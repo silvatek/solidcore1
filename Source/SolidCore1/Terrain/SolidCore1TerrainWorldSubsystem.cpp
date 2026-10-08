@@ -1,5 +1,5 @@
-#include "Terrain/SolidCore1TerrainWorldSubsystem.h"
-#include "Terrain/SolidCore1TerrainStreamer.h"
+#include "SolidCore1TerrainWorldSubsystem.h"
+#include "SolidCore1TerrainStreamer.h"
 #include "SolidCore1.h"
 #include "Engine/World.h"
 

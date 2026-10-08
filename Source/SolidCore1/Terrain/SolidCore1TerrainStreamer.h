@@ -4,6 +4,8 @@
 #include "GameFramework/Actor.h"
 #include "SolidCore1TerrainStreamer.generated.h"
 
+// Note: .cpp files in this folder include local headers without a Terrain/ prefix (MSVC).
+
 class ASolidCore1TerrainChunk;
 class UMaterialInterface;
 

@@ -6,6 +6,10 @@ public class SolidCore1 : ModuleRules
 	{
 		PCHUsage = PCHUsageMode.UseExplicitOrSharedPCHs;
 
+		PublicIncludePaths.Add(ModuleDirectory);
+		PrivateIncludePaths.Add(ModuleDirectory);
+		PrivateIncludePaths.Add(System.IO.Path.Combine(ModuleDirectory, "Terrain"));
+
 		PublicDependencyModuleNames.AddRange(new string[]
 		{
 			"Core",

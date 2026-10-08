@@ -3,7 +3,6 @@
 #include "SolidCore1PlayerController.h"
 #include "SolidCore1.h"
 #include "Terrain/SolidCore1TerrainStreamer.h"
-#include "UObject/ConstructorHelpers.h"
 
 namespace SolidCore1GameModePrivate
 {
@@ -23,18 +22,20 @@ ASolidCore1GameMode::ASolidCore1GameMode()
 	PlayerControllerClass = ASolidCore1PlayerController::StaticClass();
 	bAutoSpawnTerrainStreamer = true;
 
-	if (UClass* PawnClass = SolidCore1GameModePrivate::TryLoadPawnClass(
-			TEXT("/Game/Characters/BP_SolidCore1Character.BP_SolidCore1Character_C")))
+	UClass* PawnClass = SolidCore1GameModePrivate::TryLoadPawnClass(
+		TEXT("/Game/Characters/BP_SolidCore1Character.BP_SolidCore1Character_C"));
+	if (!PawnClass)
 	{
-		DefaultPawnClass = PawnClass;
+		PawnClass = SolidCore1GameModePrivate::TryLoadPawnClass(
+			TEXT("/Game/Blueprints/BP_SolidCore1Character.BP_SolidCore1Character_C"));
 	}
-	else if (UClass* PawnClass = SolidCore1GameModePrivate::TryLoadPawnClass(
-			TEXT("/Game/Blueprints/BP_SolidCore1Character.BP_SolidCore1Character_C")))
+	if (!PawnClass)
 	{
-		DefaultPawnClass = PawnClass;
+		PawnClass = SolidCore1GameModePrivate::TryLoadPawnClass(
+			TEXT("/Game/ThirdPerson/Blueprints/BP_ThirdPersonCharacter.BP_ThirdPersonCharacter_C"));
 	}
-	else if (UClass* PawnClass = SolidCore1GameModePrivate::TryLoadPawnClass(
-			TEXT("/Game/ThirdPerson/Blueprints/BP_ThirdPersonCharacter.BP_ThirdPersonCharacter_C")))
+
+	if (PawnClass)
 	{
 		DefaultPawnClass = PawnClass;
 	}

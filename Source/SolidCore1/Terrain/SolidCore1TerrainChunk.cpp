@@ -1,5 +1,5 @@
-#include "Terrain/SolidCore1TerrainChunk.h"
-#include "Terrain/SolidCore1TerrainNoise.h"
+#include "SolidCore1TerrainChunk.h"
+#include "SolidCore1TerrainNoise.h"
 #include "Engine/CollisionProfile.h"
 #include "Materials/MaterialInterface.h"
 #include "ProceduralMeshComponent.h"

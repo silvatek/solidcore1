@@ -64,6 +64,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	bool bSnapFocusToTerrainOnce = true;
 
+	/** Hide Open World landscape and disable its collision so the pawn walks on procedural chunks. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
+	bool bDisableLandscapeActors = true;
+
 protected:
 	void UpdateStreaming();
 	FIntPoint WorldToChunkCoord(const FVector& WorldLocation) const;
@@ -71,10 +75,12 @@ protected:
 	UMaterialInterface* ResolveMaterial() const;
 	float SampleHeightAtWorld(const FVector& WorldLocation) const;
 	void TrySnapFocusToTerrain(AActor* Focus);
+	void DisableLandscapeActorsOnce();
 
 	UPROPERTY()
 	TMap<FIntPoint, TObjectPtr<ASolidCore1TerrainChunk>> LoadedChunks;
 
 	float TimeSinceUpdate = 0.f;
 	bool bDidSnapFocus = false;
+	bool bDidDisableLandscape = false;
 };

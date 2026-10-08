@@ -10,10 +10,19 @@ ASolidCore1TerrainChunk::ASolidCore1TerrainChunk()
 
 	ProceduralMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("ProceduralMesh"));
 	SetRootComponent(ProceduralMesh);
-	ProceduralMesh->bUseAsyncCooking = true;
+
+	// Sync cooking so collision exists before the pawn lands (async often causes fall-through).
+	ProceduralMesh->bUseAsyncCooking = false;
+	ProceduralMesh->bUseComplexAsSimpleCollision = true;
 	ProceduralMesh->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
+	ProceduralMesh->SetCollisionObjectType(ECC_WorldStatic);
+	ProceduralMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	ProceduralMesh->SetCollisionResponseToAllChannels(ECR_Block);
+	ProceduralMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+	ProceduralMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	ProceduralMesh->SetGenerateOverlapEvents(false);
 	ProceduralMesh->SetCastShadow(true);
+	ProceduralMesh->SetMobility(EComponentMobility::Static);
 }
 
 void ASolidCore1TerrainChunk::BuildChunk(
@@ -121,6 +130,7 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	}
 
 	ProceduralMesh->ClearAllMeshSections();
+	ProceduralMesh->bUseComplexAsSimpleCollision = true;
 	ProceduralMesh->CreateMeshSection_LinearColor(
 		0, Vertices, Triangles, Normals, UVs, Colors, Tangents, /*bCreateCollision=*/true);
 
@@ -131,4 +141,6 @@ void ASolidCore1TerrainChunk::BuildChunk(
 
 	ProceduralMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	ProceduralMesh->SetCollisionResponseToAllChannels(ECR_Block);
+	ProceduralMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+	ProceduralMesh->RecreatePhysicsState();
 }

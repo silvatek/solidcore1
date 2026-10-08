@@ -4,8 +4,10 @@
 #include "SolidCore1.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "GameFramework/Character.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "Components/CapsuleComponent.h"
 #include "Landscape.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialInterface.h"
@@ -173,8 +175,16 @@ void ASolidCore1TerrainStreamer::TrySnapFocusToTerrain(AActor* Focus)
 		LandZ = Hit.ImpactPoint.Z;
 	}
 
-	const float CapsuleHalfHeight = 96.f;
-	Focus->SetActorLocation(FVector(Loc.X, Loc.Y, LandZ + CapsuleHalfHeight + 2.f));
+	float CapsuleHalfHeight = 96.f;
+	if (const ACharacter* Character = Cast<ACharacter>(Focus))
+	{
+		if (const UCapsuleComponent* Capsule = Character->GetCapsuleComponent())
+		{
+			CapsuleHalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+		}
+	}
+
+	Focus->SetActorLocation(FVector(Loc.X, Loc.Y, LandZ + CapsuleHalfHeight + SnapHeightPadding));
 	bDidSnapFocus = true;
 
 	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Snapped focus onto terrain Z=%.1f at (%.0f, %.0f)"), LandZ, Loc.X, Loc.Y);

@@ -58,8 +58,8 @@ ASolidCore1Character::ASolidCore1Character()
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 
 	// Mannequin mesh sits in the capsule. Yaw -90 aligns mesh forward with character forward.
-	// Z ≈ -capsule half-height so feet meet the ground (tune in BP if needed).
-	GetMesh()->SetRelativeLocationAndRotation(FVector(0.f, 0.f, -96.f), FRotator(0.f, -90.f, 0.f));
+	// Z is slightly less than capsule half-height so feet aren't buried in complex collision.
+	GetMesh()->SetRelativeLocationAndRotation(FVector(0.f, 0.f, -88.f), FRotator(0.f, -90.f, 0.f));
 	GetMesh()->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
 	GetMesh()->SetVisibility(true);
 

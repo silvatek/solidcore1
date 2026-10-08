@@ -95,6 +95,17 @@ void ASolidCore1Character::BeginPlay()
 	ApplyWalkSpeed();
 	AddMappingContext();
 
+	// Keep BP yaw; lift mesh so feet clear procedural ground (BP often saves Z=-96).
+	if (USkeletalMeshComponent* CharacterMesh = GetMesh())
+	{
+		FVector Rel = CharacterMesh->GetRelativeLocation();
+		if (Rel.Z < -88.f)
+		{
+			Rel.Z = -88.f;
+			CharacterMesh->SetRelativeLocation(Rel);
+		}
+	}
+
 	// Backup spawn path: Blueprint GameModes sometimes skip C++ BeginPlay.
 	ASolidCore1TerrainStreamer::EnsureExists(GetWorld());
 }

@@ -4,24 +4,46 @@
 #include "Materials/MaterialInterface.h"
 #include "ProceduralMeshComponent.h"
 
+namespace SolidCore1TerrainChunkPrivate
+{
+	static void ConfigureCollision(UProceduralMeshComponent* Mesh)
+	{
+		Mesh->bUseAsyncCooking = false;
+		Mesh->bUseComplexAsSimpleCollision = true;
+		Mesh->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
+		Mesh->SetCollisionObjectType(ECC_WorldStatic);
+		Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		Mesh->SetCollisionResponseToAllChannels(ECR_Block);
+		Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+		Mesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+		Mesh->SetGenerateOverlapEvents(false);
+	}
+
+	static void FinalizeRenderAndBounds(UProceduralMeshComponent* Mesh)
+	{
+		Mesh->UpdateBounds();
+		Mesh->MarkRenderStateDirty();
+		Mesh->RecreatePhysicsState();
+	}
+}
+
 ASolidCore1TerrainChunk::ASolidCore1TerrainChunk()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
 	ProceduralMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("ProceduralMesh"));
 	SetRootComponent(ProceduralMesh);
-
-	// Sync cooking so collision exists before the pawn lands (async often causes fall-through).
-	ProceduralMesh->bUseAsyncCooking = false;
-	ProceduralMesh->bUseComplexAsSimpleCollision = true;
-	ProceduralMesh->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
-	ProceduralMesh->SetCollisionObjectType(ECC_WorldStatic);
-	ProceduralMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	ProceduralMesh->SetCollisionResponseToAllChannels(ECR_Block);
-	ProceduralMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
-	ProceduralMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
-	ProceduralMesh->SetGenerateOverlapEvents(false);
+	ProceduralMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ProceduralMesh->SetCastShadow(true);
+	ProceduralMesh->SetVisibility(true);
+	ProceduralMesh->SetHiddenInGame(false);
+
+	CollisionMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("CollisionMesh"));
+	CollisionMesh->SetupAttachment(ProceduralMesh);
+	CollisionMesh->SetVisibility(false);
+	CollisionMesh->SetHiddenInGame(true);
+	CollisionMesh->SetCastShadow(false);
+	SolidCore1TerrainChunkPrivate::ConfigureCollision(CollisionMesh);
 }
 
 void ASolidCore1TerrainChunk::BuildChunk(
@@ -135,26 +157,27 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	}
 
 	ProceduralMesh->ClearAllMeshSections();
-	ProceduralMesh->bUseComplexAsSimpleCollision = true;
-
-	// Section 0: visible terrain (no collision).
+	ProceduralMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ProceduralMesh->CreateMeshSection_LinearColor(
 		0, Vertices, Triangles, Normals, UVs, Colors, Tangents, /*bCreateCollision=*/false);
 	if (Material)
 	{
 		ProceduralMesh->SetMaterial(0, Material);
 	}
+	ProceduralMesh->SetVisibility(true);
+	ProceduralMesh->SetHiddenInGame(false);
+	SolidCore1TerrainChunkPrivate::FinalizeRenderAndBounds(ProceduralMesh);
 
-	// Section 1: invisible collision surface raised to counter capsule sink into complex mesh.
-	ProceduralMesh->CreateMeshSection_LinearColor(
-		1, CollisionVertices, Triangles, Normals, UVs, Colors, Tangents, /*bCreateCollision=*/true);
-	ProceduralMesh->SetMeshSectionVisible(1, false);
+	CollisionMesh->ClearAllMeshSections();
+	SolidCore1TerrainChunkPrivate::ConfigureCollision(CollisionMesh);
+	CollisionMesh->CreateMeshSection_LinearColor(
+		0, CollisionVertices, Triangles, Normals, UVs, Colors, Tangents, /*bCreateCollision=*/true);
+	CollisionMesh->SetVisibility(false);
+	CollisionMesh->SetHiddenInGame(true);
+	SolidCore1TerrainChunkPrivate::FinalizeRenderAndBounds(CollisionMesh);
 
-	ProceduralMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	ProceduralMesh->SetCollisionResponseToAllChannels(ECR_Block);
-	ProceduralMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
-	ProceduralMesh->RecreatePhysicsState();
-
-	// Static after positioning: avoids Movable "movement base" paths (GetMovementBase deprecation spam).
-	ProceduralMesh->SetMobility(EComponentMobility::Static);
+	UE_LOG(LogTemp, Warning,
+		TEXT("[SolidCore1] Chunk (%d,%d) visual verts=%d bounds=%s"),
+		InChunkCoord.X, InChunkCoord.Y, Vertices.Num(),
+		*ProceduralMesh->Bounds.ToString());
 }

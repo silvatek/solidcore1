@@ -15,7 +15,6 @@ class SOLIDCORE1_API ASolidCore1TerrainChunk : public AActor
 public:
 	ASolidCore1TerrainChunk();
 
-	/** Build / rebuild the mesh for this chunk coordinate. Safe to call more than once. */
 	void BuildChunk(
 		FIntPoint InChunkCoord,
 		float InChunkWorldSize,
@@ -32,6 +31,10 @@ public:
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terrain")
 	TObjectPtr<UProceduralMeshComponent> ProceduralMesh;
+
+	/** Invisible walkable surface (may be slightly above the visible mesh). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terrain")
+	TObjectPtr<UProceduralMeshComponent> CollisionMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terrain")
 	FIntPoint ChunkCoord = FIntPoint::ZeroValue;

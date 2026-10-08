@@ -70,7 +70,7 @@ public:
 
 	/** Extra cm above the hit surface when snapping (helps with complex-collision sink). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.0"))
-	float SnapHeightPadding = 16.f;
+	float SnapHeightPadding = 28.f;
 
 protected:
 	void UpdateStreaming();

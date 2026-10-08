@@ -46,6 +46,9 @@ protected:
 	/** Loads mannequin mesh / anim BP from soft paths when the mesh is still empty. */
 	void ApplyCharacterVisuals();
 
+	/** Applies MeshGroundZOffset while preserving BP yaw/pitch/roll. */
+	void ApplyMeshGroundOffset();
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USpringArmComponent> CameraBoom;
 
@@ -73,6 +76,13 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Visual")
 	TSoftClassPtr<UAnimInstance> DefaultAnimBlueprint;
+
+	/**
+	 * Mesh relative Z. Capsule half-height is 96; values around -90..-96 bury feet in procedural
+	 * complex collision — use a higher (less negative) value so soles sit on the surface.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Visual")
+	float MeshGroundZOffset = -72.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float WalkSpeed = 500.f;

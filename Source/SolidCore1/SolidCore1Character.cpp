@@ -58,8 +58,7 @@ ASolidCore1Character::ASolidCore1Character()
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 
 	// Mannequin mesh sits in the capsule. Yaw -90 aligns mesh forward with character forward.
-	// Z is slightly less than capsule half-height so feet aren't buried in complex collision.
-	GetMesh()->SetRelativeLocationAndRotation(FVector(0.f, 0.f, -88.f), FRotator(0.f, -90.f, 0.f));
+	GetMesh()->SetRelativeLocationAndRotation(FVector(0.f, 0.f, MeshGroundZOffset), FRotator(0.f, -90.f, 0.f));
 	GetMesh()->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
 	GetMesh()->SetVisibility(true);
 
@@ -87,6 +86,16 @@ void ASolidCore1Character::PostInitializeComponents()
 	ApplyCharacterVisuals();
 }
 
+void ASolidCore1Character::ApplyMeshGroundOffset()
+{
+	if (USkeletalMeshComponent* CharacterMesh = GetMesh())
+	{
+		FVector Rel = CharacterMesh->GetRelativeLocation();
+		Rel.Z = MeshGroundZOffset;
+		CharacterMesh->SetRelativeLocation(Rel);
+	}
+}
+
 void ASolidCore1Character::BeginPlay()
 {
 	Super::BeginPlay();
@@ -94,17 +103,7 @@ void ASolidCore1Character::BeginPlay()
 	EnsureRuntimeInputAssets();
 	ApplyWalkSpeed();
 	AddMappingContext();
-
-	// Keep BP yaw; lift mesh so feet clear procedural ground (BP often saves Z=-96).
-	if (USkeletalMeshComponent* CharacterMesh = GetMesh())
-	{
-		FVector Rel = CharacterMesh->GetRelativeLocation();
-		if (Rel.Z < -88.f)
-		{
-			Rel.Z = -88.f;
-			CharacterMesh->SetRelativeLocation(Rel);
-		}
-	}
+	ApplyMeshGroundOffset();
 
 	// Backup spawn path: Blueprint GameModes sometimes skip C++ BeginPlay.
 	ASolidCore1TerrainStreamer::EnsureExists(GetWorld());
@@ -115,8 +114,9 @@ void ASolidCore1Character::PossessedBy(AController* NewController)
 	Super::PossessedBy(NewController);
 	EnsureRuntimeInputAssets();
 	AddMappingContext();
+	ApplyMeshGroundOffset();
 	ASolidCore1TerrainStreamer::EnsureExists(GetWorld());
-	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Character PossessedBy — ensured terrain streamer"));
+	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Character PossessedBy - ensured terrain streamer"));
 }
 
 void ASolidCore1Character::OnRep_PlayerState()

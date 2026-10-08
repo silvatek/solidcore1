@@ -1,5 +1,6 @@
 #include "SolidCore1HUD.h"
 #include "SolidCore1BuildId.h"
+#include "Companion/SolidCore1CompanionCharacter.h"
 #include "Terrain/SolidCore1TerrainStreamer.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
@@ -146,6 +147,31 @@ void ASolidCore1HUD::DrawHUD()
 		const FVector CamLoc = CamMgr->GetCameraLocation();
 		Lines.Add(FString::Printf(
 			TEXT("Cam pitch=%+.1f  Z=%.0f"), CamRot.Pitch, CamLoc.Z));
+	}
+
+	{
+		ASolidCore1CompanionCharacter* Companion = nullptr;
+		if (UWorld* World = GetWorld())
+		{
+			for (TActorIterator<ASolidCore1CompanionCharacter> It(World); It; ++It)
+			{
+				Companion = *It;
+				break;
+			}
+		}
+
+		if (Companion && Pawn)
+		{
+			const float Dist = FVector::Dist(Pawn->GetActorLocation(), Companion->GetActorLocation());
+			const FString MeshName = Companion->GetMesh() && Companion->GetMesh()->GetSkeletalMeshAsset()
+				? Companion->GetMesh()->GetSkeletalMeshAsset()->GetName()
+				: TEXT("<no mesh>");
+			Lines.Add(FString::Printf(TEXT("Companion %s  dist=%.0f cm"), *MeshName, Dist));
+		}
+		else
+		{
+			Lines.Add(TEXT("Companion <none>"));
+		}
 	}
 
 	UFont* Font = GEngine ? GEngine->GetSmallFont() : nullptr;

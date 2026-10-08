@@ -87,6 +87,10 @@ Default map is `/Game/ThirdPerson/Lvl_ThirdPerson` (SC1-0022) so Open World Land
 
 SC1-0007 drops `UProceduralMeshComponent` after persistent ribbon/culling failures with that path.
 
+## Quinn companion (SC1-0024)
+
+`ASolidCore1CompanionCharacter` spawns behind the player and follows with simple steering (no NavMesh — works on procedural terrain). She uses `SKM_Quinn_Simple` + `ABP_Unarmed` (same Epic skeleton as Manny). GameMode flag: `bAutoSpawnCompanion`. HUD shows companion mesh name and distance. Later this pawn is the swap target for the Viking mesh while Manny stays the player.
+
 ## Create the open-world map
 
 Binary `.umap` assets are created in the Editor (not checked in as source):

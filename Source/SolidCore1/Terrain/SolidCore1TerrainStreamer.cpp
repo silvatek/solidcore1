@@ -19,22 +19,12 @@ ASolidCore1TerrainStreamer::ASolidCore1TerrainStreamer()
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
 
-	// SC1-0020: WorldGrid at grazing angles can look like floating horizon slivers.
-	// Try plain BasicShape (no world-aligned grid) to test that theory.
-	static ConstructorHelpers::FObjectFinder<UMaterial> BasicMat(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
-	if (BasicMat.Succeeded())
+	// SC1-0020 BasicShape: shards remained (geometry, not WorldGrid). Restored.
+	static ConstructorHelpers::FObjectFinder<UMaterial> GridMat(
+		TEXT("/Engine/EngineMaterials/WorldGridMaterial.WorldGridMaterial"));
+	if (GridMat.Succeeded())
 	{
-		TerrainMaterial = BasicMat.Object;
-	}
-	else
-	{
-		static ConstructorHelpers::FObjectFinder<UMaterial> GridMat(
-			TEXT("/Engine/EngineMaterials/WorldGridMaterial.WorldGridMaterial"));
-		if (GridMat.Succeeded())
-		{
-			TerrainMaterial = GridMat.Object;
-		}
+		TerrainMaterial = GridMat.Object;
 	}
 }
 

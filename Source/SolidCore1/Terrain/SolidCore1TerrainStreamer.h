@@ -41,9 +41,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "4", ClampMax = "128"))
 	int32 QuadsPerSide = 32;
 
-	/** Chebyshev radius in chunks around the focus (0 => 1 chunk, 2 => 5x5). */
+	/** Chebyshev radius in chunks around the focus (0 => 1 chunk, 4 => 9x9). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0", ClampMax = "12"))
-	int32 ViewRadiusChunks = 2;
+	int32 ViewRadiusChunks = 4;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	int32 Seed = 1337;
@@ -64,7 +64,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.0"))
 	float CollisionHeightBias = 0.f;
 
-	/** Optional material override. Defaults to BasicShapeMaterial. */
+	/** Optional material override. Defaults to WorldGridMaterial. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	TObjectPtr<UMaterialInterface> TerrainMaterial;
 

@@ -90,6 +90,7 @@ void ASolidCore1HUD::DrawHUD()
 
 	TArray<FString> Lines;
 	Lines.Add(FString::Printf(TEXT("Build %s"), SOLIDCORE1_BUILD_ID));
+	Lines.Add(FString::Printf(TEXT("Change: %s"), SOLIDCORE1_BUILD_NOTE));
 
 	APawn* Pawn = GetOwningPawn();
 	ASolidCore1TerrainStreamer* Streamer = SolidCore1HUDPrivate::FindStreamer(GetWorld());
@@ -115,8 +116,9 @@ void ASolidCore1HUD::DrawHUD()
 			const FIntPoint Chunk = Streamer->GetChunkCoordAt(Loc);
 			Lines.Add(FString::Printf(TEXT("Terrain Z=%.1f  feetΔ=%+.0f cm"), LandZ, Delta));
 			Lines.Add(FString::Printf(
-				TEXT("Chunk (%d,%d)  loaded=%d  amp=%.0f  freq=%.5f"),
+				TEXT("Chunk (%d,%d)  loaded=%d  radius=%d  amp=%.0f  freq=%.5f"),
 				Chunk.X, Chunk.Y, Streamer->GetLoadedChunkCount(),
+				Streamer->ViewRadiusChunks,
 				Streamer->Amplitude, Streamer->FrequencyScale));
 
 			if (const UMaterialInterface* Mat = Streamer->GetActiveMaterial())

@@ -55,7 +55,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.0"))
 	float CollisionHeightBias = 0.f;
 
-	/** Optional material; if null a basic engine material is used when available. */
+	/** Optional material override. If null, a green BasicShape MID is created at runtime. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	TObjectPtr<UMaterialInterface> TerrainMaterial;
 
@@ -90,6 +90,10 @@ protected:
 
 	UPROPERTY()
 	TMap<FIntPoint, TObjectPtr<ASolidCore1TerrainChunk>> LoadedChunks;
+
+	/** Cached lit MID so chunks do not each create their own. */
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInterface> ResolvedTerrainMaterial;
 
 	float TimeSinceUpdate = 0.f;
 	bool bDidDisableLandscape = false;

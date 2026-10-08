@@ -52,7 +52,7 @@ public:
 	float FrequencyScale = 0.00012f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
-	float Amplitude = 1200.f;
+	float Amplitude = 3000.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	float BaseHeight = 0.f;

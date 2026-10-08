@@ -18,6 +18,7 @@ Put this repo’s contents at `C:\Users\staz6\Dev\solidcore1` (clone or sync), t
 |--------|----------|---------|
 | Move | WASD | Left stick |
 | Look | Mouse | Right stick |
+| Zoom | Mouse wheel | — |
 | Jump | Space | A / Cross |
 | Sprint | Left Shift | Left stick click |
 

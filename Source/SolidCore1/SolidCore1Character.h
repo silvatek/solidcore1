@@ -34,6 +34,7 @@ protected:
 
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
+	void Zoom(const FInputActionValue& Value);
 	void StartSprint();
 	void StopSprint();
 

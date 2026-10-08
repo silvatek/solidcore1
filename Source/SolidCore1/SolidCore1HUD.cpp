@@ -162,8 +162,14 @@ void ASolidCore1HUD::DrawHUD()
 		}
 		if (ArmLen >= 0.f)
 		{
+			float ZoomLen = ArmLen;
+			if (const ASolidCore1Character* SolidCharacter = Cast<ASolidCore1Character>(Pawn))
+			{
+				ZoomLen = SolidCharacter->GetUserZoomArmLength();
+			}
 			Lines.Add(FString::Printf(
-				TEXT("Cam pitch=%+.1f  Z=%.0f  arm=%.0f"), CamRot.Pitch, CamLoc.Z, ArmLen));
+				TEXT("Cam pitch=%+.1f  Z=%.0f  arm=%.0f  zoom=%.0f"),
+				CamRot.Pitch, CamLoc.Z, ArmLen, ZoomLen));
 		}
 		else
 		{

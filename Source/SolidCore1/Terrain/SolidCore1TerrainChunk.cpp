@@ -27,7 +27,7 @@ ASolidCore1TerrainChunk::ASolidCore1TerrainChunk()
 	ProceduralMesh->SetMobility(EComponentMobility::Movable);
 	ProceduralMesh->bUseAsOccluder = false;
 	ProceduralMesh->bTreatAsBackgroundForOcclusion = true;
-	ProceduralMesh->SetCullDistance(0.f);
+	ProceduralMesh->LDMaxDrawDistance = 0.f;
 	ProceduralMesh->bAllowCullDistanceVolume = false;
 }
 

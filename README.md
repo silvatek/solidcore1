@@ -77,9 +77,9 @@ C++ generates walkable terrain around the player at runtime:
 - `ASolidCore1TerrainStreamer` — loads/unloads a Chebyshev radius of chunks around the pawn
 - `ASolidCore1GameMode` auto-spawns the streamer on BeginPlay (`bAutoSpawnTerrainStreamer`)
 
-Defaults: 64 m chunks (`ChunkWorldSize=6400`), 32 quads/side, radius 2 (5×5 chunks). Tunable on the streamer actor.
+Defaults: 64 m chunks (`ChunkWorldSize=6400`), 32 quads/side, radius 2 (5×5 chunks), `Amplitude=1200`. Tunable on the streamer actor. Chunks use a vertex-color debug material so height reads clearly (WorldGrid looks like a flat void floor).
 
-On first stream, the pawn is snapped onto the procedural height so you are not stuck on the empty Open World landscape. For a cleaner look, hide or remove the default landscape (or disable its collision) in `L_OpenWorld`.
+On first stream, the pawn is snapped onto the procedural height so you are not stuck on the empty Open World landscape. Landscape actors are hidden/collision-disabled automatically. Single-sided meshes avoid a floating z-fight “ribbon.”
 
 Requires the **ProceduralMeshComponent** plugin (enabled in `SolidCore1.uproject`).
 

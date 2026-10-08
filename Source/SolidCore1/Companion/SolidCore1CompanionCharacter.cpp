@@ -1,13 +1,23 @@
 #include "SolidCore1CompanionCharacter.h"
 #include "SolidCore1.h"
 #include "Animation/AnimSequence.h"
+#include "Animation/AnimSingleNodeInstance.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
+#include "UObject/ConstructorHelpers.h"
 #include "UObject/SoftObjectPath.h"
+
+namespace SolidCore1CompanionPrivate
+{
+	static UAnimSequence* LoadAnimPath(const TCHAR* Path)
+	{
+		return Cast<UAnimSequence>(StaticLoadObject(UAnimSequence::StaticClass(), nullptr, Path));
+	}
+}
 
 ASolidCore1CompanionCharacter::ASolidCore1CompanionCharacter()
 {
@@ -38,6 +48,9 @@ ASolidCore1CompanionCharacter::ASolidCore1CompanionCharacter()
 		FVector(0.f, 0.f, MeshGroundZOffset), FRotator(0.f, -90.f, 0.f));
 	GetMesh()->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
 	GetMesh()->SetVisibility(true);
+	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+	GetMesh()->bPauseAnims = false;
+	GetMesh()->bNoSkeletonUpdate = false;
 
 	// Fab Viking — custom skeleton; locomotion uses single-node clip playback.
 	CompanionMesh = TSoftObjectPtr<USkeletalMesh>(
@@ -60,6 +73,7 @@ void ASolidCore1CompanionCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	ApplyVisuals();
+	CacheLocomotionAnims();
 	ResolveFollowTarget();
 	UpdateLocomotionAnim();
 
@@ -70,16 +84,23 @@ void ASolidCore1CompanionCharacter::BeginPlay()
 		CharacterMesh->SetRelativeLocation(Rel);
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Companion BeginPlay mesh=%s follow=%s"),
+	UE_LOG(LogTemp, Warning,
+		TEXT("[SolidCore1] Companion BeginPlay mesh=%s idle=%s walk=%s run=%s follow=%s"),
 		GetMesh() && GetMesh()->GetSkeletalMeshAsset()
 			? *GetMesh()->GetSkeletalMeshAsset()->GetName()
 			: TEXT("<none>"),
+		CachedIdleAnim ? *CachedIdleAnim->GetName() : TEXT("<null>"),
+		CachedWalkAnim ? *CachedWalkAnim->GetName() : TEXT("<null>"),
+		CachedRunAnim ? *CachedRunAnim->GetName() : TEXT("<null>"),
 		FollowTarget.IsValid() ? *FollowTarget->GetName() : TEXT("<none>"));
-	UE_LOG(LogSolidCore1, Warning, TEXT("Companion BeginPlay mesh=%s follow=%s"),
+	UE_LOG(LogSolidCore1, Warning,
+		TEXT("Companion BeginPlay mesh=%s idle=%s walk=%s run=%s"),
 		GetMesh() && GetMesh()->GetSkeletalMeshAsset()
 			? *GetMesh()->GetSkeletalMeshAsset()->GetName()
 			: TEXT("<none>"),
-		FollowTarget.IsValid() ? *FollowTarget->GetName() : TEXT("<none>"));
+		CachedIdleAnim ? *CachedIdleAnim->GetName() : TEXT("<null>"),
+		CachedWalkAnim ? *CachedWalkAnim->GetName() : TEXT("<null>"),
+		CachedRunAnim ? *CachedRunAnim->GetName() : TEXT("<null>"));
 }
 
 void ASolidCore1CompanionCharacter::Tick(float DeltaSeconds)
@@ -122,15 +143,35 @@ void ASolidCore1CompanionCharacter::ResolveFollowTarget()
 	}
 }
 
-UAnimSequence* ASolidCore1CompanionCharacter::LoadAnim(
-	const TSoftObjectPtr<UAnimSequence>& SoftAnim,
-	const TCHAR* FallbackPath) const
+void ASolidCore1CompanionCharacter::CacheLocomotionAnims()
 {
-	if (UAnimSequence* Loaded = SoftAnim.LoadSynchronous())
+	if (!CachedIdleAnim)
 	{
-		return Loaded;
+		CachedIdleAnim = IdleAnim.LoadSynchronous();
+		if (!CachedIdleAnim)
+		{
+			CachedIdleAnim = SolidCore1CompanionPrivate::LoadAnimPath(
+				TEXT("/Game/Viking/Animations/Anim_Viking_idle1.Anim_Viking_idle1"));
+		}
 	}
-	return Cast<UAnimSequence>(StaticLoadObject(UAnimSequence::StaticClass(), nullptr, FallbackPath));
+	if (!CachedWalkAnim)
+	{
+		CachedWalkAnim = WalkAnim.LoadSynchronous();
+		if (!CachedWalkAnim)
+		{
+			CachedWalkAnim = SolidCore1CompanionPrivate::LoadAnimPath(
+				TEXT("/Game/Viking/Animations/Anim_Viking_walk.Anim_Viking_walk"));
+		}
+	}
+	if (!CachedRunAnim)
+	{
+		CachedRunAnim = RunAnim.LoadSynchronous();
+		if (!CachedRunAnim)
+		{
+			CachedRunAnim = SolidCore1CompanionPrivate::LoadAnimPath(
+				TEXT("/Game/Viking/Animations/Anim_Viking_run.Anim_Viking_run"));
+		}
+	}
 }
 
 void ASolidCore1CompanionCharacter::ApplyVisuals()
@@ -149,7 +190,6 @@ void ASolidCore1CompanionCharacter::ApplyVisuals()
 			static const TCHAR* Fallbacks[] = {
 				TEXT("/Game/Viking/Mesh/SK_Viking.SK_Viking"),
 				TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn_Simple.SKM_Quinn_Simple"),
-				TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn.SKM_Quinn"),
 			};
 			for (const TCHAR* Path : Fallbacks)
 			{
@@ -173,15 +213,54 @@ void ASolidCore1CompanionCharacter::ApplyVisuals()
 		else
 		{
 			UE_LOG(LogSolidCore1, Error, TEXT("Companion: no skeletal mesh found (Viking/Quinn)."));
+			return;
 		}
 	}
 
 	// Viking uses a custom skeleton — drive clips via single-node, not Manny's AnimBP.
-	if (CharacterMesh->GetSkeletalMeshAsset())
+	CharacterMesh->SetAnimInstanceClass(nullptr);
+	CharacterMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+	CharacterMesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+	CharacterMesh->bPauseAnims = false;
+	CharacterMesh->bNoSkeletonUpdate = false;
+	CharacterMesh->InitAnim(true);
+}
+
+bool ASolidCore1CompanionCharacter::PlayLocomotionClip(UAnimSequence* Anim)
+{
+	USkeletalMeshComponent* CharacterMesh = GetMesh();
+	if (!CharacterMesh || !Anim)
 	{
-		CharacterMesh->SetAnimInstanceClass(nullptr);
-		CharacterMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+		return false;
 	}
+
+	CharacterMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+	CharacterMesh->InitAnim(true);
+
+	if (UAnimSingleNodeInstance* SingleNode = CharacterMesh->GetSingleNodeInstance())
+	{
+		if (SingleNode->GetAnimationAsset() != Anim || !SingleNode->IsPlaying())
+		{
+			SingleNode->SetAnimationAsset(Anim, false);
+			SingleNode->SetLooping(true);
+			SingleNode->SetPlaying(true);
+			SingleNode->SetPlayRate(1.f);
+		}
+		ActiveLocomotionAnim = Anim;
+		return true;
+	}
+
+	// Fallback path used by some engine versions.
+	CharacterMesh->PlayAnimation(Anim, true);
+	if (UAnimSingleNodeInstance* SingleNode = CharacterMesh->GetSingleNodeInstance())
+	{
+		ActiveLocomotionAnim = Anim;
+		return SingleNode->GetAnimationAsset() == Anim;
+	}
+
+	UE_LOG(LogSolidCore1, Error,
+		TEXT("Companion: failed to create AnimSingleNodeInstance for %s"), *Anim->GetName());
+	return false;
 }
 
 void ASolidCore1CompanionCharacter::UpdateLocomotionAnim()
@@ -192,29 +271,39 @@ void ASolidCore1CompanionCharacter::UpdateLocomotionAnim()
 		return;
 	}
 
+	CacheLocomotionAnims();
+
 	const float Speed = GetVelocity().Size2D();
-	UAnimSequence* Desired = nullptr;
-	if (Speed >= RunAnimSpeedThreshold)
+	UAnimSequence* Desired = CachedIdleAnim;
+	if (Speed >= RunAnimSpeedThreshold && CachedRunAnim)
 	{
-		Desired = LoadAnim(RunAnim, TEXT("/Game/Viking/Animations/Anim_Viking_run.Anim_Viking_run"));
+		Desired = CachedRunAnim;
 	}
-	else if (Speed >= WalkAnimSpeedThreshold)
+	else if (Speed >= WalkAnimSpeedThreshold && CachedWalkAnim)
 	{
-		Desired = LoadAnim(WalkAnim, TEXT("/Game/Viking/Animations/Anim_Viking_walk.Anim_Viking_walk"));
-	}
-	else
-	{
-		Desired = LoadAnim(IdleAnim, TEXT("/Game/Viking/Animations/Anim_Viking_idle1.Anim_Viking_idle1"));
+		Desired = CachedWalkAnim;
 	}
 
-	if (!Desired || Desired == ActiveLocomotionAnim)
+	if (!Desired)
+	{
+		UE_LOG(LogSolidCore1, Warning, TEXT("Companion: no locomotion anim loaded (still T-pose)."));
+		return;
+	}
+
+	// Retry until the single-node instance is actually playing this clip.
+	const UAnimSingleNodeInstance* SingleNode = CharacterMesh->GetSingleNodeInstance();
+	const bool bAlreadyPlaying =
+		ActiveLocomotionAnim == Desired
+		&& SingleNode
+		&& SingleNode->GetAnimationAsset() == Desired
+		&& SingleNode->IsPlaying();
+
+	if (bAlreadyPlaying)
 	{
 		return;
 	}
 
-	CharacterMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-	CharacterMesh->PlayAnimation(Desired, true);
-	ActiveLocomotionAnim = Desired;
+	PlayLocomotionClip(Desired);
 }
 
 void ASolidCore1CompanionCharacter::UpdateFollow(float /*DeltaSeconds*/)

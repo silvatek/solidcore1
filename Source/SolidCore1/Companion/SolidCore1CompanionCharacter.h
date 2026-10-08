@@ -63,8 +63,9 @@ protected:
 	void ApplyVisuals();
 	void ResolveFollowTarget();
 	void UpdateFollow(float DeltaSeconds);
+	void CacheLocomotionAnims();
 	void UpdateLocomotionAnim();
-	UAnimSequence* LoadAnim(const TSoftObjectPtr<UAnimSequence>& SoftAnim, const TCHAR* FallbackPath) const;
+	bool PlayLocomotionClip(UAnimSequence* Anim);
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Companion|Visual")
 	TSoftObjectPtr<USkeletalMesh> CompanionMesh;
@@ -83,6 +84,15 @@ protected:
 
 	UPROPERTY(Transient)
 	TWeakObjectPtr<AActor> FollowTarget;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> CachedIdleAnim;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> CachedWalkAnim;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> CachedRunAnim;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimSequence> ActiveLocomotionAnim;

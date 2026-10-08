@@ -122,7 +122,8 @@ void ASolidCore1TerrainChunk::BuildChunk(
 			const float HDn = SampleSurfaceAt(X, Y - 1);
 			const float HUp = SampleSurfaceAt(X, Y + 1);
 
-			const FVector Normal = FVector(HLft - HRgt, HDn - HUp, Step * 2.f).GetSafeNormal();
+			// Match flipped winding: keep normals pointing toward the viewer from above (+Z).
+			const FVector Normal = FVector(HRgt - HLft, HUp - HDn, Step * 2.f).GetSafeNormal();
 			Normals.Add(Normal);
 
 			FVector Tangent = FVector::CrossProduct(FVector::UpVector, Normal).GetSafeNormal();
@@ -143,12 +144,14 @@ void ASolidCore1TerrainChunk::BuildChunk(
 			const int32 I01 = I00 + VertsPerSide;
 			const int32 I11 = I01 + 1;
 
+			// SC1-0010: flip winding vs prior builds. Collision worked while looking down showed
+			// only blue fog + horizon ribbons — classic one-sided backface cull from reversed winding.
 			Triangles.Add(I00);
+			Triangles.Add(I11);
 			Triangles.Add(I10);
-			Triangles.Add(I11);
 			Triangles.Add(I00);
-			Triangles.Add(I11);
 			Triangles.Add(I01);
+			Triangles.Add(I11);
 		}
 	}
 

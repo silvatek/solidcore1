@@ -39,7 +39,7 @@ public:
 
 	/** Quads along one chunk edge (verts = QuadsPerSide + 1). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "4", ClampMax = "128"))
-	int32 QuadsPerSide = 32;
+	int32 QuadsPerSide = 64;
 
 	/** Chebyshev radius in chunks around the focus (0 => 1 chunk, 2 => 5x5). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0", ClampMax = "12"))

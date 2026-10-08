@@ -52,6 +52,9 @@ protected:
 	/** Pull the boom toward the group center and lengthen it so companions stay framed. */
 	void UpdateGroupCameraFraming(float DeltaTime);
 
+	/** Lift the boom socket so the camera stays above procedural terrain (no arm collapse). */
+	void ClampCameraAboveTerrain(float DeltaTime);
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USpringArmComponent> CameraBoom;
 
@@ -94,6 +97,13 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "1.0"))
 	float FramingAspectRatio = 16.f / 9.f;
 
+	/** Minimum camera height above sampled terrain surface (cm). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Terrain", meta = (ClampMin = "0.0"))
+	float CameraTerrainClearance = 120.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Terrain", meta = (ClampMin = "0.1"))
+	float CameraTerrainLiftSpeed = 10.f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputMappingContext> DefaultMappingContext;
 
@@ -127,4 +137,7 @@ protected:
 	float SprintSpeed = 900.f;
 
 	bool bIsSprinting = false;
+
+	/** Smoothed world-Z lift applied via spring-arm SocketOffset (keeps camera above terrain). */
+	float CameraTerrainLiftCm = 0.f;
 };

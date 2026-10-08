@@ -254,6 +254,54 @@ void ASolidCore1Character::UpdateGroupCameraFraming(float DeltaTime)
 		CameraBoom->TargetArmLength, DesiredArmLength, DeltaTime, ArmInterpSpeed);
 }
 
+void ASolidCore1Character::ClampCameraAboveTerrain(float DeltaTime)
+{
+	if (!CameraBoom || !IsLocallyControlled())
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	ASolidCore1TerrainStreamer* Streamer = nullptr;
+	for (TActorIterator<ASolidCore1TerrainStreamer> It(World); It; ++It)
+	{
+		Streamer = *It;
+		break;
+	}
+	if (!Streamer)
+	{
+		return;
+	}
+
+	// Predict camera location the same way USpringArmComponent does (without terrain lift).
+	const FRotator ArmRot = CameraBoom->GetTargetRotation();
+	const FRotationMatrix ArmMatrix(ArmRot);
+	const FVector ArmOrigin = CameraBoom->GetComponentLocation() + CameraBoom->TargetOffset;
+	const FVector DesiredCam =
+		ArmOrigin
+		- ArmRot.Vector() * CameraBoom->TargetArmLength
+		+ ArmMatrix.TransformVector(FVector(CameraBoom->SocketOffset.X, CameraBoom->SocketOffset.Y, 0.f));
+
+	const float TerrainZ = Streamer->GetHeightAt(DesiredCam) + Streamer->CollisionHeightBias;
+	const float MinCamZ = TerrainZ + CameraTerrainClearance;
+	const float NeededLift = FMath::Max(0.f, MinCamZ - DesiredCam.Z);
+
+	CameraTerrainLiftCm = FMath::FInterpTo(
+		CameraTerrainLiftCm, NeededLift, DeltaTime, CameraTerrainLiftSpeed);
+
+	// Convert world-up lift into spring-arm local SocketOffset so attachment keeps it.
+	const FVector LocalLift = ArmMatrix.InverseTransformVector(FVector(0.f, 0.f, CameraTerrainLiftCm));
+	CameraBoom->SocketOffset = FVector(
+		CameraBoom->SocketOffset.X,
+		CameraBoom->SocketOffset.Y,
+		0.f) + LocalLift;
+}
+
 void ASolidCore1Character::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);

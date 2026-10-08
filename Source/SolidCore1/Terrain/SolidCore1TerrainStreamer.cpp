@@ -19,13 +19,22 @@ ASolidCore1TerrainStreamer::ASolidCore1TerrainStreamer()
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
 
-	// SC1-0002 HUD: mesh + standing OK, but MID_BasicShapeMaterial shaded black.
-	// One change: use WorldGrid directly (no MID) — known-visible albedo on this mesh.
-	static ConstructorHelpers::FObjectFinder<UMaterial> GridMat(
-		TEXT("/Engine/EngineMaterials/WorldGridMaterial.WorldGridMaterial"));
-	if (GridMat.Succeeded())
+	// SC1-0020: WorldGrid at grazing angles can look like floating horizon slivers.
+	// Try plain BasicShape (no world-aligned grid) to test that theory.
+	static ConstructorHelpers::FObjectFinder<UMaterial> BasicMat(
+		TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+	if (BasicMat.Succeeded())
 	{
-		TerrainMaterial = GridMat.Object;
+		TerrainMaterial = BasicMat.Object;
+	}
+	else
+	{
+		static ConstructorHelpers::FObjectFinder<UMaterial> GridMat(
+			TEXT("/Engine/EngineMaterials/WorldGridMaterial.WorldGridMaterial"));
+		if (GridMat.Succeeded())
+		{
+			TerrainMaterial = GridMat.Object;
+		}
 	}
 }
 

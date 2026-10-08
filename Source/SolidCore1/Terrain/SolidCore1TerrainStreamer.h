@@ -64,7 +64,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.0"))
 	float CollisionHeightBias = 0.f;
 
-	/** Optional material override. Defaults to WorldGridMaterial. */
+	/** Optional material override. Defaults to BasicShapeMaterial. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	TObjectPtr<UMaterialInterface> TerrainMaterial;
 

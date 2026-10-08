@@ -274,8 +274,20 @@ void ASolidCore1CompanionCharacter::UpdateLocomotionAnim()
 	CacheLocomotionAnims();
 
 	const float Speed = GetVelocity().Size2D();
+	float PlayerSpeed = 0.f;
+	if (const AActor* Target = FollowTarget.Get())
+	{
+		PlayerSpeed = Target->GetVelocity().Size2D();
+	}
+
+	// Prefer run when we or Manny are clearly running/sprinting (Manny walk≈500, sprint≈900).
+	const bool bShouldRun =
+		Speed >= RunAnimSpeedThreshold
+		|| PlayerSpeed >= RunAnimSpeedThreshold
+		|| (GetCharacterMovement() && GetCharacterMovement()->MaxWalkSpeed >= CatchUpSpeed - 1.f);
+
 	UAnimSequence* Desired = CachedIdleAnim;
-	if (Speed >= RunAnimSpeedThreshold && CachedRunAnim)
+	if (bShouldRun && CachedRunAnim)
 	{
 		Desired = CachedRunAnim;
 	}
@@ -333,12 +345,28 @@ void ASolidCore1CompanionCharacter::UpdateFollow(float /*DeltaSeconds*/)
 		return;
 	}
 
+	float DesiredMaxSpeed = WalkSpeed;
+	if (bMatchFollowTargetSpeed)
+	{
+		if (const ACharacter* TargetCharacter = Cast<ACharacter>(Target))
+		{
+			if (const UCharacterMovementComponent* TargetMove = TargetCharacter->GetCharacterMovement())
+			{
+				DesiredMaxSpeed = FMath::Max(WalkSpeed, TargetMove->MaxWalkSpeed);
+			}
+		}
+	}
+	if (PlanarDist >= CatchUpDistance)
+	{
+		DesiredMaxSpeed = FMath::Max(DesiredMaxSpeed, CatchUpSpeed);
+	}
+
 	if (PlanarDist <= AcceptanceRadius)
 	{
-		Move->MaxWalkSpeed = WalkSpeed;
+		Move->MaxWalkSpeed = DesiredMaxSpeed;
 		return;
 	}
 
-	Move->MaxWalkSpeed = (PlanarDist >= CatchUpDistance) ? CatchUpSpeed : WalkSpeed;
+	Move->MaxWalkSpeed = DesiredMaxSpeed;
 	AddMovementInput(ToFollow.GetSafeNormal(), 1.f);
 }

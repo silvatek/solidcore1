@@ -40,18 +40,22 @@ public:
 	float CatchUpDistance = 700.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Follow")
-	float WalkSpeed = 480.f;
+	float WalkSpeed = 500.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Follow")
-	float CatchUpSpeed = 850.f;
+	float CatchUpSpeed = 900.f;
 
 	/** Soft lateral offset so the companion is not glued to the player's exact trail. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Follow")
 	float SideOffset = 80.f;
 
+	/** Match the follow target's MaxWalkSpeed (Manny walk/sprint) when possible. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Follow")
+	bool bMatchFollowTargetSpeed = true;
+
 	/** Planar speed above which the run clip plays (cm/s). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Anim", meta = (ClampMin = "0.0"))
-	float RunAnimSpeedThreshold = 600.f;
+	float RunAnimSpeedThreshold = 380.f;
 
 	/** Planar speed above which the walk clip plays (cm/s). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Anim", meta = (ClampMin = "0.0"))

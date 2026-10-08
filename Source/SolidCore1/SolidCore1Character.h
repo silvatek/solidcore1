@@ -106,6 +106,17 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Terrain", meta = (ClampMin = "0.1"))
 	float CameraTerrainLiftSpeed = 10.f;
 
+	/** Hard cap on terrain lift so hill samples cannot fling the boom (cm). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Terrain", meta = (ClampMin = "0.0"))
+	float CameraTerrainLiftMax = 280.f;
+
+	/**
+	 * When true, companion framing may lengthen the boom past zoom.
+	 * When false (default), mouse-wheel zoom fully controls arm length; framing only recenters.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing")
+	bool bFramingCanOverrideZoom = false;
+
 	/** Player-chosen boom length (cm); mouse wheel adjusts this. Framing may only pull farther out. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Zoom", meta = (ClampMin = "100.0"))
 	float UserZoomArmLength = 450.f;

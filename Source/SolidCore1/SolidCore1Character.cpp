@@ -244,11 +244,14 @@ void ASolidCore1Character::UpdateGroupCameraFraming(float DeltaTime)
 			FramingMaxArmLength);
 	}
 
-	// Wheel zoom sets UserZoomArmLength; companion framing may only pull farther out.
-	const float DesiredArmLength = FMath::Clamp(
-		bHasCompanions ? FMath::Max(UserZoomArmLength, FramingFitArm) : UserZoomArmLength,
-		CameraZoomMin,
-		CameraZoomMax);
+	// Wheel zoom owns arm length by default. Framing may only pull out if explicitly allowed
+	// (otherwise zoom-in hits CameraZoomMin while arm stays long — feels "stuck").
+	float DesiredArmLength = UserZoomArmLength;
+	if (bHasCompanions && bFramingCanOverrideZoom && FramingFitArm > DesiredArmLength)
+	{
+		DesiredArmLength = FramingFitArm;
+	}
+	DesiredArmLength = FMath::Clamp(DesiredArmLength, CameraZoomMin, CameraZoomMax);
 
 	CameraBoom->TargetOffset = FMath::VInterpTo(
 		CameraBoom->TargetOffset, DesiredTargetOffset, DeltaTime, FramingOffsetInterpSpeed);
@@ -295,10 +298,17 @@ void ASolidCore1Character::ClampCameraAboveTerrain(float DeltaTime)
 
 	const float TerrainZ = Streamer->GetHeightAt(DesiredCam) + Streamer->CollisionHeightBias;
 	const float MinCamZ = TerrainZ + CameraTerrainClearance;
-	const float NeededLift = FMath::Max(0.f, MinCamZ - DesiredCam.Z);
+	const float NeededLift = FMath::Clamp(
+		FMath::Max(0.f, MinCamZ - DesiredCam.Z),
+		0.f,
+		CameraTerrainLiftMax);
 
+	// Drop lift faster than we add it so the boom does not stay stuck high after cresting a hill.
+	const float LiftInterpSpeed = (NeededLift < CameraTerrainLiftCm)
+		? CameraTerrainLiftSpeed * 1.8f
+		: CameraTerrainLiftSpeed;
 	CameraTerrainLiftCm = FMath::FInterpTo(
-		CameraTerrainLiftCm, NeededLift, DeltaTime, CameraTerrainLiftSpeed);
+		CameraTerrainLiftCm, NeededLift, DeltaTime, LiftInterpSpeed);
 
 	// Convert world-up lift into spring-arm local SocketOffset so attachment keeps it.
 	const FVector LocalLift = ArmMatrix.InverseTransformVector(FVector(0.f, 0.f, CameraTerrainLiftCm));
@@ -380,7 +390,8 @@ void ASolidCore1Character::Look(const FInputActionValue& Value)
 
 void ASolidCore1Character::Zoom(const FInputActionValue& Value)
 {
-	const float Axis = Value.Get<float>();
+	// Clamp axis — some platforms deliver large wheel spikes in one tick.
+	const float Axis = FMath::Clamp(Value.Get<float>(), -3.f, 3.f);
 	if (FMath::IsNearlyZero(Axis))
 	{
 		return;

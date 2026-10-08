@@ -49,7 +49,7 @@ public:
 	int32 Seed = 1337;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
-	float FrequencyScale = 0.00005f;
+	float FrequencyScale = 0.00012f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	float Amplitude = 3000.f;

@@ -7,5 +7,5 @@
  * Format: SC1-NNNN (increment the number).
  */
 #ifndef SOLIDCORE1_BUILD_ID
-#define SOLIDCORE1_BUILD_ID TEXT("SC1-0018")
+#define SOLIDCORE1_BUILD_ID TEXT("SC1-0019")
 #endif

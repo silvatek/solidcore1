@@ -62,7 +62,7 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	Colors.Reserve(VertsPerSide * VertsPerSide);
 	Tangents.Reserve(VertsPerSide * VertsPerSide);
 	// Top + bottom faces.
-	Triangles.Reserve(InQuadsPerSide * InQuadsPerSide * 12);
+	Triangles.Reserve(InQuadsPerSide * InQuadsPerSide * 6);
 
 	TArray<float> Heights;
 	Heights.SetNumUninitialized(VertsPerSide * VertsPerSide);

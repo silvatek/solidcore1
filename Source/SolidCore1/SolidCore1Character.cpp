@@ -213,25 +213,40 @@ void ASolidCore1Character::AddMappingContext()
 	}
 }
 
+static USkeletalMesh* LoadMeshFromAssetData(const FAssetData& Asset)
+{
+	if (USkeletalMesh* AlreadyLoaded = Cast<USkeletalMesh>(Asset.FastGetAsset(false)))
+	{
+		return AlreadyLoaded;
+	}
+
+	const FSoftObjectPath SoftPath = Asset.ToSoftObjectPath();
+	return Cast<USkeletalMesh>(SoftPath.TryLoad());
+}
+
 static USkeletalMesh* FindMannequinMeshByRegistry()
 {
 	IAssetRegistry& AssetRegistry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
 	AssetRegistry.SearchAllAssets(true);
 
+	FARFilter Filter;
+	Filter.PackagePaths.Add(FName(TEXT("/Game/Characters/Mannequins")));
+	Filter.bRecursivePaths = true;
+	Filter.ClassPaths.Add(USkeletalMesh::StaticClass()->GetClassPathName());
+
 	TArray<FAssetData> Assets;
-	AssetRegistry.GetAssetsByPath(FName(TEXT("/Game/Characters/Mannequins")), Assets, /*bRecursive=*/true);
+	AssetRegistry.GetAssets(Filter, Assets);
+
+	UE_LOG(LogSolidCore1, Log, TEXT("Mannequin mesh search: found %d skeletal meshes under /Game/Characters/Mannequins"), Assets.Num());
 
 	USkeletalMesh* Ranked[3] = {nullptr, nullptr, nullptr}; // Simple Manny, Manny, Quinn/other
 
 	for (const FAssetData& Asset : Assets)
 	{
-		if (!Asset.IsInstanceOf(USkeletalMesh::StaticClass()))
-		{
-			continue;
-		}
-
 		const FString Name = Asset.AssetName.ToString();
-		USkeletalMesh* Mesh = Cast<USkeletalMesh>(Asset.GetAsset());
+		UE_LOG(LogSolidCore1, Log, TEXT("  candidate mesh: %s"), *Asset.GetObjectPathString());
+
+		USkeletalMesh* Mesh = LoadMeshFromAssetData(Asset);
 		if (!Mesh)
 		{
 			continue;
@@ -247,6 +262,11 @@ static USkeletalMesh* FindMannequinMeshByRegistry()
 		}
 		else if (Name.Contains(TEXT("Quinn"), ESearchCase::IgnoreCase) && !Ranked[2])
 		{
+			Ranked[2] = Mesh;
+		}
+		else if (!Ranked[2])
+		{
+			// Any other mannequin skeletal mesh as last resort.
 			Ranked[2] = Mesh;
 		}
 	}
@@ -266,20 +286,23 @@ static UClass* FindMannequinAnimClassByRegistry()
 {
 	IAssetRegistry& AssetRegistry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
 
+	FARFilter Filter;
+	Filter.PackagePaths.Add(FName(TEXT("/Game/Characters/Mannequins")));
+	Filter.bRecursivePaths = true;
+	Filter.ClassPaths.Add(UAnimBlueprint::StaticClass()->GetClassPathName());
+
 	TArray<FAssetData> Assets;
-	AssetRegistry.GetAssetsByPath(FName(TEXT("/Game/Characters/Mannequins")), Assets, /*bRecursive=*/true);
+	AssetRegistry.GetAssets(Filter, Assets);
+
+	UE_LOG(LogSolidCore1, Log, TEXT("Mannequin anim search: found %d anim blueprints under /Game/Characters/Mannequins"), Assets.Num());
 
 	UClass* Ranked[3] = {nullptr, nullptr, nullptr}; // Manny ABP, Quinn ABP, any ABP
 
 	for (const FAssetData& Asset : Assets)
 	{
 		const FString Name = Asset.AssetName.ToString();
-		if (!Name.StartsWith(TEXT("ABP_")))
-		{
-			continue;
-		}
+		UE_LOG(LogSolidCore1, Log, TEXT("  candidate anim: %s"), *Asset.GetObjectPathString());
 
-		// Skip post-process-only blueprints when a locomotion ABP exists.
 		if (Name.Contains(TEXT("PostProcess"), ESearchCase::IgnoreCase))
 		{
 			continue;
@@ -325,6 +348,9 @@ void ASolidCore1Character::ApplyCharacterVisuals()
 		return;
 	}
 
+	UE_LOG(LogSolidCore1, Log, TEXT("ApplyCharacterVisuals: current mesh=%s"),
+		CharacterMesh->GetSkeletalMeshAsset() ? *CharacterMesh->GetSkeletalMeshAsset()->GetPathName() : TEXT("<none>"));
+
 	if (!CharacterMesh->GetSkeletalMeshAsset())
 	{
 		USkeletalMesh* LoadedMesh = DefaultSkeletalMesh.LoadSynchronous();
@@ -344,6 +370,7 @@ void ASolidCore1Character::ApplyCharacterVisuals()
 					StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, Path));
 				if (LoadedMesh)
 				{
+					UE_LOG(LogSolidCore1, Log, TEXT("Loaded mesh via fallback path: %s"), Path);
 					break;
 				}
 			}
@@ -359,13 +386,14 @@ void ASolidCore1Character::ApplyCharacterVisuals()
 			CharacterMesh->SetSkeletalMeshAsset(LoadedMesh);
 			CharacterMesh->SetVisibility(true);
 			CharacterMesh->SetHiddenInGame(false);
-			UE_LOG(LogSolidCore1, Log, TEXT("Applied mannequin mesh: %s"), *LoadedMesh->GetPathName());
+			CharacterMesh->SetCastShadow(true);
+			UE_LOG(LogSolidCore1, Warning, TEXT("Applied mannequin mesh: %s"), *LoadedMesh->GetPathName());
 		}
 		else
 		{
-			UE_LOG(LogSolidCore1, Warning,
+			UE_LOG(LogSolidCore1, Error,
 				TEXT("No mannequin mesh found under /Game/Characters/Mannequins. "
-					 "Check Output Log and Content Browser paths (e.g. SKM_Manny_Simple)."));
+					 "Create BP_SolidCore1Character and assign the mesh in the editor (see README)."));
 		}
 	}
 
@@ -400,13 +428,12 @@ void ASolidCore1Character::ApplyCharacterVisuals()
 		{
 			CharacterMesh->SetAnimationMode(EAnimationMode::AnimationBlueprint);
 			CharacterMesh->SetAnimInstanceClass(AnimClass);
-			UE_LOG(LogSolidCore1, Log, TEXT("Applied mannequin anim BP: %s"), *AnimClass->GetPathName());
+			UE_LOG(LogSolidCore1, Warning, TEXT("Applied mannequin anim BP: %s"), *AnimClass->GetPathName());
 		}
 		else if (CharacterMesh->GetSkeletalMeshAsset())
 		{
 			UE_LOG(LogSolidCore1, Warning,
-				TEXT("Mannequin mesh loaded but no Anim Blueprint found under /Game/Characters/Mannequins. "
-					 "Character will appear in reference pose."));
+				TEXT("Mannequin mesh loaded but no Anim Blueprint found. Character will appear in reference pose."));
 		}
 	}
 }

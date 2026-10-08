@@ -32,12 +32,20 @@ Input Actions / Mapping Context can be replaced with Content assets on the chara
 
 If those exact names differ, the character also searches `/Game/Characters/Mannequins` via the Asset Registry.
 
-Those `.uasset` files are **not** in git (binary content). Add them once:
+Those `.uasset` files are **not** in git (binary content). Add them once via Migrate / Add Feature, then use the Blueprint pawn below (most reliable).
 
-1. Create a temporary **Games → Third Person** project in UE 5.8 (any location).
-2. Open that project, in Content Browser find `Content/Characters/Mannequins`.
-3. Right-click **Mannequins** → **Asset Actions → Migrate…** → select your SolidCore1 `Content` folder (`C:\Users\staz6\Dev\solidcore1\Content`).
-4. Restart / recompile SolidCore1 if needed, then PIE — you should see Manny with locomotion.
+### Reliable setup: Blueprint pawn (recommended)
+
+1. Content Browser → right-click `Content/Characters` → **Blueprint Class**.
+2. Pick **SolidCore1Character** as the parent → name it `BP_SolidCore1Character` (path must be `/Game/Characters/BP_SolidCore1Character`).
+3. Open it → select **Mesh (CharacterMesh0)**:
+   - **Skeletal Mesh**: `SKM_Manny_Simple` (or `SKM_Manny` / Quinn)
+   - **Anim Class**: `ABP_Manny` (or the locomotion ABP next to it)
+4. Compile & Save.
+5. Close the editor, rebuild/reopen so GameMode picks up the Blueprint (it prefers this BP over the bare C++ class).
+6. PIE — you should see the mannequin.
+
+While PIE is running, **Output Log** filtered to `SolidCore1` shows whether a mesh was applied or how many meshes were found.
 
 You can commit `Content/Characters/` to GitHub if you want the mannequin shared with the repo (large binaries; Git LFS recommended).
 

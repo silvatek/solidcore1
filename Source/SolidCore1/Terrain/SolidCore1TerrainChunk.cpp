@@ -4,46 +4,26 @@
 #include "Materials/MaterialInterface.h"
 #include "ProceduralMeshComponent.h"
 
-namespace SolidCore1TerrainChunkPrivate
-{
-	static void ConfigureCollision(UProceduralMeshComponent* Mesh)
-	{
-		Mesh->bUseAsyncCooking = false;
-		Mesh->bUseComplexAsSimpleCollision = true;
-		Mesh->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
-		Mesh->SetCollisionObjectType(ECC_WorldStatic);
-		Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-		Mesh->SetCollisionResponseToAllChannels(ECR_Block);
-		Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
-		Mesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
-		Mesh->SetGenerateOverlapEvents(false);
-	}
-
-	static void FinalizeRenderAndBounds(UProceduralMeshComponent* Mesh)
-	{
-		Mesh->UpdateBounds();
-		Mesh->MarkRenderStateDirty();
-		Mesh->RecreatePhysicsState();
-	}
-}
-
 ASolidCore1TerrainChunk::ASolidCore1TerrainChunk()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
 	ProceduralMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("ProceduralMesh"));
 	SetRootComponent(ProceduralMesh);
-	ProceduralMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	ProceduralMesh->bUseAsyncCooking = false;
+	ProceduralMesh->bUseComplexAsSimpleCollision = true;
+	ProceduralMesh->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
+	ProceduralMesh->SetCollisionObjectType(ECC_WorldStatic);
+	ProceduralMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	ProceduralMesh->SetCollisionResponseToAllChannels(ECR_Block);
+	ProceduralMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+	ProceduralMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	ProceduralMesh->SetGenerateOverlapEvents(false);
 	ProceduralMesh->SetCastShadow(true);
 	ProceduralMesh->SetVisibility(true);
 	ProceduralMesh->SetHiddenInGame(false);
-
-	CollisionMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("CollisionMesh"));
-	CollisionMesh->SetupAttachment(ProceduralMesh);
-	CollisionMesh->SetVisibility(false);
-	CollisionMesh->SetHiddenInGame(true);
-	CollisionMesh->SetCastShadow(false);
-	SolidCore1TerrainChunkPrivate::ConfigureCollision(CollisionMesh);
+	ProceduralMesh->bUseAsOccluder = false; // avoid self-occlusion / HZB hiding neighboring chunks
 }
 
 void ASolidCore1TerrainChunk::BuildChunk(
@@ -70,7 +50,6 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	SetActorLocation(FVector(OriginX, OriginY, 0.f));
 
 	TArray<FVector> Vertices;
-	TArray<FVector> CollisionVertices;
 	TArray<FVector> Normals;
 	TArray<FVector2D> UVs;
 	TArray<FLinearColor> Colors;
@@ -78,7 +57,6 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	TArray<int32> Triangles;
 
 	Vertices.Reserve(VertsPerSide * VertsPerSide);
-	CollisionVertices.Reserve(VertsPerSide * VertsPerSide);
 	Normals.Reserve(VertsPerSide * VertsPerSide);
 	UVs.Reserve(VertsPerSide * VertsPerSide);
 	Colors.Reserve(VertsPerSide * VertsPerSide);
@@ -87,6 +65,9 @@ void ASolidCore1TerrainChunk::BuildChunk(
 
 	TArray<float> Heights;
 	Heights.SetNumUninitialized(VertsPerSide * VertsPerSide);
+
+	float MinZ = TNumericLimits<float>::Max();
+	float MaxZ = TNumericLimits<float>::Lowest();
 
 	for (int32 Y = 0; Y < VertsPerSide; ++Y)
 	{
@@ -98,14 +79,18 @@ void ASolidCore1TerrainChunk::BuildChunk(
 				WorldX, WorldY, InSeed, InFrequencyScale, InAmplitude, InBaseHeight);
 			Heights[Y * VertsPerSide + X] = Height;
 
+			// Visual + collision share the same raised surface so you walk on what you see.
+			const float SurfaceZ = Height + InCollisionHeightBias;
+			MinZ = FMath::Min(MinZ, SurfaceZ);
+			MaxZ = FMath::Max(MaxZ, SurfaceZ);
+
 			const float LocalX = static_cast<float>(X) * Step;
 			const float LocalY = static_cast<float>(Y) * Step;
-			Vertices.Add(FVector(LocalX, LocalY, Height));
-			CollisionVertices.Add(FVector(LocalX, LocalY, Height + InCollisionHeightBias));
+			Vertices.Add(FVector(LocalX, LocalY, SurfaceZ));
 			UVs.Add(FVector2D(static_cast<float>(X) / InQuadsPerSide, static_cast<float>(Y) / InQuadsPerSide));
 
 			const float T = FMath::Clamp((Height - InBaseHeight) / FMath::Max(InAmplitude, 1.f), 0.f, 1.f);
-			Colors.Add(FLinearColor::LerpUsingHSV(FLinearColor(0.15f, 0.35f, 0.12f), FLinearColor(0.45f, 0.42f, 0.32f), T));
+			Colors.Add(FLinearColor::LerpUsingHSV(FLinearColor(0.2f, 0.55f, 0.15f), FLinearColor(0.55f, 0.5f, 0.35f), T));
 		}
 	}
 
@@ -113,7 +98,7 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	{
 		X = FMath::Clamp(X, 0, InQuadsPerSide);
 		Y = FMath::Clamp(Y, 0, InQuadsPerSide);
-		return Heights[Y * VertsPerSide + X];
+		return Heights[Y * VertsPerSide + X] + InCollisionHeightBias;
 	};
 
 	for (int32 Y = 0; Y < VertsPerSide; ++Y)
@@ -157,27 +142,35 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	}
 
 	ProceduralMesh->ClearAllMeshSections();
-	ProceduralMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ProceduralMesh->bUseComplexAsSimpleCollision = true;
 	ProceduralMesh->CreateMeshSection_LinearColor(
-		0, Vertices, Triangles, Normals, UVs, Colors, Tangents, /*bCreateCollision=*/false);
+		0, Vertices, Triangles, Normals, UVs, Colors, Tangents, /*bCreateCollision=*/true);
+
 	if (Material)
 	{
 		ProceduralMesh->SetMaterial(0, Material);
 	}
+
+	// Explicit bounds so chunks aren't frustum-culled when the camera is close / above them.
+	const FBox LocalBox(
+		FVector(0.f, 0.f, MinZ - 100.f),
+		FVector(InChunkWorldSize, InChunkWorldSize, MaxZ + 100.f));
+	ProceduralMesh->SetBoundsScale(1.f);
+	ProceduralMesh->Bounds = FBoxSphereBounds(LocalBox);
+	ProceduralMesh->UpdateBounds();
+	ProceduralMesh->MarkRenderStateDirty();
+
+	ProceduralMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	ProceduralMesh->SetCollisionResponseToAllChannels(ECR_Block);
+	ProceduralMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	ProceduralMesh->SetVisibility(true);
 	ProceduralMesh->SetHiddenInGame(false);
-	SolidCore1TerrainChunkPrivate::FinalizeRenderAndBounds(ProceduralMesh);
-
-	CollisionMesh->ClearAllMeshSections();
-	SolidCore1TerrainChunkPrivate::ConfigureCollision(CollisionMesh);
-	CollisionMesh->CreateMeshSection_LinearColor(
-		0, CollisionVertices, Triangles, Normals, UVs, Colors, Tangents, /*bCreateCollision=*/true);
-	CollisionMesh->SetVisibility(false);
-	CollisionMesh->SetHiddenInGame(true);
-	SolidCore1TerrainChunkPrivate::FinalizeRenderAndBounds(CollisionMesh);
+	ProceduralMesh->bUseAsOccluder = false;
+	ProceduralMesh->RecreatePhysicsState();
 
 	UE_LOG(LogTemp, Warning,
-		TEXT("[SolidCore1] Chunk (%d,%d) visual verts=%d bounds=%s"),
-		InChunkCoord.X, InChunkCoord.Y, Vertices.Num(),
-		*ProceduralMesh->Bounds.ToString());
+		TEXT("[SolidCore1] Chunk (%d,%d) verts=%d Z=[%.0f,%.0f] bounds=%s material=%s"),
+		InChunkCoord.X, InChunkCoord.Y, Vertices.Num(), MinZ, MaxZ,
+		*ProceduralMesh->Bounds.ToString(),
+		Material ? *Material->GetName() : TEXT("<null>"));
 }

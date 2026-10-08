@@ -32,10 +32,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terrain")
 	TObjectPtr<UProceduralMeshComponent> ProceduralMesh;
 
-	/** Invisible walkable surface (may be slightly above the visible mesh). */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terrain")
-	TObjectPtr<UProceduralMeshComponent> CollisionMesh;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terrain")
 	FIntPoint ChunkCoord = FIntPoint::ZeroValue;
 };

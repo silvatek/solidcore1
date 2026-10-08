@@ -8,7 +8,7 @@ public class SolidCore1 : ModuleRules
 
 		PublicIncludePaths.Add(ModuleDirectory);
 		PrivateIncludePaths.Add(ModuleDirectory);
-		PrivateIncludePaths.Add(System.IO.Path.Combine(ModuleDirectory, "Terrain"));
+		PrivateIncludePaths.Add(ModuleDirectory + "/Terrain");
 
 		PublicDependencyModuleNames.AddRange(new string[]
 		{

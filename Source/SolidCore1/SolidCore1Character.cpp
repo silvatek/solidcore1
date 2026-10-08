@@ -1,5 +1,8 @@
 #include "SolidCore1Character.h"
+#include "Animation/AnimBlueprint.h"
 #include "Animation/AnimInstance.h"
+#include "AssetRegistry/AssetData.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -14,6 +17,7 @@
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
 #include "InputModifiers.h"
+#include "Modules/ModuleManager.h"
 #include "SolidCore1.h"
 #include "UObject/SoftObjectPath.h"
 
@@ -57,9 +61,9 @@ ASolidCore1Character::ASolidCore1Character()
 	GetMesh()->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
 	GetMesh()->SetVisibility(true);
 
-	// Soft paths match the UE Third Person template Content layout.
+	// Soft paths: UE 5.7+ Third Person often ships SKM_Manny_Simple / ABP_Manny variants.
 	DefaultSkeletalMesh = TSoftObjectPtr<USkeletalMesh>(
-		FSoftObjectPath(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny.SKM_Manny")));
+		FSoftObjectPath(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple")));
 	DefaultAnimBlueprint = TSoftClassPtr<UAnimInstance>(
 		FSoftObjectPath(TEXT("/Game/Characters/Mannequins/Animations/ABP_Manny.ABP_Manny_C")));
 

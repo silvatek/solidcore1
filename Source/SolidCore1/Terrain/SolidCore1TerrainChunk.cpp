@@ -204,8 +204,6 @@ void ASolidCore1TerrainChunk::BuildChunk(
 		MeshDescription.CreatePolygon(PolygonGroupID, InstanceIDs);
 	}
 
-	// SC1-0012 underside did not clear horizon slivers — reverted.
-
 	RuntimeStaticMesh = NewObject<UStaticMesh>(this, NAME_None, RF_Transient);
 	RuntimeStaticMesh->bAllowCPUAccess = true;
 	RuntimeStaticMesh->NeverStream = true;

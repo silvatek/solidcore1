@@ -39,7 +39,7 @@ public:
 
 	/** Quads along one chunk edge (verts = QuadsPerSide + 1). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "4", ClampMax = "128"))
-	int32 QuadsPerSide = 64;
+	int32 QuadsPerSide = 32;
 
 	/** Chebyshev radius in chunks around the focus (0 => 1 chunk, 2 => 5x5). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0", ClampMax = "12"))
@@ -95,7 +95,8 @@ protected:
 	UMaterialInterface* ResolveMaterial() const;
 	float SampleHeightAtWorld(const FVector& WorldLocation) const;
 	void TrySnapFocusToTerrain(AActor* Focus);
-	void DisableLandscapeActorsOnce();
+	/** Hide landscape proxies every stream tick — World Partition can stream new ones in later. */
+	void DisableLandscapeActors();
 
 	UPROPERTY()
 	TMap<FIntPoint, TObjectPtr<ASolidCore1TerrainChunk>> LoadedChunks;
@@ -105,5 +106,4 @@ protected:
 	TObjectPtr<UMaterialInterface> ResolvedTerrainMaterial;
 
 	float TimeSinceUpdate = 0.f;
-	bool bDidDisableLandscape = false;
 };

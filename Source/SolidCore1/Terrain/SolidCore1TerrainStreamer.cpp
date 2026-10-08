@@ -130,9 +130,9 @@ float ASolidCore1TerrainStreamer::SampleHeightAtWorld(const FVector& WorldLocati
 		WorldLocation.X, WorldLocation.Y, Seed, FrequencyScale, Amplitude, BaseHeight);
 }
 
-void ASolidCore1TerrainStreamer::DisableLandscapeActorsOnce()
+void ASolidCore1TerrainStreamer::DisableLandscapeActors()
 {
-	if (!bDisableLandscapeActors || bDidDisableLandscape)
+	if (!bDisableLandscapeActors)
 	{
 		return;
 	}
@@ -162,12 +162,15 @@ void ASolidCore1TerrainStreamer::DisableLandscapeActorsOnce()
 			continue;
 		}
 
-		It->SetActorHiddenInGame(true);
-		It->SetActorEnableCollision(false);
-		++Count;
+		// Re-apply every stream tick: WP can stream in new LandscapeStreamingProxy actors later.
+		if (!It->IsHidden() || It->GetActorEnableCollision())
+		{
+			It->SetActorHiddenInGame(true);
+			It->SetActorEnableCollision(false);
+			++Count;
+		}
 	}
 
-	bDidDisableLandscape = true;
 	if (Count > 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Disabled %d Landscape actor(s) so pawn uses procedural terrain."), Count);
@@ -216,7 +219,7 @@ void ASolidCore1TerrainStreamer::TrySnapFocusToTerrain(AActor* Focus)
 
 void ASolidCore1TerrainStreamer::UpdateStreaming()
 {
-	DisableLandscapeActorsOnce();
+	DisableLandscapeActors();
 
 	AActor* Focus = ResolveFocusActor();
 	if (!Focus)

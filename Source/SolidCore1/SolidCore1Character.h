@@ -9,6 +9,8 @@ class USpringArmComponent;
 class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
+class USkeletalMesh;
+class UAnimInstance;
 
 UCLASS(config = Game)
 class SOLIDCORE1_API ASolidCore1Character : public ACharacter
@@ -25,6 +27,7 @@ public:
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 
 protected:
+	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
@@ -39,6 +42,9 @@ protected:
 
 	/** Builds transient Enhanced Input assets when Content assets are not assigned (playable out of the box). */
 	void EnsureRuntimeInputAssets();
+
+	/** Loads mannequin mesh / anim BP from soft paths when the mesh is still empty. */
+	void ApplyCharacterVisuals();
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USpringArmComponent> CameraBoom;
@@ -60,6 +66,13 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> SprintAction;
+
+	/** Defaults to Epic Third Person mannequin paths; assign in defaults if you use different content. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Visual")
+	TSoftObjectPtr<USkeletalMesh> DefaultSkeletalMesh;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Visual")
+	TSoftClassPtr<UAnimInstance> DefaultAnimBlueprint;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float WalkSpeed = 500.f;

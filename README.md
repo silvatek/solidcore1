@@ -23,6 +23,22 @@ Put this repo’s contents at `C:\Users\staz6\Dev\solidcore1` (clone or sync), t
 
 Input Actions / Mapping Context can be replaced with Content assets on the character later; if unset, C++ creates transient defaults so PIE works immediately.
 
+## Visible mannequin (mesh + anim)
+
+`SolidCore1Character` loads Epic’s Third Person mannequin when present:
+
+- Mesh: `/Game/Characters/Mannequins/Meshes/SKM_Manny`
+- Anim BP: `/Game/Characters/Mannequins/Animations/ABP_Manny`
+
+Those `.uasset` files are **not** in git (binary content). Add them once:
+
+1. Create a temporary **Games → Third Person** project in UE 5.8 (any location).
+2. Open that project, in Content Browser find `Content/Characters/Mannequins`.
+3. Right-click **Mannequins** → **Asset Actions → Migrate…** → select your SolidCore1 `Content` folder (`C:\Users\staz6\Dev\solidcore1\Content`).
+4. Restart / recompile SolidCore1 if needed, then PIE — you should see Manny with locomotion.
+
+You can commit `Content/Characters/` to GitHub if you want the mannequin shared with the repo (large binaries; Git LFS recommended).
+
 ## Open and build
 
 ### Option A — Editor

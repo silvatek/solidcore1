@@ -1,6 +1,8 @@
 #include "SolidCore1Character.h"
+#include "Animation/AnimInstance.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
@@ -12,6 +14,7 @@
 #include "InputMappingContext.h"
 #include "InputModifiers.h"
 #include "SolidCore1.h"
+#include "UObject/SoftObjectPath.h"
 
 namespace SolidCore1Input
 {
@@ -48,6 +51,17 @@ ASolidCore1Character::ASolidCore1Character()
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 
+	// Mannequin mesh sits in the capsule (Epic Third Person offsets).
+	GetMesh()->SetRelativeLocationAndRotation(FVector(0.f, 0.f, -90.f), FRotator(0.f, -90.f, 0.f));
+	GetMesh()->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
+	GetMesh()->SetVisibility(true);
+
+	// Soft paths match the UE Third Person template Content layout.
+	DefaultSkeletalMesh = TSoftObjectPtr<USkeletalMesh>(
+		FSoftObjectPath(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny.SKM_Manny")));
+	DefaultAnimBlueprint = TSoftClassPtr<UAnimInstance>(
+		FSoftObjectPath(TEXT("/Game/Characters/Mannequins/Animations/ABP_Manny.ABP_Manny_C")));
+
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
 	CameraBoom->TargetArmLength = 400.0f;
@@ -60,9 +74,16 @@ ASolidCore1Character::ASolidCore1Character()
 	FollowCamera->bUsePawnControlRotation = false;
 }
 
+void ASolidCore1Character::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
+	ApplyCharacterVisuals();
+}
+
 void ASolidCore1Character::BeginPlay()
 {
 	Super::BeginPlay();
+	ApplyCharacterVisuals();
 	EnsureRuntimeInputAssets();
 	ApplyWalkSpeed();
 	AddMappingContext();
@@ -183,6 +204,85 @@ void ASolidCore1Character::AddMappingContext()
 			{
 				Subsystem->AddMappingContext(DefaultMappingContext, 0);
 			}
+		}
+	}
+}
+
+void ASolidCore1Character::ApplyCharacterVisuals()
+{
+	USkeletalMeshComponent* CharacterMesh = GetMesh();
+	if (!CharacterMesh)
+	{
+		return;
+	}
+
+	if (!CharacterMesh->GetSkeletalMeshAsset())
+	{
+		USkeletalMesh* LoadedMesh = DefaultSkeletalMesh.LoadSynchronous();
+
+		// Fallback paths used by some UE Third Person / Game Animation layouts.
+		if (!LoadedMesh)
+		{
+			static const TCHAR* MeshFallbacks[] = {
+				TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn.SKM_Quinn"),
+				TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny"),
+			};
+
+			for (const TCHAR* Path : MeshFallbacks)
+			{
+				LoadedMesh = Cast<USkeletalMesh>(
+					StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, Path));
+				if (LoadedMesh)
+				{
+					break;
+				}
+			}
+		}
+
+		if (LoadedMesh)
+		{
+			CharacterMesh->SetSkeletalMeshAsset(LoadedMesh);
+		}
+		else
+		{
+			UE_LOG(LogSolidCore1, Warning,
+				TEXT("No mannequin mesh found. Migrate Content/Characters/Mannequins from a Third Person template project "
+					 "(expected /Game/Characters/Mannequins/Meshes/SKM_Manny)."));
+		}
+	}
+
+	if (CharacterMesh->GetSkeletalMeshAsset() && CharacterMesh->GetAnimClass() == nullptr)
+	{
+		UClass* AnimClass = DefaultAnimBlueprint.LoadSynchronous();
+
+		if (!AnimClass)
+		{
+			static const TCHAR* AnimFallbacks[] = {
+				TEXT("/Game/Characters/Mannequins/Animations/ABP_Quinn.ABP_Quinn_C"),
+				TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.ABP_Unarmed_C"),
+				TEXT("/Game/Characters/Mannequins/Animations/ABP_Manny"),
+			};
+
+			for (const TCHAR* Path : AnimFallbacks)
+			{
+				AnimClass = StaticLoadClass(UAnimInstance::StaticClass(), nullptr, Path);
+				if (AnimClass)
+				{
+					break;
+				}
+			}
+		}
+
+		if (AnimClass)
+		{
+			CharacterMesh->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+			CharacterMesh->SetAnimInstanceClass(AnimClass);
+		}
+		else if (CharacterMesh->GetSkeletalMeshAsset())
+		{
+			UE_LOG(LogSolidCore1, Warning,
+				TEXT("Mannequin mesh loaded but no Anim Blueprint found. Character will appear in reference pose. "
+					 "Expected /Game/Characters/Mannequins/Animations/ABP_Manny."));
 		}
 	}
 }

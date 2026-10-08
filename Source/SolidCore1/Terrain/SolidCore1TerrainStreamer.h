@@ -40,10 +40,10 @@ public:
 	int32 Seed = 1337;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
-	float FrequencyScale = 0.00008f;
+	float FrequencyScale = 0.00012f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
-	float Amplitude = 600.f;
+	float Amplitude = 1200.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	float BaseHeight = 0.f;

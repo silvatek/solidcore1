@@ -61,7 +61,6 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	UVs.Reserve(VertsPerSide * VertsPerSide);
 	Colors.Reserve(VertsPerSide * VertsPerSide);
 	Tangents.Reserve(VertsPerSide * VertsPerSide);
-	// Top + bottom faces.
 	Triangles.Reserve(InQuadsPerSide * InQuadsPerSide * 6);
 
 	TArray<float> Heights;
@@ -131,21 +130,13 @@ void ASolidCore1TerrainChunk::BuildChunk(
 			const int32 I01 = I00 + VertsPerSide;
 			const int32 I11 = I01 + 1;
 
-			// Top (CCW from +Z).
+			// CCW from +Z (single-sided — double-sided duplicates z-fight into a "ribbon").
 			Triangles.Add(I00);
 			Triangles.Add(I10);
 			Triangles.Add(I11);
 			Triangles.Add(I00);
 			Triangles.Add(I11);
 			Triangles.Add(I01);
-
-			// Bottom (flipped) so the underside is visible if the camera goes below the surface.
-			Triangles.Add(I00);
-			Triangles.Add(I11);
-			Triangles.Add(I10);
-			Triangles.Add(I00);
-			Triangles.Add(I01);
-			Triangles.Add(I11);
 		}
 	}
 

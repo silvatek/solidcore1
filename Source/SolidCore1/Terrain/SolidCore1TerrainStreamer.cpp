@@ -19,20 +19,20 @@ ASolidCore1TerrainStreamer::ASolidCore1TerrainStreamer()
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
 
-	// Prefer materials that render reliably on procedural meshes.
-	static ConstructorHelpers::FObjectFinder<UMaterial> GridMat(
-		TEXT("/Engine/EngineMaterials/WorldGridMaterial.WorldGridMaterial"));
-	if (GridMat.Succeeded())
+	// Vertex-color debug material makes height tint obvious; WorldGrid looks like a flat void floor.
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> VertexColorMat(
+		TEXT("/Engine/EngineDebugMaterials/VertexColorViewModeMaterial_ColorOnly.VertexColorViewModeMaterial_ColorOnly"));
+	if (VertexColorMat.Succeeded())
 	{
-		TerrainMaterial = GridMat.Object;
+		TerrainMaterial = VertexColorMat.Object;
 	}
 	else
 	{
-		static ConstructorHelpers::FObjectFinder<UMaterial> DefaultMat(
-			TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
-		if (DefaultMat.Succeeded())
+		static ConstructorHelpers::FObjectFinder<UMaterial> GridMat(
+			TEXT("/Engine/EngineMaterials/WorldGridMaterial.WorldGridMaterial"));
+		if (GridMat.Succeeded())
 		{
-			TerrainMaterial = DefaultMat.Object;
+			TerrainMaterial = GridMat.Object;
 		}
 	}
 }

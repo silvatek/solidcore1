@@ -2,9 +2,11 @@
 #include "SolidCore1TerrainChunk.h"
 #include "SolidCore1TerrainNoise.h"
 #include "SolidCore1.h"
+#include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "Landscape.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
@@ -115,6 +117,35 @@ float ASolidCore1TerrainStreamer::SampleHeightAtWorld(const FVector& WorldLocati
 		WorldLocation.X, WorldLocation.Y, Seed, FrequencyScale, Amplitude, BaseHeight);
 }
 
+void ASolidCore1TerrainStreamer::DisableLandscapeActorsOnce()
+{
+	if (!bDisableLandscapeActors || bDidDisableLandscape)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	int32 Count = 0;
+	for (TActorIterator<ALandscape> It(World); It; ++It)
+	{
+		It->SetActorHiddenInGame(true);
+		It->SetActorEnableCollision(false);
+		++Count;
+	}
+
+	bDidDisableLandscape = true;
+	if (Count > 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Disabled %d Landscape actor(s) so pawn uses procedural terrain."), Count);
+		UE_LOG(LogSolidCore1, Warning, TEXT("Disabled %d Landscape actor(s) for procedural terrain."), Count);
+	}
+}
+
 void ASolidCore1TerrainStreamer::TrySnapFocusToTerrain(AActor* Focus)
 {
 	if (!bSnapFocusToTerrainOnce || bDidSnapFocus || !Focus)
@@ -122,17 +153,38 @@ void ASolidCore1TerrainStreamer::TrySnapFocusToTerrain(AActor* Focus)
 		return;
 	}
 
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
 	const FVector Loc = Focus->GetActorLocation();
-	const float TerrainZ = SampleHeightAtWorld(Loc);
-	Focus->SetActorLocation(FVector(Loc.X, Loc.Y, TerrainZ + 120.f));
+	const float ExpectedZ = SampleHeightAtWorld(Loc);
+	const FVector TraceStart(Loc.X, Loc.Y, ExpectedZ + 10000.f);
+	const FVector TraceEnd(Loc.X, Loc.Y, ExpectedZ - 10000.f);
+
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(SolidCore1TerrainSnap), false, Focus);
+	FHitResult Hit;
+	float LandZ = ExpectedZ;
+
+	if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic, Params))
+	{
+		LandZ = Hit.ImpactPoint.Z;
+	}
+
+	const float CapsuleHalfHeight = 96.f;
+	Focus->SetActorLocation(FVector(Loc.X, Loc.Y, LandZ + CapsuleHalfHeight + 2.f));
 	bDidSnapFocus = true;
 
-	UE_LOG(LogSolidCore1, Warning,
-		TEXT("Snapped focus to procedural terrain height %.1f at (%.0f, %.0f)."), TerrainZ, Loc.X, Loc.Y);
+	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Snapped focus onto terrain Z=%.1f at (%.0f, %.0f)"), LandZ, Loc.X, Loc.Y);
+	UE_LOG(LogSolidCore1, Warning, TEXT("Snapped focus onto terrain Z=%.1f at (%.0f, %.0f)."), LandZ, Loc.X, Loc.Y);
 }
 
 void ASolidCore1TerrainStreamer::UpdateStreaming()
 {
+	DisableLandscapeActorsOnce();
+
 	AActor* Focus = ResolveFocusActor();
 	if (!Focus)
 	{

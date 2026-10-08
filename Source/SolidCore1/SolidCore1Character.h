@@ -71,7 +71,7 @@ protected:
 	float FramingMinArmLength = 450.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "400.0"))
-	float FramingMaxArmLength = 1800.f;
+	float FramingMaxArmLength = 4000.f;
 
 	/** Extra world centimeters outside the projected group extents. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "0.0"))
@@ -114,7 +114,7 @@ protected:
 	float CameraZoomMin = 250.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Zoom", meta = (ClampMin = "300.0"))
-	float CameraZoomMax = 2200.f;
+	float CameraZoomMax = 5000.f;
 
 	/** Arm cm change per mouse-wheel notch (MouseWheelAxis is typically ±1). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Zoom", meta = (ClampMin = "1.0"))

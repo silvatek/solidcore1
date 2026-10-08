@@ -17,7 +17,8 @@ public class SolidCore1 : ModuleRules
 			"Engine",
 			"InputCore",
 			"EnhancedInput",
-			"ProceduralMeshComponent"
+			"MeshDescription",
+			"StaticMeshDescription"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]

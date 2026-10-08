@@ -1,34 +1,44 @@
 #include "SolidCore1TerrainChunk.h"
-#include "SolidCore1TerrainMeshComponent.h"
 #include "SolidCore1TerrainNoise.h"
 #include "Engine/CollisionProfile.h"
+#include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"
+#include "MeshDescription.h"
+#include "PhysicsEngine/BodySetup.h"
+#include "StaticMeshAttributes.h"
+#include "Components/StaticMeshComponent.h"
+
+namespace SolidCore1TerrainChunkPrivate
+{
+	static void ConfigureCollision(UStaticMeshComponent* Mesh)
+	{
+		Mesh->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
+		Mesh->SetCollisionObjectType(ECC_WorldStatic);
+		Mesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		Mesh->SetCollisionResponseToAllChannels(ECR_Block);
+		Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+		Mesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Block);
+		Mesh->SetGenerateOverlapEvents(false);
+	}
+}
 
 ASolidCore1TerrainChunk::ASolidCore1TerrainChunk()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	ProceduralMesh = CreateDefaultSubobject<USolidCore1TerrainMeshComponent>(TEXT("ProceduralMesh"));
-	SetRootComponent(ProceduralMesh);
+	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
+	SetRootComponent(MeshComponent);
 
-	ProceduralMesh->bUseAsyncCooking = false;
-	ProceduralMesh->bUseComplexAsSimpleCollision = true;
-	ProceduralMesh->SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
-	ProceduralMesh->SetCollisionObjectType(ECC_WorldStatic);
-	ProceduralMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	ProceduralMesh->SetCollisionResponseToAllChannels(ECR_Block);
-	ProceduralMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
-	// Block Camera so the spring-arm probe stays above the surface.
-	ProceduralMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Block);
-	ProceduralMesh->SetGenerateOverlapEvents(false);
-	ProceduralMesh->SetCastShadow(true);
-	ProceduralMesh->SetVisibility(true);
-	ProceduralMesh->SetHiddenInGame(false);
-	ProceduralMesh->SetMobility(EComponentMobility::Movable);
-	ProceduralMesh->bUseAsOccluder = false;
-	ProceduralMesh->bTreatAsBackgroundForOcclusion = true;
-	ProceduralMesh->LDMaxDrawDistance = 0.f;
-	ProceduralMesh->bAllowCullDistanceVolume = false;
+	SolidCore1TerrainChunkPrivate::ConfigureCollision(MeshComponent);
+	MeshComponent->SetCastShadow(true);
+	MeshComponent->SetVisibility(true);
+	MeshComponent->SetHiddenInGame(false);
+	MeshComponent->SetMobility(EComponentMobility::Movable);
+	MeshComponent->bUseAsOccluder = false;
+	MeshComponent->bTreatAsBackgroundForOcclusion = true;
+	MeshComponent->LDMaxDrawDistance = 0.f;
+	MeshComponent->bAllowCullDistanceVolume = false;
+	MeshComponent->SetCanEverAffectNavigation(false);
 }
 
 void ASolidCore1TerrainChunk::BuildChunk(
@@ -54,18 +64,18 @@ void ASolidCore1TerrainChunk::BuildChunk(
 
 	SetActorLocation(FVector(OriginX, OriginY, 0.f));
 
-	TArray<FVector> Vertices;
+	TArray<FVector> Positions;
 	TArray<FVector> Normals;
+	TArray<FVector> Tangents;
 	TArray<FVector2D> UVs;
 	TArray<FLinearColor> Colors;
-	TArray<FProcMeshTangent> Tangents;
 	TArray<int32> Triangles;
 
-	Vertices.Reserve(VertsPerSide * VertsPerSide);
+	Positions.Reserve(VertsPerSide * VertsPerSide);
 	Normals.Reserve(VertsPerSide * VertsPerSide);
+	Tangents.Reserve(VertsPerSide * VertsPerSide);
 	UVs.Reserve(VertsPerSide * VertsPerSide);
 	Colors.Reserve(VertsPerSide * VertsPerSide);
-	Tangents.Reserve(VertsPerSide * VertsPerSide);
 	Triangles.Reserve(InQuadsPerSide * InQuadsPerSide * 6);
 
 	TArray<float> Heights;
@@ -88,9 +98,7 @@ void ASolidCore1TerrainChunk::BuildChunk(
 			MinZ = FMath::Min(MinZ, SurfaceZ);
 			MaxZ = FMath::Max(MaxZ, SurfaceZ);
 
-			const float LocalX = static_cast<float>(X) * Step;
-			const float LocalY = static_cast<float>(Y) * Step;
-			Vertices.Add(FVector(LocalX, LocalY, SurfaceZ));
+			Positions.Add(FVector(static_cast<float>(X) * Step, static_cast<float>(Y) * Step, SurfaceZ));
 			UVs.Add(FVector2D(static_cast<float>(X) / InQuadsPerSide, static_cast<float>(Y) / InQuadsPerSide));
 
 			const float T = FMath::Clamp((Height - InBaseHeight) / FMath::Max(InAmplitude, 1.f), 0.f, 1.f);
@@ -122,7 +130,7 @@ void ASolidCore1TerrainChunk::BuildChunk(
 			{
 				Tangent = FVector::RightVector;
 			}
-			Tangents.Add(FProcMeshTangent(Tangent, false));
+			Tangents.Add(Tangent);
 		}
 	}
 
@@ -144,35 +152,102 @@ void ASolidCore1TerrainChunk::BuildChunk(
 		}
 	}
 
-	ProceduralMesh->ClearAllMeshSections();
-	ProceduralMesh->bUseComplexAsSimpleCollision = true;
-	ProceduralMesh->CreateMeshSection_LinearColor(
-		0, Vertices, Triangles, Normals, UVs, Colors, Tangents, /*bCreateCollision=*/true);
+	FMeshDescription MeshDescription;
+	FStaticMeshAttributes Attributes(MeshDescription);
+	Attributes.Register();
 
-	if (Material)
+	TVertexAttributesRef<FVector3f> VertexPositions = Attributes.GetVertexPositions();
+	TVertexInstanceAttributesRef<FVector3f> InstanceNormals = Attributes.GetVertexInstanceNormals();
+	TVertexInstanceAttributesRef<FVector3f> InstanceTangents = Attributes.GetVertexInstanceTangents();
+	TVertexInstanceAttributesRef<float> InstanceBinormalSigns = Attributes.GetVertexInstanceBinormalSigns();
+	TVertexInstanceAttributesRef<FVector2f> InstanceUVs = Attributes.GetVertexInstanceUVs();
+	TVertexInstanceAttributesRef<FVector4f> InstanceColors = Attributes.GetVertexInstanceColors();
+	TPolygonGroupAttributesRef<FName> PolygonGroupNames = Attributes.GetPolygonGroupMaterialSlotNames();
+
+	InstanceUVs.SetNumChannels(1);
+
+	const FPolygonGroupID PolygonGroupID = MeshDescription.CreatePolygonGroup();
+	PolygonGroupNames[PolygonGroupID] = FName(TEXT("Terrain"));
+
+	TArray<FVertexID> VertexIDs;
+	VertexIDs.Reserve(Positions.Num());
+	for (const FVector& Position : Positions)
 	{
-		ProceduralMesh->SetMaterial(0, Material);
+		const FVertexID VertexID = MeshDescription.CreateVertex();
+		VertexPositions[VertexID] = FVector3f(Position);
+		VertexIDs.Add(VertexID);
 	}
 
-	// SC1-0005: force local bounds through CalcBounds (transform to world). Never write a local
-	// box into Bounds directly — that previously culled off-origin chunks (fa926c2).
-	const FBox ForcedLocalBox(
-		FVector(-200.f, -200.f, MinZ - 1000.f),
-		FVector(InChunkWorldSize + 200.f, InChunkWorldSize + 200.f, MaxZ + 1000.f));
-	ProceduralMesh->SetForcedLocalBounds(ForcedLocalBox);
-	ProceduralMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
-	ProceduralMesh->SetCollisionResponseToAllChannels(ECR_Block);
-	ProceduralMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
-	ProceduralMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Block);
-	ProceduralMesh->SetVisibility(true);
-	ProceduralMesh->SetHiddenInGame(false);
-	ProceduralMesh->bUseAsOccluder = false;
-	ProceduralMesh->bTreatAsBackgroundForOcclusion = true;
-	ProceduralMesh->RecreatePhysicsState();
+	const int32 TriCount = Triangles.Num() / 3;
+	for (int32 TriIndex = 0; TriIndex < TriCount; ++TriIndex)
+	{
+		const int32 I0 = Triangles[TriIndex * 3 + 0];
+		const int32 I1 = Triangles[TriIndex * 3 + 1];
+		const int32 I2 = Triangles[TriIndex * 3 + 2];
+
+		TArray<FVertexInstanceID, TInlineAllocator<3>> InstanceIDs;
+		const int32 CornerIndices[3] = { I0, I1, I2 };
+		for (int32 Corner = 0; Corner < 3; ++Corner)
+		{
+			const int32 VertIndex = CornerIndices[Corner];
+			const FVertexInstanceID InstanceID = MeshDescription.CreateVertexInstance(VertexIDs[VertIndex]);
+			InstanceNormals[InstanceID] = FVector3f(Normals[VertIndex]);
+			InstanceTangents[InstanceID] = FVector3f(Tangents[VertIndex]);
+			InstanceBinormalSigns[InstanceID] = 1.f;
+			InstanceUVs.Set(InstanceID, 0, FVector2f(UVs[VertIndex]));
+			InstanceColors[InstanceID] = FVector4f(Colors[VertIndex]);
+			InstanceIDs.Add(InstanceID);
+		}
+
+		MeshDescription.CreatePolygon(PolygonGroupID, InstanceIDs);
+	}
+
+	RuntimeStaticMesh = NewObject<UStaticMesh>(this, NAME_None, RF_Transient);
+	RuntimeStaticMesh->bAllowCPUAccess = true;
+	RuntimeStaticMesh->NeverStream = true;
+
+	FStaticMaterial StaticMaterial(Material, FName(TEXT("Terrain")), FName(TEXT("Terrain")));
+	RuntimeStaticMesh->SetStaticMaterials({ StaticMaterial });
+
+	UStaticMesh::FBuildMeshDescriptionsParams BuildParams;
+	BuildParams.bBuildSimpleCollision = false;
+	BuildParams.bFastBuild = true;
+	BuildParams.bAllowCpuAccess = true;
+	BuildParams.bCommitMeshDescription = true;
+	BuildParams.bMarkPackageDirty = false;
+
+	const TArray<const FMeshDescription*> Descriptions = { &MeshDescription };
+	RuntimeStaticMesh->BuildFromMeshDescriptions(Descriptions, BuildParams);
+
+	if (!RuntimeStaticMesh->GetBodySetup())
+	{
+		RuntimeStaticMesh->CreateBodySetup();
+	}
+	if (UBodySetup* BodySetup = RuntimeStaticMesh->GetBodySetup())
+	{
+		BodySetup->CollisionTraceFlag = CTF_UseComplexAsSimple;
+		BodySetup->InvalidatePhysicsData();
+		BodySetup->CreatePhysicsMeshes();
+	}
+
+	MeshComponent->SetStaticMesh(RuntimeStaticMesh);
+	if (Material)
+	{
+		MeshComponent->SetMaterial(0, Material);
+	}
+
+	SolidCore1TerrainChunkPrivate::ConfigureCollision(MeshComponent);
+	MeshComponent->SetVisibility(true);
+	MeshComponent->SetHiddenInGame(false);
+	MeshComponent->bUseAsOccluder = false;
+	MeshComponent->bTreatAsBackgroundForOcclusion = true;
+	MeshComponent->UpdateBounds();
+	MeshComponent->MarkRenderStateDirty();
+	MeshComponent->RecreatePhysicsState();
 
 	UE_LOG(LogTemp, Warning,
-		TEXT("[SolidCore1] Chunk (%d,%d) actor=(%.0f,%.0f) verts=%d tris=%d Z=[%.0f,%.0f] worldBounds=%s material=%s"),
-		InChunkCoord.X, InChunkCoord.Y, OriginX, OriginY, Vertices.Num(), Triangles.Num() / 3, MinZ, MaxZ,
-		*ProceduralMesh->Bounds.ToString(),
+		TEXT("[SolidCore1] StaticMesh chunk (%d,%d) actor=(%.0f,%.0f) verts=%d tris=%d Z=[%.0f,%.0f] worldBounds=%s material=%s"),
+		InChunkCoord.X, InChunkCoord.Y, OriginX, OriginY, Positions.Num(), TriCount, MinZ, MaxZ,
+		*MeshComponent->Bounds.ToString(),
 		Material ? *Material->GetName() : TEXT("<null>"));
 }

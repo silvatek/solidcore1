@@ -4,7 +4,8 @@
 #include "GameFramework/Actor.h"
 #include "SolidCore1TerrainChunk.generated.h"
 
-class USolidCore1TerrainMeshComponent;
+class UStaticMeshComponent;
+class UStaticMesh;
 class UMaterialInterface;
 
 UCLASS()
@@ -30,7 +31,11 @@ public:
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terrain")
-	TObjectPtr<USolidCore1TerrainMeshComponent> ProceduralMesh;
+	TObjectPtr<UStaticMeshComponent> MeshComponent;
+
+	/** Transient runtime mesh owned by this chunk; replaced each BuildChunk. */
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMesh> RuntimeStaticMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terrain")
 	FIntPoint ChunkCoord = FIntPoint::ZeroValue;

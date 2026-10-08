@@ -77,15 +77,15 @@ Or right-click `SolidCore1.uproject` → **Generate Visual Studio project files*
 
 C++ generates walkable terrain around the player at runtime:
 
-- `ASolidCore1TerrainChunk` — `UProceduralMeshComponent` from seeded fBm noise (seamless across chunk edges)
+- `ASolidCore1TerrainChunk` — runtime `UStaticMesh` (via `FMeshDescription` / `BuildFromMeshDescriptions`) from seeded fBm noise
 - `ASolidCore1TerrainStreamer` — loads/unloads a Chebyshev radius of chunks around the pawn
 - `ASolidCore1GameMode` auto-spawns the streamer on BeginPlay (`bAutoSpawnTerrainStreamer`)
 
-Defaults: 64 m chunks (`ChunkWorldSize=6400`), 32 quads/side, radius 2 (5×5 chunks), `Amplitude=1200`. Tunable on the streamer actor. Chunks use a green `BasicShapeMaterial` MID (lit). Avoid the engine vertex-color debug material (black in PIE) and WorldGrid-only without an underside (near mesh vanishes at grazing angles).
+Defaults: 64 m chunks (`ChunkWorldSize=6400`), 32 quads/side, radius 2 (5×5 chunks), `Amplitude=1200`. Tunable on the streamer actor. Chunks use `WorldGridMaterial`.
 
-On first stream, the pawn is snapped onto the procedural height so you are not stuck on the empty Open World landscape. Landscape actors are hidden/collision-disabled automatically. Chunks block the Camera channel, pad section local bounds (never write local boxes into world `Bounds`), and keep a 3 cm-biased underside section so one-sided lit materials do not disappear when the camera grazes the surface.
+On first stream, the pawn is snapped onto the procedural height so you are not stuck on the empty Open World landscape. Landscape actors are hidden/collision-disabled automatically. Chunks block the Camera channel and use complex-as-simple collision on the runtime static mesh.
 
-Requires the **ProceduralMeshComponent** plugin (enabled in `SolidCore1.uproject`).
+SC1-0007 drops `UProceduralMeshComponent` after persistent ribbon/culling failures with that path.
 
 ## Create the open-world map
 

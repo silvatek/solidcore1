@@ -61,11 +61,11 @@ ASolidCore1Character::ASolidCore1Character()
 	GetMesh()->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
 	GetMesh()->SetVisibility(true);
 
-	// Soft paths: UE 5.7+ Third Person often ships SKM_Manny_Simple / ABP_Manny variants.
+	// Soft paths match common UE 5.7+/5.8 Third Person / mannequin content.
 	DefaultSkeletalMesh = TSoftObjectPtr<USkeletalMesh>(
 		FSoftObjectPath(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple")));
 	DefaultAnimBlueprint = TSoftClassPtr<UAnimInstance>(
-		FSoftObjectPath(TEXT("/Game/Characters/Mannequins/Animations/ABP_Manny.ABP_Manny_C")));
+		FSoftObjectPath(TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.ABP_Unarmed_C")));
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);

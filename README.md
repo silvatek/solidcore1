@@ -27,8 +27,8 @@ Input Actions / Mapping Context can be replaced with Content assets on the chara
 
 `SolidCore1Character` loads Epic’s Third Person mannequin when present (UE 5.7+ often uses the `_Simple` mesh):
 
-- Mesh: `/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple` (or `SKM_Manny`)
-- Anim BP: `/Game/Characters/Mannequins/Animations/ABP_Manny`
+- Mesh: `/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple`
+- Anim BP: `/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed` (or `Animations/ABP_Unarmed`)
 
 If those exact names differ, the character also searches `/Game/Characters/Mannequins` via the Asset Registry.
 

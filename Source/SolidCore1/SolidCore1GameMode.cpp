@@ -1,5 +1,7 @@
 #include "SolidCore1GameMode.h"
+#include "SolidCore1BuildId.h"
 #include "SolidCore1Character.h"
+#include "SolidCore1HUD.h"
 #include "SolidCore1PlayerController.h"
 #include "SolidCore1.h"
 #include "Terrain/SolidCore1TerrainStreamer.h"
@@ -20,6 +22,7 @@ namespace SolidCore1GameModePrivate
 ASolidCore1GameMode::ASolidCore1GameMode()
 {
 	PlayerControllerClass = ASolidCore1PlayerController::StaticClass();
+	HUDClass = ASolidCore1HUD::StaticClass();
 	bAutoSpawnTerrainStreamer = true;
 
 	UClass* PawnClass = SolidCore1GameModePrivate::TryLoadPawnClass(
@@ -52,6 +55,8 @@ ASolidCore1GameMode::ASolidCore1GameMode()
 void ASolidCore1GameMode::BeginPlay()
 {
 	Super::BeginPlay();
+	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Build %s"), SOLIDCORE1_BUILD_ID);
+	UE_LOG(LogSolidCore1, Warning, TEXT("Build %s"), SOLIDCORE1_BUILD_ID);
 	EnsureTerrainStreamer();
 }
 

@@ -23,6 +23,10 @@ Put this repo’s contents at `C:\Users\staz6\Dev\solidcore1` (clone or sync), t
 
 Input Actions / Mapping Context can be replaced with Content assets on the character later; if unset, C++ creates transient defaults so PIE works immediately.
 
+## Build ID (HUD)
+
+PIE shows `Build SC1-NNNN` in the top-left. The string lives in `Source/SolidCore1/SolidCore1BuildId.h` (`SOLIDCORE1_BUILD_ID`) and is bumped on every GitHub push so screenshots identify which binary you ran.
+
 ## Visible mannequin (mesh + anim)
 
 `SolidCore1Character` loads Epic’s Third Person mannequin when present (UE 5.7+ often uses the `_Simple` mesh):

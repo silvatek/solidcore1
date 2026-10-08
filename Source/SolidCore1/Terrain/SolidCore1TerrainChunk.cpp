@@ -22,7 +22,7 @@ ASolidCore1TerrainChunk::ASolidCore1TerrainChunk()
 	ProceduralMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	ProceduralMesh->SetGenerateOverlapEvents(false);
 	ProceduralMesh->SetCastShadow(true);
-	ProceduralMesh->SetMobility(EComponentMobility::Static);
+	// Must stay Movable: BuildChunk calls SetActorLocation per chunk coord.
 }
 
 void ASolidCore1TerrainChunk::BuildChunk(

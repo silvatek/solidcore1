@@ -250,8 +250,13 @@ void ASolidCore1TerrainStreamer::UpdateStreaming()
 		SpawnParams.Owner = this;
 		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
+		const FVector SpawnLoc(
+			static_cast<float>(Coord.X) * ChunkWorldSize,
+			static_cast<float>(Coord.Y) * ChunkWorldSize,
+			0.f);
+
 		ASolidCore1TerrainChunk* Chunk = World->SpawnActor<ASolidCore1TerrainChunk>(
-			ASolidCore1TerrainChunk::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+			ASolidCore1TerrainChunk::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
 		if (!Chunk)
 		{
 			UE_LOG(LogSolidCore1, Error, TEXT("Failed to spawn terrain chunk at %d,%d"), Coord.X, Coord.Y);

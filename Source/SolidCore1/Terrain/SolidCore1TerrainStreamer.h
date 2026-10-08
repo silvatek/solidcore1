@@ -40,10 +40,10 @@ public:
 	int32 Seed = 1337;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
-	float FrequencyScale = 0.00018f;
+	float FrequencyScale = 0.00008f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
-	float Amplitude = 2800.f;
+	float Amplitude = 600.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	float BaseHeight = 0.f;
@@ -67,9 +67,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	TWeakObjectPtr<AActor> FocusActor;
 
-	/** On first successful stream, move the focus pawn onto the generated height so you aren't stuck in the Open World landscape. */
+	/** Keep the focus pawn on the terrain surface (retries while falling / far below). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
-	bool bSnapFocusToTerrainOnce = true;
+	bool bSnapFocusToTerrain = true;
 
 	/** Hide Open World landscape and disable its collision so the pawn walks on procedural chunks. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
@@ -92,6 +92,5 @@ protected:
 	TMap<FIntPoint, TObjectPtr<ASolidCore1TerrainChunk>> LoadedChunks;
 
 	float TimeSinceUpdate = 0.f;
-	bool bDidSnapFocus = false;
 	bool bDidDisableLandscape = false;
 };

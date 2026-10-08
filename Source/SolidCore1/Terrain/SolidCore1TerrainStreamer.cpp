@@ -176,19 +176,12 @@ void ASolidCore1TerrainStreamer::DisableLandscapeActorsOnce()
 
 void ASolidCore1TerrainStreamer::TrySnapFocusToTerrain(AActor* Focus)
 {
-	if (!bSnapFocusToTerrainOnce || bDidSnapFocus || !Focus)
-	{
-		return;
-	}
-
-	UWorld* World = GetWorld();
-	if (!World)
+	if (!bSnapFocusToTerrain || !Focus)
 	{
 		return;
 	}
 
 	const FVector Loc = Focus->GetActorLocation();
-	// Place on the raised collision surface (visual height + bias), not high in the air.
 	const float LandZ = SampleHeightAtWorld(Loc) + CollisionHeightBias;
 
 	float CapsuleHalfHeight = 96.f;
@@ -200,11 +193,24 @@ void ASolidCore1TerrainStreamer::TrySnapFocusToTerrain(AActor* Focus)
 		}
 	}
 
-	Focus->SetActorLocation(FVector(Loc.X, Loc.Y, LandZ + CapsuleHalfHeight + SnapHeightPadding));
-	bDidSnapFocus = true;
+	const float TargetZ = LandZ + CapsuleHalfHeight + SnapHeightPadding;
+	// Only correct when clearly below (or far above) the surface — avoids fighting normal walking.
+	if (Loc.Z > TargetZ - 50.f && Loc.Z < TargetZ + 2000.f)
+	{
+		return;
+	}
+
+	Focus->SetActorLocation(FVector(Loc.X, Loc.Y, TargetZ));
+	if (ACharacter* Character = Cast<ACharacter>(Focus))
+	{
+		if (UCharacterMovementComponent* Move = Character->GetCharacterMovement())
+		{
+			Move->StopMovementImmediately();
+			Move->SetMovementMode(MOVE_Walking);
+		}
+	}
 
 	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Snapped focus onto terrain Z=%.1f at (%.0f, %.0f)"), LandZ, Loc.X, Loc.Y);
-	UE_LOG(LogSolidCore1, Warning, TEXT("Snapped focus onto terrain Z=%.1f at (%.0f, %.0f)."), LandZ, Loc.X, Loc.Y);
 }
 
 void ASolidCore1TerrainStreamer::UpdateStreaming()

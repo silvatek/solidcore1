@@ -23,7 +23,7 @@ ASolidCore1TerrainChunk::ASolidCore1TerrainChunk()
 	ProceduralMesh->SetCastShadow(true);
 	ProceduralMesh->SetVisibility(true);
 	ProceduralMesh->SetHiddenInGame(false);
-	ProceduralMesh->bUseAsOccluder = false; // avoid self-occlusion / HZB hiding neighboring chunks
+	ProceduralMesh->bUseAsOccluder = false;
 }
 
 void ASolidCore1TerrainChunk::BuildChunk(
@@ -61,7 +61,8 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	UVs.Reserve(VertsPerSide * VertsPerSide);
 	Colors.Reserve(VertsPerSide * VertsPerSide);
 	Tangents.Reserve(VertsPerSide * VertsPerSide);
-	Triangles.Reserve(InQuadsPerSide * InQuadsPerSide * 6);
+	// Top + bottom faces.
+	Triangles.Reserve(InQuadsPerSide * InQuadsPerSide * 12);
 
 	TArray<float> Heights;
 	Heights.SetNumUninitialized(VertsPerSide * VertsPerSide);
@@ -79,7 +80,6 @@ void ASolidCore1TerrainChunk::BuildChunk(
 				WorldX, WorldY, InSeed, InFrequencyScale, InAmplitude, InBaseHeight);
 			Heights[Y * VertsPerSide + X] = Height;
 
-			// Visual + collision share the same raised surface so you walk on what you see.
 			const float SurfaceZ = Height + InCollisionHeightBias;
 			MinZ = FMath::Min(MinZ, SurfaceZ);
 			MaxZ = FMath::Max(MaxZ, SurfaceZ);
@@ -94,7 +94,7 @@ void ASolidCore1TerrainChunk::BuildChunk(
 		}
 	}
 
-	auto SampleHeightAt = [&](int32 X, int32 Y) -> float
+	auto SampleSurfaceAt = [&](int32 X, int32 Y) -> float
 	{
 		X = FMath::Clamp(X, 0, InQuadsPerSide);
 		Y = FMath::Clamp(Y, 0, InQuadsPerSide);
@@ -105,10 +105,10 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	{
 		for (int32 X = 0; X < VertsPerSide; ++X)
 		{
-			const float HLft = SampleHeightAt(X - 1, Y);
-			const float HRgt = SampleHeightAt(X + 1, Y);
-			const float HDn = SampleHeightAt(X, Y - 1);
-			const float HUp = SampleHeightAt(X, Y + 1);
+			const float HLft = SampleSurfaceAt(X - 1, Y);
+			const float HRgt = SampleSurfaceAt(X + 1, Y);
+			const float HDn = SampleSurfaceAt(X, Y - 1);
+			const float HUp = SampleSurfaceAt(X, Y + 1);
 
 			const FVector Normal = FVector(HLft - HRgt, HDn - HUp, Step * 2.f).GetSafeNormal();
 			Normals.Add(Normal);
@@ -131,13 +131,21 @@ void ASolidCore1TerrainChunk::BuildChunk(
 			const int32 I01 = I00 + VertsPerSide;
 			const int32 I11 = I01 + 1;
 
+			// Top (CCW from +Z).
 			Triangles.Add(I00);
 			Triangles.Add(I10);
 			Triangles.Add(I11);
-
 			Triangles.Add(I00);
 			Triangles.Add(I11);
 			Triangles.Add(I01);
+
+			// Bottom (flipped) so the underside is visible if the camera goes below the surface.
+			Triangles.Add(I00);
+			Triangles.Add(I11);
+			Triangles.Add(I10);
+			Triangles.Add(I00);
+			Triangles.Add(I01);
+			Triangles.Add(I11);
 		}
 	}
 
@@ -151,11 +159,8 @@ void ASolidCore1TerrainChunk::BuildChunk(
 		ProceduralMesh->SetMaterial(0, Material);
 	}
 
-	// CreateMeshSection already builds local bounds; UpdateBounds() maps them to world.
-	// Do NOT assign local boxes to Bounds (that field is world-space) or off-origin chunks cull away.
 	ProceduralMesh->UpdateBounds();
 	ProceduralMesh->MarkRenderStateDirty();
-
 	ProceduralMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	ProceduralMesh->SetCollisionResponseToAllChannels(ECR_Block);
 	ProceduralMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
@@ -165,8 +170,8 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	ProceduralMesh->RecreatePhysicsState();
 
 	UE_LOG(LogTemp, Warning,
-		TEXT("[SolidCore1] Chunk (%d,%d) actor=(%.0f,%.0f) verts=%d Z=[%.0f,%.0f] worldBounds=%s material=%s"),
-		InChunkCoord.X, InChunkCoord.Y, OriginX, OriginY, Vertices.Num(), MinZ, MaxZ,
+		TEXT("[SolidCore1] Chunk (%d,%d) actor=(%.0f,%.0f) verts=%d tris=%d Z=[%.0f,%.0f] worldBounds=%s material=%s"),
+		InChunkCoord.X, InChunkCoord.Y, OriginX, OriginY, Vertices.Num(), Triangles.Num() / 3, MinZ, MaxZ,
 		*ProceduralMesh->Bounds.ToString(),
 		Material ? *Material->GetName() : TEXT("<null>"));
 }

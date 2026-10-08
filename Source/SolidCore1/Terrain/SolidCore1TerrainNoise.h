@@ -66,8 +66,7 @@ namespace SolidCore1TerrainNoise
 	FORCEINLINE float SampleHeight(float WorldX, float WorldY, int32 Seed, float FrequencyScale, float Amplitude, float BaseHeight)
 	{
 		const float N = Fbm2D(WorldX * FrequencyScale, WorldY * FrequencyScale, Seed);
-		// Remap [0,1] to roughly [-0.35, 1.0] so valleys dip but peaks dominate.
-		const float Shaped = FMath::Pow(N, 1.35f) * 1.35f - 0.35f;
-		return BaseHeight + Shaped * Amplitude;
+		// Keep in [0,1] for gentle rolling hills (no deep negative valleys).
+		return BaseHeight + N * Amplitude;
 	}
 }

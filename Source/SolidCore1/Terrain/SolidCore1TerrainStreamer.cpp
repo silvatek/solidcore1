@@ -277,6 +277,7 @@ void ASolidCore1TerrainStreamer::UpdateStreaming()
 			FrequencyScale,
 			Amplitude,
 			BaseHeight,
+			CollisionHeightBias,
 			Material);
 
 		LoadedChunks.Add(Coord, Chunk);

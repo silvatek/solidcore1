@@ -5,11 +5,12 @@
 #include "SolidCore1CompanionCharacter.generated.h"
 
 class USkeletalMesh;
-class UAnimInstance;
+class UAnimSequence;
 
 /**
- * Quinn companion that steers toward a follow point behind the player.
+ * Companion that steers toward a follow point behind the player.
  * Uses direct CharacterMovement (no NavMesh) so it works on procedural terrain.
+ * Default visual is the Fab Viking (custom skeleton + clip anims).
  */
 UCLASS()
 class SOLIDCORE1_API ASolidCore1CompanionCharacter : public ACharacter
@@ -44,9 +45,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Follow")
 	float CatchUpSpeed = 850.f;
 
-	/** Soft lateral offset so she is not glued to the player's exact trail. */
+	/** Soft lateral offset so the companion is not glued to the player's exact trail. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Follow")
 	float SideOffset = 80.f;
+
+	/** Planar speed above which the run clip plays (cm/s). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Anim", meta = (ClampMin = "0.0"))
+	float RunAnimSpeedThreshold = 600.f;
+
+	/** Planar speed above which the walk clip plays (cm/s). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Anim", meta = (ClampMin = "0.0"))
+	float WalkAnimSpeedThreshold = 30.f;
 
 protected:
 	virtual void PostInitializeComponents() override;
@@ -54,16 +63,27 @@ protected:
 	void ApplyVisuals();
 	void ResolveFollowTarget();
 	void UpdateFollow(float DeltaSeconds);
+	void UpdateLocomotionAnim();
+	UAnimSequence* LoadAnim(const TSoftObjectPtr<UAnimSequence>& SoftAnim, const TCHAR* FallbackPath) const;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Companion|Visual")
 	TSoftObjectPtr<USkeletalMesh> CompanionMesh;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Companion|Visual")
-	TSoftClassPtr<UAnimInstance> CompanionAnimBlueprint;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Visual")
 	float MeshGroundZOffset = -90.f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Companion|Anim")
+	TSoftObjectPtr<UAnimSequence> IdleAnim;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Companion|Anim")
+	TSoftObjectPtr<UAnimSequence> WalkAnim;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Companion|Anim")
+	TSoftObjectPtr<UAnimSequence> RunAnim;
+
 	UPROPERTY(Transient)
 	TWeakObjectPtr<AActor> FollowTarget;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> ActiveLocomotionAnim;
 };

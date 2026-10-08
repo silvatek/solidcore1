@@ -25,6 +25,7 @@ public:
 
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
+	FORCEINLINE float GetUserZoomArmLength() const { return UserZoomArmLength; }
 
 protected:
 	virtual void PostInitializeComponents() override;

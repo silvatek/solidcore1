@@ -25,10 +25,12 @@ Input Actions / Mapping Context can be replaced with Content assets on the chara
 
 ## Visible mannequin (mesh + anim)
 
-`SolidCore1Character` loads Epic’s Third Person mannequin when present:
+`SolidCore1Character` loads Epic’s Third Person mannequin when present (UE 5.7+ often uses the `_Simple` mesh):
 
-- Mesh: `/Game/Characters/Mannequins/Meshes/SKM_Manny`
+- Mesh: `/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple` (or `SKM_Manny`)
 - Anim BP: `/Game/Characters/Mannequins/Animations/ABP_Manny`
+
+If those exact names differ, the character also searches `/Game/Characters/Mannequins` via the Asset Registry.
 
 Those `.uasset` files are **not** in git (binary content). Add them once:
 

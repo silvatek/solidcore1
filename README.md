@@ -79,7 +79,7 @@ C++ generates walkable terrain around the player at runtime:
 
 Defaults: 64 m chunks (`ChunkWorldSize=6400`), 32 quads/side, radius 2 (5×5 chunks), `Amplitude=1200`. Tunable on the streamer actor. Chunks use a vertex-color debug material so height reads clearly (WorldGrid looks like a flat void floor).
 
-On first stream, the pawn is snapped onto the procedural height so you are not stuck on the empty Open World landscape. Landscape actors are hidden/collision-disabled automatically. Single-sided meshes avoid a floating z-fight “ribbon.”
+On first stream, the pawn is snapped onto the procedural height so you are not stuck on the empty Open World landscape. Landscape actors are hidden/collision-disabled automatically. Chunks block the Camera channel (spring-arm stays above the surface), use padded frustum bounds, and keep a slight underside bias so looking down does not make the mesh vanish.
 
 Requires the **ProceduralMeshComponent** plugin (enabled in `SolidCore1.uproject`).
 

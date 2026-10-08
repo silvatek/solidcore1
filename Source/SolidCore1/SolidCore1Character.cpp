@@ -74,6 +74,9 @@ ASolidCore1Character::ASolidCore1Character()
 	CameraBoom->bUsePawnControlRotation = true;
 	CameraBoom->bEnableCameraLag = true;
 	CameraBoom->CameraLagSpeed = 10.f;
+	CameraBoom->bDoCollisionTest = true;
+	CameraBoom->ProbeSize = 12.f;
+	CameraBoom->ProbeChannel = ECC_Camera;
 
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);

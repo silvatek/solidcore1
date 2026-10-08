@@ -18,12 +18,17 @@ ASolidCore1TerrainChunk::ASolidCore1TerrainChunk()
 	ProceduralMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	ProceduralMesh->SetCollisionResponseToAllChannels(ECR_Block);
 	ProceduralMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
-	ProceduralMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+	// Block Camera so the spring-arm probe stays above the surface (Ignore lets it clip under and backfaces vanish).
+	ProceduralMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Block);
 	ProceduralMesh->SetGenerateOverlapEvents(false);
 	ProceduralMesh->SetCastShadow(true);
 	ProceduralMesh->SetVisibility(true);
 	ProceduralMesh->SetHiddenInGame(false);
+	ProceduralMesh->SetMobility(EComponentMobility::Movable);
 	ProceduralMesh->bUseAsOccluder = false;
+	ProceduralMesh->bTreatAsBackgroundForOcclusion = true;
+	ProceduralMesh->SetCullDistance(0.f);
+	ProceduralMesh->bAllowCullDistanceVolume = false;
 }
 
 void ASolidCore1TerrainChunk::BuildChunk(
@@ -130,7 +135,7 @@ void ASolidCore1TerrainChunk::BuildChunk(
 			const int32 I01 = I00 + VertsPerSide;
 			const int32 I11 = I01 + 1;
 
-			// CCW from +Z (single-sided — double-sided duplicates z-fight into a "ribbon").
+			// Top face (CCW from +Z).
 			Triangles.Add(I00);
 			Triangles.Add(I10);
 			Triangles.Add(I11);
@@ -140,29 +145,82 @@ void ASolidCore1TerrainChunk::BuildChunk(
 		}
 	}
 
+	// Underside on a separate section, biased down so it never z-fights the top.
+	// Needed when the camera dips under the surface (one-sided materials go invisible).
+	constexpr float UndersideBiasCm = 3.f;
+	TArray<FVector> BottomVertices;
+	TArray<FVector> BottomNormals;
+	TArray<int32> BottomTriangles;
+	BottomVertices.Reserve(Vertices.Num());
+	BottomNormals.Reserve(Normals.Num());
+	BottomTriangles.Reserve(Triangles.Num());
+	for (const FVector& V : Vertices)
+	{
+		BottomVertices.Add(FVector(V.X, V.Y, V.Z - UndersideBiasCm));
+	}
+	for (const FVector& N : Normals)
+	{
+		BottomNormals.Add(-N);
+	}
+	for (int32 Y = 0; Y < InQuadsPerSide; ++Y)
+	{
+		for (int32 X = 0; X < InQuadsPerSide; ++X)
+		{
+			const int32 I00 = Y * VertsPerSide + X;
+			const int32 I10 = I00 + 1;
+			const int32 I01 = I00 + VertsPerSide;
+			const int32 I11 = I01 + 1;
+
+			BottomTriangles.Add(I00);
+			BottomTriangles.Add(I11);
+			BottomTriangles.Add(I10);
+			BottomTriangles.Add(I00);
+			BottomTriangles.Add(I01);
+			BottomTriangles.Add(I11);
+		}
+	}
+
 	ProceduralMesh->ClearAllMeshSections();
 	ProceduralMesh->bUseComplexAsSimpleCollision = true;
 	ProceduralMesh->CreateMeshSection_LinearColor(
 		0, Vertices, Triangles, Normals, UVs, Colors, Tangents, /*bCreateCollision=*/true);
+	ProceduralMesh->CreateMeshSection_LinearColor(
+		1, BottomVertices, BottomTriangles, BottomNormals, UVs, Colors, Tangents, /*bCreateCollision=*/false);
 
 	if (Material)
 	{
 		ProceduralMesh->SetMaterial(0, Material);
+		ProceduralMesh->SetMaterial(1, Material);
 	}
 
+	// Pad local section boxes, then UpdateBounds() → correct world frustum bounds.
+	const FBox PaddedLocalBox(
+		FVector(-100.f, -100.f, MinZ - UndersideBiasCm - 500.f),
+		FVector(InChunkWorldSize + 100.f, InChunkWorldSize + 100.f, MaxZ + 500.f));
+	for (int32 SectionIndex = 0; SectionIndex <= 1; ++SectionIndex)
+	{
+		if (FProcMeshSection* Section = ProceduralMesh->GetProcMeshSection(SectionIndex))
+		{
+			Section->SectionLocalBox = PaddedLocalBox;
+		}
+	}
+	ProceduralMesh->SetBoundsScale(1.25f);
 	ProceduralMesh->UpdateBounds();
 	ProceduralMesh->MarkRenderStateDirty();
 	ProceduralMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	ProceduralMesh->SetCollisionResponseToAllChannels(ECR_Block);
 	ProceduralMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
+	ProceduralMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Block);
 	ProceduralMesh->SetVisibility(true);
 	ProceduralMesh->SetHiddenInGame(false);
 	ProceduralMesh->bUseAsOccluder = false;
+	ProceduralMesh->bTreatAsBackgroundForOcclusion = true;
 	ProceduralMesh->RecreatePhysicsState();
 
 	UE_LOG(LogTemp, Warning,
 		TEXT("[SolidCore1] Chunk (%d,%d) actor=(%.0f,%.0f) verts=%d tris=%d Z=[%.0f,%.0f] worldBounds=%s material=%s"),
-		InChunkCoord.X, InChunkCoord.Y, OriginX, OriginY, Vertices.Num(), Triangles.Num() / 3, MinZ, MaxZ,
+		InChunkCoord.X, InChunkCoord.Y, OriginX, OriginY, Vertices.Num(),
+		(Triangles.Num() + BottomTriangles.Num()) / 3, MinZ, MaxZ,
 		*ProceduralMesh->Bounds.ToString(),
 		Material ? *Material->GetName() : TEXT("<null>"));
 }

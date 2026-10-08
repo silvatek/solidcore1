@@ -122,8 +122,7 @@ void ASolidCore1TerrainChunk::BuildChunk(
 			const float HDn = SampleSurfaceAt(X, Y - 1);
 			const float HUp = SampleSurfaceAt(X, Y + 1);
 
-			// Match flipped winding: keep normals pointing toward the viewer from above (+Z).
-			const FVector Normal = FVector(HRgt - HLft, HUp - HDn, Step * 2.f).GetSafeNormal();
+			const FVector Normal = FVector(HLft - HRgt, HDn - HUp, Step * 2.f).GetSafeNormal();
 			Normals.Add(Normal);
 
 			FVector Tangent = FVector::CrossProduct(FVector::UpVector, Normal).GetSafeNormal();

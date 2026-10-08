@@ -77,12 +77,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Visual")
 	TSoftClassPtr<UAnimInstance> DefaultAnimBlueprint;
 
-	/**
-	 * Mesh relative Z. Capsule half-height is 96; values around -90..-96 bury feet in procedural
-	 * complex collision — use a higher (less negative) value so soles sit on the surface.
-	 */
+	/** Mesh relative Z (mannequin feet at capsule bottom ≈ -capsule half-height). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Visual")
-	float MeshGroundZOffset = -72.f;
+	float MeshGroundZOffset = -90.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Movement")
 	float WalkSpeed = 500.f;

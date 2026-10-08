@@ -22,7 +22,6 @@ ASolidCore1TerrainChunk::ASolidCore1TerrainChunk()
 	ProceduralMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	ProceduralMesh->SetGenerateOverlapEvents(false);
 	ProceduralMesh->SetCastShadow(true);
-	// Must stay Movable: BuildChunk calls SetActorLocation per chunk coord.
 }
 
 void ASolidCore1TerrainChunk::BuildChunk(
@@ -33,11 +32,13 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	float InFrequencyScale,
 	float InAmplitude,
 	float InBaseHeight,
+	float InCollisionHeightBias,
 	UMaterialInterface* Material)
 {
 	ChunkCoord = InChunkCoord;
 	InQuadsPerSide = FMath::Clamp(InQuadsPerSide, 1, 256);
 	InChunkWorldSize = FMath::Max(InChunkWorldSize, 100.f);
+	InCollisionHeightBias = FMath::Max(InCollisionHeightBias, 0.f);
 
 	const int32 VertsPerSide = InQuadsPerSide + 1;
 	const float Step = InChunkWorldSize / static_cast<float>(InQuadsPerSide);
@@ -47,6 +48,7 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	SetActorLocation(FVector(OriginX, OriginY, 0.f));
 
 	TArray<FVector> Vertices;
+	TArray<FVector> CollisionVertices;
 	TArray<FVector> Normals;
 	TArray<FVector2D> UVs;
 	TArray<FLinearColor> Colors;
@@ -54,6 +56,7 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	TArray<int32> Triangles;
 
 	Vertices.Reserve(VertsPerSide * VertsPerSide);
+	CollisionVertices.Reserve(VertsPerSide * VertsPerSide);
 	Normals.Reserve(VertsPerSide * VertsPerSide);
 	UVs.Reserve(VertsPerSide * VertsPerSide);
 	Colors.Reserve(VertsPerSide * VertsPerSide);
@@ -73,7 +76,10 @@ void ASolidCore1TerrainChunk::BuildChunk(
 				WorldX, WorldY, InSeed, InFrequencyScale, InAmplitude, InBaseHeight);
 			Heights[Y * VertsPerSide + X] = Height;
 
-			Vertices.Add(FVector(static_cast<float>(X) * Step, static_cast<float>(Y) * Step, Height));
+			const float LocalX = static_cast<float>(X) * Step;
+			const float LocalY = static_cast<float>(Y) * Step;
+			Vertices.Add(FVector(LocalX, LocalY, Height));
+			CollisionVertices.Add(FVector(LocalX, LocalY, Height + InCollisionHeightBias));
 			UVs.Add(FVector2D(static_cast<float>(X) / InQuadsPerSide, static_cast<float>(Y) / InQuadsPerSide));
 
 			const float T = FMath::Clamp((Height - InBaseHeight) / FMath::Max(InAmplitude, 1.f), 0.f, 1.f);
@@ -118,7 +124,6 @@ void ASolidCore1TerrainChunk::BuildChunk(
 			const int32 I01 = I00 + VertsPerSide;
 			const int32 I11 = I01 + 1;
 
-			// CCW when viewed from +Z so normals face upward (visible from above).
 			Triangles.Add(I00);
 			Triangles.Add(I10);
 			Triangles.Add(I11);
@@ -131,13 +136,19 @@ void ASolidCore1TerrainChunk::BuildChunk(
 
 	ProceduralMesh->ClearAllMeshSections();
 	ProceduralMesh->bUseComplexAsSimpleCollision = true;
-	ProceduralMesh->CreateMeshSection_LinearColor(
-		0, Vertices, Triangles, Normals, UVs, Colors, Tangents, /*bCreateCollision=*/true);
 
+	// Section 0: visible terrain (no collision).
+	ProceduralMesh->CreateMeshSection_LinearColor(
+		0, Vertices, Triangles, Normals, UVs, Colors, Tangents, /*bCreateCollision=*/false);
 	if (Material)
 	{
 		ProceduralMesh->SetMaterial(0, Material);
 	}
+
+	// Section 1: invisible collision surface raised to counter capsule sink into complex mesh.
+	ProceduralMesh->CreateMeshSection_LinearColor(
+		1, CollisionVertices, Triangles, Normals, UVs, Colors, Tangents, /*bCreateCollision=*/true);
+	ProceduralMesh->SetMeshSectionVisible(1, false);
 
 	ProceduralMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	ProceduralMesh->SetCollisionResponseToAllChannels(ECR_Block);

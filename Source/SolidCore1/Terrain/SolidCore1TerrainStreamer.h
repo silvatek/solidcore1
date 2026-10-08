@@ -48,6 +48,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	float BaseHeight = 0.f;
 
+	/**
+	 * Raise invisible collision above the visible mesh (cm). Capsules sink into complex
+	 * procedural collision; this keeps feet on the rendered surface.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.0"))
+	float CollisionHeightBias = 24.f;
+
 	/** Optional material; if null a basic engine material is used when available. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	TObjectPtr<UMaterialInterface> TerrainMaterial;
@@ -70,7 +77,7 @@ public:
 
 	/** Extra cm above the hit surface when snapping (helps with complex-collision sink). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.0"))
-	float SnapHeightPadding = 28.f;
+	float SnapHeightPadding = 4.f;
 
 protected:
 	void UpdateStreaming();

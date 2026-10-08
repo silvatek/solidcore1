@@ -24,6 +24,7 @@ public:
 		float InFrequencyScale,
 		float InAmplitude,
 		float InBaseHeight,
+		float InCollisionHeightBias,
 		UMaterialInterface* Material);
 
 	FIntPoint GetChunkCoord() const { return ChunkCoord; }

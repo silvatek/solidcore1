@@ -178,18 +178,8 @@ void ASolidCore1TerrainStreamer::TrySnapFocusToTerrain(AActor* Focus)
 	}
 
 	const FVector Loc = Focus->GetActorLocation();
-	const float ExpectedZ = SampleHeightAtWorld(Loc);
-	const FVector TraceStart(Loc.X, Loc.Y, ExpectedZ + 10000.f);
-	const FVector TraceEnd(Loc.X, Loc.Y, ExpectedZ - 10000.f);
-
-	FCollisionQueryParams Params(SCENE_QUERY_STAT(SolidCore1TerrainSnap), false, Focus);
-	FHitResult Hit;
-	float LandZ = ExpectedZ;
-
-	if (World->LineTraceSingleByChannel(Hit, TraceStart, TraceEnd, ECC_WorldStatic, Params))
-	{
-		LandZ = Hit.ImpactPoint.Z;
-	}
+	// Place on the raised collision surface (visual height + bias), not high in the air.
+	const float LandZ = SampleHeightAtWorld(Loc) + CollisionHeightBias;
 
 	float CapsuleHalfHeight = 96.f;
 	if (const ACharacter* Character = Cast<ACharacter>(Focus))

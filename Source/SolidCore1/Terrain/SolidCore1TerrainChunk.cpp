@@ -31,11 +31,6 @@ ASolidCore1TerrainChunk::ASolidCore1TerrainChunk()
 	ProceduralMesh->bAllowCullDistanceVolume = false;
 }
 
-FBoxSphereBounds ASolidCore1TerrainChunk::GetMeshBounds() const
-{
-	return ProceduralMesh ? ProceduralMesh->Bounds : FBoxSphereBounds(ForceInit);
-}
-
 void ASolidCore1TerrainChunk::BuildChunk(
 	FIntPoint InChunkCoord,
 	float InChunkWorldSize,

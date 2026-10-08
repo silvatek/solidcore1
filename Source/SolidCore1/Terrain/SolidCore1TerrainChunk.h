@@ -28,9 +28,6 @@ public:
 
 	FIntPoint GetChunkCoord() const { return ChunkCoord; }
 
-	/** World-space render bounds after last BuildChunk (for HUD). */
-	FBoxSphereBounds GetMeshBounds() const;
-
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terrain")
 	TObjectPtr<USolidCore1TerrainMeshComponent> ProceduralMesh;

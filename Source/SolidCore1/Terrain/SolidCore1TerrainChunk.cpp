@@ -135,7 +135,7 @@ void ASolidCore1TerrainChunk::BuildChunk(
 			const int32 I01 = I00 + VertsPerSide;
 			const int32 I11 = I01 + 1;
 
-			// Top face (CCW from +Z).
+			// Top face only (CCW from +Z). Camera channel is blocked so the boom stays above.
 			Triangles.Add(I00);
 			Triangles.Add(I10);
 			Triangles.Add(I11);
@@ -145,64 +145,23 @@ void ASolidCore1TerrainChunk::BuildChunk(
 		}
 	}
 
-	// Underside on a separate section, biased down so it never z-fights the top.
-	// Needed when the camera dips under the surface (one-sided materials go invisible).
-	constexpr float UndersideBiasCm = 3.f;
-	TArray<FVector> BottomVertices;
-	TArray<FVector> BottomNormals;
-	TArray<int32> BottomTriangles;
-	BottomVertices.Reserve(Vertices.Num());
-	BottomNormals.Reserve(Normals.Num());
-	BottomTriangles.Reserve(Triangles.Num());
-	for (const FVector& V : Vertices)
-	{
-		BottomVertices.Add(FVector(V.X, V.Y, V.Z - UndersideBiasCm));
-	}
-	for (const FVector& N : Normals)
-	{
-		BottomNormals.Add(-N);
-	}
-	for (int32 Y = 0; Y < InQuadsPerSide; ++Y)
-	{
-		for (int32 X = 0; X < InQuadsPerSide; ++X)
-		{
-			const int32 I00 = Y * VertsPerSide + X;
-			const int32 I10 = I00 + 1;
-			const int32 I01 = I00 + VertsPerSide;
-			const int32 I11 = I01 + 1;
-
-			BottomTriangles.Add(I00);
-			BottomTriangles.Add(I11);
-			BottomTriangles.Add(I10);
-			BottomTriangles.Add(I00);
-			BottomTriangles.Add(I01);
-			BottomTriangles.Add(I11);
-		}
-	}
-
 	ProceduralMesh->ClearAllMeshSections();
 	ProceduralMesh->bUseComplexAsSimpleCollision = true;
 	ProceduralMesh->CreateMeshSection_LinearColor(
 		0, Vertices, Triangles, Normals, UVs, Colors, Tangents, /*bCreateCollision=*/true);
-	ProceduralMesh->CreateMeshSection_LinearColor(
-		1, BottomVertices, BottomTriangles, BottomNormals, UVs, Colors, Tangents, /*bCreateCollision=*/false);
 
 	if (Material)
 	{
 		ProceduralMesh->SetMaterial(0, Material);
-		ProceduralMesh->SetMaterial(1, Material);
 	}
 
-	// Pad local section boxes, then UpdateBounds() → correct world frustum bounds.
+	// Pad local section box, then UpdateBounds() → correct world frustum bounds.
 	const FBox PaddedLocalBox(
-		FVector(-100.f, -100.f, MinZ - UndersideBiasCm - 500.f),
+		FVector(-100.f, -100.f, MinZ - 500.f),
 		FVector(InChunkWorldSize + 100.f, InChunkWorldSize + 100.f, MaxZ + 500.f));
-	for (int32 SectionIndex = 0; SectionIndex <= 1; ++SectionIndex)
+	if (FProcMeshSection* Section = ProceduralMesh->GetProcMeshSection(0))
 	{
-		if (FProcMeshSection* Section = ProceduralMesh->GetProcMeshSection(SectionIndex))
-		{
-			Section->SectionLocalBox = PaddedLocalBox;
-		}
+		Section->SectionLocalBox = PaddedLocalBox;
 	}
 	ProceduralMesh->SetBoundsScale(1.25f);
 	ProceduralMesh->UpdateBounds();
@@ -219,8 +178,7 @@ void ASolidCore1TerrainChunk::BuildChunk(
 
 	UE_LOG(LogTemp, Warning,
 		TEXT("[SolidCore1] Chunk (%d,%d) actor=(%.0f,%.0f) verts=%d tris=%d Z=[%.0f,%.0f] worldBounds=%s material=%s"),
-		InChunkCoord.X, InChunkCoord.Y, OriginX, OriginY, Vertices.Num(),
-		(Triangles.Num() + BottomTriangles.Num()) / 3, MinZ, MaxZ,
+		InChunkCoord.X, InChunkCoord.Y, OriginX, OriginY, Vertices.Num(), Triangles.Num() / 3, MinZ, MaxZ,
 		*ProceduralMesh->Bounds.ToString(),
 		Material ? *Material->GetName() : TEXT("<null>"));
 }

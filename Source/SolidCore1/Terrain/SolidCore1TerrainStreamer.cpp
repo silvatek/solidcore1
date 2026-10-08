@@ -19,20 +19,21 @@ ASolidCore1TerrainStreamer::ASolidCore1TerrainStreamer()
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
 
-	// Vertex-color debug material makes height tint obvious; WorldGrid looks like a flat void floor.
-	static ConstructorHelpers::FObjectFinder<UMaterialInterface> VertexColorMat(
-		TEXT("/Engine/EngineDebugMaterials/VertexColorViewModeMaterial_ColorOnly.VertexColorViewModeMaterial_ColorOnly"));
-	if (VertexColorMat.Succeeded())
+	// WorldGrid is lit and readable on hills. VertexColorViewModeMaterial_ColorOnly is a debug
+	// view-mode material — in normal PIE it shades nearly black (only ridge specular shows).
+	static ConstructorHelpers::FObjectFinder<UMaterial> GridMat(
+		TEXT("/Engine/EngineMaterials/WorldGridMaterial.WorldGridMaterial"));
+	if (GridMat.Succeeded())
 	{
-		TerrainMaterial = VertexColorMat.Object;
+		TerrainMaterial = GridMat.Object;
 	}
 	else
 	{
-		static ConstructorHelpers::FObjectFinder<UMaterial> GridMat(
-			TEXT("/Engine/EngineMaterials/WorldGridMaterial.WorldGridMaterial"));
-		if (GridMat.Succeeded())
+		static ConstructorHelpers::FObjectFinder<UMaterial> BasicMat(
+			TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+		if (BasicMat.Succeeded())
 		{
-			TerrainMaterial = GridMat.Object;
+			TerrainMaterial = BasicMat.Object;
 		}
 	}
 }

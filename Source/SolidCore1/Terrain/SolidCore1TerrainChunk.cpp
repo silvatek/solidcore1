@@ -209,15 +209,23 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	FStaticMaterial StaticMaterial(Material, FName(TEXT("Terrain")), FName(TEXT("Terrain")));
 	RuntimeStaticMesh->SetStaticMaterials({ StaticMaterial });
 
+	// SC1-0007 used bFastBuild=true — that path often skips collision (and can produce bad LODs),
+	// which caused the snap/fall loop. Full build + CPU access for complex-as-simple.
 	UStaticMesh::FBuildMeshDescriptionsParams BuildParams;
 	BuildParams.bBuildSimpleCollision = false;
-	BuildParams.bFastBuild = true;
+	BuildParams.bFastBuild = false;
 	BuildParams.bAllowCpuAccess = true;
 	BuildParams.bCommitMeshDescription = true;
 	BuildParams.bMarkPackageDirty = false;
 
 	const TArray<const FMeshDescription*> Descriptions = { &MeshDescription };
-	RuntimeStaticMesh->BuildFromMeshDescriptions(Descriptions, BuildParams);
+	const bool bBuilt = RuntimeStaticMesh->BuildFromMeshDescriptions(Descriptions, BuildParams);
+	if (!bBuilt)
+	{
+		UE_LOG(LogTemp, Error,
+			TEXT("[SolidCore1] BuildFromMeshDescriptions FAILED for chunk (%d,%d)"),
+			InChunkCoord.X, InChunkCoord.Y);
+	}
 
 	if (!RuntimeStaticMesh->GetBodySetup())
 	{
@@ -226,10 +234,12 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	if (UBodySetup* BodySetup = RuntimeStaticMesh->GetBodySetup())
 	{
 		BodySetup->CollisionTraceFlag = CTF_UseComplexAsSimple;
+		BodySetup->bDoubleSidedGeometry = true;
 		BodySetup->InvalidatePhysicsData();
 		BodySetup->CreatePhysicsMeshes();
 	}
 
+	MeshComponent->SetStaticMesh(nullptr);
 	MeshComponent->SetStaticMesh(RuntimeStaticMesh);
 	if (Material)
 	{
@@ -237,6 +247,8 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	}
 
 	SolidCore1TerrainChunkPrivate::ConfigureCollision(MeshComponent);
+	MeshComponent->BodyInstance.SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
+	MeshComponent->BodyInstance.SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	MeshComponent->SetVisibility(true);
 	MeshComponent->SetHiddenInGame(false);
 	MeshComponent->bUseAsOccluder = false;
@@ -245,9 +257,19 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	MeshComponent->MarkRenderStateDirty();
 	MeshComponent->RecreatePhysicsState();
 
+	const int32 RenderTris = RuntimeStaticMesh->GetNumTriangles(0);
+	int32 SimpleCollisionElems = 0;
+	ECollisionTraceFlag TraceFlag = CTF_UseDefault;
+	if (const UBodySetup* BodySetup = RuntimeStaticMesh->GetBodySetup())
+	{
+		SimpleCollisionElems = BodySetup->AggGeom.GetElementCount();
+		TraceFlag = BodySetup->CollisionTraceFlag;
+	}
+
 	UE_LOG(LogTemp, Warning,
-		TEXT("[SolidCore1] StaticMesh chunk (%d,%d) actor=(%.0f,%.0f) verts=%d tris=%d Z=[%.0f,%.0f] worldBounds=%s material=%s"),
-		InChunkCoord.X, InChunkCoord.Y, OriginX, OriginY, Positions.Num(), TriCount, MinZ, MaxZ,
+		TEXT("[SolidCore1] StaticMesh chunk (%d,%d) built=%d renderTris=%d simpleCols=%d traceFlag=%d actor=(%.0f,%.0f) Z=[%.0f,%.0f] worldBounds=%s material=%s"),
+		InChunkCoord.X, InChunkCoord.Y, bBuilt ? 1 : 0, RenderTris, SimpleCollisionElems,
+		static_cast<int32>(TraceFlag), OriginX, OriginY, MinZ, MaxZ,
 		*MeshComponent->Bounds.ToString(),
 		Material ? *Material->GetName() : TEXT("<null>"));
 }

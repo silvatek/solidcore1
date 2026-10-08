@@ -42,10 +42,12 @@ ASolidCore1TerrainStreamer* ASolidCore1TerrainStreamer::EnsureExists(UWorld* Wor
 
 	if (Streamer)
 	{
+		UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Spawned SolidCore1TerrainStreamer (EnsureExists)."));
 		UE_LOG(LogSolidCore1, Warning, TEXT("Spawned SolidCore1TerrainStreamer (EnsureExists)."));
 	}
 	else
 	{
+		UE_LOG(LogTemp, Error, TEXT("[SolidCore1] Failed to spawn SolidCore1TerrainStreamer (EnsureExists)."));
 		UE_LOG(LogSolidCore1, Error, TEXT("Failed to spawn SolidCore1TerrainStreamer (EnsureExists)."));
 	}
 
@@ -205,6 +207,11 @@ void ASolidCore1TerrainStreamer::UpdateStreaming()
 			Material);
 
 		LoadedChunks.Add(Coord, Chunk);
+		UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Built terrain chunk (%d, %d) origin=(%.0f, %.0f) loaded=%d"),
+			Coord.X, Coord.Y,
+			static_cast<float>(Coord.X) * ChunkWorldSize,
+			static_cast<float>(Coord.Y) * ChunkWorldSize,
+			LoadedChunks.Num());
 		UE_LOG(LogSolidCore1, Warning, TEXT("Built terrain chunk (%d, %d) at origin (%.0f, %.0f). Loaded=%d"),
 			Coord.X, Coord.Y,
 			static_cast<float>(Coord.X) * ChunkWorldSize,

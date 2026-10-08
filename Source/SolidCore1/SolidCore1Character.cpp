@@ -104,6 +104,8 @@ void ASolidCore1Character::PossessedBy(AController* NewController)
 	Super::PossessedBy(NewController);
 	EnsureRuntimeInputAssets();
 	AddMappingContext();
+	ASolidCore1TerrainStreamer::EnsureExists(GetWorld());
+	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Character PossessedBy — ensured terrain streamer"));
 }
 
 void ASolidCore1Character::OnRep_PlayerState()

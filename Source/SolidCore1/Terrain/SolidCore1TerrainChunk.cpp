@@ -144,64 +144,25 @@ void ASolidCore1TerrainChunk::BuildChunk(
 		}
 	}
 
-	// Biased underside (NOT coplanar — coplanar doubles caused the z-fight ribbon).
-	// Restored from the continuous-hills PIE state; one-sided lit mats vanish if the camera grazes under.
-	constexpr float UndersideBiasCm = 3.f;
-	TArray<FVector> BottomVertices;
-	TArray<FVector> BottomNormals;
-	TArray<int32> BottomTriangles;
-	BottomVertices.Reserve(Vertices.Num());
-	BottomNormals.Reserve(Normals.Num());
-	BottomTriangles.Reserve(Triangles.Num());
-	for (const FVector& V : Vertices)
-	{
-		BottomVertices.Add(FVector(V.X, V.Y, V.Z - UndersideBiasCm));
-	}
-	for (const FVector& N : Normals)
-	{
-		BottomNormals.Add(-N);
-	}
-	for (int32 Y = 0; Y < InQuadsPerSide; ++Y)
-	{
-		for (int32 X = 0; X < InQuadsPerSide; ++X)
-		{
-			const int32 I00 = Y * VertsPerSide + X;
-			const int32 I10 = I00 + 1;
-			const int32 I01 = I00 + VertsPerSide;
-			const int32 I11 = I01 + 1;
-
-			BottomTriangles.Add(I00);
-			BottomTriangles.Add(I11);
-			BottomTriangles.Add(I10);
-			BottomTriangles.Add(I00);
-			BottomTriangles.Add(I01);
-			BottomTriangles.Add(I11);
-		}
-	}
-
+	// SC1-0004: remove underside section. SC1-0003 still showed sky ribbons with WorldGrid;
+	// underside is the prime suspect. Top faces only for this build.
 	ProceduralMesh->ClearAllMeshSections();
 	ProceduralMesh->bUseComplexAsSimpleCollision = true;
 	ProceduralMesh->CreateMeshSection_LinearColor(
 		0, Vertices, Triangles, Normals, UVs, Colors, Tangents, /*bCreateCollision=*/true);
-	ProceduralMesh->CreateMeshSection_LinearColor(
-		1, BottomVertices, BottomTriangles, BottomNormals, UVs, Colors, Tangents, /*bCreateCollision=*/false);
 
 	if (Material)
 	{
 		ProceduralMesh->SetMaterial(0, Material);
-		ProceduralMesh->SetMaterial(1, Material);
 	}
 
 	// Pad section local boxes only — do NOT assign a local FBox to Bounds (that culled off-origin chunks).
 	const FBox PaddedLocalBox(
-		FVector(-100.f, -100.f, MinZ - UndersideBiasCm - 500.f),
+		FVector(-100.f, -100.f, MinZ - 500.f),
 		FVector(InChunkWorldSize + 100.f, InChunkWorldSize + 100.f, MaxZ + 500.f));
-	for (int32 SectionIndex = 0; SectionIndex <= 1; ++SectionIndex)
+	if (FProcMeshSection* Section = ProceduralMesh->GetProcMeshSection(0))
 	{
-		if (FProcMeshSection* Section = ProceduralMesh->GetProcMeshSection(SectionIndex))
-		{
-			Section->SectionLocalBox = PaddedLocalBox;
-		}
+		Section->SectionLocalBox = PaddedLocalBox;
 	}
 	ProceduralMesh->SetBoundsScale(1.25f);
 	ProceduralMesh->UpdateBounds();
@@ -218,8 +179,7 @@ void ASolidCore1TerrainChunk::BuildChunk(
 
 	UE_LOG(LogTemp, Warning,
 		TEXT("[SolidCore1] Chunk (%d,%d) actor=(%.0f,%.0f) verts=%d tris=%d Z=[%.0f,%.0f] worldBounds=%s material=%s"),
-		InChunkCoord.X, InChunkCoord.Y, OriginX, OriginY, Vertices.Num(),
-		(Triangles.Num() + BottomTriangles.Num()) / 3, MinZ, MaxZ,
+		InChunkCoord.X, InChunkCoord.Y, OriginX, OriginY, Vertices.Num(), Triangles.Num() / 3, MinZ, MaxZ,
 		*ProceduralMesh->Bounds.ToString(),
 		Material ? *Material->GetName() : TEXT("<null>"));
 }

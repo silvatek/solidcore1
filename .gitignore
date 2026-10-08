@@ -1,0 +1,45 @@
+# Unreal Engine
+Binaries/
+DerivedDataCache/
+Intermediate/
+Saved/
+Build/
+
+# Visual Studio / IDEs
+.vs/
+*.sln
+*.suo
+*.opensdf
+*.sdf
+*.VC.db
+*.VC.opendb
+*.xcodeproj
+*.xcworkspace
+.idea/
+*.code-workspace
+
+# Compiled objects
+*.obj
+*.o
+*.pdb
+*.dll
+*.exe
+*.lib
+*.exp
+*.ilk
+*.dylib
+*.so
+*.a
+
+# Local user / machine
+*.user
+*.userprefs
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Cursor / tooling
+.cursor/

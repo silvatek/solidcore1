@@ -8,9 +8,9 @@
  * SOLIDCORE1_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLIDCORE1_BUILD_ID
-#define SOLIDCORE1_BUILD_ID TEXT("SC1-0022")
+#define SOLIDCORE1_BUILD_ID TEXT("SC1-0023")
 #endif
 
 #ifndef SOLIDCORE1_BUILD_NOTE
-#define SOLIDCORE1_BUILD_NOTE TEXT("Default map → Lvl_ThirdPerson; radius=2")
+#define SOLIDCORE1_BUILD_NOTE TEXT("Force SolidCore1 GameMode (Manny+HUD)")
 #endif

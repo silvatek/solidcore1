@@ -18,11 +18,21 @@ ASolidCore1TerrainStreamer::ASolidCore1TerrainStreamer()
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
 
-	static ConstructorHelpers::FObjectFinder<UMaterial> DefaultMat(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
-	if (DefaultMat.Succeeded())
+	// Prefer materials that render reliably on procedural meshes.
+	static ConstructorHelpers::FObjectFinder<UMaterial> GridMat(
+		TEXT("/Engine/EngineMaterials/WorldGridMaterial.WorldGridMaterial"));
+	if (GridMat.Succeeded())
 	{
-		TerrainMaterial = DefaultMat.Object;
+		TerrainMaterial = GridMat.Object;
+	}
+	else
+	{
+		static ConstructorHelpers::FObjectFinder<UMaterial> DefaultMat(
+			TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
+		if (DefaultMat.Succeeded())
+		{
+			TerrainMaterial = DefaultMat.Object;
+		}
 	}
 }
 

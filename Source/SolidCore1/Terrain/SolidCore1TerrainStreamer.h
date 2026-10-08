@@ -53,7 +53,7 @@ public:
 	 * procedural collision; this keeps feet on the rendered surface.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.0"))
-	float CollisionHeightBias = 20.f;
+	float CollisionHeightBias = 0.f;
 
 	/** Optional material; if null a basic engine material is used when available. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")

@@ -3,7 +3,6 @@
 #include "SolidCore1PlayerController.h"
 #include "SolidCore1.h"
 #include "Terrain/SolidCore1TerrainStreamer.h"
-#include "EngineUtils.h"
 #include "UObject/ConstructorHelpers.h"
 
 namespace SolidCore1GameModePrivate
@@ -62,30 +61,5 @@ void ASolidCore1GameMode::EnsureTerrainStreamer()
 		return;
 	}
 
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return;
-	}
-
-	for (TActorIterator<ASolidCore1TerrainStreamer> It(World); It; ++It)
-	{
-		return; // already present
-	}
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	ASolidCore1TerrainStreamer* Streamer = World->SpawnActor<ASolidCore1TerrainStreamer>(
-		ASolidCore1TerrainStreamer::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-
-	if (Streamer)
-	{
-		UE_LOG(LogSolidCore1, Warning, TEXT("Spawned SolidCore1TerrainStreamer for runtime chunk terrain."));
-	}
-	else
-	{
-		UE_LOG(LogSolidCore1, Error, TEXT("Failed to spawn SolidCore1TerrainStreamer."));
-	}
+	ASolidCore1TerrainStreamer::EnsureExists(GetWorld());
 }

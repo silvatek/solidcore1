@@ -19,6 +19,7 @@
 #include "InputModifiers.h"
 #include "Modules/ModuleManager.h"
 #include "SolidCore1.h"
+#include "Terrain/SolidCore1TerrainStreamer.h"
 #include "UObject/SoftObjectPath.h"
 
 namespace SolidCore1Input
@@ -93,6 +94,9 @@ void ASolidCore1Character::BeginPlay()
 	EnsureRuntimeInputAssets();
 	ApplyWalkSpeed();
 	AddMappingContext();
+
+	// Backup spawn path: Blueprint GameModes sometimes skip C++ BeginPlay.
+	ASolidCore1TerrainStreamer::EnsureExists(GetWorld());
 }
 
 void ASolidCore1Character::PossessedBy(AController* NewController)

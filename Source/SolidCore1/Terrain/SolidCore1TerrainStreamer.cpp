@@ -2,6 +2,7 @@
 #include "Terrain/SolidCore1TerrainChunk.h"
 #include "Terrain/SolidCore1TerrainNoise.h"
 #include "SolidCore1.h"
+#include "EngineUtils.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "Materials/Material.h"
@@ -19,6 +20,36 @@ ASolidCore1TerrainStreamer::ASolidCore1TerrainStreamer()
 	{
 		TerrainMaterial = DefaultMat.Object;
 	}
+}
+
+ASolidCore1TerrainStreamer* ASolidCore1TerrainStreamer::EnsureExists(UWorld* World)
+{
+	if (!World || World->bIsTearingDown)
+	{
+		return nullptr;
+	}
+
+	for (TActorIterator<ASolidCore1TerrainStreamer> It(World); It; ++It)
+	{
+		return *It;
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	ASolidCore1TerrainStreamer* Streamer = World->SpawnActor<ASolidCore1TerrainStreamer>(
+		ASolidCore1TerrainStreamer::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+
+	if (Streamer)
+	{
+		UE_LOG(LogSolidCore1, Warning, TEXT("Spawned SolidCore1TerrainStreamer (EnsureExists)."));
+	}
+	else
+	{
+		UE_LOG(LogSolidCore1, Error, TEXT("Failed to spawn SolidCore1TerrainStreamer (EnsureExists)."));
+	}
+
+	return Streamer;
 }
 
 void ASolidCore1TerrainStreamer::BeginPlay()
@@ -174,6 +205,11 @@ void ASolidCore1TerrainStreamer::UpdateStreaming()
 			Material);
 
 		LoadedChunks.Add(Coord, Chunk);
+		UE_LOG(LogSolidCore1, Warning, TEXT("Built terrain chunk (%d, %d) at origin (%.0f, %.0f). Loaded=%d"),
+			Coord.X, Coord.Y,
+			static_cast<float>(Coord.X) * ChunkWorldSize,
+			static_cast<float>(Coord.Y) * ChunkWorldSize,
+			LoadedChunks.Num());
 	}
 
 	TrySnapFocusToTerrain(Focus);

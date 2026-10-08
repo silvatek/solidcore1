@@ -22,6 +22,9 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
+	/** Spawn a streamer if the world does not already have one. Safe to call often. */
+	static ASolidCore1TerrainStreamer* EnsureExists(UWorld* World);
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "500.0"))
 	float ChunkWorldSize = 6400.f;
 

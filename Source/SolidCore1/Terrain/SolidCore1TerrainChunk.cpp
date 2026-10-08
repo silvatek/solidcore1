@@ -109,13 +109,14 @@ void ASolidCore1TerrainChunk::BuildChunk(
 			const int32 I01 = I00 + VertsPerSide;
 			const int32 I11 = I01 + 1;
 
+			// CCW when viewed from +Z so normals face upward (visible from above).
 			Triangles.Add(I00);
-			Triangles.Add(I01);
+			Triangles.Add(I10);
 			Triangles.Add(I11);
 
 			Triangles.Add(I00);
 			Triangles.Add(I11);
-			Triangles.Add(I10);
+			Triangles.Add(I01);
 		}
 	}
 

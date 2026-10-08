@@ -134,6 +134,71 @@ void ASolidCore1Character::OnRep_PlayerState()
 void ASolidCore1Character::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	UpdateGroupCameraFraming(DeltaTime);
+}
+
+void ASolidCore1Character::UpdateGroupCameraFraming(float DeltaTime)
+{
+	if (!CameraBoom || !bFrameCompanions)
+	{
+		return;
+	}
+
+	// Only the locally controlled player drives the framing camera.
+	if (!IsLocallyControlled())
+	{
+		return;
+	}
+
+	TArray<FVector, TInlineAllocator<8>> Points;
+	Points.Add(GetActorLocation());
+
+	if (UWorld* World = GetWorld())
+	{
+		for (TActorIterator<ASolidCore1CompanionCharacter> It(World); It; ++It)
+		{
+			if (IsValid(*It))
+			{
+				Points.Add(It->GetActorLocation());
+			}
+		}
+	}
+
+	FVector DesiredTargetOffset = FVector::ZeroVector;
+	float DesiredArmLength = FramingMinArmLength;
+
+	if (Points.Num() > 1)
+	{
+		FBox Bounds(ForceInit);
+		for (const FVector& Point : Points)
+		{
+			Bounds += Point;
+		}
+
+		const FVector Center = Bounds.GetCenter();
+		FVector ToCenter = Center - GetActorLocation();
+		// Keep vertical bias mild so look pitch stays comfortable.
+		ToCenter.Z *= 0.35f;
+		DesiredTargetOffset = ToCenter;
+
+		const FVector Extent = Bounds.GetExtent();
+		const float PlanarRadius = FMath::Max(Extent.Size2D(), 50.f) + FramingPadding;
+
+		float VerticalFovDeg = 90.f;
+		if (FollowCamera)
+		{
+			VerticalFovDeg = FollowCamera->FieldOfView;
+		}
+		const float HalfFovRad = FMath::DegreesToRadians(FMath::Clamp(VerticalFovDeg, 40.f, 120.f) * 0.5f);
+		const float FitDistance = PlanarRadius / FMath::Max(FMath::Tan(HalfFovRad), 0.1f);
+
+		DesiredArmLength = FMath::Clamp(FitDistance, FramingMinArmLength, FramingMaxArmLength);
+	}
+
+	CameraBoom->TargetOffset = FMath::VInterpTo(
+		CameraBoom->TargetOffset, DesiredTargetOffset, DeltaTime, FramingInterpSpeed);
+	CameraBoom->TargetArmLength = FMath::FInterpTo(
+		CameraBoom->TargetArmLength, DesiredArmLength, DeltaTime, FramingInterpSpeed);
 }
 
 void ASolidCore1Character::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

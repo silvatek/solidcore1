@@ -91,6 +91,8 @@ SC1-0007 drops `UProceduralMeshComponent` after persistent ribbon/culling failur
 
 `ASolidCore1CompanionCharacter` spawns behind the player and follows with simple steering (no NavMesh — works on procedural terrain). She uses `SKM_Quinn_Simple` + `ABP_Unarmed` (same Epic skeleton as Manny). GameMode flag: `bAutoSpawnCompanion`. HUD shows companion mesh name and distance. Later this pawn is the swap target for the Viking mesh while Manny stays the player.
 
+SC1-0025: the player spring-arm camera shifts its `TargetOffset` toward the group center and lengthens so all companions stay in frame (`bFrameCompanions`).
+
 ## Create the open-world map
 
 Binary `.umap` assets are created in the Editor (not checked in as source):

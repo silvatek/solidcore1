@@ -205,12 +205,14 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	RuntimeStaticMesh = NewObject<UStaticMesh>(this, NAME_None, RF_Transient);
 	RuntimeStaticMesh->bAllowCPUAccess = true;
 	RuntimeStaticMesh->NeverStream = true;
+	// Open World projects default Nanite on; runtime meshes with Nanite enabled but no valid
+	// Nanite build often collide yet draw as invisible (blue fog). Force classic raster path.
+	RuntimeStaticMesh->NaniteSettings.bEnabled = false;
 
 	FStaticMaterial StaticMaterial(Material, FName(TEXT("Terrain")), FName(TEXT("Terrain")));
 	RuntimeStaticMesh->SetStaticMaterials({ StaticMaterial });
 
-	// SC1-0007 used bFastBuild=true — that path often skips collision (and can produce bad LODs),
-	// which caused the snap/fall loop. Full build + CPU access for complex-as-simple.
+	// Full build + CPU access for complex-as-simple (bFastBuild skipped collision in SC1-0007).
 	UStaticMesh::FBuildMeshDescriptionsParams BuildParams;
 	BuildParams.bBuildSimpleCollision = false;
 	BuildParams.bFastBuild = false;
@@ -226,6 +228,9 @@ void ASolidCore1TerrainChunk::BuildChunk(
 			TEXT("[SolidCore1] BuildFromMeshDescriptions FAILED for chunk (%d,%d)"),
 			InChunkCoord.X, InChunkCoord.Y);
 	}
+
+	// Build can re-enable Nanite from project defaults — keep it off for runtime meshes.
+	RuntimeStaticMesh->NaniteSettings.bEnabled = false;
 
 	if (!RuntimeStaticMesh->GetBodySetup())
 	{

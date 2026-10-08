@@ -35,8 +35,7 @@ ASolidCore1TerrainChunk::ASolidCore1TerrainChunk()
 	MeshComponent->SetHiddenInGame(false);
 	MeshComponent->SetMobility(EComponentMobility::Movable);
 	MeshComponent->bUseAsOccluder = false;
-	// SC1-0016: background-for-occlusion can ghost distant strips; keep normal occlusion.
-	MeshComponent->bTreatAsBackgroundForOcclusion = false;
+	MeshComponent->bTreatAsBackgroundForOcclusion = true;
 	MeshComponent->LDMaxDrawDistance = 0.f;
 	MeshComponent->bAllowCullDistanceVolume = false;
 	MeshComponent->SetCanEverAffectNavigation(false);
@@ -267,12 +266,15 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	MeshComponent->SetVisibility(true);
 	MeshComponent->SetHiddenInGame(false);
 	MeshComponent->bUseAsOccluder = false;
-	MeshComponent->bTreatAsBackgroundForOcclusion = false;
+	MeshComponent->bTreatAsBackgroundForOcclusion = true;
+	// SC1-0017: force LOD0 — horizon slivers may be a degenerate auto-generated LOD.
+	MeshComponent->SetForcedLodModel(1);
 	MeshComponent->UpdateBounds();
 	MeshComponent->MarkRenderStateDirty();
 	MeshComponent->RecreatePhysicsState();
 
 	const int32 RenderTris = RuntimeStaticMesh->GetNumTriangles(0);
+	const int32 NumLODs = RuntimeStaticMesh->GetNumLODs();
 	int32 SimpleCollisionElems = 0;
 	ECollisionTraceFlag TraceFlag = CTF_UseDefault;
 	if (const UBodySetup* BodySetup = RuntimeStaticMesh->GetBodySetup())
@@ -282,8 +284,8 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	}
 
 	UE_LOG(LogTemp, Warning,
-		TEXT("[SolidCore1] StaticMesh chunk (%d,%d) built=%d renderTris=%d simpleCols=%d traceFlag=%d actor=(%.0f,%.0f) Z=[%.0f,%.0f] worldBounds=%s material=%s"),
-		InChunkCoord.X, InChunkCoord.Y, bBuilt ? 1 : 0, RenderTris, SimpleCollisionElems,
+		TEXT("[SolidCore1] StaticMesh chunk (%d,%d) built=%d renderTris=%d lods=%d simpleCols=%d traceFlag=%d actor=(%.0f,%.0f) Z=[%.0f,%.0f] worldBounds=%s material=%s"),
+		InChunkCoord.X, InChunkCoord.Y, bBuilt ? 1 : 0, RenderTris, NumLODs, SimpleCollisionElems,
 		static_cast<int32>(TraceFlag), OriginX, OriginY, MinZ, MaxZ,
 		*MeshComponent->Bounds.ToString(),
 		Material ? *Material->GetName() : TEXT("<null>"));

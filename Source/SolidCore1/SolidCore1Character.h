@@ -63,17 +63,36 @@ protected:
 	bool bFrameCompanions = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "200.0"))
-	float FramingMinArmLength = 400.f;
+	float FramingMinArmLength = 450.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "400.0"))
-	float FramingMaxArmLength = 1400.f;
+	float FramingMaxArmLength = 1800.f;
 
-	/** Extra world centimeters added outside the group bounds. */
+	/** Extra world centimeters outside the projected group extents. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "0.0"))
-	float FramingPadding = 220.f;
+	float FramingPadding = 280.f;
+
+	/** Zoom-out speed when the group needs a wider shot. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "0.1"))
+	float FramingZoomOutSpeed = 8.f;
+
+	/** Zoom-in speed (kept low so terrain boom-collision / brief gaps do not pop Quinn out). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "0.1"))
+	float FramingZoomInSpeed = 1.2f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "0.1"))
-	float FramingInterpSpeed = 5.f;
+	float FramingOffsetInterpSpeed = 6.f;
+
+	/**
+	 * Spring-arm collision against hills collapses TargetArmLength and clips companions.
+	 * When true, collision probes are disabled while any companion is present.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing")
+	bool bDisableBoomCollisionWhileFraming = true;
+
+	/** Assumed viewport aspect when computing horizontal FOV fit. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "1.0"))
+	float FramingAspectRatio = 16.f / 9.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputMappingContext> DefaultMappingContext;

@@ -8,9 +8,9 @@
  * SOLIDCORE1_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLIDCORE1_BUILD_ID
-#define SOLIDCORE1_BUILD_ID TEXT("SC1-0025")
+#define SOLIDCORE1_BUILD_ID TEXT("SC1-0026")
 #endif
 
 #ifndef SOLIDCORE1_BUILD_NOTE
-#define SOLIDCORE1_BUILD_NOTE TEXT("Camera frames Manny + companions")
+#define SOLIDCORE1_BUILD_NOTE TEXT("Framing: no boom collision + slow zoom-in")
 #endif

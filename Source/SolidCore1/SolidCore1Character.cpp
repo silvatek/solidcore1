@@ -150,55 +150,107 @@ void ASolidCore1Character::UpdateGroupCameraFraming(float DeltaTime)
 		return;
 	}
 
-	TArray<FVector, TInlineAllocator<8>> Points;
-	Points.Add(GetActorLocation());
+	struct FFramedPoint
+	{
+		FVector Location;
+		float CapsuleHalfHeight;
+	};
+
+	TArray<FFramedPoint, TInlineAllocator<8>> Subjects;
+	{
+		float HalfHeight = 96.f;
+		if (const UCapsuleComponent* Capsule = GetCapsuleComponent())
+		{
+			HalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+		}
+		Subjects.Add({ GetActorLocation(), HalfHeight });
+	}
 
 	if (UWorld* World = GetWorld())
 	{
 		for (TActorIterator<ASolidCore1CompanionCharacter> It(World); It; ++It)
 		{
-			if (IsValid(*It))
+			if (!IsValid(*It))
 			{
-				Points.Add(It->GetActorLocation());
+				continue;
 			}
+			float HalfHeight = 96.f;
+			if (const UCapsuleComponent* Capsule = It->GetCapsuleComponent())
+			{
+				HalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+			}
+			Subjects.Add({ It->GetActorLocation(), HalfHeight });
 		}
+	}
+
+	const bool bHasCompanions = Subjects.Num() > 1;
+
+	if (bDisableBoomCollisionWhileFraming)
+	{
+		// SC1-0025 popped narrower when the boom probe hit hills and collapsed arm length.
+		CameraBoom->bDoCollisionTest = !bHasCompanions;
 	}
 
 	FVector DesiredTargetOffset = FVector::ZeroVector;
 	float DesiredArmLength = FramingMinArmLength;
 
-	if (Points.Num() > 1)
+	if (bHasCompanions)
 	{
-		FBox Bounds(ForceInit);
-		for (const FVector& Point : Points)
+		FVector Center = FVector::ZeroVector;
+		for (const FFramedPoint& Subject : Subjects)
 		{
-			Bounds += Point;
+			Center += Subject.Location;
 		}
+		Center /= static_cast<float>(Subjects.Num());
 
-		const FVector Center = Bounds.GetCenter();
 		FVector ToCenter = Center - GetActorLocation();
-		// Keep vertical bias mild so look pitch stays comfortable.
-		ToCenter.Z *= 0.35f;
+		ToCenter.Z *= 0.45f;
 		DesiredTargetOffset = ToCenter;
 
-		const FVector Extent = Bounds.GetExtent();
-		const float PlanarRadius = FMath::Max(Extent.Size2D(), 50.f) + FramingPadding;
-
-		float VerticalFovDeg = 90.f;
-		if (FollowCamera)
+		FRotator ViewRot = GetControlRotation();
+		if (const APlayerController* PC = Cast<APlayerController>(GetController()))
 		{
-			VerticalFovDeg = FollowCamera->FieldOfView;
+			ViewRot = PC->GetControlRotation();
 		}
-		const float HalfFovRad = FMath::DegreesToRadians(FMath::Clamp(VerticalFovDeg, 40.f, 120.f) * 0.5f);
-		const float FitDistance = PlanarRadius / FMath::Max(FMath::Tan(HalfFovRad), 0.1f);
+		const FRotationMatrix ViewMatrix(ViewRot);
+		const FVector CamRight = ViewMatrix.GetUnitAxis(EAxis::Y);
+		const FVector CamUp = ViewMatrix.GetUnitAxis(EAxis::Z);
 
-		DesiredArmLength = FMath::Clamp(FitDistance, FramingMinArmLength, FramingMaxArmLength);
+		float MaxRight = 0.f;
+		float MaxUp = 0.f;
+		for (const FFramedPoint& Subject : Subjects)
+		{
+			const FVector Delta = Subject.Location - Center;
+			MaxRight = FMath::Max(MaxRight, FMath::Abs(FVector::DotProduct(Delta, CamRight)) + 45.f);
+			MaxUp = FMath::Max(
+				MaxUp,
+				FMath::Abs(FVector::DotProduct(Delta, CamUp)) + Subject.CapsuleHalfHeight);
+		}
+
+		MaxRight += FramingPadding;
+		MaxUp += FramingPadding * 0.65f;
+
+		float VerticalFovDeg = FollowCamera ? FollowCamera->FieldOfView : 90.f;
+		VerticalFovDeg = FMath::Clamp(VerticalFovDeg, 40.f, 120.f);
+		const float HalfVFovRad = FMath::DegreesToRadians(VerticalFovDeg * 0.5f);
+		const float HalfHFovRad = FMath::Atan(FMath::Tan(HalfVFovRad) * FramingAspectRatio);
+
+		const float DistForWidth = MaxRight / FMath::Max(FMath::Tan(HalfHFovRad), 0.05f);
+		const float DistForHeight = MaxUp / FMath::Max(FMath::Tan(HalfVFovRad), 0.05f);
+		DesiredArmLength = FMath::Clamp(
+			FMath::Max(DistForWidth, DistForHeight),
+			FramingMinArmLength,
+			FramingMaxArmLength);
 	}
 
 	CameraBoom->TargetOffset = FMath::VInterpTo(
-		CameraBoom->TargetOffset, DesiredTargetOffset, DeltaTime, FramingInterpSpeed);
+		CameraBoom->TargetOffset, DesiredTargetOffset, DeltaTime, FramingOffsetInterpSpeed);
+
+	const float ArmInterpSpeed = (DesiredArmLength > CameraBoom->TargetArmLength)
+		? FramingZoomOutSpeed
+		: FramingZoomInSpeed;
 	CameraBoom->TargetArmLength = FMath::FInterpTo(
-		CameraBoom->TargetArmLength, DesiredArmLength, DeltaTime, FramingInterpSpeed);
+		CameraBoom->TargetArmLength, DesiredArmLength, DeltaTime, ArmInterpSpeed);
 }
 
 void ASolidCore1Character::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

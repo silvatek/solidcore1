@@ -1,17 +1,19 @@
 #include "SolidCore1HUD.h"
 #include "SolidCore1BuildId.h"
+#include "SolidCore1Character.h"
 #include "Companion/SolidCore1CompanionCharacter.h"
 #include "Terrain/SolidCore1TerrainStreamer.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
+#include "GameFramework/SpringArmComponent.h"
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
+#include "Engine/SkeletalMesh.h"
 #include "EngineUtils.h"
-#include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/Pawn.h"
 #include "Materials/MaterialInterface.h"
-#include "Engine/SkeletalMesh.h"
 
 namespace SolidCore1HUDPrivate
 {
@@ -147,8 +149,27 @@ void ASolidCore1HUD::DrawHUD()
 	{
 		const FRotator CamRot = CamMgr->GetCameraRotation();
 		const FVector CamLoc = CamMgr->GetCameraLocation();
-		Lines.Add(FString::Printf(
-			TEXT("Cam pitch=%+.1f  Z=%.0f"), CamRot.Pitch, CamLoc.Z));
+		float ArmLen = -1.f;
+		if (const ACharacter* Character = Cast<ACharacter>(Pawn))
+		{
+			if (const ASolidCore1Character* SolidCharacter = Cast<ASolidCore1Character>(Character))
+			{
+				if (const USpringArmComponent* Boom = SolidCharacter->GetCameraBoom())
+				{
+					ArmLen = Boom->TargetArmLength;
+				}
+			}
+		}
+		if (ArmLen >= 0.f)
+		{
+			Lines.Add(FString::Printf(
+				TEXT("Cam pitch=%+.1f  Z=%.0f  arm=%.0f"), CamRot.Pitch, CamLoc.Z, ArmLen));
+		}
+		else
+		{
+			Lines.Add(FString::Printf(
+				TEXT("Cam pitch=%+.1f  Z=%.0f"), CamRot.Pitch, CamLoc.Z));
+		}
 	}
 
 	{

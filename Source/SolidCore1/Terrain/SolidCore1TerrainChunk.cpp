@@ -35,7 +35,8 @@ ASolidCore1TerrainChunk::ASolidCore1TerrainChunk()
 	MeshComponent->SetHiddenInGame(false);
 	MeshComponent->SetMobility(EComponentMobility::Movable);
 	MeshComponent->bUseAsOccluder = false;
-	MeshComponent->bTreatAsBackgroundForOcclusion = true;
+	// SC1-0016: background-for-occlusion can ghost distant strips; keep normal occlusion.
+	MeshComponent->bTreatAsBackgroundForOcclusion = false;
 	MeshComponent->LDMaxDrawDistance = 0.f;
 	MeshComponent->bAllowCullDistanceVolume = false;
 	MeshComponent->SetCanEverAffectNavigation(false);
@@ -266,7 +267,7 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	MeshComponent->SetVisibility(true);
 	MeshComponent->SetHiddenInGame(false);
 	MeshComponent->bUseAsOccluder = false;
-	MeshComponent->bTreatAsBackgroundForOcclusion = true;
+	MeshComponent->bTreatAsBackgroundForOcclusion = false;
 	MeshComponent->UpdateBounds();
 	MeshComponent->MarkRenderStateDirty();
 	MeshComponent->RecreatePhysicsState();

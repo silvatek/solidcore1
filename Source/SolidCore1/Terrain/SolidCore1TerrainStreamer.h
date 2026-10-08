@@ -95,8 +95,7 @@ protected:
 	UMaterialInterface* ResolveMaterial() const;
 	float SampleHeightAtWorld(const FVector& WorldLocation) const;
 	void TrySnapFocusToTerrain(AActor* Focus);
-	/** Destroy Open World landscape proxies (re-checked each stream tick for WP streaming). */
-	void DisableLandscapeActors();
+	void DisableLandscapeActorsOnce();
 
 	UPROPERTY()
 	TMap<FIntPoint, TObjectPtr<ASolidCore1TerrainChunk>> LoadedChunks;
@@ -106,4 +105,5 @@ protected:
 	TObjectPtr<UMaterialInterface> ResolvedTerrainMaterial;
 
 	float TimeSinceUpdate = 0.f;
+	bool bDidDisableLandscape = false;
 };

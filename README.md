@@ -69,6 +69,20 @@ cd /d C:\Users\staz6\Dev\solidcore1
 
 Or right-click `SolidCore1.uproject` → **Generate Visual Studio project files**, open the `.sln`, then build **Development Editor | Win64**.
 
+## Runtime procedural terrain chunks
+
+C++ generates walkable terrain around the player at runtime:
+
+- `ASolidCore1TerrainChunk` — `UProceduralMeshComponent` from seeded fBm noise (seamless across chunk edges)
+- `ASolidCore1TerrainStreamer` — loads/unloads a Chebyshev radius of chunks around the pawn
+- `ASolidCore1GameMode` auto-spawns the streamer on BeginPlay (`bAutoSpawnTerrainStreamer`)
+
+Defaults: 64 m chunks (`ChunkWorldSize=6400`), 32 quads/side, radius 2 (5×5 chunks). Tunable on the streamer actor.
+
+On first stream, the pawn is snapped onto the procedural height so you are not stuck on the empty Open World landscape. For a cleaner look, hide or remove the default landscape (or disable its collision) in `L_OpenWorld`.
+
+Requires the **ProceduralMeshComponent** plugin (enabled in `SolidCore1.uproject`).
+
 ## Create the open-world map
 
 Binary `.umap` assets are created in the Editor (not checked in as source):
@@ -90,7 +104,7 @@ World Partition and Large Worlds are enabled in project config for open-world sc
 ```
 SolidCore1.uproject
 Config/
-Content/Maps/          # create L_OpenWorld here in Editor
+Content/Maps/          # L_OpenWorld (+ World Partition externals)
 Source/
   SolidCore1.Target.cs
   SolidCore1Editor.Target.cs
@@ -99,6 +113,10 @@ Source/
     SolidCore1Character.*
     SolidCore1GameMode.*
     SolidCore1PlayerController.*
+    Terrain/
+      SolidCore1TerrainNoise.h
+      SolidCore1TerrainChunk.*
+      SolidCore1TerrainStreamer.*
 ```
 
 ## Requirements

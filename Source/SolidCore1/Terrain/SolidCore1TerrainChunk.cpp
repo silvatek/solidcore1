@@ -1,14 +1,14 @@
 #include "SolidCore1TerrainChunk.h"
+#include "SolidCore1TerrainMeshComponent.h"
 #include "SolidCore1TerrainNoise.h"
 #include "Engine/CollisionProfile.h"
 #include "Materials/MaterialInterface.h"
-#include "ProceduralMeshComponent.h"
 
 ASolidCore1TerrainChunk::ASolidCore1TerrainChunk()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	ProceduralMesh = CreateDefaultSubobject<UProceduralMeshComponent>(TEXT("ProceduralMesh"));
+	ProceduralMesh = CreateDefaultSubobject<USolidCore1TerrainMeshComponent>(TEXT("ProceduralMesh"));
 	SetRootComponent(ProceduralMesh);
 
 	ProceduralMesh->bUseAsyncCooking = false;
@@ -29,6 +29,11 @@ ASolidCore1TerrainChunk::ASolidCore1TerrainChunk()
 	ProceduralMesh->bTreatAsBackgroundForOcclusion = true;
 	ProceduralMesh->LDMaxDrawDistance = 0.f;
 	ProceduralMesh->bAllowCullDistanceVolume = false;
+}
+
+FBoxSphereBounds ASolidCore1TerrainChunk::GetMeshBounds() const
+{
+	return ProceduralMesh ? ProceduralMesh->Bounds : FBoxSphereBounds(ForceInit);
 }
 
 void ASolidCore1TerrainChunk::BuildChunk(
@@ -144,8 +149,6 @@ void ASolidCore1TerrainChunk::BuildChunk(
 		}
 	}
 
-	// SC1-0004: remove underside section. SC1-0003 still showed sky ribbons with WorldGrid;
-	// underside is the prime suspect. Top faces only for this build.
 	ProceduralMesh->ClearAllMeshSections();
 	ProceduralMesh->bUseComplexAsSimpleCollision = true;
 	ProceduralMesh->CreateMeshSection_LinearColor(
@@ -156,17 +159,12 @@ void ASolidCore1TerrainChunk::BuildChunk(
 		ProceduralMesh->SetMaterial(0, Material);
 	}
 
-	// Pad section local boxes only — do NOT assign a local FBox to Bounds (that culled off-origin chunks).
-	const FBox PaddedLocalBox(
-		FVector(-100.f, -100.f, MinZ - 500.f),
-		FVector(InChunkWorldSize + 100.f, InChunkWorldSize + 100.f, MaxZ + 500.f));
-	if (FProcMeshSection* Section = ProceduralMesh->GetProcMeshSection(0))
-	{
-		Section->SectionLocalBox = PaddedLocalBox;
-	}
-	ProceduralMesh->SetBoundsScale(1.25f);
-	ProceduralMesh->UpdateBounds();
-	ProceduralMesh->MarkRenderStateDirty();
+	// SC1-0005: force local bounds through CalcBounds (transform to world). Never write a local
+	// box into Bounds directly — that previously culled off-origin chunks (fa926c2).
+	const FBox ForcedLocalBox(
+		FVector(-200.f, -200.f, MinZ - 1000.f),
+		FVector(InChunkWorldSize + 200.f, InChunkWorldSize + 200.f, MaxZ + 1000.f));
+	ProceduralMesh->SetForcedLocalBounds(ForcedLocalBox);
 	ProceduralMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	ProceduralMesh->SetCollisionResponseToAllChannels(ECR_Block);
 	ProceduralMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);

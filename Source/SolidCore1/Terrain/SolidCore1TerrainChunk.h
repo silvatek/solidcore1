@@ -4,7 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "SolidCore1TerrainChunk.generated.h"
 
-class UProceduralMeshComponent;
+class USolidCore1TerrainMeshComponent;
 class UMaterialInterface;
 
 UCLASS()
@@ -28,9 +28,12 @@ public:
 
 	FIntPoint GetChunkCoord() const { return ChunkCoord; }
 
+	/** World-space render bounds after last BuildChunk (for HUD). */
+	FBoxSphereBounds GetMeshBounds() const;
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terrain")
-	TObjectPtr<UProceduralMeshComponent> ProceduralMesh;
+	TObjectPtr<USolidCore1TerrainMeshComponent> ProceduralMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terrain")
 	FIntPoint ChunkCoord = FIntPoint::ZeroValue;

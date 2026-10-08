@@ -49,11 +49,31 @@ protected:
 	/** Applies MeshGroundZOffset while preserving BP yaw/pitch/roll. */
 	void ApplyMeshGroundOffset();
 
+	/** Pull the boom toward the group center and lengthen it so companions stay framed. */
+	void UpdateGroupCameraFraming(float DeltaTime);
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USpringArmComponent> CameraBoom;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> FollowCamera;
+
+	/** When true, camera frames this pawn plus all SolidCore1 companions. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing")
+	bool bFrameCompanions = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "200.0"))
+	float FramingMinArmLength = 400.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "400.0"))
+	float FramingMaxArmLength = 1400.f;
+
+	/** Extra world centimeters added outside the group bounds. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "0.0"))
+	float FramingPadding = 220.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "0.1"))
+	float FramingInterpSpeed = 5.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputMappingContext> DefaultMappingContext;

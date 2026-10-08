@@ -19,7 +19,9 @@
 #include "InputModifiers.h"
 #include "Modules/ModuleManager.h"
 #include "SolidCore1.h"
+#include "Companion/SolidCore1CompanionCharacter.h"
 #include "Terrain/SolidCore1TerrainStreamer.h"
+#include "EngineUtils.h"
 #include "UObject/SoftObjectPath.h"
 
 namespace SolidCore1Input

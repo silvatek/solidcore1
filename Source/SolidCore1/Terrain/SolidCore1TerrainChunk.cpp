@@ -151,12 +151,8 @@ void ASolidCore1TerrainChunk::BuildChunk(
 		ProceduralMesh->SetMaterial(0, Material);
 	}
 
-	// Explicit bounds so chunks aren't frustum-culled when the camera is close / above them.
-	const FBox LocalBox(
-		FVector(0.f, 0.f, MinZ - 100.f),
-		FVector(InChunkWorldSize, InChunkWorldSize, MaxZ + 100.f));
-	ProceduralMesh->SetBoundsScale(1.f);
-	ProceduralMesh->Bounds = FBoxSphereBounds(LocalBox);
+	// CreateMeshSection already builds local bounds; UpdateBounds() maps them to world.
+	// Do NOT assign local boxes to Bounds (that field is world-space) or off-origin chunks cull away.
 	ProceduralMesh->UpdateBounds();
 	ProceduralMesh->MarkRenderStateDirty();
 
@@ -169,8 +165,8 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	ProceduralMesh->RecreatePhysicsState();
 
 	UE_LOG(LogTemp, Warning,
-		TEXT("[SolidCore1] Chunk (%d,%d) verts=%d Z=[%.0f,%.0f] bounds=%s material=%s"),
-		InChunkCoord.X, InChunkCoord.Y, Vertices.Num(), MinZ, MaxZ,
+		TEXT("[SolidCore1] Chunk (%d,%d) actor=(%.0f,%.0f) verts=%d Z=[%.0f,%.0f] worldBounds=%s material=%s"),
+		InChunkCoord.X, InChunkCoord.Y, OriginX, OriginY, Vertices.Num(), MinZ, MaxZ,
 		*ProceduralMesh->Bounds.ToString(),
 		Material ? *Material->GetName() : TEXT("<null>"));
 }

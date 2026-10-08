@@ -143,4 +143,7 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	ProceduralMesh->SetCollisionResponseToAllChannels(ECR_Block);
 	ProceduralMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 	ProceduralMesh->RecreatePhysicsState();
+
+	// Static after positioning: avoids Movable "movement base" paths (GetMovementBase deprecation spam).
+	ProceduralMesh->SetMobility(EComponentMobility::Static);
 }

@@ -267,14 +267,11 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	MeshComponent->SetHiddenInGame(false);
 	MeshComponent->bUseAsOccluder = false;
 	MeshComponent->bTreatAsBackgroundForOcclusion = true;
-	// SC1-0017: force LOD0 — horizon slivers may be a degenerate auto-generated LOD.
-	MeshComponent->SetForcedLodModel(1);
 	MeshComponent->UpdateBounds();
 	MeshComponent->MarkRenderStateDirty();
 	MeshComponent->RecreatePhysicsState();
 
 	const int32 RenderTris = RuntimeStaticMesh->GetNumTriangles(0);
-	const int32 NumLODs = RuntimeStaticMesh->GetNumLODs();
 	int32 SimpleCollisionElems = 0;
 	ECollisionTraceFlag TraceFlag = CTF_UseDefault;
 	if (const UBodySetup* BodySetup = RuntimeStaticMesh->GetBodySetup())
@@ -284,8 +281,8 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	}
 
 	UE_LOG(LogTemp, Warning,
-		TEXT("[SolidCore1] StaticMesh chunk (%d,%d) built=%d renderTris=%d lods=%d simpleCols=%d traceFlag=%d actor=(%.0f,%.0f) Z=[%.0f,%.0f] worldBounds=%s material=%s"),
-		InChunkCoord.X, InChunkCoord.Y, bBuilt ? 1 : 0, RenderTris, NumLODs, SimpleCollisionElems,
+		TEXT("[SolidCore1] StaticMesh chunk (%d,%d) built=%d renderTris=%d simpleCols=%d traceFlag=%d actor=(%.0f,%.0f) Z=[%.0f,%.0f] worldBounds=%s material=%s"),
+		InChunkCoord.X, InChunkCoord.Y, bBuilt ? 1 : 0, RenderTris, SimpleCollisionElems,
 		static_cast<int32>(TraceFlag), OriginX, OriginY, MinZ, MaxZ,
 		*MeshComponent->Bounds.ToString(),
 		Material ? *Material->GetName() : TEXT("<null>"));

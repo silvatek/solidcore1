@@ -135,6 +135,7 @@ void ASolidCore1Character::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	UpdateGroupCameraFraming(DeltaTime);
+	ClampCameraAboveTerrain(DeltaTime);
 }
 
 void ASolidCore1Character::UpdateGroupCameraFraming(float DeltaTime)

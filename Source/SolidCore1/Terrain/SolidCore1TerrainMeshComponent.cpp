@@ -2,7 +2,7 @@
 
 void USolidCore1TerrainMeshComponent::SetForcedLocalBounds(const FBox& InLocalBox)
 {
-	bUseForcedLocalBounds = InLocalBox.IsValid;
+	bUseForcedLocalBounds = InLocalBox.IsValid != 0;
 	ForcedLocalBounds = InLocalBox;
 	UpdateBounds();
 	MarkRenderStateDirty();

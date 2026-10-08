@@ -10,7 +10,6 @@
 #include "GameFramework/PlayerController.h"
 #include "Components/CapsuleComponent.h"
 #include "Materials/Material.h"
-#include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
 #include "UObject/UObjectGlobals.h"
@@ -20,26 +19,13 @@ ASolidCore1TerrainStreamer::ASolidCore1TerrainStreamer()
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
 
-	// History notes (do not reintroduce without a new root cause):
-	// - VertexColorViewModeMaterial_ColorOnly → continuous hills but nearly black in PIE
-	// - WorldGrid alone + no underside → near ground vanished; horizon ribbons
-	// - Coplanar double-sided tris → floating z-fight ribbon
-	// - Assigning a local FBox to Bounds → off-origin chunks culled
-	// Prefer lit BasicShape (green MID); WorldGrid only as fallback parent.
-	static ConstructorHelpers::FObjectFinder<UMaterial> BasicMat(
-		TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
-	if (BasicMat.Succeeded())
+	// SC1-0002 HUD: mesh + standing OK, but MID_BasicShapeMaterial shaded black.
+	// One change: use WorldGrid directly (no MID) — known-visible albedo on this mesh.
+	static ConstructorHelpers::FObjectFinder<UMaterial> GridMat(
+		TEXT("/Engine/EngineMaterials/WorldGridMaterial.WorldGridMaterial"));
+	if (GridMat.Succeeded())
 	{
-		TerrainMaterial = BasicMat.Object;
-	}
-	else
-	{
-		static ConstructorHelpers::FObjectFinder<UMaterial> GridMat(
-			TEXT("/Engine/EngineMaterials/WorldGridMaterial.WorldGridMaterial"));
-		if (GridMat.Succeeded())
-		{
-			TerrainMaterial = GridMat.Object;
-		}
+		TerrainMaterial = GridMat.Object;
 	}
 }
 
@@ -132,25 +118,10 @@ UMaterialInterface* ASolidCore1TerrainStreamer::ResolveMaterial() const
 		return ResolvedTerrainMaterial;
 	}
 
-	UMaterialInterface* Parent = TerrainMaterial;
-	if (!Parent)
-	{
-		return nullptr;
-	}
-
-	// Non-const create: cache a single green MID for all chunks.
+	// Use the parent material as-is (no MID). BasicShape MID was shading black in SC1-0002.
 	ASolidCore1TerrainStreamer* MutableThis = const_cast<ASolidCore1TerrainStreamer*>(this);
-	if (UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Parent, MutableThis))
-	{
-		const FLinearColor Grass(0.28f, 0.48f, 0.18f, 1.f);
-		MID->SetVectorParameterValue(TEXT("Color"), Grass);
-		MID->SetVectorParameterValue(TEXT("BaseColor"), Grass);
-		MID->SetVectorParameterValue(TEXT("Base Color"), Grass);
-		MutableThis->ResolvedTerrainMaterial = MID;
-		return ResolvedTerrainMaterial;
-	}
-
-	return Parent;
+	MutableThis->ResolvedTerrainMaterial = TerrainMaterial;
+	return ResolvedTerrainMaterial;
 }
 
 float ASolidCore1TerrainStreamer::SampleHeightAtWorld(const FVector& WorldLocation) const

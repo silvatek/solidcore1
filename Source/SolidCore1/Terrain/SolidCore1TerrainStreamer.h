@@ -64,7 +64,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.0"))
 	float CollisionHeightBias = 0.f;
 
-	/** Optional material override. If null, a green BasicShape MID is created at runtime. */
+	/** Optional material override. Defaults to WorldGridMaterial. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	TObjectPtr<UMaterialInterface> TerrainMaterial;
 

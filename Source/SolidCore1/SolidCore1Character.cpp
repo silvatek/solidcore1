@@ -193,7 +193,7 @@ void ASolidCore1Character::UpdateGroupCameraFraming(float DeltaTime)
 	}
 
 	FVector DesiredTargetOffset = FVector::ZeroVector;
-	float DesiredArmLength = FramingMinArmLength;
+	float FramingFitArm = 0.f;
 
 	if (bHasCompanions)
 	{
@@ -238,11 +238,17 @@ void ASolidCore1Character::UpdateGroupCameraFraming(float DeltaTime)
 
 		const float DistForWidth = MaxRight / FMath::Max(FMath::Tan(HalfHFovRad), 0.05f);
 		const float DistForHeight = MaxUp / FMath::Max(FMath::Tan(HalfVFovRad), 0.05f);
-		DesiredArmLength = FMath::Clamp(
+		FramingFitArm = FMath::Clamp(
 			FMath::Max(DistForWidth, DistForHeight),
 			FramingMinArmLength,
 			FramingMaxArmLength);
 	}
+
+	// Wheel zoom sets UserZoomArmLength; companion framing may only pull farther out.
+	const float DesiredArmLength = FMath::Clamp(
+		bHasCompanions ? FMath::Max(UserZoomArmLength, FramingFitArm) : UserZoomArmLength,
+		CameraZoomMin,
+		CameraZoomMax);
 
 	CameraBoom->TargetOffset = FMath::VInterpTo(
 		CameraBoom->TargetOffset, DesiredTargetOffset, DeltaTime, FramingOffsetInterpSpeed);
@@ -331,6 +337,11 @@ void ASolidCore1Character::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ASolidCore1Character::StartSprint);
 			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ASolidCore1Character::StopSprint);
 		}
+
+		if (ZoomAction)
+		{
+			EnhancedInputComponent->BindAction(ZoomAction, ETriggerEvent::Triggered, this, &ASolidCore1Character::Zoom);
+		}
 	}
 	else
 	{
@@ -367,6 +378,21 @@ void ASolidCore1Character::Look(const FInputActionValue& Value)
 	}
 }
 
+void ASolidCore1Character::Zoom(const FInputActionValue& Value)
+{
+	const float Axis = Value.Get<float>();
+	if (FMath::IsNearlyZero(Axis))
+	{
+		return;
+	}
+
+	// Scroll up (positive) zooms in → shorter arm.
+	UserZoomArmLength = FMath::Clamp(
+		UserZoomArmLength - Axis * CameraZoomStep,
+		CameraZoomMin,
+		CameraZoomMax);
+}
+
 void ASolidCore1Character::StartSprint()
 {
 	bIsSprinting = true;
@@ -397,6 +423,10 @@ void ASolidCore1Character::AddMappingContext()
 			if (DefaultMappingContext)
 			{
 				Subsystem->AddMappingContext(DefaultMappingContext, 0);
+			}
+			if (ZoomMappingContext)
+			{
+				Subsystem->AddMappingContext(ZoomMappingContext, 1);
 			}
 		}
 	}
@@ -630,11 +660,6 @@ void ASolidCore1Character::ApplyCharacterVisuals()
 
 void ASolidCore1Character::EnsureRuntimeInputAssets()
 {
-	if (MoveAction && LookAction && JumpAction && SprintAction && DefaultMappingContext)
-	{
-		return;
-	}
-
 	if (!MoveAction)
 	{
 		MoveAction = NewObject<UInputAction>(this, TEXT("IA_Move"), RF_Transient);
@@ -657,6 +682,12 @@ void ASolidCore1Character::EnsureRuntimeInputAssets()
 	{
 		SprintAction = NewObject<UInputAction>(this, TEXT("IA_Sprint"), RF_Transient);
 		SprintAction->ValueType = EInputActionValueType::Boolean;
+	}
+
+	if (!ZoomAction)
+	{
+		ZoomAction = NewObject<UInputAction>(this, TEXT("IA_Zoom"), RF_Transient);
+		ZoomAction->ValueType = EInputActionValueType::Axis1D;
 	}
 
 	if (!DefaultMappingContext)
@@ -707,5 +738,11 @@ void ASolidCore1Character::EnsureRuntimeInputAssets()
 
 		DefaultMappingContext->MapKey(SprintAction, EKeys::LeftShift);
 		DefaultMappingContext->MapKey(SprintAction, EKeys::Gamepad_LeftThumbstick);
+	}
+
+	if (!ZoomMappingContext && ZoomAction)
+	{
+		ZoomMappingContext = NewObject<UInputMappingContext>(this, TEXT("IMC_Zoom"), RF_Transient);
+		ZoomMappingContext->MapKey(ZoomAction, EKeys::MouseWheelAxis);
 	}
 }

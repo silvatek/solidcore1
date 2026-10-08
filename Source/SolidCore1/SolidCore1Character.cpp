@@ -315,11 +315,11 @@ static UClass* FindMannequinAnimClassByRegistry()
 			continue;
 		}
 
-		if (Name.Contains(TEXT("Manny"), ESearchCase::IgnoreCase) && !Ranked[0])
+		if (Name.Contains(TEXT("Unarmed"), ESearchCase::IgnoreCase) && !Ranked[0])
 		{
 			Ranked[0] = AnimClass;
 		}
-		else if (Name.Contains(TEXT("Quinn"), ESearchCase::IgnoreCase) && !Ranked[1])
+		else if (Name.Contains(TEXT("Manny"), ESearchCase::IgnoreCase) && !Ranked[1])
 		{
 			Ranked[1] = AnimClass;
 		}
@@ -404,9 +404,10 @@ void ASolidCore1Character::ApplyCharacterVisuals()
 		if (!AnimClass)
 		{
 			static const TCHAR* AnimFallbacks[] = {
+				TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.ABP_Unarmed_C"),
+				TEXT("/Game/Characters/Mannequins/Animations/ABP_Unarmed.ABP_Unarmed_C"),
 				TEXT("/Game/Characters/Mannequins/Animations/ABP_Manny.ABP_Manny_C"),
 				TEXT("/Game/Characters/Mannequins/Animations/ABP_Quinn.ABP_Quinn_C"),
-				TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.ABP_Unarmed_C"),
 			};
 
 			for (const TCHAR* Path : AnimFallbacks)

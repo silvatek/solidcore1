@@ -25,6 +25,15 @@ public:
 	/** Spawn a streamer if the world does not already have one. Safe to call often. */
 	static ASolidCore1TerrainStreamer* EnsureExists(UWorld* World);
 
+	/** Read-only helpers for the debug HUD (no streaming side effects). */
+	int32 GetLoadedChunkCount() const { return LoadedChunks.Num(); }
+	float GetHeightAt(const FVector& WorldLocation) const { return SampleHeightAtWorld(WorldLocation); }
+	FIntPoint GetChunkCoordAt(const FVector& WorldLocation) const { return WorldToChunkCoord(WorldLocation); }
+	UMaterialInterface* GetActiveMaterial() const
+	{
+		return ResolvedTerrainMaterial ? ResolvedTerrainMaterial.Get() : TerrainMaterial.Get();
+	}
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "500.0"))
 	float ChunkWorldSize = 6400.f;
 

@@ -25,7 +25,7 @@ Input Actions / Mapping Context can be replaced with Content assets on the chara
 
 ## Build ID (HUD)
 
-PIE shows a top-left debug HUD (`Build SC1-NNNN`, pawn/terrain Z, chunk load, material, camera pitch). The build string lives in `Source/SolidCore1/SolidCore1BuildId.h` (`SOLIDCORE1_BUILD_ID`) and is bumped on every GitHub push so screenshots identify which binary you ran.
+PIE shows a top-left debug HUD (`Build SC1-NNNN`, a one-line `Change:` note, pawn/terrain Z, chunk load, material, camera pitch). Both strings live in `Source/SolidCore1/SolidCore1BuildId.h` (`SOLIDCORE1_BUILD_ID` / `SOLIDCORE1_BUILD_NOTE`) and are bumped on every GitHub push so screenshots identify which binary you ran.
 
 ## Visible mannequin (mesh + anim)
 
@@ -83,7 +83,7 @@ C++ generates walkable terrain around the player at runtime:
 
 Defaults: 64 m chunks (`ChunkWorldSize=6400`), 32 quads/side, radius 2 (5×5 chunks), `Amplitude=3000`. Tunable on the streamer actor. Chunks use `WorldGridMaterial`.
 
-On first stream, the pawn is snapped onto the procedural height so you are not stuck on the empty Open World landscape. Landscape actors are hidden/collision-disabled automatically. Chunks block the Camera channel and use complex-as-simple collision on the runtime static mesh.
+Default map is `/Game/ThirdPerson/Lvl_ThirdPerson` (SC1-0022) so Open World Landscape/HLOD outer hills are not in the scene. `L_OpenWorld` remains for comparison. On first stream, the pawn is snapped onto the procedural height. If a Landscape is present, actors are hidden/collision-disabled once. Chunks block the Camera channel and use complex-as-simple collision on the runtime static mesh.
 
 SC1-0007 drops `UProceduralMeshComponent` after persistent ribbon/culling failures with that path.
 
@@ -95,7 +95,7 @@ Binary `.umap` assets are created in the Editor (not checked in as source):
 2. Save as `Content/Maps/L_OpenWorld`.
 3. Place a **Player Start** near the origin (or on the landscape).
 4. Confirm **Project Settings → Maps & Modes**:
-   - Editor Startup Map / Game Default Map → `/Game/Maps/L_OpenWorld`
+   - Editor Startup Map / Game Default Map → `/Game/ThirdPerson/Lvl_ThirdPerson` (horizon test; Open World map still available)
    - Default GameMode → `SolidCore1GameMode`
 5. **Play** (PIE).
 

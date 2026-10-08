@@ -41,9 +41,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "4", ClampMax = "128"))
 	int32 QuadsPerSide = 32;
 
-	/** Chebyshev radius in chunks around the focus (0 => 1 chunk, 4 => 9x9). */
+	/** Chebyshev radius in chunks around the focus (0 => 1 chunk, 2 => 5x5). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0", ClampMax = "12"))
-	int32 ViewRadiusChunks = 4;
+	int32 ViewRadiusChunks = 2;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	int32 Seed = 1337;

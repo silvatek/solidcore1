@@ -204,42 +204,7 @@ void ASolidCore1TerrainChunk::BuildChunk(
 		MeshDescription.CreatePolygon(PolygonGroupID, InstanceIDs);
 	}
 
-	// SC1-0019: biased underside. User layering (ground → blue band → clouds → gappy hills)
-	// matches missing mid-slope faces (sky showing through) with ridge lines still drawing.
-	// 0012 tried this earlier but may have been masked by other bugs; retry with current mesh path.
-	constexpr float UndersideBiasCm = 5.f;
-	TArray<FVertexID> BottomVertexIDs;
-	BottomVertexIDs.Reserve(Positions.Num());
-	for (const FVector& Position : Positions)
-	{
-		const FVertexID VertexID = MeshDescription.CreateVertex();
-		VertexPositions[VertexID] = FVector3f(Position.X, Position.Y, Position.Z - UndersideBiasCm);
-		BottomVertexIDs.Add(VertexID);
-	}
-
-	for (int32 TriIndex = 0; TriIndex < TriCount; ++TriIndex)
-	{
-		// Opposite winding to the top faces (which use I0,I1,I2 from Triangles).
-		const int32 I0 = Triangles[TriIndex * 3 + 0];
-		const int32 I1 = Triangles[TriIndex * 3 + 2];
-		const int32 I2 = Triangles[TriIndex * 3 + 1];
-
-		TArray<FVertexInstanceID, TInlineAllocator<3>> InstanceIDs;
-		const int32 CornerIndices[3] = { I0, I1, I2 };
-		for (int32 Corner = 0; Corner < 3; ++Corner)
-		{
-			const int32 VertIndex = CornerIndices[Corner];
-			const FVertexInstanceID InstanceID = MeshDescription.CreateVertexInstance(BottomVertexIDs[VertIndex]);
-			InstanceNormals[InstanceID] = FVector3f(-Normals[VertIndex]);
-			InstanceTangents[InstanceID] = FVector3f(Tangents[VertIndex]);
-			InstanceBinormalSigns[InstanceID] = -1.f;
-			InstanceUVs.Set(InstanceID, 0, FVector2f(UVs[VertIndex]));
-			InstanceColors[InstanceID] = FVector4f(Colors[VertIndex]);
-			InstanceIDs.Add(InstanceID);
-		}
-
-		MeshDescription.CreatePolygon(PolygonGroupID, InstanceIDs);
-	}
+	// SC1-0019 underside did not remove horizon shards — reverted.
 
 	RuntimeStaticMesh = NewObject<UStaticMesh>(this, NAME_None, RF_Transient);
 	RuntimeStaticMesh->bAllowCPUAccess = true;

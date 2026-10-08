@@ -8,10 +8,10 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "Components/CapsuleComponent.h"
-#include "Landscape.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
+#include "UObject/UObjectGlobals.h"
 
 ASolidCore1TerrainStreamer::ASolidCore1TerrainStreamer()
 {
@@ -132,9 +132,25 @@ void ASolidCore1TerrainStreamer::DisableLandscapeActorsOnce()
 		return;
 	}
 
+	// Resolve by name so we don't link the Landscape module / deprecated edit-layer APIs.
+	UClass* LandscapeClass = FindObject<UClass>(nullptr, TEXT("/Script/Landscape.Landscape"));
+	UClass* LandscapeProxyClass = FindObject<UClass>(nullptr, TEXT("/Script/Landscape.LandscapeProxy"));
+	UClass* StreamingProxyClass = FindObject<UClass>(nullptr, TEXT("/Script/Landscape.LandscapeStreamingProxy"));
+
 	int32 Count = 0;
-	for (TActorIterator<ALandscape> It(World); It; ++It)
+	for (TActorIterator<AActor> It(World); It; ++It)
 	{
+		UClass* ActorClass = It->GetClass();
+		const bool bIsLandscape =
+			(LandscapeClass && ActorClass->IsChildOf(LandscapeClass)) ||
+			(LandscapeProxyClass && ActorClass->IsChildOf(LandscapeProxyClass)) ||
+			(StreamingProxyClass && ActorClass->IsChildOf(StreamingProxyClass));
+
+		if (!bIsLandscape)
+		{
+			continue;
+		}
+
 		It->SetActorHiddenInGame(true);
 		It->SetActorEnableCollision(false);
 		++Count;

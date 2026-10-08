@@ -95,7 +95,7 @@ protected:
 	UMaterialInterface* ResolveMaterial() const;
 	float SampleHeightAtWorld(const FVector& WorldLocation) const;
 	void TrySnapFocusToTerrain(AActor* Focus);
-	/** Hide landscape proxies every stream tick — World Partition can stream new ones in later. */
+	/** Destroy Open World landscape proxies (re-checked each stream tick for WP streaming). */
 	void DisableLandscapeActors();
 
 	UPROPERTY()

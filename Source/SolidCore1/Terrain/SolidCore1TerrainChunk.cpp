@@ -207,9 +207,12 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	RuntimeStaticMesh = NewObject<UStaticMesh>(this, NAME_None, RF_Transient);
 	RuntimeStaticMesh->bAllowCPUAccess = true;
 	RuntimeStaticMesh->NeverStream = true;
-	// Open World projects default Nanite on; runtime meshes with Nanite enabled but no valid
-	// Nanite build often collide yet draw as invisible (blue fog). Force classic raster path.
-	RuntimeStaticMesh->NaniteSettings.bEnabled = false;
+	// Open World defaults Nanite on; runtime meshes then often collide without drawing.
+	{
+		FMeshNaniteSettings NaniteSettings = RuntimeStaticMesh->GetNaniteSettings();
+		NaniteSettings.bEnabled = false;
+		RuntimeStaticMesh->SetNaniteSettings(NaniteSettings);
+	}
 
 	FStaticMaterial StaticMaterial(Material, FName(TEXT("Terrain")), FName(TEXT("Terrain")));
 	RuntimeStaticMesh->SetStaticMaterials({ StaticMaterial });
@@ -232,7 +235,11 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	}
 
 	// Build can re-enable Nanite from project defaults — keep it off for runtime meshes.
-	RuntimeStaticMesh->NaniteSettings.bEnabled = false;
+	{
+		FMeshNaniteSettings NaniteSettings = RuntimeStaticMesh->GetNaniteSettings();
+		NaniteSettings.bEnabled = false;
+		RuntimeStaticMesh->SetNaniteSettings(NaniteSettings);
+	}
 
 	if (!RuntimeStaticMesh->GetBodySetup())
 	{

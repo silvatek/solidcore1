@@ -143,12 +143,13 @@ void ASolidCore1TerrainStreamer::DisableLandscapeActors()
 		return;
 	}
 
-	// Resolve by name so we don't link the Landscape module / deprecated edit-layer APIs.
-	UClass* LandscapeClass = FindObject<UClass>(nullptr, TEXT("/Script/Landscape.Landscape"));
-	UClass* LandscapeProxyClass = FindObject<UClass>(nullptr, TEXT("/Script/Landscape.LandscapeProxy"));
-	UClass* StreamingProxyClass = FindObject<UClass>(nullptr, TEXT("/Script/Landscape.LandscapeStreamingProxy"));
+	// SC1-0014 hide+FindObject did not clear horizon slivers — undo that approach.
+	// LoadClass (not FindObject) so types resolve, then Destroy (hide can leave WP LODs drawing).
+	UClass* LandscapeClass = StaticLoadClass(AActor::StaticClass(), nullptr, TEXT("/Script/Landscape.Landscape"));
+	UClass* LandscapeProxyClass = StaticLoadClass(AActor::StaticClass(), nullptr, TEXT("/Script/Landscape.LandscapeProxy"));
+	UClass* StreamingProxyClass = StaticLoadClass(AActor::StaticClass(), nullptr, TEXT("/Script/Landscape.LandscapeStreamingProxy"));
 
-	int32 Count = 0;
+	TArray<AActor*> ToDestroy;
 	for (TActorIterator<AActor> It(World); It; ++It)
 	{
 		UClass* ActorClass = It->GetClass();
@@ -157,24 +158,21 @@ void ASolidCore1TerrainStreamer::DisableLandscapeActors()
 			(LandscapeProxyClass && ActorClass->IsChildOf(LandscapeProxyClass)) ||
 			(StreamingProxyClass && ActorClass->IsChildOf(StreamingProxyClass));
 
-		if (!bIsLandscape)
+		if (bIsLandscape)
 		{
-			continue;
-		}
-
-		// Re-apply every stream tick: WP can stream in new LandscapeStreamingProxy actors later.
-		if (!It->IsHidden() || It->GetActorEnableCollision())
-		{
-			It->SetActorHiddenInGame(true);
-			It->SetActorEnableCollision(false);
-			++Count;
+			ToDestroy.Add(*It);
 		}
 	}
 
-	if (Count > 0)
+	for (AActor* LandscapeActor : ToDestroy)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Disabled %d Landscape actor(s) so pawn uses procedural terrain."), Count);
-		UE_LOG(LogSolidCore1, Warning, TEXT("Disabled %d Landscape actor(s) for procedural terrain."), Count);
+		LandscapeActor->Destroy();
+	}
+
+	if (ToDestroy.Num() > 0)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Destroyed %d Landscape actor(s) so pawn uses procedural terrain."), ToDestroy.Num());
+		UE_LOG(LogSolidCore1, Warning, TEXT("Destroyed %d Landscape actor(s) for procedural terrain."), ToDestroy.Num());
 	}
 }
 

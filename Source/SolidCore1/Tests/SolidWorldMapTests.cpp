@@ -47,6 +47,10 @@ bool FSolidWorldMapLoadDefaultTest::RunTest(const FString& Parameters)
 	const FLinearColor GrassColor = Map->GetBiomeColor(ESolidBiome::Grassland);
 	TestTrue(TEXT("grass color is greenish"), GrassColor.G > GrassColor.R && GrassColor.G > GrassColor.B);
 
+	const FLinearColor MountainColor = Map->GetBiomeColor(ESolidBiome::Mountain);
+	TestTrue(TEXT("mountain color is dark grey"),
+		MountainColor.R < 0.28f && MountainColor.G < 0.28f && MountainColor.B < 0.28f);
+
 	return true;
 }
 
@@ -167,8 +171,14 @@ bool FSolidWorldMapDefaultColorPublicTest::RunTest(const FString& Parameters)
 {
 	const FLinearColor Sea = USolidWorldMap::DefaultColorForBiome(ESolidBiome::Sea);
 	const FLinearColor River = USolidWorldMap::DefaultColorForBiome(ESolidBiome::River);
+	const FLinearColor Mountain = USolidWorldMap::DefaultColorForBiome(ESolidBiome::Mountain);
 	TestTrue(TEXT("default sea is blue"), Sea.B > 0.5f);
 	TestTrue(TEXT("default river is blue"), River.B > 0.5f);
+	TestTrue(TEXT("default mountain is dark"),
+		Mountain.R < 0.28f && Mountain.G < 0.28f && Mountain.B < 0.28f);
+	TestTrue(TEXT("default mountain is grey (channels close)"),
+		FMath::Abs(Mountain.R - Mountain.G) < 0.05f
+		&& FMath::Abs(Mountain.G - Mountain.B) < 0.05f);
 	return true;
 }
 

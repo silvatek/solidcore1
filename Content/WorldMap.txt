@@ -66,7 +66,7 @@ SSSSSSSSSSSSSSSSSSSSSSSSSSSSSMMMMMMMMMMMMMMMMMMMMMMMMMMMMSSSSSSS
 S = Sea (blue)
 G = Grassland (light green)
 T = Town (brown)
-M = Mountain (grey)
+M = Mountain (dark grey)
 F = Forest (dark green)
 D = Desert (yellow)
 R = River (blue)

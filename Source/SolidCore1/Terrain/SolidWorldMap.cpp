@@ -25,7 +25,7 @@ FLinearColor USolidWorldMap::DefaultColorForBiome(const ESolidBiome Biome)
 	{
 	case ESolidBiome::Grassland: return FLinearColor(0.45f, 0.72f, 0.28f);
 	case ESolidBiome::Forest: return FLinearColor(0.08f, 0.28f, 0.08f);
-	case ESolidBiome::Mountain: return FLinearColor(0.55f, 0.55f, 0.58f);
+	case ESolidBiome::Mountain: return FLinearColor(0.16f, 0.16f, 0.18f);
 	case ESolidBiome::Town: return FLinearColor(0.45f, 0.28f, 0.12f);
 	case ESolidBiome::Desert: return FLinearColor(0.85f, 0.75f, 0.32f);
 	case ESolidBiome::Swamp: return FLinearColor(0.22f, 0.32f, 0.18f);
@@ -57,6 +57,11 @@ FLinearColor USolidWorldMap::ColorFromName(const FString& ColorName)
 	if (Name.Contains(TEXT("brown")))
 	{
 		return FLinearColor(0.45f, 0.28f, 0.12f);
+	}
+	if (Name.Contains(TEXT("dark grey")) || Name.Contains(TEXT("dark gray"))
+		|| Name.Equals(TEXT("darkgrey")) || Name.Equals(TEXT("darkgray")))
+	{
+		return FLinearColor(0.16f, 0.16f, 0.18f);
 	}
 	if (Name.Contains(TEXT("grey")) || Name.Contains(TEXT("gray")))
 	{

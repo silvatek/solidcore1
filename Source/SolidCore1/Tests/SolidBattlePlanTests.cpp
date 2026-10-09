@@ -20,18 +20,24 @@ bool FSolidBattleFormationSlotsTest::RunTest(const FString& Parameters)
 	const FVector2D Line1 = SolidBattleFormationSlots::SlotOffset(ESolidBattleFormation::Line, 1, Count);
 	TestTrue(TEXT("line: both slightly behind"), Line0.X < 0.f && Line1.X < 0.f);
 	TestTrue(TEXT("line: opposite flanks"), Line0.Y * Line1.Y < 0.f);
-	TestEqual(TEXT("line: same depth"), Line0.X, Line1.X);
+	TestEqual(
+		TEXT("line: same depth"),
+		static_cast<float>(Line0.X),
+		static_cast<float>(Line1.X));
 
 	const FVector2D Col0 = SolidBattleFormationSlots::SlotOffset(ESolidBattleFormation::Column, 0, Count);
 	const FVector2D Col1 = SolidBattleFormationSlots::SlotOffset(ESolidBattleFormation::Column, 1, Count);
 	TestTrue(TEXT("column: alex further back than sam"), Col1.X < Col0.X);
-	TestEqual(TEXT("column: centered"), Col0.Y, 0.f);
-	TestEqual(TEXT("column: alex centered"), Col1.Y, 0.f);
+	TestEqual(TEXT("column: centered"), static_cast<float>(Col0.Y), 0.f);
+	TestEqual(TEXT("column: alex centered"), static_cast<float>(Col1.Y), 0.f);
 
 	const FVector2D Mob0 = SolidBattleFormationSlots::SlotOffset(ESolidBattleFormation::Mob, 0, Count);
 	const FVector2D Mob1 = SolidBattleFormationSlots::SlotOffset(ESolidBattleFormation::Mob, 1, Count);
 	TestTrue(TEXT("mob: both behind"), Mob0.X < 0.f && Mob1.X < 0.f);
-	TestEqual(TEXT("mob: same depth (triangle base)"), Mob0.X, Mob1.X);
+	TestEqual(
+		TEXT("mob: same depth (triangle base)"),
+		static_cast<float>(Mob0.X),
+		static_cast<float>(Mob1.X));
 	TestTrue(TEXT("mob: opposite flanks"), Mob0.Y * Mob1.Y < 0.f);
 	TestTrue(TEXT("mob: tighter than line"), FMath::Abs(Mob0.Y) < FMath::Abs(Line0.Y));
 	return true;

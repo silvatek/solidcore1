@@ -167,7 +167,7 @@ Floating nameplates (`SolidNameLabel`) sit above each Party member and face the 
 - **Party** (`USolidParty`) holds up to 8 **assigned** plans and one **active** plan (default **F1 Line**).
 - Each plan has a **formation** plus **spacing** (`Narrow` / `Standard` / `Wide`) that scales follow distances.
 - Captain switches assigned slots with **F1–F8** (only filled slots work).
-- **F9** runs a formation drill: F1 walk 1.5s → F2 +90° walk 1.5s → F3 +90° walk 1.5s → F4 +90° walk 1.5s (square path; player move suppressed while active).
+- **F9** runs a formation drill: F1 walk 1.5s → F2 / F3 / F4 each blend +90° yaw over 250 ms then walk 1.5s (square path; player move/look suppressed while active).
 - HUD shows a **Battle Plans** panel under the tech block: all 8 slots, F-key + name when assigned, active slot highlighted in amber (aligned marker column).
 - Engine viewmode debug binds (wireframe/unlit/lit/…) are moved to **Ctrl+F1–F5** in `Config/DefaultInput.ini` so bare F-keys stay free for battle plans. Restart the editor after pulling.
 

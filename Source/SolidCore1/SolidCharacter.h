@@ -52,12 +52,15 @@ public:
 	void StartPartyFormationDrill();
 	void StopPartyFormationDrill();
 	bool IsPartyFormationDrillActive() const;
+	bool IsPartyFormationDrillTurning() const;
 	int32 GetPartyFormationDrillLeg() const { return PartyFormationDrill.CurrentLeg; }
-	float GetPartyFormationDrillWalkRemaining() const { return PartyFormationDrill.WalkSecondsRemaining; }
+	float GetPartyFormationDrillPhaseRemaining() const { return PartyFormationDrill.PhaseSecondsRemaining; }
 
 protected:
 	void ApplyNameLabel();
 	void BeginPartyFormationDrillLeg();
+	void BeginPartyFormationDrillWalk();
+	void ApplyPartyFormationDrillYaw(float YawDegrees);
 	void TickPartyFormationDrill(float DeltaTime);
 
 	virtual void PostInitializeComponents() override;

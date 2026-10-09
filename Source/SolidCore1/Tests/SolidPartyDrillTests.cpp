@@ -13,6 +13,7 @@ bool FSolidPartyDrillLegsTest::RunTest(const FString& Parameters)
 {
 	TestEqual(TEXT("leg count"), SolidPartyDrill::NumLegs, 4);
 	TestEqual(TEXT("leg duration"), SolidPartyDrill::LegDurationSeconds, 1.5f);
+	TestEqual(TEXT("turn duration"), SolidPartyDrill::TurnDurationSeconds, 0.25f);
 	TestEqual(TEXT("turn yaw"), SolidPartyDrill::TurnYawDegrees, 90.f);
 
 	TestEqual(TEXT("leg0 → F1"), SolidPartyDrill::PlanSlotForLeg(0), 0);

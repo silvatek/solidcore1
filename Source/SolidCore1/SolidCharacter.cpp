@@ -269,6 +269,11 @@ void ASolidCharacter::Move(const FInputActionValue& Value)
 
 void ASolidCharacter::Look(const FInputActionValue& Value)
 {
+	if (IsPartyFormationDrillActive())
+	{
+		return;
+	}
+
 	const FVector2D LookAxisVector = Value.Get<FVector2D>();
 
 	if (Controller != nullptr)

@@ -359,10 +359,11 @@ void ASolidHUD::DrawHUD()
 		if (Captain->IsPartyFormationDrillActive())
 		{
 			Lines.Add(FString::Printf(
-				TEXT("Drill F9  leg %d/%d  walk %.1fs"),
+				TEXT("Drill F9  leg %d/%d  %s %.2fs"),
 				Captain->GetPartyFormationDrillLeg() + 1,
 				SolidPartyDrill::NumLegs,
-				Captain->GetPartyFormationDrillWalkRemaining()));
+				Captain->IsPartyFormationDrillTurning() ? TEXT("turn") : TEXT("walk"),
+				Captain->GetPartyFormationDrillPhaseRemaining()));
 		}
 	}
 

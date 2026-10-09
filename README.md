@@ -33,6 +33,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 1. **All existing tests must keep passing** when you change product code — **without modifying those tests**.
 2. If a change **must** update an existing test (API rename, intentional behavior change), say so explicitly in the commit / change description and why.
 3. **New product code ships with tests in the same commit** (same PR/change set). Prefer pure logic / `NewObject` unit tests; add heavier PIE tests only when needed.
+4. **Never pass `TObjectPtr<T>` to `TestNotNull` / `TestNull`.** UE 5.8 cannot deduce `const ValueType*` from it (`GetStaticMesh()` is the usual trap). Bind a raw `T*` first, or call `.Get()`.
 
 ### Suite (filter `SolidCore1`)
 

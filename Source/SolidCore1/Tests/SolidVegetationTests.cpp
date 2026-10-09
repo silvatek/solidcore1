@@ -266,6 +266,7 @@ bool FSolidBuildingDefaultsTest::RunTest(const FString& Parameters)
 		}
 	}
 	TestNotNull(TEXT("RoofMesh component"), RoofComp);
+	// GetStaticMesh() is TObjectPtr; TestNotNull needs a raw T* (UE 5.8).
 	UStaticMesh* RoofMesh = RoofComp ? RoofComp->GetStaticMesh() : nullptr;
 	TestNotNull(TEXT("roof has static mesh"), RoofMesh);
 	if (RoofMesh)

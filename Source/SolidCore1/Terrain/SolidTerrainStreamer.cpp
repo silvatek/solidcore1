@@ -68,6 +68,7 @@ void ASolidTerrainStreamer::BeginPlay()
 	Super::BeginPlay();
 	EnsureTerrainMap();
 	EnsureHeightFog();
+	ClearExplorationFogAtFocus();
 	TimeSinceUpdate = UpdateIntervalSeconds;
 	UpdateStreaming();
 	UpdateTerrainFog(0.f);
@@ -121,6 +122,7 @@ void ASolidTerrainStreamer::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	ClearExplorationFogAtFocus();
 	UpdateTerrainFog(DeltaSeconds);
 
 	TimeSinceUpdate += DeltaSeconds;
@@ -131,6 +133,21 @@ void ASolidTerrainStreamer::Tick(float DeltaSeconds)
 
 	TimeSinceUpdate = 0.f;
 	UpdateStreaming();
+}
+
+void ASolidTerrainStreamer::ClearExplorationFogAtFocus()
+{
+	if (!TerrainMap || !TerrainMap->IsBuilt())
+	{
+		return;
+	}
+
+	if (AActor* Focus = ResolveFocusActor())
+	{
+		const FVector Loc = Focus->GetActorLocation();
+		TerrainMap->ClearFogAround(
+			Loc.X, Loc.Y, SolidTerrainFog::MetersToCm(SolidTerrainFog::ClearRadiusMeters));
+	}
 }
 
 void ASolidTerrainStreamer::EnsureHeightFog()

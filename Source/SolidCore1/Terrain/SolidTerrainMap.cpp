@@ -213,19 +213,50 @@ void USolidTerrainMap::FillThreatAndFog(
 		Point.Threat = FMath::Min(Point.Threat, 0.08f);
 	}
 
-	// Initial exploration fog by distance from world origin (cm).
-	// Bands are 25% of the original 100m / 200m distances.
+	// Initial exploration fog by distance from world origin (same bands as trail clear).
 	const float DistM = FVector2D(Point.X, Point.Y).Size() * 0.01f;
-	if (DistM > 50.f)
+	if (DistM > SolidTerrainFog::FullFogStartMeters)
 	{
 		Point.Fog = 1.f;
 	}
-	else if (DistM >= 25.f)
+	else if (DistM >= SolidTerrainFog::HalfFogStartMeters)
 	{
 		Point.Fog = 0.5f;
 	}
 	else
 	{
 		Point.Fog = 0.f;
+	}
+}
+
+void USolidTerrainMap::ClearFogAround(float WorldX, float WorldY, float RadiusCm)
+{
+	if (!IsBuilt() || RadiusCm <= 0.f)
+	{
+		return;
+	}
+
+	const float RadiusSq = RadiusCm * RadiusCm;
+	const int32 X0 = FMath::Clamp(
+		FMath::FloorToInt((WorldX - RadiusCm - OriginXY.X) / PointSpacing), 0, GridWidth - 1);
+	const int32 X1 = FMath::Clamp(
+		FMath::CeilToInt((WorldX + RadiusCm - OriginXY.X) / PointSpacing), 0, GridWidth - 1);
+	const int32 Y0 = FMath::Clamp(
+		FMath::FloorToInt((WorldY - RadiusCm - OriginXY.Y) / PointSpacing), 0, GridHeight - 1);
+	const int32 Y1 = FMath::Clamp(
+		FMath::CeilToInt((WorldY + RadiusCm - OriginXY.Y) / PointSpacing), 0, GridHeight - 1);
+
+	for (int32 IY = Y0; IY <= Y1; ++IY)
+	{
+		for (int32 IX = X0; IX <= X1; ++IX)
+		{
+			FSolidTerrainPoint& Point = Points[IY * GridWidth + IX];
+			const float DX = Point.X - WorldX;
+			const float DY = Point.Y - WorldY;
+			if ((DX * DX + DY * DY) <= RadiusSq)
+			{
+				Point.Fog = 0.f;
+			}
+		}
 	}
 }

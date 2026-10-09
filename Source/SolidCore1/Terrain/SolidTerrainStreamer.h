@@ -135,6 +135,7 @@ public:
 protected:
 	void EnsureTerrainMap();
 	void EnsureHeightFog();
+	void ClearExplorationFogAtFocus();
 	void UpdateTerrainFog(float DeltaSeconds);
 	float SampleViewFogAmount() const;
 	void UpdateStreaming();

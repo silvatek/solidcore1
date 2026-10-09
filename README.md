@@ -96,7 +96,7 @@ Goal: the world starts shrouded; fog clears only where the **pawn has been** (tr
 
 **Data (kept):** `FSolidTerrainPoint.Fog` on `USolidTerrainMap`. Initial fill and trail clear use the same bands — ≤25 m → `0`, 25–50 m → `0.5`, >50 m → `1`. Runtime: `ApplyExplorationFogAround` as the pawn moves.
 
-**Current visual (SC1-0071):** world-space **boundary curtains** — one face per grid edge where `fog≈0` meets `fog>0` (`SolidTerrainFog::BuildChunkFogMesh`). Logic lives in `Terrain/SolidTerrainFog.*`. Height fog **off**. HUD `fog` = local TerrainPoint; `mist` = max fog on a pawn-centered ring (not camera).
+**Current visual (SC1-0072):** world-space **boundary curtains** — one face per grid edge where `fog≈0` meets `fog>0` (`SolidTerrainFog::BuildChunkFogMesh`). Materials are **programmatic `BLEND_Translucent`** unlit mist (editor); glow/FlatCol parents were rejected (opaque / ignore Opacity). Logic in `Terrain/SolidTerrainFog.*`. Height fog **off**.
 
 ### Approaches tried and rejected
 
@@ -108,6 +108,7 @@ Goal: the world starts shrouded; fog clears only where the **pawn has been** (tr
 | **Opaque solid fog volumes / roofs** (FlatCol boxes) | ~SC1-0057…0060 | Read as **solid grey/white slabs or snow** on the ground, not mist. |
 | **Opaque wall-only / prism banks** (still FlatCol) | ~SC1-0063…0065 | Less “snow roof,” but still **solid walls**; spring-arm sometimes collided until fog meshes forced `NoCollision` / ignore `ECC_Camera`. |
 | **Dense fog lattice** (fins/prisms in every fogged cell) | SC1-0069 | Many overlapping layers → looks fully opaque even with translucent mats; heavy overdraw / FPS. |
+| **JumpPad glow MIDs as “translucent” fog** | SC1-0069…0071 | Load successfully but ignore Opacity / read as **solid white emissive panels**. MID cannot change BlendMode. |
 | **Half-fog via fake translucency on opaque mats** | mid series | Opacity parameters ignored on opaque parents → still fully opaque. |
 | **Half-fog geometric dither** (checkerboard pillars, ~50% cells empty) | SC1-0063+ | Mitigated opacity for lattice cells; superseded by boundary curtains. |
 | **Height fog “thicker mist” tuning only** (density / max opacity / extinction) | SC1-0058…0065 | Could look misty in places, but never fixed **spatial trail clearing** vs **camera dependence**. |

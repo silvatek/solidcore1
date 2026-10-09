@@ -8,10 +8,15 @@
 #include "Engine/StaticMesh.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "Materials/Material.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "MeshDescription.h"
 #include "StaticMeshAttributes.h"
+#if WITH_EDITOR
+#include "Materials/MaterialExpressionScalarParameter.h"
+#include "Materials/MaterialExpressionVectorParameter.h"
+#endif
 
 namespace SolidTerrainFog
 {
@@ -59,6 +64,77 @@ namespace SolidTerrainFog
 		return MID;
 	}
 
+#if WITH_EDITOR
+	/** Real translucent mist — BlendMode on a new UMaterial (MIDs cannot change blend mode). */
+	static UMaterialInterface* CreateProgrammaticTranslucentMist(
+		UObject* Outer,
+		const FLinearColor& Color,
+		float Opacity,
+		const TCHAR* DebugName)
+	{
+		Opacity = FMath::Clamp(Opacity, 0.f, 1.f);
+
+		UMaterial* Material = NewObject<UMaterial>(Outer, NAME_None, RF_Transient);
+		if (!Material)
+		{
+			return nullptr;
+		}
+
+		Material->MaterialDomain = MD_Surface;
+		Material->BlendMode = BLEND_Translucent;
+		Material->TwoSided = true;
+		Material->TranslucencyLightingMode = TLM_VolumetricNonDirectional;
+		Material->bScreenSpaceReflections = false;
+		Material->SetShadingModel(MSM_Unlit);
+
+		UMaterialEditorOnlyData* EditorData = Material->GetEditorOnlyData();
+		if (!EditorData)
+		{
+			UE_LOG(LogSolid, Error, TEXT("Fog %s: GetEditorOnlyData() null — cannot build translucent mat."), DebugName);
+			return nullptr;
+		}
+
+		UMaterialExpressionVectorParameter* ColorParam =
+			NewObject<UMaterialExpressionVectorParameter>(Material);
+		ColorParam->ParameterName = TEXT("MistColor");
+		ColorParam->DefaultValue = Color;
+		ColorParam->MaterialExpressionEditorX = -380;
+		ColorParam->MaterialExpressionEditorY = 0;
+
+		UMaterialExpressionScalarParameter* OpacityParam =
+			NewObject<UMaterialExpressionScalarParameter>(Material);
+		OpacityParam->ParameterName = TEXT("Opacity");
+		OpacityParam->DefaultValue = Opacity;
+		OpacityParam->MaterialExpressionEditorX = -380;
+		OpacityParam->MaterialExpressionEditorY = 160;
+
+		EditorData->ExpressionCollection.AddExpression(ColorParam);
+		EditorData->ExpressionCollection.AddExpression(OpacityParam);
+		EditorData->EmissiveColor.Connect(0, ColorParam);
+		EditorData->Opacity.Connect(0, OpacityParam);
+
+		bool bNeedsRecompile = false;
+		Material->SetMaterialUsage(bNeedsRecompile, MATUSAGE_StaticMesh);
+
+		Material->PreEditChange(nullptr);
+		Material->PostEditChange();
+
+		UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Material, Outer);
+		if (MID)
+		{
+			MID->SetVectorParameterValue(TEXT("MistColor"), Color);
+			MID->SetScalarParameterValue(TEXT("Opacity"), Opacity);
+			UE_LOG(LogSolid, Warning,
+				TEXT("Fog translucent material %s (programmatic, opacity=%.2f)"), DebugName, Opacity);
+			return MID;
+		}
+
+		UE_LOG(LogSolid, Warning,
+			TEXT("Fog translucent material %s (programmatic parent, opacity=%.2f)"), DebugName, Opacity);
+		return Material;
+	}
+#endif // WITH_EDITOR
+
 	UMaterialInterface* CreateVolumeMaterial(
 		UObject* Outer,
 		const FLinearColor& Color,
@@ -67,37 +143,16 @@ namespace SolidTerrainFog
 	{
 		Opacity = FMath::Clamp(Opacity, 0.f, 1.f);
 
-		static const TCHAR* TranslucentParents[] = {
-			TEXT("/Game/LevelPrototyping/Interactable/JumpPad/Assets/Materials/M_SimpleGlow.M_SimpleGlow"),
-			TEXT("/Game/LevelPrototyping/Interactable/JumpPad/Assets/Materials/MI_GlowNT.MI_GlowNT"),
-			TEXT("/Game/LevelPrototyping/Interactable/JumpPad/Assets/Materials/M_GradientGlow.M_GradientGlow"),
-		};
-
-		for (const TCHAR* Path : TranslucentParents)
+#if WITH_EDITOR
+		if (UMaterialInterface* Programmatic = CreateProgrammaticTranslucentMist(Outer, Color, Opacity, DebugName))
 		{
-			if (UMaterialInterface* Parent = LoadObject<UMaterialInterface>(nullptr, Path))
-			{
-				if (UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Parent, Outer))
-				{
-					MID->SetVectorParameterValue(TEXT("Base Color"), Color);
-					MID->SetVectorParameterValue(TEXT("BaseColor"), Color);
-					MID->SetVectorParameterValue(TEXT("Color"), Color);
-					MID->SetVectorParameterValue(TEXT("EmissiveColor"), Color);
-					MID->SetVectorParameterValue(TEXT("GlowColor"), Color);
-					MID->SetScalarParameterValue(TEXT("Opacity"), Opacity);
-					MID->SetScalarParameterValue(TEXT("OpacityMask"), Opacity);
-					MID->SetScalarParameterValue(TEXT("Emissive"), Opacity * 0.35f);
-					MID->SetScalarParameterValue(TEXT("Intensity"), Opacity * 0.35f);
-					UE_LOG(LogSolid, Warning,
-						TEXT("Fog volume material %s from %s (opacity=%.2f)"),
-						DebugName, *Parent->GetName(), Opacity);
-					return MID;
-				}
-			}
+			return Programmatic;
 		}
+#endif
 
-		UE_LOG(LogSolid, Warning,
-			TEXT("Fog volume material %s falling back to FlatCol (opacity=%.2f unused)."),
+		// Glow parents often ignore Opacity and read as solid white panels — last resort only.
+		UE_LOG(LogSolid, Error,
+			TEXT("Fog %s: programmatic translucent failed; FlatCol fallback is OPAQUE (opacity=%.2f unused)."),
 			DebugName, Opacity);
 		return CreateSolidColorMaterial(Outer, Color, DebugName);
 	}
@@ -105,13 +160,13 @@ namespace SolidTerrainFog
 	UMaterialInterface* CreateHalfMaterial(UObject* Outer)
 	{
 		return CreateVolumeMaterial(
-			Outer, FLinearColor(0.55f, 0.62f, 0.68f), 0.45f, TEXT("ExplorationFogHalf"));
+			Outer, FLinearColor(0.55f, 0.62f, 0.68f), 0.40f, TEXT("ExplorationFogHalf"));
 	}
 
 	UMaterialInterface* CreateFullMaterial(UObject* Outer)
 	{
 		return CreateVolumeMaterial(
-			Outer, FLinearColor(0.48f, 0.54f, 0.60f), 0.85f, TEXT("ExplorationFogFull"));
+			Outer, FLinearColor(0.48f, 0.54f, 0.60f), 0.70f, TEXT("ExplorationFogFull"));
 	}
 
 	void ConfigureOverlayComponent(UStaticMeshComponent* Mesh)
@@ -336,21 +391,13 @@ namespace SolidTerrainFog
 
 		auto AppendQuad = [&](int32 I0, int32 I1, int32 I2, int32 I3, int32 Slot)
 		{
-			// Both windings — parents may be one-sided.
+			// Single winding — material is TwoSided. Double winding stacked translucent alpha to ~1.
 			Triangles.Add(I0);
 			Triangles.Add(I1);
 			Triangles.Add(I2);
 			Triangles.Add(I0);
 			Triangles.Add(I2);
 			Triangles.Add(I3);
-			Triangles.Add(I0);
-			Triangles.Add(I2);
-			Triangles.Add(I1);
-			Triangles.Add(I0);
-			Triangles.Add(I3);
-			Triangles.Add(I2);
-			TriMaterials.Add(Slot);
-			TriMaterials.Add(Slot);
 			TriMaterials.Add(Slot);
 			TriMaterials.Add(Slot);
 		};

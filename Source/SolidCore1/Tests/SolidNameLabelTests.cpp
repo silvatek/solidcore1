@@ -27,7 +27,10 @@ bool FSolidNameLabelStyleTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("configured text"), Label->Text.ToString(), FString(TEXT("Outcast")));
 	TestEqual(TEXT("configured captain size"), Label->WorldSize, SolidNameLabel::CaptainWorldSize);
 	TestEqual(TEXT("configured captain color"), Label->TextRenderColor, SolidNameLabel::ColorFor(SolidNameLabel::EStyle::Captain));
-	TestEqual(TEXT("height above capsule"), Label->GetRelativeLocation().Z, 96.f + SolidNameLabel::HeightAboveCapsuleCm);
+	TestEqual(
+		TEXT("height above capsule"),
+		static_cast<float>(Label->GetRelativeLocation().Z),
+		96.f + SolidNameLabel::HeightAboveCapsuleCm);
 
 	SolidNameLabel::Configure(Label, TEXT("Sam"), SolidNameLabel::EStyle::Companion, 96.f);
 	TestEqual(TEXT("companion text"), Label->Text.ToString(), FString(TEXT("Sam")));

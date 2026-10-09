@@ -186,13 +186,13 @@ bool FSolidContentPawnBlueprintFallbackTest::RunTest(const FString& Parameters)
 	{
 		AddWarning(TEXT("No pawn Blueprint found; GameMode will use C++ ASolidCharacter (supported)."));
 	}
+	else
+	{
+		AddInfo(TEXT("At least one pawn Blueprint is available."));
+	}
 
-	// C++ class is always available in this module.
-	TestNotNull(TEXT("ASolidCharacter C++ class registered"),
-		FindObject<UClass>(nullptr, TEXT("/Script/SolidCore1.SolidCharacter")));
-	// FindObject with that path can fail depending on load order — also accept StaticClass via Load.
 	UClass* SolidCharacterClass = LoadClass<APawn>(nullptr, TEXT("/Script/SolidCore1.SolidCharacter"));
-	TestNotNull(TEXT("ASolidCharacter loadable"), SolidCharacterClass);
+	TestNotNull(TEXT("ASolidCharacter C++ class loadable"), SolidCharacterClass);
 	return true;
 }
 

@@ -45,6 +45,9 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.Vegetation.*` | Tree RNG variation, monolith defaults |
 | `SolidCore1.GameMode.*` | Default spawn flags |
 | `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |
+| `SolidCore1.Content.*` | Required/optional Content + Engine assets the code loads |
+
+**Content dependency tests** assert meshes/materials/anims/BPs the C++ loaders expect (Engine BasicShapes, FlatCol, Viking mesh+locomotion, Fab grass or FlatCol fallback, pawn/GameMode BP-or-C++). Optional mannequin fallbacks warn if missing but do not fail.
 
 Not yet covered (need a world / PIE): character movement, companion AI, streamer chunk load/unload, HUD drawing.
 
@@ -211,6 +214,7 @@ Source/
       SolidVegetationTests.cpp
       SolidGameModeTests.cpp
       SolidBuildIdTests.cpp
+      SolidContentDependencyTests.cpp
 ```
 
 ## Requirements

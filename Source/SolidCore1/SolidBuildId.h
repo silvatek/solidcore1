@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0078")
+#define SOLID_BUILD_ID TEXT("SC1-0079")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Broader unit tests + test policy")
+#define SOLID_BUILD_NOTE TEXT("Content dependency automation tests")
 #endif

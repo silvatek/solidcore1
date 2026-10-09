@@ -343,6 +343,10 @@ UMaterialInterface* ASolidCore1TerrainStreamer::ResolveMaterial() const
 	ASolidCore1TerrainStreamer* MutableThis = const_cast<ASolidCore1TerrainStreamer*>(this);
 
 	// Never use M_PrototypeGrid (hard-wired grey checker).
+	//
+	// TODO(shipping grass): Author /Game/SolidCore1/Materials/M_SC1_Grass (vertex color or
+	// GrassNoise texture param) and load it here for packaged builds. Paths 1–2 are editor-only
+	// (MaterialEditingLibrary / UnrealEd); packaged falls through to FlatCol monotone green.
 
 	// 1) Vertex colors already hold darker/lighter grass per vert — show them.
 	if (UMaterialInterface* VertGrass = CreateVertexColorGrassMaterial())
@@ -361,7 +365,7 @@ UMaterialInterface* ASolidCore1TerrainStreamer::ResolveMaterial() const
 		}
 	}
 
-	// 3) FlatCol Base Color — solid green last resort.
+	// 3) FlatCol Base Color — solid green last resort (also the packaged-build path today).
 	if (UMaterialInterface* FlatGrass = CreateFlatColGrassMaterial())
 	{
 		MutableThis->ResolvedTerrainMaterial = FlatGrass;

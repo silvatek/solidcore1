@@ -266,12 +266,13 @@ bool FSolidBuildingDefaultsTest::RunTest(const FString& Parameters)
 		}
 	}
 	TestNotNull(TEXT("RoofMesh component"), RoofComp);
-	TestNotNull(TEXT("roof has static mesh"), RoofComp ? RoofComp->GetStaticMesh() : nullptr);
-	if (RoofComp && RoofComp->GetStaticMesh())
+	UStaticMesh* RoofMesh = RoofComp ? RoofComp->GetStaticMesh() : nullptr;
+	TestNotNull(TEXT("roof has static mesh"), RoofMesh);
+	if (RoofMesh)
 	{
-		TestTrue(TEXT("roof is not Engine Cone"), RoofComp->GetStaticMesh() != Cone);
+		TestTrue(TEXT("roof is not Engine Cone"), RoofMesh != Cone);
 		TestTrue(TEXT("roof mesh is transient gable prism"),
-			RoofComp->GetStaticMesh()->HasAnyFlags(RF_Transient));
+			RoofMesh->HasAnyFlags(RF_Transient));
 	}
 	return true;
 }

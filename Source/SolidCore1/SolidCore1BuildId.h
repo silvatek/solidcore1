@@ -8,9 +8,9 @@
  * SOLIDCORE1_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLIDCORE1_BUILD_ID
-#define SOLIDCORE1_BUILD_ID TEXT("SC1-0038")
+#define SOLIDCORE1_BUILD_ID TEXT("SC1-0039")
 #endif
 
 #ifndef SOLIDCORE1_BUILD_NOTE
-#define SOLIDCORE1_BUILD_NOTE TEXT("FlatCol green grass (drop PrototypeGrid)")
+#define SOLIDCORE1_BUILD_NOTE TEXT("Vertex-color grass speckles (not FlatCol)")
 #endif

@@ -9,11 +9,19 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "Components/CapsuleComponent.h"
+#include "Engine/Texture2D.h"
 #include "Materials/Material.h"
+#include "Materials/MaterialExpressionConstant.h"
+#include "Materials/MaterialExpressionTextureSample.h"
+#include "Materials/MaterialExpressionVertexColor.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
 #include "UObject/UObjectGlobals.h"
+
+#if WITH_EDITORONLY_DATA
+#include "Materials/MaterialEditorOnlyData.h"
+#endif
 
 ASolidCore1TerrainStreamer::ASolidCore1TerrainStreamer()
 {
@@ -112,12 +120,190 @@ AActor* ASolidCore1TerrainStreamer::ResolveFocusActor() const
 	return nullptr;
 }
 
+UTexture2D* ASolidCore1TerrainStreamer::EnsureGrassNoiseTexture() const
+{
+	ASolidCore1TerrainStreamer* MutableThis = const_cast<ASolidCore1TerrainStreamer*>(this);
+	if (MutableThis->GrassNoiseTexture)
+	{
+		return MutableThis->GrassNoiseTexture;
+	}
+
+	const int32 Size = FMath::Clamp(GrassNoiseTextureSize, 64, 1024);
+	UTexture2D* NoiseTex = UTexture2D::CreateTransient(Size, Size, PF_B8G8R8A8);
+	if (!NoiseTex)
+	{
+		UE_LOG(LogSolidCore1, Error, TEXT("Failed to create grass noise texture."));
+		return nullptr;
+	}
+
+	NoiseTex->SRGB = true;
+	NoiseTex->Filter = TF_Bilinear;
+	NoiseTex->AddressX = TA_Wrap;
+	NoiseTex->AddressY = TA_Wrap;
+	NoiseTex->CompressionSettings = TC_Default;
+	NoiseTex->MipGenSettings = TMGS_NoMipmaps;
+	NoiseTex->LODGroup = TEXTUREGROUP_World;
+	NoiseTex->NeverStream = true;
+
+	FTexturePlatformData* PlatformData = NoiseTex->GetPlatformData();
+	if (!PlatformData || PlatformData->Mips.Num() == 0)
+	{
+		UE_LOG(LogSolidCore1, Error, TEXT("Grass noise texture missing platform mip data."));
+		return nullptr;
+	}
+
+	FTexture2DMipMap& Mip = PlatformData->Mips[0];
+	void* RawMip = Mip.BulkData.Lock(LOCK_READ_WRITE);
+	if (!RawMip)
+	{
+		UE_LOG(LogSolidCore1, Error, TEXT("Failed to lock grass noise texture mip."));
+		return nullptr;
+	}
+
+	FColor* Pixels = static_cast<FColor*>(RawMip);
+	// Match chunk UV scale (~0.0024): one texel ≈ world cm so speckles read at landscape scale.
+	const float TexelWorldCm = 32.f;
+	for (int32 Y = 0; Y < Size; ++Y)
+	{
+		for (int32 X = 0; X < Size; ++X)
+		{
+			const float Tone = SolidCore1TerrainNoise::SampleGrassTone(
+				static_cast<float>(X) * TexelWorldCm,
+				static_cast<float>(Y) * TexelWorldCm,
+				Seed + 9049);
+			// Hard contrast so dark speckles read clearly on lit hills.
+			const float Speckle = FMath::SmoothStep(0.35f, 0.65f, Tone);
+			const FLinearColor Color = FLinearColor::LerpUsingHSV(GrassDarkColor, GrassColor, Speckle);
+			Pixels[Y * Size + X] = Color.ToFColor(/*bSRGB=*/true);
+		}
+	}
+	Mip.BulkData.Unlock();
+	NoiseTex->UpdateResource();
+
+	MutableThis->GrassNoiseTexture = NoiseTex;
+	UE_LOG(LogSolidCore1, Warning, TEXT("Created grass noise texture %dx%d"), Size, Size);
+	return NoiseTex;
+}
+
+UMaterialInterface* ASolidCore1TerrainStreamer::CreateVertexColorGrassMaterial() const
+{
+#if WITH_EDITORONLY_DATA
+	ASolidCore1TerrainStreamer* MutableThis = const_cast<ASolidCore1TerrainStreamer*>(this);
+	UMaterial* GrassMat = NewObject<UMaterial>(MutableThis, FName(TEXT("M_SC1_GrassVertex")), RF_Transient);
+	if (!GrassMat)
+	{
+		return nullptr;
+	}
+
+	UMaterialEditorOnlyData* EditorData = GrassMat->GetEditorOnlyData();
+	if (!EditorData)
+	{
+		UE_LOG(LogSolidCore1, Error, TEXT("Vertex grass material missing editor-only data."));
+		return nullptr;
+	}
+
+	GrassMat->MaterialDomain = MD_Surface;
+	GrassMat->BlendMode = BLEND_Opaque;
+	GrassMat->SetShadingModel(MSM_DefaultLit);
+	GrassMat->TwoSided = false;
+	GrassMat->bUsedWithStaticMeshes = true;
+
+	// Chunks already bake darker/lighter grass into vertex colors.
+	UMaterialExpressionVertexColor* VertColor =
+		NewObject<UMaterialExpressionVertexColor>(GrassMat, NAME_None, RF_Transient);
+	VertColor->MaterialExpressionEditorX = -320;
+	VertColor->MaterialExpressionEditorY = 0;
+	GrassMat->GetExpressionCollection().AddExpression(VertColor);
+	EditorData->BaseColor.Expression = VertColor;
+	EditorData->BaseColor.OutputIndex = 0;
+
+	UMaterialExpressionConstant* Rough =
+		NewObject<UMaterialExpressionConstant>(GrassMat, NAME_None, RF_Transient);
+	Rough->R = 0.9f;
+	Rough->MaterialExpressionEditorX = -320;
+	Rough->MaterialExpressionEditorY = 140;
+	GrassMat->GetExpressionCollection().AddExpression(Rough);
+	EditorData->Roughness.Expression = Rough;
+	EditorData->Roughness.OutputIndex = 0;
+
+	GrassMat->PreEditChange(nullptr);
+	GrassMat->PostEditChange();
+	GrassMat->ForceRecompileForRendering();
+
+	UE_LOG(LogSolidCore1, Warning,
+		TEXT("Terrain material: M_SC1_GrassVertex (chunk vertex-color speckles)"));
+	return GrassMat;
+#else
+	return nullptr;
+#endif
+}
+
+UMaterialInterface* ASolidCore1TerrainStreamer::CreateGrassNoiseMaterial(UTexture2D* NoiseTex) const
+{
+#if WITH_EDITORONLY_DATA
+	if (!NoiseTex)
+	{
+		return nullptr;
+	}
+
+	ASolidCore1TerrainStreamer* MutableThis = const_cast<ASolidCore1TerrainStreamer*>(this);
+	UMaterial* GrassMat = NewObject<UMaterial>(MutableThis, FName(TEXT("M_SC1_GrassNoise")), RF_Transient);
+	if (!GrassMat)
+	{
+		return nullptr;
+	}
+
+	UMaterialEditorOnlyData* EditorData = GrassMat->GetEditorOnlyData();
+	if (!EditorData)
+	{
+		UE_LOG(LogSolidCore1, Error, TEXT("Noise grass material missing editor-only data."));
+		return nullptr;
+	}
+
+	GrassMat->MaterialDomain = MD_Surface;
+	GrassMat->BlendMode = BLEND_Opaque;
+	GrassMat->SetShadingModel(MSM_DefaultLit);
+	GrassMat->TwoSided = false;
+	GrassMat->bUsedWithStaticMeshes = true;
+
+	UMaterialExpressionTextureSample* TexSample =
+		NewObject<UMaterialExpressionTextureSample>(GrassMat, NAME_None, RF_Transient);
+	TexSample->Texture = NoiseTex;
+	TexSample->SamplerType = SAMPLERTYPE_Color;
+	TexSample->ConstCoordinate = 0;
+	TexSample->MaterialExpressionEditorX = -400;
+	TexSample->MaterialExpressionEditorY = 0;
+	GrassMat->GetExpressionCollection().AddExpression(TexSample);
+	EditorData->BaseColor.Expression = TexSample;
+	EditorData->BaseColor.OutputIndex = 0;
+
+	UMaterialExpressionConstant* Rough =
+		NewObject<UMaterialExpressionConstant>(GrassMat, NAME_None, RF_Transient);
+	Rough->R = 0.9f;
+	Rough->MaterialExpressionEditorX = -400;
+	Rough->MaterialExpressionEditorY = 160;
+	GrassMat->GetExpressionCollection().AddExpression(Rough);
+	EditorData->Roughness.Expression = Rough;
+	EditorData->Roughness.OutputIndex = 0;
+
+	GrassMat->PreEditChange(nullptr);
+	GrassMat->PostEditChange();
+	GrassMat->ForceRecompileForRendering();
+
+	UE_LOG(LogSolidCore1, Warning,
+		TEXT("Terrain material: M_SC1_GrassNoise (green noise texture on mesh UVs)"));
+	return GrassMat;
+#else
+	(void)NoiseTex;
+	return nullptr;
+#endif
+}
+
 UMaterialInterface* ASolidCore1TerrainStreamer::CreateFlatColGrassMaterial() const
 {
 	ASolidCore1TerrainStreamer* MutableThis = const_cast<ASolidCore1TerrainStreamer*>(this);
 
-	// Always parent from FlatCol (or a non-PrototypeGrid override). PrototypeGrid's checker
-	// texture is hard-wired — any MID from it stays grey regardless of color params.
+	// FlatCol solid green fallback. Never parent from PrototypeGrid (hard-wired grey checker).
 	UMaterialInterface* Parent = nullptr;
 	if (TerrainMaterial)
 	{
@@ -154,14 +340,13 @@ UMaterialInterface* ASolidCore1TerrainStreamer::CreateFlatColGrassMaterial() con
 		return Parent;
 	}
 
-	// M_FlatCol exposes "Base Color" — reliable lit green.
 	const FLinearColor MidGrass = FLinearColor::LerpUsingHSV(GrassDarkColor, GrassColor, 0.55f);
 	GrassMID->SetVectorParameterValue(TEXT("Base Color"), MidGrass);
 	GrassMID->SetVectorParameterValue(TEXT("BaseColor"), MidGrass);
 	GrassMID->SetScalarParameterValue(TEXT("Roughness"), 0.9f);
 
 	UE_LOG(LogSolidCore1, Warning,
-		TEXT("Terrain material: %s grassy Base Color (solid green)"), *Parent->GetName());
+		TEXT("Terrain material: %s solid green fallback (monotone)"), *Parent->GetName());
 	return GrassMID;
 }
 
@@ -174,14 +359,33 @@ UMaterialInterface* ASolidCore1TerrainStreamer::ResolveMaterial() const
 
 	ASolidCore1TerrainStreamer* MutableThis = const_cast<ASolidCore1TerrainStreamer*>(this);
 
-	// Never use M_PrototypeGrid: T_GridChecker_A is hard-wired (no Texture param) so MIDs stay grey.
+	// Never use M_PrototypeGrid (hard-wired grey checker).
+
+	// 1) Vertex colors already hold darker/lighter grass per vert — show them.
+	if (UMaterialInterface* VertGrass = CreateVertexColorGrassMaterial())
+	{
+		MutableThis->ResolvedTerrainMaterial = VertGrass;
+		return ResolvedTerrainMaterial;
+	}
+
+	// 2) Runtime lit material sampling green noise (chunk UVs already world-tiled).
+	if (UTexture2D* NoiseTex = EnsureGrassNoiseTexture())
+	{
+		if (UMaterialInterface* GrassMat = CreateGrassNoiseMaterial(NoiseTex))
+		{
+			MutableThis->ResolvedTerrainMaterial = GrassMat;
+			return ResolvedTerrainMaterial;
+		}
+	}
+
+	// 3) FlatCol Base Color — solid green last resort.
 	if (UMaterialInterface* FlatGrass = CreateFlatColGrassMaterial())
 	{
 		MutableThis->ResolvedTerrainMaterial = FlatGrass;
 		return ResolvedTerrainMaterial;
 	}
 
-	UE_LOG(LogSolidCore1, Error, TEXT("Terrain material: FlatCol grass material could not be created."));
+	UE_LOG(LogSolidCore1, Error, TEXT("Terrain material: no grass material could be created."));
 	return nullptr;
 }
 

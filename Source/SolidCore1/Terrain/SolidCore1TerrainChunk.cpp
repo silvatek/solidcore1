@@ -106,13 +106,14 @@ void ASolidCore1TerrainChunk::BuildChunk(
 			const float Warp = (GrassTone - 0.5f) * 0.35f;
 			UVs.Add(FVector2D(WorldX * UVScale + Warp, WorldY * UVScale - Warp * 0.7f));
 
-			// Darker greens with high-frequency noise; slight dry tint on higher slopes.
+			// High-contrast darker/lighter greens so speckles read under lit shading.
 			const float HeightT = FMath::Clamp((Height - InBaseHeight) / FMath::Max(InAmplitude, 1.f), 0.f, 1.f);
-			const FLinearColor DarkGrass(0.05f, 0.12f, 0.04f);
-			const FLinearColor MidGrass(0.16f, 0.34f, 0.10f);
-			const FLinearColor DryGrass(0.28f, 0.30f, 0.12f);
-			FLinearColor Grass = FLinearColor::LerpUsingHSV(DarkGrass, MidGrass, GrassTone);
-			Grass = FLinearColor::LerpUsingHSV(Grass, DryGrass, HeightT * 0.35f);
+			const FLinearColor DarkGrass(0.04f, 0.10f, 0.02f);
+			const FLinearColor MidGrass(0.30f, 0.52f, 0.12f);
+			const FLinearColor DryGrass(0.36f, 0.38f, 0.12f);
+			const float Speckle = FMath::SmoothStep(0.30f, 0.70f, GrassTone);
+			FLinearColor Grass = FLinearColor::LerpUsingHSV(DarkGrass, MidGrass, Speckle);
+			Grass = FLinearColor::LerpUsingHSV(Grass, DryGrass, HeightT * 0.30f);
 			Colors.Add(Grass);
 		}
 	}

@@ -199,9 +199,9 @@ UMaterialInterface* ASolidCore1TerrainStreamer::CreateVertexColorGrassMaterial()
 	GrassMat->BlendMode = BLEND_Opaque;
 	GrassMat->SetShadingModel(MSM_DefaultLit);
 	GrassMat->TwoSided = false;
-	GrassMat->bUsedWithStaticMeshes = true;
 
 	// Chunks already bake darker/lighter grass into vertex colors.
+	// UE 5.8: ConnectMaterialProperty(FromExpression, FromOutputName, Property).
 	UMaterialExpression* VertColorExp = UMaterialEditingLibrary::CreateMaterialExpression(
 		GrassMat, UMaterialExpressionVertexColor::StaticClass(), -320, 0);
 	if (!VertColorExp)
@@ -209,14 +209,14 @@ UMaterialInterface* ASolidCore1TerrainStreamer::CreateVertexColorGrassMaterial()
 		UE_LOG(LogSolidCore1, Error, TEXT("Failed to create VertexColor expression for grass."));
 		return nullptr;
 	}
-	UMaterialEditingLibrary::ConnectMaterialProperty(GrassMat, VertColorExp, MP_BaseColor);
+	UMaterialEditingLibrary::ConnectMaterialProperty(VertColorExp, TEXT(""), MP_BaseColor);
 
 	UMaterialExpression* RoughExp = UMaterialEditingLibrary::CreateMaterialExpression(
 		GrassMat, UMaterialExpressionConstant::StaticClass(), -320, 140);
 	if (UMaterialExpressionConstant* Rough = Cast<UMaterialExpressionConstant>(RoughExp))
 	{
 		Rough->R = 0.9f;
-		UMaterialEditingLibrary::ConnectMaterialProperty(GrassMat, Rough, MP_Roughness);
+		UMaterialEditingLibrary::ConnectMaterialProperty(Rough, TEXT(""), MP_Roughness);
 	}
 
 	UMaterialEditingLibrary::RecompileMaterial(GrassMat);
@@ -248,7 +248,6 @@ UMaterialInterface* ASolidCore1TerrainStreamer::CreateGrassNoiseMaterial(UTextur
 	GrassMat->BlendMode = BLEND_Opaque;
 	GrassMat->SetShadingModel(MSM_DefaultLit);
 	GrassMat->TwoSided = false;
-	GrassMat->bUsedWithStaticMeshes = true;
 
 	UMaterialExpression* TexExp = UMaterialEditingLibrary::CreateMaterialExpression(
 		GrassMat, UMaterialExpressionTextureSample::StaticClass(), -400, 0);
@@ -261,14 +260,14 @@ UMaterialInterface* ASolidCore1TerrainStreamer::CreateGrassNoiseMaterial(UTextur
 	TexSample->Texture = NoiseTex;
 	TexSample->SamplerType = SAMPLERTYPE_Color;
 	TexSample->ConstCoordinate = 0;
-	UMaterialEditingLibrary::ConnectMaterialProperty(GrassMat, TexSample, MP_BaseColor);
+	UMaterialEditingLibrary::ConnectMaterialProperty(TexSample, TEXT("RGB"), MP_BaseColor);
 
 	UMaterialExpression* RoughExp = UMaterialEditingLibrary::CreateMaterialExpression(
 		GrassMat, UMaterialExpressionConstant::StaticClass(), -400, 160);
 	if (UMaterialExpressionConstant* Rough = Cast<UMaterialExpressionConstant>(RoughExp))
 	{
 		Rough->R = 0.9f;
-		UMaterialEditingLibrary::ConnectMaterialProperty(GrassMat, Rough, MP_Roughness);
+		UMaterialEditingLibrary::ConnectMaterialProperty(Rough, TEXT(""), MP_Roughness);
 	}
 
 	UMaterialEditingLibrary::RecompileMaterial(GrassMat);

@@ -26,11 +26,11 @@ Input Actions / Mapping Context can be replaced with Content assets on the chara
 
 ## Build ID (HUD)
 
-PIE shows a top-left debug HUD (`Build SC1-NNNN`, a one-line `Change:` note, pawn/terrain Z, chunk load, material, camera pitch). Both strings live in `Source/SolidCore1/SolidCore1BuildId.h` (`SOLIDCORE1_BUILD_ID` / `SOLIDCORE1_BUILD_NOTE`) and are bumped on every GitHub push so screenshots identify which binary you ran.
+PIE shows a top-left debug HUD (`Build SC1-NNNN`, a one-line `Change:` note, pawn/terrain Z, chunk load, material, camera pitch). Both strings live in `Source/SolidCore1/SolidBuildId.h` (`SOLID_BUILD_ID` / `SOLID_BUILD_NOTE`) and are bumped on every GitHub push so screenshots identify which binary you ran.
 
 ## Visible mannequin (mesh + anim)
 
-`SolidCore1Character` loads Epic’s Third Person mannequin when present (UE 5.7+ often uses the `_Simple` mesh):
+`SolidCharacter` loads Epic’s Third Person mannequin when present (UE 5.7+ often uses the `_Simple` mesh):
 
 - Mesh: `/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple`
 - Anim BP: `/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed` (or `Animations/ABP_Unarmed`)
@@ -42,13 +42,13 @@ Those `.uasset` files are **not** in git (binary content). Add them once via Mig
 ### Reliable setup: Blueprint pawn (recommended)
 
 1. Content Browser → right-click `Content/Characters` → **Blueprint Class**.
-2. Pick **SolidCore1Character** as the parent → name it `BP_SolidCore1Character` (path must be `/Game/Characters/BP_SolidCore1Character`).
+2. Pick **SolidCharacter** as the parent → name it `BP_SolidCore1Character` (path must be `/Game/Characters/BP_SolidCore1Character`).
 3. Open it → select **Mesh (CharacterMesh0)** if you want editor defaults; SC1-0034 forces Fab Viking at runtime when `bUseVikingVisuals` is true (overrides a Manny mesh/AnimBP on the BP).
 4. Compile & Save.
 5. Close the editor, rebuild/reopen so GameMode picks up the Blueprint (it prefers this BP over the bare C++ class).
 6. PIE — you should see the Viking player (and Viking companion).
 
-While PIE is running, **Output Log** filtered to `SolidCore1` shows whether a mesh was applied or how many meshes were found.
+While PIE is running, **Output Log** filtered to `LogSolid` shows whether a mesh was applied or how many meshes were found.
 
 You can commit `Content/Characters/` to GitHub if you want the mannequin shared with the repo (large binaries; Git LFS recommended).
 
@@ -76,10 +76,10 @@ Or right-click `SolidCore1.uproject` → **Generate Visual Studio project files*
 
 C++ generates walkable terrain around the player at runtime:
 
-- `FSolidCore1TerrainPoint` / `ESolidCore1Biome` — simulation cell (X, Y, Height, Biome, Threat, Fog)
-- `USolidCore1TerrainMap` — 2D TerrainPoint grid built once at streamer startup (default 257×257 @ chunk vert spacing)
-- `ASolidCore1TerrainChunk` — runtime `UStaticMesh`; vertex heights sampled from the TerrainMap
-- `ASolidCore1TerrainStreamer` — builds the map, then loads/unloads a Chebyshev radius of chunks around the pawn
+- `FSolidTerrainPoint` / `ESolidBiome` — simulation cell (X, Y, Height, Biome, Threat, Fog)
+- `USolidTerrainMap` — 2D TerrainPoint grid built once at streamer startup (default 257×257 @ chunk vert spacing)
+- `ASolidTerrainChunk` — runtime `UStaticMesh`; vertex heights sampled from the TerrainMap
+- `ASolidTerrainStreamer` — builds the map, then loads/unloads a Chebyshev radius of chunks around the pawn
 - Debug HUD shows biome / threat / fog at the pawn plus map size
 
 Defaults: 64 m chunks (`ChunkWorldSize=6400`), 32 quads/side, radius 2 (5×5 chunks), `Amplitude=3000`. Material: Fab `Mat_025_grass` when present.
@@ -90,7 +90,7 @@ SC1-0007 drops `UProceduralMeshComponent` after persistent ribbon/culling failur
 
 ## Quinn companion (SC1-0024)
 
-`ASolidCore1CompanionCharacter` spawns behind the player and follows with simple steering (no NavMesh — works on procedural terrain). Both player and companion use the Fab Viking (`/Game/Viking/Mesh/SK_Viking`) with idle/walk/run/(jump) clip playback (custom skeleton — not Epic AnimBP). GameMode flag: `bAutoSpawnCompanion`. HUD shows companion mesh name and distance. Set `bUseVikingVisuals=false` on the player to fall back to Manny.
+`ASolidCompanionCharacter` spawns behind the player and follows with simple steering (no NavMesh — works on procedural terrain). Both player and companion use the Fab Viking (`/Game/Viking/Mesh/SK_Viking`) with idle/walk/run/(jump) clip playback (custom skeleton — not Epic AnimBP). GameMode flag: `bAutoSpawnCompanion`. HUD shows companion mesh name and distance. Set `bUseVikingVisuals=false` on the player to fall back to Manny.
 
 SC1-0025/0026: the player spring-arm camera shifts its `TargetOffset` toward the group center and lengthens so all companions stay in frame (`bFrameCompanions`). SC1-0026 uses screen-space fit, disables boom collision while companions are present (hill probes were collapsing the arm), and zooms in much slower than out so the shot does not pop narrow. SC1-0027 lifts the camera via spring-arm `SocketOffset` when the predicted camera point would sink below the procedural terrain height (keeps framing arm length intact).
 
@@ -103,10 +103,10 @@ Binary `.umap` assets are created in the Editor (not checked in as source):
 3. Place a **Player Start** near the origin (or on the landscape).
 4. Confirm **Project Settings → Maps & Modes**:
    - Editor Startup Map / Game Default Map → `/Game/ThirdPerson/Lvl_ThirdPerson` (horizon test; Open World map still available)
-   - Default GameMode → `SolidCore1GameMode`
+   - Default GameMode → `SolidGameMode`
 5. **Play** (PIE).
 
-`Config/DefaultEngine.ini` already points at `/Game/Maps/L_OpenWorld` and `SolidCore1GameMode`. Until that map exists, the editor may warn that the map is missing—create it once as above.
+`Config/DefaultEngine.ini` already points at `/Game/Maps/L_OpenWorld` and `SolidGameMode`. Until that map exists, the editor may warn that the map is missing—create it once as above.
 
 World Partition and Large Worlds are enabled in project config for open-world scale.
 
@@ -121,15 +121,15 @@ Source/
   SolidCore1Editor.Target.cs
   SolidCore1/
     SolidCore1.Build.cs
-    SolidCore1Character.*
-    SolidCore1GameMode.*
-    SolidCore1PlayerController.*
+    SolidCharacter.*
+    SolidGameMode.*
+    SolidPlayerController.*
     Terrain/
-      SolidCore1TerrainTypes.h
-      SolidCore1TerrainMap.*
-      SolidCore1TerrainNoise.h
-      SolidCore1TerrainChunk.*
-      SolidCore1TerrainStreamer.*
+      SolidTerrainTypes.h
+      SolidTerrainMap.*
+      SolidTerrainNoise.h
+      SolidTerrainChunk.*
+      SolidTerrainStreamer.*
 ```
 
 ## Requirements
@@ -140,4 +140,4 @@ Source/
 ## Notes
 
 - This repo is source + config only. `Binaries/`, `Intermediate/`, `Saved/`, and `.sln` are gitignored and generated locally.
-- Optional: create Blueprint subclasses of `SolidCore1Character` / `SolidCore1GameMode` for content-driven tuning without changing C++.
+- Optional: create Blueprint subclasses of `SolidCharacter` / `SolidGameMode` for content-driven tuning without changing C++.

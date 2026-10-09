@@ -1,8 +1,8 @@
-#include "SolidCore1TerrainMap.h"
-#include "SolidCore1TerrainNoise.h"
+#include "SolidTerrainMap.h"
+#include "SolidTerrainNoise.h"
 #include "SolidCore1.h"
 
-void USolidCore1TerrainMap::Build(
+void USolidTerrainMap::Build(
 	int32 InSeed,
 	float FrequencyScale,
 	float Amplitude,
@@ -34,10 +34,10 @@ void USolidCore1TerrainMap::Build(
 	{
 		for (int32 IX = 0; IX < GridWidth; ++IX)
 		{
-			FSolidCore1TerrainPoint& Point = Points[IY * GridWidth + IX];
+			FSolidTerrainPoint& Point = Points[IY * GridWidth + IX];
 			Point.X = OriginXY.X + static_cast<float>(IX) * PointSpacing;
 			Point.Y = OriginXY.Y + static_cast<float>(IY) * PointSpacing;
-			Point.Height = SolidCore1TerrainNoise::SampleHeight(
+			Point.Height = SolidTerrainNoise::SampleHeight(
 				Point.X, Point.Y, Seed, FrequencyScale, Amplitude, BaseHeight);
 
 			const float HeightNorm = FMath::Clamp((Point.Height - BaseHeight) / SafeAmp, 0.f, 1.f);
@@ -47,13 +47,13 @@ void USolidCore1TerrainMap::Build(
 	}
 
 	bIsBuilt = true;
-	UE_LOG(LogSolidCore1, Warning,
+	UE_LOG(LogSolid, Warning,
 		TEXT("TerrainMap built: %dx%d spacing=%.0f cm seed=%d origin=(%.0f,%.0f) extent=(%.0f,%.0f)"),
 		GridWidth, GridHeight, PointSpacing, Seed,
 		OriginXY.X, OriginXY.Y, GetWorldMaxXY().X, GetWorldMaxXY().Y);
 }
 
-void USolidCore1TerrainMap::WorldToIndex(float WorldX, float WorldY, int32& OutX, int32& OutY) const
+void USolidTerrainMap::WorldToIndex(float WorldX, float WorldY, int32& OutX, int32& OutY) const
 {
 	const float FX = (WorldX - OriginXY.X) / PointSpacing;
 	const float FY = (WorldY - OriginXY.Y) / PointSpacing;
@@ -61,7 +61,7 @@ void USolidCore1TerrainMap::WorldToIndex(float WorldX, float WorldY, int32& OutX
 	OutY = FMath::Clamp(FMath::RoundToInt(FY), 0, GridHeight - 1);
 }
 
-const FSolidCore1TerrainPoint& USolidCore1TerrainMap::GetPoint(int32 IndexX, int32 IndexY) const
+const FSolidTerrainPoint& USolidTerrainMap::GetPoint(int32 IndexX, int32 IndexY) const
 {
 	check(Points.Num() > 0);
 	IndexX = FMath::Clamp(IndexX, 0, GridWidth - 1);
@@ -69,7 +69,7 @@ const FSolidCore1TerrainPoint& USolidCore1TerrainMap::GetPoint(int32 IndexX, int
 	return Points[IndexY * GridWidth + IndexX];
 }
 
-const FSolidCore1TerrainPoint& USolidCore1TerrainMap::GetNearestPoint(float WorldX, float WorldY) const
+const FSolidTerrainPoint& USolidTerrainMap::GetNearestPoint(float WorldX, float WorldY) const
 {
 	int32 IX = 0;
 	int32 IY = 0;
@@ -77,7 +77,7 @@ const FSolidCore1TerrainPoint& USolidCore1TerrainMap::GetNearestPoint(float Worl
 	return GetPoint(IX, IY);
 }
 
-float USolidCore1TerrainMap::SampleHeight(float WorldX, float WorldY) const
+float USolidTerrainMap::SampleHeight(float WorldX, float WorldY) const
 {
 	if (!IsBuilt())
 	{
@@ -100,9 +100,9 @@ float USolidCore1TerrainMap::SampleHeight(float WorldX, float WorldY) const
 	return FMath::Lerp(FMath::Lerp(H00, H10, Tx), FMath::Lerp(H01, H11, Tx), Ty);
 }
 
-FSolidCore1TerrainPoint USolidCore1TerrainMap::SamplePoint(float WorldX, float WorldY) const
+FSolidTerrainPoint USolidTerrainMap::SamplePoint(float WorldX, float WorldY) const
 {
-	FSolidCore1TerrainPoint Result;
+	FSolidTerrainPoint Result;
 	Result.X = WorldX;
 	Result.Y = WorldY;
 
@@ -120,10 +120,10 @@ FSolidCore1TerrainPoint USolidCore1TerrainMap::SamplePoint(float WorldX, float W
 	const float Tx = FMath::Clamp(FX - static_cast<float>(X0), 0.f, 1.f);
 	const float Ty = FMath::Clamp(FY - static_cast<float>(Y0), 0.f, 1.f);
 
-	const FSolidCore1TerrainPoint& P00 = GetPoint(X0, Y0);
-	const FSolidCore1TerrainPoint& P10 = GetPoint(X1, Y0);
-	const FSolidCore1TerrainPoint& P01 = GetPoint(X0, Y1);
-	const FSolidCore1TerrainPoint& P11 = GetPoint(X1, Y1);
+	const FSolidTerrainPoint& P00 = GetPoint(X0, Y0);
+	const FSolidTerrainPoint& P10 = GetPoint(X1, Y0);
+	const FSolidTerrainPoint& P01 = GetPoint(X0, Y1);
+	const FSolidTerrainPoint& P11 = GetPoint(X1, Y1);
 
 	Result.Height = FMath::Lerp(FMath::Lerp(P00.Height, P10.Height, Tx), FMath::Lerp(P01.Height, P11.Height, Tx), Ty);
 	Result.Threat = FMath::Lerp(FMath::Lerp(P00.Threat, P10.Threat, Tx), FMath::Lerp(P01.Threat, P11.Threat, Tx), Ty);
@@ -134,7 +134,7 @@ FSolidCore1TerrainPoint USolidCore1TerrainMap::SamplePoint(float WorldX, float W
 	return Result;
 }
 
-ESolidCore1Biome USolidCore1TerrainMap::ChooseBiome(
+ESolidBiome USolidTerrainMap::ChooseBiome(
 	float WorldX,
 	float WorldY,
 	float HeightNorm,
@@ -144,35 +144,35 @@ ESolidCore1Biome USolidCore1TerrainMap::ChooseBiome(
 	const float TownRadius = PointSpacing * 12.f; // ~small starter town footprint
 	if (DistFromOrigin < TownRadius && HeightNorm < 0.55f)
 	{
-		return ESolidCore1Biome::Town;
+		return ESolidBiome::Town;
 	}
 
-	const float Moisture = SolidCore1TerrainNoise::Fbm2D(
+	const float Moisture = SolidTerrainNoise::Fbm2D(
 		WorldX * 0.00035f, WorldY * 0.00035f, InSeed + 44027, 4);
-	const float Heat = SolidCore1TerrainNoise::Fbm2D(
+	const float Heat = SolidTerrainNoise::Fbm2D(
 		WorldX * 0.00028f, WorldY * 0.00028f, InSeed + 99191, 3);
 
 	if (HeightNorm > 0.72f)
 	{
-		return ESolidCore1Biome::Mountain;
+		return ESolidBiome::Mountain;
 	}
 	if (Moisture > 0.62f && HeightNorm < 0.45f)
 	{
-		return ESolidCore1Biome::Swamp;
+		return ESolidBiome::Swamp;
 	}
 	if (Heat > 0.68f && Moisture < 0.40f && HeightNorm < 0.55f)
 	{
-		return ESolidCore1Biome::Desert;
+		return ESolidBiome::Desert;
 	}
 	if (Moisture > 0.48f && HeightNorm > 0.25f && HeightNorm < 0.70f)
 	{
-		return ESolidCore1Biome::Forest;
+		return ESolidBiome::Forest;
 	}
-	return ESolidCore1Biome::Grassland;
+	return ESolidBiome::Grassland;
 }
 
-void USolidCore1TerrainMap::FillThreatAndFog(
-	FSolidCore1TerrainPoint& Point,
+void USolidTerrainMap::FillThreatAndFog(
+	FSolidTerrainPoint& Point,
 	float HeightNorm,
 	int32 InSeed) const
 {
@@ -180,35 +180,35 @@ void USolidCore1TerrainMap::FillThreatAndFog(
 
 	switch (Point.Biome)
 	{
-	case ESolidCore1Biome::Town:
+	case ESolidBiome::Town:
 		ThreatBase = 0.05f;
 		break;
-	case ESolidCore1Biome::Grassland:
+	case ESolidBiome::Grassland:
 		ThreatBase = 0.20f;
 		break;
-	case ESolidCore1Biome::Forest:
+	case ESolidBiome::Forest:
 		ThreatBase = 0.45f;
 		break;
-	case ESolidCore1Biome::Mountain:
+	case ESolidBiome::Mountain:
 		ThreatBase = 0.65f;
 		break;
-	case ESolidCore1Biome::Desert:
+	case ESolidBiome::Desert:
 		ThreatBase = 0.40f;
 		break;
-	case ESolidCore1Biome::Swamp:
+	case ESolidBiome::Swamp:
 		ThreatBase = 0.55f;
 		break;
 	default:
 		break;
 	}
 
-	const float Jitter = SolidCore1TerrainNoise::HashToFloat(
+	const float Jitter = SolidTerrainNoise::HashToFloat(
 		FMath::FloorToInt(Point.X * 0.01f),
 		FMath::FloorToInt(Point.Y * 0.01f),
 		InSeed + 3037);
 
 	Point.Threat = FMath::Clamp(ThreatBase + (Jitter - 0.5f) * 0.15f + HeightNorm * 0.1f, 0.f, 1.f);
-	if (Point.Biome == ESolidCore1Biome::Town)
+	if (Point.Biome == ESolidBiome::Town)
 	{
 		Point.Threat = FMath::Min(Point.Threat, 0.08f);
 	}

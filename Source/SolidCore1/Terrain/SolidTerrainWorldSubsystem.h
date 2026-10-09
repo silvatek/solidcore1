@@ -2,14 +2,14 @@
 
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
-#include "SolidCore1TerrainWorldSubsystem.generated.h"
+#include "SolidTerrainWorldSubsystem.generated.h"
 
 /**
  * Always-on world subsystem so terrain streaming does not depend on Blueprint BeginPlay
  * calling the C++ parent (a common reason the streamer never spawns).
  */
 UCLASS()
-class SOLIDCORE1_API USolidCore1TerrainWorldSubsystem : public UTickableWorldSubsystem
+class SOLIDCORE1_API USolidTerrainWorldSubsystem : public UTickableWorldSubsystem
 {
 	GENERATED_BODY()
 

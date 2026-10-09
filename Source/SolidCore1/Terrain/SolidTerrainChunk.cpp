@@ -1,6 +1,6 @@
-#include "SolidCore1TerrainChunk.h"
-#include "SolidCore1TerrainMap.h"
-#include "SolidCore1TerrainNoise.h"
+#include "SolidTerrainChunk.h"
+#include "SolidTerrainMap.h"
+#include "SolidTerrainNoise.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"
@@ -9,7 +9,7 @@
 #include "StaticMeshAttributes.h"
 #include "Components/StaticMeshComponent.h"
 
-namespace SolidCore1TerrainChunkPrivate
+namespace SolidTerrainChunkPrivate
 {
 	static void ConfigureCollision(UStaticMeshComponent* Mesh)
 	{
@@ -23,14 +23,14 @@ namespace SolidCore1TerrainChunkPrivate
 	}
 }
 
-ASolidCore1TerrainChunk::ASolidCore1TerrainChunk()
+ASolidTerrainChunk::ASolidTerrainChunk()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
 	SetRootComponent(MeshComponent);
 
-	SolidCore1TerrainChunkPrivate::ConfigureCollision(MeshComponent);
+	SolidTerrainChunkPrivate::ConfigureCollision(MeshComponent);
 	MeshComponent->SetCastShadow(true);
 	MeshComponent->SetVisibility(true);
 	MeshComponent->SetHiddenInGame(false);
@@ -42,7 +42,7 @@ ASolidCore1TerrainChunk::ASolidCore1TerrainChunk()
 	MeshComponent->SetCanEverAffectNavigation(false);
 }
 
-void ASolidCore1TerrainChunk::BuildChunk(
+void ASolidTerrainChunk::BuildChunk(
 	FIntPoint InChunkCoord,
 	float InChunkWorldSize,
 	int32 InQuadsPerSide,
@@ -52,7 +52,7 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	float InBaseHeight,
 	float InCollisionHeightBias,
 	UMaterialInterface* Material,
-	const USolidCore1TerrainMap* TerrainMap)
+	const USolidTerrainMap* TerrainMap)
 {
 	ChunkCoord = InChunkCoord;
 	InQuadsPerSide = FMath::Clamp(InQuadsPerSide, 1, 256);
@@ -95,7 +95,7 @@ void ASolidCore1TerrainChunk::BuildChunk(
 			// Prefer TerrainPoint grid heights; noise fallback only if map missing.
 			const float Height = (TerrainMap && TerrainMap->IsBuilt())
 				? TerrainMap->SampleHeight(WorldX, WorldY)
-				: SolidCore1TerrainNoise::SampleHeight(
+				: SolidTerrainNoise::SampleHeight(
 					WorldX, WorldY, InSeed, InFrequencyScale, InAmplitude, InBaseHeight);
 			Heights[Y * VertsPerSide + X] = Height;
 
@@ -106,7 +106,7 @@ void ASolidCore1TerrainChunk::BuildChunk(
 			Positions.Add(FVector(static_cast<float>(X) * Step, static_cast<float>(Y) * Step, SurfaceZ));
 
 			// World-tiled UVs for seamless Fab grass (~1 m per tile). No warp — keeps seams clean.
-			const float GrassTone = SolidCore1TerrainNoise::SampleGrassTone(WorldX, WorldY, InSeed);
+			const float GrassTone = SolidTerrainNoise::SampleGrassTone(WorldX, WorldY, InSeed);
 			const float UVScale = 0.01f;
 			UVs.Add(FVector2D(WorldX * UVScale, WorldY * UVScale));
 
@@ -278,7 +278,7 @@ void ASolidCore1TerrainChunk::BuildChunk(
 		MeshComponent->SetMaterial(0, Material);
 	}
 
-	SolidCore1TerrainChunkPrivate::ConfigureCollision(MeshComponent);
+	SolidTerrainChunkPrivate::ConfigureCollision(MeshComponent);
 	MeshComponent->BodyInstance.SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
 	MeshComponent->BodyInstance.SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	MeshComponent->SetVisibility(true);

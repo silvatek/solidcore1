@@ -1,20 +1,20 @@
-#include "SolidCore1PlayerController.h"
+#include "SolidPlayerController.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "InputMappingContext.h"
 
-ASolidCore1PlayerController::ASolidCore1PlayerController()
+ASolidPlayerController::ASolidPlayerController()
 {
 	bShowMouseCursor = false;
 	DefaultMouseCursor = EMouseCursor::Default;
 }
 
-void ASolidCore1PlayerController::BeginPlay()
+void ASolidPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
 }
 
-void ASolidCore1PlayerController::SetupInputComponent()
+void ASolidPlayerController::SetupInputComponent()
 {
 	Super::SetupInputComponent();
 

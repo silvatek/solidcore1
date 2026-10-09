@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
-#include "SolidCore1Character.generated.h"
+#include "SolidCharacter.generated.h"
 
 class USpringArmComponent;
 class UCameraComponent;
@@ -14,12 +14,12 @@ class UAnimInstance;
 class UAnimSequence;
 
 UCLASS(config = Game)
-class SOLIDCORE1_API ASolidCore1Character : public ACharacter
+class SOLIDCORE1_API ASolidCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
 public:
-	ASolidCore1Character();
+	ASolidCharacter();
 
 	virtual void Tick(float DeltaTime) override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
@@ -68,7 +68,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> FollowCamera;
 
-	/** When true, camera frames this pawn plus all SolidCore1 companions. */
+	/** When true, camera frames this pawn plus all Solid companions. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing")
 	bool bFrameCompanions = true;
 

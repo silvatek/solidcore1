@@ -2,20 +2,20 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "SolidCore1TerrainChunk.generated.h"
+#include "SolidTerrainChunk.generated.h"
 
 class UStaticMeshComponent;
 class UStaticMesh;
 class UMaterialInterface;
-class USolidCore1TerrainMap;
+class USolidTerrainMap;
 
 UCLASS()
-class SOLIDCORE1_API ASolidCore1TerrainChunk : public AActor
+class SOLIDCORE1_API ASolidTerrainChunk : public AActor
 {
 	GENERATED_BODY()
 
 public:
-	ASolidCore1TerrainChunk();
+	ASolidTerrainChunk();
 
 	void BuildChunk(
 		FIntPoint InChunkCoord,
@@ -27,7 +27,7 @@ public:
 		float InBaseHeight,
 		float InCollisionHeightBias,
 		UMaterialInterface* Material,
-		const USolidCore1TerrainMap* TerrainMap);
+		const USolidTerrainMap* TerrainMap);
 
 	FIntPoint GetChunkCoord() const { return ChunkCoord; }
 

@@ -1,25 +1,25 @@
 #include "SolidCore1.h"
-#include "SolidCore1BuildId.h"
-#include "SolidCore1GameMode.h"
+#include "SolidBuildId.h"
+#include "SolidGameMode.h"
 #include "Engine/World.h"
 #include "GameFramework/WorldSettings.h"
 #include "Modules/ModuleManager.h"
 #include "UObject/SoftObjectPath.h"
 
-class FSolidCore1Module : public FDefaultGameModuleImpl
+class FSolidModule : public FDefaultGameModuleImpl
 {
 public:
 	virtual void StartupModule() override
 	{
 		FDefaultGameModuleImpl::StartupModule();
 		// Error severity so it shows even when the Output Log is filtered to errors/warnings.
-		UE_LOG(LogTemp, Error, TEXT("[SolidCore1] MODULE STARTUP - build %s"), SOLIDCORE1_BUILD_ID);
-		UE_LOG(LogSolidCore1, Error, TEXT("MODULE STARTUP - build %s"), SOLIDCORE1_BUILD_ID);
+		UE_LOG(LogTemp, Error, TEXT("[SolidCore1] MODULE STARTUP - build %s"), SOLID_BUILD_ID);
+		UE_LOG(LogSolid, Error, TEXT("MODULE STARTUP - build %s"), SOLID_BUILD_ID);
 
 		// Lvl_ThirdPerson (and similar template maps) bake BP_ThirdPersonGameMode into WorldSettings,
-		// which spawns Quinn and skips SolidCore1HUD. Force our GameMode before the world picks one.
+		// which spawns Quinn and skips SolidHUD. Force our GameMode before the world picks one.
 		PreWorldInitHandle = FWorldDelegates::OnPreWorldInitialization.AddRaw(
-			this, &FSolidCore1Module::HandlePreWorldInitialization);
+			this, &FSolidModule::HandlePreWorldInitialization);
 	}
 
 	virtual void ShutdownModule() override
@@ -56,7 +56,7 @@ private:
 			nullptr, TEXT("/Game/Characters/BP_SolidCore1GameMode.BP_SolidCore1GameMode_C"));
 		if (!DesiredGameMode)
 		{
-			DesiredGameMode = ASolidCore1GameMode::StaticClass();
+			DesiredGameMode = ASolidGameMode::StaticClass();
 		}
 
 		if (WorldSettings->DefaultGameMode == DesiredGameMode)
@@ -68,8 +68,8 @@ private:
 			TEXT("[SolidCore1] Overriding WorldSettings GameMode %s -> %s (build %s)"),
 			WorldSettings->DefaultGameMode ? *WorldSettings->DefaultGameMode->GetName() : TEXT("<none>"),
 			*DesiredGameMode->GetName(),
-			SOLIDCORE1_BUILD_ID);
-		UE_LOG(LogSolidCore1, Warning,
+			SOLID_BUILD_ID);
+		UE_LOG(LogSolid, Warning,
 			TEXT("Overriding WorldSettings GameMode %s -> %s"),
 			WorldSettings->DefaultGameMode ? *WorldSettings->DefaultGameMode->GetName() : TEXT("<none>"),
 			*DesiredGameMode->GetName());
@@ -80,6 +80,6 @@ private:
 	FDelegateHandle PreWorldInitHandle;
 };
 
-IMPLEMENT_PRIMARY_GAME_MODULE(FSolidCore1Module, SolidCore1, "SolidCore1");
+IMPLEMENT_PRIMARY_GAME_MODULE(FSolidModule, SolidCore1, "SolidCore1");
 
-DEFINE_LOG_CATEGORY(LogSolidCore1);
+DEFINE_LOG_CATEGORY(LogSolid);

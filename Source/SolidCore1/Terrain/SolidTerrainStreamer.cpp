@@ -1,7 +1,7 @@
-#include "SolidCore1TerrainStreamer.h"
-#include "SolidCore1TerrainChunk.h"
-#include "SolidCore1TerrainMap.h"
-#include "SolidCore1TerrainNoise.h"
+#include "SolidTerrainStreamer.h"
+#include "SolidTerrainChunk.h"
+#include "SolidTerrainMap.h"
+#include "SolidTerrainNoise.h"
 #include "SolidCore1.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -18,7 +18,7 @@
 #include "Materials/MaterialInterface.h"
 #include "UObject/UObjectGlobals.h"
 
-ASolidCore1TerrainStreamer::ASolidCore1TerrainStreamer()
+ASolidTerrainStreamer::ASolidTerrainStreamer()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
@@ -27,14 +27,14 @@ ASolidCore1TerrainStreamer::ASolidCore1TerrainStreamer()
 	// Do NOT default to M_PrototypeGrid (hard-wired grey checker).
 }
 
-ASolidCore1TerrainStreamer* ASolidCore1TerrainStreamer::EnsureExists(UWorld* World)
+ASolidTerrainStreamer* ASolidTerrainStreamer::EnsureExists(UWorld* World)
 {
 	if (!World || World->bIsTearingDown)
 	{
 		return nullptr;
 	}
 
-	for (TActorIterator<ASolidCore1TerrainStreamer> It(World); It; ++It)
+	for (TActorIterator<ASolidTerrainStreamer> It(World); It; ++It)
 	{
 		return *It;
 	}
@@ -42,24 +42,24 @@ ASolidCore1TerrainStreamer* ASolidCore1TerrainStreamer::EnsureExists(UWorld* Wor
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	ASolidCore1TerrainStreamer* Streamer = World->SpawnActor<ASolidCore1TerrainStreamer>(
-		ASolidCore1TerrainStreamer::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+	ASolidTerrainStreamer* Streamer = World->SpawnActor<ASolidTerrainStreamer>(
+		ASolidTerrainStreamer::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
 
 	if (Streamer)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Spawned SolidCore1TerrainStreamer (EnsureExists)."));
-		UE_LOG(LogSolidCore1, Warning, TEXT("Spawned SolidCore1TerrainStreamer (EnsureExists)."));
+		UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Spawned SolidTerrainStreamer (EnsureExists)."));
+		UE_LOG(LogSolid, Warning, TEXT("Spawned SolidTerrainStreamer (EnsureExists)."));
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("[SolidCore1] Failed to spawn SolidCore1TerrainStreamer (EnsureExists)."));
-		UE_LOG(LogSolidCore1, Error, TEXT("Failed to spawn SolidCore1TerrainStreamer (EnsureExists)."));
+		UE_LOG(LogTemp, Error, TEXT("[SolidCore1] Failed to spawn SolidTerrainStreamer (EnsureExists)."));
+		UE_LOG(LogSolid, Error, TEXT("Failed to spawn SolidTerrainStreamer (EnsureExists)."));
 	}
 
 	return Streamer;
 }
 
-void ASolidCore1TerrainStreamer::BeginPlay()
+void ASolidTerrainStreamer::BeginPlay()
 {
 	Super::BeginPlay();
 	EnsureTerrainMap();
@@ -67,7 +67,7 @@ void ASolidCore1TerrainStreamer::BeginPlay()
 	UpdateStreaming();
 }
 
-void ASolidCore1TerrainStreamer::EnsureTerrainMap()
+void ASolidTerrainStreamer::EnsureTerrainMap()
 {
 	if (TerrainMap && TerrainMap->IsBuilt())
 	{
@@ -76,7 +76,7 @@ void ASolidCore1TerrainStreamer::EnsureTerrainMap()
 
 	if (!TerrainMap)
 	{
-		TerrainMap = NewObject<USolidCore1TerrainMap>(this, TEXT("TerrainMap"));
+		TerrainMap = NewObject<USolidTerrainMap>(this, TEXT("TerrainMap"));
 	}
 
 	// Align point spacing with chunk vertex step when possible so samples hit grid nodes.
@@ -97,21 +97,21 @@ void ASolidCore1TerrainStreamer::EnsureTerrainMap()
 		/*bForceRebuild=*/false);
 }
 
-FSolidCore1TerrainPoint ASolidCore1TerrainStreamer::GetTerrainPointAt(const FVector& WorldLocation) const
+FSolidTerrainPoint ASolidTerrainStreamer::GetTerrainPointAt(const FVector& WorldLocation) const
 {
 	if (TerrainMap && TerrainMap->IsBuilt())
 	{
 		return TerrainMap->SamplePoint(WorldLocation.X, WorldLocation.Y);
 	}
 
-	FSolidCore1TerrainPoint Fallback;
+	FSolidTerrainPoint Fallback;
 	Fallback.X = WorldLocation.X;
 	Fallback.Y = WorldLocation.Y;
 	Fallback.Height = SampleHeightAtWorld(WorldLocation);
 	return Fallback;
 }
 
-void ASolidCore1TerrainStreamer::Tick(float DeltaSeconds)
+void ASolidTerrainStreamer::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
@@ -125,7 +125,7 @@ void ASolidCore1TerrainStreamer::Tick(float DeltaSeconds)
 	UpdateStreaming();
 }
 
-FIntPoint ASolidCore1TerrainStreamer::WorldToChunkCoord(const FVector& WorldLocation) const
+FIntPoint ASolidTerrainStreamer::WorldToChunkCoord(const FVector& WorldLocation) const
 {
 	const float Size = FMath::Max(ChunkWorldSize, 100.f);
 	return FIntPoint(
@@ -133,7 +133,7 @@ FIntPoint ASolidCore1TerrainStreamer::WorldToChunkCoord(const FVector& WorldLoca
 		FMath::FloorToInt(WorldLocation.Y / Size));
 }
 
-AActor* ASolidCore1TerrainStreamer::ResolveFocusActor() const
+AActor* ASolidTerrainStreamer::ResolveFocusActor() const
 {
 	if (AActor* Focus = FocusActor.Get())
 	{
@@ -154,7 +154,7 @@ AActor* ASolidCore1TerrainStreamer::ResolveFocusActor() const
 	return nullptr;
 }
 
-UMaterialInterface* ASolidCore1TerrainStreamer::FindFabGrassMaterial() const
+UMaterialInterface* ASolidTerrainStreamer::FindFabGrassMaterial() const
 {
 	IAssetRegistry& AssetRegistry =
 		FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
@@ -187,19 +187,19 @@ UMaterialInterface* ASolidCore1TerrainStreamer::FindFabGrassMaterial() const
 
 		if (UMaterialInterface* Grass = Cast<UMaterialInterface>(Asset.GetAsset()))
 		{
-			UE_LOG(LogSolidCore1, Warning,
+			UE_LOG(LogSolid, Warning,
 				TEXT("Terrain material: Fab grass %s"), *Asset.GetObjectPathString());
 			return Grass;
 		}
 	}
 
-	UE_LOG(LogSolidCore1, Warning, TEXT("Fab Mat_025_grass not found under /Game/Fab."));
+	UE_LOG(LogSolid, Warning, TEXT("Fab Mat_025_grass not found under /Game/Fab."));
 	return nullptr;
 }
 
-UMaterialInterface* ASolidCore1TerrainStreamer::CreateFlatColGrassMaterial() const
+UMaterialInterface* ASolidTerrainStreamer::CreateFlatColGrassMaterial() const
 {
-	ASolidCore1TerrainStreamer* MutableThis = const_cast<ASolidCore1TerrainStreamer*>(this);
+	ASolidTerrainStreamer* MutableThis = const_cast<ASolidTerrainStreamer*>(this);
 
 	UMaterialInterface* Parent = LoadObject<UMaterialInterface>(
 		nullptr, TEXT("/Game/LevelPrototyping/Materials/M_FlatCol.M_FlatCol"));
@@ -224,19 +224,19 @@ UMaterialInterface* ASolidCore1TerrainStreamer::CreateFlatColGrassMaterial() con
 	GrassMID->SetVectorParameterValue(TEXT("BaseColor"), MidGrass);
 	GrassMID->SetScalarParameterValue(TEXT("Roughness"), 0.9f);
 
-	UE_LOG(LogSolidCore1, Warning,
+	UE_LOG(LogSolid, Warning,
 		TEXT("Terrain material: %s solid green (FlatCol fallback)"), *Parent->GetName());
 	return GrassMID;
 }
 
-UMaterialInterface* ASolidCore1TerrainStreamer::ResolveMaterial() const
+UMaterialInterface* ASolidTerrainStreamer::ResolveMaterial() const
 {
 	if (ResolvedTerrainMaterial)
 	{
 		return ResolvedTerrainMaterial;
 	}
 
-	ASolidCore1TerrainStreamer* MutableThis = const_cast<ASolidCore1TerrainStreamer*>(this);
+	ASolidTerrainStreamer* MutableThis = const_cast<ASolidTerrainStreamer*>(this);
 
 	// Never use M_PrototypeGrid (hard-wired grey checker).
 
@@ -247,10 +247,10 @@ UMaterialInterface* ASolidCore1TerrainStreamer::ResolveMaterial() const
 		if (!MatName.Contains(TEXT("PrototypeGrid"), ESearchCase::IgnoreCase))
 		{
 			MutableThis->ResolvedTerrainMaterial = TerrainMaterial;
-			UE_LOG(LogSolidCore1, Warning, TEXT("Terrain material: override %s"), *MatName);
+			UE_LOG(LogSolid, Warning, TEXT("Terrain material: override %s"), *MatName);
 			return ResolvedTerrainMaterial;
 		}
-		UE_LOG(LogSolidCore1, Warning,
+		UE_LOG(LogSolid, Warning,
 			TEXT("Ignoring TerrainMaterial '%s' (PrototypeGrid cannot be tinted)."), *MatName);
 	}
 
@@ -268,22 +268,22 @@ UMaterialInterface* ASolidCore1TerrainStreamer::ResolveMaterial() const
 		return ResolvedTerrainMaterial;
 	}
 
-	UE_LOG(LogSolidCore1, Error, TEXT("Terrain material: no grass material could be created."));
+	UE_LOG(LogSolid, Error, TEXT("Terrain material: no grass material could be created."));
 	return nullptr;
 }
 
-float ASolidCore1TerrainStreamer::SampleHeightAtWorld(const FVector& WorldLocation) const
+float ASolidTerrainStreamer::SampleHeightAtWorld(const FVector& WorldLocation) const
 {
 	if (TerrainMap && TerrainMap->IsBuilt())
 	{
 		return TerrainMap->SampleHeight(WorldLocation.X, WorldLocation.Y);
 	}
 
-	return SolidCore1TerrainNoise::SampleHeight(
+	return SolidTerrainNoise::SampleHeight(
 		WorldLocation.X, WorldLocation.Y, Seed, FrequencyScale, Amplitude, BaseHeight);
 }
 
-void ASolidCore1TerrainStreamer::DisableLandscapeActorsOnce()
+void ASolidTerrainStreamer::DisableLandscapeActorsOnce()
 {
 	if (!bDisableLandscapeActors || bDidDisableLandscape)
 	{
@@ -324,11 +324,11 @@ void ASolidCore1TerrainStreamer::DisableLandscapeActorsOnce()
 	if (Count > 0)
 	{
 		UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Disabled %d Landscape actor(s) so pawn uses procedural terrain."), Count);
-		UE_LOG(LogSolidCore1, Warning, TEXT("Disabled %d Landscape actor(s) for procedural terrain."), Count);
+		UE_LOG(LogSolid, Warning, TEXT("Disabled %d Landscape actor(s) for procedural terrain."), Count);
 	}
 }
 
-void ASolidCore1TerrainStreamer::TrySnapFocusToTerrain(AActor* Focus)
+void ASolidTerrainStreamer::TrySnapFocusToTerrain(AActor* Focus)
 {
 	if (!bSnapFocusToTerrain || !Focus)
 	{
@@ -367,7 +367,7 @@ void ASolidCore1TerrainStreamer::TrySnapFocusToTerrain(AActor* Focus)
 	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Snapped focus onto terrain Z=%.1f at (%.0f, %.0f)"), LandZ, Loc.X, Loc.Y);
 }
 
-void ASolidCore1TerrainStreamer::UpdateStreaming()
+void ASolidTerrainStreamer::UpdateStreaming()
 {
 	EnsureTerrainMap();
 	DisableLandscapeActorsOnce();
@@ -391,7 +391,7 @@ void ASolidCore1TerrainStreamer::UpdateStreaming()
 	}
 
 	TArray<FIntPoint> ToRemove;
-	for (const TPair<FIntPoint, TObjectPtr<ASolidCore1TerrainChunk>>& Pair : LoadedChunks)
+	for (const TPair<FIntPoint, TObjectPtr<ASolidTerrainChunk>>& Pair : LoadedChunks)
 	{
 		if (!Desired.Contains(Pair.Key))
 		{
@@ -401,7 +401,7 @@ void ASolidCore1TerrainStreamer::UpdateStreaming()
 
 	for (const FIntPoint& Key : ToRemove)
 	{
-		if (ASolidCore1TerrainChunk* Chunk = LoadedChunks.FindRef(Key))
+		if (ASolidTerrainChunk* Chunk = LoadedChunks.FindRef(Key))
 		{
 			Chunk->Destroy();
 		}
@@ -432,11 +432,11 @@ void ASolidCore1TerrainStreamer::UpdateStreaming()
 			static_cast<float>(Coord.Y) * ChunkWorldSize,
 			0.f);
 
-		ASolidCore1TerrainChunk* Chunk = World->SpawnActor<ASolidCore1TerrainChunk>(
-			ASolidCore1TerrainChunk::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+		ASolidTerrainChunk* Chunk = World->SpawnActor<ASolidTerrainChunk>(
+			ASolidTerrainChunk::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
 		if (!Chunk)
 		{
-			UE_LOG(LogSolidCore1, Error, TEXT("Failed to spawn terrain chunk at %d,%d"), Coord.X, Coord.Y);
+			UE_LOG(LogSolid, Error, TEXT("Failed to spawn terrain chunk at %d,%d"), Coord.X, Coord.Y);
 			continue;
 		}
 
@@ -458,7 +458,7 @@ void ASolidCore1TerrainStreamer::UpdateStreaming()
 			static_cast<float>(Coord.X) * ChunkWorldSize,
 			static_cast<float>(Coord.Y) * ChunkWorldSize,
 			LoadedChunks.Num());
-		UE_LOG(LogSolidCore1, Warning, TEXT("Built terrain chunk (%d, %d) at origin (%.0f, %.0f). Loaded=%d"),
+		UE_LOG(LogSolid, Warning, TEXT("Built terrain chunk (%d, %d) at origin (%.0f, %.0f). Loaded=%d"),
 			Coord.X, Coord.Y,
 			static_cast<float>(Coord.X) * ChunkWorldSize,
 			static_cast<float>(Coord.Y) * ChunkWorldSize,

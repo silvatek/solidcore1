@@ -1,10 +1,10 @@
-#include "SolidCore1HUD.h"
-#include "SolidCore1BuildId.h"
-#include "SolidCore1Character.h"
-#include "Companion/SolidCore1CompanionCharacter.h"
-#include "Terrain/SolidCore1TerrainMap.h"
-#include "Terrain/SolidCore1TerrainStreamer.h"
-#include "Terrain/SolidCore1TerrainTypes.h"
+#include "SolidHUD.h"
+#include "SolidBuildId.h"
+#include "SolidCharacter.h"
+#include "Companion/SolidCompanionCharacter.h"
+#include "Terrain/SolidTerrainMap.h"
+#include "Terrain/SolidTerrainStreamer.h"
+#include "Terrain/SolidTerrainTypes.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -17,15 +17,15 @@
 #include "GameFramework/Pawn.h"
 #include "Materials/MaterialInterface.h"
 
-namespace SolidCore1HUDPrivate
+namespace SolidHUDPrivate
 {
-	static ASolidCore1TerrainStreamer* FindStreamer(UWorld* World)
+	static ASolidTerrainStreamer* FindStreamer(UWorld* World)
 	{
 		if (!World)
 		{
 			return nullptr;
 		}
-		for (TActorIterator<ASolidCore1TerrainStreamer> It(World); It; ++It)
+		for (TActorIterator<ASolidTerrainStreamer> It(World); It; ++It)
 		{
 			return *It;
 		}
@@ -86,7 +86,7 @@ namespace SolidCore1HUDPrivate
 	}
 }
 
-void ASolidCore1HUD::DrawHUD()
+void ASolidHUD::DrawHUD()
 {
 	Super::DrawHUD();
 
@@ -96,11 +96,11 @@ void ASolidCore1HUD::DrawHUD()
 	}
 
 	TArray<FString> Lines;
-	Lines.Add(FString::Printf(TEXT("Build %s"), SOLIDCORE1_BUILD_ID));
-	Lines.Add(FString::Printf(TEXT("Change: %s"), SOLIDCORE1_BUILD_NOTE));
+	Lines.Add(FString::Printf(TEXT("Build %s"), SOLID_BUILD_ID));
+	Lines.Add(FString::Printf(TEXT("Change: %s"), SOLID_BUILD_NOTE));
 
 	APawn* Pawn = GetOwningPawn();
-	ASolidCore1TerrainStreamer* Streamer = SolidCore1HUDPrivate::FindStreamer(GetWorld());
+	ASolidTerrainStreamer* Streamer = SolidHUDPrivate::FindStreamer(GetWorld());
 
 	if (Pawn)
 	{
@@ -128,12 +128,12 @@ void ASolidCore1HUD::DrawHUD()
 				Streamer->ViewRadiusChunks,
 				Streamer->Amplitude, Streamer->FrequencyScale));
 
-			const FSolidCore1TerrainPoint Point = Streamer->GetTerrainPointAt(Loc);
+			const FSolidTerrainPoint Point = Streamer->GetTerrainPointAt(Loc);
 			Lines.Add(FString::Printf(
 				TEXT("Biome %s  threat=%.2f  fog=%.2f"),
-				SolidCore1TerrainTypes::BiomeToString(Point.Biome),
+				SolidTerrainTypes::BiomeToString(Point.Biome),
 				Point.Threat, Point.Fog));
-			if (const USolidCore1TerrainMap* Map = Streamer->GetTerrainMap())
+			if (const USolidTerrainMap* Map = Streamer->GetTerrainMap())
 			{
 				Lines.Add(FString::Printf(
 					TEXT("Map %dx%d  spacing=%.0f  points=%d"),
@@ -166,7 +166,7 @@ void ASolidCore1HUD::DrawHUD()
 		float ArmLen = -1.f;
 		if (const ACharacter* Character = Cast<ACharacter>(Pawn))
 		{
-			if (const ASolidCore1Character* SolidCharacter = Cast<ASolidCore1Character>(Character))
+			if (const ASolidCharacter* SolidCharacter = Cast<ASolidCharacter>(Character))
 			{
 				if (const USpringArmComponent* Boom = SolidCharacter->GetCameraBoom())
 				{
@@ -177,7 +177,7 @@ void ASolidCore1HUD::DrawHUD()
 		if (ArmLen >= 0.f)
 		{
 			float ZoomLen = ArmLen;
-			if (const ASolidCore1Character* SolidCharacter = Cast<ASolidCore1Character>(Pawn))
+			if (const ASolidCharacter* SolidCharacter = Cast<ASolidCharacter>(Pawn))
 			{
 				ZoomLen = SolidCharacter->GetUserZoomArmLength();
 			}
@@ -193,10 +193,10 @@ void ASolidCore1HUD::DrawHUD()
 	}
 
 	{
-		ASolidCore1CompanionCharacter* Companion = nullptr;
+		ASolidCompanionCharacter* Companion = nullptr;
 		if (UWorld* World = GetWorld())
 		{
-			for (TActorIterator<ASolidCore1CompanionCharacter> It(World); It; ++It)
+			for (TActorIterator<ASolidCompanionCharacter> It(World); It; ++It)
 			{
 				Companion = *It;
 				break;
@@ -218,5 +218,5 @@ void ASolidCore1HUD::DrawHUD()
 	}
 
 	UFont* Font = GEngine ? GEngine->GetSmallFont() : nullptr;
-	SolidCore1HUDPrivate::DrawLines(Canvas, Font, Lines, FLinearColor::White);
+	SolidHUDPrivate::DrawLines(Canvas, Font, Lines, FLinearColor::White);
 }

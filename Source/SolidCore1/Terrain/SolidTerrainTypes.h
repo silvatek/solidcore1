@@ -1,11 +1,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SolidCore1TerrainTypes.generated.h"
+#include "SolidTerrainTypes.generated.h"
 
 /** Coarse gameplay biome for a terrain simulation point. */
 UENUM(BlueprintType)
-enum class ESolidCore1Biome : uint8
+enum class ESolidBiome : uint8
 {
 	Grassland UMETA(DisplayName = "Grassland"),
 	Forest UMETA(DisplayName = "Forest"),
@@ -17,7 +17,7 @@ enum class ESolidCore1Biome : uint8
 
 /** One cell in the world simulation grid (gameplay + heightfield source). */
 USTRUCT(BlueprintType)
-struct FSolidCore1TerrainPoint
+struct FSolidTerrainPoint
 {
 	GENERATED_BODY()
 
@@ -34,7 +34,7 @@ struct FSolidCore1TerrainPoint
 	float Height = 0.f;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Terrain")
-	ESolidCore1Biome Biome = ESolidCore1Biome::Grassland;
+	ESolidBiome Biome = ESolidBiome::Grassland;
 
 	/** Relative danger in [0, 1]. */
 	UPROPERTY(BlueprintReadOnly, Category = "Terrain")
@@ -45,18 +45,18 @@ struct FSolidCore1TerrainPoint
 	float Fog = 1.f;
 };
 
-namespace SolidCore1TerrainTypes
+namespace SolidTerrainTypes
 {
-	FORCEINLINE const TCHAR* BiomeToString(ESolidCore1Biome Biome)
+	FORCEINLINE const TCHAR* BiomeToString(ESolidBiome Biome)
 	{
 		switch (Biome)
 		{
-		case ESolidCore1Biome::Grassland: return TEXT("Grassland");
-		case ESolidCore1Biome::Forest: return TEXT("Forest");
-		case ESolidCore1Biome::Mountain: return TEXT("Mountain");
-		case ESolidCore1Biome::Town: return TEXT("Town");
-		case ESolidCore1Biome::Desert: return TEXT("Desert");
-		case ESolidCore1Biome::Swamp: return TEXT("Swamp");
+		case ESolidBiome::Grassland: return TEXT("Grassland");
+		case ESolidBiome::Forest: return TEXT("Forest");
+		case ESolidBiome::Mountain: return TEXT("Mountain");
+		case ESolidBiome::Town: return TEXT("Town");
+		case ESolidBiome::Desert: return TEXT("Desert");
+		case ESolidBiome::Swamp: return TEXT("Swamp");
 		default: return TEXT("Unknown");
 		}
 	}

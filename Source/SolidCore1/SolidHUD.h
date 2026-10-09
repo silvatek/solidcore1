@@ -2,10 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/HUD.h"
-#include "SolidCore1HUD.generated.h"
+#include "SolidHUD.generated.h"
 
 UCLASS()
-class SOLIDCORE1_API ASolidCore1HUD : public AHUD
+class SOLIDCORE1_API ASolidHUD : public AHUD
 {
 	GENERATED_BODY()
 

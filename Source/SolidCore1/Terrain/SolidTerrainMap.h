@@ -2,15 +2,15 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
-#include "SolidCore1TerrainTypes.h"
-#include "SolidCore1TerrainMap.generated.h"
+#include "SolidTerrainTypes.h"
+#include "SolidTerrainMap.generated.h"
 
 /**
  * Fixed 2D TerrainPoint grid built once at startup. Chunk meshes sample Height from this map
  * (bilinear) so gameplay data and rendered landscape share one source of truth.
  */
 UCLASS(BlueprintType)
-class SOLIDCORE1_API USolidCore1TerrainMap : public UObject
+class SOLIDCORE1_API USolidTerrainMap : public UObject
 {
 	GENERATED_BODY()
 
@@ -55,13 +55,13 @@ public:
 
 	int32 GetPointCount() const { return Points.Num(); }
 
-	const TArray<FSolidCore1TerrainPoint>& GetPoints() const { return Points; }
+	const TArray<FSolidTerrainPoint>& GetPoints() const { return Points; }
 
 	/** Row-major access; clamps indices. */
-	const FSolidCore1TerrainPoint& GetPoint(int32 IndexX, int32 IndexY) const;
+	const FSolidTerrainPoint& GetPoint(int32 IndexX, int32 IndexY) const;
 
 	/** Nearest grid point (no interpolation). */
-	const FSolidCore1TerrainPoint& GetNearestPoint(float WorldX, float WorldY) const;
+	const FSolidTerrainPoint& GetNearestPoint(float WorldX, float WorldY) const;
 
 	/** Bilinear height sample in world cm. */
 	float SampleHeight(float WorldX, float WorldY) const;
@@ -70,7 +70,7 @@ public:
 	 * Gameplay sample: bilinear Height / Threat / Fog, nearest-neighbor Biome.
 	 * Coordinates on the result are the query world XY.
 	 */
-	FSolidCore1TerrainPoint SamplePoint(float WorldX, float WorldY) const;
+	FSolidTerrainPoint SamplePoint(float WorldX, float WorldY) const;
 
 	FVector2D GetWorldMinXY() const { return OriginXY; }
 	FVector2D GetWorldMaxXY() const
@@ -82,9 +82,9 @@ public:
 
 protected:
 	UPROPERTY()
-	TArray<FSolidCore1TerrainPoint> Points;
+	TArray<FSolidTerrainPoint> Points;
 
 	void WorldToIndex(float WorldX, float WorldY, int32& OutX, int32& OutY) const;
-	ESolidCore1Biome ChooseBiome(float WorldX, float WorldY, float HeightNorm, int32 InSeed) const;
-	void FillThreatAndFog(FSolidCore1TerrainPoint& Point, float HeightNorm, int32 InSeed) const;
+	ESolidBiome ChooseBiome(float WorldX, float WorldY, float HeightNorm, int32 InSeed) const;
+	void FillThreatAndFog(FSolidTerrainPoint& Point, float HeightNorm, int32 InSeed) const;
 };

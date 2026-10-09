@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "SolidCore1CompanionCharacter.generated.h"
+#include "SolidCompanionCharacter.generated.h"
 
 class USkeletalMesh;
 class UAnimSequence;
@@ -13,12 +13,12 @@ class UAnimSequence;
  * Default visual is the Fab Viking (custom skeleton + clip anims).
  */
 UCLASS()
-class SOLIDCORE1_API ASolidCore1CompanionCharacter : public ACharacter
+class SOLIDCORE1_API ASolidCompanionCharacter : public ACharacter
 {
 	GENERATED_BODY()
 
 public:
-	ASolidCore1CompanionCharacter();
+	ASolidCompanionCharacter();
 
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;

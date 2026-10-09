@@ -2,17 +2,17 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/PlayerController.h"
-#include "SolidCore1PlayerController.generated.h"
+#include "SolidPlayerController.generated.h"
 
 class UInputMappingContext;
 
 UCLASS()
-class SOLIDCORE1_API ASolidCore1PlayerController : public APlayerController
+class SOLIDCORE1_API ASolidPlayerController : public APlayerController
 {
 	GENERATED_BODY()
 
 public:
-	ASolidCore1PlayerController();
+	ASolidPlayerController();
 
 protected:
 	virtual void BeginPlay() override;

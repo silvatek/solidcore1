@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 
 /** Deterministic 2D value / fBm noise for seamless chunk heights (world XY in cm). */
-namespace SolidCore1TerrainNoise
+namespace SolidTerrainNoise
 {
 	FORCEINLINE uint32 HashCoords(int32 X, int32 Y, int32 Seed)
 	{

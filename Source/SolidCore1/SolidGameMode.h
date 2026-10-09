@@ -2,17 +2,17 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/GameModeBase.h"
-#include "SolidCore1GameMode.generated.h"
+#include "SolidGameMode.generated.h"
 
-class ASolidCore1CompanionCharacter;
+class ASolidCompanionCharacter;
 
 UCLASS()
-class SOLIDCORE1_API ASolidCore1GameMode : public AGameModeBase
+class SOLIDCORE1_API ASolidGameMode : public AGameModeBase
 {
 	GENERATED_BODY()
 
 public:
-	ASolidCore1GameMode();
+	ASolidGameMode();
 
 	/** When true, spawns a terrain streamer at BeginPlay if the level does not already have one. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
@@ -22,11 +22,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	bool bAutoSpawnCompanion = true;
 
-	/** Optional override; defaults to ASolidCore1CompanionCharacter. */
+	/** Optional override; defaults to ASolidCompanionCharacter. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
-	TSubclassOf<ASolidCore1CompanionCharacter> CompanionClass;
+	TSubclassOf<ASolidCompanionCharacter> CompanionClass;
 
-	ASolidCore1CompanionCharacter* GetCompanion() const { return SpawnedCompanion.Get(); }
+	ASolidCompanionCharacter* GetCompanion() const { return SpawnedCompanion.Get(); }
 
 protected:
 	virtual void BeginPlay() override;
@@ -35,7 +35,7 @@ protected:
 	void EnsureCompanion();
 
 	UPROPERTY(Transient)
-	TWeakObjectPtr<ASolidCore1CompanionCharacter> SpawnedCompanion;
+	TWeakObjectPtr<ASolidCompanionCharacter> SpawnedCompanion;
 
 	FTimerHandle CompanionSpawnTimer;
 };

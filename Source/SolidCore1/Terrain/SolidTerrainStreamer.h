@@ -2,30 +2,30 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "SolidCore1TerrainTypes.h"
-#include "SolidCore1TerrainStreamer.generated.h"
+#include "SolidTerrainTypes.h"
+#include "SolidTerrainStreamer.generated.h"
 
-class ASolidCore1TerrainChunk;
+class ASolidTerrainChunk;
 class UMaterialInterface;
-class USolidCore1TerrainMap;
+class USolidTerrainMap;
 
 /**
  * Spawns / destroys runtime procedural terrain chunks around a focus actor (usually the player pawn).
  * Heights are sampled in world XY so chunk edges match.
  */
 UCLASS()
-class SOLIDCORE1_API ASolidCore1TerrainStreamer : public AActor
+class SOLIDCORE1_API ASolidTerrainStreamer : public AActor
 {
 	GENERATED_BODY()
 
 public:
-	ASolidCore1TerrainStreamer();
+	ASolidTerrainStreamer();
 
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
 	/** Spawn a streamer if the world does not already have one. Safe to call often. */
-	static ASolidCore1TerrainStreamer* EnsureExists(UWorld* World);
+	static ASolidTerrainStreamer* EnsureExists(UWorld* World);
 
 	/** Read-only helpers for the debug HUD (no streaming side effects). */
 	int32 GetLoadedChunkCount() const { return LoadedChunks.Num(); }
@@ -35,8 +35,8 @@ public:
 	{
 		return ResolvedTerrainMaterial ? ResolvedTerrainMaterial.Get() : TerrainMaterial.Get();
 	}
-	USolidCore1TerrainMap* GetTerrainMap() const { return TerrainMap; }
-	FSolidCore1TerrainPoint GetTerrainPointAt(const FVector& WorldLocation) const;
+	USolidTerrainMap* GetTerrainMap() const { return TerrainMap; }
+	FSolidTerrainPoint GetTerrainPointAt(const FVector& WorldLocation) const;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "500.0"))
 	float ChunkWorldSize = 6400.f;
@@ -121,7 +121,7 @@ protected:
 	void DisableLandscapeActorsOnce();
 
 	UPROPERTY()
-	TMap<FIntPoint, TObjectPtr<ASolidCore1TerrainChunk>> LoadedChunks;
+	TMap<FIntPoint, TObjectPtr<ASolidTerrainChunk>> LoadedChunks;
 
 	/** Cached lit material so chunks do not each create their own. */
 	UPROPERTY(Transient)
@@ -129,7 +129,7 @@ protected:
 
 	/** World simulation grid — source of rendered heights + biome/threat/fog. */
 	UPROPERTY(Transient)
-	TObjectPtr<USolidCore1TerrainMap> TerrainMap;
+	TObjectPtr<USolidTerrainMap> TerrainMap;
 
 	float TimeSinceUpdate = 0.f;
 	bool bDidDisableLandscape = false;

@@ -1,4 +1,4 @@
-#include "SolidCore1Character.h"
+#include "SolidCharacter.h"
 #include "Animation/AnimBlueprint.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimSequence.h"
@@ -21,12 +21,12 @@
 #include "InputModifiers.h"
 #include "Modules/ModuleManager.h"
 #include "SolidCore1.h"
-#include "Companion/SolidCore1CompanionCharacter.h"
-#include "Terrain/SolidCore1TerrainStreamer.h"
+#include "Companion/SolidCompanionCharacter.h"
+#include "Terrain/SolidTerrainStreamer.h"
 #include "EngineUtils.h"
 #include "UObject/SoftObjectPath.h"
 
-namespace SolidCore1Input
+namespace SolidInput
 {
 	static UInputModifierSwizzleAxis* MakeSwizzleYXZ(UObject* Outer)
 	{
@@ -41,7 +41,7 @@ namespace SolidCore1Input
 	}
 }
 
-ASolidCore1Character::ASolidCore1Character()
+ASolidCharacter::ASolidCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -96,13 +96,13 @@ ASolidCore1Character::ASolidCore1Character()
 	FollowCamera->bUsePawnControlRotation = false;
 }
 
-void ASolidCore1Character::PostInitializeComponents()
+void ASolidCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
 	ApplyCharacterVisuals();
 }
 
-void ASolidCore1Character::ApplyMeshGroundOffset()
+void ASolidCharacter::ApplyMeshGroundOffset()
 {
 	if (USkeletalMeshComponent* CharacterMesh = GetMesh())
 	{
@@ -112,7 +112,7 @@ void ASolidCore1Character::ApplyMeshGroundOffset()
 	}
 }
 
-void ASolidCore1Character::BeginPlay()
+void ASolidCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	ApplyCharacterVisuals();
@@ -127,27 +127,27 @@ void ASolidCore1Character::BeginPlay()
 	ApplyMeshGroundOffset();
 
 	// Backup spawn path: Blueprint GameModes sometimes skip C++ BeginPlay.
-	ASolidCore1TerrainStreamer::EnsureExists(GetWorld());
+	ASolidTerrainStreamer::EnsureExists(GetWorld());
 }
 
-void ASolidCore1Character::PossessedBy(AController* NewController)
+void ASolidCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
 	EnsureRuntimeInputAssets();
 	AddMappingContext();
 	ApplyMeshGroundOffset();
-	ASolidCore1TerrainStreamer::EnsureExists(GetWorld());
+	ASolidTerrainStreamer::EnsureExists(GetWorld());
 	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Character PossessedBy - ensured terrain streamer"));
 }
 
-void ASolidCore1Character::OnRep_PlayerState()
+void ASolidCharacter::OnRep_PlayerState()
 {
 	Super::OnRep_PlayerState();
 	EnsureRuntimeInputAssets();
 	AddMappingContext();
 }
 
-void ASolidCore1Character::Tick(float DeltaTime)
+void ASolidCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	if (bUseVikingVisuals)
@@ -158,7 +158,7 @@ void ASolidCore1Character::Tick(float DeltaTime)
 	ClampCameraAboveTerrain(DeltaTime);
 }
 
-void ASolidCore1Character::UpdateGroupCameraFraming(float DeltaTime)
+void ASolidCharacter::UpdateGroupCameraFraming(float DeltaTime)
 {
 	if (!CameraBoom || !bFrameCompanions)
 	{
@@ -189,7 +189,7 @@ void ASolidCore1Character::UpdateGroupCameraFraming(float DeltaTime)
 
 	if (UWorld* World = GetWorld())
 	{
-		for (TActorIterator<ASolidCore1CompanionCharacter> It(World); It; ++It)
+		for (TActorIterator<ASolidCompanionCharacter> It(World); It; ++It)
 		{
 			if (!IsValid(*It))
 			{
@@ -283,7 +283,7 @@ void ASolidCore1Character::UpdateGroupCameraFraming(float DeltaTime)
 		CameraBoom->TargetArmLength, DesiredArmLength, DeltaTime, ArmInterpSpeed);
 }
 
-void ASolidCore1Character::ClampCameraAboveTerrain(float DeltaTime)
+void ASolidCharacter::ClampCameraAboveTerrain(float DeltaTime)
 {
 	if (!CameraBoom || !IsLocallyControlled())
 	{
@@ -296,8 +296,8 @@ void ASolidCore1Character::ClampCameraAboveTerrain(float DeltaTime)
 		return;
 	}
 
-	ASolidCore1TerrainStreamer* Streamer = nullptr;
-	for (TActorIterator<ASolidCore1TerrainStreamer> It(World); It; ++It)
+	ASolidTerrainStreamer* Streamer = nullptr;
+	for (TActorIterator<ASolidTerrainStreamer> It(World); It; ++It)
 	{
 		Streamer = *It;
 		break;
@@ -338,7 +338,7 @@ void ASolidCore1Character::ClampCameraAboveTerrain(float DeltaTime)
 		0.f) + LocalLift;
 }
 
-void ASolidCore1Character::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
@@ -354,33 +354,33 @@ void ASolidCore1Character::SetupPlayerInputComponent(UInputComponent* PlayerInpu
 
 		if (MoveAction)
 		{
-			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASolidCore1Character::Move);
+			EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &ASolidCharacter::Move);
 		}
 
 		if (LookAction)
 		{
-			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASolidCore1Character::Look);
+			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASolidCharacter::Look);
 		}
 
 		if (SprintAction)
 		{
-			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ASolidCore1Character::StartSprint);
-			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ASolidCore1Character::StopSprint);
+			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ASolidCharacter::StartSprint);
+			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Completed, this, &ASolidCharacter::StopSprint);
 		}
 
 		if (ZoomAction)
 		{
-			EnhancedInputComponent->BindAction(ZoomAction, ETriggerEvent::Triggered, this, &ASolidCore1Character::Zoom);
+			EnhancedInputComponent->BindAction(ZoomAction, ETriggerEvent::Triggered, this, &ASolidCharacter::Zoom);
 		}
 	}
 	else
 	{
-		UE_LOG(LogSolidCore1, Error,
-			TEXT("SolidCore1Character requires an Enhanced Input Component. Check DefaultInput.ini DefaultInputComponentClass."));
+		UE_LOG(LogSolid, Error,
+			TEXT("SolidCharacter requires an Enhanced Input Component. Check DefaultInput.ini DefaultInputComponentClass."));
 	}
 }
 
-void ASolidCore1Character::Move(const FInputActionValue& Value)
+void ASolidCharacter::Move(const FInputActionValue& Value)
 {
 	const FVector2D MovementVector = Value.Get<FVector2D>();
 
@@ -397,7 +397,7 @@ void ASolidCore1Character::Move(const FInputActionValue& Value)
 	}
 }
 
-void ASolidCore1Character::Look(const FInputActionValue& Value)
+void ASolidCharacter::Look(const FInputActionValue& Value)
 {
 	const FVector2D LookAxisVector = Value.Get<FVector2D>();
 
@@ -408,7 +408,7 @@ void ASolidCore1Character::Look(const FInputActionValue& Value)
 	}
 }
 
-void ASolidCore1Character::Zoom(const FInputActionValue& Value)
+void ASolidCharacter::Zoom(const FInputActionValue& Value)
 {
 	// Clamp axis — some platforms deliver large wheel spikes in one tick.
 	const float Axis = FMath::Clamp(Value.Get<float>(), -3.f, 3.f);
@@ -424,19 +424,19 @@ void ASolidCore1Character::Zoom(const FInputActionValue& Value)
 		CameraZoomMax);
 }
 
-void ASolidCore1Character::StartSprint()
+void ASolidCharacter::StartSprint()
 {
 	bIsSprinting = true;
 	ApplyWalkSpeed();
 }
 
-void ASolidCore1Character::StopSprint()
+void ASolidCharacter::StopSprint()
 {
 	bIsSprinting = false;
 	ApplyWalkSpeed();
 }
 
-void ASolidCore1Character::ApplyWalkSpeed() const
+void ASolidCharacter::ApplyWalkSpeed() const
 {
 	if (UCharacterMovementComponent* Movement = GetCharacterMovement())
 	{
@@ -444,7 +444,7 @@ void ASolidCore1Character::ApplyWalkSpeed() const
 	}
 }
 
-void ASolidCore1Character::AddMappingContext()
+void ASolidCharacter::AddMappingContext()
 {
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
@@ -487,14 +487,14 @@ static USkeletalMesh* FindMannequinMeshByRegistry()
 	TArray<FAssetData> Assets;
 	AssetRegistry.GetAssets(Filter, Assets);
 
-	UE_LOG(LogSolidCore1, Log, TEXT("Mannequin mesh search: found %d skeletal meshes under /Game/Characters/Mannequins"), Assets.Num());
+	UE_LOG(LogSolid, Log, TEXT("Mannequin mesh search: found %d skeletal meshes under /Game/Characters/Mannequins"), Assets.Num());
 
 	USkeletalMesh* Ranked[3] = {nullptr, nullptr, nullptr}; // Simple Manny, Manny, Quinn/other
 
 	for (const FAssetData& Asset : Assets)
 	{
 		const FString Name = Asset.AssetName.ToString();
-		UE_LOG(LogSolidCore1, Log, TEXT("  candidate mesh: %s"), *Asset.GetObjectPathString());
+		UE_LOG(LogSolid, Log, TEXT("  candidate mesh: %s"), *Asset.GetObjectPathString());
 
 		USkeletalMesh* Mesh = LoadMeshFromAssetData(Asset);
 		if (!Mesh)
@@ -544,14 +544,14 @@ static UClass* FindMannequinAnimClassByRegistry()
 	TArray<FAssetData> Assets;
 	AssetRegistry.GetAssets(Filter, Assets);
 
-	UE_LOG(LogSolidCore1, Log, TEXT("Mannequin anim search: found %d anim blueprints under /Game/Characters/Mannequins"), Assets.Num());
+	UE_LOG(LogSolid, Log, TEXT("Mannequin anim search: found %d anim blueprints under /Game/Characters/Mannequins"), Assets.Num());
 
 	UClass* Ranked[3] = {nullptr, nullptr, nullptr}; // Manny ABP, Quinn ABP, any ABP
 
 	for (const FAssetData& Asset : Assets)
 	{
 		const FString Name = Asset.AssetName.ToString();
-		UE_LOG(LogSolidCore1, Log, TEXT("  candidate anim: %s"), *Asset.GetObjectPathString());
+		UE_LOG(LogSolid, Log, TEXT("  candidate anim: %s"), *Asset.GetObjectPathString());
 
 		if (Name.Contains(TEXT("PostProcess"), ESearchCase::IgnoreCase))
 		{
@@ -590,7 +590,7 @@ static UClass* FindMannequinAnimClassByRegistry()
 	return nullptr;
 }
 
-void ASolidCore1Character::ApplyCharacterVisuals()
+void ASolidCharacter::ApplyCharacterVisuals()
 {
 	USkeletalMeshComponent* CharacterMesh = GetMesh();
 	if (!CharacterMesh)
@@ -598,7 +598,7 @@ void ASolidCore1Character::ApplyCharacterVisuals()
 		return;
 	}
 
-	UE_LOG(LogSolidCore1, Log, TEXT("ApplyCharacterVisuals: current mesh=%s viking=%d"),
+	UE_LOG(LogSolid, Log, TEXT("ApplyCharacterVisuals: current mesh=%s viking=%d"),
 		CharacterMesh->GetSkeletalMeshAsset() ? *CharacterMesh->GetSkeletalMeshAsset()->GetPathName() : TEXT("<none>"),
 		bUseVikingVisuals ? 1 : 0);
 
@@ -642,11 +642,11 @@ void ASolidCore1Character::ApplyCharacterVisuals()
 		CharacterMesh->SetVisibility(true);
 		CharacterMesh->SetHiddenInGame(false);
 		CharacterMesh->SetCastShadow(true);
-		UE_LOG(LogSolidCore1, Warning, TEXT("Applied character mesh: %s"), *LoadedMesh->GetPathName());
+		UE_LOG(LogSolid, Warning, TEXT("Applied character mesh: %s"), *LoadedMesh->GetPathName());
 	}
 	else if (!LoadedMesh)
 	{
-		UE_LOG(LogSolidCore1, Error, TEXT("No character skeletal mesh found (Viking/Manny)."));
+		UE_LOG(LogSolid, Error, TEXT("No character skeletal mesh found (Viking/Manny)."));
 		return;
 	}
 
@@ -690,12 +690,12 @@ void ASolidCore1Character::ApplyCharacterVisuals()
 		{
 			CharacterMesh->SetAnimationMode(EAnimationMode::AnimationBlueprint);
 			CharacterMesh->SetAnimInstanceClass(AnimClass);
-			UE_LOG(LogSolidCore1, Warning, TEXT("Applied mannequin anim BP: %s"), *AnimClass->GetPathName());
+			UE_LOG(LogSolid, Warning, TEXT("Applied mannequin anim BP: %s"), *AnimClass->GetPathName());
 		}
 	}
 }
 
-void ASolidCore1Character::CacheVikingLocomotionAnims()
+void ASolidCharacter::CacheVikingLocomotionAnims()
 {
 	auto LoadClip = [](TSoftObjectPtr<UAnimSequence>& Soft, const TCHAR* Path) -> UAnimSequence*
 	{
@@ -728,7 +728,7 @@ void ASolidCore1Character::CacheVikingLocomotionAnims()
 	}
 }
 
-bool ASolidCore1Character::PlayVikingLocomotionClip(UAnimSequence* Anim)
+bool ASolidCharacter::PlayVikingLocomotionClip(UAnimSequence* Anim)
 {
 	USkeletalMeshComponent* CharacterMesh = GetMesh();
 	if (!CharacterMesh || !Anim)
@@ -759,11 +759,11 @@ bool ASolidCore1Character::PlayVikingLocomotionClip(UAnimSequence* Anim)
 		return SingleNode->GetAnimationAsset() == Anim;
 	}
 
-	UE_LOG(LogSolidCore1, Error, TEXT("Player Viking: failed AnimSingleNodeInstance for %s"), *Anim->GetName());
+	UE_LOG(LogSolid, Error, TEXT("Player Viking: failed AnimSingleNodeInstance for %s"), *Anim->GetName());
 	return false;
 }
 
-void ASolidCore1Character::UpdateVikingLocomotionAnim()
+void ASolidCharacter::UpdateVikingLocomotionAnim()
 {
 	USkeletalMeshComponent* CharacterMesh = GetMesh();
 	if (!CharacterMesh || !CharacterMesh->GetSkeletalMeshAsset())
@@ -817,7 +817,7 @@ void ASolidCore1Character::UpdateVikingLocomotionAnim()
 	PlayVikingLocomotionClip(Desired);
 }
 
-void ASolidCore1Character::EnsureRuntimeInputAssets()
+void ASolidCharacter::EnsureRuntimeInputAssets()
 {
 	if (!MoveAction)
 	{
@@ -856,40 +856,40 @@ void ASolidCore1Character::EnsureRuntimeInputAssets()
 		// WASD → Axis2D (X = strafe, Y = forward)
 		{
 			FEnhancedActionKeyMapping& Mapping = DefaultMappingContext->MapKey(MoveAction, EKeys::W);
-			Mapping.Modifiers.Add(SolidCore1Input::MakeSwizzleYXZ(DefaultMappingContext));
+			Mapping.Modifiers.Add(SolidInput::MakeSwizzleYXZ(DefaultMappingContext));
 		}
 		{
 			FEnhancedActionKeyMapping& Mapping = DefaultMappingContext->MapKey(MoveAction, EKeys::S);
-			Mapping.Modifiers.Add(SolidCore1Input::MakeNegate(DefaultMappingContext));
-			Mapping.Modifiers.Add(SolidCore1Input::MakeSwizzleYXZ(DefaultMappingContext));
+			Mapping.Modifiers.Add(SolidInput::MakeNegate(DefaultMappingContext));
+			Mapping.Modifiers.Add(SolidInput::MakeSwizzleYXZ(DefaultMappingContext));
 		}
 		DefaultMappingContext->MapKey(MoveAction, EKeys::D);
 		{
 			FEnhancedActionKeyMapping& Mapping = DefaultMappingContext->MapKey(MoveAction, EKeys::A);
-			Mapping.Modifiers.Add(SolidCore1Input::MakeNegate(DefaultMappingContext));
+			Mapping.Modifiers.Add(SolidInput::MakeNegate(DefaultMappingContext));
 		}
 
 		// Gamepad left stick
 		DefaultMappingContext->MapKey(MoveAction, EKeys::Gamepad_LeftX);
 		{
 			FEnhancedActionKeyMapping& Mapping = DefaultMappingContext->MapKey(MoveAction, EKeys::Gamepad_LeftY);
-			Mapping.Modifiers.Add(SolidCore1Input::MakeSwizzleYXZ(DefaultMappingContext));
+			Mapping.Modifiers.Add(SolidInput::MakeSwizzleYXZ(DefaultMappingContext));
 		}
 
 		// Mouse look
 		DefaultMappingContext->MapKey(LookAction, EKeys::MouseX);
 		{
 			FEnhancedActionKeyMapping& Mapping = DefaultMappingContext->MapKey(LookAction, EKeys::MouseY);
-			Mapping.Modifiers.Add(SolidCore1Input::MakeNegate(DefaultMappingContext));
-			Mapping.Modifiers.Add(SolidCore1Input::MakeSwizzleYXZ(DefaultMappingContext));
+			Mapping.Modifiers.Add(SolidInput::MakeNegate(DefaultMappingContext));
+			Mapping.Modifiers.Add(SolidInput::MakeSwizzleYXZ(DefaultMappingContext));
 		}
 
 		// Gamepad right stick
 		DefaultMappingContext->MapKey(LookAction, EKeys::Gamepad_RightX);
 		{
 			FEnhancedActionKeyMapping& Mapping = DefaultMappingContext->MapKey(LookAction, EKeys::Gamepad_RightY);
-			Mapping.Modifiers.Add(SolidCore1Input::MakeNegate(DefaultMappingContext));
-			Mapping.Modifiers.Add(SolidCore1Input::MakeSwizzleYXZ(DefaultMappingContext));
+			Mapping.Modifiers.Add(SolidInput::MakeNegate(DefaultMappingContext));
+			Mapping.Modifiers.Add(SolidInput::MakeSwizzleYXZ(DefaultMappingContext));
 		}
 
 		DefaultMappingContext->MapKey(JumpAction, EKeys::SpaceBar);

@@ -1,11 +1,11 @@
-#include "SolidCore1GameMode.h"
-#include "SolidCore1BuildId.h"
-#include "SolidCore1Character.h"
-#include "SolidCore1HUD.h"
-#include "SolidCore1PlayerController.h"
+#include "SolidGameMode.h"
+#include "SolidBuildId.h"
+#include "SolidCharacter.h"
+#include "SolidHUD.h"
+#include "SolidPlayerController.h"
 #include "SolidCore1.h"
-#include "Companion/SolidCore1CompanionCharacter.h"
-#include "Terrain/SolidCore1TerrainStreamer.h"
+#include "Companion/SolidCompanionCharacter.h"
+#include "Terrain/SolidTerrainStreamer.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/Character.h"
@@ -13,37 +13,37 @@
 #include "GameFramework/PlayerController.h"
 #include "TimerManager.h"
 
-namespace SolidCore1GameModePrivate
+namespace SolidGameModePrivate
 {
 	static UClass* TryLoadPawnClass(const TCHAR* Path)
 	{
 		if (UClass* Loaded = LoadClass<APawn>(nullptr, Path))
 		{
-			UE_LOG(LogSolidCore1, Warning, TEXT("SolidCore1GameMode using pawn class: %s"), *Loaded->GetPathName());
+			UE_LOG(LogSolid, Warning, TEXT("SolidGameMode using pawn class: %s"), *Loaded->GetPathName());
 			return Loaded;
 		}
 		return nullptr;
 	}
 }
 
-ASolidCore1GameMode::ASolidCore1GameMode()
+ASolidGameMode::ASolidGameMode()
 {
-	PlayerControllerClass = ASolidCore1PlayerController::StaticClass();
-	HUDClass = ASolidCore1HUD::StaticClass();
+	PlayerControllerClass = ASolidPlayerController::StaticClass();
+	HUDClass = ASolidHUD::StaticClass();
 	bAutoSpawnTerrainStreamer = true;
 	bAutoSpawnCompanion = true;
-	CompanionClass = ASolidCore1CompanionCharacter::StaticClass();
+	CompanionClass = ASolidCompanionCharacter::StaticClass();
 
-	UClass* PawnClass = SolidCore1GameModePrivate::TryLoadPawnClass(
+	UClass* PawnClass = SolidGameModePrivate::TryLoadPawnClass(
 		TEXT("/Game/Characters/BP_SolidCore1Character.BP_SolidCore1Character_C"));
 	if (!PawnClass)
 	{
-		PawnClass = SolidCore1GameModePrivate::TryLoadPawnClass(
+		PawnClass = SolidGameModePrivate::TryLoadPawnClass(
 			TEXT("/Game/Blueprints/BP_SolidCore1Character.BP_SolidCore1Character_C"));
 	}
 	if (!PawnClass)
 	{
-		PawnClass = SolidCore1GameModePrivate::TryLoadPawnClass(
+		PawnClass = SolidGameModePrivate::TryLoadPawnClass(
 			TEXT("/Game/ThirdPerson/Blueprints/BP_ThirdPersonCharacter.BP_ThirdPersonCharacter_C"));
 	}
 
@@ -53,41 +53,41 @@ ASolidCore1GameMode::ASolidCore1GameMode()
 	}
 	else
 	{
-		DefaultPawnClass = ASolidCore1Character::StaticClass();
-		UE_LOG(LogSolidCore1, Warning,
-			TEXT("SolidCore1GameMode falling back to C++ SolidCore1Character. "
+		DefaultPawnClass = ASolidCharacter::StaticClass();
+		UE_LOG(LogSolid, Warning,
+			TEXT("SolidGameMode falling back to C++ SolidCharacter. "
 				 "Create /Game/Characters/BP_SolidCore1Character with SKM_Manny_Simple assigned, "
 				 "or set Default Pawn via BP_SolidCore1GameMode in Project Settings."));
 	}
 }
 
-void ASolidCore1GameMode::BeginPlay()
+void ASolidGameMode::BeginPlay()
 {
 	Super::BeginPlay();
-	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Build %s"), SOLIDCORE1_BUILD_ID);
-	UE_LOG(LogSolidCore1, Warning, TEXT("Build %s"), SOLIDCORE1_BUILD_ID);
+	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Build %s"), SOLID_BUILD_ID);
+	UE_LOG(LogSolid, Warning, TEXT("Build %s"), SOLID_BUILD_ID);
 	EnsureTerrainStreamer();
 
 	// Player pawn may not exist on the first frame of PIE — retry shortly.
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(
-			CompanionSpawnTimer, this, &ASolidCore1GameMode::EnsureCompanion, 0.35f, false);
+			CompanionSpawnTimer, this, &ASolidGameMode::EnsureCompanion, 0.35f, false);
 	}
 	EnsureCompanion();
 }
 
-void ASolidCore1GameMode::EnsureTerrainStreamer()
+void ASolidGameMode::EnsureTerrainStreamer()
 {
 	if (!bAutoSpawnTerrainStreamer)
 	{
 		return;
 	}
 
-	ASolidCore1TerrainStreamer::EnsureExists(GetWorld());
+	ASolidTerrainStreamer::EnsureExists(GetWorld());
 }
 
-void ASolidCore1GameMode::EnsureCompanion()
+void ASolidGameMode::EnsureCompanion()
 {
 	if (!bAutoSpawnCompanion)
 	{
@@ -111,13 +111,13 @@ void ASolidCore1GameMode::EnsureCompanion()
 	{
 		// Keep trying until the pawn exists.
 		World->GetTimerManager().SetTimer(
-			CompanionSpawnTimer, this, &ASolidCore1GameMode::EnsureCompanion, 0.25f, false);
+			CompanionSpawnTimer, this, &ASolidGameMode::EnsureCompanion, 0.25f, false);
 		return;
 	}
 
 	UClass* ClassToSpawn = CompanionClass
 		? CompanionClass.Get()
-		: ASolidCore1CompanionCharacter::StaticClass();
+		: ASolidCompanionCharacter::StaticClass();
 
 	const FVector PlayerLoc = PlayerPawn->GetActorLocation();
 	const FVector PlayerFwd = PlayerPawn->GetActorForwardVector();
@@ -133,7 +133,7 @@ void ASolidCore1GameMode::EnsureCompanion()
 		}
 	}
 
-	if (ASolidCore1TerrainStreamer* Streamer = ASolidCore1TerrainStreamer::EnsureExists(World))
+	if (ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::EnsureExists(World))
 	{
 		const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
 		SpawnLoc.Z = LandZ + CapsuleHalf + Streamer->SnapHeightPadding;
@@ -143,12 +143,12 @@ void ASolidCore1GameMode::EnsureCompanion()
 	SpawnParams.Owner = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-	ASolidCore1CompanionCharacter* Companion = World->SpawnActor<ASolidCore1CompanionCharacter>(
+	ASolidCompanionCharacter* Companion = World->SpawnActor<ASolidCompanionCharacter>(
 		ClassToSpawn, SpawnLoc, PlayerPawn->GetActorRotation(), SpawnParams);
 	if (!Companion)
 	{
 		UE_LOG(LogTemp, Error, TEXT("[SolidCore1] Failed to spawn Quinn companion."));
-		UE_LOG(LogSolidCore1, Error, TEXT("Failed to spawn Quinn companion."));
+		UE_LOG(LogSolid, Error, TEXT("Failed to spawn Quinn companion."));
 		return;
 	}
 
@@ -157,5 +157,5 @@ void ASolidCore1GameMode::EnsureCompanion()
 
 	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Spawned Quinn companion at %s following %s"),
 		*SpawnLoc.ToCompactString(), *PlayerPawn->GetName());
-	UE_LOG(LogSolidCore1, Warning, TEXT("Spawned Quinn companion following %s"), *PlayerPawn->GetName());
+	UE_LOG(LogSolid, Warning, TEXT("Spawned Quinn companion following %s"), *PlayerPawn->GetName());
 }

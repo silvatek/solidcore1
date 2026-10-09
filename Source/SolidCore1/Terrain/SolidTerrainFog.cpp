@@ -108,10 +108,10 @@ namespace SolidTerrainFog
 		OpacityParam->MaterialExpressionEditorX = -380;
 		OpacityParam->MaterialExpressionEditorY = 160;
 
-		EditorData->ExpressionCollection.AddExpression(ColorParam);
-		EditorData->ExpressionCollection.AddExpression(OpacityParam);
-		EditorData->EmissiveColor.Connect(0, ColorParam);
-		EditorData->Opacity.Connect(0, OpacityParam);
+		EditorData->ExpressionCollection.Expressions.Add(ColorParam);
+		EditorData->ExpressionCollection.Expressions.Add(OpacityParam);
+		EditorData->EmissiveColor.Expression = ColorParam;
+		EditorData->Opacity.Expression = OpacityParam;
 
 		bool bNeedsRecompile = false;
 		Material->SetMaterialUsage(bNeedsRecompile, MATUSAGE_StaticMesh);

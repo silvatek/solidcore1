@@ -213,36 +213,30 @@ float ASolidTerrainStreamer::SampleViewFogAmount() const
 		return 0.f;
 	}
 
+	// Drive mist from the same local TerrainPoint fog the HUD shows (pawn/focus),
+	// not from forward probes. Probes kept mist~0.6 while standing in fog==0.
 	FVector SampleOrigin = FVector::ZeroVector;
-	FVector ViewForward = FVector::ForwardVector;
-	if (APlayerController* PC = World->GetFirstPlayerController())
+	bool bHaveSample = false;
+	if (AActor* Focus = ResolveFocusActor())
 	{
-		if (APlayerCameraManager* CamMgr = PC->PlayerCameraManager)
-		{
-			SampleOrigin = CamMgr->GetCameraLocation();
-			ViewForward = CamMgr->GetCameraRotation().Vector();
-		}
-		else if (APawn* Pawn = PC->GetPawn())
+		SampleOrigin = Focus->GetActorLocation();
+		bHaveSample = true;
+	}
+	else if (APlayerController* PC = World->GetFirstPlayerController())
+	{
+		if (APawn* Pawn = PC->GetPawn())
 		{
 			SampleOrigin = Pawn->GetActorLocation();
-			ViewForward = Pawn->GetActorForwardVector();
+			bHaveSample = true;
 		}
 	}
 
-	const float LocalFog = GetTerrainPointAt(SampleOrigin).Fog;
-	float MaxFog = LocalFog;
-
-	// Probe along the view (25% of prior distances) so mist reacts to nearer fog bands.
-	static const float ProbeDistancesCm[] = {
-		1250.f, 2500.f, 3750.f, 5000.f, 7500.f, 11250.f
-	};
-	for (const float DistanceCm : ProbeDistancesCm)
+	if (!bHaveSample)
 	{
-		const FVector Probe = SampleOrigin + ViewForward * DistanceCm;
-		MaxFog = FMath::Max(MaxFog, GetTerrainPointAt(Probe).Fog);
+		return 0.f;
 	}
 
-	return FMath::Clamp(LocalFog * 0.4f + MaxFog * 0.6f, 0.f, 1.f);
+	return FMath::Clamp(GetTerrainPointAt(SampleOrigin).Fog, 0.f, 1.f);
 }
 
 void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)
@@ -265,8 +259,9 @@ void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)
 	}
 
 	const float TargetFog = SampleViewFogAmount();
-	if (DeltaSeconds <= 0.f)
+	if (DeltaSeconds <= 0.f || TargetFog <= KINDA_SMALL_NUMBER)
 	{
+		// Snap clear so fog==0 never leaves residual mist while interpolating down.
 		RenderedFogAmount = TargetFog;
 	}
 	else

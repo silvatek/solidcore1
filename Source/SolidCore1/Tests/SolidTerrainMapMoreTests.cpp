@@ -1,19 +1,9 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "SolidTerrainFog.h"
 #include "SolidTerrainMap.h"
+#include "SolidTerrainTestHelpers.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
-
-namespace SolidTerrainMapMoreTestPrivate
-{
-	static USolidTerrainMap* MakeSmallMap()
-	{
-		USolidTerrainMap* Map = NewObject<USolidTerrainMap>();
-		Map->Build(1337, 0.00012f, 3000.f, 0.f, 65, 65, 200.f, true);
-		return Map;
-	}
-}
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidMapSampleHeightMatchesGridTest,
@@ -22,7 +12,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidMapSampleHeightMatchesGridTest::RunTest(const FString& Parameters)
 {
-	USolidTerrainMap* Map = SolidTerrainMapMoreTestPrivate::MakeSmallMap();
+	USolidTerrainMap* Map = SolidTerrainTestHelpers::MakeSmallMap();
 	TestNotNull(TEXT("map"), Map);
 
 	const FSolidTerrainPoint& Grid = Map->GetPoint(32, 32);
@@ -43,7 +33,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidMapBuildIdempotentTest::RunTest(const FString& Parameters)
 {
-	USolidTerrainMap* Map = SolidTerrainMapMoreTestPrivate::MakeSmallMap();
+	USolidTerrainMap* Map = SolidTerrainTestHelpers::MakeSmallMap();
 	const int32 CountBefore = Map->GetPointCount();
 	const float HeightBefore = Map->GetPoint(10, 10).Height;
 
@@ -65,33 +55,13 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidMapWorldBoundsTest::RunTest(const FString& Parameters)
 {
-	USolidTerrainMap* Map = SolidTerrainMapMoreTestPrivate::MakeSmallMap();
+	USolidTerrainMap* Map = SolidTerrainTestHelpers::MakeSmallMap();
 	const FVector2D MinXY = Map->GetWorldMinXY();
 	const FVector2D MaxXY = Map->GetWorldMaxXY();
 	TestTrue(TEXT("min < max X"), MinXY.X < MaxXY.X);
 	TestTrue(TEXT("min < max Y"), MinXY.Y < MaxXY.Y);
 	TestTrue(TEXT("origin centered-ish (min negative)"), MinXY.X < 0.f && MinXY.Y < 0.f);
 	TestTrue(TEXT("origin centered-ish (max positive)"), MaxXY.X > 0.f && MaxXY.Y > 0.f);
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidFogSampleMistAroundTest,
-	"SolidCore1.Fog.SampleMistAround",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
-
-bool FSolidFogSampleMistAroundTest::RunTest(const FString& Parameters)
-{
-	TestTrue(TEXT("null map => 0"),
-		FMath::IsNearlyEqual(SolidTerrainFog::SampleMistAmountAround(nullptr, FVector::ZeroVector), 0.f));
-
-	USolidTerrainMap* Map = SolidTerrainMapMoreTestPrivate::MakeSmallMap();
-	// At origin: local fog 0, but ring at 25/50m hits fogged cells.
-	const float MistAtOrigin = SolidTerrainFog::SampleMistAmountAround(Map, FVector::ZeroVector);
-	TestTrue(TEXT("mist at origin sees surrounding fog"), MistAtOrigin > 0.f);
-
-	const float MistInFull = SolidTerrainFog::SampleMistAmountAround(Map, FVector(6000.f, 0.f, 0.f));
-	TestTrue(TEXT("mist in full fog is 1"), FMath::IsNearlyEqual(MistInFull, 1.f));
 	return true;
 }
 

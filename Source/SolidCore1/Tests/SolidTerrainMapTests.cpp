@@ -1,28 +1,9 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "SolidTerrainFog.h"
 #include "SolidTerrainMap.h"
+#include "SolidTerrainTestHelpers.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
-
-namespace SolidTerrainMapTestPrivate
-{
-	static USolidTerrainMap* MakeSmallMap()
-	{
-		USolidTerrainMap* Map = NewObject<USolidTerrainMap>();
-		// ~128m half-extent so the grid includes full-fog cells beyond 50m.
-		Map->Build(
-			/*InSeed=*/1337,
-			/*FrequencyScale=*/0.00012f,
-			/*Amplitude=*/3000.f,
-			/*BaseHeight=*/0.f,
-			/*InGridWidth=*/65,
-			/*InGridHeight=*/65,
-			/*InPointSpacing=*/200.f,
-			/*bForceRebuild=*/true);
-		return Map;
-	}
-}
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidMapBuildSmokeTest,
@@ -31,7 +12,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidMapBuildSmokeTest::RunTest(const FString& Parameters)
 {
-	USolidTerrainMap* Map = SolidTerrainMapTestPrivate::MakeSmallMap();
+	USolidTerrainMap* Map = SolidTerrainTestHelpers::MakeSmallMap();
 	TestNotNull(TEXT("map object"), Map);
 	TestTrue(TEXT("map reports built"), Map->IsBuilt());
 	TestEqual(TEXT("point count"), Map->GetPointCount(), 65 * 65);
@@ -55,7 +36,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidMapTrailClearTest::RunTest(const FString& Parameters)
 {
-	USolidTerrainMap* Map = SolidTerrainMapTestPrivate::MakeSmallMap();
+	USolidTerrainMap* Map = SolidTerrainTestHelpers::MakeSmallMap();
 	TestNotNull(TEXT("map object"), Map);
 
 	// ~70.7m from origin → starts at full fog; stays inside ±6400cm map bounds for probes.
@@ -95,7 +76,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidMapTrailNeverIncreasesFogTest::RunTest(const FString& Parameters)
 {
-	USolidTerrainMap* Map = SolidTerrainMapTestPrivate::MakeSmallMap();
+	USolidTerrainMap* Map = SolidTerrainTestHelpers::MakeSmallMap();
 	TestNotNull(TEXT("map object"), Map);
 
 	TArray<float> Before;

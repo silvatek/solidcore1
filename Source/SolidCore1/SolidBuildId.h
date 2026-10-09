@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0087")
+#define SOLID_BUILD_ID TEXT("SC1-0088")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Extract SolidTerrainMaterials from Streamer")
+#define SOLID_BUILD_NOTE TEXT("Shared map test helpers; Fog.SampleMistAround with Fog tests")
 #endif

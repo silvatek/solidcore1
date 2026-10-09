@@ -209,6 +209,7 @@ Source/
       SolidMonolith.*         # Grey slab landmark at start
       SolidTree.*             # Placeholder cylinder+cone tree
     Tests/
+      SolidTerrainTestHelpers.h   # Shared MakeSmallMap fixture
       SolidTerrainFogTests.cpp
       SolidTerrainFogMeshTests.cpp
       SolidTerrainMapTests.cpp

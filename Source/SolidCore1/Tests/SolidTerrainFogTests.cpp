@@ -1,6 +1,8 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "SolidTerrainFog.h"
+#include "SolidTerrainMap.h"
+#include "SolidTerrainTestHelpers.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -46,6 +48,26 @@ bool FSolidFogUnitsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("half/full threshold between 0.5 and 1"),
 		SolidTerrainFog::HalfFullFogThreshold > 0.5f
 		&& SolidTerrainFog::HalfFullFogThreshold < 1.f);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidFogSampleMistAroundTest,
+	"SolidCore1.Fog.SampleMistAround",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidFogSampleMistAroundTest::RunTest(const FString& Parameters)
+{
+	TestTrue(TEXT("null map => 0"),
+		FMath::IsNearlyEqual(SolidTerrainFog::SampleMistAmountAround(nullptr, FVector::ZeroVector), 0.f));
+
+	USolidTerrainMap* Map = SolidTerrainTestHelpers::MakeSmallMap();
+	// At origin: local fog 0, but ring at 25/50m hits fogged cells.
+	const float MistAtOrigin = SolidTerrainFog::SampleMistAmountAround(Map, FVector::ZeroVector);
+	TestTrue(TEXT("mist at origin sees surrounding fog"), MistAtOrigin > 0.f);
+
+	const float MistInFull = SolidTerrainFog::SampleMistAmountAround(Map, FVector(6000.f, 0.f, 0.f));
+	TestTrue(TEXT("mist in full fog is 1"), FMath::IsNearlyEqual(MistInFull, 1.f));
 	return true;
 }
 

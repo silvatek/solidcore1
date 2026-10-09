@@ -174,7 +174,7 @@ bool FSolidContentPawnBlueprintFallbackTest::RunTest(const FString& Parameters)
 {
 	// Same path table as ASolidGameMode (SolidContentPaths); then C++ ASolidCharacter.
 	const bool bHasBp = SolidContentTestPrivate::AnyClassResolves(SolidContentPaths::PawnBlueprintClasses());
-	TestTrue(TEXT("BP_SolidCharacter (or legacy redirect) present"), bHasBp);
+	TestTrue(TEXT("BP_SolidCharacter present"), bHasBp);
 	if (bHasBp)
 	{
 		AddInfo(TEXT("Pawn Blueprint path from SolidContentPaths resolved."));

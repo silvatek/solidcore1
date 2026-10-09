@@ -163,6 +163,7 @@ Floating nameplates (`SolidNameLabel`) sit above each Party member and face the 
 - **Party** (`USolidParty`) holds up to 8 **assigned** plans from that catalog and one **active** plan (default Column).
 - Formations drive Companion follow slots: **Line** (flanks), **Column** (file behind), **Mob** (tight triangle behind).
 - Captain switches assigned slots with **F1–F8** (only filled slots work). HUD shows `BattlePlan F#/# Name (Formation)`.
+- Engine viewmode debug binds (wireframe/unlit/lit/…) are moved to **Ctrl+F1–F5** in `Config/DefaultInput.ini` so bare F-keys stay free for battle plans. Restart the editor after pulling.
 
 ## Companion (SC1-0024 / SC1-0093)
 

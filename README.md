@@ -43,13 +43,16 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.Noise.*` | Hash / value / fBm / height / grass tone |
 | `SolidCore1.Types.*` | Biome names, `FSolidTerrainPoint` defaults |
 | `SolidCore1.Vegetation.*` | Tree RNG variation, monolith defaults |
-| `SolidCore1.GameMode.*` | Default spawn flags |
+| `SolidCore1.GameMode.*` | Default spawn flags, pawn BP resolution |
+| `SolidCore1.Companion.*` | Defaults, SetFollowTarget |
+| `SolidCore1.Streamer.*` | FindExisting / EnsureExists (null + idempotent) |
+| `SolidCore1.Clip.*` | SelectClip idle/walk/run/jump rules |
 | `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |
 | `SolidCore1.Content.*` | Required/optional Content + Engine assets the code loads |
 
 **Content dependency tests** assert meshes/materials/anims/BPs the C++ loaders expect (Engine BasicShapes, FlatCol, Viking mesh+locomotion, Fab grass or FlatCol fallback, pawn/GameMode BP-or-C++). Viking is required; Epic mannequin assets are not used.
 
-Not yet covered (need a world / PIE): character movement, companion AI, streamer chunk load/unload, HUD drawing.
+Not yet covered (need PIE): character movement, companion steering on terrain, streamer chunk load/unload, HUD drawing.
 
 **Session Frontend:** rebuild editor → **Tools → Session Frontend → Automation** → filter `SolidCore1` → Start.
 
@@ -218,6 +221,9 @@ Source/
       SolidTerrainTypesTests.cpp
       SolidVegetationTests.cpp
       SolidGameModeTests.cpp
+      SolidCompanionTests.cpp
+      SolidTerrainStreamerTests.cpp
+      SolidClipLocomotionTests.cpp
       SolidBuildIdTests.cpp
       SolidContentDependencyTests.cpp
 tools/

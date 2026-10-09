@@ -179,19 +179,36 @@ void ASolidCompanionCharacter::UpdateLocomotionAnim()
 	}
 
 	// Prefer run when clearly running/sprinting (walk≈500, sprint≈900).
-	const bool bShouldRun =
+	const bool bPreferRun =
 		Speed >= RunAnimSpeedThreshold
 		|| PlayerSpeed >= RunAnimSpeedThreshold
 		|| (GetCharacterMovement() && GetCharacterMovement()->MaxWalkSpeed >= CatchUpSpeed - 1.f);
 
+	const SolidClipLocomotion::EClip Kind = SolidClipLocomotion::SelectClip(
+		Speed,
+		WalkAnimSpeedThreshold,
+		bPreferRun,
+		/*bInAir=*/false,
+		/*bAllowJump=*/false);
+
 	UAnimSequence* Desired = CachedIdleAnim;
-	if (bShouldRun && CachedRunAnim)
+	switch (Kind)
 	{
-		Desired = CachedRunAnim;
-	}
-	else if (Speed >= WalkAnimSpeedThreshold && CachedWalkAnim)
-	{
-		Desired = CachedWalkAnim;
+	case SolidClipLocomotion::EClip::Run:
+		if (CachedRunAnim)
+		{
+			Desired = CachedRunAnim;
+		}
+		else if (CachedWalkAnim && Speed >= WalkAnimSpeedThreshold)
+		{
+			Desired = CachedWalkAnim;
+		}
+		break;
+	case SolidClipLocomotion::EClip::Walk:
+		Desired = CachedWalkAnim ? CachedWalkAnim.Get() : Desired;
+		break;
+	default:
+		break;
 	}
 
 	if (!Desired)

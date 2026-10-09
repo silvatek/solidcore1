@@ -24,7 +24,7 @@ ASolidTerrainStreamer::ASolidTerrainStreamer()
 	// Do NOT default to M_PrototypeGrid (hard-wired grey checker).
 }
 
-ASolidTerrainStreamer* ASolidTerrainStreamer::EnsureExists(UWorld* World)
+ASolidTerrainStreamer* ASolidTerrainStreamer::FindExisting(UWorld* World)
 {
 	if (!World || World->bIsTearingDown)
 	{
@@ -34,6 +34,20 @@ ASolidTerrainStreamer* ASolidTerrainStreamer::EnsureExists(UWorld* World)
 	for (TActorIterator<ASolidTerrainStreamer> It(World); It; ++It)
 	{
 		return *It;
+	}
+	return nullptr;
+}
+
+ASolidTerrainStreamer* ASolidTerrainStreamer::EnsureExists(UWorld* World)
+{
+	if (ASolidTerrainStreamer* Existing = FindExisting(World))
+	{
+		return Existing;
+	}
+
+	if (!World || World->bIsTearingDown)
+	{
+		return nullptr;
 	}
 
 	FActorSpawnParameters SpawnParams;

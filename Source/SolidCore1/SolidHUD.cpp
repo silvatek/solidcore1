@@ -19,19 +19,6 @@
 
 namespace SolidHUDPrivate
 {
-	static ASolidTerrainStreamer* FindStreamer(UWorld* World)
-	{
-		if (!World)
-		{
-			return nullptr;
-		}
-		for (TActorIterator<ASolidTerrainStreamer> It(World); It; ++It)
-		{
-			return *It;
-		}
-		return nullptr;
-	}
-
 	static void DrawLines(
 		UCanvas* Canvas,
 		UFont* Font,
@@ -117,7 +104,7 @@ void ASolidHUD::DrawHUD()
 	Lines.Add(FString::Printf(TEXT("FPS %.0f  (%.1f ms, %.1fs avg)"), AvgFps, AvgMs, FpsAverageWindowSeconds));
 
 	APawn* Pawn = GetOwningPawn();
-	ASolidTerrainStreamer* Streamer = SolidHUDPrivate::FindStreamer(GetWorld());
+	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(GetWorld());
 
 	if (Pawn)
 	{

@@ -21,6 +21,42 @@ namespace SolidClipLocomotion
 	inline constexpr const TCHAR* DefaultRunPath = TEXT("/Game/Viking/Animations/Anim_Viking_run.Anim_Viking_run");
 	inline constexpr const TCHAR* DefaultJumpPath = TEXT("/Game/Viking/Animations/Anim_Viking_jump.Anim_Viking_jump");
 
+	/** Pure clip-selection preference (caller maps to loaded assets). */
+	enum class EClip : uint8
+	{
+		Idle,
+		Walk,
+		Run,
+		Jump,
+	};
+
+	/**
+	 * Choose idle / walk / run / jump from planar speed and flags.
+	 * @param bPreferRun  Caller-computed (sprint, catch-up, Captain/Companion speed rules).
+	 * @param bAllowJump  True when a jump clip exists and air poses should use it.
+	 */
+	inline EClip SelectClip(
+		float PlanarSpeed,
+		float WalkSpeedThreshold,
+		bool bPreferRun,
+		bool bInAir,
+		bool bAllowJump)
+	{
+		if (bInAir && bAllowJump)
+		{
+			return EClip::Jump;
+		}
+		if (bPreferRun)
+		{
+			return EClip::Run;
+		}
+		if (PlanarSpeed >= WalkSpeedThreshold)
+		{
+			return EClip::Walk;
+		}
+		return EClip::Idle;
+	}
+
 	/** Load soft clip, else hard path. */
 	UAnimSequence* LoadClip(TSoftObjectPtr<UAnimSequence>& Soft, const TCHAR* FallbackPath);
 

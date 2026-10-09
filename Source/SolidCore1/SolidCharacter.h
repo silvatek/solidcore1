@@ -10,7 +10,6 @@ class UCameraComponent;
 class UInputMappingContext;
 class UInputAction;
 class USkeletalMesh;
-class UAnimInstance;
 class UAnimSequence;
 
 /**
@@ -52,15 +51,15 @@ protected:
 	/** Builds transient Enhanced Input assets when Content assets are not assigned (playable out of the box). */
 	void EnsureRuntimeInputAssets();
 
-	/** Applies Viking mesh / locomotion setup (Captain). */
+	/** Applies mesh / single-node locomotion setup (Captain). */
 	void ApplyCharacterVisuals();
 
 	/** Applies MeshGroundZOffset while preserving BP yaw/pitch/roll. */
 	void ApplyMeshGroundOffset();
 
-	void CacheVikingLocomotionAnims();
-	void UpdateVikingLocomotionAnim();
-	bool PlayVikingLocomotionClip(UAnimSequence* Anim);
+	void CacheLocomotionAnims();
+	void UpdateLocomotionAnim();
+	bool PlayLocomotionClip(UAnimSequence* Anim);
 
 	/**
 	 * Party camera: pull the boom toward the Party center and optionally lengthen
@@ -167,29 +166,29 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> ZoomAction;
 
-	/** Fab Viking skeletal mesh (required). */
+	/** Default skeletal mesh soft ptr (Fab Viking unless overridden). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Visual")
 	TSoftObjectPtr<USkeletalMesh> DefaultSkeletalMesh;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Anim")
-	TSoftObjectPtr<UAnimSequence> VikingIdleAnim;
+	TSoftObjectPtr<UAnimSequence> IdleAnim;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Anim")
-	TSoftObjectPtr<UAnimSequence> VikingWalkAnim;
+	TSoftObjectPtr<UAnimSequence> WalkAnim;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Anim")
-	TSoftObjectPtr<UAnimSequence> VikingRunAnim;
+	TSoftObjectPtr<UAnimSequence> RunAnim;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Anim")
-	TSoftObjectPtr<UAnimSequence> VikingJumpAnim;
+	TSoftObjectPtr<UAnimSequence> JumpAnim;
 
 	/** Planar speed above which the run clip plays (cm/s). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Anim", meta = (ClampMin = "0.0"))
-	float VikingRunAnimSpeedThreshold = 380.f;
+	float RunAnimSpeedThreshold = 380.f;
 
 	/** Planar speed above which the walk clip plays (cm/s). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Anim", meta = (ClampMin = "0.0"))
-	float VikingWalkAnimSpeedThreshold = 30.f;
+	float WalkAnimSpeedThreshold = 30.f;
 
 	/** Mesh relative Z (feet at capsule bottom ≈ -capsule half-height). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Visual")
@@ -207,17 +206,17 @@ protected:
 	float CameraTerrainLiftCm = 0.f;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UAnimSequence> CachedVikingIdleAnim;
+	TObjectPtr<UAnimSequence> CachedIdleAnim;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UAnimSequence> CachedVikingWalkAnim;
+	TObjectPtr<UAnimSequence> CachedWalkAnim;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UAnimSequence> CachedVikingRunAnim;
+	TObjectPtr<UAnimSequence> CachedRunAnim;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UAnimSequence> CachedVikingJumpAnim;
+	TObjectPtr<UAnimSequence> CachedJumpAnim;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UAnimSequence> ActiveVikingLocomotionAnim;
+	TObjectPtr<UAnimSequence> ActiveLocomotionAnim;
 };

@@ -25,6 +25,9 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
+	/** Return an existing streamer, or nullptr (never spawns). Safe for HUD / read-only queries. */
+	static ASolidTerrainStreamer* FindExisting(UWorld* World);
+
 	/**
 	 * Spawn a streamer if the world does not already have one.
 	 * Primary owners: SolidGameMode and USolidTerrainWorldSubsystem (PIE/game backup).

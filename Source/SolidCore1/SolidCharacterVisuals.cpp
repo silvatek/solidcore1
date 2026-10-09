@@ -14,37 +14,37 @@ void ASolidCharacter::ApplyCharacterVisuals()
 		/*bOnlyIfMeshUnset=*/false);
 }
 
-void ASolidCharacter::CacheVikingLocomotionAnims()
+void ASolidCharacter::CacheLocomotionAnims()
 {
-	if (!CachedVikingIdleAnim)
+	if (!CachedIdleAnim)
 	{
-		CachedVikingIdleAnim = SolidClipLocomotion::LoadClip(
-			VikingIdleAnim, SolidClipLocomotion::DefaultIdlePath);
+		CachedIdleAnim = SolidClipLocomotion::LoadClip(
+			IdleAnim, SolidClipLocomotion::DefaultIdlePath);
 	}
-	if (!CachedVikingWalkAnim)
+	if (!CachedWalkAnim)
 	{
-		CachedVikingWalkAnim = SolidClipLocomotion::LoadClip(
-			VikingWalkAnim, SolidClipLocomotion::DefaultWalkPath);
+		CachedWalkAnim = SolidClipLocomotion::LoadClip(
+			WalkAnim, SolidClipLocomotion::DefaultWalkPath);
 	}
-	if (!CachedVikingRunAnim)
+	if (!CachedRunAnim)
 	{
-		CachedVikingRunAnim = SolidClipLocomotion::LoadClip(
-			VikingRunAnim, SolidClipLocomotion::DefaultRunPath);
+		CachedRunAnim = SolidClipLocomotion::LoadClip(
+			RunAnim, SolidClipLocomotion::DefaultRunPath);
 	}
-	if (!CachedVikingJumpAnim)
+	if (!CachedJumpAnim)
 	{
-		CachedVikingJumpAnim = SolidClipLocomotion::LoadClip(
-			VikingJumpAnim, SolidClipLocomotion::DefaultJumpPath);
+		CachedJumpAnim = SolidClipLocomotion::LoadClip(
+			JumpAnim, SolidClipLocomotion::DefaultJumpPath);
 	}
 }
 
-bool ASolidCharacter::PlayVikingLocomotionClip(UAnimSequence* Anim)
+bool ASolidCharacter::PlayLocomotionClip(UAnimSequence* Anim)
 {
 	return SolidClipLocomotion::PlayLoopingClip(
-		GetMesh(), Anim, ActiveVikingLocomotionAnim, TEXT("Captain"));
+		GetMesh(), Anim, ActiveLocomotionAnim, TEXT("Captain"));
 }
 
-void ASolidCharacter::UpdateVikingLocomotionAnim()
+void ASolidCharacter::UpdateLocomotionAnim()
 {
 	USkeletalMeshComponent* CharacterMesh = GetMesh();
 	if (!CharacterMesh || !CharacterMesh->GetSkeletalMeshAsset())
@@ -52,31 +52,44 @@ void ASolidCharacter::UpdateVikingLocomotionAnim()
 		return;
 	}
 
-	CacheVikingLocomotionAnims();
+	CacheLocomotionAnims();
 
-	UAnimSequence* Desired = CachedVikingIdleAnim;
 	const UCharacterMovementComponent* MoveComp = GetCharacterMovement();
 	const bool bInAir = MoveComp && MoveComp->IsFalling();
-	if (bInAir && CachedVikingJumpAnim)
-	{
-		Desired = CachedVikingJumpAnim;
-	}
-	else
-	{
-		const float Speed = GetVelocity().Size2D();
-		const bool bShouldRun =
-			Speed >= VikingRunAnimSpeedThreshold
-			|| bIsSprinting
-			|| (MoveComp && MoveComp->MaxWalkSpeed >= SprintSpeed - 1.f);
+	const float Speed = GetVelocity().Size2D();
+	const bool bPreferRun =
+		Speed >= RunAnimSpeedThreshold
+		|| bIsSprinting
+		|| (MoveComp && MoveComp->MaxWalkSpeed >= SprintSpeed - 1.f);
 
-		if (bShouldRun && CachedVikingRunAnim)
+	const SolidClipLocomotion::EClip Kind = SolidClipLocomotion::SelectClip(
+		Speed,
+		WalkAnimSpeedThreshold,
+		bPreferRun,
+		bInAir,
+		/*bAllowJump=*/CachedJumpAnim != nullptr);
+
+	UAnimSequence* Desired = CachedIdleAnim;
+	switch (Kind)
+	{
+	case SolidClipLocomotion::EClip::Jump:
+		Desired = CachedJumpAnim ? CachedJumpAnim.Get() : Desired;
+		break;
+	case SolidClipLocomotion::EClip::Run:
+		if (CachedRunAnim)
 		{
-			Desired = CachedVikingRunAnim;
+			Desired = CachedRunAnim;
 		}
-		else if (Speed >= VikingWalkAnimSpeedThreshold && CachedVikingWalkAnim)
+		else if (CachedWalkAnim && Speed >= WalkAnimSpeedThreshold)
 		{
-			Desired = CachedVikingWalkAnim;
+			Desired = CachedWalkAnim;
 		}
+		break;
+	case SolidClipLocomotion::EClip::Walk:
+		Desired = CachedWalkAnim ? CachedWalkAnim.Get() : Desired;
+		break;
+	default:
+		break;
 	}
 
 	if (!Desired)
@@ -84,10 +97,10 @@ void ASolidCharacter::UpdateVikingLocomotionAnim()
 		return;
 	}
 
-	if (SolidClipLocomotion::IsPlayingClip(CharacterMesh, ActiveVikingLocomotionAnim, Desired))
+	if (SolidClipLocomotion::IsPlayingClip(CharacterMesh, ActiveLocomotionAnim, Desired))
 	{
 		return;
 	}
 
-	PlayVikingLocomotionClip(Desired);
+	PlayLocomotionClip(Desired);
 }

@@ -145,12 +145,7 @@ void ASolidCharacter::ClampCameraAboveTerrain(float DeltaTime)
 		return;
 	}
 
-	ASolidTerrainStreamer* Streamer = nullptr;
-	for (TActorIterator<ASolidTerrainStreamer> It(World); It; ++It)
-	{
-		Streamer = *It;
-		break;
-	}
+	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World);
 	if (!Streamer)
 	{
 		return;

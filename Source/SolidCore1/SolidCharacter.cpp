@@ -49,13 +49,13 @@ ASolidCharacter::ASolidCharacter()
 	// Default mesh/clips are Fab Viking; Captain may override DefaultSkeletalMesh later.
 	DefaultSkeletalMesh = TSoftObjectPtr<USkeletalMesh>(
 		FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath));
-	VikingIdleAnim = TSoftObjectPtr<UAnimSequence>(
+	IdleAnim = TSoftObjectPtr<UAnimSequence>(
 		FSoftObjectPath(SolidClipLocomotion::DefaultIdlePath));
-	VikingWalkAnim = TSoftObjectPtr<UAnimSequence>(
+	WalkAnim = TSoftObjectPtr<UAnimSequence>(
 		FSoftObjectPath(SolidClipLocomotion::DefaultWalkPath));
-	VikingRunAnim = TSoftObjectPtr<UAnimSequence>(
+	RunAnim = TSoftObjectPtr<UAnimSequence>(
 		FSoftObjectPath(SolidClipLocomotion::DefaultRunPath));
-	VikingJumpAnim = TSoftObjectPtr<UAnimSequence>(
+	JumpAnim = TSoftObjectPtr<UAnimSequence>(
 		FSoftObjectPath(SolidClipLocomotion::DefaultJumpPath));
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -93,8 +93,8 @@ void ASolidCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	ApplyCharacterVisuals();
-	CacheVikingLocomotionAnims();
-	UpdateVikingLocomotionAnim();
+	CacheLocomotionAnims();
+	UpdateLocomotionAnim();
 	EnsureRuntimeInputAssets();
 	ApplyWalkSpeed();
 	AddMappingContext();
@@ -119,7 +119,7 @@ void ASolidCharacter::OnRep_PlayerState()
 void ASolidCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	UpdateVikingLocomotionAnim();
+	UpdateLocomotionAnim();
 	UpdatePartyCameraFraming(DeltaTime);
 	ClampCameraAboveTerrain(DeltaTime);
 }

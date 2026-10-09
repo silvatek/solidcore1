@@ -176,7 +176,7 @@ World Partition and Large Worlds are enabled in project config for open-world sc
 SolidCore1.uproject
 Config/
 Content/
-  Characters/          # BP_SolidCharacter, BP_SolidGameMode (+ optional SolidCore1* redirector)
+  Characters/          # BP_SolidCharacter, BP_SolidGameMode
   Maps/                # optional L_OpenWorld (+ World Partition externals)
   Viking/              # Fab Viking mesh + locomotion clips
 Source/

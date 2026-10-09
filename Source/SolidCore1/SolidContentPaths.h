@@ -4,27 +4,25 @@
 
 /**
  * Canonical Content Blueprint soft-class paths for pawn / GameMode resolution.
- * Prefer BP_Solid* under /Game/Characters. Legacy BP_SolidCore1* kept while redirectors exist.
+ * Content assets: /Game/Characters/BP_SolidCharacter and BP_SolidGameMode.
  */
 namespace SolidContentPaths
 {
-	/** Null-terminated list of pawn Blueprint class paths (preferred first). */
+	/** Null-terminated list of pawn Blueprint class paths. */
 	inline const TCHAR* const* PawnBlueprintClasses()
 	{
 		static const TCHAR* Paths[] = {
 			TEXT("/Game/Characters/BP_SolidCharacter.BP_SolidCharacter_C"),
-			TEXT("/Game/Characters/BP_SolidCore1Character.BP_SolidCore1Character_C"),
 			nullptr
 		};
 		return Paths;
 	}
 
-	/** Null-terminated list of GameMode Blueprint class paths (preferred first). */
+	/** Null-terminated list of GameMode Blueprint class paths. */
 	inline const TCHAR* const* GameModeBlueprintClasses()
 	{
 		static const TCHAR* Paths[] = {
 			TEXT("/Game/Characters/BP_SolidGameMode.BP_SolidGameMode_C"),
-			TEXT("/Game/Characters/BP_SolidCore1GameMode.BP_SolidCore1GameMode_C"),
 			nullptr
 		};
 		return Paths;

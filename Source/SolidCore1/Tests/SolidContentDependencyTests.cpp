@@ -194,7 +194,7 @@ bool FSolidContentGameModeBlueprintOrCppTest::RunTest(const FString& Parameters)
 {
 	// Same path table as FSolidModule PreWorldInit (SolidContentPaths).
 	const bool bHasBp = SolidContentTestPrivate::AnyClassResolves(SolidContentPaths::GameModeBlueprintClasses());
-	TestTrue(TEXT("BP_SolidGameMode (or legacy redirect) present"), bHasBp);
+	TestTrue(TEXT("BP_SolidGameMode present"), bHasBp);
 	if (bHasBp)
 	{
 		AddInfo(TEXT("GameMode Blueprint path from SolidContentPaths resolved."));

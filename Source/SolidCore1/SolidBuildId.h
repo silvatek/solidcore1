@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0082")
+#define SOLID_BUILD_ID TEXT("SC1-0083")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("BP_Solid* Content paths; drop ThirdPerson pawn fallback")
+#define SOLID_BUILD_NOTE TEXT("Drop legacy BP_SolidCore1* Content path fallbacks")
 #endif

@@ -341,10 +341,10 @@ void ASolidTerrainStreamer::EnsureHeightFog()
 		FogComp->SetVolumetricFog(true);
 		FogComp->VolumetricFogScatteringDistribution = 0.3f;
 		FogComp->VolumetricFogExtinctionScale = 0.8f;
-		FogComp->FogHeightFalloff = 0.12f;
+		// Low falloff so orbiting / raising the boom does not erase mist.
+		FogComp->FogHeightFalloff = 0.02f;
 		FogComp->SetFogInscatteringColor(FogMistColor);
-		// 25% of the previous 50 km volumetric range (matches tighter fog bands).
-		FogComp->SetVolumetricFogDistance(12500.f);
+		FogComp->SetVolumetricFogDistance(20000.f);
 	}
 }
 
@@ -355,58 +355,58 @@ float ASolidTerrainStreamer::SampleViewFogAmount() const
 		return 0.f;
 	}
 
-	UWorld* World = GetWorld();
-	if (!World)
+	AActor* Focus = ResolveFocusActor();
+	if (!Focus)
 	{
 		return 0.f;
 	}
 
-	FVector SampleOrigin = FVector::ZeroVector;
-	FVector ViewForward = FVector::ForwardVector;
-	bool bHaveSample = false;
+	// Anchor to the pawn (not the camera). Camera XY moves with boom/orbit and was
+	// making mist pop to 0 whenever the look direction missed fogged cells.
+	const FVector PawnLoc = Focus->GetActorLocation();
+	const float LocalFog = FMath::Clamp(GetTerrainPointAt(PawnLoc).Fog, 0.f, 1.f);
 
-	if (APlayerController* PC = World->GetFirstPlayerController())
-	{
-		FVector CamLoc = FVector::ZeroVector;
-		FRotator CamRot = FRotator::ZeroRotator;
-		PC->GetPlayerViewPoint(CamLoc, CamRot);
-		SampleOrigin = CamLoc;
-		ViewForward = CamRot.Vector();
-		bHaveSample = true;
-	}
-	else if (AActor* Focus = ResolveFocusActor())
-	{
-		SampleOrigin = Focus->GetActorLocation();
-		ViewForward = Focus->GetActorForwardVector();
-		bHaveSample = true;
-	}
+	const float ClearCm = SolidTerrainFog::MetersToCm(SolidTerrainFog::ClearRadiusMeters);
+	const float FullCm = SolidTerrainFog::MetersToCm(SolidTerrainFog::FullFogStartMeters);
 
-	if (!bHaveSample)
+	// Omnidirectional ring at the exploration edge — stable while orbiting the camera.
+	float SurroundFog = 0.f;
+	constexpr int32 NumRingDirs = 8;
+	for (int32 DirIndex = 0; DirIndex < NumRingDirs; ++DirIndex)
 	{
-		return 0.f;
+		const float Angle = (2.f * PI) * (static_cast<float>(DirIndex) / static_cast<float>(NumRingDirs));
+		const FVector2D Dir(FMath::Cos(Angle), FMath::Sin(Angle));
+		const FVector AtClear = PawnLoc + FVector(Dir.X * ClearCm, Dir.Y * ClearCm, 0.f);
+		const FVector AtFull = PawnLoc + FVector(Dir.X * FullCm, Dir.Y * FullCm, 0.f);
+		SurroundFog = FMath::Max(SurroundFog, GetTerrainPointAt(AtClear).Fog);
+		SurroundFog = FMath::Max(SurroundFog, GetTerrainPointAt(AtFull).Fog);
 	}
 
-	const float LocalFog = FMath::Clamp(GetTerrainPointAt(SampleOrigin).Fog, 0.f, 1.f);
-	float AheadFog = LocalFog;
-	// Probes around the clear-radius / half-band so mist thickens at the exploration edge.
-	static const float ProbeDistancesCm[] = {
-		SolidTerrainFog::MetersToCm(SolidTerrainFog::ClearRadiusMeters),
-		SolidTerrainFog::MetersToCm(SolidTerrainFog::HalfFogStartMeters),
-		SolidTerrainFog::MetersToCm(SolidTerrainFog::FullFogStartMeters),
-		SolidTerrainFog::MetersToCm(SolidTerrainFog::FullFogStartMeters) * 1.5f,
-	};
-	for (const float DistanceCm : ProbeDistancesCm)
+	// Optional view boost (does not replace the ring — prevents look-away wipeout).
+	float ViewFog = 0.f;
+	if (UWorld* World = GetWorld())
 	{
-		AheadFog = FMath::Max(AheadFog, GetTerrainPointAt(SampleOrigin + ViewForward * DistanceCm).Fog);
+		if (APlayerController* PC = World->GetFirstPlayerController())
+		{
+			FVector CamLoc = FVector::ZeroVector;
+			FRotator CamRot = FRotator::ZeroRotator;
+			PC->GetPlayerViewPoint(CamLoc, CamRot);
+			const FVector Forward = CamRot.Vector();
+			const float ViewProbeCm[] = { ClearCm, FullCm, FullCm * 1.5f };
+			for (const float DistanceCm : ViewProbeCm)
+			{
+				ViewFog = FMath::Max(
+					ViewFog, GetTerrainPointAt(CamLoc + Forward * DistanceCm).Fog);
+			}
+		}
 	}
 
-	// Cleared air: mist amount follows what is ahead (exploration edge).
-	// Inside a fog band: prefer local so walking into fog thickens around you.
+	const float EdgeFog = FMath::Max(SurroundFog, ViewFog);
 	if (LocalFog <= 0.05f)
 	{
-		return AheadFog;
+		return FMath::Clamp(EdgeFog, 0.f, 1.f);
 	}
-	return FMath::Max(LocalFog, AheadFog * 0.35f);
+	return FMath::Clamp(FMath::Max(LocalFog, EdgeFog * 0.5f), 0.f, 1.f);
 }
 
 void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)

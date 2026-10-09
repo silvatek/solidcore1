@@ -153,7 +153,7 @@ public:
 
 	/** How quickly rendered fog follows TerrainPoint samples. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.1"))
-	float FogInterpSpeed = 3.5f;
+	float FogInterpSpeed = 2.0f;
 
 	/** FogDensity at TerrainPoint.Fog == 0.5 (hard to see through, still misty). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.0"))

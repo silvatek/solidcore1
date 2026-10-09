@@ -535,32 +535,39 @@ void ASolidTerrainChunk::RebuildExplorationFog(
 					AppendQuad(V0, V1, V2, V3, Slot);
 				};
 
+				// Crossed vertical sheets form a mist lattice (world-space, trail-cleared).
+				// Translucent materials accumulate along the view ray without solid roofs.
+				const float MidX = 0.5f * (X0 + X1);
+				const float MidY = 0.5f * (Y0 + Y1);
+				const float ZMidA = 0.5f * (Z00 + Z10);
+				const float ZMidB = 0.5f * (Z01 + Z11);
+				const float ZMidC = 0.5f * (Z00 + Z01);
+				const float ZMidD = 0.5f * (Z10 + Z11);
+
 				if (bFull)
 				{
-					// Full: edge walls on -X/-Y only (grid of sheets; neighbors share edges).
-					const FVector BX0A(X0, Y0, Z00 + SkirtCm);
-					const FVector BX0B(X0, Y1, Z01 + SkirtCm);
-					const FVector BX0TA(X0, Y0, Z00 + VolumeHeight);
-					const FVector BX0TB(X0, Y1, Z01 + VolumeHeight);
-					AppendWall(BX0A, BX0B, BX0TB, BX0TA, FVector(-1.f, 0.f, 0.f));
-
-					const FVector BY0A(X0, Y0, Z00 + SkirtCm);
-					const FVector BY0B(X1, Y0, Z10 + SkirtCm);
-					const FVector BY0TA(X0, Y0, Z00 + VolumeHeight);
-					const FVector BY0TB(X1, Y0, Z10 + VolumeHeight);
-					AppendWall(BY0A, BY0B, BY0TB, BY0TA, FVector(0.f, -1.f, 0.f));
+					// Full: center X + Y fins every cell — dense lattice.
+					AppendWall(
+						FVector(MidX, Y0, ZMidA + SkirtCm),
+						FVector(MidX, Y1, ZMidB + SkirtCm),
+						FVector(MidX, Y1, ZMidB + VolumeHeight),
+						FVector(MidX, Y0, ZMidA + VolumeHeight),
+						FVector(1.f, 0.f, 0.f));
+					AppendWall(
+						FVector(X0, MidY, ZMidC + SkirtCm),
+						FVector(X1, MidY, ZMidD + SkirtCm),
+						FVector(X1, MidY, ZMidD + VolumeHeight),
+						FVector(X0, MidY, ZMidC + VolumeHeight),
+						FVector(0.f, 1.f, 0.f));
 				}
 				else
 				{
-					// Half: one thin center fin per checkerboard cell (~50% coverage).
-					const float MidX = 0.5f * (X0 + X1);
-					const float ZB0 = 0.5f * (Z00 + Z10) + SkirtCm;
-					const float ZB1 = 0.5f * (Z01 + Z11) + SkirtCm;
+					// Half: single center fin on checkerboard cells (~50% coverage).
 					AppendWall(
-						FVector(MidX, Y0, ZB0),
-						FVector(MidX, Y1, ZB1),
-						FVector(MidX, Y1, ZB1 - SkirtCm + VolumeHeight),
-						FVector(MidX, Y0, ZB0 - SkirtCm + VolumeHeight),
+						FVector(MidX, Y0, ZMidA + SkirtCm),
+						FVector(MidX, Y1, ZMidB + SkirtCm),
+						FVector(MidX, Y1, ZMidB + VolumeHeight),
+						FVector(MidX, Y0, ZMidA + VolumeHeight),
 						FVector(1.f, 0.f, 0.f));
 				}
 			}

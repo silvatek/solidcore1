@@ -186,16 +186,16 @@ int32 ASolidTerrainStreamer::ClearExplorationFogAtFocus()
 
 void ASolidTerrainStreamer::EnsureExplorationFogMaterials()
 {
-	// Sparse bank meshes use soft mist greys (not bright white slabs).
+	// Soft mist greys via translucent parents when available (not bright opaque slabs).
 	if (!ExplorationFogHalfMaterial)
 	{
-		ExplorationFogHalfMaterial = CreateSolidColorMaterial(
-			FLinearColor(0.68f, 0.74f, 0.78f), TEXT("ExplorationFogHalf"));
+		ExplorationFogHalfMaterial = CreateFogVolumeMaterial(
+			FLinearColor(0.55f, 0.62f, 0.68f), 0.45f, TEXT("ExplorationFogHalf"));
 	}
 	if (!ExplorationFogFullMaterial)
 	{
-		ExplorationFogFullMaterial = CreateSolidColorMaterial(
-			FLinearColor(0.74f, 0.78f, 0.82f), TEXT("ExplorationFogFull"));
+		ExplorationFogFullMaterial = CreateFogVolumeMaterial(
+			FLinearColor(0.48f, 0.54f, 0.60f), 0.90f, TEXT("ExplorationFogFull"));
 	}
 }
 
@@ -361,9 +361,48 @@ float ASolidTerrainStreamer::SampleViewFogAmount() const
 		return 0.f;
 	}
 
-	// Mist follows only the pawn's TerrainPoint.Fog (exploration trail).
-	// No camera location / look-direction probes — orbiting the boom must not change mist.
-	return FMath::Clamp(GetTerrainPointAt(Focus->GetActorLocation()).Fog, 0.f, 1.f);
+	// HUD mist: strongest TerrainPoint.Fog on an omnidirectional ring around the pawn.
+	// Pawn/trail only — never camera location or look direction.
+	const FVector PawnLoc = Focus->GetActorLocation();
+	float Amount = FMath::Clamp(GetTerrainPointAt(PawnLoc).Fog, 0.f, 1.f);
+	const float ClearCm = SolidTerrainFog::MetersToCm(SolidTerrainFog::ClearRadiusMeters);
+	const float FullCm = SolidTerrainFog::MetersToCm(SolidTerrainFog::FullFogStartMeters);
+	constexpr int32 NumDirs = 8;
+	for (int32 DirIndex = 0; DirIndex < NumDirs; ++DirIndex)
+	{
+		const float Angle = (2.f * PI) * (static_cast<float>(DirIndex) / static_cast<float>(NumDirs));
+		const FVector2D Dir(FMath::Cos(Angle), FMath::Sin(Angle));
+		Amount = FMath::Max(Amount, GetTerrainPointAt(PawnLoc + FVector(Dir.X * ClearCm, Dir.Y * ClearCm, 0.f)).Fog);
+		Amount = FMath::Max(Amount, GetTerrainPointAt(PawnLoc + FVector(Dir.X * FullCm, Dir.Y * FullCm, 0.f)).Fog);
+	}
+	return FMath::Clamp(Amount, 0.f, 1.f);
+}
+
+void ASolidTerrainStreamer::SilenceHeightFog()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	for (TActorIterator<AExponentialHeightFog> It(World); It; ++It)
+	{
+		AExponentialHeightFog* FogActor = *It;
+		if (!FogActor)
+		{
+			continue;
+		}
+		if (UExponentialHeightFogComponent* FogComp = FogActor->GetComponent())
+		{
+			FogComp->SetFogDensity(0.f);
+			FogComp->SetFogMaxOpacity(0.f);
+			FogComp->SetStartDistance(0.f);
+			FogComp->SetVolumetricFog(false);
+			FogComp->VolumetricFogExtinctionScale = 0.f;
+			FogComp->MarkRenderStateDirty();
+		}
+	}
 }
 
 void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)
@@ -380,8 +419,14 @@ void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)
 
 	if (!bRenderTerrainFog)
 	{
+		if (!bHeightFogSilenced)
+		{
+			SilenceHeightFog();
+			bHeightFogSilenced = true;
+		}
 		return;
 	}
+	bHeightFogSilenced = false;
 
 	EnsureHeightFog();
 	if (!HeightFogActor)
@@ -402,7 +447,6 @@ void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)
 	float StartDistance = 0.f;
 	float ExtinctionScale = 0.f;
 
-	// Piecewise response keyed only to pawn TerrainPoint.Fog (0 / 0.5 / 1).
 	if (Amount <= KINDA_SMALL_NUMBER)
 	{
 		Density = 0.f;

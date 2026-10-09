@@ -121,23 +121,24 @@ public:
 	float TerrainPointSpacing = 200.f;
 
 	/**
-	 * Opaque mesh "fog banks" (debug/legacy). Off by default — they always read as solid
-	 * walls. Exploration fog is Exponential Height Fog driven by TerrainPoint.Fog.
+	 * World-space exploration fog banks (mesh lattice). On by default — this is the only
+	 * fog that clears with the pawn trail and does not depend on camera look/orbit.
+	 * Height fog cannot do spatial fog-of-war (StartDistance is camera-relative).
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog")
-	bool bRenderExplorationFogMeshes = false;
+	bool bRenderExplorationFogMeshes = true;
 
 	/** Low-res fog-of-war cells per chunk edge (only if bRenderExplorationFogMeshes). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "2", ClampMax = "32"))
-	int32 FogQuadsPerSide = 6;
+	int32 FogQuadsPerSide = 8;
 
 	/** Vertical extent of full exploration-fog volumes (cm). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "200.0"))
-	float FogVolumeHeightCm = 2500.f;
+	float FogVolumeHeightCm = 3200.f;
 
 	/** Vertical extent of half-fog pillars (cm). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "200.0"))
-	float FogVolumeHeightHalfCm = 1400.f;
+	float FogVolumeHeightHalfCm = 2200.f;
 
 	/** Min focus travel (cm) before re-applying trail fog / queuing mesh refreshes. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "50.0"))
@@ -147,9 +148,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "1", ClampMax = "16"))
 	int32 MaxFogChunkRebuildsPerUpdate = 2;
 
-	/** Soft Exponential Height Fog driven by TerrainPoint fog (true mist). */
+	/**
+	 * Global Exponential Height Fog. Off by default — it is camera-relative and cannot
+	 * represent trail-based exploration fog. Prefer bRenderExplorationFogMeshes.
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog")
-	bool bRenderTerrainFog = true;
+	bool bRenderTerrainFog = false;
 
 	/** How quickly rendered fog follows TerrainPoint samples. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.1"))
@@ -184,6 +188,7 @@ protected:
 	void ProcessExplorationFogMeshRebuilds();
 	void BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint Coord);
 	void UpdateTerrainFog(float DeltaSeconds);
+	void SilenceHeightFog();
 	float SampleViewFogAmount() const;
 	void UpdateStreaming();
 	FIntPoint WorldToChunkCoord(const FVector& WorldLocation) const;
@@ -226,6 +231,7 @@ protected:
 	float TimeSinceUpdate = 0.f;
 	float RenderedFogAmount = 0.f;
 	bool bDidDisableLandscape = false;
+	bool bHeightFogSilenced = false;
 	bool bHasFogApplyLocation = false;
 	FVector LastFogApplyLocation = FVector::ZeroVector;
 	TSet<FIntPoint> DirtyFogChunkCoords;

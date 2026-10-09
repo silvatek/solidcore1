@@ -31,7 +31,8 @@ public:
 
 	/**
 	 * Sample biome for a world XY given the TerrainMap world rectangle.
-	 * File row 0 maps to the north edge (max Y).
+	 * File row 0 → north (max Y). File column 0 → east (max X) so the text
+	 * matches the in-world layout when viewed with north up.
 	 */
 	ESolidBiome SampleBiome(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 

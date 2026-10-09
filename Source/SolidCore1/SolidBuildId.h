@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0108")
+#define SOLID_BUILD_ID TEXT("SC1-0109")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Captain spawns clear of the town monolith")
+#define SOLID_BUILD_NOTE TEXT("WorldMap: fix left/right (col 0 = east)")
 #endif

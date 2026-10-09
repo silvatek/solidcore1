@@ -6,6 +6,7 @@
 #include "SolidTerrainNoise.h"
 #include "SolidWorldMap.h"
 #include "SolidCore1.h"
+#include "Companion/SolidCompanionCharacter.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/Character.h"
@@ -457,6 +458,50 @@ void ASolidTerrainStreamer::CollectBiomeMaterials(
 	}
 }
 
+void ASolidTerrainStreamer::RelocateCompanionsByDelta(const FVector& DeltaXY)
+{
+	UWorld* World = GetWorld();
+	if (!World || DeltaXY.IsNearlyZero())
+	{
+		return;
+	}
+
+	int32 Moved = 0;
+	for (TActorIterator<ASolidCompanionCharacter> It(World); It; ++It)
+	{
+		ASolidCompanionCharacter* Companion = *It;
+		if (!IsValid(Companion))
+		{
+			continue;
+		}
+
+		const FVector OldLoc = Companion->GetActorLocation();
+		const FVector Planned(OldLoc.X + DeltaXY.X, OldLoc.Y + DeltaXY.Y, OldLoc.Z);
+		const float LandZ = SampleHeightAtWorld(Planned) + CollisionHeightBias;
+		float CapsuleHalfHeight = 96.f;
+		if (const UCapsuleComponent* Capsule = Companion->GetCapsuleComponent())
+		{
+			CapsuleHalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+		}
+
+		const FVector NewLoc(Planned.X, Planned.Y, LandZ + CapsuleHalfHeight + SnapHeightPadding);
+		Companion->SetActorLocation(NewLoc);
+		if (UCharacterMovementComponent* Move = Companion->GetCharacterMovement())
+		{
+			Move->StopMovementImmediately();
+			Move->SetMovementMode(MOVE_Walking);
+		}
+		++Moved;
+	}
+
+	if (Moved > 0)
+	{
+		UE_LOG(LogSolid, Warning,
+			TEXT("Relocated %d companion(s) with start-town delta (%.0f, %.0f)"),
+			Moved, DeltaXY.X, DeltaXY.Y);
+	}
+}
+
 void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 {
 	if (bDidRelocateToStartTown)
@@ -483,6 +528,7 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 		return;
 	}
 
+	const FVector OldLoc = Focus->GetActorLocation();
 	const float LandZ = SampleHeightAtWorld(FVector(TownXY.X, TownXY.Y, 0.f)) + CollisionHeightBias;
 	float CapsuleHalfHeight = 96.f;
 	if (const ACharacter* Character = Cast<ACharacter>(Focus))
@@ -494,6 +540,8 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 	}
 
 	const FVector NewLoc(TownXY.X, TownXY.Y, LandZ + CapsuleHalfHeight + SnapHeightPadding);
+	const FVector Delta(NewLoc.X - OldLoc.X, NewLoc.Y - OldLoc.Y, 0.f);
+
 	Focus->SetActorLocation(NewLoc);
 	if (ACharacter* Character = Cast<ACharacter>(Focus))
 	{
@@ -504,11 +552,13 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 		}
 	}
 
+	RelocateCompanionsByDelta(Delta);
+
 	bDidRelocateToStartTown = true;
 	bHasFogApplyLocation = false;
 	UE_LOG(LogSolid, Warning,
-		TEXT("Relocated focus to start town (%.0f, %.0f) Z=%.1f"),
-		TownXY.X, TownXY.Y, NewLoc.Z);
+		TEXT("Relocated focus to start town (%.0f, %.0f) Z=%.1f (from %.0f, %.0f)"),
+		TownXY.X, TownXY.Y, NewLoc.Z, OldLoc.X, OldLoc.Y);
 }
 
 float ASolidTerrainStreamer::SampleHeightAtWorld(const FVector& WorldLocation) const

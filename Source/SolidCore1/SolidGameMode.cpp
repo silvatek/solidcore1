@@ -210,6 +210,16 @@ void ASolidGameMode::EnsureCompanion()
 		return;
 	}
 
+	// Wait for the streamer to finish the one-shot Z-town relocate so companions
+	// spawn next to the Captain at the starting town, not at the map PlayerStart.
+	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::EnsureExists(World);
+	if (Streamer && !Streamer->HasAttemptedStartTownRelocate())
+	{
+		World->GetTimerManager().SetTimer(
+			CompanionSpawnTimer, this, &ASolidGameMode::EnsureCompanion, 0.1f, false);
+		return;
+	}
+
 	UClass* ClassToSpawn = CompanionClass
 		? CompanionClass.Get()
 		: ASolidCompanionCharacter::StaticClass();

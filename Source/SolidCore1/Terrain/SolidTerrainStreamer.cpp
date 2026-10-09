@@ -275,17 +275,46 @@ void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)
 	}
 
 	const float Amount = FMath::Clamp(RenderedFogAmount, 0.f, 1.f);
-	// Keep a tiny clear-air density so the component stays active; ramp hard with TerrainPoint fog.
-	const float Density = FMath::Lerp(0.00008f, FogDensityAtFull, Amount);
-	const float MaxOpacity = FMath::Lerp(0.0f, FogMaxOpacityAtFull, Amount);
-	// Start distances are 25% of the prior 800→50 cm range so mist begins closer.
-	const float StartDistance = FMath::Lerp(200.f, 12.5f, Amount);
+
+	float Density = 0.f;
+	float MaxOpacity = 0.f;
+	float StartDistance = 0.f;
+	float ExtinctionScale = 0.f;
+
+	// Piecewise mist response keyed to TerrainPoint fog levels:
+	// fog==0 → perfect clear (true zeros, no residual haze)
+	// fog==0.5 → hard to see through
+	// fog==1 → essentially opaque
+	if (Amount <= KINDA_SMALL_NUMBER)
+	{
+		Density = 0.f;
+		MaxOpacity = 0.f;
+		StartDistance = 0.f;
+		ExtinctionScale = 0.f;
+	}
+	else if (Amount <= 0.5f)
+	{
+		const float T = Amount / 0.5f;
+		Density = FMath::Lerp(0.f, FogDensityAtHalf, T);
+		MaxOpacity = FMath::Lerp(0.f, FogMaxOpacityAtHalf, T);
+		StartDistance = FMath::Lerp(2500.f, 60.f, T);
+		ExtinctionScale = FMath::Lerp(0.f, 2.4f, T);
+	}
+	else
+	{
+		const float T = (Amount - 0.5f) / 0.5f;
+		Density = FMath::Lerp(FogDensityAtHalf, FogDensityAtFull, T);
+		MaxOpacity = FMath::Lerp(FogMaxOpacityAtHalf, FogMaxOpacityAtFull, T);
+		StartDistance = FMath::Lerp(60.f, 0.f, T);
+		ExtinctionScale = FMath::Lerp(2.4f, 4.5f, T);
+	}
 
 	FogComp->SetFogDensity(Density);
 	FogComp->SetFogMaxOpacity(MaxOpacity);
 	FogComp->SetFogInscatteringColor(FogMistColor);
 	FogComp->SetStartDistance(StartDistance);
-	FogComp->VolumetricFogExtinctionScale = FMath::Lerp(0.25f, 2.2f, Amount);
+	FogComp->SetVolumetricFog(Amount > KINDA_SMALL_NUMBER);
+	FogComp->VolumetricFogExtinctionScale = ExtinctionScale;
 	FogComp->MarkRenderStateDirty();
 }
 

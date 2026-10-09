@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0054")
+#define SOLID_BUILD_ID TEXT("SC1-0055")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Higher mist density")
+#define SOLID_BUILD_NOTE TEXT("Opaque mist at fog=1; clear at 0")
 #endif

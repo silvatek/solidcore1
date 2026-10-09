@@ -120,9 +120,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.1"))
 	float FogInterpSpeed = 2.5f;
 
-	/** FogDensity at TerrainPoint.Fog == 1. */
+	/** FogDensity at TerrainPoint.Fog == 0.5 (hard to see through). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.0"))
-	float FogDensityAtFull = 0.28f;
+	float FogDensityAtHalf = 0.55f;
+
+	/** FogDensity at TerrainPoint.Fog == 1 (essentially opaque). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.0"))
+	float FogDensityAtFull = 1.4f;
+
+	/** FogMaxOpacity at TerrainPoint.Fog == 0.5. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float FogMaxOpacityAtHalf = 0.92f;
 
 	/** FogMaxOpacity at TerrainPoint.Fog == 1. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.0", ClampMax = "1.0"))

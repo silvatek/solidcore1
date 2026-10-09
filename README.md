@@ -152,7 +152,7 @@ Goal: the world starts shrouded; fog clears only where the **pawn has been** (tr
 
 `ASolidCompanionCharacter` spawns behind the player and follows with simple steering (no NavMesh — works on procedural terrain). Same Fab Viking mesh + clip locomotion as the player. GameMode flag: `bAutoSpawnCompanion`. HUD shows companion mesh name and distance.
 
-SC1-0025/0026: the player spring-arm camera shifts its `TargetOffset` toward the group center and lengthens so all companions stay in frame (`bFrameCompanions`). SC1-0026 uses screen-space fit, disables boom collision while companions are present (hill probes were collapsing the arm), and zooms in much slower than out so the shot does not pop narrow. SC1-0027 lifts the camera via spring-arm `SocketOffset` when the predicted camera point would sink below the procedural terrain height (keeps framing arm length intact).
+**Party camera** (SC1-0025/0026/0084): the Captain spring-arm shifts `TargetOffset` toward the Party center and may lengthen so Companions stay in frame (`bFrameCompanions`; implementation in `SolidCharacterPartyCamera.cpp`). SC1-0026 uses screen-space fit, disables boom collision while Companions are present, and zooms in much slower than out. SC1-0027 lifts the camera via `SocketOffset` when the predicted camera point would sink below procedural terrain.
 
 ## Create the open-world map
 
@@ -184,14 +184,17 @@ Source/
   SolidCore1Editor.Target.cs
   SolidCore1/
     SolidCore1.Build.cs
-    SolidCharacter.*
+    SolidCharacter.h / .cpp              # Captain core (move/look/zoom/sprint)
+    SolidCharacterInput.cpp              # Runtime Enhanced Input factory
+    SolidCharacterVisuals.cpp            # Viking mesh + clip locomotion
+    SolidCharacterPartyCamera.cpp        # Party framing + terrain boom lift
     SolidGameMode.*
     SolidPlayerController.*
     SolidMaterials.*       # Shared FlatCol solid-color MID helper
     SolidContentPaths.h    # Canonical BP soft-class paths
     WorldMap.txt           # ASCII large-scale biome overlay (not wired yet)
     Companion/
-      SolidCompanionCharacter.*
+      SolidCompanionCharacter.*          # Companion NPC follower
     Terrain/
       SolidTerrainTypes.h
       SolidTerrainFog.*       # FoW bands, boundary mesh, materials, height-fog helpers

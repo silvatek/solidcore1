@@ -13,6 +13,11 @@ class USkeletalMesh;
 class UAnimInstance;
 class UAnimSequence;
 
+/**
+ * Captain — the single player-controlled character.
+ * Party camera framing lives in SolidCharacterPartyCamera.cpp;
+ * Viking visuals in SolidCharacterVisuals.cpp; runtime input in SolidCharacterInput.cpp.
+ */
 UCLASS(config = Game)
 class SOLIDCORE1_API ASolidCharacter : public ACharacter
 {
@@ -46,7 +51,7 @@ protected:
 	/** Builds transient Enhanced Input assets when Content assets are not assigned (playable out of the box). */
 	void EnsureRuntimeInputAssets();
 
-	/** Applies Viking mesh / locomotion setup. */
+	/** Applies Viking mesh / locomotion setup (Captain). */
 	void ApplyCharacterVisuals();
 
 	/** Applies MeshGroundZOffset while preserving BP yaw/pitch/roll. */
@@ -56,8 +61,11 @@ protected:
 	void UpdateVikingLocomotionAnim();
 	bool PlayVikingLocomotionClip(UAnimSequence* Anim);
 
-	/** Pull the boom toward the group center and lengthen it so companions stay framed. */
-	void UpdateGroupCameraFraming(float DeltaTime);
+	/**
+	 * Party camera: pull the boom toward the Party center and optionally lengthen
+	 * so the Captain and active Companions stay framed. (Company is not framed.)
+	 */
+	void UpdatePartyCameraFraming(float DeltaTime);
 
 	/** Lift the boom socket so the camera stays above procedural terrain (no arm collapse). */
 	void ClampCameraAboveTerrain(float DeltaTime);
@@ -68,7 +76,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> FollowCamera;
 
-	/** When true, camera frames this pawn plus all Solid companions. */
+	/** When true, camera frames the Party (Captain + Companions currently in the world). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing")
 	bool bFrameCompanions = true;
 
@@ -78,15 +86,15 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "400.0"))
 	float FramingMaxArmLength = 4000.f;
 
-	/** Extra world centimeters outside the projected group extents. */
+	/** Extra world centimeters outside the projected Party extents. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "0.0"))
 	float FramingPadding = 280.f;
 
-	/** Zoom-out speed when the group needs a wider shot. */
+	/** Zoom-out speed when the Party needs a wider shot. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "0.1"))
 	float FramingZoomOutSpeed = 8.f;
 
-	/** Zoom-in speed (kept low so terrain boom-collision / brief gaps do not pop companions out). */
+	/** Zoom-in speed (kept low so terrain boom-collision / brief gaps do not pop Companions out). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "0.1"))
 	float FramingZoomInSpeed = 1.2f;
 
@@ -94,8 +102,8 @@ protected:
 	float FramingOffsetInterpSpeed = 6.f;
 
 	/**
-	 * Spring-arm collision against hills collapses TargetArmLength and clips companions.
-	 * When true, collision probes are disabled while any companion is present.
+	 * Spring-arm collision against hills collapses TargetArmLength and clips Companions.
+	 * When true, collision probes are disabled while any Companion is in the Party frame.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing")
 	bool bDisableBoomCollisionWhileFraming = true;
@@ -116,7 +124,7 @@ protected:
 	float CameraTerrainLiftMax = 280.f;
 
 	/**
-	 * When true, companion framing may lengthen the boom past zoom.
+	 * When true, Party framing may lengthen the boom past zoom.
 	 * When false (default), mouse-wheel zoom fully controls arm length; framing only recenters.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing")

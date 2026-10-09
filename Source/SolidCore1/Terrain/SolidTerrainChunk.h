@@ -29,6 +29,7 @@ public:
 		UMaterialInterface* Material,
 		UMaterialInterface* FogHalfMaterial,
 		UMaterialInterface* FogFullMaterial,
+		UMaterialInterface* FogOuterMaterial,
 		const USolidTerrainMap* TerrainMap,
 		int32 InFogQuadsPerSide = 6,
 		float InFogVolumeHeightCm = 2500.f,
@@ -38,6 +39,7 @@ public:
 	void RebuildExplorationFog(
 		UMaterialInterface* FogHalfMaterial,
 		UMaterialInterface* FogFullMaterial,
+		UMaterialInterface* FogOuterMaterial,
 		const USolidTerrainMap* TerrainMap,
 		int32 InFogQuadsPerSide = 6,
 		float InFogVolumeHeightCm = 2500.f,

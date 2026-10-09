@@ -169,6 +169,12 @@ namespace SolidTerrainFog
 			Outer, FLinearColor(0.48f, 0.54f, 0.60f), 0.70f, TEXT("ExplorationFogFull"));
 	}
 
+	UMaterialInterface* CreateOuterMaterial(UObject* Outer)
+	{
+		return CreateVolumeMaterial(
+			Outer, FLinearColor(0.92f, 0.94f, 0.96f), 0.82f, TEXT("ExplorationFogOuter"));
+	}
+
 	void ConfigureOverlayComponent(UStaticMeshComponent* Mesh)
 	{
 		if (!Mesh)
@@ -317,11 +323,13 @@ namespace SolidTerrainFog
 		const USolidTerrainMap* TerrainMap,
 		const FMeshBuildParams& Params,
 		UMaterialInterface* HalfMaterial,
-		UMaterialInterface* FullMaterial)
+		UMaterialInterface* FullMaterial,
+		UMaterialInterface* OuterMaterial)
 	{
 		const bool bHaveHalf = HalfMaterial != nullptr;
 		const bool bHaveFull = FullMaterial != nullptr;
-		if (!Outer || (!bHaveHalf && !bHaveFull))
+		const bool bHaveOuter = OuterMaterial != nullptr;
+		if (!Outer || (!bHaveHalf && !bHaveFull && !bHaveOuter))
 		{
 			return nullptr;
 		}
@@ -363,8 +371,8 @@ namespace SolidTerrainFog
 		TArray<int32> Triangles;
 		TArray<int32> TriMaterials;
 
-		// Marching-squares isocontour at ClearFogEpsilon — continuous curtains (no stair-step gaps).
-		const int32 EdgeBudget = FogQuads * FogQuads * 2;
+		// Two contours: clear|fogged (~25m) and half|full (~50m).
+		const int32 EdgeBudget = FogQuads * FogQuads * 4;
 		Positions.Reserve(EdgeBudget * 4);
 		Normals.Reserve(EdgeBudget * 4);
 		Tangents.Reserve(EdgeBudget * 4);
@@ -372,6 +380,40 @@ namespace SolidTerrainFog
 		Colors.Reserve(EdgeBudget * 4);
 		Triangles.Reserve(EdgeBudget * 6);
 		TriMaterials.Reserve(EdgeBudget * 2);
+
+		// Material slots: 0=half, 1=full, 2=outer (white half→full curtain).
+		int32 SlotHalf = INDEX_NONE;
+		int32 SlotFull = INDEX_NONE;
+		int32 SlotOuter = INDEX_NONE;
+		TArray<UMaterialInterface*> Materials;
+		if (bHaveHalf)
+		{
+			SlotHalf = Materials.Add(HalfMaterial);
+		}
+		if (bHaveFull)
+		{
+			SlotFull = Materials.Add(FullMaterial);
+		}
+		if (bHaveOuter)
+		{
+			SlotOuter = Materials.Add(OuterMaterial);
+		}
+		else if (SlotFull != INDEX_NONE)
+		{
+			SlotOuter = SlotFull;
+		}
+		else
+		{
+			SlotOuter = SlotHalf;
+		}
+		if (SlotHalf == INDEX_NONE)
+		{
+			SlotHalf = (SlotFull != INDEX_NONE) ? SlotFull : SlotOuter;
+		}
+		if (SlotFull == INDEX_NONE)
+		{
+			SlotFull = (SlotOuter != INDEX_NONE) ? SlotOuter : SlotHalf;
+		}
 
 		auto AppendVert = [&](const FVector& Pos, const FVector& Normal) -> int32
 		{
@@ -391,7 +433,6 @@ namespace SolidTerrainFog
 
 		auto AppendQuad = [&](int32 I0, int32 I1, int32 I2, int32 I3, int32 Slot)
 		{
-			// Single winding — material is TwoSided.
 			Triangles.Add(I0);
 			Triangles.Add(I1);
 			Triangles.Add(I2);
@@ -402,11 +443,6 @@ namespace SolidTerrainFog
 			TriMaterials.Add(Slot);
 		};
 
-		auto IsFogged = [](float FogValue) -> bool
-		{
-			return FogValue > ClearFogEpsilon;
-		};
-
 		struct FContourPoint
 		{
 			float X = 0.f;
@@ -414,8 +450,7 @@ namespace SolidTerrainFog
 			float Z = 0.f;
 		};
 
-		// Lerp along a sample edge to the clear|fogged crossing.
-		auto CrossingOnEdge = [&](int32 IX0, int32 IY0, int32 IX1, int32 IY1) -> FContourPoint
+		auto CrossingOnEdge = [&](int32 IX0, int32 IY0, int32 IX1, int32 IY1, float Iso) -> FContourPoint
 		{
 			const int32 I0 = IY0 * FogVerts + IX0;
 			const int32 I1 = IY1 * FogVerts + IX1;
@@ -424,7 +459,7 @@ namespace SolidTerrainFog
 			float T = 0.5f;
 			if (FMath::Abs(F1 - F0) > KINDA_SMALL_NUMBER)
 			{
-				T = FMath::Clamp((ClearFogEpsilon - F0) / (F1 - F0), 0.f, 1.f);
+				T = FMath::Clamp((Iso - F0) / (F1 - F0), 0.f, 1.f);
 			}
 			FContourPoint P;
 			P.X = FMath::Lerp(static_cast<float>(IX0) * Step, static_cast<float>(IX1) * Step, T);
@@ -433,131 +468,121 @@ namespace SolidTerrainFog
 			return P;
 		};
 
-		auto AppendContourWall = [&](const FContourPoint& A, const FContourPoint& B, float FoggedAmount)
+		auto AppendContourWall = [&](
+			const FContourPoint& A, const FContourPoint& B, int32 Slot, float VolumeHeight)
 		{
 			FVector2D Dir2(B.X - A.X, B.Y - A.Y);
 			const float Len = Dir2.Size();
-			if (Len < 1.f)
+			if (Len < 1.f || Slot < 0)
 			{
 				return;
 			}
 			Dir2 /= Len;
 
-			// Slight overlap so panel ends meet at corners.
 			const float Pad = FMath::Min(Step * 0.08f, Len * 0.25f);
 			const float AX = A.X - Dir2.X * Pad;
 			const float AY = A.Y - Dir2.Y * Pad;
 			const float BX = B.X + Dir2.X * Pad;
 			const float BY = B.Y + Dir2.Y * Pad;
-			const float AZ = A.Z;
-			const float BZ = B.Z;
-
-			const bool bFull = FoggedAmount >= 0.75f;
-			int32 Slot = 0;
-			if (bHaveHalf && bHaveFull)
-			{
-				Slot = bFull ? 1 : 0;
-			}
-			const float VolumeHeight = bFull ? HeightFull : HeightHalf;
 			constexpr float SkirtCm = 20.f;
-
-			// Outward-ish normal in XY (perpendicular to segment).
 			const FVector Normal(-Dir2.Y, Dir2.X, 0.f);
 
-			const int32 V0 = AppendVert(FVector(AX, AY, AZ + SkirtCm), Normal);
-			const int32 V1 = AppendVert(FVector(BX, BY, BZ + SkirtCm), Normal);
-			const int32 V2 = AppendVert(FVector(BX, BY, BZ + VolumeHeight), Normal);
-			const int32 V3 = AppendVert(FVector(AX, AY, AZ + VolumeHeight), Normal);
+			const int32 V0 = AppendVert(FVector(AX, AY, A.Z + SkirtCm), Normal);
+			const int32 V1 = AppendVert(FVector(BX, BY, B.Z + SkirtCm), Normal);
+			const int32 V2 = AppendVert(FVector(BX, BY, B.Z + VolumeHeight), Normal);
+			const int32 V3 = AppendVert(FVector(AX, AY, A.Z + VolumeHeight), Normal);
 			AppendQuad(V0, V1, V2, V3, Slot);
 		};
 
-		// Per-cell marching squares. Bits: 1=SW(F00), 2=SE(F10), 4=NE(F11), 8=NW(F01).
-		// Edge ids: 0=bottom(SW-SE), 1=right(SE-NE), 2=top(NE-NW), 3=left(NW-SW).
 		static const int8 MSSegments[16][4] = {
-			{-1, -1, -1, -1}, // 0
-			{3, 0, -1, -1},   // 1 SW
-			{0, 1, -1, -1},   // 2 SE
-			{3, 1, -1, -1},   // 3 SW+SE
-			{1, 2, -1, -1},   // 4 NE
-			{3, 0, 1, 2},     // 5 SW+NE saddle
-			{0, 2, -1, -1},   // 6 SE+NE
-			{3, 2, -1, -1},   // 7 all but NW
-			{2, 3, -1, -1},   // 8 NW
-			{0, 2, -1, -1},   // 9 SW+NW
-			{0, 1, 2, 3},     // 10 SE+NW saddle
-			{1, 2, -1, -1},   // 11 all but NE
-			{1, 3, -1, -1},   // 12 NE+NW
-			{0, 1, -1, -1},   // 13 all but SE
-			{0, 3, -1, -1},   // 14 all but SW
-			{-1, -1, -1, -1}, // 15
+			{-1, -1, -1, -1},
+			{3, 0, -1, -1},
+			{0, 1, -1, -1},
+			{3, 1, -1, -1},
+			{1, 2, -1, -1},
+			{3, 0, 1, 2},
+			{0, 2, -1, -1},
+			{3, 2, -1, -1},
+			{2, 3, -1, -1},
+			{0, 2, -1, -1},
+			{0, 1, 2, 3},
+			{1, 2, -1, -1},
+			{1, 3, -1, -1},
+			{0, 1, -1, -1},
+			{0, 3, -1, -1},
+			{-1, -1, -1, -1},
 		};
 
-		for (int32 Y = 0; Y < FogQuads; ++Y)
+		auto EmitIsocontour = [&](float Iso, auto&& InsidePred, auto&& SlotForCell, float VolumeHeight)
 		{
-			for (int32 X = 0; X < FogQuads; ++X)
+			for (int32 Y = 0; Y < FogQuads; ++Y)
 			{
-				const int32 I00 = Y * FogVerts + X;
-				const int32 I10 = I00 + 1;
-				const int32 I01 = I00 + FogVerts;
-				const int32 I11 = I01 + 1;
-
-				const float F00 = FogAmounts[I00];
-				const float F10 = FogAmounts[I10];
-				const float F01 = FogAmounts[I01];
-				const float F11 = FogAmounts[I11];
-
-				const uint8 Case =
-					(IsFogged(F00) ? 1u : 0u) |
-					(IsFogged(F10) ? 2u : 0u) |
-					(IsFogged(F11) ? 4u : 0u) |
-					(IsFogged(F01) ? 8u : 0u);
-
-				if (Case == 0 || Case == 15)
+				for (int32 X = 0; X < FogQuads; ++X)
 				{
-					continue;
-				}
+					const int32 I00 = Y * FogVerts + X;
+					const int32 I10 = I00 + 1;
+					const int32 I01 = I00 + FogVerts;
+					const int32 I11 = I01 + 1;
 
-				FContourPoint EdgePt[4];
-				EdgePt[0] = CrossingOnEdge(X, Y, X + 1, Y);         // bottom
-				EdgePt[1] = CrossingOnEdge(X + 1, Y, X + 1, Y + 1); // right
-				EdgePt[2] = CrossingOnEdge(X + 1, Y + 1, X, Y + 1); // top
-				EdgePt[3] = CrossingOnEdge(X, Y + 1, X, Y);         // left
+					const float F00 = FogAmounts[I00];
+					const float F10 = FogAmounts[I10];
+					const float F01 = FogAmounts[I01];
+					const float F11 = FogAmounts[I11];
 
-				// Material from the strongest fogged corner in this cell.
-				float FoggedAmount = 0.f;
-				if (IsFogged(F00)) { FoggedAmount = FMath::Max(FoggedAmount, F00); }
-				if (IsFogged(F10)) { FoggedAmount = FMath::Max(FoggedAmount, F10); }
-				if (IsFogged(F01)) { FoggedAmount = FMath::Max(FoggedAmount, F01); }
-				if (IsFogged(F11)) { FoggedAmount = FMath::Max(FoggedAmount, F11); }
+					const uint8 Case =
+						(InsidePred(F00) ? 1u : 0u) |
+						(InsidePred(F10) ? 2u : 0u) |
+						(InsidePred(F11) ? 4u : 0u) |
+						(InsidePred(F01) ? 8u : 0u);
 
-				const int8* Seg = MSSegments[Case];
-				for (int32 S = 0; S < 4 && Seg[S] >= 0; S += 2)
-				{
-					const int32 E0 = Seg[S];
-					const int32 E1 = Seg[S + 1];
-					if (E0 < 0 || E1 < 0)
+					if (Case == 0 || Case == 15)
 					{
-						break;
+						continue;
 					}
-					AppendContourWall(EdgePt[E0], EdgePt[E1], FoggedAmount);
+
+					FContourPoint EdgePt[4];
+					EdgePt[0] = CrossingOnEdge(X, Y, X + 1, Y, Iso);
+					EdgePt[1] = CrossingOnEdge(X + 1, Y, X + 1, Y + 1, Iso);
+					EdgePt[2] = CrossingOnEdge(X + 1, Y + 1, X, Y + 1, Iso);
+					EdgePt[3] = CrossingOnEdge(X, Y + 1, X, Y, Iso);
+
+					const int32 Slot = SlotForCell(F00, F10, F01, F11);
+					const int8* Seg = MSSegments[Case];
+					for (int32 S = 0; S < 4 && Seg[S] >= 0; S += 2)
+					{
+						const int32 E0 = Seg[S];
+						const int32 E1 = Seg[S + 1];
+						if (E0 < 0 || E1 < 0)
+						{
+							break;
+						}
+						AppendContourWall(EdgePt[E0], EdgePt[E1], Slot, VolumeHeight);
+					}
 				}
 			}
-		}
+		};
 
-		TArray<UMaterialInterface*> Materials;
-		if (bHaveHalf && bHaveFull)
-		{
-			Materials.Add(HalfMaterial);
-			Materials.Add(FullMaterial);
-		}
-		else if (bHaveFull)
-		{
-			Materials.Add(FullMaterial);
-		}
-		else
-		{
-			Materials.Add(HalfMaterial);
-		}
+		// Inner ring: clear (fog≈0) | any fog.
+		EmitIsocontour(
+			ClearFogEpsilon,
+			[](float F) { return F > ClearFogEpsilon; },
+			[&](float F00, float F10, float F01, float F11) -> int32
+			{
+				float FoggedAmount = 0.f;
+				if (F00 > ClearFogEpsilon) { FoggedAmount = FMath::Max(FoggedAmount, F00); }
+				if (F10 > ClearFogEpsilon) { FoggedAmount = FMath::Max(FoggedAmount, F10); }
+				if (F01 > ClearFogEpsilon) { FoggedAmount = FMath::Max(FoggedAmount, F01); }
+				if (F11 > ClearFogEpsilon) { FoggedAmount = FMath::Max(FoggedAmount, F11); }
+				return (FoggedAmount >= HalfFullFogThreshold) ? SlotFull : SlotHalf;
+			},
+			HeightHalf);
+
+		// Outer ring: half fog | full fog (white curtain ~50m).
+		EmitIsocontour(
+			HalfFullFogThreshold,
+			[](float F) { return F >= HalfFullFogThreshold; },
+			[&](float, float, float, float) -> int32 { return SlotOuter; },
+			HeightFull);
 
 		return BuildRuntimeFogStaticMesh(
 			Outer, Positions, Normals, Tangents, UVs, Colors, Triangles, Materials, TriMaterials);

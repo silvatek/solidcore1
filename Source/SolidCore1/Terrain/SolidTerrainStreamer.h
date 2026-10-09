@@ -216,12 +216,15 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<AExponentialHeightFog> HeightFogActor;
 
-	/** Spatial exploration fog overlay materials (half / full). */
+	/** Spatial exploration fog overlay materials (half / full / outer white). */
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInterface> ExplorationFogHalfMaterial;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInterface> ExplorationFogFullMaterial;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInterface> ExplorationFogOuterMaterial;
 
 	float TimeSinceUpdate = 0.f;
 	float RenderedFogAmount = 0.f;

@@ -28,6 +28,8 @@ namespace SolidTerrainFog
 	constexpr float FullFogStartMeters = 50.f;
 	/** Samples at or below this count as clear (fog=0 side of a boundary). */
 	constexpr float ClearFogEpsilon = 0.05f;
+	/** Isocontour between half fog (0.5) and full fog (1.0). */
+	constexpr float HalfFullFogThreshold = 0.75f;
 
 	FORCEINLINE float MetersToCm(float Meters) { return Meters * 100.f; }
 
@@ -61,19 +63,22 @@ namespace SolidTerrainFog
 
 	UMaterialInterface* CreateHalfMaterial(UObject* Outer);
 	UMaterialInterface* CreateFullMaterial(UObject* Outer);
+	/** White curtain at the half→full fog boundary (~50m). */
+	UMaterialInterface* CreateOuterMaterial(UObject* Outer);
 
 	void ConfigureOverlayComponent(UStaticMeshComponent* Mesh);
 
 	/**
 	 * Build a non-colliding fog overlay mesh: marching-squares isocontour curtains
-	 * along fog≈0 | fog>0 (continuous; no stair-step corner gaps).
+	 * at fog≈0 | fog>0 and at fog 0.5 | fog 1.0 (white outer ring).
 	 */
 	UStaticMesh* BuildChunkFogMesh(
 		UObject* Outer,
 		const USolidTerrainMap* TerrainMap,
 		const FMeshBuildParams& Params,
 		UMaterialInterface* HalfMaterial,
-		UMaterialInterface* FullMaterial);
+		UMaterialInterface* FullMaterial,
+		UMaterialInterface* OuterMaterial = nullptr);
 
 	/** HUD / legacy mist amount: max TerrainPoint.Fog on a pawn-centered ring (no camera). */
 	float SampleMistAmountAround(const USolidTerrainMap* Map, const FVector& WorldLocation);

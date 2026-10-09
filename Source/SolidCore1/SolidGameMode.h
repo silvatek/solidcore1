@@ -5,6 +5,7 @@
 #include "SolidGameMode.generated.h"
 
 class ASolidCompanionCharacter;
+class ASolidMonolith;
 class ASolidTree;
 
 UCLASS()
@@ -27,11 +28,11 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	TSubclassOf<ASolidCompanionCharacter> CompanionClass;
 
-	/** Spawn a line of placeholder trees from near the start into the fog. */
+	/** Spawn a grey monolith at the start and a line of trees into the fog. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation")
 	bool bAutoSpawnStarterTrees = true;
 
-	/** World XY of the first tree (cm). Line continues along StarterTreeLineDirection. */
+	/** World XY of the starter monolith (cm). Tree line continues from here. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation")
 	FVector2D StarterTreeOffsetXY = FVector2D(1400.f, 900.f);
 
@@ -62,6 +63,9 @@ protected:
 
 	UPROPERTY(Transient)
 	TWeakObjectPtr<ASolidCompanionCharacter> SpawnedCompanion;
+
+	UPROPERTY(Transient)
+	TWeakObjectPtr<ASolidMonolith> SpawnedMonolith;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidTree>> SpawnedStarterTrees;

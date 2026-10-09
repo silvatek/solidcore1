@@ -192,6 +192,7 @@ void ASolidTerrainChunk::BuildChunk(
 	UMaterialInterface* Material,
 	UMaterialInterface* FogHalfMaterial,
 	UMaterialInterface* FogFullMaterial,
+	UMaterialInterface* FogOuterMaterial,
 	const USolidTerrainMap* TerrainMap,
 	int32 InFogQuadsPerSide,
 	float InFogVolumeHeightCm,
@@ -341,6 +342,7 @@ void ASolidTerrainChunk::BuildChunk(
 	RebuildExplorationFog(
 		FogHalfMaterial,
 		FogFullMaterial,
+		FogOuterMaterial,
 		TerrainMap,
 		CachedFogQuadsPerSide,
 		CachedFogVolumeHeightCm,
@@ -356,6 +358,7 @@ void ASolidTerrainChunk::BuildChunk(
 void ASolidTerrainChunk::RebuildExplorationFog(
 	UMaterialInterface* FogHalfMaterial,
 	UMaterialInterface* FogFullMaterial,
+	UMaterialInterface* FogOuterMaterial,
 	const USolidTerrainMap* TerrainMap,
 	int32 InFogQuadsPerSide,
 	float InFogVolumeHeightCm,
@@ -377,7 +380,7 @@ void ASolidTerrainChunk::RebuildExplorationFog(
 	Params.CollisionHeightBias = CachedCollisionHeightBias;
 
 	RuntimeFogStaticMesh = SolidTerrainFog::BuildChunkFogMesh(
-		this, TerrainMap, Params, FogHalfMaterial, FogFullMaterial);
+		this, TerrainMap, Params, FogHalfMaterial, FogFullMaterial, FogOuterMaterial);
 
 	FogMeshComponent->SetStaticMesh(nullptr);
 	if (RuntimeFogStaticMesh)
@@ -386,9 +389,7 @@ void ASolidTerrainChunk::RebuildExplorationFog(
 		const int32 NumMaterials = RuntimeFogStaticMesh->GetStaticMaterials().Num();
 		for (int32 MatIndex = 0; MatIndex < NumMaterials; ++MatIndex)
 		{
-			UMaterialInterface* Mat = (MatIndex == 0 && FogHalfMaterial) ? FogHalfMaterial
-				: (FogFullMaterial ? FogFullMaterial : FogHalfMaterial);
-			if (Mat)
+			if (UMaterialInterface* Mat = RuntimeFogStaticMesh->GetMaterial(MatIndex))
 			{
 				FogMeshComponent->SetMaterial(MatIndex, Mat);
 			}

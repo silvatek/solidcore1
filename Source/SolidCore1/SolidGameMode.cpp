@@ -6,6 +6,7 @@
 #include "SolidCore1.h"
 #include "Companion/SolidCompanionCharacter.h"
 #include "Terrain/SolidTerrainStreamer.h"
+#include "Vegetation/SolidMonolith.h"
 #include "Vegetation/SolidTree.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/World.h"
@@ -183,7 +184,7 @@ void ASolidGameMode::EnsureStarterTrees()
 		return;
 	}
 
-	if (SpawnedStarterTrees.Num() > 0)
+	if (SpawnedMonolith.IsValid() || SpawnedStarterTrees.Num() > 0)
 	{
 		return;
 	}
@@ -195,13 +196,15 @@ void ASolidGameMode::EnsureStarterTrees()
 	}
 
 	// Already placed in the level (PIE restart / hand-placed).
-	int32 Existing = 0;
+	for (TActorIterator<ASolidMonolith> It(World); It; ++It)
+	{
+		SpawnedMonolith = *It;
+	}
 	for (TActorIterator<ASolidTree> It(World); It; ++It)
 	{
 		SpawnedStarterTrees.Add(*It);
-		++Existing;
 	}
-	if (Existing > 0)
+	if (SpawnedMonolith.IsValid() || SpawnedStarterTrees.Num() > 0)
 	{
 		return;
 	}
@@ -229,10 +232,32 @@ void ASolidGameMode::EnsureStarterTrees()
 	SpawnParams.Owner = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
+	// Monolith at the former first-tree spot (start of the clear-zone landmark).
+	{
+		FVector MonoLoc(StarterTreeOffsetXY.X, StarterTreeOffsetXY.Y, 0.f);
+		const float LandZ = Streamer->GetHeightAt(MonoLoc) + Streamer->CollisionHeightBias;
+		MonoLoc.Z = LandZ + Streamer->SnapHeightPadding;
+
+		ASolidMonolith* Monolith = World->SpawnActor<ASolidMonolith>(
+			ASolidMonolith::StaticClass(), MonoLoc, FRotator(0.f, 25.f, 0.f), SpawnParams);
+		if (Monolith)
+		{
+			Monolith->BuildVisuals();
+			SpawnedMonolith = Monolith;
+			UE_LOG(LogSolid, Warning, TEXT("Spawned starter monolith at %s"), *MonoLoc.ToCompactString());
+		}
+		else
+		{
+			UE_LOG(LogSolid, Error, TEXT("Failed to spawn starter SolidMonolith."));
+		}
+	}
+
+	// Trees begin one spacing past the monolith and stretch into the fog.
 	int32 Spawned = 0;
 	for (int32 Index = 0; Index < Count; ++Index)
 	{
-		const float Along = static_cast<float>(Index) * Spacing + Rng.FRandRange(-Spacing * 0.15f, Spacing * 0.15f);
+		const float Along =
+			Spacing * (1.f + static_cast<float>(Index)) + Rng.FRandRange(-Spacing * 0.15f, Spacing * 0.15f);
 		const float Lateral = Rng.FRandRange(-220.f, 220.f);
 		const FVector2D XY = StarterTreeOffsetXY + Dir * Along + Side * Lateral;
 
@@ -255,6 +280,6 @@ void ASolidGameMode::EnsureStarterTrees()
 	}
 
 	UE_LOG(LogSolid, Warning,
-		TEXT("Spawned %d starter trees in a line from %s dir=(%.2f,%.2f) spacing=%.0fcm"),
-		Spawned, *StarterTreeOffsetXY.ToString(), Dir.X, Dir.Y, Spacing);
+		TEXT("Spawned monolith + %d trees along dir=(%.2f,%.2f) spacing=%.0fcm"),
+		Spawned, Dir.X, Dir.Y, Spacing);
 }

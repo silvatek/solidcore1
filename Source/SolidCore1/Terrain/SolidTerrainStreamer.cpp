@@ -194,6 +194,10 @@ void ASolidTerrainStreamer::EnsureExplorationFogMaterials()
 	{
 		ExplorationFogFullMaterial = SolidTerrainFog::CreateFullMaterial(this);
 	}
+	if (!ExplorationFogOuterMaterial)
+	{
+		ExplorationFogOuterMaterial = SolidTerrainFog::CreateOuterMaterial(this);
+	}
 }
 
 void ASolidTerrainStreamer::BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint Coord)
@@ -205,11 +209,13 @@ void ASolidTerrainStreamer::BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint
 
 	UMaterialInterface* FogHalf = nullptr;
 	UMaterialInterface* FogFull = nullptr;
+	UMaterialInterface* FogOuter = nullptr;
 	if (bRenderExplorationFogMeshes)
 	{
 		EnsureExplorationFogMaterials();
 		FogHalf = ExplorationFogHalfMaterial;
 		FogFull = ExplorationFogFullMaterial;
+		FogOuter = ExplorationFogOuterMaterial;
 	}
 
 	Chunk->BuildChunk(
@@ -224,6 +230,7 @@ void ASolidTerrainStreamer::BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint
 		ResolveMaterial(),
 		FogHalf,
 		FogFull,
+		FogOuter,
 		TerrainMap,
 		FogQuadsPerSide,
 		FogVolumeHeightCm,
@@ -280,6 +287,7 @@ void ASolidTerrainStreamer::ProcessExplorationFogMeshRebuilds()
 			Chunk->RebuildExplorationFog(
 				ExplorationFogHalfMaterial,
 				ExplorationFogFullMaterial,
+				ExplorationFogOuterMaterial,
 				TerrainMap,
 				FogQuadsPerSide,
 				FogVolumeHeightCm,

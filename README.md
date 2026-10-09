@@ -116,9 +116,11 @@ Goal: the world starts shrouded; fog clears only where the **pawn has been** (tr
 
 **Do not reintroduce** camera/view sampling for fog amount, height-fog StartDistance as a 25 m clear radius, or dense per-cell fog lattices. Prefer boundary geometry in `SolidTerrainFog` tied to `TerrainPoint.Fog`.
 
-## Starter trees (SC1-0075)
+## Starter landmark + trees (SC1-0076)
 
-`ASolidTree` (`Vegetation/SolidTree.*`) is a placeholder: Engine BasicShapes **cylinder** (brown trunk) + **cone** (green canopy). GameMode spawns a **line** of them from near the origin into the fog (`StarterTreeCount=16`, ~10 m spacing, random trunk/canopy size). Toggle with `bAutoSpawnStarterTrees`.
+- `ASolidMonolith` — large grey slab at `StarterTreeOffsetXY` (replaces the near-spawn tree).
+- `ASolidTree` — cylinder trunk + cone canopy; a **line** continues from the monolith into the fog (`StarterTreeCount=16`, ~10 m spacing, random sizes).
+- Fog curtains: clear|fogged (~25 m) plus a **white** half→full curtain (~50 m). Toggle vegetation with `bAutoSpawnStarterTrees`.
 
 ## Quinn companion (SC1-0024)
 
@@ -164,6 +166,7 @@ Source/
       SolidTerrainChunk.*
       SolidTerrainStreamer.*
     Vegetation/
+      SolidMonolith.*         # Grey slab landmark at start
       SolidTree.*             # Placeholder cylinder+cone tree
 ```
 

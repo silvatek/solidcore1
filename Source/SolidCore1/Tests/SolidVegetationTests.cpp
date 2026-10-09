@@ -275,6 +275,11 @@ bool FSolidBuildingDefaultsTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("roof mesh is transient gable prism"),
 			RoofMesh->HasAnyFlags(RF_Transient));
 	}
+	if (RoofComp)
+	{
+		TestTrue(TEXT("eaves nested below cube top (no coplanar z-fight)"),
+			RoofComp->GetRelativeLocation().Z < Building->BodyHeightCm - 1.f);
+	}
 	return true;
 }
 

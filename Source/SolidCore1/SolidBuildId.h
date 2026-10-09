@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0116")
+#define SOLID_BUILD_ID TEXT("SC1-0117")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Per-biome terrain Z shelf: Sea/River 0, Mountain 10m, else 1m")
+#define SOLID_BUILD_NOTE TEXT("Town building roofs: triangular prism gable (not cone)")
 #endif

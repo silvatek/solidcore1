@@ -6,7 +6,7 @@
 
 class UStaticMeshComponent;
 
-/** Placeholder town building: grey cuboid body + red cone roof. */
+/** Placeholder town building: grey cuboid body + red triangular-prism (gable) roof. */
 UCLASS()
 class SOLIDCORE1_API ASolidBuilding : public AActor
 {

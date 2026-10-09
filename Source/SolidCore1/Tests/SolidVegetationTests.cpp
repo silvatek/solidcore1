@@ -250,6 +250,34 @@ bool FSolidBuildingDefaultsTest::RunTest(const FString& Parameters)
 
 	Building->BuildVisuals();
 	TestNotNull(TEXT("root component"), Building->GetRootComponent());
+	TestNotNull(TEXT("roof mesh after BuildVisuals"), Building->FindComponentByClass<UStaticMeshComponent>());
+
+	// Prism roof: body uses Engine Cube; roof is a runtime MeshDescription gable (not Cone).
+	TArray<UStaticMeshComponent*> MeshComps;
+	Building->GetComponents<UStaticMeshComponent>(MeshComps);
+	TestTrue(TEXT("body + roof mesh components"), MeshComps.Num() >= 2);
+	bool bFoundRuntimeRoof = false;
+	for (UStaticMeshComponent* Comp : MeshComps)
+	{
+		if (!Comp || !Comp->GetStaticMesh())
+		{
+			continue;
+		}
+		const FString MeshName = Comp->GetStaticMesh()->GetName();
+		if (!MeshName.Contains(TEXT("Cone")) && Comp->GetStaticMesh()->GetPackage() == GetTransientPackage())
+		{
+			bFoundRuntimeRoof = true;
+			break;
+		}
+		// Also accept unnamed transient meshes built via NewObject(Outer) without a package hop.
+		if (Comp->GetStaticMesh()->HasAnyFlags(RF_Transient)
+			&& !Comp->GetStaticMesh()->GetPathName().Contains(TEXT("BasicShapes/Cone")))
+		{
+			bFoundRuntimeRoof = true;
+			break;
+		}
+	}
+	TestTrue(TEXT("roof is runtime gable prism (not Engine Cone)"), bFoundRuntimeRoof);
 	return true;
 }
 

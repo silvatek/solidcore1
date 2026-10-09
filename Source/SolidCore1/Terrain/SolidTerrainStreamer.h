@@ -112,9 +112,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Map", meta = (ClampMin = "50.0"))
 	float TerrainPointSpacing = 200.f;
 
-	/** Low-res fog-of-war overlay quads per chunk edge (kept small for cheap rebuilds while moving). */
+	/** Low-res fog-of-war cells per chunk edge (kept small for cheap rebuilds while moving). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "2", ClampMax = "32"))
 	int32 FogQuadsPerSide = 8;
+
+	/** Vertical extent of full exploration-fog volumes (cm). Tall banks, not a ground sheet. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "200.0"))
+	float FogVolumeHeightCm = 3000.f;
+
+	/** Vertical extent of half-fog volumes (cm). Slightly shorter so the mid band reads softer. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "200.0"))
+	float FogVolumeHeightHalfCm = 1800.f;
 
 	/**
 	 * Legacy weather-style Exponential Height Fog. Off by default — exploration fog is

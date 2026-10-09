@@ -30,14 +30,18 @@ public:
 		UMaterialInterface* FogHalfMaterial,
 		UMaterialInterface* FogFullMaterial,
 		const USolidTerrainMap* TerrainMap,
-		int32 InFogQuadsPerSide = 8);
+		int32 InFogQuadsPerSide = 8,
+		float InFogVolumeHeightCm = 3000.f,
+		float InFogVolumeHeightHalfCm = 1800.f);
 
-	/** Cheap fog-of-war refresh: rebuilds only the overlay mesh (no collision terrain rebuild). */
+	/** Cheap fog-of-war refresh: rebuilds only the volume mesh (no collision terrain rebuild). */
 	void RebuildExplorationFog(
 		UMaterialInterface* FogHalfMaterial,
 		UMaterialInterface* FogFullMaterial,
 		const USolidTerrainMap* TerrainMap,
-		int32 InFogQuadsPerSide = 8);
+		int32 InFogQuadsPerSide = 8,
+		float InFogVolumeHeightCm = 3000.f,
+		float InFogVolumeHeightHalfCm = 1800.f);
 
 	FIntPoint GetChunkCoord() const { return ChunkCoord; }
 
@@ -62,4 +66,6 @@ protected:
 	float CachedChunkWorldSize = 6400.f;
 	float CachedCollisionHeightBias = 0.f;
 	int32 CachedFogQuadsPerSide = 8;
+	float CachedFogVolumeHeightCm = 3000.f;
+	float CachedFogVolumeHeightHalfCm = 1800.f;
 };

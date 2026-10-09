@@ -171,15 +171,15 @@ void ASolidTerrainStreamer::EnsureExplorationFogMaterials()
 {
 	if (!ExplorationFogHalfMaterial)
 	{
-		// Distinct mid band (fog ~= 0.5) — darker than full so the ring reads clearly.
+		// Soft mid-band mist (not bright "snow" white).
 		ExplorationFogHalfMaterial = CreateSolidColorMaterial(
-			FLinearColor(0.52f, 0.58f, 0.64f), TEXT("ExplorationFogHalf"));
+			FLinearColor(0.58f, 0.64f, 0.70f), TEXT("ExplorationFogHalf"));
 	}
 	if (!ExplorationFogFullMaterial)
 	{
-		// Impenetrable at fog ~= 1.
+		// Dense mist bank — cool grey, still opaque enough to block sight.
 		ExplorationFogFullMaterial = CreateSolidColorMaterial(
-			FLinearColor(0.93f, 0.94f, 0.96f), TEXT("ExplorationFogFull"));
+			FLinearColor(0.72f, 0.76f, 0.80f), TEXT("ExplorationFogFull"));
 	}
 }
 
@@ -204,7 +204,9 @@ void ASolidTerrainStreamer::BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint
 		ExplorationFogHalfMaterial,
 		ExplorationFogFullMaterial,
 		TerrainMap,
-		FogQuadsPerSide);
+		FogQuadsPerSide,
+		FogVolumeHeightCm,
+		FogVolumeHeightHalfCm);
 }
 
 void ASolidTerrainStreamer::RefreshExplorationFogMeshesAround(float WorldX, float WorldY, float RadiusCm)
@@ -229,12 +231,14 @@ void ASolidTerrainStreamer::RefreshExplorationFogMeshesAround(float WorldX, floa
 		const float Reach = RadiusCm + ChunkRadius;
 		if ((DX * DX + DY * DY) <= Reach * Reach)
 		{
-			// Overlay only — never rebuild terrain collision meshes while walking.
+			// Volumes only — never rebuild terrain collision meshes while walking.
 			Chunk->RebuildExplorationFog(
 				ExplorationFogHalfMaterial,
 				ExplorationFogFullMaterial,
 				TerrainMap,
-				FogQuadsPerSide);
+				FogQuadsPerSide,
+				FogVolumeHeightCm,
+				FogVolumeHeightHalfCm);
 		}
 	}
 }

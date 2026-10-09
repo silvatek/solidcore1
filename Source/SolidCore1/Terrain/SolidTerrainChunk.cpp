@@ -205,7 +205,9 @@ void ASolidTerrainChunk::BuildChunk(
 	UMaterialInterface* FogHalfMaterial,
 	UMaterialInterface* FogFullMaterial,
 	const USolidTerrainMap* TerrainMap,
-	int32 InFogQuadsPerSide)
+	int32 InFogQuadsPerSide,
+	float InFogVolumeHeightCm,
+	float InFogVolumeHeightHalfCm)
 {
 	ChunkCoord = InChunkCoord;
 	InQuadsPerSide = FMath::Clamp(InQuadsPerSide, 1, 256);
@@ -214,6 +216,8 @@ void ASolidTerrainChunk::BuildChunk(
 	CachedChunkWorldSize = InChunkWorldSize;
 	CachedCollisionHeightBias = InCollisionHeightBias;
 	CachedFogQuadsPerSide = FMath::Clamp(InFogQuadsPerSide, 1, 64);
+	CachedFogVolumeHeightCm = FMath::Max(InFogVolumeHeightCm, 200.f);
+	CachedFogVolumeHeightHalfCm = FMath::Max(InFogVolumeHeightHalfCm, 200.f);
 
 	const int32 VertsPerSide = InQuadsPerSide + 1;
 	const float Step = InChunkWorldSize / static_cast<float>(InQuadsPerSide);
@@ -346,7 +350,13 @@ void ASolidTerrainChunk::BuildChunk(
 	MeshComponent->MarkRenderStateDirty();
 	MeshComponent->RecreatePhysicsState();
 
-	RebuildExplorationFog(FogHalfMaterial, FogFullMaterial, TerrainMap, CachedFogQuadsPerSide);
+	RebuildExplorationFog(
+		FogHalfMaterial,
+		FogFullMaterial,
+		TerrainMap,
+		CachedFogQuadsPerSide,
+		CachedFogVolumeHeightCm,
+		CachedFogVolumeHeightHalfCm);
 
 	const int32 RenderTris = RuntimeStaticMesh ? RuntimeStaticMesh->GetNumTriangles(0) : 0;
 	UE_LOG(LogTemp, Warning,
@@ -359,60 +369,98 @@ void ASolidTerrainChunk::RebuildExplorationFog(
 	UMaterialInterface* FogHalfMaterial,
 	UMaterialInterface* FogFullMaterial,
 	const USolidTerrainMap* TerrainMap,
-	int32 InFogQuadsPerSide)
+	int32 InFogQuadsPerSide,
+	float InFogVolumeHeightCm,
+	float InFogVolumeHeightHalfCm)
 {
 	CachedFogQuadsPerSide = FMath::Clamp(
 		InFogQuadsPerSide > 0 ? InFogQuadsPerSide : CachedFogQuadsPerSide, 1, 64);
+	CachedFogVolumeHeightCm = FMath::Max(
+		InFogVolumeHeightCm > 0.f ? InFogVolumeHeightCm : CachedFogVolumeHeightCm, 200.f);
+	CachedFogVolumeHeightHalfCm = FMath::Max(
+		InFogVolumeHeightHalfCm > 0.f ? InFogVolumeHeightHalfCm : CachedFogVolumeHeightHalfCm, 200.f);
+
 	const float ChunkSize = FMath::Max(CachedChunkWorldSize, 100.f);
 	const int32 FogQuads = CachedFogQuadsPerSide;
 	const int32 FogVerts = FogQuads + 1;
 	const float Step = ChunkSize / static_cast<float>(FogQuads);
 	const float OriginX = static_cast<float>(ChunkCoord.X) * ChunkSize;
 	const float OriginY = static_cast<float>(ChunkCoord.Y) * ChunkSize;
-	constexpr float FogHeightOffsetCm = 12.f;
+
+	// Sample surface corners for each low-res fog cell.
+	TArray<float> SurfaceZ;
+	TArray<float> FogAmounts;
+	SurfaceZ.SetNumUninitialized(FogVerts * FogVerts);
+	FogAmounts.SetNumUninitialized(FogVerts * FogVerts);
+	for (int32 Y = 0; Y < FogVerts; ++Y)
+	{
+		for (int32 X = 0; X < FogVerts; ++X)
+		{
+			const float WorldX = OriginX + static_cast<float>(X) * Step;
+			const float WorldY = OriginY + static_cast<float>(Y) * Step;
+			const float Height = (TerrainMap && TerrainMap->IsBuilt())
+				? TerrainMap->SampleHeight(WorldX, WorldY)
+				: 0.f;
+			SurfaceZ[Y * FogVerts + X] = Height + CachedCollisionHeightBias;
+			FogAmounts[Y * FogVerts + X] = (TerrainMap && TerrainMap->IsBuilt())
+				? FMath::Clamp(TerrainMap->SamplePoint(WorldX, WorldY).Fog, 0.f, 1.f)
+				: 1.f;
+		}
+	}
 
 	TArray<FVector> FogPositions;
 	TArray<FVector> FogNormals;
 	TArray<FVector> FogTangents;
 	TArray<FVector2D> FogUVs;
 	TArray<FLinearColor> FogColors;
-	TArray<float> FogAmounts;
-	FogPositions.Reserve(FogVerts * FogVerts);
-	FogNormals.Reserve(FogVerts * FogVerts);
-	FogTangents.Reserve(FogVerts * FogVerts);
-	FogUVs.Reserve(FogVerts * FogVerts);
-	FogColors.Reserve(FogVerts * FogVerts);
-	FogAmounts.Reserve(FogVerts * FogVerts);
-
-	for (int32 Y = 0; Y < FogVerts; ++Y)
-	{
-		for (int32 X = 0; X < FogVerts; ++X)
-		{
-			const float LocalX = static_cast<float>(X) * Step;
-			const float LocalY = static_cast<float>(Y) * Step;
-			const float WorldX = OriginX + LocalX;
-			const float WorldY = OriginY + LocalY;
-			const float Height = (TerrainMap && TerrainMap->IsBuilt())
-				? TerrainMap->SampleHeight(WorldX, WorldY)
-				: 0.f;
-			const float SurfaceZ = Height + CachedCollisionHeightBias + FogHeightOffsetCm;
-			FogPositions.Add(FVector(LocalX, LocalY, SurfaceZ));
-			FogNormals.Add(FVector::UpVector);
-			FogTangents.Add(FVector::RightVector);
-			FogUVs.Add(FVector2D(WorldX * 0.01f, WorldY * 0.01f));
-			FogColors.Add(FLinearColor::White);
-
-			const float Fog = (TerrainMap && TerrainMap->IsBuilt())
-				? TerrainMap->SamplePoint(WorldX, WorldY).Fog
-				: 1.f;
-			FogAmounts.Add(FMath::Clamp(Fog, 0.f, 1.f));
-		}
-	}
-
 	TArray<int32> FogTriangles;
 	TArray<int32> FogTriMaterials;
-	FogTriangles.Reserve(FogQuads * FogQuads * 6);
-	FogTriMaterials.Reserve(FogQuads * FogQuads * 2);
+
+	// Each fogged cell becomes a prism (top + 4 walls) so fog reads as air banks, not snow.
+	FogPositions.Reserve(FogQuads * FogQuads * 8);
+	FogNormals.Reserve(FogQuads * FogQuads * 8);
+	FogTangents.Reserve(FogQuads * FogQuads * 8);
+	FogUVs.Reserve(FogQuads * FogQuads * 8);
+	FogColors.Reserve(FogQuads * FogQuads * 8);
+	FogTriangles.Reserve(FogQuads * FogQuads * 30);
+	FogTriMaterials.Reserve(FogQuads * FogQuads * 10);
+
+	auto AppendVert = [&](const FVector& Pos, const FVector& Normal) -> int32
+	{
+		const int32 Index = FogPositions.Num();
+		FogPositions.Add(Pos);
+		FogNormals.Add(Normal);
+		FVector Tangent = FVector::CrossProduct(FVector::UpVector, Normal).GetSafeNormal();
+		if (Tangent.IsNearlyZero())
+		{
+			Tangent = FVector::RightVector;
+		}
+		FogTangents.Add(Tangent);
+		FogUVs.Add(FVector2D(Pos.X * 0.01f, Pos.Y * 0.01f));
+		FogColors.Add(FLinearColor::White);
+		return Index;
+	};
+
+	auto AppendQuad = [&](int32 I0, int32 I1, int32 I2, int32 I3, int32 Slot)
+	{
+		// Both windings — FlatCol is one-sided; fog banks must read from inside and outside.
+		FogTriangles.Add(I0);
+		FogTriangles.Add(I1);
+		FogTriangles.Add(I2);
+		FogTriangles.Add(I0);
+		FogTriangles.Add(I2);
+		FogTriangles.Add(I3);
+		FogTriangles.Add(I0);
+		FogTriangles.Add(I2);
+		FogTriangles.Add(I1);
+		FogTriangles.Add(I0);
+		FogTriangles.Add(I3);
+		FogTriangles.Add(I2);
+		FogTriMaterials.Add(Slot);
+		FogTriMaterials.Add(Slot);
+		FogTriMaterials.Add(Slot);
+		FogTriMaterials.Add(Slot);
+	};
 
 	const bool bHaveHalf = FogHalfMaterial != nullptr;
 	const bool bHaveFull = FogFullMaterial != nullptr;
@@ -438,30 +486,79 @@ void ASolidTerrainChunk::RebuildExplorationFog(
 					continue;
 				}
 
-				// Distinct bands: <0.75 average uses half material (fog~=0.5 zone).
 				const bool bFull = AvgFog >= 0.75f;
 				int32 Slot = 0;
 				if (bHaveHalf && bHaveFull)
 				{
 					Slot = bFull ? 1 : 0;
 				}
-				else if (bHaveFull)
-				{
-					Slot = 0;
-				}
-				else
-				{
-					Slot = 0;
-				}
 
-				FogTriangles.Add(I00);
-				FogTriangles.Add(I11);
-				FogTriangles.Add(I10);
-				FogTriangles.Add(I00);
-				FogTriangles.Add(I01);
-				FogTriangles.Add(I11);
-				FogTriMaterials.Add(Slot);
-				FogTriMaterials.Add(Slot);
+				const float VolumeHeight = bFull ? CachedFogVolumeHeightCm : CachedFogVolumeHeightHalfCm;
+				const float X0 = static_cast<float>(X) * Step;
+				const float X1 = static_cast<float>(X + 1) * Step;
+				const float Y0 = static_cast<float>(Y) * Step;
+				const float Y1 = static_cast<float>(Y + 1) * Step;
+
+				const float Z00 = SurfaceZ[I00];
+				const float Z10 = SurfaceZ[I10];
+				const float Z01 = SurfaceZ[I01];
+				const float Z11 = SurfaceZ[I11];
+
+				// Bottom skirt slightly above grass to avoid z-fight; top follows terrain + height.
+				constexpr float SkirtCm = 20.f;
+				const FVector B00(X0, Y0, Z00 + SkirtCm);
+				const FVector B10(X1, Y0, Z10 + SkirtCm);
+				const FVector B01(X0, Y1, Z01 + SkirtCm);
+				const FVector B11(X1, Y1, Z11 + SkirtCm);
+				const FVector T00(X0, Y0, Z00 + VolumeHeight);
+				const FVector T10(X1, Y0, Z10 + VolumeHeight);
+				const FVector T01(X0, Y1, Z01 + VolumeHeight);
+				const FVector T11(X1, Y1, Z11 + VolumeHeight);
+
+				// Top (facing up).
+				{
+					const int32 V0 = AppendVert(T00, FVector::UpVector);
+					const int32 V1 = AppendVert(T10, FVector::UpVector);
+					const int32 V2 = AppendVert(T11, FVector::UpVector);
+					const int32 V3 = AppendVert(T01, FVector::UpVector);
+					AppendQuad(V0, V1, V2, V3, Slot);
+				}
+				// -Y wall (facing -Y).
+				{
+					const FVector N(0.f, -1.f, 0.f);
+					const int32 V0 = AppendVert(B00, N);
+					const int32 V1 = AppendVert(B10, N);
+					const int32 V2 = AppendVert(T10, N);
+					const int32 V3 = AppendVert(T00, N);
+					AppendQuad(V0, V1, V2, V3, Slot);
+				}
+				// +Y wall.
+				{
+					const FVector N(0.f, 1.f, 0.f);
+					const int32 V0 = AppendVert(B11, N);
+					const int32 V1 = AppendVert(B01, N);
+					const int32 V2 = AppendVert(T01, N);
+					const int32 V3 = AppendVert(T11, N);
+					AppendQuad(V0, V1, V2, V3, Slot);
+				}
+				// -X wall.
+				{
+					const FVector N(-1.f, 0.f, 0.f);
+					const int32 V0 = AppendVert(B01, N);
+					const int32 V1 = AppendVert(B00, N);
+					const int32 V2 = AppendVert(T00, N);
+					const int32 V3 = AppendVert(T01, N);
+					AppendQuad(V0, V1, V2, V3, Slot);
+				}
+				// +X wall.
+				{
+					const FVector N(1.f, 0.f, 0.f);
+					const int32 V0 = AppendVert(B10, N);
+					const int32 V1 = AppendVert(B11, N);
+					const int32 V2 = AppendVert(T11, N);
+					const int32 V3 = AppendVert(T10, N);
+					AppendQuad(V0, V1, V2, V3, Slot);
+				}
 			}
 		}
 	}

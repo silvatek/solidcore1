@@ -75,9 +75,7 @@ namespace
 		AddTri(EavesFL, RidgeB, EavesBL, FVector2D(0.f, 0.f), FVector2D(1.f, 1.f), FVector2D(0.f, 1.f));
 		AddTri(EavesFR, EavesBR, RidgeB, FVector2D(0.f, 0.f), FVector2D(0.f, 1.f), FVector2D(1.f, 1.f));
 		AddTri(EavesFR, RidgeB, RidgeF, FVector2D(0.f, 0.f), FVector2D(1.f, 1.f), FVector2D(1.f, 0.f));
-		// Underside so the volume is closed.
-		AddTri(EavesFL, EavesBL, EavesBR, FVector2D(0.f, 0.f), FVector2D(0.f, 1.f), FVector2D(1.f, 1.f));
-		AddTri(EavesFL, EavesBR, EavesFR, FVector2D(0.f, 0.f), FVector2D(1.f, 1.f), FVector2D(1.f, 0.f));
+		// No underside: it would sit on the cube top and z-fight.
 
 		FMeshDescription MeshDescription;
 		FStaticMeshAttributes Attributes(MeshDescription);
@@ -243,8 +241,9 @@ void ASolidBuilding::BuildVisuals()
 	}
 
 	RoofMesh->SetStaticMesh(Roof);
-	// Mesh base sits at z=0; place that plane on top of the body.
-	RoofMesh->SetRelativeLocation(FVector(0.f, 0.f, BodyHeightCm));
+	// Nest eaves a few cm into the body so the gable is not coplanar with the cube top.
+	constexpr float RoofEmbedCm = 4.f;
+	RoofMesh->SetRelativeLocation(FVector(0.f, 0.f, BodyHeightCm - RoofEmbedCm));
 	const bool bRidgeAlongY = FootprintYCm >= FootprintXCm;
 	if (bRidgeAlongY)
 	{

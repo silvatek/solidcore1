@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0119")
+#define SOLID_BUILD_ID TEXT("SC1-0120")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Fix BuildingDefaults TestNotNull vs TObjectPtr")
+#define SOLID_BUILD_NOTE TEXT("Stop roof/body z-fight: open gable, eaves embedded")
 #endif

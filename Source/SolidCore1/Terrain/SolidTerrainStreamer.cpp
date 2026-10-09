@@ -66,14 +66,20 @@ void ASolidTerrainStreamer::BeginPlay()
 {
 	Super::BeginPlay();
 	EnsureTerrainMap();
-	EnsureExplorationFogMaterials();
+	if (bRenderExplorationFogMeshes)
+	{
+		EnsureExplorationFogMaterials();
+	}
 	EnsureHeightFog();
 	bHasFogApplyLocation = false;
 	ClearExplorationFogAtFocus();
 	TimeSinceUpdate = UpdateIntervalSeconds;
 	UpdateStreaming();
 	UpdateTerrainFog(0.f);
-	ProcessExplorationFogMeshRebuilds();
+	if (bRenderExplorationFogMeshes)
+	{
+		ProcessExplorationFogMeshRebuilds();
+	}
 }
 
 void ASolidTerrainStreamer::EnsureTerrainMap()
@@ -135,7 +141,10 @@ void ASolidTerrainStreamer::Tick(float DeltaSeconds)
 	TimeSinceUpdate = 0.f;
 	ClearExplorationFogAtFocus();
 	UpdateStreaming();
-	ProcessExplorationFogMeshRebuilds();
+	if (bRenderExplorationFogMeshes)
+	{
+		ProcessExplorationFogMeshRebuilds();
+	}
 }
 
 int32 ASolidTerrainStreamer::ClearExplorationFogAtFocus()
@@ -166,7 +175,7 @@ int32 ASolidTerrainStreamer::ClearExplorationFogAtFocus()
 	LastFogApplyLocation = Loc;
 	bHasFogApplyLocation = true;
 
-	if (Changed > 0)
+	if (Changed > 0 && bRenderExplorationFogMeshes)
 	{
 		QueueExplorationFogMeshRefresh(
 			Loc.X, Loc.Y,
@@ -197,7 +206,15 @@ void ASolidTerrainStreamer::BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint
 		return;
 	}
 
-	EnsureExplorationFogMaterials();
+	UMaterialInterface* FogHalf = nullptr;
+	UMaterialInterface* FogFull = nullptr;
+	if (bRenderExplorationFogMeshes)
+	{
+		EnsureExplorationFogMaterials();
+		FogHalf = ExplorationFogHalfMaterial;
+		FogFull = ExplorationFogFullMaterial;
+	}
+
 	Chunk->BuildChunk(
 		Coord,
 		ChunkWorldSize,
@@ -208,8 +225,8 @@ void ASolidTerrainStreamer::BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint
 		BaseHeight,
 		CollisionHeightBias,
 		ResolveMaterial(),
-		ExplorationFogHalfMaterial,
-		ExplorationFogFullMaterial,
+		FogHalf,
+		FogFull,
 		TerrainMap,
 		FogQuadsPerSide,
 		FogVolumeHeightCm,
@@ -371,19 +388,25 @@ float ASolidTerrainStreamer::SampleViewFogAmount() const
 
 	const float LocalFog = FMath::Clamp(GetTerrainPointAt(SampleOrigin).Fog, 0.f, 1.f);
 	float AheadFog = LocalFog;
-	static const float ProbeDistancesCm[] = { 2000.f, 4000.f, 7000.f, 11000.f };
+	// Probes around the clear-radius / half-band so mist thickens at the exploration edge.
+	static const float ProbeDistancesCm[] = {
+		SolidTerrainFog::MetersToCm(SolidTerrainFog::ClearRadiusMeters),
+		SolidTerrainFog::MetersToCm(SolidTerrainFog::HalfFogStartMeters),
+		SolidTerrainFog::MetersToCm(SolidTerrainFog::FullFogStartMeters),
+		SolidTerrainFog::MetersToCm(SolidTerrainFog::FullFogStartMeters) * 1.5f,
+	};
 	for (const float DistanceCm : ProbeDistancesCm)
 	{
 		AheadFog = FMath::Max(AheadFog, GetTerrainPointAt(SampleOrigin + ViewForward * DistanceCm).Fog);
 	}
 
-	// In a cleared cell: only a soft distant haze (near field stays open).
-	// Inside fog bands: follow local fog for thicker air.
+	// Cleared air: mist amount follows what is ahead (exploration edge).
+	// Inside a fog band: prefer local so walking into fog thickens around you.
 	if (LocalFog <= 0.05f)
 	{
-		return FMath::Clamp(AheadFog * 0.45f, 0.f, 1.f);
+		return AheadFog;
 	}
-	return LocalFog;
+	return FMath::Max(LocalFog, AheadFog * 0.35f);
 }
 
 void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)
@@ -416,14 +439,11 @@ void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)
 	}
 
 	const float Amount = FMath::Clamp(RenderedFogAmount, 0.f, 1.f);
-	const float LocalFog = [&]()
+	float LocalFog = 0.f;
+	if (AActor* Focus = ResolveFocusActor())
 	{
-		if (AActor* Focus = ResolveFocusActor())
-		{
-			return GetTerrainPointAt(Focus->GetActorLocation()).Fog;
-		}
-		return Amount;
-	}();
+		LocalFog = GetTerrainPointAt(Focus->GetActorLocation()).Fog;
+	}
 
 	float Density = 0.f;
 	float MaxOpacity = 0.f;
@@ -439,28 +459,40 @@ void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)
 	}
 	else if (LocalFog <= 0.05f)
 	{
-		// Looking into unexplored fog from a clear trail: haze starts well ahead.
-		const float T = FMath::Clamp(Amount / 0.45f, 0.f, 1.f);
-		Density = FMath::Lerp(0.f, FogDensityAtHalf * 0.85f, T);
-		MaxOpacity = FMath::Lerp(0.f, FogMaxOpacityAtHalf, T);
-		StartDistance = FMath::Lerp(14000.f, 3500.f, T);
-		ExtinctionScale = FMath::Lerp(0.f, 1.1f, T);
+		// From a clear trail: atmospheric mist begins near the 25m clear edge.
+		const float ClearCm = SolidTerrainFog::MetersToCm(SolidTerrainFog::ClearRadiusMeters);
+		const float T = FMath::Clamp(Amount, 0.f, 1.f);
+		if (T <= 0.5f)
+		{
+			const float U = T / 0.5f;
+			Density = FMath::Lerp(0.f, FogDensityAtHalf, U);
+			MaxOpacity = FMath::Lerp(0.f, FogMaxOpacityAtHalf, U);
+			ExtinctionScale = FMath::Lerp(0.15f, 1.0f, U);
+		}
+		else
+		{
+			const float U = (T - 0.5f) / 0.5f;
+			Density = FMath::Lerp(FogDensityAtHalf, FogDensityAtFull, U);
+			MaxOpacity = FMath::Lerp(FogMaxOpacityAtHalf, FogMaxOpacityAtFull, U);
+			ExtinctionScale = FMath::Lerp(1.0f, 1.8f, U);
+		}
+		StartDistance = FMath::Lerp(ClearCm * 1.15f, ClearCm * 0.85f, T);
 	}
 	else if (Amount <= 0.5f)
 	{
 		const float T = Amount / 0.5f;
 		Density = FMath::Lerp(0.f, FogDensityAtHalf, T);
 		MaxOpacity = FMath::Lerp(0.f, FogMaxOpacityAtHalf, T);
-		StartDistance = FMath::Lerp(1800.f, 200.f, T);
-		ExtinctionScale = FMath::Lerp(0.2f, 1.2f, T);
+		StartDistance = FMath::Lerp(600.f, 80.f, T);
+		ExtinctionScale = FMath::Lerp(0.3f, 1.2f, T);
 	}
 	else
 	{
 		const float T = (Amount - 0.5f) / 0.5f;
 		Density = FMath::Lerp(FogDensityAtHalf, FogDensityAtFull, T);
 		MaxOpacity = FMath::Lerp(FogMaxOpacityAtHalf, FogMaxOpacityAtFull, T);
-		StartDistance = FMath::Lerp(200.f, 40.f, T);
-		ExtinctionScale = FMath::Lerp(1.2f, 2.0f, T);
+		StartDistance = FMath::Lerp(80.f, 20.f, T);
+		ExtinctionScale = FMath::Lerp(1.2f, 2.2f, T);
 	}
 
 	FogComp->SetFogDensity(Density);

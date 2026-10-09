@@ -120,15 +120,22 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Map", meta = (ClampMin = "50.0"))
 	float TerrainPointSpacing = 200.f;
 
-	/** Low-res fog-of-war cells per chunk edge (kept small for cheap rebuilds while moving). */
+	/**
+	 * Opaque mesh "fog banks" (debug/legacy). Off by default — they always read as solid
+	 * walls. Exploration fog is Exponential Height Fog driven by TerrainPoint.Fog.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog")
+	bool bRenderExplorationFogMeshes = false;
+
+	/** Low-res fog-of-war cells per chunk edge (only if bRenderExplorationFogMeshes). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "2", ClampMax = "32"))
 	int32 FogQuadsPerSide = 6;
 
-	/** Vertical extent of full exploration-fog volumes (cm). Tall banks, not a ground sheet. */
+	/** Vertical extent of full exploration-fog volumes (cm). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "200.0"))
 	float FogVolumeHeightCm = 2500.f;
 
-	/** Vertical extent of half-fog pillars (cm). Shorter + checkerboard = ~50% coverage. */
+	/** Vertical extent of half-fog pillars (cm). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "200.0"))
 	float FogVolumeHeightHalfCm = 1400.f;
 
@@ -136,36 +143,33 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "50.0"))
 	float FogUpdateMoveThresholdCm = 250.f;
 
-	/** Max fog-overlay chunk rebuilds per streamer tick (spreads cost while walking). */
+	/** Max fog-overlay chunk rebuilds per streamer tick. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "1", ClampMax = "16"))
 	int32 MaxFogChunkRebuildsPerUpdate = 2;
 
-	/**
-	 * Soft Exponential Height Fog for misty air (complements sparse fog-bank meshes).
-	 * Cleared trail stays clear nearby; distant unexplored fog can haze the horizon.
-	 */
+	/** Soft Exponential Height Fog driven by TerrainPoint fog (true mist). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog")
 	bool bRenderTerrainFog = true;
 
 	/** How quickly rendered fog follows TerrainPoint samples. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.1"))
-	float FogInterpSpeed = 2.5f;
+	float FogInterpSpeed = 3.5f;
 
-	/** FogDensity at TerrainPoint.Fog == 0.5 (soft mist — not a solid wall). */
+	/** FogDensity at TerrainPoint.Fog == 0.5 (hard to see through, still misty). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.0"))
-	float FogDensityAtHalf = 0.07f;
+	float FogDensityAtHalf = 0.12f;
 
-	/** FogDensity at TerrainPoint.Fog == 1 (thick mist, still not pure whiteout). */
+	/** FogDensity at TerrainPoint.Fog == 1 (near-impenetrable mist). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.0"))
-	float FogDensityAtFull = 0.18f;
+	float FogDensityAtFull = 0.35f;
 
 	/** FogMaxOpacity at TerrainPoint.Fog == 0.5. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float FogMaxOpacityAtHalf = 0.55f;
+	float FogMaxOpacityAtHalf = 0.75f;
 
 	/** FogMaxOpacity at TerrainPoint.Fog == 1. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float FogMaxOpacityAtFull = 0.82f;
+	float FogMaxOpacityAtFull = 0.95f;
 
 	/** Mist inscattering color (lit fog). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog")

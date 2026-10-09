@@ -1,5 +1,6 @@
 #include "SolidCore1TerrainStreamer.h"
 #include "SolidCore1TerrainChunk.h"
+#include "SolidCore1TerrainMap.h"
 #include "SolidCore1TerrainNoise.h"
 #include "SolidCore1.h"
 #include "Engine/World.h"
@@ -61,8 +62,53 @@ ASolidCore1TerrainStreamer* ASolidCore1TerrainStreamer::EnsureExists(UWorld* Wor
 void ASolidCore1TerrainStreamer::BeginPlay()
 {
 	Super::BeginPlay();
+	EnsureTerrainMap();
 	TimeSinceUpdate = UpdateIntervalSeconds;
 	UpdateStreaming();
+}
+
+void ASolidCore1TerrainStreamer::EnsureTerrainMap()
+{
+	if (TerrainMap && TerrainMap->IsBuilt())
+	{
+		return;
+	}
+
+	if (!TerrainMap)
+	{
+		TerrainMap = NewObject<USolidCore1TerrainMap>(this, TEXT("TerrainMap"));
+	}
+
+	// Align point spacing with chunk vertex step when possible so samples hit grid nodes.
+	float Spacing = TerrainPointSpacing;
+	if (QuadsPerSide > 0)
+	{
+		Spacing = ChunkWorldSize / static_cast<float>(QuadsPerSide);
+	}
+
+	TerrainMap->Build(
+		Seed,
+		FrequencyScale,
+		Amplitude,
+		BaseHeight,
+		TerrainMapSize,
+		TerrainMapSize,
+		Spacing,
+		/*bForceRebuild=*/false);
+}
+
+FSolidCore1TerrainPoint ASolidCore1TerrainStreamer::GetTerrainPointAt(const FVector& WorldLocation) const
+{
+	if (TerrainMap && TerrainMap->IsBuilt())
+	{
+		return TerrainMap->SamplePoint(WorldLocation.X, WorldLocation.Y);
+	}
+
+	FSolidCore1TerrainPoint Fallback;
+	Fallback.X = WorldLocation.X;
+	Fallback.Y = WorldLocation.Y;
+	Fallback.Height = SampleHeightAtWorld(WorldLocation);
+	return Fallback;
 }
 
 void ASolidCore1TerrainStreamer::Tick(float DeltaSeconds)
@@ -228,6 +274,11 @@ UMaterialInterface* ASolidCore1TerrainStreamer::ResolveMaterial() const
 
 float ASolidCore1TerrainStreamer::SampleHeightAtWorld(const FVector& WorldLocation) const
 {
+	if (TerrainMap && TerrainMap->IsBuilt())
+	{
+		return TerrainMap->SampleHeight(WorldLocation.X, WorldLocation.Y);
+	}
+
 	return SolidCore1TerrainNoise::SampleHeight(
 		WorldLocation.X, WorldLocation.Y, Seed, FrequencyScale, Amplitude, BaseHeight);
 }
@@ -318,6 +369,7 @@ void ASolidCore1TerrainStreamer::TrySnapFocusToTerrain(AActor* Focus)
 
 void ASolidCore1TerrainStreamer::UpdateStreaming()
 {
+	EnsureTerrainMap();
 	DisableLandscapeActorsOnce();
 
 	AActor* Focus = ResolveFocusActor();
@@ -397,7 +449,8 @@ void ASolidCore1TerrainStreamer::UpdateStreaming()
 			Amplitude,
 			BaseHeight,
 			CollisionHeightBias,
-			Material);
+			Material,
+			TerrainMap);
 
 		LoadedChunks.Add(Coord, Chunk);
 		UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Built terrain chunk (%d, %d) origin=(%.0f, %.0f) loaded=%d"),

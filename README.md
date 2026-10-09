@@ -76,11 +76,13 @@ Or right-click `SolidCore1.uproject` → **Generate Visual Studio project files*
 
 C++ generates walkable terrain around the player at runtime:
 
-- `ASolidCore1TerrainChunk` — runtime `UStaticMesh` (via `FMeshDescription` / `BuildFromMeshDescriptions`) from seeded fBm noise
-- `ASolidCore1TerrainStreamer` — loads/unloads a Chebyshev radius of chunks around the pawn
-- `ASolidCore1GameMode` auto-spawns the streamer on BeginPlay (`bAutoSpawnTerrainStreamer`)
+- `FSolidCore1TerrainPoint` / `ESolidCore1Biome` — simulation cell (X, Y, Height, Biome, Threat, Fog)
+- `USolidCore1TerrainMap` — 2D TerrainPoint grid built once at streamer startup (default 257×257 @ chunk vert spacing)
+- `ASolidCore1TerrainChunk` — runtime `UStaticMesh`; vertex heights sampled from the TerrainMap
+- `ASolidCore1TerrainStreamer` — builds the map, then loads/unloads a Chebyshev radius of chunks around the pawn
+- Debug HUD shows biome / threat / fog at the pawn plus map size
 
-Defaults: 64 m chunks (`ChunkWorldSize=6400`), 32 quads/side, radius 2 (5×5 chunks), `Amplitude=3000`. Tunable on the streamer actor. Chunks use `WorldGridMaterial`.
+Defaults: 64 m chunks (`ChunkWorldSize=6400`), 32 quads/side, radius 2 (5×5 chunks), `Amplitude=3000`. Material: Fab `Mat_025_grass` when present.
 
 Default map is `/Game/ThirdPerson/Lvl_ThirdPerson` (SC1-0022) so Open World Landscape/HLOD outer hills are not in the scene — that cleared the horizon slivers. `L_OpenWorld` remains for comparison. SC1-0023 forces `BP_SolidCore1GameMode` on PIE/game worlds so template maps keep Manny + the debug HUD instead of Quinn. On first stream, the pawn is snapped onto the procedural height. If a Landscape is present, actors are hidden/collision-disabled once. Chunks block the Camera channel and use complex-as-simple collision on the runtime static mesh.
 

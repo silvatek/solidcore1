@@ -2,7 +2,9 @@
 #include "SolidCore1BuildId.h"
 #include "SolidCore1Character.h"
 #include "Companion/SolidCore1CompanionCharacter.h"
+#include "Terrain/SolidCore1TerrainMap.h"
 #include "Terrain/SolidCore1TerrainStreamer.h"
+#include "Terrain/SolidCore1TerrainTypes.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -125,6 +127,18 @@ void ASolidCore1HUD::DrawHUD()
 				Chunk.X, Chunk.Y, Streamer->GetLoadedChunkCount(),
 				Streamer->ViewRadiusChunks,
 				Streamer->Amplitude, Streamer->FrequencyScale));
+
+			const FSolidCore1TerrainPoint Point = Streamer->GetTerrainPointAt(Loc);
+			Lines.Add(FString::Printf(
+				TEXT("Biome %s  threat=%.2f  fog=%.2f"),
+				SolidCore1TerrainTypes::BiomeToString(Point.Biome),
+				Point.Threat, Point.Fog));
+			if (const USolidCore1TerrainMap* Map = Streamer->GetTerrainMap())
+			{
+				Lines.Add(FString::Printf(
+					TEXT("Map %dx%d  spacing=%.0f  points=%d"),
+					Map->GridWidth, Map->GridHeight, Map->PointSpacing, Map->GetPointCount()));
+			}
 
 			if (const UMaterialInterface* Mat = Streamer->GetActiveMaterial())
 			{

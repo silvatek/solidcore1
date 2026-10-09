@@ -7,6 +7,7 @@
 class UStaticMeshComponent;
 class UStaticMesh;
 class UMaterialInterface;
+class USolidCore1TerrainMap;
 
 UCLASS()
 class SOLIDCORE1_API ASolidCore1TerrainChunk : public AActor
@@ -25,7 +26,8 @@ public:
 		float InAmplitude,
 		float InBaseHeight,
 		float InCollisionHeightBias,
-		UMaterialInterface* Material);
+		UMaterialInterface* Material,
+		const USolidCore1TerrainMap* TerrainMap);
 
 	FIntPoint GetChunkCoord() const { return ChunkCoord; }
 

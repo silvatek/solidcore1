@@ -1,4 +1,5 @@
 #include "SolidCore1TerrainChunk.h"
+#include "SolidCore1TerrainMap.h"
 #include "SolidCore1TerrainNoise.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
@@ -50,7 +51,8 @@ void ASolidCore1TerrainChunk::BuildChunk(
 	float InAmplitude,
 	float InBaseHeight,
 	float InCollisionHeightBias,
-	UMaterialInterface* Material)
+	UMaterialInterface* Material,
+	const USolidCore1TerrainMap* TerrainMap)
 {
 	ChunkCoord = InChunkCoord;
 	InQuadsPerSide = FMath::Clamp(InQuadsPerSide, 1, 256);
@@ -90,8 +92,11 @@ void ASolidCore1TerrainChunk::BuildChunk(
 		{
 			const float WorldX = OriginX + static_cast<float>(X) * Step;
 			const float WorldY = OriginY + static_cast<float>(Y) * Step;
-			const float Height = SolidCore1TerrainNoise::SampleHeight(
-				WorldX, WorldY, InSeed, InFrequencyScale, InAmplitude, InBaseHeight);
+			// Prefer TerrainPoint grid heights; noise fallback only if map missing.
+			const float Height = (TerrainMap && TerrainMap->IsBuilt())
+				? TerrainMap->SampleHeight(WorldX, WorldY)
+				: SolidCore1TerrainNoise::SampleHeight(
+					WorldX, WorldY, InSeed, InFrequencyScale, InAmplitude, InBaseHeight);
 			Heights[Y * VertsPerSide + X] = Height;
 
 			const float SurfaceZ = Height + InCollisionHeightBias;

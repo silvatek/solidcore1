@@ -2,10 +2,12 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "SolidCore1TerrainTypes.h"
 #include "SolidCore1TerrainStreamer.generated.h"
 
 class ASolidCore1TerrainChunk;
 class UMaterialInterface;
+class USolidCore1TerrainMap;
 
 /**
  * Spawns / destroys runtime procedural terrain chunks around a focus actor (usually the player pawn).
@@ -33,6 +35,8 @@ public:
 	{
 		return ResolvedTerrainMaterial ? ResolvedTerrainMaterial.Get() : TerrainMaterial.Get();
 	}
+	USolidCore1TerrainMap* GetTerrainMap() const { return TerrainMap; }
+	FSolidCore1TerrainPoint GetTerrainPointAt(const FVector& WorldLocation) const;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "500.0"))
 	float ChunkWorldSize = 6400.f;
@@ -96,7 +100,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.0"))
 	float SnapHeightPadding = 4.f;
 
+	/** TerrainPoint cells along each map axis (built once at BeginPlay). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Map", meta = (ClampMin = "8", ClampMax = "1025"))
+	int32 TerrainMapSize = 257;
+
+	/** World cm between TerrainPoints. Match chunk vert step (ChunkWorldSize / QuadsPerSide) for crisp sampling. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Map", meta = (ClampMin = "50.0"))
+	float TerrainPointSpacing = 200.f;
+
 protected:
+	void EnsureTerrainMap();
 	void UpdateStreaming();
 	FIntPoint WorldToChunkCoord(const FVector& WorldLocation) const;
 	AActor* ResolveFocusActor() const;
@@ -113,6 +126,10 @@ protected:
 	/** Cached lit material so chunks do not each create their own. */
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInterface> ResolvedTerrainMaterial;
+
+	/** World simulation grid — source of rendered heights + biome/threat/fog. */
+	UPROPERTY(Transient)
+	TObjectPtr<USolidCore1TerrainMap> TerrainMap;
 
 	float TimeSinceUpdate = 0.f;
 	bool bDidDisableLandscape = false;

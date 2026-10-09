@@ -112,9 +112,12 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Map", meta = (ClampMin = "50.0"))
 	float TerrainPointSpacing = 200.f;
 
-	/** Drive Exponential Height Fog from TerrainPoint.Fog samples. */
+	/**
+	 * Legacy weather-style Exponential Height Fog. Off by default — exploration fog is
+	 * a spatial overlay on terrain chunks (fog-of-war), not global atmosphere.
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog")
-	bool bRenderTerrainFog = true;
+	bool bRenderTerrainFog = false;
 
 	/** How quickly rendered fog follows TerrainPoint samples. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.1"))
@@ -143,7 +146,10 @@ public:
 protected:
 	void EnsureTerrainMap();
 	void EnsureHeightFog();
-	void ClearExplorationFogAtFocus();
+	void EnsureExplorationFogMaterials();
+	int32 ClearExplorationFogAtFocus();
+	void RefreshExplorationFogMeshesAround(float WorldX, float WorldY, float RadiusCm);
+	void BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint Coord);
 	void UpdateTerrainFog(float DeltaSeconds);
 	float SampleViewFogAmount() const;
 	void UpdateStreaming();
@@ -152,6 +158,7 @@ protected:
 	UMaterialInterface* ResolveMaterial() const;
 	UMaterialInterface* FindFabGrassMaterial() const;
 	UMaterialInterface* CreateFlatColGrassMaterial() const;
+	UMaterialInterface* CreateSolidColorMaterial(const FLinearColor& Color, const TCHAR* DebugName) const;
 	float SampleHeightAtWorld(const FVector& WorldLocation) const;
 	void TrySnapFocusToTerrain(AActor* Focus);
 	void DisableLandscapeActorsOnce();
@@ -167,11 +174,19 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<USolidTerrainMap> TerrainMap;
 
-	/** Height fog actor driven by TerrainPoint fog. */
+	/** Height fog actor driven by TerrainPoint fog (legacy; unused when bRenderTerrainFog is false). */
 	UPROPERTY(Transient)
 	TObjectPtr<AExponentialHeightFog> HeightFogActor;
+
+	/** Spatial exploration fog overlay materials (half / full). */
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInterface> ExplorationFogHalfMaterial;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInterface> ExplorationFogFullMaterial;
 
 	float TimeSinceUpdate = 0.f;
 	float RenderedFogAmount = 0.f;
 	bool bDidDisableLandscape = false;
+	bool bExplorationFogMeshesDirty = false;
 };

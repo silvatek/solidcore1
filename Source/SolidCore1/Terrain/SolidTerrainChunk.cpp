@@ -1,6 +1,7 @@
 #include "SolidTerrainChunk.h"
 #include "SolidTerrainMap.h"
 #include "SolidTerrainNoise.h"
+#include "SolidTerrainTypes.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"
@@ -21,6 +22,150 @@ namespace SolidTerrainChunkPrivate
 		Mesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Block);
 		Mesh->SetGenerateOverlapEvents(false);
 	}
+
+	static void ConfigureFogOverlay(UStaticMeshComponent* Mesh)
+	{
+		Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Mesh->SetGenerateOverlapEvents(false);
+		Mesh->SetCastShadow(false);
+		Mesh->SetVisibility(true);
+		Mesh->SetHiddenInGame(false);
+		Mesh->SetMobility(EComponentMobility::Movable);
+		Mesh->bUseAsOccluder = false;
+		Mesh->SetCanEverAffectNavigation(false);
+	}
+
+	static UStaticMesh* BuildRuntimeMesh(
+		UObject* Outer,
+		const TArray<FVector>& Positions,
+		const TArray<FVector>& Normals,
+		const TArray<FVector>& Tangents,
+		const TArray<FVector2D>& UVs,
+		const TArray<FLinearColor>& Colors,
+		const TArray<int32>& Triangles,
+		const TArray<UMaterialInterface*>& Materials,
+		const TArray<int32>& TriMaterialIndices,
+		bool bBuildCollision)
+	{
+		if (Positions.Num() == 0 || Triangles.Num() < 3 || Materials.Num() == 0)
+		{
+			return nullptr;
+		}
+
+		FMeshDescription MeshDescription;
+		FStaticMeshAttributes Attributes(MeshDescription);
+		Attributes.Register();
+
+		TVertexAttributesRef<FVector3f> VertexPositions = Attributes.GetVertexPositions();
+		TVertexInstanceAttributesRef<FVector3f> InstanceNormals = Attributes.GetVertexInstanceNormals();
+		TVertexInstanceAttributesRef<FVector3f> InstanceTangents = Attributes.GetVertexInstanceTangents();
+		TVertexInstanceAttributesRef<float> InstanceBinormalSigns = Attributes.GetVertexInstanceBinormalSigns();
+		TVertexInstanceAttributesRef<FVector2f> InstanceUVs = Attributes.GetVertexInstanceUVs();
+		TVertexInstanceAttributesRef<FVector4f> InstanceColors = Attributes.GetVertexInstanceColors();
+		TPolygonGroupAttributesRef<FName> PolygonGroupNames = Attributes.GetPolygonGroupMaterialSlotNames();
+
+		InstanceUVs.SetNumChannels(1);
+
+		TArray<FPolygonGroupID> PolygonGroups;
+		PolygonGroups.Reserve(Materials.Num());
+		for (int32 MatIndex = 0; MatIndex < Materials.Num(); ++MatIndex)
+		{
+			const FPolygonGroupID PolygonGroupID = MeshDescription.CreatePolygonGroup();
+			PolygonGroupNames[PolygonGroupID] = FName(*FString::Printf(TEXT("Slot%d"), MatIndex));
+			PolygonGroups.Add(PolygonGroupID);
+		}
+
+		TArray<FVertexID> VertexIDs;
+		VertexIDs.Reserve(Positions.Num());
+		for (const FVector& Position : Positions)
+		{
+			const FVertexID VertexID = MeshDescription.CreateVertex();
+			VertexPositions[VertexID] = FVector3f(Position);
+			VertexIDs.Add(VertexID);
+		}
+
+		const int32 TriCount = Triangles.Num() / 3;
+		for (int32 TriIndex = 0; TriIndex < TriCount; ++TriIndex)
+		{
+			const int32 I0 = Triangles[TriIndex * 3 + 0];
+			const int32 I1 = Triangles[TriIndex * 3 + 1];
+			const int32 I2 = Triangles[TriIndex * 3 + 2];
+			const int32 MatIndex = TriMaterialIndices.IsValidIndex(TriIndex)
+				? FMath::Clamp(TriMaterialIndices[TriIndex], 0, PolygonGroups.Num() - 1)
+				: 0;
+
+			TArray<FVertexInstanceID, TInlineAllocator<3>> InstanceIDs;
+			const int32 CornerIndices[3] = { I0, I1, I2 };
+			for (int32 Corner = 0; Corner < 3; ++Corner)
+			{
+				const int32 VertIndex = CornerIndices[Corner];
+				const FVertexInstanceID InstanceID = MeshDescription.CreateVertexInstance(VertexIDs[VertIndex]);
+				InstanceNormals[InstanceID] = FVector3f(Normals[VertIndex]);
+				InstanceTangents[InstanceID] = FVector3f(Tangents[VertIndex]);
+				InstanceBinormalSigns[InstanceID] = 1.f;
+				InstanceUVs.Set(InstanceID, 0, FVector2f(UVs.IsValidIndex(VertIndex) ? UVs[VertIndex] : FVector2D::ZeroVector));
+				InstanceColors[InstanceID] = FVector4f(
+					Colors.IsValidIndex(VertIndex) ? Colors[VertIndex] : FLinearColor::White);
+				InstanceIDs.Add(InstanceID);
+			}
+
+			MeshDescription.CreatePolygon(PolygonGroups[MatIndex], InstanceIDs);
+		}
+
+		UStaticMesh* Mesh = NewObject<UStaticMesh>(Outer, NAME_None, RF_Transient);
+		Mesh->bAllowCPUAccess = true;
+		Mesh->NeverStream = true;
+		{
+			FMeshNaniteSettings NaniteSettings = Mesh->GetNaniteSettings();
+			NaniteSettings.bEnabled = false;
+			Mesh->SetNaniteSettings(NaniteSettings);
+		}
+
+		TArray<FStaticMaterial> StaticMaterials;
+		StaticMaterials.Reserve(Materials.Num());
+		for (int32 MatIndex = 0; MatIndex < Materials.Num(); ++MatIndex)
+		{
+			const FName SlotName(*FString::Printf(TEXT("Slot%d"), MatIndex));
+			StaticMaterials.Add(FStaticMaterial(Materials[MatIndex], SlotName, SlotName));
+		}
+		Mesh->SetStaticMaterials(StaticMaterials);
+
+		UStaticMesh::FBuildMeshDescriptionsParams BuildParams;
+		BuildParams.bBuildSimpleCollision = false;
+		BuildParams.bFastBuild = false;
+		BuildParams.bAllowCpuAccess = true;
+		BuildParams.bCommitMeshDescription = true;
+		BuildParams.bMarkPackageDirty = false;
+
+		const TArray<const FMeshDescription*> Descriptions = { &MeshDescription };
+		if (!Mesh->BuildFromMeshDescriptions(Descriptions, BuildParams))
+		{
+			return nullptr;
+		}
+
+		{
+			FMeshNaniteSettings NaniteSettings = Mesh->GetNaniteSettings();
+			NaniteSettings.bEnabled = false;
+			Mesh->SetNaniteSettings(NaniteSettings);
+		}
+
+		if (bBuildCollision)
+		{
+			if (!Mesh->GetBodySetup())
+			{
+				Mesh->CreateBodySetup();
+			}
+			if (UBodySetup* BodySetup = Mesh->GetBodySetup())
+			{
+				BodySetup->CollisionTraceFlag = CTF_UseComplexAsSimple;
+				BodySetup->bDoubleSidedGeometry = true;
+				BodySetup->InvalidatePhysicsData();
+				BodySetup->CreatePhysicsMeshes();
+			}
+		}
+
+		return Mesh;
+	}
 }
 
 ASolidTerrainChunk::ASolidTerrainChunk()
@@ -30,7 +175,11 @@ ASolidTerrainChunk::ASolidTerrainChunk()
 	MeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MeshComponent"));
 	SetRootComponent(MeshComponent);
 
+	FogMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FogMeshComponent"));
+	FogMeshComponent->SetupAttachment(MeshComponent);
+
 	SolidTerrainChunkPrivate::ConfigureCollision(MeshComponent);
+	SolidTerrainChunkPrivate::ConfigureFogOverlay(FogMeshComponent);
 	MeshComponent->SetCastShadow(true);
 	MeshComponent->SetVisibility(true);
 	MeshComponent->SetHiddenInGame(false);
@@ -52,6 +201,8 @@ void ASolidTerrainChunk::BuildChunk(
 	float InBaseHeight,
 	float InCollisionHeightBias,
 	UMaterialInterface* Material,
+	UMaterialInterface* FogHalfMaterial,
+	UMaterialInterface* FogFullMaterial,
 	const USolidTerrainMap* TerrainMap)
 {
 	ChunkCoord = InChunkCoord;
@@ -63,6 +214,7 @@ void ASolidTerrainChunk::BuildChunk(
 	const float Step = InChunkWorldSize / static_cast<float>(InQuadsPerSide);
 	const float OriginX = static_cast<float>(InChunkCoord.X) * InChunkWorldSize;
 	const float OriginY = static_cast<float>(InChunkCoord.Y) * InChunkWorldSize;
+	constexpr float FogHeightOffsetCm = 12.f;
 
 	SetActorLocation(FVector(OriginX, OriginY, 0.f));
 
@@ -71,6 +223,7 @@ void ASolidTerrainChunk::BuildChunk(
 	TArray<FVector> Tangents;
 	TArray<FVector2D> UVs;
 	TArray<FLinearColor> Colors;
+	TArray<float> FogAmounts;
 	TArray<int32> Triangles;
 
 	Positions.Reserve(VertsPerSide * VertsPerSide);
@@ -78,6 +231,7 @@ void ASolidTerrainChunk::BuildChunk(
 	Tangents.Reserve(VertsPerSide * VertsPerSide);
 	UVs.Reserve(VertsPerSide * VertsPerSide);
 	Colors.Reserve(VertsPerSide * VertsPerSide);
+	FogAmounts.Reserve(VertsPerSide * VertsPerSide);
 	Triangles.Reserve(InQuadsPerSide * InQuadsPerSide * 6);
 
 	TArray<float> Heights;
@@ -92,7 +246,6 @@ void ASolidTerrainChunk::BuildChunk(
 		{
 			const float WorldX = OriginX + static_cast<float>(X) * Step;
 			const float WorldY = OriginY + static_cast<float>(Y) * Step;
-			// Prefer TerrainPoint grid heights; noise fallback only if map missing.
 			const float Height = (TerrainMap && TerrainMap->IsBuilt())
 				? TerrainMap->SampleHeight(WorldX, WorldY)
 				: SolidTerrainNoise::SampleHeight(
@@ -105,12 +258,10 @@ void ASolidTerrainChunk::BuildChunk(
 
 			Positions.Add(FVector(static_cast<float>(X) * Step, static_cast<float>(Y) * Step, SurfaceZ));
 
-			// World-tiled UVs for seamless Fab grass (~1 m per tile). No warp — keeps seams clean.
 			const float GrassTone = SolidTerrainNoise::SampleGrassTone(WorldX, WorldY, InSeed);
 			const float UVScale = 0.01f;
 			UVs.Add(FVector2D(WorldX * UVScale, WorldY * UVScale));
 
-			// High-contrast darker/lighter greens so speckles read under lit shading.
 			const float HeightT = FMath::Clamp((Height - InBaseHeight) / FMath::Max(InAmplitude, 1.f), 0.f, 1.f);
 			const FLinearColor DarkGrass(0.04f, 0.10f, 0.02f);
 			const FLinearColor MidGrass(0.30f, 0.52f, 0.12f);
@@ -119,6 +270,11 @@ void ASolidTerrainChunk::BuildChunk(
 			FLinearColor Grass = FLinearColor::LerpUsingHSV(DarkGrass, MidGrass, Speckle);
 			Grass = FLinearColor::LerpUsingHSV(Grass, DryGrass, HeightT * 0.30f);
 			Colors.Add(Grass);
+
+			const float Fog = (TerrainMap && TerrainMap->IsBuilt())
+				? TerrainMap->SamplePoint(WorldX, WorldY).Fog
+				: 1.f;
+			FogAmounts.Add(FMath::Clamp(Fog, 0.f, 1.f));
 		}
 	}
 
@@ -159,8 +315,6 @@ void ASolidTerrainChunk::BuildChunk(
 			const int32 I01 = I00 + VertsPerSide;
 			const int32 I11 = I01 + 1;
 
-			// SC1-0010: flip winding vs prior builds. Collision worked while looking down showed
-			// only blue fog + horizon ribbons — classic one-sided backface cull from reversed winding.
 			Triangles.Add(I00);
 			Triangles.Add(I11);
 			Triangles.Add(I10);
@@ -170,106 +324,14 @@ void ASolidTerrainChunk::BuildChunk(
 		}
 	}
 
-	FMeshDescription MeshDescription;
-	FStaticMeshAttributes Attributes(MeshDescription);
-	Attributes.Register();
+	TArray<int32> GrassMatIndices;
+	GrassMatIndices.Init(0, Triangles.Num() / 3);
+	TArray<UMaterialInterface*> GrassMaterials;
+	GrassMaterials.Add(Material);
 
-	TVertexAttributesRef<FVector3f> VertexPositions = Attributes.GetVertexPositions();
-	TVertexInstanceAttributesRef<FVector3f> InstanceNormals = Attributes.GetVertexInstanceNormals();
-	TVertexInstanceAttributesRef<FVector3f> InstanceTangents = Attributes.GetVertexInstanceTangents();
-	TVertexInstanceAttributesRef<float> InstanceBinormalSigns = Attributes.GetVertexInstanceBinormalSigns();
-	TVertexInstanceAttributesRef<FVector2f> InstanceUVs = Attributes.GetVertexInstanceUVs();
-	TVertexInstanceAttributesRef<FVector4f> InstanceColors = Attributes.GetVertexInstanceColors();
-	TPolygonGroupAttributesRef<FName> PolygonGroupNames = Attributes.GetPolygonGroupMaterialSlotNames();
-
-	InstanceUVs.SetNumChannels(1);
-
-	const FPolygonGroupID PolygonGroupID = MeshDescription.CreatePolygonGroup();
-	PolygonGroupNames[PolygonGroupID] = FName(TEXT("Terrain"));
-
-	TArray<FVertexID> VertexIDs;
-	VertexIDs.Reserve(Positions.Num());
-	for (const FVector& Position : Positions)
-	{
-		const FVertexID VertexID = MeshDescription.CreateVertex();
-		VertexPositions[VertexID] = FVector3f(Position);
-		VertexIDs.Add(VertexID);
-	}
-
-	const int32 TriCount = Triangles.Num() / 3;
-	for (int32 TriIndex = 0; TriIndex < TriCount; ++TriIndex)
-	{
-		const int32 I0 = Triangles[TriIndex * 3 + 0];
-		const int32 I1 = Triangles[TriIndex * 3 + 1];
-		const int32 I2 = Triangles[TriIndex * 3 + 2];
-
-		TArray<FVertexInstanceID, TInlineAllocator<3>> InstanceIDs;
-		const int32 CornerIndices[3] = { I0, I1, I2 };
-		for (int32 Corner = 0; Corner < 3; ++Corner)
-		{
-			const int32 VertIndex = CornerIndices[Corner];
-			const FVertexInstanceID InstanceID = MeshDescription.CreateVertexInstance(VertexIDs[VertIndex]);
-			InstanceNormals[InstanceID] = FVector3f(Normals[VertIndex]);
-			InstanceTangents[InstanceID] = FVector3f(Tangents[VertIndex]);
-			InstanceBinormalSigns[InstanceID] = 1.f;
-			InstanceUVs.Set(InstanceID, 0, FVector2f(UVs[VertIndex]));
-			InstanceColors[InstanceID] = FVector4f(Colors[VertIndex]);
-			InstanceIDs.Add(InstanceID);
-		}
-
-		MeshDescription.CreatePolygon(PolygonGroupID, InstanceIDs);
-	}
-
-	// SC1-0019 underside did not remove horizon shards — reverted.
-
-	RuntimeStaticMesh = NewObject<UStaticMesh>(this, NAME_None, RF_Transient);
-	RuntimeStaticMesh->bAllowCPUAccess = true;
-	RuntimeStaticMesh->NeverStream = true;
-	// Open World defaults Nanite on; runtime meshes then often collide without drawing.
-	{
-		FMeshNaniteSettings NaniteSettings = RuntimeStaticMesh->GetNaniteSettings();
-		NaniteSettings.bEnabled = false;
-		RuntimeStaticMesh->SetNaniteSettings(NaniteSettings);
-	}
-
-	FStaticMaterial StaticMaterial(Material, FName(TEXT("Terrain")), FName(TEXT("Terrain")));
-	RuntimeStaticMesh->SetStaticMaterials({ StaticMaterial });
-
-	// Full build + CPU access for complex-as-simple (bFastBuild skipped collision in SC1-0007).
-	UStaticMesh::FBuildMeshDescriptionsParams BuildParams;
-	BuildParams.bBuildSimpleCollision = false;
-	BuildParams.bFastBuild = false;
-	BuildParams.bAllowCpuAccess = true;
-	BuildParams.bCommitMeshDescription = true;
-	BuildParams.bMarkPackageDirty = false;
-
-	const TArray<const FMeshDescription*> Descriptions = { &MeshDescription };
-	const bool bBuilt = RuntimeStaticMesh->BuildFromMeshDescriptions(Descriptions, BuildParams);
-	if (!bBuilt)
-	{
-		UE_LOG(LogTemp, Error,
-			TEXT("[SolidCore1] BuildFromMeshDescriptions FAILED for chunk (%d,%d)"),
-			InChunkCoord.X, InChunkCoord.Y);
-	}
-
-	// Build can re-enable Nanite from project defaults — keep it off for runtime meshes.
-	{
-		FMeshNaniteSettings NaniteSettings = RuntimeStaticMesh->GetNaniteSettings();
-		NaniteSettings.bEnabled = false;
-		RuntimeStaticMesh->SetNaniteSettings(NaniteSettings);
-	}
-
-	if (!RuntimeStaticMesh->GetBodySetup())
-	{
-		RuntimeStaticMesh->CreateBodySetup();
-	}
-	if (UBodySetup* BodySetup = RuntimeStaticMesh->GetBodySetup())
-	{
-		BodySetup->CollisionTraceFlag = CTF_UseComplexAsSimple;
-		BodySetup->bDoubleSidedGeometry = true;
-		BodySetup->InvalidatePhysicsData();
-		BodySetup->CreatePhysicsMeshes();
-	}
+	RuntimeStaticMesh = SolidTerrainChunkPrivate::BuildRuntimeMesh(
+		this, Positions, Normals, Tangents, UVs, Colors, Triangles, GrassMaterials, GrassMatIndices,
+		/*bBuildCollision=*/true);
 
 	MeshComponent->SetStaticMesh(nullptr);
 	MeshComponent->SetStaticMesh(RuntimeStaticMesh);
@@ -277,31 +339,150 @@ void ASolidTerrainChunk::BuildChunk(
 	{
 		MeshComponent->SetMaterial(0, Material);
 	}
-
 	SolidTerrainChunkPrivate::ConfigureCollision(MeshComponent);
 	MeshComponent->BodyInstance.SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
 	MeshComponent->BodyInstance.SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	MeshComponent->SetVisibility(true);
 	MeshComponent->SetHiddenInGame(false);
 	MeshComponent->bUseAsOccluder = false;
-	MeshComponent->bTreatAsBackgroundForOcclusion = true;
 	MeshComponent->UpdateBounds();
 	MeshComponent->MarkRenderStateDirty();
 	MeshComponent->RecreatePhysicsState();
 
-	const int32 RenderTris = RuntimeStaticMesh->GetNumTriangles(0);
-	int32 SimpleCollisionElems = 0;
-	ECollisionTraceFlag TraceFlag = CTF_UseDefault;
-	if (const UBodySetup* BodySetup = RuntimeStaticMesh->GetBodySetup())
+	// --- Spatial exploration fog overlay (fog-of-war), not global height fog ---
+	TArray<FVector> FogPositions;
+	TArray<FVector> FogNormals;
+	TArray<FVector> FogTangents;
+	TArray<FVector2D> FogUVs;
+	TArray<FLinearColor> FogColors;
+	TArray<int32> FogTriangles;
+	TArray<int32> FogTriMaterials;
+
+	auto AppendFogQuad = [&](int32 I00, int32 I10, int32 I01, int32 I11, int32 MaterialSlot)
 	{
-		SimpleCollisionElems = BodySetup->AggGeom.GetElementCount();
-		TraceFlag = BodySetup->CollisionTraceFlag;
+		const int32 Base = FogPositions.Num();
+		const int32 Src[4] = { I00, I10, I01, I11 };
+		for (int32 Corner = 0; Corner < 4; ++Corner)
+		{
+			const int32 SrcIndex = Src[Corner];
+			FogPositions.Add(Positions[SrcIndex] + FVector(0.f, 0.f, FogHeightOffsetCm));
+			FogNormals.Add(Normals[SrcIndex]);
+			FogTangents.Add(Tangents[SrcIndex]);
+			FogUVs.Add(UVs[SrcIndex]);
+			FogColors.Add(FLinearColor::White);
+		}
+
+		// Same winding as terrain.
+		FogTriangles.Add(Base + 0);
+		FogTriangles.Add(Base + 3);
+		FogTriangles.Add(Base + 1);
+		FogTriangles.Add(Base + 0);
+		FogTriangles.Add(Base + 2);
+		FogTriangles.Add(Base + 3);
+		FogTriMaterials.Add(MaterialSlot);
+		FogTriMaterials.Add(MaterialSlot);
+	};
+
+	if (FogHalfMaterial || FogFullMaterial)
+	{
+		for (int32 Y = 0; Y < InQuadsPerSide; ++Y)
+		{
+			for (int32 X = 0; X < InQuadsPerSide; ++X)
+			{
+				const int32 I00 = Y * VertsPerSide + X;
+				const int32 I10 = I00 + 1;
+				const int32 I01 = I00 + VertsPerSide;
+				const int32 I11 = I01 + 1;
+
+				const float F00 = FogAmounts[I00];
+				const float F10 = FogAmounts[I10];
+				const float F01 = FogAmounts[I01];
+				const float F11 = FogAmounts[I11];
+				const float AvgFog = 0.25f * (F00 + F10 + F01 + F11);
+				const float MaxFog = FMath::Max(FMath::Max(F00, F10), FMath::Max(F01, F11));
+
+				// Cleared trail / origin band: no overlay.
+				if (MaxFog <= 0.05f)
+				{
+					continue;
+				}
+
+				// fog ~= 0.5 → hard to see through; fog ~= 1 → impenetrable.
+				const bool bFull = AvgFog >= 0.75f;
+				const int32 Slot = bFull ? 1 : 0;
+				if (Slot == 0 && !FogHalfMaterial)
+				{
+					if (FogFullMaterial)
+					{
+						AppendFogQuad(I00, I10, I01, I11, 0);
+					}
+					continue;
+				}
+				if (Slot == 1 && !FogFullMaterial)
+				{
+					if (FogHalfMaterial)
+					{
+						AppendFogQuad(I00, I10, I01, I11, 0);
+					}
+					continue;
+				}
+
+				// Material slots: 0 = half, 1 = full when both present.
+				if (FogHalfMaterial && FogFullMaterial)
+				{
+					AppendFogQuad(I00, I10, I01, I11, bFull ? 1 : 0);
+				}
+				else
+				{
+					AppendFogQuad(I00, I10, I01, I11, 0);
+				}
+			}
+		}
 	}
 
+	TArray<UMaterialInterface*> FogMaterials;
+	if (FogHalfMaterial && FogFullMaterial)
+	{
+		FogMaterials.Add(FogHalfMaterial);
+		FogMaterials.Add(FogFullMaterial);
+	}
+	else if (FogFullMaterial)
+	{
+		FogMaterials.Add(FogFullMaterial);
+	}
+	else if (FogHalfMaterial)
+	{
+		FogMaterials.Add(FogHalfMaterial);
+	}
+
+	RuntimeFogStaticMesh = nullptr;
+	FogMeshComponent->SetStaticMesh(nullptr);
+	if (FogPositions.Num() > 0 && FogMaterials.Num() > 0)
+	{
+		RuntimeFogStaticMesh = SolidTerrainChunkPrivate::BuildRuntimeMesh(
+			this, FogPositions, FogNormals, FogTangents, FogUVs, FogColors, FogTriangles,
+			FogMaterials, FogTriMaterials, /*bBuildCollision=*/false);
+
+		FogMeshComponent->SetStaticMesh(RuntimeFogStaticMesh);
+		for (int32 MatIndex = 0; MatIndex < FogMaterials.Num(); ++MatIndex)
+		{
+			FogMeshComponent->SetMaterial(MatIndex, FogMaterials[MatIndex]);
+		}
+		SolidTerrainChunkPrivate::ConfigureFogOverlay(FogMeshComponent);
+		FogMeshComponent->SetVisibility(true);
+		FogMeshComponent->SetHiddenInGame(false);
+		FogMeshComponent->UpdateBounds();
+		FogMeshComponent->MarkRenderStateDirty();
+	}
+	else
+	{
+		FogMeshComponent->SetVisibility(false);
+	}
+
+	const int32 RenderTris = RuntimeStaticMesh ? RuntimeStaticMesh->GetNumTriangles(0) : 0;
+	const int32 FogTris = RuntimeFogStaticMesh ? RuntimeFogStaticMesh->GetNumTriangles(0) : 0;
 	UE_LOG(LogTemp, Warning,
-		TEXT("[SolidCore1] StaticMesh chunk (%d,%d) built=%d renderTris=%d simpleCols=%d traceFlag=%d actor=(%.0f,%.0f) Z=[%.0f,%.0f] worldBounds=%s material=%s"),
-		InChunkCoord.X, InChunkCoord.Y, bBuilt ? 1 : 0, RenderTris, SimpleCollisionElems,
-		static_cast<int32>(TraceFlag), OriginX, OriginY, MinZ, MaxZ,
-		*MeshComponent->Bounds.ToString(),
+		TEXT("[SolidCore1] StaticMesh chunk (%d,%d) renderTris=%d fogTris=%d actor=(%.0f,%.0f) Z=[%.0f,%.0f] material=%s"),
+		InChunkCoord.X, InChunkCoord.Y, RenderTris, FogTris, OriginX, OriginY, MinZ, MaxZ,
 		Material ? *Material->GetName() : TEXT("<null>"));
 }

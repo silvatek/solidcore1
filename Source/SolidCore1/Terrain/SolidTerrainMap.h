@@ -75,8 +75,9 @@ public:
 	/**
 	 * Set Fog=0 on every TerrainPoint within RadiusCm of (WorldX, WorldY).
 	 * Used to clear exploration fog along the player's trail.
+	 * @return Number of points whose Fog value changed.
 	 */
-	void ClearFogAround(float WorldX, float WorldY, float RadiusCm);
+	int32 ClearFogAround(float WorldX, float WorldY, float RadiusCm);
 
 	FVector2D GetWorldMinXY() const { return OriginXY; }
 	FVector2D GetWorldMaxXY() const

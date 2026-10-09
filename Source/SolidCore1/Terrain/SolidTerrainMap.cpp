@@ -229,11 +229,11 @@ void USolidTerrainMap::FillThreatAndFog(
 	}
 }
 
-void USolidTerrainMap::ClearFogAround(float WorldX, float WorldY, float RadiusCm)
+int32 USolidTerrainMap::ClearFogAround(float WorldX, float WorldY, float RadiusCm)
 {
 	if (!IsBuilt() || RadiusCm <= 0.f)
 	{
-		return;
+		return 0;
 	}
 
 	const float RadiusSq = RadiusCm * RadiusCm;
@@ -246,6 +246,7 @@ void USolidTerrainMap::ClearFogAround(float WorldX, float WorldY, float RadiusCm
 	const int32 Y1 = FMath::Clamp(
 		FMath::CeilToInt((WorldY + RadiusCm - OriginXY.Y) / PointSpacing), 0, GridHeight - 1);
 
+	int32 Cleared = 0;
 	for (int32 IY = Y0; IY <= Y1; ++IY)
 	{
 		for (int32 IX = X0; IX <= X1; ++IX)
@@ -253,10 +254,12 @@ void USolidTerrainMap::ClearFogAround(float WorldX, float WorldY, float RadiusCm
 			FSolidTerrainPoint& Point = Points[IY * GridWidth + IX];
 			const float DX = Point.X - WorldX;
 			const float DY = Point.Y - WorldY;
-			if ((DX * DX + DY * DY) <= RadiusSq)
+			if ((DX * DX + DY * DY) <= RadiusSq && Point.Fog > 0.f)
 			{
 				Point.Fog = 0.f;
+				++Cleared;
 			}
 		}
 	}
+	return Cleared;
 }

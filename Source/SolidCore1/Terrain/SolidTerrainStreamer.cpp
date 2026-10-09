@@ -66,8 +66,10 @@ void ASolidTerrainStreamer::BeginPlay()
 {
 	Super::BeginPlay();
 	EnsureTerrainMap();
+	EnsureExplorationFogMaterials();
 	EnsureHeightFog();
 	ClearExplorationFogAtFocus();
+	bExplorationFogMeshesDirty = true;
 	TimeSinceUpdate = UpdateIntervalSeconds;
 	UpdateStreaming();
 	UpdateTerrainFog(0.f);
@@ -121,7 +123,10 @@ void ASolidTerrainStreamer::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	ClearExplorationFogAtFocus();
+	if (ClearExplorationFogAtFocus() > 0)
+	{
+		bExplorationFogMeshesDirty = true;
+	}
 	UpdateTerrainFog(DeltaSeconds);
 
 	TimeSinceUpdate += DeltaSeconds;
@@ -132,20 +137,100 @@ void ASolidTerrainStreamer::Tick(float DeltaSeconds)
 
 	TimeSinceUpdate = 0.f;
 	UpdateStreaming();
+
+	if (bExplorationFogMeshesDirty)
+	{
+		if (AActor* Focus = ResolveFocusActor())
+		{
+			const FVector Loc = Focus->GetActorLocation();
+			RefreshExplorationFogMeshesAround(
+				Loc.X, Loc.Y,
+				SolidTerrainFog::MetersToCm(SolidTerrainFog::ClearRadiusMeters) + ChunkWorldSize);
+		}
+		bExplorationFogMeshesDirty = false;
+	}
 }
 
-void ASolidTerrainStreamer::ClearExplorationFogAtFocus()
+int32 ASolidTerrainStreamer::ClearExplorationFogAtFocus()
 {
 	if (!TerrainMap || !TerrainMap->IsBuilt())
 	{
-		return;
+		return 0;
 	}
 
 	if (AActor* Focus = ResolveFocusActor())
 	{
 		const FVector Loc = Focus->GetActorLocation();
-		TerrainMap->ClearFogAround(
+		return TerrainMap->ClearFogAround(
 			Loc.X, Loc.Y, SolidTerrainFog::MetersToCm(SolidTerrainFog::ClearRadiusMeters));
+	}
+	return 0;
+}
+
+void ASolidTerrainStreamer::EnsureExplorationFogMaterials()
+{
+	if (!ExplorationFogHalfMaterial)
+	{
+		// Hard to see through at fog ~= 0.5.
+		ExplorationFogHalfMaterial = CreateSolidColorMaterial(
+			FLinearColor(0.78f, 0.82f, 0.86f), TEXT("ExplorationFogHalf"));
+	}
+	if (!ExplorationFogFullMaterial)
+	{
+		// Impenetrable at fog ~= 1.
+		ExplorationFogFullMaterial = CreateSolidColorMaterial(
+			FLinearColor(0.93f, 0.94f, 0.96f), TEXT("ExplorationFogFull"));
+	}
+}
+
+void ASolidTerrainStreamer::BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint Coord)
+{
+	if (!Chunk)
+	{
+		return;
+	}
+
+	EnsureExplorationFogMaterials();
+	Chunk->BuildChunk(
+		Coord,
+		ChunkWorldSize,
+		QuadsPerSide,
+		Seed,
+		FrequencyScale,
+		Amplitude,
+		BaseHeight,
+		CollisionHeightBias,
+		ResolveMaterial(),
+		ExplorationFogHalfMaterial,
+		ExplorationFogFullMaterial,
+		TerrainMap);
+}
+
+void ASolidTerrainStreamer::RefreshExplorationFogMeshesAround(float WorldX, float WorldY, float RadiusCm)
+{
+	EnsureExplorationFogMaterials();
+	for (const TPair<FIntPoint, TObjectPtr<ASolidTerrainChunk>>& Pair : LoadedChunks)
+	{
+		ASolidTerrainChunk* Chunk = Pair.Value;
+		if (!Chunk)
+		{
+			continue;
+		}
+
+		const FVector ChunkOrigin(
+			static_cast<float>(Pair.Key.X) * ChunkWorldSize,
+			static_cast<float>(Pair.Key.Y) * ChunkWorldSize,
+			0.f);
+		const FVector ChunkCenter = ChunkOrigin + FVector(ChunkWorldSize * 0.5f, ChunkWorldSize * 0.5f, 0.f);
+		const float DX = ChunkCenter.X - WorldX;
+		const float DY = ChunkCenter.Y - WorldY;
+		// Conservative: rebuild if chunk center or any corner could overlap the clear radius.
+		const float ChunkRadius = ChunkWorldSize * 0.75f;
+		const float Reach = RadiusCm + ChunkRadius;
+		if ((DX * DX + DY * DY) <= Reach * Reach)
+		{
+			BuildChunkActor(Chunk, Pair.Key);
+		}
 	}
 }
 
@@ -240,6 +325,17 @@ float ASolidTerrainStreamer::SampleViewFogAmount() const
 
 void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)
 {
+	// HUD mist tracks local TerrainPoint fog (exploration fog-of-war).
+	const float TargetFog = SampleViewFogAmount();
+	if (DeltaSeconds <= 0.f || TargetFog <= KINDA_SMALL_NUMBER)
+	{
+		RenderedFogAmount = TargetFog;
+	}
+	else
+	{
+		RenderedFogAmount = FMath::FInterpTo(RenderedFogAmount, TargetFog, DeltaSeconds, FogInterpSpeed);
+	}
+
 	if (!bRenderTerrainFog)
 	{
 		return;
@@ -257,17 +353,6 @@ void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)
 		return;
 	}
 
-	const float TargetFog = SampleViewFogAmount();
-	if (DeltaSeconds <= 0.f || TargetFog <= KINDA_SMALL_NUMBER)
-	{
-		// Snap clear so fog==0 never leaves residual mist while interpolating down.
-		RenderedFogAmount = TargetFog;
-	}
-	else
-	{
-		RenderedFogAmount = FMath::FInterpTo(RenderedFogAmount, TargetFog, DeltaSeconds, FogInterpSpeed);
-	}
-
 	const float Amount = FMath::Clamp(RenderedFogAmount, 0.f, 1.f);
 
 	float Density = 0.f;
@@ -275,10 +360,6 @@ void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)
 	float StartDistance = 0.f;
 	float ExtinctionScale = 0.f;
 
-	// Piecewise mist response keyed to TerrainPoint fog levels:
-	// fog==0 → perfect clear (true zeros, no residual haze)
-	// fog==0.5 → hard to see through
-	// fog==1 → essentially opaque
 	if (Amount <= KINDA_SMALL_NUMBER)
 	{
 		Density = 0.f;
@@ -384,7 +465,9 @@ UMaterialInterface* ASolidTerrainStreamer::FindFabGrassMaterial() const
 	return nullptr;
 }
 
-UMaterialInterface* ASolidTerrainStreamer::CreateFlatColGrassMaterial() const
+UMaterialInterface* ASolidTerrainStreamer::CreateSolidColorMaterial(
+	const FLinearColor& Color,
+	const TCHAR* DebugName) const
 {
 	ASolidTerrainStreamer* MutableThis = const_cast<ASolidTerrainStreamer*>(this);
 
@@ -397,22 +480,31 @@ UMaterialInterface* ASolidTerrainStreamer::CreateFlatColGrassMaterial() const
 	}
 	if (!Parent)
 	{
+		UE_LOG(LogSolid, Error, TEXT("CreateSolidColorMaterial(%s): no FlatCol parent."), DebugName);
 		return nullptr;
 	}
 
-	UMaterialInstanceDynamic* GrassMID = UMaterialInstanceDynamic::Create(Parent, MutableThis);
-	if (!GrassMID)
+	UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Parent, MutableThis);
+	if (!MID)
 	{
 		return Parent;
 	}
 
-	const FLinearColor MidGrass = FLinearColor::LerpUsingHSV(GrassDarkColor, GrassColor, 0.55f);
-	GrassMID->SetVectorParameterValue(TEXT("Base Color"), MidGrass);
-	GrassMID->SetVectorParameterValue(TEXT("BaseColor"), MidGrass);
-	GrassMID->SetScalarParameterValue(TEXT("Roughness"), 0.9f);
+	MID->SetVectorParameterValue(TEXT("Base Color"), Color);
+	MID->SetVectorParameterValue(TEXT("BaseColor"), Color);
+	MID->SetScalarParameterValue(TEXT("Roughness"), 1.f);
+	UE_LOG(LogSolid, Warning, TEXT("Created solid material %s from %s"), DebugName, *Parent->GetName());
+	return MID;
+}
 
-	UE_LOG(LogSolid, Warning,
-		TEXT("Terrain material: %s solid green (FlatCol fallback)"), *Parent->GetName());
+UMaterialInterface* ASolidTerrainStreamer::CreateFlatColGrassMaterial() const
+{
+	const FLinearColor MidGrass = FLinearColor::LerpUsingHSV(GrassDarkColor, GrassColor, 0.55f);
+	UMaterialInterface* GrassMID = CreateSolidColorMaterial(MidGrass, TEXT("FlatColGrass"));
+	if (GrassMID)
+	{
+		UE_LOG(LogSolid, Warning, TEXT("Terrain material: solid green (FlatCol fallback)"));
+	}
 	return GrassMID;
 }
 
@@ -601,7 +693,7 @@ void ASolidTerrainStreamer::UpdateStreaming()
 		return;
 	}
 
-	UMaterialInterface* Material = ResolveMaterial();
+	EnsureExplorationFogMaterials();
 
 	for (const FIntPoint& Coord : Desired)
 	{
@@ -627,17 +719,7 @@ void ASolidTerrainStreamer::UpdateStreaming()
 			continue;
 		}
 
-		Chunk->BuildChunk(
-			Coord,
-			ChunkWorldSize,
-			QuadsPerSide,
-			Seed,
-			FrequencyScale,
-			Amplitude,
-			BaseHeight,
-			CollisionHeightBias,
-			Material,
-			TerrainMap);
+		BuildChunkActor(Chunk, Coord);
 
 		LoadedChunks.Add(Coord, Chunk);
 		UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Built terrain chunk (%d, %d) origin=(%.0f, %.0f) loaded=%d"),

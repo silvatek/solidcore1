@@ -27,6 +27,8 @@ public:
 		float InBaseHeight,
 		float InCollisionHeightBias,
 		UMaterialInterface* Material,
+		UMaterialInterface* FogHalfMaterial,
+		UMaterialInterface* FogFullMaterial,
 		const USolidTerrainMap* TerrainMap);
 
 	FIntPoint GetChunkCoord() const { return ChunkCoord; }
@@ -35,9 +37,16 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terrain")
 	TObjectPtr<UStaticMeshComponent> MeshComponent;
 
+	/** Non-colliding exploration-fog overlay (spatial fog-of-war). */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terrain")
+	TObjectPtr<UStaticMeshComponent> FogMeshComponent;
+
 	/** Transient runtime mesh owned by this chunk; replaced each BuildChunk. */
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMesh> RuntimeStaticMesh;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMesh> RuntimeFogStaticMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terrain")
 	FIntPoint ChunkCoord = FIntPoint::ZeroValue;

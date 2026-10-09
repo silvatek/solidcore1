@@ -25,8 +25,18 @@ namespace SolidTerrainChunkPrivate
 
 	static void ConfigureFogOverlay(UStaticMeshComponent* Mesh)
 	{
+		// Fog must never block pawn/camera traces (spring arm ProbeChannel = ECC_Camera).
+		Mesh->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
 		Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Mesh->SetCollisionResponseToAllChannels(ECR_Ignore);
+		Mesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
+		Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+		Mesh->SetCollisionObjectType(ECC_WorldDynamic);
+		Mesh->BodyInstance.SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Mesh->BodyInstance.SetResponseToAllChannels(ECR_Ignore);
 		Mesh->SetGenerateOverlapEvents(false);
+		Mesh->SetNotifyRigidBodyCollision(false);
+		Mesh->CanCharacterStepUpOn = ECB_No;
 		Mesh->SetCastShadow(false);
 		Mesh->SetVisibility(true);
 		Mesh->SetHiddenInGame(false);
@@ -443,13 +453,21 @@ void ASolidTerrainChunk::RebuildExplorationFog(
 
 	auto AppendQuad = [&](int32 I0, int32 I1, int32 I2, int32 I3, int32 Slot)
 	{
-		// Single winding only (perf). Outward faces toward the clear trail.
+		// Both windings — FlatCol is one-sided; avoids black backs on fog banks.
 		FogTriangles.Add(I0);
 		FogTriangles.Add(I1);
 		FogTriangles.Add(I2);
 		FogTriangles.Add(I0);
 		FogTriangles.Add(I2);
 		FogTriangles.Add(I3);
+		FogTriangles.Add(I0);
+		FogTriangles.Add(I2);
+		FogTriangles.Add(I1);
+		FogTriangles.Add(I0);
+		FogTriangles.Add(I3);
+		FogTriangles.Add(I2);
+		FogTriMaterials.Add(Slot);
+		FogTriMaterials.Add(Slot);
 		FogTriMaterials.Add(Slot);
 		FogTriMaterials.Add(Slot);
 	};
@@ -467,13 +485,16 @@ void ASolidTerrainChunk::RebuildExplorationFog(
 				const int32 I01 = I00 + FogVerts;
 				const int32 I11 = I01 + 1;
 
-				const float AvgFog = 0.25f * (
-					FogAmounts[I00] + FogAmounts[I10] + FogAmounts[I01] + FogAmounts[I11]);
-				const float MaxFog = FMath::Max(
-					FMath::Max(FogAmounts[I00], FogAmounts[I10]),
-					FMath::Max(FogAmounts[I01], FogAmounts[I11]));
+				const float F00 = FogAmounts[I00];
+				const float F10 = FogAmounts[I10];
+				const float F01 = FogAmounts[I01];
+				const float F11 = FogAmounts[I11];
+				const float AvgFog = 0.25f * (F00 + F10 + F01 + F11);
+				const float MinFog = FMath::Min(FMath::Min(F00, F10), FMath::Min(F01, F11));
 
-				if (MaxFog <= 0.05f)
+				// Require the whole cell to be fogged. Using MaxFog let pillars straddle into
+				// the clear disk and sit on top of the camera / spring-arm path.
+				if (MinFog <= 0.05f)
 				{
 					continue;
 				}
@@ -486,7 +507,6 @@ void ASolidTerrainChunk::RebuildExplorationFog(
 				}
 
 				// Half band: checkerboard pillars so ~50% of cells stay empty (see-through).
-				// Translucent materials did not work; this is the opacity stand-in.
 				if (!bFull && (((X + Y) & 1) == 0))
 				{
 					continue;

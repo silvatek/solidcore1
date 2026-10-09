@@ -49,6 +49,10 @@ bool FSolidMapTrailClearTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("found fully-fogged in-bounds trail point"),
 		SolidTerrainTestHelpers::FindFullyFoggedTrailPoint(Map, TrailXY));
 
+	FVector2D UntouchedXY = FVector2D::ZeroVector;
+	TestTrue(TEXT("found second full-fog point outside trail apply radius"),
+		SolidTerrainTestHelpers::FindUntouchedFullFogPoint(Map, TrailXY, UntouchedXY));
+
 	const FVector2D FogOrigin = Map->GetFogOriginXY();
 	FVector2D TowardOrigin = FogOrigin - TrailXY;
 	if (!TowardOrigin.Normalize())
@@ -58,6 +62,8 @@ bool FSolidMapTrailClearTest::RunTest(const FString& Parameters)
 
 	TestTrue(TEXT("precondition: trail center fogged"),
 		FMath::IsNearlyEqual(Map->SamplePoint(TrailXY.X, TrailXY.Y).Fog, 1.f));
+	TestTrue(TEXT("precondition: untouched point fogged"),
+		FMath::IsNearlyEqual(Map->SamplePoint(UntouchedXY.X, UntouchedXY.Y).Fog, 1.f));
 
 	const int32 Changed = Map->ApplyExplorationFogAround(TrailXY.X, TrailXY.Y);
 	TestTrue(TEXT("trail clear changed some points"), Changed > 0);
@@ -75,14 +81,9 @@ bool FSolidMapTrailClearTest::RunTest(const FString& Parameters)
 	const float HalfFog = Map->SamplePoint(HalfXY.X, HalfXY.Y).Fog;
 	TestTrue(TEXT("35m from trail is half fog"), FMath::IsNearlyEqual(HalfFog, 0.5f));
 
-	// Far opposite corner from the trail — outside apply radius, still full fog.
-	const FVector2D MinXY = Map->GetWorldMinXY();
-	const FVector2D MaxXY = Map->GetWorldMaxXY();
-	const FVector2D UntouchedXY(
-		(TrailXY.X > 0.f) ? MinXY.X + 500.f : MaxXY.X - 500.f,
-		(TrailXY.Y > 0.f) ? MinXY.Y + 500.f : MaxXY.Y - 500.f);
+	// Outside the trail apply radius and still far from the Z-town fog origin.
 	const float Untouched = Map->SamplePoint(UntouchedXY.X, UntouchedXY.Y).Fog;
-	TestTrue(TEXT("far opposite side still full fog"), FMath::IsNearlyEqual(Untouched, 1.f));
+	TestTrue(TEXT("untouched full-fog point still full fog"), FMath::IsNearlyEqual(Untouched, 1.f));
 
 	const int32 Second = Map->ApplyExplorationFogAround(TrailXY.X, TrailXY.Y);
 	TestEqual(TEXT("second apply is idempotent"), Second, 0);

@@ -68,12 +68,13 @@ namespace SolidTerrainTestHelpers
 		return (RoomNegY >= RoomPosY) ? FVector2D(0.f, -1.f) : FVector2D(0.f, 1.f);
 	}
 
-	/** A point that starts at full fog and leaves room for ±35m trail probes in-bounds. */
-	inline bool FindFullyFoggedTrailPoint(const USolidTerrainMap* Map, FVector2D& OutTrailXY)
+	/** Corner-ish candidates that sit outside the initial full-fog band around FogOrigin. */
+	inline void CollectFullFogCandidates(const USolidTerrainMap* Map, TArray<FVector2D>& OutCandidates)
 	{
+		OutCandidates.Reset();
 		if (!Map || !Map->IsBuilt())
 		{
-			return false;
+			return;
 		}
 
 		const FVector2D FogOrigin = Map->GetFogOriginXY();
@@ -82,14 +83,14 @@ namespace SolidTerrainTestHelpers
 		constexpr float MarginCm = 4000.f; // room for 35m probe toward fog origin
 		constexpr float FullFogCm = SolidTerrainFog::FullFogStartMeters * 100.f + 500.f;
 
-		const FVector2D Candidates[] = {
+		const FVector2D Corners[] = {
 			FVector2D(MinXY.X + MarginCm, MinXY.Y + MarginCm),
 			FVector2D(MaxXY.X - MarginCm, MinXY.Y + MarginCm),
 			FVector2D(MinXY.X + MarginCm, MaxXY.Y - MarginCm),
 			FVector2D(MaxXY.X - MarginCm, MaxXY.Y - MarginCm),
 		};
 
-		for (const FVector2D& Candidate : Candidates)
+		for (const FVector2D& Candidate : Corners)
 		{
 			if (FVector2D::Distance(Candidate, FogOrigin) < FullFogCm)
 			{
@@ -97,7 +98,41 @@ namespace SolidTerrainTestHelpers
 			}
 			if (FMath::IsNearlyEqual(Map->SamplePoint(Candidate.X, Candidate.Y).Fog, 1.f))
 			{
-				OutTrailXY = Candidate;
+				OutCandidates.Add(Candidate);
+			}
+		}
+	}
+
+	/** A point that starts at full fog and leaves room for ±35m trail probes in-bounds. */
+	inline bool FindFullyFoggedTrailPoint(const USolidTerrainMap* Map, FVector2D& OutTrailXY)
+	{
+		TArray<FVector2D> Candidates;
+		CollectFullFogCandidates(Map, Candidates);
+		if (Candidates.Num() == 0)
+		{
+			return false;
+		}
+		OutTrailXY = Candidates[0];
+		return true;
+	}
+
+	/**
+	 * Another full-fog point far enough from TrailXY that ApplyExplorationFogAround
+	 * will not touch it (outside the 50m half/full apply radius).
+	 */
+	inline bool FindUntouchedFullFogPoint(
+		const USolidTerrainMap* Map,
+		const FVector2D& TrailXY,
+		FVector2D& OutUntouchedXY)
+	{
+		TArray<FVector2D> Candidates;
+		CollectFullFogCandidates(Map, Candidates);
+		constexpr float ApplyReachCm = SolidTerrainFog::FullFogStartMeters * 100.f + 250.f;
+		for (const FVector2D& Candidate : Candidates)
+		{
+			if (FVector2D::Distance(Candidate, TrailXY) > ApplyReachCm)
+			{
+				OutUntouchedXY = Candidate;
 				return true;
 			}
 		}

@@ -153,11 +153,12 @@ Goal: the world starts shrouded; fog clears only where the **pawn has been** (tr
 
 `Content/WorldMap.txt` (fallback `Source/SolidCore1/WorldMap.txt`) is a 64×64 grid of markers plus a color key (`S` Sea, `G` Grassland, `T`/`Z` Town, `M` Mountain, `F` Forest, `D` Desert, `R` River). The grid scales across the TerrainMap world rectangle (file row 0 = north). `Z` cells mark the **starting town**: fog clears from that centroid, the streamer relocates the player there, and the monolith sits in the middle.
 
-## Starter landmark + trees (SC1-0076 / SC1-0105)
+## Starter landmark + forest trees (SC1-0076 / SC1-0110)
 
-- `ASolidMonolith` — large grey slab at the WorldMap starting-town (Z) centroid (falls back to `StarterTreeOffsetXY`).
-- `ASolidTree` — cylinder trunk + cone canopy; a **line** continues from the monolith into the fog (`StarterTreeCount=16`, ~10 m spacing, random sizes).
-- Fog curtains: clear|fogged (~25 m) plus a **white** half→full curtain (~50 m). Toggle vegetation with `bAutoSpawnStarterTrees`.
+- `ASolidMonolith` — large grey slab at the WorldMap starting-town (Z) centroid (falls back to `StarterMonolithOffsetXY`).
+- `ASolidTree` — cylinder trunk + cone canopy; scattered randomly across **Forest** TerrainPoints (`ForestTreeDensity`, capped by `MaxForestTrees`).
+- Logic in `Vegetation/SolidForestTrees.*`. Toggle with `bAutoSpawnVegetation`.
+- Fog curtains: clear|fogged (~25 m) plus a **white** half→full curtain (~50 m).
 
 ## Name labels (SC1-0091 / SC1-0093)
 
@@ -239,6 +240,7 @@ Source/
     Vegetation/
       SolidMonolith.*         # Grey slab landmark at start town
       SolidTree.*             # Placeholder cylinder+cone tree
+      SolidForestTrees.*      # Random Forest-biome tree placement
     Tests/
       SolidTerrainTestHelpers.h   # Shared MakeSmallMap fixture
       SolidWorldMapTests.cpp

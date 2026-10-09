@@ -11,6 +11,7 @@
 #include "Party/SolidParty.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
+#include "Vegetation/SolidForestTrees.h"
 #include "Vegetation/SolidMonolith.h"
 #include "Vegetation/SolidTree.h"
 #include "Components/CapsuleComponent.h"
@@ -73,10 +74,10 @@ void ASolidGameMode::BeginPlay()
 		World->GetTimerManager().SetTimer(
 			CompanionSpawnTimer, this, &ASolidGameMode::EnsureCompanion, 0.35f, false);
 		World->GetTimerManager().SetTimer(
-			StarterTreeSpawnTimer, this, &ASolidGameMode::EnsureStarterTrees, 0.5f, false);
+			VegetationSpawnTimer, this, &ASolidGameMode::EnsureVegetation, 0.5f, false);
 	}
 	EnsureCompanion();
-	EnsureStarterTrees();
+	EnsureVegetation();
 }
 
 bool ASolidGameMode::SelectBattlePlanSlot(const int32 SlotIndex)
@@ -262,14 +263,9 @@ void ASolidGameMode::EnsureCompanion()
 	}
 }
 
-void ASolidGameMode::EnsureStarterTrees()
+void ASolidGameMode::EnsureVegetation()
 {
-	if (!bAutoSpawnStarterTrees)
-	{
-		return;
-	}
-
-	if (SpawnedMonolith.IsValid() || SpawnedStarterTrees.Num() > 0)
+	if (!bAutoSpawnVegetation)
 	{
 		return;
 	}
@@ -280,53 +276,49 @@ void ASolidGameMode::EnsureStarterTrees()
 		return;
 	}
 
-	// Already placed in the level (PIE restart / hand-placed).
-	for (TActorIterator<ASolidMonolith> It(World); It; ++It)
+	SpawnedForestTrees.RemoveAll([](const TObjectPtr<ASolidTree>& Tree)
 	{
-		SpawnedMonolith = *It;
+		return !IsValid(Tree);
+	});
+
+	if (!SpawnedMonolith.IsValid())
+	{
+		for (TActorIterator<ASolidMonolith> It(World); It; ++It)
+		{
+			SpawnedMonolith = *It;
+			break;
+		}
 	}
-	for (TActorIterator<ASolidTree> It(World); It; ++It)
+
+	if (SpawnedForestTrees.Num() == 0)
 	{
-		SpawnedStarterTrees.Add(*It);
-	}
-	if (SpawnedMonolith.IsValid() || SpawnedStarterTrees.Num() > 0)
-	{
-		return;
+		for (TActorIterator<ASolidTree> It(World); It; ++It)
+		{
+			SpawnedForestTrees.Add(*It);
+		}
 	}
 
 	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::EnsureExists(World);
 	if (!Streamer || !Streamer->GetTerrainMap() || !Streamer->GetTerrainMap()->IsBuilt())
 	{
 		World->GetTimerManager().SetTimer(
-			StarterTreeSpawnTimer, this, &ASolidGameMode::EnsureStarterTrees, 0.25f, false);
+			VegetationSpawnTimer, this, &ASolidGameMode::EnsureVegetation, 0.25f, false);
 		return;
 	}
-
-	// Prefer WorldMap starting-town (Z) centroid; fall back to the inspector offset.
-	FVector2D LandmarkXY = StarterTreeOffsetXY;
-	FVector2D TownXY = FVector2D::ZeroVector;
-	if (Streamer->GetTerrainMap()->GetStartTownWorldXY(TownXY))
-	{
-		LandmarkXY = TownXY;
-	}
-
-	FVector2D Dir = StarterTreeLineDirection;
-	if (!Dir.Normalize())
-	{
-		Dir = FVector2D(1.f, 0.f);
-	}
-	const FVector2D Side(-Dir.Y, Dir.X);
-
-	FRandomStream Rng(StarterTreeSeed != 0 ? StarterTreeSeed : 1337);
-	const int32 Count = FMath::Clamp(StarterTreeCount, 1, 64);
-	const float Spacing = FMath::Max(StarterTreeSpacingCm, 200.f);
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	// Monolith in the middle of the starting town (Z biome).
+	if (!SpawnedMonolith.IsValid())
 	{
+		FVector2D LandmarkXY = StarterMonolithOffsetXY;
+		FVector2D TownXY = FVector2D::ZeroVector;
+		if (Streamer->GetTerrainMap()->GetStartTownWorldXY(TownXY))
+		{
+			LandmarkXY = TownXY;
+		}
+
 		FVector MonoLoc(LandmarkXY.X, LandmarkXY.Y, 0.f);
 		const float LandZ = Streamer->GetHeightAt(MonoLoc) + Streamer->CollisionHeightBias;
 		MonoLoc.Z = LandZ + Streamer->SnapHeightPadding;
@@ -345,15 +337,24 @@ void ASolidGameMode::EnsureStarterTrees()
 		}
 	}
 
-	// Trees begin one spacing past the monolith and stretch into the fog.
-	int32 Spawned = 0;
-	for (int32 Index = 0; Index < Count; ++Index)
+	if (SpawnedForestTrees.Num() > 0)
 	{
-		const float Along =
-			Spacing * (1.f + static_cast<float>(Index)) + Rng.FRandRange(-Spacing * 0.15f, Spacing * 0.15f);
-		const float Lateral = Rng.FRandRange(-220.f, 220.f);
-		const FVector2D XY = LandmarkXY + Dir * Along + Side * Lateral;
+		return;
+	}
 
+	SolidForestTrees::FScatterParams Scatter;
+	Scatter.Density = ForestTreeDensity;
+	Scatter.MaxTrees = MaxForestTrees;
+	Scatter.JitterCm = ForestTreeJitterCm;
+
+	TArray<FVector2D> Positions;
+	SolidForestTrees::CollectSpawnPositions(
+		Streamer->GetTerrainMap(), ForestTreeSeed, Scatter, Positions);
+
+	FRandomStream Rng(ForestTreeSeed != 0 ? ForestTreeSeed : 1337);
+	int32 Spawned = 0;
+	for (const FVector2D& XY : Positions)
+	{
 		FVector SpawnLoc(XY.X, XY.Y, 0.f);
 		const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
 		SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
@@ -368,11 +369,11 @@ void ASolidGameMode::EnsureStarterTrees()
 
 		Tree->ApplyRandomVariation(Rng);
 		Tree->BuildVisuals();
-		SpawnedStarterTrees.Add(Tree);
+		SpawnedForestTrees.Add(Tree);
 		++Spawned;
 	}
 
 	UE_LOG(LogSolid, Warning,
-		TEXT("Spawned monolith + %d trees along dir=(%.2f,%.2f) spacing=%.0fcm"),
-		Spawned, Dir.X, Dir.Y, Spacing);
+		TEXT("Spawned %d forest trees (density=%.2f max=%d)"),
+		Spawned, ForestTreeDensity, MaxForestTrees);
 }

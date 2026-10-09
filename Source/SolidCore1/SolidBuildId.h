@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0109")
+#define SOLID_BUILD_ID TEXT("SC1-0110")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("WorldMap: fix left/right (col 0 = east)")
+#define SOLID_BUILD_NOTE TEXT("Forest trees: scatter in Forest biomes, no starter line")
 #endif

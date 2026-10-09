@@ -18,9 +18,10 @@ bool FSolidGameModeDefaultsTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("gamemode"), GameMode);
 	TestTrue(TEXT("auto terrain streamer"), GameMode->bAutoSpawnTerrainStreamer);
 	TestTrue(TEXT("auto companion"), GameMode->bAutoSpawnCompanion);
-	TestTrue(TEXT("auto starter trees"), GameMode->bAutoSpawnStarterTrees);
-	TestEqual(TEXT("starter tree count"), GameMode->StarterTreeCount, 16);
-	TestTrue(TEXT("tree spacing positive"), GameMode->StarterTreeSpacingCm > 0.f);
+	TestTrue(TEXT("auto vegetation"), GameMode->bAutoSpawnVegetation);
+	TestTrue(TEXT("forest tree density in range"),
+		GameMode->ForestTreeDensity > 0.f && GameMode->ForestTreeDensity <= 1.f);
+	TestTrue(TEXT("max forest trees positive"), GameMode->MaxForestTrees > 0);
 	TestEqual(TEXT("default companion count Sam+Alex"), ASolidGameMode::DefaultCompanionCount, 2);
 	TestNull(TEXT("no companion until Ensure"), GameMode->GetCompanion());
 	TestEqual(TEXT("companions empty until Ensure"), GameMode->GetCompanions().Num(), 0);

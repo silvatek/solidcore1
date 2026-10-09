@@ -562,6 +562,82 @@ UMaterialInterface* ASolidTerrainStreamer::CreateFlatColGrassMaterial() const
 	return GrassMID;
 }
 
+UMaterialInterface* ASolidTerrainStreamer::MakeMatteGrassInstance(UMaterialInterface* Parent) const
+{
+	if (!Parent)
+	{
+		return nullptr;
+	}
+
+	ASolidTerrainStreamer* MutableThis = const_cast<ASolidTerrainStreamer*>(this);
+	UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Parent, MutableThis);
+	if (!MID)
+	{
+		return Parent;
+	}
+
+	const float Roughness = FMath::Clamp(GrassRoughness, 0.f, 1.f);
+	const float Specular = FMath::Clamp(GrassSpecular, 0.f, 1.f);
+
+	// Blanket sets for common Fab / Quixel / FlatCol names.
+	static const TCHAR* RoughnessNames[] = {
+		TEXT("Roughness"), TEXT("roughness"), TEXT("RoughnessAmount"), TEXT("RoughnessIntensity"),
+		TEXT("Roughness Min"), TEXT("RoughnessMax"), TEXT("Roughness Max"), TEXT("RoughnessMultiply"),
+		TEXT("Roughness Scale"), TEXT("RoughnessScale"), TEXT("ORM Roughness"),
+	};
+	static const TCHAR* SpecularNames[] = {
+		TEXT("Specular"), TEXT("specular"), TEXT("SpecularAmount"), TEXT("SpecularIntensity"),
+		TEXT("Spec"), TEXT("SpecularScale"),
+	};
+	static const TCHAR* MetallicNames[] = {
+		TEXT("Metallic"), TEXT("metallic"), TEXT("MetallicAmount"), TEXT("Metalness"),
+	};
+
+	for (const TCHAR* Name : RoughnessNames)
+	{
+		MID->SetScalarParameterValue(Name, Roughness);
+	}
+	for (const TCHAR* Name : SpecularNames)
+	{
+		MID->SetScalarParameterValue(Name, Specular);
+	}
+	for (const TCHAR* Name : MetallicNames)
+	{
+		MID->SetScalarParameterValue(Name, 0.f);
+	}
+
+	// Also drive any scalar the parent actually exposes whose name looks relevant.
+	TArray<FMaterialParameterInfo> ScalarInfos;
+	TArray<FGuid> ScalarIds;
+	Parent->GetAllScalarParameterInfo(ScalarInfos, ScalarIds);
+	for (const FMaterialParameterInfo& Info : ScalarInfos)
+	{
+		const FString Name = Info.Name.ToString();
+		if (Name.Contains(TEXT("Rough"), ESearchCase::IgnoreCase))
+		{
+			MID->SetScalarParameterValue(Info, Roughness);
+		}
+		else if (Name.Contains(TEXT("Spec"), ESearchCase::IgnoreCase)
+			|| Name.Contains(TEXT("Gloss"), ESearchCase::IgnoreCase)
+			|| Name.Contains(TEXT("Shine"), ESearchCase::IgnoreCase))
+		{
+			// Gloss/shine often inverted vs roughness — keep low for less shine.
+			const bool bLooksLikeGloss = Name.Contains(TEXT("Gloss"), ESearchCase::IgnoreCase)
+				|| Name.Contains(TEXT("Shine"), ESearchCase::IgnoreCase);
+			MID->SetScalarParameterValue(Info, bLooksLikeGloss ? (1.f - Roughness) : Specular);
+		}
+		else if (Name.Contains(TEXT("Metal"), ESearchCase::IgnoreCase))
+		{
+			MID->SetScalarParameterValue(Info, 0.f);
+		}
+	}
+
+	UE_LOG(LogSolid, Warning,
+		TEXT("Terrain material: matte MID on %s (roughness=%.2f specular=%.2f, %d scalar params scanned)"),
+		*Parent->GetName(), Roughness, Specular, ScalarInfos.Num());
+	return MID;
+}
+
 UMaterialInterface* ASolidTerrainStreamer::ResolveMaterial() const
 {
 	if (ResolvedTerrainMaterial)
@@ -579,18 +655,18 @@ UMaterialInterface* ASolidTerrainStreamer::ResolveMaterial() const
 		const FString MatName = TerrainMaterial->GetName();
 		if (!MatName.Contains(TEXT("PrototypeGrid"), ESearchCase::IgnoreCase))
 		{
-			MutableThis->ResolvedTerrainMaterial = TerrainMaterial;
-			UE_LOG(LogSolid, Warning, TEXT("Terrain material: override %s"), *MatName);
+			MutableThis->ResolvedTerrainMaterial = MakeMatteGrassInstance(TerrainMaterial);
+			UE_LOG(LogSolid, Warning, TEXT("Terrain material: override %s (matte)"), *MatName);
 			return ResolvedTerrainMaterial;
 		}
 		UE_LOG(LogSolid, Warning,
 			TEXT("Ignoring TerrainMaterial '%s' (PrototypeGrid cannot be tinted)."), *MatName);
 	}
 
-	// 2) Fab seamless grass (Content/Fab/.../Mat_025_grass).
+	// 2) Fab seamless grass (Content/Fab/.../Mat_025_grass), forced matte.
 	if (UMaterialInterface* FabGrass = FindFabGrassMaterial())
 	{
-		MutableThis->ResolvedTerrainMaterial = FabGrass;
+		MutableThis->ResolvedTerrainMaterial = MakeMatteGrassInstance(FabGrass);
 		return ResolvedTerrainMaterial;
 	}
 

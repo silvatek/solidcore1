@@ -84,6 +84,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	FLinearColor GrassDarkColor = FLinearColor(0.04f, 0.11f, 0.03f);
 
+	/** Grass surface roughness (1 = fully matte). Applied via MID on Fab / override materials. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float GrassRoughness = 0.97f;
+
+	/** Grass specular amount (0 = no shiny highlights). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float GrassSpecular = 0.05f;
+
 	/** Seconds between streamer updates. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.05"))
 	float UpdateIntervalSeconds = 0.25f;
@@ -170,6 +178,7 @@ protected:
 	UMaterialInterface* ResolveMaterial() const;
 	UMaterialInterface* FindFabGrassMaterial() const;
 	UMaterialInterface* CreateFlatColGrassMaterial() const;
+	UMaterialInterface* MakeMatteGrassInstance(UMaterialInterface* Parent) const;
 	UMaterialInterface* CreateSolidColorMaterial(const FLinearColor& Color, const TCHAR* DebugName) const;
 	UMaterialInterface* CreateFogVolumeMaterial(
 		const FLinearColor& Color,

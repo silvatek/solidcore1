@@ -54,7 +54,6 @@ namespace SolidTerrainTestHelpers
 			return Dir;
 		}
 
-		// Fall back to axis toward the farther map edge.
 		const float RoomNegX = Origin.X - MinXY.X;
 		const float RoomPosX = MaxXY.X - Origin.X;
 		const float RoomNegY = Origin.Y - MinXY.Y;
@@ -68,7 +67,10 @@ namespace SolidTerrainTestHelpers
 		return (RoomNegY >= RoomPosY) ? FVector2D(0.f, -1.f) : FVector2D(0.f, 1.f);
 	}
 
-	/** Corner-ish candidates that sit outside the initial full-fog band around FogOrigin. */
+	/**
+	 * Corner candidates outside the initial full-fog band around FogOrigin.
+	 * Margin is small so opposite corners are >50m apart (trail apply radius).
+	 */
 	inline void CollectFullFogCandidates(const USolidTerrainMap* Map, TArray<FVector2D>& OutCandidates)
 	{
 		OutCandidates.Reset();
@@ -80,7 +82,9 @@ namespace SolidTerrainTestHelpers
 		const FVector2D FogOrigin = Map->GetFogOriginXY();
 		const FVector2D MinXY = Map->GetWorldMinXY();
 		const FVector2D MaxXY = Map->GetWorldMaxXY();
-		constexpr float MarginCm = 4000.f; // room for 35m probe toward fog origin
+		// Keep probes in-bounds for a 35m step toward fog origin, but stay near corners
+		// so two candidates can be >50m apart on the 128m map.
+		constexpr float MarginCm = 800.f;
 		constexpr float FullFogCm = SolidTerrainFog::FullFogStartMeters * 100.f + 500.f;
 
 		const FVector2D Corners[] = {
@@ -103,7 +107,7 @@ namespace SolidTerrainTestHelpers
 		}
 	}
 
-	/** A point that starts at full fog and leaves room for ±35m trail probes in-bounds. */
+	/** Full-fog point farthest from FogOrigin (best trail center). */
 	inline bool FindFullyFoggedTrailPoint(const USolidTerrainMap* Map, FVector2D& OutTrailXY)
 	{
 		TArray<FVector2D> Candidates;
@@ -112,13 +116,25 @@ namespace SolidTerrainTestHelpers
 		{
 			return false;
 		}
-		OutTrailXY = Candidates[0];
+
+		const FVector2D FogOrigin = Map->GetFogOriginXY();
+		int32 BestIndex = 0;
+		float BestDistSq = -1.f;
+		for (int32 Index = 0; Index < Candidates.Num(); ++Index)
+		{
+			const float DistSq = FVector2D::DistSquared(Candidates[Index], FogOrigin);
+			if (DistSq > BestDistSq)
+			{
+				BestDistSq = DistSq;
+				BestIndex = Index;
+			}
+		}
+		OutTrailXY = Candidates[BestIndex];
 		return true;
 	}
 
 	/**
-	 * Another full-fog point far enough from TrailXY that ApplyExplorationFogAround
-	 * will not touch it (outside the 50m half/full apply radius).
+	 * Full-fog point farthest from TrailXY and outside the 50m apply radius.
 	 */
 	inline bool FindUntouchedFullFogPoint(
 		const USolidTerrainMap* Map,
@@ -127,16 +143,29 @@ namespace SolidTerrainTestHelpers
 	{
 		TArray<FVector2D> Candidates;
 		CollectFullFogCandidates(Map, Candidates);
-		constexpr float ApplyReachCm = SolidTerrainFog::FullFogStartMeters * 100.f + 250.f;
-		for (const FVector2D& Candidate : Candidates)
+		constexpr float ApplyReachCm = SolidTerrainFog::FullFogStartMeters * 100.f + 100.f;
+
+		int32 BestIndex = INDEX_NONE;
+		float BestDistSq = -1.f;
+		for (int32 Index = 0; Index < Candidates.Num(); ++Index)
 		{
-			if (FVector2D::Distance(Candidate, TrailXY) > ApplyReachCm)
+			const float DistSq = FVector2D::DistSquared(Candidates[Index], TrailXY);
+			if (DistSq <= ApplyReachCm * ApplyReachCm)
 			{
-				OutUntouchedXY = Candidate;
-				return true;
+				continue;
+			}
+			if (DistSq > BestDistSq)
+			{
+				BestDistSq = DistSq;
+				BestIndex = Index;
 			}
 		}
-		return false;
+		if (BestIndex == INDEX_NONE)
+		{
+			return false;
+		}
+		OutUntouchedXY = Candidates[BestIndex];
+		return true;
 	}
 }
 

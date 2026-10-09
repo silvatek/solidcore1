@@ -60,10 +60,14 @@ bool FSolidMapTrailClearTest::RunTest(const FString& Parameters)
 		TowardOrigin = FVector2D(-1.f, 0.f);
 	}
 
+	const float UntouchedFogBefore = Map->SamplePoint(UntouchedXY.X, UntouchedXY.Y).Fog;
 	TestTrue(TEXT("precondition: trail center fogged"),
 		FMath::IsNearlyEqual(Map->SamplePoint(TrailXY.X, TrailXY.Y).Fog, 1.f));
 	TestTrue(TEXT("precondition: untouched point fogged"),
-		FMath::IsNearlyEqual(Map->SamplePoint(UntouchedXY.X, UntouchedXY.Y).Fog, 1.f));
+		FMath::IsNearlyEqual(UntouchedFogBefore, 1.f));
+	TestTrue(TEXT("precondition: untouched is outside 50m apply radius"),
+		FVector2D::Distance(TrailXY, UntouchedXY)
+			> SolidTerrainFog::FullFogStartMeters * 100.f);
 
 	const int32 Changed = Map->ApplyExplorationFogAround(TrailXY.X, TrailXY.Y);
 	TestTrue(TEXT("trail clear changed some points"), Changed > 0);
@@ -76,14 +80,15 @@ bool FSolidMapTrailClearTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("15m from trail is clear"),
 		FMath::IsNearlyEqual(Map->SamplePoint(ClearXY.X, ClearXY.Y).Fog, 0.f));
 
-	// 35m toward fog origin — half ring.
+	// 35m toward fog origin — half ring (nearest grid fog, not bilinear blend).
 	const FVector2D HalfXY = TrailXY + TowardOrigin * 3500.f;
-	const float HalfFog = Map->SamplePoint(HalfXY.X, HalfXY.Y).Fog;
+	const float HalfFog = Map->GetNearestPoint(HalfXY.X, HalfXY.Y).Fog;
 	TestTrue(TEXT("35m from trail is half fog"), FMath::IsNearlyEqual(HalfFog, 0.5f));
 
-	// Outside the trail apply radius and still far from the Z-town fog origin.
-	const float Untouched = Map->SamplePoint(UntouchedXY.X, UntouchedXY.Y).Fog;
-	TestTrue(TEXT("untouched full-fog point still full fog"), FMath::IsNearlyEqual(Untouched, 1.f));
+	const float UntouchedFogAfter = Map->SamplePoint(UntouchedXY.X, UntouchedXY.Y).Fog;
+	TestTrue(TEXT("untouched fog unchanged"),
+		FMath::IsNearlyEqual(UntouchedFogAfter, UntouchedFogBefore));
+	TestTrue(TEXT("untouched still full fog"), FMath::IsNearlyEqual(UntouchedFogAfter, 1.f));
 
 	const int32 Second = Map->ApplyExplorationFogAround(TrailXY.X, TrailXY.Y);
 	TestEqual(TEXT("second apply is idempotent"), Second, 0);

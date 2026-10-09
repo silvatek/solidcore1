@@ -39,10 +39,10 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | Filter | Covers |
 |--------|--------|
 | `SolidCore1.Fog.*` | Distance bands, units, mist sampling, fog mesh build guards |
-| `SolidCore1.Map.*` | Build smoke, trail clear, idempotent build, sampling, bounds |
+| `SolidCore1.Map.*` | Build smoke, trail clear, idempotent build, sampling, bounds, biome Z shelf |
 | `SolidCore1.WorldMap.*` | ASCII overlay load, key colors, Z town, terrain fog origin |
 | `SolidCore1.Noise.*` | Hash / value / fBm / height / grass tone |
-| `SolidCore1.Types.*` | Biome names (incl. Sea/River), `FSolidTerrainPoint` defaults |
+| `SolidCore1.Types.*` | Biome names (incl. Sea/River), height offsets, `FSolidTerrainPoint` defaults |
 | `SolidCore1.Vegetation.*` | Tree RNG variation, monolith defaults, town building pack |
 | `SolidCore1.GameMode.*` | Default spawn flags, pawn BP resolution |
 | `SolidCore1.Companion.*` | Defaults, SetFollowTarget |

@@ -1,7 +1,9 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "SolidTerrainMap.h"
+#include "SolidTerrainNoise.h"
 #include "SolidTerrainTestHelpers.h"
+#include "SolidTerrainTypes.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -62,6 +64,56 @@ bool FSolidMapWorldBoundsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("min < max Y"), MinXY.Y < MaxXY.Y);
 	TestTrue(TEXT("origin centered-ish (min negative)"), MinXY.X < 0.f && MinXY.Y < 0.f);
 	TestTrue(TEXT("origin centered-ish (max positive)"), MaxXY.X > 0.f && MaxXY.Y > 0.f);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidMapBiomeHeightOffsetTest,
+	"SolidCore1.Map.BiomeHeightOffset",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidMapBiomeHeightOffsetTest::RunTest(const FString& Parameters)
+{
+	USolidTerrainMap* Map = SolidTerrainTestHelpers::MakeSmallMap();
+	TestNotNull(TEXT("map"), Map);
+
+	bool bSawSeaOrRiver = false;
+	bool bSawMountain = false;
+	bool bSawShelfBiome = false;
+
+	for (const FSolidTerrainPoint& Point : Map->GetPoints())
+	{
+		const float RawHeight = SolidTerrainNoise::SampleHeight(
+			Point.X, Point.Y, /*Seed=*/1337, /*FrequencyScale=*/0.00012f,
+			/*Amplitude=*/3000.f, /*BaseHeight=*/0.f);
+		const float Expected =
+			RawHeight + SolidTerrainTypes::BiomeHeightOffsetCm(Point.Biome);
+		TestTrue(TEXT("height includes biome shelf"),
+			FMath::IsNearlyEqual(Point.Height, Expected, 0.01f));
+
+		if (Point.Biome == ESolidBiome::Sea || Point.Biome == ESolidBiome::River)
+		{
+			bSawSeaOrRiver = true;
+			TestTrue(TEXT("water has no shelf"),
+				FMath::IsNearlyEqual(Point.Height, RawHeight, 0.01f));
+		}
+		else if (Point.Biome == ESolidBiome::Mountain)
+		{
+			bSawMountain = true;
+			TestTrue(TEXT("mountain shelf 10m"),
+				FMath::IsNearlyEqual(Point.Height - RawHeight, 1000.f, 0.01f));
+		}
+		else
+		{
+			bSawShelfBiome = true;
+			TestTrue(TEXT("land shelf 1m"),
+				FMath::IsNearlyEqual(Point.Height - RawHeight, 100.f, 0.01f));
+		}
+	}
+
+	TestTrue(TEXT("map has water cells"), bSawSeaOrRiver);
+	TestTrue(TEXT("map has mountain cells"), bSawMountain);
+	TestTrue(TEXT("map has +1m shelf biomes"), bSawShelfBiome);
 	return true;
 }
 

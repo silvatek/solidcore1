@@ -64,4 +64,22 @@ namespace SolidTerrainTypes
 		default: return TEXT("Unknown");
 		}
 	}
+
+	/**
+	 * Vertical shelf added to TerrainPoint.Height after biome assignment (cm).
+	 * Sea/River stay at the noise surface; Mountain rises 10m; other biomes +1m.
+	 */
+	FORCEINLINE float BiomeHeightOffsetCm(ESolidBiome Biome)
+	{
+		switch (Biome)
+		{
+		case ESolidBiome::Sea:
+		case ESolidBiome::River:
+			return 0.f;
+		case ESolidBiome::Mountain:
+			return 1000.f;
+		default:
+			return 100.f;
+		}
+	}
 }

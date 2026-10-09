@@ -36,4 +36,30 @@ bool FSolidTerrainPointDefaultsTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBiomeHeightOffsetTest,
+	"SolidCore1.Types.BiomeHeightOffset",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBiomeHeightOffsetTest::RunTest(const FString& Parameters)
+{
+	TestTrue(TEXT("Sea offset 0"),
+		FMath::IsNearlyEqual(SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Sea), 0.f));
+	TestTrue(TEXT("River offset 0"),
+		FMath::IsNearlyEqual(SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::River), 0.f));
+	TestTrue(TEXT("Mountain offset 10m"),
+		FMath::IsNearlyEqual(SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Mountain), 1000.f));
+	TestTrue(TEXT("Grassland offset 1m"),
+		FMath::IsNearlyEqual(SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Grassland), 100.f));
+	TestTrue(TEXT("Forest offset 1m"),
+		FMath::IsNearlyEqual(SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Forest), 100.f));
+	TestTrue(TEXT("Town offset 1m"),
+		FMath::IsNearlyEqual(SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Town), 100.f));
+	TestTrue(TEXT("Desert offset 1m"),
+		FMath::IsNearlyEqual(SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Desert), 100.f));
+	TestTrue(TEXT("Swamp offset 1m"),
+		FMath::IsNearlyEqual(SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Swamp), 100.f));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

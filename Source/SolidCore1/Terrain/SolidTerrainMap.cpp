@@ -70,6 +70,8 @@ void USolidTerrainMap::Build(
 				Point.Biome = ChooseBiome(Point.X, Point.Y, HeightNorm, Seed);
 			}
 			FillThreatAndFog(Point, HeightNorm, Seed);
+			// Shelf after threat/fog so HeightNorm stays noise-based.
+			Point.Height += SolidTerrainTypes::BiomeHeightOffsetCm(Point.Biome);
 		}
 	}
 

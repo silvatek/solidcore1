@@ -6,7 +6,6 @@
 
 class ASolidCore1TerrainChunk;
 class UMaterialInterface;
-class UTexture2D;
 
 /**
  * Spawns / destroys runtime procedural terrain chunks around a focus actor (usually the player pawn).
@@ -65,21 +64,17 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.0"))
 	float CollisionHeightBias = 0.f;
 
-	/** Optional material override. Empty => build grassy MID at runtime. */
+	/** Optional material override. Empty => build grassy FlatCol MID at runtime. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	TObjectPtr<UMaterialInterface> TerrainMaterial;
 
-	/** Lighter grass shade in the noise texture / FlatCol fallback. */
+	/** Lighter grass shade for the FlatCol Base Color blend. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	FLinearColor GrassColor = FLinearColor(0.32f, 0.55f, 0.14f);
 
-	/** Darker grass shade in the noise texture / FlatCol fallback. */
+	/** Darker grass shade for the FlatCol Base Color blend. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	FLinearColor GrassDarkColor = FLinearColor(0.05f, 0.14f, 0.03f);
-
-	/** Resolution of the runtime grass noise texture (power of two). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "64", ClampMax = "1024"))
-	int32 GrassNoiseTextureSize = 256;
 
 	/** Seconds between streamer updates. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.05"))
@@ -106,9 +101,6 @@ protected:
 	FIntPoint WorldToChunkCoord(const FVector& WorldLocation) const;
 	AActor* ResolveFocusActor() const;
 	UMaterialInterface* ResolveMaterial() const;
-	UTexture2D* EnsureGrassNoiseTexture() const;
-	UMaterialInterface* CreateVertexColorGrassMaterial() const;
-	UMaterialInterface* CreateGrassNoiseMaterial(UTexture2D* NoiseTex) const;
 	UMaterialInterface* CreateFlatColGrassMaterial() const;
 	float SampleHeightAtWorld(const FVector& WorldLocation) const;
 	void TrySnapFocusToTerrain(AActor* Focus);
@@ -120,10 +112,6 @@ protected:
 	/** Cached lit material so chunks do not each create their own. */
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInterface> ResolvedTerrainMaterial;
-
-	/** Runtime darker/lighter green noise sampled by M_SC1_GrassNoise. */
-	UPROPERTY(Transient)
-	TObjectPtr<UTexture2D> GrassNoiseTexture;
 
 	float TimeSinceUpdate = 0.f;
 	bool bDidDisableLandscape = false;

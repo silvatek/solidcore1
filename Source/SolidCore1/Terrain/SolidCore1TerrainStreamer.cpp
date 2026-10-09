@@ -9,19 +9,11 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "Components/CapsuleComponent.h"
-#include "Engine/Texture2D.h"
 #include "Materials/Material.h"
-#include "Materials/MaterialExpressionConstant.h"
-#include "Materials/MaterialExpressionTextureSample.h"
-#include "Materials/MaterialExpressionVertexColor.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "UObject/ConstructorHelpers.h"
 #include "UObject/UObjectGlobals.h"
-
-#if WITH_EDITOR
-#include "MaterialEditingLibrary.h"
-#endif
 
 ASolidCore1TerrainStreamer::ASolidCore1TerrainStreamer()
 {
@@ -120,172 +112,11 @@ AActor* ASolidCore1TerrainStreamer::ResolveFocusActor() const
 	return nullptr;
 }
 
-UTexture2D* ASolidCore1TerrainStreamer::EnsureGrassNoiseTexture() const
-{
-	ASolidCore1TerrainStreamer* MutableThis = const_cast<ASolidCore1TerrainStreamer*>(this);
-	if (MutableThis->GrassNoiseTexture)
-	{
-		return MutableThis->GrassNoiseTexture;
-	}
-
-	const int32 Size = FMath::Clamp(GrassNoiseTextureSize, 64, 1024);
-	UTexture2D* NoiseTex = UTexture2D::CreateTransient(Size, Size, PF_B8G8R8A8);
-	if (!NoiseTex)
-	{
-		UE_LOG(LogSolidCore1, Error, TEXT("Failed to create grass noise texture."));
-		return nullptr;
-	}
-
-	NoiseTex->SRGB = true;
-	NoiseTex->Filter = TF_Bilinear;
-	NoiseTex->AddressX = TA_Wrap;
-	NoiseTex->AddressY = TA_Wrap;
-	NoiseTex->CompressionSettings = TC_Default;
-	NoiseTex->MipGenSettings = TMGS_NoMipmaps;
-	NoiseTex->LODGroup = TEXTUREGROUP_World;
-	NoiseTex->NeverStream = true;
-
-	FTexturePlatformData* PlatformData = NoiseTex->GetPlatformData();
-	if (!PlatformData || PlatformData->Mips.Num() == 0)
-	{
-		UE_LOG(LogSolidCore1, Error, TEXT("Grass noise texture missing platform mip data."));
-		return nullptr;
-	}
-
-	FTexture2DMipMap& Mip = PlatformData->Mips[0];
-	void* RawMip = Mip.BulkData.Lock(LOCK_READ_WRITE);
-	if (!RawMip)
-	{
-		UE_LOG(LogSolidCore1, Error, TEXT("Failed to lock grass noise texture mip."));
-		return nullptr;
-	}
-
-	FColor* Pixels = static_cast<FColor*>(RawMip);
-	// Match chunk UV scale (~0.0024): one texel ≈ world cm so speckles read at landscape scale.
-	const float TexelWorldCm = 32.f;
-	for (int32 Y = 0; Y < Size; ++Y)
-	{
-		for (int32 X = 0; X < Size; ++X)
-		{
-			const float Tone = SolidCore1TerrainNoise::SampleGrassTone(
-				static_cast<float>(X) * TexelWorldCm,
-				static_cast<float>(Y) * TexelWorldCm,
-				Seed + 9049);
-			// Hard contrast so dark speckles read clearly on lit hills.
-			const float Speckle = FMath::SmoothStep(0.35f, 0.65f, Tone);
-			const FLinearColor Color = FLinearColor::LerpUsingHSV(GrassDarkColor, GrassColor, Speckle);
-			Pixels[Y * Size + X] = Color.ToFColor(/*bSRGB=*/true);
-		}
-	}
-	Mip.BulkData.Unlock();
-	NoiseTex->UpdateResource();
-
-	MutableThis->GrassNoiseTexture = NoiseTex;
-	UE_LOG(LogSolidCore1, Warning, TEXT("Created grass noise texture %dx%d"), Size, Size);
-	return NoiseTex;
-}
-
-UMaterialInterface* ASolidCore1TerrainStreamer::CreateVertexColorGrassMaterial() const
-{
-#if WITH_EDITOR
-	ASolidCore1TerrainStreamer* MutableThis = const_cast<ASolidCore1TerrainStreamer*>(this);
-	UMaterial* GrassMat = NewObject<UMaterial>(MutableThis, FName(TEXT("M_SC1_GrassVertex")), RF_Transient);
-	if (!GrassMat)
-	{
-		return nullptr;
-	}
-
-	GrassMat->MaterialDomain = MD_Surface;
-	GrassMat->BlendMode = BLEND_Opaque;
-	GrassMat->SetShadingModel(MSM_DefaultLit);
-	GrassMat->TwoSided = false;
-
-	// Chunks already bake darker/lighter grass into vertex colors.
-	// UE 5.8: ConnectMaterialProperty(FromExpression, FromOutputName, Property).
-	UMaterialExpression* VertColorExp = UMaterialEditingLibrary::CreateMaterialExpression(
-		GrassMat, UMaterialExpressionVertexColor::StaticClass(), -320, 0);
-	if (!VertColorExp)
-	{
-		UE_LOG(LogSolidCore1, Error, TEXT("Failed to create VertexColor expression for grass."));
-		return nullptr;
-	}
-	UMaterialEditingLibrary::ConnectMaterialProperty(VertColorExp, TEXT(""), MP_BaseColor);
-
-	UMaterialExpression* RoughExp = UMaterialEditingLibrary::CreateMaterialExpression(
-		GrassMat, UMaterialExpressionConstant::StaticClass(), -320, 140);
-	if (UMaterialExpressionConstant* Rough = Cast<UMaterialExpressionConstant>(RoughExp))
-	{
-		Rough->R = 0.9f;
-		UMaterialEditingLibrary::ConnectMaterialProperty(Rough, TEXT(""), MP_Roughness);
-	}
-
-	UMaterialEditingLibrary::RecompileMaterial(GrassMat);
-
-	UE_LOG(LogSolidCore1, Warning,
-		TEXT("Terrain material: M_SC1_GrassVertex (chunk vertex-color speckles)"));
-	return GrassMat;
-#else
-	return nullptr;
-#endif
-}
-
-UMaterialInterface* ASolidCore1TerrainStreamer::CreateGrassNoiseMaterial(UTexture2D* NoiseTex) const
-{
-#if WITH_EDITOR
-	if (!NoiseTex)
-	{
-		return nullptr;
-	}
-
-	ASolidCore1TerrainStreamer* MutableThis = const_cast<ASolidCore1TerrainStreamer*>(this);
-	UMaterial* GrassMat = NewObject<UMaterial>(MutableThis, FName(TEXT("M_SC1_GrassNoise")), RF_Transient);
-	if (!GrassMat)
-	{
-		return nullptr;
-	}
-
-	GrassMat->MaterialDomain = MD_Surface;
-	GrassMat->BlendMode = BLEND_Opaque;
-	GrassMat->SetShadingModel(MSM_DefaultLit);
-	GrassMat->TwoSided = false;
-
-	UMaterialExpression* TexExp = UMaterialEditingLibrary::CreateMaterialExpression(
-		GrassMat, UMaterialExpressionTextureSample::StaticClass(), -400, 0);
-	UMaterialExpressionTextureSample* TexSample = Cast<UMaterialExpressionTextureSample>(TexExp);
-	if (!TexSample)
-	{
-		UE_LOG(LogSolidCore1, Error, TEXT("Failed to create TextureSample expression for grass."));
-		return nullptr;
-	}
-	TexSample->Texture = NoiseTex;
-	TexSample->SamplerType = SAMPLERTYPE_Color;
-	TexSample->ConstCoordinate = 0;
-	UMaterialEditingLibrary::ConnectMaterialProperty(TexSample, TEXT("RGB"), MP_BaseColor);
-
-	UMaterialExpression* RoughExp = UMaterialEditingLibrary::CreateMaterialExpression(
-		GrassMat, UMaterialExpressionConstant::StaticClass(), -400, 160);
-	if (UMaterialExpressionConstant* Rough = Cast<UMaterialExpressionConstant>(RoughExp))
-	{
-		Rough->R = 0.9f;
-		UMaterialEditingLibrary::ConnectMaterialProperty(Rough, TEXT(""), MP_Roughness);
-	}
-
-	UMaterialEditingLibrary::RecompileMaterial(GrassMat);
-
-	UE_LOG(LogSolidCore1, Warning,
-		TEXT("Terrain material: M_SC1_GrassNoise (green noise texture on mesh UVs)"));
-	return GrassMat;
-#else
-	(void)NoiseTex;
-	return nullptr;
-#endif
-}
-
 UMaterialInterface* ASolidCore1TerrainStreamer::CreateFlatColGrassMaterial() const
 {
 	ASolidCore1TerrainStreamer* MutableThis = const_cast<ASolidCore1TerrainStreamer*>(this);
 
-	// FlatCol solid green fallback. Never parent from PrototypeGrid (hard-wired grey checker).
+	// FlatCol solid green. Never parent from PrototypeGrid (hard-wired grey checker).
 	UMaterialInterface* Parent = nullptr;
 	if (TerrainMaterial)
 	{
@@ -328,7 +159,7 @@ UMaterialInterface* ASolidCore1TerrainStreamer::CreateFlatColGrassMaterial() con
 	GrassMID->SetScalarParameterValue(TEXT("Roughness"), 0.9f);
 
 	UE_LOG(LogSolidCore1, Warning,
-		TEXT("Terrain material: %s solid green fallback (monotone)"), *Parent->GetName());
+		TEXT("Terrain material: %s solid green (FlatCol)"), *Parent->GetName());
 	return GrassMID;
 }
 
@@ -343,35 +174,17 @@ UMaterialInterface* ASolidCore1TerrainStreamer::ResolveMaterial() const
 
 	// Never use M_PrototypeGrid (hard-wired grey checker).
 	//
-	// TODO(shipping grass): Author /Game/SolidCore1/Materials/M_SC1_Grass (vertex color or
-	// GrassNoise texture param) and load it here for packaged builds. Paths 1–2 are editor-only
-	// (MaterialEditingLibrary / UnrealEd); packaged falls through to FlatCol monotone green.
+	// SC1-0042 runtime MaterialEditingLibrary graph compile crashed PIE — removed.
+	// TODO(shipping grass): Author /Game/SolidCore1/Materials/M_SC1_Grass (Vertex Color → Base
+	// Color, or GrassNoise texture param), load it here, then drop FlatCol as primary.
 
-	// 1) Vertex colors already hold darker/lighter grass per vert — show them.
-	if (UMaterialInterface* VertGrass = CreateVertexColorGrassMaterial())
-	{
-		MutableThis->ResolvedTerrainMaterial = VertGrass;
-		return ResolvedTerrainMaterial;
-	}
-
-	// 2) Runtime lit material sampling green noise (chunk UVs already world-tiled).
-	if (UTexture2D* NoiseTex = EnsureGrassNoiseTexture())
-	{
-		if (UMaterialInterface* GrassMat = CreateGrassNoiseMaterial(NoiseTex))
-		{
-			MutableThis->ResolvedTerrainMaterial = GrassMat;
-			return ResolvedTerrainMaterial;
-		}
-	}
-
-	// 3) FlatCol Base Color — solid green last resort (also the packaged-build path today).
 	if (UMaterialInterface* FlatGrass = CreateFlatColGrassMaterial())
 	{
 		MutableThis->ResolvedTerrainMaterial = FlatGrass;
 		return ResolvedTerrainMaterial;
 	}
 
-	UE_LOG(LogSolidCore1, Error, TEXT("Terrain material: no grass material could be created."));
+	UE_LOG(LogSolidCore1, Error, TEXT("Terrain material: FlatCol grass material could not be created."));
 	return nullptr;
 }
 

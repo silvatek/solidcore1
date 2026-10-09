@@ -26,11 +26,5 @@ public class SolidCore1 : ModuleRules
 		{
 			"AssetRegistry"
 		});
-
-		// Runtime grass material graph wiring (MaterialEditingLibrary) — editor/PIE only.
-		if (Target.bBuildEditor)
-		{
-			PrivateDependencyModuleNames.AddRange(new string[] { "UnrealEd", "MaterialEditor" });
-		}
 	}
 }

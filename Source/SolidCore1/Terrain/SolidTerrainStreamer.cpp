@@ -528,8 +528,11 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 		return;
 	}
 
+	// Stand clear of the monolith (which sits on the town centroid).
+	const FVector2D PawnXY = TownXY + StartTownPawnOffsetXY;
+
 	const FVector OldLoc = Focus->GetActorLocation();
-	const float LandZ = SampleHeightAtWorld(FVector(TownXY.X, TownXY.Y, 0.f)) + CollisionHeightBias;
+	const float LandZ = SampleHeightAtWorld(FVector(PawnXY.X, PawnXY.Y, 0.f)) + CollisionHeightBias;
 	float CapsuleHalfHeight = 96.f;
 	if (const ACharacter* Character = Cast<ACharacter>(Focus))
 	{
@@ -539,10 +542,19 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 		}
 	}
 
-	const FVector NewLoc(TownXY.X, TownXY.Y, LandZ + CapsuleHalfHeight + SnapHeightPadding);
+	const FVector NewLoc(PawnXY.X, PawnXY.Y, LandZ + CapsuleHalfHeight + SnapHeightPadding);
 	const FVector Delta(NewLoc.X - OldLoc.X, NewLoc.Y - OldLoc.Y, 0.f);
 
 	Focus->SetActorLocation(NewLoc);
+
+	// Face the monolith at the town centroid.
+	const FVector2D ToMonolith = TownXY - PawnXY;
+	if (!ToMonolith.IsNearlyZero())
+	{
+		const float YawDeg = FMath::RadiansToDegrees(FMath::Atan2(ToMonolith.Y, ToMonolith.X));
+		Focus->SetActorRotation(FRotator(0.f, YawDeg, 0.f));
+	}
+
 	if (ACharacter* Character = Cast<ACharacter>(Focus))
 	{
 		if (UCharacterMovementComponent* Move = Character->GetCharacterMovement())
@@ -557,8 +569,8 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 	bDidRelocateToStartTown = true;
 	bHasFogApplyLocation = false;
 	UE_LOG(LogSolid, Warning,
-		TEXT("Relocated focus to start town (%.0f, %.0f) Z=%.1f (from %.0f, %.0f)"),
-		TownXY.X, TownXY.Y, NewLoc.Z, OldLoc.X, OldLoc.Y);
+		TEXT("Relocated focus to start town pawn (%.0f, %.0f) monolith=(%.0f, %.0f) Z=%.1f (from %.0f, %.0f)"),
+		PawnXY.X, PawnXY.Y, TownXY.X, TownXY.Y, NewLoc.Z, OldLoc.X, OldLoc.Y);
 }
 
 float ASolidTerrainStreamer::SampleHeightAtWorld(const FVector& WorldLocation) const

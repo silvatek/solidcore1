@@ -8,9 +8,9 @@ class USkeletalMesh;
 class UAnimSequence;
 
 /**
- * Companion that steers toward a follow point behind the player.
+ * Companion — NPC Party member that steers toward a follow point behind the Captain.
  * Uses direct CharacterMovement (no NavMesh) so it works on procedural terrain.
- * Default visual is the Fab Viking (custom skeleton + clip anims).
+ * Mesh/clips default to Fab Viking via SoftObjectPtrs (Party members may use different meshes).
  */
 UCLASS()
 class SOLIDCORE1_API ASolidCompanionCharacter : public ACharacter

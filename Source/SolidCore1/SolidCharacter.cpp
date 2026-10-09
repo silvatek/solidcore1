@@ -11,12 +11,13 @@
 #include "GameFramework/SpringArmComponent.h"
 #include "InputAction.h"
 #include "InputActionValue.h"
+#include "SolidClipLocomotion.h"
 #include "SolidCore1.h"
 #include "UObject/SoftObjectPath.h"
 
 // Captain core: construction, lifecycle, movement / look / zoom / sprint.
 // Input factory → SolidCharacterInput.cpp
-// Viking visuals → SolidCharacterVisuals.cpp
+// Visuals / clip selection → SolidCharacterVisuals.cpp (shared play via SolidClipLocomotion)
 // Party camera → SolidPartyCamera.cpp
 
 ASolidCharacter::ASolidCharacter()
@@ -45,17 +46,17 @@ ASolidCharacter::ASolidCharacter()
 	GetMesh()->SetVisibility(true);
 	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
 
-	// Fab Viking (custom skeleton + single-node clip locomotion).
+	// Default mesh/clips are Fab Viking; Captain may override DefaultSkeletalMesh later.
 	DefaultSkeletalMesh = TSoftObjectPtr<USkeletalMesh>(
-		FSoftObjectPath(TEXT("/Game/Viking/Mesh/SK_Viking.SK_Viking")));
+		FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath));
 	VikingIdleAnim = TSoftObjectPtr<UAnimSequence>(
-		FSoftObjectPath(TEXT("/Game/Viking/Animations/Anim_Viking_idle1.Anim_Viking_idle1")));
+		FSoftObjectPath(SolidClipLocomotion::DefaultIdlePath));
 	VikingWalkAnim = TSoftObjectPtr<UAnimSequence>(
-		FSoftObjectPath(TEXT("/Game/Viking/Animations/Anim_Viking_walk.Anim_Viking_walk")));
+		FSoftObjectPath(SolidClipLocomotion::DefaultWalkPath));
 	VikingRunAnim = TSoftObjectPtr<UAnimSequence>(
-		FSoftObjectPath(TEXT("/Game/Viking/Animations/Anim_Viking_run.Anim_Viking_run")));
+		FSoftObjectPath(SolidClipLocomotion::DefaultRunPath));
 	VikingJumpAnim = TSoftObjectPtr<UAnimSequence>(
-		FSoftObjectPath(TEXT("/Game/Viking/Animations/Anim_Viking_jump.Anim_Viking_jump")));
+		FSoftObjectPath(SolidClipLocomotion::DefaultJumpPath));
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);

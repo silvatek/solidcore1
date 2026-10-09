@@ -64,9 +64,9 @@ tools\run_automation_tests.bat SolidCore1.Fog
 
 PIE shows a top-left debug HUD (`Build SC1-NNNN`, a one-line `Change:` note, pawn/terrain Z, chunk load, material, camera pitch). Both strings live in `Source/SolidCore1/SolidBuildId.h` (`SOLID_BUILD_ID` / `SOLID_BUILD_NOTE`) and are bumped on every GitHub push so screenshots identify which binary you ran.
 
-## Character visuals (Fab Viking)
+## Character visuals (clip locomotion)
 
-Player and companion both use the Fab Viking (`/Game/Viking/Mesh/SK_Viking`) with idle/walk/run/jump clip playback on the custom skeleton (single-node anim mode — not Epic AnimBP). There is no Epic mannequin fallback; `Content/Characters/Mannequins` is not part of the project.
+Captain and Companions use single-node clip locomotion via `SolidClipLocomotion` (not Epic AnimBP). Each character keeps its own mesh soft pointer — Party members will use different meshes later; defaults are Fab Viking (`/Game/Viking/Mesh/SK_Viking` + idle/walk/run/jump). No Epic mannequin fallback.
 
 ### Reliable setup: Blueprint pawn (recommended)
 
@@ -186,8 +186,9 @@ Source/
     SolidCore1.Build.cs
     SolidCharacter.h / .cpp              # Captain core (move/look/zoom/sprint)
     SolidCharacterInput.cpp              # Runtime Enhanced Input factory
-    SolidCharacterVisuals.cpp            # Viking mesh + clip locomotion
+    SolidCharacterVisuals.cpp            # Captain mesh + clip selection
     SolidPartyCamera.cpp                 # Party framing + terrain boom lift
+    SolidClipLocomotion.*  # Shared single-node clip apply/play (per-character mesh)
     SolidGameMode.*
     SolidPlayerController.*
     SolidMaterials.*       # Shared FlatCol solid-color MID helper

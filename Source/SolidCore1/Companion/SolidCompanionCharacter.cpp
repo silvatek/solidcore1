@@ -1,23 +1,14 @@
 #include "SolidCompanionCharacter.h"
+#include "SolidClipLocomotion.h"
 #include "SolidCore1.h"
 #include "Animation/AnimSequence.h"
-#include "Animation/AnimSingleNodeInstance.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
-#include "UObject/ConstructorHelpers.h"
 #include "UObject/SoftObjectPath.h"
-
-namespace SolidCompanionPrivate
-{
-	static UAnimSequence* LoadAnimPath(const TCHAR* Path)
-	{
-		return Cast<UAnimSequence>(StaticLoadObject(UAnimSequence::StaticClass(), nullptr, Path));
-	}
-}
 
 ASolidCompanionCharacter::ASolidCompanionCharacter()
 {
@@ -52,15 +43,15 @@ ASolidCompanionCharacter::ASolidCompanionCharacter()
 	GetMesh()->bPauseAnims = false;
 	GetMesh()->bNoSkeletonUpdate = false;
 
-	// Fab Viking — custom skeleton; locomotion uses single-node clip playback.
+	// Default mesh/clips are Fab Viking; Party members may override CompanionMesh later.
 	CompanionMesh = TSoftObjectPtr<USkeletalMesh>(
-		FSoftObjectPath(TEXT("/Game/Viking/Mesh/SK_Viking.SK_Viking")));
+		FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath));
 	IdleAnim = TSoftObjectPtr<UAnimSequence>(
-		FSoftObjectPath(TEXT("/Game/Viking/Animations/Anim_Viking_idle1.Anim_Viking_idle1")));
+		FSoftObjectPath(SolidClipLocomotion::DefaultIdlePath));
 	WalkAnim = TSoftObjectPtr<UAnimSequence>(
-		FSoftObjectPath(TEXT("/Game/Viking/Animations/Anim_Viking_walk.Anim_Viking_walk")));
+		FSoftObjectPath(SolidClipLocomotion::DefaultWalkPath));
 	RunAnim = TSoftObjectPtr<UAnimSequence>(
-		FSoftObjectPath(TEXT("/Game/Viking/Animations/Anim_Viking_run.Anim_Viking_run")));
+		FSoftObjectPath(SolidClipLocomotion::DefaultRunPath));
 }
 
 void ASolidCompanionCharacter::PostInitializeComponents()
@@ -139,109 +130,35 @@ void ASolidCompanionCharacter::CacheLocomotionAnims()
 {
 	if (!CachedIdleAnim)
 	{
-		CachedIdleAnim = IdleAnim.LoadSynchronous();
-		if (!CachedIdleAnim)
-		{
-			CachedIdleAnim = SolidCompanionPrivate::LoadAnimPath(
-				TEXT("/Game/Viking/Animations/Anim_Viking_idle1.Anim_Viking_idle1"));
-		}
+		CachedIdleAnim = SolidClipLocomotion::LoadClip(
+			IdleAnim, SolidClipLocomotion::DefaultIdlePath);
 	}
 	if (!CachedWalkAnim)
 	{
-		CachedWalkAnim = WalkAnim.LoadSynchronous();
-		if (!CachedWalkAnim)
-		{
-			CachedWalkAnim = SolidCompanionPrivate::LoadAnimPath(
-				TEXT("/Game/Viking/Animations/Anim_Viking_walk.Anim_Viking_walk"));
-		}
+		CachedWalkAnim = SolidClipLocomotion::LoadClip(
+			WalkAnim, SolidClipLocomotion::DefaultWalkPath);
 	}
 	if (!CachedRunAnim)
 	{
-		CachedRunAnim = RunAnim.LoadSynchronous();
-		if (!CachedRunAnim)
-		{
-			CachedRunAnim = SolidCompanionPrivate::LoadAnimPath(
-				TEXT("/Game/Viking/Animations/Anim_Viking_run.Anim_Viking_run"));
-		}
+		CachedRunAnim = SolidClipLocomotion::LoadClip(
+			RunAnim, SolidClipLocomotion::DefaultRunPath);
 	}
 }
 
 void ASolidCompanionCharacter::ApplyVisuals()
 {
-	USkeletalMeshComponent* CharacterMesh = GetMesh();
-	if (!CharacterMesh)
-	{
-		return;
-	}
-
-	if (!CharacterMesh->GetSkeletalMeshAsset())
-	{
-		USkeletalMesh* LoadedMesh = CompanionMesh.LoadSynchronous();
-		if (!LoadedMesh)
-		{
-			LoadedMesh = Cast<USkeletalMesh>(
-				StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, TEXT("/Game/Viking/Mesh/SK_Viking.SK_Viking")));
-		}
-
-		if (LoadedMesh)
-		{
-			CharacterMesh->SetSkeletalMeshAsset(LoadedMesh);
-			CharacterMesh->SetVisibility(true);
-			CharacterMesh->SetHiddenInGame(false);
-			CharacterMesh->SetCastShadow(true);
-			UE_LOG(LogSolid, Warning, TEXT("Companion mesh: %s"), *LoadedMesh->GetPathName());
-		}
-		else
-		{
-			UE_LOG(LogSolid, Error, TEXT("Companion: Viking skeletal mesh missing (/Game/Viking/Mesh/SK_Viking)."));
-			return;
-		}
-	}
-
-	// Viking custom skeleton — single-node clip playback.
-	CharacterMesh->SetAnimInstanceClass(nullptr);
-	CharacterMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-	CharacterMesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
-	CharacterMesh->bPauseAnims = false;
-	CharacterMesh->bNoSkeletonUpdate = false;
-	CharacterMesh->InitAnim(true);
+	SolidClipLocomotion::ApplyMeshAndSingleNodeMode(
+		GetMesh(),
+		CompanionMesh,
+		SolidClipLocomotion::DefaultMeshPath,
+		TEXT("Companion"),
+		/*bOnlyIfMeshUnset=*/true);
 }
 
 bool ASolidCompanionCharacter::PlayLocomotionClip(UAnimSequence* Anim)
 {
-	USkeletalMeshComponent* CharacterMesh = GetMesh();
-	if (!CharacterMesh || !Anim)
-	{
-		return false;
-	}
-
-	CharacterMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-	CharacterMesh->InitAnim(true);
-
-	if (UAnimSingleNodeInstance* SingleNode = CharacterMesh->GetSingleNodeInstance())
-	{
-		if (SingleNode->GetAnimationAsset() != Anim || !SingleNode->IsPlaying())
-		{
-			SingleNode->SetAnimationAsset(Anim, false);
-			SingleNode->SetLooping(true);
-			SingleNode->SetPlaying(true);
-			SingleNode->SetPlayRate(1.f);
-		}
-		ActiveLocomotionAnim = Anim;
-		return true;
-	}
-
-	// Fallback path used by some engine versions.
-	CharacterMesh->PlayAnimation(Anim, true);
-	if (UAnimSingleNodeInstance* SingleNode = CharacterMesh->GetSingleNodeInstance())
-	{
-		ActiveLocomotionAnim = Anim;
-		return SingleNode->GetAnimationAsset() == Anim;
-	}
-
-	UE_LOG(LogSolid, Error,
-		TEXT("Companion: failed to create AnimSingleNodeInstance for %s"), *Anim->GetName());
-	return false;
+	return SolidClipLocomotion::PlayLoopingClip(
+		GetMesh(), Anim, ActiveLocomotionAnim, TEXT("Companion"));
 }
 
 void ASolidCompanionCharacter::UpdateLocomotionAnim()
@@ -283,15 +200,7 @@ void ASolidCompanionCharacter::UpdateLocomotionAnim()
 		return;
 	}
 
-	// Retry until the single-node instance is actually playing this clip.
-	const UAnimSingleNodeInstance* SingleNode = CharacterMesh->GetSingleNodeInstance();
-	const bool bAlreadyPlaying =
-		ActiveLocomotionAnim == Desired
-		&& SingleNode
-		&& SingleNode->GetAnimationAsset() == Desired
-		&& SingleNode->IsPlaying();
-
-	if (bAlreadyPlaying)
+	if (SolidClipLocomotion::IsPlayingClip(CharacterMesh, ActiveLocomotionAnim, Desired))
 	{
 		return;
 	}

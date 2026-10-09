@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
+#include "Party/SolidPartyDrill.h"
 #include "SolidCharacter.generated.h"
 
 class USpringArmComponent;
@@ -47,8 +48,17 @@ public:
 	void SetCharacterDisplayName(const FString& NewName);
 	const FString& GetCharacterDisplayName() const { return CharacterDisplayName; }
 
+	/** F9: cycle F1–F4 while walking a square (1.5s per side). */
+	void StartPartyFormationDrill();
+	void StopPartyFormationDrill();
+	bool IsPartyFormationDrillActive() const;
+	int32 GetPartyFormationDrillLeg() const { return PartyFormationDrill.CurrentLeg; }
+	float GetPartyFormationDrillWalkRemaining() const { return PartyFormationDrill.WalkSecondsRemaining; }
+
 protected:
 	void ApplyNameLabel();
+	void BeginPartyFormationDrillLeg();
+	void TickPartyFormationDrill(float DeltaTime);
 
 	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
@@ -71,6 +81,7 @@ protected:
 	void SelectBattlePlanSlot6();
 	void SelectBattlePlanSlot7();
 	void SelectBattlePlanSlot8();
+	void StartPartyFormationDrillFromInput();
 
 	void ApplyWalkSpeed() const;
 	void AddMappingContext();
@@ -258,4 +269,7 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimSequence> ActiveLocomotionAnim;
+
+	/** F9 square-walk formation demo state. */
+	SolidPartyDrill::FState PartyFormationDrill;
 };

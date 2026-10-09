@@ -160,6 +160,7 @@ void ASolidCharacter::OnRep_PlayerState()
 void ASolidCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	TickPartyFormationDrill(DeltaTime);
 	UpdateLocomotionAnim();
 	UpdatePartyCameraFraming(DeltaTime);
 	ClampCameraAboveTerrain(DeltaTime);
@@ -216,6 +217,12 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::F6, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot6);
 	PlayerInputComponent->BindKey(EKeys::F7, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot7);
 	PlayerInputComponent->BindKey(EKeys::F8, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot8);
+	PlayerInputComponent->BindKey(EKeys::F9, IE_Pressed, this, &ASolidCharacter::StartPartyFormationDrillFromInput);
+}
+
+void ASolidCharacter::StartPartyFormationDrillFromInput()
+{
+	StartPartyFormationDrill();
 }
 
 void ASolidCharacter::SelectBattlePlanSlot(const int32 SlotIndex)
@@ -240,6 +247,11 @@ void ASolidCharacter::SelectBattlePlanSlot8() { SelectBattlePlanSlot(7); }
 
 void ASolidCharacter::Move(const FInputActionValue& Value)
 {
+	if (IsPartyFormationDrillActive())
+	{
+		return;
+	}
+
 	const FVector2D MovementVector = Value.Get<FVector2D>();
 
 	if (Controller != nullptr)
@@ -284,6 +296,10 @@ void ASolidCharacter::Zoom(const FInputActionValue& Value)
 
 void ASolidCharacter::StartSprint()
 {
+	if (IsPartyFormationDrillActive())
+	{
+		return;
+	}
 	bIsSprinting = true;
 	ApplyWalkSpeed();
 }

@@ -5,6 +5,7 @@
 #include "Companion/SolidCompanionCharacter.h"
 #include "Party/SolidBattlePlan.h"
 #include "Party/SolidParty.h"
+#include "Party/SolidPartyDrill.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Terrain/SolidTerrainTypes.h"
@@ -350,6 +351,18 @@ void ASolidHUD::DrawHUD()
 		if (CompanionCount == 0)
 		{
 			Lines.Add(TEXT("Companion <none>"));
+		}
+	}
+
+	if (const ASolidCharacter* Captain = Cast<ASolidCharacter>(Pawn))
+	{
+		if (Captain->IsPartyFormationDrillActive())
+		{
+			Lines.Add(FString::Printf(
+				TEXT("Drill F9  leg %d/%d  walk %.1fs"),
+				Captain->GetPartyFormationDrillLeg() + 1,
+				SolidPartyDrill::NumLegs,
+				Captain->GetPartyFormationDrillWalkRemaining()));
 		}
 	}
 

@@ -164,17 +164,17 @@ void ASolidGameMode::EnsureCompanion()
 		ClassToSpawn, SpawnLoc, PlayerPawn->GetActorRotation(), SpawnParams);
 	if (!Companion)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[SolidCore1] Failed to spawn Quinn companion."));
-		UE_LOG(LogSolid, Error, TEXT("Failed to spawn Quinn companion."));
+		UE_LOG(LogTemp, Error, TEXT("[SolidCore1] Failed to spawn companion."));
+		UE_LOG(LogSolid, Error, TEXT("Failed to spawn companion."));
 		return;
 	}
 
 	Companion->SetFollowTarget(PlayerPawn);
 	SpawnedCompanion = Companion;
 
-	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Spawned Quinn companion at %s following %s"),
+	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Spawned companion at %s following %s"),
 		*SpawnLoc.ToCompactString(), *PlayerPawn->GetName());
-	UE_LOG(LogSolid, Warning, TEXT("Spawned Quinn companion following %s"), *PlayerPawn->GetName());
+	UE_LOG(LogSolid, Warning, TEXT("Spawned companion following %s"), *PlayerPawn->GetName());
 }
 
 void ASolidGameMode::EnsureStarterTrees()

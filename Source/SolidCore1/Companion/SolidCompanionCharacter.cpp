@@ -187,19 +187,8 @@ void ASolidCompanionCharacter::ApplyVisuals()
 		USkeletalMesh* LoadedMesh = CompanionMesh.LoadSynchronous();
 		if (!LoadedMesh)
 		{
-			static const TCHAR* Fallbacks[] = {
-				TEXT("/Game/Viking/Mesh/SK_Viking.SK_Viking"),
-				TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn_Simple.SKM_Quinn_Simple"),
-			};
-			for (const TCHAR* Path : Fallbacks)
-			{
-				LoadedMesh = Cast<USkeletalMesh>(
-					StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, Path));
-				if (LoadedMesh)
-				{
-					break;
-				}
-			}
+			LoadedMesh = Cast<USkeletalMesh>(
+				StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, TEXT("/Game/Viking/Mesh/SK_Viking.SK_Viking")));
 		}
 
 		if (LoadedMesh)
@@ -212,12 +201,12 @@ void ASolidCompanionCharacter::ApplyVisuals()
 		}
 		else
 		{
-			UE_LOG(LogSolid, Error, TEXT("Companion: no skeletal mesh found (Viking/Quinn)."));
+			UE_LOG(LogSolid, Error, TEXT("Companion: Viking skeletal mesh missing (/Game/Viking/Mesh/SK_Viking)."));
 			return;
 		}
 	}
 
-	// Viking uses a custom skeleton — drive clips via single-node, not Manny's AnimBP.
+	// Viking custom skeleton — single-node clip playback.
 	CharacterMesh->SetAnimInstanceClass(nullptr);
 	CharacterMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
 	CharacterMesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
@@ -280,7 +269,7 @@ void ASolidCompanionCharacter::UpdateLocomotionAnim()
 		PlayerSpeed = Target->GetVelocity().Size2D();
 	}
 
-	// Prefer run when we or Manny are clearly running/sprinting (Manny walk≈500, sprint≈900).
+	// Prefer run when clearly running/sprinting (walk≈500, sprint≈900).
 	const bool bShouldRun =
 		Speed >= RunAnimSpeedThreshold
 		|| PlayerSpeed >= RunAnimSpeedThreshold

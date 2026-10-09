@@ -20,7 +20,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	bool bAutoSpawnTerrainStreamer = true;
 
-	/** Spawn Quinn as a follower once the player pawn exists. */
+	/** Spawn a Viking companion follower once the player pawn exists. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	bool bAutoSpawnCompanion = true;
 

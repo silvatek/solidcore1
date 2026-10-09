@@ -47,7 +47,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |
 | `SolidCore1.Content.*` | Required/optional Content + Engine assets the code loads |
 
-**Content dependency tests** assert meshes/materials/anims/BPs the C++ loaders expect (Engine BasicShapes, FlatCol, Viking mesh+locomotion, Fab grass or FlatCol fallback, pawn/GameMode BP-or-C++). Optional mannequin fallbacks warn if missing but do not fail.
+**Content dependency tests** assert meshes/materials/anims/BPs the C++ loaders expect (Engine BasicShapes, FlatCol, Viking mesh+locomotion, Fab grass or FlatCol fallback, pawn/GameMode BP-or-C++). Viking is required; Epic mannequin assets are not used.
 
 Not yet covered (need a world / PIE): character movement, companion AI, streamer chunk load/unload, HUD drawing.
 
@@ -64,31 +64,21 @@ tools\run_automation_tests.bat SolidCore1.Fog
 
 PIE shows a top-left debug HUD (`Build SC1-NNNN`, a one-line `Change:` note, pawn/terrain Z, chunk load, material, camera pitch). Both strings live in `Source/SolidCore1/SolidBuildId.h` (`SOLID_BUILD_ID` / `SOLID_BUILD_NOTE`) and are bumped on every GitHub push so screenshots identify which binary you ran.
 
-## Visible mannequin (mesh + anim)
+## Character visuals (Fab Viking)
 
-`SolidCharacter` loads Epic’s Third Person mannequin when present (UE 5.7+ often uses the `_Simple` mesh):
-
-- Mesh: `/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple`
-- Anim BP: `/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed` (or `Animations/ABP_Unarmed`)
-
-If those exact names differ, the character also searches `/Game/Characters/Mannequins` via the Asset Registry.
-
-Those `.uasset` files are **not** in git (binary content). Add them once via Migrate / Add Feature, then use the Blueprint pawn below (most reliable).
+Player and companion both use the Fab Viking (`/Game/Viking/Mesh/SK_Viking`) with idle/walk/run/jump clip playback on the custom skeleton (single-node anim mode — not Epic AnimBP). There is no Epic mannequin fallback; `Content/Characters/Mannequins` is not part of the project.
 
 ### Reliable setup: Blueprint pawn (recommended)
 
 1. Content Browser → right-click `Content/Characters` → **Blueprint Class**.
 2. Pick **SolidCharacter** as the parent → name it `BP_SolidCharacter` (path `/Game/Characters/BP_SolidCharacter`).
-3. Open it → select **Mesh (CharacterMesh0)** if you want editor defaults; SC1-0034 forces Fab Viking at runtime when `bUseVikingVisuals` is true (overrides a Manny mesh/AnimBP on the BP).
-4. Compile & Save.
-5. Close the editor, rebuild/reopen so GameMode picks up the Blueprint (it prefers this BP over the bare C++ class).
-6. PIE — you should see the Viking player (and Viking companion).
+3. Compile & Save (runtime forces the Viking mesh/clips even if the BP mesh slot is empty).
+4. Close the editor, rebuild/reopen so GameMode picks up the Blueprint (it prefers this BP over the bare C++ class).
+5. PIE — you should see the Viking player (and Viking companion).
 
 **Naming:** New Blueprints should use the `Solid*` forms (`BP_SolidCharacter`, `BP_SolidGameMode`, parent `SolidCharacter` / `SolidGameMode`, etc.). Legacy `BP_SolidCore1*` assets remain supported via CoreRedirects and fallback load paths.
 
-While PIE is running, **Output Log** filtered to `LogSolid` shows whether a mesh was applied or how many meshes were found.
-
-You can commit `Content/Characters/` to GitHub if you want the mannequin shared with the repo (large binaries; Git LFS recommended).
+While PIE is running, **Output Log** filtered to `LogSolid` shows whether a mesh was applied.
 
 ## Open and build
 
@@ -122,7 +112,7 @@ C++ generates walkable terrain around the player at runtime:
 
 Defaults: 64 m chunks (`ChunkWorldSize=6400`), 32 quads/side, radius 2 (5×5 chunks), `Amplitude=3000`. Material: Fab `Mat_025_grass` when present.
 
-Default map is `/Game/ThirdPerson/Lvl_ThirdPerson` (SC1-0022) so Open World Landscape/HLOD outer hills are not in the scene — that cleared the horizon slivers. `L_OpenWorld` remains for comparison. SC1-0023 forces `BP_SolidCore1GameMode` on PIE/game worlds so template maps keep Manny + the debug HUD instead of Quinn. On first stream, the pawn is snapped onto the procedural height. If a Landscape is present, actors are hidden/collision-disabled once. Chunks block the Camera channel and use complex-as-simple collision on the runtime static mesh.
+Default map is `/Game/ThirdPerson/Lvl_ThirdPerson` (SC1-0022) so Open World Landscape/HLOD outer hills are not in the scene — that cleared the horizon slivers. `L_OpenWorld` remains for comparison. SC1-0023 forces `BP_SolidCore1GameMode` on PIE/game worlds so template maps keep Solid HUD + Viking pawn instead of the template default. On first stream, the pawn is snapped onto the procedural height. If a Landscape is present, actors are hidden/collision-disabled once. Chunks block the Camera channel and use complex-as-simple collision on the runtime static mesh.
 
 SC1-0007 drops `UProceduralMeshComponent` after persistent ribbon/culling failures with that path.
 
@@ -158,9 +148,9 @@ Goal: the world starts shrouded; fog clears only where the **pawn has been** (tr
 - `ASolidTree` — cylinder trunk + cone canopy; a **line** continues from the monolith into the fog (`StarterTreeCount=16`, ~10 m spacing, random sizes).
 - Fog curtains: clear|fogged (~25 m) plus a **white** half→full curtain (~50 m). Toggle vegetation with `bAutoSpawnStarterTrees`.
 
-## Quinn companion (SC1-0024)
+## Companion (SC1-0024)
 
-`ASolidCompanionCharacter` spawns behind the player and follows with simple steering (no NavMesh — works on procedural terrain). Both player and companion use the Fab Viking (`/Game/Viking/Mesh/SK_Viking`) with idle/walk/run/(jump) clip playback (custom skeleton — not Epic AnimBP). GameMode flag: `bAutoSpawnCompanion`. HUD shows companion mesh name and distance. Set `bUseVikingVisuals=false` on the player to fall back to Manny.
+`ASolidCompanionCharacter` spawns behind the player and follows with simple steering (no NavMesh — works on procedural terrain). Same Fab Viking mesh + clip locomotion as the player. GameMode flag: `bAutoSpawnCompanion`. HUD shows companion mesh name and distance.
 
 SC1-0025/0026: the player spring-arm camera shifts its `TargetOffset` toward the group center and lengthens so all companions stay in frame (`bFrameCompanions`). SC1-0026 uses screen-space fit, disables boom collision while companions are present (hill probes were collapsing the arm), and zooms in much slower than out so the shot does not pop narrow. SC1-0027 lifts the camera via spring-arm `SocketOffset` when the predicted camera point would sink below the procedural terrain height (keeps framing arm length intact).
 

@@ -128,7 +128,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidContentVikingRequiredTest::RunTest(const FString& Parameters)
 {
-	// Default player + companion path (bUseVikingVisuals=true).
+	// Required player + companion path (Viking only — no mannequin fallback).
 	TestTrue(TEXT("SK_Viking mesh"),
 		SolidContentTestPrivate::SoftObjectResolves(TEXT("/Game/Viking/Mesh/SK_Viking.SK_Viking")));
 	TestTrue(TEXT("Anim_Viking_idle1"),
@@ -217,39 +217,6 @@ bool FSolidContentGameModeBlueprintOrCppTest::RunTest(const FString& Parameters)
 
 	UClass* SolidGameModeClass = LoadClass<AGameModeBase>(nullptr, TEXT("/Script/SolidCore1.SolidGameMode"));
 	TestNotNull(TEXT("ASolidGameMode loadable"), SolidGameModeClass);
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidContentMannequinFallbackTest,
-	"SolidCore1.Content.MannequinFallbackOptional",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
-
-bool FSolidContentMannequinFallbackTest::RunTest(const FString& Parameters)
-{
-	// Only needed if Viking fails / bUseVikingVisuals=false. Warn if entirely absent.
-	static const TCHAR* Meshes[] = {
-		TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"),
-		TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny.SKM_Manny"),
-		TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn_Simple.SKM_Quinn_Simple"),
-		TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn.SKM_Quinn"),
-		nullptr
-	};
-	static const TCHAR* AnimBPs[] = {
-		TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.ABP_Unarmed_C"),
-		TEXT("/Game/Characters/Mannequins/Animations/ABP_Unarmed.ABP_Unarmed_C"),
-		TEXT("/Game/Characters/Mannequins/Animations/ABP_Manny.ABP_Manny_C"),
-		nullptr
-	};
-
-	const bool bMesh = SolidContentTestPrivate::AnyObjectResolves(Meshes);
-	const bool bAnim = SolidContentTestPrivate::AnyClassResolves(AnimBPs);
-	if (!bMesh || !bAnim)
-	{
-		AddWarning(TEXT("Epic mannequin fallback mesh/AnimBP missing (OK while Viking assets are present)."));
-	}
-	// Always pass — this is an optional dependency check with warnings only.
-	TestTrue(TEXT("mannequin check completed"), true);
 	return true;
 }
 

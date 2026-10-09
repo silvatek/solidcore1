@@ -49,7 +49,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Follow")
 	float SideOffset = 80.f;
 
-	/** Match the follow target's MaxWalkSpeed (Manny walk/sprint) when possible. */
+	/** Match the follow target's MaxWalkSpeed when possible. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Follow")
 	bool bMatchFollowTargetSpeed = true;
 

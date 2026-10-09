@@ -46,7 +46,7 @@ protected:
 	/** Builds transient Enhanced Input assets when Content assets are not assigned (playable out of the box). */
 	void EnsureRuntimeInputAssets();
 
-	/** Applies Viking (or fallback mannequin) mesh / locomotion setup. */
+	/** Applies Viking mesh / locomotion setup. */
 	void ApplyCharacterVisuals();
 
 	/** Applies MeshGroundZOffset while preserving BP yaw/pitch/roll. */
@@ -86,7 +86,7 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "0.1"))
 	float FramingZoomOutSpeed = 8.f;
 
-	/** Zoom-in speed (kept low so terrain boom-collision / brief gaps do not pop Quinn out). */
+	/** Zoom-in speed (kept low so terrain boom-collision / brief gaps do not pop companions out). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "0.1"))
 	float FramingZoomInSpeed = 1.2f;
 
@@ -158,19 +158,9 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> ZoomAction;
 
-	/**
-	 * When true, force Fab Viking mesh + single-node idle/walk/run (overrides BP Manny mesh/AnimBP).
-	 * Viking uses a custom skeleton, so Epic ABP_Unarmed cannot drive it.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Visual")
-	bool bUseVikingVisuals = true;
-
-	/** Defaults to Viking; mannequin paths remain as fallback when Viking is missing. */
+	/** Fab Viking skeletal mesh (required). */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Visual")
 	TSoftObjectPtr<USkeletalMesh> DefaultSkeletalMesh;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Visual")
-	TSoftClassPtr<UAnimInstance> DefaultAnimBlueprint;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Anim")
 	TSoftObjectPtr<UAnimSequence> VikingIdleAnim;

@@ -1,10 +1,7 @@
 #include "SolidCharacter.h"
-#include "Animation/AnimBlueprint.h"
 #include "Animation/AnimInstance.h"
 #include "Animation/AnimSequence.h"
 #include "Animation/AnimSingleNodeInstance.h"
-#include "AssetRegistry/AssetData.h"
-#include "AssetRegistry/AssetRegistryModule.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -19,7 +16,6 @@
 #include "InputActionValue.h"
 #include "InputMappingContext.h"
 #include "InputModifiers.h"
-#include "Modules/ModuleManager.h"
 #include "SolidCore1.h"
 #include "Companion/SolidCompanionCharacter.h"
 #include "Terrain/SolidTerrainStreamer.h"
@@ -67,11 +63,9 @@ ASolidCharacter::ASolidCharacter()
 	GetMesh()->SetVisibility(true);
 	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
 
-	// SC1-0034: player defaults to Fab Viking (custom skeleton + clip locomotion).
+	// Fab Viking (custom skeleton + single-node clip locomotion).
 	DefaultSkeletalMesh = TSoftObjectPtr<USkeletalMesh>(
 		FSoftObjectPath(TEXT("/Game/Viking/Mesh/SK_Viking.SK_Viking")));
-	DefaultAnimBlueprint = TSoftClassPtr<UAnimInstance>(
-		FSoftObjectPath(TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.ABP_Unarmed_C")));
 	VikingIdleAnim = TSoftObjectPtr<UAnimSequence>(
 		FSoftObjectPath(TEXT("/Game/Viking/Animations/Anim_Viking_idle1.Anim_Viking_idle1")));
 	VikingWalkAnim = TSoftObjectPtr<UAnimSequence>(
@@ -116,11 +110,8 @@ void ASolidCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	ApplyCharacterVisuals();
-	if (bUseVikingVisuals)
-	{
-		CacheVikingLocomotionAnims();
-		UpdateVikingLocomotionAnim();
-	}
+	CacheVikingLocomotionAnims();
+	UpdateVikingLocomotionAnim();
 	EnsureRuntimeInputAssets();
 	ApplyWalkSpeed();
 	AddMappingContext();
@@ -150,10 +141,7 @@ void ASolidCharacter::OnRep_PlayerState()
 void ASolidCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	if (bUseVikingVisuals)
-	{
-		UpdateVikingLocomotionAnim();
-	}
+	UpdateVikingLocomotionAnim();
 	UpdateGroupCameraFraming(DeltaTime);
 	ClampCameraAboveTerrain(DeltaTime);
 }
@@ -463,133 +451,6 @@ void ASolidCharacter::AddMappingContext()
 	}
 }
 
-static USkeletalMesh* LoadMeshFromAssetData(const FAssetData& Asset)
-{
-	if (USkeletalMesh* AlreadyLoaded = Cast<USkeletalMesh>(Asset.FastGetAsset(false)))
-	{
-		return AlreadyLoaded;
-	}
-
-	const FSoftObjectPath SoftPath = Asset.ToSoftObjectPath();
-	return Cast<USkeletalMesh>(SoftPath.TryLoad());
-}
-
-static USkeletalMesh* FindMannequinMeshByRegistry()
-{
-	IAssetRegistry& AssetRegistry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
-	AssetRegistry.SearchAllAssets(true);
-
-	FARFilter Filter;
-	Filter.PackagePaths.Add(FName(TEXT("/Game/Characters/Mannequins")));
-	Filter.bRecursivePaths = true;
-	Filter.ClassPaths.Add(USkeletalMesh::StaticClass()->GetClassPathName());
-
-	TArray<FAssetData> Assets;
-	AssetRegistry.GetAssets(Filter, Assets);
-
-	UE_LOG(LogSolid, Log, TEXT("Mannequin mesh search: found %d skeletal meshes under /Game/Characters/Mannequins"), Assets.Num());
-
-	USkeletalMesh* Ranked[3] = {nullptr, nullptr, nullptr}; // Simple Manny, Manny, Quinn/other
-
-	for (const FAssetData& Asset : Assets)
-	{
-		const FString Name = Asset.AssetName.ToString();
-		UE_LOG(LogSolid, Log, TEXT("  candidate mesh: %s"), *Asset.GetObjectPathString());
-
-		USkeletalMesh* Mesh = LoadMeshFromAssetData(Asset);
-		if (!Mesh)
-		{
-			continue;
-		}
-
-		if (Name.Contains(TEXT("Manny_Simple"), ESearchCase::IgnoreCase))
-		{
-			Ranked[0] = Mesh;
-		}
-		else if (Name.Contains(TEXT("Manny"), ESearchCase::IgnoreCase) && !Ranked[1])
-		{
-			Ranked[1] = Mesh;
-		}
-		else if (Name.Contains(TEXT("Quinn"), ESearchCase::IgnoreCase) && !Ranked[2])
-		{
-			Ranked[2] = Mesh;
-		}
-		else if (!Ranked[2])
-		{
-			// Any other mannequin skeletal mesh as last resort.
-			Ranked[2] = Mesh;
-		}
-	}
-
-	for (USkeletalMesh* Candidate : Ranked)
-	{
-		if (Candidate)
-		{
-			return Candidate;
-		}
-	}
-
-	return nullptr;
-}
-
-static UClass* FindMannequinAnimClassByRegistry()
-{
-	IAssetRegistry& AssetRegistry = FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
-
-	FARFilter Filter;
-	Filter.PackagePaths.Add(FName(TEXT("/Game/Characters/Mannequins")));
-	Filter.bRecursivePaths = true;
-	Filter.ClassPaths.Add(UAnimBlueprint::StaticClass()->GetClassPathName());
-
-	TArray<FAssetData> Assets;
-	AssetRegistry.GetAssets(Filter, Assets);
-
-	UE_LOG(LogSolid, Log, TEXT("Mannequin anim search: found %d anim blueprints under /Game/Characters/Mannequins"), Assets.Num());
-
-	UClass* Ranked[3] = {nullptr, nullptr, nullptr}; // Manny ABP, Quinn ABP, any ABP
-
-	for (const FAssetData& Asset : Assets)
-	{
-		const FString Name = Asset.AssetName.ToString();
-		UE_LOG(LogSolid, Log, TEXT("  candidate anim: %s"), *Asset.GetObjectPathString());
-
-		if (Name.Contains(TEXT("PostProcess"), ESearchCase::IgnoreCase))
-		{
-			continue;
-		}
-
-		const FString ClassPath = Asset.GetObjectPathString() + TEXT("_C");
-		UClass* AnimClass = StaticLoadClass(UAnimInstance::StaticClass(), nullptr, *ClassPath);
-		if (!AnimClass)
-		{
-			continue;
-		}
-
-		if (Name.Contains(TEXT("Unarmed"), ESearchCase::IgnoreCase) && !Ranked[0])
-		{
-			Ranked[0] = AnimClass;
-		}
-		else if (Name.Contains(TEXT("Manny"), ESearchCase::IgnoreCase) && !Ranked[1])
-		{
-			Ranked[1] = AnimClass;
-		}
-		else if (!Ranked[2])
-		{
-			Ranked[2] = AnimClass;
-		}
-	}
-
-	for (UClass* Candidate : Ranked)
-	{
-		if (Candidate)
-		{
-			return Candidate;
-		}
-	}
-
-	return nullptr;
-}
-
 void ASolidCharacter::ApplyCharacterVisuals()
 {
 	USkeletalMeshComponent* CharacterMesh = GetMesh();
@@ -598,101 +459,36 @@ void ASolidCharacter::ApplyCharacterVisuals()
 		return;
 	}
 
-	UE_LOG(LogSolid, Log, TEXT("ApplyCharacterVisuals: current mesh=%s viking=%d"),
-		CharacterMesh->GetSkeletalMeshAsset() ? *CharacterMesh->GetSkeletalMeshAsset()->GetPathName() : TEXT("<none>"),
-		bUseVikingVisuals ? 1 : 0);
-
 	USkeletalMesh* LoadedMesh = DefaultSkeletalMesh.LoadSynchronous();
-	if (!LoadedMesh && bUseVikingVisuals)
+	if (!LoadedMesh)
 	{
 		LoadedMesh = Cast<USkeletalMesh>(
 			StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, TEXT("/Game/Viking/Mesh/SK_Viking.SK_Viking")));
 	}
+
 	if (!LoadedMesh)
 	{
-		static const TCHAR* MeshFallbacks[] = {
-			TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"),
-			TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny.SKM_Manny"),
-			TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn_Simple.SKM_Quinn_Simple"),
-			TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn.SKM_Quinn"),
-		};
-		for (const TCHAR* Path : MeshFallbacks)
-		{
-			LoadedMesh = Cast<USkeletalMesh>(
-				StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, Path));
-			if (LoadedMesh)
-			{
-				break;
-			}
-		}
-	}
-	if (!LoadedMesh)
-	{
-		LoadedMesh = FindMannequinMeshByRegistry();
+		UE_LOG(LogSolid, Error, TEXT("Viking skeletal mesh missing (/Game/Viking/Mesh/SK_Viking)."));
+		return;
 	}
 
-	const bool bForceReplace =
-		bUseVikingVisuals
-		|| CharacterMesh->GetSkeletalMeshAsset() == nullptr
-		|| (LoadedMesh && CharacterMesh->GetSkeletalMeshAsset() != LoadedMesh);
-
-	if (LoadedMesh && bForceReplace)
+	if (CharacterMesh->GetSkeletalMeshAsset() != LoadedMesh)
 	{
 		CharacterMesh->SetSkeletalMeshAsset(LoadedMesh);
-		CharacterMesh->SetVisibility(true);
-		CharacterMesh->SetHiddenInGame(false);
-		CharacterMesh->SetCastShadow(true);
 		UE_LOG(LogSolid, Warning, TEXT("Applied character mesh: %s"), *LoadedMesh->GetPathName());
 	}
-	else if (!LoadedMesh)
-	{
-		UE_LOG(LogSolid, Error, TEXT("No character skeletal mesh found (Viking/Manny)."));
-		return;
-	}
 
-	if (bUseVikingVisuals)
-	{
-		// Custom skeleton — clip playback, not Epic AnimBP (also clears BP_SolidCore1Character's Manny ABP).
-		CharacterMesh->SetAnimInstanceClass(nullptr);
-		CharacterMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-		CharacterMesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
-		CharacterMesh->bPauseAnims = false;
-		CharacterMesh->bNoSkeletonUpdate = false;
-		CharacterMesh->InitAnim(true);
-		return;
-	}
+	CharacterMesh->SetVisibility(true);
+	CharacterMesh->SetHiddenInGame(false);
+	CharacterMesh->SetCastShadow(true);
 
-	if (CharacterMesh->GetAnimClass() == nullptr)
-	{
-		UClass* AnimClass = DefaultAnimBlueprint.LoadSynchronous();
-		if (!AnimClass)
-		{
-			static const TCHAR* AnimFallbacks[] = {
-				TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.ABP_Unarmed_C"),
-				TEXT("/Game/Characters/Mannequins/Animations/ABP_Unarmed.ABP_Unarmed_C"),
-				TEXT("/Game/Characters/Mannequins/Animations/ABP_Manny.ABP_Manny_C"),
-			};
-			for (const TCHAR* Path : AnimFallbacks)
-			{
-				AnimClass = StaticLoadClass(UAnimInstance::StaticClass(), nullptr, Path);
-				if (AnimClass)
-				{
-					break;
-				}
-			}
-		}
-		if (!AnimClass)
-		{
-			AnimClass = FindMannequinAnimClassByRegistry();
-		}
-
-		if (AnimClass)
-		{
-			CharacterMesh->SetAnimationMode(EAnimationMode::AnimationBlueprint);
-			CharacterMesh->SetAnimInstanceClass(AnimClass);
-			UE_LOG(LogSolid, Warning, TEXT("Applied mannequin anim BP: %s"), *AnimClass->GetPathName());
-		}
-	}
+	// Custom skeleton — single-node clip playback (not Epic AnimBP).
+	CharacterMesh->SetAnimInstanceClass(nullptr);
+	CharacterMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+	CharacterMesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+	CharacterMesh->bPauseAnims = false;
+	CharacterMesh->bNoSkeletonUpdate = false;
+	CharacterMesh->InitAnim(true);
 }
 
 void ASolidCharacter::CacheVikingLocomotionAnims()

@@ -11,7 +11,11 @@
 #include "GameFramework/PlayerController.h"
 #include "AssetRegistry/AssetData.h"
 #include "AssetRegistry/AssetRegistryModule.h"
+#include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/ExponentialHeightFogComponent.h"
+#include "Engine/ExponentialHeightFog.h"
+#include "GameFramework/PlayerController.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialInstance.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -63,8 +67,10 @@ void ASolidTerrainStreamer::BeginPlay()
 {
 	Super::BeginPlay();
 	EnsureTerrainMap();
+	EnsureHeightFog();
 	TimeSinceUpdate = UpdateIntervalSeconds;
 	UpdateStreaming();
+	UpdateTerrainFog(0.f);
 }
 
 void ASolidTerrainStreamer::EnsureTerrainMap()
@@ -115,6 +121,8 @@ void ASolidTerrainStreamer::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
+	UpdateTerrainFog(DeltaSeconds);
+
 	TimeSinceUpdate += DeltaSeconds;
 	if (TimeSinceUpdate < UpdateIntervalSeconds)
 	{
@@ -123,6 +131,144 @@ void ASolidTerrainStreamer::Tick(float DeltaSeconds)
 
 	TimeSinceUpdate = 0.f;
 	UpdateStreaming();
+}
+
+void ASolidTerrainStreamer::EnsureHeightFog()
+{
+	if (!bRenderTerrainFog)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	if (HeightFogActor && IsValid(HeightFogActor))
+	{
+		return;
+	}
+
+	for (TActorIterator<AExponentialHeightFog> It(World); It; ++It)
+	{
+		HeightFogActor = *It;
+		break;
+	}
+
+	if (!HeightFogActor)
+	{
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		HeightFogActor = World->SpawnActor<AExponentialHeightFog>(
+			AExponentialHeightFog::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
+		if (HeightFogActor)
+		{
+			UE_LOG(LogSolid, Warning, TEXT("Spawned ExponentialHeightFog for TerrainPoint mist."));
+		}
+	}
+
+	if (UExponentialHeightFogComponent* FogComp = HeightFogActor ? HeightFogActor->GetComponent() : nullptr)
+	{
+		FogComp->SetVisibility(true);
+		FogComp->SetVolumetricFog(true);
+		FogComp->VolumetricFogScatteringDistribution = 0.3f;
+		FogComp->VolumetricFogExtinctionScale = 0.8f;
+		FogComp->FogHeightFalloff = 0.12f;
+		FogComp->SetFogInscatteringColor(FogMistColor);
+		FogComp->SetVolumetricFogDistance(50000.f);
+	}
+}
+
+float ASolidTerrainStreamer::SampleViewFogAmount() const
+{
+	if (!TerrainMap || !TerrainMap->IsBuilt())
+	{
+		return 0.f;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return 0.f;
+	}
+
+	FVector SampleOrigin = FVector::ZeroVector;
+	FVector ViewForward = FVector::ForwardVector;
+	if (APlayerController* PC = World->GetFirstPlayerController())
+	{
+		if (APlayerCameraManager* CamMgr = PC->PlayerCameraManager)
+		{
+			SampleOrigin = CamMgr->GetCameraLocation();
+			ViewForward = CamMgr->GetCameraRotation().Vector();
+		}
+		else if (APawn* Pawn = PC->GetPawn())
+		{
+			SampleOrigin = Pawn->GetActorLocation();
+			ViewForward = Pawn->GetActorForwardVector();
+		}
+	}
+
+	const float LocalFog = GetTerrainPointAt(SampleOrigin).Fog;
+	float MaxFog = LocalFog;
+
+	// Probe along the view so distant foggy TerrainPoints thicken mist when looking outward.
+	static const float ProbeDistancesCm[] = {
+		5000.f, 10000.f, 15000.f, 20000.f, 30000.f, 45000.f
+	};
+	for (const float DistanceCm : ProbeDistancesCm)
+	{
+		const FVector Probe = SampleOrigin + ViewForward * DistanceCm;
+		MaxFog = FMath::Max(MaxFog, GetTerrainPointAt(Probe).Fog);
+	}
+
+	return FMath::Clamp(LocalFog * 0.4f + MaxFog * 0.6f, 0.f, 1.f);
+}
+
+void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)
+{
+	if (!bRenderTerrainFog)
+	{
+		return;
+	}
+
+	EnsureHeightFog();
+	if (!HeightFogActor)
+	{
+		return;
+	}
+
+	UExponentialHeightFogComponent* FogComp = HeightFogActor->GetComponent();
+	if (!FogComp)
+	{
+		return;
+	}
+
+	const float TargetFog = SampleViewFogAmount();
+	if (DeltaSeconds <= 0.f)
+	{
+		RenderedFogAmount = TargetFog;
+	}
+	else
+	{
+		RenderedFogAmount = FMath::FInterpTo(RenderedFogAmount, TargetFog, DeltaSeconds, FogInterpSpeed);
+	}
+
+	const float Amount = FMath::Clamp(RenderedFogAmount, 0.f, 1.f);
+	// Keep a tiny clear-air density so the component stays active; ramp hard with TerrainPoint fog.
+	const float Density = FMath::Lerp(0.00005f, FogDensityAtFull, Amount * Amount);
+	const float MaxOpacity = FMath::Lerp(0.0f, FogMaxOpacityAtFull, Amount);
+	// Push start distance out slightly when clear so near terrain stays crisp.
+	const float StartDistance = FMath::Lerp(800.f, 50.f, Amount);
+
+	FogComp->SetFogDensity(Density);
+	FogComp->SetFogMaxOpacity(MaxOpacity);
+	FogComp->SetFogInscatteringColor(FogMistColor);
+	FogComp->SetStartDistance(StartDistance);
+	FogComp->VolumetricFogExtinctionScale = FMath::Lerp(0.15f, 1.35f, Amount);
+	FogComp->MarkRenderStateDirty();
 }
 
 FIntPoint ASolidTerrainStreamer::WorldToChunkCoord(const FVector& WorldLocation) const

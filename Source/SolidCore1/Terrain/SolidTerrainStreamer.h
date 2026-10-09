@@ -5,6 +5,7 @@
 #include "SolidTerrainTypes.h"
 #include "SolidTerrainStreamer.generated.h"
 
+class AExponentialHeightFog;
 class ASolidTerrainChunk;
 class UMaterialInterface;
 class USolidTerrainMap;
@@ -37,6 +38,9 @@ public:
 	}
 	USolidTerrainMap* GetTerrainMap() const { return TerrainMap; }
 	FSolidTerrainPoint GetTerrainPointAt(const FVector& WorldLocation) const;
+
+	/** Smoothed fog amount currently applied to height fog [0, 1]. */
+	float GetRenderedFogAmount() const { return RenderedFogAmount; }
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "500.0"))
 	float ChunkWorldSize = 6400.f;
@@ -108,8 +112,31 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Map", meta = (ClampMin = "50.0"))
 	float TerrainPointSpacing = 200.f;
 
+	/** Drive Exponential Height Fog from TerrainPoint.Fog samples. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog")
+	bool bRenderTerrainFog = true;
+
+	/** How quickly rendered fog follows TerrainPoint samples. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.1"))
+	float FogInterpSpeed = 2.5f;
+
+	/** FogDensity at TerrainPoint.Fog == 1. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.0"))
+	float FogDensityAtFull = 0.045f;
+
+	/** FogMaxOpacity at TerrainPoint.Fog == 1. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float FogMaxOpacityAtFull = 0.88f;
+
+	/** Mist inscattering color (lit fog). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog")
+	FLinearColor FogMistColor = FLinearColor(0.72f, 0.78f, 0.82f);
+
 protected:
 	void EnsureTerrainMap();
+	void EnsureHeightFog();
+	void UpdateTerrainFog(float DeltaSeconds);
+	float SampleViewFogAmount() const;
 	void UpdateStreaming();
 	FIntPoint WorldToChunkCoord(const FVector& WorldLocation) const;
 	AActor* ResolveFocusActor() const;
@@ -131,6 +158,11 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<USolidTerrainMap> TerrainMap;
 
+	/** Height fog actor driven by TerrainPoint fog. */
+	UPROPERTY(Transient)
+	TObjectPtr<AExponentialHeightFog> HeightFogActor;
+
 	float TimeSinceUpdate = 0.f;
+	float RenderedFogAmount = 0.f;
 	bool bDidDisableLandscape = false;
 };

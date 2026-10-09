@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0106")
+#define SOLID_BUILD_ID TEXT("SC1-0107")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Z-town relocate brings companions with the Captain")
+#define SOLID_BUILD_NOTE TEXT("Fix streamer relocate tests (no chunk build in automation)")
 #endif

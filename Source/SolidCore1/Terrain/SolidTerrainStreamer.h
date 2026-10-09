@@ -55,6 +55,12 @@ public:
 	 */
 	bool HasAttemptedStartTownRelocate() const { return bDidRelocateToStartTown; }
 
+	/**
+	 * Run the one-shot start-town relocate (Captain + companions) without streaming chunks.
+	 * Used by GameMode timing and automation tests.
+	 */
+	void EnsureStartTownRelocate() { TryRelocateFocusToStartTown(); }
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "500.0"))
 	float ChunkWorldSize = 6400.f;
 

@@ -73,10 +73,8 @@ bool FSolidStreamerStartTownRelocateFlagTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("focus pawn"), Focus);
 	Streamer->FocusActor = Focus;
 
-	// Drive BeginPlay-equivalent relocate path via a streaming tick helper: rebuild map + relocate.
-	// EnsureExists already called BeginPlay; call Tick with enough time to hit UpdateStreaming.
-	Streamer->UpdateIntervalSeconds = 0.01f;
-	Streamer->Tick(1.f);
+	// Relocate only — do not Tick/UpdateStreaming (chunk mesh builds spam Error under NullRHI).
+	Streamer->EnsureStartTownRelocate();
 
 	TestTrue(TEXT("relocate attempted once focus exists"), Streamer->HasAttemptedStartTownRelocate());
 
@@ -121,18 +119,24 @@ bool FSolidStreamerRelocateCompanionsWithFocusTest::RunTest(const FString& Param
 	TestNotNull(TEXT("focus"), Focus);
 	Streamer->FocusActor = Focus;
 
-	ASolidCompanionCharacter* Sam = World->SpawnActor<ASolidCompanionCharacter>(
+	// Deferred spawn skips BeginPlay mesh/anim (avoids Error logs under NullRHI).
+	const FTransform SamXform(FRotator::ZeroRotator, StartLoc + FVector(-200.f, 80.f, 0.f));
+	ASolidCompanionCharacter* Sam = World->SpawnActorDeferred<ASolidCompanionCharacter>(
 		ASolidCompanionCharacter::StaticClass(),
-		StartLoc + FVector(-200.f, 80.f, 0.f),
-		FRotator::ZeroRotator,
-		SpawnParams);
+		SamXform,
+		nullptr,
+		nullptr,
+		ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 	TestNotNull(TEXT("sam"), Sam);
+	if (!Sam)
+	{
+		World->DestroyWorld(false);
+		return false;
+	}
 	Sam->SetFollowTarget(Focus);
-
 	const FVector SamBefore = Sam->GetActorLocation();
 
-	Streamer->UpdateIntervalSeconds = 0.01f;
-	Streamer->Tick(1.f);
+	Streamer->EnsureStartTownRelocate();
 
 	TestTrue(TEXT("relocate attempted"), Streamer->HasAttemptedStartTownRelocate());
 

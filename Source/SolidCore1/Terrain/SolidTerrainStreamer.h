@@ -122,11 +122,11 @@ public:
 
 	/** FogDensity at TerrainPoint.Fog == 1. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.0"))
-	float FogDensityAtFull = 0.14f;
+	float FogDensityAtFull = 0.28f;
 
 	/** FogMaxOpacity at TerrainPoint.Fog == 1. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float FogMaxOpacityAtFull = 0.95f;
+	float FogMaxOpacityAtFull = 1.0f;
 
 	/** Mist inscattering color (lit fog). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog")

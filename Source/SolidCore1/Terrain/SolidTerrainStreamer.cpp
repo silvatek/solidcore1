@@ -285,7 +285,7 @@ void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)
 	FogComp->SetFogMaxOpacity(MaxOpacity);
 	FogComp->SetFogInscatteringColor(FogMistColor);
 	FogComp->SetStartDistance(StartDistance);
-	FogComp->VolumetricFogExtinctionScale = FMath::Lerp(0.15f, 1.35f, Amount);
+	FogComp->VolumetricFogExtinctionScale = FMath::Lerp(0.25f, 2.2f, Amount);
 	FogComp->MarkRenderStateDirty();
 }
 

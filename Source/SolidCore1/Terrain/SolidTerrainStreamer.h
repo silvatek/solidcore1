@@ -196,10 +196,8 @@ protected:
 	void UpdateStreaming();
 	FIntPoint WorldToChunkCoord(const FVector& WorldLocation) const;
 	AActor* ResolveFocusActor() const;
+	/** Resolve via SolidTerrainMaterials (override → Fab grass → FlatCol); caches result. */
 	UMaterialInterface* ResolveMaterial() const;
-	UMaterialInterface* FindFabGrassMaterial() const;
-	UMaterialInterface* CreateFlatColGrassMaterial() const;
-	UMaterialInterface* MakeMatteGrassInstance(UMaterialInterface* Parent) const;
 	float SampleHeightAtWorld(const FVector& WorldLocation) const;
 	void TrySnapFocusToTerrain(AActor* Focus);
 	void DisableLandscapeActorsOnce();

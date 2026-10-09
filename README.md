@@ -203,6 +203,7 @@ Source/
       SolidTerrainNoise.h
       SolidTerrainChunk.*
       SolidTerrainStreamer.*
+      SolidTerrainMaterials.*   # Fab/FlatCol grass resolve + matte MID
       SolidTerrainWorldSubsystem.*
     Vegetation/
       SolidMonolith.*         # Grey slab landmark at start

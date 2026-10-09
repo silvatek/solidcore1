@@ -114,15 +114,15 @@ public:
 
 	/** Low-res fog-of-war cells per chunk edge (kept small for cheap rebuilds while moving). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "2", ClampMax = "32"))
-	int32 FogQuadsPerSide = 8;
+	int32 FogQuadsPerSide = 12;
 
 	/** Vertical extent of full exploration-fog volumes (cm). Tall banks, not a ground sheet. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "200.0"))
 	float FogVolumeHeightCm = 3000.f;
 
-	/** Vertical extent of half-fog volumes (cm). Slightly shorter so the mid band reads softer. */
+	/** Vertical extent of half-fog volumes (cm). Shorter open banks so mid fog reads lighter. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "200.0"))
-	float FogVolumeHeightHalfCm = 1800.f;
+	float FogVolumeHeightHalfCm = 1200.f;
 
 	/**
 	 * Legacy weather-style Exponential Height Fog. Off by default — exploration fog is
@@ -171,6 +171,10 @@ protected:
 	UMaterialInterface* FindFabGrassMaterial() const;
 	UMaterialInterface* CreateFlatColGrassMaterial() const;
 	UMaterialInterface* CreateSolidColorMaterial(const FLinearColor& Color, const TCHAR* DebugName) const;
+	UMaterialInterface* CreateFogVolumeMaterial(
+		const FLinearColor& Color,
+		float Opacity,
+		const TCHAR* DebugName) const;
 	float SampleHeightAtWorld(const FVector& WorldLocation) const;
 	void TrySnapFocusToTerrain(AActor* Focus);
 	void DisableLandscapeActorsOnce();

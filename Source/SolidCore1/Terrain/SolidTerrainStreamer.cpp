@@ -171,15 +171,15 @@ void ASolidTerrainStreamer::EnsureExplorationFogMaterials()
 {
 	if (!ExplorationFogHalfMaterial)
 	{
-		// Soft mid-band mist (not bright "snow" white).
-		ExplorationFogHalfMaterial = CreateSolidColorMaterial(
-			FLinearColor(0.58f, 0.64f, 0.70f), TEXT("ExplorationFogHalf"));
+		// ~50% opacity mid band (translucent parent when available).
+		ExplorationFogHalfMaterial = CreateFogVolumeMaterial(
+			FLinearColor(0.70f, 0.76f, 0.82f), 0.45f, TEXT("ExplorationFogHalf"));
 	}
 	if (!ExplorationFogFullMaterial)
 	{
-		// Dense mist bank — cool grey, still opaque enough to block sight.
-		ExplorationFogFullMaterial = CreateSolidColorMaterial(
-			FLinearColor(0.72f, 0.76f, 0.80f), TEXT("ExplorationFogFull"));
+		// Near-opaque full band.
+		ExplorationFogFullMaterial = CreateFogVolumeMaterial(
+			FLinearColor(0.78f, 0.82f, 0.86f), 0.92f, TEXT("ExplorationFogFull"));
 	}
 }
 
@@ -504,6 +504,51 @@ UMaterialInterface* ASolidTerrainStreamer::CreateSolidColorMaterial(
 	MID->SetScalarParameterValue(TEXT("Roughness"), 1.f);
 	UE_LOG(LogSolid, Warning, TEXT("Created solid material %s from %s"), DebugName, *Parent->GetName());
 	return MID;
+}
+
+UMaterialInterface* ASolidTerrainStreamer::CreateFogVolumeMaterial(
+	const FLinearColor& Color,
+	float Opacity,
+	const TCHAR* DebugName) const
+{
+	ASolidTerrainStreamer* MutableThis = const_cast<ASolidTerrainStreamer*>(this);
+	Opacity = FMath::Clamp(Opacity, 0.f, 1.f);
+
+	// Prefer translucent glow parents so half-fog can actually be ~50% opacity.
+	static const TCHAR* TranslucentParents[] = {
+		TEXT("/Game/LevelPrototyping/Interactable/JumpPad/Assets/Materials/M_SimpleGlow.M_SimpleGlow"),
+		TEXT("/Game/LevelPrototyping/Interactable/JumpPad/Assets/Materials/MI_GlowNT.MI_GlowNT"),
+		TEXT("/Game/LevelPrototyping/Interactable/JumpPad/Assets/Materials/M_GradientGlow.M_GradientGlow"),
+	};
+
+	for (const TCHAR* Path : TranslucentParents)
+	{
+		if (UMaterialInterface* Parent = LoadObject<UMaterialInterface>(nullptr, Path))
+		{
+			if (UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Parent, MutableThis))
+			{
+				MID->SetVectorParameterValue(TEXT("Base Color"), Color);
+				MID->SetVectorParameterValue(TEXT("BaseColor"), Color);
+				MID->SetVectorParameterValue(TEXT("Color"), Color);
+				MID->SetVectorParameterValue(TEXT("EmissiveColor"), Color);
+				MID->SetVectorParameterValue(TEXT("GlowColor"), Color);
+				MID->SetScalarParameterValue(TEXT("Opacity"), Opacity);
+				MID->SetScalarParameterValue(TEXT("OpacityMask"), Opacity);
+				MID->SetScalarParameterValue(TEXT("Emissive"), Opacity);
+				MID->SetScalarParameterValue(TEXT("Intensity"), Opacity);
+				UE_LOG(LogSolid, Warning,
+					TEXT("Fog volume material %s from %s (opacity=%.2f)"),
+					DebugName, *Parent->GetName(), Opacity);
+				return MID;
+			}
+		}
+	}
+
+	// Opaque fallback — geometry still differentiates half vs full.
+	UE_LOG(LogSolid, Warning,
+		TEXT("Fog volume material %s falling back to FlatCol (opacity=%.2f unused)."),
+		DebugName, Opacity);
+	return CreateSolidColorMaterial(Color, DebugName);
 }
 
 UMaterialInterface* ASolidTerrainStreamer::CreateFlatColGrassMaterial() const

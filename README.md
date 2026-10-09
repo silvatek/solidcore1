@@ -24,31 +24,37 @@ Put this repo’s contents at `C:\Users\staz6\Dev\solidcore1` (clone or sync), t
 
 Input Actions / Mapping Context can be replaced with Content assets on the character later; if unset, C++ creates transient defaults so PIE works immediately.
 
-## Automated tests (SC1-0077)
+## Automated tests
 
-UE Automation tests live under `Source/SolidCore1/Tests/` (compiled into the editor target when `WITH_DEV_AUTOMATION_TESTS` is on):
+UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_DEV_AUTOMATION_TESTS`).
 
-| Filter | What it covers |
-|--------|----------------|
-| `SolidCore1.Fog.DistanceBands` | `FogFromDistanceMeters` clear / half / full thresholds |
-| `SolidCore1.Fog.Units` | meters→cm helpers and band constants |
-| `SolidCore1.Map.BuildSmoke` | small map build; initial fog at 0 / 35 / 60 m |
-| `SolidCore1.Map.TrailClearsFog` | trail clear disk + half ring; idempotent re-apply |
-| `SolidCore1.Map.TrailNeverIncreasesFog` | trail apply never raises `Fog` |
+### Policy
 
-**Session Frontend:** rebuild the editor → **Tools → Session Frontend → Automation** → filter `SolidCore1` → Start.
+1. **All existing tests must keep passing** when you change product code — **without modifying those tests**.
+2. If a change **must** update an existing test (API rename, intentional behavior change), say so explicitly in the commit / change description and why.
+3. **New product code ships with tests in the same commit** (same PR/change set). Prefer pure logic / `NewObject` unit tests; add heavier PIE tests only when needed.
 
-**Command line** (from the project machine):
+### Suite (filter `SolidCore1`)
+
+| Filter | Covers |
+|--------|--------|
+| `SolidCore1.Fog.*` | Distance bands, units, mist sampling, fog mesh build guards |
+| `SolidCore1.Map.*` | Build smoke, trail clear, idempotent build, sampling, bounds |
+| `SolidCore1.Noise.*` | Hash / value / fBm / height / grass tone |
+| `SolidCore1.Types.*` | Biome names, `FSolidTerrainPoint` defaults |
+| `SolidCore1.Vegetation.*` | Tree RNG variation, monolith defaults |
+| `SolidCore1.GameMode.*` | Default spawn flags |
+| `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |
+
+Not yet covered (need a world / PIE): character movement, companion AI, streamer chunk load/unload, HUD drawing.
+
+**Session Frontend:** rebuild editor → **Tools → Session Frontend → Automation** → filter `SolidCore1` → Start.
+
+**Command line** (prints ran / passed / failed from the automation log):
 
 ```bat
 tools\run_automation_tests.bat
 tools\run_automation_tests.bat SolidCore1.Fog
-```
-
-Or:
-
-```bat
-"C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "%CD%\SolidCore1.uproject" -NullRHI -unattended -nop4 -nosound -nosplash -ExecCmds="Automation RunTests SolidCore1; Quit"
 ```
 
 ## Build ID (HUD)
@@ -197,7 +203,14 @@ Source/
       SolidTree.*             # Placeholder cylinder+cone tree
     Tests/
       SolidTerrainFogTests.cpp
+      SolidTerrainFogMeshTests.cpp
       SolidTerrainMapTests.cpp
+      SolidTerrainMapMoreTests.cpp
+      SolidTerrainNoiseTests.cpp
+      SolidTerrainTypesTests.cpp
+      SolidVegetationTests.cpp
+      SolidGameModeTests.cpp
+      SolidBuildIdTests.cpp
 ```
 
 ## Requirements

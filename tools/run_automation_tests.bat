@@ -1,6 +1,6 @@
 @echo off
-setlocal
-rem Run SolidCore1 automation tests headlessly (UE 5.8).
+setlocal EnableExtensions EnableDelayedExpansion
+rem Run SolidCore1 automation tests headlessly (UE 5.8) and print pass/fail counts.
 rem
 rem Usage:
 rem   tools\run_automation_tests.bat
@@ -26,9 +26,42 @@ if not exist "%EDITOR%" (
   exit /b 1
 )
 
+set "LOGDIR=%TEMP%\solidcore1-automation"
+if not exist "%LOGDIR%" mkdir "%LOGDIR%"
+set "LOGFILE=%LOGDIR%\automation.log"
+if exist "%LOGFILE%" del /f /q "%LOGFILE%"
+
 echo Running automation filter: %FILTER%
 echo Project: %PROJECT%
-"%EDITOR%" "%PROJECT%" -NullRHI -unattended -nop4 -nosound -nosplash -ExecCmds="Automation RunTests %FILTER%; Quit" -Log
+echo Log: %LOGFILE%
+echo.
+
+"%EDITOR%" "%PROJECT%" -NullRHI -unattended -nop4 -nosound -nosplash -ABSLOG="%LOGFILE%" -ExecCmds="Automation RunTests %FILTER%; Quit"
 set "ERR=%ERRORLEVEL%"
-echo Exit code: %ERR%
+
+set "PASSED=0"
+set "FAILED=0"
+set "RAN=0"
+
+if exist "%LOGFILE%" (
+  rem UE AutomationController lines look like: Test Completed. Result={Success}
+  for /f %%C in ('findstr /R /C:"Result={Success}" "%LOGFILE%" 2^>nul ^| find /C /V ""') do set "PASSED=%%C"
+  for /f %%C in ('findstr /R /C:"Result={Fail}" "%LOGFILE%" 2^>nul ^| find /C /V ""') do set "FAILED=%%C"
+  set /a RAN=PASSED+FAILED
+) else (
+  echo WARNING: automation log not found at "%LOGFILE%"
+)
+
+echo.
+echo ===== SolidCore1 automation summary =====
+echo Filter : %FILTER%
+echo Ran    : !RAN!
+echo Passed : !PASSED!
+echo Failed : !FAILED!
+echo Exit   : %ERR%
+echo Log    : %LOGFILE%
+echo =========================================
+
+if not "!FAILED!"=="0" if "%ERR%"=="0" set "ERR=1"
+
 exit /b %ERR%

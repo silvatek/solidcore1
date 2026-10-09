@@ -29,7 +29,9 @@ if not exist "%EDITOR%" (
 set "LOGDIR=%TEMP%\solidcore1-automation"
 if not exist "%LOGDIR%" mkdir "%LOGDIR%"
 set "LOGFILE=%LOGDIR%\automation.log"
+set "FAILLIST=%LOGDIR%\failed-tests.txt"
 if exist "%LOGFILE%" del /f /q "%LOGFILE%"
+if exist "%FAILLIST%" del /f /q "%FAILLIST%"
 
 echo Running automation filter: %FILTER%
 echo Project: %PROJECT%
@@ -44,10 +46,22 @@ set "FAILED=0"
 set "RAN=0"
 
 if exist "%LOGFILE%" (
-  rem UE AutomationController lines look like: Test Completed. Result={Success}
+  rem UE AutomationController lines look like:
+  rem   Test Completed. Result={Success} Name={...} Path={...}
+  rem   Test Completed. Result={Fail} Name={...} Path={...}
   for /f %%C in ('findstr /R /C:"Result={Success}" "%LOGFILE%" 2^>nul ^| find /C /V ""') do set "PASSED=%%C"
   for /f %%C in ('findstr /R /C:"Result={Fail}" "%LOGFILE%" 2^>nul ^| find /C /V ""') do set "FAILED=%%C"
   set /a RAN=PASSED+FAILED
+
+  rem Extract failed test Path={...} (fallback Name={...}) into a side file.
+  if not "!FAILED!"=="0" (
+    >"%FAILLIST%" (
+      for /f "usebackq delims=" %%L in (`findstr /C:"Result={Fail}" "%LOGFILE%" 2^>nul`) do (
+        set "LINE=%%L"
+        call :EmitFailName
+      )
+    )
+  )
 ) else (
   echo WARNING: automation log not found at "%LOGFILE%"
 )
@@ -60,8 +74,32 @@ echo Passed : !PASSED!
 echo Failed : !FAILED!
 echo Exit   : %ERR%
 echo Log    : %LOGFILE%
+if exist "%FAILLIST%" (
+  echo.
+  echo Failed tests:
+  for /f "usebackq delims=" %%F in ("%FAILLIST%") do echo   - %%F
+)
 echo =========================================
 
 if not "!FAILED!"=="0" if "%ERR%"=="0" set "ERR=1"
 
 exit /b %ERR%
+
+rem ---------------------------------------------------------------------------
+rem Uses LINE from caller. Prefers Path={...}; falls back to Name={...}.
+rem ---------------------------------------------------------------------------
+:EmitFailName
+set "OUT="
+set "TMP=!LINE:*Path={=!"
+if not "!TMP!"=="!LINE!" (
+  for /f "delims=}" %%P in ("!TMP!") do set "OUT=%%P"
+)
+if not defined OUT (
+  set "TMP=!LINE:*Name={=!"
+  if not "!TMP!"=="!LINE!" (
+    for /f "delims=}" %%N in ("!TMP!") do set "OUT=%%N"
+  )
+)
+if not defined OUT set "OUT=!LINE!"
+echo(!OUT!
+goto :eof

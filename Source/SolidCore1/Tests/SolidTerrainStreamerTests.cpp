@@ -122,7 +122,11 @@ bool FSolidStreamerRelocateCompanionsWithFocusTest::RunTest(const FString& Param
 	TestNotNull(TEXT("focus"), Focus);
 	Streamer->FocusActor = Focus;
 
-	// Deferred spawn skips BeginPlay mesh/anim (avoids Error logs under NullRHI).
+	// FinishSpawning so TActorIterator can see Sam; expect clip/mesh Errors under NullRHI.
+	AddExpectedError(TEXT("skeletal mesh missing"), EAutomationExpectedErrorFlags::Contains, 0);
+	AddExpectedError(TEXT("AnimSingleNodeInstance"), EAutomationExpectedErrorFlags::Contains, 0);
+	AddExpectedError(TEXT("Companion"), EAutomationExpectedErrorFlags::Contains, 0);
+
 	const FTransform SamXform(FRotator::ZeroRotator, StartLoc + FVector(-200.f, 80.f, 0.f));
 	ASolidCompanionCharacter* Sam = World->SpawnActorDeferred<ASolidCompanionCharacter>(
 		ASolidCompanionCharacter::StaticClass(),
@@ -137,6 +141,7 @@ bool FSolidStreamerRelocateCompanionsWithFocusTest::RunTest(const FString& Param
 		return false;
 	}
 	Sam->SetFollowTarget(Focus);
+	Sam->FinishSpawning(SamXform);
 	const FVector SamBefore = Sam->GetActorLocation();
 
 	Streamer->EnsureStartTownRelocate();

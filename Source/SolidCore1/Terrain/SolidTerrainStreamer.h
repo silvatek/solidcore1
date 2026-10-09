@@ -61,6 +61,9 @@ public:
 	 */
 	void EnsureStartTownRelocate() { TryRelocateFocusToStartTown(); }
 
+	/** Apply the same XY delta (and terrain Z snap) to every companion in the world. */
+	void RelocateCompanionsByDelta(const FVector& DeltaXY);
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "500.0"))
 	float ChunkWorldSize = 6400.f;
 
@@ -227,8 +230,6 @@ protected:
 	void TrySnapFocusToTerrain(AActor* Focus);
 	/** Move the focus pawn once to the WorldMap starting-town (Z) centroid. */
 	void TryRelocateFocusToStartTown();
-	/** Apply the same XY delta (and terrain Z snap) to every companion in the world. */
-	void RelocateCompanionsByDelta(const FVector& DeltaXY);
 	void DisableLandscapeActorsOnce();
 
 	UPROPERTY()

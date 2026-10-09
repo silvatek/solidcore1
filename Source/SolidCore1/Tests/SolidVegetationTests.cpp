@@ -45,11 +45,20 @@ bool FSolidForestTreeScatterTest::RunTest(const FString& Parameters)
 	for (int32 I = 0; I < PositionsA.Num(); ++I)
 	{
 		TestTrue(TEXT("deterministic positions"), PositionsA[I].Equals(PositionsB[I], 0.01f));
-		const FSolidTerrainPoint Sample = Map->SamplePoint(PositionsA[I].X, PositionsA[I].Y);
-		TestEqual(
-			TEXT("spawn on forest biome"),
-			static_cast<uint8>(Sample.Biome),
-			static_cast<uint8>(ESolidBiome::Forest));
+
+		// Match an exact Forest grid node (avoids SamplePoint edge rounding at cell borders).
+		bool bMatchesForestNode = false;
+		for (const FSolidTerrainPoint& Point : Map->GetPoints())
+		{
+			if (Point.Biome == ESolidBiome::Forest
+				&& FMath::IsNearlyEqual(Point.X, PositionsA[I].X, 0.5f)
+				&& FMath::IsNearlyEqual(Point.Y, PositionsA[I].Y, 0.5f))
+			{
+				bMatchesForestNode = true;
+				break;
+			}
+		}
+		TestTrue(TEXT("spawn matches a Forest grid point"), bMatchesForestNode);
 	}
 
 	SolidForestTrees::FScatterParams EmptyParams;

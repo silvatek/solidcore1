@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0110")
+#define SOLID_BUILD_ID TEXT("SC1-0111")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Forest trees: scatter in Forest biomes, no starter line")
+#define SOLID_BUILD_NOTE TEXT("Fix forest scatter + companion relocate automation tests")
 #endif

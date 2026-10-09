@@ -177,33 +177,26 @@ void USolidCore1TerrainMap::FillThreatAndFog(
 	int32 InSeed) const
 {
 	float ThreatBase = 0.2f;
-	float FogBase = 0.55f;
 
 	switch (Point.Biome)
 	{
 	case ESolidCore1Biome::Town:
 		ThreatBase = 0.05f;
-		FogBase = 0.0f; // starter area revealed
 		break;
 	case ESolidCore1Biome::Grassland:
 		ThreatBase = 0.20f;
-		FogBase = 0.45f;
 		break;
 	case ESolidCore1Biome::Forest:
 		ThreatBase = 0.45f;
-		FogBase = 0.70f;
 		break;
 	case ESolidCore1Biome::Mountain:
 		ThreatBase = 0.65f;
-		FogBase = 0.50f;
 		break;
 	case ESolidCore1Biome::Desert:
 		ThreatBase = 0.40f;
-		FogBase = 0.35f;
 		break;
 	case ESolidCore1Biome::Swamp:
 		ThreatBase = 0.55f;
-		FogBase = 0.85f;
 		break;
 	default:
 		break;
@@ -215,12 +208,23 @@ void USolidCore1TerrainMap::FillThreatAndFog(
 		InSeed + 3037);
 
 	Point.Threat = FMath::Clamp(ThreatBase + (Jitter - 0.5f) * 0.15f + HeightNorm * 0.1f, 0.f, 1.f);
-	Point.Fog = FMath::Clamp(FogBase + (1.f - Jitter) * 0.1f, 0.f, 1.f);
-
-	// Keep the immediate town clear.
 	if (Point.Biome == ESolidCore1Biome::Town)
 	{
 		Point.Threat = FMath::Min(Point.Threat, 0.08f);
+	}
+
+	// Initial exploration fog by distance from world origin (cm).
+	const float DistM = FVector2D(Point.X, Point.Y).Size() * 0.01f;
+	if (DistM > 200.f)
+	{
+		Point.Fog = 1.f;
+	}
+	else if (DistM >= 100.f)
+	{
+		Point.Fog = 0.5f;
+	}
+	else
+	{
 		Point.Fog = 0.f;
 	}
 }

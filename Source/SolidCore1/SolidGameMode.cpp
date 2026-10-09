@@ -78,7 +78,6 @@ ASolidGameMode::ASolidGameMode()
 void ASolidGameMode::BeginPlay()
 {
 	Super::BeginPlay();
-	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Build %s"), SOLID_BUILD_ID);
 	UE_LOG(LogSolid, Warning, TEXT("Build %s"), SOLID_BUILD_ID);
 	EnsureTerrainStreamer();
 
@@ -164,7 +163,6 @@ void ASolidGameMode::EnsureCompanion()
 		ClassToSpawn, SpawnLoc, PlayerPawn->GetActorRotation(), SpawnParams);
 	if (!Companion)
 	{
-		UE_LOG(LogTemp, Error, TEXT("[SolidCore1] Failed to spawn companion."));
 		UE_LOG(LogSolid, Error, TEXT("Failed to spawn companion."));
 		return;
 	}
@@ -172,9 +170,8 @@ void ASolidGameMode::EnsureCompanion()
 	Companion->SetFollowTarget(PlayerPawn);
 	SpawnedCompanion = Companion;
 
-	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Spawned companion at %s following %s"),
+	UE_LOG(LogSolid, Warning, TEXT("Spawned companion at %s following %s"),
 		*SpawnLoc.ToCompactString(), *PlayerPawn->GetName());
-	UE_LOG(LogSolid, Warning, TEXT("Spawned companion following %s"), *PlayerPawn->GetName());
 }
 
 void ASolidGameMode::EnsureStarterTrees()

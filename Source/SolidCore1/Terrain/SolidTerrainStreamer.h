@@ -25,7 +25,11 @@ public:
 	virtual void BeginPlay() override;
 	virtual void Tick(float DeltaSeconds) override;
 
-	/** Spawn a streamer if the world does not already have one. Safe to call often. */
+	/**
+	 * Spawn a streamer if the world does not already have one.
+	 * Primary owners: SolidGameMode and USolidTerrainWorldSubsystem (PIE/game backup).
+	 * Other callers may use this when they need a streamer for height/snap.
+	 */
 	static ASolidTerrainStreamer* EnsureExists(UWorld* World);
 
 	/** Read-only helpers for the debug HUD (no streaming side effects). */
@@ -196,7 +200,6 @@ protected:
 	UMaterialInterface* FindFabGrassMaterial() const;
 	UMaterialInterface* CreateFlatColGrassMaterial() const;
 	UMaterialInterface* MakeMatteGrassInstance(UMaterialInterface* Parent) const;
-	UMaterialInterface* CreateSolidColorMaterial(const FLinearColor& Color, const TCHAR* DebugName) const;
 	float SampleHeightAtWorld(const FVector& WorldLocation) const;
 	void TrySnapFocusToTerrain(AActor* Focus);
 	void DisableLandscapeActorsOnce();

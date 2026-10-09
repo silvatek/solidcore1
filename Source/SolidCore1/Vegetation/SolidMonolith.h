@@ -41,6 +41,4 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Monolith")
 	TObjectPtr<UStaticMeshComponent> SlabMesh;
-
-	UMaterialInterface* MakeSolidColor(const FLinearColor& InColor, const TCHAR* DebugName) const;
 };

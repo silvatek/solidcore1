@@ -4,6 +4,7 @@
 #include "SolidTerrainMap.h"
 #include "SolidTerrainNoise.h"
 #include "SolidCore1.h"
+#include "SolidMaterials.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/Character.h"
@@ -14,7 +15,6 @@
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/ExponentialHeightFog.h"
-#include "GameFramework/PlayerController.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialInstance.h"
 #include "Materials/MaterialInstanceDynamic.h"
@@ -50,12 +50,10 @@ ASolidTerrainStreamer* ASolidTerrainStreamer::EnsureExists(UWorld* World)
 
 	if (Streamer)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Spawned SolidTerrainStreamer (EnsureExists)."));
 		UE_LOG(LogSolid, Warning, TEXT("Spawned SolidTerrainStreamer (EnsureExists)."));
 	}
 	else
 	{
-		UE_LOG(LogTemp, Error, TEXT("[SolidCore1] Failed to spawn SolidTerrainStreamer (EnsureExists)."));
 		UE_LOG(LogSolid, Error, TEXT("Failed to spawn SolidTerrainStreamer (EnsureExists)."));
 	}
 
@@ -434,42 +432,11 @@ UMaterialInterface* ASolidTerrainStreamer::FindFabGrassMaterial() const
 	return nullptr;
 }
 
-UMaterialInterface* ASolidTerrainStreamer::CreateSolidColorMaterial(
-	const FLinearColor& Color,
-	const TCHAR* DebugName) const
-{
-	ASolidTerrainStreamer* MutableThis = const_cast<ASolidTerrainStreamer*>(this);
-
-	UMaterialInterface* Parent = LoadObject<UMaterialInterface>(
-		nullptr, TEXT("/Game/LevelPrototyping/Materials/M_FlatCol.M_FlatCol"));
-	if (!Parent)
-	{
-		Parent = LoadObject<UMaterialInterface>(
-			nullptr, TEXT("/Game/LevelPrototyping/Materials/MI_DefaultColorway.MI_DefaultColorway"));
-	}
-	if (!Parent)
-	{
-		UE_LOG(LogSolid, Error, TEXT("CreateSolidColorMaterial(%s): no FlatCol parent."), DebugName);
-		return nullptr;
-	}
-
-	UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Parent, MutableThis);
-	if (!MID)
-	{
-		return Parent;
-	}
-
-	MID->SetVectorParameterValue(TEXT("Base Color"), Color);
-	MID->SetVectorParameterValue(TEXT("BaseColor"), Color);
-	MID->SetScalarParameterValue(TEXT("Roughness"), 1.f);
-	UE_LOG(LogSolid, Warning, TEXT("Created solid material %s from %s"), DebugName, *Parent->GetName());
-	return MID;
-}
-
 UMaterialInterface* ASolidTerrainStreamer::CreateFlatColGrassMaterial() const
 {
 	const FLinearColor MidGrass = FLinearColor::LerpUsingHSV(GrassDarkColor, GrassColor, 0.55f);
-	UMaterialInterface* GrassMID = CreateSolidColorMaterial(MidGrass, TEXT("FlatColGrass"));
+	UMaterialInterface* GrassMID = SolidMaterials::CreateSolidColor(
+		const_cast<ASolidTerrainStreamer*>(this), MidGrass, TEXT("FlatColGrass"));
 	if (GrassMID)
 	{
 		UE_LOG(LogSolid, Warning, TEXT("Terrain material: solid green (FlatCol fallback)"));
@@ -647,7 +614,6 @@ void ASolidTerrainStreamer::DisableLandscapeActorsOnce()
 	bDidDisableLandscape = true;
 	if (Count > 0)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Disabled %d Landscape actor(s) so pawn uses procedural terrain."), Count);
 		UE_LOG(LogSolid, Warning, TEXT("Disabled %d Landscape actor(s) for procedural terrain."), Count);
 	}
 }
@@ -688,7 +654,7 @@ void ASolidTerrainStreamer::TrySnapFocusToTerrain(AActor* Focus)
 		}
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Snapped focus onto terrain Z=%.1f at (%.0f, %.0f)"), LandZ, Loc.X, Loc.Y);
+	UE_LOG(LogSolid, Warning, TEXT("Snapped focus onto terrain Z=%.1f at (%.0f, %.0f)"), LandZ, Loc.X, Loc.Y);
 }
 
 void ASolidTerrainStreamer::UpdateStreaming()
@@ -767,11 +733,6 @@ void ASolidTerrainStreamer::UpdateStreaming()
 		BuildChunkActor(Chunk, Coord);
 
 		LoadedChunks.Add(Coord, Chunk);
-		UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Built terrain chunk (%d, %d) origin=(%.0f, %.0f) loaded=%d"),
-			Coord.X, Coord.Y,
-			static_cast<float>(Coord.X) * ChunkWorldSize,
-			static_cast<float>(Coord.Y) * ChunkWorldSize,
-			LoadedChunks.Num());
 		UE_LOG(LogSolid, Warning, TEXT("Built terrain chunk (%d, %d) at origin (%.0f, %.0f). Loaded=%d"),
 			Coord.X, Coord.Y,
 			static_cast<float>(Coord.X) * ChunkWorldSize,

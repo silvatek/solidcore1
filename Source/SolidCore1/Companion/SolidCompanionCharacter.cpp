@@ -84,8 +84,8 @@ void ASolidCompanionCharacter::BeginPlay()
 		CharacterMesh->SetRelativeLocation(Rel);
 	}
 
-	UE_LOG(LogTemp, Warning,
-		TEXT("[SolidCore1] Companion BeginPlay mesh=%s idle=%s walk=%s run=%s follow=%s"),
+	UE_LOG(LogSolid, Warning,
+		TEXT("Companion BeginPlay mesh=%s idle=%s walk=%s run=%s follow=%s"),
 		GetMesh() && GetMesh()->GetSkeletalMeshAsset()
 			? *GetMesh()->GetSkeletalMeshAsset()->GetName()
 			: TEXT("<none>"),
@@ -93,14 +93,6 @@ void ASolidCompanionCharacter::BeginPlay()
 		CachedWalkAnim ? *CachedWalkAnim->GetName() : TEXT("<null>"),
 		CachedRunAnim ? *CachedRunAnim->GetName() : TEXT("<null>"),
 		FollowTarget.IsValid() ? *FollowTarget->GetName() : TEXT("<none>"));
-	UE_LOG(LogSolid, Warning,
-		TEXT("Companion BeginPlay mesh=%s idle=%s walk=%s run=%s"),
-		GetMesh() && GetMesh()->GetSkeletalMeshAsset()
-			? *GetMesh()->GetSkeletalMeshAsset()->GetName()
-			: TEXT("<none>"),
-		CachedIdleAnim ? *CachedIdleAnim->GetName() : TEXT("<null>"),
-		CachedWalkAnim ? *CachedWalkAnim->GetName() : TEXT("<null>"),
-		CachedRunAnim ? *CachedRunAnim->GetName() : TEXT("<null>"));
 }
 
 void ASolidCompanionCharacter::Tick(float DeltaSeconds)

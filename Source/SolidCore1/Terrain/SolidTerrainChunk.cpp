@@ -2,6 +2,7 @@
 #include "SolidTerrainFog.h"
 #include "SolidTerrainMap.h"
 #include "SolidTerrainNoise.h"
+#include "SolidCore1.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"
@@ -349,8 +350,8 @@ void ASolidTerrainChunk::BuildChunk(
 		CachedFogVolumeHeightHalfCm);
 
 	const int32 RenderTris = RuntimeStaticMesh ? RuntimeStaticMesh->GetNumTriangles(0) : 0;
-	UE_LOG(LogTemp, Warning,
-		TEXT("[SolidCore1] StaticMesh chunk (%d,%d) renderTris=%d actor=(%.0f,%.0f) Z=[%.0f,%.0f] material=%s"),
+	UE_LOG(LogSolid, Warning,
+		TEXT("StaticMesh chunk (%d,%d) renderTris=%d actor=(%.0f,%.0f) Z=[%.0f,%.0f] material=%s"),
 		InChunkCoord.X, InChunkCoord.Y, RenderTris, OriginX, OriginY, MinZ, MaxZ,
 		Material ? *Material->GetName() : TEXT("<null>"));
 }

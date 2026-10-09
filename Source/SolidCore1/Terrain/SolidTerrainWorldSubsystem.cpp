@@ -8,14 +8,13 @@ void USolidTerrainWorldSubsystem::Initialize(FSubsystemCollectionBase& Collectio
 	Super::Initialize(Collection);
 	bStreamerEnsured = false;
 	TimeSinceRetry = 0.f;
-	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] TerrainWorldSubsystem Initialize"));
 	UE_LOG(LogSolid, Warning, TEXT("TerrainWorldSubsystem Initialize"));
 }
 
 void USolidTerrainWorldSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 {
 	Super::OnWorldBeginPlay(InWorld);
-	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] TerrainWorldSubsystem OnWorldBeginPlay (%s)"), *InWorld.GetName());
+	UE_LOG(LogSolid, Warning, TEXT("TerrainWorldSubsystem OnWorldBeginPlay (%s)"), *InWorld.GetName());
 	TryEnsureStreamer(TEXT("OnWorldBeginPlay"));
 }
 
@@ -64,7 +63,6 @@ void USolidTerrainWorldSubsystem::TryEnsureStreamer(const TCHAR* Reason)
 	if (Streamer)
 	{
 		bStreamerEnsured = true;
-		UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Terrain streamer ready via %s"), Reason);
 		UE_LOG(LogSolid, Warning, TEXT("Terrain streamer ready via %s"), Reason);
 	}
 }

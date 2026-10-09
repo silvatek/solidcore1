@@ -1,9 +1,9 @@
 #include "SolidMonolith.h"
 #include "SolidCore1.h"
+#include "SolidMaterials.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
-#include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 
 ASolidMonolith::ASolidMonolith()
@@ -32,34 +32,6 @@ void ASolidMonolith::BeginPlay()
 	BuildVisuals();
 }
 
-UMaterialInterface* ASolidMonolith::MakeSolidColor(const FLinearColor& InColor, const TCHAR* DebugName) const
-{
-	UMaterialInterface* Parent = LoadObject<UMaterialInterface>(
-		nullptr, TEXT("/Game/LevelPrototyping/Materials/M_FlatCol.M_FlatCol"));
-	if (!Parent)
-	{
-		Parent = LoadObject<UMaterialInterface>(
-			nullptr, TEXT("/Game/LevelPrototyping/Materials/MI_DefaultColorway.MI_DefaultColorway"));
-	}
-	if (!Parent)
-	{
-		UE_LOG(LogSolid, Error, TEXT("SolidMonolith %s: no FlatCol parent."), DebugName);
-		return nullptr;
-	}
-
-	UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(
-		Parent, const_cast<ASolidMonolith*>(this));
-	if (!MID)
-	{
-		return Parent;
-	}
-
-	MID->SetVectorParameterValue(TEXT("Base Color"), InColor);
-	MID->SetVectorParameterValue(TEXT("BaseColor"), InColor);
-	MID->SetScalarParameterValue(TEXT("Roughness"), 0.92f);
-	return MID;
-}
-
 void ASolidMonolith::BuildVisuals()
 {
 	UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
@@ -79,7 +51,8 @@ void ASolidMonolith::BuildVisuals()
 		ThicknessCm / ShapeSize,
 		HeightCm / ShapeSize));
 
-	if (UMaterialInterface* Mat = MakeSolidColor(Color, TEXT("Slab")))
+	if (UMaterialInterface* Mat =
+			SolidMaterials::CreateSolidColor(this, Color, TEXT("MonolithSlab"), 0.92f))
 	{
 		SlabMesh->SetMaterial(0, Mat);
 	}

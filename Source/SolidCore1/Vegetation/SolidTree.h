@@ -51,6 +51,4 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Tree")
 	TObjectPtr<UStaticMeshComponent> CanopyMesh;
-
-	UMaterialInterface* MakeSolidColor(const FLinearColor& Color, const TCHAR* DebugName) const;
 };

@@ -13,7 +13,6 @@ public:
 	{
 		FDefaultGameModuleImpl::StartupModule();
 		// Error severity so it shows even when the Output Log is filtered to errors/warnings.
-		UE_LOG(LogTemp, Error, TEXT("[SolidCore1] MODULE STARTUP - build %s"), SOLID_BUILD_ID);
 		UE_LOG(LogSolid, Error, TEXT("MODULE STARTUP - build %s"), SOLID_BUILD_ID);
 
 		// Lvl_ThirdPerson (and similar template maps) bake BP_ThirdPersonGameMode into WorldSettings,
@@ -70,15 +69,11 @@ private:
 			return;
 		}
 
-		UE_LOG(LogTemp, Warning,
-			TEXT("[SolidCore1] Overriding WorldSettings GameMode %s -> %s (build %s)"),
+		UE_LOG(LogSolid, Warning,
+			TEXT("Overriding WorldSettings GameMode %s -> %s (build %s)"),
 			WorldSettings->DefaultGameMode ? *WorldSettings->DefaultGameMode->GetName() : TEXT("<none>"),
 			*DesiredGameMode->GetName(),
 			SOLID_BUILD_ID);
-		UE_LOG(LogSolid, Warning,
-			TEXT("Overriding WorldSettings GameMode %s -> %s"),
-			WorldSettings->DefaultGameMode ? *WorldSettings->DefaultGameMode->GetName() : TEXT("<none>"),
-			*DesiredGameMode->GetName());
 
 		WorldSettings->DefaultGameMode = DesiredGameMode;
 	}

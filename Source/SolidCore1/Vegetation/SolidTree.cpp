@@ -1,9 +1,9 @@
 #include "SolidTree.h"
 #include "SolidCore1.h"
+#include "SolidMaterials.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
-#include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 
 ASolidTree::ASolidTree()
@@ -64,34 +64,6 @@ void ASolidTree::ApplyRandomVariation(FRandomStream& Rng)
 		FMath::Clamp(0.08f + LeafTint * 0.2f, 0.03f, 0.16f));
 }
 
-UMaterialInterface* ASolidTree::MakeSolidColor(const FLinearColor& Color, const TCHAR* DebugName) const
-{
-	UMaterialInterface* Parent = LoadObject<UMaterialInterface>(
-		nullptr, TEXT("/Game/LevelPrototyping/Materials/M_FlatCol.M_FlatCol"));
-	if (!Parent)
-	{
-		Parent = LoadObject<UMaterialInterface>(
-			nullptr, TEXT("/Game/LevelPrototyping/Materials/MI_DefaultColorway.MI_DefaultColorway"));
-	}
-	if (!Parent)
-	{
-		UE_LOG(LogSolid, Error, TEXT("SolidTree %s: no FlatCol parent."), DebugName);
-		return nullptr;
-	}
-
-	UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(
-		Parent, const_cast<ASolidTree*>(this));
-	if (!MID)
-	{
-		return Parent;
-	}
-
-	MID->SetVectorParameterValue(TEXT("Base Color"), Color);
-	MID->SetVectorParameterValue(TEXT("BaseColor"), Color);
-	MID->SetScalarParameterValue(TEXT("Roughness"), 0.95f);
-	return MID;
-}
-
 void ASolidTree::BuildVisuals()
 {
 	UStaticMesh* Cylinder = LoadObject<UStaticMesh>(
@@ -118,7 +90,8 @@ void ASolidTree::BuildVisuals()
 		TrunkRadiusCm / ShapeHalfWidth,
 		TrunkRadiusCm / ShapeHalfWidth,
 		TrunkHeightCm / ShapeHeight));
-	if (UMaterialInterface* TrunkMat = MakeSolidColor(TrunkColor, TEXT("Trunk")))
+	if (UMaterialInterface* TrunkMat =
+			SolidMaterials::CreateSolidColor(this, TrunkColor, TEXT("TreeTrunk"), 0.95f))
 	{
 		TrunkMesh->SetMaterial(0, TrunkMat);
 	}
@@ -129,7 +102,8 @@ void ASolidTree::BuildVisuals()
 		CanopyRadiusCm / ShapeHalfWidth,
 		CanopyRadiusCm / ShapeHalfWidth,
 		CanopyHeightCm / ShapeHeight));
-	if (UMaterialInterface* CanopyMat = MakeSolidColor(CanopyColor, TEXT("Canopy")))
+	if (UMaterialInterface* CanopyMat =
+			SolidMaterials::CreateSolidColor(this, CanopyColor, TEXT("TreeCanopy"), 0.95f))
 	{
 		CanopyMesh->SetMaterial(0, CanopyMat);
 	}

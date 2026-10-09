@@ -116,9 +116,6 @@ void ASolidCharacter::BeginPlay()
 	ApplyWalkSpeed();
 	AddMappingContext();
 	ApplyMeshGroundOffset();
-
-	// Backup spawn path: Blueprint GameModes sometimes skip C++ BeginPlay.
-	ASolidTerrainStreamer::EnsureExists(GetWorld());
 }
 
 void ASolidCharacter::PossessedBy(AController* NewController)
@@ -127,8 +124,6 @@ void ASolidCharacter::PossessedBy(AController* NewController)
 	EnsureRuntimeInputAssets();
 	AddMappingContext();
 	ApplyMeshGroundOffset();
-	ASolidTerrainStreamer::EnsureExists(GetWorld());
-	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Character PossessedBy - ensured terrain streamer"));
 }
 
 void ASolidCharacter::OnRep_PlayerState()

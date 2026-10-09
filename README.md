@@ -161,12 +161,12 @@ Binary `.umap` assets are created in the Editor (not checked in as source):
 1. **File → New Level → Open World** (World Partition).
 2. Save as `Content/Maps/L_OpenWorld`.
 3. Place a **Player Start** near the origin (or on the landscape).
-4. Confirm **Project Settings → Maps & Modes**:
+4. Confirm **Project Settings → Maps & Modes** (or edit `Config/DefaultEngine.ini`):
    - Editor Startup Map / Game Default Map → `/Game/ThirdPerson/Lvl_ThirdPerson` (horizon test; Open World map still available)
-   - Default GameMode → `SolidGameMode`
+   - Default GameMode → `/Game/Characters/BP_SolidCore1GameMode` (legacy name; prefer renaming to `BP_SolidGameMode`)
 5. **Play** (PIE).
 
-`Config/DefaultEngine.ini` already points at `/Game/Maps/L_OpenWorld` and `SolidGameMode`. Until that map exists, the editor may warn that the map is missing—create it once as above.
+`Config/DefaultEngine.ini` currently uses `Lvl_ThirdPerson` and `BP_SolidCore1GameMode`. After you create `Content/Maps/L_OpenWorld`, you can point the startup maps there; until then the Third Person map is the intentional default.
 
 World Partition and Large Worlds are enabled in project config for open-world scale.
 
@@ -175,7 +175,10 @@ World Partition and Large Worlds are enabled in project config for open-world sc
 ```
 SolidCore1.uproject
 Config/
-Content/Maps/          # L_OpenWorld (+ World Partition externals)
+Content/
+  Characters/          # BP_SolidCore1* pawn/GameMode (rename to BP_Solid* when convenient)
+  Maps/                # optional L_OpenWorld (+ World Partition externals)
+  Viking/              # Fab Viking mesh + locomotion clips
 Source/
   SolidCore1.Target.cs
   SolidCore1Editor.Target.cs
@@ -184,6 +187,9 @@ Source/
     SolidCharacter.*
     SolidGameMode.*
     SolidPlayerController.*
+    SolidMaterials.*       # Shared FlatCol solid-color MID helper
+    Companion/
+      SolidCompanionCharacter.*
     Terrain/
       SolidTerrainTypes.h
       SolidTerrainFog.*       # FoW bands, boundary mesh, materials, height-fog helpers
@@ -191,6 +197,7 @@ Source/
       SolidTerrainNoise.h
       SolidTerrainChunk.*
       SolidTerrainStreamer.*
+      SolidTerrainWorldSubsystem.*
     Vegetation/
       SolidMonolith.*         # Grey slab landmark at start
       SolidTree.*             # Placeholder cylinder+cone tree
@@ -205,6 +212,8 @@ Source/
       SolidGameModeTests.cpp
       SolidBuildIdTests.cpp
       SolidContentDependencyTests.cpp
+tools/
+  run_automation_tests.bat
 ```
 
 ## Requirements

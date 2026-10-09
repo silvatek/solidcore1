@@ -1,6 +1,7 @@
 #include "SolidTerrainFog.h"
 #include "SolidTerrainMap.h"
 #include "SolidCore1.h"
+#include "SolidMaterials.h"
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/CollisionProfile.h"
@@ -31,37 +32,6 @@ namespace SolidTerrainFog
 			return 0.5f;
 		}
 		return 0.f;
-	}
-
-	static UMaterialInterface* CreateSolidColorMaterial(
-		UObject* Outer,
-		const FLinearColor& Color,
-		const TCHAR* DebugName)
-	{
-		UMaterialInterface* Parent = LoadObject<UMaterialInterface>(
-			nullptr, TEXT("/Game/LevelPrototyping/Materials/M_FlatCol.M_FlatCol"));
-		if (!Parent)
-		{
-			Parent = LoadObject<UMaterialInterface>(
-				nullptr, TEXT("/Game/LevelPrototyping/Materials/MI_DefaultColorway.MI_DefaultColorway"));
-		}
-		if (!Parent)
-		{
-			UE_LOG(LogSolid, Error, TEXT("Fog solid material %s: no FlatCol parent."), DebugName);
-			return nullptr;
-		}
-
-		UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Parent, Outer);
-		if (!MID)
-		{
-			return Parent;
-		}
-
-		MID->SetVectorParameterValue(TEXT("Base Color"), Color);
-		MID->SetVectorParameterValue(TEXT("BaseColor"), Color);
-		MID->SetScalarParameterValue(TEXT("Roughness"), 1.f);
-		UE_LOG(LogSolid, Warning, TEXT("Fog solid material %s from %s"), DebugName, *Parent->GetName());
-		return MID;
 	}
 
 #if WITH_EDITOR
@@ -154,7 +124,7 @@ namespace SolidTerrainFog
 		UE_LOG(LogSolid, Error,
 			TEXT("Fog %s: programmatic translucent failed; FlatCol fallback is OPAQUE (opacity=%.2f unused)."),
 			DebugName, Opacity);
-		return CreateSolidColorMaterial(Outer, Color, DebugName);
+		return SolidMaterials::CreateSolidColor(Outer, Color, DebugName);
 	}
 
 	UMaterialInterface* CreateHalfMaterial(UObject* Outer)

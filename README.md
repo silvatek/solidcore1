@@ -112,7 +112,7 @@ C++ generates walkable terrain around the player at runtime:
 
 Defaults: 64 m chunks (`ChunkWorldSize=6400`), 32 quads/side, radius 2 (5×5 chunks), `Amplitude=3000`. Material: Fab `Mat_025_grass` when present.
 
-Default map is `/Game/ThirdPerson/Lvl_ThirdPerson` (SC1-0022) so Open World Landscape/HLOD outer hills are not in the scene — that cleared the horizon slivers. `L_OpenWorld` remains for comparison. SC1-0023 forces `BP_SolidCore1GameMode` on PIE/game worlds so template maps keep Solid HUD + Viking pawn instead of the template default. On first stream, the pawn is snapped onto the procedural height. If a Landscape is present, actors are hidden/collision-disabled once. Chunks block the Camera channel and use complex-as-simple collision on the runtime static mesh.
+Default map is `/Game/ThirdPerson/Lvl_ThirdPerson` (SC1-0022) so Open World Landscape/HLOD outer hills are not in the scene — that cleared the horizon slivers. `L_OpenWorld` remains for comparison. SC1-0023/0082 force `BP_SolidGameMode` on PIE/game worlds so template maps keep Solid HUD + Viking pawn instead of the template default. On first stream, the pawn is snapped onto the procedural height. If a Landscape is present, actors are hidden/collision-disabled once. Chunks block the Camera channel and use complex-as-simple collision on the runtime static mesh.
 
 SC1-0007 drops `UProceduralMeshComponent` after persistent ribbon/culling failures with that path.
 
@@ -163,10 +163,10 @@ Binary `.umap` assets are created in the Editor (not checked in as source):
 3. Place a **Player Start** near the origin (or on the landscape).
 4. Confirm **Project Settings → Maps & Modes** (or edit `Config/DefaultEngine.ini`):
    - Editor Startup Map / Game Default Map → `/Game/ThirdPerson/Lvl_ThirdPerson` (horizon test; Open World map still available)
-   - Default GameMode → `/Game/Characters/BP_SolidCore1GameMode` (legacy name; prefer renaming to `BP_SolidGameMode`)
+   - Default GameMode → `/Game/Characters/BP_SolidGameMode`
 5. **Play** (PIE).
 
-`Config/DefaultEngine.ini` currently uses `Lvl_ThirdPerson` and `BP_SolidCore1GameMode`. After you create `Content/Maps/L_OpenWorld`, you can point the startup maps there; until then the Third Person map is the intentional default.
+`Config/DefaultEngine.ini` currently uses `Lvl_ThirdPerson` and `BP_SolidGameMode`. After you create `Content/Maps/L_OpenWorld`, you can point the startup maps there; until then the Third Person map is the intentional default.
 
 World Partition and Large Worlds are enabled in project config for open-world scale.
 
@@ -176,7 +176,7 @@ World Partition and Large Worlds are enabled in project config for open-world sc
 SolidCore1.uproject
 Config/
 Content/
-  Characters/          # BP_SolidCore1* pawn/GameMode (rename to BP_Solid* when convenient)
+  Characters/          # BP_SolidCharacter, BP_SolidGameMode (+ optional SolidCore1* redirector)
   Maps/                # optional L_OpenWorld (+ World Partition externals)
   Viking/              # Fab Viking mesh + locomotion clips
 Source/
@@ -188,6 +188,8 @@ Source/
     SolidGameMode.*
     SolidPlayerController.*
     SolidMaterials.*       # Shared FlatCol solid-color MID helper
+    SolidContentPaths.h    # Canonical BP soft-class paths
+    WorldMap.txt           # ASCII large-scale biome overlay (not wired yet)
     Companion/
       SolidCompanionCharacter.*
     Terrain/
@@ -224,4 +226,4 @@ tools/
 ## Notes
 
 - This repo is source + config only. `Binaries/`, `Intermediate/`, `Saved/`, and `.sln` are gitignored and generated locally.
-- Optional: create Blueprint subclasses of `SolidCharacter` / `SolidGameMode` for content-driven tuning without changing C++. Name new BPs `BP_Solid*` (not `BP_SolidCore1*`).
+- Optional: create Blueprint subclasses of `SolidCharacter` / `SolidGameMode` for content-driven tuning without changing C++. Keep names `BP_Solid*`.

@@ -19,8 +19,8 @@
 #include "UObject/ConstructorHelpers.h"
 #include "UObject/UObjectGlobals.h"
 
-#if WITH_EDITORONLY_DATA
-#include "Materials/MaterialEditorOnlyData.h"
+#if WITH_EDITOR
+#include "MaterialEditingLibrary.h"
 #endif
 
 ASolidCore1TerrainStreamer::ASolidCore1TerrainStreamer()
@@ -187,18 +187,11 @@ UTexture2D* ASolidCore1TerrainStreamer::EnsureGrassNoiseTexture() const
 
 UMaterialInterface* ASolidCore1TerrainStreamer::CreateVertexColorGrassMaterial() const
 {
-#if WITH_EDITORONLY_DATA
+#if WITH_EDITOR
 	ASolidCore1TerrainStreamer* MutableThis = const_cast<ASolidCore1TerrainStreamer*>(this);
 	UMaterial* GrassMat = NewObject<UMaterial>(MutableThis, FName(TEXT("M_SC1_GrassVertex")), RF_Transient);
 	if (!GrassMat)
 	{
-		return nullptr;
-	}
-
-	UMaterialEditorOnlyData* EditorData = GrassMat->GetEditorOnlyData();
-	if (!EditorData)
-	{
-		UE_LOG(LogSolidCore1, Error, TEXT("Vertex grass material missing editor-only data."));
 		return nullptr;
 	}
 
@@ -209,26 +202,24 @@ UMaterialInterface* ASolidCore1TerrainStreamer::CreateVertexColorGrassMaterial()
 	GrassMat->bUsedWithStaticMeshes = true;
 
 	// Chunks already bake darker/lighter grass into vertex colors.
-	UMaterialExpressionVertexColor* VertColor =
-		NewObject<UMaterialExpressionVertexColor>(GrassMat, NAME_None, RF_Transient);
-	VertColor->MaterialExpressionEditorX = -320;
-	VertColor->MaterialExpressionEditorY = 0;
-	GrassMat->GetExpressionCollection().AddExpression(VertColor);
-	EditorData->BaseColor.Expression = VertColor;
-	EditorData->BaseColor.OutputIndex = 0;
+	UMaterialExpression* VertColorExp = UMaterialEditingLibrary::CreateMaterialExpression(
+		GrassMat, UMaterialExpressionVertexColor::StaticClass(), -320, 0);
+	if (!VertColorExp)
+	{
+		UE_LOG(LogSolidCore1, Error, TEXT("Failed to create VertexColor expression for grass."));
+		return nullptr;
+	}
+	UMaterialEditingLibrary::ConnectMaterialProperty(GrassMat, VertColorExp, MP_BaseColor);
 
-	UMaterialExpressionConstant* Rough =
-		NewObject<UMaterialExpressionConstant>(GrassMat, NAME_None, RF_Transient);
-	Rough->R = 0.9f;
-	Rough->MaterialExpressionEditorX = -320;
-	Rough->MaterialExpressionEditorY = 140;
-	GrassMat->GetExpressionCollection().AddExpression(Rough);
-	EditorData->Roughness.Expression = Rough;
-	EditorData->Roughness.OutputIndex = 0;
+	UMaterialExpression* RoughExp = UMaterialEditingLibrary::CreateMaterialExpression(
+		GrassMat, UMaterialExpressionConstant::StaticClass(), -320, 140);
+	if (UMaterialExpressionConstant* Rough = Cast<UMaterialExpressionConstant>(RoughExp))
+	{
+		Rough->R = 0.9f;
+		UMaterialEditingLibrary::ConnectMaterialProperty(GrassMat, Rough, MP_Roughness);
+	}
 
-	GrassMat->PreEditChange(nullptr);
-	GrassMat->PostEditChange();
-	GrassMat->ForceRecompileForRendering();
+	UMaterialEditingLibrary::RecompileMaterial(GrassMat);
 
 	UE_LOG(LogSolidCore1, Warning,
 		TEXT("Terrain material: M_SC1_GrassVertex (chunk vertex-color speckles)"));
@@ -240,7 +231,7 @@ UMaterialInterface* ASolidCore1TerrainStreamer::CreateVertexColorGrassMaterial()
 
 UMaterialInterface* ASolidCore1TerrainStreamer::CreateGrassNoiseMaterial(UTexture2D* NoiseTex) const
 {
-#if WITH_EDITORONLY_DATA
+#if WITH_EDITOR
 	if (!NoiseTex)
 	{
 		return nullptr;
@@ -253,42 +244,34 @@ UMaterialInterface* ASolidCore1TerrainStreamer::CreateGrassNoiseMaterial(UTextur
 		return nullptr;
 	}
 
-	UMaterialEditorOnlyData* EditorData = GrassMat->GetEditorOnlyData();
-	if (!EditorData)
-	{
-		UE_LOG(LogSolidCore1, Error, TEXT("Noise grass material missing editor-only data."));
-		return nullptr;
-	}
-
 	GrassMat->MaterialDomain = MD_Surface;
 	GrassMat->BlendMode = BLEND_Opaque;
 	GrassMat->SetShadingModel(MSM_DefaultLit);
 	GrassMat->TwoSided = false;
 	GrassMat->bUsedWithStaticMeshes = true;
 
-	UMaterialExpressionTextureSample* TexSample =
-		NewObject<UMaterialExpressionTextureSample>(GrassMat, NAME_None, RF_Transient);
+	UMaterialExpression* TexExp = UMaterialEditingLibrary::CreateMaterialExpression(
+		GrassMat, UMaterialExpressionTextureSample::StaticClass(), -400, 0);
+	UMaterialExpressionTextureSample* TexSample = Cast<UMaterialExpressionTextureSample>(TexExp);
+	if (!TexSample)
+	{
+		UE_LOG(LogSolidCore1, Error, TEXT("Failed to create TextureSample expression for grass."));
+		return nullptr;
+	}
 	TexSample->Texture = NoiseTex;
 	TexSample->SamplerType = SAMPLERTYPE_Color;
 	TexSample->ConstCoordinate = 0;
-	TexSample->MaterialExpressionEditorX = -400;
-	TexSample->MaterialExpressionEditorY = 0;
-	GrassMat->GetExpressionCollection().AddExpression(TexSample);
-	EditorData->BaseColor.Expression = TexSample;
-	EditorData->BaseColor.OutputIndex = 0;
+	UMaterialEditingLibrary::ConnectMaterialProperty(GrassMat, TexSample, MP_BaseColor);
 
-	UMaterialExpressionConstant* Rough =
-		NewObject<UMaterialExpressionConstant>(GrassMat, NAME_None, RF_Transient);
-	Rough->R = 0.9f;
-	Rough->MaterialExpressionEditorX = -400;
-	Rough->MaterialExpressionEditorY = 160;
-	GrassMat->GetExpressionCollection().AddExpression(Rough);
-	EditorData->Roughness.Expression = Rough;
-	EditorData->Roughness.OutputIndex = 0;
+	UMaterialExpression* RoughExp = UMaterialEditingLibrary::CreateMaterialExpression(
+		GrassMat, UMaterialExpressionConstant::StaticClass(), -400, 160);
+	if (UMaterialExpressionConstant* Rough = Cast<UMaterialExpressionConstant>(RoughExp))
+	{
+		Rough->R = 0.9f;
+		UMaterialEditingLibrary::ConnectMaterialProperty(GrassMat, Rough, MP_Roughness);
+	}
 
-	GrassMat->PreEditChange(nullptr);
-	GrassMat->PostEditChange();
-	GrassMat->ForceRecompileForRendering();
+	UMaterialEditingLibrary::RecompileMaterial(GrassMat);
 
 	UE_LOG(LogSolidCore1, Warning,
 		TEXT("Terrain material: M_SC1_GrassNoise (green noise texture on mesh UVs)"));

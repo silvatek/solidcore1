@@ -1,10 +1,11 @@
 #include "SolidCore1.h"
 #include "SolidBuildId.h"
+#include "SolidContentPaths.h"
 #include "SolidGameMode.h"
 #include "Engine/World.h"
+#include "GameFramework/GameModeBase.h"
 #include "GameFramework/WorldSettings.h"
 #include "Modules/ModuleManager.h"
-#include "UObject/SoftObjectPath.h"
 
 class FSolidModule : public FDefaultGameModuleImpl
 {
@@ -51,14 +52,8 @@ private:
 			return;
 		}
 
-		// Prefer Solid* BP names; legacy BP_SolidCore1GameMode remains supported.
-		UClass* DesiredGameMode = LoadClass<AGameModeBase>(
-			nullptr, TEXT("/Game/Characters/BP_SolidGameMode.BP_SolidGameMode_C"));
-		if (!DesiredGameMode)
-		{
-			DesiredGameMode = LoadClass<AGameModeBase>(
-				nullptr, TEXT("/Game/Characters/BP_SolidCore1GameMode.BP_SolidCore1GameMode_C"));
-		}
+		UClass* DesiredGameMode = SolidContentPaths::LoadFirstClass<AGameModeBase>(
+			SolidContentPaths::GameModeBlueprintClasses());
 		if (!DesiredGameMode)
 		{
 			DesiredGameMode = ASolidGameMode::StaticClass();

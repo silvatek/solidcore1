@@ -64,9 +64,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.0"))
 	float CollisionHeightBias = 0.f;
 
-	/** Optional material override. Defaults to WorldGridMaterial. */
+	/** Optional material override. Defaults to a grassy tint of LevelPrototyping M_FlatCol. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	TObjectPtr<UMaterialInterface> TerrainMaterial;
+
+	/** Base color used when building the default grassy terrain MID. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
+	FLinearColor GrassColor = FLinearColor(0.20f, 0.38f, 0.12f);
 
 	/** Seconds between streamer updates. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.05"))

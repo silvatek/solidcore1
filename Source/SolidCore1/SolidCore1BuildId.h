@@ -8,9 +8,9 @@
  * SOLIDCORE1_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLIDCORE1_BUILD_ID
-#define SOLIDCORE1_BUILD_ID TEXT("SC1-0034")
+#define SOLIDCORE1_BUILD_ID TEXT("SC1-0035")
 #endif
 
 #ifndef SOLIDCORE1_BUILD_NOTE
-#define SOLIDCORE1_BUILD_NOTE TEXT("Player = Viking (Manny replaced)")
+#define SOLIDCORE1_BUILD_NOTE TEXT("Grassy terrain material tint")
 #endif

@@ -397,9 +397,9 @@ void ASolidCore1Character::Zoom(const FInputActionValue& Value)
 		return;
 	}
 
-	// Scroll up (positive) zooms in → shorter arm.
+	// Scroll up (positive) zooms out → longer arm.
 	UserZoomArmLength = FMath::Clamp(
-		UserZoomArmLength - Axis * CameraZoomStep,
+		UserZoomArmLength + Axis * CameraZoomStep,
 		CameraZoomMin,
 		CameraZoomMax);
 }

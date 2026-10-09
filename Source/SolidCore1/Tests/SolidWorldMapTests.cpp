@@ -107,6 +107,15 @@ bool FSolidWorldMapParseKeyAndSampleTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(NorthCenter),
 		static_cast<uint8>(ESolidBiome::Town));
 
+	// File column 0 is east (max X): desert at col 10 → positive X.
+	const float DesertWorldX = WorldMax.X - (10.5f) * ((WorldMax.X - WorldMin.X) / 64.f);
+	const float DesertWorldY = WorldMax.Y - (10.5f) * ((WorldMax.Y - WorldMin.Y) / 64.f);
+	TestTrue(TEXT("desert cell is on the east side"), DesertWorldX > 0.f);
+	TestEqual(
+		TEXT("east-side sample is Desert"),
+		static_cast<uint8>(Map->SampleBiome(DesertWorldX, DesertWorldY, WorldMin, WorldMax)),
+		static_cast<uint8>(ESolidBiome::Desert));
+
 	FVector2D TownXY = FVector2D::ZeroVector;
 	TestTrue(TEXT("start town world XY"), Map->GetStartTownWorldXY(WorldMin, WorldMax, TownXY));
 	TestTrue(TEXT("town near north"), TownXY.Y > 4000.f);

@@ -250,12 +250,13 @@ ESolidBiome USolidWorldMap::SampleBiome(
 
 	const float ExtentX = FMath::Max(WorldMaxXY.X - WorldMinXY.X, 1.f);
 	const float ExtentY = FMath::Max(WorldMaxXY.Y - WorldMinXY.Y, 1.f);
-	const float U = FMath::Clamp((WorldX - WorldMinXY.X) / ExtentX, 0.f, 1.f);
+	// File column 0 is the left side of the text → world east (max X).
+	const float UFromEast = FMath::Clamp((WorldMaxXY.X - WorldX) / ExtentX, 0.f, 1.f);
 	// File row 0 is north (max Y).
 	const float VFromSouth = FMath::Clamp((WorldY - WorldMinXY.Y) / ExtentY, 0.f, 1.f);
 	const float VFromNorth = 1.f - VFromSouth;
 
-	const int32 MapX = FMath::Clamp(FMath::FloorToInt(U * MapWidth), 0, MapWidth - 1);
+	const int32 MapX = FMath::Clamp(FMath::FloorToInt(UFromEast * MapWidth), 0, MapWidth - 1);
 	const int32 MapY = FMath::Clamp(FMath::FloorToInt(VFromNorth * MapHeight), 0, MapHeight - 1);
 	return GetBiomeAtCell(MapX, MapY);
 }
@@ -287,7 +288,8 @@ bool USolidWorldMap::GetStartTownWorldXY(
 	FVector2D Sum = FVector2D::ZeroVector;
 	for (const FIntPoint& Cell : StartTownCells)
 	{
-		const float X = WorldMinXY.X + (static_cast<float>(Cell.X) + 0.5f) * CellW;
+		// Column 0 = east = max X (matches SampleBiome).
+		const float X = WorldMaxXY.X - (static_cast<float>(Cell.X) + 0.5f) * CellW;
 		// Row 0 = north = max Y.
 		const float Y = WorldMaxXY.Y - (static_cast<float>(Cell.Y) + 0.5f) * CellH;
 		Sum += FVector2D(X, Y);

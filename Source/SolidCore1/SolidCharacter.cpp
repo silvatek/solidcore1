@@ -13,6 +13,8 @@
 #include "InputActionValue.h"
 #include "SolidClipLocomotion.h"
 #include "SolidCore1.h"
+#include "SolidNameLabel.h"
+#include "Components/TextRenderComponent.h"
 #include "UObject/SoftObjectPath.h"
 
 // Captain core: construction, lifecycle, movement / look / zoom / sprint.
@@ -71,6 +73,10 @@ ASolidCharacter::ASolidCharacter()
 	FollowCamera = CreateDefaultSubobject<UCameraComponent>(TEXT("FollowCamera"));
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
+
+	NameLabel = CreateDefaultSubobject<UTextRenderComponent>(TEXT("NameLabel"));
+	NameLabel->SetupAttachment(RootComponent);
+	ApplyNameLabel();
 }
 
 void ASolidCharacter::PostInitializeComponents()
@@ -89,10 +95,29 @@ void ASolidCharacter::ApplyMeshGroundOffset()
 	}
 }
 
+void ASolidCharacter::ApplyNameLabel()
+{
+	const float CapsuleHalf = GetCapsuleComponent()
+		? GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight()
+		: 96.f;
+	SolidNameLabel::Configure(
+		NameLabel,
+		CharacterDisplayName,
+		SolidNameLabel::EStyle::Captain,
+		CapsuleHalf);
+}
+
+void ASolidCharacter::SetCharacterDisplayName(const FString& NewName)
+{
+	CharacterDisplayName = NewName;
+	ApplyNameLabel();
+}
+
 void ASolidCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	ApplyCharacterVisuals();
+	ApplyNameLabel();
 	CacheLocomotionAnims();
 	UpdateLocomotionAnim();
 	EnsureRuntimeInputAssets();
@@ -122,6 +147,7 @@ void ASolidCharacter::Tick(float DeltaTime)
 	UpdateLocomotionAnim();
 	UpdatePartyCameraFraming(DeltaTime);
 	ClampCameraAboveTerrain(DeltaTime);
+	SolidNameLabel::FaceViewCamera(NameLabel, GetWorld());
 }
 
 void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

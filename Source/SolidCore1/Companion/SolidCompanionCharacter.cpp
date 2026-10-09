@@ -1,9 +1,11 @@
 #include "SolidCompanionCharacter.h"
 #include "SolidClipLocomotion.h"
 #include "SolidCore1.h"
+#include "SolidNameLabel.h"
 #include "Animation/AnimSequence.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/TextRenderComponent.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -52,6 +54,28 @@ ASolidCompanionCharacter::ASolidCompanionCharacter()
 		FSoftObjectPath(SolidClipLocomotion::DefaultWalkPath));
 	RunAnim = TSoftObjectPtr<UAnimSequence>(
 		FSoftObjectPath(SolidClipLocomotion::DefaultRunPath));
+
+	NameLabel = CreateDefaultSubobject<UTextRenderComponent>(TEXT("NameLabel"));
+	NameLabel->SetupAttachment(RootComponent);
+	ApplyNameLabel();
+}
+
+void ASolidCompanionCharacter::ApplyNameLabel()
+{
+	const float CapsuleHalf = GetCapsuleComponent()
+		? GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight()
+		: 96.f;
+	SolidNameLabel::Configure(
+		NameLabel,
+		CharacterDisplayName,
+		SolidNameLabel::EStyle::Companion,
+		CapsuleHalf);
+}
+
+void ASolidCompanionCharacter::SetCharacterDisplayName(const FString& NewName)
+{
+	CharacterDisplayName = NewName;
+	ApplyNameLabel();
 }
 
 void ASolidCompanionCharacter::PostInitializeComponents()
@@ -64,6 +88,7 @@ void ASolidCompanionCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	ApplyVisuals();
+	ApplyNameLabel();
 	CacheLocomotionAnims();
 	ResolveFollowTarget();
 	UpdateLocomotionAnim();
@@ -97,6 +122,7 @@ void ASolidCompanionCharacter::Tick(float DeltaSeconds)
 
 	UpdateFollow(DeltaSeconds);
 	UpdateLocomotionAnim();
+	SolidNameLabel::FaceViewCamera(NameLabel, GetWorld());
 }
 
 void ASolidCompanionCharacter::SetFollowTarget(AActor* NewTarget)

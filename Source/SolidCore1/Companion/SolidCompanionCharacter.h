@@ -6,6 +6,7 @@
 
 class USkeletalMesh;
 class UAnimSequence;
+class UTextRenderComponent;
 
 /**
  * Companion — NPC Party member that steers toward a follow point behind the Captain.
@@ -26,6 +27,14 @@ public:
 	void SetFollowTarget(AActor* NewTarget);
 
 	AActor* GetFollowTarget() const { return FollowTarget.Get(); }
+	FORCEINLINE UTextRenderComponent* GetNameLabel() const { return NameLabel; }
+
+	/** Shown on the floating nameplate. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Name")
+	FString CharacterDisplayName = TEXT("Sam");
+
+	void SetCharacterDisplayName(const FString& NewName);
+	const FString& GetCharacterDisplayName() const { return CharacterDisplayName; }
 
 	/** Desired distance behind the follow target (cm). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Follow", meta = (ClampMin = "50.0"))
@@ -65,11 +74,15 @@ protected:
 	virtual void PostInitializeComponents() override;
 
 	void ApplyVisuals();
+	void ApplyNameLabel();
 	void ResolveFollowTarget();
 	void UpdateFollow(float DeltaSeconds);
 	void CacheLocomotionAnims();
 	void UpdateLocomotionAnim();
 	bool PlayLocomotionClip(UAnimSequence* Anim);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Companion|Name", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UTextRenderComponent> NameLabel;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Companion|Visual")
 	TSoftObjectPtr<USkeletalMesh> CompanionMesh;

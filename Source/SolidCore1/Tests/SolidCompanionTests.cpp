@@ -21,6 +21,7 @@ bool FSolidCompanionDefaultsTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("catch-up speed"), Companion->CatchUpSpeed, 900.f);
 	TestTrue(TEXT("match follow target speed"), Companion->bMatchFollowTargetSpeed);
 	TestNull(TEXT("no follow target yet"), Companion->GetFollowTarget());
+	TestEqual(TEXT("display name Sam"), Companion->GetCharacterDisplayName(), FString(TEXT("Sam")));
 	return true;
 }
 

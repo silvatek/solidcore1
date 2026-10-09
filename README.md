@@ -47,6 +47,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.Companion.*` | Defaults, SetFollowTarget |
 | `SolidCore1.Streamer.*` | FindExisting / EnsureExists (null + idempotent) |
 | `SolidCore1.Clip.*` | SelectClip idle/walk/run/jump rules |
+| `SolidCore1.NameLabel.*` | Style sizes/colors; Outcast / Sam defaults |
 | `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |
 | `SolidCore1.Content.*` | Required/optional Content + Engine assets the code loads |
 
@@ -150,6 +151,10 @@ Goal: the world starts shrouded; fog clears only where the **pawn has been** (tr
 - `ASolidMonolith` — large grey slab at `StarterTreeOffsetXY` (replaces the near-spawn tree).
 - `ASolidTree` — cylinder trunk + cone canopy; a **line** continues from the monolith into the fog (`StarterTreeCount=16`, ~10 m spacing, random sizes).
 - Fog curtains: clear|fogged (~25 m) plus a **white** half→full curtain (~50 m). Toggle vegetation with `bAutoSpawnStarterTrees`.
+
+## Name labels (SC1-0091)
+
+Floating `UTextRenderComponent` nameplates (`SolidNameLabel`) sit above each Party member and face the view camera. Defaults: Captain **"Outcast"** (larger warm amber highlight), Companion **"Sam"** (smaller muted slate). Override via `CharacterDisplayName` / `SetCharacterDisplayName`.
 
 ## Companion (SC1-0024)
 

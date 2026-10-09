@@ -11,6 +11,7 @@ class UInputMappingContext;
 class UInputAction;
 class USkeletalMesh;
 class UAnimSequence;
+class UTextRenderComponent;
 
 /**
  * Captain — the single player-controlled character.
@@ -32,8 +33,18 @@ public:
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE float GetUserZoomArmLength() const { return UserZoomArmLength; }
+	FORCEINLINE UTextRenderComponent* GetNameLabel() const { return NameLabel; }
+
+	/** Shown on the floating nameplate (not always "Captain"). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Name")
+	FString CharacterDisplayName = TEXT("Outcast");
+
+	void SetCharacterDisplayName(const FString& NewName);
+	const FString& GetCharacterDisplayName() const { return CharacterDisplayName; }
 
 protected:
+	void ApplyNameLabel();
+
 	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
 	virtual void PossessedBy(AController* NewController) override;
@@ -75,6 +86,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> FollowCamera;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character|Name", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UTextRenderComponent> NameLabel;
 
 	/** When true, camera frames the Party (Captain + Companions currently in the world). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing")

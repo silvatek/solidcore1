@@ -523,27 +523,8 @@ void ASolidTerrainChunk::RebuildExplorationFog(
 				const float Z01 = SurfaceZ[I01];
 				const float Z11 = SurfaceZ[I11];
 
+				// Walls only (no solid roof) — open tops + gaps read as mist banks, not buildings.
 				constexpr float SkirtCm = 20.f;
-				FVector B00(X0, Y0, Z00 + SkirtCm);
-				FVector B10(X1, Y0, Z10 + SkirtCm);
-				FVector B01(X0, Y1, Z01 + SkirtCm);
-				FVector B11(X1, Y1, Z11 + SkirtCm);
-
-				if (!bFull)
-				{
-					// Shrink pillar to the cell center so gaps between half-fog cells stay open.
-					const float Inset = Step * 0.22f;
-					B00 = FVector(X0 + Inset, Y0 + Inset, Z00 + SkirtCm);
-					B10 = FVector(X1 - Inset, Y0 + Inset, Z10 + SkirtCm);
-					B01 = FVector(X0 + Inset, Y1 - Inset, Z01 + SkirtCm);
-					B11 = FVector(X1 - Inset, Y1 - Inset, Z11 + SkirtCm);
-				}
-
-				const FVector T00(B00.X, B00.Y, Z00 + VolumeHeight);
-				const FVector T10(B10.X, B10.Y, Z10 + VolumeHeight);
-				const FVector T01(B01.X, B01.Y, Z01 + VolumeHeight);
-				const FVector T11(B11.X, B11.Y, Z11 + VolumeHeight);
-
 				auto AppendWall = [&](const FVector& BottomA, const FVector& BottomB,
 					const FVector& TopB, const FVector& TopA, const FVector& Normal)
 				{
@@ -554,18 +535,34 @@ void ASolidTerrainChunk::RebuildExplorationFog(
 					AppendQuad(V0, V1, V2, V3, Slot);
 				};
 
-				// Closed prism (top + 4 walls). Half uses checkerboard+inset; full fills every cell.
+				if (bFull)
 				{
-					const int32 V0 = AppendVert(T00, FVector::UpVector);
-					const int32 V1 = AppendVert(T10, FVector::UpVector);
-					const int32 V2 = AppendVert(T11, FVector::UpVector);
-					const int32 V3 = AppendVert(T01, FVector::UpVector);
-					AppendQuad(V0, V1, V2, V3, Slot);
+					// Full: edge walls on -X/-Y only (grid of sheets; neighbors share edges).
+					const FVector BX0A(X0, Y0, Z00 + SkirtCm);
+					const FVector BX0B(X0, Y1, Z01 + SkirtCm);
+					const FVector BX0TA(X0, Y0, Z00 + VolumeHeight);
+					const FVector BX0TB(X0, Y1, Z01 + VolumeHeight);
+					AppendWall(BX0A, BX0B, BX0TB, BX0TA, FVector(-1.f, 0.f, 0.f));
+
+					const FVector BY0A(X0, Y0, Z00 + SkirtCm);
+					const FVector BY0B(X1, Y0, Z10 + SkirtCm);
+					const FVector BY0TA(X0, Y0, Z00 + VolumeHeight);
+					const FVector BY0TB(X1, Y0, Z10 + VolumeHeight);
+					AppendWall(BY0A, BY0B, BY0TB, BY0TA, FVector(0.f, -1.f, 0.f));
 				}
-				AppendWall(B00, B10, T10, T00, FVector(0.f, -1.f, 0.f));
-				AppendWall(B11, B01, T01, T11, FVector(0.f, 1.f, 0.f));
-				AppendWall(B01, B00, T00, T01, FVector(-1.f, 0.f, 0.f));
-				AppendWall(B10, B11, T11, T10, FVector(1.f, 0.f, 0.f));
+				else
+				{
+					// Half: one thin center fin per checkerboard cell (~50% coverage).
+					const float MidX = 0.5f * (X0 + X1);
+					const float ZB0 = 0.5f * (Z00 + Z10) + SkirtCm;
+					const float ZB1 = 0.5f * (Z01 + Z11) + SkirtCm;
+					AppendWall(
+						FVector(MidX, Y0, ZB0),
+						FVector(MidX, Y1, ZB1),
+						FVector(MidX, Y1, ZB1 - SkirtCm + VolumeHeight),
+						FVector(MidX, Y0, ZB0 - SkirtCm + VolumeHeight),
+						FVector(1.f, 0.f, 0.f));
+				}
 			}
 		}
 	}

@@ -141,31 +141,31 @@ public:
 	int32 MaxFogChunkRebuildsPerUpdate = 2;
 
 	/**
-	 * Legacy weather-style Exponential Height Fog. Off by default — exploration fog is
-	 * a spatial overlay on terrain chunks (fog-of-war), not global atmosphere.
+	 * Soft Exponential Height Fog for misty air (complements sparse fog-bank meshes).
+	 * Cleared trail stays clear nearby; distant unexplored fog can haze the horizon.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog")
-	bool bRenderTerrainFog = false;
+	bool bRenderTerrainFog = true;
 
 	/** How quickly rendered fog follows TerrainPoint samples. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.1"))
 	float FogInterpSpeed = 2.5f;
 
-	/** FogDensity at TerrainPoint.Fog == 0.5 (hard to see through). */
+	/** FogDensity at TerrainPoint.Fog == 0.5 (soft mist — not a solid wall). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.0"))
-	float FogDensityAtHalf = 0.55f;
+	float FogDensityAtHalf = 0.07f;
 
-	/** FogDensity at TerrainPoint.Fog == 1 (essentially opaque). */
+	/** FogDensity at TerrainPoint.Fog == 1 (thick mist, still not pure whiteout). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.0"))
-	float FogDensityAtFull = 1.4f;
+	float FogDensityAtFull = 0.18f;
 
 	/** FogMaxOpacity at TerrainPoint.Fog == 0.5. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float FogMaxOpacityAtHalf = 0.92f;
+	float FogMaxOpacityAtHalf = 0.55f;
 
 	/** FogMaxOpacity at TerrainPoint.Fog == 1. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float FogMaxOpacityAtFull = 1.0f;
+	float FogMaxOpacityAtFull = 0.82f;
 
 	/** Mist inscattering color (lit fog). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog")

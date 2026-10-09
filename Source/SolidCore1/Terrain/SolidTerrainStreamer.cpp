@@ -361,52 +361,9 @@ float ASolidTerrainStreamer::SampleViewFogAmount() const
 		return 0.f;
 	}
 
-	// Anchor to the pawn (not the camera). Camera XY moves with boom/orbit and was
-	// making mist pop to 0 whenever the look direction missed fogged cells.
-	const FVector PawnLoc = Focus->GetActorLocation();
-	const float LocalFog = FMath::Clamp(GetTerrainPointAt(PawnLoc).Fog, 0.f, 1.f);
-
-	const float ClearCm = SolidTerrainFog::MetersToCm(SolidTerrainFog::ClearRadiusMeters);
-	const float FullCm = SolidTerrainFog::MetersToCm(SolidTerrainFog::FullFogStartMeters);
-
-	// Omnidirectional ring at the exploration edge — stable while orbiting the camera.
-	float SurroundFog = 0.f;
-	constexpr int32 NumRingDirs = 8;
-	for (int32 DirIndex = 0; DirIndex < NumRingDirs; ++DirIndex)
-	{
-		const float Angle = (2.f * PI) * (static_cast<float>(DirIndex) / static_cast<float>(NumRingDirs));
-		const FVector2D Dir(FMath::Cos(Angle), FMath::Sin(Angle));
-		const FVector AtClear = PawnLoc + FVector(Dir.X * ClearCm, Dir.Y * ClearCm, 0.f);
-		const FVector AtFull = PawnLoc + FVector(Dir.X * FullCm, Dir.Y * FullCm, 0.f);
-		SurroundFog = FMath::Max(SurroundFog, GetTerrainPointAt(AtClear).Fog);
-		SurroundFog = FMath::Max(SurroundFog, GetTerrainPointAt(AtFull).Fog);
-	}
-
-	// Optional view boost (does not replace the ring — prevents look-away wipeout).
-	float ViewFog = 0.f;
-	if (UWorld* World = GetWorld())
-	{
-		if (APlayerController* PC = World->GetFirstPlayerController())
-		{
-			FVector CamLoc = FVector::ZeroVector;
-			FRotator CamRot = FRotator::ZeroRotator;
-			PC->GetPlayerViewPoint(CamLoc, CamRot);
-			const FVector Forward = CamRot.Vector();
-			const float ViewProbeCm[] = { ClearCm, FullCm, FullCm * 1.5f };
-			for (const float DistanceCm : ViewProbeCm)
-			{
-				ViewFog = FMath::Max(
-					ViewFog, GetTerrainPointAt(CamLoc + Forward * DistanceCm).Fog);
-			}
-		}
-	}
-
-	const float EdgeFog = FMath::Max(SurroundFog, ViewFog);
-	if (LocalFog <= 0.05f)
-	{
-		return FMath::Clamp(EdgeFog, 0.f, 1.f);
-	}
-	return FMath::Clamp(FMath::Max(LocalFog, EdgeFog * 0.5f), 0.f, 1.f);
+	// Mist follows only the pawn's TerrainPoint.Fog (exploration trail).
+	// No camera location / look-direction probes — orbiting the boom must not change mist.
+	return FMath::Clamp(GetTerrainPointAt(Focus->GetActorLocation()).Fog, 0.f, 1.f);
 }
 
 void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)
@@ -439,17 +396,13 @@ void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)
 	}
 
 	const float Amount = FMath::Clamp(RenderedFogAmount, 0.f, 1.f);
-	float LocalFog = 0.f;
-	if (AActor* Focus = ResolveFocusActor())
-	{
-		LocalFog = GetTerrainPointAt(Focus->GetActorLocation()).Fog;
-	}
 
 	float Density = 0.f;
 	float MaxOpacity = 0.f;
 	float StartDistance = 0.f;
 	float ExtinctionScale = 0.f;
 
+	// Piecewise response keyed only to pawn TerrainPoint.Fog (0 / 0.5 / 1).
 	if (Amount <= KINDA_SMALL_NUMBER)
 	{
 		Density = 0.f;
@@ -457,41 +410,20 @@ void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)
 		StartDistance = 0.f;
 		ExtinctionScale = 0.f;
 	}
-	else if (LocalFog <= 0.05f)
-	{
-		// From a clear trail: atmospheric mist begins near the 25m clear edge.
-		const float ClearCm = SolidTerrainFog::MetersToCm(SolidTerrainFog::ClearRadiusMeters);
-		const float T = FMath::Clamp(Amount, 0.f, 1.f);
-		if (T <= 0.5f)
-		{
-			const float U = T / 0.5f;
-			Density = FMath::Lerp(0.f, FogDensityAtHalf, U);
-			MaxOpacity = FMath::Lerp(0.f, FogMaxOpacityAtHalf, U);
-			ExtinctionScale = FMath::Lerp(0.15f, 1.0f, U);
-		}
-		else
-		{
-			const float U = (T - 0.5f) / 0.5f;
-			Density = FMath::Lerp(FogDensityAtHalf, FogDensityAtFull, U);
-			MaxOpacity = FMath::Lerp(FogMaxOpacityAtHalf, FogMaxOpacityAtFull, U);
-			ExtinctionScale = FMath::Lerp(1.0f, 1.8f, U);
-		}
-		StartDistance = FMath::Lerp(ClearCm * 1.15f, ClearCm * 0.85f, T);
-	}
 	else if (Amount <= 0.5f)
 	{
 		const float T = Amount / 0.5f;
 		Density = FMath::Lerp(0.f, FogDensityAtHalf, T);
 		MaxOpacity = FMath::Lerp(0.f, FogMaxOpacityAtHalf, T);
-		StartDistance = FMath::Lerp(600.f, 80.f, T);
-		ExtinctionScale = FMath::Lerp(0.3f, 1.2f, T);
+		StartDistance = FMath::Lerp(800.f, 100.f, T);
+		ExtinctionScale = FMath::Lerp(0.2f, 1.2f, T);
 	}
 	else
 	{
 		const float T = (Amount - 0.5f) / 0.5f;
 		Density = FMath::Lerp(FogDensityAtHalf, FogDensityAtFull, T);
 		MaxOpacity = FMath::Lerp(FogMaxOpacityAtHalf, FogMaxOpacityAtFull, T);
-		StartDistance = FMath::Lerp(80.f, 20.f, T);
+		StartDistance = FMath::Lerp(100.f, 20.f, T);
 		ExtinctionScale = FMath::Lerp(1.2f, 2.2f, T);
 	}
 

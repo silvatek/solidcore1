@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0067")
+#define SOLID_BUILD_ID TEXT("SC1-0068")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Stable mist from pawn fog ring")
+#define SOLID_BUILD_NOTE TEXT("Mist follows pawn fog only")
 #endif

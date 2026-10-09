@@ -1,6 +1,7 @@
 #include "SolidTerrainMaterials.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
+#include "SolidWorldMap.h"
 #include "AssetRegistry/AssetData.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Materials/Material.h"
@@ -200,4 +201,42 @@ UMaterialInterface* SolidTerrainMaterials::Resolve(
 
 	UE_LOG(LogSolid, Error, TEXT("Terrain material: no grass material could be created."));
 	return nullptr;
+}
+
+UMaterialInterface* SolidTerrainMaterials::ResolveForBiome(
+	const ESolidBiome Biome,
+	const FResolveParams& Params,
+	const USolidWorldMap* WorldMap,
+	TObjectPtr<UMaterialInterface>& InOutGrassCached,
+	TMap<ESolidBiome, TObjectPtr<UMaterialInterface>>& InOutBiomeMaterials)
+{
+	if (Biome == ESolidBiome::Grassland)
+	{
+		return Resolve(Params, InOutGrassCached);
+	}
+
+	if (TObjectPtr<UMaterialInterface>* Existing = InOutBiomeMaterials.Find(Biome))
+	{
+		if (Existing->Get())
+		{
+			return Existing->Get();
+		}
+	}
+
+	if (!Params.Outer)
+	{
+		return nullptr;
+	}
+
+	const FLinearColor Color = WorldMap
+		? WorldMap->GetBiomeColor(Biome)
+		: USolidWorldMap::DefaultColorForBiome(Biome);
+
+	UMaterialInterface* Solid = SolidMaterials::CreateSolidColor(
+		Params.Outer,
+		Color,
+		SolidTerrainTypes::BiomeToString(Biome),
+		Params.GrassRoughness);
+	InOutBiomeMaterials.Add(Biome, Solid);
+	return Solid;
 }

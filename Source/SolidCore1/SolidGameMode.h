@@ -34,7 +34,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation")
 	bool bAutoSpawnStarterTrees = true;
 
-	/** World XY of the starter monolith (cm). Tree line continues from here. */
+	/**
+	 * Fallback world XY for the starter monolith (cm) when WorldMap has no Z town.
+	 * When WorldMap loads, the monolith is placed at the Z-cell centroid instead.
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation")
 	FVector2D StarterTreeOffsetXY = FVector2D(1400.f, 900.f);
 

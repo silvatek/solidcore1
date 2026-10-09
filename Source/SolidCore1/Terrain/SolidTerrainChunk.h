@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "SolidTerrainTypes.h"
 #include "SolidTerrainChunk.generated.h"
 
 class UStaticMeshComponent;
@@ -17,6 +18,11 @@ class SOLIDCORE1_API ASolidTerrainChunk : public AActor
 public:
 	ASolidTerrainChunk();
 
+	/**
+	 * Build terrain mesh for this chunk. When BiomeMaterials is non-null and TerrainMap is built,
+	 * each quad uses the material for its TerrainPoint biome (Grassland = grass, others = solid color).
+	 * FallbackMaterial is used when a biome has no entry.
+	 */
 	void BuildChunk(
 		FIntPoint InChunkCoord,
 		float InChunkWorldSize,
@@ -26,11 +32,12 @@ public:
 		float InAmplitude,
 		float InBaseHeight,
 		float InCollisionHeightBias,
-		UMaterialInterface* Material,
+		UMaterialInterface* FallbackMaterial,
 		UMaterialInterface* FogHalfMaterial,
 		UMaterialInterface* FogFullMaterial,
 		UMaterialInterface* FogOuterMaterial,
 		const USolidTerrainMap* TerrainMap,
+		const TMap<ESolidBiome, UMaterialInterface*>* BiomeMaterials = nullptr,
 		int32 InFogQuadsPerSide = 6,
 		float InFogVolumeHeightCm = 2500.f,
 		float InFogVolumeHeightHalfCm = 1400.f);

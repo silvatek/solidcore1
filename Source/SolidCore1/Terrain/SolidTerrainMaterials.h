@@ -2,12 +2,14 @@
 
 #include "CoreMinimal.h"
 #include "UObject/ObjectPtr.h"
+#include "SolidTerrainTypes.h"
 
 class UMaterialInterface;
 class UObject;
+class USolidWorldMap;
 
 /**
- * Terrain grass material resolution: optional override → Fab Mat_025_grass → FlatCol.
+ * Terrain material resolution: grassland (Fab/FlatCol) + solid-color biomes from WorldMap.
  * Used by ASolidTerrainStreamer; keeps AssetRegistry / MID spraying out of the streamer.
  */
 namespace SolidTerrainMaterials
@@ -40,4 +42,15 @@ namespace SolidTerrainMaterials
 	 * Order: override (non-PrototypeGrid) → Fab grass → FlatCol.
 	 */
 	UMaterialInterface* Resolve(const FResolveParams& Params, TObjectPtr<UMaterialInterface>& InOutCached);
+
+	/**
+	 * Material for a biome. Grassland uses Resolve(); others use FlatCol tinted by WorldMap
+	 * key color (or built-in defaults). Results cached in InOutBiomeMaterials.
+	 */
+	UMaterialInterface* ResolveForBiome(
+		ESolidBiome Biome,
+		const FResolveParams& Params,
+		const USolidWorldMap* WorldMap,
+		TObjectPtr<UMaterialInterface>& InOutGrassCached,
+		TMap<ESolidBiome, TObjectPtr<UMaterialInterface>>& InOutBiomeMaterials);
 }

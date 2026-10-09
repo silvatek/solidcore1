@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0104")
+#define SOLID_BUILD_ID TEXT("SC1-0105")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("F9 drill: 250ms blended corner turns")
+#define SOLID_BUILD_NOTE TEXT("WorldMap biomes: scale 64x64, materials, Z town spawn")
 #endif

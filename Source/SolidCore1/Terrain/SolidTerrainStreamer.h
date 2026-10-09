@@ -201,16 +201,25 @@ protected:
 	AActor* ResolveFocusActor() const;
 	/** Resolve via SolidTerrainMaterials (override → Fab grass → FlatCol); caches result. */
 	UMaterialInterface* ResolveMaterial() const;
+	/** Grassland → ResolveMaterial(); other biomes → FlatCol tinted by WorldMap key color. */
+	UMaterialInterface* ResolveBiomeMaterial(ESolidBiome Biome) const;
+	void CollectBiomeMaterials(TMap<ESolidBiome, UMaterialInterface*>& OutMaterials) const;
 	float SampleHeightAtWorld(const FVector& WorldLocation) const;
 	void TrySnapFocusToTerrain(AActor* Focus);
+	/** Move the focus pawn once to the WorldMap starting-town (Z) centroid. */
+	void TryRelocateFocusToStartTown();
 	void DisableLandscapeActorsOnce();
 
 	UPROPERTY()
 	TMap<FIntPoint, TObjectPtr<ASolidTerrainChunk>> LoadedChunks;
 
-	/** Cached lit material so chunks do not each create their own. */
+	/** Cached lit grassland material so chunks do not each create their own. */
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInterface> ResolvedTerrainMaterial;
+
+	/** Cached solid-color materials for non-grassland biomes. */
+	UPROPERTY(Transient)
+	TMap<ESolidBiome, TObjectPtr<UMaterialInterface>> ResolvedBiomeMaterials;
 
 	/** World simulation grid — source of rendered heights + biome/threat/fog. */
 	UPROPERTY(Transient)
@@ -235,6 +244,7 @@ protected:
 	bool bDidDisableLandscape = false;
 	bool bHeightFogSilenced = false;
 	bool bHasFogApplyLocation = false;
+	bool bDidRelocateToStartTown = false;
 	FVector LastFogApplyLocation = FVector::ZeroVector;
 	TSet<FIntPoint> DirtyFogChunkCoords;
 };

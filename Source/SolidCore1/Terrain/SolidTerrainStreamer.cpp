@@ -4,6 +4,7 @@
 #include "SolidTerrainMap.h"
 #include "SolidTerrainMaterials.h"
 #include "SolidTerrainNoise.h"
+#include "SolidWorldMap.h"
 #include "SolidCore1.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
@@ -72,6 +73,7 @@ void ASolidTerrainStreamer::BeginPlay()
 {
 	Super::BeginPlay();
 	EnsureTerrainMap();
+	TryRelocateFocusToStartTown();
 	if (bRenderExplorationFogMeshes)
 	{
 		EnsureExplorationFogMaterials();
@@ -224,6 +226,9 @@ void ASolidTerrainStreamer::BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint
 		FogOuter = ExplorationFogOuterMaterial;
 	}
 
+	TMap<ESolidBiome, UMaterialInterface*> BiomeMaterials;
+	CollectBiomeMaterials(BiomeMaterials);
+
 	Chunk->BuildChunk(
 		Coord,
 		ChunkWorldSize,
@@ -238,6 +243,7 @@ void ASolidTerrainStreamer::BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint
 		FogFull,
 		FogOuter,
 		TerrainMap,
+		&BiomeMaterials,
 		FogQuadsPerSide,
 		FogVolumeHeightCm,
 		FogVolumeHeightHalfCm);
@@ -411,6 +417,100 @@ UMaterialInterface* ASolidTerrainStreamer::ResolveMaterial() const
 		Params, const_cast<ASolidTerrainStreamer*>(this)->ResolvedTerrainMaterial);
 }
 
+UMaterialInterface* ASolidTerrainStreamer::ResolveBiomeMaterial(const ESolidBiome Biome) const
+{
+	SolidTerrainMaterials::FResolveParams Params;
+	Params.Outer = const_cast<ASolidTerrainStreamer*>(this);
+	Params.OverrideMaterial = TerrainMaterial;
+	Params.GrassColor = GrassColor;
+	Params.GrassDarkColor = GrassDarkColor;
+	Params.GrassRoughness = GrassRoughness;
+	Params.GrassSpecular = GrassSpecular;
+
+	const USolidWorldMap* WorldMap = TerrainMap ? TerrainMap->GetWorldMap() : nullptr;
+	return SolidTerrainMaterials::ResolveForBiome(
+		Biome,
+		Params,
+		WorldMap,
+		const_cast<ASolidTerrainStreamer*>(this)->ResolvedTerrainMaterial,
+		const_cast<ASolidTerrainStreamer*>(this)->ResolvedBiomeMaterials);
+}
+
+void ASolidTerrainStreamer::CollectBiomeMaterials(
+	TMap<ESolidBiome, UMaterialInterface*>& OutMaterials) const
+{
+	static const ESolidBiome AllBiomes[] = {
+		ESolidBiome::Grassland,
+		ESolidBiome::Forest,
+		ESolidBiome::Mountain,
+		ESolidBiome::Town,
+		ESolidBiome::Desert,
+		ESolidBiome::Swamp,
+		ESolidBiome::Sea,
+		ESolidBiome::River,
+	};
+
+	OutMaterials.Reset();
+	for (const ESolidBiome Biome : AllBiomes)
+	{
+		OutMaterials.Add(Biome, ResolveBiomeMaterial(Biome));
+	}
+}
+
+void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
+{
+	if (bDidRelocateToStartTown)
+	{
+		return;
+	}
+
+	EnsureTerrainMap();
+	if (!TerrainMap || !TerrainMap->IsBuilt())
+	{
+		return;
+	}
+
+	FVector2D TownXY = FVector2D::ZeroVector;
+	if (!TerrainMap->GetStartTownWorldXY(TownXY))
+	{
+		bDidRelocateToStartTown = true;
+		return;
+	}
+
+	AActor* Focus = ResolveFocusActor();
+	if (!Focus)
+	{
+		return;
+	}
+
+	const float LandZ = SampleHeightAtWorld(FVector(TownXY.X, TownXY.Y, 0.f)) + CollisionHeightBias;
+	float CapsuleHalfHeight = 96.f;
+	if (const ACharacter* Character = Cast<ACharacter>(Focus))
+	{
+		if (const UCapsuleComponent* Capsule = Character->GetCapsuleComponent())
+		{
+			CapsuleHalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+		}
+	}
+
+	const FVector NewLoc(TownXY.X, TownXY.Y, LandZ + CapsuleHalfHeight + SnapHeightPadding);
+	Focus->SetActorLocation(NewLoc);
+	if (ACharacter* Character = Cast<ACharacter>(Focus))
+	{
+		if (UCharacterMovementComponent* Move = Character->GetCharacterMovement())
+		{
+			Move->StopMovementImmediately();
+			Move->SetMovementMode(MOVE_Walking);
+		}
+	}
+
+	bDidRelocateToStartTown = true;
+	bHasFogApplyLocation = false;
+	UE_LOG(LogSolid, Warning,
+		TEXT("Relocated focus to start town (%.0f, %.0f) Z=%.1f"),
+		TownXY.X, TownXY.Y, NewLoc.Z);
+}
+
 float ASolidTerrainStreamer::SampleHeightAtWorld(const FVector& WorldLocation) const
 {
 	if (TerrainMap && TerrainMap->IsBuilt())
@@ -508,6 +608,7 @@ void ASolidTerrainStreamer::TrySnapFocusToTerrain(AActor* Focus)
 void ASolidTerrainStreamer::UpdateStreaming()
 {
 	EnsureTerrainMap();
+	TryRelocateFocusToStartTown();
 	DisableLandscapeActorsOnce();
 
 	AActor* Focus = ResolveFocusActor();

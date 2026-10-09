@@ -5,6 +5,8 @@
 #include "SolidTerrainTypes.h"
 #include "SolidTerrainMap.generated.h"
 
+class USolidWorldMap;
+
 /**
  * Fixed 2D TerrainPoint grid built once at startup. Chunk meshes sample Height from this map
  * (bilinear) so gameplay data and rendered landscape share one source of truth.
@@ -89,9 +91,24 @@ public:
 			static_cast<float>(FMath::Max(GridHeight - 1, 0)) * PointSpacing);
 	}
 
+	USolidWorldMap* GetWorldMap() const { return WorldMap; }
+
+	/** World XY of WorldMap starting-town (Z) centroid, if available. */
+	bool GetStartTownWorldXY(FVector2D& OutWorldXY) const;
+
+	/** Fog distance origin (start town when WorldMap provides one, else world origin). */
+	FVector2D GetFogOriginXY() const { return FogOriginXY; }
+
 protected:
 	UPROPERTY()
 	TArray<FSolidTerrainPoint> Points;
+
+	UPROPERTY()
+	TObjectPtr<USolidWorldMap> WorldMap;
+
+	/** Fog distance origin (start town when WorldMap provides one). */
+	UPROPERTY()
+	FVector2D FogOriginXY = FVector2D::ZeroVector;
 
 	void WorldToIndex(float WorldX, float WorldY, int32& OutX, int32& OutY) const;
 	ESolidBiome ChooseBiome(float WorldX, float WorldY, float HeightNorm, int32 InSeed) const;

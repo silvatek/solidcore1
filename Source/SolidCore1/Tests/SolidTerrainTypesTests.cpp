@@ -17,6 +17,8 @@ bool FSolidBiomeToStringTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Town"), FString(SolidTerrainTypes::BiomeToString(ESolidBiome::Town)), FString(TEXT("Town")));
 	TestEqual(TEXT("Desert"), FString(SolidTerrainTypes::BiomeToString(ESolidBiome::Desert)), FString(TEXT("Desert")));
 	TestEqual(TEXT("Swamp"), FString(SolidTerrainTypes::BiomeToString(ESolidBiome::Swamp)), FString(TEXT("Swamp")));
+	TestEqual(TEXT("Sea"), FString(SolidTerrainTypes::BiomeToString(ESolidBiome::Sea)), FString(TEXT("Sea")));
+	TestEqual(TEXT("River"), FString(SolidTerrainTypes::BiomeToString(ESolidBiome::River)), FString(TEXT("River")));
 	return true;
 }
 

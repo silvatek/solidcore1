@@ -12,7 +12,9 @@ enum class ESolidBiome : uint8
 	Mountain UMETA(DisplayName = "Mountain"),
 	Town UMETA(DisplayName = "Town"),
 	Desert UMETA(DisplayName = "Desert"),
-	Swamp UMETA(DisplayName = "Swamp")
+	Swamp UMETA(DisplayName = "Swamp"),
+	Sea UMETA(DisplayName = "Sea"),
+	River UMETA(DisplayName = "River"),
 };
 
 /** One cell in the world simulation grid (gameplay + heightfield source). */
@@ -57,6 +59,8 @@ namespace SolidTerrainTypes
 		case ESolidBiome::Town: return TEXT("Town");
 		case ESolidBiome::Desert: return TEXT("Desert");
 		case ESolidBiome::Swamp: return TEXT("Swamp");
+		case ESolidBiome::Sea: return TEXT("Sea");
+		case ESolidBiome::River: return TEXT("River");
 		default: return TEXT("Unknown");
 		}
 	}

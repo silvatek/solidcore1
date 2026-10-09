@@ -40,8 +40,9 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 |--------|--------|
 | `SolidCore1.Fog.*` | Distance bands, units, mist sampling, fog mesh build guards |
 | `SolidCore1.Map.*` | Build smoke, trail clear, idempotent build, sampling, bounds |
+| `SolidCore1.WorldMap.*` | ASCII overlay load, key colors, Z town, terrain fog origin |
 | `SolidCore1.Noise.*` | Hash / value / fBm / height / grass tone |
-| `SolidCore1.Types.*` | Biome names, `FSolidTerrainPoint` defaults |
+| `SolidCore1.Types.*` | Biome names (incl. Sea/River), `FSolidTerrainPoint` defaults |
 | `SolidCore1.Vegetation.*` | Tree RNG variation, monolith defaults |
 | `SolidCore1.GameMode.*` | Default spawn flags, pawn BP resolution |
 | `SolidCore1.Companion.*` | Defaults, SetFollowTarget |
@@ -110,12 +111,13 @@ Or right-click `SolidCore1.uproject` → **Generate Visual Studio project files*
 C++ generates walkable terrain around the player at runtime:
 
 - `FSolidTerrainPoint` / `ESolidBiome` — simulation cell (X, Y, Height, Biome, Threat, Fog)
-- `USolidTerrainMap` — 2D TerrainPoint grid built once at streamer startup (default 257×257 @ chunk vert spacing)
-- `ASolidTerrainChunk` — runtime `UStaticMesh`; vertex heights sampled from the TerrainMap
-- `ASolidTerrainStreamer` — builds the map, then loads/unloads a Chebyshev radius of chunks around the pawn
+- `USolidWorldMap` — 64×64 ASCII biome overlay (`Content/WorldMap.txt`) scaled across the TerrainMap world bounds
+- `USolidTerrainMap` — 2D TerrainPoint grid built once at streamer startup (default 257×257 @ chunk vert spacing); biomes from WorldMap when loaded
+- `ASolidTerrainChunk` — runtime `UStaticMesh`; vertex heights from the TerrainMap; per-quad biome materials
+- `ASolidTerrainStreamer` — builds the map, relocates the pawn to the starting town (Z), then loads/unloads chunks
 - Debug HUD shows biome / threat / fog at the pawn plus map size
 
-Defaults: 64 m chunks (`ChunkWorldSize=6400`), 32 quads/side, radius 2 (5×5 chunks), `Amplitude=3000`. Material: Fab `Mat_025_grass` when present.
+Defaults: 64 m chunks (`ChunkWorldSize=6400`), 32 quads/side, radius 2 (5×5 chunks), `Amplitude=3000`. Grassland uses Fab `Mat_025_grass` when present; other biomes use FlatCol tinted by the WorldMap key colors.
 
 Default map is `/Game/ThirdPerson/Lvl_ThirdPerson` (SC1-0022) so Open World Landscape/HLOD outer hills are not in the scene — that cleared the horizon slivers. `L_OpenWorld` remains for comparison. SC1-0023/0082 force `BP_SolidGameMode` on PIE/game worlds so template maps keep Solid HUD + Viking pawn instead of the template default. On first stream, the pawn is snapped onto the procedural height. If a Landscape is present, actors are hidden/collision-disabled once. Chunks block the Camera channel and use complex-as-simple collision on the runtime static mesh.
 
@@ -125,7 +127,7 @@ SC1-0007 drops `UProceduralMeshComponent` after persistent ribbon/culling failur
 
 Goal: the world starts shrouded; fog clears only where the **pawn has been** (trail), independent of camera orbit / pitch / zoom.
 
-**Data (kept):** `FSolidTerrainPoint.Fog` on `USolidTerrainMap`. Initial fill and trail clear use the same bands — ≤25 m → `0`, 25–50 m → `0.5`, >50 m → `1`. Runtime: `ApplyExplorationFogAround` as the pawn moves.
+**Data (kept):** `FSolidTerrainPoint.Fog` on `USolidTerrainMap`. Initial fill and trail clear use the same bands — ≤25 m → `0`, 25–50 m → `0.5`, >50 m → `1`. Initial distance is measured from the WorldMap starting-town (Z) centroid when present (else world origin). Runtime: `ApplyExplorationFogAround` as the pawn moves.
 
 **Current visual (SC1-0076):** marching-squares curtains at **clear|fogged (~25 m)** and **half|full (~50 m, white)**. Programmatic `BLEND_Translucent` unlit mist. Logic in `Terrain/SolidTerrainFog.*`. Height fog **off**.
 
@@ -147,9 +149,13 @@ Goal: the world starts shrouded; fog clears only where the **pawn has been** (tr
 
 **Do not reintroduce** camera/view sampling for fog amount, height-fog StartDistance as a 25 m clear radius, or dense per-cell fog lattices. Prefer boundary geometry in `SolidTerrainFog` tied to `TerrainPoint.Fog`.
 
-## Starter landmark + trees (SC1-0076)
+## WorldMap biomes (SC1-0105)
 
-- `ASolidMonolith` — large grey slab at `StarterTreeOffsetXY` (replaces the near-spawn tree).
+`Content/WorldMap.txt` (fallback `Source/SolidCore1/WorldMap.txt`) is a 64×64 grid of markers plus a color key (`S` Sea, `G` Grassland, `T`/`Z` Town, `M` Mountain, `F` Forest, `D` Desert, `R` River). The grid scales across the TerrainMap world rectangle (file row 0 = north). `Z` cells mark the **starting town**: fog clears from that centroid, the streamer relocates the player there, and the monolith sits in the middle.
+
+## Starter landmark + trees (SC1-0076 / SC1-0105)
+
+- `ASolidMonolith` — large grey slab at the WorldMap starting-town (Z) centroid (falls back to `StarterTreeOffsetXY`).
 - `ASolidTree` — cylinder trunk + cone canopy; a **line** continues from the monolith into the fog (`StarterTreeCount=16`, ~10 m spacing, random sizes).
 - Fog curtains: clear|fogged (~25 m) plus a **white** half→full curtain (~50 m). Toggle vegetation with `bAutoSpawnStarterTrees`.
 
@@ -202,6 +208,7 @@ Content/
   Characters/          # BP_SolidCharacter, BP_SolidGameMode
   Maps/                # optional L_OpenWorld (+ World Partition externals)
   Viking/              # Fab Viking mesh + locomotion clips
+  WorldMap.txt         # ASCII 64×64 biome overlay + color key
 Source/
   SolidCore1.Target.cs
   SolidCore1Editor.Target.cs
@@ -216,23 +223,25 @@ Source/
     SolidPlayerController.*
     SolidMaterials.*       # Shared FlatCol solid-color MID helper
     SolidContentPaths.h    # Canonical BP soft-class paths
-    WorldMap.txt           # ASCII large-scale biome overlay (not wired yet)
+    WorldMap.txt           # ASCII biome overlay (fallback copy)
     Companion/
       SolidCompanionCharacter.*          # Companion NPC follower
     Terrain/
       SolidTerrainTypes.h
       SolidTerrainFog.*       # FoW bands, boundary mesh, materials, height-fog helpers
+      SolidWorldMap.*         # Parse/scale WorldMap.txt; Z town centroid
       SolidTerrainMap.*
       SolidTerrainNoise.h
       SolidTerrainChunk.*
       SolidTerrainStreamer.*
-      SolidTerrainMaterials.*   # Fab/FlatCol grass resolve + matte MID
+      SolidTerrainMaterials.*   # Grass + per-biome FlatCol resolve
       SolidTerrainWorldSubsystem.*
     Vegetation/
-      SolidMonolith.*         # Grey slab landmark at start
+      SolidMonolith.*         # Grey slab landmark at start town
       SolidTree.*             # Placeholder cylinder+cone tree
     Tests/
       SolidTerrainTestHelpers.h   # Shared MakeSmallMap fixture
+      SolidWorldMapTests.cpp
       SolidTerrainFogTests.cpp
       SolidTerrainFogMeshTests.cpp
       SolidTerrainMapTests.cpp

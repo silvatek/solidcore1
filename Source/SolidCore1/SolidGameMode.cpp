@@ -9,6 +9,7 @@
 #include "Party/SolidBattlePlan.h"
 #include "Party/SolidCompany.h"
 #include "Party/SolidParty.h"
+#include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Vegetation/SolidMonolith.h"
 #include "Vegetation/SolidTree.h"
@@ -284,11 +285,19 @@ void ASolidGameMode::EnsureStarterTrees()
 	}
 
 	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::EnsureExists(World);
-	if (!Streamer || !Streamer->GetTerrainMap())
+	if (!Streamer || !Streamer->GetTerrainMap() || !Streamer->GetTerrainMap()->IsBuilt())
 	{
 		World->GetTimerManager().SetTimer(
 			StarterTreeSpawnTimer, this, &ASolidGameMode::EnsureStarterTrees, 0.25f, false);
 		return;
+	}
+
+	// Prefer WorldMap starting-town (Z) centroid; fall back to the inspector offset.
+	FVector2D LandmarkXY = StarterTreeOffsetXY;
+	FVector2D TownXY = FVector2D::ZeroVector;
+	if (Streamer->GetTerrainMap()->GetStartTownWorldXY(TownXY))
+	{
+		LandmarkXY = TownXY;
 	}
 
 	FVector2D Dir = StarterTreeLineDirection;
@@ -306,9 +315,9 @@ void ASolidGameMode::EnsureStarterTrees()
 	SpawnParams.Owner = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	// Monolith at the former first-tree spot (start of the clear-zone landmark).
+	// Monolith in the middle of the starting town (Z biome).
 	{
-		FVector MonoLoc(StarterTreeOffsetXY.X, StarterTreeOffsetXY.Y, 0.f);
+		FVector MonoLoc(LandmarkXY.X, LandmarkXY.Y, 0.f);
 		const float LandZ = Streamer->GetHeightAt(MonoLoc) + Streamer->CollisionHeightBias;
 		MonoLoc.Z = LandZ + Streamer->SnapHeightPadding;
 
@@ -333,7 +342,7 @@ void ASolidGameMode::EnsureStarterTrees()
 		const float Along =
 			Spacing * (1.f + static_cast<float>(Index)) + Rng.FRandRange(-Spacing * 0.15f, Spacing * 0.15f);
 		const float Lateral = Rng.FRandRange(-220.f, 220.f);
-		const FVector2D XY = StarterTreeOffsetXY + Dir * Along + Side * Lateral;
+		const FVector2D XY = LandmarkXY + Dir * Along + Side * Lateral;
 
 		FVector SpawnLoc(XY.X, XY.Y, 0.f);
 		const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;

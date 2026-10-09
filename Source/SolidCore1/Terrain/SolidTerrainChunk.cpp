@@ -190,11 +190,12 @@ void ASolidTerrainChunk::BuildChunk(
 	float InAmplitude,
 	float InBaseHeight,
 	float InCollisionHeightBias,
-	UMaterialInterface* Material,
+	UMaterialInterface* FallbackMaterial,
 	UMaterialInterface* FogHalfMaterial,
 	UMaterialInterface* FogFullMaterial,
 	UMaterialInterface* FogOuterMaterial,
 	const USolidTerrainMap* TerrainMap,
+	const TMap<ESolidBiome, UMaterialInterface*>* BiomeMaterials,
 	int32 InFogQuadsPerSide,
 	float InFogVolumeHeightCm,
 	float InFogVolumeHeightHalfCm)
@@ -297,6 +298,39 @@ void ASolidTerrainChunk::BuildChunk(
 		}
 	}
 
+	TMap<ESolidBiome, int32> BiomeToSlot;
+	TArray<UMaterialInterface*> Materials;
+	TArray<int32> TriMatIndices;
+	TriMatIndices.Reserve(InQuadsPerSide * InQuadsPerSide * 2);
+
+	auto EnsureMaterialSlot = [&](const ESolidBiome Biome) -> int32
+	{
+		if (const int32* Existing = BiomeToSlot.Find(Biome))
+		{
+			return *Existing;
+		}
+
+		UMaterialInterface* Mat = nullptr;
+		if (BiomeMaterials)
+		{
+			if (UMaterialInterface* const* Found = BiomeMaterials->Find(Biome))
+			{
+				Mat = *Found;
+			}
+		}
+		if (!Mat)
+		{
+			Mat = FallbackMaterial;
+		}
+
+		const int32 Slot = Materials.Num();
+		Materials.Add(Mat);
+		BiomeToSlot.Add(Biome, Slot);
+		return Slot;
+	};
+
+	const bool bUseBiomeMaterials = TerrainMap && TerrainMap->IsBuilt() && BiomeMaterials != nullptr;
+
 	for (int32 Y = 0; Y < InQuadsPerSide; ++Y)
 	{
 		for (int32 X = 0; X < InQuadsPerSide; ++X)
@@ -312,23 +346,37 @@ void ASolidTerrainChunk::BuildChunk(
 			Triangles.Add(I00);
 			Triangles.Add(I01);
 			Triangles.Add(I11);
+
+			ESolidBiome Biome = ESolidBiome::Grassland;
+			if (bUseBiomeMaterials)
+			{
+				const float WorldX = OriginX + (static_cast<float>(X) + 0.5f) * Step;
+				const float WorldY = OriginY + (static_cast<float>(Y) + 0.5f) * Step;
+				Biome = TerrainMap->SamplePoint(WorldX, WorldY).Biome;
+			}
+			const int32 Slot = EnsureMaterialSlot(Biome);
+			TriMatIndices.Add(Slot);
+			TriMatIndices.Add(Slot);
 		}
 	}
 
-	TArray<int32> GrassMatIndices;
-	GrassMatIndices.Init(0, Triangles.Num() / 3);
-	TArray<UMaterialInterface*> GrassMaterials;
-	GrassMaterials.Add(Material);
+	if (Materials.Num() == 0)
+	{
+		Materials.Add(FallbackMaterial);
+	}
 
 	RuntimeStaticMesh = SolidTerrainChunkPrivate::BuildRuntimeMesh(
-		this, Positions, Normals, Tangents, UVs, Colors, Triangles, GrassMaterials, GrassMatIndices,
+		this, Positions, Normals, Tangents, UVs, Colors, Triangles, Materials, TriMatIndices,
 		/*bBuildCollision=*/true);
 
 	MeshComponent->SetStaticMesh(nullptr);
 	MeshComponent->SetStaticMesh(RuntimeStaticMesh);
-	if (Material)
+	for (int32 MatIndex = 0; MatIndex < Materials.Num(); ++MatIndex)
 	{
-		MeshComponent->SetMaterial(0, Material);
+		if (Materials[MatIndex])
+		{
+			MeshComponent->SetMaterial(MatIndex, Materials[MatIndex]);
+		}
 	}
 	SolidTerrainChunkPrivate::ConfigureCollision(MeshComponent);
 	MeshComponent->BodyInstance.SetCollisionProfileName(UCollisionProfile::BlockAll_ProfileName);
@@ -351,9 +399,9 @@ void ASolidTerrainChunk::BuildChunk(
 
 	const int32 RenderTris = RuntimeStaticMesh ? RuntimeStaticMesh->GetNumTriangles(0) : 0;
 	UE_LOG(LogSolid, Warning,
-		TEXT("StaticMesh chunk (%d,%d) renderTris=%d actor=(%.0f,%.0f) Z=[%.0f,%.0f] material=%s"),
+		TEXT("StaticMesh chunk (%d,%d) renderTris=%d actor=(%.0f,%.0f) Z=[%.0f,%.0f] materials=%d biomes=%d"),
 		InChunkCoord.X, InChunkCoord.Y, RenderTris, OriginX, OriginY, MinZ, MaxZ,
-		Material ? *Material->GetName() : TEXT("<null>"));
+		Materials.Num(), BiomeToSlot.Num());
 }
 
 void ASolidTerrainChunk::RebuildExplorationFog(

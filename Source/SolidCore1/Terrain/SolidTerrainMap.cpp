@@ -1,6 +1,7 @@
 #include "SolidTerrainMap.h"
 #include "SolidTerrainFog.h"
 #include "SolidTerrainNoise.h"
+#include "SolidWorldMap.h"
 #include "SolidCore1.h"
 
 void USolidTerrainMap::Build(
@@ -28,9 +29,27 @@ void USolidTerrainMap::Build(
 		-0.5f * static_cast<float>(GridWidth - 1) * PointSpacing,
 		-0.5f * static_cast<float>(GridHeight - 1) * PointSpacing);
 
+	if (!WorldMap)
+	{
+		WorldMap = NewObject<USolidWorldMap>(this, TEXT("WorldMap"));
+	}
+	WorldMap->LoadDefault();
+
+	FogOriginXY = FVector2D::ZeroVector;
+	FVector2D StartTownXY = FVector2D::ZeroVector;
+	if (WorldMap->IsLoaded()
+		&& WorldMap->GetStartTownWorldXY(GetWorldMinXY(), GetWorldMaxXY(), StartTownXY))
+	{
+		FogOriginXY = StartTownXY;
+	}
+
 	Points.SetNum(GridWidth * GridHeight);
 
 	const float SafeAmp = FMath::Max(Amplitude, 1.f);
+	const bool bUseWorldMap = WorldMap && WorldMap->IsLoaded();
+	const FVector2D WorldMin = GetWorldMinXY();
+	const FVector2D WorldMax = GetWorldMaxXY();
+
 	for (int32 IY = 0; IY < GridHeight; ++IY)
 	{
 		for (int32 IX = 0; IX < GridWidth; ++IX)
@@ -42,16 +61,34 @@ void USolidTerrainMap::Build(
 				Point.X, Point.Y, Seed, FrequencyScale, Amplitude, BaseHeight);
 
 			const float HeightNorm = FMath::Clamp((Point.Height - BaseHeight) / SafeAmp, 0.f, 1.f);
-			Point.Biome = ChooseBiome(Point.X, Point.Y, HeightNorm, Seed);
+			if (bUseWorldMap)
+			{
+				Point.Biome = WorldMap->SampleBiome(Point.X, Point.Y, WorldMin, WorldMax);
+			}
+			else
+			{
+				Point.Biome = ChooseBiome(Point.X, Point.Y, HeightNorm, Seed);
+			}
 			FillThreatAndFog(Point, HeightNorm, Seed);
 		}
 	}
 
 	bIsBuilt = true;
 	UE_LOG(LogSolid, Warning,
-		TEXT("TerrainMap built: %dx%d spacing=%.0f cm seed=%d origin=(%.0f,%.0f) extent=(%.0f,%.0f)"),
+		TEXT("TerrainMap built: %dx%d spacing=%.0f cm seed=%d origin=(%.0f,%.0f) extent=(%.0f,%.0f) worldMap=%s fogOrigin=(%.0f,%.0f)"),
 		GridWidth, GridHeight, PointSpacing, Seed,
-		OriginXY.X, OriginXY.Y, GetWorldMaxXY().X, GetWorldMaxXY().Y);
+		OriginXY.X, OriginXY.Y, GetWorldMaxXY().X, GetWorldMaxXY().Y,
+		bUseWorldMap ? TEXT("yes") : TEXT("no"),
+		FogOriginXY.X, FogOriginXY.Y);
+}
+
+bool USolidTerrainMap::GetStartTownWorldXY(FVector2D& OutWorldXY) const
+{
+	if (!WorldMap || !WorldMap->IsLoaded())
+	{
+		return false;
+	}
+	return WorldMap->GetStartTownWorldXY(GetWorldMinXY(), GetWorldMaxXY(), OutWorldXY);
 }
 
 void USolidTerrainMap::WorldToIndex(float WorldX, float WorldY, int32& OutX, int32& OutY) const
@@ -199,6 +236,12 @@ void USolidTerrainMap::FillThreatAndFog(
 	case ESolidBiome::Swamp:
 		ThreatBase = 0.55f;
 		break;
+	case ESolidBiome::Sea:
+		ThreatBase = 0.15f;
+		break;
+	case ESolidBiome::River:
+		ThreatBase = 0.25f;
+		break;
 	default:
 		break;
 	}
@@ -214,8 +257,8 @@ void USolidTerrainMap::FillThreatAndFog(
 		Point.Threat = FMath::Min(Point.Threat, 0.08f);
 	}
 
-	// Initial exploration fog by distance from world origin (same bands as trail clear).
-	const float DistM = FVector2D(Point.X, Point.Y).Size() * 0.01f;
+	// Initial exploration fog by distance from start town (or world origin).
+	const float DistM = (FVector2D(Point.X, Point.Y) - FogOriginXY).Size() * 0.01f;
 	Point.Fog = SolidTerrainFog::FogFromDistanceMeters(DistM);
 }
 

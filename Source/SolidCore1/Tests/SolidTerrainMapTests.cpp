@@ -17,13 +17,14 @@ bool FSolidMapBuildSmokeTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("map reports built"), Map->IsBuilt());
 	TestEqual(TEXT("point count"), Map->GetPointCount(), 65 * 65);
 
-	const FSolidTerrainPoint Origin = Map->SamplePoint(0.f, 0.f);
-	TestTrue(TEXT("origin starts clear"), FMath::IsNearlyEqual(Origin.Fog, 0.f));
+	const FVector2D FogOrigin = Map->GetFogOriginXY();
+	const FSolidTerrainPoint Origin = Map->SamplePoint(FogOrigin.X, FogOrigin.Y);
+	TestTrue(TEXT("fog origin starts clear"), FMath::IsNearlyEqual(Origin.Fog, 0.f));
 
-	const FSolidTerrainPoint Far = Map->SamplePoint(6000.f, 0.f); // 60m
+	const FSolidTerrainPoint Far = Map->SamplePoint(FogOrigin.X + 6000.f, FogOrigin.Y); // 60m
 	TestTrue(TEXT("60m starts fully fogged"), FMath::IsNearlyEqual(Far.Fog, 1.f));
 
-	const FSolidTerrainPoint Mid = Map->SamplePoint(3500.f, 0.f); // 35m
+	const FSolidTerrainPoint Mid = Map->SamplePoint(FogOrigin.X + 3500.f, FogOrigin.Y); // 35m
 	TestTrue(TEXT("35m starts at half fog"), FMath::IsNearlyEqual(Mid.Fog, 0.5f));
 
 	return true;

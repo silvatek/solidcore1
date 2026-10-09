@@ -112,6 +112,10 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Map", meta = (ClampMin = "50.0"))
 	float TerrainPointSpacing = 200.f;
 
+	/** Low-res fog-of-war overlay quads per chunk edge (kept small for cheap rebuilds while moving). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "2", ClampMax = "32"))
+	int32 FogQuadsPerSide = 8;
+
 	/**
 	 * Legacy weather-style Exponential Height Fog. Off by default — exploration fog is
 	 * a spatial overlay on terrain chunks (fog-of-war), not global atmosphere.

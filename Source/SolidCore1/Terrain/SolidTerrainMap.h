@@ -73,11 +73,13 @@ public:
 	FSolidTerrainPoint SamplePoint(float WorldX, float WorldY) const;
 
 	/**
-	 * Set Fog=0 on every TerrainPoint within RadiusCm of (WorldX, WorldY).
-	 * Used to clear exploration fog along the player's trail.
+	 * Apply exploration fog bands around a trail sample (same thresholds as initial fill):
+	 *   <= ClearRadius → Fog=0
+	 *   ClearRadius..FullFogStart → Fog = min(Fog, 0.5)
+	 * Beyond FullFogStart unchanged. Never increases Fog.
 	 * @return Number of points whose Fog value changed.
 	 */
-	int32 ClearFogAround(float WorldX, float WorldY, float RadiusCm);
+	int32 ApplyExplorationFogAround(float WorldX, float WorldY);
 
 	FVector2D GetWorldMinXY() const { return OriginXY; }
 	FVector2D GetWorldMaxXY() const

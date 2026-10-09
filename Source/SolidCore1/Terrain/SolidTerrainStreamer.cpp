@@ -143,9 +143,10 @@ void ASolidTerrainStreamer::Tick(float DeltaSeconds)
 		if (AActor* Focus = ResolveFocusActor())
 		{
 			const FVector Loc = Focus->GetActorLocation();
+			// Refresh through the half-fog outer band (50m), not just the clear disk.
 			RefreshExplorationFogMeshesAround(
 				Loc.X, Loc.Y,
-				SolidTerrainFog::MetersToCm(SolidTerrainFog::ClearRadiusMeters) + ChunkWorldSize);
+				SolidTerrainFog::MetersToCm(SolidTerrainFog::FullFogStartMeters) + ChunkWorldSize * 0.5f);
 		}
 		bExplorationFogMeshesDirty = false;
 	}
@@ -161,8 +162,7 @@ int32 ASolidTerrainStreamer::ClearExplorationFogAtFocus()
 	if (AActor* Focus = ResolveFocusActor())
 	{
 		const FVector Loc = Focus->GetActorLocation();
-		return TerrainMap->ClearFogAround(
-			Loc.X, Loc.Y, SolidTerrainFog::MetersToCm(SolidTerrainFog::ClearRadiusMeters));
+		return TerrainMap->ApplyExplorationFogAround(Loc.X, Loc.Y);
 	}
 	return 0;
 }
@@ -171,9 +171,9 @@ void ASolidTerrainStreamer::EnsureExplorationFogMaterials()
 {
 	if (!ExplorationFogHalfMaterial)
 	{
-		// Hard to see through at fog ~= 0.5.
+		// Distinct mid band (fog ~= 0.5) — darker than full so the ring reads clearly.
 		ExplorationFogHalfMaterial = CreateSolidColorMaterial(
-			FLinearColor(0.78f, 0.82f, 0.86f), TEXT("ExplorationFogHalf"));
+			FLinearColor(0.52f, 0.58f, 0.64f), TEXT("ExplorationFogHalf"));
 	}
 	if (!ExplorationFogFullMaterial)
 	{
@@ -203,7 +203,8 @@ void ASolidTerrainStreamer::BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint
 		ResolveMaterial(),
 		ExplorationFogHalfMaterial,
 		ExplorationFogFullMaterial,
-		TerrainMap);
+		TerrainMap,
+		FogQuadsPerSide);
 }
 
 void ASolidTerrainStreamer::RefreshExplorationFogMeshesAround(float WorldX, float WorldY, float RadiusCm)
@@ -224,12 +225,16 @@ void ASolidTerrainStreamer::RefreshExplorationFogMeshesAround(float WorldX, floa
 		const FVector ChunkCenter = ChunkOrigin + FVector(ChunkWorldSize * 0.5f, ChunkWorldSize * 0.5f, 0.f);
 		const float DX = ChunkCenter.X - WorldX;
 		const float DY = ChunkCenter.Y - WorldY;
-		// Conservative: rebuild if chunk center or any corner could overlap the clear radius.
 		const float ChunkRadius = ChunkWorldSize * 0.75f;
 		const float Reach = RadiusCm + ChunkRadius;
 		if ((DX * DX + DY * DY) <= Reach * Reach)
 		{
-			BuildChunkActor(Chunk, Pair.Key);
+			// Overlay only — never rebuild terrain collision meshes while walking.
+			Chunk->RebuildExplorationFog(
+				ExplorationFogHalfMaterial,
+				ExplorationFogFullMaterial,
+				TerrainMap,
+				FogQuadsPerSide);
 		}
 	}
 }

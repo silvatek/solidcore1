@@ -29,7 +29,15 @@ public:
 		UMaterialInterface* Material,
 		UMaterialInterface* FogHalfMaterial,
 		UMaterialInterface* FogFullMaterial,
-		const USolidTerrainMap* TerrainMap);
+		const USolidTerrainMap* TerrainMap,
+		int32 InFogQuadsPerSide = 8);
+
+	/** Cheap fog-of-war refresh: rebuilds only the overlay mesh (no collision terrain rebuild). */
+	void RebuildExplorationFog(
+		UMaterialInterface* FogHalfMaterial,
+		UMaterialInterface* FogFullMaterial,
+		const USolidTerrainMap* TerrainMap,
+		int32 InFogQuadsPerSide = 8);
 
 	FIntPoint GetChunkCoord() const { return ChunkCoord; }
 
@@ -50,4 +58,8 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terrain")
 	FIntPoint ChunkCoord = FIntPoint::ZeroValue;
+
+	float CachedChunkWorldSize = 6400.f;
+	float CachedCollisionHeightBias = 0.f;
+	int32 CachedFogQuadsPerSide = 8;
 };

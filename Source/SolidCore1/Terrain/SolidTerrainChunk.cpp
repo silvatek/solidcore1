@@ -132,8 +132,9 @@ namespace SolidTerrainChunkPrivate
 
 		UStaticMesh::FBuildMeshDescriptionsParams BuildParams;
 		BuildParams.bBuildSimpleCollision = false;
-		BuildParams.bFastBuild = false;
-		BuildParams.bAllowCpuAccess = true;
+		// Fog overlays skip collision — fast build avoids the expensive path.
+		BuildParams.bFastBuild = !bBuildCollision;
+		BuildParams.bAllowCpuAccess = bBuildCollision;
 		BuildParams.bCommitMeshDescription = true;
 		BuildParams.bMarkPackageDirty = false;
 
@@ -203,18 +204,21 @@ void ASolidTerrainChunk::BuildChunk(
 	UMaterialInterface* Material,
 	UMaterialInterface* FogHalfMaterial,
 	UMaterialInterface* FogFullMaterial,
-	const USolidTerrainMap* TerrainMap)
+	const USolidTerrainMap* TerrainMap,
+	int32 InFogQuadsPerSide)
 {
 	ChunkCoord = InChunkCoord;
 	InQuadsPerSide = FMath::Clamp(InQuadsPerSide, 1, 256);
 	InChunkWorldSize = FMath::Max(InChunkWorldSize, 100.f);
 	InCollisionHeightBias = FMath::Max(InCollisionHeightBias, 0.f);
+	CachedChunkWorldSize = InChunkWorldSize;
+	CachedCollisionHeightBias = InCollisionHeightBias;
+	CachedFogQuadsPerSide = FMath::Clamp(InFogQuadsPerSide, 1, 64);
 
 	const int32 VertsPerSide = InQuadsPerSide + 1;
 	const float Step = InChunkWorldSize / static_cast<float>(InQuadsPerSide);
 	const float OriginX = static_cast<float>(InChunkCoord.X) * InChunkWorldSize;
 	const float OriginY = static_cast<float>(InChunkCoord.Y) * InChunkWorldSize;
-	constexpr float FogHeightOffsetCm = 12.f;
 
 	SetActorLocation(FVector(OriginX, OriginY, 0.f));
 
@@ -223,7 +227,6 @@ void ASolidTerrainChunk::BuildChunk(
 	TArray<FVector> Tangents;
 	TArray<FVector2D> UVs;
 	TArray<FLinearColor> Colors;
-	TArray<float> FogAmounts;
 	TArray<int32> Triangles;
 
 	Positions.Reserve(VertsPerSide * VertsPerSide);
@@ -231,7 +234,6 @@ void ASolidTerrainChunk::BuildChunk(
 	Tangents.Reserve(VertsPerSide * VertsPerSide);
 	UVs.Reserve(VertsPerSide * VertsPerSide);
 	Colors.Reserve(VertsPerSide * VertsPerSide);
-	FogAmounts.Reserve(VertsPerSide * VertsPerSide);
 	Triangles.Reserve(InQuadsPerSide * InQuadsPerSide * 6);
 
 	TArray<float> Heights;
@@ -270,11 +272,6 @@ void ASolidTerrainChunk::BuildChunk(
 			FLinearColor Grass = FLinearColor::LerpUsingHSV(DarkGrass, MidGrass, Speckle);
 			Grass = FLinearColor::LerpUsingHSV(Grass, DryGrass, HeightT * 0.30f);
 			Colors.Add(Grass);
-
-			const float Fog = (TerrainMap && TerrainMap->IsBuilt())
-				? TerrainMap->SamplePoint(WorldX, WorldY).Fog
-				: 1.f;
-			FogAmounts.Add(FMath::Clamp(Fog, 0.f, 1.f));
 		}
 	}
 
@@ -349,115 +346,144 @@ void ASolidTerrainChunk::BuildChunk(
 	MeshComponent->MarkRenderStateDirty();
 	MeshComponent->RecreatePhysicsState();
 
-	// --- Spatial exploration fog overlay (fog-of-war), not global height fog ---
+	RebuildExplorationFog(FogHalfMaterial, FogFullMaterial, TerrainMap, CachedFogQuadsPerSide);
+
+	const int32 RenderTris = RuntimeStaticMesh ? RuntimeStaticMesh->GetNumTriangles(0) : 0;
+	UE_LOG(LogTemp, Warning,
+		TEXT("[SolidCore1] StaticMesh chunk (%d,%d) renderTris=%d actor=(%.0f,%.0f) Z=[%.0f,%.0f] material=%s"),
+		InChunkCoord.X, InChunkCoord.Y, RenderTris, OriginX, OriginY, MinZ, MaxZ,
+		Material ? *Material->GetName() : TEXT("<null>"));
+}
+
+void ASolidTerrainChunk::RebuildExplorationFog(
+	UMaterialInterface* FogHalfMaterial,
+	UMaterialInterface* FogFullMaterial,
+	const USolidTerrainMap* TerrainMap,
+	int32 InFogQuadsPerSide)
+{
+	CachedFogQuadsPerSide = FMath::Clamp(
+		InFogQuadsPerSide > 0 ? InFogQuadsPerSide : CachedFogQuadsPerSide, 1, 64);
+	const float ChunkSize = FMath::Max(CachedChunkWorldSize, 100.f);
+	const int32 FogQuads = CachedFogQuadsPerSide;
+	const int32 FogVerts = FogQuads + 1;
+	const float Step = ChunkSize / static_cast<float>(FogQuads);
+	const float OriginX = static_cast<float>(ChunkCoord.X) * ChunkSize;
+	const float OriginY = static_cast<float>(ChunkCoord.Y) * ChunkSize;
+	constexpr float FogHeightOffsetCm = 12.f;
+
 	TArray<FVector> FogPositions;
 	TArray<FVector> FogNormals;
 	TArray<FVector> FogTangents;
 	TArray<FVector2D> FogUVs;
 	TArray<FLinearColor> FogColors;
+	TArray<float> FogAmounts;
+	FogPositions.Reserve(FogVerts * FogVerts);
+	FogNormals.Reserve(FogVerts * FogVerts);
+	FogTangents.Reserve(FogVerts * FogVerts);
+	FogUVs.Reserve(FogVerts * FogVerts);
+	FogColors.Reserve(FogVerts * FogVerts);
+	FogAmounts.Reserve(FogVerts * FogVerts);
+
+	for (int32 Y = 0; Y < FogVerts; ++Y)
+	{
+		for (int32 X = 0; X < FogVerts; ++X)
+		{
+			const float LocalX = static_cast<float>(X) * Step;
+			const float LocalY = static_cast<float>(Y) * Step;
+			const float WorldX = OriginX + LocalX;
+			const float WorldY = OriginY + LocalY;
+			const float Height = (TerrainMap && TerrainMap->IsBuilt())
+				? TerrainMap->SampleHeight(WorldX, WorldY)
+				: 0.f;
+			const float SurfaceZ = Height + CachedCollisionHeightBias + FogHeightOffsetCm;
+			FogPositions.Add(FVector(LocalX, LocalY, SurfaceZ));
+			FogNormals.Add(FVector::UpVector);
+			FogTangents.Add(FVector::RightVector);
+			FogUVs.Add(FVector2D(WorldX * 0.01f, WorldY * 0.01f));
+			FogColors.Add(FLinearColor::White);
+
+			const float Fog = (TerrainMap && TerrainMap->IsBuilt())
+				? TerrainMap->SamplePoint(WorldX, WorldY).Fog
+				: 1.f;
+			FogAmounts.Add(FMath::Clamp(Fog, 0.f, 1.f));
+		}
+	}
+
 	TArray<int32> FogTriangles;
 	TArray<int32> FogTriMaterials;
+	FogTriangles.Reserve(FogQuads * FogQuads * 6);
+	FogTriMaterials.Reserve(FogQuads * FogQuads * 2);
 
-	auto AppendFogQuad = [&](int32 I00, int32 I10, int32 I01, int32 I11, int32 MaterialSlot)
+	const bool bHaveHalf = FogHalfMaterial != nullptr;
+	const bool bHaveFull = FogFullMaterial != nullptr;
+	if (bHaveHalf || bHaveFull)
 	{
-		const int32 Base = FogPositions.Num();
-		const int32 Src[4] = { I00, I10, I01, I11 };
-		for (int32 Corner = 0; Corner < 4; ++Corner)
+		for (int32 Y = 0; Y < FogQuads; ++Y)
 		{
-			const int32 SrcIndex = Src[Corner];
-			FogPositions.Add(Positions[SrcIndex] + FVector(0.f, 0.f, FogHeightOffsetCm));
-			FogNormals.Add(Normals[SrcIndex]);
-			FogTangents.Add(Tangents[SrcIndex]);
-			FogUVs.Add(UVs[SrcIndex]);
-			FogColors.Add(FLinearColor::White);
-		}
-
-		// Same winding as terrain.
-		FogTriangles.Add(Base + 0);
-		FogTriangles.Add(Base + 3);
-		FogTriangles.Add(Base + 1);
-		FogTriangles.Add(Base + 0);
-		FogTriangles.Add(Base + 2);
-		FogTriangles.Add(Base + 3);
-		FogTriMaterials.Add(MaterialSlot);
-		FogTriMaterials.Add(MaterialSlot);
-	};
-
-	if (FogHalfMaterial || FogFullMaterial)
-	{
-		for (int32 Y = 0; Y < InQuadsPerSide; ++Y)
-		{
-			for (int32 X = 0; X < InQuadsPerSide; ++X)
+			for (int32 X = 0; X < FogQuads; ++X)
 			{
-				const int32 I00 = Y * VertsPerSide + X;
+				const int32 I00 = Y * FogVerts + X;
 				const int32 I10 = I00 + 1;
-				const int32 I01 = I00 + VertsPerSide;
+				const int32 I01 = I00 + FogVerts;
 				const int32 I11 = I01 + 1;
 
-				const float F00 = FogAmounts[I00];
-				const float F10 = FogAmounts[I10];
-				const float F01 = FogAmounts[I01];
-				const float F11 = FogAmounts[I11];
-				const float AvgFog = 0.25f * (F00 + F10 + F01 + F11);
-				const float MaxFog = FMath::Max(FMath::Max(F00, F10), FMath::Max(F01, F11));
+				const float AvgFog = 0.25f * (
+					FogAmounts[I00] + FogAmounts[I10] + FogAmounts[I01] + FogAmounts[I11]);
+				const float MaxFog = FMath::Max(
+					FMath::Max(FogAmounts[I00], FogAmounts[I10]),
+					FMath::Max(FogAmounts[I01], FogAmounts[I11]));
 
-				// Cleared trail / origin band: no overlay.
 				if (MaxFog <= 0.05f)
 				{
 					continue;
 				}
 
-				// fog ~= 0.5 → hard to see through; fog ~= 1 → impenetrable.
+				// Distinct bands: <0.75 average uses half material (fog~=0.5 zone).
 				const bool bFull = AvgFog >= 0.75f;
-				const int32 Slot = bFull ? 1 : 0;
-				if (Slot == 0 && !FogHalfMaterial)
+				int32 Slot = 0;
+				if (bHaveHalf && bHaveFull)
 				{
-					if (FogFullMaterial)
-					{
-						AppendFogQuad(I00, I10, I01, I11, 0);
-					}
-					continue;
+					Slot = bFull ? 1 : 0;
 				}
-				if (Slot == 1 && !FogFullMaterial)
+				else if (bHaveFull)
 				{
-					if (FogHalfMaterial)
-					{
-						AppendFogQuad(I00, I10, I01, I11, 0);
-					}
-					continue;
-				}
-
-				// Material slots: 0 = half, 1 = full when both present.
-				if (FogHalfMaterial && FogFullMaterial)
-				{
-					AppendFogQuad(I00, I10, I01, I11, bFull ? 1 : 0);
+					Slot = 0;
 				}
 				else
 				{
-					AppendFogQuad(I00, I10, I01, I11, 0);
+					Slot = 0;
 				}
+
+				FogTriangles.Add(I00);
+				FogTriangles.Add(I11);
+				FogTriangles.Add(I10);
+				FogTriangles.Add(I00);
+				FogTriangles.Add(I01);
+				FogTriangles.Add(I11);
+				FogTriMaterials.Add(Slot);
+				FogTriMaterials.Add(Slot);
 			}
 		}
 	}
 
 	TArray<UMaterialInterface*> FogMaterials;
-	if (FogHalfMaterial && FogFullMaterial)
+	if (bHaveHalf && bHaveFull)
 	{
 		FogMaterials.Add(FogHalfMaterial);
 		FogMaterials.Add(FogFullMaterial);
 	}
-	else if (FogFullMaterial)
+	else if (bHaveFull)
 	{
 		FogMaterials.Add(FogFullMaterial);
 	}
-	else if (FogHalfMaterial)
+	else if (bHaveHalf)
 	{
 		FogMaterials.Add(FogHalfMaterial);
 	}
 
 	RuntimeFogStaticMesh = nullptr;
 	FogMeshComponent->SetStaticMesh(nullptr);
-	if (FogPositions.Num() > 0 && FogMaterials.Num() > 0)
+	if (FogTriangles.Num() > 0 && FogMaterials.Num() > 0)
 	{
 		RuntimeFogStaticMesh = SolidTerrainChunkPrivate::BuildRuntimeMesh(
 			this, FogPositions, FogNormals, FogTangents, FogUVs, FogColors, FogTriangles,
@@ -478,11 +504,4 @@ void ASolidTerrainChunk::BuildChunk(
 	{
 		FogMeshComponent->SetVisibility(false);
 	}
-
-	const int32 RenderTris = RuntimeStaticMesh ? RuntimeStaticMesh->GetNumTriangles(0) : 0;
-	const int32 FogTris = RuntimeFogStaticMesh ? RuntimeFogStaticMesh->GetNumTriangles(0) : 0;
-	UE_LOG(LogTemp, Warning,
-		TEXT("[SolidCore1] StaticMesh chunk (%d,%d) renderTris=%d fogTris=%d actor=(%.0f,%.0f) Z=[%.0f,%.0f] material=%s"),
-		InChunkCoord.X, InChunkCoord.Y, RenderTris, FogTris, OriginX, OriginY, MinZ, MaxZ,
-		Material ? *Material->GetName() : TEXT("<null>"));
 }

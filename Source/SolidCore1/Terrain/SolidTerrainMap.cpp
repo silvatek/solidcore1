@@ -229,24 +229,28 @@ void USolidTerrainMap::FillThreatAndFog(
 	}
 }
 
-int32 USolidTerrainMap::ClearFogAround(float WorldX, float WorldY, float RadiusCm)
+int32 USolidTerrainMap::ApplyExplorationFogAround(float WorldX, float WorldY)
 {
-	if (!IsBuilt() || RadiusCm <= 0.f)
+	if (!IsBuilt())
 	{
 		return 0;
 	}
 
-	const float RadiusSq = RadiusCm * RadiusCm;
-	const int32 X0 = FMath::Clamp(
-		FMath::FloorToInt((WorldX - RadiusCm - OriginXY.X) / PointSpacing), 0, GridWidth - 1);
-	const int32 X1 = FMath::Clamp(
-		FMath::CeilToInt((WorldX + RadiusCm - OriginXY.X) / PointSpacing), 0, GridWidth - 1);
-	const int32 Y0 = FMath::Clamp(
-		FMath::FloorToInt((WorldY - RadiusCm - OriginXY.Y) / PointSpacing), 0, GridHeight - 1);
-	const int32 Y1 = FMath::Clamp(
-		FMath::CeilToInt((WorldY + RadiusCm - OriginXY.Y) / PointSpacing), 0, GridHeight - 1);
+	const float ClearRadiusCm = SolidTerrainFog::MetersToCm(SolidTerrainFog::ClearRadiusMeters);
+	const float HalfOuterCm = SolidTerrainFog::MetersToCm(SolidTerrainFog::FullFogStartMeters);
+	const float ClearRadiusSq = ClearRadiusCm * ClearRadiusCm;
+	const float HalfOuterSq = HalfOuterCm * HalfOuterCm;
 
-	int32 Cleared = 0;
+	const int32 X0 = FMath::Clamp(
+		FMath::FloorToInt((WorldX - HalfOuterCm - OriginXY.X) / PointSpacing), 0, GridWidth - 1);
+	const int32 X1 = FMath::Clamp(
+		FMath::CeilToInt((WorldX + HalfOuterCm - OriginXY.X) / PointSpacing), 0, GridWidth - 1);
+	const int32 Y0 = FMath::Clamp(
+		FMath::FloorToInt((WorldY - HalfOuterCm - OriginXY.Y) / PointSpacing), 0, GridHeight - 1);
+	const int32 Y1 = FMath::Clamp(
+		FMath::CeilToInt((WorldY + HalfOuterCm - OriginXY.Y) / PointSpacing), 0, GridHeight - 1);
+
+	int32 Changed = 0;
 	for (int32 IY = Y0; IY <= Y1; ++IY)
 	{
 		for (int32 IX = X0; IX <= X1; ++IX)
@@ -254,12 +258,28 @@ int32 USolidTerrainMap::ClearFogAround(float WorldX, float WorldY, float RadiusC
 			FSolidTerrainPoint& Point = Points[IY * GridWidth + IX];
 			const float DX = Point.X - WorldX;
 			const float DY = Point.Y - WorldY;
-			if ((DX * DX + DY * DY) <= RadiusSq && Point.Fog > 0.f)
+			const float DistSq = DX * DX + DY * DY;
+			if (DistSq > HalfOuterSq)
+			{
+				continue;
+			}
+
+			const float OldFog = Point.Fog;
+			if (DistSq <= ClearRadiusSq)
 			{
 				Point.Fog = 0.f;
-				++Cleared;
+			}
+			else
+			{
+				// 25–50m ring: pull full fog down to half, leave clearer points alone.
+				Point.Fog = FMath::Min(Point.Fog, 0.5f);
+			}
+
+			if (!FMath::IsNearlyEqual(OldFog, Point.Fog))
+			{
+				++Changed;
 			}
 		}
 	}
-	return Cleared;
+	return Changed;
 }

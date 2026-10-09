@@ -113,17 +113,7 @@ bool FSolidStreamerRelocateCompanionsWithFocusTest::RunTest(const FString& Param
 	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::EnsureExists(World);
 	TestNotNull(TEXT("streamer"), Streamer);
 
-	// Avoid SolidCompanionCharacter BeginPlay mesh/anim Errors under NullRHI:
-	// exercise RelocateCompanionsByDelta with a plain Character tagged as companion subclass
-	// by spawning the companion class only if we can skip visuals — instead call the delta
-	// API after placing a finished companion with expected errors suppressed, OR use a
-	// minimal approach: spawn Character and temporarily rely on public delta + companion class
-	// with FinishSpawning + expected errors.
-
-	AddExpectedError(TEXT("skeletal mesh missing"), EAutomationExpectedErrorFlags::Contains, 0);
-	AddExpectedError(TEXT("AnimSingleNodeInstance"), EAutomationExpectedErrorFlags::Contains, 0);
-	AddExpectedError(TEXT("missing"), EAutomationExpectedErrorFlags::Contains, 0);
-
+	// Viking mesh is a required Content dependency, so BeginPlay should not Error.
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 

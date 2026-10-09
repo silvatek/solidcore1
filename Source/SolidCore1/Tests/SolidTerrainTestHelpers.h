@@ -59,11 +59,13 @@ namespace SolidTerrainTestHelpers
 		const float RoomPosX = MaxXY.X - Origin.X;
 		const float RoomNegY = Origin.Y - MinXY.Y;
 		const float RoomPosY = MaxXY.Y - Origin.Y;
-		const float Best = FMath::Max3(FMath::Max(RoomNegX, RoomPosX), RoomNegY, RoomPosY);
-		if (Best == RoomNegX) return FVector2D(-1.f, 0.f);
-		if (Best == RoomPosX) return FVector2D(1.f, 0.f);
-		if (Best == RoomNegY) return FVector2D(0.f, -1.f);
-		return FVector2D(0.f, 1.f);
+		const float BestX = FMath::Max(RoomNegX, RoomPosX);
+		const float BestY = FMath::Max(RoomNegY, RoomPosY);
+		if (BestX >= BestY)
+		{
+			return (RoomNegX >= RoomPosX) ? FVector2D(-1.f, 0.f) : FVector2D(1.f, 0.f);
+		}
+		return (RoomNegY >= RoomPosY) ? FVector2D(0.f, -1.f) : FVector2D(0.f, 1.f);
 	}
 
 	/** A point that starts at full fog and leaves room for ±35m trail probes in-bounds. */

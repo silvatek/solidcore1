@@ -120,9 +120,12 @@ ASolidCompanionCharacter* ASolidGameMode::SpawnCompanion(
 	EnsureCompanyAndParty();
 	const ESolidBattleFormation Formation = Party
 		? Party->GetActiveFormation()
-		: ESolidBattleFormation::Column;
+		: ESolidBattleFormation::Line;
+	const ESolidBattleSpacing Spacing = Party
+		? Party->GetActiveSpacing()
+		: ESolidBattleSpacing::Standard;
 	const FVector2D Slot = SolidBattleFormationSlots::SlotOffset(
-		Formation, PartySlotIndex, DefaultCompanionCount);
+		Formation, PartySlotIndex, DefaultCompanionCount, Spacing);
 
 	const FVector PlayerLoc = PlayerPawn->GetActorLocation();
 	const FVector PlayerFwd = PlayerPawn->GetActorForwardVector();

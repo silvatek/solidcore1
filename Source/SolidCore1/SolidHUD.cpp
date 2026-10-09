@@ -119,26 +119,36 @@ namespace SolidHUDPrivate
 			SlotLines.Add(FormatBattlePlanSlotLine(Slot, Plan));
 		}
 
+		// Fixed 2-char marker column ("> " or "  ") so F-keys / names stay aligned.
+		auto WithMarker = [](const FString& Body, const bool bActive) -> FString
+		{
+			return bActive
+				? FString::Printf(TEXT("> %s"), *Body)
+				: FString::Printf(TEXT("  %s"), *Body);
+		};
+
 		float MaxWidth = 0.f;
 		float LineHeight = 14.f;
-		for (const FString& Line : SlotLines)
+		for (int32 LineIndex = 0; LineIndex < SlotLines.Num(); ++LineIndex)
 		{
+			const bool bActivePreview = (LineIndex > 0) && Party
+				&& (LineIndex - 1) == ActiveSlot
+				&& Party->GetAssignedBattlePlan(LineIndex - 1) != nullptr;
+			const FString Measured = WithMarker(SlotLines[LineIndex], bActivePreview);
 			float W = 0.f;
 			float H = 0.f;
 			if (Font)
 			{
-				Canvas->StrLen(Font, Line, W, H);
+				Canvas->StrLen(Font, Measured, W, H);
 			}
 			else
 			{
-				W = static_cast<float>(Line.Len() * 8);
+				W = static_cast<float>(Measured.Len() * 8);
 				H = 14.f;
 			}
 			MaxWidth = FMath::Max(MaxWidth, W);
 			LineHeight = FMath::Max(LineHeight, H);
 		}
-		// Room for active marker prefix.
-		MaxWidth += 16.f;
 
 		const float BlockHeight = SlotLines.Num() * LineHeight + (SlotLines.Num() - 1) * LineGap;
 		FCanvasTileItem Background(
@@ -178,10 +188,7 @@ namespace SolidHUDPrivate
 				Canvas->DrawItem(Highlight);
 			}
 
-			const FString DrawText = bActive
-				? FString::Printf(TEXT("> %s"), *SlotLines[LineIndex])
-				: (bTitle ? SlotLines[LineIndex] : FString::Printf(TEXT("  %s"), *SlotLines[LineIndex]));
-
+			const FString DrawText = WithMarker(SlotLines[LineIndex], bActive);
 			FCanvasTextItem TextItem(FVector2D(PadX, Y), FText::FromString(DrawText), Font, Color);
 			TextItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.9f));
 			Canvas->DrawItem(TextItem);

@@ -14,7 +14,7 @@ class SOLIDCORE1_API USolidCompany : public UObject
 	GENERATED_BODY()
 
 public:
-	/** Seed Line / Column / Mob starter plans (idempotent). */
+	/** Seed Line / Column / Tight mob / Loose mob starter plans (idempotent). */
 	void InitializeDefaultBattlePlans();
 
 	const TArray<FSolidBattlePlan>& GetAllBattlePlans() const { return AllBattlePlans; }

@@ -157,13 +157,17 @@ Goal: the world starts shrouded; fog clears only where the **pawn has been** (tr
 
 Floating nameplates (`SolidNameLabel`) sit above each Party member and face the view camera: TextRender plus thin cube **border** and contrasting **background** plates. Defaults: Captain **"Outcast"** (larger warm amber on dark plate), Companions muted slate plates. Override via `CharacterDisplayName` / `SetCharacterDisplayName`.
 
-## Battle plans (SC1-0095)
+## Battle plans (SC1-0095 / SC1-0101)
 
-- **Company** (`USolidCompany`) owns the catalog of all battle plans (starter: Line, Column, Mob).
-- **Party** (`USolidParty`) holds up to 8 **assigned** plans from that catalog and one **active** plan (default Column).
-- Formations drive Companion follow slots: **Line** (flanks), **Column** (file behind), **Mob** (tight triangle behind).
+- **Company** (`USolidCompany`) owns the catalog of all battle plans. Starter assigned set:
+  - **F1 Line** (Standard) — companions on the flanks
+  - **F2 Column** (Standard) — file behind the Captain
+  - **F3 Tight mob** (Narrow) — close triangle behind
+  - **F4 Loose mob** (Wide) — spread triangle behind
+- **Party** (`USolidParty`) holds up to 8 **assigned** plans and one **active** plan (default **F1 Line**).
+- Each plan has a **formation** plus **spacing** (`Narrow` / `Standard` / `Wide`) that scales follow distances.
 - Captain switches assigned slots with **F1–F8** (only filled slots work).
-- HUD shows a **Battle Plans** panel under the tech block: all 8 slots, F-key + name when assigned, active slot highlighted in amber.
+- HUD shows a **Battle Plans** panel under the tech block: all 8 slots, F-key + name when assigned, active slot highlighted in amber (aligned marker column).
 - Engine viewmode debug binds (wireframe/unlit/lit/…) are moved to **Ctrl+F1–F5** in `Config/DefaultInput.ini` so bare F-keys stay free for battle plans. Restart the editor after pulling.
 
 ## Companion (SC1-0024 / SC1-0093)

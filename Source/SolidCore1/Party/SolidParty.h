@@ -17,7 +17,7 @@ class SOLIDCORE1_API USolidParty : public UObject
 	GENERATED_BODY()
 
 public:
-	/** Bind to Company, assign starter plans (Line/Column/Mob), activate Column. */
+	/** Bind to Company, assign starter plans, activate F1 (Line). */
 	void InitializeFromCompany(USolidCompany* InCompany);
 
 	USolidCompany* GetCompany() const { return Company; }
@@ -37,6 +37,7 @@ public:
 	const FSolidBattlePlan* GetActiveBattlePlan() const;
 
 	ESolidBattleFormation GetActiveFormation() const;
+	ESolidBattleSpacing GetActiveSpacing() const;
 
 	FString GetActiveBattlePlanDebugString() const;
 

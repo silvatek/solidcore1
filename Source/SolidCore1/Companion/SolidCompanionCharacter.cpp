@@ -289,7 +289,10 @@ void ASolidCompanionCharacter::UpdateFollow(float /*DeltaSeconds*/)
 			{
 				const int32 CompanionCount = FMath::Max(GameMode->GetCompanions().Num(), 1);
 				const FVector2D Slot = SolidBattleFormationSlots::SlotOffset(
-					Party->GetActiveFormation(), PartySlotIndex, CompanionCount);
+					Party->GetActiveFormation(),
+					PartySlotIndex,
+					CompanionCount,
+					Party->GetActiveSpacing());
 				AlongForward = Slot.X;
 				AlongRight = Slot.Y;
 			}

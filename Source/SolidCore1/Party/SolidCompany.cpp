@@ -7,9 +7,22 @@ void USolidCompany::InitializeDefaultBattlePlans()
 		return;
 	}
 
-	AllBattlePlans.Add({TEXT("Line"), ESolidBattleFormation::Line});
-	AllBattlePlans.Add({TEXT("Column"), ESolidBattleFormation::Column});
-	AllBattlePlans.Add({TEXT("Mob"), ESolidBattleFormation::Mob});
+	AllBattlePlans.Add({
+		TEXT("Line"),
+		ESolidBattleFormation::Line,
+		ESolidBattleSpacing::Standard});
+	AllBattlePlans.Add({
+		TEXT("Column"),
+		ESolidBattleFormation::Column,
+		ESolidBattleSpacing::Standard});
+	AllBattlePlans.Add({
+		TEXT("Tight mob"),
+		ESolidBattleFormation::Mob,
+		ESolidBattleSpacing::Narrow});
+	AllBattlePlans.Add({
+		TEXT("Loose mob"),
+		ESolidBattleFormation::Mob,
+		ESolidBattleSpacing::Wide});
 }
 
 const FSolidBattlePlan* USolidCompany::GetBattlePlan(const int32 Index) const

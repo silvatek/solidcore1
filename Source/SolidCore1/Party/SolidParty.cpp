@@ -22,20 +22,8 @@ void USolidParty::InitializeFromCompany(USolidCompany* InCompany)
 	}
 	SetAssignedBattlePlans(Starter);
 
-	// Default active: Column (matches the classic file-behind Captain feel).
-	const int32 ColumnIndex = Company->FindBattlePlanIndexByName(TEXT("Column"));
+	// Default active: F1 (first assigned slot — Line in the starter catalog).
 	ActiveAssignedSlot = 0;
-	if (ColumnIndex != INDEX_NONE)
-	{
-		for (int32 Slot = 0; Slot < AssignedCompanyPlanIndices.Num(); ++Slot)
-		{
-			if (AssignedCompanyPlanIndices[Slot] == ColumnIndex)
-			{
-				ActiveAssignedSlot = Slot;
-				break;
-			}
-		}
-	}
 }
 
 bool USolidParty::SetAssignedBattlePlans(const TArray<int32>& CompanyPlanIndices)
@@ -100,7 +88,16 @@ ESolidBattleFormation USolidParty::GetActiveFormation() const
 	{
 		return Plan->Formation;
 	}
-	return ESolidBattleFormation::Column;
+	return ESolidBattleFormation::Line;
+}
+
+ESolidBattleSpacing USolidParty::GetActiveSpacing() const
+{
+	if (const FSolidBattlePlan* Plan = GetActiveBattlePlan())
+	{
+		return Plan->Spacing;
+	}
+	return ESolidBattleSpacing::Standard;
 }
 
 FString USolidParty::GetActiveBattlePlanDebugString() const
@@ -111,9 +108,10 @@ FString USolidParty::GetActiveBattlePlanDebugString() const
 		return TEXT("BattlePlan <none>");
 	}
 	return FString::Printf(
-		TEXT("BattlePlan F%d/%d %s (%s)"),
+		TEXT("BattlePlan F%d/%d %s (%s, %s)"),
 		ActiveAssignedSlot + 1,
 		AssignedCompanyPlanIndices.Num(),
 		*Plan->Name,
-		SolidBattleFormationSlots::FormationName(Plan->Formation));
+		SolidBattleFormationSlots::FormationName(Plan->Formation),
+		SolidBattleFormationSlots::SpacingName(Plan->Spacing));
 }

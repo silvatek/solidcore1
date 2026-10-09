@@ -16,8 +16,10 @@ bool FSolidBattleFormationSlotsTest::RunTest(const FString& Parameters)
 {
 	constexpr int32 Count = 2;
 
-	const FVector2D Line0 = SolidBattleFormationSlots::SlotOffset(ESolidBattleFormation::Line, 0, Count);
-	const FVector2D Line1 = SolidBattleFormationSlots::SlotOffset(ESolidBattleFormation::Line, 1, Count);
+	const FVector2D Line0 = SolidBattleFormationSlots::SlotOffset(
+		ESolidBattleFormation::Line, 0, Count, ESolidBattleSpacing::Standard);
+	const FVector2D Line1 = SolidBattleFormationSlots::SlotOffset(
+		ESolidBattleFormation::Line, 1, Count, ESolidBattleSpacing::Standard);
 	TestTrue(TEXT("line: both slightly behind"), Line0.X < 0.f && Line1.X < 0.f);
 	TestTrue(TEXT("line: opposite flanks"), Line0.Y * Line1.Y < 0.f);
 	TestEqual(
@@ -25,21 +27,26 @@ bool FSolidBattleFormationSlotsTest::RunTest(const FString& Parameters)
 		static_cast<float>(Line0.X),
 		static_cast<float>(Line1.X));
 
-	const FVector2D Col0 = SolidBattleFormationSlots::SlotOffset(ESolidBattleFormation::Column, 0, Count);
-	const FVector2D Col1 = SolidBattleFormationSlots::SlotOffset(ESolidBattleFormation::Column, 1, Count);
+	const FVector2D Col0 = SolidBattleFormationSlots::SlotOffset(
+		ESolidBattleFormation::Column, 0, Count, ESolidBattleSpacing::Standard);
+	const FVector2D Col1 = SolidBattleFormationSlots::SlotOffset(
+		ESolidBattleFormation::Column, 1, Count, ESolidBattleSpacing::Standard);
 	TestTrue(TEXT("column: alex further back than sam"), Col1.X < Col0.X);
 	TestEqual(TEXT("column: centered"), static_cast<float>(Col0.Y), 0.f);
 	TestEqual(TEXT("column: alex centered"), static_cast<float>(Col1.Y), 0.f);
 
-	const FVector2D Mob0 = SolidBattleFormationSlots::SlotOffset(ESolidBattleFormation::Mob, 0, Count);
-	const FVector2D Mob1 = SolidBattleFormationSlots::SlotOffset(ESolidBattleFormation::Mob, 1, Count);
-	TestTrue(TEXT("mob: both behind"), Mob0.X < 0.f && Mob1.X < 0.f);
-	TestEqual(
-		TEXT("mob: same depth (triangle base)"),
-		static_cast<float>(Mob0.X),
-		static_cast<float>(Mob1.X));
-	TestTrue(TEXT("mob: opposite flanks"), Mob0.Y * Mob1.Y < 0.f);
-	TestTrue(TEXT("mob: tighter than line"), FMath::Abs(Mob0.Y) < FMath::Abs(Line0.Y));
+	const FVector2D MobStd0 = SolidBattleFormationSlots::SlotOffset(
+		ESolidBattleFormation::Mob, 0, Count, ESolidBattleSpacing::Standard);
+	const FVector2D MobNarrow0 = SolidBattleFormationSlots::SlotOffset(
+		ESolidBattleFormation::Mob, 0, Count, ESolidBattleSpacing::Narrow);
+	const FVector2D MobWide0 = SolidBattleFormationSlots::SlotOffset(
+		ESolidBattleFormation::Mob, 0, Count, ESolidBattleSpacing::Wide);
+	TestTrue(TEXT("mob: both behind"), MobStd0.X < 0.f);
+	TestTrue(TEXT("mob: tighter than line (standard)"), FMath::Abs(MobStd0.Y) < FMath::Abs(Line0.Y));
+	TestTrue(TEXT("narrow closer than standard"), FMath::Abs(MobNarrow0.Y) < FMath::Abs(MobStd0.Y));
+	TestTrue(TEXT("wide farther than standard"), FMath::Abs(MobWide0.Y) > FMath::Abs(MobStd0.Y));
+	TestTrue(TEXT("narrow shallower than standard"), FMath::Abs(MobNarrow0.X) < FMath::Abs(MobStd0.X));
+	TestTrue(TEXT("wide deeper than standard"), FMath::Abs(MobWide0.X) > FMath::Abs(MobStd0.X));
 	return true;
 }
 
@@ -53,23 +60,31 @@ bool FSolidCompanyDefaultPlansTest::RunTest(const FString& Parameters)
 	USolidCompany* Company = NewObject<USolidCompany>();
 	TestNotNull(TEXT("company"), Company);
 	Company->InitializeDefaultBattlePlans();
-	TestEqual(TEXT("three starter plans"), Company->GetBattlePlanCount(), 3);
+	TestEqual(TEXT("four starter plans"), Company->GetBattlePlanCount(), 4);
 	Company->InitializeDefaultBattlePlans();
-	TestEqual(TEXT("idempotent init"), Company->GetBattlePlanCount(), 3);
+	TestEqual(TEXT("idempotent init"), Company->GetBattlePlanCount(), 4);
 
 	const FSolidBattlePlan* Line = Company->GetBattlePlan(0);
 	const FSolidBattlePlan* Column = Company->GetBattlePlan(1);
-	const FSolidBattlePlan* Mob = Company->GetBattlePlan(2);
+	const FSolidBattlePlan* Tight = Company->GetBattlePlan(2);
+	const FSolidBattlePlan* Loose = Company->GetBattlePlan(3);
 	TestNotNull(TEXT("line plan"), Line);
 	TestNotNull(TEXT("column plan"), Column);
-	TestNotNull(TEXT("mob plan"), Mob);
+	TestNotNull(TEXT("tight mob"), Tight);
+	TestNotNull(TEXT("loose mob"), Loose);
 	TestEqual(TEXT("line name"), Line->Name, FString(TEXT("Line")));
 	TestEqual(TEXT("column name"), Column->Name, FString(TEXT("Column")));
-	TestEqual(TEXT("mob name"), Mob->Name, FString(TEXT("Mob")));
+	TestEqual(TEXT("tight name"), Tight->Name, FString(TEXT("Tight mob")));
+	TestEqual(TEXT("loose name"), Loose->Name, FString(TEXT("Loose mob")));
 	TestTrue(TEXT("line formation"), Line->Formation == ESolidBattleFormation::Line);
 	TestTrue(TEXT("column formation"), Column->Formation == ESolidBattleFormation::Column);
-	TestTrue(TEXT("mob formation"), Mob->Formation == ESolidBattleFormation::Mob);
-	TestEqual(TEXT("find column"), Company->FindBattlePlanIndexByName(TEXT("Column")), 1);
+	TestTrue(TEXT("tight formation mob"), Tight->Formation == ESolidBattleFormation::Mob);
+	TestTrue(TEXT("loose formation mob"), Loose->Formation == ESolidBattleFormation::Mob);
+	TestTrue(TEXT("line standard spacing"), Line->Spacing == ESolidBattleSpacing::Standard);
+	TestTrue(TEXT("column standard spacing"), Column->Spacing == ESolidBattleSpacing::Standard);
+	TestTrue(TEXT("tight narrow spacing"), Tight->Spacing == ESolidBattleSpacing::Narrow);
+	TestTrue(TEXT("loose wide spacing"), Loose->Spacing == ESolidBattleSpacing::Wide);
+	TestEqual(TEXT("find loose mob"), Company->FindBattlePlanIndexByName(TEXT("Loose mob")), 3);
 	TestNull(TEXT("out of range"), Company->GetBattlePlan(99));
 	return true;
 }
@@ -87,18 +102,23 @@ bool FSolidPartyAssignedPlansTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("party"), Party);
 
 	Party->InitializeFromCompany(Company);
-	TestEqual(TEXT("assigned starter count"), Party->GetAssignedCount(), 3);
-	TestTrue(TEXT("active is column by default"),
-		Party->GetActiveFormation() == ESolidBattleFormation::Column);
-	TestEqual(TEXT("active slot is column index"), Party->GetActiveAssignedSlot(), 1);
+	TestEqual(TEXT("assigned starter count"), Party->GetAssignedCount(), 4);
+	TestTrue(TEXT("active is line by default"),
+		Party->GetActiveFormation() == ESolidBattleFormation::Line);
+	TestEqual(TEXT("active slot is F1"), Party->GetActiveAssignedSlot(), 0);
+	TestTrue(TEXT("default spacing standard"),
+		Party->GetActiveSpacing() == ESolidBattleSpacing::Standard);
 
-	TestTrue(TEXT("select F1 line"), Party->SelectAssignedSlot(0));
-	TestTrue(TEXT("active line"), Party->GetActiveFormation() == ESolidBattleFormation::Line);
-	TestTrue(TEXT("select F3 mob"), Party->SelectAssignedSlot(2));
+	TestTrue(TEXT("select F2 column"), Party->SelectAssignedSlot(1));
+	TestTrue(TEXT("active column"), Party->GetActiveFormation() == ESolidBattleFormation::Column);
+	TestTrue(TEXT("select F3 tight mob"), Party->SelectAssignedSlot(2));
 	TestTrue(TEXT("active mob"), Party->GetActiveFormation() == ESolidBattleFormation::Mob);
-	TestFalse(TEXT("reject empty F4"), Party->SelectAssignedSlot(3));
-	TestFalse(TEXT("reject F8 when only 3"), Party->SelectAssignedSlot(7));
-	TestEqual(TEXT("slot unchanged after reject"), Party->GetActiveAssignedSlot(), 2);
+	TestTrue(TEXT("tight narrow"), Party->GetActiveSpacing() == ESolidBattleSpacing::Narrow);
+	TestTrue(TEXT("select F4 loose mob"), Party->SelectAssignedSlot(3));
+	TestTrue(TEXT("loose wide"), Party->GetActiveSpacing() == ESolidBattleSpacing::Wide);
+	TestFalse(TEXT("reject empty F5"), Party->SelectAssignedSlot(4));
+	TestFalse(TEXT("reject F8 when only 4"), Party->SelectAssignedSlot(7));
+	TestEqual(TEXT("slot unchanged after reject"), Party->GetActiveAssignedSlot(), 3);
 
 	// Max 8 assigned — grow the Company catalog first so indices are unique.
 	TArray<int32> TooMany;
@@ -107,6 +127,7 @@ bool FSolidPartyAssignedPlansTest::RunTest(const FString& Parameters)
 		FSolidBattlePlan Extra;
 		Extra.Name = FString::Printf(TEXT("Extra%d"), i);
 		Extra.Formation = ESolidBattleFormation::Mob;
+		Extra.Spacing = ESolidBattleSpacing::Standard;
 		TooMany.Add(Company->AddBattlePlan(Extra));
 	}
 	TestTrue(TEXT("set assigned"), Party->SetAssignedBattlePlans(TooMany));
@@ -125,16 +146,19 @@ bool FSolidGameModeBattlePlanSelectTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("gamemode"), GameMode);
 	TestNotNull(TEXT("company"), GameMode->GetCompany());
 	TestNotNull(TEXT("party"), GameMode->GetParty());
-	TestEqual(TEXT("company plans"), GameMode->GetCompany()->GetBattlePlanCount(), 3);
-	TestTrue(TEXT("default column"),
-		GameMode->GetParty()->GetActiveFormation() == ESolidBattleFormation::Column);
-
-	TestTrue(TEXT("F1 line"), GameMode->SelectBattlePlanSlot(0));
-	TestTrue(TEXT("formation line"),
+	TestEqual(TEXT("company plans"), GameMode->GetCompany()->GetBattlePlanCount(), 4);
+	TestTrue(TEXT("default line"),
 		GameMode->GetParty()->GetActiveFormation() == ESolidBattleFormation::Line);
+	TestEqual(TEXT("default F1"), GameMode->GetParty()->GetActiveAssignedSlot(), 0);
+
 	TestTrue(TEXT("F2 column"), GameMode->SelectBattlePlanSlot(1));
-	TestTrue(TEXT("F3 mob"), GameMode->SelectBattlePlanSlot(2));
-	TestFalse(TEXT("F4 empty"), GameMode->SelectBattlePlanSlot(3));
+	TestTrue(TEXT("formation column"),
+		GameMode->GetParty()->GetActiveFormation() == ESolidBattleFormation::Column);
+	TestTrue(TEXT("F3 tight"), GameMode->SelectBattlePlanSlot(2));
+	TestTrue(TEXT("F4 loose"), GameMode->SelectBattlePlanSlot(3));
+	TestTrue(TEXT("loose wide"),
+		GameMode->GetParty()->GetActiveSpacing() == ESolidBattleSpacing::Wide);
+	TestFalse(TEXT("F5 empty"), GameMode->SelectBattlePlanSlot(4));
 	return true;
 }
 

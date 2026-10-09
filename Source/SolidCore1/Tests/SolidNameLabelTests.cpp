@@ -54,11 +54,11 @@ bool FSolidNameLabelCaptainDefaultsTest::RunTest(const FString& Parameters)
 	}
 	if (UStaticMeshComponent* Border = Captain->GetNameLabelBorder())
 	{
-		TestNotNull(TEXT("border mesh assigned"), Border->GetStaticMesh());
+		TestNotNull(TEXT("border mesh assigned"), Border->GetStaticMesh().Get());
 	}
 	if (UStaticMeshComponent* Background = Captain->GetNameLabelBackground())
 	{
-		TestNotNull(TEXT("background mesh assigned"), Background->GetStaticMesh());
+		TestNotNull(TEXT("background mesh assigned"), Background->GetStaticMesh().Get());
 		TestTrue(TEXT("background smaller than border (width)"),
 			Background->GetRelativeScale3D().Y < Captain->GetNameLabelBorder()->GetRelativeScale3D().Y);
 	}

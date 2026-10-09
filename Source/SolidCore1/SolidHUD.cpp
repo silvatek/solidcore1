@@ -119,41 +119,41 @@ namespace SolidHUDPrivate
 			SlotLines.Add(FormatBattlePlanSlotLine(Slot, Plan));
 		}
 
-		// Fixed 2-char marker column ("> " or "  ") so F-keys / names stay aligned.
-		auto WithMarker = [](const FString& Body, const bool bActive) -> FString
-		{
-			return bActive
-				? FString::Printf(TEXT("> %s"), *Body)
-				: FString::Printf(TEXT("  %s"), *Body);
-		};
-
-		float MaxWidth = 0.f;
+		// Proportional fonts: don't prefix strings. Draw marker and body at fixed X.
+		float MarkerWidth = 10.f;
 		float LineHeight = 14.f;
-		for (int32 LineIndex = 0; LineIndex < SlotLines.Num(); ++LineIndex)
+		float BodyMaxWidth = 0.f;
+		if (Font)
 		{
-			const bool bActivePreview = (LineIndex > 0) && Party
-				&& (LineIndex - 1) == ActiveSlot
-				&& Party->GetAssignedBattlePlan(LineIndex - 1) != nullptr;
-			const FString Measured = WithMarker(SlotLines[LineIndex], bActivePreview);
+			float MarkerH = 0.f;
+			Canvas->StrLen(Font, TEXT(">"), MarkerWidth, MarkerH);
+			LineHeight = FMath::Max(LineHeight, MarkerH);
+		}
+		const float MarkerGap = 6.f;
+		const float BodyX = PadX + MarkerWidth + MarkerGap;
+
+		for (const FString& Line : SlotLines)
+		{
 			float W = 0.f;
 			float H = 0.f;
 			if (Font)
 			{
-				Canvas->StrLen(Font, Measured, W, H);
+				Canvas->StrLen(Font, Line, W, H);
 			}
 			else
 			{
-				W = static_cast<float>(Measured.Len() * 8);
+				W = static_cast<float>(Line.Len() * 8);
 				H = 14.f;
 			}
-			MaxWidth = FMath::Max(MaxWidth, W);
+			BodyMaxWidth = FMath::Max(BodyMaxWidth, W);
 			LineHeight = FMath::Max(LineHeight, H);
 		}
 
+		const float ContentWidth = (BodyX - PadX) + BodyMaxWidth;
 		const float BlockHeight = SlotLines.Num() * LineHeight + (SlotLines.Num() - 1) * LineGap;
 		FCanvasTileItem Background(
 			FVector2D(PadX - BoxPad, PanelTop - BoxPad * 0.5f),
-			FVector2D(MaxWidth + BoxPad * 2.f, BlockHeight + BoxPad),
+			FVector2D(ContentWidth + BoxPad * 2.f, BlockHeight + BoxPad),
 			FLinearColor(0.f, 0.f, 0.f, 0.55f));
 		Background.BlendMode = SE_BLEND_Translucent;
 		Canvas->DrawItem(Background);
@@ -182,14 +182,19 @@ namespace SolidHUDPrivate
 			{
 				FCanvasTileItem Highlight(
 					FVector2D(PadX - BoxPad + 2.f, Y - 1.f),
-					FVector2D(MaxWidth + BoxPad * 2.f - 4.f, LineHeight + 2.f),
+					FVector2D(ContentWidth + BoxPad * 2.f - 4.f, LineHeight + 2.f),
 					FLinearColor(0.85f, 0.68f, 0.32f, 0.22f));
 				Highlight.BlendMode = SE_BLEND_Translucent;
 				Canvas->DrawItem(Highlight);
+
+				FCanvasTextItem MarkerItem(
+					FVector2D(PadX, Y), FText::FromString(TEXT(">")), Font, ActiveColor);
+				MarkerItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.9f));
+				Canvas->DrawItem(MarkerItem);
 			}
 
-			const FString DrawText = WithMarker(SlotLines[LineIndex], bActive);
-			FCanvasTextItem TextItem(FVector2D(PadX, Y), FText::FromString(DrawText), Font, Color);
+			FCanvasTextItem TextItem(
+				FVector2D(BodyX, Y), FText::FromString(SlotLines[LineIndex]), Font, Color);
 			TextItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.9f));
 			Canvas->DrawItem(TextItem);
 			Y += LineHeight + LineGap;

@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0101")
+#define SOLID_BUILD_ID TEXT("SC1-0102")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("F1 default; plan spacing; Tight/Loose mob")
+#define SOLID_BUILD_NOTE TEXT("Align Battle Plans panel with fixed marker column")
 #endif

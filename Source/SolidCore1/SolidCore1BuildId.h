@@ -8,9 +8,9 @@
  * SOLIDCORE1_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLIDCORE1_BUILD_ID
-#define SOLIDCORE1_BUILD_ID TEXT("SC1-0046")
+#define SOLIDCORE1_BUILD_ID TEXT("SC1-0047")
 #endif
 
 #ifndef SOLIDCORE1_BUILD_NOTE
-#define SOLIDCORE1_BUILD_NOTE TEXT("TerrainPoint grid drives landscape heights")
+#define SOLIDCORE1_BUILD_NOTE TEXT("Distance fog bands (100m / 200m)")
 #endif

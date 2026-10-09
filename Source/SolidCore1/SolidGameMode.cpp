@@ -67,42 +67,29 @@ void ASolidGameMode::EnsureTerrainStreamer()
 	ASolidTerrainStreamer::EnsureExists(GetWorld());
 }
 
-void ASolidGameMode::EnsureCompanion()
+ASolidCompanionCharacter* ASolidGameMode::GetCompanion() const
 {
-	if (!bAutoSpawnCompanion)
-	{
-		return;
-	}
+	return SpawnedCompanions.Num() > 0 ? SpawnedCompanions[0].Get() : nullptr;
+}
 
-	if (SpawnedCompanion.IsValid())
+ASolidCompanionCharacter* ASolidGameMode::SpawnCompanion(
+	UWorld* World,
+	APawn* PlayerPawn,
+	UClass* ClassToSpawn,
+	const FString& DisplayName,
+	const float FollowDistance,
+	const float SideOffset,
+	const float CatchUpDistance)
+{
+	if (!World || !PlayerPawn || !ClassToSpawn)
 	{
-		return;
+		return nullptr;
 	}
-
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return;
-	}
-
-	APlayerController* PC = World->GetFirstPlayerController();
-	APawn* PlayerPawn = PC ? PC->GetPawn() : nullptr;
-	if (!PlayerPawn)
-	{
-		// Keep trying until the pawn exists.
-		World->GetTimerManager().SetTimer(
-			CompanionSpawnTimer, this, &ASolidGameMode::EnsureCompanion, 0.25f, false);
-		return;
-	}
-
-	UClass* ClassToSpawn = CompanionClass
-		? CompanionClass.Get()
-		: ASolidCompanionCharacter::StaticClass();
 
 	const FVector PlayerLoc = PlayerPawn->GetActorLocation();
 	const FVector PlayerFwd = PlayerPawn->GetActorForwardVector();
 	const FVector PlayerRight = PlayerPawn->GetActorRightVector();
-	FVector SpawnLoc = PlayerLoc - PlayerFwd * 280.f + PlayerRight * 80.f;
+	FVector SpawnLoc = PlayerLoc - PlayerFwd * FollowDistance + PlayerRight * SideOffset;
 
 	float CapsuleHalf = 96.f;
 	if (const ACharacter* PlayerCharacter = Cast<ACharacter>(PlayerPawn))
@@ -127,15 +114,97 @@ void ASolidGameMode::EnsureCompanion()
 		ClassToSpawn, SpawnLoc, PlayerPawn->GetActorRotation(), SpawnParams);
 	if (!Companion)
 	{
-		UE_LOG(LogSolid, Error, TEXT("Failed to spawn companion."));
+		UE_LOG(LogSolid, Error, TEXT("Failed to spawn companion %s."), *DisplayName);
+		return nullptr;
+	}
+
+	Companion->FollowDistance = FollowDistance;
+	Companion->SideOffset = SideOffset;
+	Companion->CatchUpDistance = CatchUpDistance;
+	Companion->SetCharacterDisplayName(DisplayName);
+	Companion->SetFollowTarget(PlayerPawn);
+
+	UE_LOG(LogSolid, Warning, TEXT("Spawned companion %s at %s (follow=%.0f side=%.0f) following %s"),
+		*DisplayName, *SpawnLoc.ToCompactString(), FollowDistance, SideOffset, *PlayerPawn->GetName());
+	return Companion;
+}
+
+void ASolidGameMode::EnsureCompanion()
+{
+	if (!bAutoSpawnCompanion)
+	{
 		return;
 	}
 
-	Companion->SetFollowTarget(PlayerPawn);
-	SpawnedCompanion = Companion;
+	// Drop stale entries (PIE teardown / destroyed actors).
+	SpawnedCompanions.RemoveAll([](const TObjectPtr<ASolidCompanionCharacter>& Companion)
+	{
+		return !IsValid(Companion);
+	});
 
-	UE_LOG(LogSolid, Warning, TEXT("Spawned companion at %s following %s"),
-		*SpawnLoc.ToCompactString(), *PlayerPawn->GetName());
+	if (SpawnedCompanions.Num() >= DefaultCompanionCount)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	APlayerController* PC = World->GetFirstPlayerController();
+	APawn* PlayerPawn = PC ? PC->GetPawn() : nullptr;
+	if (!PlayerPawn)
+	{
+		// Keep trying until the pawn exists.
+		World->GetTimerManager().SetTimer(
+			CompanionSpawnTimer, this, &ASolidGameMode::EnsureCompanion, 0.25f, false);
+		return;
+	}
+
+	UClass* ClassToSpawn = CompanionClass
+		? CompanionClass.Get()
+		: ASolidCompanionCharacter::StaticClass();
+
+	auto HasNamed = [this](const TCHAR* Name) -> bool
+	{
+		for (const TObjectPtr<ASolidCompanionCharacter>& Companion : SpawnedCompanions)
+		{
+			if (Companion && Companion->GetCharacterDisplayName() == Name)
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+
+	// Sam stays close on the Captain's right; Alex follows further back on the left.
+	if (!HasNamed(TEXT("Sam")))
+	{
+		if (ASolidCompanionCharacter* Sam = SpawnCompanion(
+			World, PlayerPawn, ClassToSpawn, TEXT("Sam"),
+			/*FollowDistance=*/280.f, /*SideOffset=*/80.f, /*CatchUpDistance=*/700.f))
+		{
+			SpawnedCompanions.Add(Sam);
+		}
+	}
+
+	if (!HasNamed(TEXT("Alex")))
+	{
+		if (ASolidCompanionCharacter* Alex = SpawnCompanion(
+			World, PlayerPawn, ClassToSpawn, TEXT("Alex"),
+			/*FollowDistance=*/480.f, /*SideOffset=*/-100.f, /*CatchUpDistance=*/950.f))
+		{
+			SpawnedCompanions.Add(Alex);
+		}
+	}
+
+	if (SpawnedCompanions.Num() < DefaultCompanionCount)
+	{
+		World->GetTimerManager().SetTimer(
+			CompanionSpawnTimer, this, &ASolidGameMode::EnsureCompanion, 0.25f, false);
+	}
 }
 
 void ASolidGameMode::EnsureStarterTrees()

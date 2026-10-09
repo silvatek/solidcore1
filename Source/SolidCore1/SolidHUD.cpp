@@ -197,25 +197,26 @@ void ASolidHUD::DrawHUD()
 	}
 
 	{
-		ASolidCompanionCharacter* Companion = nullptr;
+		int32 CompanionCount = 0;
 		if (UWorld* World = GetWorld())
 		{
 			for (TActorIterator<ASolidCompanionCharacter> It(World); It; ++It)
 			{
-				Companion = *It;
-				break;
+				ASolidCompanionCharacter* Companion = *It;
+				if (!Companion || !Pawn)
+				{
+					continue;
+				}
+				++CompanionCount;
+				const float Dist = FVector::Dist(Pawn->GetActorLocation(), Companion->GetActorLocation());
+				Lines.Add(FString::Printf(
+					TEXT("Companion %s  dist=%.0f cm  follow=%.0f"),
+					*Companion->GetCharacterDisplayName(),
+					Dist,
+					Companion->FollowDistance));
 			}
 		}
-
-		if (Companion && Pawn)
-		{
-			const float Dist = FVector::Dist(Pawn->GetActorLocation(), Companion->GetActorLocation());
-			const FString MeshName = Companion->GetMesh() && Companion->GetMesh()->GetSkeletalMeshAsset()
-				? Companion->GetMesh()->GetSkeletalMeshAsset()->GetName()
-				: TEXT("<no mesh>");
-			Lines.Add(FString::Printf(TEXT("Companion %s  dist=%.0f cm"), *MeshName, Dist));
-		}
-		else
+		if (CompanionCount == 0)
 		{
 			Lines.Add(TEXT("Companion <none>"));
 		}

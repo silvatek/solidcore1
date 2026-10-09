@@ -11,6 +11,8 @@ class UInputMappingContext;
 class UInputAction;
 class USkeletalMesh;
 class UAnimSequence;
+class USceneComponent;
+class UStaticMeshComponent;
 class UTextRenderComponent;
 
 /**
@@ -33,7 +35,10 @@ public:
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
 	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE float GetUserZoomArmLength() const { return UserZoomArmLength; }
+	FORCEINLINE USceneComponent* GetNameLabelRoot() const { return NameLabelRoot; }
 	FORCEINLINE UTextRenderComponent* GetNameLabel() const { return NameLabel; }
+	FORCEINLINE UStaticMeshComponent* GetNameLabelBorder() const { return NameLabelBorder; }
+	FORCEINLINE UStaticMeshComponent* GetNameLabelBackground() const { return NameLabelBackground; }
 
 	/** Shown on the floating nameplate (not always "Captain"). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Name")
@@ -86,6 +91,15 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> FollowCamera;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character|Name", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USceneComponent> NameLabelRoot;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character|Name", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> NameLabelBorder;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character|Name", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> NameLabelBackground;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character|Name", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UTextRenderComponent> NameLabel;

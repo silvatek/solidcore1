@@ -21,7 +21,9 @@ bool FSolidGameModeDefaultsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("auto starter trees"), GameMode->bAutoSpawnStarterTrees);
 	TestEqual(TEXT("starter tree count"), GameMode->StarterTreeCount, 16);
 	TestTrue(TEXT("tree spacing positive"), GameMode->StarterTreeSpacingCm > 0.f);
+	TestEqual(TEXT("default companion count Sam+Alex"), ASolidGameMode::DefaultCompanionCount, 2);
 	TestNull(TEXT("no companion until Ensure"), GameMode->GetCompanion());
+	TestEqual(TEXT("companions empty until Ensure"), GameMode->GetCompanions().Num(), 0);
 	return true;
 }
 

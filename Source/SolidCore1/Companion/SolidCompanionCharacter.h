@@ -6,6 +6,8 @@
 
 class USkeletalMesh;
 class UAnimSequence;
+class USceneComponent;
+class UStaticMeshComponent;
 class UTextRenderComponent;
 
 /**
@@ -27,7 +29,10 @@ public:
 	void SetFollowTarget(AActor* NewTarget);
 
 	AActor* GetFollowTarget() const { return FollowTarget.Get(); }
+	FORCEINLINE USceneComponent* GetNameLabelRoot() const { return NameLabelRoot; }
 	FORCEINLINE UTextRenderComponent* GetNameLabel() const { return NameLabel; }
+	FORCEINLINE UStaticMeshComponent* GetNameLabelBorder() const { return NameLabelBorder; }
+	FORCEINLINE UStaticMeshComponent* GetNameLabelBackground() const { return NameLabelBackground; }
 
 	/** Shown on the floating nameplate. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Name")
@@ -80,6 +85,15 @@ protected:
 	void CacheLocomotionAnims();
 	void UpdateLocomotionAnim();
 	bool PlayLocomotionClip(UAnimSequence* Anim);
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Companion|Name", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USceneComponent> NameLabelRoot;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Companion|Name", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> NameLabelBorder;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Companion|Name", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> NameLabelBackground;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Companion|Name", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UTextRenderComponent> NameLabel;

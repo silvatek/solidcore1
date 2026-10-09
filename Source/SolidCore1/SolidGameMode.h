@@ -20,7 +20,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	bool bAutoSpawnTerrainStreamer = true;
 
-	/** Spawn a Viking companion follower once the player pawn exists. */
+	/** Spawn Party companions (Sam + Alex) once the player pawn exists. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	bool bAutoSpawnCompanion = true;
 
@@ -52,7 +52,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation")
 	int32 StarterTreeSeed = 42;
 
-	ASolidCompanionCharacter* GetCompanion() const { return SpawnedCompanion.Get(); }
+	/** First spawned companion (Sam), if any. */
+	ASolidCompanionCharacter* GetCompanion() const;
+
+	const TArray<TObjectPtr<ASolidCompanionCharacter>>& GetCompanions() const { return SpawnedCompanions; }
+
+	/** Expected starter Party size (Sam + Alex). */
+	static constexpr int32 DefaultCompanionCount = 2;
 
 protected:
 	virtual void BeginPlay() override;
@@ -61,8 +67,17 @@ protected:
 	void EnsureCompanion();
 	void EnsureStarterTrees();
 
+	ASolidCompanionCharacter* SpawnCompanion(
+		UWorld* World,
+		APawn* PlayerPawn,
+		UClass* ClassToSpawn,
+		const FString& DisplayName,
+		float FollowDistance,
+		float SideOffset,
+		float CatchUpDistance);
+
 	UPROPERTY(Transient)
-	TWeakObjectPtr<ASolidCompanionCharacter> SpawnedCompanion;
+	TArray<TObjectPtr<ASolidCompanionCharacter>> SpawnedCompanions;
 
 	UPROPERTY(Transient)
 	TWeakObjectPtr<ASolidMonolith> SpawnedMonolith;

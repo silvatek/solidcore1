@@ -14,6 +14,8 @@
 #include "SolidClipLocomotion.h"
 #include "SolidCore1.h"
 #include "SolidNameLabel.h"
+#include "Components/SceneComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "UObject/SoftObjectPath.h"
 
@@ -74,8 +76,14 @@ ASolidCharacter::ASolidCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 
+	NameLabelRoot = CreateDefaultSubobject<USceneComponent>(TEXT("NameLabelRoot"));
+	NameLabelRoot->SetupAttachment(RootComponent);
+	NameLabelBorder = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("NameLabelBorder"));
+	NameLabelBorder->SetupAttachment(NameLabelRoot);
+	NameLabelBackground = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("NameLabelBackground"));
+	NameLabelBackground->SetupAttachment(NameLabelRoot);
 	NameLabel = CreateDefaultSubobject<UTextRenderComponent>(TEXT("NameLabel"));
-	NameLabel->SetupAttachment(RootComponent);
+	NameLabel->SetupAttachment(NameLabelRoot);
 	ApplyNameLabel();
 }
 
@@ -101,10 +109,14 @@ void ASolidCharacter::ApplyNameLabel()
 		? GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight()
 		: 96.f;
 	SolidNameLabel::Configure(
+		NameLabelRoot,
+		NameLabelBorder,
+		NameLabelBackground,
 		NameLabel,
 		CharacterDisplayName,
 		SolidNameLabel::EStyle::Captain,
-		CapsuleHalf);
+		CapsuleHalf,
+		this);
 }
 
 void ASolidCharacter::SetCharacterDisplayName(const FString& NewName)
@@ -147,7 +159,7 @@ void ASolidCharacter::Tick(float DeltaTime)
 	UpdateLocomotionAnim();
 	UpdatePartyCameraFraming(DeltaTime);
 	ClampCameraAboveTerrain(DeltaTime);
-	SolidNameLabel::FaceViewCamera(NameLabel, GetWorld());
+	SolidNameLabel::FaceViewCamera(NameLabelRoot, GetWorld());
 }
 
 void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)

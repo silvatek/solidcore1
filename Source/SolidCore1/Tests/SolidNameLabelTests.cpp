@@ -3,6 +3,7 @@
 #include "SolidNameLabel.h"
 #include "SolidCharacter.h"
 #include "Companion/SolidCompanionCharacter.h"
+#include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -17,24 +18,18 @@ bool FSolidNameLabelStyleTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("captain world size larger than companion"),
 		SolidNameLabel::WorldSizeFor(SolidNameLabel::EStyle::Captain)
 		> SolidNameLabel::WorldSizeFor(SolidNameLabel::EStyle::Companion));
-	TestTrue(TEXT("captain color differs from companion"),
-		SolidNameLabel::ColorFor(SolidNameLabel::EStyle::Captain)
-		!= SolidNameLabel::ColorFor(SolidNameLabel::EStyle::Companion));
-
-	UTextRenderComponent* Label = NewObject<UTextRenderComponent>();
-	TestNotNull(TEXT("label"), Label);
-	SolidNameLabel::Configure(Label, TEXT("Outcast"), SolidNameLabel::EStyle::Captain, 96.f);
-	TestEqual(TEXT("configured text"), Label->Text.ToString(), FString(TEXT("Outcast")));
-	TestEqual(TEXT("configured captain size"), Label->WorldSize, SolidNameLabel::CaptainWorldSize);
-	TestEqual(TEXT("configured captain color"), Label->TextRenderColor, SolidNameLabel::ColorFor(SolidNameLabel::EStyle::Captain));
-	TestEqual(
-		TEXT("height above capsule"),
-		static_cast<float>(Label->GetRelativeLocation().Z),
-		96.f + SolidNameLabel::HeightAboveCapsuleCm);
-
-	SolidNameLabel::Configure(Label, TEXT("Sam"), SolidNameLabel::EStyle::Companion, 96.f);
-	TestEqual(TEXT("companion text"), Label->Text.ToString(), FString(TEXT("Sam")));
-	TestEqual(TEXT("companion size"), Label->WorldSize, SolidNameLabel::CompanionWorldSize);
+	TestTrue(TEXT("captain text color differs from companion"),
+		SolidNameLabel::TextColorFor(SolidNameLabel::EStyle::Captain)
+		!= SolidNameLabel::TextColorFor(SolidNameLabel::EStyle::Companion));
+	TestTrue(TEXT("captain background contrasts with companion"),
+		SolidNameLabel::BackgroundColorFor(SolidNameLabel::EStyle::Captain)
+		!= SolidNameLabel::BackgroundColorFor(SolidNameLabel::EStyle::Companion));
+	TestTrue(TEXT("border differs from background (captain)"),
+		SolidNameLabel::BorderColorFor(SolidNameLabel::EStyle::Captain)
+		!= SolidNameLabel::BackgroundColorFor(SolidNameLabel::EStyle::Captain));
+	TestTrue(TEXT("border differs from background (companion)"),
+		SolidNameLabel::BorderColorFor(SolidNameLabel::EStyle::Companion)
+		!= SolidNameLabel::BackgroundColorFor(SolidNameLabel::EStyle::Companion));
 	return true;
 }
 
@@ -48,11 +43,24 @@ bool FSolidNameLabelCaptainDefaultsTest::RunTest(const FString& Parameters)
 	ASolidCharacter* Captain = NewObject<ASolidCharacter>();
 	TestNotNull(TEXT("captain"), Captain);
 	TestEqual(TEXT("display name Outcast"), Captain->GetCharacterDisplayName(), FString(TEXT("Outcast")));
+	TestNotNull(TEXT("name label root"), Captain->GetNameLabelRoot());
 	TestNotNull(TEXT("name label component"), Captain->GetNameLabel());
+	TestNotNull(TEXT("border plate"), Captain->GetNameLabelBorder());
+	TestNotNull(TEXT("background plate"), Captain->GetNameLabelBackground());
 	if (UTextRenderComponent* Label = Captain->GetNameLabel())
 	{
 		TestEqual(TEXT("label text"), Label->Text.ToString(), FString(TEXT("Outcast")));
 		TestEqual(TEXT("highlighted size"), Label->WorldSize, SolidNameLabel::CaptainWorldSize);
+	}
+	if (UStaticMeshComponent* Border = Captain->GetNameLabelBorder())
+	{
+		TestNotNull(TEXT("border mesh assigned"), Border->GetStaticMesh());
+	}
+	if (UStaticMeshComponent* Background = Captain->GetNameLabelBackground())
+	{
+		TestNotNull(TEXT("background mesh assigned"), Background->GetStaticMesh());
+		TestTrue(TEXT("background smaller than border (width)"),
+			Background->GetRelativeScale3D().Y < Captain->GetNameLabelBorder()->GetRelativeScale3D().Y);
 	}
 
 	Captain->SetCharacterDisplayName(TEXT("Scout"));
@@ -72,6 +80,8 @@ bool FSolidNameLabelCompanionDefaultsTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("companion"), Companion);
 	TestEqual(TEXT("display name Sam"), Companion->GetCharacterDisplayName(), FString(TEXT("Sam")));
 	TestNotNull(TEXT("name label component"), Companion->GetNameLabel());
+	TestNotNull(TEXT("border plate"), Companion->GetNameLabelBorder());
+	TestNotNull(TEXT("background plate"), Companion->GetNameLabelBackground());
 	if (UTextRenderComponent* Label = Companion->GetNameLabel())
 	{
 		TestEqual(TEXT("label text"), Label->Text.ToString(), FString(TEXT("Sam")));

@@ -4,7 +4,9 @@
 #include "SolidNameLabel.h"
 #include "Animation/AnimSequence.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SceneComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/World.h"
@@ -55,8 +57,14 @@ ASolidCompanionCharacter::ASolidCompanionCharacter()
 	RunAnim = TSoftObjectPtr<UAnimSequence>(
 		FSoftObjectPath(SolidClipLocomotion::DefaultRunPath));
 
+	NameLabelRoot = CreateDefaultSubobject<USceneComponent>(TEXT("NameLabelRoot"));
+	NameLabelRoot->SetupAttachment(RootComponent);
+	NameLabelBorder = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("NameLabelBorder"));
+	NameLabelBorder->SetupAttachment(NameLabelRoot);
+	NameLabelBackground = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("NameLabelBackground"));
+	NameLabelBackground->SetupAttachment(NameLabelRoot);
 	NameLabel = CreateDefaultSubobject<UTextRenderComponent>(TEXT("NameLabel"));
-	NameLabel->SetupAttachment(RootComponent);
+	NameLabel->SetupAttachment(NameLabelRoot);
 	ApplyNameLabel();
 }
 
@@ -66,10 +74,14 @@ void ASolidCompanionCharacter::ApplyNameLabel()
 		? GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight()
 		: 96.f;
 	SolidNameLabel::Configure(
+		NameLabelRoot,
+		NameLabelBorder,
+		NameLabelBackground,
 		NameLabel,
 		CharacterDisplayName,
 		SolidNameLabel::EStyle::Companion,
-		CapsuleHalf);
+		CapsuleHalf,
+		this);
 }
 
 void ASolidCompanionCharacter::SetCharacterDisplayName(const FString& NewName)
@@ -122,7 +134,7 @@ void ASolidCompanionCharacter::Tick(float DeltaSeconds)
 
 	UpdateFollow(DeltaSeconds);
 	UpdateLocomotionAnim();
-	SolidNameLabel::FaceViewCamera(NameLabel, GetWorld());
+	SolidNameLabel::FaceViewCamera(NameLabelRoot, GetWorld());
 }
 
 void ASolidCompanionCharacter::SetFollowTarget(AActor* NewTarget)

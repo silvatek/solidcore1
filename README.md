@@ -47,7 +47,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.Companion.*` | Defaults, SetFollowTarget |
 | `SolidCore1.Streamer.*` | FindExisting / EnsureExists (null + idempotent) |
 | `SolidCore1.Clip.*` | SelectClip idle/walk/run/jump rules |
-| `SolidCore1.NameLabel.*` | Style sizes/colors; Outcast / Sam defaults |
+| `SolidCore1.NameLabel.*` | Style sizes/colors/plates; Outcast / Sam defaults |
 | `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |
 | `SolidCore1.Content.*` | Required/optional Content + Engine assets the code loads |
 
@@ -152,13 +152,13 @@ Goal: the world starts shrouded; fog clears only where the **pawn has been** (tr
 - `ASolidTree` — cylinder trunk + cone canopy; a **line** continues from the monolith into the fog (`StarterTreeCount=16`, ~10 m spacing, random sizes).
 - Fog curtains: clear|fogged (~25 m) plus a **white** half→full curtain (~50 m). Toggle vegetation with `bAutoSpawnStarterTrees`.
 
-## Name labels (SC1-0091)
+## Name labels (SC1-0091 / SC1-0093)
 
-Floating `UTextRenderComponent` nameplates (`SolidNameLabel`) sit above each Party member and face the view camera. Defaults: Captain **"Outcast"** (larger warm amber highlight), Companion **"Sam"** (smaller muted slate). Override via `CharacterDisplayName` / `SetCharacterDisplayName`.
+Floating nameplates (`SolidNameLabel`) sit above each Party member and face the view camera: TextRender plus thin cube **border** and contrasting **background** plates. Defaults: Captain **"Outcast"** (larger warm amber on dark plate), Companions muted slate plates. Override via `CharacterDisplayName` / `SetCharacterDisplayName`.
 
-## Companion (SC1-0024)
+## Companion (SC1-0024 / SC1-0093)
 
-`ASolidCompanionCharacter` spawns behind the player and follows with simple steering (no NavMesh — works on procedural terrain). Same Fab Viking mesh + clip locomotion as the player. GameMode flag: `bAutoSpawnCompanion`. HUD shows companion mesh name and distance.
+`ASolidCompanionCharacter` spawns behind the player and follows with simple steering (no NavMesh — works on procedural terrain). Same Fab Viking mesh + clip locomotion as the player. GameMode flag: `bAutoSpawnCompanion` spawns **Sam** (follow 280 cm, right) and **Alex** (follow 480 cm, left). HUD lists each companion name and distance.
 
 **Party camera** (SC1-0025/0026/0084): the Captain spring-arm shifts `TargetOffset` toward the Party center and may lengthen so Companions stay in frame (`bFrameCompanions`; implementation in `SolidPartyCamera.cpp`). SC1-0026 uses screen-space fit, disables boom collision while Companions are present, and zooms in much slower than out. SC1-0027 lifts the camera via `SocketOffset` when the predicted camera point would sink below procedural terrain.
 

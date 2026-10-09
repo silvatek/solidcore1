@@ -87,10 +87,10 @@ void ASolidGameMode::BeginPlay()
 		World->GetTimerManager().SetTimer(
 			CompanionSpawnTimer, this, &ASolidGameMode::EnsureCompanion, 0.35f, false);
 		World->GetTimerManager().SetTimer(
-			StarterTreeSpawnTimer, this, &ASolidGameMode::EnsureStarterTree, 0.5f, false);
+			StarterTreeSpawnTimer, this, &ASolidGameMode::EnsureStarterTrees, 0.5f, false);
 	}
 	EnsureCompanion();
-	EnsureStarterTree();
+	EnsureStarterTrees();
 }
 
 void ASolidGameMode::EnsureTerrainStreamer()
@@ -176,14 +176,14 @@ void ASolidGameMode::EnsureCompanion()
 	UE_LOG(LogSolid, Warning, TEXT("Spawned Quinn companion following %s"), *PlayerPawn->GetName());
 }
 
-void ASolidGameMode::EnsureStarterTree()
+void ASolidGameMode::EnsureStarterTrees()
 {
-	if (!bAutoSpawnStarterTree)
+	if (!bAutoSpawnStarterTrees)
 	{
 		return;
 	}
 
-	if (SpawnedStarterTree.IsValid())
+	if (SpawnedStarterTrees.Num() > 0)
 	{
 		return;
 	}
@@ -194,10 +194,15 @@ void ASolidGameMode::EnsureStarterTree()
 		return;
 	}
 
-	// Reuse an existing starter tree if the level already has one.
+	// Already placed in the level (PIE restart / hand-placed).
+	int32 Existing = 0;
 	for (TActorIterator<ASolidTree> It(World); It; ++It)
 	{
-		SpawnedStarterTree = *It;
+		SpawnedStarterTrees.Add(*It);
+		++Existing;
+	}
+	if (Existing > 0)
+	{
 		return;
 	}
 
@@ -205,28 +210,51 @@ void ASolidGameMode::EnsureStarterTree()
 	if (!Streamer || !Streamer->GetTerrainMap())
 	{
 		World->GetTimerManager().SetTimer(
-			StarterTreeSpawnTimer, this, &ASolidGameMode::EnsureStarterTree, 0.25f, false);
+			StarterTreeSpawnTimer, this, &ASolidGameMode::EnsureStarterTrees, 0.25f, false);
 		return;
 	}
 
-	FVector SpawnLoc(StarterTreeOffsetXY.X, StarterTreeOffsetXY.Y, 0.f);
-	const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
-	SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
+	FVector2D Dir = StarterTreeLineDirection;
+	if (!Dir.Normalize())
+	{
+		Dir = FVector2D(1.f, 0.f);
+	}
+	const FVector2D Side(-Dir.Y, Dir.X);
+
+	FRandomStream Rng(StarterTreeSeed != 0 ? StarterTreeSeed : 1337);
+	const int32 Count = FMath::Clamp(StarterTreeCount, 1, 64);
+	const float Spacing = FMath::Max(StarterTreeSpacingCm, 200.f);
 
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-	ASolidTree* Tree = World->SpawnActor<ASolidTree>(
-		ASolidTree::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
-	if (!Tree)
+	int32 Spawned = 0;
+	for (int32 Index = 0; Index < Count; ++Index)
 	{
-		UE_LOG(LogSolid, Error, TEXT("Failed to spawn starter SolidTree."));
-		return;
+		const float Along = static_cast<float>(Index) * Spacing + Rng.FRandRange(-Spacing * 0.15f, Spacing * 0.15f);
+		const float Lateral = Rng.FRandRange(-220.f, 220.f);
+		const FVector2D XY = StarterTreeOffsetXY + Dir * Along + Side * Lateral;
+
+		FVector SpawnLoc(XY.X, XY.Y, 0.f);
+		const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
+		SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
+
+		const float Yaw = Rng.FRandRange(0.f, 360.f);
+		ASolidTree* Tree = World->SpawnActor<ASolidTree>(
+			ASolidTree::StaticClass(), SpawnLoc, FRotator(0.f, Yaw, 0.f), SpawnParams);
+		if (!Tree)
+		{
+			continue;
+		}
+
+		Tree->ApplyRandomVariation(Rng);
+		Tree->BuildVisuals();
+		SpawnedStarterTrees.Add(Tree);
+		++Spawned;
 	}
 
-	Tree->BuildVisuals();
-	SpawnedStarterTree = Tree;
-
-	UE_LOG(LogSolid, Warning, TEXT("Spawned starter tree at %s"), *SpawnLoc.ToCompactString());
+	UE_LOG(LogSolid, Warning,
+		TEXT("Spawned %d starter trees in a line from %s dir=(%.2f,%.2f) spacing=%.0fcm"),
+		Spawned, *StarterTreeOffsetXY.ToString(), Dir.X, Dir.Y, Spacing);
 }

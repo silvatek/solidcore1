@@ -21,6 +21,9 @@ public:
 	/** Rebuild meshes/materials from current size properties. */
 	void BuildVisuals();
 
+	/** Randomize trunk/canopy proportions (call before BuildVisuals). */
+	void ApplyRandomVariation(FRandomStream& Rng);
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Tree", meta = (ClampMin = "10.0"))
 	float TrunkHeightCm = 280.f;
 

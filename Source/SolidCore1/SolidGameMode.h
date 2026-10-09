@@ -27,13 +27,29 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	TSubclassOf<ASolidCompanionCharacter> CompanionClass;
 
-	/** Spawn one placeholder procedural tree near the start. */
+	/** Spawn a line of placeholder trees from near the start into the fog. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation")
-	bool bAutoSpawnStarterTree = true;
+	bool bAutoSpawnStarterTrees = true;
 
-	/** World XY offset from origin for the starter tree (cm). */
+	/** World XY of the first tree (cm). Line continues along StarterTreeLineDirection. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation")
 	FVector2D StarterTreeOffsetXY = FVector2D(1400.f, 900.f);
+
+	/** Horizontal direction of the tree line (normalized at spawn). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation")
+	FVector2D StarterTreeLineDirection = FVector2D(1.f, 0.35f);
+
+	/** How many trees in the line (most should fall beyond the 25–50m fog bands). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation", meta = (ClampMin = "1", ClampMax = "64"))
+	int32 StarterTreeCount = 16;
+
+	/** Base spacing along the line (cm). Per-tree jitter is applied on top. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation", meta = (ClampMin = "200.0"))
+	float StarterTreeSpacingCm = 1000.f;
+
+	/** RNG seed for tree sizes / lateral jitter (0 = derive from world). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation")
+	int32 StarterTreeSeed = 42;
 
 	ASolidCompanionCharacter* GetCompanion() const { return SpawnedCompanion.Get(); }
 
@@ -42,13 +58,13 @@ protected:
 
 	void EnsureTerrainStreamer();
 	void EnsureCompanion();
-	void EnsureStarterTree();
+	void EnsureStarterTrees();
 
 	UPROPERTY(Transient)
 	TWeakObjectPtr<ASolidCompanionCharacter> SpawnedCompanion;
 
 	UPROPERTY(Transient)
-	TWeakObjectPtr<ASolidTree> SpawnedStarterTree;
+	TArray<TObjectPtr<ASolidTree>> SpawnedStarterTrees;
 
 	FTimerHandle CompanionSpawnTimer;
 	FTimerHandle StarterTreeSpawnTimer;

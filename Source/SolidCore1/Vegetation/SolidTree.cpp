@@ -38,6 +38,32 @@ void ASolidTree::BeginPlay()
 	BuildVisuals();
 }
 
+void ASolidTree::ApplyRandomVariation(FRandomStream& Rng)
+{
+	const float Overall = Rng.FRandRange(0.62f, 1.55f);
+	const float TrunkFat = Rng.FRandRange(0.70f, 1.45f);
+	const float TrunkTall = Rng.FRandRange(0.75f, 1.40f);
+	const float CanopyWide = Rng.FRandRange(0.65f, 1.50f);
+	const float CanopyTall = Rng.FRandRange(0.70f, 1.40f);
+
+	TrunkHeightCm = 280.f * Overall * TrunkTall;
+	TrunkRadiusCm = FMath::Max(8.f, 28.f * Overall * TrunkFat);
+	CanopyHeightCm = 320.f * Overall * CanopyTall;
+	CanopyRadiusCm = FMath::Max(40.f, 180.f * Overall * CanopyWide);
+
+	const float TrunkTint = Rng.FRandRange(-0.04f, 0.05f);
+	TrunkColor = FLinearColor(
+		FMath::Clamp(0.28f + TrunkTint, 0.12f, 0.40f),
+		FMath::Clamp(0.16f + TrunkTint * 0.5f, 0.06f, 0.24f),
+		FMath::Clamp(0.07f + TrunkTint * 0.25f, 0.03f, 0.14f));
+
+	const float LeafTint = Rng.FRandRange(-0.05f, 0.08f);
+	CanopyColor = FLinearColor(
+		FMath::Clamp(0.10f + LeafTint * 0.3f, 0.04f, 0.18f),
+		FMath::Clamp(0.32f + LeafTint, 0.16f, 0.48f),
+		FMath::Clamp(0.08f + LeafTint * 0.2f, 0.03f, 0.16f));
+}
+
 UMaterialInterface* ASolidTree::MakeSolidColor(const FLinearColor& Color, const TCHAR* DebugName) const
 {
 	UMaterialInterface* Parent = LoadObject<UMaterialInterface>(

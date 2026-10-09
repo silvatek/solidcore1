@@ -6,7 +6,6 @@
 
 class ASolidCore1TerrainChunk;
 class UMaterialInterface;
-class UTexture2D;
 
 /**
  * Spawns / destroys runtime procedural terrain chunks around a focus actor (usually the player pawn).
@@ -69,17 +68,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	TObjectPtr<UMaterialInterface> TerrainMaterial;
 
-	/** Lighter grass shade in the generated noise texture / FlatCol fallback. */
+	/** Lighter grass shade for the FlatCol Base Color blend. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
-	FLinearColor GrassColor = FLinearColor(0.24f, 0.42f, 0.14f);
+	FLinearColor GrassColor = FLinearColor(0.28f, 0.50f, 0.14f);
 
-	/** Darker grass shade in the generated noise texture. */
+	/** Darker grass shade for the FlatCol Base Color blend. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
-	FLinearColor GrassDarkColor = FLinearColor(0.06f, 0.14f, 0.04f);
-
-	/** Resolution of the runtime grass noise texture (power of two). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "64", ClampMax = "1024"))
-	int32 GrassNoiseTextureSize = 256;
+	FLinearColor GrassDarkColor = FLinearColor(0.08f, 0.20f, 0.05f);
 
 	/** Seconds between streamer updates. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.05"))
@@ -106,6 +101,7 @@ protected:
 	FIntPoint WorldToChunkCoord(const FVector& WorldLocation) const;
 	AActor* ResolveFocusActor() const;
 	UMaterialInterface* ResolveMaterial() const;
+	UMaterialInterface* CreateFlatColGrassMaterial() const;
 	float SampleHeightAtWorld(const FVector& WorldLocation) const;
 	void TrySnapFocusToTerrain(AActor* Focus);
 	void DisableLandscapeActorsOnce();
@@ -113,7 +109,7 @@ protected:
 	UPROPERTY()
 	TMap<FIntPoint, TObjectPtr<ASolidCore1TerrainChunk>> LoadedChunks;
 
-	/** Cached lit MID so chunks do not each create their own. */
+	/** Cached lit material so chunks do not each create their own. */
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInterface> ResolvedTerrainMaterial;
 

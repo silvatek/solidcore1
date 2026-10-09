@@ -9,7 +9,6 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "Components/CapsuleComponent.h"
-#include "Engine/Texture2D.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
@@ -21,7 +20,8 @@ ASolidCore1TerrainStreamer::ASolidCore1TerrainStreamer()
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
 
-	// Prefer FlatCol (reliable Base Color tint). PrototypeGrid is used when we can replace its Texture.
+	// FlatCol is the reliable lit solid-color fallback. Do NOT default to M_PrototypeGrid:
+	// its grey T_GridChecker_A is hard-wired (no Texture parameter), so tint/noise binds stay grey.
 	static ConstructorHelpers::FObjectFinder<UMaterial> FlatColMat(
 		TEXT("/Game/LevelPrototyping/Materials/M_FlatCol.M_FlatCol"));
 	if (FlatColMat.Succeeded())
@@ -112,20 +112,26 @@ AActor* ASolidCore1TerrainStreamer::ResolveFocusActor() const
 	return nullptr;
 }
 
-UMaterialInterface* ASolidCore1TerrainStreamer::ResolveMaterial() const
+UMaterialInterface* ASolidCore1TerrainStreamer::CreateFlatColGrassMaterial() const
 {
-	if (ResolvedTerrainMaterial)
-	{
-		return ResolvedTerrainMaterial;
-	}
-
 	ASolidCore1TerrainStreamer* MutableThis = const_cast<ASolidCore1TerrainStreamer*>(this);
 
-	UMaterialInterface* Parent = TerrainMaterial;
-	if (!Parent)
+	// Always parent from FlatCol (or a non-PrototypeGrid override). PrototypeGrid's checker
+	// texture is hard-wired — any MID from it stays grey regardless of color params.
+	UMaterialInterface* Parent = nullptr;
+	if (TerrainMaterial)
 	{
-		Parent = LoadObject<UMaterialInterface>(
-			nullptr, TEXT("/Game/LevelPrototyping/Materials/M_PrototypeGrid.M_PrototypeGrid"));
+		const FString MatName = TerrainMaterial->GetName();
+		if (!MatName.Contains(TEXT("PrototypeGrid"), ESearchCase::IgnoreCase))
+		{
+			Parent = TerrainMaterial.Get();
+		}
+		else
+		{
+			UE_LOG(LogSolidCore1, Warning,
+				TEXT("Ignoring TerrainMaterial '%s' (PrototypeGrid cannot be tinted green)."),
+				*MatName);
+		}
 	}
 	if (!Parent)
 	{
@@ -135,35 +141,48 @@ UMaterialInterface* ASolidCore1TerrainStreamer::ResolveMaterial() const
 	if (!Parent)
 	{
 		Parent = LoadObject<UMaterialInterface>(
-			nullptr, TEXT("/Engine/EngineMaterials/WorldGridMaterial.WorldGridMaterial"));
+			nullptr, TEXT("/Game/LevelPrototyping/Materials/MI_DefaultColorway.MI_DefaultColorway"));
 	}
-
-	if (Parent)
+	if (!Parent)
 	{
-		if (UMaterialInstanceDynamic* GrassMID = UMaterialInstanceDynamic::Create(Parent, MutableThis))
-		{
-			// Dual-tone grass: lighter field + darker speckles/grid. Also set BaseColor for FlatCol fallback.
-			GrassMID->SetVectorParameterValue(TEXT("BackgroundColor"), GrassColor);
-			GrassMID->SetVectorParameterValue(TEXT("Background Color"), GrassColor);
-			GrassMID->SetVectorParameterValue(TEXT("GridColor"), GrassDarkColor);
-			GrassMID->SetVectorParameterValue(TEXT("SubGridColor"), GrassDarkColor * 0.75f);
-			GrassMID->SetVectorParameterValue(TEXT("TopGridColor"), GrassColor * 0.85f);
-			GrassMID->SetVectorParameterValue(TEXT("TopSubGridGridColor"), GrassDarkColor);
-			GrassMID->SetVectorParameterValue(TEXT("BaseColor"), GrassColor);
-			GrassMID->SetVectorParameterValue(TEXT("Base Color"), GrassColor);
-			GrassMID->SetVectorParameterValue(TEXT("Color"), GrassColor);
-			GrassMID->SetScalarParameterValue(TEXT("Grid Size"), GrassGridSize);
-			GrassMID->SetScalarParameterValue(TEXT("GridSize"), GrassGridSize);
-			GrassMID->SetScalarParameterValue(TEXT("Roughness"), 0.88f);
-			MutableThis->ResolvedTerrainMaterial = GrassMID;
-			UE_LOG(LogSolidCore1, Warning,
-				TEXT("Terrain material: grassy noisy MID from %s"), *Parent->GetName());
-			return ResolvedTerrainMaterial;
-		}
+		return nullptr;
 	}
 
-	MutableThis->ResolvedTerrainMaterial = Parent;
-	return ResolvedTerrainMaterial;
+	UMaterialInstanceDynamic* GrassMID = UMaterialInstanceDynamic::Create(Parent, MutableThis);
+	if (!GrassMID)
+	{
+		return Parent;
+	}
+
+	// M_FlatCol exposes "Base Color" — reliable lit green.
+	const FLinearColor MidGrass = FLinearColor::LerpUsingHSV(GrassDarkColor, GrassColor, 0.55f);
+	GrassMID->SetVectorParameterValue(TEXT("Base Color"), MidGrass);
+	GrassMID->SetVectorParameterValue(TEXT("BaseColor"), MidGrass);
+	GrassMID->SetScalarParameterValue(TEXT("Roughness"), 0.9f);
+
+	UE_LOG(LogSolidCore1, Warning,
+		TEXT("Terrain material: %s grassy Base Color (solid green)"), *Parent->GetName());
+	return GrassMID;
+}
+
+UMaterialInterface* ASolidCore1TerrainStreamer::ResolveMaterial() const
+{
+	if (ResolvedTerrainMaterial)
+	{
+		return ResolvedTerrainMaterial;
+	}
+
+	ASolidCore1TerrainStreamer* MutableThis = const_cast<ASolidCore1TerrainStreamer*>(this);
+
+	// Never use M_PrototypeGrid: T_GridChecker_A is hard-wired (no Texture param) so MIDs stay grey.
+	if (UMaterialInterface* FlatGrass = CreateFlatColGrassMaterial())
+	{
+		MutableThis->ResolvedTerrainMaterial = FlatGrass;
+		return ResolvedTerrainMaterial;
+	}
+
+	UE_LOG(LogSolidCore1, Error, TEXT("Terrain material: FlatCol grass material could not be created."));
+	return nullptr;
 }
 
 float ASolidCore1TerrainStreamer::SampleHeightAtWorld(const FVector& WorldLocation) const

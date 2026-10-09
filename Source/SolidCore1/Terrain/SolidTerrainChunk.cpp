@@ -1,7 +1,7 @@
 #include "SolidTerrainChunk.h"
+#include "SolidTerrainFog.h"
 #include "SolidTerrainMap.h"
 #include "SolidTerrainNoise.h"
-#include "SolidTerrainTypes.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"
@@ -21,28 +21,6 @@ namespace SolidTerrainChunkPrivate
 		Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Block);
 		Mesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Block);
 		Mesh->SetGenerateOverlapEvents(false);
-	}
-
-	static void ConfigureFogOverlay(UStaticMeshComponent* Mesh)
-	{
-		// Fog must never block pawn/camera traces (spring arm ProbeChannel = ECC_Camera).
-		Mesh->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
-		Mesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		Mesh->SetCollisionResponseToAllChannels(ECR_Ignore);
-		Mesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
-		Mesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
-		Mesh->SetCollisionObjectType(ECC_WorldDynamic);
-		Mesh->BodyInstance.SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		Mesh->BodyInstance.SetResponseToAllChannels(ECR_Ignore);
-		Mesh->SetGenerateOverlapEvents(false);
-		Mesh->SetNotifyRigidBodyCollision(false);
-		Mesh->CanCharacterStepUpOn = ECB_No;
-		Mesh->SetCastShadow(false);
-		Mesh->SetVisibility(true);
-		Mesh->SetHiddenInGame(false);
-		Mesh->SetMobility(EComponentMobility::Movable);
-		Mesh->bUseAsOccluder = false;
-		Mesh->SetCanEverAffectNavigation(false);
 	}
 
 	static UStaticMesh* BuildRuntimeMesh(
@@ -190,7 +168,7 @@ ASolidTerrainChunk::ASolidTerrainChunk()
 	FogMeshComponent->SetupAttachment(MeshComponent);
 
 	SolidTerrainChunkPrivate::ConfigureCollision(MeshComponent);
-	SolidTerrainChunkPrivate::ConfigureFogOverlay(FogMeshComponent);
+	SolidTerrainFog::ConfigureOverlayComponent(FogMeshComponent);
 	MeshComponent->SetCastShadow(true);
 	MeshComponent->SetVisibility(true);
 	MeshComponent->SetHiddenInGame(false);
@@ -390,220 +368,32 @@ void ASolidTerrainChunk::RebuildExplorationFog(
 	CachedFogVolumeHeightHalfCm = FMath::Max(
 		InFogVolumeHeightHalfCm > 0.f ? InFogVolumeHeightHalfCm : CachedFogVolumeHeightHalfCm, 200.f);
 
-	const float ChunkSize = FMath::Max(CachedChunkWorldSize, 100.f);
-	const int32 FogQuads = CachedFogQuadsPerSide;
-	const int32 FogVerts = FogQuads + 1;
-	const float Step = ChunkSize / static_cast<float>(FogQuads);
-	const float OriginX = static_cast<float>(ChunkCoord.X) * ChunkSize;
-	const float OriginY = static_cast<float>(ChunkCoord.Y) * ChunkSize;
+	SolidTerrainFog::FMeshBuildParams Params;
+	Params.ChunkCoord = ChunkCoord;
+	Params.ChunkWorldSize = CachedChunkWorldSize;
+	Params.FogQuadsPerSide = CachedFogQuadsPerSide;
+	Params.VolumeHeightCm = CachedFogVolumeHeightCm;
+	Params.VolumeHeightHalfCm = CachedFogVolumeHeightHalfCm;
+	Params.CollisionHeightBias = CachedCollisionHeightBias;
 
-	// Sample surface corners for each low-res fog cell.
-	TArray<float> SurfaceZ;
-	TArray<float> FogAmounts;
-	SurfaceZ.SetNumUninitialized(FogVerts * FogVerts);
-	FogAmounts.SetNumUninitialized(FogVerts * FogVerts);
-	for (int32 Y = 0; Y < FogVerts; ++Y)
+	RuntimeFogStaticMesh = SolidTerrainFog::BuildChunkFogMesh(
+		this, TerrainMap, Params, FogHalfMaterial, FogFullMaterial);
+
+	FogMeshComponent->SetStaticMesh(nullptr);
+	if (RuntimeFogStaticMesh)
 	{
-		for (int32 X = 0; X < FogVerts; ++X)
+		FogMeshComponent->SetStaticMesh(RuntimeFogStaticMesh);
+		const int32 NumMaterials = RuntimeFogStaticMesh->GetStaticMaterials().Num();
+		for (int32 MatIndex = 0; MatIndex < NumMaterials; ++MatIndex)
 		{
-			const float WorldX = OriginX + static_cast<float>(X) * Step;
-			const float WorldY = OriginY + static_cast<float>(Y) * Step;
-			const float Height = (TerrainMap && TerrainMap->IsBuilt())
-				? TerrainMap->SampleHeight(WorldX, WorldY)
-				: 0.f;
-			SurfaceZ[Y * FogVerts + X] = Height + CachedCollisionHeightBias;
-			FogAmounts[Y * FogVerts + X] = (TerrainMap && TerrainMap->IsBuilt())
-				? FMath::Clamp(TerrainMap->SamplePoint(WorldX, WorldY).Fog, 0.f, 1.f)
-				: 1.f;
-		}
-	}
-
-	TArray<FVector> FogPositions;
-	TArray<FVector> FogNormals;
-	TArray<FVector> FogTangents;
-	TArray<FVector2D> FogUVs;
-	TArray<FLinearColor> FogColors;
-	TArray<int32> FogTriangles;
-	TArray<int32> FogTriMaterials;
-
-	// Each fogged cell becomes a prism (top + 4 walls) so fog reads as air banks, not snow.
-	FogPositions.Reserve(FogQuads * FogQuads * 8);
-	FogNormals.Reserve(FogQuads * FogQuads * 8);
-	FogTangents.Reserve(FogQuads * FogQuads * 8);
-	FogUVs.Reserve(FogQuads * FogQuads * 8);
-	FogColors.Reserve(FogQuads * FogQuads * 8);
-	FogTriangles.Reserve(FogQuads * FogQuads * 30);
-	FogTriMaterials.Reserve(FogQuads * FogQuads * 10);
-
-	auto AppendVert = [&](const FVector& Pos, const FVector& Normal) -> int32
-	{
-		const int32 Index = FogPositions.Num();
-		FogPositions.Add(Pos);
-		FogNormals.Add(Normal);
-		FVector Tangent = FVector::CrossProduct(FVector::UpVector, Normal).GetSafeNormal();
-		if (Tangent.IsNearlyZero())
-		{
-			Tangent = FVector::RightVector;
-		}
-		FogTangents.Add(Tangent);
-		FogUVs.Add(FVector2D(Pos.X * 0.01f, Pos.Y * 0.01f));
-		FogColors.Add(FLinearColor::White);
-		return Index;
-	};
-
-	auto AppendQuad = [&](int32 I0, int32 I1, int32 I2, int32 I3, int32 Slot)
-	{
-		// Both windings — FlatCol is one-sided; avoids black backs on fog banks.
-		FogTriangles.Add(I0);
-		FogTriangles.Add(I1);
-		FogTriangles.Add(I2);
-		FogTriangles.Add(I0);
-		FogTriangles.Add(I2);
-		FogTriangles.Add(I3);
-		FogTriangles.Add(I0);
-		FogTriangles.Add(I2);
-		FogTriangles.Add(I1);
-		FogTriangles.Add(I0);
-		FogTriangles.Add(I3);
-		FogTriangles.Add(I2);
-		FogTriMaterials.Add(Slot);
-		FogTriMaterials.Add(Slot);
-		FogTriMaterials.Add(Slot);
-		FogTriMaterials.Add(Slot);
-	};
-
-	const bool bHaveHalf = FogHalfMaterial != nullptr;
-	const bool bHaveFull = FogFullMaterial != nullptr;
-	if (bHaveHalf || bHaveFull)
-	{
-		for (int32 Y = 0; Y < FogQuads; ++Y)
-		{
-			for (int32 X = 0; X < FogQuads; ++X)
+			UMaterialInterface* Mat = (MatIndex == 0 && FogHalfMaterial) ? FogHalfMaterial
+				: (FogFullMaterial ? FogFullMaterial : FogHalfMaterial);
+			if (Mat)
 			{
-				const int32 I00 = Y * FogVerts + X;
-				const int32 I10 = I00 + 1;
-				const int32 I01 = I00 + FogVerts;
-				const int32 I11 = I01 + 1;
-
-				const float F00 = FogAmounts[I00];
-				const float F10 = FogAmounts[I10];
-				const float F01 = FogAmounts[I01];
-				const float F11 = FogAmounts[I11];
-				const float AvgFog = 0.25f * (F00 + F10 + F01 + F11);
-				const float MinFog = FMath::Min(FMath::Min(F00, F10), FMath::Min(F01, F11));
-
-				// Require the whole cell to be fogged. Using MaxFog let pillars straddle into
-				// the clear disk and sit on top of the camera / spring-arm path.
-				if (MinFog <= 0.05f)
-				{
-					continue;
-				}
-
-				const bool bFull = AvgFog >= 0.75f;
-				int32 Slot = 0;
-				if (bHaveHalf && bHaveFull)
-				{
-					Slot = bFull ? 1 : 0;
-				}
-
-				// Half band: checkerboard pillars so ~50% of cells stay empty (see-through).
-				if (!bFull && (((X + Y) & 1) == 0))
-				{
-					continue;
-				}
-
-				const float VolumeHeight = bFull ? CachedFogVolumeHeightCm : CachedFogVolumeHeightHalfCm;
-				const float X0 = static_cast<float>(X) * Step;
-				const float X1 = static_cast<float>(X + 1) * Step;
-				const float Y0 = static_cast<float>(Y) * Step;
-				const float Y1 = static_cast<float>(Y + 1) * Step;
-
-				const float Z00 = SurfaceZ[I00];
-				const float Z10 = SurfaceZ[I10];
-				const float Z01 = SurfaceZ[I01];
-				const float Z11 = SurfaceZ[I11];
-
-				// Walls only (no solid roof) — open tops + gaps read as mist banks, not buildings.
-				constexpr float SkirtCm = 20.f;
-				auto AppendWall = [&](const FVector& BottomA, const FVector& BottomB,
-					const FVector& TopB, const FVector& TopA, const FVector& Normal)
-				{
-					const int32 V0 = AppendVert(BottomA, Normal);
-					const int32 V1 = AppendVert(BottomB, Normal);
-					const int32 V2 = AppendVert(TopB, Normal);
-					const int32 V3 = AppendVert(TopA, Normal);
-					AppendQuad(V0, V1, V2, V3, Slot);
-				};
-
-				// Crossed vertical sheets form a mist lattice (world-space, trail-cleared).
-				// Translucent materials accumulate along the view ray without solid roofs.
-				const float MidX = 0.5f * (X0 + X1);
-				const float MidY = 0.5f * (Y0 + Y1);
-				const float ZMidA = 0.5f * (Z00 + Z10);
-				const float ZMidB = 0.5f * (Z01 + Z11);
-				const float ZMidC = 0.5f * (Z00 + Z01);
-				const float ZMidD = 0.5f * (Z10 + Z11);
-
-				if (bFull)
-				{
-					// Full: center X + Y fins every cell — dense lattice.
-					AppendWall(
-						FVector(MidX, Y0, ZMidA + SkirtCm),
-						FVector(MidX, Y1, ZMidB + SkirtCm),
-						FVector(MidX, Y1, ZMidB + VolumeHeight),
-						FVector(MidX, Y0, ZMidA + VolumeHeight),
-						FVector(1.f, 0.f, 0.f));
-					AppendWall(
-						FVector(X0, MidY, ZMidC + SkirtCm),
-						FVector(X1, MidY, ZMidD + SkirtCm),
-						FVector(X1, MidY, ZMidD + VolumeHeight),
-						FVector(X0, MidY, ZMidC + VolumeHeight),
-						FVector(0.f, 1.f, 0.f));
-				}
-				else
-				{
-					// Half: single center fin on checkerboard cells (~50% coverage).
-					AppendWall(
-						FVector(MidX, Y0, ZMidA + SkirtCm),
-						FVector(MidX, Y1, ZMidB + SkirtCm),
-						FVector(MidX, Y1, ZMidB + VolumeHeight),
-						FVector(MidX, Y0, ZMidA + VolumeHeight),
-						FVector(1.f, 0.f, 0.f));
-				}
+				FogMeshComponent->SetMaterial(MatIndex, Mat);
 			}
 		}
-	}
-
-	TArray<UMaterialInterface*> FogMaterials;
-	if (bHaveHalf && bHaveFull)
-	{
-		FogMaterials.Add(FogHalfMaterial);
-		FogMaterials.Add(FogFullMaterial);
-	}
-	else if (bHaveFull)
-	{
-		FogMaterials.Add(FogFullMaterial);
-	}
-	else if (bHaveHalf)
-	{
-		FogMaterials.Add(FogHalfMaterial);
-	}
-
-	RuntimeFogStaticMesh = nullptr;
-	FogMeshComponent->SetStaticMesh(nullptr);
-	if (FogTriangles.Num() > 0 && FogMaterials.Num() > 0)
-	{
-		RuntimeFogStaticMesh = SolidTerrainChunkPrivate::BuildRuntimeMesh(
-			this, FogPositions, FogNormals, FogTangents, FogUVs, FogColors, FogTriangles,
-			FogMaterials, FogTriMaterials, /*bBuildCollision=*/false);
-
-		FogMeshComponent->SetStaticMesh(RuntimeFogStaticMesh);
-		for (int32 MatIndex = 0; MatIndex < FogMaterials.Num(); ++MatIndex)
-		{
-			FogMeshComponent->SetMaterial(MatIndex, FogMaterials[MatIndex]);
-		}
-		// SetStaticMesh can restore default collision — force fog non-blocking again.
-		SolidTerrainChunkPrivate::ConfigureFogOverlay(FogMeshComponent);
+		SolidTerrainFog::ConfigureOverlayComponent(FogMeshComponent);
 		FogMeshComponent->SetVisibility(true);
 		FogMeshComponent->SetHiddenInGame(false);
 		FogMeshComponent->UpdateBounds();

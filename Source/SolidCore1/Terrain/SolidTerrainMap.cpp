@@ -1,4 +1,5 @@
 #include "SolidTerrainMap.h"
+#include "SolidTerrainFog.h"
 #include "SolidTerrainNoise.h"
 #include "SolidCore1.h"
 
@@ -215,18 +216,7 @@ void USolidTerrainMap::FillThreatAndFog(
 
 	// Initial exploration fog by distance from world origin (same bands as trail clear).
 	const float DistM = FVector2D(Point.X, Point.Y).Size() * 0.01f;
-	if (DistM > SolidTerrainFog::FullFogStartMeters)
-	{
-		Point.Fog = 1.f;
-	}
-	else if (DistM >= SolidTerrainFog::HalfFogStartMeters)
-	{
-		Point.Fog = 0.5f;
-	}
-	else
-	{
-		Point.Fog = 0.f;
-	}
+	Point.Fog = SolidTerrainFog::FogFromDistanceMeters(DistM);
 }
 
 int32 USolidTerrainMap::ApplyExplorationFogAround(float WorldX, float WorldY)

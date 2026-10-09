@@ -1,5 +1,6 @@
 #include "SolidTerrainStreamer.h"
 #include "SolidTerrainChunk.h"
+#include "SolidTerrainFog.h"
 #include "SolidTerrainMap.h"
 #include "SolidTerrainNoise.h"
 #include "SolidCore1.h"
@@ -12,7 +13,6 @@
 #include "AssetRegistry/AssetData.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Components/CapsuleComponent.h"
-#include "Components/ExponentialHeightFogComponent.h"
 #include "Engine/ExponentialHeightFog.h"
 #include "GameFramework/PlayerController.h"
 #include "Materials/Material.h"
@@ -186,16 +186,13 @@ int32 ASolidTerrainStreamer::ClearExplorationFogAtFocus()
 
 void ASolidTerrainStreamer::EnsureExplorationFogMaterials()
 {
-	// Soft mist greys via translucent parents when available (not bright opaque slabs).
 	if (!ExplorationFogHalfMaterial)
 	{
-		ExplorationFogHalfMaterial = CreateFogVolumeMaterial(
-			FLinearColor(0.55f, 0.62f, 0.68f), 0.45f, TEXT("ExplorationFogHalf"));
+		ExplorationFogHalfMaterial = SolidTerrainFog::CreateHalfMaterial(this);
 	}
 	if (!ExplorationFogFullMaterial)
 	{
-		ExplorationFogFullMaterial = CreateFogVolumeMaterial(
-			FLinearColor(0.48f, 0.54f, 0.60f), 0.90f, TEXT("ExplorationFogFull"));
+		ExplorationFogFullMaterial = SolidTerrainFog::CreateFullMaterial(this);
 	}
 }
 
@@ -305,104 +302,22 @@ void ASolidTerrainStreamer::EnsureHeightFog()
 		return;
 	}
 
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return;
-	}
-
 	if (HeightFogActor && IsValid(HeightFogActor))
 	{
 		return;
 	}
 
-	for (TActorIterator<AExponentialHeightFog> It(World); It; ++It)
-	{
-		HeightFogActor = *It;
-		break;
-	}
-
-	if (!HeightFogActor)
-	{
-		FActorSpawnParameters SpawnParams;
-		SpawnParams.Owner = this;
-		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		HeightFogActor = World->SpawnActor<AExponentialHeightFog>(
-			AExponentialHeightFog::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, SpawnParams);
-		if (HeightFogActor)
-		{
-			UE_LOG(LogSolid, Warning, TEXT("Spawned ExponentialHeightFog for TerrainPoint mist."));
-		}
-	}
-
-	if (UExponentialHeightFogComponent* FogComp = HeightFogActor ? HeightFogActor->GetComponent() : nullptr)
-	{
-		FogComp->SetVisibility(true);
-		FogComp->SetVolumetricFog(true);
-		FogComp->VolumetricFogScatteringDistribution = 0.3f;
-		FogComp->VolumetricFogExtinctionScale = 0.8f;
-		// Low falloff so orbiting / raising the boom does not erase mist.
-		FogComp->FogHeightFalloff = 0.02f;
-		FogComp->SetFogInscatteringColor(FogMistColor);
-		FogComp->SetVolumetricFogDistance(20000.f);
-	}
+	HeightFogActor = SolidTerrainFog::EnsureHeightFog(GetWorld(), this, FogMistColor);
 }
 
 float ASolidTerrainStreamer::SampleViewFogAmount() const
 {
-	if (!TerrainMap || !TerrainMap->IsBuilt())
-	{
-		return 0.f;
-	}
-
 	AActor* Focus = ResolveFocusActor();
 	if (!Focus)
 	{
 		return 0.f;
 	}
-
-	// HUD mist: strongest TerrainPoint.Fog on an omnidirectional ring around the pawn.
-	// Pawn/trail only — never camera location or look direction.
-	const FVector PawnLoc = Focus->GetActorLocation();
-	float Amount = FMath::Clamp(GetTerrainPointAt(PawnLoc).Fog, 0.f, 1.f);
-	const float ClearCm = SolidTerrainFog::MetersToCm(SolidTerrainFog::ClearRadiusMeters);
-	const float FullCm = SolidTerrainFog::MetersToCm(SolidTerrainFog::FullFogStartMeters);
-	constexpr int32 NumDirs = 8;
-	for (int32 DirIndex = 0; DirIndex < NumDirs; ++DirIndex)
-	{
-		const float Angle = (2.f * PI) * (static_cast<float>(DirIndex) / static_cast<float>(NumDirs));
-		const FVector2D Dir(FMath::Cos(Angle), FMath::Sin(Angle));
-		Amount = FMath::Max(Amount, GetTerrainPointAt(PawnLoc + FVector(Dir.X * ClearCm, Dir.Y * ClearCm, 0.f)).Fog);
-		Amount = FMath::Max(Amount, GetTerrainPointAt(PawnLoc + FVector(Dir.X * FullCm, Dir.Y * FullCm, 0.f)).Fog);
-	}
-	return FMath::Clamp(Amount, 0.f, 1.f);
-}
-
-void ASolidTerrainStreamer::SilenceHeightFog()
-{
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return;
-	}
-
-	for (TActorIterator<AExponentialHeightFog> It(World); It; ++It)
-	{
-		AExponentialHeightFog* FogActor = *It;
-		if (!FogActor)
-		{
-			continue;
-		}
-		if (UExponentialHeightFogComponent* FogComp = FogActor->GetComponent())
-		{
-			FogComp->SetFogDensity(0.f);
-			FogComp->SetFogMaxOpacity(0.f);
-			FogComp->SetStartDistance(0.f);
-			FogComp->SetVolumetricFog(false);
-			FogComp->VolumetricFogExtinctionScale = 0.f;
-			FogComp->MarkRenderStateDirty();
-		}
-	}
+	return SolidTerrainFog::SampleMistAmountAround(TerrainMap, Focus->GetActorLocation());
 }
 
 void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)
@@ -421,7 +336,7 @@ void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)
 	{
 		if (!bHeightFogSilenced)
 		{
-			SilenceHeightFog();
+			SolidTerrainFog::SilenceHeightFog(GetWorld());
 			bHeightFogSilenced = true;
 		}
 		return;
@@ -429,55 +344,14 @@ void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)
 	bHeightFogSilenced = false;
 
 	EnsureHeightFog();
-	if (!HeightFogActor)
-	{
-		return;
-	}
 
-	UExponentialHeightFogComponent* FogComp = HeightFogActor->GetComponent();
-	if (!FogComp)
-	{
-		return;
-	}
-
-	const float Amount = FMath::Clamp(RenderedFogAmount, 0.f, 1.f);
-
-	float Density = 0.f;
-	float MaxOpacity = 0.f;
-	float StartDistance = 0.f;
-	float ExtinctionScale = 0.f;
-
-	if (Amount <= KINDA_SMALL_NUMBER)
-	{
-		Density = 0.f;
-		MaxOpacity = 0.f;
-		StartDistance = 0.f;
-		ExtinctionScale = 0.f;
-	}
-	else if (Amount <= 0.5f)
-	{
-		const float T = Amount / 0.5f;
-		Density = FMath::Lerp(0.f, FogDensityAtHalf, T);
-		MaxOpacity = FMath::Lerp(0.f, FogMaxOpacityAtHalf, T);
-		StartDistance = FMath::Lerp(800.f, 100.f, T);
-		ExtinctionScale = FMath::Lerp(0.2f, 1.2f, T);
-	}
-	else
-	{
-		const float T = (Amount - 0.5f) / 0.5f;
-		Density = FMath::Lerp(FogDensityAtHalf, FogDensityAtFull, T);
-		MaxOpacity = FMath::Lerp(FogMaxOpacityAtHalf, FogMaxOpacityAtFull, T);
-		StartDistance = FMath::Lerp(100.f, 20.f, T);
-		ExtinctionScale = FMath::Lerp(1.2f, 2.2f, T);
-	}
-
-	FogComp->SetFogDensity(Density);
-	FogComp->SetFogMaxOpacity(MaxOpacity);
-	FogComp->SetFogInscatteringColor(FogMistColor);
-	FogComp->SetStartDistance(StartDistance);
-	FogComp->SetVolumetricFog(Amount > KINDA_SMALL_NUMBER);
-	FogComp->VolumetricFogExtinctionScale = ExtinctionScale;
-	FogComp->MarkRenderStateDirty();
+	SolidTerrainFog::FHeightFogStyle Style;
+	Style.DensityAtHalf = FogDensityAtHalf;
+	Style.DensityAtFull = FogDensityAtFull;
+	Style.MaxOpacityAtHalf = FogMaxOpacityAtHalf;
+	Style.MaxOpacityAtFull = FogMaxOpacityAtFull;
+	Style.MistColor = FogMistColor;
+	SolidTerrainFog::ApplyHeightFogAmount(HeightFogActor, RenderedFogAmount, Style);
 }
 
 FIntPoint ASolidTerrainStreamer::WorldToChunkCoord(const FVector& WorldLocation) const
@@ -582,51 +456,6 @@ UMaterialInterface* ASolidTerrainStreamer::CreateSolidColorMaterial(
 	MID->SetScalarParameterValue(TEXT("Roughness"), 1.f);
 	UE_LOG(LogSolid, Warning, TEXT("Created solid material %s from %s"), DebugName, *Parent->GetName());
 	return MID;
-}
-
-UMaterialInterface* ASolidTerrainStreamer::CreateFogVolumeMaterial(
-	const FLinearColor& Color,
-	float Opacity,
-	const TCHAR* DebugName) const
-{
-	ASolidTerrainStreamer* MutableThis = const_cast<ASolidTerrainStreamer*>(this);
-	Opacity = FMath::Clamp(Opacity, 0.f, 1.f);
-
-	// Prefer translucent glow parents so half-fog can actually be ~50% opacity.
-	static const TCHAR* TranslucentParents[] = {
-		TEXT("/Game/LevelPrototyping/Interactable/JumpPad/Assets/Materials/M_SimpleGlow.M_SimpleGlow"),
-		TEXT("/Game/LevelPrototyping/Interactable/JumpPad/Assets/Materials/MI_GlowNT.MI_GlowNT"),
-		TEXT("/Game/LevelPrototyping/Interactable/JumpPad/Assets/Materials/M_GradientGlow.M_GradientGlow"),
-	};
-
-	for (const TCHAR* Path : TranslucentParents)
-	{
-		if (UMaterialInterface* Parent = LoadObject<UMaterialInterface>(nullptr, Path))
-		{
-			if (UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Parent, MutableThis))
-			{
-				MID->SetVectorParameterValue(TEXT("Base Color"), Color);
-				MID->SetVectorParameterValue(TEXT("BaseColor"), Color);
-				MID->SetVectorParameterValue(TEXT("Color"), Color);
-				MID->SetVectorParameterValue(TEXT("EmissiveColor"), Color);
-				MID->SetVectorParameterValue(TEXT("GlowColor"), Color);
-				MID->SetScalarParameterValue(TEXT("Opacity"), Opacity);
-				MID->SetScalarParameterValue(TEXT("OpacityMask"), Opacity);
-				MID->SetScalarParameterValue(TEXT("Emissive"), Opacity);
-				MID->SetScalarParameterValue(TEXT("Intensity"), Opacity);
-				UE_LOG(LogSolid, Warning,
-					TEXT("Fog volume material %s from %s (opacity=%.2f)"),
-					DebugName, *Parent->GetName(), Opacity);
-				return MID;
-			}
-		}
-	}
-
-	// Opaque fallback — geometry still differentiates half vs full.
-	UE_LOG(LogSolid, Warning,
-		TEXT("Fog volume material %s falling back to FlatCol (opacity=%.2f unused)."),
-		DebugName, Opacity);
-	return CreateSolidColorMaterial(Color, DebugName);
 }
 
 UMaterialInterface* ASolidTerrainStreamer::CreateFlatColGrassMaterial() const

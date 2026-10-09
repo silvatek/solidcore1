@@ -40,23 +40,10 @@ struct FSolidTerrainPoint
 	UPROPERTY(BlueprintReadOnly, Category = "Terrain")
 	float Threat = 0.f;
 
-	/** Exploration fog / obscurity in [0, 1] (1 = fully fogged). */
+	/** Exploration fog / obscurity in [0, 1] (1 = fully fogged). Distance bands: SolidTerrainFog.h. */
 	UPROPERTY(BlueprintReadOnly, Category = "Terrain")
 	float Fog = 1.f;
 };
-
-/** Shared exploration-fog distance bands (meters). Initial fill and trail clear use these. */
-namespace SolidTerrainFog
-{
-	/** Points closer than this to origin (init) or player trail (runtime) are fully clear. */
-	constexpr float ClearRadiusMeters = 25.f;
-	/** Half fog starts at this distance from origin on the initial map fill. */
-	constexpr float HalfFogStartMeters = 25.f;
-	/** Full fog beyond this distance from origin on the initial map fill. */
-	constexpr float FullFogStartMeters = 50.f;
-
-	FORCEINLINE float MetersToCm(float Meters) { return Meters * 100.f; }
-}
 
 namespace SolidTerrainTypes
 {

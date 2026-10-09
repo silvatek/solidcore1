@@ -121,8 +121,8 @@ public:
 	float TerrainPointSpacing = 200.f;
 
 	/**
-	 * World-space exploration fog banks (mesh lattice). On by default — this is the only
-	 * fog that clears with the pawn trail and does not depend on camera look/orbit.
+	 * World-space FoW curtains (SolidTerrainFog boundary faces). On by default — clears
+	 * with the pawn trail and does not depend on camera look/orbit.
 	 * Height fog cannot do spatial fog-of-war (StartDistance is camera-relative).
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog")
@@ -188,7 +188,6 @@ protected:
 	void ProcessExplorationFogMeshRebuilds();
 	void BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint Coord);
 	void UpdateTerrainFog(float DeltaSeconds);
-	void SilenceHeightFog();
 	float SampleViewFogAmount() const;
 	void UpdateStreaming();
 	FIntPoint WorldToChunkCoord(const FVector& WorldLocation) const;
@@ -198,10 +197,6 @@ protected:
 	UMaterialInterface* CreateFlatColGrassMaterial() const;
 	UMaterialInterface* MakeMatteGrassInstance(UMaterialInterface* Parent) const;
 	UMaterialInterface* CreateSolidColorMaterial(const FLinearColor& Color, const TCHAR* DebugName) const;
-	UMaterialInterface* CreateFogVolumeMaterial(
-		const FLinearColor& Color,
-		float Opacity,
-		const TCHAR* DebugName) const;
 	float SampleHeightAtWorld(const FVector& WorldLocation) const;
 	void TrySnapFocusToTerrain(AActor* Focus);
 	void DisableLandscapeActorsOnce();

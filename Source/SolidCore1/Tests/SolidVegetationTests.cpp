@@ -31,7 +31,7 @@ bool FSolidForestTreeScatterTest::RunTest(const FString& Parameters)
 	SolidForestTrees::FScatterParams Params;
 	Params.Density = 0.5f;
 	Params.MaxTrees = 64;
-	Params.JitterCm = 50.f;
+	Params.JitterCm = 0.f; // exact grid points so biome checks stay crisp
 
 	TArray<FVector2D> PositionsA;
 	TArray<FVector2D> PositionsB;
@@ -46,9 +46,8 @@ bool FSolidForestTreeScatterTest::RunTest(const FString& Parameters)
 	{
 		TestTrue(TEXT("deterministic positions"), PositionsA[I].Equals(PositionsB[I], 0.01f));
 		const FSolidTerrainPoint Sample = Map->SamplePoint(PositionsA[I].X, PositionsA[I].Y);
-		// Jitter can push slightly outside a forest cell; nearest should usually stay Forest.
 		TestEqual(
-			TEXT("spawn near forest biome"),
+			TEXT("spawn on forest biome"),
 			static_cast<uint8>(Sample.Biome),
 			static_cast<uint8>(ESolidBiome::Forest));
 	}

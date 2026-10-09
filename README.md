@@ -90,6 +90,29 @@ Default map is `/Game/ThirdPerson/Lvl_ThirdPerson` (SC1-0022) so Open World Land
 
 SC1-0007 drops `UProceduralMeshComponent` after persistent ribbon/culling failures with that path.
 
+## Exploration fog (fog-of-war)
+
+Goal: the world starts shrouded; fog clears only where the **pawn has been** (trail), independent of camera orbit / pitch / zoom.
+
+**Data (kept):** `FSolidTerrainPoint.Fog` on `USolidTerrainMap`. Initial fill and trail clear use the same bands — ≤25 m → `0`, 25–50 m → `0.5`, >50 m → `1`. Runtime: `ApplyExplorationFogAround` as the pawn moves.
+
+**Current visual (SC1-0069):** world-space **mesh mist banks** on fogged cells (`bRenderExplorationFogMeshes=true`). Exponential Height Fog is **off** (`bRenderTerrainFog=false`). HUD `fog` = local TerrainPoint; `mist` = max fog on a pawn-centered ring (not camera).
+
+### Approaches tried and rejected
+
+| Approach | Builds (approx.) | Why rejected |
+|----------|------------------|--------------|
+| **Exponential Height Fog driven by local pawn `Fog`** | ~SC1-0056…0061, **0068** | Global atmosphere. When the pawn stands on clear trail (`Fog=0`), density goes to 0 and **the whole world looks clear** — no distant fog-of-war. |
+| **Height fog + camera / look-direction probes** | ~SC1-0065…0067 | `GetPlayerViewPoint` / forward probes made mist pop in/out when orbiting or looking at clear ground. UE’s fog **StartDistance is camera-relative**, so a “25 m clear bubble” moves with the boom, not the pawn. |
+| **Height fog + omnidirectional ring around pawn** (no look probe) | SC1-0067 | Amount could stay stable, but StartDistance / height falloff still made the **look** of mist change with camera pose. Still not spatial FoW. |
+| **Opaque solid fog volumes / roofs** (FlatCol boxes) | ~SC1-0057…0060 | Read as **solid grey/white slabs or snow** on the ground, not mist. |
+| **Opaque wall-only / prism banks** (still FlatCol) | ~SC1-0063…0065 | Less “snow roof,” but still **solid walls**; spring-arm sometimes collided until fog meshes forced `NoCollision` / ignore `ECC_Camera`. |
+| **Half-fog via fake translucency on opaque mats** | mid series | Opacity parameters ignored on opaque parents → still fully opaque. |
+| **Half-fog geometric dither** (checkerboard pillars, ~50% cells empty) | SC1-0063+ | Kept as the half-band mesh strategy; alone it does not replace needing world-space banks vs height fog. |
+| **Height fog “thicker mist” tuning only** (density / max opacity / extinction) | SC1-0058…0065 | Could look misty in places, but never fixed **spatial trail clearing** vs **camera dependence**. |
+
+**Do not reintroduce** camera/view sampling for fog amount, or height-fog StartDistance as a stand-in for the 25 m clear radius. Prefer world-space geometry (or a future true local/volumetric FoW solution) tied to `TerrainPoint.Fog`.
+
 ## Quinn companion (SC1-0024)
 
 `ASolidCompanionCharacter` spawns behind the player and follows with simple steering (no NavMesh — works on procedural terrain). Both player and companion use the Fab Viking (`/Game/Viking/Mesh/SK_Viking`) with idle/walk/run/(jump) clip playback (custom skeleton — not Epic AnimBP). GameMode flag: `bAutoSpawnCompanion`. HUD shows companion mesh name and distance. Set `bUseVikingVisuals=false` on the player to fall back to Manny.

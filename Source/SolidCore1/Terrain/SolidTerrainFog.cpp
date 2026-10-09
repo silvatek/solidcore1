@@ -83,8 +83,8 @@ namespace SolidTerrainFog
 		EditorData->EmissiveColor.Expression = ColorParam;
 		EditorData->Opacity.Expression = OpacityParam;
 
-		bool bNeedsRecompile = false;
-		Material->SetMaterialUsage(bNeedsRecompile, MATUSAGE_StaticMesh);
+		// UE 5.8+: SetMaterialUsage(bool&, Usage) is deprecated; use the virtual Usage-only API.
+		Material->SetMaterialUsage(MATUSAGE_StaticMesh);
 
 		Material->PreEditChange(nullptr);
 		Material->PostEditChange();

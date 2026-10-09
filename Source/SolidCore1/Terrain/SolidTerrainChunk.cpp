@@ -443,21 +443,13 @@ void ASolidTerrainChunk::RebuildExplorationFog(
 
 	auto AppendQuad = [&](int32 I0, int32 I1, int32 I2, int32 I3, int32 Slot)
 	{
-		// Both windings — FlatCol is one-sided; fog banks must read from inside and outside.
+		// Single winding only (perf). Outward faces toward the clear trail.
 		FogTriangles.Add(I0);
 		FogTriangles.Add(I1);
 		FogTriangles.Add(I2);
 		FogTriangles.Add(I0);
 		FogTriangles.Add(I2);
 		FogTriangles.Add(I3);
-		FogTriangles.Add(I0);
-		FogTriangles.Add(I2);
-		FogTriangles.Add(I1);
-		FogTriangles.Add(I0);
-		FogTriangles.Add(I3);
-		FogTriangles.Add(I2);
-		FogTriMaterials.Add(Slot);
-		FogTriMaterials.Add(Slot);
 		FogTriMaterials.Add(Slot);
 		FogTriMaterials.Add(Slot);
 	};
@@ -486,12 +478,18 @@ void ASolidTerrainChunk::RebuildExplorationFog(
 					continue;
 				}
 
-				// Prefer the half material for the fog~=0.5 band; only solid-full when clearly ~1.
 				const bool bFull = AvgFog >= 0.75f;
 				int32 Slot = 0;
 				if (bHaveHalf && bHaveFull)
 				{
 					Slot = bFull ? 1 : 0;
+				}
+
+				// Half band: checkerboard pillars so ~50% of cells stay empty (see-through).
+				// Translucent materials did not work; this is the opacity stand-in.
+				if (!bFull && (((X + Y) & 1) == 0))
+				{
+					continue;
 				}
 
 				const float VolumeHeight = bFull ? CachedFogVolumeHeightCm : CachedFogVolumeHeightHalfCm;
@@ -505,16 +503,26 @@ void ASolidTerrainChunk::RebuildExplorationFog(
 				const float Z01 = SurfaceZ[I01];
 				const float Z11 = SurfaceZ[I11];
 
-				// Bottom skirt slightly above grass to avoid z-fight; top follows terrain + height.
 				constexpr float SkirtCm = 20.f;
-				const FVector B00(X0, Y0, Z00 + SkirtCm);
-				const FVector B10(X1, Y0, Z10 + SkirtCm);
-				const FVector B01(X0, Y1, Z01 + SkirtCm);
-				const FVector B11(X1, Y1, Z11 + SkirtCm);
-				const FVector T00(X0, Y0, Z00 + VolumeHeight);
-				const FVector T10(X1, Y0, Z10 + VolumeHeight);
-				const FVector T01(X0, Y1, Z01 + VolumeHeight);
-				const FVector T11(X1, Y1, Z11 + VolumeHeight);
+				FVector B00(X0, Y0, Z00 + SkirtCm);
+				FVector B10(X1, Y0, Z10 + SkirtCm);
+				FVector B01(X0, Y1, Z01 + SkirtCm);
+				FVector B11(X1, Y1, Z11 + SkirtCm);
+
+				if (!bFull)
+				{
+					// Shrink pillar to the cell center so gaps between half-fog cells stay open.
+					const float Inset = Step * 0.22f;
+					B00 = FVector(X0 + Inset, Y0 + Inset, Z00 + SkirtCm);
+					B10 = FVector(X1 - Inset, Y0 + Inset, Z10 + SkirtCm);
+					B01 = FVector(X0 + Inset, Y1 - Inset, Z01 + SkirtCm);
+					B11 = FVector(X1 - Inset, Y1 - Inset, Z11 + SkirtCm);
+				}
+
+				const FVector T00(B00.X, B00.Y, Z00 + VolumeHeight);
+				const FVector T10(B10.X, B10.Y, Z10 + VolumeHeight);
+				const FVector T01(B01.X, B01.Y, Z01 + VolumeHeight);
+				const FVector T11(B11.X, B11.Y, Z11 + VolumeHeight);
 
 				auto AppendWall = [&](const FVector& BottomA, const FVector& BottomB,
 					const FVector& TopB, const FVector& TopA, const FVector& Normal)
@@ -526,44 +534,18 @@ void ASolidTerrainChunk::RebuildExplorationFog(
 					AppendQuad(V0, V1, V2, V3, Slot);
 				};
 
-				if (bFull)
+				// Closed prism (top + 4 walls). Half uses checkerboard+inset; full fills every cell.
 				{
-					// Full fog: closed prism (top + walls) — near-impenetrable bank.
-					{
-						const int32 V0 = AppendVert(T00, FVector::UpVector);
-						const int32 V1 = AppendVert(T10, FVector::UpVector);
-						const int32 V2 = AppendVert(T11, FVector::UpVector);
-						const int32 V3 = AppendVert(T01, FVector::UpVector);
-						AppendQuad(V0, V1, V2, V3, Slot);
-					}
-					AppendWall(B00, B10, T10, T00, FVector(0.f, -1.f, 0.f));
-					AppendWall(B11, B01, T01, T11, FVector(0.f, 1.f, 0.f));
-					AppendWall(B01, B00, T00, T01, FVector(-1.f, 0.f, 0.f));
-					AppendWall(B10, B11, T11, T10, FVector(1.f, 0.f, 0.f));
+					const int32 V0 = AppendVert(T00, FVector::UpVector);
+					const int32 V1 = AppendVert(T10, FVector::UpVector);
+					const int32 V2 = AppendVert(T11, FVector::UpVector);
+					const int32 V3 = AppendVert(T01, FVector::UpVector);
+					AppendQuad(V0, V1, V2, V3, Slot);
 				}
-				else
-				{
-					// Half fog: open top + two center fins (not a solid box) so coverage reads ~50%.
-					const float MidX = 0.5f * (X0 + X1);
-					const float MidY = 0.5f * (Y0 + Y1);
-					const float ZMid0 = 0.5f * (Z00 + Z10) + SkirtCm;
-					const float ZMid1 = 0.5f * (Z01 + Z11) + SkirtCm;
-					const float ZMidL = 0.5f * (Z00 + Z01) + SkirtCm;
-					const float ZMidR = 0.5f * (Z10 + Z11) + SkirtCm;
-					const float ZTop0 = ZMid0 - SkirtCm + VolumeHeight;
-					const float ZTop1 = ZMid1 - SkirtCm + VolumeHeight;
-					const float ZTopL = ZMidL - SkirtCm + VolumeHeight;
-					const float ZTopR = ZMidR - SkirtCm + VolumeHeight;
-
-					AppendWall(
-						FVector(MidX, Y0, ZMid0), FVector(MidX, Y1, ZMid1),
-						FVector(MidX, Y1, ZTop1), FVector(MidX, Y0, ZTop0),
-						FVector(1.f, 0.f, 0.f));
-					AppendWall(
-						FVector(X0, MidY, ZMidL), FVector(X1, MidY, ZMidR),
-						FVector(X1, MidY, ZTopR), FVector(X0, MidY, ZTopL),
-						FVector(0.f, 1.f, 0.f));
-				}
+				AppendWall(B00, B10, T10, T00, FVector(0.f, -1.f, 0.f));
+				AppendWall(B11, B01, T01, T11, FVector(0.f, 1.f, 0.f));
+				AppendWall(B01, B00, T00, T01, FVector(-1.f, 0.f, 0.f));
+				AppendWall(B10, B11, T11, T10, FVector(1.f, 0.f, 0.f));
 			}
 		}
 	}

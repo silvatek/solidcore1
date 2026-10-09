@@ -68,11 +68,12 @@ void ASolidTerrainStreamer::BeginPlay()
 	EnsureTerrainMap();
 	EnsureExplorationFogMaterials();
 	EnsureHeightFog();
+	bHasFogApplyLocation = false;
 	ClearExplorationFogAtFocus();
-	bExplorationFogMeshesDirty = true;
 	TimeSinceUpdate = UpdateIntervalSeconds;
 	UpdateStreaming();
 	UpdateTerrainFog(0.f);
+	ProcessExplorationFogMeshRebuilds();
 }
 
 void ASolidTerrainStreamer::EnsureTerrainMap()
@@ -123,10 +124,6 @@ void ASolidTerrainStreamer::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
 
-	if (ClearExplorationFogAtFocus() > 0)
-	{
-		bExplorationFogMeshesDirty = true;
-	}
 	UpdateTerrainFog(DeltaSeconds);
 
 	TimeSinceUpdate += DeltaSeconds;
@@ -136,20 +133,9 @@ void ASolidTerrainStreamer::Tick(float DeltaSeconds)
 	}
 
 	TimeSinceUpdate = 0.f;
+	ClearExplorationFogAtFocus();
 	UpdateStreaming();
-
-	if (bExplorationFogMeshesDirty)
-	{
-		if (AActor* Focus = ResolveFocusActor())
-		{
-			const FVector Loc = Focus->GetActorLocation();
-			// Refresh through the half-fog outer band (50m), not just the clear disk.
-			RefreshExplorationFogMeshesAround(
-				Loc.X, Loc.Y,
-				SolidTerrainFog::MetersToCm(SolidTerrainFog::FullFogStartMeters) + ChunkWorldSize * 0.5f);
-		}
-		bExplorationFogMeshesDirty = false;
-	}
+	ProcessExplorationFogMeshRebuilds();
 }
 
 int32 ASolidTerrainStreamer::ClearExplorationFogAtFocus()
@@ -159,27 +145,49 @@ int32 ASolidTerrainStreamer::ClearExplorationFogAtFocus()
 		return 0;
 	}
 
-	if (AActor* Focus = ResolveFocusActor())
+	AActor* Focus = ResolveFocusActor();
+	if (!Focus)
 	{
-		const FVector Loc = Focus->GetActorLocation();
-		return TerrainMap->ApplyExplorationFogAround(Loc.X, Loc.Y);
+		return 0;
 	}
-	return 0;
+
+	const FVector Loc = Focus->GetActorLocation();
+	if (bHasFogApplyLocation)
+	{
+		const float MovedSq = FVector::DistSquared2D(Loc, LastFogApplyLocation);
+		const float Threshold = FMath::Max(FogUpdateMoveThresholdCm, 50.f);
+		if (MovedSq < Threshold * Threshold)
+		{
+			return 0;
+		}
+	}
+
+	const int32 Changed = TerrainMap->ApplyExplorationFogAround(Loc.X, Loc.Y);
+	LastFogApplyLocation = Loc;
+	bHasFogApplyLocation = true;
+
+	if (Changed > 0)
+	{
+		QueueExplorationFogMeshRefresh(
+			Loc.X, Loc.Y,
+			SolidTerrainFog::MetersToCm(SolidTerrainFog::FullFogStartMeters) + ChunkWorldSize * 0.5f);
+	}
+	return Changed;
 }
 
 void ASolidTerrainStreamer::EnsureExplorationFogMaterials()
 {
+	// Opaque FlatCol only — translucency parents did not reduce opacity in PIE.
+	// Half vs full is conveyed by geometry (checkerboard pillars vs solid banks).
 	if (!ExplorationFogHalfMaterial)
 	{
-		// ~50% opacity mid band (translucent parent when available).
-		ExplorationFogHalfMaterial = CreateFogVolumeMaterial(
-			FLinearColor(0.70f, 0.76f, 0.82f), 0.45f, TEXT("ExplorationFogHalf"));
+		ExplorationFogHalfMaterial = CreateSolidColorMaterial(
+			FLinearColor(0.62f, 0.68f, 0.74f), TEXT("ExplorationFogHalf"));
 	}
 	if (!ExplorationFogFullMaterial)
 	{
-		// Near-opaque full band.
-		ExplorationFogFullMaterial = CreateFogVolumeMaterial(
-			FLinearColor(0.78f, 0.82f, 0.86f), 0.92f, TEXT("ExplorationFogFull"));
+		ExplorationFogFullMaterial = CreateSolidColorMaterial(
+			FLinearColor(0.82f, 0.86f, 0.90f), TEXT("ExplorationFogFull"));
 	}
 }
 
@@ -209,29 +217,53 @@ void ASolidTerrainStreamer::BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint
 		FogVolumeHeightHalfCm);
 }
 
-void ASolidTerrainStreamer::RefreshExplorationFogMeshesAround(float WorldX, float WorldY, float RadiusCm)
+void ASolidTerrainStreamer::QueueExplorationFogMeshRefresh(float WorldX, float WorldY, float RadiusCm)
 {
-	EnsureExplorationFogMaterials();
+	const float ChunkRadius = ChunkWorldSize * 0.75f;
+	const float Reach = RadiusCm + ChunkRadius;
+	const float ReachSq = Reach * Reach;
 	for (const TPair<FIntPoint, TObjectPtr<ASolidTerrainChunk>>& Pair : LoadedChunks)
 	{
-		ASolidTerrainChunk* Chunk = Pair.Value;
-		if (!Chunk)
+		if (!Pair.Value)
 		{
 			continue;
 		}
-
-		const FVector ChunkOrigin(
-			static_cast<float>(Pair.Key.X) * ChunkWorldSize,
-			static_cast<float>(Pair.Key.Y) * ChunkWorldSize,
+		const FVector ChunkCenter(
+			(static_cast<float>(Pair.Key.X) + 0.5f) * ChunkWorldSize,
+			(static_cast<float>(Pair.Key.Y) + 0.5f) * ChunkWorldSize,
 			0.f);
-		const FVector ChunkCenter = ChunkOrigin + FVector(ChunkWorldSize * 0.5f, ChunkWorldSize * 0.5f, 0.f);
 		const float DX = ChunkCenter.X - WorldX;
 		const float DY = ChunkCenter.Y - WorldY;
-		const float ChunkRadius = ChunkWorldSize * 0.75f;
-		const float Reach = RadiusCm + ChunkRadius;
-		if ((DX * DX + DY * DY) <= Reach * Reach)
+		if ((DX * DX + DY * DY) <= ReachSq)
 		{
-			// Volumes only — never rebuild terrain collision meshes while walking.
+			DirtyFogChunkCoords.Add(Pair.Key);
+		}
+	}
+}
+
+void ASolidTerrainStreamer::ProcessExplorationFogMeshRebuilds()
+{
+	if (DirtyFogChunkCoords.Num() == 0)
+	{
+		return;
+	}
+
+	EnsureExplorationFogMaterials();
+	const int32 Budget = FMath::Max(MaxFogChunkRebuildsPerUpdate, 1);
+	int32 Rebuilt = 0;
+	TArray<FIntPoint> StillDirty;
+	StillDirty.Reserve(DirtyFogChunkCoords.Num());
+
+	for (const FIntPoint& Coord : DirtyFogChunkCoords)
+	{
+		if (Rebuilt >= Budget)
+		{
+			StillDirty.Add(Coord);
+			continue;
+		}
+
+		if (ASolidTerrainChunk* Chunk = LoadedChunks.FindRef(Coord))
+		{
 			Chunk->RebuildExplorationFog(
 				ExplorationFogHalfMaterial,
 				ExplorationFogFullMaterial,
@@ -239,7 +271,14 @@ void ASolidTerrainStreamer::RefreshExplorationFogMeshesAround(float WorldX, floa
 				FogQuadsPerSide,
 				FogVolumeHeightCm,
 				FogVolumeHeightHalfCm);
+			++Rebuilt;
 		}
+	}
+
+	DirtyFogChunkCoords.Reset();
+	for (const FIntPoint& Coord : StillDirty)
+	{
+		DirtyFogChunkCoords.Add(Coord);
 	}
 }
 

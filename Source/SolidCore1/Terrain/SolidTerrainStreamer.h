@@ -122,15 +122,23 @@ public:
 
 	/** Low-res fog-of-war cells per chunk edge (kept small for cheap rebuilds while moving). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "2", ClampMax = "32"))
-	int32 FogQuadsPerSide = 12;
+	int32 FogQuadsPerSide = 6;
 
 	/** Vertical extent of full exploration-fog volumes (cm). Tall banks, not a ground sheet. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "200.0"))
-	float FogVolumeHeightCm = 3000.f;
+	float FogVolumeHeightCm = 2500.f;
 
-	/** Vertical extent of half-fog volumes (cm). Shorter open banks so mid fog reads lighter. */
+	/** Vertical extent of half-fog pillars (cm). Shorter + checkerboard = ~50% coverage. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "200.0"))
-	float FogVolumeHeightHalfCm = 1200.f;
+	float FogVolumeHeightHalfCm = 1400.f;
+
+	/** Min focus travel (cm) before re-applying trail fog / queuing mesh refreshes. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "50.0"))
+	float FogUpdateMoveThresholdCm = 250.f;
+
+	/** Max fog-overlay chunk rebuilds per streamer tick (spreads cost while walking). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "1", ClampMax = "16"))
+	int32 MaxFogChunkRebuildsPerUpdate = 2;
 
 	/**
 	 * Legacy weather-style Exponential Height Fog. Off by default — exploration fog is
@@ -168,7 +176,8 @@ protected:
 	void EnsureHeightFog();
 	void EnsureExplorationFogMaterials();
 	int32 ClearExplorationFogAtFocus();
-	void RefreshExplorationFogMeshesAround(float WorldX, float WorldY, float RadiusCm);
+	void QueueExplorationFogMeshRefresh(float WorldX, float WorldY, float RadiusCm);
+	void ProcessExplorationFogMeshRebuilds();
 	void BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint Coord);
 	void UpdateTerrainFog(float DeltaSeconds);
 	float SampleViewFogAmount() const;
@@ -213,5 +222,7 @@ protected:
 	float TimeSinceUpdate = 0.f;
 	float RenderedFogAmount = 0.f;
 	bool bDidDisableLandscape = false;
-	bool bExplorationFogMeshesDirty = false;
+	bool bHasFogApplyLocation = false;
+	FVector LastFogApplyLocation = FVector::ZeroVector;
+	TSet<FIntPoint> DirtyFogChunkCoords;
 };

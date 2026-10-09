@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0048")
+#define SOLID_BUILD_ID TEXT("SC1-0049")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Rename C++ SolidCore1* idents to Solid*")
+#define SOLID_BUILD_NOTE TEXT("Prefer BP_Solid* names for new Blueprints")
 #endif

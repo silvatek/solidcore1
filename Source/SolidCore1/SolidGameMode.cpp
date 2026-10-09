@@ -34,8 +34,19 @@ ASolidGameMode::ASolidGameMode()
 	bAutoSpawnCompanion = true;
 	CompanionClass = ASolidCompanionCharacter::StaticClass();
 
+	// Prefer Solid* BP names; keep legacy BP_SolidCore1* as fallback.
 	UClass* PawnClass = SolidGameModePrivate::TryLoadPawnClass(
-		TEXT("/Game/Characters/BP_SolidCore1Character.BP_SolidCore1Character_C"));
+		TEXT("/Game/Characters/BP_SolidCharacter.BP_SolidCharacter_C"));
+	if (!PawnClass)
+	{
+		PawnClass = SolidGameModePrivate::TryLoadPawnClass(
+			TEXT("/Game/Characters/BP_SolidCore1Character.BP_SolidCore1Character_C"));
+	}
+	if (!PawnClass)
+	{
+		PawnClass = SolidGameModePrivate::TryLoadPawnClass(
+			TEXT("/Game/Blueprints/BP_SolidCharacter.BP_SolidCharacter_C"));
+	}
 	if (!PawnClass)
 	{
 		PawnClass = SolidGameModePrivate::TryLoadPawnClass(
@@ -56,8 +67,8 @@ ASolidGameMode::ASolidGameMode()
 		DefaultPawnClass = ASolidCharacter::StaticClass();
 		UE_LOG(LogSolid, Warning,
 			TEXT("SolidGameMode falling back to C++ SolidCharacter. "
-				 "Create /Game/Characters/BP_SolidCore1Character with SKM_Manny_Simple assigned, "
-				 "or set Default Pawn via BP_SolidCore1GameMode in Project Settings."));
+				 "Create /Game/Characters/BP_SolidCharacter (parent SolidCharacter), "
+				 "or set Default Pawn via BP_SolidGameMode in Project Settings."));
 	}
 }
 

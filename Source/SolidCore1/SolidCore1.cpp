@@ -52,8 +52,14 @@ private:
 			return;
 		}
 
+		// Prefer Solid* BP names; legacy BP_SolidCore1GameMode remains supported.
 		UClass* DesiredGameMode = LoadClass<AGameModeBase>(
-			nullptr, TEXT("/Game/Characters/BP_SolidCore1GameMode.BP_SolidCore1GameMode_C"));
+			nullptr, TEXT("/Game/Characters/BP_SolidGameMode.BP_SolidGameMode_C"));
+		if (!DesiredGameMode)
+		{
+			DesiredGameMode = LoadClass<AGameModeBase>(
+				nullptr, TEXT("/Game/Characters/BP_SolidCore1GameMode.BP_SolidCore1GameMode_C"));
+		}
 		if (!DesiredGameMode)
 		{
 			DesiredGameMode = ASolidGameMode::StaticClass();

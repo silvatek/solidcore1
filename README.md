@@ -42,11 +42,13 @@ Those `.uasset` files are **not** in git (binary content). Add them once via Mig
 ### Reliable setup: Blueprint pawn (recommended)
 
 1. Content Browser → right-click `Content/Characters` → **Blueprint Class**.
-2. Pick **SolidCharacter** as the parent → name it `BP_SolidCore1Character` (path must be `/Game/Characters/BP_SolidCore1Character`).
+2. Pick **SolidCharacter** as the parent → name it `BP_SolidCharacter` (path `/Game/Characters/BP_SolidCharacter`).
 3. Open it → select **Mesh (CharacterMesh0)** if you want editor defaults; SC1-0034 forces Fab Viking at runtime when `bUseVikingVisuals` is true (overrides a Manny mesh/AnimBP on the BP).
 4. Compile & Save.
 5. Close the editor, rebuild/reopen so GameMode picks up the Blueprint (it prefers this BP over the bare C++ class).
 6. PIE — you should see the Viking player (and Viking companion).
+
+**Naming:** New Blueprints should use the `Solid*` forms (`BP_SolidCharacter`, `BP_SolidGameMode`, parent `SolidCharacter` / `SolidGameMode`, etc.). Legacy `BP_SolidCore1*` assets remain supported via CoreRedirects and fallback load paths.
 
 While PIE is running, **Output Log** filtered to `LogSolid` shows whether a mesh was applied or how many meshes were found.
 
@@ -140,4 +142,4 @@ Source/
 ## Notes
 
 - This repo is source + config only. `Binaries/`, `Intermediate/`, `Saved/`, and `.sln` are gitignored and generated locally.
-- Optional: create Blueprint subclasses of `SolidCharacter` / `SolidGameMode` for content-driven tuning without changing C++.
+- Optional: create Blueprint subclasses of `SolidCharacter` / `SolidGameMode` for content-driven tuning without changing C++. Name new BPs `BP_Solid*` (not `BP_SolidCore1*`).

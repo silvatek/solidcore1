@@ -8,6 +8,7 @@
 #include "GameFramework/Pawn.h"
 #include "Materials/MaterialInterface.h"
 #include "Animation/AnimSequence.h"
+#include "SolidContentPaths.h"
 #include "UObject/SoftObjectPath.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -171,24 +172,12 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidContentPawnBlueprintFallbackTest::RunTest(const FString& Parameters)
 {
-	// GameMode tries these BP classes, then falls back to ASolidCharacter C++.
-	static const TCHAR* PawnBPs[] = {
-		TEXT("/Game/Characters/BP_SolidCharacter.BP_SolidCharacter_C"),
-		TEXT("/Game/Characters/BP_SolidCore1Character.BP_SolidCore1Character_C"),
-		TEXT("/Game/Blueprints/BP_SolidCharacter.BP_SolidCharacter_C"),
-		TEXT("/Game/Blueprints/BP_SolidCore1Character.BP_SolidCore1Character_C"),
-		TEXT("/Game/ThirdPerson/Blueprints/BP_ThirdPersonCharacter.BP_ThirdPersonCharacter_C"),
-		nullptr
-	};
-
-	const bool bHasBp = SolidContentTestPrivate::AnyClassResolves(PawnBPs);
-	if (!bHasBp)
+	// Same path table as ASolidGameMode (SolidContentPaths); then C++ ASolidCharacter.
+	const bool bHasBp = SolidContentTestPrivate::AnyClassResolves(SolidContentPaths::PawnBlueprintClasses());
+	TestTrue(TEXT("BP_SolidCharacter (or legacy redirect) present"), bHasBp);
+	if (bHasBp)
 	{
-		AddWarning(TEXT("No pawn Blueprint found; GameMode will use C++ ASolidCharacter (supported)."));
-	}
-	else
-	{
-		AddInfo(TEXT("At least one pawn Blueprint is available."));
+		AddInfo(TEXT("Pawn Blueprint path from SolidContentPaths resolved."));
 	}
 
 	UClass* SolidCharacterClass = LoadClass<APawn>(nullptr, TEXT("/Script/SolidCore1.SolidCharacter"));
@@ -203,16 +192,12 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidContentGameModeBlueprintOrCppTest::RunTest(const FString& Parameters)
 {
-	static const TCHAR* GameModeBPs[] = {
-		TEXT("/Game/Characters/BP_SolidGameMode.BP_SolidGameMode_C"),
-		TEXT("/Game/Characters/BP_SolidCore1GameMode.BP_SolidCore1GameMode_C"),
-		nullptr
-	};
-
-	const bool bHasBp = SolidContentTestPrivate::AnyClassResolves(GameModeBPs);
-	if (!bHasBp)
+	// Same path table as FSolidModule PreWorldInit (SolidContentPaths).
+	const bool bHasBp = SolidContentTestPrivate::AnyClassResolves(SolidContentPaths::GameModeBlueprintClasses());
+	TestTrue(TEXT("BP_SolidGameMode (or legacy redirect) present"), bHasBp);
+	if (bHasBp)
 	{
-		AddWarning(TEXT("No Solid GameMode Blueprint found; module will use C++ ASolidGameMode (supported)."));
+		AddInfo(TEXT("GameMode Blueprint path from SolidContentPaths resolved."));
 	}
 
 	UClass* SolidGameModeClass = LoadClass<AGameModeBase>(nullptr, TEXT("/Script/SolidCore1.SolidGameMode"));

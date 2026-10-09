@@ -1,6 +1,7 @@
 #include "SolidGameMode.h"
 #include "SolidBuildId.h"
 #include "SolidCharacter.h"
+#include "SolidContentPaths.h"
 #include "SolidHUD.h"
 #include "SolidPlayerController.h"
 #include "SolidCore1.h"
@@ -16,19 +17,6 @@
 #include "GameFramework/PlayerController.h"
 #include "TimerManager.h"
 
-namespace SolidGameModePrivate
-{
-	static UClass* TryLoadPawnClass(const TCHAR* Path)
-	{
-		if (UClass* Loaded = LoadClass<APawn>(nullptr, Path))
-		{
-			UE_LOG(LogSolid, Warning, TEXT("SolidGameMode using pawn class: %s"), *Loaded->GetPathName());
-			return Loaded;
-		}
-		return nullptr;
-	}
-}
-
 ASolidGameMode::ASolidGameMode()
 {
 	PlayerControllerClass = ASolidPlayerController::StaticClass();
@@ -37,41 +25,17 @@ ASolidGameMode::ASolidGameMode()
 	bAutoSpawnCompanion = true;
 	CompanionClass = ASolidCompanionCharacter::StaticClass();
 
-	// Prefer Solid* BP names; keep legacy BP_SolidCore1* as fallback.
-	UClass* PawnClass = SolidGameModePrivate::TryLoadPawnClass(
-		TEXT("/Game/Characters/BP_SolidCharacter.BP_SolidCharacter_C"));
-	if (!PawnClass)
-	{
-		PawnClass = SolidGameModePrivate::TryLoadPawnClass(
-			TEXT("/Game/Characters/BP_SolidCore1Character.BP_SolidCore1Character_C"));
-	}
-	if (!PawnClass)
-	{
-		PawnClass = SolidGameModePrivate::TryLoadPawnClass(
-			TEXT("/Game/Blueprints/BP_SolidCharacter.BP_SolidCharacter_C"));
-	}
-	if (!PawnClass)
-	{
-		PawnClass = SolidGameModePrivate::TryLoadPawnClass(
-			TEXT("/Game/Blueprints/BP_SolidCore1Character.BP_SolidCore1Character_C"));
-	}
-	if (!PawnClass)
-	{
-		PawnClass = SolidGameModePrivate::TryLoadPawnClass(
-			TEXT("/Game/ThirdPerson/Blueprints/BP_ThirdPersonCharacter.BP_ThirdPersonCharacter_C"));
-	}
-
-	if (PawnClass)
+	if (UClass* PawnClass = SolidContentPaths::LoadFirstClass<APawn>(SolidContentPaths::PawnBlueprintClasses()))
 	{
 		DefaultPawnClass = PawnClass;
+		UE_LOG(LogSolid, Warning, TEXT("SolidGameMode using pawn class: %s"), *PawnClass->GetPathName());
 	}
 	else
 	{
 		DefaultPawnClass = ASolidCharacter::StaticClass();
 		UE_LOG(LogSolid, Warning,
 			TEXT("SolidGameMode falling back to C++ SolidCharacter. "
-				 "Create /Game/Characters/BP_SolidCharacter (parent SolidCharacter), "
-				 "or set Default Pawn via BP_SolidGameMode in Project Settings."));
+				 "Expected /Game/Characters/BP_SolidCharacter (parent SolidCharacter)."));
 	}
 }
 

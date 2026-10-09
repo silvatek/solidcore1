@@ -76,7 +76,7 @@ Player and companion both use the Fab Viking (`/Game/Viking/Mesh/SK_Viking`) wit
 4. Close the editor, rebuild/reopen so GameMode picks up the Blueprint (it prefers this BP over the bare C++ class).
 5. PIE — you should see the Viking player (and Viking companion).
 
-**Naming:** New Blueprints should use the `Solid*` forms (`BP_SolidCharacter`, `BP_SolidGameMode`, parent `SolidCharacter` / `SolidGameMode`, etc.). Legacy `BP_SolidCore1*` assets remain supported via CoreRedirects and fallback load paths.
+**Naming:** Content Blueprints are `BP_SolidCharacter` / `BP_SolidGameMode` (parents `SolidCharacter` / `SolidGameMode`). Load paths are centralized in `SolidContentPaths.h`. A leftover `BP_SolidCore1GameMode` **ObjectRedirector** may still sit in `Content/Characters` (enable Content Browser → Settings → **Show Redirectors** to see it); safe to keep, or Fix Up / delete once nothing references the old name.
 
 While PIE is running, **Output Log** filtered to `LogSolid` shows whether a mesh was applied.
 

@@ -7,6 +7,8 @@
 class ASolidCompanionCharacter;
 class ASolidMonolith;
 class ASolidTree;
+class USolidCompany;
+class USolidParty;
 
 UCLASS()
 class SOLIDCORE1_API ASolidGameMode : public AGameModeBase
@@ -57,12 +59,19 @@ public:
 
 	const TArray<TObjectPtr<ASolidCompanionCharacter>>& GetCompanions() const { return SpawnedCompanions; }
 
+	USolidCompany* GetCompany() const { return Company; }
+	USolidParty* GetParty() const { return Party; }
+
 	/** Expected starter Party size (Sam + Alex). */
 	static constexpr int32 DefaultCompanionCount = 2;
+
+	/** Select Party assigned battle-plan slot (0 = F1). Returns false if empty/out of range. */
+	bool SelectBattlePlanSlot(int32 SlotIndex);
 
 protected:
 	virtual void BeginPlay() override;
 
+	void EnsureCompanyAndParty();
 	void EnsureTerrainStreamer();
 	void EnsureCompanion();
 	void EnsureStarterTrees();
@@ -72,9 +81,13 @@ protected:
 		APawn* PlayerPawn,
 		UClass* ClassToSpawn,
 		const FString& DisplayName,
-		float FollowDistance,
-		float SideOffset,
-		float CatchUpDistance);
+		int32 PartySlotIndex);
+
+	UPROPERTY(Transient)
+	TObjectPtr<USolidCompany> Company;
+
+	UPROPERTY(Transient)
+	TObjectPtr<USolidParty> Party;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidCompanionCharacter>> SpawnedCompanions;

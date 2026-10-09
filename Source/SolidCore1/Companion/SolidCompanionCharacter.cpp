@@ -1,7 +1,11 @@
 #include "SolidCompanionCharacter.h"
 #include "SolidClipLocomotion.h"
 #include "SolidCore1.h"
+#include "SolidGameMode.h"
 #include "SolidNameLabel.h"
+#include "Party/SolidBattlePlan.h"
+#include "Party/SolidParty.h"
+#include "GameFramework/GameModeBase.h"
 #include "Animation/AnimSequence.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SceneComponent.h"
@@ -275,10 +279,27 @@ void ASolidCompanionCharacter::UpdateFollow(float /*DeltaSeconds*/)
 	const FVector TargetForward = Target->GetActorForwardVector();
 	const FVector TargetRight = Target->GetActorRightVector();
 
+	float AlongForward = -FollowDistance;
+	float AlongRight = SideOffset;
+	if (UWorld* World = GetWorld())
+	{
+		if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+		{
+			if (const USolidParty* Party = GameMode->GetParty())
+			{
+				const int32 CompanionCount = FMath::Max(GameMode->GetCompanions().Num(), 1);
+				const FVector2D Slot = SolidBattleFormationSlots::SlotOffset(
+					Party->GetActiveFormation(), PartySlotIndex, CompanionCount);
+				AlongForward = Slot.X;
+				AlongRight = Slot.Y;
+			}
+		}
+	}
+
 	const FVector FollowPoint =
 		TargetLoc
-		- TargetForward * FollowDistance
-		+ TargetRight * SideOffset;
+		+ TargetForward * AlongForward
+		+ TargetRight * AlongRight;
 
 	FVector ToFollow = FollowPoint - GetActorLocation();
 	ToFollow.Z = 0.f;

@@ -48,6 +48,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.Streamer.*` | FindExisting / EnsureExists (null + idempotent) |
 | `SolidCore1.Clip.*` | SelectClip idle/walk/run/jump rules |
 | `SolidCore1.NameLabel.*` | Style sizes/colors/plates; Outcast / Sam defaults |
+| `SolidCore1.BattlePlan.*` | Formation slots; Company/Party assign + F-key select |
 | `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |
 | `SolidCore1.Content.*` | Required/optional Content + Engine assets the code loads |
 
@@ -156,9 +157,16 @@ Goal: the world starts shrouded; fog clears only where the **pawn has been** (tr
 
 Floating nameplates (`SolidNameLabel`) sit above each Party member and face the view camera: TextRender plus thin cube **border** and contrasting **background** plates. Defaults: Captain **"Outcast"** (larger warm amber on dark plate), Companions muted slate plates. Override via `CharacterDisplayName` / `SetCharacterDisplayName`.
 
+## Battle plans (SC1-0095)
+
+- **Company** (`USolidCompany`) owns the catalog of all battle plans (starter: Line, Column, Mob).
+- **Party** (`USolidParty`) holds up to 8 **assigned** plans from that catalog and one **active** plan (default Column).
+- Formations drive Companion follow slots: **Line** (flanks), **Column** (file behind), **Mob** (tight triangle behind).
+- Captain switches assigned slots with **F1–F8** (only filled slots work). HUD shows `BattlePlan F#/# Name (Formation)`.
+
 ## Companion (SC1-0024 / SC1-0093)
 
-`ASolidCompanionCharacter` spawns behind the player and follows with simple steering (no NavMesh — works on procedural terrain). Same Fab Viking mesh + clip locomotion as the player. GameMode flag: `bAutoSpawnCompanion` spawns **Sam** (follow 280 cm, right) and **Alex** (follow 480 cm, left). HUD lists each companion name and distance.
+`ASolidCompanionCharacter` spawns behind the player and follows with simple steering (no NavMesh — works on procedural terrain). Same Fab Viking mesh + clip locomotion as the player. GameMode flag: `bAutoSpawnCompanion` spawns **Sam** (slot 0) and **Alex** (slot 1); offsets come from the active Battle Plan. HUD lists each companion name and distance.
 
 **Party camera** (SC1-0025/0026/0084): the Captain spring-arm shifts `TargetOffset` toward the Party center and may lengthen so Companions stay in frame (`bFrameCompanions`; implementation in `SolidPartyCamera.cpp`). SC1-0026 uses screen-space fit, disables boom collision while Companions are present, and zooms in much slower than out. SC1-0027 lifts the camera via `SocketOffset` when the predicted camera point would sink below procedural terrain.
 

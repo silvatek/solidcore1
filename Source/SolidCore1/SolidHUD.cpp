@@ -1,10 +1,13 @@
 #include "SolidHUD.h"
 #include "SolidBuildId.h"
 #include "SolidCharacter.h"
+#include "SolidGameMode.h"
 #include "Companion/SolidCompanionCharacter.h"
+#include "Party/SolidParty.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Terrain/SolidTerrainTypes.h"
+#include "GameFramework/GameModeBase.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -102,6 +105,17 @@ void ASolidHUD::DrawHUD()
 		: 0.f;
 	const float AvgMs = (AvgFps > KINDA_SMALL_NUMBER) ? (1000.f / AvgFps) : (DeltaSeconds * 1000.f);
 	Lines.Add(FString::Printf(TEXT("FPS %.0f  (%.1f ms, %.1fs avg)"), AvgFps, AvgMs, FpsAverageWindowSeconds));
+
+	if (UWorld* World = GetWorld())
+	{
+		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+		{
+			if (const USolidParty* Party = GameMode->GetParty())
+			{
+				Lines.Add(Party->GetActiveBattlePlanDebugString());
+			}
+		}
+	}
 
 	APawn* Pawn = GetOwningPawn();
 	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(GetWorld());

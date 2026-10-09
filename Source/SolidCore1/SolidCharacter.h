@@ -61,6 +61,17 @@ protected:
 	void StartSprint();
 	void StopSprint();
 
+	/** Select Party assigned battle-plan slot (0 = F1 … 7 = F8). */
+	void SelectBattlePlanSlot(int32 SlotIndex);
+	void SelectBattlePlanSlot1();
+	void SelectBattlePlanSlot2();
+	void SelectBattlePlanSlot3();
+	void SelectBattlePlanSlot4();
+	void SelectBattlePlanSlot5();
+	void SelectBattlePlanSlot6();
+	void SelectBattlePlanSlot7();
+	void SelectBattlePlanSlot8();
+
 	void ApplyWalkSpeed() const;
 	void AddMappingContext();
 

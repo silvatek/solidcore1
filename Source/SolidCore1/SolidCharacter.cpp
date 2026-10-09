@@ -5,18 +5,22 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/SkeletalMesh.h"
+#include "Components/InputComponent.h"
 #include "EnhancedInputComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "InputAction.h"
 #include "InputActionValue.h"
+#include "InputCoreTypes.h"
 #include "SolidClipLocomotion.h"
 #include "SolidCore1.h"
+#include "SolidGameMode.h"
 #include "SolidNameLabel.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
+#include "GameFramework/GameModeBase.h"
 #include "UObject/SoftObjectPath.h"
 
 // Captain core: construction, lifecycle, movement / look / zoom / sprint.
@@ -202,7 +206,37 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		UE_LOG(LogSolid, Error,
 			TEXT("SolidCharacter requires an Enhanced Input Component. Check DefaultInput.ini DefaultInputComponentClass."));
 	}
+
+	// Battle-plan hotkeys (F1–F8) via classic key binds on the same input component.
+	PlayerInputComponent->BindKey(EKeys::F1, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot1);
+	PlayerInputComponent->BindKey(EKeys::F2, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot2);
+	PlayerInputComponent->BindKey(EKeys::F3, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot3);
+	PlayerInputComponent->BindKey(EKeys::F4, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot4);
+	PlayerInputComponent->BindKey(EKeys::F5, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot5);
+	PlayerInputComponent->BindKey(EKeys::F6, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot6);
+	PlayerInputComponent->BindKey(EKeys::F7, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot7);
+	PlayerInputComponent->BindKey(EKeys::F8, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot8);
 }
+
+void ASolidCharacter::SelectBattlePlanSlot(const int32 SlotIndex)
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+		{
+			GameMode->SelectBattlePlanSlot(SlotIndex);
+		}
+	}
+}
+
+void ASolidCharacter::SelectBattlePlanSlot1() { SelectBattlePlanSlot(0); }
+void ASolidCharacter::SelectBattlePlanSlot2() { SelectBattlePlanSlot(1); }
+void ASolidCharacter::SelectBattlePlanSlot3() { SelectBattlePlanSlot(2); }
+void ASolidCharacter::SelectBattlePlanSlot4() { SelectBattlePlanSlot(3); }
+void ASolidCharacter::SelectBattlePlanSlot5() { SelectBattlePlanSlot(4); }
+void ASolidCharacter::SelectBattlePlanSlot6() { SelectBattlePlanSlot(5); }
+void ASolidCharacter::SelectBattlePlanSlot7() { SelectBattlePlanSlot(6); }
+void ASolidCharacter::SelectBattlePlanSlot8() { SelectBattlePlanSlot(7); }
 
 void ASolidCharacter::Move(const FInputActionValue& Value)
 {

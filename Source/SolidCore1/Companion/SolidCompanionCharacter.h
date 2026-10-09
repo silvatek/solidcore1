@@ -63,6 +63,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Follow")
 	float SideOffset = 80.f;
 
+	/**
+	 * Index in the Party formation (0 = Sam, 1 = Alex, …).
+	 * When a Party Battle Plan is active, follow point comes from this slot.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Follow", meta = (ClampMin = "0"))
+	int32 PartySlotIndex = 0;
+
+	void SetPartySlotIndex(int32 NewSlotIndex) { PartySlotIndex = FMath::Max(0, NewSlotIndex); }
+	int32 GetPartySlotIndex() const { return PartySlotIndex; }
+
 	/** Match the follow target's MaxWalkSpeed when possible. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Follow")
 	bool bMatchFollowTargetSpeed = true;

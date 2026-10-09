@@ -6,6 +6,9 @@
 #include "SolidPlayerController.h"
 #include "SolidCore1.h"
 #include "Companion/SolidCompanionCharacter.h"
+#include "Party/SolidBattlePlan.h"
+#include "Party/SolidCompany.h"
+#include "Party/SolidParty.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Vegetation/SolidMonolith.h"
 #include "Vegetation/SolidTree.h"
@@ -37,12 +40,30 @@ ASolidGameMode::ASolidGameMode()
 			TEXT("SolidGameMode falling back to C++ SolidCharacter. "
 				 "Expected /Game/Characters/BP_SolidCharacter (parent SolidCharacter)."));
 	}
+
+	EnsureCompanyAndParty();
+}
+
+void ASolidGameMode::EnsureCompanyAndParty()
+{
+	if (!Company)
+	{
+		Company = NewObject<USolidCompany>(this, TEXT("Company"));
+	}
+	Company->InitializeDefaultBattlePlans();
+
+	if (!Party)
+	{
+		Party = NewObject<USolidParty>(this, TEXT("Party"));
+	}
+	Party->InitializeFromCompany(Company);
 }
 
 void ASolidGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 	UE_LOG(LogSolid, Warning, TEXT("Build %s"), SOLID_BUILD_ID);
+	EnsureCompanyAndParty();
 	EnsureTerrainStreamer();
 
 	// Player pawn / terrain may not be ready on the first PIE frame — retry shortly.
@@ -55,6 +76,18 @@ void ASolidGameMode::BeginPlay()
 	}
 	EnsureCompanion();
 	EnsureStarterTrees();
+}
+
+bool ASolidGameMode::SelectBattlePlanSlot(const int32 SlotIndex)
+{
+	EnsureCompanyAndParty();
+	if (!Party || !Party->SelectAssignedSlot(SlotIndex))
+	{
+		return false;
+	}
+
+	UE_LOG(LogSolid, Warning, TEXT("%s"), *Party->GetActiveBattlePlanDebugString());
+	return true;
 }
 
 void ASolidGameMode::EnsureTerrainStreamer()
@@ -77,19 +110,24 @@ ASolidCompanionCharacter* ASolidGameMode::SpawnCompanion(
 	APawn* PlayerPawn,
 	UClass* ClassToSpawn,
 	const FString& DisplayName,
-	const float FollowDistance,
-	const float SideOffset,
-	const float CatchUpDistance)
+	const int32 PartySlotIndex)
 {
 	if (!World || !PlayerPawn || !ClassToSpawn)
 	{
 		return nullptr;
 	}
 
+	EnsureCompanyAndParty();
+	const ESolidBattleFormation Formation = Party
+		? Party->GetActiveFormation()
+		: ESolidBattleFormation::Column;
+	const FVector2D Slot = SolidBattleFormationSlots::SlotOffset(
+		Formation, PartySlotIndex, DefaultCompanionCount);
+
 	const FVector PlayerLoc = PlayerPawn->GetActorLocation();
 	const FVector PlayerFwd = PlayerPawn->GetActorForwardVector();
 	const FVector PlayerRight = PlayerPawn->GetActorRightVector();
-	FVector SpawnLoc = PlayerLoc - PlayerFwd * FollowDistance + PlayerRight * SideOffset;
+	FVector SpawnLoc = PlayerLoc + PlayerFwd * Slot.X + PlayerRight * Slot.Y;
 
 	float CapsuleHalf = 96.f;
 	if (const ACharacter* PlayerCharacter = Cast<ACharacter>(PlayerPawn))
@@ -118,14 +156,17 @@ ASolidCompanionCharacter* ASolidGameMode::SpawnCompanion(
 		return nullptr;
 	}
 
-	Companion->FollowDistance = FollowDistance;
-	Companion->SideOffset = SideOffset;
-	Companion->CatchUpDistance = CatchUpDistance;
+	const float Behind = FMath::Abs(Slot.X);
+	Companion->FollowDistance = FMath::Max(Behind, 120.f);
+	Companion->SideOffset = Slot.Y;
+	Companion->CatchUpDistance = FMath::Max(700.f, Behind + 400.f);
+	Companion->SetPartySlotIndex(PartySlotIndex);
 	Companion->SetCharacterDisplayName(DisplayName);
 	Companion->SetFollowTarget(PlayerPawn);
 
-	UE_LOG(LogSolid, Warning, TEXT("Spawned companion %s at %s (follow=%.0f side=%.0f) following %s"),
-		*DisplayName, *SpawnLoc.ToCompactString(), FollowDistance, SideOffset, *PlayerPawn->GetName());
+	UE_LOG(LogSolid, Warning,
+		TEXT("Spawned companion %s slot=%d at %s (fwd=%.0f right=%.0f) following %s"),
+		*DisplayName, PartySlotIndex, *SpawnLoc.ToCompactString(), Slot.X, Slot.Y, *PlayerPawn->GetName());
 	return Companion;
 }
 
@@ -135,6 +176,8 @@ void ASolidGameMode::EnsureCompanion()
 	{
 		return;
 	}
+
+	EnsureCompanyAndParty();
 
 	// Drop stale entries (PIE teardown / destroyed actors).
 	SpawnedCompanions.RemoveAll([](const TObjectPtr<ASolidCompanionCharacter>& Companion)
@@ -179,12 +222,11 @@ void ASolidGameMode::EnsureCompanion()
 		return false;
 	};
 
-	// Sam stays close on the Captain's right; Alex follows further back on the left.
+	// Slot 0 = Sam, slot 1 = Alex (formation offsets come from the active Battle Plan).
 	if (!HasNamed(TEXT("Sam")))
 	{
 		if (ASolidCompanionCharacter* Sam = SpawnCompanion(
-			World, PlayerPawn, ClassToSpawn, TEXT("Sam"),
-			/*FollowDistance=*/280.f, /*SideOffset=*/80.f, /*CatchUpDistance=*/700.f))
+			World, PlayerPawn, ClassToSpawn, TEXT("Sam"), /*PartySlotIndex=*/0))
 		{
 			SpawnedCompanions.Add(Sam);
 		}
@@ -193,8 +235,7 @@ void ASolidGameMode::EnsureCompanion()
 	if (!HasNamed(TEXT("Alex")))
 	{
 		if (ASolidCompanionCharacter* Alex = SpawnCompanion(
-			World, PlayerPawn, ClassToSpawn, TEXT("Alex"),
-			/*FollowDistance=*/480.f, /*SideOffset=*/-100.f, /*CatchUpDistance=*/950.f))
+			World, PlayerPawn, ClassToSpawn, TEXT("Alex"), /*PartySlotIndex=*/1))
 		{
 			SpawnedCompanions.Add(Alex);
 		}

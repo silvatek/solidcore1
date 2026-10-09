@@ -8,11 +8,13 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "AssetRegistry/AssetData.h"
+#include "AssetRegistry/AssetRegistryModule.h"
 #include "Components/CapsuleComponent.h"
 #include "Materials/Material.h"
+#include "Materials/MaterialInstance.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
-#include "UObject/ConstructorHelpers.h"
 #include "UObject/UObjectGlobals.h"
 
 ASolidCore1TerrainStreamer::ASolidCore1TerrainStreamer()
@@ -20,14 +22,8 @@ ASolidCore1TerrainStreamer::ASolidCore1TerrainStreamer()
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
 
-	// FlatCol is the reliable lit solid-color fallback. Do NOT default to M_PrototypeGrid:
-	// its grey T_GridChecker_A is hard-wired (no Texture parameter), so tint/noise binds stay grey.
-	static ConstructorHelpers::FObjectFinder<UMaterial> FlatColMat(
-		TEXT("/Game/LevelPrototyping/Materials/M_FlatCol.M_FlatCol"));
-	if (FlatColMat.Succeeded())
-	{
-		TerrainMaterial = FlatColMat.Object;
-	}
+	// TerrainMaterial left null: ResolveMaterial prefers Fab Mat_025_grass, then FlatCol.
+	// Do NOT default to M_PrototypeGrid (hard-wired grey checker).
 }
 
 ASolidCore1TerrainStreamer* ASolidCore1TerrainStreamer::EnsureExists(UWorld* World)
@@ -112,31 +108,55 @@ AActor* ASolidCore1TerrainStreamer::ResolveFocusActor() const
 	return nullptr;
 }
 
+UMaterialInterface* ASolidCore1TerrainStreamer::FindFabGrassMaterial() const
+{
+	IAssetRegistry& AssetRegistry =
+		FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
+	AssetRegistry.SearchAllAssets(true);
+
+	FARFilter Filter;
+	Filter.PackagePaths.Add(FName(TEXT("/Game/Fab")));
+	Filter.bRecursivePaths = true;
+	Filter.ClassPaths.Add(UMaterial::StaticClass()->GetClassPathName());
+	Filter.ClassPaths.Add(UMaterialInstance::StaticClass()->GetClassPathName());
+	Filter.ClassPaths.Add(UMaterialInterface::StaticClass()->GetClassPathName());
+	Filter.bRecursiveClasses = true;
+
+	TArray<FAssetData> Assets;
+	AssetRegistry.GetAssets(Filter, Assets);
+
+	for (const FAssetData& Asset : Assets)
+	{
+		const FString Name = Asset.AssetName.ToString();
+		if (!Name.Equals(TEXT("Mat_025_grass"), ESearchCase::IgnoreCase))
+		{
+			continue;
+		}
+
+		// Skip the StaticMeshes package that shares the asset name.
+		if (Asset.PackageName.ToString().Contains(TEXT("/StaticMeshes/"), ESearchCase::IgnoreCase))
+		{
+			continue;
+		}
+
+		if (UMaterialInterface* Grass = Cast<UMaterialInterface>(Asset.GetAsset()))
+		{
+			UE_LOG(LogSolidCore1, Warning,
+				TEXT("Terrain material: Fab grass %s"), *Asset.GetObjectPathString());
+			return Grass;
+		}
+	}
+
+	UE_LOG(LogSolidCore1, Warning, TEXT("Fab Mat_025_grass not found under /Game/Fab."));
+	return nullptr;
+}
+
 UMaterialInterface* ASolidCore1TerrainStreamer::CreateFlatColGrassMaterial() const
 {
 	ASolidCore1TerrainStreamer* MutableThis = const_cast<ASolidCore1TerrainStreamer*>(this);
 
-	// FlatCol solid green. Never parent from PrototypeGrid (hard-wired grey checker).
-	UMaterialInterface* Parent = nullptr;
-	if (TerrainMaterial)
-	{
-		const FString MatName = TerrainMaterial->GetName();
-		if (!MatName.Contains(TEXT("PrototypeGrid"), ESearchCase::IgnoreCase))
-		{
-			Parent = TerrainMaterial.Get();
-		}
-		else
-		{
-			UE_LOG(LogSolidCore1, Warning,
-				TEXT("Ignoring TerrainMaterial '%s' (PrototypeGrid cannot be tinted green)."),
-				*MatName);
-		}
-	}
-	if (!Parent)
-	{
-		Parent = LoadObject<UMaterialInterface>(
-			nullptr, TEXT("/Game/LevelPrototyping/Materials/M_FlatCol.M_FlatCol"));
-	}
+	UMaterialInterface* Parent = LoadObject<UMaterialInterface>(
+		nullptr, TEXT("/Game/LevelPrototyping/Materials/M_FlatCol.M_FlatCol"));
 	if (!Parent)
 	{
 		Parent = LoadObject<UMaterialInterface>(
@@ -159,7 +179,7 @@ UMaterialInterface* ASolidCore1TerrainStreamer::CreateFlatColGrassMaterial() con
 	GrassMID->SetScalarParameterValue(TEXT("Roughness"), 0.9f);
 
 	UE_LOG(LogSolidCore1, Warning,
-		TEXT("Terrain material: %s solid green (FlatCol)"), *Parent->GetName());
+		TEXT("Terrain material: %s solid green (FlatCol fallback)"), *Parent->GetName());
 	return GrassMID;
 }
 
@@ -173,18 +193,36 @@ UMaterialInterface* ASolidCore1TerrainStreamer::ResolveMaterial() const
 	ASolidCore1TerrainStreamer* MutableThis = const_cast<ASolidCore1TerrainStreamer*>(this);
 
 	// Never use M_PrototypeGrid (hard-wired grey checker).
-	//
-	// SC1-0042 runtime MaterialEditingLibrary graph compile crashed PIE — removed.
-	// TODO(shipping grass): Author /Game/SolidCore1/Materials/M_SC1_Grass (Vertex Color → Base
-	// Color, or GrassNoise texture param), load it here, then drop FlatCol as primary.
 
+	// 1) Explicit override (skip PrototypeGrid if someone set it).
+	if (TerrainMaterial)
+	{
+		const FString MatName = TerrainMaterial->GetName();
+		if (!MatName.Contains(TEXT("PrototypeGrid"), ESearchCase::IgnoreCase))
+		{
+			MutableThis->ResolvedTerrainMaterial = TerrainMaterial;
+			UE_LOG(LogSolidCore1, Warning, TEXT("Terrain material: override %s"), *MatName);
+			return ResolvedTerrainMaterial;
+		}
+		UE_LOG(LogSolidCore1, Warning,
+			TEXT("Ignoring TerrainMaterial '%s' (PrototypeGrid cannot be tinted)."), *MatName);
+	}
+
+	// 2) Fab seamless grass (Content/Fab/.../Mat_025_grass).
+	if (UMaterialInterface* FabGrass = FindFabGrassMaterial())
+	{
+		MutableThis->ResolvedTerrainMaterial = FabGrass;
+		return ResolvedTerrainMaterial;
+	}
+
+	// 3) FlatCol solid green fallback.
 	if (UMaterialInterface* FlatGrass = CreateFlatColGrassMaterial())
 	{
 		MutableThis->ResolvedTerrainMaterial = FlatGrass;
 		return ResolvedTerrainMaterial;
 	}
 
-	UE_LOG(LogSolidCore1, Error, TEXT("Terrain material: FlatCol grass material could not be created."));
+	UE_LOG(LogSolidCore1, Error, TEXT("Terrain material: no grass material could be created."));
 	return nullptr;
 }
 

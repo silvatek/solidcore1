@@ -100,11 +100,10 @@ void ASolidCore1TerrainChunk::BuildChunk(
 
 			Positions.Add(FVector(static_cast<float>(X) * Step, static_cast<float>(Y) * Step, SurfaceZ));
 
-			// World-tiled UVs + noise warp so grass speckles don't seam on chunk borders.
+			// World-tiled UVs for seamless Fab grass (~1 m per tile). No warp — keeps seams clean.
 			const float GrassTone = SolidCore1TerrainNoise::SampleGrassTone(WorldX, WorldY, InSeed);
-			const float UVScale = 0.0024f;
-			const float Warp = (GrassTone - 0.5f) * 0.35f;
-			UVs.Add(FVector2D(WorldX * UVScale + Warp, WorldY * UVScale - Warp * 0.7f));
+			const float UVScale = 0.01f;
+			UVs.Add(FVector2D(WorldX * UVScale, WorldY * UVScale));
 
 			// High-contrast darker/lighter greens so speckles read under lit shading.
 			const float HeightT = FMath::Clamp((Height - InBaseHeight) / FMath::Max(InAmplitude, 1.f), 0.f, 1.f);

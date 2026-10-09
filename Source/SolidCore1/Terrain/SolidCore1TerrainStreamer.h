@@ -64,7 +64,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.0"))
 	float CollisionHeightBias = 0.f;
 
-	/** Optional material override. Empty => build grassy FlatCol MID at runtime. */
+	/** Optional material override. Empty => Fab Mat_025_grass, then FlatCol. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	TObjectPtr<UMaterialInterface> TerrainMaterial;
 
@@ -101,6 +101,7 @@ protected:
 	FIntPoint WorldToChunkCoord(const FVector& WorldLocation) const;
 	AActor* ResolveFocusActor() const;
 	UMaterialInterface* ResolveMaterial() const;
+	UMaterialInterface* FindFabGrassMaterial() const;
 	UMaterialInterface* CreateFlatColGrassMaterial() const;
 	float SampleHeightAtWorld(const FVector& WorldLocation) const;
 	void TrySnapFocusToTerrain(AActor* Focus);

@@ -8,9 +8,9 @@
  * SOLIDCORE1_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLIDCORE1_BUILD_ID
-#define SOLIDCORE1_BUILD_ID TEXT("SC1-0040")
+#define SOLIDCORE1_BUILD_ID TEXT("SC1-0041")
 #endif
 
 #ifndef SOLIDCORE1_BUILD_NOTE
-#define SOLIDCORE1_BUILD_NOTE TEXT("Fix grass mat compile (MaterialEditingLibrary)")
+#define SOLIDCORE1_BUILD_NOTE TEXT("Note: Content grass mat for shipping later")
 #endif

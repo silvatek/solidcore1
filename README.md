@@ -96,7 +96,7 @@ Goal: the world starts shrouded; fog clears only where the **pawn has been** (tr
 
 **Data (kept):** `FSolidTerrainPoint.Fog` on `USolidTerrainMap`. Initial fill and trail clear use the same bands — ≤25 m → `0`, 25–50 m → `0.5`, >50 m → `1`. Runtime: `ApplyExplorationFogAround` as the pawn moves.
 
-**Current visual (SC1-0073):** world-space **boundary curtains** via marching-squares isocontour (`fog≈0` | `fog>0`) so panels meet without stair-step gaps. Materials are **programmatic `BLEND_Translucent`** unlit mist. Logic in `Terrain/SolidTerrainFog.*`. Height fog **off**.
+**Current visual (SC1-0076):** marching-squares curtains at **clear|fogged (~25 m)** and **half|full (~50 m, white)**. Programmatic `BLEND_Translucent` unlit mist. Logic in `Terrain/SolidTerrainFog.*`. Height fog **off**.
 
 ### Approaches tried and rejected
 

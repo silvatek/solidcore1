@@ -4,6 +4,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "SolidGameMode.generated.h"
 
+class ASolidBuilding;
 class ASolidCompanionCharacter;
 class ASolidMonolith;
 class ASolidTree;
@@ -30,7 +31,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	TSubclassOf<ASolidCompanionCharacter> CompanionClass;
 
-	/** Spawn the starter monolith and scatter trees in Forest biomes. */
+	/** Spawn the starter monolith, Forest trees, and Town buildings. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation")
 	bool bAutoSpawnVegetation = true;
 
@@ -56,6 +57,26 @@ public:
 	/** RNG seed for forest scatter / tree sizes (0 = fixed fallback). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation")
 	int32 ForestTreeSeed = 42;
+
+	/** Fraction of Town TerrainPoints considered as building candidate sites [0, 1]. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float TownBuildingDensity = 0.35f;
+
+	/** Hard cap on packed town buildings. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation", meta = (ClampMin = "0", ClampMax = "500"))
+	int32 MaxTownBuildings = 48;
+
+	/** Extra gap between building packing circles (cm). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation", meta = (ClampMin = "0.0"))
+	float TownBuildingMinSeparationCm = 100.f;
+
+	/** Keep the monolith / town centroid clear of buildings (cm). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation", meta = (ClampMin = "0.0"))
+	float TownBuildingClearRadiusCm = 450.f;
+
+	/** RNG seed for town building pack / sizes (0 = fixed fallback). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation")
+	int32 TownBuildingSeed = 77;
 
 	/** First spawned companion (Sam), if any. */
 	ASolidCompanionCharacter* GetCompanion() const;
@@ -100,6 +121,9 @@ protected:
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidTree>> SpawnedForestTrees;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<ASolidBuilding>> SpawnedTownBuildings;
 
 	FTimerHandle CompanionSpawnTimer;
 	FTimerHandle VegetationSpawnTimer;

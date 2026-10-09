@@ -43,7 +43,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.WorldMap.*` | ASCII overlay load, key colors, Z town, terrain fog origin |
 | `SolidCore1.Noise.*` | Hash / value / fBm / height / grass tone |
 | `SolidCore1.Types.*` | Biome names (incl. Sea/River), `FSolidTerrainPoint` defaults |
-| `SolidCore1.Vegetation.*` | Tree RNG variation, monolith defaults |
+| `SolidCore1.Vegetation.*` | Tree RNG variation, monolith defaults, town building pack |
 | `SolidCore1.GameMode.*` | Default spawn flags, pawn BP resolution |
 | `SolidCore1.Companion.*` | Defaults, SetFollowTarget |
 | `SolidCore1.Streamer.*` | FindExisting / EnsureExists (null + idempotent) |

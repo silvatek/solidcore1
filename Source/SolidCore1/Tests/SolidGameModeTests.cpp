@@ -22,6 +22,10 @@ bool FSolidGameModeDefaultsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("forest tree density in range"),
 		GameMode->ForestTreeDensity > 0.f && GameMode->ForestTreeDensity <= 1.f);
 	TestTrue(TEXT("max forest trees positive"), GameMode->MaxForestTrees > 0);
+	TestTrue(TEXT("town building density in range"),
+		GameMode->TownBuildingDensity > 0.f && GameMode->TownBuildingDensity <= 1.f);
+	TestTrue(TEXT("max town buildings positive"), GameMode->MaxTownBuildings > 0);
+	TestTrue(TEXT("town clear radius positive"), GameMode->TownBuildingClearRadiusCm > 0.f);
 	TestEqual(TEXT("default companion count Sam+Alex"), ASolidGameMode::DefaultCompanionCount, 2);
 	TestNull(TEXT("no companion until Ensure"), GameMode->GetCompanion());
 	TestEqual(TEXT("companions empty until Ensure"), GameMode->GetCompanions().Num(), 0);

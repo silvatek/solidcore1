@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0114")
+#define SOLID_BUILD_ID TEXT("SC1-0115")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("TrailClearsFog: corner spacing > trail apply radius")
+#define SOLID_BUILD_NOTE TEXT("Random non-overlapping town buildings (grey box + red roof)")
 #endif

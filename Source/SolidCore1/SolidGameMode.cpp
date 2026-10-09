@@ -11,8 +11,10 @@
 #include "Party/SolidParty.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
+#include "Vegetation/SolidBuilding.h"
 #include "Vegetation/SolidForestTrees.h"
 #include "Vegetation/SolidMonolith.h"
+#include "Vegetation/SolidTownBuildings.h"
 #include "Vegetation/SolidTree.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/World.h"
@@ -280,6 +282,10 @@ void ASolidGameMode::EnsureVegetation()
 	{
 		return !IsValid(Tree);
 	});
+	SpawnedTownBuildings.RemoveAll([](const TObjectPtr<ASolidBuilding>& Building)
+	{
+		return !IsValid(Building);
+	});
 
 	if (!SpawnedMonolith.IsValid())
 	{
@@ -295,6 +301,14 @@ void ASolidGameMode::EnsureVegetation()
 		for (TActorIterator<ASolidTree> It(World); It; ++It)
 		{
 			SpawnedForestTrees.Add(*It);
+		}
+	}
+
+	if (SpawnedTownBuildings.Num() == 0)
+	{
+		for (TActorIterator<ASolidBuilding> It(World); It; ++It)
+		{
+			SpawnedTownBuildings.Add(*It);
 		}
 	}
 
@@ -337,43 +351,84 @@ void ASolidGameMode::EnsureVegetation()
 		}
 	}
 
-	if (SpawnedForestTrees.Num() > 0)
+	if (SpawnedForestTrees.Num() == 0)
 	{
-		return;
-	}
+		SolidForestTrees::FScatterParams Scatter;
+		Scatter.Density = ForestTreeDensity;
+		Scatter.MaxTrees = MaxForestTrees;
+		Scatter.JitterCm = ForestTreeJitterCm;
 
-	SolidForestTrees::FScatterParams Scatter;
-	Scatter.Density = ForestTreeDensity;
-	Scatter.MaxTrees = MaxForestTrees;
-	Scatter.JitterCm = ForestTreeJitterCm;
+		TArray<FVector2D> Positions;
+		SolidForestTrees::CollectSpawnPositions(
+			Streamer->GetTerrainMap(), ForestTreeSeed, Scatter, Positions);
 
-	TArray<FVector2D> Positions;
-	SolidForestTrees::CollectSpawnPositions(
-		Streamer->GetTerrainMap(), ForestTreeSeed, Scatter, Positions);
-
-	FRandomStream Rng(ForestTreeSeed != 0 ? ForestTreeSeed : 1337);
-	int32 Spawned = 0;
-	for (const FVector2D& XY : Positions)
-	{
-		FVector SpawnLoc(XY.X, XY.Y, 0.f);
-		const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
-		SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
-
-		const float Yaw = Rng.FRandRange(0.f, 360.f);
-		ASolidTree* Tree = World->SpawnActor<ASolidTree>(
-			ASolidTree::StaticClass(), SpawnLoc, FRotator(0.f, Yaw, 0.f), SpawnParams);
-		if (!Tree)
+		FRandomStream Rng(ForestTreeSeed != 0 ? ForestTreeSeed : 1337);
+		int32 Spawned = 0;
+		for (const FVector2D& XY : Positions)
 		{
-			continue;
+			FVector SpawnLoc(XY.X, XY.Y, 0.f);
+			const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
+			SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
+
+			const float Yaw = Rng.FRandRange(0.f, 360.f);
+			ASolidTree* Tree = World->SpawnActor<ASolidTree>(
+				ASolidTree::StaticClass(), SpawnLoc, FRotator(0.f, Yaw, 0.f), SpawnParams);
+			if (!Tree)
+			{
+				continue;
+			}
+
+			Tree->ApplyRandomVariation(Rng);
+			Tree->BuildVisuals();
+			SpawnedForestTrees.Add(Tree);
+			++Spawned;
 		}
 
-		Tree->ApplyRandomVariation(Rng);
-		Tree->BuildVisuals();
-		SpawnedForestTrees.Add(Tree);
-		++Spawned;
+		UE_LOG(LogSolid, Warning,
+			TEXT("Spawned %d forest trees (density=%.2f max=%d)"),
+			Spawned, ForestTreeDensity, MaxForestTrees);
 	}
 
-	UE_LOG(LogSolid, Warning,
-		TEXT("Spawned %d forest trees (density=%.2f max=%d)"),
-		Spawned, ForestTreeDensity, MaxForestTrees);
+	if (SpawnedTownBuildings.Num() == 0)
+	{
+		SolidTownBuildings::FScatterParams BuildingParams;
+		BuildingParams.Density = TownBuildingDensity;
+		BuildingParams.MaxBuildings = MaxTownBuildings;
+		BuildingParams.MinSeparationCm = TownBuildingMinSeparationCm;
+		BuildingParams.ClearRadiusAroundTownCenterCm = TownBuildingClearRadiusCm;
+
+		TArray<SolidTownBuildings::FPlacement> Placements;
+		SolidTownBuildings::CollectPlacements(
+			Streamer->GetTerrainMap(), TownBuildingSeed, BuildingParams, Placements);
+
+		int32 Spawned = 0;
+		for (const SolidTownBuildings::FPlacement& Placement : Placements)
+		{
+			FVector SpawnLoc(Placement.CenterXY.X, Placement.CenterXY.Y, 0.f);
+			const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
+			SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
+
+			ASolidBuilding* Building = World->SpawnActor<ASolidBuilding>(
+				ASolidBuilding::StaticClass(),
+				SpawnLoc,
+				FRotator(0.f, Placement.YawDeg, 0.f),
+				SpawnParams);
+			if (!Building)
+			{
+				continue;
+			}
+
+			Building->FootprintXCm = Placement.FootprintXCm;
+			Building->FootprintYCm = Placement.FootprintYCm;
+			Building->BodyHeightCm = Placement.BodyHeightCm;
+			Building->RoofHeightCm = Placement.RoofHeightCm;
+			Building->BuildVisuals();
+			SpawnedTownBuildings.Add(Building);
+			++Spawned;
+		}
+
+		UE_LOG(LogSolid, Warning,
+			TEXT("Spawned %d town buildings (density=%.2f max=%d)"),
+			Spawned, TownBuildingDensity, MaxTownBuildings);
+	}
 }

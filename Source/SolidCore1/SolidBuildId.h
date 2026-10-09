@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0076")
+#define SOLID_BUILD_ID TEXT("SC1-0077")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Monolith + white half/full fog curtain")
+#define SOLID_BUILD_NOTE TEXT("Add SolidCore1 automation tests")
 #endif

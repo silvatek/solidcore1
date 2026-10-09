@@ -24,6 +24,33 @@ Put this repo’s contents at `C:\Users\staz6\Dev\solidcore1` (clone or sync), t
 
 Input Actions / Mapping Context can be replaced with Content assets on the character later; if unset, C++ creates transient defaults so PIE works immediately.
 
+## Automated tests (SC1-0077)
+
+UE Automation tests live under `Source/SolidCore1/Tests/` (compiled into the editor target when `WITH_DEV_AUTOMATION_TESTS` is on):
+
+| Filter | What it covers |
+|--------|----------------|
+| `SolidCore1.Fog.DistanceBands` | `FogFromDistanceMeters` clear / half / full thresholds |
+| `SolidCore1.Fog.Units` | meters→cm helpers and band constants |
+| `SolidCore1.Map.BuildSmoke` | small map build; initial fog at 0 / 35 / 60 m |
+| `SolidCore1.Map.TrailClearsFog` | trail clear disk + half ring; idempotent re-apply |
+| `SolidCore1.Map.TrailNeverIncreasesFog` | trail apply never raises `Fog` |
+
+**Session Frontend:** rebuild the editor → **Tools → Session Frontend → Automation** → filter `SolidCore1` → Start.
+
+**Command line** (from the project machine):
+
+```bat
+tools\run_automation_tests.bat
+tools\run_automation_tests.bat SolidCore1.Fog
+```
+
+Or:
+
+```bat
+"C:\Program Files\Epic Games\UE_5.8\Engine\Binaries\Win64\UnrealEditor-Cmd.exe" "%CD%\SolidCore1.uproject" -NullRHI -unattended -nop4 -nosound -nosplash -ExecCmds="Automation RunTests SolidCore1; Quit"
+```
+
 ## Build ID (HUD)
 
 PIE shows a top-left debug HUD (`Build SC1-NNNN`, a one-line `Change:` note, pawn/terrain Z, chunk load, material, camera pitch). Both strings live in `Source/SolidCore1/SolidBuildId.h` (`SOLID_BUILD_ID` / `SOLID_BUILD_NOTE`) and are bumped on every GitHub push so screenshots identify which binary you ran.
@@ -168,6 +195,9 @@ Source/
     Vegetation/
       SolidMonolith.*         # Grey slab landmark at start
       SolidTree.*             # Placeholder cylinder+cone tree
+    Tests/
+      SolidTerrainFogTests.cpp
+      SolidTerrainMapTests.cpp
 ```
 
 ## Requirements

@@ -94,11 +94,14 @@ bool FSolidPartyAssignedPlansTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("reject F8 when only 3"), Party->SelectAssignedSlot(7));
 	TestEqual(TEXT("slot unchanged after reject"), Party->GetActiveAssignedSlot(), 2);
 
-	// Max 8 assigned.
+	// Max 8 assigned — grow the Company catalog first so indices are unique.
 	TArray<int32> TooMany;
 	for (int32 i = 0; i < 12; ++i)
 	{
-		TooMany.Add(i % 3);
+		FSolidBattlePlan Extra;
+		Extra.Name = FString::Printf(TEXT("Extra%d"), i);
+		Extra.Formation = ESolidBattleFormation::Mob;
+		TooMany.Add(Company->AddBattlePlan(Extra));
 	}
 	TestTrue(TEXT("set assigned"), Party->SetAssignedBattlePlans(TooMany));
 	TestEqual(TEXT("capped at 8"), Party->GetAssignedCount(), SolidBattleFormationSlots::MaxAssignedBattlePlans);

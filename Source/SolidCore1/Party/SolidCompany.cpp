@@ -28,3 +28,8 @@ int32 USolidCompany::FindBattlePlanIndexByName(const FString& Name) const
 	}
 	return INDEX_NONE;
 }
+
+int32 USolidCompany::AddBattlePlan(const FSolidBattlePlan& Plan)
+{
+	return AllBattlePlans.Add(Plan);
+}

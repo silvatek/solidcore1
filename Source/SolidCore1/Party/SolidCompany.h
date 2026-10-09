@@ -24,6 +24,9 @@ public:
 
 	int32 FindBattlePlanIndexByName(const FString& Name) const;
 
+	/** Append a plan to the Company catalog; returns its index. */
+	int32 AddBattlePlan(const FSolidBattlePlan& Plan);
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Company|BattlePlans")
 	TArray<FSolidBattlePlan> AllBattlePlans;

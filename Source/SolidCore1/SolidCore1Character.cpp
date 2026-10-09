@@ -1,6 +1,8 @@
 #include "SolidCore1Character.h"
 #include "Animation/AnimBlueprint.h"
 #include "Animation/AnimInstance.h"
+#include "Animation/AnimSequence.h"
+#include "Animation/AnimSingleNodeInstance.h"
 #include "AssetRegistry/AssetData.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Camera/CameraComponent.h"
@@ -59,16 +61,25 @@ ASolidCore1Character::ASolidCore1Character()
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
 
-	// Mannequin mesh sits in the capsule. Yaw -90 aligns mesh forward with character forward.
+	// Mesh sits in the capsule. Yaw -90 aligns mesh forward with character forward.
 	GetMesh()->SetRelativeLocationAndRotation(FVector(0.f, 0.f, MeshGroundZOffset), FRotator(0.f, -90.f, 0.f));
 	GetMesh()->SetCollisionProfileName(UCollisionProfile::NoCollision_ProfileName);
 	GetMesh()->SetVisibility(true);
+	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
 
-	// Soft paths match common UE 5.7+/5.8 Third Person / mannequin content.
+	// SC1-0034: player defaults to Fab Viking (custom skeleton + clip locomotion).
 	DefaultSkeletalMesh = TSoftObjectPtr<USkeletalMesh>(
-		FSoftObjectPath(TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple")));
+		FSoftObjectPath(TEXT("/Game/Viking/Mesh/SK_Viking.SK_Viking")));
 	DefaultAnimBlueprint = TSoftClassPtr<UAnimInstance>(
 		FSoftObjectPath(TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.ABP_Unarmed_C")));
+	VikingIdleAnim = TSoftObjectPtr<UAnimSequence>(
+		FSoftObjectPath(TEXT("/Game/Viking/Animations/Anim_Viking_idle1.Anim_Viking_idle1")));
+	VikingWalkAnim = TSoftObjectPtr<UAnimSequence>(
+		FSoftObjectPath(TEXT("/Game/Viking/Animations/Anim_Viking_walk.Anim_Viking_walk")));
+	VikingRunAnim = TSoftObjectPtr<UAnimSequence>(
+		FSoftObjectPath(TEXT("/Game/Viking/Animations/Anim_Viking_run.Anim_Viking_run")));
+	VikingJumpAnim = TSoftObjectPtr<UAnimSequence>(
+		FSoftObjectPath(TEXT("/Game/Viking/Animations/Anim_Viking_jump.Anim_Viking_jump")));
 
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
 	CameraBoom->SetupAttachment(RootComponent);
@@ -105,6 +116,11 @@ void ASolidCore1Character::BeginPlay()
 {
 	Super::BeginPlay();
 	ApplyCharacterVisuals();
+	if (bUseVikingVisuals)
+	{
+		CacheVikingLocomotionAnims();
+		UpdateVikingLocomotionAnim();
+	}
 	EnsureRuntimeInputAssets();
 	ApplyWalkSpeed();
 	AddMappingContext();
@@ -134,6 +150,10 @@ void ASolidCore1Character::OnRep_PlayerState()
 void ASolidCore1Character::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (bUseVikingVisuals)
+	{
+		UpdateVikingLocomotionAnim();
+	}
 	UpdateGroupCameraFraming(DeltaTime);
 	ClampCameraAboveTerrain(DeltaTime);
 }
@@ -578,68 +598,80 @@ void ASolidCore1Character::ApplyCharacterVisuals()
 		return;
 	}
 
-	UE_LOG(LogSolidCore1, Log, TEXT("ApplyCharacterVisuals: current mesh=%s"),
-		CharacterMesh->GetSkeletalMeshAsset() ? *CharacterMesh->GetSkeletalMeshAsset()->GetPathName() : TEXT("<none>"));
+	UE_LOG(LogSolidCore1, Log, TEXT("ApplyCharacterVisuals: current mesh=%s viking=%d"),
+		CharacterMesh->GetSkeletalMeshAsset() ? *CharacterMesh->GetSkeletalMeshAsset()->GetPathName() : TEXT("<none>"),
+		bUseVikingVisuals ? 1 : 0);
 
-	if (!CharacterMesh->GetSkeletalMeshAsset())
+	USkeletalMesh* LoadedMesh = DefaultSkeletalMesh.LoadSynchronous();
+	if (!LoadedMesh && bUseVikingVisuals)
 	{
-		USkeletalMesh* LoadedMesh = DefaultSkeletalMesh.LoadSynchronous();
-
-		if (!LoadedMesh)
+		LoadedMesh = Cast<USkeletalMesh>(
+			StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, TEXT("/Game/Viking/Mesh/SK_Viking.SK_Viking")));
+	}
+	if (!LoadedMesh)
+	{
+		static const TCHAR* MeshFallbacks[] = {
+			TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"),
+			TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny.SKM_Manny"),
+			TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn_Simple.SKM_Quinn_Simple"),
+			TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn.SKM_Quinn"),
+		};
+		for (const TCHAR* Path : MeshFallbacks)
 		{
-			static const TCHAR* MeshFallbacks[] = {
-				TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny_Simple.SKM_Manny_Simple"),
-				TEXT("/Game/Characters/Mannequins/Meshes/SKM_Manny.SKM_Manny"),
-				TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn_Simple.SKM_Quinn_Simple"),
-				TEXT("/Game/Characters/Mannequins/Meshes/SKM_Quinn.SKM_Quinn"),
-			};
-
-			for (const TCHAR* Path : MeshFallbacks)
+			LoadedMesh = Cast<USkeletalMesh>(
+				StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, Path));
+			if (LoadedMesh)
 			{
-				LoadedMesh = Cast<USkeletalMesh>(
-					StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, Path));
-				if (LoadedMesh)
-				{
-					UE_LOG(LogSolidCore1, Log, TEXT("Loaded mesh via fallback path: %s"), Path);
-					break;
-				}
+				break;
 			}
 		}
-
-		if (!LoadedMesh)
-		{
-			LoadedMesh = FindMannequinMeshByRegistry();
-		}
-
-		if (LoadedMesh)
-		{
-			CharacterMesh->SetSkeletalMeshAsset(LoadedMesh);
-			CharacterMesh->SetVisibility(true);
-			CharacterMesh->SetHiddenInGame(false);
-			CharacterMesh->SetCastShadow(true);
-			UE_LOG(LogSolidCore1, Warning, TEXT("Applied mannequin mesh: %s"), *LoadedMesh->GetPathName());
-		}
-		else
-		{
-			UE_LOG(LogSolidCore1, Error,
-				TEXT("No mannequin mesh found under /Game/Characters/Mannequins. "
-					 "Create BP_SolidCore1Character and assign the mesh in the editor (see README)."));
-		}
+	}
+	if (!LoadedMesh)
+	{
+		LoadedMesh = FindMannequinMeshByRegistry();
 	}
 
-	if (CharacterMesh->GetSkeletalMeshAsset() && CharacterMesh->GetAnimClass() == nullptr)
+	const bool bForceReplace =
+		bUseVikingVisuals
+		|| CharacterMesh->GetSkeletalMeshAsset() == nullptr
+		|| (LoadedMesh && CharacterMesh->GetSkeletalMeshAsset() != LoadedMesh);
+
+	if (LoadedMesh && bForceReplace)
+	{
+		CharacterMesh->SetSkeletalMeshAsset(LoadedMesh);
+		CharacterMesh->SetVisibility(true);
+		CharacterMesh->SetHiddenInGame(false);
+		CharacterMesh->SetCastShadow(true);
+		UE_LOG(LogSolidCore1, Warning, TEXT("Applied character mesh: %s"), *LoadedMesh->GetPathName());
+	}
+	else if (!LoadedMesh)
+	{
+		UE_LOG(LogSolidCore1, Error, TEXT("No character skeletal mesh found (Viking/Manny)."));
+		return;
+	}
+
+	if (bUseVikingVisuals)
+	{
+		// Custom skeleton — clip playback, not Epic AnimBP (also clears BP_SolidCore1Character's Manny ABP).
+		CharacterMesh->SetAnimInstanceClass(nullptr);
+		CharacterMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+		CharacterMesh->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+		CharacterMesh->bPauseAnims = false;
+		CharacterMesh->bNoSkeletonUpdate = false;
+		CharacterMesh->InitAnim(true);
+		return;
+	}
+
+	if (CharacterMesh->GetAnimClass() == nullptr)
 	{
 		UClass* AnimClass = DefaultAnimBlueprint.LoadSynchronous();
-
 		if (!AnimClass)
 		{
 			static const TCHAR* AnimFallbacks[] = {
 				TEXT("/Game/Characters/Mannequins/Anims/Unarmed/ABP_Unarmed.ABP_Unarmed_C"),
 				TEXT("/Game/Characters/Mannequins/Animations/ABP_Unarmed.ABP_Unarmed_C"),
 				TEXT("/Game/Characters/Mannequins/Animations/ABP_Manny.ABP_Manny_C"),
-				TEXT("/Game/Characters/Mannequins/Animations/ABP_Quinn.ABP_Quinn_C"),
 			};
-
 			for (const TCHAR* Path : AnimFallbacks)
 			{
 				AnimClass = StaticLoadClass(UAnimInstance::StaticClass(), nullptr, Path);
@@ -649,7 +681,6 @@ void ASolidCore1Character::ApplyCharacterVisuals()
 				}
 			}
 		}
-
 		if (!AnimClass)
 		{
 			AnimClass = FindMannequinAnimClassByRegistry();
@@ -661,12 +692,129 @@ void ASolidCore1Character::ApplyCharacterVisuals()
 			CharacterMesh->SetAnimInstanceClass(AnimClass);
 			UE_LOG(LogSolidCore1, Warning, TEXT("Applied mannequin anim BP: %s"), *AnimClass->GetPathName());
 		}
-		else if (CharacterMesh->GetSkeletalMeshAsset())
+	}
+}
+
+void ASolidCore1Character::CacheVikingLocomotionAnims()
+{
+	auto LoadClip = [](TSoftObjectPtr<UAnimSequence>& Soft, const TCHAR* Path) -> UAnimSequence*
+	{
+		if (UAnimSequence* Loaded = Soft.LoadSynchronous())
 		{
-			UE_LOG(LogSolidCore1, Warning,
-				TEXT("Mannequin mesh loaded but no Anim Blueprint found. Character will appear in reference pose."));
+			return Loaded;
+		}
+		return Cast<UAnimSequence>(StaticLoadObject(UAnimSequence::StaticClass(), nullptr, Path));
+	};
+
+	if (!CachedVikingIdleAnim)
+	{
+		CachedVikingIdleAnim = LoadClip(
+			VikingIdleAnim, TEXT("/Game/Viking/Animations/Anim_Viking_idle1.Anim_Viking_idle1"));
+	}
+	if (!CachedVikingWalkAnim)
+	{
+		CachedVikingWalkAnim = LoadClip(
+			VikingWalkAnim, TEXT("/Game/Viking/Animations/Anim_Viking_walk.Anim_Viking_walk"));
+	}
+	if (!CachedVikingRunAnim)
+	{
+		CachedVikingRunAnim = LoadClip(
+			VikingRunAnim, TEXT("/Game/Viking/Animations/Anim_Viking_run.Anim_Viking_run"));
+	}
+	if (!CachedVikingJumpAnim)
+	{
+		CachedVikingJumpAnim = LoadClip(
+			VikingJumpAnim, TEXT("/Game/Viking/Animations/Anim_Viking_jump.Anim_Viking_jump"));
+	}
+}
+
+bool ASolidCore1Character::PlayVikingLocomotionClip(UAnimSequence* Anim)
+{
+	USkeletalMeshComponent* CharacterMesh = GetMesh();
+	if (!CharacterMesh || !Anim)
+	{
+		return false;
+	}
+
+	CharacterMesh->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+	CharacterMesh->InitAnim(true);
+
+	if (UAnimSingleNodeInstance* SingleNode = CharacterMesh->GetSingleNodeInstance())
+	{
+		if (SingleNode->GetAnimationAsset() != Anim || !SingleNode->IsPlaying())
+		{
+			SingleNode->SetAnimationAsset(Anim, false);
+			SingleNode->SetLooping(true);
+			SingleNode->SetPlaying(true);
+			SingleNode->SetPlayRate(1.f);
+		}
+		ActiveVikingLocomotionAnim = Anim;
+		return true;
+	}
+
+	CharacterMesh->PlayAnimation(Anim, true);
+	if (UAnimSingleNodeInstance* SingleNode = CharacterMesh->GetSingleNodeInstance())
+	{
+		ActiveVikingLocomotionAnim = Anim;
+		return SingleNode->GetAnimationAsset() == Anim;
+	}
+
+	UE_LOG(LogSolidCore1, Error, TEXT("Player Viking: failed AnimSingleNodeInstance for %s"), *Anim->GetName());
+	return false;
+}
+
+void ASolidCore1Character::UpdateVikingLocomotionAnim()
+{
+	USkeletalMeshComponent* CharacterMesh = GetMesh();
+	if (!CharacterMesh || !CharacterMesh->GetSkeletalMeshAsset())
+	{
+		return;
+	}
+
+	CacheVikingLocomotionAnims();
+
+	UAnimSequence* Desired = CachedVikingIdleAnim;
+	const UCharacterMovementComponent* Move = GetCharacterMovement();
+	const bool bInAir = Move && Move->IsFalling();
+	if (bInAir && CachedVikingJumpAnim)
+	{
+		Desired = CachedVikingJumpAnim;
+	}
+	else
+	{
+		const float Speed = GetVelocity().Size2D();
+		const bool bShouldRun =
+			Speed >= VikingRunAnimSpeedThreshold
+			|| bIsSprinting
+			|| (Move && Move->MaxWalkSpeed >= SprintSpeed - 1.f);
+
+		if (bShouldRun && CachedVikingRunAnim)
+		{
+			Desired = CachedVikingRunAnim;
+		}
+		else if (Speed >= VikingWalkAnimSpeedThreshold && CachedVikingWalkAnim)
+		{
+			Desired = CachedVikingWalkAnim;
 		}
 	}
+
+	if (!Desired)
+	{
+		return;
+	}
+
+	const UAnimSingleNodeInstance* SingleNode = CharacterMesh->GetSingleNodeInstance();
+	const bool bAlreadyPlaying =
+		ActiveVikingLocomotionAnim == Desired
+		&& SingleNode
+		&& SingleNode->GetAnimationAsset() == Desired
+		&& SingleNode->IsPlaying();
+	if (bAlreadyPlaying)
+	{
+		return;
+	}
+
+	PlayVikingLocomotionClip(Desired);
 }
 
 void ASolidCore1Character::EnsureRuntimeInputAssets()

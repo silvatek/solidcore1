@@ -11,6 +11,7 @@ class UInputMappingContext;
 class UInputAction;
 class USkeletalMesh;
 class UAnimInstance;
+class UAnimSequence;
 
 UCLASS(config = Game)
 class SOLIDCORE1_API ASolidCore1Character : public ACharacter
@@ -45,11 +46,15 @@ protected:
 	/** Builds transient Enhanced Input assets when Content assets are not assigned (playable out of the box). */
 	void EnsureRuntimeInputAssets();
 
-	/** Loads mannequin mesh / anim BP from soft paths when the mesh is still empty. */
+	/** Applies Viking (or fallback mannequin) mesh / locomotion setup. */
 	void ApplyCharacterVisuals();
 
 	/** Applies MeshGroundZOffset while preserving BP yaw/pitch/roll. */
 	void ApplyMeshGroundOffset();
+
+	void CacheVikingLocomotionAnims();
+	void UpdateVikingLocomotionAnim();
+	bool PlayVikingLocomotionClip(UAnimSequence* Anim);
 
 	/** Pull the boom toward the group center and lengthen it so companions stay framed. */
 	void UpdateGroupCameraFraming(float DeltaTime);
@@ -153,14 +158,41 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> ZoomAction;
 
-	/** Defaults to Epic Third Person mannequin paths; assign in defaults if you use different content. */
+	/**
+	 * When true, force Fab Viking mesh + single-node idle/walk/run (overrides BP Manny mesh/AnimBP).
+	 * Viking uses a custom skeleton, so Epic ABP_Unarmed cannot drive it.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Visual")
+	bool bUseVikingVisuals = true;
+
+	/** Defaults to Viking; mannequin paths remain as fallback when Viking is missing. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Visual")
 	TSoftObjectPtr<USkeletalMesh> DefaultSkeletalMesh;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Visual")
 	TSoftClassPtr<UAnimInstance> DefaultAnimBlueprint;
 
-	/** Mesh relative Z (mannequin feet at capsule bottom ≈ -capsule half-height). */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Anim")
+	TSoftObjectPtr<UAnimSequence> VikingIdleAnim;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Anim")
+	TSoftObjectPtr<UAnimSequence> VikingWalkAnim;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Anim")
+	TSoftObjectPtr<UAnimSequence> VikingRunAnim;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character|Anim")
+	TSoftObjectPtr<UAnimSequence> VikingJumpAnim;
+
+	/** Planar speed above which the run clip plays (cm/s). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Anim", meta = (ClampMin = "0.0"))
+	float VikingRunAnimSpeedThreshold = 380.f;
+
+	/** Planar speed above which the walk clip plays (cm/s). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Anim", meta = (ClampMin = "0.0"))
+	float VikingWalkAnimSpeedThreshold = 30.f;
+
+	/** Mesh relative Z (feet at capsule bottom ≈ -capsule half-height). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character|Visual")
 	float MeshGroundZOffset = -90.f;
 
@@ -174,4 +206,19 @@ protected:
 
 	/** Smoothed world-Z lift applied via spring-arm SocketOffset (keeps camera above terrain). */
 	float CameraTerrainLiftCm = 0.f;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> CachedVikingIdleAnim;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> CachedVikingWalkAnim;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> CachedVikingRunAnim;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> CachedVikingJumpAnim;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UAnimSequence> ActiveVikingLocomotionAnim;
 };

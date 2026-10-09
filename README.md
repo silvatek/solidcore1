@@ -43,12 +43,10 @@ Those `.uasset` files are **not** in git (binary content). Add them once via Mig
 
 1. Content Browser → right-click `Content/Characters` → **Blueprint Class**.
 2. Pick **SolidCore1Character** as the parent → name it `BP_SolidCore1Character` (path must be `/Game/Characters/BP_SolidCore1Character`).
-3. Open it → select **Mesh (CharacterMesh0)**:
-   - **Skeletal Mesh**: `SKM_Manny_Simple`
-   - **Anim Class**: `ABP_Unarmed`
+3. Open it → select **Mesh (CharacterMesh0)** if you want editor defaults; SC1-0034 forces Fab Viking at runtime when `bUseVikingVisuals` is true (overrides a Manny mesh/AnimBP on the BP).
 4. Compile & Save.
 5. Close the editor, rebuild/reopen so GameMode picks up the Blueprint (it prefers this BP over the bare C++ class).
-6. PIE — you should see the mannequin.
+6. PIE — you should see the Viking player (and Viking companion).
 
 While PIE is running, **Output Log** filtered to `SolidCore1` shows whether a mesh was applied or how many meshes were found.
 

@@ -116,6 +116,10 @@ Goal: the world starts shrouded; fog clears only where the **pawn has been** (tr
 
 **Do not reintroduce** camera/view sampling for fog amount, height-fog StartDistance as a 25 m clear radius, or dense per-cell fog lattices. Prefer boundary geometry in `SolidTerrainFog` tied to `TerrainPoint.Fog`.
 
+## Starter tree (SC1-0074)
+
+`ASolidTree` (`Vegetation/SolidTree.*`) is a placeholder: Engine BasicShapes **cylinder** (brown trunk) + **cone** (green canopy). GameMode spawns one near the origin (`StarterTreeOffsetXY`, default 14 m / 9 m) on the procedural terrain once the streamer map is ready. Toggle with `bAutoSpawnStarterTree`.
+
 ## Quinn companion (SC1-0024)
 
 `ASolidCompanionCharacter` spawns behind the player and follows with simple steering (no NavMesh — works on procedural terrain). Both player and companion use the Fab Viking (`/Game/Viking/Mesh/SK_Viking`) with idle/walk/run/(jump) clip playback (custom skeleton — not Epic AnimBP). GameMode flag: `bAutoSpawnCompanion`. HUD shows companion mesh name and distance. Set `bUseVikingVisuals=false` on the player to fall back to Manny.
@@ -159,6 +163,8 @@ Source/
       SolidTerrainNoise.h
       SolidTerrainChunk.*
       SolidTerrainStreamer.*
+    Vegetation/
+      SolidTree.*             # Placeholder cylinder+cone tree
 ```
 
 ## Requirements

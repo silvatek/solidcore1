@@ -6,8 +6,10 @@
 #include "SolidCore1.h"
 #include "Companion/SolidCompanionCharacter.h"
 #include "Terrain/SolidTerrainStreamer.h"
+#include "Vegetation/SolidTree.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/World.h"
+#include "EngineUtils.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
@@ -79,13 +81,16 @@ void ASolidGameMode::BeginPlay()
 	UE_LOG(LogSolid, Warning, TEXT("Build %s"), SOLID_BUILD_ID);
 	EnsureTerrainStreamer();
 
-	// Player pawn may not exist on the first frame of PIE — retry shortly.
+	// Player pawn / terrain may not be ready on the first PIE frame — retry shortly.
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(
 			CompanionSpawnTimer, this, &ASolidGameMode::EnsureCompanion, 0.35f, false);
+		World->GetTimerManager().SetTimer(
+			StarterTreeSpawnTimer, this, &ASolidGameMode::EnsureStarterTree, 0.5f, false);
 	}
 	EnsureCompanion();
+	EnsureStarterTree();
 }
 
 void ASolidGameMode::EnsureTerrainStreamer()
@@ -169,4 +174,59 @@ void ASolidGameMode::EnsureCompanion()
 	UE_LOG(LogTemp, Warning, TEXT("[SolidCore1] Spawned Quinn companion at %s following %s"),
 		*SpawnLoc.ToCompactString(), *PlayerPawn->GetName());
 	UE_LOG(LogSolid, Warning, TEXT("Spawned Quinn companion following %s"), *PlayerPawn->GetName());
+}
+
+void ASolidGameMode::EnsureStarterTree()
+{
+	if (!bAutoSpawnStarterTree)
+	{
+		return;
+	}
+
+	if (SpawnedStarterTree.IsValid())
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	// Reuse an existing starter tree if the level already has one.
+	for (TActorIterator<ASolidTree> It(World); It; ++It)
+	{
+		SpawnedStarterTree = *It;
+		return;
+	}
+
+	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::EnsureExists(World);
+	if (!Streamer || !Streamer->GetTerrainMap())
+	{
+		World->GetTimerManager().SetTimer(
+			StarterTreeSpawnTimer, this, &ASolidGameMode::EnsureStarterTree, 0.25f, false);
+		return;
+	}
+
+	FVector SpawnLoc(StarterTreeOffsetXY.X, StarterTreeOffsetXY.Y, 0.f);
+	const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
+	SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	ASolidTree* Tree = World->SpawnActor<ASolidTree>(
+		ASolidTree::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+	if (!Tree)
+	{
+		UE_LOG(LogSolid, Error, TEXT("Failed to spawn starter SolidTree."));
+		return;
+	}
+
+	Tree->BuildVisuals();
+	SpawnedStarterTree = Tree;
+
+	UE_LOG(LogSolid, Warning, TEXT("Spawned starter tree at %s"), *SpawnLoc.ToCompactString());
 }

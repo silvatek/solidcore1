@@ -38,7 +38,7 @@ namespace SolidTerrainFog
 	{
 		FIntPoint ChunkCoord = FIntPoint::ZeroValue;
 		float ChunkWorldSize = 6400.f;
-		int32 FogQuadsPerSide = 8;
+		int32 FogQuadsPerSide = 16;
 		float VolumeHeightCm = 3200.f;
 		float VolumeHeightHalfCm = 2200.f;
 		float CollisionHeightBias = 0.f;
@@ -65,8 +65,8 @@ namespace SolidTerrainFog
 	void ConfigureOverlayComponent(UStaticMeshComponent* Mesh);
 
 	/**
-	 * Build a non-colliding fog overlay mesh: one vertical face per grid edge where
-	 * one endpoint is clear (fog≈0) and the other is fogged (fog>0).
+	 * Build a non-colliding fog overlay mesh: marching-squares isocontour curtains
+	 * along fog≈0 | fog>0 (continuous; no stair-step corner gaps).
 	 */
 	UStaticMesh* BuildChunkFogMesh(
 		UObject* Outer,

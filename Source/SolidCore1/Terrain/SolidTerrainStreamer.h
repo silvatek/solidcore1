@@ -130,7 +130,7 @@ public:
 
 	/** Low-res fog-of-war cells per chunk edge (only if bRenderExplorationFogMeshes). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "2", ClampMax = "32"))
-	int32 FogQuadsPerSide = 8;
+	int32 FogQuadsPerSide = 16;
 
 	/** Vertical extent of full exploration-fog volumes (cm). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "200.0"))

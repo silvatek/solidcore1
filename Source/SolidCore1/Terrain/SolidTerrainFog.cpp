@@ -363,15 +363,15 @@ namespace SolidTerrainFog
 		TArray<int32> Triangles;
 		TArray<int32> TriMaterials;
 
-		// Boundary curtains only — one face per clear|fogged edge (not a dense lattice).
-		const int32 EdgeBudget = FogQuads * FogVerts * 2;
+		// Marching-squares isocontour at ClearFogEpsilon — continuous curtains (no stair-step gaps).
+		const int32 EdgeBudget = FogQuads * FogQuads * 2;
 		Positions.Reserve(EdgeBudget * 4);
 		Normals.Reserve(EdgeBudget * 4);
 		Tangents.Reserve(EdgeBudget * 4);
 		UVs.Reserve(EdgeBudget * 4);
 		Colors.Reserve(EdgeBudget * 4);
-		Triangles.Reserve(EdgeBudget * 12);
-		TriMaterials.Reserve(EdgeBudget * 4);
+		Triangles.Reserve(EdgeBudget * 6);
+		TriMaterials.Reserve(EdgeBudget * 2);
 
 		auto AppendVert = [&](const FVector& Pos, const FVector& Normal) -> int32
 		{
@@ -391,7 +391,7 @@ namespace SolidTerrainFog
 
 		auto AppendQuad = [&](int32 I0, int32 I1, int32 I2, int32 I3, int32 Slot)
 		{
-			// Single winding — material is TwoSided. Double winding stacked translucent alpha to ~1.
+			// Single winding — material is TwoSided.
 			Triangles.Add(I0);
 			Triangles.Add(I1);
 			Triangles.Add(I2);
@@ -402,29 +402,67 @@ namespace SolidTerrainFog
 			TriMaterials.Add(Slot);
 		};
 
-		auto AppendBoundaryWall = [&](
-			float AX, float AY, float AZ,
-			float BX, float BY, float BZ,
-			float FogA, float FogB,
-			const FVector& Normal)
+		auto IsFogged = [](float FogValue) -> bool
 		{
-			const bool bClearA = FogA <= ClearFogEpsilon;
-			const bool bClearB = FogB <= ClearFogEpsilon;
-			if (bClearA == bClearB)
-			{
-				return; // both clear or both fogged — not a FoW boundary
-			}
+			return FogValue > ClearFogEpsilon;
+		};
 
-			const float FoggedAmount = FMath::Max(FogA, FogB);
+		struct FContourPoint
+		{
+			float X = 0.f;
+			float Y = 0.f;
+			float Z = 0.f;
+		};
+
+		// Lerp along a sample edge to the clear|fogged crossing.
+		auto CrossingOnEdge = [&](int32 IX0, int32 IY0, int32 IX1, int32 IY1) -> FContourPoint
+		{
+			const int32 I0 = IY0 * FogVerts + IX0;
+			const int32 I1 = IY1 * FogVerts + IX1;
+			const float F0 = FogAmounts[I0];
+			const float F1 = FogAmounts[I1];
+			float T = 0.5f;
+			if (FMath::Abs(F1 - F0) > KINDA_SMALL_NUMBER)
+			{
+				T = FMath::Clamp((ClearFogEpsilon - F0) / (F1 - F0), 0.f, 1.f);
+			}
+			FContourPoint P;
+			P.X = FMath::Lerp(static_cast<float>(IX0) * Step, static_cast<float>(IX1) * Step, T);
+			P.Y = FMath::Lerp(static_cast<float>(IY0) * Step, static_cast<float>(IY1) * Step, T);
+			P.Z = FMath::Lerp(SurfaceZ[I0], SurfaceZ[I1], T);
+			return P;
+		};
+
+		auto AppendContourWall = [&](const FContourPoint& A, const FContourPoint& B, float FoggedAmount)
+		{
+			FVector2D Dir2(B.X - A.X, B.Y - A.Y);
+			const float Len = Dir2.Size();
+			if (Len < 1.f)
+			{
+				return;
+			}
+			Dir2 /= Len;
+
+			// Slight overlap so panel ends meet at corners.
+			const float Pad = FMath::Min(Step * 0.08f, Len * 0.25f);
+			const float AX = A.X - Dir2.X * Pad;
+			const float AY = A.Y - Dir2.Y * Pad;
+			const float BX = B.X + Dir2.X * Pad;
+			const float BY = B.Y + Dir2.Y * Pad;
+			const float AZ = A.Z;
+			const float BZ = B.Z;
+
 			const bool bFull = FoggedAmount >= 0.75f;
 			int32 Slot = 0;
 			if (bHaveHalf && bHaveFull)
 			{
 				Slot = bFull ? 1 : 0;
 			}
-
 			const float VolumeHeight = bFull ? HeightFull : HeightHalf;
 			constexpr float SkirtCm = 20.f;
+
+			// Outward-ish normal in XY (perpendicular to segment).
+			const FVector Normal(-Dir2.Y, Dir2.X, 0.f);
 
 			const int32 V0 = AppendVert(FVector(AX, AY, AZ + SkirtCm), Normal);
 			const int32 V1 = AppendVert(FVector(BX, BY, BZ + SkirtCm), Normal);
@@ -433,39 +471,76 @@ namespace SolidTerrainFog
 			AppendQuad(V0, V1, V2, V3, Slot);
 		};
 
-		// Horizontal edges (along +X between samples).
-		for (int32 Y = 0; Y < FogVerts; ++Y)
+		// Per-cell marching squares. Bits: 1=SW(F00), 2=SE(F10), 4=NE(F11), 8=NW(F01).
+		// Edge ids: 0=bottom(SW-SE), 1=right(SE-NE), 2=top(NE-NW), 3=left(NW-SW).
+		static const int8 MSSegments[16][4] = {
+			{-1, -1, -1, -1}, // 0
+			{3, 0, -1, -1},   // 1 SW
+			{0, 1, -1, -1},   // 2 SE
+			{3, 1, -1, -1},   // 3 SW+SE
+			{1, 2, -1, -1},   // 4 NE
+			{3, 0, 1, 2},     // 5 SW+NE saddle
+			{0, 2, -1, -1},   // 6 SE+NE
+			{3, 2, -1, -1},   // 7 all but NW
+			{2, 3, -1, -1},   // 8 NW
+			{0, 2, -1, -1},   // 9 SW+NW
+			{0, 1, 2, 3},     // 10 SE+NW saddle
+			{1, 2, -1, -1},   // 11 all but NE
+			{1, 3, -1, -1},   // 12 NE+NW
+			{0, 1, -1, -1},   // 13 all but SE
+			{0, 3, -1, -1},   // 14 all but SW
+			{-1, -1, -1, -1}, // 15
+		};
+
+		for (int32 Y = 0; Y < FogQuads; ++Y)
 		{
 			for (int32 X = 0; X < FogQuads; ++X)
 			{
-				const int32 I0 = Y * FogVerts + X;
-				const int32 I1 = I0 + 1;
-				const float X0 = static_cast<float>(X) * Step;
-				const float X1 = static_cast<float>(X + 1) * Step;
-				const float Yw = static_cast<float>(Y) * Step;
-				AppendBoundaryWall(
-					X0, Yw, SurfaceZ[I0],
-					X1, Yw, SurfaceZ[I1],
-					FogAmounts[I0], FogAmounts[I1],
-					FVector(0.f, 1.f, 0.f));
-			}
-		}
+				const int32 I00 = Y * FogVerts + X;
+				const int32 I10 = I00 + 1;
+				const int32 I01 = I00 + FogVerts;
+				const int32 I11 = I01 + 1;
 
-		// Vertical edges (along +Y between samples).
-		for (int32 Y = 0; Y < FogQuads; ++Y)
-		{
-			for (int32 X = 0; X < FogVerts; ++X)
-			{
-				const int32 I0 = Y * FogVerts + X;
-				const int32 I1 = I0 + FogVerts;
-				const float Xw = static_cast<float>(X) * Step;
-				const float Y0 = static_cast<float>(Y) * Step;
-				const float Y1 = static_cast<float>(Y + 1) * Step;
-				AppendBoundaryWall(
-					Xw, Y0, SurfaceZ[I0],
-					Xw, Y1, SurfaceZ[I1],
-					FogAmounts[I0], FogAmounts[I1],
-					FVector(1.f, 0.f, 0.f));
+				const float F00 = FogAmounts[I00];
+				const float F10 = FogAmounts[I10];
+				const float F01 = FogAmounts[I01];
+				const float F11 = FogAmounts[I11];
+
+				const uint8 Case =
+					(IsFogged(F00) ? 1u : 0u) |
+					(IsFogged(F10) ? 2u : 0u) |
+					(IsFogged(F11) ? 4u : 0u) |
+					(IsFogged(F01) ? 8u : 0u);
+
+				if (Case == 0 || Case == 15)
+				{
+					continue;
+				}
+
+				FContourPoint EdgePt[4];
+				EdgePt[0] = CrossingOnEdge(X, Y, X + 1, Y);         // bottom
+				EdgePt[1] = CrossingOnEdge(X + 1, Y, X + 1, Y + 1); // right
+				EdgePt[2] = CrossingOnEdge(X + 1, Y + 1, X, Y + 1); // top
+				EdgePt[3] = CrossingOnEdge(X, Y + 1, X, Y);         // left
+
+				// Material from the strongest fogged corner in this cell.
+				float FoggedAmount = 0.f;
+				if (IsFogged(F00)) { FoggedAmount = FMath::Max(FoggedAmount, F00); }
+				if (IsFogged(F10)) { FoggedAmount = FMath::Max(FoggedAmount, F10); }
+				if (IsFogged(F01)) { FoggedAmount = FMath::Max(FoggedAmount, F01); }
+				if (IsFogged(F11)) { FoggedAmount = FMath::Max(FoggedAmount, F11); }
+
+				const int8* Seg = MSSegments[Case];
+				for (int32 S = 0; S < 4 && Seg[S] >= 0; S += 2)
+				{
+					const int32 E0 = Seg[S];
+					const int32 E1 = Seg[S + 1];
+					if (E0 < 0 || E1 < 0)
+					{
+						break;
+					}
+					AppendContourWall(EdgePt[E0], EdgePt[E1], FoggedAmount);
+				}
 			}
 		}
 

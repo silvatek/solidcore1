@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0061")
+#define SOLID_BUILD_ID TEXT("SC1-0062")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Matte grass (less shiny)")
+#define SOLID_BUILD_NOTE TEXT("Fix matte grass MID compile (UE5.8)")
 #endif

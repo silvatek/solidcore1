@@ -615,7 +615,7 @@ UMaterialInterface* ASolidTerrainStreamer::MakeMatteGrassInstance(UMaterialInter
 		const FString Name = Info.Name.ToString();
 		if (Name.Contains(TEXT("Rough"), ESearchCase::IgnoreCase))
 		{
-			MID->SetScalarParameterValue(Info, Roughness);
+			MID->SetScalarParameterValue(Info.Name, Roughness);
 		}
 		else if (Name.Contains(TEXT("Spec"), ESearchCase::IgnoreCase)
 			|| Name.Contains(TEXT("Gloss"), ESearchCase::IgnoreCase)
@@ -624,11 +624,11 @@ UMaterialInterface* ASolidTerrainStreamer::MakeMatteGrassInstance(UMaterialInter
 			// Gloss/shine often inverted vs roughness — keep low for less shine.
 			const bool bLooksLikeGloss = Name.Contains(TEXT("Gloss"), ESearchCase::IgnoreCase)
 				|| Name.Contains(TEXT("Shine"), ESearchCase::IgnoreCase);
-			MID->SetScalarParameterValue(Info, bLooksLikeGloss ? (1.f - Roughness) : Specular);
+			MID->SetScalarParameterValue(Info.Name, bLooksLikeGloss ? (1.f - Roughness) : Specular);
 		}
 		else if (Name.Contains(TEXT("Metal"), ESearchCase::IgnoreCase))
 		{
-			MID->SetScalarParameterValue(Info, 0.f);
+			MID->SetScalarParameterValue(Info.Name, 0.f);
 		}
 	}
 

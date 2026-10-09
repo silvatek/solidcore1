@@ -125,6 +125,8 @@ Source/
     SolidCore1GameMode.*
     SolidCore1PlayerController.*
     Terrain/
+      SolidCore1TerrainTypes.h
+      SolidCore1TerrainMap.*
       SolidCore1TerrainNoise.h
       SolidCore1TerrainChunk.*
       SolidCore1TerrainStreamer.*

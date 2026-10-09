@@ -598,6 +598,7 @@ void ASolidTerrainChunk::RebuildExplorationFog(
 		{
 			FogMeshComponent->SetMaterial(MatIndex, FogMaterials[MatIndex]);
 		}
+		// SetStaticMesh can restore default collision — force fog non-blocking again.
 		SolidTerrainChunkPrivate::ConfigureFogOverlay(FogMeshComponent);
 		FogMeshComponent->SetVisibility(true);
 		FogMeshComponent->SetHiddenInGame(false);

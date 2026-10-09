@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0063")
+#define SOLID_BUILD_ID TEXT("SC1-0064")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Fog checkerboard half + rebuild budget")
+#define SOLID_BUILD_NOTE TEXT("Fog stays outside clear; no camera block")
 #endif

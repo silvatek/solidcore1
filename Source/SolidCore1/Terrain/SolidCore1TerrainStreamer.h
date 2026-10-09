@@ -70,11 +70,11 @@ public:
 
 	/** Lighter grass shade for the FlatCol Base Color blend. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
-	FLinearColor GrassColor = FLinearColor(0.32f, 0.55f, 0.14f);
+	FLinearColor GrassColor = FLinearColor(0.12f, 0.28f, 0.07f);
 
 	/** Darker grass shade for the FlatCol Base Color blend. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
-	FLinearColor GrassDarkColor = FLinearColor(0.05f, 0.14f, 0.03f);
+	FLinearColor GrassDarkColor = FLinearColor(0.04f, 0.11f, 0.03f);
 
 	/** Seconds between streamer updates. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.05"))

@@ -88,7 +88,7 @@ SC1-0007 drops `UProceduralMeshComponent` after persistent ribbon/culling failur
 
 ## Quinn companion (SC1-0024)
 
-`ASolidCore1CompanionCharacter` spawns behind the player and follows with simple steering (no NavMesh — works on procedural terrain). SC1-0030 uses the Fab Viking (`/Game/Viking/Mesh/SK_Viking`) with idle/walk/run clip playback (custom skeleton — not Manny’s AnimBP). Manny remains the player pawn. GameMode flag: `bAutoSpawnCompanion`. HUD shows companion mesh name and distance.
+`ASolidCore1CompanionCharacter` spawns behind the player and follows with simple steering (no NavMesh — works on procedural terrain). Both player and companion use the Fab Viking (`/Game/Viking/Mesh/SK_Viking`) with idle/walk/run/(jump) clip playback (custom skeleton — not Epic AnimBP). GameMode flag: `bAutoSpawnCompanion`. HUD shows companion mesh name and distance. Set `bUseVikingVisuals=false` on the player to fall back to Manny.
 
 SC1-0025/0026: the player spring-arm camera shifts its `TargetOffset` toward the group center and lengthens so all companions stay in frame (`bFrameCompanions`). SC1-0026 uses screen-space fit, disables boom collision while companions are present (hill probes were collapsing the arm), and zooms in much slower than out so the shot does not pop narrow. SC1-0027 lifts the camera via spring-arm `SocketOffset` when the predicted camera point would sink below the procedural terrain height (keeps framing arm length intact).
 

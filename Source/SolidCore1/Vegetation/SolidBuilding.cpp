@@ -67,14 +67,14 @@ namespace
 		const FVector RidgeF(0.f, -Hy, Hh);
 		const FVector RidgeB(0.f, Hy, Hh);
 
-		// Front / back gables.
-		AddTri(EavesFL, EavesFR, RidgeF, FVector2D(0.f, 0.f), FVector2D(1.f, 0.f), FVector2D(0.5f, 1.f));
-		AddTri(EavesBR, EavesBL, RidgeB, FVector2D(0.f, 0.f), FVector2D(1.f, 0.f), FVector2D(0.5f, 1.f));
-		// Left / right slopes (two tris each).
-		AddTri(EavesFL, RidgeF, RidgeB, FVector2D(0.f, 0.f), FVector2D(1.f, 0.f), FVector2D(1.f, 1.f));
-		AddTri(EavesFL, RidgeB, EavesBL, FVector2D(0.f, 0.f), FVector2D(1.f, 1.f), FVector2D(0.f, 1.f));
-		AddTri(EavesFR, EavesBR, RidgeB, FVector2D(0.f, 0.f), FVector2D(0.f, 1.f), FVector2D(1.f, 1.f));
-		AddTri(EavesFR, RidgeB, RidgeF, FVector2D(0.f, 0.f), FVector2D(1.f, 1.f), FVector2D(1.f, 0.f));
+		// MeshDescription / UE culling uses the opposite of a right-hand Cross;
+		// wind clockwise so the red slopes face outward (SC1-0120 showed insides).
+		AddTri(EavesFL, RidgeF, EavesFR, FVector2D(0.f, 0.f), FVector2D(0.5f, 1.f), FVector2D(1.f, 0.f));
+		AddTri(EavesBR, RidgeB, EavesBL, FVector2D(0.f, 0.f), FVector2D(0.5f, 1.f), FVector2D(1.f, 0.f));
+		AddTri(EavesFL, RidgeB, RidgeF, FVector2D(0.f, 0.f), FVector2D(1.f, 1.f), FVector2D(1.f, 0.f));
+		AddTri(EavesFL, EavesBL, RidgeB, FVector2D(0.f, 0.f), FVector2D(0.f, 1.f), FVector2D(1.f, 1.f));
+		AddTri(EavesFR, RidgeB, EavesBR, FVector2D(0.f, 0.f), FVector2D(1.f, 1.f), FVector2D(0.f, 1.f));
+		AddTri(EavesFR, RidgeF, RidgeB, FVector2D(0.f, 0.f), FVector2D(1.f, 0.f), FVector2D(1.f, 1.f));
 		// No underside: it would sit on the cube top and z-fight.
 
 		FMeshDescription MeshDescription;

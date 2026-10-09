@@ -99,6 +99,10 @@ void ASolidHUD::DrawHUD()
 	Lines.Add(FString::Printf(TEXT("Build %s"), SOLID_BUILD_ID));
 	Lines.Add(FString::Printf(TEXT("Change: %s"), SOLID_BUILD_NOTE));
 
+	const float DeltaSeconds = GetWorld() ? GetWorld()->GetDeltaSeconds() : 0.f;
+	const float Fps = (DeltaSeconds > KINDA_SMALL_NUMBER) ? (1.f / DeltaSeconds) : 0.f;
+	Lines.Add(FString::Printf(TEXT("FPS %.0f  (%.1f ms)"), Fps, DeltaSeconds * 1000.f));
+
 	APawn* Pawn = GetOwningPawn();
 	ASolidTerrainStreamer* Streamer = SolidHUDPrivate::FindStreamer(GetWorld());
 

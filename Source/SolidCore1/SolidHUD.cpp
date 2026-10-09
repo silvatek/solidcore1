@@ -179,7 +179,7 @@ namespace SolidHUDPrivate
 			}
 
 			const FString DrawText = bActive
-				? FString::Printf(TEXT("▶ %s"), *SlotLines[LineIndex])
+				? FString::Printf(TEXT("> %s"), *SlotLines[LineIndex])
 				: (bTitle ? SlotLines[LineIndex] : FString::Printf(TEXT("  %s"), *SlotLines[LineIndex]));
 
 			FCanvasTextItem TextItem(FVector2D(PadX, Y), FText::FromString(DrawText), Font, Color);

@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0099")
+#define SOLID_BUILD_ID TEXT("SC1-0100")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Fix viewmode -DebugExecBindings exact match")
+#define SOLID_BUILD_NOTE TEXT("Battle Plans HUD panel (8 slots, active highlight)")
 #endif

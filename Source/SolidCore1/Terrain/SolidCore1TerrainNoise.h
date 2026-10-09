@@ -69,4 +69,15 @@ namespace SolidCore1TerrainNoise
 		// Keep in [0,1] for gentle rolling hills (no deep negative valleys).
 		return BaseHeight + N * Amplitude;
 	}
+
+	/**
+	 * Grass albedo tone in [0, 1] from world XY (cm). Higher frequency than height so patches
+	 * read as surface noise rather than hill-scale color bands.
+	 */
+	FORCEINLINE float SampleGrassTone(float WorldX, float WorldY, int32 Seed)
+	{
+		const float Low = Fbm2D(WorldX * 0.0011f, WorldY * 0.0011f, Seed + 9049, 4);
+		const float High = Fbm2D(WorldX * 0.0045f, WorldY * 0.0045f, Seed + 17231, 3);
+		return FMath::Clamp(Low * 0.55f + High * 0.45f, 0.f, 1.f);
+	}
 }

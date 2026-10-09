@@ -20,20 +20,29 @@ ASolidCore1TerrainStreamer::ASolidCore1TerrainStreamer()
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
 
-	// Prefer LevelPrototyping flat color (tintable to grass). WorldGrid remains a fallback.
-	static ConstructorHelpers::FObjectFinder<UMaterial> FlatColMat(
-		TEXT("/Game/LevelPrototyping/Materials/M_FlatCol.M_FlatCol"));
-	if (FlatColMat.Succeeded())
+	// PrototypeGrid gives lit dual-tone speckles we can tint as darker/lighter grass.
+	static ConstructorHelpers::FObjectFinder<UMaterial> ProtoGridMat(
+		TEXT("/Game/LevelPrototyping/Materials/M_PrototypeGrid.M_PrototypeGrid"));
+	if (ProtoGridMat.Succeeded())
 	{
-		TerrainMaterial = FlatColMat.Object;
+		TerrainMaterial = ProtoGridMat.Object;
 	}
 	else
 	{
-		static ConstructorHelpers::FObjectFinder<UMaterial> GridMat(
-			TEXT("/Engine/EngineMaterials/WorldGridMaterial.WorldGridMaterial"));
-		if (GridMat.Succeeded())
+		static ConstructorHelpers::FObjectFinder<UMaterial> FlatColMat(
+			TEXT("/Game/LevelPrototyping/Materials/M_FlatCol.M_FlatCol"));
+		if (FlatColMat.Succeeded())
 		{
-			TerrainMaterial = GridMat.Object;
+			TerrainMaterial = FlatColMat.Object;
+		}
+		else
+		{
+			static ConstructorHelpers::FObjectFinder<UMaterial> GridMat(
+				TEXT("/Engine/EngineMaterials/WorldGridMaterial.WorldGridMaterial"));
+			if (GridMat.Succeeded())
+			{
+				TerrainMaterial = GridMat.Object;
+			}
 		}
 	}
 }
@@ -133,6 +142,11 @@ UMaterialInterface* ASolidCore1TerrainStreamer::ResolveMaterial() const
 	if (!Parent)
 	{
 		Parent = LoadObject<UMaterialInterface>(
+			nullptr, TEXT("/Game/LevelPrototyping/Materials/M_PrototypeGrid.M_PrototypeGrid"));
+	}
+	if (!Parent)
+	{
+		Parent = LoadObject<UMaterialInterface>(
 			nullptr, TEXT("/Game/LevelPrototyping/Materials/M_FlatCol.M_FlatCol"));
 	}
 	if (!Parent)
@@ -143,16 +157,24 @@ UMaterialInterface* ASolidCore1TerrainStreamer::ResolveMaterial() const
 
 	if (Parent)
 	{
-		// Soft grassy look via MID tint (no grass texture pack in the project yet).
 		if (UMaterialInstanceDynamic* GrassMID = UMaterialInstanceDynamic::Create(Parent, MutableThis))
 		{
+			// Dual-tone grass: lighter field + darker speckles/grid. Also set BaseColor for FlatCol fallback.
+			GrassMID->SetVectorParameterValue(TEXT("BackgroundColor"), GrassColor);
+			GrassMID->SetVectorParameterValue(TEXT("Background Color"), GrassColor);
+			GrassMID->SetVectorParameterValue(TEXT("GridColor"), GrassDarkColor);
+			GrassMID->SetVectorParameterValue(TEXT("SubGridColor"), GrassDarkColor * 0.75f);
+			GrassMID->SetVectorParameterValue(TEXT("TopGridColor"), GrassColor * 0.85f);
+			GrassMID->SetVectorParameterValue(TEXT("TopSubGridGridColor"), GrassDarkColor);
 			GrassMID->SetVectorParameterValue(TEXT("BaseColor"), GrassColor);
-			GrassMID->SetVectorParameterValue(TEXT("Color"), GrassColor);
 			GrassMID->SetVectorParameterValue(TEXT("Base Color"), GrassColor);
-			GrassMID->SetScalarParameterValue(TEXT("Roughness"), 0.85f);
+			GrassMID->SetVectorParameterValue(TEXT("Color"), GrassColor);
+			GrassMID->SetScalarParameterValue(TEXT("Grid Size"), GrassGridSize);
+			GrassMID->SetScalarParameterValue(TEXT("GridSize"), GrassGridSize);
+			GrassMID->SetScalarParameterValue(TEXT("Roughness"), 0.88f);
 			MutableThis->ResolvedTerrainMaterial = GrassMID;
 			UE_LOG(LogSolidCore1, Warning,
-				TEXT("Terrain material: grassy MID from %s"), *Parent->GetName());
+				TEXT("Terrain material: grassy noisy MID from %s"), *Parent->GetName());
 			return ResolvedTerrainMaterial;
 		}
 	}

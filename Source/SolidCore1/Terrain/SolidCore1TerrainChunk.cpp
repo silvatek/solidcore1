@@ -99,10 +99,21 @@ void ASolidCore1TerrainChunk::BuildChunk(
 			MaxZ = FMath::Max(MaxZ, SurfaceZ);
 
 			Positions.Add(FVector(static_cast<float>(X) * Step, static_cast<float>(Y) * Step, SurfaceZ));
-			UVs.Add(FVector2D(static_cast<float>(X) / InQuadsPerSide, static_cast<float>(Y) / InQuadsPerSide));
 
-			const float T = FMath::Clamp((Height - InBaseHeight) / FMath::Max(InAmplitude, 1.f), 0.f, 1.f);
-			Colors.Add(FLinearColor::LerpUsingHSV(FLinearColor(0.2f, 0.55f, 0.15f), FLinearColor(0.55f, 0.5f, 0.35f), T));
+			// World-tiled UVs + noise warp so grass speckles don't seam on chunk borders.
+			const float GrassTone = SolidCore1TerrainNoise::SampleGrassTone(WorldX, WorldY, InSeed);
+			const float UVScale = 0.0024f;
+			const float Warp = (GrassTone - 0.5f) * 0.35f;
+			UVs.Add(FVector2D(WorldX * UVScale + Warp, WorldY * UVScale - Warp * 0.7f));
+
+			// Darker greens with high-frequency noise; slight dry tint on higher slopes.
+			const float HeightT = FMath::Clamp((Height - InBaseHeight) / FMath::Max(InAmplitude, 1.f), 0.f, 1.f);
+			const FLinearColor DarkGrass(0.05f, 0.12f, 0.04f);
+			const FLinearColor MidGrass(0.16f, 0.34f, 0.10f);
+			const FLinearColor DryGrass(0.28f, 0.30f, 0.12f);
+			FLinearColor Grass = FLinearColor::LerpUsingHSV(DarkGrass, MidGrass, GrassTone);
+			Grass = FLinearColor::LerpUsingHSV(Grass, DryGrass, HeightT * 0.35f);
+			Colors.Add(Grass);
 		}
 	}
 

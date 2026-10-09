@@ -64,13 +64,21 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.0"))
 	float CollisionHeightBias = 0.f;
 
-	/** Optional material override. Defaults to a grassy tint of LevelPrototyping M_FlatCol. */
+	/** Optional material override. Defaults to LevelPrototyping M_PrototypeGrid (grassy dual-tone). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	TObjectPtr<UMaterialInterface> TerrainMaterial;
 
-	/** Base color used when building the default grassy terrain MID. */
+	/** Lighter grass shade (PrototypeGrid background / flat-color fallback). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
-	FLinearColor GrassColor = FLinearColor(0.20f, 0.38f, 0.12f);
+	FLinearColor GrassColor = FLinearColor(0.22f, 0.40f, 0.13f);
+
+	/** Darker grass shade used for grid / noise contrast. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
+	FLinearColor GrassDarkColor = FLinearColor(0.07f, 0.16f, 0.05f);
+
+	/** PrototypeGrid cell size — smaller => denser speckles. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.01"))
+	float GrassGridSize = 0.08f;
 
 	/** Seconds between streamer updates. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.05"))

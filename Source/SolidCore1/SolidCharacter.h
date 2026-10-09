@@ -15,7 +15,7 @@ class UAnimSequence;
 
 /**
  * Captain — the single player-controlled character.
- * Party camera framing lives in SolidCharacterPartyCamera.cpp;
+ * Party camera framing lives in SolidPartyCamera.cpp;
  * Viking visuals in SolidCharacterVisuals.cpp; runtime input in SolidCharacterInput.cpp.
  */
 UCLASS(config = Game)

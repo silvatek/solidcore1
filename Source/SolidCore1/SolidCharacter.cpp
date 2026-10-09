@@ -17,7 +17,7 @@
 // Captain core: construction, lifecycle, movement / look / zoom / sprint.
 // Input factory → SolidCharacterInput.cpp
 // Viking visuals → SolidCharacterVisuals.cpp
-// Party camera → SolidCharacterPartyCamera.cpp
+// Party camera → SolidPartyCamera.cpp
 
 ASolidCharacter::ASolidCharacter()
 {

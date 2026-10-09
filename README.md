@@ -152,7 +152,7 @@ Goal: the world starts shrouded; fog clears only where the **pawn has been** (tr
 
 `ASolidCompanionCharacter` spawns behind the player and follows with simple steering (no NavMesh — works on procedural terrain). Same Fab Viking mesh + clip locomotion as the player. GameMode flag: `bAutoSpawnCompanion`. HUD shows companion mesh name and distance.
 
-**Party camera** (SC1-0025/0026/0084): the Captain spring-arm shifts `TargetOffset` toward the Party center and may lengthen so Companions stay in frame (`bFrameCompanions`; implementation in `SolidCharacterPartyCamera.cpp`). SC1-0026 uses screen-space fit, disables boom collision while Companions are present, and zooms in much slower than out. SC1-0027 lifts the camera via `SocketOffset` when the predicted camera point would sink below procedural terrain.
+**Party camera** (SC1-0025/0026/0084): the Captain spring-arm shifts `TargetOffset` toward the Party center and may lengthen so Companions stay in frame (`bFrameCompanions`; implementation in `SolidPartyCamera.cpp`). SC1-0026 uses screen-space fit, disables boom collision while Companions are present, and zooms in much slower than out. SC1-0027 lifts the camera via `SocketOffset` when the predicted camera point would sink below procedural terrain.
 
 ## Create the open-world map
 
@@ -187,7 +187,7 @@ Source/
     SolidCharacter.h / .cpp              # Captain core (move/look/zoom/sprint)
     SolidCharacterInput.cpp              # Runtime Enhanced Input factory
     SolidCharacterVisuals.cpp            # Viking mesh + clip locomotion
-    SolidCharacterPartyCamera.cpp        # Party framing + terrain boom lift
+    SolidPartyCamera.cpp                 # Party framing + terrain boom lift
     SolidGameMode.*
     SolidPlayerController.*
     SolidMaterials.*       # Shared FlatCol solid-color MID helper

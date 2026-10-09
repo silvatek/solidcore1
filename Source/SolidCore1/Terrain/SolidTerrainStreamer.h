@@ -119,6 +119,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	TWeakObjectPtr<AActor> FocusActor;
 
+	/**
+	 * Planar offset from the WorldMap Z-town centroid for the Captain spawn.
+	 * The monolith stays at the centroid; this keeps the pawn outside the slab.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Start Town")
+	FVector2D StartTownPawnOffsetXY = FVector2D(0.f, -450.f);
+
 	/** Keep the focus pawn on the terrain surface (retries while falling / far below). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	bool bSnapFocusToTerrain = true;

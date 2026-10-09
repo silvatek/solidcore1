@@ -221,7 +221,6 @@ void ASolidBuilding::BuildVisuals()
 
 	// Engine cube is ~100cm with pivot at center.
 	constexpr float ShapeSize = 100.f;
-	constexpr float RoofOverhang = 1.08f;
 
 	BodyMesh->SetStaticMesh(Cube);
 	BodyMesh->SetRelativeLocation(FVector(0.f, 0.f, BodyHeightCm * 0.5f));
@@ -235,7 +234,8 @@ void ASolidBuilding::BuildVisuals()
 		BodyMesh->SetMaterial(0, BodyMat);
 	}
 
-	// Unit gable prism: 100x100 base, 100 tall, ridge along local Y. Scale to footprint + overhang.
+	// Unit gable prism: 100x100 base, 100 tall, ridge along local Y.
+	// Scale XY to match the body footprint exactly (ridge through the middle).
 	UStaticMesh* Roof = BuildUnitGablePrismMesh(this);
 	if (!Roof)
 	{
@@ -250,8 +250,8 @@ void ASolidBuilding::BuildVisuals()
 	{
 		RoofMesh->SetRelativeRotation(FRotator::ZeroRotator);
 		RoofMesh->SetRelativeScale3D(FVector(
-			(FootprintXCm * RoofOverhang) / ShapeSize,
-			(FootprintYCm * RoofOverhang) / ShapeSize,
+			FootprintXCm / ShapeSize,
+			FootprintYCm / ShapeSize,
 			RoofHeightCm / ShapeSize));
 	}
 	else
@@ -259,8 +259,8 @@ void ASolidBuilding::BuildVisuals()
 		// Rotate so the ridge follows the longer X axis.
 		RoofMesh->SetRelativeRotation(FRotator(0.f, 90.f, 0.f));
 		RoofMesh->SetRelativeScale3D(FVector(
-			(FootprintYCm * RoofOverhang) / ShapeSize,
-			(FootprintXCm * RoofOverhang) / ShapeSize,
+			FootprintYCm / ShapeSize,
+			FootprintXCm / ShapeSize,
 			RoofHeightCm / ShapeSize));
 	}
 	if (UMaterialInterface* RoofMat =

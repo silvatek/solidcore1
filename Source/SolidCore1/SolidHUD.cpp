@@ -3,6 +3,7 @@
 #include "SolidCharacter.h"
 #include "SolidGameMode.h"
 #include "Companion/SolidCompanionCharacter.h"
+#include "Party/SolidBattlePlan.h"
 #include "Party/SolidParty.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
@@ -22,19 +23,20 @@
 
 namespace SolidHUDPrivate
 {
-	static void DrawLines(
+	/** Draw a top-left text block. Returns Y just below the block (including padding). */
+	static float DrawLines(
 		UCanvas* Canvas,
 		UFont* Font,
 		const TArray<FString>& Lines,
-		const FLinearColor& TextColor)
+		const FLinearColor& TextColor,
+		float StartY = 12.f)
 	{
 		if (!Canvas || Lines.Num() == 0)
 		{
-			return;
+			return StartY;
 		}
 
 		const float PadX = 16.f;
-		const float PadY = 12.f;
 		const float LineGap = 2.f;
 		const float BoxPad = 6.f;
 
@@ -59,13 +61,13 @@ namespace SolidHUDPrivate
 
 		const float BlockHeight = Lines.Num() * LineHeight + (Lines.Num() - 1) * LineGap;
 		FCanvasTileItem Background(
-			FVector2D(PadX - BoxPad, PadY - BoxPad * 0.5f),
+			FVector2D(PadX - BoxPad, StartY - BoxPad * 0.5f),
 			FVector2D(MaxWidth + BoxPad * 2.f, BlockHeight + BoxPad),
 			FLinearColor(0.f, 0.f, 0.f, 0.55f));
 		Background.BlendMode = SE_BLEND_Translucent;
 		Canvas->DrawItem(Background);
 
-		float Y = PadY;
+		float Y = StartY;
 		for (const FString& Line : Lines)
 		{
 			FCanvasTextItem TextItem(FVector2D(PadX, Y), FText::FromString(Line), Font, TextColor);
@@ -73,6 +75,120 @@ namespace SolidHUDPrivate
 			Canvas->DrawItem(TextItem);
 			Y += LineHeight + LineGap;
 		}
+
+		return Y + BoxPad;
+	}
+
+	static FString FormatBattlePlanSlotLine(const int32 SlotIndex, const FSolidBattlePlan* Plan)
+	{
+		const int32 KeyNumber = SlotIndex + 1;
+		if (Plan)
+		{
+			return FString::Printf(TEXT("F%d  %s"), KeyNumber, *Plan->Name);
+		}
+		return FString::Printf(TEXT("F%d  —"), KeyNumber);
+	}
+
+	/** Battle-plan slot list under the tech HUD. Returns Y below the panel. */
+	static float DrawBattlePlansPanel(
+		UCanvas* Canvas,
+		UFont* Font,
+		const USolidParty* Party,
+		const float StartY)
+	{
+		if (!Canvas)
+		{
+			return StartY;
+		}
+
+		const float PadX = 16.f;
+		const float LineGap = 2.f;
+		const float BoxPad = 6.f;
+		const float GapAbove = 10.f;
+		const float PanelTop = StartY + GapAbove;
+
+		const int32 ActiveSlot = Party ? Party->GetActiveAssignedSlot() : INDEX_NONE;
+		const int32 SlotCount = SolidBattleFormationSlots::MaxAssignedBattlePlans;
+
+		TArray<FString> SlotLines;
+		SlotLines.Reserve(SlotCount + 1);
+		SlotLines.Add(TEXT("Battle Plans"));
+		for (int32 Slot = 0; Slot < SlotCount; ++Slot)
+		{
+			const FSolidBattlePlan* Plan = Party ? Party->GetAssignedBattlePlan(Slot) : nullptr;
+			SlotLines.Add(FormatBattlePlanSlotLine(Slot, Plan));
+		}
+
+		float MaxWidth = 0.f;
+		float LineHeight = 14.f;
+		for (const FString& Line : SlotLines)
+		{
+			float W = 0.f;
+			float H = 0.f;
+			if (Font)
+			{
+				Canvas->StrLen(Font, Line, W, H);
+			}
+			else
+			{
+				W = static_cast<float>(Line.Len() * 8);
+				H = 14.f;
+			}
+			MaxWidth = FMath::Max(MaxWidth, W);
+			LineHeight = FMath::Max(LineHeight, H);
+		}
+		// Room for active marker prefix.
+		MaxWidth += 16.f;
+
+		const float BlockHeight = SlotLines.Num() * LineHeight + (SlotLines.Num() - 1) * LineGap;
+		FCanvasTileItem Background(
+			FVector2D(PadX - BoxPad, PanelTop - BoxPad * 0.5f),
+			FVector2D(MaxWidth + BoxPad * 2.f, BlockHeight + BoxPad),
+			FLinearColor(0.f, 0.f, 0.f, 0.55f));
+		Background.BlendMode = SE_BLEND_Translucent;
+		Canvas->DrawItem(Background);
+
+		const FLinearColor TitleColor(0.85f, 0.88f, 0.92f);
+		const FLinearColor ActiveColor(1.f, 0.84f, 0.47f);      // warm amber (matches Captain label)
+		const FLinearColor FilledColor(0.82f, 0.86f, 0.90f);
+		const FLinearColor EmptyColor(0.45f, 0.48f, 0.52f);
+
+		float Y = PanelTop;
+		for (int32 LineIndex = 0; LineIndex < SlotLines.Num(); ++LineIndex)
+		{
+			const bool bTitle = (LineIndex == 0);
+			const int32 Slot = LineIndex - 1;
+			const bool bActive = !bTitle && Party && Slot == ActiveSlot
+				&& Party->GetAssignedBattlePlan(Slot) != nullptr;
+			const bool bFilled = !bTitle && Party && Party->GetAssignedBattlePlan(Slot) != nullptr;
+
+			FLinearColor Color = TitleColor;
+			if (!bTitle)
+			{
+				Color = bActive ? ActiveColor : (bFilled ? FilledColor : EmptyColor);
+			}
+
+			if (bActive)
+			{
+				FCanvasTileItem Highlight(
+					FVector2D(PadX - BoxPad + 2.f, Y - 1.f),
+					FVector2D(MaxWidth + BoxPad * 2.f - 4.f, LineHeight + 2.f),
+					FLinearColor(0.85f, 0.68f, 0.32f, 0.22f));
+				Highlight.BlendMode = SE_BLEND_Translucent;
+				Canvas->DrawItem(Highlight);
+			}
+
+			const FString DrawText = bActive
+				? FString::Printf(TEXT("▶ %s"), *SlotLines[LineIndex])
+				: (bTitle ? SlotLines[LineIndex] : FString::Printf(TEXT("  %s"), *SlotLines[LineIndex]));
+
+			FCanvasTextItem TextItem(FVector2D(PadX, Y), FText::FromString(DrawText), Font, Color);
+			TextItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.9f));
+			Canvas->DrawItem(TextItem);
+			Y += LineHeight + LineGap;
+		}
+
+		return Y + BoxPad;
 	}
 }
 
@@ -105,17 +221,6 @@ void ASolidHUD::DrawHUD()
 		: 0.f;
 	const float AvgMs = (AvgFps > KINDA_SMALL_NUMBER) ? (1000.f / AvgFps) : (DeltaSeconds * 1000.f);
 	Lines.Add(FString::Printf(TEXT("FPS %.0f  (%.1f ms, %.1fs avg)"), AvgFps, AvgMs, FpsAverageWindowSeconds));
-
-	if (UWorld* World = GetWorld())
-	{
-		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
-		{
-			if (const USolidParty* Party = GameMode->GetParty())
-			{
-				Lines.Add(Party->GetActiveBattlePlanDebugString());
-			}
-		}
-	}
 
 	APawn* Pawn = GetOwningPawn();
 	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(GetWorld());
@@ -237,5 +342,15 @@ void ASolidHUD::DrawHUD()
 	}
 
 	UFont* Font = GEngine ? GEngine->GetSmallFont() : nullptr;
-	SolidHUDPrivate::DrawLines(Canvas, Font, Lines, FLinearColor::White);
+	const float BelowTech = SolidHUDPrivate::DrawLines(Canvas, Font, Lines, FLinearColor::White);
+
+	const USolidParty* Party = nullptr;
+	if (UWorld* World = GetWorld())
+	{
+		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+		{
+			Party = GameMode->GetParty();
+		}
+	}
+	SolidHUDPrivate::DrawBattlePlansPanel(Canvas, Font, Party, BelowTech);
 }

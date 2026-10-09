@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0051")
+#define SOLID_BUILD_ID TEXT("SC1-0052")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Show FPS on debug HUD")
+#define SOLID_BUILD_NOTE TEXT("Avg FPS 2s; denser closer fog")
 #endif

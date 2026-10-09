@@ -11,4 +11,12 @@ class SOLIDCORE1_API ASolidHUD : public AHUD
 
 public:
 	virtual void DrawHUD() override;
+
+protected:
+	/** Wall-clock timestamps (seconds) for frames in the rolling FPS window. */
+	TArray<double> RecentFrameTimes;
+
+	/** Rolling average window for the FPS gauge. */
+	UPROPERTY(EditAnywhere, Category = "HUD")
+	float FpsAverageWindowSeconds = 2.f;
 };

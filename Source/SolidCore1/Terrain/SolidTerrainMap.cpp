@@ -214,12 +214,13 @@ void USolidTerrainMap::FillThreatAndFog(
 	}
 
 	// Initial exploration fog by distance from world origin (cm).
+	// Bands are 25% of the original 100m / 200m distances.
 	const float DistM = FVector2D(Point.X, Point.Y).Size() * 0.01f;
-	if (DistM > 200.f)
+	if (DistM > 50.f)
 	{
 		Point.Fog = 1.f;
 	}
-	else if (DistM >= 100.f)
+	else if (DistM >= 25.f)
 	{
 		Point.Fog = 0.5f;
 	}

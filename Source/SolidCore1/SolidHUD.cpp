@@ -100,8 +100,21 @@ void ASolidHUD::DrawHUD()
 	Lines.Add(FString::Printf(TEXT("Change: %s"), SOLID_BUILD_NOTE));
 
 	const float DeltaSeconds = GetWorld() ? GetWorld()->GetDeltaSeconds() : 0.f;
-	const float Fps = (DeltaSeconds > KINDA_SMALL_NUMBER) ? (1.f / DeltaSeconds) : 0.f;
-	Lines.Add(FString::Printf(TEXT("FPS %.0f  (%.1f ms)"), Fps, DeltaSeconds * 1000.f));
+	const double NowSeconds = FPlatformTime::Seconds();
+	RecentFrameTimes.Add(NowSeconds);
+	const double WindowStart = NowSeconds - static_cast<double>(FMath::Max(FpsAverageWindowSeconds, 0.1f));
+	while (RecentFrameTimes.Num() > 0 && RecentFrameTimes[0] < WindowStart)
+	{
+		RecentFrameTimes.RemoveAt(0, 1, EAllowShrinking::No);
+	}
+	const double Elapsed = (RecentFrameTimes.Num() >= 2)
+		? (RecentFrameTimes.Last() - RecentFrameTimes[0])
+		: static_cast<double>(DeltaSeconds);
+	const float AvgFps = (Elapsed > KINDA_SMALL_NUMBER)
+		? static_cast<float>(FMath::Max(RecentFrameTimes.Num() - 1, 1)) / static_cast<float>(Elapsed)
+		: 0.f;
+	const float AvgMs = (AvgFps > KINDA_SMALL_NUMBER) ? (1000.f / AvgFps) : (DeltaSeconds * 1000.f);
+	Lines.Add(FString::Printf(TEXT("FPS %.0f  (%.1f ms, %.1fs avg)"), AvgFps, AvgMs, FpsAverageWindowSeconds));
 
 	APawn* Pawn = GetOwningPawn();
 	ASolidTerrainStreamer* Streamer = SolidHUDPrivate::FindStreamer(GetWorld());

@@ -178,7 +178,8 @@ void ASolidTerrainStreamer::EnsureHeightFog()
 		FogComp->VolumetricFogExtinctionScale = 0.8f;
 		FogComp->FogHeightFalloff = 0.12f;
 		FogComp->SetFogInscatteringColor(FogMistColor);
-		FogComp->SetVolumetricFogDistance(50000.f);
+		// 25% of the previous 50 km volumetric range (matches tighter fog bands).
+		FogComp->SetVolumetricFogDistance(12500.f);
 	}
 }
 
@@ -214,9 +215,9 @@ float ASolidTerrainStreamer::SampleViewFogAmount() const
 	const float LocalFog = GetTerrainPointAt(SampleOrigin).Fog;
 	float MaxFog = LocalFog;
 
-	// Probe along the view so distant foggy TerrainPoints thicken mist when looking outward.
+	// Probe along the view (25% of prior distances) so mist reacts to nearer fog bands.
 	static const float ProbeDistancesCm[] = {
-		5000.f, 10000.f, 15000.f, 20000.f, 30000.f, 45000.f
+		1250.f, 2500.f, 3750.f, 5000.f, 7500.f, 11250.f
 	};
 	for (const float DistanceCm : ProbeDistancesCm)
 	{
@@ -258,10 +259,10 @@ void ASolidTerrainStreamer::UpdateTerrainFog(float DeltaSeconds)
 
 	const float Amount = FMath::Clamp(RenderedFogAmount, 0.f, 1.f);
 	// Keep a tiny clear-air density so the component stays active; ramp hard with TerrainPoint fog.
-	const float Density = FMath::Lerp(0.00005f, FogDensityAtFull, Amount * Amount);
+	const float Density = FMath::Lerp(0.00008f, FogDensityAtFull, Amount);
 	const float MaxOpacity = FMath::Lerp(0.0f, FogMaxOpacityAtFull, Amount);
-	// Push start distance out slightly when clear so near terrain stays crisp.
-	const float StartDistance = FMath::Lerp(800.f, 50.f, Amount);
+	// Start distances are 25% of the prior 800→50 cm range so mist begins closer.
+	const float StartDistance = FMath::Lerp(200.f, 12.5f, Amount);
 
 	FogComp->SetFogDensity(Density);
 	FogComp->SetFogMaxOpacity(MaxOpacity);

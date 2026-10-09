@@ -8,9 +8,9 @@
  * SOLIDCORE1_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLIDCORE1_BUILD_ID
-#define SOLIDCORE1_BUILD_ID TEXT("SC1-0032")
+#define SOLIDCORE1_BUILD_ID TEXT("SC1-0033")
 #endif
 
 #ifndef SOLIDCORE1_BUILD_NOTE
-#define SOLIDCORE1_BUILD_NOTE TEXT("Viking run sync; zoom owns arm length")
+#define SOLIDCORE1_BUILD_NOTE TEXT("Invert mouse-wheel zoom direction")
 #endif

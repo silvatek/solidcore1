@@ -21,10 +21,15 @@ bool FSolidMapBuildSmokeTest::RunTest(const FString& Parameters)
 	const FSolidTerrainPoint Origin = Map->SamplePoint(FogOrigin.X, FogOrigin.Y);
 	TestTrue(TEXT("fog origin starts clear"), FMath::IsNearlyEqual(Origin.Fog, 0.f));
 
-	const FSolidTerrainPoint Far = Map->SamplePoint(FogOrigin.X + 6000.f, FogOrigin.Y); // 60m
+	// Probe toward map interior so 60m/35m samples are not edge-clamped.
+	const FVector2D Dir = SolidTerrainTestHelpers::InBoundsFogProbeDir(Map, 6000.f);
+	const FVector2D FarXY = FogOrigin + Dir * 6000.f;
+	const FVector2D MidXY = FogOrigin + Dir * 3500.f;
+
+	const FSolidTerrainPoint Far = Map->SamplePoint(FarXY.X, FarXY.Y);
 	TestTrue(TEXT("60m starts fully fogged"), FMath::IsNearlyEqual(Far.Fog, 1.f));
 
-	const FSolidTerrainPoint Mid = Map->SamplePoint(FogOrigin.X + 3500.f, FogOrigin.Y); // 35m
+	const FSolidTerrainPoint Mid = Map->SamplePoint(MidXY.X, MidXY.Y);
 	TestTrue(TEXT("35m starts at half fog"), FMath::IsNearlyEqual(Mid.Fog, 0.5f));
 
 	return true;
@@ -40,31 +45,46 @@ bool FSolidMapTrailClearTest::RunTest(const FString& Parameters)
 	USolidTerrainMap* Map = SolidTerrainTestHelpers::MakeSmallMap();
 	TestNotNull(TEXT("map object"), Map);
 
-	// ~70.7m from origin → starts at full fog; stays inside ±6400cm map bounds for probes.
-	constexpr float TrailX = 5000.f;
-	constexpr float TrailY = 5000.f;
-	TestTrue(TEXT("precondition: trail center fogged"),
-		FMath::IsNearlyEqual(Map->SamplePoint(TrailX, TrailY).Fog, 1.f));
+	FVector2D TrailXY = FVector2D::ZeroVector;
+	TestTrue(TEXT("found fully-fogged in-bounds trail point"),
+		SolidTerrainTestHelpers::FindFullyFoggedTrailPoint(Map, TrailXY));
 
-	const int32 Changed = Map->ApplyExplorationFogAround(TrailX, TrailY);
+	const FVector2D FogOrigin = Map->GetFogOriginXY();
+	FVector2D TowardOrigin = FogOrigin - TrailXY;
+	if (!TowardOrigin.Normalize())
+	{
+		TowardOrigin = FVector2D(-1.f, 0.f);
+	}
+
+	TestTrue(TEXT("precondition: trail center fogged"),
+		FMath::IsNearlyEqual(Map->SamplePoint(TrailXY.X, TrailXY.Y).Fog, 1.f));
+
+	const int32 Changed = Map->ApplyExplorationFogAround(TrailXY.X, TrailXY.Y);
 	TestTrue(TEXT("trail clear changed some points"), Changed > 0);
 
 	TestTrue(TEXT("trail center cleared"),
-		FMath::IsNearlyEqual(Map->SamplePoint(TrailX, TrailY).Fog, 0.f));
+		FMath::IsNearlyEqual(Map->SamplePoint(TrailXY.X, TrailXY.Y).Fog, 0.f));
 
-	// 15m toward origin — still inside clear radius (25m), was full fog before.
+	// 15m toward fog origin — still inside clear radius (25m).
+	const FVector2D ClearXY = TrailXY + TowardOrigin * 1500.f;
 	TestTrue(TEXT("15m from trail is clear"),
-		FMath::IsNearlyEqual(Map->SamplePoint(TrailX - 1500.f, TrailY).Fog, 0.f));
+		FMath::IsNearlyEqual(Map->SamplePoint(ClearXY.X, ClearXY.Y).Fog, 0.f));
 
-	// 35m toward origin — half ring; was full fog before trail.
-	const float HalfFog = Map->SamplePoint(TrailX - 3500.f, TrailY).Fog;
+	// 35m toward fog origin — half ring.
+	const FVector2D HalfXY = TrailXY + TowardOrigin * 3500.f;
+	const float HalfFog = Map->SamplePoint(HalfXY.X, HalfXY.Y).Fog;
 	TestTrue(TEXT("35m from trail is half fog"), FMath::IsNearlyEqual(HalfFog, 0.5f));
 
-	// Far opposite corner — outside apply radius, still full fog.
-	const float Untouched = Map->SamplePoint(-5000.f, -5000.f).Fog;
-	TestTrue(TEXT("opposite far side still full fog"), FMath::IsNearlyEqual(Untouched, 1.f));
+	// Far opposite corner from the trail — outside apply radius, still full fog.
+	const FVector2D MinXY = Map->GetWorldMinXY();
+	const FVector2D MaxXY = Map->GetWorldMaxXY();
+	const FVector2D UntouchedXY(
+		(TrailXY.X > 0.f) ? MinXY.X + 500.f : MaxXY.X - 500.f,
+		(TrailXY.Y > 0.f) ? MinXY.Y + 500.f : MaxXY.Y - 500.f);
+	const float Untouched = Map->SamplePoint(UntouchedXY.X, UntouchedXY.Y).Fog;
+	TestTrue(TEXT("far opposite side still full fog"), FMath::IsNearlyEqual(Untouched, 1.f));
 
-	const int32 Second = Map->ApplyExplorationFogAround(TrailX, TrailY);
+	const int32 Second = Map->ApplyExplorationFogAround(TrailXY.X, TrailXY.Y);
 	TestEqual(TEXT("second apply is idempotent"), Second, 0);
 
 	return true;

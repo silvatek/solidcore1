@@ -1,6 +1,7 @@
 #pragma once
 
 #include "SolidTerrainMap.h"
+#include "SolidTerrainFog.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -24,6 +25,81 @@ namespace SolidTerrainTestHelpers
 			/*InPointSpacing=*/200.f,
 			/*bForceRebuild=*/true);
 		return Map;
+	}
+
+	/**
+	 * Unit direction from FogOrigin toward the map interior that keeps DistCm
+	 * probes inside world bounds (avoids edge clamp after Z-town fog origin moves).
+	 */
+	inline FVector2D InBoundsFogProbeDir(const USolidTerrainMap* Map, float DistCm)
+	{
+		const FVector2D Origin = Map->GetFogOriginXY();
+		const FVector2D MinXY = Map->GetWorldMinXY();
+		const FVector2D MaxXY = Map->GetWorldMaxXY();
+		const FVector2D Center = (MinXY + MaxXY) * 0.5f;
+
+		FVector2D Dir = Center - Origin;
+		if (Dir.SizeSquared() < 1.f)
+		{
+			Dir = FVector2D(-1.f, 0.f);
+		}
+		Dir.Normalize();
+
+		const FVector2D Probe = Origin + Dir * DistCm;
+		const bool bInside =
+			Probe.X >= MinXY.X && Probe.X <= MaxXY.X
+			&& Probe.Y >= MinXY.Y && Probe.Y <= MaxXY.Y;
+		if (bInside)
+		{
+			return Dir;
+		}
+
+		// Fall back to axis toward the farther map edge.
+		const float RoomNegX = Origin.X - MinXY.X;
+		const float RoomPosX = MaxXY.X - Origin.X;
+		const float RoomNegY = Origin.Y - MinXY.Y;
+		const float RoomPosY = MaxXY.Y - Origin.Y;
+		const float Best = FMath::Max3(FMath::Max(RoomNegX, RoomPosX), RoomNegY, RoomPosY);
+		if (Best == RoomNegX) return FVector2D(-1.f, 0.f);
+		if (Best == RoomPosX) return FVector2D(1.f, 0.f);
+		if (Best == RoomNegY) return FVector2D(0.f, -1.f);
+		return FVector2D(0.f, 1.f);
+	}
+
+	/** A point that starts at full fog and leaves room for ±35m trail probes in-bounds. */
+	inline bool FindFullyFoggedTrailPoint(const USolidTerrainMap* Map, FVector2D& OutTrailXY)
+	{
+		if (!Map || !Map->IsBuilt())
+		{
+			return false;
+		}
+
+		const FVector2D FogOrigin = Map->GetFogOriginXY();
+		const FVector2D MinXY = Map->GetWorldMinXY();
+		const FVector2D MaxXY = Map->GetWorldMaxXY();
+		constexpr float MarginCm = 4000.f; // room for 35m probe toward fog origin
+		constexpr float FullFogCm = SolidTerrainFog::FullFogStartMeters * 100.f + 500.f;
+
+		const FVector2D Candidates[] = {
+			FVector2D(MinXY.X + MarginCm, MinXY.Y + MarginCm),
+			FVector2D(MaxXY.X - MarginCm, MinXY.Y + MarginCm),
+			FVector2D(MinXY.X + MarginCm, MaxXY.Y - MarginCm),
+			FVector2D(MaxXY.X - MarginCm, MaxXY.Y - MarginCm),
+		};
+
+		for (const FVector2D& Candidate : Candidates)
+		{
+			if (FVector2D::Distance(Candidate, FogOrigin) < FullFogCm)
+			{
+				continue;
+			}
+			if (FMath::IsNearlyEqual(Map->SamplePoint(Candidate.X, Candidate.Y).Fog, 1.f))
+			{
+				OutTrailXY = Candidate;
+				return true;
+			}
+		}
+		return false;
 	}
 }
 

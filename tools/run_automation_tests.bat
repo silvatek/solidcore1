@@ -53,14 +53,15 @@ if exist "%LOGFILE%" (
   for /f %%C in ('findstr /R /C:"Result={Fail}" "%LOGFILE%" 2^>nul ^| find /C /V ""') do set "FAILED=%%C"
   set /a RAN=PASSED+FAILED
 
-  rem Extract failed test Path={...} (fallback Name={...}) into a side file.
+  rem Robust Path/Name extraction via PowerShell (cmd *substitution mangles braces).
   if not "!FAILED!"=="0" (
-    >"%FAILLIST%" (
-      for /f "usebackq delims=" %%L in (`findstr /C:"Result={Fail}" "%LOGFILE%" 2^>nul`) do (
-        set "LINE=%%L"
-        call :EmitFailName
-      )
-    )
+    powershell -NoProfile -Command ^
+      "$p='%LOGFILE%';" ^
+      "Get-Content -LiteralPath $p | Where-Object { $_ -match 'Result=\{Fail\}' } | ForEach-Object {" ^
+      "  if ($_ -match 'Path=\{([^}]+)\}') { $matches[1] }" ^
+      "  elseif ($_ -match 'Name=\{([^}]+)\}') { $matches[1] }" ^
+      "  else { $_ }" ^
+      "} | ForEach-Object { $_.Trim() } | Where-Object { $_ } | Set-Content -LiteralPath '%FAILLIST%'"
   )
 ) else (
   echo WARNING: automation log not found at "%LOGFILE%"
@@ -84,22 +85,3 @@ echo =========================================
 if not "!FAILED!"=="0" if "%ERR%"=="0" set "ERR=1"
 
 exit /b %ERR%
-
-rem ---------------------------------------------------------------------------
-rem Uses LINE from caller. Prefers Path={...}; falls back to Name={...}.
-rem ---------------------------------------------------------------------------
-:EmitFailName
-set "OUT="
-set "TMP=!LINE:*Path={=!"
-if not "!TMP!"=="!LINE!" (
-  for /f "delims=}" %%P in ("!TMP!") do set "OUT=%%P"
-)
-if not defined OUT (
-  set "TMP=!LINE:*Name={=!"
-  if not "!TMP!"=="!LINE!" (
-    for /f "delims=}" %%N in ("!TMP!") do set "OUT=%%N"
-  )
-)
-if not defined OUT set "OUT=!LINE!"
-echo(!OUT!
-goto :eof

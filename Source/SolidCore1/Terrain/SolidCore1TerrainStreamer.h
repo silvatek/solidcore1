@@ -6,6 +6,7 @@
 
 class ASolidCore1TerrainChunk;
 class UMaterialInterface;
+class UTexture2D;
 
 /**
  * Spawns / destroys runtime procedural terrain chunks around a focus actor (usually the player pawn).
@@ -64,21 +65,21 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.0"))
 	float CollisionHeightBias = 0.f;
 
-	/** Optional material override. Defaults to LevelPrototyping M_PrototypeGrid (grassy dual-tone). */
+	/** Optional material override. Empty => build grassy MID at runtime. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	TObjectPtr<UMaterialInterface> TerrainMaterial;
 
-	/** Lighter grass shade (PrototypeGrid background / flat-color fallback). */
+	/** Lighter grass shade in the generated noise texture / FlatCol fallback. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
-	FLinearColor GrassColor = FLinearColor(0.22f, 0.40f, 0.13f);
+	FLinearColor GrassColor = FLinearColor(0.24f, 0.42f, 0.14f);
 
-	/** Darker grass shade used for grid / noise contrast. */
+	/** Darker grass shade in the generated noise texture. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
-	FLinearColor GrassDarkColor = FLinearColor(0.07f, 0.16f, 0.05f);
+	FLinearColor GrassDarkColor = FLinearColor(0.06f, 0.14f, 0.04f);
 
-	/** PrototypeGrid cell size — smaller => denser speckles. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.01"))
-	float GrassGridSize = 0.08f;
+	/** Resolution of the runtime grass noise texture (power of two). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "64", ClampMax = "1024"))
+	int32 GrassNoiseTextureSize = 256;
 
 	/** Seconds between streamer updates. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.05"))

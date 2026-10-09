@@ -9,6 +9,7 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "Components/CapsuleComponent.h"
+#include "Engine/Texture2D.h"
 #include "Materials/Material.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
@@ -20,30 +21,12 @@ ASolidCore1TerrainStreamer::ASolidCore1TerrainStreamer()
 	PrimaryActorTick.bCanEverTick = true;
 	PrimaryActorTick.bStartWithTickEnabled = true;
 
-	// PrototypeGrid gives lit dual-tone speckles we can tint as darker/lighter grass.
-	static ConstructorHelpers::FObjectFinder<UMaterial> ProtoGridMat(
-		TEXT("/Game/LevelPrototyping/Materials/M_PrototypeGrid.M_PrototypeGrid"));
-	if (ProtoGridMat.Succeeded())
+	// Prefer FlatCol (reliable Base Color tint). PrototypeGrid is used when we can replace its Texture.
+	static ConstructorHelpers::FObjectFinder<UMaterial> FlatColMat(
+		TEXT("/Game/LevelPrototyping/Materials/M_FlatCol.M_FlatCol"));
+	if (FlatColMat.Succeeded())
 	{
-		TerrainMaterial = ProtoGridMat.Object;
-	}
-	else
-	{
-		static ConstructorHelpers::FObjectFinder<UMaterial> FlatColMat(
-			TEXT("/Game/LevelPrototyping/Materials/M_FlatCol.M_FlatCol"));
-		if (FlatColMat.Succeeded())
-		{
-			TerrainMaterial = FlatColMat.Object;
-		}
-		else
-		{
-			static ConstructorHelpers::FObjectFinder<UMaterial> GridMat(
-				TEXT("/Engine/EngineMaterials/WorldGridMaterial.WorldGridMaterial"));
-			if (GridMat.Succeeded())
-			{
-				TerrainMaterial = GridMat.Object;
-			}
-		}
+		TerrainMaterial = FlatColMat.Object;
 	}
 }
 

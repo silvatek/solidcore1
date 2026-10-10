@@ -5,12 +5,20 @@
   "assets": [
     {
       "id": "viking",
-      "title": "Viking (Art.Hiraeth)",
+      "title": "Viking",
       "listingUuid": "ca4ba583-8d90-4069-b51f-50e694530b2f",
       "listing": "https://www.fab.com/listings/ca4ba583-8d90-4069-b51f-50e694530b2f",
       "required": true,
       "format": "unreal-engine",
       "engine": "5.8",
+      "attribution": {
+        "creator": "Art.Hiraeth",
+        "sellerUrl": "https://www.fab.com/sellers/Art.Hiraeth",
+        "source": "Fab",
+        "license": "Fab Standard (Personal / Professional)",
+        "isFree": false,
+        "credit": "Viking character by Art.Hiraeth, used from Fab as an element of this project."
+      },
       "expectedPaths": [
         "Content/Viking/Mesh/SK_Viking.uasset",
         "Content/Viking/Animations/Anim_Viking_idle1.uasset",
@@ -22,12 +30,20 @@
     },
     {
       "id": "grass",
-      "title": "025 Grass (Mat_025_grass)",
+      "title": "025_Grass【Material & SeamlessTexture & Instance & Blueprint】",
       "listingUuid": "94bfee39-8d7d-409c-89c9-40433550ee3a",
       "listing": "https://www.fab.com/listings/94bfee39-8d7d-409c-89c9-40433550ee3a",
       "required": true,
       "format": "unreal-engine",
       "engine": "5.8",
+      "attribution": {
+        "creator": "NoblesseOblige-No.1",
+        "sellerUrl": "https://www.fab.com/sellers/NoblesseOblige-No.1",
+        "source": "Fab",
+        "license": "CC-BY",
+        "isFree": true,
+        "credit": "025_Grass seamless material by NoblesseOblige-No.1, used from Fab (CC-BY)."
+      },
       "expectedName": "Mat_025_grass.uasset",
       "searchRoots": ["Content/Fab"],
       "notes": "Required. Terrain looks up Mat_025_grass under /Game/Fab. Add to Project is enough."

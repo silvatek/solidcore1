@@ -3,6 +3,7 @@
 #include "Menus/SolidCredits.h"
 #include "Menus/SolidMainMenu.h"
 #include "SolidCharacter.h"
+#include "SolidSight.h"
 #include "SolidGameMode.h"
 #include "Companion/SolidCompanionCharacter.h"
 #include "Party/SolidBattlePlan.h"
@@ -356,6 +357,10 @@ void ASolidHUD::DrawHUD()
 		}
 	}
 
+	if (const ASolidCharacter* Captain = Cast<ASolidCharacter>(Pawn))
+	{
+		Lines.Add(FString::Printf(TEXT("F9  %s"), SolidSight::Label(Captain->GetSight())));
+	}
 	Lines.Add(TEXT("F10  Menu"));
 
 	if (const ASolidCharacter* Captain = Cast<ASolidCharacter>(Pawn))

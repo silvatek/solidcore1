@@ -6,7 +6,7 @@ Code in this folder: `SolidTerrainFog.*`. Tests stay in `Source/SolidCore1/Tests
 
 **Data (kept):** `FSolidTerrainPoint.Fog` on `USolidTerrainMap`. Initial fill and trail clear use the same bands — ≤25 m → `0`, 25–50 m → `0.5`, >50 m → `1`. The map starts fully fogged. `CenterExplorationFogOn` measures the initial distance from the **player** once they are placed. The player is moved to WorldMap location 0, but fog is not keyed off that cell. Runtime: `ApplyExplorationFogAround` as the pawn moves.
 
-**Current visual (SC1-0076 / SC1-0136):** marching-squares curtains at **clear|fogged (~25 m)** and **half|full (~50 m, white)**. Curtain height is **110 m / 160 m**, above the max camera zoom (50 m), so a high orbit cannot look over the wall. Programmatic `BLEND_Translucent` unlit mist. Height fog **off**. The boom shortens so the camera XY stays on a terrain point with `Fog == 0`. That uses the trail data to limit the camera; it does not sample the camera to decide fog amount. Fog meshes stay non-colliding.
+**Current visual (SC1-0076 / SC1-0136):** marching-squares curtains at **clear|fogged (~25 m)** and **half|full (~50 m, white)**. Curtain height is **110 m / 160 m**, above the max camera zoom (50 m), so a high orbit cannot look over the wall. Programmatic `BLEND_Translucent` unlit mist. Height fog **off**. The boom shortens so the camera XY stays on a terrain point with `Fog == 0`. That uses the trail data to limit the camera; it does not sample the camera to decide fog amount. True sight skips that shorten: the camera sits on the pawn, which is the trail center. Fog meshes stay non-colliding.
 
 ## Approaches tried and rejected
 

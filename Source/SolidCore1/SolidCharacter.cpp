@@ -220,6 +220,7 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::F6, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot6);
 	PlayerInputComponent->BindKey(EKeys::F7, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot7);
 	PlayerInputComponent->BindKey(EKeys::F8, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot8);
+	PlayerInputComponent->BindKey(EKeys::F9, IE_Pressed, this, &ASolidCharacter::ToggleSightFromInput);
 	PlayerInputComponent->BindKey(EKeys::F10, IE_Pressed, this, &ASolidCharacter::ToggleMainMenuFromInput);
 	PlayerInputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ASolidCharacter::CloseMenuOverlayFromInput);
 	PlayerInputComponent->BindKey(EKeys::Up, IE_Pressed, this, &ASolidCharacter::MainMenuMoveUp);
@@ -247,6 +248,52 @@ bool ASolidCharacter::IsMenuOverlayOpen() const
 		return HUD->IsMainMenuOpen() || HUD->IsCreditsVisible();
 	}
 	return false;
+}
+
+void ASolidCharacter::ToggleSight()
+{
+	Sight = SolidSight::Toggle(Sight);
+	const bool bTrue = IsTrueSight();
+
+	bUseControllerRotationYaw = bTrue;
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		if (!IsPartyFormationDrillActive())
+		{
+			Move->bOrientRotationToMovement = !bTrue;
+		}
+	}
+
+	if (USkeletalMeshComponent* CharacterMesh = GetMesh())
+	{
+		CharacterMesh->SetOwnerNoSee(bTrue);
+		CharacterMesh->SetCastHiddenShadow(bTrue);
+	}
+
+	if (NameLabelRoot)
+	{
+		NameLabelRoot->SetVisibility(!bTrue, /*bPropagateToChildren=*/true);
+	}
+
+	if (bTrue)
+	{
+		ApplyTrueSightCamera();
+	}
+	else
+	{
+		ApplyRavenSightCamera();
+	}
+
+	UE_LOG(LogSolid, Warning, TEXT("Sight: %s"), SolidSight::Label(Sight));
+}
+
+void ASolidCharacter::ToggleSightFromInput()
+{
+	if (IsMenuOverlayOpen() || IsPartyFormationDrillActive())
+	{
+		return;
+	}
+	ToggleSight();
 }
 
 void ASolidCharacter::ToggleMainMenuFromInput()
@@ -418,7 +465,7 @@ void ASolidCharacter::StopJumpFromInput()
 
 void ASolidCharacter::Zoom(const FInputActionValue& Value)
 {
-	if (IsMenuOverlayOpen())
+	if (IsMenuOverlayOpen() || IsTrueSight())
 	{
 		return;
 	}

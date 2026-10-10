@@ -8,8 +8,43 @@
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
 
+void ASolidCharacter::ApplyTrueSightCamera()
+{
+	if (!CameraBoom)
+	{
+		return;
+	}
+
+	CameraBoom->TargetArmLength = 0.f;
+	CameraBoom->TargetOffset = FVector(0.f, 0.f, SolidSight::TrueSightEyeHeightCm);
+	CameraBoom->SocketOffset = FVector(SolidSight::TrueSightForwardCm, 0.f, 0.f);
+	CameraBoom->bEnableCameraLag = false;
+	CameraBoom->bDoCollisionTest = false;
+}
+
+void ASolidCharacter::ApplyRavenSightCamera()
+{
+	if (!CameraBoom)
+	{
+		return;
+	}
+
+	CameraBoom->TargetArmLength = UserZoomArmLength;
+	CameraBoom->TargetOffset = FVector::ZeroVector;
+	CameraBoom->SocketOffset = FVector::ZeroVector;
+	CameraTerrainLiftCm = 0.f;
+	CameraBoom->bEnableCameraLag = true;
+	CameraBoom->bDoCollisionTest = true;
+}
+
 void ASolidCharacter::UpdatePartyCameraFraming(float DeltaTime)
 {
+	if (IsTrueSight())
+	{
+		ApplyTrueSightCamera();
+		return;
+	}
+
 	if (!CameraBoom || !bFrameCompanions)
 	{
 		return;
@@ -136,7 +171,7 @@ void ASolidCharacter::UpdatePartyCameraFraming(float DeltaTime)
 
 void ASolidCharacter::ClampCameraAboveTerrain(float DeltaTime)
 {
-	if (!CameraBoom || !IsLocallyControlled())
+	if (IsTrueSight() || !CameraBoom || !IsLocallyControlled())
 	{
 		return;
 	}

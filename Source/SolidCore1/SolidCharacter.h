@@ -4,6 +4,7 @@
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
 #include "Party/SolidPartyDrill.h"
+#include "SolidSight.h"
 #include "SolidCharacter.generated.h"
 
 class USpringArmComponent;
@@ -60,6 +61,11 @@ public:
 	/** Mouse-wheel boom limit (cm). Fog curtains are taller than this. */
 	float GetCameraZoomMax() const { return CameraZoomMax; }
 
+	/** Raven sight (third person) or true sight (first person). F9 toggles. */
+	ESolidSight GetSight() const { return Sight; }
+	bool IsTrueSight() const { return SolidSight::IsTrueSight(Sight); }
+	void ToggleSight();
+
 protected:
 	void ApplyNameLabel();
 	void BeginPartyFormationDrillLeg();
@@ -93,6 +99,9 @@ protected:
 	void SelectBattlePlanSlot6();
 	void SelectBattlePlanSlot7();
 	void SelectBattlePlanSlot8();
+	void ToggleSightFromInput();
+	void ApplyTrueSightCamera();
+	void ApplyRavenSightCamera();
 	void ToggleMainMenuFromInput();
 	void CloseMenuOverlayFromInput();
 	void MainMenuMoveUp();
@@ -273,6 +282,9 @@ protected:
 
 	/** Smoothed world-Z lift applied via spring-arm SocketOffset (keeps camera above terrain). */
 	float CameraTerrainLiftCm = 0.f;
+
+	/** Default is the third-person party camera. */
+	ESolidSight Sight = ESolidSight::Raven;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimSequence> CachedIdleAnim;

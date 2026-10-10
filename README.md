@@ -11,7 +11,6 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 - Build cave interior as a new level and transition to/from the main world at the entrance
 - Replace companion models with new Fab assets
 - Click to move
-- First person view ("true sight" vs "raven sight")
 - HUD / Menu panel borders & themes
 
 ## Done
@@ -24,6 +23,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 - **Procedural terrain** — streamed chunks around the pawn, Fab grassland material, FlatCol tints for other biomes. Exploration fog-of-war (25 m / 50 m bands, marching-squares curtains) clears from the trail, not the camera.
 - **Town + forest** — random non-overlapping town buildings (grey cuboid + red gable prism roof); forest trees scattered on Forest cells. Buildings stay clear of the start-town centroid and of each welcome sign.
 - **Town signs** — every named WorldMap cell gets a "Welcome to {name}" sign: one thin dark-brown pole, a flat light-brown board, white letters with a black border. The board faces south. Kanfold's two cells each get a sign.
+- **True sight / raven sight** — F9 toggles. Raven sight is the third-person party camera (default). True sight is first person at eye height: the captain's body and nameplate are hidden, the body faces the look direction, and mouse-wheel zoom is ignored until you switch back. The menu and the formation drill ignore F9.
 - **Main menu** — F10 opens it. **1 Test Drill** runs the formation drill. **2 Credits** opens the credits page (Silvatek, Cursor + Grok, Fab Viking and grass). Up/Down and Enter also work. Esc or F10 closes. Move, look, and battle-plan keys are ignored while the menu or credits page is open.
 - **Content pipeline** — Fab listings restored via Launcher Add to Project; C++ finds Viking/grass by name under `/Game/Viking` or `/Game/Fab`. `tools/fab_doctor.bat` + `fab-assets.json`. Packs are gitignored (attribution README kept).
 - **Automation** — `SolidCore1.*` editor tests; `tools/run_automation_tests.bat` prints failed test paths. Build ID `SC1-NNNN` on the debug HUD.
@@ -38,6 +38,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 | Zoom | Mouse wheel | — |
 | Jump | Space | A / Cross |
 | Sprint | Left Shift | Left stick click |
+| True sight / raven sight | F9 | — |
 | Main menu | F10 | — |
 | Menu up / down | Up / Down | — |
 | Menu confirm | Enter, or 1 / 2 | — |
@@ -74,6 +75,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.BattlePlan.*` | Formation slots; Company/Party assign; drill legs |
 | `SolidCore1.Credits.*` | Author / Cursor+Grok / Fab attribution; HUD toggle |
 | `SolidCore1.MainMenu.*` | F10 menu entries (Test Drill, Credits) and selection |
+| `SolidCore1.Sight.*` | F9 true sight / raven sight toggle |
 | `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |
 | `SolidCore1.Content.*` | Required Content + Engine assets the code loads |
 
@@ -253,6 +255,7 @@ Source/
     SolidClipLocomotion.*  # Shared single-node clip apply/play (per-character mesh)
     SolidGameMode.*
     SolidCameraFog.h         # Boom scale that keeps the camera over Fog == 0
+    SolidSight.h             # True sight / raven sight toggle
     SolidPlayerController.*
     SolidMaterials.*       # Shared FlatCol solid-color MID helper
     SolidContentPaths.h    # Canonical BP soft-class paths
@@ -301,6 +304,7 @@ Source/
       SolidClipLocomotionTests.cpp
       SolidBuildIdTests.cpp
       SolidMainMenuTests.cpp
+      SolidSightTests.cpp
       SolidContentDependencyTests.cpp
 tools/
   run_automation_tests.bat

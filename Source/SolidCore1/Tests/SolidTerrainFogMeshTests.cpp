@@ -22,6 +22,8 @@ bool FSolidFogMeshBuildGuardsTest::RunTest(const FString& Parameters)
 
 	USolidTerrainMap* Map = NewObject<USolidTerrainMap>();
 	Map->Build(1, 0.00012f, 1000.f, 0.f, 17, 17, 400.f, true);
+	// Build leaves every point fully fogged, so there is no curtain until a player is placed.
+	Map->CenterExplorationFogOn(0.f, 0.f);
 
 	UObject* Outer = GetTransientPackage();
 	TestNull(TEXT("no materials => null mesh"),
@@ -36,7 +38,10 @@ bool FSolidFogMeshBuildGuardsTest::RunTest(const FString& Parameters)
 
 	UStaticMesh* Mesh = SolidTerrainFog::BuildChunkFogMesh(Outer, Map, Params, Half, Full, White);
 	TestNotNull(TEXT("fog mesh builds with materials"), Mesh);
-	TestTrue(TEXT("fog mesh has triangles"), Mesh->GetNumTriangles(0) > 0);
+	if (Mesh)
+	{
+		TestTrue(TEXT("fog mesh has triangles"), Mesh->GetNumTriangles(0) > 0);
+	}
 	return true;
 }
 

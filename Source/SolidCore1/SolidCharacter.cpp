@@ -16,6 +16,7 @@
 #include "SolidClipLocomotion.h"
 #include "SolidCore1.h"
 #include "SolidGameMode.h"
+#include "SolidHUD.h"
 #include "SolidNameLabel.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -218,11 +219,23 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::F7, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot7);
 	PlayerInputComponent->BindKey(EKeys::F8, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot8);
 	PlayerInputComponent->BindKey(EKeys::F9, IE_Pressed, this, &ASolidCharacter::StartPartyFormationDrillFromInput);
+	PlayerInputComponent->BindKey(EKeys::F10, IE_Pressed, this, &ASolidCharacter::ToggleCreditsFromInput);
 }
 
 void ASolidCharacter::StartPartyFormationDrillFromInput()
 {
 	StartPartyFormationDrill();
+}
+
+void ASolidCharacter::ToggleCreditsFromInput()
+{
+	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		if (ASolidHUD* HUD = Cast<ASolidHUD>(PC->GetHUD()))
+		{
+			HUD->ToggleCredits();
+		}
+	}
 }
 
 void ASolidCharacter::SelectBattlePlanSlot(const int32 SlotIndex)

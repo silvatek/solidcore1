@@ -85,6 +85,7 @@ protected:
 	void SelectBattlePlanSlot7();
 	void SelectBattlePlanSlot8();
 	void StartPartyFormationDrillFromInput();
+	void ToggleCreditsFromInput();
 
 	void ApplyWalkSpeed() const;
 	void AddMappingContext();

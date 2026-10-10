@@ -21,6 +21,7 @@ Put this repo’s contents at `C:\Users\staz6\Dev\solidcore1` (clone or sync), t
 | Zoom | Mouse wheel | — |
 | Jump | Space | A / Cross |
 | Sprint | Left Shift | Left stick click |
+| Credits | F10 | — |
 
 Input Actions / Mapping Context can be replaced with Content assets on the character later; if unset, C++ creates transient defaults so PIE works immediately.
 
@@ -51,6 +52,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.Clip.*` | SelectClip idle/walk/run/jump rules |
 | `SolidCore1.NameLabel.*` | Style sizes/colors/plates; Outcast / Sam defaults |
 | `SolidCore1.BattlePlan.*` | Formation slots; Company/Party assign; F9 drill legs |
+| `SolidCore1.Credits.*` | Author / Cursor+Grok / Fab attribution; HUD toggle |
 | `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |
 | `SolidCore1.Content.*` | Required Content + Engine assets the code loads |
 

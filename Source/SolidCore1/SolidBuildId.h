@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0123")
+#define SOLID_BUILD_ID TEXT("SC1-0124")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Find Viking under /Game/Viking or /Game/Fab by name")
+#define SOLID_BUILD_NOTE TEXT("F10 credits popup: Silvatek, Cursor+Grok, Fab assets")
 #endif

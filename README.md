@@ -5,6 +5,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 ## To-do
 
 - Implement main menu
+- Remove monolith
 
 ## Done
 

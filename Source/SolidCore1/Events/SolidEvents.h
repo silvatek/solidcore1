@@ -58,6 +58,11 @@ namespace SolidEvents
 
 	inline const FEvent Definitions[] = {
 		{
+			TEXT("Enter Iglin"),
+			ETrigger::EnterTown,
+			0,
+		},
+		{
 			TEXT("Enter Relion"),
 			ETrigger::EnterTown,
 			1,

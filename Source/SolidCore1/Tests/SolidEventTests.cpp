@@ -15,7 +15,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("two starter events"), SolidEvents::DefinitionCount, 2);
+	TestEqual(TEXT("three starter events"), SolidEvents::DefinitionCount, 3);
 	TestEqual(TEXT("roster is Sam then Alex"), SolidEvents::RosterCount, 2);
 	TestEqual(TEXT("slot 0 is Sam"), FString(SolidEvents::RosterName(0)), FString(TEXT("Sam")));
 	TestEqual(TEXT("slot 1 is Alex"), FString(SolidEvents::RosterName(1)), FString(TEXT("Alex")));
@@ -34,9 +34,11 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("still an empty party"), State.MaxPartySize, 0);
 
 	const SolidEvents::FResult Iglin = SolidEvents::NotifyOccupiedTown(State, 0);
-	TestFalse(TEXT("starting town fires nothing"), Iglin.bFired);
+	TestTrue(TEXT("entering town 0 fires"), Iglin.bFired);
+	TestFalse(TEXT("Iglin does not switch sight"), Iglin.bSetSight);
 	TestFalse(TEXT("Iglin leaves raven sight locked"), State.bRavenSightEnabled);
 	TestEqual(TEXT("Iglin leaves the party empty"), State.MaxPartySize, 0);
+	TestEqual(TEXT("Iglin is recorded"), State.FiredCount, 1);
 
 	const SolidEvents::FResult Relion = SolidEvents::NotifyOccupiedTown(State, 1);
 	TestTrue(TEXT("entering town 1 fires"), Relion.bFired);

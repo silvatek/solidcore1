@@ -47,14 +47,18 @@ bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 	SolidEvents::NotifyOccupiedTown(State, 0);
 	TArray<FString> AtStart;
 	SolidJournal::CollectLines(State, AtStart);
-	TestTrue(TEXT("Iglin is not an entry"), !SolidJournalTestPrivate::JoinLines(AtStart).Contains(TEXT("Relion")));
-	TestTrue(TEXT("still empty at Iglin"), SolidJournalTestPrivate::JoinLines(AtStart).Contains(TEXT("No events yet.")));
+	const FString IglinText = SolidJournalTestPrivate::JoinLines(AtStart);
+	TestTrue(TEXT("Iglin is the first entry"), IglinText.Contains(TEXT("1  Enter Iglin")));
+	TestFalse(TEXT("Iglin has no change line"), IglinText.Contains(TEXT("    ")));
+	TestFalse(TEXT("Iglin does not mention Relion"), IglinText.Contains(TEXT("Relion")));
+	TestFalse(TEXT("Iglin is not the empty journal"), IglinText.Contains(TEXT("No events yet.")));
 
 	SolidEvents::NotifyOccupiedTown(State, 1);
 	TArray<FString> AfterRelion;
 	SolidJournal::CollectLines(State, AfterRelion);
 	const FString RelionText = SolidJournalTestPrivate::JoinLines(AfterRelion);
-	TestTrue(TEXT("lists Enter Relion"), RelionText.Contains(TEXT("1  Enter Relion")));
+	TestTrue(TEXT("Iglin stays first"), RelionText.Contains(TEXT("1  Enter Iglin")));
+	TestTrue(TEXT("lists Enter Relion second"), RelionText.Contains(TEXT("2  Enter Relion")));
 	TestTrue(TEXT("Relion enables raven sight"), RelionText.Contains(TEXT("Raven sight enabled")));
 	TestTrue(TEXT("Relion party is Sam"), RelionText.Contains(TEXT("Party 1: Sam")));
 	TestFalse(TEXT("Alex is not in yet"), RelionText.Contains(TEXT("Alex")));
@@ -63,8 +67,9 @@ bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 	TArray<FString> AfterKanfold;
 	SolidJournal::CollectLines(State, AfterKanfold);
 	const FString Both = SolidJournalTestPrivate::JoinLines(AfterKanfold);
-	TestTrue(TEXT("Relion stays first"), Both.Contains(TEXT("1  Enter Relion")));
-	TestTrue(TEXT("Kanfold is second"), Both.Contains(TEXT("2  Enter Kanfold")));
+	TestTrue(TEXT("Iglin stays first"), Both.Contains(TEXT("1  Enter Iglin")));
+	TestTrue(TEXT("Relion stays second"), Both.Contains(TEXT("2  Enter Relion")));
+	TestTrue(TEXT("Kanfold is third"), Both.Contains(TEXT("3  Enter Kanfold")));
 	TestTrue(TEXT("Kanfold party is both"), Both.Contains(TEXT("Party 2: Sam, Alex")));
 	TestFalse(TEXT("filled journal is not empty"), Both.Contains(TEXT("No events yet.")));
 

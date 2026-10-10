@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0142")
+#define SOLID_BUILD_ID TEXT("SC1-0143")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Town names come from code, linked by the map index")
+#define SOLID_BUILD_NOTE TEXT("Town records are FTownInfo")
 #endif

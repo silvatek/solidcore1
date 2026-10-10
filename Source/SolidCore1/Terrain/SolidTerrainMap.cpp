@@ -35,13 +35,8 @@ void USolidTerrainMap::Build(
 	}
 	WorldMap->LoadDefault();
 
+	// Fully fogged until the player is placed. The Z cell is the spawn, not the fog center.
 	FogOriginXY = FVector2D::ZeroVector;
-	FVector2D StartTownXY = FVector2D::ZeroVector;
-	if (WorldMap->IsLoaded()
-		&& WorldMap->GetStartTownWorldXY(GetWorldMinXY(), GetWorldMaxXY(), StartTownXY))
-	{
-		FogOriginXY = StartTownXY;
-	}
 
 	Points.SetNum(GridWidth * GridHeight);
 
@@ -259,9 +254,23 @@ void USolidTerrainMap::FillThreatAndFog(
 		Point.Threat = FMath::Min(Point.Threat, 0.08f);
 	}
 
-	// Initial exploration fog by distance from start town (or world origin).
-	const float DistM = (FVector2D(Point.X, Point.Y) - FogOriginXY).Size() * 0.01f;
-	Point.Fog = SolidTerrainFog::FogFromDistanceMeters(DistM);
+	// Shroud the map. CenterExplorationFogOn opens the bands around the player.
+	Point.Fog = 1.f;
+}
+
+void USolidTerrainMap::CenterExplorationFogOn(const float WorldX, const float WorldY)
+{
+	if (!IsBuilt())
+	{
+		return;
+	}
+
+	FogOriginXY = FVector2D(WorldX, WorldY);
+	for (FSolidTerrainPoint& Point : Points)
+	{
+		const float DistM = (FVector2D(Point.X, Point.Y) - FogOriginXY).Size() * 0.01f;
+		Point.Fog = SolidTerrainFog::FogFromDistanceMeters(DistM);
+	}
 }
 
 int32 USolidTerrainMap::ApplyExplorationFogAround(float WorldX, float WorldY)

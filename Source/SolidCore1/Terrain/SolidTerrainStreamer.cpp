@@ -75,6 +75,7 @@ void ASolidTerrainStreamer::BeginPlay()
 	Super::BeginPlay();
 	EnsureTerrainMap();
 	TryRelocateFocusToStartTown();
+	CenterExplorationFogOnFocus();
 	if (bRenderExplorationFogMeshes)
 	{
 		EnsureExplorationFogMaterials();
@@ -148,6 +149,8 @@ void ASolidTerrainStreamer::Tick(float DeltaSeconds)
 	}
 
 	TimeSinceUpdate = 0.f;
+	TryRelocateFocusToStartTown();
+	CenterExplorationFogOnFocus();
 	ClearExplorationFogAtFocus();
 	UpdateStreaming();
 	if (bRenderExplorationFogMeshes)
@@ -180,6 +183,7 @@ int32 ASolidTerrainStreamer::ClearExplorationFogAtFocus()
 		}
 	}
 
+	// Trail clear only. The initial bubble is CenterExplorationFogOnFocus.
 	const int32 Changed = TerrainMap->ApplyExplorationFogAround(Loc.X, Loc.Y);
 	LastFogApplyLocation = Loc;
 	bHasFogApplyLocation = true;
@@ -502,6 +506,36 @@ void ASolidTerrainStreamer::RelocateCompanionsByDelta(const FVector& DeltaXY)
 	}
 }
 
+void ASolidTerrainStreamer::CenterExplorationFogOnFocus()
+{
+	if (bDidCenterFogOnPlayer || !TerrainMap || !TerrainMap->IsBuilt() || !bDidRelocateToStartTown)
+	{
+		return;
+	}
+
+	AActor* Focus = ResolveFocusActor();
+	if (!Focus)
+	{
+		return;
+	}
+
+	const FVector Loc = Focus->GetActorLocation();
+	TerrainMap->CenterExplorationFogOn(Loc.X, Loc.Y);
+	bDidCenterFogOnPlayer = true;
+	bHasFogApplyLocation = false;
+
+	if (bRenderExplorationFogMeshes)
+	{
+		QueueExplorationFogMeshRefresh(
+			Loc.X, Loc.Y,
+			SolidTerrainFog::MetersToCm(SolidTerrainFog::FullFogStartMeters) + ChunkWorldSize * 0.5f);
+	}
+
+	UE_LOG(LogSolid, Warning,
+		TEXT("Centered exploration fog on player (%.0f, %.0f)"),
+		Loc.X, Loc.Y);
+}
+
 void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 {
 	if (bDidRelocateToStartTown)
@@ -528,7 +562,7 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 		return;
 	}
 
-	// Stand in the town plaza, offset from the centroid.
+	// Stand in the town plaza, offset from the start-town centroid.
 	const FVector2D PawnXY = TownXY + StartTownPawnOffsetXY;
 
 	const FVector OldLoc = Focus->GetActorLocation();
@@ -547,7 +581,7 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 
 	Focus->SetActorLocation(NewLoc);
 
-	// Face the town centroid.
+	// Face the start-town centroid.
 	const FVector2D ToTown = TownXY - PawnXY;
 	if (!ToTown.IsNearlyZero())
 	{

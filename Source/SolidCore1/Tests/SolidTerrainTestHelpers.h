@@ -24,12 +24,14 @@ namespace SolidTerrainTestHelpers
 			/*InGridHeight=*/65,
 			/*InPointSpacing=*/200.f,
 			/*bForceRebuild=*/true);
+		// Fixture player stands at the world origin. Fog follows that position, not the Z cell.
+		Map->CenterExplorationFogOn(0.f, 0.f);
 		return Map;
 	}
 
 	/**
 	 * Unit direction from FogOrigin toward the map interior that keeps DistCm
-	 * probes inside world bounds (avoids edge clamp after Z-town fog origin moves).
+	 * probes inside world bounds (avoids edge clamp when the player fog origin is off-center).
 	 */
 	inline FVector2D InBoundsFogProbeDir(const USolidTerrainMap* Map, float DistCm)
 	{

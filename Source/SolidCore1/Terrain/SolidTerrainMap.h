@@ -83,6 +83,13 @@ public:
 	 */
 	int32 ApplyExplorationFogAround(float WorldX, float WorldY);
 
+	/**
+	 * Initial fog bands around a player position. Replaces every point's Fog from
+	 * distance to (WorldX, WorldY). Call once when the player is placed; trail
+	 * updates after that use ApplyExplorationFogAround and never increase fog.
+	 */
+	void CenterExplorationFogOn(float WorldX, float WorldY);
+
 	FVector2D GetWorldMinXY() const { return OriginXY; }
 	FVector2D GetWorldMaxXY() const
 	{
@@ -93,10 +100,13 @@ public:
 
 	USolidWorldMap* GetWorldMap() const { return WorldMap; }
 
-	/** World XY of WorldMap starting-town (Z) centroid, if available. */
+	/** World XY of the WorldMap starting-town (Z) centroid, if available. */
 	bool GetStartTownWorldXY(FVector2D& OutWorldXY) const;
 
-	/** Fog distance origin (start town when WorldMap provides one, else world origin). */
+	/**
+	 * World XY fog bands were last centered on.
+	 * Valid after CenterExplorationFogOn. Build leaves this at zero and every point fully fogged.
+	 */
 	FVector2D GetFogOriginXY() const { return FogOriginXY; }
 
 protected:
@@ -106,7 +116,7 @@ protected:
 	UPROPERTY()
 	TObjectPtr<USolidWorldMap> WorldMap;
 
-	/** Fog distance origin (start town when WorldMap provides one). */
+	/** Last player position passed to CenterExplorationFogOn. */
 	UPROPERTY()
 	FVector2D FogOriginXY = FVector2D::ZeroVector;
 

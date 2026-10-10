@@ -4,7 +4,7 @@ Goal: the world starts shrouded; fog clears only where the **pawn has been** (tr
 
 Code in this folder: `SolidTerrainFog.*`. Tests stay in `Source/SolidCore1/Tests/` (`SolidTerrainFogTests.cpp`, `SolidTerrainFogMeshTests.cpp`).
 
-**Data (kept):** `FSolidTerrainPoint.Fog` on `USolidTerrainMap`. Initial fill and trail clear use the same bands — ≤25 m → `0`, 25–50 m → `0.5`, >50 m → `1`. Initial distance is measured from the WorldMap starting-town (Z) centroid when present (else world origin). Runtime: `ApplyExplorationFogAround` as the pawn moves.
+**Data (kept):** `FSolidTerrainPoint.Fog` on `USolidTerrainMap`. Initial fill and trail clear use the same bands — ≤25 m → `0`, 25–50 m → `0.5`, >50 m → `1`. The map starts fully fogged. `CenterExplorationFogOn` measures the initial distance from the **player** once they are placed. The player is moved to the WorldMap Z town, but fog is not keyed off that cell. Runtime: `ApplyExplorationFogAround` as the pawn moves.
 
 **Current visual (SC1-0076):** marching-squares curtains at **clear|fogged (~25 m)** and **half|full (~50 m, white)**. Programmatic `BLEND_Translucent` unlit mist. Height fog **off**.
 

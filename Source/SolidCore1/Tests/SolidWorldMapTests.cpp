@@ -1,5 +1,6 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
+#include "SolidTerrainFog.h"
 #include "SolidTerrainMap.h"
 #include "SolidTerrainTestHelpers.h"
 #include "SolidWorldMap.h"
@@ -146,19 +147,66 @@ bool FSolidWorldMapTerrainOverlayTest::RunTest(const FString& Parameters)
 	FVector2D TownXY = FVector2D::ZeroVector;
 	TestTrue(TEXT("terrain exposes start town"), Terrain->GetStartTownWorldXY(TownXY));
 
-	const FVector2D FogOrigin = Terrain->GetFogOriginXY();
-	TestTrue(TEXT("fog origin matches start town X"),
-		FMath::IsNearlyEqual(FogOrigin.X, TownXY.X, 1.f));
-	TestTrue(TEXT("fog origin matches start town Y"),
-		FMath::IsNearlyEqual(FogOrigin.Y, TownXY.Y, 1.f));
-
 	const FSolidTerrainPoint TownPoint = Terrain->SamplePoint(TownXY.X, TownXY.Y);
 	TestEqual(
 		TEXT("town centroid is Town biome"),
 		static_cast<uint8>(TownPoint.Biome),
 		static_cast<uint8>(ESolidBiome::Town));
-	TestTrue(TEXT("town starts clear of fog"), FMath::IsNearlyEqual(TownPoint.Fog, 0.f));
 
+	// MakeSmallMap centers fog on a fixture player at the origin, not on the Z cell.
+	const FVector2D FogOrigin = Terrain->GetFogOriginXY();
+	TestTrue(TEXT("fixture fog origin is the player at world origin"),
+		FogOrigin.Equals(FVector2D::ZeroVector, 1.f));
+	TestTrue(TEXT("Z town is not the fog center"),
+		FVector2D::Distance(FogOrigin, TownXY) > SolidTerrainFog::MetersToCm(SolidTerrainFog::FullFogStartMeters));
+	TestTrue(TEXT("Z town starts fully fogged"),
+		FMath::IsNearlyEqual(Terrain->GetNearestPoint(TownXY.X, TownXY.Y).Fog, 1.f));
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidWorldMapFogFollowsPlayerTest,
+	"SolidCore1.WorldMap.FogFollowsPlayer",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidWorldMapFogFollowsPlayerTest::RunTest(const FString& Parameters)
+{
+	USolidTerrainMap* Map = NewObject<USolidTerrainMap>();
+	TestNotNull(TEXT("map"), Map);
+	Map->Build(
+		/*InSeed=*/1337,
+		/*FrequencyScale=*/0.00012f,
+		/*Amplitude=*/3000.f,
+		/*BaseHeight=*/0.f,
+		/*InGridWidth=*/65,
+		/*InGridHeight=*/65,
+		/*InPointSpacing=*/200.f,
+		/*bForceRebuild=*/true);
+
+	FVector2D StartXY = FVector2D::ZeroVector;
+	TestTrue(TEXT("start town exists"), Map->GetStartTownWorldXY(StartXY));
+	TestTrue(TEXT("build leaves the Z town fogged"),
+		FMath::IsNearlyEqual(Map->GetNearestPoint(StartXY.X, StartXY.Y).Fog, 1.f));
+	TestTrue(TEXT("build leaves the world origin fogged"),
+		FMath::IsNearlyEqual(Map->GetNearestPoint(0.f, 0.f).Fog, 1.f));
+
+	const FVector2D Player(1200.f, -800.f);
+	Map->CenterExplorationFogOn(Player.X, Player.Y);
+	TestTrue(TEXT("fog origin is the player"),
+		Map->GetFogOriginXY().Equals(Player, 1.f));
+	TestTrue(TEXT("player cell is clear"),
+		FMath::IsNearlyEqual(Map->GetNearestPoint(Player.X, Player.Y).Fog, 0.f));
+	TestTrue(TEXT("Z town stays fogged when the player is elsewhere"),
+		FVector2D::Distance(StartXY, Player) > SolidTerrainFog::MetersToCm(SolidTerrainFog::FullFogStartMeters)
+		&& FMath::IsNearlyEqual(Map->GetNearestPoint(StartXY.X, StartXY.Y).Fog, 1.f));
+
+	// Standing on the start town is what clears it. The marker itself is not the fog key.
+	Map->CenterExplorationFogOn(StartXY.X, StartXY.Y);
+	TestTrue(TEXT("fog origin follows the player onto the Z town"),
+		Map->GetFogOriginXY().Equals(StartXY, 1.f));
+	TestTrue(TEXT("Z town is clear only while the player is there"),
+		FMath::IsNearlyEqual(Map->GetNearestPoint(StartXY.X, StartXY.Y).Fog, 0.f));
 	return true;
 }
 

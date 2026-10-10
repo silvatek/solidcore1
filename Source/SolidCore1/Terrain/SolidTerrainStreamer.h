@@ -124,7 +124,7 @@ public:
 
 	/**
 	 * Planar offset from the WorldMap Z-town centroid for the Captain spawn.
-	 * Keeps the pawn in the town plaza, facing the centroid.
+	 * Keeps the pawn in the town plaza, facing that centroid.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Start Town")
 	FVector2D StartTownPawnOffsetXY = FVector2D(0.f, -450.f);
@@ -230,6 +230,8 @@ protected:
 	void TrySnapFocusToTerrain(AActor* Focus);
 	/** Move the focus pawn once to the WorldMap starting-town (Z) centroid. */
 	void TryRelocateFocusToStartTown();
+	/** After the player is at their start position, center fog on that pawn. */
+	void CenterExplorationFogOnFocus();
 	void DisableLandscapeActorsOnce();
 
 	UPROPERTY()
@@ -267,6 +269,7 @@ protected:
 	bool bHeightFogSilenced = false;
 	bool bHasFogApplyLocation = false;
 	bool bDidRelocateToStartTown = false;
+	bool bDidCenterFogOnPlayer = false;
 	FVector LastFogApplyLocation = FVector::ZeroVector;
 	TSet<FIntPoint> DirtyFogChunkCoords;
 };

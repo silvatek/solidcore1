@@ -1,9 +1,11 @@
 #include "SolidCharacter.h"
+#include "SolidCameraFog.h"
 #include "Camera/CameraComponent.h"
 #include "Companion/SolidCompanionCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "EngineUtils.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
 
 void ASolidCharacter::UpdatePartyCameraFraming(float DeltaTime)
@@ -155,10 +157,33 @@ void ASolidCharacter::ClampCameraAboveTerrain(float DeltaTime)
 	const FRotator ArmRot = CameraBoom->GetTargetRotation();
 	const FRotationMatrix ArmMatrix(ArmRot);
 	const FVector ArmOrigin = CameraBoom->GetComponentLocation() + CameraBoom->TargetOffset;
-	const FVector DesiredCam =
-		ArmOrigin
-		- ArmRot.Vector() * CameraBoom->TargetArmLength
-		+ ArmMatrix.TransformVector(FVector(CameraBoom->SocketOffset.X, CameraBoom->SocketOffset.Y, 0.f));
+	const FVector SocketXY = ArmMatrix.TransformVector(
+		FVector(CameraBoom->SocketOffset.X, CameraBoom->SocketOffset.Y, 0.f));
+	auto CameraAtScale = [&](float Scale)
+	{
+		return ArmOrigin
+			- ArmRot.Vector() * (CameraBoom->TargetArmLength * Scale)
+			+ SocketXY;
+	};
+
+	// Keep the camera over clear trail. Do not sample the camera to decide fog amount.
+	if (const USolidTerrainMap* Map = Streamer->GetTerrainMap())
+	{
+		if (Map->IsBuilt())
+		{
+			const float ClearScale = SolidCameraFog::MaxClearScale([&](float Scale)
+			{
+				const FVector At = CameraAtScale(Scale);
+				return Map->GetNearestPoint(At.X, At.Y).Fog;
+			});
+			if (ClearScale < 1.f - KINDA_SMALL_NUMBER)
+			{
+				CameraBoom->TargetArmLength *= ClearScale;
+			}
+		}
+	}
+
+	const FVector DesiredCam = CameraAtScale(1.f);
 
 	const float TerrainZ = Streamer->GetHeightAt(DesiredCam) + Streamer->CollisionHeightBias;
 	const float MinCamZ = TerrainZ + CameraTerrainClearance;

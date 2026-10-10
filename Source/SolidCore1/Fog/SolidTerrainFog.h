@@ -41,8 +41,8 @@ namespace SolidTerrainFog
 		FIntPoint ChunkCoord = FIntPoint::ZeroValue;
 		float ChunkWorldSize = 6400.f;
 		int32 FogQuadsPerSide = 16;
-		float VolumeHeightCm = 3200.f;
-		float VolumeHeightHalfCm = 2200.f;
+		float VolumeHeightCm = 16000.f;
+		float VolumeHeightHalfCm = 11000.f;
 		float CollisionHeightBias = 0.f;
 	};
 

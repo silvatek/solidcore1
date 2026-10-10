@@ -5,8 +5,6 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 ## To-do
 
 - Use white material for 100% fog terrain
-- Don't allow camera to pass through fog curtain
-- Raise height of fog curtain
 - Don't render trees or buildings on 100% fog terrain, generate it when fog is removed
 - Improve building and tree models
 - Create signs near all the towns with the town's name
@@ -23,7 +21,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 - **Battle plans** — Company catalog and Party assigned slots. F1 Line, F2 Column, F3 Tight mob, F4 Loose mob (spacing Narrow / Standard / Wide). F1–F8 select; HUD battle-plan panel. The square-walk formation drill is the main menu's Test Drill entry.
 - **World + biomes** — 64×64 `WorldMap.txt` overlay (Sea, Grassland, Town, Mountain, Forest, Desert, River) scaled onto a 513×513 TerrainPoint map (1024 m side, 200 cm spacing). That doubles the original 257-point / 512 m world, and each ASCII cell doubles from 8 m to 16 m. Numbered locations are towns: `0` Iglin (start), `1` Relion, `2` Kanfold, `3` Visolar. The captain starts at location 0. Per-biome height shelf (Sea/River 0, Mountain +10 m, else +1 m). Darker mountain grey.
 - **No starter monolith** — the grey slab that marked the start-town centroid is gone. Location 0 still sets the captain spawn and the building clear radius.
-- **Fog follows the player** — the map starts fully fogged. After the captain is placed at location 0, exploration fog is centered on the pawn, not on that cell. The two match only because that is where the pawn stands.
+- **Fog follows the player** — the map starts fully fogged. After the captain is placed at location 0, exploration fog is centered on the pawn, not on that cell. The two match only because that is where the pawn stands. Curtains are 110 m (half) and 160 m (full), above the 50 m max zoom. The camera boom shortens so it cannot sit above terrain with fog greater than 0.
 - **Procedural terrain** — streamed chunks around the pawn, Fab grassland material, FlatCol tints for other biomes. Exploration fog-of-war (25 m / 50 m bands, marching-squares curtains) clears from the trail, not the camera.
 - **Town + forest** — random non-overlapping town buildings (grey cuboid + red gable prism roof); forest trees scattered on Forest cells.
 - **Main menu** — F10 opens it. **1 Test Drill** runs the formation drill. **2 Credits** opens the credits page (Silvatek, Cursor + Grok, Fab Viking and grass). Up/Down and Enter also work. Esc or F10 closes. Move, look, and battle-plan keys are ignored while the menu or credits page is open.
@@ -62,7 +60,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 
 | Filter | Covers |
 |--------|--------|
-| `SolidCore1.Fog.*` | Distance bands, units, mist sampling, fog mesh build guards |
+| `SolidCore1.Fog.*` | Distance bands, units, mist sampling, fog mesh build guards, camera stays on clear ground, curtain above max zoom |
 | `SolidCore1.Map.*` | Build smoke, trail clear, idempotent build, sampling, bounds, biome Z shelf |
 | `SolidCore1.WorldMap.*` | ASCII overlay load, key colors, numbered locations, doubled world scale, fog follows the player |
 | `SolidCore1.Noise.*` | Hash / value / fBm / height / grass tone |
@@ -255,6 +253,7 @@ Source/
     SolidClipLocomotion.*  # Shared single-node clip apply/play (per-character mesh)
     SolidGameMode.*
     SolidMainMenu.*          # F10 menu entries (Test Drill, Credits)
+    SolidCameraFog.h         # Boom scale that keeps the camera over Fog == 0
     SolidPlayerController.*
     SolidMaterials.*       # Shared FlatCol solid-color MID helper
     SolidContentPaths.h    # Canonical BP soft-class paths

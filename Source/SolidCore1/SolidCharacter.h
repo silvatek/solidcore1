@@ -57,6 +57,9 @@ public:
 	int32 GetPartyFormationDrillLeg() const { return PartyFormationDrill.CurrentLeg; }
 	float GetPartyFormationDrillPhaseRemaining() const { return PartyFormationDrill.PhaseSecondsRemaining; }
 
+	/** Mouse-wheel boom limit (cm). Fog curtains are taller than this. */
+	float GetCameraZoomMax() const { return CameraZoomMax; }
+
 protected:
 	void ApplyNameLabel();
 	void BeginPartyFormationDrillLeg();

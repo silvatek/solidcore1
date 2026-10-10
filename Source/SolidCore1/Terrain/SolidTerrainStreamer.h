@@ -166,13 +166,16 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "2", ClampMax = "32"))
 	int32 FogQuadsPerSide = 16;
 
-	/** Vertical extent of full exploration-fog volumes (cm). */
+	/**
+	 * Vertical extent of the outer (full) fog curtain (cm).
+	 * Taller than CameraZoomMax so a fully zoomed-out camera still sits below the top.
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "200.0"))
-	float FogVolumeHeightCm = 3200.f;
+	float FogVolumeHeightCm = 16000.f;
 
-	/** Vertical extent of half-fog pillars (cm). */
+	/** Vertical extent of the inner (half) fog curtain (cm). Also above max camera zoom. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "200.0"))
-	float FogVolumeHeightHalfCm = 2200.f;
+	float FogVolumeHeightHalfCm = 11000.f;
 
 	/** Min focus travel (cm) before re-applying trail fog / queuing mesh refreshes. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "50.0"))

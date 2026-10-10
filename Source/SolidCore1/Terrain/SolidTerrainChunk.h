@@ -39,8 +39,8 @@ public:
 		const USolidTerrainMap* TerrainMap,
 		const TMap<ESolidBiome, UMaterialInterface*>* BiomeMaterials = nullptr,
 		int32 InFogQuadsPerSide = 6,
-		float InFogVolumeHeightCm = 2500.f,
-		float InFogVolumeHeightHalfCm = 1400.f);
+		float InFogVolumeHeightCm = 16000.f,
+		float InFogVolumeHeightHalfCm = 11000.f);
 
 	/** Cheap fog-of-war refresh: rebuilds only the volume mesh (no collision terrain rebuild). */
 	void RebuildExplorationFog(
@@ -49,8 +49,8 @@ public:
 		UMaterialInterface* FogOuterMaterial,
 		const USolidTerrainMap* TerrainMap,
 		int32 InFogQuadsPerSide = 6,
-		float InFogVolumeHeightCm = 2500.f,
-		float InFogVolumeHeightHalfCm = 1400.f);
+		float InFogVolumeHeightCm = 16000.f,
+		float InFogVolumeHeightHalfCm = 11000.f);
 
 	FIntPoint GetChunkCoord() const { return ChunkCoord; }
 
@@ -75,6 +75,6 @@ protected:
 	float CachedChunkWorldSize = 6400.f;
 	float CachedCollisionHeightBias = 0.f;
 	int32 CachedFogQuadsPerSide = 6;
-	float CachedFogVolumeHeightCm = 2500.f;
-	float CachedFogVolumeHeightHalfCm = 1400.f;
+	float CachedFogVolumeHeightCm = 16000.f;
+	float CachedFogVolumeHeightHalfCm = 11000.f;
 };

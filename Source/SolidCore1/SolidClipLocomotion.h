@@ -11,7 +11,9 @@ class USkeletalMeshComponent;
 /**
  * Shared single-node clip locomotion for Captain / Companion (and later other Party members).
  * Does not assume a shared mesh — each character supplies its own skeletal mesh soft ptr.
- * Default Content paths below are Fab Viking; callers may point soft ptrs elsewhere.
+ * Default Content paths below are Fab Viking under /Game/Viking.
+ * If those miss (Launcher Add to Project → /Game/Fab/...), SolidContentLookup
+ * finds SK_Viking / Anim_Viking_* by name. Callers may point soft ptrs elsewhere.
  */
 namespace SolidClipLocomotion
 {

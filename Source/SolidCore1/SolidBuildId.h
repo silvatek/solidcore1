@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0122")
+#define SOLID_BUILD_ID TEXT("SC1-0123")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Mountain biome: significantly darker grey")
+#define SOLID_BUILD_NOTE TEXT("Find Viking under /Game/Viking or /Game/Fab by name")
 #endif

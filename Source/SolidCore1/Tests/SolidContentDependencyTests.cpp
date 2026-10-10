@@ -8,6 +8,7 @@
 #include "GameFramework/Pawn.h"
 #include "Materials/MaterialInterface.h"
 #include "Animation/AnimSequence.h"
+#include "SolidContentLookup.h"
 #include "SolidContentPaths.h"
 #include "UObject/SoftObjectPath.h"
 
@@ -130,16 +131,23 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidContentVikingRequiredTest::RunTest(const FString& Parameters)
 {
 	// Required player + companion path (Viking only — no mannequin fallback).
-	TestTrue(TEXT("SK_Viking mesh"),
-		SolidContentTestPrivate::SoftObjectResolves(TEXT("/Game/Viking/Mesh/SK_Viking.SK_Viking")));
-	TestTrue(TEXT("Anim_Viking_idle1"),
-		SolidContentTestPrivate::SoftObjectResolves(TEXT("/Game/Viking/Animations/Anim_Viking_idle1.Anim_Viking_idle1")));
-	TestTrue(TEXT("Anim_Viking_walk"),
-		SolidContentTestPrivate::SoftObjectResolves(TEXT("/Game/Viking/Animations/Anim_Viking_walk.Anim_Viking_walk")));
-	TestTrue(TEXT("Anim_Viking_run"),
-		SolidContentTestPrivate::SoftObjectResolves(TEXT("/Game/Viking/Animations/Anim_Viking_run.Anim_Viking_run")));
-	TestTrue(TEXT("Anim_Viking_jump"),
-		SolidContentTestPrivate::SoftObjectResolves(TEXT("/Game/Viking/Animations/Anim_Viking_jump.Anim_Viking_jump")));
+	// Accept repo /Game/Viking or Launcher Add-to-Project under /Game/Fab.
+	USkeletalMesh* Mesh = SolidContentLookup::FindVikingMesh();
+	UAnimSequence* Idle = SolidContentLookup::FindVikingIdle();
+	UAnimSequence* Walk = SolidContentLookup::FindVikingWalk();
+	UAnimSequence* Run = SolidContentLookup::FindVikingRun();
+	UAnimSequence* Jump = SolidContentLookup::FindVikingJump();
+	TestNotNull(TEXT("SK_Viking mesh (/Game/Viking or /Game/Fab)"), Mesh);
+	TestNotNull(TEXT("Anim_Viking_idle1"), Idle);
+	TestNotNull(TEXT("Anim_Viking_walk"), Walk);
+	TestNotNull(TEXT("Anim_Viking_run"), Run);
+	TestNotNull(TEXT("Anim_Viking_jump"), Jump);
+	if (Mesh)
+	{
+		const FString Path = Mesh->GetPathName();
+		TestTrue(TEXT("mesh is under /Game/Viking or /Game/Fab"),
+			Path.Contains(TEXT("/Game/Viking/")) || Path.Contains(TEXT("/Game/Fab/")));
+	}
 	return true;
 }
 

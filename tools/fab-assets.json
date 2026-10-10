@@ -17,7 +17,7 @@
         "Content/Viking/Animations/Anim_Viking_run.uasset",
         "Content/Viking/Animations/Anim_Viking_jump.uasset"
       ],
-      "notes": "Code loads /Game/Viking/Mesh/SK_Viking (+ idle/walk/run/jump). Launcher Add to Project often lands under Content/Fab/<listing>/ — if so, move or copy the Viking folder to Content/Viking so those paths resolve."
+      "notes": "C++ finds SK_Viking / Anim_Viking_* by name under /Game/Viking or /Game/Fab. Add to Project is enough — do not move folders."
     },
     {
       "id": "grass",

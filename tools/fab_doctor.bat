@@ -1,7 +1,8 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
-rem Check whether Fab assets this project expects are on disk, and print
-rem how to restore them from Fab in the Epic Games Launcher.
+rem Check whether Fab assets this project expects are on disk.
+rem C++ finds Viking by asset name under Content\Viking or Content\Fab —
+rem no manual folder move after Launcher Add to Project.
 rem
 rem Usage:
 rem   tools\fab_doctor.bat
@@ -15,18 +16,33 @@ echo.
 
 set "MISSING=0"
 
-echo [required] Viking
-if exist "%ROOT%\Content\Viking\Mesh\SK_Viking.uasset" (
-  echo   OK  Content\Viking\Mesh\SK_Viking.uasset
+echo [required] Viking  (Content\Viking or Content\Fab, name SK_Viking)
+set "VIKING_MESH="
+if exist "%ROOT%\Content\Viking\Mesh\SK_Viking.uasset" set "VIKING_MESH=%ROOT%\Content\Viking\Mesh\SK_Viking.uasset"
+if not defined VIKING_MESH (
+  for /r "%ROOT%\Content\Fab" %%F in (SK_Viking.uasset) do (
+    if exist "%%F" set "VIKING_MESH=%%F"
+  )
+)
+if defined VIKING_MESH (
+  echo   OK  !VIKING_MESH:%ROOT%\=!
 ) else (
-  echo   MISSING  Content\Viking\Mesh\SK_Viking.uasset
+  echo   MISSING  SK_Viking.uasset
   set "MISSING=1"
 )
+
 for %%A in (idle1 walk run jump) do (
-  if exist "%ROOT%\Content\Viking\Animations\Anim_Viking_%%A.uasset" (
-    echo   OK  Content\Viking\Animations\Anim_Viking_%%A.uasset
+  set "CLIP="
+  if exist "%ROOT%\Content\Viking\Animations\Anim_Viking_%%A.uasset" set "CLIP=%ROOT%\Content\Viking\Animations\Anim_Viking_%%A.uasset"
+  if not defined CLIP (
+    for /r "%ROOT%\Content\Fab" %%F in (Anim_Viking_%%A.uasset) do (
+      if exist "%%F" set "CLIP=%%F"
+    )
+  )
+  if defined CLIP (
+    echo   OK  !CLIP:%ROOT%\=!
   ) else (
-    echo   MISSING  Content\Viking\Animations\Anim_Viking_%%A.uasset
+    echo   MISSING  Anim_Viking_%%A.uasset
     set "MISSING=1"
   )
 )
@@ -35,27 +51,28 @@ echo.
 
 echo [optional] Grass Mat_025_grass
 set "GRASS="
-for /r "%ROOT%\Content\Fab" %%F in (Mat_025_grass.uasset) do (
-  if exist "%%F" set "GRASS=%%F"
+if exist "%ROOT%\Content\Fab" (
+  for /r "%ROOT%\Content\Fab" %%F in (Mat_025_grass.uasset) do (
+    if exist "%%F" (
+      echo %%F | findstr /i /c:"StaticMeshes" >nul
+      if errorlevel 1 set "GRASS=%%F"
+    )
+  )
 )
 if defined GRASS (
   echo   OK  !GRASS:%ROOT%\=!
 ) else (
-  echo   missing  Content\Fab\...\Mat_025_grass.uasset
+  echo   missing  Mat_025_grass.uasset
   echo   (terrain falls back to FlatCol)
 )
 echo   listing: https://www.fab.com/listings/94bfee39-8d7d-409c-89c9-40433550ee3a
 echo.
 
-echo Restore via Fab in Launcher
+echo Restore
 echo   1. Epic Games Launcher -^> Unreal Engine -^> Fab. Sign in.
-echo   2. Gear icon: default format = Unreal Engine, export target = Unreal Engine 5.8.
-echo   3. Open each listing above. Add to My Library if needed.
-echo   4. Native UE packs do NOT batch-download or batch-export.
-echo      Per listing: Add to Project -^> this SolidCore1.uproject.
-echo   5. If Viking lands under Content\Fab\, move it to Content\Viking\
-echo      so /Game/Viking/Mesh/SK_Viking resolves.
-echo   Docs: https://dev.epicgames.com/documentation/en-us/fab/exporting-assets-from-fab-in-launcher
+echo   2. Open each listing. Add to My Library if needed.
+echo   3. Add to Project -^> this SolidCore1.uproject.
+echo   No folder moves. Code searches /Game/Viking then /Game/Fab by asset name.
 echo   Manifest: tools\fab-assets.json
 echo.
 

@@ -1,4 +1,5 @@
 #include "SolidClipLocomotion.h"
+#include "SolidContentLookup.h"
 #include "Animation/AnimSequence.h"
 #include "Animation/AnimSingleNodeInstance.h"
 #include "Components/SkeletalMeshComponent.h"
@@ -14,7 +15,28 @@ UAnimSequence* SolidClipLocomotion::LoadClip(TSoftObjectPtr<UAnimSequence>& Soft
 	}
 	if (FallbackPath)
 	{
-		return Cast<UAnimSequence>(StaticLoadObject(UAnimSequence::StaticClass(), nullptr, FallbackPath));
+		if (UAnimSequence* FromPath = Cast<UAnimSequence>(
+			StaticLoadObject(UAnimSequence::StaticClass(), nullptr, FallbackPath)))
+		{
+			return FromPath;
+		}
+	}
+	// Launcher Add to Project may have dropped the pack under /Game/Fab/<listing>/.
+	if (FallbackPath && FCString::Stricmp(FallbackPath, DefaultIdlePath) == 0)
+	{
+		return SolidContentLookup::FindVikingIdle();
+	}
+	if (FallbackPath && FCString::Stricmp(FallbackPath, DefaultWalkPath) == 0)
+	{
+		return SolidContentLookup::FindVikingWalk();
+	}
+	if (FallbackPath && FCString::Stricmp(FallbackPath, DefaultRunPath) == 0)
+	{
+		return SolidContentLookup::FindVikingRun();
+	}
+	if (FallbackPath && FCString::Stricmp(FallbackPath, DefaultJumpPath) == 0)
+	{
+		return SolidContentLookup::FindVikingJump();
 	}
 	return nullptr;
 }
@@ -27,7 +49,15 @@ USkeletalMesh* SolidClipLocomotion::LoadMesh(TSoftObjectPtr<USkeletalMesh>& Soft
 	}
 	if (FallbackPath)
 	{
-		return Cast<USkeletalMesh>(StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, FallbackPath));
+		if (USkeletalMesh* FromPath = Cast<USkeletalMesh>(
+			StaticLoadObject(USkeletalMesh::StaticClass(), nullptr, FallbackPath)))
+		{
+			return FromPath;
+		}
+	}
+	if (!FallbackPath || FCString::Stricmp(FallbackPath, DefaultMeshPath) == 0)
+	{
+		return SolidContentLookup::FindVikingMesh();
 	}
 	return nullptr;
 }

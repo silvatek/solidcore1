@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0127")
+#define SOLID_BUILD_ID TEXT("SC1-0128")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Center exploration fog on the player")
+#define SOLID_BUILD_NOTE TEXT("Temporarily mark the start cell as Z")
 #endif

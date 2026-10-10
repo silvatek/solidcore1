@@ -3,6 +3,12 @@
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 
+bool USolidWorldMap::IsGridMarker(const TCHAR Marker)
+{
+	const TCHAR Upper = FChar::ToUpper(Marker);
+	return (Upper >= TEXT('A') && Upper <= TEXT('Z')) || FChar::IsDigit(Marker);
+}
+
 ESolidBiome USolidWorldMap::MarkerToBiome(const TCHAR Marker)
 {
 	switch (FChar::ToUpper(Marker))
@@ -15,8 +21,28 @@ ESolidBiome USolidWorldMap::MarkerToBiome(const TCHAR Marker)
 	case TEXT('D'): return ESolidBiome::Desert;
 	case TEXT('S'): return ESolidBiome::Sea;
 	case TEXT('R'): return ESolidBiome::River;
-	default: return ESolidBiome::Grassland;
+	default:
+		// Numbered locations resolve through the location key in GetBiomeAtCell.
+		return FChar::IsDigit(Marker) ? ESolidBiome::Town : ESolidBiome::Grassland;
 	}
+}
+
+bool USolidWorldMap::BiomeFromName(const FString& Name, ESolidBiome& OutBiome)
+{
+	const FString Trimmed = Name.TrimStartAndEnd();
+	static const ESolidBiome AllBiomes[] = {
+		ESolidBiome::Grassland, ESolidBiome::Forest, ESolidBiome::Mountain, ESolidBiome::Town,
+		ESolidBiome::Desert, ESolidBiome::Swamp, ESolidBiome::Sea, ESolidBiome::River,
+	};
+	for (const ESolidBiome Biome : AllBiomes)
+	{
+		if (Trimmed.Equals(SolidTerrainTypes::BiomeToString(Biome), ESearchCase::IgnoreCase))
+		{
+			OutBiome = Biome;
+			return true;
+		}
+	}
+	return false;
 }
 
 FLinearColor USolidWorldMap::DefaultColorForBiome(const ESolidBiome Biome)
@@ -110,6 +136,67 @@ bool USolidWorldMap::ParseKeyLine(const FString& Line)
 	return true;
 }
 
+bool USolidWorldMap::ParseLocationLine(const FString& Line)
+{
+	// "0 = Starting village, biome=Town, name=Iglin"
+	const FString Trimmed = Line.TrimStartAndEnd();
+	int32 EqIndex = INDEX_NONE;
+	if (!Trimmed.FindChar(TEXT('='), EqIndex) || EqIndex < 1)
+	{
+		return false;
+	}
+
+	const FString Left = Trimmed.Left(EqIndex).TrimStartAndEnd();
+	if (Left.Len() != 1 || !FChar::IsDigit(Left[0]))
+	{
+		return false;
+	}
+
+	const int32 Id = static_cast<int32>(Left[0] - TEXT('0'));
+	FSolidWorldLocation& Loc = Locations.FindOrAdd(Id);
+	Loc.Id = Id;
+	Loc.Biome = ESolidBiome::Town;
+
+	const FString Right = Trimmed.Mid(EqIndex + 1).TrimStartAndEnd();
+	TArray<FString> Parts;
+	Right.ParseIntoArray(Parts, TEXT(","), /*CullEmpty=*/true);
+	for (int32 PartIndex = 0; PartIndex < Parts.Num(); ++PartIndex)
+	{
+		const FString Part = Parts[PartIndex].TrimStartAndEnd();
+		FString Key;
+		FString Value;
+		if (Part.Split(TEXT("="), &Key, &Value))
+		{
+			Key = Key.TrimStartAndEnd();
+			Value = Value.TrimStartAndEnd();
+			if (Key.Equals(TEXT("biome"), ESearchCase::IgnoreCase))
+			{
+				ESolidBiome ParsedBiome = ESolidBiome::Town;
+				if (BiomeFromName(Value, ParsedBiome))
+				{
+					Loc.Biome = ParsedBiome;
+				}
+				else
+				{
+					UE_LOG(LogSolid, Warning,
+						TEXT("WorldMap: location %d has unknown biome '%s'; using Town."),
+						Id, *Value);
+					Loc.Biome = ESolidBiome::Town;
+				}
+			}
+			else if (Key.Equals(TEXT("name"), ESearchCase::IgnoreCase))
+			{
+				Loc.Name = Value;
+			}
+		}
+		else if (PartIndex == 0)
+		{
+			Loc.Role = Part;
+		}
+	}
+	return true;
+}
+
 bool USolidWorldMap::LoadFromString(const FString& Text)
 {
 	TArray<FString> Lines;
@@ -125,8 +212,7 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 			bool bAllMarkers = true;
 			for (int32 i = 0; i < Line.Len(); ++i)
 			{
-				const TCHAR C = FChar::ToUpper(Line[i]);
-				if (C < TEXT('A') || C > TEXT('Z'))
+				if (!IsGridMarker(Line[i]))
 				{
 					bAllMarkers = false;
 					break;
@@ -134,7 +220,7 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 			}
 			if (bAllMarkers)
 			{
-				GridLines.Add(Line.ToUpper());
+				GridLines.Add(Line);
 				if (GridLines.Num() == MapHeight)
 				{
 					break;
@@ -153,6 +239,7 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 
 	Markers.SetNum(MapWidth * MapHeight);
 	StartTownCells.Reset();
+	Locations.Reset();
 	bHasStartTown = false;
 
 	for (int32 Row = 0; Row < MapHeight; ++Row)
@@ -160,21 +247,62 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 		const FString& RowText = GridLines[Row];
 		for (int32 Col = 0; Col < MapWidth; ++Col)
 		{
-			const TCHAR Marker = RowText[Col];
+			const TCHAR Raw = RowText[Col];
+			const TCHAR Marker = FChar::IsDigit(Raw) ? Raw : FChar::ToUpper(Raw);
 			Markers[Row * MapWidth + Col] = static_cast<uint8>(Marker);
-			if (Marker == TEXT('Z'))
-			{
-				StartTownCells.Add(FIntPoint(Col, Row));
-				bHasStartTown = true;
-			}
 		}
 	}
 
 	BiomeColors.Reset();
 	for (const FString& RawLine : Lines)
 	{
-		ParseKeyLine(RawLine);
+		if (!ParseLocationLine(RawLine))
+		{
+			ParseKeyLine(RawLine);
+		}
 	}
+
+	TArray<FIntPoint> LegacyStartCells;
+	bool bHasLocationZero = false;
+	for (int32 Row = 0; Row < MapHeight; ++Row)
+	{
+		for (int32 Col = 0; Col < MapWidth; ++Col)
+		{
+			const TCHAR Marker = static_cast<TCHAR>(Markers[Row * MapWidth + Col]);
+			if (FChar::IsDigit(Marker))
+			{
+				const int32 Id = static_cast<int32>(Marker - TEXT('0'));
+				FSolidWorldLocation& Loc = Locations.FindOrAdd(Id);
+				if (Loc.Id == INDEX_NONE)
+				{
+					Loc.Id = Id;
+					Loc.Biome = ESolidBiome::Town;
+				}
+				Loc.Cells.Add(FIntPoint(Col, Row));
+				if (Id == 0)
+				{
+					bHasLocationZero = true;
+				}
+			}
+			else if (Marker == TEXT('Z'))
+			{
+				LegacyStartCells.Add(FIntPoint(Col, Row));
+			}
+		}
+	}
+
+	if (bHasLocationZero)
+	{
+		if (const FSolidWorldLocation* Start = Locations.Find(0))
+		{
+			StartTownCells = Start->Cells;
+		}
+	}
+	else
+	{
+		StartTownCells = MoveTemp(LegacyStartCells);
+	}
+	bHasStartTown = StartTownCells.Num() > 0;
 
 	// Ensure every biome used by markers has a color.
 	static const ESolidBiome AllBiomes[] = {
@@ -191,8 +319,8 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 
 	bIsLoaded = true;
 	UE_LOG(LogSolid, Warning,
-		TEXT("WorldMap loaded: %dx%d startTownCells=%d"),
-		MapWidth, MapHeight, StartTownCells.Num());
+		TEXT("WorldMap loaded: %dx%d startTownCells=%d locations=%d"),
+		MapWidth, MapHeight, StartTownCells.Num(), Locations.Num());
 	return true;
 }
 
@@ -239,7 +367,17 @@ ESolidBiome USolidWorldMap::GetBiomeAtCell(int32 MapX, int32 MapY) const
 	}
 	MapX = FMath::Clamp(MapX, 0, MapWidth - 1);
 	MapY = FMath::Clamp(MapY, 0, MapHeight - 1);
-	return MarkerToBiome(static_cast<TCHAR>(Markers[MapY * MapWidth + MapX]));
+	const TCHAR Marker = static_cast<TCHAR>(Markers[MapY * MapWidth + MapX]);
+	if (FChar::IsDigit(Marker))
+	{
+		const int32 Id = static_cast<int32>(Marker - TEXT('0'));
+		if (const FSolidWorldLocation* Loc = Locations.Find(Id))
+		{
+			return Loc->Biome;
+		}
+		return ESolidBiome::Town;
+	}
+	return MarkerToBiome(Marker);
 }
 
 ESolidBiome USolidWorldMap::SampleBiome(
@@ -275,12 +413,13 @@ FLinearColor USolidWorldMap::GetBiomeColor(const ESolidBiome Biome) const
 	return DefaultColorForBiome(Biome);
 }
 
-bool USolidWorldMap::GetStartTownWorldXY(
+bool USolidWorldMap::CellsToWorldXY(
+	const TArray<FIntPoint>& Cells,
 	const FVector2D WorldMinXY,
 	const FVector2D WorldMaxXY,
 	FVector2D& OutWorldXY) const
 {
-	if (!bHasStartTown || StartTownCells.Num() == 0)
+	if (Cells.Num() == 0)
 	{
 		return false;
 	}
@@ -291,7 +430,7 @@ bool USolidWorldMap::GetStartTownWorldXY(
 	const float CellH = ExtentY / static_cast<float>(MapHeight);
 
 	FVector2D Sum = FVector2D::ZeroVector;
-	for (const FIntPoint& Cell : StartTownCells)
+	for (const FIntPoint& Cell : Cells)
 	{
 		// Column 0 = east = max X (matches SampleBiome).
 		const float X = WorldMaxXY.X - (static_cast<float>(Cell.X) + 0.5f) * CellW;
@@ -299,6 +438,42 @@ bool USolidWorldMap::GetStartTownWorldXY(
 		const float Y = WorldMaxXY.Y - (static_cast<float>(Cell.Y) + 0.5f) * CellH;
 		Sum += FVector2D(X, Y);
 	}
-	OutWorldXY = Sum / static_cast<float>(StartTownCells.Num());
+	OutWorldXY = Sum / static_cast<float>(Cells.Num());
 	return true;
+}
+
+bool USolidWorldMap::GetStartTownWorldXY(
+	const FVector2D WorldMinXY,
+	const FVector2D WorldMaxXY,
+	FVector2D& OutWorldXY) const
+{
+	if (!bHasStartTown || StartTownCells.Num() == 0)
+	{
+		return false;
+	}
+	return CellsToWorldXY(StartTownCells, WorldMinXY, WorldMaxXY, OutWorldXY);
+}
+
+bool USolidWorldMap::FindLocation(const int32 Id, FSolidWorldLocation& OutLocation) const
+{
+	if (const FSolidWorldLocation* Found = Locations.Find(Id))
+	{
+		OutLocation = *Found;
+		return true;
+	}
+	return false;
+}
+
+bool USolidWorldMap::GetLocationWorldXY(
+	const int32 Id,
+	const FVector2D WorldMinXY,
+	const FVector2D WorldMaxXY,
+	FVector2D& OutWorldXY) const
+{
+	const FSolidWorldLocation* Found = Locations.Find(Id);
+	if (!Found)
+	{
+		return false;
+	}
+	return CellsToWorldXY(Found->Cells, WorldMinXY, WorldMaxXY, OutWorldXY);
 }

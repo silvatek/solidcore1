@@ -230,4 +230,134 @@ bool FSolidWorldMapDefaultColorPublicTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidWorldMapNumberedLocationsTest,
+	"SolidCore1.WorldMap.NumberedLocations",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
+{
+	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("LoadDefault"), Map->LoadDefault());
+	TestEqual(TEXT("four named locations"), Map->GetLocationCount(), 4);
+
+	FSolidWorldLocation Iglin;
+	TestTrue(TEXT("location 0"), Map->FindLocation(0, Iglin));
+	TestEqual(TEXT("Iglin"), Iglin.Name, FString(TEXT("Iglin")));
+	TestEqual(TEXT("starting village"), Iglin.Role, FString(TEXT("Starting village")));
+	TestEqual(TEXT("Iglin is Town"), static_cast<uint8>(Iglin.Biome), static_cast<uint8>(ESolidBiome::Town));
+	TestEqual(TEXT("one Iglin cell"), Iglin.Cells.Num(), 1);
+
+	FSolidWorldLocation Relion;
+	TestTrue(TEXT("location 1"), Map->FindLocation(1, Relion));
+	TestEqual(TEXT("Relion"), Relion.Name, FString(TEXT("Relion")));
+	TestEqual(TEXT("capital"), Relion.Role, FString(TEXT("Capital city")));
+	TestEqual(TEXT("one Relion cell"), Relion.Cells.Num(), 1);
+
+	FSolidWorldLocation Kanfold;
+	TestTrue(TEXT("location 2"), Map->FindLocation(2, Kanfold));
+	TestEqual(TEXT("Kanfold"), Kanfold.Name, FString(TEXT("Kanfold")));
+	TestEqual(TEXT("island city"), Kanfold.Role, FString(TEXT("Island city")));
+	TestEqual(TEXT("two Kanfold cells"), Kanfold.Cells.Num(), 2);
+
+	FSolidWorldLocation Visolar;
+	TestTrue(TEXT("location 3"), Map->FindLocation(3, Visolar));
+	TestEqual(TEXT("Visolar"), Visolar.Name, FString(TEXT("Visolar")));
+	TestEqual(TEXT("ruined city"), Visolar.Role, FString(TEXT("Ruined city")));
+	TestEqual(TEXT("one Visolar cell"), Visolar.Cells.Num(), 1);
+
+	TestEqual(TEXT("start is only location 0"), Map->GetStartTownCellCount(), Iglin.Cells.Num());
+
+	const FSolidWorldLocation* Named[] = { &Iglin, &Relion, &Kanfold, &Visolar };
+	for (const FSolidWorldLocation* Loc : Named)
+	{
+		for (const FIntPoint& Cell : Loc->Cells)
+		{
+			TestEqual(
+				*FString::Printf(TEXT("location %d cell is its biome"), Loc->Id),
+				static_cast<uint8>(Map->GetBiomeAtCell(Cell.X, Cell.Y)),
+				static_cast<uint8>(Loc->Biome));
+		}
+	}
+
+	const FVector2D WorldMin(-1000.f, -1000.f);
+	const FVector2D WorldMax(1000.f, 1000.f);
+	FVector2D StartXY = FVector2D::ZeroVector;
+	FVector2D IglinXY = FVector2D::ZeroVector;
+	TestTrue(TEXT("start XY"), Map->GetStartTownWorldXY(WorldMin, WorldMax, StartXY));
+	TestTrue(TEXT("Iglin XY"), Map->GetLocationWorldXY(0, WorldMin, WorldMax, IglinXY));
+	TestTrue(TEXT("start matches location 0"), StartXY.Equals(IglinXY, 0.1f));
+
+	FVector2D RelionXY = FVector2D::ZeroVector;
+	TestTrue(TEXT("Relion XY"), Map->GetLocationWorldXY(1, WorldMin, WorldMax, RelionXY));
+	TestFalse(TEXT("capital is not the start"), RelionXY.Equals(StartXY, 1.f));
+
+	// Digits are grid markers. Location 0 is the start even if a legacy Z is also present.
+	FString Text;
+	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	{
+		FString Line;
+		Line.Reserve(USolidWorldMap::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		{
+			if (Row == 2 && Col == 4)
+			{
+				Line.AppendChar(TEXT('0'));
+			}
+			else if (Row == 2 && Col == 8)
+			{
+				Line.AppendChar(TEXT('Z'));
+			}
+			else if (Row == 4 && Col == 6)
+			{
+				Line.AppendChar(TEXT('1'));
+			}
+			else
+			{
+				Line.AppendChar(TEXT('G'));
+			}
+		}
+		Text += Line;
+		Text += TEXT("\n");
+	}
+	Text += TEXT("G = Grassland (light green)\n");
+	Text += TEXT("0 = Starting village, biome=Town, name=Iglin\n");
+	Text += TEXT("1 = Watch, biome=Forest, name=Pine\n");
+	Text += TEXT("Z = Starting town (brown)\n");
+
+	USolidWorldMap* Synthetic = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("synthetic loads digits"), Synthetic->LoadFromString(Text));
+	TestEqual(TEXT("start ignores Z when 0 is present"), Synthetic->GetStartTownCellCount(), 1);
+	TestEqual(
+		TEXT("0 cell is Town"),
+		static_cast<uint8>(Synthetic->GetBiomeAtCell(4, 2)),
+		static_cast<uint8>(ESolidBiome::Town));
+	TestEqual(
+		TEXT("Z is still Town"),
+		static_cast<uint8>(Synthetic->GetBiomeAtCell(8, 2)),
+		static_cast<uint8>(ESolidBiome::Town));
+	TestEqual(
+		TEXT("1 cell uses biome=Forest"),
+		static_cast<uint8>(Synthetic->GetBiomeAtCell(6, 4)),
+		static_cast<uint8>(ESolidBiome::Forest));
+
+	FSolidWorldLocation Pine;
+	TestTrue(TEXT("pine location"), Synthetic->FindLocation(1, Pine));
+	TestEqual(TEXT("pine name"), Pine.Name, FString(TEXT("Pine")));
+	TestEqual(TEXT("pine role"), Pine.Role, FString(TEXT("Watch")));
+	TestEqual(
+		TEXT("pine biome"),
+		static_cast<uint8>(Pine.Biome),
+		static_cast<uint8>(ESolidBiome::Forest));
+
+	FVector2D SyntheticStart = FVector2D::ZeroVector;
+	const FVector2D SynMin(0.f, 0.f);
+	const FVector2D SynMax(6400.f, 6400.f);
+	TestTrue(TEXT("synthetic start"), Synthetic->GetStartTownWorldXY(SynMin, SynMax, SyntheticStart));
+	// Column 0 is east. Cell (4, 2) center is (5950, 6150), not the Z at column 8.
+	TestTrue(TEXT("start is the 0 cell, not Z"), FMath::IsNearlyEqual(SyntheticStart.X, 5950.f, 1.f));
+	TestTrue(TEXT("start row is the 0 cell"), FMath::IsNearlyEqual(SyntheticStart.Y, 6150.f, 1.f));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

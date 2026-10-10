@@ -51,7 +51,7 @@ public:
 
 	/**
 	 * True after the one-shot start-town relocate has run (or been skipped because
-	 * WorldMap has no Z cells). Companions should wait on this before first spawn.
+	 * WorldMap has no location 0 or legacy Z cells). Companions should wait on this before first spawn.
 	 */
 	bool HasAttemptedStartTownRelocate() const { return bDidRelocateToStartTown; }
 
@@ -123,7 +123,7 @@ public:
 	TWeakObjectPtr<AActor> FocusActor;
 
 	/**
-	 * Planar offset from the WorldMap Z-town centroid for the Captain spawn.
+	 * Planar offset from the WorldMap location-0 centroid for the Captain spawn.
 	 * Keeps the pawn in the town plaza, facing that centroid.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Start Town")
@@ -228,7 +228,7 @@ protected:
 	void CollectBiomeMaterials(TMap<ESolidBiome, UMaterialInterface*>& OutMaterials) const;
 	float SampleHeightAtWorld(const FVector& WorldLocation) const;
 	void TrySnapFocusToTerrain(AActor* Focus);
-	/** Move the focus pawn once to the WorldMap starting-town (Z) centroid. */
+	/** Move the focus pawn once to the WorldMap location-0 centroid (legacy Z if no 0). */
 	void TryRelocateFocusToStartTown();
 	/** After the player is at their start position, center fog on that pawn. */
 	void CenterExplorationFogOnFocus();

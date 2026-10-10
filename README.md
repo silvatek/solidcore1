@@ -4,7 +4,6 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 
 ## To-do
 
-- Use numbered locations in WorldMap.txt (no longer uses "Z")
 - Double world size
 - Use white material for 100% fog terrain
 - Don't allow camera to pass through fog curtain
@@ -21,9 +20,9 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 
 - **Captain + Party** — third-person Viking pawn (Enhanced Input: move / look / zoom / jump / sprint), clip locomotion (idle / walk / run / jump), floating nameplates. Companions **Sam** and **Alex** follow in battle-plan slots; Party camera frames the group and lifts off terrain.
 - **Battle plans** — Company catalog and Party assigned slots. F1 Line, F2 Column, F3 Tight mob, F4 Loose mob (spacing Narrow / Standard / Wide). F1–F8 select; F9 square-walk formation drill; HUD battle-plan panel.
-- **World + biomes** — 64×64 `WorldMap.txt` overlay (Sea, Grassland, Town/Z, Mountain, Forest, Desert, River) scaled onto a 257×257 TerrainPoint map. The captain starts at the Z-town centroid. Per-biome height shelf (Sea/River 0, Mountain +10 m, else +1 m). Darker mountain grey.
-- **No starter monolith** — the grey slab that marked the Z-town centroid is gone. That centroid still sets the captain spawn and the building clear radius.
-- **Fog follows the player** — the map starts fully fogged. After the captain is placed (at the Z town), exploration fog is centered on the pawn, not on the Z cell. The two match only because that is where the pawn stands.
+- **World + biomes** — 64×64 `WorldMap.txt` overlay (Sea, Grassland, Town, Mountain, Forest, Desert, River) scaled onto a 257×257 TerrainPoint map. Numbered locations are towns: `0` Iglin (start), `1` Relion, `2` Kanfold, `3` Visolar. The captain starts at location 0. Per-biome height shelf (Sea/River 0, Mountain +10 m, else +1 m). Darker mountain grey.
+- **No starter monolith** — the grey slab that marked the start-town centroid is gone. Location 0 still sets the captain spawn and the building clear radius.
+- **Fog follows the player** — the map starts fully fogged. After the captain is placed at location 0, exploration fog is centered on the pawn, not on that cell. The two match only because that is where the pawn stands.
 - **Procedural terrain** — streamed chunks around the pawn, Fab grassland material, FlatCol tints for other biomes. Exploration fog-of-war (25 m / 50 m bands, marching-squares curtains) clears from the trail, not the camera.
 - **Town + forest** — random non-overlapping town buildings (grey cuboid + red gable prism roof); forest trees scattered on Forest cells.
 - **Credits** — F10 overlay: Silvatek, Cursor + Grok, Fab Viking (Art.Hiraeth) and grass (NoblesseOblige-No.1).
@@ -60,7 +59,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 |--------|--------|
 | `SolidCore1.Fog.*` | Distance bands, units, mist sampling, fog mesh build guards |
 | `SolidCore1.Map.*` | Build smoke, trail clear, idempotent build, sampling, bounds, biome Z shelf |
-| `SolidCore1.WorldMap.*` | ASCII overlay load, key colors, Z town, fog follows the player |
+| `SolidCore1.WorldMap.*` | ASCII overlay load, key colors, numbered locations, fog follows the player |
 | `SolidCore1.Noise.*` | Hash / value / fBm / height / grass tone |
 | `SolidCore1.Types.*` | Biome names (incl. Sea/River), height offsets, `FSolidTerrainPoint` defaults |
 | `SolidCore1.Vegetation.*` | Tree RNG variation, town building pack |
@@ -160,7 +159,7 @@ C++ generates walkable terrain around the player at runtime:
 - `USolidWorldMap` — 64×64 ASCII biome overlay (`Content/WorldMap.txt`) scaled across the TerrainMap world bounds
 - `USolidTerrainMap` — 2D TerrainPoint grid built once at streamer startup (default 257×257 @ chunk vert spacing); biomes from WorldMap when loaded
 - `ASolidTerrainChunk` — runtime `UStaticMesh`; vertex heights from the TerrainMap; per-quad biome materials
-- `ASolidTerrainStreamer` — builds the map, relocates the pawn to the starting town (Z), then loads/unloads chunks
+- `ASolidTerrainStreamer` — builds the map, relocates the pawn to location 0, then loads/unloads chunks
 - Debug HUD shows biome / threat / fog at the pawn plus map size
 
 Defaults: 64 m chunks (`ChunkWorldSize=6400`), 32 quads/side, radius 2 (5×5 chunks), `Amplitude=3000`. Grassland uses Fab `Mat_025_grass`; other biomes use FlatCol tinted by the WorldMap key colors.
@@ -175,7 +174,7 @@ See [`Source/SolidCore1/Fog/README.md`](Source/SolidCore1/Fog/README.md) — tra
 
 ## WorldMap biomes (SC1-0105)
 
-`Content/WorldMap.txt` (fallback `Source/SolidCore1/WorldMap.txt`) is a 64×64 grid of markers plus a color key (`S` Sea, `G` Grassland, `T`/`Z` Town, `M` Mountain, `F` Forest, `D` Desert, `R` River). The grid scales across the TerrainMap world rectangle (file row 0 = north). `Z` cells mark the **starting town**: the streamer relocates the player there. Fog bands are centered on the player after that placement.
+`Content/WorldMap.txt` (fallback `Source/SolidCore1/WorldMap.txt`) is a 64×64 grid of markers plus a color key (`S` Sea, `G` Grassland, `T` Town, `M` Mountain, `F` Forest, `D` Desert, `R` River). Digits are named locations (`0` Iglin, `1` Relion, `2` Kanfold, `3` Visolar), each with `biome=` and `name=` in the key. The grid scales across the TerrainMap world rectangle (file row 0 = north). Location **0** is the starting town: the streamer relocates the player there. A legacy `Z` marker is the start only on maps that have no `0` cells. Fog bands are centered on the player after that placement.
 
 ## Forest trees (SC1-0076 / SC1-0110)
 
@@ -259,7 +258,7 @@ Source/
       SolidTerrainFog.*       # FoW bands, boundary mesh, materials, height-fog helpers
     Terrain/
       SolidTerrainTypes.h
-      SolidWorldMap.*         # Parse/scale WorldMap.txt; Z town centroid
+      SolidWorldMap.*         # Parse/scale WorldMap.txt; location 0 centroid
       SolidTerrainMap.*
       SolidTerrainNoise.h
       SolidTerrainChunk.*

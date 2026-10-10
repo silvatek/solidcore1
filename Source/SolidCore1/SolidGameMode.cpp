@@ -212,7 +212,7 @@ void ASolidGameMode::EnsureCompanion()
 		return;
 	}
 
-	// Wait for the streamer to finish the one-shot Z-town relocate so companions
+	// Wait for the streamer to finish the one-shot location-0 relocate so companions
 	// spawn next to the Captain at the starting town, not at the map PlayerStart.
 	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::EnsureExists(World);
 	if (Streamer && !Streamer->HasAttemptedStartTownRelocate())

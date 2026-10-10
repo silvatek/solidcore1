@@ -13,6 +13,10 @@ set "ROOT=%SCRIPT_DIR%.."
 echo SolidCore1 Fab doctor
 echo Project: %ROOT%
 echo.
+echo Listing IDs (copy/paste)
+echo ca4ba583-8d90-4069-b51f-50e694530b2f
+echo 94bfee39-8d7d-409c-89c9-40433550ee3a
+echo.
 
 set "MISSING=0"
 
@@ -46,6 +50,7 @@ for %%A in (idle1 walk run jump) do (
     set "MISSING=1"
   )
 )
+echo   uuid:    ca4ba583-8d90-4069-b51f-50e694530b2f
 echo   listing: https://www.fab.com/listings/ca4ba583-8d90-4069-b51f-50e694530b2f
 echo.
 
@@ -65,6 +70,7 @@ if defined GRASS (
   echo   MISSING  Mat_025_grass.uasset
   set "MISSING=1"
 )
+echo   uuid:    94bfee39-8d7d-409c-89c9-40433550ee3a
 echo   listing: https://www.fab.com/listings/94bfee39-8d7d-409c-89c9-40433550ee3a
 echo.
 

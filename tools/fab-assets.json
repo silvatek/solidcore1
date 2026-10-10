@@ -6,6 +6,7 @@
     {
       "id": "viking",
       "title": "Viking (Art.Hiraeth)",
+      "listingUuid": "ca4ba583-8d90-4069-b51f-50e694530b2f",
       "listing": "https://www.fab.com/listings/ca4ba583-8d90-4069-b51f-50e694530b2f",
       "required": true,
       "format": "unreal-engine",
@@ -22,6 +23,7 @@
     {
       "id": "grass",
       "title": "025 Grass (Mat_025_grass)",
+      "listingUuid": "94bfee39-8d7d-409c-89c9-40433550ee3a",
       "listing": "https://www.fab.com/listings/94bfee39-8d7d-409c-89c9-40433550ee3a",
       "required": true,
       "format": "unreal-engine",

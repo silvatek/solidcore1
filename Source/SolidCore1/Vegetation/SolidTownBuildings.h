@@ -46,11 +46,13 @@ namespace SolidTownBuildings
 	/**
 	 * Fill OutPlacements with non-overlapping buildings inside Town biomes.
 	 * Deterministic for a given map + seed + params.
+	 * ExtraClearCenters use the same radius as the start-town centroid (welcome signs).
 	 * @return Number of placements written.
 	 */
 	int32 CollectPlacements(
 		const USolidTerrainMap* TerrainMap,
 		int32 Seed,
 		const FScatterParams& Params,
-		TArray<FPlacement>& OutPlacements);
+		TArray<FPlacement>& OutPlacements,
+		const TArray<FVector2D>& ExtraClearCenters = TArray<FVector2D>());
 }

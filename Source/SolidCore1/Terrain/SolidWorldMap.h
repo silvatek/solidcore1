@@ -83,8 +83,14 @@ public:
 	/** Copy of a numbered location, including its map cells. */
 	bool FindLocation(int32 Id, FSolidWorldLocation& OutLocation) const;
 
+	/** Every numbered location, sorted by id. */
+	void CollectLocations(TArray<FSolidWorldLocation>& OutLocations) const;
+
 	/** Centroid of one location's cells. Same world rectangle as SampleBiome. */
 	bool GetLocationWorldXY(int32 Id, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
+
+	/** World XY of one map cell center. Same rectangle as SampleBiome. */
+	bool CellToWorldXY(FIntPoint Cell, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 
 	/** Built-in fallback colors when the key line is missing a named tint. */
 	static FLinearColor DefaultColorForBiome(ESolidBiome Biome);

@@ -6,6 +6,7 @@
 
 class ASolidBuilding;
 class ASolidCompanionCharacter;
+class ASolidTownSign;
 class ASolidTree;
 class USolidCompany;
 class USolidParty;
@@ -30,7 +31,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	TSubclassOf<ASolidCompanionCharacter> CompanionClass;
 
-	/** Spawn Forest trees and Town buildings. */
+	/** Spawn Forest trees, Town buildings, and welcome signs. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation")
 	bool bAutoSpawnVegetation = true;
 
@@ -62,7 +63,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation", meta = (ClampMin = "0.0"))
 	float TownBuildingMinSeparationCm = 100.f;
 
-	/** Keep the town centroid clear of buildings (cm). */
+	/** Keep the start-town centroid and each welcome sign clear of buildings (cm). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation", meta = (ClampMin = "0.0"))
 	float TownBuildingClearRadiusCm = 450.f;
 
@@ -113,6 +114,9 @@ protected:
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidBuilding>> SpawnedTownBuildings;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<ASolidTownSign>> SpawnedTownSigns;
 
 	FTimerHandle CompanionSpawnTimer;
 	FTimerHandle VegetationSpawnTimer;

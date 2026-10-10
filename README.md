@@ -7,7 +7,6 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 - Use white material for 100% fog terrain
 - Don't render trees or buildings on 100% fog terrain, generate it when fog is removed
 - Improve building and tree models
-- Create signs near all the towns with the town's name
 - Create a cave in the mountains near the starting town
 - Build cave interior as a new level and transition to/from the main world at the entrance
 - Replace companion models with new Fab assets
@@ -23,7 +22,8 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 - **No starter monolith** — the grey slab that marked the start-town centroid is gone. Location 0 still sets the captain spawn and the building clear radius.
 - **Fog follows the player** — the map starts fully fogged. After the captain is placed at location 0, exploration fog is centered on the pawn, not on that cell. The two match only because that is where the pawn stands. Curtains are 110 m (half) and 160 m (full), above the 50 m max zoom. The camera boom shortens so it cannot sit above terrain with fog greater than 0.
 - **Procedural terrain** — streamed chunks around the pawn, Fab grassland material, FlatCol tints for other biomes. Exploration fog-of-war (25 m / 50 m bands, marching-squares curtains) clears from the trail, not the camera.
-- **Town + forest** — random non-overlapping town buildings (grey cuboid + red gable prism roof); forest trees scattered on Forest cells.
+- **Town + forest** — random non-overlapping town buildings (grey cuboid + red gable prism roof); forest trees scattered on Forest cells. Buildings stay clear of the start-town centroid and of each welcome sign.
+- **Town signs** — every named WorldMap cell gets a "Welcome to {name}" sign: one thin dark-brown pole, a flat light-brown board, white letters with a black border. The board faces south. Kanfold's two cells each get a sign.
 - **Main menu** — F10 opens it. **1 Test Drill** runs the formation drill. **2 Credits** opens the credits page (Silvatek, Cursor + Grok, Fab Viking and grass). Up/Down and Enter also work. Esc or F10 closes. Move, look, and battle-plan keys are ignored while the menu or credits page is open.
 - **Content pipeline** — Fab listings restored via Launcher Add to Project; C++ finds Viking/grass by name under `/Game/Viking` or `/Game/Fab`. `tools/fab_doctor.bat` + `fab-assets.json`. Packs are gitignored (attribution README kept).
 - **Automation** — `SolidCore1.*` editor tests; `tools/run_automation_tests.bat` prints failed test paths. Build ID `SC1-NNNN` on the debug HUD.
@@ -65,7 +65,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.WorldMap.*` | ASCII overlay load, key colors, numbered locations, doubled world scale, fog follows the player |
 | `SolidCore1.Noise.*` | Hash / value / fBm / height / grass tone |
 | `SolidCore1.Types.*` | Biome names (incl. Sea/River), height offsets, `FSolidTerrainPoint` defaults |
-| `SolidCore1.Vegetation.*` | Tree RNG variation, town building pack |
+| `SolidCore1.Vegetation.*` | Tree RNG variation, town building pack, welcome signs |
 | `SolidCore1.GameMode.*` | Default spawn flags, pawn BP resolution |
 | `SolidCore1.Companion.*` | Defaults, SetFollowTarget |
 | `SolidCore1.Streamer.*` | FindExisting / EnsureExists (null + idempotent) |
@@ -275,6 +275,10 @@ Source/
     Vegetation/
       SolidTree.*             # Placeholder cylinder+cone tree
       SolidForestTrees.*      # Random Forest-biome tree placement
+      SolidBuilding.*         # Grey cuboid + red gable roof
+      SolidTownBuildings.*    # Non-overlapping town building pack
+      SolidTownSign.*         # Pole, board, "Welcome to {name}"
+      SolidTownSigns.*        # One sign per named WorldMap cell
     Tests/
       SolidTerrainTestHelpers.h   # Shared MakeSmallMap fixture
       SolidWorldMapTests.cpp
@@ -285,6 +289,7 @@ Source/
       SolidTerrainNoiseTests.cpp
       SolidTerrainTypesTests.cpp
       SolidVegetationTests.cpp
+      SolidTownSignTests.cpp
       SolidGameModeTests.cpp
       SolidCompanionTests.cpp
       SolidTerrainStreamerTests.cpp

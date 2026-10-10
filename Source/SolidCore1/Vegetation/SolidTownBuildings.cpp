@@ -6,7 +6,8 @@ int32 SolidTownBuildings::CollectPlacements(
 	const USolidTerrainMap* TerrainMap,
 	const int32 Seed,
 	const FScatterParams& Params,
-	TArray<FPlacement>& OutPlacements)
+	TArray<FPlacement>& OutPlacements,
+	const TArray<FVector2D>& ExtraClearCenters)
 {
 	OutPlacements.Reset();
 	if (!TerrainMap || !TerrainMap->IsBuilt())
@@ -65,6 +66,19 @@ int32 SolidTownBuildings::CollectPlacements(
 		const FVector2D Center(Point.X, Point.Y);
 
 		if (bHasTownCenter && FVector2D::DistSquared(Center, TownCenter) < ClearRadiusSq)
+		{
+			continue;
+		}
+		bool bInsideExtraClear = false;
+		for (const FVector2D& ClearCenter : ExtraClearCenters)
+		{
+			if (FVector2D::DistSquared(Center, ClearCenter) < ClearRadiusSq)
+			{
+				bInsideExtraClear = true;
+				break;
+			}
+		}
+		if (bInsideExtraClear)
 		{
 			continue;
 		}

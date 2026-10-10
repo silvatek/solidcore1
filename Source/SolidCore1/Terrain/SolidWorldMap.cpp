@@ -464,6 +464,26 @@ bool USolidWorldMap::FindLocation(const int32 Id, FSolidWorldLocation& OutLocati
 	return false;
 }
 
+void USolidWorldMap::CollectLocations(TArray<FSolidWorldLocation>& OutLocations) const
+{
+	OutLocations.Reset();
+	Locations.GenerateValueArray(OutLocations);
+	OutLocations.Sort([](const FSolidWorldLocation& A, const FSolidWorldLocation& B)
+	{
+		return A.Id < B.Id;
+	});
+}
+
+bool USolidWorldMap::CellToWorldXY(
+	const FIntPoint Cell,
+	const FVector2D WorldMinXY,
+	const FVector2D WorldMaxXY,
+	FVector2D& OutWorldXY) const
+{
+	const TArray<FIntPoint> Cells = { Cell };
+	return CellsToWorldXY(Cells, WorldMinXY, WorldMaxXY, OutWorldXY);
+}
+
 bool USolidWorldMap::GetLocationWorldXY(
 	const int32 Id,
 	const FVector2D WorldMinXY,

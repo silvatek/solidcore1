@@ -11,9 +11,12 @@
 #include "Party/SolidParty.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
+#include "Terrain/SolidWorldMap.h"
 #include "Vegetation/SolidBuilding.h"
 #include "Vegetation/SolidForestTrees.h"
 #include "Vegetation/SolidTownBuildings.h"
+#include "Vegetation/SolidTownSign.h"
+#include "Vegetation/SolidTownSigns.h"
 #include "Vegetation/SolidTree.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/World.h"
@@ -285,6 +288,10 @@ void ASolidGameMode::EnsureVegetation()
 	{
 		return !IsValid(Building);
 	});
+	SpawnedTownSigns.RemoveAll([](const TObjectPtr<ASolidTownSign>& Sign)
+	{
+		return !IsValid(Sign);
+	});
 
 	if (SpawnedForestTrees.Num() == 0)
 	{
@@ -299,6 +306,14 @@ void ASolidGameMode::EnsureVegetation()
 		for (TActorIterator<ASolidBuilding> It(World); It; ++It)
 		{
 			SpawnedTownBuildings.Add(*It);
+		}
+	}
+
+	if (SpawnedTownSigns.Num() == 0)
+	{
+		for (TActorIterator<ASolidTownSign> It(World); It; ++It)
+		{
+			SpawnedTownSigns.Add(*It);
 		}
 	}
 
@@ -352,6 +367,22 @@ void ASolidGameMode::EnsureVegetation()
 			Spawned, ForestTreeDensity, MaxForestTrees);
 	}
 
+	TArray<SolidTownSigns::FPlacement> SignPlacements;
+	TArray<FVector2D> SignClearCenters;
+	if (const USolidWorldMap* WorldMap = Streamer->GetTerrainMap()->GetWorldMap())
+	{
+		SolidTownSigns::CollectPlacements(
+			WorldMap,
+			Streamer->GetTerrainMap()->GetWorldMinXY(),
+			Streamer->GetTerrainMap()->GetWorldMaxXY(),
+			SignPlacements);
+		SignClearCenters.Reserve(SignPlacements.Num());
+		for (const SolidTownSigns::FPlacement& Placement : SignPlacements)
+		{
+			SignClearCenters.Add(Placement.WorldXY);
+		}
+	}
+
 	if (SpawnedTownBuildings.Num() == 0)
 	{
 		SolidTownBuildings::FScatterParams BuildingParams;
@@ -362,7 +393,7 @@ void ASolidGameMode::EnsureVegetation()
 
 		TArray<SolidTownBuildings::FPlacement> Placements;
 		SolidTownBuildings::CollectPlacements(
-			Streamer->GetTerrainMap(), TownBuildingSeed, BuildingParams, Placements);
+			Streamer->GetTerrainMap(), TownBuildingSeed, BuildingParams, Placements, SignClearCenters);
 
 		int32 Spawned = 0;
 		for (const SolidTownBuildings::FPlacement& Placement : Placements)
@@ -393,5 +424,33 @@ void ASolidGameMode::EnsureVegetation()
 		UE_LOG(LogSolid, Warning,
 			TEXT("Spawned %d town buildings (density=%.2f max=%d)"),
 			Spawned, TownBuildingDensity, MaxTownBuildings);
+	}
+
+	if (SpawnedTownSigns.Num() == 0)
+	{
+		int32 Spawned = 0;
+		for (const SolidTownSigns::FPlacement& Placement : SignPlacements)
+		{
+			FVector SpawnLoc(Placement.WorldXY.X, Placement.WorldXY.Y, 0.f);
+			const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
+			SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
+
+			ASolidTownSign* Sign = World->SpawnActor<ASolidTownSign>(
+				ASolidTownSign::StaticClass(),
+				SpawnLoc,
+				FRotator(0.f, SolidTownSigns::FacingYawDeg, 0.f),
+				SpawnParams);
+			if (!Sign)
+			{
+				continue;
+			}
+
+			Sign->SetTownName(Placement.Name);
+			Sign->BuildVisuals();
+			SpawnedTownSigns.Add(Sign);
+			++Spawned;
+		}
+
+		UE_LOG(LogSolid, Warning, TEXT("Spawned %d town signs"), Spawned);
 	}
 }

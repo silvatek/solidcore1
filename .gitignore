@@ -43,3 +43,7 @@ Desktop.ini
 
 # Cursor / tooling
 .cursor/
+
+# FAB content
+Content/Fab
+Content/Viking

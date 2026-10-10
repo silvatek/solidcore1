@@ -17,6 +17,7 @@ struct FSolidWorldLocation
 	UPROPERTY(BlueprintReadOnly, Category = "WorldMap")
 	int32 Id = INDEX_NONE;
 
+	/** From SolidTowns, matched by Id. WorldMap.txt does not supply this. */
 	UPROPERTY(BlueprintReadOnly, Category = "WorldMap")
 	FString Name;
 

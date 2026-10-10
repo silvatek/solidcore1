@@ -322,7 +322,7 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 		Text += TEXT("\n");
 	}
 	Text += TEXT("G = Grassland (light green)\n");
-	Text += TEXT("0 = Starting village, biome=Town, name=Iglin\n");
+	Text += TEXT("0 = Starting village, biome=Town, name=Ignored\n");
 	Text += TEXT("1 = Watch, biome=Forest, name=Pine\n");
 	Text += TEXT("Z = Starting town (brown)\n");
 
@@ -342,14 +342,17 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(6, 4)),
 		static_cast<uint8>(ESolidBiome::Forest));
 
-	FSolidWorldLocation Pine;
-	TestTrue(TEXT("pine location"), Synthetic->FindLocation(1, Pine));
-	TestEqual(TEXT("pine name"), Pine.Name, FString(TEXT("Pine")));
-	TestEqual(TEXT("pine role"), Pine.Role, FString(TEXT("Watch")));
+	FSolidWorldLocation IndexOne;
+	TestTrue(TEXT("location 1"), Synthetic->FindLocation(1, IndexOne));
+	TestEqual(TEXT("name comes from the town table, not name="), IndexOne.Name, FString(TEXT("Relion")));
+	TestEqual(TEXT("role still comes from the file"), IndexOne.Role, FString(TEXT("Watch")));
 	TestEqual(
-		TEXT("pine biome"),
-		static_cast<uint8>(Pine.Biome),
+		TEXT("biome still comes from the file"),
+		static_cast<uint8>(IndexOne.Biome),
 		static_cast<uint8>(ESolidBiome::Forest));
+	FSolidWorldLocation IndexZero;
+	TestTrue(TEXT("location 0"), Synthetic->FindLocation(0, IndexZero));
+	TestEqual(TEXT("index 0 ignores name=Ignored"), IndexZero.Name, FString(TEXT("Iglin")));
 
 	FVector2D SyntheticStart = FVector2D::ZeroVector;
 	const FVector2D SynMin(0.f, 0.f);

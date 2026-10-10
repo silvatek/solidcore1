@@ -64,6 +64,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.Fog.*` | Distance bands, units, mist sampling, fog mesh build guards, camera stays on clear ground, curtain above max zoom |
 | `SolidCore1.Map.*` | Build smoke, trail clear, idempotent build, sampling, bounds, biome Z shelf |
 | `SolidCore1.WorldMap.*` | ASCII overlay load, key colors, numbered locations, doubled world scale, fog follows the player |
+| `SolidCore1.Towns.*` | Town names keyed by the WorldMap index |
 | `SolidCore1.Noise.*` | Hash / value / fBm / height / grass tone |
 | `SolidCore1.Types.*` | Biome names (incl. Sea/River), height offsets, `FSolidTerrainPoint` defaults |
 | `SolidCore1.Vegetation.*` | Tree RNG variation, town building pack, welcome signs |
@@ -180,7 +181,7 @@ See [`Source/SolidCore1/Fog/README.md`](Source/SolidCore1/Fog/README.md) — tra
 
 ## WorldMap biomes (SC1-0105)
 
-`Content/WorldMap.txt` (fallback `Source/SolidCore1/WorldMap.txt`) is a 64×64 grid of markers plus a color key (`S` Sea, `G` Grassland, `T` Town, `M` Mountain, `F` Forest, `D` Desert, `R` River). Digits are named locations (`0` Iglin, `1` Relion, `2` Kanfold, `3` Visolar), each with `biome=` and `name=` in the key. The grid scales across the TerrainMap world rectangle (file row 0 = north). The default rectangle is 1024 m on a side, so each marker is 16 m. Location **0** is the starting town: the streamer relocates the player there. A legacy `Z` marker is the start only on maps that have no `0` cells. Fog bands are centered on the player after that placement.
+`Content/WorldMap.txt` (fallback `Source/SolidCore1/WorldMap.txt`) is a 64×64 grid of markers plus a color key (`S` Sea, `G` Grassland, `T` Town, `M` Mountain, `F` Forest, `D` Desert, `R` River). Digits are location indexes (`0` Iglin, `1` Relion, `2` Kanfold, `3` Visolar). The key still carries `biome=` and the role text. Town names live in `Towns/SolidTowns.h`, matched by that index. The grid scales across the TerrainMap world rectangle (file row 0 = north). The default rectangle is 1024 m on a side, so each marker is 16 m. Location **0** is the starting town: the streamer relocates the player there. A legacy `Z` marker is the start only on maps that have no `0` cells. Fog bands are centered on the player after that placement.
 
 ## Forest trees (SC1-0076 / SC1-0110)
 
@@ -283,6 +284,7 @@ Source/
       SolidTownBuildings.*    # Non-overlapping town building pack
       SolidTownSign.*         # Pole, board, "Welcome to {name}"
       SolidTownSigns.*        # One sign per named WorldMap cell
+      SolidTowns.h            # Town names, keyed by the WorldMap index
     HUD/
       SolidHUD.*              # Debug HUD, battle-plan panel, menu and credits drawing
     Menus/
@@ -299,6 +301,7 @@ Source/
       SolidTerrainTypesTests.cpp
       SolidVegetationTests.cpp
       SolidTownSignTests.cpp
+      SolidTownsTests.cpp
       SolidGameModeTests.cpp
       SolidCompanionTests.cpp
       SolidTerrainStreamerTests.cpp

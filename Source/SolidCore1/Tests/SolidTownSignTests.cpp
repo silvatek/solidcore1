@@ -83,7 +83,7 @@ bool FSolidTownSignSkipsEmptyNameTest::RunTest(const FString& Parameters)
 			}
 			else if (Row == 3 && Col == 5)
 			{
-				Line.AppendChar(TEXT('1'));
+				Line.AppendChar(TEXT('9'));
 			}
 			else if ((Row == 3 && Col == 9) || (Row == 8 && Col == 9))
 			{
@@ -97,8 +97,8 @@ bool FSolidTownSignSkipsEmptyNameTest::RunTest(const FString& Parameters)
 		Text += Line;
 		Text += TEXT("\n");
 	}
-	Text += TEXT("0 = Starting village, biome=Town, name=Iglin\n");
-	Text += TEXT("2 = Island city, biome=Town, name=Kanfold\n");
+	Text += TEXT("0 = Starting village, biome=Town\n");
+	Text += TEXT("2 = Island city, biome=Town\n");
 
 	USolidWorldMap* WorldMap = NewObject<USolidWorldMap>();
 	TestTrue(TEXT("synthetic loads"), WorldMap->LoadFromString(Text));
@@ -106,7 +106,7 @@ bool FSolidTownSignSkipsEmptyNameTest::RunTest(const FString& Parameters)
 	const FVector2D WorldMin(0.f, 0.f);
 	const FVector2D WorldMax(6400.f, 6400.f);
 	TArray<SolidTownSigns::FPlacement> Placements;
-	TestEqual(TEXT("unnamed digit is skipped"),
+	TestEqual(TEXT("index with no town definition is skipped"),
 		SolidTownSigns::CollectPlacements(WorldMap, WorldMin, WorldMax, Placements), 3);
 	if (Placements.Num() < 3)
 	{

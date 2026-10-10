@@ -1,5 +1,6 @@
 #include "SolidWorldMap.h"
 #include "SolidCore1.h"
+#include "SolidTowns.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 
@@ -138,7 +139,7 @@ bool USolidWorldMap::ParseKeyLine(const FString& Line)
 
 bool USolidWorldMap::ParseLocationLine(const FString& Line)
 {
-	// "0 = Starting village, biome=Town, name=Iglin"
+	// "0 = Starting village, biome=Town" — the name comes from SolidTowns by this index.
 	const FString Trimmed = Line.TrimStartAndEnd();
 	int32 EqIndex = INDEX_NONE;
 	if (!Trimmed.FindChar(TEXT('='), EqIndex) || EqIndex < 1)
@@ -183,10 +184,6 @@ bool USolidWorldMap::ParseLocationLine(const FString& Line)
 						Id, *Value);
 					Loc.Biome = ESolidBiome::Town;
 				}
-			}
-			else if (Key.Equals(TEXT("name"), ESearchCase::IgnoreCase))
-			{
-				Loc.Name = Value;
 			}
 		}
 		else if (PartIndex == 0)
@@ -303,6 +300,11 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 		StartTownCells = MoveTemp(LegacyStartCells);
 	}
 	bHasStartTown = StartTownCells.Num() > 0;
+
+	for (TPair<int32, FSolidWorldLocation>& Pair : Locations)
+	{
+		Pair.Value.Name = SolidTowns::NameFor(Pair.Key);
+	}
 
 	// Ensure every biome used by markers has a color.
 	static const ESolidBiome AllBiomes[] = {

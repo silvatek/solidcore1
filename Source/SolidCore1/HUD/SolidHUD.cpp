@@ -26,7 +26,6 @@
 #include "Engine/GameViewportClient.h"
 #include "GameFramework/PlayerController.h"
 #include "InputCoreTypes.h"
-#include "RenderUtils.h"
 #include "Engine/SkeletalMesh.h"
 #include "EngineUtils.h"
 #include "GameFramework/Character.h"
@@ -89,14 +88,20 @@ namespace SolidHUDPrivate
 		const SolidPointer::FTriangle& Screen,
 		const FLinearColor& Color)
 	{
-		if (!Canvas || !GWhiteTexture)
+		const float MinY = FMath::Min3(Screen.A.Y, Screen.B.Y, Screen.C.Y);
+		const float MaxY = FMath::Max3(Screen.A.Y, Screen.B.Y, Screen.C.Y);
+		const int32 FirstRow = FMath::FloorToInt(MinY);
+		const int32 LastRow = FMath::FloorToInt(MaxY);
+		for (int32 Row = FirstRow; Row <= LastRow; ++Row)
 		{
-			return;
+			float Left = 0.f;
+			float Right = 0.f;
+			if (!SolidPointer::SpanAtY(Screen, static_cast<float>(Row) + 0.5f, Left, Right))
+			{
+				continue;
+			}
+			FillRect(Canvas, Left, static_cast<float>(Row), FMath::Max(1.f, Right - Left), 1.f, Color);
 		}
-		FCanvasTriangleItem Item(Screen.A, Screen.B, Screen.C, GWhiteTexture);
-		Item.SetColor(Color);
-		Item.BlendMode = SE_BLEND_Opaque;
-		Canvas->DrawItem(Item);
 	}
 
 	static void DrawPointerLayer(

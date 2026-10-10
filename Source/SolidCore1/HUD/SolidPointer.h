@@ -53,6 +53,42 @@ namespace SolidPointer
 		return bHasMousePosition && !AllowsMouseLook(bRightMouseDown);
 	}
 
+	/**
+	 * Horizontal slice through the triangle at ScanY (top-inclusive, bottom-exclusive).
+	 * Used to paint the arrow with rects; the game module cannot link GWhiteTexture.
+	 */
+	inline bool SpanAtY(const FTriangle& Tri, const float ScanY, float& OutLeft, float& OutRight)
+	{
+		const FVector2D Vertices[3] = { Tri.A, Tri.B, Tri.C };
+		float Xs[3] = { 0.f, 0.f, 0.f };
+		int32 Found = 0;
+		for (int32 Edge = 0; Edge < 3; ++Edge)
+		{
+			const FVector2D& A = Vertices[Edge];
+			const FVector2D& B = Vertices[(Edge + 1) % 3];
+			const float YMin = FMath::Min(A.Y, B.Y);
+			const float YMax = FMath::Max(A.Y, B.Y);
+			if (ScanY < YMin || ScanY >= YMax)
+			{
+				continue;
+			}
+			const float T = (ScanY - A.Y) / (B.Y - A.Y);
+			Xs[Found++] = FMath::Lerp(A.X, B.X, T);
+		}
+		if (Found < 2)
+		{
+			return false;
+		}
+		OutLeft = FMath::Min(Xs[0], Xs[1]);
+		OutRight = FMath::Max(Xs[0], Xs[1]);
+		if (Found > 2)
+		{
+			OutLeft = FMath::Min(OutLeft, Xs[2]);
+			OutRight = FMath::Max(OutRight, Xs[2]);
+		}
+		return OutRight > OutLeft;
+	}
+
 	inline FTriangle Place(const FTriangle& Local, const FVector2D& HotspotScreen)
 	{
 		return {

@@ -45,6 +45,15 @@ bool FSolidPointerShapeTest::RunTest(const FString& Parameters)
 	}
 	TestTrue(TEXT("outline stamps surround the tip"), OffsetSum.IsNearlyZero(0.01f));
 
+	const FVector2D HeadCenter = (Head.A + Head.B + Head.C) / 3.f;
+	float SpanLeft = 0.f;
+	float SpanRight = 0.f;
+	TestTrue(TEXT("head row crosses the centroid"),
+		SolidPointer::SpanAtY(Head, HeadCenter.Y, SpanLeft, SpanRight));
+	TestTrue(TEXT("centroid sits inside that row"), HeadCenter.X >= SpanLeft && HeadCenter.X <= SpanRight);
+	TestFalse(TEXT("above the tip has no row"),
+		SolidPointer::SpanAtY(Head, -1.f, SpanLeft, SpanRight));
+
 	const FVector2D Screen(320.f, 180.f);
 	const SolidPointer::FTriangle Placed = SolidPointer::Place(Head, Screen);
 	TestTrue(TEXT("drawn tip sits on the mouse"), Placed.A.Equals(Screen));

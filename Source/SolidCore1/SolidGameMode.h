@@ -87,6 +87,9 @@ public:
 	/** Companions an event currently allows in the party. Starts at 0. */
 	int32 GetMaxPartySize() const { return Configuration.MaxPartySize; }
 
+	/** Live configuration, including which events have fired. */
+	const FSolidEventConfiguration& GetConfiguration() const { return Configuration; }
+
 	/** True when F9 may switch to this sight. Raven sight starts locked. */
 	bool IsSightEnabled(ESolidSight Sight) const;
 

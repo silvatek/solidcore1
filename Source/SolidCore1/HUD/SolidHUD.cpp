@@ -1,6 +1,7 @@
 #include "SolidHUD.h"
 #include "SolidBuildId.h"
 #include "Menus/SolidCredits.h"
+#include "Menus/SolidJournal.h"
 #include "Menus/SolidMainMenu.h"
 #include "SolidCharacter.h"
 #include "SolidSight.h"
@@ -27,6 +28,87 @@
 
 namespace SolidHUDPrivate
 {
+	static void DrawCenteredPopup(UCanvas* Canvas, const TArray<FString>& Lines, const float LineGap)
+	{
+		if (!Canvas || Lines.Num() == 0)
+		{
+			return;
+		}
+
+		UFont* Font = GEngine ? GEngine->GetMediumFont() : nullptr;
+		if (!Font && GEngine)
+		{
+			Font = GEngine->GetSmallFont();
+		}
+
+		float MaxWidth = 0.f;
+		float LineHeight = 18.f;
+		for (const FString& Line : Lines)
+		{
+			float W = 0.f;
+			float H = 0.f;
+			if (Font)
+			{
+				Canvas->StrLen(Font, Line.IsEmpty() ? TEXT(" ") : Line, W, H);
+			}
+			else
+			{
+				W = static_cast<float>(FMath::Max(Line.Len(), 1) * 8);
+				H = 18.f;
+			}
+			MaxWidth = FMath::Max(MaxWidth, W);
+			LineHeight = FMath::Max(LineHeight, H);
+		}
+
+		const float BoxPad = 22.f;
+		const float BlockHeight = Lines.Num() * LineHeight + (Lines.Num() - 1) * LineGap;
+		const float BoxW = MaxWidth + BoxPad * 2.f;
+		const float BoxH = BlockHeight + BoxPad * 2.f;
+		const float BoxX = (Canvas->SizeX - BoxW) * 0.5f;
+		const float BoxY = (Canvas->SizeY - BoxH) * 0.5f;
+
+		FCanvasTileItem Dim(
+			FVector2D(0.f, 0.f),
+			FVector2D(static_cast<float>(Canvas->SizeX), static_cast<float>(Canvas->SizeY)),
+			FLinearColor(0.f, 0.f, 0.f, 0.55f));
+		Dim.BlendMode = SE_BLEND_Translucent;
+		Canvas->DrawItem(Dim);
+
+		FCanvasTileItem Panel(
+			FVector2D(BoxX, BoxY),
+			FVector2D(BoxW, BoxH),
+			FLinearColor(0.06f, 0.07f, 0.09f, 0.92f));
+		Panel.BlendMode = SE_BLEND_Translucent;
+		Canvas->DrawItem(Panel);
+
+		float Y = BoxY + BoxPad;
+		for (int32 Index = 0; Index < Lines.Num(); ++Index)
+		{
+			const FString& Line = Lines[Index];
+			FLinearColor Color(0.88f, 0.90f, 0.93f);
+			if (Index == 0)
+			{
+				Color = FLinearColor(1.f, 0.84f, 0.47f);
+			}
+			else if (Line.StartsWith(TEXT("Fab assets")) || Line.StartsWith(TEXT("SolidCore1")))
+			{
+				Color = FLinearColor(0.75f, 0.80f, 0.86f);
+			}
+			else if (Line.StartsWith(TEXT("F10")))
+			{
+				Color = FLinearColor(0.55f, 0.58f, 0.62f);
+			}
+
+			if (!Line.IsEmpty())
+			{
+				FCanvasTextItem TextItem(FVector2D(BoxX + BoxPad, Y), FText::FromString(Line), Font, Color);
+				TextItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+				Canvas->DrawItem(TextItem);
+			}
+			Y += LineHeight + LineGap;
+		}
+	}
+
 	/** Draw a top-left text block. Returns Y just below the block (including padding). */
 	static float DrawLines(
 		UCanvas* Canvas,
@@ -389,7 +471,11 @@ void ASolidHUD::DrawHUD()
 	}
 	SolidHUDPrivate::DrawBattlePlansPanel(Canvas, Font, Party, BelowTech);
 
-	if (bShowCredits)
+	if (bShowJournal)
+	{
+		DrawJournalPopup();
+	}
+	else if (bShowCredits)
 	{
 		DrawCreditsPopup();
 	}
@@ -401,6 +487,12 @@ void ASolidHUD::DrawHUD()
 
 void ASolidHUD::HandleMenuKey()
 {
+	if (bShowJournal)
+	{
+		bShowJournal = false;
+		return;
+	}
+
 	if (bShowCredits)
 	{
 		bShowCredits = false;
@@ -418,6 +510,7 @@ void ASolidHUD::CloseMenuOverlay()
 {
 	bShowMainMenu = false;
 	bShowCredits = false;
+	bShowJournal = false;
 }
 
 void ASolidHUD::CloseMainMenu()
@@ -448,87 +541,25 @@ void ASolidHUD::ToggleCredits()
 
 void ASolidHUD::DrawCreditsPopup() const
 {
-	if (!Canvas)
-	{
-		return;
-	}
+	TArray<FString> Lines;
+	SolidCredits::CollectLines(Lines);
+	SolidHUDPrivate::DrawCenteredPopup(Canvas, Lines, 4.f);
+}
 
-	UFont* Font = GEngine ? GEngine->GetMediumFont() : nullptr;
-	if (!Font && GEngine)
+void ASolidHUD::DrawJournalPopup() const
+{
+	SolidEvents::FState State;
+	if (UWorld* World = GetWorld())
 	{
-		Font = GEngine->GetSmallFont();
+		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+		{
+			State = GameMode->GetConfiguration();
+		}
 	}
 
 	TArray<FString> Lines;
-	SolidCredits::CollectLines(Lines);
-
-	float MaxWidth = 0.f;
-	float LineHeight = 18.f;
-	const float LineGap = 4.f;
-	for (const FString& Line : Lines)
-	{
-		float W = 0.f;
-		float H = 0.f;
-		if (Font)
-		{
-			Canvas->StrLen(Font, Line.IsEmpty() ? TEXT(" ") : Line, W, H);
-		}
-		else
-		{
-			W = static_cast<float>(FMath::Max(Line.Len(), 1) * 8);
-			H = 18.f;
-		}
-		MaxWidth = FMath::Max(MaxWidth, W);
-		LineHeight = FMath::Max(LineHeight, H);
-	}
-
-	const float BoxPad = 22.f;
-	const float BlockHeight = Lines.Num() * LineHeight + (Lines.Num() - 1) * LineGap;
-	const float BoxW = MaxWidth + BoxPad * 2.f;
-	const float BoxH = BlockHeight + BoxPad * 2.f;
-	const float BoxX = (Canvas->SizeX - BoxW) * 0.5f;
-	const float BoxY = (Canvas->SizeY - BoxH) * 0.5f;
-
-	FCanvasTileItem Dim(
-		FVector2D(0.f, 0.f),
-		FVector2D(static_cast<float>(Canvas->SizeX), static_cast<float>(Canvas->SizeY)),
-		FLinearColor(0.f, 0.f, 0.f, 0.55f));
-	Dim.BlendMode = SE_BLEND_Translucent;
-	Canvas->DrawItem(Dim);
-
-	FCanvasTileItem Panel(
-		FVector2D(BoxX, BoxY),
-		FVector2D(BoxW, BoxH),
-		FLinearColor(0.06f, 0.07f, 0.09f, 0.92f));
-	Panel.BlendMode = SE_BLEND_Translucent;
-	Canvas->DrawItem(Panel);
-
-	float Y = BoxY + BoxPad;
-	for (int32 Index = 0; Index < Lines.Num(); ++Index)
-	{
-		const FString& Line = Lines[Index];
-		FLinearColor Color(0.88f, 0.90f, 0.93f);
-		if (Index == 0)
-		{
-			Color = FLinearColor(1.f, 0.84f, 0.47f);
-		}
-		else if (Line.StartsWith(TEXT("Fab assets")) || Line.StartsWith(TEXT("SolidCore1")))
-		{
-			Color = FLinearColor(0.75f, 0.80f, 0.86f);
-		}
-		else if (Line.StartsWith(TEXT("F10")))
-		{
-			Color = FLinearColor(0.55f, 0.58f, 0.62f);
-		}
-
-		if (!Line.IsEmpty())
-		{
-			FCanvasTextItem TextItem(FVector2D(BoxX + BoxPad, Y), FText::FromString(Line), Font, Color);
-			TextItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
-			Canvas->DrawItem(TextItem);
-		}
-		Y += LineHeight + LineGap;
-	}
+	SolidJournal::CollectLines(State, Lines);
+	SolidHUDPrivate::DrawCenteredPopup(Canvas, Lines, 4.f);
 }
 
 void ASolidHUD::DrawMainMenuPopup() const
@@ -556,7 +587,7 @@ void ASolidHUD::DrawMainMenuPopup() const
 		Lines.Add(FString::Printf(TEXT("%s  %d  %s"), Marker, Index + 1, *Entries[Index].Label));
 	}
 	Lines.Add(TEXT(""));
-	Lines.Add(TEXT("1-2 or Up/Down    Enter    Esc / F10"));
+	Lines.Add(TEXT("1-3 or Up/Down    Enter    Esc / F10"));
 
 	float MaxWidth = 0.f;
 	float LineHeight = 18.f;

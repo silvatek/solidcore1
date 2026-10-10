@@ -230,8 +230,10 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::Enter, IE_Pressed, this, &ASolidCharacter::MainMenuConfirm);
 	PlayerInputComponent->BindKey(EKeys::One, IE_Pressed, this, &ASolidCharacter::MainMenuChoose1);
 	PlayerInputComponent->BindKey(EKeys::Two, IE_Pressed, this, &ASolidCharacter::MainMenuChoose2);
+	PlayerInputComponent->BindKey(EKeys::Three, IE_Pressed, this, &ASolidCharacter::MainMenuChoose3);
 	PlayerInputComponent->BindKey(EKeys::NumPadOne, IE_Pressed, this, &ASolidCharacter::MainMenuChoose1);
 	PlayerInputComponent->BindKey(EKeys::NumPadTwo, IE_Pressed, this, &ASolidCharacter::MainMenuChoose2);
+	PlayerInputComponent->BindKey(EKeys::NumPadThree, IE_Pressed, this, &ASolidCharacter::MainMenuChoose3);
 }
 
 ASolidHUD* ASolidCharacter::GetSolidHUD() const
@@ -247,7 +249,7 @@ bool ASolidCharacter::IsMenuOverlayOpen() const
 {
 	if (const ASolidHUD* HUD = GetSolidHUD())
 	{
-		return HUD->IsMainMenuOpen() || HUD->IsCreditsVisible();
+		return HUD->IsMainMenuOpen() || HUD->IsCreditsVisible() || HUD->IsJournalVisible();
 	}
 	return false;
 }
@@ -373,6 +375,11 @@ void ASolidCharacter::MainMenuChoose2()
 	ChooseMainMenuIndex(1);
 }
 
+void ASolidCharacter::MainMenuChoose3()
+{
+	ChooseMainMenuIndex(2);
+}
+
 void ASolidCharacter::ChooseMainMenuIndex(const int32 Index)
 {
 	ASolidHUD* HUD = GetSolidHUD();
@@ -403,6 +410,9 @@ void ASolidCharacter::MainMenuConfirm()
 	{
 	case ESolidMainMenuAction::StartTestDrill:
 		StartPartyFormationDrill();
+		break;
+	case ESolidMainMenuAction::ShowJournal:
+		HUD->SetJournalVisible(true);
 		break;
 	case ESolidMainMenuAction::ShowCredits:
 		HUD->SetCreditsVisible(true);

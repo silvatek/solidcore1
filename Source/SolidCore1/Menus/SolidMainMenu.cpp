@@ -4,6 +4,7 @@ void SolidMainMenu::CollectEntries(TArray<FSolidMainMenuEntry>& OutEntries)
 {
 	OutEntries.Reset();
 	OutEntries.Add({ ESolidMainMenuItem::TestDrill, TEXT("Test Drill") });
+	OutEntries.Add({ ESolidMainMenuItem::Journal, TEXT("Journal") });
 	OutEntries.Add({ ESolidMainMenuItem::Credits, TEXT("Credits") });
 }
 
@@ -32,6 +33,8 @@ ESolidMainMenuAction SolidMainMenu::ActionForItem(const ESolidMainMenuItem Item)
 	{
 	case ESolidMainMenuItem::TestDrill:
 		return ESolidMainMenuAction::StartTestDrill;
+	case ESolidMainMenuItem::Journal:
+		return ESolidMainMenuAction::ShowJournal;
 	case ESolidMainMenuItem::Credits:
 		return ESolidMainMenuAction::ShowCredits;
 	default:

@@ -16,9 +16,12 @@ public:
 	bool IsCreditsVisible() const { return bShowCredits; }
 	void SetCreditsVisible(bool bVisible) { bShowCredits = bVisible; }
 
-	/** F10. Closes credits if they are up; otherwise toggles the main menu. */
+	bool IsJournalVisible() const { return bShowJournal; }
+	void SetJournalVisible(bool bVisible) { bShowJournal = bVisible; }
+
+	/** F10. Closes the journal or credits if they are up; otherwise toggles the main menu. */
 	void HandleMenuKey();
-	/** Esc. Closes the menu and the credits page. */
+	/** Esc. Closes the menu, the journal, and the credits page. */
 	void CloseMenuOverlay();
 	/** Hide the menu list. Leaves the credits page as it is. */
 	void CloseMainMenu();
@@ -29,6 +32,7 @@ public:
 
 protected:
 	void DrawCreditsPopup() const;
+	void DrawJournalPopup() const;
 	void DrawMainMenuPopup() const;
 	/** Wall-clock timestamps (seconds) for frames in the rolling FPS window. */
 	TArray<double> RecentFrameTimes;
@@ -40,6 +44,10 @@ protected:
 	/** Credits page, opened from the main menu. */
 	UPROPERTY(VisibleAnywhere, Category = "HUD")
 	bool bShowCredits = false;
+
+	/** Journal page, opened from the main menu. Lists events that have fired. */
+	UPROPERTY(VisibleAnywhere, Category = "HUD")
+	bool bShowJournal = false;
 
 	/** F10 main menu. Off until toggled. */
 	UPROPERTY(VisibleAnywhere, Category = "HUD")

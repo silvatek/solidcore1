@@ -14,8 +14,8 @@ bool FSolidMainMenuEntriesTest::RunTest(const FString& Parameters)
 {
 	TArray<FSolidMainMenuEntry> Entries;
 	SolidMainMenu::CollectEntries(Entries);
-	TestEqual(TEXT("two entries"), Entries.Num(), 2);
-	TestEqual(TEXT("entry count"), SolidMainMenu::EntryCount(), 2);
+	TestEqual(TEXT("three entries"), Entries.Num(), 3);
+	TestEqual(TEXT("entry count"), SolidMainMenu::EntryCount(), 3);
 
 	TestEqual(TEXT("first is Test Drill"), Entries[0].Label, FString(TEXT("Test Drill")));
 	TestEqual(
@@ -27,24 +27,35 @@ bool FSolidMainMenuEntriesTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(SolidMainMenu::ActionForItem(Entries[0].Item)),
 		static_cast<uint8>(ESolidMainMenuAction::StartTestDrill));
 
-	TestEqual(TEXT("second is Credits"), Entries[1].Label, FString(TEXT("Credits")));
+	TestEqual(TEXT("second is Journal"), Entries[1].Label, FString(TEXT("Journal")));
 	TestEqual(
 		TEXT("second item"),
 		static_cast<uint8>(Entries[1].Item),
+		static_cast<uint8>(ESolidMainMenuItem::Journal));
+	TestEqual(
+		TEXT("journal action"),
+		static_cast<uint8>(SolidMainMenu::ActionForItem(Entries[1].Item)),
+		static_cast<uint8>(ESolidMainMenuAction::ShowJournal));
+
+	TestEqual(TEXT("third is Credits"), Entries[2].Label, FString(TEXT("Credits")));
+	TestEqual(
+		TEXT("third item"),
+		static_cast<uint8>(Entries[2].Item),
 		static_cast<uint8>(ESolidMainMenuItem::Credits));
 	TestEqual(
 		TEXT("credits action"),
-		static_cast<uint8>(SolidMainMenu::ActionForItem(Entries[1].Item)),
+		static_cast<uint8>(SolidMainMenu::ActionForItem(Entries[2].Item)),
 		static_cast<uint8>(ESolidMainMenuAction::ShowCredits));
 
 	FSolidMainMenuEntry Found;
 	TestTrue(TEXT("find first"), SolidMainMenu::FindEntry(0, Found));
 	TestEqual(TEXT("found label"), Found.Label, FString(TEXT("Test Drill")));
-	TestFalse(TEXT("no third entry"), SolidMainMenu::FindEntry(2, Found));
+	TestFalse(TEXT("no fourth entry"), SolidMainMenu::FindEntry(3, Found));
 
 	TestEqual(TEXT("wrap down"), SolidMainMenu::WrapIndex(0, 1), 1);
-	TestEqual(TEXT("wrap past end"), SolidMainMenu::WrapIndex(1, 1), 0);
-	TestEqual(TEXT("wrap up"), SolidMainMenu::WrapIndex(0, -1), 1);
+	TestEqual(TEXT("wrap to journal"), SolidMainMenu::WrapIndex(1, 1), 2);
+	TestEqual(TEXT("wrap past end"), SolidMainMenu::WrapIndex(2, 1), 0);
+	TestEqual(TEXT("wrap up"), SolidMainMenu::WrapIndex(0, -1), 2);
 	return true;
 }
 
@@ -66,16 +77,20 @@ bool FSolidMainMenuHudTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("opening menu does not show credits"), HUD->IsCreditsVisible());
 
 	HUD->MoveMainMenuSelection(1);
-	TestEqual(TEXT("down selects Credits"), HUD->GetMainMenuIndex(), 1);
+	TestEqual(TEXT("down selects Journal"), HUD->GetMainMenuIndex(), 1);
+	HUD->MoveMainMenuSelection(1);
+	TestEqual(TEXT("down selects Credits"), HUD->GetMainMenuIndex(), 2);
 	HUD->MoveMainMenuSelection(1);
 	TestEqual(TEXT("down wraps to Test Drill"), HUD->GetMainMenuIndex(), 0);
 	HUD->MoveMainMenuSelection(-1);
-	TestEqual(TEXT("up wraps to Credits"), HUD->GetMainMenuIndex(), 1);
+	TestEqual(TEXT("up wraps to Credits"), HUD->GetMainMenuIndex(), 2);
 
 	HUD->SetMainMenuIndex(0);
 	TestEqual(TEXT("number key selects Test Drill"), HUD->GetMainMenuIndex(), 0);
+	HUD->SetMainMenuIndex(1);
+	TestEqual(TEXT("number key selects Journal"), HUD->GetMainMenuIndex(), 1);
 	HUD->SetMainMenuIndex(99);
-	TestEqual(TEXT("index clamps"), HUD->GetMainMenuIndex(), 1);
+	TestEqual(TEXT("index clamps"), HUD->GetMainMenuIndex(), 2);
 
 	HUD->HandleMenuKey();
 	TestFalse(TEXT("F10 closes menu"), HUD->IsMainMenuOpen());
@@ -90,6 +105,16 @@ bool FSolidMainMenuHudTest::RunTest(const FString& Parameters)
 	HUD->CloseMenuOverlay();
 	TestFalse(TEXT("Esc closes menu"), HUD->IsMainMenuOpen());
 	TestFalse(TEXT("Esc closes credits"), HUD->IsCreditsVisible());
+
+	HUD->SetJournalVisible(true);
+	TestTrue(TEXT("journal opens"), HUD->IsJournalVisible());
+	HUD->HandleMenuKey();
+	TestFalse(TEXT("F10 closes journal"), HUD->IsJournalVisible());
+	TestFalse(TEXT("closing journal does not open the menu"), HUD->IsMainMenuOpen());
+
+	HUD->SetJournalVisible(true);
+	HUD->CloseMenuOverlay();
+	TestFalse(TEXT("Esc closes journal"), HUD->IsJournalVisible());
 	return true;
 }
 

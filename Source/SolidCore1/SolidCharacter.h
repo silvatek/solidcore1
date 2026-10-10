@@ -111,6 +111,7 @@ protected:
 	void MainMenuConfirm();
 	void MainMenuChoose1();
 	void MainMenuChoose2();
+	void MainMenuChoose3();
 	void ChooseMainMenuIndex(int32 Index);
 
 	void ApplyWalkSpeed() const;

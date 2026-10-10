@@ -6,6 +6,7 @@
 enum class ESolidMainMenuItem : uint8
 {
 	TestDrill,
+	Journal,
 	Credits,
 };
 
@@ -14,6 +15,7 @@ enum class ESolidMainMenuAction : uint8
 {
 	None,
 	StartTestDrill,
+	ShowJournal,
 	ShowCredits,
 };
 

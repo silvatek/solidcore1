@@ -25,7 +25,8 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - **Town signs** — every named WorldMap cell gets a "Welcome to {name}" sign: one thin dark-brown pole, a flat light-brown board, white letters with a black border. The board faces south. Kanfold's two cells each get a sign.
 - **True sight / raven sight** — the game starts in true sight (first person). Raven sight (third person) is locked until the captain enters town 1. F9 then toggles. True sight hides the captain's body and nameplate, turns the body with the look direction, and ignores mouse-wheel zoom until you switch back. The menu and the formation drill ignore F9.
 - **Events** — a list of one-shot triggers that change the company/party configuration. Enter town fires when the captain steps onto a numbered WorldMap cell; the parameter is that index. Entering town 1 (Relion) enables raven sight and sets max party size to 1 (Sam). Entering town 2 (Kanfold) sets max party size to 2 (Sam and Alex). Town 0 does not.
-- **Main menu** — F10 opens it. **1 Test Drill** runs the formation drill. **2 Credits** opens the credits page (Silvatek, Cursor + Grok, Fab Viking and grass). Up/Down and Enter also work. Esc or F10 closes. Move, look, and battle-plan keys are ignored while the menu or credits page is open.
+- **Journal** — F10 menu, **2 Journal**. Lists every event that has fired, in that order, with what it changed. Empty until the first event. Esc or F10 closes the page.
+- **Main menu** — F10 opens it. **1 Test Drill** runs the formation drill. **2 Journal** opens the journal. **3 Credits** opens the credits page (Silvatek, Cursor + Grok, Fab Viking and grass). Up/Down and Enter also work. Esc or F10 closes. Move, look, and battle-plan keys are ignored while the menu, journal, or credits page is open.
 - **Content pipeline** — Fab listings restored via Launcher Add to Project; C++ finds Viking/grass by name under `/Game/Viking` or `/Game/Fab`. `tools/fab_doctor.bat` + `fab-assets.json`. Packs are gitignored (attribution README kept).
 - **Automation** — `SolidCore1.*` editor tests; `tools/run_automation_tests.bat` prints failed test paths. Build ID `SC1-NNNN` on the debug HUD.
 - **Editor build** — `tools\build.bat` compiles `SolidCore1Editor` Win64 Development (`-WaitMutex`). `UE_ROOT` overrides the engine install; `PROJECT` overrides the uproject. Both default from the script location.
@@ -42,8 +43,8 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 | True sight / raven sight | F9 (after raven sight is enabled) | — |
 | Main menu | F10 | — |
 | Menu up / down | Up / Down | — |
-| Menu confirm | Enter, or 1 / 2 | — |
-| Close menu / credits | Esc or F10 | — |
+| Menu confirm | Enter, or 1 / 2 / 3 | — |
+| Close menu / journal / credits | Esc or F10 | — |
 
 Input Actions / Mapping Context can be replaced with Content assets on the character later; if unset, C++ creates transient defaults so PIE works immediately.
 
@@ -76,7 +77,8 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.NameLabel.*` | Style sizes/colors/plates; Outcast / Sam defaults |
 | `SolidCore1.BattlePlan.*` | Formation slots; Company/Party assign; drill legs |
 | `SolidCore1.Credits.*` | Author / Cursor+Grok / Fab attribution; HUD toggle |
-| `SolidCore1.MainMenu.*` | F10 menu entries (Test Drill, Credits) and selection |
+| `SolidCore1.MainMenu.*` | F10 menu entries (Test Drill, Journal, Credits) and selection |
+| `SolidCore1.Journal.*` | Empty journal, then events in the order they fired |
 | `SolidCore1.Sight.*` | True sight at start; F9 switches to raven sight and back |
 | `SolidCore1.Events.*` | Enter-town events: raven sight, max party size, numbered cells |
 | `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |
@@ -290,7 +292,8 @@ Source/
     HUD/
       SolidHUD.*              # Debug HUD, battle-plan panel, menu and credits drawing
     Menus/
-      SolidMainMenu.*         # F10 menu entries (Test Drill, Credits)
+      SolidMainMenu.*         # F10 menu entries (Test Drill, Journal, Credits)
+      SolidJournal.*          # Journal lists events in the order they fired
       SolidCredits.*          # Credits page copy
     Tests/
       SolidTerrainTestHelpers.h   # Shared MakeSmallMap fixture

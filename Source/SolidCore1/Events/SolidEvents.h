@@ -91,6 +91,9 @@ namespace SolidEvents
 		/** Numbered cell the captain is standing on, or INDEX_NONE. */
 		int32 OccupiedTown = INDEX_NONE;
 		bool bFired[MaxEvents] = {};
+		/** Definition indexes, in the order the events fired. */
+		int32 FiredOrder[MaxEvents] = {};
+		int32 FiredCount = 0;
 	};
 
 	struct FResult
@@ -183,6 +186,11 @@ namespace SolidEvents
 			}
 
 			State.bFired[Index] = true;
+			if (State.FiredCount < MaxEvents)
+			{
+				State.FiredOrder[State.FiredCount] = Index;
+				++State.FiredCount;
+			}
 			Result.bFired = true;
 			const int32 ChangeCount = FMath::Min(Event.ChangeCount, MaxChangesPerEvent);
 			for (int32 ChangeIndex = 0; ChangeIndex < ChangeCount; ++ChangeIndex)

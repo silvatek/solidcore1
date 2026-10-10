@@ -15,6 +15,20 @@ Human docs and the To-do list: `README.md`. Fog history: `Source/SolidCore1/Fog/
 - Commit and push to GitHub `main` when the user wants the change shipped.
 - On every product push, bump `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE` in `Source/SolidCore1/SolidBuildId.h` (`SC1-NNNN`).
 
+## Collaborative workflow
+
+The agent pushes to GitHub. The user verifies on their machine. Do not run the editor, automation, or PIE from the agent environment.
+
+After a push, the user:
+
+1. Pulls the changes.
+2. Rebuilds the code.
+3. Runs the tests.
+4. Runs the game in PIE.
+5. Typically, but not always, sends a screenshot for the agent to review.
+
+Wait for that report before treating the change as verified. When a screenshot arrives, review it.
+
 ## Tests
 
 Follow the Automated tests policy in `README.md`:

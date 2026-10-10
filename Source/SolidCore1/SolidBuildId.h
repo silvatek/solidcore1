@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0130")
+#define SOLID_BUILD_ID TEXT("SC1-0131")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Numbered WorldMap locations; start at 0")
+#define SOLID_BUILD_NOTE TEXT("Document the collaborative test workflow")
 #endif

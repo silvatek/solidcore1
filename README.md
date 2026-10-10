@@ -4,6 +4,17 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 
 ## To-do
 
+- Use numbered locations in WorldMap.txt (no longer uses "Z")
+- Double world size
+- Use white material for 100% fog terrain
+- Don't allow camera to pass through fog curtain
+- Raise height of fog curtain
+- Don't render trees or buildings on 100% fog terrain, generate it when fog is removed
+- Improve building and tree models
+- Create signs near all the towns with the town's name
+- Create a cave in the mountains near the starting town
+- Build cave interior as a new level and transition to/from the main world at the entrance
+- Replace companion models with new Fab assets
 - Implement main menu
 
 ## Done
@@ -17,16 +28,6 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 - **Credits** — F10 overlay: Silvatek, Cursor + Grok, Fab Viking (Art.Hiraeth) and grass (NoblesseOblige-No.1).
 - **Content pipeline** — Fab listings restored via Launcher Add to Project; C++ finds Viking/grass by name under `/Game/Viking` or `/Game/Fab`. `tools/fab_doctor.bat` + `fab-assets.json`. Packs are gitignored (attribution README kept).
 - **Automation** — `SolidCore1.*` editor tests; `tools/run_automation_tests.bat` prints failed test paths. Build ID `SC1-NNNN` on the debug HUD.
-
-## Paths (this machine)
-
-| Item | Path |
-|------|------|
-| Project folder | `C:\Users\staz6\Dev\solidcore1` |
-| Project file | `C:\Users\staz6\Dev\solidcore1\SolidCore1.uproject` |
-| Engine | `C:\Program Files\Epic Games\UE_5.8` |
-
-Put this repo’s contents at `C:\Users\staz6\Dev\solidcore1` (clone or sync), then open/build there.
 
 ## Controls (runtime defaults)
 

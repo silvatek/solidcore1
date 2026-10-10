@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0124")
+#define SOLID_BUILD_ID TEXT("SC1-0125")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("F10 credits popup: Silvatek, Cursor+Grok, Fab assets")
+#define SOLID_BUILD_NOTE TEXT("Move exploration fog into Source/SolidCore1/Fog")
 #endif

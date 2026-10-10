@@ -1,7 +1,7 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 rem Check whether Fab assets this project expects are on disk.
-rem C++ finds Viking by asset name under Content\Viking or Content\Fab —
+rem C++ finds Viking/grass by asset name under Content\Viking or Content\Fab —
 rem no manual folder move after Launcher Add to Project.
 rem
 rem Usage:
@@ -49,7 +49,7 @@ for %%A in (idle1 walk run jump) do (
 echo   listing: https://www.fab.com/listings/ca4ba583-8d90-4069-b51f-50e694530b2f
 echo.
 
-echo [optional] Grass Mat_025_grass
+echo [required] Grass Mat_025_grass
 set "GRASS="
 if exist "%ROOT%\Content\Fab" (
   for /r "%ROOT%\Content\Fab" %%F in (Mat_025_grass.uasset) do (
@@ -62,8 +62,8 @@ if exist "%ROOT%\Content\Fab" (
 if defined GRASS (
   echo   OK  !GRASS:%ROOT%\=!
 ) else (
-  echo   missing  Mat_025_grass.uasset
-  echo   (terrain falls back to FlatCol)
+  echo   MISSING  Mat_025_grass.uasset
+  set "MISSING=1"
 )
 echo   listing: https://www.fab.com/listings/94bfee39-8d7d-409c-89c9-40433550ee3a
 echo.
@@ -77,8 +77,8 @@ echo   Manifest: tools\fab-assets.json
 echo.
 
 if "%MISSING%"=="1" (
-  echo RESULT: required Viking assets are missing.
+  echo RESULT: required Fab assets are missing.
   exit /b 1
 )
-echo RESULT: required Viking assets are present.
+echo RESULT: required Fab assets are present.
 exit /b 0

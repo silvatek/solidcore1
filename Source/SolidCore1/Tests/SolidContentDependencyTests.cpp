@@ -158,18 +158,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidContentTerrainGrassTest::RunTest(const FString& Parameters)
 {
-	// Preferred: Fab Mat_025_grass. Fallback: FlatCol solid color (covered elsewhere).
-	const bool bFab = SolidContentTestPrivate::FabGrassMaterialPresent();
-	const bool bFlatCol = SolidContentTestPrivate::SoftObjectResolves(
-		TEXT("/Game/LevelPrototyping/Materials/M_FlatCol.M_FlatCol"))
-		|| SolidContentTestPrivate::SoftObjectResolves(
-			TEXT("/Game/LevelPrototyping/Materials/MI_DefaultColorway.MI_DefaultColorway"));
-
-	TestTrue(TEXT("Fab grass or FlatCol fallback available for terrain"), bFab || bFlatCol);
-	if (!bFab)
-	{
-		AddWarning(TEXT("Fab Mat_025_grass not found under /Game/Fab; terrain will use FlatCol grass."));
-	}
+	TestTrue(TEXT("Fab Mat_025_grass present under /Game/Fab"),
+		SolidContentTestPrivate::FabGrassMaterialPresent());
 	return true;
 }
 

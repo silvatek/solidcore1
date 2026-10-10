@@ -52,9 +52,9 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.NameLabel.*` | Style sizes/colors/plates; Outcast / Sam defaults |
 | `SolidCore1.BattlePlan.*` | Formation slots; Company/Party assign; F9 drill legs |
 | `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |
-| `SolidCore1.Content.*` | Required/optional Content + Engine assets the code loads |
+| `SolidCore1.Content.*` | Required Content + Engine assets the code loads |
 
-**Content dependency tests** assert meshes/materials/anims/BPs the C++ loaders expect (Engine BasicShapes, FlatCol, Viking mesh+locomotion, Fab grass or FlatCol fallback, pawn/GameMode BP-or-C++). Viking is required; Epic mannequin assets are not used.
+**Content dependency tests** assert meshes/materials/anims/BPs the C++ loaders expect (Engine BasicShapes, FlatCol for solid colors, Viking mesh+locomotion, Fab grass, pawn/GameMode BP-or-C++). Viking and Fab grass are required; Epic mannequin assets are not used.
 
 ## Fab assets (Epic Games Launcher)
 
@@ -63,7 +63,7 @@ Grass + Viking come from Fab. There is **no official download API**. Native UE `
 | Asset | Listing | Required | Resolved as |
 |-------|---------|----------|-------------|
 | Viking (Art.Hiraeth) | [fab.com/listings/ca4ba583-…](https://www.fab.com/listings/ca4ba583-8d90-4069-b51f-50e694530b2f) | Yes | `SK_Viking` + `Anim_Viking_*` |
-| 025 Grass | [fab.com/listings/94bfee39-…](https://www.fab.com/listings/94bfee39-8d7d-409c-89c9-40433550ee3a) | No (FlatCol fallback) | `Mat_025_grass` |
+| 025 Grass | [fab.com/listings/94bfee39-…](https://www.fab.com/listings/94bfee39-8d7d-409c-89c9-40433550ee3a) | Yes | `Mat_025_grass` |
 
 **Restore (Launcher + UE 5.8):**
 
@@ -143,7 +143,7 @@ C++ generates walkable terrain around the player at runtime:
 - `ASolidTerrainStreamer` — builds the map, relocates the pawn to the starting town (Z), then loads/unloads chunks
 - Debug HUD shows biome / threat / fog at the pawn plus map size
 
-Defaults: 64 m chunks (`ChunkWorldSize=6400`), 32 quads/side, radius 2 (5×5 chunks), `Amplitude=3000`. Grassland uses Fab `Mat_025_grass` when present; other biomes use FlatCol tinted by the WorldMap key colors.
+Defaults: 64 m chunks (`ChunkWorldSize=6400`), 32 quads/side, radius 2 (5×5 chunks), `Amplitude=3000`. Grassland uses Fab `Mat_025_grass`; other biomes use FlatCol tinted by the WorldMap key colors.
 
 Default map is `/Game/ThirdPerson/Lvl_ThirdPerson` (SC1-0022) so Open World Landscape/HLOD outer hills are not in the scene — that cleared the horizon slivers. `L_OpenWorld` remains for comparison. SC1-0023/0082 force `BP_SolidGameMode` on PIE/game worlds so template maps keep Solid HUD + Viking pawn instead of the template default. On first stream, the pawn is snapped onto the procedural height. If a Landscape is present, actors are hidden/collision-disabled once. Chunks block the Camera channel and use complex-as-simple collision on the runtime static mesh.
 

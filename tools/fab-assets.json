@@ -23,12 +23,12 @@
       "id": "grass",
       "title": "025 Grass (Mat_025_grass)",
       "listing": "https://www.fab.com/listings/94bfee39-8d7d-409c-89c9-40433550ee3a",
-      "required": false,
+      "required": true,
       "format": "unreal-engine",
       "engine": "5.8",
       "expectedName": "Mat_025_grass.uasset",
       "searchRoots": ["Content/Fab"],
-      "notes": "Optional. Terrain looks up Mat_025_grass under /Game/Fab; FlatCol solid green is the fallback."
+      "notes": "Required. Terrain looks up Mat_025_grass under /Game/Fab. Add to Project is enough."
     }
   ]
 }

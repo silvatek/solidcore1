@@ -96,10 +96,14 @@ public:
 	/** Select Party assigned battle-plan slot (0 = F1). Returns false if empty/out of range. */
 	bool SelectBattlePlanSlot(int32 SlotIndex);
 
+	/**
+	 * Create the company catalog and party on the first call.
+	 * Later calls (event refresh, companion spawn) keep the active battle plan.
+	 */
+	void EnsureCompanyAndParty();
+
 protected:
 	virtual void BeginPlay() override;
-
-	void EnsureCompanyAndParty();
 	void EnsureTerrainStreamer();
 	void RefreshEvents();
 	void EnsureCompanion();

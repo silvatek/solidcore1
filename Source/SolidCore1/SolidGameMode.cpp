@@ -66,8 +66,10 @@ void ASolidGameMode::EnsureCompanyAndParty()
 	if (!Party)
 	{
 		Party = NewObject<USolidParty>(this, TEXT("Party"));
+		// Bind once. InitializeFromCompany always activates F1, and the
+		// enter-town timer calls this every 0.1s via EnsureCompanion.
+		Party->InitializeFromCompany(Company);
 	}
-	Party->InitializeFromCompany(Company);
 }
 
 void ASolidGameMode::BeginPlay()

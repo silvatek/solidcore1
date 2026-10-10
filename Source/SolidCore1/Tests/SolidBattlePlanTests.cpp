@@ -220,4 +220,32 @@ bool FSolidGameModeBattlePlanSelectTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidGameModeBattlePlanSurvivesEnsureTest,
+	"SolidCore1.BattlePlan.SelectionSurvivesEnsure",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidGameModeBattlePlanSurvivesEnsureTest::RunTest(const FString& Parameters)
+{
+	ASolidGameMode* GameMode = NewObject<ASolidGameMode>();
+	TestNotNull(TEXT("gamemode"), GameMode);
+
+	TestTrue(TEXT("F2 column"), GameMode->SelectBattlePlanSlot(1));
+	TestEqual(TEXT("slot is F2"), GameMode->GetParty()->GetActiveAssignedSlot(), 1);
+
+	// Enter-town refresh calls EnsureCompanyAndParty on a timer. That used to
+	// rebuild the party and snap the active plan back to Line.
+	GameMode->EnsureCompanyAndParty();
+	TestEqual(TEXT("slot stays F2"), GameMode->GetParty()->GetActiveAssignedSlot(), 1);
+	TestTrue(TEXT("formation stays column"),
+		GameMode->GetParty()->GetActiveFormation() == ESolidBattleFormation::Column);
+
+	TestTrue(TEXT("F5 parade"), GameMode->SelectBattlePlanSlot(4));
+	GameMode->EnsureCompanyAndParty();
+	TestEqual(TEXT("slot stays F5"), GameMode->GetParty()->GetActiveAssignedSlot(), 4);
+	TestTrue(TEXT("formation stays parade"),
+		GameMode->GetParty()->GetActiveFormation() == ESolidBattleFormation::Parade);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

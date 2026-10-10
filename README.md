@@ -252,7 +252,6 @@ Source/
     SolidPartyCamera.cpp                 # Party framing + terrain boom lift
     SolidClipLocomotion.*  # Shared single-node clip apply/play (per-character mesh)
     SolidGameMode.*
-    SolidMainMenu.*          # F10 menu entries (Test Drill, Credits)
     SolidCameraFog.h         # Boom scale that keeps the camera over Fog == 0
     SolidPlayerController.*
     SolidMaterials.*       # Shared FlatCol solid-color MID helper
@@ -275,10 +274,16 @@ Source/
     Vegetation/
       SolidTree.*             # Placeholder cylinder+cone tree
       SolidForestTrees.*      # Random Forest-biome tree placement
+    Towns/
       SolidBuilding.*         # Grey cuboid + red gable roof
       SolidTownBuildings.*    # Non-overlapping town building pack
       SolidTownSign.*         # Pole, board, "Welcome to {name}"
       SolidTownSigns.*        # One sign per named WorldMap cell
+    HUD/
+      SolidHUD.*              # Debug HUD, battle-plan panel, menu and credits drawing
+    Menus/
+      SolidMainMenu.*         # F10 menu entries (Test Drill, Credits)
+      SolidCredits.*          # Credits page copy
     Tests/
       SolidTerrainTestHelpers.h   # Shared MakeSmallMap fixture
       SolidWorldMapTests.cpp

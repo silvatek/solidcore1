@@ -29,6 +29,8 @@ After a push, the user:
 
 Wait for that report before treating the change as verified. When a screenshot arrives, review it.
 
+Screenshots are taken with the Windows snipping tool. That switch puts Unreal in the background, so the HUD frame rate drops. Ignore FPS in a screenshot unless the user says they are worried about it. Foreground PIE is about 120 FPS.
+
 ## Tests
 
 Follow the Automated tests policy in `README.md`:

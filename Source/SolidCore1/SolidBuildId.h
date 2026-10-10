@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0131")
+#define SOLID_BUILD_ID TEXT("SC1-0132")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Document the collaborative test workflow")
+#define SOLID_BUILD_NOTE TEXT("Ignore background FPS in snipping-tool screenshots")
 #endif

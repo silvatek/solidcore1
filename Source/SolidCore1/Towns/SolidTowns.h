@@ -19,6 +19,7 @@ namespace SolidTowns
 		{ 1, TEXT("Relion") },
 		{ 2, TEXT("Kanfold") },
 		{ 3, TEXT("Visolar") },
+		{ 4, TEXT("Jethan") },
 	};
 
 	inline constexpr int32 DefinitionCount = UE_ARRAY_COUNT(Definitions);

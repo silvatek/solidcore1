@@ -11,9 +11,9 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidTownNamesTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("four towns"), SolidTowns::DefinitionCount, 4);
+	TestEqual(TEXT("five towns"), SolidTowns::DefinitionCount, 5);
 
-	const TCHAR* Expected[] = { TEXT("Iglin"), TEXT("Relion"), TEXT("Kanfold"), TEXT("Visolar") };
+	const TCHAR* Expected[] = { TEXT("Iglin"), TEXT("Relion"), TEXT("Kanfold"), TEXT("Visolar"), TEXT("Jethan") };
 	for (int32 Index = 0; Index < SolidTowns::DefinitionCount; ++Index)
 	{
 		const SolidTowns::FTownInfo& Town = SolidTowns::Definitions[Index];

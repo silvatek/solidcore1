@@ -240,36 +240,43 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 {
 	USolidWorldMap* Map = NewObject<USolidWorldMap>();
 	TestTrue(TEXT("LoadDefault"), Map->LoadDefault());
-	TestEqual(TEXT("four named locations"), Map->GetLocationCount(), 4);
+	TestEqual(TEXT("five locations"), Map->GetLocationCount(), 5);
 
 	FSolidWorldLocation Iglin;
 	TestTrue(TEXT("location 0"), Map->FindLocation(0, Iglin));
 	TestEqual(TEXT("Iglin"), Iglin.Name, FString(TEXT("Iglin")));
-	TestEqual(TEXT("starting village"), Iglin.Role, FString(TEXT("Starting village")));
+	TestTrue(TEXT("role is not in the map file"), Iglin.Role.IsEmpty());
 	TestEqual(TEXT("Iglin is Town"), static_cast<uint8>(Iglin.Biome), static_cast<uint8>(ESolidBiome::Town));
 	TestEqual(TEXT("one Iglin cell"), Iglin.Cells.Num(), 1);
 
 	FSolidWorldLocation Relion;
 	TestTrue(TEXT("location 1"), Map->FindLocation(1, Relion));
 	TestEqual(TEXT("Relion"), Relion.Name, FString(TEXT("Relion")));
-	TestEqual(TEXT("capital"), Relion.Role, FString(TEXT("Capital city")));
+	TestTrue(TEXT("Relion role is not in the map file"), Relion.Role.IsEmpty());
 	TestEqual(TEXT("one Relion cell"), Relion.Cells.Num(), 1);
 
 	FSolidWorldLocation Kanfold;
 	TestTrue(TEXT("location 2"), Map->FindLocation(2, Kanfold));
 	TestEqual(TEXT("Kanfold"), Kanfold.Name, FString(TEXT("Kanfold")));
-	TestEqual(TEXT("island city"), Kanfold.Role, FString(TEXT("Island city")));
+	TestTrue(TEXT("Kanfold role is not in the map file"), Kanfold.Role.IsEmpty());
 	TestEqual(TEXT("two Kanfold cells"), Kanfold.Cells.Num(), 2);
 
 	FSolidWorldLocation Visolar;
 	TestTrue(TEXT("location 3"), Map->FindLocation(3, Visolar));
 	TestEqual(TEXT("Visolar"), Visolar.Name, FString(TEXT("Visolar")));
-	TestEqual(TEXT("ruined city"), Visolar.Role, FString(TEXT("Ruined city")));
+	TestTrue(TEXT("Visolar role is not in the map file"), Visolar.Role.IsEmpty());
 	TestEqual(TEXT("one Visolar cell"), Visolar.Cells.Num(), 1);
+
+	FSolidWorldLocation Jethan;
+	TestTrue(TEXT("location 4"), Map->FindLocation(4, Jethan));
+	TestEqual(TEXT("Jethan"), Jethan.Name, FString(TEXT("Jethan")));
+	TestTrue(TEXT("Jethan role is not in the map file"), Jethan.Role.IsEmpty());
+	TestEqual(TEXT("Jethan is Town"), static_cast<uint8>(Jethan.Biome), static_cast<uint8>(ESolidBiome::Town));
+	TestEqual(TEXT("one Jethan cell"), Jethan.Cells.Num(), 1);
 
 	TestEqual(TEXT("start is only location 0"), Map->GetStartTownCellCount(), Iglin.Cells.Num());
 
-	const FSolidWorldLocation* Named[] = { &Iglin, &Relion, &Kanfold, &Visolar };
+	const FSolidWorldLocation* Named[] = { &Iglin, &Relion, &Kanfold, &Visolar, &Jethan };
 	for (const FSolidWorldLocation* Loc : Named)
 	{
 		for (const FIntPoint& Cell : Loc->Cells)

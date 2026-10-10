@@ -27,15 +27,16 @@ bool FSolidTownSignPlacementsTest::RunTest(const FString& Parameters)
 
 	TArray<SolidTownSigns::FPlacement> Placements;
 	const int32 Count = SolidTownSigns::CollectPlacements(WorldMap, WorldMin, WorldMax, Placements);
-	TestEqual(TEXT("five named cells"), Count, 5);
-	TestEqual(TEXT("placements filled"), Placements.Num(), 5);
-	if (Placements.Num() != 5)
+	TestEqual(TEXT("six named cells"), Count, 6);
+	TestEqual(TEXT("placements filled"), Placements.Num(), 6);
+	if (Placements.Num() != 6)
 	{
 		return false;
 	}
 
-	const TCHAR* ExpectedNames[] = { TEXT("Iglin"), TEXT("Relion"), TEXT("Kanfold"), TEXT("Kanfold"), TEXT("Visolar") };
-	const int32 ExpectedIds[] = { 0, 1, 2, 2, 3 };
+	const TCHAR* ExpectedNames[] = {
+		TEXT("Iglin"), TEXT("Relion"), TEXT("Kanfold"), TEXT("Kanfold"), TEXT("Visolar"), TEXT("Jethan") };
+	const int32 ExpectedIds[] = { 0, 1, 2, 2, 3, 4 };
 	for (int32 Index = 0; Index < Placements.Num(); ++Index)
 	{
 		const SolidTownSigns::FPlacement& Placement = Placements[Index];

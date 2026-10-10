@@ -356,6 +356,9 @@ void ASolidHUD::DrawHUD()
 		return;
 	}
 
+	float BelowTech = 12.f;
+	if (bShowDebugPanel)
+	{
 	TArray<FString> Lines;
 	Lines.Add(FString::Printf(TEXT("Build %s"), SOLID_BUILD_ID));
 	Lines.Add(FString::Printf(TEXT("Change: %s"), SOLID_BUILD_NOTE));
@@ -501,6 +504,7 @@ void ASolidHUD::DrawHUD()
 		Lines.Add(FString::Printf(TEXT("F9  %s"), SolidSight::Label(Captain->GetSight())));
 	}
 	Lines.Add(TEXT("F10  Menu"));
+	Lines.Add(TEXT("F12  Debug"));
 
 	if (const ASolidCharacter* Captain = Cast<ASolidCharacter>(Pawn))
 	{
@@ -515,9 +519,11 @@ void ASolidHUD::DrawHUD()
 		}
 	}
 
-	UFont* Font = GEngine ? GEngine->GetSmallFont() : nullptr;
-	const float BelowTech = SolidHUDPrivate::DrawLines(Canvas, Font, Lines, FLinearColor::White);
+	UFont* DebugFont = GEngine ? GEngine->GetSmallFont() : nullptr;
+	BelowTech = SolidHUDPrivate::DrawLines(Canvas, DebugFont, Lines, FLinearColor::White);
+	}
 
+	UFont* Font = GEngine ? GEngine->GetSmallFont() : nullptr;
 	const USolidParty* Party = nullptr;
 	if (UWorld* World = GetWorld())
 	{
@@ -594,6 +600,11 @@ void ASolidHUD::SetMainMenuIndex(const int32 Index)
 void ASolidHUD::ToggleCredits()
 {
 	bShowCredits = !bShowCredits;
+}
+
+void ASolidHUD::ToggleDebugPanel()
+{
+	bShowDebugPanel = !bShowDebugPanel;
 }
 
 void ASolidHUD::DrawCreditsPopup() const

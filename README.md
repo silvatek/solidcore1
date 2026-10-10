@@ -15,7 +15,6 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - Only move companions when captain is moving
 - Test Drill should end with party in Parade formation, and add both companions if not already in party 
 - Extend SolidSight.h with Falcon Sight and Eagle sight, both 3rd person but with increased maximum height (not horizontal distance)
-- Regular vs Debug HUD
 
 ## Done
 
@@ -31,6 +30,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - **Events** — a list of one-shot triggers. Enter town fires when the captain steps onto a numbered WorldMap cell; the parameter is that index. Entering town 0 (Iglin) is recorded and changes nothing. Entering town 1 (Relion) enables raven sight and sets max party size to 1 (Sam). Entering town 2 (Kanfold) sets max party size to 2 (Sam and Alex).
 - **Journal** — F10 menu, **2 Journal**. Lists every event that has fired, in that order, with what it changed. Iglin is recorded as soon as the captain is placed there, with no change under the name. Esc or F10 closes the page.
 - **Oak and bronze** — the journal, credits, main menu, and battle-plan list are a dark oak board in a bronze binding, with brighter corner bosses. The debug readout in the corner stays a plain block.
+- **Debug HUD** — F12 hides and shows the tech readout (build, FPS, pawn, terrain). The battle-plan list stays up. It starts visible.
 - **Main menu** — F10 opens it. **1 Test Drill** runs the formation drill. **2 Journal** opens the journal. **3 Credits** opens the credits page (Silvatek, Cursor + Grok, Fab Viking and grass). Up/Down and Enter also work. Esc or F10 closes. Move, look, and battle-plan keys are ignored while the menu, journal, or credits page is open.
 - **Content pipeline** — Fab listings restored via Launcher Add to Project; C++ finds Viking/grass by name under `/Game/Viking` or `/Game/Fab`. `tools/fab_doctor.bat` + `fab-assets.json`. Packs are gitignored (attribution README kept).
 - **Automation** — `SolidCore1.*` editor tests; `tools/run_automation_tests.bat` prints failed test paths. Build ID `SC1-NNNN` on the debug HUD.
@@ -47,6 +47,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 | Sprint | Left Shift | Left stick click |
 | True sight / raven sight | F9 (after raven sight is enabled) | — |
 | Main menu | F10 | — |
+| Debug readout | F12 | — |
 | Menu up / down | Up / Down | — |
 | Menu confirm | Enter, or 1 / 2 / 3 | — |
 | Close menu / journal / credits | Esc or F10 | — |
@@ -85,6 +86,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.MainMenu.*` | F10 menu entries (Test Drill, Journal, Credits) and selection |
 | `SolidCore1.Journal.*` | Empty journal, then events in the order they fired |
 | `SolidCore1.HudTheme.*` | Oak-and-bronze frame thickness, corner bosses, opaque board |
+| `SolidCore1.HUD.DebugToggle` | F12 shows and hides the tech readout |
 | `SolidCore1.Sight.*` | True sight at start; F9 switches to raven sight and back |
 | `SolidCore1.Events.*` | Enter-town events: raven sight, max party size, numbered cells |
 | `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |
@@ -297,10 +299,10 @@ Source/
       SolidTowns.h            # Town names, keyed by the WorldMap index
     HUD/
       SolidHUD.*              # Debug HUD, battle-plan panel, menu and credits drawing
+      SolidHudTheme.h         # Oak-and-bronze frame
     Menus/
       SolidMainMenu.*         # F10 menu entries (Test Drill, Journal, Credits)
       SolidJournal.*          # Journal lists events in the order they fired
-      SolidHudTheme.*         # Oak-and-bronze frame
       SolidCredits.*          # Credits page copy
     Tests/
       SolidTerrainTestHelpers.h   # Shared MakeSmallMap fixture

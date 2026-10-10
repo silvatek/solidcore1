@@ -224,6 +224,7 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::F8, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot8);
 	PlayerInputComponent->BindKey(EKeys::F9, IE_Pressed, this, &ASolidCharacter::ToggleSightFromInput);
 	PlayerInputComponent->BindKey(EKeys::F10, IE_Pressed, this, &ASolidCharacter::ToggleMainMenuFromInput);
+	PlayerInputComponent->BindKey(EKeys::F12, IE_Pressed, this, &ASolidCharacter::ToggleDebugPanelFromInput);
 	PlayerInputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ASolidCharacter::CloseMenuOverlayFromInput);
 	PlayerInputComponent->BindKey(EKeys::Up, IE_Pressed, this, &ASolidCharacter::MainMenuMoveUp);
 	PlayerInputComponent->BindKey(EKeys::Down, IE_Pressed, this, &ASolidCharacter::MainMenuMoveDown);
@@ -332,6 +333,14 @@ void ASolidCharacter::ToggleMainMenuFromInput()
 	if (ASolidHUD* HUD = GetSolidHUD())
 	{
 		HUD->HandleMenuKey();
+	}
+}
+
+void ASolidCharacter::ToggleDebugPanelFromInput()
+{
+	if (ASolidHUD* HUD = GetSolidHUD())
+	{
+		HUD->ToggleDebugPanel();
 	}
 }
 

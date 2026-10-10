@@ -19,6 +19,11 @@ public:
 	bool IsJournalVisible() const { return bShowJournal; }
 	void SetJournalVisible(bool bVisible) { bShowJournal = bVisible; }
 
+	/** F12. The tech readout in the corner. Battle plans stay up either way. */
+	void ToggleDebugPanel();
+	bool IsDebugPanelVisible() const { return bShowDebugPanel; }
+	void SetDebugPanelVisible(bool bVisible) { bShowDebugPanel = bVisible; }
+
 	/** F10. Closes the journal or credits if they are up; otherwise toggles the main menu. */
 	void HandleMenuKey();
 	/** Esc. Closes the menu, the journal, and the credits page. */
@@ -52,6 +57,10 @@ protected:
 	/** F10 main menu. Off until toggled. */
 	UPROPERTY(VisibleAnywhere, Category = "HUD")
 	bool bShowMainMenu = false;
+
+	/** Tech readout (build, FPS, pawn, terrain). On until F12. */
+	UPROPERTY(VisibleAnywhere, Category = "HUD")
+	bool bShowDebugPanel = true;
 
 	/** Highlighted row while the main menu is open. */
 	UPROPERTY(VisibleAnywhere, Category = "HUD")

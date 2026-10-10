@@ -105,6 +105,7 @@ protected:
 	void ApplyTrueSightCamera();
 	void ApplyRavenSightCamera();
 	void ToggleMainMenuFromInput();
+	void ToggleDebugPanelFromInput();
 	void CloseMenuOverlayFromInput();
 	void MainMenuMoveUp();
 	void MainMenuMoveDown();

@@ -106,6 +106,48 @@ namespace SolidBattleFormationSlots
 	/** How quickly a companion turns to face the Captain (RInterpTo speed). */
 	inline constexpr float FaceTurnInterpSpeed = 8.f;
 
+	/** Half of the captain's horizontal view (true sight uses a 90° camera). */
+	inline constexpr float CaptainHalfFovDeg = 45.f;
+
+	/** Keep bodies inside this fraction of the view so they are not cropped at the edge. */
+	inline constexpr float ParadeViewFill = 0.65f;
+
+	/** Half-width of a companion body, past the slot center (cm). */
+	inline constexpr float ParadeBodyHalfWidthCm = 90.f;
+
+	/** Feet sit this far below the captain's eyes (capsule half-height + eye offset, cm). */
+	inline constexpr float ParadeFeetBelowEyeCm = 160.f;
+
+	/** Companions may stop this far short of the slot (matches the follow acceptance radius, cm). */
+	inline constexpr float ParadeArrivalSlackCm = 90.f;
+
+	/** Do not march the rank out toward the fog curtain (cm). */
+	inline constexpr float ParadeMaxFrontCm = 1400.f;
+
+	/** Lateral half-span of a two-companion parade rank before spacing scale (cm). */
+	inline constexpr float ParadeSideCm = 160.f;
+
+	inline float CaptainHalfVerticalFovDeg()
+	{
+		const float HalfH = FMath::DegreesToRadians(CaptainHalfFovDeg);
+		return FMath::RadiansToDegrees(FMath::Atan(FMath::Tan(HalfH) / (16.f / 9.f)));
+	}
+
+	/**
+	 * How far in front of the captain a parade rank must stand so the bodies fit
+	 * in his view, including companions who stop short of the slot.
+	 * A very wide rank is capped at ParadeMaxFrontCm.
+	 */
+	inline float ParadeStandingFrontCm(float HalfSpanCm)
+	{
+		const float LimitH = FMath::DegreesToRadians(CaptainHalfFovDeg * ParadeViewFill);
+		const float LimitV = FMath::DegreesToRadians(CaptainHalfVerticalFovDeg() * ParadeViewFill);
+		const float Outer = FMath::Max(0.f, HalfSpanCm) + ParadeBodyHalfWidthCm;
+		const float HorizontalFit = Outer / FMath::Max(FMath::Tan(LimitH), 0.05f);
+		const float VerticalFit = ParadeFeetBelowEyeCm / FMath::Max(FMath::Tan(LimitV), 0.05f);
+		return FMath::Min(FMath::Max(HorizontalFit, VerticalFit) + ParadeArrivalSlackCm, ParadeMaxFrontCm);
+	}
+
 	/** Multiplier applied to base formation offsets. */
 	inline float SpacingScale(ESolidBattleSpacing Spacing)
 	{
@@ -156,18 +198,19 @@ namespace SolidBattleFormationSlots
 		}
 		case ESolidBattleFormation::Parade:
 		{
-			constexpr float FrontCm = 280.f;
-			constexpr float SideCm = 160.f;
-			if (Count == 1)
+			float HalfSpan = (Count <= 1) ? 0.f : ParadeSideCm * Scale;
+			const float LimitH = FMath::DegreesToRadians(CaptainHalfFovDeg * ParadeViewFill);
+			const float UsableHalfSpan = FMath::Max(
+				0.f,
+				(ParadeMaxFrontCm - ParadeArrivalSlackCm) * FMath::Tan(LimitH) - ParadeBodyHalfWidthCm);
+			HalfSpan = FMath::Min(HalfSpan, UsableHalfSpan);
+			const float Front = ParadeStandingFrontCm(HalfSpan);
+			if (Count <= 1)
 			{
-				Base = FVector2D(FrontCm, 0.f);
+				return FVector2D(Front, 0.f);
 			}
-			else
-			{
-				const float T = (static_cast<float>(Index) / static_cast<float>(Count - 1)) * 2.f - 1.f;
-				Base = FVector2D(FrontCm, T * SideCm);
-			}
-			break;
+			const float T = (static_cast<float>(Index) / static_cast<float>(Count - 1)) * 2.f - 1.f;
+			return FVector2D(Front, T * HalfSpan);
 		}
 		case ESolidBattleFormation::Mob:
 		default:

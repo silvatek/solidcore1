@@ -58,6 +58,25 @@ bool FSolidBattleFormationSlotsTest::RunTest(const FString& Parameters)
 		static_cast<float>(Parade0.X),
 		static_cast<float>(Parade1.X));
 	TestTrue(TEXT("parade: opposite flanks"), Parade0.Y * Parade1.Y < 0.f);
+	TestTrue(TEXT("parade stands further than the old 2.8 m rank"), Parade0.X > 450.f);
+
+	const float StandingFront = Parade0.X - SolidBattleFormationSlots::ParadeArrivalSlackCm;
+	const float HalfSpan = FMath::Abs(Parade0.Y);
+	const float Outer = HalfSpan + SolidBattleFormationSlots::ParadeBodyHalfWidthCm;
+	const float HorizontalDeg = FMath::RadiansToDegrees(FMath::Atan2(Outer, StandingFront));
+	const float HorizontalLimit =
+		SolidBattleFormationSlots::CaptainHalfFovDeg * SolidBattleFormationSlots::ParadeViewFill;
+	TestTrue(TEXT("parade rank fits across the captain's view"), HorizontalDeg <= HorizontalLimit + 0.5f);
+
+	const float Slant = FMath::Sqrt(StandingFront * StandingFront + HalfSpan * HalfSpan);
+	const float VerticalDeg = FMath::RadiansToDegrees(
+		FMath::Atan2(SolidBattleFormationSlots::ParadeFeetBelowEyeCm, Slant));
+	const float VerticalLimit =
+		SolidBattleFormationSlots::CaptainHalfVerticalFovDeg() * SolidBattleFormationSlots::ParadeViewFill;
+	TestTrue(TEXT("parade rank fits the captain's view vertically"), VerticalDeg <= VerticalLimit + 0.5f);
+	TestTrue(TEXT("a very wide rank stays short of the fog"),
+		SolidBattleFormationSlots::ParadeStandingFrontCm(5000.f)
+		<= SolidBattleFormationSlots::ParadeMaxFrontCm + 0.5f);
 	TestTrue(TEXT("parade faces the captain"),
 		SolidBattleFormationSlots::FacesCaptain(ESolidBattleFormation::Parade));
 	TestFalse(TEXT("line does not face the captain"),

@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0144")
+#define SOLID_BUILD_ID TEXT("SC1-0145")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Town 4 is Jethan")
+#define SOLID_BUILD_NOTE TEXT("Town events unlock raven sight and companions")
 #endif

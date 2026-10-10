@@ -1,7 +1,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Events/SolidEvents.h"
 #include "GameFramework/GameModeBase.h"
+#include "SolidSight.h"
 #include "SolidGameMode.generated.h"
 
 class ASolidBuilding;
@@ -23,7 +25,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	bool bAutoSpawnTerrainStreamer = true;
 
-	/** Spawn Party companions (Sam + Alex) once the player pawn exists. */
+	/** Spawn roster companions up to the event max party size (starts empty). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	bool bAutoSpawnCompanion = true;
 
@@ -79,8 +81,14 @@ public:
 	USolidCompany* GetCompany() const { return Company; }
 	USolidParty* GetParty() const { return Party; }
 
-	/** Expected starter Party size (Sam + Alex). */
+	/** Company roster size (Sam, then Alex). The live party starts empty. */
 	static constexpr int32 DefaultCompanionCount = 2;
+
+	/** Companions an event currently allows in the party. Starts at 0. */
+	int32 GetMaxPartySize() const { return Configuration.MaxPartySize; }
+
+	/** True when F9 may switch to this sight. Raven sight starts locked. */
+	bool IsSightEnabled(ESolidSight Sight) const;
 
 	/** Select Party assigned battle-plan slot (0 = F1). Returns false if empty/out of range. */
 	bool SelectBattlePlanSlot(int32 SlotIndex);
@@ -90,6 +98,7 @@ protected:
 
 	void EnsureCompanyAndParty();
 	void EnsureTerrainStreamer();
+	void RefreshEvents();
 	void EnsureCompanion();
 	void EnsureVegetation();
 
@@ -106,6 +115,9 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<USolidParty> Party;
 
+	/** Company/party configuration. Enter-town events mutate this. */
+	FSolidEventConfiguration Configuration;
+
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidCompanionCharacter>> SpawnedCompanions;
 
@@ -118,6 +130,6 @@ protected:
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidTownSign>> SpawnedTownSigns;
 
-	FTimerHandle CompanionSpawnTimer;
+	FTimerHandle EventRefreshTimer;
 	FTimerHandle VegetationSpawnTimer;
 };

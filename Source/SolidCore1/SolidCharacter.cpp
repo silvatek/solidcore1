@@ -92,6 +92,7 @@ ASolidCharacter::ASolidCharacter()
 	NameLabel = CreateDefaultSubobject<UTextRenderComponent>(TEXT("NameLabel"));
 	NameLabel->SetupAttachment(NameLabelRoot);
 	ApplyNameLabel();
+	ApplySightPresentation();
 }
 
 void ASolidCharacter::PostInitializeComponents()
@@ -143,6 +144,7 @@ void ASolidCharacter::BeginPlay()
 	ApplyWalkSpeed();
 	AddMappingContext();
 	ApplyMeshGroundOffset();
+	ApplySightPresentation();
 }
 
 void ASolidCharacter::PossessedBy(AController* NewController)
@@ -250,9 +252,8 @@ bool ASolidCharacter::IsMenuOverlayOpen() const
 	return false;
 }
 
-void ASolidCharacter::ToggleSight()
+void ASolidCharacter::ApplySightPresentation()
 {
-	Sight = SolidSight::Toggle(Sight);
 	const bool bTrue = IsTrueSight();
 
 	bUseControllerRotationYaw = bTrue;
@@ -283,8 +284,23 @@ void ASolidCharacter::ToggleSight()
 	{
 		ApplyRavenSightCamera();
 	}
+}
 
+void ASolidCharacter::SetSight(const ESolidSight NewSight)
+{
+	if (Sight == NewSight)
+	{
+		return;
+	}
+
+	Sight = NewSight;
+	ApplySightPresentation();
 	UE_LOG(LogSolid, Warning, TEXT("Sight: %s"), SolidSight::Label(Sight));
+}
+
+void ASolidCharacter::ToggleSight()
+{
+	SetSight(SolidSight::Toggle(Sight));
 }
 
 void ASolidCharacter::ToggleSightFromInput()
@@ -292,6 +308,19 @@ void ASolidCharacter::ToggleSightFromInput()
 	if (IsMenuOverlayOpen() || IsPartyFormationDrillActive())
 	{
 		return;
+	}
+
+	const ESolidSight Next = SolidSight::Toggle(Sight);
+	if (UWorld* World = GetWorld())
+	{
+		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+		{
+			if (!GameMode->IsSightEnabled(Next))
+			{
+				UE_LOG(LogSolid, Warning, TEXT("Sight locked: %s"), SolidSight::Label(Next));
+				return;
+			}
+		}
 	}
 	ToggleSight();
 }

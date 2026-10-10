@@ -1,6 +1,6 @@
 # SolidCore1
 
-UE **5.8** C++ open-world starter with World Partition–oriented config, a third-person character, and Enhanced Input (move / look / jump / sprint).
+UE **5.8** C++ open-world starter with World Partition–oriented config, a Viking captain, and Enhanced Input (move / look / jump / sprint).
 
 ## To-do
 
@@ -15,7 +15,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 
 ## Done
 
-- **Captain + Party** — third-person Viking pawn (Enhanced Input: move / look / zoom / jump / sprint), clip locomotion (idle / walk / run / jump), floating nameplates. Companions **Sam** and **Alex** follow in battle-plan slots; Party camera frames the group and lifts off terrain.
+- **Captain + Party** — Viking pawn (Enhanced Input: move / look / zoom / jump / sprint), clip locomotion (idle / walk / run / jump), floating nameplates. The party starts empty. Entering Iglin adds **Sam**; entering Relion adds **Alex** as well. Companions follow in battle-plan slots; the party camera frames the group and lifts off terrain.
 - **Battle plans** — Company catalog and Party assigned slots. F1 Line, F2 Column, F3 Tight mob, F4 Loose mob, F5 Parade (companions in front, facing the captain, far enough to stay in his view). F1–F8 select; HUD battle-plan panel. The square-walk formation drill is the main menu's Test Drill entry and still cycles F1–F4.
 - **World + biomes** — 64×64 `WorldMap.txt` overlay (Sea, Grassland, Town, Mountain, Forest, Desert, River) scaled onto a 513×513 TerrainPoint map (1024 m side, 200 cm spacing). That doubles the original 257-point / 512 m world, and each ASCII cell doubles from 8 m to 16 m. Numbered locations are towns: `0` Iglin (start), `1` Relion, `2` Kanfold, `3` Visolar, `4` Jethan. The captain starts at location 0. Per-biome height shelf (Sea/River 0, Mountain +10 m, else +1 m). Darker mountain grey.
 - **No starter monolith** — the grey slab that marked the start-town centroid is gone. Location 0 still sets the captain spawn and the building clear radius.
@@ -23,7 +23,8 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 - **Procedural terrain** — streamed chunks around the pawn, Fab grassland material, FlatCol tints for other biomes. Exploration fog-of-war (25 m / 50 m bands, marching-squares curtains) clears from the trail, not the camera.
 - **Town + forest** — random non-overlapping town buildings (grey cuboid + red gable prism roof); forest trees scattered on Forest cells. Buildings stay clear of the start-town centroid and of each welcome sign.
 - **Town signs** — every named WorldMap cell gets a "Welcome to {name}" sign: one thin dark-brown pole, a flat light-brown board, white letters with a black border. The board faces south. Kanfold's two cells each get a sign.
-- **True sight / raven sight** — F9 toggles. Raven sight is the third-person party camera (default). True sight is first person at eye height: the captain's body and nameplate are hidden, the body faces the look direction, and mouse-wheel zoom is ignored until you switch back. The menu and the formation drill ignore F9.
+- **True sight / raven sight** — the game starts in true sight (first person). Raven sight (third person) is locked until the captain enters town 0. F9 then toggles. True sight hides the captain's body and nameplate, turns the body with the look direction, and ignores mouse-wheel zoom until you switch back. The menu and the formation drill ignore F9.
+- **Events** — a list of one-shot triggers that change the company/party configuration. Enter town fires when the captain steps onto a numbered WorldMap cell; the parameter is that index. Entering town 0 enables raven sight and sets max party size to 1 (Sam). Entering town 1 sets max party size to 2 (Sam and Alex).
 - **Main menu** — F10 opens it. **1 Test Drill** runs the formation drill. **2 Credits** opens the credits page (Silvatek, Cursor + Grok, Fab Viking and grass). Up/Down and Enter also work. Esc or F10 closes. Move, look, and battle-plan keys are ignored while the menu or credits page is open.
 - **Content pipeline** — Fab listings restored via Launcher Add to Project; C++ finds Viking/grass by name under `/Game/Viking` or `/Game/Fab`. `tools/fab_doctor.bat` + `fab-assets.json`. Packs are gitignored (attribution README kept).
 - **Automation** — `SolidCore1.*` editor tests; `tools/run_automation_tests.bat` prints failed test paths. Build ID `SC1-NNNN` on the debug HUD.
@@ -38,7 +39,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 | Zoom | Mouse wheel | — |
 | Jump | Space | A / Cross |
 | Sprint | Left Shift | Left stick click |
-| True sight / raven sight | F9 | — |
+| True sight / raven sight | F9 (after raven sight is enabled) | — |
 | Main menu | F10 | — |
 | Menu up / down | Up / Down | — |
 | Menu confirm | Enter, or 1 / 2 | — |
@@ -76,7 +77,8 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.BattlePlan.*` | Formation slots; Company/Party assign; drill legs |
 | `SolidCore1.Credits.*` | Author / Cursor+Grok / Fab attribution; HUD toggle |
 | `SolidCore1.MainMenu.*` | F10 menu entries (Test Drill, Credits) and selection |
-| `SolidCore1.Sight.*` | F9 true sight / raven sight toggle |
+| `SolidCore1.Sight.*` | True sight at start; F9 switches to raven sight and back |
+| `SolidCore1.Events.*` | Enter-town events: raven sight, max party size, numbered cells |
 | `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |
 | `SolidCore1.Content.*` | Required Content + Engine assets the code loads |
 
@@ -210,7 +212,7 @@ Floating nameplates (`SolidNameLabel`) sit above each Party member and face the 
 
 ## Companion (SC1-0024 / SC1-0093)
 
-`ASolidCompanionCharacter` spawns behind the player and follows with simple steering (no NavMesh — works on procedural terrain). Same Fab Viking mesh + clip locomotion as the player. GameMode flag: `bAutoSpawnCompanion` spawns **Sam** (slot 0) and **Alex** (slot 1); offsets come from the active Battle Plan. HUD lists each companion name and distance.
+`ASolidCompanionCharacter` follows with simple steering (no NavMesh — works on procedural terrain). Same Fab Viking mesh + clip locomotion as the player. The roster is **Sam** (slot 0) then **Alex** (slot 1). `bAutoSpawnCompanion` spawns only as many as the current max party size, which starts at 0 and is raised by town events. Offsets come from the active Battle Plan. HUD lists each companion name and distance.
 
 **Party camera** (SC1-0025/0026/0084): the Captain spring-arm shifts `TargetOffset` toward the Party center and may lengthen so Companions stay in frame (`bFrameCompanions`; implementation in `SolidPartyCamera.cpp`). SC1-0026 uses screen-space fit, disables boom collision while Companions are present, and zooms in much slower than out. SC1-0027 lifts the camera via `SocketOffset` when the predicted camera point would sink below procedural terrain.
 

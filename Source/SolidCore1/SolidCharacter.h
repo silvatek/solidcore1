@@ -61,9 +61,10 @@ public:
 	/** Mouse-wheel boom limit (cm). Fog curtains are taller than this. */
 	float GetCameraZoomMax() const { return CameraZoomMax; }
 
-	/** Raven sight (third person) or true sight (first person). F9 toggles. */
+	/** Raven sight (third person) or true sight (first person). F9 toggles once both are enabled. */
 	ESolidSight GetSight() const { return Sight; }
 	bool IsTrueSight() const { return SolidSight::IsTrueSight(Sight); }
+	void SetSight(ESolidSight NewSight);
 	void ToggleSight();
 
 protected:
@@ -100,6 +101,7 @@ protected:
 	void SelectBattlePlanSlot7();
 	void SelectBattlePlanSlot8();
 	void ToggleSightFromInput();
+	void ApplySightPresentation();
 	void ApplyTrueSightCamera();
 	void ApplyRavenSightCamera();
 	void ToggleMainMenuFromInput();
@@ -283,8 +285,8 @@ protected:
 	/** Smoothed world-Z lift applied via spring-arm SocketOffset (keeps camera above terrain). */
 	float CameraTerrainLiftCm = 0.f;
 
-	/** Default is the third-person party camera. */
-	ESolidSight Sight = ESolidSight::Raven;
+	/** True sight until an event enables raven sight. */
+	ESolidSight Sight = ESolidSight::True;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimSequence> CachedIdleAnim;

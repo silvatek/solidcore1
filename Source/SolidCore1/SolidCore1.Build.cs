@@ -16,6 +16,7 @@ public class SolidCore1 : ModuleRules
 		PrivateIncludePaths.Add(ModuleDirectory + "/Towns");
 		PrivateIncludePaths.Add(ModuleDirectory + "/HUD");
 		PrivateIncludePaths.Add(ModuleDirectory + "/Menus");
+		PrivateIncludePaths.Add(ModuleDirectory + "/Events");
 		PrivateIncludePaths.Add(ModuleDirectory + "/Tests");
 
 		PublicDependencyModuleNames.AddRange(new string[]

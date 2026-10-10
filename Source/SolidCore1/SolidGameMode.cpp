@@ -12,6 +12,7 @@
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Terrain/SolidWorldMap.h"
+#include "Towns/SolidTowns.h"
 #include "Towns/SolidBuilding.h"
 #include "Towns/SolidTownBuildings.h"
 #include "Towns/SolidTownSign.h"
@@ -25,6 +26,10 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "TimerManager.h"
+
+static_assert(
+	ASolidGameMode::DefaultCompanionCount == SolidEvents::RosterCount,
+	"DefaultCompanionCount must match the event roster (Sam, Alex).");
 
 ASolidGameMode::ASolidGameMode()
 {
@@ -72,16 +77,78 @@ void ASolidGameMode::BeginPlay()
 	EnsureCompanyAndParty();
 	EnsureTerrainStreamer();
 
-	// Player pawn / terrain may not be ready on the first PIE frame — retry shortly.
+	// Player pawn / terrain may not be ready on the first PIE frame — keep sampling.
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(
-			CompanionSpawnTimer, this, &ASolidGameMode::EnsureCompanion, 0.35f, false);
+			EventRefreshTimer, this, &ASolidGameMode::RefreshEvents, 0.1f, true);
 		World->GetTimerManager().SetTimer(
 			VegetationSpawnTimer, this, &ASolidGameMode::EnsureVegetation, 0.5f, false);
 	}
-	EnsureCompanion();
+	RefreshEvents();
 	EnsureVegetation();
+}
+
+void ASolidGameMode::RefreshEvents()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World);
+	if (!Streamer && bAutoSpawnTerrainStreamer)
+	{
+		Streamer = ASolidTerrainStreamer::EnsureExists(World);
+	}
+	// The captain is moved onto location 0 once. Sampling earlier would
+	// treat the map PlayerStart as the town they "entered".
+	if (!Streamer || !Streamer->HasAttemptedStartTownRelocate())
+	{
+		return;
+	}
+
+	USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
+	USolidWorldMap* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
+	APlayerController* PC = World->GetFirstPlayerController();
+	APawn* PlayerPawn = PC ? PC->GetPawn() : nullptr;
+	if (!Terrain || !WorldMap || !WorldMap->IsLoaded() || !PlayerPawn)
+	{
+		return;
+	}
+
+	const FVector Location = PlayerPawn->GetActorLocation();
+	const int32 TownId = WorldMap->SampleLocationId(
+		Location.X,
+		Location.Y,
+		Terrain->GetWorldMinXY(),
+		Terrain->GetWorldMaxXY());
+	const SolidEvents::FResult Result = SolidEvents::NotifyOccupiedTown(Configuration, TownId);
+	if (Result.bFired)
+	{
+		UE_LOG(LogSolid, Warning,
+			TEXT("Event: entered town %d (%s). Sight %s. Max party %d."),
+			TownId,
+			*SolidTowns::NameFor(TownId),
+			Result.bSetSight ? SolidSight::Label(Result.Sight) : TEXT("unchanged"),
+			Configuration.MaxPartySize);
+	}
+
+	if (Result.bSetSight)
+	{
+		if (ASolidCharacter* Captain = Cast<ASolidCharacter>(PlayerPawn))
+		{
+			Captain->SetSight(Result.Sight);
+		}
+	}
+
+	EnsureCompanion();
+}
+
+bool ASolidGameMode::IsSightEnabled(const ESolidSight Sight) const
+{
+	return SolidEvents::IsSightEnabled(Configuration, Sight);
 }
 
 bool ASolidGameMode::SelectBattlePlanSlot(const int32 SlotIndex)
@@ -130,8 +197,9 @@ ASolidCompanionCharacter* ASolidGameMode::SpawnCompanion(
 	const ESolidBattleSpacing Spacing = Party
 		? Party->GetActiveSpacing()
 		: ESolidBattleSpacing::Standard;
+	const int32 FormationCount = FMath::Max(SolidEvents::PartyCount(Configuration), 1);
 	const FVector2D Slot = SolidBattleFormationSlots::SlotOffset(
-		Formation, PartySlotIndex, DefaultCompanionCount, Spacing);
+		Formation, PartySlotIndex, FormationCount, Spacing);
 
 	const FVector PlayerLoc = PlayerPawn->GetActorLocation();
 	const FVector PlayerFwd = PlayerPawn->GetActorForwardVector();
@@ -194,7 +262,31 @@ void ASolidGameMode::EnsureCompanion()
 		return !IsValid(Companion);
 	});
 
-	if (SpawnedCompanions.Num() >= DefaultCompanionCount)
+	const int32 Wanted = SolidEvents::PartyCount(Configuration);
+	for (int32 Index = SpawnedCompanions.Num() - 1; Index >= 0; --Index)
+	{
+		ASolidCompanionCharacter* Companion = SpawnedCompanions[Index];
+		const int32 Slot = Companion ? Companion->GetPartySlotIndex() : INDEX_NONE;
+		const TCHAR* Expected = SolidEvents::RosterName(Slot);
+		const bool bKeep = Companion
+			&& Expected
+			&& Slot < Wanted
+			&& Companion->GetCharacterDisplayName() == Expected;
+		if (!bKeep)
+		{
+			if (Companion)
+			{
+				UE_LOG(LogSolid, Warning,
+					TEXT("Removed companion %s (max party %d)."),
+					*Companion->GetCharacterDisplayName(),
+					Wanted);
+				Companion->Destroy();
+			}
+			SpawnedCompanions.RemoveAt(Index);
+		}
+	}
+
+	if (SpawnedCompanions.Num() >= Wanted)
 	{
 		return;
 	}
@@ -209,19 +301,14 @@ void ASolidGameMode::EnsureCompanion()
 	APawn* PlayerPawn = PC ? PC->GetPawn() : nullptr;
 	if (!PlayerPawn)
 	{
-		// Keep trying until the pawn exists.
-		World->GetTimerManager().SetTimer(
-			CompanionSpawnTimer, this, &ASolidGameMode::EnsureCompanion, 0.25f, false);
 		return;
 	}
 
 	// Wait for the streamer to finish the one-shot location-0 relocate so companions
 	// spawn next to the Captain at the starting town, not at the map PlayerStart.
-	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::EnsureExists(World);
+	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World);
 	if (Streamer && !Streamer->HasAttemptedStartTownRelocate())
 	{
-		World->GetTimerManager().SetTimer(
-			CompanionSpawnTimer, this, &ASolidGameMode::EnsureCompanion, 0.1f, false);
 		return;
 	}
 
@@ -229,11 +316,16 @@ void ASolidGameMode::EnsureCompanion()
 		? CompanionClass.Get()
 		: ASolidCompanionCharacter::StaticClass();
 
-	auto HasNamed = [this](const TCHAR* Name) -> bool
+	auto HasSlot = [this](const int32 Slot) -> bool
 	{
+		const TCHAR* Name = SolidEvents::RosterName(Slot);
+		if (!Name)
+		{
+			return true;
+		}
 		for (const TObjectPtr<ASolidCompanionCharacter>& Companion : SpawnedCompanions)
 		{
-			if (Companion && Companion->GetCharacterDisplayName() == Name)
+			if (Companion && Companion->GetPartySlotIndex() == Slot)
 			{
 				return true;
 			}
@@ -241,29 +333,22 @@ void ASolidGameMode::EnsureCompanion()
 		return false;
 	};
 
-	// Slot 0 = Sam, slot 1 = Alex (formation offsets come from the active Battle Plan).
-	if (!HasNamed(TEXT("Sam")))
+	for (int32 Slot = 0; Slot < Wanted; ++Slot)
 	{
-		if (ASolidCompanionCharacter* Sam = SpawnCompanion(
-			World, PlayerPawn, ClassToSpawn, TEXT("Sam"), /*PartySlotIndex=*/0))
+		if (HasSlot(Slot))
 		{
-			SpawnedCompanions.Add(Sam);
+			continue;
 		}
-	}
-
-	if (!HasNamed(TEXT("Alex")))
-	{
-		if (ASolidCompanionCharacter* Alex = SpawnCompanion(
-			World, PlayerPawn, ClassToSpawn, TEXT("Alex"), /*PartySlotIndex=*/1))
+		const TCHAR* Name = SolidEvents::RosterName(Slot);
+		if (!Name)
 		{
-			SpawnedCompanions.Add(Alex);
+			continue;
 		}
-	}
-
-	if (SpawnedCompanions.Num() < DefaultCompanionCount)
-	{
-		World->GetTimerManager().SetTimer(
-			CompanionSpawnTimer, this, &ASolidGameMode::EnsureCompanion, 0.25f, false);
+		if (ASolidCompanionCharacter* Companion = SpawnCompanion(
+			World, PlayerPawn, ClassToSpawn, Name, Slot))
+		{
+			SpawnedCompanions.Add(Companion);
+		}
 	}
 }
 

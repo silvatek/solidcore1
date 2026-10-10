@@ -58,6 +58,12 @@ public:
 	/** Marker biome at map cell (clamped). T and Z are Town; digits use the location key. */
 	ESolidBiome GetBiomeAtCell(int32 MapX, int32 MapY) const;
 
+	/** Digit on this cell, or INDEX_NONE when the marker is not numbered. */
+	int32 GetLocationIdAtCell(int32 MapX, int32 MapY) const;
+
+	/** Numbered location under a world XY, or INDEX_NONE. Same rectangle as SampleBiome. */
+	int32 SampleLocationId(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
+
 	/**
 	 * Sample biome for a world XY given the TerrainMap world rectangle.
 	 * File row 0 → north (max Y). File column 0 → east (max X) so the text
@@ -99,6 +105,7 @@ public:
 protected:
 	bool ParseKeyLine(const FString& Line);
 	bool ParseLocationLine(const FString& Line);
+	bool WorldXYToCell(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, int32& OutMapX, int32& OutMapY) const;
 	bool CellsToWorldXY(const TArray<FIntPoint>& Cells, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 	static ESolidBiome MarkerToBiome(TCHAR Marker);
 	static bool BiomeFromName(const FString& Name, ESolidBiome& OutBiome);

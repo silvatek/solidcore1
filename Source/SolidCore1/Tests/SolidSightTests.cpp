@@ -30,10 +30,10 @@ bool FSolidSightToggleTest::RunTest(const FString& Parameters)
 	ASolidCharacter* Character = NewObject<ASolidCharacter>();
 	TestNotNull(TEXT("character"), Character);
 	TestEqual(
-		TEXT("starts in raven sight"),
+		TEXT("starts in true sight"),
 		static_cast<uint8>(Character->GetSight()),
-		static_cast<uint8>(ESolidSight::Raven));
-	TestFalse(TEXT("not true sight"), Character->IsTrueSight());
+		static_cast<uint8>(ESolidSight::True));
+	TestTrue(TEXT("true sight"), Character->IsTrueSight());
 
 	USkeletalMeshComponent* Mesh = Character->GetMesh();
 	USpringArmComponent* Boom = Character->GetCameraBoom();
@@ -49,11 +49,6 @@ bool FSolidSightToggleTest::RunTest(const FString& Parameters)
 	}
 
 	const float SavedZoom = Character->GetUserZoomArmLength();
-	TestTrue(TEXT("nameplate starts visible"), Nameplate->IsVisible());
-	TestFalse(TEXT("body starts visible to the owner"), Mesh->bOwnerNoSee);
-
-	Character->ToggleSight();
-	TestTrue(TEXT("true sight"), Character->IsTrueSight());
 	TestTrue(TEXT("body hidden from the owner"), Mesh->bOwnerNoSee);
 	TestTrue(TEXT("hidden body still casts a shadow"), Mesh->bCastHiddenShadow);
 	TestFalse(TEXT("nameplate hidden"), Nameplate->IsVisible());
@@ -70,13 +65,19 @@ bool FSolidSightToggleTest::RunTest(const FString& Parameters)
 		FMath::IsNearlyEqual(Character->GetUserZoomArmLength(), SavedZoom));
 
 	Character->ToggleSight();
-	TestFalse(TEXT("back to raven sight"), Character->IsTrueSight());
-	TestFalse(TEXT("body visible to the owner again"), Mesh->bOwnerNoSee);
-	TestTrue(TEXT("nameplate visible again"), Nameplate->IsVisible());
+	TestFalse(TEXT("raven sight"), Character->IsTrueSight());
+	TestFalse(TEXT("body visible to the owner"), Mesh->bOwnerNoSee);
+	TestTrue(TEXT("nameplate visible"), Nameplate->IsVisible());
 	TestTrue(TEXT("arm length restored"), FMath::IsNearlyEqual(Boom->TargetArmLength, SavedZoom));
 	TestTrue(TEXT("body yaws toward movement"), Move->bOrientRotationToMovement);
 	TestFalse(TEXT("look yaw does not turn the body"), Character->bUseControllerRotationYaw);
 	TestTrue(TEXT("boom lag restored"), Boom->bEnableCameraLag);
+
+	Character->ToggleSight();
+	TestTrue(TEXT("back to true sight"), Character->IsTrueSight());
+	TestTrue(TEXT("body hidden again"), Mesh->bOwnerNoSee);
+	TestFalse(TEXT("nameplate hidden again"), Nameplate->IsVisible());
+	TestTrue(TEXT("arm length is zero again"), FMath::IsNearlyZero(Boom->TargetArmLength));
 	return true;
 }
 

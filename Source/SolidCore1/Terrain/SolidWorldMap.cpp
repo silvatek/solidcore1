@@ -382,15 +382,17 @@ ESolidBiome USolidWorldMap::GetBiomeAtCell(int32 MapX, int32 MapY) const
 	return MarkerToBiome(Marker);
 }
 
-ESolidBiome USolidWorldMap::SampleBiome(
+bool USolidWorldMap::WorldXYToCell(
 	const float WorldX,
 	const float WorldY,
 	const FVector2D WorldMinXY,
-	const FVector2D WorldMaxXY) const
+	const FVector2D WorldMaxXY,
+	int32& OutMapX,
+	int32& OutMapY) const
 {
 	if (!bIsLoaded)
 	{
-		return ESolidBiome::Grassland;
+		return false;
 	}
 
 	const float ExtentX = FMath::Max(WorldMaxXY.X - WorldMinXY.X, 1.f);
@@ -401,9 +403,56 @@ ESolidBiome USolidWorldMap::SampleBiome(
 	const float VFromSouth = FMath::Clamp((WorldY - WorldMinXY.Y) / ExtentY, 0.f, 1.f);
 	const float VFromNorth = 1.f - VFromSouth;
 
-	const int32 MapX = FMath::Clamp(FMath::FloorToInt(UFromEast * MapWidth), 0, MapWidth - 1);
-	const int32 MapY = FMath::Clamp(FMath::FloorToInt(VFromNorth * MapHeight), 0, MapHeight - 1);
+	OutMapX = FMath::Clamp(FMath::FloorToInt(UFromEast * MapWidth), 0, MapWidth - 1);
+	OutMapY = FMath::Clamp(FMath::FloorToInt(VFromNorth * MapHeight), 0, MapHeight - 1);
+	return true;
+}
+
+ESolidBiome USolidWorldMap::SampleBiome(
+	const float WorldX,
+	const float WorldY,
+	const FVector2D WorldMinXY,
+	const FVector2D WorldMaxXY) const
+{
+	int32 MapX = 0;
+	int32 MapY = 0;
+	if (!WorldXYToCell(WorldX, WorldY, WorldMinXY, WorldMaxXY, MapX, MapY))
+	{
+		return ESolidBiome::Grassland;
+	}
 	return GetBiomeAtCell(MapX, MapY);
+}
+
+int32 USolidWorldMap::GetLocationIdAtCell(const int32 MapX, const int32 MapY) const
+{
+	if (!bIsLoaded || Markers.Num() != MapWidth * MapHeight)
+	{
+		return INDEX_NONE;
+	}
+
+	const int32 X = FMath::Clamp(MapX, 0, MapWidth - 1);
+	const int32 Y = FMath::Clamp(MapY, 0, MapHeight - 1);
+	const TCHAR Marker = static_cast<TCHAR>(Markers[Y * MapWidth + X]);
+	if (!FChar::IsDigit(Marker))
+	{
+		return INDEX_NONE;
+	}
+	return static_cast<int32>(Marker - TEXT('0'));
+}
+
+int32 USolidWorldMap::SampleLocationId(
+	const float WorldX,
+	const float WorldY,
+	const FVector2D WorldMinXY,
+	const FVector2D WorldMaxXY) const
+{
+	int32 MapX = 0;
+	int32 MapY = 0;
+	if (!WorldXYToCell(WorldX, WorldY, WorldMinXY, WorldMaxXY, MapX, MapY))
+	{
+		return INDEX_NONE;
+	}
+	return GetLocationIdAtCell(MapX, MapY);
 }
 
 FLinearColor USolidWorldMap::GetBiomeColor(const ESolidBiome Biome) const

@@ -180,7 +180,7 @@ See [`Source/SolidCore1/Fog/README.md`](Source/SolidCore1/Fog/README.md) — tra
 
 ## WorldMap biomes (SC1-0105)
 
-`Content/WorldMap.txt` (fallback `Source/SolidCore1/WorldMap.txt`) is a 64×64 grid of markers plus a color key (`S` Sea, `G` Grassland, `T` Town, `M` Mountain, `F` Forest, `D` Desert, `R` River). Digits are named locations (`0` Iglin, `1` Relion, `2` Kanfold, `3` Visolar), each with `biome=` and `name=` in the key. The grid scales across the TerrainMap world rectangle (file row 0 = north). Location **0** is the starting town: the streamer relocates the player there. A legacy `Z` marker is the start only on maps that have no `0` cells. Fog bands are centered on the player after that placement.
+`Content/WorldMap.txt` (fallback `Source/SolidCore1/WorldMap.txt`) is a 64×64 grid of markers plus a color key (`S` Sea, `G` Grassland, `T` Town, `M` Mountain, `F` Forest, `D` Desert, `R` River). Digits are named locations (`0` Iglin, `1` Relion, `2` Kanfold, `3` Visolar), each with `biome=` and `name=` in the key. The grid scales across the TerrainMap world rectangle (file row 0 = north). The default rectangle is 1024 m on a side, so each marker is 16 m. Location **0** is the starting town: the streamer relocates the player there. A legacy `Z` marker is the start only on maps that have no `0` cells. Fog bands are centered on the player after that placement.
 
 ## Forest trees (SC1-0076 / SC1-0110)
 

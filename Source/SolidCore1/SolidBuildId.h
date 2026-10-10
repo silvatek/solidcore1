@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0134")
+#define SOLID_BUILD_ID TEXT("SC1-0135")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("tools\\build.bat for the editor target")
+#define SOLID_BUILD_NOTE TEXT("Double world size; WorldMap cells are 16 m")
 #endif

@@ -4,7 +4,6 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 
 ## To-do
 
-- Double world size
 - Use white material for 100% fog terrain
 - Don't allow camera to pass through fog curtain
 - Raise height of fog curtain
@@ -22,7 +21,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 
 - **Captain + Party** — third-person Viking pawn (Enhanced Input: move / look / zoom / jump / sprint), clip locomotion (idle / walk / run / jump), floating nameplates. Companions **Sam** and **Alex** follow in battle-plan slots; Party camera frames the group and lifts off terrain.
 - **Battle plans** — Company catalog and Party assigned slots. F1 Line, F2 Column, F3 Tight mob, F4 Loose mob (spacing Narrow / Standard / Wide). F1–F8 select; HUD battle-plan panel. The square-walk formation drill is the main menu's Test Drill entry.
-- **World + biomes** — 64×64 `WorldMap.txt` overlay (Sea, Grassland, Town, Mountain, Forest, Desert, River) scaled onto a 257×257 TerrainPoint map. Numbered locations are towns: `0` Iglin (start), `1` Relion, `2` Kanfold, `3` Visolar. The captain starts at location 0. Per-biome height shelf (Sea/River 0, Mountain +10 m, else +1 m). Darker mountain grey.
+- **World + biomes** — 64×64 `WorldMap.txt` overlay (Sea, Grassland, Town, Mountain, Forest, Desert, River) scaled onto a 513×513 TerrainPoint map (1024 m side, 200 cm spacing). That doubles the original 257-point / 512 m world, and each ASCII cell doubles from 8 m to 16 m. Numbered locations are towns: `0` Iglin (start), `1` Relion, `2` Kanfold, `3` Visolar. The captain starts at location 0. Per-biome height shelf (Sea/River 0, Mountain +10 m, else +1 m). Darker mountain grey.
 - **No starter monolith** — the grey slab that marked the start-town centroid is gone. Location 0 still sets the captain spawn and the building clear radius.
 - **Fog follows the player** — the map starts fully fogged. After the captain is placed at location 0, exploration fog is centered on the pawn, not on that cell. The two match only because that is where the pawn stands.
 - **Procedural terrain** — streamed chunks around the pawn, Fab grassland material, FlatCol tints for other biomes. Exploration fog-of-war (25 m / 50 m bands, marching-squares curtains) clears from the trail, not the camera.
@@ -65,7 +64,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 |--------|--------|
 | `SolidCore1.Fog.*` | Distance bands, units, mist sampling, fog mesh build guards |
 | `SolidCore1.Map.*` | Build smoke, trail clear, idempotent build, sampling, bounds, biome Z shelf |
-| `SolidCore1.WorldMap.*` | ASCII overlay load, key colors, numbered locations, fog follows the player |
+| `SolidCore1.WorldMap.*` | ASCII overlay load, key colors, numbered locations, doubled world scale, fog follows the player |
 | `SolidCore1.Noise.*` | Hash / value / fBm / height / grass tone |
 | `SolidCore1.Types.*` | Biome names (incl. Sea/River), height offsets, `FSolidTerrainPoint` defaults |
 | `SolidCore1.Vegetation.*` | Tree RNG variation, town building pack |
@@ -164,7 +163,7 @@ C++ generates walkable terrain around the player at runtime:
 
 - `FSolidTerrainPoint` / `ESolidBiome` — simulation cell (X, Y, Height, Biome, Threat, Fog)
 - `USolidWorldMap` — 64×64 ASCII biome overlay (`Content/WorldMap.txt`) scaled across the TerrainMap world bounds
-- `USolidTerrainMap` — 2D TerrainPoint grid built once at streamer startup (default 257×257 @ chunk vert spacing); biomes from WorldMap when loaded
+- `USolidTerrainMap` — 2D TerrainPoint grid built once at streamer startup (default 513×513 @ 200 cm); biomes from WorldMap when loaded. The ASCII map is stretched across that rectangle, so doubling the point count doubles each WorldMap cell.
 - `ASolidTerrainChunk` — runtime `UStaticMesh`; vertex heights from the TerrainMap; per-quad biome materials
 - `ASolidTerrainStreamer` — builds the map, relocates the pawn to location 0, then loads/unloads chunks
 - Debug HUD shows biome / threat / fog at the pawn plus map size

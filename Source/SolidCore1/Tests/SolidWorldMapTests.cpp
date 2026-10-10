@@ -2,6 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "SolidTerrainFog.h"
 #include "SolidTerrainMap.h"
+#include "SolidTerrainStreamer.h"
 #include "SolidTerrainTestHelpers.h"
 #include "SolidWorldMap.h"
 
@@ -357,6 +358,49 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	// Column 0 is east. Cell (4, 2) center is (5950, 6150), not the Z at column 8.
 	TestTrue(TEXT("start is the 0 cell, not Z"), FMath::IsNearlyEqual(SyntheticStart.X, 5950.f, 1.f));
 	TestTrue(TEXT("start row is the 0 cell"), FMath::IsNearlyEqual(SyntheticStart.Y, 6150.f, 1.f));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidWorldMapDoubledScaleTest,
+	"SolidCore1.WorldMap.DoubledScale",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidWorldMapDoubledScaleTest::RunTest(const FString& Parameters)
+{
+	const ASolidTerrainStreamer* Defaults = GetDefault<ASolidTerrainStreamer>();
+	TestNotNull(TEXT("streamer defaults"), Defaults);
+	TestEqual(TEXT("points doubled from 257"), Defaults->TerrainMapSize, 513);
+	TestEqual(TEXT("spacing stays 200 cm"), Defaults->TerrainPointSpacing, 200.f);
+
+	const float Extent = static_cast<float>(Defaults->TerrainMapSize - 1) * Defaults->TerrainPointSpacing;
+	TestTrue(TEXT("world side is 1024 m"), FMath::IsNearlyEqual(Extent, 102400.f, 1.f));
+	const float CellCm = Extent / static_cast<float>(USolidWorldMap::MapWidth);
+	TestTrue(TEXT("world map cell is 16 m"), FMath::IsNearlyEqual(CellCm, 1600.f, 1.f));
+
+	USolidWorldMap* WorldMap = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("LoadDefault"), WorldMap->LoadDefault());
+
+	// Previous rectangle was half this size. A sample and its doubled twin must hit the same marker.
+	const FVector2D OldMin(-25600.f, -25600.f);
+	const FVector2D OldMax(25600.f, 25600.f);
+	const FVector2D NewMin = OldMin * 2.f;
+	const FVector2D NewMax = OldMax * 2.f;
+	const FVector2D Samples[] = {
+		FVector2D(0.f, 0.f),
+		FVector2D(12000.f, -8000.f),
+		FVector2D(-18000.f, 22000.f),
+		FVector2D(25000.f, 25000.f),
+	};
+	for (const FVector2D& Sample : Samples)
+	{
+		const ESolidBiome Previous = WorldMap->SampleBiome(Sample.X, Sample.Y, OldMin, OldMax);
+		const ESolidBiome Doubled = WorldMap->SampleBiome(Sample.X * 2.f, Sample.Y * 2.f, NewMin, NewMax);
+		TestEqual(
+			*FString::Printf(TEXT("biome scales at (%.0f, %.0f)"), Sample.X, Sample.Y),
+			static_cast<uint8>(Doubled),
+			static_cast<uint8>(Previous));
+	}
 	return true;
 }
 

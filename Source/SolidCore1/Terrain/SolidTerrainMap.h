@@ -17,12 +17,12 @@ class SOLIDCORE1_API USolidTerrainMap : public UObject
 	GENERATED_BODY()
 
 public:
-	/** Points along each axis (total cells = Width * Height). */
+	/** Points along each axis (total cells = Width * Height). 513 covers 1024 m at 200 cm. */
 	UPROPERTY(BlueprintReadOnly, Category = "Terrain")
-	int32 GridWidth = 257;
+	int32 GridWidth = 513;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Terrain")
-	int32 GridHeight = 257;
+	int32 GridHeight = 513;
 
 	/** World cm between neighboring points. */
 	UPROPERTY(BlueprintReadOnly, Category = "Terrain")
@@ -48,8 +48,8 @@ public:
 		float FrequencyScale,
 		float Amplitude,
 		float BaseHeight,
-		int32 InGridWidth = 257,
-		int32 InGridHeight = 257,
+		int32 InGridWidth = 513,
+		int32 InGridHeight = 513,
 		float InPointSpacing = 200.f,
 		bool bForceRebuild = false);
 

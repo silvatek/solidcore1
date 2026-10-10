@@ -141,9 +141,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain", meta = (ClampMin = "0.0"))
 	float SnapHeightPadding = 4.f;
 
-	/** TerrainPoint cells along each map axis (built once at BeginPlay). */
+	/**
+	 * TerrainPoint cells along each map axis (built once at BeginPlay).
+	 * 513 doubles the original 257-point span at the same spacing: world side
+	 * goes from 512 m to 1024 m. WorldMap.txt still covers that whole rectangle,
+	 * so each ASCII cell doubles from 8 m to 16 m.
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Map", meta = (ClampMin = "8", ClampMax = "1025"))
-	int32 TerrainMapSize = 257;
+	int32 TerrainMapSize = 513;
 
 	/** World cm between TerrainPoints. Match chunk vert step (ChunkWorldSize / QuadsPerSide) for crisp sampling. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Map", meta = (ClampMin = "50.0"))

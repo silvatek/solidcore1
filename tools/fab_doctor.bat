@@ -14,8 +14,11 @@ echo SolidCore1 Fab doctor
 echo Project: %ROOT%
 echo.
 echo Listing IDs (copy/paste)
-echo ca4ba583-8d90-4069-b51f-50e694530b2f
-echo 94bfee39-8d7d-409c-89c9-40433550ee3a
+powershell -NoProfile -Command "$j = Get-Content -Raw -LiteralPath '%SCRIPT_DIR%fab-assets.json' | ConvertFrom-Json; foreach ($a in $j.assets) { if ($a.listingUuid) { $a.listingUuid } }"
+if errorlevel 1 (
+  echo ca4ba583-8d90-4069-b51f-50e694530b2f
+  echo 94bfee39-8d7d-409c-89c9-40433550ee3a
+)
 echo.
 
 set "MISSING=0"

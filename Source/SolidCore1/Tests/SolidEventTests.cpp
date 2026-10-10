@@ -34,34 +34,39 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("still an empty party"), State.MaxPartySize, 0);
 
 	const SolidEvents::FResult Iglin = SolidEvents::NotifyOccupiedTown(State, 0);
-	TestTrue(TEXT("entering town 0 fires"), Iglin.bFired);
-	TestTrue(TEXT("town 0 switches sight"), Iglin.bSetSight);
+	TestFalse(TEXT("starting town fires nothing"), Iglin.bFired);
+	TestFalse(TEXT("Iglin leaves raven sight locked"), State.bRavenSightEnabled);
+	TestEqual(TEXT("Iglin leaves the party empty"), State.MaxPartySize, 0);
+
+	const SolidEvents::FResult Relion = SolidEvents::NotifyOccupiedTown(State, 1);
+	TestTrue(TEXT("entering town 1 fires"), Relion.bFired);
+	TestTrue(TEXT("town 1 switches sight"), Relion.bSetSight);
 	TestEqual(
-		TEXT("town 0 enables raven sight"),
-		static_cast<uint8>(Iglin.Sight),
+		TEXT("town 1 enables raven sight"),
+		static_cast<uint8>(Relion.Sight),
 		static_cast<uint8>(ESolidSight::Raven));
 	TestTrue(TEXT("raven sight unlocked"), SolidEvents::IsSightEnabled(State, ESolidSight::Raven));
 	TestTrue(TEXT("true sight stays available"), SolidEvents::IsSightEnabled(State, ESolidSight::True));
-	TestEqual(TEXT("town 0 party size"), State.MaxPartySize, 1);
-	TestEqual(TEXT("town 0 companion count"), SolidEvents::PartyCount(State), 1);
-	TestEqual(TEXT("Sam joins at Iglin"), FString(SolidEvents::RosterName(0)), FString(TEXT("Sam")));
+	TestEqual(TEXT("town 1 party size"), State.MaxPartySize, 1);
+	TestEqual(TEXT("town 1 companion count"), SolidEvents::PartyCount(State), 1);
+	TestEqual(TEXT("Sam joins at Relion"), FString(SolidEvents::RosterName(0)), FString(TEXT("Sam")));
 
-	const SolidEvents::FResult StillIglin = SolidEvents::NotifyOccupiedTown(State, 0);
-	TestFalse(TEXT("staying in town 0 does not fire again"), StillIglin.bFired);
+	const SolidEvents::FResult StillRelion = SolidEvents::NotifyOccupiedTown(State, 1);
+	TestFalse(TEXT("staying in town 1 does not fire again"), StillRelion.bFired);
 
 	const SolidEvents::FResult Leave = SolidEvents::NotifyOccupiedTown(State, INDEX_NONE);
 	TestFalse(TEXT("leaving town fires nothing"), Leave.bFired);
 	TestEqual(TEXT("party size sticks after leaving"), State.MaxPartySize, 1);
 
-	const SolidEvents::FResult IglinAgain = SolidEvents::NotifyOccupiedTown(State, 0);
-	TestFalse(TEXT("town 0 event already fired"), IglinAgain.bFired);
-	TestEqual(TEXT("re-entering Iglin does not shrink the party"), State.MaxPartySize, 1);
+	const SolidEvents::FResult RelionAgain = SolidEvents::NotifyOccupiedTown(State, 1);
+	TestFalse(TEXT("town 1 event already fired"), RelionAgain.bFired);
+	TestEqual(TEXT("re-entering Relion does not shrink the party"), State.MaxPartySize, 1);
 
-	const SolidEvents::FResult Relion = SolidEvents::NotifyOccupiedTown(State, 1);
-	TestTrue(TEXT("entering town 1 fires"), Relion.bFired);
-	TestFalse(TEXT("town 1 does not change sight"), Relion.bSetSight);
+	const SolidEvents::FResult Kanfold = SolidEvents::NotifyOccupiedTown(State, 2);
+	TestTrue(TEXT("entering town 2 fires"), Kanfold.bFired);
+	TestFalse(TEXT("town 2 does not change sight"), Kanfold.bSetSight);
 	TestTrue(TEXT("raven sight still unlocked"), SolidEvents::IsSightEnabled(State, ESolidSight::Raven));
-	TestEqual(TEXT("town 1 party size"), State.MaxPartySize, 2);
+	TestEqual(TEXT("town 2 party size"), State.MaxPartySize, 2);
 	TestEqual(TEXT("Sam and Alex"), SolidEvents::PartyCount(State), 2);
 	TestEqual(TEXT("Alex is the second companion"), FString(SolidEvents::RosterName(1)), FString(TEXT("Alex")));
 
@@ -71,10 +76,10 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Jethan leaves the party empty"), Skipped.MaxPartySize, 0);
 	TestFalse(TEXT("Jethan does not unlock raven sight"), Skipped.bRavenSightEnabled);
 
-	const SolidEvents::FResult RelionFirst = SolidEvents::NotifyOccupiedTown(Skipped, 1);
-	TestTrue(TEXT("town 1 still fires if Iglin was skipped"), RelionFirst.bFired);
-	TestFalse(TEXT("skipped Iglin does not enable raven sight"), Skipped.bRavenSightEnabled);
-	TestEqual(TEXT("town 1 still fields Sam and Alex"), SolidEvents::PartyCount(Skipped), 2);
+	const SolidEvents::FResult KanfoldFirst = SolidEvents::NotifyOccupiedTown(Skipped, 2);
+	TestTrue(TEXT("town 2 still fires if Relion was skipped"), KanfoldFirst.bFired);
+	TestFalse(TEXT("skipped Relion does not enable raven sight"), Skipped.bRavenSightEnabled);
+	TestEqual(TEXT("town 2 still fields Sam and Alex"), SolidEvents::PartyCount(Skipped), 2);
 
 	ASolidGameMode* GameMode = NewObject<ASolidGameMode>();
 	TestNotNull(TEXT("gamemode"), GameMode);

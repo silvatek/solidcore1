@@ -58,9 +58,9 @@ namespace SolidEvents
 
 	inline const FEvent Definitions[] = {
 		{
-			TEXT("Enter Iglin"),
+			TEXT("Enter Relion"),
 			ETrigger::EnterTown,
-			0,
+			1,
 			{
 				{ EChange::EnableSight, ESolidSight::Raven, 0 },
 				{ EChange::MaxPartySize, ESolidSight::Raven, 1 },
@@ -68,9 +68,9 @@ namespace SolidEvents
 			2,
 		},
 		{
-			TEXT("Enter Relion"),
+			TEXT("Enter Kanfold"),
 			ETrigger::EnterTown,
-			1,
+			2,
 			{
 				{ EChange::MaxPartySize, ESolidSight::Raven, 2 },
 			},

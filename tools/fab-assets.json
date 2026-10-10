@@ -1,0 +1,34 @@
+{
+  "note": "Fab listings this project expects. Native UE (.uasset) packs cannot be batch-downloaded or batch-exported in Fab in Launcher — Add to Project is per listing. See README 'Fab assets'.",
+  "docs": "https://dev.epicgames.com/documentation/en-us/fab/exporting-assets-from-fab-in-launcher",
+  "project": "SolidCore1.uproject",
+  "assets": [
+    {
+      "id": "viking",
+      "title": "Viking (Art.Hiraeth)",
+      "listing": "https://www.fab.com/listings/ca4ba583-8d90-4069-b51f-50e694530b2f",
+      "required": true,
+      "format": "unreal-engine",
+      "engine": "5.8",
+      "expectedPaths": [
+        "Content/Viking/Mesh/SK_Viking.uasset",
+        "Content/Viking/Animations/Anim_Viking_idle1.uasset",
+        "Content/Viking/Animations/Anim_Viking_walk.uasset",
+        "Content/Viking/Animations/Anim_Viking_run.uasset",
+        "Content/Viking/Animations/Anim_Viking_jump.uasset"
+      ],
+      "notes": "Code loads /Game/Viking/Mesh/SK_Viking (+ idle/walk/run/jump). Launcher Add to Project often lands under Content/Fab/<listing>/ — if so, move or copy the Viking folder to Content/Viking so those paths resolve."
+    },
+    {
+      "id": "grass",
+      "title": "025 Grass (Mat_025_grass)",
+      "listing": "https://www.fab.com/listings/94bfee39-8d7d-409c-89c9-40433550ee3a",
+      "required": false,
+      "format": "unreal-engine",
+      "engine": "5.8",
+      "expectedName": "Mat_025_grass.uasset",
+      "searchRoots": ["Content/Fab"],
+      "notes": "Optional. Terrain looks up Mat_025_grass under /Game/Fab; FlatCol solid green is the fallback."
+    }
+  ]
+}

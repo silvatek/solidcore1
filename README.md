@@ -56,6 +56,31 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 
 **Content dependency tests** assert meshes/materials/anims/BPs the C++ loaders expect (Engine BasicShapes, FlatCol, Viking mesh+locomotion, Fab grass or FlatCol fallback, pawn/GameMode BP-or-C++). Viking is required; Epic mannequin assets are not used.
 
+## Fab assets (Epic Games Launcher)
+
+Grass + Viking come from Fab. There is **no official download API**. Fab in Launcher can batch add-to-library / cart, but **native UE `.uasset` packs cannot be batch-downloaded or batch-exported**. Each listing is **Add to Project** on its own.
+
+| Asset | Listing | Required | Code path |
+|-------|---------|----------|-----------|
+| Viking (Art.Hiraeth) | [fab.com/listings/ca4ba583-…](https://www.fab.com/listings/ca4ba583-8d90-4069-b51f-50e694530b2f) | Yes | `/Game/Viking/Mesh/SK_Viking` + idle/walk/run/jump |
+| 025 Grass | [fab.com/listings/94bfee39-…](https://www.fab.com/listings/94bfee39-8d7d-409c-89c9-40433550ee3a) | No (FlatCol fallback) | `Mat_025_grass` under `/Game/Fab` |
+
+**Restore on a machine that has the Launcher + UE 5.8:**
+
+1. Epic Games Launcher → **Unreal Engine → Fab**. Sign in with the same Epic account that owns the listings.
+2. Gear icon: default format **Unreal Engine**, export target **Unreal Engine 5.8** (Launcher-installed engine, not a source build).
+3. Open each listing (or Ctrl+click both to add-to-library together). **Add to My Library** if they are not there yet.
+4. On each listing: **Add to Project** → this `SolidCore1.uproject` (editor can be open).
+5. If Viking lands under `Content/Fab/<listing>/`, move that folder to `Content/Viking` so `/Game/Viking/...` still resolves. Grass can stay anywhere under `Content/Fab`.
+
+```bat
+tools\fab_doctor.bat
+```
+
+prints which marker files are present and the listing URLs. Manifest: `tools/fab-assets.json`. Official notes: [Exporting Assets from Fab in Launcher](https://dev.epicgames.com/documentation/en-us/fab/exporting-assets-from-fab-in-launcher).
+
+We still commit these folders today so a clone runs without the Launcher. Once Add-to-Project reliably lands at the paths above, they can leave git.
+
 Not yet covered (need PIE): character movement, companion steering on terrain, streamer chunk load/unload, HUD drawing.
 
 **Session Frontend:** rebuild editor → **Tools → Session Frontend → Automation** → filter `SolidCore1` → Start.
@@ -211,8 +236,12 @@ Config/
 Content/
   Characters/          # BP_SolidCharacter, BP_SolidGameMode
   Maps/                # optional L_OpenWorld (+ World Partition externals)
-  Viking/              # Fab Viking mesh + locomotion clips
+  Viking/              # Fab Viking mesh + locomotion clips (see Fab assets)
   WorldMap.txt         # ASCII 64×64 biome overlay + color key
+tools/
+  fab-assets.json      # Fab listing IDs + expected paths
+  fab_doctor.bat       # check Viking/grass on disk; print Launcher restore
+  run_automation_tests.bat
 Source/
   SolidCore1.Target.cs
   SolidCore1Editor.Target.cs

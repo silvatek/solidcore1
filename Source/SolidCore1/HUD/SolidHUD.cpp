@@ -1,4 +1,5 @@
 #include "SolidHUD.h"
+#include "HUD/SolidHudTheme.h"
 #include "SolidBuildId.h"
 #include "Menus/SolidCredits.h"
 #include "Menus/SolidJournal.h"
@@ -28,6 +29,55 @@
 
 namespace SolidHUDPrivate
 {
+	static void FillRect(
+		UCanvas* Canvas,
+		const float X,
+		const float Y,
+		const float W,
+		const float H,
+		const FLinearColor& Color)
+	{
+		if (!Canvas || W <= 0.f || H <= 0.f)
+		{
+			return;
+		}
+		FCanvasTileItem Tile(FVector2D(X, Y), FVector2D(W, H), Color);
+		Tile.BlendMode = SE_BLEND_Opaque;
+		Canvas->DrawItem(Tile);
+	}
+
+	/** Dark oak board, bronze binding, brighter bosses on the corners. */
+	static void DrawOakFrame(
+		UCanvas* Canvas,
+		const float X,
+		const float Y,
+		const float W,
+		const float H,
+		const SolidHudTheme::FFrame& Frame)
+	{
+		const SolidHudTheme::FPalette Palette = SolidHudTheme::OakAndBronze();
+		float InnerW = 0.f;
+		float InnerH = 0.f;
+		if (!SolidHudTheme::InnerSize(W, H, Frame, InnerW, InnerH))
+		{
+			FillRect(Canvas, X, Y, W, H, Palette.Fill);
+			return;
+		}
+
+		FillRect(Canvas, X, Y, W, H, Palette.Bronze);
+		const float Inset1 = Frame.Outer;
+		FillRect(Canvas, X + Inset1, Y + Inset1, W - Inset1 * 2.f, H - Inset1 * 2.f, Palette.Recess);
+		const float Inset2 = Inset1 + Frame.Gap;
+		FillRect(Canvas, X + Inset2, Y + Inset2, W - Inset2 * 2.f, H - Inset2 * 2.f, Palette.Bronze);
+		FillRect(Canvas, X + Inset2 + Frame.Inner, Y + Inset2 + Frame.Inner, InnerW, InnerH, Palette.Fill);
+
+		const float Corner = FMath::Min(Frame.Corner, FMath::Min(W, H) * 0.5f);
+		FillRect(Canvas, X, Y, Corner, Corner, Palette.BronzeBright);
+		FillRect(Canvas, X + W - Corner, Y, Corner, Corner, Palette.BronzeBright);
+		FillRect(Canvas, X, Y + H - Corner, Corner, Corner, Palette.BronzeBright);
+		FillRect(Canvas, X + W - Corner, Y + H - Corner, Corner, Corner, Palette.BronzeBright);
+	}
+
 	static void DrawCenteredPopup(UCanvas* Canvas, const TArray<FString>& Lines, const float LineGap)
 	{
 		if (!Canvas || Lines.Num() == 0)
@@ -74,29 +124,34 @@ namespace SolidHUDPrivate
 		Dim.BlendMode = SE_BLEND_Translucent;
 		Canvas->DrawItem(Dim);
 
-		FCanvasTileItem Panel(
-			FVector2D(BoxX, BoxY),
-			FVector2D(BoxW, BoxH),
-			FLinearColor(0.05f, 0.055f, 0.07f, 1.f));
-		Panel.BlendMode = SE_BLEND_Opaque;
-		Canvas->DrawItem(Panel);
+		DrawOakFrame(Canvas, BoxX, BoxY, BoxW, BoxH, SolidHudTheme::MenuFrame());
 
+		const SolidHudTheme::FPalette Palette = SolidHudTheme::OakAndBronze();
 		float Y = BoxY + BoxPad;
 		for (int32 Index = 0; Index < Lines.Num(); ++Index)
 		{
 			const FString& Line = Lines[Index];
-			FLinearColor Color = FLinearColor::White;
+			FLinearColor Color = Palette.Ink;
 			if (Index == 0)
 			{
-				Color = FLinearColor(1.f, 0.84f, 0.47f);
+				Color = Palette.Title;
 			}
-			else if (Line.StartsWith(TEXT("Fab assets")) || Line.StartsWith(TEXT("SolidCore1")))
+			else if (Line.StartsWith(TEXT("Fab assets")) || Line.StartsWith(TEXT("SolidCore1"))
+				|| Line.StartsWith(TEXT("F10")))
 			{
-				Color = FLinearColor(0.75f, 0.80f, 0.86f);
+				Color = Palette.Hint;
 			}
-			else if (Line.StartsWith(TEXT("F10")))
+
+			if (Index == 0 && !Line.IsEmpty())
 			{
-				Color = FLinearColor(0.55f, 0.58f, 0.62f);
+				const float RuleInset = SolidHudTheme::BandThickness(SolidHudTheme::MenuFrame()) + 18.f;
+				FillRect(
+					Canvas,
+					BoxX + RuleInset,
+					Y + LineHeight + LineGap * 0.35f,
+					FMath::Max(0.f, BoxW - RuleInset * 2.f),
+					2.f,
+					Palette.Bronze);
 			}
 
 			if (!Line.IsEmpty())
@@ -189,7 +244,8 @@ namespace SolidHUDPrivate
 
 		const float PadX = 16.f;
 		const float LineGap = 2.f;
-		const float BoxPad = 6.f;
+		const SolidHudTheme::FFrame Frame = SolidHudTheme::HudFrame();
+		const float BoxPad = FMath::Max(14.f, SolidHudTheme::BandThickness(Frame) + 8.f);
 		const float GapAbove = 10.f;
 		const float PanelTop = StartY + GapAbove;
 
@@ -237,17 +293,17 @@ namespace SolidHUDPrivate
 
 		const float ContentWidth = (BodyX - PadX) + BodyMaxWidth;
 		const float BlockHeight = SlotLines.Num() * LineHeight + (SlotLines.Num() - 1) * LineGap;
-		FCanvasTileItem Background(
-			FVector2D(PadX - BoxPad, PanelTop - BoxPad * 0.5f),
-			FVector2D(ContentWidth + BoxPad * 2.f, BlockHeight + BoxPad),
-			FLinearColor(0.f, 0.f, 0.f, 0.55f));
-		Background.BlendMode = SE_BLEND_Translucent;
-		Canvas->DrawItem(Background);
+		const float BoxX = PadX - BoxPad;
+		const float BoxY = PanelTop - BoxPad * 0.5f;
+		const float BoxW = ContentWidth + BoxPad * 2.f;
+		const float BoxH = BlockHeight + BoxPad;
+		DrawOakFrame(Canvas, BoxX, BoxY, BoxW, BoxH, Frame);
 
-		const FLinearColor TitleColor(0.85f, 0.88f, 0.92f);
-		const FLinearColor ActiveColor(1.f, 0.84f, 0.47f);      // warm amber (matches Captain label)
-		const FLinearColor FilledColor(0.82f, 0.86f, 0.90f);
-		const FLinearColor EmptyColor(0.45f, 0.48f, 0.52f);
+		const SolidHudTheme::FPalette Palette = SolidHudTheme::OakAndBronze();
+		const FLinearColor TitleColor = Palette.Title;
+		const FLinearColor ActiveColor = Palette.Title;
+		const FLinearColor FilledColor = Palette.Ink;
+		const FLinearColor EmptyColor = Palette.Hint;
 
 		float Y = PanelTop;
 		for (int32 LineIndex = 0; LineIndex < SlotLines.Num(); ++LineIndex)
@@ -266,10 +322,11 @@ namespace SolidHUDPrivate
 
 			if (bActive)
 			{
+				const float Band = SolidHudTheme::BandThickness(Frame);
 				FCanvasTileItem Highlight(
-					FVector2D(PadX - BoxPad + 2.f, Y - 1.f),
-					FVector2D(ContentWidth + BoxPad * 2.f - 4.f, LineHeight + 2.f),
-					FLinearColor(0.85f, 0.68f, 0.32f, 0.22f));
+					FVector2D(BoxX + Band + 3.f, Y - 1.f),
+					FVector2D(FMath::Max(0.f, BoxW - (Band + 3.f) * 2.f), LineHeight + 2.f),
+					FLinearColor(Palette.Bronze.R, Palette.Bronze.G, Palette.Bronze.B, 0.35f));
 				Highlight.BlendMode = SE_BLEND_Translucent;
 				Canvas->DrawItem(Highlight);
 
@@ -619,33 +676,37 @@ void ASolidHUD::DrawMainMenuPopup() const
 	FCanvasTileItem Dim(
 		FVector2D(0.f, 0.f),
 		FVector2D(static_cast<float>(Canvas->SizeX), static_cast<float>(Canvas->SizeY)),
-		FLinearColor(0.f, 0.f, 0.f, 0.55f));
+		FLinearColor(0.f, 0.f, 0.f, 0.72f));
 	Dim.BlendMode = SE_BLEND_Translucent;
 	Canvas->DrawItem(Dim);
 
-	FCanvasTileItem Panel(
-		FVector2D(BoxX, BoxY),
-		FVector2D(BoxW, BoxH),
-		FLinearColor(0.06f, 0.07f, 0.09f, 0.92f));
-	Panel.BlendMode = SE_BLEND_Translucent;
-	Canvas->DrawItem(Panel);
+	SolidHUDPrivate::DrawOakFrame(Canvas, BoxX, BoxY, BoxW, BoxH, SolidHudTheme::MenuFrame());
 
+	const SolidHudTheme::FPalette Palette = SolidHudTheme::OakAndBronze();
 	float Y = BoxY + BoxPad;
 	for (int32 Index = 0; Index < Lines.Num(); ++Index)
 	{
 		const FString& Line = Lines[Index];
-		FLinearColor Color(0.88f, 0.90f, 0.93f);
-		if (Index == 0)
+		FLinearColor Color = Palette.Ink;
+		if (Index == 0 || Line.StartsWith(TEXT(">")))
 		{
-			Color = FLinearColor(1.f, 0.84f, 0.47f);
-		}
-		else if (Line.StartsWith(TEXT(">")))
-		{
-			Color = FLinearColor(1.f, 0.84f, 0.47f);
+			Color = Palette.Title;
 		}
 		else if (Line.StartsWith(TEXT("1")))
 		{
-			Color = FLinearColor(0.55f, 0.58f, 0.62f);
+			Color = Palette.Hint;
+		}
+
+		if (Index == 0 && !Line.IsEmpty())
+		{
+			const float RuleInset = SolidHudTheme::BandThickness(SolidHudTheme::MenuFrame()) + 18.f;
+			SolidHUDPrivate::FillRect(
+				Canvas,
+				BoxX + RuleInset,
+				Y + LineHeight + LineGap * 0.35f,
+				FMath::Max(0.f, BoxW - RuleInset * 2.f),
+				2.f,
+				Palette.Bronze);
 		}
 
 		if (!Line.IsEmpty())

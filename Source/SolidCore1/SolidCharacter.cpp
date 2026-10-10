@@ -1,4 +1,5 @@
 #include "SolidCharacter.h"
+#include "HUD/SolidPointer.h"
 #include "Animation/AnimSequence.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -10,6 +11,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 #include "GameFramework/PlayerController.h"
+#include "SolidPlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "InputAction.h"
 #include "InputActionValue.h"
@@ -196,6 +198,11 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASolidCharacter::Look);
 		}
 
+		if (MouseLookAction)
+		{
+			EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &ASolidCharacter::MouseLook);
+		}
+
 		if (SprintAction)
 		{
 			EnhancedInputComponent->BindAction(SprintAction, ETriggerEvent::Started, this, &ASolidCharacter::StartSprint);
@@ -226,6 +233,8 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::F10, IE_Pressed, this, &ASolidCharacter::ToggleMainMenuFromInput);
 	PlayerInputComponent->BindKey(EKeys::F12, IE_Pressed, this, &ASolidCharacter::ToggleDebugPanelFromInput);
 	PlayerInputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ASolidCharacter::CloseMenuOverlayFromInput);
+	PlayerInputComponent->BindKey(EKeys::RightMouseButton, IE_Pressed, this, &ASolidCharacter::BeginMouseLookFromInput);
+	PlayerInputComponent->BindKey(EKeys::RightMouseButton, IE_Released, this, &ASolidCharacter::EndMouseLookFromInput);
 	PlayerInputComponent->BindKey(EKeys::Up, IE_Pressed, this, &ASolidCharacter::MainMenuMoveUp);
 	PlayerInputComponent->BindKey(EKeys::Down, IE_Pressed, this, &ASolidCharacter::MainMenuMoveDown);
 	PlayerInputComponent->BindKey(EKeys::Enter, IE_Pressed, this, &ASolidCharacter::MainMenuConfirm);
@@ -495,6 +504,45 @@ void ASolidCharacter::Look(const FInputActionValue& Value)
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+void ASolidCharacter::BeginMouseLookFromInput()
+{
+	if (IsPartyFormationDrillActive() || IsMenuOverlayOpen())
+	{
+		return;
+	}
+	if (ASolidPlayerController* PlayerController = Cast<ASolidPlayerController>(Controller))
+	{
+		PlayerController->SetMouseLookHeld(true);
+	}
+}
+
+void ASolidCharacter::EndMouseLookFromInput()
+{
+	if (ASolidPlayerController* PlayerController = Cast<ASolidPlayerController>(Controller))
+	{
+		PlayerController->SetMouseLookHeld(false);
+	}
+}
+
+void ASolidCharacter::MouseLook(const FInputActionValue& Value)
+{
+	if (IsPartyFormationDrillActive() || IsMenuOverlayOpen())
+	{
+		return;
+	}
+
+	const APlayerController* PlayerController = Cast<APlayerController>(Controller);
+	if (!PlayerController
+		|| !SolidPointer::AllowsMouseLook(PlayerController->IsInputKeyDown(EKeys::RightMouseButton)))
+	{
+		return;
+	}
+
+	const FVector2D LookAxisVector = Value.Get<FVector2D>();
+	AddControllerYawInput(LookAxisVector.X);
+	AddControllerPitchInput(LookAxisVector.Y);
 }
 
 void ASolidCharacter::StartJump()

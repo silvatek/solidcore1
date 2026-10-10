@@ -31,6 +31,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - **Journal** — F10 menu, **2 Journal**. Lists every event that has fired, in that order, with what it changed. Iglin is recorded as soon as the captain is placed there, with no change under the name. Esc or F10 closes the page.
 - **Oak and bronze** — the journal, credits, main menu, and battle-plan list are a dark oak board in a bronze binding, with brighter corner bosses. The debug readout in the corner stays a plain block.
 - **Debug HUD** — F12 hides and shows the tech readout (build, FPS, pawn, terrain). The battle-plan list stays up. It starts visible.
+- **Mouse pointer** — a bronze arrow drawn in the game, tip on the hotspot. It follows the mouse. Hold the right mouse button to look; the pointer hides until you let go, then it is back where you pressed. The right stick still looks.
 - **Main menu** — F10 opens it. **1 Test Drill** runs the formation drill. **2 Journal** opens the journal. **3 Credits** opens the credits page (Silvatek, Cursor + Grok, Fab Viking and grass). Up/Down and Enter also work. Esc or F10 closes. Move, look, and battle-plan keys are ignored while the menu, journal, or credits page is open.
 - **Content pipeline** — Fab listings restored via Launcher Add to Project; C++ finds Viking/grass by name under `/Game/Viking` or `/Game/Fab`. `tools/fab_doctor.bat` + `fab-assets.json`. Packs are gitignored (attribution README kept).
 - **Automation** — `SolidCore1.*` editor tests; `tools/run_automation_tests.bat` prints failed test paths. Build ID `SC1-NNNN` on the debug HUD.
@@ -41,7 +42,8 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 | Action | Keyboard | Gamepad |
 |--------|----------|---------|
 | Move | WASD | Left stick |
-| Look | Mouse | Right stick |
+| Look | Right mouse button (hold) | Right stick |
+| Pointer | Mouse | — |
 | Zoom | Mouse wheel | — |
 | Jump | Space | A / Cross |
 | Sprint | Left Shift | Left stick click |
@@ -87,6 +89,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.Journal.*` | Empty journal, then events in the order they fired |
 | `SolidCore1.HudTheme.*` | Oak-and-bronze frame thickness, corner bosses, opaque board |
 | `SolidCore1.HUD.DebugToggle` | F12 shows and hides the tech readout |
+| `SolidCore1.Pointer.*` | Bronze arrow tip, outline, and hide-while-looking |
 | `SolidCore1.Sight.*` | True sight at start; F9 switches to raven sight and back |
 | `SolidCore1.Events.*` | Enter-town events: raven sight, max party size, numbered cells |
 | `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |
@@ -300,6 +303,7 @@ Source/
     HUD/
       SolidHUD.*              # Debug HUD, battle-plan panel, menu and credits drawing
       SolidHudTheme.h         # Oak-and-bronze frame
+      SolidPointer.h          # In-game mouse pointer
     Menus/
       SolidMainMenu.*         # F10 menu entries (Test Drill, Journal, Credits)
       SolidJournal.*          # Journal lists events in the order they fired
@@ -321,6 +325,7 @@ Source/
       SolidTerrainStreamerTests.cpp
       SolidClipLocomotionTests.cpp
       SolidBuildIdTests.cpp
+      SolidPointerTests.cpp
       SolidMainMenuTests.cpp
       SolidSightTests.cpp
       SolidContentDependencyTests.cpp

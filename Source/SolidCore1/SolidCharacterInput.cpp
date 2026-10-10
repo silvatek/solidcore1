@@ -54,6 +54,12 @@ void ASolidCharacter::EnsureRuntimeInputAssets()
 		LookAction->ValueType = EInputActionValueType::Axis2D;
 	}
 
+	if (!MouseLookAction)
+	{
+		MouseLookAction = NewObject<UInputAction>(this, TEXT("IA_MouseLook"), RF_Transient);
+		MouseLookAction->ValueType = EInputActionValueType::Axis2D;
+	}
+
 	if (!JumpAction)
 	{
 		JumpAction = NewObject<UInputAction>(this, TEXT("IA_Jump"), RF_Transient);
@@ -99,14 +105,6 @@ void ASolidCharacter::EnsureRuntimeInputAssets()
 			Mapping.Modifiers.Add(SolidCaptainInput::MakeSwizzleYXZ(DefaultMappingContext));
 		}
 
-		// Mouse look
-		DefaultMappingContext->MapKey(LookAction, EKeys::MouseX);
-		{
-			FEnhancedActionKeyMapping& Mapping = DefaultMappingContext->MapKey(LookAction, EKeys::MouseY);
-			Mapping.Modifiers.Add(SolidCaptainInput::MakeNegate(DefaultMappingContext));
-			Mapping.Modifiers.Add(SolidCaptainInput::MakeSwizzleYXZ(DefaultMappingContext));
-		}
-
 		// Gamepad right stick
 		DefaultMappingContext->MapKey(LookAction, EKeys::Gamepad_RightX);
 		{
@@ -120,6 +118,30 @@ void ASolidCharacter::EnsureRuntimeInputAssets()
 
 		DefaultMappingContext->MapKey(SprintAction, EKeys::LeftShift);
 		DefaultMappingContext->MapKey(SprintAction, EKeys::Gamepad_LeftThumbstick);
+	}
+
+	// Mouse axes stay off LookAction. Moving the pointer must not turn the camera;
+	// MouseLook is applied only while the right button is held.
+	if (DefaultMappingContext && MouseLookAction && LookAction)
+	{
+		bool bMouseLookMapped = false;
+		for (const FEnhancedActionKeyMapping& Mapping : DefaultMappingContext->GetMappings())
+		{
+			if (Mapping.Action == MouseLookAction && Mapping.Key == EKeys::MouseX)
+			{
+				bMouseLookMapped = true;
+				break;
+			}
+		}
+		DefaultMappingContext->UnmapKey(LookAction, EKeys::MouseX);
+		DefaultMappingContext->UnmapKey(LookAction, EKeys::MouseY);
+		if (!bMouseLookMapped)
+		{
+			DefaultMappingContext->MapKey(MouseLookAction, EKeys::MouseX);
+			FEnhancedActionKeyMapping& Mapping = DefaultMappingContext->MapKey(MouseLookAction, EKeys::MouseY);
+			Mapping.Modifiers.Add(SolidCaptainInput::MakeNegate(DefaultMappingContext));
+			Mapping.Modifiers.Add(SolidCaptainInput::MakeSwizzleYXZ(DefaultMappingContext));
+		}
 	}
 
 	if (!ZoomMappingContext && ZoomAction)

@@ -81,6 +81,10 @@ protected:
 
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
+	/** Mouse look. Applied only while the right mouse button is held. */
+	void MouseLook(const FInputActionValue& Value);
+	void BeginMouseLookFromInput();
+	void EndMouseLookFromInput();
 	void Zoom(const FInputActionValue& Value);
 	void StartJump();
 	void StopJumpFromInput();
@@ -238,6 +242,10 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> LookAction;
+
+	/** Mouse axes. Separate from LookAction so a free pointer does not turn the camera. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UInputAction> MouseLookAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UInputAction> JumpAction;

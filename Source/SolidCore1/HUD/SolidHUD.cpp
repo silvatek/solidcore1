@@ -1,5 +1,6 @@
 #include "SolidHUD.h"
 #include "HUD/SolidHudTheme.h"
+#include "HUD/SolidPointer.h"
 #include "SolidBuildId.h"
 #include "Menus/SolidCredits.h"
 #include "Menus/SolidJournal.h"
@@ -19,8 +20,13 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "CanvasItem.h"
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
+#include "Engine/GameViewportClient.h"
+#include "GameFramework/PlayerController.h"
+#include "InputCoreTypes.h"
+#include "RenderUtils.h"
 #include "Engine/SkeletalMesh.h"
 #include "EngineUtils.h"
 #include "GameFramework/Character.h"
@@ -76,6 +82,58 @@ namespace SolidHUDPrivate
 		FillRect(Canvas, X + W - Corner, Y, Corner, Corner, Palette.BronzeBright);
 		FillRect(Canvas, X, Y + H - Corner, Corner, Corner, Palette.BronzeBright);
 		FillRect(Canvas, X + W - Corner, Y + H - Corner, Corner, Corner, Palette.BronzeBright);
+	}
+
+	static void DrawPointerTriangle(
+		UCanvas* Canvas,
+		const SolidPointer::FTriangle& Screen,
+		const FLinearColor& Color)
+	{
+		if (!Canvas || !GWhiteTexture)
+		{
+			return;
+		}
+		FCanvasTriangleItem Item(Screen.A, Screen.B, Screen.C, GWhiteTexture);
+		Item.SetColor(Color);
+		Item.BlendMode = SE_BLEND_Opaque;
+		Canvas->DrawItem(Item);
+	}
+
+	static void DrawPointerLayer(
+		UCanvas* Canvas,
+		const FVector2D& Hotspot,
+		const FLinearColor& Color)
+	{
+		for (int32 Index = 0; Index < SolidPointer::TriangleCount; ++Index)
+		{
+			DrawPointerTriangle(
+				Canvas,
+				SolidPointer::Place(SolidPointer::Triangle(Index), Hotspot),
+				Color);
+		}
+	}
+
+	/** Bronze arrow. The tip is the hotspot. Drawn last so it sits on the panels. */
+	static void DrawPointer(UCanvas* Canvas, const FVector2D& Hotspot)
+	{
+		if (!Canvas)
+		{
+			return;
+		}
+		const SolidHudTheme::FPalette Palette = SolidHudTheme::OakAndBronze();
+		FVector2D Rim[SolidPointer::OutlineOffsetCount];
+		SolidPointer::OutlineOffsets(SolidPointer::OutlinePad, Rim);
+		for (const FVector2D& Offset : Rim)
+		{
+			DrawPointerLayer(Canvas, Hotspot + Offset, Palette.Recess);
+		}
+		FVector2D Edge[SolidPointer::OutlineOffsetCount];
+		SolidPointer::OutlineOffsets(SolidPointer::EdgePad, Edge);
+		for (const FVector2D& Offset : Edge)
+		{
+			DrawPointerLayer(Canvas, Hotspot + Offset, Palette.Bronze);
+		}
+		DrawPointerLayer(Canvas, Hotspot, Palette.BronzeBright);
 	}
 
 	static void DrawCenteredPopup(UCanvas* Canvas, const TArray<FString>& Lines, const float LineGap)
@@ -505,6 +563,7 @@ void ASolidHUD::DrawHUD()
 	}
 	Lines.Add(TEXT("F10  Menu"));
 	Lines.Add(TEXT("F12  Debug"));
+	Lines.Add(TEXT("RMB  Look"));
 
 	if (const ASolidCharacter* Captain = Cast<ASolidCharacter>(Pawn))
 	{
@@ -545,6 +604,27 @@ void ASolidHUD::DrawHUD()
 	else if (bShowMainMenu)
 	{
 		DrawMainMenuPopup();
+	}
+
+	if (APlayerController* PC = GetOwningPlayerController())
+	{
+		float MouseX = 0.f;
+		float MouseY = 0.f;
+		bool bHasMouse = PC->GetMousePosition(MouseX, MouseY);
+		if (!bHasMouse)
+		{
+			if (UGameViewportClient* Viewport = GetWorld() ? GetWorld()->GetGameViewport() : nullptr)
+			{
+				FVector2D Position = FVector2D::ZeroVector;
+				bHasMouse = Viewport->GetMousePosition(Position);
+				MouseX = Position.X;
+				MouseY = Position.Y;
+			}
+		}
+		if (SolidPointer::ShouldDraw(bHasMouse, PC->IsInputKeyDown(EKeys::RightMouseButton)))
+		{
+			SolidHUDPrivate::DrawPointer(Canvas, FVector2D(MouseX, MouseY));
+		}
 	}
 }
 

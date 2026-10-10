@@ -4,6 +4,7 @@
 #include "GameFramework/PlayerController.h"
 #include "SolidPlayerController.generated.h"
 
+class UInputAction;
 class UInputMappingContext;
 
 UCLASS()
@@ -14,18 +15,21 @@ class SOLIDCORE1_API ASolidPlayerController : public APlayerController
 public:
 	ASolidPlayerController();
 
-	/**
-	 * Right mouse button. While held, the mouse is captured and looks.
-	 * Releasing it returns the bronze pointer to where the button went down.
-	 */
-	void SetMouseLookHeld(bool bHeld);
+	/** True when player input or Slate still has the right button down. */
+	bool IsRightMouseHeld() const;
+
+	/** Current Axis2D value of a mapped Enhanced Input action, or zero. */
+	FVector2D GetMappedAxis2D(const UInputAction* Action) const;
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void PlayerTick(float DeltaTime) override;
 	virtual void SetupInputComponent() override;
 
-	/** Free the mouse for the in-game pointer. Hardware cursor stays hidden. */
+	/** Free the mouse until right-button look. Hardware cursor stays hidden. */
 	void ApplyPointerMode();
+	void EnsurePointerCaptureMode();
+	void HideHardwareCursor();
 
 	/** Mapping context applied for local players. Character also adds its own IMC when available. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")

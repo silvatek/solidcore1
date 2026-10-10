@@ -81,10 +81,8 @@ protected:
 
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
-	/** Mouse look. Applied only while the right mouse button is held. */
-	void MouseLook(const FInputActionValue& Value);
-	void BeginMouseLookFromInput();
-	void EndMouseLookFromInput();
+	/** Right-button look. The free pointer does not turn the camera. */
+	void UpdatePointerMouseLook();
 	void Zoom(const FInputActionValue& Value);
 	void StartJump();
 	void StopJumpFromInput();

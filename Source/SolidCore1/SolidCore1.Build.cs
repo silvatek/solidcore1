@@ -32,7 +32,9 @@ public class SolidCore1 : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[]
 		{
-			"AssetRegistry"
+			"AssetRegistry",
+			"ApplicationCore",
+			"Slate"
 		});
 	}
 }

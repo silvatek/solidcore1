@@ -168,6 +168,7 @@ void ASolidCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 	TickPartyFormationDrill(DeltaTime);
+	UpdatePointerMouseLook();
 	UpdateLocomotionAnim();
 	UpdatePartyCameraFraming(DeltaTime);
 	ClampCameraAboveTerrain(DeltaTime);
@@ -196,11 +197,6 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 		if (LookAction)
 		{
 			EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &ASolidCharacter::Look);
-		}
-
-		if (MouseLookAction)
-		{
-			EnhancedInputComponent->BindAction(MouseLookAction, ETriggerEvent::Triggered, this, &ASolidCharacter::MouseLook);
 		}
 
 		if (SprintAction)
@@ -233,8 +229,6 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::F10, IE_Pressed, this, &ASolidCharacter::ToggleMainMenuFromInput);
 	PlayerInputComponent->BindKey(EKeys::F12, IE_Pressed, this, &ASolidCharacter::ToggleDebugPanelFromInput);
 	PlayerInputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ASolidCharacter::CloseMenuOverlayFromInput);
-	PlayerInputComponent->BindKey(EKeys::RightMouseButton, IE_Pressed, this, &ASolidCharacter::BeginMouseLookFromInput);
-	PlayerInputComponent->BindKey(EKeys::RightMouseButton, IE_Released, this, &ASolidCharacter::EndMouseLookFromInput);
 	PlayerInputComponent->BindKey(EKeys::Up, IE_Pressed, this, &ASolidCharacter::MainMenuMoveUp);
 	PlayerInputComponent->BindKey(EKeys::Down, IE_Pressed, this, &ASolidCharacter::MainMenuMoveDown);
 	PlayerInputComponent->BindKey(EKeys::Enter, IE_Pressed, this, &ASolidCharacter::MainMenuConfirm);
@@ -506,43 +500,35 @@ void ASolidCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
-void ASolidCharacter::BeginMouseLookFromInput()
-{
-	if (IsPartyFormationDrillActive() || IsMenuOverlayOpen())
-	{
-		return;
-	}
-	if (ASolidPlayerController* PlayerController = Cast<ASolidPlayerController>(Controller))
-	{
-		PlayerController->SetMouseLookHeld(true);
-	}
-}
-
-void ASolidCharacter::EndMouseLookFromInput()
-{
-	if (ASolidPlayerController* PlayerController = Cast<ASolidPlayerController>(Controller))
-	{
-		PlayerController->SetMouseLookHeld(false);
-	}
-}
-
-void ASolidCharacter::MouseLook(const FInputActionValue& Value)
+void ASolidCharacter::UpdatePointerMouseLook()
 {
 	if (IsPartyFormationDrillActive() || IsMenuOverlayOpen())
 	{
 		return;
 	}
 
-	const APlayerController* PlayerController = Cast<APlayerController>(Controller);
-	if (!PlayerController
-		|| !SolidPointer::AllowsMouseLook(PlayerController->IsInputKeyDown(EKeys::RightMouseButton)))
+	ASolidPlayerController* PlayerController = Cast<ASolidPlayerController>(Controller);
+	if (!PlayerController || !SolidPointer::AllowsMouseLook(PlayerController->IsRightMouseHeld()))
 	{
 		return;
 	}
 
-	const FVector2D LookAxisVector = Value.Get<FVector2D>();
-	AddControllerYawInput(LookAxisVector.X);
-	AddControllerPitchInput(LookAxisVector.Y);
+	// Same value the old mouse Look mapping produced (Y already negated).
+	// If that action is quiet, use the raw axes with the same sign.
+	FVector2D LookAxis = PlayerController->GetMappedAxis2D(MouseLookAction);
+	if (LookAxis.IsNearlyZero())
+	{
+		float DeltaX = 0.f;
+		float DeltaY = 0.f;
+		PlayerController->GetInputMouseDelta(DeltaX, DeltaY);
+		LookAxis = SolidPointer::MouseLookDelta(DeltaX, DeltaY);
+	}
+
+	if (!LookAxis.IsNearlyZero())
+	{
+		AddControllerYawInput(LookAxis.X);
+		AddControllerPitchInput(LookAxis.Y);
+	}
 }
 
 void ASolidCharacter::StartJump()

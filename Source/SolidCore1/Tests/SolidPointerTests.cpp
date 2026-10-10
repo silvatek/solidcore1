@@ -74,6 +74,14 @@ bool FSolidPointerVisibilityTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("hide when looking and the mouse has no position"), SolidPointer::ShouldDraw(false, true));
 	TestFalse(TEXT("free pointer does not look"), SolidPointer::AllowsMouseLook(false));
 	TestTrue(TEXT("right mouse looks"), SolidPointer::AllowsMouseLook(true));
+
+	TestFalse(TEXT("button up in both paths"), SolidPointer::IsRightMouseHeld(false, false));
+	TestTrue(TEXT("player input sees the button"), SolidPointer::IsRightMouseHeld(true, false));
+	TestTrue(TEXT("slate sees the button"), SolidPointer::IsRightMouseHeld(false, true));
+
+	const FVector2D Look = SolidPointer::MouseLookDelta(4.f, 5.f);
+	TestTrue(TEXT("yaw follows mouse x"), FMath::IsNearlyEqual(Look.X, 4.f));
+	TestTrue(TEXT("pitch negates mouse y"), FMath::IsNearlyEqual(Look.Y, -5.f));
 	return true;
 }
 

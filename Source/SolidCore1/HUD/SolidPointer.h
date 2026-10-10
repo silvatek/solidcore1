@@ -48,6 +48,21 @@ namespace SolidPointer
 		return bRightMouseDown;
 	}
 
+	/** Player input or Slate may be the one that still sees the button. */
+	inline bool IsRightMouseHeld(const bool bPlayerInputDown, const bool bSlateDown)
+	{
+		return bPlayerInputDown || bSlateDown;
+	}
+
+	/**
+	 * Raw MouseX/MouseY to yaw/pitch. MouseY is negated, matching the mapping
+	 * that used to feed Look (negate, then swizzle into the axis).
+	 */
+	inline FVector2D MouseLookDelta(const float DeltaX, const float DeltaY)
+	{
+		return FVector2D(DeltaX, -DeltaY);
+	}
+
 	inline bool ShouldDraw(const bool bHasMousePosition, const bool bRightMouseDown)
 	{
 		return bHasMousePosition && !AllowsMouseLook(bRightMouseDown);

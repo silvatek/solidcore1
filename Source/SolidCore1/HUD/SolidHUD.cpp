@@ -8,6 +8,7 @@
 #include "SolidCharacter.h"
 #include "SolidSight.h"
 #include "SolidGameMode.h"
+#include "SolidPlayerController.h"
 #include "Companion/SolidCompanionCharacter.h"
 #include "Party/SolidBattlePlan.h"
 #include "Party/SolidParty.h"
@@ -626,7 +627,12 @@ void ASolidHUD::DrawHUD()
 				MouseY = Position.Y;
 			}
 		}
-		if (SolidPointer::ShouldDraw(bHasMouse, PC->IsInputKeyDown(EKeys::RightMouseButton)))
+		bool bRightDown = PC->IsInputKeyDown(EKeys::RightMouseButton);
+		if (const ASolidPlayerController* SolidPC = Cast<ASolidPlayerController>(PC))
+		{
+			bRightDown = SolidPC->IsRightMouseHeld();
+		}
+		if (SolidPointer::ShouldDraw(bHasMouse, bRightDown))
 		{
 			SolidHUDPrivate::DrawPointer(Canvas, FVector2D(MouseX, MouseY));
 		}

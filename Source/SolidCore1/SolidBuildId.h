@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0139")
+#define SOLID_BUILD_ID TEXT("SC1-0140")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("F9 toggles true sight and raven sight")
+#define SOLID_BUILD_NOTE TEXT("F5 Parade lines companions up facing the captain")
 #endif

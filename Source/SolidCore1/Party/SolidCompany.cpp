@@ -23,6 +23,10 @@ void USolidCompany::InitializeDefaultBattlePlans()
 		TEXT("Loose mob"),
 		ESolidBattleFormation::Mob,
 		ESolidBattleSpacing::Wide});
+	AllBattlePlans.Add({
+		TEXT("Parade"),
+		ESolidBattleFormation::Parade,
+		ESolidBattleSpacing::Standard});
 }
 
 const FSolidBattlePlan* USolidCompany::GetBattlePlan(const int32 Index) const

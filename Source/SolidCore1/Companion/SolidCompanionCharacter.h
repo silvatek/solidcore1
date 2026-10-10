@@ -11,7 +11,7 @@ class UStaticMeshComponent;
 class UTextRenderComponent;
 
 /**
- * Companion — NPC Party member that steers toward a follow point behind the Captain.
+ * Companion — NPC Party member that steers toward a battle-plan slot around the Captain.
  * Uses direct CharacterMovement (no NavMesh) so it works on procedural terrain.
  * Mesh/clips default to Fab Viking via SoftObjectPtrs (Party members may use different meshes).
  */

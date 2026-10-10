@@ -47,6 +47,34 @@ bool FSolidBattleFormationSlotsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("wide farther than standard"), FMath::Abs(MobWide0.Y) > FMath::Abs(MobStd0.Y));
 	TestTrue(TEXT("narrow shallower than standard"), FMath::Abs(MobNarrow0.X) < FMath::Abs(MobStd0.X));
 	TestTrue(TEXT("wide deeper than standard"), FMath::Abs(MobWide0.X) > FMath::Abs(MobStd0.X));
+
+	const FVector2D Parade0 = SolidBattleFormationSlots::SlotOffset(
+		ESolidBattleFormation::Parade, 0, Count, ESolidBattleSpacing::Standard);
+	const FVector2D Parade1 = SolidBattleFormationSlots::SlotOffset(
+		ESolidBattleFormation::Parade, 1, Count, ESolidBattleSpacing::Standard);
+	TestTrue(TEXT("parade: both in front"), Parade0.X > 0.f && Parade1.X > 0.f);
+	TestEqual(
+		TEXT("parade: same depth"),
+		static_cast<float>(Parade0.X),
+		static_cast<float>(Parade1.X));
+	TestTrue(TEXT("parade: opposite flanks"), Parade0.Y * Parade1.Y < 0.f);
+	TestTrue(TEXT("parade faces the captain"),
+		SolidBattleFormationSlots::FacesCaptain(ESolidBattleFormation::Parade));
+	TestFalse(TEXT("line does not face the captain"),
+		SolidBattleFormationSlots::FacesCaptain(ESolidBattleFormation::Line));
+	TestTrue(TEXT("face once inside the slot"),
+		SolidBattleFormationSlots::ShouldFaceCaptain(ESolidBattleFormation::Parade, 90.f, 90.f));
+	TestFalse(TEXT("keep walking until the slot"),
+		SolidBattleFormationSlots::ShouldFaceCaptain(ESolidBattleFormation::Parade, 91.f, 90.f));
+
+	const FVector2D CaptainXY = FVector2D::ZeroVector;
+	const float Yaw = SolidBattleFormationSlots::YawFacingPoint(Parade0, CaptainXY);
+	const FVector2D Facing(
+		FMath::Cos(FMath::DegreesToRadians(Yaw)),
+		FMath::Sin(FMath::DegreesToRadians(Yaw)));
+	const FVector2D ToCaptain = (CaptainXY - Parade0).GetSafeNormal();
+	TestTrue(TEXT("parade yaw looks at the captain"),
+		FVector2D::DotProduct(Facing, ToCaptain) > 0.99f);
 	return true;
 }
 
@@ -60,22 +88,25 @@ bool FSolidCompanyDefaultPlansTest::RunTest(const FString& Parameters)
 	USolidCompany* Company = NewObject<USolidCompany>();
 	TestNotNull(TEXT("company"), Company);
 	Company->InitializeDefaultBattlePlans();
-	TestEqual(TEXT("four starter plans"), Company->GetBattlePlanCount(), 4);
+	TestEqual(TEXT("five starter plans"), Company->GetBattlePlanCount(), 5);
 	Company->InitializeDefaultBattlePlans();
-	TestEqual(TEXT("idempotent init"), Company->GetBattlePlanCount(), 4);
+	TestEqual(TEXT("idempotent init"), Company->GetBattlePlanCount(), 5);
 
 	const FSolidBattlePlan* Line = Company->GetBattlePlan(0);
 	const FSolidBattlePlan* Column = Company->GetBattlePlan(1);
 	const FSolidBattlePlan* Tight = Company->GetBattlePlan(2);
 	const FSolidBattlePlan* Loose = Company->GetBattlePlan(3);
+	const FSolidBattlePlan* Parade = Company->GetBattlePlan(4);
 	TestNotNull(TEXT("line plan"), Line);
 	TestNotNull(TEXT("column plan"), Column);
 	TestNotNull(TEXT("tight mob"), Tight);
 	TestNotNull(TEXT("loose mob"), Loose);
+	TestNotNull(TEXT("parade plan"), Parade);
 	TestEqual(TEXT("line name"), Line->Name, FString(TEXT("Line")));
 	TestEqual(TEXT("column name"), Column->Name, FString(TEXT("Column")));
 	TestEqual(TEXT("tight name"), Tight->Name, FString(TEXT("Tight mob")));
 	TestEqual(TEXT("loose name"), Loose->Name, FString(TEXT("Loose mob")));
+	TestEqual(TEXT("parade name"), Parade->Name, FString(TEXT("Parade")));
 	TestTrue(TEXT("line formation"), Line->Formation == ESolidBattleFormation::Line);
 	TestTrue(TEXT("column formation"), Column->Formation == ESolidBattleFormation::Column);
 	TestTrue(TEXT("tight formation mob"), Tight->Formation == ESolidBattleFormation::Mob);
@@ -84,7 +115,10 @@ bool FSolidCompanyDefaultPlansTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("column standard spacing"), Column->Spacing == ESolidBattleSpacing::Standard);
 	TestTrue(TEXT("tight narrow spacing"), Tight->Spacing == ESolidBattleSpacing::Narrow);
 	TestTrue(TEXT("loose wide spacing"), Loose->Spacing == ESolidBattleSpacing::Wide);
+	TestTrue(TEXT("parade formation"), Parade->Formation == ESolidBattleFormation::Parade);
+	TestTrue(TEXT("parade standard spacing"), Parade->Spacing == ESolidBattleSpacing::Standard);
 	TestEqual(TEXT("find loose mob"), Company->FindBattlePlanIndexByName(TEXT("Loose mob")), 3);
+	TestEqual(TEXT("find parade"), Company->FindBattlePlanIndexByName(TEXT("Parade")), 4);
 	TestNull(TEXT("out of range"), Company->GetBattlePlan(99));
 	return true;
 }
@@ -102,7 +136,7 @@ bool FSolidPartyAssignedPlansTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("party"), Party);
 
 	Party->InitializeFromCompany(Company);
-	TestEqual(TEXT("assigned starter count"), Party->GetAssignedCount(), 4);
+	TestEqual(TEXT("assigned starter count"), Party->GetAssignedCount(), 5);
 	TestTrue(TEXT("active is line by default"),
 		Party->GetActiveFormation() == ESolidBattleFormation::Line);
 	TestEqual(TEXT("active slot is F1"), Party->GetActiveAssignedSlot(), 0);
@@ -116,9 +150,11 @@ bool FSolidPartyAssignedPlansTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("tight narrow"), Party->GetActiveSpacing() == ESolidBattleSpacing::Narrow);
 	TestTrue(TEXT("select F4 loose mob"), Party->SelectAssignedSlot(3));
 	TestTrue(TEXT("loose wide"), Party->GetActiveSpacing() == ESolidBattleSpacing::Wide);
-	TestFalse(TEXT("reject empty F5"), Party->SelectAssignedSlot(4));
-	TestFalse(TEXT("reject F8 when only 4"), Party->SelectAssignedSlot(7));
-	TestEqual(TEXT("slot unchanged after reject"), Party->GetActiveAssignedSlot(), 3);
+	TestTrue(TEXT("select F5 parade"), Party->SelectAssignedSlot(4));
+	TestTrue(TEXT("active parade"), Party->GetActiveFormation() == ESolidBattleFormation::Parade);
+	TestFalse(TEXT("reject empty F6"), Party->SelectAssignedSlot(5));
+	TestFalse(TEXT("reject F8 when only 5"), Party->SelectAssignedSlot(7));
+	TestEqual(TEXT("slot unchanged after reject"), Party->GetActiveAssignedSlot(), 4);
 
 	// Max 8 assigned — grow the Company catalog first so indices are unique.
 	TArray<int32> TooMany;
@@ -146,7 +182,7 @@ bool FSolidGameModeBattlePlanSelectTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("gamemode"), GameMode);
 	TestNotNull(TEXT("company"), GameMode->GetCompany());
 	TestNotNull(TEXT("party"), GameMode->GetParty());
-	TestEqual(TEXT("company plans"), GameMode->GetCompany()->GetBattlePlanCount(), 4);
+	TestEqual(TEXT("company plans"), GameMode->GetCompany()->GetBattlePlanCount(), 5);
 	TestTrue(TEXT("default line"),
 		GameMode->GetParty()->GetActiveFormation() == ESolidBattleFormation::Line);
 	TestEqual(TEXT("default F1"), GameMode->GetParty()->GetActiveAssignedSlot(), 0);
@@ -158,7 +194,10 @@ bool FSolidGameModeBattlePlanSelectTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("F4 loose"), GameMode->SelectBattlePlanSlot(3));
 	TestTrue(TEXT("loose wide"),
 		GameMode->GetParty()->GetActiveSpacing() == ESolidBattleSpacing::Wide);
-	TestFalse(TEXT("F5 empty"), GameMode->SelectBattlePlanSlot(4));
+	TestTrue(TEXT("F5 parade"), GameMode->SelectBattlePlanSlot(4));
+	TestTrue(TEXT("formation parade"),
+		GameMode->GetParty()->GetActiveFormation() == ESolidBattleFormation::Parade);
+	TestFalse(TEXT("F6 empty"), GameMode->SelectBattlePlanSlot(5));
 	return true;
 }
 

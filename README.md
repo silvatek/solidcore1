@@ -16,7 +16,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 ## Done
 
 - **Captain + Party** — third-person Viking pawn (Enhanced Input: move / look / zoom / jump / sprint), clip locomotion (idle / walk / run / jump), floating nameplates. Companions **Sam** and **Alex** follow in battle-plan slots; Party camera frames the group and lifts off terrain.
-- **Battle plans** — Company catalog and Party assigned slots. F1 Line, F2 Column, F3 Tight mob, F4 Loose mob (spacing Narrow / Standard / Wide). F1–F8 select; HUD battle-plan panel. The square-walk formation drill is the main menu's Test Drill entry.
+- **Battle plans** — Company catalog and Party assigned slots. F1 Line, F2 Column, F3 Tight mob, F4 Loose mob, F5 Parade (companions in front, facing the captain). F1–F8 select; HUD battle-plan panel. The square-walk formation drill is the main menu's Test Drill entry and still cycles F1–F4.
 - **World + biomes** — 64×64 `WorldMap.txt` overlay (Sea, Grassland, Town, Mountain, Forest, Desert, River) scaled onto a 513×513 TerrainPoint map (1024 m side, 200 cm spacing). That doubles the original 257-point / 512 m world, and each ASCII cell doubles from 8 m to 16 m. Numbered locations are towns: `0` Iglin (start), `1` Relion, `2` Kanfold, `3` Visolar. The captain starts at location 0. Per-biome height shelf (Sea/River 0, Mountain +10 m, else +1 m). Darker mountain grey.
 - **No starter monolith** — the grey slab that marked the start-town centroid is gone. Location 0 still sets the captain spawn and the building clear radius.
 - **Fog follows the player** — the map starts fully fogged. After the captain is placed at location 0, exploration fog is centered on the pawn, not on that cell. The two match only because that is where the pawn stands. Curtains are 110 m (half) and 160 m (full), above the 50 m max zoom. The camera boom shortens so it cannot sit above terrain with fog greater than 0.
@@ -199,6 +199,7 @@ Floating nameplates (`SolidNameLabel`) sit above each Party member and face the 
   - **F2 Column** (Standard) — file behind the Captain
   - **F3 Tight mob** (Narrow) — close triangle behind
   - **F4 Loose mob** (Wide) — spread triangle behind
+  - **F5 Parade** (Standard) — line in front of the Captain, facing him
 - **Party** (`USolidParty`) holds up to 8 **assigned** plans and one **active** plan (default **F1 Line**).
 - Each plan has a **formation** plus **spacing** (`Narrow` / `Standard` / `Wide`) that scales follow distances.
 - Captain switches assigned slots with **F1–F8** (only filled slots work).

@@ -267,7 +267,7 @@ void ASolidCompanionCharacter::UpdateLocomotionAnim()
 	PlayLocomotionClip(Desired);
 }
 
-void ASolidCompanionCharacter::UpdateFollow(float /*DeltaSeconds*/)
+void ASolidCompanionCharacter::UpdateFollow(const float DeltaSeconds)
 {
 	AActor* Target = FollowTarget.Get();
 	if (!Target)
@@ -281,15 +281,17 @@ void ASolidCompanionCharacter::UpdateFollow(float /*DeltaSeconds*/)
 
 	float AlongForward = -FollowDistance;
 	float AlongRight = SideOffset;
+	ESolidBattleFormation Formation = ESolidBattleFormation::Line;
 	if (UWorld* World = GetWorld())
 	{
 		if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 		{
 			if (const USolidParty* Party = GameMode->GetParty())
 			{
+				Formation = Party->GetActiveFormation();
 				const int32 CompanionCount = FMath::Max(GameMode->GetCompanions().Num(), 1);
 				const FVector2D Slot = SolidBattleFormationSlots::SlotOffset(
-					Party->GetActiveFormation(),
+					Formation,
 					PartySlotIndex,
 					CompanionCount,
 					Party->GetActiveSpacing());
@@ -328,6 +330,19 @@ void ASolidCompanionCharacter::UpdateFollow(float /*DeltaSeconds*/)
 	if (PlanarDist >= CatchUpDistance)
 	{
 		DesiredMaxSpeed = FMath::Max(DesiredMaxSpeed, CatchUpSpeed);
+	}
+
+	const bool bFaceCaptain = SolidBattleFormationSlots::ShouldFaceCaptain(
+		Formation, PlanarDist, AcceptanceRadius);
+	Move->bOrientRotationToMovement = !bFaceCaptain;
+	if (bFaceCaptain)
+	{
+		const float Yaw = SolidBattleFormationSlots::YawFacingPoint(
+			FVector2D(GetActorLocation().X, GetActorLocation().Y),
+			FVector2D(TargetLoc.X, TargetLoc.Y));
+		const FRotator Desired(0.f, Yaw, 0.f);
+		SetActorRotation(FMath::RInterpTo(
+			GetActorRotation(), Desired, DeltaSeconds, SolidBattleFormationSlots::FaceTurnInterpSpeed));
 	}
 
 	if (PlanarDist <= AcceptanceRadius)

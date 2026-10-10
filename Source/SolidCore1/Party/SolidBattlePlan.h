@@ -13,6 +13,8 @@ enum class ESolidBattleFormation : uint8
 	Column UMETA(DisplayName = "Column"),
 	/** Companions clustered behind the Captain (triangle for two). */
 	Mob UMETA(DisplayName = "Mob"),
+	/** Companions abreast in front of the Captain, facing him. */
+	Parade UMETA(DisplayName = "Parade"),
 };
 
 /** How far Companions keep from the Captain and each other. */
@@ -43,7 +45,7 @@ struct FSolidBattlePlan
 /**
  * Follow-slot offsets for Companions under a formation + spacing.
  * Returns (AlongForward, AlongRight) in cm relative to the Captain.
- * AlongForward is typically negative (behind).
+ * AlongForward is negative behind the Captain and positive in front (Parade).
  */
 namespace SolidBattleFormationSlots
 {
@@ -56,6 +58,7 @@ namespace SolidBattleFormationSlots
 		case ESolidBattleFormation::Line: return TEXT("Line");
 		case ESolidBattleFormation::Column: return TEXT("Column");
 		case ESolidBattleFormation::Mob: return TEXT("Mob");
+		case ESolidBattleFormation::Parade: return TEXT("Parade");
 		default: return TEXT("?");
 		}
 	}
@@ -70,6 +73,38 @@ namespace SolidBattleFormationSlots
 		default: return TEXT("?");
 		}
 	}
+
+	/** True when companions in slot should turn to look at the Captain. */
+	inline bool FacesCaptain(ESolidBattleFormation Formation)
+	{
+		return Formation == ESolidBattleFormation::Parade;
+	}
+
+	/**
+	 * Face the Captain only after arriving in a formation that looks at him.
+	 * While walking to the slot, companions still face their travel direction.
+	 */
+	inline bool ShouldFaceCaptain(
+		ESolidBattleFormation Formation,
+		float PlanarDistanceCm,
+		float AcceptanceRadiusCm)
+	{
+		return FacesCaptain(Formation) && PlanarDistanceCm <= FMath::Max(AcceptanceRadiusCm, 0.f);
+	}
+
+	/** Yaw in degrees so someone at FromXY looks at ToXY. Unchanged direction returns 0. */
+	inline float YawFacingPoint(FVector2D FromXY, FVector2D ToXY)
+	{
+		const FVector2D Delta = ToXY - FromXY;
+		if (Delta.IsNearlyZero())
+		{
+			return 0.f;
+		}
+		return FMath::RadiansToDegrees(FMath::Atan2(Delta.Y, Delta.X));
+	}
+
+	/** How quickly a companion turns to face the Captain (RInterpTo speed). */
+	inline constexpr float FaceTurnInterpSpeed = 8.f;
 
 	/** Multiplier applied to base formation offsets. */
 	inline float SpacingScale(ESolidBattleSpacing Spacing)
@@ -117,6 +152,21 @@ namespace SolidBattleFormationSlots
 			constexpr float FirstBackCm = 280.f;
 			constexpr float RankSpacingCm = 240.f;
 			Base = FVector2D(-(FirstBackCm + RankSpacingCm * Index), 0.f);
+			break;
+		}
+		case ESolidBattleFormation::Parade:
+		{
+			constexpr float FrontCm = 280.f;
+			constexpr float SideCm = 160.f;
+			if (Count == 1)
+			{
+				Base = FVector2D(FrontCm, 0.f);
+			}
+			else
+			{
+				const float T = (static_cast<float>(Index) / static_cast<float>(Count - 1)) * 2.f - 1.f;
+				Base = FVector2D(FrontCm, T * SideCm);
+			}
 			break;
 		}
 		case ESolidBattleFormation::Mob:

@@ -14,18 +14,17 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 - Create a cave in the mountains near the starting town
 - Build cave interior as a new level and transition to/from the main world at the entrance
 - Replace companion models with new Fab assets
-- Implement main menu
 
 ## Done
 
 - **Captain + Party** — third-person Viking pawn (Enhanced Input: move / look / zoom / jump / sprint), clip locomotion (idle / walk / run / jump), floating nameplates. Companions **Sam** and **Alex** follow in battle-plan slots; Party camera frames the group and lifts off terrain.
-- **Battle plans** — Company catalog and Party assigned slots. F1 Line, F2 Column, F3 Tight mob, F4 Loose mob (spacing Narrow / Standard / Wide). F1–F8 select; F9 square-walk formation drill; HUD battle-plan panel.
+- **Battle plans** — Company catalog and Party assigned slots. F1 Line, F2 Column, F3 Tight mob, F4 Loose mob (spacing Narrow / Standard / Wide). F1–F8 select; HUD battle-plan panel. The square-walk formation drill is the main menu's Test Drill entry.
 - **World + biomes** — 64×64 `WorldMap.txt` overlay (Sea, Grassland, Town, Mountain, Forest, Desert, River) scaled onto a 257×257 TerrainPoint map. Numbered locations are towns: `0` Iglin (start), `1` Relion, `2` Kanfold, `3` Visolar. The captain starts at location 0. Per-biome height shelf (Sea/River 0, Mountain +10 m, else +1 m). Darker mountain grey.
 - **No starter monolith** — the grey slab that marked the start-town centroid is gone. Location 0 still sets the captain spawn and the building clear radius.
 - **Fog follows the player** — the map starts fully fogged. After the captain is placed at location 0, exploration fog is centered on the pawn, not on that cell. The two match only because that is where the pawn stands.
 - **Procedural terrain** — streamed chunks around the pawn, Fab grassland material, FlatCol tints for other biomes. Exploration fog-of-war (25 m / 50 m bands, marching-squares curtains) clears from the trail, not the camera.
 - **Town + forest** — random non-overlapping town buildings (grey cuboid + red gable prism roof); forest trees scattered on Forest cells.
-- **Credits** — F10 overlay: Silvatek, Cursor + Grok, Fab Viking (Art.Hiraeth) and grass (NoblesseOblige-No.1).
+- **Main menu** — F10 opens it. **1 Test Drill** runs the formation drill. **2 Credits** opens the credits page (Silvatek, Cursor + Grok, Fab Viking and grass). Up/Down and Enter also work. Esc or F10 closes. Move, look, and battle-plan keys are ignored while the menu or credits page is open.
 - **Content pipeline** — Fab listings restored via Launcher Add to Project; C++ finds Viking/grass by name under `/Game/Viking` or `/Game/Fab`. `tools/fab_doctor.bat` + `fab-assets.json`. Packs are gitignored (attribution README kept).
 - **Automation** — `SolidCore1.*` editor tests; `tools/run_automation_tests.bat` prints failed test paths. Build ID `SC1-NNNN` on the debug HUD.
 
@@ -38,7 +37,10 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 | Zoom | Mouse wheel | — |
 | Jump | Space | A / Cross |
 | Sprint | Left Shift | Left stick click |
-| Credits | F10 | — |
+| Main menu | F10 | — |
+| Menu up / down | Up / Down | — |
+| Menu confirm | Enter, or 1 / 2 | — |
+| Close menu / credits | Esc or F10 | — |
 
 Input Actions / Mapping Context can be replaced with Content assets on the character later; if unset, C++ creates transient defaults so PIE works immediately.
 
@@ -68,8 +70,9 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.Streamer.*` | FindExisting / EnsureExists (null + idempotent) |
 | `SolidCore1.Clip.*` | SelectClip idle/walk/run/jump rules |
 | `SolidCore1.NameLabel.*` | Style sizes/colors/plates; Outcast / Sam defaults |
-| `SolidCore1.BattlePlan.*` | Formation slots; Company/Party assign; F9 drill legs |
+| `SolidCore1.BattlePlan.*` | Formation slots; Company/Party assign; drill legs |
 | `SolidCore1.Credits.*` | Author / Cursor+Grok / Fab attribution; HUD toggle |
+| `SolidCore1.MainMenu.*` | F10 menu entries (Test Drill, Credits) and selection |
 | `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |
 | `SolidCore1.Content.*` | Required Content + Engine assets the code loads |
 
@@ -196,7 +199,7 @@ Floating nameplates (`SolidNameLabel`) sit above each Party member and face the 
 - **Party** (`USolidParty`) holds up to 8 **assigned** plans and one **active** plan (default **F1 Line**).
 - Each plan has a **formation** plus **spacing** (`Narrow` / `Standard` / `Wide`) that scales follow distances.
 - Captain switches assigned slots with **F1–F8** (only filled slots work).
-- **F9** runs a formation drill: F1 walk 1.5s → F2 / F3 / F4 each blend +90° yaw over 250 ms then walk 1.5s (square path; player move/look suppressed while active).
+- **Test Drill** (main menu) runs a formation drill: F1 walk 1.5s → F2 / F3 / F4 each blend +90° yaw over 250 ms then walk 1.5s (square path; player move/look suppressed while active).
 - HUD shows a **Battle Plans** panel under the tech block: all 8 slots, F-key + name when assigned, active slot highlighted in amber (aligned marker column).
 - Engine viewmode debug binds (wireframe/unlit/lit/…) are moved to **Ctrl+F1–F5** in `Config/DefaultInput.ini` so bare F-keys stay free for battle plans. Restart the editor after pulling.
 
@@ -247,6 +250,7 @@ Source/
     SolidPartyCamera.cpp                 # Party framing + terrain boom lift
     SolidClipLocomotion.*  # Shared single-node clip apply/play (per-character mesh)
     SolidGameMode.*
+    SolidMainMenu.*          # F10 menu entries (Test Drill, Credits)
     SolidPlayerController.*
     SolidMaterials.*       # Shared FlatCol solid-color MID helper
     SolidContentPaths.h    # Canonical BP soft-class paths
@@ -283,6 +287,7 @@ Source/
       SolidTerrainStreamerTests.cpp
       SolidClipLocomotionTests.cpp
       SolidBuildIdTests.cpp
+      SolidMainMenuTests.cpp
       SolidContentDependencyTests.cpp
 tools/
   run_automation_tests.bat

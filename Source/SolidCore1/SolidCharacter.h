@@ -15,6 +15,7 @@ class UAnimSequence;
 class USceneComponent;
 class UStaticMeshComponent;
 class UTextRenderComponent;
+class ASolidHUD;
 
 /**
  * Captain — the single player-controlled character.
@@ -48,7 +49,7 @@ public:
 	void SetCharacterDisplayName(const FString& NewName);
 	const FString& GetCharacterDisplayName() const { return CharacterDisplayName; }
 
-	/** F9: cycle F1–F4 while walking a square (1.5s per side). */
+	/** Square-walk formation demo (main menu: Test Drill). Cycles F1–F4, 1.5s per side. */
 	void StartPartyFormationDrill();
 	void StopPartyFormationDrill();
 	bool IsPartyFormationDrillActive() const;
@@ -71,11 +72,16 @@ protected:
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
 	void Zoom(const FInputActionValue& Value);
+	void StartJump();
+	void StopJumpFromInput();
 	void StartSprint();
 	void StopSprint();
+	bool IsMenuOverlayOpen() const;
+	ASolidHUD* GetSolidHUD() const;
 
 	/** Select Party assigned battle-plan slot (0 = F1 … 7 = F8). */
 	void SelectBattlePlanSlot(int32 SlotIndex);
+	void SelectBattlePlanSlotFromInput(int32 SlotIndex);
 	void SelectBattlePlanSlot1();
 	void SelectBattlePlanSlot2();
 	void SelectBattlePlanSlot3();
@@ -84,8 +90,14 @@ protected:
 	void SelectBattlePlanSlot6();
 	void SelectBattlePlanSlot7();
 	void SelectBattlePlanSlot8();
-	void StartPartyFormationDrillFromInput();
-	void ToggleCreditsFromInput();
+	void ToggleMainMenuFromInput();
+	void CloseMenuOverlayFromInput();
+	void MainMenuMoveUp();
+	void MainMenuMoveDown();
+	void MainMenuConfirm();
+	void MainMenuChoose1();
+	void MainMenuChoose2();
+	void ChooseMainMenuIndex(int32 Index);
 
 	void ApplyWalkSpeed() const;
 	void AddMappingContext();
@@ -274,6 +286,6 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimSequence> ActiveLocomotionAnim;
 
-	/** F9 square-walk formation demo state. */
+	/** Square-walk formation demo state. */
 	SolidPartyDrill::FState PartyFormationDrill;
 };

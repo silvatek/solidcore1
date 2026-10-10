@@ -18,6 +18,7 @@
 #include "SolidCore1.h"
 #include "SolidGameMode.h"
 #include "SolidHUD.h"
+#include "SolidMainMenu.h"
 #include "SolidNameLabel.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -179,8 +180,8 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	{
 		if (JumpAction)
 		{
-			EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ACharacter::Jump);
-			EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
+			EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Started, this, &ASolidCharacter::StartJump);
+			EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ASolidCharacter::StopJumpFromInput);
 		}
 
 		if (MoveAction)
@@ -219,23 +220,119 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::F6, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot6);
 	PlayerInputComponent->BindKey(EKeys::F7, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot7);
 	PlayerInputComponent->BindKey(EKeys::F8, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot8);
-	PlayerInputComponent->BindKey(EKeys::F9, IE_Pressed, this, &ASolidCharacter::StartPartyFormationDrillFromInput);
-	PlayerInputComponent->BindKey(EKeys::F10, IE_Pressed, this, &ASolidCharacter::ToggleCreditsFromInput);
+	PlayerInputComponent->BindKey(EKeys::F10, IE_Pressed, this, &ASolidCharacter::ToggleMainMenuFromInput);
+	PlayerInputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ASolidCharacter::CloseMenuOverlayFromInput);
+	PlayerInputComponent->BindKey(EKeys::Up, IE_Pressed, this, &ASolidCharacter::MainMenuMoveUp);
+	PlayerInputComponent->BindKey(EKeys::Down, IE_Pressed, this, &ASolidCharacter::MainMenuMoveDown);
+	PlayerInputComponent->BindKey(EKeys::Enter, IE_Pressed, this, &ASolidCharacter::MainMenuConfirm);
+	PlayerInputComponent->BindKey(EKeys::One, IE_Pressed, this, &ASolidCharacter::MainMenuChoose1);
+	PlayerInputComponent->BindKey(EKeys::Two, IE_Pressed, this, &ASolidCharacter::MainMenuChoose2);
+	PlayerInputComponent->BindKey(EKeys::NumPadOne, IE_Pressed, this, &ASolidCharacter::MainMenuChoose1);
+	PlayerInputComponent->BindKey(EKeys::NumPadTwo, IE_Pressed, this, &ASolidCharacter::MainMenuChoose2);
 }
 
-void ASolidCharacter::StartPartyFormationDrillFromInput()
+ASolidHUD* ASolidCharacter::GetSolidHUD() const
 {
-	StartPartyFormationDrill();
-}
-
-void ASolidCharacter::ToggleCreditsFromInput()
-{
-	if (APlayerController* PC = Cast<APlayerController>(GetController()))
+	if (const APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
-		if (ASolidHUD* HUD = Cast<ASolidHUD>(PC->GetHUD()))
+		return Cast<ASolidHUD>(PC->GetHUD());
+	}
+	return nullptr;
+}
+
+bool ASolidCharacter::IsMenuOverlayOpen() const
+{
+	if (const ASolidHUD* HUD = GetSolidHUD())
+	{
+		return HUD->IsMainMenuOpen() || HUD->IsCreditsVisible();
+	}
+	return false;
+}
+
+void ASolidCharacter::ToggleMainMenuFromInput()
+{
+	if (ASolidHUD* HUD = GetSolidHUD())
+	{
+		HUD->HandleMenuKey();
+	}
+}
+
+void ASolidCharacter::CloseMenuOverlayFromInput()
+{
+	if (ASolidHUD* HUD = GetSolidHUD())
+	{
+		HUD->CloseMenuOverlay();
+	}
+}
+
+void ASolidCharacter::MainMenuMoveUp()
+{
+	if (ASolidHUD* HUD = GetSolidHUD())
+	{
+		if (HUD->IsMainMenuOpen())
 		{
-			HUD->ToggleCredits();
+			HUD->MoveMainMenuSelection(-1);
 		}
+	}
+}
+
+void ASolidCharacter::MainMenuMoveDown()
+{
+	if (ASolidHUD* HUD = GetSolidHUD())
+	{
+		if (HUD->IsMainMenuOpen())
+		{
+			HUD->MoveMainMenuSelection(1);
+		}
+	}
+}
+
+void ASolidCharacter::MainMenuChoose1()
+{
+	ChooseMainMenuIndex(0);
+}
+
+void ASolidCharacter::MainMenuChoose2()
+{
+	ChooseMainMenuIndex(1);
+}
+
+void ASolidCharacter::ChooseMainMenuIndex(const int32 Index)
+{
+	ASolidHUD* HUD = GetSolidHUD();
+	if (!HUD || !HUD->IsMainMenuOpen())
+	{
+		return;
+	}
+	HUD->SetMainMenuIndex(Index);
+	MainMenuConfirm();
+}
+
+void ASolidCharacter::MainMenuConfirm()
+{
+	ASolidHUD* HUD = GetSolidHUD();
+	if (!HUD || !HUD->IsMainMenuOpen())
+	{
+		return;
+	}
+
+	FSolidMainMenuEntry Entry;
+	if (!SolidMainMenu::FindEntry(HUD->GetMainMenuIndex(), Entry))
+	{
+		return;
+	}
+
+	HUD->CloseMainMenu();
+	switch (SolidMainMenu::ActionForItem(Entry.Item))
+	{
+	case ESolidMainMenuAction::StartTestDrill:
+		StartPartyFormationDrill();
+		break;
+	case ESolidMainMenuAction::ShowCredits:
+		HUD->SetCreditsVisible(true);
+		break;
+	default:
+		break;
 	}
 }
 
@@ -250,18 +347,26 @@ void ASolidCharacter::SelectBattlePlanSlot(const int32 SlotIndex)
 	}
 }
 
-void ASolidCharacter::SelectBattlePlanSlot1() { SelectBattlePlanSlot(0); }
-void ASolidCharacter::SelectBattlePlanSlot2() { SelectBattlePlanSlot(1); }
-void ASolidCharacter::SelectBattlePlanSlot3() { SelectBattlePlanSlot(2); }
-void ASolidCharacter::SelectBattlePlanSlot4() { SelectBattlePlanSlot(3); }
-void ASolidCharacter::SelectBattlePlanSlot5() { SelectBattlePlanSlot(4); }
-void ASolidCharacter::SelectBattlePlanSlot6() { SelectBattlePlanSlot(5); }
-void ASolidCharacter::SelectBattlePlanSlot7() { SelectBattlePlanSlot(6); }
-void ASolidCharacter::SelectBattlePlanSlot8() { SelectBattlePlanSlot(7); }
+void ASolidCharacter::SelectBattlePlanSlotFromInput(const int32 SlotIndex)
+{
+	if (!IsMenuOverlayOpen())
+	{
+		SelectBattlePlanSlot(SlotIndex);
+	}
+}
+
+void ASolidCharacter::SelectBattlePlanSlot1() { SelectBattlePlanSlotFromInput(0); }
+void ASolidCharacter::SelectBattlePlanSlot2() { SelectBattlePlanSlotFromInput(1); }
+void ASolidCharacter::SelectBattlePlanSlot3() { SelectBattlePlanSlotFromInput(2); }
+void ASolidCharacter::SelectBattlePlanSlot4() { SelectBattlePlanSlotFromInput(3); }
+void ASolidCharacter::SelectBattlePlanSlot5() { SelectBattlePlanSlotFromInput(4); }
+void ASolidCharacter::SelectBattlePlanSlot6() { SelectBattlePlanSlotFromInput(5); }
+void ASolidCharacter::SelectBattlePlanSlot7() { SelectBattlePlanSlotFromInput(6); }
+void ASolidCharacter::SelectBattlePlanSlot8() { SelectBattlePlanSlotFromInput(7); }
 
 void ASolidCharacter::Move(const FInputActionValue& Value)
 {
-	if (IsPartyFormationDrillActive())
+	if (IsPartyFormationDrillActive() || IsMenuOverlayOpen())
 	{
 		return;
 	}
@@ -283,7 +388,7 @@ void ASolidCharacter::Move(const FInputActionValue& Value)
 
 void ASolidCharacter::Look(const FInputActionValue& Value)
 {
-	if (IsPartyFormationDrillActive())
+	if (IsPartyFormationDrillActive() || IsMenuOverlayOpen())
 	{
 		return;
 	}
@@ -297,8 +402,27 @@ void ASolidCharacter::Look(const FInputActionValue& Value)
 	}
 }
 
+void ASolidCharacter::StartJump()
+{
+	if (IsMenuOverlayOpen())
+	{
+		return;
+	}
+	Jump();
+}
+
+void ASolidCharacter::StopJumpFromInput()
+{
+	StopJumping();
+}
+
 void ASolidCharacter::Zoom(const FInputActionValue& Value)
 {
+	if (IsMenuOverlayOpen())
+	{
+		return;
+	}
+
 	// Clamp axis — some platforms deliver large wheel spikes in one tick.
 	const float Axis = FMath::Clamp(Value.Get<float>(), -3.f, 3.f);
 	if (FMath::IsNearlyZero(Axis))
@@ -315,7 +439,7 @@ void ASolidCharacter::Zoom(const FInputActionValue& Value)
 
 void ASolidCharacter::StartSprint()
 {
-	if (IsPartyFormationDrillActive())
+	if (IsPartyFormationDrillActive() || IsMenuOverlayOpen())
 	{
 		return;
 	}

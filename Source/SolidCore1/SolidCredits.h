@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 
 /**
- * Credits copy shown by the F10 HUD popup.
+ * Credits copy shown from the main menu. F10 closes the page.
  * Keep Fab attribution in sync with tools/fab-assets.json.
  */
 namespace SolidCredits

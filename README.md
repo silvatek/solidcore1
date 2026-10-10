@@ -4,6 +4,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 
 ## To-do
 
+- Build script in tools
 - Double world size
 - Use white material for 100% fog terrain
 - Don't allow camera to pass through fog curtain
@@ -14,6 +15,9 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 - Create a cave in the mountains near the starting town
 - Build cave interior as a new level and transition to/from the main world at the entrance
 - Replace companion models with new Fab assets
+- Click to move
+- First person view ("true sight" vs "raven sight")
+- HUD / Menu panel borders & themes
 
 ## Done
 

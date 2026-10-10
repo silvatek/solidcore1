@@ -2,6 +2,21 @@
 
 UE **5.8** C++ open-world starter with World Partition–oriented config, a third-person character, and Enhanced Input (move / look / jump / sprint).
 
+## To-do
+
+- Implement main menu
+
+## Done
+
+- **Captain + Party** — third-person Viking pawn (Enhanced Input: move / look / zoom / jump / sprint), clip locomotion (idle / walk / run / jump), floating nameplates. Companions **Sam** and **Alex** follow in battle-plan slots; Party camera frames the group and lifts off terrain.
+- **Battle plans** — Company catalog and Party assigned slots. F1 Line, F2 Column, F3 Tight mob, F4 Loose mob (spacing Narrow / Standard / Wide). F1–F8 select; F9 square-walk formation drill; HUD battle-plan panel.
+- **World + biomes** — 64×64 `WorldMap.txt` overlay (Sea, Grassland, Town/Z, Mountain, Forest, Desert, River) scaled onto a 257×257 TerrainPoint map. Z-town start, fog origin, and monolith at the town centroid. Per-biome height shelf (Sea/River 0, Mountain +10 m, else +1 m). Darker mountain grey.
+- **Procedural terrain** — streamed chunks around the pawn, Fab grassland material, FlatCol tints for other biomes. Exploration fog-of-war (25 m / 50 m bands, marching-squares curtains) clears from the trail, not the camera.
+- **Town + forest** — random non-overlapping town buildings (grey cuboid + red gable prism roof); forest trees scattered on Forest cells.
+- **Credits** — F10 overlay: Silvatek, Cursor + Grok, Fab Viking (Art.Hiraeth) and grass (NoblesseOblige-No.1).
+- **Content pipeline** — Fab listings restored via Launcher Add to Project; C++ finds Viking/grass by name under `/Game/Viking` or `/Game/Fab`. `tools/fab_doctor.bat` + `fab-assets.json`. Packs are gitignored (attribution README kept).
+- **Automation** — `SolidCore1.*` editor tests; `tools/run_automation_tests.bat` prints failed test paths. Build ID `SC1-NNNN` on the debug HUD.
+
 ## Paths (this machine)
 
 | Item | Path |

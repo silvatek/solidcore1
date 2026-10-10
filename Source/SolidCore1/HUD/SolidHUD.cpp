@@ -70,22 +70,22 @@ namespace SolidHUDPrivate
 		FCanvasTileItem Dim(
 			FVector2D(0.f, 0.f),
 			FVector2D(static_cast<float>(Canvas->SizeX), static_cast<float>(Canvas->SizeY)),
-			FLinearColor(0.f, 0.f, 0.f, 0.55f));
+			FLinearColor(0.f, 0.f, 0.f, 0.72f));
 		Dim.BlendMode = SE_BLEND_Translucent;
 		Canvas->DrawItem(Dim);
 
 		FCanvasTileItem Panel(
 			FVector2D(BoxX, BoxY),
 			FVector2D(BoxW, BoxH),
-			FLinearColor(0.06f, 0.07f, 0.09f, 0.92f));
-		Panel.BlendMode = SE_BLEND_Translucent;
+			FLinearColor(0.05f, 0.055f, 0.07f, 1.f));
+		Panel.BlendMode = SE_BLEND_Opaque;
 		Canvas->DrawItem(Panel);
 
 		float Y = BoxY + BoxPad;
 		for (int32 Index = 0; Index < Lines.Num(); ++Index)
 		{
 			const FString& Line = Lines[Index];
-			FLinearColor Color(0.88f, 0.90f, 0.93f);
+			FLinearColor Color = FLinearColor::White;
 			if (Index == 0)
 			{
 				Color = FLinearColor(1.f, 0.84f, 0.47f);

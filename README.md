@@ -5,13 +5,13 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a thir
 ## To-do
 
 - Implement main menu
-- Remove monolith
 
 ## Done
 
 - **Captain + Party** — third-person Viking pawn (Enhanced Input: move / look / zoom / jump / sprint), clip locomotion (idle / walk / run / jump), floating nameplates. Companions **Sam** and **Alex** follow in battle-plan slots; Party camera frames the group and lifts off terrain.
 - **Battle plans** — Company catalog and Party assigned slots. F1 Line, F2 Column, F3 Tight mob, F4 Loose mob (spacing Narrow / Standard / Wide). F1–F8 select; F9 square-walk formation drill; HUD battle-plan panel.
-- **World + biomes** — 64×64 `WorldMap.txt` overlay (Sea, Grassland, Town/Z, Mountain, Forest, Desert, River) scaled onto a 257×257 TerrainPoint map. Z-town start, fog origin, and monolith at the town centroid. Per-biome height shelf (Sea/River 0, Mountain +10 m, else +1 m). Darker mountain grey.
+- **World + biomes** — 64×64 `WorldMap.txt` overlay (Sea, Grassland, Town/Z, Mountain, Forest, Desert, River) scaled onto a 257×257 TerrainPoint map. Z-town start and fog origin at the town centroid. Per-biome height shelf (Sea/River 0, Mountain +10 m, else +1 m). Darker mountain grey.
+- **No starter monolith** — the grey slab that marked the Z-town centroid is gone. The centroid still sets fog origin, captain spawn, and the building clear radius.
 - **Procedural terrain** — streamed chunks around the pawn, Fab grassland material, FlatCol tints for other biomes. Exploration fog-of-war (25 m / 50 m bands, marching-squares curtains) clears from the trail, not the camera.
 - **Town + forest** — random non-overlapping town buildings (grey cuboid + red gable prism roof); forest trees scattered on Forest cells.
 - **Credits** — F10 overlay: Silvatek, Cursor + Grok, Fab Viking (Art.Hiraeth) and grass (NoblesseOblige-No.1).
@@ -61,7 +61,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.WorldMap.*` | ASCII overlay load, key colors, Z town, terrain fog origin |
 | `SolidCore1.Noise.*` | Hash / value / fBm / height / grass tone |
 | `SolidCore1.Types.*` | Biome names (incl. Sea/River), height offsets, `FSolidTerrainPoint` defaults |
-| `SolidCore1.Vegetation.*` | Tree RNG variation, monolith defaults, town building pack |
+| `SolidCore1.Vegetation.*` | Tree RNG variation, town building pack |
 | `SolidCore1.GameMode.*` | Default spawn flags, pawn BP resolution |
 | `SolidCore1.Companion.*` | Defaults, SetFollowTarget |
 | `SolidCore1.Streamer.*` | FindExisting / EnsureExists (null + idempotent) |
@@ -173,11 +173,10 @@ See [`Source/SolidCore1/Fog/README.md`](Source/SolidCore1/Fog/README.md) — tra
 
 ## WorldMap biomes (SC1-0105)
 
-`Content/WorldMap.txt` (fallback `Source/SolidCore1/WorldMap.txt`) is a 64×64 grid of markers plus a color key (`S` Sea, `G` Grassland, `T`/`Z` Town, `M` Mountain, `F` Forest, `D` Desert, `R` River). The grid scales across the TerrainMap world rectangle (file row 0 = north). `Z` cells mark the **starting town**: fog clears from that centroid, the streamer relocates the player there, and the monolith sits in the middle.
+`Content/WorldMap.txt` (fallback `Source/SolidCore1/WorldMap.txt`) is a 64×64 grid of markers plus a color key (`S` Sea, `G` Grassland, `T`/`Z` Town, `M` Mountain, `F` Forest, `D` Desert, `R` River). The grid scales across the TerrainMap world rectangle (file row 0 = north). `Z` cells mark the **starting town**: fog clears from that centroid, and the streamer relocates the player there.
 
-## Starter landmark + forest trees (SC1-0076 / SC1-0110)
+## Forest trees (SC1-0076 / SC1-0110)
 
-- `ASolidMonolith` — large grey slab at the WorldMap starting-town (Z) centroid (falls back to `StarterMonolithOffsetXY`).
 - `ASolidTree` — cylinder trunk + cone canopy; scattered randomly across **Forest** TerrainPoints (`ForestTreeDensity`, capped by `MaxForestTrees`).
 - Logic in `Vegetation/SolidForestTrees.*`. Toggle with `bAutoSpawnVegetation`.
 - Fog curtains: see [`Fog/README.md`](Source/SolidCore1/Fog/README.md) (clear|fogged ~25 m plus a **white** half→full curtain ~50 m).
@@ -266,7 +265,6 @@ Source/
       SolidTerrainMaterials.*   # Grass + per-biome FlatCol resolve
       SolidTerrainWorldSubsystem.*
     Vegetation/
-      SolidMonolith.*         # Grey slab landmark at start town
       SolidTree.*             # Placeholder cylinder+cone tree
       SolidForestTrees.*      # Random Forest-biome tree placement
     Tests/

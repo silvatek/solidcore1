@@ -2,7 +2,6 @@
 #include "Misc/AutomationTest.h"
 #include "SolidBuilding.h"
 #include "SolidForestTrees.h"
-#include "SolidMonolith.h"
 #include "SolidTerrainMap.h"
 #include "SolidTerrainTestHelpers.h"
 #include "SolidTownBuildings.h"
@@ -114,25 +113,6 @@ bool FSolidTreeRandomVariationTest::RunTest(const FString& Parameters)
 		!FMath::IsNearlyEqual(A->TrunkHeightCm, C->TrunkHeightCm)
 		|| !FMath::IsNearlyEqual(A->CanopyRadiusCm, C->CanopyRadiusCm));
 
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidMonolithDefaultsTest,
-	"SolidCore1.Vegetation.MonolithDefaults",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
-
-bool FSolidMonolithDefaultsTest::RunTest(const FString& Parameters)
-{
-	ASolidMonolith* Mono = NewObject<ASolidMonolith>();
-	TestNotNull(TEXT("monolith"), Mono);
-	TestTrue(TEXT("width positive"), Mono->WidthCm > 0.f);
-	TestTrue(TEXT("thickness positive"), Mono->ThicknessCm > 0.f);
-	TestTrue(TEXT("height positive"), Mono->HeightCm > 0.f);
-	TestTrue(TEXT("taller than wide"), Mono->HeightCm > Mono->WidthCm);
-
-	Mono->BuildVisuals();
-	TestNotNull(TEXT("slab mesh component"), Mono->GetRootComponent());
 	return true;
 }
 

@@ -13,7 +13,6 @@
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Vegetation/SolidBuilding.h"
 #include "Vegetation/SolidForestTrees.h"
-#include "Vegetation/SolidMonolith.h"
 #include "Vegetation/SolidTownBuildings.h"
 #include "Vegetation/SolidTree.h"
 #include "Components/CapsuleComponent.h"
@@ -287,15 +286,6 @@ void ASolidGameMode::EnsureVegetation()
 		return !IsValid(Building);
 	});
 
-	if (!SpawnedMonolith.IsValid())
-	{
-		for (TActorIterator<ASolidMonolith> It(World); It; ++It)
-		{
-			SpawnedMonolith = *It;
-			break;
-		}
-	}
-
 	if (SpawnedForestTrees.Num() == 0)
 	{
 		for (TActorIterator<ASolidTree> It(World); It; ++It)
@@ -323,33 +313,6 @@ void ASolidGameMode::EnsureVegetation()
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	if (!SpawnedMonolith.IsValid())
-	{
-		FVector2D LandmarkXY = StarterMonolithOffsetXY;
-		FVector2D TownXY = FVector2D::ZeroVector;
-		if (Streamer->GetTerrainMap()->GetStartTownWorldXY(TownXY))
-		{
-			LandmarkXY = TownXY;
-		}
-
-		FVector MonoLoc(LandmarkXY.X, LandmarkXY.Y, 0.f);
-		const float LandZ = Streamer->GetHeightAt(MonoLoc) + Streamer->CollisionHeightBias;
-		MonoLoc.Z = LandZ + Streamer->SnapHeightPadding;
-
-		ASolidMonolith* Monolith = World->SpawnActor<ASolidMonolith>(
-			ASolidMonolith::StaticClass(), MonoLoc, FRotator(0.f, 25.f, 0.f), SpawnParams);
-		if (Monolith)
-		{
-			Monolith->BuildVisuals();
-			SpawnedMonolith = Monolith;
-			UE_LOG(LogSolid, Warning, TEXT("Spawned starter monolith at %s"), *MonoLoc.ToCompactString());
-		}
-		else
-		{
-			UE_LOG(LogSolid, Error, TEXT("Failed to spawn starter SolidMonolith."));
-		}
-	}
 
 	if (SpawnedForestTrees.Num() == 0)
 	{

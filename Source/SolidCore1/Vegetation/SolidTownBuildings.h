@@ -33,7 +33,7 @@ namespace SolidTownBuildings
 		int32 MaxBuildings = 48;
 		/** Extra gap between packing circles (cm). */
 		float MinSeparationCm = 100.f;
-		/** Keep the monolith / town centroid clear (cm). */
+		/** Keep the town centroid clear (cm). */
 		float ClearRadiusAroundTownCenterCm = 450.f;
 		float MinFootprintCm = 180.f;
 		float MaxFootprintCm = 420.f;

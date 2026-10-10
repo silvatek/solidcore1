@@ -528,7 +528,7 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 		return;
 	}
 
-	// Stand clear of the monolith (which sits on the town centroid).
+	// Stand in the town plaza, offset from the centroid.
 	const FVector2D PawnXY = TownXY + StartTownPawnOffsetXY;
 
 	const FVector OldLoc = Focus->GetActorLocation();
@@ -547,11 +547,11 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 
 	Focus->SetActorLocation(NewLoc);
 
-	// Face the monolith at the town centroid.
-	const FVector2D ToMonolith = TownXY - PawnXY;
-	if (!ToMonolith.IsNearlyZero())
+	// Face the town centroid.
+	const FVector2D ToTown = TownXY - PawnXY;
+	if (!ToTown.IsNearlyZero())
 	{
-		const float YawDeg = FMath::RadiansToDegrees(FMath::Atan2(ToMonolith.Y, ToMonolith.X));
+		const float YawDeg = FMath::RadiansToDegrees(FMath::Atan2(ToTown.Y, ToTown.X));
 		Focus->SetActorRotation(FRotator(0.f, YawDeg, 0.f));
 	}
 
@@ -569,7 +569,7 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 	bDidRelocateToStartTown = true;
 	bHasFogApplyLocation = false;
 	UE_LOG(LogSolid, Warning,
-		TEXT("Relocated focus to start town pawn (%.0f, %.0f) monolith=(%.0f, %.0f) Z=%.1f (from %.0f, %.0f)"),
+		TEXT("Relocated focus to start town pawn (%.0f, %.0f) town=(%.0f, %.0f) Z=%.1f (from %.0f, %.0f)"),
 		PawnXY.X, PawnXY.Y, TownXY.X, TownXY.Y, NewLoc.Z, OldLoc.X, OldLoc.Y);
 }
 

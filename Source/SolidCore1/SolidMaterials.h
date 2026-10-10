@@ -7,7 +7,7 @@ class UObject;
 
 /**
  * Shared FlatCol / DefaultColorway solid-color MID helpers.
- * Used by terrain grass fallback, fog opaque fallback, trees, and monolith.
+ * Used by terrain grass fallback, fog opaque fallback, and trees.
  */
 namespace SolidMaterials
 {

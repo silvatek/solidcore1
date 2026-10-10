@@ -124,7 +124,7 @@ public:
 
 	/**
 	 * Planar offset from the WorldMap Z-town centroid for the Captain spawn.
-	 * The monolith stays at the centroid; this keeps the pawn outside the slab.
+	 * Keeps the pawn in the town plaza, facing the centroid.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Start Town")
 	FVector2D StartTownPawnOffsetXY = FVector2D(0.f, -450.f);

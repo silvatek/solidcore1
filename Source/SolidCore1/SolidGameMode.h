@@ -6,7 +6,6 @@
 
 class ASolidBuilding;
 class ASolidCompanionCharacter;
-class ASolidMonolith;
 class ASolidTree;
 class USolidCompany;
 class USolidParty;
@@ -31,16 +30,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	TSubclassOf<ASolidCompanionCharacter> CompanionClass;
 
-	/** Spawn the starter monolith, Forest trees, and Town buildings. */
+	/** Spawn Forest trees and Town buildings. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation")
 	bool bAutoSpawnVegetation = true;
-
-	/**
-	 * Fallback world XY for the starter monolith (cm) when WorldMap has no Z town.
-	 * When WorldMap loads, the monolith is placed at the Z-cell centroid instead.
-	 */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation")
-	FVector2D StarterMonolithOffsetXY = FVector2D(1400.f, 900.f);
 
 	/** Fraction of Forest TerrainPoints that get a tree [0, 1]. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation", meta = (ClampMin = "0.0", ClampMax = "1.0"))
@@ -70,7 +62,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation", meta = (ClampMin = "0.0"))
 	float TownBuildingMinSeparationCm = 100.f;
 
-	/** Keep the monolith / town centroid clear of buildings (cm). */
+	/** Keep the town centroid clear of buildings (cm). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation", meta = (ClampMin = "0.0"))
 	float TownBuildingClearRadiusCm = 450.f;
 
@@ -115,9 +107,6 @@ protected:
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidCompanionCharacter>> SpawnedCompanions;
-
-	UPROPERTY(Transient)
-	TWeakObjectPtr<ASolidMonolith> SpawnedMonolith;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidTree>> SpawnedForestTrees;

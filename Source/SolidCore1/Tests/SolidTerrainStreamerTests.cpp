@@ -87,7 +87,7 @@ bool FSolidStreamerStartTownRelocateFlagTest::RunTest(const FString& Parameters)
 			const FVector Loc = Focus->GetActorLocation();
 			TestTrue(TEXT("focus X near offset spawn"), FMath::IsNearlyEqual(Loc.X, ExpectedXY.X, 50.f));
 			TestTrue(TEXT("focus Y near offset spawn"), FMath::IsNearlyEqual(Loc.Y, ExpectedXY.Y, 50.f));
-			TestTrue(TEXT("focus cleared of monolith centroid"),
+			TestTrue(TEXT("focus cleared of town centroid"),
 				FVector2D::Distance(FVector2D(Loc.X, Loc.Y), TownXY) > 200.f);
 		}
 	}

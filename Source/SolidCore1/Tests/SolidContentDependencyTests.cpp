@@ -89,8 +89,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidContentEngineBasicShapesTest::RunTest(const FString& Parameters)
 {
-	// SolidTree / SolidMonolith
-	TestTrue(TEXT("Engine Cube (monolith)"),
+	// SolidBuilding / SolidNameLabel
+	TestTrue(TEXT("Engine Cube (buildings, nameplates)"),
 		SolidContentTestPrivate::SoftObjectResolves(TEXT("/Engine/BasicShapes/Cube.Cube")));
 	TestTrue(TEXT("Engine Cylinder (tree trunk)"),
 		SolidContentTestPrivate::SoftObjectResolves(TEXT("/Engine/BasicShapes/Cylinder.Cylinder")));
@@ -106,7 +106,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidContentSolidColorMaterialsTest::RunTest(const FString& Parameters)
 {
-	// Fog / tree / monolith / grass fallback — need at least one FlatCol parent.
+	// Fog / tree / grass fallback — need at least one FlatCol parent.
 	static const TCHAR* Parents[] = {
 		TEXT("/Game/LevelPrototyping/Materials/M_FlatCol.M_FlatCol"),
 		TEXT("/Game/LevelPrototyping/Materials/MI_DefaultColorway.MI_DefaultColorway"),

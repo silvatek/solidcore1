@@ -12,6 +12,10 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - Replace companion models with new Fab assets
 - Click to move
 - HUD / Menu panel borders & themes
+- Only move companions when captain is moving
+- Test Drill should end with party in Parade formation, and add both companions if not already in party 
+- Extend SolidSight.h with Falcon Sight and Eagle sight, both 3rd person but with increased maximum height (not horizontal distance)
+- Regular vs Debug HUD
 
 ## Done
 

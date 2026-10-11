@@ -32,6 +32,12 @@
 #include "GameFramework/Character.h"
 #include "GameFramework/Pawn.h"
 #include "Materials/MaterialInterface.h"
+#include "Fonts/CompositeFont.h"
+#include "Styling/CoreStyle.h"
+#include "Widgets/Layout/SBorder.h"
+#include "Widgets/SOverlay.h"
+#include "Widgets/Text/STextBlock.h"
+#include "Misc/Paths.h"
 
 namespace SolidHUDPrivate
 {
@@ -409,11 +415,117 @@ namespace SolidHUDPrivate
 
 		return Y + BoxPad;
 	}
+
+	/** Roboto has no emoji, so the marker uses Segoe UI Emoji when that file is present. */
+	static FSlateFontInfo SightMarkerFont()
+	{
+		static TSharedPtr<const FCompositeFont> EmojiFont;
+		if (!EmojiFont.IsValid())
+		{
+			const FString SystemRoot = FPlatformMisc::GetEnvironmentVariable(TEXT("SystemRoot"));
+			const FString FontPath = FPaths::Combine(SystemRoot, TEXT("Fonts"), TEXT("seguiemj.ttf"));
+			if (!SystemRoot.IsEmpty() && FPaths::FileExists(FontPath))
+			{
+				const TSharedRef<FCompositeFont> Composite = MakeShared<FCompositeFont>();
+				FTypefaceEntry& Entry = Composite->DefaultTypeface.Fonts.AddDefaulted_GetRef();
+				Entry.Name = FName(TEXT("Regular"));
+				Entry.Font = FFontData(FontPath, EFontHinting::Default, EFontLoadingPolicy::LazyLoad);
+				EmojiFont = Composite;
+			}
+		}
+
+		FSlateFontInfo Font = EmojiFont.IsValid()
+			? FSlateFontInfo(EmojiFont.ToSharedRef(), 28.f, FName(TEXT("Regular")))
+			: FCoreStyle::GetDefaultFontStyle(TEXT("Regular"), 28);
+		return Font;
+	}
+
+	static TMap<ASolidHUD*, TSharedPtr<SWidget>> SightIndicators;
+}
+
+void ASolidHUD::EnsureSightIndicator()
+{
+	if (bSightIndicatorAdded)
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	UGameViewportClient* Viewport = World ? World->GetGameViewport() : nullptr;
+	if (!Viewport)
+	{
+		return;
+	}
+
+	const TWeakObjectPtr<ASolidHUD> WeakHUD(this);
+	const TSharedRef<SWidget> Widget =
+		SNew(SOverlay)
+		.Visibility(EVisibility::HitTestInvisible)
+		+ SOverlay::Slot()
+		.HAlign(HAlign_Right)
+		.VAlign(VAlign_Top)
+		.Padding(FMargin(0.f, 16.f, 16.f, 0.f))
+		[
+			SNew(SBorder)
+			.Visibility(EVisibility::HitTestInvisible)
+			.BorderImage(FCoreStyle::Get().GetBrush(TEXT("GenericWhiteBox")))
+			.BorderBackgroundColor(FLinearColor(0.96f, 0.93f, 0.86f, 0.94f))
+			.Padding(FMargin(12.f, 6.f))
+			[
+				SNew(STextBlock)
+				.Visibility(EVisibility::HitTestInvisible)
+				.Font(SolidHUDPrivate::SightMarkerFont())
+				.ColorAndOpacity(FLinearColor(0.12f, 0.08f, 0.05f, 1.f))
+				.Justification(ETextJustify::Center)
+				.Text_Lambda([WeakHUD]()
+				{
+					ESolidSight Sight = ESolidSight::True;
+					if (ASolidHUD* HUD = WeakHUD.Get())
+					{
+						if (const ASolidCharacter* Captain = Cast<ASolidCharacter>(HUD->GetOwningPawn()))
+						{
+							Sight = Captain->GetSight();
+						}
+					}
+					return FText::FromString(SolidSight::Marker(Sight));
+				})
+			]
+		];
+
+	Viewport->AddViewportWidgetContent(Widget, 50);
+	SolidHUDPrivate::SightIndicators.Add(this, Widget);
+	bSightIndicatorAdded = true;
+}
+
+void ASolidHUD::RemoveSightIndicator()
+{
+	TSharedPtr<SWidget> Widget;
+	SolidHUDPrivate::SightIndicators.RemoveAndCopyValue(this, Widget);
+	bSightIndicatorAdded = false;
+	if (!Widget.IsValid())
+	{
+		return;
+	}
+
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameViewportClient* Viewport = World->GetGameViewport())
+		{
+			Viewport->RemoveViewportWidgetContent(Widget.ToSharedRef());
+		}
+	}
+}
+
+void ASolidHUD::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	RemoveSightIndicator();
+	Super::EndPlay(EndPlayReason);
 }
 
 void ASolidHUD::DrawHUD()
 {
 	Super::DrawHUD();
+	EnsureSightIndicator();
 
 	if (!Canvas)
 	{

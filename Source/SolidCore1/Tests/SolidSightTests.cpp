@@ -81,4 +81,19 @@ bool FSolidSightToggleTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidSightMarkerTest,
+	"SolidCore1.Sight.Marker",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidSightMarkerTest::RunTest(const FString& Parameters)
+{
+	const FString Eye(SolidSight::Marker(ESolidSight::True));
+	const FString Eagle(SolidSight::Marker(ESolidSight::Raven));
+	TestEqual(TEXT("true sight is an eye"), Eye, FString(TEXT("\U0001F441")));
+	TestEqual(TEXT("raven sight is an eagle"), Eagle, FString(TEXT("\U0001F985")));
+	TestFalse(TEXT("the two markers differ"), Eye.Equals(Eagle));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

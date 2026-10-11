@@ -11,6 +11,7 @@ class SOLIDCORE1_API ASolidHUD : public AHUD
 
 public:
 	virtual void DrawHUD() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	void ToggleCredits();
 	bool IsCreditsVisible() const { return bShowCredits; }
@@ -36,6 +37,8 @@ public:
 	void SetMainMenuIndex(int32 Index);
 
 protected:
+	void EnsureSightIndicator();
+	void RemoveSightIndicator();
 	void DrawCreditsPopup() const;
 	void DrawJournalPopup() const;
 	void DrawMainMenuPopup() const;
@@ -65,4 +68,7 @@ protected:
 	/** Highlighted row while the main menu is open. */
 	UPROPERTY(VisibleAnywhere, Category = "HUD")
 	int32 MainMenuIndex = 0;
+
+	/** Top-right eye / eagle widget has been added to the viewport. */
+	bool bSightIndicatorAdded = false;
 };

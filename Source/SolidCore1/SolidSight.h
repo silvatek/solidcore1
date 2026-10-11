@@ -32,4 +32,10 @@ namespace SolidSight
 	{
 		return IsTrueSight(Sight) ? TEXT("True sight") : TEXT("Raven sight");
 	}
+
+	/** Top-right marker. Eye for true sight, eagle for raven sight. */
+	inline const TCHAR* Marker(ESolidSight Sight)
+	{
+		return IsTrueSight(Sight) ? TEXT("\U0001F441") : TEXT("\U0001F985");
+	}
 }

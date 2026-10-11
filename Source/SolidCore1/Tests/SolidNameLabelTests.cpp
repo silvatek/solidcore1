@@ -3,6 +3,7 @@
 #include "SolidNameLabel.h"
 #include "SolidCharacter.h"
 #include "Companion/SolidCompanionCharacter.h"
+#include "Party/SolidCompany.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 
@@ -84,9 +85,39 @@ bool FSolidNameLabelCompanionDefaultsTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("background plate"), Companion->GetNameLabelBackground());
 	if (UTextRenderComponent* Label = Companion->GetNameLabel())
 	{
-		TestEqual(TEXT("label text"), Label->Text.ToString(), FString(TEXT("Sam")));
+		TestEqual(TEXT("label text"), Label->Text.ToString(), FString(TEXT("Sam (W)")));
 		TestEqual(TEXT("companion size"), Label->WorldSize, SolidNameLabel::CompanionWorldSize);
 	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidNameLabelVocationInitialTest,
+	"SolidCore1.NameLabel.VocationInitial",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidNameLabelVocationInitialTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("warrior initial"), FString(SolidVocation::Initial(ESolidVocation::Warrior)), FString(TEXT("W")));
+	TestEqual(TEXT("rogue initial"), FString(SolidVocation::Initial(ESolidVocation::Rogue)), FString(TEXT("R")));
+	TestEqual(TEXT("mage initial"), FString(SolidVocation::Initial(ESolidVocation::Mage)), FString(TEXT("M")));
+	TestEqual(TEXT("cleric initial"), FString(SolidVocation::Initial(ESolidVocation::Cleric)), FString(TEXT("C")));
+	TestEqual(
+		TEXT("sam the mage"),
+		SolidVocation::NameLabel(TEXT("Sam"), ESolidVocation::Mage),
+		FString(TEXT("Sam (M)")));
+
+	ASolidCompanionCharacter* Companion = NewObject<ASolidCompanionCharacter>();
+	TestNotNull(TEXT("companion"), Companion);
+	Companion->SetVocation(ESolidVocation::Mage);
+	TestEqual(TEXT("name stays Sam"), Companion->GetCharacterDisplayName(), FString(TEXT("Sam")));
+	TestTrue(TEXT("vocation is mage"), Companion->GetVocation() == ESolidVocation::Mage);
+	TestEqual(TEXT("label shows initial"), Companion->GetNameLabel()->Text.ToString(), FString(TEXT("Sam (M)")));
+
+	Companion->SetCharacterDisplayName(TEXT("Max"));
+	Companion->SetVocation(ESolidVocation::Cleric);
+	TestEqual(TEXT("renamed label"), Companion->GetNameLabel()->Text.ToString(), FString(TEXT("Max (C)")));
+	TestEqual(TEXT("display name has no initial"), Companion->GetCharacterDisplayName(), FString(TEXT("Max")));
 	return true;
 }
 

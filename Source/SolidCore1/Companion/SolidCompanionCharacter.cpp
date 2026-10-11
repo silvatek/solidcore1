@@ -82,7 +82,7 @@ void ASolidCompanionCharacter::ApplyNameLabel()
 		NameLabelBorder,
 		NameLabelBackground,
 		NameLabel,
-		CharacterDisplayName,
+		SolidVocation::NameLabel(CharacterDisplayName, Vocation),
 		SolidNameLabel::EStyle::Companion,
 		CapsuleHalf,
 		this);
@@ -91,6 +91,12 @@ void ASolidCompanionCharacter::ApplyNameLabel()
 void ASolidCompanionCharacter::SetCharacterDisplayName(const FString& NewName)
 {
 	CharacterDisplayName = NewName;
+	ApplyNameLabel();
+}
+
+void ASolidCompanionCharacter::SetVocation(const ESolidVocation NewVocation)
+{
+	Vocation = NewVocation;
 	ApplyNameLabel();
 }
 

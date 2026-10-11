@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0167")
+#define SOLID_BUILD_ID TEXT("SC1-0168")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Companions have a vocation")
+#define SOLID_BUILD_NOTE TEXT("Nameplate shows the vocation initial")
 #endif

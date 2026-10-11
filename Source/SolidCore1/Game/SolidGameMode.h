@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Events/SolidEvents.h"
 #include "GameFramework/GameModeBase.h"
+#include "Party/SolidCompany.h"
 #include "SolidSight.h"
 #include "SolidGameMode.generated.h"
 
@@ -123,7 +124,8 @@ protected:
 		UClass* ClassToSpawn,
 		const FString& DisplayName,
 		int32 PartySlotIndex,
-		const TSoftObjectPtr<USkeletalMesh>& Mesh);
+		const TSoftObjectPtr<USkeletalMesh>& Mesh,
+		ESolidVocation Vocation);
 
 	UPROPERTY(Transient)
 	TObjectPtr<USolidCompany> Company;

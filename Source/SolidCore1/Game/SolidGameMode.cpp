@@ -256,7 +256,8 @@ ASolidCompanionCharacter* ASolidGameMode::SpawnCompanion(
 	UClass* ClassToSpawn,
 	const FString& DisplayName,
 	const int32 PartySlotIndex,
-	const TSoftObjectPtr<USkeletalMesh>& Mesh)
+	const TSoftObjectPtr<USkeletalMesh>& Mesh,
+	const ESolidVocation Vocation)
 {
 	if (!World || !PlayerPawn || !ClassToSpawn)
 	{
@@ -313,6 +314,7 @@ ASolidCompanionCharacter* ASolidGameMode::SpawnCompanion(
 	Companion->CatchUpDistance = FMath::Max(700.f, Behind + 400.f);
 	Companion->SetCompanionMesh(Mesh);
 	Companion->SetPartySlotIndex(PartySlotIndex);
+	Companion->SetVocation(Vocation);
 	Companion->SetCharacterDisplayName(DisplayName);
 	Companion->SetFollowTarget(PlayerPawn);
 	Companion->FinishSpawning(SpawnTransform);
@@ -427,7 +429,7 @@ void ASolidGameMode::EnsureCompanion()
 			? Company->GetMeshForCompanion(Fielded[Slot])
 			: TSoftObjectPtr<USkeletalMesh>();
 		if (ASolidCompanionCharacter* Companion = SpawnCompanion(
-			World, PlayerPawn, ClassToSpawn, Fielded[Slot].Name, Slot, Mesh))
+			World, PlayerPawn, ClassToSpawn, Fielded[Slot].Name, Slot, Mesh, Fielded[Slot].Vocation))
 		{
 			SpawnedCompanions.Add(Companion);
 		}

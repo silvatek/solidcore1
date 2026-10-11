@@ -58,7 +58,7 @@ bool FSolidCompanionAlexPartySlotTest::RunTest(const FString& Parameters)
 	Alex->SetCharacterDisplayName(TEXT("Alex"));
 	TestEqual(TEXT("alex name"), Alex->GetCharacterDisplayName(), FString(TEXT("Alex")));
 	TestEqual(TEXT("alex party slot"), Alex->GetPartySlotIndex(), 1);
-	TestEqual(TEXT("alex label text"), Alex->GetNameLabel()->Text.ToString(), FString(TEXT("Alex")));
+	TestEqual(TEXT("alex label text"), Alex->GetNameLabel()->Text.ToString(), FString(TEXT("Alex (W)")));
 	return true;
 }
 

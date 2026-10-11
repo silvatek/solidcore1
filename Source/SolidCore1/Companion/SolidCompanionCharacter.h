@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
+#include "Party/SolidCompany.h"
 #include "SolidCompanionCharacter.generated.h"
 
 class USkeletalMesh;
@@ -34,12 +35,19 @@ public:
 	FORCEINLINE UStaticMeshComponent* GetNameLabelBorder() const { return NameLabelBorder; }
 	FORCEINLINE UStaticMeshComponent* GetNameLabelBackground() const { return NameLabelBackground; }
 
-	/** Shown on the floating nameplate. */
+	/** Companion name. The nameplate appends the vocation initial. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Name")
 	FString CharacterDisplayName = TEXT("Sam");
 
 	void SetCharacterDisplayName(const FString& NewName);
 	const FString& GetCharacterDisplayName() const { return CharacterDisplayName; }
+
+	/** Shown on the nameplate as an initial in brackets, such as (W). */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Name")
+	ESolidVocation Vocation = ESolidVocation::Warrior;
+
+	void SetVocation(ESolidVocation NewVocation);
+	ESolidVocation GetVocation() const { return Vocation; }
 
 	/** Desired distance behind the follow target (cm). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Follow", meta = (ClampMin = "50.0"))

@@ -31,6 +31,28 @@ enum class ESolidVocation : uint8
 	Cleric UMETA(DisplayName = "Cleric"),
 };
 
+namespace SolidVocation
+{
+	/** One letter for the nameplate, such as W for Warrior. */
+	inline const TCHAR* Initial(const ESolidVocation Vocation)
+	{
+		switch (Vocation)
+		{
+		case ESolidVocation::Warrior: return TEXT("W");
+		case ESolidVocation::Rogue: return TEXT("R");
+		case ESolidVocation::Mage: return TEXT("M");
+		case ESolidVocation::Cleric: return TEXT("C");
+		default: return TEXT("?");
+		}
+	}
+
+	/** Nameplate text: "Sam (M)". */
+	inline FString NameLabel(const FString& Name, const ESolidVocation Vocation)
+	{
+		return FString::Printf(TEXT("%s (%s)"), *Name, Initial(Vocation));
+	}
+}
+
 /**
  * One companion in the company catalog.
  * Name, mesh reference, and vocation; more attributes will be added later.

@@ -63,6 +63,49 @@ namespace
 		}
 		return Best->GetAsset();
 	}
+
+	USkeletalMesh* FindSkeletalMeshInFolder(
+		const TCHAR* Folder,
+		const TCHAR* Token,
+		const TArray<FTopLevelAssetPath>& ClassPaths)
+	{
+		IAssetRegistry& AssetRegistry =
+			FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
+		AssetRegistry.SearchAllAssets(true);
+
+		FARFilter Filter;
+		Filter.PackagePaths.Add(FName(TEXT("/Game")));
+		Filter.bRecursivePaths = true;
+		Filter.ClassPaths = ClassPaths;
+		Filter.bRecursiveClasses = true;
+
+		TArray<FAssetData> Assets;
+		AssetRegistry.GetAssets(Filter, Assets);
+
+		const FAssetData* Best = nullptr;
+		for (const FAssetData& Asset : Assets)
+		{
+			if (!SolidContentLookup::PackageContainsFolder(Asset.PackageName.ToString(), Folder))
+			{
+				continue;
+			}
+			const FString AssetName = Asset.AssetName.ToString();
+			if (!Best
+				|| SolidContentLookup::IsBetterCompanionMesh(AssetName, Best->AssetName.ToString(), Token))
+			{
+				Best = &Asset;
+			}
+		}
+
+		if (!Best)
+		{
+			return nullptr;
+		}
+
+		UE_LOG(LogSolid, Warning, TEXT("Mesh token %s in %s -> %s"),
+			Token, Folder, *Best->GetObjectPathString());
+		return Cast<USkeletalMesh>(Best->GetAsset());
+	}
 }
 
 USkeletalMesh* SolidContentLookup::FindVikingMesh()
@@ -91,6 +134,19 @@ USkeletalMesh* SolidContentLookup::FindSkeletalMeshByToken(const TCHAR* Token)
 
 	TArray<FTopLevelAssetPath> Classes;
 	Classes.Add(USkeletalMesh::StaticClass()->GetClassPathName());
+
+	const TCHAR* Folder = CompanionMeshFolder(Token);
+	if (Folder && Folder[0])
+	{
+		if (USkeletalMesh* InFolder = FindSkeletalMeshInFolder(Folder, Token, Classes))
+		{
+			return InFolder;
+		}
+		UE_LOG(LogSolid, Warning,
+			TEXT("No skeletal mesh in Content folder %s for token \"%s\"."),
+			Folder, Token);
+	}
+
 	if (USkeletalMesh* Exact = Cast<USkeletalMesh>(FindNamedAsset(Token, Classes)))
 	{
 		return Exact;

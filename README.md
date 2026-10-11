@@ -10,7 +10,6 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - Improve building and tree models
 - Create a cave in the mountains near the starting town
 - Build cave interior as a new level and transition to/from the main world at the entrance
-- Add to Project: Free Medieval Assassin Girl and Elf Blacksmith (companion meshes)
 - HUD / Menu panel borders & themes, from FAB
 - Only move companions when captain is moving
 - Test Drill should end with party in Parade formation, and add both companions if not already in party 
@@ -39,7 +38,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - **Mouse pointer** — a bronze arrow drawn in the game, tip on the hotspot. The Windows cursor stays hidden. Hold the right mouse button to look; the pointer hides until you let go, then it is back where you pressed. The right stick still looks.
 - **Click to move** — raven sight only. One left click on the ground walks the captain there in a straight line, then he stops. WASD and the left stick do nothing in raven sight. In true sight a click does nothing: he moves only with WASD or the left stick. Switching back to true sight cancels a walk that was in progress.
 - **Main menu** — F10 opens it. **1 Use portal** lists the towns; choosing one moves the party onto that town and fires its enter-town event. **2 Test Drill** runs the formation drill. **3 Journal** opens the journal. **4 Credits** opens the credits page (Silvatek, Cursor + Grok, Fab Viking, grass, Assassin, and Blacksmith). Up/Down, Enter, and the pointer also work: resting the pointer on a row highlights it, and a left click chooses it. The same pointer works on the portal list. Esc or F10 closes. Move, look, and battle-plan keys are ignored while the menu, the portal list, the journal, or the credits page is open.
-- **Content pipeline** — Fab listings restored via Launcher Add to Project; C++ finds Viking, grass, Assassin, and Blacksmith by name under `/Game/Viking` or `/Game/Fab`. `tools/fab_doctor.bat` + `fab-assets.json`. Packs are gitignored (attribution README kept).
+- **Content pipeline** — Fab listings restored via Launcher Add to Project. C++ finds Viking and grass by name under `/Game/Viking` or `/Game/Fab`. Companion meshes are the skeletal mesh inside `Medieval_Assassin_Girl` and `Elf_Blacksmith` anywhere under Content. `tools/fab_doctor.bat` + `fab-assets.json`. Packs are gitignored (attribution README kept).
 - **Automation** — `SolidCore1.*` editor tests; `tools/run_automation_tests.bat` prints failed test paths. Build ID `SC1-NNNN` on the debug HUD.
 - **Editor build** — `tools\build.bat` compiles `SolidCore1Editor` Win64 Development (`-WaitMutex`). `UE_ROOT` overrides the engine install; `PROJECT` overrides the uproject. Both default from the script location.
 
@@ -105,20 +104,20 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.Sight.*` | True sight at start; F9 switches to raven sight and back; eye and eagle markers |
 | `SolidCore1.Events.*` | Enter-town events: raven sight, max party size, numbered cells |
 | `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |
-| `SolidCore1.Content.*` | Required Content + Engine assets the code loads |
+| `SolidCore1.Content.*` | Required Content + Engine assets the code loads; Assassin and Blacksmith folder names |
 
 **Content dependency tests** assert meshes/materials/anims/BPs the C++ loaders expect (Engine BasicShapes, FlatCol for solid colors, Viking mesh+locomotion, Fab grass, pawn/GameMode BP-or-C++). Viking and Fab grass are required; Epic mannequin assets are not used.
 
 ## Fab assets (Epic Games Launcher)
 
-Grass, Viking, the Assassin, and the Blacksmith come from Fab. There is **no official download API**. Native UE `.uasset` packs cannot be batch-exported — each listing is **Add to Project** on its own. C++ finds them by **asset name** under `/Game/Viking` or `/Game/Fab`, so you do **not** move folders after Add to Project.
+Grass, Viking, the Assassin, and the Blacksmith come from Fab. There is **no official download API**. Native UE `.uasset` packs cannot be batch-exported — each listing is **Add to Project** on its own. Viking and grass are found by **asset name** under `/Game/Viking` or `/Game/Fab`. The Assassin and Blacksmith packs are the folders `Medieval_Assassin_Girl` and `Elf_Blacksmith` anywhere under Content. Do **not** move folders after Add to Project.
 
 | Asset | Listing | Required | Resolved as |
 |-------|---------|----------|-------------|
 | Viking (Art.Hiraeth) | [fab.com/listings/ca4ba583-…](https://www.fab.com/listings/ca4ba583-8d90-4069-b51f-50e694530b2f) | Yes | `SK_Viking` + `Anim_Viking_*` (captain) |
 | 025 Grass | [fab.com/listings/94bfee39-…](https://www.fab.com/listings/94bfee39-8d7d-409c-89c9-40433550ee3a) | Yes | `Mat_025_grass` |
-| Free Medieval Assassin Girl (Dimentrius3dArtist) | [fab.com/listings/2986b290-…](https://www.fab.com/listings/2986b290-90ed-4a0e-a891-cacf442033f9) | Yes | skeletal mesh whose name contains `Assassin` |
-| Elf Blacksmith (Art.Hiraeth) | [fab.com/listings/d01abf8c-…](https://www.fab.com/listings/d01abf8c-9798-4bcb-8617-2d1d560d318a) | Yes | skeletal mesh whose name contains `Blacksmith` |
+| Free Medieval Assassin Girl (Dimentrius3dArtist) | [fab.com/listings/2986b290-…](https://www.fab.com/listings/2986b290-90ed-4a0e-a891-cacf442033f9) | Yes | `SK_` mesh inside `Medieval_Assassin_Girl` |
+| Elf Blacksmith (Art.Hiraeth) | [fab.com/listings/d01abf8c-…](https://www.fab.com/listings/d01abf8c-9798-4bcb-8617-2d1d560d318a) | Yes | `SK_` mesh inside `Elf_Blacksmith` |
 
 **Restore (Launcher + UE 5.8):**
 
@@ -130,7 +129,7 @@ Grass, Viking, the Assassin, and the Blacksmith come from Fab. There is **no off
 tools\fab_doctor.bat
 ```
 
-checks `SK_Viking` / clips / grass, plus an Assassin mesh and a Blacksmith mesh, under `Content/Viking` or `Content/Fab`. Manifest: `tools/fab-assets.json`. Official notes: [Exporting Assets from Fab in Launcher](https://dev.epicgames.com/documentation/en-us/fab/exporting-assets-from-fab-in-launcher).
+checks `SK_Viking` / clips / grass under `Content/Viking` or `Content/Fab`, and an `SK_` mesh inside `Medieval_Assassin_Girl` and `Elf_Blacksmith` anywhere under Content. Manifest: `tools/fab-assets.json`. Official notes: [Exporting Assets from Fab in Launcher](https://dev.epicgames.com/documentation/en-us/fab/exporting-assets-from-fab-in-launcher).
 
 We still commit these folders today so a clone runs without the Launcher.
 
@@ -153,7 +152,7 @@ PIE shows a top-left debug HUD (`Build SC1-NNNN`, a one-line `Change:` note, paw
 
 ## Character visuals (clip locomotion)
 
-Captain and Companions use single-node clip locomotion via `SolidClipLocomotion` (not Epic AnimBP). The captain stays on Fab Viking (`/Game/Viking/Mesh/SK_Viking` + idle/walk/run/jump). Companions use the Assassin or Blacksmith mesh from the company list. No Epic mannequin fallback.
+Captain and Companions use single-node clip locomotion via `SolidClipLocomotion` (not Epic AnimBP). The captain stays on Fab Viking (`/Game/Viking/Mesh/SK_Viking` + idle/walk/run/jump). Companions use the skeletal mesh inside `Medieval_Assassin_Girl` or `Elf_Blacksmith`. No Epic mannequin fallback.
 
 ### Reliable setup: Blueprint pawn (recommended)
 
@@ -239,7 +238,7 @@ Floating nameplates (`SolidNameLabel`) sit above each Party member and face the 
 
 ## Companion (SC1-0024 / SC1-0093)
 
-`ASolidCompanionCharacter` follows with simple steering (no NavMesh — works on procedural terrain). Sam, Morgan, and Quinn use the Assassin mesh. Alex and Max use the Blacksmith mesh. The captain stays on Viking. The roster is **Sam** (slot 0) then **Alex** (slot 1). `bAutoSpawnCompanion` spawns only as many as the current max party size, which starts at 0 and is raised by town events. Offsets come from the active Battle Plan. HUD lists each companion name and distance.
+`ASolidCompanionCharacter` follows with simple steering (no NavMesh — works on procedural terrain). Sam, Morgan, and Quinn use the Assassin mesh (`Medieval_Assassin_Girl`). Alex and Max use the Blacksmith mesh (`Elf_Blacksmith`). The captain stays on Viking. The roster is **Sam** (slot 0) then **Alex** (slot 1). `bAutoSpawnCompanion` spawns only as many as the current max party size, which starts at 0 and is raised by town events. Offsets come from the active Battle Plan. HUD lists each companion name and distance.
 
 **Party camera** (SC1-0025/0026/0084): the Captain spring-arm shifts `TargetOffset` toward the Party center and may lengthen so Companions stay in frame (`bFrameCompanions`; implementation in `SolidPartyCamera.cpp`). SC1-0026 uses screen-space fit, disables boom collision while Companions are present, and zooms in much slower than out. SC1-0027 lifts the camera via `SocketOffset` when the predicted camera point would sink below procedural terrain.
 
@@ -271,7 +270,7 @@ Content/
   WorldMap.txt         # ASCII 64×64 biome overlay + color key
 tools/
   fab-assets.json      # Fab listing IDs + expected paths
-  fab_doctor.bat       # check Viking/grass on disk; print Launcher restore
+  fab_doctor.bat       # check Viking, grass, and companion pack folders
   build.bat            # SolidCore1Editor Win64 Development
   run_automation_tests.bat
 Source/
@@ -298,7 +297,7 @@ Source/
       SolidBuildId.h                     # SC1-NNNN shown on the debug HUD
     Content/
       SolidMaterials.*                   # Shared FlatCol solid-color MID helper
-      SolidContentLookup.*               # Find Fab meshes and clips by asset name
+      SolidContentLookup.*               # Viking/grass by name; companion packs by folder
       SolidContentPaths.h                # Canonical BP soft-class paths
     Companion/
       SolidCompanionCharacter.*          # Companion NPC follower

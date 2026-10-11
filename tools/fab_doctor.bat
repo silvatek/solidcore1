@@ -1,8 +1,9 @@
 @echo off
 setlocal EnableExtensions EnableDelayedExpansion
 rem Check whether Fab assets this project expects are on disk.
-rem C++ finds Viking/grass by asset name under Content\Viking or Content\Fab —
-rem no manual folder move after Launcher Add to Project.
+rem C++ finds Viking/grass by asset name under Content\Viking or Content\Fab.
+rem Companion meshes are SK_ assets inside Medieval_Assassin_Girl and
+rem Elf_Blacksmith anywhere under Content. No folder move after Add to Project.
 rem
 rem Usage:
 rem   tools\fab_doctor.bat
@@ -79,34 +80,52 @@ echo   uuid:    94bfee39-8d7d-409c-89c9-40433550ee3a
 echo   listing: https://www.fab.com/listings/94bfee39-8d7d-409c-89c9-40433550ee3a
 echo.
 
-echo [required] Assassin companion mesh  (Content\Fab, name contains Assassin)
+echo [required] Assassin companion mesh  (folder Medieval_Assassin_Girl)
+set "ASSASSIN_DIR="
+for /f "delims=" %%D in ('dir /b /s /ad "%ROOT%\Content" 2^>nul ^| findstr /i /l /e /c:"\Medieval_Assassin_Girl"') do (
+  if not defined ASSASSIN_DIR set "ASSASSIN_DIR=%%D"
+)
 set "ASSASSIN="
-if exist "%ROOT%\Content\Fab" (
-  for /r "%ROOT%\Content\Fab" %%F in (*Assassin*.uasset) do (
-    if exist "%%F" set "ASSASSIN=%%F"
+if defined ASSASSIN_DIR (
+  pushd "!ASSASSIN_DIR!"
+  for /r %%F in (SK_*.uasset) do (
+    if not defined ASSASSIN set "ASSASSIN=%%F"
   )
+  popd
 )
 if defined ASSASSIN (
   echo   OK  !ASSASSIN:%ROOT%\=!
+) else if defined ASSASSIN_DIR (
+  echo   MISSING  SK_*.uasset in !ASSASSIN_DIR:%ROOT%\=!
+  set "MISSING=1"
 ) else (
-  echo   MISSING  a Fab .uasset whose path contains Assassin
+  echo   MISSING  Content folder Medieval_Assassin_Girl
   set "MISSING=1"
 )
 echo   uuid:    2986b290-90ed-4a0e-a891-cacf442033f9
 echo   listing: https://www.fab.com/listings/2986b290-90ed-4a0e-a891-cacf442033f9
 echo.
 
-echo [required] Blacksmith companion mesh  (Content\Fab, name contains Blacksmith)
+echo [required] Blacksmith companion mesh  (folder Elf_Blacksmith)
+set "BLACKSMITH_DIR="
+for /f "delims=" %%D in ('dir /b /s /ad "%ROOT%\Content" 2^>nul ^| findstr /i /l /e /c:"\Elf_Blacksmith"') do (
+  if not defined BLACKSMITH_DIR set "BLACKSMITH_DIR=%%D"
+)
 set "BLACKSMITH="
-if exist "%ROOT%\Content\Fab" (
-  for /r "%ROOT%\Content\Fab" %%F in (*Blacksmith*.uasset) do (
-    if exist "%%F" set "BLACKSMITH=%%F"
+if defined BLACKSMITH_DIR (
+  pushd "!BLACKSMITH_DIR!"
+  for /r %%F in (SK_*.uasset) do (
+    if not defined BLACKSMITH set "BLACKSMITH=%%F"
   )
+  popd
 )
 if defined BLACKSMITH (
   echo   OK  !BLACKSMITH:%ROOT%\=!
+) else if defined BLACKSMITH_DIR (
+  echo   MISSING  SK_*.uasset in !BLACKSMITH_DIR:%ROOT%\=!
+  set "MISSING=1"
 ) else (
-  echo   MISSING  a Fab .uasset whose path contains Blacksmith
+  echo   MISSING  Content folder Elf_Blacksmith
   set "MISSING=1"
 )
 echo   uuid:    d01abf8c-9798-4bcb-8617-2d1d560d318a
@@ -117,7 +136,8 @@ echo Restore
 echo   1. Epic Games Launcher -^> Unreal Engine -^> Fab. Sign in.
 echo   2. Open each listing. Add to My Library if needed.
 echo   3. Add to Project -^> this SolidCore1.uproject.
-echo   No folder moves. Code searches /Game/Viking then /Game/Fab by asset name.
+echo   No folder moves. Viking and grass are found by asset name under /Game/Viking or /Game/Fab.
+echo   Companion meshes are the SK_ mesh inside Medieval_Assassin_Girl and Elf_Blacksmith anywhere under Content.
 echo   Manifest: tools\fab-assets.json
 echo.
 

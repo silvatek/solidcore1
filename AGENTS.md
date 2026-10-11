@@ -42,7 +42,7 @@ Follow the Automated tests policy in `README.md`:
 ## Fab content
 
 - Packs under `Content/Fab` and `Content/Viking` are gitignored. Restore only via Epic Launcher **Add to Project**. See `README.md` and `tools/fab-assets.json`.
-- C++ finds Viking/grass by **asset name** under `/Game/Viking` then `/Game/Fab`. Do not relocate folders after Add to Project.
+- C++ finds Viking/grass by **asset name** under `/Game/Viking` then `/Game/Fab`. Companion meshes are an `SK_` skeletal mesh inside `Medieval_Assassin_Girl` (token Assassin) and `Elf_Blacksmith` (token Blacksmith), anywhere under Content. Do not relocate folders after Add to Project.
 - Grass is required (`Mat_025_grass`).
 
 ## Fog

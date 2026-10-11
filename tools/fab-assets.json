@@ -65,8 +65,9 @@
         "credit": "Free Medieval Assassin Girl by Dimentrius3dArtist, used from Fab (CC-BY)."
       },
       "assetToken": "Assassin",
-      "searchRoots": ["Content/Fab"],
-      "notes": "Companion mesh. Add to Project. C++ finds a skeletal mesh under /Game/Fab whose name contains Assassin. Captain stays on SK_Viking."
+      "contentFolder": "Medieval_Assassin_Girl",
+      "searchRoots": ["Content"],
+      "notes": "Companion mesh. C++ finds a skeletal mesh whose package path contains /Medieval_Assassin_Girl anywhere under /Game, and prefers an SK_ asset. Captain stays on SK_Viking."
     },
     {
       "id": "blacksmith",
@@ -85,8 +86,9 @@
         "credit": "Elf Blacksmith by Art.Hiraeth, used from Fab as an element of this project."
       },
       "assetToken": "Blacksmith",
-      "searchRoots": ["Content/Fab"],
-      "notes": "Companion mesh. Add to Project. C++ finds a skeletal mesh under /Game/Fab whose name contains Blacksmith. Captain stays on SK_Viking."
+      "contentFolder": "Elf_Blacksmith",
+      "searchRoots": ["Content"],
+      "notes": "Companion mesh. C++ finds a skeletal mesh whose package path contains /Elf_Blacksmith anywhere under /Game, and prefers an SK_ asset. Captain stays on SK_Viking."
     }
   ]
 }

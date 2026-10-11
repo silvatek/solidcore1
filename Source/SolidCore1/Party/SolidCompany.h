@@ -22,8 +22,9 @@ struct FSolidCharacterMesh
 
 	/**
 	 * Asset-registry token used when Mesh is not a direct path.
-	 * Viking is SK_Viking. Assassin and Blacksmith match a skeletal mesh
-	 * under /Game/Fab whose name contains the token.
+	 * Viking is SK_Viking. Assassin is the pack folder Medieval_Assassin_Girl.
+	 * Blacksmith is the pack folder Elf_Blacksmith. Those folders may sit
+	 * anywhere under Content.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CharacterMesh")
 	FString AssetToken;

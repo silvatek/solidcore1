@@ -124,6 +124,52 @@ namespace
 
 		return Best ? Cast<USkeletalMesh>(Best->GetAsset()) : nullptr;
 	}
+
+	USkeletalMesh* FindCompanionBody(
+		const TCHAR* PackFolder,
+		const TArray<FName>& PackagePaths,
+		const TArray<FTopLevelAssetPath>& ClassPaths)
+	{
+		if (!PackFolder || !PackFolder[0] || PackagePaths.Num() == 0)
+		{
+			return nullptr;
+		}
+
+		IAssetRegistry& AssetRegistry =
+			FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
+		AssetRegistry.SearchAllAssets(true);
+
+		FARFilter Filter;
+		Filter.PackagePaths.Append(PackagePaths);
+		Filter.bRecursivePaths = true;
+		Filter.ClassPaths = ClassPaths;
+		Filter.bRecursiveClasses = true;
+
+		TArray<FAssetData> Assets;
+		AssetRegistry.GetAssets(Filter, Assets);
+
+		const FAssetData* Best = nullptr;
+		for (const FAssetData& Asset : Assets)
+		{
+			if (!Asset.AssetName.ToString().Equals(TEXT("SK_Mannequin"), ESearchCase::IgnoreCase))
+			{
+				continue;
+			}
+			const FString PackageName = Asset.PackageName.ToString();
+			if (!SolidContentLookup::PackageContainsFolder(PackageName, PackFolder)
+				|| !SolidContentLookup::PackageContainsFolder(PackageName, TEXT("Meshes"))
+				|| !SolidContentLookup::PackageContainsFolder(PackageName, TEXT("base_mesh")))
+			{
+				continue;
+			}
+			if (!Best || PackageName.Len() < Best->PackageName.ToString().Len())
+			{
+				Best = &Asset;
+			}
+		}
+
+		return Best ? Cast<USkeletalMesh>(Best->GetAsset()) : nullptr;
+	}
 }
 
 USkeletalMesh* SolidContentLookup::FindVikingMesh()
@@ -196,7 +242,41 @@ USkeletalMesh* SolidContentLookup::FindSkeletalMeshByToken(const TCHAR* Token)
 		return Mesh;
 	};
 
-	if (SolidFabManifest::ChooseFabLookup(bFile, bFolder) == ESolidFabLookup::RecordedFile)
+	if (bFile && IsCompanionBodyPath(RecordedFile))
+	{
+		if (USkeletalMesh* Recorded = Cast<USkeletalMesh>(
+			SolidFabManifest::TryLoadContentFile(RecordedFile, USkeletalMesh::StaticClass())))
+		{
+			UE_LOG(LogSolid, Warning, TEXT("Mesh token %s body: %s"), Token, *Recorded->GetPathName());
+			return Recorded;
+		}
+		UE_LOG(LogSolid, Warning, TEXT("Recorded body for token %s is missing. Searching."), Token);
+	}
+
+	if (bFolder)
+	{
+		const FString BodyFile = CompanionBodyFile(RecordedFolder);
+		if (USkeletalMesh* Body = Cast<USkeletalMesh>(
+			SolidFabManifest::TryLoadContentFile(BodyFile, USkeletalMesh::StaticClass())))
+		{
+			UE_LOG(LogSolid, Warning, TEXT("Mesh token %s body in %s -> %s"),
+				Token, *RecordedFolder, *Body->GetPathName());
+			return Remember(Body);
+		}
+	}
+
+	if (PackFolder && PackFolder[0])
+	{
+		TArray<FName> Packages;
+		Packages.Add(FName(TEXT("/Game")));
+		if (USkeletalMesh* Body = FindCompanionBody(PackFolder, Packages, Classes))
+		{
+			UE_LOG(LogSolid, Warning, TEXT("Mesh token %s body -> %s"), Token, *Body->GetPathName());
+			return Remember(Body);
+		}
+	}
+
+	if (bFile)
 	{
 		if (USkeletalMesh* Recorded = Cast<USkeletalMesh>(
 			SolidFabManifest::TryLoadContentFile(RecordedFile, USkeletalMesh::StaticClass())))

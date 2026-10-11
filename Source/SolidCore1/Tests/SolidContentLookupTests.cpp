@@ -72,6 +72,23 @@ bool FSolidCompanionMeshFolderTest::RunTest(const FString& Parameters)
 		TEXT("equal rank keeps the earlier name"),
 		SolidContentLookup::IsBetterCompanionMesh(TEXT("SK_B"), TEXT("SK_A"), TEXT("Assassin")));
 
+	TestEqual(
+		TEXT("body file under the pack"),
+		SolidContentLookup::CompanionBodyFile(TEXT("Content/Fab/Medieval_Assassin_Girl")),
+		FString(TEXT("Content/Fab/Medieval_Assassin_Girl/Meshes/base_mesh/SK_Mannequin.uasset")));
+	TestTrue(
+		TEXT("content body path"),
+		SolidContentLookup::IsCompanionBodyPath(
+			TEXT("Content/X/Elf_Blacksmith/Meshes/base_mesh/SK_Mannequin.uasset")));
+	TestTrue(
+		TEXT("object body path"),
+		SolidContentLookup::IsCompanionBodyPath(
+			TEXT("/Game/X/Medieval_Assassin_Girl/Meshes/base_mesh/SK_Mannequin.SK_Mannequin")));
+	TestFalse(
+		TEXT("a shorter SK_ is not the body"),
+		SolidContentLookup::IsCompanionBodyPath(
+			TEXT("/Game/X/Medieval_Assassin_Girl/Props/SK_Dagger.SK_Dagger")));
+
 	return true;
 }
 

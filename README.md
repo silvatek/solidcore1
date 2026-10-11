@@ -116,8 +116,8 @@ Grass, Viking, the Assassin, and the Blacksmith come from Fab. There is **no off
 |-------|---------|----------|-------------|
 | Viking (Art.Hiraeth) | [fab.com/listings/ca4ba583-…](https://www.fab.com/listings/ca4ba583-8d90-4069-b51f-50e694530b2f) | Yes | `SK_Viking` + `Anim_Viking_*` (captain) |
 | 025 Grass | [fab.com/listings/94bfee39-…](https://www.fab.com/listings/94bfee39-8d7d-409c-89c9-40433550ee3a) | Yes | `Mat_025_grass` |
-| Free Medieval Assassin Girl (Dimentrius3dArtist) | [fab.com/listings/2986b290-…](https://www.fab.com/listings/2986b290-90ed-4a0e-a891-cacf442033f9) | Yes | `SK_` mesh inside `Medieval_Assassin_Girl` |
-| Elf Blacksmith (Art.Hiraeth) | [fab.com/listings/d01abf8c-…](https://www.fab.com/listings/d01abf8c-9798-4bcb-8617-2d1d560d318a) | Yes | `SK_` mesh inside `Elf_Blacksmith` |
+| Free Medieval Assassin Girl (Dimentrius3dArtist) | [fab.com/listings/2986b290-…](https://www.fab.com/listings/2986b290-90ed-4a0e-a891-cacf442033f9) | Yes | `Meshes/base_mesh/SK_Mannequin` in `Medieval_Assassin_Girl` |
+| Elf Blacksmith (Art.Hiraeth) | [fab.com/listings/d01abf8c-…](https://www.fab.com/listings/d01abf8c-9798-4bcb-8617-2d1d560d318a) | Yes | `Meshes/base_mesh/SK_Mannequin` in `Elf_Blacksmith` |
 
 **Restore (Launcher + UE 5.8):**
 
@@ -129,7 +129,7 @@ Grass, Viking, the Assassin, and the Blacksmith come from Fab. There is **no off
 tools\fab_doctor.bat
 ```
 
-tries each recorded path in `tools/fab-assets.json` first, then searches. Viking and grass fall back to `Content/Viking` or `Content/Fab`. Companion meshes fall back to an `SK_` file inside `Medieval_Assassin_Girl` and `Elf_Blacksmith` anywhere under Content. A find is written back. Official notes: [Exporting Assets from Fab in Launcher](https://dev.epicgames.com/documentation/en-us/fab/exporting-assets-from-fab-in-launcher).
+tries each recorded path in `tools/fab-assets.json` first, then searches. Viking and grass fall back to `Content/Viking` or `Content/Fab`. Companion bodies are `Meshes/base_mesh/SK_Mannequin.uasset` inside `Medieval_Assassin_Girl` and `Elf_Blacksmith`. A different recorded file is replaced when that body is found. Official notes: [Exporting Assets from Fab in Launcher](https://dev.epicgames.com/documentation/en-us/fab/exporting-assets-from-fab-in-launcher).
 
 We still commit these folders today so a clone runs without the Launcher.
 

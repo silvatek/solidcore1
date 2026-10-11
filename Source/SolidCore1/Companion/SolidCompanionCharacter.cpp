@@ -1,5 +1,6 @@
 #include "SolidCompanionCharacter.h"
 #include "SolidClipLocomotion.h"
+#include "SolidContentLookup.h"
 #include "SolidCore1.h"
 #include "SolidGameMode.h"
 #include "SolidNameLabel.h"
@@ -150,6 +151,10 @@ void ASolidCompanionCharacter::Tick(float DeltaSeconds)
 void ASolidCompanionCharacter::SetCompanionMesh(const TSoftObjectPtr<USkeletalMesh>& NewMesh)
 {
 	CompanionMesh = NewMesh;
+	CachedIdleAnim = nullptr;
+	CachedWalkAnim = nullptr;
+	CachedRunAnim = nullptr;
+	ActiveLocomotionAnim = nullptr;
 	if (HasActorBegunPlay())
 	{
 		const bool bVikingMesh = CompanionMesh.IsNull()
@@ -160,6 +165,8 @@ void ASolidCompanionCharacter::SetCompanionMesh(const TSoftObjectPtr<USkeletalMe
 			bVikingMesh ? SolidClipLocomotion::DefaultMeshPath : nullptr,
 			TEXT("Companion"),
 			/*bOnlyIfMeshUnset=*/false);
+		CacheLocomotionAnims();
+		UpdateLocomotionAnim();
 	}
 }
 
@@ -192,21 +199,36 @@ void ASolidCompanionCharacter::ResolveFollowTarget()
 
 void ASolidCompanionCharacter::CacheLocomotionAnims()
 {
-	if (!CachedIdleAnim)
+	if (CachedIdleAnim || CachedWalkAnim || CachedRunAnim)
 	{
-		CachedIdleAnim = SolidClipLocomotion::LoadClip(
-			IdleAnim, SolidClipLocomotion::DefaultIdlePath);
+		return;
 	}
-	if (!CachedWalkAnim)
+
+	if (const USkeletalMesh* MeshAsset = GetMesh() ? GetMesh()->GetSkeletalMeshAsset() : nullptr)
 	{
-		CachedWalkAnim = SolidClipLocomotion::LoadClip(
-			WalkAnim, SolidClipLocomotion::DefaultWalkPath);
+		const FString Package = MeshAsset->GetOutermost()->GetName();
+		if (SolidContentLookup::PackageContainsFolder(Package, SolidContentLookup::AssassinContentFolder))
+		{
+			UAnimSequence* Idle = SolidContentLookup::FindPackClip(
+				SolidContentLookup::AssassinContentFolder, SolidContentLookup::AssassinIdleName);
+			if (Idle)
+			{
+				CachedIdleAnim = Idle;
+				CachedWalkAnim = SolidContentLookup::FindPackClip(
+					SolidContentLookup::AssassinContentFolder, SolidContentLookup::AssassinWalkName);
+				CachedRunAnim = SolidContentLookup::FindPackClip(
+					SolidContentLookup::AssassinContentFolder, SolidContentLookup::AssassinRunName);
+				return;
+			}
+		}
 	}
-	if (!CachedRunAnim)
-	{
-		CachedRunAnim = SolidClipLocomotion::LoadClip(
-			RunAnim, SolidClipLocomotion::DefaultRunPath);
-	}
+
+	CachedIdleAnim = SolidClipLocomotion::LoadClip(
+		IdleAnim, SolidClipLocomotion::DefaultIdlePath);
+	CachedWalkAnim = SolidClipLocomotion::LoadClip(
+		WalkAnim, SolidClipLocomotion::DefaultWalkPath);
+	CachedRunAnim = SolidClipLocomotion::LoadClip(
+		RunAnim, SolidClipLocomotion::DefaultRunPath);
 }
 
 void ASolidCompanionCharacter::ApplyVisuals()

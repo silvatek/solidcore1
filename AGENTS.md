@@ -43,6 +43,7 @@ Follow the Automated tests policy in `README.md`:
 
 - Packs under `Content/Fab` and `Content/Viking` are gitignored. Restore only via Epic Launcher **Add to Project**. See `README.md` and `tools/fab-assets.json`.
 - C++ finds Viking/grass by **asset name** under `/Game/Viking` then `/Game/Fab`. Companion bodies are `Meshes/base_mesh/SKM_base_mesh_ue.uasset` inside `Medieval_Assassin_Girl` (token Assassin) and `Elf_Blacksmith` (token Blacksmith), anywhere under Content. `SK_Mannequin.uasset` in that folder is the skeleton. `resolvedPath` / `resolvedFolder` / `resolvedPaths` in `tools/fab-assets.json` are tried first when the recorded file is that body; a different recorded file is replaced when the body is found. Do not relocate folders after Add to Project.
+- Assassin companions play `anim_assassin_idle_1`, `anim_assassin_Walk`, and `anim_assassin_run` from `Medieval_Assassin_Girl`. Do not guess Blacksmith clip names. `tools/fab_mesh_info.bat <folder>` lists meshes and animations in a downloaded pack and does not edit the manifest.
 - Grass is required (`Mat_025_grass`).
 
 ## Fog

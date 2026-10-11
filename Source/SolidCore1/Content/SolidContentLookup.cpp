@@ -379,6 +379,54 @@ USkeletalMesh* SolidContentLookup::FindSkeletalMeshByToken(const TCHAR* Token)
 	return Remember(Cast<USkeletalMesh>(Best->GetAsset()));
 }
 
+UAnimSequence* SolidContentLookup::FindPackClip(const TCHAR* PackFolder, const TCHAR* AssetName)
+{
+	if (!PackFolder || !PackFolder[0] || !AssetName || !AssetName[0])
+	{
+		return nullptr;
+	}
+
+	IAssetRegistry& AssetRegistry =
+		FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
+	AssetRegistry.SearchAllAssets(true);
+
+	FARFilter Filter;
+	Filter.PackagePaths.Add(FName(TEXT("/Game")));
+	Filter.bRecursivePaths = true;
+	Filter.ClassPaths.Add(UAnimSequence::StaticClass()->GetClassPathName());
+	Filter.bRecursiveClasses = true;
+
+	TArray<FAssetData> Assets;
+	AssetRegistry.GetAssets(Filter, Assets);
+
+	const FAssetData* Best = nullptr;
+	for (const FAssetData& Asset : Assets)
+	{
+		if (!Asset.AssetName.ToString().Equals(AssetName, ESearchCase::IgnoreCase))
+		{
+			continue;
+		}
+		const FString PackageName = Asset.PackageName.ToString();
+		if (!PackageContainsFolder(PackageName, PackFolder))
+		{
+			continue;
+		}
+		if (!Best || PackageName.Len() < Best->PackageName.ToString().Len())
+		{
+			Best = &Asset;
+		}
+	}
+
+	if (!Best)
+	{
+		UE_LOG(LogSolid, Warning, TEXT("Pack clip %s not found under %s."), AssetName, PackFolder);
+		return nullptr;
+	}
+
+	UE_LOG(LogSolid, Warning, TEXT("Pack clip %s -> %s"), AssetName, *Best->GetObjectPathString());
+	return Cast<UAnimSequence>(Best->GetAsset());
+}
+
 UAnimSequence* SolidContentLookup::FindVikingClip(const TCHAR* AssetName)
 {
 	TArray<FTopLevelAssetPath> Classes;

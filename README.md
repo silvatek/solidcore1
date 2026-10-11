@@ -131,6 +131,13 @@ tools\fab_doctor.bat
 
 tries each recorded path in `tools/fab-assets.json` first, then searches. Viking and grass fall back to `Content/Viking` or `Content/Fab`. Companion bodies are `Meshes/base_mesh/SKM_base_mesh_ue.uasset` inside `Medieval_Assassin_Girl` and `Elf_Blacksmith`. `SK_Mannequin.uasset` beside it is the skeleton. A different recorded file is replaced when that body is found. Official notes: [Exporting Assets from Fab in Launcher](https://dev.epicgames.com/documentation/en-us/fab/exporting-assets-from-fab-in-launcher).
 
+```bat
+tools\fab_mesh_info.bat Medieval_Assassin_Girl
+tools\fab_mesh_info.bat Elf_Blacksmith
+```
+
+lists that pack's folders, mesh files (size and SKM / SK / PA), and animation names. It does not change `fab-assets.json`.
+
 We still commit these folders today so a clone runs without the Launcher.
 
 Not yet covered (need PIE): character movement, companion steering on terrain, streamer chunk load/unload, HUD drawing.
@@ -238,7 +245,7 @@ Floating nameplates (`SolidNameLabel`) sit above each Party member and face the 
 
 ## Companion (SC1-0024 / SC1-0093)
 
-`ASolidCompanionCharacter` follows with simple steering (no NavMesh — works on procedural terrain). Sam, Morgan, and Quinn use the Assassin mesh (`Medieval_Assassin_Girl`). Alex and Max use the Blacksmith mesh (`Elf_Blacksmith`). The captain stays on Viking. The roster is **Sam** (slot 0) then **Alex** (slot 1). `bAutoSpawnCompanion` spawns only as many as the current max party size, which starts at 0 and is raised by town events. Offsets come from the active Battle Plan. HUD lists each companion name and distance.
+`ASolidCompanionCharacter` follows with simple steering (no NavMesh — works on procedural terrain). Sam, Morgan, and Quinn use the Assassin mesh (`Medieval_Assassin_Girl`) and that pack's unarmed idle, walk, and run (`anim_assassin_idle_1`, `anim_assassin_Walk`, `anim_assassin_run`). Alex and Max use the Blacksmith mesh (`Elf_Blacksmith`). The captain stays on Viking clips. The roster is **Sam** (slot 0) then **Alex** (slot 1). `bAutoSpawnCompanion` spawns only as many as the current max party size, which starts at 0 and is raised by town events. Offsets come from the active Battle Plan. HUD lists each companion name and distance.
 
 **Party camera** (SC1-0025/0026/0084): the Captain spring-arm shifts `TargetOffset` toward the Party center and may lengthen so Companions stay in frame (`bFrameCompanions`; implementation in `SolidPartyCamera.cpp`). SC1-0026 uses screen-space fit, disables boom collision while Companions are present, and zooms in much slower than out. SC1-0027 lifts the camera via `SocketOffset` when the predicted camera point would sink below procedural terrain.
 
@@ -272,6 +279,7 @@ tools/
   fab-assets.json      # Fab listing IDs, plus recorded paths once a search finds them
   fab_manifest.ps1     # read or update one recorded path
   fab_doctor.bat       # recorded path first, then search; write back a find
+  fab_mesh_info.bat    # list meshes and animations in a downloaded pack
   build.bat            # SolidCore1Editor Win64 Development
   run_automation_tests.bat
 Source/

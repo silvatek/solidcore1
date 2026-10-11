@@ -88,6 +88,23 @@ bool FSolidCompanionMeshFolderTest::RunTest(const FString& Parameters)
 		TEXT("SK_Mannequin is the skeleton"),
 		SolidContentLookup::IsCompanionBodyPath(
 			TEXT("Content/X/Medieval_Assassin_Girl/Meshes/base_mesh/SK_Mannequin.uasset")));
+	TestEqual(
+		TEXT("assassin idle"),
+		FString(SolidContentLookup::AssassinIdleName),
+		FString(TEXT("anim_assassin_idle_1")));
+	TestEqual(
+		TEXT("assassin walk"),
+		FString(SolidContentLookup::AssassinWalkName),
+		FString(TEXT("anim_assassin_Walk")));
+	TestEqual(
+		TEXT("assassin run"),
+		FString(SolidContentLookup::AssassinRunName),
+		FString(TEXT("anim_assassin_run")));
+	TestEqual(
+		TEXT("assassin jump"),
+		FString(SolidContentLookup::AssassinJumpName),
+		FString(TEXT("anim_assassin_Jump")));
+
 	TestFalse(
 		TEXT("a shorter SKM_ is not the body"),
 		SolidContentLookup::IsCompanionBodyPath(

@@ -30,6 +30,12 @@ namespace SolidContentLookup
 	 */
 	inline constexpr const TCHAR* CompanionBodyRelativePath = TEXT("Meshes/base_mesh/SKM_base_mesh_ue.uasset");
 
+	/** Unarmed locomotion in Medieval_Assassin_Girl/animation/assassin. */
+	inline constexpr const TCHAR* AssassinIdleName = TEXT("anim_assassin_idle_1");
+	inline constexpr const TCHAR* AssassinWalkName = TEXT("anim_assassin_Walk");
+	inline constexpr const TCHAR* AssassinRunName = TEXT("anim_assassin_run");
+	inline constexpr const TCHAR* AssassinJumpName = TEXT("anim_assassin_Jump");
+
 	/** PackFolder/Meshes/base_mesh/SKM_base_mesh_ue.uasset */
 	inline FString CompanionBodyFile(const FString& PackFolder)
 	{
@@ -152,6 +158,9 @@ namespace SolidContentLookup
 	 * the body is found and written back, then a shorter SK_ is the fallback.
 	 */
 	USkeletalMesh* FindSkeletalMeshByToken(const TCHAR* Token);
+
+	/** Anim sequence with this name whose package sits inside PackFolder. */
+	UAnimSequence* FindPackClip(const TCHAR* PackFolder, const TCHAR* AssetName);
 
 	UAnimSequence* FindVikingIdle();
 	UAnimSequence* FindVikingWalk();

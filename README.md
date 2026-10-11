@@ -4,16 +4,19 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 
 ## To-do
 
+- Teleport to towns (from main menu)
 - Use white material for 100% fog terrain
 - Don't render trees or buildings on 100% fog terrain, generate it when fog is removed
 - Improve building and tree models
 - Create a cave in the mountains near the starting town
 - Build cave interior as a new level and transition to/from the main world at the entrance
 - Replace companion models with new Fab assets
-- HUD / Menu panel borders & themes
+- HUD / Menu panel borders & themes, from FAB
 - Only move companions when captain is moving
 - Test Drill should end with party in Parade formation, and add both companions if not already in party 
 - Extend SolidSight.h with Falcon Sight and Eagle sight, both 3rd person but with increased maximum height (not horizontal distance)
+- More terrain textures from FAB
+- Only show sight indicator after Raven Sight unlocked
 
 ## Done
 

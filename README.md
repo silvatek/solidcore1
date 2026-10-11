@@ -4,6 +4,8 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 
 ## To-do
 
+- Clickable menus
+- Better mouse pointer
 - Use white material for 100% fog terrain
 - Don't render trees or buildings on 100% fog terrain, generate it when fog is removed
 - Improve building and tree models

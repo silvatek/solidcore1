@@ -86,10 +86,10 @@ void USolidCompany::InitializeDefaultCompanions()
 	const int32 Assassin = FindCharacterMeshIndexByName(TEXT("Assassin"));
 	const int32 Blacksmith = FindCharacterMeshIndexByName(TEXT("Blacksmith"));
 
-	AllCompanions.Add({ TEXT("Sam"), Assassin, ESolidVocation::Mage });
+	AllCompanions.Add({ TEXT("Sam"), Assassin, ESolidVocation::Rogue });
 	AllCompanions.Add({ TEXT("Alex"), Blacksmith, ESolidVocation::Warrior });
 	AllCompanions.Add({ TEXT("Max"), Blacksmith, ESolidVocation::Cleric });
-	AllCompanions.Add({ TEXT("Morgan"), Assassin, ESolidVocation::Rogue });
+	AllCompanions.Add({ TEXT("Morgan"), Assassin, ESolidVocation::Mage });
 	AllCompanions.Add({ TEXT("Quinn"), Assassin, ESolidVocation::Warrior });
 }
 

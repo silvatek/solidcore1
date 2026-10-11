@@ -127,10 +127,10 @@ bool FSolidCompanyRosterTest::RunTest(const FString& Parameters)
 		TEXT("Quinn"),
 	};
 	const ESolidVocation Vocations[] = {
-		ESolidVocation::Mage,
+		ESolidVocation::Rogue,
 		ESolidVocation::Warrior,
 		ESolidVocation::Cleric,
-		ESolidVocation::Rogue,
+		ESolidVocation::Mage,
 		ESolidVocation::Warrior,
 	};
 	const TCHAR* Meshes[] = {

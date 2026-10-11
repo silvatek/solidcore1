@@ -55,7 +55,7 @@ namespace SolidVocation
 		}
 	}
 
-	/** Nameplate text: "Sam (M)". */
+	/** Nameplate text: "Sam (R)". */
 	inline FString NameLabel(const FString& Name, const ESolidVocation Vocation)
 	{
 		return FString::Printf(TEXT("%s (%s)"), *Name, Initial(Vocation));

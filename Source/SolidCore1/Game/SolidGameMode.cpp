@@ -1,7 +1,9 @@
 #include "SolidGameMode.h"
 #include "SolidBuildId.h"
 #include "SolidCharacter.h"
+#include "SolidContentLookup.h"
 #include "SolidContentPaths.h"
+#include "UObject/SoftObjectPath.h"
 #include "HUD/SolidHUD.h"
 #include "SolidPlayerController.h"
 #include "SolidCore1.h"
@@ -27,6 +29,37 @@
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
 #include "TimerManager.h"
+
+namespace
+{
+	TSoftObjectPtr<USkeletalMesh> ResolveFieldedMesh(USolidCompany* Company, const FSolidCompanion& Companion)
+	{
+		TSoftObjectPtr<USkeletalMesh> Mesh = Company
+			? Company->GetMeshForCompanion(Companion)
+			: TSoftObjectPtr<USkeletalMesh>();
+		const FSolidCharacterMesh* Entry = Company
+			? Company->GetCharacterMesh(Companion.CharacterMeshIndex)
+			: nullptr;
+		if (!Entry || Entry->Name.Equals(TEXT("Viking"), ESearchCase::IgnoreCase))
+		{
+			return Mesh;
+		}
+
+		if (USkeletalMesh* Found = SolidContentLookup::FindSkeletalMeshByToken(*Entry->AssetToken))
+		{
+			return Found;
+		}
+		if (!Mesh.IsNull())
+		{
+			return Mesh;
+		}
+
+		// Distinct from the Viking path so a missing pack does not dress the companion as the captain.
+		const FString Path = FString::Printf(
+			TEXT("/Game/Fab/%s/%s.%s"), *Entry->Name, *Entry->Name, *Entry->Name);
+		return TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(Path));
+	}
+}
 
 static_assert(
 	ASolidGameMode::DefaultCompanionCount == SolidEvents::RosterCount,
@@ -356,9 +389,7 @@ void ASolidGameMode::EnsureCompanion()
 			&& Companion->GetCharacterDisplayName() == Fielded[Slot].Name;
 		if (bKeep)
 		{
-			const TSoftObjectPtr<USkeletalMesh> Mesh = Company
-				? Company->GetMeshForCompanion(Fielded[Slot])
-				: TSoftObjectPtr<USkeletalMesh>();
+			const TSoftObjectPtr<USkeletalMesh> Mesh = ResolveFieldedMesh(Company, Fielded[Slot]);
 			if (Companion->GetCompanionMesh().ToSoftObjectPath() != Mesh.ToSoftObjectPath())
 			{
 				Companion->SetCompanionMesh(Mesh);
@@ -425,9 +456,7 @@ void ASolidGameMode::EnsureCompanion()
 		{
 			continue;
 		}
-		const TSoftObjectPtr<USkeletalMesh> Mesh = Company
-			? Company->GetMeshForCompanion(Fielded[Slot])
-			: TSoftObjectPtr<USkeletalMesh>();
+		const TSoftObjectPtr<USkeletalMesh> Mesh = ResolveFieldedMesh(Company, Fielded[Slot]);
 		if (ASolidCompanionCharacter* Companion = SpawnCompanion(
 			World, PlayerPawn, ClassToSpawn, Fielded[Slot].Name, Slot, Mesh, Fielded[Slot].Vocation))
 		{

@@ -18,6 +18,8 @@ powershell -NoProfile -Command "$j = Get-Content -Raw -LiteralPath '%SCRIPT_DIR%
 if errorlevel 1 (
   echo ca4ba583-8d90-4069-b51f-50e694530b2f
   echo 94bfee39-8d7d-409c-89c9-40433550ee3a
+  echo 2986b290-90ed-4a0e-a891-cacf442033f9
+  echo d01abf8c-9798-4bcb-8617-2d1d560d318a
 )
 echo.
 
@@ -75,6 +77,40 @@ if defined GRASS (
 )
 echo   uuid:    94bfee39-8d7d-409c-89c9-40433550ee3a
 echo   listing: https://www.fab.com/listings/94bfee39-8d7d-409c-89c9-40433550ee3a
+echo.
+
+echo [required] Assassin companion mesh  (Content\Fab, name contains Assassin)
+set "ASSASSIN="
+if exist "%ROOT%\Content\Fab" (
+  for /r "%ROOT%\Content\Fab" %%F in (*Assassin*.uasset) do (
+    if exist "%%F" set "ASSASSIN=%%F"
+  )
+)
+if defined ASSASSIN (
+  echo   OK  !ASSASSIN:%ROOT%\=!
+) else (
+  echo   MISSING  a Fab .uasset whose path contains Assassin
+  set "MISSING=1"
+)
+echo   uuid:    2986b290-90ed-4a0e-a891-cacf442033f9
+echo   listing: https://www.fab.com/listings/2986b290-90ed-4a0e-a891-cacf442033f9
+echo.
+
+echo [required] Blacksmith companion mesh  (Content\Fab, name contains Blacksmith)
+set "BLACKSMITH="
+if exist "%ROOT%\Content\Fab" (
+  for /r "%ROOT%\Content\Fab" %%F in (*Blacksmith*.uasset) do (
+    if exist "%%F" set "BLACKSMITH=%%F"
+  )
+)
+if defined BLACKSMITH (
+  echo   OK  !BLACKSMITH:%ROOT%\=!
+) else (
+  echo   MISSING  a Fab .uasset whose path contains Blacksmith
+  set "MISSING=1"
+)
+echo   uuid:    d01abf8c-9798-4bcb-8617-2d1d560d318a
+echo   listing: https://www.fab.com/listings/d01abf8c-9798-4bcb-8617-2d1d560d318a
 echo.
 
 echo Restore

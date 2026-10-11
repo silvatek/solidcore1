@@ -24,6 +24,12 @@ namespace SolidContentLookup
 	USkeletalMesh* FindVikingMesh();
 	UAnimSequence* FindVikingClip(const TCHAR* AssetName);
 
+	/**
+	 * Skeletal mesh under /Game/Viking or /Game/Fab whose name contains Token.
+	 * Exact asset name wins. Otherwise the shortest SK_ name that contains it.
+	 */
+	USkeletalMesh* FindSkeletalMeshByToken(const TCHAR* Token);
+
 	UAnimSequence* FindVikingIdle();
 	UAnimSequence* FindVikingWalk();
 	UAnimSequence* FindVikingRun();

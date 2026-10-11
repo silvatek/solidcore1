@@ -12,16 +12,24 @@
 
 namespace
 {
-	bool ReferencesVikingMesh(const USolidCompany* Company, const FSolidCompanion& Companion)
+	const TCHAR* ExpectedMeshName(const TCHAR* CompanionName)
 	{
-		if (!Company)
+		if (FCString::Stricmp(CompanionName, TEXT("Alex")) == 0
+			|| FCString::Stricmp(CompanionName, TEXT("Max")) == 0)
+		{
+			return TEXT("Blacksmith");
+		}
+		return TEXT("Assassin");
+	}
+
+	bool ReferencesMesh(const USolidCompany* Company, const FSolidCompanion& Companion, const TCHAR* MeshName)
+	{
+		if (!Company || !MeshName)
 		{
 			return false;
 		}
 		const FSolidCharacterMesh* CharacterMesh = Company->GetCharacterMesh(Companion.CharacterMeshIndex);
-		return CharacterMesh
-			&& CharacterMesh->Name.Equals(TEXT("Viking"), ESearchCase::IgnoreCase)
-			&& CharacterMesh->Mesh.ToSoftObjectPath() == FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath);
+		return CharacterMesh && CharacterMesh->Name.Equals(MeshName, ESearchCase::IgnoreCase);
 	}
 
 	bool FieldedNamesAre(
@@ -43,11 +51,12 @@ namespace
 		int32 Index = 0;
 		for (const TCHAR* Name : Expected)
 		{
-			if (Fielded[Index].Name != Name || !ReferencesVikingMesh(Company, Fielded[Index]))
+			const TCHAR* MeshName = ExpectedMeshName(Name);
+			if (Fielded[Index].Name != Name || !ReferencesMesh(Company, Fielded[Index], MeshName))
 			{
 				Test.AddError(FString::Printf(
-					TEXT("fielded[%d] is %s, expected %s referencing the Viking mesh"),
-					Index, *Fielded[Index].Name, Name));
+					TEXT("fielded[%d] is %s, expected %s on %s"),
+					Index, *Fielded[Index].Name, Name, MeshName));
 				return false;
 			}
 			++Index;
@@ -66,9 +75,9 @@ bool FSolidCompanyRosterTest::RunTest(const FString& Parameters)
 	USolidCompany* Company = NewObject<USolidCompany>();
 	TestNotNull(TEXT("company"), Company);
 	Company->InitializeDefaultCharacterMeshes();
-	TestEqual(TEXT("one character mesh"), Company->GetCharacterMeshCount(), 1);
+	TestEqual(TEXT("three character meshes"), Company->GetCharacterMeshCount(), 3);
 	Company->InitializeDefaultCharacterMeshes();
-	TestEqual(TEXT("mesh catalog is idempotent"), Company->GetCharacterMeshCount(), 1);
+	TestEqual(TEXT("mesh catalog is idempotent"), Company->GetCharacterMeshCount(), 3);
 
 	const FSolidCharacterMesh* Viking = Company->GetCharacterMesh(0);
 	TestNotNull(TEXT("viking mesh"), Viking);
@@ -77,6 +86,21 @@ bool FSolidCompanyRosterTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("mesh name"), Viking->Name, FString(TEXT("Viking")));
 		TestTrue(TEXT("viking asset"),
 			Viking->Mesh.ToSoftObjectPath() == FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath));
+		TestEqual(TEXT("viking token"), Viking->AssetToken, FString(TEXT("SK_Viking")));
+	}
+	const FSolidCharacterMesh* Assassin = Company->GetCharacterMesh(Company->FindCharacterMeshIndexByName(TEXT("Assassin")));
+	const FSolidCharacterMesh* Blacksmith = Company->GetCharacterMesh(Company->FindCharacterMeshIndexByName(TEXT("Blacksmith")));
+	TestNotNull(TEXT("assassin mesh"), Assassin);
+	TestNotNull(TEXT("blacksmith mesh"), Blacksmith);
+	if (Assassin)
+	{
+		TestTrue(TEXT("assassin mesh is found by token after Add to Project"), Assassin->Mesh.IsNull());
+		TestEqual(TEXT("assassin token"), Assassin->AssetToken, FString(TEXT("Assassin")));
+	}
+	if (Blacksmith)
+	{
+		TestTrue(TEXT("blacksmith mesh is found by token after Add to Project"), Blacksmith->Mesh.IsNull());
+		TestEqual(TEXT("blacksmith token"), Blacksmith->AssetToken, FString(TEXT("Blacksmith")));
 	}
 	TestEqual(TEXT("find viking"), Company->FindCharacterMeshIndexByName(TEXT("viking")), 0);
 	TestEqual(TEXT("unknown mesh"), Company->FindCharacterMeshIndexByName(TEXT("Shield")), INDEX_NONE);
@@ -86,14 +110,14 @@ bool FSolidCompanyRosterTest::RunTest(const FString& Parameters)
 	Extra.Name = TEXT("Extra");
 	Extra.Mesh = TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(TEXT("/Game/Viking/Mesh/SK_Other.SK_Other")));
 	const int32 ExtraIndex = Company->AddCharacterMesh(Extra);
-	TestEqual(TEXT("appended mesh"), ExtraIndex, 1);
-	TestEqual(TEXT("two meshes"), Company->GetCharacterMeshCount(), 2);
+	TestEqual(TEXT("appended mesh"), ExtraIndex, 3);
+	TestEqual(TEXT("four meshes"), Company->GetCharacterMeshCount(), 4);
 
 	Company->InitializeDefaultCompanions();
 	TestEqual(TEXT("five companions"), Company->GetCompanionCount(), 5);
 	Company->InitializeDefaultCompanions();
 	TestEqual(TEXT("idempotent init"), Company->GetCompanionCount(), 5);
-	TestEqual(TEXT("companion init does not reseed meshes"), Company->GetCharacterMeshCount(), 2);
+	TestEqual(TEXT("companion init does not reseed meshes"), Company->GetCharacterMeshCount(), 4);
 
 	const TCHAR* Names[] = {
 		TEXT("Sam"),
@@ -109,7 +133,15 @@ bool FSolidCompanyRosterTest::RunTest(const FString& Parameters)
 		ESolidVocation::Rogue,
 		ESolidVocation::Warrior,
 	};
+	const TCHAR* Meshes[] = {
+		TEXT("Assassin"),
+		TEXT("Blacksmith"),
+		TEXT("Blacksmith"),
+		TEXT("Assassin"),
+		TEXT("Assassin"),
+	};
 	static_assert(UE_ARRAY_COUNT(Names) == UE_ARRAY_COUNT(Vocations), "Vocation per companion");
+	static_assert(UE_ARRAY_COUNT(Names) == UE_ARRAY_COUNT(Meshes), "Mesh per companion");
 	bool bSeenWarrior = false;
 	bool bSeenRogue = false;
 	bool bSeenMage = false;
@@ -127,10 +159,15 @@ bool FSolidCompanyRosterTest::RunTest(const FString& Parameters)
 			Companion->Name,
 			FString(Names[Index]));
 		TestEqual(
-			*FString::Printf(TEXT("references viking %d"), Index),
+			*FString::Printf(TEXT("mesh %d"), Index),
 			Companion->CharacterMeshIndex,
-			0);
-		TestTrue(*FString::Printf(TEXT("viking mesh %d"), Index), ReferencesVikingMesh(Company, *Companion));
+			Company->FindCharacterMeshIndexByName(Meshes[Index]));
+		TestTrue(
+			*FString::Printf(TEXT("references %s"), Meshes[Index]),
+			ReferencesMesh(Company, *Companion, Meshes[Index]));
+		TestFalse(
+			*FString::Printf(TEXT("not the captain mesh %d"), Index),
+			ReferencesMesh(Company, *Companion, TEXT("Viking")));
 		TestTrue(
 			*FString::Printf(TEXT("vocation %d"), Index),
 			Companion->Vocation == Vocations[Index]);

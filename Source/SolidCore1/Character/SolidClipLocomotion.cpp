@@ -55,7 +55,7 @@ USkeletalMesh* SolidClipLocomotion::LoadMesh(TSoftObjectPtr<USkeletalMesh>& Soft
 			return FromPath;
 		}
 	}
-	if (!FallbackPath || FCString::Stricmp(FallbackPath, DefaultMeshPath) == 0)
+	if (FallbackPath && FCString::Stricmp(FallbackPath, DefaultMeshPath) == 0)
 	{
 		return SolidContentLookup::FindVikingMesh();
 	}

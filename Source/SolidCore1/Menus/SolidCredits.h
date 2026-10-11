@@ -22,5 +22,15 @@ namespace SolidCredits
 	inline constexpr const TCHAR* GrassListing =
 		TEXT("https://www.fab.com/listings/94bfee39-8d7d-409c-89c9-40433550ee3a");
 
+	inline constexpr const TCHAR* AssassinCreator = TEXT("Dimentrius3dArtist");
+	inline constexpr const TCHAR* AssassinLicense = TEXT("CC-BY");
+	inline constexpr const TCHAR* AssassinListing =
+		TEXT("https://www.fab.com/listings/2986b290-90ed-4a0e-a891-cacf442033f9");
+
+	inline constexpr const TCHAR* BlacksmithCreator = TEXT("Art.Hiraeth");
+	inline constexpr const TCHAR* BlacksmithLicense = TEXT("Fab Standard (Personal / Professional)");
+	inline constexpr const TCHAR* BlacksmithListing =
+		TEXT("https://www.fab.com/listings/d01abf8c-9798-4bcb-8617-2d1d560d318a");
+
 	void CollectLines(TArray<FString>& OutLines);
 }

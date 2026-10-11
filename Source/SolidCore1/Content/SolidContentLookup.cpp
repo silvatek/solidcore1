@@ -82,6 +82,75 @@ USkeletalMesh* SolidContentLookup::FindVikingMesh()
 	return Mesh;
 }
 
+USkeletalMesh* SolidContentLookup::FindSkeletalMeshByToken(const TCHAR* Token)
+{
+	if (!Token || !Token[0])
+	{
+		return nullptr;
+	}
+
+	TArray<FTopLevelAssetPath> Classes;
+	Classes.Add(USkeletalMesh::StaticClass()->GetClassPathName());
+	if (USkeletalMesh* Exact = Cast<USkeletalMesh>(FindNamedAsset(Token, Classes)))
+	{
+		return Exact;
+	}
+
+	IAssetRegistry& AssetRegistry =
+		FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
+	AssetRegistry.SearchAllAssets(true);
+
+	FARFilter Filter;
+	Filter.PackagePaths.Add(FName(TEXT("/Game/Viking")));
+	Filter.PackagePaths.Add(FName(TEXT("/Game/Fab")));
+	Filter.bRecursivePaths = true;
+	Filter.ClassPaths = Classes;
+	Filter.bRecursiveClasses = true;
+
+	TArray<FAssetData> Assets;
+	AssetRegistry.GetAssets(Filter, Assets);
+
+	const FAssetData* Best = nullptr;
+	for (const FAssetData& Asset : Assets)
+	{
+		const FString AssetName = Asset.AssetName.ToString();
+		if (!AssetName.Contains(Token, ESearchCase::IgnoreCase))
+		{
+			continue;
+		}
+		if (!Best)
+		{
+			Best = &Asset;
+			continue;
+		}
+		const bool bBestSk = Best->AssetName.ToString().StartsWith(TEXT("SK_"));
+		const bool bThisSk = AssetName.StartsWith(TEXT("SK_"));
+		if (bThisSk != bBestSk)
+		{
+			if (bThisSk)
+			{
+				Best = &Asset;
+			}
+			continue;
+		}
+		if (AssetName.Len() < Best->AssetName.ToString().Len())
+		{
+			Best = &Asset;
+		}
+	}
+
+	if (!Best)
+	{
+		UE_LOG(LogSolid, Warning,
+			TEXT("No skeletal mesh under /Game/Viking or /Game/Fab contains \"%s\"."),
+			Token);
+		return nullptr;
+	}
+
+	UE_LOG(LogSolid, Warning, TEXT("Mesh token %s -> %s"), Token, *Best->GetObjectPathString());
+	return Cast<USkeletalMesh>(Best->GetAsset());
+}
+
 UAnimSequence* SolidContentLookup::FindVikingClip(const TCHAR* AssetName)
 {
 	TArray<FTopLevelAssetPath> Classes;

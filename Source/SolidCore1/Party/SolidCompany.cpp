@@ -62,7 +62,17 @@ void USolidCompany::InitializeDefaultCharacterMeshes()
 
 	AllCharacterMeshes.Add({
 		TEXT("Viking"),
-		TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath))});
+		TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath)),
+		TEXT("SK_Viking")});
+	// Paths are filled after Launcher Add to Project. The token finds the mesh by name.
+	AllCharacterMeshes.Add({
+		TEXT("Assassin"),
+		TSoftObjectPtr<USkeletalMesh>(),
+		TEXT("Assassin")});
+	AllCharacterMeshes.Add({
+		TEXT("Blacksmith"),
+		TSoftObjectPtr<USkeletalMesh>(),
+		TEXT("Blacksmith")});
 }
 
 void USolidCompany::InitializeDefaultCompanions()
@@ -73,13 +83,14 @@ void USolidCompany::InitializeDefaultCompanions()
 	}
 
 	InitializeDefaultCharacterMeshes();
-	const int32 Viking = FindCharacterMeshIndexByName(TEXT("Viking"));
+	const int32 Assassin = FindCharacterMeshIndexByName(TEXT("Assassin"));
+	const int32 Blacksmith = FindCharacterMeshIndexByName(TEXT("Blacksmith"));
 
-	AllCompanions.Add({ TEXT("Sam"), Viking, ESolidVocation::Mage });
-	AllCompanions.Add({ TEXT("Alex"), Viking, ESolidVocation::Warrior });
-	AllCompanions.Add({ TEXT("Max"), Viking, ESolidVocation::Cleric });
-	AllCompanions.Add({ TEXT("Morgan"), Viking, ESolidVocation::Rogue });
-	AllCompanions.Add({ TEXT("Quinn"), Viking, ESolidVocation::Warrior });
+	AllCompanions.Add({ TEXT("Sam"), Assassin, ESolidVocation::Mage });
+	AllCompanions.Add({ TEXT("Alex"), Blacksmith, ESolidVocation::Warrior });
+	AllCompanions.Add({ TEXT("Max"), Blacksmith, ESolidVocation::Cleric });
+	AllCompanions.Add({ TEXT("Morgan"), Assassin, ESolidVocation::Rogue });
+	AllCompanions.Add({ TEXT("Quinn"), Assassin, ESolidVocation::Warrior });
 }
 
 const FSolidCharacterMesh* USolidCompany::GetCharacterMesh(const int32 Index) const

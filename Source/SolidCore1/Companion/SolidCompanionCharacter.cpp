@@ -152,10 +152,12 @@ void ASolidCompanionCharacter::SetCompanionMesh(const TSoftObjectPtr<USkeletalMe
 	CompanionMesh = NewMesh;
 	if (HasActorBegunPlay())
 	{
+		const bool bVikingMesh = CompanionMesh.IsNull()
+			|| CompanionMesh.ToSoftObjectPath() == FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath);
 		SolidClipLocomotion::ApplyMeshAndSingleNodeMode(
 			GetMesh(),
 			CompanionMesh,
-			SolidClipLocomotion::DefaultMeshPath,
+			bVikingMesh ? SolidClipLocomotion::DefaultMeshPath : nullptr,
 			TEXT("Companion"),
 			/*bOnlyIfMeshUnset=*/false);
 	}
@@ -209,10 +211,12 @@ void ASolidCompanionCharacter::CacheLocomotionAnims()
 
 void ASolidCompanionCharacter::ApplyVisuals()
 {
+	const bool bVikingMesh = CompanionMesh.IsNull()
+		|| CompanionMesh.ToSoftObjectPath() == FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath);
 	SolidClipLocomotion::ApplyMeshAndSingleNodeMode(
 		GetMesh(),
 		CompanionMesh,
-		SolidClipLocomotion::DefaultMeshPath,
+		bVikingMesh ? SolidClipLocomotion::DefaultMeshPath : nullptr,
 		TEXT("Companion"),
 		/*bOnlyIfMeshUnset=*/true);
 }

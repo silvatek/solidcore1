@@ -62,7 +62,7 @@ namespace SolidClipLocomotion
 	/** Load soft clip, else hard path. */
 	UAnimSequence* LoadClip(TSoftObjectPtr<UAnimSequence>& Soft, const TCHAR* FallbackPath);
 
-	/** Load soft mesh, else hard path. */
+	/** Load soft mesh, else hard path. A null fallback does not substitute the Viking mesh. */
 	USkeletalMesh* LoadMesh(TSoftObjectPtr<USkeletalMesh>& Soft, const TCHAR* FallbackPath);
 
 	/**

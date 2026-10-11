@@ -47,6 +47,46 @@
       "expectedName": "Mat_025_grass.uasset",
       "searchRoots": ["Content/Fab"],
       "notes": "Required. Terrain looks up Mat_025_grass under /Game/Fab. Add to Project is enough."
+    },
+    {
+      "id": "assassin",
+      "title": "Free Medieval Assassin Girl",
+      "listingUuid": "2986b290-90ed-4a0e-a891-cacf442033f9",
+      "listing": "https://www.fab.com/listings/2986b290-90ed-4a0e-a891-cacf442033f9",
+      "required": true,
+      "format": "unreal-engine",
+      "engine": "5.8",
+      "attribution": {
+        "creator": "Dimentrius3dArtist",
+        "sellerUrl": "https://www.fab.com/sellers/Dimentrius3dArtist",
+        "source": "Fab",
+        "license": "CC-BY",
+        "isFree": true,
+        "credit": "Free Medieval Assassin Girl by Dimentrius3dArtist, used from Fab (CC-BY)."
+      },
+      "assetToken": "Assassin",
+      "searchRoots": ["Content/Fab"],
+      "notes": "Companion mesh. Add to Project. C++ finds a skeletal mesh under /Game/Fab whose name contains Assassin. Captain stays on SK_Viking."
+    },
+    {
+      "id": "blacksmith",
+      "title": "Elf Blacksmith",
+      "listingUuid": "d01abf8c-9798-4bcb-8617-2d1d560d318a",
+      "listing": "https://www.fab.com/listings/d01abf8c-9798-4bcb-8617-2d1d560d318a",
+      "required": true,
+      "format": "unreal-engine",
+      "engine": "5.8",
+      "attribution": {
+        "creator": "Art.Hiraeth",
+        "sellerUrl": "https://www.fab.com/sellers/Art.Hiraeth",
+        "source": "Fab",
+        "license": "Fab Standard (Personal / Professional)",
+        "isFree": false,
+        "credit": "Elf Blacksmith by Art.Hiraeth, used from Fab as an element of this project."
+      },
+      "assetToken": "Blacksmith",
+      "searchRoots": ["Content/Fab"],
+      "notes": "Companion mesh. Add to Project. C++ finds a skeletal mesh under /Game/Fab whose name contains Blacksmith. Captain stays on SK_Viking."
     }
   ]
 }

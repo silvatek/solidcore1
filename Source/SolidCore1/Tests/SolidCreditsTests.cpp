@@ -29,6 +29,10 @@ bool FSolidCreditsCopyTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("credits Viking creator"), Joined.Contains(SolidCredits::VikingCreator));
 	TestTrue(TEXT("credits grass creator"), Joined.Contains(SolidCredits::GrassCreator));
 	TestTrue(TEXT("notes grass CC-BY"), Joined.Contains(TEXT("CC-BY")));
+	TestTrue(TEXT("credits assassin creator"), Joined.Contains(SolidCredits::AssassinCreator));
+	TestTrue(TEXT("credits assassin listing"), Joined.Contains(SolidCredits::AssassinListing));
+	TestTrue(TEXT("credits blacksmith creator"), Joined.Contains(SolidCredits::BlacksmithCreator));
+	TestTrue(TEXT("credits blacksmith listing"), Joined.Contains(SolidCredits::BlacksmithListing));
 	TestTrue(TEXT("mentions F10"), Joined.Contains(TEXT("F10")));
 	return true;
 }

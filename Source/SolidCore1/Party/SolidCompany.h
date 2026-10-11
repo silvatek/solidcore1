@@ -19,6 +19,14 @@ struct FSolidCharacterMesh
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CharacterMesh")
 	TSoftObjectPtr<USkeletalMesh> Mesh;
+
+	/**
+	 * Asset-registry token used when Mesh is not a direct path.
+	 * Viking is SK_Viking. Assassin and Blacksmith match a skeletal mesh
+	 * under /Game/Fab whose name contains the token.
+	 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CharacterMesh")
+	FString AssetToken;
 };
 
 /** What a companion is trained to do. */
@@ -85,7 +93,7 @@ public:
 	/** Seed Line / Column / Tight mob / Loose mob / Parade starter plans (idempotent). */
 	void InitializeDefaultBattlePlans();
 
-	/** Seed the character mesh catalog. Starts with Viking only (idempotent). */
+	/** Seed Viking, Assassin, and Blacksmith. Captain stays on Viking (idempotent). */
 	void InitializeDefaultCharacterMeshes();
 
 	/** Seed Sam, Alex, Max, Morgan, and Quinn, each with a mesh and a vocation (idempotent). */

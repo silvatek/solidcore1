@@ -6,7 +6,6 @@
 #include "Engine/LocalPlayer.h"
 #include "Engine/World.h"
 #include "Framework/Application/SlateApplication.h"
-#include "GenericPlatform/GenericApplication.h"
 #include "InputAction.h"
 #include "InputMappingContext.h"
 
@@ -67,29 +66,11 @@ void ASolidPlayerController::EnsurePointerCaptureMode()
 
 void ASolidPlayerController::HideHardwareCursor()
 {
+	// Slate draws this cursor. None is empty, so the Windows arrow does not sit
+	// on the bronze pointer. The platform cursor object is not exported to game modules.
 	bShowMouseCursor = true;
 	DefaultMouseCursor = EMouseCursor::None;
 	CurrentMouseCursor = EMouseCursor::None;
-
-	if (!FSlateApplication::IsInitialized())
-	{
-		return;
-	}
-
-	UWorld* World = GetWorld();
-	UGameViewportClient* Viewport = World ? World->GetGameViewport() : nullptr;
-	FVector2D Unused = FVector2D::ZeroVector;
-	const bool bOverGame = Viewport && Viewport->GetMousePosition(Unused);
-	if (!bOverGame && !IsRightMouseHeld())
-	{
-		return;
-	}
-
-	const TSharedPtr<GenericApplication> Platform = FSlateApplication::Get().GetPlatformApplication();
-	if (Platform.IsValid() && Platform->Cursor.IsValid())
-	{
-		Platform->Cursor->SetType(EMouseCursor::None);
-	}
 }
 
 bool ASolidPlayerController::IsRightMouseHeld() const

@@ -23,7 +23,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 ## Done
 
 - **Captain + Party** — Viking pawn (Enhanced Input: move / look / zoom / jump / sprint), clip locomotion (idle / walk / run / jump), floating nameplates. The party starts empty. Entering Relion adds **Sam**; entering Kanfold adds **Alex** as well. Companions follow in battle-plan slots; the party camera frames the group and lifts off terrain.
-- **Company roster** — the company lists Sam, Alex, Max, Morgan, and Quinn. Character meshes live in their own list, which starts with Viking, and each companion points at one of those meshes. All five point at Viking for now. The party remembers who is selected from that list (Sam and Alex to start). Only as many as the current party limit walk with the captain.
+- **Company roster** — the company lists Sam, Alex, Max, Morgan, and Quinn. Character meshes live in their own list, which starts with Viking, and each companion points at one of those meshes. All five point at Viking for now. Each companion also has a vocation: Warrior, Rogue, Mage, or Cleric. The party remembers who is selected from that list (Sam and Alex to start). Only as many as the current party limit walk with the captain.
 - **Battle plans** — Company catalog and Party assigned slots. F1 Line, F2 Column, F3 Tight mob, F4 Loose mob, F5 Parade (companions in front, facing the captain, far enough to stay in his view). F1–F8 select; HUD battle-plan panel. The square-walk formation drill is the main menu's Test Drill entry and still cycles F1–F4.
 - **World + biomes** — 64×64 `WorldMap.txt` overlay (Sea, Grassland, Town, Mountain, Forest, Desert, River) scaled onto a 513×513 TerrainPoint map (1024 m side, 200 cm spacing). That doubles the original 257-point / 512 m world, and each ASCII cell doubles from 8 m to 16 m. Numbered locations are towns: `0` Iglin (start), `1` Relion, `2` Kanfold, `3` Visolar, `4` Jethan. The captain starts at location 0. Per-biome height shelf (Sea/River 0, Mountain +10 m, else +1 m). Darker mountain grey.
 - **No starter monolith** — the grey slab that marked the start-town centroid is gone. Location 0 still sets the captain spawn and the building clear radius.
@@ -88,7 +88,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.Vegetation.*` | Tree RNG variation, town building pack, welcome signs |
 | `SolidCore1.GameMode.*` | Default spawn flags, pawn BP resolution |
 | `SolidCore1.Companion.*` | Defaults, SetFollowTarget |
-| `SolidCore1.Company.*` | Viking mesh catalog; roster of five referencing it; party selection; fielded count follows the party limit; selection survives ensure |
+| `SolidCore1.Company.*` | Viking mesh catalog; roster of five with vocations; party selection; fielded count follows the party limit; selection survives ensure |
 | `SolidCore1.Streamer.*` | FindExisting / EnsureExists (null + idempotent) |
 | `SolidCore1.Clip.*` | SelectClip idle/walk/run/jump rules |
 | `SolidCore1.NameLabel.*` | Style sizes/colors/plates; Outcast / Sam defaults |

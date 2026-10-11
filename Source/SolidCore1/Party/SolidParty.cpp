@@ -150,7 +150,7 @@ bool USolidParty::SetSelectedCompanions(const TArray<int32>& CompanyCompanionInd
 	return true;
 }
 
-void USolidParty::CollectFieldedCompanions(const int32 MaxCount, TArray<FSolidCompanyCompanion>& Out) const
+void USolidParty::CollectFieldedCompanions(const int32 MaxCount, TArray<FSolidCompanion>& Out) const
 {
 	Out.Reset();
 	if (!Company || MaxCount <= 0)
@@ -160,7 +160,7 @@ void USolidParty::CollectFieldedCompanions(const int32 MaxCount, TArray<FSolidCo
 
 	for (const int32 CompanyIndex : SelectedCompanionIndices)
 	{
-		const FSolidCompanyCompanion* Companion = Company->GetCompanion(CompanyIndex);
+		const FSolidCompanion* Companion = Company->GetCompanion(CompanyIndex);
 		if (!Companion)
 		{
 			continue;

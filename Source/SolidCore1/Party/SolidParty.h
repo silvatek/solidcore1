@@ -58,7 +58,7 @@ public:
 	 * Chosen companions who are with the captain right now, in selection order.
 	 * Stops at MaxCount. Missing company records are skipped.
 	 */
-	void CollectFieldedCompanions(int32 MaxCount, TArray<FSolidCompanyCompanion>& Out) const;
+	void CollectFieldedCompanions(int32 MaxCount, TArray<FSolidCompanion>& Out) const;
 
 protected:
 	UPROPERTY(Transient)

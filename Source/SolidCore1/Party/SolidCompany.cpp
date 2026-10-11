@@ -75,11 +75,11 @@ void USolidCompany::InitializeDefaultCompanions()
 	InitializeDefaultCharacterMeshes();
 	const int32 Viking = FindCharacterMeshIndexByName(TEXT("Viking"));
 
-	AllCompanions.Add({ TEXT("Sam"), Viking });
-	AllCompanions.Add({ TEXT("Alex"), Viking });
-	AllCompanions.Add({ TEXT("Max"), Viking });
-	AllCompanions.Add({ TEXT("Morgan"), Viking });
-	AllCompanions.Add({ TEXT("Quinn"), Viking });
+	AllCompanions.Add({ TEXT("Sam"), Viking, ESolidVocation::Mage });
+	AllCompanions.Add({ TEXT("Alex"), Viking, ESolidVocation::Warrior });
+	AllCompanions.Add({ TEXT("Max"), Viking, ESolidVocation::Cleric });
+	AllCompanions.Add({ TEXT("Morgan"), Viking, ESolidVocation::Rogue });
+	AllCompanions.Add({ TEXT("Quinn"), Viking, ESolidVocation::Warrior });
 }
 
 const FSolidCharacterMesh* USolidCompany::GetCharacterMesh(const int32 Index) const
@@ -104,7 +104,7 @@ int32 USolidCompany::AddCharacterMesh(const FSolidCharacterMesh& CharacterMesh)
 	return AllCharacterMeshes.Add(CharacterMesh);
 }
 
-TSoftObjectPtr<USkeletalMesh> USolidCompany::GetMeshForCompanion(const FSolidCompanyCompanion& Companion) const
+TSoftObjectPtr<USkeletalMesh> USolidCompany::GetMeshForCompanion(const FSolidCompanion& Companion) const
 {
 	if (const FSolidCharacterMesh* CharacterMesh = GetCharacterMesh(Companion.CharacterMeshIndex))
 	{
@@ -113,7 +113,7 @@ TSoftObjectPtr<USkeletalMesh> USolidCompany::GetMeshForCompanion(const FSolidCom
 	return TSoftObjectPtr<USkeletalMesh>();
 }
 
-const FSolidCompanyCompanion* USolidCompany::GetCompanion(const int32 Index) const
+const FSolidCompanion* USolidCompany::GetCompanion(const int32 Index) const
 {
 	return AllCompanions.IsValidIndex(Index) ? &AllCompanions[Index] : nullptr;
 }

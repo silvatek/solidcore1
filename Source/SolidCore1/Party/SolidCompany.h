@@ -21,12 +21,22 @@ struct FSolidCharacterMesh
 	TSoftObjectPtr<USkeletalMesh> Mesh;
 };
 
+/** What a companion is trained to do. */
+UENUM(BlueprintType)
+enum class ESolidVocation : uint8
+{
+	Warrior UMETA(DisplayName = "Warrior"),
+	Rogue UMETA(DisplayName = "Rogue"),
+	Mage UMETA(DisplayName = "Mage"),
+	Cleric UMETA(DisplayName = "Cleric"),
+};
+
 /**
  * One companion in the company catalog.
- * Name and a reference into the character mesh array; more attributes will be added later.
+ * Name, mesh reference, and vocation; more attributes will be added later.
  */
 USTRUCT(BlueprintType)
-struct FSolidCompanyCompanion
+struct FSolidCompanion
 {
 	GENERATED_BODY()
 
@@ -36,6 +46,9 @@ struct FSolidCompanyCompanion
 	/** Index into USolidCompany::AllCharacterMeshes. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	int32 CharacterMeshIndex = INDEX_NONE;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
+	ESolidVocation Vocation = ESolidVocation::Warrior;
 };
 
 /**
@@ -53,7 +66,7 @@ public:
 	/** Seed the character mesh catalog. Starts with Viking only (idempotent). */
 	void InitializeDefaultCharacterMeshes();
 
-	/** Seed Sam, Alex, Max, Morgan, and Quinn. Each entry references a character mesh (idempotent). */
+	/** Seed Sam, Alex, Max, Morgan, and Quinn, each with a mesh and a vocation (idempotent). */
 	void InitializeDefaultCompanions();
 
 	const TArray<FSolidBattlePlan>& GetAllBattlePlans() const { return AllBattlePlans; }
@@ -77,12 +90,12 @@ public:
 	int32 AddCharacterMesh(const FSolidCharacterMesh& CharacterMesh);
 
 	/** Soft mesh referenced by this companion, or unset when the index misses. */
-	TSoftObjectPtr<USkeletalMesh> GetMeshForCompanion(const FSolidCompanyCompanion& Companion) const;
+	TSoftObjectPtr<USkeletalMesh> GetMeshForCompanion(const FSolidCompanion& Companion) const;
 
-	const TArray<FSolidCompanyCompanion>& GetAllCompanions() const { return AllCompanions; }
+	const TArray<FSolidCompanion>& GetAllCompanions() const { return AllCompanions; }
 	int32 GetCompanionCount() const { return AllCompanions.Num(); }
 
-	const FSolidCompanyCompanion* GetCompanion(int32 Index) const;
+	const FSolidCompanion* GetCompanion(int32 Index) const;
 
 	int32 FindCompanionIndexByName(const FString& Name) const;
 
@@ -94,5 +107,5 @@ protected:
 	TArray<FSolidCharacterMesh> AllCharacterMeshes;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Company|Companions")
-	TArray<FSolidCompanyCompanion> AllCompanions;
+	TArray<FSolidCompanion> AllCompanions;
 };

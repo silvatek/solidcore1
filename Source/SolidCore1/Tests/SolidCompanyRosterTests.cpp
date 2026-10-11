@@ -12,7 +12,7 @@
 
 namespace
 {
-	bool ReferencesVikingMesh(const USolidCompany* Company, const FSolidCompanyCompanion& Companion)
+	bool ReferencesVikingMesh(const USolidCompany* Company, const FSolidCompanion& Companion)
 	{
 		if (!Company)
 		{
@@ -30,7 +30,7 @@ namespace
 		const int32 MaxCount,
 		std::initializer_list<const TCHAR*> Expected)
 	{
-		TArray<FSolidCompanyCompanion> Fielded;
+		TArray<FSolidCompanion> Fielded;
 		Party->CollectFieldedCompanions(MaxCount, Fielded);
 		if (Fielded.Num() != static_cast<int32>(Expected.size()))
 		{
@@ -102,9 +102,21 @@ bool FSolidCompanyRosterTest::RunTest(const FString& Parameters)
 		TEXT("Morgan"),
 		TEXT("Quinn"),
 	};
+	const ESolidVocation Vocations[] = {
+		ESolidVocation::Mage,
+		ESolidVocation::Warrior,
+		ESolidVocation::Cleric,
+		ESolidVocation::Rogue,
+		ESolidVocation::Warrior,
+	};
+	static_assert(UE_ARRAY_COUNT(Names) == UE_ARRAY_COUNT(Vocations), "Vocation per companion");
+	bool bSeenWarrior = false;
+	bool bSeenRogue = false;
+	bool bSeenMage = false;
+	bool bSeenCleric = false;
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Names); ++Index)
 	{
-		const FSolidCompanyCompanion* Companion = Company->GetCompanion(Index);
+		const FSolidCompanion* Companion = Company->GetCompanion(Index);
 		TestNotNull(*FString::Printf(TEXT("companion %d"), Index), Companion);
 		if (!Companion)
 		{
@@ -119,11 +131,22 @@ bool FSolidCompanyRosterTest::RunTest(const FString& Parameters)
 			Companion->CharacterMeshIndex,
 			0);
 		TestTrue(*FString::Printf(TEXT("viking mesh %d"), Index), ReferencesVikingMesh(Company, *Companion));
+		TestTrue(
+			*FString::Printf(TEXT("vocation %d"), Index),
+			Companion->Vocation == Vocations[Index]);
 		TestEqual(
 			*FString::Printf(TEXT("find %s"), Names[Index]),
 			Company->FindCompanionIndexByName(Names[Index]),
 			Index);
+		bSeenWarrior |= Companion->Vocation == ESolidVocation::Warrior;
+		bSeenRogue |= Companion->Vocation == ESolidVocation::Rogue;
+		bSeenMage |= Companion->Vocation == ESolidVocation::Mage;
+		bSeenCleric |= Companion->Vocation == ESolidVocation::Cleric;
 	}
+	TestTrue(TEXT("a companion is a warrior"), bSeenWarrior);
+	TestTrue(TEXT("a companion is a rogue"), bSeenRogue);
+	TestTrue(TEXT("a companion is a mage"), bSeenMage);
+	TestTrue(TEXT("a companion is a cleric"), bSeenCleric);
 
 	TestEqual(TEXT("find ignores case"), Company->FindCompanionIndexByName(TEXT("morgan")), 3);
 	TestEqual(TEXT("unknown name"), Company->FindCompanionIndexByName(TEXT("Nobody")), INDEX_NONE);

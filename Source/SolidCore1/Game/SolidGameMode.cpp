@@ -339,7 +339,7 @@ void ASolidGameMode::EnsureCompanion()
 	});
 
 	const int32 Wanted = SolidEvents::PartyCount(Configuration);
-	TArray<FSolidCompanyCompanion> Fielded;
+	TArray<FSolidCompanion> Fielded;
 	if (Party)
 	{
 		Party->CollectFieldedCompanions(Wanted, Fielded);

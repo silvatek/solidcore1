@@ -10,7 +10,6 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - Create a cave in the mountains near the starting town
 - Build cave interior as a new level and transition to/from the main world at the entrance
 - Replace companion models with new Fab assets
-- Click to move
 - HUD / Menu panel borders & themes
 - Only move companions when captain is moving
 - Test Drill should end with party in Parade formation, and add both companions if not already in party 
@@ -32,6 +31,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - **Oak and bronze** — the journal, credits, main menu, and battle-plan list are a dark oak board in a bronze binding, with brighter corner bosses. The debug readout in the corner stays a plain block.
 - **Debug HUD** — F12 hides and shows the tech readout (build, FPS, pawn, terrain). The battle-plan list stays up. It starts visible.
 - **Mouse pointer** — a bronze arrow drawn in the game, tip on the hotspot. The Windows cursor stays hidden. Hold the right mouse button to look; the pointer hides until you let go, then it is back where you pressed. The right stick still looks.
+- **Click to move** — raven sight only. Left click a point on the ground and the captain walks there in a straight line, then stops. In true sight a click does nothing: without WASD or the left stick he stays put. Switching back to true sight cancels a walk that was in progress. WASD or the stick also cancels it in raven sight.
 - **Main menu** — F10 opens it. **1 Test Drill** runs the formation drill. **2 Journal** opens the journal. **3 Credits** opens the credits page (Silvatek, Cursor + Grok, Fab Viking and grass). Up/Down and Enter also work. Esc or F10 closes. Move, look, and battle-plan keys are ignored while the menu, journal, or credits page is open.
 - **Content pipeline** — Fab listings restored via Launcher Add to Project; C++ finds Viking/grass by name under `/Game/Viking` or `/Game/Fab`. `tools/fab_doctor.bat` + `fab-assets.json`. Packs are gitignored (attribution README kept).
 - **Automation** — `SolidCore1.*` editor tests; `tools/run_automation_tests.bat` prints failed test paths. Build ID `SC1-NNNN` on the debug HUD.
@@ -44,6 +44,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 | Move | WASD | Left stick |
 | Look | Right mouse button (hold) | Right stick |
 | Pointer | Mouse | — |
+| Click to move | Left mouse (raven sight) | — |
 | Zoom | Mouse wheel | — |
 | Jump | Space | A / Cross |
 | Sprint | Left Shift | Left stick click |
@@ -90,6 +91,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.HudTheme.*` | Oak-and-bronze frame thickness, corner bosses, opaque board |
 | `SolidCore1.HUD.DebugToggle` | F12 shows and hides the tech readout |
 | `SolidCore1.Pointer.*` | Bronze arrow tip, outline, and hide-while-looking |
+| `SolidCore1.ClickMove.*` | Raven-sight click, arrival, and ground ray |
 | `SolidCore1.Sight.*` | True sight at start; F9 switches to raven sight and back |
 | `SolidCore1.Events.*` | Enter-town events: raven sight, max party size, numbered cells |
 | `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |
@@ -273,6 +275,7 @@ Source/
     SolidGameMode.*
     SolidCameraFog.h         # Boom scale that keeps the camera over Fog == 0
     SolidSight.h             # True sight / raven sight toggle
+    SolidClickMove.h         # Raven-sight click-to-move ground ray
     SolidPlayerController.*
     SolidMaterials.*       # Shared FlatCol solid-color MID helper
     SolidContentPaths.h    # Canonical BP soft-class paths
@@ -326,6 +329,7 @@ Source/
       SolidClipLocomotionTests.cpp
       SolidBuildIdTests.cpp
       SolidPointerTests.cpp
+      SolidClickMoveTests.cpp
       SolidMainMenuTests.cpp
       SolidSightTests.cpp
       SolidContentDependencyTests.cpp

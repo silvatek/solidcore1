@@ -566,6 +566,10 @@ void ASolidHUD::DrawHUD()
 	if (const ASolidCharacter* Captain = Cast<ASolidCharacter>(Pawn))
 	{
 		Lines.Add(FString::Printf(TEXT("F9  %s"), SolidSight::Label(Captain->GetSight())));
+		if (Captain->HasClickMoveDestination())
+		{
+			Lines.Add(TEXT("Click  moving"));
+		}
 	}
 	Lines.Add(TEXT("F10  Menu"));
 	Lines.Add(TEXT("F12  Debug"));

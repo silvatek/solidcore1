@@ -65,6 +65,8 @@ public:
 	ESolidSight GetSight() const { return Sight; }
 	bool IsTrueSight() const { return SolidSight::IsTrueSight(Sight); }
 	void SetSight(ESolidSight NewSight);
+	/** Raven-sight left click. Cleared on arrival, WASD, or true sight. */
+	bool HasClickMoveDestination() const { return bHasClickMoveDestination; }
 	void ToggleSight();
 
 protected:
@@ -83,6 +85,11 @@ protected:
 	void Look(const FInputActionValue& Value);
 	/** Right-button look. The free pointer does not turn the camera. */
 	void UpdatePointerMouseLook();
+	void ClickMoveFromInput();
+	void TickClickMove();
+	void ClearClickMove();
+	bool ResolveClickMoveDestination(const FVector& RayOrigin, const FVector& RayDirection, FVector& OutDestination) const;
+	bool SampleGroundZ(float X, float Y, float& OutZ) const;
 	void Zoom(const FInputActionValue& Value);
 	void StartJump();
 	void StopJumpFromInput();
@@ -295,6 +302,10 @@ protected:
 
 	/** True sight until an event enables raven sight. */
 	ESolidSight Sight = ESolidSight::True;
+
+	/** Ground point chosen by a raven-sight left click. */
+	bool bHasClickMoveDestination = false;
+	FVector ClickMoveDestination = FVector::ZeroVector;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimSequence> CachedIdleAnim;

@@ -1,10 +1,15 @@
 #include "SolidCharacter.h"
+#include "Companion/SolidCompanionCharacter.h"
 #include "HUD/SolidPointer.h"
+#include "SolidClickMove.h"
+#include "Terrain/SolidTerrainStreamer.h"
 #include "Animation/AnimSequence.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "CollisionQueryParams.h"
 #include "Engine/CollisionProfile.h"
+#include "Engine/World.h"
 #include "Engine/SkeletalMesh.h"
 #include "Components/InputComponent.h"
 #include "EnhancedInputComponent.h"
@@ -169,6 +174,7 @@ void ASolidCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	TickPartyFormationDrill(DeltaTime);
 	UpdatePointerMouseLook();
+	TickClickMove();
 	UpdateLocomotionAnim();
 	UpdatePartyCameraFraming(DeltaTime);
 	ClampCameraAboveTerrain(DeltaTime);
@@ -229,6 +235,7 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::F10, IE_Pressed, this, &ASolidCharacter::ToggleMainMenuFromInput);
 	PlayerInputComponent->BindKey(EKeys::F12, IE_Pressed, this, &ASolidCharacter::ToggleDebugPanelFromInput);
 	PlayerInputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ASolidCharacter::CloseMenuOverlayFromInput);
+	PlayerInputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &ASolidCharacter::ClickMoveFromInput);
 	PlayerInputComponent->BindKey(EKeys::Up, IE_Pressed, this, &ASolidCharacter::MainMenuMoveUp);
 	PlayerInputComponent->BindKey(EKeys::Down, IE_Pressed, this, &ASolidCharacter::MainMenuMoveDown);
 	PlayerInputComponent->BindKey(EKeys::Enter, IE_Pressed, this, &ASolidCharacter::MainMenuConfirm);
@@ -300,6 +307,10 @@ void ASolidCharacter::SetSight(const ESolidSight NewSight)
 	}
 
 	Sight = NewSight;
+	if (SolidSight::IsTrueSight(NewSight))
+	{
+		ClearClickMove();
+	}
 	ApplySightPresentation();
 	UE_LOG(LogSolid, Warning, TEXT("Sight: %s"), SolidSight::Label(Sight));
 }
@@ -470,6 +481,10 @@ void ASolidCharacter::Move(const FInputActionValue& Value)
 	}
 
 	const FVector2D MovementVector = Value.Get<FVector2D>();
+	if (!MovementVector.IsNearlyZero())
+	{
+		ClearClickMove();
+	}
 
 	if (Controller != nullptr)
 	{
@@ -498,6 +513,149 @@ void ASolidCharacter::Look(const FInputActionValue& Value)
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+void ASolidCharacter::ClearClickMove()
+{
+	bHasClickMoveDestination = false;
+}
+
+bool ASolidCharacter::SampleGroundZ(const float X, const float Y, float& OutZ) const
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+	if (const ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World))
+	{
+		OutZ = Streamer->GetHeightAt(FVector(X, Y, 0.f)) + Streamer->CollisionHeightBias;
+		return true;
+	}
+	return false;
+}
+
+bool ASolidCharacter::ResolveClickMoveDestination(
+	const FVector& RayOrigin,
+	const FVector& RayDirection,
+	FVector& OutDestination) const
+{
+	const FVector Direction = RayDirection.GetSafeNormal();
+	if (Direction.IsNearlyZero())
+	{
+		return false;
+	}
+
+	UWorld* World = GetWorld();
+	if (World)
+	{
+		FHitResult Hit;
+		FCollisionQueryParams Params(SCENE_QUERY_STAT(SolidClickMove), /*bTraceComplex=*/true, this);
+		Params.AddIgnoredActor(this);
+		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+		{
+			for (const TObjectPtr<ASolidCompanionCharacter>& Companion : GameMode->GetCompanions())
+			{
+				ASolidCompanionCharacter* Actor = Companion.Get();
+				if (Actor)
+				{
+					Params.AddIgnoredActor(Actor);
+				}
+			}
+		}
+
+		const FVector End = RayOrigin + Direction * SolidClickMove::MaxRayCm;
+		if (World->LineTraceSingleByChannel(Hit, RayOrigin, End, ECC_Visibility, Params))
+		{
+			float GroundZ = Hit.ImpactPoint.Z;
+			SampleGroundZ(Hit.ImpactPoint.X, Hit.ImpactPoint.Y, GroundZ);
+			OutDestination = FVector(Hit.ImpactPoint.X, Hit.ImpactPoint.Y, GroundZ);
+			return true;
+		}
+	}
+
+	float ProbeZ = 0.f;
+	if (!SampleGroundZ(RayOrigin.X, RayOrigin.Y, ProbeZ))
+	{
+		return false;
+	}
+
+	return SolidClickMove::IntersectHeight(
+		RayOrigin,
+		Direction,
+		[this](const float X, const float Y)
+		{
+			float GroundZ = 0.f;
+			SampleGroundZ(X, Y, GroundZ);
+			return GroundZ;
+		},
+		OutDestination);
+}
+
+void ASolidCharacter::ClickMoveFromInput()
+{
+	if (!SolidClickMove::AllowsClick(!IsTrueSight(), IsMenuOverlayOpen() || IsPartyFormationDrillActive()))
+	{
+		return;
+	}
+
+	APlayerController* PlayerController = Cast<APlayerController>(Controller);
+	if (!PlayerController)
+	{
+		return;
+	}
+
+	FVector Origin = FVector::ZeroVector;
+	FVector Direction = FVector::ZeroVector;
+	if (!PlayerController->DeprojectMousePositionToWorld(Origin, Direction))
+	{
+		float MouseX = 0.f;
+		float MouseY = 0.f;
+		if (!PlayerController->GetMousePosition(MouseX, MouseY)
+			|| !PlayerController->DeprojectScreenPositionToWorld(MouseX, MouseY, Origin, Direction))
+		{
+			return;
+		}
+	}
+
+	FVector Destination = FVector::ZeroVector;
+	if (!ResolveClickMoveDestination(Origin, Direction, Destination))
+	{
+		return;
+	}
+
+	bHasClickMoveDestination = true;
+	ClickMoveDestination = Destination;
+	UE_LOG(LogSolid, Warning, TEXT("Click move to %s"), *Destination.ToCompactString());
+}
+
+void ASolidCharacter::TickClickMove()
+{
+	if (!bHasClickMoveDestination)
+	{
+		return;
+	}
+	if (IsTrueSight())
+	{
+		ClearClickMove();
+		return;
+	}
+	if (IsMenuOverlayOpen() || IsPartyFormationDrillActive())
+	{
+		return;
+	}
+
+	const FVector Location = GetActorLocation();
+	const FVector2D Direction = SolidClickMove::PlanarDirection(
+		FVector2D(Location.X, Location.Y),
+		FVector2D(ClickMoveDestination.X, ClickMoveDestination.Y));
+	if (Direction.IsNearlyZero())
+	{
+		ClearClickMove();
+		return;
+	}
+
+	AddMovementInput(FVector(Direction.X, Direction.Y, 0.f), 1.f);
 }
 
 void ASolidCharacter::UpdatePointerMouseLook()

@@ -9,7 +9,7 @@ class USkeletalMesh;
  * Resolve Fab-sourced Content without a manual folder move after Add to Project.
  * Viking and grass are found by asset name under /Game/Viking or /Game/Fab.
  * Companion packs are the folders Medieval_Assassin_Girl and Elf_Blacksmith
- * anywhere under /Game.
+ * anywhere under /Game. Recorded paths in tools/fab-assets.json are tried first.
  */
 namespace SolidContentLookup
 {
@@ -115,9 +115,9 @@ namespace SolidContentLookup
 
 	/**
 	 * Skeletal mesh for a companion catalog token.
-	 * Assassin and Blacksmith look in Medieval_Assassin_Girl and Elf_Blacksmith
-	 * anywhere under /Game. Otherwise an exact asset name, then a name that
-	 * contains the token under /Game/Viking or /Game/Fab.
+	 * Tries the recorded file in tools/fab-assets.json, then the recorded folder,
+	 * then Medieval_Assassin_Girl or Elf_Blacksmith anywhere under /Game.
+	 * A miss also tries an exact asset name, then a name that contains the token.
 	 */
 	USkeletalMesh* FindSkeletalMeshByToken(const TCHAR* Token);
 

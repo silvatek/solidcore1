@@ -1,5 +1,6 @@
 #include "SolidTerrainMaterials.h"
 #include "SolidCore1.h"
+#include "SolidFabManifest.h"
 #include "SolidMaterials.h"
 #include "SolidWorldMap.h"
 #include "AssetRegistry/AssetData.h"
@@ -9,43 +10,104 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 
+namespace
+{
+	UMaterialInterface* FindGrassInPackages(const TArray<FName>& PackagePaths)
+	{
+		if (PackagePaths.Num() == 0)
+		{
+			return nullptr;
+		}
+
+		IAssetRegistry& AssetRegistry =
+			FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
+		AssetRegistry.SearchAllAssets(true);
+
+		FARFilter Filter;
+		Filter.PackagePaths.Append(PackagePaths);
+		Filter.bRecursivePaths = true;
+		Filter.ClassPaths.Add(UMaterial::StaticClass()->GetClassPathName());
+		Filter.ClassPaths.Add(UMaterialInstance::StaticClass()->GetClassPathName());
+		Filter.ClassPaths.Add(UMaterialInterface::StaticClass()->GetClassPathName());
+		Filter.bRecursiveClasses = true;
+
+		TArray<FAssetData> Assets;
+		AssetRegistry.GetAssets(Filter, Assets);
+
+		for (const FAssetData& Asset : Assets)
+		{
+			const FString Name = Asset.AssetName.ToString();
+			if (!Name.Equals(TEXT("Mat_025_grass"), ESearchCase::IgnoreCase))
+			{
+				continue;
+			}
+
+			// Skip the StaticMeshes package that shares the asset name.
+			if (Asset.PackageName.ToString().Contains(TEXT("/StaticMeshes/"), ESearchCase::IgnoreCase))
+			{
+				continue;
+			}
+
+			if (UMaterialInterface* Grass = Cast<UMaterialInterface>(Asset.GetAsset()))
+			{
+				return Grass;
+			}
+		}
+		return nullptr;
+	}
+}
+
 UMaterialInterface* SolidTerrainMaterials::FindFabGrass()
 {
-	IAssetRegistry& AssetRegistry =
-		FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
-	AssetRegistry.SearchAllAssets(true);
+	const FString Manifest = SolidFabManifest::LoadManifest();
+	FString RecordedFile;
+	FString RecordedFolder;
+	SolidFabManifest::ReadJsonStringField(Manifest, TEXT("grass"), TEXT("resolvedPath"), RecordedFile);
+	SolidFabManifest::ReadJsonStringField(Manifest, TEXT("grass"), TEXT("resolvedFolder"), RecordedFolder);
+	const bool bFile = SolidFabManifest::ContentFileExists(RecordedFile);
+	const bool bFolder = SolidFabManifest::ContentDirectoryExists(RecordedFolder);
 
-	FARFilter Filter;
-	Filter.PackagePaths.Add(FName(TEXT("/Game/Fab")));
-	Filter.bRecursivePaths = true;
-	Filter.ClassPaths.Add(UMaterial::StaticClass()->GetClassPathName());
-	Filter.ClassPaths.Add(UMaterialInstance::StaticClass()->GetClassPathName());
-	Filter.ClassPaths.Add(UMaterialInterface::StaticClass()->GetClassPathName());
-	Filter.bRecursiveClasses = true;
-
-	TArray<FAssetData> Assets;
-	AssetRegistry.GetAssets(Filter, Assets);
-
-	for (const FAssetData& Asset : Assets)
+	if (SolidFabManifest::ChooseFabLookup(bFile, bFolder) == ESolidFabLookup::RecordedFile)
 	{
-		const FString Name = Asset.AssetName.ToString();
-		if (!Name.Equals(TEXT("Mat_025_grass"), ESearchCase::IgnoreCase))
+		if (UMaterialInterface* Recorded = Cast<UMaterialInterface>(
+			SolidFabManifest::TryLoadContentFile(RecordedFile, UMaterialInterface::StaticClass())))
 		{
-			continue;
+			UE_LOG(LogSolid, Warning, TEXT("Terrain material: recorded Fab grass %s"), *Recorded->GetPathName());
+			return Recorded;
 		}
+		UE_LOG(LogSolid, Warning, TEXT("Recorded Fab grass is missing. Searching."));
+	}
 
-		// Skip the StaticMeshes package that shares the asset name.
-		if (Asset.PackageName.ToString().Contains(TEXT("/StaticMeshes/"), ESearchCase::IgnoreCase))
+	auto Accept = [](UMaterialInterface* Grass) -> UMaterialInterface*
+	{
+		if (Grass)
 		{
-			continue;
+			SolidFabManifest::RememberDiscoveredFile(TEXT("grass"), Grass);
+			UE_LOG(LogSolid, Warning, TEXT("Terrain material: Fab grass %s"), *Grass->GetPathName());
 		}
+		return Grass;
+	};
 
-		if (UMaterialInterface* Grass = Cast<UMaterialInterface>(Asset.GetAsset()))
+	if (bFolder)
+	{
+		const FString Package = SolidFabManifest::ContentFolderToPackagePath(RecordedFolder);
+		TArray<FName> Packages;
+		if (!Package.IsEmpty())
 		{
-			UE_LOG(LogSolid, Warning,
-				TEXT("Terrain material: Fab grass %s"), *Asset.GetObjectPathString());
-			return Grass;
+			Packages.Add(FName(*Package));
 		}
+		if (UMaterialInterface* Grass = FindGrassInPackages(Packages))
+		{
+			return Accept(Grass);
+		}
+		UE_LOG(LogSolid, Warning, TEXT("No Mat_025_grass in recorded folder %s. Searching."), *RecordedFolder);
+	}
+
+	TArray<FName> FabPackages;
+	FabPackages.Add(FName(TEXT("/Game/Fab")));
+	if (UMaterialInterface* Grass = FindGrassInPackages(FabPackages))
+	{
+		return Accept(Grass);
 	}
 
 	UE_LOG(LogSolid, Warning, TEXT("Fab Mat_025_grass not found under /Game/Fab."));

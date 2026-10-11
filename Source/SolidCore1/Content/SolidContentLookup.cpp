@@ -1,4 +1,5 @@
 #include "SolidContentLookup.h"
+#include "SolidFabManifest.h"
 #include "SolidCore1.h"
 #include "Animation/AnimSequence.h"
 #include "AssetRegistry/AssetData.h"
@@ -64,17 +65,40 @@ namespace
 		return Best->GetAsset();
 	}
 
-	USkeletalMesh* FindSkeletalMeshInFolder(
-		const TCHAR* Folder,
+	const TCHAR* FallbackAssetId(const TCHAR* Token)
+	{
+		if (!Token)
+		{
+			return TEXT("");
+		}
+		if (FCString::Stricmp(Token, TEXT("Assassin")) == 0)
+		{
+			return TEXT("assassin");
+		}
+		if (FCString::Stricmp(Token, TEXT("Blacksmith")) == 0)
+		{
+			return TEXT("blacksmith");
+		}
+		return TEXT("");
+	}
+
+	USkeletalMesh* FindBestSkeletalMesh(
+		const TArray<FName>& PackagePaths,
 		const TCHAR* Token,
+		const TCHAR* RequiredFolder,
 		const TArray<FTopLevelAssetPath>& ClassPaths)
 	{
+		if (PackagePaths.Num() == 0)
+		{
+			return nullptr;
+		}
+
 		IAssetRegistry& AssetRegistry =
 			FModuleManager::LoadModuleChecked<FAssetRegistryModule>(TEXT("AssetRegistry")).Get();
 		AssetRegistry.SearchAllAssets(true);
 
 		FARFilter Filter;
-		Filter.PackagePaths.Add(FName(TEXT("/Game")));
+		Filter.PackagePaths.Append(PackagePaths);
 		Filter.bRecursivePaths = true;
 		Filter.ClassPaths = ClassPaths;
 		Filter.bRecursiveClasses = true;
@@ -85,7 +109,8 @@ namespace
 		const FAssetData* Best = nullptr;
 		for (const FAssetData& Asset : Assets)
 		{
-			if (!SolidContentLookup::PackageContainsFolder(Asset.PackageName.ToString(), Folder))
+			if (RequiredFolder && RequiredFolder[0]
+				&& !SolidContentLookup::PackageContainsFolder(Asset.PackageName.ToString(), RequiredFolder))
 			{
 				continue;
 			}
@@ -97,25 +122,34 @@ namespace
 			}
 		}
 
-		if (!Best)
-		{
-			return nullptr;
-		}
-
-		UE_LOG(LogSolid, Warning, TEXT("Mesh token %s in %s -> %s"),
-			Token, Folder, *Best->GetObjectPathString());
-		return Cast<USkeletalMesh>(Best->GetAsset());
+		return Best ? Cast<USkeletalMesh>(Best->GetAsset()) : nullptr;
 	}
 }
 
 USkeletalMesh* SolidContentLookup::FindVikingMesh()
 {
+	const FString Manifest = SolidFabManifest::LoadManifest();
+	FString RecordedFile;
+	SolidFabManifest::ReadJsonStringField(Manifest, TEXT("viking"), TEXT("SK_Viking.uasset"), RecordedFile);
+	const bool bFile = SolidFabManifest::ContentFileExists(RecordedFile);
+	if (SolidFabManifest::ChooseFabLookup(bFile, false) == ESolidFabLookup::RecordedFile)
+	{
+		if (USkeletalMesh* Recorded = Cast<USkeletalMesh>(
+			SolidFabManifest::TryLoadContentFile(RecordedFile, USkeletalMesh::StaticClass())))
+		{
+			UE_LOG(LogSolid, Warning, TEXT("Viking mesh recorded: %s"), *Recorded->GetPathName());
+			return Recorded;
+		}
+		UE_LOG(LogSolid, Warning, TEXT("Recorded Viking mesh is missing. Searching."));
+	}
+
 	TArray<FTopLevelAssetPath> Classes;
 	Classes.Add(USkeletalMesh::StaticClass()->GetClassPathName());
 	USkeletalMesh* Mesh = Cast<USkeletalMesh>(FindNamedAsset(VikingMeshName, Classes));
 	if (Mesh)
 	{
 		UE_LOG(LogSolid, Warning, TEXT("Viking mesh: %s"), *Mesh->GetPathName());
+		SolidFabManifest::RememberNamedFile(TEXT("viking"), TEXT("SK_Viking.uasset"), Mesh);
 	}
 	else
 	{
@@ -135,21 +169,79 @@ USkeletalMesh* SolidContentLookup::FindSkeletalMeshByToken(const TCHAR* Token)
 	TArray<FTopLevelAssetPath> Classes;
 	Classes.Add(USkeletalMesh::StaticClass()->GetClassPathName());
 
-	const TCHAR* Folder = CompanionMeshFolder(Token);
-	if (Folder && Folder[0])
+	const FString Manifest = SolidFabManifest::LoadManifest();
+	FString AssetId = SolidFabManifest::AssetIdForToken(Manifest, Token);
+	if (AssetId.IsEmpty())
 	{
-		if (USkeletalMesh* InFolder = FindSkeletalMeshInFolder(Folder, Token, Classes))
+		AssetId = FallbackAssetId(Token);
+	}
+
+	FString RecordedFile;
+	FString RecordedFolder;
+	if (!AssetId.IsEmpty())
+	{
+		SolidFabManifest::ReadJsonStringField(Manifest, *AssetId, TEXT("resolvedPath"), RecordedFile);
+		SolidFabManifest::ReadJsonStringField(Manifest, *AssetId, TEXT("resolvedFolder"), RecordedFolder);
+	}
+	const bool bFile = SolidFabManifest::ContentFileExists(RecordedFile);
+	const bool bFolder = SolidFabManifest::ContentDirectoryExists(RecordedFolder);
+	const TCHAR* PackFolder = CompanionMeshFolder(Token);
+
+	auto Remember = [&AssetId, PackFolder](USkeletalMesh* Mesh) -> USkeletalMesh*
+	{
+		if (Mesh && !AssetId.IsEmpty())
 		{
-			return InFolder;
+			SolidFabManifest::RememberDiscoveredMesh(*AssetId, PackFolder, Mesh);
+		}
+		return Mesh;
+	};
+
+	if (SolidFabManifest::ChooseFabLookup(bFile, bFolder) == ESolidFabLookup::RecordedFile)
+	{
+		if (USkeletalMesh* Recorded = Cast<USkeletalMesh>(
+			SolidFabManifest::TryLoadContentFile(RecordedFile, USkeletalMesh::StaticClass())))
+		{
+			UE_LOG(LogSolid, Warning, TEXT("Mesh token %s recorded: %s"), Token, *Recorded->GetPathName());
+			return Recorded;
+		}
+		UE_LOG(LogSolid, Warning, TEXT("Recorded mesh for token %s is missing. Searching."), Token);
+	}
+
+	if (bFolder)
+	{
+		const FString Package = SolidFabManifest::ContentFolderToPackagePath(RecordedFolder);
+		TArray<FName> Packages;
+		if (!Package.IsEmpty())
+		{
+			Packages.Add(FName(*Package));
+		}
+		if (USkeletalMesh* InFolder = FindBestSkeletalMesh(Packages, Token, nullptr, Classes))
+		{
+			UE_LOG(LogSolid, Warning, TEXT("Mesh token %s in recorded folder %s -> %s"),
+				Token, *RecordedFolder, *InFolder->GetPathName());
+			return Remember(InFolder);
+		}
+		UE_LOG(LogSolid, Warning, TEXT("No skeletal mesh in recorded folder %s. Searching."), *RecordedFolder);
+	}
+
+	if (PackFolder && PackFolder[0])
+	{
+		TArray<FName> Packages;
+		Packages.Add(FName(TEXT("/Game")));
+		if (USkeletalMesh* InFolder = FindBestSkeletalMesh(Packages, Token, PackFolder, Classes))
+		{
+			UE_LOG(LogSolid, Warning, TEXT("Mesh token %s in %s -> %s"),
+				Token, PackFolder, *InFolder->GetPathName());
+			return Remember(InFolder);
 		}
 		UE_LOG(LogSolid, Warning,
 			TEXT("No skeletal mesh in Content folder %s for token \"%s\"."),
-			Folder, Token);
+			PackFolder, Token);
 	}
 
 	if (USkeletalMesh* Exact = Cast<USkeletalMesh>(FindNamedAsset(Token, Classes)))
 	{
-		return Exact;
+		return Remember(Exact);
 	}
 
 	IAssetRegistry& AssetRegistry =
@@ -204,14 +296,34 @@ USkeletalMesh* SolidContentLookup::FindSkeletalMeshByToken(const TCHAR* Token)
 	}
 
 	UE_LOG(LogSolid, Warning, TEXT("Mesh token %s -> %s"), Token, *Best->GetObjectPathString());
-	return Cast<USkeletalMesh>(Best->GetAsset());
+	return Remember(Cast<USkeletalMesh>(Best->GetAsset()));
 }
 
 UAnimSequence* SolidContentLookup::FindVikingClip(const TCHAR* AssetName)
 {
 	TArray<FTopLevelAssetPath> Classes;
 	Classes.Add(UAnimSequence::StaticClass()->GetClassPathName());
-	return Cast<UAnimSequence>(FindNamedAsset(AssetName, Classes));
+
+	const FString Field = FString(AssetName) + TEXT(".uasset");
+	const FString Manifest = SolidFabManifest::LoadManifest();
+	FString RecordedFile;
+	SolidFabManifest::ReadJsonStringField(Manifest, TEXT("viking"), *Field, RecordedFile);
+	const bool bFile = SolidFabManifest::ContentFileExists(RecordedFile);
+	if (SolidFabManifest::ChooseFabLookup(bFile, false) == ESolidFabLookup::RecordedFile)
+	{
+		if (UAnimSequence* Recorded = Cast<UAnimSequence>(
+			SolidFabManifest::TryLoadContentFile(RecordedFile, UAnimSequence::StaticClass())))
+		{
+			return Recorded;
+		}
+	}
+
+	UAnimSequence* Clip = Cast<UAnimSequence>(FindNamedAsset(AssetName, Classes));
+	if (Clip)
+	{
+		SolidFabManifest::RememberNamedFile(TEXT("viking"), *Field, Clip);
+	}
+	return Clip;
 }
 
 UAnimSequence* SolidContentLookup::FindVikingIdle()

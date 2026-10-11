@@ -1,5 +1,5 @@
 {
-  "note": "Fab listings this project expects. Native UE (.uasset) packs cannot be batch-downloaded or batch-exported in Fab in Launcher — Add to Project is per listing. See README 'Fab assets'.",
+  "note": "Fab listings this project expects. Native UE (.uasset) packs cannot be batch-downloaded or batch-exported in Fab in Launcher — Add to Project is per listing. resolvedPath, resolvedFolder, and resolvedPaths are tried first and rewritten when a search finds the asset. See README 'Fab assets'.",
   "docs": "https://dev.epicgames.com/documentation/en-us/fab/exporting-assets-from-fab-in-launcher",
   "project": "SolidCore1.uproject",
   "assets": [
@@ -26,7 +26,14 @@
         "Content/Viking/Animations/Anim_Viking_run.uasset",
         "Content/Viking/Animations/Anim_Viking_jump.uasset"
       ],
-      "notes": "C++ finds SK_Viking / Anim_Viking_* by name under /Game/Viking or /Game/Fab. Add to Project is enough — do not move folders."
+      "resolvedPaths": {
+        "SK_Viking.uasset": "Content/Viking/Mesh/SK_Viking.uasset",
+        "Anim_Viking_idle1.uasset": "Content/Viking/Animations/Anim_Viking_idle1.uasset",
+        "Anim_Viking_walk.uasset": "Content/Viking/Animations/Anim_Viking_walk.uasset",
+        "Anim_Viking_run.uasset": "Content/Viking/Animations/Anim_Viking_run.uasset",
+        "Anim_Viking_jump.uasset": "Content/Viking/Animations/Anim_Viking_jump.uasset"
+      },
+      "notes": "resolvedPaths are tried first. A missing file is found by name under /Game/Viking or /Game/Fab, then written back. Do not move folders."
     },
     {
       "id": "grass",
@@ -46,7 +53,9 @@
       },
       "expectedName": "Mat_025_grass.uasset",
       "searchRoots": ["Content/Fab"],
-      "notes": "Required. Terrain looks up Mat_025_grass under /Game/Fab. Add to Project is enough."
+      "resolvedPath": "",
+      "resolvedFolder": "",
+      "notes": "resolvedPath, then resolvedFolder, then Mat_025_grass under /Game/Fab. A find is written back."
     },
     {
       "id": "assassin",
@@ -67,7 +76,9 @@
       "assetToken": "Assassin",
       "contentFolder": "Medieval_Assassin_Girl",
       "searchRoots": ["Content"],
-      "notes": "Companion mesh. C++ finds a skeletal mesh whose package path contains /Medieval_Assassin_Girl anywhere under /Game, and prefers an SK_ asset. Captain stays on SK_Viking."
+      "resolvedPath": "",
+      "resolvedFolder": "",
+      "notes": "resolvedPath, then resolvedFolder, then an SK_ skeletal mesh in Medieval_Assassin_Girl anywhere under Content. A find is written back. Captain stays on SK_Viking."
     },
     {
       "id": "blacksmith",
@@ -88,7 +99,9 @@
       "assetToken": "Blacksmith",
       "contentFolder": "Elf_Blacksmith",
       "searchRoots": ["Content"],
-      "notes": "Companion mesh. C++ finds a skeletal mesh whose package path contains /Elf_Blacksmith anywhere under /Game, and prefers an SK_ asset. Captain stays on SK_Viking."
+      "resolvedPath": "",
+      "resolvedFolder": "",
+      "notes": "resolvedPath, then resolvedFolder, then an SK_ skeletal mesh in Elf_Blacksmith anywhere under Content. A find is written back. Captain stays on SK_Viking."
     }
   ]
 }

@@ -24,7 +24,7 @@ namespace SolidTerrainMaterials
 		float GrassSpecular = 0.05f;
 	};
 
-	/** Search /Game/Fab for Mat_025_grass (skips StaticMeshes package). */
+	/** Recorded Fab path, then /Game/Fab, for Mat_025_grass (skips StaticMeshes). */
 	UMaterialInterface* FindFabGrass();
 
 	/** FlatCol solid green MID from GrassColor / GrassDarkColor blend. */

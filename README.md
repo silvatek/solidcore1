@@ -38,7 +38,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - **Mouse pointer** — a bronze arrow drawn in the game, tip on the hotspot. The Windows cursor stays hidden. Hold the right mouse button to look; the pointer hides until you let go, then it is back where you pressed. The right stick still looks.
 - **Click to move** — raven sight only. One left click on the ground walks the captain there in a straight line, then he stops. WASD and the left stick do nothing in raven sight. In true sight a click does nothing: he moves only with WASD or the left stick. Switching back to true sight cancels a walk that was in progress.
 - **Main menu** — F10 opens it. **1 Use portal** lists the towns; choosing one moves the party onto that town and fires its enter-town event. **2 Test Drill** runs the formation drill. **3 Journal** opens the journal. **4 Credits** opens the credits page (Silvatek, Cursor + Grok, Fab Viking, grass, Assassin, and Blacksmith). Up/Down, Enter, and the pointer also work: resting the pointer on a row highlights it, and a left click chooses it. The same pointer works on the portal list. Esc or F10 closes. Move, look, and battle-plan keys are ignored while the menu, the portal list, the journal, or the credits page is open.
-- **Content pipeline** — Fab listings restored via Launcher Add to Project. C++ finds Viking and grass by name under `/Game/Viking` or `/Game/Fab`. Companion meshes are the skeletal mesh inside `Medieval_Assassin_Girl` and `Elf_Blacksmith` anywhere under Content. `tools/fab_doctor.bat` + `fab-assets.json`. Packs are gitignored (attribution README kept).
+- **Content pipeline** — Fab listings restored via Launcher Add to Project. Recorded paths in `tools/fab-assets.json` are tried first. A miss falls back to a search: Viking and grass by name under `/Game/Viking` or `/Game/Fab`, companion meshes inside `Medieval_Assassin_Girl` and `Elf_Blacksmith` anywhere under Content. A find is written back into the manifest. `tools/fab_doctor.bat`. Packs are gitignored (attribution README kept).
 - **Automation** — `SolidCore1.*` editor tests; `tools/run_automation_tests.bat` prints failed test paths. Build ID `SC1-NNNN` on the debug HUD.
 - **Editor build** — `tools\build.bat` compiles `SolidCore1Editor` Win64 Development (`-WaitMutex`). `UE_ROOT` overrides the engine install; `PROJECT` overrides the uproject. Both default from the script location.
 
@@ -104,13 +104,13 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.Sight.*` | True sight at start; F9 switches to raven sight and back; eye and eagle markers |
 | `SolidCore1.Events.*` | Enter-town events: raven sight, max party size, numbered cells |
 | `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |
-| `SolidCore1.Content.*` | Required Content + Engine assets the code loads; Assassin and Blacksmith folder names |
+| `SolidCore1.Content.*` | Required Content + Engine assets the code loads; Assassin and Blacksmith folders; recorded Fab paths |
 
 **Content dependency tests** assert meshes/materials/anims/BPs the C++ loaders expect (Engine BasicShapes, FlatCol for solid colors, Viking mesh+locomotion, Fab grass, pawn/GameMode BP-or-C++). Viking and Fab grass are required; Epic mannequin assets are not used.
 
 ## Fab assets (Epic Games Launcher)
 
-Grass, Viking, the Assassin, and the Blacksmith come from Fab. There is **no official download API**. Native UE `.uasset` packs cannot be batch-exported — each listing is **Add to Project** on its own. Viking and grass are found by **asset name** under `/Game/Viking` or `/Game/Fab`. The Assassin and Blacksmith packs are the folders `Medieval_Assassin_Girl` and `Elf_Blacksmith` anywhere under Content. Do **not** move folders after Add to Project.
+Grass, Viking, the Assassin, and the Blacksmith come from Fab. There is **no official download API**. Native UE `.uasset` packs cannot be batch-exported — each listing is **Add to Project** on its own. `resolvedPath`, `resolvedFolder`, and `resolvedPaths` in `tools/fab-assets.json` are tried first. If that file or folder is missing, Viking and grass are found by **asset name** under `/Game/Viking` or `/Game/Fab`, and the Assassin and Blacksmith packs are the folders `Medieval_Assassin_Girl` and `Elf_Blacksmith` anywhere under Content. A find is written back into the manifest. Do **not** move folders after Add to Project.
 
 | Asset | Listing | Required | Resolved as |
 |-------|---------|----------|-------------|
@@ -129,7 +129,7 @@ Grass, Viking, the Assassin, and the Blacksmith come from Fab. There is **no off
 tools\fab_doctor.bat
 ```
 
-checks `SK_Viking` / clips / grass under `Content/Viking` or `Content/Fab`, and an `SK_` mesh inside `Medieval_Assassin_Girl` and `Elf_Blacksmith` anywhere under Content. Manifest: `tools/fab-assets.json`. Official notes: [Exporting Assets from Fab in Launcher](https://dev.epicgames.com/documentation/en-us/fab/exporting-assets-from-fab-in-launcher).
+tries each recorded path in `tools/fab-assets.json` first, then searches. Viking and grass fall back to `Content/Viking` or `Content/Fab`. Companion meshes fall back to an `SK_` file inside `Medieval_Assassin_Girl` and `Elf_Blacksmith` anywhere under Content. A find is written back. Official notes: [Exporting Assets from Fab in Launcher](https://dev.epicgames.com/documentation/en-us/fab/exporting-assets-from-fab-in-launcher).
 
 We still commit these folders today so a clone runs without the Launcher.
 
@@ -269,8 +269,9 @@ Content/
   Viking/              # Fab Viking mesh + locomotion clips (see Fab assets)
   WorldMap.txt         # ASCII 64×64 biome overlay + color key
 tools/
-  fab-assets.json      # Fab listing IDs + expected paths
-  fab_doctor.bat       # check Viking, grass, and companion pack folders
+  fab-assets.json      # Fab listing IDs, plus recorded paths once a search finds them
+  fab_manifest.ps1     # read or update one recorded path
+  fab_doctor.bat       # recorded path first, then search; write back a find
   build.bat            # SolidCore1Editor Win64 Development
   run_automation_tests.bat
 Source/
@@ -297,7 +298,8 @@ Source/
       SolidBuildId.h                     # SC1-NNNN shown on the debug HUD
     Content/
       SolidMaterials.*                   # Shared FlatCol solid-color MID helper
-      SolidContentLookup.*               # Viking/grass by name; companion packs by folder
+      SolidContentLookup.*               # Recorded Fab path, then Viking/grass by name and companion packs by folder
+      SolidFabManifest.*                 # tools/fab-assets.json recorded paths
       SolidContentPaths.h                # Canonical BP soft-class paths
     Companion/
       SolidCompanionCharacter.*          # Companion NPC follower

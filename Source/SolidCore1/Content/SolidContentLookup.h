@@ -25,18 +25,55 @@ namespace SolidContentLookup
 	inline constexpr const TCHAR* BlacksmithContentFolder = TEXT("Elf_Blacksmith");
 
 	/**
-	 * Character body inside an Assassin or Blacksmith pack.
-	 * SK_Mannequin.uasset beside it is the skeleton, not the mesh.
+	 * Assassin body. SK_Mannequin.uasset beside it is the skeleton, not the mesh.
 	 */
-	inline constexpr const TCHAR* CompanionBodyRelativePath = TEXT("Meshes/base_mesh/SKM_base_mesh_ue.uasset");
+	inline constexpr const TCHAR* AssassinBodyRelativePath = TEXT("Meshes/base_mesh/SKM_base_mesh_ue.uasset");
+	inline constexpr const TCHAR* AssassinBodyAssetName = TEXT("SKM_base_mesh_ue");
+
+	/**
+	 * Blacksmith body. SK_Elf_Blacksmith_Skeleton.uasset beside it is the skeleton.
+	 * SeparatedMesh holds body and cloth parts, not the full character.
+	 * The pack has no locomotion clips.
+	 */
+	inline constexpr const TCHAR* BlacksmithBodyRelativePath = TEXT("Mesh/SK_Elf_Blacksmith.uasset");
+	inline constexpr const TCHAR* BlacksmithBodyAssetName = TEXT("SK_Elf_Blacksmith");
+
+	/** True when PackageName has Folder as its own path segment. */
+	inline bool PackageContainsFolder(const FString& PackageName, const TCHAR* Folder)
+	{
+		if (!Folder || !Folder[0] || PackageName.IsEmpty())
+		{
+			return false;
+		}
+
+		const FString Segment = FString(TEXT("/")) + Folder;
+		int32 SearchFrom = 0;
+		while (SearchFrom < PackageName.Len())
+		{
+			const int32 At = PackageName.Find(
+				Segment, ESearchCase::IgnoreCase, ESearchDir::FromStart, SearchFrom);
+			if (At == INDEX_NONE)
+			{
+				return false;
+			}
+			const int32 After = At + Segment.Len();
+			if (After >= PackageName.Len() || PackageName[After] == TEXT('/'))
+			{
+				return true;
+			}
+			SearchFrom = At + 1;
+		}
+		return false;
+	}
 
 	/** Unarmed locomotion in Medieval_Assassin_Girl/animation/assassin. */
-	inline constexpr const TCHAR* AssassinIdleName = TEXT("anim_assassin_idle_1");
+	/** idle_1 crouches in PIE. idle_2 is the idle companions play. */
+	inline constexpr const TCHAR* AssassinIdleName = TEXT("anim_assassin_idle_2");
 	inline constexpr const TCHAR* AssassinWalkName = TEXT("anim_assassin_Walk");
 	inline constexpr const TCHAR* AssassinRunName = TEXT("anim_assassin_run");
 	inline constexpr const TCHAR* AssassinJumpName = TEXT("anim_assassin_Jump");
 
-	/** PackFolder/Meshes/base_mesh/SKM_base_mesh_ue.uasset */
+	/** Pack folder plus that pack's body file. Empty when the folder is neither pack. */
 	inline FString CompanionBodyFile(const FString& PackFolder)
 	{
 		FString Folder = PackFolder;
@@ -49,17 +86,59 @@ namespace SolidContentLookup
 		{
 			return FString();
 		}
-		return Folder + TEXT("/") + CompanionBodyRelativePath;
+		const TCHAR* Relative = nullptr;
+		if (PackageContainsFolder(Folder, BlacksmithContentFolder))
+		{
+			Relative = BlacksmithBodyRelativePath;
+		}
+		else if (PackageContainsFolder(Folder, AssassinContentFolder))
+		{
+			Relative = AssassinBodyRelativePath;
+		}
+		if (!Relative)
+		{
+			return FString();
+		}
+		return Folder + TEXT("/") + Relative;
 	}
 
-	/** True for the body mesh path, as a Content file or a /Game object path. */
-	inline bool IsCompanionBodyPath(const FString& Path)
+	inline bool EndsWithCompanionBody(const FString& Normal, const TCHAR* FileSuffix, const TCHAR* ObjectSuffix, const TCHAR* AssetSuffix)
+	{
+		return Normal.EndsWith(FileSuffix, ESearchCase::IgnoreCase)
+			|| Normal.EndsWith(ObjectSuffix, ESearchCase::IgnoreCase)
+			|| Normal.EndsWith(AssetSuffix, ESearchCase::IgnoreCase);
+	}
+
+	/** True for the Assassin body, as a Content file or a /Game object path. */
+	inline bool IsAssassinBodyPath(const FString& Path)
 	{
 		FString Normal = Path;
 		Normal.ReplaceInline(TEXT("\\"), TEXT("/"));
-		return Normal.EndsWith(TEXT("Meshes/base_mesh/SKM_base_mesh_ue.uasset"), ESearchCase::IgnoreCase)
-			|| Normal.EndsWith(TEXT("Meshes/base_mesh/SKM_base_mesh_ue.SKM_base_mesh_ue"), ESearchCase::IgnoreCase)
-			|| Normal.EndsWith(TEXT("/Meshes/base_mesh/SKM_base_mesh_ue"), ESearchCase::IgnoreCase);
+		return PackageContainsFolder(Normal, AssassinContentFolder)
+			&& EndsWithCompanionBody(
+				Normal,
+				TEXT("Meshes/base_mesh/SKM_base_mesh_ue.uasset"),
+				TEXT("Meshes/base_mesh/SKM_base_mesh_ue.SKM_base_mesh_ue"),
+				TEXT("/Meshes/base_mesh/SKM_base_mesh_ue"));
+	}
+
+	/** True for Mesh/SK_Elf_Blacksmith, not the skeleton or a SeparatedMesh part. */
+	inline bool IsBlacksmithBodyPath(const FString& Path)
+	{
+		FString Normal = Path;
+		Normal.ReplaceInline(TEXT("\\"), TEXT("/"));
+		return PackageContainsFolder(Normal, BlacksmithContentFolder)
+			&& EndsWithCompanionBody(
+				Normal,
+				TEXT("/Mesh/SK_Elf_Blacksmith.uasset"),
+				TEXT("/Mesh/SK_Elf_Blacksmith.SK_Elf_Blacksmith"),
+				TEXT("/Mesh/SK_Elf_Blacksmith"));
+	}
+
+	/** True for whichever pack body the path names. */
+	inline bool IsCompanionBodyPath(const FString& Path)
+	{
+		return IsAssassinBodyPath(Path) || IsBlacksmithBodyPath(Path);
 	}
 
 	/**
@@ -89,34 +168,6 @@ namespace SolidContentLookup
 			return BlacksmithContentFolder;
 		}
 		return TEXT("");
-	}
-
-	/** True when PackageName has Folder as its own path segment. */
-	inline bool PackageContainsFolder(const FString& PackageName, const TCHAR* Folder)
-	{
-		if (!Folder || !Folder[0] || PackageName.IsEmpty())
-		{
-			return false;
-		}
-
-		const FString Segment = FString(TEXT("/")) + Folder;
-		int32 SearchFrom = 0;
-		while (SearchFrom < PackageName.Len())
-		{
-			const int32 At = PackageName.Find(
-				Segment, ESearchCase::IgnoreCase, ESearchDir::FromStart, SearchFrom);
-			if (At == INDEX_NONE)
-			{
-				return false;
-			}
-			const int32 After = At + Segment.Len();
-			if (After >= PackageName.Len() || PackageName[After] == TEXT('/'))
-			{
-				return true;
-			}
-			SearchFrom = At + 1;
-		}
-		return false;
 	}
 
 	/**
@@ -153,9 +204,9 @@ namespace SolidContentLookup
 
 	/**
 	 * Skeletal mesh for a companion catalog token.
-	 * The body is Meshes/base_mesh/SKM_base_mesh_ue inside Medieval_Assassin_Girl or
-	 * Elf_Blacksmith. A recorded file is used when it is that body. Otherwise
-	 * the body is found and written back, then a shorter SK_ is the fallback.
+	 * Assassin body is Meshes/base_mesh/SKM_base_mesh_ue. Blacksmith body is
+	 * Mesh/SK_Elf_Blacksmith. A recorded file is used when it is that body.
+	 * Otherwise the body is found and written back, then a shorter SK_ is the fallback.
 	 */
 	USkeletalMesh* FindSkeletalMeshByToken(const TCHAR* Token);
 

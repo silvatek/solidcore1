@@ -101,7 +101,7 @@
       "searchRoots": ["Content"],
       "resolvedPath": "",
       "resolvedFolder": "",
-      "notes": "Body is Meshes/base_mesh/SKM_base_mesh_ue.uasset inside Elf_Blacksmith. A recorded file is kept when it is that body; otherwise the body replaces it. Captain stays on SK_Viking."
+      "notes": "Body is Mesh/SK_Elf_Blacksmith.uasset inside Elf_Blacksmith. SK_Elf_Blacksmith_Skeleton.uasset is the skeleton. SeparatedMesh parts are not the body. The pack has no locomotion clips. A recorded file is kept when it is that body; otherwise the body replaces it. Captain stays on SK_Viking."
     }
   ]
 }

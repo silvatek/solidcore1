@@ -76,10 +76,26 @@ bool FSolidCompanionMeshFolderTest::RunTest(const FString& Parameters)
 		TEXT("body file under the pack"),
 		SolidContentLookup::CompanionBodyFile(TEXT("Content/Fab/Medieval_Assassin_Girl")),
 		FString(TEXT("Content/Fab/Medieval_Assassin_Girl/Meshes/base_mesh/SKM_base_mesh_ue.uasset")));
-	TestTrue(
-		TEXT("content body path"),
+	TestEqual(
+		TEXT("blacksmith body file"),
+		SolidContentLookup::CompanionBodyFile(TEXT("Content/Elf_Blacksmith")),
+		FString(TEXT("Content/Elf_Blacksmith/Mesh/SK_Elf_Blacksmith.uasset")));
+	TestFalse(
+		TEXT("assassin body path is not the blacksmith body"),
 		SolidContentLookup::IsCompanionBodyPath(
 			TEXT("Content/X/Elf_Blacksmith/Meshes/base_mesh/SKM_base_mesh_ue.uasset")));
+	TestTrue(
+		TEXT("blacksmith body path"),
+		SolidContentLookup::IsCompanionBodyPath(
+			TEXT("Content/Elf_Blacksmith/Mesh/SK_Elf_Blacksmith.uasset")));
+	TestFalse(
+		TEXT("blacksmith skeleton is not the body"),
+		SolidContentLookup::IsCompanionBodyPath(
+			TEXT("Content/Elf_Blacksmith/Mesh/SK_Elf_Blacksmith_Skeleton.uasset")));
+	TestFalse(
+		TEXT("separated blacksmith part is not the body"),
+		SolidContentLookup::IsCompanionBodyPath(
+			TEXT("Content/Elf_Blacksmith/Mesh/SeparatedMesh/Body/SK_body.uasset")));
 	TestTrue(
 		TEXT("object body path"),
 		SolidContentLookup::IsCompanionBodyPath(
@@ -91,7 +107,7 @@ bool FSolidCompanionMeshFolderTest::RunTest(const FString& Parameters)
 	TestEqual(
 		TEXT("assassin idle"),
 		FString(SolidContentLookup::AssassinIdleName),
-		FString(TEXT("anim_assassin_idle_1")));
+		FString(TEXT("anim_assassin_idle_2")));
 	TestEqual(
 		TEXT("assassin walk"),
 		FString(SolidContentLookup::AssassinWalkName),

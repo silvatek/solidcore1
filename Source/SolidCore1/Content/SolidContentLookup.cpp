@@ -148,16 +148,31 @@ namespace
 		TArray<FAssetData> Assets;
 		AssetRegistry.GetAssets(Filter, Assets);
 
+		const bool bBlacksmith = FCString::Stricmp(PackFolder, SolidContentLookup::BlacksmithContentFolder) == 0;
+		const TCHAR* BodyName = bBlacksmith
+			? SolidContentLookup::BlacksmithBodyAssetName
+			: SolidContentLookup::AssassinBodyAssetName;
+
 		const FAssetData* Best = nullptr;
 		for (const FAssetData& Asset : Assets)
 		{
-			if (!Asset.AssetName.ToString().Equals(TEXT("SKM_base_mesh_ue"), ESearchCase::IgnoreCase))
+			if (!Asset.AssetName.ToString().Equals(BodyName, ESearchCase::IgnoreCase))
 			{
 				continue;
 			}
 			const FString PackageName = Asset.PackageName.ToString();
-			if (!SolidContentLookup::PackageContainsFolder(PackageName, PackFolder)
-				|| !SolidContentLookup::PackageContainsFolder(PackageName, TEXT("Meshes"))
+			if (!SolidContentLookup::PackageContainsFolder(PackageName, PackFolder))
+			{
+				continue;
+			}
+			if (bBlacksmith)
+			{
+				if (!PackageName.EndsWith(TEXT("/Mesh/SK_Elf_Blacksmith"), ESearchCase::IgnoreCase))
+				{
+					continue;
+				}
+			}
+			else if (!SolidContentLookup::PackageContainsFolder(PackageName, TEXT("Meshes"))
 				|| !SolidContentLookup::PackageContainsFolder(PackageName, TEXT("base_mesh")))
 			{
 				continue;

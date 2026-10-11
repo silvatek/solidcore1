@@ -130,14 +130,30 @@ foreach ($folder in $folders) {
     $assets = @(Get-ChildItem -LiteralPath $folder -Recurse -File -ErrorAction SilentlyContinue |
         Where-Object { $_.Extension -eq '.uasset' -or $_.Extension -eq '.umap' })
 
-    $body = Join-Path $folder (Join-Path 'Meshes' (Join-Path 'base_mesh' 'SKM_base_mesh_ue.uasset'))
+    $leafName = Split-Path -Leaf $folder
+    $bodyRel = $null
+    if ($leafName -eq 'Medieval_Assassin_Girl') {
+        $bodyRel = 'Meshes/base_mesh/SKM_base_mesh_ue.uasset'
+    }
+    elseif ($leafName -eq 'Elf_Blacksmith') {
+        $bodyRel = 'Mesh/SK_Elf_Blacksmith.uasset'
+    }
     Write-Output ''
-    if (Test-Path -LiteralPath $body -PathType Leaf) {
-        $bodyItem = Get-Item -LiteralPath $body
-        Write-Output ("Body: {0}  {1} bytes" -f (Get-RelativePath $bodyItem.FullName $folder), $bodyItem.Length)
+    if ($bodyRel) {
+        $body = $folder
+        foreach ($part in ($bodyRel -split '[\\/]')) {
+            $body = Join-Path $body $part
+        }
+        if (Test-Path -LiteralPath $body -PathType Leaf) {
+            $bodyItem = Get-Item -LiteralPath $body
+            Write-Output ("Body: {0}  {1} bytes" -f (Get-RelativePath $bodyItem.FullName $folder), $bodyItem.Length)
+        }
+        else {
+            Write-Output "Body: MISSING $bodyRel"
+        }
     }
     else {
-        Write-Output 'Body: MISSING Meshes\base_mesh\SKM_base_mesh_ue.uasset'
+        Write-Output 'Body: no known body path for this folder'
     }
 
     $meshes = New-Object System.Collections.Generic.List[object]

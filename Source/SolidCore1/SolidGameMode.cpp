@@ -13,6 +13,7 @@
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Terrain/SolidWorldMap.h"
 #include "Towns/SolidTowns.h"
+#include "Menus/SolidPortal.h"
 #include "Towns/SolidBuilding.h"
 #include "Towns/SolidTownBuildings.h"
 #include "Towns/SolidTownSign.h"
@@ -162,6 +163,73 @@ bool ASolidGameMode::SelectBattlePlanSlot(const int32 SlotIndex)
 	}
 
 	UE_LOG(LogSolid, Warning, TEXT("%s"), *Party->GetActiveBattlePlanDebugString());
+	return true;
+}
+
+bool ASolidGameMode::TeleportPartyToTown(const int32 TownId)
+{
+	UWorld* World = GetWorld();
+	if (!World || !SolidTowns::Find(TownId))
+	{
+		return false;
+	}
+
+	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World);
+	USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
+	USolidWorldMap* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
+	APlayerController* PC = World->GetFirstPlayerController();
+	ASolidCharacter* Captain = PC ? Cast<ASolidCharacter>(PC->GetPawn()) : nullptr;
+	if (!Streamer || !Terrain || !Terrain->IsBuilt() || !WorldMap || !WorldMap->IsLoaded() || !Captain)
+	{
+		return false;
+	}
+	if (!Streamer->HasAttemptedStartTownRelocate())
+	{
+		return false;
+	}
+
+	FSolidWorldLocation Location;
+	if (!WorldMap->FindLocation(TownId, Location))
+	{
+		return false;
+	}
+
+	FIntPoint Cell;
+	if (!SolidPortal::ChooseLandingCell(Location.Cells, Cell))
+	{
+		return false;
+	}
+
+	FVector2D CellXY = FVector2D::ZeroVector;
+	if (!WorldMap->CellToWorldXY(Cell, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), CellXY))
+	{
+		return false;
+	}
+
+	const FVector2D Landing = SolidPortal::LandingXY(CellXY, Streamer->StartTownPawnOffsetXY);
+	const FVector Delta = SolidPortal::PartyDelta(Captain->GetActorLocation(), Landing);
+	const float LandZ = Streamer->GetHeightAt(FVector(Landing.X, Landing.Y, 0.f)) + Streamer->CollisionHeightBias;
+	float CapsuleHalf = 96.f;
+	if (const UCapsuleComponent* Capsule = Captain->GetCapsuleComponent())
+	{
+		CapsuleHalf = Capsule->GetScaledCapsuleHalfHeight();
+	}
+	const FVector NewLoc(Landing.X, Landing.Y, LandZ + CapsuleHalf + Streamer->SnapHeightPadding);
+
+	const FVector2D ToTown = CellXY - Landing;
+	float Yaw = Captain->GetActorRotation().Yaw;
+	if (!ToTown.IsNearlyZero())
+	{
+		Yaw = FMath::RadiansToDegrees(FMath::Atan2(ToTown.Y, ToTown.X));
+	}
+
+	Captain->ArriveByPortal(NewLoc, Yaw);
+	Streamer->RelocateCompanionsByDelta(Delta);
+	RefreshEvents();
+
+	UE_LOG(LogSolid, Warning,
+		TEXT("Portal to %s (%d) at (%.0f, %.0f) Z=%.1f"),
+		*SolidTowns::NameFor(TownId), TownId, Landing.X, Landing.Y, NewLoc.Z);
 	return true;
 }
 

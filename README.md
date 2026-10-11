@@ -4,7 +4,6 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 
 ## To-do
 
-- Teleport to towns (from main menu)
 - Use white material for 100% fog terrain
 - Don't render trees or buildings on 100% fog terrain, generate it when fog is removed
 - Improve building and tree models
@@ -30,12 +29,12 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - **Town signs** — every named WorldMap cell gets a "Welcome to {name}" sign: one thin dark-brown pole, a flat light-brown board, white letters with a black border. The board faces south. Kanfold's two cells each get a sign.
 - **True sight / raven sight** — the game starts in true sight (first person). Raven sight (third person) is locked until the captain enters town 1. F9 then toggles. True sight hides the captain's body and nameplate, turns the body with the look direction, and ignores mouse-wheel zoom until you switch back. The menu and the formation drill ignore F9. A translucent oval in the top-right shows an eye in true sight and an eagle in raven sight.
 - **Events** — a list of one-shot triggers. Enter town fires when the captain steps onto a numbered WorldMap cell; the parameter is that index. Entering town 0 (Iglin) is recorded and changes nothing. Entering town 1 (Relion) enables raven sight and sets max party size to 1 (Sam). Entering town 2 (Kanfold) sets max party size to 2 (Sam and Alex).
-- **Journal** — F10 menu, **2 Journal**. Lists every event that has fired, in that order, with what it changed. Iglin is recorded as soon as the captain is placed there, with no change under the name. Esc or F10 closes the page.
+- **Journal** — F10 menu, **3 Journal**. Lists every event that has fired, in that order, with what it changed. Iglin is recorded as soon as the captain is placed there, with no change under the name. Esc or F10 closes the page.
 - **Oak and bronze** — the journal, credits, main menu, and battle-plan list are a dark oak board in a bronze binding, with brighter corner bosses. The debug readout in the corner stays a plain block.
 - **Debug HUD** — F12 hides and shows the tech readout (build, FPS, pawn, terrain). The battle-plan list stays up. It starts visible.
 - **Mouse pointer** — a bronze arrow drawn in the game, tip on the hotspot. The Windows cursor stays hidden. Hold the right mouse button to look; the pointer hides until you let go, then it is back where you pressed. The right stick still looks.
 - **Click to move** — raven sight only. One left click on the ground walks the captain there in a straight line, then he stops. WASD and the left stick do nothing in raven sight. In true sight a click does nothing: he moves only with WASD or the left stick. Switching back to true sight cancels a walk that was in progress.
-- **Main menu** — F10 opens it. **1 Test Drill** runs the formation drill. **2 Journal** opens the journal. **3 Credits** opens the credits page (Silvatek, Cursor + Grok, Fab Viking and grass). Up/Down and Enter also work. Esc or F10 closes. Move, look, and battle-plan keys are ignored while the menu, journal, or credits page is open.
+- **Main menu** — F10 opens it. **1 Use portal** lists the towns; choosing one moves the party onto that town and fires its enter-town event. **2 Test Drill** runs the formation drill. **3 Journal** opens the journal. **4 Credits** opens the credits page (Silvatek, Cursor + Grok, Fab Viking and grass). Up/Down and Enter also work. Esc or F10 closes. Move, look, and battle-plan keys are ignored while the menu, the portal list, the journal, or the credits page is open.
 - **Content pipeline** — Fab listings restored via Launcher Add to Project; C++ finds Viking/grass by name under `/Game/Viking` or `/Game/Fab`. `tools/fab_doctor.bat` + `fab-assets.json`. Packs are gitignored (attribution README kept).
 - **Automation** — `SolidCore1.*` editor tests; `tools/run_automation_tests.bat` prints failed test paths. Build ID `SC1-NNNN` on the debug HUD.
 - **Editor build** — `tools\build.bat` compiles `SolidCore1Editor` Win64 Development (`-WaitMutex`). `UE_ROOT` overrides the engine install; `PROJECT` overrides the uproject. Both default from the script location.
@@ -55,8 +54,9 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 | Main menu | F10 | — |
 | Debug readout | F12 | — |
 | Menu up / down | Up / Down | — |
-| Menu confirm | Enter, or 1 / 2 / 3 | — |
-| Close menu / journal / credits | Esc or F10 | — |
+| Menu confirm | Enter, or 1 / 2 / 3 / 4 | — |
+| Portal town | Enter, or 1–5, while the portal list is open | — |
+| Close menu / portal / journal / credits | Esc or F10 | — |
 
 Input Actions / Mapping Context can be replaced with Content assets on the character later; if unset, C++ creates transient defaults so PIE works immediately.
 
@@ -89,7 +89,8 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.NameLabel.*` | Style sizes/colors/plates; Outcast / Sam defaults |
 | `SolidCore1.BattlePlan.*` | Formation slots; Company/Party assign; selection survives party ensure; drill legs |
 | `SolidCore1.Credits.*` | Author / Cursor+Grok / Fab attribution; HUD toggle |
-| `SolidCore1.MainMenu.*` | F10 menu entries (Test Drill, Journal, Credits) and selection |
+| `SolidCore1.MainMenu.*` | F10 menu entries (Use portal, Test Drill, Journal, Credits) and selection |
+| `SolidCore1.Portal.*` | Town list; landing stays on that town (Kanfold is not the centroid); portal page |
 | `SolidCore1.Journal.*` | Empty journal, then events in the order they fired |
 | `SolidCore1.HudTheme.*` | Oak-and-bronze frame thickness, corner bosses, opaque board; translucent oval sight marker |
 | `SolidCore1.HUD.DebugToggle` | F12 shows and hides the tech readout |
@@ -311,7 +312,8 @@ Source/
       SolidHudTheme.h         # Oak-and-bronze frame
       SolidPointer.h          # In-game mouse pointer
     Menus/
-      SolidMainMenu.*         # F10 menu entries (Test Drill, Journal, Credits)
+      SolidMainMenu.*         # F10 menu entries (Use portal, Test Drill, Journal, Credits)
+      SolidPortal.h           # Town list and party landing cell
       SolidJournal.*          # Journal lists events in the order they fired
       SolidCredits.*          # Credits page copy
     Tests/
@@ -334,6 +336,7 @@ Source/
       SolidPointerTests.cpp
       SolidClickMoveTests.cpp
       SolidMainMenuTests.cpp
+      SolidPortalTests.cpp
       SolidSightTests.cpp
       SolidContentDependencyTests.cpp
 tools/

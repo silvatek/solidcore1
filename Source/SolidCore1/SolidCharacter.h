@@ -67,6 +67,8 @@ public:
 	void SetSight(ESolidSight NewSight);
 	/** Raven-sight left click. Cleared on arrival, WASD, or true sight. */
 	bool HasClickMoveDestination() const { return bHasClickMoveDestination; }
+	/** Move the captain onto a portal landing. Clears a click-walk and a formation drill. */
+	void ArriveByPortal(const FVector& NewLocation, float YawDegrees);
 	void ToggleSight();
 
 protected:
@@ -123,7 +125,10 @@ protected:
 	void MainMenuChoose1();
 	void MainMenuChoose2();
 	void MainMenuChoose3();
+	void MainMenuChoose4();
+	void MainMenuChoose5();
 	void ChooseMainMenuIndex(int32 Index);
+	void ConfirmPortalSelection();
 
 	void ApplyWalkSpeed() const;
 	void AddMappingContext();

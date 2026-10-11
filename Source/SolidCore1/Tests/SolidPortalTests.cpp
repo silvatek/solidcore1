@@ -1,0 +1,142 @@
+#include "CoreMinimal.h"
+#include "Misc/AutomationTest.h"
+#include "SolidHUD.h"
+#include "SolidPortal.h"
+#include "Terrain/SolidWorldMap.h"
+
+#if WITH_DEV_AUTOMATION_TESTS
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidPortalChoicesTest,
+	"SolidCore1.Portal.Choices",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidPortalChoicesTest::RunTest(const FString& Parameters)
+{
+	TArray<SolidPortal::FChoice> Choices;
+	SolidPortal::CollectChoices(Choices);
+	TestEqual(TEXT("one row per town"), Choices.Num(), SolidPortal::TownCount());
+	TestEqual(TEXT("five towns"), SolidPortal::TownCount(), 5);
+
+	const TCHAR* Expected[] = { TEXT("Iglin"), TEXT("Relion"), TEXT("Kanfold"), TEXT("Visolar"), TEXT("Jethan") };
+	for (int32 Index = 0; Index < Choices.Num(); ++Index)
+	{
+		TestEqual(TEXT("town id"), Choices[Index].TownId, Index);
+		TestEqual(TEXT("town name"), Choices[Index].Name, FString(Expected[Index]));
+	}
+
+	SolidPortal::FChoice Found;
+	TestTrue(TEXT("find Relion"), SolidPortal::FindChoice(1, Found));
+	TestEqual(TEXT("found name"), Found.Name, FString(TEXT("Relion")));
+	TestFalse(TEXT("no sixth town"), SolidPortal::FindChoice(5, Found));
+
+	TestEqual(TEXT("wrap down"), SolidPortal::WrapIndex(0, 1), 1);
+	TestEqual(TEXT("wrap past end"), SolidPortal::WrapIndex(4, 1), 0);
+	TestEqual(TEXT("wrap up"), SolidPortal::WrapIndex(0, -1), 4);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidPortalLandingTest,
+	"SolidCore1.Portal.Landing",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidPortalLandingTest::RunTest(const FString& Parameters)
+{
+	TArray<FIntPoint> Cells;
+	Cells.Add(FIntPoint(10, 5));
+	Cells.Add(FIntPoint(3, 8));
+	Cells.Add(FIntPoint(1, 5));
+	FIntPoint Chosen = FIntPoint::ZeroValue;
+	TestTrue(TEXT("picks a cell"), SolidPortal::ChooseLandingCell(Cells, Chosen));
+	TestEqual(TEXT("northernmost row"), Chosen.Y, 5);
+	TestEqual(TEXT("easternmost on that row"), Chosen.X, 1);
+
+	TArray<FIntPoint> Empty;
+	TestFalse(TEXT("no cells"), SolidPortal::ChooseLandingCell(Empty, Chosen));
+
+	const FVector2D Plaza(0.f, -450.f);
+	const FVector2D Center(1000.f, 2000.f);
+	const FVector2D Landing = SolidPortal::LandingXY(Center, Plaza);
+	TestTrue(TEXT("lands south of the cell center"), Landing.Equals(FVector2D(1000.f, 1550.f), 0.1f));
+
+	const FVector Captain(10.f, 20.f, 300.f);
+	const FVector Delta = SolidPortal::PartyDelta(Captain, Landing);
+	TestTrue(TEXT("delta is planar"), FMath::IsNearlyZero(Delta.Z));
+	TestTrue(TEXT("delta reaches the landing"), FVector2D(Captain.X + Delta.X, Captain.Y + Delta.Y).Equals(Landing, 0.1f));
+
+	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("shipped map loads"), Map->LoadDefault());
+	const float Half = 0.5f * 512.f * 200.f;
+	const FVector2D GameMin(-Half, -Half);
+	const FVector2D GameMax(Half, Half);
+	const float CellSize = (GameMax.X - GameMin.X) / static_cast<float>(USolidWorldMap::MapWidth);
+	TestTrue(TEXT("plaza offset stays inside the cell"), Plaza.Size() < CellSize * 0.5f);
+
+	for (int32 TownId = 0; TownId < SolidPortal::TownCount(); ++TownId)
+	{
+		FSolidWorldLocation Location;
+		TestTrue(TEXT("location exists"), Map->FindLocation(TownId, Location));
+		FIntPoint Cell;
+		TestTrue(TEXT("landing cell"), SolidPortal::ChooseLandingCell(Location.Cells, Cell));
+		TestTrue(TEXT("cell belongs to the town"), Location.Cells.Contains(Cell));
+
+		FVector2D CellXY = FVector2D::ZeroVector;
+		TestTrue(TEXT("cell projects"), Map->CellToWorldXY(Cell, GameMin, GameMax, CellXY));
+		const FVector2D TownLanding = SolidPortal::LandingXY(CellXY, Plaza);
+		TestEqual(
+			*FString::Printf(TEXT("town %d landing is that town"), TownId),
+			Map->SampleLocationId(TownLanding.X, TownLanding.Y, GameMin, GameMax),
+			TownId);
+	}
+
+	FSolidWorldLocation Kanfold;
+	TestTrue(TEXT("Kanfold"), Map->FindLocation(2, Kanfold));
+	TestTrue(TEXT("Kanfold has more than one cell"), Kanfold.Cells.Num() > 1);
+	FVector2D KanfoldCentroid = FVector2D::ZeroVector;
+	TestTrue(TEXT("Kanfold centroid"), Map->GetLocationWorldXY(2, GameMin, GameMax, KanfoldCentroid));
+	TestNotEqual(
+		TEXT("Kanfold centroid is not in the town"),
+		Map->SampleLocationId(KanfoldCentroid.X, KanfoldCentroid.Y, GameMin, GameMax),
+		2);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidPortalHudTest,
+	"SolidCore1.Portal.Hud",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidPortalHudTest::RunTest(const FString& Parameters)
+{
+	ASolidHUD* HUD = NewObject<ASolidHUD>();
+	TestNotNull(TEXT("hud"), HUD);
+	TestFalse(TEXT("portal closed"), HUD->IsPortalOpen());
+
+	HUD->HandleMenuKey();
+	TestTrue(TEXT("menu open"), HUD->IsMainMenuOpen());
+	HUD->OpenPortal();
+	TestTrue(TEXT("portal opens"), HUD->IsPortalOpen());
+	TestFalse(TEXT("menu closes"), HUD->IsMainMenuOpen());
+	TestEqual(TEXT("first town"), HUD->GetPortalIndex(), 0);
+
+	HUD->MovePortalSelection(1);
+	TestEqual(TEXT("down selects the next town"), HUD->GetPortalIndex(), 1);
+	HUD->MovePortalSelection(-1);
+	HUD->MovePortalSelection(-1);
+	TestEqual(TEXT("up wraps to the last town"), HUD->GetPortalIndex(), SolidPortal::TownCount() - 1);
+
+	HUD->SetPortalIndex(99);
+	TestEqual(TEXT("index clamps"), HUD->GetPortalIndex(), SolidPortal::TownCount() - 1);
+
+	HUD->HandleMenuKey();
+	TestFalse(TEXT("F10 closes the portal"), HUD->IsPortalOpen());
+	TestFalse(TEXT("closing the portal does not open the menu"), HUD->IsMainMenuOpen());
+
+	HUD->OpenPortal();
+	HUD->CloseMenuOverlay();
+	TestFalse(TEXT("Esc closes the portal"), HUD->IsPortalOpen());
+	return true;
+}
+
+#endif // WITH_DEV_AUTOMATION_TESTS

@@ -97,6 +97,12 @@ public:
 	bool SelectBattlePlanSlot(int32 SlotIndex);
 
 	/**
+	 * Move the captain onto one cell of TownId and shift companions by the same planar delta.
+	 * Arriving fires the enter-town event for that place.
+	 */
+	bool TeleportPartyToTown(int32 TownId);
+
+	/**
 	 * Create the company catalog and party on the first call.
 	 * Later calls (event refresh, companion spawn) keep the active battle plan.
 	 */

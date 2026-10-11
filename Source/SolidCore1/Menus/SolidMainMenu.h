@@ -5,6 +5,7 @@
 /** Entries shown by the F10 main menu. Order is the on-screen order. */
 enum class ESolidMainMenuItem : uint8
 {
+	UsePortal,
 	TestDrill,
 	Journal,
 	Credits,
@@ -14,6 +15,7 @@ enum class ESolidMainMenuItem : uint8
 enum class ESolidMainMenuAction : uint8
 {
 	None,
+	OpenPortal,
 	StartTestDrill,
 	ShowJournal,
 	ShowCredits,

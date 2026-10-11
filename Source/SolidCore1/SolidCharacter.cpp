@@ -26,6 +26,7 @@
 #include "SolidGameMode.h"
 #include "HUD/SolidHUD.h"
 #include "Menus/SolidMainMenu.h"
+#include "Menus/SolidPortal.h"
 #include "SolidNameLabel.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -241,9 +242,13 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::One, IE_Pressed, this, &ASolidCharacter::MainMenuChoose1);
 	PlayerInputComponent->BindKey(EKeys::Two, IE_Pressed, this, &ASolidCharacter::MainMenuChoose2);
 	PlayerInputComponent->BindKey(EKeys::Three, IE_Pressed, this, &ASolidCharacter::MainMenuChoose3);
+	PlayerInputComponent->BindKey(EKeys::Four, IE_Pressed, this, &ASolidCharacter::MainMenuChoose4);
+	PlayerInputComponent->BindKey(EKeys::Five, IE_Pressed, this, &ASolidCharacter::MainMenuChoose5);
 	PlayerInputComponent->BindKey(EKeys::NumPadOne, IE_Pressed, this, &ASolidCharacter::MainMenuChoose1);
 	PlayerInputComponent->BindKey(EKeys::NumPadTwo, IE_Pressed, this, &ASolidCharacter::MainMenuChoose2);
 	PlayerInputComponent->BindKey(EKeys::NumPadThree, IE_Pressed, this, &ASolidCharacter::MainMenuChoose3);
+	PlayerInputComponent->BindKey(EKeys::NumPadFour, IE_Pressed, this, &ASolidCharacter::MainMenuChoose4);
+	PlayerInputComponent->BindKey(EKeys::NumPadFive, IE_Pressed, this, &ASolidCharacter::MainMenuChoose5);
 }
 
 ASolidHUD* ASolidCharacter::GetSolidHUD() const
@@ -259,7 +264,7 @@ bool ASolidCharacter::IsMenuOverlayOpen() const
 {
 	if (const ASolidHUD* HUD = GetSolidHUD())
 	{
-		return HUD->IsMainMenuOpen() || HUD->IsCreditsVisible() || HUD->IsJournalVisible();
+		return HUD->IsMainMenuOpen() || HUD->IsPortalOpen() || HUD->IsCreditsVisible() || HUD->IsJournalVisible();
 	}
 	return false;
 }
@@ -369,7 +374,11 @@ void ASolidCharacter::MainMenuMoveUp()
 {
 	if (ASolidHUD* HUD = GetSolidHUD())
 	{
-		if (HUD->IsMainMenuOpen())
+		if (HUD->IsPortalOpen())
+		{
+			HUD->MovePortalSelection(-1);
+		}
+		else if (HUD->IsMainMenuOpen())
 		{
 			HUD->MoveMainMenuSelection(-1);
 		}
@@ -380,7 +389,11 @@ void ASolidCharacter::MainMenuMoveDown()
 {
 	if (ASolidHUD* HUD = GetSolidHUD())
 	{
-		if (HUD->IsMainMenuOpen())
+		if (HUD->IsPortalOpen())
+		{
+			HUD->MovePortalSelection(1);
+		}
+		else if (HUD->IsMainMenuOpen())
 		{
 			HUD->MoveMainMenuSelection(1);
 		}
@@ -402,10 +415,35 @@ void ASolidCharacter::MainMenuChoose3()
 	ChooseMainMenuIndex(2);
 }
 
+void ASolidCharacter::MainMenuChoose4()
+{
+	ChooseMainMenuIndex(3);
+}
+
+void ASolidCharacter::MainMenuChoose5()
+{
+	ChooseMainMenuIndex(4);
+}
+
 void ASolidCharacter::ChooseMainMenuIndex(const int32 Index)
 {
 	ASolidHUD* HUD = GetSolidHUD();
-	if (!HUD || !HUD->IsMainMenuOpen())
+	if (!HUD)
+	{
+		return;
+	}
+	if (HUD->IsPortalOpen())
+	{
+		SolidPortal::FChoice Choice;
+		if (!SolidPortal::FindChoice(Index, Choice))
+		{
+			return;
+		}
+		HUD->SetPortalIndex(Index);
+		ConfirmPortalSelection();
+		return;
+	}
+	if (!HUD->IsMainMenuOpen() || Index < 0 || Index >= SolidMainMenu::EntryCount())
 	{
 		return;
 	}
@@ -413,10 +451,63 @@ void ASolidCharacter::ChooseMainMenuIndex(const int32 Index)
 	MainMenuConfirm();
 }
 
+void ASolidCharacter::ConfirmPortalSelection()
+{
+	ASolidHUD* HUD = GetSolidHUD();
+	if (!HUD || !HUD->IsPortalOpen())
+	{
+		return;
+	}
+
+	SolidPortal::FChoice Choice;
+	if (!SolidPortal::FindChoice(HUD->GetPortalIndex(), Choice))
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+	if (!GameMode || !GameMode->TeleportPartyToTown(Choice.TownId))
+	{
+		return;
+	}
+	HUD->ClosePortal();
+}
+
+void ASolidCharacter::ArriveByPortal(const FVector& NewLocation, const float YawDegrees)
+{
+	if (IsPartyFormationDrillActive())
+	{
+		StopPartyFormationDrill();
+	}
+	SetActorLocation(NewLocation);
+	const FRotator Facing(0.f, YawDegrees, 0.f);
+	SetActorRotation(Facing);
+	if (Controller)
+	{
+		Controller->SetControlRotation(Facing);
+	}
+	ClearClickMove();
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->StopMovementImmediately();
+		Move->SetMovementMode(MOVE_Walking);
+	}
+}
+
 void ASolidCharacter::MainMenuConfirm()
 {
 	ASolidHUD* HUD = GetSolidHUD();
-	if (!HUD || !HUD->IsMainMenuOpen())
+	if (!HUD)
+	{
+		return;
+	}
+	if (HUD->IsPortalOpen())
+	{
+		ConfirmPortalSelection();
+		return;
+	}
+	if (!HUD->IsMainMenuOpen())
 	{
 		return;
 	}
@@ -430,6 +521,9 @@ void ASolidCharacter::MainMenuConfirm()
 	HUD->CloseMainMenu();
 	switch (SolidMainMenu::ActionForItem(Entry.Item))
 	{
+	case ESolidMainMenuAction::OpenPortal:
+		HUD->OpenPortal();
+		break;
 	case ESolidMainMenuAction::StartTestDrill:
 		StartPartyFormationDrill();
 		break;

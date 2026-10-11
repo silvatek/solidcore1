@@ -5,6 +5,7 @@
 #include "Menus/SolidCredits.h"
 #include "Menus/SolidJournal.h"
 #include "Menus/SolidMainMenu.h"
+#include "Menus/SolidPortal.h"
 #include "SolidCharacter.h"
 #include "SolidSight.h"
 #include "SolidGameMode.h"
@@ -451,6 +452,107 @@ namespace SolidHUDPrivate
 	}
 
 	static TMap<ASolidHUD*, TSharedPtr<SWidget>> SightIndicators;
+
+	static void DrawChoicePopup(
+		UCanvas* Canvas,
+		const FString& Title,
+		const TArray<FString>& ChoiceLabels,
+		const int32 SelectedIndex)
+	{
+		if (!Canvas)
+		{
+			return;
+		}
+
+		UFont* Font = GEngine ? GEngine->GetMediumFont() : nullptr;
+		if (!Font && GEngine)
+		{
+			Font = GEngine->GetSmallFont();
+		}
+
+		TArray<FString> Lines;
+		Lines.Add(Title);
+		Lines.Add(TEXT(""));
+		for (int32 Index = 0; Index < ChoiceLabels.Num(); ++Index)
+		{
+			const TCHAR* Marker = (Index == SelectedIndex) ? TEXT(">") : TEXT(" ");
+			Lines.Add(FString::Printf(TEXT("%s  %d  %s"), Marker, Index + 1, *ChoiceLabels[Index]));
+		}
+		Lines.Add(TEXT(""));
+		Lines.Add(FString::Printf(TEXT("1-%d or Up/Down    Enter    Esc / F10"), FMath::Max(ChoiceLabels.Num(), 1)));
+
+		float MaxWidth = 0.f;
+		float LineHeight = 18.f;
+		const float LineGap = 6.f;
+		for (const FString& Line : Lines)
+		{
+			float W = 0.f;
+			float H = 0.f;
+			if (Font)
+			{
+				Canvas->StrLen(Font, Line.IsEmpty() ? TEXT(" ") : Line, W, H);
+			}
+			else
+			{
+				W = static_cast<float>(FMath::Max(Line.Len(), 1) * 8);
+				H = 18.f;
+			}
+			MaxWidth = FMath::Max(MaxWidth, W);
+			LineHeight = FMath::Max(LineHeight, H);
+		}
+
+		const float BoxPad = 22.f;
+		const float BlockHeight = Lines.Num() * LineHeight + (Lines.Num() - 1) * LineGap;
+		const float BoxW = MaxWidth + BoxPad * 2.f;
+		const float BoxH = BlockHeight + BoxPad * 2.f;
+		const float BoxX = (Canvas->SizeX - BoxW) * 0.5f;
+		const float BoxY = (Canvas->SizeY - BoxH) * 0.5f;
+
+		FCanvasTileItem Dim(
+			FVector2D(0.f, 0.f),
+			FVector2D(static_cast<float>(Canvas->SizeX), static_cast<float>(Canvas->SizeY)),
+			FLinearColor(0.f, 0.f, 0.f, 0.72f));
+		Dim.BlendMode = SE_BLEND_Translucent;
+		Canvas->DrawItem(Dim);
+
+		DrawOakFrame(Canvas, BoxX, BoxY, BoxW, BoxH, SolidHudTheme::MenuFrame());
+
+		const SolidHudTheme::FPalette Palette = SolidHudTheme::OakAndBronze();
+		float Y = BoxY + BoxPad;
+		for (int32 Index = 0; Index < Lines.Num(); ++Index)
+		{
+			const FString& Line = Lines[Index];
+			FLinearColor Color = Palette.Ink;
+			if (Index == 0 || Line.StartsWith(TEXT(">")))
+			{
+				Color = Palette.Title;
+			}
+			else if (Line.StartsWith(TEXT("1")))
+			{
+				Color = Palette.Hint;
+			}
+
+			if (Index == 0 && !Line.IsEmpty())
+			{
+				const float RuleInset = SolidHudTheme::BandThickness(SolidHudTheme::MenuFrame()) + 18.f;
+				FillRect(
+					Canvas,
+					BoxX + RuleInset,
+					Y + LineHeight + LineGap * 0.35f,
+					FMath::Max(0.f, BoxW - RuleInset * 2.f),
+					2.f,
+					Palette.Bronze);
+			}
+
+			if (!Line.IsEmpty())
+			{
+				FCanvasTextItem TextItem(FVector2D(BoxX + BoxPad, Y), FText::FromString(Line), Font, Color);
+				TextItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+				Canvas->DrawItem(TextItem);
+			}
+			Y += LineHeight + LineGap;
+		}
+	}
 }
 
 void ASolidHUD::EnsureSightIndicator()
@@ -735,7 +837,11 @@ void ASolidHUD::DrawHUD()
 	}
 	SolidHUDPrivate::DrawBattlePlansPanel(Canvas, Font, Party, BelowTech);
 
-	if (bShowJournal)
+	if (bShowPortal)
+	{
+		DrawPortalPopup();
+	}
+	else if (bShowJournal)
 	{
 		DrawJournalPopup();
 	}
@@ -777,6 +883,12 @@ void ASolidHUD::DrawHUD()
 
 void ASolidHUD::HandleMenuKey()
 {
+	if (bShowPortal)
+	{
+		bShowPortal = false;
+		return;
+	}
+
 	if (bShowJournal)
 	{
 		bShowJournal = false;
@@ -799,8 +911,39 @@ void ASolidHUD::HandleMenuKey()
 void ASolidHUD::CloseMenuOverlay()
 {
 	bShowMainMenu = false;
+	bShowPortal = false;
 	bShowCredits = false;
 	bShowJournal = false;
+}
+
+void ASolidHUD::OpenPortal()
+{
+	bShowMainMenu = false;
+	bShowCredits = false;
+	bShowJournal = false;
+	bShowPortal = true;
+	PortalIndex = 0;
+}
+
+void ASolidHUD::ClosePortal()
+{
+	bShowPortal = false;
+}
+
+void ASolidHUD::MovePortalSelection(const int32 Delta)
+{
+	PortalIndex = SolidPortal::WrapIndex(PortalIndex, Delta);
+}
+
+void ASolidHUD::SetPortalIndex(const int32 Index)
+{
+	const int32 Count = SolidPortal::TownCount();
+	if (Count <= 0)
+	{
+		PortalIndex = 0;
+		return;
+	}
+	PortalIndex = FMath::Clamp(Index, 0, Count - 1);
 }
 
 void ASolidHUD::CloseMainMenu()
@@ -859,100 +1002,24 @@ void ASolidHUD::DrawJournalPopup() const
 
 void ASolidHUD::DrawMainMenuPopup() const
 {
-	if (!Canvas)
-	{
-		return;
-	}
-
-	UFont* Font = GEngine ? GEngine->GetMediumFont() : nullptr;
-	if (!Font && GEngine)
-	{
-		Font = GEngine->GetSmallFont();
-	}
-
 	TArray<FSolidMainMenuEntry> Entries;
 	SolidMainMenu::CollectEntries(Entries);
-
-	TArray<FString> Lines;
-	Lines.Add(TEXT("Main Menu"));
-	Lines.Add(TEXT(""));
-	for (int32 Index = 0; Index < Entries.Num(); ++Index)
+	TArray<FString> Labels;
+	for (const FSolidMainMenuEntry& Entry : Entries)
 	{
-		const TCHAR* Marker = (Index == MainMenuIndex) ? TEXT(">") : TEXT(" ");
-		Lines.Add(FString::Printf(TEXT("%s  %d  %s"), Marker, Index + 1, *Entries[Index].Label));
+		Labels.Add(Entry.Label);
 	}
-	Lines.Add(TEXT(""));
-	Lines.Add(TEXT("1-3 or Up/Down    Enter    Esc / F10"));
+	SolidHUDPrivate::DrawChoicePopup(Canvas, TEXT("Main Menu"), Labels, MainMenuIndex);
+}
 
-	float MaxWidth = 0.f;
-	float LineHeight = 18.f;
-	const float LineGap = 6.f;
-	for (const FString& Line : Lines)
+void ASolidHUD::DrawPortalPopup() const
+{
+	TArray<SolidPortal::FChoice> Choices;
+	SolidPortal::CollectChoices(Choices);
+	TArray<FString> Labels;
+	for (const SolidPortal::FChoice& Choice : Choices)
 	{
-		float W = 0.f;
-		float H = 0.f;
-		if (Font)
-		{
-			Canvas->StrLen(Font, Line.IsEmpty() ? TEXT(" ") : Line, W, H);
-		}
-		else
-		{
-			W = static_cast<float>(FMath::Max(Line.Len(), 1) * 8);
-			H = 18.f;
-		}
-		MaxWidth = FMath::Max(MaxWidth, W);
-		LineHeight = FMath::Max(LineHeight, H);
+		Labels.Add(Choice.Name);
 	}
-
-	const float BoxPad = 22.f;
-	const float BlockHeight = Lines.Num() * LineHeight + (Lines.Num() - 1) * LineGap;
-	const float BoxW = MaxWidth + BoxPad * 2.f;
-	const float BoxH = BlockHeight + BoxPad * 2.f;
-	const float BoxX = (Canvas->SizeX - BoxW) * 0.5f;
-	const float BoxY = (Canvas->SizeY - BoxH) * 0.5f;
-
-	FCanvasTileItem Dim(
-		FVector2D(0.f, 0.f),
-		FVector2D(static_cast<float>(Canvas->SizeX), static_cast<float>(Canvas->SizeY)),
-		FLinearColor(0.f, 0.f, 0.f, 0.72f));
-	Dim.BlendMode = SE_BLEND_Translucent;
-	Canvas->DrawItem(Dim);
-
-	SolidHUDPrivate::DrawOakFrame(Canvas, BoxX, BoxY, BoxW, BoxH, SolidHudTheme::MenuFrame());
-
-	const SolidHudTheme::FPalette Palette = SolidHudTheme::OakAndBronze();
-	float Y = BoxY + BoxPad;
-	for (int32 Index = 0; Index < Lines.Num(); ++Index)
-	{
-		const FString& Line = Lines[Index];
-		FLinearColor Color = Palette.Ink;
-		if (Index == 0 || Line.StartsWith(TEXT(">")))
-		{
-			Color = Palette.Title;
-		}
-		else if (Line.StartsWith(TEXT("1")))
-		{
-			Color = Palette.Hint;
-		}
-
-		if (Index == 0 && !Line.IsEmpty())
-		{
-			const float RuleInset = SolidHudTheme::BandThickness(SolidHudTheme::MenuFrame()) + 18.f;
-			SolidHUDPrivate::FillRect(
-				Canvas,
-				BoxX + RuleInset,
-				Y + LineHeight + LineGap * 0.35f,
-				FMath::Max(0.f, BoxW - RuleInset * 2.f),
-				2.f,
-				Palette.Bronze);
-		}
-
-		if (!Line.IsEmpty())
-		{
-			FCanvasTextItem TextItem(FVector2D(BoxX + BoxPad, Y), FText::FromString(Line), Font, Color);
-			TextItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
-			Canvas->DrawItem(TextItem);
-		}
-		Y += LineHeight + LineGap;
-	}
+	SolidHUDPrivate::DrawChoicePopup(Canvas, TEXT("Portal"), Labels, PortalIndex);
 }

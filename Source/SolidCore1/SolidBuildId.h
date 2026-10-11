@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0161")
+#define SOLID_BUILD_ID TEXT("SC1-0162")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Portal to any town")
+#define SOLID_BUILD_NOTE TEXT("Clickable menus")
 #endif

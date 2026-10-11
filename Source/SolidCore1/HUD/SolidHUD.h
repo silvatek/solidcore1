@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Menus/SolidMenuPointer.h"
 #include "GameFramework/HUD.h"
 #include "SolidHUD.generated.h"
 
@@ -44,13 +45,21 @@ public:
 	void MoveMainMenuSelection(int32 Delta);
 	void SetMainMenuIndex(int32 Index);
 
+	/** Rows from the choice list drawn this frame. Empty for the journal and credits. */
+	void SetChoicePointerRows(const TArray<SolidMenuPointer::FRow>& Rows);
+	/**
+	 * When the main menu or the portal list is open and the point hits a row, select it.
+	 * A miss leaves the keyboard selection alone.
+	 */
+	bool SelectChoiceAt(float X, float Y);
+
 protected:
 	void EnsureSightIndicator();
 	void RemoveSightIndicator();
 	void DrawCreditsPopup() const;
 	void DrawJournalPopup() const;
-	void DrawMainMenuPopup() const;
-	void DrawPortalPopup() const;
+	void DrawMainMenuPopup();
+	void DrawPortalPopup();
 	/** Wall-clock timestamps (seconds) for frames in the rolling FPS window. */
 	TArray<double> RecentFrameTimes;
 

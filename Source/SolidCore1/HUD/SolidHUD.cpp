@@ -5,6 +5,7 @@
 #include "Menus/SolidCredits.h"
 #include "Menus/SolidJournal.h"
 #include "Menus/SolidMainMenu.h"
+#include "Menus/SolidMenuPointer.h"
 #include "Menus/SolidPortal.h"
 #include "SolidCharacter.h"
 #include "SolidSight.h"
@@ -452,13 +453,21 @@ namespace SolidHUDPrivate
 	}
 
 	static TMap<ASolidHUD*, TSharedPtr<SWidget>> SightIndicators;
+	static TMap<ASolidHUD*, TArray<SolidMenuPointer::FRow>> ChoicePointerRows;
+
+	static void ForgetChoicePointerRows(ASolidHUD* HUD)
+	{
+		ChoicePointerRows.Remove(HUD);
+	}
 
 	static void DrawChoicePopup(
 		UCanvas* Canvas,
 		const FString& Title,
 		const TArray<FString>& ChoiceLabels,
-		const int32 SelectedIndex)
+		const int32 SelectedIndex,
+		TArray<SolidMenuPointer::FRow>& OutRows)
 	{
+		OutRows.Reset();
 		if (!Canvas)
 		{
 			return;
@@ -479,11 +488,12 @@ namespace SolidHUDPrivate
 			Lines.Add(FString::Printf(TEXT("%s  %d  %s"), Marker, Index + 1, *ChoiceLabels[Index]));
 		}
 		Lines.Add(TEXT(""));
-		Lines.Add(FString::Printf(TEXT("1-%d or Up/Down    Enter    Esc / F10"), FMath::Max(ChoiceLabels.Num(), 1)));
+		Lines.Add(FString::Printf(
+			TEXT("1-%d, click, Up/Down, Enter, Esc / F10"),
+			FMath::Max(ChoiceLabels.Num(), 1)));
 
 		float MaxWidth = 0.f;
-		float LineHeight = 18.f;
-		const float LineGap = 6.f;
+		float LineHeight = SolidMenuPointer::FallbackLineHeight;
 		for (const FString& Line : Lines)
 		{
 			float W = 0.f;
@@ -495,18 +505,25 @@ namespace SolidHUDPrivate
 			else
 			{
 				W = static_cast<float>(FMath::Max(Line.Len(), 1) * 8);
-				H = 18.f;
+				H = SolidMenuPointer::FallbackLineHeight;
 			}
 			MaxWidth = FMath::Max(MaxWidth, W);
 			LineHeight = FMath::Max(LineHeight, H);
 		}
 
-		const float BoxPad = 22.f;
-		const float BlockHeight = Lines.Num() * LineHeight + (Lines.Num() - 1) * LineGap;
-		const float BoxW = MaxWidth + BoxPad * 2.f;
-		const float BoxH = BlockHeight + BoxPad * 2.f;
-		const float BoxX = (Canvas->SizeX - BoxW) * 0.5f;
-		const float BoxY = (Canvas->SizeY - BoxH) * 0.5f;
+		SolidMenuPointer::FMetrics Metrics;
+		Metrics.CanvasW = static_cast<float>(Canvas->SizeX);
+		Metrics.CanvasH = static_cast<float>(Canvas->SizeY);
+		Metrics.ContentW = MaxWidth;
+		Metrics.LineHeight = LineHeight;
+		Metrics.ChoiceCount = ChoiceLabels.Num();
+		float BoxX = 0.f;
+		float BoxY = 0.f;
+		float BoxW = 0.f;
+		float BoxH = 0.f;
+		SolidMenuPointer::PanelBox(Metrics, BoxX, BoxY, BoxW, BoxH);
+		SolidMenuPointer::ChoiceRows(Metrics, OutRows);
+		(void)BoxH;
 
 		FCanvasTileItem Dim(
 			FVector2D(0.f, 0.f),
@@ -518,10 +535,10 @@ namespace SolidHUDPrivate
 		DrawOakFrame(Canvas, BoxX, BoxY, BoxW, BoxH, SolidHudTheme::MenuFrame());
 
 		const SolidHudTheme::FPalette Palette = SolidHudTheme::OakAndBronze();
-		float Y = BoxY + BoxPad;
 		for (int32 Index = 0; Index < Lines.Num(); ++Index)
 		{
 			const FString& Line = Lines[Index];
+			const float Y = SolidMenuPointer::LineY(BoxY, Metrics, Index);
 			FLinearColor Color = Palette.Ink;
 			if (Index == 0 || Line.StartsWith(TEXT(">")))
 			{
@@ -538,7 +555,7 @@ namespace SolidHUDPrivate
 				FillRect(
 					Canvas,
 					BoxX + RuleInset,
-					Y + LineHeight + LineGap * 0.35f,
+					Y + LineHeight + Metrics.LineGap * 0.35f,
 					FMath::Max(0.f, BoxW - RuleInset * 2.f),
 					2.f,
 					Palette.Bronze);
@@ -546,11 +563,10 @@ namespace SolidHUDPrivate
 
 			if (!Line.IsEmpty())
 			{
-				FCanvasTextItem TextItem(FVector2D(BoxX + BoxPad, Y), FText::FromString(Line), Font, Color);
+				FCanvasTextItem TextItem(FVector2D(BoxX + Metrics.BoxPad, Y), FText::FromString(Line), Font, Color);
 				TextItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
 				Canvas->DrawItem(TextItem);
 			}
-			Y += LineHeight + LineGap;
 		}
 	}
 }
@@ -640,7 +656,40 @@ void ASolidHUD::RemoveSightIndicator()
 void ASolidHUD::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	RemoveSightIndicator();
+	SolidHUDPrivate::ForgetChoicePointerRows(this);
 	Super::EndPlay(EndPlayReason);
+}
+
+void ASolidHUD::SetChoicePointerRows(const TArray<SolidMenuPointer::FRow>& Rows)
+{
+	SolidHUDPrivate::ChoicePointerRows.Add(this, Rows);
+}
+
+bool ASolidHUD::SelectChoiceAt(const float X, const float Y)
+{
+	const TArray<SolidMenuPointer::FRow>* Rows = SolidHUDPrivate::ChoicePointerRows.Find(this);
+	if (!Rows)
+	{
+		return false;
+	}
+
+	const int32 Hit = SolidMenuPointer::HitChoice(*Rows, X, Y);
+	if (Hit == INDEX_NONE)
+	{
+		return false;
+	}
+
+	if (bShowPortal)
+	{
+		SetPortalIndex(Hit);
+		return true;
+	}
+	if (bShowMainMenu)
+	{
+		SetMainMenuIndex(Hit);
+		return true;
+	}
+	return false;
 }
 
 void ASolidHUD::DrawHUD()
@@ -837,6 +886,7 @@ void ASolidHUD::DrawHUD()
 	}
 	SolidHUDPrivate::DrawBattlePlansPanel(Canvas, Font, Party, BelowTech);
 
+	SolidHUDPrivate::ForgetChoicePointerRows(this);
 	if (bShowPortal)
 	{
 		DrawPortalPopup();
@@ -923,6 +973,7 @@ void ASolidHUD::OpenPortal()
 	bShowJournal = false;
 	bShowPortal = true;
 	PortalIndex = 0;
+	SolidHUDPrivate::ForgetChoicePointerRows(this);
 }
 
 void ASolidHUD::ClosePortal()
@@ -1000,7 +1051,7 @@ void ASolidHUD::DrawJournalPopup() const
 	SolidHUDPrivate::DrawCenteredPopup(Canvas, Lines, 4.f);
 }
 
-void ASolidHUD::DrawMainMenuPopup() const
+void ASolidHUD::DrawMainMenuPopup()
 {
 	TArray<FSolidMainMenuEntry> Entries;
 	SolidMainMenu::CollectEntries(Entries);
@@ -1009,10 +1060,12 @@ void ASolidHUD::DrawMainMenuPopup() const
 	{
 		Labels.Add(Entry.Label);
 	}
-	SolidHUDPrivate::DrawChoicePopup(Canvas, TEXT("Main Menu"), Labels, MainMenuIndex);
+	TArray<SolidMenuPointer::FRow> Rows;
+	SolidHUDPrivate::DrawChoicePopup(Canvas, TEXT("Main Menu"), Labels, MainMenuIndex, Rows);
+	SetChoicePointerRows(Rows);
 }
 
-void ASolidHUD::DrawPortalPopup() const
+void ASolidHUD::DrawPortalPopup()
 {
 	TArray<SolidPortal::FChoice> Choices;
 	SolidPortal::CollectChoices(Choices);
@@ -1021,5 +1074,7 @@ void ASolidHUD::DrawPortalPopup() const
 	{
 		Labels.Add(Choice.Name);
 	}
-	SolidHUDPrivate::DrawChoicePopup(Canvas, TEXT("Portal"), Labels, PortalIndex);
+	TArray<SolidMenuPointer::FRow> Rows;
+	SolidHUDPrivate::DrawChoicePopup(Canvas, TEXT("Portal"), Labels, PortalIndex, Rows);
+	SetChoicePointerRows(Rows);
 }

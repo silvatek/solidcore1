@@ -10,6 +10,7 @@
 #include "CollisionQueryParams.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/World.h"
+#include "Engine/GameViewportClient.h"
 #include "Engine/SkeletalMesh.h"
 #include "Components/InputComponent.h"
 #include "EnhancedInputComponent.h"
@@ -175,6 +176,7 @@ void ASolidCharacter::Tick(float DeltaTime)
 	Super::Tick(DeltaTime);
 	TickPartyFormationDrill(DeltaTime);
 	UpdatePointerMouseLook();
+	UpdateMenuPointerHover();
 	TickClickMove();
 	UpdateLocomotionAnim();
 	UpdatePartyCameraFraming(DeltaTime);
@@ -727,6 +729,68 @@ void ASolidCharacter::ClickMoveFromInput()
 	UE_LOG(LogSolid, Warning, TEXT("Click move to %s"), *Destination.ToCompactString());
 }
 
+bool ASolidCharacter::ReadPointerPosition(float& OutX, float& OutY) const
+{
+	const APlayerController* PlayerController = Cast<APlayerController>(Controller);
+	if (!PlayerController)
+	{
+		return false;
+	}
+	if (PlayerController->GetMousePosition(OutX, OutY))
+	{
+		return true;
+	}
+	if (UWorld* World = GetWorld())
+	{
+		if (UGameViewportClient* Viewport = World->GetGameViewport())
+		{
+			FVector2D Position = FVector2D::ZeroVector;
+			if (Viewport->GetMousePosition(Position))
+			{
+				OutX = Position.X;
+				OutY = Position.Y;
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+void ASolidCharacter::UpdateMenuPointerHover()
+{
+	ASolidHUD* HUD = GetSolidHUD();
+	const bool bChoiceList = HUD && (HUD->IsMainMenuOpen() || HUD->IsPortalOpen());
+	if (!bChoiceList)
+	{
+		bMenuPointerSampled = false;
+		MenuPointerPage = 0;
+		return;
+	}
+
+	const int32 Page = HUD->IsPortalOpen() ? 2 : 1;
+	if (Page != MenuPointerPage)
+	{
+		MenuPointerPage = Page;
+		bMenuPointerSampled = false;
+	}
+
+	float X = 0.f;
+	float Y = 0.f;
+	if (!ReadPointerPosition(X, Y))
+	{
+		return;
+	}
+
+	const FVector2D Position(X, Y);
+	if (bMenuPointerSampled && Position.Equals(MenuPointerSample, 0.5f))
+	{
+		return;
+	}
+	bMenuPointerSampled = true;
+	MenuPointerSample = Position;
+	HUD->SelectChoiceAt(X, Y);
+}
+
 void ASolidCharacter::PollClickMovePress()
 {
 	bool bDown = false;
@@ -736,10 +800,24 @@ void ASolidCharacter::PollClickMovePress()
 	}
 	const bool bPressed = SolidClickMove::IsFreshPress(bDown, bLeftMouseWasDown);
 	bLeftMouseWasDown = bDown;
-	if (bPressed)
+	if (!bPressed)
 	{
-		ClickMoveFromInput();
+		return;
 	}
+
+	float X = 0.f;
+	float Y = 0.f;
+	if (ASolidHUD* HUD = GetSolidHUD())
+	{
+		if ((HUD->IsMainMenuOpen() || HUD->IsPortalOpen())
+			&& ReadPointerPosition(X, Y)
+			&& HUD->SelectChoiceAt(X, Y))
+		{
+			MainMenuConfirm();
+			return;
+		}
+	}
+	ClickMoveFromInput();
 }
 
 void ASolidCharacter::TickClickMove()

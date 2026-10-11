@@ -89,6 +89,8 @@ protected:
 	void UpdatePointerMouseLook();
 	void ClickMoveFromInput();
 	void PollClickMovePress();
+	void UpdateMenuPointerHover();
+	bool ReadPointerPosition(float& OutX, float& OutY) const;
 	void TickClickMove();
 	void ClearClickMove();
 	bool ResolveClickMoveDestination(const FVector& RayOrigin, const FVector& RayDirection, FVector& OutDestination) const;
@@ -314,6 +316,10 @@ protected:
 	FVector ClickMoveDestination = FVector::ZeroVector;
 	/** Previous frame's left button, so one click is a single press. */
 	bool bLeftMouseWasDown = false;
+	/** Last pointer sample while a choice list was open. A still pointer does not fight the keys. */
+	bool bMenuPointerSampled = false;
+	FVector2D MenuPointerSample = FVector2D::ZeroVector;
+	int32 MenuPointerPage = 0;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimSequence> CachedIdleAnim;

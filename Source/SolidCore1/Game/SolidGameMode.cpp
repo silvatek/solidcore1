@@ -363,6 +363,11 @@ ASolidCompanionCharacter* ASolidGameMode::SpawnCompanion(
 	return Companion;
 }
 
+void ASolidGameMode::RefreshFieldedParty()
+{
+	EnsureCompanion();
+}
+
 void ASolidGameMode::EnsureCompanion()
 {
 	if (!bAutoSpawnCompanion)

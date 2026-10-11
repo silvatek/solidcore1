@@ -9,6 +9,7 @@ enum class ESolidMainMenuItem : uint8
 	TestDrill,
 	Journal,
 	Credits,
+	BuildParty,
 };
 
 /** What confirming a menu entry does. The pawn performs the action. */
@@ -19,6 +20,7 @@ enum class ESolidMainMenuAction : uint8
 	StartTestDrill,
 	ShowJournal,
 	ShowCredits,
+	OpenParty,
 };
 
 struct FSolidMainMenuEntry

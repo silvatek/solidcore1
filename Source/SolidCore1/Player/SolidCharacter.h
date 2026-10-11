@@ -124,6 +124,8 @@ protected:
 	void MainMenuMoveUp();
 	void MainMenuMoveDown();
 	void MainMenuConfirm();
+	int32 CurrentMaxPartySize() const;
+	void TogglePartyBuilderRow(int32 Index);
 	void MainMenuChoose1();
 	void MainMenuChoose2();
 	void MainMenuChoose3();

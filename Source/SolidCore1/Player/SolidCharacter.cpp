@@ -27,6 +27,7 @@
 #include "SolidGameMode.h"
 #include "HUD/SolidHUD.h"
 #include "Menus/SolidMainMenu.h"
+#include "Menus/SolidPartyBuilder.h"
 #include "Menus/SolidPortal.h"
 #include "SolidNameLabel.h"
 #include "Components/SceneComponent.h"
@@ -266,7 +267,11 @@ bool ASolidCharacter::IsMenuOverlayOpen() const
 {
 	if (const ASolidHUD* HUD = GetSolidHUD())
 	{
-		return HUD->IsMainMenuOpen() || HUD->IsPortalOpen() || HUD->IsCreditsVisible() || HUD->IsJournalVisible();
+		return HUD->IsMainMenuOpen()
+			|| HUD->IsPortalOpen()
+			|| HUD->IsPartyBuilderOpen()
+			|| HUD->IsCreditsVisible()
+			|| HUD->IsJournalVisible();
 	}
 	return false;
 }
@@ -380,6 +385,10 @@ void ASolidCharacter::MainMenuMoveUp()
 		{
 			HUD->MovePortalSelection(-1);
 		}
+		else if (HUD->IsPartyBuilderOpen())
+		{
+			HUD->MovePartyBuilderSelection(-1);
+		}
 		else if (HUD->IsMainMenuOpen())
 		{
 			HUD->MoveMainMenuSelection(-1);
@@ -394,6 +403,10 @@ void ASolidCharacter::MainMenuMoveDown()
 		if (HUD->IsPortalOpen())
 		{
 			HUD->MovePortalSelection(1);
+		}
+		else if (HUD->IsPartyBuilderOpen())
+		{
+			HUD->MovePartyBuilderSelection(1);
 		}
 		else if (HUD->IsMainMenuOpen())
 		{
@@ -443,6 +456,11 @@ void ASolidCharacter::ChooseMainMenuIndex(const int32 Index)
 		}
 		HUD->SetPortalIndex(Index);
 		ConfirmPortalSelection();
+		return;
+	}
+	if (HUD->IsPartyBuilderOpen())
+	{
+		TogglePartyBuilderRow(Index);
 		return;
 	}
 	if (!HUD->IsMainMenuOpen() || Index < 0 || Index >= SolidMainMenu::EntryCount())
@@ -509,6 +527,11 @@ void ASolidCharacter::MainMenuConfirm()
 		ConfirmPortalSelection();
 		return;
 	}
+	if (HUD->IsPartyBuilderOpen())
+	{
+		TogglePartyBuilderRow(HUD->GetPartyBuilderIndex());
+		return;
+	}
 	if (!HUD->IsMainMenuOpen())
 	{
 		return;
@@ -516,6 +539,12 @@ void ASolidCharacter::MainMenuConfirm()
 
 	FSolidMainMenuEntry Entry;
 	if (!SolidMainMenu::FindEntry(HUD->GetMainMenuIndex(), Entry))
+	{
+		return;
+	}
+
+	if (SolidMainMenu::ActionForItem(Entry.Item) == ESolidMainMenuAction::OpenParty
+		&& !SolidPartyBuilder::CanOpen(CurrentMaxPartySize()))
 	{
 		return;
 	}
@@ -535,8 +564,55 @@ void ASolidCharacter::MainMenuConfirm()
 	case ESolidMainMenuAction::ShowCredits:
 		HUD->SetCreditsVisible(true);
 		break;
+	case ESolidMainMenuAction::OpenParty:
+		if (UWorld* World = GetWorld())
+		{
+			if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+			{
+				GameMode->EnsureCompanyAndParty();
+			}
+		}
+		HUD->OpenPartyBuilder();
+		break;
 	default:
 		break;
+	}
+}
+
+int32 ASolidCharacter::CurrentMaxPartySize() const
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+		{
+			return GameMode->GetMaxPartySize();
+		}
+	}
+	return 0;
+}
+
+void ASolidCharacter::TogglePartyBuilderRow(const int32 Index)
+{
+	ASolidHUD* HUD = GetSolidHUD();
+	UWorld* World = GetWorld();
+	ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+	if (!HUD || !GameMode)
+	{
+		return;
+	}
+
+	GameMode->EnsureCompanyAndParty();
+	TArray<SolidPartyBuilder::FRow> Rows;
+	SolidPartyBuilder::CollectRows(GameMode->GetParty(), Rows);
+	if (!Rows.IsValidIndex(Index))
+	{
+		return;
+	}
+
+	HUD->SetPartyBuilderIndex(Index);
+	if (SolidPartyBuilder::Toggle(GameMode->GetParty(), Rows[Index].CompanyIndex, GameMode->GetMaxPartySize()))
+	{
+		GameMode->RefreshFieldedParty();
 	}
 }
 
@@ -759,7 +835,7 @@ bool ASolidCharacter::ReadPointerPosition(float& OutX, float& OutY) const
 void ASolidCharacter::UpdateMenuPointerHover()
 {
 	ASolidHUD* HUD = GetSolidHUD();
-	const bool bChoiceList = HUD && (HUD->IsMainMenuOpen() || HUD->IsPortalOpen());
+	const bool bChoiceList = HUD && (HUD->IsMainMenuOpen() || HUD->IsPortalOpen() || HUD->IsPartyBuilderOpen());
 	if (!bChoiceList)
 	{
 		bMenuPointerSampled = false;
@@ -767,7 +843,7 @@ void ASolidCharacter::UpdateMenuPointerHover()
 		return;
 	}
 
-	const int32 Page = HUD->IsPortalOpen() ? 2 : 1;
+	const int32 Page = HUD->IsPartyBuilderOpen() ? 3 : (HUD->IsPortalOpen() ? 2 : 1);
 	if (Page != MenuPointerPage)
 	{
 		MenuPointerPage = Page;
@@ -809,7 +885,7 @@ void ASolidCharacter::PollClickMovePress()
 	float Y = 0.f;
 	if (ASolidHUD* HUD = GetSolidHUD())
 	{
-		if ((HUD->IsMainMenuOpen() || HUD->IsPortalOpen())
+		if ((HUD->IsMainMenuOpen() || HUD->IsPortalOpen() || HUD->IsPartyBuilderOpen())
 			&& ReadPointerPosition(X, Y)
 			&& HUD->SelectChoiceAt(X, Y))
 		{

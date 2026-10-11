@@ -21,6 +21,14 @@ public:
 	bool IsJournalVisible() const { return bShowJournal; }
 	void SetJournalVisible(bool bVisible) { bShowJournal = bVisible; }
 
+	/** Company list opened from Build party. */
+	void OpenPartyBuilder();
+	void ClosePartyBuilder();
+	bool IsPartyBuilderOpen() const { return bShowPartyBuilder; }
+	int32 GetPartyBuilderIndex() const { return PartyBuilderIndex; }
+	void MovePartyBuilderSelection(int32 Delta);
+	void SetPartyBuilderIndex(int32 Index);
+
 	/** Town list opened from Use portal. */
 	void OpenPortal();
 	void ClosePortal();
@@ -34,9 +42,9 @@ public:
 	bool IsDebugPanelVisible() const { return bShowDebugPanel; }
 	void SetDebugPanelVisible(bool bVisible) { bShowDebugPanel = bVisible; }
 
-	/** F10. Closes the portal, journal, or credits if one is up; otherwise toggles the main menu. */
+	/** F10. Closes the portal, party builder, journal, or credits if one is up; otherwise toggles the main menu. */
 	void HandleMenuKey();
-	/** Esc. Closes the menu, the portal, the journal, and the credits page. */
+	/** Esc. Closes the menu, the portal, the party builder, the journal, and the credits page. */
 	void CloseMenuOverlay();
 	/** Hide the menu list. Leaves the credits page as it is. */
 	void CloseMainMenu();
@@ -60,6 +68,7 @@ protected:
 	void DrawJournalPopup() const;
 	void DrawMainMenuPopup();
 	void DrawPortalPopup();
+	void DrawPartyBuilderPopup();
 	/** Wall-clock timestamps (seconds) for frames in the rolling FPS window. */
 	TArray<double> RecentFrameTimes;
 
@@ -74,6 +83,14 @@ protected:
 	/** Journal page, opened from the main menu. Lists events that have fired. */
 	UPROPERTY(VisibleAnywhere, Category = "HUD")
 	bool bShowJournal = false;
+
+	/** Party builder, opened from the main menu once two companions are allowed. */
+	UPROPERTY(VisibleAnywhere, Category = "HUD")
+	bool bShowPartyBuilder = false;
+
+	/** Highlighted companion while the party builder is open. */
+	UPROPERTY(VisibleAnywhere, Category = "HUD")
+	int32 PartyBuilderIndex = 0;
 
 	/** F10 main menu. Off until toggled. */
 	UPROPERTY(VisibleAnywhere, Category = "HUD")

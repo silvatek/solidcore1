@@ -14,8 +14,8 @@ bool FSolidMainMenuEntriesTest::RunTest(const FString& Parameters)
 {
 	TArray<FSolidMainMenuEntry> Entries;
 	SolidMainMenu::CollectEntries(Entries);
-	TestEqual(TEXT("four entries"), Entries.Num(), 4);
-	TestEqual(TEXT("entry count"), SolidMainMenu::EntryCount(), 4);
+	TestEqual(TEXT("five entries"), Entries.Num(), 5);
+	TestEqual(TEXT("entry count"), SolidMainMenu::EntryCount(), 5);
 
 	TestEqual(TEXT("first is Use portal"), Entries[0].Label, FString(TEXT("Use portal")));
 	TestEqual(
@@ -60,12 +60,19 @@ bool FSolidMainMenuEntriesTest::RunTest(const FString& Parameters)
 	FSolidMainMenuEntry Found;
 	TestTrue(TEXT("find first"), SolidMainMenu::FindEntry(0, Found));
 	TestEqual(TEXT("found label"), Found.Label, FString(TEXT("Use portal")));
-	TestFalse(TEXT("no fifth entry"), SolidMainMenu::FindEntry(4, Found));
+	TestTrue(TEXT("fifth is Build party"), SolidMainMenu::FindEntry(4, Found));
+	TestEqual(TEXT("fifth label"), Found.Label, FString(TEXT("Build party")));
+	TestEqual(
+		TEXT("party action"),
+		static_cast<uint8>(SolidMainMenu::ActionForItem(Found.Item)),
+		static_cast<uint8>(ESolidMainMenuAction::OpenParty));
+	TestFalse(TEXT("no sixth entry"), SolidMainMenu::FindEntry(5, Found));
 
 	TestEqual(TEXT("wrap down"), SolidMainMenu::WrapIndex(0, 1), 1);
 	TestEqual(TEXT("wrap to credits"), SolidMainMenu::WrapIndex(2, 1), 3);
-	TestEqual(TEXT("wrap past end"), SolidMainMenu::WrapIndex(3, 1), 0);
-	TestEqual(TEXT("wrap up"), SolidMainMenu::WrapIndex(0, -1), 3);
+	TestEqual(TEXT("wrap to Build party"), SolidMainMenu::WrapIndex(3, 1), 4);
+	TestEqual(TEXT("wrap past end"), SolidMainMenu::WrapIndex(4, 1), 0);
+	TestEqual(TEXT("wrap up"), SolidMainMenu::WrapIndex(0, -1), 4);
 	return true;
 }
 
@@ -93,16 +100,18 @@ bool FSolidMainMenuHudTest::RunTest(const FString& Parameters)
 	HUD->MoveMainMenuSelection(1);
 	TestEqual(TEXT("down selects Credits"), HUD->GetMainMenuIndex(), 3);
 	HUD->MoveMainMenuSelection(1);
+	TestEqual(TEXT("down selects Build party"), HUD->GetMainMenuIndex(), 4);
+	HUD->MoveMainMenuSelection(1);
 	TestEqual(TEXT("down wraps to Use portal"), HUD->GetMainMenuIndex(), 0);
 	HUD->MoveMainMenuSelection(-1);
-	TestEqual(TEXT("up wraps to Credits"), HUD->GetMainMenuIndex(), 3);
+	TestEqual(TEXT("up wraps to Build party"), HUD->GetMainMenuIndex(), 4);
 
 	HUD->SetMainMenuIndex(0);
 	TestEqual(TEXT("number key selects Use portal"), HUD->GetMainMenuIndex(), 0);
 	HUD->SetMainMenuIndex(1);
 	TestEqual(TEXT("number key selects Test Drill"), HUD->GetMainMenuIndex(), 1);
 	HUD->SetMainMenuIndex(99);
-	TestEqual(TEXT("index clamps"), HUD->GetMainMenuIndex(), 3);
+	TestEqual(TEXT("index clamps"), HUD->GetMainMenuIndex(), 4);
 
 	HUD->HandleMenuKey();
 	TestFalse(TEXT("F10 closes menu"), HUD->IsMainMenuOpen());
@@ -127,6 +136,16 @@ bool FSolidMainMenuHudTest::RunTest(const FString& Parameters)
 	HUD->SetJournalVisible(true);
 	HUD->CloseMenuOverlay();
 	TestFalse(TEXT("Esc closes journal"), HUD->IsJournalVisible());
+
+	HUD->OpenPartyBuilder();
+	TestTrue(TEXT("party builder opens"), HUD->IsPartyBuilderOpen());
+	TestFalse(TEXT("party builder closes the menu"), HUD->IsMainMenuOpen());
+	HUD->HandleMenuKey();
+	TestFalse(TEXT("F10 closes the party builder"), HUD->IsPartyBuilderOpen());
+	TestFalse(TEXT("closing the party builder does not open the menu"), HUD->IsMainMenuOpen());
+	HUD->OpenPartyBuilder();
+	HUD->CloseMenuOverlay();
+	TestFalse(TEXT("Esc closes the party builder"), HUD->IsPartyBuilderOpen());
 	return true;
 }
 

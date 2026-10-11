@@ -6,6 +6,7 @@
 #include "Menus/SolidJournal.h"
 #include "Menus/SolidMainMenu.h"
 #include "Menus/SolidMenuPointer.h"
+#include "Menus/SolidPartyBuilder.h"
 #include "Menus/SolidPortal.h"
 #include "SolidCharacter.h"
 #include "SolidSight.h"
@@ -465,7 +466,8 @@ namespace SolidHUDPrivate
 		const FString& Title,
 		const TArray<FString>& ChoiceLabels,
 		const int32 SelectedIndex,
-		TArray<SolidMenuPointer::FRow>& OutRows)
+		TArray<SolidMenuPointer::FRow>& OutRows,
+		const TArray<bool>* ChoiceEnabled = nullptr)
 	{
 		OutRows.Reset();
 		if (!Canvas)
@@ -539,8 +541,18 @@ namespace SolidHUDPrivate
 		{
 			const FString& Line = Lines[Index];
 			const float Y = SolidMenuPointer::LineY(BoxY, Metrics, Index);
+			const int32 ChoiceIndex = Index - SolidMenuPointer::LeadingLines;
+			const bool bChoiceLine = ChoiceIndex >= 0 && ChoiceIndex < ChoiceLabels.Num();
+			const bool bChoiceEnabled = !bChoiceLine
+				|| !ChoiceEnabled
+				|| !ChoiceEnabled->IsValidIndex(ChoiceIndex)
+				|| (*ChoiceEnabled)[ChoiceIndex];
 			FLinearColor Color = Palette.Ink;
-			if (Index == 0 || Line.StartsWith(TEXT(">")))
+			if (!bChoiceEnabled)
+			{
+				Color = FLinearColor(Palette.Ink.R, Palette.Ink.G, Palette.Ink.B, 0.4f);
+			}
+			else if (Index == 0 || Line.StartsWith(TEXT(">")))
 			{
 				Color = Palette.Title;
 			}
@@ -682,6 +694,11 @@ bool ASolidHUD::SelectChoiceAt(const float X, const float Y)
 	if (bShowPortal)
 	{
 		SetPortalIndex(Hit);
+		return true;
+	}
+	if (bShowPartyBuilder)
+	{
+		SetPartyBuilderIndex(Hit);
 		return true;
 	}
 	if (bShowMainMenu)
@@ -891,6 +908,10 @@ void ASolidHUD::DrawHUD()
 	{
 		DrawPortalPopup();
 	}
+	else if (bShowPartyBuilder)
+	{
+		DrawPartyBuilderPopup();
+	}
 	else if (bShowJournal)
 	{
 		DrawJournalPopup();
@@ -939,6 +960,12 @@ void ASolidHUD::HandleMenuKey()
 		return;
 	}
 
+	if (bShowPartyBuilder)
+	{
+		bShowPartyBuilder = false;
+		return;
+	}
+
 	if (bShowJournal)
 	{
 		bShowJournal = false;
@@ -962,8 +989,73 @@ void ASolidHUD::CloseMenuOverlay()
 {
 	bShowMainMenu = false;
 	bShowPortal = false;
+	bShowPartyBuilder = false;
 	bShowCredits = false;
 	bShowJournal = false;
+}
+
+void ASolidHUD::OpenPartyBuilder()
+{
+	bShowMainMenu = false;
+	bShowPortal = false;
+	bShowCredits = false;
+	bShowJournal = false;
+	bShowPartyBuilder = true;
+	PartyBuilderIndex = 0;
+	SolidHUDPrivate::ForgetChoicePointerRows(this);
+}
+
+void ASolidHUD::ClosePartyBuilder()
+{
+	bShowPartyBuilder = false;
+}
+
+void ASolidHUD::MovePartyBuilderSelection(const int32 Delta)
+{
+	int32 Count = 0;
+	if (UWorld* World = GetWorld())
+	{
+		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+		{
+			if (const USolidParty* Party = GameMode->GetParty())
+			{
+				Count = Party->GetCompany() ? Party->GetCompany()->GetCompanionCount() : 0;
+			}
+		}
+	}
+	if (Count <= 0)
+	{
+		PartyBuilderIndex = 0;
+		return;
+	}
+
+	int32 Wrapped = (PartyBuilderIndex + Delta) % Count;
+	if (Wrapped < 0)
+	{
+		Wrapped += Count;
+	}
+	PartyBuilderIndex = Wrapped;
+}
+
+void ASolidHUD::SetPartyBuilderIndex(const int32 Index)
+{
+	int32 Count = 0;
+	if (UWorld* World = GetWorld())
+	{
+		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+		{
+			if (const USolidParty* Party = GameMode->GetParty())
+			{
+				Count = Party->GetCompany() ? Party->GetCompany()->GetCompanionCount() : 0;
+			}
+		}
+	}
+	if (Count <= 0)
+	{
+		PartyBuilderIndex = 0;
+		return;
+	}
+	PartyBuilderIndex = FMath::Clamp(Index, 0, Count - 1);
 }
 
 void ASolidHUD::OpenPortal()
@@ -971,6 +1063,7 @@ void ASolidHUD::OpenPortal()
 	bShowMainMenu = false;
 	bShowCredits = false;
 	bShowJournal = false;
+	bShowPartyBuilder = false;
 	bShowPortal = true;
 	PortalIndex = 0;
 	SolidHUDPrivate::ForgetChoicePointerRows(this);
@@ -1053,15 +1146,66 @@ void ASolidHUD::DrawJournalPopup() const
 
 void ASolidHUD::DrawMainMenuPopup()
 {
+	int32 MaxPartySize = 0;
+	if (UWorld* World = GetWorld())
+	{
+		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+		{
+			MaxPartySize = GameMode->GetMaxPartySize();
+		}
+	}
+
 	TArray<FSolidMainMenuEntry> Entries;
 	SolidMainMenu::CollectEntries(Entries);
 	TArray<FString> Labels;
+	TArray<bool> Enabled;
 	for (const FSolidMainMenuEntry& Entry : Entries)
 	{
 		Labels.Add(Entry.Label);
+		const bool bEnabled = Entry.Item != ESolidMainMenuItem::BuildParty
+			|| SolidPartyBuilder::CanOpen(MaxPartySize);
+		Enabled.Add(bEnabled);
 	}
 	TArray<SolidMenuPointer::FRow> Rows;
-	SolidHUDPrivate::DrawChoicePopup(Canvas, TEXT("Main Menu"), Labels, MainMenuIndex, Rows);
+	SolidHUDPrivate::DrawChoicePopup(Canvas, TEXT("Main Menu"), Labels, MainMenuIndex, Rows, &Enabled);
+	SetChoicePointerRows(Rows);
+}
+
+void ASolidHUD::DrawPartyBuilderPopup()
+{
+	const USolidParty* Party = nullptr;
+	int32 MaxPartySize = 0;
+	if (UWorld* World = GetWorld())
+	{
+		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+		{
+			Party = GameMode->GetParty();
+			MaxPartySize = GameMode->GetMaxPartySize();
+		}
+	}
+
+	TArray<SolidPartyBuilder::FRow> Choices;
+	SolidPartyBuilder::CollectRows(Party, Choices);
+	int32 SelectedCount = 0;
+	for (const SolidPartyBuilder::FRow& Choice : Choices)
+	{
+		if (Choice.bSelected)
+		{
+			++SelectedCount;
+		}
+	}
+
+	TArray<FString> Labels;
+	TArray<bool> Enabled;
+	for (const SolidPartyBuilder::FRow& Choice : Choices)
+	{
+		Labels.Add(Choice.Label);
+		Enabled.Add(SolidPartyBuilder::IsChoiceAvailable(Choice.bSelected, SelectedCount, MaxPartySize));
+	}
+
+	const FString Title = FString::Printf(TEXT("Build party  %d/%d"), SelectedCount, MaxPartySize);
+	TArray<SolidMenuPointer::FRow> Rows;
+	SolidHUDPrivate::DrawChoicePopup(Canvas, Title, Labels, PartyBuilderIndex, Rows, &Enabled);
 	SetChoicePointerRows(Rows);
 }
 

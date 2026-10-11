@@ -7,6 +7,7 @@ void SolidMainMenu::CollectEntries(TArray<FSolidMainMenuEntry>& OutEntries)
 	OutEntries.Add({ ESolidMainMenuItem::TestDrill, TEXT("Test Drill") });
 	OutEntries.Add({ ESolidMainMenuItem::Journal, TEXT("Journal") });
 	OutEntries.Add({ ESolidMainMenuItem::Credits, TEXT("Credits") });
+	OutEntries.Add({ ESolidMainMenuItem::BuildParty, TEXT("Build party") });
 }
 
 int32 SolidMainMenu::EntryCount()
@@ -40,6 +41,8 @@ ESolidMainMenuAction SolidMainMenu::ActionForItem(const ESolidMainMenuItem Item)
 		return ESolidMainMenuAction::ShowJournal;
 	case ESolidMainMenuItem::Credits:
 		return ESolidMainMenuAction::ShowCredits;
+	case ESolidMainMenuItem::BuildParty:
+		return ESolidMainMenuAction::OpenParty;
 	default:
 		return ESolidMainMenuAction::None;
 	}

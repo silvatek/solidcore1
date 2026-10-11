@@ -89,6 +89,9 @@ public:
 	/** Companions an event currently allows in the party. Starts at 0. */
 	int32 GetMaxPartySize() const { return Configuration.MaxPartySize; }
 
+	/** Spawn or remove companions so the field matches the current selection. */
+	void RefreshFieldedParty();
+
 	/** Live configuration, including which events have fired. */
 	const FSolidEventConfiguration& GetConfiguration() const { return Configuration; }
 

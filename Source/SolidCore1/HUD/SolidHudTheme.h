@@ -58,6 +58,26 @@ namespace SolidHudTheme
 		return OutWidth > 0.f && OutHeight > 0.f;
 	}
 
+	/** Top-right sight marker. Wider than it is tall, with fully round ends, so the chip is an oval. */
+	struct FSightMarkerChip
+	{
+		float Width = 72.f;
+		float Height = 44.f;
+		/** Half the height: the short sides become semicircles. */
+		float CornerRadius = 22.f;
+		FLinearColor Fill = FLinearColor(0.96f, 0.93f, 0.86f, 0.5f);
+	};
+
+	inline FSightMarkerChip SightMarkerChip()
+	{
+		FSightMarkerChip Chip;
+		Chip.Width = 72.f;
+		Chip.Height = 44.f;
+		Chip.CornerRadius = Chip.Height * 0.5f;
+		Chip.Fill = FLinearColor(0.96f, 0.93f, 0.86f, 0.5f);
+		return Chip;
+	}
+
 	inline FPalette OakAndBronze()
 	{
 		FPalette Palette;

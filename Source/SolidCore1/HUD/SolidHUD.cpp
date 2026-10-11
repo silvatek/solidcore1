@@ -34,6 +34,9 @@
 #include "Materials/MaterialInterface.h"
 #include "Fonts/CompositeFont.h"
 #include "Styling/CoreStyle.h"
+#include "Styling/SlateBrush.h"
+#include "Styling/StyleDefaults.h"
+#include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
@@ -440,6 +443,13 @@ namespace SolidHUDPrivate
 		return Font;
 	}
 
+	static const FSlateBrush* SightMarkerBrush()
+	{
+		const SolidHudTheme::FSightMarkerChip Chip = SolidHudTheme::SightMarkerChip();
+		static const FSlateRoundedBoxBrush Brush(Chip.Fill, Chip.CornerRadius);
+		return &Brush;
+	}
+
 	static TMap<ASolidHUD*, TSharedPtr<SWidget>> SightIndicators;
 }
 
@@ -458,6 +468,7 @@ void ASolidHUD::EnsureSightIndicator()
 	}
 
 	const TWeakObjectPtr<ASolidHUD> WeakHUD(this);
+	const SolidHudTheme::FSightMarkerChip Chip = SolidHudTheme::SightMarkerChip();
 	const TSharedRef<SWidget> Widget =
 		SNew(SOverlay)
 		.Visibility(EVisibility::HitTestInvisible)
@@ -466,29 +477,37 @@ void ASolidHUD::EnsureSightIndicator()
 		.VAlign(VAlign_Top)
 		.Padding(FMargin(0.f, 16.f, 16.f, 0.f))
 		[
-			SNew(SBorder)
+			SNew(SBox)
 			.Visibility(EVisibility::HitTestInvisible)
-			.BorderImage(FCoreStyle::Get().GetBrush(TEXT("GenericWhiteBox")))
-			.BorderBackgroundColor(FLinearColor(0.96f, 0.93f, 0.86f, 0.94f))
-			.Padding(FMargin(12.f, 6.f))
+			.WidthOverride(Chip.Width)
+			.HeightOverride(Chip.Height)
 			[
-				SNew(STextBlock)
+				SNew(SBorder)
 				.Visibility(EVisibility::HitTestInvisible)
-				.Font(SolidHUDPrivate::SightMarkerFont())
-				.ColorAndOpacity(FLinearColor(0.12f, 0.08f, 0.05f, 1.f))
-				.Justification(ETextJustify::Center)
-				.Text_Lambda([WeakHUD]()
-				{
-					ESolidSight Sight = ESolidSight::True;
-					if (ASolidHUD* HUD = WeakHUD.Get())
+				.BorderImage(SolidHUDPrivate::SightMarkerBrush())
+				.BorderBackgroundColor(FLinearColor::White)
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				.Padding(0.f)
+				[
+					SNew(STextBlock)
+					.Visibility(EVisibility::HitTestInvisible)
+					.Font(SolidHUDPrivate::SightMarkerFont())
+					.ColorAndOpacity(FLinearColor(0.12f, 0.08f, 0.05f, 1.f))
+					.Justification(ETextJustify::Center)
+					.Text_Lambda([WeakHUD]()
 					{
-						if (const ASolidCharacter* Captain = Cast<ASolidCharacter>(HUD->GetOwningPawn()))
+						ESolidSight Sight = ESolidSight::True;
+						if (ASolidHUD* HUD = WeakHUD.Get())
 						{
-							Sight = Captain->GetSight();
+							if (const ASolidCharacter* Captain = Cast<ASolidCharacter>(HUD->GetOwningPawn()))
+							{
+								Sight = Captain->GetSight();
+							}
 						}
-					}
-					return FText::FromString(SolidSight::Marker(Sight));
-				})
+						return FText::FromString(SolidSight::Marker(Sight));
+					})
+				]
 			]
 		];
 

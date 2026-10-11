@@ -25,7 +25,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - **Procedural terrain** — streamed chunks around the pawn, Fab grassland material, FlatCol tints for other biomes. Exploration fog-of-war (25 m / 50 m bands, marching-squares curtains) clears from the trail, not the camera.
 - **Town + forest** — random non-overlapping town buildings (grey cuboid + red gable prism roof); forest trees scattered on Forest cells. Buildings stay clear of the start-town centroid and of each welcome sign.
 - **Town signs** — every named WorldMap cell gets a "Welcome to {name}" sign: one thin dark-brown pole, a flat light-brown board, white letters with a black border. The board faces south. Kanfold's two cells each get a sign.
-- **True sight / raven sight** — the game starts in true sight (first person). Raven sight (third person) is locked until the captain enters town 1. F9 then toggles. True sight hides the captain's body and nameplate, turns the body with the look direction, and ignores mouse-wheel zoom until you switch back. The menu and the formation drill ignore F9. A marker in the top-right shows an eye in true sight and an eagle in raven sight.
+- **True sight / raven sight** — the game starts in true sight (first person). Raven sight (third person) is locked until the captain enters town 1. F9 then toggles. True sight hides the captain's body and nameplate, turns the body with the look direction, and ignores mouse-wheel zoom until you switch back. The menu and the formation drill ignore F9. A translucent oval in the top-right shows an eye in true sight and an eagle in raven sight.
 - **Events** — a list of one-shot triggers. Enter town fires when the captain steps onto a numbered WorldMap cell; the parameter is that index. Entering town 0 (Iglin) is recorded and changes nothing. Entering town 1 (Relion) enables raven sight and sets max party size to 1 (Sam). Entering town 2 (Kanfold) sets max party size to 2 (Sam and Alex).
 - **Journal** — F10 menu, **2 Journal**. Lists every event that has fired, in that order, with what it changed. Iglin is recorded as soon as the captain is placed there, with no change under the name. Esc or F10 closes the page.
 - **Oak and bronze** — the journal, credits, main menu, and battle-plan list are a dark oak board in a bronze binding, with brighter corner bosses. The debug readout in the corner stays a plain block.
@@ -88,7 +88,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.Credits.*` | Author / Cursor+Grok / Fab attribution; HUD toggle |
 | `SolidCore1.MainMenu.*` | F10 menu entries (Test Drill, Journal, Credits) and selection |
 | `SolidCore1.Journal.*` | Empty journal, then events in the order they fired |
-| `SolidCore1.HudTheme.*` | Oak-and-bronze frame thickness, corner bosses, opaque board |
+| `SolidCore1.HudTheme.*` | Oak-and-bronze frame thickness, corner bosses, opaque board; translucent oval sight marker |
 | `SolidCore1.HUD.DebugToggle` | F12 shows and hides the tech readout |
 | `SolidCore1.Pointer.*` | Bronze arrow tip, outline, and hide-while-looking |
 | `SolidCore1.ClickMove.*` | Single click, raven-only; WASD is true sight; ground ray |

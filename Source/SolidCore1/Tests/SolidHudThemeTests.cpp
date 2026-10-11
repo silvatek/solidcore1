@@ -44,4 +44,19 @@ bool FSolidHudThemeOakFrameTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidHudThemeSightMarkerTest,
+	"SolidCore1.HudTheme.SightMarker",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidHudThemeSightMarkerTest::RunTest(const FString& Parameters)
+{
+	const SolidHudTheme::FSightMarkerChip Chip = SolidHudTheme::SightMarkerChip();
+	TestTrue(TEXT("chip is wider than it is tall"), Chip.Width > Chip.Height * 1.2f);
+	TestTrue(TEXT("ends are semicircles"), FMath::IsNearlyEqual(Chip.CornerRadius, Chip.Height * 0.5f));
+	TestTrue(TEXT("fill is visible"), Chip.Fill.A > 0.2f);
+	TestTrue(TEXT("fill is semi-transparent"), Chip.Fill.A < 0.75f);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

@@ -63,6 +63,7 @@ void ASolidGameMode::EnsureCompanyAndParty()
 		Company = NewObject<USolidCompany>(this, TEXT("Company"));
 	}
 	Company->InitializeDefaultBattlePlans();
+	Company->InitializeDefaultCharacterMeshes();
 	Company->InitializeDefaultCompanions();
 
 	if (!Party)
@@ -353,9 +354,12 @@ void ASolidGameMode::EnsureCompanion()
 			&& Companion->GetCharacterDisplayName() == Fielded[Slot].Name;
 		if (bKeep)
 		{
-			if (Companion->GetCompanionMesh().ToSoftObjectPath() != Fielded[Slot].Mesh.ToSoftObjectPath())
+			const TSoftObjectPtr<USkeletalMesh> Mesh = Company
+				? Company->GetMeshForCompanion(Fielded[Slot])
+				: TSoftObjectPtr<USkeletalMesh>();
+			if (Companion->GetCompanionMesh().ToSoftObjectPath() != Mesh.ToSoftObjectPath())
 			{
-				Companion->SetCompanionMesh(Fielded[Slot].Mesh);
+				Companion->SetCompanionMesh(Mesh);
 			}
 			continue;
 		}
@@ -419,8 +423,11 @@ void ASolidGameMode::EnsureCompanion()
 		{
 			continue;
 		}
+		const TSoftObjectPtr<USkeletalMesh> Mesh = Company
+			? Company->GetMeshForCompanion(Fielded[Slot])
+			: TSoftObjectPtr<USkeletalMesh>();
 		if (ASolidCompanionCharacter* Companion = SpawnCompanion(
-			World, PlayerPawn, ClassToSpawn, Fielded[Slot].Name, Slot, Fielded[Slot].Mesh))
+			World, PlayerPawn, ClassToSpawn, Fielded[Slot].Name, Slot, Mesh))
 		{
 			SpawnedCompanions.Add(Companion);
 		}

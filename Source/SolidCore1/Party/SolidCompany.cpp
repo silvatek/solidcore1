@@ -53,6 +53,18 @@ int32 USolidCompany::AddBattlePlan(const FSolidBattlePlan& Plan)
 	return AllBattlePlans.Add(Plan);
 }
 
+void USolidCompany::InitializeDefaultCharacterMeshes()
+{
+	if (AllCharacterMeshes.Num() > 0)
+	{
+		return;
+	}
+
+	AllCharacterMeshes.Add({
+		TEXT("Viking"),
+		TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath))});
+}
+
 void USolidCompany::InitializeDefaultCompanions()
 {
 	if (AllCompanions.Num() > 0)
@@ -60,21 +72,45 @@ void USolidCompany::InitializeDefaultCompanions()
 		return;
 	}
 
-	AllCompanions.Add({
-		TEXT("Sam"),
-		TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath))});
-	AllCompanions.Add({
-		TEXT("Alex"),
-		TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath))});
-	AllCompanions.Add({
-		TEXT("Max"),
-		TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath))});
-	AllCompanions.Add({
-		TEXT("Morgan"),
-		TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath))});
-	AllCompanions.Add({
-		TEXT("Quinn"),
-		TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath))});
+	InitializeDefaultCharacterMeshes();
+	const int32 Viking = FindCharacterMeshIndexByName(TEXT("Viking"));
+
+	AllCompanions.Add({ TEXT("Sam"), Viking });
+	AllCompanions.Add({ TEXT("Alex"), Viking });
+	AllCompanions.Add({ TEXT("Max"), Viking });
+	AllCompanions.Add({ TEXT("Morgan"), Viking });
+	AllCompanions.Add({ TEXT("Quinn"), Viking });
+}
+
+const FSolidCharacterMesh* USolidCompany::GetCharacterMesh(const int32 Index) const
+{
+	return AllCharacterMeshes.IsValidIndex(Index) ? &AllCharacterMeshes[Index] : nullptr;
+}
+
+int32 USolidCompany::FindCharacterMeshIndexByName(const FString& Name) const
+{
+	for (int32 Index = 0; Index < AllCharacterMeshes.Num(); ++Index)
+	{
+		if (AllCharacterMeshes[Index].Name.Equals(Name, ESearchCase::IgnoreCase))
+		{
+			return Index;
+		}
+	}
+	return INDEX_NONE;
+}
+
+int32 USolidCompany::AddCharacterMesh(const FSolidCharacterMesh& CharacterMesh)
+{
+	return AllCharacterMeshes.Add(CharacterMesh);
+}
+
+TSoftObjectPtr<USkeletalMesh> USolidCompany::GetMeshForCompanion(const FSolidCompanyCompanion& Companion) const
+{
+	if (const FSolidCharacterMesh* CharacterMesh = GetCharacterMesh(Companion.CharacterMeshIndex))
+	{
+		return CharacterMesh->Mesh;
+	}
+	return TSoftObjectPtr<USkeletalMesh>();
 }
 
 const FSolidCompanyCompanion* USolidCompany::GetCompanion(const int32 Index) const

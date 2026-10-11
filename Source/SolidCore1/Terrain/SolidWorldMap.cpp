@@ -352,14 +352,7 @@ bool USolidWorldMap::LoadDefault(const bool bForceReload)
 		return true;
 	}
 
-	const FString SourcePath =
-		FPaths::ProjectDir() / TEXT("Source/SolidCore1/Terrain/WorldMap.txt");
-	if (FPaths::FileExists(SourcePath) && LoadFromFile(SourcePath))
-	{
-		return true;
-	}
-
-	UE_LOG(LogSolid, Error, TEXT("WorldMap: no WorldMap.txt under Content/ or Source/SolidCore1/Terrain/."));
+	UE_LOG(LogSolid, Error, TEXT("WorldMap: failed to read Content/WorldMap.txt."));
 	return false;
 }
 

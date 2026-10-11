@@ -47,7 +47,7 @@ public:
 	static constexpr int32 MapWidth = 64;
 	static constexpr int32 MapHeight = 64;
 
-	/** Load Content/WorldMap.txt (fallback Terrain/WorldMap.txt). Idempotent when already loaded. */
+	/** Load Content/WorldMap.txt. Idempotent when already loaded. */
 	bool LoadDefault(bool bForceReload = false);
 
 	bool LoadFromString(const FString& Text);

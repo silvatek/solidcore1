@@ -218,7 +218,7 @@ See [`Source/SolidCore1/Fog/README.md`](Source/SolidCore1/Fog/README.md) — tra
 
 ## WorldMap biomes (SC1-0105)
 
-`Content/WorldMap.txt` (fallback `Source/SolidCore1/Terrain/WorldMap.txt`) is a 64×64 grid of markers plus a color key (`S` Sea, `G` Grassland, `T` Town, `M` Mountain, `C` Cave, `F` Forest, `D` Desert, `R` River). Digits are location indexes (`0` Iglin, `1` Relion, `2` Kanfold, `3` Visolar, `4` Jethan). Town names live in `Towns/SolidTowns.h`, matched by that index. A digit with no entry there has no name. Unlisted digits default to the Town biome. `C` is not a town: it is the cave stronghold and uses the Mountain biome, so that cell gets the +10 m shelf. The grid scales across the TerrainMap world rectangle (file row 0 = north). The default rectangle is 1024 m on a side, so each marker is 16 m. Location **0** is the starting town: the streamer relocates the player there. A legacy `Z` marker is the start only on maps that have no `0` cells. Fog bands are centered on the player after that placement.
+`Content/WorldMap.txt` is a 64×64 grid of markers plus a color key (`S` Sea, `G` Grassland, `T` Town, `M` Mountain, `C` Cave, `F` Forest, `D` Desert, `R` River). Digits are location indexes (`0` Iglin, `1` Relion, `2` Kanfold, `3` Visolar, `4` Jethan). Town names live in `Towns/SolidTowns.h`, matched by that index. A digit with no entry there has no name. Unlisted digits default to the Town biome. `C` is not a town: it is the cave stronghold and uses the Mountain biome, so that cell gets the +10 m shelf. The grid scales across the TerrainMap world rectangle (file row 0 = north). The default rectangle is 1024 m on a side, so each marker is 16 m. Location **0** is the starting town: the streamer relocates the player there. A legacy `Z` marker is the start only on maps that have no `0` cells. Fog bands are centered on the player after that placement.
 
 ## Forest trees (SC1-0076 / SC1-0110)
 
@@ -318,8 +318,7 @@ Source/
       SolidTerrainFog.*       # FoW bands, boundary mesh, materials, height-fog helpers
     Terrain/
       SolidTerrainTypes.h
-      WorldMap.txt            # ASCII biome overlay (fallback copy)
-      SolidWorldMap.*         # Parse/scale WorldMap.txt; location 0 centroid
+      SolidWorldMap.*         # Parse/scale Content/WorldMap.txt; location 0 centroid
       SolidTerrainMap.*
       SolidTerrainNoise.h
       SolidTerrainChunk.*

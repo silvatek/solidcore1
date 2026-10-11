@@ -78,7 +78,20 @@ bool FSolidFabManifestRecordTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("assassin resolvedPath is present"),
 		SolidFabManifest::ReadJsonStringField(Manifest, TEXT("assassin"), TEXT("resolvedPath"), AssassinPath));
-	TestTrue(TEXT("assassin path starts empty"), AssassinPath.IsEmpty());
+	TestEqual(
+		TEXT("assassin path is the recorded body"),
+		AssassinPath,
+		FString(TEXT("Content/Medieval_Assassin_Girl/Meshes/base_mesh/SKM_base_mesh_ue.uasset")));
+
+	FString OriginalBlacksmithFolder;
+	TestTrue(
+		TEXT("blacksmith folder is present"),
+		SolidFabManifest::ReadJsonStringField(
+			Manifest, TEXT("blacksmith"), TEXT("resolvedFolder"), OriginalBlacksmithFolder));
+	TestEqual(
+		TEXT("blacksmith folder is the recorded pack"),
+		OriginalBlacksmithFolder,
+		FString(TEXT("Content/Elf_Blacksmith")));
 
 	FString VikingMesh;
 	TestTrue(
@@ -114,7 +127,7 @@ bool FSolidFabManifestRecordTest::RunTest(const FString& Parameters)
 
 	FString BlacksmithFolder;
 	SolidFabManifest::ReadJsonStringField(Edited, TEXT("blacksmith"), TEXT("resolvedFolder"), BlacksmithFolder);
-	TestTrue(TEXT("blacksmith folder stays empty"), BlacksmithFolder.IsEmpty());
+	TestEqual(TEXT("blacksmith folder is untouched"), BlacksmithFolder, OriginalBlacksmithFolder);
 	TestTrue(TEXT("other text stays"), Edited.Contains(TEXT("Dimentrius3dArtist")));
 	TestTrue(
 		TEXT("second write is unchanged"),

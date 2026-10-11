@@ -10,6 +10,7 @@ class ASolidBuilding;
 class ASolidCompanionCharacter;
 class ASolidTownSign;
 class ASolidTree;
+class USkeletalMesh;
 class USolidCompany;
 class USolidParty;
 
@@ -25,7 +26,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	bool bAutoSpawnTerrainStreamer = true;
 
-	/** Spawn roster companions up to the event max party size (starts empty). */
+	/** Spawn the party's selected companions, up to the event max party size (starts empty). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	bool bAutoSpawnCompanion = true;
 
@@ -81,7 +82,7 @@ public:
 	USolidCompany* GetCompany() const { return Company; }
 	USolidParty* GetParty() const { return Party; }
 
-	/** Company roster size (Sam, then Alex). The live party starts empty. */
+	/** Event roster size (Sam, then Alex). The live party starts empty. The company catalog is larger. */
 	static constexpr int32 DefaultCompanionCount = 2;
 
 	/** Companions an event currently allows in the party. Starts at 0. */
@@ -104,7 +105,8 @@ public:
 
 	/**
 	 * Create the company catalog and party on the first call.
-	 * Later calls (event refresh, companion spawn) keep the active battle plan.
+	 * Later calls (event refresh, companion spawn) keep the active battle plan
+	 * and the companions selected for the party.
 	 */
 	void EnsureCompanyAndParty();
 
@@ -120,7 +122,8 @@ protected:
 		APawn* PlayerPawn,
 		UClass* ClassToSpawn,
 		const FString& DisplayName,
-		int32 PartySlotIndex);
+		int32 PartySlotIndex,
+		const TSoftObjectPtr<USkeletalMesh>& Mesh);
 
 	UPROPERTY(Transient)
 	TObjectPtr<USolidCompany> Company;

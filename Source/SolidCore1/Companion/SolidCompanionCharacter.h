@@ -73,6 +73,10 @@ public:
 	void SetPartySlotIndex(int32 NewSlotIndex) { PartySlotIndex = FMath::Max(0, NewSlotIndex); }
 	int32 GetPartySlotIndex() const { return PartySlotIndex; }
 
+	/** Mesh from the company roster. Applied on spawn, before visuals load. */
+	void SetCompanionMesh(const TSoftObjectPtr<USkeletalMesh>& NewMesh);
+	const TSoftObjectPtr<USkeletalMesh>& GetCompanionMesh() const { return CompanionMesh; }
+
 	/** Match the follow target's MaxWalkSpeed when possible. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Follow")
 	bool bMatchFollowTargetSpeed = true;

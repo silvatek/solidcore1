@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0163")
+#define SOLID_BUILD_ID TEXT("SC1-0164")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Source folders for player, character, game, content")
+#define SOLID_BUILD_NOTE TEXT("Company roster and party selection")
 #endif

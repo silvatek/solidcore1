@@ -8,10 +8,12 @@ void USolidParty::InitializeFromCompany(USolidCompany* InCompany)
 	{
 		AssignedCompanyPlanIndices.Reset();
 		ActiveAssignedSlot = 0;
+		SelectedCompanionIndices.Reset();
 		return;
 	}
 
 	Company->InitializeDefaultBattlePlans();
+	Company->InitializeDefaultCompanions();
 
 	TArray<int32> Starter;
 	for (int32 Index = 0; Index < Company->GetBattlePlanCount()
@@ -24,6 +26,19 @@ void USolidParty::InitializeFromCompany(USolidCompany* InCompany)
 
 	// Default active: F1 (first assigned slot — Line in the starter catalog).
 	ActiveAssignedSlot = 0;
+
+	TArray<int32> StarterCompanions;
+	const int32 Sam = Company->FindCompanionIndexByName(TEXT("Sam"));
+	const int32 Alex = Company->FindCompanionIndexByName(TEXT("Alex"));
+	if (Sam != INDEX_NONE)
+	{
+		StarterCompanions.Add(Sam);
+	}
+	if (Alex != INDEX_NONE)
+	{
+		StarterCompanions.Add(Alex);
+	}
+	SetSelectedCompanions(StarterCompanions);
 }
 
 bool USolidParty::SetAssignedBattlePlans(const TArray<int32>& CompanyPlanIndices)
@@ -114,4 +129,46 @@ FString USolidParty::GetActiveBattlePlanDebugString() const
 		*Plan->Name,
 		SolidBattleFormationSlots::FormationName(Plan->Formation),
 		SolidBattleFormationSlots::SpacingName(Plan->Spacing));
+}
+
+bool USolidParty::SetSelectedCompanions(const TArray<int32>& CompanyCompanionIndices)
+{
+	SelectedCompanionIndices.Reset();
+	if (!Company)
+	{
+		return false;
+	}
+
+	for (const int32 CompanyIndex : CompanyCompanionIndices)
+	{
+		if (!Company->GetCompanion(CompanyIndex))
+		{
+			continue;
+		}
+		SelectedCompanionIndices.AddUnique(CompanyIndex);
+	}
+	return true;
+}
+
+void USolidParty::CollectFieldedCompanions(const int32 MaxCount, TArray<FSolidCompanyCompanion>& Out) const
+{
+	Out.Reset();
+	if (!Company || MaxCount <= 0)
+	{
+		return;
+	}
+
+	for (const int32 CompanyIndex : SelectedCompanionIndices)
+	{
+		const FSolidCompanyCompanion* Companion = Company->GetCompanion(CompanyIndex);
+		if (!Companion)
+		{
+			continue;
+		}
+		Out.Add(*Companion);
+		if (Out.Num() >= MaxCount)
+		{
+			break;
+		}
+	}
 }

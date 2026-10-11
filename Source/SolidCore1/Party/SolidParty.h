@@ -3,13 +3,16 @@
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
 #include "Party/SolidBattlePlan.h"
+#include "Party/SolidCompany.h"
 #include "SolidParty.generated.h"
 
 class USolidCompany;
 
 /**
- * Party — Captain + active Companions, with up to 8 assigned battle plans
- * drawn from the Company catalog, one of which is active.
+ * Party — Captain plus the companions chosen from the company.
+ * Up to 8 assigned battle plans are drawn from the company catalog, one of which is active.
+ * The selected companion list is the choice; the fielded list is that choice clamped
+ * to the current max party size (the events own that limit).
  */
 UCLASS()
 class SOLIDCORE1_API USolidParty : public UObject
@@ -17,7 +20,7 @@ class SOLIDCORE1_API USolidParty : public UObject
 	GENERATED_BODY()
 
 public:
-	/** Bind to Company, assign starter plans, activate F1 (Line). */
+	/** Bind to Company, assign starter plans, activate F1, select Sam then Alex. */
 	void InitializeFromCompany(USolidCompany* InCompany);
 
 	USolidCompany* GetCompany() const { return Company; }
@@ -41,6 +44,22 @@ public:
 
 	FString GetActiveBattlePlanDebugString() const;
 
+	int32 GetSelectedCompanionCount() const { return SelectedCompanionIndices.Num(); }
+	const TArray<int32>& GetSelectedCompanionIndices() const { return SelectedCompanionIndices; }
+
+	/**
+	 * Replace the chosen companions (company indexes).
+	 * Invalid indices and duplicates are skipped. An empty choice is allowed.
+	 * Returns false when no company is bound.
+	 */
+	bool SetSelectedCompanions(const TArray<int32>& CompanyCompanionIndices);
+
+	/**
+	 * Chosen companions who are with the captain right now, in selection order.
+	 * Stops at MaxCount. Missing company records are skipped.
+	 */
+	void CollectFieldedCompanions(int32 MaxCount, TArray<FSolidCompanyCompanion>& Out) const;
+
 protected:
 	UPROPERTY(Transient)
 	TObjectPtr<USolidCompany> Company;
@@ -52,4 +71,8 @@ protected:
 	/** Index into AssignedCompanyPlanIndices. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Party|BattlePlans")
 	int32 ActiveAssignedSlot = 0;
+
+	/** Indices into Company::AllCompanions, in the order they join the party. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Party|Companions")
+	TArray<int32> SelectedCompanionIndices;
 };

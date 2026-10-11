@@ -63,12 +63,13 @@ void ASolidGameMode::EnsureCompanyAndParty()
 		Company = NewObject<USolidCompany>(this, TEXT("Company"));
 	}
 	Company->InitializeDefaultBattlePlans();
+	Company->InitializeDefaultCompanions();
 
 	if (!Party)
 	{
 		Party = NewObject<USolidParty>(this, TEXT("Party"));
-		// Bind once. InitializeFromCompany always activates F1, and the
-		// enter-town timer calls this every 0.1s via EnsureCompanion.
+		// Bind once. InitializeFromCompany always activates F1 and reselects
+		// Sam and Alex, and the enter-town timer calls this every 0.1s.
 		Party->InitializeFromCompany(Company);
 	}
 }
@@ -253,7 +254,8 @@ ASolidCompanionCharacter* ASolidGameMode::SpawnCompanion(
 	APawn* PlayerPawn,
 	UClass* ClassToSpawn,
 	const FString& DisplayName,
-	const int32 PartySlotIndex)
+	const int32 PartySlotIndex,
+	const TSoftObjectPtr<USkeletalMesh>& Mesh)
 {
 	if (!World || !PlayerPawn || !ClassToSpawn)
 	{
@@ -291,12 +293,13 @@ ASolidCompanionCharacter* ASolidGameMode::SpawnCompanion(
 		SpawnLoc.Z = LandZ + CapsuleHalf + Streamer->SnapHeightPadding;
 	}
 
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
-
-	ASolidCompanionCharacter* Companion = World->SpawnActor<ASolidCompanionCharacter>(
-		ClassToSpawn, SpawnLoc, PlayerPawn->GetActorRotation(), SpawnParams);
+	const FTransform SpawnTransform(PlayerPawn->GetActorRotation(), SpawnLoc);
+	ASolidCompanionCharacter* Companion = World->SpawnActorDeferred<ASolidCompanionCharacter>(
+		ClassToSpawn,
+		SpawnTransform,
+		this,
+		nullptr,
+		ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
 	if (!Companion)
 	{
 		UE_LOG(LogSolid, Error, TEXT("Failed to spawn companion %s."), *DisplayName);
@@ -307,9 +310,11 @@ ASolidCompanionCharacter* ASolidGameMode::SpawnCompanion(
 	Companion->FollowDistance = FMath::Max(Behind, 120.f);
 	Companion->SideOffset = Slot.Y;
 	Companion->CatchUpDistance = FMath::Max(700.f, Behind + 400.f);
+	Companion->SetCompanionMesh(Mesh);
 	Companion->SetPartySlotIndex(PartySlotIndex);
 	Companion->SetCharacterDisplayName(DisplayName);
 	Companion->SetFollowTarget(PlayerPawn);
+	Companion->FinishSpawning(SpawnTransform);
 
 	UE_LOG(LogSolid, Warning,
 		TEXT("Spawned companion %s slot=%d at %s (fwd=%.0f right=%.0f) following %s"),
@@ -333,30 +338,40 @@ void ASolidGameMode::EnsureCompanion()
 	});
 
 	const int32 Wanted = SolidEvents::PartyCount(Configuration);
+	TArray<FSolidCompanyCompanion> Fielded;
+	if (Party)
+	{
+		Party->CollectFieldedCompanions(Wanted, Fielded);
+	}
+
 	for (int32 Index = SpawnedCompanions.Num() - 1; Index >= 0; --Index)
 	{
 		ASolidCompanionCharacter* Companion = SpawnedCompanions[Index];
 		const int32 Slot = Companion ? Companion->GetPartySlotIndex() : INDEX_NONE;
-		const TCHAR* Expected = SolidEvents::RosterName(Slot);
 		const bool bKeep = Companion
-			&& Expected
-			&& Slot < Wanted
-			&& Companion->GetCharacterDisplayName() == Expected;
-		if (!bKeep)
+			&& Fielded.IsValidIndex(Slot)
+			&& Companion->GetCharacterDisplayName() == Fielded[Slot].Name;
+		if (bKeep)
 		{
-			if (Companion)
+			if (Companion->GetCompanionMesh().ToSoftObjectPath() != Fielded[Slot].Mesh.ToSoftObjectPath())
 			{
-				UE_LOG(LogSolid, Warning,
-					TEXT("Removed companion %s (max party %d)."),
-					*Companion->GetCharacterDisplayName(),
-					Wanted);
-				Companion->Destroy();
+				Companion->SetCompanionMesh(Fielded[Slot].Mesh);
 			}
-			SpawnedCompanions.RemoveAt(Index);
+			continue;
 		}
+
+		if (Companion)
+		{
+			UE_LOG(LogSolid, Warning,
+				TEXT("Removed companion %s (max party %d)."),
+				*Companion->GetCharacterDisplayName(),
+				Wanted);
+			Companion->Destroy();
+		}
+		SpawnedCompanions.RemoveAt(Index);
 	}
 
-	if (SpawnedCompanions.Num() >= Wanted)
+	if (SpawnedCompanions.Num() >= Fielded.Num())
 	{
 		return;
 	}
@@ -388,11 +403,6 @@ void ASolidGameMode::EnsureCompanion()
 
 	auto HasSlot = [this](const int32 Slot) -> bool
 	{
-		const TCHAR* Name = SolidEvents::RosterName(Slot);
-		if (!Name)
-		{
-			return true;
-		}
 		for (const TObjectPtr<ASolidCompanionCharacter>& Companion : SpawnedCompanions)
 		{
 			if (Companion && Companion->GetPartySlotIndex() == Slot)
@@ -403,19 +413,14 @@ void ASolidGameMode::EnsureCompanion()
 		return false;
 	};
 
-	for (int32 Slot = 0; Slot < Wanted; ++Slot)
+	for (int32 Slot = 0; Slot < Fielded.Num(); ++Slot)
 	{
 		if (HasSlot(Slot))
 		{
 			continue;
 		}
-		const TCHAR* Name = SolidEvents::RosterName(Slot);
-		if (!Name)
-		{
-			continue;
-		}
 		if (ASolidCompanionCharacter* Companion = SpawnCompanion(
-			World, PlayerPawn, ClassToSpawn, Name, Slot))
+			World, PlayerPawn, ClassToSpawn, Fielded[Slot].Name, Slot, Fielded[Slot].Mesh))
 		{
 			SpawnedCompanions.Add(Companion);
 		}

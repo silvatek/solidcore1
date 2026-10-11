@@ -141,6 +141,20 @@ void ASolidCompanionCharacter::Tick(float DeltaSeconds)
 	SolidNameLabel::FaceViewCamera(NameLabelRoot, GetWorld());
 }
 
+void ASolidCompanionCharacter::SetCompanionMesh(const TSoftObjectPtr<USkeletalMesh>& NewMesh)
+{
+	CompanionMesh = NewMesh;
+	if (HasActorBegunPlay())
+	{
+		SolidClipLocomotion::ApplyMeshAndSingleNodeMode(
+			GetMesh(),
+			CompanionMesh,
+			SolidClipLocomotion::DefaultMeshPath,
+			TEXT("Companion"),
+			/*bOnlyIfMeshUnset=*/false);
+	}
+}
+
 void ASolidCompanionCharacter::SetFollowTarget(AActor* NewTarget)
 {
 	FollowTarget = NewTarget;

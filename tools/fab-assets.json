@@ -53,8 +53,8 @@
       },
       "expectedName": "Mat_025_grass.uasset",
       "searchRoots": ["Content/Fab"],
-      "resolvedPath": "",
-      "resolvedFolder": "",
+      "resolvedPath": "Content/Fab/025_Grass【Material___SeamlessTexture___Instance___Blueprint】/Mat_025_grass/Materials/Mat_025_grass.uasset",
+      "resolvedFolder": "Content/Fab/025_Grass【Material___SeamlessTexture___Instance___Blueprint】/Mat_025_grass/Materials",
       "notes": "resolvedPath, then resolvedFolder, then Mat_025_grass under /Game/Fab. A find is written back."
     },
     {
@@ -76,8 +76,8 @@
       "assetToken": "Assassin",
       "contentFolder": "Medieval_Assassin_Girl",
       "searchRoots": ["Content"],
-      "resolvedPath": "",
-      "resolvedFolder": "",
+      "resolvedPath": "Content/Medieval_Assassin_Girl/Meshes/base_mesh/SKM_base_mesh_ue.uasset",
+      "resolvedFolder": "Content/Medieval_Assassin_Girl",
       "notes": "Body is Meshes/base_mesh/SKM_base_mesh_ue.uasset inside Medieval_Assassin_Girl. A recorded file is kept when it is that body; otherwise the body replaces it. Captain stays on SK_Viking."
     },
     {
@@ -99,8 +99,8 @@
       "assetToken": "Blacksmith",
       "contentFolder": "Elf_Blacksmith",
       "searchRoots": ["Content"],
-      "resolvedPath": "",
-      "resolvedFolder": "",
+      "resolvedPath": "Content/Elf_Blacksmith/Mesh/SK_Elf_Blacksmith.uasset",
+      "resolvedFolder": "Content/Elf_Blacksmith",
       "notes": "Body is Mesh/SK_Elf_Blacksmith.uasset inside Elf_Blacksmith. SK_Elf_Blacksmith_Skeleton.uasset is the skeleton. SeparatedMesh parts are not the body. The pack has no locomotion clips. A recorded file is kept when it is that body; otherwise the body replaces it. Captain stays on SK_Viking."
     }
   ]

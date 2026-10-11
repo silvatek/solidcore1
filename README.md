@@ -143,7 +143,7 @@ The summary prints ran/passed/failed counts and, on failure, lists each failed t
 
 ## Build ID (HUD)
 
-PIE shows a top-left debug HUD (`Build SC1-NNNN`, a one-line `Change:` note, pawn/terrain Z, chunk load, material, camera pitch). Both strings live in `Source/SolidCore1/SolidBuildId.h` (`SOLID_BUILD_ID` / `SOLID_BUILD_NOTE`) and are bumped on every GitHub push so screenshots identify which binary you ran.
+PIE shows a top-left debug HUD (`Build SC1-NNNN`, a one-line `Change:` note, pawn/terrain Z, chunk load, material, camera pitch). Both strings live in `Source/SolidCore1/Game/SolidBuildId.h` (`SOLID_BUILD_ID` / `SOLID_BUILD_NOTE`) and are bumped on every GitHub push so screenshots identify which binary you ran.
 
 ## Character visuals (clip locomotion)
 
@@ -204,7 +204,7 @@ See [`Source/SolidCore1/Fog/README.md`](Source/SolidCore1/Fog/README.md) — tra
 
 ## WorldMap biomes (SC1-0105)
 
-`Content/WorldMap.txt` (fallback `Source/SolidCore1/WorldMap.txt`) is a 64×64 grid of markers plus a color key (`S` Sea, `G` Grassland, `T` Town, `M` Mountain, `F` Forest, `D` Desert, `R` River). Digits are location indexes (`0` Iglin, `1` Relion, `2` Kanfold, `3` Visolar, `4` Jethan). Town names live in `Towns/SolidTowns.h`, matched by that index. A digit with no entry there has no name. Unlisted digits default to the Town biome. The grid scales across the TerrainMap world rectangle (file row 0 = north). The default rectangle is 1024 m on a side, so each marker is 16 m. Location **0** is the starting town: the streamer relocates the player there. A legacy `Z` marker is the start only on maps that have no `0` cells. Fog bands are centered on the player after that placement.
+`Content/WorldMap.txt` (fallback `Source/SolidCore1/Terrain/WorldMap.txt`) is a 64×64 grid of markers plus a color key (`S` Sea, `G` Grassland, `T` Town, `M` Mountain, `F` Forest, `D` Desert, `R` River). Digits are location indexes (`0` Iglin, `1` Relion, `2` Kanfold, `3` Visolar, `4` Jethan). Town names live in `Towns/SolidTowns.h`, matched by that index. A digit with no entry there has no name. Unlisted digits default to the Town biome. The grid scales across the TerrainMap world rectangle (file row 0 = north). The default rectangle is 1024 m on a side, so each marker is 16 m. Location **0** is the starting town: the streamer relocates the player there. A legacy `Z` marker is the start only on maps that have no `0` cells. Fog bands are centered on the player after that placement.
 
 ## Forest trees (SC1-0076 / SC1-0110)
 
@@ -273,19 +273,27 @@ Source/
   SolidCore1Editor.Target.cs
   SolidCore1/
     SolidCore1.Build.cs
-    SolidCharacter.h / .cpp              # Captain core (move/look/zoom/sprint)
-    SolidCharacterInput.cpp              # Runtime Enhanced Input factory
-    SolidCharacterVisuals.cpp            # Captain mesh + clip selection
-    SolidPartyCamera.cpp                 # Party framing + terrain boom lift
-    SolidClipLocomotion.*  # Shared single-node clip apply/play (per-character mesh)
-    SolidGameMode.*
-    SolidCameraFog.h         # Boom scale that keeps the camera over Fog == 0
-    SolidSight.h             # True sight / raven sight toggle
-    SolidClickMove.h         # Raven-sight click-to-move ground ray
-    SolidPlayerController.*
-    SolidMaterials.*       # Shared FlatCol solid-color MID helper
-    SolidContentPaths.h    # Canonical BP soft-class paths
-    WorldMap.txt           # ASCII biome overlay (fallback copy)
+    SolidCore1.h / .cpp
+    Player/
+      SolidCharacter.h / .cpp            # Captain core (move/look/zoom/sprint)
+      SolidCharacterInput.cpp            # Runtime Enhanced Input factory
+      SolidCharacterVisuals.cpp          # Captain mesh + clip selection
+      SolidCharacterFormationDrill.cpp   # Square-walk formation drill
+      SolidPlayerController.*
+      SolidPartyCamera.cpp               # Party framing + terrain boom lift
+      SolidClickMove.h                   # Raven-sight click-to-move ground ray
+      SolidSight.h                       # True sight / raven sight toggle
+      SolidCameraFog.h                   # Boom scale that keeps the camera over Fog == 0
+    Character/
+      SolidNameLabel.*                   # Floating nameplates
+      SolidClipLocomotion.*              # Shared single-node clip apply/play
+    Game/
+      SolidGameMode.*
+      SolidBuildId.h                     # SC1-NNNN shown on the debug HUD
+    Content/
+      SolidMaterials.*                   # Shared FlatCol solid-color MID helper
+      SolidContentLookup.*               # Find Fab meshes and clips by asset name
+      SolidContentPaths.h                # Canonical BP soft-class paths
     Companion/
       SolidCompanionCharacter.*          # Companion NPC follower
     Fog/
@@ -293,6 +301,7 @@ Source/
       SolidTerrainFog.*       # FoW bands, boundary mesh, materials, height-fog helpers
     Terrain/
       SolidTerrainTypes.h
+      WorldMap.txt            # ASCII biome overlay (fallback copy)
       SolidWorldMap.*         # Parse/scale WorldMap.txt; location 0 centroid
       SolidTerrainMap.*
       SolidTerrainNoise.h

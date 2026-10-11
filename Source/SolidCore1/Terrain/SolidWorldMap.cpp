@@ -351,13 +351,13 @@ bool USolidWorldMap::LoadDefault(const bool bForceReload)
 	}
 
 	const FString SourcePath =
-		FPaths::ProjectDir() / TEXT("Source/SolidCore1/WorldMap.txt");
+		FPaths::ProjectDir() / TEXT("Source/SolidCore1/Terrain/WorldMap.txt");
 	if (FPaths::FileExists(SourcePath) && LoadFromFile(SourcePath))
 	{
 		return true;
 	}
 
-	UE_LOG(LogSolid, Error, TEXT("WorldMap: no WorldMap.txt under Content/ or Source/SolidCore1/."));
+	UE_LOG(LogSolid, Error, TEXT("WorldMap: no WorldMap.txt under Content/ or Source/SolidCore1/Terrain/."));
 	return false;
 }
 

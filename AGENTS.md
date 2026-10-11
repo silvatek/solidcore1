@@ -13,7 +13,7 @@ Human docs and the To-do list: `README.md`. Fog history: `Source/SolidCore1/Fog/
 ## Git and builds
 
 - Commit and push to GitHub `main` when the user wants the change shipped.
-- On every product push, bump `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE` in `Source/SolidCore1/SolidBuildId.h` (`SC1-NNNN`).
+- On every product push, bump `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE` in `Source/SolidCore1/Game/SolidBuildId.h` (`SC1-NNNN`).
 
 ## Collaborative workflow
 

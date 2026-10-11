@@ -102,7 +102,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.Pointer.*` | Bronze arrow tip, outline, and hide-while-looking |
 | `SolidCore1.ClickMove.*` | Single click, raven-only; WASD is true sight; ground ray |
 | `SolidCore1.Sight.*` | True sight at start; F9 switches to raven sight and back; eye and eagle markers |
-| `SolidCore1.Events.*` | Enter-town events: raven sight, max party size, numbered cells |
+| `SolidCore1.Events.*` | Enter-town events: raven sight, max party size, captain title, numbered cells |
 | `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |
 | `SolidCore1.Content.*` | Required Content + Engine assets the code loads; Assassin and Blacksmith folders; recorded Fab paths |
 

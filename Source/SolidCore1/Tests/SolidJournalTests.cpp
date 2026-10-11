@@ -93,4 +93,25 @@ bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidJournalCaptainTitleTest,
+	"SolidCore1.Journal.CaptainTitle",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidJournalCaptainTitleTest::RunTest(const FString& Parameters)
+{
+	SolidEvents::FState State;
+	SolidEvents::NotifyOccupiedTown(State, 0);
+	SolidEvents::NotifyOccupiedTown(State, 1);
+	SolidEvents::NotifyOccupiedTown(State, 2);
+
+	TArray<FString> Lines;
+	SolidJournal::CollectLines(State, Lines);
+	const FString Text = SolidJournalTestPrivate::JoinLines(Lines);
+	TestTrue(TEXT("Relion records Vagrant"), Text.Contains(TEXT("Title Vagrant")));
+	TestTrue(TEXT("Kanfold records Ranger"), Text.Contains(TEXT("Title Ranger")));
+	TestFalse(TEXT("Iglin does not record a title"), Text.Contains(TEXT("Enter Iglin\n    Title")));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

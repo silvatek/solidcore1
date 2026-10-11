@@ -166,18 +166,23 @@ void ASolidGameMode::RefreshEvents()
 	if (Result.bFired)
 	{
 		UE_LOG(LogSolid, Warning,
-			TEXT("Event: entered town %d (%s). Sight %s. Max party %d."),
+			TEXT("Event: entered town %d (%s). Sight %s. Max party %d. Title %s."),
 			TownId,
 			*SolidTowns::NameFor(TownId),
 			Result.bSetSight ? SolidSight::Label(Result.Sight) : TEXT("unchanged"),
-			Configuration.MaxPartySize);
+			Configuration.MaxPartySize,
+			Configuration.CaptainTitle ? Configuration.CaptainTitle : TEXT(""));
 	}
 
-	if (Result.bSetSight)
+	if (ASolidCharacter* Captain = Cast<ASolidCharacter>(PlayerPawn))
 	{
-		if (ASolidCharacter* Captain = Cast<ASolidCharacter>(PlayerPawn))
+		if (Result.bSetSight)
 		{
 			Captain->SetSight(Result.Sight);
+		}
+		if (Result.bSetTitle && Result.CaptainTitle)
+		{
+			Captain->SetCharacterDisplayName(Result.CaptainTitle);
 		}
 	}
 

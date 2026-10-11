@@ -27,13 +27,21 @@ namespace SolidEvents
 		EnableSight,
 		/** How many companions may be in the party. */
 		MaxPartySize,
+		/** The captain's nameplate. Outcast, then Vagrant, then Ranger. */
+		CaptainTitle,
 	};
+
+	/** Nameplate before any title event. A later event will set Captain. */
+	inline constexpr const TCHAR* TitleOutcast = TEXT("Outcast");
+	inline constexpr const TCHAR* TitleVagrant = TEXT("Vagrant");
+	inline constexpr const TCHAR* TitleRanger = TEXT("Ranger");
 
 	struct FChange
 	{
 		EChange Kind = EChange::MaxPartySize;
 		ESolidSight Sight = ESolidSight::Raven;
 		int32 PartySize = 0;
+		const TCHAR* Title = nullptr;
 	};
 
 	struct FEvent
@@ -69,8 +77,9 @@ namespace SolidEvents
 			{
 				{ EChange::EnableSight, ESolidSight::Raven, 0 },
 				{ EChange::MaxPartySize, ESolidSight::Raven, 1 },
+				{ EChange::CaptainTitle, ESolidSight::Raven, 0, TitleVagrant },
 			},
-			2,
+			3,
 		},
 		{
 			TEXT("Enter Kanfold"),
@@ -78,8 +87,9 @@ namespace SolidEvents
 			2,
 			{
 				{ EChange::MaxPartySize, ESolidSight::Raven, 2 },
+				{ EChange::CaptainTitle, ESolidSight::Raven, 0, TitleRanger },
 			},
-			1,
+			2,
 		},
 	};
 
@@ -91,6 +101,7 @@ namespace SolidEvents
 	struct FState
 	{
 		int32 MaxPartySize = 0;
+		const TCHAR* CaptainTitle = TitleOutcast;
 		bool bTrueSightEnabled = true;
 		bool bRavenSightEnabled = false;
 		/** Numbered cell the captain is standing on, or INDEX_NONE. */
@@ -108,6 +119,8 @@ namespace SolidEvents
 		bool bSetSight = false;
 		ESolidSight Sight = ESolidSight::True;
 		int32 MaxPartySize = 0;
+		bool bSetTitle = false;
+		const TCHAR* CaptainTitle = TitleOutcast;
 	};
 
 	inline const TCHAR* RosterName(const int32 Slot)
@@ -153,6 +166,14 @@ namespace SolidEvents
 			State.MaxPartySize = FMath::Max(0, Change.PartySize);
 			Result.MaxPartySize = State.MaxPartySize;
 			break;
+		case EChange::CaptainTitle:
+			if (Change.Title && Change.Title[0])
+			{
+				State.CaptainTitle = Change.Title;
+				Result.bSetTitle = true;
+				Result.CaptainTitle = Change.Title;
+			}
+			break;
 		default:
 			break;
 		}
@@ -166,6 +187,7 @@ namespace SolidEvents
 	{
 		FResult Result;
 		Result.MaxPartySize = State.MaxPartySize;
+		Result.CaptainTitle = State.CaptainTitle;
 		if (State.OccupiedTown == TownId)
 		{
 			return Result;

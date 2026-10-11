@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0177")
+#define SOLID_BUILD_ID TEXT("SC1-0178")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Sam is a Rogue and Morgan is a Mage")
+#define SOLID_BUILD_NOTE TEXT("Relion titles the captain Vagrant; Kanfold, Ranger")
 #endif

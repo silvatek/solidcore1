@@ -14,6 +14,12 @@ FString SolidJournal::Describe(const SolidEvents::FEvent& Event)
 		case SolidEvents::EChange::EnableSight:
 			Part = FString::Printf(TEXT("%s enabled"), SolidSight::Label(Change.Sight));
 			break;
+		case SolidEvents::EChange::CaptainTitle:
+			if (Change.Title && Change.Title[0])
+			{
+				Part = FString::Printf(TEXT("Title %s"), Change.Title);
+			}
+			break;
 		case SolidEvents::EChange::MaxPartySize:
 		{
 			const int32 Count = FMath::Clamp(Change.PartySize, 0, SolidEvents::RosterCount);

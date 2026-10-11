@@ -95,6 +95,45 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidEventsCaptainTitleTest,
+	"SolidCore1.Events.CaptainTitle",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidEventsCaptainTitleTest::RunTest(const FString& Parameters)
+{
+	SolidEvents::FState State;
+	TestEqual(TEXT("starts as Outcast"), FString(State.CaptainTitle), FString(SolidEvents::TitleOutcast));
+
+	const SolidEvents::FResult Iglin = SolidEvents::NotifyOccupiedTown(State, 0);
+	TestTrue(TEXT("Iglin fires"), Iglin.bFired);
+	TestFalse(TEXT("Iglin does not retitle"), Iglin.bSetTitle);
+	TestEqual(TEXT("Iglin stays Outcast"), FString(State.CaptainTitle), FString(SolidEvents::TitleOutcast));
+
+	const SolidEvents::FResult Relion = SolidEvents::NotifyOccupiedTown(State, 1);
+	TestTrue(TEXT("Relion sets the title"), Relion.bSetTitle);
+	TestEqual(TEXT("Relion result is Vagrant"), FString(Relion.CaptainTitle), FString(SolidEvents::TitleVagrant));
+	TestEqual(TEXT("Relion state is Vagrant"), FString(State.CaptainTitle), FString(SolidEvents::TitleVagrant));
+
+	SolidEvents::NotifyOccupiedTown(State, INDEX_NONE);
+	const SolidEvents::FResult RelionAgain = SolidEvents::NotifyOccupiedTown(State, 1);
+	TestFalse(TEXT("Relion does not fire twice"), RelionAgain.bFired);
+	TestEqual(TEXT("title stays Vagrant"), FString(State.CaptainTitle), FString(SolidEvents::TitleVagrant));
+
+	const SolidEvents::FResult Kanfold = SolidEvents::NotifyOccupiedTown(State, 2);
+	TestTrue(TEXT("Kanfold sets the title"), Kanfold.bSetTitle);
+	TestEqual(TEXT("Kanfold is Ranger"), FString(State.CaptainTitle), FString(SolidEvents::TitleRanger));
+
+	SolidEvents::FState Skipped;
+	const SolidEvents::FResult KanfoldFirst = SolidEvents::NotifyOccupiedTown(Skipped, 2);
+	TestTrue(TEXT("Kanfold titles Ranger without Relion"), KanfoldFirst.bSetTitle);
+	TestEqual(TEXT("skipped path is Ranger"), FString(Skipped.CaptainTitle), FString(SolidEvents::TitleRanger));
+	const SolidEvents::FResult RelionLater = SolidEvents::NotifyOccupiedTown(Skipped, 1);
+	TestTrue(TEXT("Relion still fires later"), RelionLater.bSetTitle);
+	TestEqual(TEXT("Relion titles Vagrant"), FString(Skipped.CaptainTitle), FString(SolidEvents::TitleVagrant));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidEventsNumberedCellTest,
 	"SolidCore1.Events.NumberedCell",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)

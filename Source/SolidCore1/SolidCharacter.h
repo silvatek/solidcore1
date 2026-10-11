@@ -86,6 +86,7 @@ protected:
 	/** Right-button look. The free pointer does not turn the camera. */
 	void UpdatePointerMouseLook();
 	void ClickMoveFromInput();
+	void PollClickMovePress();
 	void TickClickMove();
 	void ClearClickMove();
 	bool ResolveClickMoveDestination(const FVector& RayOrigin, const FVector& RayDirection, FVector& OutDestination) const;
@@ -306,6 +307,8 @@ protected:
 	/** Ground point chosen by a raven-sight left click. */
 	bool bHasClickMoveDestination = false;
 	FVector ClickMoveDestination = FVector::ZeroVector;
+	/** Previous frame's left button, so one click is a single press. */
+	bool bLeftMouseWasDown = false;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UAnimSequence> CachedIdleAnim;

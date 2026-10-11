@@ -15,8 +15,9 @@ class SOLIDCORE1_API ASolidPlayerController : public APlayerController
 public:
 	ASolidPlayerController();
 
-	/** True when player input or Slate still has the right button down. */
+	/** True when player input or Slate still has the button down. */
 	bool IsRightMouseHeld() const;
+	bool IsLeftMouseHeld() const;
 
 	/** Current Axis2D value of a mapped Enhanced Input action, or zero. */
 	FVector2D GetMappedAxis2D(const UInputAction* Action) const;
@@ -30,6 +31,7 @@ protected:
 	void ApplyPointerMode();
 	void EnsurePointerCaptureMode();
 	void HideHardwareCursor();
+	bool IsMouseButtonHeld(const FKey& Button) const;
 
 	/** Mapping context applied for local players. Character also adds its own IMC when available. */
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Input")

@@ -31,7 +31,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - **Oak and bronze** — the journal, credits, main menu, and battle-plan list are a dark oak board in a bronze binding, with brighter corner bosses. The debug readout in the corner stays a plain block.
 - **Debug HUD** — F12 hides and shows the tech readout (build, FPS, pawn, terrain). The battle-plan list stays up. It starts visible.
 - **Mouse pointer** — a bronze arrow drawn in the game, tip on the hotspot. The Windows cursor stays hidden. Hold the right mouse button to look; the pointer hides until you let go, then it is back where you pressed. The right stick still looks.
-- **Click to move** — raven sight only. Left click a point on the ground and the captain walks there in a straight line, then stops. In true sight a click does nothing: without WASD or the left stick he stays put. Switching back to true sight cancels a walk that was in progress. WASD or the stick also cancels it in raven sight.
+- **Click to move** — raven sight only. One left click on the ground walks the captain there in a straight line, then he stops. WASD and the left stick do nothing in raven sight. In true sight a click does nothing: he moves only with WASD or the left stick. Switching back to true sight cancels a walk that was in progress.
 - **Main menu** — F10 opens it. **1 Test Drill** runs the formation drill. **2 Journal** opens the journal. **3 Credits** opens the credits page (Silvatek, Cursor + Grok, Fab Viking and grass). Up/Down and Enter also work. Esc or F10 closes. Move, look, and battle-plan keys are ignored while the menu, journal, or credits page is open.
 - **Content pipeline** — Fab listings restored via Launcher Add to Project; C++ finds Viking/grass by name under `/Game/Viking` or `/Game/Fab`. `tools/fab_doctor.bat` + `fab-assets.json`. Packs are gitignored (attribution README kept).
 - **Automation** — `SolidCore1.*` editor tests; `tools/run_automation_tests.bat` prints failed test paths. Build ID `SC1-NNNN` on the debug HUD.
@@ -41,10 +41,10 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 
 | Action | Keyboard | Gamepad |
 |--------|----------|---------|
-| Move | WASD | Left stick |
+| Move | WASD (true sight) | Left stick (true sight) |
 | Look | Right mouse button (hold) | Right stick |
 | Pointer | Mouse | — |
-| Click to move | Left mouse (raven sight) | — |
+| Click to move | Left click (raven sight) | — |
 | Zoom | Mouse wheel | — |
 | Jump | Space | A / Cross |
 | Sprint | Left Shift | Left stick click |
@@ -91,7 +91,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.HudTheme.*` | Oak-and-bronze frame thickness, corner bosses, opaque board |
 | `SolidCore1.HUD.DebugToggle` | F12 shows and hides the tech readout |
 | `SolidCore1.Pointer.*` | Bronze arrow tip, outline, and hide-while-looking |
-| `SolidCore1.ClickMove.*` | Raven-sight click, arrival, and ground ray |
+| `SolidCore1.ClickMove.*` | Single click, raven-only; WASD is true sight; ground ray |
 | `SolidCore1.Sight.*` | True sight at start; F9 switches to raven sight and back |
 | `SolidCore1.Events.*` | Enter-town events: raven sight, max party size, numbered cells |
 | `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |

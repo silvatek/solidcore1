@@ -23,6 +23,18 @@ namespace SolidClickMove
 		return bRavenSight && !bBlocked;
 	}
 
+	/** One press. Holding the button does not click again. */
+	inline bool IsFreshPress(const bool bDown, const bool bWasDown)
+	{
+		return bDown && !bWasDown;
+	}
+
+	/** WASD and the left stick. Raven sight walks only from a click. */
+	inline bool AllowsDirectMove(const bool bTrueSight)
+	{
+		return bTrueSight;
+	}
+
 	inline bool HasArrived(const FVector2D& From, const FVector2D& To, const float RadiusCm = ArrivalRadiusCm)
 	{
 		return FVector2D::DistSquared(From, To) <= RadiusCm * RadiusCm;

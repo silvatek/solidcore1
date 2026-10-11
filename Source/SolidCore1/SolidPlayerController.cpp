@@ -73,11 +73,21 @@ void ASolidPlayerController::HideHardwareCursor()
 	CurrentMouseCursor = EMouseCursor::None;
 }
 
-bool ASolidPlayerController::IsRightMouseHeld() const
+bool ASolidPlayerController::IsMouseButtonHeld(const FKey& Button) const
 {
 	const bool bSlateDown = FSlateApplication::IsInitialized()
-		&& FSlateApplication::Get().GetPressedMouseButtons().Contains(EKeys::RightMouseButton);
-	return SolidPointer::IsRightMouseHeld(IsInputKeyDown(EKeys::RightMouseButton), bSlateDown);
+		&& FSlateApplication::Get().GetPressedMouseButtons().Contains(Button);
+	return SolidPointer::IsRightMouseHeld(IsInputKeyDown(Button), bSlateDown);
+}
+
+bool ASolidPlayerController::IsRightMouseHeld() const
+{
+	return IsMouseButtonHeld(EKeys::RightMouseButton);
+}
+
+bool ASolidPlayerController::IsLeftMouseHeld() const
+{
+	return IsMouseButtonHeld(EKeys::LeftMouseButton);
 }
 
 FVector2D ASolidPlayerController::GetMappedAxis2D(const UInputAction* Action) const

@@ -235,7 +235,6 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::F10, IE_Pressed, this, &ASolidCharacter::ToggleMainMenuFromInput);
 	PlayerInputComponent->BindKey(EKeys::F12, IE_Pressed, this, &ASolidCharacter::ToggleDebugPanelFromInput);
 	PlayerInputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ASolidCharacter::CloseMenuOverlayFromInput);
-	PlayerInputComponent->BindKey(EKeys::LeftMouseButton, IE_Pressed, this, &ASolidCharacter::ClickMoveFromInput);
 	PlayerInputComponent->BindKey(EKeys::Up, IE_Pressed, this, &ASolidCharacter::MainMenuMoveUp);
 	PlayerInputComponent->BindKey(EKeys::Down, IE_Pressed, this, &ASolidCharacter::MainMenuMoveDown);
 	PlayerInputComponent->BindKey(EKeys::Enter, IE_Pressed, this, &ASolidCharacter::MainMenuConfirm);
@@ -480,6 +479,11 @@ void ASolidCharacter::Move(const FInputActionValue& Value)
 		return;
 	}
 
+	if (!SolidClickMove::AllowsDirectMove(IsTrueSight()))
+	{
+		return;
+	}
+
 	const FVector2D MovementVector = Value.Get<FVector2D>();
 	if (!MovementVector.IsNearlyZero())
 	{
@@ -629,8 +633,27 @@ void ASolidCharacter::ClickMoveFromInput()
 	UE_LOG(LogSolid, Warning, TEXT("Click move to %s"), *Destination.ToCompactString());
 }
 
+void ASolidCharacter::PollClickMovePress()
+{
+	bool bDown = false;
+	if (const ASolidPlayerController* PlayerController = Cast<ASolidPlayerController>(Controller))
+	{
+		bDown = PlayerController->IsLeftMouseHeld();
+	}
+	const bool bPressed = SolidClickMove::IsFreshPress(bDown, bLeftMouseWasDown);
+	bLeftMouseWasDown = bDown;
+	if (bPressed)
+	{
+		ClickMoveFromInput();
+	}
+}
+
 void ASolidCharacter::TickClickMove()
 {
+	// The pawn key bind misses a plain click while the cursor is up; Slate still
+	// sees that press. A second click is what used to get through as a double-click.
+	PollClickMovePress();
+
 	if (!bHasClickMoveDestination)
 	{
 		return;

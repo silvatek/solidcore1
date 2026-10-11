@@ -566,6 +566,7 @@ void ASolidHUD::DrawHUD()
 	if (const ASolidCharacter* Captain = Cast<ASolidCharacter>(Pawn))
 	{
 		Lines.Add(FString::Printf(TEXT("F9  %s"), SolidSight::Label(Captain->GetSight())));
+		Lines.Add(Captain->IsTrueSight() ? TEXT("WASD  Move") : TEXT("LMB  Move"));
 		if (Captain->HasClickMoveDestination())
 		{
 			Lines.Add(TEXT("Click  moving"));

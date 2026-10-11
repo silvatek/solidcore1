@@ -15,6 +15,14 @@ bool FSolidClickMoveRulesTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("true sight ignores a click"), SolidClickMove::AllowsClick(false, false));
 	TestFalse(TEXT("menu or drill ignores a click"), SolidClickMove::AllowsClick(true, true));
 
+	TestTrue(TEXT("a press is the down edge"), SolidClickMove::IsFreshPress(true, false));
+	TestFalse(TEXT("holding is not another click"), SolidClickMove::IsFreshPress(true, true));
+	TestFalse(TEXT("release is not a click"), SolidClickMove::IsFreshPress(false, true));
+	TestFalse(TEXT("staying up is not a click"), SolidClickMove::IsFreshPress(false, false));
+
+	TestTrue(TEXT("true sight walks from WASD"), SolidClickMove::AllowsDirectMove(true));
+	TestFalse(TEXT("raven sight does not walk from WASD"), SolidClickMove::AllowsDirectMove(false));
+
 	TestTrue(TEXT("inside the arrival radius"), SolidClickMove::HasArrived(FVector2D(0.f, 0.f), FVector2D(90.f, 0.f)));
 	TestFalse(TEXT("still short of the point"), SolidClickMove::HasArrived(FVector2D(0.f, 0.f), FVector2D(120.f, 0.f)));
 

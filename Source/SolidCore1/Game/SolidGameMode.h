@@ -8,6 +8,7 @@
 #include "SolidGameMode.generated.h"
 
 class ASolidBuilding;
+class ASolidCaveEntrance;
 class ASolidCompanionCharacter;
 class ASolidTownSign;
 class ASolidTree;
@@ -35,7 +36,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	TSubclassOf<ASolidCompanionCharacter> CompanionClass;
 
-	/** Spawn Forest trees, Town buildings, and welcome signs. */
+	/** Spawn Forest trees, Town buildings, welcome signs, and cave entrances. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation")
 	bool bAutoSpawnVegetation = true;
 
@@ -150,6 +151,9 @@ protected:
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidTownSign>> SpawnedTownSigns;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<ASolidCaveEntrance>> SpawnedCaveEntrances;
 
 	FTimerHandle EventRefreshTimer;
 	FTimerHandle VegetationSpawnTimer;

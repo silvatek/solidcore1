@@ -20,6 +20,8 @@
 #include "Towns/SolidTownBuildings.h"
 #include "Towns/SolidTownSign.h"
 #include "Towns/SolidTownSigns.h"
+#include "Strongholds/SolidCaveEntrance.h"
+#include "Strongholds/SolidStrongholds.h"
 #include "Vegetation/SolidForestTrees.h"
 #include "Vegetation/SolidTree.h"
 #include "Components/CapsuleComponent.h"
@@ -500,6 +502,10 @@ void ASolidGameMode::EnsureVegetation()
 	{
 		return !IsValid(Sign);
 	});
+	SpawnedCaveEntrances.RemoveAll([](const TObjectPtr<ASolidCaveEntrance>& Entrance)
+	{
+		return !IsValid(Entrance);
+	});
 
 	if (SpawnedForestTrees.Num() == 0)
 	{
@@ -522,6 +528,14 @@ void ASolidGameMode::EnsureVegetation()
 		for (TActorIterator<ASolidTownSign> It(World); It; ++It)
 		{
 			SpawnedTownSigns.Add(*It);
+		}
+	}
+
+	if (SpawnedCaveEntrances.Num() == 0)
+	{
+		for (TActorIterator<ASolidCaveEntrance> It(World); It; ++It)
+		{
+			SpawnedCaveEntrances.Add(*It);
 		}
 	}
 
@@ -576,14 +590,14 @@ void ASolidGameMode::EnsureVegetation()
 	}
 
 	TArray<SolidTownSigns::FPlacement> SignPlacements;
+	TArray<SolidStrongholds::FEntrance> CaveEntrances;
 	TArray<FVector2D> SignClearCenters;
 	if (const USolidWorldMap* WorldMap = Streamer->GetTerrainMap()->GetWorldMap())
 	{
-		SolidTownSigns::CollectPlacements(
-			WorldMap,
-			Streamer->GetTerrainMap()->GetWorldMinXY(),
-			Streamer->GetTerrainMap()->GetWorldMaxXY(),
-			SignPlacements);
+		const FVector2D WorldMin = Streamer->GetTerrainMap()->GetWorldMinXY();
+		const FVector2D WorldMax = Streamer->GetTerrainMap()->GetWorldMaxXY();
+		SolidTownSigns::CollectPlacements(WorldMap, WorldMin, WorldMax, SignPlacements);
+		SolidStrongholds::CollectEntrances(WorldMap, WorldMin, WorldMax, CaveEntrances);
 		SignClearCenters.Reserve(SignPlacements.Num());
 		for (const SolidTownSigns::FPlacement& Placement : SignPlacements)
 		{
@@ -660,5 +674,32 @@ void ASolidGameMode::EnsureVegetation()
 		}
 
 		UE_LOG(LogSolid, Warning, TEXT("Spawned %d town signs"), Spawned);
+	}
+
+	if (SpawnedCaveEntrances.Num() == 0)
+	{
+		int32 Spawned = 0;
+		for (const SolidStrongholds::FEntrance& Entrance : CaveEntrances)
+		{
+			FVector SpawnLoc(Entrance.WorldXY.X, Entrance.WorldXY.Y, 0.f);
+			const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
+			SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
+
+			ASolidCaveEntrance* Cave = World->SpawnActor<ASolidCaveEntrance>(
+				ASolidCaveEntrance::StaticClass(),
+				SpawnLoc,
+				FRotator(0.f, Entrance.FacingYawDeg, 0.f),
+				SpawnParams);
+			if (!Cave)
+			{
+				continue;
+			}
+
+			Cave->BuildVisuals();
+			SpawnedCaveEntrances.Add(Cave);
+			++Spawned;
+		}
+
+		UE_LOG(LogSolid, Warning, TEXT("Spawned %d cave entrances"), Spawned);
 	}
 }

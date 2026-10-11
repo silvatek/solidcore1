@@ -17,6 +17,8 @@ ESolidBiome USolidWorldMap::MarkerToBiome(const TCHAR Marker)
 	case TEXT('G'): return ESolidBiome::Grassland;
 	case TEXT('F'): return ESolidBiome::Forest;
 	case TEXT('M'): return ESolidBiome::Mountain;
+	// Cave stronghold: same shelf and tint as the mountain it is cut into.
+	case TEXT('C'): return ESolidBiome::Mountain;
 	case TEXT('T'): return ESolidBiome::Town;
 	case TEXT('Z'): return ESolidBiome::Town;
 	case TEXT('D'): return ESolidBiome::Desert;
@@ -380,6 +382,17 @@ ESolidBiome USolidWorldMap::GetBiomeAtCell(int32 MapX, int32 MapY) const
 		return ESolidBiome::Town;
 	}
 	return MarkerToBiome(Marker);
+}
+
+TCHAR USolidWorldMap::GetMarkerAtCell(int32 MapX, int32 MapY) const
+{
+	if (!bIsLoaded || Markers.Num() != MapWidth * MapHeight)
+	{
+		return 0;
+	}
+	MapX = FMath::Clamp(MapX, 0, MapWidth - 1);
+	MapY = FMath::Clamp(MapY, 0, MapHeight - 1);
+	return static_cast<TCHAR>(Markers[MapY * MapWidth + MapX]);
 }
 
 bool USolidWorldMap::WorldXYToCell(

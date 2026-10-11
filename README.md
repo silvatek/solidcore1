@@ -8,7 +8,6 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - Use white material for 100% fog terrain
 - Don't render trees or buildings on 100% fog terrain, generate it when fog is removed
 - Improve building and tree models
-- Create a cave in the mountains near the starting town
 - Build cave interior as a new level and transition to/from the main world at the entrance
 - HUD / Menu panel borders & themes, from FAB
 - Only move companions when captain is moving
@@ -24,7 +23,8 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - **Captain + Party** — Viking pawn (Enhanced Input: move / look / zoom / jump / sprint), clip locomotion (idle / walk / run / jump), floating nameplates. The party starts empty. Entering Relion adds **Sam**; entering Kanfold adds **Alex** as well. Companions follow in battle-plan slots; the party camera frames the group and lifts off terrain.
 - **Company roster** — the company lists Sam, Alex, Max, Morgan, and Quinn. Character meshes are Viking (the captain), Assassin, and Blacksmith. Sam, Morgan, and Quinn use Assassin. Alex and Max use Blacksmith. Each companion also has a vocation: Warrior, Rogue, Mage, or Cleric. Sam is a Rogue and Morgan is a Mage. The nameplate adds that initial in brackets, such as Sam (R). The party remembers who is selected from that list (Sam and Alex to start). Only as many as the current party limit walk with the captain.
 - **Battle plans** — Company catalog and Party assigned slots. F1 Line, F2 Column, F3 Tight mob, F4 Loose mob, F5 Parade (companions in front, facing the captain, far enough to stay in his view). F1–F8 select; HUD battle-plan panel. The square-walk formation drill is the main menu's Test Drill entry and still cycles F1–F4.
-- **World + biomes** — 64×64 `WorldMap.txt` overlay (Sea, Grassland, Town, Mountain, Forest, Desert, River) scaled onto a 513×513 TerrainPoint map (1024 m side, 200 cm spacing). That doubles the original 257-point / 512 m world, and each ASCII cell doubles from 8 m to 16 m. Numbered locations are towns: `0` Iglin (start), `1` Relion, `2` Kanfold, `3` Visolar, `4` Jethan. The captain starts at location 0. Per-biome height shelf (Sea/River 0, Mountain +10 m, else +1 m). Darker mountain grey.
+- **World + biomes** — 64×64 `WorldMap.txt` overlay (Sea, Grassland, Town, Mountain, Forest, Desert, River, Cave) scaled onto a 513×513 TerrainPoint map (1024 m side, 200 cm spacing). That doubles the original 257-point / 512 m world, and each ASCII cell doubles from 8 m to 16 m. Numbered locations are towns: `0` Iglin (start), `1` Relion, `2` Kanfold, `3` Visolar, `4` Jethan. The captain starts at location 0. Per-biome height shelf (Sea/River 0, Mountain +10 m, else +1 m). Darker mountain grey. `C` is the cave stronghold and uses the Mountain shelf.
+- **Cave stronghold** — the company's first base. A stone mouth (dark opening, rock jambs and lintel) stands on the grassland side of the cliff between the `C` cell and the grass next to it, facing that grass. `Strongholds/` is where later bases will replace the cave. The mouth is solid; the inside of the cave is a later level.
 - **No starter monolith** — the grey slab that marked the start-town centroid is gone. Location 0 still sets the captain spawn and the building clear radius.
 - **Fog follows the player** — the map starts fully fogged. After the captain is placed at location 0, exploration fog is centered on the pawn, not on that cell. The two match only because that is where the pawn stands. Curtains are 110 m (half) and 160 m (full), above the 50 m max zoom. The camera boom shortens so it cannot sit above terrain with fog greater than 0.
 - **Procedural terrain** — streamed chunks around the pawn, Fab grassland material, FlatCol tints for other biomes. Exploration fog-of-war (25 m / 50 m bands, marching-squares curtains) clears from the trail, not the camera.
@@ -82,6 +82,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.Map.*` | Build smoke, trail clear, idempotent build, sampling, bounds, biome Z shelf |
 | `SolidCore1.WorldMap.*` | ASCII overlay load, key colors, numbered locations, doubled world scale, fog follows the player |
 | `SolidCore1.Towns.*` | Town names keyed by the WorldMap index |
+| `SolidCore1.Stronghold.*` | Cave is the first stronghold; `C` is Mountain; the mouth faces the grassland neighbor |
 | `SolidCore1.Noise.*` | Hash / value / fBm / height / grass tone |
 | `SolidCore1.Types.*` | Biome names (incl. Sea/River), height offsets, `FSolidTerrainPoint` defaults |
 | `SolidCore1.Vegetation.*` | Tree RNG variation, town building pack, welcome signs |
@@ -217,7 +218,7 @@ See [`Source/SolidCore1/Fog/README.md`](Source/SolidCore1/Fog/README.md) — tra
 
 ## WorldMap biomes (SC1-0105)
 
-`Content/WorldMap.txt` (fallback `Source/SolidCore1/Terrain/WorldMap.txt`) is a 64×64 grid of markers plus a color key (`S` Sea, `G` Grassland, `T` Town, `M` Mountain, `F` Forest, `D` Desert, `R` River). Digits are location indexes (`0` Iglin, `1` Relion, `2` Kanfold, `3` Visolar, `4` Jethan). Town names live in `Towns/SolidTowns.h`, matched by that index. A digit with no entry there has no name. Unlisted digits default to the Town biome. The grid scales across the TerrainMap world rectangle (file row 0 = north). The default rectangle is 1024 m on a side, so each marker is 16 m. Location **0** is the starting town: the streamer relocates the player there. A legacy `Z` marker is the start only on maps that have no `0` cells. Fog bands are centered on the player after that placement.
+`Content/WorldMap.txt` (fallback `Source/SolidCore1/Terrain/WorldMap.txt`) is a 64×64 grid of markers plus a color key (`S` Sea, `G` Grassland, `T` Town, `M` Mountain, `C` Cave, `F` Forest, `D` Desert, `R` River). Digits are location indexes (`0` Iglin, `1` Relion, `2` Kanfold, `3` Visolar, `4` Jethan). Town names live in `Towns/SolidTowns.h`, matched by that index. A digit with no entry there has no name. Unlisted digits default to the Town biome. `C` is not a town: it is the cave stronghold and uses the Mountain biome, so that cell gets the +10 m shelf. The grid scales across the TerrainMap world rectangle (file row 0 = north). The default rectangle is 1024 m on a side, so each marker is 16 m. Location **0** is the starting town: the streamer relocates the player there. A legacy `Z` marker is the start only on maps that have no `0` cells. Fog bands are centered on the player after that placement.
 
 ## Forest trees (SC1-0076 / SC1-0110)
 
@@ -334,6 +335,10 @@ Source/
       SolidTownSign.*         # Pole, board, "Welcome to {name}"
       SolidTownSigns.*        # One sign per named WorldMap cell
       SolidTowns.h            # Town names, keyed by the WorldMap index
+    Strongholds/
+      SolidStronghold.h       # Company bases; the cave is the first
+      SolidStrongholds.*      # Mouth on the grassland face of a C cell
+      SolidCaveEntrance.*     # Rock frame and solid dark opening
     HUD/
       SolidHUD.*              # Debug HUD, battle-plan panel, menu and credits drawing
       SolidHudTheme.h         # Oak-and-bronze frame
@@ -357,6 +362,7 @@ Source/
       SolidVegetationTests.cpp
       SolidTownSignTests.cpp
       SolidTownsTests.cpp
+      SolidStrongholdTests.cpp
       SolidGameModeTests.cpp
       SolidCompanionTests.cpp
       SolidTerrainStreamerTests.cpp

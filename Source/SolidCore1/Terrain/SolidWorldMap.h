@@ -55,8 +55,11 @@ public:
 
 	bool IsLoaded() const { return bIsLoaded; }
 
-	/** Marker biome at map cell (clamped). T and Z are Town; digits use the location key. */
+	/** Marker biome at map cell (clamped). T and Z are Town; C is Mountain; digits use the location key. */
 	ESolidBiome GetBiomeAtCell(int32 MapX, int32 MapY) const;
+
+	/** Marker character at a cell, or 0 when the map is not loaded. Digits stay digits. */
+	TCHAR GetMarkerAtCell(int32 MapX, int32 MapY) const;
 
 	/** Digit on this cell, or INDEX_NONE when the marker is not numbered. */
 	int32 GetLocationIdAtCell(int32 MapX, int32 MapY) const;

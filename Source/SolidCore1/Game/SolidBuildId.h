@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0164")
+#define SOLID_BUILD_ID TEXT("SC1-0165")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Company roster and party selection")
+#define SOLID_BUILD_NOTE TEXT("Each companion defines its own mesh")
 #endif

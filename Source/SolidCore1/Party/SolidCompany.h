@@ -36,7 +36,7 @@ public:
 	/** Seed Line / Column / Tight mob / Loose mob / Parade starter plans (idempotent). */
 	void InitializeDefaultBattlePlans();
 
-	/** Seed Sam, Alex, Max, Morgan, and Quinn, all on the Viking mesh (idempotent). */
+	/** Seed Sam, Alex, Max, Morgan, and Quinn. Each entry sets its own mesh (idempotent). */
 	void InitializeDefaultCompanions();
 
 	const TArray<FSolidBattlePlan>& GetAllBattlePlans() const { return AllBattlePlans; }

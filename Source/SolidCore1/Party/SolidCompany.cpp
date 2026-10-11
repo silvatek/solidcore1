@@ -60,24 +60,21 @@ void USolidCompany::InitializeDefaultCompanions()
 		return;
 	}
 
-	const TSoftObjectPtr<USkeletalMesh> VikingMesh(
-		FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath));
-
-	static const TCHAR* Names[] = {
+	AllCompanions.Add({
 		TEXT("Sam"),
+		TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath))});
+	AllCompanions.Add({
 		TEXT("Alex"),
+		TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath))});
+	AllCompanions.Add({
 		TEXT("Max"),
+		TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath))});
+	AllCompanions.Add({
 		TEXT("Morgan"),
+		TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath))});
+	AllCompanions.Add({
 		TEXT("Quinn"),
-	};
-
-	for (const TCHAR* Name : Names)
-	{
-		FSolidCompanyCompanion Companion;
-		Companion.Name = Name;
-		Companion.Mesh = VikingMesh;
-		AllCompanions.Add(Companion);
-	}
+		TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath))});
 }
 
 const FSolidCompanyCompanion* USolidCompany::GetCompanion(const int32 Index) const

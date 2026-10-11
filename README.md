@@ -17,6 +17,8 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - Extend SolidSight.h with Falcon Sight and Eagle sight, both 3rd person but with increased maximum height (not horizontal distance)
 - More terrain textures from FAB
 - Only show sight indicator after Raven Sight unlocked
+- Hide battle plan menu if no companions in party
+- Reset camera tilt to horizontal when switching into True Sight
 
 ## Done
 

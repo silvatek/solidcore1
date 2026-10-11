@@ -166,7 +166,7 @@ namespace
 		return false;
 	}
 
-	FString EscapeJsonString(const FString& Value)
+	FString EscapeManifestValue(const FString& Value)
 	{
 		FString Escaped;
 		Escaped.Reserve(Value.Len());
@@ -219,7 +219,7 @@ namespace
 		int32 From = Start;
 		while (From < End)
 		{
-			const int32 At = FindFrom(Json, Key, From);
+			const int32 At = FindFrom(Json, *Key, From);
 			if (At == INDEX_NONE || At >= End)
 			{
 				return false;
@@ -424,7 +424,7 @@ SolidFabManifest::EWriteResult SolidFabManifest::WriteJsonStringField(
 		return EWriteResult::Unchanged;
 	}
 
-	Json = Json.Left(ValueStart) + EscapeJsonString(Normal) + Json.Mid(ValueEnd);
+	Json = Json.Left(ValueStart) + EscapeManifestValue(Normal) + Json.Mid(ValueEnd);
 	return EWriteResult::Updated;
 }
 

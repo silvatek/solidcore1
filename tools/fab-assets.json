@@ -78,7 +78,7 @@
       "searchRoots": ["Content"],
       "resolvedPath": "",
       "resolvedFolder": "",
-      "notes": "Body is Meshes/base_mesh/SK_Mannequin.uasset inside Medieval_Assassin_Girl. A recorded file is kept when it is that body; otherwise the body replaces it. Captain stays on SK_Viking."
+      "notes": "Body is Meshes/base_mesh/SKM_base_mesh_ue.uasset inside Medieval_Assassin_Girl. A recorded file is kept when it is that body; otherwise the body replaces it. Captain stays on SK_Viking."
     },
     {
       "id": "blacksmith",
@@ -101,7 +101,7 @@
       "searchRoots": ["Content"],
       "resolvedPath": "",
       "resolvedFolder": "",
-      "notes": "Body is Meshes/base_mesh/SK_Mannequin.uasset inside Elf_Blacksmith. A recorded file is kept when it is that body; otherwise the body replaces it. Captain stays on SK_Viking."
+      "notes": "Body is Meshes/base_mesh/SKM_base_mesh_ue.uasset inside Elf_Blacksmith. A recorded file is kept when it is that body; otherwise the body replaces it. Captain stays on SK_Viking."
     }
   ]
 }

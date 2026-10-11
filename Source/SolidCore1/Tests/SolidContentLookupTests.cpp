@@ -75,19 +75,23 @@ bool FSolidCompanionMeshFolderTest::RunTest(const FString& Parameters)
 	TestEqual(
 		TEXT("body file under the pack"),
 		SolidContentLookup::CompanionBodyFile(TEXT("Content/Fab/Medieval_Assassin_Girl")),
-		FString(TEXT("Content/Fab/Medieval_Assassin_Girl/Meshes/base_mesh/SK_Mannequin.uasset")));
+		FString(TEXT("Content/Fab/Medieval_Assassin_Girl/Meshes/base_mesh/SKM_base_mesh_ue.uasset")));
 	TestTrue(
 		TEXT("content body path"),
 		SolidContentLookup::IsCompanionBodyPath(
-			TEXT("Content/X/Elf_Blacksmith/Meshes/base_mesh/SK_Mannequin.uasset")));
+			TEXT("Content/X/Elf_Blacksmith/Meshes/base_mesh/SKM_base_mesh_ue.uasset")));
 	TestTrue(
 		TEXT("object body path"),
 		SolidContentLookup::IsCompanionBodyPath(
-			TEXT("/Game/X/Medieval_Assassin_Girl/Meshes/base_mesh/SK_Mannequin.SK_Mannequin")));
+			TEXT("/Game/X/Medieval_Assassin_Girl/Meshes/base_mesh/SKM_base_mesh_ue.SKM_base_mesh_ue")));
 	TestFalse(
-		TEXT("a shorter SK_ is not the body"),
+		TEXT("SK_Mannequin is the skeleton"),
 		SolidContentLookup::IsCompanionBodyPath(
-			TEXT("/Game/X/Medieval_Assassin_Girl/Props/SK_Dagger.SK_Dagger")));
+			TEXT("Content/X/Medieval_Assassin_Girl/Meshes/base_mesh/SK_Mannequin.uasset")));
+	TestFalse(
+		TEXT("a shorter SKM_ is not the body"),
+		SolidContentLookup::IsCompanionBodyPath(
+			TEXT("/Game/X/Medieval_Assassin_Girl/Meshes/mech_separate/SKM_bag.SKM_bag")));
 
 	return true;
 }

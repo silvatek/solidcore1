@@ -151,7 +151,7 @@ namespace
 		const FAssetData* Best = nullptr;
 		for (const FAssetData& Asset : Assets)
 		{
-			if (!Asset.AssetName.ToString().Equals(TEXT("SK_Mannequin"), ESearchCase::IgnoreCase))
+			if (!Asset.AssetName.ToString().Equals(TEXT("SKM_base_mesh_ue"), ESearchCase::IgnoreCase))
 			{
 				continue;
 			}

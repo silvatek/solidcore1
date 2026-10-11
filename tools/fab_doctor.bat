@@ -134,7 +134,7 @@ exit /b 0
 
 :CheckCompanion
 rem %1 manifest id  %2 label  %3 content folder name  %4 listing uuid
-echo [required] %~2 companion mesh  (Meshes\base_mesh\SK_Mannequin.uasset in %~3)
+echo [required] %~2 companion mesh  (Meshes\base_mesh\SKM_base_mesh_ue.uasset in %~3)
 set "COMPANION="
 set "COMPANION_HOW=search"
 call :GetField "%~1" resolvedPath
@@ -147,8 +147,8 @@ if defined FIELD_VALUE (
 )
 if not defined COMPANION (
   call :GetField "%~1" resolvedFolder
-  if defined FIELD_VALUE if exist "%ROOT%\!FIELD_VALUE:/=\!\Meshes\base_mesh\SK_Mannequin.uasset" (
-    set "COMPANION=%ROOT%\!FIELD_VALUE:/=\!\Meshes\base_mesh\SK_Mannequin.uasset"
+  if defined FIELD_VALUE if exist "%ROOT%\!FIELD_VALUE:/=\!\Meshes\base_mesh\SKM_base_mesh_ue.uasset" (
+    set "COMPANION=%ROOT%\!FIELD_VALUE:/=\!\Meshes\base_mesh\SKM_base_mesh_ue.uasset"
     set "COMPANION_HOW=recorded folder"
   )
 )
@@ -156,8 +156,8 @@ if not defined COMPANION (
   call :SearchNamedFolder "%~3"
   if defined FOUND_DIR (
     call :RememberFile "%~1" resolvedFolder "!FOUND_DIR!"
-    if exist "!FOUND_DIR!\Meshes\base_mesh\SK_Mannequin.uasset" (
-      set "COMPANION=!FOUND_DIR!\Meshes\base_mesh\SK_Mannequin.uasset"
+    if exist "!FOUND_DIR!\Meshes\base_mesh\SKM_base_mesh_ue.uasset" (
+      set "COMPANION=!FOUND_DIR!\Meshes\base_mesh\SKM_base_mesh_ue.uasset"
     )
   )
 )
@@ -165,7 +165,7 @@ if defined COMPANION (
   echo   OK  !COMPANION:%ROOT%\=!  (!COMPANION_HOW!)
   call :RememberFile "%~1" resolvedPath "!COMPANION!"
 ) else (
-  echo   MISSING  Meshes\base_mesh\SK_Mannequin.uasset in %~3
+  echo   MISSING  Meshes\base_mesh\SKM_base_mesh_ue.uasset in %~3
   set "MISSING=1"
 )
 echo   uuid:    %~4
@@ -220,7 +220,7 @@ exit /b 0
 set "BODY_MATCH="
 set "BODY_CHECK=%~1"
 set "BODY_CHECK=!BODY_CHECK:\=/!"
-echo !BODY_CHECK! | findstr /i /e /l /c:"Meshes/base_mesh/SK_Mannequin.uasset" >nul
+echo !BODY_CHECK! | findstr /i /e /l /c:"Meshes/base_mesh/SKM_base_mesh_ue.uasset" >nul
 if not errorlevel 1 set "BODY_MATCH=1"
 exit /b 0
 

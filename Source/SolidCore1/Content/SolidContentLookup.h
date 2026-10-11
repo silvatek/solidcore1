@@ -24,10 +24,13 @@ namespace SolidContentLookup
 	/** Content folder for the Blacksmith catalog token. */
 	inline constexpr const TCHAR* BlacksmithContentFolder = TEXT("Elf_Blacksmith");
 
-	/** Character body inside an Assassin or Blacksmith pack. */
-	inline constexpr const TCHAR* CompanionBodyRelativePath = TEXT("Meshes/base_mesh/SK_Mannequin.uasset");
+	/**
+	 * Character body inside an Assassin or Blacksmith pack.
+	 * SK_Mannequin.uasset beside it is the skeleton, not the mesh.
+	 */
+	inline constexpr const TCHAR* CompanionBodyRelativePath = TEXT("Meshes/base_mesh/SKM_base_mesh_ue.uasset");
 
-	/** PackFolder/Meshes/base_mesh/SK_Mannequin.uasset */
+	/** PackFolder/Meshes/base_mesh/SKM_base_mesh_ue.uasset */
 	inline FString CompanionBodyFile(const FString& PackFolder)
 	{
 		FString Folder = PackFolder;
@@ -48,9 +51,9 @@ namespace SolidContentLookup
 	{
 		FString Normal = Path;
 		Normal.ReplaceInline(TEXT("\\"), TEXT("/"));
-		return Normal.EndsWith(TEXT("Meshes/base_mesh/SK_Mannequin.uasset"), ESearchCase::IgnoreCase)
-			|| Normal.EndsWith(TEXT("Meshes/base_mesh/SK_Mannequin.SK_Mannequin"), ESearchCase::IgnoreCase)
-			|| Normal.EndsWith(TEXT("/Meshes/base_mesh/SK_Mannequin"), ESearchCase::IgnoreCase);
+		return Normal.EndsWith(TEXT("Meshes/base_mesh/SKM_base_mesh_ue.uasset"), ESearchCase::IgnoreCase)
+			|| Normal.EndsWith(TEXT("Meshes/base_mesh/SKM_base_mesh_ue.SKM_base_mesh_ue"), ESearchCase::IgnoreCase)
+			|| Normal.EndsWith(TEXT("/Meshes/base_mesh/SKM_base_mesh_ue"), ESearchCase::IgnoreCase);
 	}
 
 	/**
@@ -144,7 +147,7 @@ namespace SolidContentLookup
 
 	/**
 	 * Skeletal mesh for a companion catalog token.
-	 * The body is Meshes/base_mesh/SK_Mannequin inside Medieval_Assassin_Girl or
+	 * The body is Meshes/base_mesh/SKM_base_mesh_ue inside Medieval_Assassin_Girl or
 	 * Elf_Blacksmith. A recorded file is used when it is that body. Otherwise
 	 * the body is found and written back, then a shorter SK_ is the fallback.
 	 */

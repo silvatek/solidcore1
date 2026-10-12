@@ -23,6 +23,10 @@ A small village in a valley spur. Reliant on a single bridge across a wild mount
 
 Iglin is where the orphan (who will later go on to become the Captain) was raised.
 
+### Visolar
+
+An island city off the north eastern coast; survived the fall of Jethan, but has remained largely  isolated from the New Kingdom.
+
 # History
 
 Note: dates are before (BtF) / after (AtF) the fall of Jethan. The orphan was born some time between 140 and 180 AtF.
@@ -39,7 +43,7 @@ Note: dates are before (BtF) / after (AtF) the fall of Jethan. The orphan was bo
 
     Wyvern defeated.
 
-- __20 BtF__
+- __30 BtF__
 
     First dragon born, the offspring of a basilisk and a wyvern
 

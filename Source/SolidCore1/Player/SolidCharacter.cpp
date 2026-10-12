@@ -2,6 +2,7 @@
 #include "Companion/SolidCompanionCharacter.h"
 #include "HUD/SolidPointer.h"
 #include "SolidClickMove.h"
+#include "Strongholds/SolidDungeonPassage.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Animation/AnimSequence.h"
 #include "Camera/CameraComponent.h"
@@ -178,6 +179,7 @@ void ASolidCharacter::Tick(float DeltaTime)
 	TickPartyFormationDrill(DeltaTime);
 	UpdatePointerMouseLook();
 	UpdateMenuPointerHover();
+	UpdateCavePassageHover();
 	TickClickMove();
 	UpdateLocomotionAnim();
 	UpdatePartyCameraFraming(DeltaTime);
@@ -823,23 +825,11 @@ void ASolidCharacter::ClickMoveFromInput()
 		return;
 	}
 
-	APlayerController* PlayerController = Cast<APlayerController>(Controller);
-	if (!PlayerController)
-	{
-		return;
-	}
-
 	FVector Origin = FVector::ZeroVector;
 	FVector Direction = FVector::ZeroVector;
-	if (!PlayerController->DeprojectMousePositionToWorld(Origin, Direction))
+	if (!ReadPointerRay(Origin, Direction))
 	{
-		float MouseX = 0.f;
-		float MouseY = 0.f;
-		if (!PlayerController->GetMousePosition(MouseX, MouseY)
-			|| !PlayerController->DeprojectScreenPositionToWorld(MouseX, MouseY, Origin, Direction))
-		{
-			return;
-		}
+		return;
 	}
 
 	FVector Destination = FVector::ZeroVector;
@@ -851,6 +841,117 @@ void ASolidCharacter::ClickMoveFromInput()
 	bHasClickMoveDestination = true;
 	ClickMoveDestination = Destination;
 	UE_LOG(LogSolid, Warning, TEXT("Click move to %s"), *Destination.ToCompactString());
+}
+
+bool ASolidCharacter::ReadPointerRay(FVector& OutOrigin, FVector& OutDirection) const
+{
+	APlayerController* PlayerController = Cast<APlayerController>(Controller);
+	if (!PlayerController)
+	{
+		return false;
+	}
+	if (PlayerController->DeprojectMousePositionToWorld(OutOrigin, OutDirection) && !OutDirection.IsNearlyZero())
+	{
+		return true;
+	}
+
+	float MouseX = 0.f;
+	float MouseY = 0.f;
+	return ReadPointerPosition(MouseX, MouseY)
+		&& PlayerController->DeprojectScreenPositionToWorld(MouseX, MouseY, OutOrigin, OutDirection)
+		&& !OutDirection.IsNearlyZero();
+}
+
+bool ASolidCharacter::IsPointerShown() const
+{
+	float X = 0.f;
+	float Y = 0.f;
+	if (!ReadPointerPosition(X, Y))
+	{
+		return false;
+	}
+	bool bRightDown = false;
+	if (const ASolidPlayerController* SolidPC = Cast<ASolidPlayerController>(Controller))
+	{
+		bRightDown = SolidPC->IsRightMouseHeld();
+	}
+	else if (const APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	{
+		bRightDown = PlayerController->IsInputKeyDown(EKeys::RightMouseButton);
+	}
+	return SolidPointer::ShouldDraw(true, bRightDown);
+}
+
+SolidDungeonPassage::EHit ASolidCharacter::CavePassageUnderPointer() const
+{
+	if (!SolidDungeonPassage::AcceptsPointer(IsPointerShown(), IsMenuOverlayOpen() || IsPartyFormationDrillActive()))
+	{
+		return SolidDungeonPassage::EHit::None;
+	}
+
+	FVector Origin = FVector::ZeroVector;
+	FVector Direction = FVector::ZeroVector;
+	if (!ReadPointerRay(Origin, Direction))
+	{
+		return SolidDungeonPassage::EHit::None;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return SolidDungeonPassage::EHit::None;
+	}
+
+	FHitResult Hit;
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(SolidCavePassage), /*bTraceComplex=*/true, this);
+	Params.AddIgnoredActor(this);
+	if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+	{
+		for (const TObjectPtr<ASolidCompanionCharacter>& Companion : GameMode->GetCompanions())
+		{
+			ASolidCompanionCharacter* Actor = Companion.Get();
+			if (Actor)
+			{
+				Params.AddIgnoredActor(Actor);
+			}
+		}
+	}
+
+	const FVector End = Origin + Direction.GetSafeNormal() * SolidClickMove::MaxRayCm;
+	if (!World->LineTraceSingleByChannel(Hit, Origin, End, ECC_Visibility, Params))
+	{
+		return SolidDungeonPassage::EHit::None;
+	}
+	return SolidDungeonPassage::Classify(Hit.GetActor(), Hit.GetComponent());
+}
+
+void ASolidCharacter::ActivateCavePassage(const SolidDungeonPassage::EHit Hit)
+{
+	UWorld* World = GetWorld();
+	ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+	if (!GameMode || Hit == SolidDungeonPassage::EHit::None)
+	{
+		return;
+	}
+
+	ClearClickMove();
+	UE_LOG(LogSolid, Warning, TEXT("Cave passage: %s"), SolidDungeonPassage::TipText(Hit));
+	if (Hit == SolidDungeonPassage::EHit::Enter)
+	{
+		GameMode->TravelToDungeon();
+		return;
+	}
+	GameMode->TravelToWorld();
+}
+
+void ASolidCharacter::UpdateCavePassageHover()
+{
+	ASolidHUD* HUD = GetSolidHUD();
+	if (!HUD)
+	{
+		return;
+	}
+	HUD->SetCavePassageTip(SolidDungeonPassage::TipText(CavePassageUnderPointer()));
 }
 
 bool ASolidCharacter::ReadPointerPosition(float& OutX, float& OutY) const
@@ -940,6 +1041,13 @@ void ASolidCharacter::PollClickMovePress()
 			MainMenuConfirm();
 			return;
 		}
+	}
+
+	const SolidDungeonPassage::EHit Passage = CavePassageUnderPointer();
+	if (Passage != SolidDungeonPassage::EHit::None)
+	{
+		ActivateCavePassage(Passage);
+		return;
 	}
 	ClickMoveFromInput();
 }

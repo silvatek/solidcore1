@@ -8,7 +8,7 @@ class UStaticMeshComponent;
 
 /**
  * Stone mouth on the cliff between a cave cell and the adjacent grassland.
- * The opening is solid. F10 Enter cave loads the interior. Clicking the mouth comes later.
+ * The opening is solid. A left click on the dark mouth enters. F10 Enter cave does the same.
  * Local +X faces the grass.
  */
 UCLASS()

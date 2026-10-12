@@ -5,6 +5,7 @@
 #include "InputActionValue.h"
 #include "Party/SolidPartyDrill.h"
 #include "SolidSight.h"
+#include "Strongholds/SolidDungeonPassage.h"
 #include "SolidCharacter.generated.h"
 
 class USpringArmComponent;
@@ -92,7 +93,12 @@ protected:
 	void ClickMoveFromInput();
 	void PollClickMovePress();
 	void UpdateMenuPointerHover();
+	void UpdateCavePassageHover();
 	bool ReadPointerPosition(float& OutX, float& OutY) const;
+	bool ReadPointerRay(FVector& OutOrigin, FVector& OutDirection) const;
+	bool IsPointerShown() const;
+	SolidDungeonPassage::EHit CavePassageUnderPointer() const;
+	void ActivateCavePassage(SolidDungeonPassage::EHit Hit);
 	void TickClickMove();
 	void ClearClickMove();
 	bool ResolveClickMoveDestination(const FVector& RayOrigin, const FVector& RayDirection, FVector& OutDestination) const;

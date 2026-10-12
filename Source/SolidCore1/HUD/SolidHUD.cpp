@@ -1,6 +1,7 @@
 #include "SolidHUD.h"
 #include "HUD/SolidHudTheme.h"
 #include "HUD/SolidPointer.h"
+#include "Strongholds/SolidDungeonPassage.h"
 #include "SolidBuildId.h"
 #include "Menus/SolidCredits.h"
 #include "Menus/SolidJournal.h"
@@ -947,9 +948,44 @@ void ASolidHUD::DrawHUD()
 		}
 		if (SolidPointer::ShouldDraw(bHasMouse, bRightDown))
 		{
-			SolidHUDPrivate::DrawPointer(Canvas, FVector2D(MouseX, MouseY));
+			const FVector2D Hotspot(MouseX, MouseY);
+			SolidHUDPrivate::DrawPointer(Canvas, Hotspot);
+			if (!CavePassageTip.IsEmpty())
+			{
+				UFont* TipFont = GEngine ? GEngine->GetSmallFont() : nullptr;
+				float TextW = static_cast<float>(CavePassageTip.Len() * 8);
+				float TextH = 14.f;
+				if (TipFont)
+				{
+					Canvas->StrLen(TipFont, CavePassageTip, TextW, TextH);
+				}
+				const float Band = SolidHudTheme::BandThickness(SolidHudTheme::HudFrame());
+				const float Pad = 6.f;
+				const SolidDungeonPassage::FTipBox Box = SolidDungeonPassage::PlaceTip(
+					Hotspot,
+					TextW + (Band + Pad) * 2.f,
+					TextH + (Band + Pad) * 2.f,
+					Canvas->SizeX,
+					Canvas->SizeY);
+				SolidHUDPrivate::DrawOakFrame(Canvas, Box.X, Box.Y, Box.W, Box.H, SolidHudTheme::HudFrame());
+				if (TipFont)
+				{
+					FCanvasTextItem TextItem(
+						FVector2D(Box.X + Band + Pad, Box.Y + Band + Pad),
+						FText::FromString(CavePassageTip),
+						TipFont,
+						SolidHudTheme::OakAndBronze().Ink);
+					TextItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+					Canvas->DrawItem(TextItem);
+				}
+			}
 		}
 	}
+}
+
+void ASolidHUD::SetCavePassageTip(const FString& Tip)
+{
+	CavePassageTip = Tip;
 }
 
 void ASolidHUD::HandleMenuKey()

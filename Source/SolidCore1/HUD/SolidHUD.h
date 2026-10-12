@@ -61,6 +61,10 @@ public:
 	 */
 	bool SelectChoiceAt(float X, float Y);
 
+	/** Empty clears the label. Shown beside the pointer while it rests on the cave opening. */
+	void SetCavePassageTip(const FString& Tip);
+	const FString& GetCavePassageTip() const { return CavePassageTip; }
+
 protected:
 	void EnsureSightIndicator();
 	void RemoveSightIndicator();
@@ -114,4 +118,7 @@ protected:
 
 	/** Top-right eye / eagle widget has been added to the viewport. */
 	bool bSightIndicatorAdded = false;
+
+	/** Enter cave / Leave cave, or empty when the pointer is elsewhere. */
+	FString CavePassageTip;
 };

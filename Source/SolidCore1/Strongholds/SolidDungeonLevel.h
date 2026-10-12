@@ -9,7 +9,7 @@
 /**
  * Dungeon interior, traveled to from the open world.
  * Every dungeon size uses this trip. The Meagre size is the cave.
- * F10 enters and leaves. Clicking the mouth is later.
+ * F10 enters and leaves. A left click on the dark opening does the same.
  * Only the captain makes the trip. Companions are removed with the
  * open world and spawned again when he comes back.
  */

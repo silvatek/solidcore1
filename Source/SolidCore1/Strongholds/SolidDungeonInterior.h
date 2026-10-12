@@ -11,7 +11,7 @@ class UStaticMeshComponent;
 /**
  * Dungeon chamber shared by every size. Meagre, the cave, is an irregular den of fourteen hexes.
  * Rock follows that outline. The west entrance is wider than the captain, with the lip outside the flat.
- * The captain arrives alone. Clicking the mouth to leave is later; F10 leaves.
+ * The captain arrives alone. A left click on the dark opening leaves. F10 leaves too.
  */
 UCLASS()
 class SOLIDCORE1_API ASolidDungeonInterior : public AActor

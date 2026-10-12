@@ -98,6 +98,7 @@ protected:
 	bool ReadPointerRay(FVector& OutOrigin, FVector& OutDirection) const;
 	bool IsPointerShown() const;
 	SolidDungeonPassage::EHit CavePassageUnderPointer() const;
+	SolidDungeonPassage::EHit CavePassageOverlapping(const FVector& Location) const;
 	void ActivateCavePassage(SolidDungeonPassage::EHit Hit);
 	void TickClickMove();
 	void ClearClickMove();

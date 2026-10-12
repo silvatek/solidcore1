@@ -28,6 +28,12 @@ namespace SolidDungeonPassage
 		return bPointerShown && !bMenuOrDrill;
 	}
 
+	/**
+	 * The opening is an engine cube with simple collision. A complex trace skips that
+	 * box, and the click then walks the captain into the mesh.
+	 */
+	inline constexpr bool bTraceComplexCollision = false;
+
 	inline const TCHAR* TipText(const EHit Hit)
 	{
 		switch (Hit)

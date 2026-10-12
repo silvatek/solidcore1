@@ -16,6 +16,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidDungeonPassageHitTest::RunTest(const FString& Parameters)
 {
+	TestFalse(TEXT("the opening trace uses simple collision"), SolidDungeonPassage::bTraceComplexCollision);
 	TestTrue(TEXT("a shown pointer can use the opening"), SolidDungeonPassage::AcceptsPointer(true, false));
 	TestFalse(TEXT("the menu and the drill take the pointer"), SolidDungeonPassage::AcceptsPointer(true, true));
 	TestFalse(TEXT("a hidden pointer ignores the opening"), SolidDungeonPassage::AcceptsPointer(false, false));

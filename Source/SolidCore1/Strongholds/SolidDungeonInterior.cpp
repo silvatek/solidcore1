@@ -592,6 +592,8 @@ void ASolidDungeonInterior::BuildVisuals()
 			if (MouthMesh)
 			{
 				MouthMesh->SetRelativeRotation(FRotator(0.f, Yaw, 0.f));
+				MouthMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+				MouthMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 			}
 			if (WallShell)
 			{

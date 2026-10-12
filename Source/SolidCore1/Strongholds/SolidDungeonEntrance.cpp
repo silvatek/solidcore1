@@ -93,6 +93,11 @@ void ASolidDungeonEntrance::BuildVisuals()
 		FVector(Depth - Recess, Width - Gap, Height),
 		SolidStrongholds::MouthColor(),
 		TEXT("CaveMouth"));
+	if (MouthMesh)
+	{
+		MouthMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		MouthMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	}
 
 	const float JambY = (Width + Frame) * 0.5f;
 	PlacePart(

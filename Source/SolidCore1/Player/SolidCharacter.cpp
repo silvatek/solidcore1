@@ -9,6 +9,8 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "CollisionQueryParams.h"
+#include "CollisionShape.h"
+#include "Engine/WorldCollision.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/World.h"
 #include "Engine/GameViewportClient.h"
@@ -838,6 +840,13 @@ void ASolidCharacter::ClickMoveFromInput()
 		return;
 	}
 
+	const SolidDungeonPassage::EHit Blocking = CavePassageOverlapping(Destination);
+	if (Blocking != SolidDungeonPassage::EHit::None)
+	{
+		ActivateCavePassage(Blocking);
+		return;
+	}
+
 	bHasClickMoveDestination = true;
 	ClickMoveDestination = Destination;
 	UE_LOG(LogSolid, Warning, TEXT("Click move to %s"), *Destination.ToCompactString());
@@ -882,11 +891,48 @@ bool ASolidCharacter::IsPointerShown() const
 	return SolidPointer::ShouldDraw(true, bRightDown);
 }
 
+SolidDungeonPassage::EHit ASolidCharacter::CavePassageOverlapping(const FVector& Location) const
+{
+	UWorld* World = GetWorld();
+	const UCapsuleComponent* Capsule = GetCapsuleComponent();
+	if (!World || !Capsule)
+	{
+		return SolidDungeonPassage::EHit::None;
+	}
+
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(SolidCavePassage), SolidDungeonPassage::bTraceComplexCollision, this);
+	Params.AddIgnoredActor(this);
+	TArray<FOverlapResult> Overlaps;
+	const FCollisionShape Shape = FCollisionShape::MakeCapsule(
+		Capsule->GetScaledCapsuleRadius(),
+		Capsule->GetScaledCapsuleHalfHeight());
+	if (!World->OverlapMultiByChannel(Overlaps, Location, GetActorQuat(), ECC_Visibility, Shape, Params))
+	{
+		return SolidDungeonPassage::EHit::None;
+	}
+
+	for (const FOverlapResult& Result : Overlaps)
+	{
+		const SolidDungeonPassage::EHit Hit = SolidDungeonPassage::Classify(Result.GetActor(), Result.GetComponent());
+		if (Hit != SolidDungeonPassage::EHit::None)
+		{
+			return Hit;
+		}
+	}
+	return SolidDungeonPassage::EHit::None;
+}
+
 SolidDungeonPassage::EHit ASolidCharacter::CavePassageUnderPointer() const
 {
 	if (!SolidDungeonPassage::AcceptsPointer(IsPointerShown(), IsMenuOverlayOpen() || IsPartyFormationDrillActive()))
 	{
 		return SolidDungeonPassage::EHit::None;
+	}
+
+	const SolidDungeonPassage::EHit Inside = CavePassageOverlapping(GetActorLocation());
+	if (Inside != SolidDungeonPassage::EHit::None)
+	{
+		return Inside;
 	}
 
 	FVector Origin = FVector::ZeroVector;
@@ -903,7 +949,7 @@ SolidDungeonPassage::EHit ASolidCharacter::CavePassageUnderPointer() const
 	}
 
 	FHitResult Hit;
-	FCollisionQueryParams Params(SCENE_QUERY_STAT(SolidCavePassage), /*bTraceComplex=*/true, this);
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(SolidCavePassage), SolidDungeonPassage::bTraceComplexCollision, this);
 	Params.AddIgnoredActor(this);
 	if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 	{

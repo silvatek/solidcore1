@@ -1147,16 +1147,18 @@ void ASolidHUD::DrawJournalPopup() const
 void ASolidHUD::DrawMainMenuPopup()
 {
 	int32 MaxPartySize = 0;
+	bool bInCave = false;
 	if (UWorld* World = GetWorld())
 	{
 		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 		{
 			MaxPartySize = GameMode->GetMaxPartySize();
+			bInCave = GameMode->IsInCave();
 		}
 	}
 
 	TArray<FSolidMainMenuEntry> Entries;
-	SolidMainMenu::CollectEntries(Entries);
+	SolidMainMenu::CollectEntries(Entries, bInCave);
 	TArray<FString> Labels;
 	TArray<bool> Enabled;
 	for (const FSolidMainMenuEntry& Entry : Entries)

@@ -1,6 +1,7 @@
 #include "SolidTerrainWorldSubsystem.h"
 #include "SolidTerrainStreamer.h"
 #include "SolidCore1.h"
+#include "SolidGameInstance.h"
 #include "Engine/World.h"
 
 void USolidTerrainWorldSubsystem::Initialize(FSubsystemCollectionBase& Collection)
@@ -57,6 +58,15 @@ void USolidTerrainWorldSubsystem::TryEnsureStreamer(const TCHAR* Reason)
 	if (World->WorldType != EWorldType::PIE && World->WorldType != EWorldType::Game)
 	{
 		return;
+	}
+
+	if (const USolidGameInstance* Instance = World->GetGameInstance<USolidGameInstance>())
+	{
+		if (Instance->IsInCave())
+		{
+			bStreamerEnsured = true;
+			return;
+		}
 	}
 
 	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::EnsureExists(World);

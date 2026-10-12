@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0183")
+#define SOLID_BUILD_ID TEXT("SC1-0184")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Starting stronghold is a Meagre Dungeon")
+#define SOLID_BUILD_NOTE TEXT("F10 enters the cave; companions return at the mouth")
 #endif

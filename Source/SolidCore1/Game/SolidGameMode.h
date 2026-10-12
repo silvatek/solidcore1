@@ -9,6 +9,7 @@
 
 class ASolidBuilding;
 class ASolidCaveEntrance;
+class ASolidCaveInterior;
 class ASolidCompanionCharacter;
 class ASolidTownSign;
 class ASolidTree;
@@ -108,6 +109,18 @@ public:
 	 */
 	bool TeleportPartyToTown(int32 TownId);
 
+	/** True after F10 Enter cave, until F10 Leave cave. */
+	bool IsInCave() const;
+
+	/** Unload the open world (companions included) and load the cave interior. */
+	void TravelToCave();
+
+	/**
+	 * Load the open world again and stand the captain at the cave mouth.
+	 * Companions spawn beside him. The party builder stays closed.
+	 */
+	void TravelToWorld();
+
 	/**
 	 * Create the company catalog and party on the first call.
 	 * Later calls (event refresh, companion spawn) keep the active battle plan
@@ -121,6 +134,13 @@ protected:
 	void RefreshEvents();
 	void EnsureCompanion();
 	void EnsureVegetation();
+	void SaveTravelSession(bool bInCave, bool bReturnToCaveMouth);
+	void RestoreTravelSession();
+	void BeginCaveInterior();
+	/** Sight, title, and the cave spawn. Retries while the pawn is still absent. */
+	void FinishTravelArrival();
+	void ApplyCaptainFromSession();
+	void PlaceCaptainInCave();
 
 	ASolidCompanionCharacter* SpawnCompanion(
 		UWorld* World,
@@ -157,4 +177,10 @@ protected:
 
 	FTimerHandle EventRefreshTimer;
 	FTimerHandle VegetationSpawnTimer;
+	FTimerHandle CaptainArrivalTimer;
+
+	/** Interior spawned for this cave visit. The world keeps the actor alive. */
+	ASolidCaveInterior* CaveInterior = nullptr;
+	bool bCaptainTravelApplied = false;
+	bool bCaptainPlacedInCave = false;
 };

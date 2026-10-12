@@ -1,6 +1,7 @@
 #include "SolidMainMenu.h"
+#include "SolidCaveLevel.h"
 
-void SolidMainMenu::CollectEntries(TArray<FSolidMainMenuEntry>& OutEntries)
+void SolidMainMenu::CollectEntries(TArray<FSolidMainMenuEntry>& OutEntries, const bool bInCave)
 {
 	OutEntries.Reset();
 	OutEntries.Add({ ESolidMainMenuItem::UsePortal, TEXT("Use portal") });
@@ -8,6 +9,7 @@ void SolidMainMenu::CollectEntries(TArray<FSolidMainMenuEntry>& OutEntries)
 	OutEntries.Add({ ESolidMainMenuItem::Journal, TEXT("Journal") });
 	OutEntries.Add({ ESolidMainMenuItem::Credits, TEXT("Credits") });
 	OutEntries.Add({ ESolidMainMenuItem::BuildParty, TEXT("Build party") });
+	OutEntries.Add({ ESolidMainMenuItem::Cave, SolidCaveLevel::MenuLabel(bInCave) });
 }
 
 int32 SolidMainMenu::EntryCount()
@@ -43,6 +45,8 @@ ESolidMainMenuAction SolidMainMenu::ActionForItem(const ESolidMainMenuItem Item)
 		return ESolidMainMenuAction::ShowCredits;
 	case ESolidMainMenuItem::BuildParty:
 		return ESolidMainMenuAction::OpenParty;
+	case ESolidMainMenuItem::Cave:
+		return ESolidMainMenuAction::TravelCave;
 	default:
 		return ESolidMainMenuAction::None;
 	}

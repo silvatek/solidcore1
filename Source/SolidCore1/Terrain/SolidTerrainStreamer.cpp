@@ -1,4 +1,7 @@
 #include "SolidTerrainStreamer.h"
+#include "SolidCaveLevel.h"
+#include "SolidGameInstance.h"
+#include "SolidStrongholds.h"
 #include "SolidTerrainChunk.h"
 #include "SolidTerrainFog.h"
 #include "SolidTerrainMap.h"
@@ -549,21 +552,58 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 		return;
 	}
 
-	FVector2D TownXY = FVector2D::ZeroVector;
-	if (!TerrainMap->GetStartTownWorldXY(TownXY))
-	{
-		bDidRelocateToStartTown = true;
-		return;
-	}
-
 	AActor* Focus = ResolveFocusActor();
 	if (!Focus)
 	{
 		return;
 	}
 
-	// Stand in the town plaza, offset from the start-town centroid.
-	const FVector2D PawnXY = TownXY + StartTownPawnOffsetXY;
+	FVector2D PawnXY = FVector2D::ZeroVector;
+	float FacingYawDeg = 0.f;
+	bool bHaveYaw = false;
+	bool bCaveMouth = false;
+
+	if (UWorld* World = GetWorld())
+	{
+		if (USolidGameInstance* Instance = World->GetGameInstance<USolidGameInstance>())
+		{
+			if (Instance->WantsCaveMouthSpawn() && TerrainMap->GetWorldMap())
+			{
+				TArray<SolidStrongholds::FEntrance> Entrances;
+				SolidStrongholds::CollectEntrances(
+					TerrainMap->GetWorldMap(),
+					TerrainMap->GetWorldMinXY(),
+					TerrainMap->GetWorldMaxXY(),
+					Entrances);
+				if (Entrances.Num() > 0)
+				{
+					PawnXY = Entrances[0].WorldXY;
+					FacingYawDeg = SolidCaveLevel::CaptainReturnYaw(Entrances[0].FacingYawDeg);
+					bHaveYaw = true;
+					bCaveMouth = true;
+					Instance->ClearCaveMouthSpawn();
+				}
+			}
+		}
+	}
+
+	if (!bCaveMouth)
+	{
+		FVector2D TownXY = FVector2D::ZeroVector;
+		if (!TerrainMap->GetStartTownWorldXY(TownXY))
+		{
+			bDidRelocateToStartTown = true;
+			return;
+		}
+		// Stand in the town plaza, offset from the start-town centroid.
+		PawnXY = TownXY + StartTownPawnOffsetXY;
+		const FVector2D ToTown = TownXY - PawnXY;
+		if (!ToTown.IsNearlyZero())
+		{
+			FacingYawDeg = FMath::RadiansToDegrees(FMath::Atan2(ToTown.Y, ToTown.X));
+			bHaveYaw = true;
+		}
+	}
 
 	const FVector OldLoc = Focus->GetActorLocation();
 	const float LandZ = SampleHeightAtWorld(FVector(PawnXY.X, PawnXY.Y, 0.f)) + CollisionHeightBias;
@@ -581,12 +621,17 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 
 	Focus->SetActorLocation(NewLoc);
 
-	// Face the start-town centroid.
-	const FVector2D ToTown = TownXY - PawnXY;
-	if (!ToTown.IsNearlyZero())
+	if (bHaveYaw)
 	{
-		const float YawDeg = FMath::RadiansToDegrees(FMath::Atan2(ToTown.Y, ToTown.X));
-		Focus->SetActorRotation(FRotator(0.f, YawDeg, 0.f));
+		const FRotator Facing(0.f, FacingYawDeg, 0.f);
+		Focus->SetActorRotation(Facing);
+		if (APawn* Pawn = Cast<APawn>(Focus))
+		{
+			if (Pawn->Controller)
+			{
+				Pawn->Controller->SetControlRotation(Facing);
+			}
+		}
 	}
 
 	if (ACharacter* Character = Cast<ACharacter>(Focus))
@@ -603,8 +648,9 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 	bDidRelocateToStartTown = true;
 	bHasFogApplyLocation = false;
 	UE_LOG(LogSolid, Warning,
-		TEXT("Relocated focus to start town pawn (%.0f, %.0f) town=(%.0f, %.0f) Z=%.1f (from %.0f, %.0f)"),
-		PawnXY.X, PawnXY.Y, TownXY.X, TownXY.Y, NewLoc.Z, OldLoc.X, OldLoc.Y);
+		TEXT("Relocated focus to %s (%.0f, %.0f) Z=%.1f (from %.0f, %.0f)"),
+		bCaveMouth ? TEXT("cave mouth") : TEXT("start town"),
+		PawnXY.X, PawnXY.Y, NewLoc.Z, OldLoc.X, OldLoc.Y);
 }
 
 float ASolidTerrainStreamer::SampleHeightAtWorld(const FVector& WorldLocation) const

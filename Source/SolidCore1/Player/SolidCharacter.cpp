@@ -247,11 +247,13 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::Three, IE_Pressed, this, &ASolidCharacter::MainMenuChoose3);
 	PlayerInputComponent->BindKey(EKeys::Four, IE_Pressed, this, &ASolidCharacter::MainMenuChoose4);
 	PlayerInputComponent->BindKey(EKeys::Five, IE_Pressed, this, &ASolidCharacter::MainMenuChoose5);
+	PlayerInputComponent->BindKey(EKeys::Six, IE_Pressed, this, &ASolidCharacter::MainMenuChoose6);
 	PlayerInputComponent->BindKey(EKeys::NumPadOne, IE_Pressed, this, &ASolidCharacter::MainMenuChoose1);
 	PlayerInputComponent->BindKey(EKeys::NumPadTwo, IE_Pressed, this, &ASolidCharacter::MainMenuChoose2);
 	PlayerInputComponent->BindKey(EKeys::NumPadThree, IE_Pressed, this, &ASolidCharacter::MainMenuChoose3);
 	PlayerInputComponent->BindKey(EKeys::NumPadFour, IE_Pressed, this, &ASolidCharacter::MainMenuChoose4);
 	PlayerInputComponent->BindKey(EKeys::NumPadFive, IE_Pressed, this, &ASolidCharacter::MainMenuChoose5);
+	PlayerInputComponent->BindKey(EKeys::NumPadSix, IE_Pressed, this, &ASolidCharacter::MainMenuChoose6);
 }
 
 ASolidHUD* ASolidCharacter::GetSolidHUD() const
@@ -440,6 +442,11 @@ void ASolidCharacter::MainMenuChoose5()
 	ChooseMainMenuIndex(4);
 }
 
+void ASolidCharacter::MainMenuChoose6()
+{
+	ChooseMainMenuIndex(5);
+}
+
 void ASolidCharacter::ChooseMainMenuIndex(const int32 Index)
 {
 	ASolidHUD* HUD = GetSolidHUD();
@@ -573,6 +580,22 @@ void ASolidCharacter::MainMenuConfirm()
 			}
 		}
 		HUD->OpenPartyBuilder();
+		break;
+	case ESolidMainMenuAction::TravelCave:
+		if (UWorld* World = GetWorld())
+		{
+			if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+			{
+				if (GameMode->IsInCave())
+				{
+					GameMode->TravelToWorld();
+				}
+				else
+				{
+					GameMode->TravelToCave();
+				}
+			}
+		}
 		break;
 	default:
 		break;

@@ -8,7 +8,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - Use white material for 100% fog terrain
 - Don't render trees or buildings on 100% fog terrain, generate it when fog is removed
 - Improve building and tree models
-- Build cave interior as a new level and transition to/from the main world at the entrance
+- Enter and leave the cave by clicking the mouth
 - HUD / Menu panel borders & themes, from FAB
 - Only move companions when captain is moving
 - Test Drill should end with party in Parade formation, and add both companions if not already in party 
@@ -24,7 +24,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - **Company roster** — the company lists Sam, Alex, Max, Morgan, and Quinn. Character meshes are Viking (the captain), Assassin, and Blacksmith. Sam, Morgan, and Quinn use Assassin. Alex and Max use Blacksmith. Each companion also has a vocation: Warrior, Rogue, Mage, or Cleric. Sam is a Rogue and Morgan is a Mage. The nameplate adds that initial in brackets, such as Sam (R). The party remembers who is selected from that list (Sam and Alex to start). Only as many as the current party limit walk with the captain.
 - **Battle plans** — Company catalog and Party assigned slots. F1 Line, F2 Column, F3 Tight mob, F4 Loose mob, F5 Parade (companions in front, facing the captain, far enough to stay in his view). F1–F8 select; HUD battle-plan panel. The square-walk formation drill is the main menu's Test Drill entry and still cycles F1–F4.
 - **World + biomes** — 64×64 `WorldMap.txt` overlay (Sea, Grassland, Town, Mountain, Forest, Desert, River, Cave) scaled onto a 513×513 TerrainPoint map (1024 m side, 200 cm spacing). That doubles the original 257-point / 512 m world, and each ASCII cell doubles from 8 m to 16 m. Numbered locations are towns: `0` Iglin (start), `1` Relion, `2` Kanfold, `3` Visolar, `4` Jethan. The captain starts at location 0. Per-biome height shelf (Sea/River 0, Mountain +10 m, else +1 m). Darker mountain grey. `C` is the cave stronghold and uses the Mountain shelf.
-- **Cave stronghold** — the company's first base, a Meagre Dungeon. A stronghold has a type (Dungeon, Fortress, Tower) and a size (Meagre, Humble, Average, Impressive, Grand, Stately, Imperious). A stone mouth (dark opening, rock jambs and lintel) stands on the grassland side of the cliff between the `C` cell and the grass next to it, facing that grass. The mouth is solid; the inside of the cave is a later level.
+- **Cave stronghold** — the company's first base, a Meagre Dungeon. A stronghold has a type (Dungeon, Fortress, Tower) and a size (Meagre, Humble, Average, Impressive, Grand, Stately, Imperious). A stone mouth (dark opening, rock jambs and lintel) stands on the grassland side of the cliff between the `C` cell and the grass next to it, facing that grass. **F10, 6 Enter cave** loads the interior: a closed rock chamber, captain only. Companions are removed with the open world and spawn again beside him at the mouth on **Leave cave**. The party builder stays closed. Clicking the mouth comes later.
 - **No starter monolith** — the grey slab that marked the start-town centroid is gone. Location 0 still sets the captain spawn and the building clear radius.
 - **Fog follows the player** — the map starts fully fogged. After the captain is placed at location 0, exploration fog is centered on the pawn, not on that cell. The two match only because that is where the pawn stands. Curtains are 110 m (half) and 160 m (full), above the 50 m max zoom. The camera boom shortens so it cannot sit above terrain with fog greater than 0.
 - **Procedural terrain** — streamed chunks around the pawn, Fab grassland material, FlatCol tints for other biomes. Exploration fog-of-war (25 m / 50 m bands, marching-squares curtains) clears from the trail, not the camera.
@@ -37,7 +37,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - **Debug HUD** — F12 hides and shows the tech readout (build, FPS, pawn, terrain). The battle-plan list stays up. It starts visible.
 - **Mouse pointer** — a bronze arrow drawn in the game, tip on the hotspot. The Windows cursor stays hidden. Hold the right mouse button to look; the pointer hides until you let go, then it is back where you pressed. The right stick still looks.
 - **Click to move** — raven sight only. One left click on the ground walks the captain there in a straight line, then he stops. WASD and the left stick do nothing in raven sight. In true sight a click does nothing: he moves only with WASD or the left stick. Switching back to true sight cancels a walk that was in progress.
-- **Main menu** — F10 opens it. **1 Use portal** lists the towns; choosing one moves the party onto that town and fires its enter-town event. **2 Test Drill** runs the formation drill. **3 Journal** opens the journal. **4 Credits** opens the credits page (Silvatek, Cursor + Grok, Fab Viking, grass, Assassin, and Blacksmith). **5 Build party** lists the company. It stays dim until events allow at least two companions. Each row toggles that companion in or out, up to the current party limit. Up/Down, Enter, and the pointer also work: resting the pointer on a row highlights it, and a left click chooses it. The same pointer works on the portal list and the party builder. Esc or F10 closes. Move, look, and battle-plan keys are ignored while the menu, the portal list, the party builder, the journal, or the credits page is open.
+- **Main menu** — F10 opens it. **1 Use portal** lists the towns; choosing one moves the party onto that town and fires its enter-town event. **2 Test Drill** runs the formation drill. **3 Journal** opens the journal. **4 Credits** opens the credits page (Silvatek, Cursor + Grok, Fab Viking, grass, Assassin, and Blacksmith). **5 Build party** lists the company. It stays dim until events allow at least two companions. Each row toggles that companion in or out, up to the current party limit. **6 Enter cave** loads the Meagre Dungeon interior for the captain alone, and reads **Leave cave** inside. Up/Down, Enter, and the pointer also work: resting the pointer on a row highlights it, and a left click chooses it. The same pointer works on the portal list and the party builder. Esc or F10 closes. Move, look, and battle-plan keys are ignored while the menu, the portal list, the party builder, the journal, or the credits page is open.
 - **Content pipeline** — Fab listings restored via Launcher Add to Project. Recorded paths in `tools/fab-assets.json` are tried first. A miss falls back to a search: Viking and grass by name under `/Game/Viking` or `/Game/Fab`, companion bodies `Meshes/base_mesh/SKM_base_mesh_ue` inside `Medieval_Assassin_Girl` and `Mesh/SK_Elf_Blacksmith` inside `Elf_Blacksmith`, anywhere under Content. A find is written back into the manifest. `tools/fab_doctor.bat`. Packs are gitignored (attribution README kept).
 - **Automation** — `SolidCore1.*` editor tests; `tools/run_automation_tests.bat` prints failed test paths. Build ID `SC1-NNNN` on the debug HUD.
 - **Editor build** — `tools\build.bat` compiles `SolidCore1Editor` Win64 Development (`-WaitMutex`). `UE_ROOT` overrides the engine install; `PROJECT` overrides the uproject. Both default from the script location.
@@ -57,7 +57,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 | Main menu | F10 | — |
 | Debug readout | F12 | — |
 | Menu up / down | Up / Down, or point at a row | — |
-| Menu confirm | Enter, 1 / 2 / 3 / 4, or left click | — |
+| Menu confirm | Enter, 1–6, or left click | — |
 | Portal town | Enter, 1–5, or left click, while the portal list is open | — |
 | Close menu / portal / party / journal / credits | Esc or F10 | — |
 
@@ -82,7 +82,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.Map.*` | Build smoke, trail clear, idempotent build, sampling, bounds, biome Z shelf |
 | `SolidCore1.WorldMap.*` | ASCII overlay load, key colors, numbered locations, doubled world scale, fog follows the player |
 | `SolidCore1.Towns.*` | Town names keyed by the WorldMap index |
-| `SolidCore1.Stronghold.*` | Types and sizes; the `C` cell is a Meagre Dungeon; the mouth faces the grassland neighbor |
+| `SolidCore1.Stronghold.*` | Types and sizes; the `C` cell is a Meagre Dungeon; the mouth faces the grassland neighbor; F10 cave travel keeps companions outside |
 | `SolidCore1.Noise.*` | Hash / value / fBm / height / grass tone |
 | `SolidCore1.Types.*` | Biome names (incl. Sea/River), height offsets, `FSolidTerrainPoint` defaults |
 | `SolidCore1.Vegetation.*` | Tree RNG variation, town building pack, welcome signs |
@@ -94,7 +94,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.NameLabel.*` | Style sizes/colors/plates; Outcast / Sam defaults; vocation initial on the companion plate |
 | `SolidCore1.BattlePlan.*` | Formation slots; Company/Party assign; selection survives party ensure; drill legs |
 | `SolidCore1.Credits.*` | Author / Cursor+Grok / Fab attribution; HUD toggle |
-| `SolidCore1.MainMenu.*` | F10 menu entries (Use portal, Test Drill, Journal, Credits, Build party) and selection |
+| `SolidCore1.MainMenu.*` | F10 menu entries (Use portal, Test Drill, Journal, Credits, Build party, Enter cave) and selection |
 | `SolidCore1.PartyBuilder.*` | Build party stays locked below two companions; toggles the company up to the event cap |
 | `SolidCore1.MenuPointer.*` | Pointer hit-tests a menu or portal row; a miss leaves the keys' selection |
 | `SolidCore1.Portal.*` | Town list; landing stays on that town (Kanfold is not the centroid); portal page |
@@ -305,6 +305,7 @@ Source/
       SolidClipLocomotion.*              # Shared single-node clip apply/play
     Game/
       SolidGameMode.*
+      SolidGameInstance.*                # Captain, party, and events across the cave trip
       SolidBuildId.h                     # SC1-NNNN shown on the debug HUD
     Content/
       SolidMaterials.*                   # Shared FlatCol solid-color MID helper
@@ -338,12 +339,14 @@ Source/
       SolidStronghold.h       # Type (Dungeon, Fortress, Tower) and size (Meagre … Imperious)
       SolidStrongholds.*      # Mouth on the grassland face of a C cell
       SolidCaveEntrance.*     # Rock frame and solid dark opening
+      SolidCaveLevel.h        # Travel options; captain only; room bounds
+      SolidCaveInterior.*     # Closed rock chamber for the Meagre Dungeon
     HUD/
       SolidHUD.*              # Debug HUD, battle-plan panel, menu and credits drawing
       SolidHudTheme.h         # Oak-and-bronze frame
       SolidPointer.h          # In-game mouse pointer
     Menus/
-      SolidMainMenu.*         # F10 menu entries (Use portal, Test Drill, Journal, Credits, Build party)
+      SolidMainMenu.*         # F10 menu entries (Use portal, Test Drill, Journal, Credits, Build party, Enter cave)
       SolidPartyBuilder.*    # company list, locked until two companions are allowed
       SolidPortal.h           # Town list and party landing cell
       SolidMenuPointer.h      # Pointer hit targets for the menu and portal list
@@ -362,6 +365,7 @@ Source/
       SolidTownSignTests.cpp
       SolidTownsTests.cpp
       SolidStrongholdTests.cpp
+      SolidCaveLevelTests.cpp
       SolidGameModeTests.cpp
       SolidCompanionTests.cpp
       SolidTerrainStreamerTests.cpp

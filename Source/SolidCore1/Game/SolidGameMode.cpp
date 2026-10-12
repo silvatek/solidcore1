@@ -21,7 +21,11 @@
 #include "Towns/SolidTownSign.h"
 #include "Towns/SolidTownSigns.h"
 #include "Strongholds/SolidCaveEntrance.h"
+#include "Strongholds/SolidCaveInterior.h"
+#include "Strongholds/SolidCaveLevel.h"
 #include "Strongholds/SolidStrongholds.h"
+#include "SolidGameInstance.h"
+#include "Kismet/GameplayStatics.h"
 #include "Vegetation/SolidForestTrees.h"
 #include "Vegetation/SolidTree.h"
 #include "Components/CapsuleComponent.h"
@@ -60,6 +64,12 @@ namespace
 		const FString Path = FString::Printf(
 			TEXT("/Game/Fab/%s/%s.%s"), *Entry->Name, *Entry->Name, *Entry->Name);
 		return TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(Path));
+	}
+
+	ASolidCharacter* FindCaptain(UWorld* World)
+	{
+		APlayerController* Controller = World ? World->GetFirstPlayerController() : nullptr;
+		return Controller ? Cast<ASolidCharacter>(Controller->GetPawn()) : nullptr;
 	}
 }
 
@@ -115,6 +125,16 @@ void ASolidGameMode::BeginPlay()
 	Super::BeginPlay();
 	UE_LOG(LogSolid, Warning, TEXT("Build %s"), SOLID_BUILD_ID);
 	EnsureCompanyAndParty();
+	RestoreTravelSession();
+
+	if (IsInCave())
+	{
+		BeginCaveInterior();
+		FinishTravelArrival();
+		return;
+	}
+
+	FinishTravelArrival();
 	EnsureTerrainStreamer();
 
 	// Player pawn / terrain may not be ready on the first PIE frame — keep sampling.
@@ -129,10 +149,210 @@ void ASolidGameMode::BeginPlay()
 	EnsureVegetation();
 }
 
+bool ASolidGameMode::IsInCave() const
+{
+	if (SolidCaveLevel::RequestsCave(OptionsString))
+	{
+		return true;
+	}
+	const USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>();
+	return Instance && Instance->IsInCave();
+}
+
+void ASolidGameMode::SaveTravelSession(const bool bInCave, const bool bReturnToCaveMouth)
+{
+	USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>();
+	if (!Instance)
+	{
+		UE_LOG(LogSolid, Error, TEXT("Cave travel needs USolidGameInstance."));
+		return;
+	}
+
+	FSolidTravelSession Session;
+	Session.Configuration = Configuration;
+	Session.bInCave = bInCave;
+	Session.bReturnToCaveMouth = bReturnToCaveMouth;
+	if (Party)
+	{
+		Session.SelectedCompanionIndices = Party->GetSelectedCompanionIndices();
+		Session.ActiveBattlePlanSlot = Party->GetActiveAssignedSlot();
+	}
+	if (UWorld* World = GetWorld())
+	{
+		if (APlayerController* Controller = World->GetFirstPlayerController())
+		{
+			if (const ASolidCharacter* Captain = Cast<ASolidCharacter>(Controller->GetPawn()))
+			{
+				Session.Sight = Captain->GetSight();
+			}
+		}
+	}
+	Instance->Capture(Session);
+}
+
+void ASolidGameMode::RestoreTravelSession()
+{
+	const USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>();
+	if (!Instance || !Instance->HasSession())
+	{
+		return;
+	}
+
+	const FSolidTravelSession& Session = Instance->GetSession();
+	Configuration = Session.Configuration;
+	EnsureCompanyAndParty();
+	if (Party)
+	{
+		Party->SetSelectedCompanions(Session.SelectedCompanionIndices);
+		Party->SelectAssignedSlot(Session.ActiveBattlePlanSlot);
+	}
+}
+
+void ASolidGameMode::ApplyCaptainFromSession()
+{
+	if (bCaptainTravelApplied)
+	{
+		return;
+	}
+
+	const USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>();
+	if (!Instance || !Instance->HasSession())
+	{
+		bCaptainTravelApplied = true;
+		return;
+	}
+
+	ASolidCharacter* Captain = FindCaptain(GetWorld());
+	if (!Captain)
+	{
+		return;
+	}
+
+	const FSolidTravelSession& Session = Instance->GetSession();
+	if (SolidEvents::IsSightEnabled(Configuration, Session.Sight))
+	{
+		Captain->SetSight(Session.Sight);
+	}
+	if (Configuration.CaptainTitle)
+	{
+		Captain->SetCharacterDisplayName(Configuration.CaptainTitle);
+	}
+	bCaptainTravelApplied = true;
+}
+
+void ASolidGameMode::PlaceCaptainInCave()
+{
+	if (bCaptainPlacedInCave || !CaveInterior)
+	{
+		return;
+	}
+
+	ASolidCharacter* Captain = FindCaptain(GetWorld());
+	if (!Captain)
+	{
+		return;
+	}
+
+	float HalfHeight = 96.f;
+	if (const UCapsuleComponent* Capsule = Captain->GetCapsuleComponent())
+	{
+		HalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+	}
+	FVector Spawn = CaveInterior->GetCaptainSpawnWorld();
+	Spawn.Z += HalfHeight + 4.f;
+	Captain->ArriveByPortal(Spawn, CaveInterior->GetCaptainYaw());
+	bCaptainPlacedInCave = true;
+}
+
+void ASolidGameMode::FinishTravelArrival()
+{
+	ApplyCaptainFromSession();
+	if (IsInCave())
+	{
+		PlaceCaptainInCave();
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	const bool bDone = bCaptainTravelApplied && (!IsInCave() || bCaptainPlacedInCave);
+	if (bDone)
+	{
+		World->GetTimerManager().ClearTimer(CaptainArrivalTimer);
+		return;
+	}
+
+	if (!World->GetTimerManager().IsTimerActive(CaptainArrivalTimer))
+	{
+		World->GetTimerManager().SetTimer(
+			CaptainArrivalTimer, this, &ASolidGameMode::FinishTravelArrival, 0.1f, true);
+	}
+}
+
+void ASolidGameMode::BeginCaveInterior()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	if (!CaveInterior)
+	{
+		FActorSpawnParameters Params;
+		Params.Owner = this;
+		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		CaveInterior = World->SpawnActor<ASolidCaveInterior>(
+			ASolidCaveInterior::StaticClass(),
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			Params);
+		if (CaveInterior)
+		{
+			CaveInterior->BuildVisuals();
+		}
+	}
+
+	PlaceCaptainInCave();
+	UE_LOG(LogSolid, Warning, TEXT("Cave interior loaded. Companions return when the captain leaves."));
+}
+
+void ASolidGameMode::TravelToCave()
+{
+	UWorld* World = GetWorld();
+	if (!World || IsInCave())
+	{
+		return;
+	}
+	SaveTravelSession(/*bInCave=*/true, /*bReturnToCaveMouth=*/false);
+	UGameplayStatics::OpenLevel(World, FName(SolidCaveLevel::WorldMapPath), true, SolidCaveLevel::EnterOptions());
+}
+
+void ASolidGameMode::TravelToWorld()
+{
+	UWorld* World = GetWorld();
+	if (!World || !IsInCave())
+	{
+		return;
+	}
+	// Companions are spawned again once this world is the open world.
+	// The party builder is not opened here.
+	SaveTravelSession(/*bInCave=*/false, /*bReturnToCaveMouth=*/true);
+	UGameplayStatics::OpenLevel(World, FName(SolidCaveLevel::WorldMapPath), true, SolidCaveLevel::LeaveOptions());
+}
+
 void ASolidGameMode::RefreshEvents()
 {
 	UWorld* World = GetWorld();
 	if (!World)
+	{
+		return;
+	}
+
+	if (IsInCave())
 	{
 		return;
 	}
@@ -372,6 +592,19 @@ void ASolidGameMode::RefreshFieldedParty()
 
 void ASolidGameMode::EnsureCompanion()
 {
+	if (IsInCave())
+	{
+		for (const TObjectPtr<ASolidCompanionCharacter>& Companion : SpawnedCompanions)
+		{
+			if (Companion)
+			{
+				Companion->Destroy();
+			}
+		}
+		SpawnedCompanions.Reset();
+		return;
+	}
+
 	if (!bAutoSpawnCompanion)
 	{
 		return;

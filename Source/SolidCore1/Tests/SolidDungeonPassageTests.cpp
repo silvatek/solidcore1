@@ -16,7 +16,16 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidDungeonPassageHitTest::RunTest(const FString& Parameters)
 {
-	TestFalse(TEXT("the opening trace uses simple collision"), SolidDungeonPassage::bTraceComplexCollision);
+	const FBox Door(FVector(-50.f, -40.f, 0.f), FVector(50.f, 40.f, 80.f));
+	TestTrue(TEXT("a ray through the opening hits"), SolidDungeonPassage::RayHitsBox(
+		FVector(-200.f, 0.f, 40.f), FVector(1.f, 0.f, 0.f), Door, 1000.f));
+	TestFalse(TEXT("a ray past the opening misses"), SolidDungeonPassage::RayHitsBox(
+		FVector(-200.f, 200.f, 40.f), FVector(1.f, 0.f, 0.f), Door, 1000.f));
+	TestTrue(TEXT("a point inside the opening is a hit"), SolidDungeonPassage::RayHitsBox(
+		FVector(0.f, 0.f, 40.f), FVector(0.f, 1.f, 0.f), Door, 100.f));
+	TestFalse(TEXT("a short ray stops before the opening"), SolidDungeonPassage::RayHitsBox(
+		FVector(-200.f, 0.f, 40.f), FVector(1.f, 0.f, 0.f), Door, 100.f));
+
 	TestTrue(TEXT("a shown pointer can use the opening"), SolidDungeonPassage::AcceptsPointer(true, false));
 	TestFalse(TEXT("the menu and the drill take the pointer"), SolidDungeonPassage::AcceptsPointer(true, true));
 	TestFalse(TEXT("a hidden pointer ignores the opening"), SolidDungeonPassage::AcceptsPointer(false, false));

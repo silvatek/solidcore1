@@ -29,10 +29,66 @@ namespace SolidDungeonPassage
 	}
 
 	/**
-	 * The opening is an engine cube with simple collision. A complex trace skips that
-	 * box, and the click then walks the captain into the mesh.
+	 * A visibility trace misses this engine-cube mouth, including a ray that
+	 * starts inside it. The click uses the mouth component's bounds instead.
 	 */
-	inline constexpr bool bTraceComplexCollision = false;
+	inline bool RayHitsBox(
+		const FVector& Origin,
+		const FVector& Direction,
+		const FBox& Box,
+		const float MaxDistanceCm)
+	{
+		const bool bHasExtent = Box.Min.X <= Box.Max.X && Box.Min.Y <= Box.Max.Y && Box.Min.Z <= Box.Max.Z;
+		if (!bHasExtent)
+		{
+			return false;
+		}
+		if (Box.IsInsideOrOn(Origin))
+		{
+			return true;
+		}
+
+		const FVector Dir = Direction.GetSafeNormal();
+		if (Dir.IsNearlyZero() || MaxDistanceCm <= 0.f)
+		{
+			return false;
+		}
+
+		const float OriginAxis[3] = { Origin.X, Origin.Y, Origin.Z };
+		const float DirAxis[3] = { Dir.X, Dir.Y, Dir.Z };
+		const float MinAxis[3] = { Box.Min.X, Box.Min.Y, Box.Min.Z };
+		const float MaxAxis[3] = { Box.Max.X, Box.Max.Y, Box.Max.Z };
+
+		float TMin = 0.f;
+		float TMax = MaxDistanceCm;
+		for (int32 Axis = 0; Axis < 3; ++Axis)
+		{
+			if (FMath::Abs(DirAxis[Axis]) < KINDA_SMALL_NUMBER)
+			{
+				if (OriginAxis[Axis] < MinAxis[Axis] || OriginAxis[Axis] > MaxAxis[Axis])
+				{
+					return false;
+				}
+				continue;
+			}
+
+			float Near = (MinAxis[Axis] - OriginAxis[Axis]) / DirAxis[Axis];
+			float Far = (MaxAxis[Axis] - OriginAxis[Axis]) / DirAxis[Axis];
+			if (Near > Far)
+			{
+				const float SwapNear = Near;
+				Near = Far;
+				Far = SwapNear;
+			}
+			TMin = FMath::Max(TMin, Near);
+			TMax = FMath::Min(TMax, Far);
+			if (TMin > TMax)
+			{
+				return false;
+			}
+		}
+		return TMax >= 0.f;
+	}
 
 	inline const TCHAR* TipText(const EHit Hit)
 	{

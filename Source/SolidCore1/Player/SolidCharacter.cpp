@@ -9,10 +9,9 @@
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "CollisionQueryParams.h"
-#include "CollisionShape.h"
-#include "Engine/OverlapResult.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/World.h"
+#include "EngineUtils.h"
 #include "Engine/GameViewportClient.h"
 #include "Engine/SkeletalMesh.h"
 #include "Components/InputComponent.h"
@@ -891,35 +890,42 @@ bool ASolidCharacter::IsPointerShown() const
 	return SolidPointer::ShouldDraw(true, bRightDown);
 }
 
+namespace
+{
+	template<typename HitsFn>
+	SolidDungeonPassage::EHit SolidCaveMouthBox(UWorld* World, HitsFn Hits)
+	{
+		if (!World)
+		{
+			return SolidDungeonPassage::EHit::None;
+		}
+
+		for (TActorIterator<ASolidDungeonEntrance> Entrance(World); Entrance; ++Entrance)
+		{
+			const UStaticMeshComponent* Mouth = Entrance->GetMouthMesh();
+			if (Mouth && Hits(Mouth->CalcBounds(Mouth->GetComponentTransform()).GetBox()))
+			{
+				return SolidDungeonPassage::EHit::Enter;
+			}
+		}
+		for (TActorIterator<ASolidDungeonInterior> Interior(World); Interior; ++Interior)
+		{
+			const UStaticMeshComponent* Mouth = Interior->GetMouthMesh();
+			if (Mouth && Hits(Mouth->CalcBounds(Mouth->GetComponentTransform()).GetBox()))
+			{
+				return SolidDungeonPassage::EHit::Leave;
+			}
+		}
+		return SolidDungeonPassage::EHit::None;
+	}
+}
+
 SolidDungeonPassage::EHit ASolidCharacter::CavePassageOverlapping(const FVector& Location) const
 {
-	UWorld* World = GetWorld();
-	const UCapsuleComponent* Capsule = GetCapsuleComponent();
-	if (!World || !Capsule)
+	return SolidCaveMouthBox(GetWorld(), [&Location](const FBox& Box)
 	{
-		return SolidDungeonPassage::EHit::None;
-	}
-
-	FCollisionQueryParams Params(SCENE_QUERY_STAT(SolidCavePassage), SolidDungeonPassage::bTraceComplexCollision, this);
-	Params.AddIgnoredActor(this);
-	TArray<FOverlapResult> Overlaps;
-	const FCollisionShape Shape = FCollisionShape::MakeCapsule(
-		Capsule->GetScaledCapsuleRadius(),
-		Capsule->GetScaledCapsuleHalfHeight());
-	if (!World->OverlapMultiByChannel(Overlaps, Location, GetActorQuat(), ECC_Visibility, Shape, Params))
-	{
-		return SolidDungeonPassage::EHit::None;
-	}
-
-	for (const FOverlapResult& Result : Overlaps)
-	{
-		const SolidDungeonPassage::EHit Hit = SolidDungeonPassage::Classify(Result.GetActor(), Result.GetComponent());
-		if (Hit != SolidDungeonPassage::EHit::None)
-		{
-			return Hit;
-		}
-	}
-	return SolidDungeonPassage::EHit::None;
+		return Box.IsInsideOrOn(Location);
+	});
 }
 
 SolidDungeonPassage::EHit ASolidCharacter::CavePassageUnderPointer() const
@@ -942,33 +948,10 @@ SolidDungeonPassage::EHit ASolidCharacter::CavePassageUnderPointer() const
 		return SolidDungeonPassage::EHit::None;
 	}
 
-	UWorld* World = GetWorld();
-	if (!World)
+	return SolidCaveMouthBox(GetWorld(), [&Origin, &Direction](const FBox& Box)
 	{
-		return SolidDungeonPassage::EHit::None;
-	}
-
-	FHitResult Hit;
-	FCollisionQueryParams Params(SCENE_QUERY_STAT(SolidCavePassage), SolidDungeonPassage::bTraceComplexCollision, this);
-	Params.AddIgnoredActor(this);
-	if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
-	{
-		for (const TObjectPtr<ASolidCompanionCharacter>& Companion : GameMode->GetCompanions())
-		{
-			ASolidCompanionCharacter* Actor = Companion.Get();
-			if (Actor)
-			{
-				Params.AddIgnoredActor(Actor);
-			}
-		}
-	}
-
-	const FVector End = Origin + Direction.GetSafeNormal() * SolidClickMove::MaxRayCm;
-	if (!World->LineTraceSingleByChannel(Hit, Origin, End, ECC_Visibility, Params))
-	{
-		return SolidDungeonPassage::EHit::None;
-	}
-	return SolidDungeonPassage::Classify(Hit.GetActor(), Hit.GetComponent());
+		return SolidDungeonPassage::RayHitsBox(Origin, Direction, Box, SolidClickMove::MaxRayCm);
+	});
 }
 
 void ASolidCharacter::ActivateCavePassage(const SolidDungeonPassage::EHit Hit)

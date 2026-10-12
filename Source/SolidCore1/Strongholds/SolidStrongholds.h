@@ -23,6 +23,12 @@ namespace SolidStrongholds
 	inline constexpr float OpeningWidthCm = 380.f;
 	inline constexpr float OpeningHeightCm = 420.f;
 	inline constexpr float OpeningDepthCm = 240.f;
+	/**
+	 * Grass-facing face of the rock frame, in actor space (cm).
+	 * Local +X faces the grass. The face sits toward the cliff so the actor
+	 * origin, where the captain stands, is in front of the stone.
+	 */
+	inline constexpr float FrameFrontLocalX = -OpeningDepthCm * 0.5f;
 	inline constexpr float FrameThicknessCm = 80.f;
 	/** Black mouth sits this far behind the rock front so the faces do not z-fight. */
 	inline constexpr float MouthRecessCm = 16.f;

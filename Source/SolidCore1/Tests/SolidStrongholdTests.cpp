@@ -305,9 +305,12 @@ bool FSolidDungeonEntranceVisualsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("lintel sits above the mouth"), Lintel->GetRelativeLocation().Z > Mouth->GetRelativeLocation().Z);
 	TestTrue(TEXT("mouth meets the ground"), FMath::IsNearlyEqual(
 		Mouth->GetRelativeLocation().Z - Mouth->GetRelativeScale3D().Z * 50.f, 0.f, 1.f));
-	TestTrue(TEXT("mouth is recessed behind the lintel front"),
-		Mouth->GetRelativeLocation().X + Mouth->GetRelativeScale3D().X * 50.f
-		< Lintel->GetRelativeLocation().X + Lintel->GetRelativeScale3D().X * 50.f - 1.f);
+	const float MouthFront = Mouth->GetRelativeLocation().X + Mouth->GetRelativeScale3D().X * 50.f;
+	const float LintelFront = Lintel->GetRelativeLocation().X + Lintel->GetRelativeScale3D().X * 50.f;
+	TestTrue(TEXT("mouth is recessed behind the lintel front"), MouthFront < LintelFront - 1.f);
+	TestTrue(TEXT("the grass face of the frame sits toward the cliff"),
+		FMath::IsNearlyEqual(LintelFront, SolidStrongholds::FrameFrontLocalX, 1.f));
+	TestTrue(TEXT("the grass spawn stands in front of the mouth"), MouthFront < -40.f);
 
 	return true;
 }

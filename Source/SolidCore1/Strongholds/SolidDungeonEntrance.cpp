@@ -84,12 +84,15 @@ void ASolidDungeonEntrance::BuildVisuals()
 	const float Frame = SolidStrongholds::FrameThicknessCm;
 	const float Recess = SolidStrongholds::MouthRecessCm;
 	const float Gap = SolidStrongholds::MouthGapCm;
+	// The actor origin is the grass where the captain stands. Shift the whole
+	// frame toward the cliff so that spot is in front of the stone.
+	const float ShiftX = SolidStrongholds::FrameFrontLocalX - Depth * 0.5f;
 
 	PlacePart(
 		MouthMesh,
 		Cube,
 		this,
-		FVector(-Recess * 0.5f, 0.f, Height * 0.5f),
+		FVector(-Recess * 0.5f + ShiftX, 0.f, Height * 0.5f),
 		FVector(Depth - Recess, Width - Gap, Height),
 		SolidStrongholds::MouthColor(),
 		TEXT("CaveMouth"));
@@ -104,7 +107,7 @@ void ASolidDungeonEntrance::BuildVisuals()
 		LeftJamb,
 		Cube,
 		this,
-		FVector(0.f, -JambY, Height * 0.5f),
+		FVector(ShiftX, -JambY, Height * 0.5f),
 		FVector(Depth, Frame, Height),
 		SolidStrongholds::RockColor(),
 		TEXT("CaveLeftJamb"));
@@ -112,7 +115,7 @@ void ASolidDungeonEntrance::BuildVisuals()
 		RightJamb,
 		Cube,
 		this,
-		FVector(0.f, JambY, Height * 0.5f),
+		FVector(ShiftX, JambY, Height * 0.5f),
 		FVector(Depth, Frame, Height),
 		SolidStrongholds::RockColor(),
 		TEXT("CaveRightJamb"));
@@ -120,7 +123,7 @@ void ASolidDungeonEntrance::BuildVisuals()
 		Lintel,
 		Cube,
 		this,
-		FVector(0.f, 0.f, Height + Frame * 0.5f),
+		FVector(ShiftX, 0.f, Height + Frame * 0.5f),
 		FVector(Depth, Width + Frame * 2.f, Frame),
 		SolidStrongholds::RockColor(),
 		TEXT("CaveLintel"));

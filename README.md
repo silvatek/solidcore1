@@ -74,6 +74,12 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 2. If a change **must** update an existing test (API rename, intentional behavior change), say so explicitly in the commit / change description and why.
 3. **New product code ships with tests in the same commit** (same PR/change set). Prefer pure logic / `NewObject` unit tests; add heavier PIE tests only when needed.
 4. **Never pass `TObjectPtr<T>` to `TestNotNull` / `TestNull`.** UE 5.8 cannot deduce `const ValueType*` from it (`GetStaticMesh()` is the usual trap). Bind a raw `T*` first, or call `.Get()`.
+5. When a product change would invalidate an assumption in an existing test, remove that assumption **before** the product change. The test has to pass on the current code and on the code that is about to be written. Read a constant the product already defines, such as `USolidWorldMap::MapWidth`, instead of copying a number.
+   1. Name the tests that assume the old behavior.
+   2. Update those tests only. Do not change product code in that commit.
+   3. That commit is pushed on its own, so the tests can be run against the current build.
+   4. The product change comes next and does not edit the tests.
+   5. The same tests are run again against the new build.
 
 ### Suite (filter `SolidCore1`)
 
@@ -81,7 +87,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 |--------|--------|
 | `SolidCore1.Fog.*` | Distance bands, units, mist sampling, fog mesh build guards, camera stays on clear ground, curtain above max zoom |
 | `SolidCore1.Map.*` | Build smoke, trail clear, idempotent build, sampling, bounds, biome Z shelf |
-| `SolidCore1.WorldMap.*` | ASCII overlay load, key colors, numbered locations, 1024 m square world, cells 8 m east–west and 16 m north–south, fog follows the player |
+| `SolidCore1.WorldMap.*` | ASCII overlay load, key colors, numbered locations, 1024 m square world, cell size follows the map width and height, fog follows the player |
 | `SolidCore1.River.*` | 4 m pond, orthogonal joins to river or sea, banks take the adjacent biome; a road bank uses the road texture |
 | `SolidCore1.Road.*` | Trail, track, road, and highway widths; every route stays off mountains and the sea; roads avoid forest, desert, and extra river cells; the strip is a road brown and a crossing keeps the river; T, Z, and location digits are towns |
 | `SolidCore1.Towns.*` | Town names and type (Town or WallGate); Dragongate is the wall gate, with a 4 m gap and two equal towers |

@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0216")
+#define SOLID_BUILD_ID TEXT("SC1-0217")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("World map cells are 8 m east to west")
+#define SOLID_BUILD_NOTE TEXT("Map tests follow the map constants")
 #endif

@@ -410,9 +410,13 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	const FVector2D SynMin(0.f, 0.f);
 	const FVector2D SynMax(6400.f, 6400.f);
 	TestTrue(TEXT("synthetic start"), Synthetic->GetStartTownWorldXY(SynMin, SynMax, SyntheticStart));
-	// Column 0 is east. On a 6400 cm square, cell (4, 2) is 8 m wide and 16 m tall.
-	TestTrue(TEXT("start is the 0 cell, not Z"), FMath::IsNearlyEqual(SyntheticStart.X, 6175.f, 1.f));
-	TestTrue(TEXT("start row is the 0 cell"), FMath::IsNearlyEqual(SyntheticStart.Y, 6150.f, 1.f));
+	// Column 0 is east. Cell (4, 2) is one column and one row in from that corner.
+	const float CellW = (SynMax.X - SynMin.X) / static_cast<float>(USolidWorldMap::MapWidth);
+	const float CellH = (SynMax.Y - SynMin.Y) / static_cast<float>(USolidWorldMap::MapHeight);
+	TestTrue(TEXT("start is the 0 cell, not Z"),
+		FMath::IsNearlyEqual(SyntheticStart.X, SynMax.X - 4.5f * CellW, 1.f));
+	TestTrue(TEXT("start row is the 0 cell"),
+		FMath::IsNearlyEqual(SyntheticStart.Y, SynMax.Y - 2.5f * CellH, 1.f));
 	return true;
 }
 
@@ -430,15 +434,24 @@ bool FSolidWorldMapDoubledScaleTest::RunTest(const FString& Parameters)
 
 	const float Extent = static_cast<float>(Defaults->TerrainMapSize - 1) * Defaults->TerrainPointSpacing;
 	TestTrue(TEXT("world side is 1024 m"), FMath::IsNearlyEqual(Extent, 102400.f, 1.f));
-	TestEqual(TEXT("map is 128 columns"), USolidWorldMap::MapWidth, 128);
-	TestEqual(TEXT("map is 64 rows"), USolidWorldMap::MapHeight, 64);
 	const float CellEastCm = Extent / static_cast<float>(USolidWorldMap::MapWidth);
 	const float CellNorthCm = Extent / static_cast<float>(USolidWorldMap::MapHeight);
-	TestTrue(TEXT("east-west cell is 8 m"), FMath::IsNearlyEqual(CellEastCm, 800.f, 1.f));
-	TestTrue(TEXT("north-south cell is 16 m"), FMath::IsNearlyEqual(CellNorthCm, 1600.f, 1.f));
+	const FVector2D WorldMin(-Extent * 0.5f, -Extent * 0.5f);
+	const FVector2D WorldMax(Extent * 0.5f, Extent * 0.5f);
 
 	USolidWorldMap* WorldMap = NewObject<USolidWorldMap>();
 	TestTrue(TEXT("LoadDefault"), WorldMap->LoadDefault());
+
+	FVector2D EastCell = FVector2D::ZeroVector;
+	FVector2D NextColumn = FVector2D::ZeroVector;
+	FVector2D NextRow = FVector2D::ZeroVector;
+	TestTrue(TEXT("first cell projects"), WorldMap->CellToWorldXY(FIntPoint(0, 0), WorldMin, WorldMax, EastCell));
+	TestTrue(TEXT("next column projects"), WorldMap->CellToWorldXY(FIntPoint(1, 0), WorldMin, WorldMax, NextColumn));
+	TestTrue(TEXT("next row projects"), WorldMap->CellToWorldXY(FIntPoint(0, 1), WorldMin, WorldMax, NextRow));
+	TestTrue(TEXT("column step follows the map width"),
+		FMath::IsNearlyEqual(EastCell.X - NextColumn.X, CellEastCm, 1.f));
+	TestTrue(TEXT("row step follows the map height"),
+		FMath::IsNearlyEqual(EastCell.Y - NextRow.Y, CellNorthCm, 1.f));
 
 	// Previous rectangle was half this size. A sample and its doubled twin must hit the same marker.
 	const FVector2D OldMin(-25600.f, -25600.f);

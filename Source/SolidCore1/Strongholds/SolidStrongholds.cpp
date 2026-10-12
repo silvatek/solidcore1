@@ -37,12 +37,12 @@ int32 SolidStrongholds::CollectEntrances(
 		return 0;
 	}
 
-	const TCHAR CaveMarker = SolidStronghold::MarkerFor(ESolidStronghold::Cave);
 	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
 	{
 		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
 		{
-			if (WorldMap->GetMarkerAtCell(Col, Row) != CaveMarker)
+			FSolidStronghold Attributes;
+			if (!SolidStronghold::AttributesForMarker(WorldMap->GetMarkerAtCell(Col, Row), Attributes))
 			{
 				continue;
 			}
@@ -79,7 +79,7 @@ int32 SolidStrongholds::CollectEntrances(
 			}
 
 			FEntrance Entrance;
-			Entrance.Kind = ESolidStronghold::Cave;
+			Entrance.Stronghold = Attributes;
 			Entrance.Cell = FIntPoint(Col, Row);
 			Entrance.GrassCell = GrassCell;
 			Entrance.EdgeXY = (CaveXY + GrassXY) * 0.5f;

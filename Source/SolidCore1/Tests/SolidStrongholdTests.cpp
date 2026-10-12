@@ -39,15 +39,71 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidStrongholdCatalogTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("first base is the cave"), static_cast<uint8>(SolidStronghold::First), static_cast<uint8>(ESolidStronghold::Cave));
-	TestEqual(TEXT("one stronghold so far"), SolidStronghold::DefinitionCount, 1);
-	TestEqual(TEXT("cave name"), FString(SolidStronghold::NameFor(ESolidStronghold::Cave)), FString(TEXT("Cave")));
+	const TCHAR* TypeNames[] = { TEXT("Dungeon"), TEXT("Fortress"), TEXT("Tower") };
+	TestEqual(TEXT("three types"), SolidStronghold::TypeCount, 3);
+	for (int32 Index = 0; Index < SolidStronghold::TypeCount; ++Index)
+	{
+		TestEqual(
+			*FString::Printf(TEXT("type %d"), Index),
+			FString(SolidStronghold::TypeName(SolidStronghold::Types[Index])),
+			FString(TypeNames[Index]));
+		TestEqual(TEXT("type index"), SolidStronghold::IndexOfType(SolidStronghold::Types[Index]), Index);
+	}
+
+	const TCHAR* SizeNames[] = {
+		TEXT("Meagre"), TEXT("Humble"), TEXT("Average"), TEXT("Impressive"),
+		TEXT("Grand"), TEXT("Stately"), TEXT("Imperious") };
+	TestEqual(TEXT("seven sizes"), SolidStronghold::SizeCount, 7);
+	for (int32 Index = 0; Index < SolidStronghold::SizeCount; ++Index)
+	{
+		TestEqual(
+			*FString::Printf(TEXT("size %d"), Index),
+			FString(SolidStronghold::SizeName(SolidStronghold::Sizes[Index])),
+			FString(SizeNames[Index]));
+		TestEqual(TEXT("size index"), SolidStronghold::IndexOfSize(SolidStronghold::Sizes[Index]), Index);
+	}
+	TestEqual(TEXT("Meagre is the smallest"), SolidStronghold::IndexOfSize(ESolidStrongholdSize::Meagre), 0);
 	TestEqual(
-		TEXT("cave marker"),
-		static_cast<int32>(SolidStronghold::MarkerFor(ESolidStronghold::Cave)),
+		TEXT("Humble follows Meagre"),
+		SolidStronghold::IndexOfSize(ESolidStrongholdSize::Humble),
+		SolidStronghold::IndexOfSize(ESolidStrongholdSize::Meagre) + 1);
+	TestEqual(
+		TEXT("Imperious is the largest"),
+		SolidStronghold::IndexOfSize(ESolidStrongholdSize::Imperious),
+		SolidStronghold::SizeCount - 1);
+
+	TestEqual(TEXT("one stronghold on the map"), SolidStronghold::OnMapCount, 1);
+	TestEqual(
+		TEXT("starting marker"),
+		static_cast<int32>(SolidStronghold::Starting.Marker),
 		static_cast<int32>(TEXT('C')));
+	TestEqual(
+		TEXT("starting type"),
+		static_cast<uint8>(SolidStronghold::Starting.Attributes.Type),
+		static_cast<uint8>(ESolidStrongholdType::Dungeon));
+	TestEqual(
+		TEXT("starting size"),
+		static_cast<uint8>(SolidStronghold::Starting.Attributes.Size),
+		static_cast<uint8>(ESolidStrongholdSize::Meagre));
+	TestEqual(
+		TEXT("starting label"),
+		SolidStronghold::Label(SolidStronghold::Starting.Attributes),
+		FString(TEXT("Meagre Dungeon")));
+
 	TestTrue(TEXT("C is a stronghold marker"), SolidStronghold::IsStrongholdMarker(TEXT('c')));
 	TestFalse(TEXT("M is a mountain, not a stronghold"), SolidStronghold::IsStrongholdMarker(TEXT('M')));
+
+	FSolidStronghold FromMarker;
+	TestTrue(TEXT("C resolves"), SolidStronghold::AttributesForMarker(TEXT('C'), FromMarker));
+	TestEqual(
+		TEXT("C is a Dungeon"),
+		static_cast<uint8>(FromMarker.Type),
+		static_cast<uint8>(ESolidStrongholdType::Dungeon));
+	TestEqual(
+		TEXT("C is Meagre"),
+		static_cast<uint8>(FromMarker.Size),
+		static_cast<uint8>(ESolidStrongholdSize::Meagre));
+	TestFalse(TEXT("M does not resolve"), SolidStronghold::AttributesForMarker(TEXT('M'), FromMarker));
 	return true;
 }
 
@@ -110,7 +166,14 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 	}
 
 	const SolidStrongholds::FEntrance& Entrance = Entrances[0];
-	TestEqual(TEXT("entrance kind"), static_cast<uint8>(Entrance.Kind), static_cast<uint8>(ESolidStronghold::Cave));
+	TestEqual(
+		TEXT("entrance type"),
+		static_cast<uint8>(Entrance.Stronghold.Type),
+		static_cast<uint8>(ESolidStrongholdType::Dungeon));
+	TestEqual(
+		TEXT("entrance size"),
+		static_cast<uint8>(Entrance.Stronghold.Size),
+		static_cast<uint8>(ESolidStrongholdSize::Meagre));
 	TestEqual(TEXT("entrance column"), Entrance.Cell.X, CaveCell.X);
 	TestEqual(TEXT("entrance row"), Entrance.Cell.Y, CaveCell.Y);
 	TestEqual(TEXT("grass column"), Entrance.GrassCell.X, North.X);

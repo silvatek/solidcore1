@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0182")
+#define SOLID_BUILD_ID TEXT("SC1-0183")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("World map lives only in Content")
+#define SOLID_BUILD_NOTE TEXT("Starting stronghold is a Meagre Dungeon")
 #endif

@@ -41,8 +41,8 @@ namespace SolidStrongholds
 
 	struct FEntrance
 	{
-		ESolidStronghold Kind = ESolidStronghold::Cave;
-		/** Cave (or later stronghold) map cell. */
+		FSolidStronghold Stronghold;
+		/** Stronghold map cell. */
 		FIntPoint Cell = FIntPoint::ZeroValue;
 		/** Adjacent grassland the mouth faces. */
 		FIntPoint GrassCell = FIntPoint::ZeroValue;

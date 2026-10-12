@@ -2,73 +2,153 @@
 
 #include "CoreMinimal.h"
 
-/**
- * Company bases. The cave is the first. Later upgrades append after Cave;
- * only the cave is placed on the world map today.
- */
-enum class ESolidStronghold : uint8
+/** What the company base is. Dungeon is the first; Fortress and Tower come later. */
+enum class ESolidStrongholdType : uint8
 {
-	Cave,
+	Dungeon,
+	Fortress,
+	Tower,
+};
+
+/**
+ * How grand the company base is.
+ * Meagre is the start. Later upgrades move up this list.
+ */
+enum class ESolidStrongholdSize : uint8
+{
+	Meagre,
+	Humble,
+	Average,
+	Impressive,
+	Grand,
+	Stately,
+	Imperious,
+};
+
+/** A company base: one type and one size. */
+struct FSolidStronghold
+{
+	ESolidStrongholdType Type = ESolidStrongholdType::Dungeon;
+	ESolidStrongholdSize Size = ESolidStrongholdSize::Meagre;
 };
 
 namespace SolidStronghold
 {
-	struct FInfo
+	/** A stronghold that has a WorldMap.txt cell. Only the starting cave is placed today. */
+	struct FOnMap
 	{
-		ESolidStronghold Kind = ESolidStronghold::Cave;
-		const TCHAR* Name = TEXT("");
-		/** WorldMap.txt marker. The cave is `C`. */
 		TCHAR Marker = TEXT('C');
+		FSolidStronghold Attributes;
 	};
 
-	/** The company starts here. Later kinds replace it. */
-	inline constexpr ESolidStronghold First = ESolidStronghold::Cave;
-
-	inline const FInfo Definitions[] = {
-		{ ESolidStronghold::Cave, TEXT("Cave"), TEXT('C') },
+	inline const ESolidStrongholdType Types[] = {
+		ESolidStrongholdType::Dungeon,
+		ESolidStrongholdType::Fortress,
+		ESolidStrongholdType::Tower,
 	};
 
-	inline constexpr int32 DefinitionCount = UE_ARRAY_COUNT(Definitions);
+	inline const ESolidStrongholdSize Sizes[] = {
+		ESolidStrongholdSize::Meagre,
+		ESolidStrongholdSize::Humble,
+		ESolidStrongholdSize::Average,
+		ESolidStrongholdSize::Impressive,
+		ESolidStrongholdSize::Grand,
+		ESolidStrongholdSize::Stately,
+		ESolidStrongholdSize::Imperious,
+	};
 
-	inline const FInfo* Find(ESolidStronghold Kind)
+	inline constexpr int32 TypeCount = UE_ARRAY_COUNT(Types);
+	inline constexpr int32 SizeCount = UE_ARRAY_COUNT(Sizes);
+
+	/** The company starts here: a Meagre Dungeon on the `C` cell. */
+	inline const FOnMap Starting = { TEXT('C'), { ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre } };
+
+	inline const FOnMap OnMap[] = {
+		Starting,
+	};
+
+	inline constexpr int32 OnMapCount = UE_ARRAY_COUNT(OnMap);
+
+	inline const TCHAR* TypeName(ESolidStrongholdType Type)
 	{
-		for (const FInfo& Info : Definitions)
+		switch (Type)
 		{
-			if (Info.Kind == Kind)
+		case ESolidStrongholdType::Dungeon: return TEXT("Dungeon");
+		case ESolidStrongholdType::Fortress: return TEXT("Fortress");
+		case ESolidStrongholdType::Tower: return TEXT("Tower");
+		default: return TEXT("");
+		}
+	}
+
+	inline const TCHAR* SizeName(ESolidStrongholdSize Size)
+	{
+		switch (Size)
+		{
+		case ESolidStrongholdSize::Meagre: return TEXT("Meagre");
+		case ESolidStrongholdSize::Humble: return TEXT("Humble");
+		case ESolidStrongholdSize::Average: return TEXT("Average");
+		case ESolidStrongholdSize::Impressive: return TEXT("Impressive");
+		case ESolidStrongholdSize::Grand: return TEXT("Grand");
+		case ESolidStrongholdSize::Stately: return TEXT("Stately");
+		case ESolidStrongholdSize::Imperious: return TEXT("Imperious");
+		default: return TEXT("");
+		}
+	}
+
+	/** "Meagre Dungeon". */
+	inline FString Label(const FSolidStronghold& Stronghold)
+	{
+		return FString::Printf(TEXT("%s %s"), SizeName(Stronghold.Size), TypeName(Stronghold.Type));
+	}
+
+	inline int32 IndexOfType(ESolidStrongholdType Type)
+	{
+		for (int32 Index = 0; Index < TypeCount; ++Index)
+		{
+			if (Types[Index] == Type)
 			{
-				return &Info;
+				return Index;
+			}
+		}
+		return INDEX_NONE;
+	}
+
+	inline int32 IndexOfSize(ESolidStrongholdSize Size)
+	{
+		for (int32 Index = 0; Index < SizeCount; ++Index)
+		{
+			if (Sizes[Index] == Size)
+			{
+				return Index;
+			}
+		}
+		return INDEX_NONE;
+	}
+
+	inline const FOnMap* FindOnMap(TCHAR Marker)
+	{
+		const TCHAR Upper = FChar::ToUpper(Marker);
+		for (const FOnMap& Placed : OnMap)
+		{
+			if (Placed.Marker == Upper)
+			{
+				return &Placed;
 			}
 		}
 		return nullptr;
 	}
 
-	inline const TCHAR* NameFor(ESolidStronghold Kind)
-	{
-		if (const FInfo* Info = Find(Kind))
-		{
-			return Info->Name;
-		}
-		return TEXT("");
-	}
-
-	inline TCHAR MarkerFor(ESolidStronghold Kind)
-	{
-		if (const FInfo* Info = Find(Kind))
-		{
-			return Info->Marker;
-		}
-		return 0;
-	}
-
 	inline bool IsStrongholdMarker(TCHAR Marker)
 	{
-		const TCHAR Upper = FChar::ToUpper(Marker);
-		for (const FInfo& Info : Definitions)
+		return FindOnMap(Marker) != nullptr;
+	}
+
+	inline bool AttributesForMarker(TCHAR Marker, FSolidStronghold& OutAttributes)
+	{
+		if (const FOnMap* Placed = FindOnMap(Marker))
 		{
-			if (Info.Marker == Upper)
-			{
-				return true;
-			}
+			OutAttributes = Placed->Attributes;
+			return true;
 		}
 		return false;
 	}

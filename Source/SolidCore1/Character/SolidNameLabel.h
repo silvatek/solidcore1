@@ -58,6 +58,12 @@ namespace SolidNameLabel
 		return TextColorFor(Style);
 	}
 
+	/** The captain's name shows in raven sight only, and only with companions outside a stronghold. */
+	inline bool ShowsCaptainName(const bool bTrueSight, const bool bInStronghold, const int32 CompanionCount)
+	{
+		return !bTrueSight && !bInStronghold && CompanionCount > 0;
+	}
+
 	/**
 	 * Size / materials / text for a nameplate group.
 	 * Root is placed above the capsule; Border + Background are thin cubes facing +X;

@@ -121,4 +121,18 @@ bool FSolidNameLabelVocationInitialTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidNameLabelCaptainHiddenAloneTest,
+	"SolidCore1.NameLabel.CaptainHiddenAlone",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidNameLabelCaptainHiddenAloneTest::RunTest(const FString& Parameters)
+{
+	TestFalse(TEXT("true sight hides it"), SolidNameLabel::ShowsCaptainName(true, false, 2));
+	TestFalse(TEXT("stronghold hides it"), SolidNameLabel::ShowsCaptainName(false, true, 2));
+	TestFalse(TEXT("no companions hides it"), SolidNameLabel::ShowsCaptainName(false, false, 0));
+	TestTrue(TEXT("raven sight with a companion shows it"), SolidNameLabel::ShowsCaptainName(false, false, 1));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

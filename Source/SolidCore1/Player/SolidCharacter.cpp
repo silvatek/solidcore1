@@ -297,10 +297,7 @@ void ASolidCharacter::ApplySightPresentation()
 		CharacterMesh->SetCastHiddenShadow(bTrue);
 	}
 
-	if (NameLabelRoot)
-	{
-		NameLabelRoot->SetVisibility(!bTrue, /*bPropagateToChildren=*/true);
-	}
+	UpdateNameLabelVisibility();
 
 	if (bTrue)
 	{
@@ -310,6 +307,34 @@ void ASolidCharacter::ApplySightPresentation()
 	{
 		ApplyRavenSightCamera();
 	}
+}
+
+void ASolidCharacter::UpdateNameLabelVisibility()
+{
+	if (!NameLabelRoot)
+	{
+		return;
+	}
+
+	bool bInStronghold = false;
+	int32 CompanionCount = 0;
+	if (UWorld* World = GetWorld())
+	{
+		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+		{
+			bInStronghold = GameMode->IsInDungeon();
+			for (const TObjectPtr<ASolidCompanionCharacter>& Companion : GameMode->GetCompanions())
+			{
+				if (IsValid(Companion))
+				{
+					++CompanionCount;
+				}
+			}
+		}
+	}
+
+	const bool bShow = SolidNameLabel::ShowsCaptainName(IsTrueSight(), bInStronghold, CompanionCount);
+	NameLabelRoot->SetVisibility(bShow, /*bPropagateToChildren=*/true);
 }
 
 void ASolidCharacter::SetSight(const ESolidSight NewSight)

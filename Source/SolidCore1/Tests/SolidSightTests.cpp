@@ -67,7 +67,7 @@ bool FSolidSightToggleTest::RunTest(const FString& Parameters)
 	Character->ToggleSight();
 	TestFalse(TEXT("raven sight"), Character->IsTrueSight());
 	TestFalse(TEXT("body visible to the owner"), Mesh->bOwnerNoSee);
-	TestTrue(TEXT("nameplate visible"), Nameplate->IsVisible());
+	TestFalse(TEXT("nameplate stays hidden without companions"), Nameplate->IsVisible());
 	TestTrue(TEXT("arm length restored"), FMath::IsNearlyEqual(Boom->TargetArmLength, SavedZoom));
 	TestTrue(TEXT("body yaws toward movement"), Move->bOrientRotationToMovement);
 	TestFalse(TEXT("look yaw does not turn the body"), Character->bUseControllerRotationYaw);

@@ -5,11 +5,12 @@
 #include "SolidDungeonLevel.h"
 
 /**
- * Pointy-top hexes on a dungeon floor, for placing furniture later.
+ * Pointy-top hexes on a stronghold floor, for placing furniture.
+ * Dungeons, fortresses, and towers share this grid. The Meagre Dungeon uses it first.
  * "Across" is flat side to flat side (the horizontal width), not point to point.
  * Only hexes that sit entirely on the floor are kept, so a piece on a cell stays inside the room.
  */
-namespace SolidDungeonGrid
+namespace SolidStrongholdGrid
 {
 	/** 1.2 m, edge to edge. */
 	inline constexpr float FlatToFlatCm = 120.f;

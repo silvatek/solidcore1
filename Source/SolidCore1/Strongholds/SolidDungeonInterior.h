@@ -23,12 +23,16 @@ public:
 
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 	void BuildVisuals();
 
 	/** Feet position inside the room. */
 	FVector GetCaptainSpawnWorld() const;
 	float GetCaptainYaw() const;
+
+	/** Fireplace, bed, and chest on the Meagre floor. No-op without a world. */
+	void PlaceStarterFurnishings();
 
 	UStaticMeshComponent* GetFloorMesh() const { return FloorMesh; }
 	UStaticMeshComponent* GetMouthMesh() const { return MouthMesh; }
@@ -63,7 +67,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<UPointLightComponent> RoomLight;
 
-	/** Yellow hex edges. No collision; furniture placement comes later. */
+	/** Yellow hex edges. No collision; the starter pieces sit on these cells. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<UInstancedStaticMeshComponent> FloorGrid;
 };

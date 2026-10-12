@@ -1,5 +1,7 @@
 #include "SolidDungeonInterior.h"
-#include "SolidDungeonGrid.h"
+#include "SolidFurnishing.h"
+#include "SolidStrongholdFurniture.h"
+#include "SolidStrongholdGrid.h"
 #include "SolidDungeonLevel.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
@@ -9,6 +11,7 @@
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "EngineUtils.h"
 #include "Materials/MaterialInterface.h"
 
 namespace
@@ -36,6 +39,44 @@ namespace
 		{
 			Part->SetMaterial(0, Material);
 		}
+	}
+
+	void DestroyOwnedFurnishings(AActor* Owner)
+	{
+		UWorld* World = Owner ? Owner->GetWorld() : nullptr;
+		if (!World)
+		{
+			return;
+		}
+
+		TArray<ASolidFurnishing*> Owned;
+		for (TActorIterator<ASolidFurnishing> It(World); It; ++It)
+		{
+			ASolidFurnishing* Piece = *It;
+			if (Piece && Piece->GetOwner() == Owner && !Piece->IsActorBeingDestroyed())
+			{
+				Owned.Add(Piece);
+			}
+		}
+		for (ASolidFurnishing* Piece : Owned)
+		{
+			Piece->Destroy();
+		}
+	}
+
+	const SolidStrongholdGrid::FHex* FindFloorHex(
+		const TArray<SolidStrongholdGrid::FHex>& Hexes,
+		const int32 Col,
+		const int32 Row)
+	{
+		for (const SolidStrongholdGrid::FHex& Hex : Hexes)
+		{
+			if (Hex.Col == Col && Hex.Row == Row)
+			{
+				return &Hex;
+			}
+		}
+		return nullptr;
 	}
 }
 
@@ -92,6 +133,12 @@ void ASolidDungeonInterior::BeginPlay()
 	BuildVisuals();
 }
 
+void ASolidDungeonInterior::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	DestroyOwnedFurnishings(this);
+	Super::EndPlay(EndPlayReason);
+}
+
 void ASolidDungeonInterior::BuildVisuals()
 {
 	UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
@@ -134,19 +181,19 @@ void ASolidDungeonInterior::BuildVisuals()
 		FloorGrid->SetStaticMesh(Cube);
 		FloorGrid->ClearInstances();
 		if (UMaterialInterface* Material = SolidMaterials::CreateSolidColor(
-			this, SolidDungeonGrid::LineColor(), TEXT("DungeonHexGrid"), 0.45f))
+			this, SolidStrongholdGrid::LineColor(), TEXT("DungeonHexGrid"), 0.45f))
 		{
 			FloorGrid->SetMaterial(0, Material);
 		}
 
-		TArray<SolidDungeonGrid::FHex> Hexes;
-		TArray<SolidDungeonGrid::FSegment> Segments;
-		SolidDungeonGrid::CollectHexes(SolidDungeonGrid::MeagreFloorBounds(), Hexes);
-		SolidDungeonGrid::CollectSegments(Hexes, Segments);
+		TArray<SolidStrongholdGrid::FHex> Hexes;
+		TArray<SolidStrongholdGrid::FSegment> Segments;
+		SolidStrongholdGrid::CollectHexes(SolidStrongholdGrid::MeagreFloorBounds(), Hexes);
+		SolidStrongholdGrid::CollectSegments(Hexes, Segments);
 
 		const float ShapeSize = 100.f;
-		const float LineZ = SolidDungeonGrid::LineLiftCm + SolidDungeonGrid::LineHeightCm * 0.5f;
-		for (const SolidDungeonGrid::FSegment& Segment : Segments)
+		const float LineZ = SolidStrongholdGrid::LineLiftCm + SolidStrongholdGrid::LineHeightCm * 0.5f;
+		for (const SolidStrongholdGrid::FSegment& Segment : Segments)
 		{
 			const FVector2D Delta = Segment.B - Segment.A;
 			const float Length = Delta.Size();
@@ -161,11 +208,88 @@ void ASolidDungeonInterior::BuildVisuals()
 				Mid,
 				FVector(
 					Length / ShapeSize,
-					SolidDungeonGrid::LineThicknessCm / ShapeSize,
-					SolidDungeonGrid::LineHeightCm / ShapeSize));
+					SolidStrongholdGrid::LineThicknessCm / ShapeSize,
+					SolidStrongholdGrid::LineHeightCm / ShapeSize));
 			FloorGrid->AddInstance(Line);
 		}
 	}
+
+	PlaceStarterFurnishings();
+}
+
+void ASolidDungeonInterior::PlaceStarterFurnishings()
+{
+	UWorld* World = GetWorld();
+	// OnConstruction runs before the actor is initialized. Spawning then re-enters
+	// construction, so the pieces are placed from the post-spawn BuildVisuals and BeginPlay.
+	if (!World || !World->IsGameWorld() || World->bIsTearingDown || !IsActorInitialized())
+	{
+		return;
+	}
+
+	TArray<SolidStrongholdFurniture::FPlacement> Placements;
+	SolidStrongholdFurniture::MeagreStarter(Placements);
+
+	TArray<ASolidFurnishing*> Owned;
+	for (TActorIterator<ASolidFurnishing> It(World); It; ++It)
+	{
+		ASolidFurnishing* Piece = *It;
+		if (Piece && Piece->GetOwner() == this && !Piece->IsActorBeingDestroyed())
+		{
+			Owned.Add(Piece);
+		}
+	}
+	if (Owned.Num() >= Placements.Num())
+	{
+		return;
+	}
+	for (ASolidFurnishing* Piece : Owned)
+	{
+		Piece->Destroy();
+	}
+
+	TArray<SolidStrongholdGrid::FHex> Hexes;
+	SolidStrongholdGrid::CollectHexes(SolidStrongholdGrid::MeagreFloorBounds(), Hexes);
+
+	int32 Placed = 0;
+	for (const SolidStrongholdFurniture::FPlacement& Placement : Placements)
+	{
+		const SolidStrongholdGrid::FHex* Anchor = FindFloorHex(Hexes, Placement.Col, Placement.Row);
+		const SolidStrongholdGrid::FHex* Span = FindFloorHex(Hexes, Placement.SpanCol, Placement.SpanRow);
+		if (!Anchor || !Span)
+		{
+			UE_LOG(LogSolid, Error, TEXT("SolidDungeonInterior: starter furnishing hex (%d,%d) is not on the floor."),
+				Placement.Col, Placement.Row);
+			continue;
+		}
+
+		const FVector2D Mid = (Anchor->Center + Span->Center) * 0.5f;
+		const FVector2D Delta = Span->Center - Anchor->Center;
+		const float Yaw = Delta.IsNearlyZero() ? 0.f : FMath::RadiansToDegrees(FMath::Atan2(Delta.Y, Delta.X));
+		const FTransform ActorXf = GetActorTransform();
+		const FVector WorldPos = ActorXf.TransformPosition(FVector(Mid.X, Mid.Y, 0.f));
+		const FRotator WorldRot = ActorXf.TransformRotation(FRotator(0.f, Yaw, 0.f).Quaternion()).Rotator();
+		const FTransform SpawnXf(WorldRot, WorldPos);
+
+		ASolidFurnishing* Piece = World->SpawnActorDeferred<ASolidFurnishing>(
+			ASolidFurnishing::StaticClass(),
+			SpawnXf,
+			this,
+			nullptr,
+			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+		if (!Piece)
+		{
+			UE_LOG(LogSolid, Error, TEXT("SolidDungeonInterior: failed to spawn a starter furnishing."));
+			continue;
+		}
+
+		Piece->SetKind(Placement.Kind);
+		Piece->FinishSpawning(SpawnXf);
+		Piece->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+		++Placed;
+	}
+
+	UE_LOG(LogSolid, Warning, TEXT("Starter furnishings placed: %d."), Placed);
 }
 
 FVector ASolidDungeonInterior::GetCaptainSpawnWorld() const

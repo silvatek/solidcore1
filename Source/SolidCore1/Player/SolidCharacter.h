@@ -70,6 +70,8 @@ public:
 	/** Move the captain onto a portal landing. Clears a click-walk and a formation drill. */
 	void ArriveByPortal(const FVector& NewLocation, float YawDegrees);
 	void ToggleSight();
+	/** Hide the nameplate in true sight, in a stronghold, and while no companions are out. */
+	void UpdateNameLabelVisibility();
 
 protected:
 	void ApplyNameLabel();

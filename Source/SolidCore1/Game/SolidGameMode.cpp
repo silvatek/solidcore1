@@ -623,6 +623,18 @@ void ASolidGameMode::RefreshFieldedParty()
 
 void ASolidGameMode::EnsureCompanion()
 {
+	struct FRefreshCaptainName
+	{
+		ASolidGameMode* GameMode = nullptr;
+		~FRefreshCaptainName()
+		{
+			if (ASolidCharacter* Captain = FindCaptain(GameMode ? GameMode->GetWorld() : nullptr))
+			{
+				Captain->UpdateNameLabelVisibility();
+			}
+		}
+	} Refresh{this};
+
 	if (IsInDungeon())
 	{
 		for (const TObjectPtr<ASolidCompanionCharacter>& Companion : SpawnedCompanions)

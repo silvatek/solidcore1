@@ -1,5 +1,5 @@
-#include "SolidCaveInterior.h"
-#include "SolidCaveLevel.h"
+#include "SolidDungeonInterior.h"
+#include "SolidDungeonLevel.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
 #include "SolidStrongholds.h"
@@ -37,7 +37,7 @@ namespace
 	}
 }
 
-ASolidCaveInterior::ASolidCaveInterior()
+ASolidDungeonInterior::ASolidDungeonInterior()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
@@ -72,31 +72,31 @@ ASolidCaveInterior::ASolidCaveInterior()
 	RoomLight->SetLightColor(FLinearColor(1.f, 0.82f, 0.55f));
 }
 
-void ASolidCaveInterior::OnConstruction(const FTransform& Transform)
+void ASolidDungeonInterior::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 	BuildVisuals();
 }
 
-void ASolidCaveInterior::BeginPlay()
+void ASolidDungeonInterior::BeginPlay()
 {
 	Super::BeginPlay();
 	BuildVisuals();
 }
 
-void ASolidCaveInterior::BuildVisuals()
+void ASolidDungeonInterior::BuildVisuals()
 {
 	UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
 	if (!Cube)
 	{
-		UE_LOG(LogSolid, Error, TEXT("SolidCaveInterior: missing Engine BasicShapes Cube."));
+		UE_LOG(LogSolid, Error, TEXT("SolidDungeonInterior: missing Engine BasicShapes Cube."));
 		return;
 	}
 
-	const float Depth = SolidCaveLevel::RoomDepthCm;
-	const float Width = SolidCaveLevel::RoomWidthCm;
-	const float Height = SolidCaveLevel::RoomHeightCm;
-	const float Shell = SolidCaveLevel::ShellCm;
+	const float Depth = SolidDungeonLevel::RoomDepthCm;
+	const float Width = SolidDungeonLevel::RoomWidthCm;
+	const float Height = SolidDungeonLevel::RoomHeightCm;
+	const float Shell = SolidDungeonLevel::ShellCm;
 	const float SpanX = Depth + Shell * 2.f;
 	const float SpanY = Width + Shell * 2.f;
 	const FLinearColor Rock = SolidStrongholds::RockColor();
@@ -122,12 +122,12 @@ void ASolidCaveInterior::BuildVisuals()
 	}
 }
 
-FVector ASolidCaveInterior::GetCaptainSpawnWorld() const
+FVector ASolidDungeonInterior::GetCaptainSpawnWorld() const
 {
-	return GetActorTransform().TransformPosition(SolidCaveLevel::CaptainSpawnLocal());
+	return GetActorTransform().TransformPosition(SolidDungeonLevel::CaptainSpawnLocal());
 }
 
-float ASolidCaveInterior::GetCaptainYaw() const
+float ASolidDungeonInterior::GetCaptainYaw() const
 {
-	return SolidCaveLevel::CaptainYawDeg;
+	return SolidDungeonLevel::CaptainYawDeg;
 }

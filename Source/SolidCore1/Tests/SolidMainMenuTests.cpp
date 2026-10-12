@@ -71,7 +71,7 @@ bool FSolidMainMenuEntriesTest::RunTest(const FString& Parameters)
 	TestEqual(
 		TEXT("cave action"),
 		static_cast<uint8>(SolidMainMenu::ActionForItem(Found.Item)),
-		static_cast<uint8>(ESolidMainMenuAction::TravelCave));
+		static_cast<uint8>(ESolidMainMenuAction::TravelDungeon));
 	TestFalse(TEXT("no seventh entry"), SolidMainMenu::FindEntry(6, Found));
 
 	TArray<FSolidMainMenuEntry> InCave;

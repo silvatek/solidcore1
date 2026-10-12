@@ -8,7 +8,7 @@ class USolidWorldMap;
 /**
  * Where each stronghold meets the open world.
  * Pure logic — no actor spawning (safe for automation).
- * The cave interior is a later level; this only places the outside mouth.
+ * The dungeon interior is a separate visit; this only places the outside mouth.
  */
 namespace SolidStrongholds
 {

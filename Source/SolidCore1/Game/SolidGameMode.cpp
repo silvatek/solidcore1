@@ -20,15 +20,16 @@
 #include "Towns/SolidTownBuildings.h"
 #include "Towns/SolidTownSign.h"
 #include "Towns/SolidTownSigns.h"
-#include "Strongholds/SolidCaveEntrance.h"
-#include "Strongholds/SolidCaveInterior.h"
-#include "Strongholds/SolidCaveLevel.h"
+#include "Strongholds/SolidDungeonEntrance.h"
+#include "Strongholds/SolidDungeonInterior.h"
+#include "Strongholds/SolidDungeonLevel.h"
 #include "Strongholds/SolidStrongholds.h"
 #include "SolidGameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Vegetation/SolidForestTrees.h"
 #include "Vegetation/SolidTree.h"
 #include "Components/CapsuleComponent.h"
+#include "Engine/StaticMeshActor.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/Character.h"
@@ -127,9 +128,9 @@ void ASolidGameMode::BeginPlay()
 	EnsureCompanyAndParty();
 	RestoreTravelSession();
 
-	if (IsInCave())
+	if (IsInDungeon())
 	{
-		BeginCaveInterior();
+		BeginDungeonInterior();
 		FinishTravelArrival();
 		return;
 	}
@@ -149,29 +150,29 @@ void ASolidGameMode::BeginPlay()
 	EnsureVegetation();
 }
 
-bool ASolidGameMode::IsInCave() const
+bool ASolidGameMode::IsInDungeon() const
 {
-	if (SolidCaveLevel::RequestsCave(OptionsString))
+	if (SolidDungeonLevel::RequestsDungeon(OptionsString))
 	{
 		return true;
 	}
 	const USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>();
-	return Instance && Instance->IsInCave();
+	return Instance && Instance->IsInDungeon();
 }
 
-void ASolidGameMode::SaveTravelSession(const bool bInCave, const bool bReturnToCaveMouth)
+void ASolidGameMode::SaveTravelSession(const bool bInDungeon, const bool bReturnToDungeonMouth)
 {
 	USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>();
 	if (!Instance)
 	{
-		UE_LOG(LogSolid, Error, TEXT("Cave travel needs USolidGameInstance."));
+		UE_LOG(LogSolid, Error, TEXT("Dungeon travel needs USolidGameInstance."));
 		return;
 	}
 
 	FSolidTravelSession Session;
 	Session.Configuration = Configuration;
-	Session.bInCave = bInCave;
-	Session.bReturnToCaveMouth = bReturnToCaveMouth;
+	Session.bInDungeon = bInDungeon;
+	Session.bReturnToDungeonMouth = bReturnToDungeonMouth;
 	if (Party)
 	{
 		Session.SelectedCompanionIndices = Party->GetSelectedCompanionIndices();
@@ -240,9 +241,9 @@ void ASolidGameMode::ApplyCaptainFromSession()
 	bCaptainTravelApplied = true;
 }
 
-void ASolidGameMode::PlaceCaptainInCave()
+void ASolidGameMode::PlaceCaptainInDungeon()
 {
-	if (bCaptainPlacedInCave || !CaveInterior)
+	if (bCaptainPlacedInDungeon || !DungeonInterior)
 	{
 		return;
 	}
@@ -258,18 +259,19 @@ void ASolidGameMode::PlaceCaptainInCave()
 	{
 		HalfHeight = Capsule->GetScaledCapsuleHalfHeight();
 	}
-	FVector Spawn = CaveInterior->GetCaptainSpawnWorld();
+	FVector Spawn = DungeonInterior->GetCaptainSpawnWorld();
 	Spawn.Z += HalfHeight + 4.f;
-	Captain->ArriveByPortal(Spawn, CaveInterior->GetCaptainYaw());
-	bCaptainPlacedInCave = true;
+	Captain->ArriveByPortal(Spawn, DungeonInterior->GetCaptainYaw());
+	bCaptainPlacedInDungeon = true;
 }
 
 void ASolidGameMode::FinishTravelArrival()
 {
 	ApplyCaptainFromSession();
-	if (IsInCave())
+	if (IsInDungeon())
 	{
-		PlaceCaptainInCave();
+		HideTemplateProps();
+		PlaceCaptainInDungeon();
 	}
 
 	UWorld* World = GetWorld();
@@ -278,7 +280,7 @@ void ASolidGameMode::FinishTravelArrival()
 		return;
 	}
 
-	const bool bDone = bCaptainTravelApplied && (!IsInCave() || bCaptainPlacedInCave);
+	const bool bDone = bCaptainTravelApplied && (!IsInDungeon() || bCaptainPlacedInDungeon);
 	if (bDone)
 	{
 		World->GetTimerManager().ClearTimer(CaptainArrivalTimer);
@@ -292,7 +294,7 @@ void ASolidGameMode::FinishTravelArrival()
 	}
 }
 
-void ASolidGameMode::BeginCaveInterior()
+void ASolidGameMode::BeginDungeonInterior()
 {
 	UWorld* World = GetWorld();
 	if (!World)
@@ -300,48 +302,77 @@ void ASolidGameMode::BeginCaveInterior()
 		return;
 	}
 
-	if (!CaveInterior)
+	if (!DungeonInterior)
 	{
 		FActorSpawnParameters Params;
 		Params.Owner = this;
 		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		CaveInterior = World->SpawnActor<ASolidCaveInterior>(
-			ASolidCaveInterior::StaticClass(),
+		DungeonInterior = World->SpawnActor<ASolidDungeonInterior>(
+			ASolidDungeonInterior::StaticClass(),
 			FVector::ZeroVector,
 			FRotator::ZeroRotator,
 			Params);
-		if (CaveInterior)
+		if (DungeonInterior)
 		{
-			CaveInterior->BuildVisuals();
+			DungeonInterior->BuildVisuals();
 		}
 	}
 
-	PlaceCaptainInCave();
-	UE_LOG(LogSolid, Warning, TEXT("Cave interior loaded. Companions return when the captain leaves."));
+	HideTemplateProps();
+	PlaceCaptainInDungeon();
+	UE_LOG(LogSolid, Warning, TEXT("Dungeon interior loaded. Companions return when the captain leaves."));
 }
 
-void ASolidGameMode::TravelToCave()
+void ASolidGameMode::HideTemplateProps()
 {
 	UWorld* World = GetWorld();
-	if (!World || IsInCave())
+	if (!World)
 	{
 		return;
 	}
-	SaveTravelSession(/*bInCave=*/true, /*bReturnToCaveMouth=*/false);
-	UGameplayStatics::OpenLevel(World, FName(SolidCaveLevel::WorldMapPath), true, SolidCaveLevel::EnterOptions());
+
+	// Lvl_ThirdPerson still contains its playground. The colorway blocks
+	// (several of them green) stand inside the room we build at the origin.
+	int32 Hidden = 0;
+	for (TActorIterator<AStaticMeshActor> It(World); It; ++It)
+	{
+		AStaticMeshActor* Prop = *It;
+		if (!IsValid(Prop) || Prop->IsHidden())
+		{
+			continue;
+		}
+		Prop->SetActorHiddenInGame(true);
+		Prop->SetActorEnableCollision(false);
+		++Hidden;
+	}
+	if (Hidden > 0)
+	{
+		UE_LOG(LogSolid, Warning, TEXT("Hid %d template blocks in the dungeon."), Hidden);
+	}
+}
+
+void ASolidGameMode::TravelToDungeon()
+{
+	UWorld* World = GetWorld();
+	if (!World || IsInDungeon())
+	{
+		return;
+	}
+	SaveTravelSession(/*bInDungeon=*/true, /*bReturnToDungeonMouth=*/false);
+	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::EnterOptions());
 }
 
 void ASolidGameMode::TravelToWorld()
 {
 	UWorld* World = GetWorld();
-	if (!World || !IsInCave())
+	if (!World || !IsInDungeon())
 	{
 		return;
 	}
 	// Companions are spawned again once this world is the open world.
 	// The party builder is not opened here.
-	SaveTravelSession(/*bInCave=*/false, /*bReturnToCaveMouth=*/true);
-	UGameplayStatics::OpenLevel(World, FName(SolidCaveLevel::WorldMapPath), true, SolidCaveLevel::LeaveOptions());
+	SaveTravelSession(/*bInDungeon=*/false, /*bReturnToDungeonMouth=*/true);
+	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::LeaveOptions());
 }
 
 void ASolidGameMode::RefreshEvents()
@@ -352,7 +383,7 @@ void ASolidGameMode::RefreshEvents()
 		return;
 	}
 
-	if (IsInCave())
+	if (IsInDungeon())
 	{
 		return;
 	}
@@ -592,7 +623,7 @@ void ASolidGameMode::RefreshFieldedParty()
 
 void ASolidGameMode::EnsureCompanion()
 {
-	if (IsInCave())
+	if (IsInDungeon())
 	{
 		for (const TObjectPtr<ASolidCompanionCharacter>& Companion : SpawnedCompanions)
 		{
@@ -735,7 +766,7 @@ void ASolidGameMode::EnsureVegetation()
 	{
 		return !IsValid(Sign);
 	});
-	SpawnedCaveEntrances.RemoveAll([](const TObjectPtr<ASolidCaveEntrance>& Entrance)
+	SpawnedDungeonEntrances.RemoveAll([](const TObjectPtr<ASolidDungeonEntrance>& Entrance)
 	{
 		return !IsValid(Entrance);
 	});
@@ -764,11 +795,11 @@ void ASolidGameMode::EnsureVegetation()
 		}
 	}
 
-	if (SpawnedCaveEntrances.Num() == 0)
+	if (SpawnedDungeonEntrances.Num() == 0)
 	{
-		for (TActorIterator<ASolidCaveEntrance> It(World); It; ++It)
+		for (TActorIterator<ASolidDungeonEntrance> It(World); It; ++It)
 		{
-			SpawnedCaveEntrances.Add(*It);
+			SpawnedDungeonEntrances.Add(*It);
 		}
 	}
 
@@ -909,7 +940,7 @@ void ASolidGameMode::EnsureVegetation()
 		UE_LOG(LogSolid, Warning, TEXT("Spawned %d town signs"), Spawned);
 	}
 
-	if (SpawnedCaveEntrances.Num() == 0)
+	if (SpawnedDungeonEntrances.Num() == 0)
 	{
 		int32 Spawned = 0;
 		for (const SolidStrongholds::FEntrance& Entrance : CaveEntrances)
@@ -918,8 +949,8 @@ void ASolidGameMode::EnsureVegetation()
 			const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
 			SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
 
-			ASolidCaveEntrance* Cave = World->SpawnActor<ASolidCaveEntrance>(
-				ASolidCaveEntrance::StaticClass(),
+			ASolidDungeonEntrance* Cave = World->SpawnActor<ASolidDungeonEntrance>(
+				ASolidDungeonEntrance::StaticClass(),
 				SpawnLoc,
 				FRotator(0.f, Entrance.FacingYawDeg, 0.f),
 				SpawnParams);
@@ -929,7 +960,7 @@ void ASolidGameMode::EnsureVegetation()
 			}
 
 			Cave->BuildVisuals();
-			SpawnedCaveEntrances.Add(Cave);
+			SpawnedDungeonEntrances.Add(Cave);
 			++Spawned;
 		}
 

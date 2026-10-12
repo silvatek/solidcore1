@@ -24,7 +24,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - **Company roster** — the company lists Sam, Alex, Max, Morgan, and Quinn. Character meshes are Viking (the captain), Assassin, and Blacksmith. Sam, Morgan, and Quinn use Assassin. Alex and Max use Blacksmith. Each companion also has a vocation: Warrior, Rogue, Mage, or Cleric. Sam is a Rogue and Morgan is a Mage. The nameplate adds that initial in brackets, such as Sam (R). The party remembers who is selected from that list (Sam and Alex to start). Only as many as the current party limit walk with the captain.
 - **Battle plans** — Company catalog and Party assigned slots. F1 Line, F2 Column, F3 Tight mob, F4 Loose mob, F5 Parade (companions in front, facing the captain, far enough to stay in his view). F1–F8 select; HUD battle-plan panel. The square-walk formation drill is the main menu's Test Drill entry and still cycles F1–F4.
 - **World + biomes** — 64×64 `WorldMap.txt` overlay (Sea, Grassland, Town, Mountain, Forest, Desert, River, Cave) scaled onto a 513×513 TerrainPoint map (1024 m side, 200 cm spacing). That doubles the original 257-point / 512 m world, and each ASCII cell doubles from 8 m to 16 m. Numbered locations are towns: `0` Iglin (start), `1` Relion, `2` Kanfold, `3` Visolar, `4` Jethan. The captain starts at location 0. Per-biome height shelf (Sea/River 0, Mountain +10 m, else +1 m). Darker mountain grey. `C` is the cave stronghold and uses the Mountain shelf.
-- **Cave stronghold** — the company's first base, a Meagre Dungeon. A stronghold has a type (Dungeon, Fortress, Tower) and a size (Meagre, Humble, Average, Impressive, Grand, Stately, Imperious). A stone mouth (dark opening, rock jambs and lintel) stands on the grassland side of the cliff between the `C` cell and the grass next to it, facing that grass. **F10, 6 Enter cave** loads the interior: a closed rock chamber, captain only. Companions are removed with the open world and spawn again beside him at the mouth on **Leave cave**. The party builder stays closed. Clicking the mouth comes later.
+- **Cave stronghold** — the company's first base, a Meagre Dungeon. A stronghold has a type (Dungeon, Fortress, Tower) and a size (Meagre, Humble, Average, Impressive, Grand, Stately, Imperious). A stone mouth (dark opening, rock jambs and lintel) stands on the grassland side of the cliff between the `C` cell and the grass next to it, facing that grass. **F10, 6 Enter cave** loads the interior: a closed rock chamber, captain only. The same dungeon code will serve every size; Meagre is the cave. Companions are removed with the open world and spawn again beside him at the mouth on **Leave cave**. The third-person playground stays on that map, and its colorway blocks (the green shapes, and the other colors) are hidden for the visit. The party builder stays closed. Clicking the mouth comes later.
 - **No starter monolith** — the grey slab that marked the start-town centroid is gone. Location 0 still sets the captain spawn and the building clear radius.
 - **Fog follows the player** — the map starts fully fogged. After the captain is placed at location 0, exploration fog is centered on the pawn, not on that cell. The two match only because that is where the pawn stands. Curtains are 110 m (half) and 160 m (full), above the 50 m max zoom. The camera boom shortens so it cannot sit above terrain with fog greater than 0.
 - **Procedural terrain** — streamed chunks around the pawn, Fab grassland material, FlatCol tints for other biomes. Exploration fog-of-war (25 m / 50 m bands, marching-squares curtains) clears from the trail, not the camera.
@@ -338,9 +338,9 @@ Source/
     Strongholds/
       SolidStronghold.h       # Type (Dungeon, Fortress, Tower) and size (Meagre … Imperious)
       SolidStrongholds.*      # Mouth on the grassland face of a C cell
-      SolidCaveEntrance.*     # Rock frame and solid dark opening
-      SolidCaveLevel.h        # Travel options; captain only; room bounds
-      SolidCaveInterior.*     # Closed rock chamber for the Meagre Dungeon
+      SolidDungeonEntrance.*  # Rock frame and solid dark opening
+      SolidDungeonLevel.h        # Travel options; captain only; room bounds
+      SolidDungeonInterior.*     # Closed rock chamber shared by dungeon sizes
     HUD/
       SolidHUD.*              # Debug HUD, battle-plan panel, menu and credits drawing
       SolidHudTheme.h         # Oak-and-bronze frame
@@ -365,7 +365,7 @@ Source/
       SolidTownSignTests.cpp
       SolidTownsTests.cpp
       SolidStrongholdTests.cpp
-      SolidCaveLevelTests.cpp
+      SolidDungeonLevelTests.cpp
       SolidGameModeTests.cpp
       SolidCompanionTests.cpp
       SolidTerrainStreamerTests.cpp

@@ -1,6 +1,6 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "SolidCaveEntrance.h"
+#include "SolidDungeonEntrance.h"
 #include "SolidStronghold.h"
 #include "SolidStrongholds.h"
 #include "SolidWorldMap.h"
@@ -268,13 +268,13 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidCaveEntranceVisualsTest,
-	"SolidCore1.Stronghold.CaveEntranceVisuals",
+	FSolidDungeonEntranceVisualsTest,
+	"SolidCore1.Stronghold.DungeonEntranceVisuals",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 
-bool FSolidCaveEntranceVisualsTest::RunTest(const FString& Parameters)
+bool FSolidDungeonEntranceVisualsTest::RunTest(const FString& Parameters)
 {
-	ASolidCaveEntrance* Entrance = NewObject<ASolidCaveEntrance>();
+	ASolidDungeonEntrance* Entrance = NewObject<ASolidDungeonEntrance>();
 	TestNotNull(TEXT("entrance"), Entrance);
 	Entrance->BuildVisuals();
 

@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "SolidCaveEntrance.generated.h"
+#include "SolidDungeonEntrance.generated.h"
 
 class UStaticMeshComponent;
 
@@ -12,12 +12,12 @@ class UStaticMeshComponent;
  * Local +X faces the grass.
  */
 UCLASS()
-class SOLIDCORE1_API ASolidCaveEntrance : public AActor
+class SOLIDCORE1_API ASolidDungeonEntrance : public AActor
 {
 	GENERATED_BODY()
 
 public:
-	ASolidCaveEntrance();
+	ASolidDungeonEntrance();
 
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;

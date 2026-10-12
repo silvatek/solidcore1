@@ -1,5 +1,5 @@
 #include "SolidTerrainStreamer.h"
-#include "SolidCaveLevel.h"
+#include "SolidDungeonLevel.h"
 #include "SolidGameInstance.h"
 #include "SolidStrongholds.h"
 #include "SolidTerrainChunk.h"
@@ -567,7 +567,7 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 	{
 		if (USolidGameInstance* Instance = World->GetGameInstance<USolidGameInstance>())
 		{
-			if (Instance->WantsCaveMouthSpawn() && TerrainMap->GetWorldMap())
+			if (Instance->WantsDungeonMouthSpawn() && TerrainMap->GetWorldMap())
 			{
 				TArray<SolidStrongholds::FEntrance> Entrances;
 				SolidStrongholds::CollectEntrances(
@@ -578,10 +578,10 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 				if (Entrances.Num() > 0)
 				{
 					PawnXY = Entrances[0].WorldXY;
-					FacingYawDeg = SolidCaveLevel::CaptainReturnYaw(Entrances[0].FacingYawDeg);
+					FacingYawDeg = SolidDungeonLevel::CaptainReturnYaw(Entrances[0].FacingYawDeg);
 					bHaveYaw = true;
 					bCaveMouth = true;
-					Instance->ClearCaveMouthSpawn();
+					Instance->ClearDungeonMouthSpawn();
 				}
 			}
 		}

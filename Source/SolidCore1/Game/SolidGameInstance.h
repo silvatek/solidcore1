@@ -2,10 +2,10 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
-#include "SolidCaveLevel.h"
+#include "SolidDungeonLevel.h"
 #include "SolidGameInstance.generated.h"
 
-/** Holds the captain's trip across the open world and the cave interior. */
+/** Holds the captain's trip across the open world and a dungeon interior. */
 UCLASS()
 class SOLIDCORE1_API USolidGameInstance : public UGameInstance
 {
@@ -16,9 +16,9 @@ public:
 	bool HasSession() const { return bHasSession; }
 	const FSolidTravelSession& GetSession() const { return Session; }
 
-	bool IsInCave() const { return bHasSession && Session.bInCave; }
-	bool WantsCaveMouthSpawn() const { return bHasSession && Session.bReturnToCaveMouth; }
-	void ClearCaveMouthSpawn();
+	bool IsInDungeon() const { return bHasSession && Session.bInDungeon; }
+	bool WantsDungeonMouthSpawn() const { return bHasSession && Session.bReturnToDungeonMouth; }
+	void ClearDungeonMouthSpawn();
 
 private:
 	bool bHasSession = false;

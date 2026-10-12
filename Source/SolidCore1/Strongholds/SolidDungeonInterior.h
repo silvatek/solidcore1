@@ -2,22 +2,23 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "SolidCaveInterior.generated.h"
+#include "SolidDungeonInterior.generated.h"
 
 class UPointLightComponent;
 class UStaticMeshComponent;
 
 /**
- * Meagre Dungeon chamber. A closed rock room with the mouth on one wall.
+ * Dungeon chamber shared by every size. Meagre, the cave, uses the room as built.
+ * A closed rock room with the mouth on one wall.
  * The captain arrives alone. Clicking the mouth to leave is later; F10 leaves.
  */
 UCLASS()
-class SOLIDCORE1_API ASolidCaveInterior : public AActor
+class SOLIDCORE1_API ASolidDungeonInterior : public AActor
 {
 	GENERATED_BODY()
 
 public:
-	ASolidCaveInterior();
+	ASolidDungeonInterior();
 
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;

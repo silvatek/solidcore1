@@ -1,4 +1,4 @@
-#include "SolidCaveEntrance.h"
+#include "SolidDungeonEntrance.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
 #include "SolidStrongholds.h"
@@ -35,7 +35,7 @@ namespace
 	}
 }
 
-ASolidCaveEntrance::ASolidCaveEntrance()
+ASolidDungeonEntrance::ASolidDungeonEntrance()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
@@ -57,24 +57,24 @@ ASolidCaveEntrance::ASolidCaveEntrance()
 	}
 }
 
-void ASolidCaveEntrance::OnConstruction(const FTransform& Transform)
+void ASolidDungeonEntrance::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 	BuildVisuals();
 }
 
-void ASolidCaveEntrance::BeginPlay()
+void ASolidDungeonEntrance::BeginPlay()
 {
 	Super::BeginPlay();
 	BuildVisuals();
 }
 
-void ASolidCaveEntrance::BuildVisuals()
+void ASolidDungeonEntrance::BuildVisuals()
 {
 	UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
 	if (!Cube)
 	{
-		UE_LOG(LogSolid, Error, TEXT("SolidCaveEntrance: missing Engine BasicShapes Cube."));
+		UE_LOG(LogSolid, Error, TEXT("SolidDungeonEntrance: missing Engine BasicShapes Cube."));
 		return;
 	}
 

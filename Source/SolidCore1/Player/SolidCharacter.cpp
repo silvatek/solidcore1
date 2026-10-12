@@ -581,18 +581,18 @@ void ASolidCharacter::MainMenuConfirm()
 		}
 		HUD->OpenPartyBuilder();
 		break;
-	case ESolidMainMenuAction::TravelCave:
+	case ESolidMainMenuAction::TravelDungeon:
 		if (UWorld* World = GetWorld())
 		{
 			if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 			{
-				if (GameMode->IsInCave())
+				if (GameMode->IsInDungeon())
 				{
 					GameMode->TravelToWorld();
 				}
 				else
 				{
-					GameMode->TravelToCave();
+					GameMode->TravelToDungeon();
 				}
 			}
 		}

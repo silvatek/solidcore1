@@ -6,7 +6,7 @@ void USolidGameInstance::Capture(const FSolidTravelSession& InSession)
 	bHasSession = true;
 }
 
-void USolidGameInstance::ClearCaveMouthSpawn()
+void USolidGameInstance::ClearDungeonMouthSpawn()
 {
-	Session.bReturnToCaveMouth = false;
+	Session.bReturnToDungeonMouth = false;
 }

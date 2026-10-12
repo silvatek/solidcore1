@@ -8,8 +8,8 @@
 #include "SolidGameMode.generated.h"
 
 class ASolidBuilding;
-class ASolidCaveEntrance;
-class ASolidCaveInterior;
+class ASolidDungeonEntrance;
+class ASolidDungeonInterior;
 class ASolidCompanionCharacter;
 class ASolidTownSign;
 class ASolidTree;
@@ -110,13 +110,13 @@ public:
 	bool TeleportPartyToTown(int32 TownId);
 
 	/** True after F10 Enter cave, until F10 Leave cave. */
-	bool IsInCave() const;
+	bool IsInDungeon() const;
 
-	/** Unload the open world (companions included) and load the cave interior. */
-	void TravelToCave();
+	/** Unload the open world (companions included) and load the dungeon interior. */
+	void TravelToDungeon();
 
 	/**
-	 * Load the open world again and stand the captain at the cave mouth.
+	 * Load the open world again and stand the captain at the dungeon mouth.
 	 * Companions spawn beside him. The party builder stays closed.
 	 */
 	void TravelToWorld();
@@ -134,13 +134,15 @@ protected:
 	void RefreshEvents();
 	void EnsureCompanion();
 	void EnsureVegetation();
-	void SaveTravelSession(bool bInCave, bool bReturnToCaveMouth);
+	void SaveTravelSession(bool bInDungeon, bool bReturnToDungeonMouth);
 	void RestoreTravelSession();
-	void BeginCaveInterior();
-	/** Sight, title, and the cave spawn. Retries while the pawn is still absent. */
+	void BeginDungeonInterior();
+	/** Sight, title, and the dungeon spawn. Retries while the pawn is still absent. */
 	void FinishTravelArrival();
 	void ApplyCaptainFromSession();
-	void PlaceCaptainInCave();
+	void PlaceCaptainInDungeon();
+	/** The third-person playground blocks sit inside the room. Hide them for this visit. */
+	void HideTemplateProps();
 
 	ASolidCompanionCharacter* SpawnCompanion(
 		UWorld* World,
@@ -173,14 +175,14 @@ protected:
 	TArray<TObjectPtr<ASolidTownSign>> SpawnedTownSigns;
 
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<ASolidCaveEntrance>> SpawnedCaveEntrances;
+	TArray<TObjectPtr<ASolidDungeonEntrance>> SpawnedDungeonEntrances;
 
 	FTimerHandle EventRefreshTimer;
 	FTimerHandle VegetationSpawnTimer;
 	FTimerHandle CaptainArrivalTimer;
 
-	/** Interior spawned for this cave visit. The world keeps the actor alive. */
-	ASolidCaveInterior* CaveInterior = nullptr;
+	/** Interior spawned for this dungeon visit. The world keeps the actor alive. */
+	ASolidDungeonInterior* DungeonInterior = nullptr;
 	bool bCaptainTravelApplied = false;
-	bool bCaptainPlacedInCave = false;
+	bool bCaptainPlacedInDungeon = false;
 };

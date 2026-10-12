@@ -355,6 +355,8 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("trail map"), Trail);
 	if (!RoadTestLoad(*this, *Trail, RoadTestGrid({
 		{ 4, 12, TEXT('0') },
+		{ 4, 14, TEXT('T') },
+		{ 4, 16, TEXT('Z') },
 		{ 7, 12, TEXT('F') },
 		{ 12, 12, TEXT('1') },
 	}, TEXT("Road: 0 -> 1, trail\n"))))
@@ -367,18 +369,35 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("marker under the trail stays grass"),
 		static_cast<uint8>(Trail->GetBiomeAtCell(6, 12)),
 		static_cast<uint8>(ESolidBiome::Grassland));
-	TestEqual(TEXT("trail centre uses the town texture"),
+	TestEqual(TEXT("trail centre uses the road texture"),
 		static_cast<uint8>(Trail->SampleBiome(Grass.X, Grass.Y, RoadTestMin, RoadTestMax)),
-		static_cast<uint8>(ESolidBiome::Town));
-	TestEqual(TEXT("trail rim is town"),
+		static_cast<uint8>(ESolidBiome::Road));
+	TestEqual(TEXT("trail rim is road"),
 		static_cast<uint8>(Trail->SampleBiome(Grass.X, Grass.Y + 50.f, RoadTestMin, RoadTestMax)),
-		static_cast<uint8>(ESolidBiome::Town));
+		static_cast<uint8>(ESolidBiome::Road));
 	TestEqual(TEXT("past the trail is grass"),
 		static_cast<uint8>(Trail->SampleBiome(Grass.X, Grass.Y + 70.f, RoadTestMin, RoadTestMax)),
 		static_cast<uint8>(ESolidBiome::Grassland));
-	TestEqual(TEXT("forest on the trail uses the town texture"),
+	TestEqual(TEXT("forest on the trail uses the road texture"),
 		static_cast<uint8>(Trail->SampleBiome(Forest.X, Forest.Y, RoadTestMin, RoadTestMax)),
-		static_cast<uint8>(ESolidBiome::Town));
+		static_cast<uint8>(ESolidBiome::Road));
+	TestFalse(TEXT("grass under a trail is not a town marker"),
+		Trail->IsMarkedTown(Grass.X, Grass.Y, RoadTestMin, RoadTestMax));
+	const FVector2D TownDigit = RoadTestCenter(*Trail, 4, 12);
+	const FVector2D TownLetter = RoadTestCenter(*Trail, 4, 14);
+	const FVector2D LegacyTown = RoadTestCenter(*Trail, 4, 16);
+	TestTrue(TEXT("a location digit is a town"),
+		Trail->IsMarkedTown(TownDigit.X, TownDigit.Y, RoadTestMin, RoadTestMax));
+	TestTrue(TEXT("T is a town"),
+		Trail->IsMarkedTown(TownLetter.X, TownLetter.Y, RoadTestMin, RoadTestMax));
+	TestTrue(TEXT("Z is a town"),
+		Trail->IsMarkedTown(LegacyTown.X, LegacyTown.Y, RoadTestMin, RoadTestMax));
+	const FLinearColor RoadBrown = USolidWorldMap::DefaultColorForBiome(ESolidBiome::Road);
+	const FLinearColor TownBrown = USolidWorldMap::DefaultColorForBiome(ESolidBiome::Town);
+	TestTrue(TEXT("road brown sits near the town brown"),
+		RoadBrown.R > RoadBrown.G && RoadBrown.G > RoadBrown.B
+		&& TownBrown.R > TownBrown.G && TownBrown.G > TownBrown.B
+		&& FMath::Abs(RoadBrown.R - TownBrown.R) < 0.2f);
 
 	USolidWorldMap* Cave = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("cave map"), Cave);
@@ -393,6 +412,8 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the cave cell keeps the mountain shelf"),
 		static_cast<uint8>(Cave->SampleBiome(CaveCell.X, CaveCell.Y, RoadTestMin, RoadTestMax)),
 		static_cast<uint8>(ESolidBiome::Mountain));
+	TestFalse(TEXT("the cave is not a town"),
+		Cave->IsMarkedTown(CaveCell.X, CaveCell.Y, RoadTestMin, RoadTestMax));
 
 	USolidWorldMap* Crossing = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("crossing map"), Crossing);
@@ -410,9 +431,9 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the channel stays river"),
 		static_cast<uint8>(Crossing->SampleBiome(River.X, River.Y, RoadTestMin, RoadTestMax)),
 		static_cast<uint8>(ESolidBiome::River));
-	TestEqual(TEXT("the bank of a crossing uses the town texture"),
+	TestEqual(TEXT("the bank of a crossing uses the road texture"),
 		static_cast<uint8>(Crossing->SampleBiome(River.X + 250.f, River.Y, RoadTestMin, RoadTestMax)),
-		static_cast<uint8>(ESolidBiome::Town));
+		static_cast<uint8>(ESolidBiome::Road));
 
 	USolidWorldMap* Highway = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("highway map"), Highway);
@@ -426,7 +447,7 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	const FVector2D Wide = RoadTestCenter(*Highway, 10, 20);
 	TestEqual(TEXT("inside a highway"),
 		static_cast<uint8>(Highway->SampleBiome(Wide.X, Wide.Y + 190.f, RoadTestMin, RoadTestMax)),
-		static_cast<uint8>(ESolidBiome::Town));
+		static_cast<uint8>(ESolidBiome::Road));
 	TestEqual(TEXT("outside a highway"),
 		static_cast<uint8>(Highway->SampleBiome(Wide.X, Wide.Y + 220.f, RoadTestMin, RoadTestMax)),
 		static_cast<uint8>(ESolidBiome::Grassland));

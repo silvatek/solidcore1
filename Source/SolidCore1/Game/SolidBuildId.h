@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0214")
+#define SOLID_BUILD_ID TEXT("SC1-0215")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Trails and tracks stay off mountains and the sea")
+#define SOLID_BUILD_NOTE TEXT("Buildings stay in marked towns")
 #endif

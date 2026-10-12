@@ -5,7 +5,7 @@
 class USolidTerrainMap;
 
 /**
- * Pack random non-overlapping building footprints onto Town TerrainPoints.
+ * Pack random non-overlapping building footprints onto marked town cells.
  * Pure logic — no actor spawning (safe for automation).
  */
 namespace SolidTownBuildings
@@ -44,7 +44,8 @@ namespace SolidTownBuildings
 	};
 
 	/**
-	 * Fill OutPlacements with non-overlapping buildings inside Town biomes.
+	 * Fill OutPlacements with non-overlapping buildings on WorldMap town markers.
+	 * T, Z, and location digits count. A road strip does not, even where it is brown.
 	 * Deterministic for a given map + seed + params.
 	 * ExtraClearCenters use the same radius as the start-town centroid (welcome signs).
 	 * @return Number of placements written.

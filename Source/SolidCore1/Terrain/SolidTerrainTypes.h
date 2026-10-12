@@ -15,6 +15,7 @@ enum class ESolidBiome : uint8
 	Swamp UMETA(DisplayName = "Swamp"),
 	Sea UMETA(DisplayName = "Sea"),
 	River UMETA(DisplayName = "River"),
+	Road UMETA(DisplayName = "Road"),
 };
 
 /** One cell in the world simulation grid (gameplay + heightfield source). */
@@ -61,6 +62,7 @@ namespace SolidTerrainTypes
 		case ESolidBiome::Swamp: return TEXT("Swamp");
 		case ESolidBiome::Sea: return TEXT("Sea");
 		case ESolidBiome::River: return TEXT("River");
+		case ESolidBiome::Road: return TEXT("Road");
 		default: return TEXT("Unknown");
 		}
 	}
@@ -68,6 +70,7 @@ namespace SolidTerrainTypes
 	/**
 	 * Vertical shelf added to TerrainPoint.Height after biome assignment (cm).
 	 * Sea/River stay at the noise surface; Mountain rises 10m; other biomes +1m.
+	 * Road shares that land shelf, so a strip does not cut a trench.
 	 */
 	FORCEINLINE float BiomeHeightOffsetCm(ESolidBiome Biome)
 	{
@@ -78,6 +81,8 @@ namespace SolidTerrainTypes
 			return 0.f;
 		case ESolidBiome::Mountain:
 			return 1000.f;
+		case ESolidBiome::Road:
+			return 100.f;
 		default:
 			return 100.f;
 		}

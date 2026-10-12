@@ -37,6 +37,7 @@ bool USolidWorldMap::BiomeFromName(const FString& Name, ESolidBiome& OutBiome)
 	static const ESolidBiome AllBiomes[] = {
 		ESolidBiome::Grassland, ESolidBiome::Forest, ESolidBiome::Mountain, ESolidBiome::Town,
 		ESolidBiome::Desert, ESolidBiome::Swamp, ESolidBiome::Sea, ESolidBiome::River,
+		ESolidBiome::Road,
 	};
 	for (const ESolidBiome Biome : AllBiomes)
 	{
@@ -61,6 +62,7 @@ FLinearColor USolidWorldMap::DefaultColorForBiome(const ESolidBiome Biome)
 	case ESolidBiome::Swamp: return FLinearColor(0.22f, 0.32f, 0.18f);
 	case ESolidBiome::Sea: return FLinearColor(0.15f, 0.35f, 0.75f);
 	case ESolidBiome::River: return FLinearColor(0.20f, 0.48f, 0.85f);
+	case ESolidBiome::Road: return FLinearColor(0.52f, 0.38f, 0.20f);
 	default: return FLinearColor(0.4f, 0.4f, 0.4f);
 	}
 }
@@ -330,6 +332,7 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 	static const ESolidBiome AllBiomes[] = {
 		ESolidBiome::Grassland, ESolidBiome::Forest, ESolidBiome::Mountain, ESolidBiome::Town,
 		ESolidBiome::Desert, ESolidBiome::Swamp, ESolidBiome::Sea, ESolidBiome::River,
+		ESolidBiome::Road,
 	};
 	for (const ESolidBiome Biome : AllBiomes)
 	{
@@ -583,6 +586,23 @@ bool USolidWorldMap::IsOnRoad(
 	return false;
 }
 
+bool USolidWorldMap::IsMarkedTown(
+	const float WorldX,
+	const float WorldY,
+	const FVector2D WorldMinXY,
+	const FVector2D WorldMaxXY) const
+{
+	int32 MapX = 0;
+	int32 MapY = 0;
+	if (!WorldXYToCell(WorldX, WorldY, WorldMinXY, WorldMaxXY, MapX, MapY))
+	{
+		return false;
+	}
+
+	const TCHAR Marker = GetMarkerAtCell(MapX, MapY);
+	return Marker == TEXT('T') || Marker == TEXT('Z') || FChar::IsDigit(Marker);
+}
+
 ESolidBiome USolidWorldMap::SampleBiome(
 	const float WorldX,
 	const float WorldY,
@@ -636,14 +656,14 @@ ESolidBiome USolidWorldMap::SampleBiome(
 		}
 	}
 
-	// Town and grassland share a shelf, so the road is a texture change there.
+	// The road shares the grassland shelf, so this is a texture change there.
 	// Mountain and sea keep their shelves. The channel itself stays water.
 	if (Ground != ESolidBiome::River
 		&& IsOnRoad(WorldX, WorldY, WorldMinXY, WorldMaxXY)
 		&& SolidTerrainTypes::BiomeHeightOffsetCm(Ground)
-			== SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Town))
+			== SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Road))
 	{
-		return ESolidBiome::Town;
+		return ESolidBiome::Road;
 	}
 	return Ground;
 }

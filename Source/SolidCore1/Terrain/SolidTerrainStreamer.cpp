@@ -456,6 +456,7 @@ void ASolidTerrainStreamer::CollectBiomeMaterials(
 		ESolidBiome::Swamp,
 		ESolidBiome::Sea,
 		ESolidBiome::River,
+		ESolidBiome::Road,
 	};
 
 	OutMaterials.Reset();

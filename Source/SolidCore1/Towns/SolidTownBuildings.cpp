@@ -34,10 +34,17 @@ int32 SolidTownBuildings::CollectPlacements(
 	TownIndices.Reserve(Points.Num() / 16);
 	for (int32 Index = 0; Index < Points.Num(); ++Index)
 	{
-		if (Points[Index].Biome == ESolidBiome::Town)
+		const FSolidTerrainPoint& Point = Points[Index];
+		if (Point.Biome != ESolidBiome::Town)
 		{
-			TownIndices.Add(Index);
+			continue;
 		}
+		// Roads share a brown with the town, but the marker on the map is the town.
+		if (bMapLoaded && !WorldMap->IsMarkedTown(Point.X, Point.Y, WorldMin, WorldMax))
+		{
+			continue;
+		}
+		TownIndices.Add(Index);
 	}
 	if (TownIndices.Num() == 0)
 	{

@@ -6,6 +6,7 @@
 #include "SolidTerrainTestHelpers.h"
 #include "SolidTownBuildings.h"
 #include "SolidTree.h"
+#include "SolidWorldMap.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 
@@ -136,6 +137,11 @@ bool FSolidTownBuildingPackTest::RunTest(const FString& Parameters)
 	}
 	TestTrue(TEXT("map has some town cells"), TownPoints > 0);
 
+	USolidWorldMap* WorldMap = Map->GetWorldMap();
+	TestNotNull(TEXT("world map"), WorldMap);
+	const FVector2D WorldMin = Map->GetWorldMinXY();
+	const FVector2D WorldMax = Map->GetWorldMaxXY();
+
 	SolidTownBuildings::FScatterParams Params;
 	Params.Density = 0.8f;
 	Params.MaxBuildings = 64;
@@ -176,6 +182,13 @@ bool FSolidTownBuildingPackTest::RunTest(const FString& Parameters)
 			}
 		}
 		TestTrue(TEXT("placement matches a Town grid point"), bMatchesTownNode);
+		if (WorldMap)
+		{
+			TestTrue(TEXT("placement sits on a marked town"),
+				WorldMap->IsMarkedTown(A.CenterXY.X, A.CenterXY.Y, WorldMin, WorldMax));
+			TestFalse(TEXT("placement stays off the road strip"),
+				WorldMap->IsOnRoad(A.CenterXY.X, A.CenterXY.Y, WorldMin, WorldMax));
+		}
 
 		if (bHasTownCenter)
 		{

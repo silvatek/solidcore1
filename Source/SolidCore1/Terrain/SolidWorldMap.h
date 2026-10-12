@@ -77,8 +77,8 @@ public:
 	 * File row 0 → north (max Y). File column 0 → east (max X) so the text
 	 * matches the in-world layout when viewed with north up.
 	 * An R cell is a 4 m river. The dry part of that square uses the neighboring biome.
-	 * A solved road paints its strip with the town texture. River water stays river,
-	 * and a mountain or the sea keeps its own shelf.
+	 * A solved road paints its strip as Road, a brown close to the town colour.
+	 * River water stays river, and a mountain or the sea keeps its own shelf.
 	 */
 	ESolidBiome SampleBiome(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 
@@ -87,6 +87,9 @@ public:
 
 	/** True when the point lies on a solved road strip. Does not change the biome by itself. */
 	bool IsOnRoad(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
+
+	/** True when this cell is marked T, Z, or a location digit. A road strip is not a town. */
+	bool IsMarkedTown(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 
 	/** Display / material color from the key (or built-in defaults). */
 	FLinearColor GetBiomeColor(ESolidBiome Biome) const;

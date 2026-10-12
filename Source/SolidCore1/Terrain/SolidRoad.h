@@ -11,7 +11,8 @@ class USolidWorldMap;
  * Trails are 1 m, tracks 2 m, roads 3 m, highways 4 m.
  * Every route stays off mountains and the sea. Roads and highways also stay off
  * forest and desert, and they pay extra for every river cell so a crossing is short.
- * The strip uses the town texture. River water keeps the river texture.
+ * The strip uses a road texture, a brown close to the town colour.
+ * River water keeps the river texture.
  * Local offsets are centimetres. +X is east, +Y is north.
  */
 namespace SolidRoad
@@ -87,6 +88,7 @@ namespace SolidRoad
 		{
 		case ESolidBiome::Grassland:
 		case ESolidBiome::Town:
+		case ESolidBiome::Road:
 		case ESolidBiome::Swamp:
 			return 0;
 		case ESolidBiome::Forest:

@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0184")
+#define SOLID_BUILD_ID TEXT("SC1-0185")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("F10 enters the cave; companions return at the mouth")
+#define SOLID_BUILD_NOTE TEXT("Cave interior compiles beside the mouth")
 #endif

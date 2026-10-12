@@ -11,7 +11,7 @@
 
 namespace
 {
-	void PlacePart(
+	void PlaceInteriorPart(
 		UStaticMeshComponent* Part,
 		UStaticMesh* Cube,
 		AActor* Outer,
@@ -101,13 +101,13 @@ void ASolidCaveInterior::BuildVisuals()
 	const float SpanY = Width + Shell * 2.f;
 	const FLinearColor Rock = SolidStrongholds::RockColor();
 
-	PlacePart(FloorMesh, Cube, this, FVector(Depth * 0.5f, 0.f, -Shell * 0.5f), FVector(SpanX, SpanY, Shell), Rock, TEXT("CaveFloor"));
-	PlacePart(CeilingMesh, Cube, this, FVector(Depth * 0.5f, 0.f, Height + Shell * 0.5f), FVector(SpanX, SpanY, Shell), Rock, TEXT("CaveCeiling"));
-	PlacePart(WallBack, Cube, this, FVector(Depth + Shell * 0.5f, 0.f, Height * 0.5f), FVector(Shell, SpanY, Height), Rock, TEXT("CaveWallBack"));
-	PlacePart(WallLeft, Cube, this, FVector(Depth * 0.5f, -(Width * 0.5f + Shell * 0.5f), Height * 0.5f), FVector(Depth, Shell, Height), Rock, TEXT("CaveWallLeft"));
-	PlacePart(WallRight, Cube, this, FVector(Depth * 0.5f, Width * 0.5f + Shell * 0.5f, Height * 0.5f), FVector(Depth, Shell, Height), Rock, TEXT("CaveWallRight"));
-	PlacePart(WallFront, Cube, this, FVector(-Shell * 0.5f, 0.f, Height * 0.5f), FVector(Shell, SpanY, Height), Rock, TEXT("CaveWallFront"));
-	PlacePart(
+	PlaceInteriorPart(FloorMesh, Cube, this, FVector(Depth * 0.5f, 0.f, -Shell * 0.5f), FVector(SpanX, SpanY, Shell), Rock, TEXT("CaveFloor"));
+	PlaceInteriorPart(CeilingMesh, Cube, this, FVector(Depth * 0.5f, 0.f, Height + Shell * 0.5f), FVector(SpanX, SpanY, Shell), Rock, TEXT("CaveCeiling"));
+	PlaceInteriorPart(WallBack, Cube, this, FVector(Depth + Shell * 0.5f, 0.f, Height * 0.5f), FVector(Shell, SpanY, Height), Rock, TEXT("CaveWallBack"));
+	PlaceInteriorPart(WallLeft, Cube, this, FVector(Depth * 0.5f, -(Width * 0.5f + Shell * 0.5f), Height * 0.5f), FVector(Depth, Shell, Height), Rock, TEXT("CaveWallLeft"));
+	PlaceInteriorPart(WallRight, Cube, this, FVector(Depth * 0.5f, Width * 0.5f + Shell * 0.5f, Height * 0.5f), FVector(Depth, Shell, Height), Rock, TEXT("CaveWallRight"));
+	PlaceInteriorPart(WallFront, Cube, this, FVector(-Shell * 0.5f, 0.f, Height * 0.5f), FVector(Shell, SpanY, Height), Rock, TEXT("CaveWallFront"));
+	PlaceInteriorPart(
 		MouthMesh,
 		Cube,
 		this,

@@ -102,7 +102,7 @@ namespace SolidEvents
 	inline constexpr int32 DefinitionCount = UE_ARRAY_COUNT(Definitions);
 
 	/** One journal line. EventIndex draws a town event. Text is a repeated visit, such as the cave. */
-	struct FNote
+	struct FJournalEntry
 	{
 		int32 Year = SolidWorldTime::StartYear;
 		int32 Day = SolidWorldTime::StartDay;
@@ -125,7 +125,7 @@ namespace SolidEvents
 		int32 FiredOrder[MaxEvents] = {};
 		int32 FiredCount = 0;
 		/** Journal, including repeated stronghold trips. Copied with the travel session. */
-		TArray<FNote> Notes;
+		TArray<FJournalEntry> Notes;
 	};
 
 	inline void Remember(
@@ -139,13 +139,13 @@ namespace SolidEvents
 			State.Notes.RemoveAt(0);
 		}
 
-		FNote Note;
-		Note.Year = When.Year;
-		Note.Day = When.Day;
-		Note.MinuteOfSession = When.MinuteOfSession;
-		Note.EventIndex = EventIndex;
-		Note.Text = Text;
-		State.Notes.Add(Note);
+		FJournalEntry Entry;
+		Entry.Year = When.Year;
+		Entry.Day = When.Day;
+		Entry.MinuteOfSession = When.MinuteOfSession;
+		Entry.EventIndex = EventIndex;
+		Entry.Text = Text;
+		State.Notes.Add(Entry);
 	}
 
 	/** Enter or leave. The same stronghold can be noted again on the next trip. */

@@ -72,13 +72,13 @@ void SolidJournal::CollectLines(const SolidEvents::FState& State, TArray<FString
 	}
 	else
 	{
-		for (const SolidEvents::FNote& Note : State.Notes)
+		for (const SolidEvents::FJournalEntry& Entry : State.Notes)
 		{
-			FString Title = Note.Text;
+			FString Title = Entry.Text;
 			FString Detail;
-			if (Note.EventIndex >= 0 && Note.EventIndex < SolidEvents::DefinitionCount)
+			if (Entry.EventIndex >= 0 && Entry.EventIndex < SolidEvents::DefinitionCount)
 			{
-				const SolidEvents::FEvent& Event = SolidEvents::Definitions[Note.EventIndex];
+				const SolidEvents::FEvent& Event = SolidEvents::Definitions[Entry.EventIndex];
 				Title = Event.Name;
 				Detail = Describe(Event);
 			}
@@ -88,9 +88,9 @@ void SolidJournal::CollectLines(const SolidEvents::FState& State, TArray<FString
 			}
 
 			SolidWorldTime::FStamp Stamp;
-			Stamp.Year = Note.Year;
-			Stamp.Day = Note.Day;
-			Stamp.MinuteOfSession = Note.MinuteOfSession;
+			Stamp.Year = Entry.Year;
+			Stamp.Day = Entry.Day;
+			Stamp.MinuteOfSession = Entry.MinuteOfSession;
 			OutLines.Add(FString::Printf(TEXT("%s  %s"), *SolidWorldTime::Format(Stamp), *Title));
 			if (!Detail.IsEmpty())
 			{

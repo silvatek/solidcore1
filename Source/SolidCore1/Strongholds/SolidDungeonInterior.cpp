@@ -400,7 +400,7 @@ void ASolidDungeonInterior::BuildVisuals()
 			continue;
 		}
 		const FVector2D Mid2((Edge.A.X + Edge.B.X) * 0.5f, (Edge.A.Y + Edge.B.Y) * 0.5f);
-		const SolidStrongholdGrid::FHex* Owner = nullptr;
+		const SolidStrongholdGrid::FHex* EdgeHex = nullptr;
 		float Best = TNumericLimits<float>::Max();
 		for (const SolidStrongholdGrid::FHex& Hex : Hexes)
 		{
@@ -408,11 +408,11 @@ void ASolidDungeonInterior::BuildVisuals()
 			if (Dist < Best)
 			{
 				Best = Dist;
-				Owner = &Hex;
+				EdgeHex = &Hex;
 			}
 		}
-		const FVector2D Outward = Owner
-			? (Mid2 - Owner->Center).GetSafeNormal()
+		const FVector2D Outward = EdgeHex
+			? (Mid2 - EdgeHex->Center).GetSafeNormal()
 			: FVector2D(-1.f, 0.f);
 		const float Yaw = FMath::RadiansToDegrees(FMath::Atan2(Delta.Y, Delta.X));
 		const bool bMouth = Mid2.Equals(MouthMid, 2.f);

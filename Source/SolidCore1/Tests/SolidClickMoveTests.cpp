@@ -20,6 +20,19 @@ bool FSolidClickMoveRulesTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("release is not a click"), SolidClickMove::IsFreshPress(false, true));
 	TestFalse(TEXT("staying up is not a click"), SolidClickMove::IsFreshPress(false, false));
 
+	bool bSawRelease = false;
+	bool bWasDown = false;
+	TestFalse(TEXT("a button already held on arrival is not a click"), SolidClickMove::ConsumePress(bSawRelease, bWasDown, true));
+	TestFalse(TEXT("holding through arrival is still not a click"), SolidClickMove::ConsumePress(bSawRelease, bWasDown, true));
+	TestFalse(TEXT("releasing the arrival button is not a click"), SolidClickMove::ConsumePress(bSawRelease, bWasDown, false));
+	TestTrue(TEXT("the next press after arrival counts"), SolidClickMove::ConsumePress(bSawRelease, bWasDown, true));
+	TestFalse(TEXT("holding that press does not click again"), SolidClickMove::ConsumePress(bSawRelease, bWasDown, true));
+
+	bSawRelease = false;
+	bWasDown = false;
+	TestFalse(TEXT("starting with the button up does not click"), SolidClickMove::ConsumePress(bSawRelease, bWasDown, false));
+	TestTrue(TEXT("a press after the button was up counts"), SolidClickMove::ConsumePress(bSawRelease, bWasDown, true));
+
 	TestTrue(TEXT("true sight walks from WASD"), SolidClickMove::AllowsDirectMove(true));
 	TestFalse(TEXT("raven sight does not walk from WASD"), SolidClickMove::AllowsDirectMove(false));
 

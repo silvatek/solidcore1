@@ -29,6 +29,21 @@ namespace SolidClickMove
 		return bDown && !bWasDown;
 	}
 
+	/**
+	 * A press that arrives with the pawn, still held from the world just left,
+	 * is not a click. The button has to be seen up once, then pressed again.
+	 */
+	inline bool ConsumePress(bool& bSawRelease, bool& bWasDown, const bool bDown)
+	{
+		const bool bPressed = bSawRelease && IsFreshPress(bDown, bWasDown);
+		if (!bDown)
+		{
+			bSawRelease = true;
+		}
+		bWasDown = bDown;
+		return bPressed;
+	}
+
 	/** WASD and the left stick. Raven sight walks only from a click. */
 	inline bool AllowsDirectMove(const bool bTrueSight)
 	{

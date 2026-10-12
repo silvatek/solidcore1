@@ -328,6 +328,8 @@ protected:
 	FVector ClickMoveDestination = FVector::ZeroVector;
 	/** Previous frame's left button, so one click is a single press. */
 	bool bLeftMouseWasDown = false;
+	/** False until the left button has been up on this pawn. A carried hold does not click. */
+	bool bClickSawRelease = false;
 	/** Last pointer sample while a choice list was open. A still pointer does not fight the keys. */
 	bool bMenuPointerSampled = false;
 	FVector2D MenuPointerSample = FVector2D::ZeroVector;

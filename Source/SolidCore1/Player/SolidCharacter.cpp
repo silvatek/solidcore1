@@ -1052,9 +1052,9 @@ void ASolidCharacter::PollClickMovePress()
 	{
 		bDown = PlayerController->IsLeftMouseHeld();
 	}
-	const bool bPressed = SolidClickMove::IsFreshPress(bDown, bLeftMouseWasDown);
-	bLeftMouseWasDown = bDown;
-	if (!bPressed)
+	// Travel to the cave loads a new pawn while this button is still down, and the
+	// captain arrives facing the other opening. That held press must not travel back.
+	if (!SolidClickMove::ConsumePress(bClickSawRelease, bLeftMouseWasDown, bDown))
 	{
 		return;
 	}

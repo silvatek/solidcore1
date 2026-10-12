@@ -106,7 +106,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.MainMenu.*` | F10 menu entries (Use portal, Test Drill, Journal, Credits, Build party, Enter cave) and selection |
 | `SolidCore1.PartyBuilder.*` | Build party stays locked below two companions; toggles the company up to the event cap |
 | `SolidCore1.MenuPointer.*` | Pointer hit-tests a menu or portal row; a miss leaves the keys' selection |
-| `SolidCore1.Portal.*` | Town list, including Dragongate and Rathen; keys 1–7; landing stays on that town (Kanfold is not the centroid); portal page |
+| `SolidCore1.Portal.*` | Town list, including Dragongate and Rathen; keys 1–7; landing stays on one cell of that town; portal page |
 | `SolidCore1.WorldTime.*` | Session 1 is 200/45 AtF; session 9 at 84 minutes is 01:24, 200/53 AtF; day 100 rolls the year |
 | `SolidCore1.Journal.*` | Empty journal, then events in the order they fired, with Time and Summary columns; each line is an Event or a Stronghold, including the captain's title and repeated Enter Stronghold / Exit Stronghold lines |
 | `SolidCore1.HudTheme.*` | Oak-and-bronze frame thickness, corner bosses, opaque board; translucent oval sight marker |

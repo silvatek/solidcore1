@@ -633,63 +633,22 @@ bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 
 	FSolidWorldLocation ShippedKanfold;
 	TestTrue(TEXT("shipped location 2"), Shipped->FindLocation(2, ShippedKanfold));
-	TestEqual(TEXT("shipped Kanfold is three cells"), ShippedKanfold.Cells.Num(), 3);
-	int32 KanfoldPairs = 0;
-	int32 KanfoldLones = 0;
-	TArray<bool> KanfoldUsed;
-	KanfoldUsed.Init(false, ShippedKanfold.Cells.Num());
-	for (int32 Index = 0; Index < ShippedKanfold.Cells.Num(); ++Index)
+	TestEqual(TEXT("shipped Kanfold is the 02 pair"), ShippedKanfold.Cells.Num(), 2);
+	if (ShippedKanfold.Cells.Num() == 2)
 	{
-		if (KanfoldUsed[Index])
-		{
-			continue;
-		}
-		const FIntPoint Cell = ShippedKanfold.Cells[Index];
-		int32 Partner = INDEX_NONE;
-		for (int32 Other = 0; Other < ShippedKanfold.Cells.Num(); ++Other)
-		{
-			const FIntPoint Next = ShippedKanfold.Cells[Other];
-			if (!KanfoldUsed[Other] && Other != Index && Next.Y == Cell.Y && FMath::Abs(Next.X - Cell.X) == 1)
-			{
-				Partner = Other;
-				break;
-			}
-		}
-		if (Partner != INDEX_NONE)
-		{
-			KanfoldUsed[Index] = true;
-			KanfoldUsed[Partner] = true;
-			++KanfoldPairs;
-			const FIntPoint East = ShippedKanfold.Cells[Index].X < ShippedKanfold.Cells[Partner].X
-				? ShippedKanfold.Cells[Index]
-				: ShippedKanfold.Cells[Partner];
-			const FIntPoint West = ShippedKanfold.Cells[Index].X < ShippedKanfold.Cells[Partner].X
-				? ShippedKanfold.Cells[Partner]
-				: ShippedKanfold.Cells[Index];
-			TestEqual(TEXT("Kanfold pair reads 02"), Shipped->GetMarkerAtCell(East.X, East.Y), TEXT('0'));
-			TestEqual(TEXT("Kanfold pair ends in 2"), Shipped->GetMarkerAtCell(West.X, West.Y), TEXT('2'));
-			TestEqual(TEXT("Kanfold pair east id"), Shipped->GetLocationIdAtCell(East.X, East.Y), 2);
-			TestEqual(TEXT("Kanfold pair west id"), Shipped->GetLocationIdAtCell(West.X, West.Y), 2);
-		}
-		else
-		{
-			KanfoldUsed[Index] = true;
-			++KanfoldLones;
-			TestEqual(TEXT("lone Kanfold marker is 2"), Shipped->GetMarkerAtCell(Cell.X, Cell.Y), TEXT('2'));
-			const int32 EastX = Cell.X - 1;
-			const int32 WestX = Cell.X + 1;
-			if (EastX >= 0)
-			{
-				TestFalse(TEXT("lone Kanfold is not paired east"), FChar::IsDigit(Shipped->GetMarkerAtCell(EastX, Cell.Y)));
-			}
-			if (WestX < USolidWorldMap::MapWidth)
-			{
-				TestFalse(TEXT("lone Kanfold is not paired west"), FChar::IsDigit(Shipped->GetMarkerAtCell(WestX, Cell.Y)));
-			}
-		}
+		TestEqual(TEXT("Kanfold cells share a row"), ShippedKanfold.Cells[0].Y, ShippedKanfold.Cells[1].Y);
+		const FIntPoint East = ShippedKanfold.Cells[0].X < ShippedKanfold.Cells[1].X
+			? ShippedKanfold.Cells[0]
+			: ShippedKanfold.Cells[1];
+		const FIntPoint West = ShippedKanfold.Cells[0].X < ShippedKanfold.Cells[1].X
+			? ShippedKanfold.Cells[1]
+			: ShippedKanfold.Cells[0];
+		TestEqual(TEXT("Kanfold cells are adjacent"), West.X - East.X, 1);
+		TestEqual(TEXT("Kanfold tens digit is 0"), Shipped->GetMarkerAtCell(East.X, East.Y), TEXT('0'));
+		TestEqual(TEXT("Kanfold ones digit is 2"), Shipped->GetMarkerAtCell(West.X, West.Y), TEXT('2'));
+		TestEqual(TEXT("Kanfold east cell id"), Shipped->GetLocationIdAtCell(East.X, East.Y), 2);
+		TestEqual(TEXT("Kanfold west cell id"), Shipped->GetLocationIdAtCell(West.X, West.Y), 2);
 	}
-	TestEqual(TEXT("shipped Kanfold has one pair"), KanfoldPairs, 1);
-	TestEqual(TEXT("shipped Kanfold has one lone cell"), KanfoldLones, 1);
 
 	FSolidWorldLocation ShippedGate;
 	TestTrue(TEXT("shipped location 5"), Shipped->FindLocation(5, ShippedGate));

@@ -6,8 +6,8 @@
 /**
  * Town list for the main menu's Use portal entry.
  * The party lands on one cell of the chosen town, south of that cell's center
- * by the same plaza offset as the start-town spawn. Kanfold is two digits far
- * apart, so the centroid of every cell is not in the town.
+ * by the same plaza offset as the start-town spawn. A spread of cells can put
+ * the centroid outside the town, so the landing uses a cell.
  */
 namespace SolidPortal
 {

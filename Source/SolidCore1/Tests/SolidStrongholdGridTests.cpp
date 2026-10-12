@@ -39,8 +39,8 @@ bool FSolidStrongholdGridMeasureTest::RunTest(const FString& Parameters)
 
 	TArray<SolidStrongholdGrid::FCell> Cells;
 	SolidStrongholdGrid::MeagreCells(Cells);
-	TestEqual(TEXT("meagre den is ten hexes"), Cells.Num(), SolidStrongholdGrid::MeagreCellCount);
-	TestEqual(TEXT("ten cells"), SolidStrongholdGrid::MeagreCellCount, 10);
+	TestEqual(TEXT("meagre den is fourteen hexes"), Cells.Num(), SolidStrongholdGrid::MeagreCellCount);
+	TestEqual(TEXT("fourteen cells"), SolidStrongholdGrid::MeagreCellCount, 14);
 
 	TArray<SolidStrongholdGrid::FHex> Hexes;
 	SolidStrongholdGrid::CollectMeagreHexes(Hexes);
@@ -57,12 +57,27 @@ bool FSolidStrongholdGridMeasureTest::RunTest(const FString& Parameters)
 		RowCounts.FindOrAdd(Hex.Row) += 1;
 		bHasCaptain |= Hex.Col == Captain.Col && Hex.Row == Captain.Row;
 		bHasEntrance |= Hex.Col == Entrance.Col && Hex.Row == Entrance.Row;
-		bHasNotch |= Hex.Col == -1 && Hex.Row == 1;
+		bHasNotch |= Hex.Col == -2 && Hex.Row == 1;
 		TestTrue(TEXT("cell center is inside its hex"), SolidStrongholdGrid::PointInHex(Hex.Center, Hex.Center));
 	}
 	TestTrue(TEXT("captain has a cell"), bHasCaptain);
 	TestTrue(TEXT("entrance has a cell"), bHasEntrance);
 	TestFalse(TEXT("the north-west notch is open"), bHasNotch);
+
+	const FVector2D EntranceCenter = SolidStrongholdGrid::HexCenter(Entrance.Col, Entrance.Row, Origin);
+	const FVector2D CaptainCenter = SolidStrongholdGrid::HexCenter(Captain.Col, Captain.Row, Origin);
+	TestTrue(
+		TEXT("entrance is the west neighbor of the captain"),
+		EntranceCenter.X < CaptainCenter.X
+			&& FMath::IsNearlyEqual(
+				FVector2D::Distance(EntranceCenter, CaptainCenter),
+				SolidStrongholdGrid::FlatToFlatCm,
+				0.05f));
+	const FVector2D Mouth = SolidStrongholdGrid::MeagreMouthMidpoint();
+	TestTrue(
+		TEXT("mouth is the west flat of the entrance"),
+		FMath::IsNearlyEqual(Mouth.X, EntranceCenter.X - SolidStrongholdGrid::FlatToFlatCm * 0.5f, 0.05f)
+			&& FMath::IsNearlyEqual(Mouth.Y, EntranceCenter.Y, 0.05f));
 
 	int32 NarrowestRow = MAX_int32;
 	int32 WidestRow = 0;
@@ -73,7 +88,7 @@ bool FSolidStrongholdGridMeasureTest::RunTest(const FString& Parameters)
 	}
 	TestTrue(TEXT("the outline is not a rectangle"), NarrowestRow > 0 && NarrowestRow != WidestRow);
 
-	const FVector2D Notch = SolidStrongholdGrid::HexCenter(-1, 1, Origin);
+	const FVector2D Notch = SolidStrongholdGrid::HexCenter(-2, 1, Origin);
 	bool bNotchInside = false;
 	for (const SolidStrongholdGrid::FHex& Hex : Hexes)
 	{

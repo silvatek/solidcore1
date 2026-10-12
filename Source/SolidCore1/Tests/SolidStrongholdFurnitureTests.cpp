@@ -11,21 +11,6 @@
 
 namespace
 {
-	const SolidStrongholdGrid::FHex* FindStarterHex(
-		const TArray<SolidStrongholdGrid::FHex>& Hexes,
-		const int32 Col,
-		const int32 Row)
-	{
-		for (const SolidStrongholdGrid::FHex& Hex : Hexes)
-		{
-			if (Hex.Col == Col && Hex.Row == Row)
-			{
-				return &Hex;
-			}
-		}
-		return nullptr;
-	}
-
 	bool ScaleMatches(const UStaticMeshComponent* Part, const FVector& SizeCm)
 	{
 		if (!Part)
@@ -55,6 +40,9 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("embers are a low disc"),
 		SolidStrongholdFurniture::FireplaceEmberHeightCm() < SolidStrongholdFurniture::FireplaceHearthCm());
+	TestTrue(
+		TEXT("embers lost about 60 percent of their height"),
+		FMath::IsNearlyEqual(SolidStrongholdFurniture::FireplaceEmberHeightCm(), 8.f, 0.01f));
 	TestTrue(
 		TEXT("embers sit inside the hearth"),
 		SolidStrongholdFurniture::FireplaceEmberRadiusCm() * 2.f < SolidStrongholdFurniture::FireplaceAcrossCm());
@@ -86,16 +74,51 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("wood is beige"), Beige.R > Beige.G && Beige.G > Beige.B && Beige.B > 0.3f);
 	TestTrue(TEXT("pillow is white"), Pillow.R > 0.9f && Pillow.G > 0.9f && Pillow.B > 0.85f);
 
-	TArray<SolidStrongholdFurniture::FPlacement> Placements;
-	SolidStrongholdFurniture::MeagreStarter(Placements);
+	TestEqual(TEXT("catalog has the three pieces"), SolidStrongholdFurniture::CatalogCount, 3);
+	TestEqual(TEXT("fireplace name"), FString(SolidStrongholdFurniture::Catalog[0].Name), FString(TEXT("Fireplace")));
+	TestEqual(TEXT("bed name"), FString(SolidStrongholdFurniture::Catalog[1].Name), FString(TEXT("Bed")));
+	TestEqual(TEXT("chest name"), FString(SolidStrongholdFurniture::Catalog[2].Name), FString(TEXT("Chest")));
+	TestTrue(TEXT("fireplace kind"), SolidStrongholdFurniture::Catalog[0].Kind == SolidStrongholdFurniture::EKind::Fireplace);
+	TestTrue(TEXT("bed kind"), SolidStrongholdFurniture::Catalog[1].Kind == SolidStrongholdFurniture::EKind::Bed);
+	TestTrue(TEXT("chest kind"), SolidStrongholdFurniture::Catalog[2].Kind == SolidStrongholdFurniture::EKind::Chest);
+	for (int32 Index = 0; Index < SolidStrongholdFurniture::CatalogCount; ++Index)
+	{
+		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(Index);
+		TestTrue(TEXT("catalog link is the item itself"), Item == &SolidStrongholdFurniture::Catalog[Index]);
+		TestEqual(
+			TEXT("kind finds its catalog index"),
+			SolidStrongholdFurniture::IndexOfKind(SolidStrongholdFurniture::Catalog[Index].Kind),
+			Index);
+	}
+	TestTrue(TEXT("a missing index has no item"), SolidStrongholdFurniture::ItemAt(-1) == nullptr);
+	TestEqual(TEXT("meagre strongholds have one floor"), SolidStrongholdFurniture::FloorCount(ESolidStrongholdSize::Meagre), 1);
+
+	FSolidStronghold MeagreFortress;
+	MeagreFortress.Type = ESolidStrongholdType::Fortress;
+	MeagreFortress.Size = ESolidStrongholdSize::Meagre;
+	TArray<SolidStrongholdFurniture::FUsed> Empty;
+	SolidStrongholdFurniture::UsedFurnishings(MeagreFortress, Empty);
+	TestEqual(TEXT("a meagre fortress has no pieces yet"), Empty.Num(), 0);
+
+	FSolidStronghold HumbleDungeon;
+	HumbleDungeon.Type = ESolidStrongholdType::Dungeon;
+	HumbleDungeon.Size = ESolidStrongholdSize::Humble;
+	SolidStrongholdFurniture::UsedFurnishings(HumbleDungeon, Empty);
+	TestEqual(TEXT("a humble dungeon has no pieces yet"), Empty.Num(), 0);
+
+	TArray<SolidStrongholdFurniture::FUsed> Placements;
+	SolidStrongholdFurniture::UsedFurnishings(SolidStronghold::Starting.Attributes, Placements);
 	TestEqual(TEXT("three starter pieces"), Placements.Num(), 3);
 	if (Placements.Num() != 3)
 	{
 		return false;
 	}
-	TestTrue(TEXT("first is the fireplace"), Placements[0].Kind == SolidStrongholdFurniture::EKind::Fireplace);
-	TestTrue(TEXT("second is the bed"), Placements[1].Kind == SolidStrongholdFurniture::EKind::Bed);
-	TestTrue(TEXT("third is the chest"), Placements[2].Kind == SolidStrongholdFurniture::EKind::Chest);
+	const SolidStrongholdFurniture::FItem* First = SolidStrongholdFurniture::ItemAt(Placements[0].ItemIndex);
+	const SolidStrongholdFurniture::FItem* Second = SolidStrongholdFurniture::ItemAt(Placements[1].ItemIndex);
+	const SolidStrongholdFurniture::FItem* Third = SolidStrongholdFurniture::ItemAt(Placements[2].ItemIndex);
+	TestTrue(TEXT("first links to the fireplace"), First && First->Kind == SolidStrongholdFurniture::EKind::Fireplace);
+	TestTrue(TEXT("second links to the bed"), Second && Second->Kind == SolidStrongholdFurniture::EKind::Bed);
+	TestTrue(TEXT("third links to the chest"), Third && Third->Kind == SolidStrongholdFurniture::EKind::Chest);
 
 	TArray<SolidStrongholdGrid::FHex> Hexes;
 	SolidStrongholdGrid::CollectMeagreHexes(Hexes);
@@ -104,46 +127,56 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 	{
 		return (static_cast<int64>(Col) << 32) | static_cast<uint32>(Row);
 	};
-	TSet<int64> Used;
-	for (const SolidStrongholdFurniture::FPlacement& Placement : Placements)
+	TSet<int64> UsedCells;
+	const SolidStrongholdGrid::FCell Captain = SolidStrongholdGrid::MeagreCaptainCell();
+	const SolidStrongholdGrid::FCell Entrance = SolidStrongholdGrid::MeagreEntranceCell();
+	for (const SolidStrongholdFurniture::FUsed& Placement : Placements)
 	{
-		const SolidStrongholdGrid::FHex* Anchor = FindStarterHex(Hexes, Placement.Col, Placement.Row);
-		const SolidStrongholdGrid::FHex* Span = FindStarterHex(Hexes, Placement.SpanCol, Placement.SpanRow);
+		TestEqual(TEXT("cave pieces sit on the single floor"), Placement.Level, 0);
+		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(Placement.ItemIndex);
+		TestTrue(TEXT("used piece links into the catalog"), Item != nullptr);
+		if (!Item)
+		{
+			return false;
+		}
+		const SolidStrongholdGrid::FHex* Anchor = SolidStrongholdFurniture::FindCell(Hexes, Placement.X, Placement.Y);
+		const SolidStrongholdGrid::FHex* Span = SolidStrongholdFurniture::SpanCell(Hexes, Placement);
 		TestTrue(TEXT("anchor cell is on the floor"), Anchor != nullptr);
 		TestTrue(TEXT("span cell is on the floor"), Span != nullptr);
 		if (!Anchor || !Span)
 		{
 			return false;
 		}
-		const SolidStrongholdGrid::FCell Captain = SolidStrongholdGrid::MeagreCaptainCell();
-		TestFalse(
-			TEXT("pieces stay off the captain's cell"),
-			(Anchor->Col == Captain.Col && Anchor->Row == Captain.Row)
-				|| (Span->Col == Captain.Col && Span->Row == Captain.Row));
+		const bool bOnCaptain = (Anchor->Col == Captain.Col && Anchor->Row == Captain.Row)
+			|| (Span->Col == Captain.Col && Span->Row == Captain.Row);
+		const bool bOnEntrance = (Anchor->Col == Entrance.Col && Anchor->Row == Entrance.Row)
+			|| (Span->Col == Entrance.Col && Span->Row == Entrance.Row);
+		TestFalse(TEXT("pieces stay off the captain's cell"), bOnCaptain);
+		TestFalse(TEXT("pieces stay off the entrance cell"), bOnEntrance);
 
-		const int32 Cells = SolidStrongholdFurniture::HexCount(Placement.Kind);
+		const int32 Cells = SolidStrongholdFurniture::HexCount(Item->Kind);
 		if (Cells == 1)
 		{
-			TestEqual(TEXT("one-hex piece uses one cell"), Placement.Col, Placement.SpanCol);
-			TestEqual(TEXT("one-hex piece uses one row"), Placement.Row, Placement.SpanRow);
+			TestEqual(TEXT("one-hex piece uses one cell"), Anchor->Col, Span->Col);
+			TestEqual(TEXT("one-hex piece uses one row"), Anchor->Row, Span->Row);
 		}
 		else
 		{
 			TestTrue(
 				TEXT("bed cells share an edge"),
 				FMath::IsNearlyEqual(FVector2D::Distance(Anchor->Center, Span->Center), Flat, 0.05f));
-			TestEqual(TEXT("bed stays on one row"), Placement.Row, Placement.SpanRow);
-			TestEqual(TEXT("bed covers the next column"), FMath::Abs(Placement.SpanCol - Placement.Col), 1);
+			TestEqual(TEXT("bed stays on one row"), Anchor->Row, Span->Row);
+			TestEqual(TEXT("bed covers the next column"), FMath::Abs(Span->Col - Anchor->Col), 1);
 		}
 
-		const int64 AnchorKey = CellKey(Placement.Col, Placement.Row);
-		const int64 SpanKey = CellKey(Placement.SpanCol, Placement.SpanRow);
-		TestFalse(TEXT("pieces do not share the anchor"), Used.Contains(AnchorKey));
-		Used.Add(AnchorKey);
+		const int64 AnchorKey = CellKey(Anchor->Col, Anchor->Row);
+		const int64 SpanKey = CellKey(Span->Col, Span->Row);
+		TestFalse(TEXT("pieces do not share the anchor"), UsedCells.Contains(AnchorKey));
+		UsedCells.Add(AnchorKey);
 		if (SpanKey != AnchorKey)
 		{
-			TestFalse(TEXT("pieces do not share the span"), Used.Contains(SpanKey));
-			Used.Add(SpanKey);
+			TestFalse(TEXT("pieces do not share the span"), UsedCells.Contains(SpanKey));
+			UsedCells.Add(SpanKey);
 		}
 	}
 

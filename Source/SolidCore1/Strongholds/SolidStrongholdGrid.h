@@ -7,7 +7,7 @@
  * Pointy-top hexes on a stronghold floor, for placing furniture.
  * Dungeons, fortresses, and towers share this grid.
  * "Across" is flat side to flat side (the horizontal width), not point to point.
- * The Meagre Dungeon is an irregular den of ten cells, not a filled rectangle.
+ * The Meagre Dungeon is an irregular den of fourteen cells, not a filled rectangle.
  */
 namespace SolidStrongholdGrid
 {
@@ -49,22 +49,22 @@ namespace SolidStrongholdGrid
 	};
 
 	/**
-	 * Meagre den, mouth to the west.
-	 *     (0,1) (1,1)
-	 * (-1,0) (0,0) (1,0) (2,0)
-	 *     (0,-1) (1,-1) (2,-1)
-	 *           (1,-2)
+	 * Meagre den, mouth to the west. Fourteen cells, with a vestibule on the entrance.
+	 *     (-1,1) (0,1) (1,1) (2,1)
+	 * (-2,0) (-1,0) (0,0) (1,0) (2,0)
+	 *        (0,-1) (1,-1) (2,-1)
+	 *           (0,-2) (1,-2)
 	 */
-	inline constexpr int32 MeagreCellCount = 10;
+	inline constexpr int32 MeagreCellCount = 14;
 
 	inline void MeagreCells(TArray<FCell>& OutCells)
 	{
 		OutCells.Reset();
 		const FCell Cells[] = {
-			{ -1, 0 }, { 0, 0 }, { 1, 0 }, { 2, 0 },
-			{ 0, 1 }, { 1, 1 },
+			{ -2, 0 }, { -1, 0 }, { 0, 0 }, { 1, 0 }, { 2, 0 },
+			{ -1, 1 }, { 0, 1 }, { 1, 1 }, { 2, 1 },
 			{ 0, -1 }, { 1, -1 }, { 2, -1 },
-			{ 1, -2 },
+			{ 0, -2 }, { 1, -2 },
 		};
 		for (const FCell& Cell : Cells)
 		{
@@ -74,12 +74,12 @@ namespace SolidStrongholdGrid
 
 	inline FCell MeagreEntranceCell()
 	{
-		return FCell{ -1, 0 };
+		return FCell{ -2, 0 };
 	}
 
 	inline FCell MeagreCaptainCell()
 	{
-		return FCell{ 0, 0 };
+		return FCell{ -1, 0 };
 	}
 
 	/** Cell coordinates are measured from here. */

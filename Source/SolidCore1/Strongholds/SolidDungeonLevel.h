@@ -22,11 +22,16 @@ namespace SolidDungeonLevel
 	inline const TCHAR* EnterLabel = TEXT("Enter cave");
 	inline const TCHAR* LeaveLabel = TEXT("Leave cave");
 
-	/** Meagre den ceiling. The floor plan is the ten-hex outline in SolidStrongholdGrid. */
+	/** Meagre den ceiling. The floor plan is the fourteen-hex outline in SolidStrongholdGrid. */
 	inline constexpr float RoomHeightCm = 320.f;
 	inline constexpr float ShellCm = 48.f;
 	/** Dark opening on the entrance hex. The cliff mouth outside is larger. */
 	inline constexpr float MouthHeightCm = 240.f;
+	/**
+	 * Clear width of the cave door. Wider than the captain, and wider than one hex edge,
+	 * so the vestibule is not pinched shut by the wall ends.
+	 */
+	inline constexpr float DoorwayWidthCm = 140.f;
 
 	/** The captain stands on the cell inside the entrance, facing the mouth. */
 	inline FVector CaptainSpawnLocal()

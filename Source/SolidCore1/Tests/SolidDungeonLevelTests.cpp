@@ -29,8 +29,9 @@ bool FSolidDungeonLevelTravelTest::RunTest(const FString& Parameters)
 
 	TestTrue(TEXT("captain spawn is inside the room"), SolidDungeonLevel::ContainsLocal(SolidDungeonLevel::CaptainSpawnLocal()));
 	TestFalse(TEXT("past the mouth is outside"), SolidDungeonLevel::ContainsLocal(SolidDungeonLevel::PastMouthLocal()));
-	const FVector2D Notch = SolidStrongholdGrid::HexCenter(-1, 1, SolidStrongholdGrid::MeagreOrigin());
+	const FVector2D Notch = SolidStrongholdGrid::HexCenter(-2, 1, SolidStrongholdGrid::MeagreOrigin());
 	TestFalse(TEXT("the open notch is outside"), SolidDungeonLevel::ContainsLocal(FVector(Notch.X, Notch.Y, 100.f)));
+	TestTrue(TEXT("the doorway is wider than the captain"), SolidDungeonLevel::DoorwayWidthCm > 110.f);
 	TestFalse(TEXT("above the ceiling is outside"), SolidDungeonLevel::ContainsLocal(FVector(0.f, 0.f, SolidDungeonLevel::RoomHeightCm + 10.f)));
 
 	TestTrue(
@@ -122,6 +123,12 @@ bool FSolidDungeonInteriorVisualsTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("floor hangs below the walk"), FloorBottom < -10.f);
 	}
 	TestTrue(TEXT("mouth is on the near wall"), Mouth->GetRelativeLocation().X < SolidDungeonLevel::CaptainSpawnLocal().X);
+	const FVector2D MouthPlan = SolidStrongholdGrid::MeagreMouthMidpoint();
+	TestTrue(TEXT("lip sits outside the entrance flat"), Mouth->GetRelativeLocation().X < MouthPlan.X - 1.f);
+	TestTrue(
+		TEXT("doorway is wider than the captain"),
+		Mouth->GetRelativeScale3D().X * 100.f > 110.f);
+	TestTrue(TEXT("the lip is a thin panel"), Mouth->GetRelativeScale3D().Y * 100.f < 20.f);
 	TestTrue(TEXT("light hangs inside"), Light->GetRelativeLocation().Z > 0.f && Light->GetRelativeLocation().Z < SolidDungeonLevel::RoomHeightCm);
 	TestTrue(TEXT("spawn feet are inside"), SolidDungeonLevel::ContainsLocal(SolidDungeonLevel::CaptainSpawnLocal()));
 	TestTrue(TEXT("captain yaw faces the mouth"), FMath::IsNearlyEqual(Interior->GetCaptainYaw(), 180.f, 0.1f));

@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0190")
+#define SOLID_BUILD_ID TEXT("SC1-0191")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Ten-hex cave; larger hearth, narrower bed")
+#define SOLID_BUILD_NOTE TEXT("Fourteen-hex cave; furnishing catalog")
 #endif

@@ -9,8 +9,8 @@ class UPointLightComponent;
 class UStaticMeshComponent;
 
 /**
- * Dungeon chamber shared by every size. Meagre, the cave, is an irregular den of ten hexes.
- * Rock follows that outline, with the mouth on the west flat.
+ * Dungeon chamber shared by every size. Meagre, the cave, is an irregular den of fourteen hexes.
+ * Rock follows that outline. The west entrance is wider than the captain, with the lip outside the flat.
  * The captain arrives alone. Clicking the mouth to leave is later; F10 leaves.
  */
 UCLASS()
@@ -31,7 +31,7 @@ public:
 	FVector GetCaptainSpawnWorld() const;
 	float GetCaptainYaw() const;
 
-	/** Fireplace, bed, and chest on the Meagre floor. No-op without a world. */
+	/** Cave pieces from the furnishing catalog, on the single Meagre floor. No-op without a world. */
 	void PlaceStarterFurnishings();
 
 	UStaticMeshComponent* GetFloorMesh() const { return FloorMesh; }

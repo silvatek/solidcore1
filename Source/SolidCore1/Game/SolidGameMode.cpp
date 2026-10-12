@@ -370,10 +370,8 @@ void ASolidGameMode::TravelToDungeon()
 		return;
 	}
 	const SolidWorldTime::FStamp When = WorldStamp();
-	SolidEvents::RememberStronghold(Configuration, When, SolidStronghold::Starting.Attributes, /*bEnter=*/true);
-	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Enter %s"),
-		*SolidWorldTime::Format(When),
-		*SolidStronghold::Label(SolidStronghold::Starting.Attributes));
+	SolidEvents::RememberStronghold(Configuration, When, /*bEnter=*/true);
+	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Enter Stronghold"), *SolidWorldTime::Format(When));
 	SaveTravelSession(/*bInDungeon=*/true, /*bReturnToDungeonMouth=*/false);
 	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::EnterOptions());
 }
@@ -388,10 +386,8 @@ void ASolidGameMode::TravelToWorld()
 	// Companions are spawned again once this world is the open world.
 	// The party builder is not opened here.
 	const SolidWorldTime::FStamp When = WorldStamp();
-	SolidEvents::RememberStronghold(Configuration, When, SolidStronghold::Starting.Attributes, /*bEnter=*/false);
-	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Leave %s"),
-		*SolidWorldTime::Format(When),
-		*SolidStronghold::Label(SolidStronghold::Starting.Attributes));
+	SolidEvents::RememberStronghold(Configuration, When, /*bEnter=*/false);
+	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Exit Stronghold"), *SolidWorldTime::Format(When));
 	SaveTravelSession(/*bInDungeon=*/false, /*bReturnToDungeonMouth=*/true);
 	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::LeaveOptions());
 }

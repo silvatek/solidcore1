@@ -60,29 +60,28 @@ FString SolidJournal::Describe(const SolidEvents::FEvent& Event)
 	return Text;
 }
 
-void SolidJournal::CollectLines(const SolidEvents::FState& State, TArray<FString>& OutLines)
+void SolidJournal::CollectRows(const SolidEvents::FState& State, TArray<FRow>& OutRows)
 {
-	OutLines.Reset();
-	OutLines.Add(TEXT("Journal"));
-	OutLines.Add(TEXT(""));
+	OutRows.Reset();
+	OutRows.Add({ ERowKind::Title, FString(), FString(Title) });
 
-	if (State.Notes.Num() <= 0)
+	if (State.Journal.Num() <= 0)
 	{
-		OutLines.Add(TEXT("No events yet."));
+		OutRows.Add({ ERowKind::Empty, FString(), FString(EmptyText) });
 	}
 	else
 	{
-		for (const SolidEvents::FJournalEntry& Entry : State.Notes)
+		for (const SolidEvents::FJournalEntry& Entry : State.Journal)
 		{
-			FString Title = Entry.Text;
+			FString Text = Entry.Text;
 			FString Detail;
 			if (Entry.EventIndex >= 0 && Entry.EventIndex < SolidEvents::DefinitionCount)
 			{
 				const SolidEvents::FEvent& Event = SolidEvents::Definitions[Entry.EventIndex];
-				Title = Event.Name;
+				Text = Event.Name;
 				Detail = Describe(Event);
 			}
-			if (Title.IsEmpty())
+			if (Text.IsEmpty())
 			{
 				continue;
 			}
@@ -91,14 +90,13 @@ void SolidJournal::CollectLines(const SolidEvents::FState& State, TArray<FString
 			Stamp.Year = Entry.Year;
 			Stamp.Day = Entry.Day;
 			Stamp.MinuteOfSession = Entry.MinuteOfSession;
-			OutLines.Add(FString::Printf(TEXT("%s  %s"), *SolidWorldTime::Format(Stamp), *Title));
+			OutRows.Add({ ERowKind::Entry, SolidWorldTime::Format(Stamp), Text });
 			if (!Detail.IsEmpty())
 			{
-				OutLines.Add(FString::Printf(TEXT("    %s"), *Detail));
+				OutRows.Add({ ERowKind::Detail, FString(), Detail });
 			}
 		}
 	}
 
-	OutLines.Add(TEXT(""));
-	OutLines.Add(CloseHint);
+	OutRows.Add({ ERowKind::Hint, FString(), FString(CloseHint) });
 }

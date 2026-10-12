@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "SolidSight.h"
-#include "SolidStronghold.h"
 #include "SolidWorldTime.h"
 
 /**
@@ -18,7 +17,7 @@ namespace SolidEvents
 	inline constexpr int32 MaxChangesPerEvent = 4;
 	inline constexpr int32 MaxEvents = 16;
 	/** Town events plus later visits. The oldest line drops off once this fills. */
-	inline constexpr int32 MaxNotes = 64;
+	inline constexpr int32 MaxJournal = 64;
 
 	enum class ETrigger : uint8
 	{
@@ -101,7 +100,7 @@ namespace SolidEvents
 
 	inline constexpr int32 DefinitionCount = UE_ARRAY_COUNT(Definitions);
 
-	/** One journal line. EventIndex draws a town event. Text is a repeated visit, such as the cave. */
+	/** One journal line. EventIndex draws a town event. Text is a repeated visit, such as Enter Stronghold. */
 	struct FJournalEntry
 	{
 		int32 Year = SolidWorldTime::StartYear;
@@ -125,7 +124,7 @@ namespace SolidEvents
 		int32 FiredOrder[MaxEvents] = {};
 		int32 FiredCount = 0;
 		/** Journal, including repeated stronghold trips. Copied with the travel session. */
-		TArray<FJournalEntry> Notes;
+		TArray<FJournalEntry> Journal;
 	};
 
 	inline void Remember(
@@ -134,9 +133,9 @@ namespace SolidEvents
 		const FString& Text,
 		const int32 EventIndex = INDEX_NONE)
 	{
-		if (State.Notes.Num() >= MaxNotes)
+		if (State.Journal.Num() >= MaxJournal)
 		{
-			State.Notes.RemoveAt(0);
+			State.Journal.RemoveAt(0);
 		}
 
 		FJournalEntry Entry;
@@ -145,18 +144,19 @@ namespace SolidEvents
 		Entry.MinuteOfSession = When.MinuteOfSession;
 		Entry.EventIndex = EventIndex;
 		Entry.Text = Text;
-		State.Notes.Add(Entry);
+		State.Journal.Add(Entry);
 	}
 
-	/** Enter or leave. The same stronghold can be noted again on the next trip. */
+	/**
+	 * Enter or exit. The line does not name the stronghold.
+	 * An upgrade will be its own entry. The same trip can be noted again.
+	 */
 	inline void RememberStronghold(
 		FState& State,
 		const SolidWorldTime::FStamp& When,
-		const FSolidStronghold& Stronghold,
 		const bool bEnter)
 	{
-		const TCHAR* Action = bEnter ? TEXT("Enter") : TEXT("Leave");
-		Remember(State, When, FString::Printf(TEXT("%s %s"), Action, *SolidStronghold::Label(Stronghold)));
+		Remember(State, When, bEnter ? TEXT("Enter Stronghold") : TEXT("Exit Stronghold"));
 	}
 
 	struct FResult

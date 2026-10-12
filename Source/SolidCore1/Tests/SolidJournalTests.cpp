@@ -1,23 +1,36 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "Events/SolidEvents.h"
-#include "Menus/SolidJournal.h"
-#include "SolidStronghold.h"
+#include "Journal/SolidJournal.h"
 #include "SolidWorldTime.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
 namespace SolidJournalTestPrivate
 {
-	FString JoinLines(const TArray<FString>& Lines)
+	int32 FindEntry(const TArray<SolidJournal::FRow>& Rows, const TCHAR* Text, const int32 Start = 0)
 	{
-		FString Joined;
-		for (const FString& Line : Lines)
+		for (int32 Index = Start; Index < Rows.Num(); ++Index)
 		{
-			Joined += Line;
-			Joined += TEXT("\n");
+			const SolidJournal::FRow& Row = Rows[Index];
+			if (Row.Kind == SolidJournal::ERowKind::Entry && Row.Text == Text)
+			{
+				return Index;
+			}
 		}
-		return Joined;
+		return INDEX_NONE;
+	}
+
+	bool ContainsText(const TArray<SolidJournal::FRow>& Rows, const TCHAR* Text)
+	{
+		for (const SolidJournal::FRow& Row : Rows)
+		{
+			if (Row.Text.Contains(Text))
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 }
 
@@ -28,13 +41,12 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidJournalEmptyTest::RunTest(const FString& Parameters)
 {
-	TArray<FString> Lines;
-	SolidJournal::CollectLines(SolidEvents::FState(), Lines);
-	const FString Joined = SolidJournalTestPrivate::JoinLines(Lines);
-	TestTrue(TEXT("title"), Joined.Contains(TEXT("Journal")));
-	TestTrue(TEXT("empty copy"), Joined.Contains(TEXT("No events yet.")));
-	TestTrue(TEXT("close hint"), Joined.Contains(SolidJournal::CloseHint));
-	TestFalse(TEXT("no Relion yet"), Joined.Contains(TEXT("Relion")));
+	TArray<SolidJournal::FRow> Rows;
+	SolidJournal::CollectRows(SolidEvents::FState(), Rows);
+	TestTrue(TEXT("title"), SolidJournalTestPrivate::ContainsText(Rows, TEXT("Journal")));
+	TestTrue(TEXT("empty copy"), SolidJournalTestPrivate::ContainsText(Rows, TEXT("No events yet.")));
+	TestTrue(TEXT("close hint"), SolidJournalTestPrivate::ContainsText(Rows, SolidJournal::CloseHint));
+	TestFalse(TEXT("no Relion yet"), SolidJournalTestPrivate::ContainsText(Rows, TEXT("Relion")));
 	return true;
 }
 
@@ -47,51 +59,75 @@ bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 {
 	SolidEvents::FState State;
 	SolidEvents::NotifyOccupiedTown(State, 0);
-	TArray<FString> AtStart;
-	SolidJournal::CollectLines(State, AtStart);
-	const FString IglinText = SolidJournalTestPrivate::JoinLines(AtStart);
-	TestTrue(TEXT("Iglin is the first entry"), IglinText.Contains(TEXT("00:00, 200/45 AtF  Enter Iglin")));
-	TestFalse(TEXT("Iglin has no change line"), IglinText.Contains(TEXT("    ")));
-	TestFalse(TEXT("Iglin does not mention Relion"), IglinText.Contains(TEXT("Relion")));
-	TestFalse(TEXT("Iglin is not the empty journal"), IglinText.Contains(TEXT("No events yet.")));
+	TArray<SolidJournal::FRow> AtStart;
+	SolidJournal::CollectRows(State, AtStart);
+	const int32 Iglin = SolidJournalTestPrivate::FindEntry(AtStart, TEXT("Enter Iglin"));
+	TestTrue(TEXT("Iglin is the first entry"), Iglin != INDEX_NONE);
+	if (Iglin != INDEX_NONE)
+	{
+		TestEqual(TEXT("Iglin stamp"), AtStart[Iglin].Stamp, FString(TEXT("00:00, 200/45 AtF")));
+		const bool bIglinDetail = Iglin + 1 < AtStart.Num()
+			&& AtStart[Iglin + 1].Kind == SolidJournal::ERowKind::Detail;
+		TestFalse(TEXT("Iglin has no change line"), bIglinDetail);
+	}
+	TestFalse(TEXT("Iglin does not mention Relion"), SolidJournalTestPrivate::ContainsText(AtStart, TEXT("Relion")));
+	TestFalse(TEXT("Iglin is not the empty journal"), SolidJournalTestPrivate::ContainsText(AtStart, TEXT("No events yet.")));
 
 	SolidEvents::NotifyOccupiedTown(State, 1);
-	TArray<FString> AfterRelion;
-	SolidJournal::CollectLines(State, AfterRelion);
-	const FString RelionText = SolidJournalTestPrivate::JoinLines(AfterRelion);
-	TestTrue(TEXT("Iglin stays first"), RelionText.Contains(TEXT("00:00, 200/45 AtF  Enter Iglin")));
-	TestTrue(TEXT("lists Enter Relion second"), RelionText.Contains(TEXT("00:00, 200/45 AtF  Enter Relion")));
-	TestTrue(TEXT("Relion enables raven sight"), RelionText.Contains(TEXT("Raven sight enabled")));
-	TestTrue(TEXT("Relion party is Sam"), RelionText.Contains(TEXT("Party 1: Sam")));
-	TestFalse(TEXT("Alex is not in yet"), RelionText.Contains(TEXT("Alex")));
+	TArray<SolidJournal::FRow> AfterRelion;
+	SolidJournal::CollectRows(State, AfterRelion);
+	const int32 IglinStill = SolidJournalTestPrivate::FindEntry(AfterRelion, TEXT("Enter Iglin"));
+	const int32 Relion = SolidJournalTestPrivate::FindEntry(AfterRelion, TEXT("Enter Relion"));
+	TestTrue(TEXT("Iglin stays first"), IglinStill != INDEX_NONE && Relion != INDEX_NONE && IglinStill < Relion);
+	TestTrue(TEXT("lists Enter Relion second"), Relion != INDEX_NONE);
+	TestTrue(TEXT("Relion enables raven sight"), SolidJournalTestPrivate::ContainsText(AfterRelion, TEXT("Raven sight enabled")));
+	TestTrue(TEXT("Relion party is Sam"), SolidJournalTestPrivate::ContainsText(AfterRelion, TEXT("Party 1: Sam")));
+	TestFalse(TEXT("Alex is not in yet"), SolidJournalTestPrivate::ContainsText(AfterRelion, TEXT("Alex")));
+	if (Relion != INDEX_NONE)
+	{
+		TestEqual(TEXT("Relion stamp stays in its column"), AfterRelion[Relion].Stamp, FString(TEXT("00:00, 200/45 AtF")));
+		TestTrue(TEXT("Relion detail follows the entry"), Relion + 1 < AfterRelion.Num()
+			&& AfterRelion[Relion + 1].Kind == SolidJournal::ERowKind::Detail);
+		if (Relion + 1 < AfterRelion.Num())
+		{
+			TestTrue(TEXT("detail leaves the time column empty"), AfterRelion[Relion + 1].Stamp.IsEmpty());
+		}
+	}
 
 	SolidEvents::NotifyOccupiedTown(State, 2);
-	TArray<FString> AfterKanfold;
-	SolidJournal::CollectLines(State, AfterKanfold);
-	const FString Both = SolidJournalTestPrivate::JoinLines(AfterKanfold);
-	TestTrue(TEXT("Iglin stays first"), Both.Contains(TEXT("00:00, 200/45 AtF  Enter Iglin")));
-	TestTrue(TEXT("Relion stays second"), Both.Contains(TEXT("00:00, 200/45 AtF  Enter Relion")));
-	TestTrue(TEXT("Kanfold is third"), Both.Contains(TEXT("00:00, 200/45 AtF  Enter Kanfold")));
-	TestTrue(TEXT("Kanfold party is both"), Both.Contains(TEXT("Party 2: Sam, Alex")));
-	TestFalse(TEXT("filled journal is not empty"), Both.Contains(TEXT("No events yet.")));
-
-	const int32 RelionAt = Both.Find(TEXT("Enter Relion"));
-	const int32 KanfoldAt = Both.Find(TEXT("Enter Kanfold"));
-	TestTrue(TEXT("Relion is listed before Kanfold"), RelionAt != INDEX_NONE && KanfoldAt != INDEX_NONE && RelionAt < KanfoldAt);
+	TArray<SolidJournal::FRow> AfterKanfold;
+	SolidJournal::CollectRows(State, AfterKanfold);
+	const int32 IglinThird = SolidJournalTestPrivate::FindEntry(AfterKanfold, TEXT("Enter Iglin"));
+	const int32 RelionThird = SolidJournalTestPrivate::FindEntry(AfterKanfold, TEXT("Enter Relion"));
+	const int32 Kanfold = SolidJournalTestPrivate::FindEntry(AfterKanfold, TEXT("Enter Kanfold"));
+	TestTrue(TEXT("Iglin stays first"), IglinThird != INDEX_NONE && RelionThird != INDEX_NONE && IglinThird < RelionThird);
+	TestTrue(TEXT("Relion stays second"), RelionThird != INDEX_NONE && Kanfold != INDEX_NONE && RelionThird < Kanfold);
+	TestTrue(TEXT("Kanfold is third"), Kanfold != INDEX_NONE);
+	TestTrue(TEXT("Kanfold party is both"), SolidJournalTestPrivate::ContainsText(AfterKanfold, TEXT("Party 2: Sam, Alex")));
+	TestFalse(TEXT("filled journal is not empty"), SolidJournalTestPrivate::ContainsText(AfterKanfold, TEXT("No events yet.")));
 
 	SolidEvents::FState Skipped;
 	SolidEvents::NotifyOccupiedTown(Skipped, 2);
 	SolidEvents::NotifyOccupiedTown(Skipped, 1);
-	TArray<FString> Reversed;
-	SolidJournal::CollectLines(Skipped, Reversed);
-	const FString ReverseText = SolidJournalTestPrivate::JoinLines(Reversed);
-	const int32 KanfoldFirst = ReverseText.Find(TEXT("Enter Kanfold"));
-	const int32 RelionSecond = ReverseText.Find(TEXT("Enter Relion"));
-	TestTrue(TEXT("Kanfold is entry 1 when visited first"), ReverseText.Contains(TEXT("00:00, 200/45 AtF  Enter Kanfold")));
-	TestTrue(TEXT("Relion is entry 2 when visited second"), ReverseText.Contains(TEXT("00:00, 200/45 AtF  Enter Relion")));
-	TestTrue(TEXT("visit order is kept"), KanfoldFirst != INDEX_NONE && RelionSecond != INDEX_NONE && KanfoldFirst < RelionSecond);
-	TestFalse(TEXT("skipped Relion did not enable sight in that entry"),
-		ReverseText.Contains(TEXT("00:00, 200/45 AtF  Enter Kanfold\n    Raven sight")));
+	TArray<SolidJournal::FRow> Reversed;
+	SolidJournal::CollectRows(Skipped, Reversed);
+	const int32 KanfoldFirst = SolidJournalTestPrivate::FindEntry(Reversed, TEXT("Enter Kanfold"));
+	const int32 RelionSecond = SolidJournalTestPrivate::FindEntry(Reversed, TEXT("Enter Relion"));
+	TestTrue(TEXT("Kanfold is entry 1 when visited first"), KanfoldFirst != INDEX_NONE);
+	TestTrue(TEXT("Relion is entry 2 when visited second"), RelionSecond != INDEX_NONE && KanfoldFirst != INDEX_NONE && KanfoldFirst < RelionSecond);
+	if (KanfoldFirst != INDEX_NONE)
+	{
+		TestEqual(TEXT("Kanfold stamp"), Reversed[KanfoldFirst].Stamp, FString(TEXT("00:00, 200/45 AtF")));
+	}
+	if (RelionSecond != INDEX_NONE)
+	{
+		TestEqual(TEXT("Relion stamp"), Reversed[RelionSecond].Stamp, FString(TEXT("00:00, 200/45 AtF")));
+	}
+	const bool bKanfoldSight = KanfoldFirst != INDEX_NONE
+		&& KanfoldFirst + 1 < Reversed.Num()
+		&& Reversed[KanfoldFirst + 1].Kind == SolidJournal::ERowKind::Detail
+		&& Reversed[KanfoldFirst + 1].Text.Contains(TEXT("Raven sight"));
+	TestFalse(TEXT("skipped Relion did not enable sight in that entry"), bKanfoldSight);
 	return true;
 }
 
@@ -107,12 +143,17 @@ bool FSolidJournalCaptainTitleTest::RunTest(const FString& Parameters)
 	SolidEvents::NotifyOccupiedTown(State, 1);
 	SolidEvents::NotifyOccupiedTown(State, 2);
 
-	TArray<FString> Lines;
-	SolidJournal::CollectLines(State, Lines);
-	const FString Text = SolidJournalTestPrivate::JoinLines(Lines);
-	TestTrue(TEXT("Relion records Vagrant"), Text.Contains(TEXT("Title Vagrant")));
-	TestTrue(TEXT("Kanfold records Ranger"), Text.Contains(TEXT("Title Ranger")));
-	TestFalse(TEXT("Iglin does not record a title"), Text.Contains(TEXT("Enter Iglin\n    Title")));
+	TArray<SolidJournal::FRow> Rows;
+	SolidJournal::CollectRows(State, Rows);
+	TestTrue(TEXT("Relion records Vagrant"), SolidJournalTestPrivate::ContainsText(Rows, TEXT("Title Vagrant")));
+	TestTrue(TEXT("Kanfold records Ranger"), SolidJournalTestPrivate::ContainsText(Rows, TEXT("Title Ranger")));
+	const int32 Iglin = SolidJournalTestPrivate::FindEntry(Rows, TEXT("Enter Iglin"));
+	TestTrue(TEXT("Iglin is present"), Iglin != INDEX_NONE);
+	const bool bIglinTitle = Iglin != INDEX_NONE
+		&& Iglin + 1 < Rows.Num()
+		&& Rows[Iglin + 1].Kind == SolidJournal::ERowKind::Detail
+		&& Rows[Iglin + 1].Text.Contains(TEXT("Title"));
+	TestFalse(TEXT("Iglin does not record a title"), bIglinTitle);
 	return true;
 }
 
@@ -127,31 +168,79 @@ bool FSolidJournalWorldTimeTest::RunTest(const FString& Parameters)
 	SolidEvents::FState State;
 	SolidEvents::NotifyOccupiedTown(State, 0, Ninth);
 
-	TArray<FString> Lines;
-	SolidJournal::CollectLines(State, Lines);
-	const FString Text = SolidJournalTestPrivate::JoinLines(Lines);
-	TestTrue(TEXT("ninth session stamps Iglin"), Text.Contains(TEXT("01:24, 200/53 AtF  Enter Iglin")));
+	TArray<SolidJournal::FRow> Lines;
+	SolidJournal::CollectRows(State, Lines);
+	const int32 Iglin = SolidJournalTestPrivate::FindEntry(Lines, TEXT("Enter Iglin"));
+	TestTrue(TEXT("ninth session lists Iglin"), Iglin != INDEX_NONE);
+	if (Iglin != INDEX_NONE)
+	{
+		TestEqual(TEXT("ninth session stamps Iglin"), Lines[Iglin].Stamp, FString(TEXT("01:24, 200/53 AtF")));
+	}
 
-	SolidEvents::RememberStronghold(State, Ninth, SolidStronghold::Starting.Attributes, /*bEnter=*/true);
+	SolidEvents::RememberStronghold(State, Ninth, /*bEnter=*/true);
 	const SolidWorldTime::FStamp Later = SolidWorldTime::FromSession(9, 90.0 * 60.0);
-	SolidEvents::RememberStronghold(State, Later, SolidStronghold::Starting.Attributes, /*bEnter=*/false);
-	SolidEvents::RememberStronghold(State, Later, SolidStronghold::Starting.Attributes, /*bEnter=*/true);
+	SolidEvents::RememberStronghold(State, Later, /*bEnter=*/false);
+	SolidEvents::RememberStronghold(State, Later, /*bEnter=*/true);
 
-	TArray<FString> AfterCave;
-	SolidJournal::CollectLines(State, AfterCave);
-	const FString CaveText = SolidJournalTestPrivate::JoinLines(AfterCave);
-	TestEqual(TEXT("cave trips are noted again"), State.Notes.Num(), 4);
-	const int32 EnterAt = CaveText.Find(TEXT("Enter Meagre Dungeon"));
-	const int32 LeaveAt = CaveText.Find(TEXT("Leave Meagre Dungeon"));
-	const int32 EnterAgain = CaveText.Find(TEXT("Enter Meagre Dungeon"), ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+	TArray<SolidJournal::FRow> AfterCave;
+	SolidJournal::CollectRows(State, AfterCave);
+	TestEqual(TEXT("cave trips are noted again"), State.Journal.Num(), 4);
+	const int32 EnterAt = SolidJournalTestPrivate::FindEntry(AfterCave, TEXT("Enter Stronghold"));
+	const int32 LeaveAt = SolidJournalTestPrivate::FindEntry(AfterCave, TEXT("Exit Stronghold"));
+	const int32 EnterAgain = SolidJournalTestPrivate::FindEntry(AfterCave, TEXT("Enter Stronghold"), LeaveAt == INDEX_NONE ? 0 : LeaveAt + 1);
 	TestTrue(TEXT("enter is recorded"), EnterAt != INDEX_NONE);
-	TestTrue(TEXT("leave is recorded"), LeaveAt != INDEX_NONE && LeaveAt > EnterAt);
+	TestTrue(TEXT("exit is recorded"), LeaveAt != INDEX_NONE && LeaveAt > EnterAt);
 	TestTrue(TEXT("a second enter is its own line"), EnterAgain != INDEX_NONE && EnterAgain > LeaveAt);
-	TestTrue(TEXT("leave uses the later minute"), CaveText.Contains(TEXT("01:30, 200/53 AtF  Leave Meagre Dungeon")));
+	if (LeaveAt != INDEX_NONE)
+	{
+		TestEqual(TEXT("exit uses the later minute"), AfterCave[LeaveAt].Stamp, FString(TEXT("01:30, 200/53 AtF")));
+		TestEqual(TEXT("exit text stays in its column"), AfterCave[LeaveAt].Text, FString(TEXT("Exit Stronghold")));
+	}
+	TestFalse(TEXT("the line does not name the dungeon"), SolidJournalTestPrivate::ContainsText(AfterCave, TEXT("Meagre")));
+	TestFalse(TEXT("the line does not name the type"), SolidJournalTestPrivate::ContainsText(AfterCave, TEXT("Dungeon")));
 
 	SolidEvents::FState Copied = State;
-	TestEqual(TEXT("the cave trip keeps the journal"), Copied.Notes.Num(), State.Notes.Num());
-	TestEqual(TEXT("copied leave text"), Copied.Notes[2].Text, FString(TEXT("Leave Meagre Dungeon")));
+	TestEqual(TEXT("the cave trip keeps the journal"), Copied.Journal.Num(), State.Journal.Num());
+	TestEqual(TEXT("copied exit text"), Copied.Journal[2].Text, FString(TEXT("Exit Stronghold")));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidJournalPageTest,
+	"SolidCore1.Journal.Page",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidJournalPageTest::RunTest(const FString& Parameters)
+{
+	float Wide = 0.f;
+	float Tall = 0.f;
+	SolidJournal::BoardSize(1920.f, 1080.f, 200.f, 80.f, Wide, Tall);
+	TestTrue(TEXT("a roomy view uses the width share"), FMath::IsNearlyEqual(Wide, 1920.f * SolidJournal::BoardWidthFraction, 0.5f));
+	TestTrue(TEXT("a roomy view uses the height share"), FMath::IsNearlyEqual(Tall, 1080.f * SolidJournal::BoardHeightFraction, 0.5f));
+	TestTrue(TEXT("the page is wider than the old shrink-wrap"), Wide >= SolidJournal::MinBoardWidth);
+	TestTrue(TEXT("the page is taller than the old shrink-wrap"), Tall >= SolidJournal::MinBoardHeight);
+
+	float FittedW = 0.f;
+	float FittedH = 0.f;
+	SolidJournal::BoardSize(800.f, 600.f, 100.f, 40.f, FittedW, FittedH);
+	TestTrue(TEXT("a small view keeps the board on screen"),
+		FittedW <= 800.f - SolidJournal::BoardMargin * 2.f + 0.5f
+		&& FittedH <= 600.f - SolidJournal::BoardMargin * 2.f + 0.5f
+		&& FittedW > 0.f
+		&& FittedH > 0.f);
+
+	float Grown = 0.f;
+	float GrownH = 0.f;
+	SolidJournal::BoardSize(1920.f, 1080.f, 2000.f, 40.f, Grown, GrownH);
+	TestTrue(TEXT("wide text stays inside the view"),
+		FMath::IsNearlyEqual(Grown, 1920.f - SolidJournal::BoardMargin * 2.f, 0.5f));
+
+	const SolidJournal::FColumns Columns = SolidJournal::Columns(36.f, 180.f);
+	TestTrue(TEXT("the entry column clears the time column"),
+		Columns.TextX >= Columns.StampX + 180.f + SolidJournal::ColumnGap - 0.1f);
+
+	const SolidJournal::FColumns Empty = SolidJournal::Columns(36.f, 0.f);
+	TestTrue(TEXT("an empty time column does not indent the text"), FMath::IsNearlyEqual(Empty.TextX, 36.f, 0.1f));
 	return true;
 }
 

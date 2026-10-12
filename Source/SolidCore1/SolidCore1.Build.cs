@@ -21,6 +21,7 @@ public class SolidCore1 : ModuleRules
 		PrivateIncludePaths.Add(ModuleDirectory + "/Strongholds");
 		PrivateIncludePaths.Add(ModuleDirectory + "/HUD");
 		PrivateIncludePaths.Add(ModuleDirectory + "/Menus");
+		PrivateIncludePaths.Add(ModuleDirectory + "/Journal");
 		PrivateIncludePaths.Add(ModuleDirectory + "/Events");
 		PrivateIncludePaths.Add(ModuleDirectory + "/Tests");
 

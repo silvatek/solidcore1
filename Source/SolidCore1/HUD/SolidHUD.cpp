@@ -4,7 +4,7 @@
 #include "Strongholds/SolidDungeonPassage.h"
 #include "SolidBuildId.h"
 #include "Menus/SolidCredits.h"
-#include "Menus/SolidJournal.h"
+#include "Journal/SolidJournal.h"
 #include "Menus/SolidMainMenu.h"
 #include "Menus/SolidMenuPointer.h"
 #include "Menus/SolidPartyBuilder.h"
@@ -580,6 +580,145 @@ namespace SolidHUDPrivate
 				TextItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
 				Canvas->DrawItem(TextItem);
 			}
+		}
+	}
+
+	/** Large journal board. Time and the entry are separate columns. The close hint stays at the bottom. */
+	static void DrawJournalBoard(UCanvas* Canvas, const TArray<SolidJournal::FRow>& Rows)
+	{
+		if (!Canvas || Rows.Num() == 0)
+		{
+			return;
+		}
+
+		UFont* Font = GEngine ? GEngine->GetMediumFont() : nullptr;
+		if (!Font && GEngine)
+		{
+			Font = GEngine->GetSmallFont();
+		}
+
+		float StampWidth = 0.f;
+		float TextWidth = 0.f;
+		float LineHeight = 18.f;
+		int32 FlowRows = 0;
+		for (const SolidJournal::FRow& Row : Rows)
+		{
+			if (Row.Kind != SolidJournal::ERowKind::Hint)
+			{
+				++FlowRows;
+			}
+
+			float StampW = 0.f;
+			float StampH = 0.f;
+			float TextW = 0.f;
+			float TextH = 0.f;
+			if (Font)
+			{
+				if (!Row.Stamp.IsEmpty())
+				{
+					Canvas->StrLen(Font, Row.Stamp, StampW, StampH);
+				}
+				Canvas->StrLen(Font, Row.Text.IsEmpty() ? TEXT(" ") : Row.Text, TextW, TextH);
+			}
+			else
+			{
+				StampW = static_cast<float>(Row.Stamp.Len() * 8);
+				TextW = static_cast<float>(FMath::Max(Row.Text.Len(), 1) * 8);
+				StampH = 18.f;
+				TextH = 18.f;
+			}
+			StampWidth = FMath::Max(StampWidth, StampW);
+			TextWidth = FMath::Max(TextWidth, TextW);
+			LineHeight = FMath::Max(LineHeight, FMath::Max(StampH, TextH));
+		}
+
+		const float ColumnSpan = StampWidth > 0.f ? StampWidth + SolidJournal::ColumnGap : 0.f;
+		const float ContentW = ColumnSpan + TextWidth;
+		const float ContentH = static_cast<float>(FlowRows) * (LineHeight + SolidJournal::LineGap) + LineHeight;
+		float BoardW = 0.f;
+		float BoardH = 0.f;
+		SolidJournal::BoardSize(
+			static_cast<float>(Canvas->SizeX),
+			static_cast<float>(Canvas->SizeY),
+			ContentW,
+			ContentH,
+			BoardW,
+			BoardH);
+
+		const float BoxX = (static_cast<float>(Canvas->SizeX) - BoardW) * 0.5f;
+		const float BoxY = (static_cast<float>(Canvas->SizeY) - BoardH) * 0.5f;
+
+		FCanvasTileItem Dim(
+			FVector2D(0.f, 0.f),
+			FVector2D(static_cast<float>(Canvas->SizeX), static_cast<float>(Canvas->SizeY)),
+			FLinearColor(0.f, 0.f, 0.f, 0.72f));
+		Dim.BlendMode = SE_BLEND_Translucent;
+		Canvas->DrawItem(Dim);
+
+		DrawOakFrame(Canvas, BoxX, BoxY, BoardW, BoardH, SolidHudTheme::MenuFrame());
+
+		const SolidHudTheme::FPalette Palette = SolidHudTheme::OakAndBronze();
+		const float OriginX = BoxX + SolidJournal::BoardPad;
+		const SolidJournal::FColumns Columns = SolidJournal::Columns(OriginX, StampWidth);
+		const float HintY = BoxY + BoardH - SolidJournal::BoardPad - LineHeight;
+		float Y = BoxY + SolidJournal::BoardPad;
+
+		for (const SolidJournal::FRow& Row : Rows)
+		{
+			if (Row.Kind == SolidJournal::ERowKind::Hint)
+			{
+				continue;
+			}
+			// Leave the close hint. A scrollbar will cover lines that do not fit.
+			if (Y + LineHeight > HintY)
+			{
+				break;
+			}
+
+			const bool bTitle = Row.Kind == SolidJournal::ERowKind::Title;
+			const FLinearColor Color = bTitle ? Palette.Title : Palette.Ink;
+			const float TextX = bTitle ? OriginX : Columns.TextX;
+
+			if (!Row.Stamp.IsEmpty())
+			{
+				FCanvasTextItem StampItem(
+					FVector2D(Columns.StampX, Y), FText::FromString(Row.Stamp), Font, Palette.Ink);
+				StampItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+				Canvas->DrawItem(StampItem);
+			}
+			if (!Row.Text.IsEmpty())
+			{
+				FCanvasTextItem TextItem(FVector2D(TextX, Y), FText::FromString(Row.Text), Font, Color);
+				TextItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+				Canvas->DrawItem(TextItem);
+			}
+
+			if (bTitle && !Row.Text.IsEmpty())
+			{
+				const float RuleInset = SolidHudTheme::BandThickness(SolidHudTheme::MenuFrame()) + 18.f;
+				FillRect(
+					Canvas,
+					BoxX + RuleInset,
+					Y + LineHeight + SolidJournal::LineGap * 0.35f,
+					FMath::Max(0.f, BoardW - RuleInset * 2.f),
+					2.f,
+					Palette.Bronze);
+			}
+
+			Y += LineHeight + SolidJournal::LineGap;
+		}
+
+		for (const SolidJournal::FRow& Row : Rows)
+		{
+			if (Row.Kind != SolidJournal::ERowKind::Hint || Row.Text.IsEmpty())
+			{
+				continue;
+			}
+			FCanvasTextItem HintItem(
+				FVector2D(OriginX, HintY), FText::FromString(Row.Text), Font, Palette.Hint);
+			HintItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+			Canvas->DrawItem(HintItem);
+			break;
 		}
 	}
 }
@@ -1175,9 +1314,9 @@ void ASolidHUD::DrawJournalPopup() const
 		}
 	}
 
-	TArray<FString> Lines;
-	SolidJournal::CollectLines(State, Lines);
-	SolidHUDPrivate::DrawCenteredPopup(Canvas, Lines, 4.f);
+	TArray<SolidJournal::FRow> Rows;
+	SolidJournal::CollectRows(State, Rows);
+	SolidHUDPrivate::DrawJournalBoard(Canvas, Rows);
 }
 
 void ASolidHUD::DrawMainMenuPopup()

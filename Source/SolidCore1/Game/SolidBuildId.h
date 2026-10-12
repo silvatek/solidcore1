@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0197")
+#define SOLID_BUILD_ID TEXT("SC1-0198")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Cave arrival levels the camera")
+#define SOLID_BUILD_NOTE TEXT("Journal uses world time")
 #endif

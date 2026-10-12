@@ -1,5 +1,6 @@
 #include "SolidJournal.h"
 #include "SolidSight.h"
+#include "SolidWorldTime.h"
 
 FString SolidJournal::Describe(const SolidEvents::FEvent& Event)
 {
@@ -65,23 +66,32 @@ void SolidJournal::CollectLines(const SolidEvents::FState& State, TArray<FString
 	OutLines.Add(TEXT("Journal"));
 	OutLines.Add(TEXT(""));
 
-	if (State.FiredCount <= 0)
+	if (State.Notes.Num() <= 0)
 	{
 		OutLines.Add(TEXT("No events yet."));
 	}
 	else
 	{
-		const int32 Count = FMath::Min(State.FiredCount, SolidEvents::MaxEvents);
-		for (int32 Index = 0; Index < Count; ++Index)
+		for (const SolidEvents::FNote& Note : State.Notes)
 		{
-			const int32 EventIndex = State.FiredOrder[Index];
-			if (EventIndex < 0 || EventIndex >= SolidEvents::DefinitionCount)
+			FString Title = Note.Text;
+			FString Detail;
+			if (Note.EventIndex >= 0 && Note.EventIndex < SolidEvents::DefinitionCount)
+			{
+				const SolidEvents::FEvent& Event = SolidEvents::Definitions[Note.EventIndex];
+				Title = Event.Name;
+				Detail = Describe(Event);
+			}
+			if (Title.IsEmpty())
 			{
 				continue;
 			}
-			const SolidEvents::FEvent& Event = SolidEvents::Definitions[EventIndex];
-			OutLines.Add(FString::Printf(TEXT("%d  %s"), Index + 1, Event.Name));
-			const FString Detail = Describe(Event);
+
+			SolidWorldTime::FStamp Stamp;
+			Stamp.Year = Note.Year;
+			Stamp.Day = Note.Day;
+			Stamp.MinuteOfSession = Note.MinuteOfSession;
+			OutLines.Add(FString::Printf(TEXT("%s  %s"), *SolidWorldTime::Format(Stamp), *Title));
 			if (!Detail.IsEmpty())
 			{
 				OutLines.Add(FString::Printf(TEXT("    %s"), *Detail));

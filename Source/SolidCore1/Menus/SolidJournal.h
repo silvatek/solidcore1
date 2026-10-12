@@ -5,7 +5,7 @@
 
 /**
  * Journal page opened from the F10 menu.
- * Lists events in the order they fired, plus what each one changed.
+ * Each line starts with world time. Town events and stronghold trips are listed in the order they happened.
  */
 namespace SolidJournal
 {

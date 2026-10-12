@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "SolidSight.h"
+#include "SolidStronghold.h"
+#include "SolidWorldTime.h"
 
 /**
  * Events change the company/party configuration when a trigger fires.
@@ -15,6 +17,8 @@ namespace SolidEvents
 {
 	inline constexpr int32 MaxChangesPerEvent = 4;
 	inline constexpr int32 MaxEvents = 16;
+	/** Town events plus later visits. The oldest line drops off once this fills. */
+	inline constexpr int32 MaxNotes = 64;
 
 	enum class ETrigger : uint8
 	{
@@ -97,6 +101,16 @@ namespace SolidEvents
 
 	inline constexpr int32 DefinitionCount = UE_ARRAY_COUNT(Definitions);
 
+	/** One journal line. EventIndex draws a town event. Text is a repeated visit, such as the cave. */
+	struct FNote
+	{
+		int32 Year = SolidWorldTime::StartYear;
+		int32 Day = SolidWorldTime::StartDay;
+		int32 MinuteOfSession = 0;
+		int32 EventIndex = INDEX_NONE;
+		FString Text;
+	};
+
 	/** Live configuration. The game starts in true sight with an empty party. */
 	struct FState
 	{
@@ -110,7 +124,40 @@ namespace SolidEvents
 		/** Definition indexes, in the order the events fired. */
 		int32 FiredOrder[MaxEvents] = {};
 		int32 FiredCount = 0;
+		/** Journal, including repeated stronghold trips. Copied with the travel session. */
+		TArray<FNote> Notes;
 	};
+
+	inline void Remember(
+		FState& State,
+		const SolidWorldTime::FStamp& When,
+		const FString& Text,
+		const int32 EventIndex = INDEX_NONE)
+	{
+		if (State.Notes.Num() >= MaxNotes)
+		{
+			State.Notes.RemoveAt(0);
+		}
+
+		FNote Note;
+		Note.Year = When.Year;
+		Note.Day = When.Day;
+		Note.MinuteOfSession = When.MinuteOfSession;
+		Note.EventIndex = EventIndex;
+		Note.Text = Text;
+		State.Notes.Add(Note);
+	}
+
+	/** Enter or leave. The same stronghold can be noted again on the next trip. */
+	inline void RememberStronghold(
+		FState& State,
+		const SolidWorldTime::FStamp& When,
+		const FSolidStronghold& Stronghold,
+		const bool bEnter)
+	{
+		const TCHAR* Action = bEnter ? TEXT("Enter") : TEXT("Leave");
+		Remember(State, When, FString::Printf(TEXT("%s %s"), Action, *SolidStronghold::Label(Stronghold)));
+	}
 
 	struct FResult
 	{
@@ -183,7 +230,10 @@ namespace SolidEvents
 	 * The captain is now on TownId (INDEX_NONE when the cell is not numbered).
 	 * A change of town fires every unfired EnterTown event whose parameter matches.
 	 */
-	inline FResult NotifyOccupiedTown(FState& State, const int32 TownId)
+	inline FResult NotifyOccupiedTown(
+		FState& State,
+		const int32 TownId,
+		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp())
 	{
 		FResult Result;
 		Result.MaxPartySize = State.MaxPartySize;
@@ -218,6 +268,7 @@ namespace SolidEvents
 				State.FiredOrder[State.FiredCount] = Index;
 				++State.FiredCount;
 			}
+			Remember(State, When, FString(), Index);
 			Result.bFired = true;
 			const int32 ChangeCount = FMath::Min(Event.ChangeCount, MaxChangesPerEvent);
 			for (int32 ChangeIndex = 0; ChangeIndex < ChangeCount; ++ChangeIndex)

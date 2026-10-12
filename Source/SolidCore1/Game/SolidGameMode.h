@@ -143,6 +143,7 @@ protected:
 	void PlaceCaptainInDungeon();
 	/** The third-person playground blocks sit inside the room. Hide them for this visit. */
 	void HideTemplateProps();
+	SolidWorldTime::FStamp WorldStamp() const;
 
 	ASolidCompanionCharacter* SpawnCompanion(
 		UWorld* World,

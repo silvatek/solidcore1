@@ -36,6 +36,8 @@ namespace SolidTownSigns
 		FString Name;
 		FIntPoint Cell = FIntPoint::ZeroValue;
 		FVector2D WorldXY = FVector2D::ZeroVector;
+		/** Actor yaw from the town. The default faces south. */
+		float YawDeg = FacingYawDeg;
 	};
 
 	/** "Welcome to {TownName}". */

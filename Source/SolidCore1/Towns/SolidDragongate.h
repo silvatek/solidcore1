@@ -8,21 +8,27 @@ class USolidWorldMap;
  * Dragongate (WorldMap digit 5) is a stone wall across its cells, not a pack of houses.
  * The wall runs between the mountain sides. A 4 m gap is the gate. A normal building
  * stands each side of that gap, on the north face of an east-west wall (the east face
- * when the pass runs north-south). Both towers use the same height.
+ * when the pass runs north-south). Both towers are the same height, and that height
+ * is above the wall.
  */
 namespace SolidDragongate
 {
 	inline constexpr float GapCm = 400.f;
 	inline constexpr float WallThicknessCm = 200.f;
-	inline constexpr float WallHeightCm = 800.f;
+	/** Half of the first 8 m curtain. */
+	inline constexpr float WallHeightCm = 400.f;
 	/** How far each tower sinks into the wall so the two read as one structure. */
 	inline constexpr float ConnectCm = 40.f;
 
-	/** Same footprint and height as the default town building, so the towers match. */
+	/** Same footprint as the default town building. The body rises above the wall. */
 	inline constexpr float TowerFootprintXCm = 280.f;
 	inline constexpr float TowerFootprintYCm = 240.f;
-	inline constexpr float TowerBodyCm = 320.f;
+	/** Body above the curtain, before the roof, so the tower reads as taller. */
+	inline constexpr float TowerAboveWallCm = 160.f;
+	inline constexpr float TowerBodyCm = WallHeightCm + TowerAboveWallCm;
 	inline constexpr float TowerRoofCm = 140.f;
+
+	static_assert(TowerBodyCm > WallHeightCm, "Gate towers stand above the wall.");
 
 	inline FLinearColor StoneColor()
 	{

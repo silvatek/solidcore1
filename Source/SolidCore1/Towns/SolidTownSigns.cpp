@@ -1,5 +1,10 @@
 #include "SolidTownSigns.h"
+#include "SolidTowns.h"
 #include "SolidWorldMap.h"
+
+static_assert(
+	SolidTowns::SignFacesSouthYawDeg == SolidTownSigns::FacingYawDeg,
+	"The usual welcome board faces south.");
 
 FString SolidTownSigns::MakeLabel(const FString& TownName)
 {
@@ -46,11 +51,20 @@ int32 SolidTownSigns::CollectPlacements(
 				continue;
 			}
 
+			FVector2D Offset = FVector2D(0.f, 0.f);
+			float YawDeg = FacingYawDeg;
+			if (const SolidTowns::FTownInfo* Town = SolidTowns::Find(Location.Id))
+			{
+				Offset = Town->SignOffsetCm;
+				YawDeg = Town->SignYawDeg;
+			}
+
 			FPlacement Placement;
 			Placement.LocationId = Location.Id;
 			Placement.Name = Location.Name;
 			Placement.Cell = Cell;
-			Placement.WorldXY = WorldXY;
+			Placement.WorldXY = WorldXY + Offset;
+			Placement.YawDeg = YawDeg;
 			OutPlacements.Add(Placement);
 		}
 	}

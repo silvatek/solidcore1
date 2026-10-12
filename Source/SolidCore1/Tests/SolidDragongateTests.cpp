@@ -125,6 +125,9 @@ namespace
 		Test.TestTrue(TEXT("towers are the same height"),
 			DragongateTestNear(Towers[0].BodyHeightCm, Towers[1].BodyHeightCm)
 			&& DragongateTestNear(Towers[0].RoofHeightCm, Towers[1].RoofHeightCm));
+		Test.TestTrue(TEXT("towers stand above the wall"),
+			Towers[0].BodyHeightCm > Walls[0].BodyHeightCm
+			&& Towers[1].BodyHeightCm > Walls[1].BodyHeightCm);
 
 		Walls.Sort([bEastWest](const SolidDragongate::FPiece& A, const SolidDragongate::FPiece& B)
 		{
@@ -166,6 +169,10 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidDragongateWallTest::RunTest(const FString& Parameters)
 {
+	TestTrue(TEXT("the wall is 4 m"), FMath::IsNearlyEqual(SolidDragongate::WallHeightCm, 400.f));
+	TestTrue(TEXT("the tower body is taller than the wall"),
+		SolidDragongate::TowerBodyCm > SolidDragongate::WallHeightCm);
+
 	TArray<SolidDragongate::FPiece> Missing;
 	TestEqual(TEXT("null map builds nothing"),
 		SolidDragongate::CollectPieces(nullptr, DragongateTestMin, DragongateTestMax, Missing), 0);

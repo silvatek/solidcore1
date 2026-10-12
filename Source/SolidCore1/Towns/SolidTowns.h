@@ -4,24 +4,38 @@
 
 /**
  * Town attributes, keyed by the WorldMap.txt location index.
- * The map file keeps the digit, role, and biome. The name lives here.
+ * The map file keeps the digit, role, and biome. The name, and where its
+ * welcome sign stands, live here.
  */
 namespace SolidTowns
 {
+	/** Actor yaw. The board's front faces south, toward someone standing south of the sign. */
+	inline constexpr float SignFacesSouthYawDeg = -90.f;
+	/** Actor yaw. The board's front faces north, so it can be read while facing south. */
+	inline constexpr float SignFacesNorthYawDeg = 90.f;
+	/**
+	 * Dragongate's pole, north of the cell center. The gate is that center.
+	 * 400 cm clears the towers on the north face of the wall and stays inside the cell.
+	 */
+	inline constexpr float DragongateSignNorthCm = 400.f;
+
 	struct FTownInfo
 	{
 		int32 Id = INDEX_NONE;
 		const TCHAR* Name = TEXT("");
+		/** Centimetres from the cell center. +X is east, +Y is north. */
+		FVector2D SignOffsetCm = FVector2D(0.f, 0.f);
+		float SignYawDeg = SignFacesSouthYawDeg;
 	};
 
 	inline const FTownInfo Definitions[] = {
-		{ 0, TEXT("Iglin") },
-		{ 1, TEXT("Relion") },
-		{ 2, TEXT("Kanfold") },
-		{ 3, TEXT("Visolar") },
-		{ 4, TEXT("Jethan") },
-		{ 5, TEXT("Dragongate") },
-		{ 6, TEXT("Rathen") },
+		{ 0, TEXT("Iglin"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg },
+		{ 1, TEXT("Relion"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg },
+		{ 2, TEXT("Kanfold"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg },
+		{ 3, TEXT("Visolar"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg },
+		{ 4, TEXT("Jethan"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg },
+		{ 5, TEXT("Dragongate"), FVector2D(0.f, DragongateSignNorthCm), SignFacesNorthYawDeg },
+		{ 6, TEXT("Rathen"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg },
 	};
 
 	/** WorldMap digit for the walled pass. Houses are not scattered on its cells. */

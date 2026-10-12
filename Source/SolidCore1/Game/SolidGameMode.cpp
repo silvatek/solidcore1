@@ -992,7 +992,7 @@ void ASolidGameMode::EnsureVegetation()
 			ASolidTownSign* Sign = World->SpawnActor<ASolidTownSign>(
 				ASolidTownSign::StaticClass(),
 				SpawnLoc,
-				FRotator(0.f, SolidTownSigns::FacingYawDeg, 0.f),
+				FRotator(0.f, Placement.YawDeg, 0.f),
 				SpawnParams);
 			if (!Sign)
 			{

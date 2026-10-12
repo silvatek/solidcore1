@@ -4,8 +4,8 @@
 
 /**
  * Town attributes, keyed by the WorldMap.txt location index.
- * The map file keeps the digit, role, and biome. The name, and where its
- * welcome sign stands, live here.
+ * The map file keeps the digit, role, and biome. The name, type, and where
+ * its welcome sign stands live here.
  */
 namespace SolidTowns
 {
@@ -14,10 +14,15 @@ namespace SolidTowns
 	/** Actor yaw. The board's front faces north, so it can be read while facing south. */
 	inline constexpr float SignFacesNorthYawDeg = 90.f;
 	/**
-	 * Dragongate's pole, north of the cell center. The gate is that center.
-	 * 400 cm clears the towers on the north face of the wall and stays inside the cell.
+	 * Dragongate's pole, on the north edge of its 16 m cell. The gate stays in the middle.
 	 */
-	inline constexpr float DragongateSignNorthCm = 400.f;
+	inline constexpr float DragongateSignNorthCm = 800.f;
+
+	enum class ETownType : uint8
+	{
+		Town,
+		WallGate,
+	};
 
 	struct FTownInfo
 	{
@@ -26,20 +31,18 @@ namespace SolidTowns
 		/** Centimetres from the cell center. +X is east, +Y is north. */
 		FVector2D SignOffsetCm = FVector2D(0.f, 0.f);
 		float SignYawDeg = SignFacesSouthYawDeg;
+		ETownType Type = ETownType::Town;
 	};
 
 	inline const FTownInfo Definitions[] = {
-		{ 0, TEXT("Iglin"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg },
-		{ 1, TEXT("Relion"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg },
-		{ 2, TEXT("Kanfold"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg },
-		{ 3, TEXT("Visolar"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg },
-		{ 4, TEXT("Jethan"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg },
-		{ 5, TEXT("Dragongate"), FVector2D(0.f, DragongateSignNorthCm), SignFacesNorthYawDeg },
-		{ 6, TEXT("Rathen"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg },
+		{ 0, TEXT("Iglin"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
+		{ 1, TEXT("Relion"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
+		{ 2, TEXT("Kanfold"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
+		{ 3, TEXT("Visolar"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
+		{ 4, TEXT("Jethan"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
+		{ 5, TEXT("Dragongate"), FVector2D(0.f, DragongateSignNorthCm), SignFacesNorthYawDeg, ETownType::WallGate },
+		{ 6, TEXT("Rathen"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
 	};
-
-	/** WorldMap digit for the walled pass. Houses are not scattered on its cells. */
-	inline constexpr int32 DragongateId = 5;
 
 	inline constexpr int32 DefinitionCount = UE_ARRAY_COUNT(Definitions);
 
@@ -53,6 +56,12 @@ namespace SolidTowns
 			}
 		}
 		return nullptr;
+	}
+
+	inline bool IsWallGate(int32 Id)
+	{
+		const FTownInfo* Town = Find(Id);
+		return Town && Town->Type == ETownType::WallGate;
 	}
 
 	/** Empty when this index has no town definition. */

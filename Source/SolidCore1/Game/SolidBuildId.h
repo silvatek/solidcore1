@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0208")
+#define SOLID_BUILD_ID TEXT("SC1-0209")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Dragongate's sign faces north; its towers rise above a lower wall")
+#define SOLID_BUILD_NOTE TEXT("Dragongate's sign sits on the north edge")
 #endif

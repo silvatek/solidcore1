@@ -301,8 +301,18 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	}
 	TestTrue(TEXT("Rathen is beside the river"), bRathenBesideRiver);
 
+	const SolidTowns::FTownInfo* WallGate = nullptr;
+	for (const SolidTowns::FTownInfo& Info : SolidTowns::Definitions)
+	{
+		if (Info.Type == SolidTowns::ETownType::WallGate)
+		{
+			WallGate = &Info;
+			break;
+		}
+	}
+	TestNotNull(TEXT("a wall gate is defined"), WallGate);
 	FSolidWorldLocation Dragongate;
-	if (Map->FindLocation(SolidTowns::DragongateId, Dragongate))
+	if (WallGate && Map->FindLocation(WallGate->Id, Dragongate))
 	{
 		TestEqual(TEXT("Dragongate"), Dragongate.Name, FString(TEXT("Dragongate")));
 		TestEqual(TEXT("Dragongate is Town"), static_cast<uint8>(Dragongate.Biome), static_cast<uint8>(ESolidBiome::Town));

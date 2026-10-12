@@ -27,7 +27,7 @@ int32 SolidTownBuildings::CollectPlacements(
 	const USolidWorldMap* WorldMap = TerrainMap->GetWorldMap();
 	const FVector2D WorldMin = TerrainMap->GetWorldMinXY();
 	const FVector2D WorldMax = TerrainMap->GetWorldMaxXY();
-	const bool bSkipDragongate = WorldMap && WorldMap->IsLoaded();
+	const bool bMapLoaded = WorldMap && WorldMap->IsLoaded();
 
 	const TArray<FSolidTerrainPoint>& Points = TerrainMap->GetPoints();
 	TArray<int32> TownIndices;
@@ -71,8 +71,8 @@ int32 SolidTownBuildings::CollectPlacements(
 	{
 		const FSolidTerrainPoint& Point = Points[TownIndices[I]];
 		const FVector2D Center(Point.X, Point.Y);
-		if (bSkipDragongate
-			&& WorldMap->SampleLocationId(Center.X, Center.Y, WorldMin, WorldMax) == SolidTowns::DragongateId)
+		if (bMapLoaded
+			&& SolidTowns::IsWallGate(WorldMap->SampleLocationId(Center.X, Center.Y, WorldMin, WorldMax)))
 		{
 			continue;
 		}

@@ -232,27 +232,37 @@ bool FSolidTownSignDragongateTest::RunTest(const FString& Parameters)
 	const float TowerNorthCm = SolidDragongate::WallThicknessCm * 0.5f
 		+ SolidDragongate::TowerFootprintYCm
 		- SolidDragongate::ConnectCm;
+	const float HalfCellCm = 102400.f / static_cast<float>(USolidWorldMap::MapWidth) * 0.5f;
 	TestTrue(TEXT("the sign clears the towers"), SolidTowns::DragongateSignNorthCm > TowerNorthCm);
-	TestTrue(TEXT("the sign stays inside the cell"), SolidTowns::DragongateSignNorthCm < 800.f);
+	TestTrue(TEXT("the sign sits on the north edge of the cell"),
+		FMath::IsNearlyEqual(SolidTowns::DragongateSignNorthCm, HalfCellCm, 0.1f));
 
+	int32 WallGateCount = 0;
 	for (const SolidTowns::FTownInfo& Town : SolidTowns::Definitions)
 	{
-		if (Town.Id == SolidTowns::DragongateId)
+		if (Town.Type == SolidTowns::ETownType::WallGate)
 		{
-			TestTrue(TEXT("Dragongate sign is due north"),
+			++WallGateCount;
+			TestEqual(TEXT("the wall gate is Dragongate"), FString(Town.Name), FString(TEXT("Dragongate")));
+			TestTrue(TEXT("wall-gate sign is due north"),
 				FMath::IsNearlyZero(Town.SignOffsetCm.X) && Town.SignOffsetCm.Y > TowerNorthCm);
-			TestTrue(TEXT("Dragongate sign faces north"),
+			TestTrue(TEXT("wall-gate sign faces north"),
 				FMath::IsNearlyEqual(Town.SignYawDeg, SolidTowns::SignFacesNorthYawDeg, 0.1f));
 			TestTrue(TEXT("north is the opposite of south"),
 				FMath::IsNearlyEqual(SolidTowns::SignFacesNorthYawDeg, SolidTowns::SignFacesSouthYawDeg + 180.f, 0.1f));
 		}
 		else
 		{
+			TestEqual(
+				TEXT("other towns stay towns"),
+				static_cast<uint8>(Town.Type),
+				static_cast<uint8>(SolidTowns::ETownType::Town));
 			TestTrue(TEXT("other signs stay on the cell"), Town.SignOffsetCm.IsNearlyZero());
 			TestTrue(TEXT("other signs face south"),
 				FMath::IsNearlyEqual(Town.SignYawDeg, SolidTownSigns::FacingYawDeg, 0.1f));
 		}
 	}
+	TestEqual(TEXT("one wall gate"), WallGateCount, 1);
 
 	FString Text;
 	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
@@ -281,9 +291,10 @@ bool FSolidTownSignDragongateTest::RunTest(const FString& Parameters)
 
 	FVector2D CellXY = FVector2D::ZeroVector;
 	TestTrue(TEXT("cell projects"), WorldMap->CellToWorldXY(FIntPoint(16, 9), WorldMin, WorldMax, CellXY));
-	const FVector2D Expected = CellXY + FVector2D(0.f, SolidTowns::DragongateSignNorthCm);
-	TestTrue(TEXT("sign stands north of the gate"), Placements[0].WorldXY.Equals(Expected, 0.1f));
-	TestTrue(TEXT("sign is north of the cell center"), Placements[0].WorldXY.Y > CellXY.Y);
+	const float CellNorth = (WorldMax.Y - WorldMin.Y) / static_cast<float>(USolidWorldMap::MapHeight) * 0.5f;
+	const FVector2D Expected = CellXY + FVector2D(0.f, CellNorth);
+	TestTrue(TEXT("sign stands on the north edge of the town"), Placements[0].WorldXY.Equals(Expected, 0.1f));
+	TestTrue(TEXT("sign is north of the cell center"), Placements[0].WorldXY.Y > CellXY.Y + TowerNorthCm);
 	TestTrue(TEXT("spawn yaw faces north"),
 		FMath::IsNearlyEqual(Placements[0].YawDeg, SolidTowns::SignFacesNorthYawDeg, 0.1f));
 	return true;

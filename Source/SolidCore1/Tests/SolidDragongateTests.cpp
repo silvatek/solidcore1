@@ -256,8 +256,17 @@ bool FSolidDragongateWallTest::RunTest(const FString& Parameters)
 	{
 		TArray<SolidDragongate::FPiece> Pieces;
 		SolidDragongate::CollectPieces(Shipped, DragongateTestMin, DragongateTestMax, Pieces);
+		int32 WallGateId = INDEX_NONE;
+		for (const SolidTowns::FTownInfo& Info : SolidTowns::Definitions)
+		{
+			if (Info.Type == SolidTowns::ETownType::WallGate)
+			{
+				WallGateId = Info.Id;
+				break;
+			}
+		}
 		FSolidWorldLocation Town;
-		if (!Shipped->FindLocation(SolidTowns::DragongateId, Town))
+		if (WallGateId == INDEX_NONE || !Shipped->FindLocation(WallGateId, Town))
 		{
 			TestEqual(TEXT("Dragongate is absent until its digit is on the map"), Pieces.Num(), 0);
 		}

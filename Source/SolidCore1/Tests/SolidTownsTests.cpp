@@ -17,13 +17,29 @@ bool FSolidTownNamesTest::RunTest(const FString& Parameters)
 	const TCHAR* Expected[] = {
 		TEXT("Iglin"), TEXT("Relion"), TEXT("Kanfold"), TEXT("Visolar"), TEXT("Jethan"),
 		TEXT("Dragongate"), TEXT("Rathen") };
+	int32 WallGateCount = 0;
 	for (int32 Index = 0; Index < SolidTowns::DefinitionCount; ++Index)
 	{
 		const SolidTowns::FTownInfo& Town = SolidTowns::Definitions[Index];
 		TestEqual(TEXT("id"), Town.Id, ExpectedIds[Index]);
 		TestEqual(TEXT("name"), SolidTowns::NameFor(Town.Id), FString(Expected[Index]));
 		TestNotNull(TEXT("find"), SolidTowns::Find(Town.Id));
+		if (Town.Type == SolidTowns::ETownType::WallGate)
+		{
+			++WallGateCount;
+			TestEqual(TEXT("the wall gate is Dragongate"), FString(Town.Name), FString(TEXT("Dragongate")));
+			TestTrue(TEXT("wall gate query"), SolidTowns::IsWallGate(Town.Id));
+		}
+		else
+		{
+			TestEqual(
+				TEXT("ordinary town"),
+				static_cast<uint8>(Town.Type),
+				static_cast<uint8>(SolidTowns::ETownType::Town));
+			TestFalse(TEXT("ordinary town is not a wall gate"), SolidTowns::IsWallGate(Town.Id));
+		}
 	}
+	TestEqual(TEXT("one wall gate"), WallGateCount, 1);
 
 	TestTrue(TEXT("index 7 has no name"), SolidTowns::NameFor(7).IsEmpty());
 	TestNull(TEXT("index 7 is not a town"), SolidTowns::Find(7));

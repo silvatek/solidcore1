@@ -32,7 +32,16 @@ bool FSolidPortalChoicesTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("find Relion"), SolidPortal::FindChoice(1, Found));
 	TestEqual(TEXT("found name"), Found.Name, FString(TEXT("Relion")));
 	TestTrue(TEXT("find Dragongate"), SolidPortal::FindChoice(5, Found));
-	TestEqual(TEXT("Dragongate is town 5"), Found.TownId, SolidTowns::DragongateId);
+	TestEqual(TEXT("Dragongate is town 5"), Found.TownId, 5);
+	const SolidTowns::FTownInfo* GateTown = SolidTowns::Find(Found.TownId);
+	TestNotNull(TEXT("Dragongate info"), GateTown);
+	if (GateTown)
+	{
+		TestEqual(
+			TEXT("Dragongate is a wall gate"),
+			static_cast<uint8>(GateTown->Type),
+			static_cast<uint8>(SolidTowns::ETownType::WallGate));
+	}
 	TestTrue(TEXT("find Rathen"), SolidPortal::FindChoice(6, Found));
 	TestEqual(TEXT("Rathen is town 6"), Found.TownId, 6);
 	TestFalse(TEXT("no eighth row"), SolidPortal::FindChoice(7, Found));
@@ -86,7 +95,8 @@ bool FSolidPortalLandingTest::RunTest(const FString& Parameters)
 		FSolidWorldLocation Location;
 		if (!Map->FindLocation(TownId, Location))
 		{
-			TestEqual(TEXT("only Dragongate may be missing from the map"), TownId, SolidTowns::DragongateId);
+			TestTrue(TEXT("only a wall gate may be missing from the map"),
+				Town.Type == SolidTowns::ETownType::WallGate);
 			continue;
 		}
 		FIntPoint Cell;

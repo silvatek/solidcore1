@@ -5,13 +5,13 @@
 class USolidWorldMap;
 
 /**
- * Dragongate (WorldMap digit 5) is a stone wall across its cells, not a pack of houses.
+ * A WallGate town is a stone wall across its cells, not a pack of houses.
  * The wall runs between the mountain sides. A 4 m gap is the gate. A normal building
  * stands each side of that gap, on the north face of an east-west wall (the east face
  * when the pass runs north-south). Both towers are the same height, and that height
  * is above the wall.
  */
-namespace SolidDragongate
+namespace SolidWallgate
 {
 	inline constexpr float GapCm = 400.f;
 	inline constexpr float WallThicknessCm = 200.f;
@@ -47,7 +47,7 @@ namespace SolidDragongate
 	};
 
 	/**
-	 * Two wall lengths and two towers, or nothing when digit 5 is not on the map.
+	 * Two wall lengths and two towers for each WallGate town on the map.
 	 * @return Number of pieces written.
 	 */
 	int32 CollectPieces(

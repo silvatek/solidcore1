@@ -17,7 +17,7 @@
 #include "Towns/SolidTowns.h"
 #include "Menus/SolidPortal.h"
 #include "Towns/SolidBuilding.h"
-#include "Towns/SolidDragongate.h"
+#include "Towns/SolidWallgate.h"
 #include "Towns/SolidTownBuildings.h"
 #include "Towns/SolidTownSign.h"
 #include "Towns/SolidTownSigns.h"
@@ -939,13 +939,13 @@ void ASolidGameMode::EnsureVegetation()
 
 		if (const USolidWorldMap* GateMap = Streamer->GetTerrainMap()->GetWorldMap())
 		{
-			TArray<SolidDragongate::FPiece> GatePieces;
-			SolidDragongate::CollectPieces(
+			TArray<SolidWallgate::FPiece> GatePieces;
+			SolidWallgate::CollectPieces(
 				GateMap,
 				Streamer->GetTerrainMap()->GetWorldMinXY(),
 				Streamer->GetTerrainMap()->GetWorldMaxXY(),
 				GatePieces);
-			for (const SolidDragongate::FPiece& Piece : GatePieces)
+			for (const SolidWallgate::FPiece& Piece : GatePieces)
 			{
 				FVector SpawnLoc(Piece.CenterXY.X, Piece.CenterXY.Y, 0.f);
 				const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
@@ -967,7 +967,7 @@ void ASolidGameMode::EnsureVegetation()
 				Building->RoofHeightCm = Piece.RoofHeightCm;
 				if (Piece.bStoneWall)
 				{
-					Building->BodyColor = SolidDragongate::StoneColor();
+					Building->BodyColor = SolidWallgate::StoneColor();
 				}
 				Building->BuildVisuals();
 				SpawnedTownBuildings.Add(Building);

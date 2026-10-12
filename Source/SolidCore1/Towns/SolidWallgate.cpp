@@ -1,11 +1,11 @@
-#include "SolidDragongate.h"
+#include "SolidWallgate.h"
 #include "SolidTerrainTypes.h"
 #include "SolidTowns.h"
 #include "SolidWorldMap.h"
 
 namespace
 {
-	bool DragongateNeighborIsMountain(const USolidWorldMap& Map, const int32 X, const int32 Y)
+	bool WallgateNeighborIsMountain(const USolidWorldMap& Map, const int32 X, const int32 Y)
 	{
 		if (X < 0 || Y < 0 || X >= USolidWorldMap::MapWidth || Y >= USolidWorldMap::MapHeight)
 		{
@@ -14,12 +14,12 @@ namespace
 		return Map.GetBiomeAtCell(X, Y) == ESolidBiome::Mountain;
 	}
 
-	void DragongateAppendLocation(
+	void WallgateAppendLocation(
 		const USolidWorldMap& WorldMap,
 		const FVector2D WorldMinXY,
 		const FVector2D WorldMaxXY,
 		const TArray<FIntPoint>& Cells,
-		TArray<SolidDragongate::FPiece>& OutPieces)
+		TArray<SolidWallgate::FPiece>& OutPieces)
 	{
 		int32 MountainEast = 0;
 		int32 MountainWest = 0;
@@ -27,10 +27,10 @@ namespace
 		int32 MountainSouth = 0;
 		for (const FIntPoint& Cell : Cells)
 		{
-			MountainNorth += DragongateNeighborIsMountain(WorldMap, Cell.X, Cell.Y - 1) ? 1 : 0;
-			MountainEast += DragongateNeighborIsMountain(WorldMap, Cell.X - 1, Cell.Y) ? 1 : 0;
-			MountainSouth += DragongateNeighborIsMountain(WorldMap, Cell.X, Cell.Y + 1) ? 1 : 0;
-			MountainWest += DragongateNeighborIsMountain(WorldMap, Cell.X + 1, Cell.Y) ? 1 : 0;
+			MountainNorth += WallgateNeighborIsMountain(WorldMap, Cell.X, Cell.Y - 1) ? 1 : 0;
+			MountainEast += WallgateNeighborIsMountain(WorldMap, Cell.X - 1, Cell.Y) ? 1 : 0;
+			MountainSouth += WallgateNeighborIsMountain(WorldMap, Cell.X, Cell.Y + 1) ? 1 : 0;
+			MountainWest += WallgateNeighborIsMountain(WorldMap, Cell.X + 1, Cell.Y) ? 1 : 0;
 		}
 
 		// East and west mountains: the wall crosses the pass, and the towers stand north of it.
@@ -70,8 +70,8 @@ namespace
 
 		const float YawDeg = FMath::RadiansToDegrees(FMath::Atan2(Along.Y, Along.X));
 		const float Mid = (SpanMin + SpanMax) * 0.5f;
-		const float Gap0 = Mid - SolidDragongate::GapCm * 0.5f;
-		const float Gap1 = Mid + SolidDragongate::GapCm * 0.5f;
+		const float Gap0 = Mid - SolidWallgate::GapCm * 0.5f;
+		const float Gap1 = Mid + SolidWallgate::GapCm * 0.5f;
 
 		auto AddWall = [&](const float From, const float To)
 		{
@@ -80,11 +80,11 @@ namespace
 			{
 				return;
 			}
-			SolidDragongate::FPiece Piece;
+			SolidWallgate::FPiece Piece;
 			Piece.CenterXY = Along * ((From + To) * 0.5f) + Side * SidePos;
 			Piece.FootprintXCm = Length;
-			Piece.FootprintYCm = SolidDragongate::WallThicknessCm;
-			Piece.BodyHeightCm = SolidDragongate::WallHeightCm;
+			Piece.FootprintYCm = SolidWallgate::WallThicknessCm;
+			Piece.BodyHeightCm = SolidWallgate::WallHeightCm;
 			Piece.RoofHeightCm = 0.f;
 			Piece.YawDeg = YawDeg;
 			Piece.bStoneWall = true;
@@ -95,25 +95,25 @@ namespace
 
 		auto AddTower = [&](const float AlongPos)
 		{
-			SolidDragongate::FPiece Piece;
-			const float SideOffset = SolidDragongate::WallThicknessCm * 0.5f
-				+ SolidDragongate::TowerFootprintYCm * 0.5f
-				- SolidDragongate::ConnectCm;
+			SolidWallgate::FPiece Piece;
+			const float SideOffset = SolidWallgate::WallThicknessCm * 0.5f
+				+ SolidWallgate::TowerFootprintYCm * 0.5f
+				- SolidWallgate::ConnectCm;
 			Piece.CenterXY = Along * AlongPos + Side * (SidePos + SideOffset);
-			Piece.FootprintXCm = SolidDragongate::TowerFootprintXCm;
-			Piece.FootprintYCm = SolidDragongate::TowerFootprintYCm;
-			Piece.BodyHeightCm = SolidDragongate::TowerBodyCm;
-			Piece.RoofHeightCm = SolidDragongate::TowerRoofCm;
+			Piece.FootprintXCm = SolidWallgate::TowerFootprintXCm;
+			Piece.FootprintYCm = SolidWallgate::TowerFootprintYCm;
+			Piece.BodyHeightCm = SolidWallgate::TowerBodyCm;
+			Piece.RoofHeightCm = SolidWallgate::TowerRoofCm;
 			Piece.YawDeg = YawDeg;
 			Piece.bStoneWall = false;
 			OutPieces.Add(Piece);
 		};
-		AddTower(Gap0 - SolidDragongate::TowerFootprintXCm * 0.5f);
-		AddTower(Gap1 + SolidDragongate::TowerFootprintXCm * 0.5f);
+		AddTower(Gap0 - SolidWallgate::TowerFootprintXCm * 0.5f);
+		AddTower(Gap1 + SolidWallgate::TowerFootprintXCm * 0.5f);
 	}
 }
 
-int32 SolidDragongate::CollectPieces(
+int32 SolidWallgate::CollectPieces(
 	const USolidWorldMap* WorldMap,
 	const FVector2D WorldMinXY,
 	const FVector2D WorldMaxXY,
@@ -137,7 +137,7 @@ int32 SolidDragongate::CollectPieces(
 		{
 			continue;
 		}
-		DragongateAppendLocation(*WorldMap, WorldMinXY, WorldMaxXY, Town.Cells, OutPieces);
+		WallgateAppendLocation(*WorldMap, WorldMinXY, WorldMaxXY, Town.Cells, OutPieces);
 	}
 	return OutPieces.Num();
 }

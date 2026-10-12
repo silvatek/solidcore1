@@ -8,7 +8,19 @@ static_assert(
 
 FString SolidTownSigns::MakeLabel(const FString& TownName)
 {
-	return FString::Printf(TEXT("Welcome to %s"), *TownName);
+	return FString::Printf(TEXT("%s\n%s"), WelcomeLine, *TownName);
+}
+
+float SolidTownSigns::BoardWidthCm(const FString& Label)
+{
+	TArray<FString> Lines;
+	Label.ParseIntoArray(Lines, TEXT("\n"), false);
+	int32 Longest = 1;
+	for (const FString& Line : Lines)
+	{
+		Longest = FMath::Max(Longest, Line.Len());
+	}
+	return TextWorldSize * 0.55f * static_cast<float>(Longest) + TextWorldSize * 0.9f;
 }
 
 int32 SolidTownSigns::CollectPlacements(

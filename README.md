@@ -29,7 +29,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - **Fog follows the player** — the map starts fully fogged. After the captain is placed at location 0, exploration fog is centered on the pawn, not on that cell. The two match only because that is where the pawn stands. Curtains are 110 m (half) and 160 m (full), above the 50 m max zoom. The camera boom shortens so it cannot sit above terrain with fog greater than 0.
 - **Procedural terrain** — streamed chunks around the pawn, Fab grassland material, FlatCol tints for other biomes. Exploration fog-of-war (25 m / 50 m bands, marching-squares curtains) clears from the trail, not the camera.
 - **Town + forest** — random non-overlapping town buildings (grey cuboid + red gable prism roof); forest trees scattered on Forest cells. Dragongate is not that pack: a 4 m stone wall runs across its cells, with a 4 m gap and a taller tower on each side of the gap. Buildings stay clear of the start-town centroid and of each welcome sign.
-- **Town signs** — every named WorldMap cell gets a "Welcome to {name}" sign: one thin dark-brown pole, a flat light-brown board, white letters with a black border. The board faces south, on the cell center, unless that town sets another spot. Dragongate's sign stands on the north edge of the town and faces north, so it can be read while facing south. The gate stays clear. Kanfold's two cells each get a sign.
+- **Town signs** — every named WorldMap cell gets a welcome sign: one thin dark-brown pole, a flat light-brown board, white letters with a black border. "Welcome to" is the first line and the town name is the second. The board faces south, on the cell center, unless that town sets another spot. Dragongate's sign stands on the north edge of the town and faces north, so it can be read while facing south. The gate stays clear. Kanfold's two cells each get a sign.
 - **True sight / raven sight** — the game starts in true sight (first person). Raven sight (third person) is locked until the captain enters town 1. F9 then toggles. True sight hides the captain's body and nameplate, turns the body with the look direction, and ignores mouse-wheel zoom until you switch back. The menu and the formation drill ignore F9. A translucent oval in the top-right shows an eye in true sight and an eagle in raven sight.
 - **Events** — a list of one-shot triggers. Enter town fires when the captain steps onto a numbered WorldMap cell; the parameter is that index. Entering town 0 (Iglin) is recorded and changes nothing. Entering town 1 (Relion) enables raven sight, sets max party size to 1 (Sam), and titles the captain Vagrant. Entering town 2 (Kanfold) sets max party size to 2 (Sam and Alex) and titles the captain Ranger. Entering town 5 (Dragongate) sets max party size to 5 (the whole company) and titles the captain Captain. The nameplate starts as Outcast.
 - **Journal** — F10 menu, **3 Journal**. The page is a large board. The name sits in the top border. The columns are headed **Time** and **Summary**, such as `01:24, 200/53 AtF` beside `Enter Iglin`. A line is an Event or a Stronghold. Town events are listed in the order they fired, with what each one changed under the entry. Iglin is recorded as soon as the captain is placed there, with no change under the name. Entering or leaving a stronghold, including the cave, is `Enter Stronghold` or `Exit Stronghold`. The line does not name the size or type; an upgrade will be its own entry. The same trip can be recorded again. A new play session advances the date by one day, from **200/45 AtF**. Days run 0–99, then the year increases. Hours and minutes match real time since that session started and do not roll the date. The cave trip keeps the same day and the same clock. Esc or F10 closes the page.
@@ -338,10 +338,10 @@ Source/
     Towns/
       SolidBuilding.*         # Grey cuboid + red gable roof
       SolidTownBuildings.*    # Non-overlapping town building pack
-      SolidTownSign.*         # Pole, board, "Welcome to {name}"
+      SolidTownSign.*         # Pole, board, "Welcome to" over the town name
       SolidTownSigns.*        # One sign per named WorldMap cell
       SolidTowns.h            # Town names, type, and welcome-sign position, keyed by the WorldMap index
-      SolidDragongate.*       # Stone wall and two towers for Dragongate
+      SolidWallgate.*       # Stone wall and two towers for a WallGate town
     Strongholds/
       SolidStronghold.h       # Type (Dungeon, Fortress, Tower) and size (Meagre … Imperious)
       SolidStrongholds.*      # Mouth on the grassland face of a C cell
@@ -378,7 +378,7 @@ Source/
       SolidVegetationTests.cpp
       SolidTownSignTests.cpp
       SolidTownsTests.cpp
-      SolidDragongateTests.cpp
+      SolidWallgateTests.cpp
       SolidStrongholdTests.cpp
       SolidDungeonLevelTests.cpp
       SolidStrongholdGridTests.cpp

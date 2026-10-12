@@ -1,7 +1,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "SolidTerrainTestHelpers.h"
-#include "SolidDragongate.h"
+#include "SolidWallgate.h"
 #include "SolidTownBuildings.h"
 #include "SolidTownSign.h"
 #include "SolidTownSigns.h"
@@ -223,15 +223,15 @@ bool FSolidTownSignVisualsTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidTownSignDragongateTest,
+	FSolidTownSignWallgateTest,
 	"SolidCore1.Vegetation.TownSignDragongate",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 
-bool FSolidTownSignDragongateTest::RunTest(const FString& Parameters)
+bool FSolidTownSignWallgateTest::RunTest(const FString& Parameters)
 {
-	const float TowerNorthCm = SolidDragongate::WallThicknessCm * 0.5f
-		+ SolidDragongate::TowerFootprintYCm
-		- SolidDragongate::ConnectCm;
+	const float TowerNorthCm = SolidWallgate::WallThicknessCm * 0.5f
+		+ SolidWallgate::TowerFootprintYCm
+		- SolidWallgate::ConnectCm;
 	const float HalfCellCm = 102400.f / static_cast<float>(USolidWorldMap::MapWidth) * 0.5f;
 	TestTrue(TEXT("the sign clears the towers"), SolidTowns::DragongateSignNorthCm > TowerNorthCm);
 	TestTrue(TEXT("the sign sits on the north edge of the cell"),

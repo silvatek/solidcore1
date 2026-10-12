@@ -341,7 +341,7 @@ Source/
       SolidTownSign.*         # Pole, board, "Welcome to {name}"
       SolidTownSigns.*        # One sign per named WorldMap cell
       SolidTowns.h            # Town names, type, and welcome-sign position, keyed by the WorldMap index
-      SolidDragongate.*       # Stone wall and two towers for Dragongate
+      SolidWallgate.*       # Stone wall and two towers for a WallGate town
     Strongholds/
       SolidStronghold.h       # Type (Dungeon, Fortress, Tower) and size (Meagre … Imperious)
       SolidStrongholds.*      # Mouth on the grassland face of a C cell
@@ -378,7 +378,7 @@ Source/
       SolidVegetationTests.cpp
       SolidTownSignTests.cpp
       SolidTownsTests.cpp
-      SolidDragongateTests.cpp
+      SolidWallgateTests.cpp
       SolidStrongholdTests.cpp
       SolidDungeonLevelTests.cpp
       SolidStrongholdGridTests.cpp

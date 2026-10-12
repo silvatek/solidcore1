@@ -2,7 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "Events/SolidEvents.h"
 #include "Journal/SolidJournal.h"
-#include "SolidCore1.h"
+#include "SolidGameState.h"
 #include "SolidWorldTime.h"
 
 #if WITH_DEV_AUTOMATION_TESTS

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SolidCore1.h"
+#include "SolidGameState.h"
 #include "GameFramework/GameModeBase.h"
 #include "Party/SolidCompany.h"
 #include "SolidSight.h"

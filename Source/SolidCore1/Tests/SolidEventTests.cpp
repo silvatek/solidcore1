@@ -1,7 +1,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "Events/SolidEvents.h"
-#include "SolidCore1.h"
+#include "SolidGameState.h"
 #include "SolidGameMode.h"
 #include "SolidSight.h"
 #include "Terrain/SolidTerrainStreamer.h"

@@ -290,7 +290,7 @@ Source/
   SolidCore1Editor.Target.cs
   SolidCore1/
     SolidCore1.Build.cs
-    SolidCore1.h / .cpp                # Module startup, and FGameState (party, sight, journal)
+    SolidCore1.h / .cpp                # Module startup and the log
     Player/
       SolidCharacter.h / .cpp            # Captain core (move/look/zoom/sprint)
       SolidCharacterInput.cpp            # Runtime Enhanced Input factory
@@ -306,6 +306,7 @@ Source/
       SolidClipLocomotion.*              # Shared single-node clip apply/play
     Game/
       SolidGameMode.*
+      SolidGameState.*                   # FGameState: party, sight, and the journal
       SolidGameInstance.*                # Captain, party, events, and the world-time clock across the cave trip
       SolidWorldTime.h                   # Journal date and clock
       SolidSessionSave.h                 # How many play sessions have started

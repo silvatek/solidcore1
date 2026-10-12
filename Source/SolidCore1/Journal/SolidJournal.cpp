@@ -1,5 +1,5 @@
 #include "SolidJournal.h"
-#include "SolidCore1.h"
+#include "SolidGameState.h"
 #include "SolidSight.h"
 #include "SolidWorldTime.h"
 

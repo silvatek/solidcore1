@@ -4,6 +4,7 @@
 #include "GameFramework/Actor.h"
 #include "SolidDungeonInterior.generated.h"
 
+class UInstancedStaticMeshComponent;
 class UPointLightComponent;
 class UStaticMeshComponent;
 
@@ -32,6 +33,7 @@ public:
 	UStaticMeshComponent* GetFloorMesh() const { return FloorMesh; }
 	UStaticMeshComponent* GetMouthMesh() const { return MouthMesh; }
 	UPointLightComponent* GetRoomLight() const { return RoomLight; }
+	UInstancedStaticMeshComponent* GetFloorGrid() const { return FloorGrid; }
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
@@ -60,4 +62,8 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<UPointLightComponent> RoomLight;
+
+	/** Yellow hex edges. No collision; furniture placement comes later. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
+	TObjectPtr<UInstancedStaticMeshComponent> FloorGrid;
 };

@@ -1,8 +1,10 @@
 #include "SolidDungeonInterior.h"
+#include "SolidDungeonGrid.h"
 #include "SolidDungeonLevel.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
 #include "SolidStrongholds.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -52,6 +54,7 @@ ASolidDungeonInterior::ASolidDungeonInterior()
 	WallFront = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("WallFront"));
 	MouthMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MouthMesh"));
 	RoomLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("RoomLight"));
+	FloorGrid = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("FloorGrid"));
 
 	UStaticMeshComponent* Parts[] = {
 		FloorMesh.Get(), CeilingMesh.Get(), WallBack.Get(), WallLeft.Get(),
@@ -63,6 +66,11 @@ ASolidDungeonInterior::ASolidDungeonInterior()
 		Part->SetCollisionResponseToAllChannels(ECR_Block);
 		Part->SetCastShadow(true);
 	}
+
+	FloorGrid->SetupAttachment(SceneRoot);
+	FloorGrid->SetMobility(EComponentMobility::Movable);
+	FloorGrid->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	FloorGrid->SetCastShadow(false);
 
 	RoomLight->SetupAttachment(SceneRoot);
 	RoomLight->SetMobility(EComponentMobility::Movable);
@@ -119,6 +127,44 @@ void ASolidDungeonInterior::BuildVisuals()
 	if (RoomLight)
 	{
 		RoomLight->SetRelativeLocation(FVector(Depth * 0.5f, 0.f, Height * 0.72f));
+	}
+
+	if (FloorGrid)
+	{
+		FloorGrid->SetStaticMesh(Cube);
+		FloorGrid->ClearInstances();
+		if (UMaterialInterface* Material = SolidMaterials::CreateSolidColor(
+			this, SolidDungeonGrid::LineColor(), TEXT("DungeonHexGrid"), 0.45f))
+		{
+			FloorGrid->SetMaterial(0, Material);
+		}
+
+		TArray<SolidDungeonGrid::FHex> Hexes;
+		TArray<SolidDungeonGrid::FSegment> Segments;
+		SolidDungeonGrid::CollectHexes(SolidDungeonGrid::MeagreFloorBounds(), Hexes);
+		SolidDungeonGrid::CollectSegments(Hexes, Segments);
+
+		const float ShapeSize = 100.f;
+		const float LineZ = SolidDungeonGrid::LineLiftCm + SolidDungeonGrid::LineHeightCm * 0.5f;
+		for (const SolidDungeonGrid::FSegment& Segment : Segments)
+		{
+			const FVector2D Delta = Segment.B - Segment.A;
+			const float Length = Delta.Size();
+			if (Length < 1.f)
+			{
+				continue;
+			}
+			const float Yaw = FMath::RadiansToDegrees(FMath::Atan2(Delta.Y, Delta.X));
+			const FVector Mid((Segment.A.X + Segment.B.X) * 0.5f, (Segment.A.Y + Segment.B.Y) * 0.5f, LineZ);
+			const FTransform Line(
+				FRotator(0.f, Yaw, 0.f),
+				Mid,
+				FVector(
+					Length / ShapeSize,
+					SolidDungeonGrid::LineThicknessCm / ShapeSize,
+					SolidDungeonGrid::LineHeightCm / ShapeSize));
+			FloorGrid->AddInstance(Line);
+		}
 	}
 }
 

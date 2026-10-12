@@ -9,8 +9,8 @@ class USolidWorldMap;
  * A road line in WorldMap.txt names a start, an end, and a type.
  * The route is a path of map cells. The painted strip is centred on those cells.
  * Trails are 1 m, tracks 2 m, roads 3 m, highways 4 m.
- * Roads and highways stay off forest, mountain, desert, and sea, and they pay
- * extra for every river cell so a crossing is as short as the ground allows.
+ * Every route stays off mountains and the sea. Roads and highways also stay off
+ * forest and desert, and they pay extra for every river cell so a crossing is short.
  * The strip uses the town texture. River water keeps the river texture.
  * Local offsets are centimetres. +X is east, +Y is north.
  */
@@ -60,7 +60,7 @@ namespace SolidRoad
 	inline constexpr int32 StepCost = 16;
 	/** Roads and highways pay this to enter a river cell. One crossing, not a trip along the water. */
 	inline constexpr int32 RiverCost = StepCost * 40;
-	/** Forest, mountain, desert, and sea, for the types that must stay off them. Sea costs this for every type. */
+	/** Closed ground. Mountains and the sea cost this for every type. Forest and desert cost it for a road or a highway. */
 	inline constexpr int32 AvoidCost = StepCost * 800;
 
 	inline float WidthCm(const EType Type)
@@ -106,13 +106,13 @@ namespace SolidRoad
 	inline int32 EnterCost(const EType Type, const ESolidBiome Biome)
 	{
 		int32 Cost = StepCost;
-		if (Biome == ESolidBiome::Sea)
+		if (Biome == ESolidBiome::Sea || Biome == ESolidBiome::Mountain)
 		{
 			Cost = AvoidCost;
 		}
 		else if (AvoidsHardGround(Type))
 		{
-			if (Biome == ESolidBiome::Forest || Biome == ESolidBiome::Mountain || Biome == ESolidBiome::Desert)
+			if (Biome == ESolidBiome::Forest || Biome == ESolidBiome::Desert)
 			{
 				Cost = AvoidCost;
 			}

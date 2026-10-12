@@ -106,9 +106,10 @@ bool FSolidRoadWidthTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("a trail does not avoid hard ground"), SolidRoad::AvoidsHardGround(SolidRoad::EType::Trail));
 	TestFalse(TEXT("a track does not avoid hard ground"), SolidRoad::AvoidsHardGround(SolidRoad::EType::Track));
 
-	TestTrue(TEXT("one mountain does not outweigh a shorter trail"),
-		SolidRoad::EnterCost(SolidRoad::EType::Trail, ESolidBiome::Mountain)
-		< SolidRoad::EnterCost(SolidRoad::EType::Trail, ESolidBiome::Grassland) + SolidRoad::StepCost);
+	TestTrue(TEXT("a trail treats a mountain as a wall"),
+		SolidRoad::EnterCost(SolidRoad::EType::Trail, ESolidBiome::Mountain) > SolidRoad::StepCost * 64);
+	TestTrue(TEXT("a track treats a mountain as a wall"),
+		SolidRoad::EnterCost(SolidRoad::EType::Track, ESolidBiome::Mountain) > SolidRoad::StepCost * 64);
 	TestTrue(TEXT("a highway treats forest as a wall"),
 		SolidRoad::EnterCost(SolidRoad::EType::Highway, ESolidBiome::Forest) > SolidRoad::StepCost * 64);
 	TestTrue(TEXT("a road pays more for a river than for grass"),
@@ -242,6 +243,32 @@ bool FSolidRoadAvoidTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestEqual(TEXT("trail stays off the sea"), RoadTestCountBiome(*SeaTrail, SeaRoute->Cells, ESolidBiome::Sea), 0);
+
+	TArray<FRoadTestMark> MountainWall;
+	MountainWall.Add({ 2, 8, TEXT('0') });
+	MountainWall.Add({ 20, 8, TEXT('1') });
+	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	{
+		if (Row != 2)
+		{
+			MountainWall.Add({ 10, Row, TEXT('M') });
+		}
+	}
+	USolidWorldMap* MountainTrail = NewObject<USolidWorldMap>();
+	TestNotNull(TEXT("mountain map"), MountainTrail);
+	if (!RoadTestLoad(*this, *MountainTrail, RoadTestGrid(MountainWall, TEXT("Road: 0 -> 1, trail\n"))))
+	{
+		return false;
+	}
+	const SolidRoad::FRoute* MountainRoute = RoadTestRoute(*MountainTrail, 0);
+	TestNotNull(TEXT("mountain route"), MountainRoute);
+	if (!MountainRoute)
+	{
+		return false;
+	}
+	TestTrue(TEXT("trail goes around the mountains"), MountainRoute->Cells.Num() > 19);
+	TestEqual(TEXT("trail stays off the mountains"),
+		RoadTestCountBiome(*MountainTrail, MountainRoute->Cells, ESolidBiome::Mountain), 0);
 	return true;
 }
 
@@ -328,8 +355,7 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("trail map"), Trail);
 	if (!RoadTestLoad(*this, *Trail, RoadTestGrid({
 		{ 4, 12, TEXT('0') },
-		{ 8, 12, TEXT('M') },
-		{ 9, 12, TEXT('F') },
+		{ 7, 12, TEXT('F') },
 		{ 12, 12, TEXT('1') },
 	}, TEXT("Road: 0 -> 1, trail\n"))))
 	{
@@ -337,8 +363,7 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	}
 
 	const FVector2D Grass = RoadTestCenter(*Trail, 6, 12);
-	const FVector2D Mountain = RoadTestCenter(*Trail, 8, 12);
-	const FVector2D Forest = RoadTestCenter(*Trail, 9, 12);
+	const FVector2D Forest = RoadTestCenter(*Trail, 7, 12);
 	TestEqual(TEXT("marker under the trail stays grass"),
 		static_cast<uint8>(Trail->GetBiomeAtCell(6, 12)),
 		static_cast<uint8>(ESolidBiome::Grassland));
@@ -354,8 +379,19 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("forest on the trail uses the town texture"),
 		static_cast<uint8>(Trail->SampleBiome(Forest.X, Forest.Y, RoadTestMin, RoadTestMax)),
 		static_cast<uint8>(ESolidBiome::Town));
-	TestEqual(TEXT("mountain on the trail keeps its shelf"),
-		static_cast<uint8>(Trail->SampleBiome(Mountain.X, Mountain.Y, RoadTestMin, RoadTestMax)),
+
+	USolidWorldMap* Cave = NewObject<USolidWorldMap>();
+	TestNotNull(TEXT("cave map"), Cave);
+	if (!RoadTestLoad(*this, *Cave, RoadTestGrid({
+		{ 4, 8, TEXT('C') },
+		{ 8, 8, TEXT('0') },
+	}, TEXT("Road: C -> 0, trail\n"))))
+	{
+		return false;
+	}
+	const FVector2D CaveCell = RoadTestCenter(*Cave, 4, 8);
+	TestEqual(TEXT("the cave cell keeps the mountain shelf"),
+		static_cast<uint8>(Cave->SampleBiome(CaveCell.X, CaveCell.Y, RoadTestMin, RoadTestMax)),
 		static_cast<uint8>(ESolidBiome::Mountain));
 
 	USolidWorldMap* Crossing = NewObject<USolidWorldMap>();
@@ -454,6 +490,24 @@ bool FSolidRoadShippedTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the trail leaves the cave"), Roads[0].Definition.From.bCave);
 	TestEqual(TEXT("trail starts on C"), Map->GetMarkerAtCell(Roads[0].Cells[0].X, Roads[0].Cells[0].Y), TEXT('C'));
 	TestEqual(TEXT("trail ends at Iglin"), Map->GetLocationIdAtCell(Roads[0].Cells.Last().X, Roads[0].Cells.Last().Y), 0);
+	for (const SolidRoad::FRoute& Road : Roads)
+	{
+		int32 MountainCells = 0;
+		int32 SeaCells = 0;
+		for (const FIntPoint& Cell : Road.Cells)
+		{
+			if (Map->GetMarkerAtCell(Cell.X, Cell.Y) == TEXT('M'))
+			{
+				++MountainCells;
+			}
+			if (Map->GetBiomeAtCell(Cell.X, Cell.Y) == ESolidBiome::Sea)
+			{
+				++SeaCells;
+			}
+		}
+		TestEqual(TEXT("route stays off the mountains"), MountainCells, 0);
+		TestEqual(TEXT("route stays off the sea"), SeaCells, 0);
+	}
 
 	TestEqual(TEXT("Iglin to Relion crosses once"),
 		RoadTestCountBiome(*Map, Roads[1].Cells, ESolidBiome::River), 1);

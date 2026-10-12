@@ -4,3 +4,5 @@ AI agents should not modify this file. Once items have been copied to the to-do 
 - Replace FAB_Doctor with an automated test
 - "Hold" battle plan that has the companions not move when the captain does
 - Events depending on, or auto-triggering, other events
+- Show world history from game menu
+- Reorder game menu items

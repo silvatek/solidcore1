@@ -232,6 +232,15 @@ void ASolidBuilding::BuildVisuals()
 		BodyMesh->SetMaterial(0, BodyMat);
 	}
 
+	// A stone wall has no roof. A zero-height prism would collapse onto the top.
+	if (RoofHeightCm < 1.f)
+	{
+		RoofMesh->SetStaticMesh(nullptr);
+		RoofMesh->SetVisibility(false);
+		return;
+	}
+	RoofMesh->SetVisibility(true);
+
 	// Unit gable prism: 100x100 base, 100 tall, ridge along local Y.
 	// Scale XY to match the body footprint exactly (ridge through the middle).
 	UStaticMesh* Roof = BuildUnitGablePrismMesh(this);

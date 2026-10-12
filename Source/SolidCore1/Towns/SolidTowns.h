@@ -20,8 +20,12 @@ namespace SolidTowns
 		{ 2, TEXT("Kanfold") },
 		{ 3, TEXT("Visolar") },
 		{ 4, TEXT("Jethan") },
+		{ 5, TEXT("Dragongate") },
 		{ 6, TEXT("Rathen") },
 	};
+
+	/** WorldMap digit for the walled pass. Houses are not scattered on its cells. */
+	inline constexpr int32 DragongateId = 5;
 
 	inline constexpr int32 DefinitionCount = UE_ARRAY_COUNT(Definitions);
 

@@ -27,14 +27,15 @@ namespace SolidEvents
 		EnableSight,
 		/** How many companions may be in the party. */
 		MaxPartySize,
-		/** The captain's nameplate. Outcast, then Vagrant, then Ranger. */
+		/** The captain's nameplate. Outcast, then Vagrant, then Ranger, then Captain. */
 		CaptainTitle,
 	};
 
-	/** Nameplate before any title event. A later event will set Captain. */
+	/** Nameplate before any title event. The sequence ends at Captain. */
 	inline constexpr const TCHAR* TitleOutcast = TEXT("Outcast");
 	inline constexpr const TCHAR* TitleVagrant = TEXT("Vagrant");
 	inline constexpr const TCHAR* TitleRanger = TEXT("Ranger");
+	inline constexpr const TCHAR* TitleCaptain = TEXT("Captain");
 
 	struct FChange
 	{
@@ -55,11 +56,14 @@ namespace SolidEvents
 
 	/**
 	 * Companions join in this order as Max Party Size grows.
-	 * Size 1 is Sam. Size 2 is Sam and Alex.
+	 * Size 1 is Sam. Size 2 is Sam and Alex. Size 5 is the whole company.
 	 */
 	inline const TCHAR* RosterNames[] = {
 		TEXT("Sam"),
 		TEXT("Alex"),
+		TEXT("Max"),
+		TEXT("Morgan"),
+		TEXT("Quinn"),
 	};
 
 	inline constexpr int32 RosterCount = UE_ARRAY_COUNT(RosterNames);
@@ -88,6 +92,16 @@ namespace SolidEvents
 			{
 				{ EChange::MaxPartySize, ESolidSight::Raven, 2 },
 				{ EChange::CaptainTitle, ESolidSight::Raven, 0, TitleRanger },
+			},
+			2,
+		},
+		{
+			TEXT("Enter Dragongate"),
+			ETrigger::EnterTown,
+			5,
+			{
+				{ EChange::MaxPartySize, ESolidSight::Raven, RosterCount },
+				{ EChange::CaptainTitle, ESolidSight::Raven, 0, TitleCaptain },
 			},
 			2,
 		},

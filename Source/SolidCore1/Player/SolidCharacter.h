@@ -141,6 +141,7 @@ protected:
 	void MainMenuChoose4();
 	void MainMenuChoose5();
 	void MainMenuChoose6();
+	void MainMenuChoose7();
 	void ChooseMainMenuIndex(int32 Index);
 	void ConfirmPortalSelection();
 

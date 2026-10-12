@@ -1,6 +1,8 @@
 #include "SolidTownBuildings.h"
 #include "SolidTerrainMap.h"
 #include "SolidTerrainTypes.h"
+#include "SolidTowns.h"
+#include "SolidWorldMap.h"
 
 int32 SolidTownBuildings::CollectPlacements(
 	const USolidTerrainMap* TerrainMap,
@@ -21,6 +23,11 @@ int32 SolidTownBuildings::CollectPlacements(
 	{
 		return 0;
 	}
+
+	const USolidWorldMap* WorldMap = TerrainMap->GetWorldMap();
+	const FVector2D WorldMin = TerrainMap->GetWorldMinXY();
+	const FVector2D WorldMax = TerrainMap->GetWorldMaxXY();
+	const bool bSkipDragongate = WorldMap && WorldMap->IsLoaded();
 
 	const TArray<FSolidTerrainPoint>& Points = TerrainMap->GetPoints();
 	TArray<int32> TownIndices;
@@ -64,6 +71,11 @@ int32 SolidTownBuildings::CollectPlacements(
 	{
 		const FSolidTerrainPoint& Point = Points[TownIndices[I]];
 		const FVector2D Center(Point.X, Point.Y);
+		if (bSkipDragongate
+			&& WorldMap->SampleLocationId(Center.X, Center.Y, WorldMin, WorldMax) == SolidTowns::DragongateId)
+		{
+			continue;
+		}
 
 		if (bHasTownCenter && FVector2D::DistSquared(Center, TownCenter) < ClearRadiusSq)
 		{

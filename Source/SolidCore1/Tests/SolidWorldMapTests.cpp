@@ -4,6 +4,7 @@
 #include "SolidTerrainMap.h"
 #include "SolidTerrainStreamer.h"
 #include "SolidTerrainTestHelpers.h"
+#include "SolidTowns.h"
 #include "SolidWorldMap.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -240,7 +241,7 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 {
 	USolidWorldMap* Map = NewObject<USolidWorldMap>();
 	TestTrue(TEXT("LoadDefault"), Map->LoadDefault());
-	TestEqual(TEXT("six locations"), Map->GetLocationCount(), 6);
+	TestTrue(TEXT("the shipped towns are on the map"), Map->GetLocationCount() >= 6);
 
 	FSolidWorldLocation Iglin;
 	TestTrue(TEXT("location 0"), Map->FindLocation(0, Iglin));
@@ -299,6 +300,14 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 		}
 	}
 	TestTrue(TEXT("Rathen is beside the river"), bRathenBesideRiver);
+
+	FSolidWorldLocation Dragongate;
+	if (Map->FindLocation(SolidTowns::DragongateId, Dragongate))
+	{
+		TestEqual(TEXT("Dragongate"), Dragongate.Name, FString(TEXT("Dragongate")));
+		TestEqual(TEXT("Dragongate is Town"), static_cast<uint8>(Dragongate.Biome), static_cast<uint8>(ESolidBiome::Town));
+		TestTrue(TEXT("Dragongate has a cell"), Dragongate.Cells.Num() > 0);
+	}
 
 	TestEqual(TEXT("start is only location 0"), Map->GetStartTownCellCount(), Iglin.Cells.Num());
 

@@ -4,6 +4,7 @@
 #include "SolidTownBuildings.h"
 #include "SolidTownSign.h"
 #include "SolidTownSigns.h"
+#include "SolidTowns.h"
 #include "SolidWorldMap.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
@@ -25,31 +26,53 @@ bool FSolidTownSignPlacementsTest::RunTest(const FString& Parameters)
 	const FVector2D WorldMin(-51200.f, -51200.f);
 	const FVector2D WorldMax(51200.f, 51200.f);
 
+	int32 NamedCells = 0;
+	TArray<FSolidWorldLocation> Locations;
+	WorldMap->CollectLocations(Locations);
+	for (const FSolidWorldLocation& Location : Locations)
+	{
+		if (!SolidTowns::NameFor(Location.Id).IsEmpty())
+		{
+			NamedCells += Location.Cells.Num();
+		}
+	}
+
 	TArray<SolidTownSigns::FPlacement> Placements;
 	const int32 Count = SolidTownSigns::CollectPlacements(WorldMap, WorldMin, WorldMax, Placements);
-	TestEqual(TEXT("seven named cells"), Count, 7);
-	TestEqual(TEXT("placements filled"), Placements.Num(), 7);
-	if (Placements.Num() != 7)
+	TestEqual(TEXT("one sign per named cell"), Count, NamedCells);
+	TestEqual(TEXT("placements filled"), Placements.Num(), NamedCells);
+	if (Placements.Num() != NamedCells || Placements.Num() == 0)
 	{
 		return false;
 	}
 
-	const TCHAR* ExpectedNames[] = {
-		TEXT("Iglin"), TEXT("Relion"), TEXT("Kanfold"), TEXT("Kanfold"), TEXT("Visolar"), TEXT("Jethan"), TEXT("Rathen") };
-	const int32 ExpectedIds[] = { 0, 1, 2, 2, 3, 4, 6 };
+	int32 KanfoldSigns = 0;
+	bool bSawRathen = false;
 	for (int32 Index = 0; Index < Placements.Num(); ++Index)
 	{
 		const SolidTownSigns::FPlacement& Placement = Placements[Index];
-		TestEqual(TEXT("location id order"), Placement.LocationId, ExpectedIds[Index]);
-		TestEqual(TEXT("town name"), Placement.Name, FString(ExpectedNames[Index]));
+		if (Index > 0)
+		{
+			TestTrue(TEXT("location id order"), Placement.LocationId >= Placements[Index - 1].LocationId);
+		}
+		TestEqual(TEXT("town name"), Placement.Name, SolidTowns::NameFor(Placement.LocationId));
 		TestEqual(
 			TEXT("welcome label"),
 			SolidTownSigns::MakeLabel(Placement.Name),
-			FString::Printf(TEXT("Welcome to %s"), ExpectedNames[Index]));
+			FString::Printf(TEXT("Welcome to %s"), *Placement.Name));
 
 		FVector2D CellXY = FVector2D::ZeroVector;
 		TestTrue(TEXT("cell projects"), WorldMap->CellToWorldXY(Placement.Cell, WorldMin, WorldMax, CellXY));
 		TestTrue(TEXT("placement is the cell center"), Placement.WorldXY.Equals(CellXY, 0.1f));
+
+		if (Placement.LocationId == 2)
+		{
+			++KanfoldSigns;
+		}
+		if (Placement.LocationId == 6 && Placement.Name == TEXT("Rathen"))
+		{
+			bSawRathen = true;
+		}
 
 		for (int32 Other = Index + 1; Other < Placements.Num(); ++Other)
 		{
@@ -57,6 +80,8 @@ bool FSolidTownSignPlacementsTest::RunTest(const FString& Parameters)
 				FVector2D::DistSquared(Placement.WorldXY, Placements[Other].WorldXY) > 1.f);
 		}
 	}
+	TestEqual(TEXT("Kanfold has two signs"), KanfoldSigns, 2);
+	TestTrue(TEXT("Rathen has a sign"), bSawRathen);
 
 	TestEqual(TEXT("null map yields none"),
 		SolidTownSigns::CollectPlacements(nullptr, WorldMin, WorldMax, Placements), 0);

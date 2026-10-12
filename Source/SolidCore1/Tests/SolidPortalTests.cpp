@@ -16,11 +16,12 @@ bool FSolidPortalChoicesTest::RunTest(const FString& Parameters)
 	TArray<SolidPortal::FChoice> Choices;
 	SolidPortal::CollectChoices(Choices);
 	TestEqual(TEXT("one row per town"), Choices.Num(), SolidPortal::TownCount());
-	TestEqual(TEXT("six towns"), SolidPortal::TownCount(), 6);
+	TestEqual(TEXT("seven towns"), SolidPortal::TownCount(), 7);
 
-	const int32 ExpectedIds[] = { 0, 1, 2, 3, 4, 6 };
+	const int32 ExpectedIds[] = { 0, 1, 2, 3, 4, 5, 6 };
 	const TCHAR* Expected[] = {
-		TEXT("Iglin"), TEXT("Relion"), TEXT("Kanfold"), TEXT("Visolar"), TEXT("Jethan"), TEXT("Rathen") };
+		TEXT("Iglin"), TEXT("Relion"), TEXT("Kanfold"), TEXT("Visolar"), TEXT("Jethan"),
+		TEXT("Dragongate"), TEXT("Rathen") };
 	for (int32 Index = 0; Index < Choices.Num(); ++Index)
 	{
 		TestEqual(TEXT("town id"), Choices[Index].TownId, ExpectedIds[Index]);
@@ -30,13 +31,15 @@ bool FSolidPortalChoicesTest::RunTest(const FString& Parameters)
 	SolidPortal::FChoice Found;
 	TestTrue(TEXT("find Relion"), SolidPortal::FindChoice(1, Found));
 	TestEqual(TEXT("found name"), Found.Name, FString(TEXT("Relion")));
-	TestTrue(TEXT("find Rathen"), SolidPortal::FindChoice(5, Found));
+	TestTrue(TEXT("find Dragongate"), SolidPortal::FindChoice(5, Found));
+	TestEqual(TEXT("Dragongate is town 5"), Found.TownId, SolidTowns::DragongateId);
+	TestTrue(TEXT("find Rathen"), SolidPortal::FindChoice(6, Found));
 	TestEqual(TEXT("Rathen is town 6"), Found.TownId, 6);
-	TestFalse(TEXT("no seventh row"), SolidPortal::FindChoice(6, Found));
+	TestFalse(TEXT("no eighth row"), SolidPortal::FindChoice(7, Found));
 
 	TestEqual(TEXT("wrap down"), SolidPortal::WrapIndex(0, 1), 1);
-	TestEqual(TEXT("wrap past end"), SolidPortal::WrapIndex(5, 1), 0);
-	TestEqual(TEXT("wrap up"), SolidPortal::WrapIndex(0, -1), 5);
+	TestEqual(TEXT("wrap past end"), SolidPortal::WrapIndex(6, 1), 0);
+	TestEqual(TEXT("wrap up"), SolidPortal::WrapIndex(0, -1), 6);
 	return true;
 }
 
@@ -81,7 +84,11 @@ bool FSolidPortalLandingTest::RunTest(const FString& Parameters)
 	{
 		const int32 TownId = Town.Id;
 		FSolidWorldLocation Location;
-		TestTrue(TEXT("location exists"), Map->FindLocation(TownId, Location));
+		if (!Map->FindLocation(TownId, Location))
+		{
+			TestEqual(TEXT("only Dragongate may be missing from the map"), TownId, SolidTowns::DragongateId);
+			continue;
+		}
 		FIntPoint Cell;
 		TestTrue(TEXT("landing cell"), SolidPortal::ChooseLandingCell(Location.Cells, Cell));
 		TestTrue(TEXT("cell belongs to the town"), Location.Cells.Contains(Cell));

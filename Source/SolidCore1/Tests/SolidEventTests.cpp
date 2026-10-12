@@ -3,6 +3,7 @@
 #include "Events/SolidEvents.h"
 #include "SolidGameState.h"
 #include "SolidGameMode.h"
+#include "Journal/SolidJournal.h"
 #include "SolidSight.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Terrain/SolidWorldMap.h"
@@ -16,10 +17,14 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("three starter events"), SolidEvents::DefinitionCount, 3);
-	TestEqual(TEXT("roster is Sam then Alex"), SolidEvents::RosterCount, 2);
+	TestEqual(TEXT("four enter-town events"), SolidEvents::DefinitionCount, 4);
+	TestEqual(TEXT("roster is the company"), SolidEvents::RosterCount, 5);
 	TestEqual(TEXT("slot 0 is Sam"), FString(SolidEvents::RosterName(0)), FString(TEXT("Sam")));
 	TestEqual(TEXT("slot 1 is Alex"), FString(SolidEvents::RosterName(1)), FString(TEXT("Alex")));
+	TestEqual(TEXT("slot 2 is Max"), FString(SolidEvents::RosterName(2)), FString(TEXT("Max")));
+	TestEqual(TEXT("slot 3 is Morgan"), FString(SolidEvents::RosterName(3)), FString(TEXT("Morgan")));
+	TestEqual(TEXT("slot 4 is Quinn"), FString(SolidEvents::RosterName(4)), FString(TEXT("Quinn")));
+	TestNull(TEXT("slot 5 is empty"), SolidEvents::RosterName(5));
 
 	FGameState State;
 	TestEqual(TEXT("party starts empty"), State.MaxPartySize, 0);
@@ -84,6 +89,31 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("skipped Relion does not enable raven sight"), Skipped.bRavenSightEnabled);
 	TestEqual(TEXT("town 2 still fields Sam and Alex"), SolidEvents::PartyCount(Skipped), 2);
 
+	const SolidEvents::FResult Dragongate = SolidEvents::NotifyOccupiedTown(State, 5);
+	TestTrue(TEXT("entering Dragongate fires"), Dragongate.bFired);
+	TestFalse(TEXT("Dragongate does not change sight"), Dragongate.bSetSight);
+	TestTrue(TEXT("raven sight stays unlocked"), SolidEvents::IsSightEnabled(State, ESolidSight::Raven));
+	TestEqual(TEXT("Dragongate party size"), State.MaxPartySize, SolidEvents::RosterCount);
+	TestEqual(TEXT("the whole company"), SolidEvents::PartyCount(State), 5);
+
+	SolidEvents::NotifyOccupiedTown(State, INDEX_NONE);
+	const SolidEvents::FResult DragongateAgain = SolidEvents::NotifyOccupiedTown(State, 5);
+	TestFalse(TEXT("re-entering Dragongate does not fire again"), DragongateAgain.bFired);
+	TestEqual(TEXT("re-entering Dragongate keeps the party"), State.MaxPartySize, 5);
+
+	FGameState GateFirst;
+	const SolidEvents::FResult GateOnly = SolidEvents::NotifyOccupiedTown(GateFirst, 5);
+	TestTrue(TEXT("Dragongate fires on its own"), GateOnly.bFired);
+	TestFalse(TEXT("Dragongate leaves raven sight locked"), GateFirst.bRavenSightEnabled);
+	TestEqual(TEXT("Dragongate fields the company"), SolidEvents::PartyCount(GateFirst), 5);
+	SolidEvents::NotifyOccupiedTown(GateFirst, INDEX_NONE);
+	const SolidEvents::FResult GateReturn = SolidEvents::NotifyOccupiedTown(GateFirst, 5);
+	TestFalse(TEXT("Dragongate event already fired"), GateReturn.bFired);
+	const SolidEvents::FResult KanfoldLater = SolidEvents::NotifyOccupiedTown(GateFirst, 2);
+	TestTrue(TEXT("Kanfold still fires after Dragongate"), KanfoldLater.bFired);
+	TestEqual(TEXT("Kanfold sets the party to Sam and Alex"), GateFirst.MaxPartySize, 2);
+	TestFalse(TEXT("Kanfold still does not unlock raven sight"), GateFirst.bRavenSightEnabled);
+
 	ASolidGameMode* GameMode = NewObject<ASolidGameMode>();
 	TestNotNull(TEXT("gamemode"), GameMode);
 	if (GameMode)
@@ -131,6 +161,28 @@ bool FSolidEventsCaptainTitleTest::RunTest(const FString& Parameters)
 	const SolidEvents::FResult RelionLater = SolidEvents::NotifyOccupiedTown(Skipped, 1);
 	TestTrue(TEXT("Relion still fires later"), RelionLater.bSetTitle);
 	TestEqual(TEXT("Relion titles Vagrant"), FString(Skipped.CaptainTitle), FString(SolidEvents::TitleVagrant));
+
+	const SolidEvents::FResult Dragongate = SolidEvents::NotifyOccupiedTown(State, 5);
+	TestTrue(TEXT("Dragongate sets the title"), Dragongate.bSetTitle);
+	TestEqual(TEXT("Dragongate is Captain"), FString(State.CaptainTitle), FString(SolidEvents::TitleCaptain));
+	SolidEvents::NotifyOccupiedTown(State, INDEX_NONE);
+	const SolidEvents::FResult DragongateAgain = SolidEvents::NotifyOccupiedTown(State, 5);
+	TestFalse(TEXT("Dragongate does not fire twice"), DragongateAgain.bFired);
+	TestEqual(TEXT("title stays Captain"), FString(State.CaptainTitle), FString(SolidEvents::TitleCaptain));
+
+	FGameState GateFirst;
+	const SolidEvents::FResult GateOnly = SolidEvents::NotifyOccupiedTown(GateFirst, 5);
+	TestTrue(TEXT("Dragongate titles Captain on its own"), GateOnly.bSetTitle);
+	TestEqual(TEXT("first visit is Captain"), FString(GateFirst.CaptainTitle), FString(SolidEvents::TitleCaptain));
+	const SolidEvents::FResult KanfoldLater = SolidEvents::NotifyOccupiedTown(GateFirst, 2);
+	TestTrue(TEXT("Kanfold still sets the title"), KanfoldLater.bSetTitle);
+	TestEqual(TEXT("Kanfold after Dragongate is Ranger"), FString(GateFirst.CaptainTitle), FString(SolidEvents::TitleRanger));
+
+	const FString Detail = SolidJournal::Describe(SolidEvents::Definitions[3]);
+	TestTrue(TEXT("journal titles Captain"), Detail.Contains(TEXT("Title Captain")));
+	TestTrue(
+		TEXT("journal lists the company"),
+		Detail.Contains(TEXT("Party 5: Sam, Alex, Max, Morgan, Quinn")));
 	return true;
 }
 

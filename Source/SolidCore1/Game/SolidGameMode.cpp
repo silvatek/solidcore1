@@ -17,6 +17,7 @@
 #include "Towns/SolidTowns.h"
 #include "Menus/SolidPortal.h"
 #include "Towns/SolidBuilding.h"
+#include "Towns/SolidDragongate.h"
 #include "Towns/SolidTownBuildings.h"
 #include "Towns/SolidTownSign.h"
 #include "Towns/SolidTownSigns.h"
@@ -75,8 +76,8 @@ namespace
 }
 
 static_assert(
-	ASolidGameMode::DefaultCompanionCount == SolidEvents::RosterCount,
-	"DefaultCompanionCount must match the event roster (Sam, Alex).");
+	ASolidGameMode::DefaultCompanionCount <= SolidEvents::RosterCount,
+	"The starting selection cannot be larger than the event roster.");
 
 ASolidGameMode::ASolidGameMode()
 {
@@ -934,6 +935,44 @@ void ASolidGameMode::EnsureVegetation()
 			Building->BuildVisuals();
 			SpawnedTownBuildings.Add(Building);
 			++Spawned;
+		}
+
+		if (const USolidWorldMap* GateMap = Streamer->GetTerrainMap()->GetWorldMap())
+		{
+			TArray<SolidDragongate::FPiece> GatePieces;
+			SolidDragongate::CollectPieces(
+				GateMap,
+				Streamer->GetTerrainMap()->GetWorldMinXY(),
+				Streamer->GetTerrainMap()->GetWorldMaxXY(),
+				GatePieces);
+			for (const SolidDragongate::FPiece& Piece : GatePieces)
+			{
+				FVector SpawnLoc(Piece.CenterXY.X, Piece.CenterXY.Y, 0.f);
+				const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
+				SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
+
+				ASolidBuilding* Building = World->SpawnActor<ASolidBuilding>(
+					ASolidBuilding::StaticClass(),
+					SpawnLoc,
+					FRotator(0.f, Piece.YawDeg, 0.f),
+					SpawnParams);
+				if (!Building)
+				{
+					continue;
+				}
+
+				Building->FootprintXCm = Piece.FootprintXCm;
+				Building->FootprintYCm = Piece.FootprintYCm;
+				Building->BodyHeightCm = Piece.BodyHeightCm;
+				Building->RoofHeightCm = Piece.RoofHeightCm;
+				if (Piece.bStoneWall)
+				{
+					Building->BodyColor = SolidDragongate::StoneColor();
+				}
+				Building->BuildVisuals();
+				SpawnedTownBuildings.Add(Building);
+				++Spawned;
+			}
 		}
 
 		UE_LOG(LogSolid, Warning,

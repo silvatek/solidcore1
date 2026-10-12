@@ -252,12 +252,14 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::Four, IE_Pressed, this, &ASolidCharacter::MainMenuChoose4);
 	PlayerInputComponent->BindKey(EKeys::Five, IE_Pressed, this, &ASolidCharacter::MainMenuChoose5);
 	PlayerInputComponent->BindKey(EKeys::Six, IE_Pressed, this, &ASolidCharacter::MainMenuChoose6);
+	PlayerInputComponent->BindKey(EKeys::Seven, IE_Pressed, this, &ASolidCharacter::MainMenuChoose7);
 	PlayerInputComponent->BindKey(EKeys::NumPadOne, IE_Pressed, this, &ASolidCharacter::MainMenuChoose1);
 	PlayerInputComponent->BindKey(EKeys::NumPadTwo, IE_Pressed, this, &ASolidCharacter::MainMenuChoose2);
 	PlayerInputComponent->BindKey(EKeys::NumPadThree, IE_Pressed, this, &ASolidCharacter::MainMenuChoose3);
 	PlayerInputComponent->BindKey(EKeys::NumPadFour, IE_Pressed, this, &ASolidCharacter::MainMenuChoose4);
 	PlayerInputComponent->BindKey(EKeys::NumPadFive, IE_Pressed, this, &ASolidCharacter::MainMenuChoose5);
 	PlayerInputComponent->BindKey(EKeys::NumPadSix, IE_Pressed, this, &ASolidCharacter::MainMenuChoose6);
+	PlayerInputComponent->BindKey(EKeys::NumPadSeven, IE_Pressed, this, &ASolidCharacter::MainMenuChoose7);
 }
 
 ASolidHUD* ASolidCharacter::GetSolidHUD() const
@@ -474,6 +476,11 @@ void ASolidCharacter::MainMenuChoose5()
 void ASolidCharacter::MainMenuChoose6()
 {
 	ChooseMainMenuIndex(5);
+}
+
+void ASolidCharacter::MainMenuChoose7()
+{
+	ChooseMainMenuIndex(6);
 }
 
 void ASolidCharacter::ChooseMainMenuIndex(const int32 Index)

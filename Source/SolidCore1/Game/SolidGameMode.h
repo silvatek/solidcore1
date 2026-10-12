@@ -85,7 +85,7 @@ public:
 	USolidCompany* GetCompany() const { return Company; }
 	USolidParty* GetParty() const { return Party; }
 
-	/** Event roster size (Sam, then Alex). The live party starts empty. The company catalog is larger. */
+	/** Starting selection (Sam, then Alex). The event roster is the whole company. The live party starts empty. */
 	static constexpr int32 DefaultCompanionCount = 2;
 
 	/** Companions an event currently allows in the party. Starts at 0. */

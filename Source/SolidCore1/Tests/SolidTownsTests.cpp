@@ -11,11 +11,12 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidTownNamesTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("six towns"), SolidTowns::DefinitionCount, 6);
+	TestEqual(TEXT("seven towns"), SolidTowns::DefinitionCount, 7);
 
-	const int32 ExpectedIds[] = { 0, 1, 2, 3, 4, 6 };
+	const int32 ExpectedIds[] = { 0, 1, 2, 3, 4, 5, 6 };
 	const TCHAR* Expected[] = {
-		TEXT("Iglin"), TEXT("Relion"), TEXT("Kanfold"), TEXT("Visolar"), TEXT("Jethan"), TEXT("Rathen") };
+		TEXT("Iglin"), TEXT("Relion"), TEXT("Kanfold"), TEXT("Visolar"), TEXT("Jethan"),
+		TEXT("Dragongate"), TEXT("Rathen") };
 	for (int32 Index = 0; Index < SolidTowns::DefinitionCount; ++Index)
 	{
 		const SolidTowns::FTownInfo& Town = SolidTowns::Definitions[Index];
@@ -24,8 +25,8 @@ bool FSolidTownNamesTest::RunTest(const FString& Parameters)
 		TestNotNull(TEXT("find"), SolidTowns::Find(Town.Id));
 	}
 
-	TestTrue(TEXT("index 5 is unused"), SolidTowns::NameFor(5).IsEmpty());
-	TestNull(TEXT("index 5 is not a town"), SolidTowns::Find(5));
+	TestTrue(TEXT("index 7 has no name"), SolidTowns::NameFor(7).IsEmpty());
+	TestNull(TEXT("index 7 is not a town"), SolidTowns::Find(7));
 	TestTrue(TEXT("unknown index has no name"), SolidTowns::NameFor(9).IsEmpty());
 	TestNull(TEXT("unknown index is not a town"), SolidTowns::Find(9));
 	return true;

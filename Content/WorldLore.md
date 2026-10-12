@@ -27,6 +27,46 @@ Iglin is where the orphan (who will later go on to become the Captain) was raise
 
 An island city off the north eastern coast; survived the fall of Jethan, but has remained largely  isolated from the New Kingdom.
 
+
+# Characters
+
+## People
+
+### The Captain
+
+Also known as the Orphan, Outcast, Vagrant or Ranger, depending on progression. The central character in the story, and the leader of a company of adventurers.
+
+### Jarth (NPC)
+
+A master blacksmith. Rumoured to know how to forge the metal from the solid core of Dracosan's egg.
+
+### Melican (NPC)
+
+Queen of the New Kingdom. Rules from her palace in Kanfold.
+
+### Rethil (NPC)
+
+Leads the villager's initial attempt to retake the bridge, killed in battle along with the Orphan. Unlike the Orphan, Rethil remains dead.
+
+### Urlar (historical figure)
+
+The master sorcerer who turned the core of Dracosan's egg to solid metal, but died in the attempt.
+
+## Dragons
+
+### Dracothar
+
+The first known dragon. Destroyed the old kingdom, then killed by a great sorcerer.
+
+### Dracosan
+
+Second dragon lord. Attacked the new kingdom but defeated.
+
+### Dracorex
+
+Third dragon lord. Still growing its power in the southern mountains as-of 200 AtF.
+
+
 # World Time
 
 The Journal records entries using "world time". 
@@ -91,7 +131,7 @@ Note: dates are before (BtF) / after (AtF) the fall of Jethan. The orphan was bo
 
     Dracosan guards an egg prophesised to have an even more powerful dragon. 
 
-    A master sorcerer manages to turn the core of the egg into solid metal to stop it hatching. The master sorcerer, and hundreds of other mages and warriors, are killed to make this happen.
+    A master sorcerer, Urlar, manages to turn the core of the egg into solid metal to stop it hatching. The master sorcerer, and hundreds of other mages and warriors, are killed to make this happen.
 
 - __170 AtF__
 

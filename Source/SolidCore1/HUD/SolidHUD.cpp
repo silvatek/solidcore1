@@ -600,9 +600,20 @@ namespace SolidHUDPrivate
 		float StampWidth = 0.f;
 		float TextWidth = 0.f;
 		float LineHeight = 18.f;
+		float TitleW = 0.f;
+		float TitleH = 18.f;
+		FString TitleText(SolidJournal::Title);
 		int32 FlowRows = 0;
 		for (const SolidJournal::FRow& Row : Rows)
 		{
+			if (Row.Kind == SolidJournal::ERowKind::Title)
+			{
+				if (!Row.Text.IsEmpty())
+				{
+					TitleText = Row.Text;
+				}
+				continue;
+			}
 			if (Row.Kind != SolidJournal::ERowKind::Hint)
 			{
 				++FlowRows;
@@ -631,6 +642,15 @@ namespace SolidHUDPrivate
 			TextWidth = FMath::Max(TextWidth, TextW);
 			LineHeight = FMath::Max(LineHeight, FMath::Max(StampH, TextH));
 		}
+		if (Font)
+		{
+			Canvas->StrLen(Font, TitleText, TitleW, TitleH);
+		}
+		else
+		{
+			TitleW = static_cast<float>(TitleText.Len() * 8);
+			TitleH = 18.f;
+		}
 
 		const float ColumnSpan = StampWidth > 0.f ? StampWidth + SolidJournal::ColumnGap : 0.f;
 		const float ContentW = ColumnSpan + TextWidth;
@@ -655,9 +675,22 @@ namespace SolidHUDPrivate
 		Dim.BlendMode = SE_BLEND_Translucent;
 		Canvas->DrawItem(Dim);
 
-		DrawOakFrame(Canvas, BoxX, BoxY, BoardW, BoardH, SolidHudTheme::MenuFrame());
+		const SolidHudTheme::FFrame Frame = SolidHudTheme::MenuFrame();
+		DrawOakFrame(Canvas, BoxX, BoxY, BoardW, BoardH, Frame);
 
 		const SolidHudTheme::FPalette Palette = SolidHudTheme::OakAndBronze();
+		const float Band = SolidHudTheme::BandThickness(Frame);
+		const SolidJournal::FTitlePlate Plate = SolidJournal::TitlePlate(BoxX, BoxY, BoardW, TitleW, TitleH, Band);
+		FillRect(Canvas, Plate.X, Plate.Y, Plate.W, Plate.H, Palette.Bronze);
+		if (!TitleText.IsEmpty())
+		{
+			const float NameX = Plate.X + (Plate.W - TitleW) * 0.5f;
+			const float NameY = Plate.Y + (Plate.H - TitleH) * 0.5f;
+			FCanvasTextItem NameItem(FVector2D(NameX, NameY), FText::FromString(TitleText), Font, Palette.Title);
+			NameItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+			Canvas->DrawItem(NameItem);
+		}
+
 		const float OriginX = BoxX + SolidJournal::BoardPad;
 		const SolidJournal::FColumns Columns = SolidJournal::Columns(OriginX, StampWidth);
 		const float HintY = BoxY + BoardH - SolidJournal::BoardPad - LineHeight;
@@ -665,7 +698,7 @@ namespace SolidHUDPrivate
 
 		for (const SolidJournal::FRow& Row : Rows)
 		{
-			if (Row.Kind == SolidJournal::ERowKind::Hint)
+			if (Row.Kind == SolidJournal::ERowKind::Title || Row.Kind == SolidJournal::ERowKind::Hint)
 			{
 				continue;
 			}
@@ -675,27 +708,27 @@ namespace SolidHUDPrivate
 				break;
 			}
 
-			const bool bTitle = Row.Kind == SolidJournal::ERowKind::Title;
-			const FLinearColor Color = bTitle ? Palette.Title : Palette.Ink;
-			const float TextX = bTitle ? OriginX : Columns.TextX;
+			const bool bHeading = Row.Kind == SolidJournal::ERowKind::Heading;
+			const FLinearColor Color = bHeading ? Palette.Title : Palette.Ink;
 
 			if (!Row.Stamp.IsEmpty())
 			{
 				FCanvasTextItem StampItem(
-					FVector2D(Columns.StampX, Y), FText::FromString(Row.Stamp), Font, Palette.Ink);
+					FVector2D(Columns.StampX, Y), FText::FromString(Row.Stamp), Font, Color);
 				StampItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
 				Canvas->DrawItem(StampItem);
 			}
 			if (!Row.Text.IsEmpty())
 			{
-				FCanvasTextItem TextItem(FVector2D(TextX, Y), FText::FromString(Row.Text), Font, Color);
+				FCanvasTextItem TextItem(
+					FVector2D(Columns.TextX, Y), FText::FromString(Row.Text), Font, Color);
 				TextItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
 				Canvas->DrawItem(TextItem);
 			}
 
-			if (bTitle && !Row.Text.IsEmpty())
+			if (bHeading)
 			{
-				const float RuleInset = SolidHudTheme::BandThickness(SolidHudTheme::MenuFrame()) + 18.f;
+				const float RuleInset = Band + 18.f;
 				FillRect(
 					Canvas,
 					BoxX + RuleInset,

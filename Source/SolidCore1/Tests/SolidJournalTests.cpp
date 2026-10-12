@@ -44,6 +44,21 @@ bool FSolidJournalEmptyTest::RunTest(const FString& Parameters)
 	TArray<SolidJournal::FRow> Rows;
 	SolidJournal::CollectRows(SolidEvents::FState(), Rows);
 	TestTrue(TEXT("title"), SolidJournalTestPrivate::ContainsText(Rows, TEXT("Journal")));
+	int32 Heading = INDEX_NONE;
+	for (int32 Index = 0; Index < Rows.Num(); ++Index)
+	{
+		if (Rows[Index].Kind == SolidJournal::ERowKind::Heading)
+		{
+			Heading = Index;
+			break;
+		}
+	}
+	TestTrue(TEXT("column headings"), Heading != INDEX_NONE);
+	if (Heading != INDEX_NONE)
+	{
+		TestEqual(TEXT("time heading"), Rows[Heading].Stamp, FString(SolidJournal::TimeHeading));
+		TestEqual(TEXT("summary heading"), Rows[Heading].Text, FString(SolidJournal::SummaryHeading));
+	}
 	TestTrue(TEXT("empty copy"), SolidJournalTestPrivate::ContainsText(Rows, TEXT("No events yet.")));
 	TestTrue(TEXT("close hint"), SolidJournalTestPrivate::ContainsText(Rows, SolidJournal::CloseHint));
 	TestFalse(TEXT("no Relion yet"), SolidJournalTestPrivate::ContainsText(Rows, TEXT("Relion")));
@@ -241,6 +256,17 @@ bool FSolidJournalPageTest::RunTest(const FString& Parameters)
 
 	const SolidJournal::FColumns Empty = SolidJournal::Columns(36.f, 0.f);
 	TestTrue(TEXT("an empty time column does not indent the text"), FMath::IsNearlyEqual(Empty.TextX, 36.f, 0.1f));
+
+	const float BoardX = 100.f;
+	const float BoardY = 200.f;
+	const float BoardW = 900.f;
+	const float Band = 9.f;
+	const SolidJournal::FTitlePlate Plate = SolidJournal::TitlePlate(BoardX, BoardY, BoardW, 70.f, 18.f, Band);
+	const float BandBottom = BoardY + Band;
+	TestTrue(TEXT("the title covers the top border"), Plate.Y < BandBottom && Plate.Y + Plate.H > BoardY);
+	TestTrue(TEXT("the title is centered on the top border"),
+		FMath::IsNearlyEqual(Plate.X + Plate.W * 0.5f, BoardX + BoardW * 0.5f, 0.5f));
+	TestTrue(TEXT("the title plate is narrower than the board"), Plate.W < BoardW);
 	return true;
 }
 

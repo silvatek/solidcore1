@@ -5,12 +5,14 @@
 
 /**
  * Journal page opened from the F10 menu.
- * World time and the entry sit in separate columns on a large board.
+ * The name sits in the top border. Time and Summary head the two columns.
  * A longer page will scroll; the board stays this size either way.
  */
 namespace SolidJournal
 {
 	inline constexpr const TCHAR* Title = TEXT("Journal");
+	inline constexpr const TCHAR* TimeHeading = TEXT("Time");
+	inline constexpr const TCHAR* SummaryHeading = TEXT("Summary");
 	inline constexpr const TCHAR* EmptyText = TEXT("No events yet.");
 	inline constexpr const TCHAR* CloseHint = TEXT("F10 to close");
 
@@ -29,7 +31,10 @@ namespace SolidJournal
 
 	enum class ERowKind : uint8
 	{
+		/** Drawn on the top border, not in the column list. */
 		Title,
+		/** Column names. Stamp is Time, text is Summary. */
+		Heading,
 		Entry,
 		/** Change under an entry. Stamp is empty so the words share the entry column. */
 		Detail,
@@ -51,6 +56,18 @@ namespace SolidJournal
 		float StampX = 0.f;
 		float TextX = 0.f;
 	};
+
+	/** Nameplate on the top bronze band. */
+	struct FTitlePlate
+	{
+		float X = 0.f;
+		float Y = 0.f;
+		float W = 0.f;
+		float H = 0.f;
+	};
+
+	inline constexpr float TitlePlatePadX = 18.f;
+	inline constexpr float TitlePlatePadY = 4.f;
 
 	/** One line describing an event's configuration changes. */
 	FString Describe(const SolidEvents::FEvent& Event);
@@ -75,6 +92,23 @@ namespace SolidJournal
 		const float WantH = FMath::Max3(MinBoardHeight, ViewH * BoardHeightFraction, ContentH + BoardPad * 2.f);
 		OutW = FMath::Min(WantW, RoomW);
 		OutH = FMath::Min(WantH, RoomH);
+	}
+
+	/** The name sits on the top bronze band, centered along that edge. */
+	inline FTitlePlate TitlePlate(
+		const float BoardX,
+		const float BoardY,
+		const float BoardW,
+		const float TitleW,
+		const float TitleH,
+		const float Band)
+	{
+		FTitlePlate Plate;
+		Plate.W = TitleW + TitlePlatePadX * 2.f;
+		Plate.H = FMath::Max(TitleH + TitlePlatePadY * 2.f, Band);
+		Plate.X = BoardX + (BoardW - Plate.W) * 0.5f;
+		Plate.Y = BoardY + Band * 0.5f - Plate.H * 0.5f;
+		return Plate;
 	}
 
 	/** Time on the left. Entry text starts to the right of the widest stamp. */

@@ -64,6 +64,7 @@ void SolidJournal::CollectRows(const SolidEvents::FState& State, TArray<FRow>& O
 {
 	OutRows.Reset();
 	OutRows.Add({ ERowKind::Title, FString(), FString(Title) });
+	OutRows.Add({ ERowKind::Heading, FString(TimeHeading), FString(SummaryHeading) });
 
 	if (State.Journal.Num() <= 0)
 	{

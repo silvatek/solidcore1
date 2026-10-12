@@ -5,7 +5,8 @@
 class USolidWorldMap;
 
 /**
- * "Welcome to {name}" signs for numbered WorldMap locations.
+ * Welcome signs for numbered WorldMap locations.
+ * The board reads "Welcome to" on the first line and the town name on the second.
  * One placement per named cell (Kanfold's two cells each get a sign).
  * Pure logic — no actor spawning (safe for automation).
  */
@@ -19,6 +20,10 @@ namespace SolidTownSigns
 	inline constexpr float BoardDepthCm = 8.f;
 	inline constexpr float TextWorldSize = 46.f;
 	inline constexpr float OutlineOffsetCm = 3.5f;
+	/** First line of every welcome board. */
+	inline constexpr const TCHAR* WelcomeLine = TEXT("Welcome to");
+	/** Two lines of glyphs, plus the padding the single-line board used. */
+	inline constexpr float BoardHeightCm = TextWorldSize * 2.85f;
 
 	inline FLinearColor PoleColor()
 	{
@@ -40,8 +45,11 @@ namespace SolidTownSigns
 		float YawDeg = FacingYawDeg;
 	};
 
-	/** "Welcome to {TownName}". */
+	/** "Welcome to" and the town name, on two lines. */
 	FString MakeLabel(const FString& TownName);
+
+	/** Width of the board for that label: the longer line, plus a margin. */
+	float BoardWidthCm(const FString& Label);
 
 	/**
 	 * One placement per cell of each location that has a non-empty name.

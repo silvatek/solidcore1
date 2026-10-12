@@ -98,10 +98,8 @@ UTextRenderComponent* ASolidTownSign::GetOutlineText(const int32 Index) const
 void ASolidTownSign::BuildVisuals()
 {
 	const FString Label = GetLabel();
-	const int32 CharCount = FMath::Max(Label.Len(), 1);
-	const float TextWidth = SolidTownSigns::TextWorldSize * 0.55f * static_cast<float>(CharCount);
-	const float BoardWidth = TextWidth + SolidTownSigns::TextWorldSize * 0.9f;
-	const float BoardHeight = SolidTownSigns::TextWorldSize * 1.85f;
+	const float BoardWidth = SolidTownSigns::BoardWidthCm(Label);
+	const float BoardHeight = SolidTownSigns::BoardHeightCm;
 
 	constexpr float ShapeSize = 100.f;
 	const float BoardCenterX = (SolidTownSigns::PoleThicknessCm + SolidTownSigns::BoardDepthCm) * 0.5f;

@@ -60,7 +60,7 @@ bool FSolidTownSignPlacementsTest::RunTest(const FString& Parameters)
 		TestEqual(
 			TEXT("welcome label"),
 			SolidTownSigns::MakeLabel(Placement.Name),
-			FString::Printf(TEXT("Welcome to %s"), *Placement.Name));
+			FString::Printf(TEXT("%s\n%s"), SolidTownSigns::WelcomeLine, *Placement.Name));
 
 		FVector2D CellXY = FVector2D::ZeroVector;
 		TestTrue(TEXT("cell projects"), WorldMap->CellToWorldXY(Placement.Cell, WorldMin, WorldMax, CellXY));
@@ -169,14 +169,20 @@ bool FSolidTownSignVisualsTest::RunTest(const FString& Parameters)
 	ASolidTownSign* Sign = NewObject<ASolidTownSign>();
 	TestNotNull(TEXT("sign"), Sign);
 	Sign->SetTownName(TEXT("Iglin"));
-	TestEqual(TEXT("label"), Sign->GetLabel(), FString(TEXT("Welcome to Iglin")));
+	const FString IglinLabel = FString::Printf(TEXT("%s\nIglin"), SolidTownSigns::WelcomeLine);
+	TestEqual(TEXT("label"), Sign->GetLabel(), IglinLabel);
+	TestTrue(TEXT("the greeting is the first line"), Sign->GetLabel().StartsWith(FString(SolidTownSigns::WelcomeLine) + TEXT("\n")));
+	TestTrue(TEXT("the town name is the second line"), Sign->GetLabel().EndsWith(TEXT("Iglin")));
+	const FString LongName = SolidTownSigns::MakeLabel(TEXT("AVeryLongTownName"));
+	TestTrue(TEXT("a longer name widens the board"),
+		SolidTownSigns::BoardWidthCm(LongName) > SolidTownSigns::BoardWidthCm(IglinLabel));
 	Sign->BuildVisuals();
 
 	UTextRenderComponent* Label = Sign->GetLabelText();
 	TestNotNull(TEXT("white label"), Label);
 	if (Label)
 	{
-		TestEqual(TEXT("white text"), Label->Text.ToString(), FString(TEXT("Welcome to Iglin")));
+		TestEqual(TEXT("white text"), Label->Text.ToString(), IglinLabel);
 		TestEqual(TEXT("white color"), Label->TextRenderColor, FColor::White);
 	}
 
@@ -189,7 +195,7 @@ bool FSolidTownSignVisualsTest::RunTest(const FString& Parameters)
 		{
 			continue;
 		}
-		TestEqual(TEXT("outline copies the label"), Outline->Text.ToString(), FString(TEXT("Welcome to Iglin")));
+		TestEqual(TEXT("outline copies the label"), Outline->Text.ToString(), IglinLabel);
 		TestEqual(TEXT("outline is black"), Outline->TextRenderColor, FColor::Black);
 		if (Label)
 		{
@@ -216,6 +222,10 @@ bool FSolidTownSignVisualsTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("board is a flat slab"),
 			Board->GetRelativeScale3D().X < Board->GetRelativeScale3D().Y
 			&& Board->GetRelativeScale3D().X < Board->GetRelativeScale3D().Z);
+		TestTrue(TEXT("board is as wide as the longer line"),
+			FMath::IsNearlyEqual(Board->GetRelativeScale3D().Y * 100.f, SolidTownSigns::BoardWidthCm(IglinLabel), 0.5f));
+		TestTrue(TEXT("board is tall enough for two lines"),
+			FMath::IsNearlyEqual(Board->GetRelativeScale3D().Z * 100.f, SolidTownSigns::BoardHeightCm, 0.5f));
 	}
 
 	TestTrue(TEXT("sign faces south"), FMath::IsNearlyEqual(SolidTownSigns::FacingYawDeg, -90.f));

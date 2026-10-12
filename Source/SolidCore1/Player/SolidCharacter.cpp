@@ -10,7 +10,7 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "CollisionQueryParams.h"
 #include "CollisionShape.h"
-#include "Engine/WorldCollision.h"
+#include "Engine/OverlapResult.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/World.h"
 #include "Engine/GameViewportClient.h"

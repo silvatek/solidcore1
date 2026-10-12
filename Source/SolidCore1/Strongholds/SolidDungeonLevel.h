@@ -4,6 +4,7 @@
 #include "Misc/Parse.h"
 #include "SolidEvents.h"
 #include "SolidSight.h"
+#include "SolidStrongholdGrid.h"
 
 /**
  * Dungeon interior, traveled to from the open world.
@@ -21,16 +22,19 @@ namespace SolidDungeonLevel
 	inline const TCHAR* EnterLabel = TEXT("Enter cave");
 	inline const TCHAR* LeaveLabel = TEXT("Leave cave");
 
-	/** Open interior, cm. The mouth sits on the X=0 wall. */
-	inline constexpr float RoomDepthCm = 1800.f;
-	inline constexpr float RoomWidthCm = 1400.f;
-	inline constexpr float RoomHeightCm = 560.f;
-	inline constexpr float ShellCm = 80.f;
+	/** Meagre den ceiling. The floor plan is the ten-hex outline in SolidStrongholdGrid. */
+	inline constexpr float RoomHeightCm = 320.f;
+	inline constexpr float ShellCm = 48.f;
+	/** Dark opening on the entrance hex. The cliff mouth outside is larger. */
+	inline constexpr float MouthHeightCm = 240.f;
 
-	/** The captain stands inside, facing the mouth. */
+	/** The captain stands on the cell inside the entrance, facing the mouth. */
 	inline FVector CaptainSpawnLocal()
 	{
-		return FVector(RoomDepthCm * 0.45f, 0.f, 0.f);
+		const SolidStrongholdGrid::FCell Cell = SolidStrongholdGrid::MeagreCaptainCell();
+		const FVector2D Center = SolidStrongholdGrid::HexCenter(
+			Cell.Col, Cell.Row, SolidStrongholdGrid::MeagreOrigin());
+		return FVector(Center.X, Center.Y, 0.f);
 	}
 
 	/** Local +X of the interior runs away from the mouth, so yaw 180 looks back at it. */
@@ -44,9 +48,28 @@ namespace SolidDungeonLevel
 
 	inline bool ContainsLocal(const FVector& Point)
 	{
-		return Point.X > 0.f && Point.X < RoomDepthCm
-			&& FMath::Abs(Point.Y) < RoomWidthCm * 0.5f
-			&& Point.Z >= 0.f && Point.Z < RoomHeightCm;
+		if (Point.Z < 0.f || Point.Z >= RoomHeightCm)
+		{
+			return false;
+		}
+		TArray<SolidStrongholdGrid::FHex> Hexes;
+		SolidStrongholdGrid::CollectMeagreHexes(Hexes);
+		const FVector2D Plan(Point.X, Point.Y);
+		for (const SolidStrongholdGrid::FHex& Hex : Hexes)
+		{
+			if (SolidStrongholdGrid::PointInHex(Plan, Hex.Center))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** A step west of the mouth, outside the den. */
+	inline FVector PastMouthLocal()
+	{
+		const FVector2D Mouth = SolidStrongholdGrid::MeagreMouthMidpoint();
+		return FVector(Mouth.X - SolidStrongholdGrid::FlatToFlatCm * 0.5f, Mouth.Y, 100.f);
 	}
 
 	/** Companions stay out of the dungeon. */

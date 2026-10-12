@@ -2,13 +2,12 @@
 
 #include "CoreMinimal.h"
 #include "Math/Box2D.h"
-#include "SolidDungeonLevel.h"
 
 /**
  * Pointy-top hexes on a stronghold floor, for placing furniture.
- * Dungeons, fortresses, and towers share this grid. The Meagre Dungeon uses it first.
+ * Dungeons, fortresses, and towers share this grid.
  * "Across" is flat side to flat side (the horizontal width), not point to point.
- * Only hexes that sit entirely on the floor are kept, so a piece on a cell stays inside the room.
+ * The Meagre Dungeon is an irregular den of ten cells, not a filled rectangle.
  */
 namespace SolidStrongholdGrid
 {
@@ -43,12 +42,50 @@ namespace SolidStrongholdGrid
 		return SideCm() * 1.5f;
 	}
 
-	inline FBox2D MeagreFloorBounds()
+	struct FCell
 	{
-		const float HalfY = SolidDungeonLevel::RoomWidthCm * 0.5f;
-		return FBox2D(
-			FVector2D(0.f, -HalfY),
-			FVector2D(SolidDungeonLevel::RoomDepthCm, HalfY));
+		int32 Col = 0;
+		int32 Row = 0;
+	};
+
+	/**
+	 * Meagre den, mouth to the west.
+	 *     (0,1) (1,1)
+	 * (-1,0) (0,0) (1,0) (2,0)
+	 *     (0,-1) (1,-1) (2,-1)
+	 *           (1,-2)
+	 */
+	inline constexpr int32 MeagreCellCount = 10;
+
+	inline void MeagreCells(TArray<FCell>& OutCells)
+	{
+		OutCells.Reset();
+		const FCell Cells[] = {
+			{ -1, 0 }, { 0, 0 }, { 1, 0 }, { 2, 0 },
+			{ 0, 1 }, { 1, 1 },
+			{ 0, -1 }, { 1, -1 }, { 2, -1 },
+			{ 1, -2 },
+		};
+		for (const FCell& Cell : Cells)
+		{
+			OutCells.Add(Cell);
+		}
+	}
+
+	inline FCell MeagreEntranceCell()
+	{
+		return FCell{ -1, 0 };
+	}
+
+	inline FCell MeagreCaptainCell()
+	{
+		return FCell{ 0, 0 };
+	}
+
+	/** Cell coordinates are measured from here. */
+	inline FVector2D MeagreOrigin()
+	{
+		return FVector2D::ZeroVector;
 	}
 
 	struct FHex
@@ -89,6 +126,49 @@ namespace SolidStrongholdGrid
 			const float Angle = FMath::DegreesToRadians(60.f * static_cast<float>(Index) + 30.f);
 			OutVertices[Index] = Center + FVector2D(FMath::Cos(Angle), FMath::Sin(Angle)) * Radius;
 		}
+	}
+
+	/** True when Point is inside the hex, including the boundary. */
+	inline bool PointInHex(const FVector2D& Point, const FVector2D& Center)
+	{
+		FVector2D Vertices[6];
+		HexVertices(Center, Vertices);
+		constexpr float Slack = 0.05f;
+		for (int32 Index = 0; Index < 6; ++Index)
+		{
+			const FVector2D Edge = Vertices[(Index + 1) % 6] - Vertices[Index];
+			const FVector2D ToPoint = Point - Vertices[Index];
+			const float Cross = Edge.X * ToPoint.Y - Edge.Y * ToPoint.X;
+			if (Cross < -Slack)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	inline void CollectMeagreHexes(TArray<FHex>& OutHexes)
+	{
+		OutHexes.Reset();
+		TArray<FCell> Cells;
+		MeagreCells(Cells);
+		const FVector2D Origin = MeagreOrigin();
+		for (const FCell& Cell : Cells)
+		{
+			FHex Hex;
+			Hex.Center = HexCenter(Cell.Col, Cell.Row, Origin);
+			Hex.Col = Cell.Col;
+			Hex.Row = Cell.Row;
+			OutHexes.Add(Hex);
+		}
+	}
+
+	/** Midpoint of the entrance hex's west flat, where the mouth sits. */
+	inline FVector2D MeagreMouthMidpoint()
+	{
+		const FCell Entrance = MeagreEntranceCell();
+		const FVector2D Center = HexCenter(Entrance.Col, Entrance.Row, MeagreOrigin());
+		return Center + FVector2D(-FlatToFlatCm * 0.5f, 0.f);
 	}
 
 	inline void CollectHexes(const FBox2D& Floor, TArray<FHex>& OutHexes)
@@ -170,6 +250,57 @@ namespace SolidStrongholdGrid
 				Segment.A = P;
 				Segment.B = Q;
 				OutSegments.Add(Segment);
+			}
+		}
+	}
+
+	/** Edges that belong to only one cell. The rock wall follows these. */
+	inline void CollectBoundarySegments(const TArray<FHex>& Hexes, TArray<FSegment>& OutSegments)
+	{
+		OutSegments.Reset();
+		TMap<FEdgeKey, int32> Counts;
+		TMap<FEdgeKey, FSegment> Geometry;
+		for (const FHex& Hex : Hexes)
+		{
+			FVector2D Vertices[6];
+			HexVertices(Hex.Center, Vertices);
+			for (int32 Index = 0; Index < 6; ++Index)
+			{
+				const FVector2D& P = Vertices[Index];
+				const FVector2D& Q = Vertices[(Index + 1) % 6];
+				auto Quantize = [](const FVector2D& Point) -> TPair<int32, int32>
+				{
+					return TPair<int32, int32>(
+						FMath::RoundToInt(Point.X * 10.f),
+						FMath::RoundToInt(Point.Y * 10.f));
+				};
+				const TPair<int32, int32> KeyP = Quantize(P);
+				const TPair<int32, int32> KeyQ = Quantize(Q);
+				const bool bPFirst = KeyP.Key < KeyQ.Key || (KeyP.Key == KeyQ.Key && KeyP.Value < KeyQ.Value);
+				FEdgeKey Key;
+				Key.AX = bPFirst ? KeyP.Key : KeyQ.Key;
+				Key.AY = bPFirst ? KeyP.Value : KeyQ.Value;
+				Key.BX = bPFirst ? KeyQ.Key : KeyP.Key;
+				Key.BY = bPFirst ? KeyQ.Value : KeyP.Value;
+				int32& Count = Counts.FindOrAdd(Key);
+				if (Count == 0)
+				{
+					FSegment Segment;
+					Segment.A = P;
+					Segment.B = Q;
+					Geometry.Add(Key, Segment);
+				}
+				++Count;
+			}
+		}
+		for (const TPair<FEdgeKey, int32>& Pair : Counts)
+		{
+			if (Pair.Value == 1)
+			{
+				if (const FSegment* Segment = Geometry.Find(Pair.Key))
+				{
+					OutSegments.Add(*Segment);
+				}
 			}
 		}
 	}

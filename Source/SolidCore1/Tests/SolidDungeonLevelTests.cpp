@@ -28,8 +28,10 @@ bool FSolidDungeonLevelTravelTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("dungeon option with a trailer"), SolidDungeonLevel::RequestsDungeon(TEXT("?SolidLevel=Dungeon?listen")));
 
 	TestTrue(TEXT("captain spawn is inside the room"), SolidDungeonLevel::ContainsLocal(SolidDungeonLevel::CaptainSpawnLocal()));
-	TestFalse(TEXT("past the mouth is outside"), SolidDungeonLevel::ContainsLocal(FVector(-10.f, 0.f, 100.f)));
-	TestFalse(TEXT("above the ceiling is outside"), SolidDungeonLevel::ContainsLocal(FVector(400.f, 0.f, SolidDungeonLevel::RoomHeightCm + 10.f)));
+	TestFalse(TEXT("past the mouth is outside"), SolidDungeonLevel::ContainsLocal(SolidDungeonLevel::PastMouthLocal()));
+	const FVector2D Notch = SolidStrongholdGrid::HexCenter(-1, 1, SolidStrongholdGrid::MeagreOrigin());
+	TestFalse(TEXT("the open notch is outside"), SolidDungeonLevel::ContainsLocal(FVector(Notch.X, Notch.Y, 100.f)));
+	TestFalse(TEXT("above the ceiling is outside"), SolidDungeonLevel::ContainsLocal(FVector(0.f, 0.f, SolidDungeonLevel::RoomHeightCm + 10.f)));
 
 	TestTrue(
 		TEXT("return yaw looks back at a north-facing mouth"),
@@ -107,11 +109,18 @@ bool FSolidDungeonInteriorVisualsTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	UStaticMesh* FloorMesh = Floor->GetStaticMesh();
-	UStaticMesh* MouthMesh = Mouth->GetStaticMesh();
-	TestNotNull(TEXT("floor cube"), FloorMesh);
-	TestNotNull(TEXT("mouth cube"), MouthMesh);
-	TestTrue(TEXT("floor is under the walk"), Floor->GetRelativeLocation().Z < 0.f);
+	UStaticMesh* FloorAsset = Floor->GetStaticMesh();
+	UStaticMesh* MouthAsset = Mouth->GetStaticMesh();
+	TestNotNull(TEXT("floor mesh"), FloorAsset);
+	TestNotNull(TEXT("mouth cube"), MouthAsset);
+	if (FloorAsset)
+	{
+		const FBoxSphereBounds FloorBounds = FloorAsset->GetBounds();
+		const float FloorTop = FloorBounds.Origin.Z + FloorBounds.BoxExtent.Z;
+		const float FloorBottom = FloorBounds.Origin.Z - FloorBounds.BoxExtent.Z;
+		TestTrue(TEXT("walk surface is the top of the floor"), FMath::IsNearlyZero(FloorTop, 1.f));
+		TestTrue(TEXT("floor hangs below the walk"), FloorBottom < -10.f);
+	}
 	TestTrue(TEXT("mouth is on the near wall"), Mouth->GetRelativeLocation().X < SolidDungeonLevel::CaptainSpawnLocal().X);
 	TestTrue(TEXT("light hangs inside"), Light->GetRelativeLocation().Z > 0.f && Light->GetRelativeLocation().Z < SolidDungeonLevel::RoomHeightCm);
 	TestTrue(TEXT("spawn feet are inside"), SolidDungeonLevel::ContainsLocal(SolidDungeonLevel::CaptainSpawnLocal()));

@@ -54,12 +54,12 @@ namespace SolidStrongholdFurniture
 
 	inline float FireplaceEmberRadiusCm()
 	{
-		return 22.f;
+		return FireplaceAcrossCm() * 0.40f;
 	}
 
 	inline float FireplaceEmberHeightCm()
 	{
-		return 12.f;
+		return 20.f;
 	}
 
 	/** Long axis covers two cells. */
@@ -68,9 +68,10 @@ namespace SolidStrongholdFurniture
 		return SolidStrongholdGrid::FlatToFlatCm * 2.f - 20.f;
 	}
 
+	/** Narrow enough to pass through the flat the two cells share. */
 	inline float BedWidthCm()
 	{
-		return SolidStrongholdGrid::VertexToVertexCm() * 0.72f;
+		return SolidStrongholdGrid::SideCm() - SolidStrongholdGrid::LineThicknessCm * 1.5f;
 	}
 
 	inline float BedHeightCm()
@@ -124,12 +125,12 @@ namespace SolidStrongholdFurniture
 		int32 SpanRow = 0;
 	};
 
-	/** Starter set in the Meagre Dungeon, toward the back wall and clear of the captain. */
+	/** Starter set on the Meagre den, clear of the captain at (0, 0). */
 	inline void MeagreStarter(TArray<FPlacement>& OutPlacements)
 	{
 		OutPlacements.Reset();
-		OutPlacements.Add({ EKind::Fireplace, 6, 0, 6, 0 });
-		OutPlacements.Add({ EKind::Bed, 2, 3, 3, 3 });
-		OutPlacements.Add({ EKind::Chest, 5, -3, 5, -3 });
+		OutPlacements.Add({ EKind::Fireplace, 2, 0, 2, 0 });
+		OutPlacements.Add({ EKind::Bed, 0, -1, 1, -1 });
+		OutPlacements.Add({ EKind::Chest, 1, 1, 1, 1 });
 	}
 }

@@ -58,10 +58,16 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("embers sit inside the hearth"),
 		SolidStrongholdFurniture::FireplaceEmberRadiusCm() * 2.f < SolidStrongholdFurniture::FireplaceAcrossCm());
+	TestTrue(
+		TEXT("embers cover most of the hearth"),
+		SolidStrongholdFurniture::FireplaceEmberRadiusCm() * 2.f > SolidStrongholdFurniture::FireplaceAcrossCm() * 0.7f);
 
 	TestTrue(TEXT("bed is longer than one hex"), SolidStrongholdFurniture::BedLengthCm() > Flat);
 	TestTrue(TEXT("bed fits in two hexes"), SolidStrongholdFurniture::BedLengthCm() <= Flat * 2.f);
 	TestTrue(TEXT("bed is narrower than a hex"), SolidStrongholdFurniture::BedWidthCm() < Across);
+	TestTrue(
+		TEXT("bed passes through the shared flat"),
+		SolidStrongholdFurniture::BedWidthCm() < SolidStrongholdGrid::SideCm());
 	TestTrue(TEXT("pillow is shorter than the bed"), SolidStrongholdFurniture::PillowLengthCm() < SolidStrongholdFurniture::BedLengthCm());
 	TestTrue(TEXT("pillow is narrower than the bed"), SolidStrongholdFurniture::PillowWidthCm() < SolidStrongholdFurniture::BedWidthCm());
 
@@ -92,8 +98,7 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("third is the chest"), Placements[2].Kind == SolidStrongholdFurniture::EKind::Chest);
 
 	TArray<SolidStrongholdGrid::FHex> Hexes;
-	const FBox2D Floor = SolidStrongholdGrid::MeagreFloorBounds();
-	SolidStrongholdGrid::CollectHexes(Floor, Hexes);
+	SolidStrongholdGrid::CollectMeagreHexes(Hexes);
 
 	auto CellKey = [](const int32 Col, const int32 Row) -> int64
 	{
@@ -110,8 +115,11 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 		{
 			return false;
 		}
-		TestTrue(TEXT("anchor sits fully on the floor"), SolidStrongholdGrid::HexFitsOnFloor(Floor, Anchor->Center));
-		TestTrue(TEXT("span sits fully on the floor"), SolidStrongholdGrid::HexFitsOnFloor(Floor, Span->Center));
+		const SolidStrongholdGrid::FCell Captain = SolidStrongholdGrid::MeagreCaptainCell();
+		TestFalse(
+			TEXT("pieces stay off the captain's cell"),
+			(Anchor->Col == Captain.Col && Anchor->Row == Captain.Row)
+				|| (Span->Col == Captain.Col && Span->Row == Captain.Row));
 
 		const int32 Cells = SolidStrongholdFurniture::HexCount(Placement.Kind);
 		if (Cells == 1)

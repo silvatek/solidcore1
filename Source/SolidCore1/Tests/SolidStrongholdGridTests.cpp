@@ -27,8 +27,7 @@ bool FSolidStrongholdGridMeasureTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("lines are yellow"), Yellow.R > 0.9f && Yellow.G > 0.7f && Yellow.B < 0.2f);
 	TestTrue(TEXT("lines are thin"), SolidStrongholdGrid::LineThicknessCm < 15.f);
 
-	const FBox2D Floor = SolidStrongholdGrid::MeagreFloorBounds();
-	const FVector2D Origin = Floor.GetCenter();
+	const FVector2D Origin = SolidStrongholdGrid::MeagreOrigin();
 	const FVector2D East = SolidStrongholdGrid::HexCenter(1, 0, Origin);
 	const FVector2D North = SolidStrongholdGrid::HexCenter(0, 1, Origin);
 	TestTrue(
@@ -38,38 +37,65 @@ bool FSolidStrongholdGridMeasureTest::RunTest(const FString& Parameters)
 		TEXT("diagonal neighbor shares an edge"),
 		FMath::IsNearlyEqual(FVector2D::Distance(Origin, North), SolidStrongholdGrid::FlatToFlatCm, 0.05f));
 
-	TArray<SolidStrongholdGrid::FHex> Hexes;
-	SolidStrongholdGrid::CollectHexes(Floor, Hexes);
-	TestTrue(TEXT("the floor holds several cells"), Hexes.Num() > 20);
+	TArray<SolidStrongholdGrid::FCell> Cells;
+	SolidStrongholdGrid::MeagreCells(Cells);
+	TestEqual(TEXT("meagre den is ten hexes"), Cells.Num(), SolidStrongholdGrid::MeagreCellCount);
+	TestEqual(TEXT("ten cells"), SolidStrongholdGrid::MeagreCellCount, 10);
 
-	bool bHasCenter = false;
+	TArray<SolidStrongholdGrid::FHex> Hexes;
+	SolidStrongholdGrid::CollectMeagreHexes(Hexes);
+	TestEqual(TEXT("each cell has a center"), Hexes.Num(), Cells.Num());
+
+	TMap<int32, int32> RowCounts;
+	bool bHasCaptain = false;
+	bool bHasEntrance = false;
+	bool bHasNotch = false;
+	const SolidStrongholdGrid::FCell Captain = SolidStrongholdGrid::MeagreCaptainCell();
+	const SolidStrongholdGrid::FCell Entrance = SolidStrongholdGrid::MeagreEntranceCell();
 	for (const SolidStrongholdGrid::FHex& Hex : Hexes)
 	{
-		if (Hex.Center.Equals(Origin, 0.05f))
-		{
-			bHasCenter = true;
-		}
-		TestTrue(TEXT("cell sits fully on the floor"), SolidStrongholdGrid::HexFitsOnFloor(Floor, Hex.Center));
+		RowCounts.FindOrAdd(Hex.Row) += 1;
+		bHasCaptain |= Hex.Col == Captain.Col && Hex.Row == Captain.Row;
+		bHasEntrance |= Hex.Col == Entrance.Col && Hex.Row == Entrance.Row;
+		bHasNotch |= Hex.Col == -1 && Hex.Row == 1;
+		TestTrue(TEXT("cell center is inside its hex"), SolidStrongholdGrid::PointInHex(Hex.Center, Hex.Center));
 	}
-	TestTrue(TEXT("a cell is centered in the room"), bHasCenter);
+	TestTrue(TEXT("captain has a cell"), bHasCaptain);
+	TestTrue(TEXT("entrance has a cell"), bHasEntrance);
+	TestFalse(TEXT("the north-west notch is open"), bHasNotch);
+
+	int32 NarrowestRow = MAX_int32;
+	int32 WidestRow = 0;
+	for (const TPair<int32, int32>& Row : RowCounts)
+	{
+		NarrowestRow = FMath::Min(NarrowestRow, Row.Value);
+		WidestRow = FMath::Max(WidestRow, Row.Value);
+	}
+	TestTrue(TEXT("the outline is not a rectangle"), NarrowestRow > 0 && NarrowestRow != WidestRow);
+
+	const FVector2D Notch = SolidStrongholdGrid::HexCenter(-1, 1, Origin);
+	bool bNotchInside = false;
+	for (const SolidStrongholdGrid::FHex& Hex : Hexes)
+	{
+		bNotchInside |= SolidStrongholdGrid::PointInHex(Notch, Hex.Center);
+	}
+	TestFalse(TEXT("notch center is outside every cell"), bNotchInside);
 
 	TArray<SolidStrongholdGrid::FSegment> Segments;
 	SolidStrongholdGrid::CollectSegments(Hexes, Segments);
 	TestTrue(TEXT("shared edges are drawn once"), Segments.Num() < Hexes.Num() * 6);
 	TestTrue(TEXT("the grid has edges"), Segments.Num() > Hexes.Num());
 
+	TArray<SolidStrongholdGrid::FSegment> Boundary;
+	SolidStrongholdGrid::CollectBoundarySegments(Hexes, Boundary);
+	TestTrue(TEXT("the wall is shorter than every edge"), Boundary.Num() < Segments.Num());
+	TestTrue(TEXT("the den has an outline"), Boundary.Num() > 8);
+
 	for (const SolidStrongholdGrid::FSegment& Segment : Segments)
 	{
 		TestTrue(
 			TEXT("each edge is one side long"),
 			FMath::IsNearlyEqual(FVector2D::Distance(Segment.A, Segment.B), SolidStrongholdGrid::SideCm(), 0.05f));
-		auto OnFloor = [&Floor](const FVector2D& Point)
-		{
-			return Point.X >= Floor.Min.X - 0.1f && Point.X <= Floor.Max.X + 0.1f
-				&& Point.Y >= Floor.Min.Y - 0.1f && Point.Y <= Floor.Max.Y + 0.1f;
-		};
-		TestTrue(TEXT("edge starts on the floor"), OnFloor(Segment.A));
-		TestTrue(TEXT("edge ends on the floor"), OnFloor(Segment.B));
 	}
 	return true;
 }
@@ -83,7 +109,7 @@ bool FSolidStrongholdGridVisualTest::RunTest(const FString& Parameters)
 {
 	TArray<SolidStrongholdGrid::FHex> Hexes;
 	TArray<SolidStrongholdGrid::FSegment> Segments;
-	SolidStrongholdGrid::CollectHexes(SolidStrongholdGrid::MeagreFloorBounds(), Hexes);
+	SolidStrongholdGrid::CollectMeagreHexes(Hexes);
 	SolidStrongholdGrid::CollectSegments(Hexes, Segments);
 
 	ASolidDungeonInterior* Interior = NewObject<ASolidDungeonInterior>();

@@ -9,8 +9,8 @@ class UPointLightComponent;
 class UStaticMeshComponent;
 
 /**
- * Dungeon chamber shared by every size. Meagre, the cave, uses the room as built.
- * A closed rock room with the mouth on one wall.
+ * Dungeon chamber shared by every size. Meagre, the cave, is an irregular den of ten hexes.
+ * Rock follows that outline, with the mouth on the west flat.
  * The captain arrives alone. Clicking the mouth to leave is later; F10 leaves.
  */
 UCLASS()
@@ -49,17 +49,13 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<UStaticMeshComponent> CeilingMesh;
 
+	/** Rock around the hex outline. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
-	TObjectPtr<UStaticMeshComponent> WallBack;
+	TObjectPtr<UInstancedStaticMeshComponent> WallShell;
 
+	/** Hidden box on each hex. The open notch has none, so the walk matches the outline. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
-	TObjectPtr<UStaticMeshComponent> WallLeft;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
-	TObjectPtr<UStaticMeshComponent> WallRight;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
-	TObjectPtr<UStaticMeshComponent> WallFront;
+	TObjectPtr<UInstancedStaticMeshComponent> FloorWalk;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<UStaticMeshComponent> MouthMesh;

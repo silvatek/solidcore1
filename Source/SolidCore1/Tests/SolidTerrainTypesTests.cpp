@@ -62,4 +62,44 @@ bool FSolidBiomeHeightOffsetTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBiomeBorderTextureTest,
+	"SolidCore1.Types.BorderBiome",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBiomeBorderTextureTest::RunTest(const FString& Parameters)
+{
+	TestEqual(
+		TEXT("mountain cliff beats the river"),
+		static_cast<uint8>(SolidTerrainTypes::BorderBiome(
+			ESolidBiome::River, ESolidBiome::Mountain, ESolidBiome::River, ESolidBiome::River)),
+		static_cast<uint8>(ESolidBiome::Mountain));
+	TestEqual(
+		TEXT("grass bank beats the river"),
+		static_cast<uint8>(SolidTerrainTypes::BorderBiome(
+			ESolidBiome::River, ESolidBiome::River, ESolidBiome::Grassland, ESolidBiome::River)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+	TestEqual(
+		TEXT("a river triangle stays river"),
+		static_cast<uint8>(SolidTerrainTypes::BorderBiome(
+			ESolidBiome::Mountain, ESolidBiome::River, ESolidBiome::River, ESolidBiome::River)),
+		static_cast<uint8>(ESolidBiome::River));
+	TestEqual(
+		TEXT("equal shelves keep the quad biome"),
+		static_cast<uint8>(SolidTerrainTypes::BorderBiome(
+			ESolidBiome::Grassland, ESolidBiome::Forest, ESolidBiome::Grassland, ESolidBiome::Desert)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+	TestEqual(
+		TEXT("mountain already on the quad stays"),
+		static_cast<uint8>(SolidTerrainTypes::BorderBiome(
+			ESolidBiome::Mountain, ESolidBiome::Mountain, ESolidBiome::River, ESolidBiome::Grassland)),
+		static_cast<uint8>(ESolidBiome::Mountain));
+	TestEqual(
+		TEXT("sea and river share the shelf"),
+		static_cast<uint8>(SolidTerrainTypes::BorderBiome(
+			ESolidBiome::Sea, ESolidBiome::River, ESolidBiome::Sea, ESolidBiome::River)),
+		static_cast<uint8>(ESolidBiome::Sea));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

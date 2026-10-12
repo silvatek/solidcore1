@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0204")
+#define SOLID_BUILD_ID TEXT("SC1-0205")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Rivers are a 4 m channel")
+#define SOLID_BUILD_NOTE TEXT("Biome borders use the higher texture")
 #endif

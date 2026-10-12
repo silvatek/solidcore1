@@ -234,6 +234,13 @@ void ASolidTerrainChunk::BuildChunk(
 	TArray<float> Heights;
 	Heights.SetNumUninitialized(VertsPerSide * VertsPerSide);
 
+	const bool bUseBiomeMaterials = TerrainMap && TerrainMap->IsBuilt() && BiomeMaterials != nullptr;
+	TArray<ESolidBiome> VertexBiomes;
+	if (bUseBiomeMaterials)
+	{
+		VertexBiomes.SetNumUninitialized(VertsPerSide * VertsPerSide);
+	}
+
 	float MinZ = TNumericLimits<float>::Max();
 	float MaxZ = TNumericLimits<float>::Lowest();
 
@@ -248,6 +255,10 @@ void ASolidTerrainChunk::BuildChunk(
 				: SolidTerrainNoise::SampleHeight(
 					WorldX, WorldY, InSeed, InFrequencyScale, InAmplitude, InBaseHeight);
 			Heights[Y * VertsPerSide + X] = Height;
+			if (bUseBiomeMaterials)
+			{
+				VertexBiomes[Y * VertsPerSide + X] = TerrainMap->SamplePoint(WorldX, WorldY).Biome;
+			}
 
 			const float SurfaceZ = Height + InCollisionHeightBias;
 			MinZ = FMath::Min(MinZ, SurfaceZ);
@@ -329,8 +340,6 @@ void ASolidTerrainChunk::BuildChunk(
 		return Slot;
 	};
 
-	const bool bUseBiomeMaterials = TerrainMap && TerrainMap->IsBuilt() && BiomeMaterials != nullptr;
-
 	for (int32 Y = 0; Y < InQuadsPerSide; ++Y)
 	{
 		for (int32 X = 0; X < InQuadsPerSide; ++X)
@@ -347,16 +356,25 @@ void ASolidTerrainChunk::BuildChunk(
 			Triangles.Add(I01);
 			Triangles.Add(I11);
 
-			ESolidBiome Biome = ESolidBiome::Grassland;
+			ESolidBiome Preferred = ESolidBiome::Grassland;
+			ESolidBiome B00 = Preferred;
+			ESolidBiome B10 = Preferred;
+			ESolidBiome B01 = Preferred;
+			ESolidBiome B11 = Preferred;
 			if (bUseBiomeMaterials)
 			{
 				const float WorldX = OriginX + (static_cast<float>(X) + 0.5f) * Step;
 				const float WorldY = OriginY + (static_cast<float>(Y) + 0.5f) * Step;
-				Biome = TerrainMap->SamplePoint(WorldX, WorldY).Biome;
+				Preferred = TerrainMap->SamplePoint(WorldX, WorldY).Biome;
+				B00 = VertexBiomes[I00];
+				B10 = VertexBiomes[I10];
+				B01 = VertexBiomes[I01];
+				B11 = VertexBiomes[I11];
 			}
-			const int32 Slot = EnsureMaterialSlot(Biome);
-			TriMatIndices.Add(Slot);
-			TriMatIndices.Add(Slot);
+			const ESolidBiome FirstTri = SolidTerrainTypes::BorderBiome(Preferred, B00, B11, B10);
+			const ESolidBiome SecondTri = SolidTerrainTypes::BorderBiome(Preferred, B00, B01, B11);
+			TriMatIndices.Add(EnsureMaterialSlot(FirstTri));
+			TriMatIndices.Add(EnsureMaterialSlot(SecondTri));
 		}
 	}
 

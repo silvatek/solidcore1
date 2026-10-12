@@ -79,7 +79,7 @@ Note: dates are before (BtF) / after (AtF) the fall of Jethan. The orphan was bo
 
 - __15 AtF__
 
-    Big battle at the entrance to the valley, and Dracorthar is killed. Most of the old kingdom remains overrun by monsters, but the valley remains safe.
+    Big battle at the entrance to the valley, and Dracothar is killed. Most of the old kingdom remains overrun by monsters, but the valley remains safe.
 
 - __18 AtF__
 

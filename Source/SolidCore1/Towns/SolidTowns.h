@@ -14,9 +14,11 @@ namespace SolidTowns
 	/** Actor yaw. The board's front faces north, so it can be read while facing south. */
 	inline constexpr float SignFacesNorthYawDeg = 90.f;
 	/**
-	 * Dragongate's pole, on the north edge of its 16 m cell. The gate stays in the middle.
+	 * Dragongate's pole, on the north edge of its 16 m cell and one gate-width east of
+	 * center. The board then sits off the opening, so the path through the wall stays clear.
 	 */
 	inline constexpr float DragongateSignNorthCm = 800.f;
+	inline constexpr float DragongateSignEastCm = 400.f;
 
 	enum class ETownType : uint8
 	{
@@ -40,7 +42,7 @@ namespace SolidTowns
 		{ 2, TEXT("Kanfold"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
 		{ 3, TEXT("Visolar"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
 		{ 4, TEXT("Jethan"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
-		{ 5, TEXT("Dragongate"), FVector2D(0.f, DragongateSignNorthCm), SignFacesNorthYawDeg, ETownType::WallGate },
+		{ 5, TEXT("Dragongate"), FVector2D(DragongateSignEastCm, DragongateSignNorthCm), SignFacesNorthYawDeg, ETownType::WallGate },
 		{ 6, TEXT("Rathen"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
 	};
 

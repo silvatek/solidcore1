@@ -6,6 +6,7 @@
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Animation/AnimSequence.h"
 #include "Camera/CameraComponent.h"
+#include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "CollisionQueryParams.h"
@@ -529,18 +530,25 @@ void ASolidCharacter::ConfirmPortalSelection()
 	HUD->ClosePortal();
 }
 
-void ASolidCharacter::ArriveByPortal(const FVector& NewLocation, const float YawDegrees)
+void ASolidCharacter::ArriveByPortal(const FVector& NewLocation, const float YawDegrees, const float PitchDegrees)
 {
 	if (IsPartyFormationDrillActive())
 	{
 		StopPartyFormationDrill();
 	}
 	SetActorLocation(NewLocation);
-	const FRotator Facing(0.f, YawDegrees, 0.f);
-	SetActorRotation(Facing);
+	SetActorRotation(FRotator(0.f, YawDegrees, 0.f));
 	if (Controller)
 	{
-		Controller->SetControlRotation(Facing);
+		const FRotator View(PitchDegrees, YawDegrees, 0.f);
+		Controller->SetControlRotation(View);
+		if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+		{
+			if (APlayerCameraManager* CameraManager = PlayerController->PlayerCameraManager)
+			{
+				CameraManager->SetGameCameraCutThisFrame();
+			}
+		}
 	}
 	ClearClickMove();
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())

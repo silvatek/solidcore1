@@ -774,7 +774,13 @@ FVector ASolidDungeonInterior::GetCaptainSpawnWorld() const
 	return GetActorTransform().TransformPosition(SolidDungeonLevel::CaptainSpawnLocal());
 }
 
+FRotator ASolidDungeonInterior::GetCaptainView() const
+{
+	const SolidStronghold::FVisitView View = SolidStronghold::VisitViewFor(SolidStronghold::Starting.Attributes);
+	return FRotator(View.Enter.PitchDeg, View.Enter.YawDeg, 0.f);
+}
+
 float ASolidDungeonInterior::GetCaptainYaw() const
 {
-	return SolidDungeonLevel::CaptainYawDeg;
+	return GetCaptainView().Yaw;
 }

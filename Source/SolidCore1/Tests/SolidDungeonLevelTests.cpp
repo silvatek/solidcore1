@@ -131,7 +131,8 @@ bool FSolidDungeonInteriorVisualsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the lip is a thin panel"), Mouth->GetRelativeScale3D().Y * 100.f < 20.f);
 	TestTrue(TEXT("light hangs inside"), Light->GetRelativeLocation().Z > 0.f && Light->GetRelativeLocation().Z < SolidDungeonLevel::RoomHeightCm);
 	TestTrue(TEXT("spawn feet are inside"), SolidDungeonLevel::ContainsLocal(SolidDungeonLevel::CaptainSpawnLocal()));
-	TestTrue(TEXT("captain yaw faces the mouth"), FMath::IsNearlyEqual(Interior->GetCaptainYaw(), 180.f, 0.1f));
+	TestTrue(TEXT("captain yaw faces into the den"), FMath::IsNearlyEqual(Interior->GetCaptainYaw(), 0.f, 0.1f));
+	TestTrue(TEXT("arrival camera is level"), FMath::IsNearlyZero(Interior->GetCaptainView().Pitch, 0.1f));
 	TestFalse(
 		TEXT("room is not a template block"),
 		ASolidDungeonInterior::StaticClass()->IsChildOf(AStaticMeshActor::StaticClass()));

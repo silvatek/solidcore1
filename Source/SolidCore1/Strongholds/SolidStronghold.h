@@ -32,6 +32,18 @@ struct FSolidStronghold
 	ESolidStrongholdSize Size = ESolidStrongholdSize::Meagre;
 };
 
+/**
+ * Camera when the captain arrives.
+ * Pitch 0 is level. Yaw is degrees.
+ * Inside, yaw 0 looks in (interior +X, away from the mouth) and 180 looks out at the mouth.
+ * Outside, yaw is added to the mouth's facing yaw: 0 looks out over the grass, 180 looks back in at the cliff.
+ */
+struct FSolidStrongholdView
+{
+	float PitchDeg = 0.f;
+	float YawDeg = 0.f;
+};
+
 namespace SolidStronghold
 {
 	/** A stronghold that has a WorldMap.txt cell. Only the starting cave is placed today. */
@@ -62,6 +74,39 @@ namespace SolidStronghold
 
 	/** The company starts here: a Meagre Dungeon on the `C` cell. */
 	inline const FOnMap Starting = { TEXT('C'), { ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre } };
+
+	/** Enter and leave aims for one stronghold. Missing rows use a level in/out aim. */
+	struct FVisitView
+	{
+		FSolidStronghold Stronghold;
+		FSolidStrongholdView Enter;
+		FSolidStrongholdView Leave;
+	};
+
+	/** Meagre Dungeon: level, into the den on entry, and level, out over the grass on leave. */
+	inline const FVisitView VisitViews[] = {
+		{ Starting.Attributes, { 0.f, 0.f }, { 0.f, 0.f } },
+	};
+
+	inline constexpr int32 VisitViewCount = UE_ARRAY_COUNT(VisitViews);
+
+	inline FVisitView VisitViewFor(const FSolidStronghold& Stronghold)
+	{
+		for (const FVisitView& View : VisitViews)
+		{
+			if (View.Stronghold.Type == Stronghold.Type && View.Stronghold.Size == Stronghold.Size)
+			{
+				return View;
+			}
+		}
+		return { Stronghold, { 0.f, 0.f }, { 0.f, 0.f } };
+	}
+
+	/** World yaw for the grass outside a mouth that already faces the grass. */
+	inline float LeaveYawDeg(const float MouthYawDeg, const FSolidStrongholdView& Leave)
+	{
+		return FRotator::NormalizeAxis(MouthYawDeg + Leave.YawDeg);
+	}
 
 	inline const FOnMap OnMap[] = {
 		Starting,

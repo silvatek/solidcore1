@@ -33,7 +33,7 @@ namespace SolidDungeonLevel
 	 */
 	inline constexpr float DoorwayWidthCm = 140.f;
 
-	/** The captain stands on the cell inside the entrance, facing the mouth. */
+	/** Feet on the cell inside the entrance. The visit view turns him into the den. */
 	inline FVector CaptainSpawnLocal()
 	{
 		const SolidStrongholdGrid::FCell Cell = SolidStrongholdGrid::MeagreCaptainCell();
@@ -42,10 +42,9 @@ namespace SolidDungeonLevel
 		return FVector(Center.X, Center.Y, 0.f);
 	}
 
-	/** Local +X of the interior runs away from the mouth, so yaw 180 looks back at it. */
-	inline constexpr float CaptainYawDeg = 180.f;
+	/** Local +X runs away from the mouth, into the den. Yaw 180 would look back at the mouth. */
 
-	/** Mouth yaw faces the grass. The captain on that grass looks back at the cliff. */
+	/** Mouth yaw faces the grass. This looks back at the cliff. */
 	inline float CaptainReturnYaw(const float MouthYawDeg)
 	{
 		return FRotator::NormalizeAxis(MouthYawDeg + 180.f);

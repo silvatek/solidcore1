@@ -560,6 +560,7 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 
 	FVector2D PawnXY = FVector2D::ZeroVector;
 	float FacingYawDeg = 0.f;
+	float FacingPitchDeg = 0.f;
 	bool bHaveYaw = false;
 	bool bCaveMouth = false;
 
@@ -578,9 +579,18 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 				if (Entrances.Num() > 0)
 				{
 					PawnXY = Entrances[0].WorldXY;
-					FacingYawDeg = SolidDungeonLevel::CaptainReturnYaw(Entrances[0].FacingYawDeg);
+					const SolidStronghold::FVisitView Visit = SolidStronghold::VisitViewFor(Entrances[0].Stronghold);
+					FacingYawDeg = SolidStronghold::LeaveYawDeg(Entrances[0].FacingYawDeg, Visit.Leave);
+					FacingPitchDeg = Visit.Leave.PitchDeg;
 					bHaveYaw = true;
 					bCaveMouth = true;
+					if (const APawn* Pawn = Cast<APawn>(Focus))
+					{
+						if (!Pawn->Controller)
+						{
+							return;
+						}
+					}
 					Instance->ClearDungeonMouthSpawn();
 				}
 			}
@@ -623,13 +633,12 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 
 	if (bHaveYaw)
 	{
-		const FRotator Facing(0.f, FacingYawDeg, 0.f);
-		Focus->SetActorRotation(Facing);
+		Focus->SetActorRotation(FRotator(0.f, FacingYawDeg, 0.f));
 		if (APawn* Pawn = Cast<APawn>(Focus))
 		{
 			if (Pawn->Controller)
 			{
-				Pawn->Controller->SetControlRotation(Facing);
+				Pawn->Controller->SetControlRotation(FRotator(FacingPitchDeg, FacingYawDeg, 0.f));
 			}
 		}
 	}

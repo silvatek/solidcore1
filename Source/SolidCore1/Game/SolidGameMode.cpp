@@ -261,8 +261,10 @@ void ASolidGameMode::PlaceCaptainInDungeon()
 	}
 	FVector Spawn = DungeonInterior->GetCaptainSpawnWorld();
 	Spawn.Z += HalfHeight + 4.f;
-	Captain->ArriveByPortal(Spawn, DungeonInterior->GetCaptainYaw());
-	bCaptainPlacedInDungeon = true;
+	const FRotator View = DungeonInterior->GetCaptainView();
+	Captain->ArriveByPortal(Spawn, View.Yaw, View.Pitch);
+	// The pawn can exist a frame before it is possessed. Wait, or the old tilt sticks.
+	bCaptainPlacedInDungeon = Captain->GetController() != nullptr;
 }
 
 void ASolidGameMode::FinishTravelArrival()

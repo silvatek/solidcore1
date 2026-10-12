@@ -68,8 +68,8 @@ public:
 	void SetSight(ESolidSight NewSight);
 	/** Raven-sight left click. Cleared on arrival, WASD, or true sight. */
 	bool HasClickMoveDestination() const { return bHasClickMoveDestination; }
-	/** Move the captain onto a portal landing. Clears a click-walk and a formation drill. */
-	void ArriveByPortal(const FVector& NewLocation, float YawDegrees);
+	/** Move the captain onto a landing. Pitch 0 is a level camera. Clears a click-walk and a formation drill. */
+	void ArriveByPortal(const FVector& NewLocation, float YawDegrees, float PitchDegrees = 0.f);
 	void ToggleSight();
 	/** Hide the nameplate in true sight, in a stronghold, and while no companions are out. */
 	void UpdateNameLabelVisibility();

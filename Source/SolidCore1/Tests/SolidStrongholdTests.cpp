@@ -90,6 +90,22 @@ bool FSolidStrongholdCatalogTest::RunTest(const FString& Parameters)
 		SolidStronghold::Label(SolidStronghold::Starting.Attributes),
 		FString(TEXT("Meagre Dungeon")));
 
+	const SolidStronghold::FVisitView Cave = SolidStronghold::VisitViewFor(SolidStronghold::Starting.Attributes);
+	TestTrue(TEXT("entering the cave levels the camera"), FMath::IsNearlyZero(Cave.Enter.PitchDeg, 0.1f));
+	TestTrue(TEXT("entering the cave looks in"), FMath::IsNearlyZero(Cave.Enter.YawDeg, 0.1f));
+	TestTrue(TEXT("leaving the cave levels the camera"), FMath::IsNearlyZero(Cave.Leave.PitchDeg, 0.1f));
+	TestTrue(TEXT("leaving the cave looks out"), FMath::IsNearlyZero(Cave.Leave.YawDeg, 0.1f));
+	TestTrue(
+		TEXT("a north-facing mouth leaves looking north"),
+		FMath::IsNearlyEqual(SolidStronghold::LeaveYawDeg(90.f, Cave.Leave), 90.f, 0.1f));
+
+	FSolidStronghold Fortress;
+	Fortress.Type = ESolidStrongholdType::Fortress;
+	Fortress.Size = ESolidStrongholdSize::Meagre;
+	const SolidStronghold::FVisitView Unlisted = SolidStronghold::VisitViewFor(Fortress);
+	TestTrue(TEXT("an unlisted stronghold still arrives level"), FMath::IsNearlyZero(Unlisted.Enter.PitchDeg, 0.1f));
+	TestTrue(TEXT("an unlisted stronghold still leaves level"), FMath::IsNearlyZero(Unlisted.Leave.PitchDeg, 0.1f));
+
 	TestTrue(TEXT("C is a stronghold marker"), SolidStronghold::IsStrongholdMarker(TEXT('c')));
 	TestFalse(TEXT("M is a mountain, not a stronghold"), SolidStronghold::IsStrongholdMarker(TEXT('M')));
 

@@ -29,6 +29,8 @@ public:
 
 	/** Feet position inside the room. */
 	FVector GetCaptainSpawnWorld() const;
+	/** Level, looking into the den. From the Meagre Dungeon visit view. */
+	FRotator GetCaptainView() const;
 	float GetCaptainYaw() const;
 
 	/** Cave pieces from the furnishing catalog, on the single Meagre floor. No-op without a world. */

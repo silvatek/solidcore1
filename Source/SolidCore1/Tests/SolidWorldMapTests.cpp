@@ -240,7 +240,7 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 {
 	USolidWorldMap* Map = NewObject<USolidWorldMap>();
 	TestTrue(TEXT("LoadDefault"), Map->LoadDefault());
-	TestEqual(TEXT("five locations"), Map->GetLocationCount(), 5);
+	TestEqual(TEXT("six locations"), Map->GetLocationCount(), 6);
 
 	FSolidWorldLocation Iglin;
 	TestTrue(TEXT("location 0"), Map->FindLocation(0, Iglin));
@@ -274,9 +274,35 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Jethan is Town"), static_cast<uint8>(Jethan.Biome), static_cast<uint8>(ESolidBiome::Town));
 	TestEqual(TEXT("one Jethan cell"), Jethan.Cells.Num(), 1);
 
+	FSolidWorldLocation Rathen;
+	TestTrue(TEXT("location 6"), Map->FindLocation(6, Rathen));
+	TestEqual(TEXT("Rathen"), Rathen.Name, FString(TEXT("Rathen")));
+	TestTrue(TEXT("Rathen role is not in the map file"), Rathen.Role.IsEmpty());
+	TestEqual(TEXT("Rathen is Town"), static_cast<uint8>(Rathen.Biome), static_cast<uint8>(ESolidBiome::Town));
+	TestEqual(TEXT("one Rathen cell"), Rathen.Cells.Num(), 1);
+	bool bRathenBesideRiver = false;
+	for (const FIntPoint& Cell : Rathen.Cells)
+	{
+		const FIntPoint Steps[] = { FIntPoint(0, -1), FIntPoint(-1, 0), FIntPoint(0, 1), FIntPoint(1, 0) };
+		for (const FIntPoint& Step : Steps)
+		{
+			const int32 NextX = Cell.X + Step.X;
+			const int32 NextY = Cell.Y + Step.Y;
+			if (NextX < 0 || NextY < 0 || NextX >= USolidWorldMap::MapWidth || NextY >= USolidWorldMap::MapHeight)
+			{
+				continue;
+			}
+			if (Map->GetMarkerAtCell(NextX, NextY) == TEXT('R'))
+			{
+				bRathenBesideRiver = true;
+			}
+		}
+	}
+	TestTrue(TEXT("Rathen is beside the river"), bRathenBesideRiver);
+
 	TestEqual(TEXT("start is only location 0"), Map->GetStartTownCellCount(), Iglin.Cells.Num());
 
-	const FSolidWorldLocation* Named[] = { &Iglin, &Relion, &Kanfold, &Visolar, &Jethan };
+	const FSolidWorldLocation* Named[] = { &Iglin, &Relion, &Kanfold, &Visolar, &Jethan, &Rathen };
 	for (const FSolidWorldLocation* Loc : Named)
 	{
 		for (const FIntPoint& Cell : Loc->Cells)

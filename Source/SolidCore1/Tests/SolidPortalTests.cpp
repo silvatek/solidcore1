@@ -16,23 +16,27 @@ bool FSolidPortalChoicesTest::RunTest(const FString& Parameters)
 	TArray<SolidPortal::FChoice> Choices;
 	SolidPortal::CollectChoices(Choices);
 	TestEqual(TEXT("one row per town"), Choices.Num(), SolidPortal::TownCount());
-	TestEqual(TEXT("five towns"), SolidPortal::TownCount(), 5);
+	TestEqual(TEXT("six towns"), SolidPortal::TownCount(), 6);
 
-	const TCHAR* Expected[] = { TEXT("Iglin"), TEXT("Relion"), TEXT("Kanfold"), TEXT("Visolar"), TEXT("Jethan") };
+	const int32 ExpectedIds[] = { 0, 1, 2, 3, 4, 6 };
+	const TCHAR* Expected[] = {
+		TEXT("Iglin"), TEXT("Relion"), TEXT("Kanfold"), TEXT("Visolar"), TEXT("Jethan"), TEXT("Rathen") };
 	for (int32 Index = 0; Index < Choices.Num(); ++Index)
 	{
-		TestEqual(TEXT("town id"), Choices[Index].TownId, Index);
+		TestEqual(TEXT("town id"), Choices[Index].TownId, ExpectedIds[Index]);
 		TestEqual(TEXT("town name"), Choices[Index].Name, FString(Expected[Index]));
 	}
 
 	SolidPortal::FChoice Found;
 	TestTrue(TEXT("find Relion"), SolidPortal::FindChoice(1, Found));
 	TestEqual(TEXT("found name"), Found.Name, FString(TEXT("Relion")));
-	TestFalse(TEXT("no sixth town"), SolidPortal::FindChoice(5, Found));
+	TestTrue(TEXT("find Rathen"), SolidPortal::FindChoice(5, Found));
+	TestEqual(TEXT("Rathen is town 6"), Found.TownId, 6);
+	TestFalse(TEXT("no seventh row"), SolidPortal::FindChoice(6, Found));
 
 	TestEqual(TEXT("wrap down"), SolidPortal::WrapIndex(0, 1), 1);
-	TestEqual(TEXT("wrap past end"), SolidPortal::WrapIndex(4, 1), 0);
-	TestEqual(TEXT("wrap up"), SolidPortal::WrapIndex(0, -1), 4);
+	TestEqual(TEXT("wrap past end"), SolidPortal::WrapIndex(5, 1), 0);
+	TestEqual(TEXT("wrap up"), SolidPortal::WrapIndex(0, -1), 5);
 	return true;
 }
 
@@ -73,8 +77,9 @@ bool FSolidPortalLandingTest::RunTest(const FString& Parameters)
 	const float CellSize = (GameMax.X - GameMin.X) / static_cast<float>(USolidWorldMap::MapWidth);
 	TestTrue(TEXT("plaza offset stays inside the cell"), Plaza.Size() < CellSize * 0.5f);
 
-	for (int32 TownId = 0; TownId < SolidPortal::TownCount(); ++TownId)
+	for (const SolidTowns::FTownInfo& Town : SolidTowns::Definitions)
 	{
+		const int32 TownId = Town.Id;
 		FSolidWorldLocation Location;
 		TestTrue(TEXT("location exists"), Map->FindLocation(TownId, Location));
 		FIntPoint Cell;

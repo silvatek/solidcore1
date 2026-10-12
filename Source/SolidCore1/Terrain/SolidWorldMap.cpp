@@ -240,6 +240,9 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 	Markers.SetNum(MapWidth * MapHeight);
 	StartTownCells.Reset();
 	Locations.Reset();
+	Roads.Reset();
+	RoadSpans.Reset();
+	RoadSpansByCell.Reset();
 	bHasStartTown = false;
 
 	for (int32 Row = 0; Row < MapHeight; ++Row)
@@ -254,9 +257,23 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 	}
 
 	BiomeColors.Reset();
+	TArray<SolidRoad::FDefinition> RoadDefs;
 	for (const FString& RawLine : Lines)
 	{
-		if (!ParseLocationLine(RawLine))
+		const FString Trimmed = RawLine.TrimStartAndEnd();
+		SolidRoad::FDefinition RoadDef;
+		if (Trimmed.StartsWith(TEXT("Road:"), ESearchCase::IgnoreCase))
+		{
+			if (SolidRoad::Parse(Trimmed, RoadDef))
+			{
+				RoadDefs.Add(RoadDef);
+			}
+			else
+			{
+				UE_LOG(LogSolid, Warning, TEXT("WorldMap: ignored road line '%s'."), *Trimmed);
+			}
+		}
+		else if (!ParseLocationLine(RawLine))
 		{
 			ParseKeyLine(RawLine);
 		}
@@ -323,9 +340,10 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 	}
 
 	bIsLoaded = true;
+	BuildRoads(RoadDefs);
 	UE_LOG(LogSolid, Warning,
-		TEXT("WorldMap loaded: %dx%d startTownCells=%d locations=%d"),
-		MapWidth, MapHeight, StartTownCells.Num(), Locations.Num());
+		TEXT("WorldMap loaded: %dx%d startTownCells=%d locations=%d roads=%d"),
+		MapWidth, MapHeight, StartTownCells.Num(), Locations.Num(), Roads.Num());
 	return true;
 }
 
@@ -468,6 +486,103 @@ namespace
 	}
 }
 
+void USolidWorldMap::BuildRoads(const TArray<SolidRoad::FDefinition>& Definitions)
+{
+	Roads.Reset();
+	RoadSpans.Reset();
+	RoadSpansByCell.Reset();
+	RoadSpansByCell.SetNum(MapWidth * MapHeight);
+
+	for (const SolidRoad::FDefinition& Definition : Definitions)
+	{
+		SolidRoad::FRoute Route;
+		Route.Definition = Definition;
+		if (!SolidRoad::Solve(*this, Definition, Route.Cells))
+		{
+			const FString From = Definition.From.bCave
+				? FString(TEXT("C"))
+				: FString::FromInt(Definition.From.LocationId);
+			const FString To = Definition.To.bCave
+				? FString(TEXT("C"))
+				: FString::FromInt(Definition.To.LocationId);
+			UE_LOG(LogSolid, Warning, TEXT("WorldMap: no route for road %s -> %s."), *From, *To);
+		}
+		Roads.Add(Route);
+
+		if (Route.Cells.Num() == 0)
+		{
+			continue;
+		}
+
+		const float HalfWidth = SolidRoad::WidthCm(Definition.Type) * 0.5f;
+		const int32 SpanCount = Route.Cells.Num() == 1 ? 1 : Route.Cells.Num() - 1;
+		for (int32 SpanIndex = 0; SpanIndex < SpanCount; ++SpanIndex)
+		{
+			SolidRoad::FSpan Span;
+			Span.From = Route.Cells[SpanIndex];
+			Span.To = Route.Cells[FMath::Min(SpanIndex + 1, Route.Cells.Num() - 1)];
+			Span.HalfWidthCm = HalfWidth;
+			const int32 Stored = RoadSpans.Add(Span);
+
+			auto Touch = [this, Stored](const FIntPoint& Cell)
+			{
+				for (int32 OffsetY = -1; OffsetY <= 1; ++OffsetY)
+				{
+					for (int32 OffsetX = -1; OffsetX <= 1; ++OffsetX)
+					{
+						const int32 X = Cell.X + OffsetX;
+						const int32 Y = Cell.Y + OffsetY;
+						if (X < 0 || Y < 0 || X >= MapWidth || Y >= MapHeight)
+						{
+							continue;
+						}
+						RoadSpansByCell[Y * MapWidth + X].AddUnique(Stored);
+					}
+				}
+			};
+			Touch(Span.From);
+			Touch(Span.To);
+		}
+	}
+}
+
+bool USolidWorldMap::IsOnRoad(
+	const float WorldX,
+	const float WorldY,
+	const FVector2D WorldMinXY,
+	const FVector2D WorldMaxXY) const
+{
+	if (RoadSpans.Num() == 0 || RoadSpansByCell.Num() != MapWidth * MapHeight)
+	{
+		return false;
+	}
+
+	int32 MapX = 0;
+	int32 MapY = 0;
+	if (!WorldXYToCell(WorldX, WorldY, WorldMinXY, WorldMaxXY, MapX, MapY))
+	{
+		return false;
+	}
+
+	const FVector2D World(WorldX, WorldY);
+	for (const int32 SpanIndex : RoadSpansByCell[MapY * MapWidth + MapX])
+	{
+		const SolidRoad::FSpan& Span = RoadSpans[SpanIndex];
+		FVector2D From = FVector2D::ZeroVector;
+		FVector2D To = FVector2D::ZeroVector;
+		if (!CellToWorldXY(Span.From, WorldMinXY, WorldMaxXY, From)
+			|| !CellToWorldXY(Span.To, WorldMinXY, WorldMaxXY, To))
+		{
+			continue;
+		}
+		if (SolidRoad::DistanceToSegmentCm(World, From, To) <= Span.HalfWidthCm)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
 ESolidBiome USolidWorldMap::SampleBiome(
 	const float WorldX,
 	const float WorldY,
@@ -481,36 +596,56 @@ ESolidBiome USolidWorldMap::SampleBiome(
 		return ESolidBiome::Grassland;
 	}
 
+	ESolidBiome Ground = ESolidBiome::Grassland;
 	TCHAR Marker = 0;
 	if (!WorldMapMarkerInCell(*this, MapX, MapY, Marker) || Marker != TEXT('R'))
 	{
-		return GetBiomeAtCell(MapX, MapY);
+		Ground = GetBiomeAtCell(MapX, MapY);
 	}
-
-	const float ExtentX = FMath::Max(WorldMaxXY.X - WorldMinXY.X, 1.f);
-	const float ExtentY = FMath::Max(WorldMaxXY.Y - WorldMinXY.Y, 1.f);
-	const float CellW = ExtentX / static_cast<float>(MapWidth);
-	const float CellH = ExtentY / static_cast<float>(MapHeight);
-
-	FVector2D Center = FVector2D::ZeroVector;
-	if (!CellToWorldXY(FIntPoint(MapX, MapY), WorldMinXY, WorldMaxXY, Center))
+	else
 	{
-		return ESolidBiome::River;
+		const float ExtentX = FMath::Max(WorldMaxXY.X - WorldMinXY.X, 1.f);
+		const float ExtentY = FMath::Max(WorldMaxXY.Y - WorldMinXY.Y, 1.f);
+		const float CellW = ExtentX / static_cast<float>(MapWidth);
+		const float CellH = ExtentY / static_cast<float>(MapHeight);
+
+		FVector2D Center = FVector2D::ZeroVector;
+		if (!CellToWorldXY(FIntPoint(MapX, MapY), WorldMinXY, WorldMaxXY, Center))
+		{
+			Ground = ESolidBiome::River;
+		}
+		else
+		{
+			const FVector2D Local(WorldX - Center.X, WorldY - Center.Y);
+
+			SolidRiver::FLinks Links;
+			TCHAR Neighbor = 0;
+			Links.bNorth = WorldMapMarkerInCell(*this, MapX, MapY - 1, Neighbor) && SolidRiver::Joins(Neighbor);
+			Links.bEast = WorldMapMarkerInCell(*this, MapX - 1, MapY, Neighbor) && SolidRiver::Joins(Neighbor);
+			Links.bSouth = WorldMapMarkerInCell(*this, MapX, MapY + 1, Neighbor) && SolidRiver::Joins(Neighbor);
+			Links.bWest = WorldMapMarkerInCell(*this, MapX + 1, MapY, Neighbor) && SolidRiver::Joins(Neighbor);
+
+			if (SolidRiver::IsWater(Local, CellW, CellH, Links))
+			{
+				Ground = ESolidBiome::River;
+			}
+			else
+			{
+				Ground = WorldMapRiverBank(*this, MapX, MapY, SolidRiver::Side(Local, CellW, CellH, Links));
+			}
+		}
 	}
-	const FVector2D Local(WorldX - Center.X, WorldY - Center.Y);
 
-	SolidRiver::FLinks Links;
-	TCHAR Neighbor = 0;
-	Links.bNorth = WorldMapMarkerInCell(*this, MapX, MapY - 1, Neighbor) && SolidRiver::Joins(Neighbor);
-	Links.bEast = WorldMapMarkerInCell(*this, MapX - 1, MapY, Neighbor) && SolidRiver::Joins(Neighbor);
-	Links.bSouth = WorldMapMarkerInCell(*this, MapX, MapY + 1, Neighbor) && SolidRiver::Joins(Neighbor);
-	Links.bWest = WorldMapMarkerInCell(*this, MapX + 1, MapY, Neighbor) && SolidRiver::Joins(Neighbor);
-
-	if (SolidRiver::IsWater(Local, CellW, CellH, Links))
+	// Town and grassland share a shelf, so the road is a texture change there.
+	// Mountain and sea keep their shelves. The channel itself stays water.
+	if (Ground != ESolidBiome::River
+		&& IsOnRoad(WorldX, WorldY, WorldMinXY, WorldMaxXY)
+		&& SolidTerrainTypes::BiomeHeightOffsetCm(Ground)
+			== SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Town))
 	{
-		return ESolidBiome::River;
+		return ESolidBiome::Town;
 	}
-	return WorldMapRiverBank(*this, MapX, MapY, SolidRiver::Side(Local, CellW, CellH, Links));
+	return Ground;
 }
 
 int32 USolidWorldMap::GetLocationIdAtCell(const int32 MapX, const int32 MapY) const

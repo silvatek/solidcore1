@@ -290,11 +290,16 @@ bool FSolidRiverShippedMapTest::RunTest(const FString& Parameters)
 					continue;
 				}
 				++BankSamples;
+				const FVector2D BankPoint = Center + Offsets[Side];
+				const ESolidBiome NeighborBiome = Map->GetBiomeAtCell(NextX, NextY);
+				const bool bRoadBank = Map->IsOnRoad(BankPoint.X, BankPoint.Y, RiverTestMin, RiverTestMax)
+					&& SolidTerrainTypes::BiomeHeightOffsetCm(NeighborBiome)
+						== SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Town);
 				RiverTestBiome(
 					*this,
 					*FString::Printf(TEXT("bank of (%d,%d) side %d"), Col, Row, Side),
-					RiverTestSample(*Map, Center + Offsets[Side]),
-					Map->GetBiomeAtCell(NextX, NextY));
+					RiverTestSample(*Map, BankPoint),
+					bRoadBank ? ESolidBiome::Town : NeighborBiome);
 			}
 		}
 	}

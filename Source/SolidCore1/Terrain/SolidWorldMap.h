@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
+#include "SolidRoad.h"
 #include "SolidTerrainTypes.h"
 #include "SolidWorldMap.generated.h"
 
@@ -37,6 +38,7 @@ struct FSolidWorldLocation
  * ASCII WorldMap.txt biome overlay (64×64 markers + color key + numbered locations).
  * Scaled across the TerrainMap world bounds. Location 0 is the starting town.
  * A legacy Z marker is the start only when the grid has no 0 cells.
+ * Road lines are solved into routes when the file loads.
  */
 UCLASS()
 class SOLIDCORE1_API USolidWorldMap : public UObject
@@ -75,8 +77,16 @@ public:
 	 * File row 0 → north (max Y). File column 0 → east (max X) so the text
 	 * matches the in-world layout when viewed with north up.
 	 * An R cell is a 4 m river. The dry part of that square uses the neighboring biome.
+	 * A solved road paints its strip with the town texture. River water stays river,
+	 * and a mountain or the sea keeps its own shelf.
 	 */
 	ESolidBiome SampleBiome(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
+
+	/** Solved routes, in file order. A route with no cells had a missing end. */
+	const TArray<SolidRoad::FRoute>& GetRoads() const { return Roads; }
+
+	/** True when the point lies on a solved road strip. Does not change the biome by itself. */
+	bool IsOnRoad(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 
 	/** Display / material color from the key (or built-in defaults). */
 	FLinearColor GetBiomeColor(ESolidBiome Biome) const;
@@ -113,6 +123,7 @@ protected:
 	bool ParseKeyLine(const FString& Line);
 	bool ParseLocationLine(const FString& Line);
 	bool WorldXYToCell(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, int32& OutMapX, int32& OutMapY) const;
+	void BuildRoads(const TArray<SolidRoad::FDefinition>& Definitions);
 	bool CellsToWorldXY(const TArray<FIntPoint>& Cells, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 	static ESolidBiome MarkerToBiome(TCHAR Marker);
 	static bool BiomeFromName(const FString& Name, ESolidBiome& OutBiome);
@@ -138,4 +149,9 @@ protected:
 
 	UPROPERTY()
 	TMap<int32, FSolidWorldLocation> Locations;
+
+	TArray<SolidRoad::FRoute> Roads;
+	TArray<SolidRoad::FSpan> RoadSpans;
+	/** Span indexes that can paint each cell, including the cells beside the route. */
+	TArray<TArray<int32>> RoadSpansByCell;
 };

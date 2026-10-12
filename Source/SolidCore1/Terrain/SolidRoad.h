@@ -1,0 +1,137 @@
+#pragma once
+
+#include "CoreMinimal.h"
+#include "SolidTerrainTypes.h"
+
+class USolidWorldMap;
+
+/**
+ * A road line in WorldMap.txt names a start, an end, and a type.
+ * The route is a path of map cells. The painted strip is centred on those cells.
+ * Trails are 1 m, tracks 2 m, roads 3 m, highways 4 m.
+ * Roads and highways stay off forest, mountain, desert, and sea, and they pay
+ * extra for every river cell so a crossing is as short as the ground allows.
+ * The strip uses the town texture. River water keeps the river texture.
+ * Local offsets are centimetres. +X is east, +Y is north.
+ */
+namespace SolidRoad
+{
+	enum class EType : uint8
+	{
+		Trail,
+		Track,
+		Road,
+		Highway,
+	};
+
+	struct FEndpoint
+	{
+		/** True when the end is the cave (marker C) rather than a numbered town. */
+		bool bCave = false;
+		int32 LocationId = INDEX_NONE;
+	};
+
+	struct FDefinition
+	{
+		FEndpoint From;
+		FEndpoint To;
+		EType Type = EType::Trail;
+	};
+
+	struct FRoute
+	{
+		FDefinition Definition;
+		/** Cell centres the strip follows, including both ends. Empty when an end is missing. */
+		TArray<FIntPoint> Cells;
+	};
+
+	/** One painted segment, in map cells. A point span uses the same cell twice. */
+	struct FSpan
+	{
+		FIntPoint From = FIntPoint::ZeroValue;
+		FIntPoint To = FIntPoint::ZeroValue;
+		float HalfWidthCm = 0.f;
+	};
+
+	/**
+	 * One step, in the same units as the other costs. A surface preference is
+	 * smaller than this, so it only breaks a tie between equal-length routes.
+	 */
+	inline constexpr int32 StepCost = 16;
+	/** Roads and highways pay this to enter a river cell. One crossing, not a trip along the water. */
+	inline constexpr int32 RiverCost = StepCost * 40;
+	/** Forest, mountain, desert, and sea, for the types that must stay off them. Sea costs this for every type. */
+	inline constexpr int32 AvoidCost = StepCost * 800;
+
+	inline float WidthCm(const EType Type)
+	{
+		switch (Type)
+		{
+		case EType::Track: return 200.f;
+		case EType::Road: return 300.f;
+		case EType::Highway: return 400.f;
+		case EType::Trail:
+		default: return 100.f;
+		}
+	}
+
+	inline bool AvoidsHardGround(const EType Type)
+	{
+		return Type == EType::Road || Type == EType::Highway;
+	}
+
+	/** Lower is better. Never as large as a whole extra step. */
+	inline int32 SurfacePreference(const ESolidBiome Biome)
+	{
+		switch (Biome)
+		{
+		case ESolidBiome::Grassland:
+		case ESolidBiome::Town:
+		case ESolidBiome::Swamp:
+			return 0;
+		case ESolidBiome::Forest:
+		case ESolidBiome::Desert:
+			return 2;
+		case ESolidBiome::Mountain:
+			return 4;
+		case ESolidBiome::River:
+			return 6;
+		case ESolidBiome::Sea:
+			return 8;
+		default:
+			return 1;
+		}
+	}
+
+	inline int32 EnterCost(const EType Type, const ESolidBiome Biome)
+	{
+		int32 Cost = StepCost;
+		if (Biome == ESolidBiome::Sea)
+		{
+			Cost = AvoidCost;
+		}
+		else if (AvoidsHardGround(Type))
+		{
+			if (Biome == ESolidBiome::Forest || Biome == ESolidBiome::Mountain || Biome == ESolidBiome::Desert)
+			{
+				Cost = AvoidCost;
+			}
+			else if (Biome == ESolidBiome::River)
+			{
+				Cost = RiverCost;
+			}
+		}
+		return Cost + SurfacePreference(Biome);
+	}
+
+	/** "Road: C -> 0, trail". False when the line is not a road, or the road is incomplete. */
+	bool Parse(const FString& Line, FDefinition& Out);
+
+	/**
+	 * Orthogonal route from any cell of From to any cell of To.
+	 * @return False when an end has no cells, or no path exists.
+	 */
+	bool Solve(const USolidWorldMap& Map, const FDefinition& Definition, TArray<FIntPoint>& OutCells);
+
+	float DistanceToSegmentCm(const FVector2D& Point, const FVector2D& A, const FVector2D& B);
+}

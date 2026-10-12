@@ -35,8 +35,9 @@ struct FSolidWorldLocation
 };
 
 /**
- * ASCII WorldMap.txt biome overlay (64×64 markers + color key + numbered locations).
- * Scaled across the TerrainMap world bounds. Location 0 is the starting town.
+ * ASCII WorldMap.txt biome overlay (128×64 markers + color key + numbered locations).
+ * Scaled across the TerrainMap world bounds. The world stays square, so a cell is
+ * 8 m east–west and 16 m north–south. Location 0 is the starting town.
  * A legacy Z marker is the start only when the grid has no 0 cells.
  * Road lines are solved into routes when the file loads.
  */
@@ -46,7 +47,7 @@ class SOLIDCORE1_API USolidWorldMap : public UObject
 	GENERATED_BODY()
 
 public:
-	static constexpr int32 MapWidth = 64;
+	static constexpr int32 MapWidth = 128;
 	static constexpr int32 MapHeight = 64;
 
 	/** Load Content/WorldMap.txt. Idempotent when already loaded. */

@@ -64,7 +64,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidWorldMapParseKeyAndSampleTest::RunTest(const FString& Parameters)
 {
-	// Tiny synthetic map: 64 identical rows of G, with one Z in the center of row 0.
+	// Synthetic map: grass, with one Z in the middle of row 0.
 	FString Text;
 	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
 	{
@@ -72,7 +72,7 @@ bool FSolidWorldMapParseKeyAndSampleTest::RunTest(const FString& Parameters)
 		Line.Reserve(USolidWorldMap::MapWidth);
 		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
 		{
-			if (Row == 0 && Col == 32)
+			if (Row == 0 && Col == USolidWorldMap::MapWidth / 2)
 			{
 				Line.AppendChar(TEXT('Z'));
 			}
@@ -97,7 +97,7 @@ bool FSolidWorldMapParseKeyAndSampleTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("one Z cell"), Map->GetStartTownCellCount(), 1);
 	TestEqual(
 		TEXT("Z is Town"),
-		static_cast<uint8>(Map->GetBiomeAtCell(32, 0)),
+		static_cast<uint8>(Map->GetBiomeAtCell(USolidWorldMap::MapWidth / 2, 0)),
 		static_cast<uint8>(ESolidBiome::Town));
 	TestEqual(
 		TEXT("desert marker"),
@@ -107,7 +107,7 @@ bool FSolidWorldMapParseKeyAndSampleTest::RunTest(const FString& Parameters)
 	const FVector2D WorldMin(-6400.f, -6400.f);
 	const FVector2D WorldMax(6400.f, 6400.f);
 
-	// Row 0 = north = max Y → Z at col 32 should sample near top-center.
+	// Row 0 = north = max Y → Z at the middle column samples near top-center.
 	const ESolidBiome NorthCenter = Map->SampleBiome(0.f, 6300.f, WorldMin, WorldMax);
 	TestEqual(
 		TEXT("north-center samples Town"),
@@ -115,8 +115,8 @@ bool FSolidWorldMapParseKeyAndSampleTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(ESolidBiome::Town));
 
 	// File column 0 is east (max X): desert at col 10 → positive X.
-	const float DesertWorldX = WorldMax.X - (10.5f) * ((WorldMax.X - WorldMin.X) / 64.f);
-	const float DesertWorldY = WorldMax.Y - (10.5f) * ((WorldMax.Y - WorldMin.Y) / 64.f);
+	const float DesertWorldX = WorldMax.X - (10.5f) * ((WorldMax.X - WorldMin.X) / static_cast<float>(USolidWorldMap::MapWidth));
+	const float DesertWorldY = WorldMax.Y - (10.5f) * ((WorldMax.Y - WorldMin.Y) / static_cast<float>(USolidWorldMap::MapHeight));
 	TestTrue(TEXT("desert cell is on the east side"), DesertWorldX > 0.f);
 	TestEqual(
 		TEXT("east-side sample is Desert"),
@@ -410,8 +410,8 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	const FVector2D SynMin(0.f, 0.f);
 	const FVector2D SynMax(6400.f, 6400.f);
 	TestTrue(TEXT("synthetic start"), Synthetic->GetStartTownWorldXY(SynMin, SynMax, SyntheticStart));
-	// Column 0 is east. Cell (4, 2) center is (5950, 6150), not the Z at column 8.
-	TestTrue(TEXT("start is the 0 cell, not Z"), FMath::IsNearlyEqual(SyntheticStart.X, 5950.f, 1.f));
+	// Column 0 is east. On a 6400 cm square, cell (4, 2) is 8 m wide and 16 m tall.
+	TestTrue(TEXT("start is the 0 cell, not Z"), FMath::IsNearlyEqual(SyntheticStart.X, 6175.f, 1.f));
 	TestTrue(TEXT("start row is the 0 cell"), FMath::IsNearlyEqual(SyntheticStart.Y, 6150.f, 1.f));
 	return true;
 }
@@ -430,8 +430,12 @@ bool FSolidWorldMapDoubledScaleTest::RunTest(const FString& Parameters)
 
 	const float Extent = static_cast<float>(Defaults->TerrainMapSize - 1) * Defaults->TerrainPointSpacing;
 	TestTrue(TEXT("world side is 1024 m"), FMath::IsNearlyEqual(Extent, 102400.f, 1.f));
-	const float CellCm = Extent / static_cast<float>(USolidWorldMap::MapWidth);
-	TestTrue(TEXT("world map cell is 16 m"), FMath::IsNearlyEqual(CellCm, 1600.f, 1.f));
+	TestEqual(TEXT("map is 128 columns"), USolidWorldMap::MapWidth, 128);
+	TestEqual(TEXT("map is 64 rows"), USolidWorldMap::MapHeight, 64);
+	const float CellEastCm = Extent / static_cast<float>(USolidWorldMap::MapWidth);
+	const float CellNorthCm = Extent / static_cast<float>(USolidWorldMap::MapHeight);
+	TestTrue(TEXT("east-west cell is 8 m"), FMath::IsNearlyEqual(CellEastCm, 800.f, 1.f));
+	TestTrue(TEXT("north-south cell is 16 m"), FMath::IsNearlyEqual(CellNorthCm, 1600.f, 1.f));
 
 	USolidWorldMap* WorldMap = NewObject<USolidWorldMap>();
 	TestTrue(TEXT("LoadDefault"), WorldMap->LoadDefault());

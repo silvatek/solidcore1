@@ -144,8 +144,9 @@ public:
 	/**
 	 * TerrainPoint cells along each map axis (built once at BeginPlay).
 	 * 513 doubles the original 257-point span at the same spacing: world side
-	 * goes from 512 m to 1024 m. WorldMap.txt still covers that whole rectangle,
-	 * so each ASCII cell doubles from 8 m to 16 m.
+	 * goes from 512 m to 1024 m, and the world stays square. WorldMap.txt is
+	 * 128 columns by 64 rows across that square, so a cell is 8 m east–west
+	 * and 16 m north–south.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Map", meta = (ClampMin = "8", ClampMax = "1025"))
 	int32 TerrainMapSize = 513;

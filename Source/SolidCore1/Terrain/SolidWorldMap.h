@@ -55,7 +55,10 @@ public:
 
 	bool IsLoaded() const { return bIsLoaded; }
 
-	/** Marker biome at map cell (clamped). T and Z are Town; C is Mountain; digits use the location key. */
+	/**
+	 * Marker biome at map cell (clamped). T and Z are Town; C is Mountain; digits use the location key.
+	 * R is River for the whole cell. SampleBiome paints only the channel.
+	 */
 	ESolidBiome GetBiomeAtCell(int32 MapX, int32 MapY) const;
 
 	/** Marker character at a cell, or 0 when the map is not loaded. Digits stay digits. */
@@ -71,6 +74,7 @@ public:
 	 * Sample biome for a world XY given the TerrainMap world rectangle.
 	 * File row 0 → north (max Y). File column 0 → east (max X) so the text
 	 * matches the in-world layout when viewed with north up.
+	 * An R cell is a 4 m river. The dry part of that square uses the neighboring biome.
 	 */
 	ESolidBiome SampleBiome(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 

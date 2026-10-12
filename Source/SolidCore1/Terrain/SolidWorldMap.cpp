@@ -1,5 +1,6 @@
 #include "SolidWorldMap.h"
 #include "SolidCore1.h"
+#include "SolidRiver.h"
 #include "SolidTowns.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
@@ -414,6 +415,59 @@ bool USolidWorldMap::WorldXYToCell(
 	return true;
 }
 
+namespace
+{
+	bool WorldMapMarkerInCell(const USolidWorldMap& Map, const int32 MapX, const int32 MapY, TCHAR& OutMarker)
+	{
+		if (MapX < 0 || MapY < 0 || MapX >= USolidWorldMap::MapWidth || MapY >= USolidWorldMap::MapHeight)
+		{
+			return false;
+		}
+		OutMarker = Map.GetMarkerAtCell(MapX, MapY);
+		return OutMarker != 0;
+	}
+
+	/** File column 0 is east, file row 0 is north. */
+	FIntPoint WorldMapRiverSideStep(const SolidRiver::ESide Side)
+	{
+		switch (Side)
+		{
+		case SolidRiver::ESide::North: return FIntPoint(0, -1);
+		case SolidRiver::ESide::East: return FIntPoint(-1, 0);
+		case SolidRiver::ESide::South: return FIntPoint(0, 1);
+		case SolidRiver::ESide::West: return FIntPoint(1, 0);
+		default: return FIntPoint(0, -1);
+		}
+	}
+
+	ESolidBiome WorldMapRiverBank(const USolidWorldMap& Map, const int32 MapX, const int32 MapY, const SolidRiver::ESide Preferred)
+	{
+		const int32 First = static_cast<int32>(Preferred);
+		const int32 Order[4] = { First, (First + 1) & 3, (First + 3) & 3, (First + 2) & 3 };
+		for (const int32 Index : Order)
+		{
+			const FIntPoint Step = WorldMapRiverSideStep(static_cast<SolidRiver::ESide>(Index));
+			const int32 NextX = MapX + Step.X;
+			const int32 NextY = MapY + Step.Y;
+			TCHAR Marker = 0;
+			if (!WorldMapMarkerInCell(Map, NextX, NextY, Marker))
+			{
+				continue;
+			}
+			const ESolidBiome Biome = Map.GetBiomeAtCell(NextX, NextY);
+			// The channel is already water. Another river square is the next
+			// length of that channel, so a bend's dry corner takes the other bank.
+			// Sea is a real neighbor: a mouth uses it, and a land bank stays land.
+			if (Biome == ESolidBiome::River)
+			{
+				continue;
+			}
+			return Biome;
+		}
+		return ESolidBiome::Grassland;
+	}
+}
+
 ESolidBiome USolidWorldMap::SampleBiome(
 	const float WorldX,
 	const float WorldY,
@@ -426,7 +480,37 @@ ESolidBiome USolidWorldMap::SampleBiome(
 	{
 		return ESolidBiome::Grassland;
 	}
-	return GetBiomeAtCell(MapX, MapY);
+
+	TCHAR Marker = 0;
+	if (!WorldMapMarkerInCell(*this, MapX, MapY, Marker) || Marker != TEXT('R'))
+	{
+		return GetBiomeAtCell(MapX, MapY);
+	}
+
+	const float ExtentX = FMath::Max(WorldMaxXY.X - WorldMinXY.X, 1.f);
+	const float ExtentY = FMath::Max(WorldMaxXY.Y - WorldMinXY.Y, 1.f);
+	const float CellW = ExtentX / static_cast<float>(MapWidth);
+	const float CellH = ExtentY / static_cast<float>(MapHeight);
+
+	FVector2D Center = FVector2D::ZeroVector;
+	if (!CellToWorldXY(FIntPoint(MapX, MapY), WorldMinXY, WorldMaxXY, Center))
+	{
+		return ESolidBiome::River;
+	}
+	const FVector2D Local(WorldX - Center.X, WorldY - Center.Y);
+
+	SolidRiver::FLinks Links;
+	TCHAR Neighbor = 0;
+	Links.bNorth = WorldMapMarkerInCell(*this, MapX, MapY - 1, Neighbor) && SolidRiver::Joins(Neighbor);
+	Links.bEast = WorldMapMarkerInCell(*this, MapX - 1, MapY, Neighbor) && SolidRiver::Joins(Neighbor);
+	Links.bSouth = WorldMapMarkerInCell(*this, MapX, MapY + 1, Neighbor) && SolidRiver::Joins(Neighbor);
+	Links.bWest = WorldMapMarkerInCell(*this, MapX + 1, MapY, Neighbor) && SolidRiver::Joins(Neighbor);
+
+	if (SolidRiver::IsWater(Local, CellW, CellH, Links))
+	{
+		return ESolidBiome::River;
+	}
+	return WorldMapRiverBank(*this, MapX, MapY, SolidRiver::Side(Local, CellW, CellH, Links));
 }
 
 int32 USolidWorldMap::GetLocationIdAtCell(const int32 MapX, const int32 MapY) const

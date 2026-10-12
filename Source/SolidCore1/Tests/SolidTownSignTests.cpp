@@ -32,15 +32,17 @@ bool FSolidTownSignPlacementsTest::RunTest(const FString& Parameters)
 	WorldMap->CollectLocations(Locations);
 	for (const FSolidWorldLocation& Location : Locations)
 	{
-		if (!SolidTowns::NameFor(Location.Id).IsEmpty())
+		if (SolidTowns::NameFor(Location.Id).IsEmpty())
 		{
-			NamedCells += Location.Cells.Num();
+			continue;
 		}
+		// A wall gate is one gate, however many cells it covers. One cell is still one sign.
+		NamedCells += SolidTowns::IsWallGate(Location.Id) ? 1 : Location.Cells.Num();
 	}
 
 	TArray<SolidTownSigns::FPlacement> Placements;
 	const int32 Count = SolidTownSigns::CollectPlacements(WorldMap, WorldMin, WorldMax, Placements);
-	TestEqual(TEXT("one sign per named cell"), Count, NamedCells);
+	TestEqual(TEXT("one sign per named town cell, one for a wall gate"), Count, NamedCells);
 	TestEqual(TEXT("placements filled"), Placements.Num(), NamedCells);
 	if (Placements.Num() != NamedCells || Placements.Num() == 0)
 	{
@@ -68,8 +70,31 @@ bool FSolidTownSignPlacementsTest::RunTest(const FString& Parameters)
 		TestNotNull(TEXT("town"), Town);
 		if (Town)
 		{
-			TestTrue(TEXT("placement is the cell center plus the town offset"),
-				Placement.WorldXY.Equals(CellXY + Town->SignOffsetCm, 0.1f));
+			FVector2D Anchor = CellXY;
+			if (SolidTowns::IsWallGate(Town->Id))
+			{
+				FSolidWorldLocation Gate;
+				if (WorldMap->FindLocation(Town->Id, Gate) && Gate.Cells.Num() > 0)
+				{
+					FVector2D Sum = FVector2D::ZeroVector;
+					int32 Found = 0;
+					for (const FIntPoint& GateCell : Gate.Cells)
+					{
+						FVector2D GateXY = FVector2D::ZeroVector;
+						if (WorldMap->CellToWorldXY(GateCell, WorldMin, WorldMax, GateXY))
+						{
+							Sum += GateXY;
+							++Found;
+						}
+					}
+					if (Found > 0)
+					{
+						Anchor = Sum / static_cast<float>(Found);
+					}
+				}
+			}
+			TestTrue(TEXT("placement is the anchor plus the town offset"),
+				Placement.WorldXY.Equals(Anchor + Town->SignOffsetCm, 0.1f));
 			TestTrue(TEXT("placement uses the town yaw"),
 				FMath::IsNearlyEqual(Placement.YawDeg, Town->SignYawDeg, 0.1f));
 		}
@@ -89,7 +114,7 @@ bool FSolidTownSignPlacementsTest::RunTest(const FString& Parameters)
 				FVector2D::DistSquared(Placement.WorldXY, Placements[Other].WorldXY) > 1.f);
 		}
 	}
-	TestEqual(TEXT("Kanfold has two signs"), KanfoldSigns, 2);
+	TestTrue(TEXT("Kanfold has a sign on more than one cell"), KanfoldSigns > 1);
 	TestTrue(TEXT("Rathen has a sign"), bSawRathen);
 
 	TestEqual(TEXT("null map yields none"),

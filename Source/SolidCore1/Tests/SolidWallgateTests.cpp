@@ -186,11 +186,9 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 	}
 
 	USolidWorldMap* EastWest = WallgateTestLoad(*this, TEXT("east-west pass loads"), {
-		{ 10, 21, TEXT('M') },
-		{ 11, 21, TEXT('5') },
+		{ 11, 21, TEXT('M') },
 		{ 12, 21, TEXT('5') },
-		{ 13, 21, TEXT('5') },
-		{ 14, 21, TEXT('M') },
+		{ 13, 21, TEXT('M') },
 	});
 	if (EastWest)
 	{
@@ -200,16 +198,11 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 		{
 			const float HalfCell = (WallgateTestMax.X - WallgateTestMin.X)
 				/ static_cast<float>(USolidWorldMap::MapWidth) * 0.5f;
-			float SpanMin = TNumericLimits<float>::Max();
-			float SpanMax = TNumericLimits<float>::Lowest();
-			for (int32 Col = 11; Col <= 13; ++Col)
-			{
-				FVector2D Center = FVector2D::ZeroVector;
-				TestTrue(TEXT("pass cell projects"),
-					EastWest->CellToWorldXY(FIntPoint(Col, 21), WallgateTestMin, WallgateTestMax, Center));
-				SpanMin = FMath::Min(SpanMin, Center.X - HalfCell);
-				SpanMax = FMath::Max(SpanMax, Center.X + HalfCell);
-			}
+			FVector2D Center = FVector2D::ZeroVector;
+			TestTrue(TEXT("pass cell projects"),
+				EastWest->CellToWorldXY(FIntPoint(12, 21), WallgateTestMin, WallgateTestMax, Center));
+			const float SpanMin = Center.X - HalfCell;
+			const float SpanMax = Center.X + HalfCell;
 
 			float OuterMin = TNumericLimits<float>::Max();
 			float OuterMax = TNumericLimits<float>::Lowest();
@@ -222,16 +215,19 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 				OuterMin = FMath::Min(OuterMin, Piece.CenterXY.X - Piece.FootprintXCm * 0.5f);
 				OuterMax = FMath::Max(OuterMax, Piece.CenterXY.X + Piece.FootprintXCm * 0.5f);
 			}
-			TestTrue(TEXT("wall meets the outer edges of the town cells"),
+			TestTrue(TEXT("wall meets the outer edges of the town cell"),
 				WallgateTestNear(OuterMin, SpanMin) && WallgateTestNear(OuterMax, SpanMax));
-			TestTrue(TEXT("three cells of wall"), WallgateTestNear(SpanMax - SpanMin, HalfCell * 6.f));
+			TestTrue(TEXT("one cell of wall"), WallgateTestNear(SpanMax - SpanMin, HalfCell * 2.f));
 		}
 	}
 
+	// A vertical stack stays one location whether or not a row pairs digits.
 	USolidWorldMap* NorthSouth = WallgateTestLoad(*this, TEXT("north-south pass loads"), {
-		{ 11, 20, TEXT('M') }, { 12, 20, TEXT('M') }, { 13, 20, TEXT('M') },
-		{ 11, 21, TEXT('5') }, { 12, 21, TEXT('5') }, { 13, 21, TEXT('5') },
-		{ 11, 22, TEXT('M') }, { 12, 22, TEXT('M') }, { 13, 22, TEXT('M') },
+		{ 12, 19, TEXT('M') },
+		{ 12, 20, TEXT('5') },
+		{ 12, 21, TEXT('5') },
+		{ 12, 22, TEXT('5') },
+		{ 12, 23, TEXT('M') },
 	});
 	if (NorthSouth)
 	{

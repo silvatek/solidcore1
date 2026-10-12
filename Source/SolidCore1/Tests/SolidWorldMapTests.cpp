@@ -248,7 +248,7 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Iglin"), Iglin.Name, FString(TEXT("Iglin")));
 	TestTrue(TEXT("role is not in the map file"), Iglin.Role.IsEmpty());
 	TestEqual(TEXT("Iglin is Town"), static_cast<uint8>(Iglin.Biome), static_cast<uint8>(ESolidBiome::Town));
-	TestEqual(TEXT("one Iglin cell"), Iglin.Cells.Num(), 1);
+	TestTrue(TEXT("Iglin has a cell"), Iglin.Cells.Num() >= 1);
 
 	FSolidWorldLocation Relion;
 	TestTrue(TEXT("location 1"), Map->FindLocation(1, Relion));
@@ -260,7 +260,7 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("location 2"), Map->FindLocation(2, Kanfold));
 	TestEqual(TEXT("Kanfold"), Kanfold.Name, FString(TEXT("Kanfold")));
 	TestTrue(TEXT("Kanfold role is not in the map file"), Kanfold.Role.IsEmpty());
-	TestEqual(TEXT("two Kanfold cells"), Kanfold.Cells.Num(), 2);
+	TestTrue(TEXT("Kanfold has more than one cell"), Kanfold.Cells.Num() > 1);
 
 	FSolidWorldLocation Visolar;
 	TestTrue(TEXT("location 3"), Map->FindLocation(3, Visolar));

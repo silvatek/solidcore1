@@ -1,4 +1,28 @@
 
+# Geography
+
+The explorable world is bounded between seas on the east & west, with impassable mountains to the north and south. The New Kingdom sits in a valley in the northern mountains, and the great Dragons hold power in the southern mountains.
+
+## Towns and Cities
+
+### Jethan
+
+Ancient capital city of the old kingdom, now a desolate and dangerous ruin.
+
+### Kanfold
+
+The current capital of the new kingdom, high up in the northern valley. Generally peaceful and properous, but something lurks in the catacombes and caves below.
+
+### Relion
+
+A town in the new kingdom. Smaller than Kanfold, but larger than Iglin. Used to be the capital of the New Kingdom before it moved to Kanfold.
+
+### Iglin
+
+A small village in a valley spur. Reliant on a single bridge across a wild mountain river for access to the rest of the world.
+
+Iglin is where the orphan (who will later go on to become the Captain) was raised.
+
 # History
 
 Note: dates are before (BtF) / after (AtF) the fall of Jethan. The orphan was born some time between 140 and 180 AtF.

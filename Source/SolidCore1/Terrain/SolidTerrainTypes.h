@@ -82,4 +82,33 @@ namespace SolidTerrainTypes
 			return 100.f;
 		}
 	}
+
+	/**
+	 * Texture for one terrain triangle. Preferred is the quad's current biome.
+	 * A corner on a higher shelf replaces it, so the cliff between a mountain and a
+	 * river uses the mountain. Equal shelves stay on Preferred.
+	 */
+	FORCEINLINE ESolidBiome BorderBiome(ESolidBiome Preferred, ESolidBiome A, ESolidBiome B, ESolidBiome C)
+	{
+		const ESolidBiome Corners[3] = { A, B, C };
+		float BestOffset = BiomeHeightOffsetCm(A);
+		for (int32 Index = 1; Index < 3; ++Index)
+		{
+			BestOffset = FMath::Max(BestOffset, BiomeHeightOffsetCm(Corners[Index]));
+		}
+
+		if (BiomeHeightOffsetCm(Preferred) == BestOffset)
+		{
+			return Preferred;
+		}
+
+		for (const ESolidBiome Corner : Corners)
+		{
+			if (BiomeHeightOffsetCm(Corner) == BestOffset)
+			{
+				return Corner;
+			}
+		}
+		return A;
+	}
 }

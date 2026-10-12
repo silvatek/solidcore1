@@ -55,20 +55,50 @@ int32 SolidTownSigns::CollectPlacements(
 			return A.X < B.X;
 		});
 
+		FVector2D Offset = FVector2D(0.f, 0.f);
+		float YawDeg = FacingYawDeg;
+		if (const SolidTowns::FTownInfo* Town = SolidTowns::Find(Location.Id))
+		{
+			Offset = Town->SignOffsetCm;
+			YawDeg = Town->SignYawDeg;
+		}
+
+		// One board for the whole gate, at the middle of its cells, so it stays off the opening.
+		if (SolidTowns::IsWallGate(Location.Id))
+		{
+			FVector2D Sum = FVector2D::ZeroVector;
+			int32 Found = 0;
+			FIntPoint AnchorCell = Cells.Num() > 0 ? Cells[0] : FIntPoint::ZeroValue;
+			for (const FIntPoint& Cell : Cells)
+			{
+				FVector2D WorldXY = FVector2D::ZeroVector;
+				if (!WorldMap->CellToWorldXY(Cell, WorldMinXY, WorldMaxXY, WorldXY))
+				{
+					continue;
+				}
+				Sum += WorldXY;
+				++Found;
+				AnchorCell = Cell;
+			}
+			if (Found > 0)
+			{
+				FPlacement Placement;
+				Placement.LocationId = Location.Id;
+				Placement.Name = Location.Name;
+				Placement.Cell = AnchorCell;
+				Placement.WorldXY = (Sum / static_cast<float>(Found)) + Offset;
+				Placement.YawDeg = YawDeg;
+				OutPlacements.Add(Placement);
+			}
+			continue;
+		}
+
 		for (const FIntPoint& Cell : Cells)
 		{
 			FVector2D WorldXY = FVector2D::ZeroVector;
 			if (!WorldMap->CellToWorldXY(Cell, WorldMinXY, WorldMaxXY, WorldXY))
 			{
 				continue;
-			}
-
-			FVector2D Offset = FVector2D(0.f, 0.f);
-			float YawDeg = FacingYawDeg;
-			if (const SolidTowns::FTownInfo* Town = SolidTowns::Find(Location.Id))
-			{
-				Offset = Town->SignOffsetCm;
-				YawDeg = Town->SignYawDeg;
 			}
 
 			FPlacement Placement;

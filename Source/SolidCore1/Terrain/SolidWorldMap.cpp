@@ -153,12 +153,19 @@ bool USolidWorldMap::ParseLocationLine(const FString& Line)
 	}
 
 	const FString Left = Trimmed.Left(EqIndex).TrimStartAndEnd();
-	if (Left.Len() != 1 || !FChar::IsDigit(Left[0]))
+	if (Left.IsEmpty() || Left.Len() > 2)
 	{
 		return false;
 	}
+	for (const TCHAR Char : Left)
+	{
+		if (!FChar::IsDigit(Char))
+		{
+			return false;
+		}
+	}
 
-	const int32 Id = static_cast<int32>(Left[0] - TEXT('0'));
+	const int32 Id = FCString::Atoi(*Left);
 	FSolidWorldLocation& Loc = Locations.FindOrAdd(Id);
 	Loc.Id = Id;
 	Loc.Biome = ESolidBiome::Town;
@@ -287,10 +294,9 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 	{
 		for (int32 Col = 0; Col < MapWidth; ++Col)
 		{
-			const TCHAR Marker = static_cast<TCHAR>(Markers[Row * MapWidth + Col]);
-			if (FChar::IsDigit(Marker))
+			const int32 Id = ResolveLocationId(Col, Row);
+			if (Id != INDEX_NONE)
 			{
-				const int32 Id = static_cast<int32>(Marker - TEXT('0'));
 				FSolidWorldLocation& Loc = Locations.FindOrAdd(Id);
 				if (Loc.Id == INDEX_NONE)
 				{
@@ -303,7 +309,7 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 					bHasLocationZero = true;
 				}
 			}
-			else if (Marker == TEXT('Z'))
+			else if (static_cast<TCHAR>(Markers[Row * MapWidth + Col]) == TEXT('Z'))
 			{
 				LegacyStartCells.Add(FIntPoint(Col, Row));
 			}
@@ -386,16 +392,16 @@ ESolidBiome USolidWorldMap::GetBiomeAtCell(int32 MapX, int32 MapY) const
 	}
 	MapX = FMath::Clamp(MapX, 0, MapWidth - 1);
 	MapY = FMath::Clamp(MapY, 0, MapHeight - 1);
-	const TCHAR Marker = static_cast<TCHAR>(Markers[MapY * MapWidth + MapX]);
-	if (FChar::IsDigit(Marker))
+	const int32 Id = ResolveLocationId(MapX, MapY);
+	if (Id != INDEX_NONE)
 	{
-		const int32 Id = static_cast<int32>(Marker - TEXT('0'));
 		if (const FSolidWorldLocation* Loc = Locations.Find(Id))
 		{
 			return Loc->Biome;
 		}
 		return ESolidBiome::Town;
 	}
+	const TCHAR Marker = static_cast<TCHAR>(Markers[MapY * MapWidth + MapX]);
 	return MarkerToBiome(Marker);
 }
 
@@ -677,12 +683,55 @@ int32 USolidWorldMap::GetLocationIdAtCell(const int32 MapX, const int32 MapY) co
 
 	const int32 X = FMath::Clamp(MapX, 0, MapWidth - 1);
 	const int32 Y = FMath::Clamp(MapY, 0, MapHeight - 1);
-	const TCHAR Marker = static_cast<TCHAR>(Markers[Y * MapWidth + X]);
+	return ResolveLocationId(X, Y);
+}
+
+int32 USolidWorldMap::ResolveLocationId(const int32 MapX, const int32 MapY) const
+{
+	if (Markers.Num() != MapWidth * MapHeight
+		|| MapX < 0 || MapY < 0 || MapX >= MapWidth || MapY >= MapHeight)
+	{
+		return INDEX_NONE;
+	}
+
+	const TCHAR Marker = static_cast<TCHAR>(Markers[MapY * MapWidth + MapX]);
 	if (!FChar::IsDigit(Marker))
 	{
 		return INDEX_NONE;
 	}
-	return static_cast<int32>(Marker - TEXT('0'));
+
+	// Column 0 is east, so the digits toward the left of the file are to the east.
+	int32 DigitsToTheEast = 0;
+	for (int32 X = MapX - 1; X >= 0; --X)
+	{
+		const TCHAR East = static_cast<TCHAR>(Markers[MapY * MapWidth + X]);
+		if (!FChar::IsDigit(East))
+		{
+			break;
+		}
+		++DigitsToTheEast;
+	}
+
+	const auto Value = [](const TCHAR Char)
+	{
+		return static_cast<int32>(Char - TEXT('0'));
+	};
+
+	if ((DigitsToTheEast % 2) == 1)
+	{
+		const TCHAR Tens = static_cast<TCHAR>(Markers[MapY * MapWidth + (MapX - 1)]);
+		return Value(Tens) * 10 + Value(Marker);
+	}
+
+	if (MapX + 1 < MapWidth)
+	{
+		const TCHAR Ones = static_cast<TCHAR>(Markers[MapY * MapWidth + (MapX + 1)]);
+		if (FChar::IsDigit(Ones))
+		{
+			return Value(Marker) * 10 + Value(Ones);
+		}
+	}
+	return Value(Marker);
 }
 
 int32 USolidWorldMap::SampleLocationId(

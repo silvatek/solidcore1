@@ -29,7 +29,7 @@ struct FSolidWorldLocation
 	UPROPERTY(BlueprintReadOnly, Category = "WorldMap")
 	ESolidBiome Biome = ESolidBiome::Town;
 
-	/** Map cells whose marker is the digit for this id. */
+	/** Map cells that resolve to this id. A two-digit run is two cells. */
 	UPROPERTY(BlueprintReadOnly, Category = "WorldMap")
 	TArray<FIntPoint> Cells;
 };
@@ -37,7 +37,9 @@ struct FSolidWorldLocation
 /**
  * ASCII WorldMap.txt biome overlay (128×64 markers + color key + numbered locations).
  * Scaled across the TerrainMap world bounds. The world stays square, so a cell is
- * 8 m east–west and 16 m north–south. Location 0 is the starting town.
+ * 8 m east–west and 16 m north–south. Two digits next to each other on a row are
+ * one location number, read from the left, and each character is still one cell.
+ * A longer run is taken in pairs. Location 0 is the starting town.
  * A legacy Z marker is the start only when the grid has no 0 cells.
  * Road lines are solved into routes when the file loads.
  */
@@ -67,7 +69,7 @@ public:
 	/** Marker character at a cell, or 0 when the map is not loaded. Digits stay digits. */
 	TCHAR GetMarkerAtCell(int32 MapX, int32 MapY) const;
 
-	/** Digit on this cell, or INDEX_NONE when the marker is not numbered. */
+	/** Location id on this cell, or INDEX_NONE when the marker is not a digit. A pair on the row is one id. */
 	int32 GetLocationIdAtCell(int32 MapX, int32 MapY) const;
 
 	/** Numbered location under a world XY, or INDEX_NONE. Same rectangle as SampleBiome. */
@@ -133,6 +135,12 @@ protected:
 	static bool BiomeFromName(const FString& Name, ESolidBiome& OutBiome);
 	static FLinearColor ColorFromName(const FString& ColorName);
 	static bool IsGridMarker(TCHAR Marker);
+
+	/**
+	 * Location number under a digit. A pair on the same row, read east to west
+	 * (left to right in the file), is one two-digit id. A lone digit is itself.
+	 */
+	int32 ResolveLocationId(int32 MapX, int32 MapY) const;
 
 	UPROPERTY()
 	bool bIsLoaded = false;

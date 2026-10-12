@@ -275,4 +275,71 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidWallgateDigitPairTest,
+	"SolidCore1.Towns.WallGateDigitPair",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidWallgateDigitPairTest::RunTest(const FString& Parameters)
+{
+	// Mountains stand north of both cells, south of the ones digit, and on the
+	// outer sides. The cell between the digits is town, not mountain. A single
+	// cell here would run north-south; the pair is one east-west gate.
+	USolidWorldMap* Map = WallgateTestLoad(*this, TEXT("digit pair pass loads"), {
+		{ 11, 20, TEXT('M') },
+		{ 12, 20, TEXT('M') },
+		{ 10, 21, TEXT('M') },
+		{ 11, 21, TEXT('0') },
+		{ 12, 21, TEXT('5') },
+		{ 13, 21, TEXT('M') },
+		{ 12, 22, TEXT('M') },
+	});
+	if (!Map)
+	{
+		return true;
+	}
+
+	TestEqual(TEXT("tens digit is location 5"), Map->GetLocationIdAtCell(11, 21), 5);
+	TestEqual(TEXT("ones digit is location 5"), Map->GetLocationIdAtCell(12, 21), 5);
+	FSolidWorldLocation Zero;
+	TestFalse(TEXT("the leading zero is not a town of its own"), Map->FindLocation(0, Zero));
+	FSolidWorldLocation Gate;
+	TestTrue(TEXT("location 5"), Map->FindLocation(5, Gate));
+	TestEqual(TEXT("the pair is two cells"), Gate.Cells.Num(), 2);
+
+	TArray<SolidWallgate::FPiece> Pieces;
+	SolidWallgate::CollectPieces(Map, WallgateTestMin, WallgateTestMax, Pieces);
+	if (!WallgateTestExpectPass(*this, Pieces, true))
+	{
+		return true;
+	}
+
+	const float HalfCell = (WallgateTestMax.X - WallgateTestMin.X)
+		/ static_cast<float>(USolidWorldMap::MapWidth) * 0.5f;
+	FVector2D East = FVector2D::ZeroVector;
+	FVector2D West = FVector2D::ZeroVector;
+	TestTrue(TEXT("east cell projects"),
+		Map->CellToWorldXY(FIntPoint(11, 21), WallgateTestMin, WallgateTestMax, East));
+	TestTrue(TEXT("west cell projects"),
+		Map->CellToWorldXY(FIntPoint(12, 21), WallgateTestMin, WallgateTestMax, West));
+	const float SpanMax = East.X + HalfCell;
+	const float SpanMin = West.X - HalfCell;
+
+	float OuterMin = TNumericLimits<float>::Max();
+	float OuterMax = TNumericLimits<float>::Lowest();
+	for (const SolidWallgate::FPiece& Piece : Pieces)
+	{
+		if (!Piece.bStoneWall)
+		{
+			continue;
+		}
+		OuterMin = FMath::Min(OuterMin, Piece.CenterXY.X - Piece.FootprintXCm * 0.5f);
+		OuterMax = FMath::Max(OuterMax, Piece.CenterXY.X + Piece.FootprintXCm * 0.5f);
+	}
+	TestTrue(TEXT("wall meets the outer edges of both cells"),
+		WallgateTestNear(OuterMin, SpanMin) && WallgateTestNear(OuterMax, SpanMax));
+	TestTrue(TEXT("two cells of wall"), WallgateTestNear(OuterMax - OuterMin, HalfCell * 4.f));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

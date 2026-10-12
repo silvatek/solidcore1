@@ -21,6 +21,20 @@ namespace
 		const TArray<FIntPoint>& Cells,
 		TArray<SolidWallgate::FPiece>& OutPieces)
 	{
+		int32 ColMin = MAX_int32;
+		int32 ColMax = MIN_int32;
+		int32 RowMin = MAX_int32;
+		int32 RowMax = MIN_int32;
+		for (const FIntPoint& Cell : Cells)
+		{
+			ColMin = FMath::Min(ColMin, Cell.X);
+			ColMax = FMath::Max(ColMax, Cell.X);
+			RowMin = FMath::Min(RowMin, Cell.Y);
+			RowMax = FMath::Max(RowMax, Cell.Y);
+		}
+		const int32 ColSpan = ColMax - ColMin;
+		const int32 RowSpan = RowMax - RowMin;
+
 		int32 MountainEast = 0;
 		int32 MountainWest = 0;
 		int32 MountainNorth = 0;
@@ -33,9 +47,12 @@ namespace
 			MountainWest += WallgateNeighborIsMountain(WorldMap, Cell.X + 1, Cell.Y) ? 1 : 0;
 		}
 
-		// East and west mountains: the wall crosses the pass, and the towers stand north of it.
-		// A north-south pass uses the other axis, with the towers on the east face.
-		const bool bEastWest = (MountainEast + MountainWest) >= (MountainNorth + MountainSouth);
+		// Several cells in a row are one gate. The other cell of the pair is not a mountain,
+		// so the long axis of the town decides the wall. A single cell still uses its neighbours.
+		// East-west: the wall crosses the pass and the towers stand north of it.
+		const bool bEastWest = (ColSpan != RowSpan)
+			? (ColSpan > RowSpan)
+			: ((MountainEast + MountainWest) >= (MountainNorth + MountainSouth));
 		const FVector2D Along = bEastWest ? FVector2D(1.f, 0.f) : FVector2D(0.f, 1.f);
 		const FVector2D Side = bEastWest ? FVector2D(0.f, 1.f) : FVector2D(1.f, 0.f);
 

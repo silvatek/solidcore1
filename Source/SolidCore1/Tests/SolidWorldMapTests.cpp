@@ -476,4 +476,240 @@ bool FSolidWorldMapDoubledScaleTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidWorldMapDigitPairTest,
+	"SolidCore1.WorldMap.DigitPairs",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
+{
+	TArray<FString> Rows;
+	Rows.SetNum(USolidWorldMap::MapHeight);
+	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	{
+		FString Line;
+		Line.Reserve(USolidWorldMap::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		{
+			Line.AppendChar(TEXT('G'));
+		}
+		Rows[Row] = Line;
+	}
+
+	auto Put = [&Rows](const int32 Col, const int32 Row, const TCHAR* Text)
+	{
+		for (int32 Index = 0; Text[Index] != 0; ++Index)
+		{
+			Rows[Row][Col + Index] = Text[Index];
+		}
+	};
+	Put(4, 4, TEXT("05"));
+	Put(8, 6, TEXT("0"));
+	Put(4, 8, TEXT("02"));
+	Put(4, 10, TEXT("1"));
+	Put(4, 11, TEXT("3"));
+	Put(4, 14, TEXT("123"));
+	Put(4, 16, TEXT("55"));
+	Put(0, 20, TEXT("08"));
+
+	FString Text;
+	for (const FString& Row : Rows)
+	{
+		Text += Row;
+		Text += TEXT("\n");
+	}
+	Text += TEXT("G = Grassland (light green)\n");
+	Text += TEXT("15 = Outpost, biome=Forest\n");
+
+	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("synthetic pair map loads"), Map->LoadFromString(Text));
+
+	TestEqual(TEXT("eastern digit of 05"), Map->GetMarkerAtCell(4, 4), TEXT('0'));
+	TestEqual(TEXT("western digit of 05"), Map->GetMarkerAtCell(5, 4), TEXT('5'));
+	TestEqual(TEXT("05 east cell is location 5"), Map->GetLocationIdAtCell(4, 4), 5);
+	TestEqual(TEXT("05 west cell is location 5"), Map->GetLocationIdAtCell(5, 4), 5);
+	TestEqual(
+		TEXT("05 east cell is Town"),
+		static_cast<uint8>(Map->GetBiomeAtCell(4, 4)),
+		static_cast<uint8>(ESolidBiome::Town));
+	TestEqual(
+		TEXT("05 west cell is Town"),
+		static_cast<uint8>(Map->GetBiomeAtCell(5, 4)),
+		static_cast<uint8>(ESolidBiome::Town));
+
+	const FVector2D WorldMin(-51200.f, -51200.f);
+	const FVector2D WorldMax(51200.f, 51200.f);
+	const float CellEastCm = (WorldMax.X - WorldMin.X) / static_cast<float>(USolidWorldMap::MapWidth);
+	FVector2D PairEast = FVector2D::ZeroVector;
+	FVector2D PairWest = FVector2D::ZeroVector;
+	TestTrue(TEXT("05 east cell projects"), Map->CellToWorldXY(FIntPoint(4, 4), WorldMin, WorldMax, PairEast));
+	TestTrue(TEXT("05 west cell projects"), Map->CellToWorldXY(FIntPoint(5, 4), WorldMin, WorldMax, PairWest));
+	TestEqual(TEXT("05 east cell samples as 5"), Map->SampleLocationId(PairEast.X, PairEast.Y, WorldMin, WorldMax), 5);
+	TestEqual(TEXT("05 west cell samples as 5"), Map->SampleLocationId(PairWest.X, PairWest.Y, WorldMin, WorldMax), 5);
+	TestTrue(TEXT("05 is still two cells of ground"),
+		FMath::IsNearlyEqual(PairEast.X - PairWest.X, CellEastCm, 1.f));
+
+	FSolidWorldLocation Dragongate;
+	TestTrue(TEXT("location 5"), Map->FindLocation(5, Dragongate));
+	TestEqual(TEXT("05 is the only location 5"), Dragongate.Cells.Num(), 2);
+	TestEqual(TEXT("05 is Dragongate"), Dragongate.Name, FString(TEXT("Dragongate")));
+
+	TestEqual(TEXT("one start cell"), Map->GetStartTownCellCount(), 1);
+	TestEqual(TEXT("lone 0 is Iglin"), Map->GetLocationIdAtCell(8, 6), 0);
+	FSolidWorldLocation Iglin;
+	TestTrue(TEXT("location 0"), Map->FindLocation(0, Iglin));
+	TestEqual(TEXT("Iglin is the lone 0"), Iglin.Cells.Num(), 1);
+	if (Iglin.Cells.Num() == 1)
+	{
+		TestEqual(TEXT("Iglin column"), Iglin.Cells[0].X, 8);
+		TestEqual(TEXT("Iglin row"), Iglin.Cells[0].Y, 6);
+	}
+
+	TestEqual(TEXT("02 east cell is location 2"), Map->GetLocationIdAtCell(4, 8), 2);
+	TestEqual(TEXT("02 west cell is location 2"), Map->GetLocationIdAtCell(5, 8), 2);
+	FSolidWorldLocation Kanfold;
+	TestTrue(TEXT("location 2"), Map->FindLocation(2, Kanfold));
+	TestEqual(TEXT("02 is two Kanfold cells"), Kanfold.Cells.Num(), 2);
+
+	TestEqual(TEXT("a digit above another stays itself"), Map->GetLocationIdAtCell(4, 10), 1);
+	TestEqual(TEXT("a digit below another stays itself"), Map->GetLocationIdAtCell(4, 11), 3);
+	FSolidWorldLocation Thirteen;
+	TestFalse(TEXT("vertical digits are not one number"), Map->FindLocation(13, Thirteen));
+
+	TestEqual(TEXT("123 starts as 12"), Map->GetLocationIdAtCell(4, 14), 12);
+	TestEqual(TEXT("123 continues as 12"), Map->GetLocationIdAtCell(5, 14), 12);
+	TestEqual(TEXT("123 leaves the last digit"), Map->GetLocationIdAtCell(6, 14), 3);
+
+	TestEqual(TEXT("55 east cell is location 55"), Map->GetLocationIdAtCell(4, 16), 55);
+	TestEqual(TEXT("55 west cell is location 55"), Map->GetLocationIdAtCell(5, 16), 55);
+	FSolidWorldLocation FiftyFive;
+	TestTrue(TEXT("location 55"), Map->FindLocation(55, FiftyFive));
+	TestEqual(TEXT("55 is two cells"), FiftyFive.Cells.Num(), 2);
+	TestTrue(TEXT("location 55 has no town name"), FiftyFive.Name.IsEmpty());
+
+	TestEqual(TEXT("east-edge pair is location 8"), Map->GetLocationIdAtCell(0, 20), 8);
+	TestEqual(TEXT("east-edge pair shares location 8"), Map->GetLocationIdAtCell(1, 20), 8);
+
+	FSolidWorldLocation Outpost;
+	TestTrue(TEXT("a two-digit key line is a location"), Map->FindLocation(15, Outpost));
+	TestEqual(TEXT("two-digit key role"), Outpost.Role, FString(TEXT("Outpost")));
+	TestEqual(
+		TEXT("two-digit key biome"),
+		static_cast<uint8>(Outpost.Biome),
+		static_cast<uint8>(ESolidBiome::Forest));
+	TestEqual(TEXT("key line without cells has none"), Outpost.Cells.Num(), 0);
+	TestTrue(TEXT("unlisted two-digit id has no name"), Outpost.Name.IsEmpty());
+
+	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("shipped map loads"), Shipped->LoadDefault());
+	if (!Shipped->IsLoaded())
+	{
+		return true;
+	}
+
+	FSolidWorldLocation ShippedIglin;
+	TestTrue(TEXT("shipped location 0"), Shipped->FindLocation(0, ShippedIglin));
+	TestEqual(TEXT("shipped Iglin is one cell"), ShippedIglin.Cells.Num(), 1);
+	if (ShippedIglin.Cells.Num() == 1)
+	{
+		const FIntPoint Cell = ShippedIglin.Cells[0];
+		TestEqual(TEXT("shipped Iglin marker is 0"), Shipped->GetMarkerAtCell(Cell.X, Cell.Y), TEXT('0'));
+		const FIntPoint Steps[] = {
+			FIntPoint(-1, 0), FIntPoint(1, 0), FIntPoint(0, -1), FIntPoint(0, 1),
+		};
+		for (const FIntPoint& Step : Steps)
+		{
+			const int32 NextX = Cell.X + Step.X;
+			const int32 NextY = Cell.Y + Step.Y;
+			if (NextX < 0 || NextY < 0 || NextX >= USolidWorldMap::MapWidth || NextY >= USolidWorldMap::MapHeight)
+			{
+				continue;
+			}
+			TestFalse(
+				TEXT("shipped Iglin stands beside a non-digit"),
+				FChar::IsDigit(Shipped->GetMarkerAtCell(NextX, NextY)));
+		}
+	}
+
+	FSolidWorldLocation ShippedKanfold;
+	TestTrue(TEXT("shipped location 2"), Shipped->FindLocation(2, ShippedKanfold));
+	TestEqual(TEXT("shipped Kanfold is three cells"), ShippedKanfold.Cells.Num(), 3);
+	int32 KanfoldPairs = 0;
+	int32 KanfoldLones = 0;
+	TArray<bool> KanfoldUsed;
+	KanfoldUsed.Init(false, ShippedKanfold.Cells.Num());
+	for (int32 Index = 0; Index < ShippedKanfold.Cells.Num(); ++Index)
+	{
+		if (KanfoldUsed[Index])
+		{
+			continue;
+		}
+		const FIntPoint Cell = ShippedKanfold.Cells[Index];
+		int32 Partner = INDEX_NONE;
+		for (int32 Other = 0; Other < ShippedKanfold.Cells.Num(); ++Other)
+		{
+			const FIntPoint Next = ShippedKanfold.Cells[Other];
+			if (!KanfoldUsed[Other] && Other != Index && Next.Y == Cell.Y && FMath::Abs(Next.X - Cell.X) == 1)
+			{
+				Partner = Other;
+				break;
+			}
+		}
+		if (Partner != INDEX_NONE)
+		{
+			KanfoldUsed[Index] = true;
+			KanfoldUsed[Partner] = true;
+			++KanfoldPairs;
+			const FIntPoint East = ShippedKanfold.Cells[Index].X < ShippedKanfold.Cells[Partner].X
+				? ShippedKanfold.Cells[Index]
+				: ShippedKanfold.Cells[Partner];
+			const FIntPoint West = ShippedKanfold.Cells[Index].X < ShippedKanfold.Cells[Partner].X
+				? ShippedKanfold.Cells[Partner]
+				: ShippedKanfold.Cells[Index];
+			TestEqual(TEXT("Kanfold pair reads 02"), Shipped->GetMarkerAtCell(East.X, East.Y), TEXT('0'));
+			TestEqual(TEXT("Kanfold pair ends in 2"), Shipped->GetMarkerAtCell(West.X, West.Y), TEXT('2'));
+			TestEqual(TEXT("Kanfold pair east id"), Shipped->GetLocationIdAtCell(East.X, East.Y), 2);
+			TestEqual(TEXT("Kanfold pair west id"), Shipped->GetLocationIdAtCell(West.X, West.Y), 2);
+		}
+		else
+		{
+			KanfoldUsed[Index] = true;
+			++KanfoldLones;
+			TestEqual(TEXT("lone Kanfold marker is 2"), Shipped->GetMarkerAtCell(Cell.X, Cell.Y), TEXT('2'));
+			const int32 EastX = Cell.X - 1;
+			const int32 WestX = Cell.X + 1;
+			if (EastX >= 0)
+			{
+				TestFalse(TEXT("lone Kanfold is not paired east"), FChar::IsDigit(Shipped->GetMarkerAtCell(EastX, Cell.Y)));
+			}
+			if (WestX < USolidWorldMap::MapWidth)
+			{
+				TestFalse(TEXT("lone Kanfold is not paired west"), FChar::IsDigit(Shipped->GetMarkerAtCell(WestX, Cell.Y)));
+			}
+		}
+	}
+	TestEqual(TEXT("shipped Kanfold has one pair"), KanfoldPairs, 1);
+	TestEqual(TEXT("shipped Kanfold has one lone cell"), KanfoldLones, 1);
+
+	FSolidWorldLocation ShippedGate;
+	TestTrue(TEXT("shipped location 5"), Shipped->FindLocation(5, ShippedGate));
+	TestEqual(TEXT("shipped Dragongate is two cells"), ShippedGate.Cells.Num(), 2);
+	if (ShippedGate.Cells.Num() == 2)
+	{
+		TestEqual(TEXT("Dragongate cells share a row"), ShippedGate.Cells[0].Y, ShippedGate.Cells[1].Y);
+		const FIntPoint East = ShippedGate.Cells[0].X < ShippedGate.Cells[1].X
+			? ShippedGate.Cells[0]
+			: ShippedGate.Cells[1];
+		const FIntPoint West = ShippedGate.Cells[0].X < ShippedGate.Cells[1].X
+			? ShippedGate.Cells[1]
+			: ShippedGate.Cells[0];
+		TestEqual(TEXT("Dragongate cells are adjacent"), West.X - East.X, 1);
+		TestEqual(TEXT("Dragongate tens digit is 0"), Shipped->GetMarkerAtCell(East.X, East.Y), TEXT('0'));
+		TestEqual(TEXT("Dragongate ones digit is 5"), Shipped->GetMarkerAtCell(West.X, West.Y), TEXT('5'));
+		TestEqual(TEXT("Dragongate east cell id"), Shipped->GetLocationIdAtCell(East.X, East.Y), 5);
+		TestEqual(TEXT("Dragongate west cell id"), Shipped->GetLocationIdAtCell(West.X, West.Y), 5);
+	}
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

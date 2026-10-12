@@ -32,7 +32,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - **Town signs** — every named WorldMap cell gets a "Welcome to {name}" sign: one thin dark-brown pole, a flat light-brown board, white letters with a black border. The board faces south. Kanfold's two cells each get a sign.
 - **True sight / raven sight** — the game starts in true sight (first person). Raven sight (third person) is locked until the captain enters town 1. F9 then toggles. True sight hides the captain's body and nameplate, turns the body with the look direction, and ignores mouse-wheel zoom until you switch back. The menu and the formation drill ignore F9. A translucent oval in the top-right shows an eye in true sight and an eagle in raven sight.
 - **Events** — a list of one-shot triggers. Enter town fires when the captain steps onto a numbered WorldMap cell; the parameter is that index. Entering town 0 (Iglin) is recorded and changes nothing. Entering town 1 (Relion) enables raven sight, sets max party size to 1 (Sam), and titles the captain Vagrant. Entering town 2 (Kanfold) sets max party size to 2 (Sam and Alex) and titles the captain Ranger. The nameplate starts as Outcast.
-- **Journal** — F10 menu, **3 Journal**. The page is a large board. The name sits in the top border. The columns are headed **Time** and **Summary**, such as `01:24, 200/53 AtF` beside `Enter Iglin`. Town events are listed in the order they fired, with what each one changed under the entry. Iglin is recorded as soon as the captain is placed there, with no change under the name. Entering or leaving a stronghold, including the cave, is `Enter Stronghold` or `Exit Stronghold`. The line does not name the size or type; an upgrade will be its own entry. The same trip can be recorded again. A new play session advances the date by one day, from **200/45 AtF**. Days run 0–99, then the year increases. Hours and minutes match real time since that session started and do not roll the date. The cave trip keeps the same day and the same clock. Esc or F10 closes the page.
+- **Journal** — F10 menu, **3 Journal**. The page is a large board. The name sits in the top border. The columns are headed **Time** and **Summary**, such as `01:24, 200/53 AtF` beside `Enter Iglin`. A line is an Event or a Stronghold. Town events are listed in the order they fired, with what each one changed under the entry. Iglin is recorded as soon as the captain is placed there, with no change under the name. Entering or leaving a stronghold, including the cave, is `Enter Stronghold` or `Exit Stronghold`. The line does not name the size or type; an upgrade will be its own entry. The same trip can be recorded again. A new play session advances the date by one day, from **200/45 AtF**. Days run 0–99, then the year increases. Hours and minutes match real time since that session started and do not roll the date. The cave trip keeps the same day and the same clock. Esc or F10 closes the page.
 - **Oak and bronze** — the journal, credits, main menu, and battle-plan list are a dark oak board in a bronze binding, with brighter corner bosses. The debug readout in the corner stays a plain block.
 - **Debug HUD** — F12 hides and shows the tech readout (build, FPS, pawn, terrain). The battle-plan list stays up. It starts visible.
 - **Mouse pointer** — a bronze arrow drawn in the game, tip on the hotspot. The Windows cursor stays hidden. Hold the right mouse button to look; the pointer hides until you let go, then it is back where you pressed. The right stick still looks.
@@ -99,7 +99,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.MenuPointer.*` | Pointer hit-tests a menu or portal row; a miss leaves the keys' selection |
 | `SolidCore1.Portal.*` | Town list; landing stays on that town (Kanfold is not the centroid); portal page |
 | `SolidCore1.WorldTime.*` | Session 1 is 200/45 AtF; session 9 at 84 minutes is 01:24, 200/53 AtF; day 100 rolls the year |
-| `SolidCore1.Journal.*` | Empty journal, then events in the order they fired, with Time and Summary columns, including the captain's title and repeated Enter Stronghold / Exit Stronghold lines |
+| `SolidCore1.Journal.*` | Empty journal, then events in the order they fired, with Time and Summary columns; each line is an Event or a Stronghold, including the captain's title and repeated Enter Stronghold / Exit Stronghold lines |
 | `SolidCore1.HudTheme.*` | Oak-and-bronze frame thickness, corner bosses, opaque board; translucent oval sight marker |
 | `SolidCore1.HUD.DebugToggle` | F12 shows and hides the tech readout |
 | `SolidCore1.Pointer.*` | Bronze arrow tip, outline, and hide-while-looking |
@@ -290,7 +290,7 @@ Source/
   SolidCore1Editor.Target.cs
   SolidCore1/
     SolidCore1.Build.cs
-    SolidCore1.h / .cpp
+    SolidCore1.h / .cpp                # Module startup, and FGameState (party, sight, journal)
     Player/
       SolidCharacter.h / .cpp            # Captain core (move/look/zoom/sprint)
       SolidCharacterInput.cpp            # Runtime Enhanced Input factory
@@ -353,6 +353,7 @@ Source/
       SolidHudTheme.h         # Oak-and-bronze frame
       SolidPointer.h          # In-game mouse pointer
     Journal/
+      SolidJournalEntry.h     # One line: Event or Stronghold
       SolidJournal.*          # Journal page: time column, entry column, larger board
     Menus/
       SolidMainMenu.*         # F10 menu entries (Use portal, Test Drill, Journal, Credits, Build party, Enter cave)

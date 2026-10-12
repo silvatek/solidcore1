@@ -1,6 +1,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "Events/SolidEvents.h"
+#include "SolidCore1.h"
 #include "SolidGameMode.h"
 #include "SolidSight.h"
 #include "Terrain/SolidTerrainStreamer.h"
@@ -20,7 +21,7 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("slot 0 is Sam"), FString(SolidEvents::RosterName(0)), FString(TEXT("Sam")));
 	TestEqual(TEXT("slot 1 is Alex"), FString(SolidEvents::RosterName(1)), FString(TEXT("Alex")));
 
-	SolidEvents::FState State;
+	FGameState State;
 	TestEqual(TEXT("party starts empty"), State.MaxPartySize, 0);
 	TestEqual(TEXT("no companions yet"), SolidEvents::PartyCount(State), 0);
 	TestTrue(TEXT("true sight is on"), SolidEvents::IsSightEnabled(State, ESolidSight::True));
@@ -72,7 +73,7 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Sam and Alex"), SolidEvents::PartyCount(State), 2);
 	TestEqual(TEXT("Alex is the second companion"), FString(SolidEvents::RosterName(1)), FString(TEXT("Alex")));
 
-	SolidEvents::FState Skipped;
+	FGameState Skipped;
 	const SolidEvents::FResult OtherTown = SolidEvents::NotifyOccupiedTown(Skipped, 4);
 	TestFalse(TEXT("Jethan has no event"), OtherTown.bFired);
 	TestEqual(TEXT("Jethan leaves the party empty"), Skipped.MaxPartySize, 0);
@@ -101,7 +102,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidEventsCaptainTitleTest::RunTest(const FString& Parameters)
 {
-	SolidEvents::FState State;
+	FGameState State;
 	TestEqual(TEXT("starts as Outcast"), FString(State.CaptainTitle), FString(SolidEvents::TitleOutcast));
 
 	const SolidEvents::FResult Iglin = SolidEvents::NotifyOccupiedTown(State, 0);
@@ -123,7 +124,7 @@ bool FSolidEventsCaptainTitleTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Kanfold sets the title"), Kanfold.bSetTitle);
 	TestEqual(TEXT("Kanfold is Ranger"), FString(State.CaptainTitle), FString(SolidEvents::TitleRanger));
 
-	SolidEvents::FState Skipped;
+	FGameState Skipped;
 	const SolidEvents::FResult KanfoldFirst = SolidEvents::NotifyOccupiedTown(Skipped, 2);
 	TestTrue(TEXT("Kanfold titles Ranger without Relion"), KanfoldFirst.bSetTitle);
 	TestEqual(TEXT("skipped path is Ranger"), FString(Skipped.CaptainTitle), FString(SolidEvents::TitleRanger));

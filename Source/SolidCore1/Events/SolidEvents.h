@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "SolidSight.h"
-#include "SolidWorldTime.h"
 
 /**
  * Events change the company/party configuration when a trigger fires.
@@ -16,8 +15,6 @@ namespace SolidEvents
 {
 	inline constexpr int32 MaxChangesPerEvent = 4;
 	inline constexpr int32 MaxEvents = 16;
-	/** Town events plus later visits. The oldest line drops off once this fills. */
-	inline constexpr int32 MaxJournal = 64;
 
 	enum class ETrigger : uint8
 	{
@@ -100,187 +97,8 @@ namespace SolidEvents
 
 	inline constexpr int32 DefinitionCount = UE_ARRAY_COUNT(Definitions);
 
-	/** One journal line. EventIndex draws a town event. Text is a repeated visit, such as Enter Stronghold. */
-	struct FJournalEntry
-	{
-		int32 Year = SolidWorldTime::StartYear;
-		int32 Day = SolidWorldTime::StartDay;
-		int32 MinuteOfSession = 0;
-		int32 EventIndex = INDEX_NONE;
-		FString Text;
-	};
-
-	/** Live configuration. The game starts in true sight with an empty party. */
-	struct FState
-	{
-		int32 MaxPartySize = 0;
-		const TCHAR* CaptainTitle = TitleOutcast;
-		bool bTrueSightEnabled = true;
-		bool bRavenSightEnabled = false;
-		/** Numbered cell the captain is standing on, or INDEX_NONE. */
-		int32 OccupiedTown = INDEX_NONE;
-		bool bFired[MaxEvents] = {};
-		/** Definition indexes, in the order the events fired. */
-		int32 FiredOrder[MaxEvents] = {};
-		int32 FiredCount = 0;
-		/** Journal, including repeated stronghold trips. Copied with the travel session. */
-		TArray<FJournalEntry> Journal;
-	};
-
-	inline void Remember(
-		FState& State,
-		const SolidWorldTime::FStamp& When,
-		const FString& Text,
-		const int32 EventIndex = INDEX_NONE)
-	{
-		if (State.Journal.Num() >= MaxJournal)
-		{
-			State.Journal.RemoveAt(0);
-		}
-
-		FJournalEntry Entry;
-		Entry.Year = When.Year;
-		Entry.Day = When.Day;
-		Entry.MinuteOfSession = When.MinuteOfSession;
-		Entry.EventIndex = EventIndex;
-		Entry.Text = Text;
-		State.Journal.Add(Entry);
-	}
-
-	/**
-	 * Enter or exit. The line does not name the stronghold.
-	 * An upgrade will be its own entry. The same trip can be noted again.
-	 */
-	inline void RememberStronghold(
-		FState& State,
-		const SolidWorldTime::FStamp& When,
-		const bool bEnter)
-	{
-		Remember(State, When, bEnter ? TEXT("Enter Stronghold") : TEXT("Exit Stronghold"));
-	}
-
-	struct FResult
-	{
-		bool bFired = false;
-		/** An Enable sight change ran. Sight is the mode to switch to. */
-		bool bSetSight = false;
-		ESolidSight Sight = ESolidSight::True;
-		int32 MaxPartySize = 0;
-		bool bSetTitle = false;
-		const TCHAR* CaptainTitle = TitleOutcast;
-	};
-
 	inline const TCHAR* RosterName(const int32 Slot)
 	{
 		return (Slot >= 0 && Slot < RosterCount) ? RosterNames[Slot] : nullptr;
 	}
-
-	inline int32 PartyCount(const FState& State)
-	{
-		return FMath::Clamp(State.MaxPartySize, 0, RosterCount);
-	}
-
-	inline bool IsSightEnabled(const FState& State, const ESolidSight Sight)
-	{
-		switch (Sight)
-		{
-		case ESolidSight::True:
-			return State.bTrueSightEnabled;
-		case ESolidSight::Raven:
-			return State.bRavenSightEnabled;
-		default:
-			return false;
-		}
-	}
-
-	inline void ApplyChange(FState& State, const FChange& Change, FResult& Result)
-	{
-		switch (Change.Kind)
-		{
-		case EChange::EnableSight:
-			if (Change.Sight == ESolidSight::Raven)
-			{
-				State.bRavenSightEnabled = true;
-			}
-			else
-			{
-				State.bTrueSightEnabled = true;
-			}
-			Result.bSetSight = true;
-			Result.Sight = Change.Sight;
-			break;
-		case EChange::MaxPartySize:
-			State.MaxPartySize = FMath::Max(0, Change.PartySize);
-			Result.MaxPartySize = State.MaxPartySize;
-			break;
-		case EChange::CaptainTitle:
-			if (Change.Title && Change.Title[0])
-			{
-				State.CaptainTitle = Change.Title;
-				Result.bSetTitle = true;
-				Result.CaptainTitle = Change.Title;
-			}
-			break;
-		default:
-			break;
-		}
-	}
-
-	/**
-	 * The captain is now on TownId (INDEX_NONE when the cell is not numbered).
-	 * A change of town fires every unfired EnterTown event whose parameter matches.
-	 */
-	inline FResult NotifyOccupiedTown(
-		FState& State,
-		const int32 TownId,
-		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp())
-	{
-		FResult Result;
-		Result.MaxPartySize = State.MaxPartySize;
-		Result.CaptainTitle = State.CaptainTitle;
-		if (State.OccupiedTown == TownId)
-		{
-			return Result;
-		}
-
-		State.OccupiedTown = TownId;
-		if (TownId == INDEX_NONE)
-		{
-			return Result;
-		}
-
-		for (int32 Index = 0; Index < DefinitionCount; ++Index)
-		{
-			if (State.bFired[Index])
-			{
-				continue;
-			}
-
-			const FEvent& Event = Definitions[Index];
-			if (Event.Trigger != ETrigger::EnterTown || Event.Parameter != TownId)
-			{
-				continue;
-			}
-
-			State.bFired[Index] = true;
-			if (State.FiredCount < MaxEvents)
-			{
-				State.FiredOrder[State.FiredCount] = Index;
-				++State.FiredCount;
-			}
-			Remember(State, When, FString(), Index);
-			Result.bFired = true;
-			const int32 ChangeCount = FMath::Min(Event.ChangeCount, MaxChangesPerEvent);
-			for (int32 ChangeIndex = 0; ChangeIndex < ChangeCount; ++ChangeIndex)
-			{
-				ApplyChange(State, Event.Changes[ChangeIndex], Result);
-			}
-		}
-
-		Result.MaxPartySize = State.MaxPartySize;
-		return Result;
-	}
 }
-
-/** Alias so UCLASS headers can store the configuration without a nested type name. */
-using FSolidEventConfiguration = SolidEvents::FState;

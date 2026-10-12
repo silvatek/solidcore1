@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Misc/Parse.h"
-#include "SolidEvents.h"
+#include "SolidCore1.h"
 #include "SolidSight.h"
 #include "SolidStrongholdGrid.h"
 
@@ -117,7 +117,7 @@ namespace SolidDungeonLevel
 /** What survives the trip between the open world and a dungeon. */
 struct FSolidTravelSession
 {
-	FSolidEventConfiguration Configuration;
+	FGameState Configuration;
 	TArray<int32> SelectedCompanionIndices;
 	int32 ActiveBattlePlanSlot = 0;
 	ESolidSight Sight = ESolidSight::True;

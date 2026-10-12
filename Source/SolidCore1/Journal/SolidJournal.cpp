@@ -1,4 +1,5 @@
 #include "SolidJournal.h"
+#include "SolidCore1.h"
 #include "SolidSight.h"
 #include "SolidWorldTime.h"
 
@@ -60,7 +61,7 @@ FString SolidJournal::Describe(const SolidEvents::FEvent& Event)
 	return Text;
 }
 
-void SolidJournal::CollectRows(const SolidEvents::FState& State, TArray<FRow>& OutRows)
+void SolidJournal::CollectRows(const FGameState& State, TArray<FRow>& OutRows)
 {
 	OutRows.Reset();
 	OutRows.Add({ ERowKind::Title, FString(), FString(Title) });
@@ -72,11 +73,13 @@ void SolidJournal::CollectRows(const SolidEvents::FState& State, TArray<FRow>& O
 	}
 	else
 	{
-		for (const SolidEvents::FJournalEntry& Entry : State.Journal)
+		for (const FJournalEntry& Entry : State.Journal)
 		{
 			FString Text = Entry.Text;
 			FString Detail;
-			if (Entry.EventIndex >= 0 && Entry.EventIndex < SolidEvents::DefinitionCount)
+			if (Entry.Type == EJournalType::Event
+				&& Entry.EventIndex >= 0
+				&& Entry.EventIndex < SolidEvents::DefinitionCount)
 			{
 				const SolidEvents::FEvent& Event = SolidEvents::Definitions[Entry.EventIndex];
 				Text = Event.Name;

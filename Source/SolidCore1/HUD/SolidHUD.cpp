@@ -1338,7 +1338,7 @@ void ASolidHUD::DrawCreditsPopup() const
 
 void ASolidHUD::DrawJournalPopup() const
 {
-	SolidEvents::FState State;
+	FGameState State;
 	if (UWorld* World = GetWorld())
 	{
 		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())

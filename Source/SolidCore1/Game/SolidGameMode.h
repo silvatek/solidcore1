@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Events/SolidEvents.h"
+#include "SolidCore1.h"
 #include "GameFramework/GameModeBase.h"
 #include "Party/SolidCompany.h"
 #include "SolidSight.h"
@@ -95,7 +95,7 @@ public:
 	void RefreshFieldedParty();
 
 	/** Live configuration, including which events have fired. */
-	const FSolidEventConfiguration& GetConfiguration() const { return Configuration; }
+	const FGameState& GetConfiguration() const { return Configuration; }
 
 	/** True when F9 may switch to this sight. Raven sight starts locked. */
 	bool IsSightEnabled(ESolidSight Sight) const;
@@ -161,7 +161,7 @@ protected:
 	TObjectPtr<USolidParty> Party;
 
 	/** Company/party configuration. Enter-town events mutate this. */
-	FSolidEventConfiguration Configuration;
+	FGameState Configuration;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidCompanionCharacter>> SpawnedCompanions;

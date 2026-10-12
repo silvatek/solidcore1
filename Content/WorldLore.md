@@ -27,6 +27,16 @@ Iglin is where the orphan (who will later go on to become the Captain) was raise
 
 An island city off the north eastern coast; survived the fall of Jethan, but has remained largely  isolated from the New Kingdom.
 
+# World Time
+
+The Journal records entries using "world time". 
+
+World time starts on day 45 of year 200 AtF ("200/45 AtF"). The in-game date is incremented every time a new play session is started. Every 100 game days the year increments and the day resets to 0.
+
+The in-game time is the hours and minutes since the start of the current play session, where in-game hours and minutes are identical to real-world ones.
+
+An example journal entry timestamp is "01:24, 200/53 AtF". This is 84 minutes into the 9th play session.
+
 # History
 
 Note: dates are before (BtF) / after (AtF) the fall of Jethan. The orphan was born some time between 140 and 180 AtF.

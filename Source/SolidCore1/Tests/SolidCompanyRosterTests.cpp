@@ -173,7 +173,11 @@ bool FSolidCompanyRosterTest::RunTest(const FString& Parameters)
 			Companion->Vocation == Vocations[Index]);
 		FLinearColor ExpectedTorso;
 		FLinearColor ExpectedLegs;
-		SolidCompanionColors::PaletteForName(Companion->Name, ExpectedTorso, ExpectedLegs);
+		FLinearColor ExpectedSkin;
+		SolidCompanionColors::ColorsForName(Companion->Name, ExpectedTorso, ExpectedLegs, ExpectedSkin);
+		TestFalse(
+			*FString::Printf(TEXT("skin is painted %d"), Index),
+			ExpectedSkin.Equals(FLinearColor::Black));
 		TestTrue(
 			*FString::Printf(TEXT("torso color %d"), Index),
 			Companion->TorsoColor.Equals(ExpectedTorso));

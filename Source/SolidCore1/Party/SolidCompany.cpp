@@ -121,6 +121,16 @@ void SolidCompanionColors::PaletteForName(
 	OutLegs = FLinearColor::MakeFromHSV8(LegHue, LegSat, LegVal);
 }
 
+void SolidCompanionColors::ColorsForName(
+	const FString& Name,
+	FLinearColor& OutTorso,
+	FLinearColor& OutLegs,
+	FLinearColor& OutSkin)
+{
+	PaletteForName(Name, OutTorso, OutLegs);
+	OutSkin = SkinPink();
+}
+
 const FSolidCharacterMesh* USolidCompany::GetCharacterMesh(const int32 Index) const
 {
 	return AllCharacterMeshes.IsValidIndex(Index) ? &AllCharacterMeshes[Index] : nullptr;

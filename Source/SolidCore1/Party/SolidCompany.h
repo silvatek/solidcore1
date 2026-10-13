@@ -68,6 +68,22 @@ namespace SolidVocation
 namespace SolidCompanionColors
 {
 	void PaletteForName(const FString& Name, FLinearColor& OutTorso, FLinearColor& OutLegs);
+
+	/** Light pink for a generated head and hands. */
+	inline FLinearColor SkinPink()
+	{
+		return FLinearColor(0.96f, 0.76f, 0.72f);
+	}
+
+	/**
+	 * Shirt, trousers, and skin for a companion name.
+	 * Shirt and trousers match PaletteForName until a name is given its own clothes.
+	 */
+	void ColorsForName(
+		const FString& Name,
+		FLinearColor& OutTorso,
+		FLinearColor& OutLegs,
+		FLinearColor& OutSkin);
 }
 
 /**

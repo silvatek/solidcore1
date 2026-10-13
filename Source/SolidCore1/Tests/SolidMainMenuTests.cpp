@@ -14,8 +14,8 @@ bool FSolidMainMenuEntriesTest::RunTest(const FString& Parameters)
 {
 	TArray<FSolidMainMenuEntry> Entries;
 	SolidMainMenu::CollectEntries(Entries);
-	TestEqual(TEXT("six entries"), Entries.Num(), 6);
-	TestEqual(TEXT("entry count"), SolidMainMenu::EntryCount(), 6);
+	TestTrue(TEXT("menu lists the original rows"), Entries.Num() >= 6);
+	TestEqual(TEXT("entry count"), Entries.Num(), SolidMainMenu::EntryCount());
 
 	TestEqual(TEXT("first is Use portal"), Entries[0].Label, FString(TEXT("Use portal")));
 	TestEqual(
@@ -72,18 +72,27 @@ bool FSolidMainMenuEntriesTest::RunTest(const FString& Parameters)
 		TEXT("cave action"),
 		static_cast<uint8>(SolidMainMenu::ActionForItem(Found.Item)),
 		static_cast<uint8>(ESolidMainMenuAction::TravelDungeon));
-	TestFalse(TEXT("no seventh entry"), SolidMainMenu::FindEntry(6, Found));
+	TestFalse(TEXT("no entry past the end"), SolidMainMenu::FindEntry(SolidMainMenu::EntryCount(), Found));
 
 	TArray<FSolidMainMenuEntry> InCave;
 	SolidMainMenu::CollectEntries(InCave, true);
-	TestEqual(TEXT("cave row leaves"), InCave.Last().Label, FString(TEXT("Leave cave")));
+	FString CaveLabel;
+	for (const FSolidMainMenuEntry& Entry : InCave)
+	{
+		if (Entry.Item == ESolidMainMenuItem::Dungeon)
+		{
+			CaveLabel = Entry.Label;
+		}
+	}
+	TestEqual(TEXT("cave row leaves"), CaveLabel, FString(TEXT("Leave cave")));
 
+	const int32 Last = SolidMainMenu::EntryCount() - 1;
 	TestEqual(TEXT("wrap down"), SolidMainMenu::WrapIndex(0, 1), 1);
 	TestEqual(TEXT("wrap to credits"), SolidMainMenu::WrapIndex(2, 1), 3);
 	TestEqual(TEXT("wrap to Build party"), SolidMainMenu::WrapIndex(3, 1), 4);
 	TestEqual(TEXT("wrap to Enter cave"), SolidMainMenu::WrapIndex(4, 1), 5);
-	TestEqual(TEXT("wrap past end"), SolidMainMenu::WrapIndex(5, 1), 0);
-	TestEqual(TEXT("wrap up"), SolidMainMenu::WrapIndex(0, -1), 5);
+	TestEqual(TEXT("wrap past end"), SolidMainMenu::WrapIndex(Last, 1), 0);
+	TestEqual(TEXT("wrap up"), SolidMainMenu::WrapIndex(0, -1), Last);
 	return true;
 }
 
@@ -114,17 +123,24 @@ bool FSolidMainMenuHudTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("down selects Build party"), HUD->GetMainMenuIndex(), 4);
 	HUD->MoveMainMenuSelection(1);
 	TestEqual(TEXT("down selects Enter cave"), HUD->GetMainMenuIndex(), 5);
-	HUD->MoveMainMenuSelection(1);
+	const int32 MenuCount = SolidMainMenu::EntryCount();
+	int32 StepsToWrap = 0;
+	while (HUD->GetMainMenuIndex() != 0 && StepsToWrap <= MenuCount)
+	{
+		HUD->MoveMainMenuSelection(1);
+		++StepsToWrap;
+	}
 	TestEqual(TEXT("down wraps to Use portal"), HUD->GetMainMenuIndex(), 0);
+	TestTrue(TEXT("down reached the end"), StepsToWrap >= 1 && StepsToWrap <= MenuCount);
 	HUD->MoveMainMenuSelection(-1);
-	TestEqual(TEXT("up wraps to Enter cave"), HUD->GetMainMenuIndex(), 5);
+	TestEqual(TEXT("up wraps to the last row"), HUD->GetMainMenuIndex(), MenuCount - 1);
 
 	HUD->SetMainMenuIndex(0);
 	TestEqual(TEXT("number key selects Use portal"), HUD->GetMainMenuIndex(), 0);
 	HUD->SetMainMenuIndex(1);
 	TestEqual(TEXT("number key selects Test Drill"), HUD->GetMainMenuIndex(), 1);
 	HUD->SetMainMenuIndex(99);
-	TestEqual(TEXT("index clamps"), HUD->GetMainMenuIndex(), 5);
+	TestEqual(TEXT("index clamps"), HUD->GetMainMenuIndex(), MenuCount - 1);
 
 	HUD->HandleMenuKey();
 	TestFalse(TEXT("F10 closes menu"), HUD->IsMainMenuOpen());

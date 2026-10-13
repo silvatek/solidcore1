@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0233")
+#define SOLID_BUILD_ID TEXT("SC1-0234")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Companion bodies have a chest and limbs, a drawn face, and stable flat colors.")
+#define SOLID_BUILD_NOTE TEXT("Menu and color tests follow the list length and the color catalog.")
 #endif

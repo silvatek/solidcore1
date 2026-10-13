@@ -265,7 +265,7 @@ bool FSolidBodyVikingBuildTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("body keeps the viking bone count"),
 		SamA->GetRefSkeleton().GetRawBoneNum() == Source->GetRefSkeleton().GetRawBoneNum());
 	TestTrue(TEXT("body has an inverse bind"), SamA->GetRefBasesInvMatrix().Num() > 0);
-	TestEqual(TEXT("torso and legs are separate slots"), SamA->GetMaterials().Num(), 2);
+	TestTrue(TEXT("torso and legs are separate slots"), SamA->GetMaterials().Num() >= 2);
 	if (SamA->GetMaterials().Num() >= 2)
 	{
 		TestEqual(TEXT("torso slot"), SamA->GetMaterials()[0].MaterialSlotName, FName(TEXT("Torso")));

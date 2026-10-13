@@ -190,11 +190,11 @@ FString SolidBodyMesh::SegmentKey(const FString& BoneName)
 	return FString();
 }
 
-FSolidFittedCone SolidBodyMesh::FitCone(const FVector* Points, const int32 Count)
+SolidBodyMesh::FSolidFittedCone SolidBodyMesh::FitCone(const FVector* Points, const int32 Count)
 {
 	constexpr float Pad = 0.75f;
 	constexpr float MinSpan = 1.01f;
-	FSolidFittedCone Out;
+	SolidBodyMesh::FSolidFittedCone Out;
 	if (!Points || Count <= 0)
 	{
 		return Out;

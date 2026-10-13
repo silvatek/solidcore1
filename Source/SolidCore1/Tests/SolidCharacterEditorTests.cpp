@@ -194,15 +194,21 @@ bool FSolidSkeletonHoverTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("shield is clothing"), SolidSkeletonHover::IsOmittedBoneName(TEXT("shield_jnt")));
 	TestTrue(TEXT("skirt is clothing"), SolidSkeletonHover::IsOmittedBoneName(TEXT("skirt_pattern_front_jnt_4")));
 	TestTrue(TEXT("ik stays off"), SolidSkeletonHover::IsOmittedBoneName(TEXT("ik_foot_root")));
-	TestTrue(TEXT("left thigh twist stays off"), SolidSkeletonHover::IsOmittedBoneName(TEXT("thigh_twist_01_l")));
-	TestTrue(TEXT("right calf twist stays off"), SolidSkeletonHover::IsOmittedBoneName(TEXT("calf_twist_01_r")));
-	TestTrue(TEXT("a later calf twist stays off"), SolidSkeletonHover::IsOmittedBoneName(TEXT("calf_twist_02_r")));
-	TestFalse(TEXT("calf stays"), SolidSkeletonHover::IsOmittedBoneName(TEXT("calf_r")));
+	TestTrue(TEXT("left calf stays off"), SolidSkeletonHover::IsOmittedBoneName(TEXT("calf_l")));
+	TestTrue(TEXT("right calf stays off"), SolidSkeletonHover::IsOmittedBoneName(TEXT("calf_r")));
+	TestFalse(TEXT("left thigh twist stays"), SolidSkeletonHover::IsOmittedBoneName(TEXT("thigh_twist_01_l")));
+	TestFalse(TEXT("right calf twist stays"), SolidSkeletonHover::IsOmittedBoneName(TEXT("calf_twist_01_r")));
+	TestFalse(TEXT("a later calf twist stays"), SolidSkeletonHover::IsOmittedBoneName(TEXT("calf_twist_02_r")));
 	TestFalse(TEXT("thigh stays"), SolidSkeletonHover::IsOmittedBoneName(TEXT("thigh_l")));
 	TestFalse(TEXT("an arm twist stays"), SolidSkeletonHover::IsOmittedBoneName(TEXT("upperarm_twist_01_l")));
 	TestFalse(TEXT("foot stays"), SolidSkeletonHover::IsOmittedBoneName(TEXT("foot_l")));
 	TestFalse(TEXT("spine stays"), SolidSkeletonHover::IsOmittedBoneName(TEXT("spine_03")));
 	TestFalse(TEXT("a later axe mention stays"), SolidSkeletonHover::IsOmittedBoneName(TEXT("hand_axe_grip")));
+	TestTrue(TEXT("clothing is skipped as a parent"), SolidSkeletonHover::SkipsAsParentBone(TEXT("axe_jnt")));
+	TestTrue(TEXT("ik is skipped as a parent"), SolidSkeletonHover::SkipsAsParentBone(TEXT("ik_foot_root")));
+	TestFalse(TEXT("the calf joint is not skipped"), SolidSkeletonHover::SkipsAsParentBone(TEXT("calf_l")));
+	TestFalse(TEXT("calf twist is not skipped"), SolidSkeletonHover::SkipsAsParentBone(TEXT("calf_twist_01_r")));
+	TestFalse(TEXT("foot is not skipped"), SolidSkeletonHover::SkipsAsParentBone(TEXT("foot_r")));
 
 	ASolidCharacterStage* Stage = NewObject<ASolidCharacterStage>();
 	TestNotNull(TEXT("stage"), Stage);

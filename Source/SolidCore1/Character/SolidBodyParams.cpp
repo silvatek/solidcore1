@@ -116,20 +116,20 @@ FSolidBodyControls SolidBodyControls::FromSeed(const FSolidBodyParams& Seed)
 FSolidBodyParams SolidBodyControls::Resolve(const FSolidBodyParams& Seed, const FSolidBodyControls& Controls)
 {
 	(void)Seed;
-	const float Build = ClampSlider(Controls.Build);
-	const float Gender = ClampSlider(Controls.Gender);
-	const float Bias = (Gender - SolidBodyControls::GenderNeutral) * 2.f;
+	const float ClampedBuild = ClampSlider(Controls.Build);
+	const float ClampedGender = ClampSlider(Controls.Gender);
+	const float Bias = (ClampedGender - SolidBodyControls::GenderNeutral) * 2.f;
 
 	FSolidBodyParams Params;
-	Params.Height = FromBuild(SolidBodyControls::BuildHeightDelta, Build);
-	Params.ShoulderWidth = FromBuild(SolidBodyControls::BuildShoulderDelta, Build);
-	Params.HipWidth = FromBuild(SolidBodyControls::BuildHipDelta, Build);
-	Params.TorsoGirth = FromBuild(SolidBodyControls::BuildTorsoDelta, Build);
-	Params.ArmLength = FromBuild(SolidBodyControls::BuildArmDelta, Build);
-	Params.LegLength = FromBuild(SolidBodyControls::BuildLegDelta, Build);
-	Params.HeadSize = FromBuild(SolidBodyControls::BuildHeadDelta, Build);
-	Params.NeckLength = FromBuild(SolidBodyControls::BuildNeckDelta, Build);
-	Params.Bulk = FromBuild(SolidBodyControls::BuildBulkDelta, Build);
+	Params.Height = FromBuild(SolidBodyControls::BuildHeightDelta, ClampedBuild);
+	Params.ShoulderWidth = FromBuild(SolidBodyControls::BuildShoulderDelta, ClampedBuild);
+	Params.HipWidth = FromBuild(SolidBodyControls::BuildHipDelta, ClampedBuild);
+	Params.TorsoGirth = FromBuild(SolidBodyControls::BuildTorsoDelta, ClampedBuild);
+	Params.ArmLength = FromBuild(SolidBodyControls::BuildArmDelta, ClampedBuild);
+	Params.LegLength = FromBuild(SolidBodyControls::BuildLegDelta, ClampedBuild);
+	Params.HeadSize = FromBuild(SolidBodyControls::BuildHeadDelta, ClampedBuild);
+	Params.NeckLength = FromBuild(SolidBodyControls::BuildNeckDelta, ClampedBuild);
+	Params.Bulk = FromBuild(SolidBodyControls::BuildBulkDelta, ClampedBuild);
 
 	// Feminine is shorter. Masculine is taller. Legs already follow Height in the deform.
 	const float GenderHeight = 1.f + Bias * SolidBodyControls::GenderHeightSpread;

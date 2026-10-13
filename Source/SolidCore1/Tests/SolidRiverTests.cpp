@@ -185,46 +185,57 @@ bool FSolidRiverBanksTest::RunTest(const FString& Parameters)
 
 	RiverTestBiome(*this, TEXT("grass stays grass"), RiverTestSample(*Map, RiverTestCenter(*Map, 0, 0)), ESolidBiome::Grassland);
 
+	// East-west cells are 8 m. A step copied from the old 16 m square walks into the next cell.
+	const float CellW = (RiverTestMax.X - RiverTestMin.X) / static_cast<float>(USolidWorldMap::MapWidth);
+	const float CellH = (RiverTestMax.Y - RiverTestMin.Y) / static_cast<float>(USolidWorldMap::MapHeight);
+	const float HalfW = CellW * 0.5f;
+	const float HalfH = CellH * 0.5f;
+	const float Bank = FMath::Min(SolidRiver::RadiusCm() + 100.f, HalfW - 50.f);
+	const float Along = HalfW - 100.f;
+	const float Edge = HalfH - 10.f;
+	const float Beside = SolidRiver::RadiusCm() + 50.f;
+	const float InChannel = SolidRiver::RadiusCm() * 0.75f;
+
 	const FVector2D Pond = RiverTestCenter(*Map, 10, 10);
 	TestEqual(
 		TEXT("marker is still river"),
 		static_cast<uint8>(Map->GetBiomeAtCell(10, 10)),
 		static_cast<uint8>(ESolidBiome::River));
 	RiverTestBiome(*this, TEXT("pond centre"), RiverTestSample(*Map, Pond), ESolidBiome::River);
-	RiverTestBiome(*this, TEXT("east of the pond is mountain"), RiverTestSample(*Map, Pond + FVector2D(300.f, 0.f)), ESolidBiome::Mountain);
-	RiverTestBiome(*this, TEXT("west of the pond is grass"), RiverTestSample(*Map, Pond + FVector2D(-300.f, 0.f)), ESolidBiome::Grassland);
-	RiverTestBiome(*this, TEXT("north of the pond is forest"), RiverTestSample(*Map, Pond + FVector2D(0.f, 300.f)), ESolidBiome::Forest);
-	RiverTestBiome(*this, TEXT("south of the pond is desert"), RiverTestSample(*Map, Pond + FVector2D(0.f, -300.f)), ESolidBiome::Desert);
+	RiverTestBiome(*this, TEXT("east of the pond is mountain"), RiverTestSample(*Map, Pond + FVector2D(Bank, 0.f)), ESolidBiome::Mountain);
+	RiverTestBiome(*this, TEXT("west of the pond is grass"), RiverTestSample(*Map, Pond + FVector2D(-Bank, 0.f)), ESolidBiome::Grassland);
+	RiverTestBiome(*this, TEXT("north of the pond is forest"), RiverTestSample(*Map, Pond + FVector2D(0.f, Bank)), ESolidBiome::Forest);
+	RiverTestBiome(*this, TEXT("south of the pond is desert"), RiverTestSample(*Map, Pond + FVector2D(0.f, -Bank)), ESolidBiome::Desert);
 
 	const FVector2D Channel = RiverTestCenter(*Map, 20, 19);
 	RiverTestBiome(*this, TEXT("channel centre"), RiverTestSample(*Map, Channel), ESolidBiome::River);
-	RiverTestBiome(*this, TEXT("east bank is forest"), RiverTestSample(*Map, Channel + FVector2D(300.f, 0.f)), ESolidBiome::Forest);
-	RiverTestBiome(*this, TEXT("west bank is desert"), RiverTestSample(*Map, Channel + FVector2D(-300.f, 0.f)), ESolidBiome::Desert);
-	RiverTestBiome(*this, TEXT("along the channel stays river"), RiverTestSample(*Map, Channel + FVector2D(0.f, 300.f)), ESolidBiome::River);
+	RiverTestBiome(*this, TEXT("east bank is forest"), RiverTestSample(*Map, Channel + FVector2D(Bank, 0.f)), ESolidBiome::Forest);
+	RiverTestBiome(*this, TEXT("west bank is desert"), RiverTestSample(*Map, Channel + FVector2D(-Bank, 0.f)), ESolidBiome::Desert);
+	RiverTestBiome(*this, TEXT("along the channel stays river"), RiverTestSample(*Map, Channel + FVector2D(0.f, HalfH * 0.25f)), ESolidBiome::River);
 
 	const FVector2D NorthCell = RiverTestCenter(*Map, 20, 18);
-	RiverTestBiome(*this, TEXT("join between squares"), RiverTestSample(*Map, NorthCell + FVector2D(150.f, -790.f)), ESolidBiome::River);
-	RiverTestBiome(*this, TEXT("bank beside the join"), RiverTestSample(*Map, NorthCell + FVector2D(300.f, -790.f)), ESolidBiome::Forest);
+	RiverTestBiome(*this, TEXT("join between squares"), RiverTestSample(*Map, NorthCell + FVector2D(InChannel, -Edge)), ESolidBiome::River);
+	RiverTestBiome(*this, TEXT("bank beside the join"), RiverTestSample(*Map, NorthCell + FVector2D(Bank, -Edge)), ESolidBiome::Forest);
 
 	const FVector2D Mouth = RiverTestCenter(*Map, 5, 30);
-	RiverTestBiome(*this, TEXT("mouth channel"), RiverTestSample(*Map, Mouth + FVector2D(700.f, 0.f)), ESolidBiome::River);
-	RiverTestBiome(*this, TEXT("north of the mouth is grass"), RiverTestSample(*Map, Mouth + FVector2D(0.f, 300.f)), ESolidBiome::Grassland);
-	RiverTestBiome(*this, TEXT("south of the mouth is desert"), RiverTestSample(*Map, Mouth + FVector2D(0.f, -300.f)), ESolidBiome::Desert);
-	RiverTestBiome(*this, TEXT("west of the mouth is grass"), RiverTestSample(*Map, Mouth + FVector2D(-300.f, 0.f)), ESolidBiome::Grassland);
+	RiverTestBiome(*this, TEXT("mouth channel"), RiverTestSample(*Map, Mouth + FVector2D(Along, 0.f)), ESolidBiome::River);
+	RiverTestBiome(*this, TEXT("north of the mouth is grass"), RiverTestSample(*Map, Mouth + FVector2D(0.f, Bank)), ESolidBiome::Grassland);
+	RiverTestBiome(*this, TEXT("south of the mouth is desert"), RiverTestSample(*Map, Mouth + FVector2D(0.f, -Bank)), ESolidBiome::Desert);
+	RiverTestBiome(*this, TEXT("west of the mouth is grass"), RiverTestSample(*Map, Mouth + FVector2D(-Bank, 0.f)), ESolidBiome::Grassland);
 
 	const FVector2D SeaBank = RiverTestCenter(*Map, 10, 40);
-	RiverTestBiome(*this, TEXT("sea bank"), RiverTestSample(*Map, SeaBank + FVector2D(400.f, 250.f)), ESolidBiome::Sea);
-	RiverTestBiome(*this, TEXT("opposite bank stays desert"), RiverTestSample(*Map, SeaBank + FVector2D(400.f, -250.f)), ESolidBiome::Desert);
-	RiverTestBiome(*this, TEXT("channel in front of the sea"), RiverTestSample(*Map, SeaBank + FVector2D(700.f, 0.f)), ESolidBiome::River);
+	RiverTestBiome(*this, TEXT("sea bank"), RiverTestSample(*Map, SeaBank + FVector2D(HalfW - 50.f, Beside)), ESolidBiome::Sea);
+	RiverTestBiome(*this, TEXT("opposite bank stays desert"), RiverTestSample(*Map, SeaBank + FVector2D(HalfW - 50.f, -Beside)), ESolidBiome::Desert);
+	RiverTestBiome(*this, TEXT("channel in front of the sea"), RiverTestSample(*Map, SeaBank + FVector2D(Along, 0.f)), ESolidBiome::River);
 
 	const FVector2D Bend = RiverTestCenter(*Map, 20, 50);
 	RiverTestBiome(*this, TEXT("bend centre"), RiverTestSample(*Map, Bend), ESolidBiome::River);
-	RiverTestBiome(*this, TEXT("bend arm"), RiverTestSample(*Map, Bend + FVector2D(700.f, 0.f)), ESolidBiome::River);
-	RiverTestBiome(*this, TEXT("bend corner stays a bank"), RiverTestSample(*Map, Bend + FVector2D(300.f, -300.f)), ESolidBiome::Desert);
+	RiverTestBiome(*this, TEXT("bend arm"), RiverTestSample(*Map, Bend + FVector2D(Along, 0.f)), ESolidBiome::River);
+	RiverTestBiome(*this, TEXT("bend corner stays a bank"), RiverTestSample(*Map, Bend + FVector2D(Bank, -Bank)), ESolidBiome::Desert);
 
 	const FVector2D Diagonal = RiverTestCenter(*Map, 50, 50);
 	RiverTestBiome(*this, TEXT("diagonal stays a pond"), RiverTestSample(*Map, Diagonal), ESolidBiome::River);
-	RiverTestBiome(*this, TEXT("diagonal does not join"), RiverTestSample(*Map, Diagonal + FVector2D(700.f, 0.f)), ESolidBiome::Grassland);
+	RiverTestBiome(*this, TEXT("diagonal does not join"), RiverTestSample(*Map, Diagonal + FVector2D(Bank, 0.f)), ESolidBiome::Grassland);
 
 	return true;
 }

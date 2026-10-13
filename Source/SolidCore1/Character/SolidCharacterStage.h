@@ -33,6 +33,9 @@ public:
 	void SetSkeletonLines(bool bShow);
 	bool IsShowingSkeletonLines() const { return bSkeletonLines; }
 
+	/** Bone under this screen point while the skeleton is showing. Empty otherwise. */
+	FString BoneUnderPointer(float X, float Y) const;
+
 private:
 	void PaintRoom();
 	void Place();

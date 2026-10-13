@@ -1,6 +1,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "Character/SolidCharacterStage.h"
+#include "Character/SolidSkeletonHover.h"
 #include "Companion/SolidCompanionCharacter.h"
 #include "Menus/SolidCharacterEditor.h"
 #include "Menus/SolidMainMenu.h"
@@ -70,23 +71,34 @@ bool FSolidCharacterEditorHudTest::RunTest(const FString& Parameters)
 
 	HUD->SetCharacterEditorSkeleton(true);
 	TestTrue(TEXT("space shows the skeleton"), HUD->IsCharacterEditorSkeleton());
+	HUD->SetSkeletonBoneTip(TEXT("calf_r"));
+	TestEqual(TEXT("hover names the bone"), HUD->GetSkeletonBoneTip(), FString(TEXT("calf_r")));
+	HUD->SetCharacterEditorSkeleton(false);
+	TestTrue(TEXT("leaving the skeleton clears the name"), HUD->GetSkeletonBoneTip().IsEmpty());
+	HUD->SetCharacterEditorSkeleton(true);
+	HUD->SetSkeletonBoneTip(TEXT("foot_l"));
 
 	HUD->HandleMenuKey();
 	TestFalse(TEXT("F10 closes the editor"), HUD->IsCharacterEditorOpen());
 	TestFalse(TEXT("F10 returns to the world"), HUD->IsMainMenuOpen());
 	TestFalse(TEXT("F10 clears the skeleton"), HUD->IsCharacterEditorSkeleton());
+	TestTrue(TEXT("F10 clears the bone name"), HUD->GetSkeletonBoneTip().IsEmpty());
 
 	HUD->OpenCharacterEditor();
 	HUD->SetCharacterEditorSkeleton(true);
+	HUD->SetSkeletonBoneTip(TEXT("thigh_l"));
 	HUD->CloseMenuOverlay();
 	TestFalse(TEXT("Esc closes the editor"), HUD->IsCharacterEditorOpen());
 	TestFalse(TEXT("Esc returns to the world"), HUD->IsMainMenuOpen());
 	TestFalse(TEXT("Esc clears the skeleton"), HUD->IsCharacterEditorSkeleton());
+	TestTrue(TEXT("Esc clears the bone name"), HUD->GetSkeletonBoneTip().IsEmpty());
 
 	HUD->OpenCharacterEditor();
 	HUD->SetCharacterEditorSkeleton(true);
+	HUD->SetSkeletonBoneTip(TEXT("foot_r"));
 	HUD->CloseCharacterEditor();
 	TestFalse(TEXT("closing the editor returns to the body"), HUD->IsCharacterEditorSkeleton());
+	TestTrue(TEXT("closing the editor clears the bone name"), HUD->GetSkeletonBoneTip().IsEmpty());
 
 	ASolidCharacterStage* Stage = NewObject<ASolidCharacterStage>();
 	TestNotNull(TEXT("stage"), Stage);
@@ -115,6 +127,73 @@ bool FSolidCharacterEditorHudTest::RunTest(const FString& Parameters)
 		{
 			TestTrue(TEXT("skinned mesh returns"), PreviewMesh->GetVisibleFlag());
 		}
+	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidSkeletonHoverTest,
+	"SolidCore1.CharacterEditor.BoneHover",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidSkeletonHoverTest::RunTest(const FString& Parameters)
+{
+	const FVector2D From[] = {
+		FVector2D(0.f, 0.f),
+		FVector2D(100.f, 0.f),
+		FVector2D(100.f, 0.f),
+	};
+	const FVector2D To[] = {
+		FVector2D(100.f, 0.f),
+		FVector2D(100.f, 80.f),
+		FVector2D(100.f, 140.f),
+	};
+	const FString Names[] = {
+		FString(TEXT("thigh_r")),
+		FString(TEXT("calf_r")),
+		FString(TEXT("foot_r")),
+	};
+
+	TestEqual(
+		TEXT("along the thigh"),
+		SolidSkeletonHover::BoneUnderPoint(From, To, Names, 3, FVector2D(40.f, 4.f), SolidSkeletonHover::PickRadiusPx),
+		FString(TEXT("thigh_r")));
+	TestEqual(
+		TEXT("along the shin"),
+		SolidSkeletonHover::BoneUnderPoint(From, To, Names, 3, FVector2D(104.f, 40.f), SolidSkeletonHover::PickRadiusPx),
+		FString(TEXT("calf_r")));
+	TestEqual(
+		TEXT("a shared joint names the bone that ends there"),
+		SolidSkeletonHover::BoneUnderPoint(From, To, Names, 3, FVector2D(100.f, 0.f), SolidSkeletonHover::PickRadiusPx),
+		FString(TEXT("thigh_r")));
+	TestEqual(
+		TEXT("the next joint names the next bone"),
+		SolidSkeletonHover::BoneUnderPoint(From, To, Names, 3, FVector2D(100.f, 80.f), SolidSkeletonHover::PickRadiusPx),
+		FString(TEXT("calf_r")));
+	TestEqual(
+		TEXT("the last joint names the last bone"),
+		SolidSkeletonHover::BoneUnderPoint(From, To, Names, 3, FVector2D(100.f, 140.f), SolidSkeletonHover::PickRadiusPx),
+		FString(TEXT("foot_r")));
+	TestTrue(
+		TEXT("a miss stays quiet"),
+		SolidSkeletonHover::BoneUnderPoint(
+			From,
+			To,
+			Names,
+			3,
+			FVector2D(100.f + SolidSkeletonHover::PickRadiusPx + 4.f, 40.f),
+			SolidSkeletonHover::PickRadiusPx).IsEmpty());
+	TestTrue(
+		TEXT("no bones stays quiet"),
+		SolidSkeletonHover::BoneUnderPoint(nullptr, nullptr, nullptr, 0, FVector2D(0.f, 0.f), SolidSkeletonHover::PickRadiusPx).IsEmpty());
+
+	ASolidCharacterStage* Stage = NewObject<ASolidCharacterStage>();
+	TestNotNull(TEXT("stage"), Stage);
+	if (Stage)
+	{
+		TestTrue(TEXT("the body has no bone tip"), Stage->BoneUnderPointer(0.f, 0.f).IsEmpty());
+		Stage->SetSkeletonLines(true);
+		TestTrue(TEXT("a stage without a preview has no bone tip"), Stage->BoneUnderPointer(10.f, 10.f).IsEmpty());
 	}
 	return true;
 }

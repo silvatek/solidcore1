@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0247")
+#define SOLID_BUILD_ID TEXT("SC1-0248")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Space in the character editor swaps the body for the Viking skeleton.")
+#define SOLID_BUILD_NOTE TEXT("Hovering a bone in the character editor names it in black.")
 #endif

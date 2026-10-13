@@ -1,4 +1,5 @@
 #include "SolidCompanionCharacter.h"
+#include "Character/SolidSkeletonHover.h"
 #include "SolidBodyMesh.h"
 #include "SolidClipLocomotion.h"
 #include "SolidContentLookup.h"
@@ -543,8 +544,6 @@ void ASolidCompanionCharacter::DrawSkeletonLines() const
 		{
 			continue;
 		}
-		const bool bFinger = Name.Contains(TEXT("finger"), ESearchCase::IgnoreCase)
-			|| Name.Contains(TEXT("thumb"), ESearchCase::IgnoreCase);
 
 		const FVector BoneLocation = CharacterMesh->GetBoneLocation(BoneName);
 		FName ParentName = CharacterMesh->GetParentBone(BoneName);
@@ -565,11 +564,73 @@ void ASolidCompanionCharacter::DrawSkeletonLines() const
 				0,
 				1.75f);
 		}
-		if (!bFinger)
-		{
-			DrawDebugString(World, BoneLocation, Name, nullptr, FColor::White, 0.f, false, 0.65f);
-		}
 	}
+}
+
+FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const float Y) const
+{
+	USkeletalMeshComponent* CharacterMesh = GetMesh();
+	APlayerController* Player = GetWorld() ? GetWorld()->GetFirstPlayerController() : nullptr;
+	if (!bSkeletonLines || !CharacterMesh || !Player)
+	{
+		return FString();
+	}
+
+	TArray<FVector2D> From;
+	TArray<FVector2D> To;
+	TArray<FString> Names;
+	const int32 BoneCount = CharacterMesh->GetNumBones();
+	From.Reserve(BoneCount);
+	To.Reserve(BoneCount);
+	Names.Reserve(BoneCount);
+
+	for (int32 Index = 0; Index < BoneCount; ++Index)
+	{
+		const FName BoneName = CharacterMesh->GetBoneName(Index);
+		if (BoneName.IsNone())
+		{
+			continue;
+		}
+		const FString Name = BoneName.ToString();
+		if (Name.Contains(TEXT("ik"), ESearchCase::IgnoreCase))
+		{
+			continue;
+		}
+
+		FVector2D BoneScreen = FVector2D::ZeroVector;
+		if (!Player->ProjectWorldLocationToScreen(CharacterMesh->GetBoneLocation(BoneName), BoneScreen))
+		{
+			continue;
+		}
+
+		FName ParentName = CharacterMesh->GetParentBone(BoneName);
+		while (!ParentName.IsNone()
+			&& ParentName.ToString().Contains(TEXT("ik"), ESearchCase::IgnoreCase))
+		{
+			ParentName = CharacterMesh->GetParentBone(ParentName);
+		}
+
+		FVector2D ParentScreen = BoneScreen;
+		if (!ParentName.IsNone())
+		{
+			if (!Player->ProjectWorldLocationToScreen(CharacterMesh->GetBoneLocation(ParentName), ParentScreen))
+			{
+				ParentScreen = BoneScreen;
+			}
+		}
+
+		From.Add(ParentScreen);
+		To.Add(BoneScreen);
+		Names.Add(Name);
+	}
+
+	return SolidSkeletonHover::BoneUnderPoint(
+		From.GetData(),
+		To.GetData(),
+		Names.GetData(),
+		Names.Num(),
+		FVector2D(X, Y),
+		SolidSkeletonHover::PickRadiusPx);
 }
 
 void ASolidCompanionCharacter::ApplyFace()

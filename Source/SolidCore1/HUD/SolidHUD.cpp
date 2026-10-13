@@ -1141,6 +1141,32 @@ void ASolidHUD::DrawHUD()
 		{
 			const FVector2D Hotspot(MouseX, MouseY);
 			SolidHUDPrivate::DrawPointer(Canvas, Hotspot);
+			if (bShowCharacterEditor && !SkeletonBoneTip.IsEmpty())
+			{
+				UFont* BoneFont = GEngine ? GEngine->GetMediumFont() : nullptr;
+				if (BoneFont)
+				{
+					float TextW = 0.f;
+					float TextH = 0.f;
+					Canvas->StrLen(BoneFont, SkeletonBoneTip, TextW, TextH);
+					float TipX = MouseX + 28.f;
+					float TipY = MouseY + 22.f;
+					if (TipX + TextW > static_cast<float>(Canvas->SizeX) - 8.f)
+					{
+						TipX = MouseX - TextW - 12.f;
+					}
+					if (TipY + TextH > static_cast<float>(Canvas->SizeY) - 8.f)
+					{
+						TipY = MouseY - TextH - 12.f;
+					}
+					FCanvasTextItem BoneItem(
+						FVector2D(TipX, TipY),
+						FText::FromString(SkeletonBoneTip),
+						BoneFont,
+						FLinearColor::Black);
+					Canvas->DrawItem(BoneItem);
+				}
+			}
 			if (!CavePassageTip.IsEmpty())
 			{
 				UFont* TipFont = GEngine ? GEngine->GetSmallFont() : nullptr;
@@ -1185,6 +1211,7 @@ void ASolidHUD::HandleMenuKey()
 	{
 		bShowCharacterEditor = false;
 		bCharacterEditorSkeleton = false;
+		SkeletonBoneTip.Reset();
 		EndCharacterEditorSliderDrag();
 		return;
 	}
@@ -1229,6 +1256,7 @@ void ASolidHUD::CloseMenuOverlay()
 	bShowJournal = false;
 	bShowCharacterEditor = false;
 	bCharacterEditorSkeleton = false;
+	SkeletonBoneTip.Reset();
 	EndCharacterEditorSliderDrag();
 }
 
@@ -1265,6 +1293,7 @@ void ASolidHUD::OpenCharacterEditor()
 	CharacterEditorIndex = 0;
 	CharacterEditorSlider = 0;
 	bCharacterEditorSkeleton = false;
+	SkeletonBoneTip.Reset();
 	EndCharacterEditorSliderDrag();
 	SolidHUDPrivate::ForgetChoicePointerRows(this);
 }
@@ -1273,12 +1302,22 @@ void ASolidHUD::CloseCharacterEditor()
 {
 	bShowCharacterEditor = false;
 	bCharacterEditorSkeleton = false;
+	SkeletonBoneTip.Reset();
 	EndCharacterEditorSliderDrag();
 }
 
 void ASolidHUD::SetCharacterEditorSkeleton(const bool bShow)
 {
 	bCharacterEditorSkeleton = bShow;
+	if (!bShow)
+	{
+		SkeletonBoneTip.Reset();
+	}
+}
+
+void ASolidHUD::SetSkeletonBoneTip(const FString& Tip)
+{
+	SkeletonBoneTip = Tip;
 }
 
 void ASolidHUD::MoveCharacterEditor(const int32 Delta)
@@ -1508,6 +1547,7 @@ void ASolidHUD::OpenPartyBuilder()
 	bShowJournal = false;
 	bShowCharacterEditor = false;
 	bCharacterEditorSkeleton = false;
+	SkeletonBoneTip.Reset();
 	bShowPartyBuilder = true;
 	PartyBuilderIndex = 0;
 	SolidHUDPrivate::ForgetChoicePointerRows(this);
@@ -1574,6 +1614,7 @@ void ASolidHUD::OpenPortal()
 	bShowPartyBuilder = false;
 	bShowCharacterEditor = false;
 	bCharacterEditorSkeleton = false;
+	SkeletonBoneTip.Reset();
 	bShowPortal = true;
 	PortalIndex = 0;
 	SolidHUDPrivate::ForgetChoicePointerRows(this);

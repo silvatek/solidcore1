@@ -109,9 +109,12 @@ public:
 	void SetStagePreview(bool bPreview);
 	bool IsStagePreview() const { return bStagePreview; }
 
-	/** Hide the skinned body and draw the Viking bones as named lines. */
+	/** Hide the skinned body and draw the Viking bones as lines. */
 	void SetSkeletonLines(bool bShow);
 	bool IsShowingSkeletonLines() const { return bSkeletonLines; }
+
+	/** Bone whose line is under this screen point. Empty when the pointer misses. */
+	FString BoneUnderScreenPoint(float X, float Y) const;
 
 	/** Match the follow target's MaxWalkSpeed when possible. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Follow")

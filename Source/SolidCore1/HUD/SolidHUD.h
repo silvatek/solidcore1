@@ -68,6 +68,10 @@ public:
 	void SetCharacterEditorSkeleton(bool bShow);
 	bool IsCharacterEditorSkeleton() const { return bCharacterEditorSkeleton; }
 
+	/** Name of the bone under the pointer. Empty hides the tip. */
+	void SetSkeletonBoneTip(const FString& Tip);
+	const FString& GetSkeletonBoneTip() const { return SkeletonBoneTip; }
+
 	/** F10. Closes an open page, including the character editor, or toggles the main menu. */
 	void HandleMenuKey();
 	/** Esc. Closes the menu, the portal, the party builder, the journal, the credits page, and the character editor. */
@@ -164,6 +168,9 @@ protected:
 
 	/** Space is showing bone lines. Closing the editor returns to the body. */
 	bool bCharacterEditorSkeleton = false;
+
+	/** Hover name drawn beside the pointer while the skeleton is showing. */
+	FString SkeletonBoneTip;
 
 	/** Top-right eye / eagle widget has been added to the viewport. */
 	bool bSightIndicatorAdded = false;

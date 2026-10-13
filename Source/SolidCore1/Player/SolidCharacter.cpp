@@ -1451,8 +1451,23 @@ void ASolidCharacter::UpdateCharacterEditorPointer()
 		if (HUD)
 		{
 			HUD->EndCharacterEditorSliderDrag();
+			HUD->SetSkeletonBoneTip(FString());
 		}
 		return;
+	}
+
+	if (!HUD->IsCharacterEditorSkeleton() || !CharacterStage)
+	{
+		HUD->SetSkeletonBoneTip(FString());
+	}
+	else
+	{
+		float HoverX = 0.f;
+		float HoverY = 0.f;
+		HUD->SetSkeletonBoneTip(
+			ReadPointerPosition(HoverX, HoverY)
+				? CharacterStage->BoneUnderPointer(HoverX, HoverY)
+				: FString());
 	}
 
 	bool bDown = false;

@@ -126,42 +126,39 @@ namespace SolidBodyMesh
 	/** Round cone around Points. A mirrored point set produces a mirrored cone. */
 	FSolidFittedCone FitCone(const FVector* Points, int32 Count);
 
-	/** The only bone in the left thigh piece. */
-	inline const TCHAR* LeftThighBone = TEXT("thigh_twist_01_l");
+	/** The only bone in the left thigh piece. calf_l runs from the hip to the knee. */
+	inline const TCHAR* LeftThighBone = TEXT("calf_l");
 
 	/** The only bone in the right thigh piece. The cone matches the left thigh. */
-	inline const TCHAR* RightThighBone = TEXT("thigh_twist_01_r");
+	inline const TCHAR* RightThighBone = TEXT("calf_r");
 
-	/** Diameters of the left thigh cone, in centimetres. The parent-joint end is the wide end. */
+	/** Diameters of a thigh cone, in centimetres. The hip is the wide end. */
 	inline constexpr float LeftThighTopDiameterCm = 20.f;
 	inline constexpr float LeftThighBottomDiameterCm = 15.f;
 
 	/**
-	 * Truncated cone the length of thigh_twist_01_l.
-	 * That length is the distance from the parent joint to this bone, so ParentJoint is the wide end
-	 * and BoneEnd is this bone. The piece does not include the parent bone.
-	 * Invalid when the bone is shorter than a centimetre.
+	 * Truncated cone the length of calf_l or calf_r.
+	 * That length is the distance from the hip to the knee, so Hip is the wide end and Knee is the bone.
+	 * The piece does not include the parent bone. Invalid when the bone is shorter than a centimetre.
 	 */
-	FSolidFittedCone LeftThighCone(const FVector& ParentJoint, const FVector& BoneEnd);
+	FSolidFittedCone LeftThighCone(const FVector& Hip, const FVector& Knee);
 
-	/** The two bones in the left calf piece. */
-	inline const TCHAR* LeftCalfBone = TEXT("calf_l");
-	inline const TCHAR* LeftCalfTwistBone = TEXT("calf_twist_01_l");
+	/** The only bone in the left calf piece. foot_l runs from the knee to the ankle. */
+	inline const TCHAR* LeftCalfBone = TEXT("foot_l");
 
-	/** The two bones in the right calf piece. The cone matches the left calf. */
-	inline const TCHAR* RightCalfBone = TEXT("calf_r");
-	inline const TCHAR* RightCalfTwistBone = TEXT("calf_twist_01_r");
+	/** The only bone in the right calf piece. The cone matches the left calf. */
+	inline const TCHAR* RightCalfBone = TEXT("foot_r");
 
-	/** Diameters of a calf cone, in centimetres. The start of calf_* is the wide end. */
+	/** Diameters of a calf cone, in centimetres. The knee is the wide end. */
 	inline constexpr float CalfTopDiameterCm = LeftThighBottomDiameterCm;
 	inline constexpr float CalfBottomDiameterCm = 12.f;
 
 	/**
-	 * One truncated cone the length of calf_* plus calf_twist_01_*.
-	 * CalfStart is the parent joint of the calf bone, CalfJoint is that bone, and TwistEnd is the twist.
-	 * The wide end is at CalfStart. Invalid when the two bones together are shorter than a centimetre.
+	 * Truncated cone the length of foot_l or foot_r.
+	 * Knee is the parent joint and Ankle is the bone. The wide end is the knee.
+	 * The piece does not include the parent bone. Invalid when the bone is shorter than a centimetre.
 	 */
-	FSolidFittedCone CalfCone(const FVector& CalfStart, const FVector& CalfJoint, const FVector& TwistEnd);
+	FSolidFittedCone CalfCone(const FVector& Knee, const FVector& Ankle);
 
 	/** Start and end radii of the cone from Parent to Child. Both ends are joint radii. */
 	void SegmentRadii(

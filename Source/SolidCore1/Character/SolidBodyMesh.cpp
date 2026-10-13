@@ -292,50 +292,25 @@ SolidBodyMesh::FSolidFittedCone SolidBodyMesh::FitCone(const FVector* Points, co
 	return Out;
 }
 
-SolidBodyMesh::FSolidFittedCone SolidBodyMesh::LeftThighCone(const FVector& ParentJoint, const FVector& BoneEnd)
+SolidBodyMesh::FSolidFittedCone SolidBodyMesh::LeftThighCone(const FVector& Hip, const FVector& Knee)
 {
 	FSolidFittedCone Out;
-	Out.Start = ParentJoint;
-	Out.End = BoneEnd;
+	Out.Start = Hip;
+	Out.End = Knee;
 	Out.RadiusStart = LeftThighTopDiameterCm * 0.5f;
 	Out.RadiusEnd = LeftThighBottomDiameterCm * 0.5f;
-	Out.bValid = FVector::Dist(ParentJoint, BoneEnd) >= 1.0;
+	Out.bValid = FVector::Dist(Hip, Knee) >= 1.0;
 	return Out;
 }
 
-SolidBodyMesh::FSolidFittedCone SolidBodyMesh::CalfCone(
-	const FVector& CalfStart,
-	const FVector& CalfJoint,
-	const FVector& TwistEnd)
+SolidBodyMesh::FSolidFittedCone SolidBodyMesh::CalfCone(const FVector& Knee, const FVector& Ankle)
 {
-	const double First = FVector::Dist(CalfStart, CalfJoint);
-	const double Second = FVector::Dist(CalfJoint, TwistEnd);
-	const double Combined = First + Second;
 	FSolidFittedCone Out;
+	Out.Start = Knee;
+	Out.End = Ankle;
 	Out.RadiusStart = CalfTopDiameterCm * 0.5f;
 	Out.RadiusEnd = CalfBottomDiameterCm * 0.5f;
-	if (Combined < 1.0)
-	{
-		return Out;
-	}
-
-	FVector Direction = TwistEnd - CalfStart;
-	if (Direction.SizeSquared() < 0.01)
-	{
-		Direction = CalfJoint - CalfStart;
-	}
-	if (Direction.SizeSquared() < 0.01)
-	{
-		Direction = TwistEnd - CalfJoint;
-	}
-	if (!Direction.Normalize())
-	{
-		return Out;
-	}
-
-	Out.Start = CalfStart;
-	Out.End = CalfStart + Direction * Combined;
-	Out.bValid = true;
+	Out.bValid = FVector::Dist(Knee, Ankle) >= 1.0;
 	return Out;
 }
 
@@ -848,45 +823,36 @@ namespace
 		};
 		for (const TCHAR* BoneName : ThighBones)
 		{
-			const int32 Twist = FindNamedBone(Bones, Count, BoneName);
-			if (Twist == INDEX_NONE)
+			const int32 Calf = FindNamedBone(Bones, Count, BoneName);
+			if (Calf == INDEX_NONE)
 			{
 				continue;
 			}
-			const int32 Parent = Bones[Twist].ParentIndex;
-			if (!Bones.IsValidIndex(Parent) || !Positions.IsValidIndex(Parent))
+			const int32 Hip = Bones[Calf].ParentIndex;
+			if (!Bones.IsValidIndex(Hip) || !Positions.IsValidIndex(Hip))
 			{
 				continue;
 			}
-			AddLegCone(Verts, Tris, Twist, SolidBodyMesh::LeftThighCone(Positions[Parent], Positions[Twist]));
+			AddLegCone(Verts, Tris, Calf, SolidBodyMesh::LeftThighCone(Positions[Hip], Positions[Calf]));
 		}
 
 		const TCHAR* CalfBones[] = {
 			SolidBodyMesh::LeftCalfBone,
 			SolidBodyMesh::RightCalfBone,
 		};
-		const TCHAR* CalfTwists[] = {
-			SolidBodyMesh::LeftCalfTwistBone,
-			SolidBodyMesh::RightCalfTwistBone,
-		};
-		for (int32 Side = 0; Side < 2; ++Side)
+		for (const TCHAR* BoneName : CalfBones)
 		{
-			const int32 Calf = FindNamedBone(Bones, Count, CalfBones[Side]);
-			const int32 Twist = FindNamedBone(Bones, Count, CalfTwists[Side]);
-			if (Calf == INDEX_NONE || Twist == INDEX_NONE)
+			const int32 Foot = FindNamedBone(Bones, Count, BoneName);
+			if (Foot == INDEX_NONE)
 			{
 				continue;
 			}
-			const int32 Parent = Bones[Calf].ParentIndex;
-			if (!Bones.IsValidIndex(Parent) || !Positions.IsValidIndex(Parent) || !Positions.IsValidIndex(Twist))
+			const int32 Knee = Bones[Foot].ParentIndex;
+			if (!Bones.IsValidIndex(Knee) || !Positions.IsValidIndex(Knee))
 			{
 				continue;
 			}
-			AddLegCone(
-				Verts,
-				Tris,
-				Calf,
-				SolidBodyMesh::CalfCone(Positions[Parent], Positions[Calf], Positions[Twist]));
+			AddLegCone(Verts, Tris, Foot, SolidBodyMesh::CalfCone(Positions[Knee], Positions[Foot]));
 		}
 	}
 

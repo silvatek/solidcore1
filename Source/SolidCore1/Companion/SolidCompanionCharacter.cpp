@@ -652,46 +652,36 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 		};
 		for (const TCHAR* Wanted : ThighBones)
 		{
-			const FName TwistName = FindBone(Wanted);
-			const FName ParentName = TwistName.IsNone() ? NAME_None : CharacterMesh->GetParentBone(TwistName);
-			if (TwistName.IsNone() || ParentName.IsNone())
+			const FName CalfName = FindBone(Wanted);
+			const FName HipName = CalfName.IsNone() ? NAME_None : CharacterMesh->GetParentBone(CalfName);
+			if (CalfName.IsNone() || HipName.IsNone())
 			{
 				continue;
 			}
 			Consider(
 				SolidBodyMesh::LeftThighCone(
-					CharacterMesh->GetBoneLocation(ParentName),
-					CharacterMesh->GetBoneLocation(TwistName)),
-				TwistName.ToString());
+					CharacterMesh->GetBoneLocation(HipName),
+					CharacterMesh->GetBoneLocation(CalfName)),
+				CalfName.ToString());
 		}
 
 		const TCHAR* CalfBones[] = {
 			SolidBodyMesh::LeftCalfBone,
 			SolidBodyMesh::RightCalfBone,
 		};
-		const TCHAR* CalfTwists[] = {
-			SolidBodyMesh::LeftCalfTwistBone,
-			SolidBodyMesh::RightCalfTwistBone,
-		};
-		for (int32 Side = 0; Side < 2; ++Side)
+		for (const TCHAR* Wanted : CalfBones)
 		{
-			const FName CalfName = FindBone(CalfBones[Side]);
-			const FName TwistName = FindBone(CalfTwists[Side]);
-			const FName ParentName = CalfName.IsNone() ? NAME_None : CharacterMesh->GetParentBone(CalfName);
-			if (CalfName.IsNone() || TwistName.IsNone() || ParentName.IsNone())
+			const FName FootName = FindBone(Wanted);
+			const FName KneeName = FootName.IsNone() ? NAME_None : CharacterMesh->GetParentBone(FootName);
+			if (FootName.IsNone() || KneeName.IsNone())
 			{
 				continue;
 			}
-			TArray<FString> Names;
-			Names.Add(CalfName.ToString());
-			Names.Add(TwistName.ToString());
-			Names.Sort();
 			Consider(
 				SolidBodyMesh::CalfCone(
-					CharacterMesh->GetBoneLocation(ParentName),
-					CharacterMesh->GetBoneLocation(CalfName),
-					CharacterMesh->GetBoneLocation(TwistName)),
-				FString::Join(Names, TEXT(", ")));
+					CharacterMesh->GetBoneLocation(KneeName),
+					CharacterMesh->GetBoneLocation(FootName)),
+				FootName.ToString());
 		}
 		return BestLabel;
 	}

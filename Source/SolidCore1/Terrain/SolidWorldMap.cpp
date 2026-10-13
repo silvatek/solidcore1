@@ -20,6 +20,7 @@ namespace
 			USolidWorldMap::ForestMarker,
 			USolidWorldMap::RiverMarker,
 			USolidWorldMap::SeaMarker,
+			USolidWorldMap::DesertMarker,
 		};
 		for (const TCHAR Marker : Expected)
 		{
@@ -43,7 +44,8 @@ bool USolidWorldMap::IsGridMarker(const TCHAR Marker)
 		|| WorldMapMarkerMatches(Marker, TownMarker)
 		|| WorldMapMarkerMatches(Marker, ForestMarker)
 		|| WorldMapMarkerMatches(Marker, RiverMarker)
-		|| WorldMapMarkerMatches(Marker, SeaMarker);
+		|| WorldMapMarkerMatches(Marker, SeaMarker)
+		|| WorldMapMarkerMatches(Marker, DesertMarker);
 }
 
 ESolidBiome USolidWorldMap::MarkerToBiome(const TCHAR Marker)
@@ -68,6 +70,10 @@ ESolidBiome USolidWorldMap::MarkerToBiome(const TCHAR Marker)
 	{
 		return ESolidBiome::River;
 	}
+	if (WorldMapMarkerMatches(Marker, DesertMarker))
+	{
+		return ESolidBiome::Desert;
+	}
 
 	switch (FChar::ToUpper(Marker))
 	{
@@ -75,7 +81,6 @@ ESolidBiome USolidWorldMap::MarkerToBiome(const TCHAR Marker)
 	// Cave stronghold: same shelf and tint as the mountain it is cut into.
 	case TEXT('C'): return ESolidBiome::Mountain;
 	case TEXT('Z'): return ESolidBiome::Town;
-	case TEXT('D'): return ESolidBiome::Desert;
 	default:
 		// Numbered locations resolve through the location key in GetBiomeAtCell.
 		return FChar::IsDigit(Marker) ? ESolidBiome::Town : ESolidBiome::Grassland;

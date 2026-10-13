@@ -67,6 +67,9 @@ public:
 	/** WorldMap.txt marker for a river channel. A star, not the letter R. */
 	static constexpr TCHAR RiverMarker = TEXT('*');
 
+	/** WorldMap.txt marker for desert. */
+	static constexpr TCHAR DesertMarker = TEXT('D');
+
 	/** Load Content/WorldMap.txt. Idempotent when already loaded. */
 	bool LoadDefault(bool bForceReload = false);
 

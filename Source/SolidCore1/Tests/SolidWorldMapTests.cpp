@@ -79,7 +79,7 @@ bool FSolidWorldMapParseKeyAndSampleTest::RunTest(const FString& Parameters)
 			}
 			else if (Row == 10 && Col == 10)
 			{
-				Line.AppendChar(TEXT('D'));
+				Line.AppendChar(USolidWorldMap::DesertMarker);
 			}
 			else
 			{
@@ -90,7 +90,8 @@ bool FSolidWorldMapParseKeyAndSampleTest::RunTest(const FString& Parameters)
 		Text += TEXT("\n");
 	}
 	Text += TEXT("\nG = Grassland (light green)\n");
-	Text += TEXT("D = Desert (yellow)\n");
+	Text.AppendChar(USolidWorldMap::DesertMarker);
+	Text += TEXT(" = Desert (yellow)\n");
 	Text += TEXT("Z = Starting town (brown)\n");
 
 	USolidWorldMap* Map = NewObject<USolidWorldMap>();

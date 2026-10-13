@@ -207,15 +207,17 @@ bool FSolidBodyVikingBuildTest::RunTest(const FString& Parameters)
 
 	const FSolidBodyParams First = FSolidBodyParams::FromSeed(SolidBodyMesh::SeedForName(TEXT("Sam")));
 	const FSolidBodyParams Second = FSolidBodyParams::FromSeed(SolidBodyMesh::SeedForName(TEXT("Alex")));
+	USkeletalMesh* Neutral = SolidBodyMesh::Build(Source, FSolidBodyParams(), GetTransientPackage());
 	USkeletalMesh* Tall = SolidBodyMesh::Build(Source, Stretched, GetTransientPackage());
 	USkeletalMesh* SamA = SolidBodyMesh::Build(Source, First, GetTransientPackage());
 	USkeletalMesh* SamB = SolidBodyMesh::Build(Source, First, GetTransientPackage());
 	USkeletalMesh* Alex = SolidBodyMesh::Build(Source, Second, GetTransientPackage());
+	TestNotNull(TEXT("neutral body"), Neutral);
 	TestNotNull(TEXT("stretched body"), Tall);
 	TestNotNull(TEXT("sam body"), SamA);
 	TestNotNull(TEXT("sam body again"), SamB);
 	TestNotNull(TEXT("alex body"), Alex);
-	if (!Tall || !SamA || !SamB || !Alex)
+	if (!Neutral || !Tall || !SamA || !SamB || !Alex)
 	{
 		AddError(TEXT("A low-poly body could not be built on the Viking skeleton."));
 		return false;
@@ -253,14 +255,18 @@ bool FSolidBodyVikingBuildTest::RunTest(const FString& Parameters)
 			static_cast<uint8>(EBoneTranslationRetargetingMode::AnimationScaled));
 	}
 
+	const TArray<FTransform>& NeutralBind = Neutral->GetRefSkeleton().GetRawRefBonePose();
 	const TArray<FTransform>& TallBind = Tall->GetRefSkeleton().GetRawRefBonePose();
-	const float SourceLength = SourceTranslations[ScaledBone].Size();
+	const float NeutralLength = NeutralBind.IsValidIndex(ScaledBone)
+		? NeutralBind[ScaledBone].GetTranslation().Size()
+		: 0.f;
 	const float TallLength = TallBind.IsValidIndex(ScaledBone)
 		? TallBind[ScaledBone].GetTranslation().Size()
 		: 0.f;
+	TestTrue(TEXT("neutral length is a real segment"), NeutralLength > 1.f);
 	TestTrue(
 		TEXT("drawn length lands on that bone"),
-		TallLength > SourceLength * ((SolidBody::ParamMax + 1.f) * 0.5f));
+		TallLength > NeutralLength * ((SolidBody::ParamMax + 1.f) * 0.5f));
 
 	const int32 SamVerts = RenderVertexCount(SamA);
 	const int32 SourceVerts = RenderVertexCount(Source);

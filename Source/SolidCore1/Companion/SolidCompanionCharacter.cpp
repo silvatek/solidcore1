@@ -540,15 +540,14 @@ void ASolidCompanionCharacter::DrawSkeletonLines() const
 			continue;
 		}
 		const FString Name = BoneName.ToString();
-		if (Name.Contains(TEXT("ik"), ESearchCase::IgnoreCase))
+		if (SolidSkeletonHover::IsOmittedBoneName(Name))
 		{
 			continue;
 		}
 
 		const FVector BoneLocation = CharacterMesh->GetBoneLocation(BoneName);
 		FName ParentName = CharacterMesh->GetParentBone(BoneName);
-		while (!ParentName.IsNone()
-			&& ParentName.ToString().Contains(TEXT("ik"), ESearchCase::IgnoreCase))
+		while (!ParentName.IsNone() && SolidSkeletonHover::IsOmittedBoneName(ParentName.ToString()))
 		{
 			ParentName = CharacterMesh->GetParentBone(ParentName);
 		}
@@ -592,7 +591,7 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 			continue;
 		}
 		const FString Name = BoneName.ToString();
-		if (Name.Contains(TEXT("ik"), ESearchCase::IgnoreCase))
+		if (SolidSkeletonHover::IsOmittedBoneName(Name))
 		{
 			continue;
 		}
@@ -604,8 +603,7 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 		}
 
 		FName ParentName = CharacterMesh->GetParentBone(BoneName);
-		while (!ParentName.IsNone()
-			&& ParentName.ToString().Contains(TEXT("ik"), ESearchCase::IgnoreCase))
+		while (!ParentName.IsNone() && SolidSkeletonHover::IsOmittedBoneName(ParentName.ToString()))
 		{
 			ParentName = CharacterMesh->GetParentBone(ParentName);
 		}

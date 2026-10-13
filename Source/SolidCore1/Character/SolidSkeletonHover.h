@@ -8,6 +8,34 @@ namespace SolidSkeletonHover
 	/** How close the pointer must be to a bone, in pixels. */
 	inline constexpr float PickRadiusPx = 22.f;
 
+	/**
+	 * Bones left off the skeleton view. IK helpers, and clothing or weapon chains
+	 * whose names start with axe_, sheath_, cloack_, beard_, shield_, or skirt_.
+	 */
+	inline bool IsOmittedBoneName(const FString& Name)
+	{
+		if (Name.Contains(TEXT("ik"), ESearchCase::IgnoreCase))
+		{
+			return true;
+		}
+		const TCHAR* Prefixes[] = {
+			TEXT("axe_"),
+			TEXT("sheath_"),
+			TEXT("cloack_"),
+			TEXT("beard_"),
+			TEXT("shield_"),
+			TEXT("skirt_"),
+		};
+		for (const TCHAR* Prefix : Prefixes)
+		{
+			if (Name.StartsWith(Prefix, ESearchCase::IgnoreCase))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/** Distance from Point to the segment. A joint with no parent is a zero-length segment. */
 	inline float SegmentDistance(const FVector2D& From, const FVector2D& To, const FVector2D& Point)
 	{

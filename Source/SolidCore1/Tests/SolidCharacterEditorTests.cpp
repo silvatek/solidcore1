@@ -187,6 +187,18 @@ bool FSolidSkeletonHoverTest::RunTest(const FString& Parameters)
 		TEXT("no bones stays quiet"),
 		SolidSkeletonHover::BoneUnderPoint(nullptr, nullptr, nullptr, 0, FVector2D(0.f, 0.f), SolidSkeletonHover::PickRadiusPx).IsEmpty());
 
+	TestTrue(TEXT("axe is clothing"), SolidSkeletonHover::IsOmittedBoneName(TEXT("axe_jnt")));
+	TestTrue(TEXT("sheath is clothing"), SolidSkeletonHover::IsOmittedBoneName(TEXT("sheath_jnt_1")));
+	TestTrue(TEXT("cloack is clothing"), SolidSkeletonHover::IsOmittedBoneName(TEXT("cloack_jnt_3_l")));
+	TestTrue(TEXT("beard is clothing"), SolidSkeletonHover::IsOmittedBoneName(TEXT("beard_middle_jnt_2")));
+	TestTrue(TEXT("shield is clothing"), SolidSkeletonHover::IsOmittedBoneName(TEXT("shield_jnt")));
+	TestTrue(TEXT("skirt is clothing"), SolidSkeletonHover::IsOmittedBoneName(TEXT("skirt_pattern_front_jnt_4")));
+	TestTrue(TEXT("ik stays off"), SolidSkeletonHover::IsOmittedBoneName(TEXT("ik_foot_root")));
+	TestFalse(TEXT("calf stays"), SolidSkeletonHover::IsOmittedBoneName(TEXT("calf_r")));
+	TestFalse(TEXT("foot stays"), SolidSkeletonHover::IsOmittedBoneName(TEXT("foot_l")));
+	TestFalse(TEXT("spine stays"), SolidSkeletonHover::IsOmittedBoneName(TEXT("spine_03")));
+	TestFalse(TEXT("a later axe mention stays"), SolidSkeletonHover::IsOmittedBoneName(TEXT("hand_axe_grip")));
+
 	ASolidCharacterStage* Stage = NewObject<ASolidCharacterStage>();
 	TestNotNull(TEXT("stage"), Stage);
 	if (Stage)

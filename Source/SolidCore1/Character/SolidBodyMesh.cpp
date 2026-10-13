@@ -102,7 +102,13 @@ namespace
 	{
 		FVector Position = FVector::ZeroVector;
 		int32 Bone = INDEX_NONE;
+		uint8 Slot = 0;
 	};
+
+	constexpr uint8 SlotTorso = 0;
+	constexpr uint8 SlotLegs = 1;
+	constexpr int32 TubeSides = 10;
+	constexpr int32 TubeSegments = 3;
 
 	struct FLoFiTri
 	{
@@ -135,43 +141,140 @@ namespace
 		Tris.Add(Tri);
 	}
 
-	/** Four-sided tube from Start to End, skinned to one bone. */
-	void AddPrism(
+	uint8 SlotForRole(const ESolidBodyBoneRole Role)
+	{
+		return (Role == ESolidBodyBoneRole::Leg
+			|| Role == ESolidBodyBoneRole::Foot
+			|| Role == ESolidBodyBoneRole::Pelvis)
+			? SlotLegs
+			: SlotTorso;
+	}
+
+	/** Tapered tube. Flatten squishes the ring's second axis so a foot or a hand reads as a paddle. */
+	void AddTube(
 		TArray<FLoFiVert>& Verts,
 		TArray<FLoFiTri>& Tris,
 		const int32 BoneIndex,
 		const FVector& Start,
 		const FVector& End,
-		const float Radius)
+		const float RadiusStart,
+		const float RadiusEnd,
+		const int32 Sides,
+		const int32 Segments,
+		const uint8 Slot,
+		const float Flatten,
+		const FVector& PreferredSide)
 	{
 		const FVector Delta = End - Start;
 		const float Length = Delta.Size();
-		if (Length < 1.f || Radius < 0.5f || BoneIndex == INDEX_NONE)
+		if (Length < 1.f || BoneIndex == INDEX_NONE || Sides < 3)
 		{
 			return;
 		}
 
 		const FVector Axis = Delta / Length;
-		FVector Side = FVector::CrossProduct(FVector::UpVector, Axis);
+		FVector Side = PreferredSide - Axis * FVector::DotProduct(PreferredSide, Axis);
+		if (Side.SizeSquared() < 0.01)
+		{
+			Side = FVector::CrossProduct(FVector::UpVector, Axis);
+		}
 		if (Side.SizeSquared() < 0.01)
 		{
 			Side = FVector::CrossProduct(FVector::ForwardVector, Axis);
 		}
 		Side = Side.GetSafeNormal();
 		const FVector Up = FVector::CrossProduct(Axis, Side).GetSafeNormal();
-
-		constexpr int32 Sides = 4;
+		const int32 SideCount = FMath::Clamp(Sides, 3, 16);
+		const int32 RingCount = FMath::Max(Segments, 1) + 1;
+		const float Squash = FMath::Clamp(Flatten, 0.2f, 1.f);
 		const int32 Base = Verts.Num();
-		for (int32 Ring = 0; Ring < 2; ++Ring)
+
+		for (int32 Ring = 0; Ring < RingCount; ++Ring)
 		{
-			const FVector Center = (Ring == 0) ? Start : End;
-			for (int32 Step = 0; Step < Sides; ++Step)
+			const float T = (RingCount == 1)
+				? 0.f
+				: static_cast<float>(Ring) / static_cast<float>(RingCount - 1);
+			const FVector Center = FMath::Lerp(Start, End, static_cast<double>(T));
+			const float Radius = FMath::Lerp(RadiusStart, RadiusEnd, T);
+			for (int32 Step = 0; Step < SideCount; ++Step)
 			{
-				const float Angle = (2.f * PI * static_cast<float>(Step)) / static_cast<float>(Sides);
-				const FVector Offset = (Side * FMath::Cos(Angle) + Up * FMath::Sin(Angle)) * static_cast<double>(Radius);
+				const float Angle = (2.f * PI * static_cast<float>(Step)) / static_cast<float>(SideCount);
+				const FVector Offset = Side * (FMath::Cos(Angle) * Radius)
+					+ Up * (FMath::Sin(Angle) * Radius * Squash);
 				FLoFiVert Vert;
 				Vert.Position = Center + Offset;
 				Vert.Bone = BoneIndex;
+				Vert.Slot = Slot;
+				Verts.Add(Vert);
+			}
+		}
+
+		auto Id = [Base, SideCount](const int32 Ring, const int32 Step)
+		{
+			return Base + Ring * SideCount + (Step % SideCount);
+		};
+		for (int32 Ring = 0; Ring < RingCount - 1; ++Ring)
+		{
+			for (int32 Step = 0; Step < SideCount; ++Step)
+			{
+				const int32 Next = Step + 1;
+				AddTri(Tris, Id(Ring, Step), Id(Ring, Next), Id(Ring + 1, Step));
+				AddTri(Tris, Id(Ring, Next), Id(Ring + 1, Next), Id(Ring + 1, Step));
+			}
+		}
+		const int32 Last = RingCount - 1;
+		for (int32 Step = 1; Step < SideCount - 1; ++Step)
+		{
+			AddTri(Tris, Id(0, 0), Id(0, Step + 1), Id(0, Step));
+			AddTri(Tris, Id(Last, 0), Id(Last, Step), Id(Last, Step + 1));
+		}
+	}
+
+	/** Skull above the head joint. The front is flattened along mesh +Y so a face can sit on it. */
+	void AddHead(
+		TArray<FLoFiVert>& Verts,
+		TArray<FLoFiTri>& Tris,
+		const int32 BoneIndex,
+		const FVector& Joint,
+		const FVector& Up,
+		const float Height,
+		const float Radius,
+		const uint8 Slot)
+	{
+		FVector Forward = FVector(0.f, 1.f, 0.f) - Up * FVector::DotProduct(FVector(0.f, 1.f, 0.f), Up);
+		if (Forward.SizeSquared() < 0.01)
+		{
+			Forward = FVector(1.f, 0.f, 0.f) - Up * FVector::DotProduct(FVector(1.f, 0.f, 0.f), Up);
+		}
+		Forward = Forward.GetSafeNormal();
+		const FVector Side = FVector::CrossProduct(Up, Forward).GetSafeNormal();
+		Forward = FVector::CrossProduct(Side, Up).GetSafeNormal();
+
+		constexpr int32 Sides = 10;
+		constexpr int32 Rings = 6;
+		const FVector Center = Joint + Up * (Height * 0.42);
+		const int32 Base = Verts.Num();
+		const float FacePlane = Radius * 0.42f;
+
+		for (int32 Ring = 0; Ring < Rings; ++Ring)
+		{
+			const float T = static_cast<float>(Ring) / static_cast<float>(Rings - 1);
+			const float Bell = FMath::Sin(T * PI);
+			const float Slice = FMath::Lerp(0.55f, 1.f, Bell);
+			const float Along = (T - 0.42f) * Height;
+			for (int32 Step = 0; Step < Sides; ++Step)
+			{
+				const float Angle = (2.f * PI * static_cast<float>(Step)) / static_cast<float>(Sides);
+				FVector Offset = (Forward * FMath::Cos(Angle) + Side * FMath::Sin(Angle)) * (Radius * Slice);
+				const float ForwardAmt = FVector::DotProduct(Offset, Forward);
+				if (ForwardAmt > FacePlane)
+				{
+					Offset -= Forward * (ForwardAmt - FacePlane);
+				}
+				FLoFiVert Vert;
+				Vert.Position = Center + Up * Along + Offset;
+				Vert.Bone = BoneIndex;
+				Vert.Slot = Slot;
 				Verts.Add(Vert);
 			}
 		}
@@ -180,77 +283,20 @@ namespace
 		{
 			return Base + Ring * Sides + (Step % Sides);
 		};
-
-		for (int32 Step = 0; Step < Sides; ++Step)
+		for (int32 Ring = 0; Ring < Rings - 1; ++Ring)
 		{
-			const int32 Next = Step + 1;
-			const int32 A = Id(0, Step);
-			const int32 B = Id(0, Next);
-			const int32 C = Id(1, Next);
-			const int32 D = Id(1, Step);
-			AddTri(Tris, A, B, D);
-			AddTri(Tris, B, C, D);
-		}
-		AddTri(Tris, Id(0, 0), Id(0, 2), Id(0, 1));
-		AddTri(Tris, Id(0, 0), Id(0, 3), Id(0, 2));
-		AddTri(Tris, Id(1, 0), Id(1, 1), Id(1, 2));
-		AddTri(Tris, Id(1, 0), Id(1, 2), Id(1, 3));
-	}
-
-	void AddBox(
-		TArray<FLoFiVert>& Verts,
-		TArray<FLoFiTri>& Tris,
-		const int32 BoneIndex,
-		const FVector& Center,
-		const FVector& AxisX,
-		const FVector& AxisY,
-		const FVector& AxisZ,
-		const float HalfX,
-		const float HalfY,
-		const float HalfZ)
-	{
-		if (BoneIndex == INDEX_NONE || HalfX < 0.5f || HalfY < 0.5f || HalfZ < 0.5f)
-		{
-			return;
-		}
-
-		const int32 Base = Verts.Num();
-		for (int32 Z = 0; Z < 2; ++Z)
-		{
-			for (int32 Y = 0; Y < 2; ++Y)
+			for (int32 Step = 0; Step < Sides; ++Step)
 			{
-				for (int32 X = 0; X < 2; ++X)
-				{
-					const float SignX = (X == 0) ? -HalfX : HalfX;
-					const float SignY = (Y == 0) ? -HalfY : HalfY;
-					const float SignZ = (Z == 0) ? -HalfZ : HalfZ;
-					FLoFiVert Vert;
-					Vert.Position = Center
-						+ AxisX * static_cast<double>(SignX)
-						+ AxisY * static_cast<double>(SignY)
-						+ AxisZ * static_cast<double>(SignZ);
-					Vert.Bone = BoneIndex;
-					Verts.Add(Vert);
-				}
+				const int32 Next = Step + 1;
+				AddTri(Tris, Id(Ring, Step), Id(Ring, Next), Id(Ring + 1, Step));
+				AddTri(Tris, Id(Ring, Next), Id(Ring + 1, Next), Id(Ring + 1, Step));
 			}
 		}
-
-		auto Corner = [Base](const int32 X, const int32 Y, const int32 Z)
+		for (int32 Step = 1; Step < Sides - 1; ++Step)
 		{
-			return Base + X + Y * 2 + Z * 4;
-		};
-		auto Face = [&Tris](const int32 A, const int32 B, const int32 C, const int32 D)
-		{
-			AddTri(Tris, A, B, C);
-			AddTri(Tris, A, C, D);
-		};
-
-		Face(Corner(1, 0, 0), Corner(1, 1, 0), Corner(1, 1, 1), Corner(1, 0, 1));
-		Face(Corner(0, 1, 0), Corner(0, 0, 0), Corner(0, 0, 1), Corner(0, 1, 1));
-		Face(Corner(1, 1, 0), Corner(0, 1, 0), Corner(0, 1, 1), Corner(1, 1, 1));
-		Face(Corner(0, 0, 0), Corner(1, 0, 0), Corner(1, 0, 1), Corner(0, 0, 1));
-		Face(Corner(0, 0, 1), Corner(1, 0, 1), Corner(1, 1, 1), Corner(0, 1, 1));
-		Face(Corner(0, 1, 0), Corner(1, 1, 0), Corner(1, 0, 0), Corner(0, 0, 0));
+			AddTri(Tris, Id(0, 0), Id(0, Step + 1), Id(0, Step));
+			AddTri(Tris, Id(Rings - 1, 0), Id(Rings - 1, Step), Id(Rings - 1, Step + 1));
+		}
 	}
 
 	float SectionRadius(const ESolidBodyBoneRole Role, const float Length, const FSolidBodyParams& Params)
@@ -383,14 +429,8 @@ namespace
 		if (Side.SizeSquared() < 0.01)
 		{
 			Side = FVector::CrossProduct(Up, FVector::ForwardVector);
-			if (Side.SizeSquared() < 0.01)
-			{
-				Side = FVector::CrossProduct(Up, FVector::RightVector);
-			}
 		}
 		Side = Side.GetSafeNormal();
-		const FVector Forward = FVector::CrossProduct(Up, Side).GetSafeNormal();
-		Side = FVector::CrossProduct(Forward, Up).GetSafeNormal();
 
 		float HalfWidth = 8.f * Params.HipWidth;
 		for (const int32 Leg : Legs)
@@ -403,15 +443,96 @@ namespace
 			HalfWidth = FMath::Max(HalfWidth, static_cast<float>(Span) * 1.05f);
 		}
 
-		float HalfHeight = HalfWidth * 0.45f;
+		float HalfHeight = HalfWidth * 0.42f;
 		if (Positions.IsValidIndex(Spine))
 		{
 			const float ToSpine = (Positions[Spine] - Positions[Pelvis]).Size();
-			HalfHeight = FMath::Max(static_cast<float>(ToSpine) * 0.45f, HalfWidth * 0.35f);
+			HalfHeight = FMath::Max(static_cast<float>(ToSpine) * 0.38f, HalfWidth * 0.32f);
 		}
 		HalfHeight *= Params.TorsoGirth;
-		const float HalfDepth = HalfWidth * 0.62f * Params.TorsoGirth;
-		AddBox(Verts, Tris, Pelvis, Positions[Pelvis], Side, Forward, Up, HalfWidth, HalfDepth, HalfHeight);
+		const FVector Center = Positions[Pelvis];
+		AddTube(
+			Verts,
+			Tris,
+			Pelvis,
+			Center - Up * HalfHeight,
+			Center + Up * HalfHeight,
+			HalfWidth,
+			HalfWidth * 0.92f,
+			TubeSides,
+			2,
+			SlotLegs,
+			0.68f,
+			Side);
+	}
+
+	bool IsDigitBone(const TArray<FSolidDeformBone>& Bones, const int32 Index)
+	{
+		const int32 Parent = Bones[Index].ParentIndex;
+		if (!Bones.IsValidIndex(Parent))
+		{
+			return false;
+		}
+		const ESolidBodyBoneRole Role = Bones[Index].Role;
+		return (Role == ESolidBodyBoneRole::Hand && Bones[Parent].Role == ESolidBodyBoneRole::Hand)
+			|| (Role == ESolidBodyBoneRole::Foot && Bones[Parent].Role == ESolidBodyBoneRole::Foot);
+	}
+
+	int32 SpineOrdinal(const TArray<FSolidDeformBone>& Bones, const int32 Index, int32& OutCount)
+	{
+		int32 Ordinal = 0;
+		OutCount = 0;
+		for (int32 Bone = 0; Bone < Bones.Num(); ++Bone)
+		{
+			if (Bones[Bone].Role != ESolidBodyBoneRole::Spine)
+			{
+				continue;
+			}
+			if (Bone == Index)
+			{
+				Ordinal = OutCount;
+			}
+			++OutCount;
+		}
+		return Ordinal;
+	}
+
+	void TaperFor(const ESolidBodyBoneRole Role, const int32 Ordinal, const int32 Count, float& OutStart, float& OutEnd)
+	{
+		OutStart = 1.f;
+		OutEnd = 1.f;
+		switch (Role)
+		{
+		case ESolidBodyBoneRole::Leg:
+			OutStart = 1.35f;
+			OutEnd = 0.92f;
+			break;
+		case ESolidBodyBoneRole::Foot:
+			OutStart = 1.05f;
+			OutEnd = 0.7f;
+			break;
+		case ESolidBodyBoneRole::Arm:
+			OutStart = 1.22f;
+			OutEnd = 0.74f;
+			break;
+		case ESolidBodyBoneRole::Clavicle:
+			OutStart = 0.55f;
+			OutEnd = 0.72f;
+			break;
+		case ESolidBodyBoneRole::Neck:
+			OutStart = 0.62f;
+			OutEnd = 0.48f;
+			break;
+		case ESolidBodyBoneRole::Spine:
+		{
+			const float T = (Count <= 1) ? 1.f : static_cast<float>(Ordinal) / static_cast<float>(Count - 1);
+			OutStart = FMath::Lerp(1.2f, 0.92f, T);
+			OutEnd = FMath::Lerp(0.95f, 1.28f, T);
+			break;
+		}
+		default:
+			break;
+		}
 	}
 
 	void BuildLowFi(
@@ -433,7 +554,9 @@ namespace
 		for (int32 Index = 0; Index < Count; ++Index)
 		{
 			const ESolidBodyBoneRole Role = Bones[Index].Role;
-			if (Role == ESolidBodyBoneRole::Root || Role == ESolidBodyBoneRole::Pelvis)
+			if (Role == ESolidBodyBoneRole::Root
+				|| Role == ESolidBodyBoneRole::Pelvis
+				|| IsDigitBone(Bones, Index))
 			{
 				continue;
 			}
@@ -457,88 +580,147 @@ namespace
 				const ESolidBodyBoneRole RadiusRole = (Bones[Parent].Role == ESolidBodyBoneRole::Pelvis)
 					? Role
 					: Bones[Parent].Role;
-				AddPrism(
+				int32 SpineCount = 1;
+				const int32 Ordinal = (RadiusRole == ESolidBodyBoneRole::Spine)
+					? SpineOrdinal(Bones, Parent, SpineCount)
+					: 0;
+				float StartScale = 1.f;
+				float EndScale = 1.f;
+				TaperFor(RadiusRole, Ordinal, SpineCount, StartScale, EndScale);
+				const float Radius = SectionRadius(RadiusRole, FMath::Max(Incoming, 8.f), Params);
+				AddTube(
 					Verts,
 					Tris,
 					Parent,
 					Positions[Parent],
 					Positions[Index],
-					SectionRadius(RadiusRole, Incoming, Params));
+					Radius * StartScale,
+					Radius * EndScale,
+					TubeSides,
+					TubeSegments,
+					SlotForRole(RadiusRole),
+					1.f,
+					FVector::UpVector);
 			}
 
 			if (Role == ESolidBodyBoneRole::Head)
 			{
-				const float TipLen = FMath::Max(Incoming, 16.f) * Params.HeadSize;
-				AddPrism(
+				const float Height = FMath::Max(Incoming, 18.f) * Params.HeadSize;
+				AddHead(
 					Verts,
 					Tris,
 					Index,
 					Positions[Index],
-					Positions[Index] + Dir * static_cast<double>(TipLen),
-					TipLen * 0.4f);
+					Dir,
+					Height,
+					Height * 0.46f,
+					SlotTorso);
+			}
+			else if (Role == ESolidBodyBoneRole::Hand && bParent)
+			{
+				const float Length = FMath::Max(Incoming * 0.5f, 8.f);
+				const float Radius = SectionRadius(ESolidBodyBoneRole::Hand, FMath::Max(Incoming, Length), Params);
+				FVector Wide = FVector::CrossProduct(Dir, FVector::UpVector);
+				if (Wide.SizeSquared() < 0.01)
+				{
+					Wide = FVector::CrossProduct(Dir, FVector::RightVector);
+				}
+				AddTube(
+					Verts,
+					Tris,
+					Index,
+					Positions[Index],
+					Positions[Index] + Dir * static_cast<double>(Length),
+					Radius * 0.85f,
+					Radius * 1.2f,
+					8,
+					2,
+					SlotTorso,
+					0.42f,
+					Wide);
+			}
+			else if (Role == ESolidBodyBoneRole::Foot && bParent)
+			{
+				FVector FootDir = FVector(0.f, 1.f, 0.f);
+				for (int32 Child = 0; Child < Count; ++Child)
+				{
+					if (Bones[Child].ParentIndex == Index && Bones[Child].Role == ESolidBodyBoneRole::Foot)
+					{
+						const FVector ToToe = Positions[Child] - Positions[Index];
+						if (ToToe.SizeSquared() > 1.f)
+						{
+							FootDir = ToToe.GetSafeNormal();
+						}
+						break;
+					}
+				}
+				const float Length = FMath::Clamp(Incoming * 0.55f, 10.f, 22.f);
+				const float Radius = SectionRadius(ESolidBodyBoneRole::Foot, Length, Params);
+				FVector Wide = FVector::CrossProduct(FootDir, FVector::UpVector);
+				if (Wide.SizeSquared() < 0.01)
+				{
+					Wide = FVector::CrossProduct(FootDir, FVector::RightVector);
+				}
+				AddTube(
+					Verts,
+					Tris,
+					Index,
+					Positions[Index],
+					Positions[Index] + FootDir * static_cast<double>(Length),
+					Radius * 0.95f,
+					Radius * 0.72f,
+					8,
+					2,
+					SlotLegs,
+					0.38f,
+					Wide);
 			}
 			else if (bParent && IsChainEnd(Bones, Index))
 			{
-				const float TipLen = FMath::Max(Incoming * 0.4f, 3.f);
+				const float TipLen = FMath::Max(Incoming * 0.35f, 4.f);
 				const ESolidBodyBoneRole RadiusRole = Bones[Parent].Role == ESolidBodyBoneRole::Root
 					? Role
 					: Bones[Parent].Role;
-				AddPrism(
+				const float Radius = SectionRadius(RadiusRole, FMath::Max(Incoming, TipLen), Params);
+				AddTube(
 					Verts,
 					Tris,
 					Index,
 					Positions[Index],
 					Positions[Index] + Dir * static_cast<double>(TipLen),
-					SectionRadius(RadiusRole, FMath::Max(Incoming, TipLen), Params));
+					Radius,
+					Radius * 0.75f,
+					TubeSides,
+					2,
+					SlotForRole(Role),
+					1.f,
+					FVector::UpVector);
 			}
 		}
 	}
 
-	FLinearColor SkinColorFor(const FSolidBodyParams& Params)
+	void ApplyWearColors(USkeletalMesh* Mesh, const FLinearColor& Torso, const FLinearColor& Legs)
 	{
-		uint32 Hash = 2166136261u;
-		auto Mix = [&Hash](const float Value)
-		{
-			uint32 Bits = 0;
-			FMemory::Memcpy(&Bits, &Value, sizeof(Bits));
-			Hash ^= Bits;
-			Hash *= 16777619u;
-		};
-		Mix(Params.Height);
-		Mix(Params.ShoulderWidth);
-		Mix(Params.HipWidth);
-		Mix(Params.TorsoGirth);
-		Mix(Params.ArmLength);
-		Mix(Params.LegLength);
-		Mix(Params.HeadSize);
-		Mix(Params.NeckLength);
-		Mix(Params.Bulk);
-
-		FRandomStream Stream(static_cast<int32>(Hash));
-		return FMath::Lerp(
-			FLinearColor(0.23f, 0.13f, 0.08f),
-			FLinearColor(0.94f, 0.76f, 0.61f),
-			Stream.GetFraction());
-	}
-
-	void ApplySkinMaterial(USkeletalMesh* Mesh, const FSolidBodyParams& Params)
-	{
-		UMaterialInterface* Material = SolidMaterials::CreateSolidColor(
-			Mesh,
-			SkinColorFor(Params),
-			TEXT("BodySkin"),
-			0.68f);
-		if (!Material)
+		UMaterialInterface* TorsoMat = SolidMaterials::CreateSolidColor(
+			Mesh, Torso, TEXT("BodyTorso"), 1.f);
+		UMaterialInterface* LegMat = SolidMaterials::CreateSolidColor(
+			Mesh, Legs, TEXT("BodyLegs"), 1.f);
+		if (!TorsoMat && !LegMat)
 		{
 			return;
 		}
 
 		TArray<FSkeletalMaterial> Slots;
-		FSkeletalMaterial Slot;
-		Slot.MaterialInterface = Material;
-		Slot.MaterialSlotName = TEXT("Body");
-		Slot.ImportedMaterialSlotName = TEXT("Body");
-		Slots.Add(Slot);
+		FSkeletalMaterial TorsoSlot;
+		TorsoSlot.MaterialInterface = TorsoMat ? TorsoMat : LegMat;
+		TorsoSlot.MaterialSlotName = TEXT("Torso");
+		TorsoSlot.ImportedMaterialSlotName = TEXT("Torso");
+		FSkeletalMaterial LegSlot;
+		LegSlot.MaterialInterface = LegMat ? LegMat : TorsoMat;
+		LegSlot.MaterialSlotName = TEXT("Legs");
+		LegSlot.ImportedMaterialSlotName = TEXT("Legs");
+		Slots.Add(TorsoSlot);
+		Slots.Add(LegSlot);
 		Mesh->SetMaterials(Slots);
 	}
 
@@ -606,11 +788,13 @@ namespace
 					UE::AnimationCore::FBoneWeightsSettings()));
 		}
 
-		const FPolygonGroupID Group = Description.CreatePolygonGroup();
+		const FPolygonGroupID TorsoGroup = Description.CreatePolygonGroup();
+		const FPolygonGroupID LegGroup = Description.CreatePolygonGroup();
 		auto SlotNames = Attributes.GetPolygonGroupMaterialSlotNames();
 		if (SlotNames.IsValid())
 		{
-			SlotNames.Set(Group, FName(TEXT("Body")));
+			SlotNames.Set(TorsoGroup, FName(TEXT("Torso")));
+			SlotNames.Set(LegGroup, FName(TEXT("Legs")));
 		}
 
 		auto Normals = Attributes.GetVertexInstanceNormals();
@@ -668,6 +852,7 @@ namespace
 				}
 				Corners[Corner] = InstanceID;
 			}
+			const FPolygonGroupID Group = (Verts[Tri.V[0]].Slot == SlotLegs) ? LegGroup : TorsoGroup;
 			Description.CreateTriangle(Group, MakeArrayView(Corners));
 			++Written;
 		}
@@ -895,7 +1080,10 @@ USkeletalMesh* SolidBodyMesh::Build(
 	Mesh->NeverStream = true;
 	Mesh->SetRefSkeleton(Ref);
 	ApplyDeformedRefPose(Mesh, BodySkeleton, Ref, Deformed);
-	ApplySkinMaterial(Mesh, Clamped);
+	ApplyWearColors(
+		Mesh,
+		FLinearColor(0.29f, 0.38f, 0.55f),
+		FLinearColor(0.12f, 0.11f, 0.10f));
 
 	if (Mesh->GetNumSourceModels() < 1)
 	{
@@ -940,7 +1128,10 @@ USkeletalMesh* SolidBodyMesh::Build(
 			RenderData ? RenderData->LODRenderData.Num() : 0);
 		return nullptr;
 	}
-	ApplySkinMaterial(Mesh, Clamped);
+	ApplyWearColors(
+		Mesh,
+		FLinearColor(0.29f, 0.38f, 0.55f),
+		FLinearColor(0.12f, 0.11f, 0.10f));
 	return Mesh;
 #else
 	(void)Source;
@@ -950,11 +1141,42 @@ USkeletalMesh* SolidBodyMesh::Build(
 #endif
 }
 
+uint32 SolidBodyMesh::FaceCodepointForName(const FString& Name)
+{
+	static const uint32 Faces[] = {
+		0x1F610u,
+		0x1F611u,
+		0x1F642u,
+		0x1F641u,
+		0x1F612u,
+		0x1F644u,
+	};
+	return Faces[SeedForName(Name) % UE_ARRAY_COUNT(Faces)];
+}
+
+FString SolidBodyMesh::FaceStringForCodepoint(const uint32 Codepoint)
+{
+	if (Codepoint <= 0xFFFFu)
+	{
+		return FString::Chr(static_cast<TCHAR>(Codepoint));
+	}
+
+	const uint32 Value = Codepoint - 0x10000u;
+	const TCHAR Pair[3] = {
+		static_cast<TCHAR>(0xD800u + (Value >> 10)),
+		static_cast<TCHAR>(0xDC00u + (Value & 0x3FFu)),
+		0,
+	};
+	return FString(Pair);
+}
+
 void SolidBodyMesh::ApplySeed(
 	USkeletalMeshComponent* MeshComp,
 	const uint32 Seed,
 	UObject* Outer,
-	const TCHAR* DebugLabel)
+	const TCHAR* DebugLabel,
+	const FLinearColor& TorsoColor,
+	const FLinearColor& LegColor)
 {
 	if (!MeshComp || !Outer)
 	{
@@ -970,6 +1192,7 @@ void SolidBodyMesh::ApplySeed(
 		{
 			if (HasRenderableBody(Cached))
 			{
+				ApplyWearColors(Cached, TorsoColor, LegColor);
 				WearBody(MeshComp, Cached, Seed, Params, DebugLabel, true);
 				return;
 			}
@@ -1000,9 +1223,12 @@ void SolidBodyMesh::ApplySeed(
 			DebugLabel ? DebugLabel : TEXT("Body"));
 		return;
 	}
+	ApplyWearColors(Built, TorsoColor, LegColor);
 	BodyCache().Add(Seed, Built);
 	WearBody(MeshComp, Built, Seed, Params, DebugLabel, false);
 #else
 	(void)Built;
+	(void)TorsoColor;
+	(void)LegColor;
 #endif
 }

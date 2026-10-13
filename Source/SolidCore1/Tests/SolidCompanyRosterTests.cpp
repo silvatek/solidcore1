@@ -171,6 +171,18 @@ bool FSolidCompanyRosterTest::RunTest(const FString& Parameters)
 		TestTrue(
 			*FString::Printf(TEXT("vocation %d"), Index),
 			Companion->Vocation == Vocations[Index]);
+		FLinearColor ExpectedTorso;
+		FLinearColor ExpectedLegs;
+		SolidCompanionColors::PaletteForName(Companion->Name, ExpectedTorso, ExpectedLegs);
+		TestTrue(
+			*FString::Printf(TEXT("torso color %d"), Index),
+			Companion->TorsoColor.Equals(ExpectedTorso));
+		TestTrue(
+			*FString::Printf(TEXT("leg color %d"), Index),
+			Companion->LegColor.Equals(ExpectedLegs));
+		TestFalse(
+			*FString::Printf(TEXT("torso differs from legs %d"), Index),
+			Companion->TorsoColor.Equals(Companion->LegColor));
 		TestEqual(
 			*FString::Printf(TEXT("find %s"), Names[Index]),
 			Company->FindCompanionIndexByName(Names[Index]),
@@ -179,6 +191,12 @@ bool FSolidCompanyRosterTest::RunTest(const FString& Parameters)
 		bSeenRogue |= Companion->Vocation == ESolidVocation::Rogue;
 		bSeenMage |= Companion->Vocation == ESolidVocation::Mage;
 		bSeenCleric |= Companion->Vocation == ESolidVocation::Cleric;
+	}
+	const FSolidCompanion* Sam = Company->GetCompanion(0);
+	const FSolidCompanion* AlexCompanion = Company->GetCompanion(1);
+	if (Sam && AlexCompanion)
+	{
+		TestFalse(TEXT("Sam and Alex wear different shirts"), Sam->TorsoColor.Equals(AlexCompanion->TorsoColor));
 	}
 	TestTrue(TEXT("a companion is a warrior"), bSeenWarrior);
 	TestTrue(TEXT("a companion is a rogue"), bSeenRogue);

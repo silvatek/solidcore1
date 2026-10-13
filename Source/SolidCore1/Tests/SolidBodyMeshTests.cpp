@@ -256,7 +256,7 @@ bool FSolidBodyVikingBuildTest::RunTest(const FString& Parameters)
 	const int32 SamVerts = RenderVertexCount(SamA);
 	const int32 SourceVerts = RenderVertexCount(Source);
 	TestTrue(TEXT("low-poly body has a render lod"), SamVerts > 0);
-	TestTrue(TEXT("low-poly body stays small"), SamVerts < 8000);
+	TestTrue(TEXT("generated body stays within the polygon budget"), SamVerts < 16000);
 	if (SourceVerts > 0)
 	{
 		TestTrue(TEXT("generated body is lighter than the viking sculpt"), SamVerts < SourceVerts);
@@ -265,16 +265,67 @@ bool FSolidBodyVikingBuildTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("body keeps the viking bone count"),
 		SamA->GetRefSkeleton().GetRawBoneNum() == Source->GetRefSkeleton().GetRawBoneNum());
 	TestTrue(TEXT("body has an inverse bind"), SamA->GetRefBasesInvMatrix().Num() > 0);
+	TestEqual(TEXT("torso and legs are separate slots"), SamA->GetMaterials().Num(), 2);
+	if (SamA->GetMaterials().Num() >= 2)
+	{
+		TestEqual(TEXT("torso slot"), SamA->GetMaterials()[0].MaterialSlotName, FName(TEXT("Torso")));
+		TestEqual(TEXT("legs slot"), SamA->GetMaterials()[1].MaterialSlotName, FName(TEXT("Legs")));
+	}
 
 	const int32 Described = DescriptionVertexCount(SamA);
 	if (Described > 0)
 	{
-		TestTrue(TEXT("described body is not a copy of the sculpt"), Described < 8000);
+		TestTrue(TEXT("described body stays within the polygon budget"), Described < 16000);
 		TestEqual(TEXT("same seed rebuilds the same description"), DescriptionVertexCount(SamB), Described);
 	}
 
 	TestTrue(TEXT("same seed rebuilds the same bind"), BindDelta(SamA, SamB) < 0.05f);
 	TestTrue(TEXT("another name is another bind"), BindDelta(SamA, Alex) > 0.5f);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyFaceTest,
+	"SolidCore1.Body.Face",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyFaceTest::RunTest(const FString& Parameters)
+{
+	const FString Neutral = SolidBodyMesh::FaceStringForCodepoint(0x1F611u);
+	TestEqual(TEXT("U+1F611 is a surrogate pair"), Neutral.Len(), 2);
+	if (Neutral.Len() >= 2)
+	{
+		TestEqual(TEXT("U+1F611 high surrogate"), static_cast<uint32>(Neutral[0]), 0xD83Du);
+		TestEqual(TEXT("U+1F611 low surrogate"), static_cast<uint32>(Neutral[1]), 0xDE11u);
+	}
+	TestEqual(TEXT("a plane character stays one unit"), SolidBodyMesh::FaceStringForCodepoint(0x41u).Len(), 1);
+
+	TestEqual(
+		TEXT("face ignores case"),
+		SolidBodyMesh::FaceCodepointForName(TEXT("Sam")),
+		SolidBodyMesh::FaceCodepointForName(TEXT("sam")));
+
+	const uint32 Known[] = {
+		0x1F610u,
+		0x1F611u,
+		0x1F642u,
+		0x1F641u,
+		0x1F612u,
+		0x1F644u,
+	};
+	auto IsKnownFace = [&Known](const uint32 Codepoint)
+	{
+		for (const uint32 Face : Known)
+		{
+			if (Face == Codepoint)
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+	TestTrue(TEXT("Sam picks a face glyph"), IsKnownFace(SolidBodyMesh::FaceCodepointForName(TEXT("Sam"))));
+	TestTrue(TEXT("Alex picks a face glyph"), IsKnownFace(SolidBodyMesh::FaceCodepointForName(TEXT("Alex"))));
 	return true;
 }
 

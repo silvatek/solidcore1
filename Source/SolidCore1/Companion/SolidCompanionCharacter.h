@@ -85,6 +85,11 @@ public:
 	void SetCompanionMesh(const TSoftObjectPtr<USkeletalMesh>& NewMesh);
 	const TSoftObjectPtr<USkeletalMesh>& GetCompanionMesh() const { return CompanionMesh; }
 
+	/** Matte torso and leg colors from the company record. */
+	void SetBodyColors(const FLinearColor& NewTorso, const FLinearColor& NewLegs);
+	FLinearColor GetTorsoColor() const { return TorsoColor; }
+	FLinearColor GetLegColor() const { return LegColor; }
+
 	/** Match the follow target's MaxWalkSpeed when possible. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Follow")
 	bool bMatchFollowTargetSpeed = true;
@@ -101,6 +106,7 @@ protected:
 	virtual void PostInitializeComponents() override;
 
 	void ApplyVisuals();
+	void ApplyFace();
 	void ApplyNameLabel();
 	void ResolveFollowTarget();
 	void UpdateFollow(float DeltaSeconds);
@@ -120,8 +126,18 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Companion|Name", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UTextRenderComponent> NameLabel;
 
+	/** Unicode face on the front of the head. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Companion|Visual", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UTextRenderComponent> FaceText;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Companion|Visual")
 	TSoftObjectPtr<USkeletalMesh> CompanionMesh;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Visual")
+	FLinearColor TorsoColor = FLinearColor(0.29f, 0.38f, 0.55f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Visual")
+	FLinearColor LegColor = FLinearColor(0.12f, 0.11f, 0.10f);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Visual")
 	float MeshGroundZOffset = -90.f;

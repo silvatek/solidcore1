@@ -625,6 +625,18 @@ ASolidCompanionCharacter* ASolidGameMode::SpawnCompanion(
 	Companion->SetPartySlotIndex(PartySlotIndex);
 	Companion->SetVocation(Vocation);
 	Companion->SetCharacterDisplayName(DisplayName);
+	FLinearColor TorsoColor;
+	FLinearColor LegColor;
+	SolidCompanionColors::PaletteForName(DisplayName, TorsoColor, LegColor);
+	if (Company)
+	{
+		if (const FSolidCompanion* Record = Company->GetCompanion(Company->FindCompanionIndexByName(DisplayName)))
+		{
+			TorsoColor = Record->TorsoColor;
+			LegColor = Record->LegColor;
+		}
+	}
+	Companion->SetBodyColors(TorsoColor, LegColor);
 	Companion->SetFollowTarget(PlayerPawn);
 	Companion->FinishSpawning(SpawnTransform);
 
@@ -699,6 +711,11 @@ void ASolidGameMode::EnsureCompanion()
 			if (Companion->GetCompanionMesh().ToSoftObjectPath() != Mesh.ToSoftObjectPath())
 			{
 				Companion->SetCompanionMesh(Mesh);
+			}
+			if (!Companion->GetTorsoColor().Equals(Fielded[Slot].TorsoColor)
+				|| !Companion->GetLegColor().Equals(Fielded[Slot].LegColor))
+			{
+				Companion->SetBodyColors(Fielded[Slot].TorsoColor, Fielded[Slot].LegColor);
 			}
 			continue;
 		}

@@ -33,8 +33,21 @@ namespace SolidBodyMesh
 
 	/**
 	 * Replace the component mesh with a seeded low-poly body.
-	 * The same seed reuses one mesh. Leaves the current mesh when the body cannot be built.
+	 * Torso and leg colors are plain matte materials. The same seed reuses one mesh.
+	 * Leaves the current mesh when the body cannot be built.
 	 * The captain does not call this.
 	 */
-	void ApplySeed(USkeletalMeshComponent* MeshComp, uint32 Seed, UObject* Outer, const TCHAR* DebugLabel);
+	void ApplySeed(
+		USkeletalMeshComponent* MeshComp,
+		uint32 Seed,
+		UObject* Outer,
+		const TCHAR* DebugLabel,
+		const FLinearColor& TorsoColor,
+		const FLinearColor& LegColor);
+
+	/** Stable face glyph for a companion name. One of a few emoji code points, including U+1F611. */
+	uint32 FaceCodepointForName(const FString& Name);
+
+	/** UTF-16 text for a Unicode code point, including characters above U+FFFF. */
+	FString FaceStringForCodepoint(uint32 Codepoint);
 }

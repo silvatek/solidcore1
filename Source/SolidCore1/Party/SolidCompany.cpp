@@ -86,11 +86,39 @@ void USolidCompany::InitializeDefaultCompanions()
 	const int32 Assassin = FindCharacterMeshIndexByName(TEXT("Assassin"));
 	const int32 Blacksmith = FindCharacterMeshIndexByName(TEXT("Blacksmith"));
 
-	AllCompanions.Add({ TEXT("Sam"), Assassin, ESolidVocation::Rogue });
-	AllCompanions.Add({ TEXT("Alex"), Blacksmith, ESolidVocation::Warrior });
-	AllCompanions.Add({ TEXT("Max"), Blacksmith, ESolidVocation::Cleric });
-	AllCompanions.Add({ TEXT("Morgan"), Assassin, ESolidVocation::Mage });
-	AllCompanions.Add({ TEXT("Quinn"), Assassin, ESolidVocation::Warrior });
+	auto Add = [this](const TCHAR* Name, const int32 MeshIndex, const ESolidVocation Vocation)
+	{
+		FSolidCompanion Companion;
+		Companion.Name = Name;
+		Companion.CharacterMeshIndex = MeshIndex;
+		Companion.Vocation = Vocation;
+		SolidCompanionColors::PaletteForName(Companion.Name, Companion.TorsoColor, Companion.LegColor);
+		AllCompanions.Add(Companion);
+	};
+	Add(TEXT("Sam"), Assassin, ESolidVocation::Rogue);
+	Add(TEXT("Alex"), Blacksmith, ESolidVocation::Warrior);
+	Add(TEXT("Max"), Blacksmith, ESolidVocation::Cleric);
+	Add(TEXT("Morgan"), Assassin, ESolidVocation::Mage);
+	Add(TEXT("Quinn"), Assassin, ESolidVocation::Warrior);
+}
+
+void SolidCompanionColors::PaletteForName(
+	const FString& Name,
+	FLinearColor& OutTorso,
+	FLinearColor& OutLegs)
+{
+	const FString Lower = Name.ToLower();
+	FRandomStream Stream(static_cast<int32>(FCrc::StrCrc32(*Lower) ^ 0xC0107u));
+	const uint8 Hue = static_cast<uint8>(Stream.GetFraction() * 255.f);
+	const uint8 Sat = static_cast<uint8>(FMath::Lerp(90.f, 190.f, Stream.GetFraction()));
+	const uint8 Val = static_cast<uint8>(FMath::Lerp(80.f, 180.f, Stream.GetFraction()));
+	OutTorso = FLinearColor::MakeFromHSV8(Hue, Sat, Val);
+
+	const uint8 LegHue = static_cast<uint8>(
+		(static_cast<int32>(Hue) + 48 + static_cast<int32>(Stream.GetFraction() * 70.f)) & 255);
+	const uint8 LegSat = static_cast<uint8>(FMath::Lerp(15.f, 70.f, Stream.GetFraction()));
+	const uint8 LegVal = static_cast<uint8>(FMath::Lerp(22.f, 65.f, Stream.GetFraction()));
+	OutLegs = FLinearColor::MakeFromHSV8(LegHue, LegSat, LegVal);
 }
 
 const FSolidCharacterMesh* USolidCompany::GetCharacterMesh(const int32 Index) const

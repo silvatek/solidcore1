@@ -63,8 +63,16 @@ namespace SolidVocation
 }
 
 /**
+ * Plain matte clothes colors for a companion. The same name always draws the same pair.
+ */
+namespace SolidCompanionColors
+{
+	void PaletteForName(const FString& Name, FLinearColor& OutTorso, FLinearColor& OutLegs);
+}
+
+/**
  * One companion in the company catalog.
- * Name, mesh reference, and vocation; more attributes will be added later.
+ * Name, mesh reference, vocation, and the torso and leg colors of the generated body.
  */
 USTRUCT(BlueprintType)
 struct FSolidCompanion
@@ -80,6 +88,14 @@ struct FSolidCompanion
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	ESolidVocation Vocation = ESolidVocation::Warrior;
+
+	/** Matte color of the torso, arms, and head. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
+	FLinearColor TorsoColor = FLinearColor(0.29f, 0.38f, 0.55f);
+
+	/** Matte color of the hips, legs, and feet. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
+	FLinearColor LegColor = FLinearColor(0.12f, 0.11f, 0.10f);
 };
 
 /**

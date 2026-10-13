@@ -15,6 +15,8 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Engine/CollisionProfile.h"
+#include "Math/RotationMatrix.h"
+#include "ReferenceSkeleton.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
@@ -52,6 +54,15 @@ ASolidCompanionCharacter::ASolidCompanionCharacter()
 	GetMesh()->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
 	GetMesh()->bPauseAnims = false;
 	GetMesh()->bNoSkeletonUpdate = false;
+
+	FaceText = CreateDefaultSubobject<UTextRenderComponent>(TEXT("FaceText"));
+	FaceText->SetupAttachment(GetMesh());
+	FaceText->SetHorizontalAlignment(EHTA_Center);
+	FaceText->SetVerticalAlignment(EVRTA_TextCenter);
+	FaceText->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	FaceText->SetCastShadow(false);
+	FaceText->SetVisibility(false);
+	FaceText->SetWorldSize(16.f);
 
 	// Default mesh/clips are Fab Viking; Party members may override CompanionMesh later.
 	CompanionMesh = TSoftObjectPtr<USkeletalMesh>(
@@ -94,6 +105,20 @@ void ASolidCompanionCharacter::SetCharacterDisplayName(const FString& NewName)
 {
 	CharacterDisplayName = NewName;
 	ApplyNameLabel();
+	if (HasActorBegunPlay())
+	{
+		ApplyFace();
+	}
+}
+
+void ASolidCompanionCharacter::SetBodyColors(const FLinearColor& NewTorso, const FLinearColor& NewLegs)
+{
+	TorsoColor = NewTorso;
+	LegColor = NewLegs;
+	if (HasActorBegunPlay())
+	{
+		ApplyVisuals();
+	}
 }
 
 void ASolidCompanionCharacter::SetVocation(const ESolidVocation NewVocation)
@@ -170,7 +195,10 @@ void ASolidCompanionCharacter::SetCompanionMesh(const TSoftObjectPtr<USkeletalMe
 			GetMesh(),
 			SolidBodyMesh::SeedForName(CharacterDisplayName),
 			this,
-			TEXT("Companion"));
+			TEXT("Companion"),
+			TorsoColor,
+			LegColor);
+		ApplyFace();
 		CacheLocomotionAnims();
 		UpdateLocomotionAnim();
 	}
@@ -251,7 +279,123 @@ void ASolidCompanionCharacter::ApplyVisuals()
 		GetMesh(),
 		SolidBodyMesh::SeedForName(CharacterDisplayName),
 		this,
-		TEXT("Companion"));
+		TEXT("Companion"),
+		TorsoColor,
+		LegColor);
+	ApplyFace();
+}
+
+void ASolidCompanionCharacter::ApplyFace()
+{
+	if (!FaceText)
+	{
+		return;
+	}
+
+	USkeletalMeshComponent* CharacterMesh = GetMesh();
+	const USkeletalMesh* MeshAsset = CharacterMesh ? CharacterMesh->GetSkeletalMeshAsset() : nullptr;
+	if (!MeshAsset || MeshAsset->GetRefSkeleton().GetRawBoneNum() == 0)
+	{
+		FaceText->SetVisibility(false);
+		return;
+	}
+
+	const FReferenceSkeleton& Ref = MeshAsset->GetRefSkeleton();
+	const TArray<FMeshBoneInfo>& Infos = Ref.GetRawRefBoneInfo();
+	const TArray<FTransform>& Pose = Ref.GetRawRefBonePose();
+	const int32 Count = FMath::Min(Infos.Num(), Pose.Num());
+
+	int32 HeadIndex = INDEX_NONE;
+	int32 Fallback = INDEX_NONE;
+	for (int32 Index = 0; Index < Count; ++Index)
+	{
+		if (SolidBodyMesh::RoleForBoneName(Infos[Index].Name.ToString()) != ESolidBodyBoneRole::Head)
+		{
+			continue;
+		}
+		if (Fallback == INDEX_NONE)
+		{
+			Fallback = Index;
+		}
+		const int32 Parent = Infos[Index].ParentIndex;
+		if (Infos.IsValidIndex(Parent)
+			&& SolidBodyMesh::RoleForBoneName(Infos[Parent].Name.ToString()) == ESolidBodyBoneRole::Neck)
+		{
+			HeadIndex = Index;
+			break;
+		}
+	}
+	if (HeadIndex == INDEX_NONE)
+	{
+		HeadIndex = Fallback;
+	}
+	if (HeadIndex == INDEX_NONE)
+	{
+		FaceText->SetVisibility(false);
+		return;
+	}
+
+	TArray<int32> Chain;
+	for (int32 Index = HeadIndex; Infos.IsValidIndex(Index) && Chain.Num() <= Count; Index = Infos[Index].ParentIndex)
+	{
+		Chain.Add(Index);
+		if (Infos[Index].ParentIndex == Index)
+		{
+			break;
+		}
+	}
+
+	FVector HeadPos = FVector::ZeroVector;
+	FQuat HeadRot = FQuat::Identity;
+	FVector ParentPos = FVector::ZeroVector;
+	for (int32 Step = Chain.Num() - 1; Step >= 0; --Step)
+	{
+		const int32 Index = Chain[Step];
+		if (Index == HeadIndex)
+		{
+			ParentPos = HeadPos;
+		}
+		const FTransform& Local = Pose[Index];
+		HeadPos += HeadRot.RotateVector(Local.GetTranslation());
+		HeadRot = HeadRot * Local.GetRotation();
+	}
+
+	FVector Up = HeadPos - ParentPos;
+	if (!Up.Normalize())
+	{
+		Up = FVector::UpVector;
+	}
+	FVector Forward = FVector(0.f, 1.f, 0.f) - Up * FVector::DotProduct(FVector(0.f, 1.f, 0.f), Up);
+	if (!Forward.Normalize())
+	{
+		Forward = FVector::XAxisVector;
+	}
+
+	// The skull is built from the neck length, at least 18 cm, times head size.
+	// Forward uses the large end of that band so the glyph stays in front of the face.
+	const float Span = FMath::Max(static_cast<float>((HeadPos - ParentPos).Size()), 18.f);
+	const float UpOffset = Span * 1.05f * 0.42f;
+	const float ForwardOffset = Span * SolidBody::ParamMax * 0.46f * 0.42f + 2.5f;
+	const FVector Offset = Up * UpOffset + Forward * ForwardOffset;
+	const FQuat TextRot = FRotationMatrix::MakeFromXZ(
+		HeadRot.UnrotateVector(Forward),
+		HeadRot.UnrotateVector(Up)).ToQuat();
+
+	FaceText->AttachToComponent(
+		CharacterMesh,
+		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
+		Infos[HeadIndex].Name);
+	FaceText->SetRelativeLocation(HeadRot.UnrotateVector(Offset));
+	FaceText->SetRelativeRotation(TextRot.Rotator());
+	FaceText->SetHorizontalAlignment(EHTA_Center);
+	FaceText->SetVerticalAlignment(EVRTA_TextCenter);
+	FaceText->SetWorldSize(FMath::Clamp(Span * 0.85f, 14.f, 22.f));
+	FaceText->SetTextRenderColor(
+		TorsoColor.GetLuminance() > 0.35f ? FColor(12, 12, 14) : FColor(245, 245, 240));
+	FaceText->SetText(FText::FromString(SolidBodyMesh::FaceStringForCodepoint(
+		SolidBodyMesh::FaceCodepointForName(CharacterDisplayName))));
+	FaceText->SetCastShadow(false);
+	FaceText->SetVisibility(true);
 }
 
 bool ASolidCompanionCharacter::PlayLocomotionClip(UAnimSequence* Anim)

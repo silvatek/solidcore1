@@ -292,14 +292,14 @@ SolidBodyMesh::FSolidFittedCone SolidBodyMesh::FitCone(const FVector* Points, co
 	return Out;
 }
 
-SolidBodyMesh::FSolidFittedCone SolidBodyMesh::LeftThighCone(const FVector& Hip, const FVector& FarEnd)
+SolidBodyMesh::FSolidFittedCone SolidBodyMesh::LeftThighCone(const FVector& ParentJoint, const FVector& BoneEnd)
 {
 	FSolidFittedCone Out;
-	Out.Start = Hip;
-	Out.End = FarEnd;
+	Out.Start = ParentJoint;
+	Out.End = BoneEnd;
 	Out.RadiusStart = LeftThighTopDiameterCm * 0.5f;
 	Out.RadiusEnd = LeftThighBottomDiameterCm * 0.5f;
-	Out.bValid = FVector::Dist(Hip, FarEnd) >= 1.0;
+	Out.bValid = FVector::Dist(ParentJoint, BoneEnd) >= 1.0;
 	return Out;
 }
 
@@ -798,7 +798,7 @@ namespace
 		AddTube(
 			Verts,
 			Tris,
-			Hip,
+			Twist,
 			Cone.Start,
 			Cone.End,
 			Cone.RadiusStart,

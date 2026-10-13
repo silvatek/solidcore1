@@ -624,11 +624,7 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 			return FString();
 		}
 
-		TArray<FString> Names;
-		Names.Add(HipName.ToString());
-		Names.Add(TwistName.ToString());
-		Names.Sort();
-		return FString::Join(Names, TEXT(", "));
+		return TwistName.ToString();
 	}
 
 	TArray<FVector2D> From;

@@ -703,19 +703,19 @@ bool FSolidBodyLeftThighTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the far end is 15 cm across"), SolidBodyMesh::LeftThighBottomDiameterCm, 15.f);
 	TestEqual(TEXT("the thigh bone"), FString(SolidBodyMesh::LeftThighBone), FString(TEXT("thigh_twist_01_l")));
 
-	const FVector Hip(1.f, 2.f, 90.f);
-	const FVector FarEnd(1.f, 2.f, 68.f);
-	const SolidBodyMesh::FSolidFittedCone Cone = SolidBodyMesh::LeftThighCone(Hip, FarEnd);
+	const FVector ParentJoint(1.f, 2.f, 90.f);
+	const FVector BoneEnd(1.f, 2.f, 68.f);
+	const SolidBodyMesh::FSolidFittedCone Cone = SolidBodyMesh::LeftThighCone(ParentJoint, BoneEnd);
 	TestTrue(TEXT("the thigh is a cone"), Cone.bValid);
-	TestTrue(TEXT("the cone starts at the hip"), Cone.Start.Equals(Hip, 0.01));
-	TestTrue(TEXT("the cone ends on the bone"), Cone.End.Equals(FarEnd, 0.01));
+	TestTrue(TEXT("the wide end is the parent joint"), Cone.Start.Equals(ParentJoint, 0.01));
+	TestTrue(TEXT("the cone ends on thigh_twist_01_l"), Cone.End.Equals(BoneEnd, 0.01));
 	TestTrue(
 		TEXT("the cone is the length of the bone"),
 		FMath::IsNearlyEqual(static_cast<float>(FVector::Dist(Cone.Start, Cone.End)), 22.f, 0.05f));
 	TestTrue(TEXT("the hip is 10 cm in radius"), FMath::IsNearlyEqual(Cone.RadiusStart, 10.f, 0.01f));
 	TestTrue(TEXT("the far end is 7.5 cm in radius"), FMath::IsNearlyEqual(Cone.RadiusEnd, 7.5f, 0.01f));
 
-	const SolidBodyMesh::FSolidFittedCone Short = SolidBodyMesh::LeftThighCone(Hip, Hip);
+	const SolidBodyMesh::FSolidFittedCone Short = SolidBodyMesh::LeftThighCone(ParentJoint, ParentJoint);
 	TestFalse(TEXT("a bone with no length is not drawn"), Short.bValid);
 	return true;
 }

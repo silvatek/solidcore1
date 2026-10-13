@@ -1,5 +1,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
+#include "Character/SolidCharacterStage.h"
+#include "Companion/SolidCompanionCharacter.h"
 #include "Menus/SolidCharacterEditor.h"
 #include "Menus/SolidMainMenu.h"
 #include "Party/SolidCompany.h"
@@ -56,15 +58,64 @@ bool FSolidCharacterEditorHudTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("editor opens"), HUD->IsCharacterEditorOpen());
 	TestFalse(TEXT("editor closes the menu"), HUD->IsMainMenuOpen());
 	TestEqual(TEXT("editor starts on the first companion"), HUD->GetCharacterEditorIndex(), 0);
+	TestFalse(TEXT("editor opens on the body"), HUD->IsCharacterEditorSkeleton());
+	TestEqual(
+		TEXT("space asks for the skeleton"),
+		SolidCharacterEditor::SkeletonHint(false),
+		FString(TEXT("Space  skeleton")));
+	TestEqual(
+		TEXT("space asks for the body"),
+		SolidCharacterEditor::SkeletonHint(true),
+		FString(TEXT("Space  body")));
+
+	HUD->SetCharacterEditorSkeleton(true);
+	TestTrue(TEXT("space shows the skeleton"), HUD->IsCharacterEditorSkeleton());
 
 	HUD->HandleMenuKey();
 	TestFalse(TEXT("F10 closes the editor"), HUD->IsCharacterEditorOpen());
 	TestFalse(TEXT("F10 returns to the world"), HUD->IsMainMenuOpen());
+	TestFalse(TEXT("F10 clears the skeleton"), HUD->IsCharacterEditorSkeleton());
 
 	HUD->OpenCharacterEditor();
+	HUD->SetCharacterEditorSkeleton(true);
 	HUD->CloseMenuOverlay();
 	TestFalse(TEXT("Esc closes the editor"), HUD->IsCharacterEditorOpen());
 	TestFalse(TEXT("Esc returns to the world"), HUD->IsMainMenuOpen());
+	TestFalse(TEXT("Esc clears the skeleton"), HUD->IsCharacterEditorSkeleton());
+
+	HUD->OpenCharacterEditor();
+	HUD->SetCharacterEditorSkeleton(true);
+	HUD->CloseCharacterEditor();
+	TestFalse(TEXT("closing the editor returns to the body"), HUD->IsCharacterEditorSkeleton());
+
+	ASolidCharacterStage* Stage = NewObject<ASolidCharacterStage>();
+	TestNotNull(TEXT("stage"), Stage);
+	if (Stage)
+	{
+		Stage->SetSkeletonLines(true);
+		TestTrue(TEXT("stage keeps the skeleton view"), Stage->IsShowingSkeletonLines());
+		Stage->SetSkeletonLines(false);
+		TestFalse(TEXT("stage returns to the body"), Stage->IsShowingSkeletonLines());
+	}
+
+	ASolidCompanionCharacter* Preview = NewObject<ASolidCompanionCharacter>();
+	TestNotNull(TEXT("preview"), Preview);
+	if (Preview)
+	{
+		Preview->SetSkeletonLines(true);
+		TestTrue(TEXT("preview shows bone lines"), Preview->IsShowingSkeletonLines());
+		USkeletalMeshComponent* PreviewMesh = Preview->GetMesh();
+		if (PreviewMesh)
+		{
+			TestFalse(TEXT("skinned mesh hides"), PreviewMesh->GetVisibleFlag());
+		}
+		Preview->SetSkeletonLines(false);
+		TestFalse(TEXT("preview returns to the body"), Preview->IsShowingSkeletonLines());
+		if (PreviewMesh)
+		{
+			TestTrue(TEXT("skinned mesh returns"), PreviewMesh->GetVisibleFlag());
+		}
+	}
 	return true;
 }
 

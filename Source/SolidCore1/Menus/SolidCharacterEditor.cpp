@@ -74,6 +74,11 @@ void SolidCharacterEditor::Describe(const FSolidCompanion& Companion, TArray<FSt
 	OutLines.Add(TEXT("F10  open world"));
 }
 
+FString SolidCharacterEditor::SkeletonHint(const bool bSkeleton)
+{
+	return bSkeleton ? TEXT("Space  body") : TEXT("Space  skeleton");
+}
+
 int32 SolidCharacterEditor::SliderForLine(const FString& Line)
 {
 	if (Line.StartsWith(TEXT("Height ")))

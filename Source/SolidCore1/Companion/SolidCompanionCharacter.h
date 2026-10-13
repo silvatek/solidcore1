@@ -109,6 +109,10 @@ public:
 	void SetStagePreview(bool bPreview);
 	bool IsStagePreview() const { return bStagePreview; }
 
+	/** Hide the skinned body and draw the Viking bones as named lines. */
+	void SetSkeletonLines(bool bShow);
+	bool IsShowingSkeletonLines() const { return bSkeletonLines; }
+
 	/** Match the follow target's MaxWalkSpeed when possible. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Follow")
 	bool bMatchFollowTargetSpeed = true;
@@ -135,6 +139,7 @@ protected:
 	void CacheLocomotionAnims();
 	void UpdateLocomotionAnim();
 	bool PlayLocomotionClip(UAnimSequence* Anim);
+	void DrawSkeletonLines() const;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Companion|Name", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USceneComponent> NameLabelRoot;
@@ -201,6 +206,9 @@ protected:
 
 	/** Character-editor mannequin. Tick keeps the idle clip and does not steer. */
 	bool bStagePreview = false;
+
+	/** Character editor is showing bone lines instead of the skinned body. */
+	bool bSkeletonLines = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Visual")
 	float MeshGroundZOffset = -90.f;

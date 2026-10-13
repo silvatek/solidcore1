@@ -55,6 +55,9 @@ namespace SolidCharacterEditor
 	 */
 	void Describe(const FSolidCompanion& Companion, TArray<FString>& OutLines);
 
+	/** Space in the character editor. Skeleton mode asks for the body, and the body asks for the skeleton. */
+	FString SkeletonHint(bool bSkeleton);
+
 	/** Height, Build, and Gender lines are the three sliders. Anything else is INDEX_NONE. */
 	int32 SliderForLine(const FString& Line);
 

@@ -291,6 +291,7 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::PageUp, IE_Repeat, this, &ASolidCharacter::CharacterEditorPrevious);
 	PlayerInputComponent->BindKey(EKeys::PageDown, IE_Pressed, this, &ASolidCharacter::CharacterEditorNext);
 	PlayerInputComponent->BindKey(EKeys::PageDown, IE_Repeat, this, &ASolidCharacter::CharacterEditorNext);
+	PlayerInputComponent->BindKey(EKeys::SpaceBar, IE_Pressed, this, &ASolidCharacter::ToggleCharacterEditorSkeleton);
 	PlayerInputComponent->BindKey(EKeys::Enter, IE_Pressed, this, &ASolidCharacter::MainMenuConfirm);
 	PlayerInputComponent->BindKey(EKeys::One, IE_Pressed, this, &ASolidCharacter::MainMenuChoose1);
 	PlayerInputComponent->BindKey(EKeys::Two, IE_Pressed, this, &ASolidCharacter::MainMenuChoose2);
@@ -701,6 +702,21 @@ void ASolidCharacter::SyncCharacterStage()
 	if (Companion)
 	{
 		CharacterStage->ShowCompanion(*Companion);
+	}
+	CharacterStage->SetSkeletonLines(HUD->IsCharacterEditorSkeleton());
+}
+
+void ASolidCharacter::ToggleCharacterEditorSkeleton()
+{
+	ASolidHUD* HUD = GetSolidHUD();
+	if (!HUD || !HUD->IsCharacterEditorOpen())
+	{
+		return;
+	}
+	HUD->SetCharacterEditorSkeleton(!HUD->IsCharacterEditorSkeleton());
+	if (CharacterStage)
+	{
+		CharacterStage->SetSkeletonLines(HUD->IsCharacterEditorSkeleton());
 	}
 }
 

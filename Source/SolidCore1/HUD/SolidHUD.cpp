@@ -1184,6 +1184,7 @@ void ASolidHUD::HandleMenuKey()
 	if (bShowCharacterEditor)
 	{
 		bShowCharacterEditor = false;
+		bCharacterEditorSkeleton = false;
 		EndCharacterEditorSliderDrag();
 		return;
 	}
@@ -1227,6 +1228,7 @@ void ASolidHUD::CloseMenuOverlay()
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowCharacterEditor = false;
+	bCharacterEditorSkeleton = false;
 	EndCharacterEditorSliderDrag();
 }
 
@@ -1262,6 +1264,7 @@ void ASolidHUD::OpenCharacterEditor()
 	bShowCharacterEditor = true;
 	CharacterEditorIndex = 0;
 	CharacterEditorSlider = 0;
+	bCharacterEditorSkeleton = false;
 	EndCharacterEditorSliderDrag();
 	SolidHUDPrivate::ForgetChoicePointerRows(this);
 }
@@ -1269,7 +1272,13 @@ void ASolidHUD::OpenCharacterEditor()
 void ASolidHUD::CloseCharacterEditor()
 {
 	bShowCharacterEditor = false;
+	bCharacterEditorSkeleton = false;
 	EndCharacterEditorSliderDrag();
+}
+
+void ASolidHUD::SetCharacterEditorSkeleton(const bool bShow)
+{
+	bCharacterEditorSkeleton = bShow;
 }
 
 void ASolidHUD::MoveCharacterEditor(const int32 Delta)
@@ -1376,6 +1385,7 @@ void ASolidHUD::DrawCharacterEditorPanel()
 		Lines.Add(TEXT("No companions"));
 		Lines.Add(TEXT("F10  open world"));
 	}
+	Lines.Add(SolidCharacterEditor::SkeletonHint(bCharacterEditorSkeleton));
 
 	if (!Canvas || Lines.Num() == 0)
 	{
@@ -1497,6 +1507,7 @@ void ASolidHUD::OpenPartyBuilder()
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowCharacterEditor = false;
+	bCharacterEditorSkeleton = false;
 	bShowPartyBuilder = true;
 	PartyBuilderIndex = 0;
 	SolidHUDPrivate::ForgetChoicePointerRows(this);
@@ -1562,6 +1573,7 @@ void ASolidHUD::OpenPortal()
 	bShowJournal = false;
 	bShowPartyBuilder = false;
 	bShowCharacterEditor = false;
+	bCharacterEditorSkeleton = false;
 	bShowPortal = true;
 	PortalIndex = 0;
 	SolidHUDPrivate::ForgetChoicePointerRows(this);

@@ -90,6 +90,15 @@ void ASolidCharacterStage::ShowCompanion(const FSolidCompanion& Companion)
 	Place();
 }
 
+void ASolidCharacterStage::SetSkeletonLines(const bool bShow)
+{
+	bSkeletonLines = bShow;
+	if (Preview)
+	{
+		Preview->SetSkeletonLines(bShow);
+	}
+}
+
 void ASolidCharacterStage::PaintRoom()
 {
 	if (bRoomPainted)
@@ -164,6 +173,7 @@ void ASolidCharacterStage::ApplyPreview()
 	{
 		Preview->RebuildBody();
 	}
+	Preview->SetSkeletonLines(bSkeletonLines);
 }
 
 void ASolidCharacterStage::Place()

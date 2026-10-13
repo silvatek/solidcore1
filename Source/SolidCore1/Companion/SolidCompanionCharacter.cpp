@@ -20,6 +20,7 @@
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Math/RotationMatrix.h"
 #include "ReferenceSkeleton.h"
+#include "DrawDebugHelpers.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
@@ -107,6 +108,27 @@ ASolidCompanionCharacter::ASolidCompanionCharacter()
 	NameLabel = CreateDefaultSubobject<UTextRenderComponent>(TEXT("NameLabel"));
 	NameLabel->SetupAttachment(NameLabelRoot);
 	ApplyNameLabel();
+}
+
+void ASolidCompanionCharacter::SetSkeletonLines(const bool bShow)
+{
+	bSkeletonLines = bShow;
+	if (USkeletalMeshComponent* CharacterMesh = GetMesh())
+	{
+		CharacterMesh->SetVisibility(!bShow, true);
+	}
+	if (bShow)
+	{
+		if (FaceRoot)
+		{
+			FaceRoot->SetVisibility(false, true);
+		}
+		return;
+	}
+	if (HasActorBegunPlay())
+	{
+		ApplyFace();
+	}
 }
 
 void ASolidCompanionCharacter::SetStagePreview(const bool bPreview)
@@ -264,6 +286,14 @@ void ASolidCompanionCharacter::Tick(float DeltaSeconds)
 	if (bStagePreview)
 	{
 		UpdateLocomotionAnim();
+		if (bSkeletonLines)
+		{
+			if (USkeletalMeshComponent* CharacterMesh = GetMesh())
+			{
+				CharacterMesh->SetVisibility(false, true);
+			}
+			DrawSkeletonLines();
+		}
 		return;
 	}
 
@@ -487,6 +517,58 @@ void ASolidCompanionCharacter::LayoutFace(const uint32 Codepoint)
 	{
 		FaceMouthRight->SetRelativeLocation(FVector(0.8f, 3.6f, MouthZ + CornerLift));
 		FaceMouthRight->SetRelativeScale3D(FVector(0.012f, 0.026f, 0.014f));
+	}
+}
+
+void ASolidCompanionCharacter::DrawSkeletonLines() const
+{
+	USkeletalMeshComponent* CharacterMesh = GetMesh();
+	UWorld* World = GetWorld();
+	if (!CharacterMesh || !World)
+	{
+		return;
+	}
+
+	const FColor BoneColor(255, 176, 64);
+	const int32 BoneCount = CharacterMesh->GetNumBones();
+	for (int32 Index = 0; Index < BoneCount; ++Index)
+	{
+		const FName BoneName = CharacterMesh->GetBoneName(Index);
+		if (BoneName.IsNone())
+		{
+			continue;
+		}
+		const FString Name = BoneName.ToString();
+		if (Name.Contains(TEXT("ik"), ESearchCase::IgnoreCase))
+		{
+			continue;
+		}
+		const bool bFinger = Name.Contains(TEXT("finger"), ESearchCase::IgnoreCase)
+			|| Name.Contains(TEXT("thumb"), ESearchCase::IgnoreCase);
+
+		const FVector BoneLocation = CharacterMesh->GetBoneLocation(BoneName);
+		FName ParentName = CharacterMesh->GetParentBone(BoneName);
+		while (!ParentName.IsNone()
+			&& ParentName.ToString().Contains(TEXT("ik"), ESearchCase::IgnoreCase))
+		{
+			ParentName = CharacterMesh->GetParentBone(ParentName);
+		}
+		if (!ParentName.IsNone())
+		{
+			DrawDebugLine(
+				World,
+				CharacterMesh->GetBoneLocation(ParentName),
+				BoneLocation,
+				BoneColor,
+				false,
+				0.f,
+				0,
+				1.75f);
+		}
+		if (!bFinger)
+		{
+			DrawDebugString(World, BoneLocation, Name, nullptr, FColor::White, 0.f, false, 0.65f);
+		}
 	}
 }
 

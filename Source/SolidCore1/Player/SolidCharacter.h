@@ -140,6 +140,7 @@ protected:
 	void CharacterEditorNext();
 	void CharacterEditorNudgeLeft();
 	void CharacterEditorNudgeRight();
+	void ToggleCharacterEditorSkeleton();
 	void MoveCharacterEditor(int32 Delta);
 	void NudgeCharacterEditorSlider(int32 Direction);
 	void ApplyEditorSliderFraction(int32 Slider, float Fraction);

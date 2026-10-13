@@ -64,6 +64,10 @@ public:
 	void EndCharacterEditorSliderDrag();
 	bool IsCharacterEditorSliderDragging() const { return bCharacterEditorSliderDrag; }
 
+	/** Space. The stage draws the Viking skeleton as lines instead of the skinned body. */
+	void SetCharacterEditorSkeleton(bool bShow);
+	bool IsCharacterEditorSkeleton() const { return bCharacterEditorSkeleton; }
+
 	/** F10. Closes an open page, including the character editor, or toggles the main menu. */
 	void HandleMenuKey();
 	/** Esc. Closes the menu, the portal, the party builder, the journal, the credits page, and the character editor. */
@@ -157,6 +161,9 @@ protected:
 	/** The track the pointer grabbed. */
 	bool bCharacterEditorSliderDrag = false;
 	int32 CharacterEditorSliderDragIndex = INDEX_NONE;
+
+	/** Space is showing bone lines. Closing the editor returns to the body. */
+	bool bCharacterEditorSkeleton = false;
 
 	/** Top-right eye / eagle widget has been added to the viewport. */
 	bool bSightIndicatorAdded = false;

@@ -29,6 +29,10 @@ public:
 	/** Place this companion in the room. The same actor is reused when the roster cycles. */
 	void ShowCompanion(const FSolidCompanion& Companion);
 
+	/** Keep the skeleton view when the roster cycles. The preview applies it on the next show. */
+	void SetSkeletonLines(bool bShow);
+	bool IsShowingSkeletonLines() const { return bSkeletonLines; }
+
 private:
 	void PaintRoom();
 	void Place();
@@ -55,4 +59,5 @@ private:
 
 	bool bHasCompanion = false;
 	bool bRoomPainted = false;
+	bool bSkeletonLines = false;
 };

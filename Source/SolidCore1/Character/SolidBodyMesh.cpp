@@ -314,6 +314,17 @@ SolidBodyMesh::FSolidFittedCone SolidBodyMesh::CalfCone(const FVector& Knee, con
 	return Out;
 }
 
+SolidBodyMesh::FSolidFittedCone SolidBodyMesh::BallCylinder(const FVector& Ankle, const FVector& Toe)
+{
+	FSolidFittedCone Out;
+	Out.Start = Ankle;
+	Out.End = Toe;
+	Out.RadiusStart = BallDiameterCm * 0.5f;
+	Out.RadiusEnd = BallDiameterCm * 0.5f;
+	Out.bValid = FVector::Dist(Ankle, Toe) >= 1.0;
+	return Out;
+}
+
 namespace
 {
 	bool ConeIsStructural(const FSolidDeformBone& Bone)
@@ -853,6 +864,25 @@ namespace
 				continue;
 			}
 			AddLegCone(Verts, Tris, Foot, SolidBodyMesh::CalfCone(Positions[Knee], Positions[Foot]));
+		}
+
+		const TCHAR* BallBones[] = {
+			SolidBodyMesh::LeftBallBone,
+			SolidBodyMesh::RightBallBone,
+		};
+		for (const TCHAR* BoneName : BallBones)
+		{
+			const int32 Ball = FindNamedBone(Bones, Count, BoneName);
+			if (Ball == INDEX_NONE)
+			{
+				continue;
+			}
+			const int32 Ankle = Bones[Ball].ParentIndex;
+			if (!Bones.IsValidIndex(Ankle) || !Positions.IsValidIndex(Ankle))
+			{
+				continue;
+			}
+			AddLegCone(Verts, Tris, Ball, SolidBodyMesh::BallCylinder(Positions[Ankle], Positions[Ball]));
 		}
 	}
 

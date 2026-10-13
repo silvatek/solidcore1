@@ -160,6 +160,22 @@ namespace SolidBodyMesh
 	 */
 	FSolidFittedCone CalfCone(const FVector& Knee, const FVector& Ankle);
 
+	/** The only bone in the left foot cylinder. ball_l runs from the ankle to the toe. */
+	inline const TCHAR* LeftBallBone = TEXT("ball_l");
+
+	/** The only bone in the right foot cylinder. The cylinder matches the left foot. */
+	inline const TCHAR* RightBallBone = TEXT("ball_r");
+
+	/** Diameter of a foot cylinder, in centimetres. Both ends are the same. */
+	inline constexpr float BallDiameterCm = 10.f;
+
+	/**
+	 * Cylinder the length of ball_l or ball_r.
+	 * Ankle is the parent joint and Toe is the bone. Both ends are BallDiameterCm across.
+	 * The piece does not include the parent bone. Invalid when the bone is shorter than a centimetre.
+	 */
+	FSolidFittedCone BallCylinder(const FVector& Ankle, const FVector& Toe);
+
 	/** Start and end radii of the cone from Parent to Child. Both ends are joint radii. */
 	void SegmentRadii(
 		const TArray<float>& Radii,

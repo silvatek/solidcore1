@@ -782,4 +782,49 @@ bool FSolidBodyCalfConeTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyBallCylinderTest,
+	"SolidCore1.Body.BallCylinder",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyBallCylinderTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("the foot is 10 cm across"), SolidBodyMesh::BallDiameterCm, 10.f);
+	TestEqual(TEXT("left foot bone"), FString(SolidBodyMesh::LeftBallBone), FString(TEXT("ball_l")));
+	TestEqual(TEXT("right foot bone"), FString(SolidBodyMesh::RightBallBone), FString(TEXT("ball_r")));
+
+	const FVector Ankle(0.f, 0.f, 12.f);
+	const FVector Toe(0.f, 14.f, 10.f);
+	const SolidBodyMesh::FSolidFittedCone Cylinder = SolidBodyMesh::BallCylinder(Ankle, Toe);
+	TestTrue(TEXT("the foot is a cylinder"), Cylinder.bValid);
+	TestTrue(TEXT("the cylinder starts at the ankle"), Cylinder.Start.Equals(Ankle, 0.01));
+	TestTrue(TEXT("the cylinder ends on the ball bone"), Cylinder.End.Equals(Toe, 0.01));
+	TestTrue(
+		TEXT("the cylinder is the length of the bone"),
+		FMath::IsNearlyEqual(
+			static_cast<float>(FVector::Dist(Cylinder.Start, Cylinder.End)),
+			static_cast<float>(FVector::Dist(Ankle, Toe)),
+			0.05f));
+	TestTrue(TEXT("both ends are 5 cm in radius"), FMath::IsNearlyEqual(Cylinder.RadiusStart, 5.f, 0.01f));
+	TestTrue(TEXT("the far end matches the near end"), FMath::IsNearlyEqual(Cylinder.RadiusStart, Cylinder.RadiusEnd, 0.01f));
+
+	const FVector LeftAnkle(-4.f, 1.f, 8.f);
+	const FVector LeftToe(-5.f, 12.f, 6.f);
+	const SolidBodyMesh::FSolidFittedCone Left = SolidBodyMesh::BallCylinder(LeftAnkle, LeftToe);
+	const SolidBodyMesh::FSolidFittedCone Right = SolidBodyMesh::BallCylinder(
+		FVector(-LeftAnkle.X, LeftAnkle.Y, LeftAnkle.Z),
+		FVector(-LeftToe.X, LeftToe.Y, LeftToe.Z));
+	TestTrue(
+		TEXT("mirrored feet are the same length"),
+		FMath::IsNearlyEqual(
+			static_cast<float>(FVector::Dist(Left.Start, Left.End)),
+			static_cast<float>(FVector::Dist(Right.Start, Right.End)),
+			0.05f));
+	TestTrue(TEXT("the right foot starts across from the left"), Right.Start.Equals(FVector(-Left.Start.X, Left.Start.Y, Left.Start.Z), 0.01));
+	TestTrue(TEXT("the right foot ends across from the left"), Right.End.Equals(FVector(-Left.End.X, Left.End.Y, Left.End.Z), 0.01));
+
+	TestFalse(TEXT("a bone with no length is not drawn"), SolidBodyMesh::BallCylinder(Ankle, Ankle).bValid);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

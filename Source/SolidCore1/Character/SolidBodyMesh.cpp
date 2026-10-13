@@ -115,6 +115,336 @@ float SolidBodyMesh::HipBottomRadius(const float PelvisHalfWidth, const float Hi
 	return FMath::Max(PelvisHalfWidth, FMath::Max(0.f, HipLateral) + FMath::Max(0.f, ThighRadius));
 }
 
+namespace
+{
+	bool ConeIsStructural(const FSolidDeformBone& Bone)
+	{
+		return !Bone.bTwist && !Bone.bDigit;
+	}
+
+	int32 ConeStructuralParent(const TArray<FSolidDeformBone>& Bones, const int32 Index)
+	{
+		int32 Parent = Bones.IsValidIndex(Index) ? Bones[Index].ParentIndex : INDEX_NONE;
+		int32 Guard = 0;
+		while (Bones.IsValidIndex(Parent) && Bones[Parent].bTwist && Guard < Bones.Num())
+		{
+			Parent = Bones[Parent].ParentIndex;
+			++Guard;
+		}
+		return Parent;
+	}
+
+	int32 ConeStructuralChild(
+		const TArray<FSolidDeformBone>& Bones,
+		const int32 Parent,
+		const ESolidBodyBoneRole Role)
+	{
+		for (int32 Index = 0; Index < Bones.Num(); ++Index)
+		{
+			if (Bones[Index].ParentIndex != Parent)
+			{
+				continue;
+			}
+			if (Bones[Index].bTwist)
+			{
+				const int32 Deeper = ConeStructuralChild(Bones, Index, Role);
+				if (Deeper != INDEX_NONE)
+				{
+					return Deeper;
+				}
+				continue;
+			}
+			if (Bones[Index].Role == Role && !Bones[Index].bDigit)
+			{
+				return Index;
+			}
+		}
+		return INDEX_NONE;
+	}
+
+	float HorizontalReach(const FVector& From, const FVector& To)
+	{
+		FVector Delta = To - From;
+		Delta.Z = 0.0;
+		return static_cast<float>(Delta.Size());
+	}
+
+	/** Longest structural spine chain whose root hangs off a pelvis. */
+	void CollectConeSpine(const TArray<FSolidDeformBone>& Bones, TArray<int32>& OutChain)
+	{
+		OutChain.Reset();
+		int32 BestRoot = INDEX_NONE;
+		int32 BestLength = 0;
+		for (int32 Index = 0; Index < Bones.Num(); ++Index)
+		{
+			if (!ConeIsStructural(Bones[Index]) || Bones[Index].Role != ESolidBodyBoneRole::Spine)
+			{
+				continue;
+			}
+			const int32 Parent = ConeStructuralParent(Bones, Index);
+			if (!Bones.IsValidIndex(Parent) || Bones[Parent].Role != ESolidBodyBoneRole::Pelvis)
+			{
+				continue;
+			}
+			int32 Length = 0;
+			int32 Cursor = Index;
+			int32 Guard = 0;
+			while (Cursor != INDEX_NONE && Guard < Bones.Num())
+			{
+				++Length;
+				Cursor = ConeStructuralChild(Bones, Cursor, ESolidBodyBoneRole::Spine);
+				++Guard;
+			}
+			if (Length > BestLength)
+			{
+				BestLength = Length;
+				BestRoot = Index;
+			}
+		}
+
+		int32 Cursor = BestRoot;
+		int32 Guard = 0;
+		while (Cursor != INDEX_NONE && Guard < Bones.Num())
+		{
+			OutChain.Add(Cursor);
+			Cursor = ConeStructuralChild(Bones, Cursor, ESolidBodyBoneRole::Spine);
+			++Guard;
+		}
+	}
+
+	void CollectConeNeck(const TArray<FSolidDeformBone>& Bones, TArray<int32>& OutChain)
+	{
+		OutChain.Reset();
+		int32 BestRoot = INDEX_NONE;
+		int32 BestLength = 0;
+		for (int32 Index = 0; Index < Bones.Num(); ++Index)
+		{
+			if (!ConeIsStructural(Bones[Index]) || Bones[Index].Role != ESolidBodyBoneRole::Neck)
+			{
+				continue;
+			}
+			const int32 Parent = ConeStructuralParent(Bones, Index);
+			if (Bones.IsValidIndex(Parent) && Bones[Parent].Role == ESolidBodyBoneRole::Neck)
+			{
+				continue;
+			}
+			int32 Length = 0;
+			int32 Cursor = Index;
+			int32 Guard = 0;
+			while (Cursor != INDEX_NONE && Guard < Bones.Num())
+			{
+				++Length;
+				Cursor = ConeStructuralChild(Bones, Cursor, ESolidBodyBoneRole::Neck);
+				++Guard;
+			}
+			if (Length > BestLength)
+			{
+				BestLength = Length;
+				BestRoot = Index;
+			}
+		}
+
+		int32 Cursor = BestRoot;
+		int32 Guard = 0;
+		while (Cursor != INDEX_NONE && Guard < Bones.Num())
+		{
+			OutChain.Add(Cursor);
+			Cursor = ConeStructuralChild(Bones, Cursor, ESolidBodyBoneRole::Neck);
+			++Guard;
+		}
+	}
+
+	float ScaledJoint(const float Base, const float Channel)
+	{
+		return FMath::Clamp(Base * FMath::Max(Channel, 0.f), 2.5f, 28.f);
+	}
+}
+
+float SolidBodyMesh::HeadHeightCm(const FSolidBodyParams& Params)
+{
+	return FMath::Clamp(SolidBody::HeadLengthCm * Params.HeadSize, 17.f, 30.f);
+}
+
+float SolidBodyMesh::HeadChinRadius(const FSolidBodyParams& Params)
+{
+	return HeadHeightCm(Params) * HeadRadiusOverHeight * HeadChinSlice;
+}
+
+SolidBodyMesh::FSolidConeProfile SolidBodyMesh::ConeProfile(const FSolidBodyParams& Params)
+{
+	FSolidConeProfile Profile;
+	Profile.Waist = ScaledJoint(JointWaist, Params.TorsoGirth);
+	Profile.Chest = ScaledJoint(JointChest, Params.TorsoGirth);
+	Profile.Neck = ScaledJoint(JointNeck, Params.TorsoGirth);
+	Profile.Jaw = HeadChinRadius(Params);
+	Profile.Thigh = ScaledJoint(JointThigh, Params.Bulk);
+	Profile.Knee = ScaledJoint(JointKnee, Params.Bulk);
+	Profile.Ankle = ScaledJoint(JointAnkle, Params.Bulk);
+	Profile.Shoulder = ScaledJoint(JointShoulder, Params.Bulk);
+	Profile.Elbow = ScaledJoint(JointElbow, Params.Bulk);
+	Profile.Wrist = ScaledJoint(JointWrist, Params.Bulk);
+	return Profile;
+}
+
+float SolidBodyMesh::SplitHalfWidth(const float ChildLateral, const float ChildRadius)
+{
+	return FMath::Max(0.f, ChildLateral) + FMath::Max(0.f, ChildRadius);
+}
+
+float SolidBodyMesh::SpineJointRadius(const float Waist, const float Chest, const int32 Index, const int32 LastIndex)
+{
+	if (LastIndex <= 0)
+	{
+		return Chest;
+	}
+	const float T = FMath::Clamp(
+		static_cast<float>(Index) / static_cast<float>(LastIndex),
+		0.f,
+		1.f);
+	return FMath::Lerp(Waist, Chest, T);
+}
+
+void SolidBodyMesh::SegmentRadii(
+	const TArray<float>& Radii,
+	const int32 Parent,
+	const int32 Child,
+	float& OutStart,
+	float& OutEnd)
+{
+	OutEnd = Radii.IsValidIndex(Child) ? Radii[Child] : 0.f;
+	OutStart = Radii.IsValidIndex(Parent) ? Radii[Parent] : OutEnd;
+}
+
+void SolidBodyMesh::JointRadii(
+	const TArray<FSolidDeformBone>& Bones,
+	const TArray<FVector>& Positions,
+	const FSolidBodyParams& Params,
+	TArray<float>& OutRadii)
+{
+	const int32 Count = FMath::Min(Bones.Num(), Positions.Num());
+	const FSolidConeProfile Profile = ConeProfile(Params);
+	OutRadii.Init(Profile.Chest, Count);
+
+	for (int32 Index = 0; Index < Count; ++Index)
+	{
+		if (!ConeIsStructural(Bones[Index]))
+		{
+			continue;
+		}
+		const int32 Parent = ConeStructuralParent(Bones, Index);
+		const ESolidBodyBoneRole ParentRole = Bones.IsValidIndex(Parent)
+			? Bones[Parent].Role
+			: ESolidBodyBoneRole::Root;
+		switch (Bones[Index].Role)
+		{
+		case ESolidBodyBoneRole::Leg:
+			OutRadii[Index] = (ParentRole == ESolidBodyBoneRole::Pelvis || ParentRole == ESolidBodyBoneRole::Root)
+				? Profile.Thigh
+				: Profile.Knee;
+			break;
+		case ESolidBodyBoneRole::Foot:
+			OutRadii[Index] = (ParentRole == ESolidBodyBoneRole::Leg) ? Profile.Knee : Profile.Ankle;
+			break;
+		case ESolidBodyBoneRole::Arm:
+			OutRadii[Index] = (ParentRole == ESolidBodyBoneRole::Arm) ? Profile.Elbow : Profile.Shoulder;
+			break;
+		case ESolidBodyBoneRole::Hand:
+			OutRadii[Index] = Profile.Wrist;
+			break;
+		case ESolidBodyBoneRole::Head:
+			OutRadii[Index] = Profile.Jaw;
+			break;
+		case ESolidBodyBoneRole::Clavicle:
+			OutRadii[Index] = Profile.Shoulder;
+			break;
+		default:
+			break;
+		}
+	}
+
+	TArray<int32> Spines;
+	CollectConeSpine(Bones, Spines);
+	const int32 SpineLast = Spines.Num() - 1;
+	for (int32 Step = 0; Step < Spines.Num(); ++Step)
+	{
+		if (Spines[Step] < Count)
+		{
+			OutRadii[Spines[Step]] = SpineJointRadius(Profile.Waist, Profile.Chest, Step, SpineLast);
+		}
+	}
+
+	for (int32 Pelvis = 0; Pelvis < Count; ++Pelvis)
+	{
+		if (!ConeIsStructural(Bones[Pelvis]) || Bones[Pelvis].Role != ESolidBodyBoneRole::Pelvis)
+		{
+			continue;
+		}
+		float Reach = 0.f;
+		int32 Legs = 0;
+		for (int32 Leg = 0; Leg < Count; ++Leg)
+		{
+			if (!ConeIsStructural(Bones[Leg]) || Bones[Leg].Role != ESolidBodyBoneRole::Leg)
+			{
+				continue;
+			}
+			if (ConeStructuralParent(Bones, Leg) != Pelvis)
+			{
+				continue;
+			}
+			++Legs;
+			Reach = FMath::Max(Reach, SplitHalfWidth(HorizontalReach(Positions[Pelvis], Positions[Leg]), OutRadii[Leg]));
+		}
+		OutRadii[Pelvis] = (Legs > 0) ? Reach : Profile.Waist;
+	}
+
+	// The shoulder line is the neck joint. Its radius is the outer span of both arms,
+	// and the neck cone leaves from that same circle toward the chin.
+	float ShoulderReach = 0.f;
+	int32 Arms = 0;
+	TArray<int32> Necks;
+	CollectConeNeck(Bones, Necks);
+	const int32 NeckOrigin = (Necks.Num() > 0 && Necks[0] < Count) ? Necks[0] : INDEX_NONE;
+	for (int32 Clavicle = 0; Clavicle < Count; ++Clavicle)
+	{
+		if (!ConeIsStructural(Bones[Clavicle]) || Bones[Clavicle].Role != ESolidBodyBoneRole::Clavicle)
+		{
+			continue;
+		}
+		const int32 Arm = ConeStructuralChild(Bones, Clavicle, ESolidBodyBoneRole::Arm);
+		if (!Positions.IsValidIndex(Arm) || Arm >= Count)
+		{
+			continue;
+		}
+		const int32 Origin = (NeckOrigin != INDEX_NONE) ? NeckOrigin : ConeStructuralParent(Bones, Clavicle);
+		if (!Positions.IsValidIndex(Origin))
+		{
+			continue;
+		}
+		++Arms;
+		ShoulderReach = FMath::Max(
+			ShoulderReach,
+			SplitHalfWidth(HorizontalReach(Positions[Origin], Positions[Arm]), OutRadii[Arm]));
+	}
+	if (Arms == 0)
+	{
+		ShoulderReach = Profile.Neck;
+	}
+	for (int32 Step = 0; Step < Necks.Num(); ++Step)
+	{
+		if (Necks[Step] >= Count)
+		{
+			continue;
+		}
+		float Radius = ShoulderReach;
+		if (Necks.Num() > 1)
+		{
+			const float T = static_cast<float>(Step) / static_cast<float>(Necks.Num() - 1);
+			Radius = FMath::Lerp(ShoulderReach, Profile.Jaw, T);
+		}
+		OutRadii[Necks[Step]] = Radius;
+	}
+}
+
 #if WITH_EDITORONLY_DATA
 namespace
 {
@@ -290,7 +620,7 @@ namespace
 		{
 			const float T = static_cast<float>(Ring) / static_cast<float>(Rings - 1);
 			const float Bell = FMath::Sin(T * PI);
-			const float Slice = FMath::Lerp(0.55f, 1.f, Bell);
+			const float Slice = FMath::Lerp(SolidBodyMesh::HeadChinSlice, 1.f, Bell);
 			const float Along = (T - 0.42f) * Height;
 			for (int32 Step = 0; Step < Sides; ++Step)
 			{
@@ -329,49 +659,6 @@ namespace
 		}
 	}
 
-	/**
-	 * Thickness in centimetres for a standing person.
-	 * Short Viking bones (a spine segment, a twist) must not shrink the chest to a stick.
-	 */
-	float SectionRadius(const ESolidBodyBoneRole Role, const float Length, const FSolidBodyParams& Params)
-	{
-		(void)Length;
-		float Radius = 5.f * Params.Bulk;
-		switch (Role)
-		{
-		case ESolidBodyBoneRole::Spine:
-			Radius = 15.5f * Params.TorsoGirth;
-			break;
-		case ESolidBodyBoneRole::Pelvis:
-			Radius = 12.f * Params.HipWidth;
-			break;
-		case ESolidBodyBoneRole::Neck:
-			Radius = 6.4f * Params.TorsoGirth;
-			break;
-		case ESolidBodyBoneRole::Clavicle:
-			Radius = 6.4f * Params.Bulk;
-			break;
-		case ESolidBodyBoneRole::Arm:
-			Radius = 5.4f * Params.Bulk;
-			break;
-		case ESolidBodyBoneRole::Hand:
-			Radius = 3.8f * Params.Bulk;
-			break;
-		case ESolidBodyBoneRole::Leg:
-			Radius = 8.2f * Params.Bulk;
-			break;
-		case ESolidBodyBoneRole::Foot:
-			Radius = 5.6f * Params.Bulk;
-			break;
-		case ESolidBodyBoneRole::Head:
-			Radius = 11.f * Params.HeadSize;
-			break;
-		default:
-			break;
-		}
-		return FMath::Clamp(Radius, 2.5f, 24.f);
-	}
-
 	int32 FindChild(const TArray<FSolidDeformBone>& Bones, const int32 Parent, const ESolidBodyBoneRole Role)
 	{
 		for (int32 Index = 0; Index < Bones.Num(); ++Index)
@@ -383,8 +670,6 @@ namespace
 		}
 		return INDEX_NONE;
 	}
-
-	void TaperFor(const ESolidBodyBoneRole Role, const int32 Ordinal, const int32 Count, float& OutStart, float& OutEnd);
 
 	/** First limb bone under Parent, walking through twist bones. */
 	int32 FindStructuralChild(const TArray<FSolidDeformBone>& Bones, const int32 Parent, const ESolidBodyBoneRole Role)
@@ -454,6 +739,7 @@ namespace
 		TArray<FLoFiTri>& Tris,
 		const TArray<FSolidDeformBone>& Bones,
 		const TArray<FVector>& Positions,
+		const TArray<float>& Radii,
 		const int32 Pelvis,
 		const FSolidBodyParams& Params)
 	{
@@ -493,25 +779,10 @@ namespace
 		}
 		Side = Side.GetSafeNormal();
 
-		// The thigh bone ends at the knee, so its offset is not the hip width.
-		// The bottom of this cylinder has to reach the outside of each thigh.
-		float StartScale = 1.f;
-		float LegEndScale = 1.f;
-		TaperFor(ESolidBodyBoneRole::Leg, 0, 1, StartScale, LegEndScale);
-		(void)LegEndScale;
-		const float ThighRadius = SectionRadius(ESolidBodyBoneRole::Leg, 30.f, Params) * StartScale;
+		// The hip cylinder ends on the pelvis joint, on the same circle the abdomen leaves from.
+		// That radius is the combined outer width of the two thighs.
 		const float HalfHeight = 8.5f * Params.TorsoGirth;
 		const FVector Center = Positions[Pelvis];
-		float TopReach = HalfHeight;
-		if (Positions.IsValidIndex(Spine))
-		{
-			const float Rise = static_cast<float>(FVector::DotProduct(Positions[Spine] - Center, Up));
-			if (Rise > 0.f)
-			{
-				TopReach = FMath::Max(TopReach, Rise * 0.55f);
-			}
-		}
-		float HipLateral = 0.f;
 		float Drop = HalfHeight;
 		for (const int32 Leg : Legs)
 		{
@@ -522,18 +793,16 @@ namespace
 			const FVector Offset = Positions[Leg] - Center;
 			const float Below = -static_cast<float>(FVector::DotProduct(Offset, Up));
 			Drop = FMath::Max(Drop, Below);
-			HipLateral = FMath::Max(HipLateral, static_cast<float>(FMath::Abs(FVector::DotProduct(Offset, Side))));
 		}
-		const float BottomRadius = SolidBodyMesh::HipBottomRadius(12.f * Params.HipWidth, HipLateral, ThighRadius);
-		const float TopRadius = BottomRadius * 0.78f;
+		const float Radius = Radii.IsValidIndex(Pelvis) ? Radii[Pelvis] : HalfHeight;
 		AddTube(
 			Verts,
 			Tris,
 			Pelvis,
 			Center - Up * Drop,
-			Center + Up * TopReach,
-			BottomRadius,
-			TopRadius,
+			Center,
+			Radius,
+			Radius,
 			TubeSides,
 			2,
 			SlotLegs,
@@ -576,74 +845,18 @@ namespace
 		return Bones.IsValidIndex(Parent) && Bones[Parent].Role == ESolidBodyBoneRole::Foot;
 	}
 
-	int32 SpineOrdinal(const TArray<FSolidDeformBone>& Bones, const int32 Index, int32& OutCount)
-	{
-		int32 Ordinal = 0;
-		OutCount = 0;
-		for (int32 Bone = 0; Bone < Bones.Num(); ++Bone)
-		{
-			if (Bones[Bone].Role != ESolidBodyBoneRole::Spine)
-			{
-				continue;
-			}
-			if (Bone == Index)
-			{
-				Ordinal = OutCount;
-			}
-			++OutCount;
-		}
-		return Ordinal;
-	}
-
-	void TaperFor(const ESolidBodyBoneRole Role, const int32 Ordinal, const int32 Count, float& OutStart, float& OutEnd)
-	{
-		OutStart = 1.f;
-		OutEnd = 1.f;
-		switch (Role)
-		{
-		case ESolidBodyBoneRole::Leg:
-			OutStart = 1.35f;
-			OutEnd = 0.92f;
-			break;
-		case ESolidBodyBoneRole::Foot:
-			OutStart = 1.05f;
-			OutEnd = 0.7f;
-			break;
-		case ESolidBodyBoneRole::Arm:
-			OutStart = 1.f;
-			OutEnd = 0.72f;
-			break;
-		case ESolidBodyBoneRole::Clavicle:
-			OutStart = 0.85f;
-			OutEnd = 1.f;
-			break;
-		case ESolidBodyBoneRole::Neck:
-			OutStart = 0.62f;
-			OutEnd = 0.48f;
-			break;
-		case ESolidBodyBoneRole::Spine:
-		{
-			const float T = (Count <= 1) ? 1.f : static_cast<float>(Ordinal) / static_cast<float>(Count - 1);
-			OutStart = FMath::Lerp(1.2f, 0.92f, T);
-			OutEnd = FMath::Lerp(0.95f, 1.28f, T);
-			break;
-		}
-		default:
-			break;
-		}
-	}
-
 	/**
-	 * One cap from the ribcage out to the shoulder joint.
-	 * The upper arm tube continues from there. Helper clavicles draw nothing.
+	 * One cap from the shoulder line out to the arm joint.
+	 * Its narrow end is the upper arm's radius, and its outer edge stays on the
+	 * shoulder-line circle that also meets the neck. Helper clavicles draw nothing.
 	 */
 	void AddShoulder(
 		TArray<FLoFiVert>& Verts,
 		TArray<FLoFiTri>& Tris,
 		const TArray<FSolidDeformBone>& Bones,
 		const TArray<FVector>& Positions,
-		const int32 Clavicle,
-		const FSolidBodyParams& Params)
+		const TArray<float>& Radii,
+		const int32 Clavicle)
 	{
 		if (!Positions.IsValidIndex(Clavicle))
 		{
@@ -653,7 +866,7 @@ namespace
 		const int32 Parent = StructuralParent(Bones, Clavicle);
 		const bool bChest = Bones.IsValidIndex(Parent) && Positions.IsValidIndex(Parent);
 		const int32 Arm = FindStructuralChild(Bones, Clavicle, ESolidBodyBoneRole::Arm);
-		if (Arm == INDEX_NONE || !Positions.IsValidIndex(Arm))
+		if (Arm == INDEX_NONE || !Positions.IsValidIndex(Arm) || !Radii.IsValidIndex(Arm))
 		{
 			return;
 		}
@@ -674,34 +887,40 @@ namespace
 		}
 		Out = Out.GetSafeNormal();
 
-		const float Rib = SectionRadius(ESolidBodyBoneRole::Spine, 30.f, Params);
-		FVector Start = Chest + Out * static_cast<double>(Rib * 0.75f);
-		Start.Z = Cap.Z;
-		FVector End = Joint;
-		End.Z = FMath::Lerp(Cap.Z, Joint.Z, 0.2);
-		if ((End - Start).Size() < 4.0)
+		int32 Neck = INDEX_NONE;
+		if (bChest)
 		{
-			End = Start + Out * 12.0;
-			End.Z = Cap.Z;
+			Neck = FindStructuralChild(Bones, Parent, ESolidBodyBoneRole::Neck);
+		}
+		const FVector Column = (Neck != INDEX_NONE && Positions.IsValidIndex(Neck)) ? Positions[Neck] : Chest;
+		FVector FromColumn = Joint - Column;
+		FromColumn.Z = 0.0;
+		const float Lateral = static_cast<float>(FromColumn.Size());
+		const float EndRadius = Radii[Arm];
+		const float LineRadius = (Neck != INDEX_NONE && Radii.IsValidIndex(Neck))
+			? Radii[Neck]
+			: SolidBodyMesh::SplitHalfWidth(Lateral, EndRadius);
+		const float StartLateral = Lateral * 0.55f;
+		const float StartRadius = FMath::Max(EndRadius, LineRadius - StartLateral);
+		FVector Start = Column + Out * static_cast<double>(StartLateral);
+		const FVector End = Joint;
+		if ((End - Start).Size() < 1.0)
+		{
+			return;
 		}
 
-		float ArmStart = 1.f;
-		float ArmEndScale = 1.f;
-		TaperFor(ESolidBodyBoneRole::Arm, 0, 1, ArmStart, ArmEndScale);
-		(void)ArmEndScale;
-		const float ArmRadius = SectionRadius(ESolidBodyBoneRole::Arm, 30.f, Params) * ArmStart;
 		AddTube(
 			Verts,
 			Tris,
 			Clavicle,
 			Start,
 			End,
-			ArmRadius * 2.f,
-			ArmRadius,
+			StartRadius,
+			EndRadius,
 			TubeSides,
 			3,
 			SlotTorso,
-			0.82f,
+			1.f,
 			FVector::UpVector);
 	}
 
@@ -712,12 +931,15 @@ namespace
 		TArray<FLoFiVert>& Verts,
 		TArray<FLoFiTri>& Tris)
 	{
+		TArray<float> Radii;
+		SolidBodyMesh::JointRadii(Bones, Positions, Params, Radii);
+
 		const int32 Count = FMath::Min(Bones.Num(), Positions.Num());
 		for (int32 Index = 0; Index < Count; ++Index)
 		{
 			if (Bones[Index].Role == ESolidBodyBoneRole::Pelvis)
 			{
-				AddPelvisVolume(Verts, Tris, Bones, Positions, Index, Params);
+				AddPelvisVolume(Verts, Tris, Bones, Positions, Radii, Index, Params);
 			}
 		}
 
@@ -759,75 +981,37 @@ namespace
 
 			if (Role == ESolidBodyBoneRole::Clavicle)
 			{
-				AddShoulder(Verts, Tris, Bones, Positions, Index, Params);
+				AddShoulder(Verts, Tris, Bones, Positions, Radii, Index);
 			}
 			else if (!bShoulderSpan && bParent && ParentRole != ESolidBodyBoneRole::Root && Incoming >= MinIncoming)
 			{
-				ESolidBodyBoneRole RadiusRole = ParentRole;
-				if (Role == ESolidBodyBoneRole::Spine
-					|| Role == ESolidBodyBoneRole::Arm
-					|| Role == ESolidBodyBoneRole::Hand
-					|| Role == ESolidBodyBoneRole::Leg
-					|| Role == ESolidBodyBoneRole::Foot
-					|| Role == ESolidBodyBoneRole::Neck)
-				{
-					RadiusRole = Role;
-				}
-				// The neck joint is the shoulder line. Keep chest thickness up to
-				// that line. The thin neck runs from there to the chin.
-				if (Role == ESolidBodyBoneRole::Neck && ParentRole == ESolidBodyBoneRole::Spine)
-				{
-					RadiusRole = ESolidBodyBoneRole::Spine;
-				}
-				if (bThigh || bShin)
-				{
-					RadiusRole = ESolidBodyBoneRole::Leg;
-				}
-				int32 SpineCount = 1;
-				const int32 Ordinal = (RadiusRole == ESolidBodyBoneRole::Spine)
-					? SpineOrdinal(Bones, Parent, SpineCount)
-					: 0;
-				float StartScale = 1.f;
-				float EndScale = 1.f;
-				TaperFor(RadiusRole, Ordinal, SpineCount, StartScale, EndScale);
-				if (bShin)
-				{
-					StartScale = 0.92f;
-					EndScale = 0.62f;
-				}
-				const float Radius = SectionRadius(RadiusRole, FMath::Max(Incoming, 8.f), Params);
-				FVector TubeStart = Positions[Parent];
-				FVector TubeEnd = Positions[Index];
-				if ((bThigh || bShin) && Incoming > 1.f)
-				{
-					const FVector BoneDir = (TubeEnd - TubeStart) / static_cast<double>(Incoming);
-					if (bShin)
-					{
-						TubeStart -= BoneDir * 3.0;
-					}
-					if (bThigh)
-					{
-						TubeEnd += BoneDir * 3.0;
-					}
-				}
+				float RadiusStart = 0.f;
+				float RadiusEnd = 0.f;
+				SolidBodyMesh::SegmentRadii(Radii, Parent, Index, RadiusStart, RadiusEnd);
+				// The cone that ends on the chin is skin. The shirt stops on the shoulder line.
+				const uint8 Slot = (Role == ESolidBodyBoneRole::Head)
+					? SlotSkin
+					: ((bThigh || bShin || Role == ESolidBodyBoneRole::Leg || Role == ESolidBodyBoneRole::Foot)
+						? SlotLegs
+						: SlotTorso);
 				AddTube(
 					Verts,
 					Tris,
 					Parent,
-					TubeStart,
-					TubeEnd,
-					Radius * StartScale,
-					Radius * EndScale,
+					Positions[Parent],
+					Positions[Index],
+					RadiusStart,
+					RadiusEnd,
 					TubeSides,
 					TubeSegments,
-					SlotForRole(RadiusRole),
+					Slot,
 					1.f,
 					FVector::UpVector);
 			}
 
 			if (Role == ESolidBodyBoneRole::Head)
 			{
-				const float Height = FMath::Clamp(SolidBody::HeadLengthCm * Params.HeadSize, 17.f, 30.f);
+				const float Height = SolidBodyMesh::HeadHeightCm(Params);
 				AddHead(
 					Verts,
 					Tris,
@@ -835,13 +1019,13 @@ namespace
 					Positions[Index],
 					Dir,
 					Height,
-					Height * 0.46f,
+					Height * SolidBodyMesh::HeadRadiusOverHeight,
 					SlotSkin);
 			}
 			else if (Role == ESolidBodyBoneRole::Hand && bParent)
 			{
 				const float Length = FMath::Max(Incoming * 0.5f, 8.f);
-				const float Radius = SectionRadius(ESolidBodyBoneRole::Hand, FMath::Max(Incoming, Length), Params);
+				const float Radius = Radii.IsValidIndex(Index) ? Radii[Index] : SolidBodyMesh::JointWrist;
 				FVector Wide = FVector::CrossProduct(Dir, FVector::UpVector);
 				if (Wide.SizeSquared() < 0.01)
 				{
@@ -853,8 +1037,8 @@ namespace
 					Index,
 					Positions[Index],
 					Positions[Index] + Dir * static_cast<double>(Length),
-					Radius * 0.85f,
-					Radius * 1.2f,
+					Radius,
+					Radius * 1.15f,
 					8,
 					2,
 					SlotSkin,
@@ -883,7 +1067,7 @@ namespace
 					}
 				}
 				const float Length = FMath::Clamp(16.f * Params.Height, 12.f, 22.f);
-				const float Radius = SectionRadius(ESolidBodyBoneRole::Leg, Length, Params) * 0.7f;
+				const float Radius = Radii.IsValidIndex(Index) ? Radii[Index] : SolidBodyMesh::JointAnkle;
 				FVector FlatFoot = FootDir;
 				FlatFoot.Z = 0.0;
 				if (FlatFoot.SizeSquared() < 0.04)
@@ -916,10 +1100,7 @@ namespace
 			else if (bParent && IsChainEnd(Bones, Index))
 			{
 				const float TipLen = FMath::Max(Incoming * 0.35f, 4.f);
-				const ESolidBodyBoneRole RadiusRole = Bones[Parent].Role == ESolidBodyBoneRole::Root
-					? Role
-					: Bones[Parent].Role;
-				const float Radius = SectionRadius(RadiusRole, FMath::Max(Incoming, TipLen), Params);
+				const float Radius = Radii.IsValidIndex(Index) ? Radii[Index] : SolidBodyMesh::JointWrist;
 				AddTube(
 					Verts,
 					Tris,

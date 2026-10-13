@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0244")
+#define SOLID_BUILD_ID TEXT("SC1-0245")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The average chest, waist, and hips stand in one column.")
+#define SOLID_BUILD_NOTE TEXT("Adjoining cones share a radius, and a split matches both widths.")
 #endif

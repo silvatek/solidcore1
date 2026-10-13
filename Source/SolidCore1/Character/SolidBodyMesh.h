@@ -33,8 +33,85 @@ namespace SolidBodyMesh
 	/**
 	 * Bottom radius of the hip cylinder, in centimetres.
 	 * It reaches the outer face of the thigh (hip joint plus the thigh's radius).
+	 * A wide pelvis floor can stay wider than that span. The drawn body does not:
+	 * it uses SplitHalfWidth so the hip equals the thighs.
 	 */
 	float HipBottomRadius(float PelvisHalfWidth, float HipLateral, float ThighRadius);
+
+	/**
+	 * Skull cross-section as a fraction of head length.
+	 * The chin ring is HeadChinSlice of that, and the neck cone ends on it.
+	 */
+	inline constexpr float HeadRadiusOverHeight = 0.46f;
+	inline constexpr float HeadChinSlice = 0.55f;
+
+	/** Joint cross-sections in centimetres when the matching channel is 1. */
+	inline constexpr float JointWaist = 12.f;
+	inline constexpr float JointChest = 15.f;
+	inline constexpr float JointNeck = 8.f;
+	inline constexpr float JointThigh = 9.f;
+	inline constexpr float JointKnee = 6.4f;
+	inline constexpr float JointAnkle = 4.6f;
+	inline constexpr float JointShoulder = 5.2f;
+	inline constexpr float JointElbow = 4.2f;
+	inline constexpr float JointWrist = 3.4f;
+
+	/** One radius per joint, before a split widens the pelvis or the shoulder line. */
+	struct FSolidConeProfile
+	{
+		float Waist = 0.f;
+		float Chest = 0.f;
+		float Neck = 0.f;
+		float Jaw = 0.f;
+		float Thigh = 0.f;
+		float Knee = 0.f;
+		float Ankle = 0.f;
+		float Shoulder = 0.f;
+		float Elbow = 0.f;
+		float Wrist = 0.f;
+	};
+
+	/** Drawn head length in centimetres. HeadSize 1 is one head. */
+	float HeadHeightCm(const FSolidBodyParams& Params);
+
+	/** Radius of the skull's bottom ring, where the neck cone ends. */
+	float HeadChinRadius(const FSolidBodyParams& Params);
+
+	/** Limb and torso joint radii for these proportions. The jaw matches the chin ring. */
+	FSolidConeProfile ConeProfile(const FSolidBodyParams& Params);
+
+	/**
+	 * Half the width of one cone where it meets two equal cones.
+	 * ChildLateral is the child's axis out from the parent's axis.
+	 * The parent's diameter is then the outer span of both children.
+	 */
+	float SplitHalfWidth(float ChildLateral, float ChildRadius);
+
+	/**
+	 * Spine joint along the waist-to-chest chain.
+	 * Index 0 is the waist and LastIndex is the chest. One spine is the chest.
+	 */
+	float SpineJointRadius(float Waist, float Chest, int32 Index, int32 LastIndex);
+
+	/**
+	 * One radius per joint, in centimetres.
+	 * The cone from a parent to a child uses the parent's radius, then the child's,
+	 * so adjoining ends match. The pelvis matches both thighs. The shoulder line
+	 * matches both arms, and the neck ends on the chin.
+	 */
+	void JointRadii(
+		const TArray<FSolidDeformBone>& Bones,
+		const TArray<FVector>& Positions,
+		const FSolidBodyParams& Params,
+		TArray<float>& OutRadii);
+
+	/** Start and end radii of the cone from Parent to Child. Both ends are joint radii. */
+	void SegmentRadii(
+		const TArray<float>& Radii,
+		int32 Parent,
+		int32 Child,
+		float& OutStart,
+		float& OutEnd);
 
 	/**
 	 * Transient low-poly mesh owned by Outer.

@@ -383,4 +383,154 @@ bool FSolidBodySkinSlotTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyConeJointTest,
+	"SolidCore1.Body.ConeJoints",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyConeJointTest::RunTest(const FString& Parameters)
+{
+	const FSolidBodyParams Average;
+	const SolidBodyMesh::FSolidConeProfile Profile = SolidBodyMesh::ConeProfile(Average);
+	auto Same = [](const float A, const float B)
+	{
+		return FMath::IsNearlyEqual(A, B, 0.02f);
+	};
+
+	TestTrue(TEXT("split width is the outer span"), Same(SolidBodyMesh::SplitHalfWidth(8.f, 9.f), 17.f));
+	TestTrue(TEXT("a negative offset does not shrink the child"), Same(SolidBodyMesh::SplitHalfWidth(-3.f, 4.f), 4.f));
+	TestTrue(
+		TEXT("chin ring matches the skull"),
+		Same(
+			SolidBodyMesh::HeadChinRadius(Average),
+			SolidBody::HeadLengthCm * SolidBodyMesh::HeadRadiusOverHeight * SolidBodyMesh::HeadChinSlice));
+	TestTrue(TEXT("jaw is that chin ring"), Same(Profile.Jaw, SolidBodyMesh::HeadChinRadius(Average)));
+	TestTrue(TEXT("one spine is the chest"), Same(SolidBodyMesh::SpineJointRadius(Profile.Waist, Profile.Chest, 0, 0), Profile.Chest));
+	TestTrue(TEXT("a chain starts at the waist"), Same(SolidBodyMesh::SpineJointRadius(Profile.Waist, Profile.Chest, 0, 2), Profile.Waist));
+	TestTrue(TEXT("a chain ends at the chest"), Same(SolidBodyMesh::SpineJointRadius(Profile.Waist, Profile.Chest, 2, 2), Profile.Chest));
+
+	FSolidBodyParams Bulkier;
+	Bulkier.Bulk = 1.5f;
+	const SolidBodyMesh::FSolidConeProfile BulkProfile = SolidBodyMesh::ConeProfile(Bulkier);
+	TestTrue(TEXT("bulk thickens the thigh"), Same(BulkProfile.Thigh, SolidBodyMesh::JointThigh * 1.5f));
+	TestTrue(TEXT("bulk leaves the waist"), Same(BulkProfile.Waist, Profile.Waist));
+
+	FSolidBodyParams Thicker;
+	Thicker.TorsoGirth = 1.25f;
+	TestTrue(
+		TEXT("girth thickens the chest"),
+		Same(SolidBodyMesh::ConeProfile(Thicker).Chest, SolidBodyMesh::JointChest * 1.25f));
+
+	TArray<FSolidDeformBone> Bones;
+	TArray<FVector> Positions;
+	auto Add = [&Bones, &Positions](const int32 Parent, const ESolidBodyBoneRole Role, const FVector& At)
+	{
+		FSolidDeformBone Bone;
+		Bone.ParentIndex = Parent;
+		Bone.Role = Role;
+		Bones.Add(Bone);
+		Positions.Add(At);
+		return Bones.Num() - 1;
+	};
+
+	const int32 Pelvis = Add(INDEX_NONE, ESolidBodyBoneRole::Pelvis, FVector(0.f, 0.f, 0.f));
+	const int32 Waist = Add(Pelvis, ESolidBodyBoneRole::Spine, FVector(0.f, 0.f, 22.f));
+	const int32 Mid = Add(Waist, ESolidBodyBoneRole::Spine, FVector(0.f, 0.f, 44.f));
+	const int32 Chest = Add(Mid, ESolidBodyBoneRole::Spine, FVector(0.f, 0.f, 66.f));
+	const int32 Neck = Add(Chest, ESolidBodyBoneRole::Neck, FVector(0.f, 0.f, 88.f));
+	const int32 Head = Add(Neck, ESolidBodyBoneRole::Head, FVector(0.f, 0.f, 110.f));
+	const int32 ClavicleL = Add(Chest, ESolidBodyBoneRole::Clavicle, FVector(-8.f, 0.f, 88.f));
+	const int32 UpperL = Add(ClavicleL, ESolidBodyBoneRole::Arm, FVector(-16.f, 0.f, 88.f));
+	const int32 ElbowL = Add(UpperL, ESolidBodyBoneRole::Arm, FVector(-16.f, 0.f, 60.f));
+	const int32 WristL = Add(ElbowL, ESolidBodyBoneRole::Hand, FVector(-16.f, 0.f, 36.f));
+	const int32 ClavicleR = Add(Chest, ESolidBodyBoneRole::Clavicle, FVector(8.f, 0.f, 88.f));
+	const int32 UpperR = Add(ClavicleR, ESolidBodyBoneRole::Arm, FVector(16.f, 0.f, 88.f));
+	const int32 ThighL = Add(Pelvis, ESolidBodyBoneRole::Leg, FVector(-10.f, 0.f, 0.f));
+	const int32 KneeL = Add(ThighL, ESolidBodyBoneRole::Foot, FVector(-10.f, 0.f, -40.f));
+	const int32 AnkleL = Add(KneeL, ESolidBodyBoneRole::Foot, FVector(-10.f, 0.f, -62.f));
+	const int32 ThighR = Add(Pelvis, ESolidBodyBoneRole::Leg, FVector(10.f, 0.f, 0.f));
+	Add(ThighR, ESolidBodyBoneRole::Foot, FVector(10.f, 0.f, -40.f));
+
+	TArray<float> Radii;
+	SolidBodyMesh::JointRadii(Bones, Positions, Average, Radii);
+
+	float IntoWaist = 0.f;
+	float WaistEnd = 0.f;
+	float OutOfWaist = 0.f;
+	float IntoMid = 0.f;
+	float MidEnd = 0.f;
+	float OutOfMid = 0.f;
+	SolidBodyMesh::SegmentRadii(Radii, Pelvis, Waist, IntoWaist, WaistEnd);
+	SolidBodyMesh::SegmentRadii(Radii, Waist, Mid, OutOfWaist, IntoMid);
+	SolidBodyMesh::SegmentRadii(Radii, Mid, Chest, MidEnd, OutOfMid);
+	TestTrue(TEXT("abdomen meets the waist"), Same(WaistEnd, OutOfWaist));
+	TestTrue(TEXT("waist meets the next spine"), Same(IntoMid, MidEnd));
+	TestTrue(TEXT("chest cone leaves the middle spine"), Same(OutOfMid, Radii[Chest]));
+
+	float ThighStart = 0.f;
+	float KneeFromThigh = 0.f;
+	float KneeFromShin = 0.f;
+	float AnkleFromShin = 0.f;
+	SolidBodyMesh::SegmentRadii(Radii, ThighL, KneeL, ThighStart, KneeFromThigh);
+	SolidBodyMesh::SegmentRadii(Radii, KneeL, AnkleL, KneeFromShin, AnkleFromShin);
+	TestTrue(TEXT("thigh meets shin"), Same(KneeFromThigh, KneeFromShin));
+	TestTrue(TEXT("shin meets the ankle"), Same(AnkleFromShin, Profile.Ankle));
+	TestTrue(TEXT("both thighs share a radius"), Same(Radii[ThighL], Radii[ThighR]));
+	TestTrue(
+		TEXT("hips match the combined thighs"),
+		Same(Radii[Pelvis], SolidBodyMesh::SplitHalfWidth(10.f, Radii[ThighL])));
+	TestTrue(TEXT("the shirt leaves on that hip circle"), Same(IntoWaist, Radii[Pelvis]));
+
+	float ChestStart = 0.f;
+	float NeckFromChest = 0.f;
+	float NeckStart = 0.f;
+	float Chin = 0.f;
+	SolidBodyMesh::SegmentRadii(Radii, Chest, Neck, ChestStart, NeckFromChest);
+	SolidBodyMesh::SegmentRadii(Radii, Neck, Head, NeckStart, Chin);
+	TestTrue(TEXT("chest meets the neck"), Same(NeckFromChest, NeckStart));
+	TestTrue(TEXT("neck meets the chin"), Same(Chin, Profile.Jaw));
+	TestTrue(
+		TEXT("shoulder line matches both arms"),
+		Same(Radii[Neck], SolidBodyMesh::SplitHalfWidth(16.f, Radii[UpperL])));
+	TestTrue(TEXT("both arms share a shoulder"), Same(Radii[UpperL], Radii[UpperR]));
+
+	float ArmStart = 0.f;
+	float ElbowEnd = 0.f;
+	float ElbowStart = 0.f;
+	float WristEnd = 0.f;
+	SolidBodyMesh::SegmentRadii(Radii, UpperL, ElbowL, ArmStart, ElbowEnd);
+	SolidBodyMesh::SegmentRadii(Radii, ElbowL, WristL, ElbowStart, WristEnd);
+	TestTrue(TEXT("upper arm meets the forearm"), Same(ElbowEnd, ElbowStart));
+	TestTrue(TEXT("the elbow is one radius"), Same(ElbowEnd, Profile.Elbow));
+	TestTrue(TEXT("the shoulder cap ends on the upper arm"), Same(ArmStart, Profile.Shoulder));
+	TestTrue(TEXT("forearm meets the hand"), Same(WristEnd, Profile.Wrist));
+
+	TArray<FSolidDeformBone> LoneBones;
+	TArray<FVector> LonePos;
+	auto AddLone = [&LoneBones, &LonePos](const int32 Parent, const ESolidBodyBoneRole Role, const FVector& At)
+	{
+		FSolidDeformBone Bone;
+		Bone.ParentIndex = Parent;
+		Bone.Role = Role;
+		LoneBones.Add(Bone);
+		LonePos.Add(At);
+		return LoneBones.Num() - 1;
+	};
+	const int32 LonePelvis = AddLone(INDEX_NONE, ESolidBodyBoneRole::Pelvis, FVector::ZeroVector);
+	const int32 LoneSpine = AddLone(LonePelvis, ESolidBodyBoneRole::Spine, FVector(0.f, 0.f, 20.f));
+	const int32 LoneNeck = AddLone(LoneSpine, ESolidBodyBoneRole::Neck, FVector(0.f, 0.f, 40.f));
+	const int32 LoneHead = AddLone(LoneNeck, ESolidBodyBoneRole::Head, FVector(0.f, 0.f, 62.f));
+	TArray<float> LoneRadii;
+	SolidBodyMesh::JointRadii(LoneBones, LonePos, Average, LoneRadii);
+	TestTrue(TEXT("a lone spine is the chest"), Same(LoneRadii[LoneSpine], Profile.Chest));
+	TestTrue(TEXT("a neck with no arms keeps the neck radius"), Same(LoneRadii[LoneNeck], Profile.Neck));
+	TestTrue(TEXT("a lone head is still the chin"), Same(LoneRadii[LoneHead], Profile.Jaw));
+	TestTrue(TEXT("hips with no thighs keep the waist"), Same(LoneRadii[LonePelvis], Profile.Waist));
+
+	TArray<float> Empty;
+	SolidBodyMesh::JointRadii(TArray<FSolidDeformBone>(), TArray<FVector>(), Average, Empty);
+	TestEqual(TEXT("an empty chain has no joints"), Empty.Num(), 0);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

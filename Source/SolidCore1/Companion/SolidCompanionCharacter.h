@@ -7,6 +7,7 @@
 
 class USkeletalMesh;
 class UAnimSequence;
+class UMaterialInterface;
 class USceneComponent;
 class UStaticMeshComponent;
 class UTextRenderComponent;
@@ -107,6 +108,8 @@ protected:
 
 	void ApplyVisuals();
 	void ApplyFace();
+	void LayoutFace(uint32 Codepoint);
+	void PaintFace(const FLinearColor& Ink);
 	void ApplyNameLabel();
 	void ResolveFollowTarget();
 	void UpdateFollow(float DeltaSeconds);
@@ -126,7 +129,29 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Companion|Name", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UTextRenderComponent> NameLabel;
 
-	/** Unicode face on the front of the head. */
+	/** Anchor on the front of the head. The engine font has no emoji, so the face is drawn here. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Companion|Visual", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<USceneComponent> FaceRoot;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Companion|Visual", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> FaceLeftEye;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Companion|Visual", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> FaceRightEye;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Companion|Visual", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> FaceMouth;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Companion|Visual", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> FaceMouthLeft;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Companion|Visual", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> FaceMouthRight;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInterface> FaceInk;
+
+	/** Kept hidden. The engine font cannot draw U+1F611, so the drawn face is used instead. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Companion|Visual", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UTextRenderComponent> FaceText;
 

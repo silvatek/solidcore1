@@ -4,6 +4,7 @@
 #include "SolidContentLookup.h"
 #include "SolidCore1.h"
 #include "SolidGameMode.h"
+#include "SolidMaterials.h"
 #include "SolidNameLabel.h"
 #include "Party/SolidBattlePlan.h"
 #include "Party/SolidParty.h"
@@ -15,6 +16,8 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "Engine/CollisionProfile.h"
+#include "Engine/StaticMesh.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "Math/RotationMatrix.h"
 #include "ReferenceSkeleton.h"
 #include "Engine/World.h"
@@ -55,14 +58,35 @@ ASolidCompanionCharacter::ASolidCompanionCharacter()
 	GetMesh()->bPauseAnims = false;
 	GetMesh()->bNoSkeletonUpdate = false;
 
+	FaceRoot = CreateDefaultSubobject<USceneComponent>(TEXT("FaceRoot"));
+	FaceRoot->SetupAttachment(GetMesh());
+	FaceRoot->SetMobility(EComponentMobility::Movable);
+	FaceRoot->SetVisibility(false);
+
+	UStaticMesh* EyeMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Sphere.Sphere"));
+	UStaticMesh* MouthMesh = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+	FaceLeftEye = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FaceLeftEye"));
+	FaceRightEye = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FaceRightEye"));
+	FaceMouth = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FaceMouth"));
+	FaceMouthLeft = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FaceMouthLeft"));
+	FaceMouthRight = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FaceMouthRight"));
+	UStaticMeshComponent* Pieces[] = {
+		FaceLeftEye, FaceRightEye, FaceMouth, FaceMouthLeft, FaceMouthRight,
+	};
+	UStaticMesh* PieceMeshes[] = { EyeMesh, EyeMesh, MouthMesh, MouthMesh, MouthMesh };
+	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Pieces); ++Index)
+	{
+		Pieces[Index]->SetupAttachment(FaceRoot);
+		Pieces[Index]->SetMobility(EComponentMobility::Movable);
+		Pieces[Index]->SetStaticMesh(PieceMeshes[Index]);
+		Pieces[Index]->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Pieces[Index]->SetCastShadow(false);
+		Pieces[Index]->SetVisibility(false);
+	}
+
 	FaceText = CreateDefaultSubobject<UTextRenderComponent>(TEXT("FaceText"));
-	FaceText->SetupAttachment(GetMesh());
-	FaceText->SetHorizontalAlignment(EHTA_Center);
-	FaceText->SetVerticalAlignment(EVRTA_TextCenter);
-	FaceText->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	FaceText->SetCastShadow(false);
+	FaceText->SetupAttachment(FaceRoot);
 	FaceText->SetVisibility(false);
-	FaceText->SetWorldSize(16.f);
 
 	// Default mesh/clips are Fab Viking; Party members may override CompanionMesh later.
 	CompanionMesh = TSoftObjectPtr<USkeletalMesh>(
@@ -285,9 +309,118 @@ void ASolidCompanionCharacter::ApplyVisuals()
 	ApplyFace();
 }
 
+void ASolidCompanionCharacter::PaintFace(const FLinearColor& Ink)
+{
+	UMaterialInstanceDynamic* Existing = Cast<UMaterialInstanceDynamic>(FaceInk.Get());
+	if (!Existing || Existing->GetOuter() != this)
+	{
+		FaceInk = SolidMaterials::CreateSolidColor(this, Ink, TEXT("FaceInk"), 1.f);
+	}
+	else
+	{
+		Existing->SetVectorParameterValue(TEXT("Base Color"), Ink);
+		Existing->SetVectorParameterValue(TEXT("BaseColor"), Ink);
+		Existing->SetScalarParameterValue(TEXT("Roughness"), 1.f);
+		Existing->RecacheUniformExpressions(true);
+	}
+
+	UStaticMeshComponent* Pieces[] = {
+		FaceLeftEye, FaceRightEye, FaceMouth, FaceMouthLeft, FaceMouthRight,
+	};
+	for (UStaticMeshComponent* Piece : Pieces)
+	{
+		if (Piece && FaceInk)
+		{
+			Piece->SetMaterial(0, FaceInk);
+			Piece->SetVisibility(true);
+		}
+	}
+}
+
+void ASolidCompanionCharacter::LayoutFace(const uint32 Codepoint)
+{
+	float EyeZ = 1.6f;
+	float EyeScale = 0.045f;
+	float MouthZ = -3.8f;
+	float CornerLift = 0.f;
+	const float EyeGap = 4.2f;
+
+	switch (Codepoint)
+	{
+	case 0x1F611u:
+		EyeScale = 0.028f;
+		EyeZ = 1.2f;
+		break;
+	case 0x1F642u:
+		CornerLift = 2.f;
+		break;
+	case 0x1F641u:
+		CornerLift = -2.f;
+		break;
+	case 0x1F612u:
+		EyeZ = 0.2f;
+		EyeScale = 0.034f;
+		CornerLift = -0.7f;
+		break;
+	case 0x1F644u:
+		EyeZ = 3.4f;
+		break;
+	default:
+		break;
+	}
+
+	if (FaceLeftEye)
+	{
+		FaceLeftEye->SetRelativeLocation(FVector(0.8f, -EyeGap, EyeZ));
+		FaceLeftEye->SetRelativeScale3D(FVector(EyeScale));
+	}
+	if (FaceRightEye)
+	{
+		FaceRightEye->SetRelativeLocation(FVector(0.8f, EyeGap, EyeZ));
+		FaceRightEye->SetRelativeScale3D(FVector(EyeScale));
+	}
+	if (FaceMouth)
+	{
+		FaceMouth->SetRelativeLocation(FVector(0.8f, 0.f, MouthZ));
+		FaceMouth->SetRelativeScale3D(FVector(0.012f, 0.05f, 0.014f));
+	}
+	if (FaceMouthLeft)
+	{
+		FaceMouthLeft->SetRelativeLocation(FVector(0.8f, -3.6f, MouthZ + CornerLift));
+		FaceMouthLeft->SetRelativeScale3D(FVector(0.012f, 0.026f, 0.014f));
+	}
+	if (FaceMouthRight)
+	{
+		FaceMouthRight->SetRelativeLocation(FVector(0.8f, 3.6f, MouthZ + CornerLift));
+		FaceMouthRight->SetRelativeScale3D(FVector(0.012f, 0.026f, 0.014f));
+	}
+}
+
 void ASolidCompanionCharacter::ApplyFace()
 {
-	if (!FaceText)
+	UStaticMeshComponent* Pieces[] = {
+		FaceLeftEye, FaceRightEye, FaceMouth, FaceMouthLeft, FaceMouthRight,
+	};
+	auto HideFace = [this, &Pieces]()
+	{
+		if (FaceRoot)
+		{
+			FaceRoot->SetVisibility(false, true);
+		}
+		if (FaceText)
+		{
+			FaceText->SetVisibility(false);
+		}
+		for (UStaticMeshComponent* Piece : Pieces)
+		{
+			if (Piece)
+			{
+				Piece->SetVisibility(false);
+			}
+		}
+	};
+
+	if (!FaceRoot)
 	{
 		return;
 	}
@@ -296,7 +429,7 @@ void ASolidCompanionCharacter::ApplyFace()
 	const USkeletalMesh* MeshAsset = CharacterMesh ? CharacterMesh->GetSkeletalMeshAsset() : nullptr;
 	if (!MeshAsset || MeshAsset->GetRefSkeleton().GetRawBoneNum() == 0)
 	{
-		FaceText->SetVisibility(false);
+		HideFace();
 		return;
 	}
 
@@ -331,7 +464,7 @@ void ASolidCompanionCharacter::ApplyFace()
 	}
 	if (HeadIndex == INDEX_NONE)
 	{
-		FaceText->SetVisibility(false);
+		HideFace();
 		return;
 	}
 
@@ -371,31 +504,31 @@ void ASolidCompanionCharacter::ApplyFace()
 		Forward = FVector::XAxisVector;
 	}
 
-	// The skull is built from the neck length, at least 18 cm, times head size.
-	// Forward uses the large end of that band so the glyph stays in front of the face.
-	const float Span = FMath::Max(static_cast<float>((HeadPos - ParentPos).Size()), 18.f);
-	const float UpOffset = Span * 1.05f * 0.42f;
-	const float ForwardOffset = Span * SolidBody::ParamMax * 0.46f * 0.42f + 2.5f;
+	// Sit on the flat front. The offset uses the largest head so the features stay outside the skull.
+	const float UpOffset = 22.f * 0.42f;
+	const float ForwardOffset = 30.f * 0.48f * 0.42f + 1.4f;
 	const FVector Offset = Up * UpOffset + Forward * ForwardOffset;
-	const FQuat TextRot = FRotationMatrix::MakeFromXZ(
+	const FQuat FaceRot = FRotationMatrix::MakeFromXZ(
 		HeadRot.UnrotateVector(Forward),
 		HeadRot.UnrotateVector(Up)).ToQuat();
 
-	FaceText->AttachToComponent(
+	FaceRoot->AttachToComponent(
 		CharacterMesh,
 		FAttachmentTransformRules::SnapToTargetNotIncludingScale,
 		Infos[HeadIndex].Name);
-	FaceText->SetRelativeLocation(HeadRot.UnrotateVector(Offset));
-	FaceText->SetRelativeRotation(TextRot.Rotator());
-	FaceText->SetHorizontalAlignment(EHTA_Center);
-	FaceText->SetVerticalAlignment(EVRTA_TextCenter);
-	FaceText->SetWorldSize(FMath::Clamp(Span * 0.85f, 14.f, 22.f));
-	FaceText->SetTextRenderColor(
-		TorsoColor.GetLuminance() > 0.35f ? FColor(12, 12, 14) : FColor(245, 245, 240));
-	FaceText->SetText(FText::FromString(SolidBodyMesh::FaceStringForCodepoint(
-		SolidBodyMesh::FaceCodepointForName(CharacterDisplayName))));
-	FaceText->SetCastShadow(false);
-	FaceText->SetVisibility(true);
+	FaceRoot->SetRelativeLocation(HeadRot.UnrotateVector(Offset));
+	FaceRoot->SetRelativeRotation(FaceRot.Rotator());
+	FaceRoot->SetVisibility(true, true);
+	if (FaceText)
+	{
+		FaceText->SetVisibility(false);
+	}
+
+	const FLinearColor Ink = TorsoColor.GetLuminance() > 0.35f
+		? FLinearColor(0.02f, 0.02f, 0.025f)
+		: FLinearColor(0.95f, 0.95f, 0.92f);
+	PaintFace(Ink);
+	LayoutFace(SolidBodyMesh::FaceCodepointForName(CharacterDisplayName));
 }
 
 bool ASolidCompanionCharacter::PlayLocomotionClip(UAnimSequence* Anim)

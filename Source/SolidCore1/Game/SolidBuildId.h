@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0232")
+#define SOLID_BUILD_ID TEXT("SC1-0233")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Parade fires Enter Relion and Enter Dragongate before the rank forms.")
+#define SOLID_BUILD_NOTE TEXT("Companion bodies have a chest and limbs, a drawn face, and stable flat colors.")
 #endif

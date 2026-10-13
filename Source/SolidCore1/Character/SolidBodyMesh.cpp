@@ -6,6 +6,7 @@
 #include "Animation/Skeleton.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "ReferenceSkeleton.h"
 
 #if WITH_EDITORONLY_DATA
@@ -299,44 +300,47 @@ namespace
 		}
 	}
 
+	/**
+	 * Thickness in centimetres for a standing person.
+	 * Short Viking bones (a spine segment, a twist) must not shrink the chest to a stick.
+	 */
 	float SectionRadius(const ESolidBodyBoneRole Role, const float Length, const FSolidBodyParams& Params)
 	{
-		float Fraction = 0.18f;
-		float Girth = Params.Bulk;
+		(void)Length;
+		float Radius = 5.f * Params.Bulk;
 		switch (Role)
 		{
 		case ESolidBodyBoneRole::Spine:
+			Radius = 15.5f * Params.TorsoGirth;
+			break;
 		case ESolidBodyBoneRole::Pelvis:
-			Fraction = 0.42f;
-			Girth = Params.TorsoGirth;
+			Radius = 12.f * Params.HipWidth;
 			break;
 		case ESolidBodyBoneRole::Neck:
-			Fraction = 0.22f;
-			Girth = Params.TorsoGirth;
+			Radius = 6.4f * Params.TorsoGirth;
 			break;
 		case ESolidBodyBoneRole::Clavicle:
-			Fraction = 0.12f;
+			Radius = 5.2f * Params.ShoulderWidth;
 			break;
 		case ESolidBodyBoneRole::Arm:
-			Fraction = 0.16f;
+			Radius = 5.4f * Params.Bulk;
 			break;
 		case ESolidBodyBoneRole::Hand:
-			Fraction = 0.18f;
+			Radius = 3.8f * Params.Bulk;
 			break;
 		case ESolidBodyBoneRole::Leg:
-			Fraction = 0.22f;
+			Radius = 8.2f * Params.Bulk;
 			break;
 		case ESolidBodyBoneRole::Foot:
-			Fraction = 0.18f;
+			Radius = 5.6f * Params.Bulk;
 			break;
 		case ESolidBodyBoneRole::Head:
-			Fraction = 0.42f;
-			Girth = Params.HeadSize;
+			Radius = 11.f * Params.HeadSize;
 			break;
 		default:
 			break;
 		}
-		return FMath::Clamp(FMath::Max(Length * Fraction, 2.5f) * Girth, 1.5f, 28.f);
+		return FMath::Clamp(Radius, 2.5f, 24.f);
 	}
 
 	int32 FindChild(const TArray<FSolidDeformBone>& Bones, const int32 Parent, const ESolidBodyBoneRole Role)
@@ -432,24 +436,9 @@ namespace
 		}
 		Side = Side.GetSafeNormal();
 
-		float HalfWidth = 8.f * Params.HipWidth;
-		for (const int32 Leg : Legs)
-		{
-			if (!Positions.IsValidIndex(Leg))
-			{
-				continue;
-			}
-			const float Span = FMath::Abs(FVector::DotProduct(Positions[Leg] - Positions[Pelvis], Side));
-			HalfWidth = FMath::Max(HalfWidth, static_cast<float>(Span) * 1.05f);
-		}
-
-		float HalfHeight = HalfWidth * 0.42f;
-		if (Positions.IsValidIndex(Spine))
-		{
-			const float ToSpine = (Positions[Spine] - Positions[Pelvis]).Size();
-			HalfHeight = FMath::Max(static_cast<float>(ToSpine) * 0.38f, HalfWidth * 0.32f);
-		}
-		HalfHeight *= Params.TorsoGirth;
+		// The thigh bone ends at the knee, so its offset is not the hip width.
+		const float HalfWidth = 12.f * Params.HipWidth;
+		const float HalfHeight = 8.5f * Params.TorsoGirth;
 		const FVector Center = Positions[Pelvis];
 		AddTube(
 			Verts,
@@ -575,11 +564,20 @@ namespace
 				}
 			}
 
-			if (bParent && Bones[Parent].Role != ESolidBodyBoneRole::Root)
+			// Twist bones are only a couple of centimetres. Skip those so they do not read as sticks.
+			if (bParent && Bones[Parent].Role != ESolidBodyBoneRole::Root && Incoming >= 4.f)
 			{
-				const ESolidBodyBoneRole RadiusRole = (Bones[Parent].Role == ESolidBodyBoneRole::Pelvis)
-					? Role
-					: Bones[Parent].Role;
+				ESolidBodyBoneRole RadiusRole = Bones[Parent].Role;
+				if (Role == ESolidBodyBoneRole::Spine
+					|| Role == ESolidBodyBoneRole::Arm
+					|| Role == ESolidBodyBoneRole::Hand
+					|| Role == ESolidBodyBoneRole::Leg
+					|| Role == ESolidBodyBoneRole::Foot
+					|| Role == ESolidBodyBoneRole::Clavicle
+					|| Role == ESolidBodyBoneRole::Neck)
+				{
+					RadiusRole = Role;
+				}
 				int32 SpineCount = 1;
 				const int32 Ordinal = (RadiusRole == ESolidBodyBoneRole::Spine)
 					? SpineOrdinal(Bones, Parent, SpineCount)
@@ -605,7 +603,7 @@ namespace
 
 			if (Role == ESolidBodyBoneRole::Head)
 			{
-				const float Height = FMath::Max(Incoming, 18.f) * Params.HeadSize;
+				const float Height = FMath::Clamp(22.f * Params.HeadSize, 17.f, 30.f);
 				AddHead(
 					Verts,
 					Tris,
@@ -697,6 +695,45 @@ namespace
 					FVector::UpVector);
 			}
 		}
+	}
+
+	void PaintSlot(
+		USkeletalMeshComponent* MeshComp,
+		const int32 Slot,
+		const FLinearColor& Color,
+		const TCHAR* DebugName)
+	{
+		if (!MeshComp)
+		{
+			return;
+		}
+
+		// Overrides live on the component. The shared mesh keeps its slot names and is not recolored
+		// while a companion is already drawing it.
+		UMaterialInterface* Current = MeshComp->GetMaterial(Slot);
+		UMaterialInstanceDynamic* Existing = Cast<UMaterialInstanceDynamic>(Current);
+		if (Existing && Existing->GetOuter() == MeshComp)
+		{
+			Existing->SetVectorParameterValue(TEXT("Base Color"), Color);
+			Existing->SetVectorParameterValue(TEXT("BaseColor"), Color);
+			Existing->SetScalarParameterValue(TEXT("Roughness"), 1.f);
+			Existing->RecacheUniformExpressions(true);
+			return;
+		}
+
+		if (UMaterialInterface* Created = SolidMaterials::CreateSolidColor(MeshComp, Color, DebugName, 1.f))
+		{
+			MeshComp->SetMaterial(Slot, Created);
+		}
+	}
+
+	void ApplyComponentColors(
+		USkeletalMeshComponent* MeshComp,
+		const FLinearColor& Torso,
+		const FLinearColor& Legs)
+	{
+		PaintSlot(MeshComp, 0, Torso, TEXT("BodyTorso"));
+		PaintSlot(MeshComp, 1, Legs, TEXT("BodyLegs"));
 	}
 
 	void ApplyWearColors(USkeletalMesh* Mesh, const FLinearColor& Torso, const FLinearColor& Legs)
@@ -1192,8 +1229,8 @@ void SolidBodyMesh::ApplySeed(
 		{
 			if (HasRenderableBody(Cached))
 			{
-				ApplyWearColors(Cached, TorsoColor, LegColor);
 				WearBody(MeshComp, Cached, Seed, Params, DebugLabel, true);
+				ApplyComponentColors(MeshComp, TorsoColor, LegColor);
 				return;
 			}
 		}
@@ -1223,9 +1260,9 @@ void SolidBodyMesh::ApplySeed(
 			DebugLabel ? DebugLabel : TEXT("Body"));
 		return;
 	}
-	ApplyWearColors(Built, TorsoColor, LegColor);
 	BodyCache().Add(Seed, Built);
 	WearBody(MeshComp, Built, Seed, Params, DebugLabel, false);
+	ApplyComponentColors(MeshComp, TorsoColor, LegColor);
 #else
 	(void)Built;
 	(void)TorsoColor;

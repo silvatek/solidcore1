@@ -33,5 +33,7 @@ UMaterialInterface* SolidMaterials::CreateSolidColor(
 	MID->SetVectorParameterValue(TEXT("Base Color"), Color);
 	MID->SetVectorParameterValue(TEXT("BaseColor"), Color);
 	MID->SetScalarParameterValue(TEXT("Roughness"), FMath::Clamp(Roughness, 0.f, 1.f));
+	// The render thread asserts if this cache still points at an older shader map.
+	MID->RecacheUniformExpressions(true);
 	return MID;
 }

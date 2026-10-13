@@ -10,6 +10,9 @@
 #if WITH_EDITORONLY_DATA
 #include "BoneWeights.h"
 #include "MeshDescription.h"
+#include "Rendering/SkeletalMeshLODModel.h"
+#include "Rendering/SkeletalMeshModel.h"
+#include "Rendering/SkeletalMeshRenderData.h"
 #include "SkeletalMeshAttributes.h"
 #endif
 
@@ -251,6 +254,35 @@ namespace
 		return BodySkeleton;
 	}
 
+	bool HasRenderableBody(const USkeletalMesh* Mesh)
+	{
+		if (!Mesh || Mesh->GetRefSkeleton().GetRawBoneNum() <= 0)
+		{
+			return false;
+		}
+		if (Mesh->GetRefBasesInvMatrix().Num() <= 0)
+		{
+			return false;
+		}
+		const FSkeletalMeshRenderData* RenderData = Mesh->GetResourceForRendering();
+		return RenderData
+			&& RenderData->LODRenderData.Num() > 0
+			&& RenderData->LODRenderData[0].GetNumVertices() > 0;
+	}
+
+	void EnsureImportedLod(USkeletalMesh* Mesh)
+	{
+#if WITH_EDITOR
+		FSkeletalMeshModel* Imported = Mesh ? Mesh->GetImportedModel() : nullptr;
+		if (Imported && Imported->LODModels.Num() < 1)
+		{
+			Imported->LODModels.Add(new FSkeletalMeshLODModel());
+		}
+#else
+		(void)Mesh;
+#endif
+	}
+
 	void ApplyDeformedRefPose(
 		USkeletalMesh* Mesh,
 		const USkeleton* VirtualBoneSource,
@@ -349,6 +381,7 @@ USkeletalMesh* SolidBodyMesh::Build(
 	{
 		Mesh->AddLODInfo();
 	}
+	EnsureImportedLod(Mesh);
 
 	FMeshDescription* Dest = Mesh->CreateMeshDescription(0, MoveTemp(Description));
 	if (!Dest)
@@ -365,6 +398,19 @@ USkeletalMesh* SolidBodyMesh::Build(
 	}
 	Mesh->Build();
 	ApplyDeformedRefPose(Mesh, BodySkeleton, Ref, Deformed);
+	// The bind-pose edit drops the derived render data. Build it again before the mesh is worn.
+	Mesh->SetSkeleton(BodySkeleton);
+	Mesh->Build();
+	Mesh->CalculateInvRefMatrices();
+	if (!HasRenderableBody(Mesh))
+	{
+		const FSkeletalMeshRenderData* RenderData = Mesh->GetResourceForRendering();
+		UE_LOG(LogSolid, Warning,
+			TEXT("SolidBody build has no wearable LOD (bones %d, lods %d), so it is discarded."),
+			Mesh->GetRefSkeleton().GetRawBoneNum(),
+			RenderData ? RenderData->LODRenderData.Num() : 0);
+		return nullptr;
+	}
 	return Mesh;
 #else
 	(void)Source;
@@ -400,6 +446,15 @@ void SolidBodyMesh::ApplySeed(
 			DebugLabel ? DebugLabel : TEXT("Body"));
 		return;
 	}
+#if WITH_EDITORONLY_DATA
+	if (!HasRenderableBody(Built))
+	{
+		UE_LOG(LogSolid, Warning,
+			TEXT("%s body: generated mesh has no wearable LOD, so the source mesh stays."),
+			DebugLabel ? DebugLabel : TEXT("Body"));
+		return;
+	}
+#endif
 
 	MeshComp->SetSkeletalMeshAsset(Built);
 	MeshComp->SetAnimInstanceClass(nullptr);

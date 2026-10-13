@@ -100,7 +100,7 @@ namespace SolidCompanionColors
 
 /**
  * One companion in the company catalog.
- * Name, mesh reference, vocation, and the shirt, trouser, and skin colors of the generated body.
+ * Name, mesh reference, vocation, shirt, trouser, and skin colors, and the height, build, and gender sliders.
  */
 USTRUCT(BlueprintType)
 struct FSolidCompanion
@@ -128,6 +128,18 @@ struct FSolidCompanion
 	/** Matte skin: head and hands. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	FLinearColor SkinColor = FLinearColor(0.96f, 0.76f, 0.72f);
+
+	/** Character-editor height. The catalog copies this from the name seed. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
+	float BodyHeight = 1.f;
+
+	/** Character-editor build. The catalog copies this from the name seed's bulk. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
+	float BodyBuild = 1.f;
+
+	/** 0 is broader shoulders, 1 is broader hips, 0.5 leaves the seed. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
+	float BodyGender = 0.5f;
 };
 
 /**
@@ -175,6 +187,12 @@ public:
 	int32 GetCompanionCount() const { return AllCompanions.Num(); }
 
 	const FSolidCompanion* GetCompanion(int32 Index) const;
+
+	/**
+	 * Store height, build, and gender on one catalog entry.
+	 * Returns false when the index misses or the stored bits are already those numbers.
+	 */
+	bool SetCompanionBodyControls(int32 Index, float Height, float Build, float Gender);
 
 	int32 FindCompanionIndexByName(const FString& Name) const;
 

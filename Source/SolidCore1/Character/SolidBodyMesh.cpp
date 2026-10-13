@@ -1058,6 +1058,20 @@ namespace
 		return Cache;
 	}
 
+	/** FNV-1a over the clamped channel bits, so two equal bodies share one mesh. */
+	uint32 ParamsCacheKey(const FSolidBodyParams& Params)
+	{
+		const FSolidBodyParams Clamped = Params.Clamped();
+		uint32 Hash = 2166136261u;
+		const uint8* Bytes = reinterpret_cast<const uint8*>(&Clamped);
+		for (int32 Index = 0; Index < static_cast<int32>(sizeof(FSolidBodyParams)); ++Index)
+		{
+			Hash ^= Bytes[Index];
+			Hash *= 16777619u;
+		}
+		return Hash;
+	}
+
 	void WearBody(
 		USkeletalMeshComponent* MeshComp,
 		USkeletalMesh* Body,
@@ -1242,6 +1256,7 @@ FString SolidBodyMesh::FaceStringForCodepoint(const uint32 Codepoint)
 void SolidBodyMesh::ApplySeed(
 	USkeletalMeshComponent* MeshComp,
 	const uint32 Seed,
+	const FSolidBodyParams& Params,
 	UObject* Outer,
 	const TCHAR* DebugLabel,
 	const FLinearColor& TorsoColor,
@@ -1253,10 +1268,9 @@ void SolidBodyMesh::ApplySeed(
 		return;
 	}
 
-	const FSolidBodyParams Params = FSolidBodyParams::FromSeed(Seed);
-
 #if WITH_EDITORONLY_DATA
-	if (TWeakObjectPtr<USkeletalMesh>* Found = BodyCache().Find(Seed))
+	const uint32 Key = ParamsCacheKey(Params);
+	if (TWeakObjectPtr<USkeletalMesh>* Found = BodyCache().Find(Key))
 	{
 		if (USkeletalMesh* Cached = Found->Get())
 		{
@@ -1267,7 +1281,7 @@ void SolidBodyMesh::ApplySeed(
 				return;
 			}
 		}
-		BodyCache().Remove(Seed);
+		BodyCache().Remove(Key);
 	}
 #endif
 
@@ -1293,10 +1307,12 @@ void SolidBodyMesh::ApplySeed(
 			DebugLabel ? DebugLabel : TEXT("Body"));
 		return;
 	}
-	BodyCache().Add(Seed, Built);
+	BodyCache().Add(Key, Built);
 	WearBody(MeshComp, Built, Seed, Params, DebugLabel, false);
 	ApplyComponentColors(MeshComp, TorsoColor, LegColor, SkinColor);
 #else
+	(void)Seed;
+	(void)Params;
 	(void)Built;
 	(void)TorsoColor;
 	(void)LegColor;

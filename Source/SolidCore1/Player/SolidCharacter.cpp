@@ -31,6 +31,7 @@
 #include "Character/SolidCharacterStage.h"
 #include "HUD/SolidHUD.h"
 #include "Menus/SolidMainMenu.h"
+#include "SolidBodyParams.h"
 #include "Menus/SolidPartyBuilder.h"
 #include "Menus/SolidPortal.h"
 #include "SolidNameLabel.h"
@@ -196,6 +197,7 @@ void ASolidCharacter::Tick(float DeltaTime)
 	UpdateMenuPointerHover();
 	UpdateCavePassageHover();
 	TickClickMove();
+	UpdateCharacterEditorPointer();
 	UpdateLocomotionAnim();
 	if (const ASolidHUD* SolidHud = GetSolidHUD())
 	{
@@ -278,9 +280,17 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::F12, IE_Pressed, this, &ASolidCharacter::ToggleDebugPanelFromInput);
 	PlayerInputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ASolidCharacter::CloseMenuOverlayFromInput);
 	PlayerInputComponent->BindKey(EKeys::Up, IE_Pressed, this, &ASolidCharacter::MainMenuMoveUp);
+	PlayerInputComponent->BindKey(EKeys::Up, IE_Repeat, this, &ASolidCharacter::MainMenuMoveUp);
 	PlayerInputComponent->BindKey(EKeys::Down, IE_Pressed, this, &ASolidCharacter::MainMenuMoveDown);
-	PlayerInputComponent->BindKey(EKeys::Left, IE_Pressed, this, &ASolidCharacter::CharacterEditorPrevious);
-	PlayerInputComponent->BindKey(EKeys::Right, IE_Pressed, this, &ASolidCharacter::CharacterEditorNext);
+	PlayerInputComponent->BindKey(EKeys::Down, IE_Repeat, this, &ASolidCharacter::MainMenuMoveDown);
+	PlayerInputComponent->BindKey(EKeys::Left, IE_Pressed, this, &ASolidCharacter::CharacterEditorNudgeLeft);
+	PlayerInputComponent->BindKey(EKeys::Left, IE_Repeat, this, &ASolidCharacter::CharacterEditorNudgeLeft);
+	PlayerInputComponent->BindKey(EKeys::Right, IE_Pressed, this, &ASolidCharacter::CharacterEditorNudgeRight);
+	PlayerInputComponent->BindKey(EKeys::Right, IE_Repeat, this, &ASolidCharacter::CharacterEditorNudgeRight);
+	PlayerInputComponent->BindKey(EKeys::PageUp, IE_Pressed, this, &ASolidCharacter::CharacterEditorPrevious);
+	PlayerInputComponent->BindKey(EKeys::PageUp, IE_Repeat, this, &ASolidCharacter::CharacterEditorPrevious);
+	PlayerInputComponent->BindKey(EKeys::PageDown, IE_Pressed, this, &ASolidCharacter::CharacterEditorNext);
+	PlayerInputComponent->BindKey(EKeys::PageDown, IE_Repeat, this, &ASolidCharacter::CharacterEditorNext);
 	PlayerInputComponent->BindKey(EKeys::Enter, IE_Pressed, this, &ASolidCharacter::MainMenuConfirm);
 	PlayerInputComponent->BindKey(EKeys::One, IE_Pressed, this, &ASolidCharacter::MainMenuChoose1);
 	PlayerInputComponent->BindKey(EKeys::Two, IE_Pressed, this, &ASolidCharacter::MainMenuChoose2);
@@ -459,6 +469,16 @@ void ASolidCharacter::CharacterEditorNext()
 	MoveCharacterEditor(1);
 }
 
+void ASolidCharacter::CharacterEditorNudgeLeft()
+{
+	NudgeCharacterEditorSlider(-1);
+}
+
+void ASolidCharacter::CharacterEditorNudgeRight()
+{
+	NudgeCharacterEditorSlider(1);
+}
+
 void ASolidCharacter::MoveCharacterEditor(const int32 Delta)
 {
 	ASolidHUD* HUD = GetSolidHUD();
@@ -468,6 +488,95 @@ void ASolidCharacter::MoveCharacterEditor(const int32 Delta)
 	}
 	HUD->MoveCharacterEditor(Delta);
 	SyncCharacterStage();
+}
+
+void ASolidCharacter::NudgeCharacterEditorSlider(const int32 Direction)
+{
+	ASolidHUD* HUD = GetSolidHUD();
+	if (!HUD || !HUD->IsCharacterEditorOpen())
+	{
+		return;
+	}
+	UWorld* World = GetWorld();
+	ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+	USolidCompany* Company = GameMode ? GameMode->GetCompany() : nullptr;
+	const int32 Index = HUD->GetCharacterEditorIndex();
+	const FSolidCompanion* Record = Company ? Company->GetCompanion(Index) : nullptr;
+	if (!Record)
+	{
+		return;
+	}
+
+	const FString Name = Record->Name;
+	FSolidBodyControls Controls;
+	Controls.Height = Record->BodyHeight;
+	Controls.Build = Record->BodyBuild;
+	Controls.Gender = Record->BodyGender;
+	SolidBodyControls::Nudge(Controls, HUD->GetCharacterEditorSlider(), Direction);
+	if (!Company->SetCompanionBodyControls(Index, Controls.Height, Controls.Build, Controls.Gender))
+	{
+		return;
+	}
+	PushEditorBodyToParty(Name, Controls.Height, Controls.Build, Controls.Gender);
+	SyncCharacterStage();
+}
+
+void ASolidCharacter::ApplyEditorSliderFraction(const int32 Slider, const float Fraction)
+{
+	ASolidHUD* HUD = GetSolidHUD();
+	if (!HUD || !HUD->IsCharacterEditorOpen())
+	{
+		return;
+	}
+	UWorld* World = GetWorld();
+	ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+	USolidCompany* Company = GameMode ? GameMode->GetCompany() : nullptr;
+	const int32 Index = HUD->GetCharacterEditorIndex();
+	const FSolidCompanion* Record = Company ? Company->GetCompanion(Index) : nullptr;
+	if (!Record)
+	{
+		return;
+	}
+
+	const FString Name = Record->Name;
+	FSolidBodyControls Controls;
+	Controls.Height = Record->BodyHeight;
+	Controls.Build = Record->BodyBuild;
+	Controls.Gender = Record->BodyGender;
+	SolidBodyControls::SetFraction(Controls, Slider, Fraction);
+	if (!Company->SetCompanionBodyControls(Index, Controls.Height, Controls.Build, Controls.Gender))
+	{
+		return;
+	}
+	PushEditorBodyToParty(Name, Controls.Height, Controls.Build, Controls.Gender);
+	SyncCharacterStage();
+}
+
+void ASolidCharacter::PushEditorBodyToParty(
+	const FString& Name,
+	const float Height,
+	const float Build,
+	const float Gender)
+{
+	UWorld* World = GetWorld();
+	ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+	if (!GameMode)
+	{
+		return;
+	}
+	for (const TObjectPtr<ASolidCompanionCharacter>& Companion : GameMode->GetCompanions())
+	{
+		ASolidCompanionCharacter* Actor = Companion.Get();
+		if (!Actor || Actor->IsStagePreview())
+		{
+			continue;
+		}
+		if (Actor->GetCharacterDisplayName() != Name)
+		{
+			continue;
+		}
+		Actor->SetBodyControls(Height, Build, Gender);
+	}
 }
 
 void ASolidCharacter::SetEditorWorldHidden(const bool bHideWorld)
@@ -599,6 +708,11 @@ void ASolidCharacter::MainMenuMoveUp()
 {
 	if (ASolidHUD* HUD = GetSolidHUD())
 	{
+		if (HUD->IsCharacterEditorOpen())
+		{
+			HUD->MoveCharacterEditorSlider(-1);
+			return;
+		}
 		if (HUD->IsPortalOpen())
 		{
 			HUD->MovePortalSelection(-1);
@@ -618,6 +732,11 @@ void ASolidCharacter::MainMenuMoveDown()
 {
 	if (ASolidHUD* HUD = GetSolidHUD())
 	{
+		if (HUD->IsCharacterEditorOpen())
+		{
+			HUD->MoveCharacterEditorSlider(1);
+			return;
+		}
 		if (HUD->IsPortalOpen())
 		{
 			HUD->MovePortalSelection(1);
@@ -1274,6 +1393,22 @@ void ASolidCharacter::PollClickMovePress()
 	float Y = 0.f;
 	if (ASolidHUD* HUD = GetSolidHUD())
 	{
+		if (HUD->IsCharacterEditorOpen())
+		{
+			int32 Slider = 0;
+			bool bBar = false;
+			float Fraction = 0.f;
+			if (ReadPointerPosition(X, Y)
+				&& HUD->PressCharacterEditorSlider(X, Y, Slider, bBar, Fraction)
+				&& bBar)
+			{
+				ApplyEditorSliderFraction(Slider, Fraction);
+			}
+			return;
+		}
+	}
+	if (ASolidHUD* HUD = GetSolidHUD())
+	{
 		if ((HUD->IsMainMenuOpen() || HUD->IsPortalOpen() || HUD->IsPartyBuilderOpen())
 			&& ReadPointerPosition(X, Y)
 			&& HUD->SelectChoiceAt(X, Y))
@@ -1290,6 +1425,51 @@ void ASolidCharacter::PollClickMovePress()
 		return;
 	}
 	ClickMoveFromInput();
+}
+
+void ASolidCharacter::UpdateCharacterEditorPointer()
+{
+	ASolidHUD* HUD = GetSolidHUD();
+	if (!HUD || !HUD->IsCharacterEditorOpen())
+	{
+		if (HUD)
+		{
+			HUD->EndCharacterEditorSliderDrag();
+		}
+		return;
+	}
+
+	bool bDown = false;
+	if (const ASolidPlayerController* PlayerController = Cast<ASolidPlayerController>(Controller))
+	{
+		bDown = PlayerController->IsLeftMouseHeld();
+	}
+	else if (const APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	{
+		bDown = PlayerController->IsInputKeyDown(EKeys::LeftMouseButton);
+	}
+	if (!bDown)
+	{
+		HUD->EndCharacterEditorSliderDrag();
+		return;
+	}
+	if (!HUD->IsCharacterEditorSliderDragging())
+	{
+		return;
+	}
+
+	float X = 0.f;
+	float Y = 0.f;
+	if (!ReadPointerPosition(X, Y))
+	{
+		return;
+	}
+	int32 Slider = 0;
+	float Fraction = 0.f;
+	if (HUD->DragCharacterEditorSlider(X, Slider, Fraction))
+	{
+		ApplyEditorSliderFraction(Slider, Fraction);
+	}
 }
 
 void ASolidCharacter::TickClickMove()

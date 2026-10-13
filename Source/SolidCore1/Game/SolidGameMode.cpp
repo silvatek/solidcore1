@@ -8,6 +8,8 @@
 #include "SolidPlayerController.h"
 #include "SolidCore1.h"
 #include "Companion/SolidCompanionCharacter.h"
+#include "SolidBodyMesh.h"
+#include "SolidBodyParams.h"
 #include "Party/SolidBattlePlan.h"
 #include "Party/SolidCompany.h"
 #include "Party/SolidParty.h"
@@ -66,6 +68,23 @@ namespace
 		const FString Path = FString::Printf(
 			TEXT("/Game/Fab/%s/%s.%s"), *Entry->Name, *Entry->Name, *Entry->Name);
 		return TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(Path));
+	}
+
+	void CopyBodyControls(ASolidCompanionCharacter* Companion, const FSolidCompanion* Record, const FString& DisplayName)
+	{
+		if (!Companion)
+		{
+			return;
+		}
+		FSolidBodyControls Controls = SolidBodyControls::FromSeed(
+			FSolidBodyParams::FromSeed(SolidBodyMesh::SeedForName(DisplayName)));
+		if (Record)
+		{
+			Controls.Height = Record->BodyHeight;
+			Controls.Build = Record->BodyBuild;
+			Controls.Gender = Record->BodyGender;
+		}
+		Companion->SetBodyControls(Controls.Height, Controls.Build, Controls.Gender);
 	}
 
 	ASolidCharacter* FindCaptain(UWorld* World)
@@ -694,6 +713,10 @@ ASolidCompanionCharacter* ASolidGameMode::SpawnCompanion(
 		}
 	}
 	Companion->SetBodyColors(TorsoColor, LegColor, SkinColor);
+	CopyBodyControls(
+		Companion,
+		Company ? Company->GetCompanion(Company->FindCompanionIndexByName(DisplayName)) : nullptr,
+		DisplayName);
 	Companion->SetFollowTarget(PlayerPawn);
 	Companion->FinishSpawning(SpawnTransform);
 
@@ -777,6 +800,15 @@ void ASolidGameMode::EnsureCompanion()
 					Fielded[Slot].TorsoColor,
 					Fielded[Slot].LegColor,
 					Fielded[Slot].SkinColor);
+			}
+			if (Companion->GetBodyHeight() != Fielded[Slot].BodyHeight
+				|| Companion->GetBodyBuild() != Fielded[Slot].BodyBuild
+				|| Companion->GetBodyGender() != Fielded[Slot].BodyGender)
+			{
+				Companion->SetBodyControls(
+					Fielded[Slot].BodyHeight,
+					Fielded[Slot].BodyBuild,
+					Fielded[Slot].BodyGender);
 			}
 			continue;
 		}

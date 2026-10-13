@@ -32,14 +32,16 @@ namespace SolidBodyMesh
 	USkeletalMesh* Build(const USkeletalMesh* Source, const FSolidBodyParams& Params, UObject* Outer);
 
 	/**
-	 * Replace the component mesh with a seeded low-poly body.
-	 * Shirt, trouser, and skin colors are plain matte materials. The same seed reuses one mesh.
+	 * Replace the component mesh with a low-poly body.
+	 * Shirt, trouser, and skin colors are plain matte materials. The same proportions reuse one mesh.
+	 * Seed is the name id written to the log. Params is the body that is built.
 	 * Leaves the current mesh when the body cannot be built.
 	 * The captain does not call this.
 	 */
 	void ApplySeed(
 		USkeletalMeshComponent* MeshComp,
 		uint32 Seed,
+		const FSolidBodyParams& Params,
 		UObject* Outer,
 		const TCHAR* DebugLabel,
 		const FLinearColor& TorsoColor,

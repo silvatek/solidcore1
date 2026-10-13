@@ -1,4 +1,5 @@
 #include "Party/SolidCompany.h"
+#include "SolidBodyMesh.h"
 #include "SolidClipLocomotion.h"
 #include "UObject/SoftObjectPath.h"
 
@@ -94,6 +95,11 @@ void USolidCompany::InitializeDefaultCompanions()
 		Companion.Vocation = Vocation;
 		SolidCompanionColors::ColorsForName(
 			Companion.Name, Companion.TorsoColor, Companion.LegColor, Companion.SkinColor);
+		const FSolidBodyParams Seed = FSolidBodyParams::FromSeed(SolidBodyMesh::SeedForName(Companion.Name));
+		const FSolidBodyControls Controls = SolidBodyControls::FromSeed(Seed);
+		Companion.BodyHeight = Controls.Height;
+		Companion.BodyBuild = Controls.Build;
+		Companion.BodyGender = Controls.Gender;
 		AllCompanions.Add(Companion);
 	};
 	Add(TEXT("Sam"), Assassin, ESolidVocation::Rogue);
@@ -176,6 +182,27 @@ TSoftObjectPtr<USkeletalMesh> USolidCompany::GetMeshForCompanion(const FSolidCom
 const FSolidCompanion* USolidCompany::GetCompanion(const int32 Index) const
 {
 	return AllCompanions.IsValidIndex(Index) ? &AllCompanions[Index] : nullptr;
+}
+
+bool USolidCompany::SetCompanionBodyControls(
+	const int32 Index,
+	const float Height,
+	const float Build,
+	const float Gender)
+{
+	if (!AllCompanions.IsValidIndex(Index))
+	{
+		return false;
+	}
+	FSolidCompanion& Companion = AllCompanions[Index];
+	if (Companion.BodyHeight == Height && Companion.BodyBuild == Build && Companion.BodyGender == Gender)
+	{
+		return false;
+	}
+	Companion.BodyHeight = Height;
+	Companion.BodyBuild = Build;
+	Companion.BodyGender = Gender;
+	return true;
 }
 
 int32 USolidCompany::FindCompanionIndexByName(const FString& Name) const

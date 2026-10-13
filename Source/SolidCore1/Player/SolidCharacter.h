@@ -94,6 +94,7 @@ protected:
 	void UpdatePointerMouseLook();
 	void ClickMoveFromInput();
 	void PollClickMovePress();
+	void UpdateCharacterEditorPointer();
 	void UpdateMenuPointerHover();
 	void UpdateCavePassageHover();
 	bool ReadPointerPosition(float& OutX, float& OutY) const;
@@ -137,7 +138,12 @@ protected:
 	void MainMenuConfirm();
 	void CharacterEditorPrevious();
 	void CharacterEditorNext();
+	void CharacterEditorNudgeLeft();
+	void CharacterEditorNudgeRight();
 	void MoveCharacterEditor(int32 Delta);
+	void NudgeCharacterEditorSlider(int32 Direction);
+	void ApplyEditorSliderFraction(int32 Slider, float Fraction);
+	void PushEditorBodyToParty(const FString& Name, float Height, float Build, float Gender);
 	void SyncCharacterStage();
 	void SetEditorWorldHidden(bool bHideWorld);
 	void SetEditorCameraLocked(bool bLocked);

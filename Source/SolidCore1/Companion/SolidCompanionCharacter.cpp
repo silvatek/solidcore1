@@ -160,14 +160,51 @@ void ASolidCompanionCharacter::SetCharacterDisplayName(const FString& NewName)
 	}
 }
 
-void ASolidCompanionCharacter::SetBodyColors(
+bool ASolidCompanionCharacter::SetBodyColors(
 	const FLinearColor& NewTorso,
 	const FLinearColor& NewLegs,
 	const FLinearColor& NewSkin)
 {
+	if (TorsoColor.Equals(NewTorso) && LegColor.Equals(NewLegs) && SkinColor.Equals(NewSkin))
+	{
+		return false;
+	}
 	TorsoColor = NewTorso;
 	LegColor = NewLegs;
 	SkinColor = NewSkin;
+	if (HasActorBegunPlay())
+	{
+		ApplyVisuals();
+	}
+	return true;
+}
+
+bool ASolidCompanionCharacter::SetBodyControls(
+	const float NewHeight,
+	const float NewBuild,
+	const float NewGender)
+{
+	const bool bChanged = !bHasBodyControls
+		|| BodyHeight != NewHeight
+		|| BodyBuild != NewBuild
+		|| BodyGender != NewGender;
+	BodyHeight = NewHeight;
+	BodyBuild = NewBuild;
+	BodyGender = NewGender;
+	bHasBodyControls = true;
+	if (!bChanged)
+	{
+		return false;
+	}
+	if (HasActorBegunPlay())
+	{
+		ApplyVisuals();
+	}
+	return true;
+}
+
+void ASolidCompanionCharacter::RebuildBody()
+{
 	if (HasActorBegunPlay())
 	{
 		ApplyVisuals();
@@ -257,14 +294,7 @@ void ASolidCompanionCharacter::SetCompanionMesh(const TSoftObjectPtr<USkeletalMe
 			bVikingMesh ? SolidClipLocomotion::DefaultMeshPath : nullptr,
 			TEXT("Companion"),
 			/*bOnlyIfMeshUnset=*/false);
-		SolidBodyMesh::ApplySeed(
-			GetMesh(),
-			SolidBodyMesh::SeedForName(CharacterDisplayName),
-			this,
-			TEXT("Companion"),
-			TorsoColor,
-			LegColor,
-			SkinColor);
+		ApplyBodyMesh();
 		ApplyFace();
 		CacheLocomotionAnims();
 		UpdateLocomotionAnim();
@@ -342,15 +372,35 @@ void ASolidCompanionCharacter::ApplyVisuals()
 		bVikingMesh ? SolidClipLocomotion::DefaultMeshPath : nullptr,
 		TEXT("Companion"),
 		/*bOnlyIfMeshUnset=*/true);
+	ApplyBodyMesh();
+	ApplyFace();
+}
+
+void ASolidCompanionCharacter::ApplyBodyMesh()
+{
+	const uint32 Seed = SolidBodyMesh::SeedForName(CharacterDisplayName);
+	const FSolidBodyParams SeedParams = FSolidBodyParams::FromSeed(Seed);
+	FSolidBodyControls Controls;
+	if (bHasBodyControls)
+	{
+		Controls.Height = BodyHeight;
+		Controls.Build = BodyBuild;
+		Controls.Gender = BodyGender;
+	}
+	else
+	{
+		Controls = SolidBodyControls::FromSeed(SeedParams);
+	}
+	const FSolidBodyParams Params = SolidBodyControls::Resolve(SeedParams, Controls);
 	SolidBodyMesh::ApplySeed(
 		GetMesh(),
-		SolidBodyMesh::SeedForName(CharacterDisplayName),
+		Seed,
+		Params,
 		this,
 		TEXT("Companion"),
 		TorsoColor,
 		LegColor,
 		SkinColor);
-	ApplyFace();
 }
 
 void ASolidCompanionCharacter::PaintFace(const FLinearColor& Ink)

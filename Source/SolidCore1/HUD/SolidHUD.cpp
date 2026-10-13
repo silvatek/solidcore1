@@ -4,6 +4,7 @@
 #include "Strongholds/SolidDungeonPassage.h"
 #include "SolidBuildId.h"
 #include "Menus/SolidCharacterEditor.h"
+#include "SolidBodyParams.h"
 #include "Menus/SolidCredits.h"
 #include "Journal/SolidJournal.h"
 #include "Menus/SolidMainMenu.h"
@@ -1183,6 +1184,7 @@ void ASolidHUD::HandleMenuKey()
 	if (bShowCharacterEditor)
 	{
 		bShowCharacterEditor = false;
+		EndCharacterEditorSliderDrag();
 		return;
 	}
 
@@ -1225,6 +1227,7 @@ void ASolidHUD::CloseMenuOverlay()
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowCharacterEditor = false;
+	EndCharacterEditorSliderDrag();
 }
 
 namespace
@@ -1258,12 +1261,15 @@ void ASolidHUD::OpenCharacterEditor()
 	bShowJournal = false;
 	bShowCharacterEditor = true;
 	CharacterEditorIndex = 0;
+	CharacterEditorSlider = 0;
+	EndCharacterEditorSliderDrag();
 	SolidHUDPrivate::ForgetChoicePointerRows(this);
 }
 
 void ASolidHUD::CloseCharacterEditor()
 {
 	bShowCharacterEditor = false;
+	EndCharacterEditorSliderDrag();
 }
 
 void ASolidHUD::MoveCharacterEditor(const int32 Delta)
@@ -1274,8 +1280,79 @@ void ASolidHUD::MoveCharacterEditor(const int32 Delta)
 		EditorRosterCount(this));
 }
 
-void ASolidHUD::DrawCharacterEditorPanel() const
+void ASolidHUD::MoveCharacterEditorSlider(const int32 Delta)
 {
+	CharacterEditorSlider = SolidBodyControls::WrapSlider(CharacterEditorSlider, Delta);
+}
+
+bool ASolidHUD::PressCharacterEditorSlider(
+	const float X,
+	const float Y,
+	int32& OutSlider,
+	bool& bBar,
+	float& OutFraction)
+{
+	bBar = false;
+	OutFraction = 0.f;
+	const FSolidSliderHit Hit = SolidCharacterEditor::HitSliders(
+		CharacterEditorSliderRows.GetData(),
+		CharacterEditorSliderRows.Num(),
+		X,
+		Y);
+	if (Hit.Kind == ESolidSliderHit::None)
+	{
+		return false;
+	}
+
+	CharacterEditorSlider = Hit.Slider;
+	OutSlider = Hit.Slider;
+	bCharacterEditorSliderDrag = Hit.Kind == ESolidSliderHit::Bar;
+	CharacterEditorSliderDragIndex = bCharacterEditorSliderDrag ? Hit.Slider : INDEX_NONE;
+	bBar = bCharacterEditorSliderDrag;
+	if (bBar)
+	{
+		for (const FSolidSliderRow& Row : CharacterEditorSliderRows)
+		{
+			if (Row.Slider == Hit.Slider)
+			{
+				OutFraction = SolidCharacterEditor::BarFraction(Row.Bar, X);
+				break;
+			}
+		}
+	}
+	return true;
+}
+
+bool ASolidHUD::DragCharacterEditorSlider(const float X, int32& OutSlider, float& OutFraction)
+{
+	if (!bCharacterEditorSliderDrag)
+	{
+		return false;
+	}
+	for (const FSolidSliderRow& Row : CharacterEditorSliderRows)
+	{
+		if (Row.Slider != CharacterEditorSliderDragIndex)
+		{
+			continue;
+		}
+		CharacterEditorSlider = Row.Slider;
+		OutSlider = Row.Slider;
+		OutFraction = SolidCharacterEditor::BarFraction(Row.Bar, X);
+		return true;
+	}
+	return false;
+}
+
+void ASolidHUD::EndCharacterEditorSliderDrag()
+{
+	bCharacterEditorSliderDrag = false;
+	CharacterEditorSliderDragIndex = INDEX_NONE;
+}
+
+void ASolidHUD::DrawCharacterEditorPanel()
+{
+	CharacterEditorSliderRows.Reset();
+
 	TArray<FString> Lines;
 	const USolidCompany* Company = nullptr;
 	if (UWorld* World = GetWorld())
@@ -1300,8 +1377,117 @@ void ASolidHUD::DrawCharacterEditorPanel() const
 		Lines.Add(TEXT("F10  open world"));
 	}
 
+	if (!Canvas || Lines.Num() == 0)
+	{
+		return;
+	}
+
 	UFont* Font = GEngine ? GEngine->GetSmallFont() : nullptr;
-	SolidHUDPrivate::DrawLines(Canvas, Font, Lines, FLinearColor::White);
+	const float PadX = 16.f;
+	const float StartY = 12.f;
+	const float LineGap = 2.f;
+	const float BoxPad = 6.f;
+
+	float MaxWidth = 0.f;
+	float LineHeight = 14.f;
+	bool bHasSlider = false;
+	for (const FString& Line : Lines)
+	{
+		float W = 0.f;
+		float H = 0.f;
+		if (Font)
+		{
+			Canvas->StrLen(Font, Line, W, H);
+		}
+		else
+		{
+			W = static_cast<float>(Line.Len() * 8);
+			H = 14.f;
+		}
+		MaxWidth = FMath::Max(MaxWidth, W);
+		LineHeight = FMath::Max(LineHeight, H);
+		if (SolidCharacterEditor::SliderForLine(Line) != INDEX_NONE)
+		{
+			bHasSlider = true;
+		}
+	}
+
+	const float SliderExtra = bHasSlider
+		? SolidCharacterEditor::SliderBarGap + SolidCharacterEditor::SliderBarWidth
+		: 0.f;
+	const float BlockHeight = Lines.Num() * LineHeight + (Lines.Num() - 1) * LineGap;
+	FCanvasTileItem Background(
+		FVector2D(PadX - BoxPad, StartY - BoxPad * 0.5f),
+		FVector2D(MaxWidth + SliderExtra + BoxPad * 2.f, BlockHeight + BoxPad),
+		FLinearColor(0.f, 0.f, 0.f, 0.55f));
+	Background.BlendMode = SE_BLEND_Translucent;
+	Canvas->DrawItem(Background);
+
+	const FLinearColor Amber(1.f, 0.78f, 0.28f);
+	const float TextRight = PadX + MaxWidth;
+	float Y = StartY;
+	for (const FString& Line : Lines)
+	{
+		const int32 Slider = SolidCharacterEditor::SliderForLine(Line);
+		const bool bSelected = Slider != INDEX_NONE && Slider == CharacterEditorSlider;
+		if (Slider != INDEX_NONE)
+		{
+			const FSolidSliderRow Row = SolidCharacterEditor::MakeSliderRow(
+				Slider, PadX, Y, LineHeight, TextRight);
+			CharacterEditorSliderRows.Add(Row);
+
+			float Value = 0.f;
+			if (Companion)
+			{
+				if (Slider == SolidBodyControls::Build)
+				{
+					Value = Companion->BodyBuild;
+				}
+				else if (Slider == SolidBodyControls::Gender)
+				{
+					Value = Companion->BodyGender;
+				}
+				else
+				{
+					Value = Companion->BodyHeight;
+				}
+			}
+			const float Fraction = SolidBodyControls::Fraction(Slider, Value);
+			const float Inset = 2.f;
+			const float TrackY = Row.Bar.Y + Inset;
+			const float TrackH = FMath::Max(4.f, Row.Bar.H - Inset * 2.f);
+			SolidHUDPrivate::FillRect(
+				Canvas,
+				Row.Bar.X - 1.f,
+				TrackY - 1.f,
+				Row.Bar.W + 2.f,
+				TrackH + 2.f,
+				FLinearColor(0.85f, 0.85f, 0.85f));
+			SolidHUDPrivate::FillRect(
+				Canvas,
+				Row.Bar.X,
+				TrackY,
+				Row.Bar.W,
+				TrackH,
+				FLinearColor(0.16f, 0.16f, 0.16f));
+			SolidHUDPrivate::FillRect(
+				Canvas,
+				Row.Bar.X,
+				TrackY,
+				FMath::Max(0.f, Row.Bar.W * Fraction),
+				TrackH,
+				bSelected ? Amber : FLinearColor(0.72f, 0.72f, 0.74f));
+		}
+
+		FCanvasTextItem TextItem(
+			FVector2D(PadX, Y),
+			FText::FromString(Line),
+			Font,
+			bSelected ? Amber : FLinearColor::White);
+		TextItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.9f));
+		Canvas->DrawItem(TextItem);
+		Y += LineHeight + LineGap;
+	}
 }
 
 void ASolidHUD::OpenPartyBuilder()

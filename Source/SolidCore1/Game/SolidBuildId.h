@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0236")
+#define SOLID_BUILD_ID TEXT("SC1-0237")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Character editor compile fix: the hide flag no longer shadows the actor.")
+#define SOLID_BUILD_NOTE TEXT("Character editor: Page Up and Page Down switch companions. Sliders set height, build, and gender.")
 #endif

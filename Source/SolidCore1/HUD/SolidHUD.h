@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Menus/SolidCharacterEditor.h"
 #include "Menus/SolidMenuPointer.h"
 #include "GameFramework/HUD.h"
 #include "SolidHUD.generated.h"
@@ -42,12 +43,26 @@ public:
 	bool IsDebugPanelVisible() const { return bShowDebugPanel; }
 	void SetDebugPanelVisible(bool bVisible) { bShowDebugPanel = bVisible; }
 
-	/** One companion on a plain stage. Left and right cycle the company. F10 returns to the world. */
+	/** One companion on a plain stage. Page Up and Page Down cycle the company. F10 returns to the world. */
 	void OpenCharacterEditor();
 	void CloseCharacterEditor();
 	bool IsCharacterEditorOpen() const { return bShowCharacterEditor; }
 	int32 GetCharacterEditorIndex() const { return CharacterEditorIndex; }
 	void MoveCharacterEditor(int32 Delta);
+
+	/** Up and Down wrap height, build, and gender. */
+	void MoveCharacterEditorSlider(int32 Delta);
+	int32 GetCharacterEditorSlider() const { return CharacterEditorSlider; }
+
+	/**
+	 * A press on a slider label selects it. A press on its track also starts a drag and writes OutFraction.
+	 * Returns false when the point misses every slider.
+	 */
+	bool PressCharacterEditorSlider(float X, float Y, int32& OutSlider, bool& bBar, float& OutFraction);
+	/** Continue a track drag from the horizontal position, including after the pointer leaves the row. */
+	bool DragCharacterEditorSlider(float X, int32& OutSlider, float& OutFraction);
+	void EndCharacterEditorSliderDrag();
+	bool IsCharacterEditorSliderDragging() const { return bCharacterEditorSliderDrag; }
 
 	/** F10. Closes an open page, including the character editor, or toggles the main menu. */
 	void HandleMenuKey();
@@ -77,7 +92,7 @@ protected:
 	void RemoveSightIndicator();
 	void DrawCreditsPopup() const;
 	void DrawJournalPopup() const;
-	void DrawCharacterEditorPanel() const;
+	void DrawCharacterEditorPanel();
 	void DrawMainMenuPopup();
 	void DrawPortalPopup();
 	void DrawPartyBuilderPopup();
@@ -131,6 +146,17 @@ protected:
 	/** Company roster index while the character editor is open. */
 	UPROPERTY(VisibleAnywhere, Category = "HUD")
 	int32 CharacterEditorIndex = 0;
+
+	/** Selected height, build, or gender slider. */
+	UPROPERTY(VisibleAnywhere, Category = "HUD")
+	int32 CharacterEditorSlider = 0;
+
+	/** Tracks drawn last frame. A click uses these. */
+	TArray<FSolidSliderRow> CharacterEditorSliderRows;
+
+	/** The track the pointer grabbed. */
+	bool bCharacterEditorSliderDrag = false;
+	int32 CharacterEditorSliderDragIndex = INDEX_NONE;
 
 	/** Top-right eye / eagle widget has been added to the viewport. */
 	bool bSightIndicatorAdded = false;

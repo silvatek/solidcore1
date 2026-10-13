@@ -143,6 +143,7 @@ void ASolidCharacterStage::EnsurePreview()
 	Spawned->SetStagePreview(true);
 	Spawned->SetCharacterDisplayName(Shown.Name);
 	Spawned->SetVocation(Shown.Vocation);
+	Spawned->SetBodyControls(Shown.BodyHeight, Shown.BodyBuild, Shown.BodyGender);
 	Spawned->SetBodyColors(Shown.TorsoColor, Shown.LegColor, Shown.SkinColor);
 	Spawned->FinishSpawning(SpawnTransform);
 	Preview = Spawned;
@@ -154,9 +155,15 @@ void ASolidCharacterStage::ApplyPreview()
 	{
 		return;
 	}
+	const bool bNewPerson = Preview->GetCharacterDisplayName() != Shown.Name;
 	Preview->SetCharacterDisplayName(Shown.Name);
 	Preview->SetVocation(Shown.Vocation);
-	Preview->SetBodyColors(Shown.TorsoColor, Shown.LegColor, Shown.SkinColor);
+	const bool bControlsChanged = Preview->SetBodyControls(Shown.BodyHeight, Shown.BodyBuild, Shown.BodyGender);
+	const bool bColorsChanged = Preview->SetBodyColors(Shown.TorsoColor, Shown.LegColor, Shown.SkinColor);
+	if (bNewPerson && !bControlsChanged && !bColorsChanged)
+	{
+		Preview->RebuildBody();
+	}
 }
 
 void ASolidCharacterStage::Place()

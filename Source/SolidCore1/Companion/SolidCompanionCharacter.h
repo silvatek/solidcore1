@@ -87,10 +87,23 @@ public:
 	const TSoftObjectPtr<USkeletalMesh>& GetCompanionMesh() const { return CompanionMesh; }
 
 	/** Matte shirt, trouser, and skin colors from the company record. */
-	void SetBodyColors(const FLinearColor& NewTorso, const FLinearColor& NewLegs, const FLinearColor& NewSkin);
+	bool SetBodyColors(const FLinearColor& NewTorso, const FLinearColor& NewLegs, const FLinearColor& NewSkin);
 	FLinearColor GetTorsoColor() const { return TorsoColor; }
 	FLinearColor GetLegColor() const { return LegColor; }
 	FLinearColor GetSkinColor() const { return SkinColor; }
+
+	/**
+	 * Height, build, and gender from the company record.
+	 * Until this is called, the body stays on the name seed.
+	 * Returns false when the stored values are already those numbers.
+	 */
+	bool SetBodyControls(float NewHeight, float NewBuild, float NewGender);
+	float GetBodyHeight() const { return BodyHeight; }
+	float GetBodyBuild() const { return BodyBuild; }
+	float GetBodyGender() const { return BodyGender; }
+
+	/** Rebuild the worn body from the current name and controls. */
+	void RebuildBody();
 
 	/** Shown on the character-editor stage. Does not follow the captain or join the party. */
 	void SetStagePreview(bool bPreview);
@@ -112,6 +125,7 @@ protected:
 	virtual void PostInitializeComponents() override;
 
 	void ApplyVisuals();
+	void ApplyBodyMesh();
 	void ApplyFace();
 	void LayoutFace(uint32 Codepoint);
 	void PaintFace(const FLinearColor& Ink);
@@ -171,6 +185,19 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Visual")
 	FLinearColor SkinColor = FLinearColor(0.96f, 0.76f, 0.72f);
+
+	/** Slider values. Ignored until SetBodyControls, so a plain spawn keeps the name seed. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Visual")
+	float BodyHeight = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Visual")
+	float BodyBuild = 1.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Visual")
+	float BodyGender = 0.5f;
+
+	/** SetBodyControls has stored Height, Build, and Gender. */
+	bool bHasBodyControls = false;
 
 	/** Character-editor mannequin. Tick keeps the idle clip and does not steer. */
 	bool bStagePreview = false;

@@ -827,4 +827,51 @@ bool FSolidBodyBallCylinderTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyExtraFingerConeTest,
+	"SolidCore1.Body.ExtraFingerCone",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyExtraFingerConeTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("the ankle end matches the foot cylinder"), SolidBodyMesh::ExtraFingerAnkleDiameterCm, SolidBodyMesh::BallDiameterCm);
+	TestEqual(TEXT("the ankle end is 10 cm across"), SolidBodyMesh::ExtraFingerAnkleDiameterCm, 10.f);
+	TestEqual(TEXT("the toe end is 5 cm across"), SolidBodyMesh::ExtraFingerToeDiameterCm, 5.f);
+	TestEqual(TEXT("left toe bone"), FString(SolidBodyMesh::LeftExtraFingerBone), FString(TEXT("extra_finger_l")));
+	TestEqual(TEXT("right toe bone"), FString(SolidBodyMesh::RightExtraFingerBone), FString(TEXT("extra_finger_r")));
+
+	const FVector AnkleEnd(0.f, 14.f, 10.f);
+	const FVector ToeEnd(0.f, 22.f, 9.f);
+	const SolidBodyMesh::FSolidFittedCone Cone = SolidBodyMesh::ExtraFingerCone(AnkleEnd, ToeEnd);
+	TestTrue(TEXT("the toe is a cone"), Cone.bValid);
+	TestTrue(TEXT("the wide end is towards the ankle"), Cone.Start.Equals(AnkleEnd, 0.01));
+	TestTrue(TEXT("the cone ends on the extra finger"), Cone.End.Equals(ToeEnd, 0.01));
+	TestTrue(
+		TEXT("the cone is the length of the bone"),
+		FMath::IsNearlyEqual(
+			static_cast<float>(FVector::Dist(Cone.Start, Cone.End)),
+			static_cast<float>(FVector::Dist(AnkleEnd, ToeEnd)),
+			0.05f));
+	TestTrue(TEXT("the ankle end is 5 cm in radius"), FMath::IsNearlyEqual(Cone.RadiusStart, 5.f, 0.01f));
+	TestTrue(TEXT("the toe end is 2.5 cm in radius"), FMath::IsNearlyEqual(Cone.RadiusEnd, 2.5f, 0.01f));
+
+	const FVector LeftAnkleEnd(-5.f, 12.f, 6.f);
+	const FVector LeftToeEnd(-6.f, 20.f, 5.f);
+	const SolidBodyMesh::FSolidFittedCone Left = SolidBodyMesh::ExtraFingerCone(LeftAnkleEnd, LeftToeEnd);
+	const SolidBodyMesh::FSolidFittedCone Right = SolidBodyMesh::ExtraFingerCone(
+		FVector(-LeftAnkleEnd.X, LeftAnkleEnd.Y, LeftAnkleEnd.Z),
+		FVector(-LeftToeEnd.X, LeftToeEnd.Y, LeftToeEnd.Z));
+	TestTrue(
+		TEXT("mirrored toes are the same length"),
+		FMath::IsNearlyEqual(
+			static_cast<float>(FVector::Dist(Left.Start, Left.End)),
+			static_cast<float>(FVector::Dist(Right.Start, Right.End)),
+			0.05f));
+	TestTrue(TEXT("the right toe starts across from the left"), Right.Start.Equals(FVector(-Left.Start.X, Left.Start.Y, Left.Start.Z), 0.01));
+	TestTrue(TEXT("the right toe ends across from the left"), Right.End.Equals(FVector(-Left.End.X, Left.End.Y, Left.End.Z), 0.01));
+
+	TestFalse(TEXT("a bone with no length is not drawn"), SolidBodyMesh::ExtraFingerCone(AnkleEnd, AnkleEnd).bValid);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

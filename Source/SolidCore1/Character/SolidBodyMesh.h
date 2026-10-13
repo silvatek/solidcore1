@@ -176,6 +176,23 @@ namespace SolidBodyMesh
 	 */
 	FSolidFittedCone BallCylinder(const FVector& Ankle, const FVector& Toe);
 
+	/** The only bone in the left toe cone. extra_finger_l continues past ball_l. */
+	inline const TCHAR* LeftExtraFingerBone = TEXT("extra_finger_l");
+
+	/** The only bone in the right toe cone. The cone matches the left toe. */
+	inline const TCHAR* RightExtraFingerBone = TEXT("extra_finger_r");
+
+	/** Diameters of a toe cone, in centimetres. The end towards the ankle is the wide end. */
+	inline constexpr float ExtraFingerAnkleDiameterCm = BallDiameterCm;
+	inline constexpr float ExtraFingerToeDiameterCm = 5.f;
+
+	/**
+	 * Truncated cone the length of extra_finger_l or extra_finger_r.
+	 * AnkleEnd is the parent joint and ToeEnd is the bone. The wide end is towards the ankle.
+	 * The piece does not include the parent bone. Invalid when the bone is shorter than a centimetre.
+	 */
+	FSolidFittedCone ExtraFingerCone(const FVector& AnkleEnd, const FVector& ToeEnd);
+
 	/** Start and end radii of the cone from Parent to Child. Both ends are joint radii. */
 	void SegmentRadii(
 		const TArray<float>& Radii,

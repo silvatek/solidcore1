@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0262")
+#define SOLID_BUILD_ID TEXT("SC1-0263")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Foot cylinders follow ball_l and ball_r, 10 cm across.")
+#define SOLID_BUILD_NOTE TEXT("Toe cones follow extra_finger_l and extra_finger_r, 10 cm to 5 cm.")
 #endif

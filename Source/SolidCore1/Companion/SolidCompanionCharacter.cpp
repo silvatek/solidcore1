@@ -702,6 +702,25 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 					CharacterMesh->GetBoneLocation(BallName)),
 				BallName.ToString());
 		}
+
+		const TCHAR* ToeBones[] = {
+			SolidBodyMesh::LeftExtraFingerBone,
+			SolidBodyMesh::RightExtraFingerBone,
+		};
+		for (const TCHAR* Wanted : ToeBones)
+		{
+			const FName ToeName = FindBone(Wanted);
+			const FName AnkleEndName = ToeName.IsNone() ? NAME_None : CharacterMesh->GetParentBone(ToeName);
+			if (ToeName.IsNone() || AnkleEndName.IsNone())
+			{
+				continue;
+			}
+			Consider(
+				SolidBodyMesh::ExtraFingerCone(
+					CharacterMesh->GetBoneLocation(AnkleEndName),
+					CharacterMesh->GetBoneLocation(ToeName)),
+				ToeName.ToString());
+		}
 		return BestLabel;
 	}
 

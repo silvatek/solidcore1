@@ -325,6 +325,17 @@ SolidBodyMesh::FSolidFittedCone SolidBodyMesh::BallCylinder(const FVector& Ankle
 	return Out;
 }
 
+SolidBodyMesh::FSolidFittedCone SolidBodyMesh::ExtraFingerCone(const FVector& AnkleEnd, const FVector& ToeEnd)
+{
+	FSolidFittedCone Out;
+	Out.Start = AnkleEnd;
+	Out.End = ToeEnd;
+	Out.RadiusStart = ExtraFingerAnkleDiameterCm * 0.5f;
+	Out.RadiusEnd = ExtraFingerToeDiameterCm * 0.5f;
+	Out.bValid = FVector::Dist(AnkleEnd, ToeEnd) >= 1.0;
+	return Out;
+}
+
 namespace
 {
 	bool ConeIsStructural(const FSolidDeformBone& Bone)
@@ -883,6 +894,25 @@ namespace
 				continue;
 			}
 			AddLegCone(Verts, Tris, Ball, SolidBodyMesh::BallCylinder(Positions[Ankle], Positions[Ball]));
+		}
+
+		const TCHAR* ToeBones[] = {
+			SolidBodyMesh::LeftExtraFingerBone,
+			SolidBodyMesh::RightExtraFingerBone,
+		};
+		for (const TCHAR* BoneName : ToeBones)
+		{
+			const int32 Toe = FindNamedBone(Bones, Count, BoneName);
+			if (Toe == INDEX_NONE)
+			{
+				continue;
+			}
+			const int32 AnkleEnd = Bones[Toe].ParentIndex;
+			if (!Bones.IsValidIndex(AnkleEnd) || !Positions.IsValidIndex(AnkleEnd))
+			{
+				continue;
+			}
+			AddLegCone(Verts, Tris, Toe, SolidBodyMesh::ExtraFingerCone(Positions[AnkleEnd], Positions[Toe]));
 		}
 	}
 

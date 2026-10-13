@@ -7,7 +7,7 @@ class USolidWorldMap;
 /**
  * Welcome signs for numbered WorldMap locations.
  * The board reads "Welcome to" on the first line and the town name on the second.
- * One placement per named cell (Kanfold's two cells each get a sign).
+ * One placement per named town, at the middle of its cells.
  * Pure logic — no actor spawning (safe for automation).
  */
 namespace SolidTownSigns
@@ -52,8 +52,8 @@ namespace SolidTownSigns
 	float BoardWidthCm(const FString& Label);
 
 	/**
-	 * One placement per cell of each location that has a non-empty name.
-	 * Ordered by location id, then map row, then column.
+	 * One placement per location that has a non-empty name, at the middle of its cells.
+	 * A town offset is added from that middle. Ordered by location id.
 	 * @return Number of placements written.
 	 */
 	int32 CollectPlacements(

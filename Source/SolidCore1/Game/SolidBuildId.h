@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0242")
+#define SOLID_BUILD_ID TEXT("SC1-0243")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Slider locals no longer hide the Build and Gender names.")
+#define SOLID_BUILD_NOTE TEXT("The middle sliders stand at average human head-length proportions.")
 #endif

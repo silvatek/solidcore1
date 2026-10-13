@@ -179,6 +179,141 @@ namespace
 		}
 		return ScaleFlesh(Local, Axis, Girth);
 	}
+
+	int32 StructuralParentIndex(const TArray<FSolidDeformBone>& Bones, const int32 Index)
+	{
+		int32 Parent = Bones.IsValidIndex(Index) ? Bones[Index].ParentIndex : INDEX_NONE;
+		int32 Guard = 0;
+		while (Bones.IsValidIndex(Parent) && Parent != Index && Bones[Parent].bTwist && Guard < Bones.Num())
+		{
+			Parent = Bones[Parent].ParentIndex;
+			++Guard;
+		}
+		return Parent;
+	}
+
+	bool IsStructuralBone(const FSolidDeformBone& Bone)
+	{
+		return !Bone.bTwist && !Bone.bDigit;
+	}
+
+	int32 SpineChainDepth(
+		const TArray<int32>& SpineParent,
+		const int32 Index,
+		TArray<uint8>& Visiting,
+		const int32 Guard)
+	{
+		if (Index == INDEX_NONE || !Visiting.IsValidIndex(Index) || Guard > SpineParent.Num() || Visiting[Index])
+		{
+			return 0;
+		}
+		Visiting[Index] = 1;
+		int32 Best = 0;
+		for (int32 Child = 0; Child < SpineParent.Num(); ++Child)
+		{
+			if (SpineParent[Child] == Index)
+			{
+				Best = FMath::Max(Best, 1 + SpineChainDepth(SpineParent, Child, Visiting, Guard + 1));
+			}
+		}
+		Visiting[Index] = 0;
+		return Best;
+	}
+
+	/** Longest run of spine joints from the pelvis toward the chest. */
+	void CollectSpineChain(const TArray<FSolidDeformBone>& Bones, TArray<int32>& OutChain)
+	{
+		TArray<int32> SpineParent;
+		SpineParent.Init(INDEX_NONE, Bones.Num());
+		TArray<int32> Spines;
+		for (int32 Index = 0; Index < Bones.Num(); ++Index)
+		{
+			if (!IsStructuralBone(Bones[Index]) || Bones[Index].Role != ESolidBodyBoneRole::Spine)
+			{
+				continue;
+			}
+			Spines.Add(Index);
+			const int32 Parent = StructuralParentIndex(Bones, Index);
+			if (Bones.IsValidIndex(Parent)
+				&& IsStructuralBone(Bones[Parent])
+				&& Bones[Parent].Role == ESolidBodyBoneRole::Spine)
+			{
+				SpineParent[Index] = Parent;
+			}
+		}
+		if (Spines.Num() == 0)
+		{
+			return;
+		}
+
+		TArray<uint8> Visiting;
+		Visiting.Init(0, Bones.Num());
+
+		bool bSawPelvis = false;
+		for (const int32 Index : Spines)
+		{
+			if (SpineParent[Index] != INDEX_NONE)
+			{
+				continue;
+			}
+			const int32 Parent = StructuralParentIndex(Bones, Index);
+			if (Bones.IsValidIndex(Parent) && Bones[Parent].Role == ESolidBodyBoneRole::Pelvis)
+			{
+				bSawPelvis = true;
+				break;
+			}
+		}
+
+		int32 BestRoot = INDEX_NONE;
+		int32 BestDepth = -1;
+		for (const int32 Index : Spines)
+		{
+			if (SpineParent[Index] != INDEX_NONE)
+			{
+				continue;
+			}
+			const int32 Parent = StructuralParentIndex(Bones, Index);
+			const bool bPelvis = Bones.IsValidIndex(Parent) && Bones[Parent].Role == ESolidBodyBoneRole::Pelvis;
+			if (bSawPelvis && !bPelvis)
+			{
+				continue;
+			}
+			const int32 Depth = SpineChainDepth(SpineParent, Index, Visiting, 0);
+			if (Depth > BestDepth)
+			{
+				BestDepth = Depth;
+				BestRoot = Index;
+			}
+		}
+		if (BestRoot == INDEX_NONE)
+		{
+			return;
+		}
+
+		int32 Cursor = BestRoot;
+		int32 Guard = 0;
+		while (Cursor != INDEX_NONE && Guard < Bones.Num())
+		{
+			OutChain.Add(Cursor);
+			int32 Next = INDEX_NONE;
+			int32 NextDepth = -1;
+			for (const int32 Child : Spines)
+			{
+				if (SpineParent[Child] != Cursor)
+				{
+					continue;
+				}
+				const int32 Depth = SpineChainDepth(SpineParent, Child, Visiting, 0);
+				if (Depth > NextDepth)
+				{
+					NextDepth = Depth;
+					Next = Child;
+				}
+			}
+			Cursor = Next;
+			++Guard;
+		}
+	}
 }
 
 void SolidBodyDeform::ComponentPositions(
@@ -188,6 +323,215 @@ void SolidBodyDeform::ComponentPositions(
 	FComponentPose Pose;
 	BuildComponentPose(Bones, Pose);
 	OutPositions = MoveTemp(Pose.Position);
+}
+
+void SolidBodyDeform::FitHeadLengths(TArray<FSolidDeformBone>& Bones)
+{
+	if (Bones.Num() == 0)
+	{
+		return;
+	}
+
+	TArray<int32> Heads;
+	TArray<int32> Ankles;
+	for (int32 Index = 0; Index < Bones.Num(); ++Index)
+	{
+		if (!IsStructuralBone(Bones[Index]))
+		{
+			continue;
+		}
+		if (Bones[Index].Role == ESolidBodyBoneRole::Head)
+		{
+			Heads.Add(Index);
+			continue;
+		}
+		if (Bones[Index].Role != ESolidBodyBoneRole::Foot)
+		{
+			continue;
+		}
+		const int32 Parent = StructuralParentIndex(Bones, Index);
+		if (Bones.IsValidIndex(Parent) && Bones[Parent].Role == ESolidBodyBoneRole::Foot)
+		{
+			Ankles.Add(Index);
+		}
+	}
+	if (Heads.Num() == 0 || Ankles.Num() == 0)
+	{
+		return;
+	}
+
+	FComponentPose OldPose;
+	BuildComponentPose(Bones, OldPose);
+
+	float GroundZ = OldPose.Position[Ankles[0]].Z;
+	for (const int32 Ankle : Ankles)
+	{
+		GroundZ = FMath::Min(GroundZ, static_cast<float>(OldPose.Position[Ankle].Z));
+	}
+
+	const float Head = SolidBody::HeadLengthCm;
+	const float CrownZ = GroundZ + SolidBody::ProportionSole * Head;
+	auto Station = [CrownZ, Head](const float HeadsDown)
+	{
+		return CrownZ - HeadsDown * Head;
+	};
+
+	TArray<uint8> bSetZ;
+	TArray<uint8> bSnapXY;
+	TArray<float> TargetZ;
+	bSetZ.Init(0, Bones.Num());
+	bSnapXY.Init(0, Bones.Num());
+	TargetZ.Init(0.f, Bones.Num());
+
+	auto SetZ = [&bSetZ, &TargetZ](const int32 Index, const float Z)
+	{
+		bSetZ[Index] = 1;
+		TargetZ[Index] = Z;
+	};
+
+	bool bChinOnNeck = false;
+	for (const int32 HeadIndex : Heads)
+	{
+		const int32 Parent = StructuralParentIndex(Bones, HeadIndex);
+		if (Bones.IsValidIndex(Parent) && Bones[Parent].Role == ESolidBodyBoneRole::Neck)
+		{
+			bChinOnNeck = true;
+			break;
+		}
+	}
+	for (const int32 HeadIndex : Heads)
+	{
+		const int32 Parent = StructuralParentIndex(Bones, HeadIndex);
+		const bool bOnNeck = Bones.IsValidIndex(Parent) && Bones[Parent].Role == ESolidBodyBoneRole::Neck;
+		if (bChinOnNeck && !bOnNeck)
+		{
+			continue;
+		}
+		SetZ(HeadIndex, Station(SolidBody::ProportionChin));
+		bSnapXY[HeadIndex] = 1;
+	}
+
+	for (int32 Index = 0; Index < Bones.Num(); ++Index)
+	{
+		if (!IsStructuralBone(Bones[Index]) || Bones[Index].Role == ESolidBodyBoneRole::Head)
+		{
+			continue;
+		}
+		const int32 Parent = StructuralParentIndex(Bones, Index);
+		const ESolidBodyBoneRole ParentRole = Bones.IsValidIndex(Parent)
+			? Bones[Parent].Role
+			: ESolidBodyBoneRole::Root;
+		switch (Bones[Index].Role)
+		{
+		case ESolidBodyBoneRole::Neck:
+			if (ParentRole != ESolidBodyBoneRole::Neck)
+			{
+				SetZ(Index, Station(SolidBody::ProportionNeck));
+			}
+			break;
+		case ESolidBodyBoneRole::Clavicle:
+			SetZ(Index, Station(SolidBody::ProportionNeck));
+			break;
+		case ESolidBodyBoneRole::Pelvis:
+			SetZ(Index, Station(SolidBody::ProportionPubic));
+			break;
+		case ESolidBodyBoneRole::Leg:
+			if (ParentRole == ESolidBodyBoneRole::Pelvis)
+			{
+				SetZ(Index, Station(SolidBody::ProportionPubic));
+			}
+			break;
+		case ESolidBodyBoneRole::Foot:
+			if (ParentRole == ESolidBodyBoneRole::Leg)
+			{
+				SetZ(Index, Station(SolidBody::ProportionKnee));
+			}
+			else if (ParentRole == ESolidBodyBoneRole::Foot)
+			{
+				SetZ(Index, Station(SolidBody::ProportionSole));
+			}
+			break;
+		default:
+			break;
+		}
+	}
+
+	TArray<int32> SpineChain;
+	CollectSpineChain(Bones, SpineChain);
+	if (SpineChain.Num() == 1)
+	{
+		SetZ(SpineChain[0], Station(SolidBody::ProportionChest));
+	}
+	else if (SpineChain.Num() >= 2)
+	{
+		const float WaistZ = Station(SolidBody::ProportionWaist);
+		const float ChestZ = Station(SolidBody::ProportionChest);
+		const int32 Last = SpineChain.Num() - 1;
+		for (int32 Step = 0; Step <= Last; ++Step)
+		{
+			const float T = static_cast<float>(Step) / static_cast<float>(Last);
+			SetZ(SpineChain[Step], FMath::Lerp(WaistZ, ChestZ, T));
+		}
+	}
+
+	TArray<FVector> NewPos = OldPose.Position;
+	TArray<uint8> Ready;
+	Ready.Init(0, Bones.Num());
+	for (int32 Pass = 0; Pass < Bones.Num(); ++Pass)
+	{
+		bool bProgress = false;
+		for (int32 Index = 0; Index < Bones.Num(); ++Index)
+		{
+			if (Ready[Index])
+			{
+				continue;
+			}
+			const int32 Parent = Bones[Index].ParentIndex;
+			const bool bHasParent = Bones.IsValidIndex(Parent) && Parent != Index;
+			if (bHasParent && !Ready[Parent])
+			{
+				continue;
+			}
+
+			FVector Pos = OldPose.Position[Index];
+			if (bHasParent)
+			{
+				Pos = NewPos[Parent] + (OldPose.Position[Index] - OldPose.Position[Parent]);
+			}
+			if (bSetZ[Index])
+			{
+				Pos.Z = TargetZ[Index];
+			}
+			if (bSnapXY[Index])
+			{
+				const int32 SnapTo = StructuralParentIndex(Bones, Index);
+				if (Bones.IsValidIndex(SnapTo) && Ready[SnapTo])
+				{
+					Pos.X = NewPos[SnapTo].X;
+					Pos.Y = NewPos[SnapTo].Y;
+				}
+			}
+			NewPos[Index] = Pos;
+			Ready[Index] = 1;
+			bProgress = true;
+		}
+		if (!bProgress)
+		{
+			break;
+		}
+	}
+
+	for (int32 Index = 0; Index < Bones.Num(); ++Index)
+	{
+		const int32 Parent = Bones[Index].ParentIndex;
+		const bool bHasParent = Bones.IsValidIndex(Parent) && Parent != Index && Ready[Parent];
+		if (!bHasParent)
+		{
+			Bones[Index].LocalTranslation = NewPos[Index];
+			continue;
+		}
+		Bones[Index].LocalTranslation = OldPose.Rotation[Parent].UnrotateVector(NewPos[Index] - NewPos[Parent]);
+	}
 }
 
 FSolidDeformMesh SolidBodyDeform::Apply(

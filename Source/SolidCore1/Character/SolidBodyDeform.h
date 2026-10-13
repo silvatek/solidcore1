@@ -69,6 +69,13 @@ namespace SolidBodyDeform
 	void ComponentPositions(const TArray<FSolidDeformBone>& Bones, TArray<FVector>& OutPositions);
 
 	/**
+	 * Move the joints of a standing skeleton onto the average head-length stations.
+	 * A chain with no head or no ankle is left alone. Rotations stay.
+	 * The feet stay on their current ground. Apply this before the slider scales.
+	 */
+	void FitHeadLengths(TArray<FSolidDeformBone>& Bones);
+
+	/**
 	 * Apply params to a bind pose.
 	 * Params are clamped first. Input mesh is left unchanged.
 	 */

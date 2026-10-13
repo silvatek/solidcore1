@@ -752,6 +752,12 @@ namespace
 				{
 					RadiusRole = Role;
 				}
+				// The neck joint is the shoulder line. Keep chest thickness up to
+				// that line. The thin neck runs from there to the chin.
+				if (Role == ESolidBodyBoneRole::Neck && ParentRole == ESolidBodyBoneRole::Spine)
+				{
+					RadiusRole = ESolidBodyBoneRole::Spine;
+				}
 				if (bThigh || bShin)
 				{
 					RadiusRole = ESolidBodyBoneRole::Leg;
@@ -786,7 +792,7 @@ namespace
 
 			if (Role == ESolidBodyBoneRole::Head)
 			{
-				const float Height = FMath::Clamp(22.f * Params.HeadSize, 17.f, 30.f);
+				const float Height = FMath::Clamp(SolidBody::HeadLengthCm * Params.HeadSize, 17.f, 30.f);
 				AddHead(
 					Verts,
 					Tris,
@@ -1306,6 +1312,7 @@ USkeletalMesh* SolidBodyMesh::Build(
 
 	FSolidDeformMesh Bind;
 	FillBones(Ref, Bind);
+	SolidBodyDeform::FitHeadLengths(Bind.Bones);
 	const FSolidBodyParams Clamped = Params.Clamped();
 	const FSolidDeformMesh Deformed = SolidBodyDeform::Apply(Bind, Clamped);
 

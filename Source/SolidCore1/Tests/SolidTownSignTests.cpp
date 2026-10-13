@@ -27,7 +27,7 @@ bool FSolidTownSignPlacementsTest::RunTest(const FString& Parameters)
 	const FVector2D WorldMin(-51200.f, -51200.f);
 	const FVector2D WorldMax(51200.f, 51200.f);
 
-	int32 NamedCells = 0;
+	int32 NamedTowns = 0;
 	TArray<FSolidWorldLocation> Locations;
 	WorldMap->CollectLocations(Locations);
 	for (const FSolidWorldLocation& Location : Locations)
@@ -36,15 +36,14 @@ bool FSolidTownSignPlacementsTest::RunTest(const FString& Parameters)
 		{
 			continue;
 		}
-		// A wall gate is one gate, however many cells it covers. One cell is still one sign.
-		NamedCells += SolidTowns::IsWallGate(Location.Id) ? 1 : Location.Cells.Num();
+		++NamedTowns;
 	}
 
 	TArray<SolidTownSigns::FPlacement> Placements;
 	const int32 Count = SolidTownSigns::CollectPlacements(WorldMap, WorldMin, WorldMax, Placements);
-	TestEqual(TEXT("one sign per named town cell, one for a wall gate"), Count, NamedCells);
-	TestEqual(TEXT("placements filled"), Placements.Num(), NamedCells);
-	if (Placements.Num() != NamedCells || Placements.Num() == 0)
+	TestEqual(TEXT("one sign per named town"), Count, NamedTowns);
+	TestEqual(TEXT("placements filled"), Placements.Num(), NamedTowns);
+	if (Placements.Num() != NamedTowns || Placements.Num() == 0)
 	{
 		return false;
 	}
@@ -70,31 +69,28 @@ bool FSolidTownSignPlacementsTest::RunTest(const FString& Parameters)
 		TestNotNull(TEXT("town"), Town);
 		if (Town)
 		{
-			FVector2D Anchor = CellXY;
-			if (SolidTowns::IsWallGate(Town->Id))
+			FVector2D Middle = CellXY;
+			FSolidWorldLocation TownLocation;
+			if (WorldMap->FindLocation(Town->Id, TownLocation) && TownLocation.Cells.Num() > 0)
 			{
-				FSolidWorldLocation Gate;
-				if (WorldMap->FindLocation(Town->Id, Gate) && Gate.Cells.Num() > 0)
+				FVector2D Sum = FVector2D::ZeroVector;
+				int32 Found = 0;
+				for (const FIntPoint& TownCell : TownLocation.Cells)
 				{
-					FVector2D Sum = FVector2D::ZeroVector;
-					int32 Found = 0;
-					for (const FIntPoint& GateCell : Gate.Cells)
+					FVector2D TownXY = FVector2D::ZeroVector;
+					if (WorldMap->CellToWorldXY(TownCell, WorldMin, WorldMax, TownXY))
 					{
-						FVector2D GateXY = FVector2D::ZeroVector;
-						if (WorldMap->CellToWorldXY(GateCell, WorldMin, WorldMax, GateXY))
-						{
-							Sum += GateXY;
-							++Found;
-						}
-					}
-					if (Found > 0)
-					{
-						Anchor = Sum / static_cast<float>(Found);
+						Sum += TownXY;
+						++Found;
 					}
 				}
+				if (Found > 0)
+				{
+					Middle = Sum / static_cast<float>(Found);
+				}
 			}
-			TestTrue(TEXT("placement is the anchor plus the town offset"),
-				Placement.WorldXY.Equals(Anchor + Town->SignOffsetCm, 0.1f));
+			TestTrue(TEXT("placement is the middle of the town plus the town offset"),
+				Placement.WorldXY.Equals(Middle + Town->SignOffsetCm, 0.1f));
 			TestTrue(TEXT("placement uses the town yaw"),
 				FMath::IsNearlyEqual(Placement.YawDeg, Town->SignYawDeg, 0.1f));
 		}
@@ -114,7 +110,7 @@ bool FSolidTownSignPlacementsTest::RunTest(const FString& Parameters)
 				FVector2D::DistSquared(Placement.WorldXY, Placements[Other].WorldXY) > 1.f);
 		}
 	}
-	TestTrue(TEXT("Kanfold has a sign on more than one cell"), KanfoldSigns > 1);
+	TestEqual(TEXT("Kanfold has one sign"), KanfoldSigns, 1);
 	TestTrue(TEXT("Rathen has a sign"), bSawRathen);
 
 	TestEqual(TEXT("null map yields none"),
@@ -166,17 +162,20 @@ bool FSolidTownSignSkipsEmptyNameTest::RunTest(const FString& Parameters)
 	const FVector2D WorldMin(0.f, 0.f);
 	const FVector2D WorldMax(6400.f, 6400.f);
 	TArray<SolidTownSigns::FPlacement> Placements;
-	TestEqual(TEXT("index with no town definition is skipped"),
-		SolidTownSigns::CollectPlacements(WorldMap, WorldMin, WorldMax, Placements), 3);
-	if (Placements.Num() < 3)
+	TestEqual(TEXT("one sign for Iglin and one for Kanfold"),
+		SolidTownSigns::CollectPlacements(WorldMap, WorldMin, WorldMax, Placements), 2);
+	if (Placements.Num() < 2)
 	{
 		return false;
 	}
 	TestEqual(TEXT("first is Iglin"), Placements[0].Name, FString(TEXT("Iglin")));
-	TestEqual(TEXT("second Kanfold cell"), Placements[1].Name, FString(TEXT("Kanfold")));
-	TestEqual(TEXT("third Kanfold cell"), Placements[2].Name, FString(TEXT("Kanfold")));
-	TestTrue(TEXT("Kanfold cells stay apart"),
-		FVector2D::Distance(Placements[1].WorldXY, Placements[2].WorldXY) > 100.f);
+	TestEqual(TEXT("second is Kanfold"), Placements[1].Name, FString(TEXT("Kanfold")));
+	FVector2D KanfoldNorth = FVector2D::ZeroVector;
+	FVector2D KanfoldSouth = FVector2D::ZeroVector;
+	TestTrue(TEXT("north Kanfold cell"), WorldMap->CellToWorldXY(FIntPoint(9, 3), WorldMin, WorldMax, KanfoldNorth));
+	TestTrue(TEXT("south Kanfold cell"), WorldMap->CellToWorldXY(FIntPoint(9, 8), WorldMin, WorldMax, KanfoldSouth));
+	TestTrue(TEXT("Kanfold sign is centered between its cells"),
+		Placements[1].WorldXY.Equals((KanfoldNorth + KanfoldSouth) * 0.5f, 0.1f));
 
 	FVector2D IglinXY = FVector2D::ZeroVector;
 	TestTrue(TEXT("Iglin cell"), WorldMap->CellToWorldXY(FIntPoint(2, 1), WorldMin, WorldMax, IglinXY));

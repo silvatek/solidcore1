@@ -29,6 +29,12 @@ struct FSolidDeformBone
 	ESolidBodyBoneRole Role = ESolidBodyBoneRole::Root;
 	FVector LocalTranslation = FVector::ZeroVector;
 	FQuat LocalRotation = FQuat::Identity;
+
+	/** A twist bone spins a limb. It is not its own segment. */
+	bool bTwist = false;
+
+	/** A finger or a toe. The ankle and the calf stay limbs. */
+	bool bDigit = false;
 };
 
 /** One bind-pose vertex, skinned with up to four influences. Weights should sum to 1. */

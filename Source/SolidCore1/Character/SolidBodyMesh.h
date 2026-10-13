@@ -24,6 +24,12 @@ namespace SolidBodyMesh
 	/** Bind-pose role from a bone name. IK helpers stay Root. */
 	ESolidBodyBoneRole RoleForBoneName(const FString& BoneName);
 
+	/** Twist bones only spin a limb. They are not a shoulder plate or a shin. */
+	bool IsTwistBoneName(const FString& BoneName);
+
+	/** Fingers, thumbs, and toes. The calf and the ankle are not digits. */
+	bool IsDigitBoneName(const FString& BoneName);
+
 	/**
 	 * Transient low-poly mesh owned by Outer.
 	 * Source supplies the Viking skeleton and bind pose. Its mesh and skeleton stay unchanged.

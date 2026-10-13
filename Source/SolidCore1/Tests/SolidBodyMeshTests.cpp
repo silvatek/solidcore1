@@ -83,6 +83,13 @@ bool FSolidBodyBoneRoleTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("hand"), SolidBodyMesh::RoleForBoneName(TEXT("mixamorig_LeftHand")) == ESolidBodyBoneRole::Hand);
 	TestTrue(TEXT("thigh"), SolidBodyMesh::RoleForBoneName(TEXT("thigh_r")) == ESolidBodyBoneRole::Leg);
 	TestTrue(TEXT("calf"), SolidBodyMesh::RoleForBoneName(TEXT("calf_r")) == ESolidBodyBoneRole::Foot);
+	TestFalse(TEXT("calf is not a toe"), SolidBodyMesh::IsDigitBoneName(TEXT("calf_r")));
+	TestFalse(TEXT("ankle is not a toe"), SolidBodyMesh::IsDigitBoneName(TEXT("foot_l")));
+	TestTrue(TEXT("toe is a digit"), SolidBodyMesh::IsDigitBoneName(TEXT("ball_l")));
+	TestTrue(TEXT("thumb is a digit"), SolidBodyMesh::IsDigitBoneName(TEXT("thumb_01_l")));
+	TestTrue(TEXT("upper-arm twist is not a shoulder plate"), SolidBodyMesh::IsTwistBoneName(TEXT("upperarm_twist_01_l")));
+	TestTrue(TEXT("calf twist is not a shin"), SolidBodyMesh::IsTwistBoneName(TEXT("calf_twist_02_r")));
+	TestFalse(TEXT("calf is not a twist"), SolidBodyMesh::IsTwistBoneName(TEXT("calf_r")));
 	TestTrue(TEXT("ik helper stays put"), SolidBodyMesh::RoleForBoneName(TEXT("ik_foot_root")) == ESolidBodyBoneRole::Root);
 	TestTrue(TEXT("unknown stays put"), SolidBodyMesh::RoleForBoneName(TEXT("root")) == ESolidBodyBoneRole::Root);
 	return true;

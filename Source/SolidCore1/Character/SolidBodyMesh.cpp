@@ -96,6 +96,20 @@ ESolidBodyBoneRole SolidBodyMesh::RoleForBoneName(const FString& BoneName)
 	return ESolidBodyBoneRole::Root;
 }
 
+bool SolidBodyMesh::IsTwistBoneName(const FString& BoneName)
+{
+	return BoneName.ToLower().Contains(TEXT("twist"));
+}
+
+bool SolidBodyMesh::IsDigitBoneName(const FString& BoneName)
+{
+	const FString Lower = BoneName.ToLower();
+	return Lower.Contains(TEXT("finger"))
+		|| Lower.Contains(TEXT("thumb"))
+		|| Lower.Contains(TEXT("toe"))
+		|| Lower.Contains(TEXT("ball"));
+}
+
 #if WITH_EDITORONLY_DATA
 namespace
 {
@@ -126,8 +140,11 @@ namespace
 		for (int32 Index = 0; Index < Count; ++Index)
 		{
 			FSolidDeformBone Bone;
+			const FString BoneName = Infos[Index].Name.ToString();
 			Bone.ParentIndex = Infos[Index].ParentIndex;
-			Bone.Role = SolidBodyMesh::RoleForBoneName(Infos[Index].Name.ToString());
+			Bone.Role = SolidBodyMesh::RoleForBoneName(BoneName);
+			Bone.bTwist = SolidBodyMesh::IsTwistBoneName(BoneName);
+			Bone.bDigit = SolidBodyMesh::IsDigitBoneName(BoneName);
 			Bone.LocalTranslation = Pose[Index].GetTranslation();
 			Bone.LocalRotation = Pose[Index].GetRotation();
 			Out.Bones.Add(Bone);
@@ -327,7 +344,7 @@ namespace
 			Radius = 6.4f * Params.TorsoGirth;
 			break;
 		case ESolidBodyBoneRole::Clavicle:
-			Radius = 5.2f * Params.ShoulderWidth;
+			Radius = 6.4f * Params.Bulk;
 			break;
 		case ESolidBodyBoneRole::Arm:
 			Radius = 5.4f * Params.Bulk;
@@ -464,14 +481,37 @@ namespace
 
 	bool IsDigitBone(const TArray<FSolidDeformBone>& Bones, const int32 Index)
 	{
-		const int32 Parent = Bones[Index].ParentIndex;
-		if (!Bones.IsValidIndex(Parent))
+		return Bones.IsValidIndex(Index) && Bones[Index].bDigit;
+	}
+
+	/** Walk past twist bones so a shin still starts at the calf. */
+	int32 StructuralParent(const TArray<FSolidDeformBone>& Bones, const int32 Index)
+	{
+		int32 Parent = Bones.IsValidIndex(Index) ? Bones[Index].ParentIndex : INDEX_NONE;
+		int32 Guard = 0;
+		while (Bones.IsValidIndex(Parent) && Bones[Parent].bTwist && Guard < Bones.Num())
+		{
+			Parent = Bones[Parent].ParentIndex;
+			++Guard;
+		}
+		return Parent;
+	}
+
+	/**
+	 * The ankle is the foot bone that hangs off the calf.
+	 * The calf's own parent is the thigh, so the calf is the thigh segment, not the foot.
+	 */
+	bool IsAnkleBone(const TArray<FSolidDeformBone>& Bones, const int32 Index)
+	{
+		if (!Bones.IsValidIndex(Index)
+			|| Bones[Index].Role != ESolidBodyBoneRole::Foot
+			|| Bones[Index].bDigit
+			|| Bones[Index].bTwist)
 		{
 			return false;
 		}
-		const ESolidBodyBoneRole Role = Bones[Index].Role;
-		return (Role == ESolidBodyBoneRole::Hand && Bones[Parent].Role == ESolidBodyBoneRole::Hand)
-			|| (Role == ESolidBodyBoneRole::Foot && Bones[Parent].Role == ESolidBodyBoneRole::Foot);
+		const int32 Parent = StructuralParent(Bones, Index);
+		return Bones.IsValidIndex(Parent) && Bones[Parent].Role == ESolidBodyBoneRole::Foot;
 	}
 
 	int32 SpineOrdinal(const TArray<FSolidDeformBone>& Bones, const int32 Index, int32& OutCount)
@@ -508,12 +548,12 @@ namespace
 			OutEnd = 0.7f;
 			break;
 		case ESolidBodyBoneRole::Arm:
-			OutStart = 1.22f;
-			OutEnd = 0.74f;
+			OutStart = 1.f;
+			OutEnd = 0.72f;
 			break;
 		case ESolidBodyBoneRole::Clavicle:
-			OutStart = 0.55f;
-			OutEnd = 0.72f;
+			OutStart = 0.85f;
+			OutEnd = 1.f;
 			break;
 		case ESolidBodyBoneRole::Neck:
 			OutStart = 0.62f;
@@ -552,13 +592,17 @@ namespace
 			const ESolidBodyBoneRole Role = Bones[Index].Role;
 			if (Role == ESolidBodyBoneRole::Root
 				|| Role == ESolidBodyBoneRole::Pelvis
+				|| Bones[Index].bTwist
 				|| IsDigitBone(Bones, Index))
 			{
 				continue;
 			}
 
-			const int32 Parent = Bones[Index].ParentIndex;
+			const int32 Parent = StructuralParent(Bones, Index);
 			const bool bParent = Bones.IsValidIndex(Parent) && Positions.IsValidIndex(Parent);
+			const ESolidBodyBoneRole ParentRole = bParent
+				? Bones[Parent].Role
+				: ESolidBodyBoneRole::Root;
 			FVector Dir = FVector::UpVector;
 			float Incoming = 0.f;
 			if (bParent)
@@ -571,10 +615,13 @@ namespace
 				}
 			}
 
-			// Twist bones are only a couple of centimetres. Skip those so they do not read as sticks.
-			if (bParent && Bones[Parent].Role != ESolidBodyBoneRole::Root && Incoming >= 4.f)
+			// The calf's translation is the thigh. The ankle's translation is the shin.
+			const bool bThigh = Role == ESolidBodyBoneRole::Foot && ParentRole == ESolidBodyBoneRole::Leg;
+			const bool bShin = Role == ESolidBodyBoneRole::Foot && ParentRole == ESolidBodyBoneRole::Foot;
+
+			if (bParent && ParentRole != ESolidBodyBoneRole::Root && Incoming >= 4.f)
 			{
-				ESolidBodyBoneRole RadiusRole = Bones[Parent].Role;
+				ESolidBodyBoneRole RadiusRole = ParentRole;
 				if (Role == ESolidBodyBoneRole::Spine
 					|| Role == ESolidBodyBoneRole::Arm
 					|| Role == ESolidBodyBoneRole::Hand
@@ -585,6 +632,10 @@ namespace
 				{
 					RadiusRole = Role;
 				}
+				if (bThigh || bShin)
+				{
+					RadiusRole = ESolidBodyBoneRole::Leg;
+				}
 				int32 SpineCount = 1;
 				const int32 Ordinal = (RadiusRole == ESolidBodyBoneRole::Spine)
 					? SpineOrdinal(Bones, Parent, SpineCount)
@@ -592,11 +643,18 @@ namespace
 				float StartScale = 1.f;
 				float EndScale = 1.f;
 				TaperFor(RadiusRole, Ordinal, SpineCount, StartScale, EndScale);
+				if (bShin)
+				{
+					StartScale = 0.92f;
+					EndScale = 0.62f;
+				}
 				const float Radius = SectionRadius(RadiusRole, FMath::Max(Incoming, 8.f), Params);
+				const float Flatten = Role == ESolidBodyBoneRole::Clavicle ? 0.7f : 1.f;
+				const int32 SkinBone = Role == ESolidBodyBoneRole::Clavicle ? Index : Parent;
 				AddTube(
 					Verts,
 					Tris,
-					Parent,
+					SkinBone,
 					Positions[Parent],
 					Positions[Index],
 					Radius * StartScale,
@@ -604,7 +662,7 @@ namespace
 					TubeSides,
 					TubeSegments,
 					SlotForRole(RadiusRole),
-					1.f,
+					Flatten,
 					FVector::UpVector);
 			}
 
@@ -644,40 +702,49 @@ namespace
 					0.42f,
 					Wide);
 			}
-			else if (Role == ESolidBodyBoneRole::Foot && bParent)
+			else if (IsAnkleBone(Bones, Index))
 			{
 				FVector FootDir = FVector(0.f, 1.f, 0.f);
+				float BestToe = 1.f;
 				for (int32 Child = 0; Child < Count; ++Child)
 				{
-					if (Bones[Child].ParentIndex == Index && Bones[Child].Role == ESolidBodyBoneRole::Foot)
+					if (Bones[Child].ParentIndex != Index || Bones[Child].bTwist)
 					{
-						const FVector ToToe = Positions[Child] - Positions[Index];
-						if (ToToe.SizeSquared() > 1.f)
-						{
-							FootDir = ToToe.GetSafeNormal();
-						}
-						break;
+						continue;
+					}
+					if (!Bones[Child].bDigit && Bones[Child].Role != ESolidBodyBoneRole::Foot)
+					{
+						continue;
+					}
+					const FVector ToToe = Positions[Child] - Positions[Index];
+					if (ToToe.SizeSquared() > BestToe)
+					{
+						BestToe = ToToe.SizeSquared();
+						FootDir = ToToe.GetSafeNormal();
 					}
 				}
-				const float Length = FMath::Clamp(Incoming * 0.55f, 10.f, 22.f);
-				const float Radius = SectionRadius(ESolidBodyBoneRole::Foot, Length, Params);
+				const float Length = FMath::Clamp(16.f * Params.Height, 12.f, 22.f);
+				const float Radius = SectionRadius(ESolidBodyBoneRole::Leg, Length, Params) * 0.7f;
 				FVector Wide = FVector::CrossProduct(FootDir, FVector::UpVector);
 				if (Wide.SizeSquared() < 0.01)
 				{
 					Wide = FVector::CrossProduct(FootDir, FVector::RightVector);
 				}
+				const FVector Ankle = Positions[Index];
+				FVector Toe = Ankle + FootDir * static_cast<double>(Length);
+				Toe.Z -= 4.0;
 				AddTube(
 					Verts,
 					Tris,
 					Index,
-					Positions[Index],
-					Positions[Index] + FootDir * static_cast<double>(Length),
-					Radius * 0.95f,
-					Radius * 0.72f,
+					Ankle,
+					Toe,
+					Radius,
+					Radius * 0.78f,
 					8,
 					2,
 					SlotLegs,
-					0.38f,
+					0.36f,
 					Wide);
 			}
 			else if (bParent && IsChainEnd(Bones, Index))

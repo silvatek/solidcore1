@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0238")
+#define SOLID_BUILD_ID TEXT("SC1-0239")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Character editor compile fix: slider locals no longer hide the slider names.")
+#define SOLID_BUILD_NOTE TEXT("Shoulders meet the arms, and the shins run down to the feet.")
 #endif

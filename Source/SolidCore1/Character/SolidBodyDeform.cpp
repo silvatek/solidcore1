@@ -208,6 +208,8 @@ FSolidDeformMesh SolidBodyDeform::Apply(
 		OutBone.ParentIndex = Bone.ParentIndex;
 		OutBone.Role = Bone.Role;
 		OutBone.LocalRotation = Bone.LocalRotation;
+		OutBone.bTwist = Bone.bTwist;
+		OutBone.bDigit = Bone.bDigit;
 
 		const int32 Parent = Bone.ParentIndex;
 		const bool bHasParent = IsBone(Source.Bones, Parent) && Parent != Index;

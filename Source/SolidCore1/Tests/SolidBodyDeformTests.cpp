@@ -81,8 +81,8 @@ bool FSolidBodySeedTest::RunTest(const FString& Parameters)
 	Mesh.Vertices.Add(MakeVertex(FVector(8.f, 0.f, -48.f), 1));
 	const FSolidDeformMesh Once = SolidBodyDeform::Apply(Mesh, First);
 	const FSolidDeformMesh Twice = SolidBodyDeform::Apply(Mesh, Second);
-	TestTrue(TEXT("same seed rebuilds the same leg"), Once.Bones[1].LocalTranslation.Equals(Twice.Bones[1].LocalTranslation, 0.0));
-	TestTrue(TEXT("same seed rebuilds the same vertex"), Once.Vertices[0].Position.Equals(Twice.Vertices[0].Position, 0.0));
+	TestTrue(TEXT("same seed rebuilds the same leg"), Once.Bones[1].LocalTranslation.Equals(Twice.Bones[1].LocalTranslation, 0.f));
+	TestTrue(TEXT("same seed rebuilds the same vertex"), Once.Vertices[0].Position.Equals(Twice.Vertices[0].Position, 0.f));
 	return true;
 }
 
@@ -216,7 +216,7 @@ bool FSolidBodyRotatedLegTest::RunTest(const FString& Parameters)
 {
 	FSolidDeformMesh Mesh;
 	FSolidDeformBone Root = MakeBone(INDEX_NONE, ESolidBodyBoneRole::Root, FVector(0.f, 0.f, 100.f));
-	Root.LocalRotation = FQuat(FVector::XAxisVector, FMath::DegreesToRadians(90.0));
+	Root.LocalRotation = FRotator(0.f, 0.f, 90.f).Quaternion();
 	Mesh.Bones.Add(Root);
 	Mesh.Bones.Add(MakeBone(0, ESolidBodyBoneRole::Leg, FVector(0.f, 0.f, -40.f)));
 
@@ -232,7 +232,7 @@ bool FSolidBodyRotatedLegTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("rotated leg keeps its length in local space"), FMath::IsNearlyEqual(NewLocal.Size(), 45.0, 0.01));
 	TestTrue(
 		TEXT("local translation stays on the bone axis"),
-		FVector::CrossProduct(FVector(0.f, 0.f, -1.f), NewLocal.GetSafeNormal()).IsNearlyZero(0.01));
+		FVector::CrossProduct(FVector(0.f, 0.f, -1.f), NewLocal.GetSafeNormal()).IsNearlyZero(0.01f));
 	TestTrue(TEXT("leg still points the same way"), FVector::DotProduct(FVector(0.f, 0.f, -1.f), NewLocal) > 0.0);
 
 	TArray<FVector> NewJoints;

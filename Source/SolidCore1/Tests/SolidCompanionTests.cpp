@@ -2,6 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "Companion/SolidCompanionCharacter.h"
 #include "SolidCharacter.h"
+#include "Components/TextRenderComponent.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 

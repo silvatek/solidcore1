@@ -1,4 +1,5 @@
 #include "SolidCharacter.h"
+#include "SolidBodyMesh.h"
 #include "Animation/AnimSequence.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -12,6 +13,7 @@ void ASolidCharacter::ApplyCharacterVisuals()
 		SolidClipLocomotion::DefaultMeshPath,
 		TEXT("Captain"),
 		/*bOnlyIfMeshUnset=*/false);
+	SolidBodyMesh::ApplySeed(GetMesh(), SolidBodyMesh::CaptainSeed, this, TEXT("Captain"));
 }
 
 void ASolidCharacter::CacheLocomotionAnims()

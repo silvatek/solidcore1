@@ -3,14 +3,14 @@
 #include "CoreMinimal.h"
 
 /**
- * Proportion range around the Viking bind pose.
- * 1 leaves a channel unchanged. The deform clamps anything outside this
- * so a seed cannot pull a joint apart.
+ * Full draw for a generated body, around the Viking bind pose.
+ * 1 leaves a channel unchanged. A seed uses the whole band.
+ * The deform clamps anything outside it.
  */
 namespace SolidBody
 {
-	inline constexpr float ParamMin = 0.85f;
-	inline constexpr float ParamMax = 1.15f;
+	inline constexpr float ParamMin = 0.75f;
+	inline constexpr float ParamMax = 1.35f;
 }
 
 /**

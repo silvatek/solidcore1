@@ -33,7 +33,8 @@ public class SolidCore1 : ModuleRules
 			"InputCore",
 			"EnhancedInput",
 			"MeshDescription",
-			"StaticMeshDescription"
+			"StaticMeshDescription",
+			"SkeletalMeshDescription"
 		});
 
 		PrivateDependencyModuleNames.AddRange(new string[]

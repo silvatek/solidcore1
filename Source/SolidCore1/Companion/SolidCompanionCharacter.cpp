@@ -1,4 +1,5 @@
 #include "SolidCompanionCharacter.h"
+#include "SolidBodyMesh.h"
 #include "SolidClipLocomotion.h"
 #include "SolidContentLookup.h"
 #include "SolidCore1.h"
@@ -165,6 +166,11 @@ void ASolidCompanionCharacter::SetCompanionMesh(const TSoftObjectPtr<USkeletalMe
 			bVikingMesh ? SolidClipLocomotion::DefaultMeshPath : nullptr,
 			TEXT("Companion"),
 			/*bOnlyIfMeshUnset=*/false);
+		SolidBodyMesh::ApplySeed(
+			GetMesh(),
+			SolidBodyMesh::SeedForName(CharacterDisplayName),
+			this,
+			TEXT("Companion"));
 		CacheLocomotionAnims();
 		UpdateLocomotionAnim();
 	}
@@ -241,6 +247,11 @@ void ASolidCompanionCharacter::ApplyVisuals()
 		bVikingMesh ? SolidClipLocomotion::DefaultMeshPath : nullptr,
 		TEXT("Companion"),
 		/*bOnlyIfMeshUnset=*/true);
+	SolidBodyMesh::ApplySeed(
+		GetMesh(),
+		SolidBodyMesh::SeedForName(CharacterDisplayName),
+		this,
+		TEXT("Companion"));
 }
 
 bool ASolidCompanionCharacter::PlayLocomotionClip(UAnimSequence* Anim)

@@ -738,4 +738,61 @@ bool FSolidBodyLeftThighTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyCalfConeTest,
+	"SolidCore1.Body.CalfCone",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyCalfConeTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("the calf starts at the thigh's narrow end"), SolidBodyMesh::CalfTopDiameterCm, SolidBodyMesh::LeftThighBottomDiameterCm);
+	TestEqual(TEXT("the calf top is 15 cm across"), SolidBodyMesh::CalfTopDiameterCm, 15.f);
+	TestEqual(TEXT("the calf bottom is 12 cm across"), SolidBodyMesh::CalfBottomDiameterCm, 12.f);
+	TestEqual(TEXT("left calf"), FString(SolidBodyMesh::LeftCalfBone), FString(TEXT("calf_l")));
+	TestEqual(TEXT("left calf twist"), FString(SolidBodyMesh::LeftCalfTwistBone), FString(TEXT("calf_twist_01_l")));
+	TestEqual(TEXT("right calf"), FString(SolidBodyMesh::RightCalfBone), FString(TEXT("calf_r")));
+	TestEqual(TEXT("right calf twist"), FString(SolidBodyMesh::RightCalfTwistBone), FString(TEXT("calf_twist_01_r")));
+
+	const FVector Start(0.f, 0.f, 100.f);
+	const FVector Knee(0.f, 0.f, 60.f);
+	const FVector Twist(0.f, 0.f, 40.f);
+	const SolidBodyMesh::FSolidFittedCone Straight = SolidBodyMesh::CalfCone(Start, Knee, Twist);
+	TestTrue(TEXT("a straight calf is a cone"), Straight.bValid);
+	TestTrue(TEXT("the wide end is the start of calf"), Straight.Start.Equals(Start, 0.01));
+	TestTrue(TEXT("a straight cone ends on the twist"), Straight.End.Equals(Twist, 0.05));
+	TestTrue(
+		TEXT("the cone is both bones added together"),
+		FMath::IsNearlyEqual(static_cast<float>(FVector::Dist(Straight.Start, Straight.End)), 60.f, 0.05f));
+	TestTrue(TEXT("the top radius is 7.5 cm"), FMath::IsNearlyEqual(Straight.RadiusStart, 7.5f, 0.01f));
+	TestTrue(TEXT("the bottom radius is 6 cm"), FMath::IsNearlyEqual(Straight.RadiusEnd, 6.f, 0.01f));
+
+	const FVector BentKnee(0.f, 10.f, 70.f);
+	const FVector BentTwist(0.f, 10.f, 50.f);
+	const float Combined = static_cast<float>(FVector::Dist(Start, BentKnee) + FVector::Dist(BentKnee, BentTwist));
+	const SolidBodyMesh::FSolidFittedCone Bent = SolidBodyMesh::CalfCone(Start, BentKnee, BentTwist);
+	TestTrue(
+		TEXT("a bent pair still uses the combined length"),
+		FMath::IsNearlyEqual(static_cast<float>(FVector::Dist(Bent.Start, Bent.End)), Combined, 0.05f));
+
+	const FVector LeftStart(-5.f, 1.f, 80.f);
+	const FVector LeftKnee(-6.f, 1.f, 50.f);
+	const FVector LeftTwist(-7.f, 2.f, 30.f);
+	const SolidBodyMesh::FSolidFittedCone Left = SolidBodyMesh::CalfCone(LeftStart, LeftKnee, LeftTwist);
+	const SolidBodyMesh::FSolidFittedCone Right = SolidBodyMesh::CalfCone(
+		FVector(-LeftStart.X, LeftStart.Y, LeftStart.Z),
+		FVector(-LeftKnee.X, LeftKnee.Y, LeftKnee.Z),
+		FVector(-LeftTwist.X, LeftTwist.Y, LeftTwist.Z));
+	TestTrue(
+		TEXT("mirrored calves are the same length"),
+		FMath::IsNearlyEqual(
+			static_cast<float>(FVector::Dist(Left.Start, Left.End)),
+			static_cast<float>(FVector::Dist(Right.Start, Right.End)),
+			0.05f));
+	TestTrue(TEXT("the right calf starts across from the left"), Right.Start.Equals(FVector(-Left.Start.X, Left.Start.Y, Left.Start.Z), 0.01));
+	TestTrue(TEXT("the right calf ends across from the left"), Right.End.Equals(FVector(-Left.End.X, Left.End.Y, Left.End.Z), 0.01));
+
+	TestFalse(TEXT("two bones with no length are not drawn"), SolidBodyMesh::CalfCone(Start, Start, Start).bValid);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

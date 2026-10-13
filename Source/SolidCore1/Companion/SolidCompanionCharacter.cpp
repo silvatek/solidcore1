@@ -584,39 +584,27 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 			return FString();
 		}
 
-		const TCHAR* ThighBones[] = {
-			SolidBodyMesh::LeftThighBone,
-			SolidBodyMesh::RightThighBone,
-		};
 		FString BestLabel;
 		float BestT = TNumericLimits<float>::Max();
 		const int32 BoneCount = CharacterMesh->GetNumBones();
-		for (const TCHAR* Wanted : ThighBones)
+		auto FindBone = [CharacterMesh, BoneCount](const TCHAR* Wanted) -> FName
 		{
-			FName TwistName = NAME_None;
 			for (int32 Index = 0; Index < BoneCount; ++Index)
 			{
 				const FName BoneName = CharacterMesh->GetBoneName(Index);
 				if (BoneName.ToString().Equals(Wanted, ESearchCase::IgnoreCase))
 				{
-					TwistName = BoneName;
-					break;
+					return BoneName;
 				}
 			}
-			const FName ParentName = TwistName.IsNone() ? NAME_None : CharacterMesh->GetParentBone(TwistName);
-			if (TwistName.IsNone() || ParentName.IsNone())
+			return NAME_None;
+		};
+		auto Consider = [&](const SolidBodyMesh::FSolidFittedCone& Cone, const FString& Label)
+		{
+			if (!Cone.bValid || Label.IsEmpty())
 			{
-				continue;
+				return;
 			}
-
-			const SolidBodyMesh::FSolidFittedCone Cone = SolidBodyMesh::LeftThighCone(
-				CharacterMesh->GetBoneLocation(ParentName),
-				CharacterMesh->GetBoneLocation(TwistName));
-			if (!Cone.bValid)
-			{
-				continue;
-			}
-
 			float RayT = 0.f;
 			float SegU = 0.f;
 			const float Dist = SolidSkeletonHover::RaySegmentDistance(
@@ -629,11 +617,58 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 			const float Radius = FMath::Lerp(Cone.RadiusStart, Cone.RadiusEnd, SegU);
 			if (Dist > Radius + 0.15f || RayT >= BestT)
 			{
+				return;
+			}
+			BestT = RayT;
+			BestLabel = Label;
+		};
+
+		const TCHAR* ThighBones[] = {
+			SolidBodyMesh::LeftThighBone,
+			SolidBodyMesh::RightThighBone,
+		};
+		for (const TCHAR* Wanted : ThighBones)
+		{
+			const FName TwistName = FindBone(Wanted);
+			const FName ParentName = TwistName.IsNone() ? NAME_None : CharacterMesh->GetParentBone(TwistName);
+			if (TwistName.IsNone() || ParentName.IsNone())
+			{
 				continue;
 			}
+			Consider(
+				SolidBodyMesh::LeftThighCone(
+					CharacterMesh->GetBoneLocation(ParentName),
+					CharacterMesh->GetBoneLocation(TwistName)),
+				TwistName.ToString());
+		}
 
-			BestT = RayT;
-			BestLabel = TwistName.ToString();
+		const TCHAR* CalfBones[] = {
+			SolidBodyMesh::LeftCalfBone,
+			SolidBodyMesh::RightCalfBone,
+		};
+		const TCHAR* CalfTwists[] = {
+			SolidBodyMesh::LeftCalfTwistBone,
+			SolidBodyMesh::RightCalfTwistBone,
+		};
+		for (int32 Side = 0; Side < 2; ++Side)
+		{
+			const FName CalfName = FindBone(CalfBones[Side]);
+			const FName TwistName = FindBone(CalfTwists[Side]);
+			const FName ParentName = CalfName.IsNone() ? NAME_None : CharacterMesh->GetParentBone(CalfName);
+			if (CalfName.IsNone() || TwistName.IsNone() || ParentName.IsNone())
+			{
+				continue;
+			}
+			TArray<FString> Names;
+			Names.Add(CalfName.ToString());
+			Names.Add(TwistName.ToString());
+			Names.Sort();
+			Consider(
+				SolidBodyMesh::CalfCone(
+					CharacterMesh->GetBoneLocation(ParentName),
+					CharacterMesh->GetBoneLocation(CalfName),
+					CharacterMesh->GetBoneLocation(TwistName)),
+				FString::Join(Names, TEXT(", ")));
 		}
 		return BestLabel;
 	}

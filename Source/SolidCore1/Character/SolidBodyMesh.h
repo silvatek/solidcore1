@@ -144,6 +144,25 @@ namespace SolidBodyMesh
 	 */
 	FSolidFittedCone LeftThighCone(const FVector& ParentJoint, const FVector& BoneEnd);
 
+	/** The two bones in the left calf piece. */
+	inline const TCHAR* LeftCalfBone = TEXT("calf_l");
+	inline const TCHAR* LeftCalfTwistBone = TEXT("calf_twist_01_l");
+
+	/** The two bones in the right calf piece. The cone matches the left calf. */
+	inline const TCHAR* RightCalfBone = TEXT("calf_r");
+	inline const TCHAR* RightCalfTwistBone = TEXT("calf_twist_01_r");
+
+	/** Diameters of a calf cone, in centimetres. The start of calf_* is the wide end. */
+	inline constexpr float CalfTopDiameterCm = LeftThighBottomDiameterCm;
+	inline constexpr float CalfBottomDiameterCm = 12.f;
+
+	/**
+	 * One truncated cone the length of calf_* plus calf_twist_01_*.
+	 * CalfStart is the parent joint of the calf bone, CalfJoint is that bone, and TwistEnd is the twist.
+	 * The wide end is at CalfStart. Invalid when the two bones together are shorter than a centimetre.
+	 */
+	FSolidFittedCone CalfCone(const FVector& CalfStart, const FVector& CalfJoint, const FVector& TwistEnd);
+
 	/** Start and end radii of the cone from Parent to Child. Both ends are joint radii. */
 	void SegmentRadii(
 		const TArray<float>& Radii,

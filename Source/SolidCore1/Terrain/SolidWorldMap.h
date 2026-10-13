@@ -52,8 +52,8 @@ public:
 	static constexpr int32 MapWidth = 128;
 	static constexpr int32 MapHeight = 64;
 
-	/** WorldMap.txt marker for the sea. */
-	static constexpr TCHAR SeaMarker = TEXT('S');
+	/** WorldMap.txt marker for the sea. A wave, not the letter S. */
+	static constexpr TCHAR SeaMarker = TEXT('~');
 
 	/** Load Content/WorldMap.txt. Idempotent when already loaded. */
 	bool LoadDefault(bool bForceReload = false);

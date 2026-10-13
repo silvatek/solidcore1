@@ -112,7 +112,7 @@ FLinearColor USolidWorldMap::ColorFromName(const FString& ColorName)
 
 bool USolidWorldMap::ParseKeyLine(const FString& Line)
 {
-	// "S = Sea (blue)" or "Z = Starting town (brown)"
+	// "~ = Sea (blue)" or "Z = Starting town (brown)"
 	FString Trimmed = Line.TrimStartAndEnd();
 	if (Trimmed.Len() < 3 || Trimmed[1] != TEXT(' ') && Trimmed[1] != TEXT('='))
 	{

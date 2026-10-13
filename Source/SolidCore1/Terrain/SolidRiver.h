@@ -6,7 +6,7 @@
 /**
  * A WorldMap R marks a river through that square, not a square of water.
  * The channel is 4 m wide. An R with no river or sea beside it is a 4 m pond.
- * Orthogonal neighbors that are R or S are joined at that width, however long the gap is.
+ * Orthogonal neighbors that are R or the sea marker are joined at that width, however long the gap is.
  * Local coordinates are centimetres from the cell centre: +X east, +Y north.
  */
 namespace SolidRiver
@@ -36,7 +36,7 @@ namespace SolidRiver
 		West,
 	};
 
-	/** R joins another river. S joins the sea. Other markers do not. */
+	/** R joins another river. The sea marker joins the sea. Other markers do not. */
 	inline bool Joins(const TCHAR Marker)
 	{
 		const TCHAR Upper = FChar::ToUpper(Marker);

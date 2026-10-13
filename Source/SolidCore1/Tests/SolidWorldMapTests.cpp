@@ -1,5 +1,6 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
+#include "SolidRiver.h"
 #include "SolidTerrainFog.h"
 #include "SolidTerrainMap.h"
 #include "SolidTerrainStreamer.h"
@@ -668,6 +669,91 @@ bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("Dragongate east cell id"), Shipped->GetLocationIdAtCell(East.X, East.Y), 5);
 		TestEqual(TEXT("Dragongate west cell id"), Shipped->GetLocationIdAtCell(West.X, West.Y), 5);
 	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidWorldMapSeaMarkerTest,
+	"SolidCore1.WorldMap.SeaMarker",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidWorldMapSeaMarkerTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("the sea marker is a wave"), USolidWorldMap::SeaMarker, TEXT('~'));
+	TestTrue(TEXT("a wave joins the sea"), SolidRiver::Joins(USolidWorldMap::SeaMarker));
+	TestFalse(TEXT("the letter S does not join the sea"), SolidRiver::Joins(TEXT('S')));
+	TestFalse(TEXT("a lower-case s does not join the sea"), SolidRiver::Joins(TEXT('s')));
+
+	FString Text;
+	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	{
+		FString Line;
+		Line.Reserve(USolidWorldMap::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		{
+			if (Row == 0 && Col == 1)
+			{
+				Line.AppendChar(USolidWorldMap::SeaMarker);
+			}
+			else if (Row == 0 && Col == 2)
+			{
+				Line.AppendChar(TEXT('S'));
+			}
+			else
+			{
+				Line.AppendChar(TEXT('G'));
+			}
+		}
+		Text += Line;
+		Text += TEXT("\n");
+	}
+	Text += TEXT("~ = Sea (blue)\n");
+
+	USolidWorldMap* Synthetic = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("wave map loads"), Synthetic->LoadFromString(Text));
+	TestEqual(TEXT("a wave is sea"), Synthetic->GetMarkerAtCell(1, 0), USolidWorldMap::SeaMarker);
+	TestEqual(
+		TEXT("a wave cell is the sea biome"),
+		static_cast<uint8>(Synthetic->GetBiomeAtCell(1, 0)),
+		static_cast<uint8>(ESolidBiome::Sea));
+	TestEqual(TEXT("the letter S stays a letter"), Synthetic->GetMarkerAtCell(2, 0), TEXT('S'));
+	TestEqual(
+		TEXT("the letter S is not sea"),
+		static_cast<uint8>(Synthetic->GetBiomeAtCell(2, 0)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+
+	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("shipped map loads"), Shipped->LoadDefault());
+	if (!Shipped->IsLoaded())
+	{
+		return true;
+	}
+	TestEqual(TEXT("the north-east cell is a wave"), Shipped->GetMarkerAtCell(0, 0), USolidWorldMap::SeaMarker);
+	bool bSawSea = false;
+	int32 LetterS = 0;
+	int32 SeaNotWave = 0;
+	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	{
+		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		{
+			const TCHAR Marker = Shipped->GetMarkerAtCell(Col, Row);
+			if (Marker == TEXT('S') || Marker == TEXT('s'))
+			{
+				++LetterS;
+			}
+			if (Shipped->GetBiomeAtCell(Col, Row) == ESolidBiome::Sea)
+			{
+				bSawSea = true;
+				if (Marker != USolidWorldMap::SeaMarker)
+				{
+					++SeaNotWave;
+				}
+			}
+		}
+	}
+	TestEqual(TEXT("the shipped map has no letter S"), LetterS, 0);
+	TestEqual(TEXT("sea cells are waves"), SeaNotWave, 0);
+	TestTrue(TEXT("the shipped map has sea"), bSawSea);
 	return true;
 }
 

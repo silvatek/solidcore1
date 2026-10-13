@@ -90,6 +90,8 @@ bool FSolidBodyBoneRoleTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("upper-arm twist is not a shoulder plate"), SolidBodyMesh::IsTwistBoneName(TEXT("upperarm_twist_01_l")));
 	TestTrue(TEXT("calf twist is not a shin"), SolidBodyMesh::IsTwistBoneName(TEXT("calf_twist_02_r")));
 	TestFalse(TEXT("calf is not a twist"), SolidBodyMesh::IsTwistBoneName(TEXT("calf_r")));
+	TestTrue(TEXT("hip bottom reaches the thigh"), FMath::IsNearlyEqual(SolidBodyMesh::HipBottomRadius(10.f, 8.f, 9.f), 17.f));
+	TestTrue(TEXT("wide pelvis stays wider than the thigh"), FMath::IsNearlyEqual(SolidBodyMesh::HipBottomRadius(20.f, 4.f, 6.f), 20.f));
 	TestTrue(TEXT("ik helper stays put"), SolidBodyMesh::RoleForBoneName(TEXT("ik_foot_root")) == ESolidBodyBoneRole::Root);
 	TestTrue(TEXT("unknown stays put"), SolidBodyMesh::RoleForBoneName(TEXT("root")) == ESolidBodyBoneRole::Root);
 	return true;

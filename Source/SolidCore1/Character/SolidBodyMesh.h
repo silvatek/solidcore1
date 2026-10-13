@@ -31,6 +31,12 @@ namespace SolidBodyMesh
 	bool IsDigitBoneName(const FString& BoneName);
 
 	/**
+	 * Bottom radius of the hip cylinder, in centimetres.
+	 * It reaches the outer face of the thigh (hip joint plus the thigh's radius).
+	 */
+	float HipBottomRadius(float PelvisHalfWidth, float HipLateral, float ThighRadius);
+
+	/**
 	 * Transient low-poly mesh owned by Outer.
 	 * Source supplies the Viking skeleton and bind pose. Its mesh and skeleton stay unchanged.
 	 * Null when Source has no skeleton, or the body has no wearable LOD.

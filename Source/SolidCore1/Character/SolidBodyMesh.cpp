@@ -110,6 +110,11 @@ bool SolidBodyMesh::IsDigitBoneName(const FString& BoneName)
 		|| Lower.Contains(TEXT("ball"));
 }
 
+float SolidBodyMesh::HipBottomRadius(const float PelvisHalfWidth, const float HipLateral, const float ThighRadius)
+{
+	return FMath::Max(PelvisHalfWidth, FMath::Max(0.f, HipLateral) + FMath::Max(0.f, ThighRadius));
+}
+
 #if WITH_EDITORONLY_DATA
 namespace
 {
@@ -379,6 +384,34 @@ namespace
 		return INDEX_NONE;
 	}
 
+	void TaperFor(const ESolidBodyBoneRole Role, const int32 Ordinal, const int32 Count, float& OutStart, float& OutEnd);
+
+	/** First limb bone under Parent, walking through twist bones. */
+	int32 FindStructuralChild(const TArray<FSolidDeformBone>& Bones, const int32 Parent, const ESolidBodyBoneRole Role)
+	{
+		for (int32 Index = 0; Index < Bones.Num(); ++Index)
+		{
+			if (Bones[Index].ParentIndex != Parent)
+			{
+				continue;
+			}
+			if (Bones[Index].bTwist)
+			{
+				const int32 Deeper = FindStructuralChild(Bones, Index, Role);
+				if (Deeper != INDEX_NONE)
+				{
+					return Deeper;
+				}
+				continue;
+			}
+			if (Bones[Index].Role == Role && !Bones[Index].bDigit)
+			{
+				return Index;
+			}
+		}
+		return INDEX_NONE;
+	}
+
 	bool ContinuesChain(const ESolidBodyBoneRole Role, const ESolidBodyBoneRole Child)
 	{
 		switch (Role)
@@ -461,17 +494,37 @@ namespace
 		Side = Side.GetSafeNormal();
 
 		// The thigh bone ends at the knee, so its offset is not the hip width.
-		const float HalfWidth = 12.f * Params.HipWidth;
+		// The bottom of this cylinder has to reach the outside of each thigh.
+		float StartScale = 1.f;
+		float LegEndScale = 1.f;
+		TaperFor(ESolidBodyBoneRole::Leg, 0, 1, StartScale, LegEndScale);
+		(void)LegEndScale;
+		const float ThighRadius = SectionRadius(ESolidBodyBoneRole::Leg, 30.f, Params) * StartScale;
 		const float HalfHeight = 8.5f * Params.TorsoGirth;
 		const FVector Center = Positions[Pelvis];
+		float HipLateral = 0.f;
+		float Drop = HalfHeight;
+		for (const int32 Leg : Legs)
+		{
+			if (!Positions.IsValidIndex(Leg))
+			{
+				continue;
+			}
+			const FVector Offset = Positions[Leg] - Center;
+			const float Below = -static_cast<float>(FVector::DotProduct(Offset, Up));
+			Drop = FMath::Max(Drop, Below);
+			HipLateral = FMath::Max(HipLateral, static_cast<float>(FMath::Abs(FVector::DotProduct(Offset, Side))));
+		}
+		const float BottomRadius = SolidBodyMesh::HipBottomRadius(12.f * Params.HipWidth, HipLateral, ThighRadius);
+		const float TopRadius = BottomRadius * 0.78f;
 		AddTube(
 			Verts,
 			Tris,
 			Pelvis,
-			Center - Up * HalfHeight,
+			Center - Up * Drop,
 			Center + Up * HalfHeight,
-			HalfWidth,
-			HalfWidth * 0.92f,
+			BottomRadius,
+			TopRadius,
 			TubeSides,
 			2,
 			SlotLegs,
@@ -571,6 +624,70 @@ namespace
 		}
 	}
 
+	/**
+	 * A tapered cylinder from the chest, around the shoulder, onto the upper arm.
+	 * Wide at the body and narrow where the arm continues. Replaces the clavicle stub.
+	 */
+	void AddShoulder(
+		TArray<FLoFiVert>& Verts,
+		TArray<FLoFiTri>& Tris,
+		const TArray<FSolidDeformBone>& Bones,
+		const TArray<FVector>& Positions,
+		const int32 Clavicle,
+		const FSolidBodyParams& Params)
+	{
+		if (!Positions.IsValidIndex(Clavicle))
+		{
+			return;
+		}
+
+		const int32 Parent = StructuralParent(Bones, Clavicle);
+		const bool bChest = Bones.IsValidIndex(Parent) && Positions.IsValidIndex(Parent);
+		const int32 Arm = FindStructuralChild(Bones, Clavicle, ESolidBodyBoneRole::Arm);
+		const FVector Neck = Positions[Clavicle];
+		const FVector Chest = bChest ? Positions[Parent] : Neck;
+		FVector Joint = Neck;
+		if (Arm != INDEX_NONE && Positions.IsValidIndex(Arm) && (Positions[Arm] - Neck).Size() >= 6.0)
+		{
+			Joint = Positions[Arm];
+		}
+
+		const bool bArmIsOut = (Joint - Neck).Size() >= 6.0;
+		const FVector Start = bArmIsOut ? FMath::Lerp(Chest, Neck, 0.45) : Chest;
+		FVector End = Joint;
+		if (Arm != INDEX_NONE && Positions.IsValidIndex(Arm))
+		{
+			const int32 Forearm = FindStructuralChild(Bones, Arm, ESolidBodyBoneRole::Arm);
+			if (Forearm != INDEX_NONE && Positions.IsValidIndex(Forearm))
+			{
+				End = FMath::Lerp(Joint, Positions[Forearm], 0.22);
+			}
+		}
+		if ((End - Start).Size() < 4.0)
+		{
+			return;
+		}
+
+		float ArmStart = 1.f;
+		float ArmEndScale = 1.f;
+		TaperFor(ESolidBodyBoneRole::Arm, 0, 1, ArmStart, ArmEndScale);
+		(void)ArmEndScale;
+		const float ArmRadius = SectionRadius(ESolidBodyBoneRole::Arm, 30.f, Params) * ArmStart;
+		AddTube(
+			Verts,
+			Tris,
+			Clavicle,
+			Start,
+			End,
+			ArmRadius * 2.f,
+			ArmRadius,
+			TubeSides,
+			3,
+			SlotTorso,
+			0.82f,
+			FVector::UpVector);
+	}
+
 	void BuildLowFi(
 		const TArray<FSolidDeformBone>& Bones,
 		const TArray<FVector>& Positions,
@@ -619,7 +736,11 @@ namespace
 			const bool bThigh = Role == ESolidBodyBoneRole::Foot && ParentRole == ESolidBodyBoneRole::Leg;
 			const bool bShin = Role == ESolidBodyBoneRole::Foot && ParentRole == ESolidBodyBoneRole::Foot;
 
-			if (bParent && ParentRole != ESolidBodyBoneRole::Root && Incoming >= 4.f)
+			if (Role == ESolidBodyBoneRole::Clavicle)
+			{
+				AddShoulder(Verts, Tris, Bones, Positions, Index, Params);
+			}
+			else if (bParent && ParentRole != ESolidBodyBoneRole::Root && Incoming >= 4.f)
 			{
 				ESolidBodyBoneRole RadiusRole = ParentRole;
 				if (Role == ESolidBodyBoneRole::Spine
@@ -627,7 +748,6 @@ namespace
 					|| Role == ESolidBodyBoneRole::Hand
 					|| Role == ESolidBodyBoneRole::Leg
 					|| Role == ESolidBodyBoneRole::Foot
-					|| Role == ESolidBodyBoneRole::Clavicle
 					|| Role == ESolidBodyBoneRole::Neck)
 				{
 					RadiusRole = Role;
@@ -649,12 +769,10 @@ namespace
 					EndScale = 0.62f;
 				}
 				const float Radius = SectionRadius(RadiusRole, FMath::Max(Incoming, 8.f), Params);
-				const float Flatten = Role == ESolidBodyBoneRole::Clavicle ? 0.7f : 1.f;
-				const int32 SkinBone = Role == ESolidBodyBoneRole::Clavicle ? Index : Parent;
 				AddTube(
 					Verts,
 					Tris,
-					SkinBone,
+					Parent,
 					Positions[Parent],
 					Positions[Index],
 					Radius * StartScale,
@@ -662,7 +780,7 @@ namespace
 					TubeSides,
 					TubeSegments,
 					SlotForRole(RadiusRole),
-					Flatten,
+					1.f,
 					FVector::UpVector);
 			}
 

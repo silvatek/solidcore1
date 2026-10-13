@@ -92,7 +92,8 @@ void USolidCompany::InitializeDefaultCompanions()
 		Companion.Name = Name;
 		Companion.CharacterMeshIndex = MeshIndex;
 		Companion.Vocation = Vocation;
-		SolidCompanionColors::PaletteForName(Companion.Name, Companion.TorsoColor, Companion.LegColor);
+		SolidCompanionColors::ColorsForName(
+			Companion.Name, Companion.TorsoColor, Companion.LegColor, Companion.SkinColor);
 		AllCompanions.Add(Companion);
 	};
 	Add(TEXT("Sam"), Assassin, ESolidVocation::Rogue);
@@ -129,6 +130,16 @@ void SolidCompanionColors::ColorsForName(
 {
 	PaletteForName(Name, OutTorso, OutLegs);
 	OutSkin = SkinPink();
+	if (Name.Equals(TEXT("Sam"), ESearchCase::IgnoreCase))
+	{
+		OutTorso = ShirtRed();
+		OutLegs = TrouserBlue();
+	}
+	else if (Name.Equals(TEXT("Alex"), ESearchCase::IgnoreCase))
+	{
+		OutTorso = TrouserBlue();
+		OutLegs = ShirtRed();
+	}
 }
 
 const FSolidCharacterMesh* USolidCompany::GetCharacterMesh(const int32 Index) const

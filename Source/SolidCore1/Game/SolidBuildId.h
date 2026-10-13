@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0234")
+#define SOLID_BUILD_ID TEXT("SC1-0235")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Menu and color tests follow the list length and the color catalog.")
+#define SOLID_BUILD_NOTE TEXT("F10 Character editor. Sam wears red and blue; Alex wears blue and red. Skin is light pink.")
 #endif

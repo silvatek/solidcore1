@@ -109,8 +109,33 @@ ASolidCompanionCharacter::ASolidCompanionCharacter()
 	ApplyNameLabel();
 }
 
+void ASolidCompanionCharacter::SetStagePreview(const bool bPreview)
+{
+	bStagePreview = bPreview;
+	if (bPreview)
+	{
+		SetActorEnableCollision(false);
+		if (UCharacterMovementComponent* Move = GetCharacterMovement())
+		{
+			Move->DisableMovement();
+			Move->GravityScale = 0.f;
+			Move->StopMovementImmediately();
+		}
+	}
+	ApplyNameLabel();
+}
+
 void ASolidCompanionCharacter::ApplyNameLabel()
 {
+	if (bStagePreview)
+	{
+		if (NameLabelRoot)
+		{
+			NameLabelRoot->SetVisibility(false, true);
+		}
+		return;
+	}
+
 	const float CapsuleHalf = GetCapsuleComponent()
 		? GetCapsuleComponent()->GetUnscaledCapsuleHalfHeight()
 		: 96.f;
@@ -135,10 +160,14 @@ void ASolidCompanionCharacter::SetCharacterDisplayName(const FString& NewName)
 	}
 }
 
-void ASolidCompanionCharacter::SetBodyColors(const FLinearColor& NewTorso, const FLinearColor& NewLegs)
+void ASolidCompanionCharacter::SetBodyColors(
+	const FLinearColor& NewTorso,
+	const FLinearColor& NewLegs,
+	const FLinearColor& NewSkin)
 {
 	TorsoColor = NewTorso;
 	LegColor = NewLegs;
+	SkinColor = NewSkin;
 	if (HasActorBegunPlay())
 	{
 		ApplyVisuals();
@@ -162,8 +191,15 @@ void ASolidCompanionCharacter::BeginPlay()
 	Super::BeginPlay();
 	ApplyVisuals();
 	ApplyNameLabel();
+	if (bStagePreview)
+	{
+		SetStagePreview(true);
+	}
 	CacheLocomotionAnims();
-	ResolveFollowTarget();
+	if (!bStagePreview)
+	{
+		ResolveFollowTarget();
+	}
 	UpdateLocomotionAnim();
 
 	if (USkeletalMeshComponent* CharacterMesh = GetMesh())
@@ -187,6 +223,12 @@ void ASolidCompanionCharacter::BeginPlay()
 void ASolidCompanionCharacter::Tick(float DeltaSeconds)
 {
 	Super::Tick(DeltaSeconds);
+
+	if (bStagePreview)
+	{
+		UpdateLocomotionAnim();
+		return;
+	}
 
 	if (!FollowTarget.IsValid())
 	{
@@ -221,7 +263,8 @@ void ASolidCompanionCharacter::SetCompanionMesh(const TSoftObjectPtr<USkeletalMe
 			this,
 			TEXT("Companion"),
 			TorsoColor,
-			LegColor);
+			LegColor,
+			SkinColor);
 		ApplyFace();
 		CacheLocomotionAnims();
 		UpdateLocomotionAnim();
@@ -305,7 +348,8 @@ void ASolidCompanionCharacter::ApplyVisuals()
 		this,
 		TEXT("Companion"),
 		TorsoColor,
-		LegColor);
+		LegColor,
+		SkinColor);
 	ApplyFace();
 }
 
@@ -524,7 +568,7 @@ void ASolidCompanionCharacter::ApplyFace()
 		FaceText->SetVisibility(false);
 	}
 
-	const FLinearColor Ink = TorsoColor.GetLuminance() > 0.35f
+	const FLinearColor Ink = SkinColor.GetLuminance() > 0.35f
 		? FLinearColor(0.02f, 0.02f, 0.025f)
 		: FLinearColor(0.95f, 0.95f, 0.92f);
 	PaintFace(Ink);

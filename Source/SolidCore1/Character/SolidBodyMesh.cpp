@@ -108,6 +108,7 @@ namespace
 
 	constexpr uint8 SlotTorso = 0;
 	constexpr uint8 SlotLegs = 1;
+	constexpr uint8 SlotSkin = 2;
 	constexpr int32 TubeSides = 10;
 	constexpr int32 TubeSegments = 3;
 
@@ -144,11 +145,17 @@ namespace
 
 	uint8 SlotForRole(const ESolidBodyBoneRole Role)
 	{
-		return (Role == ESolidBodyBoneRole::Leg
+		if (Role == ESolidBodyBoneRole::Leg
 			|| Role == ESolidBodyBoneRole::Foot
 			|| Role == ESolidBodyBoneRole::Pelvis)
-			? SlotLegs
-			: SlotTorso;
+		{
+			return SlotLegs;
+		}
+		if (Role == ESolidBodyBoneRole::Head)
+		{
+			return SlotSkin;
+		}
+		return SlotTorso;
 	}
 
 	/** Tapered tube. Flatten squishes the ring's second axis so a foot or a hand reads as a paddle. */
@@ -612,7 +619,7 @@ namespace
 					Dir,
 					Height,
 					Height * 0.46f,
-					SlotTorso);
+					SlotSkin);
 			}
 			else if (Role == ESolidBodyBoneRole::Hand && bParent)
 			{
@@ -633,7 +640,7 @@ namespace
 					Radius * 1.2f,
 					8,
 					2,
-					SlotTorso,
+					SlotSkin,
 					0.42f,
 					Wide);
 			}
@@ -730,19 +737,27 @@ namespace
 	void ApplyComponentColors(
 		USkeletalMeshComponent* MeshComp,
 		const FLinearColor& Torso,
-		const FLinearColor& Legs)
+		const FLinearColor& Legs,
+		const FLinearColor& Skin)
 	{
 		PaintSlot(MeshComp, 0, Torso, TEXT("BodyTorso"));
 		PaintSlot(MeshComp, 1, Legs, TEXT("BodyLegs"));
+		PaintSlot(MeshComp, 2, Skin, TEXT("BodySkin"));
 	}
 
-	void ApplyWearColors(USkeletalMesh* Mesh, const FLinearColor& Torso, const FLinearColor& Legs)
+	void ApplyWearColors(
+		USkeletalMesh* Mesh,
+		const FLinearColor& Torso,
+		const FLinearColor& Legs,
+		const FLinearColor& Skin)
 	{
 		UMaterialInterface* TorsoMat = SolidMaterials::CreateSolidColor(
 			Mesh, Torso, TEXT("BodyTorso"), 1.f);
 		UMaterialInterface* LegMat = SolidMaterials::CreateSolidColor(
 			Mesh, Legs, TEXT("BodyLegs"), 1.f);
-		if (!TorsoMat && !LegMat)
+		UMaterialInterface* SkinMat = SolidMaterials::CreateSolidColor(
+			Mesh, Skin, TEXT("BodySkin"), 1.f);
+		if (!TorsoMat && !LegMat && !SkinMat)
 		{
 			return;
 		}
@@ -756,8 +771,13 @@ namespace
 		LegSlot.MaterialInterface = LegMat ? LegMat : TorsoMat;
 		LegSlot.MaterialSlotName = TEXT("Legs");
 		LegSlot.ImportedMaterialSlotName = TEXT("Legs");
+		FSkeletalMaterial SkinSlot;
+		SkinSlot.MaterialInterface = SkinMat ? SkinMat : (TorsoMat ? TorsoMat : LegMat);
+		SkinSlot.MaterialSlotName = TEXT("Skin");
+		SkinSlot.ImportedMaterialSlotName = TEXT("Skin");
 		Slots.Add(TorsoSlot);
 		Slots.Add(LegSlot);
+		Slots.Add(SkinSlot);
 		Mesh->SetMaterials(Slots);
 	}
 
@@ -827,11 +847,13 @@ namespace
 
 		const FPolygonGroupID TorsoGroup = Description.CreatePolygonGroup();
 		const FPolygonGroupID LegGroup = Description.CreatePolygonGroup();
+		const FPolygonGroupID SkinGroup = Description.CreatePolygonGroup();
 		auto SlotNames = Attributes.GetPolygonGroupMaterialSlotNames();
 		if (SlotNames.IsValid())
 		{
 			SlotNames.Set(TorsoGroup, FName(TEXT("Torso")));
 			SlotNames.Set(LegGroup, FName(TEXT("Legs")));
+			SlotNames.Set(SkinGroup, FName(TEXT("Skin")));
 		}
 
 		auto Normals = Attributes.GetVertexInstanceNormals();
@@ -889,7 +911,15 @@ namespace
 				}
 				Corners[Corner] = InstanceID;
 			}
-			const FPolygonGroupID Group = (Verts[Tri.V[0]].Slot == SlotLegs) ? LegGroup : TorsoGroup;
+			FPolygonGroupID Group = TorsoGroup;
+			if (Verts[Tri.V[0]].Slot == SlotLegs)
+			{
+				Group = LegGroup;
+			}
+			else if (Verts[Tri.V[0]].Slot == SlotSkin)
+			{
+				Group = SkinGroup;
+			}
 			Description.CreateTriangle(Group, MakeArrayView(Corners));
 			++Written;
 		}
@@ -1120,7 +1150,8 @@ USkeletalMesh* SolidBodyMesh::Build(
 	ApplyWearColors(
 		Mesh,
 		FLinearColor(0.29f, 0.38f, 0.55f),
-		FLinearColor(0.12f, 0.11f, 0.10f));
+		FLinearColor(0.12f, 0.11f, 0.10f),
+		FLinearColor(0.96f, 0.76f, 0.72f));
 
 	if (Mesh->GetNumSourceModels() < 1)
 	{
@@ -1168,7 +1199,8 @@ USkeletalMesh* SolidBodyMesh::Build(
 	ApplyWearColors(
 		Mesh,
 		FLinearColor(0.29f, 0.38f, 0.55f),
-		FLinearColor(0.12f, 0.11f, 0.10f));
+		FLinearColor(0.12f, 0.11f, 0.10f),
+		FLinearColor(0.96f, 0.76f, 0.72f));
 	return Mesh;
 #else
 	(void)Source;
@@ -1213,7 +1245,8 @@ void SolidBodyMesh::ApplySeed(
 	UObject* Outer,
 	const TCHAR* DebugLabel,
 	const FLinearColor& TorsoColor,
-	const FLinearColor& LegColor)
+	const FLinearColor& LegColor,
+	const FLinearColor& SkinColor)
 {
 	if (!MeshComp || !Outer)
 	{
@@ -1230,7 +1263,7 @@ void SolidBodyMesh::ApplySeed(
 			if (HasRenderableBody(Cached))
 			{
 				WearBody(MeshComp, Cached, Seed, Params, DebugLabel, true);
-				ApplyComponentColors(MeshComp, TorsoColor, LegColor);
+				ApplyComponentColors(MeshComp, TorsoColor, LegColor, SkinColor);
 				return;
 			}
 		}
@@ -1262,10 +1295,11 @@ void SolidBodyMesh::ApplySeed(
 	}
 	BodyCache().Add(Seed, Built);
 	WearBody(MeshComp, Built, Seed, Params, DebugLabel, false);
-	ApplyComponentColors(MeshComp, TorsoColor, LegColor);
+	ApplyComponentColors(MeshComp, TorsoColor, LegColor, SkinColor);
 #else
 	(void)Built;
 	(void)TorsoColor;
 	(void)LegColor;
+	(void)SkinColor;
 #endif
 }

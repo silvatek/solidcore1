@@ -42,9 +42,16 @@ public:
 	bool IsDebugPanelVisible() const { return bShowDebugPanel; }
 	void SetDebugPanelVisible(bool bVisible) { bShowDebugPanel = bVisible; }
 
-	/** F10. Closes the portal, party builder, journal, or credits if one is up; otherwise toggles the main menu. */
+	/** One companion on a plain stage. Left and right cycle the company. F10 returns to the world. */
+	void OpenCharacterEditor();
+	void CloseCharacterEditor();
+	bool IsCharacterEditorOpen() const { return bShowCharacterEditor; }
+	int32 GetCharacterEditorIndex() const { return CharacterEditorIndex; }
+	void MoveCharacterEditor(int32 Delta);
+
+	/** F10. Closes an open page, including the character editor, or toggles the main menu. */
 	void HandleMenuKey();
-	/** Esc. Closes the menu, the portal, the party builder, the journal, and the credits page. */
+	/** Esc. Closes the menu, the portal, the party builder, the journal, the credits page, and the character editor. */
 	void CloseMenuOverlay();
 	/** Hide the menu list. Leaves the credits page as it is. */
 	void CloseMainMenu();
@@ -70,6 +77,7 @@ protected:
 	void RemoveSightIndicator();
 	void DrawCreditsPopup() const;
 	void DrawJournalPopup() const;
+	void DrawCharacterEditorPanel() const;
 	void DrawMainMenuPopup();
 	void DrawPortalPopup();
 	void DrawPartyBuilderPopup();
@@ -115,6 +123,14 @@ protected:
 	/** Highlighted row while the main menu is open. */
 	UPROPERTY(VisibleAnywhere, Category = "HUD")
 	int32 MainMenuIndex = 0;
+
+	/** Full-screen companion stage from the main menu. */
+	UPROPERTY(VisibleAnywhere, Category = "HUD")
+	bool bShowCharacterEditor = false;
+
+	/** Company roster index while the character editor is open. */
+	UPROPERTY(VisibleAnywhere, Category = "HUD")
+	int32 CharacterEditorIndex = 0;
 
 	/** Top-right eye / eagle widget has been added to the viewport. */
 	bool bSightIndicatorAdded = false;

@@ -478,7 +478,7 @@ void ASolidTerrainStreamer::RelocateCompanionsByDelta(const FVector& DeltaXY)
 	for (TActorIterator<ASolidCompanionCharacter> It(World); It; ++It)
 	{
 		ASolidCompanionCharacter* Companion = *It;
-		if (!IsValid(Companion))
+		if (!IsValid(Companion) || Companion->IsStagePreview())
 		{
 			continue;
 		}

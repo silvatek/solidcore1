@@ -10,6 +10,7 @@ void SolidMainMenu::CollectEntries(TArray<FSolidMainMenuEntry>& OutEntries, cons
 	OutEntries.Add({ ESolidMainMenuItem::Credits, TEXT("Credits") });
 	OutEntries.Add({ ESolidMainMenuItem::BuildParty, TEXT("Build party") });
 	OutEntries.Add({ ESolidMainMenuItem::Dungeon, SolidDungeonLevel::MenuLabel(bInDungeon) });
+	OutEntries.Add({ ESolidMainMenuItem::CharacterEditor, TEXT("Character editor") });
 }
 
 int32 SolidMainMenu::EntryCount()
@@ -47,6 +48,8 @@ ESolidMainMenuAction SolidMainMenu::ActionForItem(const ESolidMainMenuItem Item)
 		return ESolidMainMenuAction::OpenParty;
 	case ESolidMainMenuItem::Dungeon:
 		return ESolidMainMenuAction::TravelDungeon;
+	case ESolidMainMenuItem::CharacterEditor:
+		return ESolidMainMenuAction::OpenCharacterEditor;
 	default:
 		return ESolidMainMenuAction::None;
 	}

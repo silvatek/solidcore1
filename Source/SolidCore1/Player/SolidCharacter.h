@@ -17,6 +17,7 @@ class UAnimSequence;
 class USceneComponent;
 class UStaticMeshComponent;
 class UTextRenderComponent;
+class ASolidCharacterStage;
 class ASolidHUD;
 
 /**
@@ -83,6 +84,7 @@ protected:
 
 	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void PossessedBy(AController* NewController) override;
 	virtual void OnRep_PlayerState() override;
 
@@ -133,6 +135,12 @@ protected:
 	void MainMenuMoveUp();
 	void MainMenuMoveDown();
 	void MainMenuConfirm();
+	void CharacterEditorPrevious();
+	void CharacterEditorNext();
+	void MoveCharacterEditor(int32 Delta);
+	void SyncCharacterStage();
+	void SetEditorWorldHidden(bool bHidden);
+	void SetEditorCameraLocked(bool bLocked);
 	int32 CurrentMaxPartySize() const;
 	void TogglePartyBuilderRow(int32 Index);
 	void MainMenuChoose1();
@@ -353,4 +361,13 @@ protected:
 
 	/** Square-walk formation demo state. */
 	SolidPartyDrill::FState PartyFormationDrill;
+
+	/** Plain room and one companion, shown from the F10 character editor. */
+	UPROPERTY(Transient)
+	TObjectPtr<ASolidCharacterStage> CharacterStage;
+
+	bool bEditorWorldHidden = false;
+	bool bEditorCameraLocked = false;
+	bool bEditorSavedBoomCollision = true;
+	FRotator EditorSavedControlRotation = FRotator::ZeroRotator;
 };

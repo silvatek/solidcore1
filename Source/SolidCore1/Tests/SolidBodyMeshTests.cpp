@@ -329,4 +329,43 @@ bool FSolidBodyFaceTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodySkinSlotTest,
+	"SolidCore1.Body.SkinSlot",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodySkinSlotTest::RunTest(const FString& Parameters)
+{
+	USkeletalMesh* Source = SolidContentLookup::FindVikingMesh();
+	TestNotNull(TEXT("SK_Viking"), Source);
+	if (!Source)
+	{
+		return false;
+	}
+
+	const FSolidBodyParams Params = FSolidBodyParams::FromSeed(SolidBodyMesh::SeedForName(TEXT("Sam")));
+	USkeletalMesh* Body = SolidBodyMesh::Build(Source, Params, GetTransientPackage());
+	TestNotNull(TEXT("body"), Body);
+	if (!Body)
+	{
+		return false;
+	}
+
+	const TArray<FSkeletalMaterial>& Materials = Body->GetMaterials();
+	TestTrue(TEXT("head and hands have their own slot"), Materials.Num() >= 3);
+	if (Materials.Num() >= 3)
+	{
+		TestEqual(TEXT("skin slot"), Materials[2].MaterialSlotName, FName(TEXT("Skin")));
+	}
+	if (Materials.Num() >= 1)
+	{
+		TestEqual(TEXT("shirt slot stays first"), Materials[0].MaterialSlotName, FName(TEXT("Torso")));
+	}
+	if (Materials.Num() >= 2)
+	{
+		TestEqual(TEXT("trouser slot stays second"), Materials[1].MaterialSlotName, FName(TEXT("Legs")));
+	}
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

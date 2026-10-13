@@ -682,16 +682,18 @@ ASolidCompanionCharacter* ASolidGameMode::SpawnCompanion(
 	Companion->SetCharacterDisplayName(DisplayName);
 	FLinearColor TorsoColor;
 	FLinearColor LegColor;
-	SolidCompanionColors::PaletteForName(DisplayName, TorsoColor, LegColor);
+	FLinearColor SkinColor;
+	SolidCompanionColors::ColorsForName(DisplayName, TorsoColor, LegColor, SkinColor);
 	if (Company)
 	{
 		if (const FSolidCompanion* Record = Company->GetCompanion(Company->FindCompanionIndexByName(DisplayName)))
 		{
 			TorsoColor = Record->TorsoColor;
 			LegColor = Record->LegColor;
+			SkinColor = Record->SkinColor;
 		}
 	}
-	Companion->SetBodyColors(TorsoColor, LegColor);
+	Companion->SetBodyColors(TorsoColor, LegColor, SkinColor);
 	Companion->SetFollowTarget(PlayerPawn);
 	Companion->FinishSpawning(SpawnTransform);
 
@@ -768,9 +770,13 @@ void ASolidGameMode::EnsureCompanion()
 				Companion->SetCompanionMesh(Mesh);
 			}
 			if (!Companion->GetTorsoColor().Equals(Fielded[Slot].TorsoColor)
-				|| !Companion->GetLegColor().Equals(Fielded[Slot].LegColor))
+				|| !Companion->GetLegColor().Equals(Fielded[Slot].LegColor)
+				|| !Companion->GetSkinColor().Equals(Fielded[Slot].SkinColor))
 			{
-				Companion->SetBodyColors(Fielded[Slot].TorsoColor, Fielded[Slot].LegColor);
+				Companion->SetBodyColors(
+					Fielded[Slot].TorsoColor,
+					Fielded[Slot].LegColor,
+					Fielded[Slot].SkinColor);
 			}
 			continue;
 		}

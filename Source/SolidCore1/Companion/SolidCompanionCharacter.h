@@ -86,10 +86,15 @@ public:
 	void SetCompanionMesh(const TSoftObjectPtr<USkeletalMesh>& NewMesh);
 	const TSoftObjectPtr<USkeletalMesh>& GetCompanionMesh() const { return CompanionMesh; }
 
-	/** Matte torso and leg colors from the company record. */
-	void SetBodyColors(const FLinearColor& NewTorso, const FLinearColor& NewLegs);
+	/** Matte shirt, trouser, and skin colors from the company record. */
+	void SetBodyColors(const FLinearColor& NewTorso, const FLinearColor& NewLegs, const FLinearColor& NewSkin);
 	FLinearColor GetTorsoColor() const { return TorsoColor; }
 	FLinearColor GetLegColor() const { return LegColor; }
+	FLinearColor GetSkinColor() const { return SkinColor; }
+
+	/** Shown on the character-editor stage. Does not follow the captain or join the party. */
+	void SetStagePreview(bool bPreview);
+	bool IsStagePreview() const { return bStagePreview; }
 
 	/** Match the follow target's MaxWalkSpeed when possible. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Follow")
@@ -163,6 +168,12 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Visual")
 	FLinearColor LegColor = FLinearColor(0.12f, 0.11f, 0.10f);
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Visual")
+	FLinearColor SkinColor = FLinearColor(0.96f, 0.76f, 0.72f);
+
+	/** Character-editor mannequin. Tick keeps the idle clip and does not steer. */
+	bool bStagePreview = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Visual")
 	float MeshGroundZOffset = -90.f;

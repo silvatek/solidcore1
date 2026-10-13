@@ -33,7 +33,7 @@ namespace SolidBodyMesh
 
 	/**
 	 * Replace the component mesh with a seeded low-poly body.
-	 * Torso and leg colors are plain matte materials. The same seed reuses one mesh.
+	 * Shirt, trouser, and skin colors are plain matte materials. The same seed reuses one mesh.
 	 * Leaves the current mesh when the body cannot be built.
 	 * The captain does not call this.
 	 */
@@ -43,7 +43,8 @@ namespace SolidBodyMesh
 		UObject* Outer,
 		const TCHAR* DebugLabel,
 		const FLinearColor& TorsoColor,
-		const FLinearColor& LegColor);
+		const FLinearColor& LegColor,
+		const FLinearColor& SkinColor);
 
 	/** Stable face glyph for a companion name. One of a few emoji code points, including U+1F611. */
 	uint32 FaceCodepointForName(const FString& Name);

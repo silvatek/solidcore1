@@ -28,6 +28,7 @@
 #include "SolidClipLocomotion.h"
 #include "SolidCore1.h"
 #include "SolidGameMode.h"
+#include "Character/SolidCharacterStage.h"
 #include "HUD/SolidHUD.h"
 #include "Menus/SolidMainMenu.h"
 #include "Menus/SolidPartyBuilder.h"
@@ -160,6 +161,18 @@ void ASolidCharacter::BeginPlay()
 	ApplySightPresentation();
 }
 
+void ASolidCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (CharacterStage)
+	{
+		CharacterStage->Destroy();
+		CharacterStage = nullptr;
+	}
+	SetEditorWorldHidden(false);
+	SetEditorCameraLocked(false);
+	Super::EndPlay(EndPlayReason);
+}
+
 void ASolidCharacter::PossessedBy(AController* NewController)
 {
 	Super::PossessedBy(NewController);
@@ -184,8 +197,29 @@ void ASolidCharacter::Tick(float DeltaTime)
 	UpdateCavePassageHover();
 	TickClickMove();
 	UpdateLocomotionAnim();
-	UpdatePartyCameraFraming(DeltaTime);
-	ClampCameraAboveTerrain(DeltaTime);
+	if (const ASolidHUD* SolidHud = GetSolidHUD())
+	{
+		if (SolidHud->IsCharacterEditorOpen())
+		{
+			if (Controller)
+			{
+				FRotator Level = Controller->GetControlRotation();
+				Level.Pitch = 0.f;
+				Level.Roll = 0.f;
+				Controller->SetControlRotation(Level);
+			}
+		}
+		else
+		{
+			UpdatePartyCameraFraming(DeltaTime);
+			ClampCameraAboveTerrain(DeltaTime);
+		}
+	}
+	else
+	{
+		UpdatePartyCameraFraming(DeltaTime);
+		ClampCameraAboveTerrain(DeltaTime);
+	}
 	SolidNameLabel::FaceViewCamera(NameLabelRoot, GetWorld());
 }
 
@@ -245,6 +279,8 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ASolidCharacter::CloseMenuOverlayFromInput);
 	PlayerInputComponent->BindKey(EKeys::Up, IE_Pressed, this, &ASolidCharacter::MainMenuMoveUp);
 	PlayerInputComponent->BindKey(EKeys::Down, IE_Pressed, this, &ASolidCharacter::MainMenuMoveDown);
+	PlayerInputComponent->BindKey(EKeys::Left, IE_Pressed, this, &ASolidCharacter::CharacterEditorPrevious);
+	PlayerInputComponent->BindKey(EKeys::Right, IE_Pressed, this, &ASolidCharacter::CharacterEditorNext);
 	PlayerInputComponent->BindKey(EKeys::Enter, IE_Pressed, this, &ASolidCharacter::MainMenuConfirm);
 	PlayerInputComponent->BindKey(EKeys::One, IE_Pressed, this, &ASolidCharacter::MainMenuChoose1);
 	PlayerInputComponent->BindKey(EKeys::Two, IE_Pressed, this, &ASolidCharacter::MainMenuChoose2);
@@ -279,7 +315,8 @@ bool ASolidCharacter::IsMenuOverlayOpen() const
 			|| HUD->IsPortalOpen()
 			|| HUD->IsPartyBuilderOpen()
 			|| HUD->IsCreditsVisible()
-			|| HUD->IsJournalVisible();
+			|| HUD->IsJournalVisible()
+			|| HUD->IsCharacterEditorOpen();
 	}
 	return false;
 }
@@ -391,6 +428,7 @@ void ASolidCharacter::ToggleMainMenuFromInput()
 	if (ASolidHUD* HUD = GetSolidHUD())
 	{
 		HUD->HandleMenuKey();
+		SyncCharacterStage();
 	}
 }
 
@@ -407,6 +445,153 @@ void ASolidCharacter::CloseMenuOverlayFromInput()
 	if (ASolidHUD* HUD = GetSolidHUD())
 	{
 		HUD->CloseMenuOverlay();
+		SyncCharacterStage();
+	}
+}
+
+void ASolidCharacter::CharacterEditorPrevious()
+{
+	MoveCharacterEditor(-1);
+}
+
+void ASolidCharacter::CharacterEditorNext()
+{
+	MoveCharacterEditor(1);
+}
+
+void ASolidCharacter::MoveCharacterEditor(const int32 Delta)
+{
+	ASolidHUD* HUD = GetSolidHUD();
+	if (!HUD || !HUD->IsCharacterEditorOpen())
+	{
+		return;
+	}
+	HUD->MoveCharacterEditor(Delta);
+	SyncCharacterStage();
+}
+
+void ASolidCharacter::SetEditorWorldHidden(const bool bHidden)
+{
+	if (bHidden == bEditorWorldHidden)
+	{
+		return;
+	}
+	bEditorWorldHidden = bHidden;
+
+	if (USkeletalMeshComponent* CaptainMesh = GetMesh())
+	{
+		CaptainMesh->SetVisibility(!bHidden, true);
+	}
+	if (bHidden)
+	{
+		if (NameLabelRoot)
+		{
+			NameLabelRoot->SetVisibility(false, true);
+		}
+	}
+	else
+	{
+		UpdateNameLabelVisibility();
+	}
+
+	UWorld* World = GetWorld();
+	ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+	if (!GameMode)
+	{
+		return;
+	}
+	for (const TObjectPtr<ASolidCompanionCharacter>& Companion : GameMode->GetCompanions())
+	{
+		ASolidCompanionCharacter* Actor = Companion.Get();
+		if (Actor && !Actor->IsStagePreview())
+		{
+			Actor->SetActorHiddenInGame(bHidden);
+		}
+	}
+}
+
+void ASolidCharacter::SetEditorCameraLocked(const bool bLocked)
+{
+	if (bLocked == bEditorCameraLocked)
+	{
+		return;
+	}
+	bEditorCameraLocked = bLocked;
+	if (bLocked)
+	{
+		if (CameraBoom)
+		{
+			bEditorSavedBoomCollision = CameraBoom->bDoCollisionTest;
+			CameraBoom->bDoCollisionTest = false;
+		}
+		if (Controller)
+		{
+			EditorSavedControlRotation = Controller->GetControlRotation();
+			FRotator Level = EditorSavedControlRotation;
+			Level.Pitch = 0.f;
+			Level.Roll = 0.f;
+			Controller->SetControlRotation(Level);
+		}
+		return;
+	}
+
+	if (CameraBoom)
+	{
+		CameraBoom->bDoCollisionTest = bEditorSavedBoomCollision;
+	}
+	if (Controller)
+	{
+		Controller->SetControlRotation(EditorSavedControlRotation);
+	}
+}
+
+void ASolidCharacter::SyncCharacterStage()
+{
+	ASolidHUD* HUD = GetSolidHUD();
+	const bool bOpen = HUD && HUD->IsCharacterEditorOpen();
+	if (!bOpen)
+	{
+		SetEditorCameraLocked(false);
+		SetEditorWorldHidden(false);
+		if (CharacterStage)
+		{
+			CharacterStage->Destroy();
+			CharacterStage = nullptr;
+		}
+		return;
+	}
+
+	SetEditorWorldHidden(true);
+	SetEditorCameraLocked(true);
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+	if (!CharacterStage)
+	{
+		FActorSpawnParameters Params;
+		Params.Owner = this;
+		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		CharacterStage = World->SpawnActor<ASolidCharacterStage>(
+			ASolidCharacterStage::StaticClass(),
+			GetActorTransform(),
+			Params);
+	}
+	if (!CharacterStage || !HUD)
+	{
+		return;
+	}
+
+	const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>();
+	const USolidCompany* Company = GameMode ? GameMode->GetCompany() : nullptr;
+	const FSolidCompanion* Companion = Company
+		? Company->GetCompanion(HUD->GetCharacterEditorIndex())
+		: nullptr;
+	if (Companion)
+	{
+		CharacterStage->ShowCompanion(*Companion);
 	}
 }
 
@@ -639,6 +824,17 @@ void ASolidCharacter::MainMenuConfirm()
 				}
 			}
 		}
+		break;
+	case ESolidMainMenuAction::OpenCharacterEditor:
+		if (UWorld* World = GetWorld())
+		{
+			if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+			{
+				GameMode->EnsureCompanyAndParty();
+			}
+		}
+		HUD->OpenCharacterEditor();
+		SyncCharacterStage();
 		break;
 	default:
 		break;

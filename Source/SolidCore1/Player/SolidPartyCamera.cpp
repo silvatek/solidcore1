@@ -77,7 +77,7 @@ void ASolidCharacter::UpdatePartyCameraFraming(float DeltaTime)
 	{
 		for (TActorIterator<ASolidCompanionCharacter> It(World); It; ++It)
 		{
-			if (!IsValid(*It))
+			if (!IsValid(*It) || It->IsStagePreview())
 			{
 				continue;
 			}

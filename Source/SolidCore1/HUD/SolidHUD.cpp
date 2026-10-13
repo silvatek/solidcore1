@@ -3,6 +3,7 @@
 #include "HUD/SolidPointer.h"
 #include "Strongholds/SolidDungeonPassage.h"
 #include "SolidBuildId.h"
+#include "Menus/SolidCharacterEditor.h"
 #include "Menus/SolidCredits.h"
 #include "Journal/SolidJournal.h"
 #include "Menus/SolidMainMenu.h"
@@ -885,7 +886,17 @@ bool ASolidHUD::SelectChoiceAt(const float X, const float Y)
 void ASolidHUD::DrawHUD()
 {
 	Super::DrawHUD();
-	EnsureSightIndicator();
+	if (bShowCharacterEditor)
+	{
+		if (bSightIndicatorAdded)
+		{
+			RemoveSightIndicator();
+		}
+	}
+	else
+	{
+		EnsureSightIndicator();
+	}
 
 	if (!Canvas)
 	{
@@ -893,7 +904,7 @@ void ASolidHUD::DrawHUD()
 	}
 
 	float BelowTech = 12.f;
-	if (bShowDebugPanel)
+	if (bShowDebugPanel && !bShowCharacterEditor)
 	{
 	TArray<FString> Lines;
 	Lines.Add(FString::Printf(TEXT("Build %s"), SOLID_BUILD_ID));
@@ -1016,7 +1027,7 @@ void ASolidHUD::DrawHUD()
 			for (TActorIterator<ASolidCompanionCharacter> It(World); It; ++It)
 			{
 				ASolidCompanionCharacter* Companion = *It;
-				if (!Companion || !Pawn)
+				if (!Companion || !Pawn || Companion->IsStagePreview())
 				{
 					continue;
 				}
@@ -1074,7 +1085,14 @@ void ASolidHUD::DrawHUD()
 			Party = GameMode->GetParty();
 		}
 	}
-	SolidHUDPrivate::DrawBattlePlansPanel(Canvas, Font, Party, BelowTech);
+	if (bShowCharacterEditor)
+	{
+		DrawCharacterEditorPanel();
+	}
+	else
+	{
+		SolidHUDPrivate::DrawBattlePlansPanel(Canvas, Font, Party, BelowTech);
+	}
 
 	SolidHUDPrivate::ForgetChoicePointerRows(this);
 	if (bShowPortal)
@@ -1162,6 +1180,12 @@ void ASolidHUD::SetCavePassageTip(const FString& Tip)
 
 void ASolidHUD::HandleMenuKey()
 {
+	if (bShowCharacterEditor)
+	{
+		bShowCharacterEditor = false;
+		return;
+	}
+
 	if (bShowPortal)
 	{
 		bShowPortal = false;
@@ -1200,6 +1224,84 @@ void ASolidHUD::CloseMenuOverlay()
 	bShowPartyBuilder = false;
 	bShowCredits = false;
 	bShowJournal = false;
+	bShowCharacterEditor = false;
+}
+
+namespace
+{
+	int32 EditorRosterCount(const ASolidHUD* HUD)
+	{
+		if (!HUD)
+		{
+			return 0;
+		}
+		if (UWorld* World = HUD->GetWorld())
+		{
+			if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+			{
+				if (const USolidCompany* Company = GameMode->GetCompany())
+				{
+					return Company->GetCompanionCount();
+				}
+			}
+		}
+		return 0;
+	}
+}
+
+void ASolidHUD::OpenCharacterEditor()
+{
+	bShowMainMenu = false;
+	bShowPortal = false;
+	bShowPartyBuilder = false;
+	bShowCredits = false;
+	bShowJournal = false;
+	bShowCharacterEditor = true;
+	CharacterEditorIndex = 0;
+	SolidHUDPrivate::ForgetChoicePointerRows(this);
+}
+
+void ASolidHUD::CloseCharacterEditor()
+{
+	bShowCharacterEditor = false;
+}
+
+void ASolidHUD::MoveCharacterEditor(const int32 Delta)
+{
+	CharacterEditorIndex = SolidCharacterEditor::WrapIndex(
+		CharacterEditorIndex,
+		Delta,
+		EditorRosterCount(this));
+}
+
+void ASolidHUD::DrawCharacterEditorPanel() const
+{
+	TArray<FString> Lines;
+	const USolidCompany* Company = nullptr;
+	if (UWorld* World = GetWorld())
+	{
+		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+		{
+			Company = GameMode->GetCompany();
+		}
+	}
+
+	const FSolidCompanion* Companion = Company
+		? Company->GetCompanion(CharacterEditorIndex)
+		: nullptr;
+	if (Companion)
+	{
+		SolidCharacterEditor::Describe(*Companion, Lines);
+	}
+	else
+	{
+		Lines.Add(TEXT("Character editor"));
+		Lines.Add(TEXT("No companions"));
+		Lines.Add(TEXT("F10  open world"));
+	}
+
+	UFont* Font = GEngine ? GEngine->GetSmallFont() : nullptr;
+	SolidHUDPrivate::DrawLines(Canvas, Font, Lines, FLinearColor::White);
 }
 
 void ASolidHUD::OpenPartyBuilder()
@@ -1208,6 +1310,7 @@ void ASolidHUD::OpenPartyBuilder()
 	bShowPortal = false;
 	bShowCredits = false;
 	bShowJournal = false;
+	bShowCharacterEditor = false;
 	bShowPartyBuilder = true;
 	PartyBuilderIndex = 0;
 	SolidHUDPrivate::ForgetChoicePointerRows(this);
@@ -1272,6 +1375,7 @@ void ASolidHUD::OpenPortal()
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowPartyBuilder = false;
+	bShowCharacterEditor = false;
 	bShowPortal = true;
 	PortalIndex = 0;
 	SolidHUDPrivate::ForgetChoicePointerRows(this);

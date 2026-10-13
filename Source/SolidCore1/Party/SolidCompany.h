@@ -75,6 +75,18 @@ namespace SolidCompanionColors
 		return FLinearColor(0.96f, 0.76f, 0.72f);
 	}
 
+	/** Sam's shirt and Alex's trousers. */
+	inline FLinearColor ShirtRed()
+	{
+		return FLinearColor(0.75f, 0.12f, 0.10f);
+	}
+
+	/** Sam's trousers and Alex's shirt. */
+	inline FLinearColor TrouserBlue()
+	{
+		return FLinearColor(0.10f, 0.22f, 0.72f);
+	}
+
 	/**
 	 * Shirt, trousers, and skin for a companion name.
 	 * Shirt and trousers match PaletteForName until a name is given its own clothes.
@@ -88,7 +100,7 @@ namespace SolidCompanionColors
 
 /**
  * One companion in the company catalog.
- * Name, mesh reference, vocation, and the torso and leg colors of the generated body.
+ * Name, mesh reference, vocation, and the shirt, trouser, and skin colors of the generated body.
  */
 USTRUCT(BlueprintType)
 struct FSolidCompanion
@@ -105,13 +117,17 @@ struct FSolidCompanion
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	ESolidVocation Vocation = ESolidVocation::Warrior;
 
-	/** Matte color of the torso, arms, and head. */
+	/** Matte shirt: torso, arms, and neck. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	FLinearColor TorsoColor = FLinearColor(0.29f, 0.38f, 0.55f);
 
-	/** Matte color of the hips, legs, and feet. */
+	/** Matte trousers: hips, legs, and feet. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	FLinearColor LegColor = FLinearColor(0.12f, 0.11f, 0.10f);
+
+	/** Matte skin: head and hands. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
+	FLinearColor SkinColor = FLinearColor(0.96f, 0.76f, 0.72f);
 };
 
 /**

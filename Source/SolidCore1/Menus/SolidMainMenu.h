@@ -11,6 +11,7 @@ enum class ESolidMainMenuItem : uint8
 	Credits,
 	BuildParty,
 	Dungeon,
+	CharacterEditor,
 };
 
 /** What confirming a menu entry does. The pawn performs the action. */
@@ -23,6 +24,7 @@ enum class ESolidMainMenuAction : uint8
 	ShowCredits,
 	OpenParty,
 	TravelDungeon,
+	OpenCharacterEditor,
 };
 
 struct FSolidMainMenuEntry
@@ -33,7 +35,7 @@ struct FSolidMainMenuEntry
 
 namespace SolidMainMenu
 {
-	/** bInDungeon swaps the last row between Enter cave and Leave cave. */
+	/** bInDungeon swaps the cave row between Enter cave and Leave cave. */
 	void CollectEntries(TArray<FSolidMainMenuEntry>& OutEntries, bool bInDungeon = false);
 	int32 EntryCount();
 	bool FindEntry(int32 Index, FSolidMainMenuEntry& OutEntry);

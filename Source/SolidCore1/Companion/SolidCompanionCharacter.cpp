@@ -544,7 +544,7 @@ void ASolidCompanionCharacter::DrawSkeletonLines() const
 		}
 
 		FName ParentName = CharacterMesh->GetParentBone(BoneName);
-		while (!ParentName.IsNone() && SolidSkeletonHover::SkipsAsParentBone(ParentName.ToString()))
+		while (!ParentName.IsNone() && SolidSkeletonHover::IsOmittedBoneName(ParentName.ToString()))
 		{
 			ParentName = CharacterMesh->GetParentBone(ParentName);
 		}
@@ -724,7 +724,7 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 		}
 
 		FName ParentName = CharacterMesh->GetParentBone(BoneName);
-		while (!ParentName.IsNone() && SolidSkeletonHover::SkipsAsParentBone(ParentName.ToString()))
+		while (!ParentName.IsNone() && SolidSkeletonHover::IsOmittedBoneName(ParentName.ToString()))
 		{
 			ParentName = CharacterMesh->GetParentBone(ParentName);
 		}

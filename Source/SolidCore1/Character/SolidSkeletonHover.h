@@ -161,27 +161,18 @@ namespace SolidSkeletonHover
 	}
 
 	/**
-	 * The hip-to-knee line. Hidden on the skeleton view, but still the knee
-	 * joint where calf_twist and foot begin.
-	 */
-	inline bool IsCalfJointBoneName(const FString& Name)
-	{
-		return Name.Equals(TEXT("calf_l"), ESearchCase::IgnoreCase)
-			|| Name.Equals(TEXT("calf_r"), ESearchCase::IgnoreCase);
-	}
-
-	/**
-	 * Bones left off the skeleton view. IK helpers, calf_l and calf_r, and
-	 * clothing or weapon chains whose names start with axe_, sheath_, cloack_,
-	 * beard_, shield_, or skirt_.
+	 * Bones left off the skeleton view. IK helpers, thigh and calf twist bones,
+	 * and clothing or weapon chains whose names start with axe_, sheath_,
+	 * cloack_, beard_, shield_, or skirt_.
 	 */
 	inline bool IsOmittedBoneName(const FString& Name)
 	{
-		if (IsCalfJointBoneName(Name))
+		if (Name.Contains(TEXT("ik"), ESearchCase::IgnoreCase))
 		{
 			return true;
 		}
-		if (Name.Contains(TEXT("ik"), ESearchCase::IgnoreCase))
+		if (Name.Contains(TEXT("thigh_twist"), ESearchCase::IgnoreCase)
+			|| Name.Contains(TEXT("calf_twist"), ESearchCase::IgnoreCase))
 		{
 			return true;
 		}
@@ -201,15 +192,6 @@ namespace SolidSkeletonHover
 			}
 		}
 		return false;
-	}
-
-	/**
-	 * Walk past this bone when a visible child looks for its parent.
-	 * The calf joint stays put, so the shin lines still start at the knee.
-	 */
-	inline bool SkipsAsParentBone(const FString& Name)
-	{
-		return IsOmittedBoneName(Name) && !IsCalfJointBoneName(Name);
 	}
 
 	/** Distance from Point to the segment. A joint with no parent is a zero-length segment. */

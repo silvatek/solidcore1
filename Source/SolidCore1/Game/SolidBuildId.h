@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0259")
+#define SOLID_BUILD_ID TEXT("SC1-0260")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The character editor hides calf_l and calf_r. Twist bones stay.")
+#define SOLID_BUILD_NOTE TEXT("The character editor shows calf and foot, and hides the thigh and calf twist bones.")
 #endif

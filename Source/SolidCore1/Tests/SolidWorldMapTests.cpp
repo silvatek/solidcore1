@@ -255,7 +255,7 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("location 1"), Map->FindLocation(1, Relion));
 	TestEqual(TEXT("Relion"), Relion.Name, FString(TEXT("Relion")));
 	TestTrue(TEXT("Relion role is not in the map file"), Relion.Role.IsEmpty());
-	TestEqual(TEXT("one Relion cell"), Relion.Cells.Num(), 1);
+	TestEqual(TEXT("Relion is two cells"), Relion.Cells.Num(), 2);
 
 	FSolidWorldLocation Kanfold;
 	TestTrue(TEXT("location 2"), Map->FindLocation(2, Kanfold));
@@ -267,21 +267,21 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("location 3"), Map->FindLocation(3, Visolar));
 	TestEqual(TEXT("Visolar"), Visolar.Name, FString(TEXT("Visolar")));
 	TestTrue(TEXT("Visolar role is not in the map file"), Visolar.Role.IsEmpty());
-	TestEqual(TEXT("one Visolar cell"), Visolar.Cells.Num(), 1);
+	TestEqual(TEXT("Visolar is two cells"), Visolar.Cells.Num(), 2);
 
 	FSolidWorldLocation Jethan;
 	TestTrue(TEXT("location 4"), Map->FindLocation(4, Jethan));
 	TestEqual(TEXT("Jethan"), Jethan.Name, FString(TEXT("Jethan")));
 	TestTrue(TEXT("Jethan role is not in the map file"), Jethan.Role.IsEmpty());
 	TestEqual(TEXT("Jethan is Town"), static_cast<uint8>(Jethan.Biome), static_cast<uint8>(ESolidBiome::Town));
-	TestEqual(TEXT("one Jethan cell"), Jethan.Cells.Num(), 1);
+	TestEqual(TEXT("Jethan is two cells"), Jethan.Cells.Num(), 2);
 
 	FSolidWorldLocation Rathen;
 	TestTrue(TEXT("location 6"), Map->FindLocation(6, Rathen));
 	TestEqual(TEXT("Rathen"), Rathen.Name, FString(TEXT("Rathen")));
 	TestTrue(TEXT("Rathen role is not in the map file"), Rathen.Role.IsEmpty());
 	TestEqual(TEXT("Rathen is Town"), static_cast<uint8>(Rathen.Biome), static_cast<uint8>(ESolidBiome::Town));
-	TestEqual(TEXT("one Rathen cell"), Rathen.Cells.Num(), 1);
+	TestEqual(TEXT("Rathen is two cells"), Rathen.Cells.Num(), 2);
 	bool bRathenBesideRiver = false;
 	for (const FIntPoint& Cell : Rathen.Cells)
 	{
@@ -610,26 +610,21 @@ bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 
 	FSolidWorldLocation ShippedIglin;
 	TestTrue(TEXT("shipped location 0"), Shipped->FindLocation(0, ShippedIglin));
-	TestEqual(TEXT("shipped Iglin is one cell"), ShippedIglin.Cells.Num(), 1);
-	if (ShippedIglin.Cells.Num() == 1)
+	TestEqual(TEXT("shipped Iglin is the 00 pair"), ShippedIglin.Cells.Num(), 2);
+	if (ShippedIglin.Cells.Num() == 2)
 	{
-		const FIntPoint Cell = ShippedIglin.Cells[0];
-		TestEqual(TEXT("shipped Iglin marker is 0"), Shipped->GetMarkerAtCell(Cell.X, Cell.Y), TEXT('0'));
-		const FIntPoint Steps[] = {
-			FIntPoint(-1, 0), FIntPoint(1, 0), FIntPoint(0, -1), FIntPoint(0, 1),
-		};
-		for (const FIntPoint& Step : Steps)
-		{
-			const int32 NextX = Cell.X + Step.X;
-			const int32 NextY = Cell.Y + Step.Y;
-			if (NextX < 0 || NextY < 0 || NextX >= USolidWorldMap::MapWidth || NextY >= USolidWorldMap::MapHeight)
-			{
-				continue;
-			}
-			TestFalse(
-				TEXT("shipped Iglin stands beside a non-digit"),
-				FChar::IsDigit(Shipped->GetMarkerAtCell(NextX, NextY)));
-		}
+		TestEqual(TEXT("Iglin cells share a row"), ShippedIglin.Cells[0].Y, ShippedIglin.Cells[1].Y);
+		const FIntPoint East = ShippedIglin.Cells[0].X < ShippedIglin.Cells[1].X
+			? ShippedIglin.Cells[0]
+			: ShippedIglin.Cells[1];
+		const FIntPoint West = ShippedIglin.Cells[0].X < ShippedIglin.Cells[1].X
+			? ShippedIglin.Cells[1]
+			: ShippedIglin.Cells[0];
+		TestEqual(TEXT("Iglin cells are adjacent"), West.X - East.X, 1);
+		TestEqual(TEXT("Iglin tens digit is 0"), Shipped->GetMarkerAtCell(East.X, East.Y), TEXT('0'));
+		TestEqual(TEXT("Iglin ones digit is 0"), Shipped->GetMarkerAtCell(West.X, West.Y), TEXT('0'));
+		TestEqual(TEXT("Iglin east cell id"), Shipped->GetLocationIdAtCell(East.X, East.Y), 0);
+		TestEqual(TEXT("Iglin west cell id"), Shipped->GetLocationIdAtCell(West.X, West.Y), 0);
 	}
 
 	FSolidWorldLocation ShippedKanfold;

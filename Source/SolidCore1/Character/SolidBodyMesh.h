@@ -129,6 +129,9 @@ namespace SolidBodyMesh
 	/** The only bone in the left thigh piece. */
 	inline const TCHAR* LeftThighBone = TEXT("thigh_twist_01_l");
 
+	/** The only bone in the right thigh piece. The cone matches the left thigh. */
+	inline const TCHAR* RightThighBone = TEXT("thigh_twist_01_r");
+
 	/** Diameters of the left thigh cone, in centimetres. The parent-joint end is the wide end. */
 	inline constexpr float LeftThighTopDiameterCm = 20.f;
 	inline constexpr float LeftThighBottomDiameterCm = 15.f;

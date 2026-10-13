@@ -769,45 +769,52 @@ namespace
 		TArray<FLoFiTri>& Tris)
 	{
 		const int32 Count = FMath::Min(Bones.Num(), Positions.Num());
-		int32 Twist = INDEX_NONE;
-		for (int32 Index = 0; Index < Count; ++Index)
+		const TCHAR* ThighBones[] = {
+			SolidBodyMesh::LeftThighBone,
+			SolidBodyMesh::RightThighBone,
+		};
+		for (const TCHAR* BoneName : ThighBones)
 		{
-			if (Bones[Index].Name.ToString().Equals(SolidBodyMesh::LeftThighBone, ESearchCase::IgnoreCase))
+			int32 Twist = INDEX_NONE;
+			for (int32 Index = 0; Index < Count; ++Index)
 			{
-				Twist = Index;
-				break;
+				if (Bones[Index].Name.ToString().Equals(BoneName, ESearchCase::IgnoreCase))
+				{
+					Twist = Index;
+					break;
+				}
 			}
-		}
-		if (Twist == INDEX_NONE)
-		{
-			return;
-		}
+			if (Twist == INDEX_NONE)
+			{
+				continue;
+			}
 
-		const int32 Hip = Bones[Twist].ParentIndex;
-		if (!Bones.IsValidIndex(Hip) || !Positions.IsValidIndex(Hip))
-		{
-			return;
-		}
+			const int32 Parent = Bones[Twist].ParentIndex;
+			if (!Bones.IsValidIndex(Parent) || !Positions.IsValidIndex(Parent))
+			{
+				continue;
+			}
 
-		const SolidBodyMesh::FSolidFittedCone Cone = SolidBodyMesh::LeftThighCone(Positions[Hip], Positions[Twist]);
-		if (!Cone.bValid)
-		{
-			return;
-		}
+			const SolidBodyMesh::FSolidFittedCone Cone = SolidBodyMesh::LeftThighCone(Positions[Parent], Positions[Twist]);
+			if (!Cone.bValid)
+			{
+				continue;
+			}
 
-		AddTube(
-			Verts,
-			Tris,
-			Twist,
-			Cone.Start,
-			Cone.End,
-			Cone.RadiusStart,
-			Cone.RadiusEnd,
-			10,
-			1,
-			SlotLegs,
-			1.f,
-			FVector::ForwardVector);
+			AddTube(
+				Verts,
+				Tris,
+				Twist,
+				Cone.Start,
+				Cone.End,
+				Cone.RadiusStart,
+				Cone.RadiusEnd,
+				10,
+				1,
+				SlotLegs,
+				1.f,
+				FVector::ForwardVector);
+		}
 	}
 
 	void PaintSlot(

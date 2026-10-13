@@ -584,47 +584,58 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 			return FString();
 		}
 
-		FName TwistName = NAME_None;
+		const TCHAR* ThighBones[] = {
+			SolidBodyMesh::LeftThighBone,
+			SolidBodyMesh::RightThighBone,
+		};
+		FString BestLabel;
+		float BestT = TNumericLimits<float>::Max();
 		const int32 BoneCount = CharacterMesh->GetNumBones();
-		for (int32 Index = 0; Index < BoneCount; ++Index)
+		for (const TCHAR* Wanted : ThighBones)
 		{
-			const FName BoneName = CharacterMesh->GetBoneName(Index);
-			if (BoneName.ToString().Equals(SolidBodyMesh::LeftThighBone, ESearchCase::IgnoreCase))
+			FName TwistName = NAME_None;
+			for (int32 Index = 0; Index < BoneCount; ++Index)
 			{
-				TwistName = BoneName;
-				break;
+				const FName BoneName = CharacterMesh->GetBoneName(Index);
+				if (BoneName.ToString().Equals(Wanted, ESearchCase::IgnoreCase))
+				{
+					TwistName = BoneName;
+					break;
+				}
 			}
-		}
-		const FName HipName = TwistName.IsNone() ? NAME_None : CharacterMesh->GetParentBone(TwistName);
-		if (TwistName.IsNone() || HipName.IsNone())
-		{
-			return FString();
-		}
+			const FName ParentName = TwistName.IsNone() ? NAME_None : CharacterMesh->GetParentBone(TwistName);
+			if (TwistName.IsNone() || ParentName.IsNone())
+			{
+				continue;
+			}
 
-		const SolidBodyMesh::FSolidFittedCone Cone = SolidBodyMesh::LeftThighCone(
-			CharacterMesh->GetBoneLocation(HipName),
-			CharacterMesh->GetBoneLocation(TwistName));
-		if (!Cone.bValid)
-		{
-			return FString();
-		}
+			const SolidBodyMesh::FSolidFittedCone Cone = SolidBodyMesh::LeftThighCone(
+				CharacterMesh->GetBoneLocation(ParentName),
+				CharacterMesh->GetBoneLocation(TwistName));
+			if (!Cone.bValid)
+			{
+				continue;
+			}
 
-		float RayT = 0.f;
-		float SegU = 0.f;
-		const float Dist = SolidSkeletonHover::RaySegmentDistance(
-			Origin,
-			Dir,
-			Cone.Start,
-			Cone.End,
-			RayT,
-			SegU);
-		const float Radius = FMath::Lerp(Cone.RadiusStart, Cone.RadiusEnd, SegU);
-		if (Dist > Radius + 0.15f)
-		{
-			return FString();
-		}
+			float RayT = 0.f;
+			float SegU = 0.f;
+			const float Dist = SolidSkeletonHover::RaySegmentDistance(
+				Origin,
+				Dir,
+				Cone.Start,
+				Cone.End,
+				RayT,
+				SegU);
+			const float Radius = FMath::Lerp(Cone.RadiusStart, Cone.RadiusEnd, SegU);
+			if (Dist > Radius + 0.15f || RayT >= BestT)
+			{
+				continue;
+			}
 
-		return TwistName.ToString();
+			BestT = RayT;
+			BestLabel = TwistName.ToString();
+		}
+		return BestLabel;
 	}
 
 	TArray<FVector2D> From;

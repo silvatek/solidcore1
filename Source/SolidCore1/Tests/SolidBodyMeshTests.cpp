@@ -717,6 +717,24 @@ bool FSolidBodyLeftThighTest::RunTest(const FString& Parameters)
 
 	const SolidBodyMesh::FSolidFittedCone Short = SolidBodyMesh::LeftThighCone(ParentJoint, ParentJoint);
 	TestFalse(TEXT("a bone with no length is not drawn"), Short.bValid);
+
+	TestEqual(TEXT("the right thigh bone"), FString(SolidBodyMesh::RightThighBone), FString(TEXT("thigh_twist_01_r")));
+	const FVector LeftParent(-8.f, 1.f, 90.f);
+	const FVector LeftEnd(-10.f, 2.f, 68.f);
+	const FVector RightParent(8.f, 1.f, 90.f);
+	const FVector RightEnd(10.f, 2.f, 68.f);
+	const SolidBodyMesh::FSolidFittedCone LeftCone = SolidBodyMesh::LeftThighCone(LeftParent, LeftEnd);
+	const SolidBodyMesh::FSolidFittedCone RightCone = SolidBodyMesh::LeftThighCone(RightParent, RightEnd);
+	TestTrue(
+		TEXT("mirrored thighs are the same length"),
+		FMath::IsNearlyEqual(
+			static_cast<float>(FVector::Dist(LeftCone.Start, LeftCone.End)),
+			static_cast<float>(FVector::Dist(RightCone.Start, RightCone.End)),
+			0.05f));
+	TestTrue(TEXT("mirrored thighs share the wide radius"), FMath::IsNearlyEqual(LeftCone.RadiusStart, RightCone.RadiusStart, 0.01f));
+	TestTrue(TEXT("mirrored thighs share the narrow radius"), FMath::IsNearlyEqual(LeftCone.RadiusEnd, RightCone.RadiusEnd, 0.01f));
+	TestTrue(TEXT("the right thigh starts across from the left"), RightCone.Start.Equals(FVector(-LeftCone.Start.X, LeftCone.Start.Y, LeftCone.Start.Z), 0.01));
+	TestTrue(TEXT("the right thigh ends across from the left"), RightCone.End.Equals(FVector(-LeftCone.End.X, LeftCone.End.Y, LeftCone.End.Z), 0.01));
 	return true;
 }
 

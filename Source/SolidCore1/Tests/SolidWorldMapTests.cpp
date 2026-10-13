@@ -916,4 +916,98 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidWorldMapDesertMarkerTest,
+	"SolidCore1.WorldMap.DesertMarker",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidWorldMapDesertMarkerTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("desert is a peak"), USolidWorldMap::DesertMarker, TEXT('^'));
+
+	FString Text;
+	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	{
+		FString Line;
+		Line.Reserve(USolidWorldMap::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		{
+			TCHAR Marker = USolidWorldMap::GrassMarker;
+			if (Row == 0 && Col == 1)
+			{
+				Marker = USolidWorldMap::DesertMarker;
+			}
+			else if (Row == 0 && Col == 2)
+			{
+				Marker = TEXT('D');
+			}
+			Line.AppendChar(Marker);
+		}
+		Text += Line;
+		Text += TEXT("\n");
+	}
+	Text.AppendChar(USolidWorldMap::DesertMarker);
+	Text += TEXT(" = Desert (blue)\n");
+
+	USolidWorldMap* Synthetic = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("peak map loads"), Synthetic->LoadFromString(Text));
+	TestEqual(TEXT("a peak stays a peak"), Synthetic->GetMarkerAtCell(1, 0), USolidWorldMap::DesertMarker);
+	TestEqual(
+		TEXT("a peak is desert"),
+		static_cast<uint8>(Synthetic->GetBiomeAtCell(1, 0)),
+		static_cast<uint8>(ESolidBiome::Desert));
+	TestEqual(TEXT("the letter D stays a letter"), Synthetic->GetMarkerAtCell(2, 0), TEXT('D'));
+	TestEqual(
+		TEXT("the letter D is not desert"),
+		static_cast<uint8>(Synthetic->GetBiomeAtCell(2, 0)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+	const FLinearColor Desert = Synthetic->GetBiomeColor(ESolidBiome::Desert);
+	TestTrue(TEXT("the desert key still loads"), Desert.B > Desert.R && Desert.B > Desert.G);
+
+	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("shipped map loads"), Shipped->LoadDefault());
+	if (!Shipped->IsLoaded())
+	{
+		return true;
+	}
+	int32 LetterD = 0;
+	int32 DesertNotPeak = 0;
+	int32 Mountains = 0;
+	int32 Caves = 0;
+	bool bSawDesert = false;
+	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	{
+		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		{
+			const TCHAR Marker = Shipped->GetMarkerAtCell(Col, Row);
+			if (Marker == TEXT('D') || Marker == TEXT('d'))
+			{
+				++LetterD;
+			}
+			if (Marker == TEXT('M'))
+			{
+				++Mountains;
+			}
+			if (Marker == TEXT('C'))
+			{
+				++Caves;
+			}
+			if (Shipped->GetBiomeAtCell(Col, Row) == ESolidBiome::Desert)
+			{
+				bSawDesert = true;
+				if (Marker != USolidWorldMap::DesertMarker)
+				{
+					++DesertNotPeak;
+				}
+			}
+		}
+	}
+	TestEqual(TEXT("the shipped map has no letter D"), LetterD, 0);
+	TestEqual(TEXT("desert cells are peaks"), DesertNotPeak, 0);
+	TestTrue(TEXT("the shipped map has desert"), bSawDesert);
+	TestTrue(TEXT("mountains stay M"), Mountains > 0);
+	TestTrue(TEXT("the cave stays C"), Caves > 0);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

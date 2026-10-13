@@ -67,8 +67,8 @@ public:
 	/** WorldMap.txt marker for a river channel. A star, not the letter R. */
 	static constexpr TCHAR RiverMarker = TEXT('*');
 
-	/** WorldMap.txt marker for desert. */
-	static constexpr TCHAR DesertMarker = TEXT('D');
+	/** WorldMap.txt marker for desert. A peak, not the letter D. */
+	static constexpr TCHAR DesertMarker = TEXT('^');
 
 	/** Load Content/WorldMap.txt. Idempotent when already loaded. */
 	bool LoadDefault(bool bForceReload = false);
@@ -79,7 +79,7 @@ public:
 	bool IsLoaded() const { return bIsLoaded; }
 
 	/**
-	 * Marker biome at map cell (clamped). The town marker and Z are Town; C is Mountain; digits use the location key.
+	 * Marker biome at map cell (clamped). The town marker and Z are Town; the desert marker is Desert; C is Mountain; digits use the location key.
 	 * The river marker is River for the whole cell. SampleBiome paints only the channel.
 	 */
 	ESolidBiome GetBiomeAtCell(int32 MapX, int32 MapY) const;

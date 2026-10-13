@@ -35,6 +35,9 @@ struct FSolidDeformBone
 
 	/** A finger or a toe. The ankle and the calf stay limbs. */
 	bool bDigit = false;
+
+	/** Skeleton bone name. Empty on a hand-built test pose. */
+	FName Name;
 };
 
 /** One bind-pose vertex, skinned with up to four influences. Weights should sum to 1. */

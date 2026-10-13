@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0249")
+#define SOLID_BUILD_ID TEXT("SC1-0250")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The skeleton view leaves off clothing and weapon bones.")
+#define SOLID_BUILD_NOTE TEXT("Each body piece wraps the bone group from the skeleton sketch.")
 #endif

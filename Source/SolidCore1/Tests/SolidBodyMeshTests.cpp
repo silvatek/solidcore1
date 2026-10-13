@@ -534,4 +534,40 @@ bool FSolidBodyConeJointTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodySegmentKeyTest,
+	"SolidCore1.Body.SegmentKey",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodySegmentKeyTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("head"), SolidBodyMesh::SegmentKey(TEXT("head")), FString(TEXT("head")));
+	TestEqual(TEXT("left eye"), SolidBodyMesh::SegmentKey(TEXT("eye_jnt_l")), FString(TEXT("head")));
+	TestEqual(TEXT("right eye"), SolidBodyMesh::SegmentKey(TEXT("eye_r")), FString(TEXT("head")));
+	TestEqual(TEXT("eyelid"), SolidBodyMesh::SegmentKey(TEXT("eyelid_jnt_l")), FString(TEXT("head")));
+	TestEqual(TEXT("neck"), SolidBodyMesh::SegmentKey(TEXT("neck_01")), FString(TEXT("neck")));
+	TestEqual(TEXT("left shoulder clavicle"), SolidBodyMesh::SegmentKey(TEXT("clavicle_l")), FString(TEXT("shoulder_l")));
+	TestEqual(TEXT("left upper arm"), SolidBodyMesh::SegmentKey(TEXT("upperarm_l")), FString(TEXT("shoulder_l")));
+	TestEqual(TEXT("left shoulder joint"), SolidBodyMesh::SegmentKey(TEXT("shoulder_jnt_l")), FString(TEXT("shoulder_l")));
+	TestEqual(TEXT("left shoulder joint tip"), SolidBodyMesh::SegmentKey(TEXT("shoulder_jnt_1_r")), FString(TEXT("shoulder_r")));
+	TestEqual(TEXT("upper arm twist stays out"), SolidBodyMesh::SegmentKey(TEXT("upperarm_twist_01_l")), FString());
+	TestEqual(TEXT("chest slab"), SolidBodyMesh::SegmentKey(TEXT("spine_03")), FString(TEXT("spine_03")));
+	TestEqual(TEXT("mid slab"), SolidBodyMesh::SegmentKey(TEXT("spine_02")), FString(TEXT("spine_02")));
+	TestEqual(TEXT("hip slab"), SolidBodyMesh::SegmentKey(TEXT("spine_01")), FString(TEXT("spine_01")));
+	TestEqual(TEXT("left thigh"), SolidBodyMesh::SegmentKey(TEXT("thigh_l")), FString(TEXT("thigh_l")));
+	TestEqual(TEXT("left thigh twist"), SolidBodyMesh::SegmentKey(TEXT("thigh_twist_01_l")), FString(TEXT("thigh_l")));
+	TestEqual(TEXT("right calf"), SolidBodyMesh::SegmentKey(TEXT("calf_r")), FString(TEXT("calf_r")));
+	TestEqual(TEXT("right calf twist"), SolidBodyMesh::SegmentKey(TEXT("calf_twist_01_r")), FString(TEXT("calf_r")));
+	TestEqual(TEXT("left foot"), SolidBodyMesh::SegmentKey(TEXT("foot_l")), FString(TEXT("foot_l")));
+	TestEqual(TEXT("left ball"), SolidBodyMesh::SegmentKey(TEXT("ball_l")), FString(TEXT("foot_l")));
+	TestEqual(TEXT("left extra toe"), SolidBodyMesh::SegmentKey(TEXT("extra_finger_l")), FString(TEXT("foot_l")));
+	TestEqual(TEXT("left forearm"), SolidBodyMesh::SegmentKey(TEXT("lowerarm_l")), FString(TEXT("forearm_l")));
+	TestEqual(TEXT("left hand"), SolidBodyMesh::SegmentKey(TEXT("hand_l")), FString(TEXT("hand_l")));
+	TestEqual(TEXT("left index"), SolidBodyMesh::SegmentKey(TEXT("index_01_l")), FString(TEXT("hand_l")));
+	TestEqual(TEXT("pelvis is not a piece"), SolidBodyMesh::SegmentKey(TEXT("pelvis")), FString());
+	TestEqual(TEXT("axe stays off the body"), SolidBodyMesh::SegmentKey(TEXT("axe_jnt")), FString());
+	TestEqual(TEXT("cloack stays off the body"), SolidBodyMesh::SegmentKey(TEXT("cloack_jnt_1_l")), FString());
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

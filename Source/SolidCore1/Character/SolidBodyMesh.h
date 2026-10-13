@@ -105,6 +105,14 @@ namespace SolidBodyMesh
 		const FSolidBodyParams& Params,
 		TArray<float>& OutRadii);
 
+	/**
+	 * Bones that share a key are one mesh piece.
+	 * The head includes the eyes. Each shoulder includes the clavicle, the upper arm,
+	 * and the shoulder joints. spine_01, spine_02, and spine_03 are separate pieces.
+	 * Empty when the bone is not a body piece.
+	 */
+	FString SegmentKey(const FString& BoneName);
+
 	/** Start and end radii of the cone from Parent to Child. Both ends are joint radii. */
 	void SegmentRadii(
 		const TArray<float>& Radii,

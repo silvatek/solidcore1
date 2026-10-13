@@ -117,6 +117,81 @@ float SolidBodyMesh::HipBottomRadius(const float PelvisHalfWidth, const float Hi
 
 namespace
 {
+	bool IsLeftName(const FString& Lower)
+	{
+		return Lower.EndsWith(TEXT("_l")) || Lower.Contains(TEXT("_l_"));
+	}
+
+	bool IsRightName(const FString& Lower)
+	{
+		return Lower.EndsWith(TEXT("_r")) || Lower.Contains(TEXT("_r_"));
+	}
+
+	FString SidedKey(const FString& Lower, const TCHAR* Kind)
+	{
+		if (IsLeftName(Lower))
+		{
+			return FString(Kind) + TEXT("_l");
+		}
+		if (IsRightName(Lower))
+		{
+			return FString(Kind) + TEXT("_r");
+		}
+		return FString();
+	}
+}
+
+FString SolidBodyMesh::SegmentKey(const FString& BoneName)
+{
+	const FString Lower = BoneName.ToLower();
+	if (Lower == TEXT("head") || Lower.StartsWith(TEXT("eye_")) || Lower.StartsWith(TEXT("eyelid_")))
+	{
+		return TEXT("head");
+	}
+	if (Lower.StartsWith(TEXT("neck_")))
+	{
+		return TEXT("neck");
+	}
+	if (Lower.StartsWith(TEXT("spine_01")) || Lower.StartsWith(TEXT("spine_02")) || Lower.StartsWith(TEXT("spine_03")))
+	{
+		return Lower.Left(8);
+	}
+	if (Lower.StartsWith(TEXT("clavicle_"))
+		|| Lower.StartsWith(TEXT("shoulder_jnt"))
+		|| (Lower.StartsWith(TEXT("upperarm_")) && !Lower.Contains(TEXT("twist"))))
+	{
+		return SidedKey(Lower, TEXT("shoulder"));
+	}
+	if (Lower.StartsWith(TEXT("thigh_")))
+	{
+		return SidedKey(Lower, TEXT("thigh"));
+	}
+	if (Lower.StartsWith(TEXT("calf_")))
+	{
+		return SidedKey(Lower, TEXT("calf"));
+	}
+	if (Lower.StartsWith(TEXT("foot_")) || Lower.StartsWith(TEXT("ball_")) || Lower.StartsWith(TEXT("extra_finger_")))
+	{
+		return SidedKey(Lower, TEXT("foot"));
+	}
+	if (Lower.StartsWith(TEXT("lowerarm_")))
+	{
+		return SidedKey(Lower, TEXT("forearm"));
+	}
+	if (Lower.StartsWith(TEXT("hand_"))
+		|| Lower.StartsWith(TEXT("index_"))
+		|| Lower.StartsWith(TEXT("middle_"))
+		|| Lower.StartsWith(TEXT("ring_"))
+		|| Lower.StartsWith(TEXT("pinky_"))
+		|| Lower.StartsWith(TEXT("thumb_")))
+	{
+		return SidedKey(Lower, TEXT("hand"));
+	}
+	return FString();
+}
+
+namespace
+{
 	bool ConeIsStructural(const FSolidDeformBone& Bone)
 	{
 		return !Bone.bTwist && !Bone.bDigit;
@@ -457,8 +532,6 @@ namespace
 	constexpr uint8 SlotTorso = 0;
 	constexpr uint8 SlotLegs = 1;
 	constexpr uint8 SlotSkin = 2;
-	constexpr int32 TubeSides = 10;
-	constexpr int32 TubeSegments = 3;
 
 	struct FLoFiTri
 	{
@@ -476,6 +549,7 @@ namespace
 			FSolidDeformBone Bone;
 			const FString BoneName = Infos[Index].Name.ToString();
 			Bone.ParentIndex = Infos[Index].ParentIndex;
+			Bone.Name = Infos[Index].Name;
 			Bone.Role = SolidBodyMesh::RoleForBoneName(BoneName);
 			Bone.bTwist = SolidBodyMesh::IsTwistBoneName(BoneName);
 			Bone.bDigit = SolidBodyMesh::IsDigitBoneName(BoneName);
@@ -492,21 +566,6 @@ namespace
 		Tri.V[1] = B;
 		Tri.V[2] = C;
 		Tris.Add(Tri);
-	}
-
-	uint8 SlotForRole(const ESolidBodyBoneRole Role)
-	{
-		if (Role == ESolidBodyBoneRole::Leg
-			|| Role == ESolidBodyBoneRole::Foot
-			|| Role == ESolidBodyBoneRole::Pelvis)
-		{
-			return SlotLegs;
-		}
-		if (Role == ESolidBodyBoneRole::Head)
-		{
-			return SlotSkin;
-		}
-		return SlotTorso;
 	}
 
 	/** Tapered tube. Flatten squishes the ring's second axis so a foot or a hand reads as a paddle. */
@@ -589,244 +648,188 @@ namespace
 		}
 	}
 
-	/** Skull above the head joint. The front is flattened along mesh +Y so a face can sit on it. */
-	void AddHead(
+	void AddBox(
 		TArray<FLoFiVert>& Verts,
 		TArray<FLoFiTri>& Tris,
 		const int32 BoneIndex,
-		const FVector& Joint,
-		const FVector& Up,
-		const float Height,
-		const float Radius,
+		const FVector& Center,
+		const FVector& AxisX,
+		const FVector& AxisY,
+		const FVector& AxisZ,
+		const float HalfX,
+		const float HalfY,
+		const float HalfZ,
 		const uint8 Slot)
 	{
-		FVector Forward = FVector(0.f, 1.f, 0.f) - Up * FVector::DotProduct(FVector(0.f, 1.f, 0.f), Up);
-		if (Forward.SizeSquared() < 0.01)
+		if (BoneIndex == INDEX_NONE || HalfX < 0.5f || HalfY < 0.5f || HalfZ < 0.5f)
 		{
-			Forward = FVector(1.f, 0.f, 0.f) - Up * FVector::DotProduct(FVector(1.f, 0.f, 0.f), Up);
+			return;
 		}
-		Forward = Forward.GetSafeNormal();
-		const FVector Side = FVector::CrossProduct(Up, Forward).GetSafeNormal();
-		Forward = FVector::CrossProduct(Side, Up).GetSafeNormal();
-
-		constexpr int32 Sides = 10;
-		constexpr int32 Rings = 6;
-		const FVector Center = Joint + Up * (Height * 0.42);
+		const FVector X = AxisX.GetSafeNormal() * HalfX;
+		const FVector Y = AxisY.GetSafeNormal() * HalfY;
+		const FVector Z = AxisZ.GetSafeNormal() * HalfZ;
 		const int32 Base = Verts.Num();
-		const float FacePlane = Radius * 0.42f;
-
-		for (int32 Ring = 0; Ring < Rings; ++Ring)
-		{
-			const float T = static_cast<float>(Ring) / static_cast<float>(Rings - 1);
-			const float Bell = FMath::Sin(T * PI);
-			const float Slice = FMath::Lerp(SolidBodyMesh::HeadChinSlice, 1.f, Bell);
-			const float Along = (T - 0.42f) * Height;
-			for (int32 Step = 0; Step < Sides; ++Step)
-			{
-				const float Angle = (2.f * PI * static_cast<float>(Step)) / static_cast<float>(Sides);
-				FVector Offset = (Forward * FMath::Cos(Angle) + Side * FMath::Sin(Angle)) * (Radius * Slice);
-				const float ForwardAmt = FVector::DotProduct(Offset, Forward);
-				if (ForwardAmt > FacePlane)
-				{
-					Offset -= Forward * (ForwardAmt - FacePlane);
-				}
-				FLoFiVert Vert;
-				Vert.Position = Center + Up * Along + Offset;
-				Vert.Bone = BoneIndex;
-				Vert.Slot = Slot;
-				Verts.Add(Vert);
-			}
-		}
-
-		auto Id = [Base](const int32 Ring, const int32 Step)
-		{
-			return Base + Ring * Sides + (Step % Sides);
+		const FVector Corners[8] = {
+			Center - X - Y - Z,
+			Center + X - Y - Z,
+			Center + X + Y - Z,
+			Center - X + Y - Z,
+			Center - X - Y + Z,
+			Center + X - Y + Z,
+			Center + X + Y + Z,
+			Center - X + Y + Z,
 		};
-		for (int32 Ring = 0; Ring < Rings - 1; ++Ring)
+		for (const FVector& Corner : Corners)
 		{
-			for (int32 Step = 0; Step < Sides; ++Step)
-			{
-				const int32 Next = Step + 1;
-				AddTri(Tris, Id(Ring, Step), Id(Ring, Next), Id(Ring + 1, Step));
-				AddTri(Tris, Id(Ring, Next), Id(Ring + 1, Next), Id(Ring + 1, Step));
-			}
+			FLoFiVert Vert;
+			Vert.Position = Corner;
+			Vert.Bone = BoneIndex;
+			Vert.Slot = Slot;
+			Verts.Add(Vert);
 		}
-		for (int32 Step = 1; Step < Sides - 1; ++Step)
-		{
-			AddTri(Tris, Id(0, 0), Id(0, Step + 1), Id(0, Step));
-			AddTri(Tris, Id(Rings - 1, 0), Id(Rings - 1, Step), Id(Rings - 1, Step + 1));
-		}
+		auto V = [Base](const int32 Index) { return Base + Index; };
+		AddTri(Tris, V(0), V(1), V(2));
+		AddTri(Tris, V(0), V(2), V(3));
+		AddTri(Tris, V(4), V(6), V(5));
+		AddTri(Tris, V(4), V(7), V(6));
+		AddTri(Tris, V(0), V(4), V(5));
+		AddTri(Tris, V(0), V(5), V(1));
+		AddTri(Tris, V(1), V(5), V(6));
+		AddTri(Tris, V(1), V(6), V(2));
+		AddTri(Tris, V(2), V(6), V(7));
+		AddTri(Tris, V(2), V(7), V(3));
+		AddTri(Tris, V(3), V(7), V(4));
+		AddTri(Tris, V(3), V(4), V(0));
 	}
 
-	/** First limb bone under Parent, walking through twist bones. */
-	int32 FindStructuralChild(const TArray<FSolidDeformBone>& Bones, const int32 Parent, const ESolidBodyBoneRole Role)
+	void ExpandBounds(FVector& Min, FVector& Max, const FVector& Point)
 	{
+		Min.X = FMath::Min(Min.X, Point.X);
+		Min.Y = FMath::Min(Min.Y, Point.Y);
+		Min.Z = FMath::Min(Min.Z, Point.Z);
+		Max.X = FMath::Max(Max.X, Point.X);
+		Max.Y = FMath::Max(Max.Y, Point.Y);
+		Max.Z = FMath::Max(Max.Z, Point.Z);
+	}
+
+	int32 PrimaryMember(const TArray<FSolidDeformBone>& Bones, const TArray<int32>& Members)
+	{
+		int32 Best = INDEX_NONE;
+		int32 BestScore = -1;
+		for (const int32 Index : Members)
+		{
+			if (!Bones.IsValidIndex(Index))
+			{
+				continue;
+			}
+			const FString Name = Bones[Index].Name.ToString().ToLower();
+			int32 Score = 1;
+			if (!Bones[Index].bTwist && !Bones[Index].bDigit)
+			{
+				Score += 4;
+			}
+			if (!Name.Contains(TEXT("twist")) && !Name.Contains(TEXT("jnt")) && !Name.StartsWith(TEXT("eye")))
+			{
+				Score += 8;
+			}
+			if (Score > BestScore)
+			{
+				BestScore = Score;
+				Best = Index;
+			}
+		}
+		return Best;
+	}
+
+	int32 FindSegment(const TArray<FSolidDeformBone>& Bones, const FString& Key)
+	{
+		if (Key.IsEmpty())
+		{
+			return INDEX_NONE;
+		}
+		int32 Fallback = INDEX_NONE;
+		int32 BestScore = -1;
 		for (int32 Index = 0; Index < Bones.Num(); ++Index)
 		{
-			if (Bones[Index].ParentIndex != Parent)
+			if (SolidBodyMesh::SegmentKey(Bones[Index].Name.ToString()) != Key)
 			{
 				continue;
 			}
-			if (Bones[Index].bTwist)
+			if (Fallback == INDEX_NONE)
 			{
-				const int32 Deeper = FindStructuralChild(Bones, Index, Role);
-				if (Deeper != INDEX_NONE)
-				{
-					return Deeper;
-				}
-				continue;
+				Fallback = Index;
 			}
-			if (Bones[Index].Role == Role && !Bones[Index].bDigit)
+			const FString Name = Bones[Index].Name.ToString().ToLower();
+			int32 Score = Name.Contains(TEXT("twist")) ? 0 : 2;
+			if (Score > BestScore)
 			{
-				return Index;
+				BestScore = Score;
+				Fallback = Index;
 			}
 		}
-		return INDEX_NONE;
+		return Fallback;
 	}
 
-	bool ContinuesChain(const ESolidBodyBoneRole Role, const ESolidBodyBoneRole Child)
+	FString SiblingKey(const FString& Key, const TCHAR* Kind)
 	{
-		switch (Role)
+		const int32 Split = Key.Find(TEXT("_"), ESearchCase::CaseSensitive, ESearchDir::FromEnd);
+		if (Split == INDEX_NONE)
 		{
-		case ESolidBodyBoneRole::Arm:
-			return Child == ESolidBodyBoneRole::Arm || Child == ESolidBodyBoneRole::Hand;
-		case ESolidBodyBoneRole::Hand:
-			return Child == ESolidBodyBoneRole::Hand;
-		case ESolidBodyBoneRole::Leg:
-			return Child == ESolidBodyBoneRole::Leg || Child == ESolidBodyBoneRole::Foot;
-		case ESolidBodyBoneRole::Foot:
-			return Child == ESolidBodyBoneRole::Foot;
-		default:
-			return false;
+			return FString(Kind);
 		}
+		return FString(Kind) + Key.Mid(Split);
 	}
 
-	bool IsChainEnd(const TArray<FSolidDeformBone>& Bones, const int32 Index)
-	{
-		const ESolidBodyBoneRole Role = Bones[Index].Role;
-		if (Role != ESolidBodyBoneRole::Arm
-			&& Role != ESolidBodyBoneRole::Hand
-			&& Role != ESolidBodyBoneRole::Leg
-			&& Role != ESolidBodyBoneRole::Foot)
-		{
-			return false;
-		}
-		for (int32 Child = 0; Child < Bones.Num(); ++Child)
-		{
-			if (Bones[Child].ParentIndex == Index && ContinuesChain(Role, Bones[Child].Role))
-			{
-				return false;
-			}
-		}
-		return true;
-	}
-
-	bool IsDigitBone(const TArray<FSolidDeformBone>& Bones, const int32 Index)
-	{
-		return Bones.IsValidIndex(Index) && Bones[Index].bDigit;
-	}
-
-	/** Walk past twist bones so a shin still starts at the calf. */
-	int32 StructuralParent(const TArray<FSolidDeformBone>& Bones, const int32 Index)
-	{
-		int32 Parent = Bones.IsValidIndex(Index) ? Bones[Index].ParentIndex : INDEX_NONE;
-		int32 Guard = 0;
-		while (Bones.IsValidIndex(Parent) && Bones[Parent].bTwist && Guard < Bones.Num())
-		{
-			Parent = Bones[Parent].ParentIndex;
-			++Guard;
-		}
-		return Parent;
-	}
-
-	/**
-	 * The ankle is the foot bone that hangs off the calf.
-	 * The calf's own parent is the thigh, so the calf is the thigh segment, not the foot.
-	 */
-	bool IsAnkleBone(const TArray<FSolidDeformBone>& Bones, const int32 Index)
-	{
-		if (!Bones.IsValidIndex(Index)
-			|| Bones[Index].Role != ESolidBodyBoneRole::Foot
-			|| Bones[Index].bDigit
-			|| Bones[Index].bTwist)
-		{
-			return false;
-		}
-		const int32 Parent = StructuralParent(Bones, Index);
-		return Bones.IsValidIndex(Parent) && Bones[Parent].Role == ESolidBodyBoneRole::Foot;
-	}
-
-	/**
-	 * One cap from the chest out to the arm joint.
-	 * Its narrow end is the upper arm. Its outer edge stays on the chest circle,
-	 * which is already as wide as both arms. Helper clavicles draw nothing.
-	 */
-	void AddShoulder(
+	void AddLimbBox(
 		TArray<FLoFiVert>& Verts,
 		TArray<FLoFiTri>& Tris,
-		const TArray<FSolidDeformBone>& Bones,
 		const TArray<FVector>& Positions,
-		const TArray<float>& Radii,
-		const int32 Clavicle)
+		const TArray<int32>& Members,
+		const int32 Weight,
+		const FVector& Start,
+		const FVector& End,
+		const float MinStart,
+		const float MinEnd,
+		const uint8 Slot)
 	{
-		if (!Positions.IsValidIndex(Clavicle))
+		FVector Axis = End - Start;
+		const float Length = Axis.Size();
+		if (Length < 1.f || Weight == INDEX_NONE)
 		{
 			return;
 		}
-
-		const int32 Parent = StructuralParent(Bones, Clavicle);
-		const bool bChest = Bones.IsValidIndex(Parent) && Positions.IsValidIndex(Parent);
-		const int32 Arm = FindStructuralChild(Bones, Clavicle, ESolidBodyBoneRole::Arm);
-		if (Arm == INDEX_NONE || !Positions.IsValidIndex(Arm) || !Radii.IsValidIndex(Arm))
+		Axis /= Length;
+		FVector Side = FVector::CrossProduct(Axis, FVector::UpVector);
+		if (Side.SizeSquared() < 0.01)
 		{
-			return;
+			Side = FVector::CrossProduct(Axis, FVector::ForwardVector);
 		}
-
-		const FVector Cap = Positions[Clavicle];
-		const FVector Chest = bChest ? Positions[Parent] : Cap;
-		const FVector Joint = Positions[Arm];
-		FVector Out = Joint - Chest;
-		Out.Z = 0.0;
-		if (Out.SizeSquared() < 1.0)
+		Side = Side.GetSafeNormal();
+		float Radius = FMath::Max(MinStart, MinEnd);
+		for (const int32 Index : Members)
 		{
-			Out = Cap - Chest;
-			Out.Z = 0.0;
+			if (!Positions.IsValidIndex(Index))
+			{
+				continue;
+			}
+			const FVector Rel = Positions[Index] - Start;
+			const FVector Radial = Rel - Axis * FVector::DotProduct(Rel, Axis);
+			Radius = FMath::Max(Radius, static_cast<float>(Radial.Size()));
 		}
-		if (Out.SizeSquared() < 1.0)
-		{
-			return;
-		}
-		Out = Out.GetSafeNormal();
-
-		FVector Flat = Joint - Chest;
-		Flat.Z = 0.0;
-		const float Lateral = static_cast<float>(Flat.Size());
-		const float EndRadius = Radii[Arm];
-		const float ChestRadius = (bChest && Radii.IsValidIndex(Parent))
-			? Radii[Parent]
-			: SolidBodyMesh::SplitHalfWidth(Lateral, EndRadius);
-		const float StartRadius = FMath::Max(EndRadius, FMath::Min(ChestRadius * 0.5f, EndRadius * 1.8f));
-		const float StartLateral = FMath::Max(0.f, ChestRadius - StartRadius);
-		const FVector Start = Chest + Out * static_cast<double>(StartLateral);
-		const FVector End = Joint;
-		if ((End - Start).Size() < 1.0)
-		{
-			return;
-		}
-
+		Radius += 1.5f;
 		AddTube(
 			Verts,
 			Tris,
-			Clavicle,
-			Start,
-			End,
-			StartRadius,
-			EndRadius,
-			TubeSides,
-			3,
-			SlotTorso,
+			Weight,
+			Start - Axis * 2.0,
+			End + Axis * 2.0,
+			FMath::Max(MinStart, Radius),
+			FMath::Max(MinEnd, Radius * 0.82f),
+			4,
+			1,
+			Slot,
 			1.f,
-			FVector::UpVector);
+			Side);
 	}
 
 	void BuildLowFi(
@@ -836,153 +839,278 @@ namespace
 		TArray<FLoFiVert>& Verts,
 		TArray<FLoFiTri>& Tris)
 	{
-		TArray<float> Radii;
-		SolidBodyMesh::JointRadii(Bones, Positions, Params, Radii);
-
+		const SolidBodyMesh::FSolidConeProfile Profile = SolidBodyMesh::ConeProfile(Params);
 		const int32 Count = FMath::Min(Bones.Num(), Positions.Num());
+
+		TMap<FString, TArray<int32>> Groups;
 		for (int32 Index = 0; Index < Count; ++Index)
 		{
-			const ESolidBodyBoneRole Role = Bones[Index].Role;
-			if (Role == ESolidBodyBoneRole::Root
-				|| Role == ESolidBodyBoneRole::Pelvis
-				|| Bones[Index].bTwist
-				|| IsDigitBone(Bones, Index))
+			const FString Key = SolidBodyMesh::SegmentKey(Bones[Index].Name.ToString());
+			if (!Key.IsEmpty())
+			{
+				Groups.FindOrAdd(Key).Add(Index);
+			}
+		}
+		TArray<FString> Keys;
+		Groups.GetKeys(Keys);
+		Keys.Sort();
+
+		auto Pos = [&Positions](const int32 Index) -> FVector
+		{
+			return Positions.IsValidIndex(Index) ? Positions[Index] : FVector::ZeroVector;
+		};
+
+		for (const FString& Key : Keys)
+		{
+			const TArray<int32>& Members = Groups[Key];
+			const int32 Weight = PrimaryMember(Bones, Members);
+			if (Weight == INDEX_NONE)
 			{
 				continue;
 			}
 
-			const int32 Parent = StructuralParent(Bones, Index);
-			const bool bParent = Bones.IsValidIndex(Parent) && Positions.IsValidIndex(Parent);
-			const ESolidBodyBoneRole ParentRole = bParent
-				? Bones[Parent].Role
-				: ESolidBodyBoneRole::Root;
-			FVector Dir = FVector::UpVector;
-			float Incoming = 0.f;
-			if (bParent)
-			{
-				const FVector Delta = Positions[Index] - Positions[Parent];
-				Incoming = Delta.Size();
-				if (Incoming > 1.f)
-				{
-					Dir = Delta / Incoming;
-				}
-			}
-
-			// The calf's translation is the thigh. The ankle's translation is the shin.
-			const bool bThigh = Role == ESolidBodyBoneRole::Foot && ParentRole == ESolidBodyBoneRole::Leg;
-			const bool bShin = Role == ESolidBodyBoneRole::Foot && ParentRole == ESolidBodyBoneRole::Foot;
-			// The shoulder cap owns the span from the clavicle to the upper arm.
-			const bool bShoulderSpan = Role == ESolidBodyBoneRole::Arm && ParentRole == ESolidBodyBoneRole::Clavicle;
-			// The hip joint is where the thigh cone starts. A cone from the pelvis center
-			// out to that joint is the crumpled mass in the groin.
-			const bool bHipStub = Role == ESolidBodyBoneRole::Leg && ParentRole == ESolidBodyBoneRole::Pelvis;
-			const bool bTorsoSpan = Role == ESolidBodyBoneRole::Spine || Role == ESolidBodyBoneRole::Neck;
-			const float MinIncoming = bTorsoSpan ? 0.5f : 4.f;
-
-			if (Role == ESolidBodyBoneRole::Clavicle)
-			{
-				AddShoulder(Verts, Tris, Bones, Positions, Radii, Index);
-			}
-			else if (!bShoulderSpan && !bHipStub && bParent && ParentRole != ESolidBodyBoneRole::Root && Incoming >= MinIncoming)
-			{
-				float RadiusStart = 0.f;
-				float RadiusEnd = 0.f;
-				SolidBodyMesh::SegmentRadii(Radii, Parent, Index, RadiusStart, RadiusEnd);
-				// The cone that ends on the chin is skin. The shirt stops where the neck begins.
-				const uint8 Slot = (Role == ESolidBodyBoneRole::Head)
-					? SlotSkin
-					: ((bThigh || bShin || Role == ESolidBodyBoneRole::Leg || Role == ESolidBodyBoneRole::Foot)
-						? SlotLegs
-						: SlotTorso);
-				AddTube(
-					Verts,
-					Tris,
-					Parent,
-					Positions[Parent],
-					Positions[Index],
-					RadiusStart,
-					RadiusEnd,
-					TubeSides,
-					TubeSegments,
-					Slot,
-					1.f,
-					FVector::UpVector);
-			}
-
-			if (Role == ESolidBodyBoneRole::Head)
+			if (Key == TEXT("head"))
 			{
 				const float Height = SolidBodyMesh::HeadHeightCm(Params);
-				AddHead(
-					Verts,
-					Tris,
-					Index,
-					Positions[Index],
-					Dir,
-					Height,
-					Height * SolidBodyMesh::HeadRadiusOverHeight,
-					SlotSkin);
-			}
-			else if (Role == ESolidBodyBoneRole::Hand && bParent)
-			{
-				const float Length = FMath::Max(Incoming * 0.5f, 8.f);
-				const float Radius = Radii.IsValidIndex(Index) ? Radii[Index] : SolidBodyMesh::JointWrist;
-				FVector Wide = FVector::CrossProduct(Dir, FVector::UpVector);
-				if (Wide.SizeSquared() < 0.01)
+				const float Radius = Height * SolidBodyMesh::HeadRadiusOverHeight;
+				FVector Min(FLT_MAX);
+				FVector Max(-FLT_MAX);
+				for (const int32 Index : Members)
 				{
-					Wide = FVector::CrossProduct(Dir, FVector::RightVector);
+					ExpandBounds(Min, Max, Pos(Index));
 				}
-				AddTube(
-					Verts,
-					Tris,
-					Index,
-					Positions[Index],
-					Positions[Index] + Dir * static_cast<double>(Length),
-					Radius,
-					Radius * 1.15f,
-					8,
-					2,
-					SlotSkin,
-					0.42f,
-					Wide);
+				const FVector Chin = Pos(Weight);
+				Min.Z = FMath::Min(Min.Z, Chin.Z);
+				Max.Z = FMath::Max(Max.Z, Chin.Z + Height);
+				Min.X = FMath::Min(Min.X, Chin.X - Radius);
+				Max.X = FMath::Max(Max.X, Chin.X + Radius);
+				Min.Y = FMath::Min(Min.Y, Chin.Y - Radius * 0.85f);
+				Max.Y = FMath::Max(Max.Y, Chin.Y + Radius);
+				Min -= FVector(1.f);
+				Max += FVector(1.f);
+				AddBox(
+					Verts, Tris, Weight, (Min + Max) * 0.5,
+					FVector::ForwardVector, FVector::RightVector, FVector::UpVector,
+					static_cast<float>((Max.X - Min.X) * 0.5),
+					static_cast<float>((Max.Y - Min.Y) * 0.5),
+					static_cast<float>((Max.Z - Min.Z) * 0.5),
+					SlotSkin);
+				continue;
 			}
-			else if (IsAnkleBone(Bones, Index))
+
+			if (Key == TEXT("neck"))
 			{
-				// Mesh +Y is the face. Both feet point that way, level, and meet the shin.
-				const float Length = FMath::Clamp(16.f * Params.Height, 12.f, 22.f);
-				const float Radius = Radii.IsValidIndex(Index) ? Radii[Index] : SolidBodyMesh::JointAnkle;
-				const FVector Ankle = Positions[Index];
-				FVector Toe = Ankle + FVector(0.f, Length, -2.f);
-				AddTube(
-					Verts,
-					Tris,
-					Index,
-					Ankle,
-					Toe,
-					Radius,
-					Radius * 0.72f,
-					8,
-					2,
-					SlotLegs,
-					0.55f,
-					FVector::RightVector);
+				const int32 Head = FindSegment(Bones, TEXT("head"));
+				const FVector End = Head != INDEX_NONE ? Pos(Head) : Pos(Weight) + FVector(0.f, 0.f, 10.f);
+				AddLimbBox(Verts, Tris, Positions, Members, Weight, Pos(Weight), End, Profile.Neck * 0.75f, Profile.Jaw, SlotSkin);
+				continue;
 			}
-			else if (bParent && IsChainEnd(Bones, Index))
+
+			if (Key.StartsWith(TEXT("shoulder_")))
 			{
-				const float TipLen = FMath::Max(Incoming * 0.35f, 4.f);
-				const float Radius = Radii.IsValidIndex(Index) ? Radii[Index] : SolidBodyMesh::JointWrist;
-				AddTube(
-					Verts,
-					Tris,
-					Index,
-					Positions[Index],
-					Positions[Index] + Dir * static_cast<double>(TipLen),
-					Radius,
-					Radius * 0.75f,
-					TubeSides,
-					2,
-					SlotForRole(Role),
-					1.f,
-					FVector::UpVector);
+				FVector Min(FLT_MAX);
+				FVector Max(-FLT_MAX);
+				for (const int32 Index : Members)
+				{
+					ExpandBounds(Min, Max, Pos(Index));
+				}
+				const FVector Cluster = (Min + Max) * 0.5;
+				Min = FVector(
+					FMath::Min(Min.X, Cluster.X - 8.f),
+					FMath::Min(Min.Y, Cluster.Y - 6.f),
+					FMath::Min(Min.Z, Cluster.Z - 6.f));
+				Max = FVector(
+					FMath::Max(Max.X, Cluster.X + 8.f),
+					FMath::Max(Max.Y, Cluster.Y + 6.f),
+					FMath::Max(Max.Z, Cluster.Z + 8.f));
+				const int32 Chest = FindSegment(Bones, TEXT("spine_03"));
+				if (Chest != INDEX_NONE)
+				{
+					const float ChestX = static_cast<float>(Pos(Chest).X);
+					if (Cluster.X < ChestX)
+					{
+						Max.X = FMath::Max(Max.X, ChestX);
+					}
+					else
+					{
+						Min.X = FMath::Min(Min.X, ChestX);
+					}
+				}
+				Min -= FVector(2.f);
+				Max += FVector(2.f);
+				AddBox(
+					Verts, Tris, Weight, (Min + Max) * 0.5,
+					FVector::ForwardVector, FVector::RightVector, FVector::UpVector,
+					static_cast<float>((Max.X - Min.X) * 0.5),
+					static_cast<float>((Max.Y - Min.Y) * 0.5),
+					static_cast<float>((Max.Z - Min.Z) * 0.5),
+					SlotTorso);
+
+				int32 Upper = INDEX_NONE;
+				for (const int32 Index : Members)
+				{
+					const FString Name = Bones[Index].Name.ToString().ToLower();
+					if (Name.StartsWith(TEXT("upperarm_")) && !Name.Contains(TEXT("twist")))
+					{
+						Upper = Index;
+						break;
+					}
+				}
+				const int32 Elbow = FindSegment(Bones, SiblingKey(Key, TEXT("forearm")));
+				if (Elbow != INDEX_NONE && Upper != INDEX_NONE)
+				{
+					const TArray<int32> Shaft;
+					AddLimbBox(
+						Verts, Tris, Positions, Shaft, Upper,
+						Pos(Upper), Pos(Elbow),
+						Profile.Shoulder, Profile.Elbow,
+						SlotTorso);
+				}
+				continue;
+			}
+
+			if (Key.StartsWith(TEXT("spine_")))
+			{
+				const FVector At = Pos(Weight);
+				float HalfW = Key == TEXT("spine_03") ? Profile.Chest : Profile.Waist;
+				float Top = static_cast<float>(At.Z) + 6.f;
+				float Bottom = static_cast<float>(At.Z) - 6.f;
+				if (Key == TEXT("spine_01"))
+				{
+					const int32 ThighL = FindSegment(Bones, TEXT("thigh_l"));
+					const int32 ThighR = FindSegment(Bones, TEXT("thigh_r"));
+					float Reach = Profile.Waist;
+					float ThighZ = static_cast<float>(At.Z);
+					auto MeasureThigh = [&](const int32 Thigh)
+					{
+						if (Thigh == INDEX_NONE)
+						{
+							return;
+						}
+						const float Lateral = FMath::Abs(static_cast<float>(Pos(Thigh).X - At.X));
+						Reach = FMath::Max(Reach, SolidBodyMesh::SplitHalfWidth(Lateral, Profile.Thigh));
+						ThighZ = FMath::Min(ThighZ, static_cast<float>(Pos(Thigh).Z));
+					};
+					MeasureThigh(ThighL);
+					MeasureThigh(ThighR);
+					HalfW = Reach;
+					Bottom = FMath::Min(Bottom, ThighZ + 3.f);
+				}
+				if (Bottom > Top - 8.f)
+				{
+					Bottom = Top - 8.f;
+				}
+				const FVector Center(At.X, At.Y, (Top + Bottom) * 0.5);
+				AddBox(
+					Verts, Tris, Weight, Center,
+					FVector::ForwardVector, FVector::RightVector, FVector::UpVector,
+					HalfW,
+					HalfW * 0.72f,
+					FMath::Max(4.f, (Top - Bottom) * 0.5f),
+					SlotTorso);
+				continue;
+			}
+
+			if (Key.StartsWith(TEXT("thigh_")))
+			{
+				const int32 Knee = FindSegment(Bones, SiblingKey(Key, TEXT("calf")));
+				if (Knee != INDEX_NONE)
+				{
+					AddLimbBox(
+						Verts, Tris, Positions, Members, Weight,
+						Pos(Weight), Pos(Knee),
+						Profile.Thigh, Profile.Knee,
+						SlotLegs);
+				}
+				continue;
+			}
+
+			if (Key.StartsWith(TEXT("calf_")))
+			{
+				const int32 Ankle = FindSegment(Bones, SiblingKey(Key, TEXT("foot")));
+				if (Ankle != INDEX_NONE)
+				{
+					AddLimbBox(
+						Verts, Tris, Positions, Members, Weight,
+						Pos(Weight), Pos(Ankle),
+						Profile.Knee, Profile.Ankle,
+						SlotLegs);
+				}
+				continue;
+			}
+
+			if (Key.StartsWith(TEXT("foot_")))
+			{
+				FVector Toe = Pos(Weight) + FVector(0.f, 14.f, -1.f);
+				float Furthest = 0.f;
+				for (const int32 Index : Members)
+				{
+					if (Index == Weight || !Positions.IsValidIndex(Index))
+					{
+						continue;
+					}
+					const float Dist = static_cast<float>(FVector::Dist(Pos(Index), Pos(Weight)));
+					if (Dist > Furthest)
+					{
+						Furthest = Dist;
+						Toe = Pos(Index);
+					}
+				}
+				if (Furthest < 8.f)
+				{
+					FVector Forward = Toe - Pos(Weight);
+					if (!Forward.Normalize())
+					{
+						Forward = FVector(0.f, 1.f, 0.f);
+					}
+					Toe = Pos(Weight) + Forward * 14.f;
+				}
+				AddLimbBox(
+					Verts, Tris, Positions, Members, Weight,
+					Pos(Weight), Toe,
+					Profile.Ankle, Profile.Ankle * 0.7f,
+					SlotLegs);
+				continue;
+			}
+
+			if (Key.StartsWith(TEXT("forearm_")))
+			{
+				const int32 Wrist = FindSegment(Bones, SiblingKey(Key, TEXT("hand")));
+				if (Wrist != INDEX_NONE)
+				{
+					AddLimbBox(
+						Verts, Tris, Positions, Members, Weight,
+						Pos(Weight), Pos(Wrist),
+						Profile.Elbow, Profile.Wrist,
+						SlotTorso);
+				}
+				continue;
+			}
+
+			if (Key.StartsWith(TEXT("hand_")))
+			{
+				FVector Min(FLT_MAX);
+				FVector Max(-FLT_MAX);
+				for (const int32 Index : Members)
+				{
+					ExpandBounds(Min, Max, Pos(Index));
+				}
+				const FVector Cluster = Pos(Weight);
+				Min = FVector(
+					FMath::Min(Min.X, Cluster.X - 3.f),
+					FMath::Min(Min.Y, Cluster.Y - 3.f),
+					FMath::Min(Min.Z, Cluster.Z - 2.f));
+				Max = FVector(
+					FMath::Max(Max.X, Cluster.X + 3.f),
+					FMath::Max(Max.Y, Cluster.Y + 4.f),
+					FMath::Max(Max.Z, Cluster.Z + 2.f));
+				AddBox(
+					Verts, Tris, Weight, (Min + Max) * 0.5,
+					FVector::ForwardVector, FVector::RightVector, FVector::UpVector,
+					static_cast<float>((Max.X - Min.X) * 0.5),
+					static_cast<float>((Max.Y - Min.Y) * 0.5),
+					static_cast<float>((Max.Z - Min.Z) * 0.5),
+					SlotSkin);
 			}
 		}
 	}

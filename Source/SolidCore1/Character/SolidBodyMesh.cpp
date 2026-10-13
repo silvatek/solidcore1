@@ -556,7 +556,7 @@ namespace
 			Attributes.RegisterSkinWeightAttribute(NAME_None);
 		}
 
-		const FSkinWeightsVertexAttributesRef Skin = Attributes.GetVertexSkinWeights(NAME_None);
+		FSkinWeightsVertexAttributesRef Skin = Attributes.GetVertexSkinWeights(NAME_None);
 		auto BoneNames = Attributes.GetBoneNames();
 		auto BoneParents = Attributes.GetBoneParentIndices();
 		auto BonePoses = Attributes.GetBonePoses();
@@ -607,7 +607,7 @@ namespace
 		}
 
 		const FPolygonGroupID Group = Description.CreatePolygonGroup();
-		auto SlotNames = Attributes.GetMaterialSlotNames();
+		auto SlotNames = Attributes.GetPolygonGroupMaterialSlotNames();
 		if (SlotNames.IsValid())
 		{
 			SlotNames.Set(Group, FName(TEXT("Body")));
@@ -668,7 +668,7 @@ namespace
 				}
 				Corners[Corner] = InstanceID;
 			}
-			Description.CreateTriangle(Group, Corners[0], Corners[1], Corners[2]);
+			Description.CreateTriangle(Group, MakeArrayView(Corners));
 			++Written;
 		}
 

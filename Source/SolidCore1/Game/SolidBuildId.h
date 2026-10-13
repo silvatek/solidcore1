@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0229")
+#define SOLID_BUILD_ID TEXT("SC1-0230")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Companions wear a low-poly body. The captain stays SK_Viking.")
+#define SOLID_BUILD_NOTE TEXT("Low-poly body skin weights match the 5.8 mesh description.")
 #endif

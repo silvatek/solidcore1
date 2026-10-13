@@ -190,6 +190,108 @@ FString SolidBodyMesh::SegmentKey(const FString& BoneName)
 	return FString();
 }
 
+FSolidFittedCone SolidBodyMesh::FitCone(const FVector* Points, const int32 Count)
+{
+	constexpr float Pad = 0.75f;
+	constexpr float MinSpan = 1.01f;
+	FSolidFittedCone Out;
+	if (!Points || Count <= 0)
+	{
+		return Out;
+	}
+
+	FVector Centroid = FVector::ZeroVector;
+	for (int32 Index = 0; Index < Count; ++Index)
+	{
+		Centroid += Points[Index];
+	}
+	Centroid /= static_cast<double>(Count);
+
+	int32 FarA = 0;
+	int32 FarB = 0;
+	double Best = -1.0;
+	for (int32 Index = 0; Index < Count; ++Index)
+	{
+		for (int32 Other = Index + 1; Other < Count; ++Other)
+		{
+			const double DistSq = FVector::DistSquared(Points[Index], Points[Other]);
+			if (DistSq > Best)
+			{
+				Best = DistSq;
+				FarA = Index;
+				FarB = Other;
+			}
+		}
+	}
+
+	FVector Axis = FVector::UpVector;
+	if (Best > 0.01)
+	{
+		Axis = (Points[FarB] - Points[FarA]).GetSafeNormal();
+	}
+
+	double TMin = TNumericLimits<double>::Max();
+	double TMax = TNumericLimits<double>::Lowest();
+	for (int32 Index = 0; Index < Count; ++Index)
+	{
+		const double Along = FVector::DotProduct(Points[Index] - Centroid, Axis);
+		TMin = FMath::Min(TMin, Along);
+		TMax = FMath::Max(TMax, Along);
+	}
+
+	double Span = TMax - TMin;
+	if (Span < static_cast<double>(MinSpan))
+	{
+		const double Grow = (static_cast<double>(MinSpan) - Span) * 0.5;
+		TMin -= Grow;
+		TMax += Grow;
+		Span = static_cast<double>(MinSpan);
+	}
+
+	const FVector Start = Centroid + Axis * TMin;
+	const FVector End = Centroid + Axis * TMax;
+
+	double RadiusStart = Pad;
+	double RadiusEnd = Pad;
+	for (int32 Index = 0; Index < Count; ++Index)
+	{
+		const FVector Rel = Points[Index] - Start;
+		const double Along = FVector::DotProduct(Rel, Axis);
+		const double Radial = (Rel - Axis * Along).Size();
+		const double U = Along / Span;
+		if (U < 0.5)
+		{
+			RadiusStart = FMath::Max(RadiusStart, Radial + static_cast<double>(Pad));
+		}
+		else
+		{
+			RadiusEnd = FMath::Max(RadiusEnd, Radial + static_cast<double>(Pad));
+		}
+	}
+
+	for (int32 Index = 0; Index < Count; ++Index)
+	{
+		const FVector Rel = Points[Index] - Start;
+		const double Along = FVector::DotProduct(Rel, Axis);
+		const double Radial = (Rel - Axis * Along).Size();
+		const double U = FMath::Clamp(Along / Span, 0.0, 1.0);
+		const double Have = FMath::Lerp(RadiusStart, RadiusEnd, U);
+		if (Radial > Have)
+		{
+			const double Deficit = Radial - Have;
+			RadiusStart += Deficit;
+			RadiusEnd += Deficit;
+		}
+	}
+
+	Out.Start = Start;
+	Out.End = End;
+	Out.RadiusStart = static_cast<float>(RadiusStart);
+	Out.RadiusEnd = static_cast<float>(RadiusEnd);
+	Out.bValid = true;
+	return Out;
+}
+
 namespace
 {
 	bool ConeIsStructural(const FSolidDeformBone& Bone)
@@ -648,70 +750,6 @@ namespace
 		}
 	}
 
-	void AddBox(
-		TArray<FLoFiVert>& Verts,
-		TArray<FLoFiTri>& Tris,
-		const int32 BoneIndex,
-		const FVector& Center,
-		const FVector& AxisX,
-		const FVector& AxisY,
-		const FVector& AxisZ,
-		const float HalfX,
-		const float HalfY,
-		const float HalfZ,
-		const uint8 Slot)
-	{
-		if (BoneIndex == INDEX_NONE || HalfX < 0.5f || HalfY < 0.5f || HalfZ < 0.5f)
-		{
-			return;
-		}
-		const FVector X = AxisX.GetSafeNormal() * HalfX;
-		const FVector Y = AxisY.GetSafeNormal() * HalfY;
-		const FVector Z = AxisZ.GetSafeNormal() * HalfZ;
-		const int32 Base = Verts.Num();
-		const FVector Corners[8] = {
-			Center - X - Y - Z,
-			Center + X - Y - Z,
-			Center + X + Y - Z,
-			Center - X + Y - Z,
-			Center - X - Y + Z,
-			Center + X - Y + Z,
-			Center + X + Y + Z,
-			Center - X + Y + Z,
-		};
-		for (const FVector& Corner : Corners)
-		{
-			FLoFiVert Vert;
-			Vert.Position = Corner;
-			Vert.Bone = BoneIndex;
-			Vert.Slot = Slot;
-			Verts.Add(Vert);
-		}
-		auto V = [Base](const int32 Index) { return Base + Index; };
-		AddTri(Tris, V(0), V(1), V(2));
-		AddTri(Tris, V(0), V(2), V(3));
-		AddTri(Tris, V(4), V(6), V(5));
-		AddTri(Tris, V(4), V(7), V(6));
-		AddTri(Tris, V(0), V(4), V(5));
-		AddTri(Tris, V(0), V(5), V(1));
-		AddTri(Tris, V(1), V(5), V(6));
-		AddTri(Tris, V(1), V(6), V(2));
-		AddTri(Tris, V(2), V(6), V(7));
-		AddTri(Tris, V(2), V(7), V(3));
-		AddTri(Tris, V(3), V(7), V(4));
-		AddTri(Tris, V(3), V(4), V(0));
-	}
-
-	void ExpandBounds(FVector& Min, FVector& Max, const FVector& Point)
-	{
-		Min.X = FMath::Min(Min.X, Point.X);
-		Min.Y = FMath::Min(Min.Y, Point.Y);
-		Min.Z = FMath::Min(Min.Z, Point.Z);
-		Max.X = FMath::Max(Max.X, Point.X);
-		Max.Y = FMath::Max(Max.Y, Point.Y);
-		Max.Z = FMath::Max(Max.Z, Point.Z);
-	}
-
 	int32 PrimaryMember(const TArray<FSolidDeformBone>& Bones, const TArray<int32>& Members)
 	{
 		int32 Best = INDEX_NONE;
@@ -741,105 +779,12 @@ namespace
 		return Best;
 	}
 
-	int32 FindSegment(const TArray<FSolidDeformBone>& Bones, const FString& Key)
-	{
-		if (Key.IsEmpty())
-		{
-			return INDEX_NONE;
-		}
-		int32 Fallback = INDEX_NONE;
-		int32 BestScore = -1;
-		for (int32 Index = 0; Index < Bones.Num(); ++Index)
-		{
-			if (SolidBodyMesh::SegmentKey(Bones[Index].Name.ToString()) != Key)
-			{
-				continue;
-			}
-			if (Fallback == INDEX_NONE)
-			{
-				Fallback = Index;
-			}
-			const FString Name = Bones[Index].Name.ToString().ToLower();
-			int32 Score = Name.Contains(TEXT("twist")) ? 0 : 2;
-			if (Score > BestScore)
-			{
-				BestScore = Score;
-				Fallback = Index;
-			}
-		}
-		return Fallback;
-	}
-
-	FString SiblingKey(const FString& Key, const TCHAR* Kind)
-	{
-		const int32 Split = Key.Find(TEXT("_"), ESearchCase::CaseSensitive, ESearchDir::FromEnd);
-		if (Split == INDEX_NONE)
-		{
-			return FString(Kind);
-		}
-		return FString(Kind) + Key.Mid(Split);
-	}
-
-	void AddLimbBox(
-		TArray<FLoFiVert>& Verts,
-		TArray<FLoFiTri>& Tris,
-		const TArray<FVector>& Positions,
-		const TArray<int32>& Members,
-		const int32 Weight,
-		const FVector& Start,
-		const FVector& End,
-		const float MinStart,
-		const float MinEnd,
-		const uint8 Slot)
-	{
-		FVector Axis = End - Start;
-		const float Length = Axis.Size();
-		if (Length < 1.f || Weight == INDEX_NONE)
-		{
-			return;
-		}
-		Axis /= Length;
-		FVector Side = FVector::CrossProduct(Axis, FVector::UpVector);
-		if (Side.SizeSquared() < 0.01)
-		{
-			Side = FVector::CrossProduct(Axis, FVector::ForwardVector);
-		}
-		Side = Side.GetSafeNormal();
-		float Radius = FMath::Max(MinStart, MinEnd);
-		for (const int32 Index : Members)
-		{
-			if (!Positions.IsValidIndex(Index))
-			{
-				continue;
-			}
-			const FVector Rel = Positions[Index] - Start;
-			const FVector Radial = Rel - Axis * FVector::DotProduct(Rel, Axis);
-			Radius = FMath::Max(Radius, static_cast<float>(Radial.Size()));
-		}
-		Radius += 1.5f;
-		AddTube(
-			Verts,
-			Tris,
-			Weight,
-			Start - Axis * 2.0,
-			End + Axis * 2.0,
-			FMath::Max(MinStart, Radius),
-			FMath::Max(MinEnd, Radius * 0.82f),
-			4,
-			1,
-			Slot,
-			1.f,
-			Side);
-	}
-
 	void BuildLowFi(
 		const TArray<FSolidDeformBone>& Bones,
 		const TArray<FVector>& Positions,
-		const FSolidBodyParams& Params,
 		TArray<FLoFiVert>& Verts,
 		TArray<FLoFiTri>& Tris)
 	{
-		const SolidBodyMesh::FSolidConeProfile Profile = SolidBodyMesh::ConeProfile(Params);
 		const int32 Count = FMath::Min(Bones.Num(), Positions.Num());
 
 		TMap<FString, TArray<int32>> Groups;
@@ -855,11 +800,6 @@ namespace
 		Groups.GetKeys(Keys);
 		Keys.Sort();
 
-		auto Pos = [&Positions](const int32 Index) -> FVector
-		{
-			return Positions.IsValidIndex(Index) ? Positions[Index] : FVector::ZeroVector;
-		};
-
 		for (const FString& Key : Keys)
 		{
 			const TArray<int32>& Members = Groups[Key];
@@ -869,249 +809,45 @@ namespace
 				continue;
 			}
 
-			if (Key == TEXT("head"))
+			TArray<FVector> Points;
+			Points.Reserve(Members.Num());
+			for (const int32 Index : Members)
 			{
-				const float Height = SolidBodyMesh::HeadHeightCm(Params);
-				const float Radius = Height * SolidBodyMesh::HeadRadiusOverHeight;
-				FVector Min(FLT_MAX);
-				FVector Max(-FLT_MAX);
-				for (const int32 Index : Members)
+				if (Positions.IsValidIndex(Index))
 				{
-					ExpandBounds(Min, Max, Pos(Index));
+					Points.Add(Positions[Index]);
 				}
-				const FVector Chin = Pos(Weight);
-				Min.Z = FMath::Min(Min.Z, Chin.Z);
-				Max.Z = FMath::Max(Max.Z, Chin.Z + Height);
-				Min.X = FMath::Min(Min.X, Chin.X - Radius);
-				Max.X = FMath::Max(Max.X, Chin.X + Radius);
-				Min.Y = FMath::Min(Min.Y, Chin.Y - Radius * 0.85f);
-				Max.Y = FMath::Max(Max.Y, Chin.Y + Radius);
-				Min -= FVector(1.f);
-				Max += FVector(1.f);
-				AddBox(
-					Verts, Tris, Weight, (Min + Max) * 0.5,
-					FVector::ForwardVector, FVector::RightVector, FVector::UpVector,
-					static_cast<float>((Max.X - Min.X) * 0.5),
-					static_cast<float>((Max.Y - Min.Y) * 0.5),
-					static_cast<float>((Max.Z - Min.Z) * 0.5),
-					SlotSkin);
+			}
+
+			const SolidBodyMesh::FSolidFittedCone Cone = SolidBodyMesh::FitCone(Points.GetData(), Points.Num());
+			if (!Cone.bValid)
+			{
 				continue;
 			}
 
-			if (Key == TEXT("neck"))
+			uint8 Slot = SlotTorso;
+			if (Key == TEXT("head") || Key == TEXT("neck") || Key.StartsWith(TEXT("hand_")))
 			{
-				const int32 Head = FindSegment(Bones, TEXT("head"));
-				const FVector End = Head != INDEX_NONE ? Pos(Head) : Pos(Weight) + FVector(0.f, 0.f, 10.f);
-				AddLimbBox(Verts, Tris, Positions, Members, Weight, Pos(Weight), End, Profile.Neck * 0.75f, Profile.Jaw, SlotSkin);
-				continue;
+				Slot = SlotSkin;
+			}
+			else if (Key.StartsWith(TEXT("thigh_")) || Key.StartsWith(TEXT("calf_")) || Key.StartsWith(TEXT("foot_")))
+			{
+				Slot = SlotLegs;
 			}
 
-			if (Key.StartsWith(TEXT("shoulder_")))
-			{
-				FVector Min(FLT_MAX);
-				FVector Max(-FLT_MAX);
-				for (const int32 Index : Members)
-				{
-					ExpandBounds(Min, Max, Pos(Index));
-				}
-				const FVector Cluster = (Min + Max) * 0.5;
-				Min = FVector(
-					FMath::Min(Min.X, Cluster.X - 8.f),
-					FMath::Min(Min.Y, Cluster.Y - 6.f),
-					FMath::Min(Min.Z, Cluster.Z - 6.f));
-				Max = FVector(
-					FMath::Max(Max.X, Cluster.X + 8.f),
-					FMath::Max(Max.Y, Cluster.Y + 6.f),
-					FMath::Max(Max.Z, Cluster.Z + 8.f));
-				const int32 Chest = FindSegment(Bones, TEXT("spine_03"));
-				if (Chest != INDEX_NONE)
-				{
-					const float ChestX = static_cast<float>(Pos(Chest).X);
-					if (Cluster.X < ChestX)
-					{
-						Max.X = FMath::Max(Max.X, ChestX);
-					}
-					else
-					{
-						Min.X = FMath::Min(Min.X, ChestX);
-					}
-				}
-				Min -= FVector(2.f);
-				Max += FVector(2.f);
-				AddBox(
-					Verts, Tris, Weight, (Min + Max) * 0.5,
-					FVector::ForwardVector, FVector::RightVector, FVector::UpVector,
-					static_cast<float>((Max.X - Min.X) * 0.5),
-					static_cast<float>((Max.Y - Min.Y) * 0.5),
-					static_cast<float>((Max.Z - Min.Z) * 0.5),
-					SlotTorso);
-
-				int32 Upper = INDEX_NONE;
-				for (const int32 Index : Members)
-				{
-					const FString Name = Bones[Index].Name.ToString().ToLower();
-					if (Name.StartsWith(TEXT("upperarm_")) && !Name.Contains(TEXT("twist")))
-					{
-						Upper = Index;
-						break;
-					}
-				}
-				const int32 Elbow = FindSegment(Bones, SiblingKey(Key, TEXT("forearm")));
-				if (Elbow != INDEX_NONE && Upper != INDEX_NONE)
-				{
-					const TArray<int32> Shaft;
-					AddLimbBox(
-						Verts, Tris, Positions, Shaft, Upper,
-						Pos(Upper), Pos(Elbow),
-						Profile.Shoulder, Profile.Elbow,
-						SlotTorso);
-				}
-				continue;
-			}
-
-			if (Key.StartsWith(TEXT("spine_")))
-			{
-				const FVector At = Pos(Weight);
-				float HalfW = Key == TEXT("spine_03") ? Profile.Chest : Profile.Waist;
-				float Top = static_cast<float>(At.Z) + 6.f;
-				float Bottom = static_cast<float>(At.Z) - 6.f;
-				if (Key == TEXT("spine_01"))
-				{
-					const int32 ThighL = FindSegment(Bones, TEXT("thigh_l"));
-					const int32 ThighR = FindSegment(Bones, TEXT("thigh_r"));
-					float Reach = Profile.Waist;
-					float ThighZ = static_cast<float>(At.Z);
-					auto MeasureThigh = [&](const int32 Thigh)
-					{
-						if (Thigh == INDEX_NONE)
-						{
-							return;
-						}
-						const float Lateral = FMath::Abs(static_cast<float>(Pos(Thigh).X - At.X));
-						Reach = FMath::Max(Reach, SolidBodyMesh::SplitHalfWidth(Lateral, Profile.Thigh));
-						ThighZ = FMath::Min(ThighZ, static_cast<float>(Pos(Thigh).Z));
-					};
-					MeasureThigh(ThighL);
-					MeasureThigh(ThighR);
-					HalfW = Reach;
-					Bottom = FMath::Min(Bottom, ThighZ + 3.f);
-				}
-				if (Bottom > Top - 8.f)
-				{
-					Bottom = Top - 8.f;
-				}
-				const FVector Center(At.X, At.Y, (Top + Bottom) * 0.5);
-				AddBox(
-					Verts, Tris, Weight, Center,
-					FVector::ForwardVector, FVector::RightVector, FVector::UpVector,
-					HalfW,
-					HalfW * 0.72f,
-					FMath::Max(4.f, (Top - Bottom) * 0.5f),
-					SlotTorso);
-				continue;
-			}
-
-			if (Key.StartsWith(TEXT("thigh_")))
-			{
-				const int32 Knee = FindSegment(Bones, SiblingKey(Key, TEXT("calf")));
-				if (Knee != INDEX_NONE)
-				{
-					AddLimbBox(
-						Verts, Tris, Positions, Members, Weight,
-						Pos(Weight), Pos(Knee),
-						Profile.Thigh, Profile.Knee,
-						SlotLegs);
-				}
-				continue;
-			}
-
-			if (Key.StartsWith(TEXT("calf_")))
-			{
-				const int32 Ankle = FindSegment(Bones, SiblingKey(Key, TEXT("foot")));
-				if (Ankle != INDEX_NONE)
-				{
-					AddLimbBox(
-						Verts, Tris, Positions, Members, Weight,
-						Pos(Weight), Pos(Ankle),
-						Profile.Knee, Profile.Ankle,
-						SlotLegs);
-				}
-				continue;
-			}
-
-			if (Key.StartsWith(TEXT("foot_")))
-			{
-				FVector Toe = Pos(Weight) + FVector(0.f, 14.f, -1.f);
-				float Furthest = 0.f;
-				for (const int32 Index : Members)
-				{
-					if (Index == Weight || !Positions.IsValidIndex(Index))
-					{
-						continue;
-					}
-					const float Dist = static_cast<float>(FVector::Dist(Pos(Index), Pos(Weight)));
-					if (Dist > Furthest)
-					{
-						Furthest = Dist;
-						Toe = Pos(Index);
-					}
-				}
-				if (Furthest < 8.f)
-				{
-					FVector Forward = Toe - Pos(Weight);
-					if (!Forward.Normalize())
-					{
-						Forward = FVector(0.f, 1.f, 0.f);
-					}
-					Toe = Pos(Weight) + Forward * 14.f;
-				}
-				AddLimbBox(
-					Verts, Tris, Positions, Members, Weight,
-					Pos(Weight), Toe,
-					Profile.Ankle, Profile.Ankle * 0.7f,
-					SlotLegs);
-				continue;
-			}
-
-			if (Key.StartsWith(TEXT("forearm_")))
-			{
-				const int32 Wrist = FindSegment(Bones, SiblingKey(Key, TEXT("hand")));
-				if (Wrist != INDEX_NONE)
-				{
-					AddLimbBox(
-						Verts, Tris, Positions, Members, Weight,
-						Pos(Weight), Pos(Wrist),
-						Profile.Elbow, Profile.Wrist,
-						SlotTorso);
-				}
-				continue;
-			}
-
-			if (Key.StartsWith(TEXT("hand_")))
-			{
-				FVector Min(FLT_MAX);
-				FVector Max(-FLT_MAX);
-				for (const int32 Index : Members)
-				{
-					ExpandBounds(Min, Max, Pos(Index));
-				}
-				const FVector Cluster = Pos(Weight);
-				Min = FVector(
-					FMath::Min(Min.X, Cluster.X - 3.f),
-					FMath::Min(Min.Y, Cluster.Y - 3.f),
-					FMath::Min(Min.Z, Cluster.Z - 2.f));
-				Max = FVector(
-					FMath::Max(Max.X, Cluster.X + 3.f),
-					FMath::Max(Max.Y, Cluster.Y + 4.f),
-					FMath::Max(Max.Z, Cluster.Z + 2.f));
-				AddBox(
-					Verts, Tris, Weight, (Min + Max) * 0.5,
-					FVector::ForwardVector, FVector::RightVector, FVector::UpVector,
-					static_cast<float>((Max.X - Min.X) * 0.5),
-					static_cast<float>((Max.Y - Min.Y) * 0.5),
-					static_cast<float>((Max.Z - Min.Z) * 0.5),
-					SlotSkin);
-			}
+			AddTube(
+				Verts,
+				Tris,
+				Weight,
+				Cone.Start,
+				Cone.End,
+				Cone.RadiusStart,
+				Cone.RadiusEnd,
+				10,
+				1,
+				Slot,
+				1.f,
+				FVector::ForwardVector);
 		}
 	}
 
@@ -1541,7 +1277,7 @@ USkeletalMesh* SolidBodyMesh::Build(
 
 	TArray<FLoFiVert> Verts;
 	TArray<FLoFiTri> Tris;
-	BuildLowFi(Deformed.Bones, Positions, Clamped, Verts, Tris);
+	BuildLowFi(Deformed.Bones, Positions, Verts, Tris);
 	if (Tris.Num() == 0 || Verts.Num() == 0)
 	{
 		UE_LOG(LogSolid, Warning, TEXT("SolidBody low-poly mesh has no segments, so it is discarded."));

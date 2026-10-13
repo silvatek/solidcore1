@@ -33,7 +33,7 @@ public:
 	void SetSkeletonLines(bool bShow);
 	bool IsShowingSkeletonLines() const { return bSkeletonLines; }
 
-	/** Bone under this screen point while the skeleton is showing. Empty otherwise. */
+	/** Bones under this screen point. A skeleton line names one bone. A body piece lists every bone in it. */
 	FString BoneUnderPointer(float X, float Y) const;
 
 private:

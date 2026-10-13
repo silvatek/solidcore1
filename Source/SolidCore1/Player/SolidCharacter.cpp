@@ -1456,7 +1456,7 @@ void ASolidCharacter::UpdateCharacterEditorPointer()
 		return;
 	}
 
-	if (!HUD->IsCharacterEditorSkeleton() || !CharacterStage)
+	if (!CharacterStage)
 	{
 		HUD->SetSkeletonBoneTip(FString());
 	}

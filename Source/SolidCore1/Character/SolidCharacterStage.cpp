@@ -101,7 +101,7 @@ void ASolidCharacterStage::SetSkeletonLines(const bool bShow)
 
 FString ASolidCharacterStage::BoneUnderPointer(const float X, const float Y) const
 {
-	if (!bSkeletonLines || !Preview)
+	if (!Preview)
 	{
 		return FString();
 	}

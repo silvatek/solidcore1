@@ -9,6 +9,68 @@ namespace SolidSkeletonHover
 	inline constexpr float PickRadiusPx = 22.f;
 
 	/**
+	 * Closest distance from a ray to a segment.
+	 * RayDir is a unit vector. OutRayT is the distance along the ray, never negative.
+	 * OutSegU is 0 at A and 1 at B.
+	 */
+	inline float RaySegmentDistance(
+		const FVector& RayOrigin,
+		const FVector& RayDir,
+		const FVector& SegA,
+		const FVector& SegB,
+		float& OutRayT,
+		float& OutSegU)
+	{
+		const FVector D1 = RayDir;
+		const FVector D2 = SegB - SegA;
+		const FVector R = RayOrigin - SegA;
+		const float A = 1.f;
+		const float E = D2.SizeSquared();
+		const float F = FVector::DotProduct(D2, R);
+		const float C = FVector::DotProduct(D1, R);
+		const float B = FVector::DotProduct(D1, D2);
+		const float Denom = A * E - B * B;
+
+		float S = 0.f;
+		float T = 0.f;
+		if (E < KINDA_SMALL_NUMBER)
+		{
+			T = 0.f;
+			S = FMath::Max(0.f, -C);
+		}
+		else if (Denom < 1.e-4f)
+		{
+			T = FMath::Clamp(F / E, 0.f, 1.f);
+			const FVector ClosestSeg = SegA + D2 * T;
+			S = FMath::Max(0.f, static_cast<float>(FVector::DotProduct(ClosestSeg - RayOrigin, D1)));
+		}
+		else
+		{
+			S = (B * F - E * C) / Denom;
+			T = (A * F - B * C) / Denom;
+			if (T < 0.f)
+			{
+				T = 0.f;
+				S = FMath::Max(0.f, -C);
+			}
+			else if (T > 1.f)
+			{
+				T = 1.f;
+				S = FMath::Max(0.f, B - C);
+			}
+			else if (S < 0.f)
+			{
+				S = 0.f;
+				T = FMath::Clamp(F / E, 0.f, 1.f);
+			}
+		}
+
+		OutRayT = S;
+		OutSegU = T;
+		return static_cast<float>(FVector::Dist(RayOrigin + D1 * S, SegA + D2 * T));
+	}
+
+	/**
 	 * Bones left off the skeleton view. IK helpers, and clothing or weapon chains
 	 * whose names start with axe_, sheath_, cloack_, beard_, shield_, or skirt_.
 	 */

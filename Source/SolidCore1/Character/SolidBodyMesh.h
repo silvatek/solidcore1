@@ -113,6 +113,19 @@ namespace SolidBodyMesh
 	 */
 	FString SegmentKey(const FString& BoneName);
 
+	/** A truncated cone that contains a set of points and stops at their span. */
+	struct FSolidFittedCone
+	{
+		FVector Start = FVector::ZeroVector;
+		FVector End = FVector::ZeroVector;
+		float RadiusStart = 0.f;
+		float RadiusEnd = 0.f;
+		bool bValid = false;
+	};
+
+	/** Round cone around Points. A mirrored point set produces a mirrored cone. */
+	FSolidFittedCone FitCone(const FVector* Points, int32 Count);
+
 	/** Start and end radii of the cone from Parent to Child. Both ends are joint radii. */
 	void SegmentRadii(
 		const TArray<float>& Radii,

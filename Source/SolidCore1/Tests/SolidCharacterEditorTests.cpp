@@ -203,7 +203,7 @@ bool FSolidSkeletonHoverTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("stage"), Stage);
 	if (Stage)
 	{
-		TestTrue(TEXT("the body has no bone tip"), Stage->BoneUnderPointer(0.f, 0.f).IsEmpty());
+		TestTrue(TEXT("a stage without a preview has no bone tip"), Stage->BoneUnderPointer(0.f, 0.f).IsEmpty());
 		Stage->SetSkeletonLines(true);
 		TestTrue(TEXT("a stage without a preview has no bone tip"), Stage->BoneUnderPointer(10.f, 10.f).IsEmpty());
 	}

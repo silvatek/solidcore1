@@ -113,7 +113,7 @@ public:
 	void SetSkeletonLines(bool bShow);
 	bool IsShowingSkeletonLines() const { return bSkeletonLines; }
 
-	/** Bone whose line is under this screen point. Empty when the pointer misses. */
+	/** Bones under this screen point. A skeleton line names one bone. A body piece lists every bone in it. */
 	FString BoneUnderScreenPoint(float X, float Y) const;
 
 	/** Match the follow target's MaxWalkSpeed when possible. */

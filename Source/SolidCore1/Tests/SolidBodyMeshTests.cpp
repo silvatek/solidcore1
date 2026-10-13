@@ -1,6 +1,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "SolidBodyMesh.h"
+#include "Character/SolidSkeletonHover.h"
 #include "SolidContentLookup.h"
 #include "Animation/Skeleton.h"
 #include "Engine/SkeletalMesh.h"
@@ -567,6 +568,127 @@ bool FSolidBodySegmentKeyTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("pelvis is not a piece"), SolidBodyMesh::SegmentKey(TEXT("pelvis")), FString());
 	TestEqual(TEXT("axe stays off the body"), SolidBodyMesh::SegmentKey(TEXT("axe_jnt")), FString());
 	TestEqual(TEXT("cloack stays off the body"), SolidBodyMesh::SegmentKey(TEXT("cloack_jnt_1_l")), FString());
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyFitConeTest,
+	"SolidCore1.Body.FitCone",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyFitConeTest::RunTest(const FString& Parameters)
+{
+	auto Length = [](const SolidBodyMesh::FSolidFittedCone& Cone)
+	{
+		return static_cast<float>(FVector::Dist(Cone.Start, Cone.End));
+	};
+	auto Mid = [](const SolidBodyMesh::FSolidFittedCone& Cone)
+	{
+		return (Cone.Start + Cone.End) * 0.5;
+	};
+	auto Contains = [](const SolidBodyMesh::FSolidFittedCone& Cone, const FVector& Point)
+	{
+		const FVector Axis = Cone.End - Cone.Start;
+		const double Span = Axis.Size();
+		if (Span < 0.01 || !Cone.bValid)
+		{
+			return false;
+		}
+		const FVector Unit = Axis / Span;
+		const FVector Rel = Point - Cone.Start;
+		const double Along = FVector::DotProduct(Rel, Unit);
+		const double Radial = (Rel - Unit * Along).Size();
+		const double U = FMath::Clamp(Along / Span, 0.0, 1.0);
+		const double Have = FMath::Lerp(
+			static_cast<double>(Cone.RadiusStart),
+			static_cast<double>(Cone.RadiusEnd),
+			U);
+		return Radial <= Have + 0.02 && Radial <= static_cast<double>(FMath::Max(Cone.RadiusStart, Cone.RadiusEnd)) + 0.02;
+	};
+
+	TestFalse(TEXT("no points"), SolidBodyMesh::FitCone(nullptr, 0).bValid);
+
+	const FVector Shaft[] = { FVector(0.f, 0.f, 0.f), FVector(0.f, 0.f, 40.f) };
+	const SolidBodyMesh::FSolidFittedCone Long = SolidBodyMesh::FitCone(Shaft, 2);
+	TestTrue(TEXT("a shaft is a cone"), Long.bValid);
+	TestTrue(TEXT("a shaft is only as long as its bones"), FMath::IsNearlyEqual(Length(Long), 40.f, 0.05f));
+	TestTrue(TEXT("the shaft start is inside"), Contains(Long, Shaft[0]));
+	TestTrue(TEXT("the shaft end is inside"), Contains(Long, Shaft[1]));
+
+	const FVector Bulge[] = {
+		FVector(0.f, 0.f, 0.f),
+		FVector(0.f, 0.f, 40.f),
+		FVector(5.f, 0.f, 20.f),
+	};
+	const SolidBodyMesh::FSolidFittedCone Wide = SolidBodyMesh::FitCone(Bulge, 3);
+	TestTrue(TEXT("a sideways bone stays inside its cone"), Contains(Wide, Bulge[2]));
+	TestTrue(TEXT("the bulge does not lengthen the shaft"), FMath::IsNearlyEqual(Length(Wide), 40.f, 0.05f));
+
+	const FVector Left[] = {
+		FVector(-12.f, 0.f, 0.f),
+		FVector(-12.f, 1.f, 30.f),
+		FVector(-16.f, -2.f, 14.f),
+	};
+	const FVector Right[] = {
+		FVector(12.f, 0.f, 0.f),
+		FVector(12.f, 1.f, 30.f),
+		FVector(16.f, -2.f, 14.f),
+	};
+	const SolidBodyMesh::FSolidFittedCone LeftCone = SolidBodyMesh::FitCone(Left, 3);
+	const SolidBodyMesh::FSolidFittedCone RightCone = SolidBodyMesh::FitCone(Right, 3);
+	TestTrue(TEXT("mirrored legs are the same length"), FMath::IsNearlyEqual(Length(LeftCone), Length(RightCone), 0.05f));
+	TestTrue(
+		TEXT("mirrored legs share a radius"),
+		FMath::IsNearlyEqual(
+			FMath::Min(LeftCone.RadiusStart, LeftCone.RadiusEnd),
+			FMath::Min(RightCone.RadiusStart, RightCone.RadiusEnd),
+			0.05f)
+		&& FMath::IsNearlyEqual(
+			FMath::Max(LeftCone.RadiusStart, LeftCone.RadiusEnd),
+			FMath::Max(RightCone.RadiusStart, RightCone.RadiusEnd),
+			0.05f));
+	const FVector LeftMid = Mid(LeftCone);
+	const FVector RightMid = Mid(RightCone);
+	TestTrue(TEXT("mirrored legs meet on X"), FMath::IsNearlyEqual(LeftMid.X, -RightMid.X, 0.05));
+	TestTrue(TEXT("mirrored legs share Y"), FMath::IsNearlyEqual(LeftMid.Y, RightMid.Y, 0.05));
+	TestTrue(TEXT("mirrored legs share Z"), FMath::IsNearlyEqual(LeftMid.Z, RightMid.Z, 0.05));
+
+	const FVector Joint[] = { FVector(3.f, 4.f, 5.f) };
+	const SolidBodyMesh::FSolidFittedCone Bead = SolidBodyMesh::FitCone(Joint, 1);
+	TestTrue(TEXT("one bone is still a cone"), Bead.bValid);
+	const float BeadLength = Length(Bead);
+	TestTrue(TEXT("one bone is about a centimetre"), BeadLength >= 1.f && BeadLength <= 2.f);
+	TestTrue(TEXT("the lone bone is inside"), Contains(Bead, Joint[0]));
+
+	float RayT = 0.f;
+	float SegU = 0.f;
+	const float OnAxis = SolidSkeletonHover::RaySegmentDistance(
+		FVector(0.f, -10.f, 0.f),
+		FVector(0.f, 1.f, 0.f),
+		FVector::ZeroVector,
+		FVector(0.f, 0.f, 10.f),
+		RayT,
+		SegU);
+	TestTrue(TEXT("a ray down the pointer hits the axis"), FMath::IsNearlyZero(OnAxis, 0.01f));
+
+	const float Offset = SolidSkeletonHover::RaySegmentDistance(
+		FVector(3.f, -10.f, 0.f),
+		FVector(0.f, 1.f, 0.f),
+		FVector::ZeroVector,
+		FVector(0.f, 0.f, 10.f),
+		RayT,
+		SegU);
+	TestTrue(TEXT("three centimetres off the axis misses a thin cone"), Offset > 1.f);
+	TestTrue(TEXT("three centimetres off the axis hits a cone of that radius"), Offset <= 3.f + 0.01f);
+
+	const float Away = SolidSkeletonHover::RaySegmentDistance(
+		FVector(0.f, 5.f, 0.f),
+		FVector(0.f, 1.f, 0.f),
+		FVector::ZeroVector,
+		FVector(0.f, 0.f, 10.f),
+		RayT,
+		SegU);
+	TestTrue(TEXT("a ray heading away does not hit"), RayT <= 0.01f && Away > 1.f);
 	return true;
 }
 

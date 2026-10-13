@@ -96,8 +96,8 @@ namespace SolidBodyMesh
 	/**
 	 * One radius per joint, in centimetres.
 	 * The cone from a parent to a child uses the parent's radius, then the child's,
-	 * so adjoining ends match. The pelvis matches both thighs. The shoulder line
-	 * matches both arms, and the neck ends on the chin.
+	 * so adjoining ends match. The pelvis matches both thighs. The chest matches
+	 * both arms. The neck keeps its own radius and ends on the chin.
 	 */
 	void JointRadii(
 		const TArray<FSolidDeformBone>& Bones,

@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0245")
+#define SOLID_BUILD_ID TEXT("SC1-0246")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Adjoining cones share a radius, and a split matches both widths.")
+#define SOLID_BUILD_NOTE TEXT("The neck meets the chin, the chest meets both arms, and the groin disk is gone.")
 #endif

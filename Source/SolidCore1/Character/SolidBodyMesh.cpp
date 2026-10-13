@@ -397,13 +397,9 @@ void SolidBodyMesh::JointRadii(
 		OutRadii[Pelvis] = (Legs > 0) ? Reach : Profile.Waist;
 	}
 
-	// The shoulder line is the neck joint. Its radius is the outer span of both arms,
-	// and the neck cone leaves from that same circle toward the chin.
+	// The chest is the cone that meets both arms. The neck stays a neck and ends on the chin.
 	float ShoulderReach = 0.f;
 	int32 Arms = 0;
-	TArray<int32> Necks;
-	CollectConeNeck(Bones, Necks);
-	const int32 NeckOrigin = (Necks.Num() > 0 && Necks[0] < Count) ? Necks[0] : INDEX_NONE;
 	for (int32 Clavicle = 0; Clavicle < Count; ++Clavicle)
 	{
 		if (!ConeIsStructural(Bones[Clavicle]) || Bones[Clavicle].Role != ESolidBodyBoneRole::Clavicle)
@@ -415,7 +411,7 @@ void SolidBodyMesh::JointRadii(
 		{
 			continue;
 		}
-		const int32 Origin = (NeckOrigin != INDEX_NONE) ? NeckOrigin : ConeStructuralParent(Bones, Clavicle);
+		const int32 Origin = ConeStructuralParent(Bones, Clavicle);
 		if (!Positions.IsValidIndex(Origin))
 		{
 			continue;
@@ -425,21 +421,24 @@ void SolidBodyMesh::JointRadii(
 			ShoulderReach,
 			SplitHalfWidth(HorizontalReach(Positions[Origin], Positions[Arm]), OutRadii[Arm]));
 	}
-	if (Arms == 0)
+	if (Arms > 0 && Spines.Num() > 0 && Spines.Last() < Count)
 	{
-		ShoulderReach = Profile.Neck;
+		OutRadii[Spines.Last()] = ShoulderReach;
 	}
+
+	TArray<int32> Necks;
+	CollectConeNeck(Bones, Necks);
 	for (int32 Step = 0; Step < Necks.Num(); ++Step)
 	{
 		if (Necks[Step] >= Count)
 		{
 			continue;
 		}
-		float Radius = ShoulderReach;
+		float Radius = Profile.Neck;
 		if (Necks.Num() > 1)
 		{
 			const float T = static_cast<float>(Step) / static_cast<float>(Necks.Num() - 1);
-			Radius = FMath::Lerp(ShoulderReach, Profile.Jaw, T);
+			Radius = FMath::Lerp(Profile.Neck, Profile.Jaw, T);
 		}
 		OutRadii[Necks[Step]] = Radius;
 	}
@@ -659,18 +658,6 @@ namespace
 		}
 	}
 
-	int32 FindChild(const TArray<FSolidDeformBone>& Bones, const int32 Parent, const ESolidBodyBoneRole Role)
-	{
-		for (int32 Index = 0; Index < Bones.Num(); ++Index)
-		{
-			if (Bones[Index].ParentIndex == Parent && Bones[Index].Role == Role)
-			{
-				return Index;
-			}
-		}
-		return INDEX_NONE;
-	}
-
 	/** First limb bone under Parent, walking through twist bones. */
 	int32 FindStructuralChild(const TArray<FSolidDeformBone>& Bones, const int32 Parent, const ESolidBodyBoneRole Role)
 	{
@@ -734,82 +721,6 @@ namespace
 		return true;
 	}
 
-	void AddPelvisVolume(
-		TArray<FLoFiVert>& Verts,
-		TArray<FLoFiTri>& Tris,
-		const TArray<FSolidDeformBone>& Bones,
-		const TArray<FVector>& Positions,
-		const TArray<float>& Radii,
-		const int32 Pelvis,
-		const FSolidBodyParams& Params)
-	{
-		const int32 Spine = FindChild(Bones, Pelvis, ESolidBodyBoneRole::Spine);
-		FVector Up = FVector::UpVector;
-		if (Positions.IsValidIndex(Spine))
-		{
-			const FVector ToSpine = Positions[Spine] - Positions[Pelvis];
-			if (!ToSpine.IsNearlyZero())
-			{
-				Up = ToSpine.GetSafeNormal();
-			}
-		}
-
-		TArray<int32, TInlineAllocator<4>> Legs;
-		for (int32 Index = 0; Index < Bones.Num(); ++Index)
-		{
-			if (Bones[Index].ParentIndex == Pelvis && Bones[Index].Role == ESolidBodyBoneRole::Leg)
-			{
-				Legs.Add(Index);
-			}
-		}
-
-		FVector Side = FVector::CrossProduct(Up, FVector::ForwardVector);
-		if (Legs.Num() >= 2 && Positions.IsValidIndex(Legs[0]) && Positions.IsValidIndex(Legs[1]))
-		{
-			Side = Positions[Legs[1]] - Positions[Legs[0]];
-		}
-		else if (Legs.Num() == 1 && Positions.IsValidIndex(Legs[0]))
-		{
-			Side = Positions[Legs[0]] - Positions[Pelvis];
-		}
-		Side = Side - Up * FVector::DotProduct(Side, Up);
-		if (Side.SizeSquared() < 0.01)
-		{
-			Side = FVector::CrossProduct(Up, FVector::ForwardVector);
-		}
-		Side = Side.GetSafeNormal();
-
-		// The hip cylinder ends on the pelvis joint, on the same circle the abdomen leaves from.
-		// That radius is the combined outer width of the two thighs.
-		const float HalfHeight = 8.5f * Params.TorsoGirth;
-		const FVector Center = Positions[Pelvis];
-		float Drop = HalfHeight;
-		for (const int32 Leg : Legs)
-		{
-			if (!Positions.IsValidIndex(Leg))
-			{
-				continue;
-			}
-			const FVector Offset = Positions[Leg] - Center;
-			const float Below = -static_cast<float>(FVector::DotProduct(Offset, Up));
-			Drop = FMath::Max(Drop, Below);
-		}
-		const float Radius = Radii.IsValidIndex(Pelvis) ? Radii[Pelvis] : HalfHeight;
-		AddTube(
-			Verts,
-			Tris,
-			Pelvis,
-			Center - Up * Drop,
-			Center,
-			Radius,
-			Radius,
-			TubeSides,
-			2,
-			SlotLegs,
-			0.68f,
-			Side);
-	}
-
 	bool IsDigitBone(const TArray<FSolidDeformBone>& Bones, const int32 Index)
 	{
 		return Bones.IsValidIndex(Index) && Bones[Index].bDigit;
@@ -846,9 +757,9 @@ namespace
 	}
 
 	/**
-	 * One cap from the shoulder line out to the arm joint.
-	 * Its narrow end is the upper arm's radius, and its outer edge stays on the
-	 * shoulder-line circle that also meets the neck. Helper clavicles draw nothing.
+	 * One cap from the chest out to the arm joint.
+	 * Its narrow end is the upper arm. Its outer edge stays on the chest circle,
+	 * which is already as wide as both arms. Helper clavicles draw nothing.
 	 */
 	void AddShoulder(
 		TArray<FLoFiVert>& Verts,
@@ -887,22 +798,16 @@ namespace
 		}
 		Out = Out.GetSafeNormal();
 
-		int32 Neck = INDEX_NONE;
-		if (bChest)
-		{
-			Neck = FindStructuralChild(Bones, Parent, ESolidBodyBoneRole::Neck);
-		}
-		const FVector Column = (Neck != INDEX_NONE && Positions.IsValidIndex(Neck)) ? Positions[Neck] : Chest;
-		FVector FromColumn = Joint - Column;
-		FromColumn.Z = 0.0;
-		const float Lateral = static_cast<float>(FromColumn.Size());
+		FVector Flat = Joint - Chest;
+		Flat.Z = 0.0;
+		const float Lateral = static_cast<float>(Flat.Size());
 		const float EndRadius = Radii[Arm];
-		const float LineRadius = (Neck != INDEX_NONE && Radii.IsValidIndex(Neck))
-			? Radii[Neck]
+		const float ChestRadius = (bChest && Radii.IsValidIndex(Parent))
+			? Radii[Parent]
 			: SolidBodyMesh::SplitHalfWidth(Lateral, EndRadius);
-		const float StartLateral = Lateral * 0.55f;
-		const float StartRadius = FMath::Max(EndRadius, LineRadius - StartLateral);
-		FVector Start = Column + Out * static_cast<double>(StartLateral);
+		const float StartRadius = FMath::Max(EndRadius, FMath::Min(ChestRadius * 0.5f, EndRadius * 1.8f));
+		const float StartLateral = FMath::Max(0.f, ChestRadius - StartRadius);
+		const FVector Start = Chest + Out * static_cast<double>(StartLateral);
 		const FVector End = Joint;
 		if ((End - Start).Size() < 1.0)
 		{
@@ -937,14 +842,6 @@ namespace
 		const int32 Count = FMath::Min(Bones.Num(), Positions.Num());
 		for (int32 Index = 0; Index < Count; ++Index)
 		{
-			if (Bones[Index].Role == ESolidBodyBoneRole::Pelvis)
-			{
-				AddPelvisVolume(Verts, Tris, Bones, Positions, Radii, Index, Params);
-			}
-		}
-
-		for (int32 Index = 0; Index < Count; ++Index)
-		{
 			const ESolidBodyBoneRole Role = Bones[Index].Role;
 			if (Role == ESolidBodyBoneRole::Root
 				|| Role == ESolidBodyBoneRole::Pelvis
@@ -976,6 +873,9 @@ namespace
 			const bool bShin = Role == ESolidBodyBoneRole::Foot && ParentRole == ESolidBodyBoneRole::Foot;
 			// The shoulder cap owns the span from the clavicle to the upper arm.
 			const bool bShoulderSpan = Role == ESolidBodyBoneRole::Arm && ParentRole == ESolidBodyBoneRole::Clavicle;
+			// The hip joint is where the thigh cone starts. A cone from the pelvis center
+			// out to that joint is the crumpled mass in the groin.
+			const bool bHipStub = Role == ESolidBodyBoneRole::Leg && ParentRole == ESolidBodyBoneRole::Pelvis;
 			const bool bTorsoSpan = Role == ESolidBodyBoneRole::Spine || Role == ESolidBodyBoneRole::Neck;
 			const float MinIncoming = bTorsoSpan ? 0.5f : 4.f;
 
@@ -983,12 +883,12 @@ namespace
 			{
 				AddShoulder(Verts, Tris, Bones, Positions, Radii, Index);
 			}
-			else if (!bShoulderSpan && bParent && ParentRole != ESolidBodyBoneRole::Root && Incoming >= MinIncoming)
+			else if (!bShoulderSpan && !bHipStub && bParent && ParentRole != ESolidBodyBoneRole::Root && Incoming >= MinIncoming)
 			{
 				float RadiusStart = 0.f;
 				float RadiusEnd = 0.f;
 				SolidBodyMesh::SegmentRadii(Radii, Parent, Index, RadiusStart, RadiusEnd);
-				// The cone that ends on the chin is skin. The shirt stops on the shoulder line.
+				// The cone that ends on the chin is skin. The shirt stops where the neck begins.
 				const uint8 Slot = (Role == ESolidBodyBoneRole::Head)
 					? SlotSkin
 					: ((bThigh || bShin || Role == ESolidBodyBoneRole::Leg || Role == ESolidBodyBoneRole::Foot)
@@ -1047,42 +947,11 @@ namespace
 			}
 			else if (IsAnkleBone(Bones, Index))
 			{
-				FVector FootDir = FVector(0.f, 1.f, 0.f);
-				float BestToe = 1.f;
-				for (int32 Child = 0; Child < Count; ++Child)
-				{
-					if (Bones[Child].ParentIndex != Index || Bones[Child].bTwist)
-					{
-						continue;
-					}
-					if (!Bones[Child].bDigit && Bones[Child].Role != ESolidBodyBoneRole::Foot)
-					{
-						continue;
-					}
-					const FVector ToToe = Positions[Child] - Positions[Index];
-					if (ToToe.SizeSquared() > BestToe)
-					{
-						BestToe = ToToe.SizeSquared();
-						FootDir = ToToe.GetSafeNormal();
-					}
-				}
+				// Mesh +Y is the face. Both feet point that way, level, and meet the shin.
 				const float Length = FMath::Clamp(16.f * Params.Height, 12.f, 22.f);
 				const float Radius = Radii.IsValidIndex(Index) ? Radii[Index] : SolidBodyMesh::JointAnkle;
-				FVector FlatFoot = FootDir;
-				FlatFoot.Z = 0.0;
-				if (FlatFoot.SizeSquared() < 0.04)
-				{
-					FlatFoot = FVector(0.f, 1.f, 0.f);
-				}
-				FootDir = FlatFoot.GetSafeNormal();
-				FVector Wide = FVector::CrossProduct(FootDir, FVector::UpVector);
-				if (Wide.SizeSquared() < 0.01)
-				{
-					Wide = FVector::CrossProduct(FootDir, FVector::RightVector);
-				}
 				const FVector Ankle = Positions[Index];
-				FVector Toe = Ankle + FootDir * static_cast<double>(Length);
-				Toe.Z -= 4.0;
+				FVector Toe = Ankle + FVector(0.f, Length, -2.f);
 				AddTube(
 					Verts,
 					Tris,
@@ -1090,12 +959,12 @@ namespace
 					Ankle,
 					Toe,
 					Radius,
-					Radius * 0.78f,
+					Radius * 0.72f,
 					8,
 					2,
 					SlotLegs,
-					0.36f,
-					Wide);
+					0.55f,
+					FVector::RightVector);
 			}
 			else if (bParent && IsChainEnd(Bones, Index))
 			{

@@ -489,9 +489,10 @@ bool FSolidBodyConeJointTest::RunTest(const FString& Parameters)
 	SolidBodyMesh::SegmentRadii(Radii, Neck, Head, NeckStart, Chin);
 	TestTrue(TEXT("chest meets the neck"), Same(NeckFromChest, NeckStart));
 	TestTrue(TEXT("neck meets the chin"), Same(Chin, Profile.Jaw));
+	TestTrue(TEXT("the neck stays a neck"), Same(Radii[Neck], Profile.Neck));
 	TestTrue(
-		TEXT("shoulder line matches both arms"),
-		Same(Radii[Neck], SolidBodyMesh::SplitHalfWidth(16.f, Radii[UpperL])));
+		TEXT("chest matches both arms"),
+		Same(Radii[Chest], SolidBodyMesh::SplitHalfWidth(16.f, Radii[UpperL])));
 	TestTrue(TEXT("both arms share a shoulder"), Same(Radii[UpperL], Radii[UpperR]));
 
 	float ArmStart = 0.f;

@@ -8,6 +8,96 @@ namespace SolidSkeletonHover
 	/** How close the pointer must be to a bone, in pixels. */
 	inline constexpr float PickRadiusPx = 22.f;
 
+	/** Distinct colours for skeleton lines. A bone avoids the colours of the bones that meet it. */
+	inline constexpr int32 BonePaletteCount = 8;
+
+	inline FColor BonePaletteColor(const int32 Index)
+	{
+		switch (Index % BonePaletteCount)
+		{
+		case 0: return FColor(255, 64, 64);
+		case 1: return FColor(255, 176, 48);
+		case 2: return FColor(240, 220, 48);
+		case 3: return FColor(48, 200, 96);
+		case 4: return FColor(48, 196, 220);
+		case 5: return FColor(72, 128, 255);
+		case 6: return FColor(186, 96, 255);
+		default: return FColor(255, 128, 196);
+		}
+	}
+
+	/**
+	 * Colour each bone so it differs from its parent and from its siblings.
+	 * Parents[i] is an index into the same list, or INDEX_NONE when the bone has no drawn parent.
+	 * Palette is clamped to 31. A joint with more bones than that reuses a sibling colour
+	 * and still differs from the parent.
+	 */
+	inline void AssignBoneColors(const int32* Parents, const int32 Count, int32* OutColors, const int32 Palette)
+	{
+		if (!Parents || !OutColors || Count <= 0 || Palette < 2)
+		{
+			return;
+		}
+
+		const int32 Limit = FMath::Min(Palette, 31);
+		for (int32 Index = 0; Index < Count; ++Index)
+		{
+			OutColors[Index] = 0;
+		}
+
+		TArray<uint8> Ready;
+		Ready.Init(0, Count);
+		for (int32 Pass = 0; Pass < Count; ++Pass)
+		{
+			bool bProgress = false;
+			for (int32 Index = 0; Index < Count; ++Index)
+			{
+				if (Ready[Index])
+				{
+					continue;
+				}
+
+				const int32 Parent = Parents[Index];
+				const bool bHasParent = Parent >= 0 && Parent < Count && Parent != Index;
+				if (bHasParent && !Ready[Parent])
+				{
+					continue;
+				}
+
+				uint32 Used = 0;
+				if (bHasParent)
+				{
+					Used |= 1u << (OutColors[Parent] % Limit);
+					for (int32 Other = 0; Other < Count; ++Other)
+					{
+						if (Other == Index || !Ready[Other] || Parents[Other] != Parent)
+						{
+							continue;
+						}
+						Used |= 1u << (OutColors[Other] % Limit);
+					}
+				}
+
+				int32 Color = 0;
+				while (Color < Limit && (Used & (1u << Color)) != 0)
+				{
+					++Color;
+				}
+				if (Color >= Limit)
+				{
+					Color = bHasParent ? (OutColors[Parent] + 1) % Limit : 0;
+				}
+				OutColors[Index] = Color;
+				Ready[Index] = 1;
+				bProgress = true;
+			}
+			if (!bProgress)
+			{
+				break;
+			}
+		}
+	}
+
 	/**
 	 * Closest distance from a ray to a segment.
 	 * RayDir is a unit vector. OutRayT is the distance along the ray, never negative.

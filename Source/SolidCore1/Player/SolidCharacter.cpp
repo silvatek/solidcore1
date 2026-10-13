@@ -30,6 +30,7 @@
 #include "SolidGameMode.h"
 #include "Character/SolidCharacterStage.h"
 #include "HUD/SolidHUD.h"
+#include "Menus/SolidCharacterEditor.h"
 #include "Menus/SolidMainMenu.h"
 #include "SolidBodyParams.h"
 #include "Menus/SolidPartyBuilder.h"
@@ -292,6 +293,10 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::PageDown, IE_Pressed, this, &ASolidCharacter::CharacterEditorNext);
 	PlayerInputComponent->BindKey(EKeys::PageDown, IE_Repeat, this, &ASolidCharacter::CharacterEditorNext);
 	PlayerInputComponent->BindKey(EKeys::SpaceBar, IE_Pressed, this, &ASolidCharacter::ToggleCharacterEditorSkeleton);
+	PlayerInputComponent->BindKey(EKeys::Home, IE_Pressed, this, &ASolidCharacter::TurnCharacterEditorClockwise);
+	PlayerInputComponent->BindKey(EKeys::Home, IE_Repeat, this, &ASolidCharacter::TurnCharacterEditorClockwise);
+	PlayerInputComponent->BindKey(EKeys::End, IE_Pressed, this, &ASolidCharacter::TurnCharacterEditorAnticlockwise);
+	PlayerInputComponent->BindKey(EKeys::End, IE_Repeat, this, &ASolidCharacter::TurnCharacterEditorAnticlockwise);
 	PlayerInputComponent->BindKey(EKeys::Enter, IE_Pressed, this, &ASolidCharacter::MainMenuConfirm);
 	PlayerInputComponent->BindKey(EKeys::One, IE_Pressed, this, &ASolidCharacter::MainMenuChoose1);
 	PlayerInputComponent->BindKey(EKeys::Two, IE_Pressed, this, &ASolidCharacter::MainMenuChoose2);
@@ -717,6 +722,28 @@ void ASolidCharacter::ToggleCharacterEditorSkeleton()
 	if (CharacterStage)
 	{
 		CharacterStage->SetSkeletonLines(HUD->IsCharacterEditorSkeleton());
+	}
+}
+
+void ASolidCharacter::TurnCharacterEditorClockwise()
+{
+	if (ASolidHUD* HUD = GetSolidHUD())
+	{
+		if (HUD->IsCharacterEditorOpen() && CharacterStage)
+		{
+			CharacterStage->AddPreviewYaw(SolidCharacterEditor::TurnYawDelta(true));
+		}
+	}
+}
+
+void ASolidCharacter::TurnCharacterEditorAnticlockwise()
+{
+	if (ASolidHUD* HUD = GetSolidHUD())
+	{
+		if (HUD->IsCharacterEditorOpen() && CharacterStage)
+		{
+			CharacterStage->AddPreviewYaw(SolidCharacterEditor::TurnYawDelta(false));
+		}
 	}
 }
 

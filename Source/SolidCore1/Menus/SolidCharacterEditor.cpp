@@ -79,6 +79,16 @@ FString SolidCharacterEditor::SkeletonHint(const bool bSkeleton)
 	return bSkeleton ? TEXT("Space  body") : TEXT("Space  skeleton");
 }
 
+FString SolidCharacterEditor::TurnClockwiseHint()
+{
+	return TEXT("Home  clockwise");
+}
+
+FString SolidCharacterEditor::TurnAnticlockwiseHint()
+{
+	return TEXT("End  anticlockwise");
+}
+
 int32 SolidCharacterEditor::SliderForLine(const FString& Line)
 {
 	if (Line.StartsWith(TEXT("Height ")))

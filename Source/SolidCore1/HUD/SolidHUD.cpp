@@ -1425,6 +1425,8 @@ void ASolidHUD::DrawCharacterEditorPanel()
 		Lines.Add(TEXT("F10  open world"));
 	}
 	Lines.Add(SolidCharacterEditor::SkeletonHint(bCharacterEditorSkeleton));
+	Lines.Add(SolidCharacterEditor::TurnClockwiseHint());
+	Lines.Add(SolidCharacterEditor::TurnAnticlockwiseHint());
 
 	if (!Canvas || Lines.Num() == 0)
 	{

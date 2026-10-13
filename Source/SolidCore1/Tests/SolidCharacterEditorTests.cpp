@@ -545,4 +545,46 @@ bool FSolidBodySliderDerivationTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidCharacterEditorTurnAndBoneColorTest,
+	"SolidCore1.CharacterEditor.TurnAndBoneColor",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidCharacterEditorTurnAndBoneColorTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("home is clockwise"), SolidCharacterEditor::TurnClockwiseHint(), FString(TEXT("Home  clockwise")));
+	TestEqual(TEXT("end is anticlockwise"), SolidCharacterEditor::TurnAnticlockwiseHint(), FString(TEXT("End  anticlockwise")));
+	TestEqual(TEXT("one clockwise step"), SolidCharacterEditor::TurnYawDelta(true), -SolidCharacterEditor::TurnStepDegrees);
+	TestEqual(TEXT("one anticlockwise step"), SolidCharacterEditor::TurnYawDelta(false), SolidCharacterEditor::TurnStepDegrees);
+	TestTrue(TEXT("a step is visible"), SolidCharacterEditor::TurnStepDegrees >= 10.f);
+
+	ASolidCharacterStage* Stage = NewObject<ASolidCharacterStage>();
+	TestNotNull(TEXT("stage"), Stage);
+	if (Stage)
+	{
+		TestTrue(TEXT("the figure starts facing you"), FMath::IsNearlyZero(Stage->GetPreviewYaw()));
+		Stage->AddPreviewYaw(SolidCharacterEditor::TurnYawDelta(true));
+		TestTrue(TEXT("clockwise yaw is negative"), Stage->GetPreviewYaw() < 0.f);
+		Stage->AddPreviewYaw(SolidCharacterEditor::TurnYawDelta(false));
+		TestTrue(TEXT("anticlockwise undoes clockwise"), FMath::IsNearlyZero(Stage->GetPreviewYaw()));
+	}
+
+	const int32 Parents[] = { INDEX_NONE, 0, 0, 0, 1 };
+	int32 Colors[5] = { -1, -1, -1, -1, -1 };
+	SolidSkeletonHover::AssignBoneColors(Parents, 5, Colors, SolidSkeletonHover::BonePaletteCount);
+	TestTrue(TEXT("a child differs from its parent"), Colors[1] != Colors[0]);
+	TestTrue(TEXT("siblings differ"), Colors[1] != Colors[2] && Colors[1] != Colors[3] && Colors[2] != Colors[3]);
+	TestTrue(TEXT("a grandchild differs from its parent"), Colors[4] != Colors[1]);
+	TestTrue(TEXT("colours stay in the palette"), Colors[0] >= 0 && Colors[0] < SolidSkeletonHover::BonePaletteCount);
+
+	const int32 Chain[] = { INDEX_NONE, 0, 1, 2 };
+	int32 ChainColors[4] = {};
+	SolidSkeletonHover::AssignBoneColors(Chain, 4, ChainColors, SolidSkeletonHover::BonePaletteCount);
+	TestTrue(TEXT("each link differs from the one before it"),
+		ChainColors[1] != ChainColors[0]
+		&& ChainColors[2] != ChainColors[1]
+		&& ChainColors[3] != ChainColors[2]);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

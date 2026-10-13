@@ -141,6 +141,8 @@ protected:
 	void CharacterEditorNudgeLeft();
 	void CharacterEditorNudgeRight();
 	void ToggleCharacterEditorSkeleton();
+	void TurnCharacterEditorClockwise();
+	void TurnCharacterEditorAnticlockwise();
 	void MoveCharacterEditor(int32 Delta);
 	void NudgeCharacterEditorSlider(int32 Direction);
 	void ApplyEditorSliderFraction(int32 Slider, float Fraction);

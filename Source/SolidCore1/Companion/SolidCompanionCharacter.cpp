@@ -530,39 +530,62 @@ void ASolidCompanionCharacter::DrawSkeletonLines() const
 		return;
 	}
 
-	const FColor BoneColor(255, 176, 64);
+	TArray<FName> BoneNames;
+	TArray<FName> ParentNames;
 	const int32 BoneCount = CharacterMesh->GetNumBones();
+	BoneNames.Reserve(BoneCount);
+	ParentNames.Reserve(BoneCount);
 	for (int32 Index = 0; Index < BoneCount; ++Index)
 	{
 		const FName BoneName = CharacterMesh->GetBoneName(Index);
-		if (BoneName.IsNone())
-		{
-			continue;
-		}
-		const FString Name = BoneName.ToString();
-		if (SolidSkeletonHover::IsOmittedBoneName(Name))
+		if (BoneName.IsNone() || SolidSkeletonHover::IsOmittedBoneName(BoneName.ToString()))
 		{
 			continue;
 		}
 
-		const FVector BoneLocation = CharacterMesh->GetBoneLocation(BoneName);
 		FName ParentName = CharacterMesh->GetParentBone(BoneName);
 		while (!ParentName.IsNone() && SolidSkeletonHover::IsOmittedBoneName(ParentName.ToString()))
 		{
 			ParentName = CharacterMesh->GetParentBone(ParentName);
 		}
-		if (!ParentName.IsNone())
+		BoneNames.Add(BoneName);
+		ParentNames.Add(ParentName);
+	}
+
+	TArray<int32> Parents;
+	TArray<int32> Colors;
+	Parents.SetNum(BoneNames.Num());
+	Colors.SetNum(BoneNames.Num());
+	for (int32 Index = 0; Index < BoneNames.Num(); ++Index)
+	{
+		Parents[Index] = INDEX_NONE;
+		if (ParentNames[Index].IsNone())
 		{
-			DrawDebugLine(
-				World,
-				CharacterMesh->GetBoneLocation(ParentName),
-				BoneLocation,
-				BoneColor,
-				false,
-				0.f,
-				0,
-				1.75f);
+			continue;
 		}
+		Parents[Index] = BoneNames.IndexOfByKey(ParentNames[Index]);
+	}
+	SolidSkeletonHover::AssignBoneColors(
+		Parents.GetData(),
+		Parents.Num(),
+		Colors.GetData(),
+		SolidSkeletonHover::BonePaletteCount);
+
+	for (int32 Index = 0; Index < BoneNames.Num(); ++Index)
+	{
+		if (ParentNames[Index].IsNone())
+		{
+			continue;
+		}
+		DrawDebugLine(
+			World,
+			CharacterMesh->GetBoneLocation(ParentNames[Index]),
+			CharacterMesh->GetBoneLocation(BoneNames[Index]),
+			SolidSkeletonHover::BonePaletteColor(Colors[Index]),
+			false,
+			0.f,
+			0,
+			1.75f);
 	}
 }
 

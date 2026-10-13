@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0256")
+#define SOLID_BUILD_ID TEXT("SC1-0257")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Each calf is one cone over calf and calf_twist, 15 cm to 12 cm, on both legs.")
+#define SOLID_BUILD_NOTE TEXT("Home and End turn the figure. Skeleton bones that meet use different colours.")
 #endif

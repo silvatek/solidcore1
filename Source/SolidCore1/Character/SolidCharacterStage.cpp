@@ -99,6 +99,11 @@ void ASolidCharacterStage::SetSkeletonLines(const bool bShow)
 	}
 }
 
+void ASolidCharacterStage::AddPreviewYaw(const float Degrees)
+{
+	PreviewYaw += Degrees;
+}
+
 FString ASolidCharacterStage::BoneUnderPointer(const float X, const float Y) const
 {
 	if (!Preview)
@@ -222,6 +227,6 @@ void ASolidCharacterStage::Place()
 	if (Preview)
 	{
 		Preview->SetActorLocation(PreviewLoc);
-		Preview->SetActorRotation(FRotator(0.f, CamRot.Yaw + 180.f, 0.f));
+		Preview->SetActorRotation(FRotator(0.f, CamRot.Yaw + 180.f + PreviewYaw, 0.f));
 	}
 }

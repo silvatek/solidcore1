@@ -36,6 +36,10 @@ public:
 	/** Bones under this screen point. A skeleton line names one bone. A body piece lists every bone in it. */
 	FString BoneUnderPointer(float X, float Y) const;
 
+	/** Yaw added on top of facing the camera. Positive is anticlockwise as you look at the figure. */
+	void AddPreviewYaw(float Degrees);
+	float GetPreviewYaw() const { return PreviewYaw; }
+
 private:
 	void PaintRoom();
 	void Place();
@@ -63,4 +67,5 @@ private:
 	bool bHasCompanion = false;
 	bool bRoomPainted = false;
 	bool bSkeletonLines = false;
+	float PreviewYaw = 0.f;
 };

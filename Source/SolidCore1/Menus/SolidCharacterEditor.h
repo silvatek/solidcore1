@@ -58,6 +58,18 @@ namespace SolidCharacterEditor
 	/** Space in the character editor. Skeleton mode asks for the body, and the body asks for the skeleton. */
 	FString SkeletonHint(bool bSkeleton);
 
+	/** Degrees added to the preview yaw for one Home or End press. Home is clockwise on screen. */
+	inline constexpr float TurnStepDegrees = 15.f;
+
+	/** Negative yaw is clockwise as you look at the figure. */
+	inline float TurnYawDelta(const bool bClockwise)
+	{
+		return bClockwise ? -TurnStepDegrees : TurnStepDegrees;
+	}
+
+	FString TurnClockwiseHint();
+	FString TurnAnticlockwiseHint();
+
 	/** Height, Build, and Gender lines are the three sliders. Anything else is INDEX_NONE. */
 	int32 SliderForLine(const FString& Line);
 

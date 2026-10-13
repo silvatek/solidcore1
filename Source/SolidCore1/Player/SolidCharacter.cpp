@@ -470,19 +470,19 @@ void ASolidCharacter::MoveCharacterEditor(const int32 Delta)
 	SyncCharacterStage();
 }
 
-void ASolidCharacter::SetEditorWorldHidden(const bool bHidden)
+void ASolidCharacter::SetEditorWorldHidden(const bool bHideWorld)
 {
-	if (bHidden == bEditorWorldHidden)
+	if (bHideWorld == bEditorWorldHidden)
 	{
 		return;
 	}
-	bEditorWorldHidden = bHidden;
+	bEditorWorldHidden = bHideWorld;
 
 	if (USkeletalMeshComponent* CaptainMesh = GetMesh())
 	{
-		CaptainMesh->SetVisibility(!bHidden, true);
+		CaptainMesh->SetVisibility(!bHideWorld, true);
 	}
-	if (bHidden)
+	if (bHideWorld)
 	{
 		if (NameLabelRoot)
 		{
@@ -505,7 +505,7 @@ void ASolidCharacter::SetEditorWorldHidden(const bool bHidden)
 		ASolidCompanionCharacter* Actor = Companion.Get();
 		if (Actor && !Actor->IsStagePreview())
 		{
-			Actor->SetActorHiddenInGame(bHidden);
+			Actor->SetActorHiddenInGame(bHideWorld);
 		}
 	}
 }

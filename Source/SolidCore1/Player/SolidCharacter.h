@@ -139,7 +139,7 @@ protected:
 	void CharacterEditorNext();
 	void MoveCharacterEditor(int32 Delta);
 	void SyncCharacterStage();
-	void SetEditorWorldHidden(bool bHidden);
+	void SetEditorWorldHidden(bool bHideWorld);
 	void SetEditorCameraLocked(bool bLocked);
 	int32 CurrentMaxPartySize() const;
 	void TogglePartyBuilderRow(int32 Index);

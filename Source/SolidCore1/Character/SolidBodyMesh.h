@@ -193,6 +193,27 @@ namespace SolidBodyMesh
 	 */
 	FSolidFittedCone ExtraFingerCone(const FVector& AnkleEnd, const FVector& ToeEnd);
 
+	/** Shirt material slot. Trousers are the next slot, then skin. */
+	inline constexpr uint8 ShirtMaterialSlot = 0;
+	inline constexpr uint8 TrouserMaterialSlot = 1;
+
+	/** The three bones in the hip piece. */
+	inline const TCHAR* HipLeftBone = TEXT("thigh_l");
+	inline const TCHAR* HipRightBone = TEXT("thigh_r");
+	inline const TCHAR* HipSpineBone = TEXT("spine_01");
+
+	/** Diameters of the hip cone, in centimetres. The lower end is the wide end. */
+	inline constexpr float HipBottomDiameterCm = 50.f;
+	inline constexpr float HipTopDiameterCm = 30.f;
+
+	/**
+	 * Upright truncated cone around thigh_l, thigh_r, and spine_01.
+	 * Points are those bones and the joints they start from. The wide end is the lowest point
+	 * and the narrow end is the highest. The piece uses the shirt material.
+	 * Invalid when the points do not span a centimetre.
+	 */
+	FSolidFittedCone HipCone(const FVector* Points, int32 Count);
+
 	/** Start and end radii of the cone from Parent to Child. Both ends are joint radii. */
 	void SegmentRadii(
 		const TArray<float>& Radii,

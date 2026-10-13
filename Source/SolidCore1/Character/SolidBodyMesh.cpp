@@ -336,6 +336,37 @@ SolidBodyMesh::FSolidFittedCone SolidBodyMesh::ExtraFingerCone(const FVector& An
 	return Out;
 }
 
+SolidBodyMesh::FSolidFittedCone SolidBodyMesh::HipCone(const FVector* Points, const int32 Count)
+{
+	FSolidFittedCone Out;
+	Out.RadiusStart = HipBottomDiameterCm * 0.5f;
+	Out.RadiusEnd = HipTopDiameterCm * 0.5f;
+	if (!Points || Count <= 0)
+	{
+		return Out;
+	}
+
+	FVector Sum = FVector::ZeroVector;
+	double MinZ = Points[0].Z;
+	double MaxZ = Points[0].Z;
+	for (int32 Index = 0; Index < Count; ++Index)
+	{
+		Sum += Points[Index];
+		MinZ = FMath::Min(MinZ, Points[Index].Z);
+		MaxZ = FMath::Max(MaxZ, Points[Index].Z);
+	}
+	if (MaxZ - MinZ < 1.0)
+	{
+		return Out;
+	}
+
+	const FVector Center = Sum / static_cast<double>(Count);
+	Out.Start = FVector(Center.X, Center.Y, MinZ);
+	Out.End = FVector(Center.X, Center.Y, MaxZ);
+	Out.bValid = true;
+	return Out;
+}
+
 namespace
 {
 	bool ConeIsStructural(const FSolidDeformBone& Bone)
@@ -678,6 +709,8 @@ namespace
 	constexpr uint8 SlotTorso = 0;
 	constexpr uint8 SlotLegs = 1;
 	constexpr uint8 SlotSkin = 2;
+	static_assert(SlotTorso == SolidBodyMesh::ShirtMaterialSlot, "the shirt stays the first body material");
+	static_assert(SlotLegs == SolidBodyMesh::TrouserMaterialSlot, "the trousers stay the second body material");
 	static_assert(SlotTorso == 0 && SlotLegs == 1 && SlotSkin == 2, "body material slots stay in order");
 
 	struct FLoFiTri
@@ -811,7 +844,8 @@ namespace
 		TArray<FLoFiVert>& Verts,
 		TArray<FLoFiTri>& Tris,
 		const int32 Weight,
-		const SolidBodyMesh::FSolidFittedCone& Cone)
+		const SolidBodyMesh::FSolidFittedCone& Cone,
+		const uint8 Slot = SlotLegs)
 	{
 		if (!Cone.bValid || Weight == INDEX_NONE)
 		{
@@ -827,7 +861,7 @@ namespace
 			Cone.RadiusEnd,
 			10,
 			1,
-			SlotLegs,
+			Slot,
 			1.f,
 			FVector::ForwardVector);
 	}
@@ -913,6 +947,30 @@ namespace
 				continue;
 			}
 			AddLegCone(Verts, Tris, Toe, SolidBodyMesh::ExtraFingerCone(Positions[AnkleEnd], Positions[Toe]));
+		}
+
+		const int32 HipLeft = FindNamedBone(Bones, Count, SolidBodyMesh::HipLeftBone);
+		const int32 HipRight = FindNamedBone(Bones, Count, SolidBodyMesh::HipRightBone);
+		const int32 HipSpine = FindNamedBone(Bones, Count, SolidBodyMesh::HipSpineBone);
+		if (HipLeft != INDEX_NONE && HipRight != INDEX_NONE && HipSpine != INDEX_NONE)
+		{
+			TArray<FVector> HipPoints;
+			const int32 HipBones[] = { HipLeft, HipRight, HipSpine };
+			for (const int32 Bone : HipBones)
+			{
+				HipPoints.Add(Positions[Bone]);
+				const int32 Parent = Bones[Bone].ParentIndex;
+				if (Positions.IsValidIndex(Parent))
+				{
+					HipPoints.Add(Positions[Parent]);
+				}
+			}
+			AddLegCone(
+				Verts,
+				Tris,
+				HipSpine,
+				SolidBodyMesh::HipCone(HipPoints.GetData(), HipPoints.Num()),
+				SlotTorso);
 		}
 	}
 

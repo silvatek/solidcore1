@@ -8,11 +8,16 @@
 bool USolidWorldMap::IsGridMarker(const TCHAR Marker)
 {
 	const TCHAR Upper = FChar::ToUpper(Marker);
-	return (Upper >= TEXT('A') && Upper <= TEXT('Z')) || FChar::IsDigit(Marker);
+	return (Upper >= TEXT('A') && Upper <= TEXT('Z')) || FChar::IsDigit(Marker) || Marker == SeaMarker;
 }
 
 ESolidBiome USolidWorldMap::MarkerToBiome(const TCHAR Marker)
 {
+	if (Marker == SeaMarker || FChar::ToUpper(Marker) == SeaMarker)
+	{
+		return ESolidBiome::Sea;
+	}
+
 	switch (FChar::ToUpper(Marker))
 	{
 	case TEXT('G'): return ESolidBiome::Grassland;
@@ -23,7 +28,6 @@ ESolidBiome USolidWorldMap::MarkerToBiome(const TCHAR Marker)
 	case TEXT('T'): return ESolidBiome::Town;
 	case TEXT('Z'): return ESolidBiome::Town;
 	case TEXT('D'): return ESolidBiome::Desert;
-	case TEXT('S'): return ESolidBiome::Sea;
 	case TEXT('R'): return ESolidBiome::River;
 	default:
 		// Numbered locations resolve through the location key in GetBiomeAtCell.
@@ -122,7 +126,7 @@ bool USolidWorldMap::ParseKeyLine(const FString& Line)
 	}
 
 	const TCHAR Marker = FChar::ToUpper(Trimmed[0]);
-	if (Marker < TEXT('A') || Marker > TEXT('Z'))
+	if ((Marker < TEXT('A') || Marker > TEXT('Z')) && Marker != SeaMarker)
 	{
 		return false;
 	}

@@ -73,7 +73,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidRiverChannelTest::RunTest(const FString& Parameters)
 {
 	TestTrue(TEXT("river joins"), SolidRiver::Joins(TEXT('R')));
-	TestTrue(TEXT("sea joins"), SolidRiver::Joins(TEXT('s')));
+	TestTrue(TEXT("sea joins"), SolidRiver::Joins(USolidWorldMap::SeaMarker));
 	TestFalse(TEXT("grass does not join"), SolidRiver::Joins(TEXT('G')));
 	TestTrue(TEXT("width is 4 m"), FMath::IsNearlyEqual(SolidRiver::WidthCm, 400.f));
 
@@ -159,13 +159,13 @@ bool FSolidRiverBanksTest::RunTest(const FString& Parameters)
 		{ 21, 20, TEXT('D') },
 		// East into the sea. Grass north, desert south, grass west.
 		{ 5, 30, TEXT('R') },
-		{ 4, 30, TEXT('S') },
+		{ 4, 30, USolidWorldMap::SeaMarker },
 		{ 5, 31, TEXT('D') },
 		// Sea along the north bank of an east-west channel. Desert to the south.
 		{ 9, 40, TEXT('R') },
 		{ 10, 40, TEXT('R') },
 		{ 11, 40, TEXT('R') },
-		{ 10, 39, TEXT('S') },
+		{ 10, 39, USolidWorldMap::SeaMarker },
 		{ 10, 41, TEXT('D') },
 		// Bend. The dry corner must not become more river.
 		{ 20, 50, TEXT('R') },

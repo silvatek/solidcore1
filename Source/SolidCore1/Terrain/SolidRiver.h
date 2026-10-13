@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SolidWorldMap.h"
 
 /**
  * A WorldMap R marks a river through that square, not a square of water.
@@ -39,7 +40,9 @@ namespace SolidRiver
 	inline bool Joins(const TCHAR Marker)
 	{
 		const TCHAR Upper = FChar::ToUpper(Marker);
-		return Upper == TEXT('R') || Upper == TEXT('S');
+		return Upper == TEXT('R')
+			|| Marker == USolidWorldMap::SeaMarker
+			|| Upper == USolidWorldMap::SeaMarker;
 	}
 
 	inline float RadiusCm()

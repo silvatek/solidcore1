@@ -227,7 +227,7 @@ bool FSolidRoadAvoidTest::RunTest(const FString& Parameters)
 	{
 		for (int32 Row = 0; Row <= 20; ++Row)
 		{
-			SeaBay.Add({ Col, Row, TEXT('S') });
+			SeaBay.Add({ Col, Row, USolidWorldMap::SeaMarker });
 		}
 	}
 	USolidWorldMap* SeaTrail = NewObject<USolidWorldMap>();

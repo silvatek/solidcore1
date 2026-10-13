@@ -16,7 +16,7 @@ namespace
 	{
 		int32 Col = 0;
 		int32 Row = 0;
-		TCHAR Marker = TEXT('G');
+		TCHAR Marker = USolidWorldMap::GrassMarker;
 	};
 
 	FString RiverTestGrid(std::initializer_list<FRiverTestMark> Marks)
@@ -27,7 +27,7 @@ namespace
 		{
 			for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
 			{
-				TCHAR Marker = TEXT('G');
+				TCHAR Marker = USolidWorldMap::GrassMarker;
 				for (const FRiverTestMark& Mark : Marks)
 				{
 					if (Mark.Col == Col && Mark.Row == Row)
@@ -72,9 +72,9 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidRiverChannelTest::RunTest(const FString& Parameters)
 {
-	TestTrue(TEXT("river joins"), SolidRiver::Joins(TEXT('R')));
+	TestTrue(TEXT("river joins"), SolidRiver::Joins(USolidWorldMap::RiverMarker));
 	TestTrue(TEXT("sea joins"), SolidRiver::Joins(USolidWorldMap::SeaMarker));
-	TestFalse(TEXT("grass does not join"), SolidRiver::Joins(TEXT('G')));
+	TestFalse(TEXT("grass does not join"), SolidRiver::Joins(USolidWorldMap::GrassMarker));
 	TestTrue(TEXT("width is 4 m"), FMath::IsNearlyEqual(SolidRiver::WidthCm, 400.f));
 
 	const float Cell = 1600.f;
@@ -142,40 +142,40 @@ bool FSolidRiverBanksTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("map"), Map);
 	const bool bLoaded = Map->LoadFromString(RiverTestGrid({
 		// Isolated pond. East is mountain, west grass, north forest, south desert.
-		{ 10, 10, TEXT('r') },
+		{ 10, 10, USolidWorldMap::RiverMarker },
 		{ 9, 10, TEXT('M') },
-		{ 11, 10, TEXT('G') },
-		{ 10, 9, TEXT('F') },
+		{ 11, 10, USolidWorldMap::GrassMarker },
+		{ 10, 9, USolidWorldMap::ForestMarker },
 		{ 10, 11, TEXT('D') },
 		// North-south channel. Forest to the east, desert to the west.
-		{ 20, 18, TEXT('R') },
-		{ 20, 19, TEXT('R') },
-		{ 20, 20, TEXT('R') },
-		{ 19, 18, TEXT('F') },
-		{ 19, 19, TEXT('F') },
-		{ 19, 20, TEXT('F') },
+		{ 20, 18, USolidWorldMap::RiverMarker },
+		{ 20, 19, USolidWorldMap::RiverMarker },
+		{ 20, 20, USolidWorldMap::RiverMarker },
+		{ 19, 18, USolidWorldMap::ForestMarker },
+		{ 19, 19, USolidWorldMap::ForestMarker },
+		{ 19, 20, USolidWorldMap::ForestMarker },
 		{ 21, 18, TEXT('D') },
 		{ 21, 19, TEXT('D') },
 		{ 21, 20, TEXT('D') },
 		// East into the sea. Grass north, desert south, grass west.
-		{ 5, 30, TEXT('R') },
+		{ 5, 30, USolidWorldMap::RiverMarker },
 		{ 4, 30, USolidWorldMap::SeaMarker },
 		{ 5, 31, TEXT('D') },
 		// Sea along the north bank of an east-west channel. Desert to the south.
-		{ 9, 40, TEXT('R') },
-		{ 10, 40, TEXT('R') },
-		{ 11, 40, TEXT('R') },
+		{ 9, 40, USolidWorldMap::RiverMarker },
+		{ 10, 40, USolidWorldMap::RiverMarker },
+		{ 11, 40, USolidWorldMap::RiverMarker },
 		{ 10, 39, USolidWorldMap::SeaMarker },
 		{ 10, 41, TEXT('D') },
 		// Bend. The dry corner must not become more river.
-		{ 20, 50, TEXT('R') },
-		{ 19, 50, TEXT('R') },
-		{ 20, 51, TEXT('R') },
-		{ 20, 49, TEXT('F') },
+		{ 20, 50, USolidWorldMap::RiverMarker },
+		{ 19, 50, USolidWorldMap::RiverMarker },
+		{ 20, 51, USolidWorldMap::RiverMarker },
+		{ 20, 49, USolidWorldMap::ForestMarker },
 		{ 21, 50, TEXT('D') },
 		// Diagonal neighbor does not join.
-		{ 50, 50, TEXT('R') },
-		{ 49, 49, TEXT('R') },
+		{ 50, 50, USolidWorldMap::RiverMarker },
+		{ 49, 49, USolidWorldMap::RiverMarker },
 	}));
 	TestTrue(TEXT("synthetic map loads"), bLoaded);
 	if (!bLoaded)
@@ -259,7 +259,7 @@ bool FSolidRiverShippedMapTest::RunTest(const FString& Parameters)
 	{
 		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
 		{
-			if (Map->GetMarkerAtCell(Col, Row) != TEXT('R'))
+			if (Map->GetMarkerAtCell(Col, Row) != USolidWorldMap::RiverMarker)
 			{
 				continue;
 			}

@@ -5,30 +5,77 @@
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 
+namespace
+{
+	bool WorldMapMarkerMatches(const TCHAR Raw, const TCHAR Expected)
+	{
+		return Raw == Expected || FChar::ToUpper(Raw) == Expected;
+	}
+
+	TCHAR WorldMapCanonicalMarker(const TCHAR Raw)
+	{
+		const TCHAR Expected[] = {
+			USolidWorldMap::GrassMarker,
+			USolidWorldMap::TownMarker,
+			USolidWorldMap::ForestMarker,
+			USolidWorldMap::RiverMarker,
+			USolidWorldMap::SeaMarker,
+		};
+		for (const TCHAR Marker : Expected)
+		{
+			if (WorldMapMarkerMatches(Raw, Marker))
+			{
+				return Marker;
+			}
+		}
+		return FChar::IsDigit(Raw) ? Raw : FChar::ToUpper(Raw);
+	}
+}
+
 bool USolidWorldMap::IsGridMarker(const TCHAR Marker)
 {
 	const TCHAR Upper = FChar::ToUpper(Marker);
-	return (Upper >= TEXT('A') && Upper <= TEXT('Z')) || FChar::IsDigit(Marker) || Marker == SeaMarker;
+	if ((Upper >= TEXT('A') && Upper <= TEXT('Z')) || FChar::IsDigit(Marker))
+	{
+		return true;
+	}
+	return WorldMapMarkerMatches(Marker, GrassMarker)
+		|| WorldMapMarkerMatches(Marker, TownMarker)
+		|| WorldMapMarkerMatches(Marker, ForestMarker)
+		|| WorldMapMarkerMatches(Marker, RiverMarker)
+		|| WorldMapMarkerMatches(Marker, SeaMarker);
 }
 
 ESolidBiome USolidWorldMap::MarkerToBiome(const TCHAR Marker)
 {
-	if (Marker == SeaMarker || FChar::ToUpper(Marker) == SeaMarker)
+	if (WorldMapMarkerMatches(Marker, SeaMarker))
 	{
 		return ESolidBiome::Sea;
+	}
+	if (WorldMapMarkerMatches(Marker, GrassMarker))
+	{
+		return ESolidBiome::Grassland;
+	}
+	if (WorldMapMarkerMatches(Marker, ForestMarker))
+	{
+		return ESolidBiome::Forest;
+	}
+	if (WorldMapMarkerMatches(Marker, TownMarker))
+	{
+		return ESolidBiome::Town;
+	}
+	if (WorldMapMarkerMatches(Marker, RiverMarker))
+	{
+		return ESolidBiome::River;
 	}
 
 	switch (FChar::ToUpper(Marker))
 	{
-	case TEXT('G'): return ESolidBiome::Grassland;
-	case TEXT('F'): return ESolidBiome::Forest;
 	case TEXT('M'): return ESolidBiome::Mountain;
 	// Cave stronghold: same shelf and tint as the mountain it is cut into.
 	case TEXT('C'): return ESolidBiome::Mountain;
-	case TEXT('T'): return ESolidBiome::Town;
 	case TEXT('Z'): return ESolidBiome::Town;
 	case TEXT('D'): return ESolidBiome::Desert;
-	case TEXT('R'): return ESolidBiome::River;
 	default:
 		// Numbered locations resolve through the location key in GetBiomeAtCell.
 		return FChar::IsDigit(Marker) ? ESolidBiome::Town : ESolidBiome::Grassland;
@@ -125,8 +172,8 @@ bool USolidWorldMap::ParseKeyLine(const FString& Line)
 		return false;
 	}
 
-	const TCHAR Marker = FChar::ToUpper(Trimmed[0]);
-	if ((Marker < TEXT('A') || Marker > TEXT('Z')) && Marker != SeaMarker)
+	const TCHAR Marker = WorldMapCanonicalMarker(Trimmed[0]);
+	if (!IsGridMarker(Marker))
 	{
 		return false;
 	}
@@ -263,8 +310,7 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 		const FString& RowText = GridLines[Row];
 		for (int32 Col = 0; Col < MapWidth; ++Col)
 		{
-			const TCHAR Raw = RowText[Col];
-			const TCHAR Marker = FChar::IsDigit(Raw) ? Raw : FChar::ToUpper(Raw);
+			const TCHAR Marker = WorldMapCanonicalMarker(RowText[Col]);
 			Markers[Row * MapWidth + Col] = static_cast<uint8>(Marker);
 		}
 	}
@@ -610,7 +656,7 @@ bool USolidWorldMap::IsMarkedTown(
 	}
 
 	const TCHAR Marker = GetMarkerAtCell(MapX, MapY);
-	return Marker == TEXT('T') || Marker == TEXT('Z') || FChar::IsDigit(Marker);
+	return Marker == TownMarker || Marker == TEXT('Z') || FChar::IsDigit(Marker);
 }
 
 ESolidBiome USolidWorldMap::SampleBiome(
@@ -628,7 +674,7 @@ ESolidBiome USolidWorldMap::SampleBiome(
 
 	ESolidBiome Ground = ESolidBiome::Grassland;
 	TCHAR Marker = 0;
-	if (!WorldMapMarkerInCell(*this, MapX, MapY, Marker) || Marker != TEXT('R'))
+	if (!WorldMapMarkerInCell(*this, MapX, MapY, Marker) || Marker != RiverMarker)
 	{
 		Ground = GetBiomeAtCell(MapX, MapY);
 	}

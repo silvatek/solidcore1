@@ -55,6 +55,18 @@ public:
 	/** WorldMap.txt marker for the sea. A wave, not the letter S. */
 	static constexpr TCHAR SeaMarker = TEXT('~');
 
+	/** WorldMap.txt marker for grassland. */
+	static constexpr TCHAR GrassMarker = TEXT('G');
+
+	/** WorldMap.txt marker for a town cell that is not a numbered location. */
+	static constexpr TCHAR TownMarker = TEXT('T');
+
+	/** WorldMap.txt marker for forest. */
+	static constexpr TCHAR ForestMarker = TEXT('F');
+
+	/** WorldMap.txt marker for a river channel. */
+	static constexpr TCHAR RiverMarker = TEXT('R');
+
 	/** Load Content/WorldMap.txt. Idempotent when already loaded. */
 	bool LoadDefault(bool bForceReload = false);
 

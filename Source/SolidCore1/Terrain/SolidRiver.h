@@ -39,10 +39,12 @@ namespace SolidRiver
 	/** R joins another river. The sea marker joins the sea. Other markers do not. */
 	inline bool Joins(const TCHAR Marker)
 	{
-		const TCHAR Upper = FChar::ToUpper(Marker);
-		return Upper == TEXT('R')
-			|| Marker == USolidWorldMap::SeaMarker
-			|| Upper == USolidWorldMap::SeaMarker;
+		const auto Matches = [](const TCHAR Raw, const TCHAR Expected)
+		{
+			return Raw == Expected || FChar::ToUpper(Raw) == Expected;
+		};
+		return Matches(Marker, USolidWorldMap::RiverMarker)
+			|| Matches(Marker, USolidWorldMap::SeaMarker);
 	}
 
 	inline float RadiusCm()

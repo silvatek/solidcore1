@@ -83,7 +83,7 @@ bool FSolidWorldMapParseKeyAndSampleTest::RunTest(const FString& Parameters)
 			}
 			else
 			{
-				Line.AppendChar(TEXT('G'));
+				Line.AppendChar(USolidWorldMap::GrassMarker);
 			}
 		}
 		Text += Line;
@@ -294,7 +294,7 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 			{
 				continue;
 			}
-			if (Map->GetMarkerAtCell(NextX, NextY) == TEXT('R'))
+			if (Map->GetMarkerAtCell(NextX, NextY) == USolidWorldMap::RiverMarker)
 			{
 				bRathenBesideRiver = true;
 			}
@@ -368,7 +368,7 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 			}
 			else
 			{
-				Line.AppendChar(TEXT('G'));
+				Line.AppendChar(USolidWorldMap::GrassMarker);
 			}
 		}
 		Text += Line;
@@ -492,7 +492,7 @@ bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 		Line.Reserve(USolidWorldMap::MapWidth);
 		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
 		{
-			Line.AppendChar(TEXT('G'));
+			Line.AppendChar(USolidWorldMap::GrassMarker);
 		}
 		Rows[Row] = Line;
 	}
@@ -701,7 +701,7 @@ bool FSolidWorldMapSeaMarkerTest::RunTest(const FString& Parameters)
 			}
 			else
 			{
-				Line.AppendChar(TEXT('G'));
+				Line.AppendChar(USolidWorldMap::GrassMarker);
 			}
 		}
 		Text += Line;

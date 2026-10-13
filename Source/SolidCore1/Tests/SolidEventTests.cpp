@@ -214,7 +214,7 @@ bool FSolidEventsNumberedCellTest::RunTest(const FString& Parameters)
 			}
 			else
 			{
-				Line.AppendChar(TEXT('G'));
+				Line.AppendChar(USolidWorldMap::GrassMarker);
 			}
 		}
 		Text += Line;

@@ -17,7 +17,7 @@ namespace
 	{
 		int32 Col = 0;
 		int32 Row = 0;
-		TCHAR Marker = TEXT('G');
+		TCHAR Marker = USolidWorldMap::GrassMarker;
 	};
 
 	FString WallgateTestGrid(std::initializer_list<FWallgateTestMark> Marks)
@@ -28,7 +28,7 @@ namespace
 		{
 			for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
 			{
-				TCHAR Marker = TEXT('G');
+				TCHAR Marker = USolidWorldMap::GrassMarker;
 				for (const FWallgateTestMark& Mark : Marks)
 				{
 					if (Mark.Col == Col && Mark.Row == Row)

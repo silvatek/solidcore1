@@ -153,7 +153,7 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 			TestEqual(
 				TEXT("grass marker north of the cave"),
 				static_cast<int32>(Map->GetMarkerAtCell(North.X, North.Y)),
-				static_cast<int32>(TEXT('G')));
+				static_cast<int32>(USolidWorldMap::GrassMarker));
 			TestEqual(
 				TEXT("north neighbor is grassland"),
 				static_cast<uint8>(Map->GetBiomeAtCell(North.X, North.Y)),
@@ -215,7 +215,7 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 	{
 		FString Grid = MountainGrid();
 		SetCell(Grid, 10, 10, TEXT('C'));
-		SetCell(Grid, 9, 10, TEXT('G'));
+		SetCell(Grid, 9, 10, USolidWorldMap::GrassMarker);
 		USolidWorldMap* Map = NewObject<USolidWorldMap>();
 		TestTrue(TEXT("east grass loads"), Map->LoadFromString(Grid));
 		TestEqual(
@@ -257,8 +257,8 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 	{
 		FString Grid = MountainGrid();
 		SetCell(Grid, 10, 10, TEXT('C'));
-		SetCell(Grid, 10, 9, TEXT('G'));
-		SetCell(Grid, 9, 10, TEXT('G'));
+		SetCell(Grid, 10, 9, USolidWorldMap::GrassMarker);
+		SetCell(Grid, 9, 10, USolidWorldMap::GrassMarker);
 		USolidWorldMap* Map = NewObject<USolidWorldMap>();
 		TestTrue(TEXT("two grass faces load"), Map->LoadFromString(Grid));
 		TArray<SolidStrongholds::FEntrance> Entrances;

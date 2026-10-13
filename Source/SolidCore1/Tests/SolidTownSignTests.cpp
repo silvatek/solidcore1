@@ -147,7 +147,7 @@ bool FSolidTownSignSkipsEmptyNameTest::RunTest(const FString& Parameters)
 			}
 			else
 			{
-				Line.AppendChar(TEXT('G'));
+				Line.AppendChar(USolidWorldMap::GrassMarker);
 			}
 		}
 		Text += Line;
@@ -309,7 +309,7 @@ bool FSolidTownSignWallgateTest::RunTest(const FString& Parameters)
 		Line.Reserve(USolidWorldMap::MapWidth);
 		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
 		{
-			Line.AppendChar((Row == 9 && Col == 16) ? TEXT('5') : TEXT('G'));
+			Line.AppendChar((Row == 9 && Col == 16) ? TEXT('5') : USolidWorldMap::GrassMarker);
 		}
 		Text += Line;
 		Text += TEXT("\n");

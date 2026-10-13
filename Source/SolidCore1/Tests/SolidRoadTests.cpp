@@ -15,7 +15,7 @@ namespace
 	{
 		int32 Col = 0;
 		int32 Row = 0;
-		TCHAR Marker = TEXT('G');
+		TCHAR Marker = USolidWorldMap::GrassMarker;
 	};
 
 	FString RoadTestGrid(const TArray<FRoadTestMark>& Marks, const FString& Roads)
@@ -26,7 +26,7 @@ namespace
 		{
 			for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
 			{
-				TCHAR Marker = TEXT('G');
+				TCHAR Marker = USolidWorldMap::GrassMarker;
 				for (const FRoadTestMark& Mark : Marks)
 				{
 					if (Mark.Col == Col && Mark.Row == Row)
@@ -164,7 +164,7 @@ bool FSolidRoadAvoidTest::RunTest(const FString& Parameters)
 	{
 		if (Row != 2)
 		{
-			ForestWall.Add({ 10, Row, TEXT('F') });
+			ForestWall.Add({ 10, Row, USolidWorldMap::ForestMarker });
 		}
 	}
 
@@ -286,7 +286,7 @@ bool FSolidRoadRiverTest::RunTest(const FString& Parameters)
 	{
 		if (Row != 22)
 		{
-			Marks.Add({ 12, Row, TEXT('R') });
+			Marks.Add({ 12, Row, USolidWorldMap::RiverMarker });
 		}
 	}
 
@@ -323,7 +323,7 @@ bool FSolidRoadRiverTest::RunTest(const FString& Parameters)
 	Blocked.Add({ 20, 20, TEXT('1') });
 	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
 	{
-		Blocked.Add({ 12, Row, TEXT('R') });
+		Blocked.Add({ 12, Row, USolidWorldMap::RiverMarker });
 	}
 	USolidWorldMap* Forced = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("forced map"), Forced);
@@ -355,9 +355,9 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("trail map"), Trail);
 	if (!RoadTestLoad(*this, *Trail, RoadTestGrid({
 		{ 4, 12, TEXT('0') },
-		{ 4, 14, TEXT('T') },
+		{ 4, 14, USolidWorldMap::TownMarker },
 		{ 4, 16, TEXT('Z') },
-		{ 7, 12, TEXT('F') },
+		{ 7, 12, USolidWorldMap::ForestMarker },
 		{ 12, 12, TEXT('1') },
 	}, TEXT("Road: 0 -> 1, trail\n"))))
 	{
@@ -419,9 +419,9 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("crossing map"), Crossing);
 	if (!RoadTestLoad(*this, *Crossing, RoadTestGrid({
 		{ 4, 16, TEXT('0') },
-		{ 10, 15, TEXT('R') },
-		{ 10, 16, TEXT('R') },
-		{ 10, 17, TEXT('R') },
+		{ 10, 15, USolidWorldMap::RiverMarker },
+		{ 10, 16, USolidWorldMap::RiverMarker },
+		{ 10, 17, USolidWorldMap::RiverMarker },
 		{ 16, 16, TEXT('1') },
 	}, TEXT("Road: 0 -> 1, track\n"))))
 	{

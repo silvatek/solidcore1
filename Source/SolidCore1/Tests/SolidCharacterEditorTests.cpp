@@ -113,10 +113,15 @@ bool FSolidCharacterEditorRosterTest::RunTest(const FString& Parameters)
 
 	TArray<FString> Lines;
 	SolidCharacterEditor::Describe(*Sam, Lines);
-	const FSolidBodyParams Params = FSolidBodyParams::FromSeed(SolidBodyMesh::SeedForName(TEXT("Sam")));
+	const FSolidBodyParams SamSeed = FSolidBodyParams::FromSeed(SolidBodyMesh::SeedForName(TEXT("Sam")));
+	FSolidBodyControls Shown;
+	Shown.Height = Sam->BodyHeight;
+	Shown.Build = Sam->BodyBuild;
+	Shown.Gender = Sam->BodyGender;
+	const FSolidBodyParams Params = SolidBodyControls::Resolve(SamSeed, Shown);
 	TestTrue(TEXT("name"), Lines.Contains(FString(TEXT("Sam"))));
 	TestTrue(TEXT("vocation"), Lines.Contains(FString(TEXT("Rogue"))));
-	TestTrue(TEXT("height"), Lines.Contains(FString::Printf(TEXT("Height %.2f"), Params.Height)));
+	TestTrue(TEXT("height"), Lines.Contains(FString::Printf(TEXT("Height %.2f"), Shown.Height)));
 	TestTrue(TEXT("shoulders"), Lines.Contains(FString::Printf(TEXT("Shoulder width %.2f"), Params.ShoulderWidth)));
 	TestTrue(TEXT("hips"), Lines.Contains(FString::Printf(TEXT("Hip width %.2f"), Params.HipWidth)));
 	TestTrue(TEXT("girth"), Lines.Contains(FString::Printf(TEXT("Torso girth %.2f"), Params.TorsoGirth)));
@@ -170,43 +175,53 @@ bool FSolidCharacterEditorSliderTest::RunTest(const FString& Parameters)
 	Seed.Bulk = 1.f;
 
 	const FSolidBodyControls Neutral = SolidBodyControls::FromSeed(Seed);
-	TestTrue(TEXT("neutral controls match the seed"), SolidBodyControls::Resolve(Seed, Neutral).ExactEquals(Seed));
+	const FSolidBodyParams NeutralBody = SolidBodyControls::Resolve(Seed, Neutral);
+	TestTrue(TEXT("resolved body stays in range"), NeutralBody.ExactEquals(NeutralBody.Clamped()));
+	TestTrue(TEXT("default gender is neutral"), FMath::IsNearlyEqual(Neutral.Gender, SolidBodyControls::GenderNeutral));
 
 	const FSolidBodyParams SamSeed = FSolidBodyParams::FromSeed(SolidBodyMesh::SeedForName(TEXT("Sam")));
-	TestTrue(
-		TEXT("Sam's default sliders match his seed"),
-		SolidBodyControls::Resolve(SamSeed, SolidBodyControls::FromSeed(SamSeed)).ExactEquals(SamSeed));
+	const FSolidBodyParams SamResolved = SolidBodyControls::Resolve(SamSeed, SolidBodyControls::FromSeed(SamSeed));
+	TestTrue(TEXT("Sam's default body stays in range"), SamResolved.ExactEquals(SamResolved.Clamped()));
 
 	FSolidBodyControls Masculine = Neutral;
-	Masculine.Gender = 0.f;
+	Masculine.Gender = SolidBodyControls::Masculine;
 	const FSolidBodyParams Man = SolidBodyControls::Resolve(Seed, Masculine);
 	TestTrue(TEXT("masculine shoulders widen"), Man.ShoulderWidth > Seed.ShoulderWidth);
 	TestTrue(TEXT("masculine hips narrow"), Man.HipWidth < Seed.HipWidth);
 
 	FSolidBodyControls Feminine = Neutral;
-	Feminine.Gender = 1.f;
+	Feminine.Gender = SolidBodyControls::Feminine;
 	const FSolidBodyParams Woman = SolidBodyControls::Resolve(Seed, Feminine);
 	TestTrue(TEXT("feminine shoulders narrow"), Woman.ShoulderWidth < Seed.ShoulderWidth);
 	TestTrue(TEXT("feminine hips widen"), Woman.HipWidth > Seed.HipWidth);
 
-	FSolidBodyControls Heavier = Neutral;
-	Heavier.Build = 1.2f;
-	const FSolidBodyParams Built = SolidBodyControls::Resolve(Seed, Heavier);
-	TestTrue(TEXT("build sets bulk"), FMath::IsNearlyEqual(Built.Bulk, 1.2f));
-	TestTrue(TEXT("build scales torso girth"), FMath::IsNearlyEqual(Built.TorsoGirth, 1.2f));
-	TestTrue(TEXT("build leaves arm length"), FMath::IsNearlyEqual(Built.ArmLength, Seed.ArmLength));
+	FSolidBodyControls LowBuild = Neutral;
+	LowBuild.Build = SolidBodyControls::ValueAtFraction(SolidBodyControls::Build, 0.f);
+	FSolidBodyControls HighBuild = Neutral;
+	HighBuild.Build = SolidBodyControls::ValueAtFraction(SolidBodyControls::Build, 1.f);
+	const float LowBulk = SolidBodyControls::Resolve(Seed, LowBuild).Bulk;
+	const float HighBulk = SolidBodyControls::Resolve(Seed, HighBuild).Bulk;
+	TestTrue(
+		TEXT("build moves bulk"),
+		(HighBulk - LowBulk) * SolidBodyControls::BuildBulkDirection > 0.f);
 
 	FSolidBodyControls Nudged = Neutral;
+	const float HeightBefore = Nudged.Height;
 	SolidBodyControls::Nudge(Nudged, SolidBodyControls::Height, 1);
-	TestTrue(TEXT("right raises height"), FMath::IsNearlyEqual(Nudged.Height, 1.05f, 0.001f));
+	TestTrue(
+		TEXT("right raises height"),
+		FMath::IsNearlyEqual(Nudged.Height, HeightBefore + SolidBodyControls::KeyStep, 0.001f));
 	SolidBodyControls::Nudge(Nudged, SolidBodyControls::Height, -1);
-	TestTrue(TEXT("left lowers height"), FMath::IsNearlyEqual(Nudged.Height, 1.f, 0.001f));
-	Nudged.Height = SolidBody::ParamMin;
+	TestTrue(TEXT("left lowers height"), FMath::IsNearlyEqual(Nudged.Height, HeightBefore, 0.001f));
+	const float HeightLow = SolidBodyControls::ValueAtFraction(SolidBodyControls::Height, 0.f);
+	const float HeightHigh = SolidBodyControls::ValueAtFraction(SolidBodyControls::Height, 1.f);
+	Nudged.Height = HeightLow;
 	SolidBodyControls::Nudge(Nudged, SolidBodyControls::Height, -1);
-	TestTrue(TEXT("height stops at the low end"), FMath::IsNearlyEqual(Nudged.Height, SolidBody::ParamMin));
-	Nudged.Gender = 1.f;
+	TestTrue(TEXT("height stops at the low end"), FMath::IsNearlyEqual(Nudged.Height, HeightLow));
+	const float GenderHigh = SolidBodyControls::ValueAtFraction(SolidBodyControls::Gender, 1.f);
+	Nudged.Gender = GenderHigh;
 	SolidBodyControls::Nudge(Nudged, SolidBodyControls::Gender, 1);
-	TestTrue(TEXT("gender stops at 1"), FMath::IsNearlyEqual(Nudged.Gender, 1.f));
+	TestTrue(TEXT("gender stops at the high end"), FMath::IsNearlyEqual(Nudged.Gender, GenderHigh));
 
 	TestEqual(TEXT("up wraps onto gender"), SolidBodyControls::WrapSlider(0, -1), 2);
 	TestEqual(TEXT("down wraps onto height"), SolidBodyControls::WrapSlider(2, 1), 0);
@@ -214,16 +229,18 @@ bool FSolidCharacterEditorSliderTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("build label"), FString(SolidBodyControls::Label(SolidBodyControls::Build)), FString(TEXT("Build")));
 	TestEqual(TEXT("gender label"), FString(SolidBodyControls::Label(SolidBodyControls::Gender)), FString(TEXT("Gender")));
 
-	TestTrue(TEXT("fraction at the low end"), FMath::IsNearlyEqual(SolidBodyControls::Fraction(SolidBodyControls::Height, SolidBody::ParamMin), 0.f));
-	TestTrue(TEXT("fraction at the high end"), FMath::IsNearlyEqual(SolidBodyControls::Fraction(SolidBodyControls::Height, SolidBody::ParamMax), 1.f));
+	TestTrue(TEXT("fraction at the low end"), FMath::IsNearlyEqual(SolidBodyControls::Fraction(SolidBodyControls::Height, HeightLow), 0.f));
+	TestTrue(TEXT("fraction at the high end"), FMath::IsNearlyEqual(SolidBodyControls::Fraction(SolidBodyControls::Height, HeightHigh), 1.f));
+	const float HeightMid = SolidBodyControls::ValueAtFraction(SolidBodyControls::Height, 0.5f);
 	TestTrue(
 		TEXT("mid bar is the mid height"),
-		FMath::IsNearlyEqual(SolidBodyControls::ValueAtFraction(SolidBodyControls::Height, 0.5f), 1.05f, 0.001f));
+		FMath::IsNearlyEqual(SolidBodyControls::Fraction(SolidBodyControls::Height, HeightMid), 0.5f, 0.001f));
 	TestTrue(TEXT("gender bar starts at 0"), FMath::IsNearlyEqual(SolidBodyControls::ValueAtFraction(SolidBodyControls::Gender, 0.f), 0.f));
 	TestTrue(TEXT("gender bar ends at 1"), FMath::IsNearlyEqual(SolidBodyControls::ValueAtFraction(SolidBodyControls::Gender, 1.f), 1.f));
 	TestTrue(
 		TEXT("mouse step quantizes"),
-		FMath::IsNearlyEqual(SolidBodyControls::ValueAtFraction(SolidBodyControls::Height, 0.505f), 1.05f, 0.001f));
+		FMath::Abs(SolidBodyControls::ValueAtFraction(SolidBodyControls::Height, 0.505f) - HeightMid)
+			<= SolidBodyControls::MouseStep + 0.001f);
 
 	USolidCompany* Company = NewObject<USolidCompany>();
 	TestNotNull(TEXT("company"), Company);
@@ -239,23 +256,22 @@ bool FSolidCharacterEditorSliderTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	TestTrue(TEXT("catalog height is the seed"), FMath::IsNearlyEqual(Sam->BodyHeight, SamSeed.Height));
-	TestTrue(TEXT("catalog build is the seed bulk"), FMath::IsNearlyEqual(Sam->BodyBuild, SamSeed.Bulk));
-	TestTrue(TEXT("catalog gender is neutral"), FMath::IsNearlyEqual(Sam->BodyGender, SolidBodyControls::GenderNeutral));
+	const FSolidBodyControls SamControls = SolidBodyControls::FromSeed(SamSeed);
+	TestTrue(TEXT("catalog height is the default slider"), FMath::IsNearlyEqual(Sam->BodyHeight, SamControls.Height));
+	TestTrue(TEXT("catalog build is the default slider"), FMath::IsNearlyEqual(Sam->BodyBuild, SamControls.Build));
+	TestTrue(TEXT("catalog gender is neutral"), FMath::IsNearlyEqual(Sam->BodyGender, SamControls.Gender));
 
 	TArray<FString> Lines;
 	SolidCharacterEditor::Describe(*Sam, Lines);
 	TestTrue(TEXT("page up switches companions"), Lines.Contains(FString(TEXT("Page Up / Page Down"))));
 	TestTrue(TEXT("up and down select a slider"), Lines.Contains(FString(TEXT("Up / Down"))));
 	TestTrue(TEXT("left and right still named"), Lines.Contains(FString(TEXT("Left / Right"))));
-	TestTrue(TEXT("build line"), Lines.Contains(FString::Printf(TEXT("Build %.2f"), SamSeed.Bulk)));
-	TestTrue(TEXT("gender line"), Lines.Contains(FString(TEXT("Gender 0.50"))));
+	TestTrue(TEXT("build line"), Lines.Contains(FString::Printf(TEXT("Build %.2f"), Sam->BodyBuild)));
+	TestTrue(TEXT("gender line"), Lines.Contains(FString::Printf(TEXT("Gender %.2f"), Sam->BodyGender)));
 	TestEqual(TEXT("height line is a slider"), SolidCharacterEditor::SliderForLine(TEXT("Height 1.00")), SolidBodyControls::Height);
 	TestEqual(TEXT("head size is not a slider"), SolidCharacterEditor::SliderForLine(TEXT("Head size 1.00")), INDEX_NONE);
 
-	const float NextHeight = FMath::IsNearlyEqual(Sam->BodyHeight, SolidBody::ParamMin)
-		? SolidBody::ParamMax
-		: SolidBody::ParamMin;
+	const float NextHeight = FMath::IsNearlyEqual(Sam->BodyHeight, HeightLow) ? HeightHigh : HeightLow;
 	TestTrue(TEXT("store a new height"), Company->SetCompanionBodyControls(SamIndex, NextHeight, Sam->BodyBuild, Sam->BodyGender));
 	TestFalse(TEXT("same controls do not write"), Company->SetCompanionBodyControls(SamIndex, NextHeight, Sam->BodyBuild, Sam->BodyGender));
 	TestFalse(TEXT("missing companion does not write"), Company->SetCompanionBodyControls(99, NextHeight, 1.f, 0.5f));

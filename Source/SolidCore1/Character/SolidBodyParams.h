@@ -61,6 +61,11 @@ namespace SolidBodyControls
 	inline constexpr float KeyStep = 0.05f;
 	inline constexpr float MouseStep = 0.01f;
 	inline constexpr float GenderNeutral = 0.5f;
+	/** Feminine end of the gender slider. Masculine is the other end. */
+	inline constexpr float Feminine = 1.f;
+	inline constexpr float Masculine = 0.f;
+	/** +1 when a higher Build slider increases bulk. */
+	inline constexpr float BuildBulkDirection = 1.f;
 	/** How far gender 0 or 1 pulls shoulders and hips off the seed. */
 	inline constexpr float GenderSpread = 0.18f;
 

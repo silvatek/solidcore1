@@ -292,6 +292,17 @@ SolidBodyMesh::FSolidFittedCone SolidBodyMesh::FitCone(const FVector* Points, co
 	return Out;
 }
 
+SolidBodyMesh::FSolidFittedCone SolidBodyMesh::LeftThighCone(const FVector& Hip, const FVector& FarEnd)
+{
+	FSolidFittedCone Out;
+	Out.Start = Hip;
+	Out.End = FarEnd;
+	Out.RadiusStart = LeftThighTopDiameterCm * 0.5f;
+	Out.RadiusEnd = LeftThighBottomDiameterCm * 0.5f;
+	Out.bValid = FVector::Dist(Hip, FarEnd) >= 1.0;
+	return Out;
+}
+
 namespace
 {
 	bool ConeIsStructural(const FSolidDeformBone& Bone)
@@ -634,6 +645,7 @@ namespace
 	constexpr uint8 SlotTorso = 0;
 	constexpr uint8 SlotLegs = 1;
 	constexpr uint8 SlotSkin = 2;
+	static_assert(SlotTorso == 0 && SlotLegs == 1 && SlotSkin == 2, "body material slots stay in order");
 
 	struct FLoFiTri
 	{
@@ -750,35 +762,6 @@ namespace
 		}
 	}
 
-	int32 PrimaryMember(const TArray<FSolidDeformBone>& Bones, const TArray<int32>& Members)
-	{
-		int32 Best = INDEX_NONE;
-		int32 BestScore = -1;
-		for (const int32 Index : Members)
-		{
-			if (!Bones.IsValidIndex(Index))
-			{
-				continue;
-			}
-			const FString Name = Bones[Index].Name.ToString().ToLower();
-			int32 Score = 1;
-			if (!Bones[Index].bTwist && !Bones[Index].bDigit)
-			{
-				Score += 4;
-			}
-			if (!Name.Contains(TEXT("twist")) && !Name.Contains(TEXT("jnt")) && !Name.StartsWith(TEXT("eye")))
-			{
-				Score += 8;
-			}
-			if (Score > BestScore)
-			{
-				BestScore = Score;
-				Best = Index;
-			}
-		}
-		return Best;
-	}
-
 	void BuildLowFi(
 		const TArray<FSolidDeformBone>& Bones,
 		const TArray<FVector>& Positions,
@@ -786,69 +769,45 @@ namespace
 		TArray<FLoFiTri>& Tris)
 	{
 		const int32 Count = FMath::Min(Bones.Num(), Positions.Num());
-
-		TMap<FString, TArray<int32>> Groups;
+		int32 Twist = INDEX_NONE;
 		for (int32 Index = 0; Index < Count; ++Index)
 		{
-			const FString Key = SolidBodyMesh::SegmentKey(Bones[Index].Name.ToString());
-			if (!Key.IsEmpty())
+			if (Bones[Index].Name.ToString().Equals(SolidBodyMesh::LeftThighBone, ESearchCase::IgnoreCase))
 			{
-				Groups.FindOrAdd(Key).Add(Index);
+				Twist = Index;
+				break;
 			}
 		}
-		TArray<FString> Keys;
-		Groups.GetKeys(Keys);
-		Keys.Sort();
-
-		for (const FString& Key : Keys)
+		if (Twist == INDEX_NONE)
 		{
-			const TArray<int32>& Members = Groups[Key];
-			const int32 Weight = PrimaryMember(Bones, Members);
-			if (Weight == INDEX_NONE)
-			{
-				continue;
-			}
-
-			TArray<FVector> Points;
-			Points.Reserve(Members.Num());
-			for (const int32 Index : Members)
-			{
-				if (Positions.IsValidIndex(Index))
-				{
-					Points.Add(Positions[Index]);
-				}
-			}
-
-			const SolidBodyMesh::FSolidFittedCone Cone = SolidBodyMesh::FitCone(Points.GetData(), Points.Num());
-			if (!Cone.bValid)
-			{
-				continue;
-			}
-
-			uint8 Slot = SlotTorso;
-			if (Key == TEXT("head") || Key == TEXT("neck") || Key.StartsWith(TEXT("hand_")))
-			{
-				Slot = SlotSkin;
-			}
-			else if (Key.StartsWith(TEXT("thigh_")) || Key.StartsWith(TEXT("calf_")) || Key.StartsWith(TEXT("foot_")))
-			{
-				Slot = SlotLegs;
-			}
-
-			AddTube(
-				Verts,
-				Tris,
-				Weight,
-				Cone.Start,
-				Cone.End,
-				Cone.RadiusStart,
-				Cone.RadiusEnd,
-				10,
-				1,
-				Slot,
-				1.f,
-				FVector::ForwardVector);
+			return;
 		}
+
+		const int32 Hip = Bones[Twist].ParentIndex;
+		if (!Bones.IsValidIndex(Hip) || !Positions.IsValidIndex(Hip))
+		{
+			return;
+		}
+
+		const SolidBodyMesh::FSolidFittedCone Cone = SolidBodyMesh::LeftThighCone(Positions[Hip], Positions[Twist]);
+		if (!Cone.bValid)
+		{
+			return;
+		}
+
+		AddTube(
+			Verts,
+			Tris,
+			Hip,
+			Cone.Start,
+			Cone.End,
+			Cone.RadiusStart,
+			Cone.RadiusEnd,
+			10,
+			1,
+			SlotLegs,
+			1.f,
+			FVector::ForwardVector);
 	}
 
 	void PaintSlot(

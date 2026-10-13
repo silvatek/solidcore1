@@ -584,63 +584,51 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 			return FString();
 		}
 
-		TMap<FString, TArray<FName>> Groups;
+		FName TwistName = NAME_None;
 		const int32 BoneCount = CharacterMesh->GetNumBones();
 		for (int32 Index = 0; Index < BoneCount; ++Index)
 		{
 			const FName BoneName = CharacterMesh->GetBoneName(Index);
-			if (BoneName.IsNone())
+			if (BoneName.ToString().Equals(SolidBodyMesh::LeftThighBone, ESearchCase::IgnoreCase))
 			{
-				continue;
+				TwistName = BoneName;
+				break;
 			}
-			const FString Key = SolidBodyMesh::SegmentKey(BoneName.ToString());
-			if (Key.IsEmpty())
-			{
-				continue;
-			}
-			Groups.FindOrAdd(Key).Add(BoneName);
 		}
-
-		FString BestLabel;
-		float BestT = TNumericLimits<float>::Max();
-		for (const TPair<FString, TArray<FName>>& Group : Groups)
+		const FName HipName = TwistName.IsNone() ? NAME_None : CharacterMesh->GetParentBone(TwistName);
+		if (TwistName.IsNone() || HipName.IsNone())
 		{
-			TArray<FVector> Points;
-			TArray<FString> Names;
-			Points.Reserve(Group.Value.Num());
-			Names.Reserve(Group.Value.Num());
-			for (const FName& BoneName : Group.Value)
-			{
-				Points.Add(CharacterMesh->GetBoneLocation(BoneName));
-				Names.Add(BoneName.ToString());
-			}
-
-			const SolidBodyMesh::FSolidFittedCone Cone = SolidBodyMesh::FitCone(Points.GetData(), Points.Num());
-			if (!Cone.bValid)
-			{
-				continue;
-			}
-
-			float RayT = 0.f;
-			float SegU = 0.f;
-			const float Dist = SolidSkeletonHover::RaySegmentDistance(
-				Origin,
-				Dir,
-				Cone.Start,
-				Cone.End,
-				RayT,
-				SegU);
-			const float Radius = FMath::Lerp(Cone.RadiusStart, Cone.RadiusEnd, SegU);
-			if (Dist > Radius + 0.15f || RayT >= BestT)
-			{
-				continue;
-			}
-
-			Names.Sort();
-			BestT = RayT;
-			BestLabel = FString::Join(Names, TEXT(", "));
+			return FString();
 		}
-		return BestLabel;
+
+		const SolidBodyMesh::FSolidFittedCone Cone = SolidBodyMesh::LeftThighCone(
+			CharacterMesh->GetBoneLocation(HipName),
+			CharacterMesh->GetBoneLocation(TwistName));
+		if (!Cone.bValid)
+		{
+			return FString();
+		}
+
+		float RayT = 0.f;
+		float SegU = 0.f;
+		const float Dist = SolidSkeletonHover::RaySegmentDistance(
+			Origin,
+			Dir,
+			Cone.Start,
+			Cone.End,
+			RayT,
+			SegU);
+		const float Radius = FMath::Lerp(Cone.RadiusStart, Cone.RadiusEnd, SegU);
+		if (Dist > Radius + 0.15f)
+		{
+			return FString();
+		}
+
+		TArray<FString> Names;
+		Names.Add(HipName.ToString());
+		Names.Add(TwistName.ToString());
+		Names.Sort();
+		return FString::Join(Names, TEXT(", "));
 	}
 
 	TArray<FVector2D> From;

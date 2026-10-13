@@ -126,6 +126,20 @@ namespace SolidBodyMesh
 	/** Round cone around Points. A mirrored point set produces a mirrored cone. */
 	FSolidFittedCone FitCone(const FVector* Points, int32 Count);
 
+	/** The left thigh is this bone. Its length is the distance from its parent joint. */
+	inline const TCHAR* LeftThighBone = TEXT("thigh_twist_01_l");
+
+	/** Diameters of the left thigh cone, in centimetres. The hip end is the wide end. */
+	inline constexpr float LeftThighTopDiameterCm = 20.f;
+	inline constexpr float LeftThighBottomDiameterCm = 15.f;
+
+	/**
+	 * Truncated cone for the left thigh.
+	 * Hip is the parent joint and FarEnd is the bone. The wide end is at the hip.
+	 * Invalid when that bone is shorter than a centimetre.
+	 */
+	FSolidFittedCone LeftThighCone(const FVector& Hip, const FVector& FarEnd);
+
 	/** Start and end radii of the cone from Parent to Child. Both ends are joint radii. */
 	void SegmentRadii(
 		const TArray<float>& Radii,

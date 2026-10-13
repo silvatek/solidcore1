@@ -4,9 +4,9 @@
 #include "SolidWorldMap.h"
 
 /**
- * A WorldMap R marks a river through that square, not a square of water.
- * The channel is 4 m wide. An R with no river or sea beside it is a 4 m pond.
- * Orthogonal neighbors that are R or the sea marker are joined at that width, however long the gap is.
+ * The river marker marks a river through that square, not a square of water.
+ * The channel is 4 m wide. A river marker with no river or sea beside it is a 4 m pond.
+ * Orthogonal neighbors that are the river marker or the sea marker are joined at that width, however long the gap is.
  * Local coordinates are centimetres from the cell centre: +X east, +Y north.
  */
 namespace SolidRiver
@@ -36,7 +36,7 @@ namespace SolidRiver
 		West,
 	};
 
-	/** R joins another river. The sea marker joins the sea. Other markers do not. */
+	/** The river marker joins another river. The sea marker joins the sea. Other markers do not. */
 	inline bool Joins(const TCHAR Marker)
 	{
 		const auto Matches = [](const TCHAR Raw, const TCHAR Expected)

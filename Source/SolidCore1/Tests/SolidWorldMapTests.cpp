@@ -757,4 +757,167 @@ bool FSolidWorldMapSeaMarkerTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidWorldMapLandMarkersTest,
+	"SolidCore1.WorldMap.LandMarkers",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("grass is a dot"), USolidWorldMap::GrassMarker, TEXT('.'));
+	TestEqual(TEXT("a town cell is a small circle"), USolidWorldMap::TownMarker, TEXT('o'));
+	TestEqual(TEXT("forest is a hatch"), USolidWorldMap::ForestMarker, TEXT('#'));
+	TestEqual(TEXT("a river is a star"), USolidWorldMap::RiverMarker, TEXT('*'));
+	TestTrue(TEXT("a star joins a river"), SolidRiver::Joins(USolidWorldMap::RiverMarker));
+	TestFalse(TEXT("the letter R does not join a river"), SolidRiver::Joins(TEXT('R')));
+	TestFalse(TEXT("a lower-case r does not join a river"), SolidRiver::Joins(TEXT('r')));
+	TestFalse(TEXT("grass does not join a river"), SolidRiver::Joins(USolidWorldMap::GrassMarker));
+
+	FString Text;
+	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	{
+		FString Line;
+		Line.Reserve(USolidWorldMap::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		{
+			TCHAR Marker = USolidWorldMap::GrassMarker;
+			if (Row == 0)
+			{
+				if (Col == 1) Marker = TEXT('G');
+				else if (Col == 2) Marker = USolidWorldMap::TownMarker;
+				else if (Col == 3) Marker = TEXT('T');
+				else if (Col == 4) Marker = USolidWorldMap::ForestMarker;
+				else if (Col == 5) Marker = TEXT('F');
+				else if (Col == 6) Marker = USolidWorldMap::RiverMarker;
+				else if (Col == 7) Marker = TEXT('R');
+			}
+			Line.AppendChar(Marker);
+		}
+		Text += Line;
+		Text += TEXT("\n");
+	}
+	Text += TEXT(". = Grassland (yellow)\n");
+
+	USolidWorldMap* Synthetic = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("symbol map loads"), Synthetic->LoadFromString(Text));
+	TestEqual(TEXT("a dot stays a dot"), Synthetic->GetMarkerAtCell(0, 0), USolidWorldMap::GrassMarker);
+	TestEqual(
+		TEXT("a dot is grassland"),
+		static_cast<uint8>(Synthetic->GetBiomeAtCell(0, 0)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+	TestEqual(TEXT("the letter G stays a letter"), Synthetic->GetMarkerAtCell(1, 0), TEXT('G'));
+	TestEqual(
+		TEXT("the letter G is still grassland"),
+		static_cast<uint8>(Synthetic->GetBiomeAtCell(1, 0)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+	TestEqual(TEXT("a circle is the town marker"), Synthetic->GetMarkerAtCell(2, 0), USolidWorldMap::TownMarker);
+	TestEqual(
+		TEXT("a circle is town"),
+		static_cast<uint8>(Synthetic->GetBiomeAtCell(2, 0)),
+		static_cast<uint8>(ESolidBiome::Town));
+	TestEqual(TEXT("the letter T stays a letter"), Synthetic->GetMarkerAtCell(3, 0), TEXT('T'));
+	TestEqual(
+		TEXT("the letter T is not town"),
+		static_cast<uint8>(Synthetic->GetBiomeAtCell(3, 0)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+	TestEqual(TEXT("a hatch is the forest marker"), Synthetic->GetMarkerAtCell(4, 0), USolidWorldMap::ForestMarker);
+	TestEqual(
+		TEXT("a hatch is forest"),
+		static_cast<uint8>(Synthetic->GetBiomeAtCell(4, 0)),
+		static_cast<uint8>(ESolidBiome::Forest));
+	TestEqual(TEXT("the letter F stays a letter"), Synthetic->GetMarkerAtCell(5, 0), TEXT('F'));
+	TestEqual(
+		TEXT("the letter F is not forest"),
+		static_cast<uint8>(Synthetic->GetBiomeAtCell(5, 0)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+	TestEqual(TEXT("a star is the river marker"), Synthetic->GetMarkerAtCell(6, 0), USolidWorldMap::RiverMarker);
+	TestEqual(
+		TEXT("a star is river"),
+		static_cast<uint8>(Synthetic->GetBiomeAtCell(6, 0)),
+		static_cast<uint8>(ESolidBiome::River));
+	TestEqual(TEXT("the letter R stays a letter"), Synthetic->GetMarkerAtCell(7, 0), TEXT('R'));
+	TestEqual(
+		TEXT("the letter R is not river"),
+		static_cast<uint8>(Synthetic->GetBiomeAtCell(7, 0)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+
+	const FVector2D WorldMin(-51200.f, -51200.f);
+	const FVector2D WorldMax(51200.f, 51200.f);
+	FVector2D TownXY = FVector2D::ZeroVector;
+	FVector2D LetterT = FVector2D::ZeroVector;
+	TestTrue(TEXT("town cell projects"), Synthetic->CellToWorldXY(FIntPoint(2, 0), WorldMin, WorldMax, TownXY));
+	TestTrue(TEXT("letter T projects"), Synthetic->CellToWorldXY(FIntPoint(3, 0), WorldMin, WorldMax, LetterT));
+	TestTrue(TEXT("a circle is a marked town"), Synthetic->IsMarkedTown(TownXY.X, TownXY.Y, WorldMin, WorldMax));
+	TestFalse(TEXT("the letter T is not a marked town"), Synthetic->IsMarkedTown(LetterT.X, LetterT.Y, WorldMin, WorldMax));
+	const FLinearColor Grass = Synthetic->GetBiomeColor(ESolidBiome::Grassland);
+	TestTrue(TEXT("the grass key still loads"), Grass.R > 0.5f && Grass.G > 0.5f && Grass.B < 0.5f);
+
+	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("shipped map loads"), Shipped->LoadDefault());
+	if (!Shipped->IsLoaded())
+	{
+		return true;
+	}
+	int32 OldLetters = 0;
+	int32 GrassNotDot = 0;
+	int32 ForestNotHatch = 0;
+	int32 RiverNotStar = 0;
+	int32 TownCircles = 0;
+	bool bSawGrass = false;
+	bool bSawForest = false;
+	bool bSawRiver = false;
+	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	{
+		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		{
+			const TCHAR Marker = Shipped->GetMarkerAtCell(Col, Row);
+			if (Marker == TEXT('G') || Marker == TEXT('g')
+				|| Marker == TEXT('T') || Marker == TEXT('t')
+				|| Marker == TEXT('F') || Marker == TEXT('f')
+				|| Marker == TEXT('R') || Marker == TEXT('r'))
+			{
+				++OldLetters;
+			}
+			if (Marker == USolidWorldMap::TownMarker)
+			{
+				++TownCircles;
+			}
+			const ESolidBiome Biome = Shipped->GetBiomeAtCell(Col, Row);
+			if (Biome == ESolidBiome::Grassland)
+			{
+				bSawGrass = true;
+				if (Marker != USolidWorldMap::GrassMarker)
+				{
+					++GrassNotDot;
+				}
+			}
+			else if (Biome == ESolidBiome::Forest)
+			{
+				bSawForest = true;
+				if (Marker != USolidWorldMap::ForestMarker)
+				{
+					++ForestNotHatch;
+				}
+			}
+			else if (Biome == ESolidBiome::River)
+			{
+				bSawRiver = true;
+				if (Marker != USolidWorldMap::RiverMarker)
+				{
+					++RiverNotStar;
+				}
+			}
+		}
+	}
+	TestEqual(TEXT("the shipped map has no G, T, F, or R"), OldLetters, 0);
+	TestEqual(TEXT("grass cells are dots"), GrassNotDot, 0);
+	TestEqual(TEXT("forest cells are hatches"), ForestNotHatch, 0);
+	TestEqual(TEXT("river cells are stars"), RiverNotStar, 0);
+	TestTrue(TEXT("the shipped map has grass"), bSawGrass);
+	TestTrue(TEXT("the shipped map has forest"), bSawForest);
+	TestTrue(TEXT("the shipped map has a river"), bSawRiver);
+	TestTrue(TEXT("the shipped map has a town circle"), TownCircles > 0);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

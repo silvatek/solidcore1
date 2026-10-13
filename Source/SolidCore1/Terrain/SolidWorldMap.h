@@ -55,17 +55,17 @@ public:
 	/** WorldMap.txt marker for the sea. A wave, not the letter S. */
 	static constexpr TCHAR SeaMarker = TEXT('~');
 
-	/** WorldMap.txt marker for grassland. */
-	static constexpr TCHAR GrassMarker = TEXT('G');
+	/** WorldMap.txt marker for grassland. A dot, not the letter G. */
+	static constexpr TCHAR GrassMarker = TEXT('.');
 
-	/** WorldMap.txt marker for a town cell that is not a numbered location. */
-	static constexpr TCHAR TownMarker = TEXT('T');
+	/** WorldMap.txt marker for a town cell that is not a numbered location. A small circle, not the letter T. */
+	static constexpr TCHAR TownMarker = TEXT('o');
 
-	/** WorldMap.txt marker for forest. */
-	static constexpr TCHAR ForestMarker = TEXT('F');
+	/** WorldMap.txt marker for forest. A hatch, not the letter F. */
+	static constexpr TCHAR ForestMarker = TEXT('#');
 
-	/** WorldMap.txt marker for a river channel. */
-	static constexpr TCHAR RiverMarker = TEXT('R');
+	/** WorldMap.txt marker for a river channel. A star, not the letter R. */
+	static constexpr TCHAR RiverMarker = TEXT('*');
 
 	/** Load Content/WorldMap.txt. Idempotent when already loaded. */
 	bool LoadDefault(bool bForceReload = false);
@@ -76,8 +76,8 @@ public:
 	bool IsLoaded() const { return bIsLoaded; }
 
 	/**
-	 * Marker biome at map cell (clamped). T and Z are Town; C is Mountain; digits use the location key.
-	 * R is River for the whole cell. SampleBiome paints only the channel.
+	 * Marker biome at map cell (clamped). The town marker and Z are Town; C is Mountain; digits use the location key.
+	 * The river marker is River for the whole cell. SampleBiome paints only the channel.
 	 */
 	ESolidBiome GetBiomeAtCell(int32 MapX, int32 MapY) const;
 
@@ -94,7 +94,7 @@ public:
 	 * Sample biome for a world XY given the TerrainMap world rectangle.
 	 * File row 0 → north (max Y). File column 0 → east (max X) so the text
 	 * matches the in-world layout when viewed with north up.
-	 * An R cell is a 4 m river. The dry part of that square uses the neighboring biome.
+	 * A river-marker cell is a 4 m river. The dry part of that square uses the neighboring biome.
 	 * A solved road paints its strip as Road, a brown close to the town colour.
 	 * River water stays river, and a mountain or the sea keeps its own shelf.
 	 */
@@ -106,7 +106,7 @@ public:
 	/** True when the point lies on a solved road strip. Does not change the biome by itself. */
 	bool IsOnRoad(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 
-	/** True when this cell is marked T, Z, or a location digit. A road strip is not a town. */
+	/** True when this cell is the town marker, Z, or a location digit. A road strip is not a town. */
 	bool IsMarkedTown(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 
 	/** Display / material color from the key (or built-in defaults). */

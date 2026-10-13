@@ -2,75 +2,75 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~MMMMMMMMMM~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ~~~~~~~~~~~~~~~~~~~~~~MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-~~~~~~~~~~~~~~~~~~MMMMMMMMMMMMMMTTTTTTMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~~GGGG~~~~~~~~~~~~
-~~~~~~~~~~MMMMMMMMMMMMMMMMMMGGTTTT02TTTTMMMMMMMMGGMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~~GGGGGGGG~~~~~~~~~~~~
-~~~~~~~~MMMMMMGGGGGGT0GGRMMMMMMMGGGGGGGGGGGGGGGGGGMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~~~~~~~~GGT3TTGG~~~~~~~~~~~~
-~~~~~~~~MMMMMMMMCMGGGGGGRGGGT1TTGGFFFFMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~~~~~~~~~~~~GGTTTT~~~~~~~~~~~~~~
-~~~~~~~~MMMMMMMMMMMMMMMMRMMMGGGGGGGGFFFFMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~MMMMMMMMMMMMMMooooooMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~~....~~~~~~~~~~~~
+~~~~~~~~~~MMMMMMMMMMMMMMMMMM..oooo02ooooMMMMMMMM..MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~~........~~~~~~~~~~~~
+~~~~~~~~MMMMMM......o0..*MMMMMMM..................MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~~~~~~~~..o3oo..~~~~~~~~~~~~
+~~~~~~~~MMMMMMMMCM......*...o1oo..####MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~~~~~~~~~~~~..oooo~~~~~~~~~~~~~~
+~~~~~~~~MMMMMMMMMMMMMMMM*MMM........####MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ~~~~~~~~MMMMMMMMMMMMMMMMMMMMMMMM05MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-~~~~~~~~~~~~MMMMMMMMMMMMMMGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~~~~~GG~~~~~~~~~~~~~~
-~~~~~~~~~~MMMMMMMMMMMMGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~GGGGGG~~~~~~~~~~~~~~
-~~~~~~~~MMMMMMMMGGGGGGGGGGGGGGGGFFFFFFFFFFFFGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~GGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~MMMMGGGGGGGGGGGGGGGGGGGGGGGGFFFFFFFFFFFFFFGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~GGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~MMGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGFFFFFFFFFFFFFFFFFFGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~GGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGFFFFFFFFFFFFFFFFFFFFFFGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGFFFFFFFFFFFFGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGFFFFFFGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGFFFFGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGFFFFFFFFFFFFFFFFFFFFGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGFFFFFFFFFFGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGFFFFGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGTTTTGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGTTT4TTGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGTTTTGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGDDDDDDDDDDDDDDDDDDDDDDDDDDGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGMMMMMM~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGDDDDDDDDDDDDDDDDDDDDDDGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGMMMMMMMM~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGDDDDDDGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGMMMM~~~~~~~~~~~~~~
-~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGMMMMMMMM~~~~~~~~~~~~
-~~~~~~~~~~GGGGGGGGGGGGMMMMGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGMMMMMMMMMM~~~~~~~~~~~~
-~~~~~~~~~~~~~~~~GGGGGGT6GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGMMMMMMMMMM~~~~~~~~~~~~~~
-~~~~~~~~RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGMMMMMMMMMM~~~~~~~~~~~~~~
-~~~~~~~~~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGRRRRGGGGGGGGGGGGGGGGGGGGGGGGGGGGMMMMMMMMMMMM~~~~~~~~~~~~~~
-~~~~~~~~~~~~GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGRRRRRRRRRRRRGGGGGGGGGGGGGGGGGGMMMMMMMMMMMM~~~~~~~~~~~~~~
+~~~~~~~~~~~~MMMMMMMMMMMMMM....................................................................~~~~~~~~~~~~~~~~~~..~~~~~~~~~~~~~~
+~~~~~~~~~~MMMMMMMMMMMM..........................................................................~~~~~~~~~~~~......~~~~~~~~~~~~~~
+~~~~~~~~MMMMMMMM................############........................................................~~~~~~........~~~~~~~~~~~~~~
+~~~~~~~~MMMM........................##############..................................................~~~~..........~~~~~~~~~~~~~~
+~~~~~~~~MM................................##################........................................~~............~~~~~~~~~~~~~~
+~~~~~~~~............................######################........................................................~~~~~~~~~~~~~~
+~~~~~~~~......................############........................................................................~~~~~~~~~~~~~~
+~~~~~~~~..........................######..........................................................................~~~~~~~~~~~~~~
+~~~~~~~~............................####..........................................................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~............................................################################..............................~~~~~~~~~~~~~~
+~~~~~~~~..................................................################################........................~~~~~~~~~~~~~~
+~~~~~~~~..................................................####################....................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................##########......................................~~~~~~~~~~~~~~
+~~~~~~~~..............................................................####........................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~.....................................................................oooo.................................~~~~~~~~~~~~~~
+~~~~~~~~....................................................................ooo4oo................................~~~~~~~~~~~~~~
+~~~~~~~~.....................................................................oooo.................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~..........................................................................................................~~~~~~~~~~~~~~
+~~~~~~~~........DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD....................................................~~~~~~~~~~~~~~
+~~~~~~~~........DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD........................................................~~~~~~~~~~~~~~
+~~~~~~~~..........DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD........................................................~~~~~~~~~~~~~~
+~~~~~~~~............DDDDDDDDDDDDDDDDDDDDDDDDDD..............................................................MMMMMM~~~~~~~~~~~~~~
+~~~~~~~~............DDDDDDDDDDDDDDDDDDDDDD................................................................MMMMMMMM~~~~~~~~~~~~~~
+~~~~~~~~......................DDDDDD..........................................................................MMMM~~~~~~~~~~~~~~
+~~~~~~~~....................................................................................................MMMMMMMM~~~~~~~~~~~~
+~~~~~~~~~~............MMMM................................................................................MMMMMMMMMM~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~......o6................................................................................MMMMMMMMMM~~~~~~~~~~~~~~
+~~~~~~~~****************************************************************................................MMMMMMMMMM~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~......................................................****............................MMMMMMMMMMMM~~~~~~~~~~~~~~
+~~~~~~~~~~~~............................................................************..................MMMMMMMMMMMM~~~~~~~~~~~~~~
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM~~~~~~~~~~~~~~
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM~~~~~~~~~~~~~~
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM~~~~~~~~~~~~~~
 
 ~ = Sea (blue)
-G = Grassland (light green)
-T = Town (brown)
+. = Grassland (light green)
+o = Town (brown)
 M = Mountain (dark grey)
 C = Cave (dark grey)
-F = Forest (dark green)
+# = Forest (dark green)
 D = Desert (yellow)
-R = River (blue)
+* = River (blue)
 
 
 

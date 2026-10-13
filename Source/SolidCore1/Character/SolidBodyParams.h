@@ -9,8 +9,8 @@
  */
 namespace SolidBody
 {
-	inline constexpr float ParamMin = 0.75f;
-	inline constexpr float ParamMax = 1.35f;
+	inline constexpr float ParamMin = 0.40f;
+	inline constexpr float ParamMax = 1.95f;
 }
 
 /**
@@ -41,14 +41,15 @@ struct FSolidBodyParams
 };
 
 /**
- * The three sliders in the character editor.
- * Height and build sit on SolidBody::ParamMin .. ParamMax.
- * Gender runs from 0 (broad shoulders, narrow hips) to 1 (the opposite). 0.5 leaves the seed.
+ * The three sliders in the character editor. Each runs from 0 to 1.
+ * Build 0 is short and wide, build 1 is tall and thin, and 0.5 is the Viking scale.
+ * Gender 0 is feminine and gender 1 is masculine. 0.5 changes nothing.
+ * Height 0.5 changes nothing. 0 shortens the figure and 1 lengthens it.
  */
 struct FSolidBodyControls
 {
-	float Height = 1.f;
-	float Build = 1.f;
+	float Height = 0.5f;
+	float Build = 0.5f;
 	float Gender = 0.5f;
 };
 
@@ -62,19 +63,45 @@ namespace SolidBodyControls
 	inline constexpr float MouseStep = 0.01f;
 	inline constexpr float GenderNeutral = 0.5f;
 	/** Feminine end of the gender slider. Masculine is the other end. */
-	inline constexpr float Feminine = 1.f;
-	inline constexpr float Masculine = 0.f;
-	/** +1 when a higher Build slider increases bulk. */
-	inline constexpr float BuildBulkDirection = 1.f;
-	/** How far gender 0 or 1 pulls shoulders and hips off the seed. */
-	inline constexpr float GenderSpread = 0.18f;
+	inline constexpr float Feminine = 0.f;
+	inline constexpr float Masculine = 1.f;
+	/** -1: a higher Build slider is the thin end, so bulk falls. */
+	inline constexpr float BuildBulkDirection = -1.f;
 
-	/** Height and build copied from the seed. Gender stays neutral, so Resolve matches the seed. */
+	/**
+	 * Build pulls each channel off 1.
+	 * Positive means build 1 is larger. Negative means build 0 is larger.
+	 * At 0.5 every channel is exactly 1, before gender and the height slider.
+	 */
+	inline constexpr float BuildHeightDelta = 0.22f;
+	inline constexpr float BuildBulkDelta = -0.42f;
+	inline constexpr float BuildTorsoDelta = -0.34f;
+	inline constexpr float BuildShoulderDelta = -0.28f;
+	inline constexpr float BuildHipDelta = -0.18f;
+	inline constexpr float BuildArmDelta = 0.14f;
+	inline constexpr float BuildLegDelta = 0.26f;
+	inline constexpr float BuildHeadDelta = -0.24f;
+	inline constexpr float BuildNeckDelta = 0.22f;
+
+	/** Gender bias is -1 at feminine and +1 at masculine. Each spread is that fraction. */
+	inline constexpr float GenderHeightSpread = 0.07f;
+	inline constexpr float GenderShoulderSpread = 0.14f;
+	inline constexpr float GenderHipSpread = 0.14f;
+	inline constexpr float GenderChestSpread = 0.10f;
+	inline constexpr float GenderBulkSpread = 0.06f;
+	inline constexpr float GenderNeckSpread = 0.08f;
+	inline constexpr float GenderHeadSpread = 0.04f;
+
+	/** Height slider. 0.5 leaves the lengths alone. */
+	inline constexpr float HeightScaleLow = 0.68f;
+	inline constexpr float HeightScaleHigh = 1.36f;
+
+	/** Neutral sliders. The seed does not choose the body. */
 	FSolidBodyControls FromSeed(const FSolidBodyParams& Seed);
 
 	/**
-	 * Seed with the sliders applied.
-	 * Neutral gender and a build equal to the seed bulk leave every channel bit-identical.
+	 * Every proportion from the three sliders, in order: build, then gender, then height.
+	 * The seed is ignored. 0.5, 0.5, 0.5 is the Viking scale on every channel.
 	 */
 	FSolidBodyParams Resolve(const FSolidBodyParams& Seed, const FSolidBodyControls& Controls);
 

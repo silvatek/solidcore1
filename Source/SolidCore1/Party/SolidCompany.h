@@ -129,15 +129,15 @@ struct FSolidCompanion
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	FLinearColor SkinColor = FLinearColor(0.96f, 0.76f, 0.72f);
 
-	/** Character-editor height. The catalog copies this from the name seed. */
+	/** Height slider, 0 to 1. 0.5 leaves the build and gender alone. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
-	float BodyHeight = 1.f;
+	float BodyHeight = 0.5f;
 
-	/** Character-editor build. The catalog copies this from the name seed's bulk. */
+	/** Build slider, 0 to 1. 0 is short and wide, 1 is tall and thin. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
-	float BodyBuild = 1.f;
+	float BodyBuild = 0.5f;
 
-	/** 0 is broader shoulders, 1 is broader hips, 0.5 leaves the seed. */
+	/** Gender slider, 0 to 1. 0 is feminine, 1 is masculine, 0.5 changes nothing. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	float BodyGender = 0.5f;
 };

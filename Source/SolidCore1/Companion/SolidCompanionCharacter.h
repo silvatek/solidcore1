@@ -186,12 +186,12 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Visual")
 	FLinearColor SkinColor = FLinearColor(0.96f, 0.76f, 0.72f);
 
-	/** Slider values. Ignored until SetBodyControls, so a plain spawn keeps the name seed. */
+	/** Slider values, each from 0 to 1. Ignored until SetBodyControls. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Visual")
-	float BodyHeight = 1.f;
+	float BodyHeight = 0.5f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Visual")
-	float BodyBuild = 1.f;
+	float BodyBuild = 0.5f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Visual")
 	float BodyGender = 0.5f;

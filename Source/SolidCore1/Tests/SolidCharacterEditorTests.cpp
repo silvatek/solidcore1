@@ -340,4 +340,67 @@ bool FSolidCharacterEditorSliderHitTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodySliderDerivationTest,
+	"SolidCore1.Body.SliderDerivation",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodySliderDerivationTest::RunTest(const FString& Parameters)
+{
+	FSolidBodyParams SeedA;
+	SeedA.Height = 1.2f;
+	SeedA.Bulk = 0.8f;
+	const FSolidBodyParams SeedB = FSolidBodyParams::FromSeed(SolidBodyMesh::SeedForName(TEXT("Quinn")));
+	const FSolidBodyControls Neutral = SolidBodyControls::FromSeed(SeedA);
+
+	const FSolidBodyParams MidA = SolidBodyControls::Resolve(SeedA, Neutral);
+	const FSolidBodyParams MidB = SolidBodyControls::Resolve(SeedB, Neutral);
+	TestTrue(TEXT("sliders ignore the seed"), MidA.ExactEquals(MidB));
+	TestTrue(TEXT("neutral height is the viking scale"), FMath::IsNearlyEqual(MidA.Height, 1.f));
+	TestTrue(TEXT("neutral bulk is the viking scale"), FMath::IsNearlyEqual(MidA.Bulk, 1.f));
+	TestTrue(TEXT("neutral shoulders are the viking scale"), FMath::IsNearlyEqual(MidA.ShoulderWidth, 1.f));
+	TestTrue(TEXT("neutral hips are the viking scale"), FMath::IsNearlyEqual(MidA.HipWidth, 1.f));
+	TestTrue(TEXT("neutral legs are the viking scale"), FMath::IsNearlyEqual(MidA.LegLength, 1.f));
+	TestTrue(TEXT("neutral arms are the viking scale"), FMath::IsNearlyEqual(MidA.ArmLength, 1.f));
+	TestTrue(TEXT("neutral head is the viking scale"), FMath::IsNearlyEqual(MidA.HeadSize, 1.f));
+
+	FSolidBodyControls Dwarf = Neutral;
+	Dwarf.Build = 0.f;
+	FSolidBodyControls Elf = Neutral;
+	Elf.Build = 1.f;
+	const FSolidBodyParams ShortWide = SolidBodyControls::Resolve(SeedA, Dwarf);
+	const FSolidBodyParams TallThin = SolidBodyControls::Resolve(SeedA, Elf);
+	TestTrue(TEXT("dwarf is shorter than the mid point"), ShortWide.Height < MidA.Height);
+	TestTrue(TEXT("elf is taller than the mid point"), TallThin.Height > MidA.Height);
+	TestTrue(TEXT("dwarf is wider than the elf"), ShortWide.Bulk > TallThin.Bulk);
+	TestTrue(TEXT("dwarf legs are shorter"), ShortWide.LegLength < TallThin.LegLength);
+	TestTrue(TEXT("dwarf head is larger"), ShortWide.HeadSize > TallThin.HeadSize);
+	TestTrue(TEXT("elf shoulders are narrower"), TallThin.ShoulderWidth < ShortWide.ShoulderWidth);
+
+	FSolidBodyControls Feminine = Neutral;
+	Feminine.Gender = SolidBodyControls::Feminine;
+	FSolidBodyControls Masculine = Neutral;
+	Masculine.Gender = SolidBodyControls::Masculine;
+	const FSolidBodyParams Woman = SolidBodyControls::Resolve(SeedA, Feminine);
+	const FSolidBodyParams Man = SolidBodyControls::Resolve(SeedA, Masculine);
+	TestTrue(TEXT("feminine is shorter than masculine"), Woman.Height < Man.Height);
+	TestTrue(TEXT("feminine shoulders are narrower"), Woman.ShoulderWidth < Man.ShoulderWidth);
+	TestTrue(TEXT("feminine hips are wider"), Woman.HipWidth > Man.HipWidth);
+	TestTrue(TEXT("masculine chest is broader"), Man.TorsoGirth > Woman.TorsoGirth);
+
+	FSolidBodyControls Short = Neutral;
+	Short.Height = 0.f;
+	FSolidBodyControls Tall = Neutral;
+	Tall.Height = 1.f;
+	const FSolidBodyParams Reduced = SolidBodyControls::Resolve(SeedA, Short);
+	const FSolidBodyParams Increased = SolidBodyControls::Resolve(SeedA, Tall);
+	TestTrue(TEXT("height 0 shortens the figure"), Reduced.Height < MidA.Height);
+	TestTrue(TEXT("height 1 lengthens the figure"), Increased.Height > MidA.Height);
+	TestTrue(TEXT("height slider scales the arms"), Reduced.ArmLength < MidA.ArmLength && Increased.ArmLength > MidA.ArmLength);
+	TestTrue(TEXT("height slider leaves the bulk"), FMath::IsNearlyEqual(Reduced.Bulk, MidA.Bulk));
+	TestTrue(TEXT("sliders stay on 0 to 1"), FMath::IsNearlyEqual(SolidBodyControls::ValueAtFraction(SolidBodyControls::Build, 0.f), 0.f));
+	TestTrue(TEXT("build slider ends at 1"), FMath::IsNearlyEqual(SolidBodyControls::ValueAtFraction(SolidBodyControls::Build, 1.f), 1.f));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

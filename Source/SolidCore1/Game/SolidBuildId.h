@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0240")
+#define SOLID_BUILD_ID TEXT("SC1-0241")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Shoulders are tapered cylinders, and the hips reach the outside of the thighs.")
+#define SOLID_BUILD_NOTE TEXT("Height, build, and gender sliders run from 0 to 1 and set every proportion.")
 #endif

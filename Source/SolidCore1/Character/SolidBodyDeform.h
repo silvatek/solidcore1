@@ -42,8 +42,8 @@ struct FSolidDeformVertex
 };
 
 /**
- * A bind pose small enough to build in a test, and the same shape a later
- * pass will fill from SK_Viking. Z is up.
+ * A bind pose small enough to build in a test. The body mesh fills the same
+ * bones from the Viking skeleton. Z is up.
  */
 struct FSolidDeformMesh
 {

@@ -6,29 +6,46 @@
 #include "Engine/SkeletalMesh.h"
 #include "MeshDescription.h"
 #include "ReferenceSkeleton.h"
-#include "SkeletalMeshAttributes.h"
+#include "Rendering/SkeletalMeshRenderData.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
 namespace
 {
-	FVector AverageVertex(USkeletalMesh* Mesh)
+	int32 RenderVertexCount(const USkeletalMesh* Mesh)
 	{
-		FMeshDescription* Description = Mesh ? Mesh->GetMeshDescription(0) : nullptr;
-		if (!Description || Description->Vertices().Num() == 0)
+		const FSkeletalMeshRenderData* RenderData = Mesh ? Mesh->GetResourceForRendering() : nullptr;
+		if (!RenderData || RenderData->LODRenderData.Num() == 0)
 		{
-			return FVector::ZeroVector;
+			return 0;
 		}
-		FSkeletalMeshAttributes Attributes(*Description);
-		const TVertexAttributesRef<FVector3f> Positions = Attributes.GetVertexPositions();
-		FVector Sum = FVector::ZeroVector;
-		int32 Count = 0;
-		for (const FVertexID VertexID : Description->Vertices().GetElementIDs())
+		return static_cast<int32>(RenderData->LODRenderData[0].GetNumVertices());
+	}
+
+	int32 DescriptionVertexCount(USkeletalMesh* Mesh)
+	{
+		const FMeshDescription* Description = Mesh ? Mesh->GetMeshDescription(0) : nullptr;
+		return Description ? Description->Vertices().Num() : 0;
+	}
+
+	float BindDelta(const USkeletalMesh* A, const USkeletalMesh* B)
+	{
+		if (!A || !B)
 		{
-			Sum += FVector(Positions.Get(VertexID));
-			++Count;
+			return 1.e6f;
 		}
-		return Count > 0 ? Sum / static_cast<double>(Count) : FVector::ZeroVector;
+		const TArray<FTransform>& PoseA = A->GetRefSkeleton().GetRawRefBonePose();
+		const TArray<FTransform>& PoseB = B->GetRefSkeleton().GetRawRefBonePose();
+		if (PoseA.Num() != PoseB.Num())
+		{
+			return 1.e6f;
+		}
+		float Delta = 0.f;
+		for (int32 Index = 0; Index < PoseA.Num(); ++Index)
+		{
+			Delta = FMath::Max(Delta, static_cast<float>((PoseA[Index].GetTranslation() - PoseB[Index].GetTranslation()).Size()));
+		}
+		return Delta;
 	}
 }
 
@@ -191,7 +208,7 @@ bool FSolidBodyVikingBuildTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("alex body"), Alex);
 	if (!Tall || !SamA || !SamB || !Alex)
 	{
-		AddError(TEXT("SK_Viking could not be copied into a generated body."));
+		AddError(TEXT("A low-poly body could not be built on the Viking skeleton."));
 		return false;
 	}
 
@@ -236,11 +253,28 @@ bool FSolidBodyVikingBuildTest::RunTest(const FString& Parameters)
 		TEXT("drawn length lands on that bone"),
 		TallLength > SourceLength * ((SolidBody::ParamMax + 1.f) * 0.5f));
 
-	const FVector AverageA = AverageVertex(SamA);
-	const FVector AverageB = AverageVertex(SamB);
-	const FVector AverageAlex = AverageVertex(Alex);
-	TestTrue(TEXT("same seed rebuilds the same shape"), AverageA.Equals(AverageB, 0.05f));
-	TestFalse(TEXT("another name is another shape"), AverageA.Equals(AverageAlex, 0.5f));
+	const int32 SamVerts = RenderVertexCount(SamA);
+	const int32 SourceVerts = RenderVertexCount(Source);
+	TestTrue(TEXT("low-poly body has a render lod"), SamVerts > 0);
+	TestTrue(TEXT("low-poly body stays small"), SamVerts < 8000);
+	if (SourceVerts > 0)
+	{
+		TestTrue(TEXT("generated body is lighter than the viking sculpt"), SamVerts < SourceVerts);
+	}
+	TestEqual(TEXT("same seed rebuilds the same vertex count"), RenderVertexCount(SamB), SamVerts);
+	TestTrue(TEXT("body keeps the viking bone count"),
+		SamA->GetRefSkeleton().GetRawBoneNum() == Source->GetRefSkeleton().GetRawBoneNum());
+	TestTrue(TEXT("body has an inverse bind"), SamA->GetRefBasesInvMatrix().Num() > 0);
+
+	const int32 Described = DescriptionVertexCount(SamA);
+	if (Described > 0)
+	{
+		TestTrue(TEXT("described body is not a copy of the sculpt"), Described < 8000);
+		TestEqual(TEXT("same seed rebuilds the same description"), DescriptionVertexCount(SamB), Described);
+	}
+
+	TestTrue(TEXT("same seed rebuilds the same bind"), BindDelta(SamA, SamB) < 0.05f);
+	TestTrue(TEXT("another name is another bind"), BindDelta(SamA, Alex) > 0.5f);
 	return true;
 }
 

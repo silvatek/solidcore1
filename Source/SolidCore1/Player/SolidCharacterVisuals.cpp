@@ -1,5 +1,4 @@
 #include "SolidCharacter.h"
-#include "SolidBodyMesh.h"
 #include "Animation/AnimSequence.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -7,13 +6,13 @@
 
 void ASolidCharacter::ApplyCharacterVisuals()
 {
+	// The captain stays on SK_Viking. Companions wear the generated body.
 	SolidClipLocomotion::ApplyMeshAndSingleNodeMode(
 		GetMesh(),
 		DefaultSkeletalMesh,
 		SolidClipLocomotion::DefaultMeshPath,
 		TEXT("Captain"),
 		/*bOnlyIfMeshUnset=*/false);
-	SolidBodyMesh::ApplySeed(GetMesh(), SolidBodyMesh::CaptainSeed, this, TEXT("Captain"));
 }
 
 void ASolidCharacter::CacheLocomotionAnims()

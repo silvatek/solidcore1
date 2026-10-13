@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0228")
+#define SOLID_BUILD_ID TEXT("SC1-0229")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A generated body is worn only when it has a render LOD")
+#define SOLID_BUILD_NOTE TEXT("Companions wear a low-poly body. The captain stays SK_Viking.")
 #endif

@@ -7,11 +7,12 @@ class USkeletalMesh;
 class USkeletalMeshComponent;
 
 /**
- * Builds a unique body from SK_Viking.
+ * Builds a low-poly humanoid on the Viking skeleton.
+ * The Viking sculpt is not copied. Bone names stay, so Anim_Viking_* still plays.
+ * One transient skeleton copy serves every body, so the Viking skeleton asset is not modified.
  * A seed draws every channel across SolidBody::ParamMin .. ParamMax.
- * The same seed rebuilds the same body. The captain's seed does not follow his title.
- * The mesh keeps the Viking bone names and plays Anim_Viking_*.
- * Its skeleton is a transient copy, so the Viking skeleton asset is not modified.
+ * The same seed rebuilds the same body.
+ * The captain stays on SK_Viking for now. Companions wear the generated body.
  */
 namespace SolidBodyMesh
 {
@@ -24,14 +25,16 @@ namespace SolidBodyMesh
 	ESolidBodyBoneRole RoleForBoneName(const FString& BoneName);
 
 	/**
-	 * Transient mesh owned by Outer. Null when Source has no editable LOD.
-	 * Source is left unchanged.
+	 * Transient low-poly mesh owned by Outer.
+	 * Source supplies the Viking skeleton and bind pose. Its mesh and skeleton stay unchanged.
+	 * Null when Source has no skeleton, or the body has no wearable LOD.
 	 */
 	USkeletalMesh* Build(const USkeletalMesh* Source, const FSolidBodyParams& Params, UObject* Outer);
 
 	/**
-	 * Replace the component mesh with a seeded body from SK_Viking.
-	 * Leaves the current mesh in place when the Viking LOD cannot be edited.
+	 * Replace the component mesh with a seeded low-poly body.
+	 * The same seed reuses one mesh. Leaves the current mesh when the body cannot be built.
+	 * The captain does not call this.
 	 */
 	void ApplySeed(USkeletalMeshComponent* MeshComp, uint32 Seed, UObject* Outer, const TCHAR* DebugLabel);
 }

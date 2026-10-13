@@ -100,7 +100,11 @@ public:
 	/** True when F9 may switch to this sight. Raven sight starts locked. */
 	bool IsSightEnabled(ESolidSight Sight) const;
 
-	/** Select Party assigned battle-plan slot (0 = F1). Returns false if empty/out of range. */
+	/**
+	 * Select Party assigned battle-plan slot (0 = F1). Returns false if empty/out of range.
+	 * Parade first fires Enter Relion and Enter Dragongate, so a fresh launch
+	 * still has companions and raven sight. The captain does not move.
+	 */
 	bool SelectBattlePlanSlot(int32 SlotIndex);
 
 	/**
@@ -132,6 +136,10 @@ protected:
 	virtual void BeginPlay() override;
 	void EnsureTerrainStreamer();
 	void RefreshEvents();
+	/** Record one enter-town event and apply its sight and title to the captain. */
+	void NoteTownEntry(int32 TownId);
+	/** Fire Enter Relion, then Enter Dragongate, and field the party. */
+	void FireParadeEvents();
 	void EnsureCompanion();
 	void EnsureVegetation();
 	void SaveTravelSession(bool bInDungeon, bool bReturnToDungeonMouth);

@@ -213,9 +213,42 @@ bool FSolidGameModeBattlePlanSelectTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("F4 loose"), GameMode->SelectBattlePlanSlot(3));
 	TestTrue(TEXT("loose wide"),
 		GameMode->GetParty()->GetActiveSpacing() == ESolidBattleSpacing::Wide);
+	TestEqual(TEXT("other plans leave the party empty"), GameMode->GetMaxPartySize(), 0);
+	TestFalse(TEXT("other plans leave raven sight locked"), GameMode->IsSightEnabled(ESolidSight::Raven));
+
 	TestTrue(TEXT("F5 parade"), GameMode->SelectBattlePlanSlot(4));
 	TestTrue(TEXT("formation parade"),
 		GameMode->GetParty()->GetActiveFormation() == ESolidBattleFormation::Parade);
+	TestTrue(TEXT("parade unlocks raven sight"), GameMode->IsSightEnabled(ESolidSight::Raven));
+	TestEqual(TEXT("parade raises the party cap"), GameMode->GetMaxPartySize(), SolidEvents::RosterCount);
+	TestEqual(
+		TEXT("parade titles the captain"),
+		FString(GameMode->GetConfiguration().CaptainTitle),
+		FString(SolidEvents::TitleCaptain));
+	TestEqual(TEXT("parade leaves the captain where he stands"), GameMode->GetConfiguration().OccupiedTown, INDEX_NONE);
+
+	auto Fired = [](const FGameState& State, const TCHAR* Name)
+	{
+		for (int32 Index = 0; Index < State.FiredCount; ++Index)
+		{
+			const int32 EventIndex = State.FiredOrder[Index];
+			if (EventIndex >= 0
+				&& EventIndex < SolidEvents::DefinitionCount
+				&& FCString::Strcmp(SolidEvents::Definitions[EventIndex].Name, Name) == 0)
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+	const FGameState& State = GameMode->GetConfiguration();
+	TestTrue(TEXT("parade fires Enter Relion"), Fired(State, TEXT("Enter Relion")));
+	TestTrue(TEXT("parade fires Enter Dragongate"), Fired(State, TEXT("Enter Dragongate")));
+	TestFalse(TEXT("parade does not fire Enter Kanfold"), Fired(State, TEXT("Enter Kanfold")));
+	const int32 FiredCount = State.FiredCount;
+	TestTrue(TEXT("F5 parade again"), GameMode->SelectBattlePlanSlot(4));
+	TestEqual(TEXT("parade events fire once"), GameMode->GetConfiguration().FiredCount, FiredCount);
+
 	TestFalse(TEXT("F6 empty"), GameMode->SelectBattlePlanSlot(5));
 	return true;
 }

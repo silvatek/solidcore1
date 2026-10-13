@@ -73,6 +73,22 @@ namespace
 		APlayerController* Controller = World ? World->GetFirstPlayerController() : nullptr;
 		return Controller ? Cast<ASolidCharacter>(Controller->GetPawn()) : nullptr;
 	}
+
+	int32 TownIdForEvent(const TCHAR* EventName)
+	{
+		if (!EventName)
+		{
+			return INDEX_NONE;
+		}
+		for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
+		{
+			if (FCString::Strcmp(SolidEvents::Definitions[Index].Name, EventName) == 0)
+			{
+				return SolidEvents::Definitions[Index].Parameter;
+			}
+		}
+		return INDEX_NONE;
+	}
 }
 
 static_assert(
@@ -433,6 +449,12 @@ void ASolidGameMode::RefreshEvents()
 		Location.Y,
 		Terrain->GetWorldMinXY(),
 		Terrain->GetWorldMaxXY());
+	NoteTownEntry(TownId);
+	EnsureCompanion();
+}
+
+void ASolidGameMode::NoteTownEntry(const int32 TownId)
+{
 	const SolidEvents::FResult Result = SolidEvents::NotifyOccupiedTown(Configuration, TownId, WorldStamp());
 	if (Result.bFired)
 	{
@@ -445,7 +467,7 @@ void ASolidGameMode::RefreshEvents()
 			Configuration.CaptainTitle ? Configuration.CaptainTitle : TEXT(""));
 	}
 
-	if (ASolidCharacter* Captain = Cast<ASolidCharacter>(PlayerPawn))
+	if (ASolidCharacter* Captain = FindCaptain(GetWorld()))
 	{
 		if (Result.bSetSight)
 		{
@@ -456,7 +478,27 @@ void ASolidGameMode::RefreshEvents()
 			Captain->SetCharacterDisplayName(Result.CaptainTitle);
 		}
 	}
+}
 
+void ASolidGameMode::FireParadeEvents()
+{
+	const int32 Stay = Configuration.OccupiedTown;
+	auto Visit = [this](const int32 TownId)
+	{
+		if (TownId == INDEX_NONE)
+		{
+			return;
+		}
+		// A repeat visit to the town the captain is already on does not fire.
+		if (Configuration.OccupiedTown == TownId)
+		{
+			Configuration.OccupiedTown = INDEX_NONE;
+		}
+		NoteTownEntry(TownId);
+	};
+	Visit(TownIdForEvent(TEXT("Enter Relion")));
+	Visit(TownIdForEvent(TEXT("Enter Dragongate")));
+	Configuration.OccupiedTown = Stay;
 	EnsureCompanion();
 }
 
@@ -468,7 +510,20 @@ bool ASolidGameMode::IsSightEnabled(const ESolidSight Sight) const
 bool ASolidGameMode::SelectBattlePlanSlot(const int32 SlotIndex)
 {
 	EnsureCompanyAndParty();
-	if (!Party || !Party->SelectAssignedSlot(SlotIndex))
+	if (!Party)
+	{
+		return false;
+	}
+
+	if (const FSolidBattlePlan* Plan = Party->GetAssignedBattlePlan(SlotIndex))
+	{
+		if (Plan->Formation == ESolidBattleFormation::Parade)
+		{
+			FireParadeEvents();
+		}
+	}
+
+	if (!Party->SelectAssignedSlot(SlotIndex))
 	{
 		return false;
 	}

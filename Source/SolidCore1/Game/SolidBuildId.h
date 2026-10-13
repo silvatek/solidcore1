@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0237")
+#define SOLID_BUILD_ID TEXT("SC1-0238")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Character editor: Page Up and Page Down switch companions. Sliders set height, build, and gender.")
+#define SOLID_BUILD_NOTE TEXT("Character editor compile fix: slider locals no longer hide the slider names.")
 #endif

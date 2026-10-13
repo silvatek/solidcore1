@@ -1440,9 +1440,9 @@ void ASolidCharacter::UpdateCharacterEditorPointer()
 	}
 
 	bool bDown = false;
-	if (const ASolidPlayerController* PlayerController = Cast<ASolidPlayerController>(Controller))
+	if (const ASolidPlayerController* SolidController = Cast<ASolidPlayerController>(Controller))
 	{
-		bDown = PlayerController->IsLeftMouseHeld();
+		bDown = SolidController->IsLeftMouseHeld();
 	}
 	else if (const APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{

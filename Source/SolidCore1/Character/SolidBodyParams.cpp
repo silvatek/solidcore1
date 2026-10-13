@@ -94,21 +94,21 @@ FSolidBodyParams SolidBodyControls::Resolve(const FSolidBodyParams& Seed, const 
 	FSolidBodyParams Params = Seed;
 	Params.Height = FMath::Clamp(Controls.Height, SolidBody::ParamMin, SolidBody::ParamMax);
 
-	const float Build = FMath::Clamp(Controls.Build, SolidBody::ParamMin, SolidBody::ParamMax);
-	Params.Bulk = Build;
+	const float ClampedBuild = FMath::Clamp(Controls.Build, SolidBody::ParamMin, SolidBody::ParamMax);
+	Params.Bulk = ClampedBuild;
 	// Skip the scale when the bits already match, so a default slider stays ExactEquals.
-	if (Build != Seed.Bulk && Seed.Bulk != 0.f)
+	if (ClampedBuild != Seed.Bulk && Seed.Bulk != 0.f)
 	{
 		Params.TorsoGirth = FMath::Clamp(
-			Seed.TorsoGirth * (Build / Seed.Bulk),
+			Seed.TorsoGirth * (ClampedBuild / Seed.Bulk),
 			SolidBody::ParamMin,
 			SolidBody::ParamMax);
 	}
 
 	if (Controls.Gender != SolidBodyControls::GenderNeutral)
 	{
-		const float Gender = FMath::Clamp(Controls.Gender, 0.f, 1.f);
-		const float Bias = (Gender - SolidBodyControls::GenderNeutral) * 2.f;
+		const float ClampedGender = FMath::Clamp(Controls.Gender, 0.f, 1.f);
+		const float Bias = (ClampedGender - SolidBodyControls::GenderNeutral) * 2.f;
 		Params.ShoulderWidth = FMath::Clamp(
 			Seed.ShoulderWidth - Bias * SolidBodyControls::GenderSpread,
 			SolidBody::ParamMin,

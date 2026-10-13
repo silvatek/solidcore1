@@ -144,7 +144,7 @@ namespace
 				MaxId = FMath::Max(MaxId, BoneID.GetValue());
 			}
 			ToSkeleton.Init(INDEX_NONE, MaxId + 1);
-			const FBoneNameAttributesRef BoneNames = Attributes.GetBoneNames();
+			const auto BoneNames = Attributes.GetBoneNames();
 			for (const FBoneID BoneID : Attributes.Bones().GetElementIDs())
 			{
 				const int32 DescriptionIndex = BoneID.GetValue();
@@ -160,7 +160,7 @@ namespace
 			Vertex.Position = FVector(Positions.Get(VertexID));
 			if (bHaveWeights)
 			{
-				const UE::AnimationCore::FBoneWeights Weights = Skin.Get(VertexID);
+				const FVertexBoneWeights Weights = Skin.Get(VertexID);
 				int32 Slot = 0;
 				for (const UE::AnimationCore::FBoneWeight& Weight : Weights)
 				{
@@ -186,7 +186,7 @@ namespace
 	void WritePose(FMeshDescription& Description, const FReferenceSkeleton& Ref, const FSolidDeformMesh& Deformed)
 	{
 		FSkeletalMeshAttributes Attributes(Description);
-		const FBoneNameAttributesRef BoneNames = Attributes.GetBoneNames();
+		const auto BoneNames = Attributes.GetBoneNames();
 		auto BonePoses = Attributes.GetBonePoses();
 		for (const FBoneID BoneID : Attributes.Bones().GetElementIDs())
 		{

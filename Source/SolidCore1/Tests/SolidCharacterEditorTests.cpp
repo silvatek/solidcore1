@@ -194,7 +194,12 @@ bool FSolidSkeletonHoverTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("shield is clothing"), SolidSkeletonHover::IsOmittedBoneName(TEXT("shield_jnt")));
 	TestTrue(TEXT("skirt is clothing"), SolidSkeletonHover::IsOmittedBoneName(TEXT("skirt_pattern_front_jnt_4")));
 	TestTrue(TEXT("ik stays off"), SolidSkeletonHover::IsOmittedBoneName(TEXT("ik_foot_root")));
+	TestTrue(TEXT("left thigh twist stays off"), SolidSkeletonHover::IsOmittedBoneName(TEXT("thigh_twist_01_l")));
+	TestTrue(TEXT("right calf twist stays off"), SolidSkeletonHover::IsOmittedBoneName(TEXT("calf_twist_01_r")));
+	TestTrue(TEXT("a later calf twist stays off"), SolidSkeletonHover::IsOmittedBoneName(TEXT("calf_twist_02_r")));
 	TestFalse(TEXT("calf stays"), SolidSkeletonHover::IsOmittedBoneName(TEXT("calf_r")));
+	TestFalse(TEXT("thigh stays"), SolidSkeletonHover::IsOmittedBoneName(TEXT("thigh_l")));
+	TestFalse(TEXT("an arm twist stays"), SolidSkeletonHover::IsOmittedBoneName(TEXT("upperarm_twist_01_l")));
 	TestFalse(TEXT("foot stays"), SolidSkeletonHover::IsOmittedBoneName(TEXT("foot_l")));
 	TestFalse(TEXT("spine stays"), SolidSkeletonHover::IsOmittedBoneName(TEXT("spine_03")));
 	TestFalse(TEXT("a later axe mention stays"), SolidSkeletonHover::IsOmittedBoneName(TEXT("hand_axe_grip")));

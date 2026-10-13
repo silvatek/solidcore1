@@ -161,12 +161,18 @@ namespace SolidSkeletonHover
 	}
 
 	/**
-	 * Bones left off the skeleton view. IK helpers, and clothing or weapon chains
-	 * whose names start with axe_, sheath_, cloack_, beard_, shield_, or skirt_.
+	 * Bones left off the skeleton view. IK helpers, thigh and calf twist bones,
+	 * and clothing or weapon chains whose names start with axe_, sheath_,
+	 * cloack_, beard_, shield_, or skirt_.
 	 */
 	inline bool IsOmittedBoneName(const FString& Name)
 	{
 		if (Name.Contains(TEXT("ik"), ESearchCase::IgnoreCase))
+		{
+			return true;
+		}
+		if (Name.Contains(TEXT("thigh_twist"), ESearchCase::IgnoreCase)
+			|| Name.Contains(TEXT("calf_twist"), ESearchCase::IgnoreCase))
 		{
 			return true;
 		}

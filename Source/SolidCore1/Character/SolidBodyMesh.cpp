@@ -502,6 +502,15 @@ namespace
 		const float ThighRadius = SectionRadius(ESolidBodyBoneRole::Leg, 30.f, Params) * StartScale;
 		const float HalfHeight = 8.5f * Params.TorsoGirth;
 		const FVector Center = Positions[Pelvis];
+		float TopReach = HalfHeight;
+		if (Positions.IsValidIndex(Spine))
+		{
+			const float Rise = static_cast<float>(FVector::DotProduct(Positions[Spine] - Center, Up));
+			if (Rise > 0.f)
+			{
+				TopReach = FMath::Max(TopReach, Rise * 0.55f);
+			}
+		}
 		float HipLateral = 0.f;
 		float Drop = HalfHeight;
 		for (const int32 Leg : Legs)
@@ -522,7 +531,7 @@ namespace
 			Tris,
 			Pelvis,
 			Center - Up * Drop,
-			Center + Up * HalfHeight,
+			Center + Up * TopReach,
 			BottomRadius,
 			TopRadius,
 			TubeSides,
@@ -625,8 +634,8 @@ namespace
 	}
 
 	/**
-	 * A tapered cylinder from the chest, around the shoulder, onto the upper arm.
-	 * Wide at the body and narrow where the arm continues. Replaces the clavicle stub.
+	 * One cap from the ribcage out to the shoulder joint.
+	 * The upper arm tube continues from there. Helper clavicles draw nothing.
 	 */
 	void AddShoulder(
 		TArray<FLoFiVert>& Verts,
@@ -644,28 +653,36 @@ namespace
 		const int32 Parent = StructuralParent(Bones, Clavicle);
 		const bool bChest = Bones.IsValidIndex(Parent) && Positions.IsValidIndex(Parent);
 		const int32 Arm = FindStructuralChild(Bones, Clavicle, ESolidBodyBoneRole::Arm);
-		const FVector Neck = Positions[Clavicle];
-		const FVector Chest = bChest ? Positions[Parent] : Neck;
-		FVector Joint = Neck;
-		if (Arm != INDEX_NONE && Positions.IsValidIndex(Arm) && (Positions[Arm] - Neck).Size() >= 6.0)
-		{
-			Joint = Positions[Arm];
-		}
-
-		const bool bArmIsOut = (Joint - Neck).Size() >= 6.0;
-		const FVector Start = bArmIsOut ? FMath::Lerp(Chest, Neck, 0.45) : Chest;
-		FVector End = Joint;
-		if (Arm != INDEX_NONE && Positions.IsValidIndex(Arm))
-		{
-			const int32 Forearm = FindStructuralChild(Bones, Arm, ESolidBodyBoneRole::Arm);
-			if (Forearm != INDEX_NONE && Positions.IsValidIndex(Forearm))
-			{
-				End = FMath::Lerp(Joint, Positions[Forearm], 0.22);
-			}
-		}
-		if ((End - Start).Size() < 4.0)
+		if (Arm == INDEX_NONE || !Positions.IsValidIndex(Arm))
 		{
 			return;
+		}
+
+		const FVector Cap = Positions[Clavicle];
+		const FVector Chest = bChest ? Positions[Parent] : Cap;
+		const FVector Joint = Positions[Arm];
+		FVector Out = Joint - Chest;
+		Out.Z = 0.0;
+		if (Out.SizeSquared() < 1.0)
+		{
+			Out = Cap - Chest;
+			Out.Z = 0.0;
+		}
+		if (Out.SizeSquared() < 1.0)
+		{
+			return;
+		}
+		Out = Out.GetSafeNormal();
+
+		const float Rib = SectionRadius(ESolidBodyBoneRole::Spine, 30.f, Params);
+		FVector Start = Chest + Out * static_cast<double>(Rib * 0.75f);
+		Start.Z = Cap.Z;
+		FVector End = Joint;
+		End.Z = FMath::Lerp(Cap.Z, Joint.Z, 0.2);
+		if ((End - Start).Size() < 4.0)
+		{
+			End = Start + Out * 12.0;
+			End.Z = Cap.Z;
 		}
 
 		float ArmStart = 1.f;
@@ -735,12 +752,16 @@ namespace
 			// The calf's translation is the thigh. The ankle's translation is the shin.
 			const bool bThigh = Role == ESolidBodyBoneRole::Foot && ParentRole == ESolidBodyBoneRole::Leg;
 			const bool bShin = Role == ESolidBodyBoneRole::Foot && ParentRole == ESolidBodyBoneRole::Foot;
+			// The shoulder cap owns the span from the clavicle to the upper arm.
+			const bool bShoulderSpan = Role == ESolidBodyBoneRole::Arm && ParentRole == ESolidBodyBoneRole::Clavicle;
+			const bool bTorsoSpan = Role == ESolidBodyBoneRole::Spine || Role == ESolidBodyBoneRole::Neck;
+			const float MinIncoming = bTorsoSpan ? 0.5f : 4.f;
 
 			if (Role == ESolidBodyBoneRole::Clavicle)
 			{
 				AddShoulder(Verts, Tris, Bones, Positions, Index, Params);
 			}
-			else if (bParent && ParentRole != ESolidBodyBoneRole::Root && Incoming >= 4.f)
+			else if (!bShoulderSpan && bParent && ParentRole != ESolidBodyBoneRole::Root && Incoming >= MinIncoming)
 			{
 				ESolidBodyBoneRole RadiusRole = ParentRole;
 				if (Role == ESolidBodyBoneRole::Spine
@@ -775,12 +796,26 @@ namespace
 					EndScale = 0.62f;
 				}
 				const float Radius = SectionRadius(RadiusRole, FMath::Max(Incoming, 8.f), Params);
+				FVector TubeStart = Positions[Parent];
+				FVector TubeEnd = Positions[Index];
+				if ((bThigh || bShin) && Incoming > 1.f)
+				{
+					const FVector BoneDir = (TubeEnd - TubeStart) / static_cast<double>(Incoming);
+					if (bShin)
+					{
+						TubeStart -= BoneDir * 3.0;
+					}
+					if (bThigh)
+					{
+						TubeEnd += BoneDir * 3.0;
+					}
+				}
 				AddTube(
 					Verts,
 					Tris,
 					Parent,
-					Positions[Parent],
-					Positions[Index],
+					TubeStart,
+					TubeEnd,
 					Radius * StartScale,
 					Radius * EndScale,
 					TubeSides,
@@ -849,6 +884,13 @@ namespace
 				}
 				const float Length = FMath::Clamp(16.f * Params.Height, 12.f, 22.f);
 				const float Radius = SectionRadius(ESolidBodyBoneRole::Leg, Length, Params) * 0.7f;
+				FVector FlatFoot = FootDir;
+				FlatFoot.Z = 0.0;
+				if (FlatFoot.SizeSquared() < 0.04)
+				{
+					FlatFoot = FVector(0.f, 1.f, 0.f);
+				}
+				FootDir = FlatFoot.GetSafeNormal();
 				FVector Wide = FVector::CrossProduct(FootDir, FVector::UpVector);
 				if (Wide.SizeSquared() < 0.01)
 				{

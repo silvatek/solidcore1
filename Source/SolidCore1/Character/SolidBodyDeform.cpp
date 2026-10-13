@@ -376,11 +376,25 @@ void SolidBodyDeform::FitHeadLengths(TArray<FSolidDeformBone>& Bones)
 		return CrownZ - HeadsDown * Head;
 	};
 
+	int32 ColumnBone = INDEX_NONE;
+	for (int32 Index = 0; Index < Bones.Num(); ++Index)
+	{
+		if (IsStructuralBone(Bones[Index]) && Bones[Index].Role == ESolidBodyBoneRole::Pelvis)
+		{
+			ColumnBone = Index;
+			break;
+		}
+	}
+	const float ColumnX = ColumnBone != INDEX_NONE ? static_cast<float>(OldPose.Position[ColumnBone].X) : 0.f;
+	const float ColumnY = ColumnBone != INDEX_NONE ? static_cast<float>(OldPose.Position[ColumnBone].Y) : 0.f;
+
 	TArray<uint8> bSetZ;
 	TArray<uint8> bSnapXY;
+	TArray<uint8> bColumn;
 	TArray<float> TargetZ;
 	bSetZ.Init(0, Bones.Num());
 	bSnapXY.Init(0, Bones.Num());
+	bColumn.Init(0, Bones.Num());
 	TargetZ.Init(0.f, Bones.Num());
 
 	auto SetZ = [&bSetZ, &TargetZ](const int32 Index, const float Z)
@@ -408,7 +422,14 @@ void SolidBodyDeform::FitHeadLengths(TArray<FSolidDeformBone>& Bones)
 			continue;
 		}
 		SetZ(HeadIndex, Station(SolidBody::ProportionChin));
-		bSnapXY[HeadIndex] = 1;
+		if (ColumnBone != INDEX_NONE)
+		{
+			bColumn[HeadIndex] = 1;
+		}
+		else
+		{
+			bSnapXY[HeadIndex] = 1;
+		}
 	}
 
 	for (int32 Index = 0; Index < Bones.Num(); ++Index)
@@ -427,6 +448,16 @@ void SolidBodyDeform::FitHeadLengths(TArray<FSolidDeformBone>& Bones)
 			if (ParentRole != ESolidBodyBoneRole::Neck)
 			{
 				SetZ(Index, Station(SolidBody::ProportionNeck));
+			}
+			if (ColumnBone != INDEX_NONE)
+			{
+				bColumn[Index] = 1;
+			}
+			break;
+		case ESolidBodyBoneRole::Spine:
+			if (ColumnBone != INDEX_NONE)
+			{
+				bColumn[Index] = 1;
 			}
 			break;
 		case ESolidBodyBoneRole::Clavicle:
@@ -502,7 +533,12 @@ void SolidBodyDeform::FitHeadLengths(TArray<FSolidDeformBone>& Bones)
 			{
 				Pos.Z = TargetZ[Index];
 			}
-			if (bSnapXY[Index])
+			if (bColumn[Index])
+			{
+				Pos.X = ColumnX;
+				Pos.Y = ColumnY;
+			}
+			else if (bSnapXY[Index])
 			{
 				const int32 SnapTo = StructuralParentIndex(Bones, Index);
 				if (Bones.IsValidIndex(SnapTo) && Ready[SnapTo])

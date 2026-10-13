@@ -313,7 +313,7 @@ bool FSolidBodyHeadLengthTest::RunTest(const FString& Parameters)
 	TArray<FSolidDeformBone> OneSpine;
 	OneSpine.Add(MakeBone(INDEX_NONE, ESolidBodyBoneRole::Root, FVector::ZeroVector));
 	OneSpine.Add(MakeBone(0, ESolidBodyBoneRole::Pelvis, FVector(0.f, 0.f, 80.f)));
-	OneSpine.Add(MakeBone(1, ESolidBodyBoneRole::Spine, FVector(0.f, 0.f, 20.f)));
+	OneSpine.Add(MakeBone(1, ESolidBodyBoneRole::Spine, FVector(8.f, 3.f, 20.f)));
 	OneSpine.Add(MakeBone(2, ESolidBodyBoneRole::Neck, FVector(0.f, 0.f, 10.f)));
 	OneSpine.Add(MakeBone(3, ESolidBodyBoneRole::Head, FVector(2.f, 1.f, 12.f)));
 	OneSpine.Add(MakeBone(1, ESolidBodyBoneRole::Leg, FVector(6.f, 0.f, -1.f)));
@@ -328,6 +328,12 @@ bool FSolidBodyHeadLengthTest::RunTest(const FString& Parameters)
 	SolidBodyDeform::ComponentPositions(OneSpine, OneJoints);
 	const float OneGround = static_cast<float>(OneJoints[7].Z);
 	TestTrue(TEXT("one spine is the chest"), CloseCm(OneJoints[2].Z, Station(OneGround, SolidBody::ProportionChest)));
+	TestTrue(
+		TEXT("a leaning spine stands over the pelvis"),
+		CloseCm(OneJoints[2].X, OneJoints[1].X) && CloseCm(OneJoints[2].Y, OneJoints[1].Y));
+	TestTrue(
+		TEXT("the neck stands over the pelvis"),
+		CloseCm(OneJoints[3].X, OneJoints[1].X) && CloseCm(OneJoints[3].Y, OneJoints[1].Y));
 	TestTrue(TEXT("one-spine neck is the shoulder line"), CloseCm(OneJoints[3].Z, Station(OneGround, SolidBody::ProportionNeck)));
 	TestTrue(TEXT("one-spine chin is one head down"), CloseCm(OneJoints[4].Z, Station(OneGround, SolidBody::ProportionChin)));
 	TestTrue(TEXT("chin sits over the neck"), CloseCm(OneJoints[4].X, OneJoints[3].X) && CloseCm(OneJoints[4].Y, OneJoints[3].Y));

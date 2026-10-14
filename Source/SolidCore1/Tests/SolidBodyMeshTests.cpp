@@ -881,7 +881,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidBodyHipConeTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("the hip is 50 cm side to side"), SolidBodyMesh::HipSideDiameterCm, 50.f);
+	TestEqual(TEXT("the hip bottom is 50 cm side to side"), SolidBodyMesh::HipSideDiameterCm, 50.f);
+	TestEqual(TEXT("the hip top is 30 cm side to side"), SolidBodyMesh::HipTopSideDiameterCm, 30.f);
 	TestEqual(TEXT("the hip is 20 cm front to back"), SolidBodyMesh::HipDepthDiameterCm, 20.f);
 	TestEqual(TEXT("left hip bone"), FString(SolidBodyMesh::HipLeftBone), FString(TEXT("thigh_l")));
 	TestEqual(TEXT("right hip bone"), FString(SolidBodyMesh::HipRightBone), FString(TEXT("thigh_r")));
@@ -901,9 +902,10 @@ bool FSolidBodyHipConeTest::RunTest(const FString& Parameters)
 			static_cast<float>(FVector::Dist(Cone.Start, Cone.End)),
 			static_cast<float>(FVector::Dist(SpineStart, SpineEnd)),
 			0.05f));
-	TestTrue(TEXT("both ends are 25 cm toward the sides"), FMath::IsNearlyEqual(Cone.RadiusStart, 25.f, 0.01f));
-	TestTrue(TEXT("the far end matches the near end"), FMath::IsNearlyEqual(Cone.RadiusStart, Cone.RadiusEnd, 0.01f));
-	TestTrue(TEXT("front to back is 20 cm for a 50 cm width"), FMath::IsNearlyEqual(Cone.DepthScale, 0.4f, 0.01f));
+	TestTrue(TEXT("the bottom is 25 cm toward the sides"), FMath::IsNearlyEqual(Cone.RadiusStart, 25.f, 0.01f));
+	TestTrue(TEXT("the top is 15 cm toward the sides"), FMath::IsNearlyEqual(Cone.RadiusEnd, 15.f, 0.01f));
+	TestTrue(TEXT("the bottom is 20 cm front to back"), FMath::IsNearlyEqual(Cone.DepthScaleStart, 0.4f, 0.01f));
+	TestTrue(TEXT("the top stays 20 cm front to back"), FMath::IsNearlyEqual(Cone.DepthScaleEnd, 20.f / 30.f, 0.01f));
 	TestTrue(TEXT("the full width is the mesh forward axis"), Cone.WideAxis.Equals(FVector::ForwardVector, 0.01));
 
 	float BestT = TNumericLimits<float>::Max();

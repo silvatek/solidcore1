@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0267")
+#define SOLID_BUILD_ID TEXT("SC1-0268")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The hip piece is 20 cm front to back and 50 cm side to side.")
+#define SOLID_BUILD_NOTE TEXT("The hip tapers from a 50 by 20 ellipse at the bottom to a 30 by 20 ellipse at the top.")
 #endif

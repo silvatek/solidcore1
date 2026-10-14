@@ -343,8 +343,9 @@ SolidBodyMesh::FSolidFittedCone SolidBodyMesh::HipCone(const FVector& SpineStart
 	Out.Start = SpineStart;
 	Out.End = SpineEnd;
 	Out.RadiusStart = HipSideDiameterCm * 0.5f;
-	Out.RadiusEnd = HipSideDiameterCm * 0.5f;
-	Out.DepthScale = HipSideDiameterCm > KINDA_SMALL_NUMBER ? HipDepthDiameterCm / HipSideDiameterCm : 1.f;
+	Out.RadiusEnd = HipTopSideDiameterCm * 0.5f;
+	Out.DepthScaleStart = HipSideDiameterCm > KINDA_SMALL_NUMBER ? HipDepthDiameterCm / HipSideDiameterCm : 1.f;
+	Out.DepthScaleEnd = HipTopSideDiameterCm > KINDA_SMALL_NUMBER ? HipDepthDiameterCm / HipTopSideDiameterCm : 1.f;
 	Out.WideAxis = FVector::ForwardVector;
 	Out.bValid = FVector::Dist(SpineStart, SpineEnd) >= 1.0;
 	return Out;
@@ -390,7 +391,8 @@ bool SolidBodyMesh::RayHitsCone(
 	}
 	const FVector Narrow = FVector::CrossProduct(Axis, Wide).GetSafeNormal();
 	const float SideRadius = FMath::Lerp(Cone.RadiusStart, Cone.RadiusEnd, SegU) + 0.15f;
-	const float DepthRadius = FMath::Lerp(Cone.RadiusStart, Cone.RadiusEnd, SegU) * FMath::Clamp(Cone.DepthScale, 0.2f, 1.f) + 0.15f;
+	const float DepthScale = FMath::Lerp(Cone.DepthScaleStart, Cone.DepthScaleEnd, SegU);
+	const float DepthRadius = FMath::Lerp(Cone.RadiusStart, Cone.RadiusEnd, SegU) * FMath::Clamp(DepthScale, 0.2f, 1.f) + 0.15f;
 	if (SideRadius <= KINDA_SMALL_NUMBER || DepthRadius <= KINDA_SMALL_NUMBER)
 	{
 		return false;
@@ -802,7 +804,8 @@ namespace
 		const int32 Sides,
 		const int32 Segments,
 		const uint8 Slot,
-		const float Flatten,
+		const float FlattenStart,
+		const float FlattenEnd,
 		const FVector& PreferredSide)
 	{
 		const FVector Delta = End - Start;
@@ -826,7 +829,6 @@ namespace
 		const FVector Up = FVector::CrossProduct(Axis, Side).GetSafeNormal();
 		const int32 SideCount = FMath::Clamp(Sides, 3, 16);
 		const int32 RingCount = FMath::Max(Segments, 1) + 1;
-		const float Squash = FMath::Clamp(Flatten, 0.2f, 1.f);
 		const int32 Base = Verts.Num();
 
 		for (int32 Ring = 0; Ring < RingCount; ++Ring)
@@ -836,6 +838,10 @@ namespace
 				: static_cast<float>(Ring) / static_cast<float>(RingCount - 1);
 			const FVector Center = FMath::Lerp(Start, End, static_cast<double>(T));
 			const float Radius = FMath::Lerp(RadiusStart, RadiusEnd, T);
+			const float Squash = FMath::Lerp(
+				FMath::Clamp(FlattenStart, 0.2f, 1.f),
+				FMath::Clamp(FlattenEnd, 0.2f, 1.f),
+				T);
 			for (int32 Step = 0; Step < SideCount; ++Step)
 			{
 				const float Angle = (2.f * PI * static_cast<float>(Step)) / static_cast<float>(SideCount);
@@ -908,7 +914,8 @@ namespace
 			10,
 			1,
 			Slot,
-			Cone.DepthScale,
+			Cone.DepthScaleStart,
+			Cone.DepthScaleEnd,
 			Cone.WideAxis);
 	}
 

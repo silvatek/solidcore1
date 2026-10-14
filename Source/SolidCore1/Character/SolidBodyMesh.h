@@ -113,7 +113,7 @@ namespace SolidBodyMesh
 	 */
 	FString SegmentKey(const FString& BoneName);
 
-	/** A tube along a bone. DepthScale squishes the section across WideAxis. */
+	/** A tube along a bone. Depth scales squash the section across WideAxis, and may differ at each end. */
 	struct FSolidFittedCone
 	{
 		FVector Start = FVector::ZeroVector;
@@ -122,7 +122,8 @@ namespace SolidBodyMesh
 		float RadiusEnd = 0.f;
 		bool bValid = false;
 		/** 1 keeps a round section. Smaller flattens the axis perpendicular to WideAxis. */
-		float DepthScale = 1.f;
+		float DepthScaleStart = 1.f;
+		float DepthScaleEnd = 1.f;
 		/** Direction that keeps the full diameter. Side-to-side for the hip. */
 		FVector WideAxis = FVector::RightVector;
 	};
@@ -206,20 +207,22 @@ namespace SolidBodyMesh
 	inline const TCHAR* HipRightBone = TEXT("thigh_r");
 	inline const TCHAR* HipSpineBone = TEXT("spine_01");
 
-	/** Hip section, in centimetres. Side-to-side is the full width. Front-to-back is the squashed depth. */
+	/** Hip section, in centimetres. The bottom is wider from side to side. Front-to-back stays the same. */
 	inline constexpr float HipSideDiameterCm = 50.f;
+	inline constexpr float HipTopSideDiameterCm = 30.f;
 	inline constexpr float HipDepthDiameterCm = 20.f;
 
 	/**
-	 * Shirt piece the length of spine_01, 50 cm side to side and 20 cm front to back.
-	 * SpineStart is the parent joint and SpineEnd is spine_01. The full width is the mesh forward axis.
+	 * Shirt piece the length of spine_01. The parent joint is the bottom: 50 cm side to side and 20 cm front to back.
+	 * spine_01 is the top: 30 cm side to side and 20 cm front to back. The full width is the mesh forward axis.
 	 * Invalid when the bone is shorter than a centimetre.
 	 */
 	FSolidFittedCone HipCone(const FVector& SpineStart, const FVector& SpineEnd);
 
 	/**
 	 * True when the ray meets the cone closer than InOutRayT.
-	 * A DepthScale below 1 uses an oval section, full across WideAxis and squashed across it.
+	 * A depth scale below 1 uses an oval section, full across WideAxis and squashed across it.
+	 * The two scales are the start and the end of the piece.
 	 * InOutRayT is the closest hit so far, and becomes this hit when the ray meets the cone.
 	 */
 	bool RayHitsCone(

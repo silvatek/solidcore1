@@ -882,6 +882,10 @@ namespace
 		return INDEX_NONE;
 	}
 
+	/**
+	 * Skin the tube to the joint the segment starts from.
+	 * The child joint only rotates, so weighting the child spins the parent end off the bone.
+	 */
 	void AddLegCone(
 		TArray<FLoFiVert>& Verts,
 		TArray<FLoFiTri>& Tris,
@@ -931,7 +935,7 @@ namespace
 			{
 				continue;
 			}
-			AddLegCone(Verts, Tris, Calf, SolidBodyMesh::LeftThighCone(Positions[Hip], Positions[Calf]));
+			AddLegCone(Verts, Tris, Hip, SolidBodyMesh::LeftThighCone(Positions[Hip], Positions[Calf]));
 		}
 
 		const TCHAR* CalfBones[] = {
@@ -950,7 +954,7 @@ namespace
 			{
 				continue;
 			}
-			AddLegCone(Verts, Tris, Foot, SolidBodyMesh::CalfCone(Positions[Knee], Positions[Foot]));
+			AddLegCone(Verts, Tris, Knee, SolidBodyMesh::CalfCone(Positions[Knee], Positions[Foot]));
 		}
 
 		const TCHAR* BallBones[] = {
@@ -969,7 +973,7 @@ namespace
 			{
 				continue;
 			}
-			AddLegCone(Verts, Tris, Ball, SolidBodyMesh::BallCylinder(Positions[Ankle], Positions[Ball]));
+			AddLegCone(Verts, Tris, Ankle, SolidBodyMesh::BallCylinder(Positions[Ankle], Positions[Ball]));
 		}
 
 		const TCHAR* ToeBones[] = {
@@ -988,7 +992,7 @@ namespace
 			{
 				continue;
 			}
-			AddLegCone(Verts, Tris, Toe, SolidBodyMesh::ExtraFingerCone(Positions[AnkleEnd], Positions[Toe]));
+			AddLegCone(Verts, Tris, AnkleEnd, SolidBodyMesh::ExtraFingerCone(Positions[AnkleEnd], Positions[Toe]));
 		}
 
 		const int32 HipLeft = FindNamedBone(Bones, Count, SolidBodyMesh::HipLeftBone);
@@ -1002,7 +1006,7 @@ namespace
 				AddLegCone(
 					Verts,
 					Tris,
-					HipSpine,
+					SpineStart,
 					SolidBodyMesh::HipCone(Positions[SpineStart], Positions[HipSpine]),
 					SlotTorso);
 			}

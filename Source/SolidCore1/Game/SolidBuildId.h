@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0265")
+#define SOLID_BUILD_ID TEXT("SC1-0266")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The hip piece matches spine_01, 50 cm side to side and 20 cm front to back.")
+#define SOLID_BUILD_NOTE TEXT("Each body piece is skinned to the joint it starts from, so a sway keeps the bone inside.")
 #endif

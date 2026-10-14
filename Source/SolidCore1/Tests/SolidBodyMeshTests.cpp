@@ -769,4 +769,68 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyPartSizesBonesTest,
+	"SolidCore1.Body.PartSizesBones",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyPartSizesBonesTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidBodyMesh;
+
+	FSolidBodyPart Hip(
+		TEXT("Hip"),
+		{ TEXT("spine_01"), TEXT("thigh_l") },
+		ESolidPartColour::Shirt,
+		FSolidPartSection::Oval(20.f, 16.f),
+		FSolidPartSection::Oval(18.f, 16.f));
+	Hip.Measure = ESolidPartMeasure::Hip;
+
+	const FQuat ParentRotation(FVector::ForwardVector, HALF_PI);
+	const FVector SpreadLocal = ParentRotation.UnrotateVector(FVector(8.f, 4.f, 1.f));
+	const FVector Untouched(1.f, 2.f, 3.f);
+
+	TArray<FSolidDeformBone> Skeleton;
+	FSolidDeformBone Pelvis;
+	Pelvis.Name = TEXT("pelvis");
+	Pelvis.LocalRotation = ParentRotation;
+	Skeleton.Add(Pelvis);
+
+	FSolidDeformBone Span;
+	Span.Name = TEXT("spine_01");
+	Span.ParentIndex = 0;
+	Span.LocalTranslation = FVector(0.f, 0.f, -30.f);
+	Skeleton.Add(Span);
+
+	FSolidDeformBone Thigh;
+	Thigh.Name = TEXT("thigh_l");
+	Thigh.ParentIndex = 0;
+	Thigh.LocalTranslation = SpreadLocal;
+	Skeleton.Add(Thigh);
+
+	FSolidDeformBone Head;
+	Head.Name = TEXT("head");
+	Head.ParentIndex = 0;
+	Head.LocalTranslation = Untouched;
+	Skeleton.Add(Head);
+
+	FSolidBodyParams Wide;
+	Wide.Height = 1.5f;
+	Wide.HipWidth = 2.f;
+	Wide.TorsoGirth = 1.25f;
+	Hip.Apply(Skeleton, Wide);
+
+	TestTrue(TEXT("hip width widens the part"), FMath::IsNearlyEqual(Hip.Start.X, 40.f, 0.01f));
+	TestTrue(TEXT("torso girth sets the hip depth"), FMath::IsNearlyEqual(Hip.Start.Y, 20.f, 0.01f));
+	TestTrue(
+		TEXT("height lengthens the span bone"),
+		Skeleton[1].LocalTranslation.Equals(FVector(0.f, 0.f, -45.f), 0.01f));
+	const FVector ExpectedSpread = ParentRotation.UnrotateVector(FVector(16.f, 8.f, 1.f));
+	TestTrue(
+		TEXT("the part spreads its other bone on the world side axes"),
+		Skeleton[2].LocalTranslation.Equals(ExpectedSpread, 0.01f));
+	TestTrue(TEXT("a bone outside the part stays put"), Skeleton[3].LocalTranslation.Equals(Untouched, 0.01f));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

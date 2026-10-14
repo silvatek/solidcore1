@@ -36,8 +36,7 @@ namespace SolidBodyMesh
 		const FSolidBodyPart* Find(const FString& Name) const;
 
 		/**
-		 * Size every part from these sliders, then size the bones that part wraps.
-		 * The span bone takes the part length. The other bones spread by the part's side.
+		 * Ask every part to size itself and the bones it wraps.
 		 * A bone with no part, including the head and the hands, keeps its Viking translation.
 		 */
 		void Apply(TArray<FSolidDeformBone>& Bones, const FSolidBodyParams& Params);

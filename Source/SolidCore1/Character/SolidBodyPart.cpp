@@ -1,6 +1,56 @@
 #include "SolidBodyPart.h"
 #include "SolidBodyMesh.h"
 
+namespace
+{
+	int32 FindPartBone(const TArray<FSolidDeformBone>& Skeleton, const FName& Name)
+	{
+		const FString Wanted = Name.ToString();
+		for (int32 Index = 0; Index < Skeleton.Num(); ++Index)
+		{
+			if (Skeleton[Index].Name.ToString().Equals(Wanted, ESearchCase::IgnoreCase))
+			{
+				return Index;
+			}
+		}
+		return INDEX_NONE;
+	}
+
+	/** Bind-pose rotation of one bone. A cycle has no rotation. */
+	FQuat WorldRotationAt(const TArray<FSolidDeformBone>& Skeleton, const int32 Index)
+	{
+		TArray<int32, TInlineAllocator<32>> Up;
+		int32 Cursor = Index;
+		for (int32 Guard = 0; Guard < Skeleton.Num(); ++Guard)
+		{
+			if (!Skeleton.IsValidIndex(Cursor))
+			{
+				return FQuat::Identity;
+			}
+			for (const int32 Prior : Up)
+			{
+				if (Prior == Cursor)
+				{
+					return FQuat::Identity;
+				}
+			}
+			Up.Add(Cursor);
+			const int32 Parent = Skeleton[Cursor].ParentIndex;
+			if (!Skeleton.IsValidIndex(Parent) || Parent == Cursor)
+			{
+				FQuat Rotation = FQuat::Identity;
+				for (int32 Step = Up.Num() - 1; Step >= 0; --Step)
+				{
+					Rotation = Rotation * Skeleton[Up[Step]].LocalRotation;
+				}
+				return Rotation;
+			}
+			Cursor = Parent;
+		}
+		return FQuat::Identity;
+	}
+}
+
 SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
 	const TCHAR* InName,
 	const std::initializer_list<const TCHAR*> InBones,
@@ -18,57 +68,88 @@ SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
 	}
 }
 
-SolidBodyMesh::FSolidPartFactors SolidBodyMesh::FSolidBodyPart::Apply(const FSolidBodyParams& Params)
+void SolidBodyMesh::FSolidBodyPart::Apply(
+	TArray<FSolidDeformBone>& Skeleton,
+	const FSolidBodyParams& Params)
 {
 	const FSolidBodyParams Clamped = Params.Clamped();
-	FSolidPartFactors Factors;
+	float Length = 1.f;
+	float Side = 1.f;
+	float Depth = 1.f;
 	switch (Measure)
 	{
 	case ESolidPartMeasure::Leg:
-		Factors.Length = Clamped.LegLength * Clamped.Height;
-		Factors.Side = Clamped.Bulk;
-		Factors.Depth = Clamped.Bulk;
+		Length = Clamped.LegLength * Clamped.Height;
+		Side = Clamped.Bulk;
+		Depth = Clamped.Bulk;
 		break;
 	case ESolidPartMeasure::Hip:
-		Factors.Length = Clamped.Height;
-		Factors.Side = Clamped.HipWidth;
-		Factors.Depth = Clamped.TorsoGirth;
+		Length = Clamped.Height;
+		Side = Clamped.HipWidth;
+		Depth = Clamped.TorsoGirth;
 		break;
 	case ESolidPartMeasure::Shoulder:
-		Factors.Length = Clamped.NeckLength;
-		Factors.Side = Clamped.ShoulderWidth;
-		Factors.Depth = Clamped.TorsoGirth;
+		Length = Clamped.NeckLength;
+		Side = Clamped.ShoulderWidth;
+		Depth = Clamped.TorsoGirth;
 		break;
 	case ESolidPartMeasure::Arm:
-		Factors.Length = Clamped.ArmLength;
-		Factors.Side = Clamped.Bulk;
-		Factors.Depth = Clamped.Bulk;
+		Length = Clamped.ArmLength;
+		Side = Clamped.Bulk;
+		Depth = Clamped.Bulk;
 		break;
 	default:
-		Factors.Length = Clamped.Height;
-		Factors.Side = Clamped.TorsoGirth;
-		Factors.Depth = Clamped.TorsoGirth;
+		Length = Clamped.Height;
+		Side = Clamped.TorsoGirth;
+		Depth = Clamped.TorsoGirth;
 		break;
 	}
 
-	Start.X *= Factors.Side;
-	Start.Y *= Factors.Depth;
+	Start.X *= Side;
+	Start.Y *= Depth;
 	if (Measure == ESolidPartMeasure::Shoulder)
 	{
-		End.X *= Factors.Side;
-		End.Y *= Factors.Side;
+		End.X *= Side;
+		End.Y *= Side;
 	}
 	else
 	{
-		End.X *= Factors.Side;
-		End.Y *= Factors.Depth;
+		End.X *= Side;
+		End.Y *= Depth;
 	}
 	if (bHasMid)
 	{
-		Mid.X *= Factors.Side;
-		Mid.Y *= Factors.Depth;
+		Mid.X *= Side;
+		Mid.Y *= Depth;
 	}
-	return Factors;
+
+	if (Bones.Num() == 0)
+	{
+		return;
+	}
+
+	const int32 Span = FindPartBone(Skeleton, Bones[0]);
+	if (Skeleton.IsValidIndex(Span))
+	{
+		Skeleton[Span].LocalTranslation *= Length;
+	}
+
+	for (int32 BoneNumber = 1; BoneNumber < Bones.Num(); ++BoneNumber)
+	{
+		const int32 Index = FindPartBone(Skeleton, Bones[BoneNumber]);
+		if (!Skeleton.IsValidIndex(Index))
+		{
+			continue;
+		}
+		const int32 Parent = Skeleton[Index].ParentIndex;
+		const FQuat ParentRotation = Skeleton.IsValidIndex(Parent)
+			? WorldRotationAt(Skeleton, Parent)
+			: FQuat::Identity;
+		FVector Offset = ParentRotation.RotateVector(Skeleton[Index].LocalTranslation);
+		Offset.X *= Side;
+		Offset.Y *= Side;
+		Skeleton[Index].LocalTranslation = ParentRotation.UnrotateVector(Offset);
+	}
 }
 
 uint8 SolidBodyMesh::FSolidBodyPart::MaterialSlot() const

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SolidBodyDeform.h"
 #include "SolidBodyParams.h"
 
 #include <initializer_list>
@@ -37,14 +38,6 @@ namespace SolidBodyMesh
 		Arm,
 		/** Length is leg length times height. Side and depth are bulk. */
 		Leg,
-	};
-
-	/** How far a part moves off its catalogue size. 1 leaves it alone. */
-	struct FSolidPartFactors
-	{
-		float Length = 1.f;
-		float Side = 1.f;
-		float Depth = 1.f;
 	};
 
 	/** Diameters of one end of a part, in centimetres. */
@@ -121,7 +114,7 @@ namespace SolidBodyMesh
 	 * One mesh piece.
 	 * Bones[0] is the length of the piece. The other bones are wrapped inside it.
 	 * Start is the parent joint. End is Bones[0]. Mid is used by the shoulders.
-	 * Fit measures the cones. Draw adds the triangles.
+	 * Apply sizes the part and those bones. Fit measures the cones. Draw adds the triangles.
 	 */
 	struct FSolidBodyPart
 	{
@@ -148,10 +141,11 @@ namespace SolidBodyMesh
 		uint8 MaterialSlot() const;
 
 		/**
-		 * Multiply the catalogue diameters by the slider channels for this part.
-		 * Call once. The returned factors are what the wrapped bones then use.
+		 * Size this part from the sliders, then size the bones it wraps.
+		 * Bones[0] takes the length. The other bones spread by the part's side.
+		 * Call once. A listed bone that is missing from the skeleton is left out.
 		 */
-		FSolidPartFactors Apply(const FSolidBodyParams& Params);
+		void Apply(TArray<FSolidDeformBone>& Skeleton, const FSolidBodyParams& Params);
 
 		/**
 		 * The cones for this part.

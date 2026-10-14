@@ -1116,66 +1116,9 @@ void SolidBodyMesh::FSolidBodyMesh::Apply(
 	TArray<FSolidDeformBone>& Bones,
 	const FSolidBodyParams& Params)
 {
-	TArray<FQuat> WorldRotation;
-	WorldRotation.SetNum(Bones.Num());
-	TArray<uint8> Ready;
-	Ready.Init(0, Bones.Num());
-	for (int32 Pass = 0; Pass < Bones.Num(); ++Pass)
-	{
-		bool bProgress = false;
-		for (int32 Index = 0; Index < Bones.Num(); ++Index)
-		{
-			if (Ready[Index])
-			{
-				continue;
-			}
-			const int32 Parent = Bones[Index].ParentIndex;
-			const bool bHasParent = Bones.IsValidIndex(Parent) && Parent != Index;
-			if (bHasParent && !Ready[Parent])
-			{
-				continue;
-			}
-			const FQuat ParentRotation = bHasParent ? WorldRotation[Parent] : FQuat::Identity;
-			WorldRotation[Index] = ParentRotation * Bones[Index].LocalRotation;
-			Ready[Index] = 1;
-			bProgress = true;
-		}
-		if (!bProgress)
-		{
-			break;
-		}
-	}
-
 	for (FSolidBodyPart& Part : Parts)
 	{
-		const FSolidPartFactors Factors = Part.Apply(Params);
-		if (Part.Bones.Num() == 0)
-		{
-			continue;
-		}
-
-		const int32 Span = FindNamedBone(Bones, Bones.Num(), *Part.Bones[0].ToString());
-		if (Bones.IsValidIndex(Span))
-		{
-			Bones[Span].LocalTranslation *= Factors.Length;
-		}
-
-		for (int32 BoneNumber = 1; BoneNumber < Part.Bones.Num(); ++BoneNumber)
-		{
-			const int32 Index = FindNamedBone(Bones, Bones.Num(), *Part.Bones[BoneNumber].ToString());
-			if (!Bones.IsValidIndex(Index))
-			{
-				continue;
-			}
-			const int32 Parent = Bones[Index].ParentIndex;
-			const FQuat ParentRotation = (Bones.IsValidIndex(Parent) && Ready.IsValidIndex(Parent) && Ready[Parent])
-				? WorldRotation[Parent]
-				: FQuat::Identity;
-			FVector Offset = ParentRotation.RotateVector(Bones[Index].LocalTranslation);
-			Offset.X *= Factors.Side;
-			Offset.Y *= Factors.Side;
-			Bones[Index].LocalTranslation = ParentRotation.UnrotateVector(Offset);
-		}
+		Part.Apply(Bones, Params);
 	}
 }
 

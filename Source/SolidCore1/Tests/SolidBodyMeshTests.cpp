@@ -986,4 +986,112 @@ bool FSolidBodyHeadShapeTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyDetailTest,
+	"SolidCore1.Body.Detail",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyDetailTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidBodyMesh;
+
+	TestEqual(TEXT("every part uses five times the first ring"), BodyPartDetail, 5);
+	TestEqual(TEXT("tubes, shoulders, and the head share that ring"), BodyPartSides, 10 * BodyPartDetail);
+	TestEqual(TEXT("the head uses that ring"), HeadSideCount, BodyPartSides);
+	TestEqual(TEXT("the shoulders use that ring"), ShoulderSideCount, BodyPartSides);
+
+	FSolidBodyPart Limb(
+		TEXT("Thigh (L)"),
+		{ LeftThighBone },
+		ESolidPartColour::Trousers,
+		FSolidPartSection::Round(LeftThighTopDiameterCm),
+		FSolidPartSection::Round(LeftThighBottomDiameterCm));
+	Limb.Measure = ESolidPartMeasure::Leg;
+	TArray<FSolidBodyVert> LimbVerts;
+	TArray<FSolidBodyTri> LimbTris;
+	Limb.Draw(
+		LimbVerts,
+		LimbTris,
+		0,
+		1,
+		FVector(0.f, 0.f, 40.f),
+		FVector(0.f, 0.f, 0.f),
+		nullptr,
+		nullptr,
+		0,
+		FVector::ForwardVector);
+	TestEqual(TEXT("a limb has two rings at the shared side count"), LimbVerts.Num(), 2 * BodyPartSides);
+
+	const FSolidBodyMesh Catalogue = FSolidBodyMesh::Make({});
+	const FSolidBodyPart* Found = Catalogue.Find(TEXT("Shoulders"));
+	TestTrue(TEXT("the shoulders are on the list"), Found != nullptr);
+	if (Found)
+	{
+		FSolidBodyPart Shoulders = *Found;
+		const FVector SegmentStart[] = {
+			FVector(0.f, 0.f, 0.f),
+			FVector(0.f, 0.f, 0.f),
+			FVector(7.f, 3.f, 10.f),
+			FVector(-7.f, 3.f, 10.f),
+		};
+		const FVector SegmentEnd[] = {
+			FVector(7.f, 3.f, 10.f),
+			FVector(-7.f, 3.f, 10.f),
+			FVector(20.f, -2.f, 8.f),
+			FVector(-20.f, -2.f, 8.f),
+		};
+		TArray<FSolidBodyVert> ShoulderVerts;
+		TArray<FSolidBodyTri> ShoulderTris;
+		Shoulders.Draw(
+			ShoulderVerts,
+			ShoulderTris,
+			0,
+			1,
+			FVector(0.f, 0.f, 0.f),
+			FVector(0.f, 0.f, 20.f),
+			SegmentStart,
+			SegmentEnd,
+			4,
+			FVector::ForwardVector);
+		TestEqual(TEXT("the shoulders have three rings at the shared side count"), ShoulderVerts.Num(), 3 * ShoulderSideCount);
+	}
+
+	TArray<FSolidDeformBone> Bones;
+	auto AddBone = [&Bones](const TCHAR* Name, const int32 Parent, const FVector& Translation)
+	{
+		FSolidDeformBone Bone;
+		Bone.Name = Name;
+		Bone.ParentIndex = Parent;
+		Bone.LocalTranslation = Translation;
+		Bones.Add(Bone);
+	};
+	AddBone(TEXT("neck_01"), INDEX_NONE, FVector(0.f, 0.f, 90.f));
+	AddBone(HeadBone, 0, FVector(0.f, 0.f, 10.f));
+	AddBone(TEXT("eye_jnt_l"), 1, FVector(4.f, 6.f, 12.f));
+
+	TArray<FVector> Positions;
+	SolidBodyDeform::ComponentPositions(Bones, Positions);
+	TArray<FSolidBodyVert> HeadVerts;
+	TArray<FSolidBodyTri> HeadTris;
+	FSolidBodyMesh Body = FSolidBodyMesh::FromBones(Bones);
+	Body.Draw(HeadVerts, HeadTris, Bones, Positions);
+
+	float MinZ = 1.e9f;
+	int32 SkinVerts = 0;
+	for (const FSolidBodyVert& Vert : HeadVerts)
+	{
+		if (Vert.Slot != SkinMaterialSlot)
+		{
+			continue;
+		}
+		++SkinVerts;
+		MinZ = FMath::Min(MinZ, static_cast<float>(Vert.Position.Z));
+	}
+	const int32 HeadRingVerts = 2 + (HeadRingCount - 2) * HeadSideCount;
+	TestEqual(TEXT("the head has five times the ring vertices, plus the poles"), SkinVerts, HeadRingVerts);
+	TestTrue(TEXT("the sphere starts at the base of the head bone"), FMath::IsNearlyEqual(MinZ, 90.f, 0.01f));
+	TestTrue(TEXT("the head joint is above that base"), Positions.IsValidIndex(1) && Positions[1].Z > MinZ + 1.f);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

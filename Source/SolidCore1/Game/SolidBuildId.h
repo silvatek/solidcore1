@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0291")
+#define SOLID_BUILD_ID TEXT("SC1-0292")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The head tests no longer pin the sphere to the head joint.")
+#define SOLID_BUILD_NOTE TEXT("The head sits on the bone base. Every part has five times the vertices.")
 #endif

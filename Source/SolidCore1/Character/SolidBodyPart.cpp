@@ -253,7 +253,7 @@ void SolidBodyMesh::FSolidBodyPart::AddTube(
 	}
 	Side = Side.GetSafeNormal();
 	const FVector Up = FVector::CrossProduct(Axis, Side).GetSafeNormal();
-	const int32 SideCount = FMath::Clamp(Sides, 3, 16);
+	const int32 SideCount = FMath::Clamp(Sides, 3, BodyPartSideLimit);
 	const int32 RingCount = FMath::Max(Segments, 1) + 1;
 	const int32 Base = Verts.Num();
 
@@ -424,11 +424,11 @@ void SolidBodyMesh::FSolidBodyPart::AddHead(
 	const float HorizontalRadius = RadiusSum / static_cast<float>(Count);
 	const float Height = HeadLength * HeadHeightInBoneLengths;
 	const float VerticalRadius = Height * 0.5f;
-	const FVector Center = Base + FVector::UpVector * VerticalRadius;
+	const FVector Center = Neck + FVector::UpVector * VerticalRadius;
 	const FVector Up = FVector::UpVector;
 	const FVector Side = FVector::RightVector;
 	const FVector Forward = FVector::ForwardVector;
-	const int32 Sides = FMath::Clamp(HeadSideCount, 3, 16);
+	const int32 Sides = FMath::Clamp(HeadSideCount, 3, BodyPartSideLimit);
 	const int32 Rings = FMath::Max(HeadRingCount, 3);
 	const uint8 Slot = MaterialSlot();
 	const int32 BaseVert = Verts.Num();
@@ -442,7 +442,7 @@ void SolidBodyMesh::FSolidBodyPart::AddHead(
 		Verts.Add(Vert);
 	};
 
-	AddVert(Base);
+	AddVert(Neck);
 	for (int32 Ring = 1; Ring < Rings - 1; ++Ring)
 	{
 		const float T = static_cast<float>(Ring) / static_cast<float>(Rings - 1);
@@ -529,7 +529,7 @@ void SolidBodyMesh::FSolidBodyPart::Draw(
 		Cone.End,
 		Cone.RadiusStart,
 		Cone.RadiusEnd,
-		10,
+		BodyPartSides,
 		1,
 		MaterialSlot(),
 		Cone.DepthScaleStart,

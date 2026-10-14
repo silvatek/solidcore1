@@ -166,8 +166,8 @@ namespace SolidBodyMesh
 		 * Add this part's triangles.
 		 * WeightBone is the parent joint. The child joint only rotates, so a tube is skinned there.
 		 * SpanBone is Bones[0]. The head is a sphere skinned to that bone.
-		 * To is the head bone, and the sphere starts there.
-		 * The height is three lengths of that bone. The horizontal radius is the eye_jnt length.
+		 * To is the head joint. The sphere starts at From, the base of that bone.
+		 * The height is three lengths of the head bone. The horizontal radius is the eye_jnt length.
 		 */
 		void Draw(
 			TArray<FSolidBodyVert>& Verts,
@@ -208,7 +208,8 @@ namespace SolidBodyMesh
 
 		/**
 		 * A sphere along world up, skinned to the head bone.
-		 * The bottom pole is Base. Neck is the parent joint, so the head bone's length is the gap between them.
+		 * The bottom pole is Neck, the parent joint, which is the base of the head bone.
+		 * Base is the head joint. The head bone's length is the gap between them.
 		 * The height is HeadHeightInBoneLengths times that length.
 		 * The horizontal radius is the length of the eye_jnt bones.
 		 */

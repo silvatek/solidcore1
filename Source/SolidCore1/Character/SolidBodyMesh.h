@@ -61,14 +61,20 @@ namespace SolidBodyMesh
 	/** An eye joint. The head's horizontal radius is the length of this bone. */
 	bool IsEyeJointBoneName(const FString& BoneName);
 
-	/** The bone the head sphere is skinned to. Its position is the bottom of the sphere. */
+	/** The bone the head sphere is skinned to. The sphere's bottom is that bone's parent joint. */
 	inline const TCHAR* HeadBone = TEXT("head");
 
-	/** The sphere is this many head-bone lengths tall. The bottom sits on the head bone. */
+	/** The sphere is this many head-bone lengths tall. The bottom is the base of the head bone. */
 	inline constexpr float HeadHeightInBoneLengths = 3.f;
 
+	/** Five times the first ring. Tubes, shoulders, and the head all use this many sides. */
+	inline constexpr int32 BodyPartDetail = 5;
+	inline constexpr int32 BodyPartSides = 10 * BodyPartDetail;
+	inline constexpr int32 BodyPartSideLimit = 64;
+	static_assert(BodyPartSides <= BodyPartSideLimit, "the side count fits the mesh clamp");
+
 	/** Rings around the head, and rings from the chin pole to the crown, including both poles. */
-	inline constexpr int32 HeadSideCount = 10;
+	inline constexpr int32 HeadSideCount = BodyPartSides;
 	/** An odd count puts one ring on the equator, halfway up. */
 	inline constexpr int32 HeadRingCount = 9;
 	static_assert(HeadRingCount >= 3 && HeadRingCount % 2 == 1, "the head keeps a ring halfway up");
@@ -191,7 +197,7 @@ namespace SolidBodyMesh
 	 */
 	inline constexpr float ShoulderUpperArmClearanceCm = UpperArmElbowDiameterCm * 0.5f;
 	/** Rings around the shoulder piece. The bulge keeps bones inside the flat faces. */
-	inline constexpr int32 ShoulderSideCount = 10;
+	inline constexpr int32 ShoulderSideCount = BodyPartSides;
 
 	/**
 	 * Shirt piece the length of neck_01.

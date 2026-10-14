@@ -628,22 +628,10 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 			{
 				return;
 			}
-			float RayT = 0.f;
-			float SegU = 0.f;
-			const float Dist = SolidSkeletonHover::RaySegmentDistance(
-				Origin,
-				Dir,
-				Cone.Start,
-				Cone.End,
-				RayT,
-				SegU);
-			const float Radius = FMath::Lerp(Cone.RadiusStart, Cone.RadiusEnd, SegU);
-			if (Dist > Radius + 0.15f || RayT >= BestT)
+			if (SolidBodyMesh::RayHitsCone(Cone, Origin, Dir, BestT))
 			{
-				return;
+				BestLabel = Label;
 			}
-			BestT = RayT;
-			BestLabel = Label;
 		};
 
 		const TCHAR* ThighBones[] = {
@@ -727,23 +715,20 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 		const FName HipSpine = FindBone(SolidBodyMesh::HipSpineBone);
 		if (!HipLeft.IsNone() && !HipRight.IsNone() && !HipSpine.IsNone())
 		{
-			TArray<FVector> HipPoints;
-			TArray<FString> HipNames;
-			const FName HipBones[] = { HipLeft, HipRight, HipSpine };
-			for (const FName& BoneName : HipBones)
+			const FName SpineStart = CharacterMesh->GetParentBone(HipSpine);
+			if (!SpineStart.IsNone())
 			{
-				HipPoints.Add(CharacterMesh->GetBoneLocation(BoneName));
-				HipNames.Add(BoneName.ToString());
-				const FName ParentName = CharacterMesh->GetParentBone(BoneName);
-				if (!ParentName.IsNone())
-				{
-					HipPoints.Add(CharacterMesh->GetBoneLocation(ParentName));
-				}
+				TArray<FString> HipNames;
+				HipNames.Add(HipLeft.ToString());
+				HipNames.Add(HipRight.ToString());
+				HipNames.Add(HipSpine.ToString());
+				HipNames.Sort();
+				SolidBodyMesh::FSolidFittedCone Hip = SolidBodyMesh::HipCone(
+					CharacterMesh->GetBoneLocation(SpineStart),
+					CharacterMesh->GetBoneLocation(HipSpine));
+				Hip.WideAxis = CharacterMesh->GetRightVector();
+				Consider(Hip, FString::Join(HipNames, TEXT(", ")));
 			}
-			HipNames.Sort();
-			Consider(
-				SolidBodyMesh::HipCone(HipPoints.GetData(), HipPoints.Num()),
-				FString::Join(HipNames, TEXT(", ")));
 		}
 		return BestLabel;
 	}

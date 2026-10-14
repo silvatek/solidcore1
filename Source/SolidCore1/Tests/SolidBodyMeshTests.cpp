@@ -881,38 +881,49 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidBodyHipConeTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("the hip bottom is 50 cm across"), SolidBodyMesh::HipBottomDiameterCm, 50.f);
-	TestEqual(TEXT("the hip top is 30 cm across"), SolidBodyMesh::HipTopDiameterCm, 30.f);
+	TestEqual(TEXT("the hip is 50 cm side to side"), SolidBodyMesh::HipSideDiameterCm, 50.f);
+	TestEqual(TEXT("the hip is 20 cm front to back"), SolidBodyMesh::HipDepthDiameterCm, 20.f);
 	TestEqual(TEXT("left hip bone"), FString(SolidBodyMesh::HipLeftBone), FString(TEXT("thigh_l")));
 	TestEqual(TEXT("right hip bone"), FString(SolidBodyMesh::HipRightBone), FString(TEXT("thigh_r")));
 	TestEqual(TEXT("spine bone"), FString(SolidBodyMesh::HipSpineBone), FString(TEXT("spine_01")));
 	TestEqual(TEXT("the hip uses the shirt"), SolidBodyMesh::ShirtMaterialSlot, static_cast<uint8>(0));
 	TestTrue(TEXT("the shirt is not the trousers"), SolidBodyMesh::ShirtMaterialSlot != SolidBodyMesh::TrouserMaterialSlot);
 
-	const FVector ThighL(-12.f, 2.f, 90.f);
-	const FVector ThighR(12.f, 2.f, 88.f);
-	const FVector Spine(0.f, -1.f, 110.f);
-	const FVector Pelvis(0.f, 0.f, 96.f);
-	const FVector Points[] = { ThighL, Pelvis, ThighR, Pelvis, Spine, Pelvis };
-	const SolidBodyMesh::FSolidFittedCone Cone = SolidBodyMesh::HipCone(Points, UE_ARRAY_COUNT(Points));
-	TestTrue(TEXT("the hip is a cone"), Cone.bValid);
-	TestTrue(TEXT("the wide end is the lowest point"), FMath::IsNearlyEqual(static_cast<float>(Cone.Start.Z), 88.f, 0.01f));
-	TestTrue(TEXT("the narrow end is the highest point"), FMath::IsNearlyEqual(static_cast<float>(Cone.End.Z), 110.f, 0.01f));
-	TestTrue(TEXT("the cone stands upright"), FMath::IsNearlyEqual(static_cast<float>(Cone.Start.X), static_cast<float>(Cone.End.X), 0.01f));
-	TestTrue(TEXT("the cone is centred on the bones"), FMath::IsNearlyEqual(static_cast<float>(Cone.Start.X), 0.f, 0.05f));
+	const FVector SpineStart(1.f, 2.f, 95.f);
+	const FVector SpineEnd(1.f, 4.f, 112.f);
+	const SolidBodyMesh::FSolidFittedCone Cone = SolidBodyMesh::HipCone(SpineStart, SpineEnd);
+	TestTrue(TEXT("the hip is a piece"), Cone.bValid);
+	TestTrue(TEXT("the piece starts at the spine joint"), Cone.Start.Equals(SpineStart, 0.01));
+	TestTrue(TEXT("the piece ends on spine_01"), Cone.End.Equals(SpineEnd, 0.01));
 	TestTrue(
-		TEXT("the cone reaches from the hips to the spine"),
-		FMath::IsNearlyEqual(static_cast<float>(FVector::Dist(Cone.Start, Cone.End)), 22.f, 0.05f));
-	TestTrue(TEXT("the bottom is 25 cm in radius"), FMath::IsNearlyEqual(Cone.RadiusStart, 25.f, 0.01f));
-	TestTrue(TEXT("the top is 15 cm in radius"), FMath::IsNearlyEqual(Cone.RadiusEnd, 15.f, 0.01f));
+		TEXT("the piece is the length of spine_01"),
+		FMath::IsNearlyEqual(
+			static_cast<float>(FVector::Dist(Cone.Start, Cone.End)),
+			static_cast<float>(FVector::Dist(SpineStart, SpineEnd)),
+			0.05f));
+	TestTrue(TEXT("both ends are 25 cm toward the sides"), FMath::IsNearlyEqual(Cone.RadiusStart, 25.f, 0.01f));
+	TestTrue(TEXT("the far end matches the near end"), FMath::IsNearlyEqual(Cone.RadiusStart, Cone.RadiusEnd, 0.01f));
+	TestTrue(TEXT("front to back is 20 cm for a 50 cm width"), FMath::IsNearlyEqual(Cone.DepthScale, 0.4f, 0.01f));
+	TestTrue(TEXT("the full width points to the side"), Cone.WideAxis.Equals(FVector::RightVector, 0.01));
 
-	const FVector Swapped[] = { ThighR, Pelvis, ThighL, Pelvis, Spine, Pelvis };
-	const SolidBodyMesh::FSolidFittedCone Mirrored = SolidBodyMesh::HipCone(Swapped, UE_ARRAY_COUNT(Swapped));
-	TestTrue(TEXT("swapping the thighs leaves the cone"), Mirrored.Start.Equals(Cone.Start, 0.01) && Mirrored.End.Equals(Cone.End, 0.01));
+	float BestT = TNumericLimits<float>::Max();
+	TestTrue(
+		TEXT("a ray from the side meets the hip"),
+		SolidBodyMesh::RayHitsCone(Cone, FVector(1.f, 40.f, 103.f), FVector(0.f, -1.f, 0.f), BestT));
+	BestT = TNumericLimits<float>::Max();
+	TestFalse(
+		TEXT("a ray past the side misses the hip"),
+		SolidBodyMesh::RayHitsCone(Cone, FVector(1.f, 40.f, 103.f), FVector(0.f, 1.f, 0.f), BestT));
+	BestT = TNumericLimits<float>::Max();
+	TestTrue(
+		TEXT("a ray from the front meets the squashed side"),
+		SolidBodyMesh::RayHitsCone(Cone, FVector(20.f, 3.f, 103.f), FVector(-1.f, 0.f, 0.f), BestT));
+	BestT = TNumericLimits<float>::Max();
+	TestFalse(
+		TEXT("a ray that only clips the round outline misses the front"),
+		SolidBodyMesh::RayHitsCone(Cone, FVector(18.f, 3.f, 103.f), FVector(0.f, 1.f, 0.f), BestT));
 
-	const FVector Flat[] = { FVector(-10.f, 0.f, 90.f), FVector(10.f, 0.f, 90.f), FVector(0.f, 0.f, 90.f) };
-	TestFalse(TEXT("bones with no height are not drawn"), SolidBodyMesh::HipCone(Flat, UE_ARRAY_COUNT(Flat)).bValid);
-	TestFalse(TEXT("no bones are not drawn"), SolidBodyMesh::HipCone(nullptr, 0).bValid);
+	TestFalse(TEXT("a bone with no length is not drawn"), SolidBodyMesh::HipCone(SpineStart, SpineStart).bValid);
 	return true;
 }
 

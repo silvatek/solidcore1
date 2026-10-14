@@ -3,6 +3,7 @@
 #include "SolidContentLookup.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
+#include "SolidSkeletonHover.h"
 #include "Animation/Skeleton.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
@@ -336,35 +337,76 @@ SolidBodyMesh::FSolidFittedCone SolidBodyMesh::ExtraFingerCone(const FVector& An
 	return Out;
 }
 
-SolidBodyMesh::FSolidFittedCone SolidBodyMesh::HipCone(const FVector* Points, const int32 Count)
+SolidBodyMesh::FSolidFittedCone SolidBodyMesh::HipCone(const FVector& SpineStart, const FVector& SpineEnd)
 {
 	FSolidFittedCone Out;
-	Out.RadiusStart = HipBottomDiameterCm * 0.5f;
-	Out.RadiusEnd = HipTopDiameterCm * 0.5f;
-	if (!Points || Count <= 0)
-	{
-		return Out;
-	}
-
-	FVector Sum = FVector::ZeroVector;
-	double MinZ = Points[0].Z;
-	double MaxZ = Points[0].Z;
-	for (int32 Index = 0; Index < Count; ++Index)
-	{
-		Sum += Points[Index];
-		MinZ = FMath::Min(MinZ, Points[Index].Z);
-		MaxZ = FMath::Max(MaxZ, Points[Index].Z);
-	}
-	if (MaxZ - MinZ < 1.0)
-	{
-		return Out;
-	}
-
-	const FVector Center = Sum / static_cast<double>(Count);
-	Out.Start = FVector(Center.X, Center.Y, MinZ);
-	Out.End = FVector(Center.X, Center.Y, MaxZ);
-	Out.bValid = true;
+	Out.Start = SpineStart;
+	Out.End = SpineEnd;
+	Out.RadiusStart = HipSideDiameterCm * 0.5f;
+	Out.RadiusEnd = HipSideDiameterCm * 0.5f;
+	Out.DepthScale = HipSideDiameterCm > KINDA_SMALL_NUMBER ? HipDepthDiameterCm / HipSideDiameterCm : 1.f;
+	Out.WideAxis = FVector::RightVector;
+	Out.bValid = FVector::Dist(SpineStart, SpineEnd) >= 1.0;
 	return Out;
+}
+
+bool SolidBodyMesh::RayHitsCone(
+	const FSolidFittedCone& Cone,
+	const FVector& RayOrigin,
+	const FVector& RayDir,
+	float& InOutRayT)
+{
+	if (!Cone.bValid)
+	{
+		return false;
+	}
+
+	float RayT = 0.f;
+	float SegU = 0.f;
+	SolidSkeletonHover::RaySegmentDistance(RayOrigin, RayDir, Cone.Start, Cone.End, RayT, SegU);
+	if (RayT >= InOutRayT)
+	{
+		return false;
+	}
+
+	const FVector Delta = Cone.End - Cone.Start;
+	FVector Axis = Delta;
+	if (!Axis.Normalize())
+	{
+		return false;
+	}
+	FVector Wide = Cone.WideAxis - Axis * FVector::DotProduct(Cone.WideAxis, Axis);
+	if (Wide.SizeSquared() < 0.01)
+	{
+		Wide = FVector::CrossProduct(FVector::UpVector, Axis);
+	}
+	if (Wide.SizeSquared() < 0.01)
+	{
+		Wide = FVector::CrossProduct(FVector::ForwardVector, Axis);
+	}
+	if (!Wide.Normalize())
+	{
+		return false;
+	}
+	const FVector Narrow = FVector::CrossProduct(Axis, Wide).GetSafeNormal();
+	const float SideRadius = FMath::Lerp(Cone.RadiusStart, Cone.RadiusEnd, SegU) + 0.15f;
+	const float DepthRadius = FMath::Lerp(Cone.RadiusStart, Cone.RadiusEnd, SegU) * FMath::Clamp(Cone.DepthScale, 0.2f, 1.f) + 0.15f;
+	if (SideRadius <= KINDA_SMALL_NUMBER || DepthRadius <= KINDA_SMALL_NUMBER)
+	{
+		return false;
+	}
+
+	const FVector Offset = (RayOrigin + RayDir * RayT) - (Cone.Start + Delta * SegU);
+	const float WideDist = FVector::DotProduct(Offset, Wide);
+	const float NarrowDist = FVector::DotProduct(Offset, Narrow);
+	const float Ellipse = FMath::Square(WideDist / SideRadius) + FMath::Square(NarrowDist / DepthRadius);
+	if (Ellipse > 1.f)
+	{
+		return false;
+	}
+
+	InOutRayT = RayT;
+	return true;
 }
 
 namespace
@@ -862,8 +904,8 @@ namespace
 			10,
 			1,
 			Slot,
-			1.f,
-			FVector::ForwardVector);
+			Cone.DepthScale,
+			Cone.WideAxis);
 	}
 
 	void BuildLowFi(
@@ -954,23 +996,16 @@ namespace
 		const int32 HipSpine = FindNamedBone(Bones, Count, SolidBodyMesh::HipSpineBone);
 		if (HipLeft != INDEX_NONE && HipRight != INDEX_NONE && HipSpine != INDEX_NONE)
 		{
-			TArray<FVector> HipPoints;
-			const int32 HipBones[] = { HipLeft, HipRight, HipSpine };
-			for (const int32 Bone : HipBones)
+			const int32 SpineStart = Bones[HipSpine].ParentIndex;
+			if (Bones.IsValidIndex(SpineStart) && Positions.IsValidIndex(SpineStart))
 			{
-				HipPoints.Add(Positions[Bone]);
-				const int32 Parent = Bones[Bone].ParentIndex;
-				if (Positions.IsValidIndex(Parent))
-				{
-					HipPoints.Add(Positions[Parent]);
-				}
+				AddLegCone(
+					Verts,
+					Tris,
+					HipSpine,
+					SolidBodyMesh::HipCone(Positions[SpineStart], Positions[HipSpine]),
+					SlotTorso);
 			}
-			AddLegCone(
-				Verts,
-				Tris,
-				HipSpine,
-				SolidBodyMesh::HipCone(HipPoints.GetData(), HipPoints.Num()),
-				SlotTorso);
 		}
 	}
 

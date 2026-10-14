@@ -113,7 +113,7 @@ namespace SolidBodyMesh
 	 */
 	FString SegmentKey(const FString& BoneName);
 
-	/** A truncated cone that contains a set of points and stops at their span. */
+	/** A tube along a bone. DepthScale squishes the section across WideAxis. */
 	struct FSolidFittedCone
 	{
 		FVector Start = FVector::ZeroVector;
@@ -121,6 +121,10 @@ namespace SolidBodyMesh
 		float RadiusStart = 0.f;
 		float RadiusEnd = 0.f;
 		bool bValid = false;
+		/** 1 keeps a round section. Smaller flattens the axis perpendicular to WideAxis. */
+		float DepthScale = 1.f;
+		/** Direction that keeps the full diameter. Side-to-side for the hip. */
+		FVector WideAxis = FVector::RightVector;
 	};
 
 	/** Round cone around Points. A mirrored point set produces a mirrored cone. */
@@ -197,22 +201,32 @@ namespace SolidBodyMesh
 	inline constexpr uint8 ShirtMaterialSlot = 0;
 	inline constexpr uint8 TrouserMaterialSlot = 1;
 
-	/** The three bones in the hip piece. */
+	/** The three bones named by the hip piece. The mesh itself is the length of spine_01. */
 	inline const TCHAR* HipLeftBone = TEXT("thigh_l");
 	inline const TCHAR* HipRightBone = TEXT("thigh_r");
 	inline const TCHAR* HipSpineBone = TEXT("spine_01");
 
-	/** Diameters of the hip cone, in centimetres. The lower end is the wide end. */
-	inline constexpr float HipBottomDiameterCm = 50.f;
-	inline constexpr float HipTopDiameterCm = 30.f;
+	/** Hip section, in centimetres. Side-to-side is the full width. Front-to-back is the squashed depth. */
+	inline constexpr float HipSideDiameterCm = 50.f;
+	inline constexpr float HipDepthDiameterCm = 20.f;
 
 	/**
-	 * Upright truncated cone around thigh_l, thigh_r, and spine_01.
-	 * Points are those bones and the joints they start from. The wide end is the lowest point
-	 * and the narrow end is the highest. The piece uses the shirt material.
-	 * Invalid when the points do not span a centimetre.
+	 * Shirt piece the length of spine_01, 50 cm side to side and 20 cm front to back.
+	 * SpineStart is the parent joint and SpineEnd is spine_01. WideAxis is the character's right.
+	 * Invalid when the bone is shorter than a centimetre.
 	 */
-	FSolidFittedCone HipCone(const FVector* Points, int32 Count);
+	FSolidFittedCone HipCone(const FVector& SpineStart, const FVector& SpineEnd);
+
+	/**
+	 * True when the ray meets the cone closer than InOutRayT.
+	 * A DepthScale below 1 uses an oval section, full across WideAxis and squashed across it.
+	 * InOutRayT is the closest hit so far, and becomes this hit when the ray meets the cone.
+	 */
+	bool RayHitsCone(
+		const FSolidFittedCone& Cone,
+		const FVector& RayOrigin,
+		const FVector& RayDir,
+		float& InOutRayT);
 
 	/** Start and end radii of the cone from Parent to Child. Both ends are joint radii. */
 	void SegmentRadii(

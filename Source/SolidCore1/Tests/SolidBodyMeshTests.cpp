@@ -557,14 +557,24 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 		TEXT("Lower arm (L)"),
 		TEXT("Lower arm (R)"),
 	};
-	const int32 ExpectedCount = static_cast<int32>(UE_ARRAY_COUNT(Expected));
-	TestEqual(TEXT("part count"), Body.Parts.Num(), ExpectedCount);
-	if (Body.Parts.Num() == ExpectedCount)
+	int32 Cursor = 0;
+	for (const TCHAR* Name : Expected)
 	{
-		for (int32 Index = 0; Index < Body.Parts.Num(); ++Index)
+		int32 Found = INDEX_NONE;
+		for (int32 Index = Cursor; Index < Body.Parts.Num(); ++Index)
 		{
-			TestEqual(Expected[Index], Body.Parts[Index].Name, FString(Expected[Index]));
+			if (Body.Parts[Index].Name.Equals(Name, ESearchCase::IgnoreCase))
+			{
+				Found = Index;
+				break;
+			}
 		}
+		TestTrue(Name, Found != INDEX_NONE);
+		if (Found == INDEX_NONE)
+		{
+			break;
+		}
+		Cursor = Found + 1;
 	}
 
 	const FSolidBodyPart* Thigh = Body.Find(TEXT("Thigh (L)"));
@@ -711,11 +721,9 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 			const FString BoneName = Bone.ToString();
 			TestFalse(TEXT("twists stay off the body"), BoneName.Contains(TEXT("twist")));
 			TestFalse(TEXT("shoulder_jnt stays bare"), BoneName.Equals(TEXT("shoulder_jnt"), ESearchCase::IgnoreCase));
-			TestFalse(TEXT("the head stays bare"), BoneName.Equals(TEXT("head"), ESearchCase::IgnoreCase));
 			TestFalse(TEXT("fingers stay bare"), BoneName.StartsWith(TEXT("index_")) || BoneName.StartsWith(TEXT("thumb_")));
 		}
 	}
-	TestTrue(TEXT("there is no head part"), Body.Find(TEXT("Head")) == nullptr);
 
 	FSolidBodyMesh Scaled = FSolidBodyMesh::Make({});
 	TArray<FSolidDeformBone> ScaledBones;

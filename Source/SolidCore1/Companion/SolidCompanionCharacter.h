@@ -192,7 +192,7 @@ protected:
 	FLinearColor LegColor = FLinearColor(0.12f, 0.11f, 0.10f);
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Visual")
-	FLinearColor SkinColor = FLinearColor(0.96f, 0.76f, 0.72f);
+	FLinearColor SkinColor = FLinearColor(0xD6 / 255.f, 0xA8 / 255.f, 0x92 / 255.f);
 
 	/** Slider values, each from 0 to 1. Ignored until SetBodyControls. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Visual")

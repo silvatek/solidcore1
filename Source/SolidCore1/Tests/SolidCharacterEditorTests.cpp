@@ -248,11 +248,17 @@ bool FSolidCharacterEditorRosterTest::RunTest(const FString& Parameters)
 
 	TestTrue(TEXT("Sam shirt is red"), Sam->TorsoColor.Equals(SolidCompanionColors::ShirtRed()));
 	TestTrue(TEXT("Sam trousers are blue"), Sam->LegColor.Equals(SolidCompanionColors::TrouserBlue()));
-	TestTrue(TEXT("Sam skin is pink"), Sam->SkinColor.Equals(SolidCompanionColors::SkinPink()));
+	TestTrue(TEXT("Sam skin is the default"), Sam->SkinColor.Equals(SolidCompanionColors::SkinPink()));
+	const FLinearColor DefaultSkin = SolidCompanionColors::SkinPink();
+	TestTrue(
+		TEXT("default skin is #D6A892"),
+		FMath::IsNearlyEqual(DefaultSkin.R, 0xD6 / 255.f, 0.0001f)
+		&& FMath::IsNearlyEqual(DefaultSkin.G, 0xA8 / 255.f, 0.0001f)
+		&& FMath::IsNearlyEqual(DefaultSkin.B, 0x92 / 255.f, 0.0001f));
 	TestTrue(TEXT("Alex shirt is blue"), Alex->TorsoColor.Equals(SolidCompanionColors::TrouserBlue()));
 	TestTrue(TEXT("Alex trousers are red"), Alex->LegColor.Equals(SolidCompanionColors::ShirtRed()));
-	TestTrue(TEXT("Alex skin is pink"), Alex->SkinColor.Equals(SolidCompanionColors::SkinPink()));
-	TestTrue(TEXT("Max skin is pink"), Max->SkinColor.Equals(SolidCompanionColors::SkinPink()));
+	TestTrue(TEXT("Alex skin is the default"), Alex->SkinColor.Equals(SolidCompanionColors::SkinPink()));
+	TestTrue(TEXT("Max skin is the default"), Max->SkinColor.Equals(SolidCompanionColors::SkinPink()));
 
 	FLinearColor PaletteTorso;
 	FLinearColor PaletteLegs;

@@ -1,5 +1,6 @@
 #include "SolidBodyMesh.h"
 
+#include "Party/SolidCompany.h"
 #include "SolidContentLookup.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
@@ -979,7 +980,7 @@ USkeletalMesh* SolidBodyMesh::Build(
 		Mesh,
 		FLinearColor(0.29f, 0.38f, 0.55f),
 		FLinearColor(0.12f, 0.11f, 0.10f),
-		FLinearColor(0.96f, 0.76f, 0.72f));
+		SolidCompanionColors::SkinPink());
 
 	if (Mesh->GetNumSourceModels() < 1)
 	{
@@ -1028,7 +1029,7 @@ USkeletalMesh* SolidBodyMesh::Build(
 		Mesh,
 		FLinearColor(0.29f, 0.38f, 0.55f),
 		FLinearColor(0.12f, 0.11f, 0.10f),
-		FLinearColor(0.96f, 0.76f, 0.72f));
+		SolidCompanionColors::SkinPink());
 	return Mesh;
 #else
 	(void)Source;

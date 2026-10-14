@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0292")
+#define SOLID_BUILD_ID TEXT("SC1-0293")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The head sits on the bone base. Every part has five times the vertices.")
+#define SOLID_BUILD_NOTE TEXT("The default skin colour is #D6A892.")
 #endif

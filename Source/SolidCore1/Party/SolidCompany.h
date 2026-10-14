@@ -69,10 +69,10 @@ namespace SolidCompanionColors
 {
 	void PaletteForName(const FString& Name, FLinearColor& OutTorso, FLinearColor& OutLegs);
 
-	/** Light pink for a generated head and hands. */
+	/** #D6A892 for a generated head and hands. */
 	inline FLinearColor SkinPink()
 	{
-		return FLinearColor(0.96f, 0.76f, 0.72f);
+		return FLinearColor(0xD6 / 255.f, 0xA8 / 255.f, 0x92 / 255.f);
 	}
 
 	/** Sam's shirt and Alex's trousers. */
@@ -127,7 +127,7 @@ struct FSolidCompanion
 
 	/** Matte skin: head and hands. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
-	FLinearColor SkinColor = FLinearColor(0.96f, 0.76f, 0.72f);
+	FLinearColor SkinColor = FLinearColor(0xD6 / 255.f, 0xA8 / 255.f, 0x92 / 255.f);
 
 	/** Height slider, 0 to 1. 0.5 leaves the build and gender alone. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")

@@ -494,6 +494,11 @@ void ASolidCompanionCharacter::LayoutFace(const uint32 Codepoint)
 		break;
 	}
 
+	// The eyes land on the old mouth line. The mouth drops by the same gap.
+	const float Drop = EyeZ - MouthZ;
+	EyeZ = MouthZ;
+	MouthZ -= Drop;
+
 	if (FaceLeftEye)
 	{
 		FaceLeftEye->SetRelativeLocation(FVector(0.8f, -EyeGap, EyeZ));

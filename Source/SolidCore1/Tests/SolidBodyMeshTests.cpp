@@ -653,7 +653,7 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the right upper-arm bone is inside the shoulders"), Shoulders->Bones.Contains(FName(ShoulderRightUpperArmBone)));
 		TestTrue(TEXT("the shoulder base matches the chest"), FMath::IsNearlyEqual(Shoulders->Start.X, Chest->End.X, 0.01f));
 		TestTrue(TEXT("the shoulder base is 20 cm deep"), FMath::IsNearlyEqual(Shoulders->Start.Y, TorsoDepthDiameterCm, 0.01f));
-		TestTrue(TEXT("the shoulder top is a 20 cm circle"), FMath::IsNearlyEqual(Shoulders->End.X, ShoulderTopRadiusCm * 2.f, 0.01f));
+		TestTrue(TEXT("the shoulder top is the neck circle"), FMath::IsNearlyEqual(Shoulders->End.X, ShoulderTopRadiusCm * 2.f, 0.01f));
 		TestTrue(TEXT("the shoulder top is round"), FMath::IsNearlyEqual(Shoulders->End.Y, Shoulders->End.X, 0.01f));
 		TestTrue(TEXT("the mid waits until the piece is drawn"), FMath::IsNearlyEqual(Shoulders->Mid.X, 0.f, 0.01f));
 		TestTrue(TEXT("the shoulders are a shirt"), Shoulders->Colour == ESolidPartColour::Shirt);

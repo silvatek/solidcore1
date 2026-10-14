@@ -4,85 +4,28 @@
 #include "SolidBodyParams.h"
 
 /**
- * What a bind-pose bone contributes.
- * A bone's local translation is the segment that ends at that bone
- * (the shin bone's translation is the thigh length).
+ * One bind-pose bone.
+ * A body part scales the translation of each bone it wraps.
+ * Rotation is copied through. The Viking skeleton asset is not modified.
  */
-enum class ESolidBodyBoneRole : uint8
-{
-	Root,
-	Pelvis,
-	Spine,
-	Neck,
-	Head,
-	Clavicle,
-	Arm,
-	Hand,
-	Leg,
-	Foot,
-};
-
-/** One bind-pose bone. Length edits translation. Rotation is copied through. */
 struct FSolidDeformBone
 {
 	int32 ParentIndex = INDEX_NONE;
-	ESolidBodyBoneRole Role = ESolidBodyBoneRole::Root;
 	FVector LocalTranslation = FVector::ZeroVector;
 	FQuat LocalRotation = FQuat::Identity;
-
-	/** A twist bone spins a limb. It is not its own segment. */
-	bool bTwist = false;
-
-	/** A finger or a toe. The ankle and the calf stay limbs. */
-	bool bDigit = false;
 
 	/** Skeleton bone name. Empty on a hand-built test pose. */
 	FName Name;
 };
 
-/** One bind-pose vertex, skinned with up to four influences. Weights should sum to 1. */
-struct FSolidDeformVertex
-{
-	static constexpr int32 MaxInfluences = 4;
-
-	FVector Position = FVector::ZeroVector;
-	int32 BoneIndex[MaxInfluences] = { INDEX_NONE, INDEX_NONE, INDEX_NONE, INDEX_NONE };
-	float Weight[MaxInfluences] = { 0.f, 0.f, 0.f, 0.f };
-};
-
-/**
- * A bind pose small enough to build in a test. The body mesh fills the same
- * bones from the Viking skeleton. Z is up.
- */
+/** Bind-pose bones for one generated body. */
 struct FSolidDeformMesh
 {
 	TArray<FSolidDeformBone> Bones;
-	TArray<FSolidDeformVertex> Vertices;
 };
 
-/**
- * Proportion deform for a generated body.
- * Length scales bone translations. Girth and head size move vertices off
- * the bone. The Viking skeleton asset is not modified; each result is its
- * own pose that can still play Anim_Viking_* once it shares that skeleton.
- */
 namespace SolidBodyDeform
 {
 	/** Joint positions from parent-first local transforms. */
 	void ComponentPositions(const TArray<FSolidDeformBone>& Bones, TArray<FVector>& OutPositions);
-
-	/**
-	 * Move the joints of a standing skeleton onto the average head-length stations.
-	 * The chest, waist, neck, and head share the pelvis column.
-	 * A chain with no head or no ankle is left alone. Rotations stay.
-	 * The feet stay on their current ground.
-	 * The worn companion body does not call this. Its bone lengths stay the Viking lengths.
-	 */
-	void FitHeadLengths(TArray<FSolidDeformBone>& Bones);
-
-	/**
-	 * Apply params to a bind pose.
-	 * Params are clamped first. Input mesh is left unchanged.
-	 */
-	FSolidDeformMesh Apply(const FSolidDeformMesh& Source, const FSolidBodyParams& Params);
 }

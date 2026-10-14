@@ -11,30 +11,11 @@ namespace SolidBody
 {
 	inline constexpr float ParamMin = 0.40f;
 	inline constexpr float ParamMax = 1.95f;
-
-	/**
-	 * Average adult, measured down from the crown.
-	 * The companion skeleton does not move onto these stations. It keeps the Viking bone lengths.
-	 * The drawn head at HeadSize 1 is one head length.
-	 * Chin 1, base of the neck and the shoulders 2, nipple line 3, navel 4,
-	 * pubic bone 5, mid-thigh 6 (halfway from the hip to the knee),
-	 * just below the knee 7, soles at 7.75 (the middle of 7.5 and 8).
-	 */
-	inline constexpr float HeadLengthCm = 22.f;
-	inline constexpr float ProportionChin = 1.f;
-	inline constexpr float ProportionNeck = 2.f;
-	inline constexpr float ProportionChest = 3.f;
-	inline constexpr float ProportionWaist = 4.f;
-	inline constexpr float ProportionPubic = 5.f;
-	/** Halfway from the hip to the knee. No joint sits here. */
-	inline constexpr float ProportionMidThigh = 6.f;
-	inline constexpr float ProportionKnee = 7.f;
-	inline constexpr float ProportionSole = 7.75f;
 }
 
 /**
- * One generated humanoid. The mesh is rebuilt from these multipliers;
- * nothing here stores vertices.
+ * One generated humanoid. Each body part reads these multipliers.
+ * Head size is kept for the seed layout. No part uses it yet.
  * FromSeed is pure: one seed is one body, for the captain and for every NPC.
  */
 struct FSolidBodyParams

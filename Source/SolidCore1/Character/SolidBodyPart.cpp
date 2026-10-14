@@ -18,6 +18,59 @@ SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
 	}
 }
 
+SolidBodyMesh::FSolidPartFactors SolidBodyMesh::FSolidBodyPart::Apply(const FSolidBodyParams& Params)
+{
+	const FSolidBodyParams Clamped = Params.Clamped();
+	FSolidPartFactors Factors;
+	switch (Measure)
+	{
+	case ESolidPartMeasure::Leg:
+		Factors.Length = Clamped.LegLength * Clamped.Height;
+		Factors.Side = Clamped.Bulk;
+		Factors.Depth = Clamped.Bulk;
+		break;
+	case ESolidPartMeasure::Hip:
+		Factors.Length = Clamped.Height;
+		Factors.Side = Clamped.HipWidth;
+		Factors.Depth = Clamped.TorsoGirth;
+		break;
+	case ESolidPartMeasure::Shoulder:
+		Factors.Length = Clamped.NeckLength;
+		Factors.Side = Clamped.ShoulderWidth;
+		Factors.Depth = Clamped.TorsoGirth;
+		break;
+	case ESolidPartMeasure::Arm:
+		Factors.Length = Clamped.ArmLength;
+		Factors.Side = Clamped.Bulk;
+		Factors.Depth = Clamped.Bulk;
+		break;
+	default:
+		Factors.Length = Clamped.Height;
+		Factors.Side = Clamped.TorsoGirth;
+		Factors.Depth = Clamped.TorsoGirth;
+		break;
+	}
+
+	Start.X *= Factors.Side;
+	Start.Y *= Factors.Depth;
+	if (Measure == ESolidPartMeasure::Shoulder)
+	{
+		End.X *= Factors.Side;
+		End.Y *= Factors.Side;
+	}
+	else
+	{
+		End.X *= Factors.Side;
+		End.Y *= Factors.Depth;
+	}
+	if (bHasMid)
+	{
+		Mid.X *= Factors.Side;
+		Mid.Y *= Factors.Depth;
+	}
+	return Factors;
+}
+
 uint8 SolidBodyMesh::FSolidBodyPart::MaterialSlot() const
 {
 	switch (Colour)
@@ -43,7 +96,7 @@ SolidBodyMesh::FSolidPartDraw SolidBodyMesh::FSolidBodyPart::Fit(
 	if (bHasMid)
 	{
 		Out.bShoulder = true;
-		Out.Shoulder = ShoulderPiece(From, To, SegmentStart, SegmentEnd, SegmentCount, Start.X, WideAxis);
+		Out.Shoulder = ShoulderPiece(From, To, SegmentStart, SegmentEnd, SegmentCount, Start.X, WideAxis, Start.Y, End.X);
 		if (Out.Shoulder.bValid)
 		{
 			const float SideRadius = Out.Shoulder.Lower.RadiusEnd;

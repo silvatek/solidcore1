@@ -828,7 +828,8 @@ void ASolidCompanionCharacter::ApplyFace()
 	int32 Fallback = INDEX_NONE;
 	for (int32 Index = 0; Index < Count; ++Index)
 	{
-		if (SolidBodyMesh::RoleForBoneName(Infos[Index].Name.ToString()) != ESolidBodyBoneRole::Head)
+		const FString BoneName = Infos[Index].Name.ToString();
+		if (!BoneName.Contains(TEXT("head"), ESearchCase::IgnoreCase))
 		{
 			continue;
 		}
@@ -838,7 +839,7 @@ void ASolidCompanionCharacter::ApplyFace()
 		}
 		const int32 Parent = Infos[Index].ParentIndex;
 		if (Infos.IsValidIndex(Parent)
-			&& SolidBodyMesh::RoleForBoneName(Infos[Parent].Name.ToString()) == ESolidBodyBoneRole::Neck)
+			&& Infos[Parent].Name.ToString().Contains(TEXT("neck"), ESearchCase::IgnoreCase))
 		{
 			HeadIndex = Index;
 			break;

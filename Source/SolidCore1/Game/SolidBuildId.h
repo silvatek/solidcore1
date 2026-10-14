@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0284")
+#define SOLID_BUILD_ID TEXT("SC1-0285")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Remove body-mesh helpers the drawn body does not use.")
+#define SOLID_BUILD_NOTE TEXT("Sliders size each body part, and the part sizes the bones it wraps.")
 #endif

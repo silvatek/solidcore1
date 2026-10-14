@@ -35,6 +35,13 @@ namespace SolidBodyMesh
 
 		const FSolidBodyPart* Find(const FString& Name) const;
 
+		/**
+		 * Size every part from these sliders, then size the bones that part wraps.
+		 * The span bone takes the part length. The other bones spread by the part's side.
+		 * A bone with no part, including the head and the hands, keeps its Viking translation.
+		 */
+		void Apply(TArray<FSolidDeformBone>& Bones, const FSolidBodyParams& Params);
+
 		/** Draw every part whose bones are on this skeleton. */
 		void Draw(
 			TArray<FSolidBodyVert>& Verts,
@@ -46,14 +53,8 @@ namespace SolidBodyMesh
 	/** Stable id for a companion name. Case does not matter. */
 	uint32 SeedForName(const FString& Name);
 
-	/** Bind-pose role from a bone name. IK helpers stay Root. */
-	ESolidBodyBoneRole RoleForBoneName(const FString& BoneName);
-
-	/** Twist bones only spin a limb. They are not a shoulder plate or a shin. */
+	/** Twist bones only spin a limb. They are not a rising spine piece. */
 	bool IsTwistBoneName(const FString& BoneName);
-
-	/** Fingers, thumbs, and toes. The calf and the ankle are not digits. */
-	bool IsDigitBoneName(const FString& BoneName);
 
 	/** The only bone in the left thigh piece. calf_l runs from the hip to the knee. */
 	inline const TCHAR* LeftThighBone = TEXT("calf_l");
@@ -191,7 +192,9 @@ namespace SolidBodyMesh
 		const FVector* SegmentEnd,
 		int32 SegmentCount,
 		float BaseSideDiameterCm,
-		const FVector& WideAxis);
+		const FVector& WideAxis,
+		float BaseDepthDiameterCm = TorsoDepthDiameterCm,
+		float TopDiameterCm = ShoulderTopRadiusCm * 2.f);
 
 	/**
 	 * True when the ray meets the cone closer than InOutRayT.

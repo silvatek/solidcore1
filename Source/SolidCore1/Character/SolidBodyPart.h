@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SolidBodyParams.h"
 
 #include <initializer_list>
 
@@ -18,6 +19,32 @@ namespace SolidBodyMesh
 		Shirt,
 		Trousers,
 		Skin,
+	};
+
+	/**
+	 * Which slider channels size this part.
+	 * The part then sizes the bones it wraps. The head and the hands are not parts.
+	 */
+	enum class ESolidPartMeasure : uint8
+	{
+		/** Length is height. Side and depth are torso girth. */
+		Torso,
+		/** Length is height. Side is hip width. Depth is torso girth. */
+		Hip,
+		/** Length is neck length. Side is shoulder width. The base depth is torso girth. */
+		Shoulder,
+		/** Length is arm length. Side and depth are bulk. */
+		Arm,
+		/** Length is leg length times height. Side and depth are bulk. */
+		Leg,
+	};
+
+	/** How far a part moves off its catalogue size. 1 leaves it alone. */
+	struct FSolidPartFactors
+	{
+		float Length = 1.f;
+		float Side = 1.f;
+		float Depth = 1.f;
 	};
 
 	/** Diameters of one end of a part, in centimetres. */
@@ -115,9 +142,16 @@ namespace SolidBodyMesh
 		FSolidPartSection End;
 		FSolidPartSection Mid;
 		bool bHasMid = false;
+		ESolidPartMeasure Measure = ESolidPartMeasure::Torso;
 
 		/** Shirt, trousers, or skin. The companion's colours fill those slots. */
 		uint8 MaterialSlot() const;
+
+		/**
+		 * Multiply the catalogue diameters by the slider channels for this part.
+		 * Call once. The returned factors are what the wrapped bones then use.
+		 */
+		FSolidPartFactors Apply(const FSolidBodyParams& Params);
 
 		/**
 		 * The cones for this part.

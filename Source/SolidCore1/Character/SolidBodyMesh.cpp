@@ -27,26 +27,33 @@ namespace
 SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<FName>& RisingSpineBones)
 {
 	using SolidBodyMesh::ESolidPartColour;
+	using SolidBodyMesh::ESolidPartMeasure;
 	using SolidBodyMesh::FSolidPartSection;
 
 	FSolidBodyMesh Body;
+	auto AddPart = [&Body](FSolidBodyPart Part, const ESolidPartMeasure Measure)
+	{
+		Part.Measure = Measure;
+		Body.Parts.Add(MoveTemp(Part));
+	};
+
 	const FSolidPartSection Round20 = FSolidPartSection::Round(LeftThighTopDiameterCm);
-	Body.Parts.Add(FSolidBodyPart(TEXT("Thigh (L)"), { LeftThighBone }, ESolidPartColour::Trousers, Round20, FSolidPartSection::Round(LeftThighBottomDiameterCm)));
-	Body.Parts.Add(FSolidBodyPart(TEXT("Thigh (R)"), { RightThighBone }, ESolidPartColour::Trousers, Round20, FSolidPartSection::Round(LeftThighBottomDiameterCm)));
-	Body.Parts.Add(FSolidBodyPart(TEXT("Calf (L)"), { LeftCalfBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(CalfTopDiameterCm), FSolidPartSection::Round(CalfBottomDiameterCm)));
-	Body.Parts.Add(FSolidBodyPart(TEXT("Calf (R)"), { RightCalfBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(CalfTopDiameterCm), FSolidPartSection::Round(CalfBottomDiameterCm)));
-	Body.Parts.Add(FSolidBodyPart(TEXT("Foot (L)"), { LeftBallBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(BallDiameterCm), FSolidPartSection::Round(BallDiameterCm)));
-	Body.Parts.Add(FSolidBodyPart(TEXT("Foot (R)"), { RightBallBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(BallDiameterCm), FSolidPartSection::Round(BallDiameterCm)));
-	Body.Parts.Add(FSolidBodyPart(TEXT("Toe (L)"), { LeftExtraFingerBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(ExtraFingerAnkleDiameterCm), FSolidPartSection::Round(ExtraFingerToeDiameterCm)));
-	Body.Parts.Add(FSolidBodyPart(TEXT("Toe (R)"), { RightExtraFingerBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(ExtraFingerAnkleDiameterCm), FSolidPartSection::Round(ExtraFingerToeDiameterCm)));
+	AddPart(FSolidBodyPart(TEXT("Thigh (L)"), { LeftThighBone }, ESolidPartColour::Trousers, Round20, FSolidPartSection::Round(LeftThighBottomDiameterCm)), ESolidPartMeasure::Leg);
+	AddPart(FSolidBodyPart(TEXT("Thigh (R)"), { RightThighBone }, ESolidPartColour::Trousers, Round20, FSolidPartSection::Round(LeftThighBottomDiameterCm)), ESolidPartMeasure::Leg);
+	AddPart(FSolidBodyPart(TEXT("Calf (L)"), { LeftCalfBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(CalfTopDiameterCm), FSolidPartSection::Round(CalfBottomDiameterCm)), ESolidPartMeasure::Leg);
+	AddPart(FSolidBodyPart(TEXT("Calf (R)"), { RightCalfBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(CalfTopDiameterCm), FSolidPartSection::Round(CalfBottomDiameterCm)), ESolidPartMeasure::Leg);
+	AddPart(FSolidBodyPart(TEXT("Foot (L)"), { LeftBallBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(BallDiameterCm), FSolidPartSection::Round(BallDiameterCm)), ESolidPartMeasure::Leg);
+	AddPart(FSolidBodyPart(TEXT("Foot (R)"), { RightBallBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(BallDiameterCm), FSolidPartSection::Round(BallDiameterCm)), ESolidPartMeasure::Leg);
+	AddPart(FSolidBodyPart(TEXT("Toe (L)"), { LeftExtraFingerBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(ExtraFingerAnkleDiameterCm), FSolidPartSection::Round(ExtraFingerToeDiameterCm)), ESolidPartMeasure::Leg);
+	AddPart(FSolidBodyPart(TEXT("Toe (R)"), { RightExtraFingerBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(ExtraFingerAnkleDiameterCm), FSolidPartSection::Round(ExtraFingerToeDiameterCm)), ESolidPartMeasure::Leg);
 
 	// The hip mesh is the length of spine_01. The thighs are inside it.
-	Body.Parts.Add(FSolidBodyPart(
+	AddPart(FSolidBodyPart(
 		TEXT("Hip"),
 		{ HipSpineBone, HipLeftBone, HipRightBone },
 		ESolidPartColour::Shirt,
 		FSolidPartSection::Oval(HipSideDiameterCm, HipDepthDiameterCm),
-		FSolidPartSection::Oval(HipTopSideDiameterCm, HipDepthDiameterCm)));
+		FSolidPartSection::Oval(HipTopSideDiameterCm, HipDepthDiameterCm)), ESolidPartMeasure::Hip);
 
 	const int32 SpineCount = RisingSpineBones.Num();
 	for (int32 Step = 0; Step < SpineCount; ++Step)
@@ -62,7 +69,7 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 			FSolidPartSection::Oval(TopCm, TorsoDepthDiameterCm));
 		Spine.Name = SpinePartName(Step, SpineCount);
 		Spine.Bones.Add(RisingSpineBones[Step]);
-		Body.Parts.Add(Spine);
+		AddPart(Spine, ESolidPartMeasure::Torso);
 	}
 
 	float ShoulderSideCm = ChestSideDiameterCm;
@@ -82,35 +89,35 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 		FSolidPartSection::Oval(ShoulderSideCm, TorsoDepthDiameterCm),
 		FSolidPartSection::Round(ShoulderTopRadiusCm * 2.f));
 	Shoulders.bHasMid = true;
-	Body.Parts.Add(Shoulders);
+	AddPart(Shoulders, ESolidPartMeasure::Shoulder);
 
 	// upperarm joint to elbow. The skeleton names that bone lowerarm.
-	Body.Parts.Add(FSolidBodyPart(
+	AddPart(FSolidBodyPart(
 		TEXT("Upper arm (L)"),
 		{ TEXT("lowerarm_l") },
 		ESolidPartColour::Shirt,
 		FSolidPartSection::Round(UpperArmElbowDiameterCm),
-		FSolidPartSection::Round(ForearmWristDiameterCm)));
-	Body.Parts.Add(FSolidBodyPart(
+		FSolidPartSection::Round(ForearmWristDiameterCm)), ESolidPartMeasure::Arm);
+	AddPart(FSolidBodyPart(
 		TEXT("Upper arm (R)"),
 		{ TEXT("lowerarm_r") },
 		ESolidPartColour::Shirt,
 		FSolidPartSection::Round(UpperArmElbowDiameterCm),
-		FSolidPartSection::Round(ForearmWristDiameterCm)));
+		FSolidPartSection::Round(ForearmWristDiameterCm)), ESolidPartMeasure::Arm);
 
 	// elbow to wrist. The skeleton names that bone hand. Narrow at the elbow, wide at the wrist.
-	Body.Parts.Add(FSolidBodyPart(
+	AddPart(FSolidBodyPart(
 		TEXT("Lower arm (L)"),
 		{ TEXT("hand_l") },
 		ESolidPartColour::Shirt,
 		FSolidPartSection::Round(LowerArmStartDiameterCm),
-		FSolidPartSection::Round(LowerArmEndDiameterCm)));
-	Body.Parts.Add(FSolidBodyPart(
+		FSolidPartSection::Round(LowerArmEndDiameterCm)), ESolidPartMeasure::Arm);
+	AddPart(FSolidBodyPart(
 		TEXT("Lower arm (R)"),
 		{ TEXT("hand_r") },
 		ESolidPartColour::Shirt,
 		FSolidPartSection::Round(LowerArmStartDiameterCm),
-		FSolidPartSection::Round(LowerArmEndDiameterCm)));
+		FSolidPartSection::Round(LowerArmEndDiameterCm)), ESolidPartMeasure::Arm);
 
 	return Body;
 }
@@ -128,28 +135,6 @@ namespace
 			return TEXT("Abdomen");
 		}
 		return FString::Printf(TEXT("Spine %d"), Step + 1);
-	}
-
-	bool NameHas(const FString& Lower, const TCHAR* Token)
-	{
-		return Lower.Contains(Token);
-	}
-
-	bool RoleScalesLength(const ESolidBodyBoneRole Role)
-	{
-		switch (Role)
-		{
-		case ESolidBodyBoneRole::Spine:
-		case ESolidBodyBoneRole::Neck:
-		case ESolidBodyBoneRole::Clavicle:
-		case ESolidBodyBoneRole::Arm:
-		case ESolidBodyBoneRole::Hand:
-		case ESolidBodyBoneRole::Leg:
-		case ESolidBodyBoneRole::Foot:
-			return true;
-		default:
-			return false;
-		}
 	}
 
 	bool ShoulderFrame(
@@ -233,65 +218,9 @@ uint32 SolidBodyMesh::SeedForName(const FString& Name)
 	return FCrc::StrCrc32(*Lower);
 }
 
-ESolidBodyBoneRole SolidBodyMesh::RoleForBoneName(const FString& BoneName)
-{
-	const FString Lower = BoneName.ToLower();
-	if (NameHas(Lower, TEXT("ik_")) || Lower.StartsWith(TEXT("ik")))
-	{
-		return ESolidBodyBoneRole::Root;
-	}
-	if (NameHas(Lower, TEXT("pelvis")) || NameHas(Lower, TEXT("hips")))
-	{
-		return ESolidBodyBoneRole::Pelvis;
-	}
-	if (NameHas(Lower, TEXT("neck")))
-	{
-		return ESolidBodyBoneRole::Neck;
-	}
-	if (NameHas(Lower, TEXT("head")))
-	{
-		return ESolidBodyBoneRole::Head;
-	}
-	if (NameHas(Lower, TEXT("clavicle")) || NameHas(Lower, TEXT("shoulder")))
-	{
-		return ESolidBodyBoneRole::Clavicle;
-	}
-	if (NameHas(Lower, TEXT("finger")) || NameHas(Lower, TEXT("thumb")) || NameHas(Lower, TEXT("hand")))
-	{
-		return ESolidBodyBoneRole::Hand;
-	}
-	if (NameHas(Lower, TEXT("arm")))
-	{
-		return ESolidBodyBoneRole::Arm;
-	}
-	if (NameHas(Lower, TEXT("toe")) || NameHas(Lower, TEXT("foot"))
-		|| NameHas(Lower, TEXT("calf")) || NameHas(Lower, TEXT("shin")))
-	{
-		return ESolidBodyBoneRole::Foot;
-	}
-	if (NameHas(Lower, TEXT("thigh")) || NameHas(Lower, TEXT("upperleg")) || NameHas(Lower, TEXT("leg")))
-	{
-		return ESolidBodyBoneRole::Leg;
-	}
-	if (NameHas(Lower, TEXT("spine")) || NameHas(Lower, TEXT("chest")) || NameHas(Lower, TEXT("torso")))
-	{
-		return ESolidBodyBoneRole::Spine;
-	}
-	return ESolidBodyBoneRole::Root;
-}
-
 bool SolidBodyMesh::IsTwistBoneName(const FString& BoneName)
 {
 	return BoneName.ToLower().Contains(TEXT("twist"));
-}
-
-bool SolidBodyMesh::IsDigitBoneName(const FString& BoneName)
-{
-	const FString Lower = BoneName.ToLower();
-	return Lower.Contains(TEXT("finger"))
-		|| Lower.Contains(TEXT("thumb"))
-		|| Lower.Contains(TEXT("toe"))
-		|| Lower.Contains(TEXT("ball"));
 }
 
 bool SolidBodyMesh::IsRisingSpineBoneName(const FString& BoneName)
@@ -328,7 +257,9 @@ SolidBodyMesh::FSolidShoulderPiece SolidBodyMesh::ShoulderPiece(
 	const FVector* SegmentEnd,
 	const int32 SegmentCount,
 	const float BaseSideDiameterCm,
-	const FVector& WideAxis)
+	const FVector& WideAxis,
+	const float BaseDepthDiameterCm,
+	const float TopDiameterCm)
 {
 	FSolidShoulderPiece Out;
 	FVector Axis = FVector::UpVector;
@@ -337,15 +268,16 @@ SolidBodyMesh::FSolidShoulderPiece SolidBodyMesh::ShoulderPiece(
 	float Length = 0.f;
 	if (!ShoulderFrame(NeckStart, NeckEnd, WideAxis, Axis, Wide, Narrow, Length)
 		|| BaseSideDiameterCm <= KINDA_SMALL_NUMBER
-		|| ShoulderTopRadiusCm <= KINDA_SMALL_NUMBER)
+		|| BaseDepthDiameterCm <= KINDA_SMALL_NUMBER
+		|| TopDiameterCm <= KINDA_SMALL_NUMBER)
 	{
 		return Out;
 	}
 
 	const float SideBottom = BaseSideDiameterCm * 0.5f;
-	const float DepthBottom = TorsoDepthDiameterCm * 0.5f;
-	const float SideTop = ShoulderTopRadiusCm;
-	const float DepthTop = ShoulderTopRadiusCm;
+	const float DepthBottom = BaseDepthDiameterCm * 0.5f;
+	const float SideTop = TopDiameterCm * 0.5f;
+	const float DepthTop = TopDiameterCm * 0.5f;
 	const float Chord = ShoulderChord();
 	if (Chord <= KINDA_SMALL_NUMBER)
 	{
@@ -535,12 +467,8 @@ namespace
 		for (int32 Index = 0; Index < Count; ++Index)
 		{
 			FSolidDeformBone Bone;
-			const FString BoneName = Infos[Index].Name.ToString();
 			Bone.ParentIndex = Infos[Index].ParentIndex;
 			Bone.Name = Infos[Index].Name;
-			Bone.Role = SolidBodyMesh::RoleForBoneName(BoneName);
-			Bone.bTwist = SolidBodyMesh::IsTwistBoneName(BoneName);
-			Bone.bDigit = SolidBodyMesh::IsDigitBoneName(BoneName);
 			Bone.LocalTranslation = Pose[Index].GetTranslation();
 			Bone.LocalRotation = Pose[Index].GetRotation();
 			Out.Bones.Add(Bone);
@@ -792,9 +720,30 @@ namespace
 		BodySkeleton->SetFlags(RF_Transient);
 
 		const FReferenceSkeleton& Ref = BodySkeleton->GetReferenceSkeleton();
-		for (int32 Index = 0; Index < Ref.GetRawBoneNum(); ++Index)
+		const TArray<FMeshBoneInfo>& Infos = Ref.GetRawRefBoneInfo();
+		TArray<FSolidDeformBone> Named;
+		Named.Reserve(Infos.Num());
+		for (int32 Index = 0; Index < Infos.Num(); ++Index)
 		{
-			if (!RoleScalesLength(SolidBodyMesh::RoleForBoneName(Ref.GetBoneName(Index).ToString())))
+			FSolidDeformBone Bone;
+			Bone.ParentIndex = Infos[Index].ParentIndex;
+			Bone.Name = Infos[Index].Name;
+			Named.Add(Bone);
+		}
+		const SolidBodyMesh::FSolidBodyMesh Catalogue = SolidBodyMesh::FSolidBodyMesh::FromBones(Named);
+		for (int32 Index = 0; Index < Infos.Num(); ++Index)
+		{
+			const FName BoneName = Infos[Index].Name;
+			bool bWrapped = false;
+			for (const SolidBodyMesh::FSolidBodyPart& Part : Catalogue.Parts)
+			{
+				if (Part.Bones.Contains(BoneName))
+				{
+					bWrapped = true;
+					break;
+				}
+			}
+			if (!bWrapped)
 			{
 				continue;
 			}
@@ -964,9 +913,11 @@ USkeletalMesh* SolidBodyMesh::Build(
 
 	FSolidDeformMesh Bind;
 	FillBones(Ref, Bind);
-	// Lengths stay the Viking reference pose. The sliders scale from there.
+	// Lengths start as the Viking reference pose. Each part then sizes its own bones.
 	const FSolidBodyParams Clamped = Params.Clamped();
-	const FSolidDeformMesh Deformed = SolidBodyDeform::Apply(Bind, Clamped);
+	FSolidDeformMesh Deformed = Bind;
+	FSolidBodyMesh Body = FSolidBodyMesh::FromBones(Deformed.Bones);
+	Body.Apply(Deformed.Bones, Clamped);
 
 	TArray<FVector> Positions;
 	SolidBodyDeform::ComponentPositions(Deformed.Bones, Positions);
@@ -974,7 +925,6 @@ USkeletalMesh* SolidBodyMesh::Build(
 	// The part list draws the triangles. The rest of this function hands them to Unreal.
 	TArray<FSolidBodyVert> Verts;
 	TArray<FSolidBodyTri> Tris;
-	FSolidBodyMesh Body = FSolidBodyMesh::FromBones(Deformed.Bones);
 	Body.Draw(Verts, Tris, Deformed.Bones, Positions);
 	if (Tris.Num() == 0 || Verts.Num() == 0)
 	{
@@ -1160,6 +1110,73 @@ const SolidBodyMesh::FSolidBodyPart* SolidBodyMesh::FSolidBodyMesh::Find(const F
 		}
 	}
 	return nullptr;
+}
+
+void SolidBodyMesh::FSolidBodyMesh::Apply(
+	TArray<FSolidDeformBone>& Bones,
+	const FSolidBodyParams& Params)
+{
+	TArray<FQuat> WorldRotation;
+	WorldRotation.SetNum(Bones.Num());
+	TArray<uint8> Ready;
+	Ready.Init(0, Bones.Num());
+	for (int32 Pass = 0; Pass < Bones.Num(); ++Pass)
+	{
+		bool bProgress = false;
+		for (int32 Index = 0; Index < Bones.Num(); ++Index)
+		{
+			if (Ready[Index])
+			{
+				continue;
+			}
+			const int32 Parent = Bones[Index].ParentIndex;
+			const bool bHasParent = Bones.IsValidIndex(Parent) && Parent != Index;
+			if (bHasParent && !Ready[Parent])
+			{
+				continue;
+			}
+			const FQuat ParentRotation = bHasParent ? WorldRotation[Parent] : FQuat::Identity;
+			WorldRotation[Index] = ParentRotation * Bones[Index].LocalRotation;
+			Ready[Index] = 1;
+			bProgress = true;
+		}
+		if (!bProgress)
+		{
+			break;
+		}
+	}
+
+	for (FSolidBodyPart& Part : Parts)
+	{
+		const FSolidPartFactors Factors = Part.Apply(Params);
+		if (Part.Bones.Num() == 0)
+		{
+			continue;
+		}
+
+		const int32 Span = FindNamedBone(Bones, Bones.Num(), *Part.Bones[0].ToString());
+		if (Bones.IsValidIndex(Span))
+		{
+			Bones[Span].LocalTranslation *= Factors.Length;
+		}
+
+		for (int32 BoneNumber = 1; BoneNumber < Part.Bones.Num(); ++BoneNumber)
+		{
+			const int32 Index = FindNamedBone(Bones, Bones.Num(), *Part.Bones[BoneNumber].ToString());
+			if (!Bones.IsValidIndex(Index))
+			{
+				continue;
+			}
+			const int32 Parent = Bones[Index].ParentIndex;
+			const FQuat ParentRotation = (Bones.IsValidIndex(Parent) && Ready.IsValidIndex(Parent) && Ready[Parent])
+				? WorldRotation[Parent]
+				: FQuat::Identity;
+			FVector Offset = ParentRotation.RotateVector(Bones[Index].LocalTranslation);
+			Offset.X *= Factors.Side;
+			Offset.Y *= Factors.Side;
+			Bones[Index].LocalTranslation = ParentRotation.UnrotateVector(Offset);
+		}
+	}
 }
 
 SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::FromBones(const TArray<FSolidDeformBone>& Bones)

@@ -131,7 +131,7 @@ FSolidBodyParams SolidBodyControls::Resolve(const FSolidBodyParams& Seed, const 
 	Params.NeckLength = FromBuild(SolidBodyControls::BuildNeckDelta, ClampedBuild);
 	Params.Bulk = FromBuild(SolidBodyControls::BuildBulkDelta, ClampedBuild);
 
-	// Feminine is shorter. Masculine is taller. Legs already follow Height in the deform.
+	// Feminine is shorter. Masculine is taller. Leg parts also multiply by Height.
 	const float GenderHeight = 1.f + Bias * SolidBodyControls::GenderHeightSpread;
 	Params.Height *= GenderHeight;
 	Params.ArmLength *= GenderHeight;

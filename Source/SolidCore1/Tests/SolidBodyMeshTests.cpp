@@ -74,24 +74,9 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidBodyBoneRoleTest::RunTest(const FString& Parameters)
 {
-	TestTrue(TEXT("pelvis"), SolidBodyMesh::RoleForBoneName(TEXT("Bip001_Pelvis")) == ESolidBodyBoneRole::Pelvis);
-	TestTrue(TEXT("spine"), SolidBodyMesh::RoleForBoneName(TEXT("spine_02")) == ESolidBodyBoneRole::Spine);
-	TestTrue(TEXT("neck"), SolidBodyMesh::RoleForBoneName(TEXT("neck_01")) == ESolidBodyBoneRole::Neck);
-	TestTrue(TEXT("head"), SolidBodyMesh::RoleForBoneName(TEXT("head")) == ESolidBodyBoneRole::Head);
-	TestTrue(TEXT("clavicle"), SolidBodyMesh::RoleForBoneName(TEXT("LeftShoulder")) == ESolidBodyBoneRole::Clavicle);
-	TestTrue(TEXT("arm"), SolidBodyMesh::RoleForBoneName(TEXT("upperarm_l")) == ESolidBodyBoneRole::Arm);
-	TestTrue(TEXT("hand"), SolidBodyMesh::RoleForBoneName(TEXT("mixamorig_LeftHand")) == ESolidBodyBoneRole::Hand);
-	TestTrue(TEXT("thigh"), SolidBodyMesh::RoleForBoneName(TEXT("thigh_r")) == ESolidBodyBoneRole::Leg);
-	TestTrue(TEXT("calf"), SolidBodyMesh::RoleForBoneName(TEXT("calf_r")) == ESolidBodyBoneRole::Foot);
-	TestFalse(TEXT("calf is not a toe"), SolidBodyMesh::IsDigitBoneName(TEXT("calf_r")));
-	TestFalse(TEXT("ankle is not a toe"), SolidBodyMesh::IsDigitBoneName(TEXT("foot_l")));
-	TestTrue(TEXT("toe is a digit"), SolidBodyMesh::IsDigitBoneName(TEXT("ball_l")));
-	TestTrue(TEXT("thumb is a digit"), SolidBodyMesh::IsDigitBoneName(TEXT("thumb_01_l")));
 	TestTrue(TEXT("upper-arm twist is not a shoulder plate"), SolidBodyMesh::IsTwistBoneName(TEXT("upperarm_twist_01_l")));
 	TestTrue(TEXT("calf twist is not a shin"), SolidBodyMesh::IsTwistBoneName(TEXT("calf_twist_02_r")));
 	TestFalse(TEXT("calf is not a twist"), SolidBodyMesh::IsTwistBoneName(TEXT("calf_r")));
-	TestTrue(TEXT("ik helper stays put"), SolidBodyMesh::RoleForBoneName(TEXT("ik_foot_root")) == ESolidBodyBoneRole::Root);
-	TestTrue(TEXT("unknown stays put"), SolidBodyMesh::RoleForBoneName(TEXT("root")) == ESolidBodyBoneRole::Root);
 	return true;
 }
 
@@ -113,16 +98,43 @@ bool FSolidBodyVikingBuildTest::RunTest(const FString& Parameters)
 
 	const FReferenceSkeleton& Ref = Source->GetRefSkeleton();
 	TestTrue(TEXT("viking has bones"), Ref.GetRawBoneNum() > 0);
-	int32 Recognized = 0;
-	for (int32 Index = 0; Index < Ref.GetRawBoneNum(); ++Index)
+	const TArray<FMeshBoneInfo>& Infos = Ref.GetRawRefBoneInfo();
+	TArray<FSolidDeformBone> Named;
+	Named.Reserve(Infos.Num());
+	for (int32 Index = 0; Index < Infos.Num(); ++Index)
 	{
-		if (SolidBodyMesh::RoleForBoneName(Ref.GetBoneName(Index).ToString()) != ESolidBodyBoneRole::Root)
+		FSolidDeformBone Bone;
+		Bone.ParentIndex = Infos[Index].ParentIndex;
+		Bone.Name = Infos[Index].Name;
+		Named.Add(Bone);
+	}
+	const SolidBodyMesh::FSolidBodyMesh Catalogue = SolidBodyMesh::FSolidBodyMesh::FromBones(Named);
+	int32 Recognized = 0;
+	int32 ScaledBone = INDEX_NONE;
+	for (int32 Index = 0; Index < Infos.Num(); ++Index)
+	{
+		bool bWrapped = false;
+		for (const SolidBodyMesh::FSolidBodyPart& Part : Catalogue.Parts)
 		{
-			++Recognized;
+			if (Part.Bones.Contains(Infos[Index].Name))
+			{
+				bWrapped = true;
+				break;
+			}
+		}
+		if (!bWrapped)
+		{
+			continue;
+		}
+		++Recognized;
+		if (ScaledBone == INDEX_NONE && Infos[Index].Name == FName(SolidBodyMesh::LeftThighBone))
+		{
+			ScaledBone = Index;
 		}
 	}
 	TestTrue(TEXT("viking bone names map onto a body"), Recognized > 0);
-	if (Recognized == 0)
+	TestTrue(TEXT("the thigh span is a bone whose length can change"), ScaledBone != INDEX_NONE);
+	if (Recognized == 0 || ScaledBone == INDEX_NONE)
 	{
 		const int32 Shown = FMath::Min(Ref.GetRawBoneNum(), 16);
 		for (int32 Index = 0; Index < Shown; ++Index)
@@ -139,33 +151,7 @@ bool FSolidBodyVikingBuildTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	int32 ScaledBone = INDEX_NONE;
-	ESolidBodyBoneRole ScaledRole = ESolidBodyBoneRole::Root;
 	const TArray<FTransform>& SourceBind = Ref.GetRawRefBonePose();
-	for (int32 Index = 0; Index < Ref.GetRawBoneNum() && Index < SourceBind.Num(); ++Index)
-	{
-		const ESolidBodyBoneRole Role = SolidBodyMesh::RoleForBoneName(Ref.GetBoneName(Index).ToString());
-		const bool bScaled =
-			Role == ESolidBodyBoneRole::Spine
-			|| Role == ESolidBodyBoneRole::Neck
-			|| Role == ESolidBodyBoneRole::Clavicle
-			|| Role == ESolidBodyBoneRole::Arm
-			|| Role == ESolidBodyBoneRole::Hand
-			|| Role == ESolidBodyBoneRole::Leg
-			|| Role == ESolidBodyBoneRole::Foot;
-		if (!bScaled || SourceBind[Index].GetTranslation().Size() < 1.f)
-		{
-			continue;
-		}
-		ScaledBone = Index;
-		ScaledRole = Role;
-		break;
-	}
-	TestTrue(TEXT("viking has a bone whose length can change"), ScaledBone != INDEX_NONE);
-	if (ScaledBone == INDEX_NONE)
-	{
-		return false;
-	}
 
 	TArray<FVector> SourceTranslations;
 	TArray<uint8> SourceModes;
@@ -182,26 +168,7 @@ bool FSolidBodyVikingBuildTest::RunTest(const FString& Parameters)
 	}
 
 	FSolidBodyParams Stretched;
-	switch (ScaledRole)
-	{
-	case ESolidBodyBoneRole::Neck:
-		Stretched.NeckLength = SolidBody::ParamMax;
-		break;
-	case ESolidBodyBoneRole::Clavicle:
-		Stretched.ShoulderWidth = SolidBody::ParamMax;
-		break;
-	case ESolidBodyBoneRole::Arm:
-	case ESolidBodyBoneRole::Hand:
-		Stretched.ArmLength = SolidBody::ParamMax;
-		break;
-	case ESolidBodyBoneRole::Leg:
-	case ESolidBodyBoneRole::Foot:
-		Stretched.LegLength = SolidBody::ParamMax;
-		break;
-	default:
-		Stretched.Height = SolidBody::ParamMax;
-		break;
-	}
+	Stretched.LegLength = SolidBody::ParamMax;
 
 	const FSolidBodyParams First = FSolidBodyParams::FromSeed(SolidBodyMesh::SeedForName(TEXT("Sam")));
 	const FSolidBodyParams Second = FSolidBodyParams::FromSeed(SolidBodyMesh::SeedForName(TEXT("Alex")));
@@ -749,6 +716,48 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 		}
 	}
 	TestTrue(TEXT("there is no head part"), Body.Find(TEXT("Head")) == nullptr);
+
+	FSolidBodyMesh Scaled = FSolidBodyMesh::Make({});
+	TArray<FSolidDeformBone> ScaledBones;
+	FSolidDeformBone Pelvis;
+	Pelvis.Name = TEXT("pelvis");
+	ScaledBones.Add(Pelvis);
+	FSolidDeformBone ThighJoint;
+	ThighJoint.Name = FName(HipLeftBone);
+	ThighJoint.ParentIndex = 0;
+	ThighJoint.LocalTranslation = FVector(10.f, 1.f, -2.f);
+	ScaledBones.Add(ThighJoint);
+	FSolidDeformBone CalfJoint;
+	CalfJoint.Name = FName(LeftThighBone);
+	CalfJoint.ParentIndex = 1;
+	CalfJoint.LocalTranslation = FVector(0.f, 0.f, -40.f);
+	ScaledBones.Add(CalfJoint);
+	FSolidDeformBone HeadJoint;
+	HeadJoint.Name = TEXT("head");
+	HeadJoint.ParentIndex = 0;
+	HeadJoint.LocalTranslation = FVector(0.f, 0.f, 20.f);
+	ScaledBones.Add(HeadJoint);
+	FSolidBodyParams WideLegs;
+	WideLegs.LegLength = 1.5f;
+	WideLegs.Bulk = 1.25f;
+	WideLegs.HipWidth = 1.4f;
+	Scaled.Apply(ScaledBones, WideLegs);
+	const FSolidBodyPart* ScaledThigh = Scaled.Find(TEXT("Thigh (L)"));
+	const FSolidBodyPart* ScaledHip = Scaled.Find(TEXT("Hip"));
+	TestTrue(
+		TEXT("bulk widens the thigh"),
+		ScaledThigh && FMath::IsNearlyEqual(ScaledThigh->Start.X, LeftThighTopDiameterCm * WideLegs.Bulk, 0.01f));
+	TestTrue(
+		TEXT("hip width widens the hip"),
+		ScaledHip && FMath::IsNearlyEqual(ScaledHip->Start.X, HipSideDiameterCm * WideLegs.HipWidth, 0.01f));
+	TestTrue(
+		TEXT("leg length sizes the thigh bone"),
+		FMath::IsNearlyEqual(ScaledBones[2].LocalTranslation.Size(), 40.f * WideLegs.LegLength, 0.01f));
+	TestTrue(
+		TEXT("the hip spreads the thigh joint sideways"),
+		FMath::IsNearlyEqual(ScaledBones[1].LocalTranslation.X, 10.f * WideLegs.HipWidth, 0.01f)
+		&& FMath::IsNearlyEqual(ScaledBones[1].LocalTranslation.Z, -2.f, 0.01f));
+	TestTrue(TEXT("the head stays the viking length"), ScaledBones[3].LocalTranslation.Equals(FVector(0.f, 0.f, 20.f), 0.01f));
 
 	const FSolidBodyMesh Bare = FSolidBodyMesh::Make({});
 	TestTrue(TEXT("no rising spine leaves out the abdomen"), Bare.Find(TEXT("Abdomen")) == nullptr);

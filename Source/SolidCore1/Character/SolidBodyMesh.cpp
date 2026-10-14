@@ -17,6 +17,7 @@
 #include "Rendering/SkeletalMeshLODModel.h"
 #include "Rendering/SkeletalMeshModel.h"
 #include "Rendering/SkeletalMeshRenderData.h"
+#include "Components/CapsuleComponent.h"
 #include "RenderingThread.h"
 #include "SkeletalMeshAttributes.h"
 #include "UObject/StrongObjectPtr.h"
@@ -903,6 +904,24 @@ namespace
 		return Cache;
 	}
 
+	TMap<uint32, float>& BodySoleZ()
+	{
+		static TMap<uint32, float> Soles;
+		return Soles;
+	}
+
+	void PlantFeet(USkeletalMeshComponent* MeshComp, const float SoleZ)
+	{
+		float HalfHeight = 96.f;
+		if (const UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(MeshComp->GetAttachParent()))
+		{
+			HalfHeight = Capsule->GetUnscaledCapsuleHalfHeight();
+		}
+		FVector Rel = MeshComp->GetRelativeLocation();
+		Rel.Z = SolidBodyMesh::FeetMeshOffset(HalfHeight, SoleZ);
+		MeshComp->SetRelativeLocation(Rel);
+	}
+
 	/** FNV-1a over the clamped channel bits, so two equal bodies share one mesh. */
 	uint32 ParamsCacheKey(const FSolidBodyParams& Params)
 	{
@@ -923,29 +942,30 @@ namespace
 		const uint32 Seed,
 		const FSolidBodyParams& Params,
 		const TCHAR* DebugLabel,
-		const bool bReused)
+		const bool bReused,
+		const float SoleZ)
 	{
-		if (MeshComp->GetSkeletalMeshAsset() == Body)
+		if (MeshComp->GetSkeletalMeshAsset() != Body)
 		{
-			return;
+			if (MeshComp->GetSkeletalMeshAsset())
+			{
+				// The last frame may still be drawing the previous body. Wait, then swap.
+				FlushRenderingCommands();
+			}
+			MeshComp->SetSkeletalMeshAsset(Body);
+			MeshComp->SetAnimInstanceClass(nullptr);
+			MeshComp->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+			MeshComp->InitAnim(true);
+			UE_LOG(LogSolid, Warning,
+				TEXT("%s body seed %u height %.2f bulk %.2f verts %d%s"),
+				DebugLabel ? DebugLabel : TEXT("Body"),
+				Seed,
+				Params.Height,
+				Params.Bulk,
+				RenderVertexCount(Body),
+				bReused ? TEXT(" (reused)") : TEXT(""));
 		}
-		if (MeshComp->GetSkeletalMeshAsset())
-		{
-			// The last frame may still be drawing the previous body. Wait, then swap.
-			FlushRenderingCommands();
-		}
-		MeshComp->SetSkeletalMeshAsset(Body);
-		MeshComp->SetAnimInstanceClass(nullptr);
-		MeshComp->SetAnimationMode(EAnimationMode::AnimationSingleNode);
-		MeshComp->InitAnim(true);
-		UE_LOG(LogSolid, Warning,
-			TEXT("%s body seed %u height %.2f bulk %.2f verts %d%s"),
-			DebugLabel ? DebugLabel : TEXT("Body"),
-			Seed,
-			Params.Height,
-			Params.Bulk,
-			RenderVertexCount(Body),
-			bReused ? TEXT(" (reused)") : TEXT(""));
+		PlantFeet(MeshComp, SoleZ);
 	}
 }
 #endif
@@ -953,8 +973,10 @@ namespace
 USkeletalMesh* SolidBodyMesh::Build(
 	const USkeletalMesh* Source,
 	const FSolidBodyParams& Params,
-	UObject* Outer)
+	UObject* Outer,
+	float& OutSoleZ)
 {
+	OutSoleZ = 0.f;
 #if WITH_EDITORONLY_DATA
 	if (!Source || !Outer)
 	{
@@ -983,6 +1005,7 @@ USkeletalMesh* SolidBodyMesh::Build(
 
 	TArray<FVector> Positions;
 	SolidBodyDeform::ComponentPositions(Deformed.Bones, Positions);
+	OutSoleZ = FootSoleZ(Deformed.Bones, Positions);
 
 	// The part list draws the triangles. The rest of this function hands them to Unreal.
 	TArray<FSolidBodyVert> Verts;
@@ -1078,8 +1101,76 @@ USkeletalMesh* SolidBodyMesh::Build(
 	(void)Source;
 	(void)Params;
 	(void)Outer;
+	(void)OutSoleZ;
 	return nullptr;
 #endif
+}
+
+float SolidBodyMesh::FootSoleZ(
+	const TArray<FSolidDeformBone>& Bones,
+	const TArray<FVector>& Positions)
+{
+	const int32 Count = FMath::Min(Bones.Num(), Positions.Num());
+	float Sole = TNumericLimits<float>::Max();
+	bool bFound = false;
+
+	auto FindBone = [&](const TCHAR* Name) -> int32
+	{
+		for (int32 Index = 0; Index < Count; ++Index)
+		{
+			if (Bones[Index].Name.ToString().Equals(Name, ESearchCase::IgnoreCase))
+			{
+				return Index;
+			}
+		}
+		return INDEX_NONE;
+	};
+
+	auto Consider = [&](const TCHAR* Name, const float RadiusStart, const float RadiusEnd)
+	{
+		const int32 Bone = FindBone(Name);
+		if (!Bones.IsValidIndex(Bone))
+		{
+			return;
+		}
+		const int32 Parent = Bones[Bone].ParentIndex;
+		if (!Bones.IsValidIndex(Parent) || !Positions.IsValidIndex(Parent) || Parent == Bone)
+		{
+			return;
+		}
+		const FVector& From = Positions[Parent];
+		const FVector& To = Positions[Bone];
+		const float Length = static_cast<float>(FVector::Dist(From, To));
+		if (Length < 1.f)
+		{
+			return;
+		}
+		const FVector Axis = (To - From) / static_cast<double>(Length);
+		const float Drop = static_cast<float>(FVector::CrossProduct(Axis, FVector::UpVector).Size());
+		const float Low = static_cast<float>(FMath::Min(
+			From.Z - RadiusStart * Drop,
+			To.Z - RadiusEnd * Drop));
+		Sole = FMath::Min(Sole, Low);
+		bFound = true;
+	};
+
+	const float CalfStart = CalfTopDiameterCm * 0.5f;
+	const float CalfEnd = CalfBottomDiameterCm * 0.5f;
+	const float FootRadius = BallDiameterCm * 0.5f;
+	const float ToeStart = ExtraFingerAnkleDiameterCm * 0.5f;
+	const float ToeEnd = ExtraFingerToeDiameterCm * 0.5f;
+	Consider(LeftCalfBone, CalfStart, CalfEnd);
+	Consider(RightCalfBone, CalfStart, CalfEnd);
+	Consider(LeftBallBone, FootRadius, FootRadius);
+	Consider(RightBallBone, FootRadius, FootRadius);
+	Consider(LeftExtraFingerBone, ToeStart, ToeEnd);
+	Consider(RightExtraFingerBone, ToeStart, ToeEnd);
+	return bFound ? Sole : 0.f;
+}
+
+float SolidBodyMesh::FeetMeshOffset(const float CapsuleHalfHeight, const float SoleZ)
+{
+	return -CapsuleHalfHeight - SoleZ;
 }
 
 uint32 SolidBodyMesh::FaceCodepointForName(const FString& Name)
@@ -1118,12 +1209,13 @@ void SolidBodyMesh::ApplySeed(
 		{
 			if (HasRenderableBody(Cached))
 			{
-				WearBody(MeshComp, Cached, Seed, Params, DebugLabel, true);
+				WearBody(MeshComp, Cached, Seed, Params, DebugLabel, true, BodySoleZ().FindRef(Key));
 				ApplyComponentColors(MeshComp, TorsoColor, LegColor, SkinColor);
 				return;
 			}
 		}
 		BodyCache().Remove(Key);
+		BodySoleZ().Remove(Key);
 	}
 #endif
 
@@ -1133,7 +1225,8 @@ void SolidBodyMesh::ApplySeed(
 		return;
 	}
 
-	USkeletalMesh* Built = Build(Source, Params, GetTransientPackage());
+	float SoleZ = 0.f;
+	USkeletalMesh* Built = Build(Source, Params, GetTransientPackage(), SoleZ);
 	if (!Built)
 	{
 		UE_LOG(LogSolid, Warning,
@@ -1151,12 +1244,14 @@ void SolidBodyMesh::ApplySeed(
 	}
 	TStrongObjectPtr<USkeletalMesh> Kept(Built);
 	BodyCache().Add(Key, MoveTemp(Kept));
-	WearBody(MeshComp, Built, Seed, Params, DebugLabel, false);
+	BodySoleZ().Add(Key, SoleZ);
+	WearBody(MeshComp, Built, Seed, Params, DebugLabel, false, SoleZ);
 	ApplyComponentColors(MeshComp, TorsoColor, LegColor, SkinColor);
 #else
 	(void)Seed;
 	(void)Params;
 	(void)Built;
+	(void)SoleZ;
 	(void)TorsoColor;
 	(void)LegColor;
 	(void)SkinColor;

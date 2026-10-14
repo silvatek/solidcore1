@@ -1399,4 +1399,55 @@ bool FSolidBodyHandFingersTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyFootSoleTest,
+	"SolidCore1.Body.FootSole",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyFootSoleTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidBodyMesh;
+
+	TestTrue(TEXT("no feet leave the sole at the mesh origin"), FMath::IsNearlyEqual(FootSoleZ({}, {}), 0.f, 0.01f));
+
+	TArray<FSolidDeformBone> Bones;
+	auto AddBone = [&Bones](const TCHAR* Name, const int32 Parent, const FVector& Translation)
+	{
+		FSolidDeformBone Bone;
+		Bone.Name = Name;
+		Bone.ParentIndex = Parent;
+		Bone.LocalTranslation = Translation;
+		Bones.Add(Bone);
+	};
+	AddBone(TEXT("pelvis"), INDEX_NONE, FVector::ZeroVector);
+	AddBone(LeftThighBone, 0, FVector(0.f, 0.f, -40.f));
+	AddBone(LeftCalfBone, 1, FVector(0.f, 0.f, -30.f));
+	AddBone(LeftBallBone, 2, FVector(16.f, 0.f, 0.f));
+	AddBone(LeftExtraFingerBone, 3, FVector(0.f, 0.f, -8.f));
+
+	TArray<FVector> Positions;
+	SolidBodyDeform::ComponentPositions(Bones, Positions);
+	const float NeutralSole = FootSoleZ(Bones, Positions);
+	TestTrue(TEXT("the downward toe sets the sole"), FMath::IsNearlyEqual(NeutralSole, -78.f, 0.01f));
+	TestTrue(TEXT("the sole is below the foot bone"), NeutralSole < -70.f);
+
+	const float HalfHeight = 96.f;
+	TestTrue(
+		TEXT("the offset puts that sole on the capsule bottom"),
+		FMath::IsNearlyEqual(FeetMeshOffset(HalfHeight, NeutralSole) + NeutralSole, -HalfHeight, 0.01f));
+
+	FSolidBodyMesh Body = FSolidBodyMesh::FromBones(Bones);
+	FSolidBodyParams LongLegs;
+	LongLegs.Height = 1.f;
+	LongLegs.LegLength = SolidBody::ParamMax;
+	Body.Apply(Bones, LongLegs);
+	SolidBodyDeform::ComponentPositions(Bones, Positions);
+	const float LongSole = FootSoleZ(Bones, Positions);
+	TestTrue(
+		TEXT("longer legs lower the sole"),
+		FMath::IsNearlyEqual(LongSole, -78.f * SolidBody::ParamMax, 0.01f));
+	TestTrue(TEXT("the longer sole is lower"), LongSole < NeutralSole);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

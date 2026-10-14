@@ -267,12 +267,32 @@ namespace SolidBodyMesh
 		float& InOutRayT);
 
 	/**
+	 * Lowest point of the calves, feet, and toes, in mesh space.
+	 * A horizontal foot sits one radius below its bone. Zero when none of those bones are present.
+	 */
+	float FootSoleZ(const TArray<FSolidDeformBone>& Bones, const TArray<FVector>& Positions);
+
+	/** Mesh relative Z that puts that sole on the bottom of the capsule. */
+	float FeetMeshOffset(float CapsuleHalfHeight, float SoleZ);
+
+	/**
 	 * Transient low-poly mesh owned by Outer.
 	 * FSolidBodyMesh draws the triangles. This wraps them in a skeletal mesh.
 	 * Source supplies the Viking skeleton and bind pose. Its mesh and skeleton stay unchanged.
 	 * Null when Source has no skeleton, or the body has no wearable LOD.
+	 * OutSoleZ is the sole of that body, in mesh space.
 	 */
-	USkeletalMesh* Build(const USkeletalMesh* Source, const FSolidBodyParams& Params, UObject* Outer);
+	USkeletalMesh* Build(
+		const USkeletalMesh* Source,
+		const FSolidBodyParams& Params,
+		UObject* Outer,
+		float& OutSoleZ);
+
+	inline USkeletalMesh* Build(const USkeletalMesh* Source, const FSolidBodyParams& Params, UObject* Outer)
+	{
+		float SoleZ = 0.f;
+		return Build(Source, Params, Outer, SoleZ);
+	}
 
 	/**
 	 * Replace the component mesh with a low-poly body.

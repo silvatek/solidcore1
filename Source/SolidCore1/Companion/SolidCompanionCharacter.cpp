@@ -264,13 +264,6 @@ void ASolidCompanionCharacter::BeginPlay()
 	}
 	UpdateLocomotionAnim();
 
-	if (USkeletalMeshComponent* CharacterMesh = GetMesh())
-	{
-		FVector Rel = CharacterMesh->GetRelativeLocation();
-		Rel.Z = MeshGroundZOffset;
-		CharacterMesh->SetRelativeLocation(Rel);
-	}
-
 	UE_LOG(LogSolid, Warning,
 		TEXT("Companion BeginPlay mesh=%s idle=%s walk=%s run=%s follow=%s"),
 		GetMesh() && GetMesh()->GetSkeletalMeshAsset()

@@ -345,7 +345,7 @@ SolidBodyMesh::FSolidFittedCone SolidBodyMesh::HipCone(const FVector& SpineStart
 	Out.RadiusStart = HipSideDiameterCm * 0.5f;
 	Out.RadiusEnd = HipSideDiameterCm * 0.5f;
 	Out.DepthScale = HipSideDiameterCm > KINDA_SMALL_NUMBER ? HipDepthDiameterCm / HipSideDiameterCm : 1.f;
-	Out.WideAxis = FVector::RightVector;
+	Out.WideAxis = FVector::ForwardVector;
 	Out.bValid = FVector::Dist(SpineStart, SpineEnd) >= 1.0;
 	return Out;
 }

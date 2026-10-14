@@ -726,7 +726,7 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 				SolidBodyMesh::FSolidFittedCone Hip = SolidBodyMesh::HipCone(
 					CharacterMesh->GetBoneLocation(SpineStart),
 					CharacterMesh->GetBoneLocation(HipSpine));
-				Hip.WideAxis = CharacterMesh->GetRightVector();
+				Hip.WideAxis = CharacterMesh->GetForwardVector();
 				Consider(Hip, FString::Join(HipNames, TEXT(", ")));
 			}
 		}

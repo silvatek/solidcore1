@@ -212,7 +212,7 @@ namespace SolidBodyMesh
 
 	/**
 	 * Shirt piece the length of spine_01, 50 cm side to side and 20 cm front to back.
-	 * SpineStart is the parent joint and SpineEnd is spine_01. WideAxis is the character's right.
+	 * SpineStart is the parent joint and SpineEnd is spine_01. The full width is the mesh forward axis.
 	 * Invalid when the bone is shorter than a centimetre.
 	 */
 	FSolidFittedCone HipCone(const FVector& SpineStart, const FVector& SpineEnd);

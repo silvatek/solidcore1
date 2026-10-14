@@ -904,24 +904,24 @@ bool FSolidBodyHipConeTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("both ends are 25 cm toward the sides"), FMath::IsNearlyEqual(Cone.RadiusStart, 25.f, 0.01f));
 	TestTrue(TEXT("the far end matches the near end"), FMath::IsNearlyEqual(Cone.RadiusStart, Cone.RadiusEnd, 0.01f));
 	TestTrue(TEXT("front to back is 20 cm for a 50 cm width"), FMath::IsNearlyEqual(Cone.DepthScale, 0.4f, 0.01f));
-	TestTrue(TEXT("the full width points to the side"), Cone.WideAxis.Equals(FVector::RightVector, 0.01));
+	TestTrue(TEXT("the full width is the mesh forward axis"), Cone.WideAxis.Equals(FVector::ForwardVector, 0.01));
 
 	float BestT = TNumericLimits<float>::Max();
 	TestTrue(
 		TEXT("a ray from the side meets the hip"),
-		SolidBodyMesh::RayHitsCone(Cone, FVector(1.f, 40.f, 103.f), FVector(0.f, -1.f, 0.f), BestT));
+		SolidBodyMesh::RayHitsCone(Cone, FVector(40.f, 3.f, 103.f), FVector(-1.f, 0.f, 0.f), BestT));
 	BestT = TNumericLimits<float>::Max();
 	TestFalse(
 		TEXT("a ray past the side misses the hip"),
-		SolidBodyMesh::RayHitsCone(Cone, FVector(1.f, 40.f, 103.f), FVector(0.f, 1.f, 0.f), BestT));
+		SolidBodyMesh::RayHitsCone(Cone, FVector(40.f, 3.f, 103.f), FVector(1.f, 0.f, 0.f), BestT));
 	BestT = TNumericLimits<float>::Max();
 	TestTrue(
 		TEXT("a ray from the front meets the squashed side"),
-		SolidBodyMesh::RayHitsCone(Cone, FVector(20.f, 3.f, 103.f), FVector(-1.f, 0.f, 0.f), BestT));
+		SolidBodyMesh::RayHitsCone(Cone, FVector(1.f, 20.f, 103.f), FVector(0.f, -1.f, 0.f), BestT));
 	BestT = TNumericLimits<float>::Max();
 	TestFalse(
 		TEXT("a ray that only clips the round outline misses the front"),
-		SolidBodyMesh::RayHitsCone(Cone, FVector(18.f, 3.f, 103.f), FVector(0.f, 1.f, 0.f), BestT));
+		SolidBodyMesh::RayHitsCone(Cone, FVector(1.f, 18.f, 103.f), FVector(1.f, 0.f, 0.f), BestT));
 
 	TestFalse(TEXT("a bone with no length is not drawn"), SolidBodyMesh::HipCone(SpineStart, SpineStart).bValid);
 	return true;

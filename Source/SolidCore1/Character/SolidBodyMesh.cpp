@@ -25,34 +25,11 @@ namespace
 	SolidBodyMesh::FSolidBodyPartMesh Part(
 		const TCHAR* Name,
 		std::initializer_list<const TCHAR*> Bones,
-		const SolidBodyMesh::ESolidPartColour Colour,
+		SolidBodyMesh::ESolidPartColour Colour,
 		const SolidBodyMesh::FSolidPartSection& Start,
-		const SolidBodyMesh::FSolidPartSection& End)
-	{
-		SolidBodyMesh::FSolidBodyPartMesh Out;
-		Out.Name = Name;
-		for (const TCHAR* Bone : Bones)
-		{
-			Out.Bones.Add(Bone);
-		}
-		Out.Colour = Colour;
-		Out.Start = Start;
-		Out.End = End;
-		return Out;
-	}
+		const SolidBodyMesh::FSolidPartSection& End);
 
-	FString SpinePartName(const int32 Step, const int32 Count)
-	{
-		if (Step == Count - 1)
-		{
-			return TEXT("Chest");
-		}
-		if (Step == 0)
-		{
-			return TEXT("Abdomen");
-		}
-		return FString::Printf(TEXT("Spine %d"), Step + 1);
-	}
+	FString SpinePartName(int32 Step, int32 Count);
 }
 
 SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<FName>& RisingSpineBones)
@@ -144,6 +121,41 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 		FSolidPartSection::Round(LowerArmEndDiameterCm)));
 
 	return Body;
+}
+
+namespace
+{
+	SolidBodyMesh::FSolidBodyPartMesh Part(
+		const TCHAR* Name,
+		std::initializer_list<const TCHAR*> Bones,
+		const SolidBodyMesh::ESolidPartColour Colour,
+		const SolidBodyMesh::FSolidPartSection& Start,
+		const SolidBodyMesh::FSolidPartSection& End)
+	{
+		SolidBodyMesh::FSolidBodyPartMesh Out;
+		Out.Name = Name;
+		for (const TCHAR* Bone : Bones)
+		{
+			Out.Bones.Add(Bone);
+		}
+		Out.Colour = Colour;
+		Out.Start = Start;
+		Out.End = End;
+		return Out;
+	}
+
+	FString SpinePartName(const int32 Step, const int32 Count)
+	{
+		if (Step == Count - 1)
+		{
+			return TEXT("Chest");
+		}
+		if (Step == 0)
+		{
+			return TEXT("Abdomen");
+		}
+		return FString::Printf(TEXT("Spine %d"), Step + 1);
+	}
 }
 
 namespace

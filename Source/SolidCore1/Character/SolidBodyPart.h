@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 
+#include <initializer_list>
+
 /**
  * One component of a body mesh.
  * A part's name is the body region it shows. The skeleton bone inside it often has another name.
@@ -96,6 +98,16 @@ namespace SolidBodyMesh
 	 */
 	struct FSolidBodyPart
 	{
+		FSolidBodyPart() = default;
+
+		/** Name, the bones it wraps, its colour, and the diameters at each end. */
+		FSolidBodyPart(
+			const TCHAR* InName,
+			std::initializer_list<const TCHAR*> InBones,
+			ESolidPartColour InColour,
+			const FSolidPartSection& InStart,
+			const FSolidPartSection& InEnd);
+
 		FString Name;
 		TArray<FName> Bones;
 		ESolidPartColour Colour = ESolidPartColour::Shirt;

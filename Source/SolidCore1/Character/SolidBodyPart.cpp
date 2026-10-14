@@ -1,6 +1,23 @@
 #include "SolidBodyPart.h"
 #include "SolidBodyMesh.h"
 
+SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
+	const TCHAR* InName,
+	const std::initializer_list<const TCHAR*> InBones,
+	const ESolidPartColour InColour,
+	const FSolidPartSection& InStart,
+	const FSolidPartSection& InEnd)
+	: Name(InName)
+	, Colour(InColour)
+	, Start(InStart)
+	, End(InEnd)
+{
+	for (const TCHAR* Bone : InBones)
+	{
+		Bones.Add(Bone);
+	}
+}
+
 uint8 SolidBodyMesh::FSolidBodyPart::MaterialSlot() const
 {
 	switch (Colour)

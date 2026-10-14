@@ -1,7 +1,6 @@
 #include "SolidBodyMesh.h"
 
 #include "SolidContentLookup.h"
-#include <initializer_list>
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
 #include "SolidSkeletonHover.h"
@@ -22,13 +21,6 @@
 
 namespace
 {
-	SolidBodyMesh::FSolidBodyPart Part(
-		const TCHAR* Name,
-		std::initializer_list<const TCHAR*> Bones,
-		SolidBodyMesh::ESolidPartColour Colour,
-		const SolidBodyMesh::FSolidPartSection& Start,
-		const SolidBodyMesh::FSolidPartSection& End);
-
 	FString SpinePartName(int32 Step, int32 Count);
 }
 
@@ -39,17 +31,17 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 
 	FSolidBodyMesh Body;
 	const FSolidPartSection Round20 = FSolidPartSection::Round(LeftThighTopDiameterCm);
-	Body.Parts.Add(Part(TEXT("Thigh (L)"), { LeftThighBone }, ESolidPartColour::Trousers, Round20, FSolidPartSection::Round(LeftThighBottomDiameterCm)));
-	Body.Parts.Add(Part(TEXT("Thigh (R)"), { RightThighBone }, ESolidPartColour::Trousers, Round20, FSolidPartSection::Round(LeftThighBottomDiameterCm)));
-	Body.Parts.Add(Part(TEXT("Calf (L)"), { LeftCalfBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(CalfTopDiameterCm), FSolidPartSection::Round(CalfBottomDiameterCm)));
-	Body.Parts.Add(Part(TEXT("Calf (R)"), { RightCalfBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(CalfTopDiameterCm), FSolidPartSection::Round(CalfBottomDiameterCm)));
-	Body.Parts.Add(Part(TEXT("Foot (L)"), { LeftBallBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(BallDiameterCm), FSolidPartSection::Round(BallDiameterCm)));
-	Body.Parts.Add(Part(TEXT("Foot (R)"), { RightBallBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(BallDiameterCm), FSolidPartSection::Round(BallDiameterCm)));
-	Body.Parts.Add(Part(TEXT("Toe (L)"), { LeftExtraFingerBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(ExtraFingerAnkleDiameterCm), FSolidPartSection::Round(ExtraFingerToeDiameterCm)));
-	Body.Parts.Add(Part(TEXT("Toe (R)"), { RightExtraFingerBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(ExtraFingerAnkleDiameterCm), FSolidPartSection::Round(ExtraFingerToeDiameterCm)));
+	Body.Parts.Add(FSolidBodyPart(TEXT("Thigh (L)"), { LeftThighBone }, ESolidPartColour::Trousers, Round20, FSolidPartSection::Round(LeftThighBottomDiameterCm)));
+	Body.Parts.Add(FSolidBodyPart(TEXT("Thigh (R)"), { RightThighBone }, ESolidPartColour::Trousers, Round20, FSolidPartSection::Round(LeftThighBottomDiameterCm)));
+	Body.Parts.Add(FSolidBodyPart(TEXT("Calf (L)"), { LeftCalfBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(CalfTopDiameterCm), FSolidPartSection::Round(CalfBottomDiameterCm)));
+	Body.Parts.Add(FSolidBodyPart(TEXT("Calf (R)"), { RightCalfBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(CalfTopDiameterCm), FSolidPartSection::Round(CalfBottomDiameterCm)));
+	Body.Parts.Add(FSolidBodyPart(TEXT("Foot (L)"), { LeftBallBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(BallDiameterCm), FSolidPartSection::Round(BallDiameterCm)));
+	Body.Parts.Add(FSolidBodyPart(TEXT("Foot (R)"), { RightBallBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(BallDiameterCm), FSolidPartSection::Round(BallDiameterCm)));
+	Body.Parts.Add(FSolidBodyPart(TEXT("Toe (L)"), { LeftExtraFingerBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(ExtraFingerAnkleDiameterCm), FSolidPartSection::Round(ExtraFingerToeDiameterCm)));
+	Body.Parts.Add(FSolidBodyPart(TEXT("Toe (R)"), { RightExtraFingerBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(ExtraFingerAnkleDiameterCm), FSolidPartSection::Round(ExtraFingerToeDiameterCm)));
 
 	// The hip mesh is the length of spine_01. The thighs are inside it.
-	Body.Parts.Add(Part(
+	Body.Parts.Add(FSolidBodyPart(
 		TEXT("Hip"),
 		{ HipSpineBone, HipLeftBone, HipRightBone },
 		ESolidPartColour::Shirt,
@@ -62,7 +54,7 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 		float BottomCm = 0.f;
 		float TopCm = 0.f;
 		TorsoSideDiameters(Step, SpineCount, BottomCm, TopCm);
-		FSolidBodyPart Spine = Part(
+		FSolidBodyPart Spine = FSolidBodyPart(
 			TEXT("Spine"),
 			{},
 			ESolidPartColour::Shirt,
@@ -83,7 +75,7 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 	}
 
 	// Shoulders follow neck_01. Mid is fitted around the clavicles and the upper arms when the mesh is built.
-	FSolidBodyPart Shoulders = Part(
+	FSolidBodyPart Shoulders = FSolidBodyPart(
 		TEXT("Shoulders"),
 		{ ShoulderNeckBone, ShoulderLeftClavicleBone, ShoulderRightClavicleBone, ShoulderLeftUpperArmBone, ShoulderRightUpperArmBone },
 		ESolidPartColour::Shirt,
@@ -93,13 +85,13 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 	Body.Parts.Add(Shoulders);
 
 	// upperarm joint to elbow. The skeleton names that bone lowerarm.
-	Body.Parts.Add(Part(
+	Body.Parts.Add(FSolidBodyPart(
 		TEXT("Upper arm (L)"),
 		{ TEXT("lowerarm_l") },
 		ESolidPartColour::Shirt,
 		FSolidPartSection::Round(UpperArmElbowDiameterCm),
 		FSolidPartSection::Round(ForearmWristDiameterCm)));
-	Body.Parts.Add(Part(
+	Body.Parts.Add(FSolidBodyPart(
 		TEXT("Upper arm (R)"),
 		{ TEXT("lowerarm_r") },
 		ESolidPartColour::Shirt,
@@ -107,13 +99,13 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 		FSolidPartSection::Round(ForearmWristDiameterCm)));
 
 	// elbow to wrist. The skeleton names that bone hand. Narrow at the elbow, wide at the wrist.
-	Body.Parts.Add(Part(
+	Body.Parts.Add(FSolidBodyPart(
 		TEXT("Lower arm (L)"),
 		{ TEXT("hand_l") },
 		ESolidPartColour::Shirt,
 		FSolidPartSection::Round(LowerArmStartDiameterCm),
 		FSolidPartSection::Round(LowerArmEndDiameterCm)));
-	Body.Parts.Add(Part(
+	Body.Parts.Add(FSolidBodyPart(
 		TEXT("Lower arm (R)"),
 		{ TEXT("hand_r") },
 		ESolidPartColour::Shirt,
@@ -125,25 +117,6 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 
 namespace
 {
-	SolidBodyMesh::FSolidBodyPart Part(
-		const TCHAR* Name,
-		std::initializer_list<const TCHAR*> Bones,
-		const SolidBodyMesh::ESolidPartColour Colour,
-		const SolidBodyMesh::FSolidPartSection& Start,
-		const SolidBodyMesh::FSolidPartSection& End)
-	{
-		SolidBodyMesh::FSolidBodyPart Out;
-		Out.Name = Name;
-		for (const TCHAR* Bone : Bones)
-		{
-			Out.Bones.Add(Bone);
-		}
-		Out.Colour = Colour;
-		Out.Start = Start;
-		Out.End = End;
-		return Out;
-	}
-
 	FString SpinePartName(const int32 Step, const int32 Count)
 	{
 		if (Step == Count - 1)

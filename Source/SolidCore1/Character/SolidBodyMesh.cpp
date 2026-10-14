@@ -121,28 +121,18 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 		FSolidPartSection::Round(LowerArmEndDiameterCm)), ESolidPartMeasure::Arm);
 
 	// The finger list is the hand. FromBones drops a name the skeleton does not have, and adds any other finger it finds.
-	FSolidBodyPart LeftHand(
+	AddPart(FSolidBodyPart(
 		TEXT("Hand (L)"),
-		{},
+		LeftFingerBones,
 		ESolidPartColour::Skin,
 		FSolidPartSection::Round(0.f),
-		FSolidPartSection::Round(0.f));
-	for (const TCHAR* BoneName : LeftFingerBones)
-	{
-		LeftHand.Bones.Add(BoneName);
-	}
-	AddPart(LeftHand, ESolidPartMeasure::Hand);
-	FSolidBodyPart RightHand(
+		FSolidPartSection::Round(0.f)), ESolidPartMeasure::Hand);
+	AddPart(FSolidBodyPart(
 		TEXT("Hand (R)"),
-		{},
+		RightFingerBones,
 		ESolidPartColour::Skin,
 		FSolidPartSection::Round(0.f),
-		FSolidPartSection::Round(0.f));
-	for (const TCHAR* BoneName : RightFingerBones)
-	{
-		RightHand.Bones.Add(BoneName);
-	}
-	AddPart(RightHand, ESolidPartMeasure::Hand);
+		FSolidPartSection::Round(0.f)), ESolidPartMeasure::Hand);
 
 	// The sphere's height comes from the eye joints. These diameters are unused.
 	AddPart(FSolidBodyPart(

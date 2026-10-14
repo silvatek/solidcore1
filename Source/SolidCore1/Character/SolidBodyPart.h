@@ -132,6 +132,26 @@ namespace SolidBodyMesh
 			const FSolidPartSection& InStart,
 			const FSolidPartSection& InEnd);
 
+		/** The same part, when the bone names are already an array. */
+		template <int32 NumBones>
+		FSolidBodyPart(
+			const TCHAR* InName,
+			const TCHAR* (&InBones)[NumBones],
+			ESolidPartColour InColour,
+			const FSolidPartSection& InStart,
+			const FSolidPartSection& InEnd)
+			: Name(InName)
+			, Colour(InColour)
+			, Start(InStart)
+			, End(InEnd)
+		{
+			Bones.Reserve(NumBones);
+			for (int32 Index = 0; Index < NumBones; ++Index)
+			{
+				Bones.Add(InBones[Index]);
+			}
+		}
+
 		FString Name;
 		TArray<FName> Bones;
 		ESolidPartColour Colour = ESolidPartColour::Shirt;

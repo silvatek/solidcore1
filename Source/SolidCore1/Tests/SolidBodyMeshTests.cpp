@@ -1072,8 +1072,12 @@ bool FSolidBodyTorsoAndArmsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the hand is a cone"), Hand.bValid);
 	TestTrue(TEXT("the hand starts at the wrist"), Hand.Start.Equals(Wrist, 0.01));
 	TestTrue(TEXT("the hand ends on the bone"), Hand.End.Equals(Knuckle, 0.01));
-	TestTrue(TEXT("the hand starts where the forearm ends"), FMath::IsNearlyEqual(Hand.RadiusStart, Forearm.RadiusEnd, 0.01f));
-	TestTrue(TEXT("the hand is 2.5 cm in radius at the bone"), FMath::IsNearlyEqual(Hand.RadiusEnd, SolidBodyMesh::HandEndDiameterCm * 0.5f, 0.01f));
+	TestTrue(
+		TEXT("the hand uses the lower-arm start diameter"),
+		FMath::IsNearlyEqual(Hand.RadiusStart, SolidBodyMesh::LowerArmStartDiameterCm * 0.5f, 0.01f));
+	TestTrue(
+		TEXT("the hand uses the lower-arm end diameter"),
+		FMath::IsNearlyEqual(Hand.RadiusEnd, SolidBodyMesh::LowerArmEndDiameterCm * 0.5f, 0.01f));
 	TestTrue(TEXT("the hand is the length of the bone"), FMath::IsNearlyEqual(
 		static_cast<float>(FVector::Dist(Hand.Start, Hand.End)),
 		static_cast<float>(FVector::Dist(Wrist, Knuckle)),

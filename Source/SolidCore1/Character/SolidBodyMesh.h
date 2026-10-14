@@ -277,8 +277,15 @@ namespace SolidBodyMesh
 	/** Wrist diameter, in centimetres. The forearm's narrow end, and the hand's wide end. */
 	inline constexpr float ForearmWristDiameterCm = JointWrist * 2.f;
 
-	/** Diameter at the hand bone, in centimetres. The wide end is the wrist. */
+	/** Diameter at the hand bone, in centimetres. */
 	inline constexpr float HandEndDiameterCm = 5.f;
+
+	/**
+	 * Lower-arm cone, in centimetres. It wraps hand_l or hand_r.
+	 * Start is the parent joint. End is the hand bone.
+	 */
+	inline constexpr float LowerArmStartDiameterCm = ForearmWristDiameterCm;
+	inline constexpr float LowerArmEndDiameterCm = HandEndDiameterCm;
 
 	/**
 	 * Shirt cone the length of a clavicle bone.
@@ -303,7 +310,7 @@ namespace SolidBodyMesh
 
 	/**
 	 * Shirt cone the length of hand_l or hand_r.
-	 * Parent is the wrist and Bone is the hand. The wide end matches the forearm.
+	 * Parent is the elbow end and Bone is the hand. The diameters are LowerArmStartDiameterCm and LowerArmEndDiameterCm.
 	 * Invalid when the bone is shorter than a centimetre.
 	 */
 	FSolidFittedCone HandCone(const FVector& Wrist, const FVector& Hand);

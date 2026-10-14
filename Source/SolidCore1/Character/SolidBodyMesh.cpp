@@ -457,7 +457,7 @@ SolidBodyMesh::FSolidFittedCone SolidBodyMesh::ForearmCone(const FVector& Parent
 
 SolidBodyMesh::FSolidFittedCone SolidBodyMesh::HandCone(const FVector& Wrist, const FVector& Hand)
 {
-	return RoundBoneCone(Wrist, Hand, ForearmWristDiameterCm, HandEndDiameterCm);
+	return RoundBoneCone(Wrist, Hand, LowerArmStartDiameterCm, LowerArmEndDiameterCm);
 }
 
 namespace

@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0273")
+#define SOLID_BUILD_ID TEXT("SC1-0274")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The shoulder piece closes to a 20 cm diameter circle at neck_01.")
+#define SOLID_BUILD_NOTE TEXT("The shoulder widens around the upper arms, then narrows to the 20 cm neck.")
 #endif

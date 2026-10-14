@@ -309,6 +309,12 @@ namespace SolidBodyMesh
 	 * The circle is 20 cm across.
 	 */
 	inline constexpr float ShoulderTopRadiusCm = 10.f;
+
+	/**
+	 * How far the upper-arm bones sit inside the shoulder faces, in centimetres.
+	 * The elbow radius, so the forearm starts inside the shoulder rather than through its side.
+	 */
+	inline constexpr float ShoulderUpperArmClearanceCm = UpperArmElbowDiameterCm * 0.5f;
 	/** Rings around the shoulder piece. The bulge keeps bones inside the flat faces. */
 	inline constexpr int32 ShoulderSideCount = 10;
 
@@ -316,8 +322,8 @@ namespace SolidBodyMesh
 	 * Shirt piece the length of neck_01.
 	 * Lower runs from the parent joint to the wide middle. Upper runs from there to neck_01.
 	 * The base oval is BaseSideDiameterCm across and TorsoDepthDiameterCm front to back.
-	 * The middle widens until both upper-arm bones, and the clavicles, sit inside the faces.
-	 * neck_01 is a circle 20 cm across. WideAxis keeps the full width.
+	 * The middle widens past both upper-arm bones, and the clavicles, by ShoulderUpperArmClearanceCm.
+	 * It then narrows. neck_01 is a circle 20 cm across. WideAxis keeps the full width.
 	 * Invalid when neck_01 is shorter than two centimetres.
 	 */
 	struct FSolidShoulderPiece

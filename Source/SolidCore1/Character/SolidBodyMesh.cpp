@@ -543,6 +543,15 @@ SolidBodyMesh::FSolidShoulderPiece SolidBodyMesh::ShoulderPiece(
 			const float U = FMath::Clamp(Along / Length, 0.f, 1.f);
 			const float WideDist = FMath::Abs(FVector::DotProduct(Rel, Wide));
 			const float NarrowDist = FMath::Abs(FVector::DotProduct(Rel, Narrow));
+			const float Radial = FMath::Sqrt(FMath::Square(WideDist) + FMath::Square(NarrowDist));
+			float WideUse = WideDist;
+			float NarrowUse = NarrowDist;
+			if (Radial > 1.f && ShoulderUpperArmClearanceCm > 0.f)
+			{
+				const float Grown = (Radial + ShoulderUpperArmClearanceCm) / Radial;
+				WideUse *= Grown;
+				NarrowUse *= Grown;
+			}
 			const float SideHere = FMath::Lerp(SideBottom, SideTop, U);
 			const float DepthHere = FMath::Lerp(DepthBottom, DepthTop, U);
 			if (SideHere <= KINDA_SMALL_NUMBER || DepthHere <= KINDA_SMALL_NUMBER)
@@ -550,7 +559,7 @@ SolidBodyMesh::FSolidShoulderPiece SolidBodyMesh::ShoulderPiece(
 				continue;
 			}
 			const float Ellipse = FMath::Sqrt(
-				FMath::Square(WideDist / SideHere) + FMath::Square(NarrowDist / DepthHere));
+				FMath::Square(WideUse / SideHere) + FMath::Square(NarrowUse / DepthHere));
 			FSample Sample;
 			Sample.U = U;
 			Sample.Need = Ellipse / Chord;

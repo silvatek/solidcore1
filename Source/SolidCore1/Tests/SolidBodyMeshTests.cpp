@@ -1111,6 +1111,10 @@ bool FSolidBodyShoulderPieceTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the top circle is round"), FMath::IsNearlyEqual(Piece.Upper.DepthScaleEnd, 1.f, 0.01f));
 	TestTrue(TEXT("the full width is the mesh forward axis"), Piece.Lower.WideAxis.Equals(FVector::ForwardVector, 0.01));
 	TestTrue(TEXT("the middle is wider than the chest"), Piece.Lower.RadiusEnd > Piece.Lower.RadiusStart);
+	TestTrue(
+		TEXT("the middle clears the upper arm by the elbow radius"),
+		Piece.Lower.RadiusEnd * FMath::Cos(PI / static_cast<float>(SolidBodyMesh::ShoulderSideCount))
+			> 19.92f + SolidBodyMesh::ShoulderUpperArmClearanceCm);
 	TestTrue(TEXT("the left upper arm sits inside"), SolidBodyMesh::ShoulderContains(Piece, UpperEnd[0]));
 	TestTrue(TEXT("the right upper arm sits inside"), SolidBodyMesh::ShoulderContains(Piece, UpperEnd[1]));
 	TestTrue(TEXT("the left clavicle sits inside"), SolidBodyMesh::ShoulderContains(Piece, LeftClavicleEnd[0]));

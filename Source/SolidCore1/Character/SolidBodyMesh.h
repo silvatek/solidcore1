@@ -17,6 +17,32 @@ class USkeletalMeshComponent;
  */
 namespace SolidBodyMesh
 {
+	/** The character. Parts holds every body part. Draw asks each one to add its triangles. */
+	class FSolidBodyMesh
+	{
+	public:
+		TArray<FSolidBodyPartMesh> Parts;
+
+		/**
+		 * The body.
+		 * RisingSpineBones are the spine bones above the hips, parent to child.
+		 * An empty list leaves out the abdomen and the chest. The shoulder base then stays the chest width.
+		 */
+		static FSolidBodyMesh Make(const TArray<FName>& RisingSpineBones);
+
+		/** Make the body for this skeleton. The rising spine is read from the hip upward. */
+		static FSolidBodyMesh FromBones(const TArray<FSolidDeformBone>& Bones);
+
+		const FSolidBodyPartMesh* Find(const FString& Name) const;
+
+		/** Draw every part whose bones are on this skeleton. */
+		void Draw(
+			TArray<FSolidBodyVert>& Verts,
+			TArray<FSolidBodyTri>& Tris,
+			const TArray<FSolidDeformBone>& Bones,
+			const TArray<FVector>& Positions);
+	};
+
 	inline constexpr uint32 CaptainSeed = 0x0C0A77A1u;
 
 	/** Stable id for a companion name. Case does not matter. */

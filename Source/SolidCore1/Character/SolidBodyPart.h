@@ -1,14 +1,13 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SolidBodyDeform.h"
 
 /**
- * The drawn body is a list of parts.
+ * One component of a body mesh.
  * A part's name is the body region it shows. The skeleton bone inside it often has another name.
  * "Lower arm (L)" wraps hand_l. The cone runs from that bone's parent joint to the bone.
  * X is side to side, in centimetres. Y is front to back.
- * Each part draws its own triangles. The list draws the whole character.
+ * Fit measures the cones. Draw adds this part's triangles.
  */
 namespace SolidBodyMesh
 {
@@ -160,31 +159,5 @@ namespace SolidBodyMesh
 			int32 BoneIndex,
 			const FSolidShoulderPiece& Piece,
 			uint8 Slot) const;
-	};
-
-	/** The list of parts that make one character. */
-	class FSolidBodyMesh
-	{
-	public:
-		TArray<FSolidBodyPartMesh> Parts;
-
-		/**
-		 * The body.
-		 * RisingSpineBones are the spine bones above the hips, parent to child.
-		 * An empty list leaves out the abdomen and the chest. The shoulder base then stays the chest width.
-		 */
-		static FSolidBodyMesh Make(const TArray<FName>& RisingSpineBones);
-
-		/** Make the body for this skeleton. The rising spine is read from the hip upward. */
-		static FSolidBodyMesh FromBones(const TArray<FSolidDeformBone>& Bones);
-
-		const FSolidBodyPartMesh* Find(const FString& Name) const;
-
-		/** Draw every part whose bones are on this skeleton. */
-		void Draw(
-			TArray<FSolidBodyVert>& Verts,
-			TArray<FSolidBodyTri>& Tris,
-			const TArray<FSolidDeformBone>& Bones,
-			const TArray<FVector>& Positions);
 	};
 }

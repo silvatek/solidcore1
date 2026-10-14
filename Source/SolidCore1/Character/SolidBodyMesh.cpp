@@ -109,16 +109,30 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 	// elbow to wrist. The skeleton names that bone hand. Narrow at the elbow, wide at the wrist.
 	AddPart(FSolidBodyPart(
 		TEXT("Lower arm (L)"),
-		{ TEXT("hand_l") },
+		{ LeftHandBone },
 		ESolidPartColour::Shirt,
 		FSolidPartSection::Round(LowerArmStartDiameterCm),
 		FSolidPartSection::Round(LowerArmEndDiameterCm)), ESolidPartMeasure::Arm);
 	AddPart(FSolidBodyPart(
 		TEXT("Lower arm (R)"),
-		{ TEXT("hand_r") },
+		{ RightHandBone },
 		ESolidPartColour::Shirt,
 		FSolidPartSection::Round(LowerArmStartDiameterCm),
 		FSolidPartSection::Round(LowerArmEndDiameterCm)), ESolidPartMeasure::Arm);
+
+	// The ellipsoid uses the hand diameters. These cone diameters stay unused.
+	AddPart(FSolidBodyPart(
+		TEXT("Hand (L)"),
+		{ LeftHandBone },
+		ESolidPartColour::Skin,
+		FSolidPartSection::Round(0.f),
+		FSolidPartSection::Round(0.f)), ESolidPartMeasure::Hand);
+	AddPart(FSolidBodyPart(
+		TEXT("Hand (R)"),
+		{ RightHandBone },
+		ESolidPartColour::Skin,
+		FSolidPartSection::Round(0.f),
+		FSolidPartSection::Round(0.f)), ESolidPartMeasure::Hand);
 
 	// The sphere's height comes from the eye joints. These diameters are unused.
 	AddPart(FSolidBodyPart(
@@ -197,6 +211,55 @@ namespace
 		return INDEX_NONE;
 	}
 
+	bool NameMarksSide(const FString& Lower, const TCHAR* Suffix)
+	{
+		const FString Infix = FString(Suffix) + TEXT("_");
+		return Lower.EndsWith(Suffix) || Lower.Contains(Infix);
+	}
+
+	bool FingerBelongsToHand(
+		const TArray<FSolidDeformBone>& Bones,
+		const int32 Index,
+		const bool bLeft)
+	{
+		if (!Bones.IsValidIndex(Index))
+		{
+			return false;
+		}
+		const FString Lower = Bones[Index].Name.ToString().ToLower();
+		const bool bNameLeft = NameMarksSide(Lower, TEXT("_l"));
+		const bool bNameRight = NameMarksSide(Lower, TEXT("_r"));
+		if (bNameLeft || bNameRight)
+		{
+			return bLeft ? bNameLeft : bNameRight;
+		}
+
+		int32 Cursor = Index;
+		for (int32 Guard = 0; Guard < Bones.Num(); ++Guard)
+		{
+			if (!Bones.IsValidIndex(Cursor))
+			{
+				return false;
+			}
+			const FString Current = Bones[Cursor].Name.ToString();
+			if (Current.Equals(SolidBodyMesh::LeftHandBone, ESearchCase::IgnoreCase))
+			{
+				return bLeft;
+			}
+			if (Current.Equals(SolidBodyMesh::RightHandBone, ESearchCase::IgnoreCase))
+			{
+				return !bLeft;
+			}
+			const int32 Parent = Bones[Cursor].ParentIndex;
+			if (!Bones.IsValidIndex(Parent) || Parent == Cursor)
+			{
+				return false;
+			}
+			Cursor = Parent;
+		}
+		return false;
+	}
+
 	int32 ChildNamed(
 		const TArray<FSolidDeformBone>& Bones,
 		const int32 Parent,
@@ -240,6 +303,21 @@ bool SolidBodyMesh::IsEyeBoneName(const FString& BoneName)
 bool SolidBodyMesh::IsEyeJointBoneName(const FString& BoneName)
 {
 	return BoneName.ToLower().Contains(TEXT("eye_jnt"));
+}
+
+bool SolidBodyMesh::IsFingerBoneName(const FString& BoneName)
+{
+	const FString Lower = BoneName.ToLower();
+	if (IsTwistBoneName(Lower))
+	{
+		return false;
+	}
+	return Lower.StartsWith(TEXT("thumb_"))
+		|| Lower.StartsWith(TEXT("index_"))
+		|| Lower.StartsWith(TEXT("middle_"))
+		|| Lower.StartsWith(TEXT("ring_"))
+		|| Lower.StartsWith(TEXT("pinky_"))
+		|| Lower.StartsWith(TEXT("little_"));
 }
 
 bool SolidBodyMesh::IsRisingSpineBoneName(const FString& BoneName)
@@ -1163,20 +1241,41 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::FromBones(const TAr
 	FSolidBodyMesh Body = Make(RisingNames);
 	for (FSolidBodyPart& Part : Body.Parts)
 	{
-		if (!Part.Name.Equals(TEXT("Head"), ESearchCase::IgnoreCase) || Part.Bones.Num() == 0)
+		if (Part.Bones.Num() == 0)
 		{
 			continue;
 		}
-		for (const FSolidDeformBone& Bone : Bones)
+		if (Part.Measure == ESolidPartMeasure::Head)
 		{
-			const FString BoneName = Bone.Name.ToString();
-			if (BoneName.Equals(HeadBone, ESearchCase::IgnoreCase))
+			for (const FSolidDeformBone& Bone : Bones)
 			{
-				Part.Bones[0] = Bone.Name;
+				const FString BoneName = Bone.Name.ToString();
+				if (BoneName.Equals(HeadBone, ESearchCase::IgnoreCase))
+				{
+					Part.Bones[0] = Bone.Name;
+				}
+				else if (IsEyeBoneName(BoneName))
+				{
+					Part.Bones.AddUnique(Bone.Name);
+				}
 			}
-			else if (IsEyeBoneName(BoneName))
+		}
+		else if (Part.Measure == ESolidPartMeasure::Hand)
+		{
+			const bool bLeft = Part.Bones[0].ToString().Equals(LeftHandBone, ESearchCase::IgnoreCase);
+			for (int32 Index = 0; Index < Bones.Num(); ++Index)
 			{
-				Part.Bones.AddUnique(Bone.Name);
+				const FString BoneName = Bones[Index].Name.ToString();
+				if (BoneName.Equals(Part.Bones[0].ToString(), ESearchCase::IgnoreCase))
+				{
+					Part.Bones[0] = Bones[Index].Name;
+				}
+				else if (IsFingerBoneName(BoneName)
+					&& FingerBelongsToHand(Bones, Index, bLeft)
+					&& Bones.IsValidIndex(Bones[Index].ParentIndex))
+				{
+					Part.Bones.AddUnique(Bones[Index].Name);
+				}
 			}
 		}
 	}
@@ -1189,7 +1288,7 @@ void SolidBodyMesh::FSolidBodyMesh::Draw(
 	const TArray<FSolidDeformBone>& Bones,
 	const TArray<FVector>& Positions)
 {
-	// shoulder_jnt and the fingers stay bare. Twists stay bare too.
+	// shoulder_jnt stays bare. Twists stay bare. Hands draw their own fingers.
 	const int32 Count = FMath::Min(Bones.Num(), Positions.Num());
 	for (FSolidBodyPart& Part : Parts)
 	{

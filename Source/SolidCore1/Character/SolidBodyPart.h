@@ -24,7 +24,7 @@ namespace SolidBodyMesh
 
 	/**
 	 * Which slider channels size this part.
-	 * The part then sizes the bones it wraps. The hands are not parts.
+	 * The part then sizes the bones it wraps.
 	 */
 	enum class ESolidPartMeasure : uint8
 	{
@@ -40,6 +40,8 @@ namespace SolidBodyMesh
 		Leg,
 		/** Length, side, and depth are head size. */
 		Head,
+		/** Fixed ellipsoid. The lower arm already sizes the hand bone. */
+		Hand,
 	};
 
 	/** Diameters of one end of a part, in centimetres. */
@@ -165,9 +167,10 @@ namespace SolidBodyMesh
 		/**
 		 * Add this part's triangles.
 		 * WeightBone is the parent joint. The child joint only rotates, so a tube is skinned there.
-		 * SpanBone is Bones[0]. The head is a sphere skinned to that bone.
-		 * To is the head joint. The sphere starts at From, the base of that bone.
+		 * SpanBone is Bones[0]. The head and the hands are skinned to that bone.
+		 * For the head, To is the head joint. The sphere starts at From, the base of that bone.
 		 * The height is three lengths of the head bone. The horizontal radius is the eye_jnt length.
+		 * For a hand, To is the end of the hand bone. The long axis of the ellipsoid starts there.
 		 */
 		void Draw(
 			TArray<FSolidBodyVert>& Verts,
@@ -219,6 +222,22 @@ namespace SolidBodyMesh
 			int32 BoneIndex,
 			const FVector& Neck,
 			const FVector& Base,
+			const FVector* SegmentStart,
+			const FVector* SegmentEnd,
+			int32 SegmentCount) const;
+
+		/**
+		 * One ellipsoid skinned to the hand bone.
+		 * From is the parent joint and To is the end of the hand bone.
+		 * The long axis starts at To and runs along From to To for HandLengthDiameterCm.
+		 * The wide axis follows the finger bones. The thin axis is the palm thickness.
+		 */
+		void AddHand(
+			TArray<FSolidBodyVert>& Verts,
+			TArray<FSolidBodyTri>& Tris,
+			int32 BoneIndex,
+			const FVector& From,
+			const FVector& To,
 			const FVector* SegmentStart,
 			const FVector* SegmentEnd,
 			int32 SegmentCount) const;

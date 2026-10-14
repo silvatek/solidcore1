@@ -37,7 +37,7 @@ namespace SolidBodyMesh
 
 		/**
 		 * Ask every part to size itself and the bones it wraps.
-		 * A bone with no part, including the hands, keeps its Viking translation.
+		 * A bone with no part keeps its Viking translation.
 		 */
 		void Apply(TArray<FSolidDeformBone>& Bones, const FSolidBodyParams& Params);
 
@@ -60,6 +60,12 @@ namespace SolidBodyMesh
 
 	/** An eye joint. The head's horizontal radius is the length of this bone. */
 	bool IsEyeJointBoneName(const FString& BoneName);
+
+	/**
+	 * A finger bone. thumb_, index_, middle_, ring_, pinky_, and little_ match.
+	 * A twist does not. extra_finger is a toe.
+	 */
+	bool IsFingerBoneName(const FString& BoneName);
 
 	/** The bone the head sphere is skinned to. The sphere's bottom is that bone's parent joint. */
 	inline const TCHAR* HeadBone = TEXT("head");
@@ -175,6 +181,22 @@ namespace SolidBodyMesh
 	 */
 	inline constexpr float LowerArmStartDiameterCm = 5.f;
 	inline constexpr float LowerArmEndDiameterCm = ForearmWristDiameterCm;
+
+	/** The hand part is anchored here. The lower arm is the length of the same bone. */
+	inline const TCHAR* LeftHandBone = TEXT("hand_l");
+	inline const TCHAR* RightHandBone = TEXT("hand_r");
+
+	/**
+	 * Diameters of one hand ellipsoid, in centimetres.
+	 * The long axis starts at the end of the hand bone and runs on along that bone.
+	 * The wide axis follows the finger spread. The thin axis is the palm thickness.
+	 */
+	inline constexpr float HandLengthDiameterCm = 20.f;
+	inline constexpr float HandWidthDiameterCm = 15.f;
+	inline constexpr float HandThicknessDiameterCm = 3.f;
+	static_assert(
+		HandLengthDiameterCm > HandWidthDiameterCm && HandWidthDiameterCm > HandThicknessDiameterCm,
+		"the hand's long axis is the 20 cm one");
 
 	/** The five bones inside the shoulder piece. The mesh itself is the length of neck_01. */
 	inline const TCHAR* ShoulderNeckBone = TEXT("neck_01");

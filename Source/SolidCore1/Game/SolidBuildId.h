@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0276")
+#define SOLID_BUILD_ID TEXT("SC1-0277")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Lower arms widen toward the wrist. Body parts live on one list: name, bones, colour, and cone diameters.")
+#define SOLID_BUILD_NOTE TEXT("Each body part draws its own triangles. The body list draws the whole character.")
 #endif

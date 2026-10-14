@@ -114,21 +114,6 @@ namespace SolidBodyMesh
 	 */
 	FString SegmentKey(const FString& BoneName);
 
-	/** A tube along a bone. Depth scales squash the section across WideAxis, and may differ at each end. */
-	struct FSolidFittedCone
-	{
-		FVector Start = FVector::ZeroVector;
-		FVector End = FVector::ZeroVector;
-		float RadiusStart = 0.f;
-		float RadiusEnd = 0.f;
-		bool bValid = false;
-		/** 1 keeps a round section. Smaller flattens the axis perpendicular to WideAxis. */
-		float DepthScaleStart = 1.f;
-		float DepthScaleEnd = 1.f;
-		/** Direction that keeps the full diameter. Side-to-side for the hip. */
-		FVector WideAxis = FVector::RightVector;
-	};
-
 	/** Round cone around Points. A mirrored point set produces a mirrored cone. */
 	FSolidFittedCone FitCone(const FVector* Points, int32 Count);
 
@@ -203,6 +188,7 @@ namespace SolidBodyMesh
 	inline constexpr uint8 ShirtMaterialSlot = 0;
 	inline constexpr uint8 TrouserMaterialSlot = 1;
 	inline constexpr uint8 SkinMaterialSlot = 2;
+	static_assert(ShirtMaterialSlot == 0 && TrouserMaterialSlot == 1 && SkinMaterialSlot == 2, "body material slots stay in order");
 
 	/** The three bones named by the hip piece. The mesh itself is the length of spine_01. */
 	inline const TCHAR* HipLeftBone = TEXT("thigh_l");
@@ -347,14 +333,8 @@ namespace SolidBodyMesh
 	 * The middle widens past both upper-arm bones, and the clavicles, by ShoulderUpperArmClearanceCm.
 	 * It then narrows. neck_01 is a circle 20 cm across. WideAxis keeps the full width.
 	 * Invalid when neck_01 is shorter than two centimetres.
+	 * The shoulder part calls this while it draws.
 	 */
-	struct FSolidShoulderPiece
-	{
-		FSolidFittedCone Lower;
-		FSolidFittedCone Upper;
-		bool bValid = false;
-	};
-
 	FSolidShoulderPiece ShoulderPiece(
 		const FVector& NeckStart,
 		const FVector& NeckEnd,
@@ -379,22 +359,18 @@ namespace SolidBodyMesh
 		const FVector& RayDir,
 		float& InOutRayT);
 
-	/** The cones for one part. A shoulder fills both cones and writes its mid diameters. */
-	struct FSolidPartDraw
-	{
-		bool bShoulder = false;
-		FSolidFittedCone Cone;
-		FSolidShoulderPiece Shoulder;
-	};
-
-	FSolidPartDraw DrawForPart(
+	/** Fit on the part. Hover and the older cone checks call this. */
+	inline FSolidPartDraw DrawForPart(
 		FSolidBodyPartMesh& Part,
 		const FVector& From,
 		const FVector& To,
 		const FVector* SegmentStart,
 		const FVector* SegmentEnd,
-		int32 SegmentCount,
-		const FVector& WideAxis);
+		const int32 SegmentCount,
+		const FVector& WideAxis)
+	{
+		return Part.Fit(From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
+	}
 
 	/** Start and end radii of the cone from Parent to Child. Both ends are joint radii. */
 	void SegmentRadii(
@@ -406,6 +382,7 @@ namespace SolidBodyMesh
 
 	/**
 	 * Transient low-poly mesh owned by Outer.
+	 * FSolidBodyMesh draws the triangles. This wraps them in a skeletal mesh.
 	 * Source supplies the Viking skeleton and bind pose. Its mesh and skeleton stay unchanged.
 	 * Null when Source has no skeleton, or the body has no wearable LOD.
 	 */

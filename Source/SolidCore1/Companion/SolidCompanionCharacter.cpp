@@ -706,8 +706,7 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 			}
 			BoneNames.Sort();
 			const FString Label = FString::Join(BoneNames, TEXT(", "));
-			const SolidBodyMesh::FSolidPartDraw Draw = SolidBodyMesh::DrawForPart(
-				Part,
+			const SolidBodyMesh::FSolidPartDraw Draw = Part.Fit(
 				CharacterMesh->GetBoneLocation(SpanParent),
 				CharacterMesh->GetBoneLocation(Span),
 				SegmentStart.GetData(),

@@ -688,43 +688,6 @@ bool SolidBodyMesh::ShoulderContains(const FSolidShoulderPiece& Piece, const FVe
 	return Ellipse <= 1.f;
 }
 
-SolidBodyMesh::FSolidPartDraw SolidBodyMesh::DrawForPart(
-	FSolidBodyPartMesh& Part,
-	const FVector& From,
-	const FVector& To,
-	const FVector* SegmentStart,
-	const FVector* SegmentEnd,
-	const int32 SegmentCount,
-	const FVector& WideAxis)
-{
-	FSolidPartDraw Out;
-	if (Part.bHasMid)
-	{
-		Out.bShoulder = true;
-		Out.Shoulder = ShoulderPiece(From, To, SegmentStart, SegmentEnd, SegmentCount, Part.Start.X, WideAxis);
-		if (Out.Shoulder.bValid)
-		{
-			const float SideRadius = Out.Shoulder.Lower.RadiusEnd;
-			const float DepthRadius = SideRadius * Out.Shoulder.Lower.DepthScaleEnd;
-			Part.Mid.X = SideRadius * 2.f;
-			Part.Mid.Y = DepthRadius * 2.f;
-		}
-		return Out;
-	}
-
-	Out.Cone.Start = From;
-	Out.Cone.End = To;
-	Out.Cone.RadiusStart = Part.Start.X * 0.5f;
-	Out.Cone.RadiusEnd = Part.End.X * 0.5f;
-	Out.Cone.DepthScaleStart = Part.Start.X > KINDA_SMALL_NUMBER ? Part.Start.Y / Part.Start.X : 1.f;
-	Out.Cone.DepthScaleEnd = Part.End.X > KINDA_SMALL_NUMBER ? Part.End.Y / Part.End.X : 1.f;
-	Out.Cone.WideAxis = WideAxis;
-	Out.Cone.bValid = FVector::Dist(From, To) >= 1.0
-		&& Part.Start.X > KINDA_SMALL_NUMBER
-		&& Part.End.X > KINDA_SMALL_NUMBER;
-	return Out;
-}
-
 bool SolidBodyMesh::RayHitsCone(
 	const FSolidFittedCone& Cone,
 	const FVector& RayOrigin,
@@ -1117,26 +1080,6 @@ void SolidBodyMesh::JointRadii(
 #if WITH_EDITORONLY_DATA
 namespace
 {
-	struct FLoFiVert
-	{
-		FVector Position = FVector::ZeroVector;
-		int32 Bone = INDEX_NONE;
-		uint8 Slot = 0;
-	};
-
-	constexpr uint8 SlotTorso = 0;
-	constexpr uint8 SlotLegs = 1;
-	constexpr uint8 SlotSkin = 2;
-	static_assert(SlotTorso == SolidBodyMesh::ShirtMaterialSlot, "the shirt stays the first body material");
-	static_assert(SlotLegs == SolidBodyMesh::TrouserMaterialSlot, "the trousers stay the second body material");
-	static_assert(SlotSkin == SolidBodyMesh::SkinMaterialSlot, "the skin stays the third body material");
-	static_assert(SlotTorso == 0 && SlotLegs == 1 && SlotSkin == 2, "body material slots stay in order");
-
-	struct FLoFiTri
-	{
-		int32 V[3] = { INDEX_NONE, INDEX_NONE, INDEX_NONE };
-	};
-
 	void FillBones(const FReferenceSkeleton& Ref, FSolidDeformMesh& Out)
 	{
 		const TArray<FMeshBoneInfo>& Infos = Ref.GetRawRefBoneInfo();
@@ -1155,330 +1098,6 @@ namespace
 			Bone.LocalTranslation = Pose[Index].GetTranslation();
 			Bone.LocalRotation = Pose[Index].GetRotation();
 			Out.Bones.Add(Bone);
-		}
-	}
-
-	void AddTri(TArray<FLoFiTri>& Tris, const int32 A, const int32 B, const int32 C)
-	{
-		FLoFiTri Tri;
-		Tri.V[0] = A;
-		Tri.V[1] = B;
-		Tri.V[2] = C;
-		Tris.Add(Tri);
-	}
-
-	/** Tapered tube. Flatten squishes the ring's second axis so a foot or a hand reads as a paddle. */
-	void AddTube(
-		TArray<FLoFiVert>& Verts,
-		TArray<FLoFiTri>& Tris,
-		const int32 BoneIndex,
-		const FVector& Start,
-		const FVector& End,
-		const float RadiusStart,
-		const float RadiusEnd,
-		const int32 Sides,
-		const int32 Segments,
-		const uint8 Slot,
-		const float FlattenStart,
-		const float FlattenEnd,
-		const FVector& PreferredSide)
-	{
-		const FVector Delta = End - Start;
-		const float Length = Delta.Size();
-		if (Length < 1.f || BoneIndex == INDEX_NONE || Sides < 3)
-		{
-			return;
-		}
-
-		const FVector Axis = Delta / Length;
-		FVector Side = PreferredSide - Axis * FVector::DotProduct(PreferredSide, Axis);
-		if (Side.SizeSquared() < 0.01)
-		{
-			Side = FVector::CrossProduct(FVector::UpVector, Axis);
-		}
-		if (Side.SizeSquared() < 0.01)
-		{
-			Side = FVector::CrossProduct(FVector::ForwardVector, Axis);
-		}
-		Side = Side.GetSafeNormal();
-		const FVector Up = FVector::CrossProduct(Axis, Side).GetSafeNormal();
-		const int32 SideCount = FMath::Clamp(Sides, 3, 16);
-		const int32 RingCount = FMath::Max(Segments, 1) + 1;
-		const int32 Base = Verts.Num();
-
-		for (int32 Ring = 0; Ring < RingCount; ++Ring)
-		{
-			const float T = (RingCount == 1)
-				? 0.f
-				: static_cast<float>(Ring) / static_cast<float>(RingCount - 1);
-			const FVector Center = FMath::Lerp(Start, End, static_cast<double>(T));
-			const float Radius = FMath::Lerp(RadiusStart, RadiusEnd, T);
-			const float Squash = FMath::Lerp(
-				FMath::Clamp(FlattenStart, 0.2f, 1.f),
-				FMath::Clamp(FlattenEnd, 0.2f, 1.f),
-				T);
-			for (int32 Step = 0; Step < SideCount; ++Step)
-			{
-				const float Angle = (2.f * PI * static_cast<float>(Step)) / static_cast<float>(SideCount);
-				const FVector Offset = Side * (FMath::Cos(Angle) * Radius)
-					+ Up * (FMath::Sin(Angle) * Radius * Squash);
-				FLoFiVert Vert;
-				Vert.Position = Center + Offset;
-				Vert.Bone = BoneIndex;
-				Vert.Slot = Slot;
-				Verts.Add(Vert);
-			}
-		}
-
-		auto Id = [Base, SideCount](const int32 Ring, const int32 Step)
-		{
-			return Base + Ring * SideCount + (Step % SideCount);
-		};
-		for (int32 Ring = 0; Ring < RingCount - 1; ++Ring)
-		{
-			for (int32 Step = 0; Step < SideCount; ++Step)
-			{
-				const int32 Next = Step + 1;
-				AddTri(Tris, Id(Ring, Step), Id(Ring, Next), Id(Ring + 1, Step));
-				AddTri(Tris, Id(Ring, Next), Id(Ring + 1, Next), Id(Ring + 1, Step));
-			}
-		}
-		const int32 Last = RingCount - 1;
-		for (int32 Step = 1; Step < SideCount - 1; ++Step)
-		{
-			AddTri(Tris, Id(0, 0), Id(0, Step + 1), Id(0, Step));
-			AddTri(Tris, Id(Last, 0), Id(Last, Step), Id(Last, Step + 1));
-		}
-	}
-
-	/** Three rings: the chest oval, the wide middle, and the neck circle. Caps only the two ends. */
-	void AddShoulder(
-		TArray<FLoFiVert>& Verts,
-		TArray<FLoFiTri>& Tris,
-		const int32 BoneIndex,
-		const SolidBodyMesh::FSolidShoulderPiece& Piece,
-		const uint8 Slot)
-	{
-		if (!Piece.bValid || BoneIndex == INDEX_NONE)
-		{
-			return;
-		}
-
-		const FVector Centers[] = { Piece.Lower.Start, Piece.Lower.End, Piece.Upper.End };
-		const float Radii[] = { Piece.Lower.RadiusStart, Piece.Lower.RadiusEnd, Piece.Upper.RadiusEnd };
-		const float Squash[] = {
-			Piece.Lower.DepthScaleStart,
-			Piece.Lower.DepthScaleEnd,
-			Piece.Upper.DepthScaleEnd,
-		};
-		const FVector Delta = Centers[2] - Centers[0];
-		const float Length = Delta.Size();
-		if (Length < 2.f)
-		{
-			return;
-		}
-		const FVector Axis = Delta / Length;
-		FVector Side = Piece.Lower.WideAxis - Axis * FVector::DotProduct(Piece.Lower.WideAxis, Axis);
-		if (Side.SizeSquared() < 0.01)
-		{
-			Side = FVector::CrossProduct(FVector::UpVector, Axis);
-		}
-		if (Side.SizeSquared() < 0.01)
-		{
-			Side = FVector::CrossProduct(FVector::ForwardVector, Axis);
-		}
-		Side = Side.GetSafeNormal();
-		const FVector Up = FVector::CrossProduct(Axis, Side).GetSafeNormal();
-		const int32 SideCount = SolidBodyMesh::ShoulderSideCount;
-		const int32 Base = Verts.Num();
-		for (int32 Ring = 0; Ring < 3; ++Ring)
-		{
-			const float Radius = Radii[Ring];
-			const float Flat = FMath::Clamp(Squash[Ring], 0.2f, 1.f);
-			for (int32 Step = 0; Step < SideCount; ++Step)
-			{
-				const float Angle = (2.f * PI * static_cast<float>(Step)) / static_cast<float>(SideCount);
-				const FVector Offset = Side * (FMath::Cos(Angle) * Radius)
-					+ Up * (FMath::Sin(Angle) * Radius * Flat);
-				FLoFiVert Vert;
-				Vert.Position = Centers[Ring] + Offset;
-				Vert.Bone = BoneIndex;
-				Vert.Slot = Slot;
-				Verts.Add(Vert);
-			}
-		}
-
-		auto Id = [Base, SideCount](const int32 Ring, const int32 Step)
-		{
-			return Base + Ring * SideCount + (Step % SideCount);
-		};
-		for (int32 Ring = 0; Ring < 2; ++Ring)
-		{
-			for (int32 Step = 0; Step < SideCount; ++Step)
-			{
-				const int32 Next = Step + 1;
-				AddTri(Tris, Id(Ring, Step), Id(Ring, Next), Id(Ring + 1, Step));
-				AddTri(Tris, Id(Ring, Next), Id(Ring + 1, Next), Id(Ring + 1, Step));
-			}
-		}
-		for (int32 Step = 1; Step < SideCount - 1; ++Step)
-		{
-			AddTri(Tris, Id(0, 0), Id(0, Step + 1), Id(0, Step));
-			AddTri(Tris, Id(2, 0), Id(2, Step), Id(2, Step + 1));
-		}
-	}
-
-	int32 FindNamedBone(const TArray<FSolidDeformBone>& Bones, const int32 Count, const TCHAR* BoneName)
-	{
-		for (int32 Index = 0; Index < Count; ++Index)
-		{
-			if (Bones[Index].Name.ToString().Equals(BoneName, ESearchCase::IgnoreCase))
-			{
-				return Index;
-			}
-		}
-		return INDEX_NONE;
-	}
-
-	int32 ChildNamed(
-		const TArray<FSolidDeformBone>& Bones,
-		const int32 Count,
-		const int32 Parent,
-		bool (*Test)(const FString&))
-	{
-		if (!Bones.IsValidIndex(Parent) || !Test)
-		{
-			return INDEX_NONE;
-		}
-		for (int32 Index = 0; Index < Count; ++Index)
-		{
-			if (Bones[Index].ParentIndex != Parent)
-			{
-				continue;
-			}
-			if (Test(Bones[Index].Name.ToString()))
-			{
-				return Index;
-			}
-		}
-		return INDEX_NONE;
-	}
-
-	/**
-	 * Skin the tube to the joint the segment starts from.
-	 * The child joint only rotates, so weighting the child spins the parent end off the bone.
-	 */
-	void AddLegCone(
-		TArray<FLoFiVert>& Verts,
-		TArray<FLoFiTri>& Tris,
-		const int32 Weight,
-		const SolidBodyMesh::FSolidFittedCone& Cone,
-		const uint8 Slot = SlotLegs)
-	{
-		if (!Cone.bValid || Weight == INDEX_NONE)
-		{
-			return;
-		}
-		AddTube(
-			Verts,
-			Tris,
-			Weight,
-			Cone.Start,
-			Cone.End,
-			Cone.RadiusStart,
-			Cone.RadiusEnd,
-			10,
-			1,
-			Slot,
-			Cone.DepthScaleStart,
-			Cone.DepthScaleEnd,
-			Cone.WideAxis);
-	}
-
-	void BuildLowFi(
-		const TArray<FSolidDeformBone>& Bones,
-		const TArray<FVector>& Positions,
-		TArray<FLoFiVert>& Verts,
-		TArray<FLoFiTri>& Tris)
-	{
-		const int32 Count = FMath::Min(Bones.Num(), Positions.Num());
-		const int32 HipSpine = FindNamedBone(Bones, Count, SolidBodyMesh::HipSpineBone);
-		TArray<FName> RisingNames;
-		if (HipSpine != INDEX_NONE)
-		{
-			int32 Cursor = HipSpine;
-			for (int32 Guard = 0; Guard < Count; ++Guard)
-			{
-				const int32 Next = ChildNamed(Bones, Count, Cursor, SolidBodyMesh::IsRisingSpineBoneName);
-				if (Next == INDEX_NONE)
-				{
-					break;
-				}
-				RisingNames.Add(Bones[Next].Name);
-				Cursor = Next;
-			}
-		}
-
-		// shoulder_jnt, fingers, head, and eye bones stay bare. Twists stay bare too.
-		SolidBodyMesh::FSolidBodyMesh Body = SolidBodyMesh::FSolidBodyMesh::Make(RisingNames);
-		for (SolidBodyMesh::FSolidBodyPartMesh& Part : Body.Parts)
-		{
-			if (Part.Bones.Num() == 0)
-			{
-				continue;
-			}
-			const int32 Span = FindNamedBone(Bones, Count, *Part.Bones[0].ToString());
-			if (Span == INDEX_NONE)
-			{
-				continue;
-			}
-			const int32 Parent = Bones[Span].ParentIndex;
-			if (!Bones.IsValidIndex(Parent) || !Positions.IsValidIndex(Parent))
-			{
-				continue;
-			}
-
-			TArray<FVector> SegmentStart;
-			TArray<FVector> SegmentEnd;
-			bool bComplete = true;
-			for (int32 BoneNumber = 1; BoneNumber < Part.Bones.Num(); ++BoneNumber)
-			{
-				const int32 Bone = FindNamedBone(Bones, Count, *Part.Bones[BoneNumber].ToString());
-				if (Bone == INDEX_NONE)
-				{
-					bComplete = false;
-					break;
-				}
-				const int32 BoneParent = Bones[Bone].ParentIndex;
-				if (!Bones.IsValidIndex(BoneParent) || !Positions.IsValidIndex(BoneParent))
-				{
-					bComplete = false;
-					break;
-				}
-				SegmentStart.Add(Positions[BoneParent]);
-				SegmentEnd.Add(Positions[Bone]);
-			}
-			if (!bComplete)
-			{
-				continue;
-			}
-
-			SolidBodyMesh::FSolidPartDraw Draw = SolidBodyMesh::DrawForPart(
-				Part,
-				Positions[Parent],
-				Positions[Span],
-				SegmentStart.GetData(),
-				SegmentEnd.GetData(),
-				SegmentStart.Num(),
-				FVector::ForwardVector);
-			if (Draw.bShoulder)
-			{
-				AddShoulder(Verts, Tris, Parent, Draw.Shoulder, Part.MaterialSlot());
-			}
-			else
-			{
-				AddLegCone(Verts, Tris, Parent, Draw.Cone, Part.MaterialSlot());
-			}
 		}
 	}
 
@@ -1563,8 +1182,8 @@ namespace
 		FMeshDescription& Description,
 		const FReferenceSkeleton& Ref,
 		const FSolidDeformMesh& Deformed,
-		const TArray<FLoFiVert>& Verts,
-		const TArray<FLoFiTri>& Tris)
+		const TArray<SolidBodyMesh::FSolidBodyVert>& Verts,
+		const TArray<SolidBodyMesh::FSolidBodyTri>& Tris)
 	{
 		FSkeletalMeshAttributes Attributes(Description);
 		Attributes.Register(false);
@@ -1644,7 +1263,7 @@ namespace
 		}
 
 		int32 Written = 0;
-		for (const FLoFiTri& Tri : Tris)
+		for (const SolidBodyMesh::FSolidBodyTri& Tri : Tris)
 		{
 			if (!Verts.IsValidIndex(Tri.V[0]) || !Verts.IsValidIndex(Tri.V[1]) || !Verts.IsValidIndex(Tri.V[2]))
 			{
@@ -1690,11 +1309,11 @@ namespace
 				Corners[Corner] = InstanceID;
 			}
 			FPolygonGroupID Group = TorsoGroup;
-			if (Verts[Tri.V[0]].Slot == SlotLegs)
+			if (Verts[Tri.V[0]].Slot == SolidBodyMesh::TrouserMaterialSlot)
 			{
 				Group = LegGroup;
 			}
-			else if (Verts[Tri.V[0]].Slot == SlotSkin)
+			else if (Verts[Tri.V[0]].Slot == SolidBodyMesh::SkinMaterialSlot)
 			{
 				Group = SkinGroup;
 			}
@@ -1906,9 +1525,11 @@ USkeletalMesh* SolidBodyMesh::Build(
 	TArray<FVector> Positions;
 	SolidBodyDeform::ComponentPositions(Deformed.Bones, Positions);
 
-	TArray<FLoFiVert> Verts;
-	TArray<FLoFiTri> Tris;
-	BuildLowFi(Deformed.Bones, Positions, Verts, Tris);
+	// The part list draws the triangles. The rest of this function hands them to Unreal.
+	TArray<FSolidBodyVert> Verts;
+	TArray<FSolidBodyTri> Tris;
+	FSolidBodyMesh Body = FSolidBodyMesh::FromBones(Deformed.Bones);
+	Body.Draw(Verts, Tris, Deformed.Bones, Positions);
 	if (Tris.Num() == 0 || Verts.Num() == 0)
 	{
 		UE_LOG(LogSolid, Warning, TEXT("SolidBody low-poly mesh has no segments, so it is discarded."));

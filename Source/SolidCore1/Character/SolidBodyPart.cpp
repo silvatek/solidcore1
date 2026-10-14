@@ -382,16 +382,24 @@ void SolidBodyMesh::FSolidBodyPart::AddHead(
 	TArray<FSolidBodyVert>& Verts,
 	TArray<FSolidBodyTri>& Tris,
 	const int32 BoneIndex,
+	const FVector& Neck,
 	const FVector& Base,
+	const FVector* SegmentStart,
 	const FVector* SegmentEnd,
 	const int32 SegmentCount) const
 {
-	if (BoneIndex == INDEX_NONE || !SegmentEnd || Bones.Num() < 2)
+	if (BoneIndex == INDEX_NONE || !SegmentStart || !SegmentEnd || Bones.Num() < 2)
 	{
 		return;
 	}
 
-	float Sum = 0.f;
+	const float HeadLength = FVector::Dist(Neck, Base);
+	if (HeadLength < 1.f)
+	{
+		return;
+	}
+
+	float RadiusSum = 0.f;
 	int32 Count = 0;
 	const int32 Limit = FMath::Min(SegmentCount, Bones.Num() - 1);
 	for (int32 Index = 0; Index < Limit; ++Index)
@@ -400,7 +408,12 @@ void SolidBodyMesh::FSolidBodyPart::AddHead(
 		{
 			continue;
 		}
-		Sum += FVector::DotProduct(SegmentEnd[Index] - Base, FVector::UpVector);
+		const float EyeLength = FVector::Dist(SegmentStart[Index], SegmentEnd[Index]);
+		if (EyeLength < 1.f)
+		{
+			continue;
+		}
+		RadiusSum += EyeLength;
 		++Count;
 	}
 	if (Count == 0)
@@ -408,15 +421,9 @@ void SolidBodyMesh::FSolidBodyPart::AddHead(
 		return;
 	}
 
-	const float EyeHeight = Sum / static_cast<float>(Count);
-	if (EyeHeight < 1.f)
-	{
-		return;
-	}
-
-	const float Height = EyeHeight * 2.f;
+	const float HorizontalRadius = RadiusSum / static_cast<float>(Count);
+	const float Height = HeadLength * HeadHeightInBoneLengths;
 	const float VerticalRadius = Height * 0.5f;
-	const float HorizontalRadius = Height * HeadWidthOverHeight * 0.5f;
 	const FVector Center = Base + FVector::UpVector * VerticalRadius;
 	const FVector Up = FVector::UpVector;
 	const FVector Side = FVector::RightVector;
@@ -498,7 +505,7 @@ void SolidBodyMesh::FSolidBodyPart::Draw(
 {
 	if (Measure == ESolidPartMeasure::Head)
 	{
-		AddHead(Verts, Tris, SpanBone, To, SegmentEnd, SegmentCount);
+		AddHead(Verts, Tris, SpanBone, From, To, SegmentStart, SegmentEnd, SegmentCount);
 		return;
 	}
 

@@ -166,7 +166,8 @@ namespace SolidBodyMesh
 		 * Add this part's triangles.
 		 * WeightBone is the parent joint. The child joint only rotates, so a tube is skinned there.
 		 * SpanBone is Bones[0]. The head is a sphere skinned to that bone.
-		 * To is the head bone, and the sphere starts there. Eye joints set its height.
+		 * To is the head bone, and the sphere starts there.
+		 * The height is three lengths of that bone. The horizontal radius is the eye_jnt length.
 		 */
 		void Draw(
 			TArray<FSolidBodyVert>& Verts,
@@ -206,14 +207,18 @@ namespace SolidBodyMesh
 			uint8 Slot) const;
 
 		/**
-		 * A sphere stretched along world up, skinned to the head bone.
-		 * The bottom pole is Base. Eye joints sit halfway up, so the top is that far again.
+		 * A sphere along world up, skinned to the head bone.
+		 * The bottom pole is Base. Neck is the parent joint, so the head bone's length is the gap between them.
+		 * The height is HeadHeightInBoneLengths times that length.
+		 * The horizontal radius is the length of the eye_jnt bones.
 		 */
 		void AddHead(
 			TArray<FSolidBodyVert>& Verts,
 			TArray<FSolidBodyTri>& Tris,
 			int32 BoneIndex,
+			const FVector& Neck,
 			const FVector& Base,
+			const FVector* SegmentStart,
 			const FVector* SegmentEnd,
 			int32 SegmentCount) const;
 	};

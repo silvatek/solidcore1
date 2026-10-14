@@ -928,4 +928,67 @@ bool FSolidBodyHeadTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyHeadShapeTest,
+	"SolidCore1.Body.HeadShape",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyHeadShapeTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidBodyMesh;
+
+	TestEqual(TEXT("the head is three bone lengths tall"), HeadHeightInBoneLengths, 3.f);
+
+	TArray<FSolidDeformBone> Bones;
+	auto AddBone = [&Bones](const TCHAR* Name, const int32 Parent, const FVector& Translation)
+	{
+		FSolidDeformBone Bone;
+		Bone.Name = Name;
+		Bone.ParentIndex = Parent;
+		Bone.LocalTranslation = Translation;
+		Bones.Add(Bone);
+	};
+	const FVector HeadTranslation(0.f, 0.f, 10.f);
+	const FVector EyeTranslation(4.f, 6.f, 12.f);
+	AddBone(TEXT("neck_01"), INDEX_NONE, FVector(0.f, 0.f, 90.f));
+	AddBone(HeadBone, 0, HeadTranslation);
+	AddBone(TEXT("eye_jnt_l"), 1, EyeTranslation);
+	AddBone(TEXT("eyelid_l"), 1, FVector(3.f, 6.f, 18.f));
+
+	const float HeadLength = static_cast<float>(HeadTranslation.Size());
+	const float EyeLength = static_cast<float>(EyeTranslation.Size());
+	const float SphereHeight = HeadLength * HeadHeightInBoneLengths;
+	const float BaseZ = 100.f;
+
+	TArray<FVector> Positions;
+	SolidBodyDeform::ComponentPositions(Bones, Positions);
+	TArray<FSolidBodyVert> Verts;
+	TArray<FSolidBodyTri> Tris;
+	FSolidBodyMesh Body = FSolidBodyMesh::FromBones(Bones);
+	Body.Draw(Verts, Tris, Bones, Positions);
+
+	float MinZ = 1.e9f;
+	float MaxZ = -1.e9f;
+	float MaxRadial = 0.f;
+	int32 SkinVerts = 0;
+	for (const FSolidBodyVert& Vert : Verts)
+	{
+		if (Vert.Slot != SkinMaterialSlot)
+		{
+			continue;
+		}
+		++SkinVerts;
+		MinZ = FMath::Min(MinZ, static_cast<float>(Vert.Position.Z));
+		MaxZ = FMath::Max(MaxZ, static_cast<float>(Vert.Position.Z));
+		const float Radial = static_cast<float>(FVector(Vert.Position.X, Vert.Position.Y, 0.f).Size());
+		MaxRadial = FMath::Max(MaxRadial, Radial);
+	}
+	TestTrue(TEXT("the head draws a sphere"), SkinVerts > 0);
+	TestTrue(TEXT("the sphere starts at the head bone"), FMath::IsNearlyEqual(MinZ, BaseZ, 0.01f));
+	TestTrue(TEXT("the height is three head-bone lengths"), FMath::IsNearlyEqual(MaxZ - MinZ, SphereHeight, 0.01f));
+	TestTrue(TEXT("the horizontal radius is the eye joint length"), FMath::IsNearlyEqual(MaxRadial, EyeLength, 0.05f));
+	TestTrue(TEXT("an eyelid does not set the radius"), !FMath::IsNearlyEqual(MaxRadial, static_cast<float>(FVector(3.f, 6.f, 18.f).Size()), 0.5f));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

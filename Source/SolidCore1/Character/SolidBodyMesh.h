@@ -58,17 +58,14 @@ namespace SolidBodyMesh
 	/** An eye bone belongs to the head. eye_jnt and the eyelids both match. */
 	bool IsEyeBoneName(const FString& BoneName);
 
-	/** The joints that set the head height. They sit halfway up the sphere. */
+	/** An eye joint. The head's horizontal radius is the length of this bone. */
 	bool IsEyeJointBoneName(const FString& BoneName);
 
 	/** The bone the head sphere is skinned to. Its position is the bottom of the sphere. */
 	inline const TCHAR* HeadBone = TEXT("head");
 
-	/**
-	 * Horizontal diameter divided by the head's height.
-	 * Below 1, the sphere is stretched upward. The eyes set the height.
-	 */
-	inline constexpr float HeadWidthOverHeight = 0.75f;
+	/** The sphere is this many head-bone lengths tall. The bottom sits on the head bone. */
+	inline constexpr float HeadHeightInBoneLengths = 3.f;
 
 	/** Rings around the head, and rings from the chin pole to the crown, including both poles. */
 	inline constexpr int32 HeadSideCount = 10;

@@ -1338,8 +1338,8 @@ bool FSolidBodyHandFingersTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	TestEqual(TEXT("the left hand lists every finger joint"), Left->Bones.Num(), UE_ARRAY_COUNT(LeftFingerBones));
-	TestEqual(TEXT("the right hand lists every finger joint"), Right->Bones.Num(), UE_ARRAY_COUNT(RightFingerBones));
+	TestEqual(TEXT("the left hand lists every finger joint"), Left->Bones.Num(), static_cast<int32>(UE_ARRAY_COUNT(LeftFingerBones)));
+	TestEqual(TEXT("the right hand lists every finger joint"), Right->Bones.Num(), static_cast<int32>(UE_ARRAY_COUNT(RightFingerBones)));
 	TestFalse(TEXT("the left hand leaves the hand bone on the lower arm"), Left->Bones.Contains(FName(LeftHandBone)));
 	TestFalse(TEXT("the right hand leaves the hand bone on the lower arm"), Right->Bones.Contains(FName(RightHandBone)));
 	for (const TCHAR* BoneName : LeftFingerBones)

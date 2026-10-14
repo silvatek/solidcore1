@@ -730,6 +730,84 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 				Consider(Hip, FString::Join(HipNames, TEXT(", ")));
 			}
 		}
+
+		if (!HipSpine.IsNone())
+		{
+			TArray<FName> Rising;
+			FName Cursor = HipSpine;
+			for (int32 Guard = 0; Guard < BoneCount; ++Guard)
+			{
+				FName Next = NAME_None;
+				for (int32 Index = 0; Index < BoneCount; ++Index)
+				{
+					const FName BoneName = CharacterMesh->GetBoneName(Index);
+					if (BoneName.IsNone() || CharacterMesh->GetParentBone(BoneName) != Cursor)
+					{
+						continue;
+					}
+					if (!SolidBodyMesh::IsRisingSpineBoneName(BoneName.ToString()))
+					{
+						continue;
+					}
+					Next = BoneName;
+					break;
+				}
+				if (Next.IsNone())
+				{
+					break;
+				}
+				Rising.Add(Next);
+				Cursor = Next;
+			}
+
+			for (int32 Step = 0; Step < Rising.Num(); ++Step)
+			{
+				const FName ParentName = CharacterMesh->GetParentBone(Rising[Step]);
+				if (ParentName.IsNone())
+				{
+					continue;
+				}
+				float BottomCm = 0.f;
+				float TopCm = 0.f;
+				SolidBodyMesh::TorsoSideDiameters(Step, Rising.Num(), BottomCm, TopCm);
+				SolidBodyMesh::FSolidFittedCone Torso = SolidBodyMesh::TorsoCone(
+					CharacterMesh->GetBoneLocation(ParentName),
+					CharacterMesh->GetBoneLocation(Rising[Step]),
+					BottomCm,
+					TopCm);
+				Torso.WideAxis = CharacterMesh->GetForwardVector();
+				Consider(Torso, Rising[Step].ToString());
+			}
+		}
+
+		for (int32 Index = 0; Index < BoneCount; ++Index)
+		{
+			const FName BoneName = CharacterMesh->GetBoneName(Index);
+			if (BoneName.IsNone())
+			{
+				continue;
+			}
+			const FName ParentName = CharacterMesh->GetParentBone(BoneName);
+			if (ParentName.IsNone())
+			{
+				continue;
+			}
+			const FString Name = BoneName.ToString();
+			const FVector ParentPos = CharacterMesh->GetBoneLocation(ParentName);
+			const FVector BonePos = CharacterMesh->GetBoneLocation(BoneName);
+			if (SolidBodyMesh::IsClavicleBoneName(Name))
+			{
+				Consider(SolidBodyMesh::ClavicleCone(ParentPos, BonePos), Name);
+			}
+			else if (SolidBodyMesh::IsUpperArmBoneName(Name))
+			{
+				Consider(SolidBodyMesh::UpperArmCone(ParentPos, BonePos), Name);
+			}
+			else if (SolidBodyMesh::IsForearmBoneName(Name))
+			{
+				Consider(SolidBodyMesh::ForearmCone(ParentPos, BonePos), Name);
+			}
+		}
 		return BestLabel;
 	}
 

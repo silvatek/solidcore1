@@ -929,4 +929,129 @@ bool FSolidBodyHipConeTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyTorsoAndArmsTest,
+	"SolidCore1.Body.TorsoAndArms",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyTorsoAndArmsTest::RunTest(const FString& Parameters)
+{
+	TestTrue(TEXT("spine_02 rises"), SolidBodyMesh::IsRisingSpineBoneName(TEXT("spine_02")));
+	TestTrue(TEXT("spine_03 rises"), SolidBodyMesh::IsRisingSpineBoneName(TEXT("spine_03")));
+	TestTrue(TEXT("spine_04 rises"), SolidBodyMesh::IsRisingSpineBoneName(TEXT("spine_04")));
+	TestFalse(TEXT("spine_01 is the hip"), SolidBodyMesh::IsRisingSpineBoneName(TEXT("spine_01")));
+	TestFalse(TEXT("a spine twist stays bare"), SolidBodyMesh::IsRisingSpineBoneName(TEXT("spine_02_twist")));
+	TestFalse(TEXT("the neck stays bare"), SolidBodyMesh::IsRisingSpineBoneName(TEXT("neck_01")));
+
+	TestTrue(TEXT("left clavicle"), SolidBodyMesh::IsClavicleBoneName(TEXT("clavicle_l")));
+	TestTrue(TEXT("right clavicle"), SolidBodyMesh::IsClavicleBoneName(TEXT("clavicle_r")));
+	TestFalse(TEXT("a clavicle twist stays bare"), SolidBodyMesh::IsClavicleBoneName(TEXT("clavicle_twist_01_l")));
+	TestFalse(TEXT("shoulder_jnt is not a clavicle"), SolidBodyMesh::IsClavicleBoneName(TEXT("shoulder_jnt_l")));
+	TestFalse(TEXT("shoulder_jnt tip is not a clavicle"), SolidBodyMesh::IsClavicleBoneName(TEXT("shoulder_jnt_1_r")));
+
+	TestTrue(TEXT("left upper arm"), SolidBodyMesh::IsUpperArmBoneName(TEXT("upperarm_l")));
+	TestTrue(TEXT("right upper arm"), SolidBodyMesh::IsUpperArmBoneName(TEXT("upperarm_r")));
+	TestFalse(TEXT("an upper-arm twist stays bare"), SolidBodyMesh::IsUpperArmBoneName(TEXT("upperarm_twist_01_l")));
+	TestFalse(TEXT("shoulder_jnt is not an upper arm"), SolidBodyMesh::IsUpperArmBoneName(TEXT("shoulder_jnt_l")));
+
+	TestTrue(TEXT("left forearm"), SolidBodyMesh::IsForearmBoneName(TEXT("lowerarm_l")));
+	TestTrue(TEXT("right forearm"), SolidBodyMesh::IsForearmBoneName(TEXT("lowerarm_r")));
+	TestFalse(TEXT("a forearm twist stays bare"), SolidBodyMesh::IsForearmBoneName(TEXT("lowerarm_twist_01_r")));
+	TestFalse(TEXT("a hand stays bare"), SolidBodyMesh::IsForearmBoneName(TEXT("hand_l")));
+	TestFalse(TEXT("the head stays bare"), SolidBodyMesh::IsUpperArmBoneName(TEXT("head")));
+	TestFalse(TEXT("an eye stays bare"), SolidBodyMesh::IsClavicleBoneName(TEXT("eye_l")));
+
+	TestEqual(TEXT("the chest is 40 cm side to side"), SolidBodyMesh::ChestSideDiameterCm, 40.f);
+	TestEqual(TEXT("the torso depth matches the hip"), SolidBodyMesh::TorsoDepthDiameterCm, SolidBodyMesh::HipDepthDiameterCm);
+	TestEqual(TEXT("the arms use the skin"), SolidBodyMesh::SkinMaterialSlot, static_cast<uint8>(2));
+	TestTrue(
+		TEXT("the shoulder meets the upper arm"),
+		FMath::IsNearlyEqual(SolidBodyMesh::UpperArmShoulderDiameterCm, SolidBodyMesh::JointShoulder * 2.f, 0.01f));
+	TestTrue(
+		TEXT("the elbow meets the forearm"),
+		FMath::IsNearlyEqual(SolidBodyMesh::UpperArmElbowDiameterCm, SolidBodyMesh::JointElbow * 2.f, 0.01f));
+	TestTrue(
+		TEXT("the wrist is the joint section doubled"),
+		FMath::IsNearlyEqual(SolidBodyMesh::ForearmWristDiameterCm, SolidBodyMesh::JointWrist * 2.f, 0.01f));
+
+	float BottomCm = 0.f;
+	float TopCm = 0.f;
+	SolidBodyMesh::TorsoSideDiameters(0, 2, BottomCm, TopCm);
+	TestTrue(TEXT("the first of two starts at the waist"), FMath::IsNearlyEqual(BottomCm, 30.f, 0.01f));
+	TestTrue(TEXT("the first of two is halfway to the chest"), FMath::IsNearlyEqual(TopCm, 35.f, 0.01f));
+	SolidBodyMesh::TorsoSideDiameters(1, 2, BottomCm, TopCm);
+	TestTrue(TEXT("the second of two starts where the first ended"), FMath::IsNearlyEqual(BottomCm, 35.f, 0.01f));
+	TestTrue(TEXT("the second of two is the chest"), FMath::IsNearlyEqual(TopCm, 40.f, 0.01f));
+	SolidBodyMesh::TorsoSideDiameters(0, 1, BottomCm, TopCm);
+	TestTrue(TEXT("one spine bone starts at the waist"), FMath::IsNearlyEqual(BottomCm, 30.f, 0.01f));
+	TestTrue(TEXT("one spine bone ends at the chest"), FMath::IsNearlyEqual(TopCm, 40.f, 0.01f));
+	SolidBodyMesh::TorsoSideDiameters(0, 3, BottomCm, TopCm);
+	TestTrue(TEXT("the first of three starts at the waist"), FMath::IsNearlyEqual(BottomCm, 30.f, 0.01f));
+	TestTrue(TEXT("the first of three takes a third of the widen"), FMath::IsNearlyEqual(TopCm, 30.f + 10.f / 3.f, 0.01f));
+	SolidBodyMesh::TorsoSideDiameters(2, 3, BottomCm, TopCm);
+	TestTrue(TEXT("the last of three starts a third short of the chest"), FMath::IsNearlyEqual(BottomCm, 30.f + 20.f / 3.f, 0.01f));
+	TestTrue(TEXT("the last of three is the chest"), FMath::IsNearlyEqual(TopCm, 40.f, 0.01f));
+	SolidBodyMesh::TorsoSideDiameters(5, 2, BottomCm, TopCm);
+	TestTrue(TEXT("a step past the end stays on the last bone"), FMath::IsNearlyEqual(BottomCm, 35.f, 0.01f));
+	TestTrue(TEXT("a step past the end still reaches the chest"), FMath::IsNearlyEqual(TopCm, 40.f, 0.01f));
+	SolidBodyMesh::TorsoSideDiameters(0, 0, BottomCm, TopCm);
+	TestTrue(TEXT("no rising spine stays at the waist"), FMath::IsNearlyEqual(BottomCm, SolidBodyMesh::HipTopSideDiameterCm, 0.01f));
+	TestTrue(TEXT("no rising spine has no taper"), FMath::IsNearlyEqual(TopCm, SolidBodyMesh::HipTopSideDiameterCm, 0.01f));
+
+	const FVector Bottom(0.f, 0.f, 100.f);
+	const FVector Top(0.f, 0.f, 122.f);
+	const SolidBodyMesh::FSolidFittedCone Torso = SolidBodyMesh::TorsoCone(Bottom, Top, 30.f, 40.f);
+	TestTrue(TEXT("the torso piece is drawn"), Torso.bValid);
+	TestTrue(TEXT("the torso piece starts at the parent joint"), Torso.Start.Equals(Bottom, 0.01));
+	TestTrue(TEXT("the torso piece ends on the spine bone"), Torso.End.Equals(Top, 0.01));
+	TestTrue(TEXT("the waist end is 15 cm toward the sides"), FMath::IsNearlyEqual(Torso.RadiusStart, 15.f, 0.01f));
+	TestTrue(TEXT("the chest end is 20 cm toward the sides"), FMath::IsNearlyEqual(Torso.RadiusEnd, 20.f, 0.01f));
+	TestTrue(TEXT("the waist end is 20 cm front to back"), FMath::IsNearlyEqual(Torso.DepthScaleStart, 20.f / 30.f, 0.01f));
+	TestTrue(TEXT("the chest end is 20 cm front to back"), FMath::IsNearlyEqual(Torso.DepthScaleEnd, 20.f / 40.f, 0.01f));
+	TestTrue(TEXT("the full width is the mesh forward axis"), Torso.WideAxis.Equals(FVector::ForwardVector, 0.01));
+	float BestT = TNumericLimits<float>::Max();
+	TestTrue(
+		TEXT("a ray from the side meets the torso"),
+		SolidBodyMesh::RayHitsCone(Torso, FVector(30.f, 0.f, 111.f), FVector(-1.f, 0.f, 0.f), BestT));
+	BestT = TNumericLimits<float>::Max();
+	TestFalse(
+		TEXT("a ray past the side misses the torso"),
+		SolidBodyMesh::RayHitsCone(Torso, FVector(30.f, 0.f, 111.f), FVector(1.f, 0.f, 0.f), BestT));
+	BestT = TNumericLimits<float>::Max();
+	TestFalse(
+		TEXT("a ray outside the front misses the torso"),
+		SolidBodyMesh::RayHitsCone(Torso, FVector(0.f, 16.f, 111.f), FVector(1.f, 0.f, 0.f), BestT));
+	TestFalse(TEXT("a spine bone with no length is not drawn"), SolidBodyMesh::TorsoCone(Bottom, Bottom, 30.f, 40.f).bValid);
+
+	const FVector Root(-2.f, 1.f, 140.f);
+	const FVector Tip(-18.f, 2.f, 148.f);
+	const SolidBodyMesh::FSolidFittedCone Clavicle = SolidBodyMesh::ClavicleCone(Root, Tip);
+	TestTrue(TEXT("the clavicle is a cone"), Clavicle.bValid);
+	TestTrue(TEXT("the clavicle starts at the parent joint"), Clavicle.Start.Equals(Root, 0.01));
+	TestTrue(TEXT("the clavicle ends on the bone"), Clavicle.End.Equals(Tip, 0.01));
+	TestTrue(TEXT("the clavicle root is 7 cm in radius"), FMath::IsNearlyEqual(Clavicle.RadiusStart, 7.f, 0.01f));
+	TestTrue(TEXT("the clavicle tip matches the upper arm"), FMath::IsNearlyEqual(Clavicle.RadiusEnd, 5.2f, 0.01f));
+	TestTrue(TEXT("the clavicle is round"), FMath::IsNearlyEqual(Clavicle.DepthScaleStart, 1.f, 0.01f));
+	TestTrue(TEXT("the clavicle tip is round"), FMath::IsNearlyEqual(Clavicle.DepthScaleEnd, 1.f, 0.01f));
+
+	const FVector Shoulder(-18.f, 2.f, 148.f);
+	const FVector Elbow(-20.f, 4.f, 120.f);
+	const SolidBodyMesh::FSolidFittedCone Upper = SolidBodyMesh::UpperArmCone(Shoulder, Elbow);
+	TestTrue(TEXT("the upper arm is a cone"), Upper.bValid);
+	TestTrue(TEXT("the upper arm is 5.2 cm in radius at the parent"), FMath::IsNearlyEqual(Upper.RadiusStart, 5.2f, 0.01f));
+	TestTrue(TEXT("the upper arm is 4.2 cm in radius at the bone"), FMath::IsNearlyEqual(Upper.RadiusEnd, 4.2f, 0.01f));
+	TestTrue(TEXT("the upper arm is the length of the bone"), FMath::IsNearlyEqual(
+		static_cast<float>(FVector::Dist(Upper.Start, Upper.End)),
+		static_cast<float>(FVector::Dist(Shoulder, Elbow)),
+		0.05f));
+
+	const FVector Wrist(-22.f, 6.f, 96.f);
+	const SolidBodyMesh::FSolidFittedCone Forearm = SolidBodyMesh::ForearmCone(Elbow, Wrist);
+	TestTrue(TEXT("the forearm is a cone"), Forearm.bValid);
+	TestTrue(TEXT("the forearm starts where the upper arm ends"), FMath::IsNearlyEqual(Forearm.RadiusStart, Upper.RadiusEnd, 0.01f));
+	TestTrue(TEXT("the forearm is 3.4 cm in radius at the bone"), FMath::IsNearlyEqual(Forearm.RadiusEnd, 3.4f, 0.01f));
+	TestFalse(TEXT("an arm bone with no length is not drawn"), SolidBodyMesh::ForearmCone(Elbow, Elbow).bValid);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

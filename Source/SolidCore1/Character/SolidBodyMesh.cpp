@@ -351,6 +351,104 @@ SolidBodyMesh::FSolidFittedCone SolidBodyMesh::HipCone(const FVector& SpineStart
 	return Out;
 }
 
+bool SolidBodyMesh::IsRisingSpineBoneName(const FString& BoneName)
+{
+	const FString Lower = BoneName.ToLower();
+	return Lower.StartsWith(TEXT("spine_"))
+		&& !Lower.StartsWith(TEXT("spine_01"))
+		&& !IsTwistBoneName(Lower);
+}
+
+bool SolidBodyMesh::IsClavicleBoneName(const FString& BoneName)
+{
+	const FString Lower = BoneName.ToLower();
+	return Lower.StartsWith(TEXT("clavicle_")) && !IsTwistBoneName(Lower);
+}
+
+bool SolidBodyMesh::IsUpperArmBoneName(const FString& BoneName)
+{
+	const FString Lower = BoneName.ToLower();
+	return Lower.StartsWith(TEXT("upperarm_")) && !IsTwistBoneName(Lower);
+}
+
+bool SolidBodyMesh::IsForearmBoneName(const FString& BoneName)
+{
+	const FString Lower = BoneName.ToLower();
+	return Lower.StartsWith(TEXT("lowerarm_")) && !IsTwistBoneName(Lower);
+}
+
+void SolidBodyMesh::TorsoSideDiameters(
+	const int32 Step,
+	const int32 Count,
+	float& OutBottomCm,
+	float& OutTopCm)
+{
+	if (Count < 1)
+	{
+		OutBottomCm = HipTopSideDiameterCm;
+		OutTopCm = HipTopSideDiameterCm;
+		return;
+	}
+
+	const int32 SafeStep = FMath::Clamp(Step, 0, Count - 1);
+	const float Denom = static_cast<float>(Count);
+	OutBottomCm = FMath::Lerp(HipTopSideDiameterCm, ChestSideDiameterCm, static_cast<float>(SafeStep) / Denom);
+	OutTopCm = FMath::Lerp(HipTopSideDiameterCm, ChestSideDiameterCm, static_cast<float>(SafeStep + 1) / Denom);
+}
+
+SolidBodyMesh::FSolidFittedCone SolidBodyMesh::TorsoCone(
+	const FVector& Bottom,
+	const FVector& Top,
+	const float SideBottomCm,
+	const float SideTopCm)
+{
+	FSolidFittedCone Out;
+	Out.Start = Bottom;
+	Out.End = Top;
+	Out.RadiusStart = SideBottomCm * 0.5f;
+	Out.RadiusEnd = SideTopCm * 0.5f;
+	Out.DepthScaleStart = SideBottomCm > KINDA_SMALL_NUMBER ? TorsoDepthDiameterCm / SideBottomCm : 1.f;
+	Out.DepthScaleEnd = SideTopCm > KINDA_SMALL_NUMBER ? TorsoDepthDiameterCm / SideTopCm : 1.f;
+	Out.WideAxis = FVector::ForwardVector;
+	Out.bValid = FVector::Dist(Bottom, Top) >= 1.0
+		&& SideBottomCm > KINDA_SMALL_NUMBER
+		&& SideTopCm > KINDA_SMALL_NUMBER;
+	return Out;
+}
+
+namespace
+{
+	SolidBodyMesh::FSolidFittedCone RoundBoneCone(
+		const FVector& Parent,
+		const FVector& Bone,
+		const float DiameterParent,
+		const float DiameterBone)
+	{
+		SolidBodyMesh::FSolidFittedCone Out;
+		Out.Start = Parent;
+		Out.End = Bone;
+		Out.RadiusStart = DiameterParent * 0.5f;
+		Out.RadiusEnd = DiameterBone * 0.5f;
+		Out.bValid = FVector::Dist(Parent, Bone) >= 1.0;
+		return Out;
+	}
+}
+
+SolidBodyMesh::FSolidFittedCone SolidBodyMesh::ClavicleCone(const FVector& Parent, const FVector& Bone)
+{
+	return RoundBoneCone(Parent, Bone, ClavicleRootDiameterCm, UpperArmShoulderDiameterCm);
+}
+
+SolidBodyMesh::FSolidFittedCone SolidBodyMesh::UpperArmCone(const FVector& Parent, const FVector& Bone)
+{
+	return RoundBoneCone(Parent, Bone, UpperArmShoulderDiameterCm, UpperArmElbowDiameterCm);
+}
+
+SolidBodyMesh::FSolidFittedCone SolidBodyMesh::ForearmCone(const FVector& Parent, const FVector& Bone)
+{
+	return RoundBoneCone(Parent, Bone, UpperArmElbowDiameterCm, ForearmWristDiameterCm);
+}
+
 bool SolidBodyMesh::RayHitsCone(
 	const FSolidFittedCone& Cone,
 	const FVector& RayOrigin,
@@ -755,6 +853,7 @@ namespace
 	constexpr uint8 SlotSkin = 2;
 	static_assert(SlotTorso == SolidBodyMesh::ShirtMaterialSlot, "the shirt stays the first body material");
 	static_assert(SlotLegs == SolidBodyMesh::TrouserMaterialSlot, "the trousers stay the second body material");
+	static_assert(SlotSkin == SolidBodyMesh::SkinMaterialSlot, "the skin stays the third body material");
 	static_assert(SlotTorso == 0 && SlotLegs == 1 && SlotSkin == 2, "body material slots stay in order");
 
 	struct FLoFiTri
@@ -888,6 +987,30 @@ namespace
 		return INDEX_NONE;
 	}
 
+	int32 ChildNamed(
+		const TArray<FSolidDeformBone>& Bones,
+		const int32 Count,
+		const int32 Parent,
+		bool (*Test)(const FString&))
+	{
+		if (!Bones.IsValidIndex(Parent) || !Test)
+		{
+			return INDEX_NONE;
+		}
+		for (int32 Index = 0; Index < Count; ++Index)
+		{
+			if (Bones[Index].ParentIndex != Parent)
+			{
+				continue;
+			}
+			if (Test(Bones[Index].Name.ToString()))
+			{
+				return Index;
+			}
+		}
+		return INDEX_NONE;
+	}
+
 	/**
 	 * Skin the tube to the joint the segment starts from.
 	 * The child joint only rotates, so weighting the child spins the parent end off the bone.
@@ -917,6 +1040,35 @@ namespace
 			Cone.DepthScaleStart,
 			Cone.DepthScaleEnd,
 			Cone.WideAxis);
+	}
+
+	void AddNamedCones(
+		TArray<FLoFiVert>& Verts,
+		TArray<FLoFiTri>& Tris,
+		const TArray<FSolidDeformBone>& Bones,
+		const TArray<FVector>& Positions,
+		const int32 Count,
+		bool (*Test)(const FString&),
+		SolidBodyMesh::FSolidFittedCone (*MakeCone)(const FVector&, const FVector&),
+		const uint8 Slot)
+	{
+		if (!Test || !MakeCone)
+		{
+			return;
+		}
+		for (int32 Index = 0; Index < Count; ++Index)
+		{
+			if (!Test(Bones[Index].Name.ToString()))
+			{
+				continue;
+			}
+			const int32 Parent = Bones[Index].ParentIndex;
+			if (!Bones.IsValidIndex(Parent) || !Positions.IsValidIndex(Parent))
+			{
+				continue;
+			}
+			AddLegCone(Verts, Tris, Parent, MakeCone(Positions[Parent], Positions[Index]), Slot);
+		}
 	}
 
 	void BuildLowFi(
@@ -1018,6 +1170,69 @@ namespace
 					SlotTorso);
 			}
 		}
+
+		if (HipSpine != INDEX_NONE)
+		{
+			TArray<int32> Rising;
+			int32 Cursor = HipSpine;
+			for (int32 Guard = 0; Guard < Count; ++Guard)
+			{
+				const int32 Next = ChildNamed(Bones, Count, Cursor, SolidBodyMesh::IsRisingSpineBoneName);
+				if (Next == INDEX_NONE)
+				{
+					break;
+				}
+				Rising.Add(Next);
+				Cursor = Next;
+			}
+			for (int32 Step = 0; Step < Rising.Num(); ++Step)
+			{
+				const int32 Bone = Rising[Step];
+				const int32 Parent = Bones[Bone].ParentIndex;
+				if (!Bones.IsValidIndex(Parent) || !Positions.IsValidIndex(Parent))
+				{
+					continue;
+				}
+				float BottomCm = 0.f;
+				float TopCm = 0.f;
+				SolidBodyMesh::TorsoSideDiameters(Step, Rising.Num(), BottomCm, TopCm);
+				AddLegCone(
+					Verts,
+					Tris,
+					Parent,
+					SolidBodyMesh::TorsoCone(Positions[Parent], Positions[Bone], BottomCm, TopCm),
+					SlotTorso);
+			}
+		}
+
+		// Neck, shoulder_jnt, hand, head, and eye bones stay bare. Twists stay bare too.
+		AddNamedCones(
+			Verts,
+			Tris,
+			Bones,
+			Positions,
+			Count,
+			SolidBodyMesh::IsClavicleBoneName,
+			SolidBodyMesh::ClavicleCone,
+			SlotTorso);
+		AddNamedCones(
+			Verts,
+			Tris,
+			Bones,
+			Positions,
+			Count,
+			SolidBodyMesh::IsUpperArmBoneName,
+			SolidBodyMesh::UpperArmCone,
+			SlotSkin);
+		AddNamedCones(
+			Verts,
+			Tris,
+			Bones,
+			Positions,
+			Count,
+			SolidBodyMesh::IsForearmBoneName,
+			SolidBodyMesh::ForearmCone,
+			SlotSkin);
 	}
 
 	void PaintSlot(

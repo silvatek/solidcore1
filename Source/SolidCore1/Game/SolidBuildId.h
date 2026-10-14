@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0268")
+#define SOLID_BUILD_ID TEXT("SC1-0269")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The hip tapers from a 50 by 20 ellipse at the bottom to a 30 by 20 ellipse at the top.")
+#define SOLID_BUILD_NOTE TEXT("The torso widens from the 30 cm waist to a 40 cm chest, then the clavicles and arms follow their bones.")
 #endif

@@ -201,6 +201,7 @@ namespace SolidBodyMesh
 	/** Shirt material slot. Trousers are the next slot, then skin. */
 	inline constexpr uint8 ShirtMaterialSlot = 0;
 	inline constexpr uint8 TrouserMaterialSlot = 1;
+	inline constexpr uint8 SkinMaterialSlot = 2;
 
 	/** The three bones named by the hip piece. The mesh itself is the length of spine_01. */
 	inline const TCHAR* HipLeftBone = TEXT("thigh_l");
@@ -218,6 +219,81 @@ namespace SolidBodyMesh
 	 * Invalid when the bone is shorter than a centimetre.
 	 */
 	FSolidFittedCone HipCone(const FVector& SpineStart, const FVector& SpineEnd);
+
+	/** A spine bone above the hips. spine_01 is the hip piece. A twist is not a slab. */
+	bool IsRisingSpineBoneName(const FString& BoneName);
+
+	/** clavicle_l and clavicle_r. A twist is not a clavicle, and neither is shoulder_jnt. */
+	bool IsClavicleBoneName(const FString& BoneName);
+
+	/** upperarm_l and upperarm_r. A twist is not the upper arm. */
+	bool IsUpperArmBoneName(const FString& BoneName);
+
+	/** lowerarm_l and lowerarm_r. A twist is not the forearm. */
+	bool IsForearmBoneName(const FString& BoneName);
+
+	/**
+	 * Side-to-side width at the top of the spine, in centimetres.
+	 * That is an average shoulder breadth: wider than the 30 cm waist, narrower than the 50 cm hips.
+	 */
+	inline constexpr float ChestSideDiameterCm = 40.f;
+
+	/** Front-to-back of every spine piece above the hips. It matches the hip. */
+	inline constexpr float TorsoDepthDiameterCm = HipDepthDiameterCm;
+
+	/**
+	 * Side-to-side diameters of one spine piece above spine_01, in centimetres.
+	 * Step 0 is the first of those bones. Count is how many there are.
+	 * The chain starts at the hip top and reaches the chest on the last bone.
+	 * A count below 1 leaves both ends at the hip top.
+	 */
+	void TorsoSideDiameters(int32 Step, int32 Count, float& OutBottomCm, float& OutTopCm);
+
+	/**
+	 * Shirt piece the length of one spine bone above spine_01.
+	 * Bottom is the parent joint and Top is the bone. SideBottomCm and SideTopCm are the full widths.
+	 * Front-to-back stays TorsoDepthDiameterCm. The full width is the mesh forward axis.
+	 * Invalid when the bone is shorter than a centimetre.
+	 */
+	FSolidFittedCone TorsoCone(
+		const FVector& Bottom,
+		const FVector& Top,
+		float SideBottomCm,
+		float SideTopCm);
+
+	/**
+	 * Clavicle where it leaves the chest, in centimetres.
+	 * Thicker than the arm and thinner than the chest. The outer end matches the upper arm.
+	 */
+	inline constexpr float ClavicleRootDiameterCm = 14.f;
+
+	/** Upper-arm diameters, in centimetres. The parent joint is the wide end. */
+	inline constexpr float UpperArmShoulderDiameterCm = JointShoulder * 2.f;
+	inline constexpr float UpperArmElbowDiameterCm = JointElbow * 2.f;
+
+	/** Wrist diameter, in centimetres. The forearm's wide end is the elbow. */
+	inline constexpr float ForearmWristDiameterCm = JointWrist * 2.f;
+
+	/**
+	 * Shirt cone the length of a clavicle bone.
+	 * Parent is the wide end and Bone is the narrow end.
+	 * Invalid when the bone is shorter than a centimetre.
+	 */
+	FSolidFittedCone ClavicleCone(const FVector& Parent, const FVector& Bone);
+
+	/**
+	 * Skin cone the length of upperarm_l or upperarm_r.
+	 * Parent is the wide end and Bone is the narrow end.
+	 * Invalid when the bone is shorter than a centimetre.
+	 */
+	FSolidFittedCone UpperArmCone(const FVector& Parent, const FVector& Bone);
+
+	/**
+	 * Skin cone the length of lowerarm_l or lowerarm_r.
+	 * Parent is the wide end and Bone is the narrow end.
+	 * Invalid when the bone is shorter than a centimetre.
+	 */
+	FSolidFittedCone ForearmCone(const FVector& Parent, const FVector& Bone);
 
 	/**
 	 * True when the ray meets the cone closer than InOutRayT.

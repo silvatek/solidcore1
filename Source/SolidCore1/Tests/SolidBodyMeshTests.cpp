@@ -1063,4 +1063,95 @@ bool FSolidBodyTorsoAndArmsTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyShoulderPieceTest,
+	"SolidCore1.Body.ShoulderPiece",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyShoulderPieceTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("neck bone"), FString(SolidBodyMesh::ShoulderNeckBone), FString(TEXT("neck_01")));
+	TestEqual(TEXT("left clavicle"), FString(SolidBodyMesh::ShoulderLeftClavicleBone), FString(TEXT("clavicle_l")));
+	TestEqual(TEXT("right clavicle"), FString(SolidBodyMesh::ShoulderRightClavicleBone), FString(TEXT("clavicle_r")));
+	TestEqual(TEXT("left upper arm"), FString(SolidBodyMesh::ShoulderLeftUpperArmBone), FString(TEXT("upperarm_l")));
+	TestEqual(TEXT("right upper arm"), FString(SolidBodyMesh::ShoulderRightUpperArmBone), FString(TEXT("upperarm_r")));
+	TestEqual(TEXT("the chest bone"), FString(SolidBodyMesh::SpineChestBone), FString(TEXT("spine_03")));
+	TestEqual(TEXT("the neck circle is a 20 cm radius"), SolidBodyMesh::ShoulderTopRadiusCm, 20.f);
+	TestEqual(TEXT("the shoulder uses the shirt"), SolidBodyMesh::ShirtMaterialSlot, static_cast<uint8>(0));
+
+	const FVector NeckStart(0.f, 0.f, 140.f);
+	const FVector NeckEnd(0.f, 0.f, 159.4f);
+	const FVector LeftClavicleStart[] = { NeckStart, NeckStart };
+	const FVector LeftClavicleEnd[] = { FVector(7.26f, 3.71f, 151.39f), FVector(-7.26f, 3.71f, 151.39f) };
+	const FVector UpperStart[] = { LeftClavicleEnd[0], LeftClavicleEnd[1] };
+	const FVector UpperEnd[] = { FVector(19.92f, -2.60f, 144.81f), FVector(-19.92f, -2.60f, 144.81f) };
+	const FVector SegmentStart[] = { LeftClavicleStart[0], LeftClavicleStart[1], UpperStart[0], UpperStart[1] };
+	const FVector SegmentEnd[] = { LeftClavicleEnd[0], LeftClavicleEnd[1], UpperEnd[0], UpperEnd[1] };
+	const SolidBodyMesh::FSolidShoulderPiece Piece = SolidBodyMesh::ShoulderPiece(
+		NeckStart,
+		NeckEnd,
+		SegmentStart,
+		SegmentEnd,
+		4,
+		SolidBodyMesh::ChestSideDiameterCm,
+		FVector::ForwardVector);
+	TestTrue(TEXT("the shoulders are a piece"), Piece.bValid);
+	TestTrue(TEXT("the piece starts at the neck joint"), Piece.Lower.Start.Equals(NeckStart, 0.01));
+	TestTrue(TEXT("the piece ends on neck_01"), Piece.Upper.End.Equals(NeckEnd, 0.01));
+	TestTrue(
+		TEXT("the piece is the length of neck_01"),
+		FMath::IsNearlyEqual(
+			static_cast<float>(FVector::Dist(Piece.Lower.Start, Piece.Upper.End)),
+			static_cast<float>(FVector::Dist(NeckStart, NeckEnd)),
+			0.05f));
+	TestTrue(TEXT("the base is 20 cm toward the sides"), FMath::IsNearlyEqual(Piece.Lower.RadiusStart, 20.f, 0.01f));
+	TestTrue(TEXT("the base is 20 cm front to back"), FMath::IsNearlyEqual(Piece.Lower.DepthScaleStart, 0.5f, 0.01f));
+	TestTrue(TEXT("the top is a 20 cm radius circle"), FMath::IsNearlyEqual(Piece.Upper.RadiusEnd, 20.f, 0.01f));
+	TestTrue(TEXT("the top circle is round"), FMath::IsNearlyEqual(Piece.Upper.DepthScaleEnd, 1.f, 0.01f));
+	TestTrue(TEXT("the full width is the mesh forward axis"), Piece.Lower.WideAxis.Equals(FVector::ForwardVector, 0.01));
+	TestTrue(TEXT("the middle is wider than the chest"), Piece.Lower.RadiusEnd > Piece.Lower.RadiusStart);
+	TestTrue(TEXT("the left upper arm sits inside"), SolidBodyMesh::ShoulderContains(Piece, UpperEnd[0]));
+	TestTrue(TEXT("the right upper arm sits inside"), SolidBodyMesh::ShoulderContains(Piece, UpperEnd[1]));
+	TestTrue(TEXT("the left clavicle sits inside"), SolidBodyMesh::ShoulderContains(Piece, LeftClavicleEnd[0]));
+	TestTrue(TEXT("the right clavicle sits inside"), SolidBodyMesh::ShoulderContains(Piece, LeftClavicleEnd[1]));
+
+	const FVector WideNeckStart(0.f, 0.f, 0.f);
+	const FVector WideNeckEnd(0.f, 0.f, 20.f);
+	const FVector WideStart[] = { WideNeckStart, FVector(0.f, 0.f, 8.f) };
+	const FVector WideEnd[] = { FVector(8.f, 0.f, 6.f), FVector(35.f, 0.f, 10.f) };
+	const SolidBodyMesh::FSolidShoulderPiece Wide = SolidBodyMesh::ShoulderPiece(
+		WideNeckStart,
+		WideNeckEnd,
+		WideStart,
+		WideEnd,
+		2,
+		40.f,
+		FVector::ForwardVector);
+	TestTrue(TEXT("a wide upper arm still makes a piece"), Wide.bValid);
+	TestTrue(TEXT("the middle reaches past that upper arm"), Wide.Lower.RadiusEnd > 35.f);
+	TestTrue(TEXT("that upper arm sits inside"), SolidBodyMesh::ShoulderContains(Wide, WideEnd[1]));
+	TestTrue(TEXT("19 cm from the neck top is inside the circle"), SolidBodyMesh::ShoulderContains(Wide, FVector(19.f, 0.f, 20.f)));
+	TestFalse(TEXT("21 cm from the neck top is outside the circle"), SolidBodyMesh::ShoulderContains(Wide, FVector(21.f, 0.f, 20.f)));
+	TestTrue(TEXT("the base still reaches 9 cm forward"), SolidBodyMesh::ShoulderContains(Wide, FVector(0.f, 9.f, 0.f)));
+	TestFalse(TEXT("the base stops before 12 cm forward"), SolidBodyMesh::ShoulderContains(Wide, FVector(0.f, 12.f, 0.f)));
+
+	float HitT = TNumericLimits<float>::Max();
+	TestTrue(
+		TEXT("a ray from the side meets the shoulder"),
+		SolidBodyMesh::RayHitsCone(Wide.Lower, FVector(50.f, 0.f, 10.f), FVector(-1.f, 0.f, 0.f), HitT)
+			|| SolidBodyMesh::RayHitsCone(Wide.Upper, FVector(50.f, 0.f, 10.f), FVector(-1.f, 0.f, 0.f), HitT));
+
+	TestFalse(
+		TEXT("a neck with no length is not drawn"),
+		SolidBodyMesh::ShoulderPiece(
+			NeckStart,
+			NeckStart,
+			SegmentStart,
+			SegmentEnd,
+			4,
+			40.f,
+			FVector::ForwardVector).bValid);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

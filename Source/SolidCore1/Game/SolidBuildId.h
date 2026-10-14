@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0271")
+#define SOLID_BUILD_ID TEXT("SC1-0272")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Clavicle and upper-arm bones have no mesh. The forearms stay.")
+#define SOLID_BUILD_NOTE TEXT("One shirt shoulder piece follows neck_01, from the top of spine_03 out around the upper arms to a 20 cm radius circle.")
 #endif

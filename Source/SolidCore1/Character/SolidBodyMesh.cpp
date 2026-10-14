@@ -449,6 +449,230 @@ SolidBodyMesh::FSolidFittedCone SolidBodyMesh::ForearmCone(const FVector& Parent
 	return RoundBoneCone(Parent, Bone, UpperArmElbowDiameterCm, ForearmWristDiameterCm);
 }
 
+namespace
+{
+	bool ShoulderFrame(
+		const FVector& Start,
+		const FVector& End,
+		const FVector& PreferredSide,
+		FVector& OutAxis,
+		FVector& OutWide,
+		FVector& OutNarrow,
+		float& OutLength)
+	{
+		const FVector Delta = End - Start;
+		OutLength = Delta.Size();
+		if (OutLength < 2.f)
+		{
+			return false;
+		}
+		OutAxis = Delta / OutLength;
+		OutWide = PreferredSide - OutAxis * FVector::DotProduct(PreferredSide, OutAxis);
+		if (OutWide.SizeSquared() < 0.01)
+		{
+			OutWide = FVector::CrossProduct(FVector::UpVector, OutAxis);
+		}
+		if (OutWide.SizeSquared() < 0.01)
+		{
+			OutWide = FVector::CrossProduct(FVector::ForwardVector, OutAxis);
+		}
+		if (!OutWide.Normalize())
+		{
+			return false;
+		}
+		OutNarrow = FVector::CrossProduct(OutAxis, OutWide).GetSafeNormal();
+		return !OutNarrow.IsNearlyZero();
+	}
+
+	float ShoulderChord()
+	{
+		return FMath::Cos(PI / static_cast<float>(SolidBodyMesh::ShoulderSideCount));
+	}
+}
+
+SolidBodyMesh::FSolidShoulderPiece SolidBodyMesh::ShoulderPiece(
+	const FVector& NeckStart,
+	const FVector& NeckEnd,
+	const FVector* SegmentStart,
+	const FVector* SegmentEnd,
+	const int32 SegmentCount,
+	const float BaseSideDiameterCm,
+	const FVector& WideAxis)
+{
+	FSolidShoulderPiece Out;
+	FVector Axis = FVector::UpVector;
+	FVector Wide = FVector::ForwardVector;
+	FVector Narrow = FVector::RightVector;
+	float Length = 0.f;
+	if (!ShoulderFrame(NeckStart, NeckEnd, WideAxis, Axis, Wide, Narrow, Length)
+		|| BaseSideDiameterCm <= KINDA_SMALL_NUMBER
+		|| ShoulderTopRadiusCm <= KINDA_SMALL_NUMBER)
+	{
+		return Out;
+	}
+
+	const float SideBottom = BaseSideDiameterCm * 0.5f;
+	const float DepthBottom = TorsoDepthDiameterCm * 0.5f;
+	const float SideTop = ShoulderTopRadiusCm;
+	const float DepthTop = ShoulderTopRadiusCm;
+	const float Chord = ShoulderChord();
+	if (Chord <= KINDA_SMALL_NUMBER)
+	{
+		return Out;
+	}
+
+	struct FSample
+	{
+		float U = 0.f;
+		float Need = 1.f;
+	};
+	TArray<FSample> Samples;
+	const int32 SafeCount = FMath::Max(SegmentCount, 0);
+	for (int32 Segment = 0; Segment < SafeCount; ++Segment)
+	{
+		if (!SegmentStart || !SegmentEnd)
+		{
+			break;
+		}
+		for (int32 Step = 0; Step < 8; ++Step)
+		{
+			const float T = static_cast<float>(Step) / 7.f;
+			const FVector Point = FMath::Lerp(SegmentStart[Segment], SegmentEnd[Segment], T);
+			const FVector Rel = Point - NeckStart;
+			const float Along = FVector::DotProduct(Rel, Axis);
+			const float U = FMath::Clamp(Along / Length, 0.f, 1.f);
+			const float WideDist = FMath::Abs(FVector::DotProduct(Rel, Wide));
+			const float NarrowDist = FMath::Abs(FVector::DotProduct(Rel, Narrow));
+			const float SideHere = FMath::Lerp(SideBottom, SideTop, U);
+			const float DepthHere = FMath::Lerp(DepthBottom, DepthTop, U);
+			if (SideHere <= KINDA_SMALL_NUMBER || DepthHere <= KINDA_SMALL_NUMBER)
+			{
+				continue;
+			}
+			const float Ellipse = FMath::Sqrt(
+				FMath::Square(WideDist / SideHere) + FMath::Square(NarrowDist / DepthHere));
+			FSample Sample;
+			Sample.U = U;
+			Sample.Need = Ellipse / Chord;
+			Samples.Add(Sample);
+		}
+	}
+
+	float PeakU = 0.5f;
+	float PeakNeed = 1.f;
+	for (const FSample& Sample : Samples)
+	{
+		if (Sample.Need > PeakNeed)
+		{
+			PeakNeed = Sample.Need;
+			PeakU = Sample.U;
+		}
+	}
+	const float MinU = FMath::Clamp(1.f / Length, 0.05f, 0.45f);
+	const float MidU = FMath::Clamp(PeakU, MinU, 1.f - MinU);
+
+	float Multiplier = 1.f;
+	for (const FSample& Sample : Samples)
+	{
+		if (Sample.Need <= 1.f)
+		{
+			continue;
+		}
+		if (Sample.U <= MidU)
+		{
+			const float Denom = FMath::Max(Sample.U, 0.02f);
+			Multiplier = FMath::Max(Multiplier, 1.f + (Sample.Need - 1.f) * (MidU / Denom));
+		}
+		else
+		{
+			const float Frac = (Sample.U - MidU) / FMath::Max(1.f - MidU, 0.02f);
+			const float Remain = 1.f - Frac;
+			if (Remain > 0.02f)
+			{
+				Multiplier = FMath::Max(Multiplier, (Sample.Need - Frac) / Remain);
+			}
+		}
+	}
+
+	const FVector MidPoint = FMath::Lerp(NeckStart, NeckEnd, MidU);
+	const float SideMid = Multiplier * FMath::Lerp(SideBottom, SideTop, MidU);
+	const float DepthMid = Multiplier * FMath::Lerp(DepthBottom, DepthTop, MidU);
+	auto ScaleOf = [](const float Side, const float Depth)
+	{
+		return Side > KINDA_SMALL_NUMBER ? Depth / Side : 1.f;
+	};
+
+	Out.Lower.Start = NeckStart;
+	Out.Lower.End = MidPoint;
+	Out.Lower.RadiusStart = SideBottom;
+	Out.Lower.RadiusEnd = SideMid;
+	Out.Lower.DepthScaleStart = ScaleOf(SideBottom, DepthBottom);
+	Out.Lower.DepthScaleEnd = ScaleOf(SideMid, DepthMid);
+	Out.Lower.WideAxis = WideAxis;
+	Out.Lower.bValid = FVector::Dist(NeckStart, MidPoint) >= 1.0;
+
+	Out.Upper.Start = MidPoint;
+	Out.Upper.End = NeckEnd;
+	Out.Upper.RadiusStart = SideMid;
+	Out.Upper.RadiusEnd = SideTop;
+	Out.Upper.DepthScaleStart = ScaleOf(SideMid, DepthMid);
+	Out.Upper.DepthScaleEnd = ScaleOf(SideTop, DepthTop);
+	Out.Upper.WideAxis = WideAxis;
+	Out.Upper.bValid = FVector::Dist(MidPoint, NeckEnd) >= 1.0;
+	Out.bValid = Out.Lower.bValid && Out.Upper.bValid;
+	return Out;
+}
+
+bool SolidBodyMesh::ShoulderContains(const FSolidShoulderPiece& Piece, const FVector& Point)
+{
+	if (!Piece.bValid)
+	{
+		return false;
+	}
+
+	const FVector Start = Piece.Lower.Start;
+	const FVector End = Piece.Upper.End;
+	FVector Axis = End - Start;
+	const float Length = Axis.Size();
+	if (Length < 2.f || !Axis.Normalize())
+	{
+		return false;
+	}
+	const float Along = FVector::DotProduct(Point - Start, Axis);
+	if (Along < -0.15f || Along > Length + 0.15f)
+	{
+		return false;
+	}
+	const float U = FMath::Clamp(Along / Length, 0.f, 1.f);
+	const float MidU = FMath::Clamp(FVector::DotProduct(Piece.Lower.End - Start, Axis) / Length, 0.f, 1.f);
+
+	const FSolidFittedCone& Cone = (U <= MidU) ? Piece.Lower : Piece.Upper;
+	const FVector ConeDelta = Cone.End - Cone.Start;
+	const float ConeLength = ConeDelta.Size();
+	const float ConeU = ConeLength > KINDA_SMALL_NUMBER
+		? FMath::Clamp(FVector::DotProduct(Point - Cone.Start, ConeDelta) / FMath::Square(ConeLength), 0.f, 1.f)
+		: 0.f;
+	const float SideRadius = FMath::Lerp(Cone.RadiusStart, Cone.RadiusEnd, ConeU);
+	const float DepthScale = FMath::Lerp(Cone.DepthScaleStart, Cone.DepthScaleEnd, ConeU);
+	const float DepthRadius = SideRadius * FMath::Clamp(DepthScale, 0.2f, 1.f);
+	if (SideRadius <= KINDA_SMALL_NUMBER || DepthRadius <= KINDA_SMALL_NUMBER)
+	{
+		return false;
+	}
+
+	FVector Wide = Cone.WideAxis - Axis * FVector::DotProduct(Cone.WideAxis, Axis);
+	if (!Wide.Normalize())
+	{
+		return false;
+	}
+	const FVector Narrow = FVector::CrossProduct(Axis, Wide).GetSafeNormal();
+	const FVector Offset = Point - (Start + Axis * Along);
+	const float WideDist = FVector::DotProduct(Offset, Wide);
+	const float NarrowDist = FVector::DotProduct(Offset, Narrow);
+	const float Ellipse = FMath::Square(WideDist / SideRadius) + FMath::Square(NarrowDist / DepthRadius);
+	return Ellipse <= 1.f;
+}
+
 bool SolidBodyMesh::RayHitsCone(
 	const FSolidFittedCone& Cone,
 	const FVector& RayOrigin,
@@ -975,6 +1199,83 @@ namespace
 		}
 	}
 
+	/** Three rings: the chest oval, the wide middle, and the neck circle. Caps only the two ends. */
+	void AddShoulder(
+		TArray<FLoFiVert>& Verts,
+		TArray<FLoFiTri>& Tris,
+		const int32 BoneIndex,
+		const SolidBodyMesh::FSolidShoulderPiece& Piece,
+		const uint8 Slot)
+	{
+		if (!Piece.bValid || BoneIndex == INDEX_NONE)
+		{
+			return;
+		}
+
+		const FVector Centers[] = { Piece.Lower.Start, Piece.Lower.End, Piece.Upper.End };
+		const float Radii[] = { Piece.Lower.RadiusStart, Piece.Lower.RadiusEnd, Piece.Upper.RadiusEnd };
+		const float Squash[] = {
+			Piece.Lower.DepthScaleStart,
+			Piece.Lower.DepthScaleEnd,
+			Piece.Upper.DepthScaleEnd,
+		};
+		const FVector Delta = Centers[2] - Centers[0];
+		const float Length = Delta.Size();
+		if (Length < 2.f)
+		{
+			return;
+		}
+		const FVector Axis = Delta / Length;
+		FVector Side = Piece.Lower.WideAxis - Axis * FVector::DotProduct(Piece.Lower.WideAxis, Axis);
+		if (Side.SizeSquared() < 0.01)
+		{
+			Side = FVector::CrossProduct(FVector::UpVector, Axis);
+		}
+		if (Side.SizeSquared() < 0.01)
+		{
+			Side = FVector::CrossProduct(FVector::ForwardVector, Axis);
+		}
+		Side = Side.GetSafeNormal();
+		const FVector Up = FVector::CrossProduct(Axis, Side).GetSafeNormal();
+		const int32 SideCount = SolidBodyMesh::ShoulderSideCount;
+		const int32 Base = Verts.Num();
+		for (int32 Ring = 0; Ring < 3; ++Ring)
+		{
+			const float Radius = Radii[Ring];
+			const float Flat = FMath::Clamp(Squash[Ring], 0.2f, 1.f);
+			for (int32 Step = 0; Step < SideCount; ++Step)
+			{
+				const float Angle = (2.f * PI * static_cast<float>(Step)) / static_cast<float>(SideCount);
+				const FVector Offset = Side * (FMath::Cos(Angle) * Radius)
+					+ Up * (FMath::Sin(Angle) * Radius * Flat);
+				FLoFiVert Vert;
+				Vert.Position = Centers[Ring] + Offset;
+				Vert.Bone = BoneIndex;
+				Vert.Slot = Slot;
+				Verts.Add(Vert);
+			}
+		}
+
+		auto Id = [Base, SideCount](const int32 Ring, const int32 Step)
+		{
+			return Base + Ring * SideCount + (Step % SideCount);
+		};
+		for (int32 Ring = 0; Ring < 2; ++Ring)
+		{
+			for (int32 Step = 0; Step < SideCount; ++Step)
+			{
+				const int32 Next = Step + 1;
+				AddTri(Tris, Id(Ring, Step), Id(Ring, Next), Id(Ring + 1, Step));
+				AddTri(Tris, Id(Ring, Next), Id(Ring + 1, Next), Id(Ring + 1, Step));
+			}
+		}
+		for (int32 Step = 1; Step < SideCount - 1; ++Step)
+		{
+			AddTri(Tris, Id(0, 0), Id(0, Step + 1), Id(0, Step));
+			AddTri(Tris, Id(2, 0), Id(2, Step), Id(2, Step + 1));
+		}
+	}
+
 	int32 FindNamedBone(const TArray<FSolidDeformBone>& Bones, const int32 Count, const TCHAR* BoneName)
 	{
 		for (int32 Index = 0; Index < Count; ++Index)
@@ -1171,6 +1472,7 @@ namespace
 			}
 		}
 
+		float ShoulderBaseSideCm = SolidBodyMesh::ChestSideDiameterCm;
 		if (HipSpine != INDEX_NONE)
 		{
 			TArray<int32> Rising;
@@ -1196,6 +1498,10 @@ namespace
 				float BottomCm = 0.f;
 				float TopCm = 0.f;
 				SolidBodyMesh::TorsoSideDiameters(Step, Rising.Num(), BottomCm, TopCm);
+				if (Bones[Bone].Name.ToString().Equals(SolidBodyMesh::SpineChestBone, ESearchCase::IgnoreCase))
+				{
+					ShoulderBaseSideCm = TopCm;
+				}
 				AddLegCone(
 					Verts,
 					Tris,
@@ -1205,7 +1511,57 @@ namespace
 			}
 		}
 
-		// Clavicle, upper arm, neck, shoulder_jnt, hand, head, and eye bones stay bare. Twists stay bare too.
+		const int32 ShoulderNeck = FindNamedBone(Bones, Count, SolidBodyMesh::ShoulderNeckBone);
+		const int32 LeftClavicle = FindNamedBone(Bones, Count, SolidBodyMesh::ShoulderLeftClavicleBone);
+		const int32 RightClavicle = FindNamedBone(Bones, Count, SolidBodyMesh::ShoulderRightClavicleBone);
+		const int32 LeftUpper = FindNamedBone(Bones, Count, SolidBodyMesh::ShoulderLeftUpperArmBone);
+		const int32 RightUpper = FindNamedBone(Bones, Count, SolidBodyMesh::ShoulderRightUpperArmBone);
+		if (ShoulderNeck != INDEX_NONE
+			&& LeftClavicle != INDEX_NONE
+			&& RightClavicle != INDEX_NONE
+			&& LeftUpper != INDEX_NONE
+			&& RightUpper != INDEX_NONE)
+		{
+			const int32 NeckStart = Bones[ShoulderNeck].ParentIndex;
+			const int32 LeftClavicleStart = Bones[LeftClavicle].ParentIndex;
+			const int32 RightClavicleStart = Bones[RightClavicle].ParentIndex;
+			const int32 LeftUpperStart = Bones[LeftUpper].ParentIndex;
+			const int32 RightUpperStart = Bones[RightUpper].ParentIndex;
+			if (Bones.IsValidIndex(NeckStart) && Positions.IsValidIndex(NeckStart)
+				&& Bones.IsValidIndex(LeftClavicleStart) && Positions.IsValidIndex(LeftClavicleStart)
+				&& Bones.IsValidIndex(RightClavicleStart) && Positions.IsValidIndex(RightClavicleStart)
+				&& Bones.IsValidIndex(LeftUpperStart) && Positions.IsValidIndex(LeftUpperStart)
+				&& Bones.IsValidIndex(RightUpperStart) && Positions.IsValidIndex(RightUpperStart))
+			{
+				const FVector SegmentStart[] = {
+					Positions[LeftClavicleStart],
+					Positions[RightClavicleStart],
+					Positions[LeftUpperStart],
+					Positions[RightUpperStart],
+				};
+				const FVector SegmentEnd[] = {
+					Positions[LeftClavicle],
+					Positions[RightClavicle],
+					Positions[LeftUpper],
+					Positions[RightUpper],
+				};
+				AddShoulder(
+					Verts,
+					Tris,
+					NeckStart,
+					SolidBodyMesh::ShoulderPiece(
+						Positions[NeckStart],
+						Positions[ShoulderNeck],
+						SegmentStart,
+						SegmentEnd,
+						4,
+						ShoulderBaseSideCm,
+						FVector::ForwardVector),
+					SlotTorso);
+			}
+		}
+
+		// shoulder_jnt, hand, head, and eye bones stay bare. Twists stay bare too.
 		AddNamedCones(
 			Verts,
 			Tris,

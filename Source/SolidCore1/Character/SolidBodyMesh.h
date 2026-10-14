@@ -295,6 +295,50 @@ namespace SolidBodyMesh
 	 */
 	FSolidFittedCone ForearmCone(const FVector& Parent, const FVector& Bone);
 
+	/** The five bones inside the shoulder piece. The mesh itself is the length of neck_01. */
+	inline const TCHAR* ShoulderNeckBone = TEXT("neck_01");
+	inline const TCHAR* ShoulderLeftClavicleBone = TEXT("clavicle_l");
+	inline const TCHAR* ShoulderRightClavicleBone = TEXT("clavicle_r");
+	inline const TCHAR* ShoulderLeftUpperArmBone = TEXT("upperarm_l");
+	inline const TCHAR* ShoulderRightUpperArmBone = TEXT("upperarm_r");
+	/** spine_03's own piece. The shoulder base copies that piece's top oval. */
+	inline const TCHAR* SpineChestBone = TEXT("spine_03");
+
+	/**
+	 * Circle at the top of the shoulder piece, in centimetres.
+	 * This is a radius, so the circle is 40 cm across.
+	 */
+	inline constexpr float ShoulderTopRadiusCm = 20.f;
+	/** Rings around the shoulder piece. The bulge keeps bones inside the flat faces. */
+	inline constexpr int32 ShoulderSideCount = 10;
+
+	/**
+	 * Shirt piece the length of neck_01.
+	 * Lower runs from the parent joint to the wide middle. Upper runs from there to neck_01.
+	 * The base oval is BaseSideDiameterCm across and TorsoDepthDiameterCm front to back.
+	 * The middle widens until both upper-arm bones, and the clavicles, sit inside the faces.
+	 * neck_01 is a circle of ShoulderTopRadiusCm. WideAxis keeps the full width.
+	 * Invalid when neck_01 is shorter than two centimetres.
+	 */
+	struct FSolidShoulderPiece
+	{
+		FSolidFittedCone Lower;
+		FSolidFittedCone Upper;
+		bool bValid = false;
+	};
+
+	FSolidShoulderPiece ShoulderPiece(
+		const FVector& NeckStart,
+		const FVector& NeckEnd,
+		const FVector* SegmentStart,
+		const FVector* SegmentEnd,
+		int32 SegmentCount,
+		float BaseSideDiameterCm,
+		const FVector& WideAxis);
+
+	/** True when Point is inside the shoulder oval. The flat faces sit slightly inside this. */
+	bool ShoulderContains(const FSolidShoulderPiece& Piece, const FVector& Point);
+
 	/**
 	 * True when the ray meets the cone closer than InOutRayT.
 	 * A depth scale below 1 uses an oval section, full across WideAxis and squashed across it.

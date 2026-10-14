@@ -731,6 +731,7 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 			}
 		}
 
+		float ShoulderBaseSideCm = SolidBodyMesh::ChestSideDiameterCm;
 		if (!HipSpine.IsNone())
 		{
 			TArray<FName> Rising;
@@ -770,6 +771,10 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 				float BottomCm = 0.f;
 				float TopCm = 0.f;
 				SolidBodyMesh::TorsoSideDiameters(Step, Rising.Num(), BottomCm, TopCm);
+				if (Rising[Step].ToString().Equals(SolidBodyMesh::SpineChestBone, ESearchCase::IgnoreCase))
+				{
+					ShoulderBaseSideCm = TopCm;
+				}
 				SolidBodyMesh::FSolidFittedCone Torso = SolidBodyMesh::TorsoCone(
 					CharacterMesh->GetBoneLocation(ParentName),
 					CharacterMesh->GetBoneLocation(Rising[Step]),
@@ -777,6 +782,55 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 					TopCm);
 				Torso.WideAxis = CharacterMesh->GetForwardVector();
 				Consider(Torso, Rising[Step].ToString());
+			}
+		}
+
+		const FName ShoulderNeck = FindBone(SolidBodyMesh::ShoulderNeckBone);
+		const FName LeftClavicle = FindBone(SolidBodyMesh::ShoulderLeftClavicleBone);
+		const FName RightClavicle = FindBone(SolidBodyMesh::ShoulderRightClavicleBone);
+		const FName LeftUpper = FindBone(SolidBodyMesh::ShoulderLeftUpperArmBone);
+		const FName RightUpper = FindBone(SolidBodyMesh::ShoulderRightUpperArmBone);
+		if (!ShoulderNeck.IsNone() && !LeftClavicle.IsNone() && !RightClavicle.IsNone()
+			&& !LeftUpper.IsNone() && !RightUpper.IsNone())
+		{
+			const FName NeckStart = CharacterMesh->GetParentBone(ShoulderNeck);
+			const FName LeftClavicleStart = CharacterMesh->GetParentBone(LeftClavicle);
+			const FName RightClavicleStart = CharacterMesh->GetParentBone(RightClavicle);
+			const FName LeftUpperStart = CharacterMesh->GetParentBone(LeftUpper);
+			const FName RightUpperStart = CharacterMesh->GetParentBone(RightUpper);
+			if (!NeckStart.IsNone() && !LeftClavicleStart.IsNone() && !RightClavicleStart.IsNone()
+				&& !LeftUpperStart.IsNone() && !RightUpperStart.IsNone())
+			{
+				const FVector SegmentStart[] = {
+					CharacterMesh->GetBoneLocation(LeftClavicleStart),
+					CharacterMesh->GetBoneLocation(RightClavicleStart),
+					CharacterMesh->GetBoneLocation(LeftUpperStart),
+					CharacterMesh->GetBoneLocation(RightUpperStart),
+				};
+				const FVector SegmentEnd[] = {
+					CharacterMesh->GetBoneLocation(LeftClavicle),
+					CharacterMesh->GetBoneLocation(RightClavicle),
+					CharacterMesh->GetBoneLocation(LeftUpper),
+					CharacterMesh->GetBoneLocation(RightUpper),
+				};
+				const SolidBodyMesh::FSolidShoulderPiece Shoulder = SolidBodyMesh::ShoulderPiece(
+					CharacterMesh->GetBoneLocation(NeckStart),
+					CharacterMesh->GetBoneLocation(ShoulderNeck),
+					SegmentStart,
+					SegmentEnd,
+					4,
+					ShoulderBaseSideCm,
+					CharacterMesh->GetForwardVector());
+				TArray<FString> ShoulderNames;
+				ShoulderNames.Add(ShoulderNeck.ToString());
+				ShoulderNames.Add(LeftClavicle.ToString());
+				ShoulderNames.Add(RightClavicle.ToString());
+				ShoulderNames.Add(LeftUpper.ToString());
+				ShoulderNames.Add(RightUpper.ToString());
+				ShoulderNames.Sort();
+				const FString ShoulderLabel = FString::Join(ShoulderNames, TEXT(", "));
+				Consider(Shoulder.Lower, ShoulderLabel);
+				Consider(Shoulder.Upper, ShoulderLabel);
 			}
 		}
 

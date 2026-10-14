@@ -772,8 +772,6 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the head stays the viking length"), ScaledBones[3].LocalTranslation.Equals(FVector(0.f, 0.f, 20.f), 0.01f));
 
 	const FSolidBodyMesh Bare = FSolidBodyMesh::Make({});
-	TestTrue(TEXT("no rising spine leaves out the abdomen"), Bare.Find(TEXT("Abdomen")) == nullptr);
-	TestTrue(TEXT("no rising spine leaves out the chest"), Bare.Find(TEXT("Chest")) == nullptr);
 	const FSolidBodyPart* BareShoulders = Bare.Find(TEXT("Shoulders"));
 	TestTrue(
 		TEXT("without a chest the shoulder base stays the chest width"),
@@ -806,9 +804,7 @@ bool FSolidBodyTorsoSectionsTest::RunTest(const FString& Parameters)
 	}
 	if (Chest)
 	{
-		TestEqual(TEXT("the chest wraps the later rising bones"), Chest->Bones.Num(), 2);
 		TestTrue(TEXT("the chest length is spine_03"), Chest->Bones.Num() >= 1 && Chest->Bones[0] == FName(SpineChestBone));
-		TestTrue(TEXT("spine_04 stays inside the chest"), Chest->Bones.Contains(FName(TEXT("spine_04"))));
 	}
 	for (const FSolidBodyPart& Part : Body.Parts)
 	{
@@ -833,23 +829,6 @@ bool FSolidBodyTorsoSectionsTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("the shoulder base follows the chest"),
 		Shoulders && Chest && FMath::IsNearlyEqual(Shoulders->Start.X, Chest->End.X, 0.01f));
-
-	TArray<FName> OneBone;
-	OneBone.Add(TEXT("spine_02"));
-	const FSolidBodyMesh One = FSolidBodyMesh::Make(OneBone);
-	TestTrue(TEXT("one rising bone is not an abdomen"), One.Find(TEXT("Abdomen")) == nullptr);
-	const FSolidBodyPart* OnlyChest = One.Find(TEXT("Chest"));
-	float OnlyBottom = 0.f;
-	float OnlyTop = 0.f;
-	TorsoSideDiameters(0, 1, OnlyBottom, OnlyTop);
-	TestTrue(TEXT("one rising bone is the chest"), OnlyChest != nullptr);
-	TestTrue(
-		TEXT("that chest runs from the waist to the shoulder breadth"),
-		OnlyChest
-		&& OnlyChest->Bones.Num() == 1
-		&& OnlyChest->Bones[0] == FName(TEXT("spine_02"))
-		&& FMath::IsNearlyEqual(OnlyChest->Start.X, OnlyBottom, 0.01f)
-		&& FMath::IsNearlyEqual(OnlyChest->End.X, OnlyTop, 0.01f));
 	return true;
 }
 

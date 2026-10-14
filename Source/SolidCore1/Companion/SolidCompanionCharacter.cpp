@@ -795,15 +795,7 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 			const FString Name = BoneName.ToString();
 			const FVector ParentPos = CharacterMesh->GetBoneLocation(ParentName);
 			const FVector BonePos = CharacterMesh->GetBoneLocation(BoneName);
-			if (SolidBodyMesh::IsClavicleBoneName(Name))
-			{
-				Consider(SolidBodyMesh::ClavicleCone(ParentPos, BonePos), Name);
-			}
-			else if (SolidBodyMesh::IsUpperArmBoneName(Name))
-			{
-				Consider(SolidBodyMesh::UpperArmCone(ParentPos, BonePos), Name);
-			}
-			else if (SolidBodyMesh::IsForearmBoneName(Name))
+			if (SolidBodyMesh::IsForearmBoneName(Name))
 			{
 				Consider(SolidBodyMesh::ForearmCone(ParentPos, BonePos), Name);
 			}

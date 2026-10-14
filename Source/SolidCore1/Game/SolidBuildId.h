@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0270")
+#define SOLID_BUILD_ID TEXT("SC1-0271")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Companion bone lengths match the unmodified Viking skeleton at the neutral sliders.")
+#define SOLID_BUILD_NOTE TEXT("Clavicle and upper-arm bones have no mesh. The forearms stay.")
 #endif

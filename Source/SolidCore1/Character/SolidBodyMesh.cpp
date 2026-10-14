@@ -1205,25 +1205,7 @@ namespace
 			}
 		}
 
-		// Neck, shoulder_jnt, hand, head, and eye bones stay bare. Twists stay bare too.
-		AddNamedCones(
-			Verts,
-			Tris,
-			Bones,
-			Positions,
-			Count,
-			SolidBodyMesh::IsClavicleBoneName,
-			SolidBodyMesh::ClavicleCone,
-			SlotTorso);
-		AddNamedCones(
-			Verts,
-			Tris,
-			Bones,
-			Positions,
-			Count,
-			SolidBodyMesh::IsUpperArmBoneName,
-			SolidBodyMesh::UpperArmCone,
-			SlotSkin);
+		// Clavicle, upper arm, neck, shoulder_jnt, hand, head, and eye bones stay bare. Twists stay bare too.
 		AddNamedCones(
 			Verts,
 			Tris,

@@ -1226,7 +1226,7 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 		}
 	}
 
-	const FSolidBodyPartMesh* Thigh = Body.Find(TEXT("Thigh (L)"));
+	const FSolidBodyPart* Thigh = Body.Find(TEXT("Thigh (L)"));
 	TestTrue(TEXT("the thigh is on the list"), Thigh != nullptr);
 	if (Thigh)
 	{
@@ -1240,7 +1240,7 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the thigh has no mid section"), !Thigh->bHasMid);
 	}
 
-	const FSolidBodyPartMesh* Hip = Body.Find(TEXT("Hip"));
+	const FSolidBodyPart* Hip = Body.Find(TEXT("Hip"));
 	TestTrue(TEXT("the hip is on the list"), Hip != nullptr);
 	if (Hip)
 	{
@@ -1258,7 +1258,7 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 	float AbdomenBottom = 0.f;
 	float AbdomenTop = 0.f;
 	TorsoSideDiameters(0, 2, AbdomenBottom, AbdomenTop);
-	const FSolidBodyPartMesh* Abdomen = Body.Find(TEXT("Abdomen"));
+	const FSolidBodyPart* Abdomen = Body.Find(TEXT("Abdomen"));
 	TestTrue(TEXT("the abdomen is on the list"), Abdomen != nullptr);
 	if (Abdomen)
 	{
@@ -1272,7 +1272,7 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 	float ChestBottom = 0.f;
 	float ChestTop = 0.f;
 	TorsoSideDiameters(1, 2, ChestBottom, ChestTop);
-	const FSolidBodyPartMesh* Chest = Body.Find(TEXT("Chest"));
+	const FSolidBodyPart* Chest = Body.Find(TEXT("Chest"));
 	TestTrue(TEXT("the chest is on the list"), Chest != nullptr);
 	if (Chest)
 	{
@@ -1282,8 +1282,8 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the chest end matches the step"), FMath::IsNearlyEqual(Chest->End.X, ChestTop, 0.01f));
 	}
 
-	FSolidBodyPartMesh* Shoulders = nullptr;
-	for (FSolidBodyPartMesh& Part : Body.Parts)
+	FSolidBodyPart* Shoulders = nullptr;
+	for (FSolidBodyPart& Part : Body.Parts)
 	{
 		if (Part.Name == TEXT("Shoulders"))
 		{
@@ -1330,7 +1330,7 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the fitted mid has depth"), Shoulders->Mid.Y > 0.f);
 	}
 
-	const FSolidBodyPartMesh* Upper = Body.Find(TEXT("Upper arm (L)"));
+	const FSolidBodyPart* Upper = Body.Find(TEXT("Upper arm (L)"));
 	TestTrue(TEXT("the upper arm is on the list"), Upper != nullptr);
 	if (Upper)
 	{
@@ -1341,7 +1341,7 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the upper arm is round"), FMath::IsNearlyEqual(Upper->Start.Y, Upper->Start.X, 0.01f));
 	}
 
-	const FSolidBodyPartMesh* Lower = Body.Find(TEXT("lower arm (l)"));
+	const FSolidBodyPart* Lower = Body.Find(TEXT("lower arm (l)"));
 	TestTrue(TEXT("the lower arm is on the list"), Lower != nullptr);
 	if (Lower)
 	{
@@ -1356,13 +1356,13 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 			Upper && Upper->End.X > Lower->Start.X);
 		TestTrue(TEXT("the lower arm has no mid section"), !Lower->bHasMid);
 	}
-	const FSolidBodyPartMesh* LowerRight = Body.Find(TEXT("Lower arm (R)"));
+	const FSolidBodyPart* LowerRight = Body.Find(TEXT("Lower arm (R)"));
 	TestTrue(TEXT("the right lower arm matches"), Lower && LowerRight && LowerRight->Bones.Num() == 1
 		&& LowerRight->Bones[0] == FName(TEXT("hand_r"))
 		&& FMath::IsNearlyEqual(LowerRight->Start.X, Lower->Start.X, 0.01f)
 		&& FMath::IsNearlyEqual(LowerRight->End.X, Lower->End.X, 0.01f));
 
-	for (const FSolidBodyPartMesh& Part : Body.Parts)
+	for (const FSolidBodyPart& Part : Body.Parts)
 	{
 		TestFalse(TEXT("clavicle_l is not its own part"), Part.Bones.Num() == 1 && Part.Bones[0] == FName(TEXT("clavicle_l")));
 		TestFalse(TEXT("upperarm_l is not its own part"), Part.Bones.Num() == 1 && Part.Bones[0] == FName(TEXT("upperarm_l")));
@@ -1380,7 +1380,7 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 	const FSolidBodyMesh Bare = FSolidBodyMesh::Make({});
 	TestTrue(TEXT("no rising spine leaves out the abdomen"), Bare.Find(TEXT("Abdomen")) == nullptr);
 	TestTrue(TEXT("no rising spine leaves out the chest"), Bare.Find(TEXT("Chest")) == nullptr);
-	const FSolidBodyPartMesh* BareShoulders = Bare.Find(TEXT("Shoulders"));
+	const FSolidBodyPart* BareShoulders = Bare.Find(TEXT("Shoulders"));
 	TestTrue(
 		TEXT("without a chest the shoulder base stays the chest width"),
 		BareShoulders && FMath::IsNearlyEqual(BareShoulders->Start.X, ChestSideDiameterCm, 0.01f));

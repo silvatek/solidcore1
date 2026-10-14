@@ -21,7 +21,7 @@ namespace SolidBodyMesh
 	class FSolidBodyMesh
 	{
 	public:
-		TArray<FSolidBodyPartMesh> Parts;
+		TArray<FSolidBodyPart> Parts;
 
 		/**
 		 * The body.
@@ -33,7 +33,7 @@ namespace SolidBodyMesh
 		/** Make the body for this skeleton. The rising spine is read from the hip upward. */
 		static FSolidBodyMesh FromBones(const TArray<FSolidDeformBone>& Bones);
 
-		const FSolidBodyPartMesh* Find(const FString& Name) const;
+		const FSolidBodyPart* Find(const FString& Name) const;
 
 		/** Draw every part whose bones are on this skeleton. */
 		void Draw(
@@ -387,7 +387,7 @@ namespace SolidBodyMesh
 
 	/** Fit on the part. Hover and the older cone checks call this. */
 	inline FSolidPartDraw DrawForPart(
-		FSolidBodyPartMesh& Part,
+		FSolidBodyPart& Part,
 		const FVector& From,
 		const FVector& To,
 		const FVector* SegmentStart,

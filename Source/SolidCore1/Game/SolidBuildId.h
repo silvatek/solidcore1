@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0280")
+#define SOLID_BUILD_ID TEXT("SC1-0281")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The body part list stays the first function. Its two helpers are declared above it and defined below it.")
+#define SOLID_BUILD_NOTE TEXT("A body part is FSolidBodyPart. The body mesh is the list of those parts.")
 #endif

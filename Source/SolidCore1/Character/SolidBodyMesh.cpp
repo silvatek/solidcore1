@@ -22,7 +22,7 @@
 
 namespace
 {
-	SolidBodyMesh::FSolidBodyPartMesh Part(
+	SolidBodyMesh::FSolidBodyPart Part(
 		const TCHAR* Name,
 		std::initializer_list<const TCHAR*> Bones,
 		SolidBodyMesh::ESolidPartColour Colour,
@@ -62,7 +62,7 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 		float BottomCm = 0.f;
 		float TopCm = 0.f;
 		TorsoSideDiameters(Step, SpineCount, BottomCm, TopCm);
-		FSolidBodyPartMesh Spine = Part(
+		FSolidBodyPart Spine = Part(
 			TEXT("Spine"),
 			{},
 			ESolidPartColour::Shirt,
@@ -74,7 +74,7 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 	}
 
 	float ShoulderSideCm = ChestSideDiameterCm;
-	for (const FSolidBodyPartMesh& Spine : Body.Parts)
+	for (const FSolidBodyPart& Spine : Body.Parts)
 	{
 		if (Spine.Bones.Num() == 1 && Spine.Bones[0] == FName(SpineChestBone))
 		{
@@ -83,7 +83,7 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 	}
 
 	// Shoulders follow neck_01. Mid is fitted around the clavicles and the upper arms when the mesh is built.
-	FSolidBodyPartMesh Shoulders = Part(
+	FSolidBodyPart Shoulders = Part(
 		TEXT("Shoulders"),
 		{ ShoulderNeckBone, ShoulderLeftClavicleBone, ShoulderRightClavicleBone, ShoulderLeftUpperArmBone, ShoulderRightUpperArmBone },
 		ESolidPartColour::Shirt,
@@ -125,14 +125,14 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 
 namespace
 {
-	SolidBodyMesh::FSolidBodyPartMesh Part(
+	SolidBodyMesh::FSolidBodyPart Part(
 		const TCHAR* Name,
 		std::initializer_list<const TCHAR*> Bones,
 		const SolidBodyMesh::ESolidPartColour Colour,
 		const SolidBodyMesh::FSolidPartSection& Start,
 		const SolidBodyMesh::FSolidPartSection& End)
 	{
-		SolidBodyMesh::FSolidBodyPartMesh Out;
+		SolidBodyMesh::FSolidBodyPart Out;
 		Out.Name = Name;
 		for (const TCHAR* Bone : Bones)
 		{
@@ -440,7 +440,7 @@ namespace
 		const FVector& To)
 	{
 		const SolidBodyMesh::FSolidBodyMesh Body = SolidBodyMesh::FSolidBodyMesh::Make({});
-		const SolidBodyMesh::FSolidBodyPartMesh* Found = Body.Find(PartName);
+		const SolidBodyMesh::FSolidBodyPart* Found = Body.Find(PartName);
 		SolidBodyMesh::FSolidFittedCone Out;
 		if (!Found)
 		{
@@ -1859,9 +1859,9 @@ void SolidBodyMesh::ApplySeed(
 #endif
 }
 
-const SolidBodyMesh::FSolidBodyPartMesh* SolidBodyMesh::FSolidBodyMesh::Find(const FString& Name) const
+const SolidBodyMesh::FSolidBodyPart* SolidBodyMesh::FSolidBodyMesh::Find(const FString& Name) const
 {
-	for (const FSolidBodyPartMesh& Part : Parts)
+	for (const FSolidBodyPart& Part : Parts)
 	{
 		if (Part.Name.Equals(Name, ESearchCase::IgnoreCase))
 		{
@@ -1939,7 +1939,7 @@ void SolidBodyMesh::FSolidBodyMesh::Draw(
 {
 	// shoulder_jnt, fingers, head, and eye bones stay bare. Twists stay bare too.
 	const int32 Count = FMath::Min(Bones.Num(), Positions.Num());
-	for (FSolidBodyPartMesh& Part : Parts)
+	for (FSolidBodyPart& Part : Parts)
 	{
 		if (Part.Bones.Num() == 0)
 		{

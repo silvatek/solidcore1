@@ -666,7 +666,7 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 		}
 
 		SolidBodyMesh::FSolidBodyMesh Body = SolidBodyMesh::FSolidBodyMesh::Make(RisingNames);
-		for (SolidBodyMesh::FSolidBodyPartMesh& Part : Body.Parts)
+		for (SolidBodyMesh::FSolidBodyPart& Part : Body.Parts)
 		{
 			if (Part.Bones.Num() == 0)
 			{

@@ -94,7 +94,7 @@ namespace SolidBodyMesh
 	 * Start is the parent joint. End is Bones[0]. Mid is used by the shoulders.
 	 * Fit measures the cones. Draw adds the triangles.
 	 */
-	struct FSolidBodyPartMesh
+	struct FSolidBodyPart
 	{
 		FString Name;
 		TArray<FName> Bones;

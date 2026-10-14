@@ -1,7 +1,7 @@
 #include "SolidBodyPart.h"
 #include "SolidBodyMesh.h"
 
-uint8 SolidBodyMesh::FSolidBodyPartMesh::MaterialSlot() const
+uint8 SolidBodyMesh::FSolidBodyPart::MaterialSlot() const
 {
 	switch (Colour)
 	{
@@ -14,7 +14,7 @@ uint8 SolidBodyMesh::FSolidBodyPartMesh::MaterialSlot() const
 	}
 }
 
-SolidBodyMesh::FSolidPartDraw SolidBodyMesh::FSolidBodyPartMesh::Fit(
+SolidBodyMesh::FSolidPartDraw SolidBodyMesh::FSolidBodyPart::Fit(
 	const FVector& From,
 	const FVector& To,
 	const FVector* SegmentStart,
@@ -50,7 +50,7 @@ SolidBodyMesh::FSolidPartDraw SolidBodyMesh::FSolidBodyPartMesh::Fit(
 	return Out;
 }
 
-void SolidBodyMesh::FSolidBodyPartMesh::AddTri(
+void SolidBodyMesh::FSolidBodyPart::AddTri(
 	TArray<FSolidBodyTri>& Tris,
 	const int32 A,
 	const int32 B,
@@ -63,7 +63,7 @@ void SolidBodyMesh::FSolidBodyPartMesh::AddTri(
 	Tris.Add(Tri);
 }
 
-void SolidBodyMesh::FSolidBodyPartMesh::AddTube(
+void SolidBodyMesh::FSolidBodyPart::AddTube(
 	TArray<FSolidBodyVert>& Verts,
 	TArray<FSolidBodyTri>& Tris,
 	const int32 BoneIndex,
@@ -146,7 +146,7 @@ void SolidBodyMesh::FSolidBodyPartMesh::AddTube(
 	}
 }
 
-void SolidBodyMesh::FSolidBodyPartMesh::AddShoulder(
+void SolidBodyMesh::FSolidBodyPart::AddShoulder(
 	TArray<FSolidBodyVert>& Verts,
 	TArray<FSolidBodyTri>& Tris,
 	const int32 BoneIndex,
@@ -222,7 +222,7 @@ void SolidBodyMesh::FSolidBodyPartMesh::AddShoulder(
 	}
 }
 
-void SolidBodyMesh::FSolidBodyPartMesh::Draw(
+void SolidBodyMesh::FSolidBodyPart::Draw(
 	TArray<FSolidBodyVert>& Verts,
 	TArray<FSolidBodyTri>& Tris,
 	const int32 WeightBone,

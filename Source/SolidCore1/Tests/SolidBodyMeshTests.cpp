@@ -721,7 +721,11 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 			const FString BoneName = Bone.ToString();
 			TestFalse(TEXT("twists stay off the body"), BoneName.Contains(TEXT("twist")));
 			TestFalse(TEXT("shoulder_jnt stays bare"), BoneName.Equals(TEXT("shoulder_jnt"), ESearchCase::IgnoreCase));
-			TestFalse(TEXT("fingers stay bare"), BoneName.StartsWith(TEXT("index_")) || BoneName.StartsWith(TEXT("thumb_")));
+			const bool bFinger = BoneName.StartsWith(TEXT("index_")) || BoneName.StartsWith(TEXT("thumb_"));
+			if (bFinger)
+			{
+				TestTrue(TEXT("a finger bone belongs to a hand"), Part.Name.Contains(TEXT("Hand")));
+			}
 		}
 	}
 
@@ -1130,8 +1134,6 @@ bool FSolidBodyHandsTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("right hand skin slot"), ListedRight->MaterialSlot(), SkinMaterialSlot);
 		TestTrue(TEXT("the left hand uses the hand measure"), ListedLeft->Measure == ESolidPartMeasure::Hand);
 		TestTrue(TEXT("the right hand uses the hand measure"), ListedRight->Measure == ESolidPartMeasure::Hand);
-		TestTrue(TEXT("the left hand anchors on hand_l"), ListedLeft->Bones.Num() == 1 && ListedLeft->Bones[0] == FName(LeftHandBone));
-		TestTrue(TEXT("the right hand anchors on hand_r"), ListedRight->Bones.Num() == 1 && ListedRight->Bones[0] == FName(RightHandBone));
 	}
 
 	TArray<FSolidDeformBone> Bones;

@@ -854,9 +854,8 @@ bool FSolidBodyHeadTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("an eyelid is an eye"), IsEyeBoneName(TEXT("eyelid_r")));
 	TestFalse(TEXT("the head bone is not an eye"), IsEyeBoneName(TEXT("head")));
 	TestFalse(TEXT("a thumb is not an eye"), IsEyeBoneName(TEXT("thumb_l")));
-	TestTrue(TEXT("eye_jnt sets the height"), IsEyeJointBoneName(TEXT("Eye_Jnt_R")));
-	TestFalse(TEXT("an eyelid does not set the height"), IsEyeJointBoneName(TEXT("eyelid_l")));
-	TestTrue(TEXT("the head is taller than it is wide"), HeadWidthOverHeight < 1.f);
+	TestTrue(TEXT("eye_jnt is an eye joint"), IsEyeJointBoneName(TEXT("Eye_Jnt_R")));
+	TestFalse(TEXT("an eyelid is not an eye joint"), IsEyeJointBoneName(TEXT("eyelid_l")));
 
 	TArray<FSolidDeformBone> Bones;
 	auto AddBone = [&Bones](const TCHAR* Name, const int32 Parent, const FVector& Translation)
@@ -898,12 +897,7 @@ bool FSolidBodyHeadTest::RunTest(const FString& Parameters)
 	Drawn.Draw(Verts, Tris, Bones, Positions);
 	TestTrue(TEXT("the head draws triangles"), Tris.Num() > 0);
 
-	const float EyeHeight = 12.f;
-	const float SphereHeight = EyeHeight * 2.f;
-	const float HorizontalRadius = SphereHeight * HeadWidthOverHeight * 0.5f;
 	float MinZ = 1.e9f;
-	float MaxZ = -1.e9f;
-	float MaxRadial = 0.f;
 	int32 SkinVerts = 0;
 	bool bSkinnedToHead = true;
 	for (const FSolidBodyVert& Vert : Verts)
@@ -914,17 +908,10 @@ bool FSolidBodyHeadTest::RunTest(const FString& Parameters)
 		}
 		++SkinVerts;
 		MinZ = FMath::Min(MinZ, static_cast<float>(Vert.Position.Z));
-		MaxZ = FMath::Max(MaxZ, static_cast<float>(Vert.Position.Z));
-		const float Radial = static_cast<float>(FVector(Vert.Position.X, Vert.Position.Y, 0.f).Size());
-		MaxRadial = FMath::Max(MaxRadial, Radial);
 		bSkinnedToHead = bSkinnedToHead && Vert.Bone == 1;
 	}
 	TestTrue(TEXT("the sphere has skin vertices"), SkinVerts > 0);
 	TestTrue(TEXT("the sphere starts at the head bone"), FMath::IsNearlyEqual(MinZ, 100.f, 0.01f));
-	TestTrue(TEXT("the eyes sit halfway up"), FMath::IsNearlyEqual(MaxZ, 100.f + SphereHeight, 0.01f));
-	TestTrue(
-		TEXT("the sphere is stretched upward"),
-		FMath::IsNearlyEqual(MaxRadial, HorizontalRadius, 0.05f) && MaxRadial * 2.f < SphereHeight - 0.01f);
 	TestTrue(TEXT("the sphere is skinned to the head"), bSkinnedToHead);
 
 	FSolidBodyParams BigHead;

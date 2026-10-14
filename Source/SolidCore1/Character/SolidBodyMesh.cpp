@@ -22,7 +22,7 @@
 #include "UObject/StrongObjectPtr.h"
 #endif
 
-SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<FName>& RisingSpineBones)
+SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
 {
 	using SolidBodyMesh::ESolidPartColour;
 	using SolidBodyMesh::ESolidPartMeasure;
@@ -53,60 +53,26 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 		FSolidPartSection::Oval(HipSideDiameterCm, HipDepthDiameterCm),
 		FSolidPartSection::Oval(HipTopSideDiameterCm, HipDepthDiameterCm)), ESolidPartMeasure::Hip);
 
-	// Two sections between the hips and the shoulders. The first bone is the abdomen.
-	// The chest wraps every bone after it, and the second bone is the length of that piece.
-	if (RisingSpineBones.Num() >= 2)
-	{
-		float AbdomenBottomCm = 0.f;
-		float AbdomenTopCm = 0.f;
-		float ChestBottomCm = 0.f;
-		float ChestTopCm = 0.f;
-		TorsoSideDiameters(0, 2, AbdomenBottomCm, AbdomenTopCm);
-		TorsoSideDiameters(1, 2, ChestBottomCm, ChestTopCm);
-
-		TArray<FName> AbdomenBones;
-		AbdomenBones.Add(RisingSpineBones[0]);
-		TArray<FName> ChestBones;
-		for (int32 Index = 1; Index < RisingSpineBones.Num(); ++Index)
-		{
-			ChestBones.Add(RisingSpineBones[Index]);
-		}
-		AddPart(FSolidBodyPart(
-			TEXT("Abdomen"),
-			AbdomenBones,
-			ESolidPartColour::Shirt,
-			FSolidPartSection::Oval(AbdomenBottomCm, TorsoDepthDiameterCm),
-			FSolidPartSection::Oval(AbdomenTopCm, TorsoDepthDiameterCm)), ESolidPartMeasure::Torso);
-		AddPart(FSolidBodyPart(
-			TEXT("Chest"),
-			ChestBones,
-			ESolidPartColour::Shirt,
-			FSolidPartSection::Oval(ChestBottomCm, TorsoDepthDiameterCm),
-			FSolidPartSection::Oval(ChestTopCm, TorsoDepthDiameterCm)), ESolidPartMeasure::Torso);
-	}
-	else if (RisingSpineBones.Num() == 1)
-	{
-		float BottomCm = 0.f;
-		float TopCm = 0.f;
-		TorsoSideDiameters(0, 1, BottomCm, TopCm);
-		TArray<FName> ChestBones;
-		ChestBones.Add(RisingSpineBones[0]);
-		AddPart(FSolidBodyPart(
-			TEXT("Chest"),
-			ChestBones,
-			ESolidPartColour::Shirt,
-			FSolidPartSection::Oval(BottomCm, TorsoDepthDiameterCm),
-			FSolidPartSection::Oval(TopCm, TorsoDepthDiameterCm)), ESolidPartMeasure::Torso);
-	}
-
-	float ShoulderSideCm = ChestSideDiameterCm;
-	for (const FSolidBodyPart& Part : Body.Parts)
-	{
-		if (Part.Name.Equals(TEXT("Chest"), ESearchCase::IgnoreCase))
-		{
-			ShoulderSideCm = Part.End.X;
-		}
-	}
+	// The abdomen is spine_02. The chest is spine_03. The shoulder base is the chest's top.
+	float AbdomenBottomCm = 0.f;
+	float AbdomenTopCm = 0.f;
+	float ChestBottomCm = 0.f;
+	float ChestTopCm = 0.f;
+	TorsoSideDiameters(0, 2, AbdomenBottomCm, AbdomenTopCm);
+	TorsoSideDiameters(1, 2, ChestBottomCm, ChestTopCm);
+	AddPart(FSolidBodyPart(
+		TEXT("Abdomen"),
+		{ SpineAbdomenBone },
+		ESolidPartColour::Shirt,
+		FSolidPartSection::Oval(AbdomenBottomCm, TorsoDepthDiameterCm),
+		FSolidPartSection::Oval(AbdomenTopCm, TorsoDepthDiameterCm)), ESolidPartMeasure::Torso);
+	AddPart(FSolidBodyPart(
+		TEXT("Chest"),
+		{ SpineChestBone },
+		ESolidPartColour::Shirt,
+		FSolidPartSection::Oval(ChestBottomCm, TorsoDepthDiameterCm),
+		FSolidPartSection::Oval(ChestTopCm, TorsoDepthDiameterCm)), ESolidPartMeasure::Torso);
+	const float ShoulderSideCm = ChestTopCm;
 
 	// Shoulders follow neck_01. Mid is fitted around the clavicles and the upper arms when the mesh is built.
 	FSolidBodyPart Shoulders = FSolidBodyPart(
@@ -273,28 +239,6 @@ namespace
 		return false;
 	}
 
-	int32 ChildNamed(
-		const TArray<FSolidDeformBone>& Bones,
-		const int32 Parent,
-		bool (*Test)(const FString&))
-	{
-		if (!Bones.IsValidIndex(Parent) || !Test)
-		{
-			return INDEX_NONE;
-		}
-		for (int32 Index = 0; Index < Bones.Num(); ++Index)
-		{
-			if (Bones[Index].ParentIndex != Parent)
-			{
-				continue;
-			}
-			if (Test(Bones[Index].Name.ToString()))
-			{
-				return Index;
-			}
-		}
-		return INDEX_NONE;
-	}
 }
 
 uint32 SolidBodyMesh::SeedForName(const FString& Name)
@@ -1243,24 +1187,7 @@ void SolidBodyMesh::FSolidBodyMesh::Apply(
 
 SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::FromBones(const TArray<FSolidDeformBone>& Bones)
 {
-	TArray<FName> RisingNames;
-	const int32 HipSpine = FindNamedBone(Bones, Bones.Num(), HipSpineBone);
-	if (HipSpine != INDEX_NONE)
-	{
-		int32 Cursor = HipSpine;
-		for (int32 Guard = 0; Guard < Bones.Num(); ++Guard)
-		{
-			const int32 Next = ChildNamed(Bones, Cursor, IsRisingSpineBoneName);
-			if (Next == INDEX_NONE)
-			{
-				break;
-			}
-			RisingNames.Add(Bones[Next].Name);
-			Cursor = Next;
-		}
-	}
-
-	FSolidBodyMesh Body = Make(RisingNames);
+	FSolidBodyMesh Body = Make();
 	for (FSolidBodyPart& Part : Body.Parts)
 	{
 		if (Part.Bones.Num() == 0)

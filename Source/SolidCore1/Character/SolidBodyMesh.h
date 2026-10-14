@@ -23,14 +23,8 @@ namespace SolidBodyMesh
 	public:
 		TArray<FSolidBodyPart> Parts;
 
-		/**
-		 * The body.
-		 * RisingSpineBones are the spine bones above the hips, parent to child.
-		 * An empty list leaves out the abdomen and the chest. The shoulder base then stays the chest width.
-		 * The first bone is the abdomen. The chest wraps every bone after it, and the second bone is its length.
-		 * A single bone is the chest, from the waist to the shoulder breadth.
-		 */
-		static FSolidBodyMesh Make(const TArray<FName>& RisingSpineBones);
+		/** The body. The abdomen is spine_02. The chest is spine_03. */
+		static FSolidBodyMesh Make();
 
 		/** Make the body for this skeleton. The rising spine is read from the hip upward. */
 		static FSolidBodyMesh FromBones(const TArray<FSolidDeformBone>& Bones);
@@ -221,6 +215,8 @@ namespace SolidBodyMesh
 	inline const TCHAR* ShoulderRightClavicleBone = TEXT("clavicle_r");
 	inline const TCHAR* ShoulderLeftUpperArmBone = TEXT("upperarm_l");
 	inline const TCHAR* ShoulderRightUpperArmBone = TEXT("upperarm_r");
+	/** spine_02's own piece, between the hips and the chest. */
+	inline const TCHAR* SpineAbdomenBone = TEXT("spine_02");
 	/** spine_03's own piece. The shoulder base copies that piece's top oval. */
 	inline const TCHAR* SpineChestBone = TEXT("spine_03");
 

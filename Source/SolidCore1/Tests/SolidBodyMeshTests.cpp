@@ -534,10 +534,7 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 {
 	using namespace SolidBodyMesh;
 
-	TArray<FName> Rising;
-	Rising.Add(TEXT("spine_02"));
-	Rising.Add(TEXT("spine_03"));
-	FSolidBodyMesh Body = FSolidBodyMesh::Make(Rising);
+	FSolidBodyMesh Body = FSolidBodyMesh::Make();
 
 	const TCHAR* Expected[] = {
 		TEXT("Thigh (L)"),
@@ -729,7 +726,7 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 		}
 	}
 
-	FSolidBodyMesh Scaled = FSolidBodyMesh::Make({});
+	FSolidBodyMesh Scaled = FSolidBodyMesh::Make();
 	TArray<FSolidDeformBone> ScaledBones;
 	FSolidDeformBone Pelvis;
 	Pelvis.Name = TEXT("pelvis");
@@ -771,7 +768,7 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 		&& FMath::IsNearlyEqual(ScaledBones[1].LocalTranslation.Z, -2.f, 0.01f));
 	TestTrue(TEXT("the head stays the viking length"), ScaledBones[3].LocalTranslation.Equals(FVector(0.f, 0.f, 20.f), 0.01f));
 
-	const FSolidBodyMesh Bare = FSolidBodyMesh::Make({});
+	const FSolidBodyMesh Bare = FSolidBodyMesh::Make();
 	const FSolidBodyPart* BareShoulders = Bare.Find(TEXT("Shoulders"));
 	TestTrue(
 		TEXT("without a chest the shoulder base stays the chest width"),
@@ -788,11 +785,7 @@ bool FSolidBodyTorsoSectionsTest::RunTest(const FString& Parameters)
 {
 	using namespace SolidBodyMesh;
 
-	TArray<FName> Rising;
-	Rising.Add(TEXT("spine_02"));
-	Rising.Add(TEXT("spine_03"));
-	Rising.Add(TEXT("spine_04"));
-	const FSolidBodyMesh Body = FSolidBodyMesh::Make(Rising);
+	const FSolidBodyMesh Body = FSolidBodyMesh::Make();
 	const FSolidBodyPart* Abdomen = Body.Find(TEXT("Abdomen"));
 	const FSolidBodyPart* Chest = Body.Find(TEXT("Chest"));
 	TestTrue(TEXT("three rising bones still have an abdomen"), Abdomen != nullptr);
@@ -1079,7 +1072,7 @@ bool FSolidBodyDetailTest::RunTest(const FString& Parameters)
 		FVector::ForwardVector);
 	TestEqual(TEXT("a limb has two rings at the shared side count"), LimbVerts.Num(), 2 * BodyPartSides);
 
-	const FSolidBodyMesh Catalogue = FSolidBodyMesh::Make({});
+	const FSolidBodyMesh Catalogue = FSolidBodyMesh::Make();
 	const FSolidBodyPart* Found = Catalogue.Find(TEXT("Shoulders"));
 	TestTrue(TEXT("the shoulders are on the list"), Found != nullptr);
 	if (Found)
@@ -1174,7 +1167,7 @@ bool FSolidBodyHandsTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("the hand bone is not a finger"), IsFingerBoneName(TEXT("hand_l")));
 	TestFalse(TEXT("a beard joint is not a finger"), IsFingerBoneName(TEXT("beard_middle_jnt_2")));
 
-	const FSolidBodyMesh Catalogue = FSolidBodyMesh::Make({});
+	const FSolidBodyMesh Catalogue = FSolidBodyMesh::Make();
 	const FSolidBodyPart* ListedLeft = Catalogue.Find(TEXT("Hand (L)"));
 	const FSolidBodyPart* ListedRight = Catalogue.Find(TEXT("Hand (R)"));
 	TestTrue(TEXT("the left hand is on the list"), ListedLeft != nullptr);
@@ -1381,7 +1374,7 @@ bool FSolidBodyHandFingersTest::RunTest(const FString& Parameters)
 {
 	using namespace SolidBodyMesh;
 
-	const FSolidBodyMesh Catalogue = FSolidBodyMesh::Make({});
+	const FSolidBodyMesh Catalogue = FSolidBodyMesh::Make();
 	const FSolidBodyPart* Left = Catalogue.Find(TEXT("Hand (L)"));
 	const FSolidBodyPart* Right = Catalogue.Find(TEXT("Hand (R)"));
 	TestTrue(TEXT("the left hand is on the list"), Left != nullptr);

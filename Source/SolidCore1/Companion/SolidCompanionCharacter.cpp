@@ -640,38 +640,7 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 			}
 		};
 
-		TArray<FName> RisingNames;
-		const FName HipSpine = FindBone(SolidBodyMesh::HipSpineBone);
-		if (!HipSpine.IsNone())
-		{
-			FName Cursor = HipSpine;
-			for (int32 Guard = 0; Guard < BoneCount; ++Guard)
-			{
-				FName Next = NAME_None;
-				for (int32 Index = 0; Index < BoneCount; ++Index)
-				{
-					const FName BoneName = CharacterMesh->GetBoneName(Index);
-					if (BoneName.IsNone() || CharacterMesh->GetParentBone(BoneName) != Cursor)
-					{
-						continue;
-					}
-					if (!SolidBodyMesh::IsRisingSpineBoneName(BoneName.ToString()))
-					{
-						continue;
-					}
-					Next = BoneName;
-					break;
-				}
-				if (Next.IsNone())
-				{
-					break;
-				}
-				RisingNames.Add(Next);
-				Cursor = Next;
-			}
-		}
-
-		SolidBodyMesh::FSolidBodyMesh Body = SolidBodyMesh::FSolidBodyMesh::Make(RisingNames);
+		SolidBodyMesh::FSolidBodyMesh Body = SolidBodyMesh::FSolidBodyMesh::Make();
 		for (SolidBodyMesh::FSolidBodyPart& Part : Body.Parts)
 		{
 			if (Part.Bones.Num() == 0)

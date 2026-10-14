@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0290")
+#define SOLID_BUILD_ID TEXT("SC1-0291")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Head height is three head-bone lengths. The radius is the eye joint.")
+#define SOLID_BUILD_NOTE TEXT("The head tests no longer pin the sphere to the head joint.")
 #endif

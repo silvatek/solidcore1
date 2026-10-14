@@ -129,10 +129,7 @@ namespace
 		}
 		return FString::Printf(TEXT("Spine %d"), Step + 1);
 	}
-}
 
-namespace
-{
 	bool NameHas(const FString& Lower, const TCHAR* Token)
 	{
 		return Lower.Contains(Token);
@@ -153,6 +150,285 @@ namespace
 		default:
 			return false;
 		}
+	}
+
+	bool IsLeftName(const FString& Lower)
+	{
+		return Lower.EndsWith(TEXT("_l")) || Lower.Contains(TEXT("_l_"));
+	}
+
+	bool IsRightName(const FString& Lower)
+	{
+		return Lower.EndsWith(TEXT("_r")) || Lower.Contains(TEXT("_r_"));
+	}
+
+	FString SidedKey(const FString& Lower, const TCHAR* Kind)
+	{
+		if (IsLeftName(Lower))
+		{
+			return FString(Kind) + TEXT("_l");
+		}
+		if (IsRightName(Lower))
+		{
+			return FString(Kind) + TEXT("_r");
+		}
+		return FString();
+	}
+
+	SolidBodyMesh::FSolidFittedCone ConeFromNamedPart(
+		const TCHAR* PartName,
+		const FVector& From,
+		const FVector& To)
+	{
+		const SolidBodyMesh::FSolidBodyMesh Body = SolidBodyMesh::FSolidBodyMesh::Make({});
+		const SolidBodyMesh::FSolidBodyPart* Found = Body.Find(PartName);
+		SolidBodyMesh::FSolidFittedCone Out;
+		if (!Found)
+		{
+			return Out;
+		}
+		Out.Start = From;
+		Out.End = To;
+		Out.RadiusStart = Found->Start.X * 0.5f;
+		Out.RadiusEnd = Found->End.X * 0.5f;
+		Out.DepthScaleStart = Found->Start.X > KINDA_SMALL_NUMBER ? Found->Start.Y / Found->Start.X : 1.f;
+		Out.DepthScaleEnd = Found->End.X > KINDA_SMALL_NUMBER ? Found->End.Y / Found->End.X : 1.f;
+		Out.WideAxis = FVector::ForwardVector;
+		Out.bValid = FVector::Dist(From, To) >= 1.0
+			&& Found->Start.X > KINDA_SMALL_NUMBER
+			&& Found->End.X > KINDA_SMALL_NUMBER;
+		return Out;
+	}
+
+	SolidBodyMesh::FSolidFittedCone RoundBoneCone(
+		const FVector& Parent,
+		const FVector& Bone,
+		const float DiameterParent,
+		const float DiameterBone)
+	{
+		SolidBodyMesh::FSolidFittedCone Out;
+		Out.Start = Parent;
+		Out.End = Bone;
+		Out.RadiusStart = DiameterParent * 0.5f;
+		Out.RadiusEnd = DiameterBone * 0.5f;
+		Out.bValid = FVector::Dist(Parent, Bone) >= 1.0;
+		return Out;
+	}
+
+	bool ShoulderFrame(
+		const FVector& Start,
+		const FVector& End,
+		const FVector& PreferredSide,
+		FVector& OutAxis,
+		FVector& OutWide,
+		FVector& OutNarrow,
+		float& OutLength)
+	{
+		const FVector Delta = End - Start;
+		OutLength = Delta.Size();
+		if (OutLength < 2.f)
+		{
+			return false;
+		}
+		OutAxis = Delta / OutLength;
+		OutWide = PreferredSide - OutAxis * FVector::DotProduct(PreferredSide, OutAxis);
+		if (OutWide.SizeSquared() < 0.01)
+		{
+			OutWide = FVector::CrossProduct(FVector::UpVector, OutAxis);
+		}
+		if (OutWide.SizeSquared() < 0.01)
+		{
+			OutWide = FVector::CrossProduct(FVector::ForwardVector, OutAxis);
+		}
+		if (!OutWide.Normalize())
+		{
+			return false;
+		}
+		OutNarrow = FVector::CrossProduct(OutAxis, OutWide).GetSafeNormal();
+		return !OutNarrow.IsNearlyZero();
+	}
+
+	float ShoulderChord()
+	{
+		return FMath::Cos(PI / static_cast<float>(SolidBodyMesh::ShoulderSideCount));
+	}
+
+	bool ConeIsStructural(const FSolidDeformBone& Bone)
+	{
+		return !Bone.bTwist && !Bone.bDigit;
+	}
+
+	int32 ConeStructuralParent(const TArray<FSolidDeformBone>& Bones, const int32 Index)
+	{
+		int32 Parent = Bones.IsValidIndex(Index) ? Bones[Index].ParentIndex : INDEX_NONE;
+		int32 Guard = 0;
+		while (Bones.IsValidIndex(Parent) && Bones[Parent].bTwist && Guard < Bones.Num())
+		{
+			Parent = Bones[Parent].ParentIndex;
+			++Guard;
+		}
+		return Parent;
+	}
+
+	int32 ConeStructuralChild(
+		const TArray<FSolidDeformBone>& Bones,
+		const int32 Parent,
+		const ESolidBodyBoneRole Role)
+	{
+		for (int32 Index = 0; Index < Bones.Num(); ++Index)
+		{
+			if (Bones[Index].ParentIndex != Parent)
+			{
+				continue;
+			}
+			if (Bones[Index].bTwist)
+			{
+				const int32 Deeper = ConeStructuralChild(Bones, Index, Role);
+				if (Deeper != INDEX_NONE)
+				{
+					return Deeper;
+				}
+				continue;
+			}
+			if (Bones[Index].Role == Role && !Bones[Index].bDigit)
+			{
+				return Index;
+			}
+		}
+		return INDEX_NONE;
+	}
+
+	float HorizontalReach(const FVector& From, const FVector& To)
+	{
+		FVector Delta = To - From;
+		Delta.Z = 0.0;
+		return static_cast<float>(Delta.Size());
+	}
+
+	/** Longest structural spine chain whose root hangs off a pelvis. */
+	void CollectConeSpine(const TArray<FSolidDeformBone>& Bones, TArray<int32>& OutChain)
+	{
+		OutChain.Reset();
+		int32 BestRoot = INDEX_NONE;
+		int32 BestLength = 0;
+		for (int32 Index = 0; Index < Bones.Num(); ++Index)
+		{
+			if (!ConeIsStructural(Bones[Index]) || Bones[Index].Role != ESolidBodyBoneRole::Spine)
+			{
+				continue;
+			}
+			const int32 Parent = ConeStructuralParent(Bones, Index);
+			if (!Bones.IsValidIndex(Parent) || Bones[Parent].Role != ESolidBodyBoneRole::Pelvis)
+			{
+				continue;
+			}
+			int32 Length = 0;
+			int32 Cursor = Index;
+			int32 Guard = 0;
+			while (Cursor != INDEX_NONE && Guard < Bones.Num())
+			{
+				++Length;
+				Cursor = ConeStructuralChild(Bones, Cursor, ESolidBodyBoneRole::Spine);
+				++Guard;
+			}
+			if (Length > BestLength)
+			{
+				BestLength = Length;
+				BestRoot = Index;
+			}
+		}
+
+		int32 Cursor = BestRoot;
+		int32 Guard = 0;
+		while (Cursor != INDEX_NONE && Guard < Bones.Num())
+		{
+			OutChain.Add(Cursor);
+			Cursor = ConeStructuralChild(Bones, Cursor, ESolidBodyBoneRole::Spine);
+			++Guard;
+		}
+	}
+
+	void CollectConeNeck(const TArray<FSolidDeformBone>& Bones, TArray<int32>& OutChain)
+	{
+		OutChain.Reset();
+		int32 BestRoot = INDEX_NONE;
+		int32 BestLength = 0;
+		for (int32 Index = 0; Index < Bones.Num(); ++Index)
+		{
+			if (!ConeIsStructural(Bones[Index]) || Bones[Index].Role != ESolidBodyBoneRole::Neck)
+			{
+				continue;
+			}
+			const int32 Parent = ConeStructuralParent(Bones, Index);
+			if (Bones.IsValidIndex(Parent) && Bones[Parent].Role == ESolidBodyBoneRole::Neck)
+			{
+				continue;
+			}
+			int32 Length = 0;
+			int32 Cursor = Index;
+			int32 Guard = 0;
+			while (Cursor != INDEX_NONE && Guard < Bones.Num())
+			{
+				++Length;
+				Cursor = ConeStructuralChild(Bones, Cursor, ESolidBodyBoneRole::Neck);
+				++Guard;
+			}
+			if (Length > BestLength)
+			{
+				BestLength = Length;
+				BestRoot = Index;
+			}
+		}
+
+		int32 Cursor = BestRoot;
+		int32 Guard = 0;
+		while (Cursor != INDEX_NONE && Guard < Bones.Num())
+		{
+			OutChain.Add(Cursor);
+			Cursor = ConeStructuralChild(Bones, Cursor, ESolidBodyBoneRole::Neck);
+			++Guard;
+		}
+	}
+
+	float ScaledJoint(const float Base, const float Channel)
+	{
+		return FMath::Clamp(Base * FMath::Max(Channel, 0.f), 2.5f, 28.f);
+	}
+
+	int32 FindNamedBone(const TArray<FSolidDeformBone>& Bones, const int32 Count, const TCHAR* BoneName)
+	{
+		const int32 Limit = FMath::Min(Count, Bones.Num());
+		for (int32 Index = 0; Index < Limit; ++Index)
+		{
+			if (Bones[Index].Name.ToString().Equals(BoneName, ESearchCase::IgnoreCase))
+			{
+				return Index;
+			}
+		}
+		return INDEX_NONE;
+	}
+
+	int32 ChildNamed(
+		const TArray<FSolidDeformBone>& Bones,
+		const int32 Parent,
+		bool (*Test)(const FString&))
+	{
+		if (!Bones.IsValidIndex(Parent) || !Test)
+		{
+			return INDEX_NONE;
+		}
+		for (int32 Index = 0; Index < Bones.Num(); ++Index)
+		{
+			if (Bones[Index].ParentIndex != Parent)
+			{
+				continue;
+			}
+			if (Test(Bones[Index].Name.ToString()))
+			{
+				return Index;
+			}
+		}
+		return INDEX_NONE;
 	}
 }
 
@@ -226,32 +502,6 @@ bool SolidBodyMesh::IsDigitBoneName(const FString& BoneName)
 float SolidBodyMesh::HipBottomRadius(const float PelvisHalfWidth, const float HipLateral, const float ThighRadius)
 {
 	return FMath::Max(PelvisHalfWidth, FMath::Max(0.f, HipLateral) + FMath::Max(0.f, ThighRadius));
-}
-
-namespace
-{
-	bool IsLeftName(const FString& Lower)
-	{
-		return Lower.EndsWith(TEXT("_l")) || Lower.Contains(TEXT("_l_"));
-	}
-
-	bool IsRightName(const FString& Lower)
-	{
-		return Lower.EndsWith(TEXT("_r")) || Lower.Contains(TEXT("_r_"));
-	}
-
-	FString SidedKey(const FString& Lower, const TCHAR* Kind)
-	{
-		if (IsLeftName(Lower))
-		{
-			return FString(Kind) + TEXT("_l");
-		}
-		if (IsRightName(Lower))
-		{
-			return FString(Kind) + TEXT("_r");
-		}
-		return FString();
-	}
 }
 
 FString SolidBodyMesh::SegmentKey(const FString& BoneName)
@@ -405,34 +655,6 @@ SolidBodyMesh::FSolidFittedCone SolidBodyMesh::FitCone(const FVector* Points, co
 	return Out;
 }
 
-namespace
-{
-	SolidBodyMesh::FSolidFittedCone ConeFromNamedPart(
-		const TCHAR* PartName,
-		const FVector& From,
-		const FVector& To)
-	{
-		const SolidBodyMesh::FSolidBodyMesh Body = SolidBodyMesh::FSolidBodyMesh::Make({});
-		const SolidBodyMesh::FSolidBodyPart* Found = Body.Find(PartName);
-		SolidBodyMesh::FSolidFittedCone Out;
-		if (!Found)
-		{
-			return Out;
-		}
-		Out.Start = From;
-		Out.End = To;
-		Out.RadiusStart = Found->Start.X * 0.5f;
-		Out.RadiusEnd = Found->End.X * 0.5f;
-		Out.DepthScaleStart = Found->Start.X > KINDA_SMALL_NUMBER ? Found->Start.Y / Found->Start.X : 1.f;
-		Out.DepthScaleEnd = Found->End.X > KINDA_SMALL_NUMBER ? Found->End.Y / Found->End.X : 1.f;
-		Out.WideAxis = FVector::ForwardVector;
-		Out.bValid = FVector::Dist(From, To) >= 1.0
-			&& Found->Start.X > KINDA_SMALL_NUMBER
-			&& Found->End.X > KINDA_SMALL_NUMBER;
-		return Out;
-	}
-}
-
 SolidBodyMesh::FSolidFittedCone SolidBodyMesh::LeftThighCone(const FVector& Hip, const FVector& Knee)
 {
 	return ConeFromNamedPart(TEXT("Thigh (L)"), Hip, Knee);
@@ -529,24 +751,6 @@ SolidBodyMesh::FSolidFittedCone SolidBodyMesh::TorsoCone(
 	return Out;
 }
 
-namespace
-{
-	SolidBodyMesh::FSolidFittedCone RoundBoneCone(
-		const FVector& Parent,
-		const FVector& Bone,
-		const float DiameterParent,
-		const float DiameterBone)
-	{
-		SolidBodyMesh::FSolidFittedCone Out;
-		Out.Start = Parent;
-		Out.End = Bone;
-		Out.RadiusStart = DiameterParent * 0.5f;
-		Out.RadiusEnd = DiameterBone * 0.5f;
-		Out.bValid = FVector::Dist(Parent, Bone) >= 1.0;
-		return Out;
-	}
-}
-
 SolidBodyMesh::FSolidFittedCone SolidBodyMesh::ClavicleCone(const FVector& Parent, const FVector& Bone)
 {
 	return RoundBoneCone(Parent, Bone, ClavicleRootDiameterCm, UpperArmShoulderDiameterCm);
@@ -565,47 +769,6 @@ SolidBodyMesh::FSolidFittedCone SolidBodyMesh::ForearmCone(const FVector& Parent
 SolidBodyMesh::FSolidFittedCone SolidBodyMesh::HandCone(const FVector& Wrist, const FVector& Hand)
 {
 	return ConeFromNamedPart(TEXT("Lower arm (L)"), Wrist, Hand);
-}
-
-namespace
-{
-	bool ShoulderFrame(
-		const FVector& Start,
-		const FVector& End,
-		const FVector& PreferredSide,
-		FVector& OutAxis,
-		FVector& OutWide,
-		FVector& OutNarrow,
-		float& OutLength)
-	{
-		const FVector Delta = End - Start;
-		OutLength = Delta.Size();
-		if (OutLength < 2.f)
-		{
-			return false;
-		}
-		OutAxis = Delta / OutLength;
-		OutWide = PreferredSide - OutAxis * FVector::DotProduct(PreferredSide, OutAxis);
-		if (OutWide.SizeSquared() < 0.01)
-		{
-			OutWide = FVector::CrossProduct(FVector::UpVector, OutAxis);
-		}
-		if (OutWide.SizeSquared() < 0.01)
-		{
-			OutWide = FVector::CrossProduct(FVector::ForwardVector, OutAxis);
-		}
-		if (!OutWide.Normalize())
-		{
-			return false;
-		}
-		OutNarrow = FVector::CrossProduct(OutAxis, OutWide).GetSafeNormal();
-		return !OutNarrow.IsNearlyZero();
-	}
-
-	float ShoulderChord()
-	{
-		return FMath::Cos(PI / static_cast<float>(SolidBodyMesh::ShoulderSideCount));
-	}
 }
 
 SolidBodyMesh::FSolidShoulderPiece SolidBodyMesh::ShoulderPiece(
@@ -858,151 +1021,6 @@ bool SolidBodyMesh::RayHitsCone(
 
 	InOutRayT = RayT;
 	return true;
-}
-
-namespace
-{
-	bool ConeIsStructural(const FSolidDeformBone& Bone)
-	{
-		return !Bone.bTwist && !Bone.bDigit;
-	}
-
-	int32 ConeStructuralParent(const TArray<FSolidDeformBone>& Bones, const int32 Index)
-	{
-		int32 Parent = Bones.IsValidIndex(Index) ? Bones[Index].ParentIndex : INDEX_NONE;
-		int32 Guard = 0;
-		while (Bones.IsValidIndex(Parent) && Bones[Parent].bTwist && Guard < Bones.Num())
-		{
-			Parent = Bones[Parent].ParentIndex;
-			++Guard;
-		}
-		return Parent;
-	}
-
-	int32 ConeStructuralChild(
-		const TArray<FSolidDeformBone>& Bones,
-		const int32 Parent,
-		const ESolidBodyBoneRole Role)
-	{
-		for (int32 Index = 0; Index < Bones.Num(); ++Index)
-		{
-			if (Bones[Index].ParentIndex != Parent)
-			{
-				continue;
-			}
-			if (Bones[Index].bTwist)
-			{
-				const int32 Deeper = ConeStructuralChild(Bones, Index, Role);
-				if (Deeper != INDEX_NONE)
-				{
-					return Deeper;
-				}
-				continue;
-			}
-			if (Bones[Index].Role == Role && !Bones[Index].bDigit)
-			{
-				return Index;
-			}
-		}
-		return INDEX_NONE;
-	}
-
-	float HorizontalReach(const FVector& From, const FVector& To)
-	{
-		FVector Delta = To - From;
-		Delta.Z = 0.0;
-		return static_cast<float>(Delta.Size());
-	}
-
-	/** Longest structural spine chain whose root hangs off a pelvis. */
-	void CollectConeSpine(const TArray<FSolidDeformBone>& Bones, TArray<int32>& OutChain)
-	{
-		OutChain.Reset();
-		int32 BestRoot = INDEX_NONE;
-		int32 BestLength = 0;
-		for (int32 Index = 0; Index < Bones.Num(); ++Index)
-		{
-			if (!ConeIsStructural(Bones[Index]) || Bones[Index].Role != ESolidBodyBoneRole::Spine)
-			{
-				continue;
-			}
-			const int32 Parent = ConeStructuralParent(Bones, Index);
-			if (!Bones.IsValidIndex(Parent) || Bones[Parent].Role != ESolidBodyBoneRole::Pelvis)
-			{
-				continue;
-			}
-			int32 Length = 0;
-			int32 Cursor = Index;
-			int32 Guard = 0;
-			while (Cursor != INDEX_NONE && Guard < Bones.Num())
-			{
-				++Length;
-				Cursor = ConeStructuralChild(Bones, Cursor, ESolidBodyBoneRole::Spine);
-				++Guard;
-			}
-			if (Length > BestLength)
-			{
-				BestLength = Length;
-				BestRoot = Index;
-			}
-		}
-
-		int32 Cursor = BestRoot;
-		int32 Guard = 0;
-		while (Cursor != INDEX_NONE && Guard < Bones.Num())
-		{
-			OutChain.Add(Cursor);
-			Cursor = ConeStructuralChild(Bones, Cursor, ESolidBodyBoneRole::Spine);
-			++Guard;
-		}
-	}
-
-	void CollectConeNeck(const TArray<FSolidDeformBone>& Bones, TArray<int32>& OutChain)
-	{
-		OutChain.Reset();
-		int32 BestRoot = INDEX_NONE;
-		int32 BestLength = 0;
-		for (int32 Index = 0; Index < Bones.Num(); ++Index)
-		{
-			if (!ConeIsStructural(Bones[Index]) || Bones[Index].Role != ESolidBodyBoneRole::Neck)
-			{
-				continue;
-			}
-			const int32 Parent = ConeStructuralParent(Bones, Index);
-			if (Bones.IsValidIndex(Parent) && Bones[Parent].Role == ESolidBodyBoneRole::Neck)
-			{
-				continue;
-			}
-			int32 Length = 0;
-			int32 Cursor = Index;
-			int32 Guard = 0;
-			while (Cursor != INDEX_NONE && Guard < Bones.Num())
-			{
-				++Length;
-				Cursor = ConeStructuralChild(Bones, Cursor, ESolidBodyBoneRole::Neck);
-				++Guard;
-			}
-			if (Length > BestLength)
-			{
-				BestLength = Length;
-				BestRoot = Index;
-			}
-		}
-
-		int32 Cursor = BestRoot;
-		int32 Guard = 0;
-		while (Cursor != INDEX_NONE && Guard < Bones.Num())
-		{
-			OutChain.Add(Cursor);
-			Cursor = ConeStructuralChild(Bones, Cursor, ESolidBodyBoneRole::Neck);
-			++Guard;
-		}
-	}
-
-	float ScaledJoint(const float Base, const float Channel)
-	{
-		return FMath::Clamp(Base * FMath::Max(Channel, 0.f), 2.5f, 28.f);
-	}
 }
 
 float SolidBodyMesh::HeadHeightCm(const FSolidBodyParams& Params)
@@ -1842,45 +1860,6 @@ const SolidBodyMesh::FSolidBodyPart* SolidBodyMesh::FSolidBodyMesh::Find(const F
 		}
 	}
 	return nullptr;
-}
-
-namespace
-{
-	int32 FindNamedBone(const TArray<FSolidDeformBone>& Bones, const int32 Count, const TCHAR* BoneName)
-	{
-		const int32 Limit = FMath::Min(Count, Bones.Num());
-		for (int32 Index = 0; Index < Limit; ++Index)
-		{
-			if (Bones[Index].Name.ToString().Equals(BoneName, ESearchCase::IgnoreCase))
-			{
-				return Index;
-			}
-		}
-		return INDEX_NONE;
-	}
-
-	int32 ChildNamed(
-		const TArray<FSolidDeformBone>& Bones,
-		const int32 Parent,
-		bool (*Test)(const FString&))
-	{
-		if (!Bones.IsValidIndex(Parent) || !Test)
-		{
-			return INDEX_NONE;
-		}
-		for (int32 Index = 0; Index < Bones.Num(); ++Index)
-		{
-			if (Bones[Index].ParentIndex != Parent)
-			{
-				continue;
-			}
-			if (Test(Bones[Index].Name.ToString()))
-			{
-				return Index;
-			}
-		}
-		return INDEX_NONE;
-	}
 }
 
 SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::FromBones(const TArray<FSolidDeformBone>& Bones)

@@ -1652,7 +1652,7 @@ USkeletalMesh* SolidBodyMesh::Build(
 
 	FSolidDeformMesh Bind;
 	FillBones(Ref, Bind);
-	SolidBodyDeform::FitHeadLengths(Bind.Bones);
+	// Lengths stay the Viking reference pose. The sliders scale from there.
 	const FSolidBodyParams Clamped = Params.Clamped();
 	const FSolidDeformMesh Deformed = SolidBodyDeform::Apply(Bind, Clamped);
 

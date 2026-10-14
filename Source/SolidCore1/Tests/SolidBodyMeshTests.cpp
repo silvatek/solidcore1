@@ -258,6 +258,15 @@ bool FSolidBodyVikingBuildTest::RunTest(const FString& Parameters)
 
 	const TArray<FTransform>& NeutralBind = Neutral->GetRefSkeleton().GetRawRefBonePose();
 	const TArray<FTransform>& TallBind = Tall->GetRefSkeleton().GetRawRefBonePose();
+	bool bNeutralMatchesViking = NeutralBind.Num() == SourceTranslations.Num();
+	for (int32 Index = 0; bNeutralMatchesViking && Index < SourceTranslations.Num(); ++Index)
+	{
+		bNeutralMatchesViking = FMath::IsNearlyEqual(
+			NeutralBind[Index].GetTranslation().Size(),
+			SourceTranslations[Index].Size(),
+			0.05f);
+	}
+	TestTrue(TEXT("neutral sliders keep every viking bone length"), bNeutralMatchesViking);
 	const float NeutralLength = NeutralBind.IsValidIndex(ScaledBone)
 		? NeutralBind[ScaledBone].GetTranslation().Size()
 		: 0.f;

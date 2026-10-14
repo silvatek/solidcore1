@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0269")
+#define SOLID_BUILD_ID TEXT("SC1-0270")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The torso widens from the 30 cm waist to a 40 cm chest, then the clavicles and arms follow their bones.")
+#define SOLID_BUILD_NOTE TEXT("Companion bone lengths match the unmodified Viking skeleton at the neutral sliders.")
 #endif

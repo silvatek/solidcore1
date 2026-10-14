@@ -75,7 +75,8 @@ namespace SolidBodyDeform
 	 * Move the joints of a standing skeleton onto the average head-length stations.
 	 * The chest, waist, neck, and head share the pelvis column.
 	 * A chain with no head or no ankle is left alone. Rotations stay.
-	 * The feet stay on their current ground. Apply this before the slider scales.
+	 * The feet stay on their current ground.
+	 * The worn companion body does not call this. Its bone lengths stay the Viking lengths.
 	 */
 	void FitHeadLengths(TArray<FSolidDeformBone>& Bones);
 

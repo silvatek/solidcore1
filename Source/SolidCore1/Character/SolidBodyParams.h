@@ -14,6 +14,7 @@ namespace SolidBody
 
 	/**
 	 * Average adult, measured down from the crown.
+	 * The companion skeleton does not move onto these stations. It keeps the Viking bone lengths.
 	 * The drawn head at HeadSize 1 is one head length.
 	 * Chin 1, base of the neck and the shoulders 2, nipple line 3, navel 4,
 	 * pubic bone 5, mid-thigh 6 (halfway from the hip to the knee),

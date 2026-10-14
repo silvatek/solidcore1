@@ -305,10 +305,10 @@ namespace SolidBodyMesh
 	inline const TCHAR* SpineChestBone = TEXT("spine_03");
 
 	/**
-	 * Circle at the top of the shoulder piece, in centimetres.
-	 * This is a radius, so the circle is 40 cm across.
+	 * Radius of the circle at neck_01, in centimetres.
+	 * The circle is 20 cm across.
 	 */
-	inline constexpr float ShoulderTopRadiusCm = 20.f;
+	inline constexpr float ShoulderTopRadiusCm = 10.f;
 	/** Rings around the shoulder piece. The bulge keeps bones inside the flat faces. */
 	inline constexpr int32 ShoulderSideCount = 10;
 
@@ -317,7 +317,7 @@ namespace SolidBodyMesh
 	 * Lower runs from the parent joint to the wide middle. Upper runs from there to neck_01.
 	 * The base oval is BaseSideDiameterCm across and TorsoDepthDiameterCm front to back.
 	 * The middle widens until both upper-arm bones, and the clavicles, sit inside the faces.
-	 * neck_01 is a circle of ShoulderTopRadiusCm. WideAxis keeps the full width.
+	 * neck_01 is a circle 20 cm across. WideAxis keeps the full width.
 	 * Invalid when neck_01 is shorter than two centimetres.
 	 */
 	struct FSolidShoulderPiece

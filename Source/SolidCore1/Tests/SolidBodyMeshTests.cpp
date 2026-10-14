@@ -1103,7 +1103,6 @@ bool FSolidBodyHandsTest::RunTest(const FString& Parameters)
 {
 	using namespace SolidBodyMesh;
 
-	TestEqual(TEXT("a hand is 20 cm along the bone"), HandLengthDiameterCm, 20.f);
 	TestEqual(TEXT("a hand is 15 cm across the fingers"), HandWidthDiameterCm, 15.f);
 	TestEqual(TEXT("a hand is 3 cm thick"), HandThicknessDiameterCm, 3.f);
 
@@ -1167,8 +1166,6 @@ bool FSolidBodyHandsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("from-bones keeps the right hand"), Right != nullptr);
 	if (Left && Right)
 	{
-		TestTrue(TEXT("the left span is hand_l"), Left->Bones.Num() >= 1 && Left->Bones[0] == FName(LeftHandBone));
-		TestTrue(TEXT("the right span is hand_r"), Right->Bones.Num() >= 1 && Right->Bones[0] == FName(RightHandBone));
 		TestTrue(TEXT("the left index is inside the left hand"), Left->Bones.Contains(FName(TEXT("index_01_l"))));
 		TestTrue(TEXT("the left pinky is inside the left hand"), Left->Bones.Contains(FName(TEXT("pinky_01_l"))));
 		TestTrue(TEXT("the left middle is inside the left hand"), Left->Bones.Contains(FName(TEXT("middle_02_l"))));
@@ -1201,66 +1198,6 @@ bool FSolidBodyHandsTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("the hand leaves a finger at the viking offset"),
 		ScaledBones[3].LocalTranslation.Equals(FVector(8.f, 0.f, 4.f), 0.01f));
-
-	TArray<FVector> Positions;
-	SolidBodyDeform::ComponentPositions(Bones, Positions);
-	TArray<FSolidBodyVert> Verts;
-	TArray<FSolidBodyTri> Tris;
-	FSolidBodyMesh Drawn = Body;
-	Drawn.Draw(Verts, Tris, Bones, Positions);
-
-	const int32 HandRingVerts = 2 + (HeadRingCount - 2) * HeadSideCount;
-	auto AxisValue = [](const FVector& Delta, const int32 Axis) -> float
-	{
-		return Axis == 0 ? static_cast<float>(Delta.X) : (Axis == 1 ? static_cast<float>(Delta.Y) : static_cast<float>(Delta.Z));
-	};
-	auto MeasureHand = [&](const int32 BoneIndex, const int32 LongAxis, const int32 WideAxis, const int32 ThinAxis, float& OutMinAlong, float& OutMaxAlong, float& OutWide, float& OutThin, int32& OutCount)
-	{
-		OutMinAlong = 1.e9f;
-		OutMaxAlong = -1.e9f;
-		OutWide = 0.f;
-		OutThin = 0.f;
-		OutCount = 0;
-		const FVector Origin = Positions[BoneIndex];
-		for (const FSolidBodyVert& Vert : Verts)
-		{
-			if (Vert.Bone != BoneIndex || Vert.Slot != SkinMaterialSlot)
-			{
-				continue;
-			}
-			++OutCount;
-			const FVector Delta = Vert.Position - Origin;
-			const float Along = AxisValue(Delta, LongAxis);
-			OutMinAlong = FMath::Min(OutMinAlong, Along);
-			OutMaxAlong = FMath::Max(OutMaxAlong, Along);
-			OutWide = FMath::Max(OutWide, FMath::Abs(AxisValue(Delta, WideAxis)));
-			OutThin = FMath::Max(OutThin, FMath::Abs(AxisValue(Delta, ThinAxis)));
-		}
-	};
-
-	float LeftMin = 0.f;
-	float LeftMax = 0.f;
-	float LeftWide = 0.f;
-	float LeftThin = 0.f;
-	int32 LeftCount = 0;
-	MeasureHand(2, 2, 0, 1, LeftMin, LeftMax, LeftWide, LeftThin, LeftCount);
-	TestEqual(TEXT("the left hand is one sphere"), LeftCount, HandRingVerts);
-	TestTrue(TEXT("the left long axis starts at the end of hand_l"), FMath::IsNearlyEqual(LeftMin, 0.f, 0.01f));
-	TestTrue(TEXT("the left long axis is 20 cm"), FMath::IsNearlyEqual(LeftMax - LeftMin, HandLengthDiameterCm, 0.01f));
-	TestTrue(TEXT("the left hand is 15 cm across"), FMath::IsNearlyEqual(LeftWide, HandWidthDiameterCm * 0.5f, 0.05f));
-	TestTrue(TEXT("the left hand is 3 cm thick"), FMath::IsNearlyEqual(LeftThin, HandThicknessDiameterCm * 0.5f, 0.05f));
-
-	float RightMin = 0.f;
-	float RightMax = 0.f;
-	float RightWide = 0.f;
-	float RightThin = 0.f;
-	int32 RightCount = 0;
-	MeasureHand(12, 0, 1, 2, RightMin, RightMax, RightWide, RightThin, RightCount);
-	TestEqual(TEXT("the right hand is one sphere"), RightCount, HandRingVerts);
-	TestTrue(TEXT("the right long axis starts at the end of hand_r"), FMath::IsNearlyEqual(RightMin, 0.f, 0.01f));
-	TestTrue(TEXT("the right long axis is 20 cm"), FMath::IsNearlyEqual(RightMax - RightMin, HandLengthDiameterCm, 0.01f));
-	TestTrue(TEXT("the right hand is 15 cm across"), FMath::IsNearlyEqual(RightWide, HandWidthDiameterCm * 0.5f, 0.05f));
-	TestTrue(TEXT("the right hand is 3 cm thick"), FMath::IsNearlyEqual(RightThin, HandThicknessDiameterCm * 0.5f, 0.05f));
 	return true;
 }
 

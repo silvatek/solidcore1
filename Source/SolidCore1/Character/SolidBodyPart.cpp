@@ -242,26 +242,30 @@ void SolidBodyMesh::FSolidBodyPart::AddTube(
 	TArray<FSolidBodyVert>& Verts,
 	TArray<FSolidBodyTri>& Tris,
 	const int32 BoneIndex,
-	const FVector& TubeStart,
-	const FVector& TubeEnd,
-	const float RadiusStart,
-	const float RadiusEnd,
-	const int32 Sides,
-	const int32 Segments,
-	const uint8 Slot,
-	const float FlattenStart,
-	const float FlattenEnd,
-	const FVector& PreferredSide) const
+	const FVector& From,
+	const FVector& To,
+	const FVector* SegmentStart,
+	const FVector* SegmentEnd,
+	const int32 SegmentCount,
+	const FVector& WideAxis)
 {
-	const FVector Delta = TubeEnd - TubeStart;
-	const float Length = Delta.Size();
-	if (Length < 1.f || BoneIndex == INDEX_NONE || Sides < 3)
+	const FSolidPartDraw Fitted = Fit(From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
+	const FSolidFittedCone& Cone = Fitted.Cone;
+	if (!Cone.bValid || BoneIndex == INDEX_NONE)
 	{
 		return;
 	}
 
+	const FVector Delta = Cone.End - Cone.Start;
+	const float Length = Delta.Size();
+	if (Length < 1.f)
+	{
+		return;
+	}
+
+	const uint8 Slot = MaterialSlot();
 	const FVector Axis = Delta / Length;
-	FVector Side = PreferredSide - Axis * FVector::DotProduct(PreferredSide, Axis);
+	FVector Side = Cone.WideAxis - Axis * FVector::DotProduct(Cone.WideAxis, Axis);
 	if (Side.SizeSquared() < 0.01)
 	{
 		Side = FVector::CrossProduct(FVector::UpVector, Axis);
@@ -272,20 +276,18 @@ void SolidBodyMesh::FSolidBodyPart::AddTube(
 	}
 	Side = Side.GetSafeNormal();
 	const FVector Up = FVector::CrossProduct(Axis, Side).GetSafeNormal();
-	const int32 SideCount = FMath::Clamp(Sides, 3, BodyPartSideLimit);
-	const int32 RingCount = FMath::Max(Segments, 1) + 1;
+	const int32 SideCount = FMath::Clamp(BodyPartSides, 3, BodyPartSideLimit);
+	const int32 RingCount = 2;
 	const int32 Base = Verts.Num();
 
 	for (int32 Ring = 0; Ring < RingCount; ++Ring)
 	{
-		const float T = (RingCount == 1)
-			? 0.f
-			: static_cast<float>(Ring) / static_cast<float>(RingCount - 1);
-		const FVector Center = FMath::Lerp(TubeStart, TubeEnd, static_cast<double>(T));
-		const float Radius = FMath::Lerp(RadiusStart, RadiusEnd, T);
+		const float T = static_cast<float>(Ring);
+		const FVector Center = FMath::Lerp(Cone.Start, Cone.End, static_cast<double>(T));
+		const float Radius = FMath::Lerp(Cone.RadiusStart, Cone.RadiusEnd, T);
 		const float Squash = FMath::Lerp(
-			FMath::Clamp(FlattenStart, 0.2f, 1.f),
-			FMath::Clamp(FlattenEnd, 0.2f, 1.f),
+			FMath::Clamp(Cone.DepthScaleStart, 0.2f, 1.f),
+			FMath::Clamp(Cone.DepthScaleEnd, 0.2f, 1.f),
 			T);
 		for (int32 Step = 0; Step < SideCount; ++Step)
 		{
@@ -325,9 +327,16 @@ void SolidBodyMesh::FSolidBodyPart::AddShoulder(
 	TArray<FSolidBodyVert>& Verts,
 	TArray<FSolidBodyTri>& Tris,
 	const int32 BoneIndex,
-	const FSolidShoulderPiece& Piece,
-	const uint8 Slot) const
+	const FVector& From,
+	const FVector& To,
+	const FVector* SegmentStart,
+	const FVector* SegmentEnd,
+	const int32 SegmentCount,
+	const FVector& WideAxis)
 {
+	const FSolidPartDraw Fitted = Fit(From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
+	const FSolidShoulderPiece& Piece = Fitted.Shoulder;
+	const uint8 Slot = MaterialSlot();
 	if (!Piece.bValid || BoneIndex == INDEX_NONE)
 	{
 		return;
@@ -653,41 +662,19 @@ void SolidBodyMesh::FSolidBodyPart::Draw(
 	const int32 SegmentCount,
 	const FVector& WideAxis)
 {
-	if (Measure == ESolidPartMeasure::Head)
+	switch (Measure)
 	{
+	case ESolidPartMeasure::Head:
 		AddHead(Verts, Tris, SpanBone, From, To, SegmentStart, SegmentEnd, SegmentCount);
-		return;
-	}
-	if (Measure == ESolidPartMeasure::Hand)
-	{
+		break;
+	case ESolidPartMeasure::Hand:
 		AddHand(Verts, Tris, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount);
-		return;
+		break;
+	case ESolidPartMeasure::Shoulder:
+		AddShoulder(Verts, Tris, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
+		break;
+	default:
+		AddTube(Verts, Tris, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
+		break;
 	}
-
-	const FSolidPartDraw Fitted = Fit(From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
-	if (Fitted.bShoulder)
-	{
-		AddShoulder(Verts, Tris, WeightBone, Fitted.Shoulder, MaterialSlot());
-		return;
-	}
-
-	const FSolidFittedCone& Cone = Fitted.Cone;
-	if (!Cone.bValid)
-	{
-		return;
-	}
-	AddTube(
-		Verts,
-		Tris,
-		WeightBone,
-		Cone.Start,
-		Cone.End,
-		Cone.RadiusStart,
-		Cone.RadiusEnd,
-		BodyPartSides,
-		1,
-		MaterialSlot(),
-		Cone.DepthScaleStart,
-		Cone.DepthScaleEnd,
-		Cone.WideAxis);
 }

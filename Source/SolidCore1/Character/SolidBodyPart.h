@@ -194,6 +194,8 @@ namespace SolidBodyMesh
 
 		/**
 		 * Add this part's triangles.
+		 * The measure chooses the mesh. The head and the hand measure themselves.
+		 * The shoulders and every other part fit their cones, then draw them.
 		 * WeightBone is the parent joint. The child joint only rotates, so a tube is skinned there.
 		 * SpanBone is Bones[0]. The head is skinned to that bone.
 		 * For the head, To is the head joint. The sphere starts at From, the base of that bone.
@@ -216,27 +218,29 @@ namespace SolidBodyMesh
 	private:
 		void AddTri(TArray<FSolidBodyTri>& Tris, int32 A, int32 B, int32 C) const;
 
+		/** Fit this part's cone, then add that tube. */
 		void AddTube(
 			TArray<FSolidBodyVert>& Verts,
 			TArray<FSolidBodyTri>& Tris,
 			int32 BoneIndex,
-			const FVector& TubeStart,
-			const FVector& TubeEnd,
-			float RadiusStart,
-			float RadiusEnd,
-			int32 Sides,
-			int32 Segments,
-			uint8 Slot,
-			float FlattenStart,
-			float FlattenEnd,
-			const FVector& PreferredSide) const;
+			const FVector& From,
+			const FVector& To,
+			const FVector* SegmentStart,
+			const FVector* SegmentEnd,
+			int32 SegmentCount,
+			const FVector& WideAxis);
 
+		/** Fit the shoulder piece, then add its two cones. */
 		void AddShoulder(
 			TArray<FSolidBodyVert>& Verts,
 			TArray<FSolidBodyTri>& Tris,
 			int32 BoneIndex,
-			const FSolidShoulderPiece& Piece,
-			uint8 Slot) const;
+			const FVector& From,
+			const FVector& To,
+			const FVector* SegmentStart,
+			const FVector* SegmentEnd,
+			int32 SegmentCount,
+			const FVector& WideAxis);
 
 		/**
 		 * A sphere along world up, skinned to the head bone.

@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0305")
+#define SOLID_BUILD_ID TEXT("SC1-0306")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The sole of each foot sits on the bottom of the capsule.")
+#define SOLID_BUILD_NOTE TEXT("Draw switches on the part. The shoulder and the tubes fit their own cones.")
 #endif

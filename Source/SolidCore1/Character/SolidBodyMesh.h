@@ -43,8 +43,6 @@ namespace SolidBodyMesh
 			const TArray<FVector>& Positions);
 	};
 
-	inline constexpr uint32 CaptainSeed = 0x0C0A77A1u;
-
 	/** Stable id for a companion name. Case does not matter. */
 	uint32 SeedForName(const FString& Name);
 
@@ -57,92 +55,6 @@ namespace SolidBodyMesh
 	/** Fingers, thumbs, and toes. The calf and the ankle are not digits. */
 	bool IsDigitBoneName(const FString& BoneName);
 
-	/**
-	 * Bottom radius of the hip cylinder, in centimetres.
-	 * It reaches the outer face of the thigh (hip joint plus the thigh's radius).
-	 * A wide pelvis floor can stay wider than that span. The drawn body does not:
-	 * it uses SplitHalfWidth so the hip equals the thighs.
-	 */
-	float HipBottomRadius(float PelvisHalfWidth, float HipLateral, float ThighRadius);
-
-	/**
-	 * Skull cross-section as a fraction of head length.
-	 * The chin ring is HeadChinSlice of that, and the neck cone ends on it.
-	 */
-	inline constexpr float HeadRadiusOverHeight = 0.46f;
-	inline constexpr float HeadChinSlice = 0.55f;
-
-	/** Joint cross-sections in centimetres when the matching channel is 1. */
-	inline constexpr float JointWaist = 12.f;
-	inline constexpr float JointChest = 15.f;
-	inline constexpr float JointNeck = 8.f;
-	inline constexpr float JointThigh = 9.f;
-	inline constexpr float JointKnee = 6.4f;
-	inline constexpr float JointAnkle = 4.6f;
-	inline constexpr float JointShoulder = 5.2f;
-	inline constexpr float JointElbow = 4.2f;
-	inline constexpr float JointWrist = 3.4f;
-
-	/** One radius per joint, before a split widens the pelvis or the shoulder line. */
-	struct FSolidConeProfile
-	{
-		float Waist = 0.f;
-		float Chest = 0.f;
-		float Neck = 0.f;
-		float Jaw = 0.f;
-		float Thigh = 0.f;
-		float Knee = 0.f;
-		float Ankle = 0.f;
-		float Shoulder = 0.f;
-		float Elbow = 0.f;
-		float Wrist = 0.f;
-	};
-
-	/** Drawn head length in centimetres. HeadSize 1 is one head. */
-	float HeadHeightCm(const FSolidBodyParams& Params);
-
-	/** Radius of the skull's bottom ring, where the neck cone ends. */
-	float HeadChinRadius(const FSolidBodyParams& Params);
-
-	/** Limb and torso joint radii for these proportions. The jaw matches the chin ring. */
-	FSolidConeProfile ConeProfile(const FSolidBodyParams& Params);
-
-	/**
-	 * Half the width of one cone where it meets two equal cones.
-	 * ChildLateral is the child's axis out from the parent's axis.
-	 * The parent's diameter is then the outer span of both children.
-	 */
-	float SplitHalfWidth(float ChildLateral, float ChildRadius);
-
-	/**
-	 * Spine joint along the waist-to-chest chain.
-	 * Index 0 is the waist and LastIndex is the chest. One spine is the chest.
-	 */
-	float SpineJointRadius(float Waist, float Chest, int32 Index, int32 LastIndex);
-
-	/**
-	 * One radius per joint, in centimetres.
-	 * The cone from a parent to a child uses the parent's radius, then the child's,
-	 * so adjoining ends match. The pelvis matches both thighs. The chest matches
-	 * both arms. The neck keeps its own radius and ends on the chin.
-	 */
-	void JointRadii(
-		const TArray<FSolidDeformBone>& Bones,
-		const TArray<FVector>& Positions,
-		const FSolidBodyParams& Params,
-		TArray<float>& OutRadii);
-
-	/**
-	 * Bones that share a key are one mesh piece.
-	 * The head includes the eyes. Each shoulder includes the clavicle, the upper arm,
-	 * and the shoulder joints. spine_01, spine_02, and spine_03 are separate pieces.
-	 * Empty when the bone is not a body piece.
-	 */
-	FString SegmentKey(const FString& BoneName);
-
-	/** Round cone around Points. A mirrored point set produces a mirrored cone. */
-	FSolidFittedCone FitCone(const FVector* Points, int32 Count);
-
 	/** The only bone in the left thigh piece. calf_l runs from the hip to the knee. */
 	inline const TCHAR* LeftThighBone = TEXT("calf_l");
 
@@ -152,13 +64,6 @@ namespace SolidBodyMesh
 	/** Diameters of a thigh cone, in centimetres. The hip is the wide end. */
 	inline constexpr float LeftThighTopDiameterCm = 20.f;
 	inline constexpr float LeftThighBottomDiameterCm = 15.f;
-
-	/**
-	 * Truncated cone the length of calf_l or calf_r.
-	 * That length is the distance from the hip to the knee, so Hip is the wide end and Knee is the bone.
-	 * The piece does not include the parent bone. Invalid when the bone is shorter than a centimetre.
-	 */
-	FSolidFittedCone LeftThighCone(const FVector& Hip, const FVector& Knee);
 
 	/** The only bone in the left calf piece. foot_l runs from the knee to the ankle. */
 	inline const TCHAR* LeftCalfBone = TEXT("foot_l");
@@ -170,13 +75,6 @@ namespace SolidBodyMesh
 	inline constexpr float CalfTopDiameterCm = LeftThighBottomDiameterCm;
 	inline constexpr float CalfBottomDiameterCm = 12.f;
 
-	/**
-	 * Truncated cone the length of foot_l or foot_r.
-	 * Knee is the parent joint and Ankle is the bone. The wide end is the knee.
-	 * The piece does not include the parent bone. Invalid when the bone is shorter than a centimetre.
-	 */
-	FSolidFittedCone CalfCone(const FVector& Knee, const FVector& Ankle);
-
 	/** The only bone in the left foot cylinder. ball_l runs from the ankle to the toe. */
 	inline const TCHAR* LeftBallBone = TEXT("ball_l");
 
@@ -185,13 +83,6 @@ namespace SolidBodyMesh
 
 	/** Diameter of a foot cylinder, in centimetres. Both ends are the same. */
 	inline constexpr float BallDiameterCm = 10.f;
-
-	/**
-	 * Cylinder the length of ball_l or ball_r.
-	 * Ankle is the parent joint and Toe is the bone. Both ends are BallDiameterCm across.
-	 * The piece does not include the parent bone. Invalid when the bone is shorter than a centimetre.
-	 */
-	FSolidFittedCone BallCylinder(const FVector& Ankle, const FVector& Toe);
 
 	/** The only bone in the left toe cone. extra_finger_l continues past ball_l. */
 	inline const TCHAR* LeftExtraFingerBone = TEXT("extra_finger_l");
@@ -202,13 +93,6 @@ namespace SolidBodyMesh
 	/** Diameters of a toe cone, in centimetres. The end towards the ankle is the wide end. */
 	inline constexpr float ExtraFingerAnkleDiameterCm = BallDiameterCm;
 	inline constexpr float ExtraFingerToeDiameterCm = 5.f;
-
-	/**
-	 * Truncated cone the length of extra_finger_l or extra_finger_r.
-	 * AnkleEnd is the parent joint and ToeEnd is the bone. The wide end is towards the ankle.
-	 * The piece does not include the parent bone. Invalid when the bone is shorter than a centimetre.
-	 */
-	FSolidFittedCone ExtraFingerCone(const FVector& AnkleEnd, const FVector& ToeEnd);
 
 	/** Shirt material slot. Trousers are the next slot, then skin. */
 	inline constexpr uint8 ShirtMaterialSlot = 0;
@@ -226,27 +110,8 @@ namespace SolidBodyMesh
 	inline constexpr float HipTopSideDiameterCm = 30.f;
 	inline constexpr float HipDepthDiameterCm = 20.f;
 
-	/**
-	 * Shirt piece the length of spine_01. The parent joint is the bottom: 50 cm side to side and 20 cm front to back.
-	 * spine_01 is the top: 30 cm side to side and 20 cm front to back. The full width is the mesh forward axis.
-	 * Invalid when the bone is shorter than a centimetre.
-	 */
-	FSolidFittedCone HipCone(const FVector& SpineStart, const FVector& SpineEnd);
-
 	/** A spine bone above the hips. spine_01 is the hip piece. A twist is not a slab. */
 	bool IsRisingSpineBoneName(const FString& BoneName);
-
-	/** clavicle_l and clavicle_r. A twist is not a clavicle, and neither is shoulder_jnt. */
-	bool IsClavicleBoneName(const FString& BoneName);
-
-	/** upperarm_l and upperarm_r. A twist is not the upper arm. */
-	bool IsUpperArmBoneName(const FString& BoneName);
-
-	/** lowerarm_l and lowerarm_r. A twist is not the forearm. */
-	bool IsForearmBoneName(const FString& BoneName);
-
-	/** hand_l and hand_r. A finger is not the hand, and neither is an IK hand. */
-	bool IsHandBoneName(const FString& BoneName);
 
 	/**
 	 * Side-to-side width at the top of the spine, in centimetres.
@@ -265,26 +130,13 @@ namespace SolidBodyMesh
 	 */
 	void TorsoSideDiameters(int32 Step, int32 Count, float& OutBottomCm, float& OutTopCm);
 
-	/**
-	 * Shirt piece the length of one spine bone above spine_01.
-	 * Bottom is the parent joint and Top is the bone. SideBottomCm and SideTopCm are the full widths.
-	 * Front-to-back stays TorsoDepthDiameterCm. The full width is the mesh forward axis.
-	 * Invalid when the bone is shorter than a centimetre.
-	 */
-	FSolidFittedCone TorsoCone(
-		const FVector& Bottom,
-		const FVector& Top,
-		float SideBottomCm,
-		float SideTopCm);
+	/** Elbow cross-section when bulk is 1, in centimetres. The drawn upper arm is twice this at the shoulder. */
+	inline constexpr float JointElbow = 4.2f;
 
-	/**
-	 * Clavicle where it leaves the chest, in centimetres.
-	 * Thicker than the arm and thinner than the chest. The outer end matches the upper arm.
-	 */
-	inline constexpr float ClavicleRootDiameterCm = 14.f;
+	/** Wrist cross-section when bulk is 1, in centimetres. The drawn upper arm ends at twice this, and so does the lower arm. */
+	inline constexpr float JointWrist = 3.4f;
 
-	/** Upper-arm diameters, in centimetres. The parent joint is the wide end. */
-	inline constexpr float UpperArmShoulderDiameterCm = JointShoulder * 2.f;
+	/** Drawn upper arm at the shoulder, in centimetres. */
 	inline constexpr float UpperArmElbowDiameterCm = JointElbow * 2.f;
 
 	/**
@@ -299,35 +151,6 @@ namespace SolidBodyMesh
 	 */
 	inline constexpr float LowerArmStartDiameterCm = 5.f;
 	inline constexpr float LowerArmEndDiameterCm = ForearmWristDiameterCm;
-
-	/**
-	 * Cone the length of a clavicle bone. Not a drawn part. The shoulders wrap that bone.
-	 * Parent is the wide end and Bone is the narrow end.
-	 * Invalid when the bone is shorter than a centimetre.
-	 */
-	FSolidFittedCone ClavicleCone(const FVector& Parent, const FVector& Bone);
-
-	/**
-	 * Cone the length of upperarm_l or upperarm_r. Not a drawn part. The shoulders wrap that bone.
-	 * The drawn upper arm is ForearmCone, along lowerarm.
-	 * Parent is the wide end and Bone is the narrow end.
-	 * Invalid when the bone is shorter than a centimetre.
-	 */
-	FSolidFittedCone UpperArmCone(const FVector& Parent, const FVector& Bone);
-
-	/**
-	 * Shirt cone for the "Upper arm" part. The skeleton bone is lowerarm_l or lowerarm_r.
-	 * Parent is the shoulder and Bone is the elbow. The shoulder is the wide end.
-	 * Invalid when the bone is shorter than a centimetre.
-	 */
-	FSolidFittedCone ForearmCone(const FVector& Parent, const FVector& Bone);
-
-	/**
-	 * Shirt cone for the "Lower arm" part. The skeleton bone is hand_l or hand_r.
-	 * Parent is the elbow and Bone is the wrist. The elbow is the narrow end.
-	 * Invalid when the bone is shorter than a centimetre.
-	 */
-	FSolidFittedCone HandCone(const FVector& Wrist, const FVector& Hand);
 
 	/** The five bones inside the shoulder piece. The mesh itself is the length of neck_01. */
 	inline const TCHAR* ShoulderNeckBone = TEXT("neck_01");
@@ -370,9 +193,6 @@ namespace SolidBodyMesh
 		float BaseSideDiameterCm,
 		const FVector& WideAxis);
 
-	/** True when Point is inside the shoulder oval. The flat faces sit slightly inside this. */
-	bool ShoulderContains(const FSolidShoulderPiece& Piece, const FVector& Point);
-
 	/**
 	 * True when the ray meets the cone closer than InOutRayT.
 	 * A depth scale below 1 uses an oval section, full across WideAxis and squashed across it.
@@ -384,27 +204,6 @@ namespace SolidBodyMesh
 		const FVector& RayOrigin,
 		const FVector& RayDir,
 		float& InOutRayT);
-
-	/** Fit on the part. Hover and the older cone checks call this. */
-	inline FSolidPartDraw DrawForPart(
-		FSolidBodyPart& Part,
-		const FVector& From,
-		const FVector& To,
-		const FVector* SegmentStart,
-		const FVector* SegmentEnd,
-		const int32 SegmentCount,
-		const FVector& WideAxis)
-	{
-		return Part.Fit(From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
-	}
-
-	/** Start and end radii of the cone from Parent to Child. Both ends are joint radii. */
-	void SegmentRadii(
-		const TArray<float>& Radii,
-		int32 Parent,
-		int32 Child,
-		float& OutStart,
-		float& OutEnd);
 
 	/**
 	 * Transient low-poly mesh owned by Outer.
@@ -433,7 +232,4 @@ namespace SolidBodyMesh
 
 	/** Stable face glyph for a companion name. One of a few emoji code points, including U+1F611. */
 	uint32 FaceCodepointForName(const FString& Name);
-
-	/** UTF-16 text for a Unicode code point, including characters above U+FFFF. */
-	FString FaceStringForCodepoint(uint32 Codepoint);
 }

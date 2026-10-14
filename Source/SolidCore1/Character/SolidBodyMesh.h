@@ -232,6 +232,9 @@ namespace SolidBodyMesh
 	/** lowerarm_l and lowerarm_r. A twist is not the forearm. */
 	bool IsForearmBoneName(const FString& BoneName);
 
+	/** hand_l and hand_r. A finger is not the hand, and neither is an IK hand. */
+	bool IsHandBoneName(const FString& BoneName);
+
 	/**
 	 * Side-to-side width at the top of the spine, in centimetres.
 	 * That is an average shoulder breadth: wider than the 30 cm waist, narrower than the 50 cm hips.
@@ -271,8 +274,11 @@ namespace SolidBodyMesh
 	inline constexpr float UpperArmShoulderDiameterCm = JointShoulder * 2.f;
 	inline constexpr float UpperArmElbowDiameterCm = JointElbow * 2.f;
 
-	/** Wrist diameter, in centimetres. The forearm's wide end is the elbow. */
+	/** Wrist diameter, in centimetres. The forearm's narrow end, and the hand's wide end. */
 	inline constexpr float ForearmWristDiameterCm = JointWrist * 2.f;
+
+	/** Diameter at the hand bone, in centimetres. The wide end is the wrist. */
+	inline constexpr float HandEndDiameterCm = 5.f;
 
 	/**
 	 * Shirt cone the length of a clavicle bone.
@@ -289,11 +295,18 @@ namespace SolidBodyMesh
 	FSolidFittedCone UpperArmCone(const FVector& Parent, const FVector& Bone);
 
 	/**
-	 * Skin cone the length of lowerarm_l or lowerarm_r.
+	 * Shirt cone the length of lowerarm_l or lowerarm_r.
 	 * Parent is the wide end and Bone is the narrow end.
 	 * Invalid when the bone is shorter than a centimetre.
 	 */
 	FSolidFittedCone ForearmCone(const FVector& Parent, const FVector& Bone);
+
+	/**
+	 * Shirt cone the length of hand_l or hand_r.
+	 * Parent is the wrist and Bone is the hand. The wide end matches the forearm.
+	 * Invalid when the bone is shorter than a centimetre.
+	 */
+	FSolidFittedCone HandCone(const FVector& Wrist, const FVector& Hand);
 
 	/** The five bones inside the shoulder piece. The mesh itself is the length of neck_01. */
 	inline const TCHAR* ShoulderNeckBone = TEXT("neck_01");

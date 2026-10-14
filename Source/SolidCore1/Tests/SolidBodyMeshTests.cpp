@@ -966,13 +966,19 @@ bool FSolidBodyTorsoAndArmsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("left forearm"), SolidBodyMesh::IsForearmBoneName(TEXT("lowerarm_l")));
 	TestTrue(TEXT("right forearm"), SolidBodyMesh::IsForearmBoneName(TEXT("lowerarm_r")));
 	TestFalse(TEXT("a forearm twist stays bare"), SolidBodyMesh::IsForearmBoneName(TEXT("lowerarm_twist_01_r")));
-	TestFalse(TEXT("a hand stays bare"), SolidBodyMesh::IsForearmBoneName(TEXT("hand_l")));
+	TestFalse(TEXT("a hand is not a forearm"), SolidBodyMesh::IsForearmBoneName(TEXT("hand_l")));
+	TestTrue(TEXT("left hand"), SolidBodyMesh::IsHandBoneName(TEXT("hand_l")));
+	TestTrue(TEXT("right hand"), SolidBodyMesh::IsHandBoneName(TEXT("hand_r")));
+	TestFalse(TEXT("a finger is not the hand"), SolidBodyMesh::IsHandBoneName(TEXT("index_01_l")));
+	TestFalse(TEXT("an IK hand stays bare"), SolidBodyMesh::IsHandBoneName(TEXT("ik_hand_l")));
+	TestFalse(TEXT("a forearm is not a hand"), SolidBodyMesh::IsHandBoneName(TEXT("lowerarm_l")));
 	TestFalse(TEXT("the head stays bare"), SolidBodyMesh::IsUpperArmBoneName(TEXT("head")));
 	TestFalse(TEXT("an eye stays bare"), SolidBodyMesh::IsClavicleBoneName(TEXT("eye_l")));
 
 	TestEqual(TEXT("the chest is 40 cm side to side"), SolidBodyMesh::ChestSideDiameterCm, 40.f);
 	TestEqual(TEXT("the torso depth matches the hip"), SolidBodyMesh::TorsoDepthDiameterCm, SolidBodyMesh::HipDepthDiameterCm);
-	TestEqual(TEXT("the arms use the skin"), SolidBodyMesh::SkinMaterialSlot, static_cast<uint8>(2));
+	TestEqual(TEXT("skin is the third material"), SolidBodyMesh::SkinMaterialSlot, static_cast<uint8>(2));
+	TestEqual(TEXT("the arms use the shirt"), SolidBodyMesh::ShirtMaterialSlot, static_cast<uint8>(0));
 	TestTrue(
 		TEXT("the shoulder meets the upper arm"),
 		FMath::IsNearlyEqual(SolidBodyMesh::UpperArmShoulderDiameterCm, SolidBodyMesh::JointShoulder * 2.f, 0.01f));
@@ -1060,6 +1066,19 @@ bool FSolidBodyTorsoAndArmsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the forearm starts where the upper arm ends"), FMath::IsNearlyEqual(Forearm.RadiusStart, Upper.RadiusEnd, 0.01f));
 	TestTrue(TEXT("the forearm is 3.4 cm in radius at the bone"), FMath::IsNearlyEqual(Forearm.RadiusEnd, 3.4f, 0.01f));
 	TestFalse(TEXT("an arm bone with no length is not drawn"), SolidBodyMesh::ForearmCone(Elbow, Elbow).bValid);
+
+	const FVector Knuckle(-24.f, 8.f, 72.f);
+	const SolidBodyMesh::FSolidFittedCone Hand = SolidBodyMesh::HandCone(Wrist, Knuckle);
+	TestTrue(TEXT("the hand is a cone"), Hand.bValid);
+	TestTrue(TEXT("the hand starts at the wrist"), Hand.Start.Equals(Wrist, 0.01));
+	TestTrue(TEXT("the hand ends on the bone"), Hand.End.Equals(Knuckle, 0.01));
+	TestTrue(TEXT("the hand starts where the forearm ends"), FMath::IsNearlyEqual(Hand.RadiusStart, Forearm.RadiusEnd, 0.01f));
+	TestTrue(TEXT("the hand is 2.5 cm in radius at the bone"), FMath::IsNearlyEqual(Hand.RadiusEnd, SolidBodyMesh::HandEndDiameterCm * 0.5f, 0.01f));
+	TestTrue(TEXT("the hand is the length of the bone"), FMath::IsNearlyEqual(
+		static_cast<float>(FVector::Dist(Hand.Start, Hand.End)),
+		static_cast<float>(FVector::Dist(Wrist, Knuckle)),
+		0.05f));
+	TestFalse(TEXT("a hand bone with no length is not drawn"), SolidBodyMesh::HandCone(Wrist, Wrist).bValid);
 	return true;
 }
 

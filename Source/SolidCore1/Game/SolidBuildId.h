@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0274")
+#define SOLID_BUILD_ID TEXT("SC1-0275")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The shoulder widens around the upper arms, then narrows to the 20 cm neck.")
+#define SOLID_BUILD_NOTE TEXT("Forearms and hands are shirt cones. Each hand runs from the 6.8 cm wrist to 5 cm.")
 #endif

@@ -377,6 +377,12 @@ bool SolidBodyMesh::IsForearmBoneName(const FString& BoneName)
 	return Lower.StartsWith(TEXT("lowerarm_")) && !IsTwistBoneName(Lower);
 }
 
+bool SolidBodyMesh::IsHandBoneName(const FString& BoneName)
+{
+	const FString Lower = BoneName.ToLower();
+	return Lower.StartsWith(TEXT("hand_")) && !IsTwistBoneName(Lower);
+}
+
 void SolidBodyMesh::TorsoSideDiameters(
 	const int32 Step,
 	const int32 Count,
@@ -447,6 +453,11 @@ SolidBodyMesh::FSolidFittedCone SolidBodyMesh::UpperArmCone(const FVector& Paren
 SolidBodyMesh::FSolidFittedCone SolidBodyMesh::ForearmCone(const FVector& Parent, const FVector& Bone)
 {
 	return RoundBoneCone(Parent, Bone, UpperArmElbowDiameterCm, ForearmWristDiameterCm);
+}
+
+SolidBodyMesh::FSolidFittedCone SolidBodyMesh::HandCone(const FVector& Wrist, const FVector& Hand)
+{
+	return RoundBoneCone(Wrist, Hand, ForearmWristDiameterCm, HandEndDiameterCm);
 }
 
 namespace
@@ -1570,7 +1581,7 @@ namespace
 			}
 		}
 
-		// shoulder_jnt, hand, head, and eye bones stay bare. Twists stay bare too.
+		// shoulder_jnt, fingers, head, and eye bones stay bare. Twists stay bare too.
 		AddNamedCones(
 			Verts,
 			Tris,
@@ -1579,7 +1590,16 @@ namespace
 			Count,
 			SolidBodyMesh::IsForearmBoneName,
 			SolidBodyMesh::ForearmCone,
-			SlotSkin);
+			SlotTorso);
+		AddNamedCones(
+			Verts,
+			Tris,
+			Bones,
+			Positions,
+			Count,
+			SolidBodyMesh::IsHandBoneName,
+			SolidBodyMesh::HandCone,
+			SlotTorso);
 	}
 
 	void PaintSlot(

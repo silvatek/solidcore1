@@ -853,6 +853,10 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 			{
 				Consider(SolidBodyMesh::ForearmCone(ParentPos, BonePos), Name);
 			}
+			else if (SolidBodyMesh::IsHandBoneName(Name))
+			{
+				Consider(SolidBodyMesh::HandCone(ParentPos, BonePos), Name);
+			}
 		}
 		return BestLabel;
 	}

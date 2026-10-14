@@ -187,6 +187,25 @@ namespace SolidBodyMesh
 	inline const TCHAR* RightHandBone = TEXT("hand_r");
 
 	/**
+	 * The bones inside one hand part.
+	 * Each finger is three joints. The hand bone stays on the lower arm.
+	 */
+	inline const TCHAR* LeftFingerBones[] = {
+		TEXT("thumb_01_l"), TEXT("thumb_02_l"), TEXT("thumb_03_l"),
+		TEXT("index_01_l"), TEXT("index_02_l"), TEXT("index_03_l"),
+		TEXT("middle_01_l"), TEXT("middle_02_l"), TEXT("middle_03_l"),
+		TEXT("ring_01_l"), TEXT("ring_02_l"), TEXT("ring_03_l"),
+		TEXT("pinky_01_l"), TEXT("pinky_02_l"), TEXT("pinky_03_l"),
+	};
+	inline const TCHAR* RightFingerBones[] = {
+		TEXT("thumb_01_r"), TEXT("thumb_02_r"), TEXT("thumb_03_r"),
+		TEXT("index_01_r"), TEXT("index_02_r"), TEXT("index_03_r"),
+		TEXT("middle_01_r"), TEXT("middle_02_r"), TEXT("middle_03_r"),
+		TEXT("ring_01_r"), TEXT("ring_02_r"), TEXT("ring_03_r"),
+		TEXT("pinky_01_r"), TEXT("pinky_02_r"), TEXT("pinky_03_r"),
+	};
+
+	/**
 	 * Cross-section of one hand ellipsoid, in centimetres.
 	 * The long axis runs from the hand joint to the top of one finger bone.
 	 * The wide axis follows the other fingers. The thin axis is the palm thickness.

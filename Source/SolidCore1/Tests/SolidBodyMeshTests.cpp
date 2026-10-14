@@ -1319,4 +1319,38 @@ bool FSolidBodyHandShapeTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyHandFingersTest,
+	"SolidCore1.Body.HandFingers",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyHandFingersTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidBodyMesh;
+
+	const FSolidBodyMesh Catalogue = FSolidBodyMesh::Make({});
+	const FSolidBodyPart* Left = Catalogue.Find(TEXT("Hand (L)"));
+	const FSolidBodyPart* Right = Catalogue.Find(TEXT("Hand (R)"));
+	TestTrue(TEXT("the left hand is on the list"), Left != nullptr);
+	TestTrue(TEXT("the right hand is on the list"), Right != nullptr);
+	if (!Left || !Right)
+	{
+		return false;
+	}
+
+	TestEqual(TEXT("the left hand lists every finger joint"), Left->Bones.Num(), UE_ARRAY_COUNT(LeftFingerBones));
+	TestEqual(TEXT("the right hand lists every finger joint"), Right->Bones.Num(), UE_ARRAY_COUNT(RightFingerBones));
+	TestFalse(TEXT("the left hand leaves the hand bone on the lower arm"), Left->Bones.Contains(FName(LeftHandBone)));
+	TestFalse(TEXT("the right hand leaves the hand bone on the lower arm"), Right->Bones.Contains(FName(RightHandBone)));
+	for (const TCHAR* BoneName : LeftFingerBones)
+	{
+		TestTrue(BoneName, Left->Bones.Contains(FName(BoneName)));
+	}
+	for (const TCHAR* BoneName : RightFingerBones)
+	{
+		TestTrue(BoneName, Right->Bones.Contains(FName(BoneName)));
+	}
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

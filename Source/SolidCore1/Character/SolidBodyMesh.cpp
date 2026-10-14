@@ -120,19 +120,29 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 		FSolidPartSection::Round(LowerArmStartDiameterCm),
 		FSolidPartSection::Round(LowerArmEndDiameterCm)), ESolidPartMeasure::Arm);
 
-	// FromBones replaces the hand bone with the finger bones. The mesh starts where this bone ends.
-	AddPart(FSolidBodyPart(
+	// The finger list is the hand. FromBones drops a name the skeleton does not have, and adds any other finger it finds.
+	FSolidBodyPart LeftHand(
 		TEXT("Hand (L)"),
-		{ LeftHandBone },
+		{},
 		ESolidPartColour::Skin,
 		FSolidPartSection::Round(0.f),
-		FSolidPartSection::Round(0.f)), ESolidPartMeasure::Hand);
-	AddPart(FSolidBodyPart(
+		FSolidPartSection::Round(0.f));
+	for (const TCHAR* BoneName : LeftFingerBones)
+	{
+		LeftHand.Bones.Add(BoneName);
+	}
+	AddPart(LeftHand, ESolidPartMeasure::Hand);
+	FSolidBodyPart RightHand(
 		TEXT("Hand (R)"),
-		{ RightHandBone },
+		{},
 		ESolidPartColour::Skin,
 		FSolidPartSection::Round(0.f),
-		FSolidPartSection::Round(0.f)), ESolidPartMeasure::Hand);
+		FSolidPartSection::Round(0.f));
+	for (const TCHAR* BoneName : RightFingerBones)
+	{
+		RightHand.Bones.Add(BoneName);
+	}
+	AddPart(RightHand, ESolidPartMeasure::Hand);
 
 	// The sphere's height comes from the eye joints. These diameters are unused.
 	AddPart(FSolidBodyPart(
@@ -1262,7 +1272,7 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::FromBones(const TAr
 		}
 		else if (Part.Measure == ESolidPartMeasure::Hand)
 		{
-			const bool bLeft = Part.Bones[0].ToString().Equals(LeftHandBone, ESearchCase::IgnoreCase);
+			const bool bLeft = Part.Name.Equals(TEXT("Hand (L)"), ESearchCase::IgnoreCase);
 			const TCHAR* HandName = bLeft ? LeftHandBone : RightHandBone;
 			int32 HandIndex = INDEX_NONE;
 			for (int32 Index = 0; Index < Bones.Num(); ++Index)

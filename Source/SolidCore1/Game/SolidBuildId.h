@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0296")
+#define SOLID_BUILD_ID TEXT("SC1-0297")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Hand tests no longer lock the span bone or the 20 cm axis.")
+#define SOLID_BUILD_NOTE TEXT("The lower arm ends on the hand joint. The hand runs from there to a finger.")
 #endif

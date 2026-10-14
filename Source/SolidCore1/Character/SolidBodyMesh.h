@@ -177,26 +177,22 @@ namespace SolidBodyMesh
 
 	/**
 	 * Lower-arm cone, in centimetres. The part is "Lower arm" and the bone inside it is hand_l or hand_r.
-	 * Start is the elbow. End is the wrist. The wrist is the wide end.
+	 * Start is the elbow. End is the hand joint, the bottom of the hand bone. The hand mesh starts there.
 	 */
 	inline constexpr float LowerArmStartDiameterCm = 5.f;
 	inline constexpr float LowerArmEndDiameterCm = ForearmWristDiameterCm;
 
-	/** The hand part is anchored here. The lower arm is the length of the same bone. */
+	/** The lower arm ends on this bone. Finger bones meet it, and the hand mesh starts there. */
 	inline const TCHAR* LeftHandBone = TEXT("hand_l");
 	inline const TCHAR* RightHandBone = TEXT("hand_r");
 
 	/**
-	 * Diameters of one hand ellipsoid, in centimetres.
-	 * The long axis starts at the end of the hand bone and runs on along that bone.
-	 * The wide axis follows the finger spread. The thin axis is the palm thickness.
+	 * Cross-section of one hand ellipsoid, in centimetres.
+	 * The long axis runs from the hand joint to the top of one finger bone.
+	 * The wide axis follows the other fingers. The thin axis is the palm thickness.
 	 */
-	inline constexpr float HandLengthDiameterCm = 20.f;
 	inline constexpr float HandWidthDiameterCm = 15.f;
 	inline constexpr float HandThicknessDiameterCm = 3.f;
-	static_assert(
-		HandLengthDiameterCm > HandWidthDiameterCm && HandWidthDiameterCm > HandThicknessDiameterCm,
-		"the hand's long axis is the 20 cm one");
 
 	/** The five bones inside the shoulder piece. The mesh itself is the length of neck_01. */
 	inline const TCHAR* ShoulderNeckBone = TEXT("neck_01");

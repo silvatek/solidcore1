@@ -40,7 +40,7 @@ namespace SolidBodyMesh
 		Leg,
 		/** Length, side, and depth are head size. */
 		Head,
-		/** Fixed ellipsoid. The lower arm already sizes the hand bone. */
+		/** Viking length. The lower arm sizes the hand bone, and this part keeps the fingers. */
 		Hand,
 	};
 
@@ -167,10 +167,11 @@ namespace SolidBodyMesh
 		/**
 		 * Add this part's triangles.
 		 * WeightBone is the parent joint. The child joint only rotates, so a tube is skinned there.
-		 * SpanBone is Bones[0]. The head and the hands are skinned to that bone.
+		 * SpanBone is Bones[0]. The head is skinned to that bone.
 		 * For the head, To is the head joint. The sphere starts at From, the base of that bone.
 		 * The height is three lengths of the head bone. The horizontal radius is the eye_jnt length.
-		 * For a hand, To is the end of the hand bone. The long axis of the ellipsoid starts there.
+		 * For a hand, Bones[0] is a finger that meets the hand bone. From is that joint.
+		 * To is the top of the finger. The ellipsoid runs from From to To and is skinned to the hand bone.
 		 */
 		void Draw(
 			TArray<FSolidBodyVert>& Verts,
@@ -228,9 +229,9 @@ namespace SolidBodyMesh
 
 		/**
 		 * One ellipsoid skinned to the hand bone.
-		 * From is the parent joint and To is the end of the hand bone.
-		 * The long axis starts at To and runs along From to To for HandLengthDiameterCm.
-		 * The wide axis follows the finger bones. The thin axis is the palm thickness.
+		 * From is the hand joint, where the finger meets the hand bone and the lower arm ends.
+		 * To is the top of that finger bone. The long axis runs from From to To.
+		 * The wide axis follows the other fingers. The thin axis is the palm thickness.
 		 */
 		void AddHand(
 			TArray<FSolidBodyVert>& Verts,

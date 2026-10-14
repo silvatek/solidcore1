@@ -1201,4 +1201,120 @@ bool FSolidBodyHandsTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyHandShapeTest,
+	"SolidCore1.Body.HandShape",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyHandShapeTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidBodyMesh;
+
+	TArray<FSolidDeformBone> Bones;
+	auto AddBone = [&Bones](const TCHAR* Name, const int32 Parent, const FVector& Translation)
+	{
+		FSolidDeformBone Bone;
+		Bone.Name = Name;
+		Bone.ParentIndex = Parent;
+		Bone.LocalTranslation = Translation;
+		Bones.Add(Bone);
+	};
+	const FVector LeftFinger(0.f, 0.f, 12.f);
+	const FVector RightFinger(8.f, 0.f, 0.f);
+	AddBone(TEXT("root"), INDEX_NONE, FVector::ZeroVector);
+	AddBone(TEXT("lowerarm_l"), 0, FVector::ZeroVector);
+	AddBone(LeftHandBone, 1, FVector(0.f, 0.f, 10.f));
+	AddBone(TEXT("index_01_l"), 2, LeftFinger);
+	AddBone(TEXT("pinky_01_l"), 2, FVector(6.f, 0.f, 3.f));
+	AddBone(TEXT("middle_02_l"), 3, FVector(0.f, 0.f, 2.f));
+	AddBone(TEXT("lowerarm_r"), 0, FVector::ZeroVector);
+	AddBone(RightHandBone, 6, FVector(12.f, 0.f, 0.f));
+	AddBone(TEXT("index_01_r"), 7, RightFinger);
+	AddBone(TEXT("ring_01_r"), 7, FVector(2.f, 5.f, 0.f));
+
+	const FSolidBodyMesh Body = FSolidBodyMesh::FromBones(Bones);
+	const FSolidBodyPart* Left = Body.Find(TEXT("Hand (L)"));
+	const FSolidBodyPart* Right = Body.Find(TEXT("Hand (R)"));
+	const FSolidBodyPart* Lower = Body.Find(TEXT("Lower arm (L)"));
+	TestTrue(TEXT("the left hand is on the list"), Left != nullptr);
+	TestTrue(TEXT("the right hand is on the list"), Right != nullptr);
+	TestTrue(TEXT("the lower arm is on the list"), Lower != nullptr);
+	if (Left && Right && Lower)
+	{
+		TestTrue(TEXT("the lower arm ends on the hand bone"), Lower->Bones.Num() == 1 && Lower->Bones[0] == FName(LeftHandBone));
+		TestFalse(TEXT("the hand bone stays on the lower arm"), Left->Bones.Contains(FName(LeftHandBone)));
+		TestFalse(TEXT("the right hand bone stays on the lower arm"), Right->Bones.Contains(FName(RightHandBone)));
+		TestTrue(TEXT("the left hand starts from a finger on the hand bone"), Left->Bones.Num() >= 1 && Left->Bones[0] == FName(TEXT("index_01_l")));
+		TestTrue(TEXT("the right hand starts from a finger on the hand bone"), Right->Bones.Num() >= 1 && Right->Bones[0] == FName(TEXT("index_01_r")));
+		TestTrue(TEXT("the left pinky is inside the hand"), Left->Bones.Contains(FName(TEXT("pinky_01_l"))));
+		TestTrue(TEXT("a further finger joint is inside the hand"), Left->Bones.Contains(FName(TEXT("middle_02_l"))));
+		TestTrue(TEXT("the right ring is inside the hand"), Right->Bones.Contains(FName(TEXT("ring_01_r"))));
+	}
+
+	TArray<FVector> Positions;
+	SolidBodyDeform::ComponentPositions(Bones, Positions);
+	TArray<FSolidBodyVert> Verts;
+	TArray<FSolidBodyTri> Tris;
+	FSolidBodyMesh Drawn = Body;
+	Drawn.Draw(Verts, Tris, Bones, Positions);
+
+	const int32 HandRingVerts = 2 + (HeadRingCount - 2) * HeadSideCount;
+	auto AxisValue = [](const FVector& Delta, const int32 Axis) -> float
+	{
+		return Axis == 0 ? static_cast<float>(Delta.X) : (Axis == 1 ? static_cast<float>(Delta.Y) : static_cast<float>(Delta.Z));
+	};
+	auto MeasureHand = [&](const int32 HandBone, const int32 LongAxis, const int32 WideAxis, const int32 ThinAxis, float& OutMin, float& OutMax, float& OutWide, float& OutThin, int32& OutCount)
+	{
+		OutMin = 1.e9f;
+		OutMax = -1.e9f;
+		OutWide = 0.f;
+		OutThin = 0.f;
+		OutCount = 0;
+		const FVector Origin = Positions[HandBone];
+		for (const FSolidBodyVert& Vert : Verts)
+		{
+			if (Vert.Bone != HandBone || Vert.Slot != SkinMaterialSlot)
+			{
+				continue;
+			}
+			++OutCount;
+			const FVector Delta = Vert.Position - Origin;
+			const float Along = AxisValue(Delta, LongAxis);
+			OutMin = FMath::Min(OutMin, Along);
+			OutMax = FMath::Max(OutMax, Along);
+			OutWide = FMath::Max(OutWide, FMath::Abs(AxisValue(Delta, WideAxis)));
+			OutThin = FMath::Max(OutThin, FMath::Abs(AxisValue(Delta, ThinAxis)));
+		}
+	};
+
+	float LeftMin = 0.f;
+	float LeftMax = 0.f;
+	float LeftWide = 0.f;
+	float LeftThin = 0.f;
+	int32 LeftCount = 0;
+	MeasureHand(2, 2, 0, 1, LeftMin, LeftMax, LeftWide, LeftThin, LeftCount);
+	TestEqual(TEXT("the left hand is one ellipsoid"), LeftCount, HandRingVerts);
+	TestTrue(TEXT("the left hand starts at the bottom of the hand bone"), FMath::IsNearlyEqual(LeftMin, 0.f, 0.01f));
+	TestTrue(
+		TEXT("the left hand ends at the top of the finger"),
+		FMath::IsNearlyEqual(LeftMax - LeftMin, static_cast<float>(LeftFinger.Size()), 0.01f));
+	TestTrue(TEXT("the left hand is 15 cm across"), FMath::IsNearlyEqual(LeftWide, HandWidthDiameterCm * 0.5f, 0.05f));
+	TestTrue(TEXT("the left hand is 3 cm thick"), FMath::IsNearlyEqual(LeftThin, HandThicknessDiameterCm * 0.5f, 0.05f));
+
+	float RightMin = 0.f;
+	float RightMax = 0.f;
+	float RightWide = 0.f;
+	float RightThin = 0.f;
+	int32 RightCount = 0;
+	MeasureHand(7, 0, 1, 2, RightMin, RightMax, RightWide, RightThin, RightCount);
+	TestEqual(TEXT("the right hand is one ellipsoid"), RightCount, HandRingVerts);
+	TestTrue(TEXT("the right hand starts at the bottom of the hand bone"), FMath::IsNearlyEqual(RightMin, 0.f, 0.01f));
+	TestTrue(
+		TEXT("the right hand ends at the top of the finger"),
+		FMath::IsNearlyEqual(RightMax - RightMin, static_cast<float>(RightFinger.Size()), 0.01f));
+	TestTrue(TEXT("the right hand is 15 cm across"), FMath::IsNearlyEqual(RightWide, HandWidthDiameterCm * 0.5f, 0.05f));
+	TestTrue(TEXT("the right hand is 3 cm thick"), FMath::IsNearlyEqual(RightThin, HandThicknessDiameterCm * 0.5f, 0.05f));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

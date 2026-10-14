@@ -511,11 +511,12 @@ void SolidBodyMesh::FSolidBodyPart::AddHand(
 		return;
 	}
 
-	FVector Long = To - From;
-	if (!Long.Normalize())
+	const float Length = static_cast<float>(FVector::Dist(From, To));
+	if (Length < 1.f)
 	{
 		return;
 	}
+	const FVector Long = (To - From) / Length;
 
 	FVector Wide = FVector::ZeroVector;
 	if (SegmentStart && SegmentEnd)
@@ -527,7 +528,7 @@ void SolidBodyMesh::FSolidBodyPart::AddHand(
 			{
 				continue;
 			}
-			FVector Perp = SegmentEnd[Index] - To;
+			FVector Perp = SegmentEnd[Index] - From;
 			Perp -= Long * FVector::DotProduct(Perp, Long);
 			if (Perp.SizeSquared() < 0.01)
 			{
@@ -559,10 +560,10 @@ void SolidBodyMesh::FSolidBodyPart::AddHand(
 		return;
 	}
 
-	const float LongRadius = HandLengthDiameterCm * 0.5f;
+	const float LongRadius = Length * 0.5f;
 	const float WideRadius = HandWidthDiameterCm * 0.5f;
 	const float ThinRadius = HandThicknessDiameterCm * 0.5f;
-	const FVector Center = To + Long * LongRadius;
+	const FVector Center = From + Long * LongRadius;
 	const int32 Sides = FMath::Clamp(HeadSideCount, 3, BodyPartSideLimit);
 	const int32 Rings = FMath::Max(HeadRingCount, 3);
 	const uint8 Slot = MaterialSlot();
@@ -577,7 +578,7 @@ void SolidBodyMesh::FSolidBodyPart::AddHand(
 		Verts.Add(Vert);
 	};
 
-	AddVert(To);
+	AddVert(From);
 	for (int32 Ring = 1; Ring < Rings - 1; ++Ring)
 	{
 		const float T = static_cast<float>(Ring) / static_cast<float>(Rings - 1);
@@ -592,7 +593,7 @@ void SolidBodyMesh::FSolidBodyPart::AddHand(
 			AddVert(Center + Offset);
 		}
 	}
-	AddVert(To + Long * HandLengthDiameterCm);
+	AddVert(To);
 
 	auto RingVert = [BaseVert, Sides, Rings](const int32 Ring, const int32 Step)
 	{
@@ -645,7 +646,7 @@ void SolidBodyMesh::FSolidBodyPart::Draw(
 	}
 	if (Measure == ESolidPartMeasure::Hand)
 	{
-		AddHand(Verts, Tris, SpanBone, From, To, SegmentStart, SegmentEnd, SegmentCount);
+		AddHand(Verts, Tris, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount);
 		return;
 	}
 

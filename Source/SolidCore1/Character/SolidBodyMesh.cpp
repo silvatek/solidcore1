@@ -120,7 +120,7 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 		FSolidPartSection::Round(LowerArmStartDiameterCm),
 		FSolidPartSection::Round(LowerArmEndDiameterCm)), ESolidPartMeasure::Arm);
 
-	// The ellipsoid uses the hand diameters. These cone diameters stay unused.
+	// FromBones replaces the hand bone with the finger bones. The mesh starts where this bone ends.
 	AddPart(FSolidBodyPart(
 		TEXT("Hand (L)"),
 		{ LeftHandBone },
@@ -1263,18 +1263,42 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::FromBones(const TAr
 		else if (Part.Measure == ESolidPartMeasure::Hand)
 		{
 			const bool bLeft = Part.Bones[0].ToString().Equals(LeftHandBone, ESearchCase::IgnoreCase);
+			const TCHAR* HandName = bLeft ? LeftHandBone : RightHandBone;
+			int32 HandIndex = INDEX_NONE;
+			for (int32 Index = 0; Index < Bones.Num(); ++Index)
+			{
+				if (Bones[Index].Name.ToString().Equals(HandName, ESearchCase::IgnoreCase))
+				{
+					HandIndex = Index;
+					break;
+				}
+			}
+
+			FName SpanFinger = NAME_None;
+			TArray<FName> Fingers;
 			for (int32 Index = 0; Index < Bones.Num(); ++Index)
 			{
 				const FString BoneName = Bones[Index].Name.ToString();
-				if (BoneName.Equals(Part.Bones[0].ToString(), ESearchCase::IgnoreCase))
+				if (!IsFingerBoneName(BoneName)
+					|| !FingerBelongsToHand(Bones, Index, bLeft)
+					|| !Bones.IsValidIndex(Bones[Index].ParentIndex))
 				{
-					Part.Bones[0] = Bones[Index].Name;
+					continue;
 				}
-				else if (IsFingerBoneName(BoneName)
-					&& FingerBelongsToHand(Bones, Index, bLeft)
-					&& Bones.IsValidIndex(Bones[Index].ParentIndex))
+				Fingers.Add(Bones[Index].Name);
+				if (SpanFinger.IsNone() && Bones[Index].ParentIndex == HandIndex)
 				{
-					Part.Bones.AddUnique(Bones[Index].Name);
+					SpanFinger = Bones[Index].Name;
+				}
+			}
+
+			Part.Bones.Reset();
+			if (!SpanFinger.IsNone())
+			{
+				Part.Bones.Add(SpanFinger);
+				for (const FName& Finger : Fingers)
+				{
+					Part.Bones.AddUnique(Finger);
 				}
 			}
 		}

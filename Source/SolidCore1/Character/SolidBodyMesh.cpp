@@ -17,13 +17,10 @@
 #include "Rendering/SkeletalMeshLODModel.h"
 #include "Rendering/SkeletalMeshModel.h"
 #include "Rendering/SkeletalMeshRenderData.h"
+#include "RenderingThread.h"
 #include "SkeletalMeshAttributes.h"
+#include "UObject/StrongObjectPtr.h"
 #endif
-
-namespace
-{
-	FString SpinePartName(int32 Step, int32 Count);
-}
 
 SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<FName>& RisingSpineBones)
 {
@@ -56,29 +53,58 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 		FSolidPartSection::Oval(HipSideDiameterCm, HipDepthDiameterCm),
 		FSolidPartSection::Oval(HipTopSideDiameterCm, HipDepthDiameterCm)), ESolidPartMeasure::Hip);
 
-	const int32 SpineCount = RisingSpineBones.Num();
-	for (int32 Step = 0; Step < SpineCount; ++Step)
+	// Two sections between the hips and the shoulders. The first bone is the abdomen.
+	// The chest wraps every bone after it, and the second bone is the length of that piece.
+	if (RisingSpineBones.Num() >= 2)
+	{
+		float AbdomenBottomCm = 0.f;
+		float AbdomenTopCm = 0.f;
+		float ChestBottomCm = 0.f;
+		float ChestTopCm = 0.f;
+		TorsoSideDiameters(0, 2, AbdomenBottomCm, AbdomenTopCm);
+		TorsoSideDiameters(1, 2, ChestBottomCm, ChestTopCm);
+
+		TArray<FName> AbdomenBones;
+		AbdomenBones.Add(RisingSpineBones[0]);
+		TArray<FName> ChestBones;
+		for (int32 Index = 1; Index < RisingSpineBones.Num(); ++Index)
+		{
+			ChestBones.Add(RisingSpineBones[Index]);
+		}
+		AddPart(FSolidBodyPart(
+			TEXT("Abdomen"),
+			AbdomenBones,
+			ESolidPartColour::Shirt,
+			FSolidPartSection::Oval(AbdomenBottomCm, TorsoDepthDiameterCm),
+			FSolidPartSection::Oval(AbdomenTopCm, TorsoDepthDiameterCm)), ESolidPartMeasure::Torso);
+		AddPart(FSolidBodyPart(
+			TEXT("Chest"),
+			ChestBones,
+			ESolidPartColour::Shirt,
+			FSolidPartSection::Oval(ChestBottomCm, TorsoDepthDiameterCm),
+			FSolidPartSection::Oval(ChestTopCm, TorsoDepthDiameterCm)), ESolidPartMeasure::Torso);
+	}
+	else if (RisingSpineBones.Num() == 1)
 	{
 		float BottomCm = 0.f;
 		float TopCm = 0.f;
-		TorsoSideDiameters(Step, SpineCount, BottomCm, TopCm);
-		FSolidBodyPart Spine = FSolidBodyPart(
-			TEXT("Spine"),
-			{},
+		TorsoSideDiameters(0, 1, BottomCm, TopCm);
+		TArray<FName> ChestBones;
+		ChestBones.Add(RisingSpineBones[0]);
+		AddPart(FSolidBodyPart(
+			TEXT("Chest"),
+			ChestBones,
 			ESolidPartColour::Shirt,
 			FSolidPartSection::Oval(BottomCm, TorsoDepthDiameterCm),
-			FSolidPartSection::Oval(TopCm, TorsoDepthDiameterCm));
-		Spine.Name = SpinePartName(Step, SpineCount);
-		Spine.Bones.Add(RisingSpineBones[Step]);
-		AddPart(Spine, ESolidPartMeasure::Torso);
+			FSolidPartSection::Oval(TopCm, TorsoDepthDiameterCm)), ESolidPartMeasure::Torso);
 	}
 
 	float ShoulderSideCm = ChestSideDiameterCm;
-	for (const FSolidBodyPart& Spine : Body.Parts)
+	for (const FSolidBodyPart& Part : Body.Parts)
 	{
-		if (Spine.Bones.Num() == 1 && Spine.Bones[0] == FName(SpineChestBone))
+		if (Part.Name.Equals(TEXT("Chest"), ESearchCase::IgnoreCase))
 		{
-			ShoulderSideCm = Spine.End.X;
+			ShoulderSideCm = Part.End.X;
 		}
 	}
 
@@ -147,19 +173,6 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 
 namespace
 {
-	FString SpinePartName(const int32 Step, const int32 Count)
-	{
-		if (Step == Count - 1)
-		{
-			return TEXT("Chest");
-		}
-		if (Step == 0)
-		{
-			return TEXT("Abdomen");
-		}
-		return FString::Printf(TEXT("Spine %d"), Step + 1);
-	}
-
 	bool ShoulderFrame(
 		const FVector& Start,
 		const FVector& End,
@@ -592,7 +605,6 @@ namespace
 			Existing->SetVectorParameterValue(TEXT("Base Color"), Color);
 			Existing->SetVectorParameterValue(TEXT("BaseColor"), Color);
 			Existing->SetScalarParameterValue(TEXT("Roughness"), 1.f);
-			Existing->RecacheUniformExpressions(true);
 			return;
 		}
 
@@ -941,9 +953,9 @@ namespace
 		Mesh->CalculateInvRefMatrices();
 	}
 
-	TMap<uint32, TWeakObjectPtr<USkeletalMesh>>& BodyCache()
+	TMap<uint32, TStrongObjectPtr<USkeletalMesh>>& BodyCache()
 	{
-		static TMap<uint32, TWeakObjectPtr<USkeletalMesh>> Cache;
+		static TMap<uint32, TStrongObjectPtr<USkeletalMesh>> Cache;
 		return Cache;
 	}
 
@@ -969,6 +981,15 @@ namespace
 		const TCHAR* DebugLabel,
 		const bool bReused)
 	{
+		if (MeshComp->GetSkeletalMeshAsset() == Body)
+		{
+			return;
+		}
+		if (MeshComp->GetSkeletalMeshAsset())
+		{
+			// The last frame may still be drawing the previous body. Wait, then swap.
+			FlushRenderingCommands();
+		}
 		MeshComp->SetSkeletalMeshAsset(Body);
 		MeshComp->SetAnimInstanceClass(nullptr);
 		MeshComp->SetAnimationMode(EAnimationMode::AnimationSingleNode);
@@ -1147,7 +1168,7 @@ void SolidBodyMesh::ApplySeed(
 
 #if WITH_EDITORONLY_DATA
 	const uint32 Key = ParamsCacheKey(Params);
-	if (TWeakObjectPtr<USkeletalMesh>* Found = BodyCache().Find(Key))
+	if (TStrongObjectPtr<USkeletalMesh>* Found = BodyCache().Find(Key))
 	{
 		if (USkeletalMesh* Cached = Found->Get())
 		{
@@ -1184,7 +1205,8 @@ void SolidBodyMesh::ApplySeed(
 			DebugLabel ? DebugLabel : TEXT("Body"));
 		return;
 	}
-	BodyCache().Add(Key, Built);
+	TStrongObjectPtr<USkeletalMesh> Kept(Built);
+	BodyCache().Add(Key, MoveTemp(Kept));
 	WearBody(MeshComp, Built, Seed, Params, DebugLabel, false);
 	ApplyComponentColors(MeshComp, TorsoColor, LegColor, SkinColor);
 #else

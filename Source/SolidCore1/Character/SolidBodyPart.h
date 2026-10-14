@@ -152,6 +152,14 @@ namespace SolidBodyMesh
 			}
 		}
 
+		/** The same part, when the bone names are already gathered. */
+		FSolidBodyPart(
+			const TCHAR* InName,
+			const TArray<FName>& InBones,
+			ESolidPartColour InColour,
+			const FSolidPartSection& InStart,
+			const FSolidPartSection& InEnd);
+
 		FString Name;
 		TArray<FName> Bones;
 		ESolidPartColour Colour = ESolidPartColour::Shirt;

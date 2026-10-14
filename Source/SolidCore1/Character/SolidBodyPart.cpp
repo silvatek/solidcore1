@@ -68,6 +68,20 @@ SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
 	}
 }
 
+SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
+	const TCHAR* InName,
+	const TArray<FName>& InBones,
+	const ESolidPartColour InColour,
+	const FSolidPartSection& InStart,
+	const FSolidPartSection& InEnd)
+	: Name(InName)
+	, Bones(InBones)
+	, Colour(InColour)
+	, Start(InStart)
+	, End(InEnd)
+{
+}
+
 void SolidBodyMesh::FSolidBodyPart::Apply(
 	TArray<FSolidDeformBone>& Skeleton,
 	const FSolidBodyParams& Params)

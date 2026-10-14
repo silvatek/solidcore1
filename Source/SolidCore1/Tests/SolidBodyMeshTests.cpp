@@ -782,6 +782,78 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyTorsoSectionsTest,
+	"SolidCore1.Body.TorsoSections",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyTorsoSectionsTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidBodyMesh;
+
+	TArray<FName> Rising;
+	Rising.Add(TEXT("spine_02"));
+	Rising.Add(TEXT("spine_03"));
+	Rising.Add(TEXT("spine_04"));
+	const FSolidBodyMesh Body = FSolidBodyMesh::Make(Rising);
+	const FSolidBodyPart* Abdomen = Body.Find(TEXT("Abdomen"));
+	const FSolidBodyPart* Chest = Body.Find(TEXT("Chest"));
+	TestTrue(TEXT("three rising bones still have an abdomen"), Abdomen != nullptr);
+	TestTrue(TEXT("three rising bones still have a chest"), Chest != nullptr);
+	if (Abdomen)
+	{
+		TestEqual(TEXT("the abdomen is the first rising bone"), Abdomen->Bones.Num(), 1);
+		TestTrue(TEXT("the abdomen wraps spine_02"), Abdomen->Bones.Num() == 1 && Abdomen->Bones[0] == FName(TEXT("spine_02")));
+	}
+	if (Chest)
+	{
+		TestEqual(TEXT("the chest wraps the later rising bones"), Chest->Bones.Num(), 2);
+		TestTrue(TEXT("the chest length is spine_03"), Chest->Bones.Num() >= 1 && Chest->Bones[0] == FName(SpineChestBone));
+		TestTrue(TEXT("spine_04 stays inside the chest"), Chest->Bones.Contains(FName(TEXT("spine_04"))));
+	}
+	for (const FSolidBodyPart& Part : Body.Parts)
+	{
+		TestFalse(TEXT("a rising bone is not its own spine slab"), Part.Name.StartsWith(TEXT("Spine")));
+	}
+
+	float AbdomenBottom = 0.f;
+	float AbdomenTop = 0.f;
+	float ChestBottom = 0.f;
+	float ChestTop = 0.f;
+	TorsoSideDiameters(0, 2, AbdomenBottom, AbdomenTop);
+	TorsoSideDiameters(1, 2, ChestBottom, ChestTop);
+	TestTrue(
+		TEXT("the abdomen still takes the first half"),
+		Abdomen && FMath::IsNearlyEqual(Abdomen->Start.X, AbdomenBottom, 0.01f)
+		&& FMath::IsNearlyEqual(Abdomen->End.X, AbdomenTop, 0.01f));
+	TestTrue(
+		TEXT("the chest still takes the second half"),
+		Chest && FMath::IsNearlyEqual(Chest->Start.X, ChestBottom, 0.01f)
+		&& FMath::IsNearlyEqual(Chest->End.X, ChestTop, 0.01f));
+	const FSolidBodyPart* Shoulders = Body.Find(TEXT("Shoulders"));
+	TestTrue(
+		TEXT("the shoulder base follows the chest"),
+		Shoulders && Chest && FMath::IsNearlyEqual(Shoulders->Start.X, Chest->End.X, 0.01f));
+
+	TArray<FName> OneBone;
+	OneBone.Add(TEXT("spine_02"));
+	const FSolidBodyMesh One = FSolidBodyMesh::Make(OneBone);
+	TestTrue(TEXT("one rising bone is not an abdomen"), One.Find(TEXT("Abdomen")) == nullptr);
+	const FSolidBodyPart* OnlyChest = One.Find(TEXT("Chest"));
+	float OnlyBottom = 0.f;
+	float OnlyTop = 0.f;
+	TorsoSideDiameters(0, 1, OnlyBottom, OnlyTop);
+	TestTrue(TEXT("one rising bone is the chest"), OnlyChest != nullptr);
+	TestTrue(
+		TEXT("that chest runs from the waist to the shoulder breadth"),
+		OnlyChest
+		&& OnlyChest->Bones.Num() == 1
+		&& OnlyChest->Bones[0] == FName(TEXT("spine_02"))
+		&& FMath::IsNearlyEqual(OnlyChest->Start.X, OnlyBottom, 0.01f)
+		&& FMath::IsNearlyEqual(OnlyChest->End.X, OnlyTop, 0.01f));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidBodyPartSizesBonesTest,
 	"SolidCore1.Body.PartSizesBones",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
@@ -828,16 +900,17 @@ bool FSolidBodyPartSizesBonesTest::RunTest(const FString& Parameters)
 
 	FSolidBodyParams Wide;
 	Wide.Height = 1.5f;
-	Wide.HipWidth = 2.f;
+	const float HipScale = SolidBody::ParamMax;
+	Wide.HipWidth = HipScale;
 	Wide.TorsoGirth = 1.25f;
 	Hip.Apply(Skeleton, Wide);
 
-	TestTrue(TEXT("hip width widens the part"), FMath::IsNearlyEqual(Hip.Start.X, 40.f, 0.01f));
+	TestTrue(TEXT("hip width widens the part"), FMath::IsNearlyEqual(Hip.Start.X, 20.f * HipScale, 0.01f));
 	TestTrue(TEXT("torso girth sets the hip depth"), FMath::IsNearlyEqual(Hip.Start.Y, 20.f, 0.01f));
 	TestTrue(
 		TEXT("height lengthens the span bone"),
 		Skeleton[1].LocalTranslation.Equals(FVector(0.f, 0.f, -45.f), 0.01f));
-	const FVector ExpectedSpread = ParentRotation.UnrotateVector(FVector(16.f, 8.f, 1.f));
+	const FVector ExpectedSpread = ParentRotation.UnrotateVector(FVector(8.f * HipScale, 4.f * HipScale, 1.f));
 	TestTrue(
 		TEXT("the part spreads its other bone on the world side axes"),
 		Skeleton[2].LocalTranslation.Equals(ExpectedSpread, 0.01f));
@@ -916,14 +989,15 @@ bool FSolidBodyHeadTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the sphere is skinned to the head"), bSkinnedToHead);
 
 	FSolidBodyParams BigHead;
-	BigHead.HeadSize = 2.f;
+	const float HeadScale = SolidBody::ParamMax;
+	BigHead.HeadSize = HeadScale;
 	FSolidBodyMesh Scaled = Body;
 	Scaled.Apply(Bones, BigHead);
-	TestTrue(TEXT("head size lengthens the head bone"), Bones[1].LocalTranslation.Equals(FVector(0.f, 0.f, 20.f), 0.01f));
+	TestTrue(TEXT("head size lengthens the head bone"), Bones[1].LocalTranslation.Equals(FVector(0.f, 0.f, 10.f * HeadScale), 0.01f));
 	TestTrue(
 		TEXT("head size spreads an eye"),
-		FMath::IsNearlyEqual(Bones[2].LocalTranslation.X, 8.f, 0.01f)
-		&& FMath::IsNearlyEqual(Bones[2].LocalTranslation.Y, 12.f, 0.01f)
+		FMath::IsNearlyEqual(Bones[2].LocalTranslation.X, 4.f * HeadScale, 0.01f)
+		&& FMath::IsNearlyEqual(Bones[2].LocalTranslation.Y, 6.f * HeadScale, 0.01f)
 		&& FMath::IsNearlyEqual(Bones[2].LocalTranslation.Z, 12.f, 0.01f));
 	TestTrue(TEXT("a thumb stays the viking offset"), Bones[5].LocalTranslation.Equals(FVector(1.f, 1.f, 1.f), 0.01f));
 	return true;

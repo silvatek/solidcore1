@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0301")
+#define SOLID_BUILD_ID TEXT("SC1-0302")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The hand-finger test compares the bone count as int32.")
+#define SOLID_BUILD_NOTE TEXT("Page up rebuilds the stage body once. The torso is an abdomen and a chest.")
 #endif

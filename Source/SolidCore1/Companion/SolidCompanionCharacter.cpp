@@ -186,7 +186,8 @@ void ASolidCompanionCharacter::SetCharacterDisplayName(const FString& NewName)
 bool ASolidCompanionCharacter::SetBodyColors(
 	const FLinearColor& NewTorso,
 	const FLinearColor& NewLegs,
-	const FLinearColor& NewSkin)
+	const FLinearColor& NewSkin,
+	const bool bApply)
 {
 	if (TorsoColor.Equals(NewTorso) && LegColor.Equals(NewLegs) && SkinColor.Equals(NewSkin))
 	{
@@ -195,7 +196,7 @@ bool ASolidCompanionCharacter::SetBodyColors(
 	TorsoColor = NewTorso;
 	LegColor = NewLegs;
 	SkinColor = NewSkin;
-	if (HasActorBegunPlay())
+	if (bApply && HasActorBegunPlay())
 	{
 		ApplyVisuals();
 	}
@@ -205,7 +206,8 @@ bool ASolidCompanionCharacter::SetBodyColors(
 bool ASolidCompanionCharacter::SetBodyControls(
 	const float NewHeight,
 	const float NewBuild,
-	const float NewGender)
+	const float NewGender,
+	const bool bApply)
 {
 	const bool bChanged = !bHasBodyControls
 		|| BodyHeight != NewHeight
@@ -219,7 +221,7 @@ bool ASolidCompanionCharacter::SetBodyControls(
 	{
 		return false;
 	}
-	if (HasActorBegunPlay())
+	if (bApply && HasActorBegunPlay())
 	{
 		ApplyVisuals();
 	}
@@ -446,7 +448,6 @@ void ASolidCompanionCharacter::PaintFace(const FLinearColor& Ink)
 		Existing->SetVectorParameterValue(TEXT("Base Color"), Ink);
 		Existing->SetVectorParameterValue(TEXT("BaseColor"), Ink);
 		Existing->SetScalarParameterValue(TEXT("Roughness"), 1.f);
-		Existing->RecacheUniformExpressions(true);
 	}
 
 	UStaticMeshComponent* Pieces[] = {

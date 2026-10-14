@@ -27,6 +27,8 @@ namespace SolidBodyMesh
 		 * The body.
 		 * RisingSpineBones are the spine bones above the hips, parent to child.
 		 * An empty list leaves out the abdomen and the chest. The shoulder base then stays the chest width.
+		 * The first bone is the abdomen. The chest wraps every bone after it, and the second bone is its length.
+		 * A single bone is the chest, from the waist to the shoulder breadth.
 		 */
 		static FSolidBodyMesh Make(const TArray<FName>& RisingSpineBones);
 

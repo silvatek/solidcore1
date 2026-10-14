@@ -86,8 +86,11 @@ public:
 	void SetCompanionMesh(const TSoftObjectPtr<USkeletalMesh>& NewMesh);
 	const TSoftObjectPtr<USkeletalMesh>& GetCompanionMesh() const { return CompanionMesh; }
 
-	/** Matte shirt, trouser, and skin colors from the company record. */
-	bool SetBodyColors(const FLinearColor& NewTorso, const FLinearColor& NewLegs, const FLinearColor& NewSkin);
+	/**
+	 * Matte shirt, trouser, and skin colors from the company record.
+	 * bApply false stores the colors and leaves the worn mesh alone.
+	 */
+	bool SetBodyColors(const FLinearColor& NewTorso, const FLinearColor& NewLegs, const FLinearColor& NewSkin, bool bApply = true);
 	FLinearColor GetTorsoColor() const { return TorsoColor; }
 	FLinearColor GetLegColor() const { return LegColor; }
 	FLinearColor GetSkinColor() const { return SkinColor; }
@@ -96,8 +99,9 @@ public:
 	 * Height, build, and gender from the company record.
 	 * Until this is called, the body stays on the name seed.
 	 * Returns false when the stored values are already those numbers.
+	 * bApply false stores the sliders and leaves the worn mesh alone.
 	 */
-	bool SetBodyControls(float NewHeight, float NewBuild, float NewGender);
+	bool SetBodyControls(float NewHeight, float NewBuild, float NewGender, bool bApply = true);
 	float GetBodyHeight() const { return BodyHeight; }
 	float GetBodyBuild() const { return BodyBuild; }
 	float GetBodyGender() const { return BodyGender; }

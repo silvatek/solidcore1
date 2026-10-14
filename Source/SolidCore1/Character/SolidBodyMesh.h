@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "SolidBodyDeform.h"
+#include "SolidBodyPart.h"
 
 class USkeletalMesh;
 class USkeletalMeshComponent;
@@ -274,43 +275,44 @@ namespace SolidBodyMesh
 	inline constexpr float UpperArmShoulderDiameterCm = JointShoulder * 2.f;
 	inline constexpr float UpperArmElbowDiameterCm = JointElbow * 2.f;
 
-	/** Wrist diameter, in centimetres. The forearm's narrow end, and the hand's wide end. */
+	/**
+	 * Shared arm diameter, in centimetres.
+	 * Narrow end of the upper arm, at the elbow. Wide end of the lower arm, at the wrist.
+	 */
 	inline constexpr float ForearmWristDiameterCm = JointWrist * 2.f;
 
-	/** Diameter at the hand bone, in centimetres. */
-	inline constexpr float HandEndDiameterCm = 5.f;
-
 	/**
-	 * Lower-arm cone, in centimetres. It wraps hand_l or hand_r.
-	 * Start is the parent joint. End is the hand bone.
+	 * Lower-arm cone, in centimetres. The part is "Lower arm" and the bone inside it is hand_l or hand_r.
+	 * Start is the elbow. End is the wrist. The wrist is the wide end.
 	 */
-	inline constexpr float LowerArmStartDiameterCm = ForearmWristDiameterCm;
-	inline constexpr float LowerArmEndDiameterCm = HandEndDiameterCm;
+	inline constexpr float LowerArmStartDiameterCm = 5.f;
+	inline constexpr float LowerArmEndDiameterCm = ForearmWristDiameterCm;
 
 	/**
-	 * Shirt cone the length of a clavicle bone.
+	 * Cone the length of a clavicle bone. Not a drawn part. The shoulders wrap that bone.
 	 * Parent is the wide end and Bone is the narrow end.
 	 * Invalid when the bone is shorter than a centimetre.
 	 */
 	FSolidFittedCone ClavicleCone(const FVector& Parent, const FVector& Bone);
 
 	/**
-	 * Skin cone the length of upperarm_l or upperarm_r.
+	 * Cone the length of upperarm_l or upperarm_r. Not a drawn part. The shoulders wrap that bone.
+	 * The drawn upper arm is ForearmCone, along lowerarm.
 	 * Parent is the wide end and Bone is the narrow end.
 	 * Invalid when the bone is shorter than a centimetre.
 	 */
 	FSolidFittedCone UpperArmCone(const FVector& Parent, const FVector& Bone);
 
 	/**
-	 * Shirt cone the length of lowerarm_l or lowerarm_r.
-	 * Parent is the wide end and Bone is the narrow end.
+	 * Shirt cone for the "Upper arm" part. The skeleton bone is lowerarm_l or lowerarm_r.
+	 * Parent is the shoulder and Bone is the elbow. The shoulder is the wide end.
 	 * Invalid when the bone is shorter than a centimetre.
 	 */
 	FSolidFittedCone ForearmCone(const FVector& Parent, const FVector& Bone);
 
 	/**
-	 * Shirt cone the length of hand_l or hand_r.
-	 * Parent is the elbow end and Bone is the hand. The diameters are LowerArmStartDiameterCm and LowerArmEndDiameterCm.
+	 * Shirt cone for the "Lower arm" part. The skeleton bone is hand_l or hand_r.
+	 * Parent is the elbow and Bone is the wrist. The elbow is the narrow end.
 	 * Invalid when the bone is shorter than a centimetre.
 	 */
 	FSolidFittedCone HandCone(const FVector& Wrist, const FVector& Hand);
@@ -376,6 +378,23 @@ namespace SolidBodyMesh
 		const FVector& RayOrigin,
 		const FVector& RayDir,
 		float& InOutRayT);
+
+	/** The cones for one part. A shoulder fills both cones and writes its mid diameters. */
+	struct FSolidPartDraw
+	{
+		bool bShoulder = false;
+		FSolidFittedCone Cone;
+		FSolidShoulderPiece Shoulder;
+	};
+
+	FSolidPartDraw DrawForPart(
+		FSolidBodyPartMesh& Part,
+		const FVector& From,
+		const FVector& To,
+		const FVector* SegmentStart,
+		const FVector* SegmentEnd,
+		int32 SegmentCount,
+		const FVector& WideAxis);
 
 	/** Start and end radii of the cone from Parent to Child. Both ends are joint radii. */
 	void SegmentRadii(

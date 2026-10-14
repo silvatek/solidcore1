@@ -1184,4 +1184,207 @@ bool FSolidBodyShoulderPieceTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyPartsTest,
+	"SolidCore1.Body.Parts",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidBodyMesh;
+
+	TArray<FName> Rising;
+	Rising.Add(TEXT("spine_02"));
+	Rising.Add(TEXT("spine_03"));
+	FSolidBodyMesh Body = FSolidBodyMesh::Make(Rising);
+
+	const TCHAR* Expected[] = {
+		TEXT("Thigh (L)"),
+		TEXT("Thigh (R)"),
+		TEXT("Calf (L)"),
+		TEXT("Calf (R)"),
+		TEXT("Foot (L)"),
+		TEXT("Foot (R)"),
+		TEXT("Toe (L)"),
+		TEXT("Toe (R)"),
+		TEXT("Hip"),
+		TEXT("Abdomen"),
+		TEXT("Chest"),
+		TEXT("Shoulders"),
+		TEXT("Upper arm (L)"),
+		TEXT("Upper arm (R)"),
+		TEXT("Lower arm (L)"),
+		TEXT("Lower arm (R)"),
+	};
+	const int32 ExpectedCount = static_cast<int32>(UE_ARRAY_COUNT(Expected));
+	TestEqual(TEXT("part count"), Body.Parts.Num(), ExpectedCount);
+	if (Body.Parts.Num() == ExpectedCount)
+	{
+		for (int32 Index = 0; Index < Body.Parts.Num(); ++Index)
+		{
+			TestEqual(Expected[Index], Body.Parts[Index].Name, FString(Expected[Index]));
+		}
+	}
+
+	const FSolidBodyPartMesh* Thigh = Body.Find(TEXT("Thigh (L)"));
+	TestTrue(TEXT("the thigh is on the list"), Thigh != nullptr);
+	if (Thigh)
+	{
+		TestEqual(TEXT("one thigh bone"), Thigh->Bones.Num(), 1);
+		TestTrue(TEXT("the thigh wraps calf_l"), Thigh->Bones.Num() == 1 && Thigh->Bones[0] == FName(LeftThighBone));
+		TestTrue(TEXT("the thigh is trousers"), Thigh->Colour == ESolidPartColour::Trousers);
+		TestEqual(TEXT("trousers slot"), Thigh->MaterialSlot(), TrouserMaterialSlot);
+		TestTrue(TEXT("the thigh is 20 cm at the hip"), FMath::IsNearlyEqual(Thigh->Start.X, LeftThighTopDiameterCm, 0.01f));
+		TestTrue(TEXT("the thigh is round at the hip"), FMath::IsNearlyEqual(Thigh->Start.Y, Thigh->Start.X, 0.01f));
+		TestTrue(TEXT("the thigh is 15 cm at the knee"), FMath::IsNearlyEqual(Thigh->End.X, LeftThighBottomDiameterCm, 0.01f));
+		TestTrue(TEXT("the thigh has no mid section"), !Thigh->bHasMid);
+	}
+
+	const FSolidBodyPartMesh* Hip = Body.Find(TEXT("Hip"));
+	TestTrue(TEXT("the hip is on the list"), Hip != nullptr);
+	if (Hip)
+	{
+		TestEqual(TEXT("three hip bones"), Hip->Bones.Num(), 3);
+		TestTrue(TEXT("the hip span is spine_01"), Hip->Bones.Num() >= 1 && Hip->Bones[0] == FName(HipSpineBone));
+		TestTrue(TEXT("the left thigh bone is inside the hip"), Hip->Bones.Num() == 3 && Hip->Bones[1] == FName(HipLeftBone));
+		TestTrue(TEXT("the right thigh bone is inside the hip"), Hip->Bones.Num() == 3 && Hip->Bones[2] == FName(HipRightBone));
+		TestTrue(TEXT("the hip is a shirt"), Hip->Colour == ESolidPartColour::Shirt);
+		TestTrue(TEXT("the hip bottom is 50 cm across"), FMath::IsNearlyEqual(Hip->Start.X, HipSideDiameterCm, 0.01f));
+		TestTrue(TEXT("the hip bottom is 20 cm deep"), FMath::IsNearlyEqual(Hip->Start.Y, HipDepthDiameterCm, 0.01f));
+		TestTrue(TEXT("the hip top is 30 cm across"), FMath::IsNearlyEqual(Hip->End.X, HipTopSideDiameterCm, 0.01f));
+		TestTrue(TEXT("the hip top stays 20 cm deep"), FMath::IsNearlyEqual(Hip->End.Y, HipDepthDiameterCm, 0.01f));
+	}
+
+	float AbdomenBottom = 0.f;
+	float AbdomenTop = 0.f;
+	TorsoSideDiameters(0, 2, AbdomenBottom, AbdomenTop);
+	const FSolidBodyPartMesh* Abdomen = Body.Find(TEXT("Abdomen"));
+	TestTrue(TEXT("the abdomen is on the list"), Abdomen != nullptr);
+	if (Abdomen)
+	{
+		TestTrue(TEXT("the abdomen wraps spine_02"), Abdomen->Bones.Num() == 1 && Abdomen->Bones[0] == FName(TEXT("spine_02")));
+		TestTrue(TEXT("the abdomen starts at the waist"), FMath::IsNearlyEqual(Abdomen->Start.X, AbdomenBottom, 0.01f));
+		TestTrue(TEXT("the abdomen ends halfway to the chest"), FMath::IsNearlyEqual(Abdomen->End.X, AbdomenTop, 0.01f));
+		TestTrue(TEXT("the abdomen is 20 cm deep"), FMath::IsNearlyEqual(Abdomen->Start.Y, TorsoDepthDiameterCm, 0.01f));
+		TestTrue(TEXT("the abdomen stays 20 cm deep"), FMath::IsNearlyEqual(Abdomen->End.Y, TorsoDepthDiameterCm, 0.01f));
+	}
+
+	float ChestBottom = 0.f;
+	float ChestTop = 0.f;
+	TorsoSideDiameters(1, 2, ChestBottom, ChestTop);
+	const FSolidBodyPartMesh* Chest = Body.Find(TEXT("Chest"));
+	TestTrue(TEXT("the chest is on the list"), Chest != nullptr);
+	if (Chest)
+	{
+		TestTrue(TEXT("the chest wraps spine_03"), Chest->Bones.Num() == 1 && Chest->Bones[0] == FName(SpineChestBone));
+		TestTrue(TEXT("the chest starts where the abdomen ended"), FMath::IsNearlyEqual(Chest->Start.X, ChestBottom, 0.01f));
+		TestTrue(TEXT("the chest ends at the shoulder breadth"), FMath::IsNearlyEqual(Chest->End.X, ChestSideDiameterCm, 0.01f));
+		TestTrue(TEXT("the chest end matches the step"), FMath::IsNearlyEqual(Chest->End.X, ChestTop, 0.01f));
+	}
+
+	FSolidBodyPartMesh* Shoulders = nullptr;
+	for (FSolidBodyPartMesh& Part : Body.Parts)
+	{
+		if (Part.Name == TEXT("Shoulders"))
+		{
+			Shoulders = &Part;
+		}
+	}
+	TestTrue(TEXT("the shoulders are on the list"), Shoulders != nullptr);
+	if (Shoulders && Chest)
+	{
+		TestTrue(TEXT("the shoulders have a mid section"), Shoulders->bHasMid);
+		TestEqual(TEXT("five shoulder bones"), Shoulders->Bones.Num(), 5);
+		TestTrue(TEXT("the shoulder span is neck_01"), Shoulders->Bones.Num() >= 1 && Shoulders->Bones[0] == FName(ShoulderNeckBone));
+		TestTrue(TEXT("the left clavicle is inside the shoulders"), Shoulders->Bones.Contains(FName(ShoulderLeftClavicleBone)));
+		TestTrue(TEXT("the right clavicle is inside the shoulders"), Shoulders->Bones.Contains(FName(ShoulderRightClavicleBone)));
+		TestTrue(TEXT("the left upper-arm bone is inside the shoulders"), Shoulders->Bones.Contains(FName(ShoulderLeftUpperArmBone)));
+		TestTrue(TEXT("the right upper-arm bone is inside the shoulders"), Shoulders->Bones.Contains(FName(ShoulderRightUpperArmBone)));
+		TestTrue(TEXT("the shoulder base matches the chest"), FMath::IsNearlyEqual(Shoulders->Start.X, Chest->End.X, 0.01f));
+		TestTrue(TEXT("the shoulder base is 20 cm deep"), FMath::IsNearlyEqual(Shoulders->Start.Y, TorsoDepthDiameterCm, 0.01f));
+		TestTrue(TEXT("the shoulder top is a 20 cm circle"), FMath::IsNearlyEqual(Shoulders->End.X, ShoulderTopRadiusCm * 2.f, 0.01f));
+		TestTrue(TEXT("the shoulder top is round"), FMath::IsNearlyEqual(Shoulders->End.Y, Shoulders->End.X, 0.01f));
+		TestTrue(TEXT("the mid waits until the piece is drawn"), FMath::IsNearlyEqual(Shoulders->Mid.X, 0.f, 0.01f));
+		TestTrue(TEXT("the shoulders are a shirt"), Shoulders->Colour == ESolidPartColour::Shirt);
+		TestEqual(TEXT("shirt slot"), Shoulders->MaterialSlot(), ShirtMaterialSlot);
+
+		const FVector NeckStart(0.f, 0.f, 140.f);
+		const FVector NeckEnd(0.f, 0.f, 159.4f);
+		const FVector SegmentStart[] = { NeckStart, NeckStart, FVector(7.26f, 3.71f, 151.39f), FVector(-7.26f, 3.71f, 151.39f) };
+		const FVector SegmentEnd[] = {
+			FVector(7.26f, 3.71f, 151.39f),
+			FVector(-7.26f, 3.71f, 151.39f),
+			FVector(19.92f, -2.60f, 144.81f),
+			FVector(-19.92f, -2.60f, 144.81f),
+		};
+		const FSolidPartDraw Draw = DrawForPart(
+			*Shoulders,
+			NeckStart,
+			NeckEnd,
+			SegmentStart,
+			SegmentEnd,
+			4,
+			FVector::ForwardVector);
+		TestTrue(TEXT("drawing the shoulders uses both cones"), Draw.bShoulder && Draw.Shoulder.bValid);
+		TestTrue(TEXT("the fitted mid is wider than the chest"), Shoulders->Mid.X > Shoulders->Start.X);
+		TestTrue(TEXT("the fitted mid has depth"), Shoulders->Mid.Y > 0.f);
+	}
+
+	const FSolidBodyPartMesh* Upper = Body.Find(TEXT("Upper arm (L)"));
+	TestTrue(TEXT("the upper arm is on the list"), Upper != nullptr);
+	if (Upper)
+	{
+		TestTrue(TEXT("the upper arm wraps lowerarm_l"), Upper->Bones.Num() == 1 && Upper->Bones[0] == FName(TEXT("lowerarm_l")));
+		TestTrue(TEXT("the upper arm is a shirt"), Upper->Colour == ESolidPartColour::Shirt);
+		TestTrue(TEXT("the upper arm is 8.4 cm at the shoulder"), FMath::IsNearlyEqual(Upper->Start.X, UpperArmElbowDiameterCm, 0.01f));
+		TestTrue(TEXT("the upper arm is 6.8 cm at the elbow"), FMath::IsNearlyEqual(Upper->End.X, ForearmWristDiameterCm, 0.01f));
+		TestTrue(TEXT("the upper arm is round"), FMath::IsNearlyEqual(Upper->Start.Y, Upper->Start.X, 0.01f));
+	}
+
+	const FSolidBodyPartMesh* Lower = Body.Find(TEXT("lower arm (l)"));
+	TestTrue(TEXT("the lower arm is on the list"), Lower != nullptr);
+	if (Lower)
+	{
+		TestTrue(TEXT("the lower arm wraps hand_l"), Lower->Bones.Num() == 1 && Lower->Bones[0] == FName(TEXT("hand_l")));
+		TestTrue(TEXT("the lower arm is a shirt"), Lower->Colour == ESolidPartColour::Shirt);
+		TestTrue(TEXT("the lower arm starts at the elbow diameter"), FMath::IsNearlyEqual(Lower->Start.X, LowerArmStartDiameterCm, 0.01f));
+		TestTrue(TEXT("the lower arm ends at the wrist diameter"), FMath::IsNearlyEqual(Lower->End.X, LowerArmEndDiameterCm, 0.01f));
+		TestTrue(TEXT("the lower arm is round"), FMath::IsNearlyEqual(Lower->Start.Y, Lower->Start.X, 0.01f) && FMath::IsNearlyEqual(Lower->End.Y, Lower->End.X, 0.01f));
+		TestTrue(TEXT("the lower arm is wider at the wrist"), Lower->End.X > Lower->Start.X);
+		TestTrue(
+			TEXT("the elbow steps from the upper arm down to the lower arm"),
+			Upper && Upper->End.X > Lower->Start.X);
+		TestTrue(TEXT("the lower arm has no mid section"), !Lower->bHasMid);
+	}
+	const FSolidBodyPartMesh* LowerRight = Body.Find(TEXT("Lower arm (R)"));
+	TestTrue(TEXT("the right lower arm matches"), Lower && LowerRight && LowerRight->Bones.Num() == 1
+		&& LowerRight->Bones[0] == FName(TEXT("hand_r"))
+		&& FMath::IsNearlyEqual(LowerRight->Start.X, Lower->Start.X, 0.01f)
+		&& FMath::IsNearlyEqual(LowerRight->End.X, Lower->End.X, 0.01f));
+
+	for (const FSolidBodyPartMesh& Part : Body.Parts)
+	{
+		TestFalse(TEXT("clavicle_l is not its own part"), Part.Bones.Num() == 1 && Part.Bones[0] == FName(TEXT("clavicle_l")));
+		TestFalse(TEXT("upperarm_l is not its own part"), Part.Bones.Num() == 1 && Part.Bones[0] == FName(TEXT("upperarm_l")));
+		for (const FName& Bone : Part.Bones)
+		{
+			const FString BoneName = Bone.ToString();
+			TestFalse(TEXT("twists stay off the body"), BoneName.Contains(TEXT("twist")));
+			TestFalse(TEXT("shoulder_jnt stays bare"), BoneName.Equals(TEXT("shoulder_jnt"), ESearchCase::IgnoreCase));
+			TestFalse(TEXT("the head stays bare"), BoneName.Equals(TEXT("head"), ESearchCase::IgnoreCase));
+			TestFalse(TEXT("fingers stay bare"), BoneName.StartsWith(TEXT("index_")) || BoneName.StartsWith(TEXT("thumb_")));
+		}
+	}
+	TestTrue(TEXT("there is no head part"), Body.Find(TEXT("Head")) == nullptr);
+
+	const FSolidBodyMesh Bare = FSolidBodyMesh::Make({});
+	TestTrue(TEXT("no rising spine leaves out the abdomen"), Bare.Find(TEXT("Abdomen")) == nullptr);
+	TestTrue(TEXT("no rising spine leaves out the chest"), Bare.Find(TEXT("Chest")) == nullptr);
+	const FSolidBodyPartMesh* BareShoulders = Bare.Find(TEXT("Shoulders"));
+	TestTrue(
+		TEXT("without a chest the shoulder base stays the chest width"),
+		BareShoulders && FMath::IsNearlyEqual(BareShoulders->Start.X, ChestSideDiameterCm, 0.01f));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

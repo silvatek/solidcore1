@@ -293,62 +293,57 @@ SolidBodyMesh::FSolidFittedCone SolidBodyMesh::FitCone(const FVector* Points, co
 	return Out;
 }
 
+namespace
+{
+	SolidBodyMesh::FSolidFittedCone ConeFromNamedPart(
+		const TCHAR* PartName,
+		const FVector& From,
+		const FVector& To)
+	{
+		const SolidBodyMesh::FSolidBodyMesh Body = SolidBodyMesh::FSolidBodyMesh::Make({});
+		const SolidBodyMesh::FSolidBodyPartMesh* Found = Body.Find(PartName);
+		SolidBodyMesh::FSolidFittedCone Out;
+		if (!Found)
+		{
+			return Out;
+		}
+		Out.Start = From;
+		Out.End = To;
+		Out.RadiusStart = Found->Start.X * 0.5f;
+		Out.RadiusEnd = Found->End.X * 0.5f;
+		Out.DepthScaleStart = Found->Start.X > KINDA_SMALL_NUMBER ? Found->Start.Y / Found->Start.X : 1.f;
+		Out.DepthScaleEnd = Found->End.X > KINDA_SMALL_NUMBER ? Found->End.Y / Found->End.X : 1.f;
+		Out.WideAxis = FVector::ForwardVector;
+		Out.bValid = FVector::Dist(From, To) >= 1.0
+			&& Found->Start.X > KINDA_SMALL_NUMBER
+			&& Found->End.X > KINDA_SMALL_NUMBER;
+		return Out;
+	}
+}
+
 SolidBodyMesh::FSolidFittedCone SolidBodyMesh::LeftThighCone(const FVector& Hip, const FVector& Knee)
 {
-	FSolidFittedCone Out;
-	Out.Start = Hip;
-	Out.End = Knee;
-	Out.RadiusStart = LeftThighTopDiameterCm * 0.5f;
-	Out.RadiusEnd = LeftThighBottomDiameterCm * 0.5f;
-	Out.bValid = FVector::Dist(Hip, Knee) >= 1.0;
-	return Out;
+	return ConeFromNamedPart(TEXT("Thigh (L)"), Hip, Knee);
 }
 
 SolidBodyMesh::FSolidFittedCone SolidBodyMesh::CalfCone(const FVector& Knee, const FVector& Ankle)
 {
-	FSolidFittedCone Out;
-	Out.Start = Knee;
-	Out.End = Ankle;
-	Out.RadiusStart = CalfTopDiameterCm * 0.5f;
-	Out.RadiusEnd = CalfBottomDiameterCm * 0.5f;
-	Out.bValid = FVector::Dist(Knee, Ankle) >= 1.0;
-	return Out;
+	return ConeFromNamedPart(TEXT("Calf (L)"), Knee, Ankle);
 }
 
 SolidBodyMesh::FSolidFittedCone SolidBodyMesh::BallCylinder(const FVector& Ankle, const FVector& Toe)
 {
-	FSolidFittedCone Out;
-	Out.Start = Ankle;
-	Out.End = Toe;
-	Out.RadiusStart = BallDiameterCm * 0.5f;
-	Out.RadiusEnd = BallDiameterCm * 0.5f;
-	Out.bValid = FVector::Dist(Ankle, Toe) >= 1.0;
-	return Out;
+	return ConeFromNamedPart(TEXT("Foot (L)"), Ankle, Toe);
 }
 
 SolidBodyMesh::FSolidFittedCone SolidBodyMesh::ExtraFingerCone(const FVector& AnkleEnd, const FVector& ToeEnd)
 {
-	FSolidFittedCone Out;
-	Out.Start = AnkleEnd;
-	Out.End = ToeEnd;
-	Out.RadiusStart = ExtraFingerAnkleDiameterCm * 0.5f;
-	Out.RadiusEnd = ExtraFingerToeDiameterCm * 0.5f;
-	Out.bValid = FVector::Dist(AnkleEnd, ToeEnd) >= 1.0;
-	return Out;
+	return ConeFromNamedPart(TEXT("Toe (L)"), AnkleEnd, ToeEnd);
 }
 
 SolidBodyMesh::FSolidFittedCone SolidBodyMesh::HipCone(const FVector& SpineStart, const FVector& SpineEnd)
 {
-	FSolidFittedCone Out;
-	Out.Start = SpineStart;
-	Out.End = SpineEnd;
-	Out.RadiusStart = HipSideDiameterCm * 0.5f;
-	Out.RadiusEnd = HipTopSideDiameterCm * 0.5f;
-	Out.DepthScaleStart = HipSideDiameterCm > KINDA_SMALL_NUMBER ? HipDepthDiameterCm / HipSideDiameterCm : 1.f;
-	Out.DepthScaleEnd = HipTopSideDiameterCm > KINDA_SMALL_NUMBER ? HipDepthDiameterCm / HipTopSideDiameterCm : 1.f;
-	Out.WideAxis = FVector::ForwardVector;
-	Out.bValid = FVector::Dist(SpineStart, SpineEnd) >= 1.0;
-	return Out;
+	return ConeFromNamedPart(TEXT("Hip"), SpineStart, SpineEnd);
 }
 
 bool SolidBodyMesh::IsRisingSpineBoneName(const FString& BoneName)
@@ -452,12 +447,12 @@ SolidBodyMesh::FSolidFittedCone SolidBodyMesh::UpperArmCone(const FVector& Paren
 
 SolidBodyMesh::FSolidFittedCone SolidBodyMesh::ForearmCone(const FVector& Parent, const FVector& Bone)
 {
-	return RoundBoneCone(Parent, Bone, UpperArmElbowDiameterCm, ForearmWristDiameterCm);
+	return ConeFromNamedPart(TEXT("Upper arm (L)"), Parent, Bone);
 }
 
 SolidBodyMesh::FSolidFittedCone SolidBodyMesh::HandCone(const FVector& Wrist, const FVector& Hand)
 {
-	return RoundBoneCone(Wrist, Hand, LowerArmStartDiameterCm, LowerArmEndDiameterCm);
+	return ConeFromNamedPart(TEXT("Lower arm (L)"), Wrist, Hand);
 }
 
 namespace
@@ -691,6 +686,43 @@ bool SolidBodyMesh::ShoulderContains(const FSolidShoulderPiece& Piece, const FVe
 	const float NarrowDist = FVector::DotProduct(Offset, Narrow);
 	const float Ellipse = FMath::Square(WideDist / SideRadius) + FMath::Square(NarrowDist / DepthRadius);
 	return Ellipse <= 1.f;
+}
+
+SolidBodyMesh::FSolidPartDraw SolidBodyMesh::DrawForPart(
+	FSolidBodyPartMesh& Part,
+	const FVector& From,
+	const FVector& To,
+	const FVector* SegmentStart,
+	const FVector* SegmentEnd,
+	const int32 SegmentCount,
+	const FVector& WideAxis)
+{
+	FSolidPartDraw Out;
+	if (Part.bHasMid)
+	{
+		Out.bShoulder = true;
+		Out.Shoulder = ShoulderPiece(From, To, SegmentStart, SegmentEnd, SegmentCount, Part.Start.X, WideAxis);
+		if (Out.Shoulder.bValid)
+		{
+			const float SideRadius = Out.Shoulder.Lower.RadiusEnd;
+			const float DepthRadius = SideRadius * Out.Shoulder.Lower.DepthScaleEnd;
+			Part.Mid.X = SideRadius * 2.f;
+			Part.Mid.Y = DepthRadius * 2.f;
+		}
+		return Out;
+	}
+
+	Out.Cone.Start = From;
+	Out.Cone.End = To;
+	Out.Cone.RadiusStart = Part.Start.X * 0.5f;
+	Out.Cone.RadiusEnd = Part.End.X * 0.5f;
+	Out.Cone.DepthScaleStart = Part.Start.X > KINDA_SMALL_NUMBER ? Part.Start.Y / Part.Start.X : 1.f;
+	Out.Cone.DepthScaleEnd = Part.End.X > KINDA_SMALL_NUMBER ? Part.End.Y / Part.End.X : 1.f;
+	Out.Cone.WideAxis = WideAxis;
+	Out.Cone.bValid = FVector::Dist(From, To) >= 1.0
+		&& Part.Start.X > KINDA_SMALL_NUMBER
+		&& Part.End.X > KINDA_SMALL_NUMBER;
+	return Out;
 }
 
 bool SolidBodyMesh::RayHitsCone(
@@ -1363,35 +1395,6 @@ namespace
 			Cone.WideAxis);
 	}
 
-	void AddNamedCones(
-		TArray<FLoFiVert>& Verts,
-		TArray<FLoFiTri>& Tris,
-		const TArray<FSolidDeformBone>& Bones,
-		const TArray<FVector>& Positions,
-		const int32 Count,
-		bool (*Test)(const FString&),
-		SolidBodyMesh::FSolidFittedCone (*MakeCone)(const FVector&, const FVector&),
-		const uint8 Slot)
-	{
-		if (!Test || !MakeCone)
-		{
-			return;
-		}
-		for (int32 Index = 0; Index < Count; ++Index)
-		{
-			if (!Test(Bones[Index].Name.ToString()))
-			{
-				continue;
-			}
-			const int32 Parent = Bones[Index].ParentIndex;
-			if (!Bones.IsValidIndex(Parent) || !Positions.IsValidIndex(Parent))
-			{
-				continue;
-			}
-			AddLegCone(Verts, Tris, Parent, MakeCone(Positions[Parent], Positions[Index]), Slot);
-		}
-	}
-
 	void BuildLowFi(
 		const TArray<FSolidDeformBone>& Bones,
 		const TArray<FVector>& Positions,
@@ -1399,103 +1402,10 @@ namespace
 		TArray<FLoFiTri>& Tris)
 	{
 		const int32 Count = FMath::Min(Bones.Num(), Positions.Num());
-		const TCHAR* ThighBones[] = {
-			SolidBodyMesh::LeftThighBone,
-			SolidBodyMesh::RightThighBone,
-		};
-		for (const TCHAR* BoneName : ThighBones)
-		{
-			const int32 Calf = FindNamedBone(Bones, Count, BoneName);
-			if (Calf == INDEX_NONE)
-			{
-				continue;
-			}
-			const int32 Hip = Bones[Calf].ParentIndex;
-			if (!Bones.IsValidIndex(Hip) || !Positions.IsValidIndex(Hip))
-			{
-				continue;
-			}
-			AddLegCone(Verts, Tris, Hip, SolidBodyMesh::LeftThighCone(Positions[Hip], Positions[Calf]));
-		}
-
-		const TCHAR* CalfBones[] = {
-			SolidBodyMesh::LeftCalfBone,
-			SolidBodyMesh::RightCalfBone,
-		};
-		for (const TCHAR* BoneName : CalfBones)
-		{
-			const int32 Foot = FindNamedBone(Bones, Count, BoneName);
-			if (Foot == INDEX_NONE)
-			{
-				continue;
-			}
-			const int32 Knee = Bones[Foot].ParentIndex;
-			if (!Bones.IsValidIndex(Knee) || !Positions.IsValidIndex(Knee))
-			{
-				continue;
-			}
-			AddLegCone(Verts, Tris, Knee, SolidBodyMesh::CalfCone(Positions[Knee], Positions[Foot]));
-		}
-
-		const TCHAR* BallBones[] = {
-			SolidBodyMesh::LeftBallBone,
-			SolidBodyMesh::RightBallBone,
-		};
-		for (const TCHAR* BoneName : BallBones)
-		{
-			const int32 Ball = FindNamedBone(Bones, Count, BoneName);
-			if (Ball == INDEX_NONE)
-			{
-				continue;
-			}
-			const int32 Ankle = Bones[Ball].ParentIndex;
-			if (!Bones.IsValidIndex(Ankle) || !Positions.IsValidIndex(Ankle))
-			{
-				continue;
-			}
-			AddLegCone(Verts, Tris, Ankle, SolidBodyMesh::BallCylinder(Positions[Ankle], Positions[Ball]));
-		}
-
-		const TCHAR* ToeBones[] = {
-			SolidBodyMesh::LeftExtraFingerBone,
-			SolidBodyMesh::RightExtraFingerBone,
-		};
-		for (const TCHAR* BoneName : ToeBones)
-		{
-			const int32 Toe = FindNamedBone(Bones, Count, BoneName);
-			if (Toe == INDEX_NONE)
-			{
-				continue;
-			}
-			const int32 AnkleEnd = Bones[Toe].ParentIndex;
-			if (!Bones.IsValidIndex(AnkleEnd) || !Positions.IsValidIndex(AnkleEnd))
-			{
-				continue;
-			}
-			AddLegCone(Verts, Tris, AnkleEnd, SolidBodyMesh::ExtraFingerCone(Positions[AnkleEnd], Positions[Toe]));
-		}
-
-		const int32 HipLeft = FindNamedBone(Bones, Count, SolidBodyMesh::HipLeftBone);
-		const int32 HipRight = FindNamedBone(Bones, Count, SolidBodyMesh::HipRightBone);
 		const int32 HipSpine = FindNamedBone(Bones, Count, SolidBodyMesh::HipSpineBone);
-		if (HipLeft != INDEX_NONE && HipRight != INDEX_NONE && HipSpine != INDEX_NONE)
-		{
-			const int32 SpineStart = Bones[HipSpine].ParentIndex;
-			if (Bones.IsValidIndex(SpineStart) && Positions.IsValidIndex(SpineStart))
-			{
-				AddLegCone(
-					Verts,
-					Tris,
-					SpineStart,
-					SolidBodyMesh::HipCone(Positions[SpineStart], Positions[HipSpine]),
-					SlotTorso);
-			}
-		}
-
-		float ShoulderBaseSideCm = SolidBodyMesh::ChestSideDiameterCm;
+		TArray<FName> RisingNames;
 		if (HipSpine != INDEX_NONE)
 		{
-			TArray<int32> Rising;
 			int32 Cursor = HipSpine;
 			for (int32 Guard = 0; Guard < Count; ++Guard)
 			{
@@ -1504,102 +1414,72 @@ namespace
 				{
 					break;
 				}
-				Rising.Add(Next);
+				RisingNames.Add(Bones[Next].Name);
 				Cursor = Next;
-			}
-			for (int32 Step = 0; Step < Rising.Num(); ++Step)
-			{
-				const int32 Bone = Rising[Step];
-				const int32 Parent = Bones[Bone].ParentIndex;
-				if (!Bones.IsValidIndex(Parent) || !Positions.IsValidIndex(Parent))
-				{
-					continue;
-				}
-				float BottomCm = 0.f;
-				float TopCm = 0.f;
-				SolidBodyMesh::TorsoSideDiameters(Step, Rising.Num(), BottomCm, TopCm);
-				if (Bones[Bone].Name.ToString().Equals(SolidBodyMesh::SpineChestBone, ESearchCase::IgnoreCase))
-				{
-					ShoulderBaseSideCm = TopCm;
-				}
-				AddLegCone(
-					Verts,
-					Tris,
-					Parent,
-					SolidBodyMesh::TorsoCone(Positions[Parent], Positions[Bone], BottomCm, TopCm),
-					SlotTorso);
-			}
-		}
-
-		const int32 ShoulderNeck = FindNamedBone(Bones, Count, SolidBodyMesh::ShoulderNeckBone);
-		const int32 LeftClavicle = FindNamedBone(Bones, Count, SolidBodyMesh::ShoulderLeftClavicleBone);
-		const int32 RightClavicle = FindNamedBone(Bones, Count, SolidBodyMesh::ShoulderRightClavicleBone);
-		const int32 LeftUpper = FindNamedBone(Bones, Count, SolidBodyMesh::ShoulderLeftUpperArmBone);
-		const int32 RightUpper = FindNamedBone(Bones, Count, SolidBodyMesh::ShoulderRightUpperArmBone);
-		if (ShoulderNeck != INDEX_NONE
-			&& LeftClavicle != INDEX_NONE
-			&& RightClavicle != INDEX_NONE
-			&& LeftUpper != INDEX_NONE
-			&& RightUpper != INDEX_NONE)
-		{
-			const int32 NeckStart = Bones[ShoulderNeck].ParentIndex;
-			const int32 LeftClavicleStart = Bones[LeftClavicle].ParentIndex;
-			const int32 RightClavicleStart = Bones[RightClavicle].ParentIndex;
-			const int32 LeftUpperStart = Bones[LeftUpper].ParentIndex;
-			const int32 RightUpperStart = Bones[RightUpper].ParentIndex;
-			if (Bones.IsValidIndex(NeckStart) && Positions.IsValidIndex(NeckStart)
-				&& Bones.IsValidIndex(LeftClavicleStart) && Positions.IsValidIndex(LeftClavicleStart)
-				&& Bones.IsValidIndex(RightClavicleStart) && Positions.IsValidIndex(RightClavicleStart)
-				&& Bones.IsValidIndex(LeftUpperStart) && Positions.IsValidIndex(LeftUpperStart)
-				&& Bones.IsValidIndex(RightUpperStart) && Positions.IsValidIndex(RightUpperStart))
-			{
-				const FVector SegmentStart[] = {
-					Positions[LeftClavicleStart],
-					Positions[RightClavicleStart],
-					Positions[LeftUpperStart],
-					Positions[RightUpperStart],
-				};
-				const FVector SegmentEnd[] = {
-					Positions[LeftClavicle],
-					Positions[RightClavicle],
-					Positions[LeftUpper],
-					Positions[RightUpper],
-				};
-				AddShoulder(
-					Verts,
-					Tris,
-					NeckStart,
-					SolidBodyMesh::ShoulderPiece(
-						Positions[NeckStart],
-						Positions[ShoulderNeck],
-						SegmentStart,
-						SegmentEnd,
-						4,
-						ShoulderBaseSideCm,
-						FVector::ForwardVector),
-					SlotTorso);
 			}
 		}
 
 		// shoulder_jnt, fingers, head, and eye bones stay bare. Twists stay bare too.
-		AddNamedCones(
-			Verts,
-			Tris,
-			Bones,
-			Positions,
-			Count,
-			SolidBodyMesh::IsForearmBoneName,
-			SolidBodyMesh::ForearmCone,
-			SlotTorso);
-		AddNamedCones(
-			Verts,
-			Tris,
-			Bones,
-			Positions,
-			Count,
-			SolidBodyMesh::IsHandBoneName,
-			SolidBodyMesh::HandCone,
-			SlotTorso);
+		SolidBodyMesh::FSolidBodyMesh Body = SolidBodyMesh::FSolidBodyMesh::Make(RisingNames);
+		for (SolidBodyMesh::FSolidBodyPartMesh& Part : Body.Parts)
+		{
+			if (Part.Bones.Num() == 0)
+			{
+				continue;
+			}
+			const int32 Span = FindNamedBone(Bones, Count, *Part.Bones[0].ToString());
+			if (Span == INDEX_NONE)
+			{
+				continue;
+			}
+			const int32 Parent = Bones[Span].ParentIndex;
+			if (!Bones.IsValidIndex(Parent) || !Positions.IsValidIndex(Parent))
+			{
+				continue;
+			}
+
+			TArray<FVector> SegmentStart;
+			TArray<FVector> SegmentEnd;
+			bool bComplete = true;
+			for (int32 BoneNumber = 1; BoneNumber < Part.Bones.Num(); ++BoneNumber)
+			{
+				const int32 Bone = FindNamedBone(Bones, Count, *Part.Bones[BoneNumber].ToString());
+				if (Bone == INDEX_NONE)
+				{
+					bComplete = false;
+					break;
+				}
+				const int32 BoneParent = Bones[Bone].ParentIndex;
+				if (!Bones.IsValidIndex(BoneParent) || !Positions.IsValidIndex(BoneParent))
+				{
+					bComplete = false;
+					break;
+				}
+				SegmentStart.Add(Positions[BoneParent]);
+				SegmentEnd.Add(Positions[Bone]);
+			}
+			if (!bComplete)
+			{
+				continue;
+			}
+
+			SolidBodyMesh::FSolidPartDraw Draw = SolidBodyMesh::DrawForPart(
+				Part,
+				Positions[Parent],
+				Positions[Span],
+				SegmentStart.GetData(),
+				SegmentEnd.GetData(),
+				SegmentStart.Num(),
+				FVector::ForwardVector);
+			if (Draw.bShoulder)
+			{
+				AddShoulder(Verts, Tris, Parent, Draw.Shoulder, Part.MaterialSlot());
+			}
+			else
+			{
+				AddLegCone(Verts, Tris, Parent, Draw.Cone, Part.MaterialSlot());
+			}
+		}
 	}
 
 	void PaintSlot(

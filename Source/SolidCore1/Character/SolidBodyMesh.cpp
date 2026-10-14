@@ -119,6 +119,14 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 		FSolidPartSection::Round(LowerArmStartDiameterCm),
 		FSolidPartSection::Round(LowerArmEndDiameterCm)), ESolidPartMeasure::Arm);
 
+	// The sphere's height comes from the eye joints. These diameters are unused.
+	AddPart(FSolidBodyPart(
+		TEXT("Head"),
+		{ HeadBone },
+		ESolidPartColour::Skin,
+		FSolidPartSection::Round(0.f),
+		FSolidPartSection::Round(0.f)), ESolidPartMeasure::Head);
+
 	return Body;
 }
 
@@ -221,6 +229,16 @@ uint32 SolidBodyMesh::SeedForName(const FString& Name)
 bool SolidBodyMesh::IsTwistBoneName(const FString& BoneName)
 {
 	return BoneName.ToLower().Contains(TEXT("twist"));
+}
+
+bool SolidBodyMesh::IsEyeBoneName(const FString& BoneName)
+{
+	return BoneName.ToLower().Contains(TEXT("eye"));
+}
+
+bool SolidBodyMesh::IsEyeJointBoneName(const FString& BoneName)
+{
+	return BoneName.ToLower().Contains(TEXT("eye_jnt"));
 }
 
 bool SolidBodyMesh::IsRisingSpineBoneName(const FString& BoneName)
@@ -1140,7 +1158,28 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::FromBones(const TAr
 			Cursor = Next;
 		}
 	}
-	return Make(RisingNames);
+
+	FSolidBodyMesh Body = Make(RisingNames);
+	for (FSolidBodyPart& Part : Body.Parts)
+	{
+		if (!Part.Name.Equals(TEXT("Head"), ESearchCase::IgnoreCase) || Part.Bones.Num() == 0)
+		{
+			continue;
+		}
+		for (const FSolidDeformBone& Bone : Bones)
+		{
+			const FString BoneName = Bone.Name.ToString();
+			if (BoneName.Equals(HeadBone, ESearchCase::IgnoreCase))
+			{
+				Part.Bones[0] = Bone.Name;
+			}
+			else if (IsEyeBoneName(BoneName))
+			{
+				Part.Bones.AddUnique(Bone.Name);
+			}
+		}
+	}
+	return Body;
 }
 
 void SolidBodyMesh::FSolidBodyMesh::Draw(
@@ -1149,7 +1188,7 @@ void SolidBodyMesh::FSolidBodyMesh::Draw(
 	const TArray<FSolidDeformBone>& Bones,
 	const TArray<FVector>& Positions)
 {
-	// shoulder_jnt, fingers, head, and eye bones stay bare. Twists stay bare too.
+	// shoulder_jnt and the fingers stay bare. Twists stay bare too.
 	const int32 Count = FMath::Min(Bones.Num(), Positions.Num());
 	for (FSolidBodyPart& Part : Parts)
 	{
@@ -1197,6 +1236,7 @@ void SolidBodyMesh::FSolidBodyMesh::Draw(
 			Verts,
 			Tris,
 			Parent,
+			Span,
 			Positions[Parent],
 			Positions[Span],
 			SegmentStart.GetData(),

@@ -841,4 +841,104 @@ bool FSolidBodyPartSizesBonesTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyHeadTest,
+	"SolidCore1.Body.Head",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyHeadTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidBodyMesh;
+
+	TestTrue(TEXT("an eye joint is an eye"), IsEyeBoneName(TEXT("eye_jnt_l")));
+	TestTrue(TEXT("an eyelid is an eye"), IsEyeBoneName(TEXT("eyelid_r")));
+	TestFalse(TEXT("the head bone is not an eye"), IsEyeBoneName(TEXT("head")));
+	TestFalse(TEXT("a thumb is not an eye"), IsEyeBoneName(TEXT("thumb_l")));
+	TestTrue(TEXT("eye_jnt sets the height"), IsEyeJointBoneName(TEXT("Eye_Jnt_R")));
+	TestFalse(TEXT("an eyelid does not set the height"), IsEyeJointBoneName(TEXT("eyelid_l")));
+	TestTrue(TEXT("the head is taller than it is wide"), HeadWidthOverHeight < 1.f);
+
+	TArray<FSolidDeformBone> Bones;
+	auto AddBone = [&Bones](const TCHAR* Name, const int32 Parent, const FVector& Translation)
+	{
+		FSolidDeformBone Bone;
+		Bone.Name = Name;
+		Bone.ParentIndex = Parent;
+		Bone.LocalTranslation = Translation;
+		Bones.Add(Bone);
+	};
+	AddBone(TEXT("neck_01"), INDEX_NONE, FVector(0.f, 0.f, 90.f));
+	AddBone(HeadBone, 0, FVector(0.f, 0.f, 10.f));
+	AddBone(TEXT("eye_jnt_l"), 1, FVector(4.f, 6.f, 12.f));
+	AddBone(TEXT("eye_jnt_r"), 1, FVector(-4.f, 6.f, 12.f));
+	AddBone(TEXT("eyelid_l"), 1, FVector(3.f, 6.f, 18.f));
+	AddBone(TEXT("thumb_l"), 1, FVector(1.f, 1.f, 1.f));
+
+	const FSolidBodyMesh Body = FSolidBodyMesh::FromBones(Bones);
+	const FSolidBodyPart* Head = Body.Find(TEXT("Head"));
+	TestTrue(TEXT("the head is on the list"), Head != nullptr);
+	if (Head)
+	{
+		TestTrue(TEXT("the head is skin"), Head->Colour == ESolidPartColour::Skin);
+		TestEqual(TEXT("skin slot"), Head->MaterialSlot(), SkinMaterialSlot);
+		TestTrue(TEXT("the head uses head size"), Head->Measure == ESolidPartMeasure::Head);
+		TestEqual(TEXT("head, two eye joints, and an eyelid"), Head->Bones.Num(), 4);
+		TestTrue(TEXT("the span is the head bone"), Head->Bones.Num() >= 1 && Head->Bones[0] == FName(HeadBone));
+		TestTrue(TEXT("the left eye joint is inside the head"), Head->Bones.Contains(FName(TEXT("eye_jnt_l"))));
+		TestTrue(TEXT("the right eye joint is inside the head"), Head->Bones.Contains(FName(TEXT("eye_jnt_r"))));
+		TestTrue(TEXT("the eyelid is inside the head"), Head->Bones.Contains(FName(TEXT("eyelid_l"))));
+		TestFalse(TEXT("the thumb stays out of the head"), Head->Bones.Contains(FName(TEXT("thumb_l"))));
+	}
+
+	TArray<FVector> Positions;
+	SolidBodyDeform::ComponentPositions(Bones, Positions);
+	TArray<FSolidBodyVert> Verts;
+	TArray<FSolidBodyTri> Tris;
+	FSolidBodyMesh Drawn = Body;
+	Drawn.Draw(Verts, Tris, Bones, Positions);
+	TestTrue(TEXT("the head draws triangles"), Tris.Num() > 0);
+
+	const float EyeHeight = 12.f;
+	const float SphereHeight = EyeHeight * 2.f;
+	const float HorizontalRadius = SphereHeight * HeadWidthOverHeight * 0.5f;
+	float MinZ = 1.e9f;
+	float MaxZ = -1.e9f;
+	float MaxRadial = 0.f;
+	int32 SkinVerts = 0;
+	bool bSkinnedToHead = true;
+	for (const FSolidBodyVert& Vert : Verts)
+	{
+		if (Vert.Slot != SkinMaterialSlot)
+		{
+			continue;
+		}
+		++SkinVerts;
+		MinZ = FMath::Min(MinZ, static_cast<float>(Vert.Position.Z));
+		MaxZ = FMath::Max(MaxZ, static_cast<float>(Vert.Position.Z));
+		const float Radial = static_cast<float>(FVector(Vert.Position.X, Vert.Position.Y, 0.f).Size());
+		MaxRadial = FMath::Max(MaxRadial, Radial);
+		bSkinnedToHead = bSkinnedToHead && Vert.Bone == 1;
+	}
+	TestTrue(TEXT("the sphere has skin vertices"), SkinVerts > 0);
+	TestTrue(TEXT("the sphere starts at the head bone"), FMath::IsNearlyEqual(MinZ, 100.f, 0.01f));
+	TestTrue(TEXT("the eyes sit halfway up"), FMath::IsNearlyEqual(MaxZ, 100.f + SphereHeight, 0.01f));
+	TestTrue(
+		TEXT("the sphere is stretched upward"),
+		FMath::IsNearlyEqual(MaxRadial, HorizontalRadius, 0.05f) && MaxRadial * 2.f < SphereHeight - 0.01f);
+	TestTrue(TEXT("the sphere is skinned to the head"), bSkinnedToHead);
+
+	FSolidBodyParams BigHead;
+	BigHead.HeadSize = 2.f;
+	FSolidBodyMesh Scaled = Body;
+	Scaled.Apply(Bones, BigHead);
+	TestTrue(TEXT("head size lengthens the head bone"), Bones[1].LocalTranslation.Equals(FVector(0.f, 0.f, 20.f), 0.01f));
+	TestTrue(
+		TEXT("head size spreads an eye"),
+		FMath::IsNearlyEqual(Bones[2].LocalTranslation.X, 8.f, 0.01f)
+		&& FMath::IsNearlyEqual(Bones[2].LocalTranslation.Y, 12.f, 0.01f)
+		&& FMath::IsNearlyEqual(Bones[2].LocalTranslation.Z, 12.f, 0.01f));
+	TestTrue(TEXT("a thumb stays the viking offset"), Bones[5].LocalTranslation.Equals(FVector(1.f, 1.f, 1.f), 0.01f));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

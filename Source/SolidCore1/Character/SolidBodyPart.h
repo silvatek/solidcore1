@@ -24,7 +24,7 @@ namespace SolidBodyMesh
 
 	/**
 	 * Which slider channels size this part.
-	 * The part then sizes the bones it wraps. The head and the hands are not parts.
+	 * The part then sizes the bones it wraps. The hands are not parts.
 	 */
 	enum class ESolidPartMeasure : uint8
 	{
@@ -38,6 +38,8 @@ namespace SolidBodyMesh
 		Arm,
 		/** Length is leg length times height. Side and depth are bulk. */
 		Leg,
+		/** Length, side, and depth are head size. */
+		Head,
 	};
 
 	/** Diameters of one end of a part, in centimetres. */
@@ -162,12 +164,15 @@ namespace SolidBodyMesh
 
 		/**
 		 * Add this part's triangles.
-		 * WeightBone is the parent joint. The child joint only rotates, so the tube is skinned there.
+		 * WeightBone is the parent joint. The child joint only rotates, so a tube is skinned there.
+		 * SpanBone is Bones[0]. The head is a sphere skinned to that bone.
+		 * To is the head bone, and the sphere starts there. Eye joints set its height.
 		 */
 		void Draw(
 			TArray<FSolidBodyVert>& Verts,
 			TArray<FSolidBodyTri>& Tris,
 			int32 WeightBone,
+			int32 SpanBone,
 			const FVector& From,
 			const FVector& To,
 			const FVector* SegmentStart,
@@ -199,5 +204,17 @@ namespace SolidBodyMesh
 			int32 BoneIndex,
 			const FSolidShoulderPiece& Piece,
 			uint8 Slot) const;
+
+		/**
+		 * A sphere stretched along world up, skinned to the head bone.
+		 * The bottom pole is Base. Eye joints sit halfway up, so the top is that far again.
+		 */
+		void AddHead(
+			TArray<FSolidBodyVert>& Verts,
+			TArray<FSolidBodyTri>& Tris,
+			int32 BoneIndex,
+			const FVector& Base,
+			const FVector* SegmentEnd,
+			int32 SegmentCount) const;
 	};
 }

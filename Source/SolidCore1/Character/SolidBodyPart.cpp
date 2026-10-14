@@ -98,6 +98,11 @@ void SolidBodyMesh::FSolidBodyPart::Apply(
 		Side = Clamped.Bulk;
 		Depth = Clamped.Bulk;
 		break;
+	case ESolidPartMeasure::Head:
+		Length = Clamped.HeadSize;
+		Side = Clamped.HeadSize;
+		Depth = Clamped.HeadSize;
+		break;
 	default:
 		Length = Clamped.Height;
 		Side = Clamped.TorsoGirth;
@@ -373,10 +378,117 @@ void SolidBodyMesh::FSolidBodyPart::AddShoulder(
 	}
 }
 
+void SolidBodyMesh::FSolidBodyPart::AddHead(
+	TArray<FSolidBodyVert>& Verts,
+	TArray<FSolidBodyTri>& Tris,
+	const int32 BoneIndex,
+	const FVector& Base,
+	const FVector* SegmentEnd,
+	const int32 SegmentCount) const
+{
+	if (BoneIndex == INDEX_NONE || !SegmentEnd || Bones.Num() < 2)
+	{
+		return;
+	}
+
+	float Sum = 0.f;
+	int32 Count = 0;
+	const int32 Limit = FMath::Min(SegmentCount, Bones.Num() - 1);
+	for (int32 Index = 0; Index < Limit; ++Index)
+	{
+		if (!IsEyeJointBoneName(Bones[Index + 1].ToString()))
+		{
+			continue;
+		}
+		Sum += FVector::DotProduct(SegmentEnd[Index] - Base, FVector::UpVector);
+		++Count;
+	}
+	if (Count == 0)
+	{
+		return;
+	}
+
+	const float EyeHeight = Sum / static_cast<float>(Count);
+	if (EyeHeight < 1.f)
+	{
+		return;
+	}
+
+	const float Height = EyeHeight * 2.f;
+	const float VerticalRadius = Height * 0.5f;
+	const float HorizontalRadius = Height * HeadWidthOverHeight * 0.5f;
+	const FVector Center = Base + FVector::UpVector * VerticalRadius;
+	const FVector Up = FVector::UpVector;
+	const FVector Side = FVector::RightVector;
+	const FVector Forward = FVector::ForwardVector;
+	const int32 Sides = FMath::Clamp(HeadSideCount, 3, 16);
+	const int32 Rings = FMath::Max(HeadRingCount, 3);
+	const uint8 Slot = MaterialSlot();
+	const int32 BaseVert = Verts.Num();
+
+	auto AddVert = [&](const FVector& Position)
+	{
+		FSolidBodyVert Vert;
+		Vert.Position = Position;
+		Vert.Bone = BoneIndex;
+		Vert.Slot = Slot;
+		Verts.Add(Vert);
+	};
+
+	AddVert(Base);
+	for (int32 Ring = 1; Ring < Rings - 1; ++Ring)
+	{
+		const float T = static_cast<float>(Ring) / static_cast<float>(Rings - 1);
+		const float Cos = -FMath::Cos(PI * T);
+		const float Sin = FMath::Sin(PI * T);
+		for (int32 Step = 0; Step < Sides; ++Step)
+		{
+			const float Phi = (2.f * PI * static_cast<float>(Step)) / static_cast<float>(Sides);
+			const FVector Offset = Up * (Cos * VerticalRadius)
+				+ Side * (FMath::Cos(Phi) * Sin * HorizontalRadius)
+				+ Forward * (FMath::Sin(Phi) * Sin * HorizontalRadius);
+			AddVert(Center + Offset);
+		}
+	}
+	AddVert(Center + Up * VerticalRadius);
+
+	auto RingVert = [BaseVert, Sides, Rings](const int32 Ring, const int32 Step)
+	{
+		if (Ring <= 0)
+		{
+			return BaseVert;
+		}
+		if (Ring >= Rings - 1)
+		{
+			return BaseVert + 1 + (Rings - 2) * Sides;
+		}
+		return BaseVert + 1 + (Ring - 1) * Sides + (Step % Sides);
+	};
+
+	for (int32 Step = 0; Step < Sides; ++Step)
+	{
+		AddTri(Tris, RingVert(0, 0), RingVert(1, Step + 1), RingVert(1, Step));
+	}
+	for (int32 Ring = 1; Ring < Rings - 2; ++Ring)
+	{
+		for (int32 Step = 0; Step < Sides; ++Step)
+		{
+			AddTri(Tris, RingVert(Ring, Step), RingVert(Ring, Step + 1), RingVert(Ring + 1, Step));
+			AddTri(Tris, RingVert(Ring, Step + 1), RingVert(Ring + 1, Step + 1), RingVert(Ring + 1, Step));
+		}
+	}
+	const int32 LastRing = Rings - 2;
+	for (int32 Step = 0; Step < Sides; ++Step)
+	{
+		AddTri(Tris, RingVert(Rings - 1, 0), RingVert(LastRing, Step), RingVert(LastRing, Step + 1));
+	}
+}
+
 void SolidBodyMesh::FSolidBodyPart::Draw(
 	TArray<FSolidBodyVert>& Verts,
 	TArray<FSolidBodyTri>& Tris,
 	const int32 WeightBone,
+	const int32 SpanBone,
 	const FVector& From,
 	const FVector& To,
 	const FVector* SegmentStart,
@@ -384,6 +496,12 @@ void SolidBodyMesh::FSolidBodyPart::Draw(
 	const int32 SegmentCount,
 	const FVector& WideAxis)
 {
+	if (Measure == ESolidPartMeasure::Head)
+	{
+		AddHead(Verts, Tris, SpanBone, To, SegmentEnd, SegmentCount);
+		return;
+	}
+
 	const FSolidPartDraw Fitted = Fit(From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
 	if (Fitted.bShoulder)
 	{

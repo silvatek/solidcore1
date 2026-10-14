@@ -15,7 +15,7 @@ namespace SolidBody
 
 /**
  * One generated humanoid. Each body part reads these multipliers.
- * Head size is kept for the seed layout. No part uses it yet.
+ * Head size lengthens the head bone and spreads the eyes.
  * FromSeed is pure: one seed is one body, for the captain and for every NPC.
  */
 struct FSolidBodyParams

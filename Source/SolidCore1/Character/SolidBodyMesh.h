@@ -37,7 +37,7 @@ namespace SolidBodyMesh
 
 		/**
 		 * Ask every part to size itself and the bones it wraps.
-		 * A bone with no part, including the head and the hands, keeps its Viking translation.
+		 * A bone with no part, including the hands, keeps its Viking translation.
 		 */
 		void Apply(TArray<FSolidDeformBone>& Bones, const FSolidBodyParams& Params);
 
@@ -54,6 +54,27 @@ namespace SolidBodyMesh
 
 	/** Twist bones only spin a limb. They are not a rising spine piece. */
 	bool IsTwistBoneName(const FString& BoneName);
+
+	/** An eye bone belongs to the head. eye_jnt and the eyelids both match. */
+	bool IsEyeBoneName(const FString& BoneName);
+
+	/** The joints that set the head height. They sit halfway up the sphere. */
+	bool IsEyeJointBoneName(const FString& BoneName);
+
+	/** The bone the head sphere is skinned to. Its position is the bottom of the sphere. */
+	inline const TCHAR* HeadBone = TEXT("head");
+
+	/**
+	 * Horizontal diameter divided by the head's height.
+	 * Below 1, the sphere is stretched upward. The eyes set the height.
+	 */
+	inline constexpr float HeadWidthOverHeight = 0.75f;
+
+	/** Rings around the head, and rings from the chin pole to the crown, including both poles. */
+	inline constexpr int32 HeadSideCount = 10;
+	/** An odd count puts one ring on the equator, halfway up. */
+	inline constexpr int32 HeadRingCount = 9;
+	static_assert(HeadRingCount >= 3 && HeadRingCount % 2 == 1, "the head keeps a ring halfway up");
 
 	/** The only bone in the left thigh piece. calf_l runs from the hip to the knee. */
 	inline const TCHAR* LeftThighBone = TEXT("calf_l");

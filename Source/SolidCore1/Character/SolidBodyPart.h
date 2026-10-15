@@ -171,6 +171,26 @@ namespace SolidBodyMesh
 		bool bValid = false;
 	};
 
+	/**
+	 * The mesh for a part.
+	 * A tube is a limb or a spine piece. The shoulder, the head, and a hand have their own mesh.
+	 * The joint positions are filled when the part is drawn.
+	 */
+	enum class ESolidPartShape : uint8
+	{
+		Tube,
+		Shoulder,
+		Head,
+		Hand,
+	};
+
+	/** The bones and the mesh for one part. PartBones fills both. */
+	struct FSolidPartBones
+	{
+		TArray<FName> Names;
+		ESolidPartShape Shape = ESolidPartShape::Tube;
+	};
+
 	/** The cones for one part. A shoulder fills both cones. */
 	struct FSolidPartDraw
 	{
@@ -193,10 +213,12 @@ namespace SolidBodyMesh
 			, Name(PartName(Type, Side))
 			, Measure(PartMeasure(Type))
 		{
-			Bones = PartBones();
+			const FSolidPartBones Listed = PartBones();
+			Bones = Listed.Names;
+			Shape = Listed.Shape;
 		}
 
-		/** The type, the side, its colour, the diameters at each end, and the skeleton. PartBones fills the bone list. */
+		/** The type, the side, its colour, the diameters at each end, and the skeleton. PartBones fills the bones and the mesh. */
 		FSolidBodyPart(
 			ESolidPartType InType,
 			ESolidPartSide InSide,
@@ -210,26 +232,28 @@ namespace SolidBodyMesh
 		/** Comes from Type and Side. "Thigh (L)", "Upper arm (R)", or "Hip". */
 		FString Name;
 		TArray<FName> Bones;
+		/** Chosen with the bones. Draw uses this and the joint positions. */
+		ESolidPartShape Shape = ESolidPartShape::Tube;
 		/** Copied from the body when the part is built. PartBones reads it. Apply sizes it. */
 		TArray<FSolidDeformBone> Skeleton;
 		ESolidPartColour Colour = ESolidPartColour::Shirt;
 		FSolidPartSection Start;
 		FSolidPartSection End;
 		FSolidPartSection Mid;
-		bool bHasMid = false;
 		/** Comes from the part type. */
 		ESolidPartMeasure Measure = ESolidPartMeasure::Leg;
 
 		/**
-		 * The bones this part wraps on its stored skeleton.
-		 * A thigh, a spine piece, and the other fixed parts keep their Viking names.
+		 * The bones and the mesh for this part.
+		 * A thigh, a spine piece, and the other fixed parts keep their Viking names and a tube.
 		 * A paired part uses its side to choose left or right. A core part ignores the side.
+		 * The shoulders are the shoulder mesh. The head is a sphere. A hand is an ellipsoid.
 		 * The head is the head bone, then every eye bone.
 		 * A hand lists the fingers that belong to that hand.
 		 * The first is a finger whose parent is the hand bone.
 		 * The hand is empty when no finger meets the hand.
 		 */
-		TArray<FName> PartBones() const;
+		FSolidPartBones PartBones() const;
 
 		/** Shirt, trousers, or skin. The companion's colours fill those slots. */
 		uint8 MaterialSlot() const;
@@ -256,8 +280,8 @@ namespace SolidBodyMesh
 
 		/**
 		 * Add this part's triangles.
-		 * The measure chooses the mesh. The head and the hand measure themselves.
-		 * The shoulders and every other part fit their cones, then draw them.
+		 * Shape chooses the mesh. The positions are the joints on this call.
+		 * The shoulders and every tube fit their cones, then draw them. The head and a hand measure themselves.
 		 * WeightBone is the parent joint. The child joint only rotates, so a tube is skinned there.
 		 * SpanBone is Bones[0]. The head is skinned to that bone.
 		 * For the head, To is the head joint. The sphere starts at From, the base of that bone.

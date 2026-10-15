@@ -239,57 +239,62 @@ namespace
 	}
 }
 
-TArray<FName> SolidBodyMesh::FSolidBodyPart::PartBones() const
+SolidBodyMesh::FSolidPartBones SolidBodyMesh::FSolidBodyPart::PartBones() const
 {
 	using namespace SolidBodyMesh;
 
-	TArray<FName> Names;
+	FSolidPartBones Listed;
 	switch (Type)
 	{
 	case ESolidPartType::Thigh:
-		AddSidedBone(Names, Side, LeftThighBone, RightThighBone);
+		AddSidedBone(Listed.Names, Side, LeftThighBone, RightThighBone);
 		break;
 	case ESolidPartType::Calf:
-		AddSidedBone(Names, Side, LeftCalfBone, RightCalfBone);
+		AddSidedBone(Listed.Names, Side, LeftCalfBone, RightCalfBone);
 		break;
 	case ESolidPartType::Foot:
-		AddSidedBone(Names, Side, LeftBallBone, RightBallBone);
+		AddSidedBone(Listed.Names, Side, LeftBallBone, RightBallBone);
 		break;
 	case ESolidPartType::Toe:
-		AddSidedBone(Names, Side, LeftToeBone, RightToeBone);
+		AddSidedBone(Listed.Names, Side, LeftToeBone, RightToeBone);
 		break;
 	case ESolidPartType::Hip:
-		Names.Add(HipSpineBone);
-		Names.Add(HipLeftBone);
-		Names.Add(HipRightBone);
+		Listed.Names.Add(HipSpineBone);
+		Listed.Names.Add(HipLeftBone);
+		Listed.Names.Add(HipRightBone);
 		break;
 	case ESolidPartType::Abdomen:
-		Names.Add(SpineAbdomenBone);
+		Listed.Names.Add(SpineAbdomenBone);
 		break;
 	case ESolidPartType::Chest:
-		Names.Add(SpineChestBone);
+		Listed.Names.Add(SpineChestBone);
 		break;
 	case ESolidPartType::Shoulders:
-		Names.Add(ShoulderNeckBone);
-		Names.Add(ShoulderLeftClavicleBone);
-		Names.Add(ShoulderRightClavicleBone);
-		Names.Add(ShoulderLeftUpperArmBone);
-		Names.Add(ShoulderRightUpperArmBone);
+		Listed.Names.Add(ShoulderNeckBone);
+		Listed.Names.Add(ShoulderLeftClavicleBone);
+		Listed.Names.Add(ShoulderRightClavicleBone);
+		Listed.Names.Add(ShoulderLeftUpperArmBone);
+		Listed.Names.Add(ShoulderRightUpperArmBone);
+		Listed.Shape = ESolidPartShape::Shoulder;
 		break;
 	case ESolidPartType::UpperArm:
-		AddSidedBone(Names, Side, TEXT("lowerarm_l"), TEXT("lowerarm_r"));
+		AddSidedBone(Listed.Names, Side, TEXT("lowerarm_l"), TEXT("lowerarm_r"));
 		break;
 	case ESolidPartType::LowerArm:
-		AddSidedBone(Names, Side, LeftHandBone, RightHandBone);
+		AddSidedBone(Listed.Names, Side, LeftHandBone, RightHandBone);
 		break;
 	case ESolidPartType::Hand:
-		return HandBones(Side, Skeleton);
+		Listed.Names = HandBones(Side, Skeleton);
+		Listed.Shape = ESolidPartShape::Hand;
+		break;
 	case ESolidPartType::Head:
-		return HeadBones(Skeleton);
+		Listed.Names = HeadBones(Skeleton);
+		Listed.Shape = ESolidPartShape::Head;
+		break;
 	default:
 		break;
 	}
-	return Names;
+	return Listed;
 }
 
 SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
@@ -308,7 +313,9 @@ SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
 	, Measure(PartMeasure(InType))
 	, Skeleton(InSkeleton)
 {
-	Bones = PartBones();
+	const FSolidPartBones Listed = PartBones();
+	Bones = Listed.Names;
+	Shape = Listed.Shape;
 }
 
 void SolidBodyMesh::FSolidBodyPart::Apply(const FSolidBodyParams& Params)
@@ -368,7 +375,7 @@ void SolidBodyMesh::FSolidBodyPart::Apply(const FSolidBodyParams& Params)
 		End.X *= SideScale;
 		End.Y *= Depth;
 	}
-	if (bHasMid)
+	if (Shape == ESolidPartShape::Shoulder)
 	{
 		Mid.X *= SideScale;
 		Mid.Y *= Depth;
@@ -425,7 +432,7 @@ SolidBodyMesh::FSolidPartDraw SolidBodyMesh::FSolidBodyPart::Fit(
 	const FVector& WideAxis)
 {
 	FSolidPartDraw Out;
-	if (bHasMid)
+	if (Shape == ESolidPartShape::Shoulder)
 	{
 		Out.bShoulder = true;
 		Out.Shoulder = ShoulderPiece(From, To, SegmentStart, SegmentEnd, SegmentCount, Start.X, WideAxis, Start.Y, End.X);
@@ -889,15 +896,15 @@ void SolidBodyMesh::FSolidBodyPart::Draw(
 	const int32 SegmentCount,
 	const FVector& WideAxis)
 {
-	switch (Measure)
+	switch (Shape)
 	{
-	case ESolidPartMeasure::Head:
+	case ESolidPartShape::Head:
 		AddHead(Verts, Tris, SpanBone, From, To, SegmentStart, SegmentEnd, SegmentCount);
 		break;
-	case ESolidPartMeasure::Hand:
+	case ESolidPartShape::Hand:
 		AddHand(Verts, Tris, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount);
 		break;
-	case ESolidPartMeasure::Shoulder:
+	case ESolidPartShape::Shoulder:
 		AddShoulder(Verts, Tris, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
 		break;
 	default:

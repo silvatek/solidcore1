@@ -642,7 +642,7 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the thigh is 20 cm at the hip"), FMath::IsNearlyEqual(Thigh->Start.X, LeftThighTopDiameterCm, 0.01f));
 		TestTrue(TEXT("the thigh is round at the hip"), FMath::IsNearlyEqual(Thigh->Start.Y, Thigh->Start.X, 0.01f));
 		TestTrue(TEXT("the thigh is 15 cm at the knee"), FMath::IsNearlyEqual(Thigh->End.X, LeftThighBottomDiameterCm, 0.01f));
-		TestTrue(TEXT("the thigh has no mid section"), !Thigh->bHasMid);
+		TestTrue(TEXT("the thigh is a tube"), Thigh->Shape == ESolidPartShape::Tube);
 	}
 
 	const FSolidBodyPart* Hip = Body.Find(TEXT("Hip"));
@@ -698,7 +698,7 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the shoulders are on the list"), Shoulders != nullptr);
 	if (Shoulders && Chest)
 	{
-		TestTrue(TEXT("the shoulders have a mid section"), Shoulders->bHasMid);
+		TestTrue(TEXT("the shoulders use the shoulder mesh"), Shoulders->Shape == ESolidPartShape::Shoulder);
 		TestEqual(TEXT("five shoulder bones"), Shoulders->Bones.Num(), 5);
 		TestTrue(TEXT("the shoulder span is neck_01"), Shoulders->Bones.Num() >= 1 && Shoulders->Bones[0] == FName(ShoulderNeckBone));
 		TestTrue(TEXT("the left clavicle is inside the shoulders"), Shoulders->Bones.Contains(FName(ShoulderLeftClavicleBone)));
@@ -758,7 +758,7 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 		TestTrue(
 			TEXT("the elbow steps from the upper arm down to the lower arm"),
 			Upper && Upper->End.X > Lower->Start.X);
-		TestTrue(TEXT("the lower arm has no mid section"), !Lower->bHasMid);
+		TestTrue(TEXT("the lower arm is a tube"), Lower->Shape == ESolidPartShape::Tube);
 	}
 	const FSolidBodyPart* LowerRight = Body.Find(TEXT("Lower arm (R)"));
 	TestTrue(TEXT("the right lower arm matches"), Lower && LowerRight && LowerRight->Bones.Num() == 1
@@ -996,7 +996,7 @@ bool FSolidBodyHeadTest::RunTest(const FString& Parameters)
 		TestFalse(TEXT("the thumb stays out of the head"), Head->Bones.Contains(FName(TEXT("thumb_l"))));
 		TestTrue(
 			TEXT("PartBones reads the head"),
-			Head->Bones == Head->PartBones());
+			Head->Bones == Head->PartBones().Names);
 	}
 
 	TArray<FVector> Positions;
@@ -1278,10 +1278,10 @@ bool FSolidBodyHandsTest::RunTest(const FString& Parameters)
 	{
 		TestTrue(
 			TEXT("PartBones reads the left hand"),
-			Left->Bones == Left->PartBones());
+			Left->Bones == Left->PartBones().Names);
 		TestTrue(
 			TEXT("PartBones reads the right hand"),
-			Right->Bones == Right->PartBones());
+			Right->Bones == Right->PartBones().Names);
 		TestTrue(TEXT("the left index is inside the left hand"), Left->Bones.Contains(FName(TEXT("index_01_l"))));
 		TestTrue(TEXT("the left pinky is inside the left hand"), Left->Bones.Contains(FName(TEXT("pinky_01_l"))));
 		TestTrue(TEXT("the left middle is inside the left hand"), Left->Bones.Contains(FName(TEXT("middle_02_l"))));
@@ -1311,7 +1311,9 @@ bool FSolidBodyHandsTest::RunTest(const FString& Parameters)
 			{});
 		TestTrue(
 			TEXT("a thigh keeps its viking bone"),
-			Thigh.PartBones() == BareThigh.PartBones());
+			Thigh.PartBones().Names == BareThigh.PartBones().Names
+			&& Thigh.Shape == ESolidPartShape::Tube
+			&& BareThigh.Shape == ESolidPartShape::Tube);
 	}
 
 	const FSolidBodyPart* Head = Body.Find(TEXT("Head"));

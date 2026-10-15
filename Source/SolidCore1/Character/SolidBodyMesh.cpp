@@ -77,7 +77,6 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 
 	// Shoulders follow neck_01. Mid is fitted around the clavicles and the upper arms when the mesh is built.
 	Body.AddBodyPart(ESolidPartType::Shoulders, Core, Shirt, ChestTop, ShoulderTop);
-	Body.Parts.Last().bHasMid = true;
 
 	// upperarm joint to elbow. The skeleton names that bone lowerarm. The elbow then steps down to the lower arm.
 	Body.AddBodyPart(ESolidPartType::UpperArm, Left, Shirt, UpperArmTop, RoundSection(ForearmWristDiameterCm));

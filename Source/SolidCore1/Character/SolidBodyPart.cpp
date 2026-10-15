@@ -51,13 +51,70 @@ namespace
 	}
 }
 
+FString SolidBodyMesh::PartName(const ESolidPartType Type, const ESolidPartSide Side)
+{
+	const TCHAR* Label = TEXT("Part");
+	switch (Type)
+	{
+	case ESolidPartType::Thigh:
+		Label = TEXT("Thigh");
+		break;
+	case ESolidPartType::Calf:
+		Label = TEXT("Calf");
+		break;
+	case ESolidPartType::Foot:
+		Label = TEXT("Foot");
+		break;
+	case ESolidPartType::Toe:
+		Label = TEXT("Toe");
+		break;
+	case ESolidPartType::Hip:
+		Label = TEXT("Hip");
+		break;
+	case ESolidPartType::Abdomen:
+		Label = TEXT("Abdomen");
+		break;
+	case ESolidPartType::Chest:
+		Label = TEXT("Chest");
+		break;
+	case ESolidPartType::Shoulders:
+		Label = TEXT("Shoulders");
+		break;
+	case ESolidPartType::UpperArm:
+		Label = TEXT("Upper arm");
+		break;
+	case ESolidPartType::LowerArm:
+		Label = TEXT("Lower arm");
+		break;
+	case ESolidPartType::Hand:
+		Label = TEXT("Hand");
+		break;
+	case ESolidPartType::Head:
+		Label = TEXT("Head");
+		break;
+	}
+
+	switch (Side)
+	{
+	case ESolidPartSide::Left:
+		return FString::Printf(TEXT("%s (L)"), Label);
+	case ESolidPartSide::Right:
+		return FString::Printf(TEXT("%s (R)"), Label);
+	default:
+		return FString(Label);
+	}
+}
+
 SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
-	const TCHAR* InName,
+	const ESolidPartType InType,
+	const ESolidPartSide InSide,
 	const std::initializer_list<const TCHAR*> InBones,
 	const ESolidPartColour InColour,
 	const FSolidPartSection& InStart,
 	const FSolidPartSection& InEnd)
-	: Name(InName)
+	: Type(InType)
+	, Side(InSide)
+	, Name(PartName(InType, InSide))
 	, Colour(InColour)
 	, Start(InStart)
 	, End(InEnd)
@@ -69,12 +126,15 @@ SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
 }
 
 SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
-	const TCHAR* InName,
+	const ESolidPartType InType,
+	const ESolidPartSide InSide,
 	const TArray<FName>& InBones,
 	const ESolidPartColour InColour,
 	const FSolidPartSection& InStart,
 	const FSolidPartSection& InEnd)
-	: Name(InName)
+	: Type(InType)
+	, Side(InSide)
+	, Name(PartName(InType, InSide))
 	, Bones(InBones)
 	, Colour(InColour)
 	, Start(InStart)

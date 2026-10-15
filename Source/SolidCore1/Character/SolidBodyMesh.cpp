@@ -27,6 +27,8 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
 {
 	using SolidBodyMesh::ESolidPartColour;
 	using SolidBodyMesh::ESolidPartMeasure;
+	using SolidBodyMesh::ESolidPartSide;
+	using SolidBodyMesh::ESolidPartType;
 	using SolidBodyMesh::FSolidPartSection;
 
 	FSolidBodyMesh Body;
@@ -37,18 +39,19 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
 	};
 
 	const FSolidPartSection Round20 = FSolidPartSection::Round(LeftThighTopDiameterCm);
-	AddPart(FSolidBodyPart(TEXT("Thigh (L)"), { LeftThighBone }, ESolidPartColour::Trousers, Round20, FSolidPartSection::Round(LeftThighBottomDiameterCm)), ESolidPartMeasure::Leg);
-	AddPart(FSolidBodyPart(TEXT("Thigh (R)"), { RightThighBone }, ESolidPartColour::Trousers, Round20, FSolidPartSection::Round(LeftThighBottomDiameterCm)), ESolidPartMeasure::Leg);
-	AddPart(FSolidBodyPart(TEXT("Calf (L)"), { LeftCalfBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(CalfTopDiameterCm), FSolidPartSection::Round(CalfBottomDiameterCm)), ESolidPartMeasure::Leg);
-	AddPart(FSolidBodyPart(TEXT("Calf (R)"), { RightCalfBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(CalfTopDiameterCm), FSolidPartSection::Round(CalfBottomDiameterCm)), ESolidPartMeasure::Leg);
-	AddPart(FSolidBodyPart(TEXT("Foot (L)"), { LeftBallBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(BallDiameterCm), FSolidPartSection::Round(BallDiameterCm)), ESolidPartMeasure::Leg);
-	AddPart(FSolidBodyPart(TEXT("Foot (R)"), { RightBallBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(BallDiameterCm), FSolidPartSection::Round(BallDiameterCm)), ESolidPartMeasure::Leg);
-	AddPart(FSolidBodyPart(TEXT("Toe (L)"), { LeftExtraFingerBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(ExtraFingerAnkleDiameterCm), FSolidPartSection::Round(ExtraFingerToeDiameterCm)), ESolidPartMeasure::Leg);
-	AddPart(FSolidBodyPart(TEXT("Toe (R)"), { RightExtraFingerBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(ExtraFingerAnkleDiameterCm), FSolidPartSection::Round(ExtraFingerToeDiameterCm)), ESolidPartMeasure::Leg);
+	AddPart(FSolidBodyPart(ESolidPartType::Thigh, ESolidPartSide::Left, { LeftThighBone }, ESolidPartColour::Trousers, Round20, FSolidPartSection::Round(LeftThighBottomDiameterCm)), ESolidPartMeasure::Leg);
+	AddPart(FSolidBodyPart(ESolidPartType::Thigh, ESolidPartSide::Right, { RightThighBone }, ESolidPartColour::Trousers, Round20, FSolidPartSection::Round(LeftThighBottomDiameterCm)), ESolidPartMeasure::Leg);
+	AddPart(FSolidBodyPart(ESolidPartType::Calf, ESolidPartSide::Left, { LeftCalfBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(CalfTopDiameterCm), FSolidPartSection::Round(CalfBottomDiameterCm)), ESolidPartMeasure::Leg);
+	AddPart(FSolidBodyPart(ESolidPartType::Calf, ESolidPartSide::Right, { RightCalfBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(CalfTopDiameterCm), FSolidPartSection::Round(CalfBottomDiameterCm)), ESolidPartMeasure::Leg);
+	AddPart(FSolidBodyPart(ESolidPartType::Foot, ESolidPartSide::Left, { LeftBallBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(BallDiameterCm), FSolidPartSection::Round(BallDiameterCm)), ESolidPartMeasure::Leg);
+	AddPart(FSolidBodyPart(ESolidPartType::Foot, ESolidPartSide::Right, { RightBallBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(BallDiameterCm), FSolidPartSection::Round(BallDiameterCm)), ESolidPartMeasure::Leg);
+	AddPart(FSolidBodyPart(ESolidPartType::Toe, ESolidPartSide::Left, { LeftExtraFingerBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(ExtraFingerAnkleDiameterCm), FSolidPartSection::Round(ExtraFingerToeDiameterCm)), ESolidPartMeasure::Leg);
+	AddPart(FSolidBodyPart(ESolidPartType::Toe, ESolidPartSide::Right, { RightExtraFingerBone }, ESolidPartColour::Trousers, FSolidPartSection::Round(ExtraFingerAnkleDiameterCm), FSolidPartSection::Round(ExtraFingerToeDiameterCm)), ESolidPartMeasure::Leg);
 
 	// The hip mesh is the length of spine_01. The thighs are inside it.
 	AddPart(FSolidBodyPart(
-		TEXT("Hip"),
+		ESolidPartType::Hip,
+		ESolidPartSide::Core,
 		{ HipSpineBone, HipLeftBone, HipRightBone },
 		ESolidPartColour::Shirt,
 		FSolidPartSection::Oval(HipSideDiameterCm, HipDepthDiameterCm),
@@ -62,13 +65,15 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
 	TorsoSideDiameters(0, 2, AbdomenBottomCm, AbdomenTopCm);
 	TorsoSideDiameters(1, 2, ChestBottomCm, ChestTopCm);
 	AddPart(FSolidBodyPart(
-		TEXT("Abdomen"),
+		ESolidPartType::Abdomen,
+		ESolidPartSide::Core,
 		{ SpineAbdomenBone },
 		ESolidPartColour::Shirt,
 		FSolidPartSection::Oval(AbdomenBottomCm, TorsoDepthDiameterCm),
 		FSolidPartSection::Oval(AbdomenTopCm, TorsoDepthDiameterCm)), ESolidPartMeasure::Torso);
 	AddPart(FSolidBodyPart(
-		TEXT("Chest"),
+		ESolidPartType::Chest,
+		ESolidPartSide::Core,
 		{ SpineChestBone },
 		ESolidPartColour::Shirt,
 		FSolidPartSection::Oval(ChestBottomCm, TorsoDepthDiameterCm),
@@ -77,7 +82,8 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
 
 	// Shoulders follow neck_01. Mid is fitted around the clavicles and the upper arms when the mesh is built.
 	FSolidBodyPart Shoulders = FSolidBodyPart(
-		TEXT("Shoulders"),
+		ESolidPartType::Shoulders,
+		ESolidPartSide::Core,
 		{ ShoulderNeckBone, ShoulderLeftClavicleBone, ShoulderRightClavicleBone, ShoulderLeftUpperArmBone, ShoulderRightUpperArmBone },
 		ESolidPartColour::Shirt,
 		FSolidPartSection::Oval(ShoulderSideCm, TorsoDepthDiameterCm),
@@ -87,13 +93,15 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
 
 	// upperarm joint to elbow. The skeleton names that bone lowerarm.
 	AddPart(FSolidBodyPart(
-		TEXT("Upper arm (L)"),
+		ESolidPartType::UpperArm,
+		ESolidPartSide::Left,
 		{ TEXT("lowerarm_l") },
 		ESolidPartColour::Shirt,
 		FSolidPartSection::Round(UpperArmElbowDiameterCm),
 		FSolidPartSection::Round(ForearmWristDiameterCm)), ESolidPartMeasure::Arm);
 	AddPart(FSolidBodyPart(
-		TEXT("Upper arm (R)"),
+		ESolidPartType::UpperArm,
+		ESolidPartSide::Right,
 		{ TEXT("lowerarm_r") },
 		ESolidPartColour::Shirt,
 		FSolidPartSection::Round(UpperArmElbowDiameterCm),
@@ -101,13 +109,15 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
 
 	// elbow to wrist. The skeleton names that bone hand. Narrow at the elbow, wide at the wrist.
 	AddPart(FSolidBodyPart(
-		TEXT("Lower arm (L)"),
+		ESolidPartType::LowerArm,
+		ESolidPartSide::Left,
 		{ LeftHandBone },
 		ESolidPartColour::Shirt,
 		FSolidPartSection::Round(LowerArmStartDiameterCm),
 		FSolidPartSection::Round(LowerArmEndDiameterCm)), ESolidPartMeasure::Arm);
 	AddPart(FSolidBodyPart(
-		TEXT("Lower arm (R)"),
+		ESolidPartType::LowerArm,
+		ESolidPartSide::Right,
 		{ RightHandBone },
 		ESolidPartColour::Shirt,
 		FSolidPartSection::Round(LowerArmStartDiameterCm),
@@ -115,13 +125,15 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
 
 	// The finger list is the hand. FromBones drops a name the skeleton does not have, and adds any other finger it finds.
 	AddPart(FSolidBodyPart(
-		TEXT("Hand (L)"),
+		ESolidPartType::Hand,
+		ESolidPartSide::Left,
 		LeftFingerBones,
 		ESolidPartColour::Skin,
 		FSolidPartSection::Round(0.f),
 		FSolidPartSection::Round(0.f)), ESolidPartMeasure::Hand);
 	AddPart(FSolidBodyPart(
-		TEXT("Hand (R)"),
+		ESolidPartType::Hand,
+		ESolidPartSide::Right,
 		RightFingerBones,
 		ESolidPartColour::Skin,
 		FSolidPartSection::Round(0.f),
@@ -129,7 +141,8 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
 
 	// The sphere's height comes from the eye joints. These diameters are unused.
 	AddPart(FSolidBodyPart(
-		TEXT("Head"),
+		ESolidPartType::Head,
+		ESolidPartSide::Core,
 		{ HeadBone },
 		ESolidPartColour::Skin,
 		FSolidPartSection::Round(0.f),
@@ -1306,7 +1319,7 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::FromBones(const TAr
 		}
 		else if (Part.Measure == ESolidPartMeasure::Hand)
 		{
-			const bool bLeft = Part.Name.Equals(TEXT("Hand (L)"), ESearchCase::IgnoreCase);
+			const bool bLeft = Part.Side == ESolidPartSide::Left;
 			const TCHAR* HandName = bLeft ? LeftHandBone : RightHandBone;
 			int32 HandIndex = INDEX_NONE;
 			for (int32 Index = 0; Index < Bones.Num(); ++Index)

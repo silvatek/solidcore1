@@ -526,6 +526,34 @@ bool FSolidBodyShoulderPieceTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyPartNameTest,
+	"SolidCore1.Body.PartName",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyPartNameTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidBodyMesh;
+
+	TestEqual(TEXT("a left thigh"), PartName(ESolidPartType::Thigh, ESolidPartSide::Left), FString(TEXT("Thigh (L)")));
+	TestEqual(TEXT("a right upper arm"), PartName(ESolidPartType::UpperArm, ESolidPartSide::Right), FString(TEXT("Upper arm (R)")));
+	TestEqual(TEXT("a core hip has no side"), PartName(ESolidPartType::Hip, ESolidPartSide::Core), FString(TEXT("Hip")));
+	TestEqual(TEXT("the shoulders stay plural"), PartName(ESolidPartType::Shoulders, ESolidPartSide::Core), FString(TEXT("Shoulders")));
+
+	const FSolidPartSection Round = FSolidPartSection::Round(1.f);
+	const FSolidBodyPart Part(
+		ESolidPartType::LowerArm,
+		ESolidPartSide::Left,
+		{ TEXT("hand_l") },
+		ESolidPartColour::Shirt,
+		Round,
+		Round);
+	TestEqual(TEXT("the part stores that name"), Part.Name, FString(TEXT("Lower arm (L)")));
+	TestTrue(TEXT("the part stores its type"), Part.Type == ESolidPartType::LowerArm);
+	TestTrue(TEXT("the part stores its side"), Part.Side == ESolidPartSide::Left);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidBodyPartsTest,
 	"SolidCore1.Body.Parts",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
@@ -835,7 +863,8 @@ bool FSolidBodyPartSizesBonesTest::RunTest(const FString& Parameters)
 	using namespace SolidBodyMesh;
 
 	FSolidBodyPart Hip(
-		TEXT("Hip"),
+		ESolidPartType::Hip,
+		ESolidPartSide::Core,
 		{ TEXT("spine_01"), TEXT("thigh_l") },
 		ESolidPartColour::Shirt,
 		FSolidPartSection::Oval(20.f, 16.f),
@@ -1051,7 +1080,8 @@ bool FSolidBodyDetailTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the shoulders use that ring"), ShoulderSideCount, BodyPartSides);
 
 	FSolidBodyPart Limb(
-		TEXT("Thigh (L)"),
+		ESolidPartType::Thigh,
+		ESolidPartSide::Left,
 		{ LeftThighBone },
 		ESolidPartColour::Trousers,
 		FSolidPartSection::Round(LeftThighTopDiameterCm),

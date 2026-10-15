@@ -8,7 +8,7 @@
 
 /**
  * One component of a body mesh.
- * A part's name is the body region it shows. The skeleton bone inside it often has another name.
+ * A part's name comes from its type and its side. The skeleton bone inside it often has another name.
  * "Lower arm (L)" wraps hand_l. The cone runs from that bone's parent joint to the bone.
  * X is side to side, in centimetres. Y is front to back.
  * Fit measures the cones. Draw adds this part's triangles.
@@ -21,6 +21,34 @@ namespace SolidBodyMesh
 		Trousers,
 		Skin,
 	};
+
+	/** The body region a part shows. */
+	enum class ESolidPartType : uint8
+	{
+		Thigh,
+		Calf,
+		Foot,
+		Toe,
+		Hip,
+		Abdomen,
+		Chest,
+		Shoulders,
+		UpperArm,
+		LowerArm,
+		Hand,
+		Head,
+	};
+
+	/** Which side of the body a part is on. Core has no left or right. */
+	enum class ESolidPartSide : uint8
+	{
+		Left,
+		Right,
+		Core,
+	};
+
+	/** "Thigh (L)", "Upper arm (R)", or "Hip" when the part is core. */
+	FString PartName(ESolidPartType Type, ESolidPartSide Side);
 
 	/**
 	 * Which slider channels size this part.
@@ -122,11 +150,17 @@ namespace SolidBodyMesh
 	 */
 	struct FSolidBodyPart
 	{
-		FSolidBodyPart() = default;
+		FSolidBodyPart()
+			: Type(ESolidPartType::Thigh)
+			, Side(ESolidPartSide::Core)
+			, Name(PartName(Type, Side))
+		{
+		}
 
-		/** Name, the bones it wraps, its colour, and the diameters at each end. */
+		/** The type, the side, the bones it wraps, its colour, and the diameters at each end. */
 		FSolidBodyPart(
-			const TCHAR* InName,
+			ESolidPartType InType,
+			ESolidPartSide InSide,
 			std::initializer_list<const TCHAR*> InBones,
 			ESolidPartColour InColour,
 			const FSolidPartSection& InStart,
@@ -135,12 +169,15 @@ namespace SolidBodyMesh
 		/** The same part, when the bone names are already an array. */
 		template <int32 NumBones>
 		FSolidBodyPart(
-			const TCHAR* InName,
+			ESolidPartType InType,
+			ESolidPartSide InSide,
 			const TCHAR* (&InBones)[NumBones],
 			ESolidPartColour InColour,
 			const FSolidPartSection& InStart,
 			const FSolidPartSection& InEnd)
-			: Name(InName)
+			: Type(InType)
+			, Side(InSide)
+			, Name(PartName(InType, InSide))
 			, Colour(InColour)
 			, Start(InStart)
 			, End(InEnd)
@@ -154,12 +191,16 @@ namespace SolidBodyMesh
 
 		/** The same part, when the bone names are already gathered. */
 		FSolidBodyPart(
-			const TCHAR* InName,
+			ESolidPartType InType,
+			ESolidPartSide InSide,
 			const TArray<FName>& InBones,
 			ESolidPartColour InColour,
 			const FSolidPartSection& InStart,
 			const FSolidPartSection& InEnd);
 
+		ESolidPartType Type = ESolidPartType::Thigh;
+		ESolidPartSide Side = ESolidPartSide::Core;
+		/** Comes from Type and Side. "Thigh (L)", "Upper arm (R)", or "Hip". */
 		FString Name;
 		TArray<FName> Bones;
 		ESolidPartColour Colour = ESolidPartColour::Shirt;

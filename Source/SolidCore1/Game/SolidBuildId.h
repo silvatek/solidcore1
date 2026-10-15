@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0338")
+#define SOLID_BUILD_ID TEXT("SC1-0339")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Each part names itself.")
+#define SOLID_BUILD_NOTE TEXT("Legs and arms size themselves.")
 #endif

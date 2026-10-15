@@ -261,12 +261,6 @@ namespace SolidBodyMesh
 		/** Widen the section, then size the bones. Depth scales the front-to-back. SideScale spreads the other bones. */
 		void SizeSection(float Length, float SideScale, float Depth);
 
-		/** Leg length and height scale the bone. Bulk widens the section. */
-		void ApplyLeg(const FSolidBodyParams& Params);
-
-		/** Arm length scales the bone. Bulk widens the section. */
-		void ApplyArm(const FSolidBodyParams& Params);
-
 		/** Bones[0] takes Length. The other bones spread by SideScale. */
 		void SizeBones(float Length, float SideScale);
 

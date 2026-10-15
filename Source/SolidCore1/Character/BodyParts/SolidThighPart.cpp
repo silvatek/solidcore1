@@ -39,5 +39,6 @@ TArray<FName> SolidBodyMesh::FSolidThighPart::PartBones() const
 
 void SolidBodyMesh::FSolidThighPart::Apply(const FSolidBodyParams& Params)
 {
-	ApplyLeg(Params);
+	const FSolidBodyParams Clamped = Params.Clamped();
+	SizeSection(Clamped.LegLength * Clamped.Height, Clamped.Bulk, Clamped.Bulk);
 }

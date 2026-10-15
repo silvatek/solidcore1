@@ -49,12 +49,7 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
 	AddPart(FSolidBodyPart(ESolidPartType::Toe, Right, Trousers, RoundSection(ExtraFingerAnkleDiameterCm), RoundSection(ExtraFingerToeDiameterCm)));
 
 	// The hip mesh is the length of spine_01. The thighs are inside it.
-	AddPart(FSolidBodyPart(
-		ESolidPartType::Hip,
-		Core,
-		Shirt,
-		OvalSection(HipSideDiameterCm, HipDepthDiameterCm),
-		OvalSection(HipTopSideDiameterCm, HipDepthDiameterCm)));
+	AddPart(FSolidBodyPart(ESolidPartType::Hip, Core, Shirt, OvalSection(HipSideDiameterCm, HipDepthDiameterCm), OvalSection(HipTopSideDiameterCm, HipDepthDiameterCm)));
 
 	// The abdomen is spine_02. The chest is spine_03. The shoulder base is the chest's top.
 	float AbdomenBottomCm = 0.f;
@@ -63,57 +58,22 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
 	float ChestTopCm = 0.f;
 	TorsoSideDiameters(0, 2, AbdomenBottomCm, AbdomenTopCm);
 	TorsoSideDiameters(1, 2, ChestBottomCm, ChestTopCm);
-	AddPart(FSolidBodyPart(
-		ESolidPartType::Abdomen,
-		Core,
-		Shirt,
-		OvalSection(AbdomenBottomCm, TorsoDepthDiameterCm),
-		OvalSection(AbdomenTopCm, TorsoDepthDiameterCm)));
-	AddPart(FSolidBodyPart(
-		ESolidPartType::Chest,
-		Core,
-		Shirt,
-		OvalSection(ChestBottomCm, TorsoDepthDiameterCm),
-		OvalSection(ChestTopCm, TorsoDepthDiameterCm)));
+	AddPart(FSolidBodyPart(ESolidPartType::Abdomen, Core, Shirt, OvalSection(AbdomenBottomCm, TorsoDepthDiameterCm), OvalSection(AbdomenTopCm, TorsoDepthDiameterCm)));
+	AddPart(FSolidBodyPart(ESolidPartType::Chest, Core, Shirt, OvalSection(ChestBottomCm, TorsoDepthDiameterCm), OvalSection(ChestTopCm, TorsoDepthDiameterCm)));
 	const float ShoulderSideCm = ChestTopCm;
 
 	// Shoulders follow neck_01. Mid is fitted around the clavicles and the upper arms when the mesh is built.
-	FSolidBodyPart ShoulderPart = FSolidBodyPart(
-		ESolidPartType::Shoulders,
-		Core,
-		Shirt,
-		OvalSection(ShoulderSideCm, TorsoDepthDiameterCm),
-		RoundSection(ShoulderTopRadiusCm * 2.f));
+	FSolidBodyPart ShoulderPart(ESolidPartType::Shoulders, Core, Shirt, OvalSection(ShoulderSideCm, TorsoDepthDiameterCm), RoundSection(ShoulderTopRadiusCm * 2.f));
 	ShoulderPart.bHasMid = true;
 	AddPart(ShoulderPart);
 
 	// upperarm joint to elbow. The skeleton names that bone lowerarm.
-	AddPart(FSolidBodyPart(
-		ESolidPartType::UpperArm,
-		Left,
-		Shirt,
-		RoundSection(UpperArmElbowDiameterCm),
-		RoundSection(ForearmWristDiameterCm)));
-	AddPart(FSolidBodyPart(
-		ESolidPartType::UpperArm,
-		Right,
-		Shirt,
-		RoundSection(UpperArmElbowDiameterCm),
-		RoundSection(ForearmWristDiameterCm)));
+	AddPart(FSolidBodyPart(ESolidPartType::UpperArm, Left, Shirt, RoundSection(UpperArmElbowDiameterCm), RoundSection(ForearmWristDiameterCm)));
+	AddPart(FSolidBodyPart(ESolidPartType::UpperArm, Right, Shirt, RoundSection(UpperArmElbowDiameterCm), RoundSection(ForearmWristDiameterCm)));
 
 	// elbow to wrist. The skeleton names that bone hand. Narrow at the elbow, wide at the wrist.
-	AddPart(FSolidBodyPart(
-		ESolidPartType::LowerArm,
-		Left,
-		Shirt,
-		RoundSection(LowerArmStartDiameterCm),
-		RoundSection(LowerArmEndDiameterCm)));
-	AddPart(FSolidBodyPart(
-		ESolidPartType::LowerArm,
-		Right,
-		Shirt,
-		RoundSection(LowerArmStartDiameterCm),
-		RoundSection(LowerArmEndDiameterCm)));
+	AddPart(FSolidBodyPart(ESolidPartType::LowerArm, Left, Shirt, RoundSection(LowerArmStartDiameterCm), RoundSection(LowerArmEndDiameterCm)));
+	AddPart(FSolidBodyPart(ESolidPartType::LowerArm, Right, Shirt, RoundSection(LowerArmStartDiameterCm), RoundSection(LowerArmEndDiameterCm)));
 
 	// The finger list is the hand. FromBones drops a name the skeleton does not have, and adds any other finger it finds.
 	AddPart(FSolidBodyPart(ESolidPartType::Hand, Left, Skin, RoundSection(0.f), RoundSection(0.f)));

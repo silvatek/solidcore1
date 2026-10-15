@@ -87,11 +87,11 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 	Body.AddBodyPart(ESolidPartType::LowerArm, Left, Shirt, LowerArmTop, RoundSection(LowerArmEndDiameterCm));
 	Body.AddBodyPart(ESolidPartType::LowerArm, Right, Shirt, LowerArmTop, RoundSection(LowerArmEndDiameterCm));
 
-	// AddBodyPart lists the fingers on Skeleton.
+	// The part lists the fingers on Skeleton.
 	Body.AddBodyPart(ESolidPartType::Hand, Left, Skin, HandTop, HandTop);
 	Body.AddBodyPart(ESolidPartType::Hand, Right, Skin, HandTop, HandTop);
 
-	// AddBodyPart lists the head bone and the eye bones on Skeleton. These diameters are unused.
+	// The part lists the head bone and the eye bones on Skeleton. These diameters are unused.
 	Body.AddBodyPart(ESolidPartType::Head, Core, Skin, NullSection, NullSection);
 
 	return Body;
@@ -1178,7 +1178,10 @@ void SolidBodyMesh::FSolidBodyMesh::Apply(
 {
 	for (FSolidBodyPart& Part : Parts)
 	{
-		Part.Apply(Bones, Params);
+		// Apply sizes the skeleton stored on the part. That result is this body's skeleton.
+		Part.Skeleton = Bones;
+		Part.Apply(Params);
+		Bones = Part.Skeleton;
 	}
 }
 

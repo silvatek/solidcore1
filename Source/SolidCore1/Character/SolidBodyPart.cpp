@@ -120,7 +120,9 @@ namespace
 	}
 }
 
-TArray<FName> SolidBodyMesh::FSolidBodyPart::PartBones() const
+namespace
+{
+TArray<FName> VikingBones(const SolidBodyMesh::ESolidPartType Type, const SolidBodyMesh::ESolidPartSide Side)
 {
 	using namespace SolidBodyMesh;
 
@@ -163,29 +165,15 @@ TArray<FName> SolidBodyMesh::FSolidBodyPart::PartBones() const
 	case ESolidPartType::LowerArm:
 		AddSidedBone(Names, Side, LeftHandBone, RightHandBone);
 		break;
+	// A hand and the head are read from the stored skeleton.
 	case ESolidPartType::Hand:
-		if (Side == ESolidPartSide::Left)
-		{
-			for (const TCHAR* Bone : LeftFingerBones)
-			{
-				Names.Add(Bone);
-			}
-		}
-		else if (Side == ESolidPartSide::Right)
-		{
-			for (const TCHAR* Bone : RightFingerBones)
-			{
-				Names.Add(Bone);
-			}
-		}
-		break;
 	case ESolidPartType::Head:
-		Names.Add(HeadBone);
 		break;
 	default:
 		break;
 	}
 	return Names;
+}
 }
 
 namespace
@@ -307,7 +295,7 @@ namespace
 	}
 }
 
-TArray<FName> SolidBodyMesh::FSolidBodyPart::PartBones(const TArray<FSolidDeformBone>& Skeleton) const
+TArray<FName> SolidBodyMesh::FSolidBodyPart::PartBones() const
 {
 	switch (Type)
 	{
@@ -316,7 +304,7 @@ TArray<FName> SolidBodyMesh::FSolidBodyPart::PartBones(const TArray<FSolidDeform
 	case ESolidPartType::Head:
 		return HeadBones(Skeleton);
 	default:
-		return PartBones();
+		return VikingBones(Type, Side);
 	}
 }
 
@@ -325,21 +313,21 @@ SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
 	const ESolidPartSide InSide,
 	const ESolidPartColour InColour,
 	const FSolidPartSection& InStart,
-	const FSolidPartSection& InEnd)
+	const FSolidPartSection& InEnd,
+	const TArray<FSolidDeformBone>& InSkeleton)
 	: Type(InType)
 	, Side(InSide)
 	, Name(PartName(InType, InSide))
-	, Bones(PartBones())
 	, Colour(InColour)
 	, Start(InStart)
 	, End(InEnd)
 	, Measure(PartMeasure(InType))
+	, Skeleton(InSkeleton)
 {
+	Bones = PartBones();
 }
 
-void SolidBodyMesh::FSolidBodyPart::Apply(
-	TArray<FSolidDeformBone>& Skeleton,
-	const FSolidBodyParams& Params)
+void SolidBodyMesh::FSolidBodyPart::Apply(const FSolidBodyParams& Params)
 {
 	const FSolidBodyParams Clamped = Params.Clamped();
 	float Length = 1.f;

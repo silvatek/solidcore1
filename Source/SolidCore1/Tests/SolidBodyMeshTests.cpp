@@ -538,7 +538,8 @@ bool FSolidBodyPartNameTest::RunTest(const FString& Parameters)
 		ESolidPartSide::Left,
 		ESolidPartColour::Shirt,
 		Round,
-		Round);
+		Round,
+		{});
 	TestEqual(TEXT("the part stores that name"), Part.Name, FString(TEXT("Lower arm (L)")));
 	TestTrue(TEXT("the part stores its type"), Part.Type == ESolidPartType::LowerArm);
 	TestTrue(TEXT("the part stores its side"), Part.Side == ESolidPartSide::Left);
@@ -572,7 +573,8 @@ bool FSolidBodyPartAliasTest::RunTest(const FString& Parameters)
 		ESolidPartSide::Left,
 		ESolidPartColour::Trousers,
 		Round20,
-		RoundSection(LeftThighBottomDiameterCm));
+		RoundSection(LeftThighBottomDiameterCm),
+		{});
 	TestEqual(TEXT("the short declaration names the thigh"), Declared.Name, FString(TEXT("Thigh (L)")));
 	TestTrue(TEXT("the short declaration is trousers"), Declared.Colour == ESolidPartColour::Trousers);
 	TestTrue(TEXT("the short declaration uses leg length"), Declared.Measure == ESolidPartMeasure::Leg);
@@ -889,14 +891,6 @@ bool FSolidBodyPartSizesBonesTest::RunTest(const FString& Parameters)
 {
 	using namespace SolidBodyMesh;
 
-	FSolidBodyPart Hip(
-		ESolidPartType::Hip,
-		ESolidPartSide::Core,
-		ESolidPartColour::Shirt,
-		FSolidPartSection::Oval(20.f, 16.f),
-		FSolidPartSection::Oval(18.f, 16.f));
-	Hip.Measure = ESolidPartMeasure::Hip;
-
 	const FQuat ParentRotation(FVector::ForwardVector, HALF_PI);
 	const FVector SpreadLocal = ParentRotation.UnrotateVector(FVector(8.f, 4.f, 1.f));
 	const FVector Untouched(1.f, 2.f, 3.f);
@@ -925,23 +919,32 @@ bool FSolidBodyPartSizesBonesTest::RunTest(const FString& Parameters)
 	Head.LocalTranslation = Untouched;
 	Skeleton.Add(Head);
 
+	FSolidBodyPart Hip(
+		ESolidPartType::Hip,
+		ESolidPartSide::Core,
+		ESolidPartColour::Shirt,
+		FSolidPartSection::Oval(20.f, 16.f),
+		FSolidPartSection::Oval(18.f, 16.f),
+		Skeleton);
+	Hip.Measure = ESolidPartMeasure::Hip;
+
 	FSolidBodyParams Wide;
 	Wide.Height = 1.5f;
 	const float HipScale = SolidBody::ParamMax;
 	Wide.HipWidth = HipScale;
 	Wide.TorsoGirth = 1.25f;
-	Hip.Apply(Skeleton, Wide);
+	Hip.Apply(Wide);
 
 	TestTrue(TEXT("hip width widens the part"), FMath::IsNearlyEqual(Hip.Start.X, 20.f * HipScale, 0.01f));
 	TestTrue(TEXT("torso girth sets the hip depth"), FMath::IsNearlyEqual(Hip.Start.Y, 20.f, 0.01f));
 	TestTrue(
 		TEXT("height lengthens the span bone"),
-		Skeleton[1].LocalTranslation.Equals(FVector(0.f, 0.f, -45.f), 0.01f));
+		Hip.Skeleton[1].LocalTranslation.Equals(FVector(0.f, 0.f, -45.f), 0.01f));
 	const FVector ExpectedSpread = ParentRotation.UnrotateVector(FVector(8.f * HipScale, 4.f * HipScale, 1.f));
 	TestTrue(
 		TEXT("the part spreads its other bone on the world side axes"),
-		Skeleton[2].LocalTranslation.Equals(ExpectedSpread, 0.01f));
-	TestTrue(TEXT("a bone outside the part stays put"), Skeleton[3].LocalTranslation.Equals(Untouched, 0.01f));
+		Hip.Skeleton[2].LocalTranslation.Equals(ExpectedSpread, 0.01f));
+	TestTrue(TEXT("a bone outside the part stays put"), Hip.Skeleton[3].LocalTranslation.Equals(Untouched, 0.01f));
 	return true;
 }
 
@@ -993,7 +996,7 @@ bool FSolidBodyHeadTest::RunTest(const FString& Parameters)
 		TestFalse(TEXT("the thumb stays out of the head"), Head->Bones.Contains(FName(TEXT("thumb_l"))));
 		TestTrue(
 			TEXT("PartBones reads the head"),
-			Head->Bones == Head->PartBones(Bones));
+			Head->Bones == Head->PartBones());
 	}
 
 	TArray<FVector> Positions;
@@ -1113,7 +1116,8 @@ bool FSolidBodyDetailTest::RunTest(const FString& Parameters)
 		ESolidPartSide::Left,
 		ESolidPartColour::Trousers,
 		FSolidPartSection::Round(LeftThighTopDiameterCm),
-		FSolidPartSection::Round(LeftThighBottomDiameterCm));
+		FSolidPartSection::Round(LeftThighBottomDiameterCm),
+		{});
 	Limb.Measure = ESolidPartMeasure::Leg;
 	TArray<FSolidBodyVert> LimbVerts;
 	TArray<FSolidBodyTri> LimbTris;
@@ -1274,10 +1278,10 @@ bool FSolidBodyHandsTest::RunTest(const FString& Parameters)
 	{
 		TestTrue(
 			TEXT("PartBones reads the left hand"),
-			Left->Bones == Left->PartBones(Bones));
+			Left->Bones == Left->PartBones());
 		TestTrue(
 			TEXT("PartBones reads the right hand"),
-			Right->Bones == Right->PartBones(Bones));
+			Right->Bones == Right->PartBones());
 		TestTrue(TEXT("the left index is inside the left hand"), Left->Bones.Contains(FName(TEXT("index_01_l"))));
 		TestTrue(TEXT("the left pinky is inside the left hand"), Left->Bones.Contains(FName(TEXT("pinky_01_l"))));
 		TestTrue(TEXT("the left middle is inside the left hand"), Left->Bones.Contains(FName(TEXT("middle_02_l"))));
@@ -1296,10 +1300,18 @@ bool FSolidBodyHandsTest::RunTest(const FString& Parameters)
 			ESolidPartSide::Left,
 			ESolidPartColour::Trousers,
 			FSolidPartSection::Round(LeftThighTopDiameterCm),
-			FSolidPartSection::Round(LeftThighBottomDiameterCm));
+			FSolidPartSection::Round(LeftThighBottomDiameterCm),
+			Bones);
+		const FSolidBodyPart BareThigh(
+			ESolidPartType::Thigh,
+			ESolidPartSide::Left,
+			ESolidPartColour::Trousers,
+			FSolidPartSection::Round(LeftThighTopDiameterCm),
+			FSolidPartSection::Round(LeftThighBottomDiameterCm),
+			{});
 		TestTrue(
 			TEXT("a thigh keeps its viking bone"),
-			Thigh.PartBones(Bones) == Thigh.PartBones());
+			Thigh.PartBones() == BareThigh.PartBones());
 	}
 
 	const FSolidBodyPart* Head = Body.Find(TEXT("Head"));

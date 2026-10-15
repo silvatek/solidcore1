@@ -196,19 +196,22 @@ namespace SolidBodyMesh
 			Bones = PartBones();
 		}
 
-		/** The type, the side, its colour, and the diameters at each end. The bones come from the type and the side. */
+		/** The type, the side, its colour, the diameters at each end, and the skeleton. PartBones fills the bone list. */
 		FSolidBodyPart(
 			ESolidPartType InType,
 			ESolidPartSide InSide,
 			ESolidPartColour InColour,
 			const FSolidPartSection& InStart,
-			const FSolidPartSection& InEnd);
+			const FSolidPartSection& InEnd,
+			const TArray<FSolidDeformBone>& InSkeleton);
 
 		ESolidPartType Type = ESolidPartType::Thigh;
 		ESolidPartSide Side = ESolidPartSide::Core;
 		/** Comes from Type and Side. "Thigh (L)", "Upper arm (R)", or "Hip". */
 		FString Name;
 		TArray<FName> Bones;
+		/** Copied from the body when the part is built. PartBones reads it. Apply sizes it. */
+		TArray<FSolidDeformBone> Skeleton;
 		ESolidPartColour Colour = ESolidPartColour::Shirt;
 		FSolidPartSection Start;
 		FSolidPartSection End;
@@ -218,20 +221,15 @@ namespace SolidBodyMesh
 		ESolidPartMeasure Measure = ESolidPartMeasure::Leg;
 
 		/**
-		 * The bones this part wraps on the Viking skeleton.
-		 * A paired part uses its side to choose left or right. A core part ignores the side.
-		 */
-		TArray<FName> PartBones() const;
-
-		/**
-		 * The bones this part wraps on this skeleton.
+		 * The bones this part wraps on its stored skeleton.
 		 * A thigh, a spine piece, and the other fixed parts keep their Viking names.
+		 * A paired part uses its side to choose left or right. A core part ignores the side.
 		 * The head is the head bone, then every eye bone.
 		 * A hand lists the fingers that belong to that hand.
 		 * The first is a finger whose parent is the hand bone.
 		 * The hand is empty when no finger meets the hand.
 		 */
-		TArray<FName> PartBones(const TArray<FSolidDeformBone>& Skeleton) const;
+		TArray<FName> PartBones() const;
 
 		/** Shirt, trousers, or skin. The companion's colours fill those slots. */
 		uint8 MaterialSlot() const;
@@ -241,7 +239,7 @@ namespace SolidBodyMesh
 		 * Bones[0] takes the length. The other bones spread by the part's side.
 		 * Call once. A listed bone that is missing from the skeleton is left out.
 		 */
-		void Apply(TArray<FSolidDeformBone>& Skeleton, const FSolidBodyParams& Params);
+		void Apply(const FSolidBodyParams& Params);
 
 		/**
 		 * The cones for this part.

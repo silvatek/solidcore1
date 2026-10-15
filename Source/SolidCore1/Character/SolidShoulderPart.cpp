@@ -64,6 +64,89 @@ SolidBodyMesh::FSolidPartDraw SolidBodyMesh::FSolidShoulderPart::Fit(
 	return Out;
 }
 
+void SolidBodyMesh::FSolidShoulderPart::DrawShoulder(
+	TArray<FSolidBodyVert>& Verts,
+	TArray<FSolidBodyTri>& Tris,
+	const int32 BoneIndex,
+	const FVector& From,
+	const FVector& To,
+	const FVector* SegmentStart,
+	const FVector* SegmentEnd,
+	const int32 SegmentCount,
+	const FVector& WideAxis)
+{
+	const FSolidPartDraw Fitted = Fit(From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
+	const FSolidShoulderPiece& Piece = Fitted.Shoulder;
+	const uint8 Slot = MaterialSlot();
+	if (!Piece.bValid || BoneIndex == INDEX_NONE)
+	{
+		return;
+	}
+
+	const FVector Centers[] = { Piece.Lower.Start, Piece.Lower.End, Piece.Upper.End };
+	const float Radii[] = { Piece.Lower.RadiusStart, Piece.Lower.RadiusEnd, Piece.Upper.RadiusEnd };
+	const float Squash[] = {
+		Piece.Lower.DepthScaleStart,
+		Piece.Lower.DepthScaleEnd,
+		Piece.Upper.DepthScaleEnd,
+	};
+	const FVector Delta = Centers[2] - Centers[0];
+	const float Length = Delta.Size();
+	if (Length < 2.f)
+	{
+		return;
+	}
+	const FVector Axis = Delta / Length;
+	FVector Wide = Piece.Lower.WideAxis - Axis * FVector::DotProduct(Piece.Lower.WideAxis, Axis);
+	if (Wide.SizeSquared() < 0.01)
+	{
+		Wide = FVector::CrossProduct(FVector::UpVector, Axis);
+	}
+	if (Wide.SizeSquared() < 0.01)
+	{
+		Wide = FVector::CrossProduct(FVector::ForwardVector, Axis);
+	}
+	Wide = Wide.GetSafeNormal();
+	const FVector Up = FVector::CrossProduct(Axis, Wide).GetSafeNormal();
+	const int32 SideCount = ShoulderSideCount;
+	const int32 Base = Verts.Num();
+	for (int32 Ring = 0; Ring < 3; ++Ring)
+	{
+		const float Radius = Radii[Ring];
+		const float Flat = FMath::Clamp(Squash[Ring], 0.2f, 1.f);
+		for (int32 Step = 0; Step < SideCount; ++Step)
+		{
+			const float Angle = (2.f * PI * static_cast<float>(Step)) / static_cast<float>(SideCount);
+			const FVector Offset = Wide * (FMath::Cos(Angle) * Radius)
+				+ Up * (FMath::Sin(Angle) * Radius * Flat);
+			FSolidBodyVert Vert;
+			Vert.Position = Centers[Ring] + Offset;
+			Vert.Bone = BoneIndex;
+			Vert.Slot = Slot;
+			Verts.Add(Vert);
+		}
+	}
+
+	auto Id = [Base, SideCount](const int32 Ring, const int32 Step)
+	{
+		return Base + Ring * SideCount + (Step % SideCount);
+	};
+	for (int32 Ring = 0; Ring < 2; ++Ring)
+	{
+		for (int32 Step = 0; Step < SideCount; ++Step)
+		{
+			const int32 Next = Step + 1;
+			AddTri(Tris, Id(Ring, Step), Id(Ring, Next), Id(Ring + 1, Step));
+			AddTri(Tris, Id(Ring, Next), Id(Ring + 1, Next), Id(Ring + 1, Step));
+		}
+	}
+	for (int32 Step = 1; Step < SideCount - 1; ++Step)
+	{
+		AddTri(Tris, Id(0, 0), Id(0, Step + 1), Id(0, Step));
+		AddTri(Tris, Id(2, 0), Id(2, Step), Id(2, Step + 1));
+	}
+}
+
 void SolidBodyMesh::FSolidShoulderPart::Draw(
 	TArray<FSolidBodyVert>& Verts,
 	TArray<FSolidBodyTri>& Tris,

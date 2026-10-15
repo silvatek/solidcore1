@@ -127,17 +127,21 @@ void SolidBodyMesh::FSolidHandPart::Apply(const FSolidBodyParams& Params)
 	SizeBones(1.f, 1.f);
 }
 
-void SolidBodyMesh::FSolidHandPart::DrawHand(
+void SolidBodyMesh::FSolidHandPart::Draw(
 	TArray<FSolidBodyVert>& Verts,
 	TArray<FSolidBodyTri>& Tris,
-	const int32 BoneIndex,
+	const int32 WeightBone,
+	const int32 SpanBone,
 	const FVector& From,
 	const FVector& To,
 	const FVector* SegmentStart,
 	const FVector* SegmentEnd,
-	const int32 SegmentCount) const
+	const int32 SegmentCount,
+	const FVector& WideAxis)
 {
-	if (BoneIndex == INDEX_NONE)
+	(void)SpanBone;
+	(void)WideAxis;
+	if (WeightBone == INDEX_NONE)
 	{
 		return;
 	}
@@ -204,7 +208,7 @@ void SolidBodyMesh::FSolidHandPart::DrawHand(
 	{
 		FSolidBodyVert Vert;
 		Vert.Position = Position;
-		Vert.Bone = BoneIndex;
+		Vert.Bone = WeightBone;
 		Vert.Slot = Slot;
 		Verts.Add(Vert);
 	};
@@ -256,21 +260,4 @@ void SolidBodyMesh::FSolidHandPart::DrawHand(
 	{
 		AddTri(Tris, RingVert(Rings - 1, 0), RingVert(LastRing, Step), RingVert(LastRing, Step + 1));
 	}
-}
-
-void SolidBodyMesh::FSolidHandPart::Draw(
-	TArray<FSolidBodyVert>& Verts,
-	TArray<FSolidBodyTri>& Tris,
-	const int32 WeightBone,
-	const int32 SpanBone,
-	const FVector& From,
-	const FVector& To,
-	const FVector* SegmentStart,
-	const FVector* SegmentEnd,
-	const int32 SegmentCount,
-	const FVector& WideAxis)
-{
-	(void)SpanBone;
-	(void)WideAxis;
-	DrawHand(Verts, Tris, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount);
 }

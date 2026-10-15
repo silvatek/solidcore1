@@ -58,22 +58,26 @@ void SolidBodyMesh::FSolidHeadPart::Apply(const FSolidBodyParams& Params)
 	SizeBones(Scale, Scale);
 }
 
-void SolidBodyMesh::FSolidHeadPart::DrawHead(
+void SolidBodyMesh::FSolidHeadPart::Draw(
 	TArray<FSolidBodyVert>& Verts,
 	TArray<FSolidBodyTri>& Tris,
-	const int32 BoneIndex,
-	const FVector& Neck,
-	const FVector& Base,
+	const int32 WeightBone,
+	const int32 SpanBone,
+	const FVector& From,
+	const FVector& To,
 	const FVector* SegmentStart,
 	const FVector* SegmentEnd,
-	const int32 SegmentCount) const
+	const int32 SegmentCount,
+	const FVector& WideAxis)
 {
-	if (BoneIndex == INDEX_NONE || !SegmentStart || !SegmentEnd || Bones.Num() < 2)
+	(void)WeightBone;
+	(void)WideAxis;
+	if (SpanBone == INDEX_NONE || !SegmentStart || !SegmentEnd || Bones.Num() < 2)
 	{
 		return;
 	}
 
-	const float HeadLength = FVector::Dist(Neck, Base);
+	const float HeadLength = FVector::Dist(From, To);
 	if (HeadLength < 1.f)
 	{
 		return;
@@ -104,7 +108,7 @@ void SolidBodyMesh::FSolidHeadPart::DrawHead(
 	const float HorizontalRadius = RadiusSum / static_cast<float>(Count);
 	const float Height = HeadLength * HeadHeightInBoneLengths;
 	const float VerticalRadius = Height * 0.5f;
-	const FVector Center = Neck + FVector::UpVector * VerticalRadius;
+	const FVector Center = From + FVector::UpVector * VerticalRadius;
 	const FVector Up = FVector::UpVector;
 	const FVector Right = FVector::RightVector;
 	const FVector Forward = FVector::ForwardVector;
@@ -117,12 +121,12 @@ void SolidBodyMesh::FSolidHeadPart::DrawHead(
 	{
 		FSolidBodyVert Vert;
 		Vert.Position = Position;
-		Vert.Bone = BoneIndex;
+		Vert.Bone = SpanBone;
 		Vert.Slot = Slot;
 		Verts.Add(Vert);
 	};
 
-	AddVert(Neck);
+	AddVert(From);
 	for (int32 Ring = 1; Ring < Rings - 1; ++Ring)
 	{
 		const float T = static_cast<float>(Ring) / static_cast<float>(Rings - 1);
@@ -169,21 +173,4 @@ void SolidBodyMesh::FSolidHeadPart::DrawHead(
 	{
 		AddTri(Tris, RingVert(Rings - 1, 0), RingVert(LastRing, Step), RingVert(LastRing, Step + 1));
 	}
-}
-
-void SolidBodyMesh::FSolidHeadPart::Draw(
-	TArray<FSolidBodyVert>& Verts,
-	TArray<FSolidBodyTri>& Tris,
-	const int32 WeightBone,
-	const int32 SpanBone,
-	const FVector& From,
-	const FVector& To,
-	const FVector* SegmentStart,
-	const FVector* SegmentEnd,
-	const int32 SegmentCount,
-	const FVector& WideAxis)
-{
-	(void)WeightBone;
-	(void)WideAxis;
-	DrawHead(Verts, Tris, SpanBone, From, To, SegmentStart, SegmentEnd, SegmentCount);
 }

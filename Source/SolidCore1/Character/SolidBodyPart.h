@@ -267,18 +267,6 @@ namespace SolidBodyMesh
 		void SizeBones(float Length, float SideScale);
 
 		void AddTri(TArray<FSolidBodyTri>& Tris, int32 A, int32 B, int32 C) const;
-
-		/** Fit this part's cone, then draw that tube. */
-		void DrawTube(
-			TArray<FSolidBodyVert>& Verts,
-			TArray<FSolidBodyTri>& Tris,
-			int32 BoneIndex,
-			const FVector& From,
-			const FVector& To,
-			const FVector* SegmentStart,
-			const FVector* SegmentEnd,
-			int32 SegmentCount,
-			const FVector& WideAxis);
 	};
 
 	/** The head bone, then every eye bone. Head size scales the part and those bones. The mesh is a sphere. */
@@ -296,6 +284,12 @@ namespace SolidBodyMesh
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual TArray<FName> PartBones() const override;
 		virtual void Apply(const FSolidBodyParams& Params) override;
+		/**
+		 * A sphere along world up, skinned to the head bone.
+		 * From is the parent joint, the base of the head bone. To is the head joint.
+		 * The height is HeadHeightInBoneLengths times that length.
+		 * The horizontal radius is the length of the eye_jnt bones.
+		 */
 		virtual void Draw(
 			TArray<FSolidBodyVert>& Verts,
 			TArray<FSolidBodyTri>& Tris,
@@ -307,24 +301,6 @@ namespace SolidBodyMesh
 			const FVector* SegmentEnd,
 			int32 SegmentCount,
 			const FVector& WideAxis) override;
-
-	private:
-		/**
-		 * A sphere along world up, skinned to the head bone.
-		 * The bottom pole is Neck, the parent joint, which is the base of the head bone.
-		 * Base is the head joint. The head bone's length is the gap between them.
-		 * The height is HeadHeightInBoneLengths times that length.
-		 * The horizontal radius is the length of the eye_jnt bones.
-		 */
-		void DrawHead(
-			TArray<FSolidBodyVert>& Verts,
-			TArray<FSolidBodyTri>& Tris,
-			int32 BoneIndex,
-			const FVector& Neck,
-			const FVector& Base,
-			const FVector* SegmentStart,
-			const FVector* SegmentEnd,
-			int32 SegmentCount) const;
 	};
 
 	/**
@@ -345,6 +321,12 @@ namespace SolidBodyMesh
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual TArray<FName> PartBones() const override;
 		virtual void Apply(const FSolidBodyParams& Params) override;
+		/**
+		 * One ellipsoid skinned to the hand bone.
+		 * From is the hand joint, where the finger meets the hand bone and the lower arm ends.
+		 * To is the top of that finger bone. The long axis runs from From to To.
+		 * The wide axis follows the other fingers. The thin axis is the palm thickness.
+		 */
 		virtual void Draw(
 			TArray<FSolidBodyVert>& Verts,
 			TArray<FSolidBodyTri>& Tris,
@@ -356,23 +338,6 @@ namespace SolidBodyMesh
 			const FVector* SegmentEnd,
 			int32 SegmentCount,
 			const FVector& WideAxis) override;
-
-	private:
-		/**
-		 * One ellipsoid skinned to the hand bone.
-		 * From is the hand joint, where the finger meets the hand bone and the lower arm ends.
-		 * To is the top of that finger bone. The long axis runs from From to To.
-		 * The wide axis follows the other fingers. The thin axis is the palm thickness.
-		 */
-		void DrawHand(
-			TArray<FSolidBodyVert>& Verts,
-			TArray<FSolidBodyTri>& Tris,
-			int32 BoneIndex,
-			const FVector& From,
-			const FVector& To,
-			const FVector* SegmentStart,
-			const FVector* SegmentEnd,
-			int32 SegmentCount) const;
 	};
 
 	/**
@@ -401,6 +366,7 @@ namespace SolidBodyMesh
 			const FVector* SegmentEnd,
 			int32 SegmentCount,
 			const FVector& WideAxis) override;
+		/** Fit the shoulder piece, then draw its two cones. */
 		virtual void Draw(
 			TArray<FSolidBodyVert>& Verts,
 			TArray<FSolidBodyTri>& Tris,
@@ -412,19 +378,6 @@ namespace SolidBodyMesh
 			const FVector* SegmentEnd,
 			int32 SegmentCount,
 			const FVector& WideAxis) override;
-
-	private:
-		/** Fit the shoulder piece, then draw its two cones. */
-		void DrawShoulder(
-			TArray<FSolidBodyVert>& Verts,
-			TArray<FSolidBodyTri>& Tris,
-			int32 BoneIndex,
-			const FVector& From,
-			const FVector& To,
-			const FVector* SegmentStart,
-			const FVector* SegmentEnd,
-			int32 SegmentCount,
-			const FVector& WideAxis);
 	};
 
 	/** The part for this type. A head, a hand, and the shoulders are their own classes. Anything else is a tube. */

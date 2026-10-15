@@ -64,10 +64,11 @@ SolidBodyMesh::FSolidPartDraw SolidBodyMesh::FSolidShoulderPart::Fit(
 	return Out;
 }
 
-void SolidBodyMesh::FSolidShoulderPart::DrawShoulder(
+void SolidBodyMesh::FSolidShoulderPart::Draw(
 	TArray<FSolidBodyVert>& Verts,
 	TArray<FSolidBodyTri>& Tris,
-	const int32 BoneIndex,
+	const int32 WeightBone,
+	const int32 SpanBone,
 	const FVector& From,
 	const FVector& To,
 	const FVector* SegmentStart,
@@ -75,10 +76,11 @@ void SolidBodyMesh::FSolidShoulderPart::DrawShoulder(
 	const int32 SegmentCount,
 	const FVector& WideAxis)
 {
+	(void)SpanBone;
 	const FSolidPartDraw Fitted = Fit(From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
 	const FSolidShoulderPiece& Piece = Fitted.Shoulder;
 	const uint8 Slot = MaterialSlot();
-	if (!Piece.bValid || BoneIndex == INDEX_NONE)
+	if (!Piece.bValid || WeightBone == INDEX_NONE)
 	{
 		return;
 	}
@@ -121,7 +123,7 @@ void SolidBodyMesh::FSolidShoulderPart::DrawShoulder(
 				+ Up * (FMath::Sin(Angle) * Radius * Flat);
 			FSolidBodyVert Vert;
 			Vert.Position = Centers[Ring] + Offset;
-			Vert.Bone = BoneIndex;
+			Vert.Bone = WeightBone;
 			Vert.Slot = Slot;
 			Verts.Add(Vert);
 		}
@@ -145,20 +147,4 @@ void SolidBodyMesh::FSolidShoulderPart::DrawShoulder(
 		AddTri(Tris, Id(0, 0), Id(0, Step + 1), Id(0, Step));
 		AddTri(Tris, Id(2, 0), Id(2, Step), Id(2, Step + 1));
 	}
-}
-
-void SolidBodyMesh::FSolidShoulderPart::Draw(
-	TArray<FSolidBodyVert>& Verts,
-	TArray<FSolidBodyTri>& Tris,
-	const int32 WeightBone,
-	const int32 SpanBone,
-	const FVector& From,
-	const FVector& To,
-	const FVector* SegmentStart,
-	const FVector* SegmentEnd,
-	const int32 SegmentCount,
-	const FVector& WideAxis)
-{
-	(void)SpanBone;
-	DrawShoulder(Verts, Tris, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
 }

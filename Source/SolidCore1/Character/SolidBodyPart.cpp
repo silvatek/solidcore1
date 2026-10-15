@@ -309,10 +309,11 @@ void SolidBodyMesh::FSolidBodyPart::AddTri(
 	Tris.Add(Tri);
 }
 
-void SolidBodyMesh::FSolidBodyPart::DrawTube(
+void SolidBodyMesh::FSolidBodyPart::Draw(
 	TArray<FSolidBodyVert>& Verts,
 	TArray<FSolidBodyTri>& Tris,
-	const int32 BoneIndex,
+	const int32 WeightBone,
+	const int32 SpanBone,
 	const FVector& From,
 	const FVector& To,
 	const FVector* SegmentStart,
@@ -320,9 +321,10 @@ void SolidBodyMesh::FSolidBodyPart::DrawTube(
 	const int32 SegmentCount,
 	const FVector& WideAxis)
 {
+	(void)SpanBone;
 	const FSolidPartDraw Fitted = Fit(From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
 	const FSolidFittedCone& Cone = Fitted.Cone;
-	if (!Cone.bValid || BoneIndex == INDEX_NONE)
+	if (!Cone.bValid || WeightBone == INDEX_NONE)
 	{
 		return;
 	}
@@ -367,7 +369,7 @@ void SolidBodyMesh::FSolidBodyPart::DrawTube(
 				+ Up * (FMath::Sin(Angle) * Radius * Squash);
 			FSolidBodyVert Vert;
 			Vert.Position = Center + Offset;
-			Vert.Bone = BoneIndex;
+			Vert.Bone = WeightBone;
 			Vert.Slot = Slot;
 			Verts.Add(Vert);
 		}
@@ -392,21 +394,6 @@ void SolidBodyMesh::FSolidBodyPart::DrawTube(
 		AddTri(Tris, Id(0, 0), Id(0, Step + 1), Id(0, Step));
 		AddTri(Tris, Id(Last, 0), Id(Last, Step), Id(Last, Step + 1));
 	}
-}
-
-void SolidBodyMesh::FSolidBodyPart::Draw(
-	TArray<FSolidBodyVert>& Verts,
-	TArray<FSolidBodyTri>& Tris,
-	const int32 WeightBone,
-	const int32 SpanBone,
-	const FVector& From,
-	const FVector& To,
-	const FVector* SegmentStart,
-	const FVector* SegmentEnd,
-	const int32 SegmentCount,
-	const FVector& WideAxis)
-{
-	DrawTube(Verts, Tris, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
 }
 
 TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::MakeBodyPart(

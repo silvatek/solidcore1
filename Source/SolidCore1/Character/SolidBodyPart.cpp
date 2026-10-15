@@ -239,62 +239,57 @@ namespace
 	}
 }
 
-SolidBodyMesh::FSolidPartBones SolidBodyMesh::FSolidBodyPart::PartBones() const
+TArray<FName> SolidBodyMesh::FSolidBodyPart::PartBones() const
 {
 	using namespace SolidBodyMesh;
 
-	FSolidPartBones Listed;
+	TArray<FName> Names;
 	switch (Type)
 	{
 	case ESolidPartType::Thigh:
-		AddSidedBone(Listed.Names, Side, LeftThighBone, RightThighBone);
+		AddSidedBone(Names, Side, LeftThighBone, RightThighBone);
 		break;
 	case ESolidPartType::Calf:
-		AddSidedBone(Listed.Names, Side, LeftCalfBone, RightCalfBone);
+		AddSidedBone(Names, Side, LeftCalfBone, RightCalfBone);
 		break;
 	case ESolidPartType::Foot:
-		AddSidedBone(Listed.Names, Side, LeftBallBone, RightBallBone);
+		AddSidedBone(Names, Side, LeftBallBone, RightBallBone);
 		break;
 	case ESolidPartType::Toe:
-		AddSidedBone(Listed.Names, Side, LeftToeBone, RightToeBone);
+		AddSidedBone(Names, Side, LeftToeBone, RightToeBone);
 		break;
 	case ESolidPartType::Hip:
-		Listed.Names.Add(HipSpineBone);
-		Listed.Names.Add(HipLeftBone);
-		Listed.Names.Add(HipRightBone);
+		Names.Add(HipSpineBone);
+		Names.Add(HipLeftBone);
+		Names.Add(HipRightBone);
 		break;
 	case ESolidPartType::Abdomen:
-		Listed.Names.Add(SpineAbdomenBone);
+		Names.Add(SpineAbdomenBone);
 		break;
 	case ESolidPartType::Chest:
-		Listed.Names.Add(SpineChestBone);
+		Names.Add(SpineChestBone);
 		break;
 	case ESolidPartType::Shoulders:
-		Listed.Names.Add(ShoulderNeckBone);
-		Listed.Names.Add(ShoulderLeftClavicleBone);
-		Listed.Names.Add(ShoulderRightClavicleBone);
-		Listed.Names.Add(ShoulderLeftUpperArmBone);
-		Listed.Names.Add(ShoulderRightUpperArmBone);
-		Listed.Shape = ESolidPartShape::Shoulder;
+		Names.Add(ShoulderNeckBone);
+		Names.Add(ShoulderLeftClavicleBone);
+		Names.Add(ShoulderRightClavicleBone);
+		Names.Add(ShoulderLeftUpperArmBone);
+		Names.Add(ShoulderRightUpperArmBone);
 		break;
 	case ESolidPartType::UpperArm:
-		AddSidedBone(Listed.Names, Side, TEXT("lowerarm_l"), TEXT("lowerarm_r"));
+		AddSidedBone(Names, Side, TEXT("lowerarm_l"), TEXT("lowerarm_r"));
 		break;
 	case ESolidPartType::LowerArm:
-		AddSidedBone(Listed.Names, Side, LeftHandBone, RightHandBone);
+		AddSidedBone(Names, Side, LeftHandBone, RightHandBone);
 		break;
 	case ESolidPartType::Hand:
-		Listed.Names = HandBones(Side, Skeleton);
-		Listed.Shape = ESolidPartShape::Hand;
-		break;
+		return HandBones(Side, Skeleton);
 	case ESolidPartType::Head:
-		Listed.Names = HeadBones(Skeleton);
-		Listed.Shape = ESolidPartShape::Head;
-		break;
+		return HeadBones(Skeleton);
 	default:
 		break;
 	}
-	return Listed;
+	return Names;
 }
 
 SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
@@ -313,9 +308,8 @@ SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
 	, Measure(PartMeasure(InType))
 	, Skeleton(InSkeleton)
 {
-	const FSolidPartBones Listed = PartBones();
-	Bones = Listed.Names;
-	Shape = Listed.Shape;
+	Bones = PartBones();
+	Shape = PartShape(Type);
 }
 
 void SolidBodyMesh::FSolidBodyPart::Apply(const FSolidBodyParams& Params)

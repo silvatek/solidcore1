@@ -23,14 +23,7 @@ namespace SolidBodyMesh
 	public:
 		TArray<FSolidBodyPart> Parts;
 
-		/** Append one finished part. Its bones come from Skeleton. */
-		void AddPart(FSolidBodyPart Part)
-		{
-			Part.Bones = PartBones(Part.Type, Part.Side, Skeleton);
-			Parts.Add(MoveTemp(Part));
-		}
-
-		/** Construct one part and append it. The arguments match the part constructor. */
+		/** Construct one part, read its bones from Skeleton, and append it. */
 		void AddBodyPart(
 			ESolidPartType InType,
 			ESolidPartSide InSide,
@@ -38,7 +31,9 @@ namespace SolidBodyMesh
 			const FSolidPartSection& InStart,
 			const FSolidPartSection& InEnd)
 		{
-			AddPart(FSolidBodyPart(InType, InSide, InColour, InStart, InEnd));
+			FSolidBodyPart Part(InType, InSide, InColour, InStart, InEnd);
+			Part.Bones = PartBones(Part.Type, Part.Side, Skeleton);
+			Parts.Add(MoveTemp(Part));
 		}
 
 		/**
@@ -64,7 +59,7 @@ namespace SolidBodyMesh
 			const TArray<FSolidDeformBone>& Bones,
 			const TArray<FVector>& Positions);
 
-		/** The skeleton this body was fitted to. AddPart reads it. */
+		/** The skeleton this body was fitted to. AddBodyPart reads it. */
 		TArray<FSolidDeformBone> Skeleton;
 	};
 

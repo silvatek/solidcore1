@@ -263,7 +263,7 @@ namespace SolidBodyMesh
 	 * The middle widens past both upper-arm bones, and the clavicles, by ShoulderUpperArmClearanceCm.
 	 * It then narrows. neck_01 is a circle 10 cm across. WideAxis keeps the full width.
 	 * Invalid when neck_01 is shorter than two centimetres.
-	 * The shoulder part calls this while it draws.
+	 * Defined with the shoulder part. Fit calls it.
 	 */
 	FSolidShoulderPiece ShoulderPiece(
 		const FVector& NeckStart,

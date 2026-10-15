@@ -122,62 +122,6 @@ namespace
 
 namespace
 {
-TArray<FName> VikingBones(const SolidBodyMesh::ESolidPartType Type, const SolidBodyMesh::ESolidPartSide Side)
-{
-	using namespace SolidBodyMesh;
-
-	TArray<FName> Names;
-	switch (Type)
-	{
-	case ESolidPartType::Thigh:
-		AddSidedBone(Names, Side, LeftThighBone, RightThighBone);
-		break;
-	case ESolidPartType::Calf:
-		AddSidedBone(Names, Side, LeftCalfBone, RightCalfBone);
-		break;
-	case ESolidPartType::Foot:
-		AddSidedBone(Names, Side, LeftBallBone, RightBallBone);
-		break;
-	case ESolidPartType::Toe:
-		AddSidedBone(Names, Side, LeftToeBone, RightToeBone);
-		break;
-	case ESolidPartType::Hip:
-		Names.Add(HipSpineBone);
-		Names.Add(HipLeftBone);
-		Names.Add(HipRightBone);
-		break;
-	case ESolidPartType::Abdomen:
-		Names.Add(SpineAbdomenBone);
-		break;
-	case ESolidPartType::Chest:
-		Names.Add(SpineChestBone);
-		break;
-	case ESolidPartType::Shoulders:
-		Names.Add(ShoulderNeckBone);
-		Names.Add(ShoulderLeftClavicleBone);
-		Names.Add(ShoulderRightClavicleBone);
-		Names.Add(ShoulderLeftUpperArmBone);
-		Names.Add(ShoulderRightUpperArmBone);
-		break;
-	case ESolidPartType::UpperArm:
-		AddSidedBone(Names, Side, TEXT("lowerarm_l"), TEXT("lowerarm_r"));
-		break;
-	case ESolidPartType::LowerArm:
-		AddSidedBone(Names, Side, LeftHandBone, RightHandBone);
-		break;
-	// A hand and the head are read from the stored skeleton.
-	case ESolidPartType::Hand:
-	case ESolidPartType::Head:
-		break;
-	default:
-		break;
-	}
-	return Names;
-}
-}
-
-namespace
-{
 	bool NameMarksSide(const FString& Lower, const TCHAR* Suffix)
 	{
 		const FString Infix = FString(Suffix) + TEXT("_");
@@ -297,15 +241,55 @@ namespace
 
 TArray<FName> SolidBodyMesh::FSolidBodyPart::PartBones() const
 {
+	using namespace SolidBodyMesh;
+
+	TArray<FName> Names;
 	switch (Type)
 	{
+	case ESolidPartType::Thigh:
+		AddSidedBone(Names, Side, LeftThighBone, RightThighBone);
+		break;
+	case ESolidPartType::Calf:
+		AddSidedBone(Names, Side, LeftCalfBone, RightCalfBone);
+		break;
+	case ESolidPartType::Foot:
+		AddSidedBone(Names, Side, LeftBallBone, RightBallBone);
+		break;
+	case ESolidPartType::Toe:
+		AddSidedBone(Names, Side, LeftToeBone, RightToeBone);
+		break;
+	case ESolidPartType::Hip:
+		Names.Add(HipSpineBone);
+		Names.Add(HipLeftBone);
+		Names.Add(HipRightBone);
+		break;
+	case ESolidPartType::Abdomen:
+		Names.Add(SpineAbdomenBone);
+		break;
+	case ESolidPartType::Chest:
+		Names.Add(SpineChestBone);
+		break;
+	case ESolidPartType::Shoulders:
+		Names.Add(ShoulderNeckBone);
+		Names.Add(ShoulderLeftClavicleBone);
+		Names.Add(ShoulderRightClavicleBone);
+		Names.Add(ShoulderLeftUpperArmBone);
+		Names.Add(ShoulderRightUpperArmBone);
+		break;
+	case ESolidPartType::UpperArm:
+		AddSidedBone(Names, Side, TEXT("lowerarm_l"), TEXT("lowerarm_r"));
+		break;
+	case ESolidPartType::LowerArm:
+		AddSidedBone(Names, Side, LeftHandBone, RightHandBone);
+		break;
 	case ESolidPartType::Hand:
 		return HandBones(Side, Skeleton);
 	case ESolidPartType::Head:
 		return HeadBones(Skeleton);
 	default:
-		return VikingBones(Type, Side);
+		break;
 	}
+	return Names;
 }
 
 SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(

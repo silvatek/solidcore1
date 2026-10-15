@@ -71,10 +71,20 @@ namespace SolidBodyMesh
 	};
 
 	/**
-	 * The bones this part wraps.
+	 * The bones this part wraps on the Viking skeleton.
 	 * A paired part uses the side to choose left or right. A core part ignores the side.
 	 */
 	TArray<FName> PartBones(ESolidPartType Type, ESolidPartSide Side);
+
+	/**
+	 * The bones this part wraps on this skeleton.
+	 * A thigh, a spine piece, and the other fixed parts keep their Viking names.
+	 * The head is the head bone, then every eye bone.
+	 * A hand lists the fingers that belong to that hand.
+	 * The first is a finger whose parent is the hand bone.
+	 * The hand is empty when no finger meets the hand.
+	 */
+	TArray<FName> PartBones(ESolidPartType Type, ESolidPartSide Side, const TArray<FSolidDeformBone>& Skeleton);
 
 	/** The slider group for a part. Thighs, calves, feet, and toes share leg length. */
 	inline ESolidPartMeasure PartMeasure(const ESolidPartType Type)

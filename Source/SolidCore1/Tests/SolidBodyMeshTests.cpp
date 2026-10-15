@@ -108,7 +108,7 @@ bool FSolidBodyVikingBuildTest::RunTest(const FString& Parameters)
 		Bone.Name = Infos[Index].Name;
 		Named.Add(Bone);
 	}
-	const SolidBodyMesh::FSolidBodyMesh Catalogue = SolidBodyMesh::FSolidBodyMesh::FromBones(Named);
+	const SolidBodyMesh::FSolidBodyMesh Catalogue = SolidBodyMesh::FSolidBodyMesh::Make(Named);
 	int32 Recognized = 0;
 	int32 ScaledBone = INDEX_NONE;
 	for (int32 Index = 0; Index < Infos.Num(); ++Index)
@@ -977,7 +977,7 @@ bool FSolidBodyHeadTest::RunTest(const FString& Parameters)
 	AddBone(TEXT("eyelid_l"), 1, FVector(3.f, 6.f, 18.f));
 	AddBone(TEXT("thumb_l"), 1, FVector(1.f, 1.f, 1.f));
 
-	const FSolidBodyMesh Body = FSolidBodyMesh::FromBones(Bones);
+	const FSolidBodyMesh Body = FSolidBodyMesh::Make(Bones);
 	const FSolidBodyPart* Head = Body.Find(TEXT("Head"));
 	TestTrue(TEXT("the head is on the list"), Head != nullptr);
 	if (Head)
@@ -991,6 +991,9 @@ bool FSolidBodyHeadTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the right eye joint is inside the head"), Head->Bones.Contains(FName(TEXT("eye_jnt_r"))));
 		TestTrue(TEXT("the eyelid is inside the head"), Head->Bones.Contains(FName(TEXT("eyelid_l"))));
 		TestFalse(TEXT("the thumb stays out of the head"), Head->Bones.Contains(FName(TEXT("thumb_l"))));
+		TestTrue(
+			TEXT("PartBones reads the head"),
+			Head->Bones == PartBones(ESolidPartType::Head, ESolidPartSide::Core, Bones));
 	}
 
 	TArray<FVector> Positions;
@@ -1065,7 +1068,7 @@ bool FSolidBodyHeadShapeTest::RunTest(const FString& Parameters)
 	SolidBodyDeform::ComponentPositions(Bones, Positions);
 	TArray<FSolidBodyVert> Verts;
 	TArray<FSolidBodyTri> Tris;
-	FSolidBodyMesh Body = FSolidBodyMesh::FromBones(Bones);
+	FSolidBodyMesh Body = FSolidBodyMesh::Make(Bones);
 	Body.Draw(Verts, Tris, Bones, Positions);
 
 	float MinZ = 1.e9f;
@@ -1178,7 +1181,7 @@ bool FSolidBodyDetailTest::RunTest(const FString& Parameters)
 	SolidBodyDeform::ComponentPositions(Bones, Positions);
 	TArray<FSolidBodyVert> HeadVerts;
 	TArray<FSolidBodyTri> HeadTris;
-	FSolidBodyMesh Body = FSolidBodyMesh::FromBones(Bones);
+	FSolidBodyMesh Body = FSolidBodyMesh::Make(Bones);
 	Body.Draw(HeadVerts, HeadTris, Bones, Positions);
 
 	float MinZ = 1.e9f;
@@ -1262,13 +1265,19 @@ bool FSolidBodyHandsTest::RunTest(const FString& Parameters)
 	AddBone(TEXT("index_01_r"), 12, FVector(4.f, 7.f, 0.f));
 	AddBone(TEXT("ring_01_r"), 12, FVector(3.f, -5.f, 0.f));
 
-	const FSolidBodyMesh Body = FSolidBodyMesh::FromBones(Bones);
+	const FSolidBodyMesh Body = FSolidBodyMesh::Make(Bones);
 	const FSolidBodyPart* Left = Body.Find(TEXT("Hand (L)"));
 	const FSolidBodyPart* Right = Body.Find(TEXT("Hand (R)"));
-	TestTrue(TEXT("from-bones keeps the left hand"), Left != nullptr);
-	TestTrue(TEXT("from-bones keeps the right hand"), Right != nullptr);
+	TestTrue(TEXT("the skeleton keeps the left hand"), Left != nullptr);
+	TestTrue(TEXT("the skeleton keeps the right hand"), Right != nullptr);
 	if (Left && Right)
 	{
+		TestTrue(
+			TEXT("PartBones reads the left hand"),
+			Left->Bones == PartBones(ESolidPartType::Hand, ESolidPartSide::Left, Bones));
+		TestTrue(
+			TEXT("PartBones reads the right hand"),
+			Right->Bones == PartBones(ESolidPartType::Hand, ESolidPartSide::Right, Bones));
 		TestTrue(TEXT("the left index is inside the left hand"), Left->Bones.Contains(FName(TEXT("index_01_l"))));
 		TestTrue(TEXT("the left pinky is inside the left hand"), Left->Bones.Contains(FName(TEXT("pinky_01_l"))));
 		TestTrue(TEXT("the left middle is inside the left hand"), Left->Bones.Contains(FName(TEXT("middle_02_l"))));
@@ -1282,6 +1291,10 @@ bool FSolidBodyHandsTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("a right-named thumb joins the right hand"), Right->Bones.Contains(FName(TEXT("thumb_01_r"))));
 		TestFalse(TEXT("the left index stays out of the right hand"), Right->Bones.Contains(FName(TEXT("index_01_l"))));
 		TestFalse(TEXT("the unsided left finger stays out of the right hand"), Right->Bones.Contains(FName(TEXT("index_01"))));
+		TestTrue(
+			TEXT("a thigh keeps its viking bone"),
+			PartBones(ESolidPartType::Thigh, ESolidPartSide::Left, Bones)
+				== PartBones(ESolidPartType::Thigh, ESolidPartSide::Left));
 	}
 
 	const FSolidBodyPart* Head = Body.Find(TEXT("Head"));
@@ -1335,7 +1348,7 @@ bool FSolidBodyHandShapeTest::RunTest(const FString& Parameters)
 	AddBone(TEXT("index_01_r"), 7, RightFinger);
 	AddBone(TEXT("ring_01_r"), 7, FVector(2.f, 5.f, 0.f));
 
-	const FSolidBodyMesh Body = FSolidBodyMesh::FromBones(Bones);
+	const FSolidBodyMesh Body = FSolidBodyMesh::Make(Bones);
 	const FSolidBodyPart* Left = Body.Find(TEXT("Hand (L)"));
 	const FSolidBodyPart* Right = Body.Find(TEXT("Hand (R)"));
 	const FSolidBodyPart* Lower = Body.Find(TEXT("Lower arm (L)"));
@@ -1491,7 +1504,7 @@ bool FSolidBodyFootSoleTest::RunTest(const FString& Parameters)
 		TEXT("the offset puts that sole on the capsule bottom"),
 		FMath::IsNearlyEqual(FeetMeshOffset(HalfHeight, NeutralSole) + NeutralSole, -HalfHeight, 0.01f));
 
-	FSolidBodyMesh Body = FSolidBodyMesh::FromBones(Bones);
+	FSolidBodyMesh Body = FSolidBodyMesh::Make(Bones);
 	FSolidBodyParams LongLegs;
 	LongLegs.Height = 1.f;
 	LongLegs.LegLength = SolidBody::ParamMax;

@@ -188,6 +188,141 @@ TArray<FName> SolidBodyMesh::PartBones(const ESolidPartType Type, const ESolidPa
 	return Bones;
 }
 
+namespace
+{
+	bool NameMarksSide(const FString& Lower, const TCHAR* Suffix)
+	{
+		const FString Infix = FString(Suffix) + TEXT("_");
+		return Lower.EndsWith(Suffix) || Lower.Contains(Infix);
+	}
+
+	bool FingerBelongsToHand(
+		const TArray<FSolidDeformBone>& Skeleton,
+		const int32 Index,
+		const bool bLeft)
+	{
+		if (!Skeleton.IsValidIndex(Index))
+		{
+			return false;
+		}
+		const FString Lower = Skeleton[Index].Name.ToString().ToLower();
+		const bool bNameLeft = NameMarksSide(Lower, TEXT("_l"));
+		const bool bNameRight = NameMarksSide(Lower, TEXT("_r"));
+		if (bNameLeft || bNameRight)
+		{
+			return bLeft ? bNameLeft : bNameRight;
+		}
+
+		int32 Cursor = Index;
+		for (int32 Guard = 0; Guard < Skeleton.Num(); ++Guard)
+		{
+			if (!Skeleton.IsValidIndex(Cursor))
+			{
+				return false;
+			}
+			const FString Current = Skeleton[Cursor].Name.ToString();
+			if (Current.Equals(SolidBodyMesh::LeftHandBone, ESearchCase::IgnoreCase))
+			{
+				return bLeft;
+			}
+			if (Current.Equals(SolidBodyMesh::RightHandBone, ESearchCase::IgnoreCase))
+			{
+				return !bLeft;
+			}
+			const int32 Parent = Skeleton[Cursor].ParentIndex;
+			if (!Skeleton.IsValidIndex(Parent) || Parent == Cursor)
+			{
+				return false;
+			}
+			Cursor = Parent;
+		}
+		return false;
+	}
+
+	TArray<FName> HeadBones(const TArray<FSolidDeformBone>& Skeleton)
+	{
+		using namespace SolidBodyMesh;
+
+		TArray<FName> Bones;
+		Bones.Add(HeadBone);
+		for (const FSolidDeformBone& Bone : Skeleton)
+		{
+			const FString BoneName = Bone.Name.ToString();
+			if (BoneName.Equals(HeadBone, ESearchCase::IgnoreCase))
+			{
+				Bones[0] = Bone.Name;
+			}
+			else if (IsEyeBoneName(BoneName))
+			{
+				Bones.AddUnique(Bone.Name);
+			}
+		}
+		return Bones;
+	}
+
+	TArray<FName> HandBones(const SolidBodyMesh::ESolidPartSide Side, const TArray<FSolidDeformBone>& Skeleton)
+	{
+		using namespace SolidBodyMesh;
+
+		const bool bLeft = Side == ESolidPartSide::Left;
+		const TCHAR* HandName = bLeft ? LeftHandBone : RightHandBone;
+		int32 HandIndex = INDEX_NONE;
+		for (int32 Index = 0; Index < Skeleton.Num(); ++Index)
+		{
+			if (Skeleton[Index].Name.ToString().Equals(HandName, ESearchCase::IgnoreCase))
+			{
+				HandIndex = Index;
+				break;
+			}
+		}
+
+		FName SpanFinger = NAME_None;
+		TArray<FName> Fingers;
+		for (int32 Index = 0; Index < Skeleton.Num(); ++Index)
+		{
+			const FString BoneName = Skeleton[Index].Name.ToString();
+			if (!IsFingerBoneName(BoneName)
+				|| !FingerBelongsToHand(Skeleton, Index, bLeft)
+				|| !Skeleton.IsValidIndex(Skeleton[Index].ParentIndex))
+			{
+				continue;
+			}
+			Fingers.Add(Skeleton[Index].Name);
+			if (SpanFinger.IsNone() && Skeleton[Index].ParentIndex == HandIndex)
+			{
+				SpanFinger = Skeleton[Index].Name;
+			}
+		}
+
+		TArray<FName> Bones;
+		if (!SpanFinger.IsNone())
+		{
+			Bones.Add(SpanFinger);
+			for (const FName& Finger : Fingers)
+			{
+				Bones.AddUnique(Finger);
+			}
+		}
+		return Bones;
+	}
+}
+
+TArray<FName> SolidBodyMesh::PartBones(
+	const ESolidPartType Type,
+	const ESolidPartSide Side,
+	const TArray<FSolidDeformBone>& Skeleton)
+{
+	switch (Type)
+	{
+	case ESolidPartType::Hand:
+		return HandBones(Side, Skeleton);
+	case ESolidPartType::Head:
+		return HeadBones(Skeleton);
+	default:
+		return PartBones(Type, Side);
+	}
+}
+
 SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
 	const ESolidPartType InType,
 	const ESolidPartSide InSide,

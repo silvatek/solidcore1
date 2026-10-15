@@ -23,11 +23,15 @@ namespace SolidBodyMesh
 	public:
 		TArray<FSolidBodyPart> Parts;
 
-		/** The body. The abdomen is spine_02. The chest is spine_03. */
+		/** The catalogue. Bone names are the Viking skeleton. The abdomen is spine_02. The chest is spine_03. */
 		static FSolidBodyMesh Make();
 
-		/** Make the body for this skeleton. The rising spine is read from the hip upward. */
-		static FSolidBodyMesh FromBones(const TArray<FSolidDeformBone>& Bones);
+		/**
+		 * That catalogue fitted to this skeleton.
+		 * Each part asks PartBones which bones it wraps.
+		 * The head gains the eye bones. Each hand lists the fingers on that hand.
+		 */
+		static FSolidBodyMesh Make(const TArray<FSolidDeformBone>& Bones);
 
 		const FSolidBodyPart* Find(const FString& Name) const;
 

@@ -544,7 +544,7 @@ namespace SolidBodyMesh
 		virtual void Apply(const FSolidBodyParams& Params) override;
 	};
 
-	/** The part for this type. Each type is its own class. The mesh switch lives here. */
+	/** The part for this type. Each type is its own class. */
 	TUniquePtr<FSolidBodyPart> MakeBodyPart(
 		ESolidPartType InType,
 		ESolidPartSide InSide,

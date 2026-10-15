@@ -302,18 +302,6 @@ TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::MakeBodyPart(
 	const FSolidPartSection& InEnd,
 	const TArray<FSolidDeformBone>& InSkeleton)
 {
-	switch (PartShape(InType))
-	{
-	case ESolidPartShape::Head:
-		return MakePart<FSolidHeadPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
-	case ESolidPartShape::Hand:
-		return MakePart<FSolidHandPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
-	case ESolidPartShape::Shoulder:
-		return MakePart<FSolidShoulderPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
-	case ESolidPartShape::Tube:
-		break;
-	}
-
 	switch (InType)
 	{
 	case ESolidPartType::Thigh:
@@ -330,15 +318,17 @@ TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::MakeBodyPart(
 		return MakePart<FSolidAbdomenPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
 	case ESolidPartType::Chest:
 		return MakePart<FSolidChestPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+	case ESolidPartType::Shoulders:
+		return MakePart<FSolidShoulderPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
 	case ESolidPartType::UpperArm:
 		return MakePart<FSolidUpperArmPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
 	case ESolidPartType::LowerArm:
 		return MakePart<FSolidLowerArmPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
-	// The mesh switch above already built the head, a hand, and the shoulders.
-	case ESolidPartType::Shoulders:
 	case ESolidPartType::Hand:
+		return MakePart<FSolidHandPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
 	case ESolidPartType::Head:
-		break;
+		return MakePart<FSolidHeadPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+	default:
+		return MakePart<FSolidBodyPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
 	}
-	return MakePart<FSolidBodyPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
 }

@@ -72,28 +72,6 @@ namespace SolidBodyMesh
 		Hand,
 	};
 
-	/** Short names for a part declaration. */
-	inline constexpr ESolidPartType Thigh = ESolidPartType::Thigh;
-	inline constexpr ESolidPartType Calf = ESolidPartType::Calf;
-	inline constexpr ESolidPartType Foot = ESolidPartType::Foot;
-	inline constexpr ESolidPartType Toe = ESolidPartType::Toe;
-	inline constexpr ESolidPartType Hip = ESolidPartType::Hip;
-	inline constexpr ESolidPartType Abdomen = ESolidPartType::Abdomen;
-	inline constexpr ESolidPartType Chest = ESolidPartType::Chest;
-	inline constexpr ESolidPartType Shoulders = ESolidPartType::Shoulders;
-	inline constexpr ESolidPartType UpperArm = ESolidPartType::UpperArm;
-	inline constexpr ESolidPartType LowerArm = ESolidPartType::LowerArm;
-	inline constexpr ESolidPartType Hand = ESolidPartType::Hand;
-	inline constexpr ESolidPartType Head = ESolidPartType::Head;
-
-	inline constexpr ESolidPartSide Left = ESolidPartSide::Left;
-	inline constexpr ESolidPartSide Right = ESolidPartSide::Right;
-	inline constexpr ESolidPartSide Core = ESolidPartSide::Core;
-
-	inline constexpr ESolidPartColour Shirt = ESolidPartColour::Shirt;
-	inline constexpr ESolidPartColour Trousers = ESolidPartColour::Trousers;
-	inline constexpr ESolidPartColour Skin = ESolidPartColour::Skin;
-
 	/** The slider group for a part. Thighs, calves, feet, and toes share leg length. */
 	inline ESolidPartMeasure PartMeasure(const ESolidPartType Type)
 	{

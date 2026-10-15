@@ -562,13 +562,10 @@ bool FSolidBodyPartAliasTest::RunTest(const FString& Parameters)
 {
 	using namespace SolidBodyMesh;
 
-	TestTrue(TEXT("thigh is the part"), Thigh == ESolidPartType::Thigh);
-	TestTrue(TEXT("left is the side"), Left == ESolidPartSide::Left);
-	TestTrue(TEXT("trousers are the colour"), Trousers == ESolidPartColour::Trousers);
-	TestTrue(TEXT("a thigh uses leg length"), PartMeasure(Thigh) == ESolidPartMeasure::Leg);
-	TestTrue(TEXT("a hip uses hip width"), PartMeasure(Hip) == ESolidPartMeasure::Hip);
-	TestTrue(TEXT("the chest uses torso girth"), PartMeasure(Chest) == ESolidPartMeasure::Torso);
-	TestTrue(TEXT("the shoulders use shoulder width"), PartMeasure(Shoulders) == ESolidPartMeasure::Shoulder);
+	TestTrue(TEXT("a thigh uses leg length"), PartMeasure(ESolidPartType::Thigh) == ESolidPartMeasure::Leg);
+	TestTrue(TEXT("a hip uses hip width"), PartMeasure(ESolidPartType::Hip) == ESolidPartMeasure::Hip);
+	TestTrue(TEXT("the chest uses torso girth"), PartMeasure(ESolidPartType::Chest) == ESolidPartMeasure::Torso);
+	TestTrue(TEXT("the shoulders use shoulder width"), PartMeasure(ESolidPartType::Shoulders) == ESolidPartMeasure::Shoulder);
 
 	const FSolidPartSection Round = RoundSection(LeftThighBottomDiameterCm);
 	const FSolidPartSection ExpectedRound = FSolidPartSection::Round(LeftThighBottomDiameterCm);
@@ -578,9 +575,15 @@ bool FSolidBodyPartAliasTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("an oval section matches"), FMath::IsNearlyEqual(Oval.X, ExpectedOval.X) && FMath::IsNearlyEqual(Oval.Y, ExpectedOval.Y));
 
 	const FSolidPartSection Round20 = RoundSection(LeftThighTopDiameterCm);
-	const FSolidBodyPart Declared(Thigh, Left, { LeftThighBone }, Trousers, Round20, RoundSection(LeftThighBottomDiameterCm));
+	const FSolidBodyPart Declared(
+		ESolidPartType::Thigh,
+		ESolidPartSide::Left,
+		{ LeftThighBone },
+		ESolidPartColour::Trousers,
+		Round20,
+		RoundSection(LeftThighBottomDiameterCm));
 	TestEqual(TEXT("the short declaration names the thigh"), Declared.Name, FString(TEXT("Thigh (L)")));
-	TestTrue(TEXT("the short declaration is trousers"), Declared.Colour == Trousers);
+	TestTrue(TEXT("the short declaration is trousers"), Declared.Colour == ESolidPartColour::Trousers);
 	TestTrue(TEXT("the short declaration uses leg length"), Declared.Measure == ESolidPartMeasure::Leg);
 	return true;
 }

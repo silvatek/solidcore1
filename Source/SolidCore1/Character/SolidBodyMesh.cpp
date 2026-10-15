@@ -25,6 +25,25 @@
 
 SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
 {
+	constexpr ESolidPartType Thigh = ESolidPartType::Thigh;
+	constexpr ESolidPartType Calf = ESolidPartType::Calf;
+	constexpr ESolidPartType Foot = ESolidPartType::Foot;
+	constexpr ESolidPartType Toe = ESolidPartType::Toe;
+	constexpr ESolidPartType Hip = ESolidPartType::Hip;
+	constexpr ESolidPartType Abdomen = ESolidPartType::Abdomen;
+	constexpr ESolidPartType Chest = ESolidPartType::Chest;
+	constexpr ESolidPartType Shoulders = ESolidPartType::Shoulders;
+	constexpr ESolidPartType UpperArm = ESolidPartType::UpperArm;
+	constexpr ESolidPartType LowerArm = ESolidPartType::LowerArm;
+	constexpr ESolidPartType Hand = ESolidPartType::Hand;
+	constexpr ESolidPartType Head = ESolidPartType::Head;
+	constexpr ESolidPartSide Left = ESolidPartSide::Left;
+	constexpr ESolidPartSide Right = ESolidPartSide::Right;
+	constexpr ESolidPartSide Core = ESolidPartSide::Core;
+	constexpr ESolidPartColour Shirt = ESolidPartColour::Shirt;
+	constexpr ESolidPartColour Trousers = ESolidPartColour::Trousers;
+	constexpr ESolidPartColour Skin = ESolidPartColour::Skin;
+
 	FSolidBodyMesh Body;
 	auto AddPart = [&Body](FSolidBodyPart Part)
 	{

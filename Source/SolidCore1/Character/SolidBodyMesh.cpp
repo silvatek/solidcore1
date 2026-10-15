@@ -33,6 +33,7 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 	constexpr ESolidPartColour Skin = ESolidPartColour::Skin;
 
 	FSolidBodyMesh Body;
+	Body.Skeleton = Bones;
 
 	// The top of a part is the bottom of the part above it, where those ends already meet.
 	const FSolidPartSection ToeTip = RoundSection(ToeTipDiameterCm);
@@ -87,17 +88,13 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 	Body.AddPart(FSolidBodyPart(ESolidPartType::LowerArm, Left, Shirt, LowerArmTop, RoundSection(LowerArmEndDiameterCm)));
 	Body.AddPart(FSolidBodyPart(ESolidPartType::LowerArm, Right, Shirt, LowerArmTop, RoundSection(LowerArmEndDiameterCm)));
 
-	// The Viking finger names are replaced below with the fingers on the skeleton.
+	// AddPart lists the fingers on Skeleton.
 	Body.AddPart(FSolidBodyPart(ESolidPartType::Hand, Left, Skin, HandTop, HandTop));
 	Body.AddPart(FSolidBodyPart(ESolidPartType::Hand, Right, Skin, HandTop, HandTop));
 
-	// The head bone is named here. The loop below adds the eye bones. These diameters are unused.
+	// AddPart lists the head bone and the eye bones on Skeleton. These diameters are unused.
 	Body.AddPart(FSolidBodyPart(ESolidPartType::Head, Core, Skin, NullSection, NullSection));
 
-	for (FSolidBodyPart& Part : Body.Parts)
-	{
-		Part.Bones = PartBones(Part.Type, Part.Side, Bones);
-	}
 	return Body;
 }
 

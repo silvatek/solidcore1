@@ -23,9 +23,10 @@ namespace SolidBodyMesh
 	public:
 		TArray<FSolidBodyPart> Parts;
 
-		/** Append one finished part. */
+		/** Append one finished part. Its bones come from Skeleton. */
 		void AddPart(FSolidBodyPart Part)
 		{
+			Part.Bones = PartBones(Part.Type, Part.Side, Skeleton);
 			Parts.Add(MoveTemp(Part));
 		}
 
@@ -51,6 +52,9 @@ namespace SolidBodyMesh
 			TArray<FSolidBodyTri>& Tris,
 			const TArray<FSolidDeformBone>& Bones,
 			const TArray<FVector>& Positions);
+
+		/** The skeleton this body was fitted to. AddPart reads it. */
+		TArray<FSolidDeformBone> Skeleton;
 	};
 
 	/** Stable id for a companion name. Case does not matter. */

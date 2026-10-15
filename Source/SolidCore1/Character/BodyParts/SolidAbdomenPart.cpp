@@ -18,6 +18,11 @@ TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::FSolidAbdomenPart::Clon
 	return MakeUnique<FSolidAbdomenPart>(*this);
 }
 
+FString SolidBodyMesh::FSolidAbdomenPart::Name() const
+{
+	return WithSide(TEXT("Abdomen"));
+}
+
 TArray<FName> SolidBodyMesh::FSolidAbdomenPart::PartBones() const
 {
 	TArray<FName> Names;

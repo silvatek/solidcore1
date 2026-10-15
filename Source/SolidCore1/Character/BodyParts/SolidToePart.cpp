@@ -18,6 +18,11 @@ TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::FSolidToePart::Clone() 
 	return MakeUnique<FSolidToePart>(*this);
 }
 
+FString SolidBodyMesh::FSolidToePart::Name() const
+{
+	return WithSide(TEXT("Toe"));
+}
+
 TArray<FName> SolidBodyMesh::FSolidToePart::PartBones() const
 {
 	TArray<FName> Names;

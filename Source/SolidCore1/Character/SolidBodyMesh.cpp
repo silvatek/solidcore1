@@ -1188,7 +1188,7 @@ const SolidBodyMesh::FSolidBodyPart* SolidBodyMesh::FSolidBodyMesh::Find(const F
 {
 	for (const TUniquePtr<FSolidBodyPart>& Part : Parts)
 	{
-		if (Part && Part->Name.Equals(Name, ESearchCase::IgnoreCase))
+		if (Part && Part->Name().Equals(Name, ESearchCase::IgnoreCase))
 		{
 			return Part.Get();
 		}

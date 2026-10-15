@@ -116,6 +116,11 @@ TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::FSolidHandPart::Clone()
 	return MakeUnique<FSolidHandPart>(*this);
 }
 
+FString SolidBodyMesh::FSolidHandPart::Name() const
+{
+	return WithSide(TEXT("Hand"));
+}
+
 TArray<FName> SolidBodyMesh::FSolidHandPart::PartBones() const
 {
 	return HandBones(Side, Skeleton);

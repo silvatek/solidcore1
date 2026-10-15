@@ -18,6 +18,11 @@ TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::FSolidHipPart::Clone() 
 	return MakeUnique<FSolidHipPart>(*this);
 }
 
+FString SolidBodyMesh::FSolidHipPart::Name() const
+{
+	return WithSide(TEXT("Hip"));
+}
+
 TArray<FName> SolidBodyMesh::FSolidHipPart::PartBones() const
 {
 	TArray<FName> Names;

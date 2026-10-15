@@ -42,6 +42,11 @@ TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::FSolidHeadPart::Clone()
 	return MakeUnique<FSolidHeadPart>(*this);
 }
 
+FString SolidBodyMesh::FSolidHeadPart::Name() const
+{
+	return WithSide(TEXT("Head"));
+}
+
 TArray<FName> SolidBodyMesh::FSolidHeadPart::PartBones() const
 {
 	return HeadBones(Skeleton);

@@ -527,22 +527,38 @@ bool FSolidBodyPartNameTest::RunTest(const FString& Parameters)
 {
 	using namespace SolidBodyMesh;
 
-	TestEqual(TEXT("a left thigh"), PartName(ESolidPartType::Thigh, ESolidPartSide::Left), FString(TEXT("Thigh (L)")));
-	TestEqual(TEXT("a right upper arm"), PartName(ESolidPartType::UpperArm, ESolidPartSide::Right), FString(TEXT("Upper arm (R)")));
-	TestEqual(TEXT("a core hip has no side"), PartName(ESolidPartType::Hip, ESolidPartSide::Core), FString(TEXT("Hip")));
-	TestEqual(TEXT("the shoulders stay plural"), PartName(ESolidPartType::Shoulders, ESolidPartSide::Core), FString(TEXT("Shoulders")));
-
 	const FSolidPartSection Round = FSolidPartSection::Round(1.f);
-	const FSolidBodyPart Part(
+	auto Named = [&](const ESolidPartType Type, const ESolidPartSide Side)
+	{
+		const TUniquePtr<FSolidBodyPart> Part = MakeBodyPart(
+			Type,
+			Side,
+			ESolidPartColour::Shirt,
+			Round,
+			Round,
+			{});
+		return Part ? Part->Name() : FString();
+	};
+	TestEqual(TEXT("a left thigh"), Named(ESolidPartType::Thigh, ESolidPartSide::Left), FString(TEXT("Thigh (L)")));
+	TestEqual(TEXT("a right upper arm"), Named(ESolidPartType::UpperArm, ESolidPartSide::Right), FString(TEXT("Upper arm (R)")));
+	TestEqual(TEXT("a core hip has no side"), Named(ESolidPartType::Hip, ESolidPartSide::Core), FString(TEXT("Hip")));
+	TestEqual(TEXT("the shoulders stay plural"), Named(ESolidPartType::Shoulders, ESolidPartSide::Core), FString(TEXT("Shoulders")));
+
+	const TUniquePtr<FSolidBodyPart> Part = MakeBodyPart(
 		ESolidPartType::LowerArm,
 		ESolidPartSide::Left,
 		ESolidPartColour::Shirt,
 		Round,
 		Round,
 		{});
-	TestEqual(TEXT("the part stores that name"), Part.Name, FString(TEXT("Lower arm (L)")));
-	TestTrue(TEXT("the part stores its type"), Part.Type == ESolidPartType::LowerArm);
-	TestTrue(TEXT("the part stores its side"), Part.Side == ESolidPartSide::Left);
+	const FSolidBodyPart* Lower = Part.Get();
+	TestNotNull(TEXT("the lower arm builds"), Lower);
+	if (Lower)
+	{
+		TestEqual(TEXT("the part names itself"), Lower->Name(), FString(TEXT("Lower arm (L)")));
+		TestTrue(TEXT("the part stores its type"), Lower->Type == ESolidPartType::LowerArm);
+		TestTrue(TEXT("the part stores its side"), Lower->Side == ESolidPartSide::Left);
+	}
 	return true;
 }
 
@@ -579,7 +595,7 @@ bool FSolidBodyPartAliasTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("the short declaration builds a thigh"), DeclaredPart);
 	if (DeclaredPart)
 	{
-		TestEqual(TEXT("the short declaration names the thigh"), DeclaredPart->Name, FString(TEXT("Thigh (L)")));
+		TestEqual(TEXT("the short declaration names the thigh"), DeclaredPart->Name(), FString(TEXT("Thigh (L)")));
 		TestTrue(TEXT("the short declaration is trousers"), DeclaredPart->Colour == ESolidPartColour::Trousers);
 		TestTrue(TEXT("the thigh wraps calf_l"), DeclaredPart->Bones.Num() == 1 && DeclaredPart->Bones[0] == FName(LeftThighBone));
 	}
@@ -621,7 +637,7 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 		int32 Found = INDEX_NONE;
 		for (int32 Index = Cursor; Index < Body.Parts.Num(); ++Index)
 		{
-			if (Body.Parts[Index] && Body.Parts[Index]->Name.Equals(Name, ESearchCase::IgnoreCase))
+			if (Body.Parts[Index] && Body.Parts[Index]->Name().Equals(Name, ESearchCase::IgnoreCase))
 			{
 				Found = Index;
 				break;
@@ -694,7 +710,7 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 	FSolidBodyPart* Shoulders = nullptr;
 	for (const TUniquePtr<FSolidBodyPart>& Part : Body.Parts)
 	{
-		if (Part && Part->Name == TEXT("Shoulders"))
+		if (Part && Part->Name() == TEXT("Shoulders"))
 		{
 			Shoulders = Part.Get();
 		}
@@ -786,7 +802,7 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 			const bool bFinger = BoneName.StartsWith(TEXT("index_")) || BoneName.StartsWith(TEXT("thumb_"));
 			if (bFinger)
 			{
-				TestTrue(TEXT("a finger bone belongs to a hand"), Part->Name.Contains(TEXT("Hand")));
+				TestTrue(TEXT("a finger bone belongs to a hand"), Part->Name().Contains(TEXT("Hand")));
 			}
 		}
 	}
@@ -870,7 +886,7 @@ bool FSolidBodyTorsoSectionsTest::RunTest(const FString& Parameters)
 		{
 			continue;
 		}
-		TestFalse(TEXT("a rising bone is not its own spine slab"), Part->Name.StartsWith(TEXT("Spine")));
+		TestFalse(TEXT("a rising bone is not its own spine slab"), Part->Name().StartsWith(TEXT("Spine")));
 	}
 
 	float AbdomenBottom = 0.f;

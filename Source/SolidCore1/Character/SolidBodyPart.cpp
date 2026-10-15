@@ -51,60 +51,6 @@ namespace
 	}
 }
 
-FString SolidBodyMesh::PartName(const ESolidPartType Type, const ESolidPartSide Side)
-{
-	const TCHAR* Label = TEXT("Part");
-	switch (Type)
-	{
-	case ESolidPartType::Thigh:
-		Label = TEXT("Thigh");
-		break;
-	case ESolidPartType::Calf:
-		Label = TEXT("Calf");
-		break;
-	case ESolidPartType::Foot:
-		Label = TEXT("Foot");
-		break;
-	case ESolidPartType::Toe:
-		Label = TEXT("Toe");
-		break;
-	case ESolidPartType::Hip:
-		Label = TEXT("Hip");
-		break;
-	case ESolidPartType::Abdomen:
-		Label = TEXT("Abdomen");
-		break;
-	case ESolidPartType::Chest:
-		Label = TEXT("Chest");
-		break;
-	case ESolidPartType::Shoulders:
-		Label = TEXT("Shoulders");
-		break;
-	case ESolidPartType::UpperArm:
-		Label = TEXT("Upper arm");
-		break;
-	case ESolidPartType::LowerArm:
-		Label = TEXT("Lower arm");
-		break;
-	case ESolidPartType::Hand:
-		Label = TEXT("Hand");
-		break;
-	case ESolidPartType::Head:
-		Label = TEXT("Head");
-		break;
-	}
-
-	switch (Side)
-	{
-	case ESolidPartSide::Left:
-		return FString::Printf(TEXT("%s (L)"), Label);
-	case ESolidPartSide::Right:
-		return FString::Printf(TEXT("%s (R)"), Label);
-	default:
-		return FString(Label);
-	}
-}
-
 TArray<FName> SolidBodyMesh::FSolidBodyPart::PartBones() const
 {
 	return {};
@@ -119,7 +65,6 @@ SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
 	const TArray<FSolidDeformBone>& InSkeleton)
 	: Type(InType)
 	, Side(InSide)
-	, Name(PartName(InType, InSide))
 	, Colour(InColour)
 	, Start(InStart)
 	, End(InEnd)
@@ -133,6 +78,24 @@ SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
 TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::FSolidBodyPart::Clone() const
 {
 	return MakeUnique<FSolidBodyPart>(*this);
+}
+
+FString SolidBodyMesh::FSolidBodyPart::WithSide(const TCHAR* Label) const
+{
+	switch (Side)
+	{
+	case ESolidPartSide::Left:
+		return FString::Printf(TEXT("%s (L)"), Label);
+	case ESolidPartSide::Right:
+		return FString::Printf(TEXT("%s (R)"), Label);
+	default:
+		return FString(Label);
+	}
+}
+
+FString SolidBodyMesh::FSolidBodyPart::Name() const
+{
+	return WithSide(TEXT("Part"));
 }
 
 void SolidBodyMesh::FSolidBodyPart::SizeSection(const float Length, const float SideScale, const float Depth)

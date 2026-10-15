@@ -18,6 +18,11 @@ TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::FSolidLowerArmPart::Clo
 	return MakeUnique<FSolidLowerArmPart>(*this);
 }
 
+FString SolidBodyMesh::FSolidLowerArmPart::Name() const
+{
+	return WithSide(TEXT("Lower arm"));
+}
+
 TArray<FName> SolidBodyMesh::FSolidLowerArmPart::PartBones() const
 {
 	TArray<FName> Names;

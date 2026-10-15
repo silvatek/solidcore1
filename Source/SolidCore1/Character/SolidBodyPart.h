@@ -6,7 +6,7 @@
 
 /**
  * One component of a body mesh.
- * A part's name comes from its type and its side. The skeleton bone inside it often has another name.
+ * A part's name comes from Name(). The skeleton bone inside it often has another name.
  * "Lower arm (L)" wraps hand_l. The cone runs from that bone's parent joint to the bone.
  * X is side to side, in centimetres. Y is front to back.
  * Fit measures the cones. Draw adds this part's triangles.
@@ -44,9 +44,6 @@ namespace SolidBodyMesh
 		Right,
 		Core,
 	};
-
-	/** "Thigh (L)", "Upper arm (R)", or "Hip" when the part is core. */
-	FString PartName(ESolidPartType Type, ESolidPartSide Side);
 
 	/**
 	 * The mesh for a part.
@@ -172,7 +169,6 @@ namespace SolidBodyMesh
 		FSolidBodyPart()
 			: Type(ESolidPartType::Thigh)
 			, Side(ESolidPartSide::Core)
-			, Name(PartName(Type, Side))
 		{
 			Bones = FSolidBodyPart::PartBones();
 			Shape = PartShape(Type);
@@ -196,10 +192,11 @@ namespace SolidBodyMesh
 		/** A copy that keeps this part's own mesh. The body clones with this. */
 		virtual TUniquePtr<FSolidBodyPart> Clone() const;
 
+		/** "Thigh (L)", "Upper arm (R)", or "Hip" when the part is core. */
+		virtual FString Name() const;
+
 		ESolidPartType Type = ESolidPartType::Thigh;
 		ESolidPartSide Side = ESolidPartSide::Core;
-		/** Comes from Type and Side. "Thigh (L)", "Upper arm (R)", or "Hip". */
-		FString Name;
 		TArray<FName> Bones;
 		/** Comes from the part type. A tube, the shoulders, the head, or a hand. */
 		ESolidPartShape Shape = ESolidPartShape::Tube;
@@ -273,6 +270,9 @@ namespace SolidBodyMesh
 		/** Bones[0] takes Length. The other bones spread by SideScale. */
 		void SizeBones(float Length, float SideScale);
 
+		/** Left and right add " (L)" or " (R)". Core returns the label alone. */
+		FString WithSide(const TCHAR* Label) const;
+
 		void AddTri(TArray<FSolidBodyTri>& Tris, int32 A, int32 B, int32 C) const;
 	};
 
@@ -289,6 +289,7 @@ namespace SolidBodyMesh
 			const TArray<FSolidDeformBone>& InSkeleton);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
 		virtual void Apply(const FSolidBodyParams& Params) override;
 		/**
@@ -326,6 +327,7 @@ namespace SolidBodyMesh
 			const TArray<FSolidDeformBone>& InSkeleton);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
 		virtual void Apply(const FSolidBodyParams& Params) override;
 		/**
@@ -364,6 +366,7 @@ namespace SolidBodyMesh
 			const TArray<FSolidDeformBone>& InSkeleton);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
 		virtual void Apply(const FSolidBodyParams& Params) override;
 		virtual FSolidPartDraw Fit(
@@ -400,6 +403,7 @@ namespace SolidBodyMesh
 			const TArray<FSolidDeformBone>& InSkeleton);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
 		virtual void Apply(const FSolidBodyParams& Params) override;
 	};
@@ -417,6 +421,7 @@ namespace SolidBodyMesh
 			const TArray<FSolidDeformBone>& InSkeleton);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
 		virtual void Apply(const FSolidBodyParams& Params) override;
 	};
@@ -434,6 +439,7 @@ namespace SolidBodyMesh
 			const TArray<FSolidDeformBone>& InSkeleton);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
 		virtual void Apply(const FSolidBodyParams& Params) override;
 	};
@@ -451,6 +457,7 @@ namespace SolidBodyMesh
 			const TArray<FSolidDeformBone>& InSkeleton);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
 		virtual void Apply(const FSolidBodyParams& Params) override;
 	};
@@ -468,6 +475,7 @@ namespace SolidBodyMesh
 			const TArray<FSolidDeformBone>& InSkeleton);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
 		virtual void Apply(const FSolidBodyParams& Params) override;
 	};
@@ -485,6 +493,7 @@ namespace SolidBodyMesh
 			const TArray<FSolidDeformBone>& InSkeleton);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
 	};
 
@@ -501,6 +510,7 @@ namespace SolidBodyMesh
 			const TArray<FSolidDeformBone>& InSkeleton);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
 	};
 
@@ -517,6 +527,7 @@ namespace SolidBodyMesh
 			const TArray<FSolidDeformBone>& InSkeleton);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
 		virtual void Apply(const FSolidBodyParams& Params) override;
 	};
@@ -534,6 +545,7 @@ namespace SolidBodyMesh
 			const TArray<FSolidDeformBone>& InSkeleton);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
 		virtual void Apply(const FSolidBodyParams& Params) override;
 	};

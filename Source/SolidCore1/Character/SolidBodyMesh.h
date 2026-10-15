@@ -23,6 +23,12 @@ namespace SolidBodyMesh
 	public:
 		TArray<FSolidBodyPart> Parts;
 
+		/** Append one finished part. */
+		void AddPart(FSolidBodyPart Part)
+		{
+			Parts.Add(MoveTemp(Part));
+		}
+
 		/**
 		 * The body for this skeleton.
 		 * Each part asks PartBones which bones it wraps.

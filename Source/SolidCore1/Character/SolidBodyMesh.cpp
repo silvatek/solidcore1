@@ -33,10 +33,6 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 	constexpr ESolidPartColour Skin = ESolidPartColour::Skin;
 
 	FSolidBodyMesh Body;
-	auto AddPart = [&Body](FSolidBodyPart Part)
-	{
-		Body.Parts.Add(MoveTemp(Part));
-	};
 
 	// The top of a part is the bottom of the part above it, where those ends already meet.
 	const FSolidPartSection ToeTip = RoundSection(ToeTipDiameterCm);
@@ -61,42 +57,42 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 	const FSolidPartSection NullSection = RoundSection(0.f);
 	const FSolidPartSection HandTop = NullSection;
 
-	AddPart(FSolidBodyPart(ESolidPartType::Thigh, Left, Trousers, ThighTop, CalfTop));
-	AddPart(FSolidBodyPart(ESolidPartType::Thigh, Right, Trousers, ThighTop, CalfTop));
+	Body.AddPart(FSolidBodyPart(ESolidPartType::Thigh, Left, Trousers, ThighTop, CalfTop));
+	Body.AddPart(FSolidBodyPart(ESolidPartType::Thigh, Right, Trousers, ThighTop, CalfTop));
 	// The calf ends narrower than the foot, so the ankle keeps its own step.
-	AddPart(FSolidBodyPart(ESolidPartType::Calf, Left, Trousers, CalfTop, CalfBottom));
-	AddPart(FSolidBodyPart(ESolidPartType::Calf, Right, Trousers, CalfTop, CalfBottom));
-	AddPart(FSolidBodyPart(ESolidPartType::Foot, Left, Trousers, FootTop, ToeTop));
-	AddPart(FSolidBodyPart(ESolidPartType::Foot, Right, Trousers, FootTop, ToeTop));
-	AddPart(FSolidBodyPart(ESolidPartType::Toe, Left, Trousers, ToeTop, ToeTip));
-	AddPart(FSolidBodyPart(ESolidPartType::Toe, Right, Trousers, ToeTop, ToeTip));
+	Body.AddPart(FSolidBodyPart(ESolidPartType::Calf, Left, Trousers, CalfTop, CalfBottom));
+	Body.AddPart(FSolidBodyPart(ESolidPartType::Calf, Right, Trousers, CalfTop, CalfBottom));
+	Body.AddPart(FSolidBodyPart(ESolidPartType::Foot, Left, Trousers, FootTop, ToeTop));
+	Body.AddPart(FSolidBodyPart(ESolidPartType::Foot, Right, Trousers, FootTop, ToeTop));
+	Body.AddPart(FSolidBodyPart(ESolidPartType::Toe, Left, Trousers, ToeTop, ToeTip));
+	Body.AddPart(FSolidBodyPart(ESolidPartType::Toe, Right, Trousers, ToeTop, ToeTip));
 
 	// The hip mesh is the length of spine_01. The thighs sit inside it, so its base is wider than the thigh top.
-	AddPart(FSolidBodyPart(ESolidPartType::Hip, Core, Shirt, OvalSection(HipSideDiameterCm, HipDepthDiameterCm), HipTop));
+	Body.AddPart(FSolidBodyPart(ESolidPartType::Hip, Core, Shirt, OvalSection(HipSideDiameterCm, HipDepthDiameterCm), HipTop));
 
 	// The abdomen is spine_02. The chest is spine_03.
-	AddPart(FSolidBodyPart(ESolidPartType::Abdomen, Core, Shirt, HipTop, AbdomenTop));
-	AddPart(FSolidBodyPart(ESolidPartType::Chest, Core, Shirt, AbdomenTop, ChestTop));
+	Body.AddPart(FSolidBodyPart(ESolidPartType::Abdomen, Core, Shirt, HipTop, AbdomenTop));
+	Body.AddPart(FSolidBodyPart(ESolidPartType::Chest, Core, Shirt, AbdomenTop, ChestTop));
 
 	// Shoulders follow neck_01. Mid is fitted around the clavicles and the upper arms when the mesh is built.
 	FSolidBodyPart ShoulderPart(ESolidPartType::Shoulders, Core, Shirt, ChestTop, ShoulderTop);
 	ShoulderPart.bHasMid = true;
-	AddPart(ShoulderPart);
+	Body.AddPart(MoveTemp(ShoulderPart));
 
 	// upperarm joint to elbow. The skeleton names that bone lowerarm. The elbow then steps down to the lower arm.
-	AddPart(FSolidBodyPart(ESolidPartType::UpperArm, Left, Shirt, UpperArmTop, RoundSection(ForearmWristDiameterCm)));
-	AddPart(FSolidBodyPart(ESolidPartType::UpperArm, Right, Shirt, UpperArmTop, RoundSection(ForearmWristDiameterCm)));
+	Body.AddPart(FSolidBodyPart(ESolidPartType::UpperArm, Left, Shirt, UpperArmTop, RoundSection(ForearmWristDiameterCm)));
+	Body.AddPart(FSolidBodyPart(ESolidPartType::UpperArm, Right, Shirt, UpperArmTop, RoundSection(ForearmWristDiameterCm)));
 
 	// elbow to wrist. The skeleton names that bone hand. Narrow at the elbow, wide at the wrist. The hand sizes itself.
-	AddPart(FSolidBodyPart(ESolidPartType::LowerArm, Left, Shirt, LowerArmTop, RoundSection(LowerArmEndDiameterCm)));
-	AddPart(FSolidBodyPart(ESolidPartType::LowerArm, Right, Shirt, LowerArmTop, RoundSection(LowerArmEndDiameterCm)));
+	Body.AddPart(FSolidBodyPart(ESolidPartType::LowerArm, Left, Shirt, LowerArmTop, RoundSection(LowerArmEndDiameterCm)));
+	Body.AddPart(FSolidBodyPart(ESolidPartType::LowerArm, Right, Shirt, LowerArmTop, RoundSection(LowerArmEndDiameterCm)));
 
 	// The Viking finger names are replaced below with the fingers on the skeleton.
-	AddPart(FSolidBodyPart(ESolidPartType::Hand, Left, Skin, HandTop, HandTop));
-	AddPart(FSolidBodyPart(ESolidPartType::Hand, Right, Skin, HandTop, HandTop));
+	Body.AddPart(FSolidBodyPart(ESolidPartType::Hand, Left, Skin, HandTop, HandTop));
+	Body.AddPart(FSolidBodyPart(ESolidPartType::Hand, Right, Skin, HandTop, HandTop));
 
 	// The head bone is named here. The loop below adds the eye bones. These diameters are unused.
-	AddPart(FSolidBodyPart(ESolidPartType::Head, Core, Skin, NullSection, NullSection));
+	Body.AddPart(FSolidBodyPart(ESolidPartType::Head, Core, Skin, NullSection, NullSection));
 
 	for (FSolidBodyPart& Part : Body.Parts)
 	{

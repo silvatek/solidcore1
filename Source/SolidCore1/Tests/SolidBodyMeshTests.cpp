@@ -554,6 +554,36 @@ bool FSolidBodyPartNameTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyPartAliasTest,
+	"SolidCore1.Body.PartAlias",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyPartAliasTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidBodyMesh;
+
+	TestTrue(TEXT("thigh is the part"), Thigh == ESolidPartType::Thigh);
+	TestTrue(TEXT("left is the side"), Left == ESolidPartSide::Left);
+	TestTrue(TEXT("trousers are the colour"), Trousers == ESolidPartColour::Trousers);
+	TestTrue(TEXT("leg is the slider group"), Leg == ESolidPartMeasure::Leg);
+	TestTrue(TEXT("hip is the part"), static_cast<ESolidPartType>(Hip) == ESolidPartType::Hip);
+	TestTrue(TEXT("hip is the slider group"), static_cast<ESolidPartMeasure>(Hip) == ESolidPartMeasure::Hip);
+
+	const FSolidPartSection Round = RoundSection(LeftThighBottomDiameterCm);
+	const FSolidPartSection ExpectedRound = FSolidPartSection::Round(LeftThighBottomDiameterCm);
+	TestTrue(TEXT("a round section matches"), FMath::IsNearlyEqual(Round.X, ExpectedRound.X) && FMath::IsNearlyEqual(Round.Y, ExpectedRound.Y));
+	const FSolidPartSection Oval = OvalSection(HipSideDiameterCm, HipDepthDiameterCm);
+	const FSolidPartSection ExpectedOval = FSolidPartSection::Oval(HipSideDiameterCm, HipDepthDiameterCm);
+	TestTrue(TEXT("an oval section matches"), FMath::IsNearlyEqual(Oval.X, ExpectedOval.X) && FMath::IsNearlyEqual(Oval.Y, ExpectedOval.Y));
+
+	const FSolidPartSection Round20 = RoundSection(LeftThighTopDiameterCm);
+	const FSolidBodyPart Declared(Thigh, Left, { LeftThighBone }, Trousers, Round20, RoundSection(LeftThighBottomDiameterCm));
+	TestEqual(TEXT("the short declaration names the thigh"), Declared.Name, FString(TEXT("Thigh (L)")));
+	TestTrue(TEXT("the short declaration is trousers"), Declared.Colour == Trousers);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidBodyPartsTest,
 	"SolidCore1.Body.Parts",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)

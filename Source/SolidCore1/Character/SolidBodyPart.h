@@ -72,6 +72,46 @@ namespace SolidBodyMesh
 		Hand,
 	};
 
+	/**
+	 * Short names for a part declaration.
+	 * Hip, Hand, and Head are both a part and a slider group, so one constant stands for either.
+	 */
+	inline constexpr ESolidPartType Thigh = ESolidPartType::Thigh;
+	inline constexpr ESolidPartType Calf = ESolidPartType::Calf;
+	inline constexpr ESolidPartType Foot = ESolidPartType::Foot;
+	inline constexpr ESolidPartType Toe = ESolidPartType::Toe;
+	inline constexpr ESolidPartType Abdomen = ESolidPartType::Abdomen;
+	inline constexpr ESolidPartType Chest = ESolidPartType::Chest;
+	inline constexpr ESolidPartType Shoulders = ESolidPartType::Shoulders;
+	inline constexpr ESolidPartType UpperArm = ESolidPartType::UpperArm;
+	inline constexpr ESolidPartType LowerArm = ESolidPartType::LowerArm;
+
+	inline constexpr ESolidPartSide Left = ESolidPartSide::Left;
+	inline constexpr ESolidPartSide Right = ESolidPartSide::Right;
+	inline constexpr ESolidPartSide Core = ESolidPartSide::Core;
+
+	inline constexpr ESolidPartColour Shirt = ESolidPartColour::Shirt;
+	inline constexpr ESolidPartColour Trousers = ESolidPartColour::Trousers;
+	inline constexpr ESolidPartColour Skin = ESolidPartColour::Skin;
+
+	inline constexpr ESolidPartMeasure Torso = ESolidPartMeasure::Torso;
+	inline constexpr ESolidPartMeasure Shoulder = ESolidPartMeasure::Shoulder;
+	inline constexpr ESolidPartMeasure Arm = ESolidPartMeasure::Arm;
+	inline constexpr ESolidPartMeasure Leg = ESolidPartMeasure::Leg;
+
+	struct FSolidPartBoth
+	{
+		ESolidPartType Type;
+		ESolidPartMeasure Measure;
+
+		constexpr operator ESolidPartType() const { return Type; }
+		constexpr operator ESolidPartMeasure() const { return Measure; }
+	};
+
+	inline constexpr FSolidPartBoth Hip{ ESolidPartType::Hip, ESolidPartMeasure::Hip };
+	inline constexpr FSolidPartBoth Hand{ ESolidPartType::Hand, ESolidPartMeasure::Hand };
+	inline constexpr FSolidPartBoth Head{ ESolidPartType::Head, ESolidPartMeasure::Head };
+
 	/** Diameters of one end of a part, in centimetres. */
 	struct FSolidPartSection
 	{
@@ -94,6 +134,16 @@ namespace SolidBodyMesh
 			return Section;
 		}
 	};
+
+	inline FSolidPartSection RoundSection(const float DiameterCm)
+	{
+		return FSolidPartSection::Round(DiameterCm);
+	}
+
+	inline FSolidPartSection OvalSection(const float SideCm, const float DepthCm)
+	{
+		return FSolidPartSection::Oval(SideCm, DepthCm);
+	}
 
 	/** One vertex of the low-poly body. Bone is the joint that skins it. Slot is the part colour. */
 	struct FSolidBodyVert

@@ -26,21 +26,20 @@
 SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
 {
 	FSolidBodyMesh Body;
-	auto AddPart = [&Body](FSolidBodyPart Part, const ESolidPartMeasure Measure)
+	auto AddPart = [&Body](FSolidBodyPart Part)
 	{
-		Part.Measure = Measure;
 		Body.Parts.Add(MoveTemp(Part));
 	};
 
 	const FSolidPartSection Round20 = RoundSection(LeftThighTopDiameterCm);
-	AddPart(FSolidBodyPart(Thigh, Left, { LeftThighBone }, Trousers, Round20, RoundSection(LeftThighBottomDiameterCm)), Leg);
-	AddPart(FSolidBodyPart(Thigh, Right, { RightThighBone }, Trousers, Round20, RoundSection(LeftThighBottomDiameterCm)), Leg);
-	AddPart(FSolidBodyPart(Calf, Left, { LeftCalfBone }, Trousers, RoundSection(CalfTopDiameterCm), RoundSection(CalfBottomDiameterCm)), Leg);
-	AddPart(FSolidBodyPart(Calf, Right, { RightCalfBone }, Trousers, RoundSection(CalfTopDiameterCm), RoundSection(CalfBottomDiameterCm)), Leg);
-	AddPart(FSolidBodyPart(Foot, Left, { LeftBallBone }, Trousers, RoundSection(BallDiameterCm), RoundSection(BallDiameterCm)), Leg);
-	AddPart(FSolidBodyPart(Foot, Right, { RightBallBone }, Trousers, RoundSection(BallDiameterCm), RoundSection(BallDiameterCm)), Leg);
-	AddPart(FSolidBodyPart(Toe, Left, { LeftExtraFingerBone }, Trousers, RoundSection(ExtraFingerAnkleDiameterCm), RoundSection(ExtraFingerToeDiameterCm)), Leg);
-	AddPart(FSolidBodyPart(Toe, Right, { RightExtraFingerBone }, Trousers, RoundSection(ExtraFingerAnkleDiameterCm), RoundSection(ExtraFingerToeDiameterCm)), Leg);
+	AddPart(FSolidBodyPart(Thigh, Left, { LeftThighBone }, Trousers, Round20, RoundSection(LeftThighBottomDiameterCm)));
+	AddPart(FSolidBodyPart(Thigh, Right, { RightThighBone }, Trousers, Round20, RoundSection(LeftThighBottomDiameterCm)));
+	AddPart(FSolidBodyPart(Calf, Left, { LeftCalfBone }, Trousers, RoundSection(CalfTopDiameterCm), RoundSection(CalfBottomDiameterCm)));
+	AddPart(FSolidBodyPart(Calf, Right, { RightCalfBone }, Trousers, RoundSection(CalfTopDiameterCm), RoundSection(CalfBottomDiameterCm)));
+	AddPart(FSolidBodyPart(Foot, Left, { LeftBallBone }, Trousers, RoundSection(BallDiameterCm), RoundSection(BallDiameterCm)));
+	AddPart(FSolidBodyPart(Foot, Right, { RightBallBone }, Trousers, RoundSection(BallDiameterCm), RoundSection(BallDiameterCm)));
+	AddPart(FSolidBodyPart(Toe, Left, { LeftExtraFingerBone }, Trousers, RoundSection(ExtraFingerAnkleDiameterCm), RoundSection(ExtraFingerToeDiameterCm)));
+	AddPart(FSolidBodyPart(Toe, Right, { RightExtraFingerBone }, Trousers, RoundSection(ExtraFingerAnkleDiameterCm), RoundSection(ExtraFingerToeDiameterCm)));
 
 	// The hip mesh is the length of spine_01. The thighs are inside it.
 	AddPart(FSolidBodyPart(
@@ -49,7 +48,7 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
 		{ HipSpineBone, HipLeftBone, HipRightBone },
 		Shirt,
 		OvalSection(HipSideDiameterCm, HipDepthDiameterCm),
-		OvalSection(HipTopSideDiameterCm, HipDepthDiameterCm)), Hip);
+		OvalSection(HipTopSideDiameterCm, HipDepthDiameterCm)));
 
 	// The abdomen is spine_02. The chest is spine_03. The shoulder base is the chest's top.
 	float AbdomenBottomCm = 0.f;
@@ -64,14 +63,14 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
 		{ SpineAbdomenBone },
 		Shirt,
 		OvalSection(AbdomenBottomCm, TorsoDepthDiameterCm),
-		OvalSection(AbdomenTopCm, TorsoDepthDiameterCm)), Torso);
+		OvalSection(AbdomenTopCm, TorsoDepthDiameterCm)));
 	AddPart(FSolidBodyPart(
 		Chest,
 		Core,
 		{ SpineChestBone },
 		Shirt,
 		OvalSection(ChestBottomCm, TorsoDepthDiameterCm),
-		OvalSection(ChestTopCm, TorsoDepthDiameterCm)), Torso);
+		OvalSection(ChestTopCm, TorsoDepthDiameterCm)));
 	const float ShoulderSideCm = ChestTopCm;
 
 	// Shoulders follow neck_01. Mid is fitted around the clavicles and the upper arms when the mesh is built.
@@ -83,7 +82,7 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
 		OvalSection(ShoulderSideCm, TorsoDepthDiameterCm),
 		RoundSection(ShoulderTopRadiusCm * 2.f));
 	ShoulderPart.bHasMid = true;
-	AddPart(ShoulderPart, Shoulder);
+	AddPart(ShoulderPart);
 
 	// upperarm joint to elbow. The skeleton names that bone lowerarm.
 	AddPart(FSolidBodyPart(
@@ -92,14 +91,14 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
 		{ TEXT("lowerarm_l") },
 		Shirt,
 		RoundSection(UpperArmElbowDiameterCm),
-		RoundSection(ForearmWristDiameterCm)), Arm);
+		RoundSection(ForearmWristDiameterCm)));
 	AddPart(FSolidBodyPart(
 		UpperArm,
 		Right,
 		{ TEXT("lowerarm_r") },
 		Shirt,
 		RoundSection(UpperArmElbowDiameterCm),
-		RoundSection(ForearmWristDiameterCm)), Arm);
+		RoundSection(ForearmWristDiameterCm)));
 
 	// elbow to wrist. The skeleton names that bone hand. Narrow at the elbow, wide at the wrist.
 	AddPart(FSolidBodyPart(
@@ -108,21 +107,21 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
 		{ LeftHandBone },
 		Shirt,
 		RoundSection(LowerArmStartDiameterCm),
-		RoundSection(LowerArmEndDiameterCm)), Arm);
+		RoundSection(LowerArmEndDiameterCm)));
 	AddPart(FSolidBodyPart(
 		LowerArm,
 		Right,
 		{ RightHandBone },
 		Shirt,
 		RoundSection(LowerArmStartDiameterCm),
-		RoundSection(LowerArmEndDiameterCm)), Arm);
+		RoundSection(LowerArmEndDiameterCm)));
 
 	// The finger list is the hand. FromBones drops a name the skeleton does not have, and adds any other finger it finds.
-	AddPart(FSolidBodyPart(Hand, Left, LeftFingerBones, Skin, RoundSection(0.f), RoundSection(0.f)), Hand);
-	AddPart(FSolidBodyPart(Hand, Right, RightFingerBones, Skin, RoundSection(0.f), RoundSection(0.f)), Hand);
+	AddPart(FSolidBodyPart(Hand, Left, LeftFingerBones, Skin, RoundSection(0.f), RoundSection(0.f)));
+	AddPart(FSolidBodyPart(Hand, Right, RightFingerBones, Skin, RoundSection(0.f), RoundSection(0.f)));
 
 	// The sphere's height comes from the eye joints. These diameters are unused.
-	AddPart(FSolidBodyPart(Head, Core, { HeadBone }, Skin, RoundSection(0.f), RoundSection(0.f)), Head);
+	AddPart(FSolidBodyPart(Head, Core, { HeadBone }, Skin, RoundSection(0.f), RoundSection(0.f)));
 
 	return Body;
 }

@@ -72,19 +72,19 @@ namespace SolidBodyMesh
 		Hand,
 	};
 
-	/**
-	 * Short names for a part declaration.
-	 * Hip, Hand, and Head are both a part and a slider group, so one constant stands for either.
-	 */
+	/** Short names for a part declaration. */
 	inline constexpr ESolidPartType Thigh = ESolidPartType::Thigh;
 	inline constexpr ESolidPartType Calf = ESolidPartType::Calf;
 	inline constexpr ESolidPartType Foot = ESolidPartType::Foot;
 	inline constexpr ESolidPartType Toe = ESolidPartType::Toe;
+	inline constexpr ESolidPartType Hip = ESolidPartType::Hip;
 	inline constexpr ESolidPartType Abdomen = ESolidPartType::Abdomen;
 	inline constexpr ESolidPartType Chest = ESolidPartType::Chest;
 	inline constexpr ESolidPartType Shoulders = ESolidPartType::Shoulders;
 	inline constexpr ESolidPartType UpperArm = ESolidPartType::UpperArm;
 	inline constexpr ESolidPartType LowerArm = ESolidPartType::LowerArm;
+	inline constexpr ESolidPartType Hand = ESolidPartType::Hand;
+	inline constexpr ESolidPartType Head = ESolidPartType::Head;
 
 	inline constexpr ESolidPartSide Left = ESolidPartSide::Left;
 	inline constexpr ESolidPartSide Right = ESolidPartSide::Right;
@@ -94,23 +94,34 @@ namespace SolidBodyMesh
 	inline constexpr ESolidPartColour Trousers = ESolidPartColour::Trousers;
 	inline constexpr ESolidPartColour Skin = ESolidPartColour::Skin;
 
-	inline constexpr ESolidPartMeasure Torso = ESolidPartMeasure::Torso;
-	inline constexpr ESolidPartMeasure Shoulder = ESolidPartMeasure::Shoulder;
-	inline constexpr ESolidPartMeasure Arm = ESolidPartMeasure::Arm;
-	inline constexpr ESolidPartMeasure Leg = ESolidPartMeasure::Leg;
-
-	struct FSolidPartBoth
+	/** The slider group for a part. Thighs, calves, feet, and toes share leg length. */
+	inline ESolidPartMeasure PartMeasure(const ESolidPartType Type)
 	{
-		ESolidPartType Type;
-		ESolidPartMeasure Measure;
-
-		constexpr operator ESolidPartType() const { return Type; }
-		constexpr operator ESolidPartMeasure() const { return Measure; }
-	};
-
-	inline constexpr FSolidPartBoth Hip{ ESolidPartType::Hip, ESolidPartMeasure::Hip };
-	inline constexpr FSolidPartBoth Hand{ ESolidPartType::Hand, ESolidPartMeasure::Hand };
-	inline constexpr FSolidPartBoth Head{ ESolidPartType::Head, ESolidPartMeasure::Head };
+		switch (Type)
+		{
+		case ESolidPartType::Thigh:
+		case ESolidPartType::Calf:
+		case ESolidPartType::Foot:
+		case ESolidPartType::Toe:
+			return ESolidPartMeasure::Leg;
+		case ESolidPartType::Hip:
+			return ESolidPartMeasure::Hip;
+		case ESolidPartType::Abdomen:
+		case ESolidPartType::Chest:
+			return ESolidPartMeasure::Torso;
+		case ESolidPartType::Shoulders:
+			return ESolidPartMeasure::Shoulder;
+		case ESolidPartType::UpperArm:
+		case ESolidPartType::LowerArm:
+			return ESolidPartMeasure::Arm;
+		case ESolidPartType::Hand:
+			return ESolidPartMeasure::Hand;
+		case ESolidPartType::Head:
+			return ESolidPartMeasure::Head;
+		default:
+			return ESolidPartMeasure::Torso;
+		}
+	}
 
 	/** Diameters of one end of a part, in centimetres. */
 	struct FSolidPartSection
@@ -204,6 +215,7 @@ namespace SolidBodyMesh
 			: Type(ESolidPartType::Thigh)
 			, Side(ESolidPartSide::Core)
 			, Name(PartName(Type, Side))
+			, Measure(PartMeasure(Type))
 		{
 		}
 
@@ -231,6 +243,7 @@ namespace SolidBodyMesh
 			, Colour(InColour)
 			, Start(InStart)
 			, End(InEnd)
+			, Measure(PartMeasure(InType))
 		{
 			Bones.Reserve(NumBones);
 			for (int32 Index = 0; Index < NumBones; ++Index)
@@ -258,7 +271,8 @@ namespace SolidBodyMesh
 		FSolidPartSection End;
 		FSolidPartSection Mid;
 		bool bHasMid = false;
-		ESolidPartMeasure Measure = ESolidPartMeasure::Torso;
+		/** Comes from the part type. */
+		ESolidPartMeasure Measure = ESolidPartMeasure::Leg;
 
 		/** Shirt, trousers, or skin. The companion's colours fill those slots. */
 		uint8 MaterialSlot() const;

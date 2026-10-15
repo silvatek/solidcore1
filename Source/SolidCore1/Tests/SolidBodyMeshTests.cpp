@@ -565,9 +565,10 @@ bool FSolidBodyPartAliasTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("thigh is the part"), Thigh == ESolidPartType::Thigh);
 	TestTrue(TEXT("left is the side"), Left == ESolidPartSide::Left);
 	TestTrue(TEXT("trousers are the colour"), Trousers == ESolidPartColour::Trousers);
-	TestTrue(TEXT("leg is the slider group"), Leg == ESolidPartMeasure::Leg);
-	TestTrue(TEXT("hip is the part"), static_cast<ESolidPartType>(Hip) == ESolidPartType::Hip);
-	TestTrue(TEXT("hip is the slider group"), static_cast<ESolidPartMeasure>(Hip) == ESolidPartMeasure::Hip);
+	TestTrue(TEXT("a thigh uses leg length"), PartMeasure(Thigh) == ESolidPartMeasure::Leg);
+	TestTrue(TEXT("a hip uses hip width"), PartMeasure(Hip) == ESolidPartMeasure::Hip);
+	TestTrue(TEXT("the chest uses torso girth"), PartMeasure(Chest) == ESolidPartMeasure::Torso);
+	TestTrue(TEXT("the shoulders use shoulder width"), PartMeasure(Shoulders) == ESolidPartMeasure::Shoulder);
 
 	const FSolidPartSection Round = RoundSection(LeftThighBottomDiameterCm);
 	const FSolidPartSection ExpectedRound = FSolidPartSection::Round(LeftThighBottomDiameterCm);
@@ -580,6 +581,7 @@ bool FSolidBodyPartAliasTest::RunTest(const FString& Parameters)
 	const FSolidBodyPart Declared(Thigh, Left, { LeftThighBone }, Trousers, Round20, RoundSection(LeftThighBottomDiameterCm));
 	TestEqual(TEXT("the short declaration names the thigh"), Declared.Name, FString(TEXT("Thigh (L)")));
 	TestTrue(TEXT("the short declaration is trousers"), Declared.Colour == Trousers);
+	TestTrue(TEXT("the short declaration uses leg length"), Declared.Measure == ESolidPartMeasure::Leg);
 	return true;
 }
 

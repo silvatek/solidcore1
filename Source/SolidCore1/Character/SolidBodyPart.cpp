@@ -118,6 +118,7 @@ SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
 	, Colour(InColour)
 	, Start(InStart)
 	, End(InEnd)
+	, Measure(PartMeasure(InType))
 {
 	for (const TCHAR* Bone : InBones)
 	{
@@ -139,6 +140,7 @@ SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
 	, Colour(InColour)
 	, Start(InStart)
 	, End(InEnd)
+	, Measure(PartMeasure(InType))
 {
 }
 

@@ -137,7 +137,7 @@ TArray<FName> SolidBodyMesh::PartBones(const ESolidPartType Type, const ESolidPa
 		AddSidedBone(Bones, Side, LeftBallBone, RightBallBone);
 		break;
 	case ESolidPartType::Toe:
-		AddSidedBone(Bones, Side, LeftExtraFingerBone, RightExtraFingerBone);
+		AddSidedBone(Bones, Side, LeftToeBone, RightToeBone);
 		break;
 	case ESolidPartType::Hip:
 		Bones.Add(HipSpineBone);

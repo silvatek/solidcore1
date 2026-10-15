@@ -1225,7 +1225,7 @@ bool FSolidBodyHandsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("a pinky bone is a finger"), IsFingerBoneName(TEXT("pinky_03_l")));
 	TestTrue(TEXT("a little bone is a finger"), IsFingerBoneName(TEXT("little_01_r")));
 	TestFalse(TEXT("a twist is not a finger"), IsFingerBoneName(TEXT("index_01_twist_l")));
-	TestFalse(TEXT("a toe is not a finger"), IsFingerBoneName(TEXT("extra_finger_l")));
+	TestFalse(TEXT("a toe is not a finger"), IsFingerBoneName(LeftToeBone));
 	TestFalse(TEXT("the hand bone is not a finger"), IsFingerBoneName(TEXT("hand_l")));
 	TestFalse(TEXT("a beard joint is not a finger"), IsFingerBoneName(TEXT("beard_middle_jnt_2")));
 
@@ -1262,7 +1262,7 @@ bool FSolidBodyHandsTest::RunTest(const FString& Parameters)
 	AddBone(TEXT("little_01_l"), 2, FVector(2.f, 0.f, 4.f));
 	AddBone(TEXT("index_01"), 2, FVector(1.f, 0.f, 2.f));
 	AddBone(TEXT("thumb_01_r"), 0, FVector(1.f, 2.f, 3.f));
-	AddBone(TEXT("extra_finger_l"), 0, FVector(0.f, 0.f, -4.f));
+	AddBone(LeftToeBone, 0, FVector(0.f, 0.f, -4.f));
 	AddBone(TEXT("index_01_twist_l"), 2, FVector(1.f, 0.f, 1.f));
 	AddBone(TEXT("lowerarm_r"), 0, FVector::ZeroVector);
 	AddBone(RightHandBone, 11, FVector(12.f, 0.f, 0.f));
@@ -1282,7 +1282,7 @@ bool FSolidBodyHandsTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the left little is inside the left hand"), Left->Bones.Contains(FName(TEXT("little_01_l"))));
 		TestTrue(TEXT("an unsided finger on hand_l joins the left hand"), Left->Bones.Contains(FName(TEXT("index_01"))));
 		TestFalse(TEXT("the right thumb stays out of the left hand"), Left->Bones.Contains(FName(TEXT("thumb_01_r"))));
-		TestFalse(TEXT("the toe stays out of the left hand"), Left->Bones.Contains(FName(TEXT("extra_finger_l"))));
+		TestFalse(TEXT("the toe stays out of the left hand"), Left->Bones.Contains(FName(LeftToeBone)));
 		TestFalse(TEXT("a finger twist stays out of the left hand"), Left->Bones.Contains(FName(TEXT("index_01_twist_l"))));
 		TestTrue(TEXT("the right index is inside the right hand"), Right->Bones.Contains(FName(TEXT("index_01_r"))));
 		TestTrue(TEXT("the right ring is inside the right hand"), Right->Bones.Contains(FName(TEXT("ring_01_r"))));
@@ -1485,7 +1485,7 @@ bool FSolidBodyFootSoleTest::RunTest(const FString& Parameters)
 	AddBone(LeftThighBone, 0, FVector(0.f, 0.f, -40.f));
 	AddBone(LeftCalfBone, 1, FVector(0.f, 0.f, -30.f));
 	AddBone(LeftBallBone, 2, FVector(16.f, 0.f, 0.f));
-	AddBone(LeftExtraFingerBone, 3, FVector(0.f, 0.f, -8.f));
+	AddBone(LeftToeBone, 3, FVector(0.f, 0.f, -8.f));
 
 	TArray<FVector> Positions;
 	SolidBodyDeform::ComponentPositions(Bones, Positions);

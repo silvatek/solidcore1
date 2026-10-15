@@ -59,7 +59,7 @@ namespace SolidBodyMesh
 
 	/**
 	 * A finger bone. thumb_, index_, middle_, ring_, pinky_, and little_ match.
-	 * A twist does not. extra_finger is a toe.
+	 * A twist does not. A toe does not.
 	 */
 	bool IsFingerBoneName(const FString& BoneName);
 
@@ -110,15 +110,15 @@ namespace SolidBodyMesh
 	/** Diameter of a foot cylinder, in centimetres. Both ends are the same. */
 	inline constexpr float BallDiameterCm = 10.f;
 
-	/** The only bone in the left toe cone. extra_finger_l continues past ball_l. */
-	inline const TCHAR* LeftExtraFingerBone = TEXT("extra_finger_l");
+	/** The only bone in the left toe cone. It continues past ball_l. */
+	inline const TCHAR* LeftToeBone = TEXT("extra_finger_l");
 
 	/** The only bone in the right toe cone. The cone matches the left toe. */
-	inline const TCHAR* RightExtraFingerBone = TEXT("extra_finger_r");
+	inline const TCHAR* RightToeBone = TEXT("extra_finger_r");
 
 	/** Diameters of a toe cone, in centimetres. The end towards the ankle is the wide end. */
-	inline constexpr float ExtraFingerAnkleDiameterCm = BallDiameterCm;
-	inline constexpr float ExtraFingerToeDiameterCm = 5.f;
+	inline constexpr float ToeAnkleDiameterCm = BallDiameterCm;
+	inline constexpr float ToeTipDiameterCm = 5.f;
 
 	/** Shirt material slot. Trousers are the next slot, then skin. */
 	inline constexpr uint8 ShirtMaterialSlot = 0;

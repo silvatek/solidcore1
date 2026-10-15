@@ -39,7 +39,7 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
 	};
 
 	// The top of a part is the bottom of the part above it, where those ends already meet.
-	const FSolidPartSection ToeTop = RoundSection(ExtraFingerAnkleDiameterCm);
+	const FSolidPartSection ToeTop = RoundSection(ToeAnkleDiameterCm);
 	const FSolidPartSection FootTop = RoundSection(BallDiameterCm);
 	const FSolidPartSection CalfTop = RoundSection(CalfTopDiameterCm);
 	const FSolidPartSection ThighTop = RoundSection(LeftThighTopDiameterCm);
@@ -65,8 +65,8 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
 	AddPart(FSolidBodyPart(ESolidPartType::Calf, Right, Trousers, CalfTop, RoundSection(CalfBottomDiameterCm)));
 	AddPart(FSolidBodyPart(ESolidPartType::Foot, Left, Trousers, FootTop, ToeTop));
 	AddPart(FSolidBodyPart(ESolidPartType::Foot, Right, Trousers, FootTop, ToeTop));
-	AddPart(FSolidBodyPart(ESolidPartType::Toe, Left, Trousers, ToeTop, RoundSection(ExtraFingerToeDiameterCm)));
-	AddPart(FSolidBodyPart(ESolidPartType::Toe, Right, Trousers, ToeTop, RoundSection(ExtraFingerToeDiameterCm)));
+	AddPart(FSolidBodyPart(ESolidPartType::Toe, Left, Trousers, ToeTop, RoundSection(ToeTipDiameterCm)));
+	AddPart(FSolidBodyPart(ESolidPartType::Toe, Right, Trousers, ToeTop, RoundSection(ToeTipDiameterCm)));
 
 	// The hip mesh is the length of spine_01. The thighs sit inside it, so its base is wider than the thigh top.
 	AddPart(FSolidBodyPart(ESolidPartType::Hip, Core, Shirt, OvalSection(HipSideDiameterCm, HipDepthDiameterCm), HipTop));
@@ -1117,14 +1117,14 @@ float SolidBodyMesh::FootSoleZ(
 	const float CalfStart = CalfTopDiameterCm * 0.5f;
 	const float CalfEnd = CalfBottomDiameterCm * 0.5f;
 	const float FootRadius = BallDiameterCm * 0.5f;
-	const float ToeStart = ExtraFingerAnkleDiameterCm * 0.5f;
-	const float ToeEnd = ExtraFingerToeDiameterCm * 0.5f;
+	const float ToeStart = ToeAnkleDiameterCm * 0.5f;
+	const float ToeEnd = ToeTipDiameterCm * 0.5f;
 	Consider(LeftCalfBone, CalfStart, CalfEnd);
 	Consider(RightCalfBone, CalfStart, CalfEnd);
 	Consider(LeftBallBone, FootRadius, FootRadius);
 	Consider(RightBallBone, FootRadius, FootRadius);
-	Consider(LeftExtraFingerBone, ToeStart, ToeEnd);
-	Consider(RightExtraFingerBone, ToeStart, ToeEnd);
+	Consider(LeftToeBone, ToeStart, ToeEnd);
+	Consider(RightToeBone, ToeStart, ToeEnd);
 	return bFound ? Sole : 0.f;
 }
 

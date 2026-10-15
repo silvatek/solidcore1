@@ -105,38 +105,99 @@ FString SolidBodyMesh::PartName(const ESolidPartType Type, const ESolidPartSide 
 	}
 }
 
-SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
-	const ESolidPartType InType,
-	const ESolidPartSide InSide,
-	const std::initializer_list<const TCHAR*> InBones,
-	const ESolidPartColour InColour,
-	const FSolidPartSection& InStart,
-	const FSolidPartSection& InEnd)
-	: Type(InType)
-	, Side(InSide)
-	, Name(PartName(InType, InSide))
-	, Colour(InColour)
-	, Start(InStart)
-	, End(InEnd)
-	, Measure(PartMeasure(InType))
+namespace
 {
-	for (const TCHAR* Bone : InBones)
+	void AddSidedBone(TArray<FName>& Bones, const SolidBodyMesh::ESolidPartSide Side, const TCHAR* Left, const TCHAR* Right)
 	{
-		Bones.Add(Bone);
+		if (Side == SolidBodyMesh::ESolidPartSide::Left)
+		{
+			Bones.Add(Left);
+		}
+		else if (Side == SolidBodyMesh::ESolidPartSide::Right)
+		{
+			Bones.Add(Right);
+		}
 	}
+}
+
+TArray<FName> SolidBodyMesh::PartBones(const ESolidPartType Type, const ESolidPartSide Side)
+{
+	using namespace SolidBodyMesh;
+
+	TArray<FName> Bones;
+	switch (Type)
+	{
+	case ESolidPartType::Thigh:
+		AddSidedBone(Bones, Side, LeftThighBone, RightThighBone);
+		break;
+	case ESolidPartType::Calf:
+		AddSidedBone(Bones, Side, LeftCalfBone, RightCalfBone);
+		break;
+	case ESolidPartType::Foot:
+		AddSidedBone(Bones, Side, LeftBallBone, RightBallBone);
+		break;
+	case ESolidPartType::Toe:
+		AddSidedBone(Bones, Side, LeftExtraFingerBone, RightExtraFingerBone);
+		break;
+	case ESolidPartType::Hip:
+		Bones.Add(HipSpineBone);
+		Bones.Add(HipLeftBone);
+		Bones.Add(HipRightBone);
+		break;
+	case ESolidPartType::Abdomen:
+		Bones.Add(SpineAbdomenBone);
+		break;
+	case ESolidPartType::Chest:
+		Bones.Add(SpineChestBone);
+		break;
+	case ESolidPartType::Shoulders:
+		Bones.Add(ShoulderNeckBone);
+		Bones.Add(ShoulderLeftClavicleBone);
+		Bones.Add(ShoulderRightClavicleBone);
+		Bones.Add(ShoulderLeftUpperArmBone);
+		Bones.Add(ShoulderRightUpperArmBone);
+		break;
+	case ESolidPartType::UpperArm:
+		AddSidedBone(Bones, Side, TEXT("lowerarm_l"), TEXT("lowerarm_r"));
+		break;
+	case ESolidPartType::LowerArm:
+		AddSidedBone(Bones, Side, LeftHandBone, RightHandBone);
+		break;
+	case ESolidPartType::Hand:
+		if (Side == ESolidPartSide::Left)
+		{
+			for (const TCHAR* Bone : LeftFingerBones)
+			{
+				Bones.Add(Bone);
+			}
+		}
+		else if (Side == ESolidPartSide::Right)
+		{
+			for (const TCHAR* Bone : RightFingerBones)
+			{
+				Bones.Add(Bone);
+			}
+		}
+		break;
+	case ESolidPartType::Head:
+		Bones.Add(HeadBone);
+		break;
+	default:
+		break;
+	}
+	return Bones;
 }
 
 SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
 	const ESolidPartType InType,
 	const ESolidPartSide InSide,
-	const TArray<FName>& InBones,
 	const ESolidPartColour InColour,
 	const FSolidPartSection& InStart,
 	const FSolidPartSection& InEnd)
 	: Type(InType)
 	, Side(InSide)
 	, Name(PartName(InType, InSide))
-	, Bones(InBones)
+	, Bones(PartBones(InType, InSide))
 	, Colour(InColour)
 	, Start(InStart)
 	, End(InEnd)

@@ -543,7 +543,6 @@ bool FSolidBodyPartNameTest::RunTest(const FString& Parameters)
 	const FSolidBodyPart Part(
 		ESolidPartType::LowerArm,
 		ESolidPartSide::Left,
-		{ TEXT("hand_l") },
 		ESolidPartColour::Shirt,
 		Round,
 		Round);
@@ -578,13 +577,13 @@ bool FSolidBodyPartAliasTest::RunTest(const FString& Parameters)
 	const FSolidBodyPart Declared(
 		ESolidPartType::Thigh,
 		ESolidPartSide::Left,
-		{ LeftThighBone },
 		ESolidPartColour::Trousers,
 		Round20,
 		RoundSection(LeftThighBottomDiameterCm));
 	TestEqual(TEXT("the short declaration names the thigh"), Declared.Name, FString(TEXT("Thigh (L)")));
 	TestTrue(TEXT("the short declaration is trousers"), Declared.Colour == ESolidPartColour::Trousers);
 	TestTrue(TEXT("the short declaration uses leg length"), Declared.Measure == ESolidPartMeasure::Leg);
+	TestTrue(TEXT("the thigh wraps calf_l"), Declared.Bones.Num() == 1 && Declared.Bones[0] == FName(LeftThighBone));
 	return true;
 }
 
@@ -900,7 +899,6 @@ bool FSolidBodyPartSizesBonesTest::RunTest(const FString& Parameters)
 	FSolidBodyPart Hip(
 		ESolidPartType::Hip,
 		ESolidPartSide::Core,
-		{ TEXT("spine_01"), TEXT("thigh_l") },
 		ESolidPartColour::Shirt,
 		FSolidPartSection::Oval(20.f, 16.f),
 		FSolidPartSection::Oval(18.f, 16.f));
@@ -1117,7 +1115,6 @@ bool FSolidBodyDetailTest::RunTest(const FString& Parameters)
 	FSolidBodyPart Limb(
 		ESolidPartType::Thigh,
 		ESolidPartSide::Left,
-		{ LeftThighBone },
 		ESolidPartColour::Trousers,
 		FSolidPartSection::Round(LeftThighTopDiameterCm),
 		FSolidPartSection::Round(LeftThighBottomDiameterCm));

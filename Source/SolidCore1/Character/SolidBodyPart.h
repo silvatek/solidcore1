@@ -4,8 +4,6 @@
 #include "SolidBodyDeform.h"
 #include "SolidBodyParams.h"
 
-#include <initializer_list>
-
 /**
  * One component of a body mesh.
  * A part's name comes from its type and its side. The skeleton bone inside it often has another name.
@@ -71,6 +69,12 @@ namespace SolidBodyMesh
 		/** Viking length. The lower arm sizes the hand bone, and this part keeps the fingers. */
 		Hand,
 	};
+
+	/**
+	 * The bones this part wraps.
+	 * A paired part uses the side to choose left or right. A core part ignores the side.
+	 */
+	TArray<FName> PartBones(ESolidPartType Type, ESolidPartSide Side);
 
 	/** The slider group for a part. Thighs, calves, feet, and toes share leg length. */
 	inline ESolidPartMeasure PartMeasure(const ESolidPartType Type)
@@ -193,48 +197,15 @@ namespace SolidBodyMesh
 			: Type(ESolidPartType::Thigh)
 			, Side(ESolidPartSide::Core)
 			, Name(PartName(Type, Side))
+			, Bones(PartBones(Type, Side))
 			, Measure(PartMeasure(Type))
 		{
 		}
 
-		/** The type, the side, the bones it wraps, its colour, and the diameters at each end. */
+		/** The type, the side, its colour, and the diameters at each end. The bones come from the type and the side. */
 		FSolidBodyPart(
 			ESolidPartType InType,
 			ESolidPartSide InSide,
-			std::initializer_list<const TCHAR*> InBones,
-			ESolidPartColour InColour,
-			const FSolidPartSection& InStart,
-			const FSolidPartSection& InEnd);
-
-		/** The same part, when the bone names are already an array. */
-		template <int32 NumBones>
-		FSolidBodyPart(
-			ESolidPartType InType,
-			ESolidPartSide InSide,
-			const TCHAR* (&InBones)[NumBones],
-			ESolidPartColour InColour,
-			const FSolidPartSection& InStart,
-			const FSolidPartSection& InEnd)
-			: Type(InType)
-			, Side(InSide)
-			, Name(PartName(InType, InSide))
-			, Colour(InColour)
-			, Start(InStart)
-			, End(InEnd)
-			, Measure(PartMeasure(InType))
-		{
-			Bones.Reserve(NumBones);
-			for (int32 Index = 0; Index < NumBones; ++Index)
-			{
-				Bones.Add(InBones[Index]);
-			}
-		}
-
-		/** The same part, when the bone names are already gathered. */
-		FSolidBodyPart(
-			ESolidPartType InType,
-			ESolidPartSide InSide,
-			const TArray<FName>& InBones,
 			ESolidPartColour InColour,
 			const FSolidPartSection& InStart,
 			const FSolidPartSection& InEnd);

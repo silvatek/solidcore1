@@ -568,16 +568,21 @@ bool FSolidBodyPartAliasTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("an oval section matches"), FMath::IsNearlyEqual(Oval.X, ExpectedOval.X) && FMath::IsNearlyEqual(Oval.Y, ExpectedOval.Y));
 
 	const FSolidPartSection Round20 = RoundSection(LeftThighTopDiameterCm);
-	const FSolidBodyPart Declared(
+	const TUniquePtr<FSolidBodyPart> Declared = MakeBodyPart(
 		ESolidPartType::Thigh,
 		ESolidPartSide::Left,
 		ESolidPartColour::Trousers,
 		Round20,
 		RoundSection(LeftThighBottomDiameterCm),
 		{});
-	TestEqual(TEXT("the short declaration names the thigh"), Declared.Name, FString(TEXT("Thigh (L)")));
-	TestTrue(TEXT("the short declaration is trousers"), Declared.Colour == ESolidPartColour::Trousers);
-	TestTrue(TEXT("the thigh wraps calf_l"), Declared.Bones.Num() == 1 && Declared.Bones[0] == FName(LeftThighBone));
+	const FSolidBodyPart* DeclaredPart = Declared.Get();
+	TestNotNull(TEXT("the short declaration builds a thigh"), DeclaredPart);
+	if (DeclaredPart)
+	{
+		TestEqual(TEXT("the short declaration names the thigh"), DeclaredPart->Name, FString(TEXT("Thigh (L)")));
+		TestTrue(TEXT("the short declaration is trousers"), DeclaredPart->Colour == ESolidPartColour::Trousers);
+		TestTrue(TEXT("the thigh wraps calf_l"), DeclaredPart->Bones.Num() == 1 && DeclaredPart->Bones[0] == FName(LeftThighBone));
+	}
 	return true;
 }
 
@@ -926,31 +931,37 @@ bool FSolidBodyPartSizesBonesTest::RunTest(const FString& Parameters)
 	Head.LocalTranslation = Untouched;
 	Skeleton.Add(Head);
 
-	FSolidBodyPart Hip(
+	const TUniquePtr<FSolidBodyPart> HipPart = MakeBodyPart(
 		ESolidPartType::Hip,
 		ESolidPartSide::Core,
 		ESolidPartColour::Shirt,
 		FSolidPartSection::Oval(20.f, 16.f),
 		FSolidPartSection::Oval(18.f, 16.f),
 		Skeleton);
+	FSolidBodyPart* Hip = HipPart.Get();
+	TestNotNull(TEXT("the hip builds"), Hip);
+	if (!Hip)
+	{
+		return false;
+	}
 
 	FSolidBodyParams Wide;
 	Wide.Height = 1.5f;
 	const float HipScale = SolidBody::ParamMax;
 	Wide.HipWidth = HipScale;
 	Wide.TorsoGirth = 1.25f;
-	Hip.Apply(Wide);
+	Hip->Apply(Wide);
 
-	TestTrue(TEXT("hip width widens the part"), FMath::IsNearlyEqual(Hip.Start.X, 20.f * HipScale, 0.01f));
-	TestTrue(TEXT("torso girth sets the hip depth"), FMath::IsNearlyEqual(Hip.Start.Y, 20.f, 0.01f));
+	TestTrue(TEXT("hip width widens the part"), FMath::IsNearlyEqual(Hip->Start.X, 20.f * HipScale, 0.01f));
+	TestTrue(TEXT("torso girth sets the hip depth"), FMath::IsNearlyEqual(Hip->Start.Y, 20.f, 0.01f));
 	TestTrue(
 		TEXT("height lengthens the span bone"),
-		Hip.Skeleton[1].LocalTranslation.Equals(FVector(0.f, 0.f, -45.f), 0.01f));
+		Hip->Skeleton[1].LocalTranslation.Equals(FVector(0.f, 0.f, -45.f), 0.01f));
 	const FVector ExpectedSpread = ParentRotation.UnrotateVector(FVector(8.f * HipScale, 4.f * HipScale, 1.f));
 	TestTrue(
 		TEXT("the part spreads its other bone on the world side axes"),
-		Hip.Skeleton[2].LocalTranslation.Equals(ExpectedSpread, 0.01f));
-	TestTrue(TEXT("a bone outside the part stays put"), Hip.Skeleton[3].LocalTranslation.Equals(Untouched, 0.01f));
+		Hip->Skeleton[2].LocalTranslation.Equals(ExpectedSpread, 0.01f));
+	TestTrue(TEXT("a bone outside the part stays put"), Hip->Skeleton[3].LocalTranslation.Equals(Untouched, 0.01f));
 	return true;
 }
 
@@ -1302,24 +1313,27 @@ bool FSolidBodyHandsTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("a right-named thumb joins the right hand"), Right->Bones.Contains(FName(TEXT("thumb_01_r"))));
 		TestFalse(TEXT("the left index stays out of the right hand"), Right->Bones.Contains(FName(TEXT("index_01_l"))));
 		TestFalse(TEXT("the unsided left finger stays out of the right hand"), Right->Bones.Contains(FName(TEXT("index_01"))));
-		const FSolidBodyPart Thigh(
+		const TUniquePtr<FSolidBodyPart> ThighPart = MakeBodyPart(
 			ESolidPartType::Thigh,
 			ESolidPartSide::Left,
 			ESolidPartColour::Trousers,
 			FSolidPartSection::Round(LeftThighTopDiameterCm),
 			FSolidPartSection::Round(LeftThighBottomDiameterCm),
 			Bones);
-		const FSolidBodyPart BareThigh(
+		const TUniquePtr<FSolidBodyPart> BareThighPart = MakeBodyPart(
 			ESolidPartType::Thigh,
 			ESolidPartSide::Left,
 			ESolidPartColour::Trousers,
 			FSolidPartSection::Round(LeftThighTopDiameterCm),
 			FSolidPartSection::Round(LeftThighBottomDiameterCm),
 			{});
+		const FSolidBodyPart* Thigh = ThighPart.Get();
+		const FSolidBodyPart* BareThigh = BareThighPart.Get();
 		TestTrue(
 			TEXT("a thigh keeps its viking bone"),
-			Thigh.PartBones() == BareThigh.PartBones()
-			&& Thigh.Shape == PartShape(ESolidPartType::Thigh));
+			Thigh && BareThigh
+			&& Thigh->PartBones() == BareThigh->PartBones()
+			&& Thigh->Shape == PartShape(ESolidPartType::Thigh));
 	}
 
 	const FSolidBodyPart* Head = Body.Find(TEXT("Head"));

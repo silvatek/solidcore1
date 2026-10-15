@@ -164,17 +164,13 @@ public:
 	/** Seed Sam, Alex, Max, Morgan, and Quinn, each with a mesh and a vocation (idempotent). */
 	void InitializeDefaultCompanions();
 
-	const TArray<FSolidBattlePlan>& GetAllBattlePlans() const { return AllBattlePlans; }
 	int32 GetBattlePlanCount() const { return AllBattlePlans.Num(); }
 
 	const FSolidBattlePlan* GetBattlePlan(int32 Index) const;
 
-	int32 FindBattlePlanIndexByName(const FString& Name) const;
-
 	/** Append a plan to the Company catalog; returns its index. */
 	int32 AddBattlePlan(const FSolidBattlePlan& Plan);
 
-	const TArray<FSolidCharacterMesh>& GetAllCharacterMeshes() const { return AllCharacterMeshes; }
 	int32 GetCharacterMeshCount() const { return AllCharacterMeshes.Num(); }
 
 	const FSolidCharacterMesh* GetCharacterMesh(int32 Index) const;
@@ -187,7 +183,6 @@ public:
 	/** Soft mesh referenced by this companion, or unset when the index misses. */
 	TSoftObjectPtr<USkeletalMesh> GetMeshForCompanion(const FSolidCompanion& Companion) const;
 
-	const TArray<FSolidCompanion>& GetAllCompanions() const { return AllCompanions; }
 	int32 GetCompanionCount() const { return AllCompanions.Num(); }
 
 	const FSolidCompanion* GetCompanion(int32 Index) const;

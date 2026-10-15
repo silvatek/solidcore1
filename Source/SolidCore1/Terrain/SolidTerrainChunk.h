@@ -52,8 +52,6 @@ public:
 		float InFogVolumeHeightCm = 16000.f,
 		float InFogVolumeHeightHalfCm = 11000.f);
 
-	FIntPoint GetChunkCoord() const { return ChunkCoord; }
-
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terrain")
 	TObjectPtr<UStaticMeshComponent> MeshComponent;

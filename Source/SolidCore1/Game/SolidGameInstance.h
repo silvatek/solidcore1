@@ -29,7 +29,6 @@ public:
 	 * OpenLevel, including the cave, keeps this clock.
 	 */
 	SolidWorldTime::FStamp WorldStamp() const;
-	int32 GetWorldSessionNumber() const { return SessionNumber; }
 
 private:
 	void BeginWorldSession();

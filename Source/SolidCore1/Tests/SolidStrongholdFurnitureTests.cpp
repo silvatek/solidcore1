@@ -91,7 +91,6 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 			Index);
 	}
 	TestTrue(TEXT("a missing index has no item"), SolidStrongholdFurniture::ItemAt(-1) == nullptr);
-	TestEqual(TEXT("meagre strongholds have one floor"), SolidStrongholdFurniture::FloorCount(ESolidStrongholdSize::Meagre), 1);
 
 	FSolidStronghold MeagreFortress;
 	MeagreFortress.Type = ESolidStrongholdType::Fortress;

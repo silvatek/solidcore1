@@ -163,16 +163,6 @@ namespace SolidStrongholdFurniture
 		float RotationDeg = 0.f;
 	};
 
-	/** Meagre strongholds, including the cave, are a single floor. */
-	inline int32 FloorCount(const ESolidStrongholdSize Size)
-	{
-		if (Size == ESolidStrongholdSize::Meagre)
-		{
-			return 1;
-		}
-		return 1;
-	}
-
 	inline const SolidStrongholdGrid::FHex* FindCell(
 		const TArray<SolidStrongholdGrid::FHex>& Hexes,
 		const int32 X,

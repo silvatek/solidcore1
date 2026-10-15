@@ -241,14 +241,6 @@ bool SolidBodyMesh::IsFingerBoneName(const FString& BoneName)
 		|| Lower.StartsWith(TEXT("little_"));
 }
 
-bool SolidBodyMesh::IsRisingSpineBoneName(const FString& BoneName)
-{
-	const FString Lower = BoneName.ToLower();
-	return Lower.StartsWith(TEXT("spine_"))
-		&& !Lower.StartsWith(TEXT("spine_01"))
-		&& !IsTwistBoneName(Lower);
-}
-
 void SolidBodyMesh::TorsoSideDiameters(
 	const int32 Step,
 	const int32 Count,

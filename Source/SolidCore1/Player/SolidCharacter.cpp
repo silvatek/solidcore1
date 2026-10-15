@@ -2,6 +2,8 @@
 #include "Companion/SolidCompanionCharacter.h"
 #include "HUD/SolidPointer.h"
 #include "SolidClickMove.h"
+#include "Strongholds/SolidDungeonEntrance.h"
+#include "Strongholds/SolidDungeonInterior.h"
 #include "Strongholds/SolidDungeonPassage.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Animation/AnimSequence.h"

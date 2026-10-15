@@ -28,8 +28,6 @@ public:
 	int32 GetAssignedCount() const { return AssignedCompanyPlanIndices.Num(); }
 	int32 GetActiveAssignedSlot() const { return ActiveAssignedSlot; }
 
-	const TArray<int32>& GetAssignedCompanyPlanIndices() const { return AssignedCompanyPlanIndices; }
-
 	/** Replace assigned list (truncated to MaxAssignedBattlePlans; invalid indices skipped). */
 	bool SetAssignedBattlePlans(const TArray<int32>& CompanyPlanIndices);
 

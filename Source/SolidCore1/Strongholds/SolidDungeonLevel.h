@@ -44,12 +44,6 @@ namespace SolidDungeonLevel
 
 	/** Local +X runs away from the mouth, into the den. Yaw 180 would look back at the mouth. */
 
-	/** Mouth yaw faces the grass. This looks back at the cliff. */
-	inline float CaptainReturnYaw(const float MouthYawDeg)
-	{
-		return FRotator::NormalizeAxis(MouthYawDeg + 180.f);
-	}
-
 	inline bool ContainsLocal(const FVector& Point)
 	{
 		if (Point.Z < 0.f || Point.Z >= RoomHeightCm)
@@ -74,12 +68,6 @@ namespace SolidDungeonLevel
 	{
 		const FVector2D Mouth = SolidStrongholdGrid::MeagreMouthMidpoint();
 		return FVector(Mouth.X - SolidStrongholdGrid::FlatToFlatCm * 0.5f, Mouth.Y, 100.f);
-	}
-
-	/** Companions stay out of the dungeon. */
-	inline bool BringsCompanions()
-	{
-		return false;
 	}
 
 	inline const TCHAR* MenuLabel(const bool bInDungeon)

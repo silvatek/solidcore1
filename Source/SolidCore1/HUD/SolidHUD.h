@@ -15,7 +15,6 @@ public:
 	virtual void DrawHUD() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	void ToggleCredits();
 	bool IsCreditsVisible() const { return bShowCredits; }
 	void SetCreditsVisible(bool bVisible) { bShowCredits = bVisible; }
 
@@ -24,7 +23,6 @@ public:
 
 	/** Company list opened from Build party. */
 	void OpenPartyBuilder();
-	void ClosePartyBuilder();
 	bool IsPartyBuilderOpen() const { return bShowPartyBuilder; }
 	int32 GetPartyBuilderIndex() const { return PartyBuilderIndex; }
 	void MovePartyBuilderSelection(int32 Delta);

@@ -146,30 +146,6 @@ namespace SolidStronghold
 		return FString::Printf(TEXT("%s %s"), SizeName(Stronghold.Size), TypeName(Stronghold.Type));
 	}
 
-	inline int32 IndexOfType(ESolidStrongholdType Type)
-	{
-		for (int32 Index = 0; Index < TypeCount; ++Index)
-		{
-			if (Types[Index] == Type)
-			{
-				return Index;
-			}
-		}
-		return INDEX_NONE;
-	}
-
-	inline int32 IndexOfSize(ESolidStrongholdSize Size)
-	{
-		for (int32 Index = 0; Index < SizeCount; ++Index)
-		{
-			if (Sizes[Index] == Size)
-			{
-				return Index;
-			}
-		}
-		return INDEX_NONE;
-	}
-
 	inline const FOnMap* FindOnMap(TCHAR Marker)
 	{
 		const TCHAR Upper = FChar::ToUpper(Marker);
@@ -181,11 +157,6 @@ namespace SolidStronghold
 			}
 		}
 		return nullptr;
-	}
-
-	inline bool IsStrongholdMarker(TCHAR Marker)
-	{
-		return FindOnMap(Marker) != nullptr;
 	}
 
 	inline bool AttributesForMarker(TCHAR Marker, FSolidStronghold& OutAttributes)

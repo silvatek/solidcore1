@@ -1555,11 +1555,6 @@ void ASolidHUD::OpenPartyBuilder()
 	SolidHUDPrivate::ForgetChoicePointerRows(this);
 }
 
-void ASolidHUD::ClosePartyBuilder()
-{
-	bShowPartyBuilder = false;
-}
-
 void ASolidHUD::MovePartyBuilderSelection(const int32 Delta)
 {
 	int32 Count = 0;
@@ -1662,11 +1657,6 @@ void ASolidHUD::SetMainMenuIndex(const int32 Index)
 		return;
 	}
 	MainMenuIndex = FMath::Clamp(Index, 0, Count - 1);
-}
-
-void ASolidHUD::ToggleCredits()
-{
-	bShowCredits = !bShowCredits;
 }
 
 void ASolidHUD::ToggleDebugPanel()

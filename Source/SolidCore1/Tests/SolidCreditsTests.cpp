@@ -1,7 +1,6 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "SolidCredits.h"
-#include "SolidHUD.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -34,23 +33,6 @@ bool FSolidCreditsCopyTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("credits blacksmith creator"), Joined.Contains(SolidCredits::BlacksmithCreator));
 	TestTrue(TEXT("credits blacksmith listing"), Joined.Contains(SolidCredits::BlacksmithListing));
 	TestTrue(TEXT("mentions F10"), Joined.Contains(TEXT("F10")));
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidCreditsHudToggleTest,
-	"SolidCore1.Credits.HudToggle",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
-
-bool FSolidCreditsHudToggleTest::RunTest(const FString& Parameters)
-{
-	ASolidHUD* HUD = NewObject<ASolidHUD>();
-	TestNotNull(TEXT("hud"), HUD);
-	TestFalse(TEXT("credits hidden by default"), HUD->IsCreditsVisible());
-	HUD->ToggleCredits();
-	TestTrue(TEXT("F10 shows credits"), HUD->IsCreditsVisible());
-	HUD->ToggleCredits();
-	TestFalse(TEXT("F10 hides credits"), HUD->IsCreditsVisible());
 	return true;
 }
 

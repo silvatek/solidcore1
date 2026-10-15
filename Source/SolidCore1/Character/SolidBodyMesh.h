@@ -136,9 +136,6 @@ namespace SolidBodyMesh
 	inline constexpr float HipTopSideDiameterCm = 30.f;
 	inline constexpr float HipDepthDiameterCm = 20.f;
 
-	/** A spine bone above the hips. spine_01 is the hip piece. A twist is not a slab. */
-	bool IsRisingSpineBoneName(const FString& BoneName);
-
 	/**
 	 * Side-to-side width at the top of the spine, in centimetres.
 	 * That is an average shoulder breadth: wider than the 30 cm waist, narrower than the 50 cm hips.

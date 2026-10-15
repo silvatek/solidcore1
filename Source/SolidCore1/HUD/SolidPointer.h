@@ -37,11 +37,6 @@ namespace SolidPointer
 		}
 	}
 
-	inline FVector2D Hotspot()
-	{
-		return FVector2D::ZeroVector;
-	}
-
 	/** Right mouse button turns the camera. The pointer stays put otherwise. */
 	inline bool AllowsMouseLook(const bool bRightMouseDown)
 	{
@@ -124,56 +119,6 @@ namespace SolidPointer
 		for (int32 Index = 0; Index < OutlineOffsetCount; ++Index)
 		{
 			OutOffsets[Index] = Steps[Index].GetSafeNormal() * Pad;
-		}
-	}
-
-	inline bool PointInTriangle(const FVector2D& Point, const FTriangle& Tri)
-	{
-		const FVector2D V0 = Tri.C - Tri.A;
-		const FVector2D V1 = Tri.B - Tri.A;
-		const FVector2D V2 = Point - Tri.A;
-		const float Dot00 = FVector2D::DotProduct(V0, V0);
-		const float Dot01 = FVector2D::DotProduct(V0, V1);
-		const float Dot02 = FVector2D::DotProduct(V0, V2);
-		const float Dot11 = FVector2D::DotProduct(V1, V1);
-		const float Dot12 = FVector2D::DotProduct(V1, V2);
-		const float Denom = Dot00 * Dot11 - Dot01 * Dot01;
-		if (FMath::IsNearlyZero(Denom))
-		{
-			return false;
-		}
-		const float U = (Dot11 * Dot02 - Dot01 * Dot12) / Denom;
-		const float V = (Dot00 * Dot12 - Dot01 * Dot02) / Denom;
-		return U >= -KINDA_SMALL_NUMBER && V >= -KINDA_SMALL_NUMBER && (U + V) <= 1.f + KINDA_SMALL_NUMBER;
-	}
-
-	inline bool CoversLocalPoint(const FVector2D& LocalPoint)
-	{
-		for (int32 Index = 0; Index < TriangleCount; ++Index)
-		{
-			if (PointInTriangle(LocalPoint, Triangle(Index)))
-			{
-				return true;
-			}
-		}
-		return false;
-	}
-
-	inline void LocalBounds(FVector2D& OutMin, FVector2D& OutMax)
-	{
-		OutMin = FVector2D(TNumericLimits<float>::Max(), TNumericLimits<float>::Max());
-		OutMax = FVector2D(-TNumericLimits<float>::Max(), -TNumericLimits<float>::Max());
-		for (int32 Index = 0; Index < TriangleCount; ++Index)
-		{
-			const FTriangle Tri = Triangle(Index);
-			const FVector2D Vertices[3] = { Tri.A, Tri.B, Tri.C };
-			for (const FVector2D& Vertex : Vertices)
-			{
-				OutMin.X = FMath::Min(OutMin.X, Vertex.X);
-				OutMin.Y = FMath::Min(OutMin.Y, Vertex.Y);
-				OutMax.X = FMath::Max(OutMax.X, Vertex.X);
-				OutMax.Y = FMath::Max(OutMax.Y, Vertex.Y);
-			}
 		}
 	}
 }

@@ -47,7 +47,6 @@ bool FSolidStrongholdCatalogTest::RunTest(const FString& Parameters)
 			*FString::Printf(TEXT("type %d"), Index),
 			FString(SolidStronghold::TypeName(SolidStronghold::Types[Index])),
 			FString(TypeNames[Index]));
-		TestEqual(TEXT("type index"), SolidStronghold::IndexOfType(SolidStronghold::Types[Index]), Index);
 	}
 
 	const TCHAR* SizeNames[] = {
@@ -60,17 +59,7 @@ bool FSolidStrongholdCatalogTest::RunTest(const FString& Parameters)
 			*FString::Printf(TEXT("size %d"), Index),
 			FString(SolidStronghold::SizeName(SolidStronghold::Sizes[Index])),
 			FString(SizeNames[Index]));
-		TestEqual(TEXT("size index"), SolidStronghold::IndexOfSize(SolidStronghold::Sizes[Index]), Index);
 	}
-	TestEqual(TEXT("Meagre is the smallest"), SolidStronghold::IndexOfSize(ESolidStrongholdSize::Meagre), 0);
-	TestEqual(
-		TEXT("Humble follows Meagre"),
-		SolidStronghold::IndexOfSize(ESolidStrongholdSize::Humble),
-		SolidStronghold::IndexOfSize(ESolidStrongholdSize::Meagre) + 1);
-	TestEqual(
-		TEXT("Imperious is the largest"),
-		SolidStronghold::IndexOfSize(ESolidStrongholdSize::Imperious),
-		SolidStronghold::SizeCount - 1);
 
 	TestEqual(TEXT("one stronghold on the map"), SolidStronghold::OnMapCount, 1);
 	TestEqual(
@@ -105,9 +94,6 @@ bool FSolidStrongholdCatalogTest::RunTest(const FString& Parameters)
 	const SolidStronghold::FVisitView Unlisted = SolidStronghold::VisitViewFor(Fortress);
 	TestTrue(TEXT("an unlisted stronghold still arrives level"), FMath::IsNearlyZero(Unlisted.Enter.PitchDeg, 0.1f));
 	TestTrue(TEXT("an unlisted stronghold still leaves level"), FMath::IsNearlyZero(Unlisted.Leave.PitchDeg, 0.1f));
-
-	TestTrue(TEXT("C is a stronghold marker"), SolidStronghold::IsStrongholdMarker(TEXT('c')));
-	TestFalse(TEXT("M is a mountain, not a stronghold"), SolidStronghold::IsStrongholdMarker(TEXT('M')));
 
 	FSolidStronghold FromMarker;
 	TestTrue(TEXT("C resolves"), SolidStronghold::AttributesForMarker(TEXT('C'), FromMarker));

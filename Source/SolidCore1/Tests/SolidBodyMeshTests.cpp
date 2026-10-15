@@ -394,13 +394,6 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidBodyTorsoAndArmsTest::RunTest(const FString& Parameters)
 {
-	TestTrue(TEXT("spine_02 rises"), SolidBodyMesh::IsRisingSpineBoneName(TEXT("spine_02")));
-	TestTrue(TEXT("spine_03 rises"), SolidBodyMesh::IsRisingSpineBoneName(TEXT("spine_03")));
-	TestTrue(TEXT("spine_04 rises"), SolidBodyMesh::IsRisingSpineBoneName(TEXT("spine_04")));
-	TestFalse(TEXT("spine_01 is the hip"), SolidBodyMesh::IsRisingSpineBoneName(TEXT("spine_01")));
-	TestFalse(TEXT("a spine twist stays bare"), SolidBodyMesh::IsRisingSpineBoneName(TEXT("spine_02_twist")));
-	TestFalse(TEXT("the neck stays bare"), SolidBodyMesh::IsRisingSpineBoneName(TEXT("neck_01")));
-
 	TestEqual(TEXT("the chest is 40 cm side to side"), SolidBodyMesh::ChestSideDiameterCm, 40.f);
 	TestEqual(TEXT("the torso depth matches the hip"), SolidBodyMesh::TorsoDepthDiameterCm, SolidBodyMesh::HipDepthDiameterCm);
 	TestEqual(TEXT("skin is the third material"), SolidBodyMesh::SkinMaterialSlot, static_cast<uint8>(2));

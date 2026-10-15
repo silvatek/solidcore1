@@ -52,10 +52,6 @@ bool FSolidDungeonPassageHitTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	TestTrue(TEXT("the outside opening enters"), SolidDungeonPassage::Classify(Entrance, Mouth) == SolidDungeonPassage::EHit::Enter);
-	TestTrue(TEXT("a jamb is not the opening"), SolidDungeonPassage::Classify(Entrance, Jamb) == SolidDungeonPassage::EHit::None);
-	TestTrue(TEXT("the lintel is not the opening"), SolidDungeonPassage::Classify(Entrance, Lintel) == SolidDungeonPassage::EHit::None);
-
 	ASolidDungeonInterior* Interior = NewObject<ASolidDungeonInterior>();
 	TestNotNull(TEXT("interior"), Interior);
 	if (!Interior)
@@ -71,10 +67,6 @@ bool FSolidDungeonPassageHitTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	TestTrue(TEXT("the inside opening leaves"), SolidDungeonPassage::Classify(Interior, InnerMouth) == SolidDungeonPassage::EHit::Leave);
-	TestTrue(TEXT("the floor is not the opening"), SolidDungeonPassage::Classify(Interior, Floor) == SolidDungeonPassage::EHit::None);
-	TestTrue(TEXT("the outside mouth is not an exit"), SolidDungeonPassage::Classify(Interior, Mouth) == SolidDungeonPassage::EHit::None);
-	TestTrue(TEXT("a null hit is nothing"), SolidDungeonPassage::Classify(nullptr, Mouth) == SolidDungeonPassage::EHit::None);
 
 	const FVector2D Hotspot(100.f, 120.f);
 	const SolidDungeonPassage::FTipBox Beside = SolidDungeonPassage::PlaceTip(Hotspot, 90.f, 28.f, 800.f, 600.f);

@@ -107,17 +107,6 @@ namespace SolidStrongholdGrid
 		return Origin + FVector2D(Col * FlatToFlatCm + OddShift, Row * RowStepCm());
 	}
 
-	inline bool HexFitsOnFloor(const FBox2D& Floor, const FVector2D& Center)
-	{
-		const float HalfFlat = FlatToFlatCm * 0.5f;
-		const float HalfVertex = SideCm();
-		constexpr float Slack = 0.05f;
-		return Center.X - HalfFlat >= Floor.Min.X - Slack
-			&& Center.X + HalfFlat <= Floor.Max.X + Slack
-			&& Center.Y - HalfVertex >= Floor.Min.Y - Slack
-			&& Center.Y + HalfVertex <= Floor.Max.Y + Slack;
-	}
-
 	inline void HexVertices(const FVector2D& Center, FVector2D OutVertices[6])
 	{
 		const float Radius = SideCm();
@@ -169,30 +158,6 @@ namespace SolidStrongholdGrid
 		const FCell Entrance = MeagreEntranceCell();
 		const FVector2D Center = HexCenter(Entrance.Col, Entrance.Row, MeagreOrigin());
 		return Center + FVector2D(-FlatToFlatCm * 0.5f, 0.f);
-	}
-
-	inline void CollectHexes(const FBox2D& Floor, TArray<FHex>& OutHexes)
-	{
-		OutHexes.Reset();
-		const FVector2D Origin = Floor.GetCenter();
-		const int32 MaxCol = FMath::CeilToInt(Floor.GetSize().X / FlatToFlatCm) + 2;
-		const int32 MaxRow = FMath::CeilToInt(Floor.GetSize().Y / FMath::Max(RowStepCm(), 1.f)) + 2;
-		for (int32 Row = -MaxRow; Row <= MaxRow; ++Row)
-		{
-			for (int32 Col = -MaxCol; Col <= MaxCol; ++Col)
-			{
-				const FVector2D Center = HexCenter(Col, Row, Origin);
-				if (!HexFitsOnFloor(Floor, Center))
-				{
-					continue;
-				}
-				FHex Hex;
-				Hex.Center = Center;
-				Hex.Col = Col;
-				Hex.Row = Row;
-				OutHexes.Add(Hex);
-			}
-		}
 	}
 
 	struct FEdgeKey

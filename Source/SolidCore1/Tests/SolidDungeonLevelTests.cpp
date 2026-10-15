@@ -17,7 +17,6 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidDungeonLevelTravelTest::RunTest(const FString& Parameters)
 {
-	TestFalse(TEXT("companions stay out of the cave"), SolidDungeonLevel::BringsCompanions());
 	TestEqual(TEXT("enter label"), FString(SolidDungeonLevel::MenuLabel(false)), FString(SolidDungeonLevel::EnterLabel));
 	TestEqual(TEXT("leave label"), FString(SolidDungeonLevel::MenuLabel(true)), FString(SolidDungeonLevel::LeaveLabel));
 
@@ -33,10 +32,6 @@ bool FSolidDungeonLevelTravelTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("the open notch is outside"), SolidDungeonLevel::ContainsLocal(FVector(Notch.X, Notch.Y, 100.f)));
 	TestTrue(TEXT("the doorway is wider than the captain"), SolidDungeonLevel::DoorwayWidthCm > 110.f);
 	TestFalse(TEXT("above the ceiling is outside"), SolidDungeonLevel::ContainsLocal(FVector(0.f, 0.f, SolidDungeonLevel::RoomHeightCm + 10.f)));
-
-	TestTrue(
-		TEXT("return yaw looks back at a north-facing mouth"),
-		FMath::IsNearlyEqual(SolidDungeonLevel::CaptainReturnYaw(90.f), -90.f, 0.1f));
 	return true;
 }
 

@@ -20,7 +20,6 @@ public:
 	virtual void BeginPlay() override;
 
 	void SetTownName(const FString& InName);
-	const FString& GetTownName() const { return TownName; }
 	FString GetLabel() const;
 
 	void BuildVisuals();

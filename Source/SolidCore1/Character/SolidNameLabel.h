@@ -52,12 +52,6 @@ namespace SolidNameLabel
 		return Style == EStyle::Captain ? CaptainWorldSize : CompanionWorldSize;
 	}
 
-	/** Legacy alias used by tests / callers that only need the text color. */
-	inline FColor ColorFor(EStyle Style)
-	{
-		return TextColorFor(Style);
-	}
-
 	/** The captain's name shows in raven sight only, and only with companions outside a stronghold. */
 	inline bool ShowsCaptainName(const bool bTrueSight, const bool bInStronghold, const int32 CompanionCount)
 	{

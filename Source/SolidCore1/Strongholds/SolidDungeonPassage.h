@@ -1,11 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SolidDungeonEntrance.h"
-#include "SolidDungeonInterior.h"
 #include "SolidDungeonLevel.h"
-
-class UPrimitiveComponent;
 
 /**
  * Left click on the dark cave opening. Outside, that click enters.
@@ -101,24 +97,6 @@ namespace SolidDungeonPassage
 		default:
 			return TEXT("");
 		}
-	}
-
-	/** Dark opening only. Jambs, the lintel, and the den floor are not a passage. */
-	inline EHit Classify(const AActor* Actor, const UPrimitiveComponent* Component)
-	{
-		if (!Actor || !Component)
-		{
-			return EHit::None;
-		}
-		if (const ASolidDungeonEntrance* Entrance = Cast<ASolidDungeonEntrance>(Actor))
-		{
-			return Component == Entrance->GetMouthMesh() ? EHit::Enter : EHit::None;
-		}
-		if (const ASolidDungeonInterior* Interior = Cast<ASolidDungeonInterior>(Actor))
-		{
-			return Component == Interior->GetMouthMesh() ? EHit::Leave : EHit::None;
-		}
-		return EHit::None;
 	}
 
 	struct FTipBox

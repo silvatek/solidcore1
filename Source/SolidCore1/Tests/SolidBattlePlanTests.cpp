@@ -136,8 +136,6 @@ bool FSolidCompanyDefaultPlansTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("loose wide spacing"), Loose->Spacing == ESolidBattleSpacing::Wide);
 	TestTrue(TEXT("parade formation"), Parade->Formation == ESolidBattleFormation::Parade);
 	TestTrue(TEXT("parade standard spacing"), Parade->Spacing == ESolidBattleSpacing::Standard);
-	TestEqual(TEXT("find loose mob"), Company->FindBattlePlanIndexByName(TEXT("Loose mob")), 3);
-	TestEqual(TEXT("find parade"), Company->FindBattlePlanIndexByName(TEXT("Parade")), 4);
 	TestNull(TEXT("out of range"), Company->GetBattlePlan(99));
 	return true;
 }

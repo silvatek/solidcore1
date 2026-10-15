@@ -38,7 +38,6 @@ public:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 
 	FORCEINLINE USpringArmComponent* GetCameraBoom() const { return CameraBoom; }
-	FORCEINLINE UCameraComponent* GetFollowCamera() const { return FollowCamera; }
 	FORCEINLINE float GetUserZoomArmLength() const { return UserZoomArmLength; }
 	FORCEINLINE USceneComponent* GetNameLabelRoot() const { return NameLabelRoot; }
 	FORCEINLINE UTextRenderComponent* GetNameLabel() const { return NameLabel; }

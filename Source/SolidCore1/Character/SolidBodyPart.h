@@ -49,57 +49,6 @@ namespace SolidBodyMesh
 	FString PartName(ESolidPartType Type, ESolidPartSide Side);
 
 	/**
-	 * Which slider channels size this part.
-	 * The part then sizes the bones it wraps.
-	 */
-	enum class ESolidPartMeasure : uint8
-	{
-		/** Length is height. Side and depth are torso girth. */
-		Torso,
-		/** Length is height. Side is hip width. Depth is torso girth. */
-		Hip,
-		/** Length is neck length. Side is shoulder width. The base depth is torso girth. */
-		Shoulder,
-		/** Length is arm length. Side and depth are bulk. */
-		Arm,
-		/** Length is leg length times height. Side and depth are bulk. */
-		Leg,
-		/** Length, side, and depth are head size. */
-		Head,
-		/** Viking length. The lower arm sizes the hand bone, and this part keeps the fingers. */
-		Hand,
-	};
-
-	/** The slider group for a part. Thighs, calves, feet, and toes share leg length. */
-	inline ESolidPartMeasure PartMeasure(const ESolidPartType Type)
-	{
-		switch (Type)
-		{
-		case ESolidPartType::Thigh:
-		case ESolidPartType::Calf:
-		case ESolidPartType::Foot:
-		case ESolidPartType::Toe:
-			return ESolidPartMeasure::Leg;
-		case ESolidPartType::Hip:
-			return ESolidPartMeasure::Hip;
-		case ESolidPartType::Abdomen:
-		case ESolidPartType::Chest:
-			return ESolidPartMeasure::Torso;
-		case ESolidPartType::Shoulders:
-			return ESolidPartMeasure::Shoulder;
-		case ESolidPartType::UpperArm:
-		case ESolidPartType::LowerArm:
-			return ESolidPartMeasure::Arm;
-		case ESolidPartType::Hand:
-			return ESolidPartMeasure::Hand;
-		case ESolidPartType::Head:
-			return ESolidPartMeasure::Head;
-		default:
-			return ESolidPartMeasure::Torso;
-		}
-	}
-
-	/**
 	 * The mesh for a part.
 	 * A tube is a limb or a spine piece. The shoulder, the head, and a hand have their own mesh.
 	 * The joint positions are filled when the part is drawn.
@@ -220,7 +169,6 @@ namespace SolidBodyMesh
 			: Type(ESolidPartType::Thigh)
 			, Side(ESolidPartSide::Core)
 			, Name(PartName(Type, Side))
-			, Measure(PartMeasure(Type))
 		{
 			Bones = PartBones();
 			Shape = PartShape(Type);
@@ -248,8 +196,6 @@ namespace SolidBodyMesh
 		FSolidPartSection Start;
 		FSolidPartSection End;
 		FSolidPartSection Mid;
-		/** Comes from the part type. */
-		ESolidPartMeasure Measure = ESolidPartMeasure::Leg;
 
 		/**
 		 * The bones this part wraps on its stored skeleton.
@@ -266,7 +212,7 @@ namespace SolidBodyMesh
 		uint8 MaterialSlot() const;
 
 		/**
-		 * Size this part from the sliders, then size the bones it wraps.
+		 * Size this part from its type, then size the bones it wraps.
 		 * Bones[0] takes the length. The other bones spread by the part's side.
 		 * Call once. A listed bone that is missing from the skeleton is left out.
 		 */

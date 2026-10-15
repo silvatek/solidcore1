@@ -555,10 +555,6 @@ bool FSolidBodyPartAliasTest::RunTest(const FString& Parameters)
 {
 	using namespace SolidBodyMesh;
 
-	TestTrue(TEXT("a thigh uses leg length"), PartMeasure(ESolidPartType::Thigh) == ESolidPartMeasure::Leg);
-	TestTrue(TEXT("a hip uses hip width"), PartMeasure(ESolidPartType::Hip) == ESolidPartMeasure::Hip);
-	TestTrue(TEXT("the chest uses torso girth"), PartMeasure(ESolidPartType::Chest) == ESolidPartMeasure::Torso);
-	TestTrue(TEXT("the shoulders use shoulder width"), PartMeasure(ESolidPartType::Shoulders) == ESolidPartMeasure::Shoulder);
 	TestTrue(TEXT("a thigh is a tube"), PartShape(ESolidPartType::Thigh) == ESolidPartShape::Tube);
 	TestTrue(TEXT("the shoulders are the shoulder mesh"), PartShape(ESolidPartType::Shoulders) == ESolidPartShape::Shoulder);
 	TestTrue(TEXT("a hand is an ellipsoid"), PartShape(ESolidPartType::Hand) == ESolidPartShape::Hand);
@@ -581,7 +577,6 @@ bool FSolidBodyPartAliasTest::RunTest(const FString& Parameters)
 		{});
 	TestEqual(TEXT("the short declaration names the thigh"), Declared.Name, FString(TEXT("Thigh (L)")));
 	TestTrue(TEXT("the short declaration is trousers"), Declared.Colour == ESolidPartColour::Trousers);
-	TestTrue(TEXT("the short declaration uses leg length"), Declared.Measure == ESolidPartMeasure::Leg);
 	TestTrue(TEXT("the thigh wraps calf_l"), Declared.Bones.Num() == 1 && Declared.Bones[0] == FName(LeftThighBone));
 	return true;
 }
@@ -930,7 +925,6 @@ bool FSolidBodyPartSizesBonesTest::RunTest(const FString& Parameters)
 		FSolidPartSection::Oval(20.f, 16.f),
 		FSolidPartSection::Oval(18.f, 16.f),
 		Skeleton);
-	Hip.Measure = ESolidPartMeasure::Hip;
 
 	FSolidBodyParams Wide;
 	Wide.Height = 1.5f;
@@ -991,7 +985,6 @@ bool FSolidBodyHeadTest::RunTest(const FString& Parameters)
 	{
 		TestTrue(TEXT("the head is skin"), Head->Colour == ESolidPartColour::Skin);
 		TestEqual(TEXT("skin slot"), Head->MaterialSlot(), SkinMaterialSlot);
-		TestTrue(TEXT("the head uses head size"), Head->Measure == ESolidPartMeasure::Head);
 		TestEqual(TEXT("head, two eye joints, and an eyelid"), Head->Bones.Num(), 4);
 		TestTrue(TEXT("the span is the head bone"), Head->Bones.Num() >= 1 && Head->Bones[0] == FName(HeadBone));
 		TestTrue(TEXT("the left eye joint is inside the head"), Head->Bones.Contains(FName(TEXT("eye_jnt_l"))));
@@ -1122,7 +1115,6 @@ bool FSolidBodyDetailTest::RunTest(const FString& Parameters)
 		FSolidPartSection::Round(LeftThighTopDiameterCm),
 		FSolidPartSection::Round(LeftThighBottomDiameterCm),
 		{});
-	Limb.Measure = ESolidPartMeasure::Leg;
 	TArray<FSolidBodyVert> LimbVerts;
 	TArray<FSolidBodyTri> LimbTris;
 	Limb.Draw(
@@ -1244,8 +1236,6 @@ bool FSolidBodyHandsTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the right hand is skin"), ListedRight->Colour == ESolidPartColour::Skin);
 		TestEqual(TEXT("left hand skin slot"), ListedLeft->MaterialSlot(), SkinMaterialSlot);
 		TestEqual(TEXT("right hand skin slot"), ListedRight->MaterialSlot(), SkinMaterialSlot);
-		TestTrue(TEXT("the left hand uses the hand measure"), ListedLeft->Measure == ESolidPartMeasure::Hand);
-		TestTrue(TEXT("the right hand uses the hand measure"), ListedRight->Measure == ESolidPartMeasure::Hand);
 	}
 
 	TArray<FSolidDeformBone> Bones;

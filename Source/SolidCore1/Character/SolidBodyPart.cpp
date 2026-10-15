@@ -305,7 +305,6 @@ SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
 	, Colour(InColour)
 	, Start(InStart)
 	, End(InEnd)
-	, Measure(PartMeasure(InType))
 	, Skeleton(InSkeleton)
 {
 	Bones = PartBones();
@@ -318,38 +317,44 @@ void SolidBodyMesh::FSolidBodyPart::Apply(const FSolidBodyParams& Params)
 	float Length = 1.f;
 	float SideScale = 1.f;
 	float Depth = 1.f;
-	switch (Measure)
+	switch (Type)
 	{
-	case ESolidPartMeasure::Leg:
+	case ESolidPartType::Thigh:
+	case ESolidPartType::Calf:
+	case ESolidPartType::Foot:
+	case ESolidPartType::Toe:
 		Length = Clamped.LegLength * Clamped.Height;
 		SideScale = Clamped.Bulk;
 		Depth = Clamped.Bulk;
 		break;
-	case ESolidPartMeasure::Hip:
+	case ESolidPartType::Hip:
 		Length = Clamped.Height;
 		SideScale = Clamped.HipWidth;
 		Depth = Clamped.TorsoGirth;
 		break;
-	case ESolidPartMeasure::Shoulder:
+	case ESolidPartType::Shoulders:
 		Length = Clamped.NeckLength;
 		SideScale = Clamped.ShoulderWidth;
 		Depth = Clamped.TorsoGirth;
 		break;
-	case ESolidPartMeasure::Arm:
+	case ESolidPartType::UpperArm:
+	case ESolidPartType::LowerArm:
 		Length = Clamped.ArmLength;
 		SideScale = Clamped.Bulk;
 		Depth = Clamped.Bulk;
 		break;
-	case ESolidPartMeasure::Head:
+	case ESolidPartType::Head:
 		Length = Clamped.HeadSize;
 		SideScale = Clamped.HeadSize;
 		Depth = Clamped.HeadSize;
 		break;
-	case ESolidPartMeasure::Hand:
+	case ESolidPartType::Hand:
 		Length = 1.f;
 		SideScale = 1.f;
 		Depth = 1.f;
 		break;
+	case ESolidPartType::Abdomen:
+	case ESolidPartType::Chest:
 	default:
 		Length = Clamped.Height;
 		SideScale = Clamped.TorsoGirth;
@@ -359,20 +364,17 @@ void SolidBodyMesh::FSolidBodyPart::Apply(const FSolidBodyParams& Params)
 
 	Start.X *= SideScale;
 	Start.Y *= Depth;
-	if (Measure == ESolidPartMeasure::Shoulder)
+	if (Type == ESolidPartType::Shoulders)
 	{
 		End.X *= SideScale;
 		End.Y *= SideScale;
+		Mid.X *= SideScale;
+		Mid.Y *= Depth;
 	}
 	else
 	{
 		End.X *= SideScale;
 		End.Y *= Depth;
-	}
-	if (Shape == ESolidPartShape::Shoulder)
-	{
-		Mid.X *= SideScale;
-		Mid.Y *= Depth;
 	}
 
 	if (Bones.Num() == 0)

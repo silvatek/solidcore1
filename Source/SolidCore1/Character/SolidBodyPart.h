@@ -158,8 +158,10 @@ namespace SolidBodyMesh
 	};
 
 	/**
-	 * One mesh piece. A tube is the default: a limb or a spine piece.
-	 * The head, a hand, and the shoulders are their own parts and draw their own mesh.
+	 * One mesh piece. Draw builds a tube.
+	 * Each part type is its own class and lists its own bones.
+	 * The abdomen and the chest keep this sizing: height and torso girth.
+	 * The head, a hand, and the shoulders draw their own mesh.
 	 * Bones[0] is the length of the piece. The other bones are wrapped inside it.
 	 * Start is the parent joint. End is Bones[0]. Mid is used by the shoulders.
 	 * Apply sizes the part and those bones. Fit measures the cones. Draw adds the triangles.
@@ -199,7 +201,7 @@ namespace SolidBodyMesh
 		/** Comes from Type and Side. "Thigh (L)", "Upper arm (R)", or "Hip". */
 		FString Name;
 		TArray<FName> Bones;
-		/** Comes from the part type. The same mapping chooses the subclass. */
+		/** Comes from the part type. A tube, the shoulders, the head, or a hand. */
 		ESolidPartShape Shape = ESolidPartShape::Tube;
 		/** Copied from the body when the part is built. PartBones reads it. Apply sizes it. */
 		TArray<FSolidDeformBone> Skeleton;
@@ -210,9 +212,8 @@ namespace SolidBodyMesh
 
 		/**
 		 * The bones this part wraps on its stored skeleton.
-		 * A thigh, a spine piece, and the other fixed parts keep their Viking names.
+		 * The base list is empty. Each part type replaces it.
 		 * A paired part uses its side to choose left or right. A core part ignores the side.
-		 * The head, a hand, and the shoulders replace this list.
 		 */
 		virtual TArray<FName> PartBones() const;
 
@@ -221,12 +222,9 @@ namespace SolidBodyMesh
 
 		/**
 		 * Size this part, then size the bones it wraps.
-		 * A thigh, calf, foot, and toe use leg length and bulk.
-		 * The hip uses height, hip width, and torso girth.
-		 * An arm uses arm length and bulk. The abdomen and the chest use height and torso girth.
-		 * Bones[0] takes the length. The other bones spread by the part's side.
+		 * Height lengthens Bones[0]. Torso girth widens the section and spreads the other bones.
+		 * The abdomen and the chest keep this. A limb, the hip, the head, a hand, and the shoulders size themselves.
 		 * Call once. A listed bone that is missing from the skeleton is left out.
-		 * The head, a hand, and the shoulders size themselves.
 		 */
 		virtual void Apply(const FSolidBodyParams& Params);
 
@@ -263,6 +261,15 @@ namespace SolidBodyMesh
 			const FVector& WideAxis);
 
 	protected:
+		/** Widen the section, then size the bones. Depth scales the front-to-back. SideScale spreads the other bones. */
+		void SizeSection(float Length, float SideScale, float Depth);
+
+		/** Leg length and height scale the bone. Bulk widens the section. */
+		void ApplyLeg(const FSolidBodyParams& Params);
+
+		/** Arm length scales the bone. Bulk widens the section. */
+		void ApplyArm(const FSolidBodyParams& Params);
+
 		/** Bones[0] takes Length. The other bones spread by SideScale. */
 		void SizeBones(float Length, float SideScale);
 
@@ -380,7 +387,158 @@ namespace SolidBodyMesh
 			const FVector& WideAxis) override;
 	};
 
-	/** The part for this type. A head, a hand, and the shoulders are their own classes. Anything else is a tube. */
+	/** calf_l or calf_r. Leg length and bulk size it. Draw keeps the tube. */
+	class FSolidThighPart : public FSolidBodyPart
+	{
+	public:
+		FSolidThighPart(
+			ESolidPartType InType,
+			ESolidPartSide InSide,
+			ESolidPartColour InColour,
+			const FSolidPartSection& InStart,
+			const FSolidPartSection& InEnd,
+			const TArray<FSolidDeformBone>& InSkeleton);
+
+		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual TArray<FName> PartBones() const override;
+		virtual void Apply(const FSolidBodyParams& Params) override;
+	};
+
+	/** foot_l or foot_r. Leg length and bulk size it. Draw keeps the tube. */
+	class FSolidCalfPart : public FSolidBodyPart
+	{
+	public:
+		FSolidCalfPart(
+			ESolidPartType InType,
+			ESolidPartSide InSide,
+			ESolidPartColour InColour,
+			const FSolidPartSection& InStart,
+			const FSolidPartSection& InEnd,
+			const TArray<FSolidDeformBone>& InSkeleton);
+
+		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual TArray<FName> PartBones() const override;
+		virtual void Apply(const FSolidBodyParams& Params) override;
+	};
+
+	/** ball_l or ball_r. Leg length and bulk size it. Draw keeps the tube. */
+	class FSolidFootPart : public FSolidBodyPart
+	{
+	public:
+		FSolidFootPart(
+			ESolidPartType InType,
+			ESolidPartSide InSide,
+			ESolidPartColour InColour,
+			const FSolidPartSection& InStart,
+			const FSolidPartSection& InEnd,
+			const TArray<FSolidDeformBone>& InSkeleton);
+
+		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual TArray<FName> PartBones() const override;
+		virtual void Apply(const FSolidBodyParams& Params) override;
+	};
+
+	/** The toe bone on this side. Leg length and bulk size it. Draw keeps the tube. */
+	class FSolidToePart : public FSolidBodyPart
+	{
+	public:
+		FSolidToePart(
+			ESolidPartType InType,
+			ESolidPartSide InSide,
+			ESolidPartColour InColour,
+			const FSolidPartSection& InStart,
+			const FSolidPartSection& InEnd,
+			const TArray<FSolidDeformBone>& InSkeleton);
+
+		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual TArray<FName> PartBones() const override;
+		virtual void Apply(const FSolidBodyParams& Params) override;
+	};
+
+	/** spine_01, then both thigh bones. Height, hip width, and torso girth size it. Draw keeps the tube. */
+	class FSolidHipPart : public FSolidBodyPart
+	{
+	public:
+		FSolidHipPart(
+			ESolidPartType InType,
+			ESolidPartSide InSide,
+			ESolidPartColour InColour,
+			const FSolidPartSection& InStart,
+			const FSolidPartSection& InEnd,
+			const TArray<FSolidDeformBone>& InSkeleton);
+
+		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual TArray<FName> PartBones() const override;
+		virtual void Apply(const FSolidBodyParams& Params) override;
+	};
+
+	/** spine_02. Height and torso girth size it. Draw keeps the tube. */
+	class FSolidAbdomenPart : public FSolidBodyPart
+	{
+	public:
+		FSolidAbdomenPart(
+			ESolidPartType InType,
+			ESolidPartSide InSide,
+			ESolidPartColour InColour,
+			const FSolidPartSection& InStart,
+			const FSolidPartSection& InEnd,
+			const TArray<FSolidDeformBone>& InSkeleton);
+
+		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual TArray<FName> PartBones() const override;
+	};
+
+	/** spine_03. Height and torso girth size it. Draw keeps the tube. */
+	class FSolidChestPart : public FSolidBodyPart
+	{
+	public:
+		FSolidChestPart(
+			ESolidPartType InType,
+			ESolidPartSide InSide,
+			ESolidPartColour InColour,
+			const FSolidPartSection& InStart,
+			const FSolidPartSection& InEnd,
+			const TArray<FSolidDeformBone>& InSkeleton);
+
+		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual TArray<FName> PartBones() const override;
+	};
+
+	/** lowerarm_l or lowerarm_r. Arm length and bulk size it. Draw keeps the tube. */
+	class FSolidUpperArmPart : public FSolidBodyPart
+	{
+	public:
+		FSolidUpperArmPart(
+			ESolidPartType InType,
+			ESolidPartSide InSide,
+			ESolidPartColour InColour,
+			const FSolidPartSection& InStart,
+			const FSolidPartSection& InEnd,
+			const TArray<FSolidDeformBone>& InSkeleton);
+
+		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual TArray<FName> PartBones() const override;
+		virtual void Apply(const FSolidBodyParams& Params) override;
+	};
+
+	/** hand_l or hand_r. Arm length and bulk size it. Draw keeps the tube. */
+	class FSolidLowerArmPart : public FSolidBodyPart
+	{
+	public:
+		FSolidLowerArmPart(
+			ESolidPartType InType,
+			ESolidPartSide InSide,
+			ESolidPartColour InColour,
+			const FSolidPartSection& InStart,
+			const FSolidPartSection& InEnd,
+			const TArray<FSolidDeformBone>& InSkeleton);
+
+		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual TArray<FName> PartBones() const override;
+		virtual void Apply(const FSolidBodyParams& Params) override;
+	};
+
+	/** The part for this type. Each type is its own class. The mesh switch lives here. */
 	TUniquePtr<FSolidBodyPart> MakeBodyPart(
 		ESolidPartType InType,
 		ESolidPartSide InSide,

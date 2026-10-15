@@ -122,44 +122,7 @@ namespace
 
 TArray<FName> SolidBodyMesh::FSolidBodyPart::PartBones() const
 {
-	using namespace SolidBodyMesh;
-
-	TArray<FName> Names;
-	switch (Type)
-	{
-	case ESolidPartType::Thigh:
-		AddSidedBone(Names, Side, LeftThighBone, RightThighBone);
-		break;
-	case ESolidPartType::Calf:
-		AddSidedBone(Names, Side, LeftCalfBone, RightCalfBone);
-		break;
-	case ESolidPartType::Foot:
-		AddSidedBone(Names, Side, LeftBallBone, RightBallBone);
-		break;
-	case ESolidPartType::Toe:
-		AddSidedBone(Names, Side, LeftToeBone, RightToeBone);
-		break;
-	case ESolidPartType::Hip:
-		Names.Add(HipSpineBone);
-		Names.Add(HipLeftBone);
-		Names.Add(HipRightBone);
-		break;
-	case ESolidPartType::Abdomen:
-		Names.Add(SpineAbdomenBone);
-		break;
-	case ESolidPartType::Chest:
-		Names.Add(SpineChestBone);
-		break;
-	case ESolidPartType::UpperArm:
-		AddSidedBone(Names, Side, TEXT("lowerarm_l"), TEXT("lowerarm_r"));
-		break;
-	case ESolidPartType::LowerArm:
-		AddSidedBone(Names, Side, LeftHandBone, RightHandBone);
-		break;
-	default:
-		break;
-	}
-	return Names;
+	return {};
 }
 
 SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
@@ -177,7 +140,7 @@ SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
 	, End(InEnd)
 	, Skeleton(InSkeleton)
 {
-	// A head, a hand, or the shoulders replace this list in their own constructor.
+	// Each part type replaces this list in its own constructor.
 	Bones = FSolidBodyPart::PartBones();
 	Shape = PartShape(Type);
 }
@@ -187,47 +150,31 @@ TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::FSolidBodyPart::Clone()
 	return MakeUnique<FSolidBodyPart>(*this);
 }
 
-void SolidBodyMesh::FSolidBodyPart::Apply(const FSolidBodyParams& Params)
+void SolidBodyMesh::FSolidBodyPart::SizeSection(const float Length, const float SideScale, const float Depth)
 {
-	const FSolidBodyParams Clamped = Params.Clamped();
-	float Length = 1.f;
-	float SideScale = 1.f;
-	float Depth = 1.f;
-	switch (Type)
-	{
-	case ESolidPartType::Thigh:
-	case ESolidPartType::Calf:
-	case ESolidPartType::Foot:
-	case ESolidPartType::Toe:
-		Length = Clamped.LegLength * Clamped.Height;
-		SideScale = Clamped.Bulk;
-		Depth = Clamped.Bulk;
-		break;
-	case ESolidPartType::Hip:
-		Length = Clamped.Height;
-		SideScale = Clamped.HipWidth;
-		Depth = Clamped.TorsoGirth;
-		break;
-	case ESolidPartType::UpperArm:
-	case ESolidPartType::LowerArm:
-		Length = Clamped.ArmLength;
-		SideScale = Clamped.Bulk;
-		Depth = Clamped.Bulk;
-		break;
-	case ESolidPartType::Abdomen:
-	case ESolidPartType::Chest:
-	default:
-		Length = Clamped.Height;
-		SideScale = Clamped.TorsoGirth;
-		Depth = Clamped.TorsoGirth;
-		break;
-	}
-
 	Start.X *= SideScale;
 	Start.Y *= Depth;
 	End.X *= SideScale;
 	End.Y *= Depth;
 	SizeBones(Length, SideScale);
+}
+
+void SolidBodyMesh::FSolidBodyPart::ApplyLeg(const FSolidBodyParams& Params)
+{
+	const FSolidBodyParams Clamped = Params.Clamped();
+	SizeSection(Clamped.LegLength * Clamped.Height, Clamped.Bulk, Clamped.Bulk);
+}
+
+void SolidBodyMesh::FSolidBodyPart::ApplyArm(const FSolidBodyParams& Params)
+{
+	const FSolidBodyParams Clamped = Params.Clamped();
+	SizeSection(Clamped.ArmLength, Clamped.Bulk, Clamped.Bulk);
+}
+
+void SolidBodyMesh::FSolidBodyPart::Apply(const FSolidBodyParams& Params)
+{
+	const FSolidBodyParams Clamped = Params.Clamped();
+	SizeSection(Clamped.Height, Clamped.TorsoGirth, Clamped.TorsoGirth);
 }
 
 void SolidBodyMesh::FSolidBodyPart::SizeBones(const float Length, const float SideScale)
@@ -396,6 +343,275 @@ void SolidBodyMesh::FSolidBodyPart::Draw(
 	}
 }
 
+namespace
+{
+	template<typename T>
+	TUniquePtr<SolidBodyMesh::FSolidBodyPart> MakePart(
+		const SolidBodyMesh::ESolidPartType InType,
+		const SolidBodyMesh::ESolidPartSide InSide,
+		const SolidBodyMesh::ESolidPartColour InColour,
+		const SolidBodyMesh::FSolidPartSection& InStart,
+		const SolidBodyMesh::FSolidPartSection& InEnd,
+		const TArray<FSolidDeformBone>& InSkeleton)
+	{
+		return MakeUnique<T>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+	}
+}
+
+SolidBodyMesh::FSolidThighPart::FSolidThighPart(
+	const ESolidPartType InType,
+	const ESolidPartSide InSide,
+	const ESolidPartColour InColour,
+	const FSolidPartSection& InStart,
+	const FSolidPartSection& InEnd,
+	const TArray<FSolidDeformBone>& InSkeleton)
+	: FSolidBodyPart(InType, InSide, InColour, InStart, InEnd, InSkeleton)
+{
+	Bones = PartBones();
+}
+
+TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::FSolidThighPart::Clone() const
+{
+	return MakeUnique<FSolidThighPart>(*this);
+}
+
+TArray<FName> SolidBodyMesh::FSolidThighPart::PartBones() const
+{
+	TArray<FName> Names;
+	AddSidedBone(Names, Side, LeftThighBone, RightThighBone);
+	return Names;
+}
+
+void SolidBodyMesh::FSolidThighPart::Apply(const FSolidBodyParams& Params)
+{
+	ApplyLeg(Params);
+}
+
+SolidBodyMesh::FSolidCalfPart::FSolidCalfPart(
+	const ESolidPartType InType,
+	const ESolidPartSide InSide,
+	const ESolidPartColour InColour,
+	const FSolidPartSection& InStart,
+	const FSolidPartSection& InEnd,
+	const TArray<FSolidDeformBone>& InSkeleton)
+	: FSolidBodyPart(InType, InSide, InColour, InStart, InEnd, InSkeleton)
+{
+	Bones = PartBones();
+}
+
+TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::FSolidCalfPart::Clone() const
+{
+	return MakeUnique<FSolidCalfPart>(*this);
+}
+
+TArray<FName> SolidBodyMesh::FSolidCalfPart::PartBones() const
+{
+	TArray<FName> Names;
+	AddSidedBone(Names, Side, LeftCalfBone, RightCalfBone);
+	return Names;
+}
+
+void SolidBodyMesh::FSolidCalfPart::Apply(const FSolidBodyParams& Params)
+{
+	ApplyLeg(Params);
+}
+
+SolidBodyMesh::FSolidFootPart::FSolidFootPart(
+	const ESolidPartType InType,
+	const ESolidPartSide InSide,
+	const ESolidPartColour InColour,
+	const FSolidPartSection& InStart,
+	const FSolidPartSection& InEnd,
+	const TArray<FSolidDeformBone>& InSkeleton)
+	: FSolidBodyPart(InType, InSide, InColour, InStart, InEnd, InSkeleton)
+{
+	Bones = PartBones();
+}
+
+TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::FSolidFootPart::Clone() const
+{
+	return MakeUnique<FSolidFootPart>(*this);
+}
+
+TArray<FName> SolidBodyMesh::FSolidFootPart::PartBones() const
+{
+	TArray<FName> Names;
+	AddSidedBone(Names, Side, LeftBallBone, RightBallBone);
+	return Names;
+}
+
+void SolidBodyMesh::FSolidFootPart::Apply(const FSolidBodyParams& Params)
+{
+	ApplyLeg(Params);
+}
+
+SolidBodyMesh::FSolidToePart::FSolidToePart(
+	const ESolidPartType InType,
+	const ESolidPartSide InSide,
+	const ESolidPartColour InColour,
+	const FSolidPartSection& InStart,
+	const FSolidPartSection& InEnd,
+	const TArray<FSolidDeformBone>& InSkeleton)
+	: FSolidBodyPart(InType, InSide, InColour, InStart, InEnd, InSkeleton)
+{
+	Bones = PartBones();
+}
+
+TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::FSolidToePart::Clone() const
+{
+	return MakeUnique<FSolidToePart>(*this);
+}
+
+TArray<FName> SolidBodyMesh::FSolidToePart::PartBones() const
+{
+	TArray<FName> Names;
+	AddSidedBone(Names, Side, LeftToeBone, RightToeBone);
+	return Names;
+}
+
+void SolidBodyMesh::FSolidToePart::Apply(const FSolidBodyParams& Params)
+{
+	ApplyLeg(Params);
+}
+
+SolidBodyMesh::FSolidHipPart::FSolidHipPart(
+	const ESolidPartType InType,
+	const ESolidPartSide InSide,
+	const ESolidPartColour InColour,
+	const FSolidPartSection& InStart,
+	const FSolidPartSection& InEnd,
+	const TArray<FSolidDeformBone>& InSkeleton)
+	: FSolidBodyPart(InType, InSide, InColour, InStart, InEnd, InSkeleton)
+{
+	Bones = PartBones();
+}
+
+TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::FSolidHipPart::Clone() const
+{
+	return MakeUnique<FSolidHipPart>(*this);
+}
+
+TArray<FName> SolidBodyMesh::FSolidHipPart::PartBones() const
+{
+	TArray<FName> Names;
+	Names.Add(HipSpineBone);
+	Names.Add(HipLeftBone);
+	Names.Add(HipRightBone);
+	return Names;
+}
+
+void SolidBodyMesh::FSolidHipPart::Apply(const FSolidBodyParams& Params)
+{
+	const FSolidBodyParams Clamped = Params.Clamped();
+	SizeSection(Clamped.Height, Clamped.HipWidth, Clamped.TorsoGirth);
+}
+
+SolidBodyMesh::FSolidAbdomenPart::FSolidAbdomenPart(
+	const ESolidPartType InType,
+	const ESolidPartSide InSide,
+	const ESolidPartColour InColour,
+	const FSolidPartSection& InStart,
+	const FSolidPartSection& InEnd,
+	const TArray<FSolidDeformBone>& InSkeleton)
+	: FSolidBodyPart(InType, InSide, InColour, InStart, InEnd, InSkeleton)
+{
+	Bones = PartBones();
+}
+
+TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::FSolidAbdomenPart::Clone() const
+{
+	return MakeUnique<FSolidAbdomenPart>(*this);
+}
+
+TArray<FName> SolidBodyMesh::FSolidAbdomenPart::PartBones() const
+{
+	TArray<FName> Names;
+	Names.Add(SpineAbdomenBone);
+	return Names;
+}
+
+SolidBodyMesh::FSolidChestPart::FSolidChestPart(
+	const ESolidPartType InType,
+	const ESolidPartSide InSide,
+	const ESolidPartColour InColour,
+	const FSolidPartSection& InStart,
+	const FSolidPartSection& InEnd,
+	const TArray<FSolidDeformBone>& InSkeleton)
+	: FSolidBodyPart(InType, InSide, InColour, InStart, InEnd, InSkeleton)
+{
+	Bones = PartBones();
+}
+
+TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::FSolidChestPart::Clone() const
+{
+	return MakeUnique<FSolidChestPart>(*this);
+}
+
+TArray<FName> SolidBodyMesh::FSolidChestPart::PartBones() const
+{
+	TArray<FName> Names;
+	Names.Add(SpineChestBone);
+	return Names;
+}
+
+SolidBodyMesh::FSolidUpperArmPart::FSolidUpperArmPart(
+	const ESolidPartType InType,
+	const ESolidPartSide InSide,
+	const ESolidPartColour InColour,
+	const FSolidPartSection& InStart,
+	const FSolidPartSection& InEnd,
+	const TArray<FSolidDeformBone>& InSkeleton)
+	: FSolidBodyPart(InType, InSide, InColour, InStart, InEnd, InSkeleton)
+{
+	Bones = PartBones();
+}
+
+TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::FSolidUpperArmPart::Clone() const
+{
+	return MakeUnique<FSolidUpperArmPart>(*this);
+}
+
+TArray<FName> SolidBodyMesh::FSolidUpperArmPart::PartBones() const
+{
+	TArray<FName> Names;
+	AddSidedBone(Names, Side, TEXT("lowerarm_l"), TEXT("lowerarm_r"));
+	return Names;
+}
+
+void SolidBodyMesh::FSolidUpperArmPart::Apply(const FSolidBodyParams& Params)
+{
+	ApplyArm(Params);
+}
+
+SolidBodyMesh::FSolidLowerArmPart::FSolidLowerArmPart(
+	const ESolidPartType InType,
+	const ESolidPartSide InSide,
+	const ESolidPartColour InColour,
+	const FSolidPartSection& InStart,
+	const FSolidPartSection& InEnd,
+	const TArray<FSolidDeformBone>& InSkeleton)
+	: FSolidBodyPart(InType, InSide, InColour, InStart, InEnd, InSkeleton)
+{
+	Bones = PartBones();
+}
+
+TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::FSolidLowerArmPart::Clone() const
+{
+	return MakeUnique<FSolidLowerArmPart>(*this);
+}
+
+TArray<FName> SolidBodyMesh::FSolidLowerArmPart::PartBones() const
+{
+	TArray<FName> Names;
+	AddSidedBone(Names, Side, LeftHandBone, RightHandBone);
+	return Names;
+}
+
+void SolidBodyMesh::FSolidLowerArmPart::Apply(const FSolidBodyParams& Params)
+{
+	ApplyArm(Params);
+}
+
 TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::MakeBodyPart(
 	const ESolidPartType InType,
 	const ESolidPartSide InSide,
@@ -407,12 +623,40 @@ TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::MakeBodyPart(
 	switch (PartShape(InType))
 	{
 	case ESolidPartShape::Head:
-		return MakeUnique<FSolidHeadPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+		return MakePart<FSolidHeadPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
 	case ESolidPartShape::Hand:
-		return MakeUnique<FSolidHandPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+		return MakePart<FSolidHandPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
 	case ESolidPartShape::Shoulder:
-		return MakeUnique<FSolidShoulderPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
-	default:
-		return MakeUnique<FSolidBodyPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+		return MakePart<FSolidShoulderPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+	case ESolidPartShape::Tube:
+		break;
 	}
+
+	switch (InType)
+	{
+	case ESolidPartType::Thigh:
+		return MakePart<FSolidThighPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+	case ESolidPartType::Calf:
+		return MakePart<FSolidCalfPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+	case ESolidPartType::Foot:
+		return MakePart<FSolidFootPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+	case ESolidPartType::Toe:
+		return MakePart<FSolidToePart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+	case ESolidPartType::Hip:
+		return MakePart<FSolidHipPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+	case ESolidPartType::Abdomen:
+		return MakePart<FSolidAbdomenPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+	case ESolidPartType::Chest:
+		return MakePart<FSolidChestPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+	case ESolidPartType::UpperArm:
+		return MakePart<FSolidUpperArmPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+	case ESolidPartType::LowerArm:
+		return MakePart<FSolidLowerArmPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+	// The mesh switch above already built the head, a hand, and the shoulders.
+	case ESolidPartType::Shoulders:
+	case ESolidPartType::Hand:
+	case ESolidPartType::Head:
+		break;
+	}
+	return MakePart<FSolidBodyPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
 }

@@ -1577,4 +1577,91 @@ bool FSolidBodyFootSoleTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyPartClassTest,
+	"SolidCore1.Body.PartClass",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyPartClassTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidBodyMesh;
+
+	TArray<FSolidDeformBone> Bones;
+	auto AddBone = [&Bones](const TCHAR* Name, const int32 Parent, const FVector& Translation)
+	{
+		FSolidDeformBone Bone;
+		Bone.Name = Name;
+		Bone.ParentIndex = Parent;
+		Bone.LocalTranslation = Translation;
+		Bones.Add(Bone);
+	};
+	AddBone(TEXT("pelvis"), INDEX_NONE, FVector::ZeroVector);
+	AddBone(LeftThighBone, 0, FVector(0.f, 0.f, -40.f));
+	AddBone(LeftCalfBone, 0, FVector(0.f, 0.f, -30.f));
+	AddBone(LeftBallBone, 0, FVector(0.f, 0.f, -10.f));
+	AddBone(LeftToeBone, 0, FVector(0.f, 0.f, -8.f));
+	AddBone(SpineAbdomenBone, 0, FVector(0.f, 0.f, 12.f));
+	AddBone(TEXT("lowerarm_l"), 0, FVector(0.f, 0.f, -22.f));
+	AddBone(LeftHandBone, 0, FVector(0.f, 0.f, -18.f));
+
+	const FSolidBodyMesh Body = FSolidBodyMesh::Make(Bones);
+	const FSolidBodyPart* Calf = Body.Find(TEXT("Calf (L)"));
+	const FSolidBodyPart* Foot = Body.Find(TEXT("Foot (L)"));
+	const FSolidBodyPart* Toe = Body.Find(TEXT("Toe (L)"));
+	const FSolidBodyPart* Abdomen = Body.Find(TEXT("Abdomen"));
+	const FSolidBodyPart* Lower = Body.Find(TEXT("Lower arm (L)"));
+	TestTrue(TEXT("the calf wraps foot_l"), Calf && Calf->Bones.Num() == 1 && Calf->Bones[0] == FName(LeftCalfBone));
+	TestTrue(TEXT("the foot wraps ball_l"), Foot && Foot->Bones.Num() == 1 && Foot->Bones[0] == FName(LeftBallBone));
+	TestTrue(TEXT("the toe wraps the toe bone"), Toe && Toe->Bones.Num() == 1 && Toe->Bones[0] == FName(LeftToeBone));
+	TestTrue(
+		TEXT("those limbs stay tubes"),
+		Calf && Foot && Toe && Lower
+		&& Calf->Shape == ESolidPartShape::Tube
+		&& Foot->Shape == ESolidPartShape::Tube
+		&& Toe->Shape == ESolidPartShape::Tube
+		&& Lower->Shape == ESolidPartShape::Tube);
+	if (!Abdomen || !Lower)
+	{
+		return false;
+	}
+	const float AbdomenSide = Abdomen->Start.X;
+	const float LowerSide = Lower->Start.X;
+
+	FSolidBodyMesh Copied = Body;
+	FSolidBodyParams Params;
+	Params.LegLength = 1.5f;
+	Params.Height = 1.2f;
+	Params.Bulk = 1.25f;
+	Params.TorsoGirth = 1.4f;
+	Params.ArmLength = 1.3f;
+	TArray<FSolidDeformBone> Scaled = Bones;
+	Copied.Apply(Scaled, Params);
+
+	const FSolidBodyPart* CopiedThigh = Copied.Find(TEXT("Thigh (L)"));
+	const FSolidBodyPart* CopiedAbdomen = Copied.Find(TEXT("Abdomen"));
+	const FSolidBodyPart* CopiedLower = Copied.Find(TEXT("Lower arm (L)"));
+	TestTrue(
+		TEXT("a copy keeps the thigh on leg bulk"),
+		CopiedThigh && FMath::IsNearlyEqual(CopiedThigh->Start.X, LeftThighTopDiameterCm * Params.Bulk, 0.01f));
+	TestTrue(
+		TEXT("a copy sizes the thigh bone by leg length and height"),
+		FMath::IsNearlyEqual(Scaled[1].LocalTranslation.Size(), 40.f * Params.LegLength * Params.Height, 0.01f));
+	TestTrue(
+		TEXT("a copy sizes the calf bone by leg length and height"),
+		FMath::IsNearlyEqual(Scaled[2].LocalTranslation.Size(), 30.f * Params.LegLength * Params.Height, 0.01f));
+	TestTrue(
+		TEXT("a copy keeps the abdomen on torso girth"),
+		CopiedAbdomen && FMath::IsNearlyEqual(CopiedAbdomen->Start.X, AbdomenSide * Params.TorsoGirth, 0.01f));
+	TestTrue(
+		TEXT("a copy sizes the abdomen bone by height"),
+		FMath::IsNearlyEqual(Scaled[5].LocalTranslation.Size(), 12.f * Params.Height, 0.01f));
+	TestTrue(
+		TEXT("a copy keeps the lower arm on bulk"),
+		CopiedLower && FMath::IsNearlyEqual(CopiedLower->Start.X, LowerSide * Params.Bulk, 0.01f));
+	TestTrue(
+		TEXT("a copy sizes the lower arm bone by arm length"),
+		FMath::IsNearlyEqual(Scaled[7].LocalTranslation.Size(), 18.f * Params.ArmLength, 0.01f));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

@@ -32,13 +32,13 @@ namespace SolidBodyMesh
 			const FSolidPartSection& InEnd)
 		{
 			FSolidBodyPart Part(InType, InSide, InColour, InStart, InEnd);
-			Part.Bones = PartBones(Part.Type, Part.Side, Skeleton);
+			Part.Bones = Part.PartBones(Skeleton);
 			Parts.Add(MoveTemp(Part));
 		}
 
 		/**
 		 * The body for this skeleton.
-		 * Each part asks PartBones which bones it wraps.
+		 * Each part reads the bones it wraps.
 		 * The head gains the eye bones. Each hand lists the fingers on that hand.
 		 * The abdomen is spine_02. The chest is spine_03.
 		 */

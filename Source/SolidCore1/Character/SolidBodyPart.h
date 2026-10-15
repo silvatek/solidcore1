@@ -70,22 +70,6 @@ namespace SolidBodyMesh
 		Hand,
 	};
 
-	/**
-	 * The bones this part wraps on the Viking skeleton.
-	 * A paired part uses the side to choose left or right. A core part ignores the side.
-	 */
-	TArray<FName> PartBones(ESolidPartType Type, ESolidPartSide Side);
-
-	/**
-	 * The bones this part wraps on this skeleton.
-	 * A thigh, a spine piece, and the other fixed parts keep their Viking names.
-	 * The head is the head bone, then every eye bone.
-	 * A hand lists the fingers that belong to that hand.
-	 * The first is a finger whose parent is the hand bone.
-	 * The hand is empty when no finger meets the hand.
-	 */
-	TArray<FName> PartBones(ESolidPartType Type, ESolidPartSide Side, const TArray<FSolidDeformBone>& Skeleton);
-
 	/** The slider group for a part. Thighs, calves, feet, and toes share leg length. */
 	inline ESolidPartMeasure PartMeasure(const ESolidPartType Type)
 	{
@@ -207,9 +191,9 @@ namespace SolidBodyMesh
 			: Type(ESolidPartType::Thigh)
 			, Side(ESolidPartSide::Core)
 			, Name(PartName(Type, Side))
-			, Bones(PartBones(Type, Side))
 			, Measure(PartMeasure(Type))
 		{
+			Bones = PartBones();
 		}
 
 		/** The type, the side, its colour, and the diameters at each end. The bones come from the type and the side. */
@@ -232,6 +216,22 @@ namespace SolidBodyMesh
 		bool bHasMid = false;
 		/** Comes from the part type. */
 		ESolidPartMeasure Measure = ESolidPartMeasure::Leg;
+
+		/**
+		 * The bones this part wraps on the Viking skeleton.
+		 * A paired part uses its side to choose left or right. A core part ignores the side.
+		 */
+		TArray<FName> PartBones() const;
+
+		/**
+		 * The bones this part wraps on this skeleton.
+		 * A thigh, a spine piece, and the other fixed parts keep their Viking names.
+		 * The head is the head bone, then every eye bone.
+		 * A hand lists the fingers that belong to that hand.
+		 * The first is a finger whose parent is the hand bone.
+		 * The hand is empty when no finger meets the hand.
+		 */
+		TArray<FName> PartBones(const TArray<FSolidDeformBone>& Skeleton) const;
 
 		/** Shirt, trousers, or skin. The companion's colours fill those slots. */
 		uint8 MaterialSlot() const;

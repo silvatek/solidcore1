@@ -993,7 +993,7 @@ bool FSolidBodyHeadTest::RunTest(const FString& Parameters)
 		TestFalse(TEXT("the thumb stays out of the head"), Head->Bones.Contains(FName(TEXT("thumb_l"))));
 		TestTrue(
 			TEXT("PartBones reads the head"),
-			Head->Bones == PartBones(ESolidPartType::Head, ESolidPartSide::Core, Bones));
+			Head->Bones == Head->PartBones(Bones));
 	}
 
 	TArray<FVector> Positions;
@@ -1274,10 +1274,10 @@ bool FSolidBodyHandsTest::RunTest(const FString& Parameters)
 	{
 		TestTrue(
 			TEXT("PartBones reads the left hand"),
-			Left->Bones == PartBones(ESolidPartType::Hand, ESolidPartSide::Left, Bones));
+			Left->Bones == Left->PartBones(Bones));
 		TestTrue(
 			TEXT("PartBones reads the right hand"),
-			Right->Bones == PartBones(ESolidPartType::Hand, ESolidPartSide::Right, Bones));
+			Right->Bones == Right->PartBones(Bones));
 		TestTrue(TEXT("the left index is inside the left hand"), Left->Bones.Contains(FName(TEXT("index_01_l"))));
 		TestTrue(TEXT("the left pinky is inside the left hand"), Left->Bones.Contains(FName(TEXT("pinky_01_l"))));
 		TestTrue(TEXT("the left middle is inside the left hand"), Left->Bones.Contains(FName(TEXT("middle_02_l"))));
@@ -1291,10 +1291,15 @@ bool FSolidBodyHandsTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("a right-named thumb joins the right hand"), Right->Bones.Contains(FName(TEXT("thumb_01_r"))));
 		TestFalse(TEXT("the left index stays out of the right hand"), Right->Bones.Contains(FName(TEXT("index_01_l"))));
 		TestFalse(TEXT("the unsided left finger stays out of the right hand"), Right->Bones.Contains(FName(TEXT("index_01"))));
+		const FSolidBodyPart Thigh(
+			ESolidPartType::Thigh,
+			ESolidPartSide::Left,
+			ESolidPartColour::Trousers,
+			FSolidPartSection::Round(LeftThighTopDiameterCm),
+			FSolidPartSection::Round(LeftThighBottomDiameterCm));
 		TestTrue(
 			TEXT("a thigh keeps its viking bone"),
-			PartBones(ESolidPartType::Thigh, ESolidPartSide::Left, Bones)
-				== PartBones(ESolidPartType::Thigh, ESolidPartSide::Left));
+			Thigh.PartBones(Bones) == Thigh.PartBones());
 	}
 
 	const FSolidBodyPart* Head = Body.Find(TEXT("Head"));

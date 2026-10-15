@@ -150,62 +150,62 @@ void SolidBodyMesh::FSolidBodyPart::Apply(
 {
 	const FSolidBodyParams Clamped = Params.Clamped();
 	float Length = 1.f;
-	float Side = 1.f;
+	float SideScale = 1.f;
 	float Depth = 1.f;
 	switch (Measure)
 	{
 	case ESolidPartMeasure::Leg:
 		Length = Clamped.LegLength * Clamped.Height;
-		Side = Clamped.Bulk;
+		SideScale = Clamped.Bulk;
 		Depth = Clamped.Bulk;
 		break;
 	case ESolidPartMeasure::Hip:
 		Length = Clamped.Height;
-		Side = Clamped.HipWidth;
+		SideScale = Clamped.HipWidth;
 		Depth = Clamped.TorsoGirth;
 		break;
 	case ESolidPartMeasure::Shoulder:
 		Length = Clamped.NeckLength;
-		Side = Clamped.ShoulderWidth;
+		SideScale = Clamped.ShoulderWidth;
 		Depth = Clamped.TorsoGirth;
 		break;
 	case ESolidPartMeasure::Arm:
 		Length = Clamped.ArmLength;
-		Side = Clamped.Bulk;
+		SideScale = Clamped.Bulk;
 		Depth = Clamped.Bulk;
 		break;
 	case ESolidPartMeasure::Head:
 		Length = Clamped.HeadSize;
-		Side = Clamped.HeadSize;
+		SideScale = Clamped.HeadSize;
 		Depth = Clamped.HeadSize;
 		break;
 	case ESolidPartMeasure::Hand:
 		Length = 1.f;
-		Side = 1.f;
+		SideScale = 1.f;
 		Depth = 1.f;
 		break;
 	default:
 		Length = Clamped.Height;
-		Side = Clamped.TorsoGirth;
+		SideScale = Clamped.TorsoGirth;
 		Depth = Clamped.TorsoGirth;
 		break;
 	}
 
-	Start.X *= Side;
+	Start.X *= SideScale;
 	Start.Y *= Depth;
 	if (Measure == ESolidPartMeasure::Shoulder)
 	{
-		End.X *= Side;
-		End.Y *= Side;
+		End.X *= SideScale;
+		End.Y *= SideScale;
 	}
 	else
 	{
-		End.X *= Side;
+		End.X *= SideScale;
 		End.Y *= Depth;
 	}
 	if (bHasMid)
 	{
-		Mid.X *= Side;
+		Mid.X *= SideScale;
 		Mid.Y *= Depth;
 	}
 
@@ -232,8 +232,8 @@ void SolidBodyMesh::FSolidBodyPart::Apply(
 			? WorldRotationAt(Skeleton, Parent)
 			: FQuat::Identity;
 		FVector Offset = ParentRotation.RotateVector(Skeleton[Index].LocalTranslation);
-		Offset.X *= Side;
-		Offset.Y *= Side;
+		Offset.X *= SideScale;
+		Offset.Y *= SideScale;
 		Skeleton[Index].LocalTranslation = ParentRotation.UnrotateVector(Offset);
 	}
 }
@@ -327,17 +327,17 @@ void SolidBodyMesh::FSolidBodyPart::AddTube(
 
 	const uint8 Slot = MaterialSlot();
 	const FVector Axis = Delta / Length;
-	FVector Side = Cone.WideAxis - Axis * FVector::DotProduct(Cone.WideAxis, Axis);
-	if (Side.SizeSquared() < 0.01)
+	FVector Wide = Cone.WideAxis - Axis * FVector::DotProduct(Cone.WideAxis, Axis);
+	if (Wide.SizeSquared() < 0.01)
 	{
-		Side = FVector::CrossProduct(FVector::UpVector, Axis);
+		Wide = FVector::CrossProduct(FVector::UpVector, Axis);
 	}
-	if (Side.SizeSquared() < 0.01)
+	if (Wide.SizeSquared() < 0.01)
 	{
-		Side = FVector::CrossProduct(FVector::ForwardVector, Axis);
+		Wide = FVector::CrossProduct(FVector::ForwardVector, Axis);
 	}
-	Side = Side.GetSafeNormal();
-	const FVector Up = FVector::CrossProduct(Axis, Side).GetSafeNormal();
+	Wide = Wide.GetSafeNormal();
+	const FVector Up = FVector::CrossProduct(Axis, Wide).GetSafeNormal();
 	const int32 SideCount = FMath::Clamp(BodyPartSides, 3, BodyPartSideLimit);
 	const int32 RingCount = 2;
 	const int32 Base = Verts.Num();
@@ -354,7 +354,7 @@ void SolidBodyMesh::FSolidBodyPart::AddTube(
 		for (int32 Step = 0; Step < SideCount; ++Step)
 		{
 			const float Angle = (2.f * PI * static_cast<float>(Step)) / static_cast<float>(SideCount);
-			const FVector Offset = Side * (FMath::Cos(Angle) * Radius)
+			const FVector Offset = Wide * (FMath::Cos(Angle) * Radius)
 				+ Up * (FMath::Sin(Angle) * Radius * Squash);
 			FSolidBodyVert Vert;
 			Vert.Position = Center + Offset;
@@ -418,17 +418,17 @@ void SolidBodyMesh::FSolidBodyPart::AddShoulder(
 		return;
 	}
 	const FVector Axis = Delta / Length;
-	FVector Side = Piece.Lower.WideAxis - Axis * FVector::DotProduct(Piece.Lower.WideAxis, Axis);
-	if (Side.SizeSquared() < 0.01)
+	FVector Wide = Piece.Lower.WideAxis - Axis * FVector::DotProduct(Piece.Lower.WideAxis, Axis);
+	if (Wide.SizeSquared() < 0.01)
 	{
-		Side = FVector::CrossProduct(FVector::UpVector, Axis);
+		Wide = FVector::CrossProduct(FVector::UpVector, Axis);
 	}
-	if (Side.SizeSquared() < 0.01)
+	if (Wide.SizeSquared() < 0.01)
 	{
-		Side = FVector::CrossProduct(FVector::ForwardVector, Axis);
+		Wide = FVector::CrossProduct(FVector::ForwardVector, Axis);
 	}
-	Side = Side.GetSafeNormal();
-	const FVector Up = FVector::CrossProduct(Axis, Side).GetSafeNormal();
+	Wide = Wide.GetSafeNormal();
+	const FVector Up = FVector::CrossProduct(Axis, Wide).GetSafeNormal();
 	const int32 SideCount = ShoulderSideCount;
 	const int32 Base = Verts.Num();
 	for (int32 Ring = 0; Ring < 3; ++Ring)
@@ -438,7 +438,7 @@ void SolidBodyMesh::FSolidBodyPart::AddShoulder(
 		for (int32 Step = 0; Step < SideCount; ++Step)
 		{
 			const float Angle = (2.f * PI * static_cast<float>(Step)) / static_cast<float>(SideCount);
-			const FVector Offset = Side * (FMath::Cos(Angle) * Radius)
+			const FVector Offset = Wide * (FMath::Cos(Angle) * Radius)
 				+ Up * (FMath::Sin(Angle) * Radius * Flat);
 			FSolidBodyVert Vert;
 			Vert.Position = Centers[Ring] + Offset;
@@ -516,7 +516,7 @@ void SolidBodyMesh::FSolidBodyPart::AddHead(
 	const float VerticalRadius = Height * 0.5f;
 	const FVector Center = Neck + FVector::UpVector * VerticalRadius;
 	const FVector Up = FVector::UpVector;
-	const FVector Side = FVector::RightVector;
+	const FVector Right = FVector::RightVector;
 	const FVector Forward = FVector::ForwardVector;
 	const int32 Sides = FMath::Clamp(HeadSideCount, 3, BodyPartSideLimit);
 	const int32 Rings = FMath::Max(HeadRingCount, 3);
@@ -542,7 +542,7 @@ void SolidBodyMesh::FSolidBodyPart::AddHead(
 		{
 			const float Phi = (2.f * PI * static_cast<float>(Step)) / static_cast<float>(Sides);
 			const FVector Offset = Up * (Cos * VerticalRadius)
-				+ Side * (FMath::Cos(Phi) * Sin * HorizontalRadius)
+				+ Right * (FMath::Cos(Phi) * Sin * HorizontalRadius)
 				+ Forward * (FMath::Sin(Phi) * Sin * HorizontalRadius);
 			AddVert(Center + Offset);
 		}

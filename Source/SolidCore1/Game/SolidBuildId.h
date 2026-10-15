@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0310")
+#define SOLID_BUILD_ID TEXT("SC1-0311")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The short part names stay inside the body list.")
+#define SOLID_BUILD_NOTE TEXT("Local side directions no longer hide the part side.")
 #endif

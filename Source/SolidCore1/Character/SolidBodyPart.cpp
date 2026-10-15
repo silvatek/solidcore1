@@ -468,7 +468,7 @@ void SolidBodyMesh::FSolidBodyPart::AddTri(
 	Tris.Add(Tri);
 }
 
-void SolidBodyMesh::FSolidBodyPart::AddTube(
+void SolidBodyMesh::FSolidBodyPart::DrawTube(
 	TArray<FSolidBodyVert>& Verts,
 	TArray<FSolidBodyTri>& Tris,
 	const int32 BoneIndex,
@@ -553,7 +553,7 @@ void SolidBodyMesh::FSolidBodyPart::AddTube(
 	}
 }
 
-void SolidBodyMesh::FSolidBodyPart::AddShoulder(
+void SolidBodyMesh::FSolidBodyPart::DrawShoulder(
 	TArray<FSolidBodyVert>& Verts,
 	TArray<FSolidBodyTri>& Tris,
 	const int32 BoneIndex,
@@ -636,7 +636,7 @@ void SolidBodyMesh::FSolidBodyPart::AddShoulder(
 	}
 }
 
-void SolidBodyMesh::FSolidBodyPart::AddHead(
+void SolidBodyMesh::FSolidBodyPart::DrawHead(
 	TArray<FSolidBodyVert>& Verts,
 	TArray<FSolidBodyTri>& Tris,
 	const int32 BoneIndex,
@@ -749,7 +749,7 @@ void SolidBodyMesh::FSolidBodyPart::AddHead(
 	}
 }
 
-void SolidBodyMesh::FSolidBodyPart::AddHand(
+void SolidBodyMesh::FSolidBodyPart::DrawHand(
 	TArray<FSolidBodyVert>& Verts,
 	TArray<FSolidBodyTri>& Tris,
 	const int32 BoneIndex,
@@ -895,16 +895,16 @@ void SolidBodyMesh::FSolidBodyPart::Draw(
 	switch (Shape)
 	{
 	case ESolidPartShape::Head:
-		AddHead(Verts, Tris, SpanBone, From, To, SegmentStart, SegmentEnd, SegmentCount);
+		DrawHead(Verts, Tris, SpanBone, From, To, SegmentStart, SegmentEnd, SegmentCount);
 		break;
 	case ESolidPartShape::Hand:
-		AddHand(Verts, Tris, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount);
+		DrawHand(Verts, Tris, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount);
 		break;
 	case ESolidPartShape::Shoulder:
-		AddShoulder(Verts, Tris, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
+		DrawShoulder(Verts, Tris, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
 		break;
 	default:
-		AddTube(Verts, Tris, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
+		DrawTube(Verts, Tris, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
 		break;
 	}
 }

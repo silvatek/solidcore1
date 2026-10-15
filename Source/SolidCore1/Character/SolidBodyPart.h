@@ -257,8 +257,8 @@ namespace SolidBodyMesh
 	private:
 		void AddTri(TArray<FSolidBodyTri>& Tris, int32 A, int32 B, int32 C) const;
 
-		/** Fit this part's cone, then add that tube. */
-		void AddTube(
+		/** Fit this part's cone, then draw that tube. */
+		void DrawTube(
 			TArray<FSolidBodyVert>& Verts,
 			TArray<FSolidBodyTri>& Tris,
 			int32 BoneIndex,
@@ -269,8 +269,8 @@ namespace SolidBodyMesh
 			int32 SegmentCount,
 			const FVector& WideAxis);
 
-		/** Fit the shoulder piece, then add its two cones. */
-		void AddShoulder(
+		/** Fit the shoulder piece, then draw its two cones. */
+		void DrawShoulder(
 			TArray<FSolidBodyVert>& Verts,
 			TArray<FSolidBodyTri>& Tris,
 			int32 BoneIndex,
@@ -288,7 +288,7 @@ namespace SolidBodyMesh
 		 * The height is HeadHeightInBoneLengths times that length.
 		 * The horizontal radius is the length of the eye_jnt bones.
 		 */
-		void AddHead(
+		void DrawHead(
 			TArray<FSolidBodyVert>& Verts,
 			TArray<FSolidBodyTri>& Tris,
 			int32 BoneIndex,
@@ -304,7 +304,7 @@ namespace SolidBodyMesh
 		 * To is the top of that finger bone. The long axis runs from From to To.
 		 * The wide axis follows the other fingers. The thin axis is the palm thickness.
 		 */
-		void AddHand(
+		void DrawHand(
 			TArray<FSolidBodyVert>& Verts,
 			TArray<FSolidBodyTri>& Tris,
 			int32 BoneIndex,

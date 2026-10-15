@@ -17,13 +17,22 @@ class USkeletalMeshComponent;
  */
 namespace SolidBodyMesh
 {
-	/** The character. Parts holds every body part. Draw asks each one to add its triangles. */
+	/**
+	 * The character. Parts owns every body part. Draw asks each one to add its triangles.
+	 * A copy clones each part, so a head, a hand, and the shoulders keep their own mesh.
+	 */
 	class FSolidBodyMesh
 	{
 	public:
-		TArray<FSolidBodyPart> Parts;
+		FSolidBodyMesh() = default;
+		FSolidBodyMesh(const FSolidBodyMesh& Other);
+		FSolidBodyMesh& operator=(const FSolidBodyMesh& Other);
+		FSolidBodyMesh(FSolidBodyMesh&&) = default;
+		FSolidBodyMesh& operator=(FSolidBodyMesh&&) = default;
 
-		/** Construct one part on Skeleton and append it. The part reads its own bones. */
+		TArray<TUniquePtr<FSolidBodyPart>> Parts;
+
+		/** Construct the part for this type on Skeleton and append it. The part reads its own bones. */
 		void AddBodyPart(
 			ESolidPartType InType,
 			ESolidPartSide InSide,
@@ -31,7 +40,7 @@ namespace SolidBodyMesh
 			const FSolidPartSection& InStart,
 			const FSolidPartSection& InEnd)
 		{
-			Parts.Add(FSolidBodyPart(InType, InSide, InColour, InStart, InEnd, Skeleton));
+			Parts.Add(MakeBodyPart(InType, InSide, InColour, InStart, InEnd, Skeleton));
 		}
 
 		/**

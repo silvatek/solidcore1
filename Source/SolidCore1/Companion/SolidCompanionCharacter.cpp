@@ -645,13 +645,13 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 			Named.Add(Bone);
 		}
 		SolidBodyMesh::FSolidBodyMesh Body = SolidBodyMesh::FSolidBodyMesh::Make(Named);
-		for (SolidBodyMesh::FSolidBodyPart& Part : Body.Parts)
+		for (const TUniquePtr<SolidBodyMesh::FSolidBodyPart>& Part : Body.Parts)
 		{
-			if (Part.Bones.Num() == 0)
+			if (!Part || Part->Bones.Num() == 0)
 			{
 				continue;
 			}
-			const FName Span = FindBone(*Part.Bones[0].ToString());
+			const FName Span = FindBone(*Part->Bones[0].ToString());
 			const FName SpanParent = Span.IsNone() ? NAME_None : CharacterMesh->GetParentBone(Span);
 			if (Span.IsNone() || SpanParent.IsNone())
 			{
@@ -661,9 +661,9 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 			TArray<FVector> SegmentStart;
 			TArray<FVector> SegmentEnd;
 			bool bComplete = true;
-			for (int32 BoneNumber = 1; BoneNumber < Part.Bones.Num(); ++BoneNumber)
+			for (int32 BoneNumber = 1; BoneNumber < Part->Bones.Num(); ++BoneNumber)
 			{
-				const FName Bone = FindBone(*Part.Bones[BoneNumber].ToString());
+				const FName Bone = FindBone(*Part->Bones[BoneNumber].ToString());
 				const FName BoneParent = Bone.IsNone() ? NAME_None : CharacterMesh->GetParentBone(Bone);
 				if (Bone.IsNone() || BoneParent.IsNone())
 				{
@@ -679,13 +679,13 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 			}
 
 			TArray<FString> BoneNames;
-			for (const FName& Bone : Part.Bones)
+			for (const FName& Bone : Part->Bones)
 			{
 				BoneNames.Add(Bone.ToString());
 			}
 			BoneNames.Sort();
 			const FString Label = FString::Join(BoneNames, TEXT(", "));
-			const SolidBodyMesh::FSolidPartDraw Draw = Part.Fit(
+			const SolidBodyMesh::FSolidPartDraw Draw = Part->Fit(
 				CharacterMesh->GetBoneLocation(SpanParent),
 				CharacterMesh->GetBoneLocation(Span),
 				SegmentStart.GetData(),

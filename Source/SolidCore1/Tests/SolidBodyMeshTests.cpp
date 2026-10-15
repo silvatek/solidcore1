@@ -114,9 +114,9 @@ bool FSolidBodyVikingBuildTest::RunTest(const FString& Parameters)
 	for (int32 Index = 0; Index < Infos.Num(); ++Index)
 	{
 		bool bWrapped = false;
-		for (const SolidBodyMesh::FSolidBodyPart& Part : Catalogue.Parts)
+		for (const TUniquePtr<SolidBodyMesh::FSolidBodyPart>& Part : Catalogue.Parts)
 		{
-			if (Part.Bones.Contains(Infos[Index].Name))
+			if (Part && Part->Bones.Contains(Infos[Index].Name))
 			{
 				bWrapped = true;
 				break;
@@ -616,7 +616,7 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 		int32 Found = INDEX_NONE;
 		for (int32 Index = Cursor; Index < Body.Parts.Num(); ++Index)
 		{
-			if (Body.Parts[Index].Name.Equals(Name, ESearchCase::IgnoreCase))
+			if (Body.Parts[Index] && Body.Parts[Index]->Name.Equals(Name, ESearchCase::IgnoreCase))
 			{
 				Found = Index;
 				break;
@@ -687,11 +687,11 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 	}
 
 	FSolidBodyPart* Shoulders = nullptr;
-	for (FSolidBodyPart& Part : Body.Parts)
+	for (const TUniquePtr<FSolidBodyPart>& Part : Body.Parts)
 	{
-		if (Part.Name == TEXT("Shoulders"))
+		if (Part && Part->Name == TEXT("Shoulders"))
 		{
-			Shoulders = &Part;
+			Shoulders = Part.Get();
 		}
 	}
 	TestTrue(TEXT("the shoulders are on the list"), Shoulders != nullptr);
@@ -765,11 +765,15 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 		&& FMath::IsNearlyEqual(LowerRight->Start.X, Lower->Start.X, 0.01f)
 		&& FMath::IsNearlyEqual(LowerRight->End.X, Lower->End.X, 0.01f));
 
-	for (const FSolidBodyPart& Part : Body.Parts)
+	for (const TUniquePtr<FSolidBodyPart>& Part : Body.Parts)
 	{
-		TestFalse(TEXT("clavicle_l is not its own part"), Part.Bones.Num() == 1 && Part.Bones[0] == FName(TEXT("clavicle_l")));
-		TestFalse(TEXT("upperarm_l is not its own part"), Part.Bones.Num() == 1 && Part.Bones[0] == FName(TEXT("upperarm_l")));
-		for (const FName& Bone : Part.Bones)
+		if (!Part)
+		{
+			continue;
+		}
+		TestFalse(TEXT("clavicle_l is not its own part"), Part->Bones.Num() == 1 && Part->Bones[0] == FName(TEXT("clavicle_l")));
+		TestFalse(TEXT("upperarm_l is not its own part"), Part->Bones.Num() == 1 && Part->Bones[0] == FName(TEXT("upperarm_l")));
+		for (const FName& Bone : Part->Bones)
 		{
 			const FString BoneName = Bone.ToString();
 			TestFalse(TEXT("twists stay off the body"), BoneName.Contains(TEXT("twist")));
@@ -777,7 +781,7 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 			const bool bFinger = BoneName.StartsWith(TEXT("index_")) || BoneName.StartsWith(TEXT("thumb_"));
 			if (bFinger)
 			{
-				TestTrue(TEXT("a finger bone belongs to a hand"), Part.Name.Contains(TEXT("Hand")));
+				TestTrue(TEXT("a finger bone belongs to a hand"), Part->Name.Contains(TEXT("Hand")));
 			}
 		}
 	}
@@ -855,9 +859,13 @@ bool FSolidBodyTorsoSectionsTest::RunTest(const FString& Parameters)
 	{
 		TestTrue(TEXT("the chest length is spine_03"), Chest->Bones.Num() >= 1 && Chest->Bones[0] == FName(SpineChestBone));
 	}
-	for (const FSolidBodyPart& Part : Body.Parts)
+	for (const TUniquePtr<FSolidBodyPart>& Part : Body.Parts)
 	{
-		TestFalse(TEXT("a rising bone is not its own spine slab"), Part.Name.StartsWith(TEXT("Spine")));
+		if (!Part)
+		{
+			continue;
+		}
+		TestFalse(TEXT("a rising bone is not its own spine slab"), Part->Name.StartsWith(TEXT("Spine")));
 	}
 
 	float AbdomenBottom = 0.f;
@@ -1135,33 +1143,38 @@ bool FSolidBodyDetailTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the shoulders are on the list"), Found != nullptr);
 	if (Found)
 	{
-		FSolidBodyPart Shoulders = *Found;
-		const FVector SegmentStart[] = {
-			FVector(0.f, 0.f, 0.f),
-			FVector(0.f, 0.f, 0.f),
-			FVector(7.f, 3.f, 10.f),
-			FVector(-7.f, 3.f, 10.f),
-		};
-		const FVector SegmentEnd[] = {
-			FVector(7.f, 3.f, 10.f),
-			FVector(-7.f, 3.f, 10.f),
-			FVector(20.f, -2.f, 8.f),
-			FVector(-20.f, -2.f, 8.f),
-		};
-		TArray<FSolidBodyVert> ShoulderVerts;
-		TArray<FSolidBodyTri> ShoulderTris;
-		Shoulders.Draw(
-			ShoulderVerts,
-			ShoulderTris,
-			0,
-			1,
-			FVector(0.f, 0.f, 0.f),
-			FVector(0.f, 0.f, 20.f),
-			SegmentStart,
-			SegmentEnd,
-			4,
-			FVector::ForwardVector);
-		TestEqual(TEXT("the shoulders have three rings at the shared side count"), ShoulderVerts.Num(), 3 * ShoulderSideCount);
+		const TUniquePtr<FSolidBodyPart> Shoulders = Found->Clone();
+		FSolidBodyPart* ShoulderMesh = Shoulders.Get();
+		TestNotNull(TEXT("a copy keeps the shoulders"), ShoulderMesh);
+		if (ShoulderMesh)
+		{
+			const FVector SegmentStart[] = {
+				FVector(0.f, 0.f, 0.f),
+				FVector(0.f, 0.f, 0.f),
+				FVector(7.f, 3.f, 10.f),
+				FVector(-7.f, 3.f, 10.f),
+			};
+			const FVector SegmentEnd[] = {
+				FVector(7.f, 3.f, 10.f),
+				FVector(-7.f, 3.f, 10.f),
+				FVector(20.f, -2.f, 8.f),
+				FVector(-20.f, -2.f, 8.f),
+			};
+			TArray<FSolidBodyVert> ShoulderVerts;
+			TArray<FSolidBodyTri> ShoulderTris;
+			ShoulderMesh->Draw(
+				ShoulderVerts,
+				ShoulderTris,
+				0,
+				1,
+				FVector(0.f, 0.f, 0.f),
+				FVector(0.f, 0.f, 20.f),
+				SegmentStart,
+				SegmentEnd,
+				4,
+				FVector::ForwardVector);
+			TestEqual(TEXT("the shoulders have three rings at the shared side count"), ShoulderVerts.Num(), 3 * ShoulderSideCount);
+		}
 	}
 
 	TArray<FSolidDeformBone> Bones;

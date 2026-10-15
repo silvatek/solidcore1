@@ -158,19 +158,21 @@ namespace SolidBodyMesh
 	};
 
 	/**
-	 * One mesh piece.
+	 * One mesh piece. A tube is the default: a limb or a spine piece.
+	 * The head, a hand, and the shoulders are their own parts and draw their own mesh.
 	 * Bones[0] is the length of the piece. The other bones are wrapped inside it.
 	 * Start is the parent joint. End is Bones[0]. Mid is used by the shoulders.
 	 * Apply sizes the part and those bones. Fit measures the cones. Draw adds the triangles.
 	 */
-	struct FSolidBodyPart
+	class FSolidBodyPart
 	{
+	public:
 		FSolidBodyPart()
 			: Type(ESolidPartType::Thigh)
 			, Side(ESolidPartSide::Core)
 			, Name(PartName(Type, Side))
 		{
-			Bones = PartBones();
+			Bones = FSolidBodyPart::PartBones();
 			Shape = PartShape(Type);
 		}
 
@@ -183,12 +185,21 @@ namespace SolidBodyMesh
 			const FSolidPartSection& InEnd,
 			const TArray<FSolidDeformBone>& InSkeleton);
 
+		virtual ~FSolidBodyPart() = default;
+		FSolidBodyPart(const FSolidBodyPart&) = default;
+		FSolidBodyPart& operator=(const FSolidBodyPart&) = default;
+		FSolidBodyPart(FSolidBodyPart&&) = default;
+		FSolidBodyPart& operator=(FSolidBodyPart&&) = default;
+
+		/** A copy that keeps this part's own mesh. The body clones with this. */
+		virtual TUniquePtr<FSolidBodyPart> Clone() const;
+
 		ESolidPartType Type = ESolidPartType::Thigh;
 		ESolidPartSide Side = ESolidPartSide::Core;
 		/** Comes from Type and Side. "Thigh (L)", "Upper arm (R)", or "Hip". */
 		FString Name;
 		TArray<FName> Bones;
-		/** Comes from the part type. Draw uses this and the joint positions. */
+		/** Comes from the part type. The same mapping chooses the subclass. */
 		ESolidPartShape Shape = ESolidPartShape::Tube;
 		/** Copied from the body when the part is built. PartBones reads it. Apply sizes it. */
 		TArray<FSolidDeformBone> Skeleton;
@@ -201,29 +212,30 @@ namespace SolidBodyMesh
 		 * The bones this part wraps on its stored skeleton.
 		 * A thigh, a spine piece, and the other fixed parts keep their Viking names.
 		 * A paired part uses its side to choose left or right. A core part ignores the side.
-		 * The head is the head bone, then every eye bone.
-		 * A hand lists the fingers that belong to that hand.
-		 * The first is a finger whose parent is the hand bone.
-		 * The hand is empty when no finger meets the hand.
+		 * The head, a hand, and the shoulders replace this list.
 		 */
-		TArray<FName> PartBones() const;
+		virtual TArray<FName> PartBones() const;
 
 		/** Shirt, trousers, or skin. The companion's colours fill those slots. */
 		uint8 MaterialSlot() const;
 
 		/**
-		 * Size this part from its type, then size the bones it wraps.
+		 * Size this part, then size the bones it wraps.
+		 * A thigh, calf, foot, and toe use leg length and bulk.
+		 * The hip uses height, hip width, and torso girth.
+		 * An arm uses arm length and bulk. The abdomen and the chest use height and torso girth.
 		 * Bones[0] takes the length. The other bones spread by the part's side.
 		 * Call once. A listed bone that is missing from the skeleton is left out.
+		 * The head, a hand, and the shoulders size themselves.
 		 */
-		void Apply(const FSolidBodyParams& Params);
+		virtual void Apply(const FSolidBodyParams& Params);
 
 		/**
-		 * The cones for this part.
+		 * The cone for this part.
 		 * From is the parent joint and To is Bones[0]. The other bones are the segments.
-		 * A shoulder writes its mid diameters.
+		 * The shoulders measure their own piece.
 		 */
-		FSolidPartDraw Fit(
+		virtual FSolidPartDraw Fit(
 			const FVector& From,
 			const FVector& To,
 			const FVector* SegmentStart,
@@ -232,17 +244,13 @@ namespace SolidBodyMesh
 			const FVector& WideAxis);
 
 		/**
-		 * Add this part's triangles.
-		 * Shape chooses the mesh. The positions are the joints on this call.
-		 * The shoulders and every tube fit their cones, then draw them. The head and a hand measure themselves.
+		 * Add this part's triangles. A tube fits its cone, then draws it.
+		 * The positions are the joints on this call.
 		 * WeightBone is the parent joint. The child joint only rotates, so a tube is skinned there.
-		 * SpanBone is Bones[0]. The head is skinned to that bone.
-		 * For the head, To is the head joint. The sphere starts at From, the base of that bone.
-		 * The height is three lengths of the head bone. The horizontal radius is the eye_jnt length.
-		 * For a hand, Bones[0] is a finger that meets the hand bone. From is that joint.
-		 * To is the top of the finger. The ellipsoid runs from From to To and is skinned to the hand bone.
+		 * SpanBone is Bones[0].
+		 * The head, a hand, and the shoulders draw their own mesh.
 		 */
-		void Draw(
+		virtual void Draw(
 			TArray<FSolidBodyVert>& Verts,
 			TArray<FSolidBodyTri>& Tris,
 			int32 WeightBone,
@@ -254,7 +262,10 @@ namespace SolidBodyMesh
 			int32 SegmentCount,
 			const FVector& WideAxis);
 
-	private:
+	protected:
+		/** Bones[0] takes Length. The other bones spread by SideScale. */
+		void SizeBones(float Length, float SideScale);
+
 		void AddTri(TArray<FSolidBodyTri>& Tris, int32 A, int32 B, int32 C) const;
 
 		/** Fit this part's cone, then draw that tube. */
@@ -314,4 +325,111 @@ namespace SolidBodyMesh
 			const FVector* SegmentEnd,
 			int32 SegmentCount) const;
 	};
+
+	/** The head bone, then every eye bone. Head size scales the part and those bones. The mesh is a sphere. */
+	class FSolidHeadPart : public FSolidBodyPart
+	{
+	public:
+		FSolidHeadPart(
+			ESolidPartType InType,
+			ESolidPartSide InSide,
+			ESolidPartColour InColour,
+			const FSolidPartSection& InStart,
+			const FSolidPartSection& InEnd,
+			const TArray<FSolidDeformBone>& InSkeleton);
+
+		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual TArray<FName> PartBones() const override;
+		virtual void Apply(const FSolidBodyParams& Params) override;
+		virtual void Draw(
+			TArray<FSolidBodyVert>& Verts,
+			TArray<FSolidBodyTri>& Tris,
+			int32 WeightBone,
+			int32 SpanBone,
+			const FVector& From,
+			const FVector& To,
+			const FVector* SegmentStart,
+			const FVector* SegmentEnd,
+			int32 SegmentCount,
+			const FVector& WideAxis) override;
+	};
+
+	/**
+	 * The fingers on one hand. The first is a finger whose parent is the hand bone.
+	 * Empty when no finger meets the hand. The Viking lengths stay. The mesh is an ellipsoid.
+	 */
+	class FSolidHandPart : public FSolidBodyPart
+	{
+	public:
+		FSolidHandPart(
+			ESolidPartType InType,
+			ESolidPartSide InSide,
+			ESolidPartColour InColour,
+			const FSolidPartSection& InStart,
+			const FSolidPartSection& InEnd,
+			const TArray<FSolidDeformBone>& InSkeleton);
+
+		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual TArray<FName> PartBones() const override;
+		virtual void Apply(const FSolidBodyParams& Params) override;
+		virtual void Draw(
+			TArray<FSolidBodyVert>& Verts,
+			TArray<FSolidBodyTri>& Tris,
+			int32 WeightBone,
+			int32 SpanBone,
+			const FVector& From,
+			const FVector& To,
+			const FVector* SegmentStart,
+			const FVector* SegmentEnd,
+			int32 SegmentCount,
+			const FVector& WideAxis) override;
+	};
+
+	/**
+	 * neck_01, both clavicles, and both upper arms.
+	 * Neck length, shoulder width, and torso girth size it. The neck circle uses shoulder width on both axes.
+	 * Fit writes the mid diameters, then the mesh draws both cones.
+	 */
+	class FSolidShoulderPart : public FSolidBodyPart
+	{
+	public:
+		FSolidShoulderPart(
+			ESolidPartType InType,
+			ESolidPartSide InSide,
+			ESolidPartColour InColour,
+			const FSolidPartSection& InStart,
+			const FSolidPartSection& InEnd,
+			const TArray<FSolidDeformBone>& InSkeleton);
+
+		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
+		virtual TArray<FName> PartBones() const override;
+		virtual void Apply(const FSolidBodyParams& Params) override;
+		virtual FSolidPartDraw Fit(
+			const FVector& From,
+			const FVector& To,
+			const FVector* SegmentStart,
+			const FVector* SegmentEnd,
+			int32 SegmentCount,
+			const FVector& WideAxis) override;
+		virtual void Draw(
+			TArray<FSolidBodyVert>& Verts,
+			TArray<FSolidBodyTri>& Tris,
+			int32 WeightBone,
+			int32 SpanBone,
+			const FVector& From,
+			const FVector& To,
+			const FVector* SegmentStart,
+			const FVector* SegmentEnd,
+			int32 SegmentCount,
+			const FVector& WideAxis) override;
+	};
+
+	/** The part for this type. A head, a hand, and the shoulders are their own classes. Anything else is a tube. */
+	TUniquePtr<FSolidBodyPart> MakeBodyPart(
+		ESolidPartType InType,
+		ESolidPartSide InSide,
+		ESolidPartColour InColour,
+		const FSolidPartSection& InStart,
+		const FSolidPartSection& InEnd,
+		const TArray<FSolidDeformBone>& InSkeleton);
 }

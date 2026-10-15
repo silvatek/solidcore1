@@ -23,6 +23,31 @@
 #include "UObject/StrongObjectPtr.h"
 #endif
 
+SolidBodyMesh::FSolidBodyMesh::FSolidBodyMesh(const FSolidBodyMesh& Other)
+	: Skeleton(Other.Skeleton)
+{
+	Parts.Reserve(Other.Parts.Num());
+	for (const TUniquePtr<FSolidBodyPart>& Part : Other.Parts)
+	{
+		Parts.Add(Part ? Part->Clone() : nullptr);
+	}
+}
+
+SolidBodyMesh::FSolidBodyMesh& SolidBodyMesh::FSolidBodyMesh::operator=(const FSolidBodyMesh& Other)
+{
+	if (this != &Other)
+	{
+		Skeleton = Other.Skeleton;
+		Parts.Reset();
+		Parts.Reserve(Other.Parts.Num());
+		for (const TUniquePtr<FSolidBodyPart>& Part : Other.Parts)
+		{
+			Parts.Add(Part ? Part->Clone() : nullptr);
+		}
+	}
+	return *this;
+}
+
 SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<FSolidDeformBone>& Bones)
 {
 	constexpr ESolidPartSide Left = ESolidPartSide::Left;
@@ -690,9 +715,9 @@ namespace
 		{
 			const FName BoneName = Infos[Index].Name;
 			bool bWrapped = false;
-			for (const SolidBodyMesh::FSolidBodyPart& Part : Catalogue.Parts)
+			for (const TUniquePtr<SolidBodyMesh::FSolidBodyPart>& Part : Catalogue.Parts)
 			{
-				if (Part.Bones.Contains(BoneName))
+				if (Part && Part->Bones.Contains(BoneName))
 				{
 					bWrapped = true;
 					break;
@@ -1161,11 +1186,11 @@ void SolidBodyMesh::ApplySeed(
 
 const SolidBodyMesh::FSolidBodyPart* SolidBodyMesh::FSolidBodyMesh::Find(const FString& Name) const
 {
-	for (const FSolidBodyPart& Part : Parts)
+	for (const TUniquePtr<FSolidBodyPart>& Part : Parts)
 	{
-		if (Part.Name.Equals(Name, ESearchCase::IgnoreCase))
+		if (Part && Part->Name.Equals(Name, ESearchCase::IgnoreCase))
 		{
-			return &Part;
+			return Part.Get();
 		}
 	}
 	return nullptr;
@@ -1175,12 +1200,16 @@ void SolidBodyMesh::FSolidBodyMesh::Apply(
 	TArray<FSolidDeformBone>& Bones,
 	const FSolidBodyParams& Params)
 {
-	for (FSolidBodyPart& Part : Parts)
+	for (const TUniquePtr<FSolidBodyPart>& Part : Parts)
 	{
+		if (!Part)
+		{
+			continue;
+		}
 		// Apply sizes the skeleton stored on the part. That result is this body's skeleton.
-		Part.Skeleton = Bones;
-		Part.Apply(Params);
-		Bones = Part.Skeleton;
+		Part->Skeleton = Bones;
+		Part->Apply(Params);
+		Bones = Part->Skeleton;
 	}
 }
 
@@ -1192,13 +1221,13 @@ void SolidBodyMesh::FSolidBodyMesh::Draw(
 {
 	// shoulder_jnt stays bare. Twists stay bare. Hands draw their own fingers.
 	const int32 Count = FMath::Min(Bones.Num(), Positions.Num());
-	for (FSolidBodyPart& Part : Parts)
+	for (const TUniquePtr<FSolidBodyPart>& Part : Parts)
 	{
-		if (Part.Bones.Num() == 0)
+		if (!Part || Part->Bones.Num() == 0)
 		{
 			continue;
 		}
-		const int32 Span = FindNamedBone(Bones, Count, *Part.Bones[0].ToString());
+		const int32 Span = FindNamedBone(Bones, Count, *Part->Bones[0].ToString());
 		if (Span == INDEX_NONE)
 		{
 			continue;
@@ -1212,9 +1241,9 @@ void SolidBodyMesh::FSolidBodyMesh::Draw(
 		TArray<FVector> SegmentStart;
 		TArray<FVector> SegmentEnd;
 		bool bComplete = true;
-		for (int32 BoneNumber = 1; BoneNumber < Part.Bones.Num(); ++BoneNumber)
+		for (int32 BoneNumber = 1; BoneNumber < Part->Bones.Num(); ++BoneNumber)
 		{
-			const int32 Bone = FindNamedBone(Bones, Count, *Part.Bones[BoneNumber].ToString());
+			const int32 Bone = FindNamedBone(Bones, Count, *Part->Bones[BoneNumber].ToString());
 			if (Bone == INDEX_NONE)
 			{
 				bComplete = false;
@@ -1234,7 +1263,7 @@ void SolidBodyMesh::FSolidBodyMesh::Draw(
 			continue;
 		}
 
-		Part.Draw(
+		Part->Draw(
 			Verts,
 			Tris,
 			Parent,

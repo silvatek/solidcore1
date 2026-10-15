@@ -269,23 +269,12 @@ TArray<FName> SolidBodyMesh::FSolidBodyPart::PartBones() const
 	case ESolidPartType::Chest:
 		Names.Add(SpineChestBone);
 		break;
-	case ESolidPartType::Shoulders:
-		Names.Add(ShoulderNeckBone);
-		Names.Add(ShoulderLeftClavicleBone);
-		Names.Add(ShoulderRightClavicleBone);
-		Names.Add(ShoulderLeftUpperArmBone);
-		Names.Add(ShoulderRightUpperArmBone);
-		break;
 	case ESolidPartType::UpperArm:
 		AddSidedBone(Names, Side, TEXT("lowerarm_l"), TEXT("lowerarm_r"));
 		break;
 	case ESolidPartType::LowerArm:
 		AddSidedBone(Names, Side, LeftHandBone, RightHandBone);
 		break;
-	case ESolidPartType::Hand:
-		return HandBones(Side, Skeleton);
-	case ESolidPartType::Head:
-		return HeadBones(Skeleton);
 	default:
 		break;
 	}
@@ -307,8 +296,14 @@ SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
 	, End(InEnd)
 	, Skeleton(InSkeleton)
 {
-	Bones = PartBones();
+	// A head, a hand, or the shoulders replace this list in their own constructor.
+	Bones = FSolidBodyPart::PartBones();
 	Shape = PartShape(Type);
+}
+
+TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::FSolidBodyPart::Clone() const
+{
+	return MakeUnique<FSolidBodyPart>(*this);
 }
 
 void SolidBodyMesh::FSolidBodyPart::Apply(const FSolidBodyParams& Params)
@@ -332,26 +327,11 @@ void SolidBodyMesh::FSolidBodyPart::Apply(const FSolidBodyParams& Params)
 		SideScale = Clamped.HipWidth;
 		Depth = Clamped.TorsoGirth;
 		break;
-	case ESolidPartType::Shoulders:
-		Length = Clamped.NeckLength;
-		SideScale = Clamped.ShoulderWidth;
-		Depth = Clamped.TorsoGirth;
-		break;
 	case ESolidPartType::UpperArm:
 	case ESolidPartType::LowerArm:
 		Length = Clamped.ArmLength;
 		SideScale = Clamped.Bulk;
 		Depth = Clamped.Bulk;
-		break;
-	case ESolidPartType::Head:
-		Length = Clamped.HeadSize;
-		SideScale = Clamped.HeadSize;
-		Depth = Clamped.HeadSize;
-		break;
-	case ESolidPartType::Hand:
-		Length = 1.f;
-		SideScale = 1.f;
-		Depth = 1.f;
 		break;
 	case ESolidPartType::Abdomen:
 	case ESolidPartType::Chest:
@@ -364,19 +344,13 @@ void SolidBodyMesh::FSolidBodyPart::Apply(const FSolidBodyParams& Params)
 
 	Start.X *= SideScale;
 	Start.Y *= Depth;
-	if (Type == ESolidPartType::Shoulders)
-	{
-		End.X *= SideScale;
-		End.Y *= SideScale;
-		Mid.X *= SideScale;
-		Mid.Y *= Depth;
-	}
-	else
-	{
-		End.X *= SideScale;
-		End.Y *= Depth;
-	}
+	End.X *= SideScale;
+	End.Y *= Depth;
+	SizeBones(Length, SideScale);
+}
 
+void SolidBodyMesh::FSolidBodyPart::SizeBones(const float Length, const float SideScale)
+{
 	if (Bones.Num() == 0)
 	{
 		return;
@@ -428,20 +402,6 @@ SolidBodyMesh::FSolidPartDraw SolidBodyMesh::FSolidBodyPart::Fit(
 	const FVector& WideAxis)
 {
 	FSolidPartDraw Out;
-	if (Shape == ESolidPartShape::Shoulder)
-	{
-		Out.bShoulder = true;
-		Out.Shoulder = ShoulderPiece(From, To, SegmentStart, SegmentEnd, SegmentCount, Start.X, WideAxis, Start.Y, End.X);
-		if (Out.Shoulder.bValid)
-		{
-			const float SideRadius = Out.Shoulder.Lower.RadiusEnd;
-			const float DepthRadius = SideRadius * Out.Shoulder.Lower.DepthScaleEnd;
-			Mid.X = SideRadius * 2.f;
-			Mid.Y = DepthRadius * 2.f;
-		}
-		return Out;
-	}
-
 	Out.Cone.Start = From;
 	Out.Cone.End = To;
 	Out.Cone.RadiusStart = Start.X * 0.5f;
@@ -892,19 +852,200 @@ void SolidBodyMesh::FSolidBodyPart::Draw(
 	const int32 SegmentCount,
 	const FVector& WideAxis)
 {
-	switch (Shape)
+	DrawTube(Verts, Tris, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
+}
+
+SolidBodyMesh::FSolidHeadPart::FSolidHeadPart(
+	const ESolidPartType InType,
+	const ESolidPartSide InSide,
+	const ESolidPartColour InColour,
+	const FSolidPartSection& InStart,
+	const FSolidPartSection& InEnd,
+	const TArray<FSolidDeformBone>& InSkeleton)
+	: FSolidBodyPart(InType, InSide, InColour, InStart, InEnd, InSkeleton)
+{
+	Bones = PartBones();
+}
+
+TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::FSolidHeadPart::Clone() const
+{
+	return MakeUnique<FSolidHeadPart>(*this);
+}
+
+TArray<FName> SolidBodyMesh::FSolidHeadPart::PartBones() const
+{
+	return HeadBones(Skeleton);
+}
+
+void SolidBodyMesh::FSolidHeadPart::Apply(const FSolidBodyParams& Params)
+{
+	const FSolidBodyParams Clamped = Params.Clamped();
+	const float Scale = Clamped.HeadSize;
+	Start.X *= Scale;
+	Start.Y *= Scale;
+	End.X *= Scale;
+	End.Y *= Scale;
+	SizeBones(Scale, Scale);
+}
+
+void SolidBodyMesh::FSolidHeadPart::Draw(
+	TArray<FSolidBodyVert>& Verts,
+	TArray<FSolidBodyTri>& Tris,
+	const int32 WeightBone,
+	const int32 SpanBone,
+	const FVector& From,
+	const FVector& To,
+	const FVector* SegmentStart,
+	const FVector* SegmentEnd,
+	const int32 SegmentCount,
+	const FVector& WideAxis)
+{
+	(void)WeightBone;
+	(void)WideAxis;
+	DrawHead(Verts, Tris, SpanBone, From, To, SegmentStart, SegmentEnd, SegmentCount);
+}
+
+SolidBodyMesh::FSolidHandPart::FSolidHandPart(
+	const ESolidPartType InType,
+	const ESolidPartSide InSide,
+	const ESolidPartColour InColour,
+	const FSolidPartSection& InStart,
+	const FSolidPartSection& InEnd,
+	const TArray<FSolidDeformBone>& InSkeleton)
+	: FSolidBodyPart(InType, InSide, InColour, InStart, InEnd, InSkeleton)
+{
+	Bones = PartBones();
+}
+
+TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::FSolidHandPart::Clone() const
+{
+	return MakeUnique<FSolidHandPart>(*this);
+}
+
+TArray<FName> SolidBodyMesh::FSolidHandPart::PartBones() const
+{
+	return HandBones(Side, Skeleton);
+}
+
+void SolidBodyMesh::FSolidHandPart::Apply(const FSolidBodyParams& Params)
+{
+	(void)Params;
+	SizeBones(1.f, 1.f);
+}
+
+void SolidBodyMesh::FSolidHandPart::Draw(
+	TArray<FSolidBodyVert>& Verts,
+	TArray<FSolidBodyTri>& Tris,
+	const int32 WeightBone,
+	const int32 SpanBone,
+	const FVector& From,
+	const FVector& To,
+	const FVector* SegmentStart,
+	const FVector* SegmentEnd,
+	const int32 SegmentCount,
+	const FVector& WideAxis)
+{
+	(void)SpanBone;
+	(void)WideAxis;
+	DrawHand(Verts, Tris, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount);
+}
+
+SolidBodyMesh::FSolidShoulderPart::FSolidShoulderPart(
+	const ESolidPartType InType,
+	const ESolidPartSide InSide,
+	const ESolidPartColour InColour,
+	const FSolidPartSection& InStart,
+	const FSolidPartSection& InEnd,
+	const TArray<FSolidDeformBone>& InSkeleton)
+	: FSolidBodyPart(InType, InSide, InColour, InStart, InEnd, InSkeleton)
+{
+	Bones = PartBones();
+}
+
+TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::FSolidShoulderPart::Clone() const
+{
+	return MakeUnique<FSolidShoulderPart>(*this);
+}
+
+TArray<FName> SolidBodyMesh::FSolidShoulderPart::PartBones() const
+{
+	TArray<FName> Names;
+	Names.Add(ShoulderNeckBone);
+	Names.Add(ShoulderLeftClavicleBone);
+	Names.Add(ShoulderRightClavicleBone);
+	Names.Add(ShoulderLeftUpperArmBone);
+	Names.Add(ShoulderRightUpperArmBone);
+	return Names;
+}
+
+void SolidBodyMesh::FSolidShoulderPart::Apply(const FSolidBodyParams& Params)
+{
+	const FSolidBodyParams Clamped = Params.Clamped();
+	const float SideScale = Clamped.ShoulderWidth;
+	const float Depth = Clamped.TorsoGirth;
+	Start.X *= SideScale;
+	Start.Y *= Depth;
+	End.X *= SideScale;
+	End.Y *= SideScale;
+	Mid.X *= SideScale;
+	Mid.Y *= Depth;
+	SizeBones(Clamped.NeckLength, SideScale);
+}
+
+SolidBodyMesh::FSolidPartDraw SolidBodyMesh::FSolidShoulderPart::Fit(
+	const FVector& From,
+	const FVector& To,
+	const FVector* SegmentStart,
+	const FVector* SegmentEnd,
+	const int32 SegmentCount,
+	const FVector& WideAxis)
+{
+	FSolidPartDraw Out;
+	Out.bShoulder = true;
+	Out.Shoulder = ShoulderPiece(From, To, SegmentStart, SegmentEnd, SegmentCount, Start.X, WideAxis, Start.Y, End.X);
+	if (Out.Shoulder.bValid)
+	{
+		const float SideRadius = Out.Shoulder.Lower.RadiusEnd;
+		const float DepthRadius = SideRadius * Out.Shoulder.Lower.DepthScaleEnd;
+		Mid.X = SideRadius * 2.f;
+		Mid.Y = DepthRadius * 2.f;
+	}
+	return Out;
+}
+
+void SolidBodyMesh::FSolidShoulderPart::Draw(
+	TArray<FSolidBodyVert>& Verts,
+	TArray<FSolidBodyTri>& Tris,
+	const int32 WeightBone,
+	const int32 SpanBone,
+	const FVector& From,
+	const FVector& To,
+	const FVector* SegmentStart,
+	const FVector* SegmentEnd,
+	const int32 SegmentCount,
+	const FVector& WideAxis)
+{
+	(void)SpanBone;
+	DrawShoulder(Verts, Tris, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
+}
+
+TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::MakeBodyPart(
+	const ESolidPartType InType,
+	const ESolidPartSide InSide,
+	const ESolidPartColour InColour,
+	const FSolidPartSection& InStart,
+	const FSolidPartSection& InEnd,
+	const TArray<FSolidDeformBone>& InSkeleton)
+{
+	switch (PartShape(InType))
 	{
 	case ESolidPartShape::Head:
-		DrawHead(Verts, Tris, SpanBone, From, To, SegmentStart, SegmentEnd, SegmentCount);
-		break;
+		return MakeUnique<FSolidHeadPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
 	case ESolidPartShape::Hand:
-		DrawHand(Verts, Tris, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount);
-		break;
+		return MakeUnique<FSolidHandPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
 	case ESolidPartShape::Shoulder:
-		DrawShoulder(Verts, Tris, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
-		break;
+		return MakeUnique<FSolidShoulderPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
 	default:
-		DrawTube(Verts, Tris, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount, WideAxis);
-		break;
+		return MakeUnique<FSolidBodyPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
 	}
 }

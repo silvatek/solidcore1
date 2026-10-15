@@ -30,6 +30,17 @@ namespace SolidBodyMesh
 			Parts.Add(MoveTemp(Part));
 		}
 
+		/** Construct one part and append it. The arguments match the part constructor. */
+		void AddBodyPart(
+			ESolidPartType InType,
+			ESolidPartSide InSide,
+			ESolidPartColour InColour,
+			const FSolidPartSection& InStart,
+			const FSolidPartSection& InEnd)
+		{
+			AddPart(FSolidBodyPart(InType, InSide, InColour, InStart, InEnd));
+		}
+
 		/**
 		 * The body for this skeleton.
 		 * Each part asks PartBones which bones it wraps.

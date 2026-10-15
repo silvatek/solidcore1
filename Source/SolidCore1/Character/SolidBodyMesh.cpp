@@ -23,7 +23,7 @@
 #include "UObject/StrongObjectPtr.h"
 #endif
 
-SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
+SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<FSolidDeformBone>& Bones)
 {
 	constexpr ESolidPartSide Left = ESolidPartSide::Left;
 	constexpr ESolidPartSide Right = ESolidPartSide::Right;
@@ -91,19 +91,13 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make()
 	AddPart(FSolidBodyPart(ESolidPartType::LowerArm, Left, Shirt, LowerArmTop, RoundSection(LowerArmEndDiameterCm)));
 	AddPart(FSolidBodyPart(ESolidPartType::LowerArm, Right, Shirt, LowerArmTop, RoundSection(LowerArmEndDiameterCm)));
 
-	// Viking finger joints. PartBones replaces this list with the fingers on a skeleton.
+	// The Viking finger names are replaced below with the fingers on the skeleton.
 	AddPart(FSolidBodyPart(ESolidPartType::Hand, Left, Skin, HandTop, HandTop));
 	AddPart(FSolidBodyPart(ESolidPartType::Hand, Right, Skin, HandTop, HandTop));
 
-	// The catalogue names the head bone. PartBones adds the eye bones. These diameters are unused.
+	// The head bone is named here. The loop below adds the eye bones. These diameters are unused.
 	AddPart(FSolidBodyPart(ESolidPartType::Head, Core, Skin, NullSection, NullSection));
 
-	return Body;
-}
-
-SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<FSolidDeformBone>& Bones)
-{
-	FSolidBodyMesh Body = Make();
 	for (FSolidBodyPart& Part : Body.Parts)
 	{
 		Part.Bones = PartBones(Part.Type, Part.Side, Bones);

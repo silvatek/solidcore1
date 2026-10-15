@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0318")
+#define SOLID_BUILD_ID TEXT("SC1-0319")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Make fits the head and the hands from the skeleton.")
+#define SOLID_BUILD_NOTE TEXT("Make takes the skeleton.")
 #endif

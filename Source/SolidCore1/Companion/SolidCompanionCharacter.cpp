@@ -633,7 +633,18 @@ FString ASolidCompanionCharacter::BoneUnderScreenPoint(const float X, const floa
 			}
 		};
 
-		SolidBodyMesh::FSolidBodyMesh Body = SolidBodyMesh::FSolidBodyMesh::Make();
+		TArray<FSolidDeformBone> Named;
+		const int32 NamedCount = CharacterMesh->GetNumBones();
+		Named.Reserve(NamedCount);
+		for (int32 Index = 0; Index < NamedCount; ++Index)
+		{
+			FSolidDeformBone Bone;
+			Bone.Name = CharacterMesh->GetBoneName(Index);
+			const FName ParentName = CharacterMesh->GetParentBone(Bone.Name);
+			Bone.ParentIndex = ParentName.IsNone() ? INDEX_NONE : CharacterMesh->GetBoneIndex(ParentName);
+			Named.Add(Bone);
+		}
+		SolidBodyMesh::FSolidBodyMesh Body = SolidBodyMesh::FSolidBodyMesh::Make(Named);
 		for (SolidBodyMesh::FSolidBodyPart& Part : Body.Parts)
 		{
 			if (Part.Bones.Num() == 0)

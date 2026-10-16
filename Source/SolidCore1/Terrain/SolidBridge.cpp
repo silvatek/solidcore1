@@ -346,7 +346,19 @@ namespace
 		}
 	}
 
-	/** Intact center. A later change replaces this mesh for a broken span. */
+	/** Location 0 is Iglin and location 1 is Relion. Either direction. The cave is neither. */
+	bool IsIglinRelion(const SolidRoad::FDefinition& Definition)
+	{
+		if (Definition.From.bCave || Definition.To.bCave)
+		{
+			return false;
+		}
+		const int32 From = Definition.From.LocationId;
+		const int32 To = Definition.To.LocationId;
+		return (From == 0 && To == 1) || (From == 1 && To == 0);
+	}
+
+	/** Intact center. A broken bridge does not build this mesh. */
 	UStaticMesh* BuildIntactDeckMesh(UObject* Outer, const SolidBridge::FBridge& Bridge, const FVector& Origin)
 	{
 		return BuildStrip(Outer, Bridge.Deck, Bridge.WidthCm, Origin, true, true, TEXT("deck"));
@@ -572,6 +584,7 @@ int32 SolidBridge::Collect(
 
 			FBridge Bridge;
 			Bridge.WidthCm = Width;
+			Bridge.bBroken = IsIglinRelion(Route.Definition);
 			Bridge.Deck.Reserve(DeckD.Num());
 			for (const float D : DeckD)
 			{
@@ -707,9 +720,17 @@ void ASolidBridge::BuildVisuals()
 	}
 
 	const FVector Origin = GetActorLocation();
-	if (UStaticMesh* Deck = BuildIntactDeckMesh(this, Bridge, Origin))
+	if (Bridge.bBroken)
+	{
+		DeckMesh->SetStaticMesh(nullptr);
+		DeckMesh->SetVisibility(false);
+		DeckMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	}
+	else if (UStaticMesh* Deck = BuildIntactDeckMesh(this, Bridge, Origin))
 	{
 		DeckMesh->SetStaticMesh(Deck);
+		DeckMesh->SetVisibility(true);
+		DeckMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		Paint(DeckMesh, this, TEXT("BridgeDeckTimber"), TEXT("BridgeDeckRoad"));
 	}
 	if (UStaticMesh* Ramp = BuildRampMesh(this, Bridge.RampFrom, Bridge.WidthCm, Origin, TEXT("ramp from")))

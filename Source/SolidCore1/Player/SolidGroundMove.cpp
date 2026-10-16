@@ -97,7 +97,8 @@ bool SolidGroundMove::BridgeOpens(const SolidBridge::FBridge& Bridge, const floa
 		return false;
 	}
 	const FVector2D Point(X, Y);
-	return DistanceToLine(Bridge.Deck, Point) <= Half
+	const bool bDeck = !Bridge.bBroken && DistanceToLine(Bridge.Deck, Point) <= Half;
+	return bDeck
 		|| DistanceToLine(Bridge.RampFrom, Point) <= Half
 		|| DistanceToLine(Bridge.RampTo, Point) <= Half;
 }

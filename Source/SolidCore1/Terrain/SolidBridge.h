@@ -10,8 +10,8 @@ class UStaticMeshComponent;
 
 /**
  * A bridge where a route crosses river water.
- * Three pieces: a ramp, a flat center, and a ramp. The center is its own mesh
- * so a later change can swap a broken span in its place. The ramps stay.
+ * Three pieces: a ramp, a flat center, and a ramp. The center is its own mesh.
+ * A broken bridge leaves that mesh out, so nothing can cross the gap. The ramps stay.
  * The center is as wide as that road and as long as the water it crosses.
  * It follows the painted strip, half a terrain quad southwest of the cell centres.
  * Each ramp runs down to its own bank and continues into the ground.
@@ -46,10 +46,13 @@ namespace SolidBridge
 	 * Deck, RampFrom, and RampTo are centerlines. Z is the walking surface.
 	 * RampFrom[0] is Deck[0]. RampTo[0] is the other end of the deck.
 	 * RampFrom walks back toward the start of the route.
+	 * The centerline is stored either way. A broken bridge does not draw it.
 	 */
 	struct FBridge
 	{
 		float WidthCm = 0.f;
+		/** The center span is omitted, and it does not carry a character across. */
+		bool bBroken = false;
 		TArray<FVector> Deck;
 		TArray<FVector> RampFrom;
 		TArray<FVector> RampTo;
@@ -68,7 +71,7 @@ namespace SolidBridge
 		TArray<FBridge>& Out);
 }
 
-/** Ramp, flat center, and ramp. The center mesh is the piece a broken span would replace. */
+/** Ramp, flat center, and ramp. A broken bridge keeps the ramps and leaves the center out. */
 UCLASS()
 class SOLIDCORE1_API ASolidBridge : public AActor
 {
@@ -97,7 +100,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Bridge")
 	TObjectPtr<UStaticMeshComponent> RampFromMesh;
 
-	/** Intact center. A later change replaces this mesh for a broken span. */
+	/** Center span. Empty when the bridge is broken. */
 	UPROPERTY(VisibleAnywhere, Category = "Bridge")
 	TObjectPtr<UStaticMeshComponent> DeckMesh;
 

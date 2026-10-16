@@ -191,4 +191,59 @@ bool FSolidGroundMoveClampTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidGroundMoveBrokenTest,
+	"SolidCore1.GroundMove.Broken",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidGroundMoveBrokenTest::RunTest(const FString& Parameters)
+{
+	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	if (!TestNotNull(TEXT("map"), Map))
+	{
+		return false;
+	}
+	const FString Grid = GroundMoveGrid({
+		{ 10, 9, USolidWorldMap::RiverMarker },
+		{ 10, 10, USolidWorldMap::RiverMarker },
+		{ 10, 11, USolidWorldMap::RiverMarker },
+	});
+	if (!TestTrue(TEXT("grid loads"), Map->LoadFromString(Grid)))
+	{
+		return false;
+	}
+
+	const FVector2D Channel = GroundMoveCenter(*Map, 10, 10);
+	SolidBridge::FBridge Span;
+	Span.WidthCm = 200.f;
+	Span.Deck = {
+		FVector(Channel.X - 300.f, Channel.Y, 0.f),
+		FVector(Channel.X + 300.f, Channel.Y, 0.f),
+	};
+	// The near ramp reaches into the channel. The far ramp stays on the bank.
+	Span.RampFrom = {
+		FVector(Channel.X - 800.f, Channel.Y, 0.f),
+		FVector(Channel.X - 150.f, Channel.Y, 0.f),
+	};
+	Span.RampTo = {
+		Span.Deck.Last(),
+		FVector(Channel.X + 800.f, Channel.Y, 0.f),
+	};
+
+	const TArray<SolidBridge::FBridge> Intact = { Span };
+	TestTrue(TEXT("an intact center crosses the channel"), GroundMoveAllows(*Map, Channel, Intact));
+
+	Span.bBroken = true;
+	const TArray<SolidBridge::FBridge> Broken = { Span };
+	const TArray<SolidBridge::FBridge> None;
+	const FVector2D Lip(Channel.X - 150.f, Channel.Y);
+	TestFalse(TEXT("a broken center leaves the channel closed"), GroundMoveAllows(*Map, Channel, Broken));
+	TestFalse(TEXT("the ramp lip is in the channel"), GroundMoveAllows(*Map, Lip, None));
+	TestTrue(TEXT("a ramp still reaches into the channel"), GroundMoveAllows(*Map, Lip, Broken));
+	TestFalse(
+		TEXT("the channel beside a broken bridge stays closed"),
+		GroundMoveAllows(*Map, Channel + FVector2D(0.f, 150.f), Broken));
+	return true;
+}
+
 #endif

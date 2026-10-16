@@ -34,11 +34,11 @@ namespace SolidGroundMove
 		FVector2D WorldMinXY,
 		FVector2D WorldMaxXY);
 
-	/** True when the point lies on the deck or either ramp. */
+	/** True when the point lies on an intact deck or either ramp. A broken deck stays closed. */
 	bool BridgeOpens(const SolidBridge::FBridge& Bridge, float X, float Y);
 
 	/**
-	 * Open ground, or the river channel where a bridge stands.
+	 * Open ground, or the river channel where an intact bridge stands.
 	 * An empty bridge list leaves the channel closed.
 	 */
 	bool AllowsFooting(

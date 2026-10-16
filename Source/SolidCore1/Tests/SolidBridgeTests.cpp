@@ -442,4 +442,106 @@ bool FSolidBridgeWalkableTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBridgeBrokenTest,
+	"SolidCore1.Bridge.Broken",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBridgeBrokenTest::RunTest(const FString& Parameters)
+{
+	const auto Height = [](float, float) { return 100.f; };
+
+	auto LoadCrossing = [this, Height](const TCHAR* From, const TCHAR* To, const TCHAR* RoadLine, TArray<SolidBridge::FBridge>& Out) -> bool
+	{
+		TArray<FBridgeTestMark> Marks;
+		Marks.Add({ 4, 16, From[0] });
+		Marks.Add({ 12, 16, USolidWorldMap::RiverMarker });
+		Marks.Add({ 20, 16, To[0] });
+		USolidWorldMap* Map = NewObject<USolidWorldMap>();
+		TestNotNull(TEXT("map"), Map);
+		if (!TestTrue(TEXT("map loads"), Map && Map->LoadFromString(BridgeTestGrid(Marks, RoadLine))))
+		{
+			return false;
+		}
+		return TestEqual(TEXT("one crossing"), SolidBridge::Collect(*Map, BridgeTestMin, BridgeTestMax, Height, Out), 1)
+			&& Out.Num() == 1;
+	};
+
+	TArray<SolidBridge::FBridge> Iglin;
+	if (LoadCrossing(TEXT("0"), TEXT("1"), TEXT("Road: 0 -> 1, track\n"), Iglin))
+	{
+		TestTrue(TEXT("Iglin to Relion is broken"), Iglin[0].bBroken);
+		TestTrue(TEXT("the missing span is still measured"), Iglin[0].Deck.Num() >= 2);
+	}
+
+	TArray<SolidBridge::FBridge> Reverse;
+	if (LoadCrossing(TEXT("1"), TEXT("0"), TEXT("Road: 1 -> 0, track\n"), Reverse))
+	{
+		TestTrue(TEXT("Relion to Iglin is broken"), Reverse[0].bBroken);
+	}
+
+	TArray<SolidBridge::FBridge> Other;
+	if (LoadCrossing(TEXT("2"), TEXT("3"), TEXT("Road: 2 -> 3, track\n"), Other))
+	{
+		TestFalse(TEXT("another route keeps its span"), Other[0].bBroken);
+	}
+
+	TArray<SolidBridge::FBridge> Cave;
+	if (LoadCrossing(TEXT("C"), TEXT("0"), TEXT("Road: C -> 0, trail\n"), Cave))
+	{
+		TestFalse(TEXT("the cave road is not the Iglin bridge"), Cave[0].bBroken);
+	}
+
+	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
+	TestNotNull(TEXT("shipped map"), Shipped);
+	if (TestTrue(TEXT("shipped map loads"), Shipped && Shipped->LoadDefault()))
+	{
+		TArray<SolidBridge::FBridge> ShippedBridges;
+		if (TestEqual(
+				TEXT("one shipped bridge"),
+				SolidBridge::Collect(*Shipped, BridgeTestMin, BridgeTestMax, Height, ShippedBridges),
+				1)
+			&& ShippedBridges.Num() == 1)
+		{
+			TestTrue(TEXT("the shipped Iglin bridge is broken"), ShippedBridges[0].bBroken);
+		}
+	}
+
+	ASolidBridge* Actor = NewObject<ASolidBridge>();
+	TestNotNull(TEXT("bridge"), Actor);
+	if (!Actor)
+	{
+		return false;
+	}
+
+	SolidBridge::FBridge Spec;
+	Spec.bBroken = true;
+	Spec.WidthCm = SolidRoad::WidthCm(SolidRoad::EType::Track);
+	Spec.Deck = { FVector(0.f, 0.f, 200.f), FVector(600.f, 0.f, 200.f) };
+	Spec.RampFrom = { FVector(0.f, 0.f, 200.f), FVector(-400.f, 0.f, 100.f), FVector(-800.f, 0.f, 0.f) };
+	Spec.RampTo = { FVector(600.f, 0.f, 200.f), FVector(1000.f, 0.f, 100.f), FVector(1400.f, 0.f, 0.f) };
+	Actor->SetBridge(Spec);
+
+	UStaticMeshComponent* Deck = Actor->GetDeckMesh();
+	TestNotNull(TEXT("deck component"), Deck);
+	if (Deck)
+	{
+		UStaticMesh* DeckAsset = Deck->GetStaticMesh();
+		TestNull(TEXT("broken center is not drawn"), DeckAsset);
+		TestFalse(TEXT("broken center stays hidden"), Deck->GetVisibleFlag());
+		TestEqual(
+			TEXT("broken center does not collide"),
+			static_cast<uint8>(Deck->GetCollisionEnabled()),
+			static_cast<uint8>(ECollisionEnabled::NoCollision));
+	}
+
+	UStaticMeshComponent* RampFrom = Actor->GetRampFromMesh();
+	UStaticMeshComponent* RampTo = Actor->GetRampToMesh();
+	UStaticMesh* RampFromAsset = RampFrom ? RampFrom->GetStaticMesh() : nullptr;
+	UStaticMesh* RampToAsset = RampTo ? RampTo->GetStaticMesh() : nullptr;
+	TestNotNull(TEXT("near ramp stays"), RampFromAsset);
+	TestNotNull(TEXT("far ramp stays"), RampToAsset);
+	return true;
+}
+
 #endif

@@ -117,6 +117,12 @@ public:
 	 */
 	bool TeleportPartyToTown(int32 TownId);
 
+	/**
+	 * Stand the party on the grass just north of a tunnel mouth.
+	 * Records Driven from the village, including when its requirements have not fired.
+	 */
+	bool TeleportPartyToTunnelMouth(TCHAR EndMarker);
+
 	/** True after F10 Enter cave, until F10 Leave cave. */
 	bool IsInDungeon() const;
 

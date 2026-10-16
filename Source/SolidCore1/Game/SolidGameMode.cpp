@@ -856,6 +856,80 @@ bool ASolidGameMode::TeleportPartyToTown(const int32 TownId)
 	return true;
 }
 
+bool ASolidGameMode::TeleportPartyToTunnelMouth(const TCHAR EndMarker)
+{
+	UWorld* World = GetWorld();
+	const TCHAR End = SolidLair::IsEndMarker(EndMarker) ? FChar::ToUpper(EndMarker) : 0;
+	if (!World || !End)
+	{
+		return false;
+	}
+
+	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World);
+	USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
+	USolidWorldMap* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
+	APlayerController* PC = World->GetFirstPlayerController();
+	ASolidCharacter* Captain = PC ? Cast<ASolidCharacter>(PC->GetPawn()) : nullptr;
+	if (!Streamer || !Terrain || !Terrain->IsBuilt() || !WorldMap || !WorldMap->IsLoaded() || !Captain)
+	{
+		return false;
+	}
+	if (!Streamer->HasAttemptedStartTownRelocate())
+	{
+		return false;
+	}
+
+	TArray<SolidLair::FEntrance> Entrances;
+	SolidLair::CollectEntrances(WorldMap, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), Entrances);
+	const SolidLair::FEntrance* Mouth = nullptr;
+	for (const SolidLair::FEntrance& Entrance : Entrances)
+	{
+		if (Entrance.EndMarker == End)
+		{
+			Mouth = &Entrance;
+			break;
+		}
+	}
+	if (!Mouth)
+	{
+		return false;
+	}
+
+	const FVector2D Landing = SolidPortal::NorthOfEntrance(Mouth->WorldXY);
+	const FVector Delta = SolidPortal::PartyDelta(Captain->GetActorLocation(), Landing);
+	const float LandZ = Streamer->GetHeightAt(FVector(Landing.X, Landing.Y, 0.f)) + Streamer->CollisionHeightBias;
+	float CapsuleHalf = 96.f;
+	if (const UCapsuleComponent* Capsule = Captain->GetCapsuleComponent())
+	{
+		CapsuleHalf = Capsule->GetScaledCapsuleHalfHeight();
+	}
+	const FVector NewLoc(Landing.X, Landing.Y, LandZ + CapsuleHalf + Streamer->SnapHeightPadding);
+
+	Captain->ArriveByPortal(NewLoc, SolidPortal::YawTowardMouth(Mouth->FacingYawDeg));
+	Streamer->RelocateCompanionsByDelta(Delta);
+
+	const SolidEvents::FResult Result = SolidEvents::MarkComplete(
+		Configuration, SolidEvents::IdDrivenFromVillage, WorldStamp());
+	if (Result.bFired)
+	{
+		UE_LOG(LogSolid, Warning, TEXT("Event: Driven from the village recorded by the tunnel portal."));
+	}
+	if (ASolidCharacter* Landed = FindCaptain(GetWorld()))
+	{
+		if (Result.bSetTitle && Result.CaptainTitle)
+		{
+			Landed->SetCharacterDisplayName(Result.CaptainTitle);
+		}
+	}
+	PresentEventResult(Result);
+	RefreshEvents();
+
+	UE_LOG(LogSolid, Warning,
+		TEXT("Portal to %s at (%.0f, %.0f) Z=%.1f"),
+		SolidLair::IglinTunnels.Name, Landing.X, Landing.Y, NewLoc.Z);
+	return true;
+}
+
 void ASolidGameMode::EnsureTerrainStreamer()
 {
 	if (!bAutoSpawnTerrainStreamer)

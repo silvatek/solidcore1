@@ -66,13 +66,14 @@ namespace
 		FGameState& State,
 		const int32 Index,
 		const SolidWorldTime::FStamp& When,
-		SolidEvents::FResult& Result)
+		SolidEvents::FResult& Result,
+		const bool bForce = false)
 	{
 		if (Index < 0 || Index >= SolidEvents::DefinitionCount || Index >= SolidEvents::MaxEvents)
 		{
 			return false;
 		}
-		if (State.bFired[Index] || !RequirementsMet(State, SolidEvents::Definitions[Index]))
+		if (State.bFired[Index] || (!bForce && !RequirementsMet(State, SolidEvents::Definitions[Index])))
 		{
 			return false;
 		}
@@ -248,6 +249,24 @@ FResult NotifyMessageClosed(
 		TryFireEvent(State, Index, When, Result);
 	}
 
+	Result.MaxPartySize = State.MaxPartySize;
+	return Result;
+}
+
+FResult MarkComplete(
+	FGameState& State,
+	const TCHAR* EventId,
+	const SolidWorldTime::FStamp& When)
+{
+	FResult Result;
+	Result.MaxPartySize = State.MaxPartySize;
+	Result.CaptainTitle = State.CaptainTitle;
+	if (!EventId || !EventId[0])
+	{
+		return Result;
+	}
+
+	TryFireEvent(State, FindIndexById(EventId), When, Result, /*bForce=*/true);
 	Result.MaxPartySize = State.MaxPartySize;
 	return Result;
 }

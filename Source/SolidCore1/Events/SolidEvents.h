@@ -22,6 +22,8 @@
  * Driven from the village fires on a later entry to Iglin, after that close,
  * shows "You are driven from the village", titles the captain Outcast,
  * and opens the Iglin tunnel mouths. It does not send him inside.
+ * The portal to the grass north of the X mouth records that same event
+ * without waiting for the close.
  * Nothing before Enter Relion enables raven sight. Relion is the first event that does.
  * A visit before the requirements are met does not fire. A later visit does.
  * Each event belongs to an act. Iglin, Reach broken bridge, and Killed by monsters

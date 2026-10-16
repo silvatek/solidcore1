@@ -1,5 +1,9 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
+#include "Events/SolidMessages.h"
+#include "Journal/SolidJournal.h"
+#include "Lairs/SolidLair.h"
+#include "SolidGameState.h"
 #include "SolidHUD.h"
 #include "SolidPortal.h"
 #include "Terrain/SolidWorldMap.h"
@@ -166,6 +170,134 @@ bool FSolidPortalHudTest::RunTest(const FString& Parameters)
 	HUD->OpenPortal();
 	HUD->CloseMenuOverlay();
 	TestFalse(TEXT("Esc closes the portal"), HUD->IsPortalOpen());
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidPortalTunnelMouthTest,
+	"SolidCore1.Portal.TunnelMouth",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidPortalTunnelMouthTest::RunTest(const FString& Parameters)
+{
+	TArray<SolidPortal::FChoice> Choices;
+	SolidPortal::CollectChoices(Choices);
+	TestEqual(
+		TEXT("tunnels follow the towns"),
+		Choices.Num(),
+		SolidTowns::DefinitionCount + SolidPortal::ExtraPlaceCount);
+	const int32 TunnelIndex = SolidTowns::DefinitionCount;
+	if (!TestTrue(TEXT("the tunnels row is on the list"), Choices.IsValidIndex(TunnelIndex)))
+	{
+		return false;
+	}
+
+	const SolidPortal::FChoice& Tunnels = Choices[TunnelIndex];
+	TestEqual(TEXT("tunnels name"), Tunnels.Name, FString(SolidLair::IglinTunnels.Name));
+	TestEqual(
+		TEXT("tunnels place"),
+		static_cast<uint8>(Tunnels.Place),
+		static_cast<uint8>(SolidPortal::EPlace::TunnelMouth));
+	TestEqual(TEXT("tunnels end is X"), static_cast<int32>(Tunnels.TunnelEnd), static_cast<int32>(USolidWorldMap::XMarker));
+	TestEqual(TEXT("tunnels are not a town"), Tunnels.TownId, INDEX_NONE);
+
+	SolidPortal::FChoice Found;
+	TestTrue(TEXT("find the tunnels"), SolidPortal::FindChoice(TunnelIndex, Found));
+	TestEqual(TEXT("found tunnels"), Found.Name, FString(SolidLair::IglinTunnels.Name));
+
+	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("shipped map loads"), Map->LoadDefault());
+	const float Half = 0.5f * 512.f * 200.f;
+	const FVector2D GameMin(-Half, -Half);
+	const FVector2D GameMax(Half, Half);
+	TArray<SolidLair::FEntrance> Mouths;
+	TestTrue(TEXT("X mouth is on the map"), SolidLair::CollectEntrances(Map, GameMin, GameMax, Mouths) >= 1);
+	const SolidLair::FEntrance* Mouth = nullptr;
+	for (const SolidLair::FEntrance& Entrance : Mouths)
+	{
+		if (Entrance.EndMarker == USolidWorldMap::XMarker)
+		{
+			Mouth = &Entrance;
+			break;
+		}
+	}
+	if (!TestNotNull(TEXT("X entrance"), Mouth))
+	{
+		return false;
+	}
+
+	const FVector2D Landing = SolidPortal::NorthOfEntrance(Mouth->WorldXY);
+	TestTrue(TEXT("landing keeps the mouth's easting"), FMath::IsNearlyEqual(Landing.X, Mouth->WorldXY.X, 0.1f));
+	TestTrue(
+		TEXT("landing is north of the mouth"),
+		FMath::IsNearlyEqual(Landing.Y - Mouth->WorldXY.Y, SolidPortal::NorthOfEntranceCm, 0.1f));
+	TestTrue(TEXT("the mouth faces north"), FMath::IsNearlyEqual(Mouth->FacingYawDeg, 90.f, 0.1f));
+	TestTrue(
+		TEXT("the captain faces the mouth"),
+		FMath::IsNearlyEqual(SolidPortal::YawTowardMouth(Mouth->FacingYawDeg), -90.f, 0.1f));
+
+	int32 Col = INDEX_NONE;
+	int32 Row = INDEX_NONE;
+	TestTrue(TEXT("landing cell"), Map->WorldXYToCell(Landing.X, Landing.Y, GameMin, GameMax, Col, Row));
+	TestEqual(TEXT("landing stays on the grass cell"), Col, Mouth->GrassCell.X);
+	TestEqual(TEXT("landing stays north of the cliff"), Row, Mouth->GrassCell.Y);
+	TestEqual(
+		TEXT("landing is grass"),
+		static_cast<uint8>(Map->SampleBiome(Landing.X, Landing.Y, GameMin, GameMax)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+	TestEqual(
+		TEXT("landing is not a town"),
+		Map->SampleLocationId(Landing.X, Landing.Y, GameMin, GameMax),
+		INDEX_NONE);
+
+	FGameState State;
+	const int32 KilledIndex = SolidEvents::FindIndexById(SolidEvents::IdKilledByMonsters);
+	const SolidEvents::FResult Recorded = SolidEvents::MarkComplete(State, SolidEvents::IdDrivenFromVillage);
+	TestTrue(TEXT("the portal records Driven from the village"), Recorded.bFired);
+	TestTrue(TEXT("the tunnels open"), SolidLair::TunnelsOpen(State));
+	TestFalse(TEXT("the cave stays shut"), State.bCaveEnabled);
+	TestTrue(TEXT("killed by monsters is still unfired"), KilledIndex != INDEX_NONE && !State.bFired[KilledIndex]);
+	TestTrue(TEXT("the title is set"), Recorded.bSetTitle);
+	TestEqual(TEXT("title is Outcast"), FString(State.CaptainTitle), FString(SolidEvents::TitleOutcast));
+	TestTrue(TEXT("the village message is shown"), Recorded.bShowMessage);
+	TestEqual(
+		TEXT("message id"),
+		FString(Recorded.MessageId ? Recorded.MessageId : TEXT("")),
+		FString(SolidMessages::IdDrivenFromVillage));
+
+	TArray<SolidJournal::FRow> Rows;
+	SolidJournal::CollectRows(State, Rows);
+	bool bNamed = false;
+	bool bDetail = false;
+	const TCHAR* MessageText = SolidMessages::TextFor(SolidMessages::IdDrivenFromVillage);
+	for (const SolidJournal::FRow& JournalRow : Rows)
+	{
+		if (JournalRow.Kind == SolidJournal::ERowKind::Entry
+			&& JournalRow.Text == FString(TEXT("Driven from the village")))
+		{
+			bNamed = true;
+		}
+		if (JournalRow.Kind == SolidJournal::ERowKind::Detail
+			&& JournalRow.Text.Contains(TEXT("Title Outcast"))
+			&& MessageText
+			&& JournalRow.Text.Contains(MessageText))
+		{
+			bDetail = true;
+		}
+	}
+	TestTrue(TEXT("the journal names the event"), bNamed);
+	TestTrue(TEXT("the journal records the message and title"), bDetail);
+
+	const int32 FiredCount = State.FiredCount;
+	const int32 JournalCount = State.Journal.Num();
+	const SolidEvents::FResult Again = SolidEvents::MarkComplete(State, SolidEvents::IdDrivenFromVillage);
+	TestFalse(TEXT("a second portal does not record it again"), Again.bFired);
+	TestEqual(TEXT("fired once"), State.FiredCount, FiredCount);
+	TestEqual(TEXT("one journal line"), State.Journal.Num(), JournalCount);
+
+	FGameState Empty;
+	TestFalse(TEXT("an unknown id does nothing"), SolidEvents::MarkComplete(Empty, TEXT("missing")).bFired);
+	TestEqual(TEXT("unknown id leaves the journal empty"), Empty.FiredCount, 0);
 	return true;
 }
 

@@ -315,6 +315,7 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::Five, IE_Pressed, this, &ASolidCharacter::MainMenuChoose5);
 	PlayerInputComponent->BindKey(EKeys::Six, IE_Pressed, this, &ASolidCharacter::MainMenuChoose6);
 	PlayerInputComponent->BindKey(EKeys::Seven, IE_Pressed, this, &ASolidCharacter::MainMenuChoose7);
+	PlayerInputComponent->BindKey(EKeys::Eight, IE_Pressed, this, &ASolidCharacter::MainMenuChoose8);
 	PlayerInputComponent->BindKey(EKeys::NumPadOne, IE_Pressed, this, &ASolidCharacter::MainMenuChoose1);
 	PlayerInputComponent->BindKey(EKeys::NumPadTwo, IE_Pressed, this, &ASolidCharacter::MainMenuChoose2);
 	PlayerInputComponent->BindKey(EKeys::NumPadThree, IE_Pressed, this, &ASolidCharacter::MainMenuChoose3);
@@ -322,6 +323,7 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::NumPadFive, IE_Pressed, this, &ASolidCharacter::MainMenuChoose5);
 	PlayerInputComponent->BindKey(EKeys::NumPadSix, IE_Pressed, this, &ASolidCharacter::MainMenuChoose6);
 	PlayerInputComponent->BindKey(EKeys::NumPadSeven, IE_Pressed, this, &ASolidCharacter::MainMenuChoose7);
+	PlayerInputComponent->BindKey(EKeys::NumPadEight, IE_Pressed, this, &ASolidCharacter::MainMenuChoose8);
 }
 
 ASolidHUD* ASolidCharacter::GetSolidHUD() const
@@ -846,6 +848,11 @@ void ASolidCharacter::MainMenuChoose7()
 	ChooseMainMenuIndex(6);
 }
 
+void ASolidCharacter::MainMenuChoose8()
+{
+	ChooseMainMenuIndex(7);
+}
+
 void ASolidCharacter::ChooseMainMenuIndex(const int32 Index)
 {
 	ASolidHUD* HUD = GetSolidHUD();
@@ -893,7 +900,11 @@ void ASolidCharacter::ConfirmPortalSelection()
 
 	UWorld* World = GetWorld();
 	ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
-	if (!GameMode || !GameMode->TeleportPartyToTown(Choice.TownId))
+	const bool bTown = Choice.Place == SolidPortal::EPlace::Town;
+	const bool bArrived = GameMode && (bTown
+		? GameMode->TeleportPartyToTown(Choice.TownId)
+		: GameMode->TeleportPartyToTunnelMouth(Choice.TunnelEnd));
+	if (!bArrived)
 	{
 		return;
 	}

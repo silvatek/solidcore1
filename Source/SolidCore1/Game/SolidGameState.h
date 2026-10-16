@@ -99,4 +99,13 @@ namespace SolidEvents
 		FGameState& State,
 		const TCHAR* MessageId,
 		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
+
+	/**
+	 * Record one event as already fired, including its journal line and changes,
+	 * even when its requirements have not fired. A second call does nothing.
+	 */
+	FResult MarkComplete(
+		FGameState& State,
+		const TCHAR* EventId,
+		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
 }

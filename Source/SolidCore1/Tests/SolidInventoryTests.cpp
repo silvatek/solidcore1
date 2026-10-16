@@ -812,4 +812,75 @@ bool FSolidInventoryCraftButtonTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidInventoryCraftReadyTest,
+	"SolidCore1.Inventory.CraftReady",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidInventoryCraftReadyTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidInventoryTestPrivate;
+
+	SolidInventory::FLoadout Loadout = SolidInventory::StartingLoadout();
+	SolidStorage::FContainer Chest = SolidStorage::StartingCaveChest();
+	SolidInventory::FPage Page;
+	SolidInventory::Layout(Loadout, Page, &Chest);
+	TestFalse(TEXT("an empty crafting row leaves the button off"), Page.bCraftEnabled);
+
+	const int32 StickIndex = SolidStorage::Index(1, 1);
+	const int32 PitchIndex = SolidStorage::Index(0, 2);
+	TestTrue(
+		TEXT("the sticks drop into a crafting slot"),
+		SolidInventory::Move(&Chest, Loadout, ChestHit(StickIndex), CraftHit(0)));
+	SolidInventory::Layout(Loadout, Page, &Chest);
+	TestFalse(TEXT("sticks alone leave the button off"), Page.bCraftEnabled);
+
+	TestTrue(
+		TEXT("the pitch drops into a crafting slot"),
+		SolidInventory::Move(&Chest, Loadout, ChestHit(PitchIndex), CraftHit(1)));
+	SolidInventory::Layout(Loadout, Page, &Chest);
+	TestTrue(TEXT("stick and pitch light the Craft button"), Page.bCraftEnabled);
+	TestEqual(TEXT("the stick stack is intact"), Loadout.CraftStack[0], SolidStorage::StartingStickCount);
+	TestEqual(TEXT("the pitch stack is intact"), Loadout.CraftStack[1], SolidStorage::StartingPitchCount);
+
+	TestTrue(
+		TEXT("the ingredients can swap slots"),
+		SolidInventory::Move(&Chest, Loadout, CraftHit(0), CraftHit(1)));
+	SolidInventory::Layout(Loadout, Page, &Chest);
+	TestTrue(TEXT("the recipe still fits after the swap"), Page.bCraftEnabled);
+
+	TestTrue(
+		TEXT("the spear can sit beside the ingredients"),
+		SolidInventory::Move(&Chest, Loadout, ChestHit(SolidStorage::Index(0, 0)), CraftHit(2)));
+	SolidInventory::Layout(Loadout, Page, &Chest);
+	TestTrue(TEXT("an extra item does not block the recipe"), Page.bCraftEnabled);
+
+	TestTrue(
+		TEXT("the pitch can leave the crafting row"),
+		SolidInventory::Move(&Chest, Loadout, CraftHit(0), PackHit(0, 0)));
+	SolidInventory::Layout(Loadout, Page, &Chest);
+	TestFalse(TEXT("the button goes dim when the recipe no longer fits"), Page.bCraftEnabled);
+
+	TestTrue(
+		TEXT("the pitch can return"),
+		SolidInventory::Move(&Chest, Loadout, PackHit(0, 0), CraftHit(0)));
+	for (int32 Index = 0; Index < SolidInventory::PackCount; ++Index)
+	{
+		const int32 Column = Index % SolidInventory::PackColumns;
+		const int32 Row = Index / SolidInventory::PackColumns;
+		TestTrue(TEXT("a pack cell can be filled"), SolidInventory::PlacePack(Loadout, Column, Row, SolidItemType::IdRags));
+	}
+	SolidInventory::Layout(Loadout, Page, &Chest);
+	TestFalse(TEXT("a full pack keeps the button off"), Page.bCraftEnabled);
+
+	TestTrue(TEXT("one pack cell can be cleared"), SolidInventory::PlacePack(Loadout, 0, 0, nullptr));
+	SolidInventory::Layout(Loadout, Page, &Chest);
+	TestTrue(TEXT("a free pack cell lights the button again"), Page.bCraftEnabled);
+
+	FSolidRecipe Hidden = SolidCrafting::Recipes[0];
+	Hidden.bKnown = false;
+	TestFalse(TEXT("an unknown recipe does not fit"), SolidInventory::RecipeFitsCraftSlots(Loadout, Hidden));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

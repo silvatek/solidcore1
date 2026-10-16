@@ -288,7 +288,7 @@ namespace SolidInventory
 		float ChestX = 0.f;
 		float ChestLabelY = 0.f;
 		float ChestGridW = 0.f;
-		/** The Craft button, to the right of the crafting slots. It stays off until crafting is wired. */
+		/** The Craft button, to the right of the crafting slots. On when a known recipe fits and the pack has room. */
 		float CraftButtonX = 0.f;
 		float CraftButtonY = 0.f;
 		float CraftButtonW = 0.f;
@@ -320,9 +320,78 @@ namespace SolidInventory
 	/**
 	 * Head, body, and boots in a column, the off hand and the main hand beside the body, belt at the waist, pack to the right.
 	 * Each worn name sits above its box. Chest, when set, adds that container to the right of the pack.
-	 * Four crafting slots and a Craft button sit on the bottom right. The button stays disabled.
+	 * Four crafting slots and a Craft button sit on the bottom right.
+	 * The button is on when a known recipe fits those slots and the pack has an empty cell.
 	 */
 	void Layout(const FLoadout& Loadout, FPage& OutPage, const SolidStorage::FContainer* Chest = nullptr);
+
+	/**
+	 * True when the crafting slots hold enough of every input.
+	 * Slot order does not matter. Extra items do not block a match. An unknown recipe does not fit.
+	 */
+	inline bool RecipeFitsCraftSlots(const FLoadout& Loadout, const FSolidRecipe& Recipe)
+	{
+		if (!Recipe.bKnown || Recipe.InputCount <= 0)
+		{
+			return false;
+		}
+		int32 Left[CraftCount];
+		for (int32 Slot = 0; Slot < CraftCount; ++Slot)
+		{
+			Left[Slot] = Loadout.Craft[Slot] ? Loadout.CraftStack[Slot] : 0;
+		}
+		const int32 Inputs = FMath::Min(Recipe.InputCount, SolidCrafting::MaxInputs);
+		for (int32 Input = 0; Input < Inputs; ++Input)
+		{
+			const TCHAR* ItemId = Recipe.Inputs[Input].ItemId;
+			int32 Need = Recipe.Inputs[Input].Count;
+			if (!ItemId || !ItemId[0] || Need <= 0)
+			{
+				return false;
+			}
+			for (int32 Slot = 0; Slot < CraftCount && Need > 0; ++Slot)
+			{
+				if (!Loadout.Craft[Slot] || Left[Slot] <= 0 || FCString::Strcmp(Loadout.Craft[Slot], ItemId) != 0)
+				{
+					continue;
+				}
+				const int32 Take = FMath::Min(Left[Slot], Need);
+				Left[Slot] -= Take;
+				Need -= Take;
+			}
+			if (Need > 0)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/** True when a known recipe fits the crafting slots and the pack has an empty cell. */
+	inline bool CraftButtonEnabled(const FLoadout& Loadout)
+	{
+		bool bPackHasRoom = false;
+		for (int32 Index = 0; Index < PackCount; ++Index)
+		{
+			if (!Loadout.Pack[Index] || !Loadout.Pack[Index][0])
+			{
+				bPackHasRoom = true;
+				break;
+			}
+		}
+		if (!bPackHasRoom)
+		{
+			return false;
+		}
+		for (int32 Index = 0; Index < SolidCrafting::RecipeCount; ++Index)
+		{
+			if (RecipeFitsCraftSlots(Loadout, SolidCrafting::Recipes[Index]))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 
 	inline FView ContentOrigin(const float CanvasW, const float CanvasH, const FPage& Page, const float LineHeight)
 	{

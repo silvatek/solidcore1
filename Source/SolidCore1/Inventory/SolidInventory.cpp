@@ -170,7 +170,7 @@ namespace SolidInventory
 		OutPage.CraftButtonY = RowY + (PackCell - CraftButtonH) * 0.5f;
 		OutPage.CraftButtonW = CraftButtonW;
 		OutPage.CraftButtonH = CraftButtonH;
-		OutPage.bCraftEnabled = false;
+		OutPage.bCraftEnabled = CraftButtonEnabled(Loadout);
 		ContentBottom = RowY + PackCell;
 
 		OutPage.ContentW = ContentRight;

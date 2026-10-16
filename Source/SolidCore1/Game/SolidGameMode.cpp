@@ -510,6 +510,41 @@ void ASolidGameMode::NoteTownEntry(const int32 TownId)
 			Captain->SetCharacterDisplayName(Result.CaptainTitle);
 		}
 	}
+	PresentEventResult(Result);
+}
+
+void ASolidGameMode::PresentEventResult(const SolidEvents::FResult& Result)
+{
+	if (Result.bShowMessage && Result.MessageId && Result.MessageId[0])
+	{
+		if (UWorld* World = GetWorld())
+		{
+			if (APlayerController* PC = World->GetFirstPlayerController())
+			{
+				if (ASolidHUD* HUD = Cast<ASolidHUD>(PC->GetHUD()))
+				{
+					const TCHAR* Text = SolidMessages::TextFor(Result.MessageId);
+					HUD->ShowMessage(Result.MessageId, Text ? Text : TEXT(""));
+				}
+			}
+		}
+	}
+	if (Result.bEnterCave)
+	{
+		TravelToDungeon();
+	}
+}
+
+void ASolidGameMode::NoteMessageClosed(const TCHAR* MessageId)
+{
+	const SolidEvents::FResult Result = SolidEvents::NotifyMessageClosed(Configuration, MessageId, WorldStamp());
+	if (Result.bFired)
+	{
+		UE_LOG(LogSolid, Warning, TEXT("Event: message %s closed. Cave %s."),
+			MessageId ? MessageId : TEXT(""),
+			Result.bEnterCave ? TEXT("entered") : TEXT("unchanged"));
+	}
+	PresentEventResult(Result);
 }
 
 void ASolidGameMode::NoteBrokenBridgeRamp(const FVector& Location)
@@ -529,13 +564,9 @@ void ASolidGameMode::NoteBrokenBridgeRamp(const FVector& Location)
 		const SolidEvents::FResult Result = SolidEvents::NotifyReachBrokenBridge(Configuration, WorldStamp());
 		if (Result.bFired)
 		{
-			UE_LOG(LogSolid, Warning, TEXT("Event: Reach broken bridge. Cave %s."),
-				Result.bEnterCave ? TEXT("entered") : TEXT("unchanged"));
+			UE_LOG(LogSolid, Warning, TEXT("Event: Reach broken bridge."));
 		}
-		if (Result.bEnterCave)
-		{
-			TravelToDungeon();
-		}
+		PresentEventResult(Result);
 		return;
 	}
 }

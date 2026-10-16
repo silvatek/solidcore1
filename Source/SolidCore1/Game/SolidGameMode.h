@@ -119,8 +119,11 @@ public:
 	/** True after F10 Enter cave, until F10 Leave cave. */
 	bool IsInDungeon() const;
 
-	/** Reach broken bridge opens the starting cave. It starts closed. */
+	/** Closing the monster message opens the starting cave. It starts closed. */
 	bool IsCaveEnabled() const { return Configuration.bCaveEnabled; }
+
+	/** The captain closed a shown message. Fires MessageClosed for that id. */
+	void NoteMessageClosed(const TCHAR* MessageId);
 
 	/** Unload the open world (companions included) and load the dungeon interior. */
 	void TravelToDungeon();
@@ -144,8 +147,10 @@ protected:
 	void RefreshEvents();
 	/** Record one enter-town event and apply its sight, title, and bridge repair. */
 	void NoteTownEntry(int32 TownId);
-	/** Record Reach broken bridge when the captain stands on an Iglin ramp, and send him into the cave. */
+	/** Record Reach broken bridge when the captain stands on an Iglin ramp, and show its message. */
 	void NoteBrokenBridgeRamp(const FVector& Location);
+	/** Show a message, or send the captain into the cave, when a result asks for it. */
+	void PresentEventResult(const SolidEvents::FResult& Result);
 	/** Draw the center of every broken bridge. Enter Relion calls this. */
 	void RepairBrokenBridges();
 	/** Fire Enter Iglin if needed, then Enter Relion and Enter Dragongate, and field the party. */

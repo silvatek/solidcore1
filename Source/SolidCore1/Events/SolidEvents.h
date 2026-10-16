@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Events/SolidMessages.h"
 #include "SolidSight.h"
 
 /**
@@ -13,9 +14,11 @@
  * Standing still, or walking between cells of the same town, does not re-fire.
  * Reach broken bridge: the captain stands on either ramp of the Iglin bridge.
  * The parameter is unused. The deck and the gap past the lip do not count.
- * That event opens the starting cave and sends the captain inside.
+ * That event shows a message. Closing that message is its own event.
+ * Killed by monsters closes the monster message, opens the starting cave,
+ * and sends the captain inside.
  * A visit before the requirements are met does not fire. A later visit does.
- * Each event belongs to an act. Iglin and Reach broken bridge are ACT_0.
+ * Each event belongs to an act. Iglin, Reach broken bridge, and Killed by monsters are ACT_0.
  * Relion is ACT_2, Kanfold is ACT_3, and Dragongate is ACT_4.
  */
 namespace SolidEvents
@@ -28,6 +31,7 @@ namespace SolidEvents
 	/** Stable ids. Eight hex digits. Requirements name these. */
 	inline constexpr const TCHAR* IdEnterIglin = TEXT("c4e1a7b2");
 	inline constexpr const TCHAR* IdReachBrokenBridge = TEXT("a17c4e58");
+	inline constexpr const TCHAR* IdKilledByMonsters = TEXT("e51b8c36");
 	inline constexpr const TCHAR* IdEnterRelion = TEXT("9f30d86a");
 	inline constexpr const TCHAR* IdEnterKanfold = TEXT("2b8e15c7");
 	inline constexpr const TCHAR* IdEnterDragongate = TEXT("e6a4f093");
@@ -43,6 +47,8 @@ namespace SolidEvents
 		EnterTown,
 		/** The captain stands on a ramp of the Iglin bridge. */
 		ReachBrokenBridge,
+		/** The captain closes the message named by MessageId. */
+		MessageClosed,
 	};
 
 	enum class EChange : uint8
@@ -57,6 +63,8 @@ namespace SolidEvents
 		RepairBridge,
 		/** Open the starting cave and send the captain inside. */
 		EnableCave,
+		/** Show the message named by MessageId. */
+		ShowMessage,
 	};
 
 	/** Nameplate before any title event. The sequence ends at Captain. */
@@ -71,6 +79,8 @@ namespace SolidEvents
 		ESolidSight Sight = ESolidSight::Raven;
 		int32 PartySize = 0;
 		const TCHAR* Title = nullptr;
+		/** Message id for a ShowMessage change. */
+		const TCHAR* MessageId = nullptr;
 	};
 
 	struct FEvent
@@ -87,6 +97,8 @@ namespace SolidEvents
 		int32 RequireCount = 0;
 		/** Story act this event belongs to. */
 		int32 Act = ACT_0;
+		/** Message id for a MessageClosed trigger. Empty for every other trigger. */
+		const TCHAR* MessageId = nullptr;
 	};
 
 	/**
@@ -121,12 +133,26 @@ namespace SolidEvents
 			ETrigger::ReachBrokenBridge,
 			INDEX_NONE,
 			{
-				{ EChange::EnableCave },
+				{ EChange::ShowMessage, ESolidSight::Raven, 0, nullptr, SolidMessages::IdKilledByMonsters },
 			},
 			1,
 			{ IdEnterIglin },
 			1,
 			ACT_0,
+		},
+		{
+			IdKilledByMonsters,
+			TEXT("Killed by monsters"),
+			ETrigger::MessageClosed,
+			INDEX_NONE,
+			{
+				{ EChange::EnableCave },
+			},
+			1,
+			{},
+			0,
+			ACT_0,
+			SolidMessages::IdKilledByMonsters,
 		},
 		{
 			IdEnterRelion,

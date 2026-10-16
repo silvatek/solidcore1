@@ -1117,6 +1117,11 @@ void ASolidHUD::DrawHUD()
 		DrawMainMenuPopup();
 	}
 
+	if (bShowMessage)
+	{
+		DrawMessagePopup();
+	}
+
 	if (APlayerController* PC = GetOwningPlayerController())
 	{
 		float MouseX = 0.f;
@@ -1205,8 +1210,52 @@ void ASolidHUD::SetCavePassageTip(const FString& Tip)
 	CavePassageTip = Tip;
 }
 
+void ASolidHUD::ShowMessage(const TCHAR* InMessageId, const TCHAR* Text)
+{
+	MessageId = InMessageId ? InMessageId : TEXT("");
+	MessageText = Text ? Text : TEXT("");
+	bShowMessage = !MessageText.IsEmpty();
+}
+
+void ASolidHUD::CloseMessage()
+{
+	if (!bShowMessage)
+	{
+		return;
+	}
+	const FString ClosedId = MessageId;
+	bShowMessage = false;
+	MessageId.Reset();
+	MessageText.Reset();
+	if (ClosedId.IsEmpty())
+	{
+		return;
+	}
+	if (UWorld* World = GetWorld())
+	{
+		if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+		{
+			GameMode->NoteMessageClosed(*ClosedId);
+		}
+	}
+}
+
+void ASolidHUD::DrawMessagePopup() const
+{
+	TArray<FString> Lines;
+	Lines.Add(MessageText);
+	Lines.Add(TEXT("Click to close"));
+	SolidHUDPrivate::DrawCenteredPopup(Canvas, Lines, 8.f);
+}
+
 void ASolidHUD::HandleMenuKey()
 {
+	if (bShowMessage)
+	{
+		CloseMessage();
+		return;
+	}
+
 	if (bShowCharacterEditor)
 	{
 		bShowCharacterEditor = false;
@@ -1249,6 +1298,12 @@ void ASolidHUD::HandleMenuKey()
 
 void ASolidHUD::CloseMenuOverlay()
 {
+	if (bShowMessage)
+	{
+		CloseMessage();
+		return;
+	}
+
 	bShowMainMenu = false;
 	bShowPortal = false;
 	bShowPartyBuilder = false;

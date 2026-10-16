@@ -52,6 +52,10 @@ namespace
 			State.bCaveEnabled = true;
 			Result.bEnterCave = true;
 			break;
+		case SolidEvents::EChange::ShowMessage:
+			Result.bShowMessage = true;
+			Result.MessageId = Change.MessageId;
+			break;
 		default:
 			break;
 		}
@@ -194,6 +198,37 @@ FResult NotifyReachBrokenBridge(
 	for (int32 Index = 0; Index < DefinitionCount; ++Index)
 	{
 		if (Definitions[Index].Trigger != ETrigger::ReachBrokenBridge)
+		{
+			continue;
+		}
+		TryFireEvent(State, Index, When, Result);
+	}
+
+	Result.MaxPartySize = State.MaxPartySize;
+	return Result;
+}
+
+FResult NotifyMessageClosed(
+	FGameState& State,
+	const TCHAR* MessageId,
+	const SolidWorldTime::FStamp& When)
+{
+	FResult Result;
+	Result.MaxPartySize = State.MaxPartySize;
+	Result.CaptainTitle = State.CaptainTitle;
+	if (!MessageId || !MessageId[0])
+	{
+		return Result;
+	}
+
+	for (int32 Index = 0; Index < DefinitionCount; ++Index)
+	{
+		const FEvent& Event = Definitions[Index];
+		if (Event.Trigger != ETrigger::MessageClosed || !Event.MessageId)
+		{
+			continue;
+		}
+		if (FCString::Strcmp(Event.MessageId, MessageId) != 0)
 		{
 			continue;
 		}

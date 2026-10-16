@@ -16,7 +16,7 @@ struct FGameState
 	bool bRavenSightEnabled = false;
 	/** Enter Relion restores the Iglin span. It starts broken. */
 	bool bIglinBridgeRepaired = false;
-	/** Reach broken bridge opens the starting cave. It starts closed. */
+	/** Closing the monster message opens the starting cave. It starts closed. */
 	bool bCaveEnabled = false;
 	/** Numbered cell the captain is standing on, or INDEX_NONE. */
 	int32 OccupiedTown = INDEX_NONE;
@@ -43,6 +43,9 @@ namespace SolidEvents
 		bool bRepairBridge = false;
 		/** An Enable cave change ran. The captain is sent inside. */
 		bool bEnterCave = false;
+		/** A Show message change ran. MessageId names the line to show. */
+		bool bShowMessage = false;
+		const TCHAR* MessageId = nullptr;
 	};
 
 	int32 PartyCount(const FGameState& State);
@@ -80,5 +83,14 @@ namespace SolidEvents
 	 */
 	FResult NotifyReachBrokenBridge(
 		FGameState& State,
+		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
+
+	/**
+	 * The captain closed the message named by MessageId.
+	 * Fires every unfired MessageClosed event for that id whose requirements are met.
+	 */
+	FResult NotifyMessageClosed(
+		FGameState& State,
+		const TCHAR* MessageId,
 		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
 }

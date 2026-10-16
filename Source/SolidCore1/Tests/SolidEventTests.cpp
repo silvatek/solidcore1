@@ -1,7 +1,9 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "Events/SolidEvents.h"
+#include "Events/SolidMessages.h"
 #include "SolidGameState.h"
+#include "SolidHUD.h"
 #include "SolidGameMode.h"
 #include "Journal/SolidJournal.h"
 #include "SolidSight.h"
@@ -655,6 +657,141 @@ bool FSolidEventsCaveTest::RunTest(const FString& Parameters)
 	if (GameMode)
 	{
 		TestFalse(TEXT("a new game keeps the cave closed"), GameMode->IsCaveEnabled());
+	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidEventsMessageTest,
+	"SolidCore1.Events.Message",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidEventsMessageTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("one message"), SolidMessages::DefinitionCount, 1);
+	const TCHAR* KilledText = SolidMessages::TextFor(SolidMessages::IdKilledByMonsters);
+	TestNotNull(TEXT("the monster message is listed"), KilledText);
+	TestEqual(
+		TEXT("the monster message text"),
+		FString(KilledText ? KilledText : TEXT("")),
+		FString(TEXT("You are killed by monsters")));
+	TestNull(TEXT("an unknown message is empty"), SolidMessages::TextFor(TEXT("missing")));
+
+	const FString MessageId = SolidMessages::IdKilledByMonsters;
+	TestEqual(TEXT("message id is eight digits"), MessageId.Len(), SolidMessages::IdLength);
+	bool bHex = MessageId.Len() == SolidMessages::IdLength;
+	for (const TCHAR Char : MessageId)
+	{
+		bHex = bHex && FChar::IsHexDigit(Char);
+	}
+	TestTrue(TEXT("message id is hex"), bHex);
+
+	TestEqual(TEXT("six events"), SolidEvents::DefinitionCount, 6);
+	const int32 ReachIndex = SolidEvents::FindIndexById(SolidEvents::IdReachBrokenBridge);
+	const int32 KilledIndex = SolidEvents::FindIndexById(SolidEvents::IdKilledByMonsters);
+	const int32 RelionIndex = SolidEvents::FindIndexById(SolidEvents::IdEnterRelion);
+	TestTrue(TEXT("the close follows the ramp"), ReachIndex != INDEX_NONE && KilledIndex == ReachIndex + 1);
+	TestTrue(TEXT("Relion follows the close"), RelionIndex == KilledIndex + 1);
+
+	const SolidEvents::FEvent* Reach = SolidEventTestPrivate::FindEvent(TEXT("Reach broken bridge"));
+	TestNotNull(TEXT("Reach broken bridge is listed"), Reach);
+	if (Reach)
+	{
+		TestEqual(TEXT("the ramp shows one message"), Reach->ChangeCount, 1);
+		TestEqual(
+			TEXT("the ramp change is ShowMessage"),
+			static_cast<uint8>(Reach->Changes[0].Kind),
+			static_cast<uint8>(SolidEvents::EChange::ShowMessage));
+		TestEqual(
+			TEXT("the ramp names the monster message"),
+			FString(Reach->Changes[0].MessageId),
+			FString(SolidMessages::IdKilledByMonsters));
+		TestTrue(
+			TEXT("the ramp journal is the message"),
+			SolidJournal::Describe(*Reach).Contains(TEXT("You are killed by monsters")));
+	}
+
+	const SolidEvents::FEvent* Killed = SolidEventTestPrivate::FindEvent(TEXT("Killed by monsters"));
+	TestNotNull(TEXT("Killed by monsters is listed"), Killed);
+	if (Killed)
+	{
+		TestEqual(
+			TEXT("closing the message is the trigger"),
+			static_cast<uint8>(Killed->Trigger),
+			static_cast<uint8>(SolidEvents::ETrigger::MessageClosed));
+		TestEqual(
+			TEXT("the close names the monster message"),
+			FString(Killed->MessageId),
+			FString(SolidMessages::IdKilledByMonsters));
+		TestEqual(TEXT("the close is ACT_0"), Killed->Act, SolidEvents::ACT_0);
+		TestEqual(TEXT("the close enables the cave"), Killed->ChangeCount, 1);
+		TestEqual(
+			TEXT("the close change is EnableCave"),
+			static_cast<uint8>(Killed->Changes[0].Kind),
+			static_cast<uint8>(SolidEvents::EChange::EnableCave));
+		TestTrue(
+			TEXT("the close journal records the cave"),
+			SolidJournal::Describe(*Killed).Contains(TEXT("Cave enabled")));
+	}
+
+	FGameState State;
+	SolidEvents::NotifyOccupiedTown(State, 0);
+	const SolidEvents::FResult Reached = SolidEvents::NotifyReachBrokenBridge(State);
+	TestTrue(TEXT("the ramp shows the message"), Reached.bShowMessage);
+	TestEqual(
+		TEXT("the ramp result names the monster message"),
+		FString(Reached.MessageId),
+		FString(SolidMessages::IdKilledByMonsters));
+	TestFalse(TEXT("the ramp leaves the cave closed"), Reached.bEnterCave);
+	TestFalse(TEXT("showing the message does not open the cave"), State.bCaveEnabled);
+
+	const SolidEvents::FResult Other = SolidEvents::NotifyMessageClosed(State, TEXT("missing"));
+	TestFalse(TEXT("another message does not fire"), Other.bFired);
+	TestFalse(TEXT("another message leaves the cave closed"), State.bCaveEnabled);
+
+	const SolidEvents::FResult Closed = SolidEvents::NotifyMessageClosed(State, SolidMessages::IdKilledByMonsters);
+	TestTrue(TEXT("closing the message fires"), Closed.bFired);
+	TestTrue(TEXT("closing the message sends the captain inside"), Closed.bEnterCave);
+	TestTrue(TEXT("the cave is open"), State.bCaveEnabled);
+
+	TArray<SolidJournal::FRow> Rows;
+	SolidJournal::CollectRows(State, Rows);
+	bool bSawMessage = false;
+	bool bSawCave = false;
+	for (const SolidJournal::FRow& Row : Rows)
+	{
+		if (Row.Kind == SolidJournal::ERowKind::Detail && Row.Text.Contains(TEXT("You are killed by monsters")))
+		{
+			bSawMessage = true;
+		}
+		if (Row.Kind == SolidJournal::ERowKind::Detail && Row.Text.Contains(TEXT("Cave enabled")))
+		{
+			bSawCave = true;
+		}
+	}
+	TestTrue(TEXT("the journal lists the message"), bSawMessage);
+	TestTrue(TEXT("the journal lists Cave enabled"), bSawCave);
+
+	const SolidEvents::FResult ClosedAgain = SolidEvents::NotifyMessageClosed(State, SolidMessages::IdKilledByMonsters);
+	TestFalse(TEXT("closing the message fires once"), ClosedAgain.bFired);
+	TestFalse(TEXT("a second close does not travel again"), ClosedAgain.bEnterCave);
+	TestTrue(TEXT("the cave stays open"), State.bCaveEnabled);
+
+	ASolidHUD* HUD = NewObject<ASolidHUD>();
+	TestNotNull(TEXT("hud"), HUD);
+	if (HUD)
+	{
+		TestFalse(TEXT("no message yet"), HUD->IsMessageVisible());
+		HUD->ShowMessage(SolidMessages::IdKilledByMonsters, SolidMessages::TextFor(SolidMessages::IdKilledByMonsters));
+		TestTrue(TEXT("the message is showing"), HUD->IsMessageVisible());
+		TestEqual(
+			TEXT("the board shows the monster line"),
+			HUD->GetMessageText(),
+			FString(TEXT("You are killed by monsters")));
+		TestEqual(TEXT("the board keeps the message id"), HUD->GetMessageId(), FString(SolidMessages::IdKilledByMonsters));
+		HUD->CloseMessage();
+		TestFalse(TEXT("the message closes"), HUD->IsMessageVisible());
+		TestTrue(TEXT("a closed board clears the text"), HUD->GetMessageText().IsEmpty());
 	}
 	return true;
 }

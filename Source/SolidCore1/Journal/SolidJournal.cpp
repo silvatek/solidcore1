@@ -1,4 +1,5 @@
 #include "SolidJournal.h"
+#include "Events/SolidMessages.h"
 #include "SolidGameState.h"
 #include "SolidSight.h"
 #include "SolidWorldTime.h"
@@ -27,6 +28,12 @@ FString SolidJournal::Describe(const SolidEvents::FEvent& Event)
 			break;
 		case SolidEvents::EChange::EnableCave:
 			Part = TEXT("Cave enabled");
+			break;
+		case SolidEvents::EChange::ShowMessage:
+			if (const TCHAR* Text = SolidMessages::TextFor(Change.MessageId))
+			{
+				Part = Text;
+			}
 			break;
 		case SolidEvents::EChange::MaxPartySize:
 		{

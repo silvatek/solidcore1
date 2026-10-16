@@ -93,11 +93,19 @@ public:
 	void SetCavePassageTip(const FString& Tip);
 	const FString& GetCavePassageTip() const { return CavePassageTip; }
 
+	/** An event message. A click, Enter, Esc, or F10 closes it. */
+	void ShowMessage(const TCHAR* MessageId, const TCHAR* Text);
+	bool IsMessageVisible() const { return bShowMessage; }
+	const FString& GetMessageText() const { return MessageText; }
+	const FString& GetMessageId() const { return MessageId; }
+	void CloseMessage();
+
 protected:
 	void EnsureSightIndicator();
 	void RemoveSightIndicator();
 	void DrawCreditsPopup() const;
 	void DrawJournalPopup() const;
+	void DrawMessagePopup() const;
 	void DrawCharacterEditorPanel();
 	void DrawMainMenuPopup();
 	void DrawPortalPopup();
@@ -175,4 +183,9 @@ protected:
 
 	/** Enter cave / Leave cave, or empty when the pointer is elsewhere. */
 	FString CavePassageTip;
+
+	/** Event message. Empty when none is showing. */
+	bool bShowMessage = false;
+	FString MessageId;
+	FString MessageText;
 };

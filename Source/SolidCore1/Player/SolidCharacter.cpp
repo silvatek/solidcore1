@@ -341,7 +341,8 @@ bool ASolidCharacter::IsMenuOverlayOpen() const
 			|| HUD->IsPartyBuilderOpen()
 			|| HUD->IsCreditsVisible()
 			|| HUD->IsJournalVisible()
-			|| HUD->IsCharacterEditorOpen();
+			|| HUD->IsCharacterEditorOpen()
+			|| HUD->IsMessageVisible();
 	}
 	return false;
 }
@@ -933,6 +934,11 @@ void ASolidCharacter::MainMenuConfirm()
 	{
 		return;
 	}
+	if (HUD->IsMessageVisible())
+	{
+		HUD->CloseMessage();
+		return;
+	}
 	if (HUD->IsPortalOpen())
 	{
 		ConfirmPortalSelection();
@@ -1470,6 +1476,15 @@ void ASolidCharacter::PollClickMovePress()
 	if (!SolidClickMove::ConsumePress(bClickSawRelease, bLeftMouseWasDown, bDown))
 	{
 		return;
+	}
+
+	if (ASolidHUD* MessageHUD = GetSolidHUD())
+	{
+		if (MessageHUD->IsMessageVisible())
+		{
+			MessageHUD->CloseMessage();
+			return;
+		}
 	}
 
 	float X = 0.f;

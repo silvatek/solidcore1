@@ -93,7 +93,7 @@ namespace SolidEvents
 	};
 
 	/** Each helper sets the one value that change reads. The other fields stay unused. */
-	inline constexpr FChange Sight(const ESolidSight Mode)
+	inline constexpr FChange EnableSight(const ESolidSight Mode)
 	{
 		FChange Change;
 		Change.Kind = EChange::EnableSight;
@@ -101,7 +101,7 @@ namespace SolidEvents
 		return Change;
 	}
 
-	inline constexpr FChange Party(const int32 Size)
+	inline constexpr FChange SetMaxPartySize(const int32 Size)
 	{
 		FChange Change;
 		Change.Kind = EChange::MaxPartySize;
@@ -109,7 +109,7 @@ namespace SolidEvents
 		return Change;
 	}
 
-	inline constexpr FChange Title(const TCHAR* Name)
+	inline constexpr FChange SetPlayerTitle(const TCHAR* Name)
 	{
 		FChange Change;
 		Change.Kind = EChange::CaptainTitle;
@@ -117,7 +117,7 @@ namespace SolidEvents
 		return Change;
 	}
 
-	inline constexpr FChange Message(const TCHAR* MessageId)
+	inline constexpr FChange DisplayMessage(const TCHAR* MessageId)
 	{
 		FChange Change;
 		Change.Kind = EChange::ShowMessage;
@@ -125,14 +125,14 @@ namespace SolidEvents
 		return Change;
 	}
 
-	inline constexpr FChange Cave()
+	inline constexpr FChange EnableCave()
 	{
 		FChange Change;
 		Change.Kind = EChange::EnableCave;
 		return Change;
 	}
 
-	inline constexpr FChange Bridge()
+	inline constexpr FChange RepairBridge()
 	{
 		FChange Change;
 		Change.Kind = EChange::RepairBridge;
@@ -178,7 +178,7 @@ namespace SolidEvents
 			ETrigger::EnterTown,
 			0,
 			{
-				Title(TitleOrphan),
+				SetPlayerTitle(TitleOrphan),
 			},
 			1,
 			{},
@@ -191,7 +191,7 @@ namespace SolidEvents
 			ETrigger::ReachBrokenBridge,
 			INDEX_NONE,
 			{
-				Message(SolidMessages::IdKilledByMonsters),
+				DisplayMessage(SolidMessages::IdKilledByMonsters),
 			},
 			1,
 			{ IdEnterIglin },
@@ -204,7 +204,7 @@ namespace SolidEvents
 			ETrigger::MessageClosed,
 			INDEX_NONE,
 			{
-				Cave(),
+				EnableCave(),
 			},
 			1,
 			{},
@@ -218,8 +218,8 @@ namespace SolidEvents
 			ETrigger::EnterTown,
 			0,
 			{
-				Message(SolidMessages::IdDrivenFromVillage),
-				Title(TitleOutcast),
+				DisplayMessage(SolidMessages::IdDrivenFromVillage),
+				SetPlayerTitle(TitleOutcast),
 			},
 			2,
 			{ IdKilledByMonsters },
@@ -232,10 +232,10 @@ namespace SolidEvents
 			ETrigger::EnterTown,
 			1,
 			{
-				Sight(ESolidSight::Raven),
-				Party(1),
-				Title(TitleVagrant),
-				Bridge(),
+				EnableSight(ESolidSight::Raven),
+				SetMaxPartySize(1),
+				SetPlayerTitle(TitleVagrant),
+				RepairBridge(),
 			},
 			4,
 			{ IdEnterIglin },
@@ -248,9 +248,9 @@ namespace SolidEvents
 			ETrigger::EnterTown,
 			2,
 			{
-				Sight(ESolidSight::Raven),
-				Party(2),
-				Title(TitleRanger),
+				EnableSight(ESolidSight::Raven),
+				SetMaxPartySize(2),
+				SetPlayerTitle(TitleRanger),
 			},
 			3,
 			{},
@@ -263,9 +263,9 @@ namespace SolidEvents
 			ETrigger::EnterTown,
 			5,
 			{
-				Sight(ESolidSight::Raven),
-				Party(RosterCount),
-				Title(TitleCaptain),
+				EnableSight(ESolidSight::Raven),
+				SetMaxPartySize(RosterCount),
+				SetPlayerTitle(TitleCaptain),
 			},
 			3,
 			{},

@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Events/SolidEvents.h"
+#include "Inventory/SolidInventory.h"
 #include "Journal/SolidJournalEntry.h"
 
 /**
@@ -26,6 +27,8 @@ struct FGameState
 	int32 FiredCount = 0;
 	/** Journal, including repeated stronghold trips. */
 	TArray<SolidJournal::FJournalEntry> Journal;
+	/** Worn boxes and the captain's pack. A new game starts in the starting kit. */
+	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
 };
 
 namespace SolidEvents

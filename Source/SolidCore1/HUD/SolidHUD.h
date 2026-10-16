@@ -21,6 +21,10 @@ public:
 	bool IsJournalVisible() const { return bShowJournal; }
 	void SetJournalVisible(bool bVisible) { bShowJournal = bVisible; }
 
+	/** # shows the worn boxes and the pack. # again, Esc, or F10 closes it. */
+	void ToggleInventory();
+	bool IsInventoryVisible() const { return bShowInventory; }
+
 	/** Company list opened from Build party. */
 	void OpenPartyBuilder();
 	bool IsPartyBuilderOpen() const { return bShowPartyBuilder; }
@@ -72,7 +76,7 @@ public:
 
 	/** F10. Closes an open page, including the character editor, or toggles the main menu. */
 	void HandleMenuKey();
-	/** Esc. Closes the menu, the portal, the party builder, the journal, the credits page, and the character editor. */
+	/** Esc. Closes the menu, the portal, the party builder, the journal, the inventory, the credits page, and the character editor. */
 	void CloseMenuOverlay();
 	/** Hide the menu list. Leaves the credits page as it is. */
 	void CloseMainMenu();
@@ -105,6 +109,7 @@ protected:
 	void RemoveSightIndicator();
 	void DrawCreditsPopup() const;
 	void DrawJournalPopup() const;
+	void DrawInventoryPopup() const;
 	void DrawMessagePopup() const;
 	void DrawCharacterEditorPanel();
 	void DrawMainMenuPopup();
@@ -124,6 +129,10 @@ protected:
 	/** Journal page, opened from the main menu. Lists events that have fired. */
 	UPROPERTY(VisibleAnywhere, Category = "HUD")
 	bool bShowJournal = false;
+
+	/** Inventory page. Worn boxes and the captain's pack. */
+	UPROPERTY(VisibleAnywhere, Category = "HUD")
+	bool bShowInventory = false;
 
 	/** Party builder, opened from the main menu once two companions are allowed. */
 	UPROPERTY(VisibleAnywhere, Category = "HUD")

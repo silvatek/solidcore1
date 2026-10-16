@@ -134,6 +134,8 @@ protected:
 	void ApplyTrueSightCamera();
 	void ApplyRavenSightCamera();
 	void ToggleMainMenuFromInput();
+	void ToggleInventoryFromBackslash();
+	void ToggleInventoryFromShiftThree();
 	void ToggleDebugPanelFromInput();
 	void CloseMenuOverlayFromInput();
 	void MainMenuMoveUp();

@@ -6,6 +6,7 @@
 #include "Menus/SolidCharacterEditor.h"
 #include "SolidBodyParams.h"
 #include "Menus/SolidCredits.h"
+#include "Inventory/SolidInventory.h"
 #include "Journal/SolidJournal.h"
 #include "Menus/SolidMainMenu.h"
 #include "Menus/SolidMenuPointer.h"
@@ -756,6 +757,170 @@ namespace SolidHUDPrivate
 			break;
 		}
 	}
+
+	static void DrawSlotBox(
+		UCanvas* Canvas,
+		const float X,
+		const float Y,
+		const float W,
+		const float H)
+	{
+		const SolidHudTheme::FPalette Palette = SolidHudTheme::OakAndBronze();
+		const float Rim = 2.f;
+		FillRect(Canvas, X, Y, W, H, Palette.Bronze);
+		FillRect(Canvas, X + Rim, Y + Rim, FMath::Max(0.f, W - Rim * 2.f), FMath::Max(0.f, H - Rim * 2.f), Palette.Recess);
+	}
+
+	static void DrawCenteredLine(
+		UCanvas* Canvas,
+		UFont* Font,
+		const FString& Text,
+		const float BoxX,
+		const float BoxY,
+		const float BoxW,
+		const float BoxH,
+		const FLinearColor& Color)
+	{
+		if (!Canvas || !Font || Text.IsEmpty() || BoxW <= 0.f || BoxH <= 0.f)
+		{
+			return;
+		}
+		float TextW = 0.f;
+		float TextH = 0.f;
+		Canvas->StrLen(Font, Text, TextW, TextH);
+		FCanvasTextItem Item(
+			FVector2D(BoxX + (BoxW - TextW) * 0.5f, BoxY + (BoxH - TextH) * 0.5f),
+			FText::FromString(Text),
+			Font,
+			Color);
+		Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+		Canvas->DrawItem(Item);
+	}
+
+	/** Same oak board as the journal. Worn boxes follow a person. The pack is a grid on the right. */
+	static void DrawInventoryBoard(UCanvas* Canvas, const SolidInventory::FPage& Page)
+	{
+		if (!Canvas)
+		{
+			return;
+		}
+
+		UFont* TitleFont = GEngine ? GEngine->GetMediumFont() : nullptr;
+		UFont* Font = GEngine ? GEngine->GetSmallFont() : nullptr;
+		if (!TitleFont)
+		{
+			TitleFont = Font;
+		}
+		if (!Font)
+		{
+			Font = TitleFont;
+		}
+
+		const FString TitleText(SolidInventory::Title);
+		float TitleW = static_cast<float>(TitleText.Len() * 8);
+		float TitleH = 18.f;
+		float LineHeight = 16.f;
+		if (TitleFont)
+		{
+			Canvas->StrLen(TitleFont, TitleText, TitleW, TitleH);
+		}
+		if (Font)
+		{
+			float HintW = 0.f;
+			Canvas->StrLen(Font, SolidInventory::CloseHint, HintW, LineHeight);
+		}
+
+		float BoardW = 0.f;
+		float BoardH = 0.f;
+		SolidJournal::BoardSize(
+			static_cast<float>(Canvas->SizeX),
+			static_cast<float>(Canvas->SizeY),
+			Page.ContentW,
+			Page.ContentH + LineHeight + SolidJournal::LineGap,
+			BoardW,
+			BoardH);
+
+		const float BoxX = (static_cast<float>(Canvas->SizeX) - BoardW) * 0.5f;
+		const float BoxY = (static_cast<float>(Canvas->SizeY) - BoardH) * 0.5f;
+
+		FCanvasTileItem Dim(
+			FVector2D(0.f, 0.f),
+			FVector2D(static_cast<float>(Canvas->SizeX), static_cast<float>(Canvas->SizeY)),
+			FLinearColor(0.f, 0.f, 0.f, 0.72f));
+		Dim.BlendMode = SE_BLEND_Translucent;
+		Canvas->DrawItem(Dim);
+
+		const SolidHudTheme::FFrame Frame = SolidHudTheme::MenuFrame();
+		DrawOakFrame(Canvas, BoxX, BoxY, BoardW, BoardH, Frame);
+
+		const SolidHudTheme::FPalette Palette = SolidHudTheme::OakAndBronze();
+		const float Band = SolidHudTheme::BandThickness(Frame);
+		const SolidJournal::FTitlePlate Plate = SolidJournal::TitlePlate(BoxX, BoxY, BoardW, TitleW, TitleH, Band);
+		FillRect(Canvas, Plate.X, Plate.Y, Plate.W, Plate.H, Palette.Bronze);
+		if (TitleFont)
+		{
+			const float NameX = Plate.X + (Plate.W - TitleW) * 0.5f;
+			const float NameY = Plate.Y + (Plate.H - TitleH) * 0.5f;
+			FCanvasTextItem NameItem(FVector2D(NameX, NameY), FText::FromString(TitleText), TitleFont, Palette.Title);
+			NameItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+			Canvas->DrawItem(NameItem);
+		}
+
+		const float OriginX = BoxX + (BoardW - Page.ContentW) * 0.5f;
+		const float OriginY = BoxY + SolidJournal::BoardPad;
+		if (Font && !FString(SolidInventory::PackTitle).IsEmpty())
+		{
+			float PackW = 0.f;
+			float PackH = 0.f;
+			Canvas->StrLen(Font, SolidInventory::PackTitle, PackW, PackH);
+			FCanvasTextItem PackItem(
+				FVector2D(OriginX + Page.PackX + (Page.PackGridW - PackW) * 0.5f, OriginY + Page.PackLabelY),
+				FText::FromString(SolidInventory::PackTitle),
+				Font,
+				Palette.Title);
+			PackItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+			Canvas->DrawItem(PackItem);
+		}
+
+		for (const SolidInventory::FBox& Slot : Page.Boxes)
+		{
+			const float X = OriginX + Slot.X;
+			const float Y = OriginY + Slot.Y;
+			DrawSlotBox(Canvas, X, Y, Slot.W, Slot.H);
+			if (!Font)
+			{
+				continue;
+			}
+			if (Slot.Item.IsEmpty())
+			{
+				DrawCenteredLine(Canvas, Font, Slot.Label, X, Y, Slot.W, Slot.H, Palette.Hint);
+				continue;
+			}
+			const float LabelBand = 18.f;
+			DrawCenteredLine(Canvas, Font, Slot.Label, X, Y, Slot.W, LabelBand, Palette.Hint);
+			DrawCenteredLine(
+				Canvas,
+				Font,
+				Slot.Item,
+				X,
+				Y + LabelBand,
+				Slot.W,
+				FMath::Max(0.f, Slot.H - LabelBand),
+				Palette.Ink);
+		}
+
+		if (Font)
+		{
+			const float HintY = BoxY + BoardH - SolidJournal::BoardPad - LineHeight;
+			FCanvasTextItem HintItem(
+				FVector2D(BoxX + SolidJournal::BoardPad, HintY),
+				FText::FromString(SolidInventory::CloseHint),
+				Font,
+				Palette.Hint);
+			HintItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+			Canvas->DrawItem(HintItem);
+		}
+	}
 }
 
 void ASolidHUD::EnsureSightIndicator()
@@ -1057,6 +1222,7 @@ void ASolidHUD::DrawHUD()
 		}
 	}
 	Lines.Add(TEXT("F10  Menu"));
+	Lines.Add(FString::Printf(TEXT("%s  Inventory"), SolidInventory::ToggleKeyLabel));
 	Lines.Add(TEXT("F12  Debug"));
 	Lines.Add(TEXT("RMB  Look"));
 
@@ -1103,6 +1269,10 @@ void ASolidHUD::DrawHUD()
 	else if (bShowPartyBuilder)
 	{
 		DrawPartyBuilderPopup();
+	}
+	else if (bShowInventory)
+	{
+		DrawInventoryPopup();
 	}
 	else if (bShowJournal)
 	{
@@ -1283,6 +1453,12 @@ void ASolidHUD::HandleMenuKey()
 		return;
 	}
 
+	if (bShowInventory)
+	{
+		bShowInventory = false;
+		return;
+	}
+
 	if (bShowCredits)
 	{
 		bShowCredits = false;
@@ -1309,6 +1485,7 @@ void ASolidHUD::CloseMenuOverlay()
 	bShowPartyBuilder = false;
 	bShowCredits = false;
 	bShowJournal = false;
+	bShowInventory = false;
 	bShowCharacterEditor = false;
 	bCharacterEditorSkeleton = false;
 	SkeletonBoneTip.Reset();
@@ -1344,6 +1521,7 @@ void ASolidHUD::OpenCharacterEditor()
 	bShowPartyBuilder = false;
 	bShowCredits = false;
 	bShowJournal = false;
+	bShowInventory = false;
 	bShowCharacterEditor = true;
 	CharacterEditorIndex = 0;
 	CharacterEditorSlider = 0;
@@ -1602,6 +1780,7 @@ void ASolidHUD::OpenPartyBuilder()
 	bShowPortal = false;
 	bShowCredits = false;
 	bShowJournal = false;
+	bShowInventory = false;
 	bShowCharacterEditor = false;
 	bCharacterEditorSkeleton = false;
 	SkeletonBoneTip.Reset();
@@ -1663,6 +1842,7 @@ void ASolidHUD::OpenPortal()
 	bShowMainMenu = false;
 	bShowCredits = false;
 	bShowJournal = false;
+	bShowInventory = false;
 	bShowPartyBuilder = false;
 	bShowCharacterEditor = false;
 	bCharacterEditorSkeleton = false;
@@ -1724,6 +1904,47 @@ void ASolidHUD::DrawCreditsPopup() const
 	TArray<FString> Lines;
 	SolidCredits::CollectLines(Lines);
 	SolidHUDPrivate::DrawCenteredPopup(Canvas, Lines, 4.f);
+}
+
+void ASolidHUD::ToggleInventory()
+{
+	if (bShowMessage)
+	{
+		return;
+	}
+	if (bShowInventory)
+	{
+		bShowInventory = false;
+		return;
+	}
+
+	bShowMainMenu = false;
+	bShowPortal = false;
+	bShowPartyBuilder = false;
+	bShowCredits = false;
+	bShowJournal = false;
+	bShowCharacterEditor = false;
+	bCharacterEditorSkeleton = false;
+	SkeletonBoneTip.Reset();
+	EndCharacterEditorSliderDrag();
+	SolidHUDPrivate::ForgetChoicePointerRows(this);
+	bShowInventory = true;
+}
+
+void ASolidHUD::DrawInventoryPopup() const
+{
+	FGameState State;
+	if (UWorld* World = GetWorld())
+	{
+		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+		{
+			State = GameMode->GetConfiguration();
+		}
+	}
+
+	SolidInventory::FPage Page;
+	SolidInventory::Layout(State.Inventory, Page);
+	SolidHUDPrivate::DrawInventoryBoard(Canvas, Page);
 }
 
 void ASolidHUD::DrawJournalPopup() const

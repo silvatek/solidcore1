@@ -1,7 +1,7 @@
 # SolidCore1 — agent rules
 
 UE 5.8 C++ Viking-only open world. Product repo: `github.com/silvatek/solidcore1`.
-Human docs and the To-do list: `README.md`. Fog history: `Source/SolidCore1/Fog/README.md`.
+Human docs and the To-do list: `README.md`. Fog history: `Source/SolidCore1/Fog/README.md`. Lair notes: `Content/Lairs.md`.
 
 ## Workflow overrides the agent harness
 
@@ -56,6 +56,10 @@ Follow the Automated tests policy in `README.md`:
 - C++ finds Viking/grass by **asset name** under `/Game/Viking` then `/Game/Fab`. The Assassin body is `Meshes/base_mesh/SKM_base_mesh_ue.uasset` inside `Medieval_Assassin_Girl` (`SK_Mannequin.uasset` is the skeleton). The Blacksmith body is `Mesh/SK_Elf_Blacksmith.uasset` inside `Elf_Blacksmith` (`SK_Elf_Blacksmith_Skeleton.uasset` is the skeleton; `SeparatedMesh` parts are not the body). `resolvedPath` / `resolvedFolder` / `resolvedPaths` in `tools/fab-assets.json` are tried first when the recorded file is that body; a different recorded file is replaced when the body is found. Do not relocate folders after Add to Project.
 - Assassin companions play `anim_assassin_idle_2`, `anim_assassin_Walk`, and `anim_assassin_run` from `Medieval_Assassin_Girl`. `anim_assassin_idle_1` is a crouch. The Blacksmith pack has no locomotion clips, so those companions stay on Viking clips. `tools/fab_mesh_info.bat <folder>` lists meshes and animations in a downloaded pack and does not edit the manifest.
 - Grass is required (`Mat_025_grass`).
+
+## Lairs
+
+- Before changing lairs, read `Content/Lairs.md`. The later-lair rules there are not the shipped Iglin tunnels. Leave the straight run until asked.
 
 ## Fog
 

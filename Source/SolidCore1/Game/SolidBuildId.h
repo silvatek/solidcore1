@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0390")
+#define SOLID_BUILD_ID TEXT("SC1-0391")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The tunnel portal test uses the public cell projection.")
+#define SOLID_BUILD_NOTE TEXT("Lair notes separate the shipped tunnels from the later rules.")
 #endif

@@ -13,6 +13,7 @@
  * Standing still, or walking between cells of the same town, does not re-fire.
  * Reach broken bridge: the captain stands on either ramp of the Iglin bridge.
  * The parameter is unused. The deck and the gap past the lip do not count.
+ * That event opens the starting cave and sends the captain inside.
  * A visit before the requirements are met does not fire. A later visit does.
  * Each event belongs to an act. Iglin and Reach broken bridge are ACT_0.
  * Relion is ACT_2, Kanfold is ACT_3, and Dragongate is ACT_4.
@@ -54,6 +55,8 @@ namespace SolidEvents
 		CaptainTitle,
 		/** Draw the center of a broken bridge and open that crossing. */
 		RepairBridge,
+		/** Open the starting cave and send the captain inside. */
+		EnableCave,
 	};
 
 	/** Nameplate before any title event. The sequence ends at Captain. */
@@ -117,8 +120,10 @@ namespace SolidEvents
 			TEXT("Reach broken bridge"),
 			ETrigger::ReachBrokenBridge,
 			INDEX_NONE,
-			{},
-			0,
+			{
+				{ EChange::EnableCave },
+			},
+			1,
 			{ IdEnterIglin },
 			1,
 			ACT_0,

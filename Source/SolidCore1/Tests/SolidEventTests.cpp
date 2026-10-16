@@ -592,4 +592,58 @@ bool FSolidEventsActTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidEventsCaveTest,
+	"SolidCore1.Events.Cave",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidEventsCaveTest::RunTest(const FString& Parameters)
+{
+	FGameState State;
+	TestFalse(TEXT("the cave starts closed"), State.bCaveEnabled);
+
+	const SolidEvents::FResult Blocked = SolidEvents::NotifyReachBrokenBridge(State);
+	TestFalse(TEXT("an early stand does not enter"), Blocked.bEnterCave);
+	TestFalse(TEXT("an early stand leaves the cave closed"), State.bCaveEnabled);
+
+	const SolidEvents::FResult Iglin = SolidEvents::NotifyOccupiedTown(State, 0);
+	TestTrue(TEXT("Iglin fires"), Iglin.bFired);
+	TestFalse(TEXT("Iglin leaves the cave closed"), Iglin.bEnterCave);
+	TestFalse(TEXT("Iglin does not open the cave"), State.bCaveEnabled);
+
+	const SolidEvents::FResult Reached = SolidEvents::NotifyReachBrokenBridge(State);
+	TestTrue(TEXT("the ramp sends the captain inside"), Reached.bEnterCave);
+	TestTrue(TEXT("the cave is open"), State.bCaveEnabled);
+
+	const SolidEvents::FEvent* Event = SolidEventTestPrivate::FindEvent(TEXT("Reach broken bridge"));
+	TestNotNull(TEXT("Reach broken bridge is listed"), Event);
+	TestTrue(
+		TEXT("the journal records the cave"),
+		Event && SolidJournal::Describe(*Event).Contains(TEXT("Cave enabled")));
+
+	TArray<SolidJournal::FRow> Rows;
+	SolidJournal::CollectRows(State, Rows);
+	bool bSawCave = false;
+	for (const SolidJournal::FRow& Row : Rows)
+	{
+		if (Row.Kind == SolidJournal::ERowKind::Detail && Row.Text.Contains(TEXT("Cave enabled")))
+		{
+			bSawCave = true;
+		}
+	}
+	TestTrue(TEXT("the journal lists Cave enabled"), bSawCave);
+
+	const SolidEvents::FResult Again = SolidEvents::NotifyReachBrokenBridge(State);
+	TestFalse(TEXT("the cave trip happens once"), Again.bEnterCave);
+	TestTrue(TEXT("the cave stays open"), State.bCaveEnabled);
+
+	ASolidGameMode* GameMode = NewObject<ASolidGameMode>();
+	TestNotNull(TEXT("gamemode"), GameMode);
+	if (GameMode)
+	{
+		TestFalse(TEXT("a new game keeps the cave closed"), GameMode->IsCaveEnabled());
+	}
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

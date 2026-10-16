@@ -102,6 +102,8 @@ protected:
 	bool IsPointerShown() const;
 	SolidDungeonPassage::EHit CavePassageUnderPointer() const;
 	SolidDungeonPassage::EHit CavePassageOverlapping(const FVector& Location) const;
+	/** Enter is ignored until the cave is open. Leave stays available. */
+	SolidDungeonPassage::EHit AllowCaveHit(SolidDungeonPassage::EHit Hit) const;
 	void ActivateCavePassage(SolidDungeonPassage::EHit Hit);
 	void TickClickMove();
 	void ClearClickMove();

@@ -402,6 +402,10 @@ SolidWorldTime::FStamp ASolidGameMode::WorldStamp() const
 
 void ASolidGameMode::TravelToDungeon()
 {
+	if (!IsCaveEnabled())
+	{
+		return;
+	}
 	UWorld* World = GetWorld();
 	if (!World || IsInDungeon())
 	{
@@ -525,7 +529,12 @@ void ASolidGameMode::NoteBrokenBridgeRamp(const FVector& Location)
 		const SolidEvents::FResult Result = SolidEvents::NotifyReachBrokenBridge(Configuration, WorldStamp());
 		if (Result.bFired)
 		{
-			UE_LOG(LogSolid, Warning, TEXT("Event: Reach broken bridge."));
+			UE_LOG(LogSolid, Warning, TEXT("Event: Reach broken bridge. Cave %s."),
+				Result.bEnterCave ? TEXT("entered") : TEXT("unchanged"));
+		}
+		if (Result.bEnterCave)
+		{
+			TravelToDungeon();
 		}
 		return;
 	}

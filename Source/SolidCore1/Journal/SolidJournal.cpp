@@ -25,6 +25,9 @@ FString SolidJournal::Describe(const SolidEvents::FEvent& Event)
 		case SolidEvents::EChange::RepairBridge:
 			Part = TEXT("Iglin bridge repaired");
 			break;
+		case SolidEvents::EChange::EnableCave:
+			Part = TEXT("Cave enabled");
+			break;
 		case SolidEvents::EChange::MaxPartySize:
 		{
 			const int32 Count = FMath::Clamp(Change.PartySize, 0, SolidEvents::RosterCount);

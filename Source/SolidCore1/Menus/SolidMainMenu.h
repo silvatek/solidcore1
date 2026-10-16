@@ -37,6 +37,12 @@ namespace SolidMainMenu
 {
 	/** bInDungeon swaps the cave row between Enter cave and Leave cave. */
 	void CollectEntries(TArray<FSolidMainMenuEntry>& OutEntries, bool bInDungeon = false);
+
+	/** Enter cave stays closed until an event opens it. Leave cave stays available. */
+	inline bool CanUseCaveRow(const bool bCaveEnabled, const bool bInDungeon)
+	{
+		return bInDungeon || bCaveEnabled;
+	}
 	int32 EntryCount();
 	bool FindEntry(int32 Index, FSolidMainMenuEntry& OutEntry);
 	ESolidMainMenuAction ActionForItem(ESolidMainMenuItem Item);

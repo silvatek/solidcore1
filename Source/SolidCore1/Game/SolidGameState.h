@@ -16,6 +16,8 @@ struct FGameState
 	bool bRavenSightEnabled = false;
 	/** Enter Relion restores the Iglin span. It starts broken. */
 	bool bIglinBridgeRepaired = false;
+	/** Reach broken bridge opens the starting cave. It starts closed. */
+	bool bCaveEnabled = false;
 	/** Numbered cell the captain is standing on, or INDEX_NONE. */
 	int32 OccupiedTown = INDEX_NONE;
 	bool bFired[SolidEvents::MaxEvents] = {};
@@ -39,6 +41,8 @@ namespace SolidEvents
 		const TCHAR* CaptainTitle = TitleOutcast;
 		/** A Repair bridge change ran. */
 		bool bRepairBridge = false;
+		/** An Enable cave change ran. The captain is sent inside. */
+		bool bEnterCave = false;
 	};
 
 	int32 PartyCount(const FGameState& State);

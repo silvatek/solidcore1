@@ -48,6 +48,10 @@ namespace
 			State.bIglinBridgeRepaired = true;
 			Result.bRepairBridge = true;
 			break;
+		case SolidEvents::EChange::EnableCave:
+			State.bCaveEnabled = true;
+			Result.bEnterCave = true;
+			break;
 		default:
 			break;
 		}

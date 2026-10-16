@@ -959,6 +959,17 @@ void ASolidCharacter::MainMenuConfirm()
 	{
 		return;
 	}
+	if (SolidMainMenu::ActionForItem(Entry.Item) == ESolidMainMenuAction::TravelDungeon)
+	{
+		const UWorld* World = GetWorld();
+		const ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+		const bool bInDungeon = GameMode && GameMode->IsInDungeon();
+		const bool bCaveEnabled = GameMode && GameMode->IsCaveEnabled();
+		if (!SolidMainMenu::CanUseCaveRow(bCaveEnabled, bInDungeon))
+		{
+			return;
+		}
+	}
 
 	HUD->CloseMainMenu();
 	switch (SolidMainMenu::ActionForItem(Entry.Item))
@@ -1307,12 +1318,27 @@ namespace
 	}
 }
 
+SolidDungeonPassage::EHit ASolidCharacter::AllowCaveHit(const SolidDungeonPassage::EHit Hit) const
+{
+	if (Hit != SolidDungeonPassage::EHit::Enter)
+	{
+		return Hit;
+	}
+	const UWorld* World = GetWorld();
+	const ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+	if (GameMode && GameMode->IsCaveEnabled())
+	{
+		return Hit;
+	}
+	return SolidDungeonPassage::EHit::None;
+}
+
 SolidDungeonPassage::EHit ASolidCharacter::CavePassageOverlapping(const FVector& Location) const
 {
-	return SolidCaveMouthBox(GetWorld(), [&Location](const FBox& Box)
+	return AllowCaveHit(SolidCaveMouthBox(GetWorld(), [&Location](const FBox& Box)
 	{
 		return Box.IsInsideOrOn(Location);
-	});
+	}));
 }
 
 SolidDungeonPassage::EHit ASolidCharacter::CavePassageUnderPointer() const
@@ -1335,10 +1361,10 @@ SolidDungeonPassage::EHit ASolidCharacter::CavePassageUnderPointer() const
 		return SolidDungeonPassage::EHit::None;
 	}
 
-	return SolidCaveMouthBox(GetWorld(), [&Origin, &Direction](const FBox& Box)
+	return AllowCaveHit(SolidCaveMouthBox(GetWorld(), [&Origin, &Direction](const FBox& Box)
 	{
 		return SolidDungeonPassage::RayHitsBox(Origin, Direction, Box, SolidClickMove::MaxRayCm);
-	});
+	}));
 }
 
 void ASolidCharacter::ActivateCavePassage(const SolidDungeonPassage::EHit Hit)

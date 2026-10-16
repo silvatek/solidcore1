@@ -178,4 +178,17 @@ bool FSolidMainMenuHudTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidMainMenuCaveRowTest,
+	"SolidCore1.MainMenu.Cave",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidMainMenuCaveRowTest::RunTest(const FString& Parameters)
+{
+	TestFalse(TEXT("a closed cave stays dim"), SolidMainMenu::CanUseCaveRow(false, false));
+	TestTrue(TEXT("an open cave can be entered"), SolidMainMenu::CanUseCaveRow(true, false));
+	TestTrue(TEXT("leave cave stays available"), SolidMainMenu::CanUseCaveRow(false, true));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

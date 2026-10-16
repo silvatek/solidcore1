@@ -1691,12 +1691,14 @@ void ASolidHUD::DrawMainMenuPopup()
 {
 	int32 MaxPartySize = 0;
 	bool bInDungeon = false;
+	bool bCaveEnabled = false;
 	if (UWorld* World = GetWorld())
 	{
 		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 		{
 			MaxPartySize = GameMode->GetMaxPartySize();
 			bInDungeon = GameMode->IsInDungeon();
+			bCaveEnabled = GameMode->IsCaveEnabled();
 		}
 	}
 
@@ -1707,9 +1709,11 @@ void ASolidHUD::DrawMainMenuPopup()
 	for (const FSolidMainMenuEntry& Entry : Entries)
 	{
 		Labels.Add(Entry.Label);
-		const bool bEnabled = Entry.Item != ESolidMainMenuItem::BuildParty
+		const bool bParty = Entry.Item != ESolidMainMenuItem::BuildParty
 			|| SolidPartyBuilder::CanOpen(MaxPartySize);
-		Enabled.Add(bEnabled);
+		const bool bCave = Entry.Item != ESolidMainMenuItem::Dungeon
+			|| SolidMainMenu::CanUseCaveRow(bCaveEnabled, bInDungeon);
+		Enabled.Add(bParty && bCave);
 	}
 	TArray<SolidMenuPointer::FRow> Rows;
 	SolidHUDPrivate::DrawChoicePopup(Canvas, TEXT("Main Menu"), Labels, MainMenuIndex, Rows, &Enabled);

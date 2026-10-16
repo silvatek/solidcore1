@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0400")
+#define SOLID_BUILD_ID TEXT("SC1-0401")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The weapon hands are Main hand and Off hand.")
+#define SOLID_BUILD_NOTE TEXT("Armor fits the body. A helmet, boots, and a belt fit their own slots.")
 #endif

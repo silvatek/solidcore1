@@ -4,16 +4,19 @@
 
 /**
  * What a carried thing is.
- * Armor is worn. A weapon is held. A tool is used.
- * Food, a valuable, and a material wait in the pack.
+ * Armor is worn on the body. A helmet, boots, and a belt each have their own box.
+ * A weapon is held. A tool is used.
+ * Food and a material can be carried. Any kind can sit in the pack or a chest.
  */
 enum class ESolidItemKind : uint8
 {
 	Armor,
+	Helmet,
+	Boots,
+	Belt,
 	Weapon,
 	Tool,
 	Food,
-	Valuable,
 	Material,
 };
 
@@ -43,7 +46,7 @@ namespace SolidItemType
 
 	inline const FSolidItemType Catalog[] = {
 		{ IdRags, TEXT("Rags"), ESolidItemKind::Armor },
-		{ IdDentedHelmet, TEXT("Dented helmet"), ESolidItemKind::Armor },
+		{ IdDentedHelmet, TEXT("Dented helmet"), ESolidItemKind::Helmet },
 		{ IdCrudeSpear, TEXT("Crude spear"), ESolidItemKind::Weapon },
 		{ IdTorch, TEXT("Torch"), ESolidItemKind::Tool },
 		{ IdRustySword, TEXT("Rusty sword"), ESolidItemKind::Weapon },

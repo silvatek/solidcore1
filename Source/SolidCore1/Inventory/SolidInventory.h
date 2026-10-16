@@ -92,9 +92,30 @@ namespace SolidInventory
 	}
 
 	/**
+	 * Armor fits only the body. A helmet fits only the head, boots only the boots, and a belt only the belt.
+	 * A weapon, a tool, food, and a material fit any worn box.
+	 */
+	inline bool WornSlotAccepts(const ESlot Slot, const ESolidItemKind Kind)
+	{
+		switch (Kind)
+		{
+		case ESolidItemKind::Armor:
+			return Slot == ESlot::Body;
+		case ESolidItemKind::Helmet:
+			return Slot == ESlot::Head;
+		case ESolidItemKind::Boots:
+			return Slot == ESlot::Boots;
+		case ESolidItemKind::Belt:
+			return Slot == ESlot::Belt;
+		default:
+			return true;
+		}
+	}
+
+	/**
 	 * Store an item id in a worn box.
 	 * A null or empty id clears it. An id that is not in the catalog is refused.
-	 * False when the slot is not a worn box, or the id is unknown.
+	 * False when the slot is not a worn box, the id is unknown, or the kind does not fit.
 	 */
 	inline bool PlaceWorn(FLoadout& Loadout, const ESlot Slot, const TCHAR* ItemId)
 	{
@@ -109,7 +130,7 @@ namespace SolidInventory
 			return true;
 		}
 		const FSolidItemType* Item = SolidItemType::FindById(ItemId);
-		if (!Item)
+		if (!Item || !WornSlotAccepts(Slot, Item->Type))
 		{
 			return false;
 		}
@@ -358,8 +379,8 @@ namespace SolidInventory
 
 	/**
 	 * Move an item from one slot to another.
-	 * Worn boxes, pack cells, and chest cells all count. An occupied destination swaps.
-	 * The same slot, an empty source, or a chest move without a chest does nothing.
+	 * Worn boxes, pack cells, and chest cells all count. An occupied destination swaps when both items fit.
+	 * The same slot, an empty source, a kind that does not fit, or a chest move without a chest does nothing.
 	 */
 	inline bool Move(
 		SolidStorage::FContainer* Chest,

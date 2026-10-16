@@ -57,6 +57,35 @@ namespace SolidInventoryTestPrivate
 	{
 		return FString(ItemId ? ItemId : TEXT(""));
 	}
+
+	SolidInventory::FSlotHit WornHit(const SolidInventory::ESlot Slot)
+	{
+		SolidInventory::FSlotHit Hit;
+		Hit.bHit = true;
+		Hit.Slot = Slot;
+		Hit.Index = SolidInventory::WornIndex(Slot);
+		return Hit;
+	}
+
+	SolidInventory::FSlotHit PackHit(const int32 Column, const int32 Row)
+	{
+		SolidInventory::FSlotHit Hit;
+		Hit.bHit = true;
+		Hit.bPack = true;
+		Hit.Column = Column;
+		Hit.Row = Row;
+		Hit.Index = SolidInventory::PackIndex(Column, Row);
+		return Hit;
+	}
+
+	SolidInventory::FSlotHit ChestHit(const int32 Index)
+	{
+		SolidInventory::FSlotHit Hit;
+		Hit.bHit = true;
+		Hit.bChest = true;
+		Hit.Index = Index;
+		return Hit;
+	}
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -427,6 +456,152 @@ bool FSolidInventoryMenuTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(SolidMainMenu::ActionForItem(Found.Item)),
 		static_cast<uint8>(ESolidMainMenuAction::ShowInventory));
 	TestEqual(TEXT("8 selects inventory"), InventoryIndex, 7);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidInventorySlotFitTest,
+	"SolidCore1.Inventory.SlotFit",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidInventorySlotFitTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidInventoryTestPrivate;
+
+	const FSolidItemType* Helmet = SolidItemType::FindById(SolidItemType::IdDentedHelmet);
+	TestNotNull(TEXT("the helmet is listed"), Helmet);
+	if (!Helmet)
+	{
+		return false;
+	}
+	TestEqual(
+		TEXT("the helmet is a helmet"),
+		static_cast<uint8>(Helmet->Type),
+		static_cast<uint8>(ESolidItemKind::Helmet));
+
+	const SolidInventory::ESlot WornSlots[] = {
+		SolidInventory::ESlot::Head,
+		SolidInventory::ESlot::Body,
+		SolidInventory::ESlot::Boots,
+		SolidInventory::ESlot::OffHand,
+		SolidInventory::ESlot::MainHand,
+		SolidInventory::ESlot::Belt,
+	};
+	for (const SolidInventory::ESlot Slot : WornSlots)
+	{
+		TestEqual(
+			TEXT("armor fits only the body"),
+			SolidInventory::WornSlotAccepts(Slot, ESolidItemKind::Armor),
+			Slot == SolidInventory::ESlot::Body);
+		TestEqual(
+			TEXT("a helmet fits only the head"),
+			SolidInventory::WornSlotAccepts(Slot, ESolidItemKind::Helmet),
+			Slot == SolidInventory::ESlot::Head);
+		TestEqual(
+			TEXT("boots fit only the boots"),
+			SolidInventory::WornSlotAccepts(Slot, ESolidItemKind::Boots),
+			Slot == SolidInventory::ESlot::Boots);
+		TestEqual(
+			TEXT("a belt fits only the belt"),
+			SolidInventory::WornSlotAccepts(Slot, ESolidItemKind::Belt),
+			Slot == SolidInventory::ESlot::Belt);
+		TestTrue(TEXT("a weapon fits any worn box"), SolidInventory::WornSlotAccepts(Slot, ESolidItemKind::Weapon));
+		TestTrue(TEXT("a tool fits any worn box"), SolidInventory::WornSlotAccepts(Slot, ESolidItemKind::Tool));
+		TestTrue(TEXT("food fits any worn box"), SolidInventory::WornSlotAccepts(Slot, ESolidItemKind::Food));
+		TestTrue(TEXT("a material fits any worn box"), SolidInventory::WornSlotAccepts(Slot, ESolidItemKind::Material));
+	}
+
+	SolidInventory::FLoadout Loadout = SolidInventory::StartingLoadout();
+	const int32 Head = SolidInventory::WornIndex(SolidInventory::ESlot::Head);
+	const int32 Body = SolidInventory::WornIndex(SolidInventory::ESlot::Body);
+	const int32 Main = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
+	const int32 Off = SolidInventory::WornIndex(SolidInventory::ESlot::OffHand);
+	const int32 Boots = SolidInventory::WornIndex(SolidInventory::ESlot::Boots);
+	const int32 Belt = SolidInventory::WornIndex(SolidInventory::ESlot::Belt);
+
+	TestFalse(TEXT("rags cannot replace the helmet"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Head, SolidItemType::IdRags));
+	TestEqual(TEXT("the head still wears the helmet"), HeldId(Loadout.Worn[Head]), FString(SolidItemType::IdDentedHelmet));
+	TestFalse(TEXT("rags cannot be held"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::OffHand, SolidItemType::IdRags));
+	TestTrue(TEXT("the off hand stays empty"), Loadout.Worn[Off] == nullptr);
+	TestFalse(TEXT("rags cannot replace the spear"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::MainHand, SolidItemType::IdRags));
+	TestEqual(TEXT("the main hand still holds the spear"), HeldId(Loadout.Worn[Main]), FString(SolidItemType::IdCrudeSpear));
+	TestFalse(TEXT("rags cannot be worn as boots"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Boots, SolidItemType::IdRags));
+	TestTrue(TEXT("the boots stay empty"), Loadout.Worn[Boots] == nullptr);
+	TestFalse(TEXT("rags cannot be worn as a belt"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Belt, SolidItemType::IdRags));
+	TestTrue(TEXT("the belt stays empty"), Loadout.Worn[Belt] == nullptr);
+	TestTrue(TEXT("rags can be worn on the body"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Body, SolidItemType::IdRags));
+
+	TestFalse(TEXT("the helmet cannot replace rags"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Body, SolidItemType::IdDentedHelmet));
+	TestEqual(TEXT("the body still wears rags"), HeldId(Loadout.Worn[Body]), FString(SolidItemType::IdRags));
+	TestFalse(TEXT("the helmet cannot be held in the off hand"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::OffHand, SolidItemType::IdDentedHelmet));
+	TestFalse(TEXT("the helmet cannot be held in the main hand"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::MainHand, SolidItemType::IdDentedHelmet));
+	TestFalse(TEXT("the helmet cannot be worn as boots"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Boots, SolidItemType::IdDentedHelmet));
+	TestFalse(TEXT("the helmet cannot be worn as a belt"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Belt, SolidItemType::IdDentedHelmet));
+	TestTrue(TEXT("the helmet can be worn on the head"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Head, SolidItemType::IdDentedHelmet));
+
+	SolidStorage::FContainer Chest = SolidStorage::StartingCaveChest();
+	TestFalse(
+		TEXT("the spear cannot swap rags onto the main hand"),
+		SolidInventory::Move(&Chest, Loadout, WornHit(SolidInventory::ESlot::MainHand), WornHit(SolidInventory::ESlot::Body)));
+	TestEqual(TEXT("the main hand keeps the spear"), HeldId(Loadout.Worn[Main]), FString(SolidItemType::IdCrudeSpear));
+	TestEqual(TEXT("the body keeps rags"), HeldId(Loadout.Worn[Body]), FString(SolidItemType::IdRags));
+	TestFalse(
+		TEXT("the helmet cannot be dragged onto the off hand"),
+		SolidInventory::Move(&Chest, Loadout, WornHit(SolidInventory::ESlot::Head), WornHit(SolidInventory::ESlot::OffHand)));
+	TestEqual(TEXT("the head keeps the helmet"), HeldId(Loadout.Worn[Head]), FString(SolidItemType::IdDentedHelmet));
+	TestTrue(TEXT("the off hand is still empty"), Loadout.Worn[Off] == nullptr);
+
+	const int32 ChestIndex = SolidStorage::Index(1, 1);
+	TestTrue(TEXT("the chest has an empty cell"), ChestIndex != INDEX_NONE && Chest.Slots[ChestIndex] == nullptr);
+	TestTrue(
+		TEXT("the helmet can be dragged into the pack"),
+		SolidInventory::Move(&Chest, Loadout, WornHit(SolidInventory::ESlot::Head), PackHit(0, 0)));
+	TestEqual(
+		TEXT("the pack holds the helmet"),
+		HeldId(Loadout.Pack[SolidInventory::PackIndex(0, 0)]),
+		FString(SolidItemType::IdDentedHelmet));
+	TestTrue(TEXT("the head is empty"), Loadout.Worn[Head] == nullptr);
+	TestTrue(
+		TEXT("the helmet can be dragged into the chest"),
+		SolidInventory::Move(&Chest, Loadout, PackHit(0, 0), ChestHit(ChestIndex)));
+	TestEqual(TEXT("the chest holds the helmet"), HeldId(Chest.Slots[ChestIndex]), FString(SolidItemType::IdDentedHelmet));
+	TestTrue(TEXT("the pack cell is empty"), Loadout.Pack[SolidInventory::PackIndex(0, 0)] == nullptr);
+	TestTrue(
+		TEXT("the helmet can be dragged back onto the head"),
+		SolidInventory::Move(&Chest, Loadout, ChestHit(ChestIndex), WornHit(SolidInventory::ESlot::Head)));
+	TestEqual(TEXT("the head wears the helmet again"), HeldId(Loadout.Worn[Head]), FString(SolidItemType::IdDentedHelmet));
+	TestTrue(TEXT("the chest cell is empty"), Chest.Slots[ChestIndex] == nullptr);
+
+	TestTrue(
+		TEXT("rags can be dragged into the pack"),
+		SolidInventory::Move(&Chest, Loadout, WornHit(SolidInventory::ESlot::Body), PackHit(1, 0)));
+	TestEqual(
+		TEXT("the pack holds rags"),
+		HeldId(Loadout.Pack[SolidInventory::PackIndex(1, 0)]),
+		FString(SolidItemType::IdRags));
+	TestTrue(TEXT("the body is empty"), Loadout.Worn[Body] == nullptr);
+	TestTrue(
+		TEXT("rags can be dragged back onto the body"),
+		SolidInventory::Move(&Chest, Loadout, PackHit(1, 0), WornHit(SolidInventory::ESlot::Body)));
+	TestEqual(TEXT("the body wears rags again"), HeldId(Loadout.Worn[Body]), FString(SolidItemType::IdRags));
+
+	for (int32 Index = 0; Index < SolidItemType::CatalogCount; ++Index)
+	{
+		const FSolidItemType& Item = SolidItemType::Catalog[Index];
+		TestTrue(
+			TEXT("any item can be placed in the pack"),
+			SolidInventory::PlacePack(Loadout, 0, 0, Item.Id));
+		TestEqual(TEXT("the pack cell stores that item"), HeldId(Loadout.Pack[SolidInventory::PackIndex(0, 0)]), FString(Item.Id));
+		TestTrue(
+			TEXT("any item can be dragged into the chest"),
+			SolidInventory::Move(&Chest, Loadout, PackHit(0, 0), ChestHit(ChestIndex)));
+		TestEqual(TEXT("the chest cell stores that item"), HeldId(Chest.Slots[ChestIndex]), FString(Item.Id));
+		TestTrue(
+			TEXT("the item can leave the chest"),
+			SolidInventory::Move(&Chest, Loadout, ChestHit(ChestIndex), PackHit(0, 0)));
+		TestTrue(TEXT("the chest cell is empty again"), Chest.Slots[ChestIndex] == nullptr);
+	}
+
 	return true;
 }
 

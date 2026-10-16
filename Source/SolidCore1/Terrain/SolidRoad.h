@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SolidStronghold.h"
 #include "SolidTerrainTypes.h"
 
 class USolidWorldMap;
@@ -30,9 +31,13 @@ namespace SolidRoad
 
 	struct FEndpoint
 	{
-		/** True when the end is the cave (marker C) rather than a numbered town. */
+		/** True when the end is the letter C. */
 		bool bCave = false;
+		/** Town location id. INDEX_NONE for a cave letter or a stronghold name. */
 		int32 LocationId = INDEX_NONE;
+		/** True when the end is a stronghold name, such as MeagreDungeon. */
+		bool bStronghold = false;
+		FSolidStronghold Stronghold;
 	};
 
 	struct FDefinition
@@ -146,7 +151,12 @@ namespace SolidRoad
 		return Cost + SurfacePreference(Biome);
 	}
 
-	/** "Road: C -> 0, trail". False when the line is not a road, or the road is incomplete. */
+	/**
+	 * "Road: Iglin -> Relion, track" or "Road: MeagreDungeon -> Iglin, trail".
+	 * An end is a location id, the letter C, a town name, or a stronghold name.
+	 * Brackets around a name are optional. False when the line is not a road,
+	 * or an end is not one of those.
+	 */
 	bool Parse(const FString& Line, FDefinition& Out);
 
 	/**

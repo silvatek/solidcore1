@@ -68,6 +68,7 @@ struct FSolidWorldLocation
  * name the same cell by type. Anything after # is a comment.
  * A ! with no line is not a location. Location 0 is the starting town.
  * A legacy Z marker is the start only when the grid has no 0 cells.
+ * A road end is a location id, the letter C, a town name, or a stronghold name.
  * Road lines are solved into routes when the file loads.
  */
 UCLASS()
@@ -105,8 +106,9 @@ public:
 	static constexpr TCHAR LocationMarker = TEXT('!');
 
 	/**
-	 * Iglin tunnel mouths. They stay on the cell, use the mountain shelf,
-	 * and are not towns, locations, or the cave.
+	 * Legacy Iglin tunnel mouths. A LairEntrance ! is the same X end, and a
+	 * LairExit ! is the same Y end. Letters and those lines use the mountain shelf.
+	 * They are not towns, locations, or the cave.
 	 */
 	static constexpr TCHAR XMarker = TEXT('X');
 	static constexpr TCHAR YMarker = TEXT('Y');

@@ -301,6 +301,44 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidLairBangMouthTest,
+	"SolidCore1.Lair.BangMouth",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidLairBangMouthTest::RunTest(const FString& Parameters)
+{
+	const FVector2D WorldMin(0.f, 0.f);
+	const FVector2D WorldMax(6400.f, 6400.f);
+	FString Grid = SolidLairTestPrivate::MountainGrid();
+	SolidLairTestPrivate::SetCell(Grid, 10, 10, USolidWorldMap::LocationMarker);
+	SolidLairTestPrivate::SetCell(Grid, 10, 9, USolidWorldMap::GrassMarker);
+	SolidLairTestPrivate::SetCell(Grid, 12, 10, USolidWorldMap::LocationMarker);
+	SolidLairTestPrivate::SetCell(Grid, 11, 10, USolidWorldMap::GrassMarker);
+	SolidLairTestPrivate::SetCell(Grid, 4, 4, USolidWorldMap::LocationMarker);
+	Grid += TEXT("! 11,11 = LairEntrance (Iglin tunnels)\n");
+	Grid += TEXT("! 11,13 = LairExit (Iglin tunnels)\n");
+	Grid += TEXT("! 5,5 = LairEntrance (Iglin tunnels)\n");
+
+	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	TestNotNull(TEXT("bang map"), Map);
+	if (!Map || !TestTrue(TEXT("bang mouths load"), Map->LoadFromString(Grid)))
+	{
+		return false;
+	}
+
+	TArray<SolidLair::FEntrance> Entrances;
+	TestEqual(TEXT("a sealed mouth is left out"), SolidLair::CollectEntrances(Map, WorldMin, WorldMax, Entrances), 2);
+	if (Entrances.Num() == 2)
+	{
+		TestEqual(TEXT("entrance is the X end"), static_cast<int32>(Entrances[0].EndMarker), static_cast<int32>(USolidWorldMap::XMarker));
+		TestEqual(TEXT("entrance faces north"), Entrances[0].GrassCell.Y, 9);
+		TestEqual(TEXT("exit is the Y end"), static_cast<int32>(Entrances[1].EndMarker), static_cast<int32>(USolidWorldMap::YMarker));
+		TestEqual(TEXT("exit faces east"), Entrances[1].GrassCell.X, 11);
+	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidLairInteriorVisualTest,
 	"SolidCore1.Lair.Interior",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)

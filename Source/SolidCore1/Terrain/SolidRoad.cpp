@@ -1,4 +1,5 @@
 #include "SolidRoad.h"
+#include "SolidTowns.h"
 #include "SolidWorldMap.h"
 
 namespace SolidRoad
@@ -7,29 +8,51 @@ namespace SolidRoad
 	{
 		bool RoadParseEndpoint(const FString& Text, FEndpoint& Out)
 		{
-			const FString Token = Text.TrimStartAndEnd();
-			if (Token.Len() == 1 && (Token[0] == TEXT('C') || Token[0] == TEXT('c')))
+			FString Token = Text.TrimStartAndEnd();
+			if (Token.Len() >= 2 && Token[0] == TEXT('(') && Token[Token.Len() - 1] == TEXT(')'))
 			{
-				Out.bCave = true;
-				Out.LocationId = INDEX_NONE;
-				return true;
+				Token = Token.Mid(1, Token.Len() - 2).TrimStartAndEnd();
 			}
-
+			Out = FEndpoint();
 			if (Token.IsEmpty())
 			{
 				return false;
 			}
+			if (Token.Len() == 1 && (Token[0] == TEXT('C') || Token[0] == TEXT('c')))
+			{
+				Out.bCave = true;
+				return true;
+			}
+
+			bool bDigits = true;
 			for (const TCHAR Char : Token)
 			{
 				if (!FChar::IsDigit(Char))
 				{
-					return false;
+					bDigits = false;
+					break;
 				}
 			}
+			if (bDigits)
+			{
+				Out.LocationId = FCString::Atoi(*Token);
+				return true;
+			}
 
-			Out.bCave = false;
-			Out.LocationId = FCString::Atoi(*Token);
-			return true;
+			if (const SolidTowns::FTownInfo* Town = SolidTowns::FindByName(Token))
+			{
+				Out.LocationId = Town->Id;
+				return true;
+			}
+
+			FSolidStronghold Hold;
+			if (SolidStronghold::FromToken(Token, Hold))
+			{
+				Out.bStronghold = true;
+				Out.Stronghold = Hold;
+				return true;
+			}
+			return false;
 		}
 
 		bool RoadParseType(const FString& Name, EType& Out)
@@ -179,13 +202,29 @@ namespace SolidRoad
 		void RoadCollectEndpoint(const USolidWorldMap& Map, const FEndpoint& End, TArray<FIntPoint>& OutCells)
 		{
 			OutCells.Reset();
-			if (End.bCave)
+			if (End.bCave || End.bStronghold)
 			{
 				for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
 				{
 					for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
 					{
-						if (Map.GetMarkerAtCell(Col, Row) == TEXT('C'))
+						FSolidStronghold Attributes;
+						const bool bNamed = Map.StrongholdAtCell(Col, Row, Attributes);
+						const bool bLetter = !bNamed
+							&& SolidStronghold::AttributesForMarker(Map.GetMarkerAtCell(Col, Row), Attributes);
+						if (!bNamed && !bLetter)
+						{
+							continue;
+						}
+						if (End.bCave)
+						{
+							if (bLetter)
+							{
+								OutCells.Add(FIntPoint(Col, Row));
+							}
+							continue;
+						}
+						if (Attributes.Type == End.Stronghold.Type && Attributes.Size == End.Stronghold.Size)
 						{
 							OutCells.Add(FIntPoint(Col, Row));
 						}

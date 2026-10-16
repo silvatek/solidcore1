@@ -1,7 +1,9 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "SolidRoad.h"
+#include "SolidStronghold.h"
 #include "SolidTerrainTypes.h"
+#include "SolidTowns.h"
 #include "SolidWorldMap.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -147,7 +149,77 @@ bool FSolidRoadParseTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("missing type"), SolidRoad::Parse(TEXT("Road: 1 -> 5"), Def));
 	TestFalse(TEXT("bad end"), SolidRoad::Parse(TEXT("Road: nowhere -> 1, trail"), Def));
 	TestFalse(TEXT("a key line is not a road"), SolidRoad::Parse(TEXT("G = Grassland (light green)"), Def));
+
+	TestTrue(TEXT("town names"), SolidRoad::Parse(TEXT("Road: Iglin -> Relion, track"), Def));
+	TestFalse(TEXT("names are not the cave"), Def.From.bCave || Def.To.bCave);
+	TestFalse(TEXT("town names are not a stronghold"), Def.From.bStronghold || Def.To.bStronghold);
+	TestEqual(TEXT("Iglin id"), Def.From.LocationId, SolidTowns::Iglin);
+	TestEqual(TEXT("Relion id"), Def.To.LocationId, SolidTowns::Relion);
+
+	TestTrue(TEXT("stronghold name"), SolidRoad::Parse(TEXT("Road: (MeagreDungeon) -> (Iglin), trail"), Def));
+	TestTrue(TEXT("from the stronghold"), Def.From.bStronghold);
+	TestFalse(TEXT("a stronghold name is not the letter C"), Def.From.bCave);
+	TestEqual(
+		TEXT("Meagre"),
+		static_cast<uint8>(Def.From.Stronghold.Size),
+		static_cast<uint8>(ESolidStrongholdSize::Meagre));
+	TestEqual(
+		TEXT("Dungeon"),
+		static_cast<uint8>(Def.From.Stronghold.Type),
+		static_cast<uint8>(ESolidStrongholdType::Dungeon));
+	TestEqual(TEXT("to Iglin"), Def.To.LocationId, SolidTowns::Iglin);
+
+	TestTrue(TEXT("spaced stronghold name"), SolidRoad::Parse(TEXT("Road: Meagre Dungeon -> iglin, trail"), Def));
+	TestTrue(TEXT("spaces still name the stronghold"), Def.From.bStronghold);
+	TestEqual(TEXT("iglin ignores case"), Def.To.LocationId, SolidTowns::Iglin);
 	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidRoadNamedEndTest,
+	"SolidCore1.Road.NamedEnd",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidRoadNamedEndTest::RunTest(const FString& Parameters)
+{
+	const int32 CaveCol = 4;
+	const int32 CaveRow = 8;
+	const int32 TownCol = 8;
+	const int32 TownRow = 8;
+	const FString Lines = FString::Printf(
+		TEXT("! %d,%d = Stronghold (MeagreDungeon)\n! %d,%d = Town (Iglin)\nRoad: MeagreDungeon -> Iglin, trail\n"),
+		CaveRow + 1,
+		CaveCol + 1,
+		TownRow + 1,
+		TownCol + 1);
+	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	TestNotNull(TEXT("named map"), Map);
+	if (!Map || !RoadTestLoad(*this, *Map, RoadTestGrid({
+		{ CaveCol, CaveRow, USolidWorldMap::LocationMarker },
+		{ TownCol, TownRow, USolidWorldMap::LocationMarker },
+	}, Lines)))
+	{
+		return false;
+	}
+
+	const SolidRoad::FRoute* Route = RoadTestRoute(*Map, 0);
+	TestNotNull(TEXT("named route"), Route);
+	if (!Route)
+	{
+		return false;
+	}
+	TestTrue(TEXT("the stronghold end is not a town id"), Route->Definition.From.bStronghold);
+	TestEqual(TEXT("the town end is Iglin"), Route->Definition.To.LocationId, SolidTowns::Iglin);
+	TestTrue(TEXT("the trail has cells"), Route->Cells.Num() >= 2);
+	if (Route->Cells.Num() < 2)
+	{
+		return false;
+	}
+	TestEqual(TEXT("the trail starts on the stronghold"), Route->Cells[0].X, CaveCol);
+	TestEqual(TEXT("the trail starts on that row"), Route->Cells[0].Y, CaveRow);
+	TestEqual(TEXT("the trail ends on Iglin"), Route->Cells.Last().X, TownCol);
+	TestEqual(TEXT("the trail ends on that row"), Route->Cells.Last().Y, TownRow);
+	return RoadTestOrthogonal(*this, Route->Cells);
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(

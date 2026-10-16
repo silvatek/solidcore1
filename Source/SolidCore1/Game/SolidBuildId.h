@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0406")
+#define SOLID_BUILD_ID TEXT("SC1-0407")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The cave chest holds five sticks and three pitch.")
+#define SOLID_BUILD_NOTE TEXT("A known Torch recipe takes one stick and one pitch.")
 #endif

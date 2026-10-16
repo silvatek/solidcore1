@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "InputCoreTypes.h"
+#include "Crafting/SolidRecipe.h"
 #include "Inventory/SolidItemType.h"
 #include "Inventory/SolidStorage.h"
 #include "Journal/SolidJournal.h"
@@ -15,6 +16,7 @@ namespace SolidInventory
 {
 	inline constexpr const TCHAR* Title = TEXT("Inventory");
 	inline constexpr const TCHAR* PackTitle = TEXT("Pack");
+	inline constexpr const TCHAR* CraftButtonLabel = TEXT("Craft");
 	inline constexpr const TCHAR* CloseHint = TEXT("/ to close");
 	inline constexpr const TCHAR* ToggleKeyLabel = TEXT("/");
 
@@ -34,6 +36,8 @@ namespace SolidInventory
 	inline constexpr int32 PackColumns = 2;
 	inline constexpr int32 PackRows = 3;
 	inline constexpr int32 PackCount = PackColumns * PackRows;
+	/** One cell for each material a recipe can list. */
+	inline constexpr int32 CraftCount = SolidCrafting::MaxInputs;
 
 	inline const TCHAR* SlotName(const ESlot Slot)
 	{
@@ -62,6 +66,9 @@ namespace SolidInventory
 		int32 WornStack[WornCount] = {};
 		const TCHAR* Pack[PackCount] = {};
 		int32 PackStack[PackCount] = {};
+		/** Crafting slots on the inventory page. Empty until an item is dragged in. */
+		const TCHAR* Craft[CraftCount] = {};
+		int32 CraftStack[CraftCount] = {};
 	};
 
 	inline void WriteWorn(FLoadout& Loadout, const int32 Index, const TCHAR* ItemId, const int32 Count)
@@ -94,6 +101,22 @@ namespace SolidInventory
 		}
 		Loadout.Pack[Index] = ItemId;
 		Loadout.PackStack[Index] = Count;
+	}
+
+	inline void WriteCraft(FLoadout& Loadout, const int32 Index, const TCHAR* ItemId, const int32 Count)
+	{
+		if (Index < 0 || Index >= CraftCount)
+		{
+			return;
+		}
+		if (!ItemId || !ItemId[0] || Count <= 0)
+		{
+			Loadout.Craft[Index] = nullptr;
+			Loadout.CraftStack[Index] = 0;
+			return;
+		}
+		Loadout.Craft[Index] = ItemId;
+		Loadout.CraftStack[Index] = Count;
 	}
 
 	/** How many of an item to store. At least one, and no more than that item allows. */
@@ -220,6 +243,10 @@ namespace SolidInventory
 		{
 			WritePack(Loadout, Index, nullptr, 0);
 		}
+		for (int32 Index = 0; Index < CraftCount; ++Index)
+		{
+			WriteCraft(Loadout, Index, nullptr, 0);
+		}
 		const int32 Body = WornIndex(ESlot::Body);
 		if (Body != INDEX_NONE)
 		{
@@ -240,6 +267,8 @@ namespace SolidInventory
 		bool bPack = false;
 		/** A cell of the open storage container. The cave chest. */
 		bool bChest = false;
+		/** A crafting slot. Any item can sit here. The Craft button is separate. */
+		bool bCraft = false;
 		/** Top of the slot name. Worn boxes only. The name sits above the box, like Pack and Chest. */
 		float LabelY = 0.f;
 		FString Label;
@@ -259,6 +288,12 @@ namespace SolidInventory
 		float ChestX = 0.f;
 		float ChestLabelY = 0.f;
 		float ChestGridW = 0.f;
+		/** The Craft button, to the right of the crafting slots. It stays off until crafting is wired. */
+		float CraftButtonX = 0.f;
+		float CraftButtonY = 0.f;
+		float CraftButtonW = 0.f;
+		float CraftButtonH = 0.f;
+		bool bCraftEnabled = false;
 		TArray<FBox> Boxes;
 	};
 
@@ -268,6 +303,7 @@ namespace SolidInventory
 		bool bHit = false;
 		bool bChest = false;
 		bool bPack = false;
+		bool bCraft = false;
 		ESlot Slot = ESlot::Head;
 		int32 Column = 0;
 		int32 Row = 0;
@@ -284,6 +320,7 @@ namespace SolidInventory
 	/**
 	 * Head, body, and boots in a column, the off hand and the main hand beside the body, belt at the waist, pack to the right.
 	 * Each worn name sits above its box. Chest, when set, adds that container to the right of the pack.
+	 * Four crafting slots and a Craft button sit on the bottom right. The button stays disabled.
 	 */
 	void Layout(const FLoadout& Loadout, FPage& OutPage, const SolidStorage::FContainer* Chest = nullptr);
 
@@ -319,6 +356,7 @@ namespace SolidInventory
 			OutHit.bHit = true;
 			OutHit.bChest = Box.bChest;
 			OutHit.bPack = Box.bPack;
+			OutHit.bCraft = Box.bCraft;
 			OutHit.Slot = Box.Slot;
 			OutHit.Column = Box.Column;
 			OutHit.Row = Box.Row;
@@ -329,6 +367,10 @@ namespace SolidInventory
 			else if (Box.bPack)
 			{
 				OutHit.Index = PackIndex(Box.Column, Box.Row);
+			}
+			else if (Box.bCraft)
+			{
+				OutHit.Index = Box.Column;
 			}
 			else
 			{
@@ -342,11 +384,11 @@ namespace SolidInventory
 	/** True when both hits are the same worn box, pack cell, or chest cell. */
 	inline bool SamePlace(const FSlotHit& A, const FSlotHit& B)
 	{
-		if (!A.bHit || !B.bHit || A.bChest != B.bChest || A.bPack != B.bPack)
+		if (!A.bHit || !B.bHit || A.bChest != B.bChest || A.bPack != B.bPack || A.bCraft != B.bCraft)
 		{
 			return false;
 		}
-		if (A.bChest)
+		if (A.bChest || A.bCraft)
 		{
 			return A.Index == B.Index;
 		}
@@ -357,7 +399,7 @@ namespace SolidInventory
 		return A.Slot == B.Slot;
 	}
 
-	/** The item in a worn box, a pack cell, or a chest cell. Null when the slot is empty or missing. */
+	/** The item in a worn box, a pack cell, a chest cell, or a crafting slot. Null when the slot is empty or missing. */
 	inline const TCHAR* ItemAt(const FLoadout& Loadout, const SolidStorage::FContainer* Chest, const FSlotHit& Hit)
 	{
 		if (!Hit.bHit)
@@ -380,6 +422,14 @@ namespace SolidInventory
 				return nullptr;
 			}
 			return Loadout.Pack[Index];
+		}
+		if (Hit.bCraft)
+		{
+			if (Hit.Index < 0 || Hit.Index >= CraftCount)
+			{
+				return nullptr;
+			}
+			return Loadout.Craft[Hit.Index];
 		}
 		const int32 Index = WornIndex(Hit.Slot);
 		if (Index == INDEX_NONE)
@@ -412,6 +462,14 @@ namespace SolidInventory
 				return 0;
 			}
 			return Loadout.PackStack[Index];
+		}
+		if (Hit.bCraft)
+		{
+			if (Hit.Index < 0 || Hit.Index >= CraftCount)
+			{
+				return 0;
+			}
+			return Loadout.CraftStack[Hit.Index];
 		}
 		const int32 Index = WornIndex(Hit.Slot);
 		if (Index == INDEX_NONE)
@@ -472,6 +530,25 @@ namespace SolidInventory
 			WritePack(Loadout, Index, Item->Id, StoredCount(*Item, Count));
 			return true;
 		}
+		if (Hit.bCraft)
+		{
+			if (Hit.Index < 0 || Hit.Index >= CraftCount)
+			{
+				return false;
+			}
+			if (!ItemId || !ItemId[0])
+			{
+				WriteCraft(Loadout, Hit.Index, nullptr, 0);
+				return true;
+			}
+			const FSolidItemType* Item = SolidItemType::FindById(ItemId);
+			if (!Item)
+			{
+				return false;
+			}
+			WriteCraft(Loadout, Hit.Index, Item->Id, StoredCount(*Item, Count));
+			return true;
+		}
 		const int32 Index = WornIndex(Hit.Slot);
 		if (Index == INDEX_NONE)
 		{
@@ -493,7 +570,7 @@ namespace SolidInventory
 
 	/**
 	 * Move an item from one slot to another.
-	 * Worn boxes, pack cells, and chest cells all count. An occupied destination swaps when both items fit.
+	 * Worn boxes, pack cells, chest cells, and crafting slots all count. An occupied destination swaps when both items fit.
 	 * The same slot, an empty source, a kind that does not fit, or a chest move without a chest does nothing.
 	 */
 	inline bool Move(

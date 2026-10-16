@@ -87,6 +87,28 @@ namespace SolidInventoryTestPrivate
 		return Hit;
 	}
 
+	SolidInventory::FSlotHit CraftHit(const int32 Index)
+	{
+		SolidInventory::FSlotHit Hit;
+		Hit.bHit = true;
+		Hit.bCraft = true;
+		Hit.Index = Index;
+		Hit.Column = Index;
+		return Hit;
+	}
+
+	const SolidInventory::FBox* FindCraft(const SolidInventory::FPage& Page, const int32 Index)
+	{
+		for (const SolidInventory::FBox& Box : Page.Boxes)
+		{
+			if (Box.bCraft && Box.Column == Index)
+			{
+				return &Box;
+			}
+		}
+		return nullptr;
+	}
+
 	/** The first empty chest cell. Later items can fill the old corner and leave another cell empty. */
 	int32 EmptyChestIndex(const SolidStorage::FContainer& Chest)
 	{
@@ -620,6 +642,144 @@ bool FSolidInventorySlotFitTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the chest cell is empty again"), Chest.Slots[ChestIndex] == nullptr);
 	}
 
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidInventoryCraftSlotsTest,
+	"SolidCore1.Inventory.CraftSlots",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidInventoryCraftSlotsTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidInventoryTestPrivate;
+
+	TestEqual(TEXT("four crafting slots"), SolidInventory::CraftCount, 4);
+	TestEqual(
+		TEXT("one slot for each recipe input"),
+		SolidInventory::CraftCount,
+		SolidCrafting::MaxInputs);
+	TestEqual(TEXT("the button reads Craft"), FString(SolidInventory::CraftButtonLabel), FString(TEXT("Craft")));
+
+	SolidInventory::FPage Page;
+	SolidInventory::Layout(SolidInventory::StartingLoadout(), Page);
+	TestFalse(TEXT("the Craft button starts disabled"), Page.bCraftEnabled);
+
+	const SolidInventory::FBox* Boots = FindWorn(Page, SolidInventory::ESlot::Boots);
+	TestTrue(TEXT("boots box"), Boots != nullptr);
+	if (!Boots)
+	{
+		return false;
+	}
+
+	const SolidInventory::FBox* First = FindCraft(Page, 0);
+	TestTrue(TEXT("the first crafting slot is on the page"), First != nullptr);
+	if (!First)
+	{
+		return false;
+	}
+	TestTrue(TEXT("the crafting row is below the boots"), First->Y >= Boots->Y + Boots->H);
+	TestTrue(
+		TEXT("the Craft button is to the right of the slots"),
+		Page.CraftButtonX >= First->X + First->W);
+	TestTrue(
+		TEXT("the Craft button shares the row"),
+		FMath::IsNearlyEqual(Page.CraftButtonY, First->Y, 1.f));
+	TestTrue(
+		TEXT("the button meets the right edge"),
+		FMath::IsNearlyEqual(Page.CraftButtonX + Page.CraftButtonW, Page.ContentW, 1.f));
+
+	int32 CraftBoxes = 0;
+	const SolidInventory::FBox* Previous = nullptr;
+	for (int32 Index = 0; Index < SolidInventory::CraftCount; ++Index)
+	{
+		const SolidInventory::FBox* Slot = FindCraft(Page, Index);
+		TestTrue(TEXT("a crafting slot is on the page"), Slot != nullptr);
+		if (!Slot)
+		{
+			return false;
+		}
+		++CraftBoxes;
+		TestTrue(TEXT("a crafting slot starts empty"), Slot->Item.IsEmpty());
+		TestTrue(TEXT("crafting slots match"), FMath::IsNearlyEqual(Slot->W, First->W, 1.f) && FMath::IsNearlyEqual(Slot->H, First->H, 1.f));
+		if (Previous)
+		{
+			TestTrue(TEXT("the next crafting slot is to the right"), Slot->X > Previous->X + Previous->W);
+			TestTrue(TEXT("the crafting slots share a row"), FMath::IsNearlyEqual(Slot->Y, Previous->Y, 1.f));
+		}
+		Previous = Slot;
+	}
+	TestEqual(TEXT("four crafting boxes"), CraftBoxes, SolidInventory::CraftCount);
+	TestTrue(
+		TEXT("the Craft button follows the last slot"),
+		Previous && Page.CraftButtonX + 1.f >= Previous->X + Previous->W);
+
+	const float ButtonX = Page.CraftButtonX + Page.CraftButtonW * 0.5f;
+	const float ButtonY = Page.CraftButtonY + Page.CraftButtonH * 0.5f;
+	SolidInventory::FSlotHit ButtonHit;
+	TestFalse(TEXT("the Craft button is not a slot"), SolidInventory::HitSlot(Page, ButtonX, ButtonY, ButtonHit));
+
+	const float SlotX = First->X + First->W * 0.5f;
+	const float SlotY = First->Y + First->H * 0.5f;
+	SolidInventory::FSlotHit SlotHit;
+	TestTrue(TEXT("the first crafting slot accepts the pointer"), SolidInventory::HitSlot(Page, SlotX, SlotY, SlotHit));
+	TestTrue(TEXT("the pointer is a crafting slot"), SlotHit.bCraft);
+	TestEqual(TEXT("the pointer is the first slot"), SlotHit.Index, 0);
+
+	SolidInventory::FLoadout Loadout = SolidInventory::StartingLoadout();
+	SolidStorage::FContainer Chest = SolidStorage::StartingCaveChest();
+	const int32 Main = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
+	TestTrue(
+		TEXT("the spear can be dragged into a crafting slot"),
+		SolidInventory::Move(&Chest, Loadout, WornHit(SolidInventory::ESlot::MainHand), CraftHit(0)));
+	TestEqual(TEXT("the crafting slot holds the spear"), HeldId(Loadout.Craft[0]), FString(SolidItemType::IdCrudeSpear));
+	TestEqual(TEXT("one spear"), Loadout.CraftStack[0], 1);
+	TestTrue(TEXT("the main hand is empty"), Loadout.Worn[Main] == nullptr);
+
+	SolidInventory::FPage Holding;
+	SolidInventory::Layout(Loadout, Holding, &Chest);
+	const SolidInventory::FBox* SpearSlot = FindCraft(Holding, 0);
+	TestTrue(TEXT("the filled slot is on the page"), SpearSlot != nullptr);
+	if (!SpearSlot)
+	{
+		return false;
+	}
+	TestEqual(TEXT("the slot shows the spear"), SpearSlot->Item, FString(TEXT("Crude spear")));
+	TestFalse(TEXT("the Craft button stays disabled"), Holding.bCraftEnabled);
+
+	const int32 StickIndex = SolidStorage::Index(1, 1);
+	TestTrue(
+		TEXT("the stick stack can be dragged into a crafting slot"),
+		SolidInventory::Move(&Chest, Loadout, ChestHit(StickIndex), CraftHit(1)));
+	TestEqual(TEXT("the second slot holds the sticks"), HeldId(Loadout.Craft[1]), FString(SolidItemType::IdStick));
+	TestEqual(TEXT("the slot keeps the stack"), Loadout.CraftStack[1], SolidStorage::StartingStickCount);
+	TestTrue(TEXT("the chest cell is empty"), Chest.Slots[StickIndex] == nullptr);
+
+	TestTrue(
+		TEXT("crafting slots can swap"),
+		SolidInventory::Move(&Chest, Loadout, CraftHit(0), CraftHit(1)));
+	TestEqual(TEXT("the first slot holds the sticks"), HeldId(Loadout.Craft[0]), FString(SolidItemType::IdStick));
+	TestEqual(TEXT("the second slot holds the spear"), HeldId(Loadout.Craft[1]), FString(SolidItemType::IdCrudeSpear));
+
+	TestTrue(
+		TEXT("a crafting slot can be dragged back to the main hand"),
+		SolidInventory::Move(&Chest, Loadout, CraftHit(1), WornHit(SolidInventory::ESlot::MainHand)));
+	TestEqual(TEXT("the main hand holds the spear again"), HeldId(Loadout.Worn[Main]), FString(SolidItemType::IdCrudeSpear));
+	TestTrue(TEXT("the crafting slot is empty"), Loadout.Craft[1] == nullptr);
+
+	TestFalse(
+		TEXT("an empty crafting slot cannot be dragged"),
+		SolidInventory::Move(&Chest, Loadout, CraftHit(2), WornHit(SolidInventory::ESlot::OffHand)));
+	TestTrue(
+		TEXT("the off hand stays empty"),
+		Loadout.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::OffHand)] == nullptr);
+
+	SolidInventory::Clear(Loadout);
+	for (int32 Index = 0; Index < SolidInventory::CraftCount; ++Index)
+	{
+		TestTrue(TEXT("clear empties a crafting slot"), Loadout.Craft[Index] == nullptr);
+		TestEqual(TEXT("clear leaves no stack"), Loadout.CraftStack[Index], 0);
+	}
 	return true;
 }
 

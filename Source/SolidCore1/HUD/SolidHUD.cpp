@@ -930,7 +930,7 @@ namespace SolidHUDPrivate
 			{
 				continue;
 			}
-			if (!Slot.bPack && !Slot.bChest)
+			if (!Slot.bPack && !Slot.bChest && !Slot.bCraft)
 			{
 				DrawInventoryHeading(
 					Canvas,
@@ -944,6 +944,38 @@ namespace SolidHUDPrivate
 			if (!Slot.Item.IsEmpty())
 			{
 				DrawCenteredLine(Canvas, Font, Slot.Item, X, Y, Slot.W, Slot.H, Palette.Ink);
+			}
+		}
+
+		if (Page.CraftButtonW > 0.f && Page.CraftButtonH > 0.f)
+		{
+			const float ButtonX = OriginX + Page.CraftButtonX;
+			const float ButtonY = OriginY + Page.CraftButtonY;
+			const FLinearColor Bronze = Page.bCraftEnabled
+				? Palette.Bronze
+				: FLinearColor(Palette.Bronze.R * 0.45f, Palette.Bronze.G * 0.45f, Palette.Bronze.B * 0.45f, 1.f);
+			const FLinearColor Recess = Palette.Recess;
+			const FLinearColor Ink = Page.bCraftEnabled ? Palette.Ink : Palette.Hint;
+			const float Rim = 2.f;
+			FillRect(Canvas, ButtonX, ButtonY, Page.CraftButtonW, Page.CraftButtonH, Bronze);
+			FillRect(
+				Canvas,
+				ButtonX + Rim,
+				ButtonY + Rim,
+				FMath::Max(0.f, Page.CraftButtonW - Rim * 2.f),
+				FMath::Max(0.f, Page.CraftButtonH - Rim * 2.f),
+				Recess);
+			if (Font)
+			{
+				DrawCenteredLine(
+					Canvas,
+					Font,
+					SolidInventory::CraftButtonLabel,
+					ButtonX,
+					ButtonY,
+					Page.CraftButtonW,
+					Page.CraftButtonH,
+					Ink);
 			}
 		}
 

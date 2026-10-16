@@ -143,6 +143,35 @@ namespace SolidInventory
 			ContentBottom = FMath::Max(ContentBottom, GridY + ChestGridH);
 		}
 
+		// Beside the slots, the same height, so the row stays one line.
+		const float CraftButtonW = 156.f;
+		const float RowW = CraftCount * PackCell + (CraftCount - 1) * PackGap + PackGap + CraftButtonW;
+		if (RowW > ContentRight)
+		{
+			ContentRight = RowW;
+		}
+		const float RowX = ContentRight - RowW;
+		const float RowY = ContentBottom + Gap;
+		for (int32 Index = 0; Index < CraftCount; ++Index)
+		{
+			FBox Box;
+			Box.bCraft = true;
+			Box.Slot = ESlot::Count;
+			Box.Column = Index;
+			Box.X = RowX + Index * (PackCell + PackGap);
+			Box.Y = RowY;
+			Box.W = PackCell;
+			Box.H = PackCell;
+			Box.Item = SolidItemType::PageLabel(Loadout.Craft[Index], Loadout.CraftStack[Index]);
+			OutPage.Boxes.Add(Box);
+		}
+		OutPage.CraftButtonX = RowX + CraftCount * (PackCell + PackGap);
+		OutPage.CraftButtonY = RowY;
+		OutPage.CraftButtonW = CraftButtonW;
+		OutPage.CraftButtonH = PackCell;
+		OutPage.bCraftEnabled = false;
+		ContentBottom = RowY + PackCell;
+
 		OutPage.ContentW = ContentRight;
 		OutPage.ContentH = ContentBottom;
 	}

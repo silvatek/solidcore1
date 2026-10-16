@@ -24,6 +24,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - Stamina: moving depletes stamina, better roads deplete it slower
 - Basic monsters (needs FAB asset download); no combat yet
 - Basic NPCs
+- Pathfinding to use bridges
 
 ## Done
 

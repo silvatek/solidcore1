@@ -236,11 +236,20 @@ bool FSolidPortalTunnelMouthTest::RunTest(const FString& Parameters)
 		TEXT("the captain faces the mouth"),
 		FMath::IsNearlyEqual(SolidPortal::YawTowardMouth(Mouth->FacingYawDeg), -90.f, 0.1f));
 
-	int32 Col = INDEX_NONE;
-	int32 Row = INDEX_NONE;
-	TestTrue(TEXT("landing cell"), Map->WorldXYToCell(Landing.X, Landing.Y, GameMin, GameMax, Col, Row));
-	TestEqual(TEXT("landing stays on the grass cell"), Col, Mouth->GrassCell.X);
-	TestEqual(TEXT("landing stays north of the cliff"), Row, Mouth->GrassCell.Y);
+	FVector2D GrassXY = FVector2D::ZeroVector;
+	FVector2D CliffXY = FVector2D::ZeroVector;
+	TestTrue(TEXT("grass cell projects"), Map->CellToWorldXY(Mouth->GrassCell, GameMin, GameMax, GrassXY));
+	TestTrue(TEXT("cliff cell projects"), Map->CellToWorldXY(Mouth->Cell, GameMin, GameMax, CliffXY));
+	const float CellEastCm = (GameMax.X - GameMin.X) / static_cast<float>(USolidWorldMap::MapWidth);
+	const float CellNorthCm = (GameMax.Y - GameMin.Y) / static_cast<float>(USolidWorldMap::MapHeight);
+	TestTrue(
+		TEXT("landing stays on the grass cell"),
+		FMath::Abs(Landing.X - GrassXY.X) < CellEastCm * 0.5f
+			&& FMath::Abs(Landing.Y - GrassXY.Y) < CellNorthCm * 0.5f);
+	TestTrue(
+		TEXT("landing stays off the cliff"),
+		FMath::Abs(Landing.X - CliffXY.X) >= CellEastCm * 0.5f
+			|| FMath::Abs(Landing.Y - CliffXY.Y) >= CellNorthCm * 0.5f);
 	TestEqual(
 		TEXT("landing is grass"),
 		static_cast<uint8>(Map->SampleBiome(Landing.X, Landing.Y, GameMin, GameMax)),

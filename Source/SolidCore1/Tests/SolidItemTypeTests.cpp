@@ -175,4 +175,50 @@ bool FSolidItemTypeBootsAndCoinsTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidItemTypeStickAndPitchTest,
+	"SolidCore1.Inventory.StickAndPitch",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidItemTypeStickAndPitchTest::RunTest(const FString& Parameters)
+{
+	const FSolidItemType* Stick = SolidItemType::FindById(SolidItemType::IdStick);
+	const FSolidItemType* Pitch = SolidItemType::FindById(SolidItemType::IdPitch);
+	TestNotNull(TEXT("a stick is listed"), Stick);
+	TestNotNull(TEXT("pitch is listed"), Pitch);
+	if (!Stick || !Pitch)
+	{
+		return false;
+	}
+
+	TestEqual(TEXT("stick name"), FString(Stick->Name), FString(TEXT("Stick")));
+	TestEqual(
+		TEXT("a stick is a material"),
+		static_cast<uint8>(Stick->Type),
+		static_cast<uint8>(ESolidItemKind::Material));
+	TestEqual(
+		TEXT("a stick is inferior"),
+		static_cast<uint8>(Stick->Quality),
+		static_cast<uint8>(ESolidItemQuality::Inferior));
+	TestEqual(TEXT("a stick stacks to 10"), Stick->MaxStacked, 10);
+
+	TestEqual(TEXT("pitch name"), FString(Pitch->Name), FString(TEXT("Pitch")));
+	TestEqual(
+		TEXT("pitch is a material"),
+		static_cast<uint8>(Pitch->Type),
+		static_cast<uint8>(ESolidItemKind::Material));
+	TestEqual(
+		TEXT("pitch is common"),
+		static_cast<uint8>(Pitch->Quality),
+		static_cast<uint8>(ESolidItemQuality::Common));
+	TestEqual(TEXT("pitch stacks to 10"), Pitch->MaxStacked, 10);
+
+	TestTrue(TEXT("stick id is eight hex digits"), SolidItemTypeTestPrivate::IsHexId(Stick->Id));
+	TestTrue(TEXT("pitch id is eight hex digits"), SolidItemTypeTestPrivate::IsHexId(Pitch->Id));
+	TestTrue(TEXT("the new ids differ"), FCString::Strcmp(Stick->Id, Pitch->Id) != 0);
+	TestEqual(TEXT("the page names a stick"), FString(SolidItemType::NameFor(Stick->Id)), FString(TEXT("Stick")));
+	TestEqual(TEXT("the page names pitch"), FString(SolidItemType::NameFor(Pitch->Id)), FString(TEXT("Pitch")));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

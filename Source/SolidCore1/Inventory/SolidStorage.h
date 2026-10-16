@@ -10,12 +10,16 @@
 namespace SolidStorage
 {
 	inline constexpr const TCHAR* ChestTitle = TEXT("Chest");
-	/** Width, then height. Four cells. */
+	/** Width, then height. Six cells. */
 	inline constexpr int32 Columns = 2;
-	inline constexpr int32 Rows = 2;
+	inline constexpr int32 Rows = 3;
 	inline constexpr int32 Count = Columns * Rows;
 	/** Coins in the cave chest when a play session starts. */
 	inline constexpr int32 StartingCoinCount = 20;
+	/** Sticks in the cave chest when a play session starts. */
+	inline constexpr int32 StartingStickCount = 5;
+	/** Pitch in the cave chest when a play session starts. */
+	inline constexpr int32 StartingPitchCount = 3;
 
 	struct FContainer
 	{
@@ -50,7 +54,8 @@ namespace SolidStorage
 
 	/**
 	 * What the cave chest holds when a play session starts.
-	 * The rusty sword, a pair of old boots, and a stack of coins. The corner cell is empty.
+	 * The rusty sword, a pair of old boots, a stack of coins, five sticks, and three pitch.
+	 * The last cell is empty.
 	 */
 	inline FContainer StartingCaveChest()
 	{
@@ -58,6 +63,8 @@ namespace SolidStorage
 		WriteSlot(Chest, Index(0, 0), SolidItemType::IdRustySword, 1);
 		WriteSlot(Chest, Index(1, 0), SolidItemType::IdOldBoots, 1);
 		WriteSlot(Chest, Index(0, 1), SolidItemType::IdCoins, StartingCoinCount);
+		WriteSlot(Chest, Index(1, 1), SolidItemType::IdStick, StartingStickCount);
+		WriteSlot(Chest, Index(0, 2), SolidItemType::IdPitch, StartingPitchCount);
 		return Chest;
 	}
 }

@@ -400,4 +400,76 @@ bool FSolidStorageChestStacksTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidStorageChestMaterialsTest,
+	"SolidCore1.Inventory.ChestMaterials",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidStorageChestMaterialsTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidStorageTestPrivate;
+
+	TestEqual(TEXT("the chest is two columns"), SolidStorage::Columns, 2);
+	TestEqual(TEXT("the chest is three rows"), SolidStorage::Rows, 3);
+	TestEqual(TEXT("five sticks"), SolidStorage::StartingStickCount, 5);
+	TestEqual(TEXT("three pitch"), SolidStorage::StartingPitchCount, 3);
+
+	const SolidStorage::FContainer Chest = SolidStorage::StartingCaveChest();
+	const int32 StickIndex = SolidStorage::Index(1, 1);
+	const int32 PitchIndex = SolidStorage::Index(0, 2);
+	const int32 LastIndex = SolidStorage::Index(1, 2);
+	TestEqual(
+		TEXT("sticks sit beside the coins"),
+		FString(Chest.Slots[StickIndex]),
+		FString(SolidItemType::IdStick));
+	TestEqual(TEXT("the chest holds five sticks"), Chest.Counts[StickIndex], SolidStorage::StartingStickCount);
+	TestEqual(
+		TEXT("pitch sits under the coins"),
+		FString(Chest.Slots[PitchIndex]),
+		FString(SolidItemType::IdPitch));
+	TestEqual(TEXT("the chest holds three pitch"), Chest.Counts[PitchIndex], SolidStorage::StartingPitchCount);
+	TestTrue(TEXT("the last cell starts empty"), Chest.Slots[LastIndex] == nullptr);
+	TestEqual(TEXT("the last cell has no count"), Chest.Counts[LastIndex], 0);
+
+	SolidInventory::FPage Page;
+	SolidInventory::Layout(SolidInventory::StartingLoadout(), Page, &Chest);
+	const SolidInventory::FBox* StickBox = FindChest(Page, 1, 1);
+	const SolidInventory::FBox* PitchBox = FindChest(Page, 0, 2);
+	TestTrue(TEXT("the stick cell is on the page"), StickBox != nullptr);
+	TestTrue(TEXT("the pitch cell is on the page"), PitchBox != nullptr);
+	if (!StickBox || !PitchBox)
+	{
+		return false;
+	}
+	TestEqual(
+		TEXT("the page shows the stick stack"),
+		StickBox->Item,
+		FString::Printf(TEXT("Stick %d"), SolidStorage::StartingStickCount));
+	TestEqual(
+		TEXT("the page shows the pitch stack"),
+		PitchBox->Item,
+		FString::Printf(TEXT("Pitch %d"), SolidStorage::StartingPitchCount));
+
+	SolidInventory::FLoadout Loadout = SolidInventory::StartingLoadout();
+	SolidStorage::FContainer Held = Chest;
+	TestTrue(
+		TEXT("the stick stack can move into the pack"),
+		SolidInventory::Move(&Held, Loadout, ChestCell(StickIndex), Pack(0, 0)));
+	TestEqual(
+		TEXT("the pack holds the sticks"),
+		FString(Loadout.Pack[SolidInventory::PackIndex(0, 0)]),
+		FString(SolidItemType::IdStick));
+	TestEqual(
+		TEXT("the pack keeps the stick stack"),
+		Loadout.PackStack[SolidInventory::PackIndex(0, 0)],
+		SolidStorage::StartingStickCount);
+	TestTrue(TEXT("the stick cell is empty"), Held.Slots[StickIndex] == nullptr);
+	TestEqual(
+		TEXT("pitch stays in the chest"),
+		FString(Held.Slots[PitchIndex]),
+		FString(SolidItemType::IdPitch));
+	TestEqual(TEXT("pitch keeps its stack"), Held.Counts[PitchIndex], SolidStorage::StartingPitchCount);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

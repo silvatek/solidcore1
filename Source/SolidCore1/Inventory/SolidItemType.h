@@ -59,6 +59,8 @@ namespace SolidItemType
 	inline constexpr const TCHAR* IdRustySword = TEXT("b5e20c78");
 	inline constexpr const TCHAR* IdOldBoots = TEXT("8e14a6c2");
 	inline constexpr const TCHAR* IdCoins = TEXT("f39b50d7");
+	inline constexpr const TCHAR* IdStick = TEXT("6c2a91e8");
+	inline constexpr const TCHAR* IdPitch = TEXT("d4f07b3a");
 
 	inline const FSolidItemType Catalog[] = {
 		{ IdRags, TEXT("Rags"), ESolidItemKind::Armor, ESolidItemQuality::Inferior, 1 },
@@ -68,6 +70,8 @@ namespace SolidItemType
 		{ IdRustySword, TEXT("Rusty sword"), ESolidItemKind::Weapon, ESolidItemQuality::Inferior, 1 },
 		{ IdOldBoots, TEXT("Old boots"), ESolidItemKind::Boots, ESolidItemQuality::Inferior, 1 },
 		{ IdCoins, TEXT("Coins"), ESolidItemKind::Material, ESolidItemQuality::NA, 999 },
+		{ IdStick, TEXT("Stick"), ESolidItemKind::Material, ESolidItemQuality::Inferior, 10 },
+		{ IdPitch, TEXT("Pitch"), ESolidItemKind::Material, ESolidItemQuality::Common, 10 },
 	};
 
 	static_assert(UE_ARRAY_COUNT(Catalog) <= MaxItems, "Raise SolidItemType::MaxItems");

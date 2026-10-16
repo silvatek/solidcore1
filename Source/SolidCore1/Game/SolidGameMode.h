@@ -138,6 +138,12 @@ public:
 			To);
 	}
 
+	/** Press the Craft button. Spends the recipe and puts one result in the pack. */
+	bool CraftFromInventory()
+	{
+		return SolidInventory::Craft(Configuration.Inventory);
+	}
+
 	/** True when F9 may switch to this sight. Raven sight starts locked. */
 	bool IsSightEnabled(ESolidSight Sight) const;
 

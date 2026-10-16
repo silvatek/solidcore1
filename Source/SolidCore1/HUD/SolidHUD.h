@@ -26,7 +26,7 @@ public:
 	void ToggleInventory();
 	bool IsInventoryVisible() const { return bShowInventory; }
 
-	/** Press a slot that holds an item. Release on another worn box, pack cell, or chest cell. */
+	/** Press a slot that holds an item, or the Craft button. Release on another slot, or on the button. */
 	void PressInventory(float X, float Y);
 	void ReleaseInventory(float X, float Y);
 	void CancelInventoryDrag();
@@ -216,4 +216,7 @@ protected:
 	bool bInventoryDrag = false;
 	SolidInventory::FSlotHit InventoryDragFrom;
 	FString InventoryDragName;
+
+	/** The pointer went down on the lit Craft button. */
+	bool bCraftButtonPressed = false;
 };

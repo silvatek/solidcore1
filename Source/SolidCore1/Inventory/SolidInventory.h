@@ -326,12 +326,13 @@ namespace SolidInventory
 	void Layout(const FLoadout& Loadout, FPage& OutPage, const SolidStorage::FContainer* Chest = nullptr);
 
 	/**
-	 * True when the crafting slots hold enough of every input.
+	 * How many of each crafting stack would remain after this recipe.
 	 * Slot order does not matter. Extra items do not block a match. An unknown recipe does not fit.
+	 * False leaves OutLeft untouched.
 	 */
-	inline bool RecipeFitsCraftSlots(const FLoadout& Loadout, const FSolidRecipe& Recipe)
+	inline bool PlanCraftConsumption(const FLoadout& Loadout, const FSolidRecipe& Recipe, int32* OutLeft)
 	{
-		if (!Recipe.bKnown || Recipe.InputCount <= 0)
+		if (!Recipe.bKnown || Recipe.InputCount <= 0 || !OutLeft)
 		{
 			return false;
 		}
@@ -364,33 +365,100 @@ namespace SolidInventory
 				return false;
 			}
 		}
+		for (int32 Slot = 0; Slot < CraftCount; ++Slot)
+		{
+			OutLeft[Slot] = Left[Slot];
+		}
 		return true;
+	}
+
+	/** True when the crafting slots hold enough of every input. */
+	inline bool RecipeFitsCraftSlots(const FLoadout& Loadout, const FSolidRecipe& Recipe)
+	{
+		int32 Left[CraftCount];
+		return PlanCraftConsumption(Loadout, Recipe, Left);
+	}
+
+	/** The first known recipe the crafting slots can make, or null. */
+	inline const FSolidRecipe* MatchingRecipe(const FLoadout& Loadout)
+	{
+		for (int32 Index = 0; Index < SolidCrafting::RecipeCount; ++Index)
+		{
+			if (RecipeFitsCraftSlots(Loadout, SolidCrafting::Recipes[Index]))
+			{
+				return &SolidCrafting::Recipes[Index];
+			}
+		}
+		return nullptr;
+	}
+
+	inline int32 FirstEmptyPackCell(const FLoadout& Loadout)
+	{
+		for (int32 Index = 0; Index < PackCount; ++Index)
+		{
+			if (!Loadout.Pack[Index] || !Loadout.Pack[Index][0])
+			{
+				return Index;
+			}
+		}
+		return INDEX_NONE;
 	}
 
 	/** True when a known recipe fits the crafting slots and the pack has an empty cell. */
 	inline bool CraftButtonEnabled(const FLoadout& Loadout)
 	{
-		bool bPackHasRoom = false;
-		for (int32 Index = 0; Index < PackCount; ++Index)
-		{
-			if (!Loadout.Pack[Index] || !Loadout.Pack[Index][0])
-			{
-				bPackHasRoom = true;
-				break;
-			}
-		}
-		if (!bPackHasRoom)
+		return FirstEmptyPackCell(Loadout) != INDEX_NONE && MatchingRecipe(Loadout) != nullptr;
+	}
+
+	/**
+	 * Press the Craft button.
+	 * Each input stack shrinks by the recipe's count, and a stack that reaches zero is cleared.
+	 * One crafted item goes in the first empty pack cell.
+	 * False when the button is off, and the slots stay as they were.
+	 */
+	inline bool Craft(FLoadout& Loadout)
+	{
+		if (!CraftButtonEnabled(Loadout))
 		{
 			return false;
 		}
-		for (int32 Index = 0; Index < SolidCrafting::RecipeCount; ++Index)
+		const FSolidRecipe* Recipe = MatchingRecipe(Loadout);
+		const int32 PackCell = FirstEmptyPackCell(Loadout);
+		const FSolidItemType* Output = Recipe ? SolidItemType::FindById(Recipe->OutputId) : nullptr;
+		if (!Recipe || !Output || PackCell == INDEX_NONE)
 		{
-			if (RecipeFitsCraftSlots(Loadout, SolidCrafting::Recipes[Index]))
+			return false;
+		}
+		int32 Left[CraftCount];
+		if (!PlanCraftConsumption(Loadout, *Recipe, Left))
+		{
+			return false;
+		}
+		for (int32 Slot = 0; Slot < CraftCount; ++Slot)
+		{
+			if (Left[Slot] <= 0)
 			{
-				return true;
+				WriteCraft(Loadout, Slot, nullptr, 0);
+			}
+			else if (Left[Slot] != Loadout.CraftStack[Slot])
+			{
+				WriteCraft(Loadout, Slot, Loadout.Craft[Slot], Left[Slot]);
 			}
 		}
-		return false;
+		WritePack(Loadout, PackCell, Output->Id, 1);
+		return true;
+	}
+
+	/** True when the point is on the Craft button. Coordinates are content pixels. */
+	inline bool HitCraftButton(const FPage& Page, const float X, const float Y)
+	{
+		if (Page.CraftButtonW <= 0.f || Page.CraftButtonH <= 0.f)
+		{
+			return false;
+		}
+		return X >= Page.CraftButtonX && Y >= Page.CraftButtonY
+			&& X < Page.CraftButtonX + Page.CraftButtonW
+			&& Y < Page.CraftButtonY + Page.CraftButtonH;
 	}
 
 	inline FView ContentOrigin(const float CanvasW, const float CanvasH, const FPage& Page, const float LineHeight)

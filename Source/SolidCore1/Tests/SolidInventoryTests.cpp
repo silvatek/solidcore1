@@ -883,4 +883,97 @@ bool FSolidInventoryCraftReadyTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidInventoryCraftPressTest,
+	"SolidCore1.Inventory.CraftPress",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidInventoryCraftPressTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidInventoryTestPrivate;
+
+	SolidInventory::FLoadout Empty = SolidInventory::StartingLoadout();
+	TestFalse(TEXT("crafting with the button off does nothing"), SolidInventory::Craft(Empty));
+	TestTrue(TEXT("the pack stays empty"), Empty.Pack[0] == nullptr);
+
+	SolidInventory::FLoadout Loadout = SolidInventory::StartingLoadout();
+	SolidInventory::WriteCraft(Loadout, 0, SolidItemType::IdStick, SolidStorage::StartingStickCount);
+	SolidInventory::WriteCraft(Loadout, 1, SolidItemType::IdPitch, SolidStorage::StartingPitchCount);
+	SolidInventory::WriteCraft(Loadout, 2, SolidItemType::IdRustySword, 1);
+	SolidInventory::FPage Page;
+	SolidInventory::Layout(Loadout, Page);
+	TestTrue(TEXT("the button is lit"), Page.bCraftEnabled);
+	const float ButtonX = Page.CraftButtonX + Page.CraftButtonW * 0.5f;
+	const float ButtonY = Page.CraftButtonY + Page.CraftButtonH * 0.5f;
+	TestTrue(TEXT("the pointer hits the Craft button"), SolidInventory::HitCraftButton(Page, ButtonX, ButtonY));
+	const SolidInventory::FBox* StickSlot = FindCraft(Page, 0);
+	TestTrue(TEXT("the stick slot is on the page"), StickSlot != nullptr);
+	if (!StickSlot)
+	{
+		return false;
+	}
+	TestFalse(
+		TEXT("a crafting slot is not the Craft button"),
+		SolidInventory::HitCraftButton(Page, StickSlot->X + StickSlot->W * 0.5f, StickSlot->Y + StickSlot->H * 0.5f));
+
+	TestTrue(TEXT("the first press crafts a torch"), SolidInventory::Craft(Loadout));
+	TestEqual(TEXT("one stick was spent"), Loadout.CraftStack[0], SolidStorage::StartingStickCount - 1);
+	TestEqual(TEXT("the stick stack remains"), FString(Loadout.Craft[0]), FString(SolidItemType::IdStick));
+	TestEqual(TEXT("one pitch was spent"), Loadout.CraftStack[1], SolidStorage::StartingPitchCount - 1);
+	TestEqual(TEXT("the pitch stack remains"), FString(Loadout.Craft[1]), FString(SolidItemType::IdPitch));
+	TestEqual(TEXT("the sword stays in its slot"), FString(Loadout.Craft[2]), FString(SolidItemType::IdRustySword));
+	TestEqual(
+		TEXT("the torch is in the first empty pack cell"),
+		FString(Loadout.Pack[0]),
+		FString(SolidItemType::IdTorch));
+	TestEqual(TEXT("one torch"), Loadout.PackStack[0], 1);
+	SolidInventory::Layout(Loadout, Page);
+	TestTrue(TEXT("the button stays lit while another torch can be made"), Page.bCraftEnabled);
+
+	TestTrue(TEXT("the second press crafts another torch"), SolidInventory::Craft(Loadout));
+	TestTrue(TEXT("the third press crafts another torch"), SolidInventory::Craft(Loadout));
+	TestTrue(TEXT("the pitch stack is gone"), Loadout.Craft[1] == nullptr);
+	TestEqual(TEXT("the pitch count is zero"), Loadout.CraftStack[1], 0);
+	TestEqual(TEXT("two sticks remain"), Loadout.CraftStack[0], SolidStorage::StartingStickCount - SolidStorage::StartingPitchCount);
+	TestEqual(
+		TEXT("the third torch filled the next pack cell"),
+		FString(Loadout.Pack[2]),
+		FString(SolidItemType::IdTorch));
+	SolidInventory::Layout(Loadout, Page);
+	TestFalse(TEXT("the button goes dim when the pitch is gone"), Page.bCraftEnabled);
+	TestFalse(TEXT("another press does nothing"), SolidInventory::Craft(Loadout));
+
+	SolidInventory::FLoadout Single = SolidInventory::StartingLoadout();
+	SolidInventory::WriteCraft(Single, 0, SolidItemType::IdStick, 1);
+	SolidInventory::WriteCraft(Single, 3, SolidItemType::IdPitch, 1);
+	TestTrue(TEXT("one of each still crafts"), SolidInventory::Craft(Single));
+	TestTrue(TEXT("the stick slot is cleared"), Single.Craft[0] == nullptr);
+	TestEqual(TEXT("the stick count is zero"), Single.CraftStack[0], 0);
+	TestTrue(TEXT("the pitch slot is cleared"), Single.Craft[3] == nullptr);
+	TestEqual(TEXT("the pitch count is zero"), Single.CraftStack[3], 0);
+	TestEqual(TEXT("the single torch is in the pack"), FString(Single.Pack[0]), FString(SolidItemType::IdTorch));
+	SolidInventory::Layout(Single, Page);
+	TestFalse(TEXT("the button goes dim when the slots are empty"), Page.bCraftEnabled);
+
+	SolidInventory::FLoadout LastCell = SolidInventory::StartingLoadout();
+	SolidInventory::WriteCraft(LastCell, 0, SolidItemType::IdStick, SolidStorage::StartingStickCount);
+	SolidInventory::WriteCraft(LastCell, 1, SolidItemType::IdPitch, SolidStorage::StartingPitchCount);
+	for (int32 Index = 0; Index < SolidInventory::PackCount - 1; ++Index)
+	{
+		const int32 Column = Index % SolidInventory::PackColumns;
+		const int32 Row = Index / SolidInventory::PackColumns;
+		TestTrue(TEXT("the pack can be filled up to the last cell"), SolidInventory::PlacePack(LastCell, Column, Row, SolidItemType::IdRags));
+	}
+	TestTrue(TEXT("the last empty cell can take the torch"), SolidInventory::Craft(LastCell));
+	const int32 LastPack = SolidInventory::PackCount - 1;
+	TestEqual(
+		TEXT("the torch took the last pack cell"),
+		FString(LastCell.Pack[LastPack]),
+		FString(SolidItemType::IdTorch));
+	SolidInventory::Layout(LastCell, Page);
+	TestFalse(TEXT("a full pack puts the button out"), Page.bCraftEnabled);
+	TestEqual(TEXT("sticks remain for another torch"), LastCell.CraftStack[0], SolidStorage::StartingStickCount - 1);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

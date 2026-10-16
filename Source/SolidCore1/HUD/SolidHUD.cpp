@@ -2024,18 +2024,27 @@ void ASolidHUD::ToggleInventory()
 void ASolidHUD::CancelInventoryDrag()
 {
 	bInventoryDrag = false;
+	bCraftButtonPressed = false;
 	InventoryDragFrom = SolidInventory::FSlotHit();
 	InventoryDragName.Reset();
 }
 
 void ASolidHUD::PressInventory(const float X, const float Y)
 {
+	bCraftButtonPressed = false;
 	if (!bInventoryHitReady)
 	{
 		return;
 	}
+	const float LocalX = X - InventoryOriginX;
+	const float LocalY = Y - InventoryOriginY;
+	if (SolidInventory::HitCraftButton(InventoryPage, LocalX, LocalY))
+	{
+		bCraftButtonPressed = InventoryPage.bCraftEnabled;
+		return;
+	}
 	SolidInventory::FSlotHit Hit;
-	if (!SolidInventory::HitSlot(InventoryPage, X - InventoryOriginX, Y - InventoryOriginY, Hit) || !Hit.bHit)
+	if (!SolidInventory::HitSlot(InventoryPage, LocalX, LocalY, Hit) || !Hit.bHit)
 	{
 		return;
 	}
@@ -2061,6 +2070,25 @@ void ASolidHUD::PressInventory(const float X, const float Y)
 
 void ASolidHUD::ReleaseInventory(const float X, const float Y)
 {
+	if (bCraftButtonPressed)
+	{
+		bCraftButtonPressed = false;
+		if (!bInventoryHitReady || !InventoryPage.bCraftEnabled)
+		{
+			return;
+		}
+		if (!SolidInventory::HitCraftButton(InventoryPage, X - InventoryOriginX, Y - InventoryOriginY))
+		{
+			return;
+		}
+		UWorld* World = GetWorld();
+		ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+		if (GameMode)
+		{
+			GameMode->CraftFromInventory();
+		}
+		return;
+	}
 	if (!bInventoryDrag)
 	{
 		return;

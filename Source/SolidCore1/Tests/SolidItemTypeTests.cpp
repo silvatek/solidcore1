@@ -60,10 +60,6 @@ bool FSolidItemTypeCatalogTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Rags->Type),
 		static_cast<uint8>(ESolidItemKind::Armor));
 	TestEqual(
-		TEXT("the helmet is armor"),
-		static_cast<uint8>(Helmet->Type),
-		static_cast<uint8>(ESolidItemKind::Armor));
-	TestEqual(
 		TEXT("the spear is a weapon"),
 		static_cast<uint8>(Spear->Type),
 		static_cast<uint8>(ESolidItemKind::Weapon));

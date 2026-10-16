@@ -124,8 +124,8 @@ bool FSolidInventoryClearTest::RunTest(const FString& Parameters)
 	};
 	TestTrue(TEXT("torch can replace rags"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Body, SolidItemType::IdTorch));
 	TestTrue(TEXT("boots can hold the spear"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Boots, SolidItemType::IdCrudeSpear));
-	TestTrue(TEXT("the off hand can hold the helmet"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::OffHand, SolidItemType::IdDentedHelmet));
-	TestTrue(TEXT("the belt can hold rags"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Belt, SolidItemType::IdRags));
+	TestTrue(TEXT("the off hand can hold the torch"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::OffHand, SolidItemType::IdTorch));
+	TestTrue(TEXT("the belt can hold the spear"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Belt, SolidItemType::IdCrudeSpear));
 	for (int32 Row = 0; Row < SolidInventory::PackRows; ++Row)
 	{
 		for (int32 Column = 0; Column < SolidInventory::PackColumns; ++Column)

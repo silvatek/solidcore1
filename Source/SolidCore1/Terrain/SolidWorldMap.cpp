@@ -81,10 +81,10 @@ ESolidBiome USolidWorldMap::MarkerToBiome(const TCHAR Marker)
 	// Cave stronghold: same shelf and tint as the mountain it is cut into.
 	case TEXT('C'): return ESolidBiome::Mountain;
 	case TEXT('Z'): return ESolidBiome::Town;
-	// Kept for later. Open ground, so a cell does not become a town or a mountain.
+	// Tunnel mouths. Same shelf as the mountain they replace, so the cliff stays closed.
 	case TEXT('X'):
 	case TEXT('Y'):
-		return ESolidBiome::Grassland;
+		return ESolidBiome::Mountain;
 	default:
 		// Numbered locations resolve through the location key in GetBiomeAtCell.
 		return FChar::IsDigit(Marker) ? ESolidBiome::Town : ESolidBiome::Grassland;
@@ -187,7 +187,7 @@ bool USolidWorldMap::ParseKeyLine(const FString& Line)
 		return false;
 	}
 
-	// X and Y have no colour of their own. Do not paint grassland with their key line.
+	// X and Y have no colour of their own. Do not paint the mountain with their key line.
 	if (Marker == XMarker || Marker == YMarker)
 	{
 		return true;

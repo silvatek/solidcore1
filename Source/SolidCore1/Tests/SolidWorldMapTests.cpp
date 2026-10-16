@@ -1110,4 +1110,92 @@ bool FSolidWorldMapXYMarkerTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidWorldMapXYMountainTest,
+	"SolidCore1.WorldMap.XYMountain",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidWorldMapXYMountainTest::RunTest(const FString& Parameters)
+{
+	const int32 MountainCol = 1;
+	const int32 XCol = 3;
+	const int32 YCol = 5;
+	const int32 MarkerRow = 2;
+
+	FString Text;
+	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	{
+		FString Line;
+		Line.Reserve(USolidWorldMap::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		{
+			TCHAR Marker = USolidWorldMap::GrassMarker;
+			if (Row == MarkerRow && Col == MountainCol)
+			{
+				Marker = TEXT('M');
+			}
+			else if (Row == MarkerRow && Col == XCol)
+			{
+				Marker = USolidWorldMap::XMarker;
+			}
+			else if (Row == MarkerRow && Col == YCol)
+			{
+				Marker = USolidWorldMap::YMarker;
+			}
+			Line.AppendChar(Marker);
+		}
+		Text += Line;
+		Text += TEXT("\n");
+	}
+	Text += TEXT("M = Mountain (yellow)\n");
+	Text += TEXT("X = Later (blue)\n");
+	Text += TEXT("Y = Later (blue)\n");
+
+	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("a map with tunnel mouths loads"), Map->LoadFromString(Text));
+	TestEqual(
+		TEXT("X uses the mountain shelf"),
+		static_cast<uint8>(Map->GetBiomeAtCell(XCol, MarkerRow)),
+		static_cast<uint8>(ESolidBiome::Mountain));
+	TestEqual(
+		TEXT("Y uses the mountain shelf"),
+		static_cast<uint8>(Map->GetBiomeAtCell(YCol, MarkerRow)),
+		static_cast<uint8>(ESolidBiome::Mountain));
+	TestTrue(
+		TEXT("X keeps the mountain height"),
+		FMath::IsNearlyEqual(
+			SolidTerrainTypes::BiomeHeightOffsetCm(Map->GetBiomeAtCell(XCol, MarkerRow)),
+			SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Mountain)));
+	const FLinearColor Mountain = Map->GetBiomeColor(ESolidBiome::Mountain);
+	TestTrue(TEXT("the X key leaves the mountain yellow"), Mountain.R > 0.5f && Mountain.G > 0.5f && Mountain.B < 0.5f);
+
+	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("shipped map loads"), Shipped->LoadDefault());
+	if (!Shipped->IsLoaded())
+	{
+		return true;
+	}
+	int32 TunnelMouths = 0;
+	int32 NotMountain = 0;
+	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	{
+		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		{
+			const TCHAR Marker = Shipped->GetMarkerAtCell(Col, Row);
+			if (Marker != USolidWorldMap::XMarker && Marker != USolidWorldMap::YMarker)
+			{
+				continue;
+			}
+			++TunnelMouths;
+			if (Shipped->GetBiomeAtCell(Col, Row) != ESolidBiome::Mountain)
+			{
+				++NotMountain;
+			}
+		}
+	}
+	TestTrue(TEXT("the shipped map has X and Y"), TunnelMouths > 0);
+	TestEqual(TEXT("shipped X and Y cells are mountain"), NotMountain, 0);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

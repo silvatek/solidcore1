@@ -71,7 +71,7 @@ public:
 	static constexpr TCHAR DesertMarker = TEXT('^');
 
 	/**
-	 * Extra markers. They stay on the cell, are open ground like grassland,
+	 * Extra markers. They stay on the cell, use the mountain shelf,
 	 * and are not towns, locations, or the cave.
 	 */
 	static constexpr TCHAR XMarker = TEXT('X');
@@ -86,7 +86,7 @@ public:
 	bool IsLoaded() const { return bIsLoaded; }
 
 	/**
-	 * Marker biome at map cell (clamped). The town marker and Z are Town; the desert marker is Desert; C is Mountain; X and Y are Grassland; digits use the location key.
+	 * Marker biome at map cell (clamped). The town marker and Z are Town; the desert marker is Desert; C, X, and Y are Mountain; digits use the location key.
 	 * The river marker is River for the whole cell. SampleBiome paints only the channel.
 	 */
 	ESolidBiome GetBiomeAtCell(int32 MapX, int32 MapY) const;

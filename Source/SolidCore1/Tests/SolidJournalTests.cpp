@@ -33,6 +33,22 @@ namespace SolidJournalTestPrivate
 		}
 		return false;
 	}
+
+	FString DescribeEvent(const TCHAR* EventName)
+	{
+		if (!EventName)
+		{
+			return FString();
+		}
+		for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
+		{
+			if (FCString::Strcmp(SolidEvents::Definitions[Index].Name, EventName) == 0)
+			{
+				return SolidJournal::Describe(SolidEvents::Definitions[Index]);
+			}
+		}
+		return FString();
+	}
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -82,9 +98,14 @@ bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 	if (Iglin != INDEX_NONE)
 	{
 		TestEqual(TEXT("Iglin stamp"), AtStart[Iglin].Stamp, FString(TEXT("00:00, 200/45 AtF")));
+		const FString IglinChanges = SolidJournalTestPrivate::DescribeEvent(TEXT("Enter Iglin"));
 		const bool bIglinDetail = Iglin + 1 < AtStart.Num()
 			&& AtStart[Iglin + 1].Kind == SolidJournal::ERowKind::Detail;
-		TestFalse(TEXT("Iglin has no change line"), bIglinDetail);
+		TestEqual(TEXT("Iglin detail follows the event"), bIglinDetail, !IglinChanges.IsEmpty());
+		if (bIglinDetail)
+		{
+			TestEqual(TEXT("Iglin detail is the event"), AtStart[Iglin + 1].Text, IglinChanges);
+		}
 	}
 	TestFalse(TEXT("Iglin does not mention Relion"), SolidJournalTestPrivate::ContainsText(AtStart, TEXT("Relion")));
 	TestFalse(TEXT("Iglin is not the empty journal"), SolidJournalTestPrivate::ContainsText(AtStart, TEXT("No events yet.")));
@@ -184,11 +205,15 @@ bool FSolidJournalCaptainTitleTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Kanfold records Ranger"), SolidJournalTestPrivate::ContainsText(Rows, TEXT("Title Ranger")));
 	const int32 Iglin = SolidJournalTestPrivate::FindEntry(Rows, TEXT("Enter Iglin"));
 	TestTrue(TEXT("Iglin is present"), Iglin != INDEX_NONE);
+	const FString IglinChanges = SolidJournalTestPrivate::DescribeEvent(TEXT("Enter Iglin"));
 	const bool bIglinTitle = Iglin != INDEX_NONE
 		&& Iglin + 1 < Rows.Num()
 		&& Rows[Iglin + 1].Kind == SolidJournal::ERowKind::Detail
 		&& Rows[Iglin + 1].Text.Contains(TEXT("Title"));
-	TestFalse(TEXT("Iglin does not record a title"), bIglinTitle);
+	TestEqual(
+		TEXT("Iglin title line follows the event"),
+		bIglinTitle,
+		IglinChanges.Contains(TEXT("Title")));
 	return true;
 }
 

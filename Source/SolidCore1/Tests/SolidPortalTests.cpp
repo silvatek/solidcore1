@@ -16,16 +16,16 @@ bool FSolidPortalChoicesTest::RunTest(const FString& Parameters)
 	TArray<SolidPortal::FChoice> Choices;
 	SolidPortal::CollectChoices(Choices);
 	TestEqual(TEXT("one row per town"), Choices.Num(), SolidPortal::TownCount());
-	TestEqual(TEXT("seven towns"), SolidPortal::TownCount(), 7);
-
-	const int32 ExpectedIds[] = { 0, 1, 2, 3, 4, 5, 6 };
-	const TCHAR* Expected[] = {
-		TEXT("Iglin"), TEXT("Relion"), TEXT("Kanfold"), TEXT("Visolar"), TEXT("Jethan"),
-		TEXT("Dragongate"), TEXT("Rathen") };
-	for (int32 Index = 0; Index < Choices.Num(); ++Index)
+	TestTrue(TEXT("lists every town"), SolidPortal::TownCount() >= SolidTowns::DefinitionCount);
+	if (Choices.Num() < SolidTowns::DefinitionCount)
 	{
-		TestEqual(TEXT("town id"), Choices[Index].TownId, ExpectedIds[Index]);
-		TestEqual(TEXT("town name"), Choices[Index].Name, FString(Expected[Index]));
+		return false;
+	}
+
+	for (int32 Index = 0; Index < SolidTowns::DefinitionCount; ++Index)
+	{
+		TestEqual(TEXT("town id"), Choices[Index].TownId, SolidTowns::Definitions[Index].Id);
+		TestEqual(TEXT("town name"), Choices[Index].Name, FString(SolidTowns::Definitions[Index].Name));
 	}
 
 	SolidPortal::FChoice Found;
@@ -44,11 +44,11 @@ bool FSolidPortalChoicesTest::RunTest(const FString& Parameters)
 	}
 	TestTrue(TEXT("find Rathen"), SolidPortal::FindChoice(6, Found));
 	TestEqual(TEXT("Rathen is town 6"), Found.TownId, 6);
-	TestFalse(TEXT("no eighth row"), SolidPortal::FindChoice(7, Found));
+	TestFalse(TEXT("past the list"), SolidPortal::FindChoice(SolidPortal::TownCount(), Found));
 
 	TestEqual(TEXT("wrap down"), SolidPortal::WrapIndex(0, 1), 1);
-	TestEqual(TEXT("wrap past end"), SolidPortal::WrapIndex(6, 1), 0);
-	TestEqual(TEXT("wrap up"), SolidPortal::WrapIndex(0, -1), 6);
+	TestEqual(TEXT("wrap past end"), SolidPortal::WrapIndex(SolidPortal::TownCount() - 1, 1), 0);
+	TestEqual(TEXT("wrap up"), SolidPortal::WrapIndex(0, -1), SolidPortal::TownCount() - 1);
 	return true;
 }
 

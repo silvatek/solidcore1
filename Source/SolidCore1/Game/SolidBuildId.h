@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0385")
+#define SOLID_BUILD_ID TEXT("SC1-0386")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Lair comments describe the visit, not only the first maze.")
+#define SOLID_BUILD_NOTE TEXT("Portal tests follow the town list length.")
 #endif

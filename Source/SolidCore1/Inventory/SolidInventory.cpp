@@ -12,7 +12,7 @@ namespace SolidInventory
 	inline constexpr float TorsoW = 176.f;
 	inline constexpr float BodyH = 148.f;
 	inline constexpr float BeltH = 48.f;
-	inline constexpr float LegsH = 120.f;
+	inline constexpr float BootsH = 120.f;
 	inline constexpr float HandW = 132.f;
 	inline constexpr float HandH = 104.f;
 
@@ -52,17 +52,17 @@ namespace SolidInventory
 		const float RightX = TorsoX + TorsoW + Gap;
 		const float BeltX = TorsoX + (TorsoW - BeltW) * 0.5f;
 		const float BeltY = BodyY + BodyH + Gap;
-		const float LegsY = BeltY + BeltH + Gap;
+		const float BootsY = BeltY + BeltH + Gap;
 
 		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::Head, HeadX, HeadY, HeadW, HeadH));
 		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::Body, TorsoX, BodyY, TorsoW, BodyH));
 		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::LeftHand, 0.f, HandY, HandW, HandH));
 		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::RightHand, RightX, HandY, HandW, HandH));
 		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::Belt, BeltX, BeltY, BeltW, BeltH));
-		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::Legs, TorsoX, LegsY, TorsoW, LegsH));
+		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::Boots, TorsoX, BootsY, TorsoW, BootsH));
 
 		const float DollRight = RightX + HandW;
-		const float DollBottom = LegsY + LegsH;
+		const float DollBottom = BootsY + BootsH;
 		const float PackX = DollRight + SideGap;
 		const float GridY = PackLabelH + Gap;
 		const float GridW = PackColumns * PackCell + (PackColumns - 1) * PackGap;

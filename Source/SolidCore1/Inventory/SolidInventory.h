@@ -15,15 +15,14 @@ namespace SolidInventory
 	inline constexpr const TCHAR* ToggleKeyLabel = TEXT("/");
 
 	inline constexpr const TCHAR* DentedHelmet = TEXT("Dented helmet");
-	inline constexpr const TCHAR* RagShirt = TEXT("Rag shirt");
-	inline constexpr const TCHAR* RagTrews = TEXT("Rag trews");
+	inline constexpr const TCHAR* Rags = TEXT("Rags");
 	inline constexpr const TCHAR* CrudeSpear = TEXT("Crude spear");
 
 	enum class ESlot : uint8
 	{
 		Head,
 		Body,
-		Legs,
+		Boots,
 		LeftHand,
 		RightHand,
 		Belt,
@@ -42,7 +41,7 @@ namespace SolidInventory
 		{
 		case ESlot::Head: return TEXT("Head");
 		case ESlot::Body: return TEXT("Body");
-		case ESlot::Legs: return TEXT("Legs");
+		case ESlot::Boots: return TEXT("Boots");
 		case ESlot::LeftHand: return TEXT("Left hand");
 		case ESlot::RightHand: return TEXT("Right hand");
 		case ESlot::Belt: return TEXT("Belt");
@@ -62,13 +61,12 @@ namespace SolidInventory
 		FString Pack[PackCount];
 	};
 
-	/** What the captain is wearing when a play session starts. The pack is empty. */
+	/** What the captain is wearing when a play session starts. Boots and the pack are empty. */
 	inline FLoadout StartingLoadout()
 	{
 		FLoadout Loadout;
 		Loadout.Worn[static_cast<int32>(ESlot::Head)] = DentedHelmet;
-		Loadout.Worn[static_cast<int32>(ESlot::Body)] = RagShirt;
-		Loadout.Worn[static_cast<int32>(ESlot::Legs)] = RagTrews;
+		Loadout.Worn[static_cast<int32>(ESlot::Body)] = Rags;
 		Loadout.Worn[static_cast<int32>(ESlot::RightHand)] = CrudeSpear;
 		return Loadout;
 	}

@@ -51,16 +51,15 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidInventoryStartingKitTest::RunTest(const FString& Parameters)
 {
 	TestEqual(TEXT("helmet name"), FString(SolidInventory::DentedHelmet), FString(TEXT("Dented helmet")));
-	TestEqual(TEXT("shirt name"), FString(SolidInventory::RagShirt), FString(TEXT("Rag shirt")));
-	TestEqual(TEXT("trews name"), FString(SolidInventory::RagTrews), FString(TEXT("Rag trews")));
+	TestEqual(TEXT("rags name"), FString(SolidInventory::Rags), FString(TEXT("Rags")));
 	TestEqual(TEXT("spear name"), FString(SolidInventory::CrudeSpear), FString(TEXT("Crude spear")));
 
 	const FGameState State;
 	const SolidInventory::FLoadout& Kit = State.Inventory;
 	TestEqual(TEXT("head"), Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Head)], FString(SolidInventory::DentedHelmet));
-	TestEqual(TEXT("body"), Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)], FString(SolidInventory::RagShirt));
-	TestEqual(TEXT("legs"), Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Legs)], FString(SolidInventory::RagTrews));
+	TestEqual(TEXT("body"), Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)], FString(SolidInventory::Rags));
 	TestEqual(TEXT("right hand"), Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::RightHand)], FString(SolidInventory::CrudeSpear));
+	TestTrue(TEXT("boots start empty"), Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Boots)].IsEmpty());
 	TestTrue(TEXT("left hand starts empty"), Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::LeftHand)].IsEmpty());
 	TestTrue(TEXT("belt starts empty"), Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Belt)].IsEmpty());
 	TestEqual(TEXT("pack has six cells"), SolidInventory::PackCount, SolidInventory::PackColumns * SolidInventory::PackRows);
@@ -98,30 +97,30 @@ bool FSolidInventoryLayoutTest::RunTest(const FString& Parameters)
 
 	const SolidInventory::FBox* Head = SolidInventoryTestPrivate::FindWorn(Page, SolidInventory::ESlot::Head);
 	const SolidInventory::FBox* Body = SolidInventoryTestPrivate::FindWorn(Page, SolidInventory::ESlot::Body);
-	const SolidInventory::FBox* Legs = SolidInventoryTestPrivate::FindWorn(Page, SolidInventory::ESlot::Legs);
+	const SolidInventory::FBox* Boots = SolidInventoryTestPrivate::FindWorn(Page, SolidInventory::ESlot::Boots);
 	const SolidInventory::FBox* Left = SolidInventoryTestPrivate::FindWorn(Page, SolidInventory::ESlot::LeftHand);
 	const SolidInventory::FBox* Right = SolidInventoryTestPrivate::FindWorn(Page, SolidInventory::ESlot::RightHand);
 	const SolidInventory::FBox* Belt = SolidInventoryTestPrivate::FindWorn(Page, SolidInventory::ESlot::Belt);
 	TestTrue(TEXT("head box"), Head != nullptr);
 	TestTrue(TEXT("body box"), Body != nullptr);
-	TestTrue(TEXT("legs box"), Legs != nullptr);
+	TestTrue(TEXT("boots box"), Boots != nullptr);
 	TestTrue(TEXT("left hand box"), Left != nullptr);
 	TestTrue(TEXT("right hand box"), Right != nullptr);
 	TestTrue(TEXT("belt box"), Belt != nullptr);
-	if (!Head || !Body || !Legs || !Left || !Right || !Belt)
+	if (!Head || !Body || !Boots || !Left || !Right || !Belt)
 	{
 		return false;
 	}
 
 	TestEqual(TEXT("head label"), Head->Label, FString(TEXT("Head")));
 	TestEqual(TEXT("body label"), Body->Label, FString(TEXT("Body")));
-	TestEqual(TEXT("legs label"), Legs->Label, FString(TEXT("Legs")));
+	TestEqual(TEXT("boots label"), Boots->Label, FString(TEXT("Boots")));
 	TestEqual(TEXT("left hand label"), Left->Label, FString(TEXT("Left hand")));
 	TestEqual(TEXT("right hand label"), Right->Label, FString(TEXT("Right hand")));
 	TestEqual(TEXT("belt label"), Belt->Label, FString(TEXT("Belt")));
 	TestEqual(TEXT("head wears the helmet"), Head->Item, FString(SolidInventory::DentedHelmet));
-	TestEqual(TEXT("body wears the shirt"), Body->Item, FString(SolidInventory::RagShirt));
-	TestEqual(TEXT("legs wear the trews"), Legs->Item, FString(SolidInventory::RagTrews));
+	TestEqual(TEXT("body wears rags"), Body->Item, FString(SolidInventory::Rags));
+	TestTrue(TEXT("boots are empty"), Boots->Item.IsEmpty());
 	TestEqual(TEXT("right hand holds the spear"), Right->Item, FString(SolidInventory::CrudeSpear));
 	TestTrue(TEXT("left hand box is empty"), Left->Item.IsEmpty());
 	TestTrue(TEXT("belt box is empty"), Belt->Item.IsEmpty());
@@ -143,14 +142,14 @@ bool FSolidInventoryLayoutTest::RunTest(const FString& Parameters)
 		TEXT("hands share a height"),
 		FMath::IsNearlyEqual(Left->Y, Right->Y, 1.f) && FMath::IsNearlyEqual(Left->H, Right->H, 1.f));
 	TestTrue(TEXT("belt is below the body"), Body->Y + Body->H < Belt->Y);
-	TestTrue(TEXT("legs are below the belt"), Belt->Y + Belt->H < Legs->Y);
+	TestTrue(TEXT("boots are below the belt"), Belt->Y + Belt->H < Boots->Y);
 	TestTrue(TEXT("belt is narrower than the body"), Belt->W < Body->W);
 	TestTrue(
 		TEXT("belt is centered on the body"),
 		FMath::IsNearlyEqual(Belt->X + Belt->W * 0.5f, Body->X + Body->W * 0.5f, 1.f));
 	TestTrue(
-		TEXT("legs share the body's column"),
-		FMath::IsNearlyEqual(Legs->X, Body->X, 1.f) && FMath::IsNearlyEqual(Legs->W, Body->W, 1.f));
+		TEXT("boots share the body's column"),
+		FMath::IsNearlyEqual(Boots->X, Body->X, 1.f) && FMath::IsNearlyEqual(Boots->W, Body->W, 1.f));
 
 	int32 PackBoxes = 0;
 	float DollRight = 0.f;

@@ -41,6 +41,11 @@ namespace SolidInventoryTestPrivate
 		const float By1 = B.Y + B.H;
 		return A.X < Bx1 && B.X < Ax1 && A.Y < By1 && B.Y < Ay1;
 	}
+
+	FString HeldId(const TCHAR* ItemId)
+	{
+		return FString(ItemId ? ItemId : TEXT(""));
+	}
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -50,38 +55,45 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidInventoryStartingKitTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("helmet name"), FString(SolidInventory::DentedHelmet), FString(TEXT("Dented helmet")));
-	TestEqual(TEXT("rags name"), FString(SolidInventory::Rags), FString(TEXT("Rags")));
-	TestEqual(TEXT("spear name"), FString(SolidInventory::CrudeSpear), FString(TEXT("Crude spear")));
-
 	const FGameState State;
 	const SolidInventory::FLoadout& Kit = State.Inventory;
-	TestEqual(TEXT("head"), Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Head)], FString(SolidInventory::DentedHelmet));
-	TestEqual(TEXT("body"), Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)], FString(SolidInventory::Rags));
-	TestEqual(TEXT("right hand"), Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::RightHand)], FString(SolidInventory::CrudeSpear));
-	TestTrue(TEXT("boots start empty"), Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Boots)].IsEmpty());
-	TestTrue(TEXT("left hand starts empty"), Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::LeftHand)].IsEmpty());
-	TestTrue(TEXT("belt starts empty"), Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Belt)].IsEmpty());
+	TestEqual(
+		TEXT("head"),
+		SolidInventoryTestPrivate::HeldId(Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Head)]),
+		FString(SolidItemType::IdDentedHelmet));
+	TestEqual(
+		TEXT("body"),
+		SolidInventoryTestPrivate::HeldId(Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)]),
+		FString(SolidItemType::IdRags));
+	TestEqual(
+		TEXT("right hand"),
+		SolidInventoryTestPrivate::HeldId(Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::RightHand)]),
+		FString(SolidItemType::IdCrudeSpear));
+	TestTrue(TEXT("boots start empty"), Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Boots)] == nullptr);
+	TestTrue(TEXT("left hand starts empty"), Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::LeftHand)] == nullptr);
+	TestTrue(TEXT("belt starts empty"), Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Belt)] == nullptr);
 	TestEqual(TEXT("pack has six cells"), SolidInventory::PackCount, SolidInventory::PackColumns * SolidInventory::PackRows);
 	TestEqual(TEXT("pack is two by three"), SolidInventory::PackColumns, 2);
 	TestEqual(TEXT("pack is three rows"), SolidInventory::PackRows, 3);
 	for (int32 Index = 0; Index < SolidInventory::PackCount; ++Index)
 	{
-		TestTrue(TEXT("pack starts empty"), Kit.Pack[Index].IsEmpty());
+		TestTrue(TEXT("pack starts empty"), Kit.Pack[Index] == nullptr);
 	}
 
 	SolidInventory::FLoadout Edited = Kit;
-	TestTrue(TEXT("spear can leave the hand"), SolidInventory::PlaceWorn(Edited, SolidInventory::ESlot::RightHand, FString()));
+	TestTrue(TEXT("spear can leave the hand"), SolidInventory::PlaceWorn(Edited, SolidInventory::ESlot::RightHand, nullptr));
 	TestTrue(
 		TEXT("spear can be placed in the pack"),
-		SolidInventory::PlacePack(Edited, 1, 2, SolidInventory::CrudeSpear));
-	TestTrue(TEXT("hand is empty after the move"), Edited.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::RightHand)].IsEmpty());
+		SolidInventory::PlacePack(Edited, 1, 2, SolidItemType::IdCrudeSpear));
+	TestTrue(TEXT("hand is empty after the move"), Edited.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::RightHand)] == nullptr);
 	TestEqual(
 		TEXT("bottom-right pack cell holds the spear"),
-		Edited.Pack[SolidInventory::PackIndex(1, 2)],
-		FString(SolidInventory::CrudeSpear));
-	TestFalse(TEXT("a cell outside the pack is refused"), SolidInventory::PlacePack(Edited, 2, 0, SolidInventory::CrudeSpear));
-	TestTrue(TEXT("the spear stays inside the pack"), Edited.Pack[SolidInventory::PackIndex(0, 0)].IsEmpty());
+		SolidInventoryTestPrivate::HeldId(Edited.Pack[SolidInventory::PackIndex(1, 2)]),
+		FString(SolidItemType::IdCrudeSpear));
+	TestFalse(TEXT("a cell outside the pack is refused"), SolidInventory::PlacePack(Edited, 2, 0, SolidItemType::IdCrudeSpear));
+	TestFalse(TEXT("an unknown item is refused"), SolidInventory::PlaceWorn(Edited, SolidInventory::ESlot::LeftHand, TEXT("missing")));
+	TestTrue(TEXT("the left hand stays empty"), Edited.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::LeftHand)] == nullptr);
+	TestTrue(TEXT("the spear stays inside the pack"), Edited.Pack[SolidInventory::PackIndex(0, 0)] == nullptr);
 	return true;
 }
 
@@ -93,17 +105,24 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidInventoryClearTest::RunTest(const FString& Parameters)
 {
 	SolidInventory::FLoadout Loadout = SolidInventory::StartingLoadout();
-	TestTrue(TEXT("mail can replace rags"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Body, TEXT("Mail")));
-	TestTrue(TEXT("boots can be filled"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Boots, TEXT("Hide boots")));
-	TestTrue(TEXT("the left hand can be filled"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::LeftHand, TEXT("Torch")));
-	TestTrue(TEXT("the belt can be filled"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Belt, TEXT("Rope")));
+	const TCHAR* Fill[] = {
+		SolidItemType::IdTorch,
+		SolidItemType::IdCrudeSpear,
+		SolidItemType::IdDentedHelmet,
+		SolidItemType::IdRags,
+	};
+	TestTrue(TEXT("torch can replace rags"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Body, SolidItemType::IdTorch));
+	TestTrue(TEXT("boots can hold the spear"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Boots, SolidItemType::IdCrudeSpear));
+	TestTrue(TEXT("the left hand can hold the helmet"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::LeftHand, SolidItemType::IdDentedHelmet));
+	TestTrue(TEXT("the belt can hold rags"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Belt, SolidItemType::IdRags));
 	for (int32 Row = 0; Row < SolidInventory::PackRows; ++Row)
 	{
 		for (int32 Column = 0; Column < SolidInventory::PackColumns; ++Column)
 		{
+			const int32 FillIndex = SolidInventory::PackIndex(Column, Row);
 			TestTrue(
-				TEXT("a pack cell can be filled"),
-				SolidInventory::PlacePack(Loadout, Column, Row, FString::Printf(TEXT("Pack %d %d"), Column, Row)));
+				TEXT("a pack cell can hold an item"),
+				SolidInventory::PlacePack(Loadout, Column, Row, Fill[FillIndex % UE_ARRAY_COUNT(Fill)]));
 		}
 	}
 
@@ -113,23 +132,26 @@ bool FSolidInventoryClearTest::RunTest(const FString& Parameters)
 		const SolidInventory::ESlot Slot = static_cast<SolidInventory::ESlot>(Index);
 		if (Slot == SolidInventory::ESlot::Body)
 		{
-			TestEqual(TEXT("body wears rags"), Loadout.Worn[Index], FString(SolidInventory::Rags));
+			TestEqual(
+				TEXT("body wears rags"),
+				SolidInventoryTestPrivate::HeldId(Loadout.Worn[Index]),
+				FString(SolidItemType::IdRags));
 		}
 		else
 		{
-			TestTrue(TEXT("every other worn box is empty"), Loadout.Worn[Index].IsEmpty());
+			TestTrue(TEXT("every other worn box is empty"), Loadout.Worn[Index] == nullptr);
 		}
 	}
 	for (int32 Index = 0; Index < SolidInventory::PackCount; ++Index)
 	{
-		TestTrue(TEXT("the pack is empty"), Loadout.Pack[Index].IsEmpty());
+		TestTrue(TEXT("the pack is empty"), Loadout.Pack[Index] == nullptr);
 	}
 
 	SolidInventory::Clear(Loadout);
 	TestEqual(
 		TEXT("clearing again leaves rags"),
-		Loadout.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)],
-		FString(SolidInventory::Rags));
+		SolidInventoryTestPrivate::HeldId(Loadout.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)]),
+		FString(SolidItemType::IdRags));
 	return true;
 }
 
@@ -166,10 +188,13 @@ bool FSolidInventoryLayoutTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("left hand label"), Left->Label, FString(TEXT("Left hand")));
 	TestEqual(TEXT("right hand label"), Right->Label, FString(TEXT("Right hand")));
 	TestEqual(TEXT("belt label"), Belt->Label, FString(TEXT("Belt")));
-	TestEqual(TEXT("head wears the helmet"), Head->Item, FString(SolidInventory::DentedHelmet));
-	TestEqual(TEXT("body wears rags"), Body->Item, FString(SolidInventory::Rags));
+	const FSolidItemType* Helmet = SolidItemType::FindById(SolidItemType::IdDentedHelmet);
+	const FSolidItemType* Rags = SolidItemType::FindById(SolidItemType::IdRags);
+	const FSolidItemType* Spear = SolidItemType::FindById(SolidItemType::IdCrudeSpear);
+	TestEqual(TEXT("head wears the helmet"), Head->Item, FString(Helmet ? Helmet->Name : TEXT("")));
+	TestEqual(TEXT("body wears rags"), Body->Item, FString(Rags ? Rags->Name : TEXT("")));
 	TestTrue(TEXT("boots are empty"), Boots->Item.IsEmpty());
-	TestEqual(TEXT("right hand holds the spear"), Right->Item, FString(SolidInventory::CrudeSpear));
+	TestEqual(TEXT("right hand holds the spear"), Right->Item, FString(Spear ? Spear->Name : TEXT("")));
 	TestTrue(TEXT("left hand box is empty"), Left->Item.IsEmpty());
 	TestTrue(TEXT("belt box is empty"), Belt->Item.IsEmpty());
 

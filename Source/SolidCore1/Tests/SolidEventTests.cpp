@@ -1239,22 +1239,22 @@ bool FSolidEventsClearInventoryTest::RunTest(const FString& Parameters)
 
 	FGameState State;
 	State.Inventory = SolidInventory::StartingLoadout();
-	SolidInventory::PlaceWorn(State.Inventory, SolidInventory::ESlot::Body, TEXT("Mail"));
-	SolidInventory::PlaceWorn(State.Inventory, SolidInventory::ESlot::Boots, TEXT("Hide boots"));
-	SolidInventory::PlacePack(State.Inventory, 0, 0, TEXT("Bread"));
-	SolidInventory::PlacePack(State.Inventory, 1, 2, SolidInventory::CrudeSpear);
+	SolidInventory::PlaceWorn(State.Inventory, SolidInventory::ESlot::Body, SolidItemType::IdTorch);
+	SolidInventory::PlaceWorn(State.Inventory, SolidInventory::ESlot::Boots, SolidItemType::IdCrudeSpear);
+	SolidInventory::PlacePack(State.Inventory, 0, 0, SolidItemType::IdDentedHelmet);
+	SolidInventory::PlacePack(State.Inventory, 1, 2, SolidItemType::IdTorch);
 
 	SolidEvents::NotifyOccupiedTown(State, 0);
 	const SolidEvents::FResult Reached = SolidEvents::NotifyReachBrokenBridge(State);
 	TestTrue(TEXT("the ramp still shows the message"), Reached.bShowMessage);
 	TestEqual(
 		TEXT("the ramp leaves the helmet"),
-		State.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Head)],
-		FString(SolidInventory::DentedHelmet));
+		FString(State.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Head)]),
+		FString(SolidItemType::IdDentedHelmet));
 	TestEqual(
 		TEXT("the ramp leaves the pack"),
-		State.Inventory.Pack[SolidInventory::PackIndex(0, 0)],
-		FString(TEXT("Bread")));
+		FString(State.Inventory.Pack[SolidInventory::PackIndex(0, 0)]),
+		FString(SolidItemType::IdDentedHelmet));
 
 	const SolidEvents::FResult Closed = SolidEvents::NotifyMessageClosed(State, SolidMessages::IdKilledByMonsters);
 	TestTrue(TEXT("closing the message fires"), Closed.bFired);
@@ -1264,16 +1264,19 @@ bool FSolidEventsClearInventoryTest::RunTest(const FString& Parameters)
 		const SolidInventory::ESlot Slot = static_cast<SolidInventory::ESlot>(Index);
 		if (Slot == SolidInventory::ESlot::Body)
 		{
-			TestEqual(TEXT("the body wears rags"), State.Inventory.Worn[Index], FString(SolidInventory::Rags));
+			TestEqual(
+				TEXT("the body wears rags"),
+				FString(State.Inventory.Worn[Index]),
+				FString(SolidItemType::IdRags));
 		}
 		else
 		{
-			TestTrue(TEXT("the close empties the other worn boxes"), State.Inventory.Worn[Index].IsEmpty());
+			TestTrue(TEXT("the close empties the other worn boxes"), State.Inventory.Worn[Index] == nullptr);
 		}
 	}
 	for (int32 Index = 0; Index < SolidInventory::PackCount; ++Index)
 	{
-		TestTrue(TEXT("the close empties the pack"), State.Inventory.Pack[Index].IsEmpty());
+		TestTrue(TEXT("the close empties the pack"), State.Inventory.Pack[Index] == nullptr);
 	}
 
 	TArray<SolidJournal::FRow> Rows;
@@ -1288,13 +1291,13 @@ bool FSolidEventsClearInventoryTest::RunTest(const FString& Parameters)
 	}
 	TestTrue(TEXT("the journal lists Inventory cleared"), bSawClear);
 
-	SolidInventory::PlaceWorn(State.Inventory, SolidInventory::ESlot::Head, SolidInventory::DentedHelmet);
+	SolidInventory::PlaceWorn(State.Inventory, SolidInventory::ESlot::Head, SolidItemType::IdDentedHelmet);
 	const SolidEvents::FResult ClosedAgain = SolidEvents::NotifyMessageClosed(State, SolidMessages::IdKilledByMonsters);
 	TestFalse(TEXT("closing the message fires once"), ClosedAgain.bFired);
 	TestEqual(
 		TEXT("a second close leaves the helmet"),
-		State.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Head)],
-		FString(SolidInventory::DentedHelmet));
+		FString(State.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Head)]),
+		FString(SolidItemType::IdDentedHelmet));
 	return true;
 }
 

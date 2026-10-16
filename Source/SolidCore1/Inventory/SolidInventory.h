@@ -2,9 +2,11 @@
 
 #include "CoreMinimal.h"
 #include "InputCoreTypes.h"
+#include "Inventory/SolidItemType.h"
 
 /**
  * Captain's inventory. Worn boxes follow a person. The pack is a grid beside them.
+ * A box stores an item id from SolidItemType. The page shows that item's name.
  * / opens the page. F10, then Inventory, opens it too.
  */
 namespace SolidInventory
@@ -13,10 +15,6 @@ namespace SolidInventory
 	inline constexpr const TCHAR* PackTitle = TEXT("Pack");
 	inline constexpr const TCHAR* CloseHint = TEXT("/ to close");
 	inline constexpr const TCHAR* ToggleKeyLabel = TEXT("/");
-
-	inline constexpr const TCHAR* DentedHelmet = TEXT("Dented helmet");
-	inline constexpr const TCHAR* Rags = TEXT("Rags");
-	inline constexpr const TCHAR* CrudeSpear = TEXT("Crude spear");
 
 	enum class ESlot : uint8
 	{
@@ -57,17 +55,18 @@ namespace SolidInventory
 
 	struct FLoadout
 	{
-		FString Worn[WornCount];
-		FString Pack[PackCount];
+		/** Item ids. Null is an empty box. */
+		const TCHAR* Worn[WornCount] = {};
+		const TCHAR* Pack[PackCount] = {};
 	};
 
 	/** What the captain is wearing when a play session starts. Boots and the pack are empty. */
 	inline FLoadout StartingLoadout()
 	{
 		FLoadout Loadout;
-		Loadout.Worn[static_cast<int32>(ESlot::Head)] = DentedHelmet;
-		Loadout.Worn[static_cast<int32>(ESlot::Body)] = Rags;
-		Loadout.Worn[static_cast<int32>(ESlot::RightHand)] = CrudeSpear;
+		Loadout.Worn[static_cast<int32>(ESlot::Head)] = SolidItemType::IdDentedHelmet;
+		Loadout.Worn[static_cast<int32>(ESlot::Body)] = SolidItemType::IdRags;
+		Loadout.Worn[static_cast<int32>(ESlot::RightHand)] = SolidItemType::IdCrudeSpear;
 		return Loadout;
 	}
 
@@ -90,27 +89,55 @@ namespace SolidInventory
 		return Row * PackColumns + Column;
 	}
 
-	/** Put Name in a worn box. An empty name clears it. False when the slot is not a worn box. */
-	inline bool PlaceWorn(FLoadout& Loadout, const ESlot Slot, const FString& Name)
+	/**
+	 * Store an item id in a worn box.
+	 * A null or empty id clears it. An id that is not in the catalog is refused.
+	 * False when the slot is not a worn box, or the id is unknown.
+	 */
+	inline bool PlaceWorn(FLoadout& Loadout, const ESlot Slot, const TCHAR* ItemId)
 	{
 		const int32 Index = WornIndex(Slot);
 		if (Index == INDEX_NONE)
 		{
 			return false;
 		}
-		Loadout.Worn[Index] = Name;
+		if (!ItemId || !ItemId[0])
+		{
+			Loadout.Worn[Index] = nullptr;
+			return true;
+		}
+		const FSolidItemType* Item = SolidItemType::FindById(ItemId);
+		if (!Item)
+		{
+			return false;
+		}
+		Loadout.Worn[Index] = Item->Id;
 		return true;
 	}
 
-	/** Put Name in one pack cell. An empty name clears it. False when the cell is outside the grid. */
-	inline bool PlacePack(FLoadout& Loadout, const int32 Column, const int32 Row, const FString& Name)
+	/**
+	 * Store an item id in one pack cell.
+	 * A null or empty id clears it. An id that is not in the catalog is refused.
+	 * False when the cell is outside the grid, or the id is unknown.
+	 */
+	inline bool PlacePack(FLoadout& Loadout, const int32 Column, const int32 Row, const TCHAR* ItemId)
 	{
 		const int32 Index = PackIndex(Column, Row);
 		if (Index == INDEX_NONE)
 		{
 			return false;
 		}
-		Loadout.Pack[Index] = Name;
+		if (!ItemId || !ItemId[0])
+		{
+			Loadout.Pack[Index] = nullptr;
+			return true;
+		}
+		const FSolidItemType* Item = SolidItemType::FindById(ItemId);
+		if (!Item)
+		{
+			return false;
+		}
+		Loadout.Pack[Index] = Item->Id;
 		return true;
 	}
 
@@ -119,16 +146,16 @@ namespace SolidInventory
 	{
 		for (int32 Index = 0; Index < WornCount; ++Index)
 		{
-			Loadout.Worn[Index].Empty();
+			Loadout.Worn[Index] = nullptr;
 		}
 		for (int32 Index = 0; Index < PackCount; ++Index)
 		{
-			Loadout.Pack[Index].Empty();
+			Loadout.Pack[Index] = nullptr;
 		}
 		const int32 Body = WornIndex(ESlot::Body);
 		if (Body != INDEX_NONE)
 		{
-			Loadout.Worn[Body] = Rags;
+			Loadout.Worn[Body] = SolidItemType::IdRags;
 		}
 	}
 

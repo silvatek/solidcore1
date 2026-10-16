@@ -35,7 +35,7 @@ namespace SolidInventory
 		const int32 Index = WornIndex(Slot);
 		if (Index != INDEX_NONE)
 		{
-			Box.Item = Loadout.Worn[Index];
+			Box.Item = SolidItemType::NameFor(Loadout.Worn[Index]);
 		}
 		return Box;
 	}
@@ -83,7 +83,7 @@ namespace SolidInventory
 				const int32 Index = PackIndex(Column, Row);
 				if (Index != INDEX_NONE)
 				{
-					Box.Item = Loadout.Pack[Index];
+					Box.Item = SolidItemType::NameFor(Loadout.Pack[Index]);
 				}
 				OutPage.Boxes.Add(Box);
 			}

@@ -40,16 +40,17 @@ namespace SolidLair
 	/**
 	 * Floor plan. '#' is rock. '.' is open floor. An end marker is a mouth.
 	 * Every open cell can be reached from a mouth.
+	 * The straight run is there for early testing.
 	 */
 	inline const TCHAR* Maze[MazeRows] = {
 		TEXT("###########"),
-		TEXT("#X..#.....#"),
+		TEXT("#X.......Y#"),
 		TEXT("#.#.#.###.#"),
 		TEXT("#.#...#...#"),
 		TEXT("#.###.#.#.#"),
 		TEXT("#.....#.#.#"),
 		TEXT("###.#...#.#"),
-		TEXT("#....##.#Y#"),
+		TEXT("#....##.#.#"),
 		TEXT("###########"),
 	};
 

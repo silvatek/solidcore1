@@ -58,6 +58,19 @@ namespace SolidStorageTestPrivate
 		Hit.Index = Index;
 		return Hit;
 	}
+
+	/** The first empty chest cell. Later items can fill the old corner and leave another cell empty. */
+	int32 FirstEmptySlot(const SolidStorage::FContainer& Chest)
+	{
+		for (int32 Index = 0; Index < SolidStorage::Count; ++Index)
+		{
+			if (Chest.Slots[Index] == nullptr)
+			{
+				return Index;
+			}
+		}
+		return INDEX_NONE;
+	}
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -82,14 +95,17 @@ bool FSolidStorageCaveChestTest::RunTest(const FString& Parameters)
 
 	const FGameState State;
 	const SolidStorage::FContainer& Chest = State.CaveChest;
-	TestEqual(TEXT("the chest has four cells"), SolidStorage::Count, SolidStorage::Columns * SolidStorage::Rows);
+	TestEqual(TEXT("the chest cell count is the grid"), SolidStorage::Count, SolidStorage::Columns * SolidStorage::Rows);
 	TestEqual(
 		TEXT("the first cell holds the sword"),
 		FString(Chest.Slots[SolidStorage::Index(0, 0)]),
 		FString(SolidItemType::IdRustySword));
-	TestTrue(
-		TEXT("the corner cell starts empty"),
-		Chest.Slots[SolidStorage::Index(1, 1)] == nullptr);
+	const int32 EmptyIndex = SolidStorageTestPrivate::FirstEmptySlot(Chest);
+	TestTrue(TEXT("the chest starts with an empty cell"), EmptyIndex != INDEX_NONE);
+	if (EmptyIndex == INDEX_NONE)
+	{
+		return false;
+	}
 
 	SolidStorage::FContainer Held = Chest;
 	SolidInventory::FLoadout Loadout = SolidInventory::StartingLoadout();
@@ -159,7 +175,9 @@ bool FSolidStorageCaveChestTest::RunTest(const FString& Parameters)
 	SolidInventory::Layout(SolidInventory::StartingLoadout(), Page, &Shown);
 	TestTrue(TEXT("the chest heading is on"), Page.bShowChest);
 	const SolidInventory::FBox* SwordBox = SolidStorageTestPrivate::FindChest(Page, 0, 0);
-	const SolidInventory::FBox* EmptyChest = SolidStorageTestPrivate::FindChest(Page, 1, 1);
+	const int32 EmptyColumn = EmptyIndex % SolidStorage::Columns;
+	const int32 EmptyRow = EmptyIndex / SolidStorage::Columns;
+	const SolidInventory::FBox* EmptyChest = SolidStorageTestPrivate::FindChest(Page, EmptyColumn, EmptyRow);
 	TestTrue(TEXT("the sword cell is on the page"), SwordBox != nullptr);
 	TestTrue(TEXT("an empty chest cell is on the page"), EmptyChest != nullptr);
 	if (!SwordBox || !EmptyChest)
@@ -179,7 +197,7 @@ bool FSolidStorageCaveChestTest::RunTest(const FString& Parameters)
 			TestTrue(TEXT("a chest cell is not a pack cell"), !Box.bPack);
 		}
 	}
-	TestEqual(TEXT("four chest cells"), ChestBoxes, SolidStorage::Count);
+	TestEqual(TEXT("every chest cell is on the page"), ChestBoxes, SolidStorage::Count);
 	for (int32 Index = 0; Index < Page.Boxes.Num(); ++Index)
 	{
 		for (int32 Other = Index + 1; Other < Page.Boxes.Num(); ++Other)
@@ -260,12 +278,18 @@ bool FSolidInventoryMoveTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the first pack cell is empty"), Loadout.Pack[SolidInventory::PackIndex(0, 0)] == nullptr);
 
 	TestTrue(TEXT("the sword can be set down in the pack"), SolidInventory::PlacePack(Loadout, 0, 1, SolidItemType::IdRustySword));
+	const int32 EmptyChest = SolidStorageTestPrivate::FirstEmptySlot(Chest);
+	TestTrue(TEXT("the chest has an empty cell for the sword"), EmptyChest != INDEX_NONE);
+	if (EmptyChest == INDEX_NONE)
+	{
+		return false;
+	}
 	TestTrue(
 		TEXT("the sword goes back into an empty chest cell"),
-		SolidInventory::Move(&Chest, Loadout, Pack(0, 1), ChestCell(SolidStorage::Index(1, 1))));
+		SolidInventory::Move(&Chest, Loadout, Pack(0, 1), ChestCell(EmptyChest)));
 	TestEqual(
 		TEXT("the chest cell holds the sword"),
-		FString(Chest.Slots[SolidStorage::Index(1, 1)]),
+		FString(Chest.Slots[EmptyChest]),
 		FString(SolidItemType::IdRustySword));
 	TestTrue(TEXT("the pack cell is empty after the return"), Loadout.Pack[SolidInventory::PackIndex(0, 1)] == nullptr);
 	TestEqual(

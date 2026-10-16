@@ -86,6 +86,19 @@ namespace SolidInventoryTestPrivate
 		Hit.Index = Index;
 		return Hit;
 	}
+
+	/** The first empty chest cell. Later items can fill the old corner and leave another cell empty. */
+	int32 EmptyChestIndex(const SolidStorage::FContainer& Chest)
+	{
+		for (int32 Index = 0; Index < SolidStorage::Count; ++Index)
+		{
+			if (Chest.Slots[Index] == nullptr)
+			{
+				return Index;
+			}
+		}
+		return INDEX_NONE;
+	}
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -551,8 +564,12 @@ bool FSolidInventorySlotFitTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the head keeps the helmet"), HeldId(Loadout.Worn[Head]), FString(SolidItemType::IdDentedHelmet));
 	TestTrue(TEXT("the off hand is still empty"), Loadout.Worn[Off] == nullptr);
 
-	const int32 ChestIndex = SolidStorage::Index(1, 1);
-	TestTrue(TEXT("the chest has an empty cell"), ChestIndex != INDEX_NONE && Chest.Slots[ChestIndex] == nullptr);
+	const int32 ChestIndex = SolidInventoryTestPrivate::EmptyChestIndex(Chest);
+	TestTrue(TEXT("the chest has an empty cell"), ChestIndex != INDEX_NONE);
+	if (ChestIndex == INDEX_NONE)
+	{
+		return false;
+	}
 	TestTrue(
 		TEXT("the helmet can be dragged into the pack"),
 		SolidInventory::Move(&Chest, Loadout, WornHit(SolidInventory::ESlot::Head), PackHit(0, 0)));

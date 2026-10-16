@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0412")
+#define SOLID_BUILD_ID TEXT("SC1-0413")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The Iglin tunnels stay dark unless a torch is in either hand.")
+#define SOLID_BUILD_NOTE TEXT("A torch in hand lights the tunnels. The body does not cast a shadow there.")
 #endif

@@ -42,6 +42,15 @@ namespace SolidLair
 		return FLinearColor(1.f, 0.52f, 0.14f);
 	}
 
+	/**
+	 * The torch sits inside the captain. His body must not cast a shadow in a lair,
+	 * or the flame lights nothing. Outside, the hidden body still casts a shadow.
+	 */
+	inline bool BodyCastsShadow(const bool bInLair)
+	{
+		return !bInLair;
+	}
+
 	/** True when the main hand or the off hand holds a torch. The pack does not count. */
 	inline bool HandsHoldTorch(const SolidInventory::FLoadout& Loadout)
 	{

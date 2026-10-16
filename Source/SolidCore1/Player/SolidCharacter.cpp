@@ -209,6 +209,7 @@ void ASolidCharacter::Tick(float DeltaTime)
 	UpdateCavePassageHover();
 	TickClickMove();
 	SolidGroundMove::Hold(this);
+	UpdateBodyShadow();
 	UpdateCharacterEditorPointer();
 	UpdateInventoryPointer();
 	UpdateLocomotionAnim();
@@ -370,8 +371,8 @@ void ASolidCharacter::ApplySightPresentation()
 	if (USkeletalMeshComponent* CharacterMesh = GetMesh())
 	{
 		CharacterMesh->SetOwnerNoSee(bTrue);
-		CharacterMesh->SetCastHiddenShadow(bTrue);
 	}
+	UpdateBodyShadow();
 
 	UpdateNameLabelVisibility();
 
@@ -382,6 +383,35 @@ void ASolidCharacter::ApplySightPresentation()
 	else
 	{
 		ApplyRavenSightCamera();
+	}
+}
+
+void ASolidCharacter::UpdateBodyShadow()
+{
+	USkeletalMeshComponent* CharacterMesh = GetMesh();
+	if (!CharacterMesh)
+	{
+		return;
+	}
+
+	bool bInLair = false;
+	if (const UWorld* World = GetWorld())
+	{
+		if (const ASolidGameMode* Mode = World->GetAuthGameMode<ASolidGameMode>())
+		{
+			bInLair = Mode->IsInLair();
+		}
+	}
+
+	const bool bCast = SolidLair::BodyCastsShadow(bInLair);
+	if (CharacterMesh->CastShadow != static_cast<uint8>(bCast))
+	{
+		CharacterMesh->SetCastShadow(bCast);
+	}
+	const bool bHiddenShadow = bCast && IsTrueSight();
+	if (CharacterMesh->bCastHiddenShadow != static_cast<uint8>(bHiddenShadow))
+	{
+		CharacterMesh->SetCastHiddenShadow(bHiddenShadow);
 	}
 }
 

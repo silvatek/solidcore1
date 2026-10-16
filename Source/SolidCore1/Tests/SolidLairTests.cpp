@@ -411,6 +411,8 @@ bool FSolidLairTorchLightTest::RunTest(const FString& Parameters)
 
 	SolidInventory::FLoadout Packed = SolidInventory::StartingLoadout();
 	TestTrue(TEXT("the pack can hold the torch"), SolidInventory::PlacePack(Packed, 0, 0, SolidItemType::IdTorch));
+	TestFalse(TEXT("the body does not shadow the tunnels"), SolidLair::BodyCastsShadow(true));
+	TestTrue(TEXT("the body still shadows the open world"), SolidLair::BodyCastsShadow(false));
 	TestFalse(TEXT("a torch in the pack is not in a hand"), SolidLair::HandsHoldTorch(Packed));
 	Interior->ApplyTorchLight(Spot, SolidLair::HandsHoldTorch(Packed));
 	TestTrue(TEXT("a packed torch stays unlit"), FMath::IsNearlyZero(Torch->Intensity));

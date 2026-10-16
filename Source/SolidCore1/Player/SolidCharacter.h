@@ -132,6 +132,8 @@ protected:
 	void SelectBattlePlanSlot8();
 	void ToggleSightFromInput();
 	void ApplySightPresentation();
+	/** In a lair the body does not cast a shadow, so a torch inside him can light the stone. */
+	void UpdateBodyShadow();
 	void ApplyTrueSightCamera();
 	void ApplyRavenSightCamera();
 	void ToggleMainMenuFromInput();

@@ -26,7 +26,7 @@ public:
 	void ToggleInventory();
 	bool IsInventoryVisible() const { return bShowInventory; }
 
-	/** Press on a cave-chest cell that holds an item. Release on a worn box or a pack cell drops it. */
+	/** Press a slot that holds an item. Release on another worn box, pack cell, or chest cell. */
 	void PressInventory(float X, float Y);
 	void ReleaseInventory(float X, float Y);
 	void CancelInventoryDrag();
@@ -207,12 +207,13 @@ protected:
 
 	/** Inventory boxes drawn last frame, in content pixels, plus where that page sits. */
 	bool bInventoryHitReady = false;
+	bool bInventoryChestOpen = false;
 	SolidInventory::FPage InventoryPage;
 	float InventoryOriginX = 0.f;
 	float InventoryOriginY = 0.f;
 
-	/** A chest item following the pointer until it is dropped. */
+	/** An item following the pointer until it is dropped on another slot. */
 	bool bInventoryDrag = false;
-	int32 InventoryDragChest = INDEX_NONE;
+	SolidInventory::FSlotHit InventoryDragFrom;
 	FString InventoryDragName;
 };

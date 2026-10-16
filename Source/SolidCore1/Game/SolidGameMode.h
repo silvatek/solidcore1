@@ -122,6 +122,22 @@ public:
 			Row);
 	}
 
+	/**
+	 * Drag between worn boxes, pack cells, and, when the chest is open, its cells.
+	 * An occupied destination swaps. The same slot does nothing.
+	 */
+	bool MoveCarriedItem(
+		const SolidInventory::FSlotHit& From,
+		const SolidInventory::FSlotHit& To,
+		bool bChestOpen)
+	{
+		return SolidInventory::Move(
+			bChestOpen ? &Configuration.CaveChest : nullptr,
+			Configuration.Inventory,
+			From,
+			To);
+	}
+
 	/** True when F9 may switch to this sight. Raven sight starts locked. */
 	bool IsSightEnabled(ESolidSight Sight) const;
 

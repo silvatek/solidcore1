@@ -1971,7 +1971,7 @@ void ASolidHUD::ToggleInventory()
 void ASolidHUD::CancelInventoryDrag()
 {
 	bInventoryDrag = false;
-	InventoryDragChest = INDEX_NONE;
+	InventoryDragFrom = SolidInventory::FSlotHit();
 	InventoryDragName.Reset();
 }
 
@@ -1982,42 +1982,7 @@ void ASolidHUD::PressInventory(const float X, const float Y)
 		return;
 	}
 	SolidInventory::FSlotHit Hit;
-	if (!SolidInventory::HitSlot(InventoryPage, X - InventoryOriginX, Y - InventoryOriginY, Hit) || !Hit.bChest)
-	{
-		return;
-	}
-	UWorld* World = GetWorld();
-	ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
-	if (!GameMode || Hit.Index < 0 || Hit.Index >= SolidStorage::Count)
-	{
-		return;
-	}
-	const TCHAR* ItemId = GameMode->GetConfiguration().CaveChest.Slots[Hit.Index];
-	if (!ItemId || !ItemId[0])
-	{
-		return;
-	}
-	bInventoryDrag = true;
-	InventoryDragChest = Hit.Index;
-	InventoryDragName = SolidItemType::NameFor(ItemId);
-}
-
-void ASolidHUD::ReleaseInventory(const float X, const float Y)
-{
-	if (!bInventoryDrag)
-	{
-		return;
-	}
-	const int32 From = InventoryDragChest;
-	CancelInventoryDrag();
-	if (!bInventoryHitReady)
-	{
-		return;
-	}
-	SolidInventory::FSlotHit Hit;
-	if (!SolidInventory::HitSlot(InventoryPage, X - InventoryOriginX, Y - InventoryOriginY, Hit)
-		|| !Hit.bHit
-		|| Hit.bChest)
+	if (!SolidInventory::HitSlot(InventoryPage, X - InventoryOriginX, Y - InventoryOriginY, Hit) || !Hit.bHit)
 	{
 		return;
 	}
@@ -2027,12 +1992,49 @@ void ASolidHUD::ReleaseInventory(const float X, const float Y)
 	{
 		return;
 	}
-	GameMode->TakeFromCaveChest(From, Hit.bPack, Hit.Slot, Hit.Column, Hit.Row);
+	const FGameState& State = GameMode->GetConfiguration();
+	const SolidStorage::FContainer* Chest = bInventoryChestOpen ? &State.CaveChest : nullptr;
+	const TCHAR* ItemId = SolidInventory::ItemAt(State.Inventory, Chest, Hit);
+	if (!ItemId || !ItemId[0])
+	{
+		return;
+	}
+	bInventoryDrag = true;
+	InventoryDragFrom = Hit;
+	InventoryDragName = SolidItemType::NameFor(ItemId);
+}
+
+void ASolidHUD::ReleaseInventory(const float X, const float Y)
+{
+	if (!bInventoryDrag)
+	{
+		return;
+	}
+	const SolidInventory::FSlotHit From = InventoryDragFrom;
+	const bool bChestOpen = bInventoryChestOpen;
+	CancelInventoryDrag();
+	if (!bInventoryHitReady)
+	{
+		return;
+	}
+	SolidInventory::FSlotHit Hit;
+	if (!SolidInventory::HitSlot(InventoryPage, X - InventoryOriginX, Y - InventoryOriginY, Hit) || !Hit.bHit)
+	{
+		return;
+	}
+	UWorld* World = GetWorld();
+	ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+	if (!GameMode)
+	{
+		return;
+	}
+	GameMode->MoveCarriedItem(From, Hit, bChestOpen);
 }
 
 void ASolidHUD::DrawInventoryPopup()
 {
 	bInventoryHitReady = false;
+	bInventoryChestOpen = false;
 	FGameState State;
 	const ASolidGameMode* GameMode = nullptr;
 	if (UWorld* World = GetWorld())
@@ -2068,6 +2070,7 @@ void ASolidHUD::DrawInventoryPopup()
 		InventoryPage = Page;
 		InventoryOriginX = View.OriginX;
 		InventoryOriginY = View.OriginY;
+		bInventoryChestOpen = bShowChest;
 		bInventoryHitReady = true;
 	}
 

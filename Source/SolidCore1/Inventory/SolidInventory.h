@@ -271,6 +271,126 @@ namespace SolidInventory
 		return false;
 	}
 
+	/** True when both hits are the same worn box, pack cell, or chest cell. */
+	inline bool SamePlace(const FSlotHit& A, const FSlotHit& B)
+	{
+		if (!A.bHit || !B.bHit || A.bChest != B.bChest || A.bPack != B.bPack)
+		{
+			return false;
+		}
+		if (A.bChest)
+		{
+			return A.Index == B.Index;
+		}
+		if (A.bPack)
+		{
+			return A.Column == B.Column && A.Row == B.Row;
+		}
+		return A.Slot == B.Slot;
+	}
+
+	/** The item in a worn box, a pack cell, or a chest cell. Null when the slot is empty or missing. */
+	inline const TCHAR* ItemAt(const FLoadout& Loadout, const SolidStorage::FContainer* Chest, const FSlotHit& Hit)
+	{
+		if (!Hit.bHit)
+		{
+			return nullptr;
+		}
+		if (Hit.bChest)
+		{
+			if (!Chest || Hit.Index < 0 || Hit.Index >= SolidStorage::Count)
+			{
+				return nullptr;
+			}
+			return Chest->Slots[Hit.Index];
+		}
+		if (Hit.bPack)
+		{
+			const int32 Index = PackIndex(Hit.Column, Hit.Row);
+			if (Index == INDEX_NONE)
+			{
+				return nullptr;
+			}
+			return Loadout.Pack[Index];
+		}
+		const int32 Index = WornIndex(Hit.Slot);
+		if (Index == INDEX_NONE)
+		{
+			return nullptr;
+		}
+		return Loadout.Worn[Index];
+	}
+
+	/** Put an item id into a slot. A null or empty id clears it. False when the slot or the id is refused. */
+	inline bool PutAt(FLoadout& Loadout, SolidStorage::FContainer* Chest, const FSlotHit& Hit, const TCHAR* ItemId)
+	{
+		if (!Hit.bHit)
+		{
+			return false;
+		}
+		if (Hit.bChest)
+		{
+			if (!Chest || Hit.Index < 0 || Hit.Index >= SolidStorage::Count)
+			{
+				return false;
+			}
+			if (!ItemId || !ItemId[0])
+			{
+				Chest->Slots[Hit.Index] = nullptr;
+				return true;
+			}
+			const FSolidItemType* Item = SolidItemType::FindById(ItemId);
+			if (!Item)
+			{
+				return false;
+			}
+			Chest->Slots[Hit.Index] = Item->Id;
+			return true;
+		}
+		if (Hit.bPack)
+		{
+			return PlacePack(Loadout, Hit.Column, Hit.Row, ItemId);
+		}
+		return PlaceWorn(Loadout, Hit.Slot, ItemId);
+	}
+
+	/**
+	 * Move an item from one slot to another.
+	 * Worn boxes, pack cells, and chest cells all count. An occupied destination swaps.
+	 * The same slot, an empty source, or a chest move without a chest does nothing.
+	 */
+	inline bool Move(
+		SolidStorage::FContainer* Chest,
+		FLoadout& Loadout,
+		const FSlotHit& From,
+		const FSlotHit& To)
+	{
+		if (!From.bHit || !To.bHit || SamePlace(From, To))
+		{
+			return false;
+		}
+		if ((From.bChest || To.bChest) && !Chest)
+		{
+			return false;
+		}
+		const TCHAR* Moving = ItemAt(Loadout, Chest, From);
+		if (!Moving || !Moving[0] || !SolidItemType::FindById(Moving))
+		{
+			return false;
+		}
+		const TCHAR* Displaced = ItemAt(Loadout, Chest, To);
+		if (!PutAt(Loadout, Chest, To, Moving))
+		{
+			return false;
+		}
+		if (!PutAt(Loadout, Chest, From, Displaced))
+		{
+			PutAt(Loadout, Chest, To, Displaced);
+			return false;
+		}
+		return true;
+	}
+
 	/**
 	 * Move one chest cell into a worn box or a pack cell.
 	 * An occupied destination swaps. A miss, an empty cell, or another chest cell does nothing.
@@ -284,44 +404,17 @@ namespace SolidInventory
 		const int32 Column,
 		const int32 Row)
 	{
-		if (ChestIndex < 0 || ChestIndex >= SolidStorage::Count)
-		{
-			return false;
-		}
-		const TCHAR* Moving = Chest.Slots[ChestIndex];
-		if (!Moving || !Moving[0] || !SolidItemType::FindById(Moving))
-		{
-			return false;
-		}
-		if (bPack)
-		{
-			const int32 Index = PackIndex(Column, Row);
-			if (Index == INDEX_NONE)
-			{
-				return false;
-			}
-			const TCHAR* Displaced = Loadout.Pack[Index];
-			if (!PlacePack(Loadout, Column, Row, Moving))
-			{
-				return false;
-			}
-			const FSolidItemType* Swap = (Displaced && Displaced[0]) ? SolidItemType::FindById(Displaced) : nullptr;
-			Chest.Slots[ChestIndex] = Swap ? Swap->Id : nullptr;
-			return true;
-		}
-
-		const int32 Index = WornIndex(Slot);
-		if (Index == INDEX_NONE)
-		{
-			return false;
-		}
-		const TCHAR* Displaced = Loadout.Worn[Index];
-		if (!PlaceWorn(Loadout, Slot, Moving))
-		{
-			return false;
-		}
-		const FSolidItemType* Swap = (Displaced && Displaced[0]) ? SolidItemType::FindById(Displaced) : nullptr;
-		Chest.Slots[ChestIndex] = Swap ? Swap->Id : nullptr;
-		return true;
+		FSlotHit From;
+		From.bHit = true;
+		From.bChest = true;
+		From.Index = ChestIndex;
+		FSlotHit To;
+		To.bHit = true;
+		To.bPack = bPack;
+		To.Slot = Slot;
+		To.Column = Column;
+		To.Row = Row;
+		To.Index = bPack ? PackIndex(Column, Row) : WornIndex(Slot);
+		return Move(&Chest, Loadout, From, To);
 	}
 }

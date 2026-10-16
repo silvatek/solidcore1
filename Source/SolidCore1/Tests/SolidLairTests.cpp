@@ -12,10 +12,11 @@
 #include "Towns/SolidTowns.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace SolidLairTestPrivate
 {
 	FString MountainGrid()
 	{
@@ -162,13 +163,13 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 	const FVector2D WorldMax(6400.f, 6400.f);
 
 	{
-		FString Grid = MountainGrid();
-		SetCell(Grid, 10, 10, USolidWorldMap::XMarker);
-		SetCell(Grid, 10, 9, USolidWorldMap::GrassMarker);
-		SetCell(Grid, 12, 10, USolidWorldMap::YMarker);
-		SetCell(Grid, 11, 10, USolidWorldMap::GrassMarker);
-		SetCell(Grid, 14, 10, TEXT('C'));
-		SetCell(Grid, 14, 9, USolidWorldMap::GrassMarker);
+		FString Grid = SolidLairTestPrivate::MountainGrid();
+		SolidLairTestPrivate::SetCell(Grid, 10, 10, USolidWorldMap::XMarker);
+		SolidLairTestPrivate::SetCell(Grid, 10, 9, USolidWorldMap::GrassMarker);
+		SolidLairTestPrivate::SetCell(Grid, 12, 10, USolidWorldMap::YMarker);
+		SolidLairTestPrivate::SetCell(Grid, 11, 10, USolidWorldMap::GrassMarker);
+		SolidLairTestPrivate::SetCell(Grid, 14, 10, TEXT('C'));
+		SolidLairTestPrivate::SetCell(Grid, 14, 9, USolidWorldMap::GrassMarker);
 		USolidWorldMap* Map = NewObject<USolidWorldMap>();
 		TestTrue(TEXT("mouths load"), Map->LoadFromString(Grid));
 
@@ -194,8 +195,8 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 	}
 
 	{
-		FString Grid = MountainGrid();
-		SetCell(Grid, 4, 4, USolidWorldMap::XMarker);
+		FString Grid = SolidLairTestPrivate::MountainGrid();
+		SolidLairTestPrivate::SetCell(Grid, 4, 4, USolidWorldMap::XMarker);
 		USolidWorldMap* Map = NewObject<USolidWorldMap>();
 		TestTrue(TEXT("a sealed mouth loads"), Map->LoadFromString(Grid));
 		TArray<SolidLair::FEntrance> Entrances;
@@ -300,8 +301,10 @@ bool FSolidLairInteriorVisualTest::RunTest(const FString& Parameters)
 	}
 	TestEqual(TEXT("one floor tile per open cell"), Floor->GetInstanceCount(), SolidLair::OpenCellCount());
 	TestTrue(TEXT("the maze has walls"), Walls->GetInstanceCount() > 0);
-	TestNotNull(TEXT("X mouth mesh"), MouthX->GetStaticMesh());
-	TestNotNull(TEXT("Y mouth mesh"), MouthY->GetStaticMesh());
+	UStaticMesh* XMesh = MouthX->GetStaticMesh().Get();
+	UStaticMesh* YMesh = MouthY->GetStaticMesh().Get();
+	TestNotNull(TEXT("X mouth mesh"), XMesh);
+	TestNotNull(TEXT("Y mouth mesh"), YMesh);
 	TestTrue(TEXT("spawn at X is inside the actor"), SolidLair::ContainsLocal(Interior->GetCaptainSpawnWorld(USolidWorldMap::XMarker)));
 	TestTrue(TEXT("the X view looks into the maze"), FMath::IsNearlyZero(Interior->GetCaptainView(USolidWorldMap::XMarker).Pitch, 0.1f));
 	return true;

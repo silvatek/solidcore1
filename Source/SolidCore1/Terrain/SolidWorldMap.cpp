@@ -297,7 +297,8 @@ namespace
 	}
 
 	/**
-	 * "! 12,4 = 0" — column 12, row 4, counting from 1 at the top-left.
+	 * "! 8,21 = 0" — row 8, column 21, counting from 1 at the top-left.
+	 * A note may follow the id: "! 8,21 = 0 (top-left is 1,1)".
 	 * Returns false when the line is not that shape.
 	 * An out-of-range coordinate is that shape: OutMapX stays INDEX_NONE and the line is consumed.
 	 */
@@ -327,23 +328,32 @@ namespace
 			return false;
 		}
 
-		const FString ColumnText = Left.Left(Comma).TrimStartAndEnd();
-		const FString RowText = Left.Mid(Comma + 1).TrimStartAndEnd();
-		if (!WorldMapDigits(ColumnText) || !WorldMapDigits(RowText) || !WorldMapDigits(Right))
+		const FString RowText = Left.Left(Comma).TrimStartAndEnd();
+		const FString ColumnText = Left.Mid(Comma + 1).TrimStartAndEnd();
+		FString IdText = Right;
+		for (int32 Index = 0; Index < Right.Len(); ++Index)
+		{
+			if (FChar::IsWhitespace(Right[Index]))
+			{
+				IdText = Right.Left(Index);
+				break;
+			}
+		}
+		if (!WorldMapDigits(RowText) || !WorldMapDigits(ColumnText) || !WorldMapDigits(IdText))
 		{
 			return false;
 		}
 
-		const int32 Column = FCString::Atoi(*ColumnText);
 		const int32 Row = FCString::Atoi(*RowText);
-		OutId = FCString::Atoi(*Right);
-		if (Column < 1 || Row < 1
-			|| Column > USolidWorldMap::MapWidth
-			|| Row > USolidWorldMap::MapHeight)
+		const int32 Column = FCString::Atoi(*ColumnText);
+		OutId = FCString::Atoi(*IdText);
+		if (Row < 1 || Column < 1
+			|| Row > USolidWorldMap::MapHeight
+			|| Column > USolidWorldMap::MapWidth)
 		{
 			UE_LOG(LogSolid, Warning,
 				TEXT("WorldMap: ! %d,%d is outside the grid; ignored."),
-				Column, Row);
+				Row, Column);
 			return true;
 		}
 
@@ -459,7 +469,7 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 		{
 			UE_LOG(LogSolid, Warning,
 				TEXT("WorldMap: ! %d,%d is not an exclamation mark; ignored."),
-				Ref.MapX + 1, Ref.MapY + 1);
+				Ref.MapY + 1, Ref.MapX + 1);
 			continue;
 		}
 		int32& Slot = BangLocationIds[Index];
@@ -467,7 +477,7 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 		{
 			UE_LOG(LogSolid, Warning,
 				TEXT("WorldMap: ! %d,%d is already location %d; keeping it."),
-				Ref.MapX + 1, Ref.MapY + 1, Slot);
+				Ref.MapY + 1, Ref.MapX + 1, Slot);
 			continue;
 		}
 		Slot = Ref.Id;

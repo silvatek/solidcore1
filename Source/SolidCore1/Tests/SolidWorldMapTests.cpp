@@ -1270,15 +1270,15 @@ bool FSolidWorldMapBangLocationTest::RunTest(const FString& Parameters)
 
 	Text += TEXT(". = Grassland (light green)\n");
 	Text += TEXT("! = Later (red)\n");
-	Text += TEXT("! 1,1 = 0\n");
+	Text += TEXT("! 1,1 = 0 (top-left is 1,1)\n");
 	Text += TEXT("! 1,1 = 11\n");
-	Text += TEXT("! 4, 3 = 5\n");
-	Text += TEXT("! 5,3=5\n");
-	Text += TEXT("! 2,1 = 9\n");
+	Text += TEXT("! 3, 4 = 5\n");
+	Text += TEXT("! 3,5=5\n");
+	Text += TEXT("! 1,2 = 9\n");
 	Text += TEXT("! 0,1 = 3\n");
-	Text += FString::Printf(TEXT("! %d,1 = 4\n"), USolidWorldMap::MapWidth + 1);
-	Text += FString::Printf(TEXT("! 1,%d = 6\n"), USolidWorldMap::MapHeight + 1);
-	Text += FString::Printf(TEXT("! %d,%d = 8\n"), SplitCol + 2, SplitRow + 1);
+	Text += FString::Printf(TEXT("! 1,%d = 4\n"), USolidWorldMap::MapWidth + 1);
+	Text += FString::Printf(TEXT("! %d,1 = 6\n"), USolidWorldMap::MapHeight + 1);
+	Text += FString::Printf(TEXT("! %d,%d = 8\n"), SplitRow + 1, SplitCol + 2);
 	Text += TEXT("0 = Starting village, biome=Town\n");
 
 	USolidWorldMap* Map = NewObject<USolidWorldMap>();
@@ -1331,7 +1331,7 @@ bool FSolidWorldMapBangLocationTest::RunTest(const FString& Parameters)
 	FSolidWorldLocation Missed;
 	TestFalse(TEXT("a line on grass is not a location"), Map->FindLocation(9, Missed));
 	TestEqual(TEXT("that grass cell stays grass"), Map->GetMarkerAtCell(1, 0), USolidWorldMap::GrassMarker);
-	TestFalse(TEXT("column 0 is ignored"), Map->FindLocation(3, Missed));
+	TestFalse(TEXT("row 0 is ignored"), Map->FindLocation(3, Missed));
 	TestFalse(TEXT("a column past the grid is ignored"), Map->FindLocation(4, Missed));
 	TestFalse(TEXT("a row past the grid is ignored"), Map->FindLocation(6, Missed));
 

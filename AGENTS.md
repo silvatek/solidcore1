@@ -64,12 +64,12 @@ Whenever `Content/WorldMap.txt` changes — a pull, a commit, a diff, or an edit
 The grid is 128 columns by 64 rows. A `!` in that grid is one location cell. It needs a description line under the grid:
 
 ```
-! 12,4 = 0
+! 8,21 = 0
 ```
 
-Column, then row. The top-left cell of the grid is 1,1. The id is the location number. Spaces around the comma and `=` are fine. The line `! column,row = id (top-left is 1,1)` is only the legend. It does not describe a cell.
+Row, then column. The top-left cell of the grid is 1,1. The id is the location number. Spaces around the comma and `=` are fine. A note after the id, such as `(top-left is 1,1)`, is not part of the coordinate.
 
-Warn the user when a `!` in the grid has no description line for that column and row. Name each missing cell as `column,row`, counting from 1,1 at the top-left. A `!` whose line is missing still loads as grassland and is not a town.
+Warn the user when a `!` in the grid has no description line for that row and column. Name each missing cell as `row,column`, counting from 1,1 at the top-left. A `!` whose line is missing still loads as grassland and is not a town.
 
 ## Lairs
 

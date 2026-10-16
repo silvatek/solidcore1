@@ -40,7 +40,7 @@ struct FSolidWorldLocation
  * 8 m east–west and 16 m north–south. Two digits next to each other on a row are
  * one location number, read from the left, and each character is still one cell.
  * A longer run is taken in pairs. A ! is one location cell, named by a line
- * "! 12,4 = 0": column 12, row 4, counting from 1 at the top-left of the grid.
+ * "! 8,21 = 0": row 8, column 21, counting from 1 at the top-left of the grid.
  * A ! with no line is not a location. Location 0 is the starting town.
  * A legacy Z marker is the start only when the grid has no 0 cells.
  * Road lines are solved into routes when the file loads.
@@ -73,8 +73,8 @@ public:
 	static constexpr TCHAR DesertMarker = TEXT('^');
 
 	/**
-	 * One location cell. The id comes from a "! column,row = id" line.
-	 * Column and row count from 1 at the top-left of the grid.
+	 * One location cell. The id comes from a "! row,column = id" line.
+	 * Row and column count from 1 at the top-left of the grid.
 	 */
 	static constexpr TCHAR LocationMarker = TEXT('!');
 

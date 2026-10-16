@@ -8,12 +8,11 @@
 #include "SolidWorldMap.h"
 
 /**
- * Closed visits. A lair is apart from the open world. Fights come later.
- * The first is the Iglin tunnels: a maze from the mouth south of Iglin
- * to the mouth east of Relion, so the broken bridge can be left alone.
- * Each mouth is the cave's stone frame on its own cliff. A click enters,
- * and a click inside leaves by that end. The mouths stay shut until
- * Driven from the village has fired.
+ * Closed visits, apart from the open world. Monsters come later.
+ * A lair has a floor plan and mouths on the world map. Each mouth uses
+ * the cave's stone frame on its own cliff. A click on the dark opening
+ * enters. A click inside leaves by that end. A mouth stays shut until
+ * its lair is open.
  */
 namespace SolidLair
 {
@@ -39,8 +38,8 @@ namespace SolidLair
 	inline const FDefinition IglinTunnels = { TEXT("Iglin tunnels") };
 
 	/**
-	 * West end is X, east end is Y. # is rock. Every open cell can be reached from X.
-	 * The path from X to Y is longer than the straight cell count, and some corridors stop.
+	 * Floor plan. '#' is rock. '.' is open floor. An end marker is a mouth.
+	 * Every open cell can be reached from a mouth.
 	 */
 	inline const TCHAR* Maze[MazeRows] = {
 		TEXT("###########"),
@@ -159,7 +158,7 @@ namespace SolidLair
 		return INDEX_NONE;
 	}
 
-	/** Open cells with one way out, apart from the two mouths. */
+	/** Open cells with one way out, apart from the mouths. */
 	inline int32 DeadEndCount()
 	{
 		int32 Count = 0;
@@ -207,7 +206,7 @@ namespace SolidLair
 		return FVector2D((static_cast<float>(Col) + 0.5f) * CellCm, (static_cast<float>(Row) + 0.5f) * CellCm);
 	}
 
-	/** West edge of the X cell, or the east edge of the Y cell. */
+	/** Midpoint of the doorway on the outer side of that mouth's cell. */
 	inline FVector2D MouthMidpoint(const TCHAR End)
 	{
 		const FIntPoint Cell = CellOf(End);
@@ -223,7 +222,7 @@ namespace SolidLair
 		return FVector(Center.X, Center.Y, 0.f);
 	}
 
-	/** X looks east into the maze. Y looks west into the maze. */
+	/** Yaw that looks from this mouth into the maze. */
 	inline float SpawnYawDeg(const TCHAR End)
 	{
 		return FChar::ToUpper(End) == USolidWorldMap::XMarker ? 0.f : 180.f;
@@ -253,7 +252,7 @@ namespace SolidLair
 		return FString::Printf(TEXT("%s %s"), bEnter ? TEXT("Enter") : TEXT("Exit"), IglinTunnels.Name);
 	}
 
-	/** True once Driven from the village has fired. The mouths stay shut until then. */
+	/** True when a click on a lair mouth may enter. */
 	inline bool TunnelsOpen(const FGameState& State)
 	{
 		const int32 Index = SolidEvents::FindIndexById(SolidEvents::IdDrivenFromVillage);
@@ -302,8 +301,8 @@ namespace SolidLair
 	}
 
 	/**
-	 * One stone mouth where a tunnel end meets grassland.
-	 * The face rules match the cave: north, then east, then south, then west.
+	 * One stone mouth where a lair cell meets grassland.
+	 * Neighbors are tried north, east, south, then west. The first grassland wins.
 	 */
 	struct FEntrance
 	{
@@ -322,8 +321,8 @@ namespace SolidLair
 		TArray<FEntrance>& OutEntrances);
 
 	/**
-	 * A click on a closed mouth. Enter and leave are the cave's two actions.
-	 * bLair selects the tunnel mouths. EndMarker is X or Y for those.
+	 * A click on a closed mouth. Enter and leave are the same two actions as the cave.
+	 * bLair marks a lair mouth. EndMarker names which end.
 	 */
 	struct FPassageHit
 	{

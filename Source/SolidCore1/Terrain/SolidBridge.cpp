@@ -78,8 +78,6 @@ namespace
 			{
 				continue;
 			}
-			// The painted road is half a terrain quad southwest of the cell centre.
-			Center += SolidRoad::StripPaintOffset();
 			if (Out.Points.Num() == 0 || !Out.Points.Last().Equals(Center, 1.f))
 			{
 				Out.Points.Add(Center);
@@ -615,6 +613,21 @@ int32 SolidBridge::Collect(
 			BuildRamp(Deck1, 1.f, Bridge.RampTo);
 			if (Bridge.Deck.Num() >= 2 && Bridge.RampFrom.Num() >= 2 && Bridge.RampTo.Num() >= 2)
 			{
+				// Water and the banks were measured on the cell centres. The painted
+				// strip lies half a quad southwest of that line, so move the finished
+				// bridge onto the strip without changing its span.
+				const FVector2D Paint = SolidRoad::StripPaintOffset();
+				auto Shift = [Paint](TArray<FVector>& Line)
+				{
+					for (FVector& Point : Line)
+					{
+						Point.X += Paint.X;
+						Point.Y += Paint.Y;
+					}
+				};
+				Shift(Bridge.Deck);
+				Shift(Bridge.RampFrom);
+				Shift(Bridge.RampTo);
 				Out.Add(MoveTemp(Bridge));
 			}
 		}

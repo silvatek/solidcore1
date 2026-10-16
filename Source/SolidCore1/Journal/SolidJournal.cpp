@@ -30,9 +30,9 @@ FString SolidJournal::Describe(const SolidEvents::FEvent& Event)
 			Part = TEXT("Cave enabled");
 			break;
 		case SolidEvents::EChange::ShowMessage:
-			if (const TCHAR* Text = SolidMessages::TextFor(Change.MessageId))
+			if (const TCHAR* MessageText = SolidMessages::TextFor(Change.MessageId))
 			{
-				Part = Text;
+				Part = MessageText;
 			}
 			break;
 		case SolidEvents::EChange::MaxPartySize:

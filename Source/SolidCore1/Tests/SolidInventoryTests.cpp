@@ -277,15 +277,16 @@ bool FSolidInventoryLayoutTest::RunTest(const FString& Parameters)
 		TEXT("boots share the body's column"),
 		FMath::IsNearlyEqual(Boots->X, Body->X, 1.f) && FMath::IsNearlyEqual(Boots->W, Body->W, 1.f));
 
-	int32 PackBoxes = 0;
 	float DollRight = 0.f;
+	const SolidInventory::FBox* Figure[] = { Head, Body, Boots, Off, Main, Belt };
+	for (const SolidInventory::FBox* Box : Figure)
+	{
+		DollRight = FMath::Max(DollRight, Box->X + Box->W);
+	}
+	int32 PackBoxes = 0;
 	for (const SolidInventory::FBox& Box : Page.Boxes)
 	{
-		if (!Box.bPack)
-		{
-			DollRight = FMath::Max(DollRight, Box.X + Box.W);
-		}
-		else
+		if (Box.bPack)
 		{
 			++PackBoxes;
 		}

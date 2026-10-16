@@ -5,7 +5,7 @@
 
 /**
  * A storage container's slots. The cave chest is the first one.
- * A slot stores an item id. Null is empty.
+ * A slot stores an item id and how many share that cell. A null id is empty.
  */
 namespace SolidStorage
 {
@@ -14,11 +14,30 @@ namespace SolidStorage
 	inline constexpr int32 Columns = 2;
 	inline constexpr int32 Rows = 2;
 	inline constexpr int32 Count = Columns * Rows;
+	/** Coins in the cave chest when a play session starts. */
+	inline constexpr int32 StartingCoinCount = 20;
 
 	struct FContainer
 	{
 		const TCHAR* Slots[Count] = {};
+		int32 Counts[Count] = {};
 	};
+
+	inline void WriteSlot(FContainer& Container, const int32 Index, const TCHAR* ItemId, const int32 Count)
+	{
+		if (Index < 0 || Index >= Count)
+		{
+			return;
+		}
+		if (!ItemId || !ItemId[0] || Count <= 0)
+		{
+			Container.Slots[Index] = nullptr;
+			Container.Counts[Index] = 0;
+			return;
+		}
+		Container.Slots[Index] = ItemId;
+		Container.Counts[Index] = Count;
+	}
 
 	inline int32 Index(const int32 Column, const int32 Row)
 	{
@@ -29,15 +48,16 @@ namespace SolidStorage
 		return Row * Columns + Column;
 	}
 
-	/** What the cave chest holds when a play session starts. The rusty sword is in the first cell. */
+	/**
+	 * What the cave chest holds when a play session starts.
+	 * The rusty sword, a pair of old boots, and a stack of coins. The corner cell is empty.
+	 */
 	inline FContainer StartingCaveChest()
 	{
 		FContainer Chest;
-		const int32 First = Index(0, 0);
-		if (First != INDEX_NONE)
-		{
-			Chest.Slots[First] = SolidItemType::IdRustySword;
-		}
+		WriteSlot(Chest, Index(0, 0), SolidItemType::IdRustySword, 1);
+		WriteSlot(Chest, Index(1, 0), SolidItemType::IdOldBoots, 1);
+		WriteSlot(Chest, Index(0, 1), SolidItemType::IdCoins, StartingCoinCount);
 		return Chest;
 	}
 }

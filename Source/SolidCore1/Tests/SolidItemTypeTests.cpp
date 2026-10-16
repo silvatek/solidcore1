@@ -132,4 +132,47 @@ bool FSolidItemTypeCatalogTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidItemTypeBootsAndCoinsTest,
+	"SolidCore1.Inventory.BootsAndCoins",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidItemTypeBootsAndCoinsTest::RunTest(const FString& Parameters)
+{
+	const FSolidItemType* Boots = SolidItemType::FindById(SolidItemType::IdOldBoots);
+	const FSolidItemType* Coins = SolidItemType::FindById(SolidItemType::IdCoins);
+	TestNotNull(TEXT("old boots are listed"), Boots);
+	TestNotNull(TEXT("coins are listed"), Coins);
+	if (!Boots || !Coins)
+	{
+		return false;
+	}
+
+	TestEqual(TEXT("old boots name"), FString(Boots->Name), FString(TEXT("Old boots")));
+	TestEqual(
+		TEXT("old boots are boots"),
+		static_cast<uint8>(Boots->Type),
+		static_cast<uint8>(ESolidItemKind::Boots));
+	TestEqual(
+		TEXT("old boots are inferior"),
+		static_cast<uint8>(Boots->Quality),
+		static_cast<uint8>(ESolidItemQuality::Inferior));
+	TestEqual(TEXT("old boots stack to one"), Boots->MaxStacked, 1);
+
+	TestEqual(TEXT("coins name"), FString(Coins->Name), FString(TEXT("Coins")));
+	TestEqual(
+		TEXT("coins are a material"),
+		static_cast<uint8>(Coins->Type),
+		static_cast<uint8>(ESolidItemKind::Material));
+	TestEqual(
+		TEXT("coins have no grade"),
+		static_cast<uint8>(Coins->Quality),
+		static_cast<uint8>(ESolidItemQuality::NA));
+	TestEqual(TEXT("coins stack to 999"), Coins->MaxStacked, 999);
+	TestTrue(TEXT("old boots id is eight hex digits"), SolidItemTypeTestPrivate::IsHexId(Boots->Id));
+	TestTrue(TEXT("coins id is eight hex digits"), SolidItemTypeTestPrivate::IsHexId(Coins->Id));
+	TestTrue(TEXT("the new ids differ"), FCString::Strcmp(Boots->Id, Coins->Id) != 0);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

@@ -308,4 +308,72 @@ bool FSolidInventoryMoveTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidStorageChestStacksTest,
+	"SolidCore1.Inventory.ChestStacks",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidStorageChestStacksTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidStorageTestPrivate;
+
+	const SolidStorage::FContainer Chest = SolidStorage::StartingCaveChest();
+	const int32 BootsIndex = SolidStorage::Index(1, 0);
+	const int32 CoinIndex = SolidStorage::Index(0, 1);
+	TestEqual(
+		TEXT("old boots sit beside the sword"),
+		FString(Chest.Slots[BootsIndex]),
+		FString(SolidItemType::IdOldBoots));
+	TestEqual(TEXT("one pair of old boots"), Chest.Counts[BootsIndex], 1);
+	TestEqual(
+		TEXT("coins sit under the sword"),
+		FString(Chest.Slots[CoinIndex]),
+		FString(SolidItemType::IdCoins));
+	TestEqual(TEXT("twenty coins"), Chest.Counts[CoinIndex], SolidStorage::StartingCoinCount);
+
+	SolidInventory::FPage Page;
+	SolidInventory::Layout(SolidInventory::StartingLoadout(), Page, &Chest);
+	const SolidInventory::FBox* BootsBox = FindChest(Page, 1, 0);
+	const SolidInventory::FBox* CoinBox = FindChest(Page, 0, 1);
+	TestTrue(TEXT("the boots cell is on the page"), BootsBox != nullptr);
+	TestTrue(TEXT("the coin cell is on the page"), CoinBox != nullptr);
+	if (!BootsBox || !CoinBox)
+	{
+		return false;
+	}
+	TestEqual(TEXT("the page names the boots"), BootsBox->Item, FString(TEXT("Old boots")));
+	TestEqual(
+		TEXT("the page shows the coin stack"),
+		CoinBox->Item,
+		FString::Printf(TEXT("Coins %d"), SolidStorage::StartingCoinCount));
+
+	SolidInventory::FLoadout Loadout = SolidInventory::StartingLoadout();
+	SolidStorage::FContainer Held = Chest;
+	TestTrue(
+		TEXT("old boots can be worn"),
+		SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Boots, SolidItemType::IdOldBoots));
+	TestFalse(
+		TEXT("old boots cannot replace rags"),
+		SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Body, SolidItemType::IdOldBoots));
+	TestEqual(
+		TEXT("the body still wears rags"),
+		FString(Loadout.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)]),
+		FString(SolidItemType::IdRags));
+
+	TestTrue(
+		TEXT("the coin stack can move into the pack"),
+		SolidInventory::Move(&Held, Loadout, ChestCell(CoinIndex), Pack(0, 0)));
+	TestEqual(
+		TEXT("the pack holds the coins"),
+		FString(Loadout.Pack[SolidInventory::PackIndex(0, 0)]),
+		FString(SolidItemType::IdCoins));
+	TestEqual(
+		TEXT("the pack keeps the stack"),
+		Loadout.PackStack[SolidInventory::PackIndex(0, 0)],
+		SolidStorage::StartingCoinCount);
+	TestTrue(TEXT("the chest cell is empty"), Held.Slots[CoinIndex] == nullptr);
+	TestEqual(TEXT("the empty cell has no count"), Held.Counts[CoinIndex], 0);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

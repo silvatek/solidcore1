@@ -2019,7 +2019,9 @@ void ASolidHUD::PressInventory(const float X, const float Y)
 	}
 	bInventoryDrag = true;
 	InventoryDragFrom = Hit;
-	InventoryDragName = SolidItemType::NameFor(ItemId);
+	InventoryDragName = SolidItemType::PageLabel(
+		ItemId,
+		SolidInventory::CountAt(State.Inventory, Chest, Hit));
 }
 
 void ASolidHUD::ReleaseInventory(const float X, const float Y)

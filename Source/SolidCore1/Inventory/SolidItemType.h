@@ -57,6 +57,8 @@ namespace SolidItemType
 	inline constexpr const TCHAR* IdCrudeSpear = TEXT("91f6c0ab");
 	inline constexpr const TCHAR* IdTorch = TEXT("4d8e27c5");
 	inline constexpr const TCHAR* IdRustySword = TEXT("b5e20c78");
+	inline constexpr const TCHAR* IdOldBoots = TEXT("8e14a6c2");
+	inline constexpr const TCHAR* IdCoins = TEXT("f39b50d7");
 
 	inline const FSolidItemType Catalog[] = {
 		{ IdRags, TEXT("Rags"), ESolidItemKind::Armor, ESolidItemQuality::Inferior, 1 },
@@ -64,6 +66,8 @@ namespace SolidItemType
 		{ IdCrudeSpear, TEXT("Crude spear"), ESolidItemKind::Weapon, ESolidItemQuality::Inferior, 1 },
 		{ IdTorch, TEXT("Torch"), ESolidItemKind::Tool, ESolidItemQuality::Common, 1 },
 		{ IdRustySword, TEXT("Rusty sword"), ESolidItemKind::Weapon, ESolidItemQuality::Inferior, 1 },
+		{ IdOldBoots, TEXT("Old boots"), ESolidItemKind::Boots, ESolidItemQuality::Inferior, 1 },
+		{ IdCoins, TEXT("Coins"), ESolidItemKind::Material, ESolidItemQuality::NA, 999 },
 	};
 
 	static_assert(UE_ARRAY_COUNT(Catalog) <= MaxItems, "Raise SolidItemType::MaxItems");
@@ -91,5 +95,20 @@ namespace SolidItemType
 	{
 		const FSolidItemType* Item = FindById(Id);
 		return Item ? Item->Name : TEXT("");
+	}
+
+	/** Page text for a stack. A count above one follows the name. */
+	inline FString PageLabel(const TCHAR* Id, const int32 Count)
+	{
+		const TCHAR* Name = NameFor(Id);
+		if (!Name || !Name[0])
+		{
+			return FString();
+		}
+		if (Count <= 1)
+		{
+			return FString(Name);
+		}
+		return FString::Printf(TEXT("%s %d"), Name, Count);
 	}
 }

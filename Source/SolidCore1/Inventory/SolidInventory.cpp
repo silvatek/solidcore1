@@ -44,7 +44,7 @@ namespace SolidInventory
 		const int32 Index = WornIndex(Slot);
 		if (Index != INDEX_NONE)
 		{
-			Box.Item = SolidItemType::NameFor(Loadout.Worn[Index]);
+			Box.Item = SolidItemType::PageLabel(Loadout.Worn[Index], Loadout.WornStack[Index]);
 		}
 		return Box;
 	}
@@ -98,7 +98,7 @@ namespace SolidInventory
 				const int32 Index = PackIndex(Column, Row);
 				if (Index != INDEX_NONE)
 				{
-					Box.Item = SolidItemType::NameFor(Loadout.Pack[Index]);
+					Box.Item = SolidItemType::PageLabel(Loadout.Pack[Index], Loadout.PackStack[Index]);
 				}
 				OutPage.Boxes.Add(Box);
 			}
@@ -130,7 +130,7 @@ namespace SolidInventory
 					const int32 Index = SolidStorage::Index(Column, Row);
 					if (Index != INDEX_NONE)
 					{
-						Box.Item = SolidItemType::NameFor(Chest->Slots[Index]);
+						Box.Item = SolidItemType::PageLabel(Chest->Slots[Index], Chest->Counts[Index]);
 					}
 					OutPage.Boxes.Add(Box);
 				}

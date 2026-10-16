@@ -59,16 +59,61 @@ namespace SolidInventory
 	{
 		/** Item ids. Null is an empty box. */
 		const TCHAR* Worn[WornCount] = {};
+		int32 WornStack[WornCount] = {};
 		const TCHAR* Pack[PackCount] = {};
+		int32 PackStack[PackCount] = {};
 	};
+
+	inline void WriteWorn(FLoadout& Loadout, const int32 Index, const TCHAR* ItemId, const int32 Count)
+	{
+		if (Index < 0 || Index >= WornCount)
+		{
+			return;
+		}
+		if (!ItemId || !ItemId[0] || Count <= 0)
+		{
+			Loadout.Worn[Index] = nullptr;
+			Loadout.WornStack[Index] = 0;
+			return;
+		}
+		Loadout.Worn[Index] = ItemId;
+		Loadout.WornStack[Index] = Count;
+	}
+
+	inline void WritePack(FLoadout& Loadout, const int32 Index, const TCHAR* ItemId, const int32 Count)
+	{
+		if (Index < 0 || Index >= PackCount)
+		{
+			return;
+		}
+		if (!ItemId || !ItemId[0] || Count <= 0)
+		{
+			Loadout.Pack[Index] = nullptr;
+			Loadout.PackStack[Index] = 0;
+			return;
+		}
+		Loadout.Pack[Index] = ItemId;
+		Loadout.PackStack[Index] = Count;
+	}
+
+	/** How many of an item to store. At least one, and no more than that item allows. */
+	inline int32 StoredCount(const FSolidItemType& Item, const int32 Count)
+	{
+		const int32 AtLeastOne = Count < 1 ? 1 : Count;
+		if (Item.MaxStacked > 0 && AtLeastOne > Item.MaxStacked)
+		{
+			return Item.MaxStacked;
+		}
+		return AtLeastOne;
+	}
 
 	/** What the captain is wearing when a play session starts. Boots and the pack are empty. */
 	inline FLoadout StartingLoadout()
 	{
 		FLoadout Loadout;
-		Loadout.Worn[static_cast<int32>(ESlot::Head)] = SolidItemType::IdDentedHelmet;
-		Loadout.Worn[static_cast<int32>(ESlot::Body)] = SolidItemType::IdRags;
-		Loadout.Worn[static_cast<int32>(ESlot::MainHand)] = SolidItemType::IdCrudeSpear;
+		WriteWorn(Loadout, static_cast<int32>(ESlot::Head), SolidItemType::IdDentedHelmet, 1);
+		WriteWorn(Loadout, static_cast<int32>(ESlot::Body), SolidItemType::IdRags, 1);
+		WriteWorn(Loadout, static_cast<int32>(ESlot::MainHand), SolidItemType::IdCrudeSpear, 1);
 		return Loadout;
 	}
 
@@ -126,7 +171,7 @@ namespace SolidInventory
 		}
 		if (!ItemId || !ItemId[0])
 		{
-			Loadout.Worn[Index] = nullptr;
+			WriteWorn(Loadout, Index, nullptr, 0);
 			return true;
 		}
 		const FSolidItemType* Item = SolidItemType::FindById(ItemId);
@@ -134,7 +179,7 @@ namespace SolidInventory
 		{
 			return false;
 		}
-		Loadout.Worn[Index] = Item->Id;
+		WriteWorn(Loadout, Index, Item->Id, 1);
 		return true;
 	}
 
@@ -152,7 +197,7 @@ namespace SolidInventory
 		}
 		if (!ItemId || !ItemId[0])
 		{
-			Loadout.Pack[Index] = nullptr;
+			WritePack(Loadout, Index, nullptr, 0);
 			return true;
 		}
 		const FSolidItemType* Item = SolidItemType::FindById(ItemId);
@@ -160,7 +205,7 @@ namespace SolidInventory
 		{
 			return false;
 		}
-		Loadout.Pack[Index] = Item->Id;
+		WritePack(Loadout, Index, Item->Id, 1);
 		return true;
 	}
 
@@ -169,16 +214,16 @@ namespace SolidInventory
 	{
 		for (int32 Index = 0; Index < WornCount; ++Index)
 		{
-			Loadout.Worn[Index] = nullptr;
+			WriteWorn(Loadout, Index, nullptr, 0);
 		}
 		for (int32 Index = 0; Index < PackCount; ++Index)
 		{
-			Loadout.Pack[Index] = nullptr;
+			WritePack(Loadout, Index, nullptr, 0);
 		}
 		const int32 Body = WornIndex(ESlot::Body);
 		if (Body != INDEX_NONE)
 		{
-			Loadout.Worn[Body] = SolidItemType::IdRags;
+			WriteWorn(Loadout, Body, SolidItemType::IdRags, 1);
 		}
 	}
 
@@ -344,8 +389,45 @@ namespace SolidInventory
 		return Loadout.Worn[Index];
 	}
 
+	/** How many share the slot. Zero when the slot is empty or missing. */
+	inline int32 CountAt(const FLoadout& Loadout, const SolidStorage::FContainer* Chest, const FSlotHit& Hit)
+	{
+		if (!Hit.bHit)
+		{
+			return 0;
+		}
+		if (Hit.bChest)
+		{
+			if (!Chest || Hit.Index < 0 || Hit.Index >= SolidStorage::Count)
+			{
+				return 0;
+			}
+			return Chest->Counts[Hit.Index];
+		}
+		if (Hit.bPack)
+		{
+			const int32 Index = PackIndex(Hit.Column, Hit.Row);
+			if (Index == INDEX_NONE)
+			{
+				return 0;
+			}
+			return Loadout.PackStack[Index];
+		}
+		const int32 Index = WornIndex(Hit.Slot);
+		if (Index == INDEX_NONE)
+		{
+			return 0;
+		}
+		return Loadout.WornStack[Index];
+	}
+
 	/** Put an item id into a slot. A null or empty id clears it. False when the slot or the id is refused. */
-	inline bool PutAt(FLoadout& Loadout, SolidStorage::FContainer* Chest, const FSlotHit& Hit, const TCHAR* ItemId)
+	inline bool PutAt(
+		FLoadout& Loadout,
+		SolidStorage::FContainer* Chest,
+		const FSlotHit& Hit,
+		const TCHAR* ItemId,
+		const int32 Count = 1)
 	{
 		if (!Hit.bHit)
 		{
@@ -359,7 +441,7 @@ namespace SolidInventory
 			}
 			if (!ItemId || !ItemId[0])
 			{
-				Chest->Slots[Hit.Index] = nullptr;
+				SolidStorage::WriteSlot(*Chest, Hit.Index, nullptr, 0);
 				return true;
 			}
 			const FSolidItemType* Item = SolidItemType::FindById(ItemId);
@@ -367,14 +449,46 @@ namespace SolidInventory
 			{
 				return false;
 			}
-			Chest->Slots[Hit.Index] = Item->Id;
+			SolidStorage::WriteSlot(*Chest, Hit.Index, Item->Id, StoredCount(*Item, Count));
 			return true;
 		}
 		if (Hit.bPack)
 		{
-			return PlacePack(Loadout, Hit.Column, Hit.Row, ItemId);
+			const int32 Index = PackIndex(Hit.Column, Hit.Row);
+			if (Index == INDEX_NONE)
+			{
+				return false;
+			}
+			if (!ItemId || !ItemId[0])
+			{
+				WritePack(Loadout, Index, nullptr, 0);
+				return true;
+			}
+			const FSolidItemType* Item = SolidItemType::FindById(ItemId);
+			if (!Item)
+			{
+				return false;
+			}
+			WritePack(Loadout, Index, Item->Id, StoredCount(*Item, Count));
+			return true;
 		}
-		return PlaceWorn(Loadout, Hit.Slot, ItemId);
+		const int32 Index = WornIndex(Hit.Slot);
+		if (Index == INDEX_NONE)
+		{
+			return false;
+		}
+		if (!ItemId || !ItemId[0])
+		{
+			WriteWorn(Loadout, Index, nullptr, 0);
+			return true;
+		}
+		const FSolidItemType* Item = SolidItemType::FindById(ItemId);
+		if (!Item || !WornSlotAccepts(Hit.Slot, Item->Type))
+		{
+			return false;
+		}
+		WriteWorn(Loadout, Index, Item->Id, StoredCount(*Item, Count));
+		return true;
 	}
 
 	/**
@@ -401,14 +515,16 @@ namespace SolidInventory
 		{
 			return false;
 		}
+		const int32 MovingCount = CountAt(Loadout, Chest, From);
 		const TCHAR* Displaced = ItemAt(Loadout, Chest, To);
-		if (!PutAt(Loadout, Chest, To, Moving))
+		const int32 DisplacedCount = CountAt(Loadout, Chest, To);
+		if (!PutAt(Loadout, Chest, To, Moving, MovingCount))
 		{
 			return false;
 		}
-		if (!PutAt(Loadout, Chest, From, Displaced))
+		if (!PutAt(Loadout, Chest, From, Displaced, DisplacedCount))
 		{
-			PutAt(Loadout, Chest, To, Displaced);
+			PutAt(Loadout, Chest, To, Displaced, DisplacedCount);
 			return false;
 		}
 		return true;

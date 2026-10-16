@@ -382,4 +382,65 @@ bool FSolidEventsLaterTownsEnableRavenTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidEventsRequiresTest,
+	"SolidCore1.Events.Requires",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidEventsRequiresTest::RunTest(const FString& Parameters)
+{
+	TArray<FString> Ids;
+	for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
+	{
+		const SolidEvents::FEvent& Event = SolidEvents::Definitions[Index];
+		const FString Id = Event.Id ? FString(Event.Id) : FString();
+		TestEqual(TEXT("id is eight digits"), Id.Len(), SolidEvents::EventIdLength);
+		bool bHex = Id.Len() == SolidEvents::EventIdLength;
+		for (const TCHAR Char : Id)
+		{
+			bHex = bHex && FChar::IsHexDigit(Char);
+		}
+		TestTrue(*FString::Printf(TEXT("%s id is hex"), Event.Name), bHex);
+		TestFalse(*FString::Printf(TEXT("%s id is unique"), Event.Name), Ids.Contains(Id));
+		Ids.Add(Id);
+		TestEqual(TEXT("id finds the event"), SolidEvents::FindIndexById(Event.Id), Index);
+	}
+
+	const int32 RelionIndex = SolidEvents::FindIndexById(SolidEvents::IdEnterRelion);
+	TestTrue(TEXT("Relion id is listed"), RelionIndex != INDEX_NONE);
+	if (RelionIndex != INDEX_NONE)
+	{
+		const SolidEvents::FEvent& Relion = SolidEvents::Definitions[RelionIndex];
+		TestEqual(TEXT("Relion requires one event"), Relion.RequireCount, 1);
+		if (Relion.RequireCount > 0)
+		{
+			TestEqual(TEXT("Relion requires Enter Iglin"), FString(Relion.Requires[0]), FString(SolidEvents::IdEnterIglin));
+		}
+	}
+	for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
+	{
+		const SolidEvents::FEvent& Event = SolidEvents::Definitions[Index];
+		if (FCString::Strcmp(Event.Id, SolidEvents::IdEnterRelion) == 0)
+		{
+			continue;
+		}
+		TestEqual(*FString::Printf(TEXT("%s has no requirement"), Event.Name), Event.RequireCount, 0);
+	}
+
+	FGameState Early;
+	const SolidEvents::FResult Blocked = SolidEvents::NotifyOccupiedTown(Early, 1);
+	TestFalse(TEXT("Relion waits for Iglin"), Blocked.bFired);
+	TestFalse(TEXT("an early visit does not repair the bridge"), Early.bIglinBridgeRepaired);
+	TestEqual(TEXT("Relion is not recorded yet"), Early.FiredCount, 0);
+	TestEqual(TEXT("the party stays empty"), Early.MaxPartySize, 0);
+
+	const SolidEvents::FResult Iglin = SolidEvents::NotifyOccupiedTown(Early, 0);
+	TestTrue(TEXT("Iglin fires"), Iglin.bFired);
+	const SolidEvents::FResult RelionNow = SolidEvents::NotifyOccupiedTown(Early, 1);
+	TestTrue(TEXT("Relion fires after Iglin"), RelionNow.bFired);
+	TestTrue(TEXT("Relion repairs the bridge after Iglin"), RelionNow.bRepairBridge);
+	TestTrue(TEXT("the bridge is repaired"), Early.bIglinBridgeRepaired);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

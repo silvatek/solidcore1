@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0363")
+#define SOLID_BUILD_ID TEXT("SC1-0364")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Entering Relion repairs the Iglin bridge.")
+#define SOLID_BUILD_NOTE TEXT("Enter Relion waits until Enter Iglin has fired.")
 #endif

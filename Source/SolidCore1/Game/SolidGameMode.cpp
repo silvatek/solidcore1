@@ -522,6 +522,7 @@ void ASolidGameMode::FireParadeEvents()
 		}
 		NoteTownEntry(TownId);
 	};
+	Visit(TownIdForEvent(TEXT("Enter Iglin")));
 	Visit(TownIdForEvent(TEXT("Enter Relion")));
 	Visit(TownIdForEvent(TEXT("Enter Dragongate")));
 	Configuration.OccupiedTown = Stay;

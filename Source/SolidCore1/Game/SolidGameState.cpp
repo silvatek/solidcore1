@@ -2,6 +2,20 @@
 
 namespace
 {
+	bool RequirementsMet(const FGameState& State, const SolidEvents::FEvent& Event)
+	{
+		const int32 Count = FMath::Min(Event.RequireCount, SolidEvents::MaxRequiresPerEvent);
+		for (int32 Index = 0; Index < Count; ++Index)
+		{
+			const int32 Required = SolidEvents::FindIndexById(Event.Requires[Index]);
+			if (Required == INDEX_NONE || Required >= SolidEvents::MaxEvents || !State.bFired[Required])
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
 	void ApplyGameStateChange(FGameState& State, const SolidEvents::FChange& Change, SolidEvents::FResult& Result)
 	{
 		switch (Change.Kind)
@@ -123,6 +137,10 @@ FResult NotifyOccupiedTown(
 
 		const FEvent& Event = Definitions[Index];
 		if (Event.Trigger != ETrigger::EnterTown || Event.Parameter != TownId)
+		{
+			continue;
+		}
+		if (!RequirementsMet(State, Event))
 		{
 			continue;
 		}

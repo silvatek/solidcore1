@@ -5,16 +5,26 @@
 
 /**
  * Events change the company/party configuration when a trigger fires.
- * Each event fires once, the first time its trigger becomes true.
+ * Each event fires once, the first time its trigger becomes true,
+ * and only after every event it requires has already fired.
  *
  * Enter town: the captain steps onto a numbered WorldMap.txt cell
  * (or leaves one numbered town for another). The parameter is that digit.
  * Standing still, or walking between cells of the same town, does not re-fire.
+ * A visit before the requirements are met does not fire. A later visit does.
  */
 namespace SolidEvents
 {
 	inline constexpr int32 MaxChangesPerEvent = 4;
+	inline constexpr int32 MaxRequiresPerEvent = 4;
 	inline constexpr int32 MaxEvents = 16;
+	inline constexpr int32 EventIdLength = 8;
+
+	/** Stable ids. Eight hex digits. Requirements name these. */
+	inline constexpr const TCHAR* IdEnterIglin = TEXT("c4e1a7b2");
+	inline constexpr const TCHAR* IdEnterRelion = TEXT("9f30d86a");
+	inline constexpr const TCHAR* IdEnterKanfold = TEXT("2b8e15c7");
+	inline constexpr const TCHAR* IdEnterDragongate = TEXT("e6a4f093");
 
 	enum class ETrigger : uint8
 	{
@@ -49,11 +59,16 @@ namespace SolidEvents
 
 	struct FEvent
 	{
+		/** Eight hex digits. */
+		const TCHAR* Id = TEXT("");
 		const TCHAR* Name = TEXT("");
 		ETrigger Trigger = ETrigger::EnterTown;
 		int32 Parameter = INDEX_NONE;
 		FChange Changes[MaxChangesPerEvent] = {};
 		int32 ChangeCount = 0;
+		/** Event ids that must already have fired. Empty means no requirement. */
+		const TCHAR* Requires[MaxRequiresPerEvent] = {};
+		int32 RequireCount = 0;
 	};
 
 	/**
@@ -72,11 +87,13 @@ namespace SolidEvents
 
 	inline const FEvent Definitions[] = {
 		{
+			IdEnterIglin,
 			TEXT("Enter Iglin"),
 			ETrigger::EnterTown,
 			0,
 		},
 		{
+			IdEnterRelion,
 			TEXT("Enter Relion"),
 			ETrigger::EnterTown,
 			1,
@@ -87,8 +104,11 @@ namespace SolidEvents
 				{ EChange::RepairBridge },
 			},
 			4,
+			{ IdEnterIglin },
+			1,
 		},
 		{
+			IdEnterKanfold,
 			TEXT("Enter Kanfold"),
 			ETrigger::EnterTown,
 			2,
@@ -100,6 +120,7 @@ namespace SolidEvents
 			3,
 		},
 		{
+			IdEnterDragongate,
 			TEXT("Enter Dragongate"),
 			ETrigger::EnterTown,
 			5,
@@ -119,5 +140,21 @@ namespace SolidEvents
 	inline const TCHAR* RosterName(const int32 Slot)
 	{
 		return (Slot >= 0 && Slot < RosterCount) ? RosterNames[Slot] : nullptr;
+	}
+
+	inline int32 FindIndexById(const TCHAR* Id)
+	{
+		if (!Id || !Id[0])
+		{
+			return INDEX_NONE;
+		}
+		for (int32 Index = 0; Index < DefinitionCount; ++Index)
+		{
+			if (FCString::Strcmp(Definitions[Index].Id, Id) == 0)
+			{
+				return Index;
+			}
+		}
+		return INDEX_NONE;
 	}
 }

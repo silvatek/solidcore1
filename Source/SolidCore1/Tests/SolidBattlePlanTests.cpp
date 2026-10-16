@@ -240,6 +240,7 @@ bool FSolidGameModeBattlePlanSelectTest::RunTest(const FString& Parameters)
 		return false;
 	};
 	const FGameState& State = GameMode->GetConfiguration();
+	TestTrue(TEXT("parade fires Enter Iglin"), Fired(State, TEXT("Enter Iglin")));
 	TestTrue(TEXT("parade fires Enter Relion"), Fired(State, TEXT("Enter Relion")));
 	TestTrue(TEXT("parade fires Enter Dragongate"), Fired(State, TEXT("Enter Dragongate")));
 	TestFalse(TEXT("parade does not fire Enter Kanfold"), Fired(State, TEXT("Enter Kanfold")));

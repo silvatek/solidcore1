@@ -17,9 +17,10 @@
  * That event shows a message. Closing that message is its own event.
  * Killed by monsters closes the monster message, opens the starting cave,
  * and sends the captain inside.
- * Entering Iglin titles the captain Orphan.
+ * Entering Iglin titles the captain Orphan. It does not enable raven sight.
  * Driven from the village fires on a later entry to Iglin, after that close,
  * shows "You are driven from the village", and titles the captain Outcast.
+ * Nothing before Enter Relion enables raven sight. Relion is the first event that does.
  * A visit before the requirements are met does not fire. A later visit does.
  * Each event belongs to an act. Iglin, Reach broken bridge, and Killed by monsters
  * are ACT_0. Driven from the village is ACT_1.

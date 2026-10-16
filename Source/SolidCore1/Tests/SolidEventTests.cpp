@@ -1059,4 +1059,64 @@ bool FSolidEventsOrphanTitleTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidEventsRavenSightWaitsForRelionTest,
+	"SolidCore1.Events.RavenSightWaitsForRelion",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidEventsRavenSightWaitsForRelionTest::RunTest(const FString& Parameters)
+{
+	const int32 RelionIndex = SolidEvents::FindIndexById(SolidEvents::IdEnterRelion);
+	TestTrue(TEXT("Relion is listed"), RelionIndex != INDEX_NONE);
+	for (int32 Index = 0; Index < RelionIndex; ++Index)
+	{
+		const SolidEvents::FEvent& Event = SolidEvents::Definitions[Index];
+		const int32 ChangeCount = FMath::Min(Event.ChangeCount, SolidEvents::MaxChangesPerEvent);
+		for (int32 ChangeIndex = 0; ChangeIndex < ChangeCount; ++ChangeIndex)
+		{
+			const SolidEvents::FChange& Change = Event.Changes[ChangeIndex];
+			const bool bEnablesRaven = Change.Kind == SolidEvents::EChange::EnableSight
+				&& Change.Sight == ESolidSight::Raven;
+			TestFalse(
+				*FString::Printf(TEXT("%s does not enable raven sight"), Event.Name),
+				bEnablesRaven);
+		}
+	}
+	TestTrue(
+		TEXT("Relion enables raven sight"),
+		SolidEventTestPrivate::EventEnablesRavenSight(TEXT("Enter Relion")));
+
+	FGameState State;
+	const SolidEvents::FResult Iglin = SolidEvents::NotifyOccupiedTown(State, 0);
+	TestTrue(TEXT("Iglin fires"), Iglin.bFired);
+	TestFalse(TEXT("Iglin does not switch sight"), Iglin.bSetSight);
+	TestFalse(TEXT("Iglin leaves raven sight locked"), State.bRavenSightEnabled);
+
+	const SolidEvents::FResult Ramp = SolidEvents::NotifyReachBrokenBridge(State);
+	TestTrue(TEXT("the ramp fires"), Ramp.bFired);
+	TestFalse(TEXT("the ramp does not switch sight"), Ramp.bSetSight);
+	TestFalse(TEXT("the ramp leaves raven sight locked"), State.bRavenSightEnabled);
+
+	const SolidEvents::FResult Closed = SolidEvents::NotifyMessageClosed(State, SolidMessages::IdKilledByMonsters);
+	TestTrue(TEXT("the close fires"), Closed.bFired);
+	TestFalse(TEXT("the close does not switch sight"), Closed.bSetSight);
+	TestFalse(TEXT("the close leaves raven sight locked"), State.bRavenSightEnabled);
+
+	SolidEvents::NotifyOccupiedTown(State, INDEX_NONE);
+	const SolidEvents::FResult Returned = SolidEvents::NotifyOccupiedTown(State, 0);
+	TestTrue(TEXT("the return fires"), Returned.bFired);
+	TestFalse(TEXT("the return does not switch sight"), Returned.bSetSight);
+	TestFalse(TEXT("the return leaves raven sight locked"), State.bRavenSightEnabled);
+	TestFalse(TEXT("F9 still cannot reach raven sight"), SolidEvents::IsSightEnabled(State, ESolidSight::Raven));
+
+	const SolidEvents::FResult Relion = SolidEvents::NotifyOccupiedTown(State, 1);
+	TestTrue(TEXT("Relion switches sight"), Relion.bSetSight);
+	TestEqual(
+		TEXT("Relion enables raven sight"),
+		static_cast<uint8>(Relion.Sight),
+		static_cast<uint8>(ESolidSight::Raven));
+	TestTrue(TEXT("Relion unlocks raven sight"), State.bRavenSightEnabled);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

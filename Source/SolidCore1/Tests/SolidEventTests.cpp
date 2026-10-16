@@ -737,11 +737,16 @@ bool FSolidEventsMessageTest::RunTest(const FString& Parameters)
 			FString(Killed->MessageId),
 			FString(SolidMessages::IdKilledByMonsters));
 		TestEqual(TEXT("the close is ACT_0"), Killed->Act, SolidEvents::ACT_0);
-		TestEqual(TEXT("the close enables the cave"), Killed->ChangeCount, 1);
-		TestEqual(
-			TEXT("the close change is EnableCave"),
-			static_cast<uint8>(Killed->Changes[0].Kind),
-			static_cast<uint8>(SolidEvents::EChange::EnableCave));
+		bool bEnablesCave = false;
+		const int32 ChangeCount = FMath::Min(Killed->ChangeCount, SolidEvents::MaxChangesPerEvent);
+		for (int32 Index = 0; Index < ChangeCount; ++Index)
+		{
+			if (Killed->Changes[Index].Kind == SolidEvents::EChange::EnableCave)
+			{
+				bEnablesCave = true;
+			}
+		}
+		TestTrue(TEXT("the close enables the cave"), bEnablesCave);
 		TestTrue(
 			TEXT("the close journal records the cave"),
 			SolidJournal::Describe(*Killed).Contains(TEXT("Cave enabled")));

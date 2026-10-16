@@ -21,8 +21,8 @@
  * Driven from the village fires on a later entry to Iglin, after that close,
  * shows "You are driven from the village", and titles the captain Outcast.
  * A visit before the requirements are met does not fire. A later visit does.
- * Each event belongs to an act. Iglin, Reach broken bridge, Killed by monsters,
- * and Driven from the village are ACT_0.
+ * Each event belongs to an act. Iglin, Reach broken bridge, and Killed by monsters
+ * are ACT_0. Driven from the village is ACT_1.
  * Relion is ACT_2, Kanfold is ACT_3, and Dragongate is ACT_4.
  */
 namespace SolidEvents
@@ -43,6 +43,7 @@ namespace SolidEvents
 
 	/** Story acts. Event definitions name these. */
 	inline constexpr int32 ACT_0 = 0;
+	inline constexpr int32 ACT_1 = 1;
 	inline constexpr int32 ACT_2 = 2;
 	inline constexpr int32 ACT_3 = 3;
 	inline constexpr int32 ACT_4 = 4;
@@ -175,7 +176,7 @@ namespace SolidEvents
 			2,
 			{ IdKilledByMonsters },
 			1,
-			ACT_0,
+			ACT_1,
 		},
 		{
 			IdEnterRelion,

@@ -594,11 +594,13 @@ bool FSolidEventsActTest::RunTest(const FString& Parameters)
 	};
 
 	TestEqual(TEXT("ACT_0"), SolidEvents::ACT_0, 0);
+	TestEqual(TEXT("ACT_1"), SolidEvents::ACT_1, 1);
 	TestEqual(TEXT("ACT_2"), SolidEvents::ACT_2, 2);
 	TestEqual(TEXT("ACT_3"), SolidEvents::ACT_3, 3);
 	TestEqual(TEXT("ACT_4"), SolidEvents::ACT_4, 4);
 	TestEqual(TEXT("Iglin is ACT_0"), ActOf(SolidEvents::IdEnterIglin), SolidEvents::ACT_0);
 	TestEqual(TEXT("Reach broken bridge is ACT_0"), ActOf(SolidEvents::IdReachBrokenBridge), SolidEvents::ACT_0);
+	TestEqual(TEXT("Driven from the village is ACT_1"), ActOf(SolidEvents::IdDrivenFromVillage), SolidEvents::ACT_1);
 	TestEqual(TEXT("Relion is ACT_2"), ActOf(SolidEvents::IdEnterRelion), SolidEvents::ACT_2);
 	TestEqual(TEXT("Kanfold is ACT_3"), ActOf(SolidEvents::IdEnterKanfold), SolidEvents::ACT_3);
 	TestEqual(TEXT("Dragongate is ACT_4"), ActOf(SolidEvents::IdEnterDragongate), SolidEvents::ACT_4);

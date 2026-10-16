@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0378")
+#define SOLID_BUILD_ID TEXT("SC1-0379")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The title builder no longer hides the event name.")
+#define SOLID_BUILD_NOTE TEXT("Event requirements are listed before changes.")
 #endif

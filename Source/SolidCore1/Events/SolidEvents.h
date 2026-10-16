@@ -273,20 +273,20 @@ namespace SolidEvents
 		EnterTown(IdEnterIglin, TEXT("Enter Iglin"), SolidTowns::Iglin, ACT_0)
 			.SetPlayerTitle(TitleOrphan),
 		ReachBrokenBridge(IdReachBrokenBridge, TEXT("Reach broken bridge"), ACT_0)
-			.DisplayMessage(SolidMessages::IdKilledByMonsters)
-			.Require(IdEnterIglin),
+			.Require(IdEnterIglin)
+			.DisplayMessage(SolidMessages::IdKilledByMonsters),
 		OnMessageClosed(IdKilledByMonsters, TEXT("Killed by monsters"), SolidMessages::IdKilledByMonsters, ACT_0)
 			.EnableCave(),
 		EnterTown(IdDrivenFromVillage, TEXT("Driven from the village"), SolidTowns::Iglin, ACT_1)
+			.Require(IdKilledByMonsters)
 			.DisplayMessage(SolidMessages::IdDrivenFromVillage)
-			.SetPlayerTitle(TitleOutcast)
-			.Require(IdKilledByMonsters),
+			.SetPlayerTitle(TitleOutcast),
 		EnterTown(IdEnterRelion, TEXT("Enter Relion"), SolidTowns::Relion, ACT_2)
+			.Require(IdEnterIglin)
 			.EnableSight(ESolidSight::Raven)
 			.SetMaxPartySize(1)
 			.SetPlayerTitle(TitleVagrant)
-			.RepairBridge()
-			.Require(IdEnterIglin),
+			.RepairBridge(),
 		EnterTown(IdEnterKanfold, TEXT("Enter Kanfold"), SolidTowns::Kanfold, ACT_3)
 			.EnableSight(ESolidSight::Raven)
 			.SetMaxPartySize(2)

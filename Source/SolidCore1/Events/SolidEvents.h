@@ -173,9 +173,9 @@ namespace SolidEvents
 			return With(Change::SetMaxPartySize(Size));
 		}
 
-		constexpr FEvent SetPlayerTitle(const TCHAR* Name) const
+		constexpr FEvent SetPlayerTitle(const TCHAR* InName) const
 		{
-			return With(Change::SetPlayerTitle(Name));
+			return With(Change::SetPlayerTitle(InName));
 		}
 
 		constexpr FEvent DisplayMessage(const TCHAR* InMessageId) const

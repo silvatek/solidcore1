@@ -1,0 +1,329 @@
+#include "CoreMinimal.h"
+#include "Misc/AutomationTest.h"
+#include "SolidBridge.h"
+#include "SolidRiver.h"
+#include "SolidRoad.h"
+#include "SolidWorldMap.h"
+
+#if WITH_DEV_AUTOMATION_TESTS
+
+namespace
+{
+	const FVector2D BridgeTestMin(-51200.f, -51200.f);
+	const FVector2D BridgeTestMax(51200.f, 51200.f);
+
+	struct FBridgeTestMark
+	{
+		int32 Col = 0;
+		int32 Row = 0;
+		TCHAR Marker = USolidWorldMap::GrassMarker;
+	};
+
+	FString BridgeTestGrid(const TArray<FBridgeTestMark>& Marks, const FString& Roads)
+	{
+		FString Text;
+		Text.Reserve((USolidWorldMap::MapWidth + 1) * USolidWorldMap::MapHeight + Roads.Len());
+		for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+		{
+			for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+			{
+				TCHAR Marker = USolidWorldMap::GrassMarker;
+				for (const FBridgeTestMark& Mark : Marks)
+				{
+					if (Mark.Col == Col && Mark.Row == Row)
+					{
+						Marker = Mark.Marker;
+						break;
+					}
+				}
+				Text.AppendChar(Marker);
+			}
+			Text.AppendChar(TEXT('\n'));
+		}
+		Text += Roads;
+		return Text;
+	}
+
+	float BridgePlanLength(const TArray<FVector>& Line)
+	{
+		float Length = 0.f;
+		for (int32 Index = 1; Index < Line.Num(); ++Index)
+		{
+			Length += FVector2D::Distance(
+				FVector2D(Line[Index - 1].X, Line[Index - 1].Y),
+				FVector2D(Line[Index].X, Line[Index].Y));
+		}
+		return Length;
+	}
+
+	bool BridgeFlat(const TArray<FVector>& Line)
+	{
+		if (Line.Num() == 0)
+		{
+			return false;
+		}
+		for (const FVector& Point : Line)
+		{
+			if (!FMath::IsNearlyEqual(Point.Z, Line[0].Z, 0.1f))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	bool BridgeBuried(const TArray<FVector>& Ramp, const TFunction<float(float, float)>& HeightAt)
+	{
+		if (Ramp.Num() < 2)
+		{
+			return false;
+		}
+		const FVector& End = Ramp.Last();
+		const float Ground = HeightAt(End.X, End.Y);
+		const float Slack = SolidBridge::Grade * SolidBridge::SampleStepCm + 1.f;
+		return End.Z < Ground - SolidBridge::Grade * SolidBridge::BurialCm + Slack
+			&& End.Z < Ramp[0].Z;
+	}
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBridgeStraightTest,
+	"SolidCore1.Bridge.Straight",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBridgeStraightTest::RunTest(const FString& Parameters)
+{
+	TArray<FBridgeTestMark> Marks;
+	Marks.Add({ 4, 16, TEXT('0') });
+	Marks.Add({ 12, 16, USolidWorldMap::RiverMarker });
+	Marks.Add({ 20, 16, TEXT('1') });
+
+	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	TestNotNull(TEXT("map"), Map);
+	if (!TestTrue(TEXT("map loads"), Map->LoadFromString(BridgeTestGrid(Marks, TEXT("Road: 0 -> 1, track\n")))))
+	{
+		return false;
+	}
+
+	const auto Height = [](float, float) { return 100.f; };
+	TArray<SolidBridge::FBridge> Bridges;
+	TestEqual(TEXT("one bridge"), SolidBridge::Collect(*Map, BridgeTestMin, BridgeTestMax, Height, Bridges), 1);
+	if (!TestTrue(TEXT("a bridge"), Bridges.Num() == 1))
+	{
+		return false;
+	}
+
+	const SolidBridge::FBridge& Bridge = Bridges[0];
+	TestTrue(TEXT("center is as wide as the track"), FMath::IsNearlyEqual(Bridge.WidthCm, SolidRoad::WidthCm(SolidRoad::EType::Track)));
+	TestTrue(TEXT("center is flat"), BridgeFlat(Bridge.Deck));
+	TestTrue(TEXT("center covers the river and rests on both banks"),
+		FMath::IsNearlyEqual(
+			BridgePlanLength(Bridge.Deck),
+			SolidRiver::WidthCm + 2.f * SolidBridge::BankRestCm,
+			2.f));
+	TestTrue(TEXT("three pieces"), Bridge.Deck.Num() >= 2 && Bridge.RampFrom.Num() >= 2 && Bridge.RampTo.Num() >= 2);
+	TestTrue(TEXT("the near ramp leaves the center"), Bridge.RampFrom[0].Equals(Bridge.Deck[0], 1.f));
+	TestTrue(TEXT("the far ramp leaves the center"), Bridge.RampTo[0].Equals(Bridge.Deck.Last(), 1.f));
+	TestTrue(TEXT("the near ramp runs into the ground"), BridgeBuried(Bridge.RampFrom, Height));
+	TestTrue(TEXT("the far ramp runs into the ground"), BridgeBuried(Bridge.RampTo, Height));
+
+	const float Lift = FMath::Max(SolidBridge::RiseCm, SolidBridge::MinClearanceCm + SolidBridge::ThicknessCm);
+	TestTrue(TEXT("the center stands above the ground"),
+		FMath::IsNearlyEqual(Bridge.Deck[0].Z, 100.f + Lift, 0.1f));
+	TestTrue(TEXT("ramps on level banks are the same length"),
+		FMath::Abs(BridgePlanLength(Bridge.RampFrom) - BridgePlanLength(Bridge.RampTo)) < SolidBridge::SampleStepCm * 2.f);
+
+	TArray<SolidBridge::FBridge> None;
+	USolidWorldMap* Dry = NewObject<USolidWorldMap>();
+	TestNotNull(TEXT("dry map"), Dry);
+	if (TestTrue(TEXT("dry map loads"), Dry->LoadFromString(BridgeTestGrid({
+		{ 4, 16, TEXT('0') },
+		{ 20, 16, TEXT('1') },
+	}, TEXT("Road: 0 -> 1, track\n")))))
+	{
+		TestEqual(TEXT("no river means no bridge"), SolidBridge::Collect(*Dry, BridgeTestMin, BridgeTestMax, Height, None), 0);
+	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBridgeBanksTest,
+	"SolidCore1.Bridge.Banks",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBridgeBanksTest::RunTest(const FString& Parameters)
+{
+	TArray<FBridgeTestMark> Marks;
+	Marks.Add({ 4, 16, TEXT('0') });
+	Marks.Add({ 12, 16, USolidWorldMap::RiverMarker });
+	Marks.Add({ 20, 16, TEXT('1') });
+
+	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	TestNotNull(TEXT("map"), Map);
+	if (!TestTrue(TEXT("map loads"), Map->LoadFromString(BridgeTestGrid(Marks, TEXT("Road: 0 -> 1, track\n")))))
+	{
+		return false;
+	}
+
+	FVector2D River = FVector2D::ZeroVector;
+	TestTrue(TEXT("river cell"), Map->CellToWorldXY(FIntPoint(12, 16), BridgeTestMin, BridgeTestMax, River));
+	const auto Height = [River](float X, float)
+	{
+		return X > River.X ? 400.f : 100.f;
+	};
+
+	TArray<SolidBridge::FBridge> Bridges;
+	if (!TestEqual(TEXT("one bridge"), SolidBridge::Collect(*Map, BridgeTestMin, BridgeTestMax, Height, Bridges), 1)
+		|| Bridges.Num() != 1)
+	{
+		return false;
+	}
+
+	const SolidBridge::FBridge& Bridge = Bridges[0];
+	TestTrue(TEXT("center clears the higher bank"), Bridge.Deck[0].Z >= 400.f + SolidBridge::RiseCm - 0.1f);
+	TestTrue(TEXT("center stays flat over uneven banks"), BridgeFlat(Bridge.Deck));
+	TestTrue(TEXT("the high bank gets the shorter ramp"),
+		BridgePlanLength(Bridge.RampFrom) * 2.f < BridgePlanLength(Bridge.RampTo));
+	TestTrue(TEXT("high ramp still enters the ground"), BridgeBuried(Bridge.RampFrom, Height));
+	TestTrue(TEXT("low ramp reaches the lower bank"), BridgeBuried(Bridge.RampTo, Height));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBridgeSpanTest,
+	"SolidCore1.Bridge.Span",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBridgeSpanTest::RunTest(const FString& Parameters)
+{
+	const auto Height = [](float, float) { return 100.f; };
+	const float CellW = (BridgeTestMax.X - BridgeTestMin.X) / static_cast<float>(USolidWorldMap::MapWidth);
+
+	TArray<FBridgeTestMark> ShortMarks;
+	ShortMarks.Add({ 2, 20, TEXT('0') });
+	ShortMarks.Add({ 10, 20, USolidWorldMap::RiverMarker });
+	ShortMarks.Add({ 18, 20, TEXT('1') });
+	USolidWorldMap* ShortMap = NewObject<USolidWorldMap>();
+	TestNotNull(TEXT("short map"), ShortMap);
+	if (!TestTrue(TEXT("short map loads"), ShortMap->LoadFromString(BridgeTestGrid(ShortMarks, TEXT("Road: 0 -> 1, trail\n")))))
+	{
+		return false;
+	}
+	TArray<SolidBridge::FBridge> ShortBridges;
+	if (!TestEqual(TEXT("short crossing"), SolidBridge::Collect(*ShortMap, BridgeTestMin, BridgeTestMax, Height, ShortBridges), 1)
+		|| ShortBridges.Num() != 1)
+	{
+		return false;
+	}
+
+	TArray<FBridgeTestMark> LongMarks;
+	LongMarks.Add({ 2, 20, TEXT('0') });
+	LongMarks.Add({ 18, 20, TEXT('1') });
+	constexpr int32 RiverCells = 5;
+	for (int32 Col = 8; Col < 8 + RiverCells; ++Col)
+	{
+		LongMarks.Add({ Col, 20, USolidWorldMap::RiverMarker });
+	}
+	USolidWorldMap* LongMap = NewObject<USolidWorldMap>();
+	TestNotNull(TEXT("long map"), LongMap);
+	if (!TestTrue(TEXT("long map loads"), LongMap->LoadFromString(BridgeTestGrid(LongMarks, TEXT("Road: 0 -> 1, trail\n")))))
+	{
+		return false;
+	}
+	TArray<SolidBridge::FBridge> LongBridges;
+	if (!TestEqual(TEXT("long crossing"), SolidBridge::Collect(*LongMap, BridgeTestMin, BridgeTestMax, Height, LongBridges), 1)
+		|| LongBridges.Num() != 1)
+	{
+		return false;
+	}
+
+	TestTrue(TEXT("a trail center is 1 m"), FMath::IsNearlyEqual(ShortBridges[0].WidthCm, SolidRoad::WidthCm(SolidRoad::EType::Trail)));
+	TestTrue(TEXT("a longer river lengthens the center"),
+		FMath::IsNearlyEqual(
+			BridgePlanLength(LongBridges[0].Deck),
+			SolidRiver::WidthCm + static_cast<float>(RiverCells - 1) * CellW + 2.f * SolidBridge::BankRestCm,
+			5.f));
+	TestTrue(TEXT("the long center is longer than one channel"),
+		BridgePlanLength(LongBridges[0].Deck) > BridgePlanLength(ShortBridges[0].Deck) + CellW);
+
+	TArray<FBridgeTestMark> Blocked;
+	Blocked.Add({ 4, 20, TEXT('0') });
+	Blocked.Add({ 20, 20, TEXT('1') });
+	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	{
+		Blocked.Add({ 12, Row, USolidWorldMap::RiverMarker });
+	}
+	USolidWorldMap* Wide = NewObject<USolidWorldMap>();
+	TestNotNull(TEXT("wide map"), Wide);
+	if (!TestTrue(TEXT("wide map loads"), Wide->LoadFromString(BridgeTestGrid(Blocked, TEXT("Road: 0 -> 1, road\n")))))
+	{
+		return false;
+	}
+	TArray<SolidBridge::FBridge> WideBridges;
+	if (!TestEqual(TEXT("a road that must cross gets one bridge"),
+		SolidBridge::Collect(*Wide, BridgeTestMin, BridgeTestMax, Height, WideBridges), 1)
+		|| WideBridges.Num() != 1)
+	{
+		return false;
+	}
+	TestTrue(TEXT("a road center is 3 m"), FMath::IsNearlyEqual(WideBridges[0].WidthCm, SolidRoad::WidthCm(SolidRoad::EType::Road)));
+	TestTrue(TEXT("a wider road widens the center"), WideBridges[0].WidthCm > ShortBridges[0].WidthCm + 100.f);
+
+	TArray<FBridgeTestMark> Gap;
+	Gap.Add({ 4, 10, TEXT('0') });
+	Gap.Add({ 22, 10, TEXT('1') });
+	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	{
+		if (Row != 22)
+		{
+			Gap.Add({ 12, Row, USolidWorldMap::RiverMarker });
+		}
+	}
+	USolidWorldMap* Around = NewObject<USolidWorldMap>();
+	TestNotNull(TEXT("around map"), Around);
+	if (TestTrue(TEXT("around map loads"), Around->LoadFromString(BridgeTestGrid(Gap, TEXT("Road: 0 -> 1, road\n")))))
+	{
+		TArray<SolidBridge::FBridge> AroundBridges;
+		TestEqual(TEXT("a road that stays off the water has no bridge"),
+			SolidBridge::Collect(*Around, BridgeTestMin, BridgeTestMax, Height, AroundBridges), 0);
+	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBridgeShippedTest,
+	"SolidCore1.Bridge.Shipped",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBridgeShippedTest::RunTest(const FString& Parameters)
+{
+	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	TestNotNull(TEXT("shipped map"), Map);
+	if (!TestTrue(TEXT("shipped map loads"), Map && Map->LoadDefault()))
+	{
+		return false;
+	}
+
+	const auto Height = [](float, float) { return 0.f; };
+	TArray<SolidBridge::FBridge> Bridges;
+	TestTrue(TEXT("the shipped roads cross water"), SolidBridge::Collect(*Map, BridgeTestMin, BridgeTestMax, Height, Bridges) >= 1);
+	for (const SolidBridge::FBridge& Bridge : Bridges)
+	{
+		const bool bKnownWidth = FMath::IsNearlyEqual(Bridge.WidthCm, SolidRoad::WidthCm(SolidRoad::EType::Trail))
+			|| FMath::IsNearlyEqual(Bridge.WidthCm, SolidRoad::WidthCm(SolidRoad::EType::Track))
+			|| FMath::IsNearlyEqual(Bridge.WidthCm, SolidRoad::WidthCm(SolidRoad::EType::Road))
+			|| FMath::IsNearlyEqual(Bridge.WidthCm, SolidRoad::WidthCm(SolidRoad::EType::Highway));
+		TestTrue(TEXT("width is a route width"), bKnownWidth);
+		TestTrue(TEXT("shipped center is flat"), BridgeFlat(Bridge.Deck));
+		TestTrue(TEXT("shipped center covers more than the channel"),
+			BridgePlanLength(Bridge.Deck) > SolidRiver::WidthCm);
+		TestTrue(TEXT("shipped ramps leave the center"),
+			Bridge.RampFrom.Num() >= 2 && Bridge.RampTo.Num() >= 2
+			&& Bridge.RampFrom[0].Equals(Bridge.Deck[0], 1.f)
+			&& Bridge.RampTo[0].Equals(Bridge.Deck.Last(), 1.f));
+		TestTrue(TEXT("shipped ramps run into the ground"), BridgeBuried(Bridge.RampFrom, Height) && BridgeBuried(Bridge.RampTo, Height));
+	}
+	return true;
+}
+
+#endif

@@ -7,6 +7,7 @@
 #include "SolidSight.h"
 #include "SolidGameMode.generated.h"
 
+class ASolidBridge;
 class ASolidBuilding;
 class ASolidDungeonEntrance;
 class ASolidDungeonInterior;
@@ -185,6 +186,9 @@ protected:
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidDungeonEntrance>> SpawnedDungeonEntrances;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<ASolidBridge>> SpawnedBridges;
 
 	FTimerHandle EventRefreshTimer;
 	FTimerHandle VegetationSpawnTimer;

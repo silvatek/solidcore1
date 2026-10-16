@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0352")
+#define SOLID_BUILD_ID TEXT("SC1-0353")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Switching to true sight levels the camera.")
+#define SOLID_BUILD_NOTE TEXT("A bridge stands where a road crosses a river.")
 #endif

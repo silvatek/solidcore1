@@ -13,6 +13,7 @@
 #include "Party/SolidBattlePlan.h"
 #include "Party/SolidCompany.h"
 #include "Party/SolidParty.h"
+#include "Terrain/SolidBridge.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Terrain/SolidWorldMap.h"
@@ -910,6 +911,10 @@ void ASolidGameMode::EnsureVegetation()
 	{
 		return !IsValid(Entrance);
 	});
+	SpawnedBridges.RemoveAll([](const TObjectPtr<ASolidBridge>& Bridge)
+	{
+		return !IsValid(Bridge);
+	});
 
 	if (SpawnedForestTrees.Num() == 0)
 	{
@@ -940,6 +945,14 @@ void ASolidGameMode::EnsureVegetation()
 		for (TActorIterator<ASolidDungeonEntrance> It(World); It; ++It)
 		{
 			SpawnedDungeonEntrances.Add(*It);
+		}
+	}
+
+	if (SpawnedBridges.Num() == 0)
+	{
+		for (TActorIterator<ASolidBridge> It(World); It; ++It)
+		{
+			SpawnedBridges.Add(*It);
 		}
 	}
 
@@ -1143,5 +1156,42 @@ void ASolidGameMode::EnsureVegetation()
 		}
 
 		UE_LOG(LogSolid, Warning, TEXT("Spawned %d cave entrances"), Spawned);
+	}
+
+	if (SpawnedBridges.Num() == 0)
+	{
+		USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
+		USolidWorldMap* BridgeMap = Terrain ? Terrain->GetWorldMap() : nullptr;
+		if (BridgeMap && BridgeMap->IsLoaded())
+		{
+			TArray<SolidBridge::FBridge> Bridges;
+			SolidBridge::Collect(
+				*BridgeMap,
+				Terrain->GetWorldMinXY(),
+				Terrain->GetWorldMaxXY(),
+				[Streamer](const float X, const float Y)
+				{
+					return Streamer->GetHeightAt(FVector(X, Y, 0.f));
+				},
+				Bridges);
+
+			int32 Spawned = 0;
+			for (const SolidBridge::FBridge& Bridge : Bridges)
+			{
+				ASolidBridge* Actor = World->SpawnActor<ASolidBridge>(
+					ASolidBridge::StaticClass(),
+					FVector::ZeroVector,
+					FRotator::ZeroRotator,
+					SpawnParams);
+				if (!Actor)
+				{
+					continue;
+				}
+				Actor->SetBridge(Bridge);
+				SpawnedBridges.Add(Actor);
+				++Spawned;
+			}
+			UE_LOG(LogSolid, Warning, TEXT("Spawned %d bridges"), Spawned);
+		}
 	}
 }

@@ -20,8 +20,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - "Hold" battle plan that has the companions not move when the captain does
 - Events depending on, or auto-triggering, other events
 - Reorder game menu items
-- River crossings: if a road crosses a river, create a ford. Don't allow movement across rivers except at fords
-- Bridges: some river crossings will be defined as bridges. Bridges can be collapsed, so you cannot cross the river there until repaired
+- Broken bridges: a crossing can be collapsed, and you cannot cross there until the span is repaired
 - Stamina: moving depletes stamina, better roads deplete it slower
 - Basic monsters (needs FAB asset download); no combat yet
 - Basic NPCs
@@ -38,6 +37,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - **Procedural terrain** — streamed chunks around the pawn, Fab grassland material, FlatCol tints for other biomes. Exploration fog-of-war (25 m / 50 m bands, marching-squares curtains) clears from the trail, not the camera.
 - **Town + forest** — random non-overlapping town buildings (grey cuboid + red gable prism roof); forest trees scattered on Forest cells. Dragongate is not that pack: a 4 m stone wall runs across its cells, with a 4 m gap and a taller tower on each side of the gap. A row of cells runs east–west and a column runs north–south. Buildings stay on cells marked `o`, Z, or a location digit, clear of the start-town centroid and of each welcome sign.
 - **Roads** — `WorldMap.txt` lists each road as a start, an end, and a type. A trail is 1 m wide, a track 2 m, a road 3 m, and a highway 4 m. The route is solved across the grid and painted in a brown close to the town colour. Houses stay in the marked towns, not on that strip. Every route stays off mountains and the sea. Roads and highways also stay off forest and desert, and they cross a river only when going around costs more. The water in a crossing keeps the river texture. A trail or a track may cross forest or desert; when two routes are the same length, open ground is preferred.
+- **Bridges** — wherever a route crosses a river, a bridge stands on that water: an up ramp, a flat center, and a down ramp. The center is as wide as that road and as long as the water, with a short rest on each bank, and it is its own mesh so a later change can swap in a broken span. Each ramp runs down to its own bank and continues into the ground, so a high bank and a low bank get different lengths. The walking surface uses the road brown. The water underneath keeps the river texture.
 - **Town signs** — a named town gets one welcome sign at the middle of its cells: one thin dark-brown pole, a flat light-brown board, white letters with a black border. "Welcome to" is the first line and the town name is the second. The board faces south, on that middle, unless that town sets another spot. A single cell's middle is the cell center. Dragongate's sign stands on the north edge of the town, east of the gate, and faces north, so it can be read while facing south. The gate stays clear. Kanfold's sign stands between its two cells.
 - **True sight / raven sight** — the game starts in true sight (first person). Raven sight (third person) is locked until the captain enters Relion, Kanfold, or Dragongate. F9 then toggles. Switching from raven sight to true sight levels the camera, so a downward raven look does not carry into first person. True sight hides the captain's body and nameplate, turns the body with the look direction, and ignores mouse-wheel zoom until you switch back. The menu and the formation drill ignore F9. A translucent oval in the top-right shows an eye in true sight and an eagle in raven sight.
 - **Events** — a list of one-shot triggers. Enter town fires when the captain steps onto a numbered WorldMap cell; the parameter is that index. Entering town 0 (Iglin) is recorded and changes nothing. Entering town 1 (Relion) enables raven sight, sets max party size to 1 (Sam), and titles the captain Vagrant. Entering town 2 (Kanfold) enables raven sight, sets max party size to 2 (Sam and Alex), and titles the captain Ranger. Entering town 5 (Dragongate) enables raven sight, sets max party size to 5 (the whole company), and titles the captain Captain. The nameplate starts as Outcast.
@@ -102,6 +102,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.WorldMap.*` | ASCII overlay load, key colors, numbered locations, two digits on a row are one location, sea is `~`, grass is `.`, a town cell is `o`, forest is `#`, a river is `*`, desert is `^`, 1024 m square world, cell size follows the map width and height, fog follows the player |
 | `SolidCore1.River.*` | 4 m pond, orthogonal joins to river or sea, banks take the adjacent biome; a road bank uses the road texture |
 | `SolidCore1.Road.*` | Trail, track, road, and highway widths; every route stays off mountains and the sea; roads avoid forest, desert, and extra river cells; the strip is a road brown and a crossing keeps the river; `o`, Z, and location digits are towns |
+| `SolidCore1.Bridge.*` | A crossing gets an up ramp, a flat center, and a down ramp; the center matches that road's width and that river's span; each ramp runs down into its own bank |
 | `SolidCore1.Towns.*` | Town names and type (Town or WallGate); Dragongate is the wall gate, with a 4 m gap and two equal towers; a two-cell gate follows the long axis |
 | `SolidCore1.Stronghold.*` | Types and sizes; the `C` cell is a Meagre Dungeon; the mouth faces the grassland neighbor; F10 cave travel keeps companions outside; a click on the dark opening enters and leaves; the Meagre Dungeon visit view levels the camera into the den and out over the grass; the Meagre den is fourteen irregular hexes; a furnishing catalog places the fireplace, bed, and chest on that single floor |
 | `SolidCore1.Noise.*` | Hash / value / fBm / height / grass tone |
@@ -350,6 +351,7 @@ Source/
       SolidWorldMap.*         # Parse/scale Content/WorldMap.txt; location 0 centroid
       SolidRiver.h            # 4 m river channel and pond
       SolidRoad.*             # Trail, track, road, and highway routes
+      SolidBridge.*           # Ramp, flat center, and ramp where a road crosses a river
       SolidTerrainMap.*
       SolidTerrainNoise.h
       SolidTerrainChunk.*

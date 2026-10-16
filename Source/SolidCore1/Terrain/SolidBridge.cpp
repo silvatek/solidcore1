@@ -1,0 +1,723 @@
+#include "SolidBridge.h"
+
+#include "SolidCore1.h"
+#include "SolidMaterials.h"
+#include "SolidRiver.h"
+#include "SolidWorldMap.h"
+#include "Components/SceneComponent.h"
+#include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
+#include "Materials/MaterialInterface.h"
+#include "MeshDescription.h"
+#include "StaticMeshAttributes.h"
+
+namespace
+{
+	struct FPoly
+	{
+		TArray<FVector2D> Points;
+	};
+
+	float PolyLength(const FPoly& Poly)
+	{
+		float Length = 0.f;
+		for (int32 Index = 1; Index < Poly.Points.Num(); ++Index)
+		{
+			Length += FVector2D::Distance(Poly.Points[Index - 1], Poly.Points[Index]);
+		}
+		return Length;
+	}
+
+	FVector2D PointAt(const FPoly& Poly, const float Distance)
+	{
+		if (Poly.Points.Num() == 0)
+		{
+			return FVector2D::ZeroVector;
+		}
+		if (Poly.Points.Num() == 1 || Distance <= 0.f)
+		{
+			if (Poly.Points.Num() == 1)
+			{
+				return Poly.Points[0];
+			}
+			const FVector2D Back = (Poly.Points[0] - Poly.Points[1]).GetSafeNormal();
+			return Poly.Points[0] + Back * (-Distance);
+		}
+
+		float Remain = Distance;
+		for (int32 Index = 1; Index < Poly.Points.Num(); ++Index)
+		{
+			const FVector2D Seg = Poly.Points[Index] - Poly.Points[Index - 1];
+			const float Len = Seg.Size();
+			if (Len <= KINDA_SMALL_NUMBER)
+			{
+				continue;
+			}
+			if (Remain <= Len || Index == Poly.Points.Num() - 1)
+			{
+				const FVector2D Dir = Seg / Len;
+				if (Remain <= Len)
+				{
+					return Poly.Points[Index - 1] + Dir * Remain;
+				}
+				return Poly.Points[Index] + Dir * (Remain - Len);
+			}
+			Remain -= Len;
+		}
+		return Poly.Points.Last();
+	}
+
+	bool RoutePoly(const USolidWorldMap& Map, const SolidRoad::FRoute& Route, const FVector2D WorldMin, const FVector2D WorldMax, FPoly& Out)
+	{
+		Out.Points.Reset();
+		for (const FIntPoint& Cell : Route.Cells)
+		{
+			FVector2D Center = FVector2D::ZeroVector;
+			if (!Map.CellToWorldXY(Cell, WorldMin, WorldMax, Center))
+			{
+				continue;
+			}
+			if (Out.Points.Num() == 0 || !Out.Points.Last().Equals(Center, 1.f))
+			{
+				Out.Points.Add(Center);
+			}
+		}
+		return Out.Points.Num() >= 2;
+	}
+
+	struct FMeshAccum
+	{
+		TArray<FVector> TimberPos;
+		TArray<FVector> TimberNorm;
+		TArray<int32> TimberTris;
+		TArray<FVector> RoadPos;
+		TArray<FVector> RoadNorm;
+		TArray<int32> RoadTris;
+
+		void Add(const bool bRoad, const FVector& A, const FVector& B, const FVector& C)
+		{
+			FVector Normal = FVector::CrossProduct(B - A, C - A);
+			if (Normal.SizeSquared() < 0.01f)
+			{
+				return;
+			}
+			// Clockwise from the outside. The right-hand cross points inward, so flip it for lighting.
+			Normal = (-Normal).GetSafeNormal();
+			TArray<FVector>& Pos = bRoad ? RoadPos : TimberPos;
+			TArray<FVector>& Norm = bRoad ? RoadNorm : TimberNorm;
+			TArray<int32>& Tris = bRoad ? RoadTris : TimberTris;
+			const int32 Base = Pos.Num();
+			Pos.Add(A);
+			Pos.Add(B);
+			Pos.Add(C);
+			Norm.Add(Normal);
+			Norm.Add(Normal);
+			Norm.Add(Normal);
+			Tris.Add(Base);
+			Tris.Add(Base + 1);
+			Tris.Add(Base + 2);
+		}
+
+		void Quad(const bool bRoad, const FVector& A, const FVector& B, const FVector& C, const FVector& D)
+		{
+			Add(bRoad, A, B, C);
+			Add(bRoad, A, C, D);
+		}
+	};
+
+	void SidesAt(const TArray<FVector>& Line, const int32 Index, const float HalfWidth, FVector2D& OutLeft, FVector2D& OutRight)
+	{
+		FVector2D Dir = FVector2D::ZeroVector;
+		if (Index + 1 < Line.Num())
+		{
+			Dir += FVector2D(Line[Index + 1].X - Line[Index].X, Line[Index + 1].Y - Line[Index].Y).GetSafeNormal();
+		}
+		if (Index > 0)
+		{
+			Dir += FVector2D(Line[Index].X - Line[Index - 1].X, Line[Index].Y - Line[Index - 1].Y).GetSafeNormal();
+		}
+		Dir = Dir.GetSafeNormal();
+		if (Dir.IsNearlyZero())
+		{
+			Dir = FVector2D(1.f, 0.f);
+		}
+
+		FVector2D Right(Dir.Y, -Dir.X);
+		if (Index > 0 && Index + 1 < Line.Num())
+		{
+			const FVector2D OutDir = FVector2D(Line[Index + 1].X - Line[Index].X, Line[Index + 1].Y - Line[Index].Y).GetSafeNormal();
+			const FVector2D OutRight(OutDir.Y, -OutDir.X);
+			const float Dot = FVector2D::DotProduct(Right, OutRight);
+			if (Dot > 0.25f)
+			{
+				Right /= Dot;
+			}
+		}
+		Right *= HalfWidth;
+		OutRight = Right;
+		OutLeft = -Right;
+	}
+
+	UStaticMesh* FinishMesh(UObject* Outer, const FMeshAccum& Accum, const TCHAR* Name)
+	{
+		if (Accum.TimberTris.Num() < 3 && Accum.RoadTris.Num() < 3)
+		{
+			return nullptr;
+		}
+
+		FMeshDescription MeshDescription;
+		FStaticMeshAttributes Attributes(MeshDescription);
+		Attributes.Register();
+
+		TVertexAttributesRef<FVector3f> VertexPositions = Attributes.GetVertexPositions();
+		TVertexInstanceAttributesRef<FVector3f> InstanceNormals = Attributes.GetVertexInstanceNormals();
+		TVertexInstanceAttributesRef<FVector3f> InstanceTangents = Attributes.GetVertexInstanceTangents();
+		TVertexInstanceAttributesRef<float> InstanceBinormalSigns = Attributes.GetVertexInstanceBinormalSigns();
+		TVertexInstanceAttributesRef<FVector2f> InstanceUVs = Attributes.GetVertexInstanceUVs();
+		TVertexInstanceAttributesRef<FVector4f> InstanceColors = Attributes.GetVertexInstanceColors();
+		TPolygonGroupAttributesRef<FName> PolygonGroupNames = Attributes.GetPolygonGroupMaterialSlotNames();
+		InstanceUVs.SetNumChannels(1);
+
+		const FName TimberName(TEXT("Timber"));
+		const FName RoadName(TEXT("Road"));
+		const FPolygonGroupID TimberGroup = MeshDescription.CreatePolygonGroup();
+		const FPolygonGroupID RoadGroup = MeshDescription.CreatePolygonGroup();
+		PolygonGroupNames[TimberGroup] = TimberName;
+		PolygonGroupNames[RoadGroup] = RoadName;
+
+		auto Emit = [&](const FPolygonGroupID Group, const TArray<FVector>& Pos, const TArray<FVector>& Norm, const TArray<int32>& Tris)
+		{
+			TArray<FVertexID> Ids;
+			Ids.Reserve(Pos.Num());
+			for (const FVector& Position : Pos)
+			{
+				const FVertexID VertexID = MeshDescription.CreateVertex();
+				VertexPositions[VertexID] = FVector3f(Position);
+				Ids.Add(VertexID);
+			}
+			for (int32 Tri = 0; Tri + 2 < Tris.Num(); Tri += 3)
+			{
+				TArray<FVertexInstanceID, TInlineAllocator<3>> Corners;
+				for (int32 Corner = 0; Corner < 3; ++Corner)
+				{
+					const int32 Vert = Tris[Tri + Corner];
+					const FVertexInstanceID InstanceID = MeshDescription.CreateVertexInstance(Ids[Vert]);
+					const FVector Normal = Norm[Vert];
+					InstanceNormals[InstanceID] = FVector3f(Normal);
+					FVector Tangent = FVector::CrossProduct(Normal, FVector::UpVector).GetSafeNormal();
+					if (Tangent.IsNearlyZero())
+					{
+						Tangent = FVector::ForwardVector;
+					}
+					InstanceTangents[InstanceID] = FVector3f(Tangent);
+					InstanceBinormalSigns[InstanceID] = 1.f;
+					InstanceUVs.Set(InstanceID, 0, FVector2f(0.f, 0.f));
+					InstanceColors[InstanceID] = FVector4f(1.f, 1.f, 1.f, 1.f);
+					Corners.Add(InstanceID);
+				}
+				MeshDescription.CreatePolygon(Group, Corners);
+			}
+		};
+
+		Emit(TimberGroup, Accum.TimberPos, Accum.TimberNorm, Accum.TimberTris);
+		Emit(RoadGroup, Accum.RoadPos, Accum.RoadNorm, Accum.RoadTris);
+
+		UStaticMesh* Mesh = NewObject<UStaticMesh>(Outer, NAME_None, RF_Transient);
+		Mesh->bAllowCPUAccess = true;
+		Mesh->NeverStream = true;
+		{
+			FMeshNaniteSettings NaniteSettings = Mesh->GetNaniteSettings();
+			NaniteSettings.bEnabled = false;
+			Mesh->SetNaniteSettings(NaniteSettings);
+		}
+		Mesh->SetStaticMaterials({
+			FStaticMaterial(nullptr, TimberName, TimberName),
+			FStaticMaterial(nullptr, RoadName, RoadName),
+		});
+
+		UStaticMesh::FBuildMeshDescriptionsParams BuildParams;
+		BuildParams.bBuildSimpleCollision = true;
+		BuildParams.bFastBuild = true;
+		BuildParams.bAllowCpuAccess = false;
+		BuildParams.bCommitMeshDescription = true;
+		BuildParams.bMarkPackageDirty = false;
+
+		const TArray<const FMeshDescription*> Descriptions = { &MeshDescription };
+		if (!Mesh->BuildFromMeshDescriptions(Descriptions, BuildParams))
+		{
+			UE_LOG(LogSolid, Error, TEXT("SolidBridge: failed to build %s mesh."), Name);
+			return nullptr;
+		}
+		{
+			FMeshNaniteSettings NaniteSettings = Mesh->GetNaniteSettings();
+			NaniteSettings.bEnabled = false;
+			Mesh->SetNaniteSettings(NaniteSettings);
+		}
+		return Mesh;
+	}
+
+	/** Strip along a centerline. The deck is capped. A ramp is capped only at the buried end. */
+	UStaticMesh* BuildStrip(UObject* Outer, const TArray<FVector>& WorldLine, const float WidthCm, const FVector& Origin, const bool bCapStart, const bool bCapEnd, const TCHAR* Name)
+	{
+		if (WorldLine.Num() < 2)
+		{
+			return nullptr;
+		}
+
+		const float Half = WidthCm * 0.5f;
+		TArray<FVector> Left;
+		TArray<FVector> Right;
+		Left.Reserve(WorldLine.Num());
+		Right.Reserve(WorldLine.Num());
+		for (int32 Index = 0; Index < WorldLine.Num(); ++Index)
+		{
+			FVector2D SideL;
+			FVector2D SideR;
+			SidesAt(WorldLine, Index, Half, SideL, SideR);
+			const FVector P = WorldLine[Index] - Origin;
+			Left.Add(P + FVector(SideL.X, SideL.Y, 0.f));
+			Right.Add(P + FVector(SideR.X, SideR.Y, 0.f));
+		}
+
+		FMeshAccum Accum;
+		for (int32 Index = 1; Index < WorldLine.Num(); ++Index)
+		{
+			const FVector L0 = Left[Index - 1];
+			const FVector R0 = Right[Index - 1];
+			const FVector L1 = Left[Index];
+			const FVector R1 = Right[Index];
+			const FVector Down(0.f, 0.f, -SolidBridge::ThicknessCm);
+			const FVector L0b = L0 + Down;
+			const FVector R0b = R0 + Down;
+			const FVector L1b = L1 + Down;
+			const FVector R1b = R1 + Down;
+
+			Accum.Quad(true, L0, L1, R1, R0);
+			Accum.Quad(false, L0b, R0b, R1b, L1b);
+			Accum.Quad(false, R0, R1, R1b, R0b);
+			Accum.Quad(false, L1, L0, L0b, L1b);
+		}
+
+		const FVector Down(0.f, 0.f, -SolidBridge::ThicknessCm);
+		if (bCapStart)
+		{
+			Accum.Quad(false, Left[0], Right[0], Right[0] + Down, Left[0] + Down);
+		}
+		if (bCapEnd)
+		{
+			const int32 Last = Left.Num() - 1;
+			Accum.Quad(false, Left[Last], Left[Last] + Down, Right[Last] + Down, Right[Last]);
+		}
+		return FinishMesh(Outer, Accum, Name);
+	}
+
+	void Paint(UStaticMeshComponent* Mesh, UObject* Outer, const TCHAR* TimberName, const TCHAR* RoadName)
+	{
+		if (!Mesh || !Mesh->GetStaticMesh())
+		{
+			return;
+		}
+		if (UMaterialInterface* Timber = SolidMaterials::CreateSolidColor(Outer, SolidBridge::TimberColor(), TimberName, 0.92f))
+		{
+			Mesh->SetMaterial(0, Timber);
+		}
+		if (UMaterialInterface* Road = SolidMaterials::CreateSolidColor(
+			Outer, USolidWorldMap::DefaultColorForBiome(ESolidBiome::Road), RoadName, 0.95f))
+		{
+			Mesh->SetMaterial(1, Road);
+		}
+	}
+
+	/** Intact center. A later change replaces this mesh for a broken span. */
+	UStaticMesh* BuildIntactDeckMesh(UObject* Outer, const SolidBridge::FBridge& Bridge, const FVector& Origin)
+	{
+		return BuildStrip(Outer, Bridge.Deck, Bridge.WidthCm, Origin, true, true, TEXT("deck"));
+	}
+
+	UStaticMesh* BuildRampMesh(UObject* Outer, const TArray<FVector>& Centerline, const float WidthCm, const FVector& Origin, const TCHAR* Name)
+	{
+		// The first point meets the deck. The last point is the buried end.
+		return BuildStrip(Outer, Centerline, WidthCm, Origin, false, true, Name);
+	}
+}
+
+int32 SolidBridge::Collect(
+	const USolidWorldMap& Map,
+	const FVector2D WorldMinXY,
+	const FVector2D WorldMaxXY,
+	const TFunction<float(float X, float Y)>& HeightAt,
+	TArray<FBridge>& Out)
+{
+	Out.Reset();
+	if (!HeightAt)
+	{
+		return 0;
+	}
+
+	for (const SolidRoad::FRoute& Route : Map.GetRoads())
+	{
+		FPoly Poly;
+		if (!RoutePoly(Map, Route, WorldMinXY, WorldMaxXY, Poly))
+		{
+			continue;
+		}
+
+		const float Total = PolyLength(Poly);
+		TArray<float> Dist;
+		Dist.Add(0.f);
+		for (float D = SampleStepCm; D < Total; D += SampleStepCm)
+		{
+			Dist.Add(D);
+		}
+		if (Total > 1.f)
+		{
+			Dist.Add(Total);
+		}
+		float Along = 0.f;
+		for (int32 Index = 1; Index < Poly.Points.Num(); ++Index)
+		{
+			Along += FVector2D::Distance(Poly.Points[Index - 1], Poly.Points[Index]);
+			Dist.Add(Along);
+		}
+		Dist.Sort();
+
+		TArray<float> Unique;
+		Unique.Reserve(Dist.Num());
+		for (const float D : Dist)
+		{
+			if (Unique.Num() == 0 || D - Unique.Last() > 1.f)
+			{
+				Unique.Add(D);
+			}
+		}
+		Dist = MoveTemp(Unique);
+
+		auto IsWet = [&Map, &Poly, WorldMinXY, WorldMaxXY](const float D)
+		{
+			const FVector2D P = PointAt(Poly, D);
+			return Map.SampleBiome(P.X, P.Y, WorldMinXY, WorldMaxXY) == ESolidBiome::River;
+		};
+
+		TArray<uint8> Wet;
+		Wet.Reserve(Dist.Num());
+		for (const float D : Dist)
+		{
+			Wet.Add(IsWet(D) ? 1 : 0);
+		}
+
+		struct FRun
+		{
+			int32 First = 0;
+			int32 Last = 0;
+		};
+		TArray<FRun> Runs;
+		for (int32 Index = 0; Index < Wet.Num();)
+		{
+			if (Wet[Index] == 0)
+			{
+				++Index;
+				continue;
+			}
+			int32 Last = Index;
+			while (Last + 1 < Wet.Num() && Wet[Last + 1] != 0)
+			{
+				++Last;
+			}
+			if (Runs.Num() > 0 && Dist[Index] - Dist[Runs.Last().Last] < SolidRiver::WidthCm)
+			{
+				Runs.Last().Last = Last;
+			}
+			else
+			{
+				Runs.Add({ Index, Last });
+			}
+			Index = Last + 1;
+		}
+
+		auto EdgeBefore = [&IsWet](const float WetD)
+		{
+			float WetAt = WetD;
+			float DryAt = WetD;
+			for (int32 Step = 0; Step < 8000; ++Step)
+			{
+				DryAt = WetAt - SampleStepCm;
+				if (!IsWet(DryAt))
+				{
+					for (int32 Refine = 0; Refine < 16; ++Refine)
+					{
+						const float Mid = (DryAt + WetAt) * 0.5f;
+						if (IsWet(Mid))
+						{
+							WetAt = Mid;
+						}
+						else
+						{
+							DryAt = Mid;
+						}
+					}
+					return WetAt;
+				}
+				WetAt = DryAt;
+				if (WetD - WetAt > MaxRampCm)
+				{
+					return WetAt;
+				}
+			}
+			return WetAt;
+		};
+
+		auto EdgeAfter = [&IsWet](const float WetD)
+		{
+			float WetAt = WetD;
+			float DryAt = WetD;
+			for (int32 Step = 0; Step < 8000; ++Step)
+			{
+				DryAt = WetAt + SampleStepCm;
+				if (!IsWet(DryAt))
+				{
+					for (int32 Refine = 0; Refine < 16; ++Refine)
+					{
+						const float Mid = (DryAt + WetAt) * 0.5f;
+						if (IsWet(Mid))
+						{
+							WetAt = Mid;
+						}
+						else
+						{
+							DryAt = Mid;
+						}
+					}
+					return WetAt;
+				}
+				WetAt = DryAt;
+				if (WetAt - WetD > MaxRampCm)
+				{
+					return WetAt;
+				}
+			}
+			return WetAt;
+		};
+
+		const float Width = SolidRoad::WidthCm(Route.Definition.Type);
+		for (const FRun& Run : Runs)
+		{
+			const float Water0 = (Run.First > 0)
+				? [&]()
+				{
+					float DryAt = Dist[Run.First - 1];
+					float WetAt = Dist[Run.First];
+					for (int32 Refine = 0; Refine < 16; ++Refine)
+					{
+						const float Mid = (DryAt + WetAt) * 0.5f;
+						if (IsWet(Mid))
+						{
+							WetAt = Mid;
+						}
+						else
+						{
+							DryAt = Mid;
+						}
+					}
+					return WetAt;
+				}()
+				: EdgeBefore(Dist[Run.First]);
+			const float Water1 = (Run.Last + 1 < Dist.Num())
+				? [&]()
+				{
+					float DryAt = Dist[Run.Last + 1];
+					float WetAt = Dist[Run.Last];
+					for (int32 Refine = 0; Refine < 16; ++Refine)
+					{
+						const float Mid = (DryAt + WetAt) * 0.5f;
+						if (IsWet(Mid))
+						{
+							WetAt = Mid;
+						}
+						else
+						{
+							DryAt = Mid;
+						}
+					}
+					return WetAt;
+				}()
+				: EdgeAfter(Dist[Run.Last]);
+
+			const float Deck0 = Water0 - BankRestCm;
+			const float Deck1 = Water1 + BankRestCm;
+			if (Deck1 - Deck0 < 10.f)
+			{
+				continue;
+			}
+
+			TArray<float> DeckD;
+			DeckD.Add(Deck0);
+			float VertD = 0.f;
+			for (int32 Index = 1; Index < Poly.Points.Num(); ++Index)
+			{
+				VertD += FVector2D::Distance(Poly.Points[Index - 1], Poly.Points[Index]);
+				if (VertD > Deck0 + 1.f && VertD < Deck1 - 1.f)
+				{
+					DeckD.Add(VertD);
+				}
+			}
+			DeckD.Add(Deck1);
+
+			float Highest = -TNumericLimits<float>::Max();
+			float HighestWater = -TNumericLimits<float>::Max();
+			bool bSawWater = false;
+			for (float D = Deck0; D <= Deck1 + 0.1f; D += SampleStepCm)
+			{
+				const float Clamped = FMath::Min(D, Deck1);
+				const FVector2D P = PointAt(Poly, Clamped);
+				const float H = HeightAt(P.X, P.Y);
+				Highest = FMath::Max(Highest, H);
+				if (IsWet(Clamped))
+				{
+					bSawWater = true;
+					HighestWater = FMath::Max(HighestWater, H);
+				}
+			}
+			float DeckTop = Highest + RiseCm;
+			if (bSawWater)
+			{
+				DeckTop = FMath::Max(DeckTop, HighestWater + MinClearanceCm + ThicknessCm);
+			}
+
+			FBridge Bridge;
+			Bridge.WidthCm = Width;
+			Bridge.Deck.Reserve(DeckD.Num());
+			for (const float D : DeckD)
+			{
+				const FVector2D P = PointAt(Poly, D);
+				Bridge.Deck.Add(FVector(P.X, P.Y, DeckTop));
+			}
+
+			auto BuildRamp = [&](const float EndD, const float Sign, TArray<FVector>& Ramp)
+			{
+				float D = EndD;
+				float OutDist = 0.f;
+				bool bMet = false;
+				float MetAt = 0.f;
+				auto Push = [&](const float AtD, const float Travel)
+				{
+					const FVector2D P = PointAt(Poly, AtD);
+					Ramp.Add(FVector(P.X, P.Y, DeckTop - Grade * Travel));
+				};
+				Push(D, 0.f);
+				while (OutDist < MaxRampCm)
+				{
+					OutDist += SampleStepCm;
+					D += Sign * SampleStepCm;
+					Push(D, OutDist);
+					const FVector& Last = Ramp.Last();
+					if (!bMet && Last.Z <= HeightAt(Last.X, Last.Y))
+					{
+						bMet = true;
+						MetAt = OutDist;
+					}
+					if (bMet && OutDist >= MetAt + BurialCm)
+					{
+						break;
+					}
+				}
+			};
+
+			BuildRamp(Deck0, -1.f, Bridge.RampFrom);
+			BuildRamp(Deck1, 1.f, Bridge.RampTo);
+			if (Bridge.Deck.Num() >= 2 && Bridge.RampFrom.Num() >= 2 && Bridge.RampTo.Num() >= 2)
+			{
+				Out.Add(MoveTemp(Bridge));
+			}
+		}
+	}
+	return Out.Num();
+}
+
+ASolidBridge::ASolidBridge()
+{
+	PrimaryActorTick.bCanEverTick = false;
+
+	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
+	SetRootComponent(SceneRoot);
+
+	RampFromMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RampFrom"));
+	RampFromMesh->SetupAttachment(SceneRoot);
+	RampFromMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	RampFromMesh->SetCollisionResponseToAllChannels(ECR_Block);
+	RampFromMesh->SetCastShadow(true);
+
+	DeckMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Deck"));
+	DeckMesh->SetupAttachment(SceneRoot);
+	DeckMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	DeckMesh->SetCollisionResponseToAllChannels(ECR_Block);
+	DeckMesh->SetCastShadow(true);
+
+	RampToMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RampTo"));
+	RampToMesh->SetupAttachment(SceneRoot);
+	RampToMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	RampToMesh->SetCollisionResponseToAllChannels(ECR_Block);
+	RampToMesh->SetCastShadow(true);
+}
+
+void ASolidBridge::OnConstruction(const FTransform& Transform)
+{
+	Super::OnConstruction(Transform);
+	if (bHasBridge)
+	{
+		BuildVisuals();
+	}
+}
+
+void ASolidBridge::BeginPlay()
+{
+	Super::BeginPlay();
+	if (bHasBridge)
+	{
+		BuildVisuals();
+	}
+}
+
+void ASolidBridge::SetBridge(const SolidBridge::FBridge& InBridge)
+{
+	Bridge = InBridge;
+	bHasBridge = Bridge.Deck.Num() >= 2;
+	if (!bHasBridge)
+	{
+		return;
+	}
+
+	FVector Mid = FVector::ZeroVector;
+	for (const FVector& P : Bridge.Deck)
+	{
+		Mid.X += P.X;
+		Mid.Y += P.Y;
+	}
+	Mid /= static_cast<float>(Bridge.Deck.Num());
+	SetActorLocation(FVector(Mid.X, Mid.Y, 0.f));
+	BuildVisuals();
+}
+
+void ASolidBridge::BuildVisuals()
+{
+	if (!bHasBridge || !DeckMesh || !RampFromMesh || !RampToMesh)
+	{
+		return;
+	}
+
+	const FVector Origin = GetActorLocation();
+	if (UStaticMesh* Deck = BuildIntactDeckMesh(this, Bridge, Origin))
+	{
+		DeckMesh->SetStaticMesh(Deck);
+		Paint(DeckMesh, this, TEXT("BridgeDeckTimber"), TEXT("BridgeDeckRoad"));
+	}
+	if (UStaticMesh* Ramp = BuildRampMesh(this, Bridge.RampFrom, Bridge.WidthCm, Origin, TEXT("ramp from")))
+	{
+		RampFromMesh->SetStaticMesh(Ramp);
+		Paint(RampFromMesh, this, TEXT("BridgeRampFromTimber"), TEXT("BridgeRampFromRoad"));
+	}
+	if (UStaticMesh* Ramp = BuildRampMesh(this, Bridge.RampTo, Bridge.WidthCm, Origin, TEXT("ramp to")))
+	{
+		RampToMesh->SetStaticMesh(Ramp);
+		Paint(RampToMesh, this, TEXT("BridgeRampToTimber"), TEXT("BridgeRampToRoad"));
+	}
+}

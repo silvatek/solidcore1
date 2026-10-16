@@ -97,6 +97,96 @@ namespace
 		}
 		return Bones;
 	}
+
+	struct FHandFrame
+	{
+		bool bValid = false;
+		FVector Center = FVector::ZeroVector;
+		FVector Long = FVector::UpVector;
+		FVector Wide = FVector::RightVector;
+		FVector Thin = FVector::ForwardVector;
+		float LongRadius = 0.f;
+		float WideRadius = 0.f;
+		float ThinRadius = 0.f;
+	};
+
+	/** The ellipsoid Draw builds. Invalid when the finger is too short to draw. */
+	FHandFrame HandFrame(
+		const TArray<FName>& BoneNames,
+		const int32 WeightBone,
+		const FVector& From,
+		const FVector& To,
+		const FVector* SegmentStart,
+		const FVector* SegmentEnd,
+		const int32 SegmentCount)
+	{
+		using namespace SolidBodyMesh;
+
+		FHandFrame Frame;
+		if (WeightBone == INDEX_NONE)
+		{
+			return Frame;
+		}
+
+		const float Length = static_cast<float>(FVector::Dist(From, To));
+		if (Length < 1.f)
+		{
+			return Frame;
+		}
+		const FVector Long = (To - From) / Length;
+
+		FVector Wide = FVector::ZeroVector;
+		if (SegmentStart && SegmentEnd)
+		{
+			const int32 Limit = FMath::Min(SegmentCount, FMath::Max(BoneNames.Num() - 1, 0));
+			for (int32 Index = 0; Index < Limit; ++Index)
+			{
+				if (!IsFingerBoneName(BoneNames[Index + 1].ToString()))
+				{
+					continue;
+				}
+				FVector Perp = SegmentEnd[Index] - From;
+				Perp -= Long * FVector::DotProduct(Perp, Long);
+				if (Perp.SizeSquared() < 0.01)
+				{
+					continue;
+				}
+				if (FVector::DotProduct(Perp, Wide) < 0.0)
+				{
+					Perp = -Perp;
+				}
+				Wide += Perp;
+			}
+		}
+		if (!Wide.Normalize())
+		{
+			Wide = FVector::RightVector - Long * FVector::DotProduct(FVector::RightVector, Long);
+			if (!Wide.Normalize())
+			{
+				Wide = FVector::ForwardVector - Long * FVector::DotProduct(FVector::ForwardVector, Long);
+			}
+		}
+		FVector Thin = FVector::CrossProduct(Long, Wide);
+		if (!Thin.Normalize())
+		{
+			return Frame;
+		}
+		Wide = FVector::CrossProduct(Thin, Long).GetSafeNormal();
+		if (Wide.IsNearlyZero())
+		{
+			return Frame;
+		}
+
+		Frame.bValid = true;
+		Frame.Center = From + Long * (Length * 0.5f);
+		Frame.Long = Long;
+		Frame.Wide = Wide;
+		Frame.Thin = Thin;
+		Frame.LongRadius = Length * 0.5f;
+		Frame.WideRadius = HandWidthDiameterCm * 0.5f;
+		Frame.ThinRadius = HandThicknessDiameterCm * 0.5f;
+		return Frame;
+	}
 }
 
 SolidBodyMesh::FSolidHandPart::FSolidHandPart(
@@ -146,64 +236,18 @@ void SolidBodyMesh::FSolidHandPart::Draw(
 {
 	(void)SpanBone;
 	(void)WideAxis;
-	if (WeightBone == INDEX_NONE)
+	const FHandFrame Frame = HandFrame(Bones, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount);
+	if (!Frame.bValid)
 	{
 		return;
 	}
-
-	const float Length = static_cast<float>(FVector::Dist(From, To));
-	if (Length < 1.f)
-	{
-		return;
-	}
-	const FVector Long = (To - From) / Length;
-
-	FVector Wide = FVector::ZeroVector;
-	if (SegmentStart && SegmentEnd)
-	{
-		const int32 Limit = FMath::Min(SegmentCount, FMath::Max(Bones.Num() - 1, 0));
-		for (int32 Index = 0; Index < Limit; ++Index)
-		{
-			if (!IsFingerBoneName(Bones[Index + 1].ToString()))
-			{
-				continue;
-			}
-			FVector Perp = SegmentEnd[Index] - From;
-			Perp -= Long * FVector::DotProduct(Perp, Long);
-			if (Perp.SizeSquared() < 0.01)
-			{
-				continue;
-			}
-			if (FVector::DotProduct(Perp, Wide) < 0.0)
-			{
-				Perp = -Perp;
-			}
-			Wide += Perp;
-		}
-	}
-	if (!Wide.Normalize())
-	{
-		Wide = FVector::RightVector - Long * FVector::DotProduct(FVector::RightVector, Long);
-		if (!Wide.Normalize())
-		{
-			Wide = FVector::ForwardVector - Long * FVector::DotProduct(FVector::ForwardVector, Long);
-		}
-	}
-	FVector Thin = FVector::CrossProduct(Long, Wide);
-	if (!Thin.Normalize())
-	{
-		return;
-	}
-	Wide = FVector::CrossProduct(Thin, Long).GetSafeNormal();
-	if (Wide.IsNearlyZero())
-	{
-		return;
-	}
-
-	const float LongRadius = Length * 0.5f;
-	const float WideRadius = HandWidthDiameterCm * 0.5f;
-	const float ThinRadius = HandThicknessDiameterCm * 0.5f;
-	const FVector Center = From + Long * LongRadius;
+	const FVector& Long = Frame.Long;
+	const FVector& Wide = Frame.Wide;
+	const FVector& Thin = Frame.Thin;
+	const float LongRadius = Frame.LongRadius;
+	const float WideRadius = Frame.WideRadius;
+	const float ThinRadius = Frame.ThinRadius;
+	const FVector& Center = Frame.Center;
 	const int32 Sides = FMath::Clamp(HeadSideCount, 3, BodyPartSideLimit);
 	const int32 Rings = FMath::Max(HeadRingCount, 3);
 	const uint8 Slot = MaterialSlot();
@@ -265,4 +309,30 @@ void SolidBodyMesh::FSolidHandPart::Draw(
 	{
 		AddTri(Tris, RingVert(Rings - 1, 0), RingVert(LastRing, Step), RingVert(LastRing, Step + 1));
 	}
+}
+
+bool SolidBodyMesh::FSolidHandPart::LowestZ(
+	const int32 WeightBone,
+	const int32 SpanBone,
+	const FVector& From,
+	const FVector& To,
+	const FVector* SegmentStart,
+	const FVector* SegmentEnd,
+	const int32 SegmentCount,
+	const FVector& WideAxis,
+	float& OutZ) const
+{
+	(void)SpanBone;
+	(void)WideAxis;
+	const FHandFrame Frame = HandFrame(Bones, WeightBone, From, To, SegmentStart, SegmentEnd, SegmentCount);
+	if (!Frame.bValid)
+	{
+		return false;
+	}
+	const float Extent = FMath::Sqrt(
+		FMath::Square(static_cast<float>(Frame.Long.Z) * Frame.LongRadius)
+		+ FMath::Square(static_cast<float>(Frame.Wide.Z) * Frame.WideRadius)
+		+ FMath::Square(static_cast<float>(Frame.Thin.Z) * Frame.ThinRadius));
+	OutZ = static_cast<float>(Frame.Center.Z) - Extent;
+	return true;
 }

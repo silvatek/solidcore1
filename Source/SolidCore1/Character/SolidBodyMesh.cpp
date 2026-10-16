@@ -647,13 +647,13 @@ namespace
 		return Cache;
 	}
 
-	TMap<uint32, float>& BodySoleZ()
+	TMap<uint32, float>& CachedBaseZ()
 	{
-		static TMap<uint32, float> Soles;
-		return Soles;
+		static TMap<uint32, float> Bases;
+		return Bases;
 	}
 
-	void PlantFeet(USkeletalMeshComponent* MeshComp, const float SoleZ)
+	void PlantBase(USkeletalMeshComponent* MeshComp, const float BaseZ)
 	{
 		float HalfHeight = 96.f;
 		if (const UCapsuleComponent* Capsule = Cast<UCapsuleComponent>(MeshComp->GetAttachParent()))
@@ -661,7 +661,7 @@ namespace
 			HalfHeight = Capsule->GetUnscaledCapsuleHalfHeight();
 		}
 		FVector Rel = MeshComp->GetRelativeLocation();
-		Rel.Z = SolidBodyMesh::FeetMeshOffset(HalfHeight, SoleZ);
+		Rel.Z = SolidBodyMesh::BaseMeshOffset(HalfHeight, BaseZ);
 		MeshComp->SetRelativeLocation(Rel);
 	}
 
@@ -686,7 +686,7 @@ namespace
 		const FSolidBodyParams& Params,
 		const TCHAR* DebugLabel,
 		const bool bReused,
-		const float SoleZ)
+		const float BaseZ)
 	{
 		if (MeshComp->GetSkeletalMeshAsset() != Body)
 		{
@@ -708,7 +708,7 @@ namespace
 				RenderVertexCount(Body),
 				bReused ? TEXT(" (reused)") : TEXT(""));
 		}
-		PlantFeet(MeshComp, SoleZ);
+		PlantBase(MeshComp, BaseZ);
 	}
 }
 #endif
@@ -717,9 +717,9 @@ USkeletalMesh* SolidBodyMesh::Build(
 	const USkeletalMesh* Source,
 	const FSolidBodyParams& Params,
 	UObject* Outer,
-	float& OutSoleZ)
+	float& OutBaseZ)
 {
-	OutSoleZ = 0.f;
+	OutBaseZ = 0.f;
 #if WITH_EDITORONLY_DATA
 	if (!Source || !Outer)
 	{
@@ -748,7 +748,7 @@ USkeletalMesh* SolidBodyMesh::Build(
 
 	TArray<FVector> Positions;
 	SolidBodyDeform::ComponentPositions(Deformed.Bones, Positions);
-	OutSoleZ = FootSoleZ(Deformed.Bones, Positions);
+	OutBaseZ = BodyBaseZ(Body, Deformed.Bones, Positions);
 
 	// The part list draws the triangles. The rest of this function hands them to Unreal.
 	TArray<FSolidBodyVert> Verts;
@@ -844,76 +844,30 @@ USkeletalMesh* SolidBodyMesh::Build(
 	(void)Source;
 	(void)Params;
 	(void)Outer;
-	(void)OutSoleZ;
+	(void)OutBaseZ;
 	return nullptr;
 #endif
 }
 
-float SolidBodyMesh::FootSoleZ(
+float SolidBodyMesh::BodyBaseZ(
+	const FSolidBodyMesh& Body,
 	const TArray<FSolidDeformBone>& Bones,
 	const TArray<FVector>& Positions)
 {
-	const int32 Count = FMath::Min(Bones.Num(), Positions.Num());
-	float Sole = TNumericLimits<float>::Max();
-	bool bFound = false;
-
-	auto FindBone = [&](const TCHAR* Name) -> int32
-	{
-		for (int32 Index = 0; Index < Count; ++Index)
-		{
-			if (Bones[Index].Name.ToString().Equals(Name, ESearchCase::IgnoreCase))
-			{
-				return Index;
-			}
-		}
-		return INDEX_NONE;
-	};
-
-	auto Consider = [&](const TCHAR* Name, const float RadiusStart, const float RadiusEnd)
-	{
-		const int32 Bone = FindBone(Name);
-		if (!Bones.IsValidIndex(Bone))
-		{
-			return;
-		}
-		const int32 Parent = Bones[Bone].ParentIndex;
-		if (!Bones.IsValidIndex(Parent) || !Positions.IsValidIndex(Parent) || Parent == Bone)
-		{
-			return;
-		}
-		const FVector& From = Positions[Parent];
-		const FVector& To = Positions[Bone];
-		const float Length = static_cast<float>(FVector::Dist(From, To));
-		if (Length < 1.f)
-		{
-			return;
-		}
-		const FVector Axis = (To - From) / static_cast<double>(Length);
-		const float Drop = static_cast<float>(FVector::CrossProduct(Axis, FVector::UpVector).Size());
-		const float Low = static_cast<float>(FMath::Min(
-			From.Z - RadiusStart * Drop,
-			To.Z - RadiusEnd * Drop));
-		Sole = FMath::Min(Sole, Low);
-		bFound = true;
-	};
-
-	const float CalfStart = CalfTopDiameterCm * 0.5f;
-	const float CalfEnd = CalfBottomDiameterCm * 0.5f;
-	const float FootRadius = BallDiameterCm * 0.5f;
-	const float ToeStart = ToeAnkleDiameterCm * 0.5f;
-	const float ToeEnd = ToeTipDiameterCm * 0.5f;
-	Consider(LeftCalfBone, CalfStart, CalfEnd);
-	Consider(RightCalfBone, CalfStart, CalfEnd);
-	Consider(LeftBallBone, FootRadius, FootRadius);
-	Consider(RightBallBone, FootRadius, FootRadius);
-	Consider(LeftToeBone, ToeStart, ToeEnd);
-	Consider(RightToeBone, ToeStart, ToeEnd);
-	return bFound ? Sole : 0.f;
+	return Body.Base(Bones, Positions);
 }
 
-float SolidBodyMesh::FeetMeshOffset(const float CapsuleHalfHeight, const float SoleZ)
+float SolidBodyMesh::BodyBaseZ(
+	const TArray<FSolidDeformBone>& Bones,
+	const TArray<FVector>& Positions)
 {
-	return -CapsuleHalfHeight - SoleZ;
+	const FSolidBodyMesh Body = FSolidBodyMesh::Make(Bones);
+	return Body.Base(Bones, Positions);
+}
+
+float SolidBodyMesh::BaseMeshOffset(const float CapsuleHalfHeight, const float BaseZ)
+{
+	return -CapsuleHalfHeight - BaseZ;
 }
 
 uint32 SolidBodyMesh::FaceCodepointForName(const FString& Name)
@@ -952,13 +906,13 @@ void SolidBodyMesh::ApplySeed(
 		{
 			if (HasRenderableBody(Cached))
 			{
-				WearBody(MeshComp, Cached, Seed, Params, DebugLabel, true, BodySoleZ().FindRef(Key));
+				WearBody(MeshComp, Cached, Seed, Params, DebugLabel, true, CachedBaseZ().FindRef(Key));
 				ApplyComponentColors(MeshComp, TorsoColor, LegColor, SkinColor);
 				return;
 			}
 		}
 		BodyCache().Remove(Key);
-		BodySoleZ().Remove(Key);
+		CachedBaseZ().Remove(Key);
 	}
 #endif
 
@@ -968,8 +922,8 @@ void SolidBodyMesh::ApplySeed(
 		return;
 	}
 
-	float SoleZ = 0.f;
-	USkeletalMesh* Built = Build(Source, Params, GetTransientPackage(), SoleZ);
+	float BaseZ = 0.f;
+	USkeletalMesh* Built = Build(Source, Params, GetTransientPackage(), BaseZ);
 	if (!Built)
 	{
 		UE_LOG(LogSolid, Warning,
@@ -987,14 +941,14 @@ void SolidBodyMesh::ApplySeed(
 	}
 	TStrongObjectPtr<USkeletalMesh> Kept(Built);
 	BodyCache().Add(Key, MoveTemp(Kept));
-	BodySoleZ().Add(Key, SoleZ);
-	WearBody(MeshComp, Built, Seed, Params, DebugLabel, false, SoleZ);
+	CachedBaseZ().Add(Key, BaseZ);
+	WearBody(MeshComp, Built, Seed, Params, DebugLabel, false, BaseZ);
 	ApplyComponentColors(MeshComp, TorsoColor, LegColor, SkinColor);
 #else
 	(void)Seed;
 	(void)Params;
 	(void)Built;
-	(void)SoleZ;
+	(void)BaseZ;
 	(void)TorsoColor;
 	(void)LegColor;
 	(void)SkinColor;
@@ -1092,4 +1046,73 @@ void SolidBodyMesh::FSolidBodyMesh::Draw(
 			SegmentStart.Num(),
 			FVector::ForwardVector);
 	}
+}
+
+float SolidBodyMesh::FSolidBodyMesh::Base(
+	const TArray<FSolidDeformBone>& Bones,
+	const TArray<FVector>& Positions) const
+{
+	const int32 Count = FMath::Min(Bones.Num(), Positions.Num());
+	float BaseZ = TNumericLimits<float>::Max();
+	bool bFound = false;
+	for (const TUniquePtr<FSolidBodyPart>& Part : Parts)
+	{
+		if (!Part || Part->Bones.Num() == 0)
+		{
+			continue;
+		}
+		const int32 Span = FindNamedBone(Bones, Count, *Part->Bones[0].ToString());
+		if (Span == INDEX_NONE)
+		{
+			continue;
+		}
+		const int32 Parent = Bones[Span].ParentIndex;
+		if (!Bones.IsValidIndex(Parent) || !Positions.IsValidIndex(Parent))
+		{
+			continue;
+		}
+
+		TArray<FVector> SegmentStart;
+		TArray<FVector> SegmentEnd;
+		bool bComplete = true;
+		for (int32 BoneNumber = 1; BoneNumber < Part->Bones.Num(); ++BoneNumber)
+		{
+			const int32 Bone = FindNamedBone(Bones, Count, *Part->Bones[BoneNumber].ToString());
+			if (Bone == INDEX_NONE)
+			{
+				bComplete = false;
+				break;
+			}
+			const int32 BoneParent = Bones[Bone].ParentIndex;
+			if (!Bones.IsValidIndex(BoneParent) || !Positions.IsValidIndex(BoneParent))
+			{
+				bComplete = false;
+				break;
+			}
+			SegmentStart.Add(Positions[BoneParent]);
+			SegmentEnd.Add(Positions[Bone]);
+		}
+		if (!bComplete)
+		{
+			continue;
+		}
+
+		float PartZ = 0.f;
+		if (!Part->LowestZ(
+			Parent,
+			Span,
+			Positions[Parent],
+			Positions[Span],
+			SegmentStart.GetData(),
+			SegmentEnd.GetData(),
+			SegmentStart.Num(),
+			FVector::ForwardVector,
+			PartZ))
+		{
+			continue;
+		}
+		BaseZ = FMath::Min(BaseZ, PartZ);
+		bFound = true;
+	}
+	return bFound ? BaseZ : 0.f;
 }

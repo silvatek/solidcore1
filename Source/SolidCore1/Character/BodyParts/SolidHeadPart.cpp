@@ -23,6 +23,60 @@ namespace
 		}
 		return Bones;
 	}
+
+	/** The sphere Draw builds. The bottom pole is the parent joint. */
+	bool MeasureHead(
+		const TArray<FName>& BoneNames,
+		const int32 SpanBone,
+		const FVector& From,
+		const FVector& To,
+		const FVector* SegmentStart,
+		const FVector* SegmentEnd,
+		const int32 SegmentCount,
+		float& OutHorizontal,
+		float& OutVertical,
+		FVector& OutCenter)
+	{
+		using namespace SolidBodyMesh;
+
+		if (SpanBone == INDEX_NONE || !SegmentStart || !SegmentEnd || BoneNames.Num() < 2)
+		{
+			return false;
+		}
+
+		const float HeadLength = FVector::Dist(From, To);
+		if (HeadLength < 1.f)
+		{
+			return false;
+		}
+
+		float RadiusSum = 0.f;
+		int32 Count = 0;
+		const int32 Limit = FMath::Min(SegmentCount, BoneNames.Num() - 1);
+		for (int32 Index = 0; Index < Limit; ++Index)
+		{
+			if (!IsEyeJointBoneName(BoneNames[Index + 1].ToString()))
+			{
+				continue;
+			}
+			const float EyeLength = FVector::Dist(SegmentStart[Index], SegmentEnd[Index]);
+			if (EyeLength < 1.f)
+			{
+				continue;
+			}
+			RadiusSum += EyeLength;
+			++Count;
+		}
+		if (Count == 0)
+		{
+			return false;
+		}
+
+		OutHorizontal = RadiusSum / static_cast<float>(Count);
+		OutVertical = HeadLength * HeadHeightInBoneLengths * 0.5f;
+		OutCenter = From + FVector::UpVector * OutVertical;
+		return true;
+	}
 }
 
 SolidBodyMesh::FSolidHeadPart::FSolidHeadPart(
@@ -77,43 +131,23 @@ void SolidBodyMesh::FSolidHeadPart::Draw(
 {
 	(void)WeightBone;
 	(void)WideAxis;
-	if (SpanBone == INDEX_NONE || !SegmentStart || !SegmentEnd || Bones.Num() < 2)
+	float HorizontalRadius = 0.f;
+	float VerticalRadius = 0.f;
+	FVector Center = FVector::ZeroVector;
+	if (!MeasureHead(
+		Bones,
+		SpanBone,
+		From,
+		To,
+		SegmentStart,
+		SegmentEnd,
+		SegmentCount,
+		HorizontalRadius,
+		VerticalRadius,
+		Center))
 	{
 		return;
 	}
-
-	const float HeadLength = FVector::Dist(From, To);
-	if (HeadLength < 1.f)
-	{
-		return;
-	}
-
-	float RadiusSum = 0.f;
-	int32 Count = 0;
-	const int32 Limit = FMath::Min(SegmentCount, Bones.Num() - 1);
-	for (int32 Index = 0; Index < Limit; ++Index)
-	{
-		if (!IsEyeJointBoneName(Bones[Index + 1].ToString()))
-		{
-			continue;
-		}
-		const float EyeLength = FVector::Dist(SegmentStart[Index], SegmentEnd[Index]);
-		if (EyeLength < 1.f)
-		{
-			continue;
-		}
-		RadiusSum += EyeLength;
-		++Count;
-	}
-	if (Count == 0)
-	{
-		return;
-	}
-
-	const float HorizontalRadius = RadiusSum / static_cast<float>(Count);
-	const float Height = HeadLength * HeadHeightInBoneLengths;
-	const float VerticalRadius = Height * 0.5f;
-	const FVector Center = From + FVector::UpVector * VerticalRadius;
 	const FVector Up = FVector::UpVector;
 	const FVector Right = FVector::RightVector;
 	const FVector Forward = FVector::ForwardVector;
@@ -178,4 +212,39 @@ void SolidBodyMesh::FSolidHeadPart::Draw(
 	{
 		AddTri(Tris, RingVert(Rings - 1, 0), RingVert(LastRing, Step), RingVert(LastRing, Step + 1));
 	}
+}
+
+bool SolidBodyMesh::FSolidHeadPart::LowestZ(
+	const int32 WeightBone,
+	const int32 SpanBone,
+	const FVector& From,
+	const FVector& To,
+	const FVector* SegmentStart,
+	const FVector* SegmentEnd,
+	const int32 SegmentCount,
+	const FVector& WideAxis,
+	float& OutZ) const
+{
+	(void)WeightBone;
+	(void)WideAxis;
+	float Horizontal = 0.f;
+	float Vertical = 0.f;
+	FVector Center = FVector::ZeroVector;
+	if (!MeasureHead(
+		Bones,
+		SpanBone,
+		From,
+		To,
+		SegmentStart,
+		SegmentEnd,
+		SegmentCount,
+		Horizontal,
+		Vertical,
+		Center))
+	{
+		return false;
+	}
+	(void)Horizontal;
+	OutZ = static_cast<float>(Center.Z - Vertical);
+	return true;
 }

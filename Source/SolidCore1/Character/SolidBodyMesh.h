@@ -66,6 +66,15 @@ namespace SolidBodyMesh
 			const TArray<FSolidDeformBone>& Bones,
 			const TArray<FVector>& Positions);
 
+		/**
+		 * The base of this body, in mesh space.
+		 * Each part measures its own lowest point. This keeps the minimum.
+		 * Zero when no part draws.
+		 */
+		float Base(
+			const TArray<FSolidDeformBone>& Bones,
+			const TArray<FVector>& Positions) const;
+
 		/** The skeleton this body was fitted to. AddBodyPart passes it to each part. */
 		TArray<FSolidDeformBone> Skeleton;
 	};
@@ -289,31 +298,43 @@ namespace SolidBodyMesh
 		float& InOutRayT);
 
 	/**
-	 * Lowest point of the calves, feet, and toes, in mesh space.
-	 * A horizontal foot sits one radius below its bone. Zero when none of those bones are present.
+	 * The base of this body, in mesh space.
+	 * The body asks every part for its lowest point, then keeps the minimum.
+	 * A hand below the feet becomes the base, and the feet lift.
+	 * Zero when no part draws.
 	 */
-	float FootSoleZ(const TArray<FSolidDeformBone>& Bones, const TArray<FVector>& Positions);
+	float BodyBaseZ(
+		const FSolidBodyMesh& Body,
+		const TArray<FSolidDeformBone>& Bones,
+		const TArray<FVector>& Positions);
 
-	/** Mesh relative Z that puts that sole on the bottom of the capsule. */
-	float FeetMeshOffset(float CapsuleHalfHeight, float SoleZ);
+	/**
+	 * The base of the body made from these bones, in mesh space.
+	 * The parts keep their default sections. A sized body uses the other overload.
+	 * Zero when no part draws.
+	 */
+	float BodyBaseZ(const TArray<FSolidDeformBone>& Bones, const TArray<FVector>& Positions);
+
+	/** Mesh relative Z that puts that base on the bottom of the capsule. */
+	float BaseMeshOffset(float CapsuleHalfHeight, float BaseZ);
 
 	/**
 	 * Transient low-poly mesh owned by Outer.
 	 * FSolidBodyMesh draws the triangles. This wraps them in a skeletal mesh.
 	 * Source supplies the Viking skeleton and bind pose. Its mesh and skeleton stay unchanged.
 	 * Null when Source has no skeleton, or the body has no wearable LOD.
-	 * OutSoleZ is the sole of that body, in mesh space.
+	 * OutBaseZ is the base of that body, in mesh space.
 	 */
 	USkeletalMesh* Build(
 		const USkeletalMesh* Source,
 		const FSolidBodyParams& Params,
 		UObject* Outer,
-		float& OutSoleZ);
+		float& OutBaseZ);
 
 	inline USkeletalMesh* Build(const USkeletalMesh* Source, const FSolidBodyParams& Params, UObject* Outer)
 	{
-		float SoleZ = 0.f;
-		return Build(Source, Params, Outer, SoleZ);
+		float BaseZ = 0.f;
+		return Build(Source, Params, Outer, BaseZ);
 	}
 
 	/**

@@ -1543,15 +1543,15 @@ bool FSolidBodyHandFingersTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidBodyFootSoleTest,
-	"SolidCore1.Body.FootSole",
+	FSolidBodyBaseTest,
+	"SolidCore1.Body.Base",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 
-bool FSolidBodyFootSoleTest::RunTest(const FString& Parameters)
+bool FSolidBodyBaseTest::RunTest(const FString& Parameters)
 {
 	using namespace SolidBodyMesh;
 
-	TestTrue(TEXT("no feet leave the sole at the mesh origin"), FMath::IsNearlyEqual(FootSoleZ({}, {}), 0.f, 0.01f));
+	TestTrue(TEXT("no parts leave the base at the mesh origin"), FMath::IsNearlyEqual(BodyBaseZ({}, {}), 0.f, 0.01f));
 
 	TArray<FSolidDeformBone> Bones;
 	auto AddBone = [&Bones](const TCHAR* Name, const int32 Parent, const FVector& Translation)
@@ -1570,14 +1570,14 @@ bool FSolidBodyFootSoleTest::RunTest(const FString& Parameters)
 
 	TArray<FVector> Positions;
 	SolidBodyDeform::ComponentPositions(Bones, Positions);
-	const float NeutralSole = FootSoleZ(Bones, Positions);
-	TestTrue(TEXT("the downward toe sets the sole"), FMath::IsNearlyEqual(NeutralSole, -78.f, 0.01f));
-	TestTrue(TEXT("the sole is below the foot bone"), NeutralSole < -70.f);
+	const float NeutralBase = BodyBaseZ(Bones, Positions);
+	TestTrue(TEXT("the downward toe sets the base"), FMath::IsNearlyEqual(NeutralBase, -78.f, 0.01f));
+	TestTrue(TEXT("the base is below the foot bone"), NeutralBase < -70.f);
 
 	const float HalfHeight = 96.f;
 	TestTrue(
-		TEXT("the offset puts that sole on the capsule bottom"),
-		FMath::IsNearlyEqual(FeetMeshOffset(HalfHeight, NeutralSole) + NeutralSole, -HalfHeight, 0.01f));
+		TEXT("the offset puts that base on the capsule bottom"),
+		FMath::IsNearlyEqual(BaseMeshOffset(HalfHeight, NeutralBase) + NeutralBase, -HalfHeight, 0.01f));
 
 	FSolidBodyMesh Body = FSolidBodyMesh::Make(Bones);
 	FSolidBodyParams LongLegs;
@@ -1585,11 +1585,68 @@ bool FSolidBodyFootSoleTest::RunTest(const FString& Parameters)
 	LongLegs.LegLength = SolidBody::ParamMax;
 	Body.Apply(Bones, LongLegs);
 	SolidBodyDeform::ComponentPositions(Bones, Positions);
-	const float LongSole = FootSoleZ(Bones, Positions);
+	const float LongBase = BodyBaseZ(Bones, Positions);
 	TestTrue(
-		TEXT("longer legs lower the sole"),
-		FMath::IsNearlyEqual(LongSole, -78.f * SolidBody::ParamMax, 0.01f));
-	TestTrue(TEXT("the longer sole is lower"), LongSole < NeutralSole);
+		TEXT("longer legs lower the base"),
+		FMath::IsNearlyEqual(LongBase, -78.f * SolidBody::ParamMax, 0.01f));
+	TestTrue(TEXT("the longer base is lower"), LongBase < NeutralBase);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBodyHandstandBaseTest,
+	"SolidCore1.Body.HandstandBase",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBodyHandstandBaseTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidBodyMesh;
+
+	TArray<FSolidDeformBone> Bones;
+	auto AddBone = [&Bones](const TCHAR* Name, const int32 Parent, const FVector& Translation)
+	{
+		FSolidDeformBone Bone;
+		Bone.Name = Name;
+		Bone.ParentIndex = Parent;
+		Bone.LocalTranslation = Translation;
+		Bones.Add(Bone);
+	};
+	AddBone(TEXT("pelvis"), INDEX_NONE, FVector::ZeroVector);
+	AddBone(LeftThighBone, 0, FVector(0.f, 0.f, -40.f));
+	AddBone(LeftCalfBone, 1, FVector(0.f, 0.f, -30.f));
+	AddBone(LeftBallBone, 2, FVector(16.f, 0.f, 0.f));
+	AddBone(LeftToeBone, 3, FVector(0.f, 0.f, -8.f));
+	AddBone(LeftHandBone, 0, FVector(0.f, 0.f, -40.f));
+	const int32 HandIndex = Bones.Num() - 1;
+	AddBone(TEXT("index_01_l"), HandIndex, FVector(0.f, 0.f, -50.f));
+	const int32 FingerIndex = Bones.Num() - 1;
+
+	TArray<FVector> Positions;
+	SolidBodyDeform::ComponentPositions(Bones, Positions);
+	int32 ToeIndex = INDEX_NONE;
+	for (int32 Index = 0; Index < Bones.Num(); ++Index)
+	{
+		if (Bones[Index].Name.ToString().Equals(LeftToeBone, ESearchCase::IgnoreCase))
+		{
+			ToeIndex = Index;
+			break;
+		}
+	}
+	TestTrue(TEXT("the toe bone is in the pose"), Bones.IsValidIndex(ToeIndex));
+	if (!Bones.IsValidIndex(ToeIndex))
+	{
+		return false;
+	}
+	const float ToeZ = static_cast<float>(Positions[ToeIndex].Z);
+	const float HandZ = static_cast<float>(Positions[FingerIndex].Z);
+	const float BaseZ = BodyBaseZ(Bones, Positions);
+	const FSolidBodyMesh Body = FSolidBodyMesh::Make(Bones);
+	const float WornBase = BodyBaseZ(Body, Bones, Positions);
+
+	TestTrue(TEXT("the hand hangs below the toe"), HandZ < ToeZ);
+	TestTrue(TEXT("a handstand plants the hand"), FMath::IsNearlyEqual(BaseZ, HandZ, 0.01f));
+	TestTrue(TEXT("the worn body plants the same hand"), FMath::IsNearlyEqual(WornBase, HandZ, 0.01f));
+	TestTrue(TEXT("the feet lift off that base"), ToeZ > BaseZ);
 	return true;
 }
 

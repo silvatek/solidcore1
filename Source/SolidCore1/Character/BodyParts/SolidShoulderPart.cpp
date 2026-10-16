@@ -339,3 +339,40 @@ void SolidBodyMesh::FSolidShoulderPart::Draw(
 		AddTri(Tris, Id(2, 0), Id(2, Step), Id(2, Step + 1));
 	}
 }
+
+bool SolidBodyMesh::FSolidShoulderPart::LowestZ(
+	const int32 WeightBone,
+	const int32 SpanBone,
+	const FVector& From,
+	const FVector& To,
+	const FVector* SegmentStart,
+	const FVector* SegmentEnd,
+	const int32 SegmentCount,
+	const FVector& WideAxis,
+	float& OutZ) const
+{
+	(void)WeightBone;
+	(void)SpanBone;
+	const FSolidShoulderPiece Piece = ShoulderPiece(
+		From,
+		To,
+		SegmentStart,
+		SegmentEnd,
+		SegmentCount,
+		Start.X,
+		WideAxis,
+		Start.Y,
+		End.X);
+	if (!Piece.bValid)
+	{
+		return false;
+	}
+	float LowerZ = 0.f;
+	float UpperZ = 0.f;
+	if (!ConeLowestZ(Piece.Lower, LowerZ) || !ConeLowestZ(Piece.Upper, UpperZ))
+	{
+		return false;
+	}
+	OutZ = FMath::Min(LowerZ, UpperZ);
+	return true;
+}

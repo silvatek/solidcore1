@@ -157,6 +157,25 @@ uint8 SolidBodyMesh::FSolidBodyPart::MaterialSlot() const
 	}
 }
 
+SolidBodyMesh::FSolidFittedCone SolidBodyMesh::FSolidBodyPart::Tube(
+	const FVector& From,
+	const FVector& To,
+	const FVector& WideAxis) const
+{
+	FSolidFittedCone Cone;
+	Cone.Start = From;
+	Cone.End = To;
+	Cone.RadiusStart = Start.X * 0.5f;
+	Cone.RadiusEnd = End.X * 0.5f;
+	Cone.DepthScaleStart = Start.X > KINDA_SMALL_NUMBER ? Start.Y / Start.X : 1.f;
+	Cone.DepthScaleEnd = End.X > KINDA_SMALL_NUMBER ? End.Y / End.X : 1.f;
+	Cone.WideAxis = WideAxis;
+	Cone.bValid = FVector::Dist(From, To) >= 1.0
+		&& Start.X > KINDA_SMALL_NUMBER
+		&& End.X > KINDA_SMALL_NUMBER;
+	return Cone;
+}
+
 SolidBodyMesh::FSolidPartDraw SolidBodyMesh::FSolidBodyPart::Fit(
 	const FVector& From,
 	const FVector& To,
@@ -165,18 +184,80 @@ SolidBodyMesh::FSolidPartDraw SolidBodyMesh::FSolidBodyPart::Fit(
 	const int32 SegmentCount,
 	const FVector& WideAxis)
 {
+	(void)SegmentStart;
+	(void)SegmentEnd;
+	(void)SegmentCount;
 	FSolidPartDraw Out;
-	Out.Cone.Start = From;
-	Out.Cone.End = To;
-	Out.Cone.RadiusStart = Start.X * 0.5f;
-	Out.Cone.RadiusEnd = End.X * 0.5f;
-	Out.Cone.DepthScaleStart = Start.X > KINDA_SMALL_NUMBER ? Start.Y / Start.X : 1.f;
-	Out.Cone.DepthScaleEnd = End.X > KINDA_SMALL_NUMBER ? End.Y / End.X : 1.f;
-	Out.Cone.WideAxis = WideAxis;
-	Out.Cone.bValid = FVector::Dist(From, To) >= 1.0
-		&& Start.X > KINDA_SMALL_NUMBER
-		&& End.X > KINDA_SMALL_NUMBER;
+	Out.Cone = Tube(From, To, WideAxis);
 	return Out;
+}
+
+bool SolidBodyMesh::FSolidBodyPart::ConeLowestZ(const FSolidFittedCone& Cone, float& OutZ) const
+{
+	if (!Cone.bValid)
+	{
+		return false;
+	}
+
+	const FVector Delta = Cone.End - Cone.Start;
+	const float Length = Delta.Size();
+	if (Length < 1.f)
+	{
+		return false;
+	}
+
+	const FVector Axis = Delta / Length;
+	FVector Wide = Cone.WideAxis - Axis * FVector::DotProduct(Cone.WideAxis, Axis);
+	if (Wide.SizeSquared() < 0.01)
+	{
+		Wide = FVector::CrossProduct(FVector::UpVector, Axis);
+	}
+	if (Wide.SizeSquared() < 0.01)
+	{
+		Wide = FVector::CrossProduct(FVector::ForwardVector, Axis);
+	}
+	if (!Wide.Normalize())
+	{
+		return false;
+	}
+	const FVector Narrow = FVector::CrossProduct(Axis, Wide).GetSafeNormal();
+	if (Narrow.IsNearlyZero())
+	{
+		return false;
+	}
+
+	auto RingZ = [&](const FVector& Center, const float Radius, const float DepthScale)
+	{
+		const float Depth = Radius * FMath::Clamp(DepthScale, 0.2f, 1.f);
+		const float Drop = FMath::Sqrt(
+			FMath::Square(Radius * static_cast<float>(Wide.Z))
+			+ FMath::Square(Depth * static_cast<float>(Narrow.Z)));
+		return static_cast<float>(Center.Z) - Drop;
+	};
+
+	OutZ = FMath::Min(
+		RingZ(Cone.Start, Cone.RadiusStart, Cone.DepthScaleStart),
+		RingZ(Cone.End, Cone.RadiusEnd, Cone.DepthScaleEnd));
+	return true;
+}
+
+bool SolidBodyMesh::FSolidBodyPart::LowestZ(
+	const int32 WeightBone,
+	const int32 SpanBone,
+	const FVector& From,
+	const FVector& To,
+	const FVector* SegmentStart,
+	const FVector* SegmentEnd,
+	const int32 SegmentCount,
+	const FVector& WideAxis,
+	float& OutZ) const
+{
+	(void)WeightBone;
+	(void)SpanBone;
+	(void)SegmentStart;
+	(void)SegmentEnd;
+	(void)SegmentCount;
+	return ConeLowestZ(Tube(From, To, WideAxis), OutZ);
 }
 
 void SolidBodyMesh::FSolidBodyPart::AddTri(

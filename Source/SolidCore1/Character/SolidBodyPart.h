@@ -162,6 +162,7 @@ namespace SolidBodyMesh
 	 * Bones[0] is the length of the piece. The other bones are wrapped inside it.
 	 * Start is the parent joint. End is Bones[0]. Mid is used by the shoulders.
 	 * Apply sizes the part and those bones. Fit measures the cones. Draw adds the triangles.
+	 * LowestZ is the bottom of that mesh. The body keeps the lowest one as its base.
 	 */
 	class FSolidBodyPart
 	{
@@ -257,7 +258,29 @@ namespace SolidBodyMesh
 			int32 SegmentCount,
 			const FVector& WideAxis);
 
+		/**
+		 * The bottom of this part's mesh, in mesh space.
+		 * A tube uses its two end rings. The head, a hand, and the shoulders measure their own mesh.
+		 * False when this part draws nothing.
+		 */
+		virtual bool LowestZ(
+			int32 WeightBone,
+			int32 SpanBone,
+			const FVector& From,
+			const FVector& To,
+			const FVector* SegmentStart,
+			const FVector* SegmentEnd,
+			int32 SegmentCount,
+			const FVector& WideAxis,
+			float& OutZ) const;
+
 	protected:
+		/** The tube Draw builds from these joints. */
+		FSolidFittedCone Tube(const FVector& From, const FVector& To, const FVector& WideAxis) const;
+
+		/** Lowest Z on the two end rings. False when the cone is not drawn. */
+		bool ConeLowestZ(const FSolidFittedCone& Cone, float& OutZ) const;
+
 		/** Widen the section, then size the bones. Depth scales the front-to-back. SideScale spreads the other bones. */
 		void SizeSection(float Length, float SideScale, float Depth);
 
@@ -303,6 +326,17 @@ namespace SolidBodyMesh
 			const FVector* SegmentEnd,
 			int32 SegmentCount,
 			const FVector& WideAxis) override;
+		/** The bottom of the head sphere. That pole sits on the parent joint. */
+		virtual bool LowestZ(
+			int32 WeightBone,
+			int32 SpanBone,
+			const FVector& From,
+			const FVector& To,
+			const FVector* SegmentStart,
+			const FVector* SegmentEnd,
+			int32 SegmentCount,
+			const FVector& WideAxis,
+			float& OutZ) const override;
 	};
 
 	/**
@@ -341,6 +375,17 @@ namespace SolidBodyMesh
 			const FVector* SegmentEnd,
 			int32 SegmentCount,
 			const FVector& WideAxis) override;
+		/** The bottom of the hand ellipsoid. */
+		virtual bool LowestZ(
+			int32 WeightBone,
+			int32 SpanBone,
+			const FVector& From,
+			const FVector& To,
+			const FVector* SegmentStart,
+			const FVector* SegmentEnd,
+			int32 SegmentCount,
+			const FVector& WideAxis,
+			float& OutZ) const override;
 	};
 
 	/**
@@ -382,6 +427,17 @@ namespace SolidBodyMesh
 			const FVector* SegmentEnd,
 			int32 SegmentCount,
 			const FVector& WideAxis) override;
+		/** The bottom of the two shoulder cones. */
+		virtual bool LowestZ(
+			int32 WeightBone,
+			int32 SpanBone,
+			const FVector& From,
+			const FVector& To,
+			const FVector* SegmentStart,
+			const FVector* SegmentEnd,
+			int32 SegmentCount,
+			const FVector& WideAxis,
+			float& OutZ) const override;
 	};
 
 	/** calf_l or calf_r. Leg length and bulk size it. Draw keeps the tube. */

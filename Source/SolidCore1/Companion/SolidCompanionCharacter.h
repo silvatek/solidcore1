@@ -217,7 +217,7 @@ protected:
 	/** Character editor is showing bone lines instead of the skinned body. */
 	bool bSkeletonLines = false;
 
-	/** Viking mesh offset. A generated body replaces this so the sole meets the capsule bottom. */
+	/** Viking mesh offset. A generated body replaces this so the base meets the capsule bottom. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Visual")
 	float MeshGroundZOffset = -90.f;
 

@@ -24,6 +24,10 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - Basic monsters (needs FAB asset download); no combat yet
 - Basic NPCs
 - Pathfinding to use bridges
+- Foraging: items found on the ground in specific biomes that can be picked up and added to the pack
+- Distribute sticks and pitch randomly in forest biome areas when they are not fogged
+- Distribute rough stones randomly next to rivers and mountains
+- A better mechanism for marking locations on the world map, using a list of grid references and "!" markers
 
 ## Done
 

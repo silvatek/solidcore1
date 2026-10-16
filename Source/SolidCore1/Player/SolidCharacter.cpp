@@ -409,6 +409,11 @@ void ASolidCharacter::SetSight(const ESolidSight NewSight)
 	if (SolidSight::IsTrueSight(NewSight))
 	{
 		ClearClickMove();
+		if (Controller)
+		{
+			Controller->SetControlRotation(
+				SolidSight::ViewForSight(NewSight, Controller->GetControlRotation()));
+		}
 	}
 	ApplySightPresentation();
 	UE_LOG(LogSolid, Warning, TEXT("Sight: %s"), SolidSight::Label(Sight));

@@ -28,6 +28,19 @@ namespace SolidSight
 		return IsTrueSight(Sight) ? ESolidSight::Raven : ESolidSight::True;
 	}
 
+	/**
+	 * Look used after a sight change. True sight is horizontal: pitch and roll are 0.
+	 * Yaw stays, so the captain still faces the same way. Raven sight keeps the tilt.
+	 */
+	inline FRotator ViewForSight(const ESolidSight Sight, const FRotator& View)
+	{
+		if (!IsTrueSight(Sight))
+		{
+			return View;
+		}
+		return FRotator(0.f, View.Yaw, 0.f);
+	}
+
 	inline const TCHAR* Label(ESolidSight Sight)
 	{
 		return IsTrueSight(Sight) ? TEXT("True sight") : TEXT("Raven sight");

@@ -96,4 +96,29 @@ bool FSolidSightMarkerTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidSightHorizontalViewTest,
+	"SolidCore1.Sight.HorizontalView",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidSightHorizontalViewTest::RunTest(const FString& Parameters)
+{
+	const FRotator LookingDown(-35.5f, 120.f, 4.f);
+	const FRotator TrueView = SolidSight::ViewForSight(ESolidSight::True, LookingDown);
+	TestTrue(TEXT("true sight look is level"), FMath::IsNearlyZero(TrueView.Pitch, 0.1f));
+	TestTrue(TEXT("true sight yaw stays"), FMath::IsNearlyEqual(TrueView.Yaw, LookingDown.Yaw, 0.1f));
+	TestTrue(TEXT("true sight roll is level"), FMath::IsNearlyZero(TrueView.Roll, 0.1f));
+
+	const FRotator RavenView = SolidSight::ViewForSight(ESolidSight::Raven, LookingDown);
+	TestTrue(TEXT("raven sight keeps the downward look"), FMath::IsNearlyEqual(RavenView.Pitch, LookingDown.Pitch, 0.1f));
+	TestTrue(TEXT("raven sight keeps the yaw"), FMath::IsNearlyEqual(RavenView.Yaw, LookingDown.Yaw, 0.1f));
+	TestTrue(TEXT("raven sight keeps the roll"), FMath::IsNearlyEqual(RavenView.Roll, LookingDown.Roll, 0.1f));
+
+	const FRotator AlreadyLevel(0.f, -40.f, 0.f);
+	const FRotator StillLevel = SolidSight::ViewForSight(ESolidSight::True, AlreadyLevel);
+	TestTrue(TEXT("a level look stays level"), FMath::IsNearlyZero(StillLevel.Pitch, 0.1f));
+	TestTrue(TEXT("a level yaw stays"), FMath::IsNearlyEqual(StillLevel.Yaw, AlreadyLevel.Yaw, 0.1f));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

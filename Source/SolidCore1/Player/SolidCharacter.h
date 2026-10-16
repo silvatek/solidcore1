@@ -65,6 +65,7 @@ public:
 	/** Raven sight (third person) or true sight (first person). F9 toggles once both are enabled. */
 	ESolidSight GetSight() const { return Sight; }
 	bool IsTrueSight() const { return SolidSight::IsTrueSight(Sight); }
+	/** Entering true sight levels the camera. Yaw stays. */
 	void SetSight(ESolidSight NewSight);
 	/** Raven-sight left click. Cleared on arrival, WASD, or true sight. */
 	bool HasClickMoveDestination() const { return bHasClickMoveDestination; }

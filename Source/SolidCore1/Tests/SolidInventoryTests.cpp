@@ -86,6 +86,54 @@ bool FSolidInventoryStartingKitTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidInventoryClearTest,
+	"SolidCore1.Inventory.Clear",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidInventoryClearTest::RunTest(const FString& Parameters)
+{
+	SolidInventory::FLoadout Loadout = SolidInventory::StartingLoadout();
+	TestTrue(TEXT("mail can replace rags"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Body, TEXT("Mail")));
+	TestTrue(TEXT("boots can be filled"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Boots, TEXT("Hide boots")));
+	TestTrue(TEXT("the left hand can be filled"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::LeftHand, TEXT("Torch")));
+	TestTrue(TEXT("the belt can be filled"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Belt, TEXT("Rope")));
+	for (int32 Row = 0; Row < SolidInventory::PackRows; ++Row)
+	{
+		for (int32 Column = 0; Column < SolidInventory::PackColumns; ++Column)
+		{
+			TestTrue(
+				TEXT("a pack cell can be filled"),
+				SolidInventory::PlacePack(Loadout, Column, Row, FString::Printf(TEXT("Pack %d %d"), Column, Row)));
+		}
+	}
+
+	SolidInventory::Clear(Loadout);
+	for (int32 Index = 0; Index < SolidInventory::WornCount; ++Index)
+	{
+		const SolidInventory::ESlot Slot = static_cast<SolidInventory::ESlot>(Index);
+		if (Slot == SolidInventory::ESlot::Body)
+		{
+			TestEqual(TEXT("body wears rags"), Loadout.Worn[Index], FString(SolidInventory::Rags));
+		}
+		else
+		{
+			TestTrue(TEXT("every other worn box is empty"), Loadout.Worn[Index].IsEmpty());
+		}
+	}
+	for (int32 Index = 0; Index < SolidInventory::PackCount; ++Index)
+	{
+		TestTrue(TEXT("the pack is empty"), Loadout.Pack[Index].IsEmpty());
+	}
+
+	SolidInventory::Clear(Loadout);
+	TestEqual(
+		TEXT("clearing again leaves rags"),
+		Loadout.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)],
+		FString(SolidInventory::Rags));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidInventoryLayoutTest,
 	"SolidCore1.Inventory.Layout",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)

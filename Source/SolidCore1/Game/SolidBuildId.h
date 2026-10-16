@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0394")
+#define SOLID_BUILD_ID TEXT("SC1-0395")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Boots replace the legs slot, and the body wears Rags.")
+#define SOLID_BUILD_NOTE TEXT("Killed by monsters clears the inventory and leaves Rags.")
 #endif

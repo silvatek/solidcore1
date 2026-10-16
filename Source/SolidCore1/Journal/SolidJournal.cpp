@@ -29,6 +29,9 @@ FString SolidJournal::Describe(const SolidEvents::FEvent& Event)
 		case SolidEvents::EChange::EnableCave:
 			Part = TEXT("Cave enabled");
 			break;
+		case SolidEvents::EChange::ClearInventory:
+			Part = TEXT("Inventory cleared");
+			break;
 		case SolidEvents::EChange::ShowMessage:
 			if (const TCHAR* MessageText = SolidMessages::TextFor(Change.MessageId))
 			{

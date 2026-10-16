@@ -114,6 +114,24 @@ namespace SolidInventory
 		return true;
 	}
 
+	/** Empty every worn box and every pack cell, then put Rags on the body. */
+	inline void Clear(FLoadout& Loadout)
+	{
+		for (int32 Index = 0; Index < WornCount; ++Index)
+		{
+			Loadout.Worn[Index].Empty();
+		}
+		for (int32 Index = 0; Index < PackCount; ++Index)
+		{
+			Loadout.Pack[Index].Empty();
+		}
+		const int32 Body = WornIndex(ESlot::Body);
+		if (Body != INDEX_NONE)
+		{
+			Loadout.Worn[Body] = Rags;
+		}
+	}
+
 	/** One box on the page, in content pixels. The origin is the top-left of the figure. */
 	struct FBox
 	{

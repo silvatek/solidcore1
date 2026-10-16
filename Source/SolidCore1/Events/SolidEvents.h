@@ -17,7 +17,7 @@
  * The parameter is unused. The deck and the gap past the lip do not count.
  * That event shows a message. Closing that message is its own event.
  * Killed by monsters closes the monster message, opens the starting cave,
- * and sends the captain inside.
+ * sends the captain inside, and clears his inventory down to Rags.
  * Entering Iglin titles the captain Orphan. It does not enable raven sight.
  * Driven from the village fires on a later entry to Iglin, after that close,
  * shows "You are driven from the village", titles the captain Outcast,
@@ -76,6 +76,8 @@ namespace SolidEvents
 		EnableCave,
 		/** Show the message named by MessageId. */
 		ShowMessage,
+		/** Empty the captain's worn boxes and pack, then put Rags on the body. */
+		ClearInventory,
 	};
 
 	/** Nameplate before Enter Iglin. Driven from the village sets this again. */
@@ -147,6 +149,13 @@ namespace SolidEvents
 			Change.Kind = EChange::RepairBridge;
 			return Change;
 		}
+
+		inline constexpr FChange ClearInventory()
+		{
+			FChange Change;
+			Change.Kind = EChange::ClearInventory;
+			return Change;
+		}
 	}
 
 	struct FEvent
@@ -194,6 +203,11 @@ namespace SolidEvents
 		constexpr FEvent RepairBridge() const
 		{
 			return With(Change::RepairBridge());
+		}
+
+		constexpr FEvent ClearInventory() const
+		{
+			return With(Change::ClearInventory());
 		}
 
 		constexpr FEvent Require(const TCHAR* EventId) const
@@ -279,7 +293,8 @@ namespace SolidEvents
 			.Require(IdEnterIglin)
 			.DisplayMessage(SolidMessages::IdKilledByMonsters),
 		OnMessageClosed(IdKilledByMonsters, TEXT("Killed by monsters"), SolidMessages::IdKilledByMonsters, ACT_0)
-			.EnableCave(),
+			.EnableCave()
+			.ClearInventory(),
 		EnterTown(IdDrivenFromVillage, TEXT("Driven from the village"), SolidTowns::Iglin, ACT_1)
 			.Require(IdKilledByMonsters)
 			.DisplayMessage(SolidMessages::IdDrivenFromVillage)

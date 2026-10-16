@@ -57,6 +57,9 @@ namespace
 			Result.bShowMessage = true;
 			Result.MessageId = Change.MessageId;
 			break;
+		case SolidEvents::EChange::ClearInventory:
+			SolidInventory::Clear(State.Inventory);
+			break;
 		default:
 			break;
 		}

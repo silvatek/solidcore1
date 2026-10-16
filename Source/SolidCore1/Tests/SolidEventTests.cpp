@@ -1199,4 +1199,103 @@ bool FSolidEventsBuilderTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidEventsClearInventoryTest,
+	"SolidCore1.Events.ClearInventory",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidEventsClearInventoryTest::RunTest(const FString& Parameters)
+{
+	const SolidEvents::FEvent* Killed = SolidEventTestPrivate::FindEvent(TEXT("Killed by monsters"));
+	TestNotNull(TEXT("Killed by monsters is listed"), Killed);
+	bool bClearsInventory = false;
+	if (Killed)
+	{
+		const int32 ChangeCount = FMath::Min(Killed->ChangeCount, SolidEvents::MaxChangesPerEvent);
+		for (int32 Index = 0; Index < ChangeCount; ++Index)
+		{
+			if (Killed->Changes[Index].Kind == SolidEvents::EChange::ClearInventory)
+			{
+				bClearsInventory = true;
+			}
+		}
+		TestTrue(
+			TEXT("the close journal records the clear"),
+			SolidJournal::Describe(*Killed).Contains(TEXT("Inventory cleared")));
+	}
+	TestTrue(TEXT("the close clears the inventory"), bClearsInventory);
+
+	const SolidEvents::FEvent Built = SolidEvents::OnMessageClosed(
+		TEXT("99aabbcc"),
+		TEXT("Sample clear"),
+		SolidMessages::IdKilledByMonsters,
+		SolidEvents::ACT_0)
+		.ClearInventory();
+	TestEqual(TEXT("a built clear has one change"), Built.ChangeCount, 1);
+	TestEqual(
+		TEXT("a built clear is ClearInventory"),
+		static_cast<uint8>(Built.Changes[0].Kind),
+		static_cast<uint8>(SolidEvents::EChange::ClearInventory));
+
+	FGameState State;
+	State.Inventory = SolidInventory::StartingLoadout();
+	SolidInventory::PlaceWorn(State.Inventory, SolidInventory::ESlot::Body, TEXT("Mail"));
+	SolidInventory::PlaceWorn(State.Inventory, SolidInventory::ESlot::Boots, TEXT("Hide boots"));
+	SolidInventory::PlacePack(State.Inventory, 0, 0, TEXT("Bread"));
+	SolidInventory::PlacePack(State.Inventory, 1, 2, SolidInventory::CrudeSpear);
+
+	SolidEvents::NotifyOccupiedTown(State, 0);
+	const SolidEvents::FResult Reached = SolidEvents::NotifyReachBrokenBridge(State);
+	TestTrue(TEXT("the ramp still shows the message"), Reached.bShowMessage);
+	TestEqual(
+		TEXT("the ramp leaves the helmet"),
+		State.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Head)],
+		FString(SolidInventory::DentedHelmet));
+	TestEqual(
+		TEXT("the ramp leaves the pack"),
+		State.Inventory.Pack[SolidInventory::PackIndex(0, 0)],
+		FString(TEXT("Bread")));
+
+	const SolidEvents::FResult Closed = SolidEvents::NotifyMessageClosed(State, SolidMessages::IdKilledByMonsters);
+	TestTrue(TEXT("closing the message fires"), Closed.bFired);
+	TestTrue(TEXT("closing the message still opens the cave"), Closed.bEnterCave);
+	for (int32 Index = 0; Index < SolidInventory::WornCount; ++Index)
+	{
+		const SolidInventory::ESlot Slot = static_cast<SolidInventory::ESlot>(Index);
+		if (Slot == SolidInventory::ESlot::Body)
+		{
+			TestEqual(TEXT("the body wears rags"), State.Inventory.Worn[Index], FString(SolidInventory::Rags));
+		}
+		else
+		{
+			TestTrue(TEXT("the close empties the other worn boxes"), State.Inventory.Worn[Index].IsEmpty());
+		}
+	}
+	for (int32 Index = 0; Index < SolidInventory::PackCount; ++Index)
+	{
+		TestTrue(TEXT("the close empties the pack"), State.Inventory.Pack[Index].IsEmpty());
+	}
+
+	TArray<SolidJournal::FRow> Rows;
+	SolidJournal::CollectRows(State, Rows);
+	bool bSawClear = false;
+	for (const SolidJournal::FRow& Row : Rows)
+	{
+		if (Row.Kind == SolidJournal::ERowKind::Detail && Row.Text.Contains(TEXT("Inventory cleared")))
+		{
+			bSawClear = true;
+		}
+	}
+	TestTrue(TEXT("the journal lists Inventory cleared"), bSawClear);
+
+	SolidInventory::PlaceWorn(State.Inventory, SolidInventory::ESlot::Head, SolidInventory::DentedHelmet);
+	const SolidEvents::FResult ClosedAgain = SolidEvents::NotifyMessageClosed(State, SolidMessages::IdKilledByMonsters);
+	TestFalse(TEXT("closing the message fires once"), ClosedAgain.bFired);
+	TestEqual(
+		TEXT("a second close leaves the helmet"),
+		State.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Head)],
+		FString(SolidInventory::DentedHelmet));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

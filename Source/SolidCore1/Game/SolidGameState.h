@@ -27,7 +27,7 @@ struct FGameState
 	int32 FiredCount = 0;
 	/** Journal, including repeated stronghold trips. */
 	TArray<SolidJournal::FJournalEntry> Journal;
-	/** Worn boxes and the captain's pack. A new game starts in the starting kit. */
+	/** Worn boxes and the captain's pack. A new game starts in the starting kit. Killed by monsters clears it to Rags. */
 	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
 };
 

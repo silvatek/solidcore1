@@ -14,6 +14,8 @@ struct FGameState
 	const TCHAR* CaptainTitle = SolidEvents::TitleOutcast;
 	bool bTrueSightEnabled = true;
 	bool bRavenSightEnabled = false;
+	/** Enter Relion restores the Iglin span. It starts broken. */
+	bool bIglinBridgeRepaired = false;
 	/** Numbered cell the captain is standing on, or INDEX_NONE. */
 	int32 OccupiedTown = INDEX_NONE;
 	bool bFired[SolidEvents::MaxEvents] = {};
@@ -35,6 +37,8 @@ namespace SolidEvents
 		int32 MaxPartySize = 0;
 		bool bSetTitle = false;
 		const TCHAR* CaptainTitle = TitleOutcast;
+		/** A Repair bridge change ran. */
+		bool bRepairBridge = false;
 	};
 
 	int32 PartyCount(const FGameState& State);

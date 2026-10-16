@@ -139,8 +139,10 @@ protected:
 	virtual void BeginPlay() override;
 	void EnsureTerrainStreamer();
 	void RefreshEvents();
-	/** Record one enter-town event and apply its sight and title to the captain. */
+	/** Record one enter-town event and apply its sight, title, and bridge repair. */
 	void NoteTownEntry(int32 TownId);
+	/** Draw the center of every broken bridge. Enter Relion calls this. */
+	void RepairBrokenBridges();
 	/** Fire Enter Relion, then Enter Dragongate, and field the party. */
 	void FireParadeEvents();
 	void EnsureCompanion();

@@ -29,6 +29,8 @@ namespace SolidEvents
 		MaxPartySize,
 		/** The captain's nameplate. Outcast, then Vagrant, then Ranger, then Captain. */
 		CaptainTitle,
+		/** Draw the center of a broken bridge and open that crossing. */
+		RepairBridge,
 	};
 
 	/** Nameplate before any title event. The sequence ends at Captain. */
@@ -82,8 +84,9 @@ namespace SolidEvents
 				{ EChange::EnableSight, ESolidSight::Raven, 0 },
 				{ EChange::MaxPartySize, ESolidSight::Raven, 1 },
 				{ EChange::CaptainTitle, ESolidSight::Raven, 0, TitleVagrant },
+				{ EChange::RepairBridge },
 			},
-			3,
+			4,
 		},
 		{
 			TEXT("Enter Kanfold"),

@@ -84,6 +84,8 @@ public:
 	virtual void BeginPlay() override;
 
 	void SetBridge(const SolidBridge::FBridge& InBridge);
+	/** Draw or omit the center. A repair passes false. */
+	void SetBroken(bool bInBroken);
 	void BuildVisuals();
 
 	bool HasBridge() const { return bHasBridge; }

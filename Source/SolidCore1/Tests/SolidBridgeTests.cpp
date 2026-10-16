@@ -541,6 +541,19 @@ bool FSolidBridgeBrokenTest::RunTest(const FString& Parameters)
 	UStaticMesh* RampToAsset = RampTo ? RampTo->GetStaticMesh() : nullptr;
 	TestNotNull(TEXT("near ramp stays"), RampFromAsset);
 	TestNotNull(TEXT("far ramp stays"), RampToAsset);
+
+	Actor->SetBroken(false);
+	TestFalse(TEXT("repair restores the span"), Actor->GetBridge().bBroken);
+	UStaticMesh* Restored = Actor->GetDeckMesh() ? Actor->GetDeckMesh()->GetStaticMesh() : nullptr;
+	TestNotNull(TEXT("the center is drawn"), Restored);
+	if (UStaticMeshComponent* RestoredDeck = Actor->GetDeckMesh())
+	{
+		TestTrue(TEXT("the center is shown"), RestoredDeck->GetVisibleFlag());
+		TestEqual(
+			TEXT("the center collides"),
+			static_cast<uint8>(RestoredDeck->GetCollisionEnabled()),
+			static_cast<uint8>(ECollisionEnabled::QueryAndPhysics));
+	}
 	return true;
 }
 

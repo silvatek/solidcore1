@@ -22,6 +22,9 @@ FString SolidJournal::Describe(const SolidEvents::FEvent& Event)
 				Part = FString::Printf(TEXT("Title %s"), Change.Title);
 			}
 			break;
+		case SolidEvents::EChange::RepairBridge:
+			Part = TEXT("Iglin bridge repaired");
+			break;
 		case SolidEvents::EChange::MaxPartySize:
 		{
 			const int32 Count = FMath::Clamp(Change.PartySize, 0, SolidEvents::RosterCount);

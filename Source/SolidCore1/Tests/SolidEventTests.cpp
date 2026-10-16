@@ -68,6 +68,8 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 	const SolidEvents::FResult Iglin = SolidEvents::NotifyOccupiedTown(State, 0);
 	TestTrue(TEXT("entering town 0 fires"), Iglin.bFired);
 	TestFalse(TEXT("Iglin does not switch sight"), Iglin.bSetSight);
+	TestFalse(TEXT("Iglin leaves the bridge broken"), Iglin.bRepairBridge);
+	TestFalse(TEXT("the Iglin bridge starts broken"), State.bIglinBridgeRepaired);
 	TestFalse(TEXT("Iglin leaves raven sight locked"), State.bRavenSightEnabled);
 	TestEqual(TEXT("Iglin leaves the party empty"), State.MaxPartySize, 0);
 	TestEqual(TEXT("Iglin is recorded"), State.FiredCount, 1);
@@ -81,6 +83,8 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(ESolidSight::Raven));
 	TestTrue(TEXT("raven sight unlocked"), SolidEvents::IsSightEnabled(State, ESolidSight::Raven));
 	TestTrue(TEXT("true sight stays available"), SolidEvents::IsSightEnabled(State, ESolidSight::True));
+	TestTrue(TEXT("Relion repairs the bridge"), Relion.bRepairBridge);
+	TestTrue(TEXT("the Iglin bridge is repaired"), State.bIglinBridgeRepaired);
 	TestEqual(TEXT("town 1 party size"), State.MaxPartySize, 1);
 	TestEqual(TEXT("town 1 companion count"), SolidEvents::PartyCount(State), 1);
 	TestEqual(TEXT("Sam joins at Relion"), FString(SolidEvents::RosterName(0)), FString(TEXT("Sam")));
@@ -94,6 +98,8 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 
 	const SolidEvents::FResult RelionAgain = SolidEvents::NotifyOccupiedTown(State, 1);
 	TestFalse(TEXT("town 1 event already fired"), RelionAgain.bFired);
+	TestFalse(TEXT("re-entering Relion does not repair again"), RelionAgain.bRepairBridge);
+	TestTrue(TEXT("the repaired bridge stays"), State.bIglinBridgeRepaired);
 	TestEqual(TEXT("re-entering Relion does not shrink the party"), State.MaxPartySize, 1);
 
 	const SolidEvents::FResult Kanfold = SolidEvents::NotifyOccupiedTown(State, 2);
@@ -201,9 +207,13 @@ bool FSolidEventsCaptainTitleTest::RunTest(const FString& Parameters)
 	FGameState Skipped;
 	const SolidEvents::FResult KanfoldFirst = SolidEvents::NotifyOccupiedTown(Skipped, 2);
 	TestTrue(TEXT("Kanfold titles Ranger without Relion"), KanfoldFirst.bSetTitle);
+	TestFalse(TEXT("Kanfold leaves the bridge broken"), KanfoldFirst.bRepairBridge);
+	TestFalse(TEXT("skipping Relion leaves the bridge broken"), Skipped.bIglinBridgeRepaired);
 	TestEqual(TEXT("skipped path is Ranger"), FString(Skipped.CaptainTitle), FString(SolidEvents::TitleRanger));
 	const SolidEvents::FResult RelionLater = SolidEvents::NotifyOccupiedTown(Skipped, 1);
 	TestTrue(TEXT("Relion still fires later"), RelionLater.bSetTitle);
+	TestTrue(TEXT("Relion later repairs the bridge"), RelionLater.bRepairBridge);
+	TestTrue(TEXT("the skipped path repairs the bridge"), Skipped.bIglinBridgeRepaired);
 	TestEqual(TEXT("Relion titles Vagrant"), FString(Skipped.CaptainTitle), FString(SolidEvents::TitleVagrant));
 
 	const SolidEvents::FResult Dragongate = SolidEvents::NotifyOccupiedTown(State, 5);
@@ -221,6 +231,11 @@ bool FSolidEventsCaptainTitleTest::RunTest(const FString& Parameters)
 	const SolidEvents::FResult KanfoldLater = SolidEvents::NotifyOccupiedTown(GateFirst, 2);
 	TestTrue(TEXT("Kanfold still sets the title"), KanfoldLater.bSetTitle);
 	TestEqual(TEXT("Kanfold after Dragongate is Ranger"), FString(GateFirst.CaptainTitle), FString(SolidEvents::TitleRanger));
+
+	TestEqual(TEXT("definition 1 is Relion"), FString(SolidEvents::Definitions[1].Name), FString(TEXT("Enter Relion")));
+	TestTrue(
+		TEXT("journal records the repair"),
+		SolidJournal::Describe(SolidEvents::Definitions[1]).Contains(TEXT("Iglin bridge repaired")));
 
 	const FString Detail = SolidJournal::Describe(SolidEvents::Definitions[3]);
 	TestTrue(TEXT("journal titles Captain"), Detail.Contains(TEXT("Title Captain")));

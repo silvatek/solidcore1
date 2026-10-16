@@ -30,6 +30,10 @@ namespace
 				Result.CaptainTitle = Change.Title;
 			}
 			break;
+		case SolidEvents::EChange::RepairBridge:
+			State.bIglinBridgeRepaired = true;
+			Result.bRepairBridge = true;
+			break;
 		default:
 			break;
 		}

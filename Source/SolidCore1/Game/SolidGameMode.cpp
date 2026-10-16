@@ -479,12 +479,18 @@ void ASolidGameMode::NoteTownEntry(const int32 TownId)
 	if (Result.bFired)
 	{
 		UE_LOG(LogSolid, Warning,
-			TEXT("Event: entered town %d (%s). Sight %s. Max party %d. Title %s."),
+			TEXT("Event: entered town %d (%s). Sight %s. Max party %d. Title %s. Bridge %s."),
 			TownId,
 			*SolidTowns::NameFor(TownId),
 			Result.bSetSight ? SolidSight::Label(Result.Sight) : TEXT("unchanged"),
 			Configuration.MaxPartySize,
-			Configuration.CaptainTitle ? Configuration.CaptainTitle : TEXT(""));
+			Configuration.CaptainTitle ? Configuration.CaptainTitle : TEXT(""),
+			Result.bRepairBridge ? TEXT("repaired") : TEXT("unchanged"));
+	}
+
+	if (Result.bRepairBridge)
+	{
+		RepairBrokenBridges();
 	}
 
 	if (ASolidCharacter* Captain = FindCaptain(GetWorld()))
@@ -525,6 +531,18 @@ void ASolidGameMode::FireParadeEvents()
 bool ASolidGameMode::IsSightEnabled(const ESolidSight Sight) const
 {
 	return SolidEvents::IsSightEnabled(Configuration, Sight);
+}
+
+void ASolidGameMode::RepairBrokenBridges()
+{
+	for (const TObjectPtr<ASolidBridge>& Actor : SpawnedBridges)
+	{
+		ASolidBridge* Bridge = Actor.Get();
+		if (Bridge && Bridge->HasBridge() && Bridge->GetBridge().bBroken)
+		{
+			Bridge->SetBroken(false);
+		}
+	}
 }
 
 bool ASolidGameMode::SelectBattlePlanSlot(const int32 SlotIndex)
@@ -1187,7 +1205,12 @@ void ASolidGameMode::EnsureVegetation()
 				{
 					continue;
 				}
-				Actor->SetBridge(Bridge);
+				SolidBridge::FBridge Spec = Bridge;
+				if (Configuration.bIglinBridgeRepaired)
+				{
+					Spec.bBroken = false;
+				}
+				Actor->SetBridge(Spec);
 				SpawnedBridges.Add(Actor);
 				++Spawned;
 			}

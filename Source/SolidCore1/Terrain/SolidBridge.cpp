@@ -719,6 +719,16 @@ void ASolidBridge::SetBridge(const SolidBridge::FBridge& InBridge)
 	BuildVisuals();
 }
 
+void ASolidBridge::SetBroken(const bool bInBroken)
+{
+	if (!bHasBridge || Bridge.bBroken == bInBroken)
+	{
+		return;
+	}
+	Bridge.bBroken = bInBroken;
+	BuildVisuals();
+}
+
 void ASolidBridge::BuildVisuals()
 {
 	if (!bHasBridge || !DeckMesh || !RampFromMesh || !RampToMesh)

@@ -1397,14 +1397,14 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 	}
 	Text += TEXT(". = Grassland (light green)\n");
 	Text += TEXT("! 1,1 = 0 # start\n");
-	Text += TEXT("! 2,2 = Town Relion\n");
+	Text += TEXT("! 2,2 = Town (Relion)\n");
 	Text += TEXT("! 2,3 = Town Nowhere\n");
 	Text += TEXT("! 2,4 = Village Iglin\n");
 	Text += TEXT("! 6,6 = Stronghold MeagreDungeon # the cave\n");
-	Text += TEXT("! 6,9 = Stronghold Humble Tower\n");
+	Text += TEXT("! 6,9 = Stronghold (Humble Tower)\n");
 	Text += TEXT("! 6,11 = Stronghold NotAThing\n");
 	Text += TEXT("! 10,4 = LairEntrance Iglin tunnels # south of town\n");
-	Text += TEXT("! 11,4 = LairExit Iglin tunnels\n");
+	Text += TEXT("! 11,4 = LairExit (Iglin tunnels)\n");
 	Text += TEXT("! 12,4 = LairEntrance Missing Lair\n");
 
 	USolidWorldMap* Map = NewObject<USolidWorldMap>();

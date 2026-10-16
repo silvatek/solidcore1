@@ -344,20 +344,46 @@ bool FSolidBridgeAlignedTest::RunTest(const FString& Parameters)
 
 	const auto Height = [](float, float) { return 0.f; };
 	TArray<SolidBridge::FBridge> Bridges;
-	if (!TestEqual(TEXT("one shipped bridge"), SolidBridge::Collect(*Map, BridgeTestMin, BridgeTestMax, Height, Bridges), 1)
-		|| Bridges.Num() != 1)
+	TestTrue(TEXT("the shipped roads cross water"),
+		SolidBridge::Collect(*Map, BridgeTestMin, BridgeTestMax, Height, Bridges) >= 1);
+
+	const SolidBridge::FBridge* Iglin = nullptr;
+	int32 IglinCount = 0;
+	for (const SolidBridge::FBridge& Bridge : Bridges)
+	{
+		if (Bridge.bIglinRelion)
+		{
+			++IglinCount;
+			Iglin = &Bridge;
+		}
+	}
+	if (!TestEqual(TEXT("one Iglin bridge"), IglinCount, 1) || !Iglin)
 	{
 		return false;
 	}
 
-	const TArray<SolidRoad::FRoute>& Roads = Map->GetRoads();
-	if (!TestTrue(TEXT("the track is listed"), Roads.Num() > 1))
+	const SolidRoad::FRoute* Track = nullptr;
+	for (const SolidRoad::FRoute& Route : Map->GetRoads())
+	{
+		if (Route.Definition.From.bCave || Route.Definition.To.bCave)
+		{
+			continue;
+		}
+		const int32 From = Route.Definition.From.LocationId;
+		const int32 To = Route.Definition.To.LocationId;
+		if ((From == 0 && To == 1) || (From == 1 && To == 0))
+		{
+			Track = &Route;
+			break;
+		}
+	}
+	if (!TestTrue(TEXT("the Iglin track is listed"), Track != nullptr) || !Track)
 	{
 		return false;
 	}
 	FVector2D River = FVector2D::ZeroVector;
 	bool bFound = false;
-	for (const FIntPoint& Cell : Roads[1].Cells)
+	for (const FIntPoint& Cell : Track->Cells)
 	{
 		if (Map->GetMarkerAtCell(Cell.X, Cell.Y) == USolidWorldMap::RiverMarker)
 		{
@@ -367,7 +393,7 @@ bool FSolidBridgeAlignedTest::RunTest(const FString& Parameters)
 	}
 	TestTrue(TEXT("river cell"), bFound);
 
-	const SolidBridge::FBridge& Bridge = Bridges[0];
+	const SolidBridge::FBridge& Bridge = *Iglin;
 	// Bridge.Aligned used to expect the cell centre. The painted strip is half a
 	// quad southwest of that centre, and the bridge follows the strip.
 	const FVector2D Paint = SolidRoad::StripPaintOffset();
@@ -501,15 +527,22 @@ bool FSolidBridgeBrokenTest::RunTest(const FString& Parameters)
 	if (TestTrue(TEXT("shipped map loads"), Shipped && Shipped->LoadDefault()))
 	{
 		TArray<SolidBridge::FBridge> ShippedBridges;
-		if (TestEqual(
-				TEXT("one shipped bridge"),
-				SolidBridge::Collect(*Shipped, BridgeTestMin, BridgeTestMax, Height, ShippedBridges),
-				1)
-			&& ShippedBridges.Num() == 1)
+		TestTrue(TEXT("the shipped roads cross water"),
+			SolidBridge::Collect(*Shipped, BridgeTestMin, BridgeTestMax, Height, ShippedBridges) >= 1);
+		int32 IglinCount = 0;
+		for (const SolidBridge::FBridge& Bridge : ShippedBridges)
 		{
-			TestTrue(TEXT("the shipped Iglin bridge is broken"), ShippedBridges[0].bBroken);
-			TestTrue(TEXT("the shipped bridge is the Iglin bridge"), ShippedBridges[0].bIglinRelion);
+			if (Bridge.bIglinRelion)
+			{
+				++IglinCount;
+				TestTrue(TEXT("the shipped Iglin bridge is broken"), Bridge.bBroken);
+			}
+			else
+			{
+				TestFalse(TEXT("another shipped bridge keeps its span"), Bridge.bBroken);
+			}
 		}
+		TestEqual(TEXT("one shipped Iglin bridge"), IglinCount, 1);
 	}
 
 	ASolidBridge* Actor = NewObject<ASolidBridge>();

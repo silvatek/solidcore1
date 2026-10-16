@@ -71,7 +71,7 @@ The grid is 128 columns by 64 rows. A `!` in that grid needs a description line 
 ! 11,40 = LairExit Iglin tunnels
 ```
 
-A number is the location id. `Town` names a town. `Stronghold` is the size then the type, as in `MeagreDungeon`. `LairEntrance` and `LairExit` name a lair. A note after a numeric id, such as `(top-left is 1,1)`, is not part of the id.
+A number is the location id. `Town` names a town. `Stronghold` is the size then the type, as in `MeagreDungeon`. `LairEntrance` and `LairExit` name a lair. The identifier may be wrapped in brackets, as in `Town (Iglin)`. A note after a numeric id, such as `(top-left is 1,1)`, is not part of the id.
 
 Warn the user when a `!` in the grid has no description line for that row and column. Name each missing cell as `row,column`, counting from 1,1 at the top-left. A `!` whose line is missing still loads as grassland and is not a town.
 

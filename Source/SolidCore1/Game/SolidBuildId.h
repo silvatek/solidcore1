@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0416")
+#define SOLID_BUILD_ID TEXT("SC1-0417")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A ! line can name a town, a stronghold, or a lair mouth.")
+#define SOLID_BUILD_NOTE TEXT("A ! name may sit in brackets, as in Town (Iglin).")
 #endif

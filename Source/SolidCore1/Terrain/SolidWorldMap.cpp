@@ -396,6 +396,12 @@ namespace
 		}
 		Type.TrimStartAndEndInline();
 		Identifier.TrimStartAndEndInline();
+		if (Identifier.Len() >= 2
+			&& Identifier[0] == TEXT('(')
+			&& Identifier[Identifier.Len() - 1] == TEXT(')'))
+		{
+			Identifier = Identifier.Mid(1, Identifier.Len() - 2).TrimStartAndEnd();
+		}
 		Out.Identifier = Identifier;
 		if (Type.Equals(TEXT("Town"), ESearchCase::IgnoreCase))
 		{

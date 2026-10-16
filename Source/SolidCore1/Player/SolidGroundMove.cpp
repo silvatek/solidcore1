@@ -242,11 +242,11 @@ void SolidGroundMove::Hold(ACharacter* Character)
 		return AllowsFooting(Map, X, Y, Ground.Min, Ground.Max, Ground.Bridges);
 	};
 
-	const FVector Pending = Move->ConsumeMovementInputVector();
+	const FVector Pending = Character->ConsumeMovementInputVector();
 	const FVector2D ClampedInput = ClampPlanar(From, FVector2D(Pending.X, Pending.Y), Probe, Allows);
 	if (!ClampedInput.IsNearlyZero())
 	{
-		Move->AddMovementInput(
+		Character->AddMovementInput(
 			FVector(ClampedInput.X, ClampedInput.Y, 0.f).GetSafeNormal(),
 			ClampedInput.Size());
 	}

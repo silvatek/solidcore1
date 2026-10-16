@@ -744,7 +744,7 @@ USkeletalMesh* SolidBodyMesh::Build(
 	const FSolidBodyParams Clamped = Params.Clamped();
 	FSolidDeformMesh Deformed = Bind;
 	FSolidBodyMesh Body = FSolidBodyMesh::Make(Deformed.Bones);
-	Body.Apply(Deformed.Bones, Clamped);
+	Body.ApplyCharacterAttributes(Deformed.Bones, Clamped);
 
 	TArray<FVector> JointPositions;
 	SolidBodyDeform::ComponentPositions(Deformed.Bones, JointPositions);
@@ -967,7 +967,7 @@ const SolidBodyMesh::FSolidBodyPart* SolidBodyMesh::FSolidBodyMesh::Find(const F
 	return nullptr;
 }
 
-void SolidBodyMesh::FSolidBodyMesh::Apply(
+void SolidBodyMesh::FSolidBodyMesh::ApplyCharacterAttributes(
 	TArray<FSolidDeformBone>& CharacterBones,
 	const FSolidBodyParams& Params)
 {
@@ -977,9 +977,9 @@ void SolidBodyMesh::FSolidBodyMesh::Apply(
 		{
 			continue;
 		}
-		// The part sizes its own copy. That result is written back into the adjusted pose.
+		// The part sizes its own copy. That result is written back into CharacterBones.
 		Part->BoneLocals = CharacterBones;
-		Part->Apply(Params);
+		Part->ApplyCharacterAttributes(Params);
 		CharacterBones = Part->BoneLocals;
 	}
 }

@@ -220,7 +220,7 @@ TArray<FName> SolidBodyMesh::FSolidShoulderPart::PartBones() const
 	return Names;
 }
 
-void SolidBodyMesh::FSolidShoulderPart::Apply(const FSolidBodyParams& Params)
+void SolidBodyMesh::FSolidShoulderPart::ApplyCharacterAttributes(const FSolidBodyParams& Params)
 {
 	const FSolidBodyParams Clamped = Params.Clamped();
 	const float SideScale = Clamped.ShoulderWidth;

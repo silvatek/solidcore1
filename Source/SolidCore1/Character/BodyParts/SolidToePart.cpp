@@ -37,7 +37,7 @@ TArray<FName> SolidBodyMesh::FSolidToePart::PartBones() const
 	return Names;
 }
 
-void SolidBodyMesh::FSolidToePart::Apply(const FSolidBodyParams& Params)
+void SolidBodyMesh::FSolidToePart::ApplyCharacterAttributes(const FSolidBodyParams& Params)
 {
 	const FSolidBodyParams Clamped = Params.Clamped();
 	SizeSection(Clamped.LegLength * Clamped.Height, Clamped.Bulk, Clamped.Bulk);

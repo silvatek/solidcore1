@@ -32,7 +32,7 @@ TArray<FName> SolidBodyMesh::FSolidHipPart::PartBones() const
 	return Names;
 }
 
-void SolidBodyMesh::FSolidHipPart::Apply(const FSolidBodyParams& Params)
+void SolidBodyMesh::FSolidHipPart::ApplyCharacterAttributes(const FSolidBodyParams& Params)
 {
 	const FSolidBodyParams Clamped = Params.Clamped();
 	SizeSection(Clamped.Height, Clamped.HipWidth, Clamped.TorsoGirth);

@@ -106,7 +106,7 @@ TArray<FName> SolidBodyMesh::FSolidHeadPart::PartBones() const
 	return HeadBones(BoneLocals);
 }
 
-void SolidBodyMesh::FSolidHeadPart::Apply(const FSolidBodyParams& Params)
+void SolidBodyMesh::FSolidHeadPart::ApplyCharacterAttributes(const FSolidBodyParams& Params)
 {
 	const FSolidBodyParams Clamped = Params.Clamped();
 	const float Scale = Clamped.HeadSize;

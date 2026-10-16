@@ -831,7 +831,7 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 	WideLegs.LegLength = 1.5f;
 	WideLegs.Bulk = 1.25f;
 	WideLegs.HipWidth = 1.4f;
-	Scaled.Apply(ScaledBones, WideLegs);
+	Scaled.ApplyCharacterAttributes(ScaledBones, WideLegs);
 	const FSolidBodyPart* ScaledThigh = Scaled.Find(TEXT("Thigh (L)"));
 	const FSolidBodyPart* ScaledHip = Scaled.Find(TEXT("Hip"));
 	TestTrue(
@@ -966,7 +966,7 @@ bool FSolidBodyPartSizesBonesTest::RunTest(const FString& Parameters)
 	const float HipScale = SolidBody::ParamMax;
 	Wide.HipWidth = HipScale;
 	Wide.TorsoGirth = 1.25f;
-	Hip->Apply(Wide);
+	Hip->ApplyCharacterAttributes(Wide);
 
 	TestTrue(TEXT("hip width widens the part"), FMath::IsNearlyEqual(Hip->Start.X, 20.f * HipScale, 0.01f));
 	TestTrue(TEXT("torso girth sets the hip depth"), FMath::IsNearlyEqual(Hip->Start.Y, 20.f, 0.01f));
@@ -1057,7 +1057,7 @@ bool FSolidBodyHeadTest::RunTest(const FString& Parameters)
 	const float HeadScale = SolidBody::ParamMax;
 	BigHead.HeadSize = HeadScale;
 	FSolidBodyMesh Scaled = Body;
-	Scaled.Apply(Bones, BigHead);
+	Scaled.ApplyCharacterAttributes(Bones, BigHead);
 	TestTrue(TEXT("head size lengthens the head bone"), Bones[1].LocalTranslation.Equals(FVector(0.f, 0.f, 10.f * HeadScale), 0.01f));
 	TestTrue(
 		TEXT("head size spreads an eye"),
@@ -1362,7 +1362,7 @@ bool FSolidBodyHandsTest::RunTest(const FString& Parameters)
 	LongArms.TorsoGirth = 1.7f;
 	TArray<FSolidDeformBone> ScaledBones = Bones;
 	FSolidBodyMesh Scaled = Body;
-	Scaled.Apply(ScaledBones, LongArms);
+	Scaled.ApplyCharacterAttributes(ScaledBones, LongArms);
 	TestTrue(
 		TEXT("arm length sizes the hand bone once"),
 		ScaledBones[2].LocalTranslation.Equals(FVector(0.f, 0.f, 15.f), 0.01f));
@@ -1583,7 +1583,7 @@ bool FSolidBodyBaseTest::RunTest(const FString& Parameters)
 	FSolidBodyParams LongLegs;
 	LongLegs.Height = 1.f;
 	LongLegs.LegLength = SolidBody::ParamMax;
-	Body.Apply(Bones, LongLegs);
+	Body.ApplyCharacterAttributes(Bones, LongLegs);
 	SolidBodyDeform::ComponentPositions(Bones, Positions);
 	const float LongBase = BodyBaseZ(Bones, Positions);
 	TestTrue(
@@ -1708,7 +1708,7 @@ bool FSolidBodyPartClassTest::RunTest(const FString& Parameters)
 	Params.TorsoGirth = 1.4f;
 	Params.ArmLength = 1.3f;
 	TArray<FSolidDeformBone> Scaled = Bones;
-	Copied.Apply(Scaled, Params);
+	Copied.ApplyCharacterAttributes(Scaled, Params);
 
 	const FSolidBodyPart* CopiedThigh = Copied.Find(TEXT("Thigh (L)"));
 	const FSolidBodyPart* CopiedAbdomen = Copied.Find(TEXT("Abdomen"));

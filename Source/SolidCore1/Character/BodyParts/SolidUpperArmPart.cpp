@@ -37,7 +37,7 @@ TArray<FName> SolidBodyMesh::FSolidUpperArmPart::PartBones() const
 	return Names;
 }
 
-void SolidBodyMesh::FSolidUpperArmPart::Apply(const FSolidBodyParams& Params)
+void SolidBodyMesh::FSolidUpperArmPart::ApplyCharacterAttributes(const FSolidBodyParams& Params)
 {
 	const FSolidBodyParams Clamped = Params.Clamped();
 	SizeSection(Clamped.ArmLength, Clamped.Bulk, Clamped.Bulk);

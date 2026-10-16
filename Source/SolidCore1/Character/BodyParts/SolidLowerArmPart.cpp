@@ -37,7 +37,7 @@ TArray<FName> SolidBodyMesh::FSolidLowerArmPart::PartBones() const
 	return Names;
 }
 
-void SolidBodyMesh::FSolidLowerArmPart::Apply(const FSolidBodyParams& Params)
+void SolidBodyMesh::FSolidLowerArmPart::ApplyCharacterAttributes(const FSolidBodyParams& Params)
 {
 	const FSolidBodyParams Clamped = Params.Clamped();
 	SizeSection(Clamped.ArmLength, Clamped.Bulk, Clamped.Bulk);

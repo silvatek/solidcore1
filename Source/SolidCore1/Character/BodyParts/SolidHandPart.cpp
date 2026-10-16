@@ -216,7 +216,7 @@ TArray<FName> SolidBodyMesh::FSolidHandPart::PartBones() const
 	return HandBones(Side, BoneLocals);
 }
 
-void SolidBodyMesh::FSolidHandPart::Apply(const FSolidBodyParams& Params)
+void SolidBodyMesh::FSolidHandPart::ApplyCharacterAttributes(const FSolidBodyParams& Params)
 {
 	(void)Params;
 	SizeBones(1.f, 1.f);

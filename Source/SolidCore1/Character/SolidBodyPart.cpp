@@ -107,7 +107,7 @@ void SolidBodyMesh::FSolidBodyPart::SizeSection(const float Length, const float 
 	SizeBones(Length, SideScale);
 }
 
-void SolidBodyMesh::FSolidBodyPart::Apply(const FSolidBodyParams& Params)
+void SolidBodyMesh::FSolidBodyPart::ApplyCharacterAttributes(const FSolidBodyParams& Params)
 {
 	const FSolidBodyParams Clamped = Params.Clamped();
 	SizeSection(Clamped.Height, Clamped.TorsoGirth, Clamped.TorsoGirth);

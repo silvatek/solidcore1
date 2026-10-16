@@ -161,7 +161,7 @@ namespace SolidBodyMesh
 	 * The head, a hand, and the shoulders draw their own mesh.
 	 * Bones[0] is the length of the piece. The other bones are wrapped inside it.
 	 * Start is the parent joint. End is Bones[0]. Mid is used by the shoulders.
-	 * Apply sizes the part and those bones. Fit measures the cones. Draw adds the triangles.
+	 * ApplyCharacterAttributes sizes the part and those bones. Fit measures the cones. Draw adds the triangles.
 	 * Base is the bottom of this mesh. The body keeps the lowest one.
 	 */
 	class FSolidBodyPart
@@ -204,7 +204,7 @@ namespace SolidBodyMesh
 		/**
 		 * Local transforms copied onto this part.
 		 * Make stores the original pose, so PartBones can list the fingers and the eyes.
-		 * Apply replaces it with the pose so far, then sizes the bones this part wraps.
+		 * ApplyCharacterAttributes replaces it with the pose so far, then sizes the bones this part wraps.
 		 */
 		TArray<FSolidDeformBone> BoneLocals;
 		ESolidPartColour Colour = ESolidPartColour::Shirt;
@@ -228,7 +228,7 @@ namespace SolidBodyMesh
 		 * The abdomen and the chest keep this. A limb, the hip, the head, a hand, and the shoulders size themselves.
 		 * Call once. A listed bone that is missing from BoneLocals is left out.
 		 */
-		virtual void Apply(const FSolidBodyParams& Params);
+		virtual void ApplyCharacterAttributes(const FSolidBodyParams& Params);
 
 		/**
 		 * The cone for this part.
@@ -323,7 +323,7 @@ namespace SolidBodyMesh
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
-		virtual void Apply(const FSolidBodyParams& Params) override;
+		virtual void ApplyCharacterAttributes(const FSolidBodyParams& Params) override;
 		/**
 		 * A sphere along world up, skinned to the head bone.
 		 * From is the parent joint, the base of the head bone. To is the head joint.
@@ -372,7 +372,7 @@ namespace SolidBodyMesh
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
-		virtual void Apply(const FSolidBodyParams& Params) override;
+		virtual void ApplyCharacterAttributes(const FSolidBodyParams& Params) override;
 		/**
 		 * One ellipsoid skinned to the hand bone.
 		 * From is the hand joint, where the finger meets the hand bone and the lower arm ends.
@@ -422,7 +422,7 @@ namespace SolidBodyMesh
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
-		virtual void Apply(const FSolidBodyParams& Params) override;
+		virtual void ApplyCharacterAttributes(const FSolidBodyParams& Params) override;
 		virtual FSolidPartDraw Fit(
 			const FVector& From,
 			const FVector& To,
@@ -470,7 +470,7 @@ namespace SolidBodyMesh
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
-		virtual void Apply(const FSolidBodyParams& Params) override;
+		virtual void ApplyCharacterAttributes(const FSolidBodyParams& Params) override;
 	};
 
 	/** foot_l or foot_r. Leg length and bulk size it. Draw keeps the tube. */
@@ -488,7 +488,7 @@ namespace SolidBodyMesh
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
-		virtual void Apply(const FSolidBodyParams& Params) override;
+		virtual void ApplyCharacterAttributes(const FSolidBodyParams& Params) override;
 	};
 
 	/** ball_l or ball_r. Leg length and bulk size it. Draw keeps the tube. */
@@ -506,7 +506,7 @@ namespace SolidBodyMesh
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
-		virtual void Apply(const FSolidBodyParams& Params) override;
+		virtual void ApplyCharacterAttributes(const FSolidBodyParams& Params) override;
 	};
 
 	/** The toe bone on this side. Leg length and bulk size it. Draw keeps the tube. */
@@ -524,7 +524,7 @@ namespace SolidBodyMesh
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
-		virtual void Apply(const FSolidBodyParams& Params) override;
+		virtual void ApplyCharacterAttributes(const FSolidBodyParams& Params) override;
 	};
 
 	/** spine_01, then both thigh bones. Height, hip width, and torso girth size it. Draw keeps the tube. */
@@ -542,7 +542,7 @@ namespace SolidBodyMesh
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
-		virtual void Apply(const FSolidBodyParams& Params) override;
+		virtual void ApplyCharacterAttributes(const FSolidBodyParams& Params) override;
 	};
 
 	/** spine_02. Height and torso girth size it. Draw keeps the tube. */
@@ -594,7 +594,7 @@ namespace SolidBodyMesh
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
-		virtual void Apply(const FSolidBodyParams& Params) override;
+		virtual void ApplyCharacterAttributes(const FSolidBodyParams& Params) override;
 	};
 
 	/** hand_l or hand_r. Arm length and bulk size it. Draw keeps the tube. */
@@ -612,7 +612,7 @@ namespace SolidBodyMesh
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
 		virtual TArray<FName> PartBones() const override;
-		virtual void Apply(const FSolidBodyParams& Params) override;
+		virtual void ApplyCharacterAttributes(const FSolidBodyParams& Params) override;
 	};
 
 	/** The part for this type. Each type is its own class. */

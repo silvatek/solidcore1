@@ -58,7 +58,7 @@ namespace SolidBodyMesh
 		 * The array starts as the original pose. Each part sizes the bones it wraps.
 		 * A bone with no part keeps its original translation.
 		 */
-		void Apply(TArray<FSolidDeformBone>& CharacterBones, const FSolidBodyParams& Params);
+		void ApplyCharacterAttributes(TArray<FSolidDeformBone>& CharacterBones, const FSolidBodyParams& Params);
 
 		/** Draw every part. CharacterBones is this character's pose. JointPositions are those joints in mesh space. */
 		void Draw(
@@ -77,7 +77,7 @@ namespace SolidBodyMesh
 			const TArray<FSolidDeformBone>& CharacterBones,
 			const TArray<FVector>& JointPositions) const;
 
-		/** The original pose. Make copies it here. Apply does not change it. */
+		/** The original pose. Make copies it here. ApplyCharacterAttributes does not change it. */
 		TArray<FSolidDeformBone> OriginalBones;
 	};
 

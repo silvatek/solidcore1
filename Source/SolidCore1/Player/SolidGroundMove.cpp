@@ -161,6 +161,18 @@ bool SolidGroundMove::BridgeOpens(const SolidBridge::FBridge& Bridge, const floa
 		|| CoversRamp(Bridge.RampTo, Point, Half, Bridge.bBroken);
 }
 
+bool SolidGroundMove::OnRamp(const SolidBridge::FBridge& Bridge, const float X, const float Y)
+{
+	const float Half = Bridge.WidthCm * 0.5f;
+	if (Half <= 0.f)
+	{
+		return false;
+	}
+	const FVector2D Point(X, Y);
+	return CoversRamp(Bridge.RampFrom, Point, Half, true)
+		|| CoversRamp(Bridge.RampTo, Point, Half, true);
+}
+
 bool SolidGroundMove::AllowsFooting(
 	const USolidWorldMap& Map,
 	const float X,

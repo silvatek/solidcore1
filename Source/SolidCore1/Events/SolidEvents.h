@@ -11,6 +11,8 @@
  * Enter town: the captain steps onto a numbered WorldMap.txt cell
  * (or leaves one numbered town for another). The parameter is that digit.
  * Standing still, or walking between cells of the same town, does not re-fire.
+ * Reach broken bridge: the captain stands on either ramp of the Iglin bridge.
+ * The parameter is unused. The deck and the gap past the lip do not count.
  * A visit before the requirements are met does not fire. A later visit does.
  */
 namespace SolidEvents
@@ -22,6 +24,7 @@ namespace SolidEvents
 
 	/** Stable ids. Eight hex digits. Requirements name these. */
 	inline constexpr const TCHAR* IdEnterIglin = TEXT("c4e1a7b2");
+	inline constexpr const TCHAR* IdReachBrokenBridge = TEXT("a17c4e58");
 	inline constexpr const TCHAR* IdEnterRelion = TEXT("9f30d86a");
 	inline constexpr const TCHAR* IdEnterKanfold = TEXT("2b8e15c7");
 	inline constexpr const TCHAR* IdEnterDragongate = TEXT("e6a4f093");
@@ -29,6 +32,8 @@ namespace SolidEvents
 	enum class ETrigger : uint8
 	{
 		EnterTown,
+		/** The captain stands on a ramp of the Iglin bridge. */
+		ReachBrokenBridge,
 	};
 
 	enum class EChange : uint8
@@ -91,6 +96,16 @@ namespace SolidEvents
 			TEXT("Enter Iglin"),
 			ETrigger::EnterTown,
 			0,
+		},
+		{
+			IdReachBrokenBridge,
+			TEXT("Reach broken bridge"),
+			ETrigger::ReachBrokenBridge,
+			INDEX_NONE,
+			{},
+			0,
+			{ IdEnterIglin },
+			1,
 		},
 		{
 			IdEnterRelion,

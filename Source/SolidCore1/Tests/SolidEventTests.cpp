@@ -60,7 +60,16 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("four enter-town events"), SolidEvents::DefinitionCount, 4);
+	int32 EnterTownCount = 0;
+	for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
+	{
+		if (SolidEvents::Definitions[Index].Trigger == SolidEvents::ETrigger::EnterTown)
+		{
+			++EnterTownCount;
+		}
+	}
+	TestEqual(TEXT("four enter-town events"), EnterTownCount, 4);
+	TestEqual(TEXT("five events"), SolidEvents::DefinitionCount, 5);
 	TestEqual(TEXT("roster is the company"), SolidEvents::RosterCount, 5);
 	TestEqual(TEXT("slot 0 is Sam"), FString(SolidEvents::RosterName(0)), FString(TEXT("Sam")));
 	TestEqual(TEXT("slot 1 is Alex"), FString(SolidEvents::RosterName(1)), FString(TEXT("Alex")));
@@ -426,8 +435,14 @@ bool FSolidEventsRequiresTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("id finds the event"), SolidEvents::FindIndexById(Event.Id), Index);
 	}
 
+	const int32 IglinIndex = SolidEvents::FindIndexById(SolidEvents::IdEnterIglin);
+	const int32 BridgeIndex = SolidEvents::FindIndexById(SolidEvents::IdReachBrokenBridge);
 	const int32 RelionIndex = SolidEvents::FindIndexById(SolidEvents::IdEnterRelion);
 	TestTrue(TEXT("Relion id is listed"), RelionIndex != INDEX_NONE);
+	TestTrue(TEXT("broken bridge id is listed"), BridgeIndex != INDEX_NONE);
+	TestTrue(
+		TEXT("Reach broken bridge sits between Iglin and Relion"),
+		IglinIndex != INDEX_NONE && BridgeIndex == IglinIndex + 1 && RelionIndex == BridgeIndex + 1);
 	if (RelionIndex != INDEX_NONE)
 	{
 		const SolidEvents::FEvent& Relion = SolidEvents::Definitions[RelionIndex];
@@ -437,10 +452,24 @@ bool FSolidEventsRequiresTest::RunTest(const FString& Parameters)
 			TestEqual(TEXT("Relion requires Enter Iglin"), FString(Relion.Requires[0]), FString(SolidEvents::IdEnterIglin));
 		}
 	}
+	if (BridgeIndex != INDEX_NONE)
+	{
+		const SolidEvents::FEvent& BridgeEvent = SolidEvents::Definitions[BridgeIndex];
+		TestEqual(TEXT("Reach broken bridge requires one event"), BridgeEvent.RequireCount, 1);
+		if (BridgeEvent.RequireCount > 0)
+		{
+			TestEqual(
+				TEXT("Reach broken bridge requires Enter Iglin"),
+				FString(BridgeEvent.Requires[0]),
+				FString(SolidEvents::IdEnterIglin));
+		}
+		TestEqual(TEXT("Reach broken bridge changes nothing"), BridgeEvent.ChangeCount, 0);
+	}
 	for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
 	{
 		const SolidEvents::FEvent& Event = SolidEvents::Definitions[Index];
-		if (FCString::Strcmp(Event.Id, SolidEvents::IdEnterRelion) == 0)
+		if (FCString::Strcmp(Event.Id, SolidEvents::IdEnterRelion) == 0
+			|| FCString::Strcmp(Event.Id, SolidEvents::IdReachBrokenBridge) == 0)
 		{
 			continue;
 		}
@@ -460,6 +489,72 @@ bool FSolidEventsRequiresTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Relion fires after Iglin"), RelionNow.bFired);
 	TestTrue(TEXT("Relion repairs the bridge after Iglin"), RelionNow.bRepairBridge);
 	TestTrue(TEXT("the bridge is repaired"), Early.bIglinBridgeRepaired);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidEventsReachBrokenBridgeTest,
+	"SolidCore1.Events.ReachBrokenBridge",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidEventsReachBrokenBridgeTest::RunTest(const FString& Parameters)
+{
+	const SolidEvents::FEvent* Event = SolidEventTestPrivate::FindEvent(TEXT("Reach broken bridge"));
+	TestNotNull(TEXT("Reach broken bridge is listed"), Event);
+	if (Event)
+	{
+		TestEqual(
+			TEXT("the ramp trigger"),
+			static_cast<uint8>(Event->Trigger),
+			static_cast<uint8>(SolidEvents::ETrigger::ReachBrokenBridge));
+		TestTrue(TEXT("the journal names it and nothing else"), SolidJournal::Describe(*Event).IsEmpty());
+	}
+
+	FGameState Early;
+	const SolidEvents::FResult Blocked = SolidEvents::NotifyReachBrokenBridge(Early);
+	TestFalse(TEXT("the ramp waits for Iglin"), Blocked.bFired);
+	TestEqual(TEXT("an early stand is not recorded"), Early.FiredCount, 0);
+	TestEqual(TEXT("an early stand is not journaled"), Early.Journal.Num(), 0);
+	TestEqual(TEXT("the ramp does not occupy a town"), Early.OccupiedTown, INDEX_NONE);
+
+	const SolidEvents::FResult Iglin = SolidEvents::NotifyOccupiedTown(Early, 0);
+	TestTrue(TEXT("Iglin fires"), Iglin.bFired);
+	const SolidEvents::FResult Reached = SolidEvents::NotifyReachBrokenBridge(Early);
+	TestTrue(TEXT("the ramp fires after Iglin"), Reached.bFired);
+	TestFalse(TEXT("the ramp does not switch sight"), Reached.bSetSight);
+	TestFalse(TEXT("the ramp does not retitle"), Reached.bSetTitle);
+	TestFalse(TEXT("the ramp does not repair the bridge"), Reached.bRepairBridge);
+	TestFalse(TEXT("the Iglin bridge stays broken"), Early.bIglinBridgeRepaired);
+	TestEqual(TEXT("the party stays empty"), Early.MaxPartySize, 0);
+	TestEqual(TEXT("Iglin and the ramp are recorded"), Early.FiredCount, 2);
+
+	const int32 BridgeIndex = SolidEvents::FindIndexById(SolidEvents::IdReachBrokenBridge);
+	TestTrue(TEXT("the ramp is journaled"), Early.Journal.Num() == 2 && BridgeIndex != INDEX_NONE
+		&& Early.Journal[1].EventIndex == BridgeIndex
+		&& Early.Journal[1].Type == SolidJournal::EJournalType::Event);
+
+	TArray<SolidJournal::FRow> Rows;
+	SolidJournal::CollectRows(Early, Rows);
+	int32 RampRow = INDEX_NONE;
+	for (int32 Index = 0; Index < Rows.Num(); ++Index)
+	{
+		if (Rows[Index].Kind == SolidJournal::ERowKind::Entry && Rows[Index].Text == TEXT("Reach broken bridge"))
+		{
+			RampRow = Index;
+			break;
+		}
+	}
+	TestTrue(TEXT("the journal lists Reach broken bridge"), RampRow != INDEX_NONE);
+	const bool bDetail = RampRow != INDEX_NONE
+		&& RampRow + 1 < Rows.Num()
+		&& Rows[RampRow + 1].Kind == SolidJournal::ERowKind::Detail;
+	TestFalse(TEXT("the ramp has no change line"), bDetail);
+
+	const int32 JournalCount = Early.Journal.Num();
+	const SolidEvents::FResult Again = SolidEvents::NotifyReachBrokenBridge(Early);
+	TestFalse(TEXT("the ramp fires once"), Again.bFired);
+	TestEqual(TEXT("a second stand is not recorded"), Early.FiredCount, 2);
+	TestEqual(TEXT("a second stand is not journaled"), Early.Journal.Num(), JournalCount);
 	return true;
 }
 

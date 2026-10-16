@@ -471,6 +471,7 @@ bool FSolidBridgeBrokenTest::RunTest(const FString& Parameters)
 	if (LoadCrossing(TEXT("0"), TEXT("1"), TEXT("Road: 0 -> 1, track\n"), Iglin))
 	{
 		TestTrue(TEXT("Iglin to Relion is broken"), Iglin[0].bBroken);
+		TestTrue(TEXT("Iglin to Relion is the Iglin bridge"), Iglin[0].bIglinRelion);
 		TestTrue(TEXT("the missing span is still measured"), Iglin[0].Deck.Num() >= 2);
 	}
 
@@ -478,18 +479,21 @@ bool FSolidBridgeBrokenTest::RunTest(const FString& Parameters)
 	if (LoadCrossing(TEXT("1"), TEXT("0"), TEXT("Road: 1 -> 0, track\n"), Reverse))
 	{
 		TestTrue(TEXT("Relion to Iglin is broken"), Reverse[0].bBroken);
+		TestTrue(TEXT("Relion to Iglin is the Iglin bridge"), Reverse[0].bIglinRelion);
 	}
 
 	TArray<SolidBridge::FBridge> Other;
 	if (LoadCrossing(TEXT("2"), TEXT("3"), TEXT("Road: 2 -> 3, track\n"), Other))
 	{
 		TestFalse(TEXT("another route keeps its span"), Other[0].bBroken);
+		TestFalse(TEXT("another route is not the Iglin bridge"), Other[0].bIglinRelion);
 	}
 
 	TArray<SolidBridge::FBridge> Cave;
 	if (LoadCrossing(TEXT("C"), TEXT("0"), TEXT("Road: C -> 0, trail\n"), Cave))
 	{
 		TestFalse(TEXT("the cave road is not the Iglin bridge"), Cave[0].bBroken);
+		TestFalse(TEXT("the cave road is not marked as the Iglin bridge"), Cave[0].bIglinRelion);
 	}
 
 	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
@@ -504,6 +508,7 @@ bool FSolidBridgeBrokenTest::RunTest(const FString& Parameters)
 			&& ShippedBridges.Num() == 1)
 		{
 			TestTrue(TEXT("the shipped Iglin bridge is broken"), ShippedBridges[0].bBroken);
+			TestTrue(TEXT("the shipped bridge is the Iglin bridge"), ShippedBridges[0].bIglinRelion);
 		}
 	}
 
@@ -516,6 +521,7 @@ bool FSolidBridgeBrokenTest::RunTest(const FString& Parameters)
 
 	SolidBridge::FBridge Spec;
 	Spec.bBroken = true;
+	Spec.bIglinRelion = true;
 	Spec.WidthCm = SolidRoad::WidthCm(SolidRoad::EType::Track);
 	Spec.Deck = { FVector(0.f, 0.f, 200.f), FVector(600.f, 0.f, 200.f) };
 	Spec.RampFrom = { FVector(0.f, 0.f, 200.f), FVector(-400.f, 0.f, 100.f), FVector(-800.f, 0.f, 0.f) };
@@ -544,6 +550,7 @@ bool FSolidBridgeBrokenTest::RunTest(const FString& Parameters)
 
 	Actor->SetBroken(false);
 	TestFalse(TEXT("repair restores the span"), Actor->GetBridge().bBroken);
+	TestTrue(TEXT("repair still knows the Iglin bridge"), Actor->GetBridge().bIglinRelion);
 	UStaticMesh* Restored = Actor->GetDeckMesh() ? Actor->GetDeckMesh()->GetStaticMesh() : nullptr;
 	TestNotNull(TEXT("the center is drawn"), Restored);
 	if (UStaticMeshComponent* RestoredDeck = Actor->GetDeckMesh())

@@ -272,4 +272,41 @@ bool FSolidGroundMoveBrokenTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidGroundMoveRampTest,
+	"SolidCore1.GroundMove.Ramp",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidGroundMoveRampTest::RunTest(const FString& Parameters)
+{
+	SolidBridge::FBridge Span;
+	Span.WidthCm = 200.f;
+	Span.bBroken = true;
+	Span.Deck = {
+		FVector(0.f, 0.f, 200.f),
+		FVector(600.f, 0.f, 200.f),
+	};
+	Span.RampFrom = {
+		FVector(0.f, 0.f, 200.f),
+		FVector(-400.f, 0.f, 100.f),
+		FVector(-800.f, 0.f, 0.f),
+	};
+	Span.RampTo = {
+		FVector(600.f, 0.f, 200.f),
+		FVector(1000.f, 0.f, 100.f),
+		FVector(1400.f, 0.f, 0.f),
+	};
+
+	TestTrue(TEXT("the near ramp is a ramp"), SolidGroundMove::OnRamp(Span, -400.f, 0.f));
+	TestTrue(TEXT("the far ramp is a ramp"), SolidGroundMove::OnRamp(Span, 1000.f, 0.f));
+	TestTrue(TEXT("the lip is a ramp"), SolidGroundMove::OnRamp(Span, 0.f, 0.f));
+	TestFalse(TEXT("past the lip is not a ramp"), SolidGroundMove::OnRamp(Span, 50.f, 0.f));
+	TestFalse(TEXT("the deck center is not a ramp"), SolidGroundMove::OnRamp(Span, 300.f, 0.f));
+
+	Span.bBroken = false;
+	TestTrue(TEXT("a repaired ramp is still a ramp"), SolidGroundMove::OnRamp(Span, 1000.f, 0.f));
+	TestFalse(TEXT("a repaired deck is not a ramp"), SolidGroundMove::OnRamp(Span, 300.f, 0.f));
+	return true;
+}
+
 #endif

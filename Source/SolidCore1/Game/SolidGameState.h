@@ -68,4 +68,13 @@ namespace SolidEvents
 		FGameState& State,
 		int32 TownId,
 		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
+
+	/**
+	 * The captain is standing on a ramp of the Iglin bridge.
+	 * Fires every unfired ReachBrokenBridge event whose requirements are met.
+	 * An unmet requirement is not recorded. A later call retries.
+	 */
+	FResult NotifyReachBrokenBridge(
+		FGameState& State,
+		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
 }

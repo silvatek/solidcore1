@@ -591,7 +591,8 @@ int32 SolidBridge::Collect(
 
 			FBridge Bridge;
 			Bridge.WidthCm = Width;
-			Bridge.bBroken = IsIglinRelion(Route.Definition);
+			Bridge.bIglinRelion = IsIglinRelion(Route.Definition);
+			Bridge.bBroken = Bridge.bIglinRelion;
 			Bridge.Deck.Reserve(DeckD.Num());
 			for (const float D : DeckD)
 			{

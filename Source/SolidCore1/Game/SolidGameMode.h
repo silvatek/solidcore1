@@ -141,6 +141,8 @@ protected:
 	void RefreshEvents();
 	/** Record one enter-town event and apply its sight, title, and bridge repair. */
 	void NoteTownEntry(int32 TownId);
+	/** Record Reach broken bridge when the captain stands on an Iglin ramp. */
+	void NoteBrokenBridgeRamp(const FVector& Location);
 	/** Draw the center of every broken bridge. Enter Relion calls this. */
 	void RepairBrokenBridges();
 	/** Fire Enter Iglin if needed, then Enter Relion and Enter Dragongate, and field the party. */

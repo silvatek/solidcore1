@@ -41,6 +41,12 @@ namespace SolidGroundMove
 	bool BridgeOpens(const SolidBridge::FBridge& Bridge, float X, float Y);
 
 	/**
+	 * True when the point lies on either ramp, and not past the lip toward the span.
+	 * The deck is not a ramp. A repaired bridge still reports its ramps.
+	 */
+	bool OnRamp(const SolidBridge::FBridge& Bridge, float X, float Y);
+
+	/**
 	 * Open ground, or the river channel where an intact bridge stands.
 	 * An empty bridge list leaves the channel closed.
 	 * A broken span also closes the bank in front of each ramp, so a step off that lip is refused.

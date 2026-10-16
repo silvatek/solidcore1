@@ -53,6 +53,8 @@ namespace SolidBridge
 		float WidthCm = 0.f;
 		/** The center span is omitted, and it does not carry a character across. */
 		bool bBroken = false;
+		/** This crossing joins Iglin and Relion. Repair clears bBroken and leaves this set. */
+		bool bIglinRelion = false;
 		TArray<FVector> Deck;
 		TArray<FVector> RampFrom;
 		TArray<FVector> RampTo;

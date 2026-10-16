@@ -52,6 +52,38 @@ namespace
 			break;
 		}
 	}
+
+	bool TryFireEvent(
+		FGameState& State,
+		const int32 Index,
+		const SolidWorldTime::FStamp& When,
+		SolidEvents::FResult& Result)
+	{
+		if (Index < 0 || Index >= SolidEvents::DefinitionCount || Index >= SolidEvents::MaxEvents)
+		{
+			return false;
+		}
+		if (State.bFired[Index] || !RequirementsMet(State, SolidEvents::Definitions[Index]))
+		{
+			return false;
+		}
+
+		const SolidEvents::FEvent& Event = SolidEvents::Definitions[Index];
+		State.bFired[Index] = true;
+		if (State.FiredCount < SolidEvents::MaxEvents)
+		{
+			State.FiredOrder[State.FiredCount] = Index;
+			++State.FiredCount;
+		}
+		SolidEvents::Remember(State, When, SolidJournal::EJournalType::Event, FString(), Index);
+		Result.bFired = true;
+		const int32 ChangeCount = FMath::Min(Event.ChangeCount, SolidEvents::MaxChangesPerEvent);
+		for (int32 ChangeIndex = 0; ChangeIndex < ChangeCount; ++ChangeIndex)
+		{
+			ApplyGameStateChange(State, Event.Changes[ChangeIndex], Result);
+		}
+		return true;
+	}
 }
 
 namespace SolidEvents
@@ -140,24 +172,28 @@ FResult NotifyOccupiedTown(
 		{
 			continue;
 		}
-		if (!RequirementsMet(State, Event))
+		TryFireEvent(State, Index, When, Result);
+	}
+
+	Result.MaxPartySize = State.MaxPartySize;
+	return Result;
+}
+
+FResult NotifyReachBrokenBridge(
+	FGameState& State,
+	const SolidWorldTime::FStamp& When)
+{
+	FResult Result;
+	Result.MaxPartySize = State.MaxPartySize;
+	Result.CaptainTitle = State.CaptainTitle;
+
+	for (int32 Index = 0; Index < DefinitionCount; ++Index)
+	{
+		if (Definitions[Index].Trigger != ETrigger::ReachBrokenBridge)
 		{
 			continue;
 		}
-
-		State.bFired[Index] = true;
-		if (State.FiredCount < MaxEvents)
-		{
-			State.FiredOrder[State.FiredCount] = Index;
-			++State.FiredCount;
-		}
-		Remember(State, When, SolidJournal::EJournalType::Event, FString(), Index);
-		Result.bFired = true;
-		const int32 ChangeCount = FMath::Min(Event.ChangeCount, MaxChangesPerEvent);
-		for (int32 ChangeIndex = 0; ChangeIndex < ChangeCount; ++ChangeIndex)
-		{
-			ApplyGameStateChange(State, Event.Changes[ChangeIndex], Result);
-		}
+		TryFireEvent(State, Index, When, Result);
 	}
 
 	Result.MaxPartySize = State.MaxPartySize;

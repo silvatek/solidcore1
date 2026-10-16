@@ -14,6 +14,7 @@
 #include "Party/SolidCompany.h"
 #include "Party/SolidParty.h"
 #include "Terrain/SolidBridge.h"
+#include "SolidGroundMove.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Terrain/SolidWorldMap.h"
@@ -470,6 +471,7 @@ void ASolidGameMode::RefreshEvents()
 		Terrain->GetWorldMinXY(),
 		Terrain->GetWorldMaxXY());
 	NoteTownEntry(TownId);
+	NoteBrokenBridgeRamp(Location);
 	EnsureCompanion();
 }
 
@@ -503,6 +505,29 @@ void ASolidGameMode::NoteTownEntry(const int32 TownId)
 		{
 			Captain->SetCharacterDisplayName(Result.CaptainTitle);
 		}
+	}
+}
+
+void ASolidGameMode::NoteBrokenBridgeRamp(const FVector& Location)
+{
+	for (const TObjectPtr<ASolidBridge>& Actor : SpawnedBridges)
+	{
+		const ASolidBridge* Bridge = Actor.Get();
+		if (!Bridge || !Bridge->HasBridge() || !Bridge->GetBridge().bIglinRelion)
+		{
+			continue;
+		}
+		if (!SolidGroundMove::OnRamp(Bridge->GetBridge(), Location.X, Location.Y))
+		{
+			continue;
+		}
+
+		const SolidEvents::FResult Result = SolidEvents::NotifyReachBrokenBridge(Configuration, WorldStamp());
+		if (Result.bFired)
+		{
+			UE_LOG(LogSolid, Warning, TEXT("Event: Reach broken bridge."));
+		}
+		return;
 	}
 }
 

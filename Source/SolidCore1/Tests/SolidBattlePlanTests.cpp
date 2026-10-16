@@ -244,6 +244,7 @@ bool FSolidGameModeBattlePlanSelectTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("parade fires Enter Relion"), Fired(State, TEXT("Enter Relion")));
 	TestTrue(TEXT("parade fires Enter Dragongate"), Fired(State, TEXT("Enter Dragongate")));
 	TestFalse(TEXT("parade does not fire Enter Kanfold"), Fired(State, TEXT("Enter Kanfold")));
+	TestFalse(TEXT("parade does not fire Reach broken bridge"), Fired(State, TEXT("Reach broken bridge")));
 	const int32 FiredCount = State.FiredCount;
 	TestTrue(TEXT("F5 parade again"), GameMode->SelectBattlePlanSlot(4));
 	TestEqual(TEXT("parade events fire once"), GameMode->GetConfiguration().FiredCount, FiredCount);

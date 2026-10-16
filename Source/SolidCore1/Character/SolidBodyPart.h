@@ -202,9 +202,9 @@ namespace SolidBodyMesh
 		/** Comes from the part type. A tube, the shoulders, the head, or a hand. */
 		ESolidPartShape Shape = ESolidPartShape::Tube;
 		/**
-		 * Local transforms copied onto this part.
-		 * Make stores the original pose, so PartBones can list the fingers and the eyes.
-		 * ApplyCharacterAttributes replaces it with the pose so far, then sizes the bones this part wraps.
+		 * Bones stored on this part.
+		 * Make stores OriginalBones, so PartBones can list the fingers and the eyes.
+		 * The mesh ApplyCharacterAttributes stores CharacterBones here.
 		 */
 		TArray<FSolidDeformBone> BoneLocals;
 		ESolidPartColour Colour = ESolidPartColour::Shirt;

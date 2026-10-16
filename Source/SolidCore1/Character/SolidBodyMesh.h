@@ -55,30 +55,27 @@ namespace SolidBodyMesh
 
 		/**
 		 * Write this character's proportions into CharacterBones.
-		 * The array starts as the original pose. Each part sizes the bones it wraps.
+		 * Starts from OriginalBones. Each part sizes the bones it wraps.
 		 * A bone with no part keeps its original translation.
+		 * Each part then stores CharacterBones.
 		 */
-		void ApplyCharacterAttributes(TArray<FSolidDeformBone>& CharacterBones, const FSolidBodyParams& Params);
+		void ApplyCharacterAttributes(const FSolidBodyParams& Params);
 
-		/** Draw every part. CharacterBones is this character's pose. JointPositions are those joints in mesh space. */
-		void Draw(
-			TArray<FSolidBodyVert>& Verts,
-			TArray<FSolidBodyTri>& Tris,
-			const TArray<FSolidDeformBone>& CharacterBones,
-			const TArray<FVector>& JointPositions);
+		/** Draw every part from CharacterBones. */
+		void Draw(TArray<FSolidBodyVert>& Verts, TArray<FSolidBodyTri>& Tris);
 
 		/**
 		 * The base of this body, in mesh space.
-		 * CharacterBones is this character's pose. JointPositions are those joints in mesh space.
-		 * Asks each part for its base, then keeps the minimum.
+		 * Uses CharacterBones. Asks each part for its base, then keeps the minimum.
 		 * Zero when no part draws.
 		 */
-		float Base(
-			const TArray<FSolidDeformBone>& CharacterBones,
-			const TArray<FVector>& JointPositions) const;
+		float Base() const;
 
 		/** The original pose. Make copies it here. ApplyCharacterAttributes does not change it. */
 		TArray<FSolidDeformBone> OriginalBones;
+
+		/** This character's bones. Make copies OriginalBones here. ApplyCharacterAttributes writes the proportions. */
+		TArray<FSolidDeformBone> CharacterBones;
 	};
 
 	/** Stable id for a companion name. Case does not matter. */
@@ -305,18 +302,15 @@ namespace SolidBodyMesh
 	 * A hand below the feet becomes the base, and the feet lift.
 	 * Zero when no part draws.
 	 */
-	float BodyBaseZ(
-		const FSolidBodyMesh& Body,
-		const TArray<FSolidDeformBone>& CharacterBones,
-		const TArray<FVector>& JointPositions);
+	float BodyBaseZ(const FSolidBodyMesh& Body);
 
 	/**
 	 * The base of the body made from these bones, in mesh space.
-	 * CharacterBones supplies the bone names and the joint positions come from that same character pose.
-	 * The parts keep their default sections. A sized body uses the other overload.
+	 * The bones supply the names and the lengths. The parts keep their default sections.
+	 * A sized body uses the other overload.
 	 * Zero when no part draws.
 	 */
-	float BodyBaseZ(const TArray<FSolidDeformBone>& CharacterBones, const TArray<FVector>& JointPositions);
+	float BodyBaseZ(const TArray<FSolidDeformBone>& Bones);
 
 	/** Mesh relative Z that puts that base on the bottom of the capsule. */
 	float BaseMeshOffset(float CapsuleHalfHeight, float BaseZ);

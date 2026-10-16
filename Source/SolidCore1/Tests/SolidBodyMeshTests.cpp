@@ -831,7 +831,7 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 	WideLegs.LegLength = 1.5f;
 	WideLegs.Bulk = 1.25f;
 	WideLegs.HipWidth = 1.4f;
-	Scaled.ApplyCharacterAttributes(ScaledBones, WideLegs);
+	Scaled.ApplyCharacterAttributes(WideLegs);
 	const FSolidBodyPart* ScaledThigh = Scaled.Find(TEXT("Thigh (L)"));
 	const FSolidBodyPart* ScaledHip = Scaled.Find(TEXT("Hip"));
 	TestTrue(
@@ -842,12 +842,12 @@ bool FSolidBodyPartsTest::RunTest(const FString& Parameters)
 		ScaledHip && FMath::IsNearlyEqual(ScaledHip->Start.X, HipSideDiameterCm * WideLegs.HipWidth, 0.01f));
 	TestTrue(
 		TEXT("leg length sizes the thigh bone"),
-		FMath::IsNearlyEqual(ScaledBones[2].LocalTranslation.Size(), 40.f * WideLegs.LegLength, 0.01f));
+		FMath::IsNearlyEqual(Scaled.CharacterBones[2].LocalTranslation.Size(), 40.f * WideLegs.LegLength, 0.01f));
 	TestTrue(
 		TEXT("the hip spreads the thigh joint sideways"),
-		FMath::IsNearlyEqual(ScaledBones[1].LocalTranslation.X, 10.f * WideLegs.HipWidth, 0.01f)
-		&& FMath::IsNearlyEqual(ScaledBones[1].LocalTranslation.Z, -2.f, 0.01f));
-	TestTrue(TEXT("the head stays the viking length"), ScaledBones[3].LocalTranslation.Equals(FVector(0.f, 0.f, 20.f), 0.01f));
+		FMath::IsNearlyEqual(Scaled.CharacterBones[1].LocalTranslation.X, 10.f * WideLegs.HipWidth, 0.01f)
+		&& FMath::IsNearlyEqual(Scaled.CharacterBones[1].LocalTranslation.Z, -2.f, 0.01f));
+	TestTrue(TEXT("the head stays the viking length"), Scaled.CharacterBones[3].LocalTranslation.Equals(FVector(0.f, 0.f, 20.f), 0.01f));
 
 	const FSolidBodyMesh Bare = FSolidBodyMesh::Make({});
 	const FSolidBodyPart* BareShoulders = Bare.Find(TEXT("Shoulders"));
@@ -1031,12 +1031,10 @@ bool FSolidBodyHeadTest::RunTest(const FString& Parameters)
 			Head->Bones == Head->PartBones());
 	}
 
-	TArray<FVector> Positions;
-	SolidBodyDeform::ComponentPositions(Bones, Positions);
 	TArray<FSolidBodyVert> Verts;
 	TArray<FSolidBodyTri> Tris;
 	FSolidBodyMesh Drawn = Body;
-	Drawn.Draw(Verts, Tris, Bones, Positions);
+	Drawn.Draw(Verts, Tris);
 	TestTrue(TEXT("the head draws triangles"), Tris.Num() > 0);
 
 	int32 SkinVerts = 0;
@@ -1057,14 +1055,14 @@ bool FSolidBodyHeadTest::RunTest(const FString& Parameters)
 	const float HeadScale = SolidBody::ParamMax;
 	BigHead.HeadSize = HeadScale;
 	FSolidBodyMesh Scaled = Body;
-	Scaled.ApplyCharacterAttributes(Bones, BigHead);
-	TestTrue(TEXT("head size lengthens the head bone"), Bones[1].LocalTranslation.Equals(FVector(0.f, 0.f, 10.f * HeadScale), 0.01f));
+	Scaled.ApplyCharacterAttributes(BigHead);
+	TestTrue(TEXT("head size lengthens the head bone"), Scaled.CharacterBones[1].LocalTranslation.Equals(FVector(0.f, 0.f, 10.f * HeadScale), 0.01f));
 	TestTrue(
 		TEXT("head size spreads an eye"),
-		FMath::IsNearlyEqual(Bones[2].LocalTranslation.X, 4.f * HeadScale, 0.01f)
-		&& FMath::IsNearlyEqual(Bones[2].LocalTranslation.Y, 6.f * HeadScale, 0.01f)
-		&& FMath::IsNearlyEqual(Bones[2].LocalTranslation.Z, 12.f, 0.01f));
-	TestTrue(TEXT("a thumb stays the viking offset"), Bones[5].LocalTranslation.Equals(FVector(1.f, 1.f, 1.f), 0.01f));
+		FMath::IsNearlyEqual(Scaled.CharacterBones[2].LocalTranslation.X, 4.f * HeadScale, 0.01f)
+		&& FMath::IsNearlyEqual(Scaled.CharacterBones[2].LocalTranslation.Y, 6.f * HeadScale, 0.01f)
+		&& FMath::IsNearlyEqual(Scaled.CharacterBones[2].LocalTranslation.Z, 12.f, 0.01f));
+	TestTrue(TEXT("a thumb stays the viking offset"), Scaled.CharacterBones[5].LocalTranslation.Equals(FVector(1.f, 1.f, 1.f), 0.01f));
 	return true;
 }
 
@@ -1099,12 +1097,10 @@ bool FSolidBodyHeadShapeTest::RunTest(const FString& Parameters)
 	const float EyeLength = static_cast<float>(EyeTranslation.Size());
 	const float SphereHeight = HeadLength * HeadHeightInBoneLengths;
 
-	TArray<FVector> Positions;
-	SolidBodyDeform::ComponentPositions(Bones, Positions);
 	TArray<FSolidBodyVert> Verts;
 	TArray<FSolidBodyTri> Tris;
 	FSolidBodyMesh Body = FSolidBodyMesh::Make(Bones);
-	Body.Draw(Verts, Tris, Bones, Positions);
+	Body.Draw(Verts, Tris);
 
 	float MinZ = 1.e9f;
 	float MaxZ = -1.e9f;
@@ -1222,7 +1218,7 @@ bool FSolidBodyDetailTest::RunTest(const FString& Parameters)
 	TArray<FSolidBodyVert> HeadVerts;
 	TArray<FSolidBodyTri> HeadTris;
 	FSolidBodyMesh Body = FSolidBodyMesh::Make(Bones);
-	Body.Draw(HeadVerts, HeadTris, Bones, Positions);
+	Body.Draw(HeadVerts, HeadTris);
 
 	float MinZ = 1.e9f;
 	int32 SkinVerts = 0;
@@ -1360,15 +1356,14 @@ bool FSolidBodyHandsTest::RunTest(const FString& Parameters)
 	LongArms.Height = 2.f;
 	LongArms.Bulk = 1.8f;
 	LongArms.TorsoGirth = 1.7f;
-	TArray<FSolidDeformBone> ScaledBones = Bones;
 	FSolidBodyMesh Scaled = Body;
-	Scaled.ApplyCharacterAttributes(ScaledBones, LongArms);
+	Scaled.ApplyCharacterAttributes(LongArms);
 	TestTrue(
 		TEXT("arm length sizes the hand bone once"),
-		ScaledBones[2].LocalTranslation.Equals(FVector(0.f, 0.f, 15.f), 0.01f));
+		Scaled.CharacterBones[2].LocalTranslation.Equals(FVector(0.f, 0.f, 15.f), 0.01f));
 	TestTrue(
 		TEXT("the hand leaves a finger at the viking offset"),
-		ScaledBones[3].LocalTranslation.Equals(FVector(8.f, 0.f, 4.f), 0.01f));
+		Scaled.CharacterBones[3].LocalTranslation.Equals(FVector(8.f, 0.f, 4.f), 0.01f));
 	return true;
 }
 
@@ -1427,7 +1422,7 @@ bool FSolidBodyHandShapeTest::RunTest(const FString& Parameters)
 	TArray<FSolidBodyVert> Verts;
 	TArray<FSolidBodyTri> Tris;
 	FSolidBodyMesh Drawn = Body;
-	Drawn.Draw(Verts, Tris, Bones, Positions);
+	Drawn.Draw(Verts, Tris);
 
 	const int32 HandRingVerts = 2 + (HeadRingCount - 2) * HeadSideCount;
 	auto AxisValue = [](const FVector& Delta, const int32 Axis) -> float
@@ -1551,7 +1546,7 @@ bool FSolidBodyBaseTest::RunTest(const FString& Parameters)
 {
 	using namespace SolidBodyMesh;
 
-	TestTrue(TEXT("no parts leave the base at the mesh origin"), FMath::IsNearlyEqual(BodyBaseZ({}, {}), 0.f, 0.01f));
+	TestTrue(TEXT("no parts leave the base at the mesh origin"), FMath::IsNearlyEqual(BodyBaseZ({}), 0.f, 0.01f));
 
 	TArray<FSolidDeformBone> Bones;
 	auto AddBone = [&Bones](const TCHAR* Name, const int32 Parent, const FVector& Translation)
@@ -1568,9 +1563,7 @@ bool FSolidBodyBaseTest::RunTest(const FString& Parameters)
 	AddBone(LeftBallBone, 2, FVector(16.f, 0.f, 0.f));
 	AddBone(LeftToeBone, 3, FVector(0.f, 0.f, -8.f));
 
-	TArray<FVector> Positions;
-	SolidBodyDeform::ComponentPositions(Bones, Positions);
-	const float NeutralBase = BodyBaseZ(Bones, Positions);
+	const float NeutralBase = BodyBaseZ(Bones);
 	TestTrue(TEXT("the downward toe sets the base"), FMath::IsNearlyEqual(NeutralBase, -78.f, 0.01f));
 	TestTrue(TEXT("the base is below the foot bone"), NeutralBase < -70.f);
 
@@ -1583,9 +1576,8 @@ bool FSolidBodyBaseTest::RunTest(const FString& Parameters)
 	FSolidBodyParams LongLegs;
 	LongLegs.Height = 1.f;
 	LongLegs.LegLength = SolidBody::ParamMax;
-	Body.ApplyCharacterAttributes(Bones, LongLegs);
-	SolidBodyDeform::ComponentPositions(Bones, Positions);
-	const float LongBase = BodyBaseZ(Bones, Positions);
+	Body.ApplyCharacterAttributes(LongLegs);
+	const float LongBase = BodyBaseZ(Body);
 	TestTrue(
 		TEXT("longer legs lower the base"),
 		FMath::IsNearlyEqual(LongBase, -78.f * SolidBody::ParamMax, 0.01f));
@@ -1639,9 +1631,9 @@ bool FSolidBodyHandstandBaseTest::RunTest(const FString& Parameters)
 	}
 	const float ToeZ = static_cast<float>(Positions[ToeIndex].Z);
 	const float HandZ = static_cast<float>(Positions[FingerIndex].Z);
-	const float BaseZ = BodyBaseZ(Bones, Positions);
+	const float BaseZ = BodyBaseZ(Bones);
 	const FSolidBodyMesh Body = FSolidBodyMesh::Make(Bones);
-	const float WornBase = BodyBaseZ(Body, Bones, Positions);
+	const float WornBase = BodyBaseZ(Body);
 
 	TestTrue(TEXT("the hand hangs below the toe"), HandZ < ToeZ);
 	TestTrue(TEXT("a handstand plants the hand"), FMath::IsNearlyEqual(BaseZ, HandZ, 0.01f));
@@ -1707,8 +1699,7 @@ bool FSolidBodyPartClassTest::RunTest(const FString& Parameters)
 	Params.Bulk = 1.25f;
 	Params.TorsoGirth = 1.4f;
 	Params.ArmLength = 1.3f;
-	TArray<FSolidDeformBone> Scaled = Bones;
-	Copied.ApplyCharacterAttributes(Scaled, Params);
+	Copied.ApplyCharacterAttributes(Params);
 
 	const FSolidBodyPart* CopiedThigh = Copied.Find(TEXT("Thigh (L)"));
 	const FSolidBodyPart* CopiedAbdomen = Copied.Find(TEXT("Abdomen"));
@@ -1718,22 +1709,22 @@ bool FSolidBodyPartClassTest::RunTest(const FString& Parameters)
 		CopiedThigh && FMath::IsNearlyEqual(CopiedThigh->Start.X, LeftThighTopDiameterCm * Params.Bulk, 0.01f));
 	TestTrue(
 		TEXT("a copy sizes the thigh bone by leg length and height"),
-		FMath::IsNearlyEqual(Scaled[1].LocalTranslation.Size(), 40.f * Params.LegLength * Params.Height, 0.01f));
+		FMath::IsNearlyEqual(Copied.CharacterBones[1].LocalTranslation.Size(), 40.f * Params.LegLength * Params.Height, 0.01f));
 	TestTrue(
 		TEXT("a copy sizes the calf bone by leg length and height"),
-		FMath::IsNearlyEqual(Scaled[2].LocalTranslation.Size(), 30.f * Params.LegLength * Params.Height, 0.01f));
+		FMath::IsNearlyEqual(Copied.CharacterBones[2].LocalTranslation.Size(), 30.f * Params.LegLength * Params.Height, 0.01f));
 	TestTrue(
 		TEXT("a copy keeps the abdomen on torso girth"),
 		CopiedAbdomen && FMath::IsNearlyEqual(CopiedAbdomen->Start.X, AbdomenSide * Params.TorsoGirth, 0.01f));
 	TestTrue(
 		TEXT("a copy sizes the abdomen bone by height"),
-		FMath::IsNearlyEqual(Scaled[5].LocalTranslation.Size(), 12.f * Params.Height, 0.01f));
+		FMath::IsNearlyEqual(Copied.CharacterBones[5].LocalTranslation.Size(), 12.f * Params.Height, 0.01f));
 	TestTrue(
 		TEXT("a copy keeps the lower arm on bulk"),
 		CopiedLower && FMath::IsNearlyEqual(CopiedLower->Start.X, LowerSide * Params.Bulk, 0.01f));
 	TestTrue(
 		TEXT("a copy sizes the lower arm bone by arm length"),
-		FMath::IsNearlyEqual(Scaled[7].LocalTranslation.Size(), 18.f * Params.ArmLength, 0.01f));
+		FMath::IsNearlyEqual(Copied.CharacterBones[7].LocalTranslation.Size(), 18.f * Params.ArmLength, 0.01f));
 	return true;
 }
 

@@ -25,6 +25,7 @@
 
 SolidBodyMesh::FSolidBodyMesh::FSolidBodyMesh(const FSolidBodyMesh& Other)
 	: OriginalBones(Other.OriginalBones)
+	, CharacterBones(Other.CharacterBones)
 {
 	Parts.Reserve(Other.Parts.Num());
 	for (const TUniquePtr<FSolidBodyPart>& Part : Other.Parts)
@@ -38,6 +39,7 @@ SolidBodyMesh::FSolidBodyMesh& SolidBodyMesh::FSolidBodyMesh::operator=(const FS
 	if (this != &Other)
 	{
 		OriginalBones = Other.OriginalBones;
+		CharacterBones = Other.CharacterBones;
 		Parts.Reset();
 		Parts.Reserve(Other.Parts.Num());
 		for (const TUniquePtr<FSolidBodyPart>& Part : Other.Parts)
@@ -59,6 +61,7 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 
 	FSolidBodyMesh Body;
 	Body.OriginalBones = OriginalBones;
+	Body.CharacterBones = OriginalBones;
 
 	// The top of a part is the bottom of the part above it, where those ends already meet.
 	const FSolidPartSection ToeTip = RoundSection(ToeTipDiameterCm);
@@ -740,20 +743,18 @@ USkeletalMesh* SolidBodyMesh::Build(
 
 	FSolidDeformMesh Bind;
 	FillBones(Ref, Bind);
-	// Lengths start as the original pose. Each part then sizes its own bones.
+	// Lengths start as OriginalBones. ApplyCharacterAttributes stores CharacterBones on the body.
 	const FSolidBodyParams Clamped = Params.Clamped();
-	FSolidDeformMesh Deformed = Bind;
-	FSolidBodyMesh Body = FSolidBodyMesh::Make(Deformed.Bones);
-	Body.ApplyCharacterAttributes(Deformed.Bones, Clamped);
-
-	TArray<FVector> JointPositions;
-	SolidBodyDeform::ComponentPositions(Deformed.Bones, JointPositions);
-	OutBaseZ = BodyBaseZ(Body, Deformed.Bones, JointPositions);
+	FSolidBodyMesh Body = FSolidBodyMesh::Make(Bind.Bones);
+	Body.ApplyCharacterAttributes(Clamped);
+	OutBaseZ = BodyBaseZ(Body);
 
 	// The part list draws the triangles. The rest of this function hands them to Unreal.
 	TArray<FSolidBodyVert> Verts;
 	TArray<FSolidBodyTri> Tris;
-	Body.Draw(Verts, Tris, Deformed.Bones, JointPositions);
+	Body.Draw(Verts, Tris);
+	FSolidDeformMesh CharacterPose;
+	CharacterPose.Bones = Body.CharacterBones;
 	if (Tris.Num() == 0 || Verts.Num() == 0)
 	{
 		UE_LOG(LogSolid, Warning, TEXT("SolidBody low-poly mesh has no segments, so it is discarded."));
@@ -761,7 +762,7 @@ USkeletalMesh* SolidBodyMesh::Build(
 	}
 
 	FMeshDescription Description;
-	if (!WriteDescription(Description, Ref, Deformed, Verts, Tris))
+	if (!WriteDescription(Description, Ref, CharacterPose, Verts, Tris))
 	{
 		return nullptr;
 	}
@@ -784,7 +785,7 @@ USkeletalMesh* SolidBodyMesh::Build(
 	Mesh->SetSkeleton(BodySkeleton);
 	Mesh->NeverStream = true;
 	Mesh->SetRefSkeleton(Ref);
-	ApplyDeformedRefPose(Mesh, BodySkeleton, Ref, Deformed);
+	ApplyDeformedRefPose(Mesh, BodySkeleton, Ref, CharacterPose);
 	ApplyWearColors(
 		Mesh,
 		FLinearColor(0.29f, 0.38f, 0.55f),
@@ -817,12 +818,12 @@ USkeletalMesh* SolidBodyMesh::Build(
 	}
 
 	Mesh->Build();
-	ApplyDeformedRefPose(Mesh, BodySkeleton, Ref, Deformed);
+	ApplyDeformedRefPose(Mesh, BodySkeleton, Ref, CharacterPose);
 	Mesh->SetSkeleton(BodySkeleton);
 	if (!HasRenderableBody(Mesh))
 	{
 		Mesh->Build();
-		ApplyDeformedRefPose(Mesh, BodySkeleton, Ref, Deformed);
+		ApplyDeformedRefPose(Mesh, BodySkeleton, Ref, CharacterPose);
 		Mesh->CalculateInvRefMatrices();
 	}
 	if (!HasRenderableBody(Mesh))
@@ -849,20 +850,15 @@ USkeletalMesh* SolidBodyMesh::Build(
 #endif
 }
 
-float SolidBodyMesh::BodyBaseZ(
-	const FSolidBodyMesh& Body,
-	const TArray<FSolidDeformBone>& CharacterBones,
-	const TArray<FVector>& JointPositions)
+float SolidBodyMesh::BodyBaseZ(const FSolidBodyMesh& Body)
 {
-	return Body.Base(CharacterBones, JointPositions);
+	return Body.Base();
 }
 
-float SolidBodyMesh::BodyBaseZ(
-	const TArray<FSolidDeformBone>& CharacterBones,
-	const TArray<FVector>& JointPositions)
+float SolidBodyMesh::BodyBaseZ(const TArray<FSolidDeformBone>& Bones)
 {
-	const FSolidBodyMesh Body = FSolidBodyMesh::Make(CharacterBones);
-	return Body.Base(CharacterBones, JointPositions);
+	const FSolidBodyMesh Body = FSolidBodyMesh::Make(Bones);
+	return Body.Base();
 }
 
 float SolidBodyMesh::BaseMeshOffset(const float CapsuleHalfHeight, const float BaseZ)
@@ -967,29 +963,34 @@ const SolidBodyMesh::FSolidBodyPart* SolidBodyMesh::FSolidBodyMesh::Find(const F
 	return nullptr;
 }
 
-void SolidBodyMesh::FSolidBodyMesh::ApplyCharacterAttributes(
-	TArray<FSolidDeformBone>& CharacterBones,
-	const FSolidBodyParams& Params)
+void SolidBodyMesh::FSolidBodyMesh::ApplyCharacterAttributes(const FSolidBodyParams& Params)
 {
+	CharacterBones = OriginalBones;
 	for (const TUniquePtr<FSolidBodyPart>& Part : Parts)
 	{
 		if (!Part)
 		{
 			continue;
 		}
-		// The part sizes its own copy. That result is written back into CharacterBones.
 		Part->BoneLocals = CharacterBones;
 		Part->ApplyCharacterAttributes(Params);
 		CharacterBones = Part->BoneLocals;
+	}
+	for (const TUniquePtr<FSolidBodyPart>& Part : Parts)
+	{
+		if (Part)
+		{
+			Part->BoneLocals = CharacterBones;
+		}
 	}
 }
 
 void SolidBodyMesh::FSolidBodyMesh::Draw(
 	TArray<FSolidBodyVert>& Verts,
-	TArray<FSolidBodyTri>& Tris,
-	const TArray<FSolidDeformBone>& CharacterBones,
-	const TArray<FVector>& JointPositions)
+	TArray<FSolidBodyTri>& Tris)
 {
+	TArray<FVector> JointPositions;
+	SolidBodyDeform::ComponentPositions(CharacterBones, JointPositions);
 	// shoulder_jnt stays bare. Twists stay bare. Hands draw their own fingers.
 	const int32 Count = FMath::Min(CharacterBones.Num(), JointPositions.Num());
 	for (const TUniquePtr<FSolidBodyPart>& Part : Parts)
@@ -1048,10 +1049,10 @@ void SolidBodyMesh::FSolidBodyMesh::Draw(
 	}
 }
 
-float SolidBodyMesh::FSolidBodyMesh::Base(
-	const TArray<FSolidDeformBone>& CharacterBones,
-	const TArray<FVector>& JointPositions) const
+float SolidBodyMesh::FSolidBodyMesh::Base() const
 {
+	TArray<FVector> JointPositions;
+	SolidBodyDeform::ComponentPositions(CharacterBones, JointPositions);
 	float BaseZ = TNumericLimits<float>::Max();
 	bool bFound = false;
 	for (const TUniquePtr<FSolidBodyPart>& Part : Parts)

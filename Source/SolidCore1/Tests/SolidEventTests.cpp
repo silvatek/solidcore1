@@ -314,4 +314,56 @@ bool FSolidEventsNumberedCellTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidEventsLaterTownsEnableRavenTest,
+	"SolidCore1.Events.LaterTownsEnableRaven",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidEventsLaterTownsEnableRavenTest::RunTest(const FString& Parameters)
+{
+	FGameState KanfoldState;
+	const SolidEvents::FResult Kanfold = SolidEvents::NotifyOccupiedTown(KanfoldState, 2);
+	TestTrue(TEXT("Kanfold fires"), Kanfold.bFired);
+	TestTrue(TEXT("Kanfold switches sight"), Kanfold.bSetSight);
+	TestEqual(
+		TEXT("Kanfold enables raven sight"),
+		static_cast<uint8>(Kanfold.Sight),
+		static_cast<uint8>(ESolidSight::Raven));
+	TestTrue(TEXT("Kanfold unlocks raven sight"), KanfoldState.bRavenSightEnabled);
+	TestEqual(TEXT("Kanfold still fields Sam and Alex"), KanfoldState.MaxPartySize, 2);
+	TestEqual(
+		TEXT("Kanfold still titles Ranger"),
+		FString(KanfoldState.CaptainTitle),
+		FString(SolidEvents::TitleRanger));
+
+	FGameState GateState;
+	const SolidEvents::FResult Dragongate = SolidEvents::NotifyOccupiedTown(GateState, 5);
+	TestTrue(TEXT("Dragongate fires"), Dragongate.bFired);
+	TestTrue(TEXT("Dragongate switches sight"), Dragongate.bSetSight);
+	TestEqual(
+		TEXT("Dragongate enables raven sight"),
+		static_cast<uint8>(Dragongate.Sight),
+		static_cast<uint8>(ESolidSight::Raven));
+	TestTrue(TEXT("Dragongate unlocks raven sight"), GateState.bRavenSightEnabled);
+	TestEqual(TEXT("Dragongate still fields the company"), GateState.MaxPartySize, SolidEvents::RosterCount);
+	TestEqual(
+		TEXT("Dragongate still titles Captain"),
+		FString(GateState.CaptainTitle),
+		FString(SolidEvents::TitleCaptain));
+
+	for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
+	{
+		const SolidEvents::FEvent& Event = SolidEvents::Definitions[Index];
+		if (FCString::Strcmp(Event.Name, TEXT("Enter Kanfold")) != 0
+			&& FCString::Strcmp(Event.Name, TEXT("Enter Dragongate")) != 0)
+		{
+			continue;
+		}
+		TestTrue(
+			*FString::Printf(TEXT("%s journal enables raven sight"), Event.Name),
+			SolidJournal::Describe(Event).Contains(TEXT("Raven sight enabled")));
+	}
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0350")
+#define SOLID_BUILD_ID TEXT("SC1-0351")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Draw writes into OutVerts and OutTris.")
+#define SOLID_BUILD_NOTE TEXT("Enter Kanfold and Enter Dragongate enable raven sight.")
 #endif

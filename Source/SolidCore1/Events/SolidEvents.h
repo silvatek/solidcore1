@@ -90,20 +90,22 @@ namespace SolidEvents
 			ETrigger::EnterTown,
 			2,
 			{
+				{ EChange::EnableSight, ESolidSight::Raven, 0 },
 				{ EChange::MaxPartySize, ESolidSight::Raven, 2 },
 				{ EChange::CaptainTitle, ESolidSight::Raven, 0, TitleRanger },
 			},
-			2,
+			3,
 		},
 		{
 			TEXT("Enter Dragongate"),
 			ETrigger::EnterTown,
 			5,
 			{
+				{ EChange::EnableSight, ESolidSight::Raven, 0 },
 				{ EChange::MaxPartySize, ESolidSight::Raven, RosterCount },
 				{ EChange::CaptainTitle, ESolidSight::Raven, 0, TitleCaptain },
 			},
-			2,
+			3,
 		},
 	};
 

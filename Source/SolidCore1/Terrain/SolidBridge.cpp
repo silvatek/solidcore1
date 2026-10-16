@@ -13,12 +13,12 @@
 
 namespace
 {
-	struct FPoly
+	struct FRouteLine
 	{
 		TArray<FVector2D> Points;
 	};
 
-	float PolyLength(const FPoly& Poly)
+	float PolyLength(const FRouteLine& Poly)
 	{
 		float Length = 0.f;
 		for (int32 Index = 1; Index < Poly.Points.Num(); ++Index)
@@ -28,7 +28,7 @@ namespace
 		return Length;
 	}
 
-	FVector2D PointAt(const FPoly& Poly, const float Distance)
+	FVector2D PointAt(const FRouteLine& Poly, const float Distance)
 	{
 		if (Poly.Points.Num() == 0)
 		{
@@ -67,7 +67,7 @@ namespace
 		return Poly.Points.Last();
 	}
 
-	bool RoutePoly(const USolidWorldMap& Map, const SolidRoad::FRoute& Route, const FVector2D WorldMin, const FVector2D WorldMax, FPoly& Out)
+	bool RoutePoly(const USolidWorldMap& Map, const SolidRoad::FRoute& Route, const FVector2D WorldMin, const FVector2D WorldMax, FRouteLine& Out)
 	{
 		Out.Points.Reset();
 		for (const FIntPoint& Cell : Route.Cells)
@@ -356,7 +356,7 @@ int32 SolidBridge::Collect(
 
 	for (const SolidRoad::FRoute& Route : Map.GetRoads())
 	{
-		FPoly Poly;
+		FRouteLine Poly;
 		if (!RoutePoly(Map, Route, WorldMinXY, WorldMaxXY, Poly))
 		{
 			continue;
@@ -434,28 +434,32 @@ int32 SolidBridge::Collect(
 			Index = Last + 1;
 		}
 
-		auto EdgeBefore = [&IsWet](const float WetD)
+		auto RefineWet = [&IsWet](float DryAt, float WetAt)
+		{
+			for (int32 Refine = 0; Refine < 16; ++Refine)
+			{
+				const float Mid = (DryAt + WetAt) * 0.5f;
+				if (IsWet(Mid))
+				{
+					WetAt = Mid;
+				}
+				else
+				{
+					DryAt = Mid;
+				}
+			}
+			return WetAt;
+		};
+
+		auto EdgeBefore = [&IsWet, &RefineWet](const float WetD)
 		{
 			float WetAt = WetD;
-			float DryAt = WetD;
 			for (int32 Step = 0; Step < 8000; ++Step)
 			{
-				DryAt = WetAt - SampleStepCm;
+				const float DryAt = WetAt - SampleStepCm;
 				if (!IsWet(DryAt))
 				{
-					for (int32 Refine = 0; Refine < 16; ++Refine)
-					{
-						const float Mid = (DryAt + WetAt) * 0.5f;
-						if (IsWet(Mid))
-						{
-							WetAt = Mid;
-						}
-						else
-						{
-							DryAt = Mid;
-						}
-					}
-					return WetAt;
+					return RefineWet(DryAt, WetAt);
 				}
 				WetAt = DryAt;
 				if (WetD - WetAt > MaxRampCm)
@@ -466,28 +470,15 @@ int32 SolidBridge::Collect(
 			return WetAt;
 		};
 
-		auto EdgeAfter = [&IsWet](const float WetD)
+		auto EdgeAfter = [&IsWet, &RefineWet](const float WetD)
 		{
 			float WetAt = WetD;
-			float DryAt = WetD;
 			for (int32 Step = 0; Step < 8000; ++Step)
 			{
-				DryAt = WetAt + SampleStepCm;
+				const float DryAt = WetAt + SampleStepCm;
 				if (!IsWet(DryAt))
 				{
-					for (int32 Refine = 0; Refine < 16; ++Refine)
-					{
-						const float Mid = (DryAt + WetAt) * 0.5f;
-						if (IsWet(Mid))
-						{
-							WetAt = Mid;
-						}
-						else
-						{
-							DryAt = Mid;
-						}
-					}
-					return WetAt;
+					return RefineWet(DryAt, WetAt);
 				}
 				WetAt = DryAt;
 				if (WetAt - WetD > MaxRampCm)
@@ -501,46 +492,24 @@ int32 SolidBridge::Collect(
 		const float Width = SolidRoad::WidthCm(Route.Definition.Type);
 		for (const FRun& Run : Runs)
 		{
-			const float Water0 = (Run.First > 0)
-				? [&]()
-				{
-					float DryAt = Dist[Run.First - 1];
-					float WetAt = Dist[Run.First];
-					for (int32 Refine = 0; Refine < 16; ++Refine)
-					{
-						const float Mid = (DryAt + WetAt) * 0.5f;
-						if (IsWet(Mid))
-						{
-							WetAt = Mid;
-						}
-						else
-						{
-							DryAt = Mid;
-						}
-					}
-					return WetAt;
-				}()
-				: EdgeBefore(Dist[Run.First]);
-			const float Water1 = (Run.Last + 1 < Dist.Num())
-				? [&]()
-				{
-					float DryAt = Dist[Run.Last + 1];
-					float WetAt = Dist[Run.Last];
-					for (int32 Refine = 0; Refine < 16; ++Refine)
-					{
-						const float Mid = (DryAt + WetAt) * 0.5f;
-						if (IsWet(Mid))
-						{
-							WetAt = Mid;
-						}
-						else
-						{
-							DryAt = Mid;
-						}
-					}
-					return WetAt;
-				}()
-				: EdgeAfter(Dist[Run.Last]);
+			float Water0 = Dist[Run.First];
+			if (Run.First > 0)
+			{
+				Water0 = RefineWet(Dist[Run.First - 1], Dist[Run.First]);
+			}
+			else
+			{
+				Water0 = EdgeBefore(Dist[Run.First]);
+			}
+			float Water1 = Dist[Run.Last];
+			if (Run.Last + 1 < Dist.Num())
+			{
+				Water1 = RefineWet(Dist[Run.Last + 1], Dist[Run.Last]);
+			}
+			else
+			{
+				Water1 = EdgeAfter(Dist[Run.Last]);
+			}
 
 			const float Deck0 = Water0 - BankRestCm;
 			const float Deck1 = Water1 + BankRestCm;

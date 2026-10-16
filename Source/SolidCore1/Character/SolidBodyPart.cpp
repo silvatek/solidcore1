@@ -326,8 +326,8 @@ void SolidBodyMesh::FSolidBodyPart::AddTri(
 }
 
 void SolidBodyMesh::FSolidBodyPart::Draw(
-	TArray<FSolidBodyVert>& Verts,
-	TArray<FSolidBodyTri>& Tris,
+	TArray<FSolidBodyVert>& OutVerts,
+	TArray<FSolidBodyTri>& OutTris,
 	const int32 WeightBone,
 	const int32 SpanBone,
 	const FVector& From,
@@ -367,7 +367,7 @@ void SolidBodyMesh::FSolidBodyPart::Draw(
 	const FVector Up = FVector::CrossProduct(Axis, Wide).GetSafeNormal();
 	const int32 SideCount = FMath::Clamp(BodyPartSides, 3, BodyPartSideLimit);
 	const int32 RingCount = 2;
-	const int32 Base = Verts.Num();
+	const int32 Base = OutVerts.Num();
 
 	for (int32 Ring = 0; Ring < RingCount; ++Ring)
 	{
@@ -387,7 +387,7 @@ void SolidBodyMesh::FSolidBodyPart::Draw(
 			Vert.Position = Center + Offset;
 			Vert.Bone = WeightBone;
 			Vert.Slot = Slot;
-			Verts.Add(Vert);
+			OutVerts.Add(Vert);
 		}
 	}
 
@@ -400,15 +400,15 @@ void SolidBodyMesh::FSolidBodyPart::Draw(
 		for (int32 Step = 0; Step < SideCount; ++Step)
 		{
 			const int32 Next = Step + 1;
-			AddTri(Tris, Id(Ring, Step), Id(Ring, Next), Id(Ring + 1, Step));
-			AddTri(Tris, Id(Ring, Next), Id(Ring + 1, Next), Id(Ring + 1, Step));
+			AddTri(OutTris, Id(Ring, Step), Id(Ring, Next), Id(Ring + 1, Step));
+			AddTri(OutTris, Id(Ring, Next), Id(Ring + 1, Next), Id(Ring + 1, Step));
 		}
 	}
 	const int32 Last = RingCount - 1;
 	for (int32 Step = 1; Step < SideCount - 1; ++Step)
 	{
-		AddTri(Tris, Id(0, 0), Id(0, Step + 1), Id(0, Step));
-		AddTri(Tris, Id(Last, 0), Id(Last, Step), Id(Last, Step + 1));
+		AddTri(OutTris, Id(0, 0), Id(0, Step + 1), Id(0, Step));
+		AddTri(OutTris, Id(Last, 0), Id(Last, Step), Id(Last, Step + 1));
 	}
 }
 

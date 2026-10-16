@@ -61,8 +61,8 @@ namespace SolidBodyMesh
 		 */
 		void ApplyCharacterAttributes(const FSolidBodyParams& Params);
 
-		/** Draw every part from CharacterBones. */
-		void Draw(TArray<FSolidBodyVert>& Verts, TArray<FSolidBodyTri>& Tris);
+		/** Append this body's triangles into OutVerts and OutTris. CharacterBones supplies the pose. */
+		void Draw(TArray<FSolidBodyVert>& OutVerts, TArray<FSolidBodyTri>& OutTris);
 
 		/**
 		 * The base of this body, in mesh space.

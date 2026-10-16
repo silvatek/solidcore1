@@ -256,8 +256,8 @@ SolidBodyMesh::FSolidPartDraw SolidBodyMesh::FSolidShoulderPart::Fit(
 }
 
 void SolidBodyMesh::FSolidShoulderPart::Draw(
-	TArray<FSolidBodyVert>& Verts,
-	TArray<FSolidBodyTri>& Tris,
+	TArray<FSolidBodyVert>& OutVerts,
+	TArray<FSolidBodyTri>& OutTris,
 	const int32 WeightBone,
 	const int32 SpanBone,
 	const FVector& From,
@@ -302,7 +302,7 @@ void SolidBodyMesh::FSolidShoulderPart::Draw(
 	Wide = Wide.GetSafeNormal();
 	const FVector Up = FVector::CrossProduct(Axis, Wide).GetSafeNormal();
 	const int32 SideCount = ShoulderSideCount;
-	const int32 Base = Verts.Num();
+	const int32 Base = OutVerts.Num();
 	for (int32 Ring = 0; Ring < 3; ++Ring)
 	{
 		const float Radius = Radii[Ring];
@@ -316,7 +316,7 @@ void SolidBodyMesh::FSolidShoulderPart::Draw(
 			Vert.Position = Centers[Ring] + Offset;
 			Vert.Bone = WeightBone;
 			Vert.Slot = Slot;
-			Verts.Add(Vert);
+			OutVerts.Add(Vert);
 		}
 	}
 
@@ -329,14 +329,14 @@ void SolidBodyMesh::FSolidShoulderPart::Draw(
 		for (int32 Step = 0; Step < SideCount; ++Step)
 		{
 			const int32 Next = Step + 1;
-			AddTri(Tris, Id(Ring, Step), Id(Ring, Next), Id(Ring + 1, Step));
-			AddTri(Tris, Id(Ring, Next), Id(Ring + 1, Next), Id(Ring + 1, Step));
+			AddTri(OutTris, Id(Ring, Step), Id(Ring, Next), Id(Ring + 1, Step));
+			AddTri(OutTris, Id(Ring, Next), Id(Ring + 1, Next), Id(Ring + 1, Step));
 		}
 	}
 	for (int32 Step = 1; Step < SideCount - 1; ++Step)
 	{
-		AddTri(Tris, Id(0, 0), Id(0, Step + 1), Id(0, Step));
-		AddTri(Tris, Id(2, 0), Id(2, Step), Id(2, Step + 1));
+		AddTri(OutTris, Id(0, 0), Id(0, Step + 1), Id(0, Step));
+		AddTri(OutTris, Id(2, 0), Id(2, Step), Id(2, Step + 1));
 	}
 }
 

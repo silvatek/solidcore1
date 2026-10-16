@@ -223,8 +223,8 @@ void SolidBodyMesh::FSolidHandPart::ApplyCharacterAttributes(const FSolidBodyPar
 }
 
 void SolidBodyMesh::FSolidHandPart::Draw(
-	TArray<FSolidBodyVert>& Verts,
-	TArray<FSolidBodyTri>& Tris,
+	TArray<FSolidBodyVert>& OutVerts,
+	TArray<FSolidBodyTri>& OutTris,
 	const int32 WeightBone,
 	const int32 SpanBone,
 	const FVector& From,
@@ -251,7 +251,7 @@ void SolidBodyMesh::FSolidHandPart::Draw(
 	const int32 Sides = FMath::Clamp(HeadSideCount, 3, BodyPartSideLimit);
 	const int32 Rings = FMath::Max(HeadRingCount, 3);
 	const uint8 Slot = MaterialSlot();
-	const int32 BaseVert = Verts.Num();
+	const int32 BaseVert = OutVerts.Num();
 
 	auto AddVert = [&](const FVector& Position)
 	{
@@ -259,7 +259,7 @@ void SolidBodyMesh::FSolidHandPart::Draw(
 		Vert.Position = Position;
 		Vert.Bone = WeightBone;
 		Vert.Slot = Slot;
-		Verts.Add(Vert);
+		OutVerts.Add(Vert);
 	};
 
 	AddVert(From);
@@ -294,20 +294,20 @@ void SolidBodyMesh::FSolidHandPart::Draw(
 
 	for (int32 Step = 0; Step < Sides; ++Step)
 	{
-		AddTri(Tris, RingVert(0, 0), RingVert(1, Step + 1), RingVert(1, Step));
+		AddTri(OutTris, RingVert(0, 0), RingVert(1, Step + 1), RingVert(1, Step));
 	}
 	for (int32 Ring = 1; Ring < Rings - 2; ++Ring)
 	{
 		for (int32 Step = 0; Step < Sides; ++Step)
 		{
-			AddTri(Tris, RingVert(Ring, Step), RingVert(Ring, Step + 1), RingVert(Ring + 1, Step));
-			AddTri(Tris, RingVert(Ring, Step + 1), RingVert(Ring + 1, Step + 1), RingVert(Ring + 1, Step));
+			AddTri(OutTris, RingVert(Ring, Step), RingVert(Ring, Step + 1), RingVert(Ring + 1, Step));
+			AddTri(OutTris, RingVert(Ring, Step + 1), RingVert(Ring + 1, Step + 1), RingVert(Ring + 1, Step));
 		}
 	}
 	const int32 LastRing = Rings - 2;
 	for (int32 Step = 0; Step < Sides; ++Step)
 	{
-		AddTri(Tris, RingVert(Rings - 1, 0), RingVert(LastRing, Step), RingVert(LastRing, Step + 1));
+		AddTri(OutTris, RingVert(Rings - 1, 0), RingVert(LastRing, Step), RingVert(LastRing, Step + 1));
 	}
 }
 

@@ -244,15 +244,15 @@ namespace SolidBodyMesh
 			const FVector& WideAxis);
 
 		/**
-		 * Add this part's triangles. A tube fits its cone, then draws it.
+		 * Add this part's triangles into OutVerts and OutTris. A tube fits its cone, then draws it.
 		 * The positions are the joints on this call.
 		 * WeightBone is the parent joint. The child joint only rotates, so a tube is skinned there.
 		 * SpanBone is Bones[0].
 		 * The head, a hand, and the shoulders draw their own mesh.
 		 */
 		virtual void Draw(
-			TArray<FSolidBodyVert>& Verts,
-			TArray<FSolidBodyTri>& Tris,
+			TArray<FSolidBodyVert>& OutVerts,
+			TArray<FSolidBodyTri>& OutTris,
 			int32 WeightBone,
 			int32 SpanBone,
 			const FVector& From,
@@ -331,8 +331,8 @@ namespace SolidBodyMesh
 		 * The horizontal radius is the length of the eye_jnt bones.
 		 */
 		virtual void Draw(
-			TArray<FSolidBodyVert>& Verts,
-			TArray<FSolidBodyTri>& Tris,
+			TArray<FSolidBodyVert>& OutVerts,
+			TArray<FSolidBodyTri>& OutTris,
 			int32 WeightBone,
 			int32 SpanBone,
 			const FVector& From,
@@ -380,8 +380,8 @@ namespace SolidBodyMesh
 		 * The wide axis follows the other fingers. The thin axis is the palm thickness.
 		 */
 		virtual void Draw(
-			TArray<FSolidBodyVert>& Verts,
-			TArray<FSolidBodyTri>& Tris,
+			TArray<FSolidBodyVert>& OutVerts,
+			TArray<FSolidBodyTri>& OutTris,
 			int32 WeightBone,
 			int32 SpanBone,
 			const FVector& From,
@@ -432,8 +432,8 @@ namespace SolidBodyMesh
 			const FVector& WideAxis) override;
 		/** Fit the shoulder piece, then draw its two cones. */
 		virtual void Draw(
-			TArray<FSolidBodyVert>& Verts,
-			TArray<FSolidBodyTri>& Tris,
+			TArray<FSolidBodyVert>& OutVerts,
+			TArray<FSolidBodyTri>& OutTris,
 			int32 WeightBone,
 			int32 SpanBone,
 			const FVector& From,

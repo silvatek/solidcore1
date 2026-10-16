@@ -986,8 +986,8 @@ void SolidBodyMesh::FSolidBodyMesh::ApplyCharacterAttributes(const FSolidBodyPar
 }
 
 void SolidBodyMesh::FSolidBodyMesh::Draw(
-	TArray<FSolidBodyVert>& Verts,
-	TArray<FSolidBodyTri>& Tris)
+	TArray<FSolidBodyVert>& OutVerts,
+	TArray<FSolidBodyTri>& OutTris)
 {
 	TArray<FVector> JointPositions;
 	SolidBodyDeform::ComponentPositions(CharacterBones, JointPositions);
@@ -1036,8 +1036,8 @@ void SolidBodyMesh::FSolidBodyMesh::Draw(
 		}
 
 		Part->Draw(
-			Verts,
-			Tris,
+			OutVerts,
+			OutTris,
 			Parent,
 			Span,
 			JointPositions[Parent],

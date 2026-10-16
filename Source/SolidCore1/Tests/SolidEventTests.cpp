@@ -10,6 +10,32 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
+namespace SolidEventTestPrivate
+{
+	bool EventEnablesRavenSight(const TCHAR* EventName)
+	{
+		for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
+		{
+			const SolidEvents::FEvent& Event = SolidEvents::Definitions[Index];
+			if (FCString::Strcmp(Event.Name, EventName) != 0)
+			{
+				continue;
+			}
+			const int32 Count = FMath::Min(Event.ChangeCount, SolidEvents::MaxChangesPerEvent);
+			for (int32 ChangeIndex = 0; ChangeIndex < Count; ++ChangeIndex)
+			{
+				const SolidEvents::FChange& Change = Event.Changes[ChangeIndex];
+				if (Change.Kind == SolidEvents::EChange::EnableSight && Change.Sight == ESolidSight::Raven)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+		return false;
+	}
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidEventsStartAndTownsTest,
 	"SolidCore1.Events.EnterTown",
@@ -72,7 +98,10 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 
 	const SolidEvents::FResult Kanfold = SolidEvents::NotifyOccupiedTown(State, 2);
 	TestTrue(TEXT("entering town 2 fires"), Kanfold.bFired);
-	TestFalse(TEXT("town 2 does not change sight"), Kanfold.bSetSight);
+	TestEqual(
+		TEXT("town 2 sight follows the Kanfold event"),
+		Kanfold.bSetSight,
+		SolidEventTestPrivate::EventEnablesRavenSight(TEXT("Enter Kanfold")));
 	TestTrue(TEXT("raven sight still unlocked"), SolidEvents::IsSightEnabled(State, ESolidSight::Raven));
 	TestEqual(TEXT("town 2 party size"), State.MaxPartySize, 2);
 	TestEqual(TEXT("Sam and Alex"), SolidEvents::PartyCount(State), 2);
@@ -86,12 +115,18 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 
 	const SolidEvents::FResult KanfoldFirst = SolidEvents::NotifyOccupiedTown(Skipped, 2);
 	TestTrue(TEXT("town 2 still fires if Relion was skipped"), KanfoldFirst.bFired);
-	TestFalse(TEXT("skipped Relion does not enable raven sight"), Skipped.bRavenSightEnabled);
+	TestEqual(
+		TEXT("Kanfold sight follows the event when Relion was skipped"),
+		Skipped.bRavenSightEnabled,
+		SolidEventTestPrivate::EventEnablesRavenSight(TEXT("Enter Kanfold")));
 	TestEqual(TEXT("town 2 still fields Sam and Alex"), SolidEvents::PartyCount(Skipped), 2);
 
 	const SolidEvents::FResult Dragongate = SolidEvents::NotifyOccupiedTown(State, 5);
 	TestTrue(TEXT("entering Dragongate fires"), Dragongate.bFired);
-	TestFalse(TEXT("Dragongate does not change sight"), Dragongate.bSetSight);
+	TestEqual(
+		TEXT("Dragongate sight follows the event"),
+		Dragongate.bSetSight,
+		SolidEventTestPrivate::EventEnablesRavenSight(TEXT("Enter Dragongate")));
 	TestTrue(TEXT("raven sight stays unlocked"), SolidEvents::IsSightEnabled(State, ESolidSight::Raven));
 	TestEqual(TEXT("Dragongate party size"), State.MaxPartySize, SolidEvents::RosterCount);
 	TestEqual(TEXT("the whole company"), SolidEvents::PartyCount(State), 5);
@@ -104,7 +139,10 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 	FGameState GateFirst;
 	const SolidEvents::FResult GateOnly = SolidEvents::NotifyOccupiedTown(GateFirst, 5);
 	TestTrue(TEXT("Dragongate fires on its own"), GateOnly.bFired);
-	TestFalse(TEXT("Dragongate leaves raven sight locked"), GateFirst.bRavenSightEnabled);
+	TestEqual(
+		TEXT("Dragongate sight follows the event on its own"),
+		GateFirst.bRavenSightEnabled,
+		SolidEventTestPrivate::EventEnablesRavenSight(TEXT("Enter Dragongate")));
 	TestEqual(TEXT("Dragongate fields the company"), SolidEvents::PartyCount(GateFirst), 5);
 	SolidEvents::NotifyOccupiedTown(GateFirst, INDEX_NONE);
 	const SolidEvents::FResult GateReturn = SolidEvents::NotifyOccupiedTown(GateFirst, 5);
@@ -112,7 +150,13 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 	const SolidEvents::FResult KanfoldLater = SolidEvents::NotifyOccupiedTown(GateFirst, 2);
 	TestTrue(TEXT("Kanfold still fires after Dragongate"), KanfoldLater.bFired);
 	TestEqual(TEXT("Kanfold sets the party to Sam and Alex"), GateFirst.MaxPartySize, 2);
-	TestFalse(TEXT("Kanfold still does not unlock raven sight"), GateFirst.bRavenSightEnabled);
+	const bool bEitherTownEnablesSight =
+		SolidEventTestPrivate::EventEnablesRavenSight(TEXT("Enter Dragongate"))
+		|| SolidEventTestPrivate::EventEnablesRavenSight(TEXT("Enter Kanfold"));
+	TestEqual(
+		TEXT("sight follows the Kanfold and Dragongate events"),
+		GateFirst.bRavenSightEnabled,
+		bEitherTownEnablesSight);
 
 	ASolidGameMode* GameMode = NewObject<ASolidGameMode>();
 	TestNotNull(TEXT("gamemode"), GameMode);

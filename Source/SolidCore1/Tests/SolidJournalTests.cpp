@@ -139,11 +139,23 @@ bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 	{
 		TestEqual(TEXT("Relion stamp"), Reversed[RelionSecond].Stamp, FString(TEXT("00:00, 200/45 AtF")));
 	}
+	FString KanfoldChanges;
+	for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
+	{
+		if (FCString::Strcmp(SolidEvents::Definitions[Index].Name, TEXT("Enter Kanfold")) == 0)
+		{
+			KanfoldChanges = SolidJournal::Describe(SolidEvents::Definitions[Index]);
+			break;
+		}
+	}
 	const bool bKanfoldSight = KanfoldFirst != INDEX_NONE
 		&& KanfoldFirst + 1 < Reversed.Num()
 		&& Reversed[KanfoldFirst + 1].Kind == SolidJournal::ERowKind::Detail
 		&& Reversed[KanfoldFirst + 1].Text.Contains(TEXT("Raven sight"));
-	TestFalse(TEXT("skipped Relion did not enable sight in that entry"), bKanfoldSight);
+	TestEqual(
+		TEXT("Kanfold sight line matches the event"),
+		bKanfoldSight,
+		KanfoldChanges.Contains(TEXT("Raven sight")));
 	return true;
 }
 

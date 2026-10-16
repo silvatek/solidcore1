@@ -66,10 +66,10 @@ namespace
 }
 
 void SolidBodyDeform::ComponentPositions(
-	const TArray<FSolidDeformBone>& AdjustedBones,
+	const TArray<FSolidDeformBone>& CharacterBones,
 	TArray<FVector>& OutJointPositions)
 {
 	FComponentPose Pose;
-	BuildComponentPose(AdjustedBones, Pose);
+	BuildComponentPose(CharacterBones, Pose);
 	OutJointPositions = MoveTemp(Pose.Position);
 }

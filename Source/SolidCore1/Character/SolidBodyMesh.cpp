@@ -24,7 +24,7 @@
 #endif
 
 SolidBodyMesh::FSolidBodyMesh::FSolidBodyMesh(const FSolidBodyMesh& Other)
-	: VikingBones(Other.VikingBones)
+	: OriginalBones(Other.OriginalBones)
 {
 	Parts.Reserve(Other.Parts.Num());
 	for (const TUniquePtr<FSolidBodyPart>& Part : Other.Parts)
@@ -37,7 +37,7 @@ SolidBodyMesh::FSolidBodyMesh& SolidBodyMesh::FSolidBodyMesh::operator=(const FS
 {
 	if (this != &Other)
 	{
-		VikingBones = Other.VikingBones;
+		OriginalBones = Other.OriginalBones;
 		Parts.Reset();
 		Parts.Reserve(Other.Parts.Num());
 		for (const TUniquePtr<FSolidBodyPart>& Part : Other.Parts)
@@ -48,7 +48,7 @@ SolidBodyMesh::FSolidBodyMesh& SolidBodyMesh::FSolidBodyMesh::operator=(const FS
 	return *this;
 }
 
-SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<FSolidDeformBone>& VikingBones)
+SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<FSolidDeformBone>& OriginalBones)
 {
 	constexpr ESolidPartSide Left = ESolidPartSide::Left;
 	constexpr ESolidPartSide Right = ESolidPartSide::Right;
@@ -58,7 +58,7 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 	constexpr ESolidPartColour Skin = ESolidPartColour::Skin;
 
 	FSolidBodyMesh Body;
-	Body.VikingBones = VikingBones;
+	Body.OriginalBones = OriginalBones;
 
 	// The top of a part is the bottom of the part above it, where those ends already meet.
 	const FSolidPartSection ToeTip = RoundSection(ToeTipDiameterCm);
@@ -111,11 +111,11 @@ SolidBodyMesh::FSolidBodyMesh SolidBodyMesh::FSolidBodyMesh::Make(const TArray<F
 	Body.AddBodyPart(ESolidPartType::LowerArm, Left, Shirt, LowerArmTop, RoundSection(LowerArmEndDiameterCm));
 	Body.AddBodyPart(ESolidPartType::LowerArm, Right, Shirt, LowerArmTop, RoundSection(LowerArmEndDiameterCm));
 
-	// The part lists the fingers on VikingBones.
+	// The part lists the fingers on OriginalBones.
 	Body.AddBodyPart(ESolidPartType::Hand, Left, Skin, HandTop, HandTop);
 	Body.AddBodyPart(ESolidPartType::Hand, Right, Skin, HandTop, HandTop);
 
-	// The part lists the head bone and the eye bones on VikingBones. These diameters are unused.
+	// The part lists the head bone and the eye bones on OriginalBones. These diameters are unused.
 	Body.AddBodyPart(ESolidPartType::Head, Core, Skin, NullSection, NullSection);
 
 	return Body;
@@ -740,7 +740,7 @@ USkeletalMesh* SolidBodyMesh::Build(
 
 	FSolidDeformMesh Bind;
 	FillBones(Ref, Bind);
-	// Lengths start as the Viking reference pose. Each part then sizes its own bones.
+	// Lengths start as the original pose. Each part then sizes its own bones.
 	const FSolidBodyParams Clamped = Params.Clamped();
 	FSolidDeformMesh Deformed = Bind;
 	FSolidBodyMesh Body = FSolidBodyMesh::Make(Deformed.Bones);
@@ -851,18 +851,18 @@ USkeletalMesh* SolidBodyMesh::Build(
 
 float SolidBodyMesh::BodyBaseZ(
 	const FSolidBodyMesh& Body,
-	const TArray<FSolidDeformBone>& AdjustedBones,
+	const TArray<FSolidDeformBone>& CharacterBones,
 	const TArray<FVector>& JointPositions)
 {
-	return Body.Base(AdjustedBones, JointPositions);
+	return Body.Base(CharacterBones, JointPositions);
 }
 
 float SolidBodyMesh::BodyBaseZ(
-	const TArray<FSolidDeformBone>& AdjustedBones,
+	const TArray<FSolidDeformBone>& CharacterBones,
 	const TArray<FVector>& JointPositions)
 {
-	const FSolidBodyMesh Body = FSolidBodyMesh::Make(AdjustedBones);
-	return Body.Base(AdjustedBones, JointPositions);
+	const FSolidBodyMesh Body = FSolidBodyMesh::Make(CharacterBones);
+	return Body.Base(CharacterBones, JointPositions);
 }
 
 float SolidBodyMesh::BaseMeshOffset(const float CapsuleHalfHeight, const float BaseZ)
@@ -968,7 +968,7 @@ const SolidBodyMesh::FSolidBodyPart* SolidBodyMesh::FSolidBodyMesh::Find(const F
 }
 
 void SolidBodyMesh::FSolidBodyMesh::Apply(
-	TArray<FSolidDeformBone>& AdjustedBones,
+	TArray<FSolidDeformBone>& CharacterBones,
 	const FSolidBodyParams& Params)
 {
 	for (const TUniquePtr<FSolidBodyPart>& Part : Parts)
@@ -978,33 +978,33 @@ void SolidBodyMesh::FSolidBodyMesh::Apply(
 			continue;
 		}
 		// The part sizes its own copy. That result is written back into the adjusted pose.
-		Part->BoneLocals = AdjustedBones;
+		Part->BoneLocals = CharacterBones;
 		Part->Apply(Params);
-		AdjustedBones = Part->BoneLocals;
+		CharacterBones = Part->BoneLocals;
 	}
 }
 
 void SolidBodyMesh::FSolidBodyMesh::Draw(
 	TArray<FSolidBodyVert>& Verts,
 	TArray<FSolidBodyTri>& Tris,
-	const TArray<FSolidDeformBone>& AdjustedBones,
+	const TArray<FSolidDeformBone>& CharacterBones,
 	const TArray<FVector>& JointPositions)
 {
 	// shoulder_jnt stays bare. Twists stay bare. Hands draw their own fingers.
-	const int32 Count = FMath::Min(AdjustedBones.Num(), JointPositions.Num());
+	const int32 Count = FMath::Min(CharacterBones.Num(), JointPositions.Num());
 	for (const TUniquePtr<FSolidBodyPart>& Part : Parts)
 	{
 		if (!Part || Part->Bones.Num() == 0)
 		{
 			continue;
 		}
-		const int32 Span = FindNamedBone(AdjustedBones, Count, *Part->Bones[0].ToString());
+		const int32 Span = FindNamedBone(CharacterBones, Count, *Part->Bones[0].ToString());
 		if (Span == INDEX_NONE)
 		{
 			continue;
 		}
-		const int32 Parent = AdjustedBones[Span].ParentIndex;
-		if (!AdjustedBones.IsValidIndex(Parent) || !JointPositions.IsValidIndex(Parent))
+		const int32 Parent = CharacterBones[Span].ParentIndex;
+		if (!CharacterBones.IsValidIndex(Parent) || !JointPositions.IsValidIndex(Parent))
 		{
 			continue;
 		}
@@ -1014,14 +1014,14 @@ void SolidBodyMesh::FSolidBodyMesh::Draw(
 		bool bComplete = true;
 		for (int32 BoneNumber = 1; BoneNumber < Part->Bones.Num(); ++BoneNumber)
 		{
-			const int32 Bone = FindNamedBone(AdjustedBones, Count, *Part->Bones[BoneNumber].ToString());
+			const int32 Bone = FindNamedBone(CharacterBones, Count, *Part->Bones[BoneNumber].ToString());
 			if (Bone == INDEX_NONE)
 			{
 				bComplete = false;
 				break;
 			}
-			const int32 BoneParent = AdjustedBones[Bone].ParentIndex;
-			if (!AdjustedBones.IsValidIndex(BoneParent) || !JointPositions.IsValidIndex(BoneParent))
+			const int32 BoneParent = CharacterBones[Bone].ParentIndex;
+			if (!CharacterBones.IsValidIndex(BoneParent) || !JointPositions.IsValidIndex(BoneParent))
 			{
 				bComplete = false;
 				break;
@@ -1049,7 +1049,7 @@ void SolidBodyMesh::FSolidBodyMesh::Draw(
 }
 
 float SolidBodyMesh::FSolidBodyMesh::Base(
-	const TArray<FSolidDeformBone>& AdjustedBones,
+	const TArray<FSolidDeformBone>& CharacterBones,
 	const TArray<FVector>& JointPositions) const
 {
 	float BaseZ = TNumericLimits<float>::Max();
@@ -1057,7 +1057,7 @@ float SolidBodyMesh::FSolidBodyMesh::Base(
 	for (const TUniquePtr<FSolidBodyPart>& Part : Parts)
 	{
 		float PartZ = 0.f;
-		if (!Part || !Part->Base(AdjustedBones, JointPositions, PartZ))
+		if (!Part || !Part->Base(CharacterBones, JointPositions, PartZ))
 		{
 			continue;
 		}

@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0345")
+#define SOLID_BUILD_ID TEXT("SC1-0346")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("VikingBones, AdjustedBones, and JointPositions name the poses.")
+#define SOLID_BUILD_NOTE TEXT("OriginalBones and CharacterBones name the two poses.")
 #endif

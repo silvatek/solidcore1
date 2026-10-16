@@ -195,8 +195,8 @@ SolidBodyMesh::FSolidHandPart::FSolidHandPart(
 	const ESolidPartColour InColour,
 	const FSolidPartSection& InStart,
 	const FSolidPartSection& InEnd,
-	const TArray<FSolidDeformBone>& InVikingBones)
-	: FSolidBodyPart(InType, InSide, InColour, InStart, InEnd, InVikingBones)
+	const TArray<FSolidDeformBone>& InOriginalBones)
+	: FSolidBodyPart(InType, InSide, InColour, InStart, InEnd, InOriginalBones)
 {
 	Bones = PartBones();
 }

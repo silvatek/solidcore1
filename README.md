@@ -17,6 +17,15 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - Hide battle plan menu if no companions in party
 - Reset camera tilt to horizontal when switching into True Sight
 - Scrollbar on the journal
+- Replace FAB_Doctor with an automated test
+- "Hold" battle plan that has the companions not move when the captain does
+- Events depending on, or auto-triggering, other events
+- Reorder game menu items
+- River crossings: if a road crosses a river, create a ford. Don't allow movement across rivers except at fords
+- Bridges: some river crossings will be defined as bridges. Bridges can be collapsed, so you cannot cross the river there until repaired
+- Stamina: moving depletes stamina, better roads deplete it slower
+- Basic monsters (needs FAB asset download); no combat yet
+- Basic NPCs
 
 ## Done
 

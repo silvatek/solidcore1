@@ -210,6 +210,7 @@ bool FSolidEventsCaptainTitleTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("Kanfold leaves the bridge broken"), KanfoldFirst.bRepairBridge);
 	TestFalse(TEXT("skipping Relion leaves the bridge broken"), Skipped.bIglinBridgeRepaired);
 	TestEqual(TEXT("skipped path is Ranger"), FString(Skipped.CaptainTitle), FString(SolidEvents::TitleRanger));
+	SolidEvents::NotifyOccupiedTown(Skipped, 0);
 	const SolidEvents::FResult RelionLater = SolidEvents::NotifyOccupiedTown(Skipped, 1);
 	TestTrue(TEXT("Relion still fires later"), RelionLater.bSetTitle);
 	TestTrue(TEXT("Relion later repairs the bridge"), RelionLater.bRepairBridge);

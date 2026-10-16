@@ -124,13 +124,20 @@ bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 
 	FGameState Skipped;
 	SolidEvents::NotifyOccupiedTown(Skipped, 2);
+	SolidEvents::NotifyOccupiedTown(Skipped, 0);
 	SolidEvents::NotifyOccupiedTown(Skipped, 1);
 	TArray<SolidJournal::FRow> Reversed;
 	SolidJournal::CollectRows(Skipped, Reversed);
 	const int32 KanfoldFirst = SolidJournalTestPrivate::FindEntry(Reversed, TEXT("Enter Kanfold"));
+	const int32 IglinSecond = SolidJournalTestPrivate::FindEntry(Reversed, TEXT("Enter Iglin"));
 	const int32 RelionSecond = SolidJournalTestPrivate::FindEntry(Reversed, TEXT("Enter Relion"));
 	TestTrue(TEXT("Kanfold is entry 1 when visited first"), KanfoldFirst != INDEX_NONE);
-	TestTrue(TEXT("Relion is entry 2 when visited second"), RelionSecond != INDEX_NONE && KanfoldFirst != INDEX_NONE && KanfoldFirst < RelionSecond);
+	TestTrue(
+		TEXT("Iglin is recorded before Relion"),
+		IglinSecond != INDEX_NONE && KanfoldFirst != INDEX_NONE && KanfoldFirst < IglinSecond);
+	TestTrue(
+		TEXT("Relion follows Iglin"),
+		RelionSecond != INDEX_NONE && IglinSecond != INDEX_NONE && IglinSecond < RelionSecond);
 	if (KanfoldFirst != INDEX_NONE)
 	{
 		TestEqual(TEXT("Kanfold stamp"), Reversed[KanfoldFirst].Stamp, FString(TEXT("00:00, 200/45 AtF")));

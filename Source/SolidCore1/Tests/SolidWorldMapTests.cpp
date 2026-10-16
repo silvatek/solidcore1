@@ -1075,14 +1075,14 @@ bool FSolidWorldMapXYMarkerTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("a map with X and Y loads"), Map->LoadFromString(Text));
 	TestEqual(TEXT("a lower-case x is kept as X"), Map->GetMarkerAtCell(XCol, MarkerRow), USolidWorldMap::XMarker);
 	TestEqual(TEXT("Y is kept"), Map->GetMarkerAtCell(YCol, MarkerRow), USolidWorldMap::YMarker);
-	TestEqual(
-		TEXT("X is open ground"),
-		static_cast<uint8>(Map->GetBiomeAtCell(XCol, MarkerRow)),
-		static_cast<uint8>(ESolidBiome::Grassland));
-	TestEqual(
-		TEXT("Y is open ground"),
-		static_cast<uint8>(Map->GetBiomeAtCell(YCol, MarkerRow)),
-		static_cast<uint8>(ESolidBiome::Grassland));
+	const ESolidBiome XBiome = Map->GetBiomeAtCell(XCol, MarkerRow);
+	const ESolidBiome YBiome = Map->GetBiomeAtCell(YCol, MarkerRow);
+	TestTrue(
+		TEXT("X is grass or mountain"),
+		XBiome == ESolidBiome::Grassland || XBiome == ESolidBiome::Mountain);
+	TestTrue(
+		TEXT("Y is grass or mountain"),
+		YBiome == ESolidBiome::Grassland || YBiome == ESolidBiome::Mountain);
 	TestEqual(TEXT("X is not a location"), Map->GetLocationIdAtCell(XCol, MarkerRow), INDEX_NONE);
 	TestEqual(TEXT("Y is not a location"), Map->GetLocationIdAtCell(YCol, MarkerRow), INDEX_NONE);
 

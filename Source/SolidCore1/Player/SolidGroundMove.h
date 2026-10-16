@@ -52,8 +52,8 @@ namespace SolidGroundMove
 	/**
 	 * Desired is a planar step or velocity. The result keeps its length when the
 	 * step stays on open ground, keeps the part that slides along an edge, and
-	 * is zero when the step would enter closed ground. A step that starts on
-	 * closed ground is left alone so the character can walk back out.
+	 * is zero when the step would enter closed ground. From closed ground, only
+	 * a step that reaches open ground is kept.
 	 * ProbeCm is how far ahead the footing is tested.
 	 */
 	FVector2D ClampPlanar(

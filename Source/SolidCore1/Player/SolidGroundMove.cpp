@@ -138,10 +138,6 @@ FVector2D SolidGroundMove::ClampPlanar(
 	{
 		return FVector2D::ZeroVector;
 	}
-	if (!Allows(From.X, From.Y))
-	{
-		return Desired;
-	}
 
 	auto StepOpens = [&Allows, &From, ProbeCm](const FVector2D& Step)
 	{
@@ -232,8 +228,7 @@ void SolidGroundMove::Hold(ACharacter* Character)
 	}
 
 	const USolidWorldMap& Map = *Ground.Map;
-	const FVector Location = Character->GetActorLocation();
-	const FVector2D From(Location.X, Location.Y);
+	FVector Location = Character->GetActorLocation();
 	const float Probe = Character->GetCapsuleComponent()
 		? Character->GetCapsuleComponent()->GetScaledCapsuleRadius()
 		: 42.f;
@@ -242,6 +237,35 @@ void SolidGroundMove::Hold(ACharacter* Character)
 		return AllowsFooting(Map, X, Y, Ground.Min, Ground.Max, Ground.Bridges);
 	};
 
+	// The movement tick can step onto the channel before this runs. Put the
+	// pawn back on the last open ground, or a push into the bank only creeps.
+	struct FBank
+	{
+		FVector Location = FVector::ZeroVector;
+		bool bSet = false;
+	};
+	static TMap<TWeakObjectPtr<ACharacter>, FBank> Banks;
+	for (auto It = Banks.CreateIterator(); It; ++It)
+	{
+		if (!It.Key().IsValid())
+		{
+			It.RemoveCurrent();
+		}
+	}
+	FBank& Bank = Banks.FindOrAdd(Character);
+	if (Allows(Location.X, Location.Y))
+	{
+		Bank.Location = Location;
+		Bank.bSet = true;
+	}
+	else if (Bank.bSet)
+	{
+		Character->SetActorLocation(Bank.Location, false, nullptr, ETeleportType::TeleportPhysics);
+		Move->StopMovementImmediately();
+		Location = Bank.Location;
+	}
+
+	const FVector2D From(Location.X, Location.Y);
 	const FVector Pending = Character->ConsumeMovementInputVector();
 	const FVector2D ClampedInput = ClampPlanar(From, FVector2D(Pending.X, Pending.Y), Probe, Allows);
 	if (!ClampedInput.IsNearlyZero())

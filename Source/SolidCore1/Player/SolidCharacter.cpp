@@ -156,6 +156,10 @@ void ASolidCharacter::SetCharacterDisplayName(const FString& NewName)
 void ASolidCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->AddTickPrerequisiteActor(this);
+	}
 	ApplyCharacterVisuals();
 	ApplyNameLabel();
 	CacheLocomotionAnims();

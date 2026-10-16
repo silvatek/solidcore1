@@ -253,6 +253,10 @@ void ASolidCompanionCharacter::PostInitializeComponents()
 void ASolidCompanionCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	if (UCharacterMovementComponent* Move = GetCharacterMovement())
+	{
+		Move->AddTickPrerequisiteActor(this);
+	}
 	ApplyVisuals();
 	ApplyNameLabel();
 	if (bStagePreview)

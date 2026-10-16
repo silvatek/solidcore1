@@ -175,7 +175,10 @@ bool FSolidGroundMoveClampTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("an open step is unchanged"), Open.Equals(FVector2D(20.f, 0.f), 0.1f));
 
 	const FVector2D Leave = SolidGroundMove::ClampPlanar(FVector2D(40.f, 0.f), FVector2D(-10.f, 5.f), 40.f, Shore);
-	TestTrue(TEXT("closed ground can still be left"), Leave.Equals(FVector2D(-10.f, 5.f), 0.1f));
+	TestTrue(TEXT("closed ground keeps only the step back out"), Leave.Equals(FVector2D(-10.f, 0.f), 0.1f));
+
+	const FVector2D Deeper = SolidGroundMove::ClampPlanar(FVector2D(40.f, 0.f), FVector2D(20.f, 0.f), 40.f, Shore);
+	TestTrue(TEXT("closed ground refuses a deeper step"), Deeper.IsNearlyZero());
 
 	auto Corner = [](const float X, const float Y)
 	{

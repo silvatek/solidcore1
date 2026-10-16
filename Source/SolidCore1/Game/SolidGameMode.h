@@ -101,6 +101,27 @@ public:
 	/** Live configuration, including which events have fired. */
 	const FGameState& GetConfiguration() const { return Configuration; }
 
+	/**
+	 * Move one cave-chest cell into a worn box or a pack cell.
+	 * An occupied destination swaps. An empty cell or a bad index does nothing.
+	 */
+	bool TakeFromCaveChest(
+		int32 ChestIndex,
+		bool bPack,
+		SolidInventory::ESlot Slot,
+		int32 Column,
+		int32 Row)
+	{
+		return SolidInventory::TakeFromChest(
+			Configuration.CaveChest,
+			Configuration.Inventory,
+			ChestIndex,
+			bPack,
+			Slot,
+			Column,
+			Row);
+	}
+
 	/** True when F9 may switch to this sight. Raven sight starts locked. */
 	bool IsSightEnabled(ESolidSight Sight) const;
 

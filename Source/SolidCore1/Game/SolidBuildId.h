@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0396")
+#define SOLID_BUILD_ID TEXT("SC1-0397")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Inventory slots store Rags, the dented helmet, the crude spear, and the torch.")
+#define SOLID_BUILD_NOTE TEXT("The cave chest holds a rusty sword you can drag into inventory.")
 #endif

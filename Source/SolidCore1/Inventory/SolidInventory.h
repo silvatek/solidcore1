@@ -3,6 +3,8 @@
 #include "CoreMinimal.h"
 #include "InputCoreTypes.h"
 #include "Inventory/SolidItemType.h"
+#include "Inventory/SolidStorage.h"
+#include "Journal/SolidJournal.h"
 
 /**
  * Captain's inventory. Worn boxes follow a person. The pack is a grid beside them.
@@ -170,6 +172,8 @@ namespace SolidInventory
 		int32 Column = 0;
 		int32 Row = 0;
 		bool bPack = false;
+		/** A cell of the open storage container. The cave chest. */
+		bool bChest = false;
 		FString Label;
 		FString Item;
 	};
@@ -182,9 +186,142 @@ namespace SolidInventory
 		float PackX = 0.f;
 		float PackLabelY = 0.f;
 		float PackGridW = 0.f;
+		/** The cave chest, to the right of the pack. Absent when Chest is null. */
+		bool bShowChest = false;
+		float ChestX = 0.f;
+		float ChestLabelY = 0.f;
+		float ChestGridW = 0.f;
 		TArray<FBox> Boxes;
 	};
 
-	/** Head, body, and legs in a column, hands beside the body, belt at the waist, pack to the right. */
-	void Layout(const FLoadout& Loadout, FPage& OutPage);
+	/** Where a pointer landed on the page, in content pixels. */
+	struct FSlotHit
+	{
+		bool bHit = false;
+		bool bChest = false;
+		bool bPack = false;
+		ESlot Slot = ESlot::Head;
+		int32 Column = 0;
+		int32 Row = 0;
+		int32 Index = INDEX_NONE;
+	};
+
+	/** Top-left of the page content on the canvas. The board math matches the drawn inventory. */
+	struct FView
+	{
+		float OriginX = 0.f;
+		float OriginY = 0.f;
+	};
+
+	/**
+	 * Head, body, and boots in a column, hands beside the body, belt at the waist, pack to the right.
+	 * Chest, when set, adds that container to the right of the pack.
+	 */
+	void Layout(const FLoadout& Loadout, FPage& OutPage, const SolidStorage::FContainer* Chest = nullptr);
+
+	inline FView ContentOrigin(const float CanvasW, const float CanvasH, const FPage& Page, const float LineHeight)
+	{
+		float BoardW = 0.f;
+		float BoardH = 0.f;
+		SolidJournal::BoardSize(
+			CanvasW,
+			CanvasH,
+			Page.ContentW,
+			Page.ContentH + LineHeight + SolidJournal::LineGap,
+			BoardW,
+			BoardH);
+		const float BoxX = (CanvasW - BoardW) * 0.5f;
+		const float BoxY = (CanvasH - BoardH) * 0.5f;
+		FView View;
+		View.OriginX = BoxX + (BoardW - Page.ContentW) * 0.5f;
+		View.OriginY = BoxY + SolidJournal::BoardPad;
+		return View;
+	}
+
+	/** The first box that contains the point. Coordinates are content pixels, origin at the page. */
+	inline bool HitSlot(const FPage& Page, const float X, const float Y, FSlotHit& OutHit)
+	{
+		OutHit = FSlotHit();
+		for (const FBox& Box : Page.Boxes)
+		{
+			if (X < Box.X || Y < Box.Y || X >= Box.X + Box.W || Y >= Box.Y + Box.H)
+			{
+				continue;
+			}
+			OutHit.bHit = true;
+			OutHit.bChest = Box.bChest;
+			OutHit.bPack = Box.bPack;
+			OutHit.Slot = Box.Slot;
+			OutHit.Column = Box.Column;
+			OutHit.Row = Box.Row;
+			if (Box.bChest)
+			{
+				OutHit.Index = SolidStorage::Index(Box.Column, Box.Row);
+			}
+			else if (Box.bPack)
+			{
+				OutHit.Index = PackIndex(Box.Column, Box.Row);
+			}
+			else
+			{
+				OutHit.Index = WornIndex(Box.Slot);
+			}
+			return true;
+		}
+		return false;
+	}
+
+	/**
+	 * Move one chest cell into a worn box or a pack cell.
+	 * An occupied destination swaps. A miss, an empty cell, or another chest cell does nothing.
+	 */
+	inline bool TakeFromChest(
+		SolidStorage::FContainer& Chest,
+		FLoadout& Loadout,
+		const int32 ChestIndex,
+		const bool bPack,
+		const ESlot Slot,
+		const int32 Column,
+		const int32 Row)
+	{
+		if (ChestIndex < 0 || ChestIndex >= SolidStorage::Count)
+		{
+			return false;
+		}
+		const TCHAR* Moving = Chest.Slots[ChestIndex];
+		if (!Moving || !Moving[0] || !SolidItemType::FindById(Moving))
+		{
+			return false;
+		}
+		if (bPack)
+		{
+			const int32 Index = PackIndex(Column, Row);
+			if (Index == INDEX_NONE)
+			{
+				return false;
+			}
+			const TCHAR* Displaced = Loadout.Pack[Index];
+			if (!PlacePack(Loadout, Column, Row, Moving))
+			{
+				return false;
+			}
+			const FSolidItemType* Swap = (Displaced && Displaced[0]) ? SolidItemType::FindById(Displaced) : nullptr;
+			Chest.Slots[ChestIndex] = Swap ? Swap->Id : nullptr;
+			return true;
+		}
+
+		const int32 Index = WornIndex(Slot);
+		if (Index == INDEX_NONE)
+		{
+			return false;
+		}
+		const TCHAR* Displaced = Loadout.Worn[Index];
+		if (!PlaceWorn(Loadout, Slot, Moving))
+		{
+			return false;
+		}
+		const FSolidItemType* Swap = (Displaced && Displaced[0]) ? SolidItemType::FindById(Displaced) : nullptr;
+		Chest.Slots[ChestIndex] = Swap ? Swap->Id : nullptr;
+		return true;
+	}
 }

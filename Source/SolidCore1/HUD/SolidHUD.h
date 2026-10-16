@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Menus/SolidCharacterEditor.h"
 #include "Menus/SolidMenuPointer.h"
+#include "Inventory/SolidInventory.h"
 #include "GameFramework/HUD.h"
 #include "SolidHUD.generated.h"
 
@@ -24,6 +25,12 @@ public:
 	/** # shows the worn boxes and the pack. # again, Esc, or F10 closes it. */
 	void ToggleInventory();
 	bool IsInventoryVisible() const { return bShowInventory; }
+
+	/** Press on a cave-chest cell that holds an item. Release on a worn box or a pack cell drops it. */
+	void PressInventory(float X, float Y);
+	void ReleaseInventory(float X, float Y);
+	void CancelInventoryDrag();
+	bool IsInventoryDragging() const { return bInventoryDrag; }
 
 	/** Company list opened from Build party. */
 	void OpenPartyBuilder();
@@ -109,7 +116,7 @@ protected:
 	void RemoveSightIndicator();
 	void DrawCreditsPopup() const;
 	void DrawJournalPopup() const;
-	void DrawInventoryPopup() const;
+	void DrawInventoryPopup();
 	void DrawMessagePopup() const;
 	void DrawCharacterEditorPanel();
 	void DrawMainMenuPopup();
@@ -197,4 +204,15 @@ protected:
 	bool bShowMessage = false;
 	FString MessageId;
 	FString MessageText;
+
+	/** Inventory boxes drawn last frame, in content pixels, plus where that page sits. */
+	bool bInventoryHitReady = false;
+	SolidInventory::FPage InventoryPage;
+	float InventoryOriginX = 0.f;
+	float InventoryOriginY = 0.f;
+
+	/** A chest item following the pointer until it is dropped. */
+	bool bInventoryDrag = false;
+	int32 InventoryDragChest = INDEX_NONE;
+	FString InventoryDragName;
 };

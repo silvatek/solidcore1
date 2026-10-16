@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Events/SolidEvents.h"
 #include "Inventory/SolidInventory.h"
+#include "Inventory/SolidStorage.h"
 #include "Journal/SolidJournalEntry.h"
 
 /**
@@ -29,6 +30,8 @@ struct FGameState
 	TArray<SolidJournal::FJournalEntry> Journal;
 	/** Worn boxes and the captain's pack. Each box stores an item id. A new game starts in the starting kit. Killed by monsters clears it to Rags. */
 	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+	/** The cave chest. It starts with a rusty sword. Taking the sword keeps it out. */
+	SolidStorage::FContainer CaveChest = SolidStorage::StartingCaveChest();
 };
 
 namespace SolidEvents

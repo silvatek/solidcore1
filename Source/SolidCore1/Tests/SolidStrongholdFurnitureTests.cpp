@@ -81,6 +81,10 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("fireplace kind"), SolidStrongholdFurniture::Catalog[0].Kind == SolidStrongholdFurniture::EKind::Fireplace);
 	TestTrue(TEXT("bed kind"), SolidStrongholdFurniture::Catalog[1].Kind == SolidStrongholdFurniture::EKind::Bed);
 	TestTrue(TEXT("chest kind"), SolidStrongholdFurniture::Catalog[2].Kind == SolidStrongholdFurniture::EKind::Chest);
+	TestFalse(TEXT("the fireplace is not storage"), SolidStrongholdFurniture::IsStorage(&SolidStrongholdFurniture::Catalog[0]));
+	TestFalse(TEXT("the bed is not storage"), SolidStrongholdFurniture::IsStorage(&SolidStrongholdFurniture::Catalog[1]));
+	TestTrue(TEXT("the chest is storage"), SolidStrongholdFurniture::IsStorage(&SolidStrongholdFurniture::Catalog[2]));
+	TestFalse(TEXT("a missing piece is not storage"), SolidStrongholdFurniture::IsStorage(nullptr));
 	for (int32 Index = 0; Index < SolidStrongholdFurniture::CatalogCount; ++Index)
 	{
 		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(Index);
@@ -118,6 +122,7 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("first links to the fireplace"), First && First->Kind == SolidStrongholdFurniture::EKind::Fireplace);
 	TestTrue(TEXT("second links to the bed"), Second && Second->Kind == SolidStrongholdFurniture::EKind::Bed);
 	TestTrue(TEXT("third links to the chest"), Third && Third->Kind == SolidStrongholdFurniture::EKind::Chest);
+	TestTrue(TEXT("the cave chest is the storage piece"), SolidStrongholdFurniture::IsStorage(Third));
 
 	TArray<SolidStrongholdGrid::FHex> Hexes;
 	SolidStrongholdGrid::CollectMeagreHexes(Hexes);

@@ -117,18 +117,20 @@ namespace SolidStrongholdFurniture
 		return ChestWidthCm() * 0.5f;
 	}
 
-	/** One kind of furnishing. The mesh is built from Kind. */
+	/** One kind of furnishing. The mesh is built from Kind. A storage piece holds items. */
 	struct FItem
 	{
 		const TCHAR* Name = TEXT("");
 		EKind Kind = EKind::Fireplace;
+		/** True when the piece holds items. The chest does. The fireplace and the bed do not. */
+		bool bStorage = false;
 	};
 
 	/** Every furnishing the game knows. Strongholds point back into this list. */
 	inline const FItem Catalog[] = {
-		{ TEXT("Fireplace"), EKind::Fireplace },
-		{ TEXT("Bed"), EKind::Bed },
-		{ TEXT("Chest"), EKind::Chest },
+		{ TEXT("Fireplace"), EKind::Fireplace, false },
+		{ TEXT("Bed"), EKind::Bed, false },
+		{ TEXT("Chest"), EKind::Chest, true },
 	};
 
 	inline constexpr int32 CatalogCount = UE_ARRAY_COUNT(Catalog);
@@ -136,6 +138,11 @@ namespace SolidStrongholdFurniture
 	inline const FItem* ItemAt(const int32 Index)
 	{
 		return Index >= 0 && Index < CatalogCount ? &Catalog[Index] : nullptr;
+	}
+
+	inline bool IsStorage(const FItem* Item)
+	{
+		return Item && Item->bStorage;
 	}
 
 	inline int32 IndexOfKind(const EKind Kind)

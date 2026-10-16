@@ -7,6 +7,8 @@
 #include "SolidBodyParams.h"
 #include "Menus/SolidCredits.h"
 #include "Inventory/SolidInventory.h"
+#include "Inventory/SolidStorage.h"
+#include "Strongholds/SolidStrongholdFurniture.h"
 #include "Journal/SolidJournal.h"
 #include "Menus/SolidMainMenu.h"
 #include "Menus/SolidMenuPointer.h"
@@ -842,6 +844,11 @@ namespace SolidHUDPrivate
 
 		const float BoxX = (static_cast<float>(Canvas->SizeX) - BoardW) * 0.5f;
 		const float BoxY = (static_cast<float>(Canvas->SizeY) - BoardH) * 0.5f;
+		const SolidInventory::FView View = SolidInventory::ContentOrigin(
+			static_cast<float>(Canvas->SizeX),
+			static_cast<float>(Canvas->SizeY),
+			Page,
+			LineHeight);
 
 		FCanvasTileItem Dim(
 			FVector2D(0.f, 0.f),
@@ -866,8 +873,8 @@ namespace SolidHUDPrivate
 			Canvas->DrawItem(NameItem);
 		}
 
-		const float OriginX = BoxX + (BoardW - Page.ContentW) * 0.5f;
-		const float OriginY = BoxY + SolidJournal::BoardPad;
+		const float OriginX = View.OriginX;
+		const float OriginY = View.OriginY;
 		if (Font && !FString(SolidInventory::PackTitle).IsEmpty())
 		{
 			float PackW = 0.f;
@@ -880,6 +887,19 @@ namespace SolidHUDPrivate
 				Palette.Title);
 			PackItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
 			Canvas->DrawItem(PackItem);
+		}
+		if (Page.bShowChest && Font && !FString(SolidStorage::ChestTitle).IsEmpty())
+		{
+			float ChestW = 0.f;
+			float ChestH = 0.f;
+			Canvas->StrLen(Font, SolidStorage::ChestTitle, ChestW, ChestH);
+			FCanvasTextItem ChestItem(
+				FVector2D(OriginX + Page.ChestX + (Page.ChestGridW - ChestW) * 0.5f, OriginY + Page.ChestLabelY),
+				FText::FromString(SolidStorage::ChestTitle),
+				Font,
+				Palette.Title);
+			ChestItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+			Canvas->DrawItem(ChestItem);
 		}
 
 		for (const SolidInventory::FBox& Slot : Page.Boxes)
@@ -1316,6 +1336,20 @@ void ASolidHUD::DrawHUD()
 		{
 			const FVector2D Hotspot(MouseX, MouseY);
 			SolidHUDPrivate::DrawPointer(Canvas, Hotspot);
+			if (bInventoryDrag && !InventoryDragName.IsEmpty())
+			{
+				UFont* DragFont = GEngine ? GEngine->GetSmallFont() : nullptr;
+				if (DragFont)
+				{
+					FCanvasTextItem DragItem(
+						FVector2D(MouseX + 28.f, MouseY + 18.f),
+						FText::FromString(InventoryDragName),
+						DragFont,
+						FLinearColor::White);
+					DragItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+					Canvas->DrawItem(DragItem);
+				}
+			}
 			if (bShowCharacterEditor && !SkeletonBoneTip.IsEmpty())
 			{
 				UFont* BoneFont = GEngine ? GEngine->GetMediumFont() : nullptr;
@@ -1456,6 +1490,7 @@ void ASolidHUD::HandleMenuKey()
 	if (bShowInventory)
 	{
 		bShowInventory = false;
+		CancelInventoryDrag();
 		return;
 	}
 
@@ -1486,6 +1521,7 @@ void ASolidHUD::CloseMenuOverlay()
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowInventory = false;
+	CancelInventoryDrag();
 	bShowCharacterEditor = false;
 	bCharacterEditorSkeleton = false;
 	SkeletonBoneTip.Reset();
@@ -1915,6 +1951,7 @@ void ASolidHUD::ToggleInventory()
 	if (bShowInventory)
 	{
 		bShowInventory = false;
+		CancelInventoryDrag();
 		return;
 	}
 
@@ -1931,19 +1968,109 @@ void ASolidHUD::ToggleInventory()
 	bShowInventory = true;
 }
 
-void ASolidHUD::DrawInventoryPopup() const
+void ASolidHUD::CancelInventoryDrag()
 {
+	bInventoryDrag = false;
+	InventoryDragChest = INDEX_NONE;
+	InventoryDragName.Reset();
+}
+
+void ASolidHUD::PressInventory(const float X, const float Y)
+{
+	if (!bInventoryHitReady)
+	{
+		return;
+	}
+	SolidInventory::FSlotHit Hit;
+	if (!SolidInventory::HitSlot(InventoryPage, X - InventoryOriginX, Y - InventoryOriginY, Hit) || !Hit.bChest)
+	{
+		return;
+	}
+	UWorld* World = GetWorld();
+	ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+	if (!GameMode || Hit.Index < 0 || Hit.Index >= SolidStorage::Count)
+	{
+		return;
+	}
+	const TCHAR* ItemId = GameMode->GetConfiguration().CaveChest.Slots[Hit.Index];
+	if (!ItemId || !ItemId[0])
+	{
+		return;
+	}
+	bInventoryDrag = true;
+	InventoryDragChest = Hit.Index;
+	InventoryDragName = SolidItemType::NameFor(ItemId);
+}
+
+void ASolidHUD::ReleaseInventory(const float X, const float Y)
+{
+	if (!bInventoryDrag)
+	{
+		return;
+	}
+	const int32 From = InventoryDragChest;
+	CancelInventoryDrag();
+	if (!bInventoryHitReady)
+	{
+		return;
+	}
+	SolidInventory::FSlotHit Hit;
+	if (!SolidInventory::HitSlot(InventoryPage, X - InventoryOriginX, Y - InventoryOriginY, Hit)
+		|| !Hit.bHit
+		|| Hit.bChest)
+	{
+		return;
+	}
+	UWorld* World = GetWorld();
+	ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+	if (!GameMode)
+	{
+		return;
+	}
+	GameMode->TakeFromCaveChest(From, Hit.bPack, Hit.Slot, Hit.Column, Hit.Row);
+}
+
+void ASolidHUD::DrawInventoryPopup()
+{
+	bInventoryHitReady = false;
 	FGameState State;
+	const ASolidGameMode* GameMode = nullptr;
 	if (UWorld* World = GetWorld())
 	{
-		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+		GameMode = World->GetAuthGameMode<ASolidGameMode>();
+		if (GameMode)
 		{
 			State = GameMode->GetConfiguration();
 		}
 	}
 
+	const bool bShowChest = GameMode
+		&& GameMode->IsInDungeon()
+		&& SolidStrongholdFurniture::IsStorage(
+			SolidStrongholdFurniture::ItemAt(
+				SolidStrongholdFurniture::IndexOfKind(SolidStrongholdFurniture::EKind::Chest)));
 	SolidInventory::FPage Page;
-	SolidInventory::Layout(State.Inventory, Page);
+	SolidInventory::Layout(State.Inventory, Page, bShowChest ? &State.CaveChest : nullptr);
+
+	float LineHeight = 16.f;
+	if (Canvas)
+	{
+		if (UFont* Font = GEngine ? GEngine->GetSmallFont() : nullptr)
+		{
+			float HintW = 0.f;
+			Canvas->StrLen(Font, SolidInventory::CloseHint, HintW, LineHeight);
+		}
+		const SolidInventory::FView View = SolidInventory::ContentOrigin(
+			static_cast<float>(Canvas->SizeX),
+			static_cast<float>(Canvas->SizeY),
+			Page,
+			LineHeight);
+		InventoryPage = Page;
+		InventoryOriginX = View.OriginX;
+		InventoryOriginY = View.OriginY;
+		bInventoryHitReady = true;
+	}
+
 	SolidHUDPrivate::DrawInventoryBoard(Canvas, Page);
 }
 

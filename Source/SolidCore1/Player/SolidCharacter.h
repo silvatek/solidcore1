@@ -96,6 +96,7 @@ protected:
 	void ClickMoveFromInput();
 	void PollClickMovePress();
 	void UpdateCharacterEditorPointer();
+	void UpdateInventoryPointer();
 	void UpdateMenuPointerHover();
 	void UpdateCavePassageHover();
 	bool ReadPointerPosition(float& OutX, float& OutY) const;
@@ -353,6 +354,8 @@ protected:
 	bool bLeftMouseWasDown = false;
 	/** False until the left button has been up on this pawn. A carried hold does not click. */
 	bool bClickSawRelease = false;
+	/** Previous frame's left button while the inventory page is open. */
+	bool bInventoryPointerWasDown = false;
 	/** Last pointer sample while a choice list was open. A still pointer does not fight the keys. */
 	bool bMenuPointerSampled = false;
 	FVector2D MenuPointerSample = FVector2D::ZeroVector;

@@ -40,7 +40,7 @@ namespace SolidInventory
 		return Box;
 	}
 
-	void Layout(const FLoadout& Loadout, FPage& OutPage)
+	void Layout(const FLoadout& Loadout, FPage& OutPage, const SolidStorage::FContainer* Chest)
 	{
 		OutPage = FPage();
 
@@ -92,7 +92,43 @@ namespace SolidInventory
 		OutPage.PackX = PackX;
 		OutPage.PackLabelY = 0.f;
 		OutPage.PackGridW = GridW;
-		OutPage.ContentW = PackX + GridW;
-		OutPage.ContentH = FMath::Max(DollBottom, GridY + GridH);
+		float ContentRight = PackX + GridW;
+		float ContentBottom = FMath::Max(DollBottom, GridY + GridH);
+
+		if (Chest)
+		{
+			const float ChestX = ContentRight + SideGap;
+			const float ChestGridW = SolidStorage::Columns * PackCell + (SolidStorage::Columns - 1) * PackGap;
+			const float ChestGridH = SolidStorage::Rows * PackCell + (SolidStorage::Rows - 1) * PackGap;
+			for (int32 Row = 0; Row < SolidStorage::Rows; ++Row)
+			{
+				for (int32 Column = 0; Column < SolidStorage::Columns; ++Column)
+				{
+					FBox Box;
+					Box.bChest = true;
+					Box.Column = Column;
+					Box.Row = Row;
+					Box.X = ChestX + Column * (PackCell + PackGap);
+					Box.Y = GridY + Row * (PackCell + PackGap);
+					Box.W = PackCell;
+					Box.H = PackCell;
+					const int32 Index = SolidStorage::Index(Column, Row);
+					if (Index != INDEX_NONE)
+					{
+						Box.Item = SolidItemType::NameFor(Chest->Slots[Index]);
+					}
+					OutPage.Boxes.Add(Box);
+				}
+			}
+			OutPage.bShowChest = true;
+			OutPage.ChestX = ChestX;
+			OutPage.ChestLabelY = 0.f;
+			OutPage.ChestGridW = ChestGridW;
+			ContentRight = ChestX + ChestGridW;
+			ContentBottom = FMath::Max(ContentBottom, GridY + ChestGridH);
+		}
+
+		OutPage.ContentW = ContentRight;
+		OutPage.ContentH = ContentBottom;
 	}
 }

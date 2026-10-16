@@ -210,6 +210,7 @@ void ASolidCharacter::Tick(float DeltaTime)
 	TickClickMove();
 	SolidGroundMove::Hold(this);
 	UpdateCharacterEditorPointer();
+	UpdateInventoryPointer();
 	UpdateLocomotionAnim();
 	if (const ASolidHUD* SolidHud = GetSolidHUD())
 	{
@@ -1580,6 +1581,50 @@ void ASolidCharacter::PollClickMovePress()
 		return;
 	}
 	ClickMoveFromInput();
+}
+
+void ASolidCharacter::UpdateInventoryPointer()
+{
+	ASolidHUD* HUD = GetSolidHUD();
+	bool bDown = false;
+	if (const ASolidPlayerController* SolidController = Cast<ASolidPlayerController>(Controller))
+	{
+		bDown = SolidController->IsLeftMouseHeld();
+	}
+	else if (const APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	{
+		bDown = PlayerController->IsInputKeyDown(EKeys::LeftMouseButton);
+	}
+
+	if (!HUD || !HUD->IsInventoryVisible())
+	{
+		if (HUD)
+		{
+			HUD->CancelInventoryDrag();
+		}
+		bInventoryPointerWasDown = bDown;
+		return;
+	}
+
+	float X = 0.f;
+	float Y = 0.f;
+	const bool bHasPoint = ReadPointerPosition(X, Y);
+	if (bDown && !bInventoryPointerWasDown && bHasPoint)
+	{
+		HUD->PressInventory(X, Y);
+	}
+	else if (!bDown && bInventoryPointerWasDown)
+	{
+		if (bHasPoint)
+		{
+			HUD->ReleaseInventory(X, Y);
+		}
+		else
+		{
+			HUD->CancelInventoryDrag();
+		}
+	}
+	bInventoryPointerWasDown = bDown;
 }
 
 void ASolidCharacter::UpdateCharacterEditorPointer()

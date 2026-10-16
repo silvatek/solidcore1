@@ -39,12 +39,14 @@ namespace SolidItemType
 	inline constexpr const TCHAR* IdDentedHelmet = TEXT("7e2b58d1");
 	inline constexpr const TCHAR* IdCrudeSpear = TEXT("91f6c0ab");
 	inline constexpr const TCHAR* IdTorch = TEXT("4d8e27c5");
+	inline constexpr const TCHAR* IdRustySword = TEXT("b5e20c78");
 
 	inline const FSolidItemType Catalog[] = {
 		{ IdRags, TEXT("Rags"), ESolidItemKind::Armor },
 		{ IdDentedHelmet, TEXT("Dented helmet"), ESolidItemKind::Armor },
 		{ IdCrudeSpear, TEXT("Crude spear"), ESolidItemKind::Weapon },
 		{ IdTorch, TEXT("Torch"), ESolidItemKind::Tool },
+		{ IdRustySword, TEXT("Rusty sword"), ESolidItemKind::Weapon },
 	};
 
 	static_assert(UE_ARRAY_COUNT(Catalog) <= MaxItems, "Raise SolidItemType::MaxItems");

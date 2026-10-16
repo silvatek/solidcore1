@@ -61,13 +61,17 @@ Follow the Automated tests policy in `README.md`:
 
 Whenever `Content/WorldMap.txt` changes — a pull, a commit, a diff, or an edit in the conversation — review the file before doing anything else with it.
 
-The grid is 128 columns by 64 rows. A `!` in that grid is one location cell. It needs a description line under the grid:
+The grid is 128 columns by 64 rows. A `!` in that grid needs a description line under the grid. Row, then column. The top-left cell is 1,1. Spaces around the comma and `=` are fine. Anything after `#` is a comment.
 
 ```
 ! 8,21 = 0
+! 8,21 = Town Iglin
+! 9,12 = Stronghold MeagreDungeon
+! 10,11 = LairEntrance Iglin tunnels
+! 11,40 = LairExit Iglin tunnels
 ```
 
-Row, then column. The top-left cell of the grid is 1,1. The id is the location number. Spaces around the comma and `=` are fine. A note after the id, such as `(top-left is 1,1)`, is not part of the coordinate.
+A number is the location id. `Town` names a town. `Stronghold` is the size then the type, as in `MeagreDungeon`. `LairEntrance` and `LairExit` name a lair. A note after a numeric id, such as `(top-left is 1,1)`, is not part of the id.
 
 Warn the user when a `!` in the grid has no description line for that row and column. Name each missing cell as `row,column`, counting from 1,1 at the top-left. A `!` whose line is missing still loads as grassland and is not a town.
 

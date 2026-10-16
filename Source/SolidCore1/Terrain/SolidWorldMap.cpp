@@ -1,5 +1,6 @@
 #include "SolidWorldMap.h"
 #include "SolidCore1.h"
+#include "SolidLair.h"
 #include "SolidRiver.h"
 #include "SolidTowns.h"
 #include "Misc/FileHelper.h"
@@ -296,19 +297,44 @@ namespace
 		return true;
 	}
 
+	struct FWorldMapBangRef
+	{
+		enum class EKind : uint8
+		{
+			Skip,
+			Id,
+			Town,
+			Stronghold,
+			LairEntrance,
+			LairExit,
+		};
+
+		int32 MapX = INDEX_NONE;
+		int32 MapY = INDEX_NONE;
+		EKind Kind = EKind::Skip;
+		int32 Id = INDEX_NONE;
+		FString Identifier;
+	};
+
 	/**
 	 * "! 8,21 = 0" — row 8, column 21, counting from 1 at the top-left.
-	 * A note may follow the id: "! 8,21 = 0 (top-left is 1,1)".
+	 * "! 8,21 = Town Iglin", "! 9,12 = Stronghold MeagreDungeon",
+	 * "! 10,11 = LairEntrance Iglin tunnels", "! 11,40 = LairExit Iglin tunnels".
+	 * Anything after # is a comment. A note after a numeric id is ignored.
 	 * Returns false when the line is not that shape.
-	 * An out-of-range coordinate is that shape: OutMapX stays INDEX_NONE and the line is consumed.
+	 * An out-of-range coordinate is that shape: MapX stays INDEX_NONE and the line is consumed.
 	 */
-	bool WorldMapParseBangLocation(const FString& Line, int32& OutMapX, int32& OutMapY, int32& OutId)
+	bool WorldMapParseBangLocation(const FString& Line, FWorldMapBangRef& Out)
 	{
-		OutMapX = INDEX_NONE;
-		OutMapY = INDEX_NONE;
-		OutId = INDEX_NONE;
+		Out = FWorldMapBangRef();
 
-		const FString Trimmed = Line.TrimStartAndEnd();
+		FString Trimmed = Line.TrimStartAndEnd();
+		int32 Hash = INDEX_NONE;
+		if (Trimmed.FindChar(TEXT('#'), Hash))
+		{
+			Trimmed.LeftInline(Hash);
+			Trimmed.TrimEndInline();
+		}
 		if (Trimmed.IsEmpty() || Trimmed[0] != USolidWorldMap::LocationMarker)
 		{
 			return false;
@@ -330,23 +356,13 @@ namespace
 
 		const FString RowText = Left.Left(Comma).TrimStartAndEnd();
 		const FString ColumnText = Left.Mid(Comma + 1).TrimStartAndEnd();
-		FString IdText = Right;
-		for (int32 Index = 0; Index < Right.Len(); ++Index)
-		{
-			if (FChar::IsWhitespace(Right[Index]))
-			{
-				IdText = Right.Left(Index);
-				break;
-			}
-		}
-		if (!WorldMapDigits(RowText) || !WorldMapDigits(ColumnText) || !WorldMapDigits(IdText))
+		if (!WorldMapDigits(RowText) || !WorldMapDigits(ColumnText) || Right.IsEmpty())
 		{
 			return false;
 		}
 
 		const int32 Row = FCString::Atoi(*RowText);
 		const int32 Column = FCString::Atoi(*ColumnText);
-		OutId = FCString::Atoi(*IdText);
 		if (Row < 1 || Column < 1
 			|| Row > USolidWorldMap::MapHeight
 			|| Column > USolidWorldMap::MapWidth)
@@ -357,17 +373,55 @@ namespace
 			return true;
 		}
 
-		OutMapX = Column - 1;
-		OutMapY = Row - 1;
+		Out.MapX = Column - 1;
+		Out.MapY = Row - 1;
+
+		if (FChar::IsDigit(Right[0]))
+		{
+			int32 End = 0;
+			while (End < Right.Len() && FChar::IsDigit(Right[End]))
+			{
+				++End;
+			}
+			Out.Kind = FWorldMapBangRef::EKind::Id;
+			Out.Id = FCString::Atoi(*Right.Left(End));
+			return true;
+		}
+
+		FString Type;
+		FString Identifier;
+		if (!Right.Split(TEXT(" "), &Type, &Identifier))
+		{
+			Type = Right;
+		}
+		Type.TrimStartAndEndInline();
+		Identifier.TrimStartAndEndInline();
+		Out.Identifier = Identifier;
+		if (Type.Equals(TEXT("Town"), ESearchCase::IgnoreCase))
+		{
+			Out.Kind = FWorldMapBangRef::EKind::Town;
+		}
+		else if (Type.Equals(TEXT("Stronghold"), ESearchCase::IgnoreCase))
+		{
+			Out.Kind = FWorldMapBangRef::EKind::Stronghold;
+		}
+		else if (Type.Equals(TEXT("LairEntrance"), ESearchCase::IgnoreCase))
+		{
+			Out.Kind = FWorldMapBangRef::EKind::LairEntrance;
+		}
+		else if (Type.Equals(TEXT("LairExit"), ESearchCase::IgnoreCase))
+		{
+			Out.Kind = FWorldMapBangRef::EKind::LairExit;
+		}
+		else
+		{
+			UE_LOG(LogSolid, Warning,
+				TEXT("WorldMap: ! %d,%d has unknown type '%s'; ignored."),
+				Row, Column, *Type);
+			Out.Kind = FWorldMapBangRef::EKind::Skip;
+		}
 		return true;
 	}
-
-	struct FWorldMapBangRef
-	{
-		int32 MapX = INDEX_NONE;
-		int32 MapY = INDEX_NONE;
-		int32 Id = INDEX_NONE;
-	};
 }
 
 bool USolidWorldMap::LoadFromString(const FString& Text)
@@ -447,7 +501,7 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 				UE_LOG(LogSolid, Warning, TEXT("WorldMap: ignored road line '%s'."), *Trimmed);
 			}
 		}
-		else if (WorldMapParseBangLocation(Trimmed, BangRef.MapX, BangRef.MapY, BangRef.Id))
+		else if (WorldMapParseBangLocation(Trimmed, BangRef))
 		{
 			BangRefs.Add(BangRef);
 		}
@@ -457,30 +511,95 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 		}
 	}
 
+	BangMarks.Reset();
 	BangLocationIds.Init(INDEX_NONE, MapWidth * MapHeight);
 	for (const FWorldMapBangRef& Ref : BangRefs)
 	{
-		if (Ref.MapX == INDEX_NONE || Ref.MapY == INDEX_NONE)
+		if (Ref.MapX == INDEX_NONE || Ref.MapY == INDEX_NONE || Ref.Kind == FWorldMapBangRef::EKind::Skip)
 		{
 			continue;
 		}
 		const int32 Index = Ref.MapY * MapWidth + Ref.MapX;
+		const int32 Row = Ref.MapY + 1;
+		const int32 Column = Ref.MapX + 1;
 		if (static_cast<TCHAR>(Markers[Index]) != LocationMarker)
 		{
 			UE_LOG(LogSolid, Warning,
 				TEXT("WorldMap: ! %d,%d is not an exclamation mark; ignored."),
-				Ref.MapY + 1, Ref.MapX + 1);
+				Row, Column);
 			continue;
 		}
-		int32& Slot = BangLocationIds[Index];
-		if (Slot != INDEX_NONE && Slot != Ref.Id)
+		if (BangMarks.Contains(Index))
 		{
 			UE_LOG(LogSolid, Warning,
-				TEXT("WorldMap: ! %d,%d is already location %d; keeping it."),
-				Ref.MapY + 1, Ref.MapX + 1, Slot);
+				TEXT("WorldMap: ! %d,%d is already described; keeping it."),
+				Row, Column);
 			continue;
 		}
-		Slot = Ref.Id;
+
+		FSolidWorldBang Mark;
+		Mark.Cell = FIntPoint(Ref.MapX, Ref.MapY);
+		switch (Ref.Kind)
+		{
+		case FWorldMapBangRef::EKind::Id:
+			Mark.Kind = ESolidWorldBang::Town;
+			Mark.LocationId = Ref.Id;
+			Mark.Name = SolidTowns::NameFor(Ref.Id);
+			BangLocationIds[Index] = Ref.Id;
+			break;
+		case FWorldMapBangRef::EKind::Town:
+		{
+			const SolidTowns::FTownInfo* Town = SolidTowns::FindByName(Ref.Identifier);
+			if (!Town)
+			{
+				UE_LOG(LogSolid, Warning,
+					TEXT("WorldMap: ! %d,%d town '%s' is unknown; ignored."),
+					Row, Column, *Ref.Identifier);
+				continue;
+			}
+			Mark.Kind = ESolidWorldBang::Town;
+			Mark.LocationId = Town->Id;
+			Mark.Name = Town->Name;
+			BangLocationIds[Index] = Town->Id;
+			break;
+		}
+		case FWorldMapBangRef::EKind::Stronghold:
+		{
+			FSolidStronghold Attributes;
+			if (!SolidStronghold::FromToken(Ref.Identifier, Attributes))
+			{
+				UE_LOG(LogSolid, Warning,
+					TEXT("WorldMap: ! %d,%d stronghold '%s' is unknown; ignored."),
+					Row, Column, *Ref.Identifier);
+				continue;
+			}
+			Mark.Kind = ESolidWorldBang::Stronghold;
+			Mark.StrongholdType = Attributes.Type;
+			Mark.StrongholdSize = Attributes.Size;
+			Mark.Name = SolidStronghold::Label(Attributes);
+			break;
+		}
+		case FWorldMapBangRef::EKind::LairEntrance:
+		case FWorldMapBangRef::EKind::LairExit:
+		{
+			const SolidLair::FDefinition* Lair = SolidLair::FindByName(Ref.Identifier);
+			if (!Lair)
+			{
+				UE_LOG(LogSolid, Warning,
+					TEXT("WorldMap: ! %d,%d lair '%s' is unknown; ignored."),
+					Row, Column, *Ref.Identifier);
+				continue;
+			}
+			Mark.Kind = Ref.Kind == FWorldMapBangRef::EKind::LairEntrance
+				? ESolidWorldBang::LairEntrance
+				: ESolidWorldBang::LairExit;
+			Mark.Name = Lair->Name;
+			break;
+		}
+		default:
+			continue;
+		}
+		BangMarks.Add(Index, Mark);
 	}
 
 	TArray<FIntPoint> LegacyStartCells;
@@ -596,8 +715,43 @@ ESolidBiome USolidWorldMap::GetBiomeAtCell(int32 MapX, int32 MapY) const
 		}
 		return ESolidBiome::Town;
 	}
+	if (const FSolidWorldBang* Mark = BangMarks.Find(MapY * MapWidth + MapX))
+	{
+		if (Mark->Kind == ESolidWorldBang::Stronghold
+			|| Mark->Kind == ESolidWorldBang::LairEntrance
+			|| Mark->Kind == ESolidWorldBang::LairExit)
+		{
+			return ESolidBiome::Mountain;
+		}
+	}
 	const TCHAR Marker = static_cast<TCHAR>(Markers[MapY * MapWidth + MapX]);
 	return MarkerToBiome(Marker);
+}
+
+bool USolidWorldMap::FindBang(const int32 MapX, const int32 MapY, FSolidWorldBang& Out) const
+{
+	if (!bIsLoaded || MapX < 0 || MapY < 0 || MapX >= MapWidth || MapY >= MapHeight)
+	{
+		return false;
+	}
+	if (const FSolidWorldBang* Found = BangMarks.Find(MapY * MapWidth + MapX))
+	{
+		Out = *Found;
+		return true;
+	}
+	return false;
+}
+
+bool USolidWorldMap::StrongholdAtCell(const int32 MapX, const int32 MapY, FSolidStronghold& Out) const
+{
+	FSolidWorldBang Mark;
+	if (!FindBang(MapX, MapY, Mark) || Mark.Kind != ESolidWorldBang::Stronghold)
+	{
+		return false;
+	}
+	Out.Type = Mark.StrongholdType;
+	Out.Size = Mark.StrongholdSize;
+	return true;
 }
 
 TCHAR USolidWorldMap::GetMarkerAtCell(int32 MapX, int32 MapY) const

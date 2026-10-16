@@ -77,6 +77,15 @@ namespace SolidLair
 
 	inline const FDefinition IglinTunnels = { TEXT("Iglin tunnels") };
 
+	inline const FDefinition* FindByName(const FString& Name)
+	{
+		if (Name.Equals(IglinTunnels.Name, ESearchCase::IgnoreCase))
+		{
+			return &IglinTunnels;
+		}
+		return nullptr;
+	}
+
 	/**
 	 * Floor plan. '#' is rock. '.' is open floor. An end marker is a mouth.
 	 * Every open cell can be reached from a mouth.

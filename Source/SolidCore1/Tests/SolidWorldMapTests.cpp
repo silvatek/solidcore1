@@ -5,7 +5,9 @@
 #include "SolidTerrainMap.h"
 #include "SolidTerrainStreamer.h"
 #include "SolidTerrainTestHelpers.h"
+#include "SolidLair.h"
 #include "SolidStronghold.h"
+#include "SolidStrongholds.h"
 #include "SolidTowns.h"
 #include "SolidWorldMap.h"
 
@@ -612,21 +614,14 @@ bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 
 	FSolidWorldLocation ShippedIglin;
 	TestTrue(TEXT("shipped location 0"), Shipped->FindLocation(0, ShippedIglin));
-	TestEqual(TEXT("shipped Iglin is the 00 pair"), ShippedIglin.Cells.Num(), 2);
-	if (ShippedIglin.Cells.Num() == 2)
+	TestEqual(TEXT("shipped Iglin is one cell"), ShippedIglin.Cells.Num(), 1);
+	if (ShippedIglin.Cells.Num() == 1)
 	{
-		TestEqual(TEXT("Iglin cells share a row"), ShippedIglin.Cells[0].Y, ShippedIglin.Cells[1].Y);
-		const FIntPoint East = ShippedIglin.Cells[0].X < ShippedIglin.Cells[1].X
-			? ShippedIglin.Cells[0]
-			: ShippedIglin.Cells[1];
-		const FIntPoint West = ShippedIglin.Cells[0].X < ShippedIglin.Cells[1].X
-			? ShippedIglin.Cells[1]
-			: ShippedIglin.Cells[0];
-		TestEqual(TEXT("Iglin cells are adjacent"), West.X - East.X, 1);
-		TestEqual(TEXT("Iglin tens digit is 0"), Shipped->GetMarkerAtCell(East.X, East.Y), TEXT('0'));
-		TestEqual(TEXT("Iglin ones digit is 0"), Shipped->GetMarkerAtCell(West.X, West.Y), TEXT('0'));
-		TestEqual(TEXT("Iglin east cell id"), Shipped->GetLocationIdAtCell(East.X, East.Y), 0);
-		TestEqual(TEXT("Iglin west cell id"), Shipped->GetLocationIdAtCell(West.X, West.Y), 0);
+		const FIntPoint Cell = ShippedIglin.Cells[0];
+		TestEqual(TEXT("Iglin is !"), Shipped->GetMarkerAtCell(Cell.X, Cell.Y), USolidWorldMap::LocationMarker);
+		TestEqual(TEXT("Iglin cell id"), Shipped->GetLocationIdAtCell(Cell.X, Cell.Y), 0);
+		TestEqual(TEXT("Iglin row"), Cell.Y + 1, 8);
+		TestEqual(TEXT("Iglin column"), Cell.X + 1, 21);
 	}
 
 	FSolidWorldLocation ShippedKanfold;
@@ -1355,6 +1350,169 @@ bool FSolidWorldMapBangLocationTest::RunTest(const FString& Parameters)
 		TEXT("sampling a bare ! reads no location"),
 		Map->SampleLocationId(BareXY.X, BareXY.Y, WorldMin, WorldMax),
 		INDEX_NONE);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidWorldMapBangDescriptionTest,
+	"SolidCore1.WorldMap.BangDescription",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
+{
+	const int32 IglinCol = 0;
+	const int32 IglinRow = 0;
+	const int32 RelionCol = 1;
+	const int32 RelionRow = 1;
+	const int32 UnknownTownCol = 2;
+	const int32 UnknownTypeCol = 3;
+	const int32 CaveCol = 5;
+	const int32 CaveRow = 5;
+	const int32 TowerCol = 8;
+	const int32 TowerRow = 5;
+	const int32 BadHoldCol = 10;
+	const int32 BadHoldRow = 5;
+	const int32 EnterCol = 3;
+	const int32 EnterRow = 9;
+	const int32 ExitCol = 3;
+	const int32 ExitRow = 10;
+	const int32 MissingLairCol = 3;
+	const int32 MissingLairRow = 11;
+
+	FString Text;
+	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	{
+		FString Line;
+		Line.Reserve(USolidWorldMap::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		{
+			const bool bBang = (Row == IglinRow && Col == IglinCol)
+				|| (Row == RelionRow && (Col == RelionCol || Col == UnknownTownCol || Col == UnknownTypeCol))
+				|| (Row == CaveRow && (Col == CaveCol || Col == TowerCol || Col == BadHoldCol))
+				|| (Col == EnterCol && (Row == EnterRow || Row == ExitRow || Row == MissingLairRow));
+			Line.AppendChar(bBang ? USolidWorldMap::LocationMarker : USolidWorldMap::GrassMarker);
+		}
+		Text += Line;
+		Text += TEXT("\n");
+	}
+	Text += TEXT(". = Grassland (light green)\n");
+	Text += TEXT("! 1,1 = 0 # start\n");
+	Text += TEXT("! 2,2 = Town Relion\n");
+	Text += TEXT("! 2,3 = Town Nowhere\n");
+	Text += TEXT("! 2,4 = Village Iglin\n");
+	Text += TEXT("! 6,6 = Stronghold MeagreDungeon # the cave\n");
+	Text += TEXT("! 6,9 = Stronghold Humble Tower\n");
+	Text += TEXT("! 6,11 = Stronghold NotAThing\n");
+	Text += TEXT("! 10,4 = LairEntrance Iglin tunnels # south of town\n");
+	Text += TEXT("! 11,4 = LairExit Iglin tunnels\n");
+	Text += TEXT("! 12,4 = LairEntrance Missing Lair\n");
+
+	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("described map loads"), Map->LoadFromString(Text));
+
+	FSolidWorldBang Iglin;
+	TestTrue(TEXT("numeric ! is a town"), Map->FindBang(IglinCol, IglinRow, Iglin));
+	TestEqual(TEXT("numeric kind"), static_cast<uint8>(Iglin.Kind), static_cast<uint8>(ESolidWorldBang::Town));
+	TestEqual(TEXT("numeric id"), Iglin.LocationId, 0);
+	TestEqual(TEXT("numeric name"), Iglin.Name, FString(TEXT("Iglin")));
+	TestEqual(TEXT("numeric cell id"), Map->GetLocationIdAtCell(IglinCol, IglinRow), 0);
+
+	FSolidWorldBang Relion;
+	TestTrue(TEXT("town name is a town"), Map->FindBang(RelionCol, RelionRow, Relion));
+	TestEqual(TEXT("Relion id"), Relion.LocationId, SolidTowns::Relion);
+	TestEqual(TEXT("Relion name"), Relion.Name, FString(TEXT("Relion")));
+	TestEqual(
+		TEXT("a named town is Town"),
+		static_cast<uint8>(Map->GetBiomeAtCell(RelionCol, RelionRow)),
+		static_cast<uint8>(ESolidBiome::Town));
+
+	FSolidWorldBang Ignored;
+	TestFalse(TEXT("an unknown town is not a mark"), Map->FindBang(UnknownTownCol, RelionRow, Ignored));
+	TestEqual(TEXT("an unknown town is not a location"), Map->GetLocationIdAtCell(UnknownTownCol, RelionRow), INDEX_NONE);
+	TestFalse(TEXT("an unknown type is not a mark"), Map->FindBang(UnknownTypeCol, RelionRow, Ignored));
+	TestEqual(
+		TEXT("an unknown type stays grassland"),
+		static_cast<uint8>(Map->GetBiomeAtCell(UnknownTypeCol, RelionRow)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+
+	FSolidWorldBang Cave;
+	TestTrue(TEXT("MeagreDungeon is a stronghold"), Map->FindBang(CaveCol, CaveRow, Cave));
+	TestEqual(TEXT("stronghold kind"), static_cast<uint8>(Cave.Kind), static_cast<uint8>(ESolidWorldBang::Stronghold));
+	TestEqual(TEXT("stronghold size"), static_cast<uint8>(Cave.StrongholdSize), static_cast<uint8>(ESolidStrongholdSize::Meagre));
+	TestEqual(TEXT("stronghold type"), static_cast<uint8>(Cave.StrongholdType), static_cast<uint8>(ESolidStrongholdType::Dungeon));
+	TestEqual(TEXT("stronghold name"), Cave.Name, FString(TEXT("Meagre Dungeon")));
+	TestEqual(TEXT("a stronghold is not a location"), Map->GetLocationIdAtCell(CaveCol, CaveRow), INDEX_NONE);
+	TestEqual(
+		TEXT("a stronghold uses the mountain shelf"),
+		static_cast<uint8>(Map->GetBiomeAtCell(CaveCol, CaveRow)),
+		static_cast<uint8>(ESolidBiome::Mountain));
+
+	FSolidWorldBang Tower;
+	TestTrue(TEXT("a spaced size and type match"), Map->FindBang(TowerCol, TowerRow, Tower));
+	TestEqual(TEXT("tower size"), static_cast<uint8>(Tower.StrongholdSize), static_cast<uint8>(ESolidStrongholdSize::Humble));
+	TestEqual(TEXT("tower type"), static_cast<uint8>(Tower.StrongholdType), static_cast<uint8>(ESolidStrongholdType::Tower));
+	TestFalse(TEXT("an unknown stronghold is not a mark"), Map->FindBang(BadHoldCol, BadHoldRow, Ignored));
+	TestEqual(
+		TEXT("an unknown stronghold stays grassland"),
+		static_cast<uint8>(Map->GetBiomeAtCell(BadHoldCol, BadHoldRow)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+
+	FSolidWorldBang Entrance;
+	TestTrue(TEXT("lair entrance"), Map->FindBang(EnterCol, EnterRow, Entrance));
+	TestEqual(TEXT("entrance kind"), static_cast<uint8>(Entrance.Kind), static_cast<uint8>(ESolidWorldBang::LairEntrance));
+	TestEqual(TEXT("entrance name"), Entrance.Name, FString(SolidLair::IglinTunnels.Name));
+	TestEqual(
+		TEXT("a lair entrance uses the mountain shelf"),
+		static_cast<uint8>(Map->GetBiomeAtCell(EnterCol, EnterRow)),
+		static_cast<uint8>(ESolidBiome::Mountain));
+
+	FSolidWorldBang Exit;
+	TestTrue(TEXT("lair exit"), Map->FindBang(ExitCol, ExitRow, Exit));
+	TestEqual(TEXT("exit kind"), static_cast<uint8>(Exit.Kind), static_cast<uint8>(ESolidWorldBang::LairExit));
+	TestEqual(TEXT("exit name"), Exit.Name, FString(SolidLair::IglinTunnels.Name));
+	TestFalse(TEXT("an unknown lair is not a mark"), Map->FindBang(MissingLairCol, MissingLairRow, Ignored));
+
+	const FVector2D WorldMin(-6400.f, -6400.f);
+	const FVector2D WorldMax(6400.f, 6400.f);
+	FVector2D RelionXY = FVector2D::ZeroVector;
+	FVector2D CaveXY = FVector2D::ZeroVector;
+	TestTrue(TEXT("Relion cell"), Map->CellToWorldXY(FIntPoint(RelionCol, RelionRow), WorldMin, WorldMax, RelionXY));
+	TestTrue(TEXT("cave cell"), Map->CellToWorldXY(FIntPoint(CaveCol, CaveRow), WorldMin, WorldMax, CaveXY));
+	TestTrue(TEXT("a town ! is a town"), Map->IsMarkedTown(RelionXY.X, RelionXY.Y, WorldMin, WorldMax));
+	TestFalse(TEXT("a stronghold ! is not a town"), Map->IsMarkedTown(CaveXY.X, CaveXY.Y, WorldMin, WorldMax));
+
+	TArray<SolidStrongholds::FEntrance> Mouths;
+	TestEqual(TEXT("two stronghold mouths"), SolidStrongholds::CollectEntrances(Map, WorldMin, WorldMax, Mouths), 2);
+	bool bFoundCave = false;
+	bool bFoundTower = false;
+	for (const SolidStrongholds::FEntrance& Mouth : Mouths)
+	{
+		if (Mouth.Cell == FIntPoint(CaveCol, CaveRow))
+		{
+			bFoundCave = true;
+			TestEqual(
+				TEXT("cave mouth size"),
+				static_cast<uint8>(Mouth.Stronghold.Size),
+				static_cast<uint8>(ESolidStrongholdSize::Meagre));
+		}
+		if (Mouth.Cell == FIntPoint(TowerCol, TowerRow))
+		{
+			bFoundTower = true;
+			TestEqual(
+				TEXT("tower mouth type"),
+				static_cast<uint8>(Mouth.Stronghold.Type),
+				static_cast<uint8>(ESolidStrongholdType::Tower));
+		}
+	}
+	TestTrue(TEXT("the cave mouth is placed"), bFoundCave);
+	TestTrue(TEXT("the tower mouth is placed"), bFoundTower);
+
+	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("shipped map loads"), Shipped->LoadDefault());
+	FSolidWorldBang ShippedIglin;
+	TestTrue(TEXT("shipped Iglin !"), Shipped->FindBang(20, 7, ShippedIglin));
+	TestEqual(TEXT("shipped Iglin id"), ShippedIglin.LocationId, 0);
+	TestEqual(TEXT("shipped Iglin name"), ShippedIglin.Name, FString(TEXT("Iglin")));
 	return true;
 }
 

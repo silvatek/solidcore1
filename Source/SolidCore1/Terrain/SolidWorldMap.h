@@ -3,8 +3,30 @@
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
 #include "SolidRoad.h"
+#include "SolidStronghold.h"
 #include "SolidTerrainTypes.h"
 #include "SolidWorldMap.generated.h"
+
+/** What a "! row,column = ..." line names. None means the cell has no such line. */
+enum class ESolidWorldBang : uint8
+{
+	None,
+	Town,
+	Stronghold,
+	LairEntrance,
+	LairExit,
+};
+
+/** One ! cell named by a description line. Row and column in the file count from 1. */
+struct FSolidWorldBang
+{
+	ESolidWorldBang Kind = ESolidWorldBang::None;
+	int32 LocationId = INDEX_NONE;
+	FString Name;
+	ESolidStrongholdType StrongholdType = ESolidStrongholdType::Dungeon;
+	ESolidStrongholdSize StrongholdSize = ESolidStrongholdSize::Meagre;
+	FIntPoint Cell = FIntPoint::ZeroValue;
+};
 
 /**
  * One numbered place in WorldMap.txt (`0` = Iglin, `1` = Relion, …).
@@ -41,6 +63,9 @@ struct FSolidWorldLocation
  * one location number, read from the left, and each character is still one cell.
  * A longer run is taken in pairs. A ! is one location cell, named by a line
  * "! 8,21 = 0": row 8, column 21, counting from 1 at the top-left of the grid.
+ * "! 8,21 = Town Iglin", "! 9,12 = Stronghold MeagreDungeon",
+ * "! 10,11 = LairEntrance Iglin tunnels", and "! 11,40 = LairExit Iglin tunnels"
+ * name the same cell by type. Anything after # is a comment.
  * A ! with no line is not a location. Location 0 is the starting town.
  * A legacy Z marker is the start only when the grid has no 0 cells.
  * Road lines are solved into routes when the file loads.
@@ -73,7 +98,8 @@ public:
 	static constexpr TCHAR DesertMarker = TEXT('^');
 
 	/**
-	 * One location cell. The id comes from a "! row,column = id" line.
+	 * One described cell. A line "! row,column = id" or "! row,column = Town Name"
+	 * is a location. Stronghold, LairEntrance, and LairExit use the same coordinates.
 	 * Row and column count from 1 at the top-left of the grid.
 	 */
 	static constexpr TCHAR LocationMarker = TEXT('!');
@@ -146,6 +172,12 @@ public:
 	/** Copy of a numbered location, including its map cells. */
 	bool FindLocation(int32 Id, FSolidWorldLocation& OutLocation) const;
 
+	/** The description of a ! cell, or false when that cell has none. */
+	bool FindBang(int32 MapX, int32 MapY, FSolidWorldBang& Out) const;
+
+	/** True when a ! line names this cell as a stronghold. */
+	bool StrongholdAtCell(int32 MapX, int32 MapY, FSolidStronghold& Out) const;
+
 	/** Every numbered location, sorted by id. */
 	void CollectLocations(TArray<FSolidWorldLocation>& OutLocations) const;
 
@@ -184,6 +216,9 @@ protected:
 
 	/** Location id for each ! cell, or INDEX_NONE. Same order as Markers. */
 	TArray<int32> BangLocationIds;
+
+	/** Description of each ! cell that has a line. Key is row-major cell index. */
+	TMap<int32, FSolidWorldBang> BangMarks;
 
 	UPROPERTY()
 	TMap<ESolidBiome, FLinearColor> BiomeColors;

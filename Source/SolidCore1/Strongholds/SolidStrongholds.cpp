@@ -42,7 +42,8 @@ int32 SolidStrongholds::CollectEntrances(
 		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
 		{
 			FSolidStronghold Attributes;
-			if (!SolidStronghold::AttributesForMarker(WorldMap->GetMarkerAtCell(Col, Row), Attributes))
+			if (!SolidStronghold::AttributesForMarker(WorldMap->GetMarkerAtCell(Col, Row), Attributes)
+				&& !WorldMap->StrongholdAtCell(Col, Row, Attributes))
 			{
 				continue;
 			}

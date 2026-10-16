@@ -146,6 +146,31 @@ namespace SolidStronghold
 		return FString::Printf(TEXT("%s %s"), SizeName(Stronghold.Size), TypeName(Stronghold.Type));
 	}
 
+	/** "MeagreDungeon" or "Meagre Dungeon": size, then type. */
+	inline bool FromToken(const FString& Token, FSolidStronghold& Out)
+	{
+		FString Compact = Token;
+		Compact.ReplaceInline(TEXT(" "), TEXT(""));
+		if (Compact.IsEmpty())
+		{
+			return false;
+		}
+		for (const ESolidStrongholdSize Size : Sizes)
+		{
+			for (const ESolidStrongholdType Type : Types)
+			{
+				const FString Joined = FString(SizeName(Size)) + TypeName(Type);
+				if (Compact.Equals(Joined, ESearchCase::IgnoreCase))
+				{
+					Out.Size = Size;
+					Out.Type = Type;
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
 	inline const FOnMap* FindOnMap(TCHAR Marker)
 	{
 		const TCHAR Upper = FChar::ToUpper(Marker);

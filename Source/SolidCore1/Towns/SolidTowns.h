@@ -69,6 +69,18 @@ namespace SolidTowns
 		return nullptr;
 	}
 
+	inline const FTownInfo* FindByName(const FString& Name)
+	{
+		for (const FTownInfo& Town : Definitions)
+		{
+			if (Name.Equals(Town.Name, ESearchCase::IgnoreCase))
+			{
+				return &Town;
+			}
+		}
+		return nullptr;
+	}
+
 	inline bool IsWallGate(int32 Id)
 	{
 		const FTownInfo* Town = Find(Id);

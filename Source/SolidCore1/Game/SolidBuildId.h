@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0387")
+#define SOLID_BUILD_ID TEXT("SC1-0388")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A portal stands north of the Iglin tunnels and records Driven from the village.")
+#define SOLID_BUILD_NOTE TEXT("Lair tests check the maze rules, not one floor plan.")
 #endif

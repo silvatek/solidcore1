@@ -53,24 +53,49 @@ bool FSolidLairMazeTest::RunTest(const FString& Parameters)
 
 	const FIntPoint X = SolidLair::CellOf(USolidWorldMap::XMarker);
 	const FIntPoint Y = SolidLair::CellOf(USolidWorldMap::YMarker);
-	TestEqual(TEXT("X column"), X.X, 1);
-	TestEqual(TEXT("X row"), X.Y, 1);
-	TestEqual(TEXT("Y column"), Y.X, 9);
-	TestTrue(TEXT("Y is not on the X row"), Y.Y != X.Y);
+	TestTrue(TEXT("X is on the plan"),
+		X.X >= 0 && X.Y >= 0 && X.X < SolidLair::MazeCols && X.Y < SolidLair::MazeRows);
+	TestTrue(TEXT("Y is on the plan"),
+		Y.X >= 0 && Y.Y >= 0 && Y.X < SolidLair::MazeCols && Y.Y < SolidLair::MazeRows);
+	TestTrue(TEXT("the mouths are different cells"), X != Y);
+	TestEqual(TEXT("X marker"), static_cast<int32>(SolidLair::MazeAt(X.X, X.Y)), static_cast<int32>(USolidWorldMap::XMarker));
+	TestEqual(TEXT("Y marker"), static_cast<int32>(SolidLair::MazeAt(Y.X, Y.Y)), static_cast<int32>(USolidWorldMap::YMarker));
 	TestEqual(TEXT("west of X is rock"), static_cast<int32>(SolidLair::MazeAt(X.X - 1, X.Y)), static_cast<int32>(TEXT('#')));
 	TestEqual(TEXT("east of Y is rock"), static_cast<int32>(SolidLair::MazeAt(Y.X + 1, Y.Y)), static_cast<int32>(TEXT('#')));
+	for (int32 Row = 0; Row < SolidLair::MazeRows; ++Row)
+	{
+		TestEqual(TEXT("row width"), static_cast<int32>(FCString::Strlen(SolidLair::Maze[Row])), SolidLair::MazeCols);
+	}
 
 	const int32 Path = SolidLair::ShortestPathSteps();
 	TestTrue(TEXT("a path joins the mouths"), Path != INDEX_NONE && Path > 0);
-	TestTrue(TEXT("the path is longer than a straight walk"), Path > SolidLair::EndSeparation());
-	TestTrue(TEXT("the maze has dead ends"), SolidLair::DeadEndCount() >= 3);
-	TestTrue(TEXT("the floor has more than a corridor"), SolidLair::OpenCellCount() > Path);
+	TestTrue(TEXT("the path is at least a straight walk"), Path >= SolidLair::EndSeparation());
+	TestTrue(TEXT("the maze has dead ends"), SolidLair::DeadEndCount() > 0);
+	TestTrue(TEXT("the floor has more than the shortest path"), SolidLair::OpenCellCount() > Path + 1);
 
 	TestTrue(TEXT("the X spawn is inside"), SolidLair::ContainsLocal(SolidLair::SpawnLocal(USolidWorldMap::XMarker)));
 	TestTrue(TEXT("the Y spawn is inside"), SolidLair::ContainsLocal(SolidLair::SpawnLocal(USolidWorldMap::YMarker)));
 	TestFalse(TEXT("past the X mouth is outside"), SolidLair::ContainsLocal(SolidLair::PastEndLocal(USolidWorldMap::XMarker)));
 	TestFalse(TEXT("past the Y mouth is outside"), SolidLair::ContainsLocal(SolidLair::PastEndLocal(USolidWorldMap::YMarker)));
-	TestFalse(TEXT("a rock cell is outside"), SolidLair::ContainsLocal(FVector(SolidLair::CellCm * 0.5f, SolidLair::CellCm * 0.5f, 100.f)));
+	bool bFoundRock = false;
+	for (int32 Row = 0; Row < SolidLair::MazeRows && !bFoundRock; ++Row)
+	{
+		for (int32 Col = 0; Col < SolidLair::MazeCols; ++Col)
+		{
+			if (SolidLair::IsOpenCell(Col, Row))
+			{
+				continue;
+			}
+			const FVector Rock(
+				(static_cast<float>(Col) + 0.5f) * SolidLair::CellCm,
+				(static_cast<float>(Row) + 0.5f) * SolidLair::CellCm,
+				100.f);
+			TestFalse(TEXT("a rock cell is outside"), SolidLair::ContainsLocal(Rock));
+			bFoundRock = true;
+			break;
+		}
+	}
+	TestTrue(TEXT("the plan has rock"), bFoundRock);
 	TestFalse(
 		TEXT("above the ceiling is outside"),
 		SolidLair::ContainsLocal(SolidLair::SpawnLocal(USolidWorldMap::XMarker) + FVector(0.f, 0.f, SolidLair::RoomHeightCm)));

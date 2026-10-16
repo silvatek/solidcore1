@@ -29,7 +29,7 @@ struct FSolidWorldLocation
 	UPROPERTY(BlueprintReadOnly, Category = "WorldMap")
 	ESolidBiome Biome = ESolidBiome::Town;
 
-	/** Map cells that resolve to this id. A two-digit run is two cells. */
+	/** Map cells that resolve to this id. A two-digit run is two cells. Each named ! is one cell. */
 	UPROPERTY(BlueprintReadOnly, Category = "WorldMap")
 	TArray<FIntPoint> Cells;
 };
@@ -39,7 +39,9 @@ struct FSolidWorldLocation
  * Scaled across the TerrainMap world bounds. The world stays square, so a cell is
  * 8 m east–west and 16 m north–south. Two digits next to each other on a row are
  * one location number, read from the left, and each character is still one cell.
- * A longer run is taken in pairs. Location 0 is the starting town.
+ * A longer run is taken in pairs. A ! is one location cell, named by a line
+ * "! 12,4 = 0": column 12, row 4, counting from 1 at the top-left of the grid.
+ * A ! with no line is not a location. Location 0 is the starting town.
  * A legacy Z marker is the start only when the grid has no 0 cells.
  * Road lines are solved into routes when the file loads.
  */
@@ -71,6 +73,12 @@ public:
 	static constexpr TCHAR DesertMarker = TEXT('^');
 
 	/**
+	 * One location cell. The id comes from a "! column,row = id" line.
+	 * Column and row count from 1 at the top-left of the grid.
+	 */
+	static constexpr TCHAR LocationMarker = TEXT('!');
+
+	/**
 	 * Iglin tunnel mouths. They stay on the cell, use the mountain shelf,
 	 * and are not towns, locations, or the cave.
 	 */
@@ -86,8 +94,8 @@ public:
 	bool IsLoaded() const { return bIsLoaded; }
 
 	/**
-	 * Marker biome at map cell (clamped). The town marker and Z are Town; the desert marker is Desert; C, X, and Y are Mountain; digits use the location key.
-	 * The river marker is River for the whole cell. SampleBiome paints only the channel.
+	 * Marker biome at map cell (clamped). The town marker and Z are Town; the desert marker is Desert; C, X, and Y are Mountain; digits and a named ! use the location key.
+	 * A ! with no coordinate line is Grassland. The river marker is River for the whole cell. SampleBiome paints only the channel.
 	 */
 	ESolidBiome GetBiomeAtCell(int32 MapX, int32 MapY) const;
 
@@ -116,7 +124,7 @@ public:
 	/** True when the point lies on a solved road strip. Does not change the biome by itself. */
 	bool IsOnRoad(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 
-	/** True when this cell is the town marker, Z, or a location digit. A road strip is not a town. */
+	/** True when this cell is the town marker, Z, a location digit, or a ! named by a coordinate line. A road strip is not a town. */
 	bool IsMarkedTown(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 
 	/** Display / material color from the key (or built-in defaults). */
@@ -170,9 +178,12 @@ protected:
 	UPROPERTY()
 	bool bIsLoaded = false;
 
-	/** Row-major MapHeight * MapWidth markers (letters uppercased, digits kept). */
+	/** Row-major MapHeight * MapWidth markers (letters uppercased, digits and ! kept). */
 	UPROPERTY()
 	TArray<uint8> Markers;
+
+	/** Location id for each ! cell, or INDEX_NONE. Same order as Markers. */
+	TArray<int32> BangLocationIds;
 
 	UPROPERTY()
 	TMap<ESolidBiome, FLinearColor> BiomeColors;

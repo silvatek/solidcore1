@@ -1198,4 +1198,164 @@ bool FSolidWorldMapXYMountainTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidWorldMapBangLocationTest,
+	"SolidCore1.WorldMap.BangLocation",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidWorldMapBangLocationTest::RunTest(const FString& Parameters)
+{
+	const int32 IglinCol = 0;
+	const int32 IglinRow = 0;
+	const int32 GateCol = 3;
+	const int32 GateRow = 2;
+	const int32 BareCol = 6;
+	const int32 BareRow = 2;
+	const int32 DigitCol = 8;
+	const int32 DigitRow = 4;
+	const int32 PairCol = 10;
+	const int32 PairRow = 4;
+	const int32 SplitCol = 13;
+	const int32 SplitRow = 6;
+
+	FString Text;
+	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	{
+		FString Line;
+		Line.Reserve(USolidWorldMap::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		{
+			TCHAR Marker = USolidWorldMap::GrassMarker;
+			if (Row == IglinRow && Col == IglinCol)
+			{
+				Marker = USolidWorldMap::LocationMarker;
+			}
+			else if (Row == GateRow && (Col == GateCol || Col == GateCol + 1))
+			{
+				Marker = USolidWorldMap::LocationMarker;
+			}
+			else if (Row == BareRow && Col == BareCol)
+			{
+				Marker = USolidWorldMap::LocationMarker;
+			}
+			else if (Row == DigitRow && Col == DigitCol)
+			{
+				Marker = TEXT('7');
+			}
+			else if (Row == PairRow && Col == PairCol)
+			{
+				Marker = TEXT('2');
+			}
+			else if (Row == PairRow && Col == PairCol + 1)
+			{
+				Marker = TEXT('3');
+			}
+			else if (Row == SplitRow && Col == SplitCol)
+			{
+				Marker = TEXT('1');
+			}
+			else if (Row == SplitRow && Col == SplitCol + 1)
+			{
+				Marker = USolidWorldMap::LocationMarker;
+			}
+			else if (Row == SplitRow && Col == SplitCol + 2)
+			{
+				Marker = TEXT('2');
+			}
+			Line.AppendChar(Marker);
+		}
+		Text += Line;
+		Text += TEXT("\n");
+	}
+
+	Text += TEXT(". = Grassland (light green)\n");
+	Text += TEXT("! = Later (red)\n");
+	Text += TEXT("! 1,1 = 0\n");
+	Text += TEXT("! 1,1 = 11\n");
+	Text += TEXT("! 4, 3 = 5\n");
+	Text += TEXT("! 5,3=5\n");
+	Text += TEXT("! 2,1 = 9\n");
+	Text += TEXT("! 0,1 = 3\n");
+	Text += FString::Printf(TEXT("! %d,1 = 4\n"), USolidWorldMap::MapWidth + 1);
+	Text += FString::Printf(TEXT("! 1,%d = 6\n"), USolidWorldMap::MapHeight + 1);
+	Text += FString::Printf(TEXT("! %d,%d = 8\n"), SplitCol + 2, SplitRow + 1);
+	Text += TEXT("0 = Starting village, biome=Town\n");
+
+	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("a map with ! loads"), Map->LoadFromString(Text));
+	TestEqual(
+		TEXT("top-left marker is !"),
+		Map->GetMarkerAtCell(IglinCol, IglinRow),
+		USolidWorldMap::LocationMarker);
+	TestEqual(TEXT("top-left is location 0"), Map->GetLocationIdAtCell(IglinCol, IglinRow), 0);
+	TestTrue(TEXT("location 0 is the start"), Map->HasStartTown());
+	TestEqual(TEXT("one start cell"), Map->GetStartTownCellCount(), 1);
+
+	FSolidWorldLocation Iglin;
+	TestTrue(TEXT("location 0"), Map->FindLocation(0, Iglin));
+	TestEqual(TEXT("Iglin name"), Iglin.Name, FString(TEXT("Iglin")));
+	TestEqual(TEXT("Iglin role"), Iglin.Role, FString(TEXT("Starting village")));
+	TestEqual(TEXT("Iglin is one cell"), Iglin.Cells.Num(), 1);
+	TestEqual(
+		TEXT("a named ! is Town"),
+		static_cast<uint8>(Map->GetBiomeAtCell(IglinCol, IglinRow)),
+		static_cast<uint8>(ESolidBiome::Town));
+
+	FSolidWorldLocation Replaced;
+	TestFalse(TEXT("a second line does not replace location 0"), Map->FindLocation(11, Replaced));
+
+	FSolidWorldLocation Gate;
+	TestTrue(TEXT("location 5"), Map->FindLocation(5, Gate));
+	TestEqual(TEXT("two ! cells are one location"), Gate.Cells.Num(), 2);
+	TestEqual(TEXT("Dragongate name"), Gate.Name, FString(TEXT("Dragongate")));
+	TestEqual(TEXT("east ! is location 5"), Map->GetLocationIdAtCell(GateCol, GateRow), 5);
+	TestEqual(TEXT("west ! is location 5"), Map->GetLocationIdAtCell(GateCol + 1, GateRow), 5);
+
+	TestEqual(
+		TEXT("a bare ! is kept"),
+		Map->GetMarkerAtCell(BareCol, BareRow),
+		USolidWorldMap::LocationMarker);
+	TestEqual(TEXT("a bare ! is not a location"), Map->GetLocationIdAtCell(BareCol, BareRow), INDEX_NONE);
+	TestEqual(
+		TEXT("a bare ! is grassland"),
+		static_cast<uint8>(Map->GetBiomeAtCell(BareCol, BareRow)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+
+	TestEqual(TEXT("a digit stays itself"), Map->GetLocationIdAtCell(DigitCol, DigitRow), 7);
+	TestEqual(TEXT("a digit pair still joins"), Map->GetLocationIdAtCell(PairCol, PairRow), 23);
+	TestEqual(TEXT("the other digit of the pair joins"), Map->GetLocationIdAtCell(PairCol + 1, PairRow), 23);
+	TestEqual(TEXT("a digit before ! stays itself"), Map->GetLocationIdAtCell(SplitCol, SplitRow), 1);
+	TestEqual(TEXT("! between digits is its own location"), Map->GetLocationIdAtCell(SplitCol + 1, SplitRow), 8);
+	TestEqual(TEXT("a digit after ! stays itself"), Map->GetLocationIdAtCell(SplitCol + 2, SplitRow), 2);
+
+	FSolidWorldLocation Missed;
+	TestFalse(TEXT("a line on grass is not a location"), Map->FindLocation(9, Missed));
+	TestEqual(TEXT("that grass cell stays grass"), Map->GetMarkerAtCell(1, 0), USolidWorldMap::GrassMarker);
+	TestFalse(TEXT("column 0 is ignored"), Map->FindLocation(3, Missed));
+	TestFalse(TEXT("a column past the grid is ignored"), Map->FindLocation(4, Missed));
+	TestFalse(TEXT("a row past the grid is ignored"), Map->FindLocation(6, Missed));
+
+	const FLinearColor Grass = Map->GetBiomeColor(ESolidBiome::Grassland);
+	TestTrue(TEXT("the ! key leaves grass green"), Grass.G > Grass.R && Grass.G > Grass.B);
+	TestFalse(TEXT("! does not join a river"), SolidRiver::Joins(USolidWorldMap::LocationMarker));
+
+	const FVector2D WorldMin(-6400.f, -6400.f);
+	const FVector2D WorldMax(6400.f, 6400.f);
+	FVector2D IglinXY = FVector2D::ZeroVector;
+	FVector2D BareXY = FVector2D::ZeroVector;
+	TestTrue(TEXT("Iglin cell"), Map->CellToWorldXY(FIntPoint(IglinCol, IglinRow), WorldMin, WorldMax, IglinXY));
+	TestTrue(TEXT("bare cell"), Map->CellToWorldXY(FIntPoint(BareCol, BareRow), WorldMin, WorldMax, BareXY));
+	TestTrue(TEXT("a named ! is a town"), Map->IsMarkedTown(IglinXY.X, IglinXY.Y, WorldMin, WorldMax));
+	TestFalse(TEXT("a bare ! is not a town"), Map->IsMarkedTown(BareXY.X, BareXY.Y, WorldMin, WorldMax));
+	TestEqual(
+		TEXT("sampling the top-left reads location 0"),
+		Map->SampleLocationId(IglinXY.X, IglinXY.Y, WorldMin, WorldMax),
+		0);
+	TestEqual(
+		TEXT("sampling a bare ! reads no location"),
+		Map->SampleLocationId(BareXY.X, BareXY.Y, WorldMin, WorldMax),
+		INDEX_NONE);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

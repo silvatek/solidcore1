@@ -4,7 +4,7 @@
 
 /**
  * Town attributes, keyed by the WorldMap.txt location index.
- * The map file keeps the digit, role, and biome. The name, type, and where
+ * The map file keeps the index, role, and biome. The name, type, and where
  * its welcome sign stands live here.
  */
 namespace SolidTowns

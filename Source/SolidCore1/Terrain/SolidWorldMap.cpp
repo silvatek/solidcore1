@@ -21,6 +21,7 @@ namespace
 			USolidWorldMap::RiverMarker,
 			USolidWorldMap::SeaMarker,
 			USolidWorldMap::DesertMarker,
+			USolidWorldMap::LocationMarker,
 		};
 		for (const TCHAR Marker : Expected)
 		{
@@ -45,7 +46,8 @@ bool USolidWorldMap::IsGridMarker(const TCHAR Marker)
 		|| WorldMapMarkerMatches(Marker, ForestMarker)
 		|| WorldMapMarkerMatches(Marker, RiverMarker)
 		|| WorldMapMarkerMatches(Marker, SeaMarker)
-		|| WorldMapMarkerMatches(Marker, DesertMarker);
+		|| WorldMapMarkerMatches(Marker, DesertMarker)
+		|| WorldMapMarkerMatches(Marker, LocationMarker);
 }
 
 ESolidBiome USolidWorldMap::MarkerToBiome(const TCHAR Marker)
@@ -73,6 +75,10 @@ ESolidBiome USolidWorldMap::MarkerToBiome(const TCHAR Marker)
 	if (WorldMapMarkerMatches(Marker, DesertMarker))
 	{
 		return ESolidBiome::Desert;
+	}
+	if (WorldMapMarkerMatches(Marker, LocationMarker))
+	{
+		return ESolidBiome::Grassland;
 	}
 
 	switch (FChar::ToUpper(Marker))
@@ -187,8 +193,8 @@ bool USolidWorldMap::ParseKeyLine(const FString& Line)
 		return false;
 	}
 
-	// X and Y have no colour of their own. Do not paint the mountain with their key line.
-	if (Marker == XMarker || Marker == YMarker)
+	// X, Y, and ! have no colour of their own.
+	if (Marker == XMarker || Marker == YMarker || Marker == LocationMarker)
 	{
 		return true;
 	}
@@ -272,6 +278,88 @@ bool USolidWorldMap::ParseLocationLine(const FString& Line)
 	return true;
 }
 
+namespace
+{
+	bool WorldMapDigits(const FString& Text)
+	{
+		if (Text.IsEmpty())
+		{
+			return false;
+		}
+		for (const TCHAR Char : Text)
+		{
+			if (!FChar::IsDigit(Char))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * "! 12,4 = 0" — column 12, row 4, counting from 1 at the top-left.
+	 * Returns false when the line is not that shape.
+	 * An out-of-range coordinate is that shape: OutMapX stays INDEX_NONE and the line is consumed.
+	 */
+	bool WorldMapParseBangLocation(const FString& Line, int32& OutMapX, int32& OutMapY, int32& OutId)
+	{
+		OutMapX = INDEX_NONE;
+		OutMapY = INDEX_NONE;
+		OutId = INDEX_NONE;
+
+		const FString Trimmed = Line.TrimStartAndEnd();
+		if (Trimmed.IsEmpty() || Trimmed[0] != USolidWorldMap::LocationMarker)
+		{
+			return false;
+		}
+
+		int32 EqIndex = INDEX_NONE;
+		if (!Trimmed.FindChar(TEXT('='), EqIndex) || EqIndex < 2)
+		{
+			return false;
+		}
+
+		const FString Left = Trimmed.Mid(1, EqIndex - 1).TrimStartAndEnd();
+		const FString Right = Trimmed.Mid(EqIndex + 1).TrimStartAndEnd();
+		int32 Comma = INDEX_NONE;
+		if (!Left.FindChar(TEXT(','), Comma))
+		{
+			return false;
+		}
+
+		const FString ColumnText = Left.Left(Comma).TrimStartAndEnd();
+		const FString RowText = Left.Mid(Comma + 1).TrimStartAndEnd();
+		if (!WorldMapDigits(ColumnText) || !WorldMapDigits(RowText) || !WorldMapDigits(Right))
+		{
+			return false;
+		}
+
+		const int32 Column = FCString::Atoi(*ColumnText);
+		const int32 Row = FCString::Atoi(*RowText);
+		OutId = FCString::Atoi(*Right);
+		if (Column < 1 || Row < 1
+			|| Column > USolidWorldMap::MapWidth
+			|| Row > USolidWorldMap::MapHeight)
+		{
+			UE_LOG(LogSolid, Warning,
+				TEXT("WorldMap: ! %d,%d is outside the grid; ignored."),
+				Column, Row);
+			return true;
+		}
+
+		OutMapX = Column - 1;
+		OutMapY = Row - 1;
+		return true;
+	}
+
+	struct FWorldMapBangRef
+	{
+		int32 MapX = INDEX_NONE;
+		int32 MapY = INDEX_NONE;
+		int32 Id = INDEX_NONE;
+	};
+}
+
 bool USolidWorldMap::LoadFromString(const FString& Text)
 {
 	TArray<FString> Lines;
@@ -332,10 +420,12 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 
 	BiomeColors.Reset();
 	TArray<SolidRoad::FDefinition> RoadDefs;
+	TArray<FWorldMapBangRef> BangRefs;
 	for (const FString& RawLine : Lines)
 	{
 		const FString Trimmed = RawLine.TrimStartAndEnd();
 		SolidRoad::FDefinition RoadDef;
+		FWorldMapBangRef BangRef;
 		if (Trimmed.StartsWith(TEXT("Road:"), ESearchCase::IgnoreCase))
 		{
 			if (SolidRoad::Parse(Trimmed, RoadDef))
@@ -347,10 +437,40 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 				UE_LOG(LogSolid, Warning, TEXT("WorldMap: ignored road line '%s'."), *Trimmed);
 			}
 		}
+		else if (WorldMapParseBangLocation(Trimmed, BangRef.MapX, BangRef.MapY, BangRef.Id))
+		{
+			BangRefs.Add(BangRef);
+		}
 		else if (!ParseLocationLine(RawLine))
 		{
 			ParseKeyLine(RawLine);
 		}
+	}
+
+	BangLocationIds.Init(INDEX_NONE, MapWidth * MapHeight);
+	for (const FWorldMapBangRef& Ref : BangRefs)
+	{
+		if (Ref.MapX == INDEX_NONE || Ref.MapY == INDEX_NONE)
+		{
+			continue;
+		}
+		const int32 Index = Ref.MapY * MapWidth + Ref.MapX;
+		if (static_cast<TCHAR>(Markers[Index]) != LocationMarker)
+		{
+			UE_LOG(LogSolid, Warning,
+				TEXT("WorldMap: ! %d,%d is not an exclamation mark; ignored."),
+				Ref.MapX + 1, Ref.MapY + 1);
+			continue;
+		}
+		int32& Slot = BangLocationIds[Index];
+		if (Slot != INDEX_NONE && Slot != Ref.Id)
+		{
+			UE_LOG(LogSolid, Warning,
+				TEXT("WorldMap: ! %d,%d is already location %d; keeping it."),
+				Ref.MapX + 1, Ref.MapY + 1, Slot);
+			continue;
+		}
+		Slot = Ref.Id;
 	}
 
 	TArray<FIntPoint> LegacyStartCells;
@@ -671,6 +791,10 @@ bool USolidWorldMap::IsMarkedTown(
 	}
 
 	const TCHAR Marker = GetMarkerAtCell(MapX, MapY);
+	if (Marker == LocationMarker)
+	{
+		return GetLocationIdAtCell(MapX, MapY) != INDEX_NONE;
+	}
 	return Marker == TownMarker || Marker == TEXT('Z') || FChar::IsDigit(Marker);
 }
 
@@ -760,6 +884,11 @@ int32 USolidWorldMap::ResolveLocationId(const int32 MapX, const int32 MapY) cons
 	}
 
 	const TCHAR Marker = static_cast<TCHAR>(Markers[MapY * MapWidth + MapX]);
+	if (Marker == LocationMarker)
+	{
+		const int32 Index = MapY * MapWidth + MapX;
+		return BangLocationIds.IsValidIndex(Index) ? BangLocationIds[Index] : INDEX_NONE;
+	}
 	if (!FChar::IsDigit(Marker))
 	{
 		return INDEX_NONE;

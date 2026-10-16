@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0411")
+#define SOLID_BUILD_ID TEXT("SC1-0412")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Pressing Craft spends the ingredients and puts the result in the pack.")
+#define SOLID_BUILD_NOTE TEXT("The Iglin tunnels stay dark unless a torch is in either hand.")
 #endif

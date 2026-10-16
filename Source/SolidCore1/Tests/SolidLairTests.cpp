@@ -1,6 +1,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "Events/SolidEvents.h"
+#include "Inventory/SolidInventory.h"
 #include "Lairs/SolidLair.h"
 #include "Lairs/SolidLairInterior.h"
 #include "SolidDungeonEntrance.h"
@@ -11,8 +12,10 @@
 #include "SolidWorldMap.h"
 #include "Towns/SolidTowns.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "UObject/UObjectIterator.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -332,6 +335,86 @@ bool FSolidLairInteriorVisualTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("Y mouth mesh"), YMesh);
 	TestTrue(TEXT("spawn at X is inside the actor"), SolidLair::ContainsLocal(Interior->GetCaptainSpawnWorld(USolidWorldMap::XMarker)));
 	TestTrue(TEXT("the X view looks into the maze"), FMath::IsNearlyZero(Interior->GetCaptainView(USolidWorldMap::XMarker).Pitch, 0.1f));
+
+	UPointLightComponent* LightX = Interior->GetMouthLight(USolidWorldMap::XMarker);
+	UPointLightComponent* LightY = Interior->GetMouthLight(USolidWorldMap::YMarker);
+	TestNotNull(TEXT("X mouth light"), LightX);
+	TestNotNull(TEXT("Y mouth light"), LightY);
+	if (LightX && LightY)
+	{
+		TestTrue(TEXT("the X mouth is dim"), FMath::IsNearlyEqual(LightX->Intensity, SolidLair::MouthLightIntensity));
+		TestTrue(TEXT("the Y mouth is dim"), FMath::IsNearlyEqual(LightY->Intensity, SolidLair::MouthLightIntensity));
+		TestTrue(TEXT("a mouth is dimmer than a torch"), SolidLair::MouthLightIntensity < SolidLair::TorchLightIntensity);
+		const FIntPoint XCell = SolidLair::CellOf(USolidWorldMap::XMarker);
+		const FVector2D XPlan = SolidLair::CellCenter(XCell.X, XCell.Y);
+		TestTrue(TEXT("the X light sits in the X cell"), LightX->GetRelativeLocation().Equals(FVector(XPlan.X, XPlan.Y, SolidLair::RoomHeightCm * 0.62f), 1.f));
+	}
+
+	bool bMiddleLight = false;
+	ForEachObjectWithOuter(Interior, [&bMiddleLight](UObject* Object)
+	{
+		if (Object && Object->GetName() == TEXT("LightMid"))
+		{
+			bMiddleLight = true;
+		}
+	});
+	TestFalse(TEXT("the middle of the tunnels has no light"), bMiddleLight);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidLairTorchLightTest,
+	"SolidCore1.Lair.TorchLight",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidLairTorchLightTest::RunTest(const FString& Parameters)
+{
+	ASolidLairInterior* Interior = NewObject<ASolidLairInterior>();
+	TestNotNull(TEXT("interior"), Interior);
+	if (!Interior)
+	{
+		return false;
+	}
+
+	UPointLightComponent* Torch = Interior->GetTorchLight();
+	TestNotNull(TEXT("torch light"), Torch);
+	if (!Torch)
+	{
+		return false;
+	}
+	TestTrue(TEXT("the torch starts out"), FMath::IsNearlyZero(Torch->Intensity));
+
+	const FVector Spot(120.f, 340.f, 96.f);
+	SolidInventory::FLoadout Spear = SolidInventory::StartingLoadout();
+	TestFalse(TEXT("the spear is not a torch"), SolidLair::HandsHoldTorch(Spear));
+	Interior->ApplyTorchLight(Spot, false);
+	TestTrue(TEXT("the spear leaves the tunnels dark"), FMath::IsNearlyZero(Torch->Intensity));
+	TestFalse(TEXT("an unlit torch stays hidden"), Torch->IsVisible());
+
+	SolidInventory::FLoadout Main = SolidInventory::StartingLoadout();
+	TestTrue(TEXT("the main hand can hold the torch"), SolidInventory::PlaceWorn(Main, SolidInventory::ESlot::MainHand, SolidItemType::IdTorch));
+	TestTrue(TEXT("the main hand holds a torch"), SolidLair::HandsHoldTorch(Main));
+	Interior->ApplyTorchLight(Spot, true);
+	TestTrue(TEXT("a torch in the main hand burns"), FMath::IsNearlyEqual(Torch->Intensity, SolidLair::TorchLightIntensity));
+	TestTrue(TEXT("the flame is wood and pitch"), Torch->GetLightColor().Equals(SolidLair::TorchLightColor(), 0.02f));
+	TestTrue(TEXT("the torch reaches a few cells"), FMath::IsNearlyEqual(Torch->AttenuationRadius, SolidLair::TorchLightRadiusCm));
+	TestTrue(TEXT("the torch light sits on the captain"), Torch->GetRelativeLocation().Equals(Spot, 1.f));
+	TestTrue(TEXT("a burning torch is visible"), Torch->IsVisible());
+
+	SolidInventory::FLoadout Off = SolidInventory::StartingLoadout();
+	TestTrue(TEXT("the off hand can hold the torch"), SolidInventory::PlaceWorn(Off, SolidInventory::ESlot::OffHand, SolidItemType::IdTorch));
+	TestTrue(TEXT("the off hand holds a torch"), SolidLair::HandsHoldTorch(Off));
+	const FVector Moved(480.f, 210.f, 96.f);
+	Interior->ApplyTorchLight(Moved, SolidLair::HandsHoldTorch(Off));
+	TestTrue(TEXT("a torch in the off hand burns"), FMath::IsNearlyEqual(Torch->Intensity, SolidLair::TorchLightIntensity));
+	TestTrue(TEXT("the torch follows the captain"), Torch->GetRelativeLocation().Equals(Moved, 1.f));
+
+	SolidInventory::FLoadout Packed = SolidInventory::StartingLoadout();
+	TestTrue(TEXT("the pack can hold the torch"), SolidInventory::PlacePack(Packed, 0, 0, SolidItemType::IdTorch));
+	TestFalse(TEXT("a torch in the pack is not in a hand"), SolidLair::HandsHoldTorch(Packed));
+	Interior->ApplyTorchLight(Spot, SolidLair::HandsHoldTorch(Packed));
+	TestTrue(TEXT("a packed torch stays unlit"), FMath::IsNearlyZero(Torch->Intensity));
+	TestFalse(TEXT("a packed torch stays hidden"), Torch->IsVisible());
 	return true;
 }
 

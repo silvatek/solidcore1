@@ -24,6 +24,37 @@ namespace SolidLair
 	inline constexpr float ShellCm = 48.f;
 	inline constexpr float MouthHeightCm = 240.f;
 	inline constexpr float DoorwayWidthCm = 160.f;
+	/** A dim glow at each mouth. The corridor stays dark. */
+	inline constexpr float MouthLightIntensity = 800.f;
+	inline constexpr float MouthLightRadiusCm = 900.f;
+	/** A held torch of wood and pitch. It lights the captain, not the maze. */
+	inline constexpr float TorchLightIntensity = 4000.f;
+	inline constexpr float TorchLightRadiusCm = 700.f;
+
+	inline FLinearColor MouthLightColor()
+	{
+		return FLinearColor(1.f, 0.82f, 0.55f);
+	}
+
+	/** Orange flame. Pitch burns darker than a clean wood fire. */
+	inline FLinearColor TorchLightColor()
+	{
+		return FLinearColor(1.f, 0.52f, 0.14f);
+	}
+
+	/** True when the main hand or the off hand holds a torch. The pack does not count. */
+	inline bool HandsHoldTorch(const SolidInventory::FLoadout& Loadout)
+	{
+		const auto IsTorch = [](const TCHAR* Id)
+		{
+			return Id && FCString::Strcmp(Id, SolidItemType::IdTorch) == 0;
+		};
+		const int32 Main = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
+		const int32 Off = SolidInventory::WornIndex(SolidInventory::ESlot::OffHand);
+		const bool bMain = Main != INDEX_NONE && IsTorch(Loadout.Worn[Main]);
+		const bool bOff = Off != INDEX_NONE && IsTorch(Loadout.Worn[Off]);
+		return bMain || bOff;
+	}
 
 	inline const TCHAR* EnterLabel = TEXT("Enter tunnels");
 	inline const TCHAR* LeaveLabel = TEXT("Leave tunnels");

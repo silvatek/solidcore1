@@ -1,5 +1,6 @@
 #include "SolidLairInterior.h"
 #include "SolidCore1.h"
+#include "SolidGameMode.h"
 #include "SolidLair.h"
 #include "SolidMaterials.h"
 #include "SolidStrongholds.h"
@@ -8,6 +9,8 @@
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "Engine/World.h"
+#include "GameFramework/PlayerController.h"
 #include "Materials/MaterialInterface.h"
 
 namespace SolidLairInteriorPrivate
@@ -75,7 +78,7 @@ namespace SolidLairInteriorPrivate
 
 ASolidLairInterior::ASolidLairInterior()
 {
-	PrimaryActorTick.bCanEverTick = false;
+	PrimaryActorTick.bCanEverTick = true;
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);
@@ -86,8 +89,8 @@ ASolidLairInterior::ASolidLairInterior()
 	MouthX = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MouthX"));
 	MouthY = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MouthY"));
 	LightNearX = CreateDefaultSubobject<UPointLightComponent>(TEXT("LightNearX"));
-	LightMid = CreateDefaultSubobject<UPointLightComponent>(TEXT("LightMid"));
 	LightNearY = CreateDefaultSubobject<UPointLightComponent>(TEXT("LightNearY"));
+	TorchLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("TorchLight"));
 
 	UInstancedStaticMeshComponent* Shells[] = { FloorTiles.Get(), CeilingTiles.Get(), WallShell.Get() };
 	for (UInstancedStaticMeshComponent* Shell : Shells)
@@ -109,16 +112,25 @@ ASolidLairInterior::ASolidLairInterior()
 		Mouth->SetCastShadow(true);
 	}
 
-	UPointLightComponent* Lights[] = { LightNearX.Get(), LightMid.Get(), LightNearY.Get() };
-	for (UPointLightComponent* Light : Lights)
+	UPointLightComponent* MouthLights[] = { LightNearX.Get(), LightNearY.Get() };
+	for (UPointLightComponent* Light : MouthLights)
 	{
 		Light->SetupAttachment(SceneRoot);
 		Light->SetMobility(EComponentMobility::Movable);
 		Light->SetCastShadows(true);
-		Light->SetIntensity(4500.f);
-		Light->SetAttenuationRadius(900.f);
-		Light->SetLightColor(FLinearColor(1.f, 0.82f, 0.55f));
+		Light->SetIntensity(SolidLair::MouthLightIntensity);
+		Light->SetAttenuationRadius(SolidLair::MouthLightRadiusCm);
+		Light->SetLightColor(SolidLair::MouthLightColor());
 	}
+
+	TorchLight->SetupAttachment(SceneRoot);
+	TorchLight->SetMobility(EComponentMobility::Movable);
+	TorchLight->SetCastShadows(false);
+	TorchLight->SetIntensity(0.f);
+	TorchLight->SetVisibility(false);
+	TorchLight->SetAttenuationRadius(SolidLair::TorchLightRadiusCm);
+	TorchLight->SetLightColor(SolidLair::TorchLightColor());
+	TorchLight->SetSourceRadius(15.f);
 }
 
 void ASolidLairInterior::OnConstruction(const FTransform& Transform)
@@ -131,6 +143,61 @@ void ASolidLairInterior::BeginPlay()
 {
 	Super::BeginPlay();
 	BuildVisuals();
+}
+
+void ASolidLairInterior::Tick(const float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	const APlayerController* Controller = World->GetFirstPlayerController();
+	const APawn* Captain = Controller ? Controller->GetPawn() : nullptr;
+	const ASolidGameMode* Mode = World->GetAuthGameMode<ASolidGameMode>();
+	if (!Captain || !Mode)
+	{
+		return;
+	}
+
+	ApplyTorchLight(
+		Captain->GetActorLocation(),
+		SolidLair::HandsHoldTorch(Mode->GetConfiguration().Inventory));
+}
+
+UPointLightComponent* ASolidLairInterior::GetMouthLight(const TCHAR End) const
+{
+	if (FChar::ToUpper(End) == USolidWorldMap::XMarker)
+	{
+		return LightNearX.Get();
+	}
+	if (FChar::ToUpper(End) == USolidWorldMap::YMarker)
+	{
+		return LightNearY.Get();
+	}
+	return nullptr;
+}
+
+void ASolidLairInterior::ApplyTorchLight(const FVector& PlayerWorldLocation, const bool bHoldingTorch)
+{
+	if (!TorchLight)
+	{
+		return;
+	}
+
+	TorchLight->SetVisibility(bHoldingTorch);
+	TorchLight->SetCastShadows(bHoldingTorch);
+	TorchLight->SetIntensity(bHoldingTorch ? SolidLair::TorchLightIntensity : 0.f);
+	TorchLight->SetAttenuationRadius(SolidLair::TorchLightRadiusCm);
+	TorchLight->SetLightColor(SolidLair::TorchLightColor());
+	if (bHoldingTorch)
+	{
+		const FVector Local = GetActorTransform().InverseTransformPosition(PlayerWorldLocation);
+		TorchLight->SetRelativeLocation(Local);
+	}
 }
 
 FVector ASolidLairInterior::GetCaptainSpawnWorld(const TCHAR End) const
@@ -281,25 +348,19 @@ void ASolidLairInterior::BuildVisuals()
 		}
 	}
 
-	auto PlaceLight = [](UPointLightComponent* Light, const TCHAR EndOrMid)
+	auto PlaceMouthLight = [](UPointLightComponent* Light, const TCHAR End)
 	{
 		if (!Light)
 		{
 			return;
 		}
-		FVector2D Plan = FVector2D::ZeroVector;
-		if (EndOrMid == USolidWorldMap::XMarker || EndOrMid == USolidWorldMap::YMarker)
-		{
-			const FIntPoint Cell = SolidLair::CellOf(EndOrMid);
-			Plan = SolidLair::CellCenter(Cell.X, Cell.Y);
-		}
-		else
-		{
-			Plan = SolidLair::CellCenter(5, 5);
-		}
+		const FIntPoint Cell = SolidLair::CellOf(End);
+		const FVector2D Plan = SolidLair::CellCenter(Cell.X, Cell.Y);
 		Light->SetRelativeLocation(FVector(Plan.X, Plan.Y, SolidLair::RoomHeightCm * 0.62f));
+		Light->SetIntensity(SolidLair::MouthLightIntensity);
+		Light->SetAttenuationRadius(SolidLair::MouthLightRadiusCm);
+		Light->SetLightColor(SolidLair::MouthLightColor());
 	};
-	PlaceLight(LightNearX, USolidWorldMap::XMarker);
-	PlaceLight(LightNearY, USolidWorldMap::YMarker);
-	PlaceLight(LightMid, TEXT('M'));
+	PlaceMouthLight(LightNearX, USolidWorldMap::XMarker);
+	PlaceMouthLight(LightNearY, USolidWorldMap::YMarker);
 }

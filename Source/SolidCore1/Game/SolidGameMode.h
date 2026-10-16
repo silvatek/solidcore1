@@ -83,6 +83,8 @@ public:
 
 	const TArray<TObjectPtr<ASolidCompanionCharacter>>& GetCompanions() const { return SpawnedCompanions; }
 
+	const TArray<TObjectPtr<ASolidBridge>>& GetBridges() const { return SpawnedBridges; }
+
 	USolidCompany* GetCompany() const { return Company; }
 	USolidParty* GetParty() const { return Party; }
 

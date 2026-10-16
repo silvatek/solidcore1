@@ -2,6 +2,7 @@
 #include "Companion/SolidCompanionCharacter.h"
 #include "HUD/SolidPointer.h"
 #include "SolidClickMove.h"
+#include "SolidGroundMove.h"
 #include "Strongholds/SolidDungeonEntrance.h"
 #include "Strongholds/SolidDungeonInterior.h"
 #include "Strongholds/SolidDungeonPassage.h"
@@ -68,6 +69,7 @@ ASolidCharacter::ASolidCharacter()
 	GetCharacterMovement()->BrakingDecelerationWalking = 2000.f;
 	GetCharacterMovement()->BrakingDecelerationFalling = 1500.0f;
 	GetCharacterMovement()->NavAgentProps.bCanCrouch = true;
+	GetCharacterMovement()->AddTickPrerequisiteActor(this);
 
 	// Mesh sits in the capsule. Yaw -90 aligns mesh forward with character forward.
 	GetMesh()->SetRelativeLocationAndRotation(FVector(0.f, 0.f, MeshGroundZOffset), FRotator(0.f, -90.f, 0.f));
@@ -200,6 +202,7 @@ void ASolidCharacter::Tick(float DeltaTime)
 	UpdateMenuPointerHover();
 	UpdateCavePassageHover();
 	TickClickMove();
+	SolidGroundMove::Hold(this);
 	UpdateCharacterEditorPointer();
 	UpdateLocomotionAnim();
 	if (const ASolidHUD* SolidHud = GetSolidHUD())
@@ -1562,6 +1565,11 @@ void ASolidCharacter::TickClickMove()
 		FVector2D(Location.X, Location.Y),
 		FVector2D(ClickMoveDestination.X, ClickMoveDestination.Y));
 	if (Direction.IsNearlyZero())
+	{
+		ClearClickMove();
+		return;
+	}
+	if (!SolidGroundMove::AllowsStep(this, Direction))
 	{
 		ClearClickMove();
 		return;

@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0357")
+#define SOLID_BUILD_ID TEXT("SC1-0358")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The bridge keeps its span and sits on the painted road.")
+#define SOLID_BUILD_NOTE TEXT("Characters stop at the sea, mountains, and the river channel. A bridge is the only crossing.")
 #endif

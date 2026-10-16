@@ -5,6 +5,7 @@
 #include "SolidContentLookup.h"
 #include "SolidCore1.h"
 #include "SolidGameMode.h"
+#include "SolidGroundMove.h"
 #include "SolidMaterials.h"
 #include "SolidNameLabel.h"
 #include "Party/SolidBattlePlan.h"
@@ -51,6 +52,7 @@ ASolidCompanionCharacter::ASolidCompanionCharacter()
 	Move->BrakingDecelerationWalking = 2000.f;
 	Move->BrakingDecelerationFalling = 1500.f;
 	Move->bRunPhysicsWithNoController = true;
+	Move->AddTickPrerequisiteActor(this);
 
 	GetMesh()->SetRelativeLocationAndRotation(
 		FVector(0.f, 0.f, MeshGroundZOffset), FRotator(0.f, -90.f, 0.f));
@@ -299,6 +301,7 @@ void ASolidCompanionCharacter::Tick(float DeltaSeconds)
 	}
 
 	UpdateFollow(DeltaSeconds);
+	SolidGroundMove::Hold(this);
 	UpdateLocomotionAnim();
 	SolidNameLabel::FaceViewCamera(NameLabelRoot, GetWorld());
 }

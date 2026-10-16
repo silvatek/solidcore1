@@ -11,6 +11,8 @@ class USolidWorldMap;
  * Trails are 1 m, tracks 2 m, roads 3 m, highways 4 m.
  * Every route stays off mountains and the sea. Roads and highways also stay off
  * forest and desert, and they pay extra for every river cell so a crossing is short.
+ * A turn beside a river costs extra, and a spur just past the far bank is pulled
+ * back, so the road runs straight across the water.
  * The strip uses a road texture, a brown close to the town colour.
  * River water keeps the river texture.
  * Local offsets are centimetres. +X is east, +Y is north.
@@ -61,6 +63,10 @@ namespace SolidRoad
 	inline constexpr int32 StepCost = 16;
 	/** Roads and highways pay this to enter a river cell. One crossing, not a trip along the water. */
 	inline constexpr int32 RiverCost = StepCost * 40;
+	/** Cells around a river, diagonals included, where a turn pays RiverBendCost. */
+	inline constexpr int32 RiverBendReach = 2;
+	/** Less than a step, so the route does not lengthen. A straight crossing wins the tie. */
+	inline constexpr int32 RiverBendCost = 4;
 	/** Closed ground. Mountains and the sea cost this for every type. Forest and desert cost it for a road or a highway. */
 	inline constexpr int32 AvoidCost = StepCost * 800;
 

@@ -9,6 +9,7 @@
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"
 #include "MeshDescription.h"
+#include "PhysicsEngine/BodySetup.h"
 #include "StaticMeshAttributes.h"
 
 namespace
@@ -236,9 +237,10 @@ namespace
 		});
 
 		UStaticMesh::FBuildMeshDescriptionsParams BuildParams;
-		BuildParams.bBuildSimpleCollision = true;
-		BuildParams.bFastBuild = true;
-		BuildParams.bAllowCpuAccess = false;
+		// A box around a ramp is a wall. Walk the triangles, the same way terrain does.
+		BuildParams.bBuildSimpleCollision = false;
+		BuildParams.bFastBuild = false;
+		BuildParams.bAllowCpuAccess = true;
 		BuildParams.bCommitMeshDescription = true;
 		BuildParams.bMarkPackageDirty = false;
 
@@ -252,6 +254,22 @@ namespace
 			FMeshNaniteSettings NaniteSettings = Mesh->GetNaniteSettings();
 			NaniteSettings.bEnabled = false;
 			Mesh->SetNaniteSettings(NaniteSettings);
+		}
+
+		if (!Mesh->GetBodySetup())
+		{
+			Mesh->CreateBodySetup();
+		}
+		if (UBodySetup* BodySetup = Mesh->GetBodySetup())
+		{
+			BodySetup->AggGeom.BoxElems.Empty();
+			BodySetup->AggGeom.ConvexElems.Empty();
+			BodySetup->AggGeom.SphereElems.Empty();
+			BodySetup->AggGeom.SphylElems.Empty();
+			BodySetup->CollisionTraceFlag = CTF_UseComplexAsSimple;
+			BodySetup->bDoubleSidedGeometry = true;
+			BodySetup->InvalidatePhysicsData();
+			BodySetup->CreatePhysicsMeshes();
 		}
 		return Mesh;
 	}

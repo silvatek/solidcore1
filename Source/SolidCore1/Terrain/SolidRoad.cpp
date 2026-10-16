@@ -57,6 +57,125 @@ namespace SolidRoad
 			return true;
 		}
 
+		bool CellBesideRiver(const USolidWorldMap& Map, const int32 X, const int32 Y)
+		{
+			for (int32 OffsetY = -RiverBendReach; OffsetY <= RiverBendReach; ++OffsetY)
+			{
+				for (int32 OffsetX = -RiverBendReach; OffsetX <= RiverBendReach; ++OffsetX)
+				{
+					const int32 NextX = X + OffsetX;
+					const int32 NextY = Y + OffsetY;
+					if (NextX < 0 || NextY < 0 || NextX >= USolidWorldMap::MapWidth || NextY >= USolidWorldMap::MapHeight)
+					{
+						continue;
+					}
+					if (Map.GetMarkerAtCell(NextX, NextY) == USolidWorldMap::RiverMarker)
+					{
+						return true;
+					}
+				}
+			}
+			return false;
+		}
+
+		/** How far a corner may sit past a river cell and still be pulled back toward it. */
+		constexpr int32 RiverSpurWindow = 6;
+
+		int32 ChebyshevToRiver(const TArray<FIntPoint>& Cells, const TArray<int32>& RiverIndices, const FIntPoint& Cell)
+		{
+			int32 Best = MAX_int32;
+			for (const int32 RiverIndex : RiverIndices)
+			{
+				const FIntPoint& River = Cells[RiverIndex];
+				Best = FMath::Min(Best, FMath::Max(FMath::Abs(Cell.X - River.X), FMath::Abs(Cell.Y - River.Y)));
+			}
+			return Best;
+		}
+
+		/**
+		 * On the far side of a crossing, tie-breaks leave a one-cell spur past the bend.
+		 * Slide that bend back toward the river when the ground beside it is open.
+		 */
+		void SlideSpursAfterRiver(const USolidWorldMap& Map, const EType Type, TArray<FIntPoint>& Cells)
+		{
+			TArray<int32> Rivers;
+			for (int32 Index = 0; Index < Cells.Num(); ++Index)
+			{
+				if (Map.GetMarkerAtCell(Cells[Index].X, Cells[Index].Y) == USolidWorldMap::RiverMarker)
+				{
+					Rivers.Add(Index);
+				}
+			}
+			if (Rivers.Num() == 0)
+			{
+				return;
+			}
+
+			for (int32 Guard = 0; Guard < Cells.Num(); ++Guard)
+			{
+				bool bChanged = false;
+				for (int32 Index = 1; Index + 1 < Cells.Num(); ++Index)
+				{
+					const FIntPoint In = Cells[Index] - Cells[Index - 1];
+					const FIntPoint Out = Cells[Index + 1] - Cells[Index];
+					if (In == Out
+						|| FMath::Abs(In.X) + FMath::Abs(In.Y) != 1
+						|| FMath::Abs(Out.X) + FMath::Abs(Out.Y) != 1)
+					{
+						continue;
+					}
+
+					bool bAfterRiver = false;
+					for (const int32 RiverIndex : Rivers)
+					{
+						if (Index > RiverIndex && Index - RiverIndex <= RiverSpurWindow)
+						{
+							bAfterRiver = true;
+							break;
+						}
+					}
+					if (!bAfterRiver)
+					{
+						continue;
+					}
+
+					const FIntPoint Side = Cells[Index - 1] + Out;
+					if (Side + In != Cells[Index + 1])
+					{
+						continue;
+					}
+					if (ChebyshevToRiver(Cells, Rivers, Side) >= ChebyshevToRiver(Cells, Rivers, Cells[Index]))
+					{
+						continue;
+					}
+					if (Side.X < 0 || Side.Y < 0 || Side.X >= USolidWorldMap::MapWidth || Side.Y >= USolidWorldMap::MapHeight)
+					{
+						continue;
+					}
+					if (Map.GetMarkerAtCell(Side.X, Side.Y) == USolidWorldMap::RiverMarker)
+					{
+						continue;
+					}
+					if (EnterCost(Type, Map.GetBiomeAtCell(Side.X, Side.Y)) >= AvoidCost)
+					{
+						continue;
+					}
+					if (Cells.Contains(Side))
+					{
+						continue;
+					}
+
+					Cells[Index] = Side;
+					bChanged = true;
+					break;
+				}
+				if (!bChanged)
+				{
+					break;
+				}
+			}
+		}
+
 		void RoadCollectEndpoint(const USolidWorldMap& Map, const FEndpoint& End, TArray<FIntPoint>& OutCells)
 		{
 			OutCells.Reset();
@@ -182,6 +301,10 @@ namespace SolidRoad
 
 			const int32 X = Best % Width;
 			const int32 Y = Best / Width;
+			const bool bHasIn = Previous[Best] != INDEX_NONE;
+			const int32 PrevX = bHasIn ? Previous[Best] % Width : X;
+			const int32 PrevY = bHasIn ? Previous[Best] / Width : Y;
+			const FIntPoint In(X - PrevX, Y - PrevY);
 			const FIntPoint Neighbors[] = {
 				FIntPoint(X, Y - 1),
 				FIntPoint(X + 1, Y),
@@ -199,7 +322,13 @@ namespace SolidRoad
 				{
 					continue;
 				}
-				const int32 NextCost = BestCost + EnterCost(Definition.Type, Map.GetBiomeAtCell(Next.X, Next.Y));
+				const FIntPoint Out(Next.X - X, Next.Y - Y);
+				int32 Bend = 0;
+				if (bHasIn && In != Out && CellBesideRiver(Map, X, Y))
+				{
+					Bend = RiverBendCost;
+				}
+				const int32 NextCost = BestCost + EnterCost(Definition.Type, Map.GetBiomeAtCell(Next.X, Next.Y)) + Bend;
 				if (NextCost < Cost[NextIndex])
 				{
 					Cost[NextIndex] = NextCost;
@@ -227,6 +356,7 @@ namespace SolidRoad
 		{
 			OutCells.Add(Reversed[Index]);
 		}
+		SlideSpursAfterRiver(Map, Definition.Type, OutCells);
 		return OutCells.Num() > 0;
 	}
 

@@ -546,4 +546,60 @@ bool FSolidRoadShippedTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidRoadCrossingTest,
+	"SolidCore1.Road.Crossing",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidRoadCrossingTest::RunTest(const FString& Parameters)
+{
+	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	TestNotNull(TEXT("map"), Map);
+	if (!TestTrue(TEXT("default map loads"), Map && Map->LoadDefault()))
+	{
+		return false;
+	}
+
+	const TArray<SolidRoad::FRoute>& Roads = Map->GetRoads();
+	if (!TestTrue(TEXT("the track is listed"), Roads.Num() > 1))
+	{
+		return false;
+	}
+
+	const TArray<FIntPoint>& Cells = Roads[1].Cells;
+	int32 River = INDEX_NONE;
+	for (int32 Index = 0; Index < Cells.Num(); ++Index)
+	{
+		if (Map->GetMarkerAtCell(Cells[Index].X, Cells[Index].Y) == USolidWorldMap::RiverMarker)
+		{
+			River = Index;
+			break;
+		}
+	}
+	if (!TestTrue(TEXT("Iglin to Relion crosses one river cell"), River > 2 && River + 2 < Cells.Num()))
+	{
+		return false;
+	}
+
+	const int32 Row = Cells[River].Y;
+	TestTrue(TEXT("the road runs straight into the river"),
+		Cells[River - 1].Y == Row && Cells[River - 2].Y == Row);
+	TestTrue(TEXT("the road runs straight off the river"),
+		Cells[River + 1].Y == Row && Cells[River + 2].Y == Row);
+	TestTrue(TEXT("the crossing does not step sideways"),
+		Cells[River - 1].X != Cells[River].X && Cells[River + 1].X != Cells[River].X
+		&& Cells[River - 1].Y == Cells[River + 1].Y);
+
+	int32 End = River;
+	while (End + 1 < Cells.Num() && Cells[End + 1].Y == Row)
+	{
+		++End;
+	}
+	TestTrue(TEXT("the far bank bends off that line"), End + 1 < Cells.Num() && Cells[End + 1].Y != Row);
+	const int32 StepX = Cells[End].X - Cells[End - 1].X;
+	const FIntPoint Spur(Cells[End].X + StepX, Row);
+	TestFalse(TEXT("the far bank has no spur past the bend"), Cells.Contains(Spur));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

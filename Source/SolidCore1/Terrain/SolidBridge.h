@@ -82,6 +82,10 @@ public:
 	void SetBridge(const SolidBridge::FBridge& InBridge);
 	void BuildVisuals();
 
+	UStaticMeshComponent* GetRampFromMesh() const { return RampFromMesh; }
+	UStaticMeshComponent* GetDeckMesh() const { return DeckMesh; }
+	UStaticMeshComponent* GetRampToMesh() const { return RampToMesh; }
+
 protected:
 	UPROPERTY(VisibleAnywhere, Category = "Bridge")
 	TObjectPtr<USceneComponent> SceneRoot;

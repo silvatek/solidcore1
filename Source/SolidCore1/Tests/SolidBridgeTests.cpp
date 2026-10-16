@@ -1,9 +1,11 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
+#include "PhysicsEngine/BodySetup.h"
 #include "SolidBridge.h"
 #include "SolidRiver.h"
 #include "SolidRoad.h"
 #include "SolidWorldMap.h"
+#include "Components/StaticMeshComponent.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -322,6 +324,114 @@ bool FSolidBridgeShippedTest::RunTest(const FString& Parameters)
 			&& Bridge.RampFrom[0].Equals(Bridge.Deck[0], 1.f)
 			&& Bridge.RampTo[0].Equals(Bridge.Deck.Last(), 1.f));
 		TestTrue(TEXT("shipped ramps run into the ground"), BridgeBuried(Bridge.RampFrom, Height) && BridgeBuried(Bridge.RampTo, Height));
+	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBridgeAlignedTest,
+	"SolidCore1.Bridge.Aligned",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBridgeAlignedTest::RunTest(const FString& Parameters)
+{
+	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	TestNotNull(TEXT("map"), Map);
+	if (!TestTrue(TEXT("default map loads"), Map && Map->LoadDefault()))
+	{
+		return false;
+	}
+
+	const auto Height = [](float, float) { return 0.f; };
+	TArray<SolidBridge::FBridge> Bridges;
+	if (!TestEqual(TEXT("one shipped bridge"), SolidBridge::Collect(*Map, BridgeTestMin, BridgeTestMax, Height, Bridges), 1)
+		|| Bridges.Num() != 1)
+	{
+		return false;
+	}
+
+	const TArray<SolidRoad::FRoute>& Roads = Map->GetRoads();
+	if (!TestTrue(TEXT("the track is listed"), Roads.Num() > 1))
+	{
+		return false;
+	}
+	FVector2D River = FVector2D::ZeroVector;
+	bool bFound = false;
+	for (const FIntPoint& Cell : Roads[1].Cells)
+	{
+		if (Map->GetMarkerAtCell(Cell.X, Cell.Y) == USolidWorldMap::RiverMarker)
+		{
+			bFound = Map->CellToWorldXY(Cell, BridgeTestMin, BridgeTestMax, River);
+			break;
+		}
+	}
+	TestTrue(TEXT("river cell"), bFound);
+
+	const SolidBridge::FBridge& Bridge = Bridges[0];
+	auto OnRoad = [&River](const FVector& Point)
+	{
+		return FMath::Abs(Point.Y - River.Y) < 1.f;
+	};
+	for (const FVector& Point : Bridge.Deck)
+	{
+		TestTrue(TEXT("the center lies on the road"), OnRoad(Point));
+	}
+	for (const FVector& Point : Bridge.RampFrom)
+	{
+		TestTrue(TEXT("the near ramp lies on the road"), OnRoad(Point));
+	}
+	for (const FVector& Point : Bridge.RampTo)
+	{
+		TestTrue(TEXT("the far ramp lies on the road"), OnRoad(Point));
+	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBridgeWalkableTest,
+	"SolidCore1.Bridge.Walkable",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBridgeWalkableTest::RunTest(const FString& Parameters)
+{
+	ASolidBridge* BridgeActor = NewObject<ASolidBridge>();
+	TestNotNull(TEXT("bridge"), BridgeActor);
+	if (!BridgeActor)
+	{
+		return false;
+	}
+
+	SolidBridge::FBridge Spec;
+	Spec.WidthCm = SolidRoad::WidthCm(SolidRoad::EType::Track);
+	Spec.Deck = { FVector(0.f, 0.f, 200.f), FVector(600.f, 0.f, 200.f) };
+	Spec.RampFrom = { FVector(0.f, 0.f, 200.f), FVector(-400.f, 0.f, 100.f), FVector(-800.f, 0.f, 0.f) };
+	Spec.RampTo = { FVector(600.f, 0.f, 200.f), FVector(1000.f, 0.f, 100.f), FVector(1400.f, 0.f, 0.f) };
+	BridgeActor->SetBridge(Spec);
+
+	UStaticMeshComponent* Meshes[] = {
+		BridgeActor->GetRampFromMesh(),
+		BridgeActor->GetDeckMesh(),
+		BridgeActor->GetRampToMesh(),
+	};
+	for (UStaticMeshComponent* Mesh : Meshes)
+	{
+		TestNotNull(TEXT("piece"), Mesh);
+		UStaticMesh* Asset = Mesh ? Mesh->GetStaticMesh() : nullptr;
+		TestNotNull(TEXT("mesh"), Asset);
+		if (!Asset)
+		{
+			continue;
+		}
+		UBodySetup* Body = Asset->GetBodySetup();
+		TestNotNull(TEXT("body"), Body);
+		if (!Body)
+		{
+			continue;
+		}
+		TestEqual(TEXT("walk the triangles"),
+			static_cast<uint8>(Body->CollisionTraceFlag),
+			static_cast<uint8>(CTF_UseComplexAsSimple));
+		TestEqual(TEXT("no box stands in front of the ramp"), Body->AggGeom.BoxElems.Num(), 0);
 	}
 	return true;
 }

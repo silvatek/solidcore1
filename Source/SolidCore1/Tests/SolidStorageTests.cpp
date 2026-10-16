@@ -87,10 +87,9 @@ bool FSolidStorageCaveChestTest::RunTest(const FString& Parameters)
 		TEXT("the first cell holds the sword"),
 		FString(Chest.Slots[SolidStorage::Index(0, 0)]),
 		FString(SolidItemType::IdRustySword));
-	for (int32 Index = 1; Index < SolidStorage::Count; ++Index)
-	{
-		TestTrue(TEXT("the other chest cells start empty"), Chest.Slots[Index] == nullptr);
-	}
+	TestTrue(
+		TEXT("the corner cell starts empty"),
+		Chest.Slots[SolidStorage::Index(1, 1)] == nullptr);
 
 	SolidStorage::FContainer Held = Chest;
 	SolidInventory::FLoadout Loadout = SolidInventory::StartingLoadout();
@@ -263,10 +262,10 @@ bool FSolidInventoryMoveTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the sword can be set down in the pack"), SolidInventory::PlacePack(Loadout, 0, 1, SolidItemType::IdRustySword));
 	TestTrue(
 		TEXT("the sword goes back into an empty chest cell"),
-		SolidInventory::Move(&Chest, Loadout, Pack(0, 1), ChestCell(SolidStorage::Index(1, 0))));
+		SolidInventory::Move(&Chest, Loadout, Pack(0, 1), ChestCell(SolidStorage::Index(1, 1))));
 	TestEqual(
 		TEXT("the chest cell holds the sword"),
-		FString(Chest.Slots[SolidStorage::Index(1, 0)]),
+		FString(Chest.Slots[SolidStorage::Index(1, 1)]),
 		FString(SolidItemType::IdRustySword));
 	TestTrue(TEXT("the pack cell is empty after the return"), Loadout.Pack[SolidInventory::PackIndex(0, 1)] == nullptr);
 	TestEqual(

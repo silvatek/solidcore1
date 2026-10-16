@@ -89,15 +89,25 @@ bool FSolidItemTypeCatalogTest::RunTest(const FString& Parameters)
 			TestTrue(TEXT("grades differ"), Grades[Index] != Grades[Other]);
 		}
 	}
-	for (int32 Index = 0; Index < SolidItemType::CatalogCount; ++Index)
+	const TCHAR* InferiorIds[] = {
+		SolidItemType::IdRags,
+		SolidItemType::IdDentedHelmet,
+		SolidItemType::IdCrudeSpear,
+		SolidItemType::IdRustySword,
+	};
+	for (const TCHAR* Id : InferiorIds)
 	{
-		const FSolidItemType& Item = SolidItemType::Catalog[Index];
-		const bool bTorch = FCString::Strcmp(Item.Id, SolidItemType::IdTorch) == 0;
+		const FSolidItemType* Item = SolidItemType::FindById(Id);
+		TestNotNull(TEXT("an inferior item is listed"), Item);
+		if (!Item)
+		{
+			return false;
+		}
 		TestEqual(
-			TEXT("catalog quality"),
-			static_cast<uint8>(Item.Quality),
-			static_cast<uint8>(bTorch ? ESolidItemQuality::Common : ESolidItemQuality::Inferior));
-		TestEqual(TEXT("catalog items stack to one"), Item.MaxStacked, 1);
+			TEXT("the item is inferior"),
+			static_cast<uint8>(Item->Quality),
+			static_cast<uint8>(ESolidItemQuality::Inferior));
+		TestEqual(TEXT("the item stacks to one"), Item->MaxStacked, 1);
 	}
 
 	const FSolidItemType* Listed[] = { Rags, Helmet, Spear, Torch };

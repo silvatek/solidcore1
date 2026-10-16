@@ -57,6 +57,20 @@ Follow the Automated tests policy in `README.md`:
 - Assassin companions play `anim_assassin_idle_2`, `anim_assassin_Walk`, and `anim_assassin_run` from `Medieval_Assassin_Girl`. `anim_assassin_idle_1` is a crouch. The Blacksmith pack has no locomotion clips, so those companions stay on Viking clips. `tools/fab_mesh_info.bat <folder>` lists meshes and animations in a downloaded pack and does not edit the manifest.
 - Grass is required (`Mat_025_grass`).
 
+## World map
+
+Whenever `Content/WorldMap.txt` changes — a pull, a commit, a diff, or an edit in the conversation — review the file before doing anything else with it.
+
+The grid is 128 columns by 64 rows. A `!` in that grid is one location cell. It needs a description line under the grid:
+
+```
+! 12,4 = 0
+```
+
+Column, then row. The top-left cell of the grid is 1,1. The id is the location number. Spaces around the comma and `=` are fine. The line `! column,row = id (top-left is 1,1)` is only the legend. It does not describe a cell.
+
+Warn the user when a `!` in the grid has no description line for that column and row. Name each missing cell as `column,row`, counting from 1,1 at the top-left. A `!` whose line is missing still loads as grassland and is not a town.
+
 ## Lairs
 
 - Before changing lairs, read `Content/Lairs.md`. The later-lair rules there are not the shipped Iglin tunnels. Leave the straight run until asked.

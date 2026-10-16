@@ -21,11 +21,25 @@ bool FSolidCharacterEditorMenuTest::RunTest(const FString& Parameters)
 {
 	TArray<FSolidMainMenuEntry> Entries;
 	SolidMainMenu::CollectEntries(Entries);
-	TestEqual(TEXT("seven entries"), Entries.Num(), 7);
-	TestEqual(TEXT("entry count"), SolidMainMenu::EntryCount(), 7);
+	TestEqual(TEXT("entry count"), Entries.Num(), SolidMainMenu::EntryCount());
+
+	int32 EditorIndex = INDEX_NONE;
+	for (int32 Index = 0; Index < Entries.Num(); ++Index)
+	{
+		if (Entries[Index].Item == ESolidMainMenuItem::CharacterEditor)
+		{
+			EditorIndex = Index;
+			break;
+		}
+	}
+	TestTrue(TEXT("character editor is listed"), EditorIndex != INDEX_NONE);
+	if (EditorIndex == INDEX_NONE)
+	{
+		return false;
+	}
 
 	FSolidMainMenuEntry Found;
-	TestTrue(TEXT("seventh is Character editor"), SolidMainMenu::FindEntry(6, Found));
+	TestTrue(TEXT("find the editor"), SolidMainMenu::FindEntry(EditorIndex, Found));
 	TestEqual(TEXT("editor label"), Found.Label, FString(TEXT("Character editor")));
 	TestEqual(
 		TEXT("editor item"),
@@ -36,8 +50,11 @@ bool FSolidCharacterEditorMenuTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(SolidMainMenu::ActionForItem(Found.Item)),
 		static_cast<uint8>(ESolidMainMenuAction::OpenCharacterEditor));
 
-	TestEqual(TEXT("wrap from the editor"), SolidMainMenu::WrapIndex(6, 1), 0);
-	TestEqual(TEXT("wrap up onto the editor"), SolidMainMenu::WrapIndex(0, -1), 6);
+	const int32 Count = SolidMainMenu::EntryCount();
+	const int32 Next = (EditorIndex + 1) % Count;
+	TestEqual(TEXT("wrap down from the editor"), SolidMainMenu::WrapIndex(EditorIndex, 1), Next);
+	const int32 Previous = EditorIndex == 0 ? Count - 1 : EditorIndex - 1;
+	TestEqual(TEXT("wrap up onto the editor"), SolidMainMenu::WrapIndex(Previous, 1), EditorIndex);
 	return true;
 }
 

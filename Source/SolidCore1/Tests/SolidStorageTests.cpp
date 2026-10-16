@@ -129,12 +129,12 @@ bool FSolidStorageCaveChestTest::RunTest(const FString& Parameters)
 			Loadout,
 			0,
 			false,
-			SolidInventory::ESlot::RightHand,
+			SolidInventory::ESlot::MainHand,
 			0,
 			0));
 	TestEqual(
-		TEXT("the hand holds the sword"),
-		FString(Loadout.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::RightHand)]),
+		TEXT("the main hand holds the sword"),
+		FString(Loadout.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::MainHand)]),
 		FString(SolidItemType::IdRustySword));
 	TestEqual(
 		TEXT("the chest holds the spear"),
@@ -142,7 +142,7 @@ bool FSolidStorageCaveChestTest::RunTest(const FString& Parameters)
 		FString(SolidItemType::IdCrudeSpear));
 	TestFalse(
 		TEXT("a cell outside the chest is refused"),
-		SolidInventory::TakeFromChest(Held, Loadout, -1, false, SolidInventory::ESlot::LeftHand, 0, 0));
+		SolidInventory::TakeFromChest(Held, Loadout, -1, false, SolidInventory::ESlot::OffHand, 0, 0));
 	TestFalse(
 		TEXT("a slot that is not worn is refused"),
 		SolidInventory::TakeFromChest(Held, Loadout, 0, false, SolidInventory::ESlot::Count, 0, 0));
@@ -220,21 +220,21 @@ bool FSolidInventoryMoveTest::RunTest(const FString& Parameters)
 
 	SolidInventory::FLoadout Loadout = SolidInventory::StartingLoadout();
 	SolidStorage::FContainer Chest = SolidStorage::StartingCaveChest();
-	const int32 Right = SolidInventory::WornIndex(SolidInventory::ESlot::RightHand);
-	const int32 Left = SolidInventory::WornIndex(SolidInventory::ESlot::LeftHand);
+	const int32 Main = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
+	const int32 Off = SolidInventory::WornIndex(SolidInventory::ESlot::OffHand);
 	const int32 Head = SolidInventory::WornIndex(SolidInventory::ESlot::Head);
 	const int32 Body = SolidInventory::WornIndex(SolidInventory::ESlot::Body);
 
 	TestTrue(
-		TEXT("the spear moves into the empty left hand"),
-		SolidInventory::Move(&Chest, Loadout, Worn(SolidInventory::ESlot::RightHand), Worn(SolidInventory::ESlot::LeftHand)));
-	TestEqual(TEXT("the left hand holds the spear"), FString(Loadout.Worn[Left]), FString(SolidItemType::IdCrudeSpear));
-	TestTrue(TEXT("the right hand is empty"), Loadout.Worn[Right] == nullptr);
+		TEXT("the spear moves into the empty off hand"),
+		SolidInventory::Move(&Chest, Loadout, Worn(SolidInventory::ESlot::MainHand), Worn(SolidInventory::ESlot::OffHand)));
+	TestEqual(TEXT("the off hand holds the spear"), FString(Loadout.Worn[Off]), FString(SolidItemType::IdCrudeSpear));
+	TestTrue(TEXT("the main hand is empty"), Loadout.Worn[Main] == nullptr);
 
 	TestTrue(
 		TEXT("the helmet swaps with the spear"),
-		SolidInventory::Move(&Chest, Loadout, Worn(SolidInventory::ESlot::Head), Worn(SolidInventory::ESlot::LeftHand)));
-	TestEqual(TEXT("the left hand holds the helmet"), FString(Loadout.Worn[Left]), FString(SolidItemType::IdDentedHelmet));
+		SolidInventory::Move(&Chest, Loadout, Worn(SolidInventory::ESlot::Head), Worn(SolidInventory::ESlot::OffHand)));
+	TestEqual(TEXT("the off hand holds the helmet"), FString(Loadout.Worn[Off]), FString(SolidItemType::IdDentedHelmet));
 	TestEqual(TEXT("the head holds the spear"), FString(Loadout.Worn[Head]), FString(SolidItemType::IdCrudeSpear));
 
 	TestFalse(

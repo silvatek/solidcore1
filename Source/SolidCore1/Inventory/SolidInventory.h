@@ -23,8 +23,8 @@ namespace SolidInventory
 		Head,
 		Body,
 		Boots,
-		LeftHand,
-		RightHand,
+		OffHand,
+		MainHand,
 		Belt,
 		Count
 	};
@@ -42,8 +42,8 @@ namespace SolidInventory
 		case ESlot::Head: return TEXT("Head");
 		case ESlot::Body: return TEXT("Body");
 		case ESlot::Boots: return TEXT("Boots");
-		case ESlot::LeftHand: return TEXT("Left hand");
-		case ESlot::RightHand: return TEXT("Right hand");
+		case ESlot::OffHand: return TEXT("Off hand");
+		case ESlot::MainHand: return TEXT("Main hand");
 		case ESlot::Belt: return TEXT("Belt");
 		default: return TEXT("");
 		}
@@ -68,7 +68,7 @@ namespace SolidInventory
 		FLoadout Loadout;
 		Loadout.Worn[static_cast<int32>(ESlot::Head)] = SolidItemType::IdDentedHelmet;
 		Loadout.Worn[static_cast<int32>(ESlot::Body)] = SolidItemType::IdRags;
-		Loadout.Worn[static_cast<int32>(ESlot::RightHand)] = SolidItemType::IdCrudeSpear;
+		Loadout.Worn[static_cast<int32>(ESlot::MainHand)] = SolidItemType::IdCrudeSpear;
 		return Loadout;
 	}
 
@@ -216,7 +216,7 @@ namespace SolidInventory
 	};
 
 	/**
-	 * Head, body, and boots in a column, hands beside the body, belt at the waist, pack to the right.
+	 * Head, body, and boots in a column, the off hand and the main hand beside the body, belt at the waist, pack to the right.
 	 * Each worn name sits above its box. Chest, when set, adds that container to the right of the pack.
 	 */
 	void Layout(const FLoadout& Loadout, FPage& OutPage, const SolidStorage::FContainer* Chest = nullptr);

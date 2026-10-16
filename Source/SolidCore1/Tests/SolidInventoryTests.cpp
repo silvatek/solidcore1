@@ -77,11 +77,11 @@ bool FSolidInventoryStartingKitTest::RunTest(const FString& Parameters)
 		SolidInventoryTestPrivate::HeldId(Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)]),
 		FString(SolidItemType::IdRags));
 	TestEqual(
-		TEXT("right hand"),
-		SolidInventoryTestPrivate::HeldId(Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::RightHand)]),
+		TEXT("main hand"),
+		SolidInventoryTestPrivate::HeldId(Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::MainHand)]),
 		FString(SolidItemType::IdCrudeSpear));
 	TestTrue(TEXT("boots start empty"), Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Boots)] == nullptr);
-	TestTrue(TEXT("left hand starts empty"), Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::LeftHand)] == nullptr);
+	TestTrue(TEXT("off hand starts empty"), Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::OffHand)] == nullptr);
 	TestTrue(TEXT("belt starts empty"), Kit.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Belt)] == nullptr);
 	TestEqual(TEXT("pack has six cells"), SolidInventory::PackCount, SolidInventory::PackColumns * SolidInventory::PackRows);
 	TestEqual(TEXT("pack is two by three"), SolidInventory::PackColumns, 2);
@@ -92,18 +92,18 @@ bool FSolidInventoryStartingKitTest::RunTest(const FString& Parameters)
 	}
 
 	SolidInventory::FLoadout Edited = Kit;
-	TestTrue(TEXT("spear can leave the hand"), SolidInventory::PlaceWorn(Edited, SolidInventory::ESlot::RightHand, nullptr));
+	TestTrue(TEXT("spear can leave the main hand"), SolidInventory::PlaceWorn(Edited, SolidInventory::ESlot::MainHand, nullptr));
 	TestTrue(
 		TEXT("spear can be placed in the pack"),
 		SolidInventory::PlacePack(Edited, 1, 2, SolidItemType::IdCrudeSpear));
-	TestTrue(TEXT("hand is empty after the move"), Edited.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::RightHand)] == nullptr);
+	TestTrue(TEXT("main hand is empty after the move"), Edited.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::MainHand)] == nullptr);
 	TestEqual(
 		TEXT("bottom-right pack cell holds the spear"),
 		SolidInventoryTestPrivate::HeldId(Edited.Pack[SolidInventory::PackIndex(1, 2)]),
 		FString(SolidItemType::IdCrudeSpear));
 	TestFalse(TEXT("a cell outside the pack is refused"), SolidInventory::PlacePack(Edited, 2, 0, SolidItemType::IdCrudeSpear));
-	TestFalse(TEXT("an unknown item is refused"), SolidInventory::PlaceWorn(Edited, SolidInventory::ESlot::LeftHand, TEXT("missing")));
-	TestTrue(TEXT("the left hand stays empty"), Edited.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::LeftHand)] == nullptr);
+	TestFalse(TEXT("an unknown item is refused"), SolidInventory::PlaceWorn(Edited, SolidInventory::ESlot::OffHand, TEXT("missing")));
+	TestTrue(TEXT("the off hand stays empty"), Edited.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::OffHand)] == nullptr);
 	TestTrue(TEXT("the spear stays inside the pack"), Edited.Pack[SolidInventory::PackIndex(0, 0)] == nullptr);
 	return true;
 }
@@ -124,7 +124,7 @@ bool FSolidInventoryClearTest::RunTest(const FString& Parameters)
 	};
 	TestTrue(TEXT("torch can replace rags"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Body, SolidItemType::IdTorch));
 	TestTrue(TEXT("boots can hold the spear"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Boots, SolidItemType::IdCrudeSpear));
-	TestTrue(TEXT("the left hand can hold the helmet"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::LeftHand, SolidItemType::IdDentedHelmet));
+	TestTrue(TEXT("the off hand can hold the helmet"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::OffHand, SolidItemType::IdDentedHelmet));
 	TestTrue(TEXT("the belt can hold rags"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Belt, SolidItemType::IdRags));
 	for (int32 Row = 0; Row < SolidInventory::PackRows; ++Row)
 	{
@@ -179,16 +179,16 @@ bool FSolidInventoryLayoutTest::RunTest(const FString& Parameters)
 	const SolidInventory::FBox* Head = SolidInventoryTestPrivate::FindWorn(Page, SolidInventory::ESlot::Head);
 	const SolidInventory::FBox* Body = SolidInventoryTestPrivate::FindWorn(Page, SolidInventory::ESlot::Body);
 	const SolidInventory::FBox* Boots = SolidInventoryTestPrivate::FindWorn(Page, SolidInventory::ESlot::Boots);
-	const SolidInventory::FBox* Left = SolidInventoryTestPrivate::FindWorn(Page, SolidInventory::ESlot::LeftHand);
-	const SolidInventory::FBox* Right = SolidInventoryTestPrivate::FindWorn(Page, SolidInventory::ESlot::RightHand);
+	const SolidInventory::FBox* Off = SolidInventoryTestPrivate::FindWorn(Page, SolidInventory::ESlot::OffHand);
+	const SolidInventory::FBox* Main = SolidInventoryTestPrivate::FindWorn(Page, SolidInventory::ESlot::MainHand);
 	const SolidInventory::FBox* Belt = SolidInventoryTestPrivate::FindWorn(Page, SolidInventory::ESlot::Belt);
 	TestTrue(TEXT("head box"), Head != nullptr);
 	TestTrue(TEXT("body box"), Body != nullptr);
 	TestTrue(TEXT("boots box"), Boots != nullptr);
-	TestTrue(TEXT("left hand box"), Left != nullptr);
-	TestTrue(TEXT("right hand box"), Right != nullptr);
+	TestTrue(TEXT("off hand box"), Off != nullptr);
+	TestTrue(TEXT("main hand box"), Main != nullptr);
 	TestTrue(TEXT("belt box"), Belt != nullptr);
-	if (!Head || !Body || !Boots || !Left || !Right || !Belt)
+	if (!Head || !Body || !Boots || !Off || !Main || !Belt)
 	{
 		return false;
 	}
@@ -196,8 +196,8 @@ bool FSolidInventoryLayoutTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("head label"), Head->Label, FString(TEXT("Head")));
 	TestEqual(TEXT("body label"), Body->Label, FString(TEXT("Body")));
 	TestEqual(TEXT("boots label"), Boots->Label, FString(TEXT("Boots")));
-	TestEqual(TEXT("left hand label"), Left->Label, FString(TEXT("Left hand")));
-	TestEqual(TEXT("right hand label"), Right->Label, FString(TEXT("Right hand")));
+	TestEqual(TEXT("off hand label"), Off->Label, FString(TEXT("Off hand")));
+	TestEqual(TEXT("main hand label"), Main->Label, FString(TEXT("Main hand")));
 	TestEqual(TEXT("belt label"), Belt->Label, FString(TEXT("Belt")));
 	const FSolidItemType* Helmet = SolidItemType::FindById(SolidItemType::IdDentedHelmet);
 	const FSolidItemType* Rags = SolidItemType::FindById(SolidItemType::IdRags);
@@ -205,8 +205,8 @@ bool FSolidInventoryLayoutTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("head wears the helmet"), Head->Item, FString(Helmet ? Helmet->Name : TEXT("")));
 	TestEqual(TEXT("body wears rags"), Body->Item, FString(Rags ? Rags->Name : TEXT("")));
 	TestTrue(TEXT("boots are empty"), Boots->Item.IsEmpty());
-	TestEqual(TEXT("right hand holds the spear"), Right->Item, FString(Spear ? Spear->Name : TEXT("")));
-	TestTrue(TEXT("left hand box is empty"), Left->Item.IsEmpty());
+	TestEqual(TEXT("main hand holds the spear"), Main->Item, FString(Spear ? Spear->Name : TEXT("")));
+	TestTrue(TEXT("off hand box is empty"), Off->Item.IsEmpty());
 	TestTrue(TEXT("belt box is empty"), Belt->Item.IsEmpty());
 
 	TestTrue(TEXT("head is above the body"), Head->Y + Head->H < Body->Y);
@@ -214,17 +214,17 @@ bool FSolidInventoryLayoutTest::RunTest(const FString& Parameters)
 		TEXT("head is centered on the body"),
 		FMath::IsNearlyEqual(Head->X + Head->W * 0.5f, Body->X + Body->W * 0.5f, 1.f));
 	TestTrue(TEXT("head is narrower than the body"), Head->W < Body->W);
-	TestTrue(TEXT("left hand is left of the body"), Left->X + Left->W < Body->X);
-	TestTrue(TEXT("right hand is right of the body"), Right->X > Body->X + Body->W);
+	TestTrue(TEXT("off hand is left of the body"), Off->X + Off->W < Body->X);
+	TestTrue(TEXT("main hand is right of the body"), Main->X > Body->X + Body->W);
 	TestTrue(
-		TEXT("left hand meets the body in height"),
-		Left->Y < Body->Y + Body->H && Left->Y + Left->H > Body->Y);
+		TEXT("off hand meets the body in height"),
+		Off->Y < Body->Y + Body->H && Off->Y + Off->H > Body->Y);
 	TestTrue(
-		TEXT("right hand meets the body in height"),
-		Right->Y < Body->Y + Body->H && Right->Y + Right->H > Body->Y);
+		TEXT("main hand meets the body in height"),
+		Main->Y < Body->Y + Body->H && Main->Y + Main->H > Body->Y);
 	TestTrue(
 		TEXT("hands share a height"),
-		FMath::IsNearlyEqual(Left->Y, Right->Y, 1.f) && FMath::IsNearlyEqual(Left->H, Right->H, 1.f));
+		FMath::IsNearlyEqual(Off->Y, Main->Y, 1.f) && FMath::IsNearlyEqual(Off->H, Main->H, 1.f));
 	TestTrue(TEXT("belt is below the body"), Body->Y + Body->H < Belt->Y);
 	TestTrue(TEXT("boots are below the belt"), Belt->Y + Belt->H < Boots->Y);
 	TestTrue(TEXT("belt is narrower than the body"), Belt->W < Body->W);
@@ -261,7 +261,7 @@ bool FSolidInventoryLayoutTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("pack heading shares the grid's left edge"), FMath::IsNearlyEqual(Page.PackX, First->X, 1.f));
 
 	const float HeadingGap = First->Y - Page.PackLabelY;
-	const SolidInventory::FBox* WornNames[] = { Head, Body, Boots, Left, Right, Belt };
+	const SolidInventory::FBox* WornNames[] = { Head, Body, Boots, Off, Main, Belt };
 	for (const SolidInventory::FBox* Named : WornNames)
 	{
 		TestTrue(TEXT("slot name is above its box"), Named->LabelY < Named->Y);
@@ -276,7 +276,7 @@ bool FSolidInventoryLayoutTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the body name is below the head"), Body->LabelY >= Head->Y + Head->H);
 	TestTrue(TEXT("the belt name is below the body"), Belt->LabelY >= Body->Y + Body->H);
 	TestTrue(TEXT("the boots name is below the belt"), Boots->LabelY >= Belt->Y + Belt->H);
-	TestTrue(TEXT("the hand names share a line"), FMath::IsNearlyEqual(Left->LabelY, Right->LabelY, 1.f));
+	TestTrue(TEXT("the hand names share a line"), FMath::IsNearlyEqual(Off->LabelY, Main->LabelY, 1.f));
 
 	for (int32 Row = 0; Row < SolidInventory::PackRows; ++Row)
 	{

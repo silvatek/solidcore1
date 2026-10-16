@@ -71,8 +71,8 @@ namespace SolidInventory
 
 		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::Head, HeadX, HeadY, HeadW, HeadH, HeadLabelY));
 		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::Body, TorsoX, BodyY, TorsoW, BodyH, BodyLabelY));
-		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::LeftHand, 0.f, HandY, HandW, HandH, HandLabelY));
-		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::RightHand, RightX, HandY, HandW, HandH, HandLabelY));
+		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::OffHand, 0.f, HandY, HandW, HandH, HandLabelY));
+		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::MainHand, RightX, HandY, HandW, HandH, HandLabelY));
 		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::Belt, BeltX, BeltY, BeltW, BeltH, BeltLabelY));
 		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::Boots, TorsoX, BootsY, TorsoW, BootsH, BootsLabelY));
 

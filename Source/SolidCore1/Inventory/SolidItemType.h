@@ -34,7 +34,7 @@ enum class ESolidItemQuality : uint8
 /**
  * One kind of thing the captain can carry.
  * Id is eight hex digits. Name is the text on the inventory page.
- * Quality is the grade. Stackable items can share a slot.
+ * Quality is the grade. MaxStacked is how many of that item share one slot.
  */
 struct FSolidItemType
 {
@@ -42,7 +42,7 @@ struct FSolidItemType
 	const TCHAR* Name = TEXT("");
 	ESolidItemKind Type = ESolidItemKind::Armor;
 	ESolidItemQuality Quality = ESolidItemQuality::Inferior;
-	bool bStackable = false;
+	int32 MaxStacked = 1;
 };
 
 /** The items a slot can store. Inventory keeps the id, and the page shows the name. */
@@ -59,11 +59,11 @@ namespace SolidItemType
 	inline constexpr const TCHAR* IdRustySword = TEXT("b5e20c78");
 
 	inline const FSolidItemType Catalog[] = {
-		{ IdRags, TEXT("Rags"), ESolidItemKind::Armor, ESolidItemQuality::Inferior, false },
-		{ IdDentedHelmet, TEXT("Dented helmet"), ESolidItemKind::Helmet, ESolidItemQuality::Inferior, false },
-		{ IdCrudeSpear, TEXT("Crude spear"), ESolidItemKind::Weapon, ESolidItemQuality::Inferior, false },
-		{ IdTorch, TEXT("Torch"), ESolidItemKind::Tool, ESolidItemQuality::Common, false },
-		{ IdRustySword, TEXT("Rusty sword"), ESolidItemKind::Weapon, ESolidItemQuality::Inferior, false },
+		{ IdRags, TEXT("Rags"), ESolidItemKind::Armor, ESolidItemQuality::Inferior, 1 },
+		{ IdDentedHelmet, TEXT("Dented helmet"), ESolidItemKind::Helmet, ESolidItemQuality::Inferior, 1 },
+		{ IdCrudeSpear, TEXT("Crude spear"), ESolidItemKind::Weapon, ESolidItemQuality::Inferior, 1 },
+		{ IdTorch, TEXT("Torch"), ESolidItemKind::Tool, ESolidItemQuality::Common, 1 },
+		{ IdRustySword, TEXT("Rusty sword"), ESolidItemKind::Weapon, ESolidItemQuality::Inferior, 1 },
 	};
 
 	static_assert(UE_ARRAY_COUNT(Catalog) <= MaxItems, "Raise SolidItemType::MaxItems");

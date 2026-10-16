@@ -71,7 +71,7 @@ bool FSolidItemTypeCatalogTest::RunTest(const FString& Parameters)
 		TEXT("the torch is common"),
 		static_cast<uint8>(Torch->Quality),
 		static_cast<uint8>(ESolidItemQuality::Common));
-	TestFalse(TEXT("the torch does not stack"), Torch->bStackable);
+	TestEqual(TEXT("the torch stacks to one"), Torch->MaxStacked, 1);
 
 	const ESolidItemQuality Grades[] = {
 		ESolidItemQuality::Inferior,
@@ -97,7 +97,7 @@ bool FSolidItemTypeCatalogTest::RunTest(const FString& Parameters)
 			TEXT("catalog quality"),
 			static_cast<uint8>(Item.Quality),
 			static_cast<uint8>(bTorch ? ESolidItemQuality::Common : ESolidItemQuality::Inferior));
-		TestFalse(TEXT("catalog items do not stack"), Item.bStackable);
+		TestEqual(TEXT("catalog items stack to one"), Item.MaxStacked, 1);
 	}
 
 	const FSolidItemType* Listed[] = { Rags, Helmet, Spear, Torch };

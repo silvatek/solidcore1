@@ -571,11 +571,15 @@ bool FSolidEventsActTest::RunTest(const FString& Parameters)
 		return Index == INDEX_NONE ? INDEX_NONE : SolidEvents::Definitions[Index].Act;
 	};
 
-	TestEqual(TEXT("Iglin is act 0"), ActOf(SolidEvents::IdEnterIglin), 0);
-	TestEqual(TEXT("Reach broken bridge is act 0"), ActOf(SolidEvents::IdReachBrokenBridge), 0);
-	TestEqual(TEXT("Relion is act 2"), ActOf(SolidEvents::IdEnterRelion), 2);
-	TestEqual(TEXT("Kanfold is act 3"), ActOf(SolidEvents::IdEnterKanfold), 3);
-	TestEqual(TEXT("Dragongate is act 4"), ActOf(SolidEvents::IdEnterDragongate), 4);
+	TestEqual(TEXT("ACT_0"), SolidEvents::ACT_0, 0);
+	TestEqual(TEXT("ACT_2"), SolidEvents::ACT_2, 2);
+	TestEqual(TEXT("ACT_3"), SolidEvents::ACT_3, 3);
+	TestEqual(TEXT("ACT_4"), SolidEvents::ACT_4, 4);
+	TestEqual(TEXT("Iglin is ACT_0"), ActOf(SolidEvents::IdEnterIglin), SolidEvents::ACT_0);
+	TestEqual(TEXT("Reach broken bridge is ACT_0"), ActOf(SolidEvents::IdReachBrokenBridge), SolidEvents::ACT_0);
+	TestEqual(TEXT("Relion is ACT_2"), ActOf(SolidEvents::IdEnterRelion), SolidEvents::ACT_2);
+	TestEqual(TEXT("Kanfold is ACT_3"), ActOf(SolidEvents::IdEnterKanfold), SolidEvents::ACT_3);
+	TestEqual(TEXT("Dragongate is ACT_4"), ActOf(SolidEvents::IdEnterDragongate), SolidEvents::ACT_4);
 	return true;
 }
 

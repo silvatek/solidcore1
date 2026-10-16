@@ -14,8 +14,8 @@
  * Reach broken bridge: the captain stands on either ramp of the Iglin bridge.
  * The parameter is unused. The deck and the gap past the lip do not count.
  * A visit before the requirements are met does not fire. A later visit does.
- * Each event belongs to an act. Iglin and Reach broken bridge are act 0.
- * Relion is act 2, Kanfold is act 3, and Dragongate is act 4.
+ * Each event belongs to an act. Iglin and Reach broken bridge are ACT_0.
+ * Relion is ACT_2, Kanfold is ACT_3, and Dragongate is ACT_4.
  */
 namespace SolidEvents
 {
@@ -30,6 +30,12 @@ namespace SolidEvents
 	inline constexpr const TCHAR* IdEnterRelion = TEXT("9f30d86a");
 	inline constexpr const TCHAR* IdEnterKanfold = TEXT("2b8e15c7");
 	inline constexpr const TCHAR* IdEnterDragongate = TEXT("e6a4f093");
+
+	/** Story acts. Event definitions name these. */
+	inline constexpr int32 ACT_0 = 0;
+	inline constexpr int32 ACT_2 = 2;
+	inline constexpr int32 ACT_3 = 3;
+	inline constexpr int32 ACT_4 = 4;
 
 	enum class ETrigger : uint8
 	{
@@ -77,7 +83,7 @@ namespace SolidEvents
 		const TCHAR* Requires[MaxRequiresPerEvent] = {};
 		int32 RequireCount = 0;
 		/** Story act this event belongs to. */
-		int32 Act = 0;
+		int32 Act = ACT_0;
 	};
 
 	/**
@@ -104,7 +110,7 @@ namespace SolidEvents
 			0,
 			{},
 			0,
-			0,
+			ACT_0,
 		},
 		{
 			IdReachBrokenBridge,
@@ -115,7 +121,7 @@ namespace SolidEvents
 			0,
 			{ IdEnterIglin },
 			1,
-			0,
+			ACT_0,
 		},
 		{
 			IdEnterRelion,
@@ -131,7 +137,7 @@ namespace SolidEvents
 			4,
 			{ IdEnterIglin },
 			1,
-			2,
+			ACT_2,
 		},
 		{
 			IdEnterKanfold,
@@ -146,7 +152,7 @@ namespace SolidEvents
 			3,
 			{},
 			0,
-			3,
+			ACT_3,
 		},
 		{
 			IdEnterDragongate,
@@ -161,7 +167,7 @@ namespace SolidEvents
 			3,
 			{},
 			0,
-			4,
+			ACT_4,
 		},
 	};
 

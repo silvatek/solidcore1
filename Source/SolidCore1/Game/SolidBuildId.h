@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0366")
+#define SOLID_BUILD_ID TEXT("SC1-0367")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Each event belongs to an act.")
+#define SOLID_BUILD_NOTE TEXT("Act numbers are named constants.")
 #endif

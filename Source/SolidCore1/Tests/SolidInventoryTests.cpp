@@ -785,4 +785,31 @@ bool FSolidInventoryCraftSlotsTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidInventoryCraftButtonTest,
+	"SolidCore1.Inventory.CraftButton",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidInventoryCraftButtonTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidInventoryTestPrivate;
+
+	SolidInventory::FPage Page;
+	SolidInventory::Layout(SolidInventory::StartingLoadout(), Page);
+	const SolidInventory::FBox* Slot = FindCraft(Page, 0);
+	TestTrue(TEXT("a crafting slot is on the page"), Slot != nullptr);
+	if (!Slot)
+	{
+		return false;
+	}
+	TestTrue(TEXT("the Craft button is shorter than a slot"), Page.CraftButtonH < Slot->H);
+	TestTrue(TEXT("the Craft button is narrower than a slot"), Page.CraftButtonW < Slot->W);
+	TestTrue(TEXT("the Craft button starts below the slot top"), Page.CraftButtonY > Slot->Y);
+	TestTrue(
+		TEXT("the Craft button ends above the slot bottom"),
+		Page.CraftButtonY + Page.CraftButtonH < Slot->Y + Slot->H);
+	TestFalse(TEXT("the Craft button stays disabled"), Page.bCraftEnabled);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

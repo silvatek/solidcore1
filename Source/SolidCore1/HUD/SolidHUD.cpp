@@ -951,20 +951,23 @@ namespace SolidHUDPrivate
 		{
 			const float ButtonX = OriginX + Page.CraftButtonX;
 			const float ButtonY = OriginY + Page.CraftButtonY;
-			const FLinearColor Bronze = Page.bCraftEnabled
+			// A solid bronze bar. Slots are a dark well inside a rim; this is the metal itself.
+			const FLinearColor Face = Page.bCraftEnabled
 				? Palette.Bronze
-				: FLinearColor(Palette.Bronze.R * 0.45f, Palette.Bronze.G * 0.45f, Palette.Bronze.B * 0.45f, 1.f);
-			const FLinearColor Recess = Palette.Recess;
-			const FLinearColor Ink = Page.bCraftEnabled ? Palette.Ink : Palette.Hint;
+				: FLinearColor(Palette.Bronze.R * 0.55f, Palette.Bronze.G * 0.55f, Palette.Bronze.B * 0.55f, 1.f);
+			const FLinearColor Edge = Page.bCraftEnabled
+				? Palette.BronzeBright
+				: FLinearColor(Palette.Bronze.R * 0.35f, Palette.Bronze.G * 0.35f, Palette.Bronze.B * 0.35f, 1.f);
+			const FLinearColor Ink = Page.bCraftEnabled ? Palette.Fill : Palette.Hint;
 			const float Rim = 2.f;
-			FillRect(Canvas, ButtonX, ButtonY, Page.CraftButtonW, Page.CraftButtonH, Bronze);
+			FillRect(Canvas, ButtonX, ButtonY, Page.CraftButtonW, Page.CraftButtonH, Edge);
 			FillRect(
 				Canvas,
 				ButtonX + Rim,
 				ButtonY + Rim,
 				FMath::Max(0.f, Page.CraftButtonW - Rim * 2.f),
 				FMath::Max(0.f, Page.CraftButtonH - Rim * 2.f),
-				Recess);
+				Face);
 			if (Font)
 			{
 				DrawCenteredLine(

@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0408")
+#define SOLID_BUILD_ID TEXT("SC1-0409")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The inventory page has four crafting slots and a disabled Craft button.")
+#define SOLID_BUILD_NOTE TEXT("The Craft button is a small bronze bar.")
 #endif

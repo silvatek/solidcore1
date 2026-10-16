@@ -143,8 +143,9 @@ namespace SolidInventory
 			ContentBottom = FMath::Max(ContentBottom, GridY + ChestGridH);
 		}
 
-		// Beside the slots, the same height, so the row stays one line.
-		const float CraftButtonW = 156.f;
+		// A short bar, centered on the row, smaller than a slot in both directions.
+		const float CraftButtonW = 96.f;
+		const float CraftButtonH = 36.f;
 		const float RowW = CraftCount * PackCell + (CraftCount - 1) * PackGap + PackGap + CraftButtonW;
 		if (RowW > ContentRight)
 		{
@@ -166,9 +167,9 @@ namespace SolidInventory
 			OutPage.Boxes.Add(Box);
 		}
 		OutPage.CraftButtonX = RowX + CraftCount * (PackCell + PackGap);
-		OutPage.CraftButtonY = RowY;
+		OutPage.CraftButtonY = RowY + (PackCell - CraftButtonH) * 0.5f;
 		OutPage.CraftButtonW = CraftButtonW;
-		OutPage.CraftButtonH = PackCell;
+		OutPage.CraftButtonH = CraftButtonH;
 		OutPage.bCraftEnabled = false;
 		ContentBottom = RowY + PackCell;
 

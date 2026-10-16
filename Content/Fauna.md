@@ -10,13 +10,15 @@ All characters and monsters in the game should be procedurally generated from on
 
 # Humans
 
-Humans are generated based on a set of core numeric parameters. Each parameter can have any value between 0 and 1, but we apply labels to the extremes (and often centre) for convenience:-
+Humans are generated based on a set of core numeric parameters. Each parameter can have any value between 0.0 and 1.0, but we apply labels to the extremes (and often centre) for convenience:-
 
 - build: dwarven - common - elfin
 - height: short - average - tall (combines with build for final character height)
 - gender: feminine - androgenous - masculine
 - age: youthful - mature - aged
 - skintone: dark to light
+
+
 
 # Suarobestia
 
@@ -28,7 +30,7 @@ Main parameters are...
 - winged: true/false
 - colour
 
-# Arthrobesia
+# Arthrobestia
 
 Core parameters...
 

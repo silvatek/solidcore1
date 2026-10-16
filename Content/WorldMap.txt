@@ -3,11 +3,11 @@
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~MMMMMM..MMMMMMMMMMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ~~~~~~~~~~~~~~~~~~~~~~MMMMMMMMMMMMMM.MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ~~~~~~~~~~~~~~~~~~MMMMMMMMMMMMMMooooooMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~~###.~~~~~~~~~~~~
-~~~~~~~~~~MMMMMMMMMMMMMMMMMM..oooo02ooooMMMMMMMMM##MMMMMMMMMMMMMMMMMMMMMM.MMMMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~~~..#####~~~~~~~~~~~~
+~~~~~~~~~~MMMMMMMMMMMMMMMMMM..ooooo!ooooMMMMMMMMM##MMMMMMMMMMMMMMMMMMMMMM.MMMMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~~~..#####~~~~~~~~~~~~
 ~~~~~~~~~MMMMMMMMMMMMMM.MMM..MM...........MMMMMMM#MMMMMMMMMMMMMMMMMMMMMMM.MMMMMMMMMMMMMMMM~~~~~~~~~~~~~~~~~..........~~~~~~~~~~~
 ~~~~~~~~MMMMMM##....!o..*MMMMMMM..............####MMMMMMMMMMMMMMMMMMMMM..MMMMMMMMMMMMM~~~~~~~~~~~~~~~~~~~~~~..o03o..~~~~~~~~~~~~
 ~~~~~~~~MMMMMMMM!M......*....######...MMMM.MMMMMMMMMMMMMMMMMMMMMMMMMMM..MMMMMMMMMM~~~~~~~~~~~~~~~~~~~~~~~~~~...oo.~~~~~~~~~~~~~~
-~~~~~~~~MMMMMMMMMMMMMM.M*M!...o01o...###MMMMMMMMMMMMMMMMMMMMMMMMMMMMM..MMMMMMM~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.....~~~~~~~~~~~~~~
+~~~~~~~~MMMMMMMMMMMMMM.M*M!...oo!o...###MMMMMMMMMMMMMMMMMMMMMMMMMMMMM..MMMMMMM~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~.....~~~~~~~~~~~~~~
 ~~~~~~~~MMMMMMMMMMMMMM!M*MMM...oo...####MMMMMMMMMMMMMMMMMMMMMMMMMMMMM..MMMMMMM~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ~~~~~~~~MMMMMMMMMMMMMMMMMMMM........####MMMMMMMMMMMMMMM##MMMMMMMMMMMM..MMMMMMM~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ~~~~~~~~MMMMMMMMMMMMMMMMMMMMM.......####MMMMMMMMMMMM#######MMMMMMMMMM..MMMMMMM~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -55,7 +55,7 @@
 ~~~~~~~~......................^^^^^^.......................................................#MM###.............MMMMM~~~~~~~~~~~~~
 ~~~~~~~~...............MMMM.............................................................###MMM##............MMMMMMMM~~~~~~~~~~~~
 ~~~~~~~~~~............MMMMMM..........................................................####MMM##...........MMMMMMMMMM~~~~~~~~~~~~
-~~~~~~~~~~~~~~........06.............................................................###MMMMM#..........MMMMMMMMMMMMMM~~~~~~~~~~
+~~~~~~~~~~~~~~........o!.............................................................###MMMMM#..........MMMMMMMMMMMMMM~~~~~~~~~~
 ~~~~~~~~~~~~~~~********************************************************............###MMMMMM............MMMMMMMMMMMMMMM~~~~~~~~~
 ~~~~~~~~~~~~~~~~......................................................****........###MMMMMMM..........MMMMMMMMMMMMMMMMMMM~~~~~~~
 ~~~~~~~~~~~~~~~~~~~..............~~~.....................................***********MMMMMMMMMM.......MMMMMMMMMMMMMMMMMMMMMMMM~~~
@@ -74,14 +74,17 @@ C = Cave (dark grey)
 
 
 
-Road: C -> 0, trail
-Road: 0 -> 1, track
-Road: 1 -> 2, highway
-Road: 1 -> 5, road
-Road: 5 -> 4, track
-Road: 5 -> 6, track
+Road: MeagreDungeon -> Iglin, trail
+Road: Iglin -> Relion, track
+Road: Relion -> Kanfold, highway
+Road: Relion -> Dragongate, road
+Road: Dragongate -> Jethan, track
+Road: Dragongate -> Rathen, track
 
 !  8,21 = Town (Iglin) # top-left is 1,1
 !  9,17 = Stronghold (MeagreDungeon) # The cave
 ! 11,23 = LairEntrance (Iglin tunnels)
 ! 10,27 = LairExit (Iglin tunnels)
+! 10,33 = Town (Relion)
+!  6,36 = Town (Kanfold)
+! 58,24 = Town (Rathen)

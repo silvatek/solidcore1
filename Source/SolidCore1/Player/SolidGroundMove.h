@@ -34,12 +34,16 @@ namespace SolidGroundMove
 		FVector2D WorldMinXY,
 		FVector2D WorldMaxXY);
 
-	/** True when the point lies on an intact deck or either ramp. A broken deck stays closed. */
+	/**
+	 * True when the point lies on an intact deck or on a ramp.
+	 * A broken deck stays closed. Its ramps stop at the lip, so the gap beyond is closed too.
+	 */
 	bool BridgeOpens(const SolidBridge::FBridge& Bridge, float X, float Y);
 
 	/**
 	 * Open ground, or the river channel where an intact bridge stands.
 	 * An empty bridge list leaves the channel closed.
+	 * A broken span also closes the bank in front of each ramp, so a step off that lip is refused.
 	 */
 	bool AllowsFooting(
 		const USolidWorldMap& Map,

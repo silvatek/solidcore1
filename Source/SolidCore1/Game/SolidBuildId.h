@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0361")
+#define SOLID_BUILD_ID TEXT("SC1-0362")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The Iglin bridge has no center span.")
+#define SOLID_BUILD_NOTE TEXT("A broken ramp ends cleanly, and you can walk back down.")
 #endif

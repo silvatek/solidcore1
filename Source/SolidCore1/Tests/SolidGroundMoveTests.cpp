@@ -243,6 +243,32 @@ bool FSolidGroundMoveBrokenTest::RunTest(const FString& Parameters)
 	TestFalse(
 		TEXT("the channel beside a broken bridge stays closed"),
 		GroundMoveAllows(*Map, Channel + FVector2D(0.f, 150.f), Broken));
+
+	// RampTo[0] is the lip, on the bank. The next point walks away from the gap.
+	const FVector2D BankPastLip(Channel.X + 250.f, Channel.Y);
+	TestTrue(TEXT("the bank in front of an intact ramp is open"), GroundMoveAllows(*Map, BankPastLip, Intact));
+	TestFalse(TEXT("the bank in front of a broken ramp is closed"), GroundMoveAllows(*Map, BankPastLip, Broken));
+	TestTrue(TEXT("the broken ramp lip can still be stood on"), GroundMoveAllows(*Map, FVector2D(Span.RampTo[0].X, Span.RampTo[0].Y), Broken));
+	TestTrue(
+		TEXT("the broken ramp can be walked back down"),
+		GroundMoveAllows(*Map, FVector2D(Channel.X + 500.f, Channel.Y), Broken));
+
+	auto Footing = [&Map, &Broken](const float X, const float Y)
+	{
+		return GroundMoveAllows(*Map, FVector2D(X, Y), Broken);
+	};
+	const FVector2D TowardGap = SolidGroundMove::ClampPlanar(
+		FVector2D(Channel.X + 320.f, Channel.Y),
+		FVector2D(-100.f, 0.f),
+		42.f,
+		Footing);
+	TestTrue(TEXT("a step off the broken ramp stops"), TowardGap.IsNearlyZero());
+	const FVector2D BackDown = SolidGroundMove::ClampPlanar(
+		FVector2D(Channel.X + 320.f, Channel.Y),
+		FVector2D(100.f, 0.f),
+		42.f,
+		Footing);
+	TestTrue(TEXT("a step back down the broken ramp continues"), BackDown.Equals(FVector2D(100.f, 0.f), 0.1f));
 	return true;
 }
 

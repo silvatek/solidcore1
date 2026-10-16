@@ -274,7 +274,7 @@ namespace
 		return Mesh;
 	}
 
-	/** Strip along a centerline. The deck is capped. A ramp is capped only at the buried end. */
+	/** Strip along a centerline. The deck is capped at both ends. A ramp is always capped at the buried end. */
 	UStaticMesh* BuildStrip(UObject* Outer, const TArray<FVector>& WorldLine, const float WidthCm, const FVector& Origin, const bool bCapStart, const bool bCapEnd, const TCHAR* Name)
 	{
 		if (WorldLine.Num() < 2)
@@ -364,10 +364,17 @@ namespace
 		return BuildStrip(Outer, Bridge.Deck, Bridge.WidthCm, Origin, true, true, TEXT("deck"));
 	}
 
-	UStaticMesh* BuildRampMesh(UObject* Outer, const TArray<FVector>& Centerline, const float WidthCm, const FVector& Origin, const TCHAR* Name)
+	UStaticMesh* BuildRampMesh(
+		UObject* Outer,
+		const TArray<FVector>& Centerline,
+		const float WidthCm,
+		const FVector& Origin,
+		const bool bCapLip,
+		const TCHAR* Name)
 	{
-		// The first point meets the deck. The last point is the buried end.
-		return BuildStrip(Outer, Centerline, WidthCm, Origin, false, true, Name);
+		// The first point meets the deck. Cap it when that deck is missing.
+		// The last point is the buried end.
+		return BuildStrip(Outer, Centerline, WidthCm, Origin, bCapLip, true, Name);
 	}
 }
 
@@ -733,12 +740,12 @@ void ASolidBridge::BuildVisuals()
 		DeckMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		Paint(DeckMesh, this, TEXT("BridgeDeckTimber"), TEXT("BridgeDeckRoad"));
 	}
-	if (UStaticMesh* Ramp = BuildRampMesh(this, Bridge.RampFrom, Bridge.WidthCm, Origin, TEXT("ramp from")))
+	if (UStaticMesh* Ramp = BuildRampMesh(this, Bridge.RampFrom, Bridge.WidthCm, Origin, Bridge.bBroken, TEXT("ramp from")))
 	{
 		RampFromMesh->SetStaticMesh(Ramp);
 		Paint(RampFromMesh, this, TEXT("BridgeRampFromTimber"), TEXT("BridgeRampFromRoad"));
 	}
-	if (UStaticMesh* Ramp = BuildRampMesh(this, Bridge.RampTo, Bridge.WidthCm, Origin, TEXT("ramp to")))
+	if (UStaticMesh* Ramp = BuildRampMesh(this, Bridge.RampTo, Bridge.WidthCm, Origin, Bridge.bBroken, TEXT("ramp to")))
 	{
 		RampToMesh->SetStaticMesh(Ramp);
 		Paint(RampToMesh, this, TEXT("BridgeRampToTimber"), TEXT("BridgeRampToRoad"));

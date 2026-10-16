@@ -11,7 +11,7 @@ class UStaticMeshComponent;
 /**
  * A bridge where a route crosses river water.
  * Three pieces: a ramp, a flat center, and a ramp. The center is its own mesh.
- * A broken bridge leaves that mesh out, so nothing can cross the gap. The ramps stay.
+ * A broken bridge leaves that mesh out. Each ramp is capped at the gap, and nothing can cross.
  * The center is as wide as that road and as long as the water it crosses.
  * It follows the painted strip, half a terrain quad southwest of the cell centres.
  * Each ramp runs down to its own bank and continues into the ground.

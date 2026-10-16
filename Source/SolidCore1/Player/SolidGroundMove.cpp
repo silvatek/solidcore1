@@ -77,6 +77,64 @@ namespace
 		Out.Max = Terrain->GetWorldMaxXY();
 		return true;
 	}
+
+	/**
+	 * Ramp[0] is the lip at the deck. When bHoldAtLip is set, ground past that lip
+	 * (toward the missing span) is not part of the ramp.
+	 */
+	bool CoversRamp(const TArray<FVector>& Line, const FVector2D& Point, const float Half, const bool bHoldAtLip)
+	{
+		if (Line.Num() == 0)
+		{
+			return false;
+		}
+		if (Line.Num() == 1)
+		{
+			return !bHoldAtLip && FVector2D::Distance(Point, FVector2D(Line[0].X, Line[0].Y)) <= Half;
+		}
+
+		for (int32 Index = 1; Index < Line.Num(); ++Index)
+		{
+			const FVector2D A(Line[Index - 1].X, Line[Index - 1].Y);
+			const FVector2D B(Line[Index].X, Line[Index].Y);
+			if (bHoldAtLip && Index == 1)
+			{
+				const FVector2D Span = B - A;
+				const float Denom = Span.SizeSquared();
+				if (Denom <= KINDA_SMALL_NUMBER)
+				{
+					continue;
+				}
+				const float Along = FVector2D::DotProduct(Point - A, Span) / Denom;
+				if (Along < 0.f)
+				{
+					continue;
+				}
+			}
+			if (SolidRoad::DistanceToSegmentCm(Point, A, B) <= Half)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** The deck corridor of a broken bridge, except the ramp surfaces that still meet the lip. */
+	bool ClosesBrokenSpan(const SolidBridge::FBridge& Bridge, const FVector2D& Point)
+	{
+		if (!Bridge.bBroken)
+		{
+			return false;
+		}
+		const float Half = Bridge.WidthCm * 0.5f;
+		if (Half <= 0.f)
+		{
+			return false;
+		}
+		return DistanceToLine(Bridge.Deck, Point) <= Half
+			&& !CoversRamp(Bridge.RampFrom, Point, Half, true)
+			&& !CoversRamp(Bridge.RampTo, Point, Half, true);
+	}
 }
 
 bool SolidGroundMove::IsImpassableGround(
@@ -99,8 +157,8 @@ bool SolidGroundMove::BridgeOpens(const SolidBridge::FBridge& Bridge, const floa
 	const FVector2D Point(X, Y);
 	const bool bDeck = !Bridge.bBroken && DistanceToLine(Bridge.Deck, Point) <= Half;
 	return bDeck
-		|| DistanceToLine(Bridge.RampFrom, Point) <= Half
-		|| DistanceToLine(Bridge.RampTo, Point) <= Half;
+		|| CoversRamp(Bridge.RampFrom, Point, Half, Bridge.bBroken)
+		|| CoversRamp(Bridge.RampTo, Point, Half, Bridge.bBroken);
 }
 
 bool SolidGroundMove::AllowsFooting(
@@ -111,6 +169,14 @@ bool SolidGroundMove::AllowsFooting(
 	const FVector2D WorldMaxXY,
 	const TArray<SolidBridge::FBridge>& Bridges)
 {
+	const FVector2D Point(X, Y);
+	for (const SolidBridge::FBridge& Bridge : Bridges)
+	{
+		if (ClosesBrokenSpan(Bridge, Point))
+		{
+			return false;
+		}
+	}
 	if (!IsImpassableGround(Map, X, Y, WorldMinXY, WorldMaxXY))
 	{
 		return true;

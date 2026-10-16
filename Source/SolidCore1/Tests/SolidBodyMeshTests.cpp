@@ -1546,7 +1546,8 @@ bool FSolidBodyBaseTest::RunTest(const FString& Parameters)
 {
 	using namespace SolidBodyMesh;
 
-	TestTrue(TEXT("no parts leave the base at the mesh origin"), FMath::IsNearlyEqual(BodyBaseZ({}), 0.f, 0.01f));
+	const TArray<FSolidDeformBone> NoBones;
+	TestTrue(TEXT("no parts leave the base at the mesh origin"), FMath::IsNearlyEqual(BodyBaseZ(NoBones), 0.f, 0.01f));
 
 	TArray<FSolidDeformBone> Bones;
 	auto AddBone = [&Bones](const TCHAR* Name, const int32 Parent, const FVector& Translation)

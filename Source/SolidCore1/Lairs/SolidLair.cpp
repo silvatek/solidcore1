@@ -1,7 +1,7 @@
 #include "SolidLair.h"
 #include "SolidStrongholds.h"
 
-namespace
+namespace SolidLairMouth
 {
 	/** Map step (column, row) toward grass. Row +1 is south; column +1 is west. Same order as the cave. */
 	const FIntPoint NeighborSteps[] = {
@@ -49,11 +49,11 @@ int32 SolidLair::CollectEntrances(
 
 			const FIntPoint* ChosenStep = nullptr;
 			FIntPoint GrassCell = FIntPoint::ZeroValue;
-			for (const FIntPoint& Step : NeighborSteps)
+			for (const FIntPoint& Step : SolidLairMouth::NeighborSteps)
 			{
 				const int32 NextX = Col + Step.X;
 				const int32 NextY = Row + Step.Y;
-				if (!InBounds(NextX, NextY))
+				if (!SolidLairMouth::InBounds(NextX, NextY))
 				{
 					continue;
 				}
@@ -85,7 +85,7 @@ int32 SolidLair::CollectEntrances(
 			Entrance.EdgeXY = (MouthXY + GrassXY) * 0.5f;
 			const FVector2D TowardGrass = (GrassXY - MouthXY).GetSafeNormal();
 			Entrance.WorldXY = Entrance.EdgeXY + TowardGrass * SolidStrongholds::FaceInsetCm;
-			Entrance.FacingYawDeg = YawFacingGrass(*ChosenStep);
+			Entrance.FacingYawDeg = SolidLairMouth::YawFacingGrass(*ChosenStep);
 			OutEntrances.Add(Entrance);
 		}
 	}

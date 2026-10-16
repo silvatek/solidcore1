@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0383")
+#define SOLID_BUILD_ID TEXT("SC1-0384")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Iglin tunnel tests compile in the unity build.")
+#define SOLID_BUILD_NOTE TEXT("Iglin tunnel mouth helpers stay out of the unity-build clash.")
 #endif

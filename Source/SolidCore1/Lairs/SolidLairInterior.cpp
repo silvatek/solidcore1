@@ -10,7 +10,7 @@
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"
 
-namespace
+namespace SolidLairInteriorPrivate
 {
 	void PlaceMouth(
 		UStaticMeshComponent* Mouth,
@@ -256,16 +256,16 @@ void ASolidLairInterior::BuildVisuals()
 					const FVector2D DoorB = B - Dir * Stub;
 					if (Stub > 1.f)
 					{
-						AddRock(WallShell, A, DoorA, Outward[Side], 0.f, Height, Shell, ShapeSize);
-						AddRock(WallShell, DoorB, B, Outward[Side], 0.f, Height, Shell, ShapeSize);
+						SolidLairInteriorPrivate::AddRock(WallShell, A, DoorA, Outward[Side], 0.f, Height, Shell, ShapeSize);
+						SolidLairInteriorPrivate::AddRock(WallShell, DoorB, B, Outward[Side], 0.f, Height, Shell, ShapeSize);
 					}
-					AddRock(WallShell, DoorA, DoorB, Outward[Side], SolidLair::MouthHeightCm, Height, Shell, ShapeSize);
+					SolidLairInteriorPrivate::AddRock(WallShell, DoorA, DoorB, Outward[Side], SolidLair::MouthHeightCm, Height, Shell, ShapeSize);
 					const FVector2D Mid = (DoorA + DoorB) * 0.5f;
 					const float Yaw = FMath::RadiansToDegrees(FMath::Atan2(Delta.Y, Delta.X));
 					const float Lip = 16.f;
 					const FVector MouthCenter = FVector(Mid.X, Mid.Y, SolidLair::MouthHeightCm * 0.5f)
 						+ FVector(Outward[Side].X, Outward[Side].Y, 0.f) * (Lip * 0.5f);
-					PlaceMouth(
+					SolidLairInteriorPrivate::PlaceMouth(
 						bWestDoor ? MouthX.Get() : MouthY.Get(),
 						Cube,
 						this,
@@ -276,7 +276,7 @@ void ASolidLairInterior::BuildVisuals()
 					continue;
 				}
 
-				AddRock(WallShell, A, B, Outward[Side], 0.f, Height, Shell, ShapeSize);
+				SolidLairInteriorPrivate::AddRock(WallShell, A, B, Outward[Side], 0.f, Height, Shell, ShapeSize);
 			}
 		}
 	}

@@ -3,6 +3,7 @@
 #include "HUD/SolidPointer.h"
 #include "SolidClickMove.h"
 #include "SolidGroundMove.h"
+#include "Lairs/SolidLairInterior.h"
 #include "Strongholds/SolidDungeonEntrance.h"
 #include "Strongholds/SolidDungeonInterior.h"
 #include "Strongholds/SolidDungeonPassage.h"
@@ -391,7 +392,7 @@ void ASolidCharacter::UpdateNameLabelVisibility()
 	{
 		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 		{
-			bInStronghold = GameMode->IsInDungeon();
+			bInStronghold = GameMode->IsInDungeon() || GameMode->IsInLair();
 			for (const TObjectPtr<ASolidCompanionCharacter>& Companion : GameMode->GetCompanions())
 			{
 				if (IsValid(Companion))
@@ -971,6 +972,10 @@ void ASolidCharacter::MainMenuConfirm()
 		const ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
 		const bool bInDungeon = GameMode && GameMode->IsInDungeon();
 		const bool bCaveEnabled = GameMode && GameMode->IsCaveEnabled();
+		if (GameMode && GameMode->IsInLair())
+		{
+			return;
+		}
 		if (!SolidMainMenu::CanUseCaveRow(bCaveEnabled, bInDungeon))
 		{
 			return;
@@ -1243,10 +1248,10 @@ void ASolidCharacter::ClickMoveFromInput()
 		return;
 	}
 
-	const SolidDungeonPassage::EHit Blocking = CavePassageOverlapping(Destination);
-	if (Blocking != SolidDungeonPassage::EHit::None)
+	const SolidLair::FPassageHit Blocking = PassageOverlapping(Destination);
+	if (Blocking.Action != SolidDungeonPassage::EHit::None)
 	{
-		ActivateCavePassage(Blocking);
+		ActivatePassage(Blocking);
 		return;
 	}
 
@@ -1297,11 +1302,11 @@ bool ASolidCharacter::IsPointerShown() const
 namespace
 {
 	template<typename HitsFn>
-	SolidDungeonPassage::EHit SolidCaveMouthBox(UWorld* World, HitsFn Hits)
+	SolidLair::FPassageHit SolidClosedMouthBox(UWorld* World, HitsFn Hits)
 	{
 		if (!World)
 		{
-			return SolidDungeonPassage::EHit::None;
+			return SolidLair::FPassageHit();
 		}
 
 		for (TActorIterator<ASolidDungeonEntrance> Entrance(World); Entrance; ++Entrance)
@@ -1309,7 +1314,7 @@ namespace
 			const UStaticMeshComponent* Mouth = Entrance->GetMouthMesh();
 			if (Mouth && Hits(Mouth->CalcBounds(Mouth->GetComponentTransform()).GetBox()))
 			{
-				return SolidDungeonPassage::EHit::Enter;
+				return SolidLair::HitOnMouth(Entrance->IsLairMouth(), Entrance->GetEndMarker(), false);
 			}
 		}
 		for (TActorIterator<ASolidDungeonInterior> Interior(World); Interior; ++Interior)
@@ -1317,45 +1322,52 @@ namespace
 			const UStaticMeshComponent* Mouth = Interior->GetMouthMesh();
 			if (Mouth && Hits(Mouth->CalcBounds(Mouth->GetComponentTransform()).GetBox()))
 			{
-				return SolidDungeonPassage::EHit::Leave;
+				return SolidLair::HitOnMouth(false, 0, true);
 			}
 		}
-		return SolidDungeonPassage::EHit::None;
+		for (TActorIterator<ASolidLairInterior> Interior(World); Interior; ++Interior)
+		{
+			const TCHAR Ends[] = { USolidWorldMap::XMarker, USolidWorldMap::YMarker };
+			for (const TCHAR End : Ends)
+			{
+				const UStaticMeshComponent* Mouth = Interior->GetEndMouth(End);
+				if (Mouth && Hits(Mouth->CalcBounds(Mouth->GetComponentTransform()).GetBox()))
+				{
+					return SolidLair::HitOnMouth(true, End, true);
+				}
+			}
+		}
+		return SolidLair::FPassageHit();
 	}
 }
 
-SolidDungeonPassage::EHit ASolidCharacter::AllowCaveHit(const SolidDungeonPassage::EHit Hit) const
+SolidLair::FPassageHit ASolidCharacter::AllowPassage(const SolidLair::FPassageHit& Hit) const
 {
-	if (Hit != SolidDungeonPassage::EHit::Enter)
-	{
-		return Hit;
-	}
 	const UWorld* World = GetWorld();
 	const ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
-	if (GameMode && GameMode->IsCaveEnabled())
-	{
-		return Hit;
-	}
-	return SolidDungeonPassage::EHit::None;
+	return SolidLair::AllowPassage(
+		Hit,
+		GameMode && GameMode->IsCaveEnabled(),
+		GameMode && GameMode->AreTunnelsOpen());
 }
 
-SolidDungeonPassage::EHit ASolidCharacter::CavePassageOverlapping(const FVector& Location) const
+SolidLair::FPassageHit ASolidCharacter::PassageOverlapping(const FVector& Location) const
 {
-	return AllowCaveHit(SolidCaveMouthBox(GetWorld(), [&Location](const FBox& Box)
+	return AllowPassage(SolidClosedMouthBox(GetWorld(), [&Location](const FBox& Box)
 	{
 		return Box.IsInsideOrOn(Location);
 	}));
 }
 
-SolidDungeonPassage::EHit ASolidCharacter::CavePassageUnderPointer() const
+SolidLair::FPassageHit ASolidCharacter::PassageUnderPointer() const
 {
 	if (!SolidDungeonPassage::AcceptsPointer(IsPointerShown(), IsMenuOverlayOpen() || IsPartyFormationDrillActive()))
 	{
-		return SolidDungeonPassage::EHit::None;
+		return SolidLair::FPassageHit();
 	}
 
-	const SolidDungeonPassage::EHit Inside = CavePassageOverlapping(GetActorLocation());
-	if (Inside != SolidDungeonPassage::EHit::None)
+	const SolidLair::FPassageHit Inside = PassageOverlapping(GetActorLocation());
+	if (Inside.Action != SolidDungeonPassage::EHit::None)
 	{
 		return Inside;
 	}
@@ -1364,29 +1376,41 @@ SolidDungeonPassage::EHit ASolidCharacter::CavePassageUnderPointer() const
 	FVector Direction = FVector::ZeroVector;
 	if (!ReadPointerRay(Origin, Direction))
 	{
-		return SolidDungeonPassage::EHit::None;
+		return SolidLair::FPassageHit();
 	}
 
-	return AllowCaveHit(SolidCaveMouthBox(GetWorld(), [&Origin, &Direction](const FBox& Box)
+	return AllowPassage(SolidClosedMouthBox(GetWorld(), [&Origin, &Direction](const FBox& Box)
 	{
 		return SolidDungeonPassage::RayHitsBox(Origin, Direction, Box, SolidClickMove::MaxRayCm);
 	}));
 }
 
-void ASolidCharacter::ActivateCavePassage(const SolidDungeonPassage::EHit Hit)
+void ASolidCharacter::ActivatePassage(const SolidLair::FPassageHit& Hit)
 {
 	UWorld* World = GetWorld();
 	ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
-	if (!GameMode || Hit == SolidDungeonPassage::EHit::None)
+	if (!GameMode || Hit.Action == SolidDungeonPassage::EHit::None)
 	{
 		return;
 	}
 
 	ClearClickMove();
-	UE_LOG(LogSolid, Warning, TEXT("Cave passage: %s"), SolidDungeonPassage::TipText(Hit));
-	if (Hit == SolidDungeonPassage::EHit::Enter)
+	UE_LOG(LogSolid, Warning, TEXT("Closed passage: %s"), SolidLair::PassageTip(Hit));
+	if (Hit.Action == SolidDungeonPassage::EHit::Enter)
 	{
-		GameMode->TravelToDungeon();
+		if (Hit.bLair)
+		{
+			GameMode->TravelToLair(Hit.EndMarker);
+		}
+		else
+		{
+			GameMode->TravelToDungeon();
+		}
+		return;
+	}
+	if (Hit.bLair)
+	{
+		GameMode->TravelFromLair(Hit.EndMarker);
 		return;
 	}
 	GameMode->TravelToWorld();
@@ -1399,7 +1423,7 @@ void ASolidCharacter::UpdateCavePassageHover()
 	{
 		return;
 	}
-	HUD->SetCavePassageTip(SolidDungeonPassage::TipText(CavePassageUnderPointer()));
+	HUD->SetCavePassageTip(SolidLair::PassageTip(PassageUnderPointer()));
 }
 
 bool ASolidCharacter::ReadPointerPosition(float& OutX, float& OutY) const
@@ -1516,10 +1540,10 @@ void ASolidCharacter::PollClickMovePress()
 		}
 	}
 
-	const SolidDungeonPassage::EHit Passage = CavePassageUnderPointer();
-	if (Passage != SolidDungeonPassage::EHit::None)
+	const SolidLair::FPassageHit Passage = PassageUnderPointer();
+	if (Passage.Action != SolidDungeonPassage::EHit::None)
 	{
-		ActivateCavePassage(Passage);
+		ActivatePassage(Passage);
 		return;
 	}
 	ClickMoveFromInput();

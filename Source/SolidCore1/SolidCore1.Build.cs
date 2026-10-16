@@ -19,6 +19,7 @@ public class SolidCore1 : ModuleRules
 		PrivateIncludePaths.Add(ModuleDirectory + "/Vegetation");
 		PrivateIncludePaths.Add(ModuleDirectory + "/Towns");
 		PrivateIncludePaths.Add(ModuleDirectory + "/Strongholds");
+		PrivateIncludePaths.Add(ModuleDirectory + "/Lairs");
 		PrivateIncludePaths.Add(ModuleDirectory + "/HUD");
 		PrivateIncludePaths.Add(ModuleDirectory + "/Menus");
 		PrivateIncludePaths.Add(ModuleDirectory + "/Journal");

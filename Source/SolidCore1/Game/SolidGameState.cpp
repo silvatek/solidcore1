@@ -1,4 +1,5 @@
 #include "SolidGameState.h"
+#include "Lairs/SolidLair.h"
 
 namespace
 {
@@ -147,6 +148,18 @@ void RememberStronghold(
 		When,
 		SolidJournal::EJournalType::Stronghold,
 		bEnter ? FString(TEXT("Enter Stronghold")) : FString(TEXT("Exit Stronghold")));
+}
+
+void RememberLair(
+	FGameState& State,
+	const SolidWorldTime::FStamp& When,
+	const bool bEnter)
+{
+	Remember(
+		State,
+		When,
+		SolidJournal::EJournalType::Lair,
+		SolidLair::VisitJournalText(bEnter));
 }
 
 FResult NotifyOccupiedTown(

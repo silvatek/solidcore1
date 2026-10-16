@@ -7,8 +7,10 @@
 class UStaticMeshComponent;
 
 /**
- * Stone mouth on the cliff between a cave cell and the adjacent grassland.
- * The opening is solid. A left click on the dark mouth enters. F10 Enter cave does the same.
+ * Stone mouth on the cliff between a closed cell and the adjacent grassland.
+ * The cave uses one. Each Iglin tunnel end uses another, the same frame.
+ * The opening is solid. A left click on the dark mouth enters that place.
+ * F10 Enter cave does the same for the cave mouth only.
  * Local +X faces the grass. The stone sits toward the cliff of the actor origin.
  */
 UCLASS()
@@ -29,6 +31,16 @@ public:
 	UStaticMeshComponent* GetRightJamb() const { return RightJamb; }
 	UStaticMeshComponent* GetLintel() const { return Lintel; }
 
+	/** Marks this frame as one end of the Iglin tunnels. The cave frame stays unmarked. */
+	void SetLairEnd(TCHAR Marker)
+	{
+		bLairMouth = true;
+		EndMarker = static_cast<uint8>(FChar::ToUpper(Marker));
+	}
+
+	bool IsLairMouth() const { return bLairMouth; }
+	TCHAR GetEndMarker() const { return static_cast<TCHAR>(EndMarker); }
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<USceneComponent> SceneRoot;
@@ -44,4 +56,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<UStaticMeshComponent> Lintel;
+
+private:
+	/** False on the cave. True on a tunnel end. */
+	bool bLairMouth = false;
+	/** X or Y when this frame is a tunnel end. */
+	uint8 EndMarker = 0;
 };

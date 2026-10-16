@@ -67,6 +67,12 @@ namespace SolidEvents
 		const SolidWorldTime::FStamp& When,
 		bool bEnter);
 
+	/** Enter or exit the Iglin tunnels. The same trip can be noted again. */
+	void RememberLair(
+		FGameState& State,
+		const SolidWorldTime::FStamp& When,
+		bool bEnter);
+
 	/**
 	 * The captain is now on TownId (INDEX_NONE when the cell is not numbered).
 	 * A change of town fires every unfired EnterTown event whose parameter matches.

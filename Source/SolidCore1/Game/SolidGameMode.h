@@ -11,6 +11,7 @@ class ASolidBridge;
 class ASolidBuilding;
 class ASolidDungeonEntrance;
 class ASolidDungeonInterior;
+class ASolidLairInterior;
 class ASolidCompanionCharacter;
 class ASolidTownSign;
 class ASolidTree;
@@ -119,8 +120,14 @@ public:
 	/** True after F10 Enter cave, until F10 Leave cave. */
 	bool IsInDungeon() const;
 
+	/** True after a click on an Iglin tunnel mouth, until a click leaves. */
+	bool IsInLair() const;
+
 	/** Closing the monster message opens the starting cave. It starts closed. */
 	bool IsCaveEnabled() const { return Configuration.bCaveEnabled; }
+
+	/** Driven from the village opens the Iglin tunnel mouths. They start shut. */
+	bool AreTunnelsOpen() const;
 
 	/** The captain closed a shown message. Fires MessageClosed for that id. */
 	void NoteMessageClosed(const TCHAR* MessageId);
@@ -133,6 +140,12 @@ public:
 	 * Companions spawn beside him. The party builder stays closed.
 	 */
 	void TravelToWorld();
+
+	/** Unload the open world and load the Iglin tunnels at one end. X or Y. */
+	void TravelToLair(TCHAR EndMarker);
+
+	/** Load the open world again and stand the captain at that tunnel mouth. */
+	void TravelFromLair(TCHAR EndMarker);
 
 	/**
 	 * Create the company catalog and party on the first call.
@@ -157,13 +170,20 @@ protected:
 	void FireParadeEvents();
 	void EnsureCompanion();
 	void EnsureVegetation();
-	void SaveTravelSession(bool bInDungeon, bool bReturnToDungeonMouth);
+	void SaveTravelSession(
+		bool bInDungeon,
+		bool bReturnToDungeonMouth,
+		bool bInLair = false,
+		bool bReturnToLairMouth = false,
+		TCHAR LairEnd = 0);
 	void RestoreTravelSession();
 	void BeginDungeonInterior();
-	/** Sight, title, and the dungeon spawn. Retries while the pawn is still absent. */
+	void BeginLairInterior();
+	/** Sight, title, and the closed-visit spawn. Retries while the pawn is still absent. */
 	void FinishTravelArrival();
 	void ApplyCaptainFromSession();
 	void PlaceCaptainInDungeon();
+	void PlaceCaptainInLair();
 	/** The third-person playground blocks sit inside the room. Hide them for this visit. */
 	void HideTemplateProps();
 	SolidWorldTime::FStamp WorldStamp() const;
@@ -210,6 +230,9 @@ protected:
 
 	/** Interior spawned for this dungeon visit. The world keeps the actor alive. */
 	ASolidDungeonInterior* DungeonInterior = nullptr;
+	/** Interior spawned for this tunnel visit. The world keeps the actor alive. */
+	ASolidLairInterior* LairInterior = nullptr;
 	bool bCaptainTravelApplied = false;
 	bool bCaptainPlacedInDungeon = false;
+	bool bCaptainPlacedInLair = false;
 };

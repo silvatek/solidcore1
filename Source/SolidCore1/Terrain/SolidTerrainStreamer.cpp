@@ -1,4 +1,5 @@
 #include "SolidTerrainStreamer.h"
+#include "Lairs/SolidLair.h"
 #include "SolidDungeonLevel.h"
 #include "SolidGameInstance.h"
 #include "SolidStrongholds.h"
@@ -593,6 +594,41 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 						}
 					}
 					Instance->ClearDungeonMouthSpawn();
+				}
+			}
+			else if (Instance->WantsLairMouthSpawn() && TerrainMap->GetWorldMap())
+			{
+				TArray<SolidLair::FEntrance> Entrances;
+				SolidLair::CollectEntrances(
+					TerrainMap->GetWorldMap(),
+					TerrainMap->GetWorldMinXY(),
+					TerrainMap->GetWorldMaxXY(),
+					Entrances);
+				const TCHAR End = Instance->GetSession().LairEnd;
+				const SolidLair::FEntrance* Chosen = nullptr;
+				for (const SolidLair::FEntrance& Entrance : Entrances)
+				{
+					if (Entrance.EndMarker == End)
+					{
+						Chosen = &Entrance;
+						break;
+					}
+				}
+				if (Chosen)
+				{
+					PawnXY = Chosen->WorldXY;
+					FacingYawDeg = Chosen->FacingYawDeg;
+					FacingPitchDeg = 0.f;
+					bHaveYaw = true;
+					bCaveMouth = true;
+					if (const APawn* Pawn = Cast<APawn>(Focus))
+					{
+						if (!Pawn->Controller)
+						{
+							return;
+						}
+					}
+					Instance->ClearLairMouthSpawn();
 				}
 			}
 		}

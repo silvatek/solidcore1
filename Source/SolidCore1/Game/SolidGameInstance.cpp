@@ -56,3 +56,8 @@ void USolidGameInstance::ClearDungeonMouthSpawn()
 {
 	Session.bReturnToDungeonMouth = false;
 }
+
+void USolidGameInstance::ClearLairMouthSpawn()
+{
+	Session.bReturnToLairMouth = false;
+}

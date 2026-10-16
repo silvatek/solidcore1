@@ -71,7 +71,7 @@ public:
 	static constexpr TCHAR DesertMarker = TEXT('^');
 
 	/**
-	 * Extra markers. They stay on the cell, use the mountain shelf,
+	 * Iglin tunnel mouths. They stay on the cell, use the mountain shelf,
 	 * and are not towns, locations, or the cave.
 	 */
 	static constexpr TCHAR XMarker = TEXT('X');

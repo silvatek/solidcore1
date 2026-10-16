@@ -5,7 +5,7 @@
 
 /**
  * One journal line. Event lines point at the event catalog.
- * Stronghold lines are the visit text, and the same trip can be written again.
+ * Stronghold lines and lair lines are the visit text, and the same trip can be written again.
  */
 namespace SolidJournal
 {
@@ -13,6 +13,7 @@ namespace SolidJournal
 	{
 		Stronghold,
 		Event,
+		Lair,
 	};
 
 	/** Oldest line drops off once the page is this full. */
@@ -26,7 +27,7 @@ namespace SolidJournal
 		int32 MinuteOfSession = 0;
 		/** Catalog index when Type is Event. */
 		int32 EventIndex = INDEX_NONE;
-		/** Visit text when Type is Stronghold. */
+		/** Visit text when Type is Stronghold or Lair. */
 		FString Text;
 	};
 }

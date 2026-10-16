@@ -6,7 +6,7 @@
 #include "SolidWorldTime.h"
 #include "SolidGameInstance.generated.h"
 
-/** Holds the captain's trip across the open world and a dungeon interior. */
+/** Holds the captain's trip across the open world and a closed visit. */
 UCLASS()
 class SOLIDCORE1_API USolidGameInstance : public UGameInstance
 {
@@ -23,6 +23,10 @@ public:
 	bool IsInDungeon() const { return bHasSession && Session.bInDungeon; }
 	bool WantsDungeonMouthSpawn() const { return bHasSession && Session.bReturnToDungeonMouth; }
 	void ClearDungeonMouthSpawn();
+
+	bool IsInLair() const { return bHasSession && Session.bInLair; }
+	bool WantsLairMouthSpawn() const { return bHasSession && Session.bReturnToLairMouth; }
+	void ClearLairMouthSpawn();
 
 	/**
 	 * World time for a journal line. A new process advances the date once.

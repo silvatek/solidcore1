@@ -5,6 +5,7 @@
 #include "InputActionValue.h"
 #include "Party/SolidPartyDrill.h"
 #include "SolidSight.h"
+#include "Lairs/SolidLair.h"
 #include "Strongholds/SolidDungeonPassage.h"
 #include "SolidCharacter.generated.h"
 
@@ -72,7 +73,7 @@ public:
 	/** Move the captain onto a landing. Pitch 0 is a level camera. Clears a click-walk and a formation drill. */
 	void ArriveByPortal(const FVector& NewLocation, float YawDegrees, float PitchDegrees = 0.f);
 	void ToggleSight();
-	/** Hide the nameplate in true sight, in a stronghold, and while no companions are out. */
+	/** Hide the nameplate in true sight, in a stronghold or lair, and while no companions are out. */
 	void UpdateNameLabelVisibility();
 
 protected:
@@ -100,11 +101,11 @@ protected:
 	bool ReadPointerPosition(float& OutX, float& OutY) const;
 	bool ReadPointerRay(FVector& OutOrigin, FVector& OutDirection) const;
 	bool IsPointerShown() const;
-	SolidDungeonPassage::EHit CavePassageUnderPointer() const;
-	SolidDungeonPassage::EHit CavePassageOverlapping(const FVector& Location) const;
-	/** Enter is ignored until the cave is open. Leave stays available. */
-	SolidDungeonPassage::EHit AllowCaveHit(SolidDungeonPassage::EHit Hit) const;
-	void ActivateCavePassage(SolidDungeonPassage::EHit Hit);
+	SolidLair::FPassageHit PassageUnderPointer() const;
+	SolidLair::FPassageHit PassageOverlapping(const FVector& Location) const;
+	/** Enter is ignored until that place is open. Leave stays available. */
+	SolidLair::FPassageHit AllowPassage(const SolidLair::FPassageHit& Hit) const;
+	void ActivatePassage(const SolidLair::FPassageHit& Hit);
 	void TickClickMove();
 	void ClearClickMove();
 	bool ResolveClickMoveDestination(const FVector& RayOrigin, const FVector& RayDirection, FVector& OutDestination) const;

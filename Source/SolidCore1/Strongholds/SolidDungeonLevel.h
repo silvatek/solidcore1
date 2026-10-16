@@ -102,7 +102,7 @@ namespace SolidDungeonLevel
 	}
 }
 
-/** What survives the trip between the open world and a dungeon. */
+/** What survives the trip between the open world and a closed visit. */
 struct FSolidTravelSession
 {
 	FGameState Configuration;
@@ -113,4 +113,10 @@ struct FSolidTravelSession
 	bool bReturnToDungeonMouth = false;
 	/** Next loaded world is the dungeon interior. */
 	bool bInDungeon = false;
+	/** Next loaded world is the Iglin tunnels. */
+	bool bInLair = false;
+	/** Next open-world spawn stands on the grass in front of one tunnel mouth. */
+	bool bReturnToLairMouth = false;
+	/** X or Y. The end to enter, or the end to stand at after leaving. */
+	TCHAR LairEnd = 0;
 };

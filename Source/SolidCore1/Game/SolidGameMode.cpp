@@ -25,6 +25,8 @@
 #include "Towns/SolidTownBuildings.h"
 #include "Towns/SolidTownSign.h"
 #include "Towns/SolidTownSigns.h"
+#include "Lairs/SolidLair.h"
+#include "Lairs/SolidLairInterior.h"
 #include "Strongholds/SolidDungeonEntrance.h"
 #include "Strongholds/SolidDungeonInterior.h"
 #include "Strongholds/SolidDungeonLevel.h"
@@ -173,6 +175,13 @@ void ASolidGameMode::BeginPlay()
 		return;
 	}
 
+	if (IsInLair())
+	{
+		BeginLairInterior();
+		FinishTravelArrival();
+		return;
+	}
+
 	FinishTravelArrival();
 	EnsureTerrainStreamer();
 
@@ -198,12 +207,32 @@ bool ASolidGameMode::IsInDungeon() const
 	return Instance && Instance->IsInDungeon();
 }
 
-void ASolidGameMode::SaveTravelSession(const bool bInDungeon, const bool bReturnToDungeonMouth)
+bool ASolidGameMode::IsInLair() const
+{
+	if (SolidLair::RequestsVisit(OptionsString))
+	{
+		return true;
+	}
+	const USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>();
+	return Instance && Instance->IsInLair();
+}
+
+bool ASolidGameMode::AreTunnelsOpen() const
+{
+	return SolidLair::TunnelsOpen(Configuration);
+}
+
+void ASolidGameMode::SaveTravelSession(
+	const bool bInDungeon,
+	const bool bReturnToDungeonMouth,
+	const bool bInLair,
+	const bool bReturnToLairMouth,
+	const TCHAR LairEnd)
 {
 	USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>();
 	if (!Instance)
 	{
-		UE_LOG(LogSolid, Error, TEXT("Dungeon travel needs USolidGameInstance."));
+		UE_LOG(LogSolid, Error, TEXT("Closed-visit travel needs USolidGameInstance."));
 		return;
 	}
 
@@ -211,6 +240,9 @@ void ASolidGameMode::SaveTravelSession(const bool bInDungeon, const bool bReturn
 	Session.Configuration = Configuration;
 	Session.bInDungeon = bInDungeon;
 	Session.bReturnToDungeonMouth = bReturnToDungeonMouth;
+	Session.bInLair = bInLair;
+	Session.bReturnToLairMouth = bReturnToLairMouth;
+	Session.LairEnd = LairEnd;
 	if (Party)
 	{
 		Session.SelectedCompanionIndices = Party->GetSelectedCompanionIndices();
@@ -313,6 +345,11 @@ void ASolidGameMode::FinishTravelArrival()
 		HideTemplateProps();
 		PlaceCaptainInDungeon();
 	}
+	else if (IsInLair())
+	{
+		HideTemplateProps();
+		PlaceCaptainInLair();
+	}
 
 	UWorld* World = GetWorld();
 	if (!World)
@@ -320,7 +357,9 @@ void ASolidGameMode::FinishTravelArrival()
 		return;
 	}
 
-	const bool bDone = bCaptainTravelApplied && (!IsInDungeon() || bCaptainPlacedInDungeon);
+	const bool bDone = bCaptainTravelApplied
+		&& (!IsInDungeon() || bCaptainPlacedInDungeon)
+		&& (!IsInLair() || bCaptainPlacedInLair);
 	if (bDone)
 	{
 		World->GetTimerManager().ClearTimer(CaptainArrivalTimer);
@@ -361,6 +400,76 @@ void ASolidGameMode::BeginDungeonInterior()
 	HideTemplateProps();
 	PlaceCaptainInDungeon();
 	UE_LOG(LogSolid, Warning, TEXT("Dungeon interior loaded. Companions return when the captain leaves."));
+}
+
+void ASolidGameMode::BeginLairInterior()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	if (!LairInterior)
+	{
+		FActorSpawnParameters Params;
+		Params.Owner = this;
+		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		LairInterior = World->SpawnActor<ASolidLairInterior>(
+			ASolidLairInterior::StaticClass(),
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			Params);
+		if (LairInterior)
+		{
+			LairInterior->BuildVisuals();
+		}
+	}
+
+	HideTemplateProps();
+	PlaceCaptainInLair();
+	UE_LOG(LogSolid, Warning, TEXT("Iglin tunnels loaded. Companions return when the captain leaves."));
+}
+
+void ASolidGameMode::PlaceCaptainInLair()
+{
+	if (bCaptainPlacedInLair || !LairInterior)
+	{
+		return;
+	}
+
+	ASolidCharacter* Captain = FindCaptain(GetWorld());
+	if (!Captain)
+	{
+		return;
+	}
+
+	TCHAR End = SolidLair::RequestedEnd(OptionsString);
+	if (!SolidLair::IsEndMarker(End))
+	{
+		if (const USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>())
+		{
+			if (Instance->HasSession())
+			{
+				End = Instance->GetSession().LairEnd;
+			}
+		}
+	}
+	if (!SolidLair::IsEndMarker(End))
+	{
+		End = USolidWorldMap::XMarker;
+	}
+
+	float HalfHeight = 96.f;
+	if (const UCapsuleComponent* Capsule = Captain->GetCapsuleComponent())
+	{
+		HalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+	}
+	FVector Spawn = LairInterior->GetCaptainSpawnWorld(End);
+	Spawn.Z += HalfHeight + 4.f;
+	const FRotator View = LairInterior->GetCaptainView(End);
+	Captain->ArriveByPortal(Spawn, View.Yaw, View.Pitch);
+	bCaptainPlacedInLair = Captain->GetController() != nullptr;
 }
 
 void ASolidGameMode::HideTemplateProps()
@@ -407,7 +516,7 @@ void ASolidGameMode::TravelToDungeon()
 		return;
 	}
 	UWorld* World = GetWorld();
-	if (!World || IsInDungeon())
+	if (!World || IsInDungeon() || IsInLair())
 	{
 		return;
 	}
@@ -434,6 +543,50 @@ void ASolidGameMode::TravelToWorld()
 	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::LeaveOptions());
 }
 
+void ASolidGameMode::TravelToLair(const TCHAR EndMarker)
+{
+	if (!AreTunnelsOpen() || !SolidLair::IsEndMarker(EndMarker))
+	{
+		return;
+	}
+	UWorld* World = GetWorld();
+	if (!World || IsInLair() || IsInDungeon())
+	{
+		return;
+	}
+	const TCHAR End = FChar::ToUpper(EndMarker);
+	const SolidWorldTime::FStamp When = WorldStamp();
+	SolidEvents::RememberLair(Configuration, When, /*bEnter=*/true);
+	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Enter Iglin tunnels"), *SolidWorldTime::Format(When));
+	SaveTravelSession(
+		/*bInDungeon=*/false,
+		/*bReturnToDungeonMouth=*/false,
+		/*bInLair=*/true,
+		/*bReturnToLairMouth=*/false,
+		End);
+	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidLair::EnterOptions(End));
+}
+
+void ASolidGameMode::TravelFromLair(const TCHAR EndMarker)
+{
+	UWorld* World = GetWorld();
+	if (!World || !IsInLair())
+	{
+		return;
+	}
+	const TCHAR End = SolidLair::IsEndMarker(EndMarker) ? FChar::ToUpper(EndMarker) : USolidWorldMap::XMarker;
+	const SolidWorldTime::FStamp When = WorldStamp();
+	SolidEvents::RememberLair(Configuration, When, /*bEnter=*/false);
+	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Exit Iglin tunnels"), *SolidWorldTime::Format(When));
+	SaveTravelSession(
+		/*bInDungeon=*/false,
+		/*bReturnToDungeonMouth=*/false,
+		/*bInLair=*/false,
+		/*bReturnToLairMouth=*/true,
+		End);
+	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::LeaveOptions());
+}
+
 void ASolidGameMode::RefreshEvents()
 {
 	UWorld* World = GetWorld();
@@ -442,7 +595,7 @@ void ASolidGameMode::RefreshEvents()
 		return;
 	}
 
-	if (IsInDungeon())
+	if (IsInDungeon() || IsInLair())
 	{
 		return;
 	}
@@ -830,7 +983,7 @@ void ASolidGameMode::EnsureCompanion()
 		}
 	} Refresh{this};
 
-	if (IsInDungeon())
+	if (IsInDungeon() || IsInLair())
 	{
 		for (const TObjectPtr<ASolidCompanionCharacter>& Companion : SpawnedCompanions)
 		{
@@ -1092,6 +1245,7 @@ void ASolidGameMode::EnsureVegetation()
 
 	TArray<SolidTownSigns::FPlacement> SignPlacements;
 	TArray<SolidStrongholds::FEntrance> CaveEntrances;
+	TArray<SolidLair::FEntrance> TunnelEntrances;
 	TArray<FVector2D> SignClearCenters;
 	if (const USolidWorldMap* WorldMap = Streamer->GetTerrainMap()->GetWorldMap())
 	{
@@ -1099,6 +1253,7 @@ void ASolidGameMode::EnsureVegetation()
 		const FVector2D WorldMax = Streamer->GetTerrainMap()->GetWorldMaxXY();
 		SolidTownSigns::CollectPlacements(WorldMap, WorldMin, WorldMax, SignPlacements);
 		SolidStrongholds::CollectEntrances(WorldMap, WorldMin, WorldMax, CaveEntrances);
+		SolidLair::CollectEntrances(WorldMap, WorldMin, WorldMax, TunnelEntrances);
 		SignClearCenters.Reserve(SignPlacements.Num());
 		for (const SolidTownSigns::FPlacement& Placement : SignPlacements)
 		{
@@ -1239,7 +1394,30 @@ void ASolidGameMode::EnsureVegetation()
 			++Spawned;
 		}
 
-		UE_LOG(LogSolid, Warning, TEXT("Spawned %d cave entrances"), Spawned);
+		int32 TunnelMouths = 0;
+		for (const SolidLair::FEntrance& Entrance : TunnelEntrances)
+		{
+			FVector SpawnLoc(Entrance.WorldXY.X, Entrance.WorldXY.Y, 0.f);
+			const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
+			SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
+
+			ASolidDungeonEntrance* Mouth = World->SpawnActor<ASolidDungeonEntrance>(
+				ASolidDungeonEntrance::StaticClass(),
+				SpawnLoc,
+				FRotator(0.f, Entrance.FacingYawDeg, 0.f),
+				SpawnParams);
+			if (!Mouth)
+			{
+				continue;
+			}
+
+			Mouth->SetLairEnd(Entrance.EndMarker);
+			Mouth->BuildVisuals();
+			SpawnedDungeonEntrances.Add(Mouth);
+			++TunnelMouths;
+		}
+
+		UE_LOG(LogSolid, Warning, TEXT("Spawned %d cave entrances and %d tunnel mouths"), Spawned, TunnelMouths);
 	}
 
 	if (SpawnedBridges.Num() == 0)

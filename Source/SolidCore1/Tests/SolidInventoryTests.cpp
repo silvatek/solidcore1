@@ -682,9 +682,11 @@ bool FSolidInventoryCraftSlotsTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("the Craft button is to the right of the slots"),
 		Page.CraftButtonX >= First->X + First->W);
+	const float ButtonMidY = Page.CraftButtonY + Page.CraftButtonH * 0.5f;
+	const float RowMidY = First->Y + First->H * 0.5f;
 	TestTrue(
-		TEXT("the Craft button shares the row"),
-		FMath::IsNearlyEqual(Page.CraftButtonY, First->Y, 1.f));
+		TEXT("the Craft button sits on the crafting row"),
+		FMath::IsNearlyEqual(ButtonMidY, RowMidY, 1.f));
 	TestTrue(
 		TEXT("the button meets the right edge"),
 		FMath::IsNearlyEqual(Page.CraftButtonX + Page.CraftButtonW, Page.ContentW, 1.f));

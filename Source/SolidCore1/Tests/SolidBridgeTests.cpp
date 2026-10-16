@@ -368,9 +368,15 @@ bool FSolidBridgeAlignedTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("river cell"), bFound);
 
 	const SolidBridge::FBridge& Bridge = Bridges[0];
-	auto OnRoad = [&River](const FVector& Point)
+	// Bridge.Aligned used to expect the cell centre. The painted strip is half a
+	// quad southwest of that centre, and the bridge follows the strip.
+	const FVector2D Paint = SolidRoad::StripPaintOffset();
+	TestTrue(TEXT("paint offset is half a quad southwest"),
+		FMath::IsNearlyEqual(Paint.X, -0.5f * SolidRoad::TerrainQuadCm)
+		&& FMath::IsNearlyEqual(Paint.Y, -0.5f * SolidRoad::TerrainQuadCm));
+	auto OnRoad = [&River, Paint](const FVector& Point)
 	{
-		return FMath::Abs(Point.Y - River.Y) < 1.f;
+		return FMath::Abs(Point.Y - (River.Y + Paint.Y)) < 1.f;
 	};
 	for (const FVector& Point : Bridge.Deck)
 	{

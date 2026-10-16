@@ -13,6 +13,7 @@ class UStaticMeshComponent;
  * Three pieces: a ramp, a flat center, and a ramp. The center is its own mesh
  * so a later change can swap a broken span in its place. The ramps stay.
  * The center is as wide as that road and as long as the water it crosses.
+ * It follows the painted strip, half a terrain quad southwest of the cell centres.
  * Each ramp runs down to its own bank and continues into the ground.
  * Local offsets are centimetres. +X is east, +Y is north.
  */

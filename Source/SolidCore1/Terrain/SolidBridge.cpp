@@ -78,6 +78,8 @@ namespace
 			{
 				continue;
 			}
+			// The painted road is half a terrain quad southwest of the cell centre.
+			Center += SolidRoad::StripPaintOffset();
 			if (Out.Points.Num() == 0 || !Out.Points.Last().Equals(Center, 1.f))
 			{
 				Out.Points.Add(Center);

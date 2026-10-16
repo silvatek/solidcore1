@@ -7,7 +7,8 @@ class USolidWorldMap;
 
 /**
  * A road line in WorldMap.txt names a start, an end, and a type.
- * The route is a path of map cells. The painted strip is centred on those cells.
+ * The route is a path of map cells. A terrain quad takes the biome of its
+ * northeast corner, so the painted strip lies half a step southwest of those centres.
  * Trails are 1 m, tracks 2 m, roads 3 m, highways 4 m.
  * Every route stays off mountains and the sea. Roads and highways also stay off
  * forest and desert, and they pay extra for every river cell so a crossing is short.
@@ -69,6 +70,19 @@ namespace SolidRoad
 	inline constexpr int32 RiverBendCost = 4;
 	/** Closed ground. Mountains and the sea cost this for every type. Forest and desert cost it for a road or a highway. */
 	inline constexpr int32 AvoidCost = StepCost * 800;
+
+	/**
+	 * Terrain quads are this wide. Rounding picks the northeast corner, so the
+	 * painted strip lies half a step toward -X and -Y. A bridge uses that shift
+	 * and sits on the strip.
+	 */
+	inline constexpr float TerrainQuadCm = 200.f;
+	inline constexpr float StripPaintOffsetCm = -0.5f * TerrainQuadCm;
+
+	inline FVector2D StripPaintOffset()
+	{
+		return FVector2D(StripPaintOffsetCm, StripPaintOffsetCm);
+	}
 
 	inline float WidthCm(const EType Type)
 	{

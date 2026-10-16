@@ -68,7 +68,7 @@ namespace SolidBodyMesh
 
 		/**
 		 * The base of this body, in mesh space.
-		 * Each part measures its own lowest point. This keeps the minimum.
+		 * Asks each part for its base, then keeps the minimum.
 		 * Zero when no part draws.
 		 */
 		float Base(

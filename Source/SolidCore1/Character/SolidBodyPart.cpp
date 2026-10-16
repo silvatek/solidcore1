@@ -260,6 +260,58 @@ bool SolidBodyMesh::FSolidBodyPart::LowestZ(
 	return ConeLowestZ(Tube(From, To, WideAxis), OutZ);
 }
 
+bool SolidBodyMesh::FSolidBodyPart::Base(
+	const TArray<FSolidDeformBone>& Bones,
+	const TArray<FVector>& Positions,
+	float& OutZ) const
+{
+	if (this->Bones.Num() == 0)
+	{
+		return false;
+	}
+
+	const int32 Count = FMath::Min(Bones.Num(), Positions.Num());
+	const int32 Span = FindPartBone(Bones, this->Bones[0]);
+	if (Span == INDEX_NONE || Span >= Count)
+	{
+		return false;
+	}
+	const int32 Parent = Bones[Span].ParentIndex;
+	if (!Bones.IsValidIndex(Parent) || !Positions.IsValidIndex(Parent) || Parent >= Count)
+	{
+		return false;
+	}
+
+	TArray<FVector> SegmentStart;
+	TArray<FVector> SegmentEnd;
+	for (int32 BoneNumber = 1; BoneNumber < this->Bones.Num(); ++BoneNumber)
+	{
+		const int32 Bone = FindPartBone(Bones, this->Bones[BoneNumber]);
+		if (Bone == INDEX_NONE || Bone >= Count)
+		{
+			return false;
+		}
+		const int32 BoneParent = Bones[Bone].ParentIndex;
+		if (!Bones.IsValidIndex(BoneParent) || !Positions.IsValidIndex(BoneParent) || BoneParent >= Count)
+		{
+			return false;
+		}
+		SegmentStart.Add(Positions[BoneParent]);
+		SegmentEnd.Add(Positions[Bone]);
+	}
+
+	return LowestZ(
+		Parent,
+		Span,
+		Positions[Parent],
+		Positions[Span],
+		SegmentStart.GetData(),
+		SegmentEnd.GetData(),
+		SegmentStart.Num(),
+		FVector::ForwardVector,
+		OutZ);
+}
+
 void SolidBodyMesh::FSolidBodyPart::AddTri(
 	TArray<FSolidBodyTri>& Tris,
 	const int32 A,

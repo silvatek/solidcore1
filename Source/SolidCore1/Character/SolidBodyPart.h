@@ -162,7 +162,7 @@ namespace SolidBodyMesh
 	 * Bones[0] is the length of the piece. The other bones are wrapped inside it.
 	 * Start is the parent joint. End is Bones[0]. Mid is used by the shoulders.
 	 * Apply sizes the part and those bones. Fit measures the cones. Draw adds the triangles.
-	 * LowestZ is the bottom of that mesh. The body keeps the lowest one as its base.
+	 * Base is the bottom of this mesh. The body keeps the lowest one.
 	 */
 	class FSolidBodyPart
 	{
@@ -259,9 +259,20 @@ namespace SolidBodyMesh
 			const FVector& WideAxis);
 
 		/**
-		 * The bottom of this part's mesh, in mesh space.
-		 * A tube uses its two end rings. The head, a hand, and the shoulders measure their own mesh.
+		 * This part's base, in mesh space.
+		 * Finds the bones it wraps, then measures the mesh. A tube uses its two end rings.
+		 * The head, a hand, and the shoulders measure their own mesh.
 		 * False when this part draws nothing.
+		 */
+		bool Base(
+			const TArray<FSolidDeformBone>& Bones,
+			const TArray<FVector>& Positions,
+			float& OutZ) const;
+
+		/**
+		 * The bottom of this part once the joints are known.
+		 * Base finds those joints. A tube uses its two end rings.
+		 * The head, a hand, and the shoulders replace this.
 		 */
 		virtual bool LowestZ(
 			int32 WeightBone,

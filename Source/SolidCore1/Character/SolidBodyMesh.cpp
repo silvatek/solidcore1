@@ -1052,62 +1052,12 @@ float SolidBodyMesh::FSolidBodyMesh::Base(
 	const TArray<FSolidDeformBone>& Bones,
 	const TArray<FVector>& Positions) const
 {
-	const int32 Count = FMath::Min(Bones.Num(), Positions.Num());
 	float BaseZ = TNumericLimits<float>::Max();
 	bool bFound = false;
 	for (const TUniquePtr<FSolidBodyPart>& Part : Parts)
 	{
-		if (!Part || Part->Bones.Num() == 0)
-		{
-			continue;
-		}
-		const int32 Span = FindNamedBone(Bones, Count, *Part->Bones[0].ToString());
-		if (Span == INDEX_NONE)
-		{
-			continue;
-		}
-		const int32 Parent = Bones[Span].ParentIndex;
-		if (!Bones.IsValidIndex(Parent) || !Positions.IsValidIndex(Parent))
-		{
-			continue;
-		}
-
-		TArray<FVector> SegmentStart;
-		TArray<FVector> SegmentEnd;
-		bool bComplete = true;
-		for (int32 BoneNumber = 1; BoneNumber < Part->Bones.Num(); ++BoneNumber)
-		{
-			const int32 Bone = FindNamedBone(Bones, Count, *Part->Bones[BoneNumber].ToString());
-			if (Bone == INDEX_NONE)
-			{
-				bComplete = false;
-				break;
-			}
-			const int32 BoneParent = Bones[Bone].ParentIndex;
-			if (!Bones.IsValidIndex(BoneParent) || !Positions.IsValidIndex(BoneParent))
-			{
-				bComplete = false;
-				break;
-			}
-			SegmentStart.Add(Positions[BoneParent]);
-			SegmentEnd.Add(Positions[Bone]);
-		}
-		if (!bComplete)
-		{
-			continue;
-		}
-
 		float PartZ = 0.f;
-		if (!Part->LowestZ(
-			Parent,
-			Span,
-			Positions[Parent],
-			Positions[Span],
-			SegmentStart.GetData(),
-			SegmentEnd.GetData(),
-			SegmentStart.Num(),
-			FVector::ForwardVector,
-			PartZ))
+		if (!Part || !Part->Base(Bones, Positions, PartZ))
 		{
 			continue;
 		}

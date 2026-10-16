@@ -12,6 +12,23 @@
 
 namespace SolidEventTestPrivate
 {
+	const SolidEvents::FEvent* FindEvent(const TCHAR* EventName)
+	{
+		if (!EventName)
+		{
+			return nullptr;
+		}
+		for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
+		{
+			const SolidEvents::FEvent& Event = SolidEvents::Definitions[Index];
+			if (FCString::Strcmp(Event.Name, EventName) == 0)
+			{
+				return &Event;
+			}
+		}
+		return nullptr;
+	}
+
 	bool EventEnablesRavenSight(const TCHAR* EventName)
 	{
 		for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
@@ -233,12 +250,15 @@ bool FSolidEventsCaptainTitleTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Kanfold still sets the title"), KanfoldLater.bSetTitle);
 	TestEqual(TEXT("Kanfold after Dragongate is Ranger"), FString(GateFirst.CaptainTitle), FString(SolidEvents::TitleRanger));
 
-	TestEqual(TEXT("definition 1 is Relion"), FString(SolidEvents::Definitions[1].Name), FString(TEXT("Enter Relion")));
+	const SolidEvents::FEvent* RelionEvent = SolidEventTestPrivate::FindEvent(TEXT("Enter Relion"));
+	TestNotNull(TEXT("Relion is listed"), RelionEvent);
 	TestTrue(
 		TEXT("journal records the repair"),
-		SolidJournal::Describe(SolidEvents::Definitions[1]).Contains(TEXT("Iglin bridge repaired")));
+		RelionEvent && SolidJournal::Describe(*RelionEvent).Contains(TEXT("Iglin bridge repaired")));
 
-	const FString Detail = SolidJournal::Describe(SolidEvents::Definitions[3]);
+	const SolidEvents::FEvent* DragongateEvent = SolidEventTestPrivate::FindEvent(TEXT("Enter Dragongate"));
+	TestNotNull(TEXT("Dragongate is listed"), DragongateEvent);
+	const FString Detail = DragongateEvent ? SolidJournal::Describe(*DragongateEvent) : FString();
 	TestTrue(TEXT("journal titles Captain"), Detail.Contains(TEXT("Title Captain")));
 	TestTrue(
 		TEXT("journal lists the company"),

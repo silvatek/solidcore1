@@ -26,6 +26,15 @@ namespace SolidTowns
 		WallGate,
 	};
 
+	/** WorldMap.txt location index for each town. */
+	inline constexpr int32 Iglin = 0;
+	inline constexpr int32 Relion = 1;
+	inline constexpr int32 Kanfold = 2;
+	inline constexpr int32 Visolar = 3;
+	inline constexpr int32 Jethan = 4;
+	inline constexpr int32 Dragongate = 5;
+	inline constexpr int32 Rathen = 6;
+
 	struct FTownInfo
 	{
 		int32 Id = INDEX_NONE;
@@ -37,13 +46,13 @@ namespace SolidTowns
 	};
 
 	inline const FTownInfo Definitions[] = {
-		{ 0, TEXT("Iglin"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
-		{ 1, TEXT("Relion"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
-		{ 2, TEXT("Kanfold"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
-		{ 3, TEXT("Visolar"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
-		{ 4, TEXT("Jethan"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
-		{ 5, TEXT("Dragongate"), FVector2D(DragongateSignEastCm, DragongateSignNorthCm), SignFacesNorthYawDeg, ETownType::WallGate },
-		{ 6, TEXT("Rathen"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
+		{ Iglin, TEXT("Iglin"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
+		{ Relion, TEXT("Relion"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
+		{ Kanfold, TEXT("Kanfold"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
+		{ Visolar, TEXT("Visolar"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
+		{ Jethan, TEXT("Jethan"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
+		{ Dragongate, TEXT("Dragongate"), FVector2D(DragongateSignEastCm, DragongateSignNorthCm), SignFacesNorthYawDeg, ETownType::WallGate },
+		{ Rathen, TEXT("Rathen"), FVector2D(0.f, 0.f), SignFacesSouthYawDeg, ETownType::Town },
 	};
 
 	inline constexpr int32 DefinitionCount = UE_ARRAY_COUNT(Definitions);

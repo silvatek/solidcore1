@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Events/SolidMessages.h"
 #include "SolidSight.h"
+#include "Towns/SolidTowns.h"
 
 /**
  * Events change the company/party configuration when a trigger fires.
@@ -269,28 +270,28 @@ namespace SolidEvents
 	inline constexpr int32 RosterCount = UE_ARRAY_COUNT(RosterNames);
 
 	inline const FEvent Definitions[] = {
-		EnterTown(IdEnterIglin, TEXT("Enter Iglin"), 0, ACT_0)
+		EnterTown(IdEnterIglin, TEXT("Enter Iglin"), SolidTowns::Iglin, ACT_0)
 			.SetPlayerTitle(TitleOrphan),
 		ReachBrokenBridge(IdReachBrokenBridge, TEXT("Reach broken bridge"), ACT_0)
 			.DisplayMessage(SolidMessages::IdKilledByMonsters)
 			.Require(IdEnterIglin),
 		OnMessageClosed(IdKilledByMonsters, TEXT("Killed by monsters"), SolidMessages::IdKilledByMonsters, ACT_0)
 			.EnableCave(),
-		EnterTown(IdDrivenFromVillage, TEXT("Driven from the village"), 0, ACT_1)
+		EnterTown(IdDrivenFromVillage, TEXT("Driven from the village"), SolidTowns::Iglin, ACT_1)
 			.DisplayMessage(SolidMessages::IdDrivenFromVillage)
 			.SetPlayerTitle(TitleOutcast)
 			.Require(IdKilledByMonsters),
-		EnterTown(IdEnterRelion, TEXT("Enter Relion"), 1, ACT_2)
+		EnterTown(IdEnterRelion, TEXT("Enter Relion"), SolidTowns::Relion, ACT_2)
 			.EnableSight(ESolidSight::Raven)
 			.SetMaxPartySize(1)
 			.SetPlayerTitle(TitleVagrant)
 			.RepairBridge()
 			.Require(IdEnterIglin),
-		EnterTown(IdEnterKanfold, TEXT("Enter Kanfold"), 2, ACT_3)
+		EnterTown(IdEnterKanfold, TEXT("Enter Kanfold"), SolidTowns::Kanfold, ACT_3)
 			.EnableSight(ESolidSight::Raven)
 			.SetMaxPartySize(2)
 			.SetPlayerTitle(TitleRanger),
-		EnterTown(IdEnterDragongate, TEXT("Enter Dragongate"), 5, ACT_4)
+		EnterTown(IdEnterDragongate, TEXT("Enter Dragongate"), SolidTowns::Dragongate, ACT_4)
 			.EnableSight(ESolidSight::Raven)
 			.SetMaxPartySize(RosterCount)
 			.SetPlayerTitle(TitleCaptain),

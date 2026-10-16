@@ -795,4 +795,155 @@ bool FSolidEventsMessageTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidEventsDrivenFromVillageTest,
+	"SolidCore1.Events.DrivenFromVillage",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidEventsDrivenFromVillageTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("two messages"), SolidMessages::DefinitionCount, 2);
+	TestEqual(TEXT("seven events"), SolidEvents::DefinitionCount, 7);
+	int32 EnterTownCount = 0;
+	for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
+	{
+		if (SolidEvents::Definitions[Index].Trigger == SolidEvents::ETrigger::EnterTown)
+		{
+			++EnterTownCount;
+		}
+	}
+	TestEqual(TEXT("five enter-town events"), EnterTownCount, 5);
+
+	const TCHAR* DrivenText = SolidMessages::TextFor(SolidMessages::IdDrivenFromVillage);
+	TestNotNull(TEXT("the village message is listed"), DrivenText);
+	TestEqual(
+		TEXT("the village message text"),
+		FString(DrivenText ? DrivenText : TEXT("")),
+		FString(TEXT("You are driven from the village")));
+	TestTrue(
+		TEXT("the two messages differ"),
+		FCString::Strcmp(SolidMessages::IdKilledByMonsters, SolidMessages::IdDrivenFromVillage) != 0);
+	const FString MessageId = SolidMessages::IdDrivenFromVillage;
+	TestEqual(TEXT("village message id is eight digits"), MessageId.Len(), SolidMessages::IdLength);
+	bool bHex = MessageId.Len() == SolidMessages::IdLength;
+	for (const TCHAR Char : MessageId)
+	{
+		bHex = bHex && FChar::IsHexDigit(Char);
+	}
+	TestTrue(TEXT("village message id is hex"), bHex);
+
+	const int32 KilledIndex = SolidEvents::FindIndexById(SolidEvents::IdKilledByMonsters);
+	const int32 DrivenIndex = SolidEvents::FindIndexById(SolidEvents::IdDrivenFromVillage);
+	const int32 RelionIndex = SolidEvents::FindIndexById(SolidEvents::IdEnterRelion);
+	TestTrue(TEXT("the return follows the close"), KilledIndex != INDEX_NONE && DrivenIndex == KilledIndex + 1);
+	TestTrue(TEXT("Relion follows the return"), DrivenIndex != INDEX_NONE && RelionIndex == DrivenIndex + 1);
+
+	const SolidEvents::FEvent* Driven = SolidEventTestPrivate::FindEvent(TEXT("Driven from the village"));
+	TestNotNull(TEXT("Driven from the village is listed"), Driven);
+	if (Driven)
+	{
+		TestEqual(
+			TEXT("the return is an enter-town event"),
+			static_cast<uint8>(Driven->Trigger),
+			static_cast<uint8>(SolidEvents::ETrigger::EnterTown));
+		TestEqual(TEXT("the return is Iglin"), Driven->Parameter, 0);
+		TestEqual(TEXT("the return requires one event"), Driven->RequireCount, 1);
+		if (Driven->RequireCount > 0)
+		{
+			TestEqual(
+				TEXT("the return requires Killed by monsters"),
+				FString(Driven->Requires[0]),
+				FString(SolidEvents::IdKilledByMonsters));
+		}
+		TestEqual(TEXT("the return is ACT_0"), Driven->Act, SolidEvents::ACT_0);
+		TestEqual(TEXT("the return shows one message"), Driven->ChangeCount, 1);
+		TestEqual(
+			TEXT("the return change is ShowMessage"),
+			static_cast<uint8>(Driven->Changes[0].Kind),
+			static_cast<uint8>(SolidEvents::EChange::ShowMessage));
+		TestEqual(
+			TEXT("the return names the village message"),
+			FString(Driven->Changes[0].MessageId),
+			FString(SolidMessages::IdDrivenFromVillage));
+		TestTrue(
+			TEXT("the return journal is the message"),
+			SolidJournal::Describe(*Driven).Contains(TEXT("You are driven from the village")));
+	}
+
+	auto HasFiredDriven = [DrivenIndex](const FGameState& State)
+	{
+		return DrivenIndex != INDEX_NONE && DrivenIndex < SolidEvents::MaxEvents && State.bFired[DrivenIndex];
+	};
+
+	FGameState State;
+	const SolidEvents::FResult First = SolidEvents::NotifyOccupiedTown(State, 0);
+	TestTrue(TEXT("the first visit records Iglin"), First.bFired);
+	TestFalse(TEXT("the first visit shows no message"), First.bShowMessage);
+	TestFalse(TEXT("the first visit is not the return"), HasFiredDriven(State));
+
+	SolidEvents::NotifyOccupiedTown(State, INDEX_NONE);
+	const SolidEvents::FResult EarlyReturn = SolidEvents::NotifyOccupiedTown(State, 0);
+	TestFalse(TEXT("a return before the close shows no message"), EarlyReturn.bShowMessage);
+	TestFalse(TEXT("a return before the close is not recorded"), HasFiredDriven(State));
+
+	SolidEvents::NotifyReachBrokenBridge(State);
+	const SolidEvents::FResult Closed = SolidEvents::NotifyMessageClosed(State, SolidMessages::IdKilledByMonsters);
+	TestTrue(TEXT("the close still opens the cave"), Closed.bEnterCave);
+	TestFalse(TEXT("the close is not the return"), HasFiredDriven(State));
+
+	const SolidEvents::FResult StillThere = SolidEvents::NotifyOccupiedTown(State, 0);
+	TestFalse(TEXT("staying in Iglin does not show the message"), StillThere.bFired);
+	TestFalse(TEXT("staying in Iglin is not the return"), HasFiredDriven(State));
+
+	const SolidEvents::FResult Relion = SolidEvents::NotifyOccupiedTown(State, 1);
+	TestTrue(TEXT("Relion still fires"), Relion.bFired);
+	TestFalse(TEXT("Relion does not show the village message"), Relion.bShowMessage);
+	TestFalse(TEXT("leaving for Relion is not the return"), HasFiredDriven(State));
+
+	const SolidEvents::FResult Returned = SolidEvents::NotifyOccupiedTown(State, 0);
+	TestTrue(TEXT("entering Iglin after the close fires"), Returned.bFired);
+	TestTrue(TEXT("entering Iglin after the close shows the message"), Returned.bShowMessage);
+	TestEqual(
+		TEXT("the return result names the village message"),
+		FString(Returned.MessageId),
+		FString(SolidMessages::IdDrivenFromVillage));
+	TestFalse(TEXT("the return does not send the captain inside again"), Returned.bEnterCave);
+	TestTrue(TEXT("the cave stays open"), State.bCaveEnabled);
+	TestTrue(TEXT("the return is recorded"), HasFiredDriven(State));
+
+	TArray<SolidJournal::FRow> Rows;
+	SolidJournal::CollectRows(State, Rows);
+	bool bSawDriven = false;
+	for (const SolidJournal::FRow& Row : Rows)
+	{
+		if (Row.Kind == SolidJournal::ERowKind::Detail
+			&& Row.Text.Contains(TEXT("You are driven from the village")))
+		{
+			bSawDriven = true;
+		}
+	}
+	TestTrue(TEXT("the journal lists the village message"), bSawDriven);
+
+	SolidEvents::NotifyOccupiedTown(State, INDEX_NONE);
+	const SolidEvents::FResult ReturnedAgain = SolidEvents::NotifyOccupiedTown(State, 0);
+	TestFalse(TEXT("the return fires once"), ReturnedAgain.bFired);
+	TestFalse(TEXT("a second entry shows no message"), ReturnedAgain.bShowMessage);
+
+	ASolidHUD* HUD = NewObject<ASolidHUD>();
+	TestNotNull(TEXT("hud"), HUD);
+	if (HUD)
+	{
+		HUD->ShowMessage(SolidMessages::IdDrivenFromVillage, SolidMessages::TextFor(SolidMessages::IdDrivenFromVillage));
+		TestEqual(
+			TEXT("the board shows the village line"),
+			HUD->GetMessageText(),
+			FString(TEXT("You are driven from the village")));
+		TestEqual(
+			TEXT("the board keeps the village message id"),
+			HUD->GetMessageId(),
+			FString(SolidMessages::IdDrivenFromVillage));
+	}
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

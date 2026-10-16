@@ -13,6 +13,7 @@ namespace SolidMessages
 
 	/** Stable ids. Eight hex digits. Event changes and triggers name these. */
 	inline constexpr const TCHAR* IdKilledByMonsters = TEXT("7c2e9a41");
+	inline constexpr const TCHAR* IdDrivenFromVillage = TEXT("4b91d0e6");
 
 	struct FMessage
 	{
@@ -25,6 +26,10 @@ namespace SolidMessages
 		{
 			IdKilledByMonsters,
 			TEXT("You are killed by monsters"),
+		},
+		{
+			IdDrivenFromVillage,
+			TEXT("You are driven from the village"),
 		},
 	};
 

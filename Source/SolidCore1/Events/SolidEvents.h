@@ -17,8 +17,11 @@
  * That event shows a message. Closing that message is its own event.
  * Killed by monsters closes the monster message, opens the starting cave,
  * and sends the captain inside.
+ * Driven from the village fires on a later entry to Iglin, after that close,
+ * and shows "You are driven from the village".
  * A visit before the requirements are met does not fire. A later visit does.
- * Each event belongs to an act. Iglin, Reach broken bridge, and Killed by monsters are ACT_0.
+ * Each event belongs to an act. Iglin, Reach broken bridge, Killed by monsters,
+ * and Driven from the village are ACT_0.
  * Relion is ACT_2, Kanfold is ACT_3, and Dragongate is ACT_4.
  */
 namespace SolidEvents
@@ -32,6 +35,7 @@ namespace SolidEvents
 	inline constexpr const TCHAR* IdEnterIglin = TEXT("c4e1a7b2");
 	inline constexpr const TCHAR* IdReachBrokenBridge = TEXT("a17c4e58");
 	inline constexpr const TCHAR* IdKilledByMonsters = TEXT("e51b8c36");
+	inline constexpr const TCHAR* IdDrivenFromVillage = TEXT("8f3c2a17");
 	inline constexpr const TCHAR* IdEnterRelion = TEXT("9f30d86a");
 	inline constexpr const TCHAR* IdEnterKanfold = TEXT("2b8e15c7");
 	inline constexpr const TCHAR* IdEnterDragongate = TEXT("e6a4f093");
@@ -153,6 +157,19 @@ namespace SolidEvents
 			0,
 			ACT_0,
 			SolidMessages::IdKilledByMonsters,
+		},
+		{
+			IdDrivenFromVillage,
+			TEXT("Driven from the village"),
+			ETrigger::EnterTown,
+			0,
+			{
+				{ EChange::ShowMessage, ESolidSight::Raven, 0, nullptr, SolidMessages::IdDrivenFromVillage },
+			},
+			1,
+			{ IdKilledByMonsters },
+			1,
+			ACT_0,
 		},
 		{
 			IdEnterRelion,

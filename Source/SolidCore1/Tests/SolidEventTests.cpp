@@ -558,4 +558,25 @@ bool FSolidEventsReachBrokenBridgeTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidEventsActTest,
+	"SolidCore1.Events.Act",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidEventsActTest::RunTest(const FString& Parameters)
+{
+	auto ActOf = [](const TCHAR* Id) -> int32
+	{
+		const int32 Index = SolidEvents::FindIndexById(Id);
+		return Index == INDEX_NONE ? INDEX_NONE : SolidEvents::Definitions[Index].Act;
+	};
+
+	TestEqual(TEXT("Iglin is act 0"), ActOf(SolidEvents::IdEnterIglin), 0);
+	TestEqual(TEXT("Reach broken bridge is act 0"), ActOf(SolidEvents::IdReachBrokenBridge), 0);
+	TestEqual(TEXT("Relion is act 2"), ActOf(SolidEvents::IdEnterRelion), 2);
+	TestEqual(TEXT("Kanfold is act 3"), ActOf(SolidEvents::IdEnterKanfold), 3);
+	TestEqual(TEXT("Dragongate is act 4"), ActOf(SolidEvents::IdEnterDragongate), 4);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

@@ -14,6 +14,8 @@
  * Reach broken bridge: the captain stands on either ramp of the Iglin bridge.
  * The parameter is unused. The deck and the gap past the lip do not count.
  * A visit before the requirements are met does not fire. A later visit does.
+ * Each event belongs to an act. Iglin and Reach broken bridge are act 0.
+ * Relion is act 2, Kanfold is act 3, and Dragongate is act 4.
  */
 namespace SolidEvents
 {
@@ -74,6 +76,8 @@ namespace SolidEvents
 		/** Event ids that must already have fired. Empty means no requirement. */
 		const TCHAR* Requires[MaxRequiresPerEvent] = {};
 		int32 RequireCount = 0;
+		/** Story act this event belongs to. */
+		int32 Act = 0;
 	};
 
 	/**
@@ -96,6 +100,11 @@ namespace SolidEvents
 			TEXT("Enter Iglin"),
 			ETrigger::EnterTown,
 			0,
+			{},
+			0,
+			{},
+			0,
+			0,
 		},
 		{
 			IdReachBrokenBridge,
@@ -106,6 +115,7 @@ namespace SolidEvents
 			0,
 			{ IdEnterIglin },
 			1,
+			0,
 		},
 		{
 			IdEnterRelion,
@@ -121,6 +131,7 @@ namespace SolidEvents
 			4,
 			{ IdEnterIglin },
 			1,
+			2,
 		},
 		{
 			IdEnterKanfold,
@@ -132,6 +143,9 @@ namespace SolidEvents
 				{ EChange::MaxPartySize, ESolidSight::Raven, 2 },
 				{ EChange::CaptainTitle, ESolidSight::Raven, 0, TitleRanger },
 			},
+			3,
+			{},
+			0,
 			3,
 		},
 		{
@@ -145,6 +159,9 @@ namespace SolidEvents
 				{ EChange::CaptainTitle, ESolidSight::Raven, 0, TitleCaptain },
 			},
 			3,
+			{},
+			0,
+			4,
 		},
 	};
 

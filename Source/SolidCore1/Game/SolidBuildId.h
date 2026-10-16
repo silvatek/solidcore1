@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0404")
+#define SOLID_BUILD_ID TEXT("SC1-0405")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The cave chest holds old boots and 20 coins.")
+#define SOLID_BUILD_NOTE TEXT("The chest slot writer no longer hides the cell count.")
 #endif

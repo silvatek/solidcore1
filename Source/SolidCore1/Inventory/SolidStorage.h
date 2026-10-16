@@ -23,20 +23,20 @@ namespace SolidStorage
 		int32 Counts[Count] = {};
 	};
 
-	inline void WriteSlot(FContainer& Container, const int32 Index, const TCHAR* ItemId, const int32 Count)
+	inline void WriteSlot(FContainer& Container, const int32 Index, const TCHAR* ItemId, const int32 StackCount)
 	{
 		if (Index < 0 || Index >= Count)
 		{
 			return;
 		}
-		if (!ItemId || !ItemId[0] || Count <= 0)
+		if (!ItemId || !ItemId[0] || StackCount <= 0)
 		{
 			Container.Slots[Index] = nullptr;
 			Container.Counts[Index] = 0;
 			return;
 		}
 		Container.Slots[Index] = ItemId;
-		Container.Counts[Index] = Count;
+		Container.Counts[Index] = StackCount;
 	}
 
 	inline int32 Index(const int32 Column, const int32 Row)

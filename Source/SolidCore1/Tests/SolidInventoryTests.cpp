@@ -42,6 +42,17 @@ namespace SolidInventoryTestPrivate
 		return A.X < Bx1 && B.X < Ax1 && A.Y < By1 && B.Y < Ay1;
 	}
 
+	/** The band from the slot name down to the box. Worn names use it; pack cells do not. */
+	bool HeadingHitsBox(const SolidInventory::FBox& Heading, const SolidInventory::FBox& Box)
+	{
+		SolidInventory::FBox Band;
+		Band.X = Heading.X;
+		Band.Y = Heading.LabelY;
+		Band.W = Heading.W;
+		Band.H = Heading.Y - Heading.LabelY;
+		return Overlaps(Band, Box);
+	}
+
 	FString HeldId(const TCHAR* ItemId)
 	{
 		return FString(ItemId ? ItemId : TEXT(""));
@@ -248,6 +259,24 @@ bool FSolidInventoryLayoutTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("pack is right of the figure"), First->X > DollRight);
 	TestTrue(TEXT("pack heading is above the grid"), Page.PackLabelY < First->Y);
 	TestTrue(TEXT("pack heading shares the grid's left edge"), FMath::IsNearlyEqual(Page.PackX, First->X, 1.f));
+
+	const float HeadingGap = First->Y - Page.PackLabelY;
+	const SolidInventory::FBox* WornNames[] = { Head, Body, Boots, Left, Right, Belt };
+	for (const SolidInventory::FBox* Named : WornNames)
+	{
+		TestTrue(TEXT("slot name is above its box"), Named->LabelY < Named->Y);
+		TestTrue(
+			TEXT("slot name uses the pack heading gap"),
+			FMath::IsNearlyEqual(Named->Y - Named->LabelY, HeadingGap, 1.f));
+		for (const SolidInventory::FBox& Box : Page.Boxes)
+		{
+			TestFalse(TEXT("a slot name does not cover a box"), SolidInventoryTestPrivate::HeadingHitsBox(*Named, Box));
+		}
+	}
+	TestTrue(TEXT("the body name is below the head"), Body->LabelY >= Head->Y + Head->H);
+	TestTrue(TEXT("the belt name is below the body"), Belt->LabelY >= Body->Y + Body->H);
+	TestTrue(TEXT("the boots name is below the belt"), Boots->LabelY >= Belt->Y + Belt->H);
+	TestTrue(TEXT("the hand names share a line"), FMath::IsNearlyEqual(Left->LabelY, Right->LabelY, 1.f));
 
 	for (int32 Row = 0; Row < SolidInventory::PackRows; ++Row)
 	{

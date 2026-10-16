@@ -174,6 +174,8 @@ namespace SolidInventory
 		bool bPack = false;
 		/** A cell of the open storage container. The cave chest. */
 		bool bChest = false;
+		/** Top of the slot name. Worn boxes only. The name sits above the box, like Pack and Chest. */
+		float LabelY = 0.f;
 		FString Label;
 		FString Item;
 	};
@@ -215,7 +217,7 @@ namespace SolidInventory
 
 	/**
 	 * Head, body, and boots in a column, hands beside the body, belt at the waist, pack to the right.
-	 * Chest, when set, adds that container to the right of the pack.
+	 * Each worn name sits above its box. Chest, when set, adds that container to the right of the pack.
 	 */
 	void Layout(const FLoadout& Loadout, FPage& OutPage, const SolidStorage::FContainer* Chest = nullptr);
 

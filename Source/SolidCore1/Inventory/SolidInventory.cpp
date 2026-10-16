@@ -18,12 +18,20 @@ namespace SolidInventory
 
 	inline constexpr float PackCell = 112.f;
 	inline constexpr float PackGap = 10.f;
+	/** Height of a Pack, Chest, or worn-slot heading. The box starts one Gap below it. */
 	inline constexpr float PackLabelH = 22.f;
 
 	/** Belt is narrower than the body so the waist reads as a belt. */
 	inline constexpr float BeltW = 128.f;
 
-	FBox MakeWorn(const FLoadout& Loadout, const ESlot Slot, const float X, const float Y, const float W, const float H)
+	FBox MakeWorn(
+		const FLoadout& Loadout,
+		const ESlot Slot,
+		const float X,
+		const float Y,
+		const float W,
+		const float H,
+		const float LabelY)
 	{
 		FBox Box;
 		Box.X = X;
@@ -31,6 +39,7 @@ namespace SolidInventory
 		Box.W = W;
 		Box.H = H;
 		Box.Slot = Slot;
+		Box.LabelY = LabelY;
 		Box.Label = SlotName(Slot);
 		const int32 Index = WornIndex(Slot);
 		if (Index != INDEX_NONE)
@@ -46,20 +55,26 @@ namespace SolidInventory
 
 		const float TorsoX = HandW + Gap;
 		const float HeadX = TorsoX + (TorsoW - HeadW) * 0.5f;
-		const float HeadY = 0.f;
-		const float BodyY = HeadY + HeadH + Gap;
+		const float Heading = PackLabelH + Gap;
+		const float HeadLabelY = 0.f;
+		const float HeadY = Heading;
+		const float BodyLabelY = HeadY + HeadH + Gap;
+		const float BodyY = BodyLabelY + Heading;
 		const float HandY = BodyY + (BodyH - HandH) * 0.5f;
+		const float HandLabelY = HandY - Heading;
 		const float RightX = TorsoX + TorsoW + Gap;
 		const float BeltX = TorsoX + (TorsoW - BeltW) * 0.5f;
-		const float BeltY = BodyY + BodyH + Gap;
-		const float BootsY = BeltY + BeltH + Gap;
+		const float BeltLabelY = BodyY + BodyH + Gap;
+		const float BeltY = BeltLabelY + Heading;
+		const float BootsLabelY = BeltY + BeltH + Gap;
+		const float BootsY = BootsLabelY + Heading;
 
-		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::Head, HeadX, HeadY, HeadW, HeadH));
-		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::Body, TorsoX, BodyY, TorsoW, BodyH));
-		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::LeftHand, 0.f, HandY, HandW, HandH));
-		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::RightHand, RightX, HandY, HandW, HandH));
-		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::Belt, BeltX, BeltY, BeltW, BeltH));
-		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::Boots, TorsoX, BootsY, TorsoW, BootsH));
+		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::Head, HeadX, HeadY, HeadW, HeadH, HeadLabelY));
+		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::Body, TorsoX, BodyY, TorsoW, BodyH, BodyLabelY));
+		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::LeftHand, 0.f, HandY, HandW, HandH, HandLabelY));
+		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::RightHand, RightX, HandY, HandW, HandH, HandLabelY));
+		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::Belt, BeltX, BeltY, BeltW, BeltH, BeltLabelY));
+		OutPage.Boxes.Add(MakeWorn(Loadout, ESlot::Boots, TorsoX, BootsY, TorsoW, BootsH, BootsLabelY));
 
 		const float DollRight = RightX + HandW;
 		const float DollBottom = BootsY + BootsH;

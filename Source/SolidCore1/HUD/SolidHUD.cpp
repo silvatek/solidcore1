@@ -799,6 +799,32 @@ namespace SolidHUDPrivate
 		Canvas->DrawItem(Item);
 	}
 
+	/** Pack, Chest, and a worn-slot name. Centered on the width, sitting on LabelY. */
+	static void DrawInventoryHeading(
+		UCanvas* Canvas,
+		UFont* Font,
+		const FString& Text,
+		const float Left,
+		const float Width,
+		const float LabelY,
+		const FLinearColor& Color)
+	{
+		if (!Canvas || !Font || Text.IsEmpty() || Width <= 0.f)
+		{
+			return;
+		}
+		float TextW = 0.f;
+		float TextH = 0.f;
+		Canvas->StrLen(Font, Text, TextW, TextH);
+		FCanvasTextItem Item(
+			FVector2D(Left + (Width - TextW) * 0.5f, LabelY),
+			FText::FromString(Text),
+			Font,
+			Color);
+		Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+		Canvas->DrawItem(Item);
+	}
+
 	/** Same oak board as the journal. Worn boxes follow a person. The pack is a grid on the right. */
 	static void DrawInventoryBoard(UCanvas* Canvas, const SolidInventory::FPage& Page)
 	{
@@ -875,31 +901,24 @@ namespace SolidHUDPrivate
 
 		const float OriginX = View.OriginX;
 		const float OriginY = View.OriginY;
-		if (Font && !FString(SolidInventory::PackTitle).IsEmpty())
+		DrawInventoryHeading(
+			Canvas,
+			Font,
+			SolidInventory::PackTitle,
+			OriginX + Page.PackX,
+			Page.PackGridW,
+			OriginY + Page.PackLabelY,
+			Palette.Title);
+		if (Page.bShowChest)
 		{
-			float PackW = 0.f;
-			float PackH = 0.f;
-			Canvas->StrLen(Font, SolidInventory::PackTitle, PackW, PackH);
-			FCanvasTextItem PackItem(
-				FVector2D(OriginX + Page.PackX + (Page.PackGridW - PackW) * 0.5f, OriginY + Page.PackLabelY),
-				FText::FromString(SolidInventory::PackTitle),
+			DrawInventoryHeading(
+				Canvas,
 				Font,
+				SolidStorage::ChestTitle,
+				OriginX + Page.ChestX,
+				Page.ChestGridW,
+				OriginY + Page.ChestLabelY,
 				Palette.Title);
-			PackItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
-			Canvas->DrawItem(PackItem);
-		}
-		if (Page.bShowChest && Font && !FString(SolidStorage::ChestTitle).IsEmpty())
-		{
-			float ChestW = 0.f;
-			float ChestH = 0.f;
-			Canvas->StrLen(Font, SolidStorage::ChestTitle, ChestW, ChestH);
-			FCanvasTextItem ChestItem(
-				FVector2D(OriginX + Page.ChestX + (Page.ChestGridW - ChestW) * 0.5f, OriginY + Page.ChestLabelY),
-				FText::FromString(SolidStorage::ChestTitle),
-				Font,
-				Palette.Title);
-			ChestItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
-			Canvas->DrawItem(ChestItem);
 		}
 
 		for (const SolidInventory::FBox& Slot : Page.Boxes)
@@ -911,22 +930,21 @@ namespace SolidHUDPrivate
 			{
 				continue;
 			}
-			if (Slot.Item.IsEmpty())
+			if (!Slot.bPack && !Slot.bChest)
 			{
-				DrawCenteredLine(Canvas, Font, Slot.Label, X, Y, Slot.W, Slot.H, Palette.Hint);
-				continue;
+				DrawInventoryHeading(
+					Canvas,
+					Font,
+					Slot.Label,
+					X,
+					Slot.W,
+					OriginY + Slot.LabelY,
+					Palette.Title);
 			}
-			const float LabelBand = 18.f;
-			DrawCenteredLine(Canvas, Font, Slot.Label, X, Y, Slot.W, LabelBand, Palette.Hint);
-			DrawCenteredLine(
-				Canvas,
-				Font,
-				Slot.Item,
-				X,
-				Y + LabelBand,
-				Slot.W,
-				FMath::Max(0.f, Slot.H - LabelBand),
-				Palette.Ink);
+			if (!Slot.Item.IsEmpty())
+			{
+				DrawCenteredLine(Canvas, Font, Slot.Item, X, Y, Slot.W, Slot.H, Palette.Ink);
+			}
 		}
 
 		if (Font)

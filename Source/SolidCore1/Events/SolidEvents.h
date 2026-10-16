@@ -92,51 +92,57 @@ namespace SolidEvents
 		const TCHAR* MessageId = nullptr;
 	};
 
-	/** Each helper sets the one value that change reads. The other fields stay unused. */
-	inline constexpr FChange EnableSight(const ESolidSight Mode)
+	/**
+	 * Each helper fills the one value that change reads. The other fields stay unused.
+	 * The event builder adds that change to an event.
+	 */
+	namespace Change
 	{
-		FChange Change;
-		Change.Kind = EChange::EnableSight;
-		Change.Sight = Mode;
-		return Change;
-	}
+		inline constexpr FChange EnableSight(const ESolidSight Mode)
+		{
+			FChange Change;
+			Change.Kind = EChange::EnableSight;
+			Change.Sight = Mode;
+			return Change;
+		}
 
-	inline constexpr FChange SetMaxPartySize(const int32 Size)
-	{
-		FChange Change;
-		Change.Kind = EChange::MaxPartySize;
-		Change.PartySize = Size;
-		return Change;
-	}
+		inline constexpr FChange SetMaxPartySize(const int32 Size)
+		{
+			FChange Change;
+			Change.Kind = EChange::MaxPartySize;
+			Change.PartySize = Size;
+			return Change;
+		}
 
-	inline constexpr FChange SetPlayerTitle(const TCHAR* Name)
-	{
-		FChange Change;
-		Change.Kind = EChange::CaptainTitle;
-		Change.Title = Name;
-		return Change;
-	}
+		inline constexpr FChange SetPlayerTitle(const TCHAR* Name)
+		{
+			FChange Change;
+			Change.Kind = EChange::CaptainTitle;
+			Change.Title = Name;
+			return Change;
+		}
 
-	inline constexpr FChange DisplayMessage(const TCHAR* MessageId)
-	{
-		FChange Change;
-		Change.Kind = EChange::ShowMessage;
-		Change.MessageId = MessageId;
-		return Change;
-	}
+		inline constexpr FChange DisplayMessage(const TCHAR* MessageId)
+		{
+			FChange Change;
+			Change.Kind = EChange::ShowMessage;
+			Change.MessageId = MessageId;
+			return Change;
+		}
 
-	inline constexpr FChange EnableCave()
-	{
-		FChange Change;
-		Change.Kind = EChange::EnableCave;
-		return Change;
-	}
+		inline constexpr FChange EnableCave()
+		{
+			FChange Change;
+			Change.Kind = EChange::EnableCave;
+			return Change;
+		}
 
-	inline constexpr FChange RepairBridge()
-	{
-		FChange Change;
-		Change.Kind = EChange::RepairBridge;
-		return Change;
+		inline constexpr FChange RepairBridge()
+		{
+			FChange Change;
+			Change.Kind = EChange::RepairBridge;
+			return Change;
+		}
 	}
 
 	struct FEvent
@@ -155,7 +161,98 @@ namespace SolidEvents
 		int32 Act = ACT_0;
 		/** Message id for a MessageClosed trigger. Empty for every other trigger. */
 		const TCHAR* MessageId = nullptr;
+
+		constexpr FEvent EnableSight(const ESolidSight Mode) const
+		{
+			return With(Change::EnableSight(Mode));
+		}
+
+		constexpr FEvent SetMaxPartySize(const int32 Size) const
+		{
+			return With(Change::SetMaxPartySize(Size));
+		}
+
+		constexpr FEvent SetPlayerTitle(const TCHAR* Name) const
+		{
+			return With(Change::SetPlayerTitle(Name));
+		}
+
+		constexpr FEvent DisplayMessage(const TCHAR* InMessageId) const
+		{
+			return With(Change::DisplayMessage(InMessageId));
+		}
+
+		constexpr FEvent EnableCave() const
+		{
+			return With(Change::EnableCave());
+		}
+
+		constexpr FEvent RepairBridge() const
+		{
+			return With(Change::RepairBridge());
+		}
+
+		constexpr FEvent Require(const TCHAR* EventId) const
+		{
+			FEvent Event = *this;
+			if (Event.RequireCount < MaxRequiresPerEvent)
+			{
+				Event.Requires[Event.RequireCount] = EventId;
+				++Event.RequireCount;
+			}
+			return Event;
+		}
+
+	private:
+		constexpr FEvent With(const FChange& Change) const
+		{
+			FEvent Event = *this;
+			if (Event.ChangeCount < MaxChangesPerEvent)
+			{
+				Event.Changes[Event.ChangeCount] = Change;
+				++Event.ChangeCount;
+			}
+			return Event;
+		}
 	};
+
+	inline constexpr FEvent EnterTown(const TCHAR* Id, const TCHAR* Name, const int32 TownId, const int32 Act)
+	{
+		FEvent Event;
+		Event.Id = Id;
+		Event.Name = Name;
+		Event.Trigger = ETrigger::EnterTown;
+		Event.Parameter = TownId;
+		Event.Act = Act;
+		return Event;
+	}
+
+	inline constexpr FEvent ReachBrokenBridge(const TCHAR* Id, const TCHAR* Name, const int32 Act)
+	{
+		FEvent Event;
+		Event.Id = Id;
+		Event.Name = Name;
+		Event.Trigger = ETrigger::ReachBrokenBridge;
+		Event.Parameter = INDEX_NONE;
+		Event.Act = Act;
+		return Event;
+	}
+
+	inline constexpr FEvent OnMessageClosed(
+		const TCHAR* Id,
+		const TCHAR* Name,
+		const TCHAR* MessageId,
+		const int32 Act)
+	{
+		FEvent Event;
+		Event.Id = Id;
+		Event.Name = Name;
+		Event.Trigger = ETrigger::MessageClosed;
+		Event.Parameter = INDEX_NONE;
+		Event.MessageId = MessageId;
+		Event.Act = Act;
+		return Event;
+	}
 
 	/**
 	 * Companions join in this order as Max Party Size grows.
@@ -172,106 +269,31 @@ namespace SolidEvents
 	inline constexpr int32 RosterCount = UE_ARRAY_COUNT(RosterNames);
 
 	inline const FEvent Definitions[] = {
-		{
-			IdEnterIglin,
-			TEXT("Enter Iglin"),
-			ETrigger::EnterTown,
-			0,
-			{
-				SetPlayerTitle(TitleOrphan),
-			},
-			1,
-			{},
-			0,
-			ACT_0,
-		},
-		{
-			IdReachBrokenBridge,
-			TEXT("Reach broken bridge"),
-			ETrigger::ReachBrokenBridge,
-			INDEX_NONE,
-			{
-				DisplayMessage(SolidMessages::IdKilledByMonsters),
-			},
-			1,
-			{ IdEnterIglin },
-			1,
-			ACT_0,
-		},
-		{
-			IdKilledByMonsters,
-			TEXT("Killed by monsters"),
-			ETrigger::MessageClosed,
-			INDEX_NONE,
-			{
-				EnableCave(),
-			},
-			1,
-			{},
-			0,
-			ACT_0,
-			SolidMessages::IdKilledByMonsters,
-		},
-		{
-			IdDrivenFromVillage,
-			TEXT("Driven from the village"),
-			ETrigger::EnterTown,
-			0,
-			{
-				DisplayMessage(SolidMessages::IdDrivenFromVillage),
-				SetPlayerTitle(TitleOutcast),
-			},
-			2,
-			{ IdKilledByMonsters },
-			1,
-			ACT_1,
-		},
-		{
-			IdEnterRelion,
-			TEXT("Enter Relion"),
-			ETrigger::EnterTown,
-			1,
-			{
-				EnableSight(ESolidSight::Raven),
-				SetMaxPartySize(1),
-				SetPlayerTitle(TitleVagrant),
-				RepairBridge(),
-			},
-			4,
-			{ IdEnterIglin },
-			1,
-			ACT_2,
-		},
-		{
-			IdEnterKanfold,
-			TEXT("Enter Kanfold"),
-			ETrigger::EnterTown,
-			2,
-			{
-				EnableSight(ESolidSight::Raven),
-				SetMaxPartySize(2),
-				SetPlayerTitle(TitleRanger),
-			},
-			3,
-			{},
-			0,
-			ACT_3,
-		},
-		{
-			IdEnterDragongate,
-			TEXT("Enter Dragongate"),
-			ETrigger::EnterTown,
-			5,
-			{
-				EnableSight(ESolidSight::Raven),
-				SetMaxPartySize(RosterCount),
-				SetPlayerTitle(TitleCaptain),
-			},
-			3,
-			{},
-			0,
-			ACT_4,
-		},
+		EnterTown(IdEnterIglin, TEXT("Enter Iglin"), 0, ACT_0)
+			.SetPlayerTitle(TitleOrphan),
+		ReachBrokenBridge(IdReachBrokenBridge, TEXT("Reach broken bridge"), ACT_0)
+			.DisplayMessage(SolidMessages::IdKilledByMonsters)
+			.Require(IdEnterIglin),
+		OnMessageClosed(IdKilledByMonsters, TEXT("Killed by monsters"), SolidMessages::IdKilledByMonsters, ACT_0)
+			.EnableCave(),
+		EnterTown(IdDrivenFromVillage, TEXT("Driven from the village"), 0, ACT_1)
+			.DisplayMessage(SolidMessages::IdDrivenFromVillage)
+			.SetPlayerTitle(TitleOutcast)
+			.Require(IdKilledByMonsters),
+		EnterTown(IdEnterRelion, TEXT("Enter Relion"), 1, ACT_2)
+			.EnableSight(ESolidSight::Raven)
+			.SetMaxPartySize(1)
+			.SetPlayerTitle(TitleVagrant)
+			.RepairBridge()
+			.Require(IdEnterIglin),
+		EnterTown(IdEnterKanfold, TEXT("Enter Kanfold"), 2, ACT_3)
+			.EnableSight(ESolidSight::Raven)
+			.SetMaxPartySize(2)
+			.SetPlayerTitle(TitleRanger),
+		EnterTown(IdEnterDragongate, TEXT("Enter Dragongate"), 5, ACT_4)
+			.EnableSight(ESolidSight::Raven)
+			.SetMaxPartySize(RosterCount)
+			.SetPlayerTitle(TitleCaptain),
 	};
 
 	static_assert(UE_ARRAY_COUNT(Definitions) <= MaxEvents, "Raise SolidEvents::MaxEvents");

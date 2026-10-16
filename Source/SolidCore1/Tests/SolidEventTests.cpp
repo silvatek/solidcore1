@@ -1119,4 +1119,79 @@ bool FSolidEventsRavenSightWaitsForRelionTest::RunTest(const FString& Parameters
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidEventsBuilderTest,
+	"SolidCore1.Events.Builder",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidEventsBuilderTest::RunTest(const FString& Parameters)
+{
+	const SolidEvents::FEvent Town = SolidEvents::EnterTown(TEXT("aabbccdd"), TEXT("Sample town"), 4, SolidEvents::ACT_1)
+		.EnableSight(ESolidSight::Raven)
+		.SetMaxPartySize(2)
+		.SetPlayerTitle(SolidEvents::TitleRanger)
+		.Require(SolidEvents::IdEnterIglin);
+	TestEqual(TEXT("sample id"), FString(Town.Id), FString(TEXT("aabbccdd")));
+	TestEqual(TEXT("sample name"), FString(Town.Name), FString(TEXT("Sample town")));
+	TestEqual(
+		TEXT("sample trigger is enter town"),
+		static_cast<uint8>(Town.Trigger),
+		static_cast<uint8>(SolidEvents::ETrigger::EnterTown));
+	TestEqual(TEXT("sample town id"), Town.Parameter, 4);
+	TestEqual(TEXT("sample act"), Town.Act, SolidEvents::ACT_1);
+	TestTrue(TEXT("a town event has no message id"), Town.MessageId == nullptr || !Town.MessageId[0]);
+	TestEqual(TEXT("sample change count"), Town.ChangeCount, 3);
+	TestEqual(
+		TEXT("sample first change is sight"),
+		static_cast<uint8>(Town.Changes[0].Kind),
+		static_cast<uint8>(SolidEvents::EChange::EnableSight));
+	TestEqual(
+		TEXT("sample sight is raven"),
+		static_cast<uint8>(Town.Changes[0].Sight),
+		static_cast<uint8>(ESolidSight::Raven));
+	TestEqual(TEXT("sample party size"), Town.Changes[1].PartySize, 2);
+	TestEqual(TEXT("sample title"), FString(Town.Changes[2].Title), FString(SolidEvents::TitleRanger));
+	TestEqual(TEXT("sample requirement count"), Town.RequireCount, 1);
+	TestEqual(TEXT("sample requirement"), FString(Town.Requires[0]), FString(SolidEvents::IdEnterIglin));
+
+	const SolidEvents::FEvent Closed = SolidEvents::OnMessageClosed(
+		TEXT("11223344"),
+		TEXT("Sample close"),
+		SolidMessages::IdKilledByMonsters,
+		SolidEvents::ACT_0)
+		.EnableCave();
+	TestEqual(
+		TEXT("sample close trigger"),
+		static_cast<uint8>(Closed.Trigger),
+		static_cast<uint8>(SolidEvents::ETrigger::MessageClosed));
+	TestEqual(TEXT("sample close has no town"), Closed.Parameter, INDEX_NONE);
+	TestEqual(TEXT("sample close message"), FString(Closed.MessageId), FString(SolidMessages::IdKilledByMonsters));
+	TestEqual(TEXT("sample close has one change"), Closed.ChangeCount, 1);
+	TestEqual(
+		TEXT("sample close enables the cave"),
+		static_cast<uint8>(Closed.Changes[0].Kind),
+		static_cast<uint8>(SolidEvents::EChange::EnableCave));
+	TestEqual(TEXT("sample close has no requirement"), Closed.RequireCount, 0);
+
+	const SolidEvents::FEvent Ramp = SolidEvents::ReachBrokenBridge(TEXT("55667788"), TEXT("Sample ramp"), SolidEvents::ACT_0)
+		.DisplayMessage(SolidMessages::IdDrivenFromVillage)
+		.RepairBridge();
+	TestEqual(
+		TEXT("sample ramp trigger"),
+		static_cast<uint8>(Ramp.Trigger),
+		static_cast<uint8>(SolidEvents::ETrigger::ReachBrokenBridge));
+	TestEqual(TEXT("sample ramp has no town"), Ramp.Parameter, INDEX_NONE);
+	TestEqual(TEXT("sample ramp change count"), Ramp.ChangeCount, 2);
+	TestEqual(
+		TEXT("sample ramp message"),
+		FString(Ramp.Changes[0].MessageId),
+		FString(SolidMessages::IdDrivenFromVillage));
+	TestEqual(
+		TEXT("sample ramp repairs the bridge"),
+		static_cast<uint8>(Ramp.Changes[1].Kind),
+		static_cast<uint8>(SolidEvents::EChange::RepairBridge));
+	TestEqual(TEXT("sample ramp has no requirement"), Ramp.RequireCount, 0);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

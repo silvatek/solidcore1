@@ -17,8 +17,9 @@
  * That event shows a message. Closing that message is its own event.
  * Killed by monsters closes the monster message, opens the starting cave,
  * and sends the captain inside.
+ * Entering Iglin titles the captain Orphan.
  * Driven from the village fires on a later entry to Iglin, after that close,
- * and shows "You are driven from the village".
+ * shows "You are driven from the village", and titles the captain Outcast.
  * A visit before the requirements are met does not fire. A later visit does.
  * Each event belongs to an act. Iglin, Reach broken bridge, Killed by monsters,
  * and Driven from the village are ACT_0.
@@ -61,7 +62,7 @@ namespace SolidEvents
 		EnableSight,
 		/** How many companions may be in the party. */
 		MaxPartySize,
-		/** The captain's nameplate. Outcast, then Vagrant, then Ranger, then Captain. */
+		/** The captain's nameplate. Orphan, then Outcast, then Vagrant, then Ranger, then Captain. */
 		CaptainTitle,
 		/** Draw the center of a broken bridge and open that crossing. */
 		RepairBridge,
@@ -71,8 +72,10 @@ namespace SolidEvents
 		ShowMessage,
 	};
 
-	/** Nameplate before any title event. The sequence ends at Captain. */
+	/** Nameplate before Enter Iglin. Driven from the village sets this again. */
 	inline constexpr const TCHAR* TitleOutcast = TEXT("Outcast");
+	/** Enter Iglin. */
+	inline constexpr const TCHAR* TitleOrphan = TEXT("Orphan");
 	inline constexpr const TCHAR* TitleVagrant = TEXT("Vagrant");
 	inline constexpr const TCHAR* TitleRanger = TEXT("Ranger");
 	inline constexpr const TCHAR* TitleCaptain = TEXT("Captain");
@@ -125,8 +128,10 @@ namespace SolidEvents
 			TEXT("Enter Iglin"),
 			ETrigger::EnterTown,
 			0,
-			{},
-			0,
+			{
+				{ EChange::CaptainTitle, ESolidSight::Raven, 0, TitleOrphan },
+			},
+			1,
 			{},
 			0,
 			ACT_0,
@@ -165,8 +170,9 @@ namespace SolidEvents
 			0,
 			{
 				{ EChange::ShowMessage, ESolidSight::Raven, 0, nullptr, SolidMessages::IdDrivenFromVillage },
+				{ EChange::CaptainTitle, ESolidSight::Raven, 0, TitleOutcast },
 			},
-			1,
+			2,
 			{ IdKilledByMonsters },
 			1,
 			ACT_0,

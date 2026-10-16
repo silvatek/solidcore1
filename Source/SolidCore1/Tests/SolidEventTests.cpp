@@ -962,4 +962,99 @@ bool FSolidEventsDrivenFromVillageTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidEventsOrphanTitleTest,
+	"SolidCore1.Events.OrphanTitle",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidEventsOrphanTitleTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("Orphan"), FString(SolidEvents::TitleOrphan), FString(TEXT("Orphan")));
+
+	const SolidEvents::FEvent* IglinEvent = SolidEventTestPrivate::FindEvent(TEXT("Enter Iglin"));
+	TestNotNull(TEXT("Enter Iglin is listed"), IglinEvent);
+	if (IglinEvent)
+	{
+		TestEqual(TEXT("Iglin has one change"), IglinEvent->ChangeCount, 1);
+		TestEqual(
+			TEXT("Iglin sets the title"),
+			static_cast<uint8>(IglinEvent->Changes[0].Kind),
+			static_cast<uint8>(SolidEvents::EChange::CaptainTitle));
+		TestEqual(
+			TEXT("Iglin names Orphan"),
+			FString(IglinEvent->Changes[0].Title),
+			FString(SolidEvents::TitleOrphan));
+		TestTrue(
+			TEXT("Iglin journal is Title Orphan"),
+			SolidJournal::Describe(*IglinEvent).Contains(TEXT("Title Orphan")));
+	}
+
+	const SolidEvents::FEvent* Driven = SolidEventTestPrivate::FindEvent(TEXT("Driven from the village"));
+	TestNotNull(TEXT("Driven from the village is listed"), Driven);
+	if (Driven)
+	{
+		TestEqual(TEXT("the return has two changes"), Driven->ChangeCount, 2);
+		bool bTitlesOutcast = false;
+		const int32 ChangeCount = FMath::Min(Driven->ChangeCount, SolidEvents::MaxChangesPerEvent);
+		for (int32 Index = 0; Index < ChangeCount; ++Index)
+		{
+			const SolidEvents::FChange& Change = Driven->Changes[Index];
+			if (Change.Kind == SolidEvents::EChange::CaptainTitle
+				&& Change.Title
+				&& FCString::Strcmp(Change.Title, SolidEvents::TitleOutcast) == 0)
+			{
+				bTitlesOutcast = true;
+			}
+		}
+		TestTrue(TEXT("the return names Outcast"), bTitlesOutcast);
+		TestTrue(
+			TEXT("the return journal is Title Outcast"),
+			SolidJournal::Describe(*Driven).Contains(TEXT("Title Outcast")));
+	}
+
+	FGameState State;
+	TestEqual(TEXT("starts as Outcast"), FString(State.CaptainTitle), FString(SolidEvents::TitleOutcast));
+	const SolidEvents::FResult Entered = SolidEvents::NotifyOccupiedTown(State, 0);
+	TestTrue(TEXT("Iglin sets the title"), Entered.bSetTitle);
+	TestEqual(TEXT("Iglin result is Orphan"), FString(Entered.CaptainTitle), FString(SolidEvents::TitleOrphan));
+	TestEqual(TEXT("Iglin state is Orphan"), FString(State.CaptainTitle), FString(SolidEvents::TitleOrphan));
+
+	SolidEvents::NotifyReachBrokenBridge(State);
+	SolidEvents::NotifyMessageClosed(State, SolidMessages::IdKilledByMonsters);
+	TestEqual(TEXT("the close leaves Orphan"), FString(State.CaptainTitle), FString(SolidEvents::TitleOrphan));
+
+	const SolidEvents::FResult StillThere = SolidEvents::NotifyOccupiedTown(State, 0);
+	TestFalse(TEXT("staying in Iglin does not retitle"), StillThere.bFired);
+	TestEqual(TEXT("staying leaves Orphan"), FString(State.CaptainTitle), FString(SolidEvents::TitleOrphan));
+
+	SolidEvents::NotifyOccupiedTown(State, INDEX_NONE);
+	const SolidEvents::FResult Returned = SolidEvents::NotifyOccupiedTown(State, 0);
+	TestTrue(TEXT("the return sets the title"), Returned.bSetTitle);
+	TestEqual(TEXT("the return result is Outcast"), FString(Returned.CaptainTitle), FString(SolidEvents::TitleOutcast));
+	TestEqual(TEXT("the return state is Outcast"), FString(State.CaptainTitle), FString(SolidEvents::TitleOutcast));
+	TestTrue(TEXT("the return still shows the message"), Returned.bShowMessage);
+
+	TArray<SolidJournal::FRow> Rows;
+	SolidJournal::CollectRows(State, Rows);
+	bool bSawOrphan = false;
+	bool bSawOutcast = false;
+	for (const SolidJournal::FRow& Row : Rows)
+	{
+		if (Row.Kind != SolidJournal::ERowKind::Detail)
+		{
+			continue;
+		}
+		bSawOrphan = bSawOrphan || Row.Text.Contains(TEXT("Title Orphan"));
+		bSawOutcast = bSawOutcast || Row.Text.Contains(TEXT("Title Outcast"));
+	}
+	TestTrue(TEXT("the journal lists Title Orphan"), bSawOrphan);
+	TestTrue(TEXT("the journal lists Title Outcast"), bSawOutcast);
+
+	SolidEvents::NotifyOccupiedTown(State, INDEX_NONE);
+	const SolidEvents::FResult ReturnedAgain = SolidEvents::NotifyOccupiedTown(State, 0);
+	TestFalse(TEXT("the return does not retitle twice"), ReturnedAgain.bFired);
+	TestEqual(TEXT("the title stays Outcast"), FString(State.CaptainTitle), FString(SolidEvents::TitleOutcast));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

@@ -3,12 +3,12 @@
 
 namespace
 {
-	int32 FindPartBone(const TArray<FSolidDeformBone>& Skeleton, const FName& Name)
+	int32 FindPartBone(const TArray<FSolidDeformBone>& BoneLocals, const FName& Name)
 	{
 		const FString Wanted = Name.ToString();
-		for (int32 Index = 0; Index < Skeleton.Num(); ++Index)
+		for (int32 Index = 0; Index < BoneLocals.Num(); ++Index)
 		{
-			if (Skeleton[Index].Name.ToString().Equals(Wanted, ESearchCase::IgnoreCase))
+			if (BoneLocals[Index].Name.ToString().Equals(Wanted, ESearchCase::IgnoreCase))
 			{
 				return Index;
 			}
@@ -17,13 +17,13 @@ namespace
 	}
 
 	/** Bind-pose rotation of one bone. A cycle has no rotation. */
-	FQuat WorldRotationAt(const TArray<FSolidDeformBone>& Skeleton, const int32 Index)
+	FQuat WorldRotationAt(const TArray<FSolidDeformBone>& BoneLocals, const int32 Index)
 	{
 		TArray<int32, TInlineAllocator<32>> Up;
 		int32 Cursor = Index;
-		for (int32 Guard = 0; Guard < Skeleton.Num(); ++Guard)
+		for (int32 Guard = 0; Guard < BoneLocals.Num(); ++Guard)
 		{
-			if (!Skeleton.IsValidIndex(Cursor))
+			if (!BoneLocals.IsValidIndex(Cursor))
 			{
 				return FQuat::Identity;
 			}
@@ -35,13 +35,13 @@ namespace
 				}
 			}
 			Up.Add(Cursor);
-			const int32 Parent = Skeleton[Cursor].ParentIndex;
-			if (!Skeleton.IsValidIndex(Parent) || Parent == Cursor)
+			const int32 Parent = BoneLocals[Cursor].ParentIndex;
+			if (!BoneLocals.IsValidIndex(Parent) || Parent == Cursor)
 			{
 				FQuat Rotation = FQuat::Identity;
 				for (int32 Step = Up.Num() - 1; Step >= 0; --Step)
 				{
-					Rotation = Rotation * Skeleton[Up[Step]].LocalRotation;
+					Rotation = Rotation * BoneLocals[Up[Step]].LocalRotation;
 				}
 				return Rotation;
 			}
@@ -62,13 +62,13 @@ SolidBodyMesh::FSolidBodyPart::FSolidBodyPart(
 	const ESolidPartColour InColour,
 	const FSolidPartSection& InStart,
 	const FSolidPartSection& InEnd,
-	const TArray<FSolidDeformBone>& InSkeleton)
+	const TArray<FSolidDeformBone>& InVikingBones)
 	: Type(InType)
 	, Side(InSide)
 	, Colour(InColour)
 	, Start(InStart)
 	, End(InEnd)
-	, Skeleton(InSkeleton)
+	, BoneLocals(InVikingBones)
 {
 	// Each part type replaces this list in its own constructor.
 	Bones = FSolidBodyPart::PartBones();
@@ -120,27 +120,27 @@ void SolidBodyMesh::FSolidBodyPart::SizeBones(const float Length, const float Si
 		return;
 	}
 
-	const int32 Span = FindPartBone(Skeleton, Bones[0]);
-	if (Skeleton.IsValidIndex(Span))
+	const int32 Span = FindPartBone(BoneLocals, Bones[0]);
+	if (BoneLocals.IsValidIndex(Span))
 	{
-		Skeleton[Span].LocalTranslation *= Length;
+		BoneLocals[Span].LocalTranslation *= Length;
 	}
 
 	for (int32 BoneNumber = 1; BoneNumber < Bones.Num(); ++BoneNumber)
 	{
-		const int32 Index = FindPartBone(Skeleton, Bones[BoneNumber]);
-		if (!Skeleton.IsValidIndex(Index))
+		const int32 Index = FindPartBone(BoneLocals, Bones[BoneNumber]);
+		if (!BoneLocals.IsValidIndex(Index))
 		{
 			continue;
 		}
-		const int32 Parent = Skeleton[Index].ParentIndex;
-		const FQuat ParentRotation = Skeleton.IsValidIndex(Parent)
-			? WorldRotationAt(Skeleton, Parent)
+		const int32 Parent = BoneLocals[Index].ParentIndex;
+		const FQuat ParentRotation = BoneLocals.IsValidIndex(Parent)
+			? WorldRotationAt(BoneLocals, Parent)
 			: FQuat::Identity;
-		FVector Offset = ParentRotation.RotateVector(Skeleton[Index].LocalTranslation);
+		FVector Offset = ParentRotation.RotateVector(BoneLocals[Index].LocalTranslation);
 		Offset.X *= SideScale;
 		Offset.Y *= SideScale;
-		Skeleton[Index].LocalTranslation = ParentRotation.UnrotateVector(Offset);
+		BoneLocals[Index].LocalTranslation = ParentRotation.UnrotateVector(Offset);
 	}
 }
 
@@ -261,8 +261,8 @@ bool SolidBodyMesh::FSolidBodyPart::LowestZ(
 }
 
 bool SolidBodyMesh::FSolidBodyPart::Base(
-	const TArray<FSolidDeformBone>& InBones,
-	const TArray<FVector>& Positions,
+	const TArray<FSolidDeformBone>& AdjustedBones,
+	const TArray<FVector>& JointPositions,
 	float& OutZ) const
 {
 	if (Bones.Num() == 0)
@@ -270,14 +270,14 @@ bool SolidBodyMesh::FSolidBodyPart::Base(
 		return false;
 	}
 
-	const int32 Count = FMath::Min(InBones.Num(), Positions.Num());
-	const int32 Span = FindPartBone(InBones, Bones[0]);
+	const int32 Count = FMath::Min(AdjustedBones.Num(), JointPositions.Num());
+	const int32 Span = FindPartBone(AdjustedBones, Bones[0]);
 	if (Span == INDEX_NONE || Span >= Count)
 	{
 		return false;
 	}
-	const int32 Parent = InBones[Span].ParentIndex;
-	if (!InBones.IsValidIndex(Parent) || !Positions.IsValidIndex(Parent) || Parent >= Count)
+	const int32 Parent = AdjustedBones[Span].ParentIndex;
+	if (!AdjustedBones.IsValidIndex(Parent) || !JointPositions.IsValidIndex(Parent) || Parent >= Count)
 	{
 		return false;
 	}
@@ -286,25 +286,25 @@ bool SolidBodyMesh::FSolidBodyPart::Base(
 	TArray<FVector> SegmentEnd;
 	for (int32 BoneNumber = 1; BoneNumber < Bones.Num(); ++BoneNumber)
 	{
-		const int32 Bone = FindPartBone(InBones, Bones[BoneNumber]);
+		const int32 Bone = FindPartBone(AdjustedBones, Bones[BoneNumber]);
 		if (Bone == INDEX_NONE || Bone >= Count)
 		{
 			return false;
 		}
-		const int32 BoneParent = InBones[Bone].ParentIndex;
-		if (!InBones.IsValidIndex(BoneParent) || !Positions.IsValidIndex(BoneParent) || BoneParent >= Count)
+		const int32 BoneParent = AdjustedBones[Bone].ParentIndex;
+		if (!AdjustedBones.IsValidIndex(BoneParent) || !JointPositions.IsValidIndex(BoneParent) || BoneParent >= Count)
 		{
 			return false;
 		}
-		SegmentStart.Add(Positions[BoneParent]);
-		SegmentEnd.Add(Positions[Bone]);
+		SegmentStart.Add(JointPositions[BoneParent]);
+		SegmentEnd.Add(JointPositions[Bone]);
 	}
 
 	return LowestZ(
 		Parent,
 		Span,
-		Positions[Parent],
-		Positions[Span],
+		JointPositions[Parent],
+		JointPositions[Span],
 		SegmentStart.GetData(),
 		SegmentEnd.GetData(),
 		SegmentStart.Num(),
@@ -421,9 +421,9 @@ namespace
 		const SolidBodyMesh::ESolidPartColour InColour,
 		const SolidBodyMesh::FSolidPartSection& InStart,
 		const SolidBodyMesh::FSolidPartSection& InEnd,
-		const TArray<FSolidDeformBone>& InSkeleton)
+		const TArray<FSolidDeformBone>& InVikingBones)
 	{
-		return MakeUnique<T>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+		return MakeUnique<T>(InType, InSide, InColour, InStart, InEnd, InVikingBones);
 	}
 }
 
@@ -433,35 +433,35 @@ TUniquePtr<SolidBodyMesh::FSolidBodyPart> SolidBodyMesh::MakeBodyPart(
 	const ESolidPartColour InColour,
 	const FSolidPartSection& InStart,
 	const FSolidPartSection& InEnd,
-	const TArray<FSolidDeformBone>& InSkeleton)
+	const TArray<FSolidDeformBone>& InVikingBones)
 {
 	switch (InType)
 	{
 	case ESolidPartType::Thigh:
-		return MakePart<FSolidThighPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+		return MakePart<FSolidThighPart>(InType, InSide, InColour, InStart, InEnd, InVikingBones);
 	case ESolidPartType::Calf:
-		return MakePart<FSolidCalfPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+		return MakePart<FSolidCalfPart>(InType, InSide, InColour, InStart, InEnd, InVikingBones);
 	case ESolidPartType::Foot:
-		return MakePart<FSolidFootPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+		return MakePart<FSolidFootPart>(InType, InSide, InColour, InStart, InEnd, InVikingBones);
 	case ESolidPartType::Toe:
-		return MakePart<FSolidToePart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+		return MakePart<FSolidToePart>(InType, InSide, InColour, InStart, InEnd, InVikingBones);
 	case ESolidPartType::Hip:
-		return MakePart<FSolidHipPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+		return MakePart<FSolidHipPart>(InType, InSide, InColour, InStart, InEnd, InVikingBones);
 	case ESolidPartType::Abdomen:
-		return MakePart<FSolidAbdomenPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+		return MakePart<FSolidAbdomenPart>(InType, InSide, InColour, InStart, InEnd, InVikingBones);
 	case ESolidPartType::Chest:
-		return MakePart<FSolidChestPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+		return MakePart<FSolidChestPart>(InType, InSide, InColour, InStart, InEnd, InVikingBones);
 	case ESolidPartType::Shoulders:
-		return MakePart<FSolidShoulderPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+		return MakePart<FSolidShoulderPart>(InType, InSide, InColour, InStart, InEnd, InVikingBones);
 	case ESolidPartType::UpperArm:
-		return MakePart<FSolidUpperArmPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+		return MakePart<FSolidUpperArmPart>(InType, InSide, InColour, InStart, InEnd, InVikingBones);
 	case ESolidPartType::LowerArm:
-		return MakePart<FSolidLowerArmPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+		return MakePart<FSolidLowerArmPart>(InType, InSide, InColour, InStart, InEnd, InVikingBones);
 	case ESolidPartType::Hand:
-		return MakePart<FSolidHandPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+		return MakePart<FSolidHandPart>(InType, InSide, InColour, InStart, InEnd, InVikingBones);
 	case ESolidPartType::Head:
-		return MakePart<FSolidHeadPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+		return MakePart<FSolidHeadPart>(InType, InSide, InColour, InStart, InEnd, InVikingBones);
 	default:
-		return MakePart<FSolidBodyPart>(InType, InSide, InColour, InStart, InEnd, InSkeleton);
+		return MakePart<FSolidBodyPart>(InType, InSide, InColour, InStart, InEnd, InVikingBones);
 	}
 }

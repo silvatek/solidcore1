@@ -175,14 +175,14 @@ namespace SolidBodyMesh
 			Shape = PartShape(Type);
 		}
 
-		/** The type, the side, its colour, the diameters at each end, and the skeleton. PartBones fills the bone list. */
+		/** The type, the side, its colour, the diameters at each end, and VikingBones. PartBones fills the bone list. */
 		FSolidBodyPart(
 			ESolidPartType InType,
 			ESolidPartSide InSide,
 			ESolidPartColour InColour,
 			const FSolidPartSection& InStart,
 			const FSolidPartSection& InEnd,
-			const TArray<FSolidDeformBone>& InSkeleton);
+			const TArray<FSolidDeformBone>& InVikingBones);
 
 		virtual ~FSolidBodyPart() = default;
 		FSolidBodyPart(const FSolidBodyPart&) = default;
@@ -201,15 +201,19 @@ namespace SolidBodyMesh
 		TArray<FName> Bones;
 		/** Comes from the part type. A tube, the shoulders, the head, or a hand. */
 		ESolidPartShape Shape = ESolidPartShape::Tube;
-		/** Copied from the body when the part is built. PartBones reads it. Apply sizes it. */
-		TArray<FSolidDeformBone> Skeleton;
+		/**
+		 * Local transforms copied onto this part.
+		 * Make stores the Viking pose, so PartBones can list the fingers and the eyes.
+		 * Apply replaces it with the pose so far, then sizes the bones this part wraps.
+		 */
+		TArray<FSolidDeformBone> BoneLocals;
 		ESolidPartColour Colour = ESolidPartColour::Shirt;
 		FSolidPartSection Start;
 		FSolidPartSection End;
 		FSolidPartSection Mid;
 
 		/**
-		 * The bones this part wraps on its stored skeleton.
+		 * The bones this part wraps on BoneLocals.
 		 * The base list is empty. Each part type replaces it.
 		 * A paired part uses its side to choose left or right. A core part ignores the side.
 		 */
@@ -222,7 +226,7 @@ namespace SolidBodyMesh
 		 * Size this part, then size the bones it wraps.
 		 * Height lengthens Bones[0]. Torso girth widens the section and spreads the other bones.
 		 * The abdomen and the chest keep this. A limb, the hip, the head, a hand, and the shoulders size themselves.
-		 * Call once. A listed bone that is missing from the skeleton is left out.
+		 * Call once. A listed bone that is missing from BoneLocals is left out.
 		 */
 		virtual void Apply(const FSolidBodyParams& Params);
 
@@ -265,8 +269,8 @@ namespace SolidBodyMesh
 		 * False when this part draws nothing.
 		 */
 		bool Base(
-			const TArray<FSolidDeformBone>& InBones,
-			const TArray<FVector>& Positions,
+			const TArray<FSolidDeformBone>& AdjustedBones,
+			const TArray<FVector>& JointPositions,
 			float& OutZ) const;
 
 		/**
@@ -314,7 +318,7 @@ namespace SolidBodyMesh
 			ESolidPartColour InColour,
 			const FSolidPartSection& InStart,
 			const FSolidPartSection& InEnd,
-			const TArray<FSolidDeformBone>& InSkeleton);
+			const TArray<FSolidDeformBone>& InVikingBones);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
@@ -363,7 +367,7 @@ namespace SolidBodyMesh
 			ESolidPartColour InColour,
 			const FSolidPartSection& InStart,
 			const FSolidPartSection& InEnd,
-			const TArray<FSolidDeformBone>& InSkeleton);
+			const TArray<FSolidDeformBone>& InVikingBones);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
@@ -413,7 +417,7 @@ namespace SolidBodyMesh
 			ESolidPartColour InColour,
 			const FSolidPartSection& InStart,
 			const FSolidPartSection& InEnd,
-			const TArray<FSolidDeformBone>& InSkeleton);
+			const TArray<FSolidDeformBone>& InVikingBones);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
@@ -461,7 +465,7 @@ namespace SolidBodyMesh
 			ESolidPartColour InColour,
 			const FSolidPartSection& InStart,
 			const FSolidPartSection& InEnd,
-			const TArray<FSolidDeformBone>& InSkeleton);
+			const TArray<FSolidDeformBone>& InVikingBones);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
@@ -479,7 +483,7 @@ namespace SolidBodyMesh
 			ESolidPartColour InColour,
 			const FSolidPartSection& InStart,
 			const FSolidPartSection& InEnd,
-			const TArray<FSolidDeformBone>& InSkeleton);
+			const TArray<FSolidDeformBone>& InVikingBones);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
@@ -497,7 +501,7 @@ namespace SolidBodyMesh
 			ESolidPartColour InColour,
 			const FSolidPartSection& InStart,
 			const FSolidPartSection& InEnd,
-			const TArray<FSolidDeformBone>& InSkeleton);
+			const TArray<FSolidDeformBone>& InVikingBones);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
@@ -515,7 +519,7 @@ namespace SolidBodyMesh
 			ESolidPartColour InColour,
 			const FSolidPartSection& InStart,
 			const FSolidPartSection& InEnd,
-			const TArray<FSolidDeformBone>& InSkeleton);
+			const TArray<FSolidDeformBone>& InVikingBones);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
@@ -533,7 +537,7 @@ namespace SolidBodyMesh
 			ESolidPartColour InColour,
 			const FSolidPartSection& InStart,
 			const FSolidPartSection& InEnd,
-			const TArray<FSolidDeformBone>& InSkeleton);
+			const TArray<FSolidDeformBone>& InVikingBones);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
@@ -551,7 +555,7 @@ namespace SolidBodyMesh
 			ESolidPartColour InColour,
 			const FSolidPartSection& InStart,
 			const FSolidPartSection& InEnd,
-			const TArray<FSolidDeformBone>& InSkeleton);
+			const TArray<FSolidDeformBone>& InVikingBones);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
@@ -568,7 +572,7 @@ namespace SolidBodyMesh
 			ESolidPartColour InColour,
 			const FSolidPartSection& InStart,
 			const FSolidPartSection& InEnd,
-			const TArray<FSolidDeformBone>& InSkeleton);
+			const TArray<FSolidDeformBone>& InVikingBones);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
@@ -585,7 +589,7 @@ namespace SolidBodyMesh
 			ESolidPartColour InColour,
 			const FSolidPartSection& InStart,
 			const FSolidPartSection& InEnd,
-			const TArray<FSolidDeformBone>& InSkeleton);
+			const TArray<FSolidDeformBone>& InVikingBones);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
@@ -603,7 +607,7 @@ namespace SolidBodyMesh
 			ESolidPartColour InColour,
 			const FSolidPartSection& InStart,
 			const FSolidPartSection& InEnd,
-			const TArray<FSolidDeformBone>& InSkeleton);
+			const TArray<FSolidDeformBone>& InVikingBones);
 
 		virtual TUniquePtr<FSolidBodyPart> Clone() const override;
 		virtual FString Name() const override;
@@ -618,5 +622,5 @@ namespace SolidBodyMesh
 		ESolidPartColour InColour,
 		const FSolidPartSection& InStart,
 		const FSolidPartSection& InEnd,
-		const TArray<FSolidDeformBone>& InSkeleton);
+		const TArray<FSolidDeformBone>& InVikingBones);
 }

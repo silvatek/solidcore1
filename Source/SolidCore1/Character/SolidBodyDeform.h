@@ -26,6 +26,6 @@ struct FSolidDeformMesh
 
 namespace SolidBodyDeform
 {
-	/** Joint positions from parent-first local transforms. */
-	void ComponentPositions(const TArray<FSolidDeformBone>& Bones, TArray<FVector>& OutPositions);
+	/** Mesh-space joint positions from the adjusted local pose. Parents are applied first. */
+	void ComponentPositions(const TArray<FSolidDeformBone>& AdjustedBones, TArray<FVector>& OutJointPositions);
 }

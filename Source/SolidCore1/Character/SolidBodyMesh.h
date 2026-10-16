@@ -32,7 +32,7 @@ namespace SolidBodyMesh
 
 		TArray<TUniquePtr<FSolidBodyPart>> Parts;
 
-		/** Construct the part for this type on Skeleton and append it. The part reads its own bones. */
+		/** Construct the part for this type on VikingBones and append it. The part reads its own bones. */
 		void AddBodyPart(
 			ESolidPartType InType,
 			ESolidPartSide InSide,
@@ -40,43 +40,45 @@ namespace SolidBodyMesh
 			const FSolidPartSection& InStart,
 			const FSolidPartSection& InEnd)
 		{
-			Parts.Add(MakeBodyPart(InType, InSide, InColour, InStart, InEnd, Skeleton));
+			Parts.Add(MakeBodyPart(InType, InSide, InColour, InStart, InEnd, VikingBones));
 		}
 
 		/**
-		 * The body for this skeleton.
+		 * The body for the Viking reference pose.
 		 * Each part reads the bones it wraps.
 		 * The head gains the eye bones. Each hand lists the fingers on that hand.
 		 * The abdomen is spine_02. The chest is spine_03.
 		 */
-		static FSolidBodyMesh Make(const TArray<FSolidDeformBone>& Bones);
+		static FSolidBodyMesh Make(const TArray<FSolidDeformBone>& VikingBones);
 
 		const FSolidBodyPart* Find(const FString& Name) const;
 
 		/**
-		 * Ask every part to size itself and the bones it wraps.
+		 * Write the slider adjustments into AdjustedBones.
+		 * The array starts as the Viking pose. Each part sizes the bones it wraps.
 		 * A bone with no part keeps its Viking translation.
 		 */
-		void Apply(TArray<FSolidDeformBone>& Bones, const FSolidBodyParams& Params);
+		void Apply(TArray<FSolidDeformBone>& AdjustedBones, const FSolidBodyParams& Params);
 
-		/** Draw every part whose bones are on this skeleton. */
+		/** Draw every part. AdjustedBones is the slider pose. JointPositions are those joints in mesh space. */
 		void Draw(
 			TArray<FSolidBodyVert>& Verts,
 			TArray<FSolidBodyTri>& Tris,
-			const TArray<FSolidDeformBone>& Bones,
-			const TArray<FVector>& Positions);
+			const TArray<FSolidDeformBone>& AdjustedBones,
+			const TArray<FVector>& JointPositions);
 
 		/**
 		 * The base of this body, in mesh space.
+		 * AdjustedBones is the slider pose. JointPositions are those joints in mesh space.
 		 * Asks each part for its base, then keeps the minimum.
 		 * Zero when no part draws.
 		 */
 		float Base(
-			const TArray<FSolidDeformBone>& Bones,
-			const TArray<FVector>& Positions) const;
+			const TArray<FSolidDeformBone>& AdjustedBones,
+			const TArray<FVector>& JointPositions) const;
 
-		/** The skeleton this body was fitted to. AddBodyPart passes it to each part. */
-		TArray<FSolidDeformBone> Skeleton;
+		/** The Viking reference pose. Make copies it here. Apply does not change it. */
+		TArray<FSolidDeformBone> VikingBones;
 	};
 
 	/** Stable id for a companion name. Case does not matter. */
@@ -305,15 +307,16 @@ namespace SolidBodyMesh
 	 */
 	float BodyBaseZ(
 		const FSolidBodyMesh& Body,
-		const TArray<FSolidDeformBone>& Bones,
-		const TArray<FVector>& Positions);
+		const TArray<FSolidDeformBone>& AdjustedBones,
+		const TArray<FVector>& JointPositions);
 
 	/**
 	 * The base of the body made from these bones, in mesh space.
+	 * AdjustedBones supplies the bone names and the joint positions come from that same pose.
 	 * The parts keep their default sections. A sized body uses the other overload.
 	 * Zero when no part draws.
 	 */
-	float BodyBaseZ(const TArray<FSolidDeformBone>& Bones, const TArray<FVector>& Positions);
+	float BodyBaseZ(const TArray<FSolidDeformBone>& AdjustedBones, const TArray<FVector>& JointPositions);
 
 	/** Mesh relative Z that puts that base on the bottom of the capsule. */
 	float BaseMeshOffset(float CapsuleHalfHeight, float BaseZ);

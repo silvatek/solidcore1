@@ -3,13 +3,13 @@
 
 namespace
 {
-	TArray<FName> HeadBones(const TArray<FSolidDeformBone>& Skeleton)
+	TArray<FName> HeadBones(const TArray<FSolidDeformBone>& BoneLocals)
 	{
 		using namespace SolidBodyMesh;
 
 		TArray<FName> Bones;
 		Bones.Add(HeadBone);
-		for (const FSolidDeformBone& Bone : Skeleton)
+		for (const FSolidDeformBone& Bone : BoneLocals)
 		{
 			const FString BoneName = Bone.Name.ToString();
 			if (BoneName.Equals(HeadBone, ESearchCase::IgnoreCase))
@@ -85,8 +85,8 @@ SolidBodyMesh::FSolidHeadPart::FSolidHeadPart(
 	const ESolidPartColour InColour,
 	const FSolidPartSection& InStart,
 	const FSolidPartSection& InEnd,
-	const TArray<FSolidDeformBone>& InSkeleton)
-	: FSolidBodyPart(InType, InSide, InColour, InStart, InEnd, InSkeleton)
+	const TArray<FSolidDeformBone>& InVikingBones)
+	: FSolidBodyPart(InType, InSide, InColour, InStart, InEnd, InVikingBones)
 {
 	Bones = PartBones();
 }
@@ -103,7 +103,7 @@ FString SolidBodyMesh::FSolidHeadPart::Name() const
 
 TArray<FName> SolidBodyMesh::FSolidHeadPart::PartBones() const
 {
-	return HeadBones(Skeleton);
+	return HeadBones(BoneLocals);
 }
 
 void SolidBodyMesh::FSolidHeadPart::Apply(const FSolidBodyParams& Params)

@@ -972,12 +972,12 @@ bool FSolidBodyPartSizesBonesTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("torso girth sets the hip depth"), FMath::IsNearlyEqual(Hip->Start.Y, 20.f, 0.01f));
 	TestTrue(
 		TEXT("height lengthens the span bone"),
-		Hip->Skeleton[1].LocalTranslation.Equals(FVector(0.f, 0.f, -45.f), 0.01f));
+		Hip->BoneLocals[1].LocalTranslation.Equals(FVector(0.f, 0.f, -45.f), 0.01f));
 	const FVector ExpectedSpread = ParentRotation.UnrotateVector(FVector(8.f * HipScale, 4.f * HipScale, 1.f));
 	TestTrue(
 		TEXT("the part spreads its other bone on the world side axes"),
-		Hip->Skeleton[2].LocalTranslation.Equals(ExpectedSpread, 0.01f));
-	TestTrue(TEXT("a bone outside the part stays put"), Hip->Skeleton[3].LocalTranslation.Equals(Untouched, 0.01f));
+		Hip->BoneLocals[2].LocalTranslation.Equals(ExpectedSpread, 0.01f));
+	TestTrue(TEXT("a bone outside the part stays put"), Hip->BoneLocals[3].LocalTranslation.Equals(Untouched, 0.01f));
 	return true;
 }
 

@@ -7,8 +7,8 @@ SolidBodyMesh::FSolidToePart::FSolidToePart(
 	const ESolidPartColour InColour,
 	const FSolidPartSection& InStart,
 	const FSolidPartSection& InEnd,
-	const TArray<FSolidDeformBone>& InSkeleton)
-	: FSolidBodyPart(InType, InSide, InColour, InStart, InEnd, InSkeleton)
+	const TArray<FSolidDeformBone>& InVikingBones)
+	: FSolidBodyPart(InType, InSide, InColour, InStart, InEnd, InVikingBones)
 {
 	Bones = PartBones();
 }

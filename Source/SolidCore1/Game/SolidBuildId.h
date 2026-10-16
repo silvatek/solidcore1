@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0392")
+#define SOLID_BUILD_ID TEXT("SC1-0393")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Inventory opens on # with the captain's starting kit.")
+#define SOLID_BUILD_NOTE TEXT("Inventory is on the F10 menu and opens with /.")
 #endif

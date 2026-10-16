@@ -1,6 +1,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "Inventory/SolidInventory.h"
+#include "Menus/SolidMainMenu.h"
 #include "SolidGameState.h"
 #include "SolidHUD.h"
 
@@ -221,7 +222,7 @@ bool FSolidInventoryLayoutTest::RunTest(const FString& Parameters)
 
 	TestEqual(TEXT("page name"), FString(SolidInventory::Title), FString(TEXT("Inventory")));
 	TestEqual(TEXT("pack heading"), FString(SolidInventory::PackTitle), FString(TEXT("Pack")));
-	TestEqual(TEXT("close hint"), FString(SolidInventory::CloseHint), FString(TEXT("# to close")));
+	TestEqual(TEXT("close hint"), FString(SolidInventory::CloseHint), FString(TEXT("/ to close")));
 	return true;
 }
 
@@ -232,11 +233,10 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidInventoryToggleTest::RunTest(const FString& Parameters)
 {
-	TestTrue(TEXT("UK hash key"), SolidInventory::IsToggleKey(EKeys::Backslash, false));
-	TestFalse(TEXT("shifted UK hash is not #"), SolidInventory::IsToggleKey(EKeys::Backslash, true));
-	TestTrue(TEXT("US hash is shift 3"), SolidInventory::IsToggleKey(EKeys::Three, true));
-	TestFalse(TEXT("3 alone is the menu key"), SolidInventory::IsToggleKey(EKeys::Three, false));
-	TestEqual(TEXT("debug label"), FString(SolidInventory::ToggleKeyLabel), FString(TEXT("#")));
+	TestTrue(TEXT("slash opens inventory"), SolidInventory::IsToggleKey(EKeys::Slash, false));
+	TestFalse(TEXT("shift slash is not the toggle"), SolidInventory::IsToggleKey(EKeys::Slash, true));
+	TestFalse(TEXT("3 stays a menu key"), SolidInventory::IsToggleKey(EKeys::Three, true));
+	TestEqual(TEXT("debug label"), FString(SolidInventory::ToggleKeyLabel), FString(TEXT("/")));
 
 	ASolidHUD* HUD = NewObject<ASolidHUD>();
 	TestNotNull(TEXT("hud"), HUD);
@@ -247,9 +247,9 @@ bool FSolidInventoryToggleTest::RunTest(const FString& Parameters)
 
 	TestFalse(TEXT("inventory starts closed"), HUD->IsInventoryVisible());
 	HUD->ToggleInventory();
-	TestTrue(TEXT("# opens the inventory"), HUD->IsInventoryVisible());
+	TestTrue(TEXT("/ opens the inventory"), HUD->IsInventoryVisible());
 	HUD->ToggleInventory();
-	TestFalse(TEXT("# closes the inventory"), HUD->IsInventoryVisible());
+	TestFalse(TEXT("/ closes the inventory"), HUD->IsInventoryVisible());
 
 	HUD->ToggleInventory();
 	HUD->HandleMenuKey();
@@ -282,10 +282,50 @@ bool FSolidInventoryToggleTest::RunTest(const FString& Parameters)
 	HUD->ShowMessage(TEXT("00000001"), TEXT("You are killed by monsters"));
 	HUD->ToggleInventory();
 	TestTrue(TEXT("a message stays up"), HUD->IsMessageVisible());
-	TestFalse(TEXT("# waits until the message closes"), HUD->IsInventoryVisible());
+	TestFalse(TEXT("/ waits until the message closes"), HUD->IsInventoryVisible());
 	HUD->CloseMessage();
 	HUD->ToggleInventory();
-	TestTrue(TEXT("# opens after the message"), HUD->IsInventoryVisible());
+	TestTrue(TEXT("/ opens after the message"), HUD->IsInventoryVisible());
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidInventoryMenuTest,
+	"SolidCore1.Inventory.Menu",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidInventoryMenuTest::RunTest(const FString& Parameters)
+{
+	TArray<FSolidMainMenuEntry> Entries;
+	SolidMainMenu::CollectEntries(Entries);
+	int32 InventoryIndex = INDEX_NONE;
+	int32 EditorIndex = INDEX_NONE;
+	for (int32 Index = 0; Index < Entries.Num(); ++Index)
+	{
+		if (Entries[Index].Item == ESolidMainMenuItem::Inventory)
+		{
+			InventoryIndex = Index;
+		}
+		if (Entries[Index].Item == ESolidMainMenuItem::CharacterEditor)
+		{
+			EditorIndex = Index;
+		}
+	}
+	TestTrue(TEXT("inventory is listed"), InventoryIndex != INDEX_NONE);
+	TestTrue(TEXT("inventory follows the character editor"), EditorIndex != INDEX_NONE && InventoryIndex == EditorIndex + 1);
+	if (InventoryIndex == INDEX_NONE)
+	{
+		return false;
+	}
+
+	FSolidMainMenuEntry Found;
+	TestTrue(TEXT("find inventory"), SolidMainMenu::FindEntry(InventoryIndex, Found));
+	TestEqual(TEXT("inventory label"), Found.Label, FString(TEXT("Inventory")));
+	TestEqual(
+		TEXT("inventory action"),
+		static_cast<uint8>(SolidMainMenu::ActionForItem(Found.Item)),
+		static_cast<uint8>(ESolidMainMenuAction::ShowInventory));
+	TestEqual(TEXT("8 selects inventory"), InventoryIndex, 7);
 	return true;
 }
 

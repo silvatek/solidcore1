@@ -290,12 +290,7 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::F9, IE_Pressed, this, &ASolidCharacter::ToggleSightFromInput);
 	PlayerInputComponent->BindKey(EKeys::F10, IE_Pressed, this, &ASolidCharacter::ToggleMainMenuFromInput);
 	PlayerInputComponent->BindKey(EKeys::F12, IE_Pressed, this, &ASolidCharacter::ToggleDebugPanelFromInput);
-	PlayerInputComponent->BindKey(EKeys::Backslash, IE_Pressed, this, &ASolidCharacter::ToggleInventoryFromBackslash);
-	PlayerInputComponent->BindKey(
-		FInputChord(EKeys::Three, /*bShift=*/true, /*bCtrl=*/false, /*bAlt=*/false, /*bCmd=*/false),
-		IE_Pressed,
-		this,
-		&ASolidCharacter::ToggleInventoryFromShiftThree);
+	PlayerInputComponent->BindKey(EKeys::Slash, IE_Pressed, this, &ASolidCharacter::ToggleInventoryFromSlash);
 	PlayerInputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ASolidCharacter::CloseMenuOverlayFromInput);
 	PlayerInputComponent->BindKey(EKeys::Up, IE_Pressed, this, &ASolidCharacter::MainMenuMoveUp);
 	PlayerInputComponent->BindKey(EKeys::Up, IE_Repeat, this, &ASolidCharacter::MainMenuMoveUp);
@@ -474,25 +469,12 @@ void ASolidCharacter::ToggleMainMenuFromInput()
 	}
 }
 
-void ASolidCharacter::ToggleInventoryFromBackslash()
+void ASolidCharacter::ToggleInventoryFromSlash()
 {
 	const APlayerController* PC = Cast<APlayerController>(GetController());
 	const bool bShift = PC
 		&& (PC->IsInputKeyDown(EKeys::LeftShift) || PC->IsInputKeyDown(EKeys::RightShift));
-	if (!SolidInventory::IsToggleKey(EKeys::Backslash, bShift))
-	{
-		return;
-	}
-	if (ASolidHUD* HUD = GetSolidHUD())
-	{
-		HUD->ToggleInventory();
-		SyncCharacterStage();
-	}
-}
-
-void ASolidCharacter::ToggleInventoryFromShiftThree()
-{
-	if (!SolidInventory::IsToggleKey(EKeys::Three, true))
+	if (!SolidInventory::IsToggleKey(EKeys::Slash, bShift))
 	{
 		return;
 	}
@@ -862,13 +844,6 @@ void ASolidCharacter::MainMenuChoose2()
 
 void ASolidCharacter::MainMenuChoose3()
 {
-	const APlayerController* PC = Cast<APlayerController>(GetController());
-	const bool bShift = PC
-		&& (PC->IsInputKeyDown(EKeys::LeftShift) || PC->IsInputKeyDown(EKeys::RightShift));
-	if (bShift)
-	{
-		return;
-	}
 	ChooseMainMenuIndex(2);
 }
 
@@ -1088,6 +1063,9 @@ void ASolidCharacter::MainMenuConfirm()
 		}
 		HUD->OpenCharacterEditor();
 		SyncCharacterStage();
+		break;
+	case ESolidMainMenuAction::ShowInventory:
+		HUD->ToggleInventory();
 		break;
 	default:
 		break;

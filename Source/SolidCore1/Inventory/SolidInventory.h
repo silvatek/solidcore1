@@ -5,15 +5,14 @@
 
 /**
  * Captain's inventory. Worn boxes follow a person. The pack is a grid beside them.
- * # opens the page. On a UK keyboard that key is beside Enter (Unreal calls it Backslash).
- * On a US keyboard # is Shift+3.
+ * / opens the page. F10, then Inventory, opens it too.
  */
 namespace SolidInventory
 {
 	inline constexpr const TCHAR* Title = TEXT("Inventory");
 	inline constexpr const TCHAR* PackTitle = TEXT("Pack");
-	inline constexpr const TCHAR* CloseHint = TEXT("# to close");
-	inline constexpr const TCHAR* ToggleKeyLabel = TEXT("#");
+	inline constexpr const TCHAR* CloseHint = TEXT("/ to close");
+	inline constexpr const TCHAR* ToggleKeyLabel = TEXT("/");
 
 	inline constexpr const TCHAR* DentedHelmet = TEXT("Dented helmet");
 	inline constexpr const TCHAR* RagShirt = TEXT("Rag shirt");
@@ -51,17 +50,10 @@ namespace SolidInventory
 		}
 	}
 
-	/**
-	 * True for the # key. Shift+# is ~ on a UK keyboard, so a shifted Backslash is not the toggle.
-	 * Shift+3 is # on a US keyboard.
-	 */
+	/** True for /. Shift+/ is ?, so a shifted slash is not the toggle. */
 	inline bool IsToggleKey(const FKey& Key, const bool bShiftDown)
 	{
-		if (Key == EKeys::Backslash)
-		{
-			return !bShiftDown;
-		}
-		return Key == EKeys::Three && bShiftDown;
+		return Key == EKeys::Slash && !bShiftDown;
 	}
 
 	struct FLoadout

@@ -11,6 +11,7 @@ void SolidMainMenu::CollectEntries(TArray<FSolidMainMenuEntry>& OutEntries, cons
 	OutEntries.Add({ ESolidMainMenuItem::BuildParty, TEXT("Build party") });
 	OutEntries.Add({ ESolidMainMenuItem::Dungeon, SolidDungeonLevel::MenuLabel(bInDungeon) });
 	OutEntries.Add({ ESolidMainMenuItem::CharacterEditor, TEXT("Character editor") });
+	OutEntries.Add({ ESolidMainMenuItem::Inventory, TEXT("Inventory") });
 }
 
 int32 SolidMainMenu::EntryCount()
@@ -50,6 +51,8 @@ ESolidMainMenuAction SolidMainMenu::ActionForItem(const ESolidMainMenuItem Item)
 		return ESolidMainMenuAction::TravelDungeon;
 	case ESolidMainMenuItem::CharacterEditor:
 		return ESolidMainMenuAction::OpenCharacterEditor;
+	case ESolidMainMenuItem::Inventory:
+		return ESolidMainMenuAction::ShowInventory;
 	default:
 		return ESolidMainMenuAction::None;
 	}

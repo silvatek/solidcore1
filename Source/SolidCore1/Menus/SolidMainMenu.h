@@ -12,6 +12,7 @@ enum class ESolidMainMenuItem : uint8
 	BuildParty,
 	Dungeon,
 	CharacterEditor,
+	Inventory,
 };
 
 /** What confirming a menu entry does. The pawn performs the action. */
@@ -25,6 +26,7 @@ enum class ESolidMainMenuAction : uint8
 	OpenParty,
 	TravelDungeon,
 	OpenCharacterEditor,
+	ShowInventory,
 };
 
 struct FSolidMainMenuEntry

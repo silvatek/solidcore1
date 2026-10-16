@@ -70,6 +70,13 @@ public:
 	/** WorldMap.txt marker for desert. A peak, not the letter D. */
 	static constexpr TCHAR DesertMarker = TEXT('^');
 
+	/**
+	 * Extra markers. They stay on the cell, are open ground like grassland,
+	 * and are not towns, locations, or the cave.
+	 */
+	static constexpr TCHAR XMarker = TEXT('X');
+	static constexpr TCHAR YMarker = TEXT('Y');
+
 	/** Load Content/WorldMap.txt. Idempotent when already loaded. */
 	bool LoadDefault(bool bForceReload = false);
 
@@ -79,7 +86,7 @@ public:
 	bool IsLoaded() const { return bIsLoaded; }
 
 	/**
-	 * Marker biome at map cell (clamped). The town marker and Z are Town; the desert marker is Desert; C is Mountain; digits use the location key.
+	 * Marker biome at map cell (clamped). The town marker and Z are Town; the desert marker is Desert; C is Mountain; X and Y are Grassland; digits use the location key.
 	 * The river marker is River for the whole cell. SampleBiome paints only the channel.
 	 */
 	ESolidBiome GetBiomeAtCell(int32 MapX, int32 MapY) const;

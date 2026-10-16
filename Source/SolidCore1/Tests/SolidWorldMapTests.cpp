@@ -5,6 +5,7 @@
 #include "SolidTerrainMap.h"
 #include "SolidTerrainStreamer.h"
 #include "SolidTerrainTestHelpers.h"
+#include "SolidStronghold.h"
 #include "SolidTowns.h"
 #include "SolidWorldMap.h"
 
@@ -1007,6 +1008,105 @@ bool FSolidWorldMapDesertMarkerTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the shipped map has desert"), bSawDesert);
 	TestTrue(TEXT("mountains stay M"), Mountains > 0);
 	TestTrue(TEXT("the cave stays C"), Caves > 0);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidWorldMapXYMarkerTest,
+	"SolidCore1.WorldMap.XYMarkers",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidWorldMapXYMarkerTest::RunTest(const FString& Parameters)
+{
+	const int32 XCol = 4;
+	const int32 YCol = 6;
+	const int32 DigitCol = 8;
+	const int32 PairCol = 10;
+	const int32 MarkerRow = 3;
+
+	FString Text;
+	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	{
+		FString Line;
+		Line.Reserve(USolidWorldMap::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		{
+			if (Row == MarkerRow && Col == XCol)
+			{
+				Line.AppendChar(TEXT('x'));
+			}
+			else if (Row == MarkerRow && Col == XCol + 1)
+			{
+				Line.AppendChar(TEXT('5'));
+			}
+			else if (Row == MarkerRow && Col == YCol)
+			{
+				Line.AppendChar(USolidWorldMap::YMarker);
+			}
+			else if (Row == MarkerRow && Col == DigitCol)
+			{
+				Line.AppendChar(TEXT('5'));
+			}
+			else if (Row == MarkerRow && Col == DigitCol + 1)
+			{
+				Line.AppendChar(USolidWorldMap::XMarker);
+			}
+			else if (Row == MarkerRow && Col == PairCol)
+			{
+				Line.AppendChar(TEXT('0'));
+			}
+			else if (Row == MarkerRow && Col == PairCol + 1)
+			{
+				Line.AppendChar(TEXT('5'));
+			}
+			else
+			{
+				Line.AppendChar(USolidWorldMap::GrassMarker);
+			}
+		}
+		Text += Line;
+		Text += TEXT("\n");
+	}
+	Text += TEXT(". = Grassland (light green)\n");
+	Text += TEXT("X = Later (red)\n");
+	Text += TEXT("Y = Later (blue)\n");
+
+	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("a map with X and Y loads"), Map->LoadFromString(Text));
+	TestEqual(TEXT("a lower-case x is kept as X"), Map->GetMarkerAtCell(XCol, MarkerRow), USolidWorldMap::XMarker);
+	TestEqual(TEXT("Y is kept"), Map->GetMarkerAtCell(YCol, MarkerRow), USolidWorldMap::YMarker);
+	TestEqual(
+		TEXT("X is open ground"),
+		static_cast<uint8>(Map->GetBiomeAtCell(XCol, MarkerRow)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+	TestEqual(
+		TEXT("Y is open ground"),
+		static_cast<uint8>(Map->GetBiomeAtCell(YCol, MarkerRow)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+	TestEqual(TEXT("X is not a location"), Map->GetLocationIdAtCell(XCol, MarkerRow), INDEX_NONE);
+	TestEqual(TEXT("Y is not a location"), Map->GetLocationIdAtCell(YCol, MarkerRow), INDEX_NONE);
+
+	const FVector2D WorldMin(-6400.f, -6400.f);
+	const FVector2D WorldMax(6400.f, 6400.f);
+	FVector2D XWorld = FVector2D::ZeroVector;
+	FVector2D YWorld = FVector2D::ZeroVector;
+	TestTrue(TEXT("X cell"), Map->CellToWorldXY(FIntPoint(XCol, MarkerRow), WorldMin, WorldMax, XWorld));
+	TestTrue(TEXT("Y cell"), Map->CellToWorldXY(FIntPoint(YCol, MarkerRow), WorldMin, WorldMax, YWorld));
+	TestFalse(TEXT("X is not a town"), Map->IsMarkedTown(XWorld.X, XWorld.Y, WorldMin, WorldMax));
+	TestFalse(TEXT("Y is not a town"), Map->IsMarkedTown(YWorld.X, YWorld.Y, WorldMin, WorldMax));
+
+	TestEqual(TEXT("a digit after X stays that digit"), Map->GetLocationIdAtCell(XCol + 1, MarkerRow), 5);
+	TestEqual(TEXT("a digit before X stays that digit"), Map->GetLocationIdAtCell(DigitCol, MarkerRow), 5);
+	TestEqual(TEXT("a digit pair still joins"), Map->GetLocationIdAtCell(PairCol, MarkerRow), 5);
+	TestEqual(TEXT("the other digit of the pair joins"), Map->GetLocationIdAtCell(PairCol + 1, MarkerRow), 5);
+
+	const FLinearColor Grass = Map->GetBiomeColor(ESolidBiome::Grassland);
+	TestTrue(TEXT("the X key leaves grass green"), Grass.G > Grass.R && Grass.G > Grass.B);
+	TestFalse(TEXT("the map still has no start from X or Y"), Map->HasStartTown());
+
+	FSolidStronghold Stronghold;
+	TestFalse(TEXT("X is not a stronghold"), SolidStronghold::AttributesForMarker(USolidWorldMap::XMarker, Stronghold));
+	TestFalse(TEXT("Y is not a stronghold"), SolidStronghold::AttributesForMarker(USolidWorldMap::YMarker, Stronghold));
 	return true;
 }
 

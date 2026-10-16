@@ -265,7 +265,7 @@ namespace SolidBodyMesh
 		 * False when this part draws nothing.
 		 */
 		bool Base(
-			const TArray<FSolidDeformBone>& Bones,
+			const TArray<FSolidDeformBone>& InBones,
 			const TArray<FVector>& Positions,
 			float& OutZ) const;
 

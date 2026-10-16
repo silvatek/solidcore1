@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0343")
+#define SOLID_BUILD_ID TEXT("SC1-0344")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Each part reports its own base.")
+#define SOLID_BUILD_NOTE TEXT("A part's base reads the posed skeleton as InBones.")
 #endif

@@ -261,38 +261,38 @@ bool SolidBodyMesh::FSolidBodyPart::LowestZ(
 }
 
 bool SolidBodyMesh::FSolidBodyPart::Base(
-	const TArray<FSolidDeformBone>& Bones,
+	const TArray<FSolidDeformBone>& InBones,
 	const TArray<FVector>& Positions,
 	float& OutZ) const
 {
-	if (this->Bones.Num() == 0)
+	if (Bones.Num() == 0)
 	{
 		return false;
 	}
 
-	const int32 Count = FMath::Min(Bones.Num(), Positions.Num());
-	const int32 Span = FindPartBone(Bones, this->Bones[0]);
+	const int32 Count = FMath::Min(InBones.Num(), Positions.Num());
+	const int32 Span = FindPartBone(InBones, Bones[0]);
 	if (Span == INDEX_NONE || Span >= Count)
 	{
 		return false;
 	}
-	const int32 Parent = Bones[Span].ParentIndex;
-	if (!Bones.IsValidIndex(Parent) || !Positions.IsValidIndex(Parent) || Parent >= Count)
+	const int32 Parent = InBones[Span].ParentIndex;
+	if (!InBones.IsValidIndex(Parent) || !Positions.IsValidIndex(Parent) || Parent >= Count)
 	{
 		return false;
 	}
 
 	TArray<FVector> SegmentStart;
 	TArray<FVector> SegmentEnd;
-	for (int32 BoneNumber = 1; BoneNumber < this->Bones.Num(); ++BoneNumber)
+	for (int32 BoneNumber = 1; BoneNumber < Bones.Num(); ++BoneNumber)
 	{
-		const int32 Bone = FindPartBone(Bones, this->Bones[BoneNumber]);
+		const int32 Bone = FindPartBone(InBones, Bones[BoneNumber]);
 		if (Bone == INDEX_NONE || Bone >= Count)
 		{
 			return false;
 		}
-		const int32 BoneParent = Bones[Bone].ParentIndex;
-		if (!Bones.IsValidIndex(BoneParent) || !Positions.IsValidIndex(BoneParent) || BoneParent >= Count)
+		const int32 BoneParent = InBones[Bone].ParentIndex;
+		if (!InBones.IsValidIndex(BoneParent) || !Positions.IsValidIndex(BoneParent) || BoneParent >= Count)
 		{
 			return false;
 		}

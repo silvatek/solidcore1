@@ -259,33 +259,53 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("location 1"), Map->FindLocation(1, Relion));
 	TestEqual(TEXT("Relion"), Relion.Name, FString(TEXT("Relion")));
 	TestTrue(TEXT("Relion role is not in the map file"), Relion.Role.IsEmpty());
-	TestEqual(TEXT("Relion is two cells"), Relion.Cells.Num(), 2);
+	TestEqual(TEXT("Relion is one cell"), Relion.Cells.Num(), 1);
+	if (Relion.Cells.Num() == 1)
+	{
+		TestEqual(TEXT("Relion is !"), Map->GetMarkerAtCell(Relion.Cells[0].X, Relion.Cells[0].Y), USolidWorldMap::LocationMarker);
+	}
 
 	FSolidWorldLocation Kanfold;
 	TestTrue(TEXT("location 2"), Map->FindLocation(2, Kanfold));
 	TestEqual(TEXT("Kanfold"), Kanfold.Name, FString(TEXT("Kanfold")));
 	TestTrue(TEXT("Kanfold role is not in the map file"), Kanfold.Role.IsEmpty());
-	TestTrue(TEXT("Kanfold has more than one cell"), Kanfold.Cells.Num() > 1);
+	TestEqual(TEXT("Kanfold is one cell"), Kanfold.Cells.Num(), 1);
+	if (Kanfold.Cells.Num() == 1)
+	{
+		TestEqual(TEXT("Kanfold is !"), Map->GetMarkerAtCell(Kanfold.Cells[0].X, Kanfold.Cells[0].Y), USolidWorldMap::LocationMarker);
+	}
 
 	FSolidWorldLocation Visolar;
 	TestTrue(TEXT("location 3"), Map->FindLocation(3, Visolar));
 	TestEqual(TEXT("Visolar"), Visolar.Name, FString(TEXT("Visolar")));
 	TestTrue(TEXT("Visolar role is not in the map file"), Visolar.Role.IsEmpty());
-	TestEqual(TEXT("Visolar is two cells"), Visolar.Cells.Num(), 2);
+	TestEqual(TEXT("Visolar is one cell"), Visolar.Cells.Num(), 1);
+	if (Visolar.Cells.Num() == 1)
+	{
+		TestEqual(TEXT("Visolar is !"), Map->GetMarkerAtCell(Visolar.Cells[0].X, Visolar.Cells[0].Y), USolidWorldMap::LocationMarker);
+	}
 
 	FSolidWorldLocation Jethan;
 	TestTrue(TEXT("location 4"), Map->FindLocation(4, Jethan));
 	TestEqual(TEXT("Jethan"), Jethan.Name, FString(TEXT("Jethan")));
 	TestTrue(TEXT("Jethan role is not in the map file"), Jethan.Role.IsEmpty());
 	TestEqual(TEXT("Jethan is Town"), static_cast<uint8>(Jethan.Biome), static_cast<uint8>(ESolidBiome::Town));
-	TestEqual(TEXT("Jethan is two cells"), Jethan.Cells.Num(), 2);
+	TestEqual(TEXT("Jethan is one cell"), Jethan.Cells.Num(), 1);
+	if (Jethan.Cells.Num() == 1)
+	{
+		TestEqual(TEXT("Jethan is !"), Map->GetMarkerAtCell(Jethan.Cells[0].X, Jethan.Cells[0].Y), USolidWorldMap::LocationMarker);
+	}
 
 	FSolidWorldLocation Rathen;
 	TestTrue(TEXT("location 6"), Map->FindLocation(6, Rathen));
 	TestEqual(TEXT("Rathen"), Rathen.Name, FString(TEXT("Rathen")));
 	TestTrue(TEXT("Rathen role is not in the map file"), Rathen.Role.IsEmpty());
 	TestEqual(TEXT("Rathen is Town"), static_cast<uint8>(Rathen.Biome), static_cast<uint8>(ESolidBiome::Town));
-	TestEqual(TEXT("Rathen is two cells"), Rathen.Cells.Num(), 2);
+	TestEqual(TEXT("Rathen is one cell"), Rathen.Cells.Num(), 1);
+	if (Rathen.Cells.Num() == 1)
+	{
+		TestEqual(TEXT("Rathen is !"), Map->GetMarkerAtCell(Rathen.Cells[0].X, Rathen.Cells[0].Y), USolidWorldMap::LocationMarker);
+	}
 	bool bRathenBesideRiver = false;
 	for (const FIntPoint& Cell : Rathen.Cells)
 	{
@@ -321,7 +341,16 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	{
 		TestEqual(TEXT("Dragongate"), Dragongate.Name, FString(TEXT("Dragongate")));
 		TestEqual(TEXT("Dragongate is Town"), static_cast<uint8>(Dragongate.Biome), static_cast<uint8>(ESolidBiome::Town));
-		TestTrue(TEXT("Dragongate has a cell"), Dragongate.Cells.Num() > 0);
+		TestEqual(TEXT("Dragongate is two cells"), Dragongate.Cells.Num(), 2);
+		if (Dragongate.Cells.Num() == 2)
+		{
+			TestEqual(TEXT("Dragongate cells share a row"), Dragongate.Cells[0].Y, Dragongate.Cells[1].Y);
+			const int32 EastCol = FMath::Min(Dragongate.Cells[0].X, Dragongate.Cells[1].X);
+			const int32 WestCol = FMath::Max(Dragongate.Cells[0].X, Dragongate.Cells[1].X);
+			TestEqual(TEXT("Dragongate cells are adjacent"), WestCol - EastCol, 1);
+			TestEqual(TEXT("Dragongate east cell is !"), Map->GetMarkerAtCell(EastCol, Dragongate.Cells[0].Y), USolidWorldMap::LocationMarker);
+			TestEqual(TEXT("Dragongate west cell is !"), Map->GetMarkerAtCell(WestCol, Dragongate.Cells[0].Y), USolidWorldMap::LocationMarker);
+		}
 	}
 
 	TestEqual(TEXT("start is only location 0"), Map->GetStartTownCellCount(), Iglin.Cells.Num());
@@ -626,21 +655,12 @@ bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 
 	FSolidWorldLocation ShippedKanfold;
 	TestTrue(TEXT("shipped location 2"), Shipped->FindLocation(2, ShippedKanfold));
-	TestEqual(TEXT("shipped Kanfold is the 02 pair"), ShippedKanfold.Cells.Num(), 2);
-	if (ShippedKanfold.Cells.Num() == 2)
+	TestEqual(TEXT("shipped Kanfold is one cell"), ShippedKanfold.Cells.Num(), 1);
+	if (ShippedKanfold.Cells.Num() == 1)
 	{
-		TestEqual(TEXT("Kanfold cells share a row"), ShippedKanfold.Cells[0].Y, ShippedKanfold.Cells[1].Y);
-		const FIntPoint East = ShippedKanfold.Cells[0].X < ShippedKanfold.Cells[1].X
-			? ShippedKanfold.Cells[0]
-			: ShippedKanfold.Cells[1];
-		const FIntPoint West = ShippedKanfold.Cells[0].X < ShippedKanfold.Cells[1].X
-			? ShippedKanfold.Cells[1]
-			: ShippedKanfold.Cells[0];
-		TestEqual(TEXT("Kanfold cells are adjacent"), West.X - East.X, 1);
-		TestEqual(TEXT("Kanfold tens digit is 0"), Shipped->GetMarkerAtCell(East.X, East.Y), TEXT('0'));
-		TestEqual(TEXT("Kanfold ones digit is 2"), Shipped->GetMarkerAtCell(West.X, West.Y), TEXT('2'));
-		TestEqual(TEXT("Kanfold east cell id"), Shipped->GetLocationIdAtCell(East.X, East.Y), 2);
-		TestEqual(TEXT("Kanfold west cell id"), Shipped->GetLocationIdAtCell(West.X, West.Y), 2);
+		const FIntPoint Cell = ShippedKanfold.Cells[0];
+		TestEqual(TEXT("Kanfold is !"), Shipped->GetMarkerAtCell(Cell.X, Cell.Y), USolidWorldMap::LocationMarker);
+		TestEqual(TEXT("Kanfold cell id"), Shipped->GetLocationIdAtCell(Cell.X, Cell.Y), 2);
 	}
 
 	FSolidWorldLocation ShippedGate;
@@ -656,8 +676,8 @@ bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 			? ShippedGate.Cells[1]
 			: ShippedGate.Cells[0];
 		TestEqual(TEXT("Dragongate cells are adjacent"), West.X - East.X, 1);
-		TestEqual(TEXT("Dragongate tens digit is 0"), Shipped->GetMarkerAtCell(East.X, East.Y), TEXT('0'));
-		TestEqual(TEXT("Dragongate ones digit is 5"), Shipped->GetMarkerAtCell(West.X, West.Y), TEXT('5'));
+		TestEqual(TEXT("Dragongate east cell is !"), Shipped->GetMarkerAtCell(East.X, East.Y), USolidWorldMap::LocationMarker);
+		TestEqual(TEXT("Dragongate west cell is !"), Shipped->GetMarkerAtCell(West.X, West.Y), USolidWorldMap::LocationMarker);
 		TestEqual(TEXT("Dragongate east cell id"), Shipped->GetLocationIdAtCell(East.X, East.Y), 5);
 		TestEqual(TEXT("Dragongate west cell id"), Shipped->GetLocationIdAtCell(West.X, West.Y), 5);
 	}

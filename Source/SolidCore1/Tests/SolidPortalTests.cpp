@@ -119,19 +119,14 @@ bool FSolidPortalLandingTest::RunTest(const FString& Parameters)
 	}
 
 	FSolidWorldLocation Kanfold;
-	TestTrue(TEXT("Kanfold"), Map->FindLocation(2, Kanfold));
-	TestEqual(TEXT("Kanfold is one pair"), Kanfold.Cells.Num(), 2);
-	if (Kanfold.Cells.Num() == 2)
+	TestTrue(TEXT("Kanfold"), Map->FindLocation(SolidTowns::Kanfold, Kanfold));
+	TestEqual(TEXT("Kanfold is one cell"), Kanfold.Cells.Num(), 1);
+	if (Kanfold.Cells.Num() == 1)
 	{
-		const int32 Row = Kanfold.Cells[0].Y;
-		TestEqual(TEXT("Kanfold cells share a row"), Kanfold.Cells[1].Y, Row);
-		const int32 EastCol = FMath::Min(Kanfold.Cells[0].X, Kanfold.Cells[1].X);
-		const int32 WestCol = FMath::Max(Kanfold.Cells[0].X, Kanfold.Cells[1].X);
-		TestEqual(TEXT("Kanfold cells are adjacent"), WestCol - EastCol, 1);
 		FIntPoint LandingCell = FIntPoint::ZeroValue;
 		TestTrue(TEXT("Kanfold landing cell"), SolidPortal::ChooseLandingCell(Kanfold.Cells, LandingCell));
-		TestEqual(TEXT("portal stands on the eastern Kanfold cell"), LandingCell.X, EastCol);
-		TestEqual(TEXT("portal stands on the Kanfold row"), LandingCell.Y, Row);
+		TestEqual(TEXT("portal stands on the Kanfold column"), LandingCell.X, Kanfold.Cells[0].X);
+		TestEqual(TEXT("portal stands on the Kanfold row"), LandingCell.Y, Kanfold.Cells[0].Y);
 	}
 	return true;
 }

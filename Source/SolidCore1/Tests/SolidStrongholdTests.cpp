@@ -125,7 +125,8 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 	{
 		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
 		{
-			if (Map->GetMarkerAtCell(Col, Row) != TEXT('C'))
+			FSolidStronghold Named;
+			if (Map->GetMarkerAtCell(Col, Row) != TEXT('C') && !Map->StrongholdAtCell(Col, Row, Named))
 			{
 				continue;
 			}

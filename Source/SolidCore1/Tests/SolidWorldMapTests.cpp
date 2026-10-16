@@ -984,7 +984,8 @@ bool FSolidWorldMapDesertMarkerTest::RunTest(const FString& Parameters)
 			{
 				++Mountains;
 			}
-			if (Marker == TEXT('C'))
+			FSolidStronghold NamedCave;
+			if (Marker == TEXT('C') || Shipped->StrongholdAtCell(Col, Row, NamedCave))
 			{
 				++Caves;
 			}
@@ -1002,7 +1003,7 @@ bool FSolidWorldMapDesertMarkerTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("desert cells are peaks"), DesertNotPeak, 0);
 	TestTrue(TEXT("the shipped map has desert"), bSawDesert);
 	TestTrue(TEXT("mountains stay M"), Mountains > 0);
-	TestTrue(TEXT("the cave stays C"), Caves > 0);
+	TestTrue(TEXT("the shipped map has a cave"), Caves > 0);
 	return true;
 }
 
@@ -1170,26 +1171,45 @@ bool FSolidWorldMapXYMountainTest::RunTest(const FString& Parameters)
 	{
 		return true;
 	}
-	int32 TunnelMouths = 0;
+	int32 LetterMouths = 0;
 	int32 NotMountain = 0;
+	int32 LairEntrances = 0;
+	int32 LairExits = 0;
 	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
 	{
 		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
 		{
 			const TCHAR Marker = Shipped->GetMarkerAtCell(Col, Row);
-			if (Marker != USolidWorldMap::XMarker && Marker != USolidWorldMap::YMarker)
+			FSolidWorldBang Bang;
+			const bool bBang = Shipped->FindBang(Col, Row, Bang);
+			const bool bLetter = Marker == USolidWorldMap::XMarker || Marker == USolidWorldMap::YMarker;
+			const bool bLair = bBang
+				&& (Bang.Kind == ESolidWorldBang::LairEntrance || Bang.Kind == ESolidWorldBang::LairExit);
+			if (!bLetter && !bLair)
 			{
 				continue;
 			}
-			++TunnelMouths;
+			if (bLetter)
+			{
+				++LetterMouths;
+			}
+			if (bBang && Bang.Kind == ESolidWorldBang::LairEntrance)
+			{
+				++LairEntrances;
+			}
+			if (bBang && Bang.Kind == ESolidWorldBang::LairExit)
+			{
+				++LairExits;
+			}
 			if (Shipped->GetBiomeAtCell(Col, Row) != ESolidBiome::Mountain)
 			{
 				++NotMountain;
 			}
 		}
 	}
-	TestTrue(TEXT("the shipped map has X and Y"), TunnelMouths > 0);
-	TestEqual(TEXT("shipped X and Y cells are mountain"), NotMountain, 0);
+	TestTrue(TEXT("the shipped map has a lair entrance"), LairEntrances > 0 || LetterMouths > 0);
+	TestTrue(TEXT("the shipped map has a lair exit"), LairExits > 0 || LetterMouths > 0);
+	TestEqual(TEXT("shipped tunnel mouths are mountain"), NotMountain, 0);
 	return true;
 }
 

@@ -463,7 +463,11 @@ bool FSolidEventsRequiresTest::RunTest(const FString& Parameters)
 				FString(BridgeEvent.Requires[0]),
 				FString(SolidEvents::IdEnterIglin));
 		}
-		TestEqual(TEXT("Reach broken bridge changes nothing"), BridgeEvent.ChangeCount, 0);
+		const FString BridgeChanges = SolidJournal::Describe(BridgeEvent);
+		TestEqual(
+			TEXT("Reach broken bridge journal follows its changes"),
+			BridgeEvent.ChangeCount > 0,
+			!BridgeChanges.IsEmpty());
 	}
 	for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
 	{
@@ -501,13 +505,14 @@ bool FSolidEventsReachBrokenBridgeTest::RunTest(const FString& Parameters)
 {
 	const SolidEvents::FEvent* Event = SolidEventTestPrivate::FindEvent(TEXT("Reach broken bridge"));
 	TestNotNull(TEXT("Reach broken bridge is listed"), Event);
+	FString RampChanges;
 	if (Event)
 	{
 		TestEqual(
 			TEXT("the ramp trigger"),
 			static_cast<uint8>(Event->Trigger),
 			static_cast<uint8>(SolidEvents::ETrigger::ReachBrokenBridge));
-		TestTrue(TEXT("the journal names it and nothing else"), SolidJournal::Describe(*Event).IsEmpty());
+		RampChanges = SolidJournal::Describe(*Event);
 	}
 
 	FGameState Early;
@@ -548,7 +553,11 @@ bool FSolidEventsReachBrokenBridgeTest::RunTest(const FString& Parameters)
 	const bool bDetail = RampRow != INDEX_NONE
 		&& RampRow + 1 < Rows.Num()
 		&& Rows[RampRow + 1].Kind == SolidJournal::ERowKind::Detail;
-	TestFalse(TEXT("the ramp has no change line"), bDetail);
+	TestEqual(TEXT("the ramp detail follows the event"), bDetail, !RampChanges.IsEmpty());
+	if (bDetail && RampRow + 1 < Rows.Num())
+	{
+		TestEqual(TEXT("the ramp change line is the event"), Rows[RampRow + 1].Text, RampChanges);
+	}
 
 	const int32 JournalCount = Early.Journal.Num();
 	const SolidEvents::FResult Again = SolidEvents::NotifyReachBrokenBridge(Early);

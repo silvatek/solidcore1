@@ -1,0 +1,3 @@
+# True sight / raven sight
+
+The game starts in true sight (first person). Raven sight (third person) stays locked through Iglin, the broken bridge, the monster close, and the return to the village. It unlocks when the captain enters Relion, and also at Kanfold or Dragongate. F9 then toggles. Switching from raven sight to true sight levels the camera, so a downward raven look does not carry into first person. True sight hides the captain's body and nameplate, turns the body with the look direction, and ignores mouse-wheel zoom until you switch back. The menu and the formation drill ignore F9. A translucent oval in the top-right shows an eye in true sight and an eagle in raven sight.

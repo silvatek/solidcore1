@@ -1,7 +1,7 @@
 # SolidCore1 — agent rules
 
 UE 5.8 C++ Viking-only open world. Product repo: `github.com/silvatek/solidcore1`.
-Human docs and the To-do list: `README.md`. Fog history: `Source/SolidCore1/Fog/README.md`. Lair notes: `Content/Lairs.md`.
+Human docs: `README.md`. Open stories: `Planning/`. Shipped stories: `Planning/Done/`. Fog history: `Source/SolidCore1/Fog/README.md`. Lair notes: `Content/Lairs.md`.
 
 ## Workflow overrides the agent harness
 
@@ -40,6 +40,12 @@ After a push, the user:
 Wait for that report before treating the change as verified. When a screenshot arrives, review it.
 
 Screenshots are taken with the Windows snipping tool. That switch puts Unreal in the background, so the HUD frame rate drops. Ignore FPS in a screenshot unless the user says they are worried about it. Foreground PIE is about 120 FPS.
+
+## Planning
+
+- One file in `Planning/` is one open story. `README.md` lists those files. The file is the story.
+- When a story ships, move its file to `Planning/Done/`.
+- `ideas.md` is the inbox. Copy each new idea into a new file under `Planning/`. Do not edit `ideas.md`.
 
 ## Tests
 

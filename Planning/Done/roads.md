@@ -1,0 +1,3 @@
+# Roads
+
+`WorldMap.txt` lists each road as a start, an end, and a type. A trail is 1 m wide, a track 2 m, a road 3 m, and a highway 4 m. The route is solved across the grid and painted in a brown close to the town colour. Houses stay in the marked towns, not on that strip. Every route stays off mountains and the sea. Roads and highways also stay off forest and desert, and they cross a river only when going around costs more. The water in a crossing keeps the river texture. The road runs straight across that water and along both banks, and it does not leave a spur past the bend on the far bank. A trail or a track may cross forest or desert; when two routes are the same length, open ground is preferred.

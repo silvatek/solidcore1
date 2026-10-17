@@ -2,7 +2,7 @@
 
 ## Story
 
-A developer marks a stronghold on the world map. The marker sets the stronghold's size, and does not set its type.
+A developer marks a stronghold site on the world map. The line is `StrongholdSite` and a size, as in `StrongholdSite (Humble)`. It sets the size and does not set the type. The player chooses the type when they click the stone, as in [Stronghold transition](stronghold-transition.md).
 
 ## Acceptance
 

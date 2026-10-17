@@ -19,4 +19,8 @@ A player does something in the game, or a developer does something in the source
 ## Acceptance
 
 What is true when the story is done.
+
+## Implementation notes
+
+Details that do not belong in the story or the acceptance criteria. Leave this out when there are none.
 ```

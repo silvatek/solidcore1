@@ -28,6 +28,11 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 - Distribute sticks and pitch randomly in forest biome areas when they are not fogged
 - Distribute rough stones randomly next to rivers and mountains
 - A better mechanism for marking locations on the world map, using a list of grid references and "!" markers
+- Switch the party builder to drag and drop, similar to inventory, including battle plans
+- Switch world map stronghold markers to select stronghold size only, not type
+- Base and subclasses for the different stronghold types
+- Initial implementation of the fortress stronghold type
+- Imperious dungeon stronghold
 
 ## Done
 

@@ -6,9 +6,9 @@ Status: Ready
 
 The player is inside a stronghold and presses `\`. Arrange mode starts, and the captain is hidden so the floor is clear to see. The pointer highlights the hex under it. A piece on that hex shows its name.
 
-A click or Enter on a piece lifts it. The piece follows the pointer and snaps to the hex under the tip. A click or Enter on cells that can hold it puts it down. While a piece is held, Q, E, and the mouse wheel each turn it by one facing. The wheel does not zoom during that hold. Esc puts a held piece back. Esc with nothing held leaves the mode, and the captain is visible again.
+A click or Enter on a piece lifts it. The piece follows the pointer and snaps to the hex under the tip. A click or Enter on cells that can hold it puts it down. While a piece is held, Q, E, and the mouse wheel each turn it by one facing. The wheel does not zoom during that hold. Esc puts a held piece back, or closes the browser when that is what is open. Esc with nothing held, and the browser closed, leaves the mode, and the captain is visible again.
 
-A new piece comes from a column that lists the furnishing catalog, in catalog order. The column sits beside the floor and does not cover the hexes. The wheel over the column scrolls it. Up and Down move through the rows, and Enter or a click on a row lifts that kind. The column hides while a piece is held, so the wheel can turn the piece and the floor stays clear. The catalog will hold dozens of kinds. The three in this story fit, so the scrollbar stays hidden. A click in this mode does not walk the captain and does not use the door.
+A new piece starts from an empty hex. A click or Enter on one, while nothing is held, opens the furnishing browser. The browser is a column beside the floor, listing the catalog in catalog order, and it stays off the hexes. It is closed when arrange mode starts. The wheel over the column scrolls it. Up and Down move through the rows, and a click on a row lifts that kind onto the hex that opened the browser. The column closes while the piece is held, so the wheel can turn it and the floor stays clear. Esc closes the browser and leaves the mode on. The catalog will hold dozens of kinds. The three in this story fit, so the scrollbar stays hidden. A click in this mode does not walk the captain and does not use the door.
 
 ## Acceptance
 
@@ -25,14 +25,17 @@ A new piece comes from a column that lists the furnishing catalog, in catalog or
 - A fireplace occupies one hex. A chest occupies one hex. A bed occupies two neighboring hexes. The second hex is the next one in the direction the bed faces.
 - A placement off the floor, on a stair, on a landing, or overlapping another piece is not legal. The ghost still shows. Confirm does not put it down, and the piece stays held.
 - Q and E rotate a held piece by one facing. One facing is 60 degrees, and six steps return it to the facing it started with. The mouse wheel does the same, one facing per notch. Wheel up matches Q. Wheel down matches E.
-- While no piece is held, the wheel still zooms, except over the catalog column, where it scrolls that column only. Q and E do nothing then.
-- Esc while a piece is held returns it to the cells and facing it had, and the mode stays on. A piece that was lifted from the catalog, and not yet put down, is discarded. The column shows again.
-- Esc with nothing held leaves the mode.
-- While the mode is on and nothing is held, a column lists every kind in the furnishing catalog, in catalog order. This story's rows are Fireplace, Bed, and Chest. The column sits beside the floor and does not cover a hex.
+- While no piece is held and the browser is closed, the wheel still zooms. Q and E do nothing then. While the browser is open, the wheel over its column scrolls that column only, and the wheel elsewhere still zooms.
+- Esc while a piece is held returns it to the cells and facing it had, and the mode stays on. A piece that was lifted from the browser, and not yet put down, is discarded. The browser stays closed.
+- Esc while the browser is open, and nothing is held, closes the browser. The mode stays on. Esc with nothing held and the browser closed leaves the mode.
+- The browser is closed when arrange mode starts, and it stays closed until an empty hex is confirmed.
+- Confirm on an empty hex, while nothing is held, opens the browser for that hex. Confirm on an empty hex while a piece is held tries to put that piece down, and does not open the browser.
+- Confirm on another empty hex while the browser is open keeps the browser open and uses that hex instead.
+- The browser is a column of every kind in the furnishing catalog, in catalog order. This story's rows are Fireplace, Bed, and Chest. The column sits beside the floor and does not cover a hex.
 - The column shows as many rows as fit in its frame. Further kinds scroll. A scrollbar shows when the rows do not fit, and it stays hidden when they do. Fireplace, Bed, and Chest fit, so the thumb is hidden.
-- Up and Down move the highlight through the catalog, and the column scrolls to keep that row in the frame. A click on a row lifts that kind. Enter lifts the highlighted kind when the pointer is not over a placed piece.
-- Enter or a click on a placed piece still lifts that piece. The catalog highlight does not change which placed piece a click lifts.
-- Lifting a piece hides the column. Putting the piece down, or putting it back, shows the column again. Up, Down, and a click where the column was do nothing while it is hidden.
+- Up and Down move the highlight through the catalog while the browser is open, and the column scrolls to keep that row in the frame. A click on a row lifts that kind as a held piece, snapped to the hex that opened the browser. Enter does too, unless the pointer is over a placed piece. Up and Down do nothing while the browser is closed.
+- Enter or a click on a placed piece still lifts that piece, and closes the browser if it was open. The catalog highlight does not change which placed piece a click lifts.
+- Lifting a piece closes the browser. Putting the piece down, or putting it back, leaves the browser closed. A click where the column was does nothing while it is closed.
 - A new game still starts with the fireplace, the bed, and the chest already placed in the Meagre den. This story does not add a fourth kind.
 - Moving a chest keeps the items in its slots. The pack and the worn boxes stay as they were.
 - A placed piece is moved or left where it is. This story does not delete one that is already down.
@@ -49,5 +52,5 @@ A new piece comes from a column that lists the furnishing catalog, in catalog or
 - Q and E are unbound today. One facing is 60 degrees, the step `SolidStrongholdGrid::HexVertices` uses. `SolidStrongholdFurniture::SpanCell` already places the bed's second cell along `RotationDeg`.
 - Hide the captain with `SetActorHiddenInGame`. The pawn stays, so the camera does not jump. His mesh and his capsule do not answer the pointer ray.
 - The placed list is the stronghold's used furnishings. The starter three from `UsedFurnishings` are the new-game list. A move edits that list. Store it on the travel session, the way the pack is stored, so `OpenLevel` brings the same placements back.
-- A catalog row builds a pending piece and does not write the placed list until confirm. Esc drops that pending piece. The column is one scrollbox. Its rows are `SolidStrongholdFurniture::Catalog` in order. This story does not add a kind, and it does not add a filter. A later kind is another row in that catalog, and the same column scrolls to it.
+- The browser opens on an empty-hex confirm and remembers that hex. A catalog row builds a pending piece on it and does not write the placed list until the placement confirm. Esc drops that pending piece and does not reopen the browser. The column is one scrollbox. Its rows are `SolidStrongholdFurniture::Catalog` in order. This story does not add a kind, and it does not add a filter. A later kind is another row in that catalog, and the same column scrolls to it.
 - Stairs, landings, and hexes the tower plan already rejects stay unavailable. The den's fourteen hexes are the Meagre floor.

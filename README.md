@@ -74,29 +74,7 @@ Shipped stories live in [`Planning/Done`](Planning/Done).
 
 ## Controls (runtime defaults)
 
-| Action | Keyboard | Gamepad |
-|--------|----------|---------|
-| Move | WASD (true sight) | Left stick (true sight) |
-| Look | Right mouse button (hold) | Right stick |
-| Pointer | Mouse | — |
-| Click to move | Left click (raven sight) | — |
-| Zoom | Mouse wheel | — |
-| Jump | Space | A / Cross |
-| Sprint | Left Shift | Left stick click |
-| True sight / raven sight | F9 (after raven sight is enabled) | — |
-| Main menu | F10 | — |
-| Inventory | / or F10 then 8 | — |
-| Debug readout | F12 | — |
-| Menu up / down | Up / Down, or point at a row | — |
-| Menu confirm | Enter, 1–8, or left click | — |
-| Character editor | F10, then 7 | — |
-| Previous / next companion | Page Up / Page Down, while the character editor is open | — |
-| Select height, build, or gender | Up / Down, while the character editor is open | — |
-| Change the selected attribute | Left / Right, or drag the slider, while the character editor is open | — |
-| Portal | Enter, 1–8, or left click, while the portal list is open | — |
-| Close menu / portal / party / journal / inventory / credits / character editor | Esc or F10 | — |
-
-Input Actions / Mapping Context can be replaced with Content assets on the character later; if unset, C++ creates transient defaults so PIE works immediately.
+Keyboard and gamepad defaults are in [`Content/Controls.md`](Content/Controls.md), one table per mode.
 
 ## Automated tests
 

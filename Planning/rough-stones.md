@@ -4,7 +4,7 @@ Status: Ready
 
 ## Story
 
-The player walks ground that is no longer in full fog, beside a river or a mountain, and finds rough stones scattered there. A pile is one rough stone. It is a foraging pile, so it is the same shape as a stick or a pitch, and the player picks it up the same way. It does not lie in the channel, on the mountain, or in the sea.
+The player walks beside a river or a mountain and finds rough stones scattered there. A pile is one rough stone. It is a foraging pile, so it is the same shape as a stick or a pitch, and the player picks it up the same way. It does not lie in the channel, on the mountain, or in the sea.
 
 The player puts a rusty sword and a rough stone into the crafting slots and presses Craft. Those two are spent, and the pack gains one cheap sword. When the slots can make more than one thing, a warning sits under the slots and the button stays dim.
 

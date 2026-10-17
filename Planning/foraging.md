@@ -4,7 +4,7 @@ Status: Ready
 
 ## Story
 
-The player walks through forest that is no longer in full fog and finds sticks and pitch scattered on the ground. Those are the materials this story places. A pile is one stick or one pitch, on forest ground, because forest is where they occur. A stick and a pitch are the same simple shape. The name is what tells them apart. The player points at it, close to the captain, and the name shows. A click picks it up into the pack, and the pile is gone. A click the pack cannot hold leaves the pile where it is. Ground still in full fog shows no pile. A pile already taken is still gone after the player leaves a stronghold or a lair and comes back.
+The player walks through forest and finds sticks and pitch scattered on the ground. Those are the materials this story places. A pile is one stick or one pitch, on forest ground, because forest is where they occur. A stick and a pitch are the same simple shape. The name is what tells them apart. The player points at it, close to the captain, and the name shows. A click picks it up into the pack, and the pile is gone. A click the pack cannot hold leaves the pile where it is. Ground still in full fog shows no pile. A pile already taken is still gone after the player leaves a stronghold or a lair and comes back.
 
 ## Acceptance
 

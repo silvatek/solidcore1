@@ -39,6 +39,7 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Basic furniture management](Planning/basic-furniture-management.md)
 - [Multiple storage containers](Planning/multiple-storage-containers.md)
 - [Name the company's stronghold](Planning/name-the-stronghold.md)
+- [Remove den from the code](Planning/remove-den-from-the-code.md)
 
 ## Done
 

@@ -2,9 +2,9 @@
 
 ## Story
 
-Fog on a terrain point is `FSolidTerrainPoint.Fog`. Full fog means that value is `1.0f`, the same test as the white ground. The fog bands and curtains are described in [Source/SolidCore1/Fog/README.md](../Source/SolidCore1/Fog/README.md).
+The player looks toward a forest or a town that is still unseen. Fog on a terrain point is `FSolidTerrainPoint.Fog`. Full fog means that value is `1.0f`, the same test as the white ground. The fog bands and curtains are described in [Source/SolidCore1/Fog/README.md](../Source/SolidCore1/Fog/README.md).
 
-Trees and buildings on a point at full fog are not drawn. They are generated when that point's `Fog` is no longer `1.0f`.
+The player does not see trees or buildings on a point at full fog. When the player comes close enough that the point's `Fog` is no longer `1.0f`, those trees and buildings appear.
 
 ## Acceptance
 

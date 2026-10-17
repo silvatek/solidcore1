@@ -2,7 +2,7 @@
 
 ## Story
 
-Distribute sticks and pitch randomly in forest biome areas when they are not fogged
+The player walks through forest that is not fogged and finds sticks and pitch scattered on the ground.
 
 ## Acceptance
 

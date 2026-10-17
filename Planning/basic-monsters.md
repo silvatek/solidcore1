@@ -2,7 +2,7 @@
 
 ## Story
 
-Basic monsters (needs FAB asset download); no combat yet
+The player meets basic monsters in the world. Those monsters come from a Fab asset download. The player cannot fight them yet.
 
 ## Acceptance
 

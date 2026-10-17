@@ -2,7 +2,7 @@
 
 ## Story
 
-Foraging: items found on the ground in specific biomes that can be picked up and added to the pack
+The player finds an item on the ground in a biome where that item occurs, picks it up, and it goes into the pack.
 
 ## Acceptance
 

@@ -2,7 +2,7 @@
 
 ## Story
 
-Initial implementation of the fortress stronghold type
+A developer adds the fortress as a stronghold type. The player can then visit a fortress.
 
 ## Acceptance
 

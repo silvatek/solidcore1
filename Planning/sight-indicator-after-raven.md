@@ -2,7 +2,7 @@
 
 ## Story
 
-Only show sight indicator after Raven Sight unlocked
+The player looks for the sight indicator before raven sight is unlocked, and it is hidden. After raven sight unlocks, the player can see it.
 
 ## Acceptance
 

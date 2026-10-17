@@ -2,7 +2,7 @@
 
 ## Story
 
-Stamina: moving depletes stamina, better roads deplete it slower
+The player moves the captain, and stamina falls. On a better road, it falls more slowly.
 
 ## Acceptance
 

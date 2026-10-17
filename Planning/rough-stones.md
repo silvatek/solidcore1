@@ -2,7 +2,7 @@
 
 ## Story
 
-Distribute rough stones randomly next to rivers and mountains
+The player finds rough stones scattered on the ground beside rivers and mountains.
 
 ## Acceptance
 

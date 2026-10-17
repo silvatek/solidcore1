@@ -2,7 +2,7 @@
 
 ## Story
 
-Basic NPCs
+The player meets basic NPCs in the world.
 
 ## Acceptance
 

@@ -2,11 +2,9 @@
 
 ## Story
 
-Ground color is chosen from the biome. Grassland uses the grass material. Every other biome uses a solid color from the world map. Fog on a terrain point is `FSolidTerrainPoint.Fog`. Full fog means that value is `1.0f`. The fog bands and curtains are described in [Source/SolidCore1/Fog/README.md](../Source/SolidCore1/Fog/README.md).
+The player looks at ground the party has not reached. Fog on a terrain point is `FSolidTerrainPoint.Fog`, and full fog means that value is `1.0f`. The fog bands and curtains are described in [Source/SolidCore1/Fog/README.md](../Source/SolidCore1/Fog/README.md).
 
-A point at full fog uses a plain white material instead of the biome color. Any other fog value keeps the biome material.
-
-The full-fog wall should already hide that ground, so the white should not be visible in play. It is a fallback for anything that gets past the wall. The fog curtains stay as they are.
+On a point at full fog, the player would see plain white ground instead of the biome color. Grassland is still the grass material, and every other biome is still its world-map color, wherever `Fog` is not `1.0f`. The full-fog wall already hides the unseen ground, so the player should not see the white. It is there if something gets past the wall. The curtains do not change. When the player comes close enough that the point's `Fog` is no longer `1.0f`, that ground shows its biome color again.
 
 ## Acceptance
 

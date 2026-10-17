@@ -2,7 +2,7 @@
 
 ## Story
 
-HUD / Menu panel borders & themes, from FAB
+The player looks at the HUD and opens a menu, and sees panel borders and themes taken from Fab.
 
 ## Acceptance
 

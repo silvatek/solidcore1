@@ -2,7 +2,7 @@
 
 ## Story
 
-Pathfinding to use bridges
+The player chooses a destination across a river. The path runs over the bridge instead of through the channel.
 
 ## Acceptance
 

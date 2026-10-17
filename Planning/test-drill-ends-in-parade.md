@@ -2,7 +2,7 @@
 
 ## Story
 
-Test Drill should end with party in Parade formation, and add both companions if not already in party
+The player runs Test Drill. It ends with the party in Parade. If both companions are not already in the party, the drill adds them.
 
 ## Acceptance
 

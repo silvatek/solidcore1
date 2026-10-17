@@ -2,7 +2,7 @@
 
 ## Story
 
-Imperious dungeon stronghold
+The player enters an Imperious dungeon.
 
 ## Acceptance
 

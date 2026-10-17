@@ -2,7 +2,7 @@
 
 ## Story
 
-Reorder game menu items
+The player opens the game menu and finds the entries in a different order.
 
 ## Acceptance
 

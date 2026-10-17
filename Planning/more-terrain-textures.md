@@ -2,7 +2,7 @@
 
 ## Story
 
-More terrain textures from FAB
+The player walks across the ground and sees more terrain textures, taken from Fab.
 
 ## Acceptance
 

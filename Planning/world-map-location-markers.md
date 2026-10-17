@@ -2,7 +2,7 @@
 
 ## Story
 
-A better mechanism for marking locations on the world map, using a list of grid references and "!" markers
+A developer marks a location on the world map with a `!` and a grid reference in a list.
 
 ## Acceptance
 

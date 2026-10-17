@@ -14,7 +14,7 @@ One file is one story.
 
 ## Story
 
-What changes for the captain, in a few sentences.
+A player does something in the game, or a developer does something in the source or the build. A few sentences.
 
 ## Acceptance
 

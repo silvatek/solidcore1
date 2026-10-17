@@ -2,7 +2,7 @@
 
 ## Story
 
-Switch world map stronghold markers to select stronghold size only, not type
+A developer marks a stronghold on the world map. The marker sets the stronghold's size, and does not set its type.
 
 ## Acceptance
 

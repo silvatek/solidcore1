@@ -2,7 +2,7 @@
 
 ## Story
 
-Switch the party builder to drag and drop, similar to inventory, including battle plans
+The player builds the party by dragging companions, the same way items are dragged in the inventory. The player arranges battle plans by dragging as well.
 
 ## Acceptance
 

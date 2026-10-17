@@ -2,7 +2,7 @@
 
 ## Story
 
-"Hold" battle plan that has the companions not move when the captain does
+The player chooses the Hold battle plan. The player then moves the captain, and the companions stay where they are.
 
 ## Acceptance
 

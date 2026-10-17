@@ -6,7 +6,7 @@ Status: Ready
 
 The player is inside a stronghold. The interior wall carries a sign that reads Arrange furniture. A click on that sign, or `\`, starts arrange mode, and the captain is hidden so the floor is clear to see. The same click, or `\` again, leaves the mode. The pointer highlights the hex under it. A piece on that hex shows its name.
 
-A click or Enter on a piece lifts it. The piece follows the pointer and snaps to the hex under the tip. A click or Enter on cells that can hold it puts it down. While a piece is held, Q, E, and the mouse wheel each turn it by one facing. The wheel does not zoom during that hold. Esc puts a held piece back, or closes the browser when that is what is open. Esc with nothing held, and the browser closed, leaves the mode, and the captain is visible again.
+A click or Enter on a piece lifts it. The piece follows the pointer and snaps to the hex under the tip. A click or Enter on cells that can hold it puts it down. While a piece is held, Q, E, and the mouse wheel each turn it by one facing. The wheel does not zoom during that hold. Esc puts a held piece back, or closes the browser when that is what is open. Esc with nothing held, and the browser closed, leaves the mode, and the captain is visible again. While the mode is on, F10 and `/` do nothing, so the main menu and the inventory stay closed.
 
 A new piece starts from an empty hex that can hold one. A click or Enter on one, while nothing is held, opens the furnishing browser. The browser is a column beside the floor, listing the catalog in catalog order, and it stays off the hexes. It is closed when arrange mode starts. The wheel over the column scrolls it. Up and Down move through the rows, and a click on a row lifts that kind onto the hex that opened the browser, when the stronghold still has room for that kind. A fireplace and a chest stop at one each. A bed stops at three. The column closes while the piece is held, so the wheel can turn it and the floor stays clear. Esc closes the browser and leaves the mode on. The catalog will hold dozens of kinds. The three in this story fit, so the scrollbar stays hidden. A click in this mode does not walk the captain and does not use the door.
 
@@ -16,7 +16,8 @@ A new piece starts from an empty hex that can hold one. A click or Enter on one,
 - The sign reads Arrange furniture. It is fixed on the interior wall, facing the room, and it is clear of the door and of any floor-number plate. The Meagre den has one, beside the entrance. Each tower floor has one. It is not a furnishing, it occupies no hex, and arrange mode cannot move it.
 - A click on the sign toggles the mode when the pointer is showing. While the right button looks, the click does nothing. The click does not walk the captain, does not use the door, and does not open the browser or lift a piece.
 - Toggling the mode off, by the sign or by `\`, returns a held piece, discards a new piece that was never put down, and closes the browser. The captain is drawn again.
-- `/` still opens the inventory. `\` does not.
+- Outside arrange mode, `/` still opens the inventory and F10 still opens the main menu. `\` does not open the inventory.
+- While arrange mode is on, F10 does not open the main menu and `/` does not open the inventory. Esc keeps its arrange-mode jobs. After the mode ends, F10 and `/` work again.
 - While the mode is on, the captain is not drawn. He stays on the cell he was on. WASD, the left stick, and a click do not move him. The camera stays where it was.
 - His body does not take the pointer. A piece or a hex behind him can be highlighted.
 - Leaving the mode draws him again, on that same cell.

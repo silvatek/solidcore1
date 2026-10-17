@@ -9,8 +9,9 @@ class UStaticMeshComponent;
 
 /**
  * Stone tube for a tower stronghold, standing on its own map cell.
- * One cylinder course per floor, the radius at the bottom of that band,
- * and a flat cap of the top exterior radius. The dark door is a slab on local -X.
+ * One course per floor. The foot of each course is the head of the course below,
+ * so the side is one smooth taper, closed by a flat cap at the top exterior radius.
+ * The dark door is a slab on local -X.
  * A click does not enter. The captain can walk up to the stone.
  */
 UCLASS()

@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0428")
+#define SOLID_BUILD_ID TEXT("SC1-0429")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The pointer is the bronze arrow head. The tail is gone.")
+#define SOLID_BUILD_NOTE TEXT("Each tower course meets the course below, so the side is smooth.")
 #endif

@@ -1,11 +1,12 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SolidStronghold.h"
 #include "SolidStrongholdGrid.h"
 
 /**
  * A round tower, measured in the tower's own plan.
- * FPlan is one size. Imperious is the shipped tower. A smaller tower is another FPlan.
+ * FPlan is one size. Imperious and Average are the defined towers.
  * Local +X runs in from the door. Yaw 0 looks into the tower, the same way a dungeon visit does.
  * Placement turns the whole tower so this door faces the grass. On cell 17,31 that is north.
  * The Meagre den stays the fourteen-cell outline. This floor uses the same 1.2 m pointy-top grid,
@@ -83,6 +84,39 @@ namespace SolidTowerStronghold
 
 	/** The shipped tower. Ten floors, 10 m across at the grass, 6 m across at the cap. */
 	inline const FPlan Imperious{};
+
+	/**
+	 * Average Tower. Four floors, 8 m across at the grass, 5.6 m across at the cap.
+	 * The storey, wall, door, and stair match Imperious.
+	 */
+	inline const FPlan Average = []
+	{
+		FPlan Plan;
+		Plan.FloorCount = 4;
+		Plan.GroundExteriorRadiusCm = 400.f;
+		Plan.TopExteriorRadiusCm = 280.f;
+		return Plan;
+	}();
+
+	/** The plan for a tower size that has one. A dungeon, or a tower with no plan, leaves OutPlan alone. */
+	inline bool PlanFor(const FSolidStronghold& Stronghold, FPlan& OutPlan)
+	{
+		if (Stronghold.Type != ESolidStrongholdType::Tower)
+		{
+			return false;
+		}
+		if (Stronghold.Size == ESolidStrongholdSize::Average)
+		{
+			OutPlan = Average;
+			return true;
+		}
+		if (Stronghold.Size == ESolidStrongholdSize::Imperious)
+		{
+			OutPlan = Imperious;
+			return true;
+		}
+		return false;
+	}
 
 	inline bool IsFloor(const FPlan& Plan, const int32 Floor)
 	{

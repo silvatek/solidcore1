@@ -1,6 +1,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "SolidDungeonLevel.h"
+#include "SolidStronghold.h"
 #include "SolidTowerStronghold.h"
 #include "SolidStrongholdGrid.h"
 
@@ -225,12 +226,9 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidTowerPlanMeasureTest::RunTest(const FString& Parameters)
 {
-	SolidTowerStronghold::FPlan Plan = SolidTowerStronghold::Imperious;
-	Plan.FloorCount = 4;
-	Plan.GroundExteriorRadiusCm = 400.f;
-	Plan.TopExteriorRadiusCm = 280.f;
+	const SolidTowerStronghold::FPlan& Plan = SolidTowerStronghold::Average;
 
-	TestEqual(TEXT("four floors"), Plan.FloorCount, 4);
+	TestEqual(TEXT("Average is four floors"), Plan.FloorCount, 4);
 	TestTrue(TEXT("the shaft is four storeys"), FMath::IsNearlyEqual(Plan.HeightCm(), 1200.f, 0.01f));
 	TestTrue(
 		TEXT("the ground interior is the exterior minus the wall"),
@@ -239,11 +237,53 @@ bool FSolidTowerPlanMeasureTest::RunTest(const FString& Parameters)
 		TEXT("the top interior is the exterior minus the wall"),
 		FMath::IsNearlyEqual(Plan.TopInteriorRadiusCm(), 230.f, 0.01f));
 	TestTrue(
-		TEXT("this plan is shorter than Imperious"),
+		TEXT("Average is shorter than Imperious"),
 		Plan.HeightCm() < SolidTowerStronghold::Imperious.HeightCm());
 	TestTrue(
-		TEXT("this plan is narrower than Imperious"),
+		TEXT("Average is narrower than Imperious"),
 		Plan.GroundExteriorRadiusCm < SolidTowerStronghold::Imperious.GroundExteriorRadiusCm);
+	TestTrue(
+		TEXT("Average keeps the Imperious storey"),
+		FMath::IsNearlyEqual(Plan.FloorPitchCm, SolidTowerStronghold::Imperious.FloorPitchCm, 0.01f));
+	TestTrue(
+		TEXT("Average keeps the Imperious wall"),
+		FMath::IsNearlyEqual(Plan.WallCm, SolidTowerStronghold::Imperious.WallCm, 0.01f));
+	TestTrue(
+		TEXT("Average keeps the Imperious door"),
+		FMath::IsNearlyEqual(Plan.DoorWidthCm, SolidTowerStronghold::Imperious.DoorWidthCm, 0.01f)
+			&& FMath::IsNearlyEqual(Plan.DoorHeightCm, SolidTowerStronghold::Imperious.DoorHeightCm, 0.01f));
+	TestTrue(
+		TEXT("Average keeps the Imperious stair"),
+		Plan.StairRiserCount == SolidTowerStronghold::Imperious.StairRiserCount
+			&& FMath::IsNearlyEqual(Plan.StairWidthCm, SolidTowerStronghold::Imperious.StairWidthCm, 0.01f)
+			&& FMath::IsNearlyEqual(Plan.StairRunCm(), SolidTowerStronghold::Imperious.StairRunCm(), 0.01f));
+
+	FSolidStronghold AverageTower;
+	TestTrue(TEXT("Average Tower resolves"), SolidStronghold::FromToken(TEXT("Average Tower"), AverageTower));
+	SolidTowerStronghold::FPlan Resolved;
+	TestTrue(TEXT("Average Tower has this plan"), SolidTowerStronghold::PlanFor(AverageTower, Resolved));
+	TestEqual(TEXT("the resolved plan is Average"), Resolved.FloorCount, Plan.FloorCount);
+	TestTrue(
+		TEXT("the resolved ground matches Average"),
+		FMath::IsNearlyEqual(Resolved.GroundExteriorRadiusCm, Plan.GroundExteriorRadiusCm, 0.01f));
+	TestTrue(
+		TEXT("the resolved cap matches Average"),
+		FMath::IsNearlyEqual(Resolved.TopExteriorRadiusCm, Plan.TopExteriorRadiusCm, 0.01f));
+
+	FSolidStronghold ImperiousTower;
+	TestTrue(TEXT("Imperious Tower resolves"), SolidStronghold::FromToken(TEXT("Imperious Tower"), ImperiousTower));
+	TestTrue(TEXT("Imperious Tower has its plan"), SolidTowerStronghold::PlanFor(ImperiousTower, Resolved));
+	TestEqual(TEXT("the resolved plan is Imperious"), Resolved.FloorCount, SolidTowerStronghold::Imperious.FloorCount);
+
+	FSolidStronghold HumbleTower;
+	TestTrue(TEXT("Humble Tower resolves"), SolidStronghold::FromToken(TEXT("Humble Tower"), HumbleTower));
+	Resolved = Plan;
+	TestFalse(TEXT("Humble Tower has no plan"), SolidTowerStronghold::PlanFor(HumbleTower, Resolved));
+	TestEqual(TEXT("a missing plan leaves the previous value"), Resolved.FloorCount, Plan.FloorCount);
+	TestFalse(
+		TEXT("a dungeon has no tower plan"),
+		SolidTowerStronghold::PlanFor(SolidStronghold::Starting, Resolved));
+	TestEqual(TEXT("a dungeon leaves the previous value"), Resolved.FloorCount, Plan.FloorCount);
 
 	const float SampleZ[] = { 0.f, 600.f, 1200.f };
 	for (const float ZCm : SampleZ)

@@ -32,6 +32,8 @@
 #include "Strongholds/SolidDungeonLevel.h"
 #include "Strongholds/SolidStrongholds.h"
 #include "Strongholds/SolidTowerInterior.h"
+#include "Strongholds/SolidStrongholdStone.h"
+#include "Strongholds/SolidStrongholdTransition.h"
 #include "Strongholds/SolidTowerShell.h"
 #include "Strongholds/SolidTowerStronghold.h"
 #include "SolidGameInstance.h"
@@ -675,6 +677,38 @@ void ASolidGameMode::TravelToTower(const FIntPoint Cell)
 	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::TowerEnterOptions());
 }
 
+bool ASolidGameMode::EnterChosenStronghold(
+	const FIntPoint Cell,
+	const ESolidStrongholdSize Size,
+	const ESolidStrongholdType Type)
+{
+	UWorld* World = GetWorld();
+	if (!World || IsInDungeon() || IsInLair() || IsInTower())
+	{
+		return false;
+	}
+	if (!SolidStrongholdTransition::Commit(Configuration, Cell, Size, Type))
+	{
+		return false;
+	}
+
+	const SolidWorldTime::FStamp When = WorldStamp();
+	SolidEvents::RememberStronghold(Configuration, When, /*bEnter=*/true);
+	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Enter Stronghold"), *SolidWorldTime::Format(When));
+	SaveTravelSession(
+		/*bInDungeon=*/false,
+		/*bReturnToDungeonMouth=*/false,
+		/*bInLair=*/false,
+		/*bReturnToLairMouth=*/false,
+		/*LairEnd=*/0,
+		/*bInTower=*/true,
+		/*bReturnToTowerDoor=*/false,
+		Configuration.ActiveStrongholdCell,
+		Configuration.ActiveStronghold);
+	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::TowerEnterOptions());
+	return true;
+}
+
 void ASolidGameMode::TravelFromTower()
 {
 	UWorld* World = GetWorld();
@@ -742,6 +776,7 @@ void ASolidGameMode::BeginTowerInterior()
 			TowerInterior->SetTowerCell(Cell);
 			TowerInterior->SetPlan(Plan);
 			TowerInterior->BuildVisuals();
+			TowerInterior->PlaceFurnishings(Configuration.Furnishings);
 		}
 	}
 
@@ -1414,6 +1449,10 @@ void ASolidGameMode::EnsureVegetation()
 	{
 		return !IsValid(Shell);
 	});
+	SpawnedStrongholdStones.RemoveAll([](const TObjectPtr<ASolidStrongholdStone>& Stone)
+	{
+		return !IsValid(Stone);
+	});
 	SpawnedBridges.RemoveAll([](const TObjectPtr<ASolidBridge>& Bridge)
 	{
 		return !IsValid(Bridge);
@@ -1745,6 +1784,102 @@ void ASolidGameMode::EnsureVegetation()
 		}
 
 		UE_LOG(LogSolid, Warning, TEXT("Spawned %d tower shells"), Spawned);
+	}
+
+	if (!bSpawnedStrongholdSites)
+	{
+		USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
+		USolidWorldMap* SiteMap = Terrain ? Terrain->GetWorldMap() : nullptr;
+		int32 Stones = 0;
+		int32 Shells = 0;
+		if (SiteMap && SiteMap->IsLoaded())
+		{
+			const FVector2D WorldMin = Terrain->GetWorldMinXY();
+			const FVector2D WorldMax = Terrain->GetWorldMaxXY();
+			bSpawnedStrongholdSites = true;
+			for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+			{
+				for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+				{
+					ESolidStrongholdSize SiteSize = ESolidStrongholdSize::Meagre;
+					if (!SiteMap->StrongholdSiteAtCell(Col, Row, SiteSize))
+					{
+						continue;
+					}
+
+					const FIntPoint SiteCell(Col, Row);
+					FSolidStronghold Exterior;
+					bool bShell = false;
+					if (SiteCell == Configuration.ActiveStrongholdCell
+						&& Configuration.ActiveStronghold.Type == ESolidStrongholdType::Tower)
+					{
+						Exterior = Configuration.ActiveStronghold;
+						bShell = true;
+					}
+					else
+					{
+						for (const FLeftStronghold& Left : Configuration.LeftStrongholds)
+						{
+							if (Left.Cell == SiteCell && Left.Stronghold.Type == ESolidStrongholdType::Tower)
+							{
+								Exterior = Left.Stronghold;
+								bShell = true;
+								break;
+							}
+						}
+					}
+
+					FVector2D CellXY = FVector2D::ZeroVector;
+					if (!SiteMap->CellToWorldXY(SiteCell, WorldMin, WorldMax, CellXY))
+					{
+						continue;
+					}
+					FVector SpawnLoc(CellXY.X, CellXY.Y, 0.f);
+					const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
+					SolidStrongholds::FGrassFace Face;
+					const float Yaw = SolidStrongholds::FindGrassFace(SiteMap, SiteCell, Face)
+						? Face.FacingYawDeg
+						: 0.f;
+
+					SolidTowerStronghold::FPlan Plan;
+					if (bShell && SolidTowerStronghold::PlanFor(Exterior, Plan))
+					{
+						SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
+						ASolidTowerShell* Shell = World->SpawnActor<ASolidTowerShell>(
+							ASolidTowerShell::StaticClass(),
+							SpawnLoc,
+							FRotator(0.f, SolidTowerStronghold::ShellYawDeg(Yaw), 0.f),
+							SpawnParams);
+						if (!Shell)
+						{
+							continue;
+						}
+						Shell->SetPlan(Plan);
+						Shell->SetTowerCell(SiteCell);
+						Shell->BuildVisuals();
+						SpawnedTowerShells.Add(Shell);
+						++Shells;
+						continue;
+					}
+
+					SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
+					ASolidStrongholdStone* Stone = World->SpawnActor<ASolidStrongholdStone>(
+						ASolidStrongholdStone::StaticClass(),
+						SpawnLoc,
+						FRotator::ZeroRotator,
+						SpawnParams);
+					if (!Stone)
+					{
+						continue;
+					}
+					Stone->SetSite(SiteCell, SiteSize);
+					Stone->BuildVisuals();
+					SpawnedStrongholdStones.Add(Stone);
+					++Stones;
+				}
+			}
+		}
+		UE_LOG(LogSolid, Warning, TEXT("Spawned %d stronghold stones and %d site shells"), Stones, Shells);
 	}
 
 	if (SpawnedBridges.Num() == 0)

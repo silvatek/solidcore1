@@ -7,6 +7,8 @@
 #include "Strongholds/SolidDungeonEntrance.h"
 #include "Strongholds/SolidDungeonInterior.h"
 #include "Strongholds/SolidDungeonPassage.h"
+#include "Strongholds/SolidStrongholdStone.h"
+#include "Strongholds/SolidStrongholdTransition.h"
 #include "Strongholds/SolidTowerInterior.h"
 #include "Strongholds/SolidTowerShell.h"
 #include "Terrain/SolidTerrainStreamer.h"
@@ -359,7 +361,8 @@ bool ASolidCharacter::IsMenuOverlayOpen() const
 			|| HUD->IsJournalVisible()
 			|| HUD->IsInventoryVisible()
 			|| HUD->IsCharacterEditorOpen()
-			|| HUD->IsMessageVisible();
+			|| HUD->IsMessageVisible()
+			|| HUD->IsStrongholdChoiceOpen();
 	}
 	return false;
 }
@@ -842,6 +845,11 @@ void ASolidCharacter::MainMenuMoveUp()
 			HUD->MoveCharacterEditorSlider(-1);
 			return;
 		}
+		if (HUD->IsStrongholdChoiceOpen())
+		{
+			HUD->MoveStrongholdChoice(-1);
+			return;
+		}
 		if (HUD->IsPortalOpen())
 		{
 			HUD->MovePortalSelection(-1);
@@ -864,6 +872,11 @@ void ASolidCharacter::MainMenuMoveDown()
 		if (HUD->IsCharacterEditorOpen())
 		{
 			HUD->MoveCharacterEditorSlider(1);
+			return;
+		}
+		if (HUD->IsStrongholdChoiceOpen())
+		{
+			HUD->MoveStrongholdChoice(1);
 			return;
 		}
 		if (HUD->IsPortalOpen())
@@ -926,6 +939,16 @@ void ASolidCharacter::ChooseMainMenuIndex(const int32 Index)
 	ASolidHUD* HUD = GetSolidHUD();
 	if (!HUD)
 	{
+		return;
+	}
+	if (HUD->IsStrongholdChoiceOpen())
+	{
+		if (Index < 0 || Index >= HUD->GetStrongholdChoiceCount())
+		{
+			return;
+		}
+		HUD->SetStrongholdChoiceIndex(Index);
+		ConfirmStrongholdChoice();
 		return;
 	}
 	if (HUD->IsPortalOpen())
@@ -1019,6 +1042,11 @@ void ASolidCharacter::MainMenuConfirm()
 		HUD->CloseMessage();
 		return;
 	}
+	if (HUD->IsStrongholdChoiceOpen())
+	{
+		ConfirmStrongholdChoice();
+		return;
+	}
 	if (HUD->IsPortalOpen())
 	{
 		ConfirmPortalSelection();
@@ -1056,6 +1084,11 @@ void ASolidCharacter::MainMenuConfirm()
 			return;
 		}
 		if (!SolidMainMenu::CanUseCaveRow(bCaveEnabled, bInDungeon))
+		{
+			return;
+		}
+		if (!bInDungeon
+			&& (!GameMode || !SolidStrongholdTransition::CompanyCaveAcceptsEnter(GameMode->GetConfiguration())))
 		{
 			return;
 		}
@@ -1481,10 +1514,99 @@ SolidLair::FPassageHit ASolidCharacter::AllowPassage(const SolidLair::FPassageHi
 {
 	const UWorld* World = GetWorld();
 	const ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
-	return SolidLair::AllowPassage(
+	const SolidLair::FPassageHit Allowed = SolidLair::AllowPassage(
 		Hit,
 		GameMode && GameMode->IsCaveEnabled(),
 		GameMode && GameMode->AreTunnelsOpen());
+	if (!GameMode || Allowed.Action != SolidDungeonPassage::EHit::Enter)
+	{
+		return Allowed;
+	}
+
+	const FGameState& State = GameMode->GetConfiguration();
+	if (Allowed.bTower)
+	{
+		return SolidStrongholdTransition::TowerDoorAcceptsEnter(State, Allowed.TowerCell)
+			? Allowed
+			: SolidLair::FPassageHit();
+	}
+	if (!Allowed.bLair && !SolidStrongholdTransition::CompanyCaveAcceptsEnter(State))
+	{
+		return SolidLair::FPassageHit();
+	}
+	return Allowed;
+}
+
+ASolidStrongholdStone* ASolidCharacter::StoneUnderPointer() const
+{
+	if (!SolidDungeonPassage::AcceptsPointer(IsPointerShown(), IsMenuOverlayOpen() || IsPartyFormationDrillActive()))
+	{
+		return nullptr;
+	}
+
+	FVector Origin = FVector::ZeroVector;
+	FVector Direction = FVector::ZeroVector;
+	if (!ReadPointerRay(Origin, Direction))
+	{
+		return nullptr;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return nullptr;
+	}
+
+	for (TActorIterator<ASolidStrongholdStone> Stone(World); Stone; ++Stone)
+	{
+		const UStaticMeshComponent* Block = Stone->GetBlockMesh();
+		if (!Block)
+		{
+			continue;
+		}
+		const FBox Box = Block->CalcBounds(Block->GetComponentTransform()).GetBox();
+		if (SolidDungeonPassage::RayHitsBox(Origin, Direction, Box, SolidClickMove::MaxRayCm))
+		{
+			return *Stone;
+		}
+	}
+	return nullptr;
+}
+
+void ASolidCharacter::OfferStrongholdStone(const ASolidStrongholdStone* Stone)
+{
+	UWorld* World = GetWorld();
+	ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+	ASolidHUD* HUD = GetSolidHUD();
+	if (!Stone || !GameMode || !HUD)
+	{
+		return;
+	}
+
+	TArray<ESolidStrongholdType> Types;
+	if (SolidStrongholdTransition::Consider(GameMode->GetConfiguration(), Stone->GetSize(), Types)
+		!= SolidStrongholdTransition::EOffer::Choose)
+	{
+		return;
+	}
+	HUD->OpenStrongholdChoice(Stone->GetCell(), Stone->GetSize(), Types);
+}
+
+void ASolidCharacter::ConfirmStrongholdChoice()
+{
+	ASolidHUD* HUD = GetSolidHUD();
+	UWorld* World = GetWorld();
+	ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+	if (!HUD || !HUD->IsStrongholdChoiceOpen() || !GameMode)
+	{
+		return;
+	}
+
+	const FIntPoint Cell = HUD->GetStrongholdChoiceCell();
+	const ESolidStrongholdSize Size = HUD->GetStrongholdChoiceSize();
+	const ESolidStrongholdType Type = HUD->GetStrongholdChoiceType();
+	HUD->CloseStrongholdChoice();
+	GameMode->EnterChosenStronghold(Cell, Size, Type);
 }
 
 SolidLair::FPassageHit ASolidCharacter::PassageOverlapping(const FVector& Location) const
@@ -1601,7 +1723,7 @@ bool ASolidCharacter::ReadPointerPosition(float& OutX, float& OutY) const
 void ASolidCharacter::UpdateMenuPointerHover()
 {
 	ASolidHUD* HUD = GetSolidHUD();
-	const bool bChoiceList = HUD && (HUD->IsMainMenuOpen() || HUD->IsPortalOpen() || HUD->IsPartyBuilderOpen());
+	const bool bChoiceList = HUD && (HUD->IsMainMenuOpen() || HUD->IsPortalOpen() || HUD->IsPartyBuilderOpen() || HUD->IsStrongholdChoiceOpen());
 	if (!bChoiceList)
 	{
 		bMenuPointerSampled = false;
@@ -1609,7 +1731,7 @@ void ASolidCharacter::UpdateMenuPointerHover()
 		return;
 	}
 
-	const int32 Page = HUD->IsPartyBuilderOpen() ? 3 : (HUD->IsPortalOpen() ? 2 : 1);
+	const int32 Page = HUD->IsStrongholdChoiceOpen() ? 4 : (HUD->IsPartyBuilderOpen() ? 3 : (HUD->IsPortalOpen() ? 2 : 1));
 	if (Page != MenuPointerPage)
 	{
 		MenuPointerPage = Page;
@@ -1676,7 +1798,7 @@ void ASolidCharacter::PollClickMovePress()
 	}
 	if (ASolidHUD* HUD = GetSolidHUD())
 	{
-		if ((HUD->IsMainMenuOpen() || HUD->IsPortalOpen() || HUD->IsPartyBuilderOpen())
+		if ((HUD->IsMainMenuOpen() || HUD->IsPortalOpen() || HUD->IsPartyBuilderOpen() || HUD->IsStrongholdChoiceOpen())
 			&& ReadPointerPosition(X, Y)
 			&& HUD->SelectChoiceAt(X, Y))
 		{
@@ -1689,6 +1811,11 @@ void ASolidCharacter::PollClickMovePress()
 	if (Passage.Action != SolidDungeonPassage::EHit::None)
 	{
 		ActivatePassage(Passage);
+		return;
+	}
+	if (const ASolidStrongholdStone* Stone = StoneUnderPointer())
+	{
+		OfferStrongholdStone(Stone);
 		return;
 	}
 	ClickMoveFromInput();

@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "SolidStrongholdFurniture.h"
 #include "SolidTowerStronghold.h"
 #include "SolidTowerInterior.generated.h"
 
@@ -33,6 +34,9 @@ public:
 
 	void SetPlan(const SolidTowerStronghold::FPlan& InPlan);
 	void BuildVisuals();
+
+	/** Pieces the company carried in. Cells that are not on this floor are skipped. */
+	void PlaceFurnishings(const TArray<SolidStrongholdFurniture::FUsed>& Used);
 
 	const SolidTowerStronghold::FPlan& GetPlan() const { return Plan; }
 	int32 GetFloorCount() const { return Floors.Num(); }

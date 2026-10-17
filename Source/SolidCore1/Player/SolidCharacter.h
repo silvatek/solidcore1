@@ -20,6 +20,7 @@ class UStaticMeshComponent;
 class UTextRenderComponent;
 class ASolidCharacterStage;
 class ASolidHUD;
+class ASolidStrongholdStone;
 
 /**
  * Captain — the single player-controlled character.
@@ -104,9 +105,13 @@ protected:
 	bool IsPointerShown() const;
 	SolidLair::FPassageHit PassageUnderPointer() const;
 	SolidLair::FPassageHit PassageOverlapping(const FVector& Location) const;
-	/** Enter is ignored until that place is open. Leave stays available. */
+	/** Enter is ignored until that place is open. A den or tower the company has left is not an enter. Leave stays available. */
 	SolidLair::FPassageHit AllowPassage(const SolidLair::FPassageHit& Hit) const;
 	void ActivatePassage(const SolidLair::FPassageHit& Hit);
+	/** A site stone under the pointer, when a click may ask it for a type. */
+	ASolidStrongholdStone* StoneUnderPointer() const;
+	void OfferStrongholdStone(const ASolidStrongholdStone* Stone);
+	void ConfirmStrongholdChoice();
 	void TickClickMove();
 	void ClearClickMove();
 	bool ResolveClickMoveDestination(const FVector& RayOrigin, const FVector& RayDirection, FVector& OutDestination) const;

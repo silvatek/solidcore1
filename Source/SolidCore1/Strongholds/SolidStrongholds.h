@@ -75,6 +75,15 @@ namespace SolidStrongholds
 		FVector2D WorldMaxXY,
 		TArray<FEntrance>& OutEntrances);
 
+	/** Grass neighbor of one map cell. North, then west, south, and east, matching CollectEntrances. */
+	struct FGrassFace
+	{
+		FIntPoint GrassCell = FIntPoint::ZeroValue;
+		float FacingYawDeg = 0.f;
+	};
+
+	bool FindGrassFace(const USolidWorldMap* WorldMap, FIntPoint Cell, FGrassFace& Out);
+
 	/** The first dungeon mouth. A tower entrance is not a place to leave the cave. */
 	inline const FEntrance* FindCaveMouth(const TArray<FEntrance>& Entrances)
 	{

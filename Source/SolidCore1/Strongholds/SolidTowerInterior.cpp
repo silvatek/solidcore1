@@ -1,7 +1,9 @@
 #include "SolidTowerInterior.h"
 #include "SolidCore1.h"
+#include "SolidFurnishing.h"
 #include "SolidMaterials.h"
 #include "SolidStrongholds.h"
+#include "EngineUtils.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SceneComponent.h"
@@ -845,4 +847,76 @@ void ASolidTowerInterior::BuildVisuals()
 				Stroke.SizeCm / SolidTowerInteriorPrivate::CubeSizeCm));
 		}
 	}
+}
+
+void ASolidTowerInterior::PlaceFurnishings(const TArray<SolidStrongholdFurniture::FUsed>& Used)
+{
+	UWorld* World = GetWorld();
+	if (!World || !World->IsGameWorld() || World->bIsTearingDown || !IsActorInitialized() || Used.Num() == 0)
+	{
+		return;
+	}
+
+	TArray<ASolidFurnishing*> Owned;
+	for (TActorIterator<ASolidFurnishing> It(World); It; ++It)
+	{
+		ASolidFurnishing* Piece = *It;
+		if (Piece && Piece->GetOwner() == this && !Piece->IsActorBeingDestroyed())
+		{
+			Owned.Add(Piece);
+		}
+	}
+	if (Owned.Num() >= Used.Num())
+	{
+		return;
+	}
+	for (ASolidFurnishing* Piece : Owned)
+	{
+		Piece->Destroy();
+	}
+
+	TArray<SolidStrongholdGrid::FHex> Hexes;
+	SolidTowerStronghold::CollectKeptHexes(Plan, 0, Hexes);
+
+	int32 Placed = 0;
+	for (const SolidStrongholdFurniture::FUsed& UsedPiece : Used)
+	{
+		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(UsedPiece.ItemIndex);
+		if (!Item || UsedPiece.Level != 0)
+		{
+			continue;
+		}
+
+		const SolidStrongholdGrid::FHex* Anchor = SolidStrongholdFurniture::FindCell(Hexes, UsedPiece.X, UsedPiece.Y);
+		const SolidStrongholdGrid::FHex* Span = SolidStrongholdFurniture::SpanCell(Hexes, UsedPiece);
+		if (!Anchor || !Span)
+		{
+			continue;
+		}
+
+		const FVector2D Mid = (Anchor->Center + Span->Center) * 0.5f;
+		const FTransform ActorXf = GetActorTransform();
+		const FVector WorldPos = ActorXf.TransformPosition(FVector(Mid.X, Mid.Y, 0.f));
+		const FRotator WorldRot = ActorXf.TransformRotation(
+			FRotator(0.f, UsedPiece.RotationDeg, 0.f).Quaternion()).Rotator();
+		const FTransform SpawnXf(WorldRot, WorldPos);
+
+		ASolidFurnishing* Piece = World->SpawnActorDeferred<ASolidFurnishing>(
+			ASolidFurnishing::StaticClass(),
+			SpawnXf,
+			this,
+			nullptr,
+			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+		if (!Piece)
+		{
+			continue;
+		}
+
+		Piece->SetKind(Item->Kind);
+		Piece->FinishSpawning(SpawnXf);
+		Piece->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
+		++Placed;
+	}
+
+	UE_LOG(LogSolid, Warning, TEXT("Tower furnishings placed: %d."), Placed);
 }

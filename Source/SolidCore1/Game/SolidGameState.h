@@ -6,6 +6,14 @@
 #include "Inventory/SolidStorage.h"
 #include "Journal/SolidJournalEntry.h"
 #include "SolidStronghold.h"
+#include "Strongholds/SolidStrongholdFurniture.h"
+
+/** A stronghold the company has left. The exterior stays. It is no longer a passage. */
+struct FLeftStronghold
+{
+	FSolidStronghold Stronghold;
+	FIntPoint Cell = FIntPoint::ZeroValue;
+};
 
 /**
  * Live company state. The game starts in true sight with an empty party.
@@ -42,6 +50,10 @@ struct FGameState
 	 * A new game has none. The starting dungeon is the company base, not an unlock.
 	 */
 	bool bStrongholdSizeUnlocked[SolidStronghold::SizeCount] = {};
+	/** Strongholds the company has left, oldest first. */
+	TArray<FLeftStronghold> LeftStrongholds;
+	/** Furnishings in the active stronghold. A new game carries the Meagre den's pieces. */
+	TArray<SolidStrongholdFurniture::FUsed> Furnishings = SolidStrongholdFurniture::StartingFurnishings();
 };
 
 namespace SolidEvents

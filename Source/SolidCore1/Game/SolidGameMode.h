@@ -16,6 +16,7 @@ class ASolidLairInterior;
 class ASolidCompanionCharacter;
 class ASolidTownSign;
 class ASolidTowerInterior;
+class ASolidStrongholdStone;
 class ASolidTowerShell;
 class ASolidTree;
 class USkeletalMesh;
@@ -205,6 +206,12 @@ public:
 	/** Unload the open world and load the tower at this map cell. Companions stay outside. */
 	void TravelToTower(FIntPoint Cell);
 
+	/**
+	 * A click on a site stone chose this type.
+	 * The company moves, then the interior opens before the new exterior is on screen.
+	 */
+	bool EnterChosenStronghold(FIntPoint Cell, ESolidStrongholdSize Size, ESolidStrongholdType Type);
+
 	/** Load the open world again and stand the captain on the grass outside that door. */
 	void TravelFromTower();
 
@@ -290,6 +297,12 @@ protected:
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidTowerShell>> SpawnedTowerShells;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<ASolidStrongholdStone>> SpawnedStrongholdStones;
+
+	/** Site stones and site shells are placed together, including when every site is a shell. */
+	bool bSpawnedStrongholdSites = false;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidBridge>> SpawnedBridges;

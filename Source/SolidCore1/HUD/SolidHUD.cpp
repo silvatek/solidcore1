@@ -9,6 +9,7 @@
 #include "Inventory/SolidInventory.h"
 #include "Inventory/SolidStorage.h"
 #include "Strongholds/SolidStrongholdFurniture.h"
+#include "Strongholds/SolidStrongholdTransition.h"
 #include "Journal/SolidJournal.h"
 #include "Menus/SolidMainMenu.h"
 #include "Menus/SolidMenuPointer.h"
@@ -1109,6 +1110,15 @@ bool ASolidHUD::SelectChoiceAt(const float X, const float Y)
 		SetPortalIndex(Hit);
 		return true;
 	}
+	if (bShowStrongholdChoice)
+	{
+		const int32 Count = StrongholdChoiceTypes.Num();
+		if (Count > 0)
+		{
+			StrongholdChoiceIndex = FMath::Clamp(Hit, 0, Count - 1);
+		}
+		return true;
+	}
 	if (bShowPartyBuilder)
 	{
 		SetPartyBuilderIndex(Hit);
@@ -1339,6 +1349,10 @@ void ASolidHUD::DrawHUD()
 	{
 		DrawPortalPopup();
 	}
+	else if (bShowStrongholdChoice)
+	{
+		DrawStrongholdChoice();
+	}
 	else if (bShowPartyBuilder)
 	{
 		DrawPartyBuilderPopup();
@@ -1528,6 +1542,13 @@ void ASolidHUD::HandleMenuKey()
 		return;
 	}
 
+	if (bShowStrongholdChoice)
+	{
+		bShowStrongholdChoice = false;
+		StrongholdChoiceTypes.Reset();
+		return;
+	}
+
 	if (bShowPartyBuilder)
 	{
 		bShowPartyBuilder = false;
@@ -1570,6 +1591,8 @@ void ASolidHUD::CloseMenuOverlay()
 
 	bShowMainMenu = false;
 	bShowPortal = false;
+	bShowStrongholdChoice = false;
+	StrongholdChoiceTypes.Reset();
 	bShowPartyBuilder = false;
 	bShowCredits = false;
 	bShowJournal = false;
@@ -2129,11 +2152,17 @@ void ASolidHUD::DrawInventoryPopup()
 		}
 	}
 
+	FIntPoint TowerCell = FIntPoint::ZeroValue;
+	if (const USolidGameInstance* Instance = GameMode ? GameMode->GetGameInstance<USolidGameInstance>() : nullptr)
+	{
+		TowerCell = Instance->GetSession().TowerCell;
+	}
 	const bool bShowChest = GameMode
-		&& GameMode->IsInDungeon()
-		&& SolidStrongholdFurniture::IsStorage(
-			SolidStrongholdFurniture::ItemAt(
-				SolidStrongholdFurniture::IndexOfKind(SolidStrongholdFurniture::EKind::Chest)));
+		&& SolidStrongholdTransition::CompanyChestOpen(
+			State,
+			GameMode->IsInDungeon(),
+			GameMode->IsInTower(),
+			TowerCell);
 	SolidInventory::FPage Page;
 	SolidInventory::Layout(State.Inventory, Page, bShowChest ? &State.CaveChest : nullptr);
 
@@ -2183,6 +2212,7 @@ void ASolidHUD::DrawMainMenuPopup()
 	bool bInLair = false;
 	bool bInTower = false;
 	bool bCaveEnabled = false;
+	bool bCompanyCave = false;
 	if (UWorld* World = GetWorld())
 	{
 		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
@@ -2192,6 +2222,7 @@ void ASolidHUD::DrawMainMenuPopup()
 			bInLair = GameMode->IsInLair();
 			bInTower = GameMode->IsInTower();
 			bCaveEnabled = GameMode->IsCaveEnabled();
+			bCompanyCave = SolidStrongholdTransition::CompanyCaveAcceptsEnter(GameMode->GetConfiguration());
 		}
 	}
 
@@ -2205,7 +2236,8 @@ void ASolidHUD::DrawMainMenuPopup()
 		const bool bParty = Entry.Item != ESolidMainMenuItem::BuildParty
 			|| SolidPartyBuilder::CanOpen(MaxPartySize);
 		const bool bCave = Entry.Item != ESolidMainMenuItem::Dungeon
-			|| (!bInLair && !bInTower && SolidMainMenu::CanUseCaveRow(bCaveEnabled, bInDungeon));
+			|| (!bInLair && !bInTower && SolidMainMenu::CanUseCaveRow(bCaveEnabled, bInDungeon)
+				&& (bInDungeon || bCompanyCave));
 		Enabled.Add(bParty && bCave);
 	}
 	TArray<SolidMenuPointer::FRow> Rows;
@@ -2248,6 +2280,89 @@ void ASolidHUD::DrawPartyBuilderPopup()
 	const FString Title = FString::Printf(TEXT("Build party  %d/%d"), SelectedCount, MaxPartySize);
 	TArray<SolidMenuPointer::FRow> Rows;
 	SolidHUDPrivate::DrawChoicePopup(Canvas, Title, Labels, PartyBuilderIndex, Rows, &Enabled);
+	SetChoicePointerRows(Rows);
+}
+
+void ASolidHUD::OpenStrongholdChoice(
+	const FIntPoint Cell,
+	const ESolidStrongholdSize Size,
+	const TArray<ESolidStrongholdType>& Types)
+{
+	if (Types.Num() == 0)
+	{
+		return;
+	}
+
+	bShowMainMenu = false;
+	bShowCredits = false;
+	bShowJournal = false;
+	bShowInventory = false;
+	bShowPartyBuilder = false;
+	bShowCharacterEditor = false;
+	bCharacterEditorSkeleton = false;
+	SkeletonBoneTip.Reset();
+	bShowPortal = false;
+	bShowStrongholdChoice = true;
+	StrongholdChoiceIndex = 0;
+	StrongholdChoiceCell = Cell;
+	StrongholdChoiceSize = static_cast<uint8>(Size);
+	StrongholdChoiceTypes.Reset();
+	for (const ESolidStrongholdType Type : Types)
+	{
+		StrongholdChoiceTypes.Add(static_cast<uint8>(Type));
+	}
+	SolidHUDPrivate::ForgetChoicePointerRows(this);
+}
+
+void ASolidHUD::CloseStrongholdChoice()
+{
+	bShowStrongholdChoice = false;
+	StrongholdChoiceTypes.Reset();
+}
+
+void ASolidHUD::SetStrongholdChoiceIndex(const int32 Index)
+{
+	if (StrongholdChoiceTypes.IsValidIndex(Index))
+	{
+		StrongholdChoiceIndex = Index;
+	}
+}
+
+void ASolidHUD::MoveStrongholdChoice(const int32 Delta)
+{
+	const int32 Count = StrongholdChoiceTypes.Num();
+	if (Count <= 0)
+	{
+		StrongholdChoiceIndex = 0;
+		return;
+	}
+	int32 Next = StrongholdChoiceIndex + Delta;
+	Next %= Count;
+	if (Next < 0)
+	{
+		Next += Count;
+	}
+	StrongholdChoiceIndex = Next;
+}
+
+ESolidStrongholdType ASolidHUD::GetStrongholdChoiceType() const
+{
+	if (!StrongholdChoiceTypes.IsValidIndex(StrongholdChoiceIndex))
+	{
+		return ESolidStrongholdType::Tower;
+	}
+	return static_cast<ESolidStrongholdType>(StrongholdChoiceTypes[StrongholdChoiceIndex]);
+}
+
+void ASolidHUD::DrawStrongholdChoice()
+{
+	TArray<FString> Labels;
+	for (const uint8 Type : StrongholdChoiceTypes)
+	{
+		Labels.Add(SolidStronghold::TypeName(static_cast<ESolidStrongholdType>(Type)));
+	}
+	TArray<SolidMenuPointer::FRow> Rows;
+	SolidHUDPrivate::DrawChoicePopup(Canvas, TEXT("Choose a type"), Labels, StrongholdChoiceIndex, Rows);
 	SetChoicePointerRows(Rows);
 }
 

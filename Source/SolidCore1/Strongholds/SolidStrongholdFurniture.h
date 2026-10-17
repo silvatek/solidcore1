@@ -235,4 +235,12 @@ namespace SolidStrongholdFurniture
 		OutUsed.Add({ IndexOfKind(EKind::Bed), 0, 0, -1, 0.f });
 		OutUsed.Add({ IndexOfKind(EKind::Chest), 0, 2, 1, 0.f });
 	}
+
+	/** The pieces a new game carries. The Meagre den is where they start. */
+	inline TArray<FUsed> StartingFurnishings()
+	{
+		TArray<FUsed> Used;
+		UsedFurnishings(SolidStronghold::Starting, Used);
+		return Used;
+	}
 }

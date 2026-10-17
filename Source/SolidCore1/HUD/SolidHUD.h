@@ -5,6 +5,7 @@
 #include "Menus/SolidMenuPointer.h"
 #include "Inventory/SolidInventory.h"
 #include "GameFramework/HUD.h"
+#include "SolidStronghold.h"
 #include "SolidHUD.generated.h"
 
 UCLASS()
@@ -47,6 +48,18 @@ public:
 	void MovePortalSelection(int32 Delta);
 	void SetPortalIndex(int32 Index);
 
+	/** A site stone asked for a type. Esc closes it and leaves the stone. */
+	void OpenStrongholdChoice(FIntPoint Cell, ESolidStrongholdSize Size, const TArray<ESolidStrongholdType>& Types);
+	void CloseStrongholdChoice();
+	bool IsStrongholdChoiceOpen() const { return bShowStrongholdChoice; }
+	void MoveStrongholdChoice(int32 Delta);
+	void SetStrongholdChoiceIndex(int32 Index);
+	int32 GetStrongholdChoiceIndex() const { return StrongholdChoiceIndex; }
+	int32 GetStrongholdChoiceCount() const { return StrongholdChoiceTypes.Num(); }
+	FIntPoint GetStrongholdChoiceCell() const { return StrongholdChoiceCell; }
+	ESolidStrongholdSize GetStrongholdChoiceSize() const { return static_cast<ESolidStrongholdSize>(StrongholdChoiceSize); }
+	ESolidStrongholdType GetStrongholdChoiceType() const;
+
 	/** F12. The tech readout in the corner. Battle plans stay up either way. */
 	void ToggleDebugPanel();
 	bool IsDebugPanelVisible() const { return bShowDebugPanel; }
@@ -83,7 +96,7 @@ public:
 
 	/** F10. Closes an open page, including the character editor, or toggles the main menu. */
 	void HandleMenuKey();
-	/** Esc. Closes the menu, the portal, the party builder, the journal, the inventory, the credits page, and the character editor. */
+	/** Esc. Closes the menu, the portal, the party builder, the journal, the inventory, the credits page, the character editor, and a stronghold type choice. */
 	void CloseMenuOverlay();
 	/** Hide the menu list. Leaves the credits page as it is. */
 	void CloseMainMenu();
@@ -121,6 +134,7 @@ protected:
 	void DrawCharacterEditorPanel();
 	void DrawMainMenuPopup();
 	void DrawPortalPopup();
+	void DrawStrongholdChoice();
 	void DrawPartyBuilderPopup();
 	/** Wall-clock timestamps (seconds) for frames in the rolling FPS window. */
 	TArray<double> RecentFrameTimes;
@@ -160,6 +174,13 @@ protected:
 	/** Highlighted town while the portal list is open. */
 	UPROPERTY(VisibleAnywhere, Category = "HUD")
 	int32 PortalIndex = 0;
+
+	/** Type list for a stronghold site. Choosing a row commits the move. */
+	bool bShowStrongholdChoice = false;
+	int32 StrongholdChoiceIndex = 0;
+	FIntPoint StrongholdChoiceCell = FIntPoint::ZeroValue;
+	uint8 StrongholdChoiceSize = 0;
+	TArray<uint8> StrongholdChoiceTypes;
 
 	/** Tech readout (build, FPS, pawn, terrain). On until F12. */
 	UPROPERTY(VisibleAnywhere, Category = "HUD")

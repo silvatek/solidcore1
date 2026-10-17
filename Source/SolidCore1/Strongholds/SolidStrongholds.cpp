@@ -92,3 +92,33 @@ int32 SolidStrongholds::CollectEntrances(
 
 	return OutEntrances.Num();
 }
+
+bool SolidStrongholds::FindGrassFace(
+	const USolidWorldMap* WorldMap,
+	const FIntPoint Cell,
+	FGrassFace& Out)
+{
+	Out = FGrassFace();
+	if (!WorldMap || !WorldMap->IsLoaded())
+	{
+		return false;
+	}
+
+	for (const FIntPoint& Step : NeighborSteps)
+	{
+		const int32 NextX = Cell.X + Step.X;
+		const int32 NextY = Cell.Y + Step.Y;
+		if (!InBounds(NextX, NextY))
+		{
+			continue;
+		}
+		if (WorldMap->GetBiomeAtCell(NextX, NextY) != ESolidBiome::Grassland)
+		{
+			continue;
+		}
+		Out.GrassCell = FIntPoint(NextX, NextY);
+		Out.FacingYawDeg = YawFacingGrass(Step);
+		return true;
+	}
+	return false;
+}

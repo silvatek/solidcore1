@@ -10,6 +10,8 @@ The player chooses Eagle Sight to see the whole map. The camera rises until the 
 
 The player presses F9. The view moves to the next sight mode that is available. A mode the player does not have yet is skipped.
 
+The player looks at the sight marker. Falcon Sight shows the same eagle as raven sight, with a + in one corner. Eagle Sight shows that same eagle, with ++ in one corner.
+
 ## Acceptance
 
 - In raven sight the camera stays within 50 m of the captain, and it does not move above a terrain point whose `FSolidTerrainPoint.Fog` is greater than `0.0f`.
@@ -18,6 +20,8 @@ The player presses F9. The view moves to the next sight mode that is available. 
 - In Eagle Sight the camera's ground position lies on the line from the captain to the centre of the world, as close to that centre as possible while the terrain under the camera has `Fog` of `0.0f`.
 - True sight behaves as it does now.
 - F9 cycles through the sight modes that are available, and skips a mode that is not.
+- Falcon Sight shows the raven sight marker with a + in one corner.
+- Eagle Sight shows the raven sight marker with ++ in one corner.
 
 ## Implementation notes
 
@@ -25,4 +29,5 @@ The player presses F9. The view moves to the next sight mode that is available. 
 - Raven zoom is the spring-arm length, `CameraZoomMin` 250 cm to `CameraZoomMax` 5000 cm (50 m). That length runs along the look. Falcon's 50 m limit is on X and on Y separately, not that arm length.
 - The world is a 1024 m square. Its centre is the middle of that square.
 - Fog on a terrain point is `FSolidTerrainPoint.Fog`. The bands and the rule that the camera stays over clear ground are in [Source/SolidCore1/Fog/README.md](../Source/SolidCore1/Fog/README.md).
-- Not decided: the order of the F9 cycle, when Falcon Sight and Eagle Sight unlock, what the sight marker shows, and whether Falcon's height is measured above the ground under the camera.
+- The raven marker is the eagle returned by `SolidSight::Marker` for raven sight, drawn in the translucent oval at the top right. True sight keeps the eye. The + and ++ are the initial marks only.
+- Not decided: which corner holds the + or ++, the order of the F9 cycle, when Falcon Sight and Eagle Sight unlock, and whether Falcon's height is measured above the ground under the camera.

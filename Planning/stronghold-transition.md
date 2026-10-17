@@ -2,7 +2,7 @@
 
 ## Story
 
-The company has one stronghold. At the start the player uses the Meagre Dungeon. The world map has stronghold sites. Each site names a size and shows a stone block. An event unlocks a larger stronghold size. The player clicks the stone at a site of that size and chooses a type. A click on a stone whose size is not unlocked yet does nothing. That starts a stronghold of the site's size there, and the company moves from the stronghold they have. The furniture goes with them, including everything that was stored in it. The company has the new stronghold. The old one is no longer theirs. Its entrance stays where it is, and the player can no longer go in. The pointer shows no enter tip there, and a click does nothing. The Imperious Tower location comes off the map.
+The company has one stronghold. At the start the player uses the Meagre Dungeon. The world map has stronghold sites. Each site names a size and shows a stone block. An event unlocks a larger stronghold size. The player clicks the stone at a site of that size and chooses a type. A click on a stone whose size is not unlocked yet does nothing. The player can leave the choice without a type, and the company stays where it is. Once the player picks a type, the move goes through: a stronghold of the site's size starts there, and the company moves from the stronghold they have. The furniture goes with them, including everything that was stored in it. The company has the new stronghold. The old one is no longer theirs. Its entrance stays where it is, and the player can no longer go in. The pointer shows no enter tip there, and a click does nothing. The Imperious Tower location comes off the map.
 
 ## Acceptance
 
@@ -12,6 +12,8 @@ The company has one stronghold. At the start the player uses the Meagre Dungeon.
 - Each site shows a stone block.
 - A click on a stone whose size is not unlocked does nothing. It does not ask for a type.
 - A click on a stone whose size is unlocked asks the player to choose a type: Dungeon, Fortress, or Tower.
+- The player can leave that choice without a type. The active stronghold stays as it is, and the site stays a stone.
+- Selecting a type commits the transition. It cannot be abandoned after that choice.
 - That choice starts creating a stronghold at that site and transitioning from the active one.
 - An event can unlock a size above the active stronghold's size.
 - The player does not choose the size at the stone. The new size is the size named on that site.
@@ -34,7 +36,7 @@ The company has one stronghold. At the start the player uses the Meagre Dungeon.
 - `FGameState` does not record an active stronghold. The cave is implied by `EnableCave` and `CaveChest`. Record the active stronghold, including type, size, and site, and carry it on the travel session the way the company is carried.
 - A `!` line today is `Town`, `Stronghold`, `LairEntrance`, or `LairExit`. `Stronghold` is size then type, as in `MeagreDungeon` and `Imperious Tower`. A site is a new kind, `StrongholdSite`, then a size name and no type. `SolidStronghold::FromToken` will not parse `Humble` alone, because it expects size and type joined. Match the size names in `SolidStronghold::Sizes`. `ESolidWorldBang` and `WorldMapParseBangLocation` need the new kind. The suite line in `README.md` that lists those four kinds needs the same word.
 - The site cells are not named. Do not invent them. The owner places the `!` lines. Do not delete `! 17, 31` in a commit that has not added those sites. The tower line comes out once the sites are the places a new stronghold is created.
-- The stone is a block at the site cell. It is not the cave mouth and not the tower shell. A click on a stone whose size is not unlocked does nothing. A click on an unlocked size asks for the type, then runs the transition when that size is larger than the active stronghold.
+- The stone is a block at the site cell. It is not the cave mouth and not the tower shell. A click on a stone whose size is not unlocked does nothing. A click on an unlocked size asks for the type. Esc closes that choice without a type, the same way it closes the other menus. Choosing a type runs the transition when that size is larger than the active stronghold, and the choice cannot be taken back.
 - Furnishings for the Meagre Dungeon are the fireplace, the bed, and the chest in `UsedFurnishings`. The chest is the only storage. Its contents are `FGameState::CaveChest`: the rusty sword, old boots, coins, sticks, and pitch at the start. The fireplace and the bed are not storage.
 - Those pieces sit on the den's hexes. Another plan does not have those cells. The pieces and the container contents still move. This story does not invent a hex layout for every size. When the new interior exists, place the pieces on kept cells of that interior.
 - The tower plan, shell, and interior stay in the code. Choosing Tower uses them. Removing the map line only takes away the visit at cell 17,31. The comment in `SolidTowerStronghold.h` that the door on that cell faces north goes with the line.

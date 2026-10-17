@@ -10,7 +10,7 @@ The player chooses Eagle Sight to see the whole map. The camera rises until the 
 
 The player presses F9. The view moves from true sight to raven sight, then to Falcon Sight, then to Eagle Sight, and then back to true sight. A mode the player does not have yet is skipped.
 
-The player looks at the sight marker. Falcon Sight shows the same eagle as raven sight, with a + in one corner. Eagle Sight shows that same eagle, with a small globe beside it.
+The player looks at the sight marker. The bird faces left, and the oval is empty behind it. Falcon Sight shows that same eagle, with a + in the space behind the bird. Eagle Sight shows that same eagle, with a small globe in the space behind the bird.
 
 ## Acceptance
 
@@ -21,8 +21,8 @@ The player looks at the sight marker. Falcon Sight shows the same eagle as raven
 - True sight behaves as it does now.
 - When every sight mode is available, F9 cycles true sight, raven sight, Falcon Sight, Eagle Sight, and then true sight again.
 - F9 skips a mode that is not available and uses the next available mode in that order.
-- Falcon Sight shows the raven sight marker with a + in one corner.
-- Eagle Sight shows the raven sight marker with a small globe, Unicode U+1F310, added to it.
+- Falcon Sight shows the raven sight marker with a + in the space behind the bird.
+- Eagle Sight shows the raven sight marker with a small globe, Unicode U+1F310, in the space behind the bird.
 
 ## Implementation notes
 
@@ -30,6 +30,6 @@ The player looks at the sight marker. Falcon Sight shows the same eagle as raven
 - Raven zoom is the spring-arm length, `CameraZoomMin` 250 cm to `CameraZoomMax` 5000 cm (50 m). That length runs along the look. Falcon's 50 m limit is on X and on Y separately, not that arm length.
 - The world is a 1024 m square. Its centre is the middle of that square.
 - Fog on a terrain point is `FSolidTerrainPoint.Fog`. The bands and the rule that the camera stays over clear ground are in [Source/SolidCore1/Fog/README.md](../Source/SolidCore1/Fog/README.md).
-- The raven marker is the eagle returned by `SolidSight::Marker` for raven sight, drawn in the translucent oval at the top right. True sight keeps the eye. Falcon's + is the initial mark only. Eagle adds a small U+1F310 (globe with meridians) to that same indicator, not a ++.
-- Corner mock-ups for Falcon's + are in [falcon-eagle-markers.png](falcon-eagle-markers.png). The eye and the bird there stand in for the emoji. A is top right, B bottom right, C top left, D bottom left, E inside the oval at the bottom right. The ++ on Eagle in that sheet is not the mark.
-- Not decided: which of those corners holds Falcon's +, where the globe sits on the Eagle indicator, when Falcon Sight and Eagle Sight unlock, and whether Falcon's height is measured above the ground under the camera.
+- The raven marker is the eagle returned by `SolidSight::Marker` for raven sight, drawn in the translucent oval at the top right. True sight keeps the eye. The bird faces left, so the empty part of the oval is behind it.
+- Falcon's + and Eagle's globe sit in that space. The globe is a small U+1F310 (globe with meridians). [falcon-eagle-markers.png](falcon-eagle-markers.png) shows both on the current raven indicator.
+- Not decided: when Falcon Sight and Eagle Sight unlock, and whether Falcon's height is measured above the ground under the camera.

@@ -578,11 +578,11 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 					TerrainMap->GetWorldMinXY(),
 					TerrainMap->GetWorldMaxXY(),
 					Entrances);
-				if (Entrances.Num() > 0)
+				if (const SolidStrongholds::FEntrance* Cave = SolidStrongholds::FindCaveMouth(Entrances))
 				{
-					PawnXY = Entrances[0].WorldXY;
-					const SolidStronghold::FVisitView Visit = SolidStronghold::VisitViewFor(Entrances[0].Stronghold);
-					FacingYawDeg = SolidStronghold::LeaveYawDeg(Entrances[0].FacingYawDeg, Visit.Leave);
+					PawnXY = Cave->WorldXY;
+					const SolidStronghold::FVisitView Visit = SolidStronghold::VisitViewFor(Cave->Stronghold);
+					FacingYawDeg = SolidStronghold::LeaveYawDeg(Cave->FacingYawDeg, Visit.Leave);
 					FacingPitchDeg = Visit.Leave.PitchDeg;
 					bHaveYaw = true;
 					bCaveMouth = true;

@@ -1449,6 +1449,11 @@ void ASolidGameMode::EnsureVegetation()
 		int32 Spawned = 0;
 		for (const SolidStrongholds::FEntrance& Entrance : CaveEntrances)
 		{
+			if (!SolidStronghold::UsesCaveMouth(Entrance.Stronghold))
+			{
+				continue;
+			}
+
 			FVector SpawnLoc(Entrance.WorldXY.X, Entrance.WorldXY.Y, 0.f);
 			const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
 			SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;

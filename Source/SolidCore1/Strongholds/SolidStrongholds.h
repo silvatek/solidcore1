@@ -64,6 +64,7 @@ namespace SolidStrongholds
 	 * One entrance per stronghold cell that shares an edge with grassland.
 	 * Neighbors are tried north, east, south, then west; the first grassland wins.
 	 * Ordered by map row, then column.
+	 * A tower is included here. Only a dungeon spawns the cliff mouth.
 	 * @return Number of entrances written.
 	 */
 	int32 CollectEntrances(
@@ -71,4 +72,17 @@ namespace SolidStrongholds
 		FVector2D WorldMinXY,
 		FVector2D WorldMaxXY,
 		TArray<FEntrance>& OutEntrances);
+
+	/** The first dungeon mouth. A tower entrance is not a place to leave the cave. */
+	inline const FEntrance* FindCaveMouth(const TArray<FEntrance>& Entrances)
+	{
+		for (const FEntrance& Entrance : Entrances)
+		{
+			if (SolidStronghold::UsesCaveMouth(Entrance.Stronghold))
+			{
+				return &Entrance;
+			}
+		}
+		return nullptr;
+	}
 }

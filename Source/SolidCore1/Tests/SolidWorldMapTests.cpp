@@ -1346,6 +1346,8 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 	const int32 CaveRow = 5;
 	const int32 TowerCol = 8;
 	const int32 TowerRow = 5;
+	const int32 ImperiousCol = 12;
+	const int32 ImperiousRow = 5;
 	const int32 BadHoldCol = 10;
 	const int32 BadHoldRow = 5;
 	const int32 EnterCol = 3;
@@ -1364,7 +1366,7 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 		{
 			const bool bBang = (Row == IglinRow && Col == IglinCol)
 				|| (Row == RelionRow && (Col == RelionCol || Col == UnknownTownCol || Col == UnknownTypeCol))
-				|| (Row == CaveRow && (Col == CaveCol || Col == TowerCol || Col == BadHoldCol))
+				|| (Row == CaveRow && (Col == CaveCol || Col == TowerCol || Col == ImperiousCol || Col == BadHoldCol))
 				|| (Col == EnterCol && (Row == EnterRow || Row == ExitRow || Row == MissingLairRow));
 			Line.AppendChar(bBang ? USolidWorldMap::LocationMarker : USolidWorldMap::GrassMarker);
 		}
@@ -1378,6 +1380,7 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 	Text += TEXT("! 2,4 = Village Iglin\n");
 	Text += TEXT("! 6,6 = Stronghold MeagreDungeon # the cave\n");
 	Text += TEXT("! 6,9 = Stronghold (Humble Tower)\n");
+	Text += TEXT("! 6,13 = Stronghold (Imperious Tower)\n");
 	Text += TEXT("! 6,11 = Stronghold NotAThing\n");
 	Text += TEXT("! 10,4 = LairEntrance Iglin tunnels # south of town\n");
 	Text += TEXT("! 11,4 = LairExit (Iglin tunnels)\n");
@@ -1427,6 +1430,20 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("a spaced size and type match"), Map->FindBang(TowerCol, TowerRow, Tower));
 	TestEqual(TEXT("tower size"), static_cast<uint8>(Tower.StrongholdSize), static_cast<uint8>(ESolidStrongholdSize::Humble));
 	TestEqual(TEXT("tower type"), static_cast<uint8>(Tower.StrongholdType), static_cast<uint8>(ESolidStrongholdType::Tower));
+	TestEqual(
+		TEXT("an unlisted tower keeps the marker biome"),
+		static_cast<uint8>(Map->GetBiomeAtCell(TowerCol, TowerRow)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+
+	FSolidWorldBang Imperious;
+	TestTrue(TEXT("Imperious Tower is a stronghold"), Map->FindBang(ImperiousCol, ImperiousRow, Imperious));
+	TestEqual(TEXT("imperious size"), static_cast<uint8>(Imperious.StrongholdSize), static_cast<uint8>(ESolidStrongholdSize::Imperious));
+	TestEqual(TEXT("imperious type"), static_cast<uint8>(Imperious.StrongholdType), static_cast<uint8>(ESolidStrongholdType::Tower));
+	TestEqual(TEXT("imperious name"), Imperious.Name, FString(TEXT("Imperious Tower")));
+	TestEqual(
+		TEXT("Imperious Tower uses grassland"),
+		static_cast<uint8>(Map->GetBiomeAtCell(ImperiousCol, ImperiousRow)),
+		static_cast<uint8>(ESolidBiome::Grassland));
 	TestFalse(TEXT("an unknown stronghold is not a mark"), Map->FindBang(BadHoldCol, BadHoldRow, Ignored));
 	TestEqual(
 		TEXT("an unknown stronghold stays grassland"),
@@ -1458,14 +1475,16 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("a stronghold ! is not a town"), Map->IsMarkedTown(CaveXY.X, CaveXY.Y, WorldMin, WorldMax));
 
 	TArray<SolidStrongholds::FEntrance> Mouths;
-	TestEqual(TEXT("two stronghold mouths"), SolidStrongholds::CollectEntrances(Map, WorldMin, WorldMax, Mouths), 2);
+	TestEqual(TEXT("three stronghold mouths"), SolidStrongholds::CollectEntrances(Map, WorldMin, WorldMax, Mouths), 3);
 	bool bFoundCave = false;
 	bool bFoundTower = false;
+	bool bFoundImperious = false;
 	for (const SolidStrongholds::FEntrance& Mouth : Mouths)
 	{
 		if (Mouth.Cell == FIntPoint(CaveCol, CaveRow))
 		{
 			bFoundCave = true;
+			TestTrue(TEXT("the cave mouth is the cliff mouth"), SolidStronghold::UsesCaveMouth(Mouth.Stronghold));
 			TestEqual(
 				TEXT("cave mouth size"),
 				static_cast<uint8>(Mouth.Stronghold.Size),
@@ -1474,14 +1493,25 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 		if (Mouth.Cell == FIntPoint(TowerCol, TowerRow))
 		{
 			bFoundTower = true;
+			TestFalse(TEXT("an unlisted tower is not the cliff mouth"), SolidStronghold::UsesCaveMouth(Mouth.Stronghold));
 			TestEqual(
 				TEXT("tower mouth type"),
 				static_cast<uint8>(Mouth.Stronghold.Type),
 				static_cast<uint8>(ESolidStrongholdType::Tower));
 		}
+		if (Mouth.Cell == FIntPoint(ImperiousCol, ImperiousRow))
+		{
+			bFoundImperious = true;
+			TestFalse(TEXT("Imperious Tower is not the cliff mouth"), SolidStronghold::UsesCaveMouth(Mouth.Stronghold));
+			TestEqual(
+				TEXT("imperious mouth size"),
+				static_cast<uint8>(Mouth.Stronghold.Size),
+				static_cast<uint8>(ESolidStrongholdSize::Imperious));
+		}
 	}
 	TestTrue(TEXT("the cave mouth is placed"), bFoundCave);
 	TestTrue(TEXT("the tower mouth is placed"), bFoundTower);
+	TestTrue(TEXT("the imperious mouth is placed"), bFoundImperious);
 
 	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
 	TestTrue(TEXT("shipped map loads"), Shipped->LoadDefault());

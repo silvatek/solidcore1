@@ -101,6 +101,53 @@ bool FSolidStrongholdCatalogTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(FromToken.Size),
 		static_cast<uint8>(ESolidStrongholdSize::Meagre));
 	TestFalse(TEXT("M does not resolve"), SolidStronghold::FromToken(TEXT("M"), FromToken));
+
+	ESolidBiome Shelf = ESolidBiome::Grassland;
+	TestTrue(TEXT("the cave names a shelf"), SolidStronghold::BiomeFor(SolidStronghold::Starting, Shelf));
+	TestEqual(TEXT("the cave shelf is mountain"), static_cast<uint8>(Shelf), static_cast<uint8>(ESolidBiome::Mountain));
+	TestTrue(TEXT("the cave uses the cliff mouth"), SolidStronghold::UsesCaveMouth(SolidStronghold::Starting));
+
+	FSolidStronghold Imperious;
+	TestTrue(TEXT("ImperiousTower resolves"), SolidStronghold::FromToken(TEXT("ImperiousTower"), Imperious));
+	TestEqual(
+		TEXT("Imperious Tower type"),
+		static_cast<uint8>(Imperious.Type),
+		static_cast<uint8>(ESolidStrongholdType::Tower));
+	TestEqual(
+		TEXT("Imperious Tower size"),
+		static_cast<uint8>(Imperious.Size),
+		static_cast<uint8>(ESolidStrongholdSize::Imperious));
+	TestTrue(TEXT("the tower names a shelf"), SolidStronghold::BiomeFor(Imperious, Shelf));
+	TestEqual(TEXT("the tower shelf is grassland"), static_cast<uint8>(Shelf), static_cast<uint8>(ESolidBiome::Grassland));
+	TestFalse(TEXT("the tower does not use the cliff mouth"), SolidStronghold::UsesCaveMouth(Imperious));
+
+	FSolidStronghold HumbleTower;
+	TestTrue(TEXT("Humble Tower resolves"), SolidStronghold::FromToken(TEXT("Humble Tower"), HumbleTower));
+	TestFalse(TEXT("an unlisted stronghold names no shelf"), SolidStronghold::BiomeFor(HumbleTower, Shelf));
+	TestEqual(
+		TEXT("a failed shelf lookup leaves the previous biome"),
+		static_cast<uint8>(Shelf),
+		static_cast<uint8>(ESolidBiome::Grassland));
+
+	TArray<SolidStrongholds::FEntrance> Mouths;
+	SolidStrongholds::FEntrance TowerMouth;
+	TowerMouth.Stronghold = Imperious;
+	TowerMouth.WorldXY = FVector2D(10.f, 10.f);
+	Mouths.Add(TowerMouth);
+	SolidStrongholds::FEntrance CaveMouth;
+	CaveMouth.Stronghold = SolidStronghold::Starting;
+	CaveMouth.WorldXY = FVector2D(40.f, 80.f);
+	Mouths.Add(CaveMouth);
+	const SolidStrongholds::FEntrance* Chosen = SolidStrongholds::FindCaveMouth(Mouths);
+	TestTrue(TEXT("leaving the cave skips a tower mouth"), Chosen != nullptr);
+	if (Chosen)
+	{
+		TestTrue(TEXT("the cave mouth is the dungeon"), SolidStronghold::UsesCaveMouth(Chosen->Stronghold));
+		TestTrue(TEXT("the cave mouth is the later entrance"), Chosen->WorldXY.Equals(CaveMouth.WorldXY, 0.1f));
+	}
+	Mouths.Reset();
+	Mouths.Add(TowerMouth);
+	TestTrue(TEXT("a tower alone is not a cave mouth"), SolidStrongholds::FindCaveMouth(Mouths) == nullptr);
 	return true;
 }
 
@@ -125,6 +172,16 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 			{
 				continue;
 			}
+			if (Named.Type != ESolidStrongholdType::Dungeon || Named.Size != ESolidStrongholdSize::Meagre)
+			{
+				ESolidBiome Expected = ESolidBiome::Grassland;
+				TestTrue(TEXT("a shipped stronghold names its shelf"), SolidStronghold::BiomeFor(Named, Expected));
+				TestEqual(
+					TEXT("a shipped stronghold uses its shelf"),
+					static_cast<uint8>(Map->GetBiomeAtCell(Col, Row)),
+					static_cast<uint8>(Expected));
+				continue;
+			}
 			CaveCells.Add(FIntPoint(Col, Row));
 			TestEqual(
 				TEXT("cave cell is Mountain"),
@@ -147,13 +204,15 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 	const FVector2D WorldMin(-51200.f, -51200.f);
 	const FVector2D WorldMax(51200.f, 51200.f);
 	TArray<SolidStrongholds::FEntrance> Entrances;
-	TestEqual(
-		TEXT("one entrance per cave cell"),
-		SolidStrongholds::CollectEntrances(Map, WorldMin, WorldMax, Entrances),
-		CaveCells.Num());
-
+	SolidStrongholds::CollectEntrances(Map, WorldMin, WorldMax, Entrances);
+	int32 CaveMouths = 0;
 	for (const SolidStrongholds::FEntrance& Entrance : Entrances)
 	{
+		if (!SolidStronghold::UsesCaveMouth(Entrance.Stronghold))
+		{
+			continue;
+		}
+		++CaveMouths;
 		TestEqual(
 			TEXT("entrance type"),
 			static_cast<uint8>(Entrance.Stronghold.Type),
@@ -179,6 +238,7 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 			TEXT("spawn inset matches the grass-side offset"),
 			FMath::IsNearlyEqual(FVector2D::Distance(Entrance.WorldXY, Entrance.EdgeXY), SolidStrongholds::FaceInsetCm, 0.1f));
 	}
+	TestEqual(TEXT("one cliff mouth per cave cell"), CaveMouths, CaveCells.Num());
 
 	TestEqual(TEXT("null map yields none"), SolidStrongholds::CollectEntrances(nullptr, WorldMin, WorldMax, Entrances), 0);
 	return true;

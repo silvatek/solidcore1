@@ -82,7 +82,7 @@ ESolidBiome USolidWorldMap::MarkerToBiome(const TCHAR Marker)
 		return ESolidBiome::Grassland;
 	}
 
-	// A named town, stronghold, or lair upgrades this in GetBiomeAtCell.
+	// A named town, lair, or defined stronghold upgrades this in GetBiomeAtCell.
 	return FChar::ToUpper(Marker) == TEXT('M') ? ESolidBiome::Mountain : ESolidBiome::Grassland;
 }
 
@@ -601,8 +601,18 @@ ESolidBiome USolidWorldMap::GetBiomeAtCell(int32 MapX, int32 MapY) const
 	}
 	if (const FSolidWorldBang* Mark = BangMarks.Find(MapY * MapWidth + MapX))
 	{
-		if (Mark->Kind == ESolidWorldBang::Stronghold
-			|| Mark->Kind == ESolidWorldBang::LairEntrance
+		if (Mark->Kind == ESolidWorldBang::Stronghold)
+		{
+			FSolidStronghold Attributes;
+			Attributes.Type = Mark->StrongholdType;
+			Attributes.Size = Mark->StrongholdSize;
+			ESolidBiome Shelf = ESolidBiome::Grassland;
+			if (SolidStronghold::BiomeFor(Attributes, Shelf))
+			{
+				return Shelf;
+			}
+		}
+		else if (Mark->Kind == ESolidWorldBang::LairEntrance
 			|| Mark->Kind == ESolidWorldBang::LairExit)
 		{
 			return ESolidBiome::Mountain;

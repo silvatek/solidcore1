@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SolidTerrainTypes.h"
 
 /** What the company base is. Dungeon is the first; Fortress and Tower come later. */
 enum class ESolidStrongholdType : uint8
@@ -131,6 +132,43 @@ namespace SolidStronghold
 	inline FString Label(const FSolidStronghold& Stronghold)
 	{
 		return FString::Printf(TEXT("%s %s"), SizeName(Stronghold.Size), TypeName(Stronghold.Type));
+	}
+
+	/**
+	 * The shelf a defined stronghold sits on. The map cell uses this biome.
+	 * A size and type with no row keeps the marker's own biome.
+	 */
+	struct FShelf
+	{
+		FSolidStronghold Stronghold;
+		ESolidBiome Biome = ESolidBiome::Grassland;
+	};
+
+	inline const FShelf Shelves[] = {
+		{ Starting, ESolidBiome::Mountain },
+		{ { ESolidStrongholdType::Tower, ESolidStrongholdSize::Imperious }, ESolidBiome::Grassland },
+	};
+
+	inline constexpr int32 ShelfCount = UE_ARRAY_COUNT(Shelves);
+
+	/** True when this stronghold names a shelf. */
+	inline bool BiomeFor(const FSolidStronghold& Stronghold, ESolidBiome& OutBiome)
+	{
+		for (const FShelf& Shelf : Shelves)
+		{
+			if (Shelf.Stronghold.Type == Stronghold.Type && Shelf.Stronghold.Size == Stronghold.Size)
+			{
+				OutBiome = Shelf.Biome;
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** The cliff mouth. A tower places its own exterior, so it does not use this. */
+	inline bool UsesCaveMouth(const FSolidStronghold& Stronghold)
+	{
+		return Stronghold.Type == ESolidStrongholdType::Dungeon;
 	}
 
 	/** "MeagreDungeon" or "Meagre Dungeon": size, then type. */

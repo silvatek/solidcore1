@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0419")
+#define SOLID_BUILD_ID TEXT("SC1-0420")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A world-map place is a named ! cell. Digits, C, Z, and the letters X and Y no longer mark one.")
+#define SOLID_BUILD_NOTE TEXT("A stronghold cell uses that stronghold's shelf. Imperious Tower is grassland.")
 #endif

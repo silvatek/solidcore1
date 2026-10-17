@@ -121,7 +121,8 @@ public:
 
 	/**
 	 * Marker biome at map cell (clamped). The town marker is Town; the desert marker is Desert; M is Mountain.
-	 * A named town ! uses the Town biome. A stronghold or lair ! is Mountain.
+	 * A named town ! uses the Town biome. A lair ! is Mountain.
+	 * A stronghold ! uses the shelf that stronghold names. One with no shelf keeps the marker biome.
 	 * A ! with no description is Grassland. The river marker is River for the whole cell. SampleBiome paints only the channel.
 	 */
 	ESolidBiome GetBiomeAtCell(int32 MapX, int32 MapY) const;

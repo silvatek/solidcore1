@@ -41,7 +41,7 @@ The player walks through forest that is no longer in full fog and finds sticks a
 
 ## Implementation notes
 
-- Stick is `6c2a91e8`, Inferior, stacks to 10. Pitch is `d4f07b3a`, Common, stacks to 10. Coins are not a ground find. There is no rough-stone id. Rough stones stay [Rough stones](rough-stones.md).
+- Stick is `6c2a91e8`, Inferior, stacks to 10. Pitch is `d4f07b3a`, Common, stacks to 10. Coins are not a ground find. Rough stone is [Rough stones](rough-stones.md). This story does not add that id and does not place those piles.
 - Scatter the piles the way `SolidForestTrees::CollectSpawnPositions` scatters trees. The input set is forest points that did not receive a tree. Fisher–Yates, then `round(count * density)` clamped to the max and to the count. Density is `0.05`. The max is 64. Jitter is 90 cm, the same as `ForestTreeJitterCm`. Trees use `ForestTreeSeed` 42. The piles use their own seed, 43, so a tree-seed change does not move them.
 - Walking that chosen list, an even index is a stick and an odd index is a pitch. A test map with 40 treeless forest points places two piles, stick then pitch. A map with no forest places none. One placed stick is still enough to test the click and the pack.
 - `SolidInventory::PlacePack` writes a cell and replaces what was there. It does not merge. Add an insert that fills the first same-id stack under `FSolidItemType::MaxStacked`, then the first empty cell, and returns false when neither exists.

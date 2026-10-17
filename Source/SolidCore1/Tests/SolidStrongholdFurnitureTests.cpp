@@ -110,7 +110,7 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("a humble dungeon has no pieces yet"), Empty.Num(), 0);
 
 	TArray<SolidStrongholdFurniture::FUsed> Placements;
-	SolidStrongholdFurniture::UsedFurnishings(SolidStronghold::Starting.Attributes, Placements);
+	SolidStrongholdFurniture::UsedFurnishings(SolidStronghold::Starting, Placements);
 	TestEqual(TEXT("three starter pieces"), Placements.Num(), 3);
 	if (Placements.Num() != 3)
 	{

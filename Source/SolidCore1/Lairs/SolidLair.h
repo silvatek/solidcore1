@@ -353,8 +353,8 @@ namespace SolidLair
 	/**
 	 * One stone mouth where a lair cell meets grassland.
 	 * Neighbors are tried north, east, south, then west. The first grassland wins.
-	 * A world-map X or Y is a mouth. A LairEntrance ! for these tunnels is the X end,
-	 * and a LairExit ! is the Y end. The interior grid still uses those two letters.
+	 * A LairEntrance ! for these tunnels is the interior X end, and a LairExit !
+	 * is the interior Y end. The interior grid still uses those two letters.
 	 */
 	struct FEntrance
 	{

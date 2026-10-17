@@ -20,10 +20,10 @@ namespace
 		TCHAR Marker = USolidWorldMap::GrassMarker;
 	};
 
-	FString GroundMoveGrid(std::initializer_list<FGroundMoveMark> Marks)
+	FString GroundMoveGrid(std::initializer_list<FGroundMoveMark> Marks, const FString& Extra = FString())
 	{
 		FString Text;
-		Text.Reserve((USolidWorldMap::MapWidth + 1) * USolidWorldMap::MapHeight);
+		Text.Reserve((USolidWorldMap::MapWidth + 1) * USolidWorldMap::MapHeight + Extra.Len());
 		for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
 		{
 			for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
@@ -41,6 +41,7 @@ namespace
 			}
 			Text.AppendChar(TEXT('\n'));
 		}
+		Text += Extra;
 		return Text;
 	}
 
@@ -81,8 +82,8 @@ bool FSolidGroundMoveFootingTest::RunTest(const FString& Parameters)
 		{ 20, 10, USolidWorldMap::SeaMarker },
 		{ 22, 10, TEXT('M') },
 		{ 24, 10, USolidWorldMap::ForestMarker },
-		{ 26, 10, TEXT('C') },
-	});
+		{ 26, 10, USolidWorldMap::LocationMarker },
+	}, TEXT("! 11,27 = Stronghold (MeagreDungeon)\n"));
 	if (!TestTrue(TEXT("grid loads"), Map->LoadFromString(Grid)))
 	{
 		return false;

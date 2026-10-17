@@ -89,6 +89,22 @@ namespace
 		Map.CellToWorldXY(FIntPoint(Col, Row), RoadTestMin, RoadTestMax, Center);
 		return Center;
 	}
+
+	FString RoadTestNamed(
+		const int32 FromCol,
+		const int32 FromRow,
+		const TCHAR* FromTown,
+		const int32 ToCol,
+		const int32 ToRow,
+		const TCHAR* ToTown,
+		const TCHAR* Type)
+	{
+		return FString::Printf(
+			TEXT("! %d,%d = Town %s\n! %d,%d = Town %s\nRoad: %s -> %s, %s\n"),
+			FromRow + 1, FromCol + 1, FromTown,
+			ToRow + 1, ToCol + 1, ToTown,
+			FromTown, ToTown, Type);
+	}
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -130,35 +146,31 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidRoadParseTest::RunTest(const FString& Parameters)
 {
 	SolidRoad::FDefinition Def;
-	TestTrue(TEXT("cave trail"), SolidRoad::Parse(TEXT("Road: C -> 0, trail"), Def));
-	TestTrue(TEXT("from the cave"), Def.From.bCave);
-	TestFalse(TEXT("to a town"), Def.To.bCave);
-	TestEqual(TEXT("town 0"), Def.To.LocationId, 0);
-	TestEqual(TEXT("trail"), static_cast<uint8>(Def.Type), static_cast<uint8>(SolidRoad::EType::Trail));
+	TestFalse(TEXT("a letter is not an end"), SolidRoad::Parse(TEXT("Road: C -> Iglin, trail"), Def));
+	TestFalse(TEXT("a number is not an end"), SolidRoad::Parse(TEXT("Road: 0 -> 1, trail"), Def));
 
-	TestTrue(TEXT("spaced track"), SolidRoad::Parse(TEXT("  Road: 5 -> 6, track  "), Def));
-	TestEqual(TEXT("from 5"), Def.From.LocationId, 5);
-	TestEqual(TEXT("to 6"), Def.To.LocationId, 6);
-	TestEqual(TEXT("track"), static_cast<uint8>(Def.Type), static_cast<uint8>(SolidRoad::EType::Track));
-
-	TestTrue(TEXT("highway"), SolidRoad::Parse(TEXT("Road: 1 -> 2, highway"), Def));
-	TestEqual(TEXT("highway type"), static_cast<uint8>(Def.Type), static_cast<uint8>(SolidRoad::EType::Highway));
-	TestTrue(TEXT("road type ignores case"), SolidRoad::Parse(TEXT("Road: 1 -> 5, Road"), Def));
-	TestEqual(TEXT("road type"), static_cast<uint8>(Def.Type), static_cast<uint8>(SolidRoad::EType::Road));
-
-	TestFalse(TEXT("missing type"), SolidRoad::Parse(TEXT("Road: 1 -> 5"), Def));
-	TestFalse(TEXT("bad end"), SolidRoad::Parse(TEXT("Road: nowhere -> 1, trail"), Def));
-	TestFalse(TEXT("a key line is not a road"), SolidRoad::Parse(TEXT("G = Grassland (light green)"), Def));
-
-	TestTrue(TEXT("town names"), SolidRoad::Parse(TEXT("Road: Iglin -> Relion, track"), Def));
-	TestFalse(TEXT("names are not the cave"), Def.From.bCave || Def.To.bCave);
+	TestTrue(TEXT("town names"), SolidRoad::Parse(TEXT("Road: Iglin -> Relion, trail"), Def));
 	TestFalse(TEXT("town names are not a stronghold"), Def.From.bStronghold || Def.To.bStronghold);
 	TestEqual(TEXT("Iglin id"), Def.From.LocationId, SolidTowns::Iglin);
 	TestEqual(TEXT("Relion id"), Def.To.LocationId, SolidTowns::Relion);
+	TestEqual(TEXT("trail"), static_cast<uint8>(Def.Type), static_cast<uint8>(SolidRoad::EType::Trail));
+
+	TestTrue(TEXT("spaced track"), SolidRoad::Parse(TEXT("  Road: Dragongate -> Rathen, track  "), Def));
+	TestEqual(TEXT("from Dragongate"), Def.From.LocationId, SolidTowns::Dragongate);
+	TestEqual(TEXT("to Rathen"), Def.To.LocationId, SolidTowns::Rathen);
+	TestEqual(TEXT("track"), static_cast<uint8>(Def.Type), static_cast<uint8>(SolidRoad::EType::Track));
+
+	TestTrue(TEXT("highway"), SolidRoad::Parse(TEXT("Road: Relion -> Kanfold, highway"), Def));
+	TestEqual(TEXT("highway type"), static_cast<uint8>(Def.Type), static_cast<uint8>(SolidRoad::EType::Highway));
+	TestTrue(TEXT("road type ignores case"), SolidRoad::Parse(TEXT("Road: Relion -> Dragongate, Road"), Def));
+	TestEqual(TEXT("road type"), static_cast<uint8>(Def.Type), static_cast<uint8>(SolidRoad::EType::Road));
+
+	TestFalse(TEXT("missing type"), SolidRoad::Parse(TEXT("Road: Relion -> Dragongate"), Def));
+	TestFalse(TEXT("bad end"), SolidRoad::Parse(TEXT("Road: nowhere -> Iglin, trail"), Def));
+	TestFalse(TEXT("a key line is not a road"), SolidRoad::Parse(TEXT("G = Grassland (light green)"), Def));
 
 	TestTrue(TEXT("stronghold name"), SolidRoad::Parse(TEXT("Road: (MeagreDungeon) -> (Iglin), trail"), Def));
 	TestTrue(TEXT("from the stronghold"), Def.From.bStronghold);
-	TestFalse(TEXT("a stronghold name is not the letter C"), Def.From.bCave);
 	TestEqual(
 		TEXT("Meagre"),
 		static_cast<uint8>(Def.From.Stronghold.Size),
@@ -230,8 +242,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidRoadAvoidTest::RunTest(const FString& Parameters)
 {
 	TArray<FRoadTestMark> ForestWall;
-	ForestWall.Add({ 2, 8, TEXT('0') });
-	ForestWall.Add({ 20, 8, TEXT('1') });
+	ForestWall.Add({ 2, 8, USolidWorldMap::LocationMarker });
+	ForestWall.Add({ 20, 8, USolidWorldMap::LocationMarker });
 	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
 	{
 		if (Row != 2)
@@ -242,7 +254,7 @@ bool FSolidRoadAvoidTest::RunTest(const FString& Parameters)
 
 	USolidWorldMap* Highway = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("highway map"), Highway);
-	if (!RoadTestLoad(*this, *Highway, RoadTestGrid(ForestWall, TEXT("Road: 0 -> 1, highway\n"))))
+	if (!RoadTestLoad(*this, *Highway, RoadTestGrid(ForestWall, RoadTestNamed(2, 8, TEXT("Iglin"), 20, 8, TEXT("Relion"), TEXT("highway")))))
 	{
 		return false;
 	}
@@ -258,7 +270,7 @@ bool FSolidRoadAvoidTest::RunTest(const FString& Parameters)
 
 	USolidWorldMap* Trail = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("trail map"), Trail);
-	if (!RoadTestLoad(*this, *Trail, RoadTestGrid(ForestWall, TEXT("Road: 0 -> 1, trail\n"))))
+	if (!RoadTestLoad(*this, *Trail, RoadTestGrid(ForestWall, RoadTestNamed(2, 8, TEXT("Iglin"), 20, 8, TEXT("Relion"), TEXT("trail")))))
 	{
 		return false;
 	}
@@ -271,15 +283,15 @@ bool FSolidRoadAvoidTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("trail takes the forest"), RoadTestCountBiome(*Trail, TrailRoute->Cells, ESolidBiome::Forest) > 0);
 
 	TArray<FRoadTestMark> MountainTie;
-	MountainTie.Add({ 5, 5, TEXT('0') });
-	MountainTie.Add({ 10, 10, TEXT('1') });
+	MountainTie.Add({ 5, 5, USolidWorldMap::LocationMarker });
+	MountainTie.Add({ 10, 10, USolidWorldMap::LocationMarker });
 	for (int32 Col = 6; Col <= 10; ++Col)
 	{
 		MountainTie.Add({ Col, 5, TEXT('M') });
 	}
 	USolidWorldMap* Track = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("track map"), Track);
-	if (!RoadTestLoad(*this, *Track, RoadTestGrid(MountainTie, TEXT("Road: 0 -> 1, track\n"))))
+	if (!RoadTestLoad(*this, *Track, RoadTestGrid(MountainTie, RoadTestNamed(5, 5, TEXT("Iglin"), 10, 10, TEXT("Relion"), TEXT("track")))))
 	{
 		return false;
 	}
@@ -293,8 +305,8 @@ bool FSolidRoadAvoidTest::RunTest(const FString& Parameters)
 		RoadTestCountBiome(*Track, TrackRoute->Cells, ESolidBiome::Mountain), 0);
 
 	TArray<FRoadTestMark> SeaBay;
-	SeaBay.Add({ 2, 10, TEXT('0') });
-	SeaBay.Add({ 14, 10, TEXT('1') });
+	SeaBay.Add({ 2, 10, USolidWorldMap::LocationMarker });
+	SeaBay.Add({ 14, 10, USolidWorldMap::LocationMarker });
 	for (int32 Col = 6; Col <= 10; ++Col)
 	{
 		for (int32 Row = 0; Row <= 20; ++Row)
@@ -304,7 +316,7 @@ bool FSolidRoadAvoidTest::RunTest(const FString& Parameters)
 	}
 	USolidWorldMap* SeaTrail = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("sea map"), SeaTrail);
-	if (!RoadTestLoad(*this, *SeaTrail, RoadTestGrid(SeaBay, TEXT("Road: 0 -> 1, trail\n"))))
+	if (!RoadTestLoad(*this, *SeaTrail, RoadTestGrid(SeaBay, RoadTestNamed(2, 10, TEXT("Iglin"), 14, 10, TEXT("Relion"), TEXT("trail")))))
 	{
 		return false;
 	}
@@ -317,8 +329,8 @@ bool FSolidRoadAvoidTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("trail stays off the sea"), RoadTestCountBiome(*SeaTrail, SeaRoute->Cells, ESolidBiome::Sea), 0);
 
 	TArray<FRoadTestMark> MountainWall;
-	MountainWall.Add({ 2, 8, TEXT('0') });
-	MountainWall.Add({ 20, 8, TEXT('1') });
+	MountainWall.Add({ 2, 8, USolidWorldMap::LocationMarker });
+	MountainWall.Add({ 20, 8, USolidWorldMap::LocationMarker });
 	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
 	{
 		if (Row != 2)
@@ -328,7 +340,7 @@ bool FSolidRoadAvoidTest::RunTest(const FString& Parameters)
 	}
 	USolidWorldMap* MountainTrail = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("mountain map"), MountainTrail);
-	if (!RoadTestLoad(*this, *MountainTrail, RoadTestGrid(MountainWall, TEXT("Road: 0 -> 1, trail\n"))))
+	if (!RoadTestLoad(*this, *MountainTrail, RoadTestGrid(MountainWall, RoadTestNamed(2, 8, TEXT("Iglin"), 20, 8, TEXT("Relion"), TEXT("trail")))))
 	{
 		return false;
 	}
@@ -352,8 +364,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidRoadRiverTest::RunTest(const FString& Parameters)
 {
 	TArray<FRoadTestMark> Marks;
-	Marks.Add({ 4, 10, TEXT('0') });
-	Marks.Add({ 22, 10, TEXT('1') });
+	Marks.Add({ 4, 10, USolidWorldMap::LocationMarker });
+	Marks.Add({ 22, 10, USolidWorldMap::LocationMarker });
 	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
 	{
 		if (Row != 22)
@@ -364,7 +376,7 @@ bool FSolidRoadRiverTest::RunTest(const FString& Parameters)
 
 	USolidWorldMap* Road = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("road map"), Road);
-	if (!RoadTestLoad(*this, *Road, RoadTestGrid(Marks, TEXT("Road: 0 -> 1, road\n"))))
+	if (!RoadTestLoad(*this, *Road, RoadTestGrid(Marks, RoadTestNamed(4, 10, TEXT("Iglin"), 22, 10, TEXT("Relion"), TEXT("road")))))
 	{
 		return false;
 	}
@@ -378,7 +390,7 @@ bool FSolidRoadRiverTest::RunTest(const FString& Parameters)
 
 	USolidWorldMap* Track = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("track map"), Track);
-	if (!RoadTestLoad(*this, *Track, RoadTestGrid(Marks, TEXT("Road: 0 -> 1, track\n"))))
+	if (!RoadTestLoad(*this, *Track, RoadTestGrid(Marks, RoadTestNamed(4, 10, TEXT("Iglin"), 22, 10, TEXT("Relion"), TEXT("track")))))
 	{
 		return false;
 	}
@@ -391,15 +403,15 @@ bool FSolidRoadRiverTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("track crosses the river"), RoadTestCountBiome(*Track, TrackRoute->Cells, ESolidBiome::River) >= 1);
 
 	TArray<FRoadTestMark> Blocked;
-	Blocked.Add({ 4, 20, TEXT('0') });
-	Blocked.Add({ 20, 20, TEXT('1') });
+	Blocked.Add({ 4, 20, USolidWorldMap::LocationMarker });
+	Blocked.Add({ 20, 20, USolidWorldMap::LocationMarker });
 	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
 	{
 		Blocked.Add({ 12, Row, USolidWorldMap::RiverMarker });
 	}
 	USolidWorldMap* Forced = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("forced map"), Forced);
-	if (!RoadTestLoad(*this, *Forced, RoadTestGrid(Blocked, TEXT("Road: 0 -> 1, road\n"))))
+	if (!RoadTestLoad(*this, *Forced, RoadTestGrid(Blocked, RoadTestNamed(4, 20, TEXT("Iglin"), 20, 20, TEXT("Relion"), TEXT("road")))))
 	{
 		return false;
 	}
@@ -426,12 +438,12 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	USolidWorldMap* Trail = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("trail map"), Trail);
 	if (!RoadTestLoad(*this, *Trail, RoadTestGrid({
-		{ 4, 12, TEXT('0') },
+		{ 4, 12, USolidWorldMap::LocationMarker },
 		{ 4, 14, USolidWorldMap::TownMarker },
 		{ 4, 16, TEXT('Z') },
 		{ 7, 12, USolidWorldMap::ForestMarker },
-		{ 12, 12, TEXT('1') },
-	}, TEXT("Road: 0 -> 1, trail\n"))))
+		{ 12, 12, USolidWorldMap::LocationMarker },
+	}, RoadTestNamed(4, 12, TEXT("Iglin"), 12, 12, TEXT("Relion"), TEXT("trail")))))
 	{
 		return false;
 	}
@@ -458,11 +470,11 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	const FVector2D TownDigit = RoadTestCenter(*Trail, 4, 12);
 	const FVector2D TownLetter = RoadTestCenter(*Trail, 4, 14);
 	const FVector2D LegacyTown = RoadTestCenter(*Trail, 4, 16);
-	TestTrue(TEXT("a location digit is a town"),
+	TestTrue(TEXT("a named town is a town"),
 		Trail->IsMarkedTown(TownDigit.X, TownDigit.Y, RoadTestMin, RoadTestMax));
-	TestTrue(TEXT("T is a town"),
+	TestTrue(TEXT("a town circle is a town"),
 		Trail->IsMarkedTown(TownLetter.X, TownLetter.Y, RoadTestMin, RoadTestMax));
-	TestTrue(TEXT("Z is a town"),
+	TestFalse(TEXT("Z is not a town"),
 		Trail->IsMarkedTown(LegacyTown.X, LegacyTown.Y, RoadTestMin, RoadTestMax));
 	const FLinearColor RoadBrown = USolidWorldMap::DefaultColorForBiome(ESolidBiome::Road);
 	const FLinearColor TownBrown = USolidWorldMap::DefaultColorForBiome(ESolidBiome::Town);
@@ -474,9 +486,9 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	USolidWorldMap* Cave = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("cave map"), Cave);
 	if (!RoadTestLoad(*this, *Cave, RoadTestGrid({
-		{ 4, 8, TEXT('C') },
-		{ 8, 8, TEXT('0') },
-	}, TEXT("Road: C -> 0, trail\n"))))
+		{ 4, 8, USolidWorldMap::LocationMarker },
+		{ 8, 8, USolidWorldMap::LocationMarker },
+	}, TEXT("! 9,5 = Stronghold (MeagreDungeon)\n! 9,9 = Town Iglin\nRoad: MeagreDungeon -> Iglin, trail\n"))))
 	{
 		return false;
 	}
@@ -490,12 +502,12 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	USolidWorldMap* Crossing = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("crossing map"), Crossing);
 	if (!RoadTestLoad(*this, *Crossing, RoadTestGrid({
-		{ 4, 16, TEXT('0') },
+		{ 4, 16, USolidWorldMap::LocationMarker },
 		{ 10, 15, USolidWorldMap::RiverMarker },
 		{ 10, 16, USolidWorldMap::RiverMarker },
 		{ 10, 17, USolidWorldMap::RiverMarker },
-		{ 16, 16, TEXT('1') },
-	}, TEXT("Road: 0 -> 1, track\n"))))
+		{ 16, 16, USolidWorldMap::LocationMarker },
+	}, RoadTestNamed(4, 16, TEXT("Iglin"), 16, 16, TEXT("Relion"), TEXT("track")))))
 	{
 		return false;
 	}
@@ -510,9 +522,9 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	USolidWorldMap* Highway = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("highway map"), Highway);
 	if (!RoadTestLoad(*this, *Highway, RoadTestGrid({
-		{ 8, 20, TEXT('0') },
-		{ 12, 20, TEXT('1') },
-	}, TEXT("Road: 0 -> 1, highway\n"))))
+		{ 8, 20, USolidWorldMap::LocationMarker },
+		{ 12, 20, USolidWorldMap::LocationMarker },
+	}, RoadTestNamed(8, 20, TEXT("Iglin"), 12, 20, TEXT("Relion"), TEXT("highway")))))
 	{
 		return false;
 	}
@@ -527,17 +539,12 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	USolidWorldMap* Missing = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("missing map"), Missing);
 	if (!RoadTestLoad(*this, *Missing, RoadTestGrid({
-		{ 4, 4, TEXT('0') },
-	}, TEXT("Road: 0 -> 9, trail\n"))))
+		{ 4, 4, USolidWorldMap::LocationMarker },
+	}, TEXT("! 5,5 = Town Iglin\nRoad: Iglin -> Nowhere, trail\n"))))
 	{
 		return false;
 	}
-	const SolidRoad::FRoute* MissingRoute = RoadTestRoute(*Missing, 0);
-	TestNotNull(TEXT("missing end is still listed"), MissingRoute);
-	if (MissingRoute)
-	{
-		TestEqual(TEXT("missing end has no cells"), MissingRoute->Cells.Num(), 0);
-	}
+	TestEqual(TEXT("an unknown end is ignored"), Missing->GetRoads().Num(), 0);
 	return true;
 }
 
@@ -572,31 +579,18 @@ bool FSolidRoadShippedTest::RunTest(const FString& Parameters)
 	for (int32 Index = 0; Index < 6; ++Index)
 	{
 		TestEqual(TEXT("road type"), static_cast<uint8>(Roads[Index].Definition.Type), static_cast<uint8>(Types[Index]));
-		TestEqual(TEXT("road starts where the line says"),
-			Roads[Index].Definition.From.bCave ? INDEX_NONE : Roads[Index].Definition.From.LocationId,
-			FromIds[Index]);
+		TestEqual(TEXT("road starts where the line says"), Roads[Index].Definition.From.LocationId, FromIds[Index]);
 		TestEqual(TEXT("road ends where the line says"), Roads[Index].Definition.To.LocationId, ToIds[Index]);
-		// The cave line may still say C after that letter has left the grid.
-		if (Roads[Index].Definition.From.bCave && Roads[Index].Cells.Num() == 0)
-		{
-			continue;
-		}
 		TestTrue(TEXT("route has cells"), Roads[Index].Cells.Num() >= 2);
 		RoadTestOrthogonal(*this, Roads[Index].Cells);
 	}
 
-	if (Roads[0].Cells.Num() == 0)
-	{
-		TestTrue(TEXT("a cave letter with no cell has no route"), Roads[0].Definition.From.bCave);
-	}
-	else
-	{
-		const TCHAR Start = Map->GetMarkerAtCell(Roads[0].Cells[0].X, Roads[0].Cells[0].Y);
-		TestTrue(
-			TEXT("the trail starts at the cave"),
-			Start == TEXT('C') || Start == USolidWorldMap::LocationMarker);
-		TestEqual(TEXT("trail ends at Iglin"), Map->GetLocationIdAtCell(Roads[0].Cells.Last().X, Roads[0].Cells.Last().Y), 0);
-	}
+	TestTrue(TEXT("the trail starts at a stronghold"), Roads[0].Definition.From.bStronghold);
+	TestEqual(
+		TEXT("the trail starts on the cave"),
+		Map->GetMarkerAtCell(Roads[0].Cells[0].X, Roads[0].Cells[0].Y),
+		USolidWorldMap::LocationMarker);
+	TestEqual(TEXT("trail ends at Iglin"), Map->GetLocationIdAtCell(Roads[0].Cells.Last().X, Roads[0].Cells.Last().Y), 0);
 	for (const SolidRoad::FRoute& Road : Roads)
 	{
 		int32 MountainCells = 0;

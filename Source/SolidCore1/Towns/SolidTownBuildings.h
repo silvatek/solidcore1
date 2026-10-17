@@ -45,7 +45,7 @@ namespace SolidTownBuildings
 
 	/**
 	 * Fill OutPlacements with non-overlapping buildings on WorldMap town markers.
-	 * The town marker, Z, and location digits count. A road strip does not, even where it is brown.
+	 * The town marker and a ! named as a town count. A road strip does not, even where it is brown.
 	 * Deterministic for a given map + seed + params.
 	 * ExtraClearCenters use the same radius as the start-town centroid (welcome signs).
 	 * @return Number of placements written.

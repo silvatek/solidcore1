@@ -61,25 +61,20 @@ bool FSolidStrongholdCatalogTest::RunTest(const FString& Parameters)
 			FString(SizeNames[Index]));
 	}
 
-	TestEqual(TEXT("one stronghold on the map"), SolidStronghold::OnMapCount, 1);
-	TestEqual(
-		TEXT("starting marker"),
-		static_cast<int32>(SolidStronghold::Starting.Marker),
-		static_cast<int32>(TEXT('C')));
 	TestEqual(
 		TEXT("starting type"),
-		static_cast<uint8>(SolidStronghold::Starting.Attributes.Type),
+		static_cast<uint8>(SolidStronghold::Starting.Type),
 		static_cast<uint8>(ESolidStrongholdType::Dungeon));
 	TestEqual(
 		TEXT("starting size"),
-		static_cast<uint8>(SolidStronghold::Starting.Attributes.Size),
+		static_cast<uint8>(SolidStronghold::Starting.Size),
 		static_cast<uint8>(ESolidStrongholdSize::Meagre));
 	TestEqual(
 		TEXT("starting label"),
-		SolidStronghold::Label(SolidStronghold::Starting.Attributes),
+		SolidStronghold::Label(SolidStronghold::Starting),
 		FString(TEXT("Meagre Dungeon")));
 
-	const SolidStronghold::FVisitView Cave = SolidStronghold::VisitViewFor(SolidStronghold::Starting.Attributes);
+	const SolidStronghold::FVisitView Cave = SolidStronghold::VisitViewFor(SolidStronghold::Starting);
 	TestTrue(TEXT("entering the cave levels the camera"), FMath::IsNearlyZero(Cave.Enter.PitchDeg, 0.1f));
 	TestTrue(TEXT("entering the cave looks in"), FMath::IsNearlyZero(Cave.Enter.YawDeg, 0.1f));
 	TestTrue(TEXT("leaving the cave levels the camera"), FMath::IsNearlyZero(Cave.Leave.PitchDeg, 0.1f));
@@ -95,17 +90,17 @@ bool FSolidStrongholdCatalogTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("an unlisted stronghold still arrives level"), FMath::IsNearlyZero(Unlisted.Enter.PitchDeg, 0.1f));
 	TestTrue(TEXT("an unlisted stronghold still leaves level"), FMath::IsNearlyZero(Unlisted.Leave.PitchDeg, 0.1f));
 
-	FSolidStronghold FromMarker;
-	TestTrue(TEXT("C resolves"), SolidStronghold::AttributesForMarker(TEXT('C'), FromMarker));
+	FSolidStronghold FromToken;
+	TestTrue(TEXT("MeagreDungeon resolves"), SolidStronghold::FromToken(TEXT("MeagreDungeon"), FromToken));
 	TestEqual(
-		TEXT("C is a Dungeon"),
-		static_cast<uint8>(FromMarker.Type),
+		TEXT("the token is a Dungeon"),
+		static_cast<uint8>(FromToken.Type),
 		static_cast<uint8>(ESolidStrongholdType::Dungeon));
 	TestEqual(
-		TEXT("C is Meagre"),
-		static_cast<uint8>(FromMarker.Size),
+		TEXT("the token is Meagre"),
+		static_cast<uint8>(FromToken.Size),
 		static_cast<uint8>(ESolidStrongholdSize::Meagre));
-	TestFalse(TEXT("M does not resolve"), SolidStronghold::AttributesForMarker(TEXT('M'), FromMarker));
+	TestFalse(TEXT("M does not resolve"), SolidStronghold::FromToken(TEXT("M"), FromToken));
 	return true;
 }
 
@@ -126,7 +121,7 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
 		{
 			FSolidStronghold Named;
-			if (Map->GetMarkerAtCell(Col, Row) != TEXT('C') && !Map->StrongholdAtCell(Col, Row, Named))
+			if (!Map->StrongholdAtCell(Col, Row, Named))
 			{
 				continue;
 			}
@@ -201,12 +196,13 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 
 	{
 		FString Grid = MountainGrid();
-		SetCell(Grid, 10, 10, TEXT('C'));
+		SetCell(Grid, 10, 10, USolidWorldMap::LocationMarker);
 		SetCell(Grid, 9, 10, USolidWorldMap::GrassMarker);
+		Grid += TEXT("! 11,11 = Stronghold (MeagreDungeon)\n");
 		USolidWorldMap* Map = NewObject<USolidWorldMap>();
 		TestTrue(TEXT("east grass loads"), Map->LoadFromString(Grid));
 		TestEqual(
-			TEXT("C is Mountain even without a key line"),
+			TEXT("a stronghold is Mountain"),
 			static_cast<uint8>(Map->GetBiomeAtCell(10, 10)),
 			static_cast<uint8>(ESolidBiome::Mountain));
 
@@ -234,7 +230,8 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 
 	{
 		FString Grid = MountainGrid();
-		SetCell(Grid, 10, 10, TEXT('C'));
+		SetCell(Grid, 10, 10, USolidWorldMap::LocationMarker);
+		Grid += TEXT("! 11,11 = Stronghold (MeagreDungeon)\n");
 		USolidWorldMap* Map = NewObject<USolidWorldMap>();
 		TestTrue(TEXT("sealed cave loads"), Map->LoadFromString(Grid));
 		TArray<SolidStrongholds::FEntrance> Entrances;
@@ -243,9 +240,10 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 
 	{
 		FString Grid = MountainGrid();
-		SetCell(Grid, 10, 10, TEXT('C'));
+		SetCell(Grid, 10, 10, USolidWorldMap::LocationMarker);
 		SetCell(Grid, 10, 9, USolidWorldMap::GrassMarker);
 		SetCell(Grid, 9, 10, USolidWorldMap::GrassMarker);
+		Grid += TEXT("! 11,11 = Stronghold (MeagreDungeon)\n");
 		USolidWorldMap* Map = NewObject<USolidWorldMap>();
 		TestTrue(TEXT("two grass faces load"), Map->LoadFromString(Grid));
 		TArray<SolidStrongholds::FEntrance> Entrances;

@@ -46,13 +46,6 @@ struct FSolidStrongholdView
 
 namespace SolidStronghold
 {
-	/** A stronghold that has a WorldMap.txt cell. Only the starting cave is placed today. */
-	struct FOnMap
-	{
-		TCHAR Marker = TEXT('C');
-		FSolidStronghold Attributes;
-	};
-
 	inline const ESolidStrongholdType Types[] = {
 		ESolidStrongholdType::Dungeon,
 		ESolidStrongholdType::Fortress,
@@ -72,8 +65,8 @@ namespace SolidStronghold
 	inline constexpr int32 TypeCount = UE_ARRAY_COUNT(Types);
 	inline constexpr int32 SizeCount = UE_ARRAY_COUNT(Sizes);
 
-	/** The company starts here: a Meagre Dungeon on the `C` cell. */
-	inline const FOnMap Starting = { TEXT('C'), { ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre } };
+	/** The company starts in a Meagre Dungeon. The world map names that cell. */
+	inline const FSolidStronghold Starting = { ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre };
 
 	/** Enter and leave aims for one stronghold. Missing rows use a level in/out aim. */
 	struct FVisitView
@@ -85,7 +78,7 @@ namespace SolidStronghold
 
 	/** Meagre Dungeon: level, into the den on entry, and level, out over the grass on leave. */
 	inline const FVisitView VisitViews[] = {
-		{ Starting.Attributes, { 0.f, 0.f }, { 0.f, 0.f } },
+		{ Starting, { 0.f, 0.f }, { 0.f, 0.f } },
 	};
 
 	inline constexpr int32 VisitViewCount = UE_ARRAY_COUNT(VisitViews);
@@ -107,12 +100,6 @@ namespace SolidStronghold
 	{
 		return FRotator::NormalizeAxis(MouthYawDeg + Leave.YawDeg);
 	}
-
-	inline const FOnMap OnMap[] = {
-		Starting,
-	};
-
-	inline constexpr int32 OnMapCount = UE_ARRAY_COUNT(OnMap);
 
 	inline const TCHAR* TypeName(ESolidStrongholdType Type)
 	{
@@ -167,29 +154,6 @@ namespace SolidStronghold
 					return true;
 				}
 			}
-		}
-		return false;
-	}
-
-	inline const FOnMap* FindOnMap(TCHAR Marker)
-	{
-		const TCHAR Upper = FChar::ToUpper(Marker);
-		for (const FOnMap& Placed : OnMap)
-		{
-			if (Placed.Marker == Upper)
-			{
-				return &Placed;
-			}
-		}
-		return nullptr;
-	}
-
-	inline bool AttributesForMarker(TCHAR Marker, FSolidStronghold& OutAttributes)
-	{
-		if (const FOnMap* Placed = FindOnMap(Marker))
-		{
-			OutAttributes = Placed->Attributes;
-			return true;
 		}
 		return false;
 	}

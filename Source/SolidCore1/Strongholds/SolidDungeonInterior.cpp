@@ -698,7 +698,7 @@ void ASolidDungeonInterior::PlaceStarterFurnishings()
 	}
 
 	TArray<SolidStrongholdFurniture::FUsed> Used;
-	SolidStrongholdFurniture::UsedFurnishings(SolidStronghold::Starting.Attributes, Used);
+	SolidStrongholdFurniture::UsedFurnishings(SolidStronghold::Starting, Used);
 
 	TArray<ASolidFurnishing*> Owned;
 	for (TActorIterator<ASolidFurnishing> It(World); It; ++It)
@@ -776,7 +776,7 @@ FVector ASolidDungeonInterior::GetCaptainSpawnWorld() const
 
 FRotator ASolidDungeonInterior::GetCaptainView() const
 {
-	const SolidStronghold::FVisitView View = SolidStronghold::VisitViewFor(SolidStronghold::Starting.Attributes);
+	const SolidStronghold::FVisitView View = SolidStronghold::VisitViewFor(SolidStronghold::Starting);
 	return FRotator(View.Enter.PitchDeg, View.Enter.YawDeg, 0.f);
 }
 

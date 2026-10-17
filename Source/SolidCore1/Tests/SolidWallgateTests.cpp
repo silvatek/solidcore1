@@ -20,10 +20,10 @@ namespace
 		TCHAR Marker = USolidWorldMap::GrassMarker;
 	};
 
-	FString WallgateTestGrid(std::initializer_list<FWallgateTestMark> Marks)
+	FString WallgateTestGrid(std::initializer_list<FWallgateTestMark> Marks, const FString& Extra = FString())
 	{
 		FString Text;
-		Text.Reserve((USolidWorldMap::MapWidth + 1) * USolidWorldMap::MapHeight);
+		Text.Reserve((USolidWorldMap::MapWidth + 1) * USolidWorldMap::MapHeight + Extra.Len());
 		for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
 		{
 			for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
@@ -41,16 +41,18 @@ namespace
 			}
 			Text.AppendChar(TEXT('\n'));
 		}
+		Text += Extra;
 		return Text;
 	}
 
 	USolidWorldMap* WallgateTestLoad(
 		FAutomationTestBase& Test,
 		const TCHAR* What,
-		std::initializer_list<FWallgateTestMark> Marks)
+		std::initializer_list<FWallgateTestMark> Marks,
+		const FString& Extra = FString())
 	{
 		USolidWorldMap* Map = NewObject<USolidWorldMap>();
-		const bool bLoaded = Map && Map->LoadFromString(WallgateTestGrid(Marks));
+		const bool bLoaded = Map && Map->LoadFromString(WallgateTestGrid(Marks, Extra));
 		Test.TestTrue(What, bLoaded);
 		return bLoaded ? Map : nullptr;
 	}
@@ -181,15 +183,15 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 	if (Grass)
 	{
 		TArray<SolidWallgate::FPiece> None;
-		TestEqual(TEXT("no digit 5 builds nothing"),
+		TestEqual(TEXT("grass builds nothing"),
 			SolidWallgate::CollectPieces(Grass, WallgateTestMin, WallgateTestMax, None), 0);
 	}
 
 	USolidWorldMap* EastWest = WallgateTestLoad(*this, TEXT("east-west pass loads"), {
 		{ 11, 21, TEXT('M') },
-		{ 12, 21, TEXT('5') },
+		{ 12, 21, USolidWorldMap::LocationMarker },
 		{ 13, 21, TEXT('M') },
-	});
+	}, TEXT("! 22,13 = Town Dragongate\n"));
 	if (EastWest)
 	{
 		TArray<SolidWallgate::FPiece> Pieces;
@@ -221,14 +223,14 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 		}
 	}
 
-	// A vertical stack stays one location whether or not a row pairs digits.
+	// A vertical stack of named cells is one north-south gate.
 	USolidWorldMap* NorthSouth = WallgateTestLoad(*this, TEXT("north-south pass loads"), {
 		{ 12, 19, TEXT('M') },
-		{ 12, 20, TEXT('5') },
-		{ 12, 21, TEXT('5') },
-		{ 12, 22, TEXT('5') },
+		{ 12, 20, USolidWorldMap::LocationMarker },
+		{ 12, 21, USolidWorldMap::LocationMarker },
+		{ 12, 22, USolidWorldMap::LocationMarker },
 		{ 12, 23, TEXT('M') },
-	});
+	}, TEXT("! 21,13 = Town Dragongate\n! 22,13 = Town Dragongate\n! 23,13 = Town Dragongate\n"));
 	if (NorthSouth)
 	{
 		TArray<SolidWallgate::FPiece> Pieces;
@@ -237,8 +239,8 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 	}
 
 	USolidWorldMap* Lone = WallgateTestLoad(*this, TEXT("lone town loads"), {
-		{ 12, 21, TEXT('5') },
-	});
+		{ 12, 21, USolidWorldMap::LocationMarker },
+	}, TEXT("! 22,13 = Town Dragongate\n"));
 	if (Lone)
 	{
 		TArray<SolidWallgate::FPiece> Pieces;
@@ -264,7 +266,7 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 		FSolidWorldLocation Town;
 		if (WallGateId == INDEX_NONE || !Shipped->FindLocation(WallGateId, Town))
 		{
-			TestEqual(TEXT("a wall gate is absent until its digit is on the map"), Pieces.Num(), 0);
+			TestEqual(TEXT("a wall gate is absent until it is named"), Pieces.Num(), 0);
 		}
 		else
 		{
@@ -282,29 +284,27 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidWallgateDigitPairTest::RunTest(const FString& Parameters)
 {
-	// Mountains stand north of both cells, south of the ones digit, and on the
-	// outer sides. The cell between the digits is town, not mountain. A single
-	// cell here would run north-south; the pair is one east-west gate.
-	USolidWorldMap* Map = WallgateTestLoad(*this, TEXT("digit pair pass loads"), {
+	// Mountains stand north of both cells, south of the west cell, and on the
+	// outer sides. Both cells are the same town. One cell in this pattern
+	// would run north-south; the pair is one east-west gate.
+	USolidWorldMap* Map = WallgateTestLoad(*this, TEXT("two-cell pass loads"), {
 		{ 11, 20, TEXT('M') },
 		{ 12, 20, TEXT('M') },
 		{ 10, 21, TEXT('M') },
-		{ 11, 21, TEXT('0') },
-		{ 12, 21, TEXT('5') },
+		{ 11, 21, USolidWorldMap::LocationMarker },
+		{ 12, 21, USolidWorldMap::LocationMarker },
 		{ 13, 21, TEXT('M') },
 		{ 12, 22, TEXT('M') },
-	});
+	}, TEXT("! 22,12 = Town Dragongate\n! 22,13 = Town Dragongate\n"));
 	if (!Map)
 	{
 		return true;
 	}
 
-	TestEqual(TEXT("tens digit is location 5"), Map->GetLocationIdAtCell(11, 21), 5);
-	TestEqual(TEXT("ones digit is location 5"), Map->GetLocationIdAtCell(12, 21), 5);
-	FSolidWorldLocation Zero;
-	TestFalse(TEXT("the leading zero is not a town of its own"), Map->FindLocation(0, Zero));
+	TestEqual(TEXT("east cell is Dragongate"), Map->GetLocationIdAtCell(11, 21), SolidTowns::Dragongate);
+	TestEqual(TEXT("west cell is Dragongate"), Map->GetLocationIdAtCell(12, 21), SolidTowns::Dragongate);
 	FSolidWorldLocation Gate;
-	TestTrue(TEXT("location 5"), Map->FindLocation(5, Gate));
+	TestTrue(TEXT("location 5"), Map->FindLocation(SolidTowns::Dragongate, Gate));
 	TestEqual(TEXT("the pair is two cells"), Gate.Cells.Num(), 2);
 
 	TArray<SolidWallgate::FPiece> Pieces;

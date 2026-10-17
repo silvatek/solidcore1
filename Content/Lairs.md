@@ -20,7 +20,7 @@ Do not build that generator, those locked exits, extra floors, or monsters until
 
 One closed visit, apart from the open world. The captain goes alone. Companions wait on the grass in front of the mouth he used. His nameplate stays hidden inside. The same level as the open world loads again, with `SolidLevel=Lair` and `LairEnd` set to `X` or `Y`. There is no separate map.
 
-The world-map entrance is the `LairEntrance` cell south of Iglin. The world-map exit is the `LairExit` cell east of Relion. Both are mountain-shelf cells, not towns, locations, or the cave. They let him pass the broken bridge. Do not move those cells when editing the interior grid. The interior still uses `X` for the entrance and `Y` for the exit. A world-map `X` or `Y` letter is also a mouth when one is present.
+The world-map entrance is the `LairEntrance` cell south of Iglin. The world-map exit is the `LairExit` cell east of Relion. Both are mountain-shelf cells, not towns, locations, or the cave. They let him pass the broken bridge. Do not move those cells when editing the interior grid. The interior still uses `X` for the entrance and `Y` for the exit.
 
 Each mouth is the cave's stone frame (`ASolidDungeonEntrance`) on its own cliff, with `SetLairEnd`. It is the same model and the same click. It is not the cave mouth. The frame faces the first grassland neighbor, tried north, east, south, west. On the shipped map, both mouths face north. The standing spot is `SolidStrongholds::FaceInsetCm` onto that grass. A click on the dark opening enters. A click on an opening inside leaves by that end. Enter does nothing until the lair is open. Leave stays available.
 

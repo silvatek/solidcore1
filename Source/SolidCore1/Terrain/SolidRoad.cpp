@@ -18,26 +18,6 @@ namespace SolidRoad
 			{
 				return false;
 			}
-			if (Token.Len() == 1 && (Token[0] == TEXT('C') || Token[0] == TEXT('c')))
-			{
-				Out.bCave = true;
-				return true;
-			}
-
-			bool bDigits = true;
-			for (const TCHAR Char : Token)
-			{
-				if (!FChar::IsDigit(Char))
-				{
-					bDigits = false;
-					break;
-				}
-			}
-			if (bDigits)
-			{
-				Out.LocationId = FCString::Atoi(*Token);
-				return true;
-			}
 
 			if (const SolidTowns::FTownInfo* Town = SolidTowns::FindByName(Token))
 			{
@@ -202,26 +182,15 @@ namespace SolidRoad
 		void RoadCollectEndpoint(const USolidWorldMap& Map, const FEndpoint& End, TArray<FIntPoint>& OutCells)
 		{
 			OutCells.Reset();
-			if (End.bCave || End.bStronghold)
+			if (End.bStronghold)
 			{
 				for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
 				{
 					for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
 					{
 						FSolidStronghold Attributes;
-						const bool bNamed = Map.StrongholdAtCell(Col, Row, Attributes);
-						const bool bLetter = !bNamed
-							&& SolidStronghold::AttributesForMarker(Map.GetMarkerAtCell(Col, Row), Attributes);
-						if (!bNamed && !bLetter)
+						if (!Map.StrongholdAtCell(Col, Row, Attributes))
 						{
-							continue;
-						}
-						if (End.bCave)
-						{
-							if (bLetter)
-							{
-								OutCells.Add(FIntPoint(Col, Row));
-							}
 							continue;
 						}
 						if (Attributes.Type == End.Stronghold.Type && Attributes.Size == End.Stronghold.Size)

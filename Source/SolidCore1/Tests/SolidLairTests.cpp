@@ -196,39 +196,28 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 		SolidLairTestPrivate::SetCell(Grid, 10, 9, USolidWorldMap::GrassMarker);
 		SolidLairTestPrivate::SetCell(Grid, 12, 10, USolidWorldMap::YMarker);
 		SolidLairTestPrivate::SetCell(Grid, 11, 10, USolidWorldMap::GrassMarker);
-		SolidLairTestPrivate::SetCell(Grid, 14, 10, TEXT('C'));
+		SolidLairTestPrivate::SetCell(Grid, 14, 10, USolidWorldMap::LocationMarker);
 		SolidLairTestPrivate::SetCell(Grid, 14, 9, USolidWorldMap::GrassMarker);
+		Grid += TEXT("! 11,15 = Stronghold (MeagreDungeon)\n");
 		USolidWorldMap* Map = NewObject<USolidWorldMap>();
 		TestTrue(TEXT("mouths load"), Map->LoadFromString(Grid));
 
 		TArray<SolidLair::FEntrance> Entrances;
-		TestEqual(TEXT("two tunnel mouths"), SolidLair::CollectEntrances(Map, WorldMin, WorldMax, Entrances), 2);
-		if (Entrances.Num() == 2)
-		{
-			TestEqual(TEXT("X marker"), static_cast<int32>(Entrances[0].EndMarker), static_cast<int32>(USolidWorldMap::XMarker));
-			TestEqual(TEXT("X faces north"), Entrances[0].GrassCell.Y, 9);
-			TestTrue(TEXT("X yaw faces north"), FMath::IsNearlyEqual(Entrances[0].FacingYawDeg, 90.f, 0.1f));
-			TestTrue(
-				TEXT("X uses the cave inset"),
-				FMath::IsNearlyEqual(FVector2D::Distance(Entrances[0].WorldXY, Entrances[0].EdgeXY), SolidStrongholds::FaceInsetCm, 0.1f));
-			TestEqual(TEXT("Y marker"), static_cast<int32>(Entrances[1].EndMarker), static_cast<int32>(USolidWorldMap::YMarker));
-			TestEqual(TEXT("Y faces east"), Entrances[1].GrassCell.X, 11);
-			TestTrue(TEXT("Y yaw faces east"), FMath::IsNearlyEqual(Entrances[1].FacingYawDeg, 0.f, 0.1f));
-		}
+		TestEqual(TEXT("letters are not tunnel mouths"), SolidLair::CollectEntrances(Map, WorldMin, WorldMax, Entrances), 0);
 
 		TArray<SolidStrongholds::FEntrance> Caves;
 		TestEqual(TEXT("the cave mouth is separate"), SolidStrongholds::CollectEntrances(Map, WorldMin, WorldMax, Caves), 1);
 		FSolidStronghold Stronghold;
-		TestFalse(TEXT("X is still not a stronghold"), SolidStronghold::AttributesForMarker(USolidWorldMap::XMarker, Stronghold));
+		TestFalse(TEXT("X is still not a stronghold"), Map->StrongholdAtCell(10, 10, Stronghold));
 	}
 
 	{
 		FString Grid = SolidLairTestPrivate::MountainGrid();
 		SolidLairTestPrivate::SetCell(Grid, 4, 4, USolidWorldMap::XMarker);
 		USolidWorldMap* Map = NewObject<USolidWorldMap>();
-		TestTrue(TEXT("a sealed mouth loads"), Map->LoadFromString(Grid));
+		TestTrue(TEXT("a letter loads"), Map->LoadFromString(Grid));
 		TArray<SolidLair::FEntrance> Entrances;
-		TestEqual(TEXT("no grass face means no mouth"), SolidLair::CollectEntrances(Map, WorldMin, WorldMax, Entrances), 0);
+		TestEqual(TEXT("a sealed letter is not a mouth"), SolidLair::CollectEntrances(Map, WorldMin, WorldMax, Entrances), 0);
 	}
 
 	ASolidDungeonEntrance* Cave = NewObject<ASolidDungeonEntrance>();

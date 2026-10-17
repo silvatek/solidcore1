@@ -67,7 +67,6 @@
 . = Grassland (light green)
 o = Town (brown)
 M = Mountain (dark grey)
-C = Cave (dark grey)
 # = Forest (dark green)
 ^ = Desert (yellow)
 * = River (blue)

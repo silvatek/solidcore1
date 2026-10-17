@@ -128,19 +128,6 @@ int32 SolidLair::CollectEntrances(
 	{
 		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
 		{
-			const TCHAR Marker = WorldMap->GetMarkerAtCell(Col, Row);
-			if (!IsEndMarker(Marker))
-			{
-				continue;
-			}
-			SolidLairMouth::TryAdd(*WorldMap, WorldMinXY, WorldMaxXY, Col, Row, Marker, OutEntrances);
-		}
-	}
-
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
-	{
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
-		{
 			FSolidWorldBang Bang;
 			if (!WorldMap->FindBang(Col, Row, Bang))
 			{

@@ -305,11 +305,11 @@ bool FSolidEventsNumberedCellTest::RunTest(const FString& Parameters)
 		{
 			if (Row == 2 && Col == 4)
 			{
-				Line.AppendChar(TEXT('0'));
+				Line.AppendChar(USolidWorldMap::LocationMarker);
 			}
 			else if (Row == 4 && Col == 6)
 			{
-				Line.AppendChar(TEXT('1'));
+				Line.AppendChar(USolidWorldMap::LocationMarker);
 			}
 			else if (Row == 2 && Col == 8)
 			{
@@ -324,8 +324,10 @@ bool FSolidEventsNumberedCellTest::RunTest(const FString& Parameters)
 		Text += TEXT("\n");
 	}
 	Text += TEXT("G = Grassland (light green)\n");
+	Text += TEXT("! 3,5 = Town Iglin\n");
+	Text += TEXT("! 5,7 = Town Relion\n");
 	Text += TEXT("0 = Starting village, biome=Town\n");
-	Text += TEXT("1 = Watch, biome=Town\n");
+	Text += TEXT("Z = Starting town (brown)\n");
 
 	USolidWorldMap* Map = NewObject<USolidWorldMap>();
 	TestTrue(TEXT("synthetic map loads"), Map->LoadFromString(Text));
@@ -342,8 +344,8 @@ bool FSolidEventsNumberedCellTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("grass cell"), Map->CellToWorldXY(FIntPoint(0, 0), WorldMin, WorldMax, Grass));
 	TestTrue(TEXT("Z cell"), Map->CellToWorldXY(FIntPoint(8, 2), WorldMin, WorldMax, Legacy));
 
-	TestEqual(TEXT("digit 0 is town 0"), Map->SampleLocationId(Iglin.X, Iglin.Y, WorldMin, WorldMax), 0);
-	TestEqual(TEXT("digit 1 is town 1"), Map->SampleLocationId(Relion.X, Relion.Y, WorldMin, WorldMax), 1);
+	TestEqual(TEXT("Iglin is town 0"), Map->SampleLocationId(Iglin.X, Iglin.Y, WorldMin, WorldMax), 0);
+	TestEqual(TEXT("Relion is town 1"), Map->SampleLocationId(Relion.X, Relion.Y, WorldMin, WorldMax), 1);
 	TestEqual(TEXT("grass is not a town"), Map->SampleLocationId(Grass.X, Grass.Y, WorldMin, WorldMax), INDEX_NONE);
 	TestEqual(TEXT("Z is not a numbered town"), Map->SampleLocationId(Legacy.X, Legacy.Y, WorldMin, WorldMax), INDEX_NONE);
 	TestEqual(TEXT("cell query matches"), Map->GetLocationIdAtCell(4, 2), 0);

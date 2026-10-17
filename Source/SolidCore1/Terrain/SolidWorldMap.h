@@ -29,8 +29,8 @@ struct FSolidWorldBang
 };
 
 /**
- * One numbered place in WorldMap.txt (`0` = Iglin, `1` = Relion, …).
- * Grid digits use Biome; the captain starts on location 0.
+ * One named town in WorldMap.txt. Iglin is location 0 and is where the captain starts.
+ * Biome is Town. WorldMap.txt does not override the role or the biome.
  */
 USTRUCT(BlueprintType)
 struct FSolidWorldLocation
@@ -44,31 +44,29 @@ struct FSolidWorldLocation
 	UPROPERTY(BlueprintReadOnly, Category = "WorldMap")
 	FString Name;
 
-	/** Text before the first comma, e.g. "Starting village". */
+	/** Unused. Older maps wrote a role here; a named town leaves this empty. */
 	UPROPERTY(BlueprintReadOnly, Category = "WorldMap")
 	FString Role;
 
 	UPROPERTY(BlueprintReadOnly, Category = "WorldMap")
 	ESolidBiome Biome = ESolidBiome::Town;
 
-	/** Map cells that resolve to this id. A two-digit run is two cells. Each named ! is one cell. */
+	/** Map cells that resolve to this id. Each named town ! is one cell. */
 	UPROPERTY(BlueprintReadOnly, Category = "WorldMap")
 	TArray<FIntPoint> Cells;
 };
 
 /**
- * ASCII WorldMap.txt biome overlay (128×64 markers + color key + numbered locations).
+ * ASCII WorldMap.txt biome overlay (128×64 markers + color key + named locations).
  * Scaled across the TerrainMap world bounds. The world stays square, so a cell is
- * 8 m east–west and 16 m north–south. Two digits next to each other on a row are
- * one location number, read from the left, and each character is still one cell.
- * A longer run is taken in pairs. A ! is one location cell, named by a line
- * "! 8,21 = 0": row 8, column 21, counting from 1 at the top-left of the grid.
- * "! 8,21 = Town Iglin", "! 9,12 = Stronghold MeagreDungeon",
- * "! 10,11 = LairEntrance Iglin tunnels", and "! 11,40 = LairExit Iglin tunnels"
- * name the same cell by type. Anything after # is a comment.
- * A ! with no line is not a location. Location 0 is the starting town.
- * A legacy Z marker is the start only when the grid has no 0 cells.
- * A road end is a location id, the letter C, a town name, or a stronghold name.
+ * 8 m east–west and 16 m north–south.
+ * A ! is one cell, named by a line such as "! 8,21 = Town Iglin": row 8, column 21,
+ * counting from 1 at the top-left of the grid.
+ * "! 9,12 = Stronghold MeagreDungeon", "! 10,11 = LairEntrance Iglin tunnels",
+ * and "! 11,40 = LairExit Iglin tunnels" name that cell by type.
+ * Anything after # is a comment. A ! with no line is not a location.
+ * Location 0 is the starting town.
+ * A road end is a town name or a stronghold name.
  * Road lines are solved into routes when the file loads.
  */
 UCLASS()
@@ -86,7 +84,7 @@ public:
 	/** WorldMap.txt marker for grassland. A dot, not the letter G. */
 	static constexpr TCHAR GrassMarker = TEXT('.');
 
-	/** WorldMap.txt marker for a town cell that is not a numbered location. A small circle, not the letter T. */
+	/** WorldMap.txt marker for a town cell that is not a named location. A small circle, not the letter T. */
 	static constexpr TCHAR TownMarker = TEXT('o');
 
 	/** WorldMap.txt marker for forest. A hatch, not the letter F. */
@@ -99,16 +97,16 @@ public:
 	static constexpr TCHAR DesertMarker = TEXT('^');
 
 	/**
-	 * One described cell. A line "! row,column = id" or "! row,column = Town Name"
-	 * is a location. Stronghold, LairEntrance, and LairExit use the same coordinates.
+	 * One described cell. "! row,column = Town Name" is a location.
+	 * Stronghold, LairEntrance, and LairExit use the same coordinates.
 	 * Row and column count from 1 at the top-left of the grid.
 	 */
 	static constexpr TCHAR LocationMarker = TEXT('!');
 
 	/**
-	 * Legacy Iglin tunnel mouths. A LairEntrance ! is the same X end, and a
-	 * LairExit ! is the same Y end. Letters and those lines use the mountain shelf.
-	 * They are not towns, locations, or the cave.
+	 * Interior Iglin tunnel ends. A LairEntrance ! is the X end, and a LairExit !
+	 * is the Y end. Those ! cells use the mountain shelf. The letters themselves
+	 * are not mouths, towns, or the cave on the world map.
 	 */
 	static constexpr TCHAR XMarker = TEXT('X');
 	static constexpr TCHAR YMarker = TEXT('Y');
@@ -122,15 +120,16 @@ public:
 	bool IsLoaded() const { return bIsLoaded; }
 
 	/**
-	 * Marker biome at map cell (clamped). The town marker and Z are Town; the desert marker is Desert; C, X, and Y are Mountain; digits and a named ! use the location key.
-	 * A ! with no coordinate line is Grassland. The river marker is River for the whole cell. SampleBiome paints only the channel.
+	 * Marker biome at map cell (clamped). The town marker is Town; the desert marker is Desert; M is Mountain.
+	 * A named town ! uses the Town biome. A stronghold or lair ! is Mountain.
+	 * A ! with no description is Grassland. The river marker is River for the whole cell. SampleBiome paints only the channel.
 	 */
 	ESolidBiome GetBiomeAtCell(int32 MapX, int32 MapY) const;
 
 	/** Marker character at a cell, or 0 when the map is not loaded. Digits stay digits. */
 	TCHAR GetMarkerAtCell(int32 MapX, int32 MapY) const;
 
-	/** Location id on this cell, or INDEX_NONE when the marker is not a digit. A pair on the row is one id. */
+	/** Location id on this cell, or INDEX_NONE when it is not a named town !. */
 	int32 GetLocationIdAtCell(int32 MapX, int32 MapY) const;
 
 	/** Numbered location under a world XY, or INDEX_NONE. Same rectangle as SampleBiome. */
@@ -152,7 +151,7 @@ public:
 	/** True when the point lies on a solved road strip. Does not change the biome by itself. */
 	bool IsOnRoad(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 
-	/** True when this cell is the town marker, Z, a location digit, or a ! named by a coordinate line. A road strip is not a town. */
+	/** True when this cell is the town marker, or a ! named as a town. A road strip is not a town. */
 	bool IsMarkedTown(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 
 	/** Display / material color from the key (or built-in defaults). */
@@ -162,8 +161,7 @@ public:
 
 	/**
 	 * World XY of the starting-town centroid, using the same world rectangle as SampleBiome.
-	 * Location 0 when the grid has any 0 cells; otherwise legacy Z cells.
-	 * Returns false if neither was found.
+	 * Location 0. Returns false when that town has no cells.
 	 */
 	bool GetStartTownWorldXY(FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 
@@ -194,19 +192,14 @@ public:
 
 protected:
 	bool ParseKeyLine(const FString& Line);
-	bool ParseLocationLine(const FString& Line);
 	bool WorldXYToCell(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, int32& OutMapX, int32& OutMapY) const;
 	void BuildRoads(const TArray<SolidRoad::FDefinition>& Definitions);
 	bool CellsToWorldXY(const TArray<FIntPoint>& Cells, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 	static ESolidBiome MarkerToBiome(TCHAR Marker);
-	static bool BiomeFromName(const FString& Name, ESolidBiome& OutBiome);
 	static FLinearColor ColorFromName(const FString& ColorName);
 	static bool IsGridMarker(TCHAR Marker);
 
-	/**
-	 * Location number under a digit. A pair on the same row, read east to west
-	 * (left to right in the file), is one two-digit id. A lone digit is itself.
-	 */
+	/** Location id of a named town ! on this cell, or INDEX_NONE. */
 	int32 ResolveLocationId(int32 MapX, int32 MapY) const;
 
 	UPROPERTY()
@@ -228,7 +221,7 @@ protected:
 	UPROPERTY()
 	bool bHasStartTown = false;
 
-	/** Map cells for the start: location 0, or legacy Z when no 0 cells exist. */
+	/** Map cells for location 0, the starting town. */
 	UPROPERTY()
 	TArray<FIntPoint> StartTownCells;
 

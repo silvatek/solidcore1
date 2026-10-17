@@ -82,39 +82,8 @@ ESolidBiome USolidWorldMap::MarkerToBiome(const TCHAR Marker)
 		return ESolidBiome::Grassland;
 	}
 
-	switch (FChar::ToUpper(Marker))
-	{
-	case TEXT('M'): return ESolidBiome::Mountain;
-	// Cave stronghold: same shelf and tint as the mountain it is cut into.
-	case TEXT('C'): return ESolidBiome::Mountain;
-	case TEXT('Z'): return ESolidBiome::Town;
-	// Tunnel mouths. Same shelf as the mountain they replace, so the cliff stays closed.
-	case TEXT('X'):
-	case TEXT('Y'):
-		return ESolidBiome::Mountain;
-	default:
-		// Numbered locations resolve through the location key in GetBiomeAtCell.
-		return FChar::IsDigit(Marker) ? ESolidBiome::Town : ESolidBiome::Grassland;
-	}
-}
-
-bool USolidWorldMap::BiomeFromName(const FString& Name, ESolidBiome& OutBiome)
-{
-	const FString Trimmed = Name.TrimStartAndEnd();
-	static const ESolidBiome AllBiomes[] = {
-		ESolidBiome::Grassland, ESolidBiome::Forest, ESolidBiome::Mountain, ESolidBiome::Town,
-		ESolidBiome::Desert, ESolidBiome::Swamp, ESolidBiome::Sea, ESolidBiome::River,
-		ESolidBiome::Road,
-	};
-	for (const ESolidBiome Biome : AllBiomes)
-	{
-		if (Trimmed.Equals(SolidTerrainTypes::BiomeToString(Biome), ESearchCase::IgnoreCase))
-		{
-			OutBiome = Biome;
-			return true;
-		}
-	}
-	return false;
+	// A named town, stronghold, or lair upgrades this in GetBiomeAtCell.
+	return FChar::ToUpper(Marker) == TEXT('M') ? ESolidBiome::Mountain : ESolidBiome::Grassland;
 }
 
 FLinearColor USolidWorldMap::DefaultColorForBiome(const ESolidBiome Biome)
@@ -175,7 +144,7 @@ FLinearColor USolidWorldMap::ColorFromName(const FString& ColorName)
 
 bool USolidWorldMap::ParseKeyLine(const FString& Line)
 {
-	// "~ = Sea (blue)" or "Z = Starting town (brown)"
+	// "~ = Sea (blue)" or "M = Mountain (dark grey)"
 	FString Trimmed = Line.TrimStartAndEnd();
 	if (Trimmed.Len() < 3 || Trimmed[1] != TEXT(' ') && Trimmed[1] != TEXT('='))
 	{
@@ -194,8 +163,9 @@ bool USolidWorldMap::ParseKeyLine(const FString& Line)
 		return false;
 	}
 
-	// X, Y, and ! have no colour of their own.
-	if (Marker == XMarker || Marker == YMarker || Marker == LocationMarker)
+	// Letters, digits, and ! are not biome keys. A leftover "C = Cave" line must not recolor grass.
+	if (Marker == XMarker || Marker == YMarker || Marker == LocationMarker
+		|| Marker == TEXT('C') || Marker == TEXT('Z') || FChar::IsDigit(Marker))
 	{
 		return true;
 	}
@@ -212,70 +182,6 @@ bool USolidWorldMap::ParseKeyLine(const FString& Line)
 
 	const ESolidBiome Biome = MarkerToBiome(Marker);
 	BiomeColors.Add(Biome, ColorName.IsEmpty() ? DefaultColorForBiome(Biome) : ColorFromName(ColorName));
-	return true;
-}
-
-bool USolidWorldMap::ParseLocationLine(const FString& Line)
-{
-	// "0 = Starting village, biome=Town" — the name comes from SolidTowns by this index.
-	const FString Trimmed = Line.TrimStartAndEnd();
-	int32 EqIndex = INDEX_NONE;
-	if (!Trimmed.FindChar(TEXT('='), EqIndex) || EqIndex < 1)
-	{
-		return false;
-	}
-
-	const FString Left = Trimmed.Left(EqIndex).TrimStartAndEnd();
-	if (Left.IsEmpty() || Left.Len() > 2)
-	{
-		return false;
-	}
-	for (const TCHAR Char : Left)
-	{
-		if (!FChar::IsDigit(Char))
-		{
-			return false;
-		}
-	}
-
-	const int32 Id = FCString::Atoi(*Left);
-	FSolidWorldLocation& Loc = Locations.FindOrAdd(Id);
-	Loc.Id = Id;
-	Loc.Biome = ESolidBiome::Town;
-
-	const FString Right = Trimmed.Mid(EqIndex + 1).TrimStartAndEnd();
-	TArray<FString> Parts;
-	Right.ParseIntoArray(Parts, TEXT(","), /*CullEmpty=*/true);
-	for (int32 PartIndex = 0; PartIndex < Parts.Num(); ++PartIndex)
-	{
-		const FString Part = Parts[PartIndex].TrimStartAndEnd();
-		FString Key;
-		FString Value;
-		if (Part.Split(TEXT("="), &Key, &Value))
-		{
-			Key = Key.TrimStartAndEnd();
-			Value = Value.TrimStartAndEnd();
-			if (Key.Equals(TEXT("biome"), ESearchCase::IgnoreCase))
-			{
-				ESolidBiome ParsedBiome = ESolidBiome::Town;
-				if (BiomeFromName(Value, ParsedBiome))
-				{
-					Loc.Biome = ParsedBiome;
-				}
-				else
-				{
-					UE_LOG(LogSolid, Warning,
-						TEXT("WorldMap: location %d has unknown biome '%s'; using Town."),
-						Id, *Value);
-					Loc.Biome = ESolidBiome::Town;
-				}
-			}
-		}
-		else if (PartIndex == 0)
-		{
-			Loc.Role = Part;
-		}
-	}
 	return true;
 }
 
@@ -302,7 +208,6 @@ namespace
 		enum class EKind : uint8
 		{
 			Skip,
-			Id,
 			Town,
 			Stronghold,
 			LairEntrance,
@@ -312,15 +217,14 @@ namespace
 		int32 MapX = INDEX_NONE;
 		int32 MapY = INDEX_NONE;
 		EKind Kind = EKind::Skip;
-		int32 Id = INDEX_NONE;
 		FString Identifier;
 	};
 
 	/**
-	 * "! 8,21 = 0" — row 8, column 21, counting from 1 at the top-left.
-	 * "! 8,21 = Town Iglin", "! 9,12 = Stronghold MeagreDungeon",
+	 * "! 8,21 = Town Iglin" — row 8, column 21, counting from 1 at the top-left.
+	 * "! 9,12 = Stronghold MeagreDungeon",
 	 * "! 10,11 = LairEntrance Iglin tunnels", "! 11,40 = LairExit Iglin tunnels".
-	 * Anything after # is a comment. A note after a numeric id is ignored.
+	 * Anything after # is a comment. A numeric right-hand side is ignored.
 	 * Returns false when the line is not that shape.
 	 * An out-of-range coordinate is that shape: MapX stays INDEX_NONE and the line is consumed.
 	 */
@@ -378,13 +282,10 @@ namespace
 
 		if (FChar::IsDigit(Right[0]))
 		{
-			int32 End = 0;
-			while (End < Right.Len() && FChar::IsDigit(Right[End]))
-			{
-				++End;
-			}
-			Out.Kind = FWorldMapBangRef::EKind::Id;
-			Out.Id = FCString::Atoi(*Right.Left(End));
+			UE_LOG(LogSolid, Warning,
+				TEXT("WorldMap: ! %d,%d uses a number; name the town, stronghold, or lair."),
+				Row, Column);
+			Out.Kind = FWorldMapBangRef::EKind::Skip;
 			return true;
 		}
 
@@ -511,7 +412,7 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 		{
 			BangRefs.Add(BangRef);
 		}
-		else if (!ParseLocationLine(RawLine))
+		else
 		{
 			ParseKeyLine(RawLine);
 		}
@@ -547,12 +448,6 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 		Mark.Cell = FIntPoint(Ref.MapX, Ref.MapY);
 		switch (Ref.Kind)
 		{
-		case FWorldMapBangRef::EKind::Id:
-			Mark.Kind = ESolidWorldBang::Town;
-			Mark.LocationId = Ref.Id;
-			Mark.Name = SolidTowns::NameFor(Ref.Id);
-			BangLocationIds[Index] = Ref.Id;
-			break;
 		case FWorldMapBangRef::EKind::Town:
 		{
 			const SolidTowns::FTownInfo* Town = SolidTowns::FindByName(Ref.Identifier);
@@ -608,44 +503,27 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 		BangMarks.Add(Index, Mark);
 	}
 
-	TArray<FIntPoint> LegacyStartCells;
-	bool bHasLocationZero = false;
 	for (int32 Row = 0; Row < MapHeight; ++Row)
 	{
 		for (int32 Col = 0; Col < MapWidth; ++Col)
 		{
 			const int32 Id = ResolveLocationId(Col, Row);
-			if (Id != INDEX_NONE)
+			if (Id == INDEX_NONE)
 			{
-				FSolidWorldLocation& Loc = Locations.FindOrAdd(Id);
-				if (Loc.Id == INDEX_NONE)
-				{
-					Loc.Id = Id;
-					Loc.Biome = ESolidBiome::Town;
-				}
-				Loc.Cells.Add(FIntPoint(Col, Row));
-				if (Id == 0)
-				{
-					bHasLocationZero = true;
-				}
+				continue;
 			}
-			else if (static_cast<TCHAR>(Markers[Row * MapWidth + Col]) == TEXT('Z'))
+			FSolidWorldLocation& Loc = Locations.FindOrAdd(Id);
+			if (Loc.Id == INDEX_NONE)
 			{
-				LegacyStartCells.Add(FIntPoint(Col, Row));
+				Loc.Id = Id;
+				Loc.Biome = ESolidBiome::Town;
+			}
+			Loc.Cells.Add(FIntPoint(Col, Row));
+			if (Id == 0)
+			{
+				StartTownCells.Add(FIntPoint(Col, Row));
 			}
 		}
-	}
-
-	if (bHasLocationZero)
-	{
-		if (const FSolidWorldLocation* Start = Locations.Find(0))
-		{
-			StartTownCells = Start->Cells;
-		}
-	}
-	else
-	{
-		StartTownCells = MoveTemp(LegacyStartCells);
 	}
 	bHasStartTown = StartTownCells.Num() > 0;
 
@@ -863,12 +741,14 @@ void USolidWorldMap::BuildRoads(const TArray<SolidRoad::FDefinition>& Definition
 		Route.Definition = Definition;
 		if (!SolidRoad::Solve(*this, Definition, Route.Cells))
 		{
-			const FString From = Definition.From.bCave
-				? FString(TEXT("C"))
-				: FString::FromInt(Definition.From.LocationId);
-			const FString To = Definition.To.bCave
-				? FString(TEXT("C"))
-				: FString::FromInt(Definition.To.LocationId);
+			const auto EndName = [](const SolidRoad::FEndpoint& End)
+			{
+				return End.bStronghold
+					? SolidStronghold::Label(End.Stronghold)
+					: SolidTowns::NameFor(End.LocationId);
+			};
+			const FString From = EndName(Definition.From);
+			const FString To = EndName(Definition.To);
 			UE_LOG(LogSolid, Warning, TEXT("WorldMap: no route for road %s -> %s."), *From, *To);
 		}
 		Roads.Add(Route);
@@ -965,7 +845,7 @@ bool USolidWorldMap::IsMarkedTown(
 	{
 		return GetLocationIdAtCell(MapX, MapY) != INDEX_NONE;
 	}
-	return Marker == TownMarker || Marker == TEXT('Z') || FChar::IsDigit(Marker);
+	return Marker == TownMarker;
 }
 
 ESolidBiome USolidWorldMap::SampleBiome(
@@ -1053,49 +933,12 @@ int32 USolidWorldMap::ResolveLocationId(const int32 MapX, const int32 MapY) cons
 		return INDEX_NONE;
 	}
 
-	const TCHAR Marker = static_cast<TCHAR>(Markers[MapY * MapWidth + MapX]);
-	if (Marker == LocationMarker)
-	{
-		const int32 Index = MapY * MapWidth + MapX;
-		return BangLocationIds.IsValidIndex(Index) ? BangLocationIds[Index] : INDEX_NONE;
-	}
-	if (!FChar::IsDigit(Marker))
+	if (static_cast<TCHAR>(Markers[MapY * MapWidth + MapX]) != LocationMarker)
 	{
 		return INDEX_NONE;
 	}
-
-	// Column 0 is east, so the digits toward the left of the file are to the east.
-	int32 DigitsToTheEast = 0;
-	for (int32 X = MapX - 1; X >= 0; --X)
-	{
-		const TCHAR East = static_cast<TCHAR>(Markers[MapY * MapWidth + X]);
-		if (!FChar::IsDigit(East))
-		{
-			break;
-		}
-		++DigitsToTheEast;
-	}
-
-	const auto Value = [](const TCHAR Char)
-	{
-		return static_cast<int32>(Char - TEXT('0'));
-	};
-
-	if ((DigitsToTheEast % 2) == 1)
-	{
-		const TCHAR Tens = static_cast<TCHAR>(Markers[MapY * MapWidth + (MapX - 1)]);
-		return Value(Tens) * 10 + Value(Marker);
-	}
-
-	if (MapX + 1 < MapWidth)
-	{
-		const TCHAR Ones = static_cast<TCHAR>(Markers[MapY * MapWidth + (MapX + 1)]);
-		if (FChar::IsDigit(Ones))
-		{
-			return Value(Marker) * 10 + Value(Ones);
-		}
-	}
-	return Value(Marker);
+	const int32 Index = MapY * MapWidth + MapX;
+	return BangLocationIds.IsValidIndex(Index) ? BangLocationIds[Index] : INDEX_NONE;
 }
 
 int32 USolidWorldMap::SampleLocationId(

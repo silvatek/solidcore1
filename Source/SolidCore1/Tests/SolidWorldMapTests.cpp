@@ -68,7 +68,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidWorldMapParseKeyAndSampleTest::RunTest(const FString& Parameters)
 {
-	// Synthetic map: grass, with one Z in the middle of row 0.
+	// Synthetic map: grass, with one named town in the middle of row 0.
 	FString Text;
 	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
 	{
@@ -78,7 +78,7 @@ bool FSolidWorldMapParseKeyAndSampleTest::RunTest(const FString& Parameters)
 		{
 			if (Row == 0 && Col == USolidWorldMap::MapWidth / 2)
 			{
-				Line.AppendChar(TEXT('Z'));
+				Line.AppendChar(USolidWorldMap::LocationMarker);
 			}
 			else if (Row == 10 && Col == 10)
 			{
@@ -96,12 +96,13 @@ bool FSolidWorldMapParseKeyAndSampleTest::RunTest(const FString& Parameters)
 	Text.AppendChar(USolidWorldMap::DesertMarker);
 	Text += TEXT(" = Desert (yellow)\n");
 	Text += TEXT("Z = Starting town (brown)\n");
+	Text += FString::Printf(TEXT("! 1,%d = Town Iglin\n"), USolidWorldMap::MapWidth / 2 + 1);
 
 	USolidWorldMap* Map = NewObject<USolidWorldMap>();
 	TestTrue(TEXT("LoadFromString"), Map->LoadFromString(Text));
-	TestEqual(TEXT("one Z cell"), Map->GetStartTownCellCount(), 1);
+	TestEqual(TEXT("one start cell"), Map->GetStartTownCellCount(), 1);
 	TestEqual(
-		TEXT("Z is Town"),
+		TEXT("the named town is Town"),
 		static_cast<uint8>(Map->GetBiomeAtCell(USolidWorldMap::MapWidth / 2, 0)),
 		static_cast<uint8>(ESolidBiome::Town));
 	TestEqual(
@@ -112,7 +113,7 @@ bool FSolidWorldMapParseKeyAndSampleTest::RunTest(const FString& Parameters)
 	const FVector2D WorldMin(-6400.f, -6400.f);
 	const FVector2D WorldMax(6400.f, 6400.f);
 
-	// Row 0 = north = max Y → Z at the middle column samples near top-center.
+	// Row 0 = north = max Y → the town at the middle column samples near top-center.
 	const ESolidBiome NorthCenter = Map->SampleBiome(0.f, 6300.f, WorldMin, WorldMax);
 	TestEqual(
 		TEXT("north-center samples Town"),
@@ -160,7 +161,7 @@ bool FSolidWorldMapTerrainOverlayTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(TownPoint.Biome),
 		static_cast<uint8>(ESolidBiome::Town));
 
-	// MakeSmallMap centers fog on a fixture player at the origin, not on the Z cell.
+	// MakeSmallMap centers fog on a fixture player at the origin, not on the start cell.
 	const FVector2D FogOrigin = Terrain->GetFogOriginXY();
 	TestTrue(TEXT("fixture fog origin is the player at world origin"),
 		FogOrigin.Equals(FVector2D::ZeroVector, 1.f));
@@ -379,7 +380,7 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Relion XY"), Map->GetLocationWorldXY(1, WorldMin, WorldMax, RelionXY));
 	TestFalse(TEXT("capital is not the start"), RelionXY.Equals(StartXY, 1.f));
 
-	// Digits are grid markers. Location 0 is the start even if a legacy Z is also present.
+	// A named ! is a town. A digit, Z, and an old key line are not.
 	FString Text;
 	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
 	{
@@ -389,7 +390,7 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 		{
 			if (Row == 2 && Col == 4)
 			{
-				Line.AppendChar(TEXT('0'));
+				Line.AppendChar(USolidWorldMap::LocationMarker);
 			}
 			else if (Row == 2 && Col == 8)
 			{
@@ -397,7 +398,11 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 			}
 			else if (Row == 4 && Col == 6)
 			{
-				Line.AppendChar(TEXT('1'));
+				Line.AppendChar(USolidWorldMap::LocationMarker);
+			}
+			else if (Row == 6 && Col == 6)
+			{
+				Line.AppendChar(TEXT('0'));
 			}
 			else
 			{
@@ -408,37 +413,49 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 		Text += TEXT("\n");
 	}
 	Text += TEXT("G = Grassland (light green)\n");
+	Text += TEXT("! 3,5 = Town (Iglin)\n");
+	Text += TEXT("! 5,7 = Town (Relion)\n");
 	Text += TEXT("0 = Starting village, biome=Town, name=Ignored\n");
 	Text += TEXT("1 = Watch, biome=Forest, name=Pine\n");
 	Text += TEXT("Z = Starting town (brown)\n");
 
 	USolidWorldMap* Synthetic = NewObject<USolidWorldMap>();
-	TestTrue(TEXT("synthetic loads digits"), Synthetic->LoadFromString(Text));
-	TestEqual(TEXT("start ignores Z when 0 is present"), Synthetic->GetStartTownCellCount(), 1);
+	TestTrue(TEXT("synthetic loads named towns"), Synthetic->LoadFromString(Text));
+	TestEqual(TEXT("start is the named Iglin cell"), Synthetic->GetStartTownCellCount(), 1);
 	TestEqual(
-		TEXT("0 cell is Town"),
+		TEXT("Iglin cell is Town"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(4, 2)),
 		static_cast<uint8>(ESolidBiome::Town));
 	TestEqual(
-		TEXT("Z is still Town"),
+		TEXT("Z is grassland"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(8, 2)),
-		static_cast<uint8>(ESolidBiome::Town));
+		static_cast<uint8>(ESolidBiome::Grassland));
+	TestEqual(TEXT("Z is not a location"), Synthetic->GetLocationIdAtCell(8, 2), INDEX_NONE);
 	TestEqual(
-		TEXT("1 cell uses biome=Forest"),
+		TEXT("Relion stays Town"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(6, 4)),
-		static_cast<uint8>(ESolidBiome::Forest));
+		static_cast<uint8>(ESolidBiome::Town));
+	TestEqual(TEXT("a digit is not a location"), Synthetic->GetLocationIdAtCell(6, 6), INDEX_NONE);
+	TestEqual(
+		TEXT("a digit is grassland"),
+		static_cast<uint8>(Synthetic->GetBiomeAtCell(6, 6)),
+		static_cast<uint8>(ESolidBiome::Grassland));
 
 	FSolidWorldLocation IndexOne;
 	TestTrue(TEXT("location 1"), Synthetic->FindLocation(1, IndexOne));
-	TestEqual(TEXT("name comes from the town table, not name="), IndexOne.Name, FString(TEXT("Relion")));
-	TestEqual(TEXT("role still comes from the file"), IndexOne.Role, FString(TEXT("Watch")));
+	TestEqual(TEXT("name comes from the town table"), IndexOne.Name, FString(TEXT("Relion")));
+	TestTrue(TEXT("role is empty"), IndexOne.Role.IsEmpty());
 	TestEqual(
-		TEXT("biome still comes from the file"),
+		TEXT("biome stays Town"),
 		static_cast<uint8>(IndexOne.Biome),
-		static_cast<uint8>(ESolidBiome::Forest));
+		static_cast<uint8>(ESolidBiome::Town));
 	FSolidWorldLocation IndexZero;
 	TestTrue(TEXT("location 0"), Synthetic->FindLocation(0, IndexZero));
-	TestEqual(TEXT("index 0 ignores name=Ignored"), IndexZero.Name, FString(TEXT("Iglin")));
+	TestEqual(TEXT("index 0 is Iglin"), IndexZero.Name, FString(TEXT("Iglin")));
+	TestTrue(TEXT("Iglin role is empty"), IndexZero.Role.IsEmpty());
+
+	const FLinearColor Grass = Synthetic->GetBiomeColor(ESolidBiome::Grassland);
+	TestTrue(TEXT("an old key line leaves grass green"), Grass.G > Grass.R && Grass.G > Grass.B);
 
 	FVector2D SyntheticStart = FVector2D::ZeroVector;
 	const FVector2D SynMin(0.f, 0.f);
@@ -447,9 +464,9 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	// Column 0 is east. Cell (4, 2) is one column and one row in from that corner.
 	const float CellW = (SynMax.X - SynMin.X) / static_cast<float>(USolidWorldMap::MapWidth);
 	const float CellH = (SynMax.Y - SynMin.Y) / static_cast<float>(USolidWorldMap::MapHeight);
-	TestTrue(TEXT("start is the 0 cell, not Z"),
+	TestTrue(TEXT("start is the Iglin cell, not Z"),
 		FMath::IsNearlyEqual(SyntheticStart.X, SynMax.X - 4.5f * CellW, 1.f));
-	TestTrue(TEXT("start row is the 0 cell"),
+	TestTrue(TEXT("start row is the Iglin cell"),
 		FMath::IsNearlyEqual(SyntheticStart.Y, SynMax.Y - 2.5f * CellH, 1.f));
 	return true;
 }
@@ -540,8 +557,6 @@ bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 	Put(4, 4, TEXT("05"));
 	Put(8, 6, TEXT("0"));
 	Put(4, 8, TEXT("02"));
-	Put(4, 10, TEXT("1"));
-	Put(4, 11, TEXT("3"));
 	Put(4, 14, TEXT("123"));
 	Put(4, 16, TEXT("55"));
 	Put(0, 20, TEXT("08"));
@@ -552,87 +567,33 @@ bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 		Text += Row;
 		Text += TEXT("\n");
 	}
-	Text += TEXT("G = Grassland (light green)\n");
+	Text += TEXT(". = Grassland (light green)\n");
 	Text += TEXT("15 = Outpost, biome=Forest\n");
+	Text += TEXT("0 = Starting village, biome=Town\n");
 
 	USolidWorldMap* Map = NewObject<USolidWorldMap>();
-	TestTrue(TEXT("synthetic pair map loads"), Map->LoadFromString(Text));
+	TestTrue(TEXT("synthetic digit map loads"), Map->LoadFromString(Text));
 
-	TestEqual(TEXT("eastern digit of 05"), Map->GetMarkerAtCell(4, 4), TEXT('0'));
-	TestEqual(TEXT("western digit of 05"), Map->GetMarkerAtCell(5, 4), TEXT('5'));
-	TestEqual(TEXT("05 east cell is location 5"), Map->GetLocationIdAtCell(4, 4), 5);
-	TestEqual(TEXT("05 west cell is location 5"), Map->GetLocationIdAtCell(5, 4), 5);
-	TestEqual(
-		TEXT("05 east cell is Town"),
-		static_cast<uint8>(Map->GetBiomeAtCell(4, 4)),
-		static_cast<uint8>(ESolidBiome::Town));
-	TestEqual(
-		TEXT("05 west cell is Town"),
-		static_cast<uint8>(Map->GetBiomeAtCell(5, 4)),
-		static_cast<uint8>(ESolidBiome::Town));
-
-	const FVector2D WorldMin(-51200.f, -51200.f);
-	const FVector2D WorldMax(51200.f, 51200.f);
-	const float CellEastCm = (WorldMax.X - WorldMin.X) / static_cast<float>(USolidWorldMap::MapWidth);
-	FVector2D PairEast = FVector2D::ZeroVector;
-	FVector2D PairWest = FVector2D::ZeroVector;
-	TestTrue(TEXT("05 east cell projects"), Map->CellToWorldXY(FIntPoint(4, 4), WorldMin, WorldMax, PairEast));
-	TestTrue(TEXT("05 west cell projects"), Map->CellToWorldXY(FIntPoint(5, 4), WorldMin, WorldMax, PairWest));
-	TestEqual(TEXT("05 east cell samples as 5"), Map->SampleLocationId(PairEast.X, PairEast.Y, WorldMin, WorldMax), 5);
-	TestEqual(TEXT("05 west cell samples as 5"), Map->SampleLocationId(PairWest.X, PairWest.Y, WorldMin, WorldMax), 5);
-	TestTrue(TEXT("05 is still two cells of ground"),
-		FMath::IsNearlyEqual(PairEast.X - PairWest.X, CellEastCm, 1.f));
-
-	FSolidWorldLocation Dragongate;
-	TestTrue(TEXT("location 5"), Map->FindLocation(5, Dragongate));
-	TestEqual(TEXT("05 is the only location 5"), Dragongate.Cells.Num(), 2);
-	TestEqual(TEXT("05 is Dragongate"), Dragongate.Name, FString(TEXT("Dragongate")));
-
-	TestEqual(TEXT("one start cell"), Map->GetStartTownCellCount(), 1);
-	TestEqual(TEXT("lone 0 is Iglin"), Map->GetLocationIdAtCell(8, 6), 0);
-	FSolidWorldLocation Iglin;
-	TestTrue(TEXT("location 0"), Map->FindLocation(0, Iglin));
-	TestEqual(TEXT("Iglin is the lone 0"), Iglin.Cells.Num(), 1);
-	if (Iglin.Cells.Num() == 1)
+	const int32 DigitCells[][2] = {
+		{ 4, 4 }, { 5, 4 }, { 8, 6 }, { 4, 8 }, { 5, 8 },
+		{ 4, 14 }, { 5, 14 }, { 6, 14 }, { 4, 16 }, { 5, 16 },
+		{ 0, 20 }, { 1, 20 },
+	};
+	for (const auto& Cell : DigitCells)
 	{
-		TestEqual(TEXT("Iglin column"), Iglin.Cells[0].X, 8);
-		TestEqual(TEXT("Iglin row"), Iglin.Cells[0].Y, 6);
+		TestEqual(TEXT("a digit is not a location"), Map->GetLocationIdAtCell(Cell[0], Cell[1]), INDEX_NONE);
+		TestEqual(
+			TEXT("a digit is grassland"),
+			static_cast<uint8>(Map->GetBiomeAtCell(Cell[0], Cell[1])),
+			static_cast<uint8>(ESolidBiome::Grassland));
 	}
-
-	TestEqual(TEXT("02 east cell is location 2"), Map->GetLocationIdAtCell(4, 8), 2);
-	TestEqual(TEXT("02 west cell is location 2"), Map->GetLocationIdAtCell(5, 8), 2);
-	FSolidWorldLocation Kanfold;
-	TestTrue(TEXT("location 2"), Map->FindLocation(2, Kanfold));
-	TestEqual(TEXT("02 is two Kanfold cells"), Kanfold.Cells.Num(), 2);
-
-	TestEqual(TEXT("a digit above another stays itself"), Map->GetLocationIdAtCell(4, 10), 1);
-	TestEqual(TEXT("a digit below another stays itself"), Map->GetLocationIdAtCell(4, 11), 3);
-	FSolidWorldLocation Thirteen;
-	TestFalse(TEXT("vertical digits are not one number"), Map->FindLocation(13, Thirteen));
-
-	TestEqual(TEXT("123 starts as 12"), Map->GetLocationIdAtCell(4, 14), 12);
-	TestEqual(TEXT("123 continues as 12"), Map->GetLocationIdAtCell(5, 14), 12);
-	TestEqual(TEXT("123 leaves the last digit"), Map->GetLocationIdAtCell(6, 14), 3);
-
-	TestEqual(TEXT("55 east cell is location 55"), Map->GetLocationIdAtCell(4, 16), 55);
-	TestEqual(TEXT("55 west cell is location 55"), Map->GetLocationIdAtCell(5, 16), 55);
-	FSolidWorldLocation FiftyFive;
-	TestTrue(TEXT("location 55"), Map->FindLocation(55, FiftyFive));
-	TestEqual(TEXT("55 is two cells"), FiftyFive.Cells.Num(), 2);
-	TestTrue(TEXT("location 55 has no town name"), FiftyFive.Name.IsEmpty());
-
-	TestEqual(TEXT("east-edge pair is location 8"), Map->GetLocationIdAtCell(0, 20), 8);
-	TestEqual(TEXT("east-edge pair shares location 8"), Map->GetLocationIdAtCell(1, 20), 8);
-
+	TestFalse(TEXT("digits are not the start"), Map->HasStartTown());
 	FSolidWorldLocation Outpost;
-	TestTrue(TEXT("a two-digit key line is a location"), Map->FindLocation(15, Outpost));
-	TestEqual(TEXT("two-digit key role"), Outpost.Role, FString(TEXT("Outpost")));
-	TestEqual(
-		TEXT("two-digit key biome"),
-		static_cast<uint8>(Outpost.Biome),
-		static_cast<uint8>(ESolidBiome::Forest));
-	TestEqual(TEXT("key line without cells has none"), Outpost.Cells.Num(), 0);
-	TestTrue(TEXT("unlisted two-digit id has no name"), Outpost.Name.IsEmpty());
+	TestFalse(TEXT("a numbered key line is not a location"), Map->FindLocation(15, Outpost));
+	FSolidWorldLocation IglinKey;
+	TestFalse(TEXT("a location key line is not a town"), Map->FindLocation(0, IglinKey));
+	const FLinearColor Grass = Map->GetBiomeColor(ESolidBiome::Grassland);
+	TestTrue(TEXT("an old key line leaves grass green"), Grass.G > Grass.R && Grass.G > Grass.B);
 
 	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
 	TestTrue(TEXT("shipped map loads"), Shipped->LoadDefault());
@@ -1005,7 +966,7 @@ bool FSolidWorldMapDesertMarkerTest::RunTest(const FString& Parameters)
 				++Mountains;
 			}
 			FSolidStronghold NamedCave;
-			if (Marker == TEXT('C') || Shipped->StrongholdAtCell(Col, Row, NamedCave))
+			if (Shipped->StrongholdAtCell(Col, Row, NamedCave))
 			{
 				++Caves;
 			}
@@ -1037,7 +998,6 @@ bool FSolidWorldMapXYMarkerTest::RunTest(const FString& Parameters)
 	const int32 XCol = 4;
 	const int32 YCol = 6;
 	const int32 DigitCol = 8;
-	const int32 PairCol = 10;
 	const int32 MarkerRow = 3;
 
 	FString Text;
@@ -1051,27 +1011,11 @@ bool FSolidWorldMapXYMarkerTest::RunTest(const FString& Parameters)
 			{
 				Line.AppendChar(TEXT('x'));
 			}
-			else if (Row == MarkerRow && Col == XCol + 1)
-			{
-				Line.AppendChar(TEXT('5'));
-			}
 			else if (Row == MarkerRow && Col == YCol)
 			{
 				Line.AppendChar(USolidWorldMap::YMarker);
 			}
 			else if (Row == MarkerRow && Col == DigitCol)
-			{
-				Line.AppendChar(TEXT('5'));
-			}
-			else if (Row == MarkerRow && Col == DigitCol + 1)
-			{
-				Line.AppendChar(USolidWorldMap::XMarker);
-			}
-			else if (Row == MarkerRow && Col == PairCol)
-			{
-				Line.AppendChar(TEXT('0'));
-			}
-			else if (Row == MarkerRow && Col == PairCol + 1)
 			{
 				Line.AppendChar(TEXT('5'));
 			}
@@ -1091,16 +1035,17 @@ bool FSolidWorldMapXYMarkerTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("a map with X and Y loads"), Map->LoadFromString(Text));
 	TestEqual(TEXT("a lower-case x is kept as X"), Map->GetMarkerAtCell(XCol, MarkerRow), USolidWorldMap::XMarker);
 	TestEqual(TEXT("Y is kept"), Map->GetMarkerAtCell(YCol, MarkerRow), USolidWorldMap::YMarker);
-	const ESolidBiome XBiome = Map->GetBiomeAtCell(XCol, MarkerRow);
-	const ESolidBiome YBiome = Map->GetBiomeAtCell(YCol, MarkerRow);
-	TestTrue(
-		TEXT("X is grass or mountain"),
-		XBiome == ESolidBiome::Grassland || XBiome == ESolidBiome::Mountain);
-	TestTrue(
-		TEXT("Y is grass or mountain"),
-		YBiome == ESolidBiome::Grassland || YBiome == ESolidBiome::Mountain);
+	TestEqual(
+		TEXT("X is grassland"),
+		static_cast<uint8>(Map->GetBiomeAtCell(XCol, MarkerRow)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+	TestEqual(
+		TEXT("Y is grassland"),
+		static_cast<uint8>(Map->GetBiomeAtCell(YCol, MarkerRow)),
+		static_cast<uint8>(ESolidBiome::Grassland));
 	TestEqual(TEXT("X is not a location"), Map->GetLocationIdAtCell(XCol, MarkerRow), INDEX_NONE);
 	TestEqual(TEXT("Y is not a location"), Map->GetLocationIdAtCell(YCol, MarkerRow), INDEX_NONE);
+	TestEqual(TEXT("a digit is not a location"), Map->GetLocationIdAtCell(DigitCol, MarkerRow), INDEX_NONE);
 
 	const FVector2D WorldMin(-6400.f, -6400.f);
 	const FVector2D WorldMax(6400.f, 6400.f);
@@ -1111,18 +1056,16 @@ bool FSolidWorldMapXYMarkerTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("X is not a town"), Map->IsMarkedTown(XWorld.X, XWorld.Y, WorldMin, WorldMax));
 	TestFalse(TEXT("Y is not a town"), Map->IsMarkedTown(YWorld.X, YWorld.Y, WorldMin, WorldMax));
 
-	TestEqual(TEXT("a digit after X stays that digit"), Map->GetLocationIdAtCell(XCol + 1, MarkerRow), 5);
-	TestEqual(TEXT("a digit before X stays that digit"), Map->GetLocationIdAtCell(DigitCol, MarkerRow), 5);
-	TestEqual(TEXT("a digit pair still joins"), Map->GetLocationIdAtCell(PairCol, MarkerRow), 5);
-	TestEqual(TEXT("the other digit of the pair joins"), Map->GetLocationIdAtCell(PairCol + 1, MarkerRow), 5);
-
 	const FLinearColor Grass = Map->GetBiomeColor(ESolidBiome::Grassland);
 	TestTrue(TEXT("the X key leaves grass green"), Grass.G > Grass.R && Grass.G > Grass.B);
 	TestFalse(TEXT("the map still has no start from X or Y"), Map->HasStartTown());
 
 	FSolidStronghold Stronghold;
-	TestFalse(TEXT("X is not a stronghold"), SolidStronghold::AttributesForMarker(USolidWorldMap::XMarker, Stronghold));
-	TestFalse(TEXT("Y is not a stronghold"), SolidStronghold::AttributesForMarker(USolidWorldMap::YMarker, Stronghold));
+	TestFalse(TEXT("X is not a stronghold"), Map->StrongholdAtCell(XCol, MarkerRow, Stronghold));
+	TestFalse(TEXT("Y is not a stronghold"), Map->StrongholdAtCell(YCol, MarkerRow, Stronghold));
+
+	TArray<SolidLair::FEntrance> Mouths;
+	TestEqual(TEXT("letters are not tunnel mouths"), SolidLair::CollectEntrances(Map, WorldMin, WorldMax, Mouths), 0);
 	return true;
 }
 
@@ -1168,20 +1111,19 @@ bool FSolidWorldMapXYMountainTest::RunTest(const FString& Parameters)
 	Text += TEXT("Y = Later (blue)\n");
 
 	USolidWorldMap* Map = NewObject<USolidWorldMap>();
-	TestTrue(TEXT("a map with tunnel mouths loads"), Map->LoadFromString(Text));
+	TestTrue(TEXT("a map with tunnel letters loads"), Map->LoadFromString(Text));
 	TestEqual(
-		TEXT("X uses the mountain shelf"),
+		TEXT("X is grassland"),
 		static_cast<uint8>(Map->GetBiomeAtCell(XCol, MarkerRow)),
-		static_cast<uint8>(ESolidBiome::Mountain));
+		static_cast<uint8>(ESolidBiome::Grassland));
 	TestEqual(
-		TEXT("Y uses the mountain shelf"),
+		TEXT("Y is grassland"),
 		static_cast<uint8>(Map->GetBiomeAtCell(YCol, MarkerRow)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+	TestEqual(
+		TEXT("M stays mountain"),
+		static_cast<uint8>(Map->GetBiomeAtCell(MountainCol, MarkerRow)),
 		static_cast<uint8>(ESolidBiome::Mountain));
-	TestTrue(
-		TEXT("X keeps the mountain height"),
-		FMath::IsNearlyEqual(
-			SolidTerrainTypes::BiomeHeightOffsetCm(Map->GetBiomeAtCell(XCol, MarkerRow)),
-			SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Mountain)));
 	const FLinearColor Mountain = Map->GetBiomeColor(ESolidBiome::Mountain);
 	TestTrue(TEXT("the X key leaves the mountain yellow"), Mountain.R > 0.5f && Mountain.G > 0.5f && Mountain.B < 0.5f);
 
@@ -1191,7 +1133,6 @@ bool FSolidWorldMapXYMountainTest::RunTest(const FString& Parameters)
 	{
 		return true;
 	}
-	int32 LetterMouths = 0;
 	int32 NotMountain = 0;
 	int32 LairEntrances = 0;
 	int32 LairExits = 0;
@@ -1199,27 +1140,22 @@ bool FSolidWorldMapXYMountainTest::RunTest(const FString& Parameters)
 	{
 		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
 		{
-			const TCHAR Marker = Shipped->GetMarkerAtCell(Col, Row);
 			FSolidWorldBang Bang;
-			const bool bBang = Shipped->FindBang(Col, Row, Bang);
-			const bool bLetter = Marker == USolidWorldMap::XMarker || Marker == USolidWorldMap::YMarker;
-			const bool bLair = bBang
-				&& (Bang.Kind == ESolidWorldBang::LairEntrance || Bang.Kind == ESolidWorldBang::LairExit);
-			if (!bLetter && !bLair)
+			if (!Shipped->FindBang(Col, Row, Bang))
 			{
 				continue;
 			}
-			if (bLetter)
-			{
-				++LetterMouths;
-			}
-			if (bBang && Bang.Kind == ESolidWorldBang::LairEntrance)
+			if (Bang.Kind == ESolidWorldBang::LairEntrance)
 			{
 				++LairEntrances;
 			}
-			if (bBang && Bang.Kind == ESolidWorldBang::LairExit)
+			else if (Bang.Kind == ESolidWorldBang::LairExit)
 			{
 				++LairExits;
+			}
+			else
+			{
+				continue;
 			}
 			if (Shipped->GetBiomeAtCell(Col, Row) != ESolidBiome::Mountain)
 			{
@@ -1227,8 +1163,8 @@ bool FSolidWorldMapXYMountainTest::RunTest(const FString& Parameters)
 			}
 		}
 	}
-	TestTrue(TEXT("the shipped map has a lair entrance"), LairEntrances > 0 || LetterMouths > 0);
-	TestTrue(TEXT("the shipped map has a lair exit"), LairExits > 0 || LetterMouths > 0);
+	TestTrue(TEXT("the shipped map has a lair entrance"), LairEntrances > 0);
+	TestTrue(TEXT("the shipped map has a lair exit"), LairExits > 0);
 	TestEqual(TEXT("shipped tunnel mouths are mountain"), NotMountain, 0);
 	return true;
 }
@@ -1305,14 +1241,14 @@ bool FSolidWorldMapBangLocationTest::RunTest(const FString& Parameters)
 
 	Text += TEXT(". = Grassland (light green)\n");
 	Text += TEXT("! = Later (red)\n");
-	Text += TEXT("! 1,1 = 0 (top-left is 1,1)\n");
-	Text += TEXT("! 1,1 = 11\n");
-	Text += TEXT("! 3, 4 = 5\n");
-	Text += TEXT("! 3,5=5\n");
-	Text += TEXT("! 1,2 = 9\n");
-	Text += TEXT("! 0,1 = 3\n");
-	Text += FString::Printf(TEXT("! 1,%d = 4\n"), USolidWorldMap::MapWidth + 1);
-	Text += FString::Printf(TEXT("! %d,1 = 6\n"), USolidWorldMap::MapHeight + 1);
+	Text += TEXT("! 1,1 = Town (Iglin)\n");
+	Text += TEXT("! 1,1 = Town (Kanfold)\n");
+	Text += TEXT("! 3, 4 = Town Dragongate\n");
+	Text += TEXT("! 3,5=Town Dragongate\n");
+	Text += TEXT("! 1,2 = Town Visolar\n");
+	Text += TEXT("! 0,1 = Town Kanfold\n");
+	Text += FString::Printf(TEXT("! 1,%d = Town Jethan\n"), USolidWorldMap::MapWidth + 1);
+	Text += FString::Printf(TEXT("! %d,1 = Town Rathen\n"), USolidWorldMap::MapHeight + 1);
 	Text += FString::Printf(TEXT("! %d,%d = 8\n"), SplitRow + 1, SplitCol + 2);
 	Text += TEXT("0 = Starting village, biome=Town\n");
 
@@ -1329,7 +1265,7 @@ bool FSolidWorldMapBangLocationTest::RunTest(const FString& Parameters)
 	FSolidWorldLocation Iglin;
 	TestTrue(TEXT("location 0"), Map->FindLocation(0, Iglin));
 	TestEqual(TEXT("Iglin name"), Iglin.Name, FString(TEXT("Iglin")));
-	TestEqual(TEXT("Iglin role"), Iglin.Role, FString(TEXT("Starting village")));
+	TestTrue(TEXT("Iglin role is empty"), Iglin.Role.IsEmpty());
 	TestEqual(TEXT("Iglin is one cell"), Iglin.Cells.Num(), 1);
 	TestEqual(
 		TEXT("a named ! is Town"),
@@ -1337,7 +1273,7 @@ bool FSolidWorldMapBangLocationTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(ESolidBiome::Town));
 
 	FSolidWorldLocation Replaced;
-	TestFalse(TEXT("a second line does not replace location 0"), Map->FindLocation(11, Replaced));
+	TestFalse(TEXT("a second line does not replace Iglin"), Map->FindLocation(SolidTowns::Kanfold, Replaced));
 
 	FSolidWorldLocation Gate;
 	TestTrue(TEXT("location 5"), Map->FindLocation(5, Gate));
@@ -1356,19 +1292,19 @@ bool FSolidWorldMapBangLocationTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Map->GetBiomeAtCell(BareCol, BareRow)),
 		static_cast<uint8>(ESolidBiome::Grassland));
 
-	TestEqual(TEXT("a digit stays itself"), Map->GetLocationIdAtCell(DigitCol, DigitRow), 7);
-	TestEqual(TEXT("a digit pair still joins"), Map->GetLocationIdAtCell(PairCol, PairRow), 23);
-	TestEqual(TEXT("the other digit of the pair joins"), Map->GetLocationIdAtCell(PairCol + 1, PairRow), 23);
-	TestEqual(TEXT("a digit before ! stays itself"), Map->GetLocationIdAtCell(SplitCol, SplitRow), 1);
-	TestEqual(TEXT("! between digits is its own location"), Map->GetLocationIdAtCell(SplitCol + 1, SplitRow), 8);
-	TestEqual(TEXT("a digit after ! stays itself"), Map->GetLocationIdAtCell(SplitCol + 2, SplitRow), 2);
+	TestEqual(TEXT("a digit is not a location"), Map->GetLocationIdAtCell(DigitCol, DigitRow), INDEX_NONE);
+	TestEqual(TEXT("a digit pair is not a location"), Map->GetLocationIdAtCell(PairCol, PairRow), INDEX_NONE);
+	TestEqual(TEXT("the other digit is not a location"), Map->GetLocationIdAtCell(PairCol + 1, PairRow), INDEX_NONE);
+	TestEqual(TEXT("a digit before ! is not a location"), Map->GetLocationIdAtCell(SplitCol, SplitRow), INDEX_NONE);
+	TestEqual(TEXT("a numeric ! line is ignored"), Map->GetLocationIdAtCell(SplitCol + 1, SplitRow), INDEX_NONE);
+	TestEqual(TEXT("a digit after ! is not a location"), Map->GetLocationIdAtCell(SplitCol + 2, SplitRow), INDEX_NONE);
 
 	FSolidWorldLocation Missed;
-	TestFalse(TEXT("a line on grass is not a location"), Map->FindLocation(9, Missed));
+	TestFalse(TEXT("a line on grass is not a location"), Map->FindLocation(SolidTowns::Visolar, Missed));
 	TestEqual(TEXT("that grass cell stays grass"), Map->GetMarkerAtCell(1, 0), USolidWorldMap::GrassMarker);
-	TestFalse(TEXT("row 0 is ignored"), Map->FindLocation(3, Missed));
-	TestFalse(TEXT("a column past the grid is ignored"), Map->FindLocation(4, Missed));
-	TestFalse(TEXT("a row past the grid is ignored"), Map->FindLocation(6, Missed));
+	TestFalse(TEXT("row 0 is ignored"), Map->FindLocation(SolidTowns::Kanfold, Missed));
+	TestFalse(TEXT("a column past the grid is ignored"), Map->FindLocation(SolidTowns::Jethan, Missed));
+	TestFalse(TEXT("a row past the grid is ignored"), Map->FindLocation(SolidTowns::Rathen, Missed));
 
 	const FLinearColor Grass = Map->GetBiomeColor(ESolidBiome::Grassland);
 	TestTrue(TEXT("the ! key leaves grass green"), Grass.G > Grass.R && Grass.G > Grass.B);
@@ -1436,7 +1372,7 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 		Text += TEXT("\n");
 	}
 	Text += TEXT(". = Grassland (light green)\n");
-	Text += TEXT("! 1,1 = 0 # start\n");
+	Text += TEXT("! 1,1 = Town (Iglin) # start\n");
 	Text += TEXT("! 2,2 = Town (Relion)\n");
 	Text += TEXT("! 2,3 = Town Nowhere\n");
 	Text += TEXT("! 2,4 = Village Iglin\n");
@@ -1451,11 +1387,11 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("described map loads"), Map->LoadFromString(Text));
 
 	FSolidWorldBang Iglin;
-	TestTrue(TEXT("numeric ! is a town"), Map->FindBang(IglinCol, IglinRow, Iglin));
-	TestEqual(TEXT("numeric kind"), static_cast<uint8>(Iglin.Kind), static_cast<uint8>(ESolidWorldBang::Town));
-	TestEqual(TEXT("numeric id"), Iglin.LocationId, 0);
-	TestEqual(TEXT("numeric name"), Iglin.Name, FString(TEXT("Iglin")));
-	TestEqual(TEXT("numeric cell id"), Map->GetLocationIdAtCell(IglinCol, IglinRow), 0);
+	TestTrue(TEXT("named ! is a town"), Map->FindBang(IglinCol, IglinRow, Iglin));
+	TestEqual(TEXT("town kind"), static_cast<uint8>(Iglin.Kind), static_cast<uint8>(ESolidWorldBang::Town));
+	TestEqual(TEXT("town id"), Iglin.LocationId, 0);
+	TestEqual(TEXT("town name"), Iglin.Name, FString(TEXT("Iglin")));
+	TestEqual(TEXT("town cell id"), Map->GetLocationIdAtCell(IglinCol, IglinRow), 0);
 
 	FSolidWorldBang Relion;
 	TestTrue(TEXT("town name is a town"), Map->FindBang(RelionCol, RelionRow, Relion));

@@ -31,9 +31,7 @@ namespace SolidRoad
 
 	struct FEndpoint
 	{
-		/** True when the end is the letter C. */
-		bool bCave = false;
-		/** Town location id. INDEX_NONE for a cave letter or a stronghold name. */
+		/** Town location id. INDEX_NONE for a stronghold name. */
 		int32 LocationId = INDEX_NONE;
 		/** True when the end is a stronghold name, such as MeagreDungeon. */
 		bool bStronghold = false;
@@ -153,7 +151,7 @@ namespace SolidRoad
 
 	/**
 	 * "Road: Iglin -> Relion, track" or "Road: MeagreDungeon -> Iglin, trail".
-	 * An end is a location id, the letter C, a town name, or a stronghold name.
+	 * An end is a town name or a stronghold name.
 	 * Brackets around a name are optional. False when the line is not a road,
 	 * or an end is not one of those.
 	 */

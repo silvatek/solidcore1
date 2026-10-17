@@ -135,7 +135,7 @@ bool FSolidTownSignSkipsEmptyNameTest::RunTest(const FString& Parameters)
 		{
 			if (Row == 1 && Col == 2)
 			{
-				Line.AppendChar(TEXT('0'));
+				Line.AppendChar(USolidWorldMap::LocationMarker);
 			}
 			else if (Row == 3 && Col == 5)
 			{
@@ -143,7 +143,7 @@ bool FSolidTownSignSkipsEmptyNameTest::RunTest(const FString& Parameters)
 			}
 			else if ((Row == 3 && Col == 9) || (Row == 8 && Col == 9))
 			{
-				Line.AppendChar(TEXT('2'));
+				Line.AppendChar(USolidWorldMap::LocationMarker);
 			}
 			else
 			{
@@ -153,8 +153,9 @@ bool FSolidTownSignSkipsEmptyNameTest::RunTest(const FString& Parameters)
 		Text += Line;
 		Text += TEXT("\n");
 	}
-	Text += TEXT("0 = Starting village, biome=Town\n");
-	Text += TEXT("2 = Island city, biome=Town\n");
+	Text += TEXT("! 2,3 = Town Iglin\n");
+	Text += TEXT("! 4,10 = Town Kanfold\n");
+	Text += TEXT("! 9,10 = Town Kanfold\n");
 
 	USolidWorldMap* WorldMap = NewObject<USolidWorldMap>();
 	TestTrue(TEXT("synthetic loads"), WorldMap->LoadFromString(Text));
@@ -309,11 +310,12 @@ bool FSolidTownSignWallgateTest::RunTest(const FString& Parameters)
 		Line.Reserve(USolidWorldMap::MapWidth);
 		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
 		{
-			Line.AppendChar((Row == 9 && Col == 16) ? TEXT('5') : USolidWorldMap::GrassMarker);
+			Line.AppendChar((Row == 9 && Col == 16) ? USolidWorldMap::LocationMarker : USolidWorldMap::GrassMarker);
 		}
 		Text += Line;
 		Text += TEXT("\n");
 	}
+	Text += TEXT("! 10,17 = Town Dragongate\n");
 
 	USolidWorldMap* WorldMap = NewObject<USolidWorldMap>();
 	TestTrue(TEXT("synthetic loads"), WorldMap->LoadFromString(Text));

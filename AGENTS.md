@@ -64,16 +64,15 @@ Whenever `Content/WorldMap.txt` changes — a pull, a commit, a diff, or an edit
 The grid is 128 columns by 64 rows. A `!` in that grid needs a description line under the grid. Row, then column. The top-left cell is 1,1. Spaces around the comma and `=` are fine. Anything after `#` is a comment.
 
 ```
-! 8,21 = 0
 ! 8,21 = Town Iglin
 ! 9,12 = Stronghold MeagreDungeon
 ! 10,11 = LairEntrance Iglin tunnels
 ! 11,40 = LairExit Iglin tunnels
 ```
 
-A number is the location id. `Town` names a town. `Stronghold` is the size then the type, as in `MeagreDungeon`. `LairEntrance` and `LairExit` name a lair. The identifier may be wrapped in brackets, as in `Town (Iglin)`. A note after a numeric id, such as `(top-left is 1,1)`, is not part of the id.
+`Town` names a town. `Stronghold` is the size then the type, as in `MeagreDungeon`. `LairEntrance` and `LairExit` name a lair. The identifier may be wrapped in brackets, as in `Town (Iglin)`.
 
-A road line is `Road: start -> end, type`. An end is a location id, the letter `C`, a town name, or a stronghold name such as `MeagreDungeon`. Brackets around that name are optional. The Iglin tunnel mouths are the `LairEntrance` and `LairExit` lines. `LairEntrance` is the interior `X` end. `LairExit` is the interior `Y` end.
+A road line is `Road: start -> end, type`. An end is a town name or a stronghold name such as `MeagreDungeon`. Brackets around that name are optional. The Iglin tunnel mouths are the `LairEntrance` and `LairExit` lines. `LairEntrance` is the interior `X` end. `LairExit` is the interior `Y` end.
 
 Warn the user when a `!` in the grid has no description line for that row and column. Name each missing cell as `row,column`, counting from 1,1 at the top-left. A `!` whose line is missing still loads as grassland and is not a town.
 

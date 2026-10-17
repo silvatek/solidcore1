@@ -46,6 +46,22 @@ namespace
 		return Text;
 	}
 
+	FString BridgeTestNamed(
+		const int32 FromCol,
+		const int32 FromRow,
+		const TCHAR* FromTown,
+		const int32 ToCol,
+		const int32 ToRow,
+		const TCHAR* ToTown,
+		const TCHAR* Type)
+	{
+		return FString::Printf(
+			TEXT("! %d,%d = Town %s\n! %d,%d = Town %s\nRoad: %s -> %s, %s\n"),
+			FromRow + 1, FromCol + 1, FromTown,
+			ToRow + 1, ToCol + 1, ToTown,
+			FromTown, ToTown, Type);
+	}
+
 	float BridgePlanLength(const TArray<FVector>& Line)
 	{
 		float Length = 0.f;
@@ -96,13 +112,13 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidBridgeStraightTest::RunTest(const FString& Parameters)
 {
 	TArray<FBridgeTestMark> Marks;
-	Marks.Add({ 4, 16, TEXT('0') });
+	Marks.Add({ 4, 16, USolidWorldMap::LocationMarker });
 	Marks.Add({ 12, 16, USolidWorldMap::RiverMarker });
-	Marks.Add({ 20, 16, TEXT('1') });
+	Marks.Add({ 20, 16, USolidWorldMap::LocationMarker });
 
 	USolidWorldMap* Map = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("map"), Map);
-	if (!TestTrue(TEXT("map loads"), Map->LoadFromString(BridgeTestGrid(Marks, TEXT("Road: 0 -> 1, track\n")))))
+	if (!TestTrue(TEXT("map loads"), Map->LoadFromString(BridgeTestGrid(Marks, BridgeTestNamed(4, 16, TEXT("Iglin"), 20, 16, TEXT("Relion"), TEXT("track"))))))
 	{
 		return false;
 	}
@@ -139,9 +155,9 @@ bool FSolidBridgeStraightTest::RunTest(const FString& Parameters)
 	USolidWorldMap* Dry = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("dry map"), Dry);
 	if (TestTrue(TEXT("dry map loads"), Dry->LoadFromString(BridgeTestGrid({
-		{ 4, 16, TEXT('0') },
-		{ 20, 16, TEXT('1') },
-	}, TEXT("Road: 0 -> 1, track\n")))))
+		{ 4, 16, USolidWorldMap::LocationMarker },
+		{ 20, 16, USolidWorldMap::LocationMarker },
+	}, BridgeTestNamed(4, 16, TEXT("Iglin"), 20, 16, TEXT("Relion"), TEXT("track"))))))
 	{
 		TestEqual(TEXT("no river means no bridge"), SolidBridge::Collect(*Dry, BridgeTestMin, BridgeTestMax, Height, None), 0);
 	}
@@ -156,13 +172,13 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidBridgeBanksTest::RunTest(const FString& Parameters)
 {
 	TArray<FBridgeTestMark> Marks;
-	Marks.Add({ 4, 16, TEXT('0') });
+	Marks.Add({ 4, 16, USolidWorldMap::LocationMarker });
 	Marks.Add({ 12, 16, USolidWorldMap::RiverMarker });
-	Marks.Add({ 20, 16, TEXT('1') });
+	Marks.Add({ 20, 16, USolidWorldMap::LocationMarker });
 
 	USolidWorldMap* Map = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("map"), Map);
-	if (!TestTrue(TEXT("map loads"), Map->LoadFromString(BridgeTestGrid(Marks, TEXT("Road: 0 -> 1, track\n")))))
+	if (!TestTrue(TEXT("map loads"), Map->LoadFromString(BridgeTestGrid(Marks, BridgeTestNamed(4, 16, TEXT("Iglin"), 20, 16, TEXT("Relion"), TEXT("track"))))))
 	{
 		return false;
 	}
@@ -202,12 +218,12 @@ bool FSolidBridgeSpanTest::RunTest(const FString& Parameters)
 	const float CellW = (BridgeTestMax.X - BridgeTestMin.X) / static_cast<float>(USolidWorldMap::MapWidth);
 
 	TArray<FBridgeTestMark> ShortMarks;
-	ShortMarks.Add({ 2, 20, TEXT('0') });
+	ShortMarks.Add({ 2, 20, USolidWorldMap::LocationMarker });
 	ShortMarks.Add({ 10, 20, USolidWorldMap::RiverMarker });
-	ShortMarks.Add({ 18, 20, TEXT('1') });
+	ShortMarks.Add({ 18, 20, USolidWorldMap::LocationMarker });
 	USolidWorldMap* ShortMap = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("short map"), ShortMap);
-	if (!TestTrue(TEXT("short map loads"), ShortMap->LoadFromString(BridgeTestGrid(ShortMarks, TEXT("Road: 0 -> 1, trail\n")))))
+	if (!TestTrue(TEXT("short map loads"), ShortMap->LoadFromString(BridgeTestGrid(ShortMarks, BridgeTestNamed(2, 20, TEXT("Iglin"), 18, 20, TEXT("Relion"), TEXT("trail"))))))
 	{
 		return false;
 	}
@@ -219,8 +235,8 @@ bool FSolidBridgeSpanTest::RunTest(const FString& Parameters)
 	}
 
 	TArray<FBridgeTestMark> LongMarks;
-	LongMarks.Add({ 2, 20, TEXT('0') });
-	LongMarks.Add({ 18, 20, TEXT('1') });
+	LongMarks.Add({ 2, 20, USolidWorldMap::LocationMarker });
+	LongMarks.Add({ 18, 20, USolidWorldMap::LocationMarker });
 	constexpr int32 RiverCells = 5;
 	for (int32 Col = 8; Col < 8 + RiverCells; ++Col)
 	{
@@ -228,7 +244,7 @@ bool FSolidBridgeSpanTest::RunTest(const FString& Parameters)
 	}
 	USolidWorldMap* LongMap = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("long map"), LongMap);
-	if (!TestTrue(TEXT("long map loads"), LongMap->LoadFromString(BridgeTestGrid(LongMarks, TEXT("Road: 0 -> 1, trail\n")))))
+	if (!TestTrue(TEXT("long map loads"), LongMap->LoadFromString(BridgeTestGrid(LongMarks, BridgeTestNamed(2, 20, TEXT("Iglin"), 18, 20, TEXT("Relion"), TEXT("trail"))))))
 	{
 		return false;
 	}
@@ -249,15 +265,15 @@ bool FSolidBridgeSpanTest::RunTest(const FString& Parameters)
 		BridgePlanLength(LongBridges[0].Deck) > BridgePlanLength(ShortBridges[0].Deck) + CellW);
 
 	TArray<FBridgeTestMark> Blocked;
-	Blocked.Add({ 4, 20, TEXT('0') });
-	Blocked.Add({ 20, 20, TEXT('1') });
+	Blocked.Add({ 4, 20, USolidWorldMap::LocationMarker });
+	Blocked.Add({ 20, 20, USolidWorldMap::LocationMarker });
 	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
 	{
 		Blocked.Add({ 12, Row, USolidWorldMap::RiverMarker });
 	}
 	USolidWorldMap* Wide = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("wide map"), Wide);
-	if (!TestTrue(TEXT("wide map loads"), Wide->LoadFromString(BridgeTestGrid(Blocked, TEXT("Road: 0 -> 1, road\n")))))
+	if (!TestTrue(TEXT("wide map loads"), Wide->LoadFromString(BridgeTestGrid(Blocked, BridgeTestNamed(4, 20, TEXT("Iglin"), 20, 20, TEXT("Relion"), TEXT("road"))))))
 	{
 		return false;
 	}
@@ -272,8 +288,8 @@ bool FSolidBridgeSpanTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("a wider road widens the center"), WideBridges[0].WidthCm > ShortBridges[0].WidthCm + 100.f);
 
 	TArray<FBridgeTestMark> Gap;
-	Gap.Add({ 4, 10, TEXT('0') });
-	Gap.Add({ 22, 10, TEXT('1') });
+	Gap.Add({ 4, 10, USolidWorldMap::LocationMarker });
+	Gap.Add({ 22, 10, USolidWorldMap::LocationMarker });
 	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
 	{
 		if (Row != 22)
@@ -283,7 +299,7 @@ bool FSolidBridgeSpanTest::RunTest(const FString& Parameters)
 	}
 	USolidWorldMap* Around = NewObject<USolidWorldMap>();
 	TestNotNull(TEXT("around map"), Around);
-	if (TestTrue(TEXT("around map loads"), Around->LoadFromString(BridgeTestGrid(Gap, TEXT("Road: 0 -> 1, road\n")))))
+	if (TestTrue(TEXT("around map loads"), Around->LoadFromString(BridgeTestGrid(Gap, BridgeTestNamed(4, 10, TEXT("Iglin"), 22, 10, TEXT("Relion"), TEXT("road"))))))
 	{
 		TArray<SolidBridge::FBridge> AroundBridges;
 		TestEqual(TEXT("a road that stays off the water has no bridge"),
@@ -365,10 +381,6 @@ bool FSolidBridgeAlignedTest::RunTest(const FString& Parameters)
 	const SolidRoad::FRoute* Track = nullptr;
 	for (const SolidRoad::FRoute& Route : Map->GetRoads())
 	{
-		if (Route.Definition.From.bCave || Route.Definition.To.bCave)
-		{
-			continue;
-		}
 		const int32 From = Route.Definition.From.LocationId;
 		const int32 To = Route.Definition.To.LocationId;
 		if ((From == 0 && To == 1) || (From == 1 && To == 0))
@@ -477,15 +489,18 @@ bool FSolidBridgeBrokenTest::RunTest(const FString& Parameters)
 {
 	const auto Height = [](float, float) { return 100.f; };
 
-	auto LoadCrossing = [this, Height](const TCHAR* From, const TCHAR* To, const TCHAR* RoadLine, TArray<SolidBridge::FBridge>& Out) -> bool
+	auto LoadCrossing = [this, Height](const TCHAR* FromKind, const TCHAR* FromName, const TCHAR* ToKind, const TCHAR* ToName, const TCHAR* Type, TArray<SolidBridge::FBridge>& Out) -> bool
 	{
 		TArray<FBridgeTestMark> Marks;
-		Marks.Add({ 4, 16, From[0] });
+		Marks.Add({ 4, 16, USolidWorldMap::LocationMarker });
 		Marks.Add({ 12, 16, USolidWorldMap::RiverMarker });
-		Marks.Add({ 20, 16, To[0] });
+		Marks.Add({ 20, 16, USolidWorldMap::LocationMarker });
+		const FString Lines = FString::Printf(
+			TEXT("! 17,5 = %s (%s)\n! 17,21 = %s (%s)\nRoad: %s -> %s, %s\n"),
+			FromKind, FromName, ToKind, ToName, FromName, ToName, Type);
 		USolidWorldMap* Map = NewObject<USolidWorldMap>();
 		TestNotNull(TEXT("map"), Map);
-		if (!TestTrue(TEXT("map loads"), Map && Map->LoadFromString(BridgeTestGrid(Marks, RoadLine))))
+		if (!TestTrue(TEXT("map loads"), Map && Map->LoadFromString(BridgeTestGrid(Marks, Lines))))
 		{
 			return false;
 		}
@@ -494,7 +509,7 @@ bool FSolidBridgeBrokenTest::RunTest(const FString& Parameters)
 	};
 
 	TArray<SolidBridge::FBridge> Iglin;
-	if (LoadCrossing(TEXT("0"), TEXT("1"), TEXT("Road: 0 -> 1, track\n"), Iglin))
+	if (LoadCrossing(TEXT("Town"), TEXT("Iglin"), TEXT("Town"), TEXT("Relion"), TEXT("track"), Iglin))
 	{
 		TestTrue(TEXT("Iglin to Relion is broken"), Iglin[0].bBroken);
 		TestTrue(TEXT("Iglin to Relion is the Iglin bridge"), Iglin[0].bIglinRelion);
@@ -502,21 +517,21 @@ bool FSolidBridgeBrokenTest::RunTest(const FString& Parameters)
 	}
 
 	TArray<SolidBridge::FBridge> Reverse;
-	if (LoadCrossing(TEXT("1"), TEXT("0"), TEXT("Road: 1 -> 0, track\n"), Reverse))
+	if (LoadCrossing(TEXT("Town"), TEXT("Relion"), TEXT("Town"), TEXT("Iglin"), TEXT("track"), Reverse))
 	{
 		TestTrue(TEXT("Relion to Iglin is broken"), Reverse[0].bBroken);
 		TestTrue(TEXT("Relion to Iglin is the Iglin bridge"), Reverse[0].bIglinRelion);
 	}
 
 	TArray<SolidBridge::FBridge> Other;
-	if (LoadCrossing(TEXT("2"), TEXT("3"), TEXT("Road: 2 -> 3, track\n"), Other))
+	if (LoadCrossing(TEXT("Town"), TEXT("Kanfold"), TEXT("Town"), TEXT("Visolar"), TEXT("track"), Other))
 	{
 		TestFalse(TEXT("another route keeps its span"), Other[0].bBroken);
 		TestFalse(TEXT("another route is not the Iglin bridge"), Other[0].bIglinRelion);
 	}
 
 	TArray<SolidBridge::FBridge> Cave;
-	if (LoadCrossing(TEXT("C"), TEXT("0"), TEXT("Road: C -> 0, trail\n"), Cave))
+	if (LoadCrossing(TEXT("Stronghold"), TEXT("MeagreDungeon"), TEXT("Town"), TEXT("Iglin"), TEXT("trail"), Cave))
 	{
 		TestFalse(TEXT("the cave road is not the Iglin bridge"), Cave[0].bBroken);
 		TestFalse(TEXT("the cave road is not marked as the Iglin bridge"), Cave[0].bIglinRelion);

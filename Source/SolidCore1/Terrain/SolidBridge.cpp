@@ -346,13 +346,9 @@ namespace
 		}
 	}
 
-	/** Location 0 is Iglin and location 1 is Relion. Either direction. The cave is neither. */
+	/** Location 0 is Iglin and location 1 is Relion. Either direction. */
 	bool IsIglinRelion(const SolidRoad::FDefinition& Definition)
 	{
-		if (Definition.From.bCave || Definition.To.bCave)
-		{
-			return false;
-		}
 		const int32 From = Definition.From.LocationId;
 		const int32 To = Definition.To.LocationId;
 		return (From == 0 && To == 1) || (From == 1 && To == 0);

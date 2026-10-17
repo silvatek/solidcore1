@@ -51,7 +51,7 @@ public:
 
 	/**
 	 * True after the one-shot start-town relocate has run (or been skipped because
-	 * WorldMap has no location 0 or legacy Z cells). Companions should wait on this before first spawn.
+	 * WorldMap has no location 0 cells). Companions should wait on this before first spawn.
 	 */
 	bool HasAttemptedStartTownRelocate() const { return bDidRelocateToStartTown; }
 
@@ -237,7 +237,7 @@ protected:
 	void CollectBiomeMaterials(TMap<ESolidBiome, UMaterialInterface*>& OutMaterials) const;
 	float SampleHeightAtWorld(const FVector& WorldLocation) const;
 	void TrySnapFocusToTerrain(AActor* Focus);
-	/** Move the focus pawn once to the WorldMap location-0 centroid (legacy Z if no 0). */
+	/** Move the focus pawn once to the WorldMap location-0 centroid. */
 	void TryRelocateFocusToStartTown();
 	/** After the player is at their start position, center fog on that pawn. */
 	void CenterExplorationFogOnFocus();

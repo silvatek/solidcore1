@@ -6,7 +6,8 @@
 
 /**
  * A round tower, measured in the tower's own plan.
- * FPlan is one size. Imperious and Average are the defined towers.
+ * FPlan is one size. Average and Imperious are the ends.
+ * Impressive, Grand, and Stately are even steps between those ends.
  * Local +X runs in from the door. Yaw 0 looks into the tower, the same way a dungeon visit does.
  * Placement turns the whole tower so this door faces the grass. On cell 17,31 that is north.
  * The Meagre den stays the fourteen-cell outline. This floor uses the same 1.2 m pointy-top grid,
@@ -82,40 +83,78 @@ namespace SolidTowerStronghold
 		}
 	};
 
-	/** The shipped tower. Ten floors, 10 m across at the grass, 6 m across at the cap. */
-	inline const FPlan Imperious{};
+	/** Average through Imperious, in size-list order. Meagre and Humble are outside this span. */
+	inline bool IsDefinedSize(const ESolidStrongholdSize Size)
+	{
+		return Size >= ESolidStrongholdSize::Average && Size <= ESolidStrongholdSize::Imperious;
+	}
 
-	/**
-	 * Average Tower. Four floors, 8 m across at the grass, 5.6 m across at the cap.
-	 * The storey, wall, door, and stair match Imperious.
-	 */
-	inline const FPlan Average = []
+	/** 0 at Average, 1 at Imperious. The three sizes between them land on 1/4, 1/2, and 3/4. */
+	inline float SizeAlong(const ESolidStrongholdSize Size)
+	{
+		const float From = static_cast<float>(ESolidStrongholdSize::Average);
+		const float To = static_cast<float>(ESolidStrongholdSize::Imperious);
+		return (static_cast<float>(Size) - From) / (To - From);
+	}
+
+	/** A halfway count rounds up. The steps from 4 floors to 10 are 6, 7, and 9. */
+	inline int32 LerpCount(const int32 From, const int32 To, const float Along)
+	{
+		const float Blended = FMath::Lerp(static_cast<float>(From), static_cast<float>(To), Along);
+		return FMath::FloorToInt(Blended + 0.5f);
+	}
+
+	/** Whole-number fields round. The other fields blend in a straight line. */
+	inline FPlan LerpPlan(const FPlan& From, const FPlan& To, const float Along)
 	{
 		FPlan Plan;
-		Plan.FloorCount = 4;
-		Plan.GroundExteriorRadiusCm = 400.f;
-		Plan.TopExteriorRadiusCm = 280.f;
+		Plan.FloorCount = LerpCount(From.FloorCount, To.FloorCount, Along);
+		Plan.FloorPitchCm = FMath::Lerp(From.FloorPitchCm, To.FloorPitchCm, Along);
+		Plan.SlabCm = FMath::Lerp(From.SlabCm, To.SlabCm, Along);
+		Plan.WallCm = FMath::Lerp(From.WallCm, To.WallCm, Along);
+		Plan.GroundExteriorRadiusCm = FMath::Lerp(From.GroundExteriorRadiusCm, To.GroundExteriorRadiusCm, Along);
+		Plan.TopExteriorRadiusCm = FMath::Lerp(From.TopExteriorRadiusCm, To.TopExteriorRadiusCm, Along);
+		Plan.DoorWidthCm = FMath::Lerp(From.DoorWidthCm, To.DoorWidthCm, Along);
+		Plan.DoorHeightCm = FMath::Lerp(From.DoorHeightCm, To.DoorHeightCm, Along);
+		Plan.StairWidthCm = FMath::Lerp(From.StairWidthCm, To.StairWidthCm, Along);
+		Plan.StairRiserCount = LerpCount(From.StairRiserCount, To.StairRiserCount, Along);
+		Plan.StairTreadCount = LerpCount(From.StairTreadCount, To.StairTreadCount, Along);
+		Plan.StairTreadCm = FMath::Lerp(From.StairTreadCm, To.StairTreadCm, Along);
+		Plan.DoorAngleRad = FMath::Lerp(From.DoorAngleRad, To.DoorAngleRad, Along);
+		Plan.StairPastDoorRad = FMath::Lerp(From.StairPastDoorRad, To.StairPastDoorRad, Along);
 		return Plan;
-	}();
+	}
 
-	/** The plan for a tower size that has one. A dungeon, or a tower with no plan, leaves OutPlan alone. */
+	inline FPlan MakePlan(const ESolidStrongholdSize Size)
+	{
+		FPlan Small;
+		Small.FloorCount = 4;
+		Small.GroundExteriorRadiusCm = 400.f;
+		Small.TopExteriorRadiusCm = 280.f;
+		const FPlan Large;
+		return LerpPlan(Small, Large, SizeAlong(Size));
+	}
+
+	/** Four floors, 8 m across at the grass, 5.6 m across at the cap. */
+	inline const FPlan Average = MakePlan(ESolidStrongholdSize::Average);
+	/** One quarter of the way from Average to Imperious. Six floors, 8.5 m across at the grass. */
+	inline const FPlan Impressive = MakePlan(ESolidStrongholdSize::Impressive);
+	/** Halfway from Average to Imperious. Seven floors, 9 m across at the grass. */
+	inline const FPlan Grand = MakePlan(ESolidStrongholdSize::Grand);
+	/** Three quarters of the way from Average to Imperious. Nine floors, 9.5 m across at the grass. */
+	inline const FPlan Stately = MakePlan(ESolidStrongholdSize::Stately);
+	/** The shipped tower. Ten floors, 10 m across at the grass, 6 m across at the cap. */
+	inline const FPlan Imperious = MakePlan(ESolidStrongholdSize::Imperious);
+
+	/** The plan for a tower size that has one. A dungeon, or a tower below Average, leaves OutPlan alone. */
 	inline bool PlanFor(const FSolidStronghold& Stronghold, FPlan& OutPlan)
 	{
-		if (Stronghold.Type != ESolidStrongholdType::Tower)
+		if (Stronghold.Type != ESolidStrongholdType::Tower || !IsDefinedSize(Stronghold.Size))
 		{
 			return false;
 		}
-		if (Stronghold.Size == ESolidStrongholdSize::Average)
-		{
-			OutPlan = Average;
-			return true;
-		}
-		if (Stronghold.Size == ESolidStrongholdSize::Imperious)
-		{
-			OutPlan = Imperious;
-			return true;
-		}
-		return false;
+		OutPlan = MakePlan(Stronghold.Size);
+		return true;
 	}
 
 	inline bool IsFloor(const FPlan& Plan, const int32 Floor)

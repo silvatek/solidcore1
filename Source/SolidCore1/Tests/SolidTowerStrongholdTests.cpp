@@ -376,4 +376,118 @@ bool FSolidTowerPlanMeasureTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidTowerStepMeasureTest,
+	"SolidCore1.Stronghold.TowerSteps",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidTowerStepMeasureTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidTowerStronghold;
+
+	TestTrue(TEXT("Average is the low end"), FMath::IsNearlyZero(SizeAlong(ESolidStrongholdSize::Average), 0.001f));
+	TestTrue(
+		TEXT("Impressive is one quarter"),
+		FMath::IsNearlyEqual(SizeAlong(ESolidStrongholdSize::Impressive), 0.25f, 0.001f));
+	TestTrue(
+		TEXT("Grand is halfway"),
+		FMath::IsNearlyEqual(SizeAlong(ESolidStrongholdSize::Grand), 0.5f, 0.001f));
+	TestTrue(
+		TEXT("Stately is three quarters"),
+		FMath::IsNearlyEqual(SizeAlong(ESolidStrongholdSize::Stately), 0.75f, 0.001f));
+	TestTrue(
+		TEXT("Imperious is the high end"),
+		FMath::IsNearlyEqual(SizeAlong(ESolidStrongholdSize::Imperious), 1.f, 0.001f));
+
+	const FPlan Steps[] = { Average, Impressive, Grand, Stately, Imperious };
+	const ESolidStrongholdSize Sizes[] = {
+		ESolidStrongholdSize::Average,
+		ESolidStrongholdSize::Impressive,
+		ESolidStrongholdSize::Grand,
+		ESolidStrongholdSize::Stately,
+		ESolidStrongholdSize::Imperious,
+	};
+	const TCHAR* Tokens[] = {
+		TEXT("Average Tower"),
+		TEXT("Impressive Tower"),
+		TEXT("Grand Tower"),
+		TEXT("Stately Tower"),
+		TEXT("Imperious Tower"),
+	};
+	const int32 FloorCounts[] = { 4, 6, 7, 9, 10 };
+	const float GroundRadii[] = { 400.f, 425.f, 450.f, 475.f, 500.f };
+	const float TopRadii[] = { 280.f, 285.f, 290.f, 295.f, 300.f };
+	const int32 KeptImpressive[] = { 16, 13, 10, 10, 6, 5 };
+	const int32 KeptGrand[] = { 26, 14, 14, 13, 10, 6, 5 };
+	const int32 KeptStately[] = { 33, 22, 14, 14, 13, 10, 10, 6, 5 };
+	const int32* KeptByStep[] = { nullptr, KeptImpressive, KeptGrand, KeptStately, nullptr };
+
+	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Steps); ++Index)
+	{
+		const FPlan& Plan = Steps[Index];
+		const FPlan Blended = LerpPlan(Average, Imperious, SizeAlong(Sizes[Index]));
+		TestEqual(TEXT("the step has the blended floor count"), Plan.FloorCount, Blended.FloorCount);
+		TestEqual(TEXT("the step has the listed floor count"), Plan.FloorCount, FloorCounts[Index]);
+		TestTrue(
+			TEXT("the step has the blended ground radius"),
+			FMath::IsNearlyEqual(Plan.GroundExteriorRadiusCm, Blended.GroundExteriorRadiusCm, 0.01f));
+		TestTrue(
+			TEXT("the step has the listed ground radius"),
+			FMath::IsNearlyEqual(Plan.GroundExteriorRadiusCm, GroundRadii[Index], 0.01f));
+		TestTrue(
+			TEXT("the step has the blended cap radius"),
+			FMath::IsNearlyEqual(Plan.TopExteriorRadiusCm, Blended.TopExteriorRadiusCm, 0.01f));
+		TestTrue(
+			TEXT("the step has the listed cap radius"),
+			FMath::IsNearlyEqual(Plan.TopExteriorRadiusCm, TopRadii[Index], 0.01f));
+		TestTrue(
+			TEXT("the step keeps the shared storey"),
+			FMath::IsNearlyEqual(Plan.FloorPitchCm, Imperious.FloorPitchCm, 0.01f));
+		TestTrue(
+			TEXT("the step keeps the shared wall"),
+			FMath::IsNearlyEqual(Plan.WallCm, Imperious.WallCm, 0.01f));
+		if (Index > 0)
+		{
+			TestTrue(TEXT("floors rise toward Imperious"), Plan.FloorCount > Steps[Index - 1].FloorCount);
+			TestTrue(
+				TEXT("the base widens toward Imperious"),
+				Plan.GroundExteriorRadiusCm > Steps[Index - 1].GroundExteriorRadiusCm);
+		}
+
+		FSolidStronghold Stronghold;
+		TestTrue(TEXT("the size token resolves"), SolidStronghold::FromToken(Tokens[Index], Stronghold));
+		FPlan Resolved;
+		TestTrue(TEXT("the size has this plan"), PlanFor(Stronghold, Resolved));
+		TestEqual(TEXT("PlanFor returns the step"), Resolved.FloorCount, Plan.FloorCount);
+		TestTrue(
+			TEXT("PlanFor returns the step's base"),
+			FMath::IsNearlyEqual(Resolved.GroundExteriorRadiusCm, Plan.GroundExteriorRadiusCm, 0.01f));
+
+		if (KeptByStep[Index] == nullptr)
+		{
+			continue;
+		}
+		bool bGroundStair = false;
+		bool bTopGap = false;
+		bool bGroundGap = false;
+		bool bTopStair = false;
+		for (int32 Floor = 0; Floor < Plan.FloorCount; ++Floor)
+		{
+			bool bSawStair = false;
+			bool bSawGap = false;
+			SolidTowerStrongholdTestPrivate::TestKeptHexes(
+				*this, Plan, Floor, KeptByStep[Index][Floor], bSawStair, bSawGap);
+			bGroundStair |= Floor == 0 && bSawStair;
+			bGroundGap |= Floor == 0 && bSawGap;
+			bTopStair |= Floor == Plan.FloorCount - 1 && bSawStair;
+			bTopGap |= Floor == Plan.FloorCount - 1 && bSawGap;
+		}
+		TestTrue(TEXT("the ground stair is left out"), bGroundStair);
+		TestFalse(TEXT("the ground floor has no hole cell"), bGroundGap);
+		TestTrue(TEXT("the top hole is left out"), bTopGap);
+		TestFalse(TEXT("the top floor has no stair cell"), bTopStair);
+	}
+	return true;
+}
+
 #endif

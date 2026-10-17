@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0424")
+#define SOLID_BUILD_ID TEXT("SC1-0425")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Average Tower is four floors, 8 m across at the ground.")
+#define SOLID_BUILD_NOTE TEXT("Impressive, Grand, and Stately step from Average Tower to Imperious.")
 #endif

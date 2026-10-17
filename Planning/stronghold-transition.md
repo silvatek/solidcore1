@@ -2,7 +2,7 @@
 
 ## Story
 
-The company has one stronghold. At the start the player uses the Meagre Dungeon. The world map has stronghold sites. Each site names a size and shows a stone block. An event unlocks a larger stronghold size. The player clicks the stone at a site of that size and chooses a type. That starts a stronghold of the site's size there, and the company moves from the stronghold they have. The furniture goes with them, including everything that was stored in it. The company has the new stronghold. The old one is no longer theirs. The Imperious Tower location comes off the map.
+The company has one stronghold. At the start the player uses the Meagre Dungeon. The world map has stronghold sites. Each site names a size and shows a stone block. An event unlocks a larger stronghold size. The player clicks the stone at a site of that size and chooses a type. That starts a stronghold of the site's size there, and the company moves from the stronghold they have. The furniture goes with them, including everything that was stored in it. The company has the new stronghold. The old one is no longer theirs. Its entrance stays where it is, and the player can no longer go in. The pointer shows no enter tip there, and a click does nothing. The Imperious Tower location comes off the map.
 
 ## Acceptance
 
@@ -17,6 +17,9 @@ The company has one stronghold. At the start the player uses the Meagre Dungeon.
 - The player does not choose the size at the stone. The new size is the size named on that site.
 - A site whose size is not unlocked, or is not larger than the active stronghold, does not accept the transition.
 - After the transition, the active stronghold is the chosen type, the site's size, at the site they clicked. The previous stronghold is not active.
+- The previous stronghold's exterior stays. The Meagre cave mouth stays when that was the one they left. A tower shell stays when a tower was the one they left.
+- The pointer shows no enter tip on an entrance the company has left. A click on it does not enter.
+- F10 Enter cave does not enter a stronghold the company has left.
 - A later event can unlock a still larger size. The player can click another site and transition again, and the furniture moves from the stronghold that is active then.
 - Every furnishing that was in the old stronghold is in the new one.
 - The contents of each storage container move with that container: the same items, in the same slots, with the same counts.
@@ -35,7 +38,8 @@ The company has one stronghold. At the start the player uses the Meagre Dungeon.
 - Furnishings for the Meagre Dungeon are the fireplace, the bed, and the chest in `UsedFurnishings`. The chest is the only storage. Its contents are `FGameState::CaveChest`: the rusty sword, old boots, coins, sticks, and pitch at the start. The fireplace and the bed are not storage.
 - Those pieces sit on the den's hexes. Another plan does not have those cells. The pieces and the container contents still move. This story does not invent a hex layout for every size. When the new interior exists, place the pieces on kept cells of that interior.
 - The tower plan, shell, and interior stay in the code. Choosing Tower uses them. Removing the map line only takes away the visit at cell 17,31. The comment in `SolidTowerStronghold.h` that the door on that cell faces north goes with the line.
-- F10 Enter cave still opens the Meagre den while that den is the active stronghold. This story does not retarget that row.
+- F10 Enter cave still opens the Meagre den while that den is the active stronghold. Once the company has left it, that row does not enter it. This story does not retarget the row to the new stronghold.
+- The enter tips are `Enter cave` on the den mouth and `Enter Stronghold` on a tower door. A stronghold the company has left gives neither. The mouth, the shell, and the door geometry stay. They no longer count as a passage hit.
 - Lairs are not strongholds. The Iglin tunnels stay as they are.
 - Fortress interiors, dungeon sizes above Meagre, and a tower the player creates somewhere other than cell 17,31 are their own stories where the interior is not already built. Choosing one of those types records it as the active stronghold and moves the furniture and the contents. It does not build that missing interior here.
 - `Planning/stronghold-markers-size-only.md` is this same marker. The line sets the size and does not set the type.

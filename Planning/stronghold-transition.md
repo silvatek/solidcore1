@@ -1,5 +1,7 @@
 # Stronghold transition
 
+Status: Ready
+
 ## Story
 
 The company has one stronghold. At the start the player uses the Meagre Dungeon. The world map has stronghold sites. Each site names a size and shows a stone block. An event unlocks a larger stronghold size. The player clicks the stone at a site of that size and chooses a type. The choice shows only a type that is already built for that size. A click on a stone whose size is not unlocked, is not larger than the stronghold the company has, or has no built type, does nothing. The player can leave the choice without a type, and the company stays where it is. Once the player picks a type, the move goes through: a stronghold of the site's size starts there, and the company moves from the stronghold they have. The stone is replaced by the exterior for that type and size, and the view changes to the interior, so the player sees that exterior only after leaving. If the move takes a noticeable time, a progress bar is shown. The furniture goes with them, including everything that was stored in it. The company has the new stronghold. The old one is no longer theirs. Its entrance stays where it is, and the player can no longer go in. The pointer shows no enter tip there, and a click does nothing. The Imperious Tower location comes off the map.

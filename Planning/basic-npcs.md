@@ -1,5 +1,7 @@
 # Basic NPCs
 
+Status: New
+
 ## Story
 
 The player meets basic NPCs in the world.

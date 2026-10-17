@@ -1,5 +1,7 @@
 # Hide trees and buildings in full fog
 
+Status: Ready
+
 ## Story
 
 The player looks toward a forest or a town that is still unseen. Trees and buildings on ground in full fog are not there. When the player comes close enough that the ground is no longer in full fog, those trees and buildings appear.

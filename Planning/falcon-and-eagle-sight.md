@@ -1,5 +1,7 @@
 # Falcon Sight and Eagle Sight
 
+Status: Ready
+
 ## Story
 
 The player uses raven sight as a tactical view of the party. The camera stays within 50 m of the captain, and it does not move above ground that still has fog.

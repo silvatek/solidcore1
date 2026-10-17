@@ -7,10 +7,20 @@ One file is one story.
 - `ideas.md` at the repo root is the inbox. Copy a new idea into a file here. Do not edit `ideas.md`.
 - `README.md` lists the files. The file is the story.
 
+## Status
+
+The line under the title is the status.
+
+- `New` — not refined yet.
+- `Ready` — refined, and not shipped.
+- `Done` — set this when the story ships, then move the file to `Done/`. Files already in `Done/` stay as they are.
+
 ## Open story
 
 ```md
 # Title
+
+Status: New
 
 ## Story
 

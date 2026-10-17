@@ -1,5 +1,7 @@
 # Fog stays cleared
 
+Status: Ready
+
 ## Story
 
 The player walks, and the fog clears along that trail. The player enters a stronghold or a lair, then leaves, and goes back to ground they already walked. That ground is still as clear as it was. Ground they have not reached is still in fog.

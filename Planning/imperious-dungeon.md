@@ -1,5 +1,7 @@
 # Imperious dungeon
 
+Status: Ready
+
 ## Story
 
 The player enters an Imperious Dungeon. It is the largest dungeon, a closed visit of the same kind as the Meagre cave, and it is not the Imperious Tower.

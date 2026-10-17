@@ -1,5 +1,7 @@
 # Imperious Tower refinements
 
+Status: Ready
+
 ## Story
 
 The player climbs the Imperious Tower. Where a flight reaches the next floor, a short flat landing sits in the stair band before the next flight starts up. The top floor has that landing and no flight above it. The ground floor still starts its flight with no landing of its own.

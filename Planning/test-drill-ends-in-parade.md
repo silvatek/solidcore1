@@ -1,5 +1,7 @@
 # Test Drill ends in Parade
 
+Status: New
+
 ## Story
 
 The player runs Test Drill. It ends with the party in Parade. If both companions are not already in the party, the drill adds them.

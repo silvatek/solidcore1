@@ -1,5 +1,7 @@
 # Party builder drag and drop
 
+Status: Ready
+
 ## Story
 
 The player opens Build party and arranges the party by dragging, the same way items move in the inventory. The page is the oak-and-bronze board, and the board stays that size. Companions who are not with the captain sit in a scrollbox under Company. A filter above that box reads All, Warrior, Rogue, Mage, Cleric. All is selected when the page opens. The box lists companions who are not in the party and who match the filter, in company order. The party is a column of boxes, one for each companion the events allow, and that column scrolls when the boxes are taller than the frame. It has no filter. Press a box that holds a companion and the name follows the pointer. Release it on a party box. An empty box takes that companion. An occupied box swaps. Release a party companion on the Company box and that box is left empty, even when the filter would hide the companion. Release on the same box, or on empty space, and nothing moves.

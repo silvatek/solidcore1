@@ -1,5 +1,7 @@
 # Open the party builder on leaving a stronghold
 
+Status: Ready
+
 ## Story
 
 The player leaves a stronghold and is standing on the grass outside it. Build party is open. The den leaves by a click on the dark opening, or by F10 Leave cave. The tower leaves by a click inside. The page is the same Build party page the menu opens. The party is the one they already had. Nothing is added or removed until the player changes it.

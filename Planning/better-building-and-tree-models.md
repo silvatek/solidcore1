@@ -1,5 +1,7 @@
 # Better building and tree models
 
+Status: New
+
 ## Story
 
 The player looks at the buildings in a town and the trees in a forest, and sees better models than the ones in the game now.

@@ -1,5 +1,7 @@
 # Stamina
 
+Status: New
+
 ## Story
 
 The player moves the captain, and stamina falls. On a better road, it falls more slowly.

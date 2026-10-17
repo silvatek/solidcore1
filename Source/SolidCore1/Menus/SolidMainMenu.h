@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "InputCoreTypes.h"
 
 /** Entries shown by the F10 main menu. Order is the on-screen order. */
 enum class ESolidMainMenuItem : uint8
@@ -37,6 +38,17 @@ struct FSolidMainMenuEntry
 
 namespace SolidMainMenu
 {
+	/** Menu on Xbox, Options on PlayStation. The same key as F10. */
+	inline FKey ControllerKey()
+	{
+		return EKeys::Gamepad_Special_Right;
+	}
+
+	inline bool IsControllerKey(const FKey& Key)
+	{
+		return Key == ControllerKey();
+	}
+
 	/** bInDungeon swaps the cave row between Enter cave and Leave cave. */
 	void CollectEntries(TArray<FSolidMainMenuEntry>& OutEntries, bool bInDungeon = false);
 

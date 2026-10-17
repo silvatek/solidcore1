@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "InputCoreTypes.h"
 
 /** Raven sight is the third-person party camera. True sight is first person. */
 enum class ESolidSight : uint8
@@ -17,6 +18,17 @@ namespace SolidSight
 
 	/** Camera sits this far along the look direction so it clears the near clip (cm). */
 	inline constexpr float TrueSightForwardCm = 12.f;
+
+	/** Right stick click. The same toggle as F9. */
+	inline FKey ControllerToggleKey()
+	{
+		return EKeys::Gamepad_RightThumbstick;
+	}
+
+	inline bool IsControllerToggle(const FKey& Key)
+	{
+		return Key == ControllerToggleKey();
+	}
 
 	inline bool IsTrueSight(ESolidSight Sight)
 	{

@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0439")
+#define SOLID_BUILD_ID TEXT("SC1-0440")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A shoulder button plus a face button selects an assigned battle plan.")
+#define SOLID_BUILD_NOTE TEXT("Right stick click toggles sight. Menu opens the menu. View opens the inventory.")
 #endif

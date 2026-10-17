@@ -53,9 +53,19 @@ namespace SolidInventory
 		}
 	}
 
-	/** True for /. Shift+/ is ?, so a shifted slash is not the toggle. */
+	/** View on Xbox, Create on PlayStation. The same toggle as /. */
+	inline FKey ControllerToggleKey()
+	{
+		return EKeys::Gamepad_Special_Left;
+	}
+
+	/** True for /, and for View / Create. Shift+/ is ?, so a shifted slash is not the toggle. */
 	inline bool IsToggleKey(const FKey& Key, const bool bShiftDown)
 	{
+		if (Key == ControllerToggleKey())
+		{
+			return true;
+		}
 		return Key == EKeys::Slash && !bShiftDown;
 	}
 

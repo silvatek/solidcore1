@@ -401,6 +401,8 @@ bool FSolidInventoryToggleTest::RunTest(const FString& Parameters)
 {
 	TestTrue(TEXT("slash opens inventory"), SolidInventory::IsToggleKey(EKeys::Slash, false));
 	TestFalse(TEXT("shift slash is not the toggle"), SolidInventory::IsToggleKey(EKeys::Slash, true));
+	TestTrue(TEXT("view opens inventory"), SolidInventory::IsToggleKey(EKeys::Gamepad_Special_Left, false));
+	TestTrue(TEXT("view stays the toggle with shift"), SolidInventory::IsToggleKey(EKeys::Gamepad_Special_Left, true));
 	TestFalse(TEXT("3 stays a menu key"), SolidInventory::IsToggleKey(EKeys::Three, true));
 	TestEqual(TEXT("debug label"), FString(SolidInventory::ToggleKeyLabel), FString(TEXT("/")));
 

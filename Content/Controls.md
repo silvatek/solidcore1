@@ -13,12 +13,12 @@ Input Actions and the mapping context can be replaced with Content assets on the
 | Zoom | Mouse wheel (raven sight) | — | — |
 | Jump | Space | A | Cross |
 | Sprint | Left Shift | Left stick click | Left stick click |
-| True sight / raven sight | F9 (after raven sight is enabled) | — | — |
-| Open the menu | F10 | — | — |
-| Close the menu | Esc or F10 | — | — |
-| Inventory | / | — | — |
+| True sight / raven sight | F9 (after raven sight is enabled) | Right stick click | R3 |
+| Open the menu | F10 | Menu | Options |
+| Close the menu | Esc or F10 | Menu | Options |
+| Inventory | / | View | Create |
 | Debug readout | F12 | — | — |
-| Close an event message | Click, Enter, Esc, or F10 | — | — |
+| Close an event message | Click, Enter, Esc, or F10 | Menu | Options |
 
 ## Open World
 
@@ -58,13 +58,13 @@ Input Actions and the mapping context can be replaced with Content assets on the
 | Change the selected attribute | Left / Right, or drag the slider | — | — |
 | Skeleton | Space | — | — |
 | Turn the figure | Home / End | — | — |
-| Return to the world | Esc or F10 | — | — |
+| Return to the world | Esc or F10 | Menu | Options |
 
 ## Inventory
 
 | Action | Keyboard | Xbox | PlayStation |
 |--------|----------|------|-------------|
-| Open | / | — | — |
-| Close | /, Esc, or F10 | — | — |
+| Open | / | View | Create |
+| Close | /, Esc, or F10 | View or Menu | Create or Options |
 | Move an item | Drag between worn boxes, the pack, and craft slots | — | — |
 | Craft | Click Craft | — | — |

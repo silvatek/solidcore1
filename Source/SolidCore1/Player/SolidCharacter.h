@@ -144,6 +144,7 @@ protected:
 	void ApplyRavenSightCamera();
 	void ToggleMainMenuFromInput();
 	void ToggleInventoryFromSlash();
+	void ToggleInventoryFromController();
 	void ToggleDebugPanelFromInput();
 	void CloseMenuOverlayFromInput();
 	void MainMenuMoveUp();

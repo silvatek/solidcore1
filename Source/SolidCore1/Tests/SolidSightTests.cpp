@@ -26,6 +26,8 @@ bool FSolidSightToggleTest::RunTest(const FString& Parameters)
 		TEXT("toggle returns to raven"),
 		static_cast<uint8>(SolidSight::Toggle(ESolidSight::True)),
 		static_cast<uint8>(ESolidSight::Raven));
+	TestTrue(TEXT("right stick click toggles sight"), SolidSight::IsControllerToggle(EKeys::Gamepad_RightThumbstick));
+	TestFalse(TEXT("A stays jump"), SolidSight::IsControllerToggle(EKeys::Gamepad_FaceButton_Bottom));
 
 	ASolidCharacter* Character = NewObject<ASolidCharacter>();
 	TestNotNull(TEXT("character"), Character);

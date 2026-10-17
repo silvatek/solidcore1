@@ -191,4 +191,17 @@ bool FSolidMainMenuCaveRowTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidMainMenuControllerKeyTest,
+	"SolidCore1.MainMenu.Controller",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidMainMenuControllerKeyTest::RunTest(const FString& Parameters)
+{
+	TestTrue(TEXT("menu button opens the menu"), SolidMainMenu::IsControllerKey(EKeys::Gamepad_Special_Right));
+	TestFalse(TEXT("view stays inventory"), SolidMainMenu::IsControllerKey(EKeys::Gamepad_Special_Left));
+	TestFalse(TEXT("A stays jump"), SolidMainMenu::IsControllerKey(EKeys::Gamepad_FaceButton_Bottom));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

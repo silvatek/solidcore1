@@ -296,7 +296,10 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::Gamepad_FaceButton_Left, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanFaceLeft);
 	PlayerInputComponent->BindKey(EKeys::Gamepad_FaceButton_Top, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanFaceTop);
 	PlayerInputComponent->BindKey(EKeys::F9, IE_Pressed, this, &ASolidCharacter::ToggleSightFromInput);
+	PlayerInputComponent->BindKey(SolidSight::ControllerToggleKey(), IE_Pressed, this, &ASolidCharacter::ToggleSightFromInput);
 	PlayerInputComponent->BindKey(EKeys::F10, IE_Pressed, this, &ASolidCharacter::ToggleMainMenuFromInput);
+	PlayerInputComponent->BindKey(SolidMainMenu::ControllerKey(), IE_Pressed, this, &ASolidCharacter::ToggleMainMenuFromInput);
+	PlayerInputComponent->BindKey(SolidInventory::ControllerToggleKey(), IE_Pressed, this, &ASolidCharacter::ToggleInventoryFromController);
 	PlayerInputComponent->BindKey(EKeys::F12, IE_Pressed, this, &ASolidCharacter::ToggleDebugPanelFromInput);
 	PlayerInputComponent->BindKey(EKeys::Slash, IE_Pressed, this, &ASolidCharacter::ToggleInventoryFromSlash);
 	PlayerInputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ASolidCharacter::CloseMenuOverlayFromInput);
@@ -495,6 +498,15 @@ void ASolidCharacter::ToggleSightFromInput()
 		}
 	}
 	ToggleSight();
+}
+
+void ASolidCharacter::ToggleInventoryFromController()
+{
+	if (ASolidHUD* HUD = GetSolidHUD())
+	{
+		HUD->ToggleInventory();
+		SyncCharacterStage();
+	}
 }
 
 void ASolidCharacter::ToggleMainMenuFromInput()

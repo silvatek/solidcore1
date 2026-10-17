@@ -31,4 +31,5 @@ The player looks at the sight marker. Falcon Sight shows the same eagle as raven
 - The world is a 1024 m square. Its centre is the middle of that square.
 - Fog on a terrain point is `FSolidTerrainPoint.Fog`. The bands and the rule that the camera stays over clear ground are in [Source/SolidCore1/Fog/README.md](../Source/SolidCore1/Fog/README.md).
 - The raven marker is the eagle returned by `SolidSight::Marker` for raven sight, drawn in the translucent oval at the top right. True sight keeps the eye. The + and ++ are the initial marks only.
-- Not decided: which corner holds the + or ++, when Falcon Sight and Eagle Sight unlock, and whether Falcon's height is measured above the ground under the camera.
+- Corner mock-ups, on the 72×44 cream oval, are in [falcon-eagle-markers.png](falcon-eagle-markers.png). The eye and the bird there stand in for the emoji. A is top right, B bottom right, C top left, D bottom left, E inside the oval at the bottom right.
+- Not decided: which of those corners to use, when Falcon Sight and Eagle Sight unlock, and whether Falcon's height is measured above the ground under the camera.

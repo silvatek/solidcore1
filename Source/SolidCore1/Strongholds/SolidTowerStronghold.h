@@ -430,15 +430,30 @@ namespace SolidTowerStronghold
 			GapWedge(Plan, Floor));
 	}
 
-	/** A floor cell: inside the circle, and neither the stair nor the hole. */
+	/** The landing is floored, and it is not a hex. The ground floor has none. */
+	inline bool HexOnLanding(const FPlan& Plan, const int32 Floor, const int32 Col, const int32 Row)
+	{
+		if (!HexFitsFloor(Plan, Floor, Col, Row))
+		{
+			return false;
+		}
+		return CenterMeetsWedge(
+			Plan,
+			CellCenter(Col, Row),
+			InteriorRadiusCm(Plan, FloorZCm(Plan, Floor)),
+			LandingWedge(Plan, Floor));
+	}
+
+	/** A floor cell: inside the circle, and neither the stair, the hole, nor the landing. */
 	inline bool HexKept(const FPlan& Plan, const int32 Floor, const int32 Col, const int32 Row)
 	{
 		return HexFitsFloor(Plan, Floor, Col, Row)
 			&& !HexOnStair(Plan, Floor, Col, Row)
-			&& !HexOnGap(Plan, Floor, Col, Row);
+			&& !HexOnGap(Plan, Floor, Col, Row)
+			&& !HexOnLanding(Plan, Floor, Col, Row);
 	}
 
-	/** Kept cells of one floor, row then column. The stair and the hole are absent. */
+	/** Kept cells of one floor, row then column. The stair, the hole, and the landing are absent. */
 	inline void CollectKeptHexes(const FPlan& Plan, const int32 Floor, TArray<SolidStrongholdGrid::FHex>& OutHexes)
 	{
 		OutHexes.Reset();

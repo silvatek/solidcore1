@@ -15,6 +15,7 @@ The yellow hex grid on each floor is shifted or rotated a little, so the cells s
 - Each floor the stairs arrive on has a flat landing in the stair band, about two metres along the centerline, at that floor's walking surface. The next flight, when there is one, starts at the far end of that landing.
 - The ground floor has the first flight and no landing. The top floor has a landing and no flight up.
 - The arrival hole is still the annular sector of the flight below. The landing is floored. The middle of the disc stays floored.
+- The yellow hex grid stays off each landing. A cell on the landing is not kept.
 - Beside each landing, the wall shows that floor's number. Ground is 1, so Imperious landings read 2 through 10. A smaller tower uses the same counting, and its top sign is its floor count.
 - A rail follows the inner edge of each climbing flight and stops for the landing.
 - A rail follows the floor edge of each arrival hole and stops for the landing.
@@ -31,6 +32,6 @@ The yellow hex grid on each floor is shifted or rotated a little, so the cells s
 - Rails are part of the interior, not furnishings. A simple rail about waist height is enough. No rail across the landing.
 - Signs are text on the curved wall beside the landing, facing the room. Do not reuse `ASolidTownSign`. Ground is floor 1 even though the plan's floor index starts at 0.
 - The hex grid is pointy-top, 1.2 m flat to flat, origin at the tower center, in `SolidTowerStronghold::CellCenter`. A per-floor offset or rotation belongs in that tower grid, not in `SolidStrongholdGrid`. Leave `MeagreOrigin` and the fourteen-cell den alone.
-- Kept hexes are cells whose six vertices lie inside the interior circle and that are neither stair nor hole. `SolidTowerStrongholdTests` pins the counts, Imperious ground to top: 34, 27, 21, 21, 13, 13, 13, 10, 6, 5. Average, Impressive, Grand, and Stately have their own pins. A landing changes the wedges, and a grid nudge changes the counts again. Update those pins in the same commit as the geometry and say so in the commit. Do not delete the pins in an earlier commit.
+- Kept hexes are cells whose six vertices lie inside the interior circle and that are neither stair, hole, nor landing. `SolidTowerStrongholdTests` pins the counts, Imperious ground to top: 34, 26, 19, 19, 12, 12, 12, 7, 4, 5. Average, Impressive, Grand, and Stately have their own pins. A landing changes the wedges, and a grid nudge changes the counts again. Update those pins in the same commit as the geometry and say so in the commit. Do not delete the pins in an earlier commit.
 - The yellow lines are `SolidStrongholdGrid::LineColor`. This story does not recolor them.
 - Do not add a map marker. Do not change the shell, the door click, or the grass outside the door.

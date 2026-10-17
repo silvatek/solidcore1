@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0422")
+#define SOLID_BUILD_ID TEXT("SC1-0423")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A tower's measurements are one plan. Imperious is that plan.")
+#define SOLID_BUILD_NOTE TEXT("Tower geometry is SolidTowerStronghold. Imperious is one plan.")
 #endif

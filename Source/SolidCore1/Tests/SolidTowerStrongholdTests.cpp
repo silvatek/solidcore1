@@ -1,26 +1,26 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "SolidDungeonLevel.h"
-#include "SolidImperiousTower.h"
+#include "SolidTowerStronghold.h"
 #include "SolidStrongholdGrid.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace SolidImperiousTowerTestPrivate
+namespace SolidTowerStrongholdTestPrivate
 {
 	void TestKeptHexes(
 		FAutomationTestBase& Test,
-		const SolidImperiousTower::FPlan& Plan,
+		const SolidTowerStronghold::FPlan& Plan,
 		const int32 Floor,
 		const int32 ExpectedCount,
 		bool& bSawStair,
 		bool& bSawGap)
 	{
 		TArray<SolidStrongholdGrid::FHex> Kept;
-		SolidImperiousTower::CollectKeptHexes(Plan, Floor, Kept);
+		SolidTowerStronghold::CollectKeptHexes(Plan, Floor, Kept);
 		Test.TestEqual(TEXT("kept hexes on this floor"), Kept.Num(), ExpectedCount);
 
-		const float Radius = SolidImperiousTower::InteriorRadiusCm(Plan, SolidImperiousTower::FloorZCm(Plan, Floor));
+		const float Radius = SolidTowerStronghold::InteriorRadiusCm(Plan, SolidTowerStronghold::FloorZCm(Plan, Floor));
 		TSet<uint64> Listed;
 		for (const SolidStrongholdGrid::FHex& Hex : Kept)
 		{
@@ -33,26 +33,26 @@ namespace SolidImperiousTowerTestPrivate
 			}
 			Test.TestFalse(
 				TEXT("a kept hex is not on the stair"),
-				SolidImperiousTower::HexOnStair(Plan, Floor, Hex.Col, Hex.Row));
+				SolidTowerStronghold::HexOnStair(Plan, Floor, Hex.Col, Hex.Row));
 			Test.TestFalse(
 				TEXT("a kept hex is not in the hole"),
-				SolidImperiousTower::HexOnGap(Plan, Floor, Hex.Col, Hex.Row));
+				SolidTowerStronghold::HexOnGap(Plan, Floor, Hex.Col, Hex.Row));
 		}
 
-		const int32 Span = SolidImperiousTower::HexSpan(Plan);
+		const int32 Span = SolidTowerStronghold::HexSpan(Plan);
 		for (int32 Row = -Span; Row <= Span; ++Row)
 		{
 			for (int32 Col = -Span; Col <= Span; ++Col)
 			{
-				const bool bKept = SolidImperiousTower::HexKept(Plan, Floor, Col, Row);
+				const bool bKept = SolidTowerStronghold::HexKept(Plan, Floor, Col, Row);
 				const uint64 Key = (static_cast<uint64>(static_cast<uint32>(Col)) << 32) | static_cast<uint32>(Row);
 				Test.TestEqual(TEXT("the list is the kept cells"), Listed.Contains(Key), bKept);
-				if (SolidImperiousTower::HexOnStair(Plan, Floor, Col, Row))
+				if (SolidTowerStronghold::HexOnStair(Plan, Floor, Col, Row))
 				{
 					Test.TestFalse(TEXT("a stair cell is missing from the hex list"), bKept);
 					bSawStair = true;
 				}
-				if (SolidImperiousTower::HexOnGap(Plan, Floor, Col, Row))
+				if (SolidTowerStronghold::HexOnGap(Plan, Floor, Col, Row))
 				{
 					Test.TestFalse(TEXT("a hole cell is missing from the hex list"), bKept);
 					bSawGap = true;
@@ -71,20 +71,20 @@ namespace SolidImperiousTowerTestPrivate
 				}
 				Test.TestFalse(
 					TEXT("a hex past the span is outside this floor"),
-					SolidImperiousTower::HexKept(Plan, Floor, Col, Row));
+					SolidTowerStronghold::HexKept(Plan, Floor, Col, Row));
 			}
 		}
 	}
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidImperiousTowerMeasureTest,
+	FSolidTowerStrongholdMeasureTest,
 	"SolidCore1.Stronghold.ImperiousTower",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 
-bool FSolidImperiousTowerMeasureTest::RunTest(const FString& Parameters)
+bool FSolidTowerStrongholdMeasureTest::RunTest(const FString& Parameters)
 {
-	const SolidImperiousTower::FPlan& Plan = SolidImperiousTower::Imperious;
+	const SolidTowerStronghold::FPlan& Plan = SolidTowerStronghold::Imperious;
 
 	TestEqual(TEXT("ten floors"), Plan.FloorCount, 10);
 	TestTrue(TEXT("each floor is 3 m"), FMath::IsNearlyEqual(Plan.FloorPitchCm, 300.f, 0.01f));
@@ -92,12 +92,12 @@ bool FSolidImperiousTowerMeasureTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("the top floor's ceiling is the cap"),
 		FMath::IsNearlyEqual(
-			SolidImperiousTower::FloorZCm(Plan, Plan.FloorCount - 1) + Plan.FloorPitchCm,
+			SolidTowerStronghold::FloorZCm(Plan, Plan.FloorCount - 1) + Plan.FloorPitchCm,
 			Plan.HeightCm(),
 			0.01f));
 	TestTrue(
 		TEXT("the ground floor is at the base"),
-		FMath::IsNearlyEqual(SolidImperiousTower::FloorZCm(Plan, 0), 0.f, 0.01f));
+		FMath::IsNearlyEqual(SolidTowerStronghold::FloorZCm(Plan, 0), 0.f, 0.01f));
 	TestTrue(TEXT("the slab is 20 cm"), FMath::IsNearlyEqual(Plan.SlabCm, 20.f, 0.01f));
 	TestTrue(
 		TEXT("the clear room is the pitch minus the slab"),
@@ -105,16 +105,16 @@ bool FSolidImperiousTowerMeasureTest::RunTest(const FString& Parameters)
 
 	TestTrue(
 		TEXT("ground exterior diameter is 10 m"),
-		FMath::IsNearlyEqual(SolidImperiousTower::ExteriorRadiusCm(Plan, 0.f) * 2.f, 1000.f, 0.01f));
+		FMath::IsNearlyEqual(SolidTowerStronghold::ExteriorRadiusCm(Plan, 0.f) * 2.f, 1000.f, 0.01f));
 	TestTrue(
 		TEXT("ground interior diameter is 9 m"),
-		FMath::IsNearlyEqual(SolidImperiousTower::InteriorRadiusCm(Plan, 0.f) * 2.f, 900.f, 0.01f));
+		FMath::IsNearlyEqual(SolidTowerStronghold::InteriorRadiusCm(Plan, 0.f) * 2.f, 900.f, 0.01f));
 	TestTrue(
 		TEXT("top exterior diameter is 6 m"),
-		FMath::IsNearlyEqual(SolidImperiousTower::ExteriorRadiusCm(Plan, Plan.HeightCm()) * 2.f, 600.f, 0.01f));
+		FMath::IsNearlyEqual(SolidTowerStronghold::ExteriorRadiusCm(Plan, Plan.HeightCm()) * 2.f, 600.f, 0.01f));
 	TestTrue(
 		TEXT("top interior diameter is 5 m"),
-		FMath::IsNearlyEqual(SolidImperiousTower::InteriorRadiusCm(Plan, Plan.HeightCm()) * 2.f, 500.f, 0.01f));
+		FMath::IsNearlyEqual(SolidTowerStronghold::InteriorRadiusCm(Plan, Plan.HeightCm()) * 2.f, 500.f, 0.01f));
 
 	const float SampleZ[] = { 0.f, 750.f, 1500.f, 2400.f, 3000.f };
 	for (const float ZCm : SampleZ)
@@ -122,7 +122,7 @@ bool FSolidImperiousTowerMeasureTest::RunTest(const FString& Parameters)
 		TestTrue(
 			TEXT("the wall stays 50 cm"),
 			FMath::IsNearlyEqual(
-				SolidImperiousTower::ExteriorRadiusCm(Plan, ZCm) - SolidImperiousTower::InteriorRadiusCm(Plan, ZCm),
+				SolidTowerStronghold::ExteriorRadiusCm(Plan, ZCm) - SolidTowerStronghold::InteriorRadiusCm(Plan, ZCm),
 				Plan.WallCm,
 				0.01f));
 	}
@@ -133,10 +133,10 @@ bool FSolidImperiousTowerMeasureTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("the door matches the cave height"),
 		FMath::IsNearlyEqual(Plan.DoorHeightCm, SolidDungeonLevel::MouthHeightCm, 0.01f));
-	TestTrue(TEXT("the ground floor has the door"), SolidImperiousTower::HasDoor(0));
-	TestFalse(TEXT("the floor above has no door"), SolidImperiousTower::HasDoor(1));
-	TestFalse(TEXT("the top floor has no door"), SolidImperiousTower::HasDoor(Plan.FloorCount - 1));
-	const FVector2D Outward = SolidImperiousTower::DoorOutward(Plan);
+	TestTrue(TEXT("the ground floor has the door"), SolidTowerStronghold::HasDoor(0));
+	TestFalse(TEXT("the floor above has no door"), SolidTowerStronghold::HasDoor(1));
+	TestFalse(TEXT("the top floor has no door"), SolidTowerStronghold::HasDoor(Plan.FloorCount - 1));
+	const FVector2D Outward = SolidTowerStronghold::DoorOutward(Plan);
 	TestTrue(
 		TEXT("the door faces local -X"),
 		FMath::IsNearlyEqual(Outward.X, -1.f, 0.01f) && FMath::IsNearlyZero(Outward.Y, 0.01f));
@@ -156,18 +156,18 @@ bool FSolidImperiousTowerMeasureTest::RunTest(const FString& Parameters)
 	const float LastSweep = 416.f / (290.f - 70.f);
 	TestTrue(
 		TEXT("the ground flight is the run along the 3.8 m centerline"),
-		FMath::IsNearlyEqual(SolidImperiousTower::FlightSweepRad(Plan, 0), GroundSweep, 0.001f));
+		FMath::IsNearlyEqual(SolidTowerStronghold::FlightSweepRad(Plan, 0), GroundSweep, 0.001f));
 	TestTrue(
 		TEXT("the last flight is the run along the 2.2 m centerline"),
-		FMath::IsNearlyEqual(SolidImperiousTower::FlightSweepRad(Plan, 8), LastSweep, 0.001f));
+		FMath::IsNearlyEqual(SolidTowerStronghold::FlightSweepRad(Plan, 8), LastSweep, 0.001f));
 	TestTrue(
 		TEXT("the last flight sweeps farther than the ground flight"),
-		SolidImperiousTower::FlightSweepRad(Plan, 8) > SolidImperiousTower::FlightSweepRad(Plan, 0));
+		SolidTowerStronghold::FlightSweepRad(Plan, 8) > SolidTowerStronghold::FlightSweepRad(Plan, 0));
 
-	const SolidImperiousTower::FWedge GroundFlight = SolidImperiousTower::FlightWedge(Plan, 0);
-	const SolidImperiousTower::FWedge GroundGap = SolidImperiousTower::GapWedge(Plan, 0);
-	const SolidImperiousTower::FWedge TopFlight = SolidImperiousTower::FlightWedge(Plan, 9);
-	const SolidImperiousTower::FWedge TopGap = SolidImperiousTower::GapWedge(Plan, 9);
+	const SolidTowerStronghold::FWedge GroundFlight = SolidTowerStronghold::FlightWedge(Plan, 0);
+	const SolidTowerStronghold::FWedge GroundGap = SolidTowerStronghold::GapWedge(Plan, 0);
+	const SolidTowerStronghold::FWedge TopFlight = SolidTowerStronghold::FlightWedge(Plan, 9);
+	const SolidTowerStronghold::FWedge TopGap = SolidTowerStronghold::GapWedge(Plan, 9);
 	TestTrue(TEXT("the ground floor has a flight"), GroundFlight.bOpen);
 	TestFalse(TEXT("the ground floor has no hole"), GroundGap.bOpen);
 	TestFalse(TEXT("the top floor has no flight"), TopFlight.bOpen);
@@ -175,18 +175,18 @@ bool FSolidImperiousTowerMeasureTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("the second flight starts where the first ends"),
 		FMath::IsNearlyEqual(
-			SolidImperiousTower::FlightStartRad(Plan, 1),
-			SolidImperiousTower::FlightStartRad(Plan, 0) + SolidImperiousTower::FlightSweepRad(Plan, 0),
+			SolidTowerStronghold::FlightStartRad(Plan, 1),
+			SolidTowerStronghold::FlightStartRad(Plan, 0) + SolidTowerStronghold::FlightSweepRad(Plan, 0),
 			0.001f));
 	TestTrue(
 		TEXT("the hole is the flight below"),
-		FMath::IsNearlyEqual(TopGap.StartRad, SolidImperiousTower::FlightStartRad(Plan, 8), 0.001f)
-			&& FMath::IsNearlyEqual(TopGap.SweepRad, SolidImperiousTower::FlightSweepRad(Plan, 8), 0.001f));
+		FMath::IsNearlyEqual(TopGap.StartRad, SolidTowerStronghold::FlightStartRad(Plan, 8), 0.001f)
+			&& FMath::IsNearlyEqual(TopGap.SweepRad, SolidTowerStronghold::FlightSweepRad(Plan, 8), 0.001f));
 
 	float Spiral = 0.f;
 	for (int32 Floor = 0; Floor < Plan.FloorCount - 1; ++Floor)
 	{
-		Spiral += SolidImperiousTower::FlightSweepRad(Plan, Floor);
+		Spiral += SolidTowerStronghold::FlightSweepRad(Plan, Floor);
 	}
 	TestTrue(TEXT("the spiral is just over two turns"), Spiral > 2.f * PI && Spiral < 2.2f * PI);
 
@@ -199,7 +199,7 @@ bool FSolidImperiousTowerMeasureTest::RunTest(const FString& Parameters)
 	{
 		bool bSawStair = false;
 		bool bSawGap = false;
-		SolidImperiousTowerTestPrivate::TestKeptHexes(*this, Plan, Floor, KeptCounts[Floor], bSawStair, bSawGap);
+		SolidTowerStrongholdTestPrivate::TestKeptHexes(*this, Plan, Floor, KeptCounts[Floor], bSawStair, bSawGap);
 		bGroundStairLeftOut |= Floor == 0 && bSawStair;
 		bGroundHadGap |= Floor == 0 && bSawGap;
 		bTopHadStair |= Floor == 9 && bSawStair;
@@ -211,9 +211,9 @@ bool FSolidImperiousTowerMeasureTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("the top floor has no stair cell"), bTopHadStair);
 
 	TArray<SolidStrongholdGrid::FHex> None;
-	SolidImperiousTower::CollectKeptHexes(Plan, -1, None);
+	SolidTowerStronghold::CollectKeptHexes(Plan, -1, None);
 	TestEqual(TEXT("a floor below the ground is empty"), None.Num(), 0);
-	SolidImperiousTower::CollectKeptHexes(Plan, Plan.FloorCount, None);
+	SolidTowerStronghold::CollectKeptHexes(Plan, Plan.FloorCount, None);
 	TestEqual(TEXT("a floor above the cap is empty"), None.Num(), 0);
 	return true;
 }
@@ -225,7 +225,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidTowerPlanMeasureTest::RunTest(const FString& Parameters)
 {
-	SolidImperiousTower::FPlan Plan = SolidImperiousTower::Imperious;
+	SolidTowerStronghold::FPlan Plan = SolidTowerStronghold::Imperious;
 	Plan.FloorCount = 4;
 	Plan.GroundExteriorRadiusCm = 400.f;
 	Plan.TopExteriorRadiusCm = 280.f;
@@ -240,10 +240,10 @@ bool FSolidTowerPlanMeasureTest::RunTest(const FString& Parameters)
 		FMath::IsNearlyEqual(Plan.TopInteriorRadiusCm(), 230.f, 0.01f));
 	TestTrue(
 		TEXT("this plan is shorter than Imperious"),
-		Plan.HeightCm() < SolidImperiousTower::Imperious.HeightCm());
+		Plan.HeightCm() < SolidTowerStronghold::Imperious.HeightCm());
 	TestTrue(
 		TEXT("this plan is narrower than Imperious"),
-		Plan.GroundExteriorRadiusCm < SolidImperiousTower::Imperious.GroundExteriorRadiusCm);
+		Plan.GroundExteriorRadiusCm < SolidTowerStronghold::Imperious.GroundExteriorRadiusCm);
 
 	const float SampleZ[] = { 0.f, 600.f, 1200.f };
 	for (const float ZCm : SampleZ)
@@ -251,7 +251,7 @@ bool FSolidTowerPlanMeasureTest::RunTest(const FString& Parameters)
 		TestTrue(
 			TEXT("the wall stays the plan thickness"),
 			FMath::IsNearlyEqual(
-				SolidImperiousTower::ExteriorRadiusCm(Plan, ZCm) - SolidImperiousTower::InteriorRadiusCm(Plan, ZCm),
+				SolidTowerStronghold::ExteriorRadiusCm(Plan, ZCm) - SolidTowerStronghold::InteriorRadiusCm(Plan, ZCm),
 				Plan.WallCm,
 				0.01f));
 	}
@@ -262,31 +262,31 @@ bool FSolidTowerPlanMeasureTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("the ground flight uses this plan's centerline"),
 		FMath::IsNearlyEqual(
-			SolidImperiousTower::FlightSweepRad(Plan, 0),
+			SolidTowerStronghold::FlightSweepRad(Plan, 0),
 			Plan.StairRunCm() / GroundCenterline,
 			0.001f));
 	TestTrue(
 		TEXT("the last flight uses this plan's centerline"),
 		FMath::IsNearlyEqual(
-			SolidImperiousTower::FlightSweepRad(Plan, 2),
+			SolidTowerStronghold::FlightSweepRad(Plan, 2),
 			Plan.StairRunCm() / LastCenterline,
 			0.001f));
 	TestFalse(
 		TEXT("the ground sweep is not the Imperious sweep"),
 		FMath::IsNearlyEqual(
-			SolidImperiousTower::FlightSweepRad(Plan, 0),
-			SolidImperiousTower::FlightSweepRad(SolidImperiousTower::Imperious, 0),
+			SolidTowerStronghold::FlightSweepRad(Plan, 0),
+			SolidTowerStronghold::FlightSweepRad(SolidTowerStronghold::Imperious, 0),
 			0.001f));
 	TestTrue(
 		TEXT("the second flight starts where the first ends"),
 		FMath::IsNearlyEqual(
-			SolidImperiousTower::FlightStartRad(Plan, 1),
-			SolidImperiousTower::FlightStartRad(Plan, 0) + SolidImperiousTower::FlightSweepRad(Plan, 0),
+			SolidTowerStronghold::FlightStartRad(Plan, 1),
+			SolidTowerStronghold::FlightStartRad(Plan, 0) + SolidTowerStronghold::FlightSweepRad(Plan, 0),
 			0.001f));
-	TestTrue(TEXT("the ground floor has a flight"), SolidImperiousTower::FlightWedge(Plan, 0).bOpen);
-	TestFalse(TEXT("the ground floor has no hole"), SolidImperiousTower::GapWedge(Plan, 0).bOpen);
-	TestFalse(TEXT("the top floor has no flight"), SolidImperiousTower::FlightWedge(Plan, 3).bOpen);
-	TestTrue(TEXT("the top floor has a hole"), SolidImperiousTower::GapWedge(Plan, 3).bOpen);
+	TestTrue(TEXT("the ground floor has a flight"), SolidTowerStronghold::FlightWedge(Plan, 0).bOpen);
+	TestFalse(TEXT("the ground floor has no hole"), SolidTowerStronghold::GapWedge(Plan, 0).bOpen);
+	TestFalse(TEXT("the top floor has no flight"), SolidTowerStronghold::FlightWedge(Plan, 3).bOpen);
+	TestTrue(TEXT("the top floor has a hole"), SolidTowerStronghold::GapWedge(Plan, 3).bOpen);
 
 	const int32 KeptCounts[] = { 16, 10, 6, 5 };
 	bool bGroundStairLeftOut = false;
@@ -297,7 +297,7 @@ bool FSolidTowerPlanMeasureTest::RunTest(const FString& Parameters)
 	{
 		bool bSawStair = false;
 		bool bSawGap = false;
-		SolidImperiousTowerTestPrivate::TestKeptHexes(*this, Plan, Floor, KeptCounts[Floor], bSawStair, bSawGap);
+		SolidTowerStrongholdTestPrivate::TestKeptHexes(*this, Plan, Floor, KeptCounts[Floor], bSawStair, bSawGap);
 		bGroundStairLeftOut |= Floor == 0 && bSawStair;
 		bGroundHadGap |= Floor == 0 && bSawGap;
 		bTopHadStair |= Floor == 3 && bSawStair;
@@ -308,30 +308,30 @@ bool FSolidTowerPlanMeasureTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the top hole is left out"), bTopGapLeftOut);
 	TestFalse(TEXT("the top floor has no stair cell"), bTopHadStair);
 
-	SolidImperiousTower::FPlan Single = SolidImperiousTower::Imperious;
+	SolidTowerStronghold::FPlan Single = SolidTowerStronghold::Imperious;
 	Single.FloorCount = 1;
 	Single.GroundExteriorRadiusCm = 350.f;
 	Single.TopExteriorRadiusCm = 350.f;
 	TestTrue(TEXT("a single floor is one storey"), FMath::IsNearlyEqual(Single.HeightCm(), 300.f, 0.01f));
-	TestTrue(TEXT("the single floor has the door"), SolidImperiousTower::HasDoor(0));
-	TestFalse(TEXT("a single floor has no flight"), SolidImperiousTower::FlightWedge(Single, 0).bOpen);
-	TestFalse(TEXT("a single floor has no hole"), SolidImperiousTower::GapWedge(Single, 0).bOpen);
+	TestTrue(TEXT("the single floor has the door"), SolidTowerStronghold::HasDoor(0));
+	TestFalse(TEXT("a single floor has no flight"), SolidTowerStronghold::FlightWedge(Single, 0).bOpen);
+	TestFalse(TEXT("a single floor has no hole"), SolidTowerStronghold::GapWedge(Single, 0).bOpen);
 	bool bIgnoredStair = false;
 	bool bIgnoredGap = false;
-	SolidImperiousTowerTestPrivate::TestKeptHexes(*this, Single, 0, 13, bIgnoredStair, bIgnoredGap);
+	SolidTowerStrongholdTestPrivate::TestKeptHexes(*this, Single, 0, 13, bIgnoredStair, bIgnoredGap);
 	TestFalse(TEXT("a single floor has no stair cell"), bIgnoredStair);
 	TestFalse(TEXT("a single floor has no hole cell"), bIgnoredGap);
 
-	SolidImperiousTower::FPlan Narrow = SolidImperiousTower::Imperious;
+	SolidTowerStronghold::FPlan Narrow = SolidTowerStronghold::Imperious;
 	Narrow.FloorCount = 2;
 	Narrow.GroundExteriorRadiusCm = 100.f;
 	Narrow.TopExteriorRadiusCm = 100.f;
 	TestTrue(
 		TEXT("a stair wider than the room has no sweep"),
-		FMath::IsNearlyZero(SolidImperiousTower::FlightSweepRad(Narrow, 0)));
-	TestFalse(TEXT("that flight stays closed"), SolidImperiousTower::FlightWedge(Narrow, 0).bOpen);
+		FMath::IsNearlyZero(SolidTowerStronghold::FlightSweepRad(Narrow, 0)));
+	TestFalse(TEXT("that flight stays closed"), SolidTowerStronghold::FlightWedge(Narrow, 0).bOpen);
 	TArray<SolidStrongholdGrid::FHex> Empty;
-	SolidImperiousTower::CollectKeptHexes(Narrow, 0, Empty);
+	SolidTowerStronghold::CollectKeptHexes(Narrow, 0, Empty);
 	TestEqual(TEXT("a room narrower than a hex keeps nothing"), Empty.Num(), 0);
 	return true;
 }

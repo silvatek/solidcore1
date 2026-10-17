@@ -387,7 +387,7 @@ Source/
       SolidDungeonPassage.h  # Click on the dark opening to enter or leave
       SolidDungeonLevel.h        # Travel options; captain only; room bounds
       SolidStrongholdGrid.h         # 1.2 m pointy-top hexes shared by every stronghold floor
-      SolidImperiousTower.h         # Tower plan struct. Imperious is the shipped value: taper, ten floors, door, stair, kept hexes
+      SolidTowerStronghold.h        # Tower plan struct. Imperious is the shipped value: taper, ten floors, door, stair, kept hexes
       SolidStrongholdFurniture.h    # Furnishing catalog, and the pieces each stronghold uses
       SolidFurnishing.*             # One placed piece: hearth, bed, or chest
       SolidDungeonInterior.*     # Irregular fourteen-hex Meagre den

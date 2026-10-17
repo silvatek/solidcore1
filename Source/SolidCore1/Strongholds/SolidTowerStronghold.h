@@ -11,7 +11,7 @@
  * The Meagre den stays the fourteen-cell outline. This floor uses the same 1.2 m pointy-top grid,
  * measured from the tower center.
  */
-namespace SolidImperiousTower
+namespace SolidTowerStronghold
 {
 	/**
 	 * One tower size. Height, clear height, interior radii, and the stair run are derived,

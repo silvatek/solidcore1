@@ -8,8 +8,6 @@ A floor number is fixed to the wall beside each landing. The ground floor is flo
 
 A handrail runs along the inner edge of each climbing flight, and another runs along the open edge of each arrival hole. Both rails stop at the landing, so the player can step off the stair onto the floor.
 
-On the ground floor, a fireplace, a bed, and a chest stand on the hex grid, clear of the door and the stair. The fireplace and the bed are not storage. The chest is. The inventory page shows that chest while the player is in the tower, and does not show it in the Meagre den or on the open world.
-
 The yellow hex grid on each floor is shifted or rotated a little, so the cells sit better in the circle. The Meagre den's grid does not move.
 
 ## Acceptance
@@ -21,9 +19,6 @@ The yellow hex grid on each floor is shifted or rotated a little, so the cells s
 - A rail follows the inner edge of each climbing flight and stops for the landing.
 - A rail follows the floor edge of each arrival hole and stops for the landing.
 - The rails block a step off the hole and off the inner edge of the flight. The landing stays open onto the floor.
-- The ground floor has one fireplace, one bed, and one chest, each on kept hexes, off the door and off the stair. The bed occupies two neighboring hexes. The other two occupy one each.
-- The fireplace and the bed are not storage. The chest is. Inventory in the tower shows this chest. Inventory in the Meagre den still shows the den's chest. Inventory on the open world shows neither.
-- The den's fireplace, bed, chest, and the items in the den's chest are unchanged.
 - Each tower floor may shift or rotate its hex grid by a small amount. The Meagre den's fourteen hexes stay where they are.
 - On the landed floor plan, a floor that shifts or rotates keeps at least as many hexes as that same floor keeps with the grid still centered and unrotated.
 - F10 Enter cave still opens the Meagre den from the open world, and does nothing inside the tower. Leaving the tower still stands the captain on the grass outside its door.
@@ -37,8 +32,5 @@ The yellow hex grid on each floor is shifted or rotated a little, so the cells s
 - Signs are text on the curved wall beside the landing, facing the room. Do not reuse `ASolidTownSign`. Ground is floor 1 even though the plan's floor index starts at 0.
 - The hex grid is pointy-top, 1.2 m flat to flat, origin at the tower center, in `SolidTowerStronghold::CellCenter`. A per-floor offset or rotation belongs in that tower grid, not in `SolidStrongholdGrid`. Leave `MeagreOrigin` and the fourteen-cell den alone.
 - Kept hexes are cells whose six vertices lie inside the interior circle and that are neither stair nor hole. `SolidTowerStrongholdTests` pins the counts, Imperious ground to top: 34, 29, 22, 21, 14, 13, 13, 10, 6, 5. Average, Impressive, Grand, and Stately have their own pins. A landing changes the wedges, and a grid nudge changes the counts again. Update those pins in the same commit as the geometry and say so in the commit. Do not delete the pins in an earlier commit.
-- Furnishings live in `SolidStrongholdFurniture`. `UsedFurnishings` returns the three cave pieces only for the Meagre Dungeon. Add a tower placement. Do not reuse the cave's hex coordinates. Those columns belong to the den. Pick kept ground-floor cells of the tower, clear of the door and the stair. The bed needs two neighbors.
-- `ASolidDungeonInterior::PlaceStarterFurnishings` places the den. Place the tower pieces from `ASolidTowerInterior`. The existing furniture tests must keep passing, including "a humble dungeon has no pieces yet" and the three Meagre pieces.
-- The den's container is `FGameState::CaveChest`, shown only while `IsInDungeon`. Give the tower its own container. Do not show `CaveChest` in the tower, and do not show the tower chest in the den. The tower chest does not start with the den's rusty sword, boots, coins, sticks, or pitch.
 - The yellow lines are `SolidStrongholdGrid::LineColor`. This story does not recolor them.
 - Do not add a map marker. Do not change the shell, the door click, or the grass outside the door.

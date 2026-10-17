@@ -189,7 +189,8 @@ bool FSolidTowerStrongholdMeasureTest::RunTest(const FString& Parameters)
 	{
 		Spiral += SolidTowerStronghold::FlightSweepRad(Plan, Floor);
 	}
-	TestTrue(TEXT("the spiral is just over two turns"), Spiral > 2.f * PI && Spiral < 2.2f * PI);
+	const float Turn = 2.f * PI;
+	TestTrue(TEXT("the spiral is just over two turns"), Spiral > 2.f * Turn && Spiral < 2.2f * Turn);
 
 	const int32 KeptCounts[] = { 34, 29, 22, 21, 14, 13, 13, 10, 6, 5 };
 	bool bGroundStairLeftOut = false;

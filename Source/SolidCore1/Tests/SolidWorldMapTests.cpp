@@ -859,7 +859,8 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 			if (Biome == ESolidBiome::Grassland)
 			{
 				bSawGrass = true;
-				if (Marker != USolidWorldMap::GrassMarker)
+				// A stronghold on the grass shelf is grassland, and its cell is !.
+				if (Marker != USolidWorldMap::GrassMarker && Marker != USolidWorldMap::LocationMarker)
 				{
 					++GrassNotDot;
 				}
@@ -883,7 +884,7 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 		}
 	}
 	TestEqual(TEXT("the shipped map has no G, T, F, or R"), OldLetters, 0);
-	TestEqual(TEXT("grass cells are dots"), GrassNotDot, 0);
+	TestEqual(TEXT("grass cells are dots or a place mark"), GrassNotDot, 0);
 	TestEqual(TEXT("forest cells are hatches"), ForestNotHatch, 0);
 	TestEqual(TEXT("river cells are stars"), RiverNotStar, 0);
 	TestTrue(TEXT("the shipped map has grass"), bSawGrass);

@@ -2,7 +2,7 @@
 
 ## Story
 
-Ground color is chosen from the biome. Grassland uses the grass material. Every other biome uses a solid color from the world map. Fog on a terrain point is `FSolidTerrainPoint.Fog`. Full fog means that value is `1.0f`.
+Ground color is chosen from the biome. Grassland uses the grass material. Every other biome uses a solid color from the world map. Fog on a terrain point is `FSolidTerrainPoint.Fog`. Full fog means that value is `1.0f`. The fog bands and curtains are described in [Source/SolidCore1/Fog/README.md](../Source/SolidCore1/Fog/README.md).
 
 A point at full fog uses a plain white material instead of the biome color. Any other fog value keeps the biome material.
 

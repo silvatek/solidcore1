@@ -130,6 +130,12 @@ protected:
 	void SelectBattlePlanSlot6();
 	void SelectBattlePlanSlot7();
 	void SelectBattlePlanSlot8();
+	/** Face button while a shoulder is held. Bottom, right, left, top. */
+	void SelectBattlePlanFaceBottom();
+	void SelectBattlePlanFaceRight();
+	void SelectBattlePlanFaceLeft();
+	void SelectBattlePlanFaceTop();
+	void SelectBattlePlanFromFace(uint8 FaceIndex);
 	void ToggleSightFromInput();
 	void ApplySightPresentation();
 	/** In a lair the body does not cast a shadow, so a torch inside him can light the stone. */

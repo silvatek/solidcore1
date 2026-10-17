@@ -282,4 +282,39 @@ bool FSolidGameModeBattlePlanSurvivesEnsureTest::RunTest(const FString& Paramete
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattlePlanGamepadSlotTest,
+	"SolidCore1.BattlePlan.GamepadSlot",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattlePlanGamepadSlotTest::RunTest(const FString& Parameters)
+{
+	const SolidBattlePlanInput::EFace Faces[] = {
+		SolidBattlePlanInput::EFace::Bottom,
+		SolidBattlePlanInput::EFace::Right,
+		SolidBattlePlanInput::EFace::Left,
+		SolidBattlePlanInput::EFace::Top,
+	};
+	for (int32 Index = 0; Index < SolidBattlePlanInput::FaceCount; ++Index)
+	{
+		TestEqual(
+			FString::Printf(TEXT("no shoulder, face %d"), Index),
+			SolidBattlePlanInput::SlotForShoulderAndFace(false, false, Faces[Index]),
+			INDEX_NONE);
+		TestEqual(
+			FString::Printf(TEXT("left shoulder, face %d"), Index),
+			SolidBattlePlanInput::SlotForShoulderAndFace(true, false, Faces[Index]),
+			Index);
+		TestEqual(
+			FString::Printf(TEXT("right shoulder, face %d"), Index),
+			SolidBattlePlanInput::SlotForShoulderAndFace(false, true, Faces[Index]),
+			Index + 4);
+		TestEqual(
+			FString::Printf(TEXT("both shoulders, face %d"), Index),
+			SolidBattlePlanInput::SlotForShoulderAndFace(true, true, Faces[Index]),
+			Index);
+	}
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

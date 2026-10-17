@@ -234,3 +234,36 @@ namespace SolidBattleFormationSlots
 		return Base * Scale;
 	}
 }
+
+/**
+ * Gamepad chords for the eight assigned slots.
+ * The face order is bottom, right, left, top: A B X Y, and Cross Circle Square Triangle.
+ * Left shoulder is the first four slots. Right shoulder is the last four.
+ * A face button with no shoulder is not a plan. Both shoulders use the left.
+ */
+namespace SolidBattlePlanInput
+{
+	enum class EFace : uint8
+	{
+		Bottom,
+		Right,
+		Left,
+		Top,
+	};
+
+	inline constexpr int32 FaceCount = 4;
+
+	inline int32 SlotForShoulderAndFace(const bool bLeftShoulder, const bool bRightShoulder, const EFace Face)
+	{
+		if (!bLeftShoulder && !bRightShoulder)
+		{
+			return INDEX_NONE;
+		}
+		const int32 FaceIndex = static_cast<int32>(Face);
+		if (FaceIndex < 0 || FaceIndex >= FaceCount)
+		{
+			return INDEX_NONE;
+		}
+		return (bLeftShoulder ? 0 : SolidBattleFormationSlots::MaxAssignedBattlePlans / 2) + FaceIndex;
+	}
+}

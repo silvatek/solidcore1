@@ -33,6 +33,7 @@
 #include "InputCoreTypes.h"
 #include "SolidClipLocomotion.h"
 #include "SolidCore1.h"
+#include "Party/SolidBattlePlan.h"
 #include "SolidGameMode.h"
 #include "Character/SolidCharacterStage.h"
 #include "HUD/SolidHUD.h"
@@ -291,6 +292,9 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::F6, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot6);
 	PlayerInputComponent->BindKey(EKeys::F7, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot7);
 	PlayerInputComponent->BindKey(EKeys::F8, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanSlot8);
+	PlayerInputComponent->BindKey(EKeys::Gamepad_FaceButton_Right, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanFaceRight);
+	PlayerInputComponent->BindKey(EKeys::Gamepad_FaceButton_Left, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanFaceLeft);
+	PlayerInputComponent->BindKey(EKeys::Gamepad_FaceButton_Top, IE_Pressed, this, &ASolidCharacter::SelectBattlePlanFaceTop);
 	PlayerInputComponent->BindKey(EKeys::F9, IE_Pressed, this, &ASolidCharacter::ToggleSightFromInput);
 	PlayerInputComponent->BindKey(EKeys::F10, IE_Pressed, this, &ASolidCharacter::ToggleMainMenuFromInput);
 	PlayerInputComponent->BindKey(EKeys::F12, IE_Pressed, this, &ASolidCharacter::ToggleDebugPanelFromInput);
@@ -1170,6 +1174,44 @@ void ASolidCharacter::SelectBattlePlanSlot6() { SelectBattlePlanSlotFromInput(5)
 void ASolidCharacter::SelectBattlePlanSlot7() { SelectBattlePlanSlotFromInput(6); }
 void ASolidCharacter::SelectBattlePlanSlot8() { SelectBattlePlanSlotFromInput(7); }
 
+void ASolidCharacter::SelectBattlePlanFromFace(const uint8 FaceIndex)
+{
+	const APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (!PlayerController || FaceIndex >= SolidBattlePlanInput::FaceCount)
+	{
+		return;
+	}
+	const int32 Slot = SolidBattlePlanInput::SlotForShoulderAndFace(
+		PlayerController->IsInputKeyDown(EKeys::Gamepad_LeftShoulder),
+		PlayerController->IsInputKeyDown(EKeys::Gamepad_RightShoulder),
+		static_cast<SolidBattlePlanInput::EFace>(FaceIndex));
+	if (Slot == INDEX_NONE)
+	{
+		return;
+	}
+	SelectBattlePlanSlotFromInput(Slot);
+}
+
+void ASolidCharacter::SelectBattlePlanFaceBottom()
+{
+	SelectBattlePlanFromFace(static_cast<uint8>(SolidBattlePlanInput::EFace::Bottom));
+}
+
+void ASolidCharacter::SelectBattlePlanFaceRight()
+{
+	SelectBattlePlanFromFace(static_cast<uint8>(SolidBattlePlanInput::EFace::Right));
+}
+
+void ASolidCharacter::SelectBattlePlanFaceLeft()
+{
+	SelectBattlePlanFromFace(static_cast<uint8>(SolidBattlePlanInput::EFace::Left));
+}
+
+void ASolidCharacter::SelectBattlePlanFaceTop()
+{
+	SelectBattlePlanFromFace(static_cast<uint8>(SolidBattlePlanInput::EFace::Top));
+}
+
 void ASolidCharacter::Move(const FInputActionValue& Value)
 {
 	if (IsPartyFormationDrillActive() || IsMenuOverlayOpen())
@@ -1817,6 +1859,15 @@ void ASolidCharacter::StartJump()
 {
 	if (IsMenuOverlayOpen())
 	{
+		return;
+	}
+	const APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (PlayerController
+		&& PlayerController->IsInputKeyDown(EKeys::Gamepad_FaceButton_Bottom)
+		&& (PlayerController->IsInputKeyDown(EKeys::Gamepad_LeftShoulder)
+			|| PlayerController->IsInputKeyDown(EKeys::Gamepad_RightShoulder)))
+	{
+		SelectBattlePlanFaceBottom();
 		return;
 	}
 	Jump();

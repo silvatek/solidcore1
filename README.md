@@ -117,7 +117,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.Streamer.*` | FindExisting / EnsureExists (null + idempotent) |
 | `SolidCore1.Clip.*` | SelectClip idle/walk/run/jump rules |
 | `SolidCore1.NameLabel.*` | Style sizes/colors/plates; Outcast / Sam defaults; vocation initial on the companion plate; captain plate hidden when alone or in a stronghold |
-| `SolidCore1.BattlePlan.*` | Formation slots; Company/Party assign; selection survives party ensure; drill legs; F5 Parade fires Enter Relion and Enter Dragongate once |
+| `SolidCore1.BattlePlan.*` | Formation slots; Company/Party assign; selection survives party ensure; drill legs; F5 Parade fires Enter Relion and Enter Dragongate once; left shoulder plus a face button is the first four slots, right shoulder the last four |
 | `SolidCore1.Credits.*` | Author / Cursor+Grok / Fab attribution; HUD toggle |
 | `SolidCore1.MainMenu.*` | F10 menu entries (Use portal, Test Drill, Journal, Credits, Build party, Enter cave, Character editor, Inventory) and selection; Enter cave stays dim until the cave is open, and Leave cave stays available |
 | `SolidCore1.CharacterEditor.*` | Character editor row, F10 returns to the world, height build and gender sliders, Sam's red shirt and Alex's blue shirt, attribute numbers |
@@ -269,7 +269,7 @@ Floating nameplates (`SolidNameLabel`) sit above each Party member and face the 
   - **F5 Parade** (Standard) — line in front of the Captain, facing him, far enough that the rank fits in his view. Selecting it fires Enter Iglin if needed, then Enter Relion and Enter Dragongate, so the rank, raven sight, and the repaired Iglin bridge are ready even at the start of a session. Those events still fire only once.
 - **Party** (`USolidParty`) holds up to 8 **assigned** plans and one **active** plan (default **F1 Line**).
 - Each plan has a **formation** plus **spacing** (`Narrow` / `Standard` / `Wide`) that scales follow distances.
-- Captain switches assigned slots with **F1–F8** (only filled slots work). The choice stays put when town events refresh the party.
+- Captain switches assigned slots with **F1–F8**, or a shoulder button plus a face button (left shoulder for the first four, right shoulder for the last four). Only filled slots work. The choice stays put when town events refresh the party.
 - **Test Drill** (main menu) runs a formation drill: F1 walk 1.5s → F2 / F3 / F4 each blend +90° yaw over 250 ms then walk 1.5s (square path; player move/look suppressed while active).
 - HUD shows a **Battle Plans** panel under the tech block: all 8 slots, F-key + name when assigned, active slot highlighted in amber (aligned marker column).
 - Engine viewmode debug binds (wireframe/unlit/lit/…) are moved to **Ctrl+F1–F5** in `Config/DefaultInput.ini` so bare F-keys stay free for battle plans. Restart the editor after pulling.

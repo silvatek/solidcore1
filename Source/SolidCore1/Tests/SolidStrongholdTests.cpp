@@ -1,6 +1,8 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "SolidDungeonEntrance.h"
+#include "SolidGameInstance.h"
+#include "SolidGameState.h"
 #include "SolidStronghold.h"
 #include "SolidStrongholds.h"
 #include "SolidWorldMap.h"
@@ -364,6 +366,127 @@ bool FSolidDungeonEntranceVisualsTest::RunTest(const FString& Parameters)
 		FMath::IsNearlyEqual(LintelFront, SolidStrongholds::FrameFrontLocalX, 1.f));
 	TestTrue(TEXT("the grass spawn stands in front of the mouth"), MouthFront < -40.f);
 
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidStrongholdSizeTokenTest,
+	"SolidCore1.Stronghold.SizeToken",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidStrongholdSizeTokenTest::RunTest(const FString& Parameters)
+{
+	ESolidStrongholdSize Size = ESolidStrongholdSize::Imperious;
+	TestTrue(TEXT("Humble is a size"), SolidStronghold::SizeFromToken(TEXT("Humble"), Size));
+	TestEqual(TEXT("Humble size"), static_cast<uint8>(Size), static_cast<uint8>(ESolidStrongholdSize::Humble));
+	TestTrue(TEXT("a lower-case size matches"), SolidStronghold::SizeFromToken(TEXT("humble"), Size));
+	TestEqual(TEXT("lower-case size"), static_cast<uint8>(Size), static_cast<uint8>(ESolidStrongholdSize::Humble));
+	TestTrue(TEXT("spaces around a size are ignored"), SolidStronghold::SizeFromToken(TEXT("  Average  "), Size));
+	TestEqual(TEXT("trimmed size"), static_cast<uint8>(Size), static_cast<uint8>(ESolidStrongholdSize::Average));
+
+	FSolidStronghold Joined;
+	TestFalse(TEXT("a size alone is not a stronghold"), SolidStronghold::FromToken(TEXT("Humble"), Joined));
+	TestFalse(TEXT("a size and type is not a size"), SolidStronghold::SizeFromToken(TEXT("Humble Tower"), Size));
+	TestFalse(TEXT("a joined token is not a size"), SolidStronghold::SizeFromToken(TEXT("MeagreDungeon"), Size));
+	TestFalse(TEXT("an empty token is not a size"), SolidStronghold::SizeFromToken(TEXT(""), Size));
+	TestFalse(TEXT("an unknown word is not a size"), SolidStronghold::SizeFromToken(TEXT("Vast"), Size));
+	TestEqual(
+		TEXT("a failed size lookup leaves the previous size"),
+		static_cast<uint8>(Size),
+		static_cast<uint8>(ESolidStrongholdSize::Average));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidStrongholdActiveCompanyTest,
+	"SolidCore1.Stronghold.ActiveCompany",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
+{
+	const FGameState Fresh;
+	TestEqual(
+		TEXT("a new game is a dungeon"),
+		static_cast<uint8>(Fresh.ActiveStronghold.Type),
+		static_cast<uint8>(SolidStronghold::Starting.Type));
+	TestEqual(
+		TEXT("a new game is meagre"),
+		static_cast<uint8>(Fresh.ActiveStronghold.Size),
+		static_cast<uint8>(SolidStronghold::Starting.Size));
+	TestEqual(TEXT("a new game uses the starting column"), Fresh.ActiveStrongholdCell.X, SolidStronghold::StartingColumn - 1);
+	TestEqual(TEXT("a new game uses the starting row"), Fresh.ActiveStrongholdCell.Y, SolidStronghold::StartingRow - 1);
+	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
+	{
+		TestFalse(
+			*FString::Printf(TEXT("%s starts locked"), SolidStronghold::SizeName(Size)),
+			SolidEvents::IsStrongholdSizeUnlocked(Fresh, Size));
+	}
+
+	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	TestNotNull(TEXT("world map"), Map);
+	TestTrue(TEXT("shipped map loads"), Map && Map->LoadDefault());
+	if (Map)
+	{
+		const FIntPoint Cell = SolidStronghold::StartingCell();
+		FSolidWorldBang Cave;
+		TestTrue(TEXT("the starting cell is described"), Map->FindBang(Cell.X, Cell.Y, Cave));
+		TestEqual(TEXT("the starting cell is a stronghold"), static_cast<uint8>(Cave.Kind), static_cast<uint8>(ESolidWorldBang::Stronghold));
+		TestEqual(TEXT("the starting cell is meagre"), static_cast<uint8>(Cave.StrongholdSize), static_cast<uint8>(ESolidStrongholdSize::Meagre));
+		TestEqual(TEXT("the starting cell is a dungeon"), static_cast<uint8>(Cave.StrongholdType), static_cast<uint8>(ESolidStrongholdType::Dungeon));
+		ESolidStrongholdSize SiteSize = ESolidStrongholdSize::Humble;
+		TestFalse(TEXT("the starting cell is not a site"), Map->StrongholdSiteAtCell(Cell.X, Cell.Y, SiteSize));
+
+		int32 ImperiousTowers = 0;
+		for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+		{
+			for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+			{
+				FSolidStronghold Named;
+				if (!Map->StrongholdAtCell(Col, Row, Named))
+				{
+					continue;
+				}
+				if (Named.Type == ESolidStrongholdType::Tower && Named.Size == ESolidStrongholdSize::Imperious)
+				{
+					++ImperiousTowers;
+				}
+			}
+		}
+		TestEqual(TEXT("the Imperious Tower line stays"), ImperiousTowers, 1);
+	}
+
+	FGameState Moved;
+	Moved.ActiveStronghold.Type = ESolidStrongholdType::Tower;
+	Moved.ActiveStronghold.Size = ESolidStrongholdSize::Average;
+	Moved.ActiveStrongholdCell = FIntPoint(4, 6);
+	Moved.bStrongholdSizeUnlocked[static_cast<int32>(ESolidStrongholdSize::Average)] = true;
+
+	USolidGameInstance* Instance = NewObject<USolidGameInstance>();
+	TestNotNull(TEXT("game instance"), Instance);
+	if (!Instance)
+	{
+		return false;
+	}
+	FSolidTravelSession Session;
+	Session.Configuration = Moved;
+	Instance->Capture(Session);
+	const FGameState& Carried = Instance->GetSession().Configuration;
+	TestEqual(
+		TEXT("the trip keeps the type"),
+		static_cast<uint8>(Carried.ActiveStronghold.Type),
+		static_cast<uint8>(ESolidStrongholdType::Tower));
+	TestEqual(
+		TEXT("the trip keeps the size"),
+		static_cast<uint8>(Carried.ActiveStronghold.Size),
+		static_cast<uint8>(ESolidStrongholdSize::Average));
+	TestEqual(TEXT("the trip keeps the column"), Carried.ActiveStrongholdCell.X, 4);
+	TestEqual(TEXT("the trip keeps the row"), Carried.ActiveStrongholdCell.Y, 6);
+	TestTrue(
+		TEXT("the trip keeps the unlocked size"),
+		SolidEvents::IsStrongholdSizeUnlocked(Carried, ESolidStrongholdSize::Average));
+	TestFalse(
+		TEXT("the trip does not unlock another size"),
+		SolidEvents::IsStrongholdSizeUnlocked(Carried, ESolidStrongholdSize::Humble));
 	return true;
 }
 

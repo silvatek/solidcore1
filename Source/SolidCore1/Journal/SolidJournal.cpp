@@ -2,6 +2,7 @@
 #include "Events/SolidMessages.h"
 #include "SolidGameState.h"
 #include "SolidSight.h"
+#include "SolidStronghold.h"
 #include "SolidWorldTime.h"
 
 FString SolidJournal::Describe(const SolidEvents::FEvent& Event)
@@ -31,6 +32,9 @@ FString SolidJournal::Describe(const SolidEvents::FEvent& Event)
 			break;
 		case SolidEvents::EChange::ClearInventory:
 			Part = TEXT("Inventory cleared");
+			break;
+		case SolidEvents::EChange::UnlockStrongholdSize:
+			Part = FString::Printf(TEXT("%s size unlocked"), SolidStronghold::SizeName(Change.StrongholdSize));
 			break;
 		case SolidEvents::EChange::ShowMessage:
 			if (const TCHAR* MessageText = SolidMessages::TextFor(Change.MessageId))

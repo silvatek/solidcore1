@@ -1303,4 +1303,83 @@ bool FSolidEventsClearInventoryTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidEventsUnlockStrongholdSizeTest,
+	"SolidCore1.Events.UnlockStrongholdSize",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidEventsUnlockStrongholdSizeTest::RunTest(const FString& Parameters)
+{
+	const TCHAR* HeldBack[] = {
+		TEXT("Enter Iglin"),
+		TEXT("Enter Relion"),
+		TEXT("Enter Kanfold"),
+		TEXT("Enter Dragongate"),
+	};
+	for (const TCHAR* Name : HeldBack)
+	{
+		const SolidEvents::FEvent* Event = SolidEventTestPrivate::FindEvent(Name);
+		TestNotNull(*FString::Printf(TEXT("%s is listed"), Name), Event);
+		if (!Event)
+		{
+			continue;
+		}
+		const int32 ChangeCount = FMath::Min(Event->ChangeCount, SolidEvents::MaxChangesPerEvent);
+		for (int32 Index = 0; Index < ChangeCount; ++Index)
+		{
+			TestFalse(
+				*FString::Printf(TEXT("%s does not unlock a size"), Name),
+				Event->Changes[Index].Kind == SolidEvents::EChange::UnlockStrongholdSize);
+		}
+	}
+	for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
+	{
+		const SolidEvents::FEvent& Event = SolidEvents::Definitions[Index];
+		const int32 ChangeCount = FMath::Min(Event.ChangeCount, SolidEvents::MaxChangesPerEvent);
+		for (int32 ChangeIndex = 0; ChangeIndex < ChangeCount; ++ChangeIndex)
+		{
+			TestFalse(
+				TEXT("no shipped event unlocks a size"),
+				Event.Changes[ChangeIndex].Kind == SolidEvents::EChange::UnlockStrongholdSize);
+		}
+	}
+
+	FGameState Played;
+	SolidEvents::NotifyOccupiedTown(Played, SolidTowns::Iglin);
+	SolidEvents::NotifyOccupiedTown(Played, SolidTowns::Relion);
+	SolidEvents::NotifyOccupiedTown(Played, SolidTowns::Kanfold);
+	SolidEvents::NotifyOccupiedTown(Played, SolidTowns::Dragongate);
+	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
+	{
+		TestFalse(
+			*FString::Printf(TEXT("those towns leave %s locked"), SolidStronghold::SizeName(Size)),
+			SolidEvents::IsStrongholdSizeUnlocked(Played, Size));
+	}
+
+	const SolidEvents::FEvent Built = SolidEvents::EnterTown(TEXT("aabbcc01"), TEXT("Sample unlock"), 0, SolidEvents::ACT_0)
+		.UnlockStrongholdSize(ESolidStrongholdSize::Humble);
+	TestEqual(TEXT("a built unlock has one change"), Built.ChangeCount, 1);
+	TestEqual(
+		TEXT("a built unlock is UnlockStrongholdSize"),
+		static_cast<uint8>(Built.Changes[0].Kind),
+		static_cast<uint8>(SolidEvents::EChange::UnlockStrongholdSize));
+	TestEqual(
+		TEXT("a built unlock names Humble"),
+		static_cast<uint8>(Built.Changes[0].StrongholdSize),
+		static_cast<uint8>(ESolidStrongholdSize::Humble));
+	TestTrue(
+		TEXT("the journal names the size"),
+		SolidJournal::Describe(Built).Contains(TEXT("Humble size unlocked")));
+
+	FGameState State;
+	SolidEvents::FResult Result;
+	SolidEvents::ApplyChange(State, Built.Changes[0], Result);
+	TestTrue(TEXT("Humble is unlocked"), SolidEvents::IsStrongholdSizeUnlocked(State, ESolidStrongholdSize::Humble));
+	TestFalse(TEXT("Average stays locked"), SolidEvents::IsStrongholdSizeUnlocked(State, ESolidStrongholdSize::Average));
+	TestFalse(TEXT("Meagre stays locked"), SolidEvents::IsStrongholdSizeUnlocked(State, ESolidStrongholdSize::Meagre));
+	SolidEvents::ApplyChange(State, Built.Changes[0], Result);
+	TestTrue(TEXT("unlocking Humble again keeps it"), SolidEvents::IsStrongholdSizeUnlocked(State, ESolidStrongholdSize::Humble));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

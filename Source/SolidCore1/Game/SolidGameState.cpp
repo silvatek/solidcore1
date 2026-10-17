@@ -17,54 +17,6 @@ namespace
 		return true;
 	}
 
-	void ApplyGameStateChange(FGameState& State, const SolidEvents::FChange& Change, SolidEvents::FResult& Result)
-	{
-		switch (Change.Kind)
-		{
-		case SolidEvents::EChange::EnableSight:
-			if (Change.Sight == ESolidSight::Raven)
-			{
-				State.bRavenSightEnabled = true;
-			}
-			else
-			{
-				State.bTrueSightEnabled = true;
-			}
-			Result.bSetSight = true;
-			Result.Sight = Change.Sight;
-			break;
-		case SolidEvents::EChange::MaxPartySize:
-			State.MaxPartySize = FMath::Max(0, Change.PartySize);
-			Result.MaxPartySize = State.MaxPartySize;
-			break;
-		case SolidEvents::EChange::CaptainTitle:
-			if (Change.Title && Change.Title[0])
-			{
-				State.CaptainTitle = Change.Title;
-				Result.bSetTitle = true;
-				Result.CaptainTitle = Change.Title;
-			}
-			break;
-		case SolidEvents::EChange::RepairBridge:
-			State.bIglinBridgeRepaired = true;
-			Result.bRepairBridge = true;
-			break;
-		case SolidEvents::EChange::EnableCave:
-			State.bCaveEnabled = true;
-			Result.bEnterCave = true;
-			break;
-		case SolidEvents::EChange::ShowMessage:
-			Result.bShowMessage = true;
-			Result.MessageId = Change.MessageId;
-			break;
-		case SolidEvents::EChange::ClearInventory:
-			SolidInventory::Clear(State.Inventory);
-			break;
-		default:
-			break;
-		}
-	}
-
 	bool TryFireEvent(
 		FGameState& State,
 		const int32 Index,
@@ -93,7 +45,7 @@ namespace
 		const int32 ChangeCount = FMath::Min(Event.ChangeCount, SolidEvents::MaxChangesPerEvent);
 		for (int32 ChangeIndex = 0; ChangeIndex < ChangeCount; ++ChangeIndex)
 		{
-			ApplyGameStateChange(State, Event.Changes[ChangeIndex], Result);
+			SolidEvents::ApplyChange(State, Event.Changes[ChangeIndex], Result);
 		}
 		return true;
 	}
@@ -101,6 +53,63 @@ namespace
 
 namespace SolidEvents
 {
+
+void ApplyChange(FGameState& State, const FChange& Change, FResult& Result)
+{
+	switch (Change.Kind)
+	{
+	case EChange::EnableSight:
+		if (Change.Sight == ESolidSight::Raven)
+		{
+			State.bRavenSightEnabled = true;
+		}
+		else
+		{
+			State.bTrueSightEnabled = true;
+		}
+		Result.bSetSight = true;
+		Result.Sight = Change.Sight;
+		break;
+	case EChange::MaxPartySize:
+		State.MaxPartySize = FMath::Max(0, Change.PartySize);
+		Result.MaxPartySize = State.MaxPartySize;
+		break;
+	case EChange::CaptainTitle:
+		if (Change.Title && Change.Title[0])
+		{
+			State.CaptainTitle = Change.Title;
+			Result.bSetTitle = true;
+			Result.CaptainTitle = Change.Title;
+		}
+		break;
+	case EChange::RepairBridge:
+		State.bIglinBridgeRepaired = true;
+		Result.bRepairBridge = true;
+		break;
+	case EChange::EnableCave:
+		State.bCaveEnabled = true;
+		Result.bEnterCave = true;
+		break;
+	case EChange::ShowMessage:
+		Result.bShowMessage = true;
+		Result.MessageId = Change.MessageId;
+		break;
+	case EChange::ClearInventory:
+		SolidInventory::Clear(State.Inventory);
+		break;
+	case EChange::UnlockStrongholdSize:
+	{
+		const int32 Index = static_cast<int32>(Change.StrongholdSize);
+		if (Index >= 0 && Index < SolidStronghold::SizeCount)
+		{
+			State.bStrongholdSizeUnlocked[Index] = true;
+		}
+		break;
+	}
+	default:
+		break;
+	}
+}
 
 int32 PartyCount(const FGameState& State)
 {

@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Events/SolidMessages.h"
 #include "SolidSight.h"
+#include "SolidStronghold.h"
 #include "Towns/SolidTowns.h"
 
 /**
@@ -78,6 +79,8 @@ namespace SolidEvents
 		ShowMessage,
 		/** Empty the captain's worn boxes and pack, then put Rags on the body. */
 		ClearInventory,
+		/** Unlock one stronghold size. No shipped event carries this yet. */
+		UnlockStrongholdSize,
 	};
 
 	/** Nameplate before Enter Iglin. Driven from the village sets this again. */
@@ -96,6 +99,8 @@ namespace SolidEvents
 		const TCHAR* Title = nullptr;
 		/** Message id for a ShowMessage change. */
 		const TCHAR* MessageId = nullptr;
+		/** Size for an UnlockStrongholdSize change. */
+		ESolidStrongholdSize StrongholdSize = ESolidStrongholdSize::Meagre;
 	};
 
 	/**
@@ -156,6 +161,14 @@ namespace SolidEvents
 			Change.Kind = EChange::ClearInventory;
 			return Change;
 		}
+
+		inline constexpr FChange UnlockStrongholdSize(const ESolidStrongholdSize Size)
+		{
+			FChange Change;
+			Change.Kind = EChange::UnlockStrongholdSize;
+			Change.StrongholdSize = Size;
+			return Change;
+		}
 	}
 
 	struct FEvent
@@ -208,6 +221,11 @@ namespace SolidEvents
 		constexpr FEvent ClearInventory() const
 		{
 			return With(Change::ClearInventory());
+		}
+
+		constexpr FEvent UnlockStrongholdSize(const ESolidStrongholdSize Size) const
+		{
+			return With(Change::UnlockStrongholdSize(Size));
 		}
 
 		constexpr FEvent Require(const TCHAR* EventId) const

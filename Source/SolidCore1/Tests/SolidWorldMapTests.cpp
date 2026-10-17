@@ -1523,4 +1523,108 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidWorldMapStrongholdSiteTest,
+	"SolidCore1.WorldMap.StrongholdSite",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidWorldMapStrongholdSiteTest::RunTest(const FString& Parameters)
+{
+	const int32 HumbleCol = 3;
+	const int32 HumbleRow = 3;
+	const int32 AverageCol = 7;
+	const int32 AverageRow = 3;
+	const int32 ImperiousCol = 11;
+	const int32 ImperiousRow = 3;
+	const int32 VastCol = 3;
+	const int32 VastRow = 4;
+	const int32 JoinedCol = 7;
+	const int32 JoinedRow = 4;
+	const int32 CaveCol = 3;
+	const int32 CaveRow = 5;
+
+	FString Text;
+	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	{
+		FString Line;
+		Line.Reserve(USolidWorldMap::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		{
+			const bool bBang = (Row == HumbleRow && Col == HumbleCol)
+				|| (Row == AverageRow && Col == AverageCol)
+				|| (Row == ImperiousRow && Col == ImperiousCol)
+				|| (Row == VastRow && Col == VastCol)
+				|| (Row == JoinedRow && Col == JoinedCol)
+				|| (Row == CaveRow && Col == CaveCol);
+			Line.AppendChar(bBang ? USolidWorldMap::LocationMarker : USolidWorldMap::GrassMarker);
+		}
+		Text += Line;
+		Text += TEXT("\n");
+	}
+	Text += TEXT(". = Grassland (light green)\n");
+	Text += TEXT("! 4,4 = StrongholdSite (Humble)\n");
+	Text += TEXT("! 4,8 = StrongholdSite Average\n");
+	Text += TEXT("! 4,12 = strongholdsite (imperious)\n");
+	Text += TEXT("! 5,4 = StrongholdSite (Vast)\n");
+	Text += TEXT("! 5,8 = StrongholdSite (Humble Tower)\n");
+	Text += TEXT("! 6,4 = Stronghold (MeagreDungeon)\n");
+
+	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("a map with sites loads"), Map->LoadFromString(Text));
+
+	FSolidWorldBang Humble;
+	TestTrue(TEXT("a bracketed size is a site"), Map->FindBang(HumbleCol, HumbleRow, Humble));
+	TestEqual(TEXT("site kind"), static_cast<uint8>(Humble.Kind), static_cast<uint8>(ESolidWorldBang::StrongholdSite));
+	TestEqual(TEXT("site size"), static_cast<uint8>(Humble.StrongholdSize), static_cast<uint8>(ESolidStrongholdSize::Humble));
+	TestEqual(TEXT("site name"), Humble.Name, FString(TEXT("Humble")));
+	TestEqual(TEXT("a site is not a location"), Map->GetLocationIdAtCell(HumbleCol, HumbleRow), INDEX_NONE);
+	TestEqual(
+		TEXT("a site keeps the marker biome"),
+		static_cast<uint8>(Map->GetBiomeAtCell(HumbleCol, HumbleRow)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+	ESolidStrongholdSize ReadSize = ESolidStrongholdSize::Stately;
+	TestTrue(TEXT("the site cell reports its size"), Map->StrongholdSiteAtCell(HumbleCol, HumbleRow, ReadSize));
+	TestEqual(TEXT("reported size"), static_cast<uint8>(ReadSize), static_cast<uint8>(ESolidStrongholdSize::Humble));
+	FSolidStronghold AsStronghold;
+	TestFalse(TEXT("a site is not a stronghold"), Map->StrongholdAtCell(HumbleCol, HumbleRow, AsStronghold));
+
+	FSolidWorldBang Average;
+	TestTrue(TEXT("a size without brackets is a site"), Map->FindBang(AverageCol, AverageRow, Average));
+	TestEqual(TEXT("unbracketed size"), static_cast<uint8>(Average.StrongholdSize), static_cast<uint8>(ESolidStrongholdSize::Average));
+
+	FSolidWorldBang Imperious;
+	TestTrue(TEXT("the site word and the size ignore case"), Map->FindBang(ImperiousCol, ImperiousRow, Imperious));
+	TestEqual(TEXT("imperious site"), static_cast<uint8>(Imperious.StrongholdSize), static_cast<uint8>(ESolidStrongholdSize::Imperious));
+
+	FSolidWorldBang Ignored;
+	TestFalse(TEXT("an unknown size is not a mark"), Map->FindBang(VastCol, VastRow, Ignored));
+	TestEqual(
+		TEXT("an unknown size stays grassland"),
+		static_cast<uint8>(Map->GetBiomeAtCell(VastCol, VastRow)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+	ReadSize = ESolidStrongholdSize::Stately;
+	TestFalse(TEXT("an unknown size is not a site"), Map->StrongholdSiteAtCell(VastCol, VastRow, ReadSize));
+	TestEqual(
+		TEXT("a failed site lookup leaves the previous size"),
+		static_cast<uint8>(ReadSize),
+		static_cast<uint8>(ESolidStrongholdSize::Stately));
+	TestFalse(TEXT("a size and type is not a site"), Map->FindBang(JoinedCol, JoinedRow, Ignored));
+
+	FSolidWorldBang Cave;
+	TestTrue(TEXT("a stronghold line is still a stronghold"), Map->FindBang(CaveCol, CaveRow, Cave));
+	TestEqual(TEXT("cave kind"), static_cast<uint8>(Cave.Kind), static_cast<uint8>(ESolidWorldBang::Stronghold));
+	TestFalse(TEXT("a stronghold is not a site"), Map->StrongholdSiteAtCell(CaveCol, CaveRow, ReadSize));
+
+	const FVector2D WorldMin(-6400.f, -6400.f);
+	const FVector2D WorldMax(6400.f, 6400.f);
+	FVector2D SiteXY = FVector2D::ZeroVector;
+	TestTrue(TEXT("site cell"), Map->CellToWorldXY(FIntPoint(HumbleCol, HumbleRow), WorldMin, WorldMax, SiteXY));
+	TestFalse(TEXT("a site is not a town"), Map->IsMarkedTown(SiteXY.X, SiteXY.Y, WorldMin, WorldMax));
+
+	TArray<SolidStrongholds::FEntrance> Mouths;
+	TestEqual(TEXT("a site adds no mouth"), SolidStrongholds::CollectEntrances(Map, WorldMin, WorldMax, Mouths), 1);
+	TestTrue(TEXT("the mouth is the stronghold"), Mouths.Num() == 1 && Mouths[0].Cell == FIntPoint(CaveCol, CaveRow));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

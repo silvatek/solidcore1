@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0437")
+#define SOLID_BUILD_ID TEXT("SC1-0438")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Each tower floor may shift its hex grid a little, so more cells sit in the circle.")
+#define SOLID_BUILD_NOTE TEXT("The company base is recorded, and a map line can name a stronghold site by size.")
 #endif

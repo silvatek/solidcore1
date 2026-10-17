@@ -69,6 +69,17 @@ namespace SolidStronghold
 	/** The company starts in a Meagre Dungeon. The world map names that cell. */
 	inline const FSolidStronghold Starting = { ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre };
 
+	/** WorldMap.txt row of that dungeon, counting from 1 at the top. */
+	inline constexpr int32 StartingRow = 9;
+	/** WorldMap.txt column of that dungeon, counting from 1 at the left. */
+	inline constexpr int32 StartingColumn = 17;
+
+	/** Map cell of the starting stronghold. X is the column, Y is the row, counting from 0. */
+	inline FIntPoint StartingCell()
+	{
+		return FIntPoint(StartingColumn - 1, StartingRow - 1);
+	}
+
 	/** Enter and leave aims for one stronghold. Missing rows use a level in/out aim. */
 	struct FVisitView
 	{
@@ -191,6 +202,28 @@ namespace SolidStronghold
 					Out.Type = Type;
 					return true;
 				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * A size name alone, such as "Humble" or "humble".
+	 * "Humble Tower" and "MeagreDungeon" are stronghold tokens, not sizes.
+	 */
+	inline bool SizeFromToken(const FString& Token, ESolidStrongholdSize& Out)
+	{
+		const FString Compact = Token.TrimStartAndEnd();
+		if (Compact.IsEmpty() || Compact.Contains(TEXT(" ")))
+		{
+			return false;
+		}
+		for (const ESolidStrongholdSize Size : Sizes)
+		{
+			if (Compact.Equals(SizeName(Size), ESearchCase::IgnoreCase))
+			{
+				Out = Size;
+				return true;
 			}
 		}
 		return false;

@@ -13,6 +13,8 @@ enum class ESolidWorldBang : uint8
 	None,
 	Town,
 	Stronghold,
+	/** A size, and no type. The cell stays the marker's biome. */
+	StrongholdSite,
 	LairEntrance,
 	LairExit,
 };
@@ -23,6 +25,7 @@ struct FSolidWorldBang
 	ESolidWorldBang Kind = ESolidWorldBang::None;
 	int32 LocationId = INDEX_NONE;
 	FString Name;
+	/** Unused for a stronghold site. */
 	ESolidStrongholdType StrongholdType = ESolidStrongholdType::Dungeon;
 	ESolidStrongholdSize StrongholdSize = ESolidStrongholdSize::Meagre;
 	FIntPoint Cell = FIntPoint::ZeroValue;
@@ -62,8 +65,9 @@ struct FSolidWorldLocation
  * 8 m east–west and 16 m north–south.
  * A ! is one cell, named by a line such as "! 8,21 = Town Iglin": row 8, column 21,
  * counting from 1 at the top-left of the grid.
- * "! 9,12 = Stronghold MeagreDungeon", "! 10,11 = LairEntrance Iglin tunnels",
- * and "! 11,40 = LairExit Iglin tunnels" name that cell by type.
+ * "! 9,12 = Stronghold MeagreDungeon", "! 12,12 = StrongholdSite (Humble)",
+ * "! 10,11 = LairEntrance Iglin tunnels", and "! 11,40 = LairExit Iglin tunnels"
+ * name that cell. A site names a size and no type.
  * Anything after # is a comment. A ! with no line is not a location.
  * Location 0 is the starting town.
  * A road end is a town name or a stronghold name.
@@ -98,7 +102,7 @@ public:
 
 	/**
 	 * One described cell. "! row,column = Town Name" is a location.
-	 * Stronghold, LairEntrance, and LairExit use the same coordinates.
+	 * Stronghold, StrongholdSite, LairEntrance, and LairExit use the same coordinates.
 	 * Row and column count from 1 at the top-left of the grid.
 	 */
 	static constexpr TCHAR LocationMarker = TEXT('!');
@@ -123,7 +127,8 @@ public:
 	 * Marker biome at map cell (clamped). The town marker is Town; the desert marker is Desert; M is Mountain.
 	 * A named town ! uses the Town biome. A lair ! is Mountain.
 	 * A stronghold ! uses the shelf that stronghold names. One with no shelf keeps the marker biome.
-	 * A ! with no description is Grassland. The river marker is River for the whole cell. SampleBiome paints only the channel.
+	 * A stronghold site keeps the marker biome. A ! with no description is Grassland.
+	 * The river marker is River for the whole cell. SampleBiome paints only the channel.
 	 */
 	ESolidBiome GetBiomeAtCell(int32 MapX, int32 MapY) const;
 
@@ -176,8 +181,11 @@ public:
 	/** The description of a ! cell, or false when that cell has none. */
 	bool FindBang(int32 MapX, int32 MapY, FSolidWorldBang& Out) const;
 
-	/** True when a ! line names this cell as a stronghold. */
+	/** True when a ! line names this cell as a stronghold. A stronghold site is not one. */
 	bool StrongholdAtCell(int32 MapX, int32 MapY, FSolidStronghold& Out) const;
+
+	/** True when a ! line names this cell as a stronghold site. OutSize is that size. */
+	bool StrongholdSiteAtCell(int32 MapX, int32 MapY, ESolidStrongholdSize& OutSize) const;
 
 	/** Every numbered location, sorted by id. */
 	void CollectLocations(TArray<FSolidWorldLocation>& OutLocations) const;

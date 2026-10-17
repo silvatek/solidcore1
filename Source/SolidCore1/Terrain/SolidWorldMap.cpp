@@ -210,6 +210,7 @@ namespace
 			Skip,
 			Town,
 			Stronghold,
+			StrongholdSite,
 			LairEntrance,
 			LairExit,
 		};
@@ -222,7 +223,7 @@ namespace
 
 	/**
 	 * "! 8,21 = Town Iglin" — row 8, column 21, counting from 1 at the top-left.
-	 * "! 9,12 = Stronghold MeagreDungeon",
+	 * "! 9,12 = Stronghold MeagreDungeon", "! 12,12 = StrongholdSite (Humble)",
 	 * "! 10,11 = LairEntrance Iglin tunnels", "! 11,40 = LairExit Iglin tunnels".
 	 * Anything after # is a comment. A numeric right-hand side is ignored.
 	 * Returns false when the line is not that shape.
@@ -311,6 +312,10 @@ namespace
 		else if (Type.Equals(TEXT("Stronghold"), ESearchCase::IgnoreCase))
 		{
 			Out.Kind = FWorldMapBangRef::EKind::Stronghold;
+		}
+		else if (Type.Equals(TEXT("StrongholdSite"), ESearchCase::IgnoreCase))
+		{
+			Out.Kind = FWorldMapBangRef::EKind::StrongholdSite;
 		}
 		else if (Type.Equals(TEXT("LairEntrance"), ESearchCase::IgnoreCase))
 		{
@@ -480,6 +485,21 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 			Mark.Name = SolidStronghold::Label(Attributes);
 			break;
 		}
+		case FWorldMapBangRef::EKind::StrongholdSite:
+		{
+			ESolidStrongholdSize Size = ESolidStrongholdSize::Meagre;
+			if (!SolidStronghold::SizeFromToken(Ref.Identifier, Size))
+			{
+				UE_LOG(LogSolid, Warning,
+					TEXT("WorldMap: ! %d,%d stronghold site '%s' is unknown; ignored."),
+					Row, Column, *Ref.Identifier);
+				continue;
+			}
+			Mark.Kind = ESolidWorldBang::StrongholdSite;
+			Mark.StrongholdSize = Size;
+			Mark.Name = SolidStronghold::SizeName(Size);
+			break;
+		}
 		case FWorldMapBangRef::EKind::LairEntrance:
 		case FWorldMapBangRef::EKind::LairExit:
 		{
@@ -645,6 +665,17 @@ bool USolidWorldMap::StrongholdAtCell(const int32 MapX, const int32 MapY, FSolid
 	}
 	Out.Type = Mark.StrongholdType;
 	Out.Size = Mark.StrongholdSize;
+	return true;
+}
+
+bool USolidWorldMap::StrongholdSiteAtCell(const int32 MapX, const int32 MapY, ESolidStrongholdSize& OutSize) const
+{
+	FSolidWorldBang Mark;
+	if (!FindBang(MapX, MapY, Mark) || Mark.Kind != ESolidWorldBang::StrongholdSite)
+	{
+		return false;
+	}
+	OutSize = Mark.StrongholdSize;
 	return true;
 }
 

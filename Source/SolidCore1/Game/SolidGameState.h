@@ -5,6 +5,7 @@
 #include "Inventory/SolidInventory.h"
 #include "Inventory/SolidStorage.h"
 #include "Journal/SolidJournalEntry.h"
+#include "SolidStronghold.h"
 
 /**
  * Live company state. The game starts in true sight with an empty party.
@@ -32,6 +33,15 @@ struct FGameState
 	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
 	/** The cave chest. It starts with a rusty sword, old boots, coins, sticks, and pitch. Taking an item keeps it out. */
 	SolidStorage::FContainer CaveChest = SolidStorage::StartingCaveChest();
+	/** The company base. A new game is the Meagre Dungeon on its map cell. */
+	FSolidStronghold ActiveStronghold = SolidStronghold::Starting;
+	/** Map cell of that base. X is the column and Y is the row, counting from 0. */
+	FIntPoint ActiveStrongholdCell = SolidStronghold::StartingCell();
+	/**
+	 * Sizes an event has unlocked. The index matches ESolidStrongholdSize.
+	 * A new game has none. The starting dungeon is the company base, not an unlock.
+	 */
+	bool bStrongholdSizeUnlocked[SolidStronghold::SizeCount] = {};
 };
 
 namespace SolidEvents
@@ -56,6 +66,19 @@ namespace SolidEvents
 
 	int32 PartyCount(const FGameState& State);
 	bool IsSightEnabled(const FGameState& State, ESolidSight Sight);
+
+	/** True when an event has unlocked this stronghold size. */
+	inline bool IsStrongholdSizeUnlocked(const FGameState& State, const ESolidStrongholdSize Size)
+	{
+		const int32 Index = static_cast<int32>(Size);
+		return Index >= 0 && Index < SolidStronghold::SizeCount && State.bStrongholdSizeUnlocked[Index];
+	}
+
+	/**
+	 * Run one change. An event runs each of its changes this way.
+	 * A size unlock is recorded on the company. No shipped event carries one yet.
+	 */
+	void ApplyChange(FGameState& State, const FChange& Change, FResult& Result);
 
 	void Remember(
 		FGameState& State,

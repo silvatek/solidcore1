@@ -17,7 +17,7 @@ The player puts a rusty sword and a rough stone into the crafting slots and pres
 - The channel and the mountain itself have none. The sea has none.
 - A point that has a tree has none. A point that already has a stick or a pitch has none.
 - A point holds at most one rough stone.
-- The piles are a scatter of those points, not every one. At most 64 are placed.
+- The piles are a scatter of those points, not every one. At most 64 are chosen.
 - Fog, the click, the pack, the cube, and a trip through a stronghold or a lair follow [Foraging](foraging.md). This story does not change those rules.
 - The taken indexes are this scatter's indexes, kept apart from the forest pile indexes. Taking a rough stone does not remove a stick or a pitch.
 - The dungeon, the tower, and the Iglin tunnels have none.
@@ -38,7 +38,7 @@ The player puts a rusty sword and a rough stone into the crafting slots and pres
 - Mountain takes the whole cell, so the piles sit on the points just outside it.
 - Town is excluded, so a bank that took a town biome has none. Rathen sits on such a bank. Road is excluded the way a road through forest has no sticks.
 - Skip a point chosen for a tree, and a point chosen for a stick or a pitch, before this scatter. Use the point index, before jitter.
-- Gather them the way the forest piles are gathered. Density is `0.05`. The max is 64. Jitter is 90 cm. The seed is 44, so a change to the forest seed 43 does not move these. A test set of 40 eligible points places two piles. A map with no river and no mountain places none.
+- Gather them the way the forest piles are gathered. Density is `0.05`. The max is 64. Jitter is 90 cm. The seed is 44, so a change to the forest seed 43 does not move these. A test set of 40 eligible points chooses two piles. A map with no river and no mountain chooses none. Seed a chosen point when its `Fog` falls below `1.0f`, the same moment as a stick or a pitch. A point that stays at `1.0f` is never seeded.
 - If the jittered spot is impassable, leave the pile on the terrain point. `SolidGroundMove::IsImpassable` is sea, mountain, and the channel.
 - Store these taken indexes on `FGameState` in their own list. The forest list stays the forest indexes. `SolidInventory::Clear` still does not put either list back.
 - The recipe is the second entry in `SolidCrafting::Recipes`, after Torch. `MaxRecipes` is 16. `CraftButtonEnabled` is true only when exactly one known recipe fits and the pack has an empty cell. `Craft` uses that same test, so a second match cannot spend the slots. The warning is that string, in the hint ink, left-aligned with the first crafting slot and below the row. It is hidden when fewer than two recipes fit, and the page is the height it is now. While it shows, the board grows to fit the line. The button stays beside the slots.

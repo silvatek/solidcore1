@@ -34,6 +34,7 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Stronghold type classes](Planning/stronghold-type-classes.md)
 - [Fortress stronghold](Planning/fortress-stronghold.md)
 - [Imperious dungeon](Planning/imperious-dungeon.md)
+- [Imperious Tower refinements](Planning/imperious-tower-refinements.md)
 
 ## Done
 

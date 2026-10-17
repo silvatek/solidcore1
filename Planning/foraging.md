@@ -4,7 +4,7 @@ Status: Ready
 
 ## Story
 
-The player walks through forest that is no longer in full fog and finds sticks and pitch scattered on the ground. Those are the materials this story places. A pile is one stick or one pitch, on forest ground, because forest is where they occur. The player points at it, close to the captain, and the name shows. A click picks it up into the pack, and the pile is gone. A click the pack cannot hold leaves the pile where it is. Ground still in full fog shows no pile. A pile already taken is still gone after the player leaves a stronghold or a lair and comes back.
+The player walks through forest that is no longer in full fog and finds sticks and pitch scattered on the ground. Those are the materials this story places. A pile is one stick or one pitch, on forest ground, because forest is where they occur. A stick and a pitch are the same simple shape. The name is what tells them apart. The player points at it, close to the captain, and the name shows. A click picks it up into the pack, and the pile is gone. A click the pack cannot hold leaves the pile where it is. Ground still in full fog shows no pile. A pile already taken is still gone after the player leaves a stronghold or a lair and comes back.
 
 ## Acceptance
 
@@ -16,6 +16,8 @@ The player walks through forest that is no longer in full fog and finds sticks a
 - A forest point holds at most one pile. A forest point that has a tree holds no pile.
 - The piles are a scatter of the remaining forest points, not every one. At most 64 are placed.
 - When at least two are placed, both a stick and a pitch are among them. They alternate, and the first is a stick.
+- Every pile uses the same simple mesh. A stick and a pitch are that same shape. The catalog name on the pointer is what differs.
+- This story does not give a stick its own mesh, or a pitch its own. A later story does that, one mesh for each kind of pile.
 - The dungeon, the tower, and the Iglin tunnels have no piles.
 - A pile whose point has `FSolidTerrainPoint.Fog` of `1.0f` is not drawn, and the pointer does not name it.
 - When that fog is no longer `1.0f`, the pile is there.
@@ -47,6 +49,7 @@ The player walks through forest that is no longer in full fog and finds sticks a
 - A left click already prefers a passage (`PassageUnderPointer`), then `ClickMoveFromInput`. A pile in reach sits between those two. `SolidClickMove::AllowsClick` is raven sight only. `IsMenuOverlayOpen` includes the inventory, the journal, the message, and the party builder. The passage ray is `SolidClickMove::MaxRayCm` (800 m). The 4 m test is the captain's ground distance to the pile, not that ray.
 - Terrain points are 2 m apart (`PointSpacing` 200 cm). 4 m is two of those, so a pile on a neighbouring point is in reach.
 - The tip is the catalog name, drawn the way `CavePassageTip` is drawn. Empty when the pointer is not over a pile in reach. The pointer has to be showing, the same check as `SolidDungeonPassage::AcceptsPointer`.
-- A pile is a small marker on the ground at its point. This story does not pick a Fab mesh.
+- The placeholder is one Engine cube, `/Engine/BasicShapes/Cube.Cube`, about 40 cm on a side, sitting on the ground, in one dull color. The same component draws every pile. One function of the item id picks the mesh. This story returns the cube for every id, so a later story can swap in a mesh per type without changing the pickup. Do not load a Fab mesh here.
+- The cube is a query hit for the pointer. It does not block the captain's walk.
 - The point's own biome is the test. A road cell is Road, not the biome the road replaced. A road through forest does not keep the sticks.
 - No piles on `?SolidLevel=Dungeon`, `Tower`, or the lair.

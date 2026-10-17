@@ -37,6 +37,15 @@ bool FSolidPointerShapeTest::RunTest(const FString& Parameters)
 	const SolidPointer::FTriangle Placed = SolidPointer::Place(Head, Screen);
 	TestTrue(TEXT("drawn tip sits on the mouse"), Placed.A.Equals(Screen));
 	TestTrue(TEXT("drawn edge follows the mouse"), Placed.B.Equals(Head.B + Screen));
+
+	TestEqual(TEXT("the pointer is the two head triangles"), SolidPointer::TriangleCount, 2);
+	const SolidPointer::FTriangle Other = SolidPointer::Triangle(1);
+	TestTrue(TEXT("the second triangle meets the tip"), Other.A.IsNearlyZero(0.01f));
+	const FVector2D Vertices[] = { Head.A, Head.B, Head.C, Other.A, Other.B, Other.C };
+	for (const FVector2D& Vertex : Vertices)
+	{
+		TestTrue(TEXT("the tail is not drawn"), Vertex.Y <= Head.B.Y + 0.01f);
+	}
 	return true;
 }
 

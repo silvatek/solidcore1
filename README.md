@@ -6,7 +6,6 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 
 Open stories live in [`Planning`](Planning). Each file is one idea. A shipped story moves to [`Planning/Done`](Planning/Done).
 
-- [Better mouse pointer](Planning/better-mouse-pointer.md)
 - [White material for full fog](Planning/white-fog-terrain.md)
 - [Hide trees and buildings in full fog](Planning/hide-props-in-full-fog.md)
 - [Better building and tree models](Planning/better-building-and-tree-models.md)
@@ -62,6 +61,7 @@ Shipped stories live in [`Planning/Done`](Planning/Done).
 - [Oak and bronze](Planning/Done/oak-and-bronze.md)
 - [Debug HUD](Planning/Done/debug-hud.md)
 - [Mouse pointer](Planning/Done/mouse-pointer.md)
+- [Better mouse pointer](Planning/Done/better-mouse-pointer.md)
 - [Click to move](Planning/Done/click-to-move.md)
 - [Main menu](Planning/Done/main-menu.md)
 - [Content pipeline](Planning/Done/content-pipeline.md)
@@ -148,7 +148,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.Inventory.*` | Item catalog: Rags (armor), a dented helmet (helmet), a crude spear (weapon), and a torch (tool); the torch and pitch are Common and the other items are Inferior, except coins which have no grade and stack to 999; a stick stacks to 10; each of the first items stacks to 1; the cave chest is two columns by three rows and starts with the rusty sword, old boots, 20 coins, five sticks, and three pitch; slots store those ids and the page shows the name; armor fits only the body, a helmet only the head, boots only the boots, and a belt only the belt; any item can go in the pack or the chest; a drag moves an item between worn boxes, pack cells, and chest cells, and an occupied destination swaps when both items fit; a closed chest refuses the drop; starting kit is the helmet, Rags, and the spear; boots, the off hand, and the belt start empty; Clear empties worn boxes, the pack, and the crafting slots, and leaves Rags on the body; person-shaped worn boxes with those names above them, in the same letters as Pack and Chest; pack is two columns by three rows; four crafting slots and a small bronze Craft button sit on the bottom right; the button lights when a known recipe fits those slots and the pack has an empty cell; pressing it spends the ingredients and puts one result in the first empty pack cell, and it stays lit only while another craft still fits; a drag can move an item into a crafting slot and back out; F10 Inventory and `/` open the page, and Esc or F10 closes it |
 | `SolidCore1.HudTheme.*` | Oak-and-bronze frame thickness, corner bosses, opaque board; translucent oval sight marker |
 | `SolidCore1.HUD.DebugToggle` | F12 shows and hides the tech readout |
-| `SolidCore1.Pointer.*` | Bronze arrow tip, outline, and hide-while-looking |
+| `SolidCore1.Pointer.*` | Bronze arrow tip, two head triangles and no tail, outline, and hide-while-looking |
 | `SolidCore1.ClickMove.*` | Single click, raven-only; WASD is true sight; ground ray |
 | `SolidCore1.Sight.*` | True sight at start; F9 switches to raven sight and back; entering true sight levels the camera and keeps the yaw; eye and eagle markers |
 | `SolidCore1.Events.*` | Enter-town events, Reach broken bridge, Killed by monsters, and Driven from the village: each has an eight-digit id and an act (Iglin, the bridge, and the monster message are ACT_0, the return to Iglin is ACT_1, Relion ACT_2, Kanfold ACT_3, Dragongate ACT_4); messages have their own ids; the ramp shows "You are killed by monsters"; closing it opens the cave, sends the captain inside, and clears his inventory to Rags; Enter Iglin titles the captain Orphan; the next entry to Iglin shows "You are driven from the village", titles Outcast, and opens the Iglin tunnel mouths; Relion and Reach broken bridge wait until Iglin has fired; nothing before Relion enables raven sight; Relion, Kanfold, and Dragongate enable raven sight; max party size through the whole company; captain title through Captain; Relion repairs the Iglin bridge; a named town cell is that town |
@@ -405,7 +405,7 @@ Source/
     HUD/
       SolidHUD.*              # Debug HUD, battle-plan panel, journal and inventory boards, menu and credits drawing
       SolidHudTheme.h         # Oak-and-bronze frame
-      SolidPointer.h          # In-game mouse pointer
+      SolidPointer.h          # In-game mouse pointer: two head triangles, tip on the hotspot, no tail
     Journal/
       SolidJournalEntry.h     # One line: Event or Stronghold
       SolidJournal.*          # Journal page: time column, entry column, larger board

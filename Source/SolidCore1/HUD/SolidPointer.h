@@ -4,8 +4,8 @@
 
 /**
  * In-game mouse pointer. The hotspot is the tip, at local (0, 0).
- * The arrow extends down and to the right. Mouse look is the right button;
- * while that button is held the pointer is hidden.
+ * The arrow is the two head triangles. It extends down and to the right.
+ * Mouse look is the right button; while that button is held the pointer is hidden.
  */
 namespace SolidPointer
 {
@@ -16,24 +16,22 @@ namespace SolidPointer
 		FVector2D C;
 	};
 
-	inline constexpr int32 TriangleCount = 3;
+	inline constexpr int32 TriangleCount = 2;
 	/** Dark copies of the arrow, stamped around the tip (px). */
 	inline constexpr float OutlinePad = 2.5f;
 	/** Bronze edge between the rim and the bright core (px). */
 	inline constexpr float EdgePad = 1.25f;
 	inline constexpr int32 OutlineOffsetCount = 8;
 
-	/** 0 and 1 are the head. 2 is the tail. */
+	/** Both triangles are the head. They meet at the tip. There is no tail. */
 	inline FTriangle Triangle(const int32 Index)
 	{
 		switch (Index)
 		{
-		case 0:
-			return { { 0.f, 0.f }, { 0.f, 24.f }, { 7.f, 16.f } };
 		case 1:
 			return { { 0.f, 0.f }, { 7.f, 16.f }, { 20.f, 14.f } };
 		default:
-			return { { 6.f, 15.f }, { 4.f, 34.f }, { 13.f, 24.f } };
+			return { { 0.f, 0.f }, { 0.f, 24.f }, { 7.f, 16.f } };
 		}
 	}
 

@@ -12,6 +12,7 @@ class UStaticMeshComponent;
 /**
  * One tower visit, at the origin, the same way the den is.
  * Each floor is a stone disc. The arrival hole is an annular gap, so the middle stays floored.
+ * A flat landing in the stair band follows that hole. The next flight starts at its far end.
  * Stair treads sit on the flight. The yellow grid is the kept hexes.
  * The curved wall follows the interior taper, with the dark door on local -X.
  * A click on that door leaves. Companions stay outside.

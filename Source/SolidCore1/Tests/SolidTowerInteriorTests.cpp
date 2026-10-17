@@ -109,6 +109,69 @@ namespace SolidTowerInteriorTestPrivate
 		return Count;
 	}
 
+	/** The landing annulus keeps a top face. The shared edge with the hole does not count. */
+	bool LandingStaysFloored(
+		UStaticMesh* Mesh,
+		const SolidTowerStronghold::FWedge& Landing,
+		const float InnerRadius,
+		const float ZTop)
+	{
+		FMeshDescription* Description = Mesh ? Mesh->GetMeshDescription(0) : nullptr;
+		if (!Description || !Landing.bOpen || Landing.SweepRad <= 0.1f)
+		{
+			return false;
+		}
+		FStaticMeshAttributes Attributes(*Description);
+		TVertexAttributesRef<FVector3f> Positions = Attributes.GetVertexPositions();
+		const float Margin = 0.04f;
+		const float InnerStart = Landing.StartRad + Margin;
+		const float InnerSweep = Landing.SweepRad - Margin * 2.f;
+		for (const FVertexID VertexID : Description->Vertices().GetElementIDs())
+		{
+			const FVector3f Position = Positions[VertexID];
+			if (FMath::Abs(Position.Z - ZTop) > 0.5f)
+			{
+				continue;
+			}
+			if (FVector2D(Position.X, Position.Y).Size() <= InnerRadius + 1.f)
+			{
+				continue;
+			}
+			if (SolidTowerStronghold::AngleInSweep(
+				FMath::Atan2(Position.Y, Position.X),
+				InnerStart,
+				InnerSweep))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	bool CenterStaysFloored(UStaticMesh* Mesh, const float ZTop, const float InnerRadius)
+	{
+		FMeshDescription* Description = Mesh ? Mesh->GetMeshDescription(0) : nullptr;
+		if (!Description)
+		{
+			return false;
+		}
+		FStaticMeshAttributes Attributes(*Description);
+		TVertexAttributesRef<FVector3f> Positions = Attributes.GetVertexPositions();
+		for (const FVertexID VertexID : Description->Vertices().GetElementIDs())
+		{
+			const FVector3f Position = Positions[VertexID];
+			if (FMath::Abs(Position.Z - ZTop) > 0.5f)
+			{
+				continue;
+			}
+			if (FVector2D(Position.X, Position.Y).Size() < InnerRadius - 1.f)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
 	bool SpawnIsKeptHex(const SolidTowerStronghold::FPlan& Plan, const FVector& Spawn)
 	{
 		TArray<SolidStrongholdGrid::FHex> Hexes;
@@ -287,6 +350,28 @@ bool FSolidTowerInteriorVisualsTest::RunTest(const FString& Parameters)
 			TestTrue(
 				*FString::Printf(TEXT("%s top hole stays open"), Label),
 				SolidTowerInteriorTestPrivate::HoleStaysOpen(TopMesh, SolidTowerStronghold::GapWedge(Plan, Top), TopInner));
+			const float UpperZ = SolidTowerStronghold::FloorZCm(Plan, Upper);
+			const float TopZ = SolidTowerStronghold::FloorZCm(Plan, Top);
+			TestTrue(
+				*FString::Printf(TEXT("%s landing stays floored"), Label),
+				SolidTowerInteriorTestPrivate::LandingStaysFloored(
+					UpperMesh,
+					SolidTowerStronghold::LandingWedge(Plan, Upper),
+					UpperInner,
+					UpperZ));
+			TestTrue(
+				*FString::Printf(TEXT("%s top landing stays floored"), Label),
+				SolidTowerInteriorTestPrivate::LandingStaysFloored(
+					TopMesh,
+					SolidTowerStronghold::LandingWedge(Plan, Top),
+					TopInner,
+					TopZ));
+			TestTrue(
+				*FString::Printf(TEXT("%s middle stays floored"), Label),
+				SolidTowerInteriorTestPrivate::CenterStaysFloored(UpperMesh, UpperZ, UpperInner));
+			TestTrue(
+				*FString::Printf(TEXT("%s top middle stays floored"), Label),
+				SolidTowerInteriorTestPrivate::CenterStaysFloored(TopMesh, TopZ, TopInner));
 		}
 
 		TestEqual(

@@ -240,7 +240,38 @@ namespace SolidTowerStronghold
 		return Plan.StairRunCm() / Centerline;
 	}
 
-	/** Where this floor's flight starts. Each flight begins where the one below ended. */
+	/**
+	 * Flat run along the stair centerline where a flight arrives, before the next flight.
+	 * About one metre. The same length on every tower size.
+	 */
+	inline constexpr float LandingRunCm = 100.f;
+
+	/** Stairs arrive on this floor, so it has a landing. The ground flight has none of its own. */
+	inline bool HasLanding(const FPlan& Plan, const int32 Floor)
+	{
+		return IsFloor(Plan, Floor) && Floor > 0 && FlightSweepRad(Plan, Floor - 1) > 0.f;
+	}
+
+	/** Arc of the landing at this floor's walking surface. Zero when this floor has no landing. */
+	inline float LandingSweepRad(const FPlan& Plan, const int32 Floor)
+	{
+		if (!HasLanding(Plan, Floor))
+		{
+			return 0.f;
+		}
+		const float Centerline = InteriorRadiusCm(Plan, FloorZCm(Plan, Floor)) - Plan.StairWidthCm * 0.5f;
+		if (Centerline <= 0.f)
+		{
+			return 0.f;
+		}
+		return LandingRunCm / Centerline;
+	}
+
+	/**
+	 * Where this floor's flight starts.
+	 * Each landing sits between the flight below and the next flight, so a flight above the ground
+	 * starts at the far end of that landing.
+	 */
 	inline float FlightStartRad(const FPlan& Plan, const int32 Floor)
 	{
 		float Start = Plan.DoorAngleRad + Plan.StairPastDoorRad;
@@ -248,6 +279,7 @@ namespace SolidTowerStronghold
 		for (int32 Index = 0; Index < Last; ++Index)
 		{
 			Start += FlightSweepRad(Plan, Index);
+			Start += LandingSweepRad(Plan, Index + 1);
 		}
 		return Start;
 	}
@@ -269,7 +301,7 @@ namespace SolidTowerStronghold
 		return Wedge;
 	}
 
-	/** The hole for the flight that arrives from the floor below. The ground floor has none. */
+	/** The hole for the flight that arrives from the floor below. The ground floor has none. The landing is not part of the hole. */
 	inline FWedge GapWedge(const FPlan& Plan, const int32 Floor)
 	{
 		if (Floor <= 0)
@@ -277,6 +309,21 @@ namespace SolidTowerStronghold
 			return FWedge{};
 		}
 		return FlightWedge(Plan, Floor - 1);
+	}
+
+	/** Flat arc in the stair band after the arriving flight, at this floor's walking surface. */
+	inline FWedge LandingWedge(const FPlan& Plan, const int32 Floor)
+	{
+		FWedge Wedge;
+		const float Sweep = LandingSweepRad(Plan, Floor);
+		if (Sweep <= 0.f)
+		{
+			return Wedge;
+		}
+		Wedge.bOpen = true;
+		Wedge.StartRad = FlightStartRad(Plan, Floor - 1) + FlightSweepRad(Plan, Floor - 1);
+		Wedge.SweepRad = Sweep;
+		return Wedge;
 	}
 
 	inline float WrapTau(const float Angle)

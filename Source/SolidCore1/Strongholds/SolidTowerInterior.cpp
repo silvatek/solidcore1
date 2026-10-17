@@ -524,6 +524,7 @@ void ASolidTowerInterior::BuildVisuals()
 		const float Outer = SolidTowerStronghold::InteriorRadiusCm(Plan, Z);
 		const float Inner = FMath::Max(Outer - Plan.StairWidthCm, 0.f);
 		SolidTowerInteriorPrivate::FMesh Slab;
+		// The hole is the arriving flight. The landing that follows it stays in this slab.
 		SolidTowerInteriorPrivate::BuildSlab(
 			Slab,
 			Outer,

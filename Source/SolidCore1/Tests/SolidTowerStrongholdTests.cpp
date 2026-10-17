@@ -76,6 +76,55 @@ namespace SolidTowerStrongholdTestPrivate
 			}
 		}
 	}
+
+	void TestLandings(FAutomationTestBase& Test, const SolidTowerStronghold::FPlan& Plan)
+	{
+		Test.TestFalse(TEXT("the ground floor has no landing"), SolidTowerStronghold::HasLanding(Plan, 0));
+		Test.TestFalse(TEXT("the ground landing wedge stays shut"), SolidTowerStronghold::LandingWedge(Plan, 0).bOpen);
+		for (int32 Floor = 1; Floor < Plan.FloorCount; ++Floor)
+		{
+			const bool bArrives = SolidTowerStronghold::FlightSweepRad(Plan, Floor - 1) > 0.f;
+			if (!bArrives)
+			{
+				Test.TestFalse(TEXT("a floor with no arriving flight has no landing"), SolidTowerStronghold::HasLanding(Plan, Floor));
+				continue;
+			}
+
+			Test.TestTrue(TEXT("an arrival floor has a landing"), SolidTowerStronghold::HasLanding(Plan, Floor));
+			const SolidTowerStronghold::FWedge Landing = SolidTowerStronghold::LandingWedge(Plan, Floor);
+			Test.TestTrue(TEXT("the landing wedge is open"), Landing.bOpen);
+			const float Centerline = SolidTowerStronghold::InteriorRadiusCm(Plan, SolidTowerStronghold::FloorZCm(Plan, Floor))
+				- Plan.StairWidthCm * 0.5f;
+			Test.TestTrue(
+				TEXT("the landing is one metre along the centerline"),
+				FMath::IsNearlyEqual(Landing.SweepRad * Centerline, SolidTowerStronghold::LandingRunCm, 0.05f));
+			const float FlightEnd = SolidTowerStronghold::FlightStartRad(Plan, Floor - 1)
+				+ SolidTowerStronghold::FlightSweepRad(Plan, Floor - 1);
+			Test.TestTrue(
+				TEXT("the landing starts where the flight below ends"),
+				FMath::IsNearlyEqual(Landing.StartRad, FlightEnd, 0.001f));
+			const SolidTowerStronghold::FWedge Gap = SolidTowerStronghold::GapWedge(Plan, Floor);
+			Test.TestTrue(
+				TEXT("the hole is the flight below, not the landing"),
+				Gap.bOpen
+					&& FMath::IsNearlyEqual(Gap.StartRad, SolidTowerStronghold::FlightStartRad(Plan, Floor - 1), 0.001f)
+					&& FMath::IsNearlyEqual(Gap.SweepRad, SolidTowerStronghold::FlightSweepRad(Plan, Floor - 1), 0.001f)
+					&& Gap.SweepRad > Landing.SweepRad + 0.05f);
+			if (Floor < Plan.FloorCount - 1)
+			{
+				Test.TestTrue(
+					TEXT("the next flight starts at the far end of the landing"),
+					FMath::IsNearlyEqual(
+						SolidTowerStronghold::FlightStartRad(Plan, Floor),
+						Landing.StartRad + Landing.SweepRad,
+						0.001f));
+			}
+			else
+			{
+				Test.TestFalse(TEXT("the top floor has no flight up"), SolidTowerStronghold::FlightWedge(Plan, Floor).bOpen);
+			}
+		}
+	}
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -173,12 +222,7 @@ bool FSolidTowerStrongholdMeasureTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("the ground floor has no hole"), GroundGap.bOpen);
 	TestFalse(TEXT("the top floor has no flight"), TopFlight.bOpen);
 	TestTrue(TEXT("the top floor has a hole"), TopGap.bOpen);
-	TestTrue(
-		TEXT("the second flight starts where the first ends"),
-		FMath::IsNearlyEqual(
-			SolidTowerStronghold::FlightStartRad(Plan, 1),
-			SolidTowerStronghold::FlightStartRad(Plan, 0) + SolidTowerStronghold::FlightSweepRad(Plan, 0),
-			0.001f));
+	SolidTowerStrongholdTestPrivate::TestLandings(*this, Plan);
 	TestTrue(
 		TEXT("the hole is the flight below"),
 		FMath::IsNearlyEqual(TopGap.StartRad, SolidTowerStronghold::FlightStartRad(Plan, 8), 0.001f)
@@ -192,7 +236,7 @@ bool FSolidTowerStrongholdMeasureTest::RunTest(const FString& Parameters)
 	const float Turn = 2.f * PI;
 	TestTrue(TEXT("the spiral is just over two turns"), Spiral > 2.f * Turn && Spiral < 2.2f * Turn);
 
-	const int32 KeptCounts[] = { 34, 29, 22, 21, 14, 13, 13, 10, 6, 5 };
+	const int32 KeptCounts[] = { 34, 28, 22, 21, 14, 14, 13, 8, 6, 5 };
 	bool bGroundStairLeftOut = false;
 	bool bTopGapLeftOut = false;
 	bool bGroundHadGap = false;
@@ -318,18 +362,13 @@ bool FSolidTowerPlanMeasureTest::RunTest(const FString& Parameters)
 			SolidTowerStronghold::FlightSweepRad(Plan, 0),
 			SolidTowerStronghold::FlightSweepRad(SolidTowerStronghold::Imperious, 0),
 			0.001f));
-	TestTrue(
-		TEXT("the second flight starts where the first ends"),
-		FMath::IsNearlyEqual(
-			SolidTowerStronghold::FlightStartRad(Plan, 1),
-			SolidTowerStronghold::FlightStartRad(Plan, 0) + SolidTowerStronghold::FlightSweepRad(Plan, 0),
-			0.001f));
+	SolidTowerStrongholdTestPrivate::TestLandings(*this, Plan);
 	TestTrue(TEXT("the ground floor has a flight"), SolidTowerStronghold::FlightWedge(Plan, 0).bOpen);
 	TestFalse(TEXT("the ground floor has no hole"), SolidTowerStronghold::GapWedge(Plan, 0).bOpen);
 	TestFalse(TEXT("the top floor has no flight"), SolidTowerStronghold::FlightWedge(Plan, 3).bOpen);
 	TestTrue(TEXT("the top floor has a hole"), SolidTowerStronghold::GapWedge(Plan, 3).bOpen);
 
-	const int32 KeptCounts[] = { 16, 10, 6, 5 };
+	const int32 KeptCounts[] = { 16, 11, 7, 6 };
 	bool bGroundStairLeftOut = false;
 	bool bTopGapLeftOut = false;
 	bool bGroundHadGap = false;
@@ -355,6 +394,7 @@ bool FSolidTowerPlanMeasureTest::RunTest(const FString& Parameters)
 	Single.TopExteriorRadiusCm = 350.f;
 	TestTrue(TEXT("a single floor is one storey"), FMath::IsNearlyEqual(Single.HeightCm(), 300.f, 0.01f));
 	TestTrue(TEXT("the single floor has the door"), SolidTowerStronghold::HasDoor(0));
+	SolidTowerStrongholdTestPrivate::TestLandings(*this, Single);
 	TestFalse(TEXT("a single floor has no flight"), SolidTowerStronghold::FlightWedge(Single, 0).bOpen);
 	TestFalse(TEXT("a single floor has no hole"), SolidTowerStronghold::GapWedge(Single, 0).bOpen);
 	bool bIgnoredStair = false;
@@ -370,6 +410,7 @@ bool FSolidTowerPlanMeasureTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("a stair wider than the room has no sweep"),
 		FMath::IsNearlyZero(SolidTowerStronghold::FlightSweepRad(Narrow, 0)));
+	SolidTowerStrongholdTestPrivate::TestLandings(*this, Narrow);
 	TestFalse(TEXT("that flight stays closed"), SolidTowerStronghold::FlightWedge(Narrow, 0).bOpen);
 	TArray<SolidStrongholdGrid::FHex> Empty;
 	SolidTowerStronghold::CollectKeptHexes(Narrow, 0, Empty);
@@ -418,9 +459,9 @@ bool FSolidTowerStepMeasureTest::RunTest(const FString& Parameters)
 	const int32 FloorCounts[] = { 4, 6, 7, 9, 10 };
 	const float GroundRadii[] = { 400.f, 425.f, 450.f, 475.f, 500.f };
 	const float TopRadii[] = { 280.f, 285.f, 290.f, 295.f, 300.f };
-	const int32 KeptImpressive[] = { 16, 13, 10, 10, 6, 5 };
-	const int32 KeptGrand[] = { 26, 14, 14, 13, 10, 6, 5 };
-	const int32 KeptStately[] = { 33, 22, 14, 14, 13, 10, 10, 6, 5 };
+	const int32 KeptImpressive[] = { 16, 13, 9, 9, 6, 5 };
+	const int32 KeptGrand[] = { 26, 13, 13, 13, 11, 6, 5 };
+	const int32 KeptStately[] = { 33, 23, 15, 14, 14, 12, 11, 6, 5 };
 	const int32* KeptByStep[] = { nullptr, KeptImpressive, KeptGrand, KeptStately, nullptr };
 
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Steps); ++Index)
@@ -459,6 +500,7 @@ bool FSolidTowerStepMeasureTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the size token resolves"), SolidStronghold::FromToken(Tokens[Index], Stronghold));
 		FPlan Resolved;
 		TestTrue(TEXT("the size has this plan"), PlanFor(Stronghold, Resolved));
+		SolidTowerStrongholdTestPrivate::TestLandings(*this, Plan);
 		TestEqual(TEXT("PlanFor returns the step"), Resolved.FloorCount, Plan.FloorCount);
 		TestTrue(
 			TEXT("PlanFor returns the step's base"),

@@ -31,6 +31,8 @@
 #include "Strongholds/SolidDungeonInterior.h"
 #include "Strongholds/SolidDungeonLevel.h"
 #include "Strongholds/SolidStrongholds.h"
+#include "Strongholds/SolidTowerShell.h"
+#include "Strongholds/SolidTowerStronghold.h"
 #include "SolidGameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Vegetation/SolidForestTrees.h"
@@ -1222,6 +1224,10 @@ void ASolidGameMode::EnsureVegetation()
 	{
 		return !IsValid(Entrance);
 	});
+	SpawnedTowerShells.RemoveAll([](const TObjectPtr<ASolidTowerShell>& Shell)
+	{
+		return !IsValid(Shell);
+	});
 	SpawnedBridges.RemoveAll([](const TObjectPtr<ASolidBridge>& Bridge)
 	{
 		return !IsValid(Bridge);
@@ -1256,6 +1262,14 @@ void ASolidGameMode::EnsureVegetation()
 		for (TActorIterator<ASolidDungeonEntrance> It(World); It; ++It)
 		{
 			SpawnedDungeonEntrances.Add(*It);
+		}
+	}
+
+	if (SpawnedTowerShells.Num() == 0)
+	{
+		for (TActorIterator<ASolidTowerShell> It(World); It; ++It)
+		{
+			SpawnedTowerShells.Add(*It);
 		}
 	}
 
@@ -1497,6 +1511,53 @@ void ASolidGameMode::EnsureVegetation()
 		}
 
 		UE_LOG(LogSolid, Warning, TEXT("Spawned %d cave entrances and %d tunnel mouths"), Spawned, TunnelMouths);
+	}
+
+	if (SpawnedTowerShells.Num() == 0)
+	{
+		USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
+		USolidWorldMap* TowerMap = Terrain ? Terrain->GetWorldMap() : nullptr;
+		int32 Spawned = 0;
+		if (TowerMap && TowerMap->IsLoaded())
+		{
+			const FVector2D WorldMin = Terrain->GetWorldMinXY();
+			const FVector2D WorldMax = Terrain->GetWorldMaxXY();
+			for (const SolidStrongholds::FEntrance& Entrance : CaveEntrances)
+			{
+				SolidTowerStronghold::FPlan Plan;
+				if (!SolidTowerStronghold::PlanFor(Entrance.Stronghold, Plan))
+				{
+					continue;
+				}
+
+				FVector2D CellXY = FVector2D::ZeroVector;
+				if (!TowerMap->CellToWorldXY(Entrance.Cell, WorldMin, WorldMax, CellXY))
+				{
+					continue;
+				}
+
+				FVector SpawnLoc(CellXY.X, CellXY.Y, 0.f);
+				const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
+				SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
+
+				ASolidTowerShell* Shell = World->SpawnActor<ASolidTowerShell>(
+					ASolidTowerShell::StaticClass(),
+					SpawnLoc,
+					FRotator(0.f, SolidTowerStronghold::ShellYawDeg(Entrance.FacingYawDeg), 0.f),
+					SpawnParams);
+				if (!Shell)
+				{
+					continue;
+				}
+
+				Shell->SetPlan(Plan);
+				Shell->BuildVisuals();
+				SpawnedTowerShells.Add(Shell);
+				++Spawned;
+			}
+		}
+
+		UE_LOG(LogSolid, Warning, TEXT("Spawned %d tower shells"), Spawned);
 	}
 
 	if (SpawnedBridges.Num() == 0)

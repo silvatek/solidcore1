@@ -194,6 +194,29 @@ namespace SolidTowerStronghold
 		return FVector2D(FMath::Cos(Plan.DoorAngleRad), FMath::Sin(Plan.DoorAngleRad));
 	}
 
+	/** Depth of the dark door slab, along local X. */
+	inline constexpr float DoorSlabDepthCm = 40.f;
+	/** How far the outer face stands past the ground course. */
+	inline constexpr float DoorProudCm = 8.f;
+
+	/**
+	 * Grass-facing yaw points local +X at the grass, the cave-mouth convention.
+	 * The tower door is local -X, so the shell turns half a turn from that yaw.
+	 * North grass (facing yaw 90) puts the door at shell yaw -90.
+	 */
+	inline float ShellYawDeg(const float GrassFacingYawDeg)
+	{
+		return FMath::UnwindDegrees(GrassFacingYawDeg + 180.f);
+	}
+
+	/** Center of the door slab. Local -X, bottom on the ground, proud of the ground course. */
+	inline FVector DoorSlabCenterCm(const FPlan& Plan)
+	{
+		const float Radius = Plan.GroundExteriorRadiusCm;
+		const float X = -(Radius - DoorSlabDepthCm * 0.5f + DoorProudCm);
+		return FVector(X, 0.f, Plan.DoorHeightCm * 0.5f);
+	}
+
 	struct FWedge
 	{
 		float StartRad = 0.f;

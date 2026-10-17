@@ -31,6 +31,7 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Rough stones](Planning/rough-stones.md)
 - [World map location markers](Planning/world-map-location-markers.md)
 - [Party builder drag and drop](Planning/party-builder-drag-and-drop.md)
+- [Stronghold transition](Planning/stronghold-transition.md)
 - [Stronghold markers select size only](Planning/stronghold-markers-size-only.md)
 - [Stronghold type classes](Planning/stronghold-type-classes.md)
 - [Fortress stronghold](Planning/fortress-stronghold.md)

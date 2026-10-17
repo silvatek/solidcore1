@@ -15,7 +15,7 @@ The company has one stronghold. At the start the player uses the Meagre Dungeon.
 - A click on a stone whose size is unlocked and larger asks the player to choose a type, and only a type already built for that size is listed.
 - A size with no built type does nothing. It does not ask for a type.
 - Meagre is not a choice at a site. The only Meagre stronghold is the one built at the start.
-- Every size above Meagre will eventually have at least two types. Until a type is built for a size, that pair stays off the list.
+- The choice never offers a pair outside the final set. Until a pair in that set is built, it stays off the list.
 - The player can leave that choice without a type. The active stronghold stays as it is, and the site stays a stone.
 - Selecting a type commits the transition. It cannot be abandoned after that choice.
 - That choice starts creating a stronghold at that site and transitioning from the active one.
@@ -51,5 +51,6 @@ The company has one stronghold. At the start the player uses the Meagre Dungeon.
 - F10 Enter cave still opens the Meagre den while that den is the active stronghold. Once the company has left it, that row does not enter it. This story does not retarget the row to the new stronghold.
 - The enter tips are `Enter cave` on the den mouth and `Enter Stronghold` on a tower door. A stronghold the company has left gives neither. The mouth, the shell, and the door geometry stay. They no longer count as a passage hit.
 - Lairs are not strongholds. The Iglin tunnels stay as they are.
-- Built today: the Meagre Dungeon, which is the start and not a site choice, and a tower from Average through Imperious (`SolidTowerStronghold::PlanFor`). A fortress is not built at any size. A dungeon above Meagre is not built. A Meagre or Humble tower has no plan. None of those pairs appear in the choice. When a later story builds one, it joins the list. This story does not design the missing model.
+- The final pairs are Meagre Dungeon; Humble Dungeon and Humble Fortress; and Dungeon, Fortress, and Tower for Average, Impressive, Grand, Stately, and Imperious. A Humble tower is not a pair. Meagre Fortress and Meagre Tower are not pairs. The choice never offers a pair outside that set.
+- Built today: the Meagre Dungeon, which is the start and not a site choice, and a tower from Average through Imperious (`SolidTowerStronghold::PlanFor`). The other final pairs are not built yet, so they stay off the list. When a later story builds one, it joins the list. This story does not design the missing model.
 - `Planning/stronghold-markers-size-only.md` is this same marker. The line sets the size and does not set the type.

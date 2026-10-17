@@ -12,7 +12,7 @@ The yellow hex grid on each floor is shifted or rotated a little, so the cells s
 
 ## Acceptance
 
-- Each floor the stairs arrive on has a flat landing in the stair band, about one metre along the centerline, at that floor's walking surface. The next flight, when there is one, starts at the far end of that landing.
+- Each floor the stairs arrive on has a flat landing in the stair band, about two metres along the centerline, at that floor's walking surface. The next flight, when there is one, starts at the far end of that landing.
 - The ground floor has the first flight and no landing. The top floor has a landing and no flight up.
 - The arrival hole is still the annular sector of the flight below. The landing is floored. The middle of the disc stays floored.
 - Beside each landing, the wall shows that floor's number. Ground is 1, so Imperious landings read 2 through 10. A smaller tower uses the same counting, and its top sign is its floor count.
@@ -26,11 +26,11 @@ The yellow hex grid on each floor is shifted or rotated a little, so the cells s
 ## Implementation notes
 
 - The shipped visit is `ASolidTowerInterior`, built from `SolidTowerStronghold::FPlan`. Imperious is the tower on cell 17,31. Average, Impressive, Grand, and Stately use the same actor. Build the landing, the rails, and the signs from the plan, so a smaller tower gets them too. Only Imperious is on the map.
-- Today the flights join with no landing. Seventeen risers and sixteen treads of 26 cm climb one floor. The last tread stops one riser below the next floor. `FlightStartRad` starts each flight where the previous sweep ended. A landing is an extra arc, about 100 cm along the centerline, inserted before the next flight. `GapWedge` stays the arriving flight, not the landing.
+- Today the flights join with no landing. Seventeen risers and sixteen treads of 26 cm climb one floor. The last tread stops one riser below the next floor. `FlightStartRad` starts each flight where the previous sweep ended. A landing is an extra arc, about 200 cm along the centerline, inserted before the next flight. `GapWedge` stays the arriving flight, not the landing.
 - The hole is an annular sector. The inner disc stays solid. Treads sit on the flight. Do not cut the landing out of the floor.
 - Rails are part of the interior, not furnishings. A simple rail about waist height is enough. No rail across the landing.
 - Signs are text on the curved wall beside the landing, facing the room. Do not reuse `ASolidTownSign`. Ground is floor 1 even though the plan's floor index starts at 0.
 - The hex grid is pointy-top, 1.2 m flat to flat, origin at the tower center, in `SolidTowerStronghold::CellCenter`. A per-floor offset or rotation belongs in that tower grid, not in `SolidStrongholdGrid`. Leave `MeagreOrigin` and the fourteen-cell den alone.
-- Kept hexes are cells whose six vertices lie inside the interior circle and that are neither stair nor hole. `SolidTowerStrongholdTests` pins the counts, Imperious ground to top: 34, 29, 22, 21, 14, 13, 13, 10, 6, 5. Average, Impressive, Grand, and Stately have their own pins. A landing changes the wedges, and a grid nudge changes the counts again. Update those pins in the same commit as the geometry and say so in the commit. Do not delete the pins in an earlier commit.
+- Kept hexes are cells whose six vertices lie inside the interior circle and that are neither stair nor hole. `SolidTowerStrongholdTests` pins the counts, Imperious ground to top: 34, 27, 21, 21, 13, 13, 13, 10, 6, 5. Average, Impressive, Grand, and Stately have their own pins. A landing changes the wedges, and a grid nudge changes the counts again. Update those pins in the same commit as the geometry and say so in the commit. Do not delete the pins in an earlier commit.
 - The yellow lines are `SolidStrongholdGrid::LineColor`. This story does not recolor them.
 - Do not add a map marker. Do not change the shell, the door click, or the grass outside the door.

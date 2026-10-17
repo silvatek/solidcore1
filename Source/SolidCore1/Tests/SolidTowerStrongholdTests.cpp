@@ -96,7 +96,7 @@ namespace SolidTowerStrongholdTestPrivate
 			const float Centerline = SolidTowerStronghold::InteriorRadiusCm(Plan, SolidTowerStronghold::FloorZCm(Plan, Floor))
 				- Plan.StairWidthCm * 0.5f;
 			Test.TestTrue(
-				TEXT("the landing is one metre along the centerline"),
+				TEXT("the landing is two metres along the centerline"),
 				FMath::IsNearlyEqual(Landing.SweepRad * Centerline, SolidTowerStronghold::LandingRunCm, 0.05f));
 			const float FlightEnd = SolidTowerStronghold::FlightStartRad(Plan, Floor - 1)
 				+ SolidTowerStronghold::FlightSweepRad(Plan, Floor - 1);
@@ -236,7 +236,7 @@ bool FSolidTowerStrongholdMeasureTest::RunTest(const FString& Parameters)
 	const float Turn = 2.f * PI;
 	TestTrue(TEXT("the spiral is just over two turns"), Spiral > 2.f * Turn && Spiral < 2.2f * Turn);
 
-	const int32 KeptCounts[] = { 34, 28, 22, 21, 14, 14, 13, 8, 6, 5 };
+	const int32 KeptCounts[] = { 34, 27, 21, 21, 13, 13, 13, 10, 6, 5 };
 	bool bGroundStairLeftOut = false;
 	bool bTopGapLeftOut = false;
 	bool bGroundHadGap = false;
@@ -368,7 +368,7 @@ bool FSolidTowerPlanMeasureTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("the top floor has no flight"), SolidTowerStronghold::FlightWedge(Plan, 3).bOpen);
 	TestTrue(TEXT("the top floor has a hole"), SolidTowerStronghold::GapWedge(Plan, 3).bOpen);
 
-	const int32 KeptCounts[] = { 16, 11, 7, 6 };
+	const int32 KeptCounts[] = { 16, 10, 6, 5 };
 	bool bGroundStairLeftOut = false;
 	bool bTopGapLeftOut = false;
 	bool bGroundHadGap = false;
@@ -459,9 +459,9 @@ bool FSolidTowerStepMeasureTest::RunTest(const FString& Parameters)
 	const int32 FloorCounts[] = { 4, 6, 7, 9, 10 };
 	const float GroundRadii[] = { 400.f, 425.f, 450.f, 475.f, 500.f };
 	const float TopRadii[] = { 280.f, 285.f, 290.f, 295.f, 300.f };
-	const int32 KeptImpressive[] = { 16, 13, 9, 9, 6, 5 };
-	const int32 KeptGrand[] = { 26, 13, 13, 13, 11, 6, 5 };
-	const int32 KeptStately[] = { 33, 23, 15, 14, 14, 12, 11, 6, 5 };
+	const int32 KeptImpressive[] = { 16, 13, 9, 7, 5, 5 };
+	const int32 KeptGrand[] = { 26, 14, 14, 13, 10, 7, 6 };
+	const int32 KeptStately[] = { 33, 23, 14, 13, 13, 8, 7, 5, 5 };
 	const int32* KeptByStep[] = { nullptr, KeptImpressive, KeptGrand, KeptStately, nullptr };
 
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Steps); ++Index)

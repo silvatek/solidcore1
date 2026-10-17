@@ -242,9 +242,9 @@ namespace SolidTowerStronghold
 
 	/**
 	 * Flat run along the stair centerline where a flight arrives, before the next flight.
-	 * About one metre. The same length on every tower size.
+	 * About two metres. The same length on every tower size.
 	 */
-	inline constexpr float LandingRunCm = 100.f;
+	inline constexpr float LandingRunCm = 200.f;
 
 	/** Stairs arrive on this floor, so it has a landing. The ground flight has none of its own. */
 	inline bool HasLanding(const FPlan& Plan, const int32 Floor)

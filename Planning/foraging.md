@@ -23,6 +23,8 @@ The player walks through forest that is no longer in full fog and finds sticks a
 - When that fog is no longer `1.0f`, the pile is there.
 - The pointer shows the item's catalog name when it is over a drawn pile and the captain is within 4 m of it. Farther away, that pile has no name on the pointer.
 - A click within 4 m takes the pile. The item joins the pack, and the pile is gone.
+- When the pointer ray meets more than one pile, the nearest one is the pile named, and the pile a click takes.
+- In raven sight, that click also stops a walk already under way.
 - The pack already holding that item below its stack limit takes the one onto that stack. Otherwise it goes in the first empty pack cell.
 - A stick stacks to 10. Pitch stacks to 10. A full stack does not take another. The next empty cell does.
 - When every stack of that item is full and no pack cell is empty, the click changes nothing. The pile stays.
@@ -32,7 +34,7 @@ The player walks through forest that is no longer in full fog and finds sticks a
 - In true sight, a click within 4 m picks the pile up. A farther click does nothing.
 - A passage under the pointer still wins. That click enters or leaves, and the pile stays.
 - A click while the pointer is hidden, or while a menu, the inventory, a message, or the party builder is open, does not take a pile.
-- After the player enters and leaves a stronghold, or enters and leaves the Iglin tunnels, a taken pile is still gone and an untaken pile is still there. The pack still holds what was picked up.
+- After the player enters and leaves a stronghold, or enters and leaves the Iglin tunnels, a taken pile is still gone and an untaken pile is still there. The pack still holds what was picked up. A taken pile is remembered by its index in the scatter list, so that same slot stays empty.
 - A new game has no pile taken. The pack is the starting pack.
 - Closing the monster message still clears the pack down to Rags on the body. It does not put taken piles back on the ground.
 - This story does not add rough stones.
@@ -43,7 +45,8 @@ The player walks through forest that is no longer in full fog and finds sticks a
 - Scatter the piles the way `SolidForestTrees::CollectSpawnPositions` scatters trees. The input set is forest points that did not receive a tree. Fisher–Yates, then `round(count * density)` clamped to the max and to the count. Density is `0.05`. The max is 64. Jitter is 90 cm, the same as `ForestTreeJitterCm`. Trees use `ForestTreeSeed` 42. The piles use their own seed, 43, so a tree-seed change does not move them.
 - Walking that chosen list, an even index is a stick and an odd index is a pitch. A test map with 40 treeless forest points places two piles, stick then pitch. A map with no forest places none. One placed stick is still enough to test the click and the pack.
 - `SolidInventory::PlacePack` writes a cell and replaces what was there. It does not merge. Add an insert that fills the first same-id stack under `FSolidItemType::MaxStacked`, then the first empty cell, and returns false when neither exists.
-- The pack is `FGameState::Inventory`, six cells, carried on the travel session. Taken pile ids have to ride on that state too. `OpenLevel` builds a new world. The same piles come back from the map, and the taken ids are skipped.
+- The pack is `FGameState::Inventory`, six cells, carried on the travel session. The taken set is the indexes in the chosen scatter list, and it rides on that state too. `OpenLevel` builds a new world. The same list comes back, and a taken index is skipped.
+- A pickup calls `ClearClickMove`, the same way `ActivatePassage` does, so a raven walk already under way stops. The nearest pile is the first hit along the pointer ray. The 4 m test still applies to that pile.
 - `SolidInventory::Clear` empties the pack and leaves Rags on the body. Leave the taken ids taken.
 - Full fog is `FSolidTerrainPoint.Fog` of `1.0f`. Bands are in [Source/SolidCore1/Fog/README.md](../Source/SolidCore1/Fog/README.md). Trees and buildings use the same test in [Hide trees and buildings in full fog](hide-props-in-full-fog.md).
 - A left click already prefers a passage (`PassageUnderPointer`), then `ClickMoveFromInput`. A pile in reach sits between those two. `SolidClickMove::AllowsClick` is raven sight only. `IsMenuOverlayOpen` includes the inventory, the journal, the message, and the party builder. The passage ray is `SolidClickMove::MaxRayCm` (800 m). The 4 m test is the captain's ground distance to the pile, not that ray.

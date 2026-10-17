@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0420")
+#define SOLID_BUILD_ID TEXT("SC1-0421")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A stronghold cell uses that stronghold's shelf. Imperious Tower is grassland.")
+#define SOLID_BUILD_NOTE TEXT("Imperious Tower geometry: ten floors, a 50 cm wall, hexes off the stair.")
 #endif

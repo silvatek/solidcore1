@@ -14,6 +14,7 @@ namespace SolidTowerStrongholdTestPrivate
 		const SolidTowerStronghold::FPlan& Plan,
 		const int32 Floor,
 		const int32 ExpectedCount,
+		const int32 CenteredCount,
 		bool& bSawStair,
 		bool& bSawGap,
 		bool& bSawLanding)
@@ -21,6 +22,23 @@ namespace SolidTowerStrongholdTestPrivate
 		TArray<SolidStrongholdGrid::FHex> Kept;
 		SolidTowerStronghold::CollectKeptHexes(Plan, Floor, Kept);
 		Test.TestEqual(TEXT("kept hexes on this floor"), Kept.Num(), ExpectedCount);
+
+		TArray<SolidStrongholdGrid::FHex> Centered;
+		SolidTowerStronghold::CollectKeptHexes(Plan, Floor, Centered, FVector2D::ZeroVector);
+		Test.TestEqual(TEXT("the centered grid keeps its count"), Centered.Num(), CenteredCount);
+		Test.TestTrue(
+			TEXT("the shift keeps at least as many hexes as the centered grid"),
+			Kept.Num() >= Centered.Num());
+		const FVector2D Nudge = SolidTowerStronghold::GridNudgeCm(Plan, Floor);
+		Test.TestTrue(TEXT("the hex shift is at most 30 cm"), Nudge.Size() <= 30.01f);
+		if (Nudge.IsNearlyZero(0.01f))
+		{
+			Test.TestEqual(TEXT("a centered floor keeps the centered count"), Kept.Num(), Centered.Num());
+		}
+		else
+		{
+			Test.TestTrue(TEXT("a shifted floor keeps another hex"), Kept.Num() > Centered.Num());
+		}
 
 		const float Radius = SolidTowerStronghold::InteriorRadiusCm(Plan, SolidTowerStronghold::FloorZCm(Plan, Floor));
 		TSet<uint64> Listed;
@@ -537,7 +555,9 @@ bool FSolidTowerStrongholdMeasureTest::RunTest(const FString& Parameters)
 	const float Turn = 2.f * PI;
 	TestTrue(TEXT("the spiral is just over two turns"), Spiral > 2.f * Turn && Spiral < 2.2f * Turn);
 
-	const int32 KeptCounts[] = { 34, 26, 19, 19, 12, 12, 12, 7, 4, 5 };
+	// The second row is the centered grid, from before this floor's shift.
+	const int32 KeptCounts[] = { 35, 28, 22, 19, 16, 12, 12, 8, 6, 7 };
+	const int32 CenteredCounts[] = { 34, 26, 19, 19, 12, 12, 12, 7, 4, 5 };
 	bool bGroundStairLeftOut = false;
 	bool bTopGapLeftOut = false;
 	bool bGroundHadGap = false;
@@ -550,7 +570,7 @@ bool FSolidTowerStrongholdMeasureTest::RunTest(const FString& Parameters)
 		bool bSawGap = false;
 		bool bSawLanding = false;
 		SolidTowerStrongholdTestPrivate::TestKeptHexes(
-			*this, Plan, Floor, KeptCounts[Floor], bSawStair, bSawGap, bSawLanding);
+			*this, Plan, Floor, KeptCounts[Floor], CenteredCounts[Floor], bSawStair, bSawGap, bSawLanding);
 		bGroundStairLeftOut |= Floor == 0 && bSawStair;
 		bGroundHadGap |= Floor == 0 && bSawGap;
 		bGroundHadLanding |= Floor == 0 && bSawLanding;
@@ -677,7 +697,9 @@ bool FSolidTowerPlanMeasureTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("the top floor has no flight"), SolidTowerStronghold::FlightWedge(Plan, 3).bOpen);
 	TestTrue(TEXT("the top floor has a hole"), SolidTowerStronghold::GapWedge(Plan, 3).bOpen);
 
-	const int32 KeptCounts[] = { 16, 7, 5, 4 };
+	// The second row is the centered grid, from before this floor's shift.
+	const int32 KeptCounts[] = { 16, 10, 6, 6 };
+	const int32 CenteredCounts[] = { 16, 7, 5, 4 };
 	bool bGroundStairLeftOut = false;
 	bool bTopGapLeftOut = false;
 	bool bGroundHadGap = false;
@@ -690,7 +712,7 @@ bool FSolidTowerPlanMeasureTest::RunTest(const FString& Parameters)
 		bool bSawGap = false;
 		bool bSawLanding = false;
 		SolidTowerStrongholdTestPrivate::TestKeptHexes(
-			*this, Plan, Floor, KeptCounts[Floor], bSawStair, bSawGap, bSawLanding);
+			*this, Plan, Floor, KeptCounts[Floor], CenteredCounts[Floor], bSawStair, bSawGap, bSawLanding);
 		bGroundStairLeftOut |= Floor == 0 && bSawStair;
 		bGroundHadGap |= Floor == 0 && bSawGap;
 		bGroundHadLanding |= Floor == 0 && bSawLanding;
@@ -717,7 +739,7 @@ bool FSolidTowerPlanMeasureTest::RunTest(const FString& Parameters)
 	bool bIgnoredStair = false;
 	bool bIgnoredGap = false;
 	bool bIgnoredLanding = false;
-	SolidTowerStrongholdTestPrivate::TestKeptHexes(*this, Single, 0, 13, bIgnoredStair, bIgnoredGap, bIgnoredLanding);
+	SolidTowerStrongholdTestPrivate::TestKeptHexes(*this, Single, 0, 13, 13, bIgnoredStair, bIgnoredGap, bIgnoredLanding);
 	TestFalse(TEXT("a single floor has no stair cell"), bIgnoredStair);
 	TestFalse(TEXT("a single floor has no hole cell"), bIgnoredGap);
 	TestFalse(TEXT("a single floor has no landing cell"), bIgnoredLanding);
@@ -778,10 +800,14 @@ bool FSolidTowerStepMeasureTest::RunTest(const FString& Parameters)
 	const int32 FloorCounts[] = { 4, 6, 7, 9, 10 };
 	const float GroundRadii[] = { 400.f, 425.f, 450.f, 475.f, 500.f };
 	const float TopRadii[] = { 280.f, 285.f, 290.f, 295.f, 300.f };
-	const int32 KeptImpressive[] = { 16, 12, 7, 6, 4, 4 };
-	const int32 KeptGrand[] = { 26, 13, 12, 12, 7, 5, 5 };
-	const int32 KeptStately[] = { 33, 20, 13, 12, 12, 7, 5, 4, 4 };
+	const int32 KeptImpressive[] = { 21, 12, 12, 7, 5, 6 };
+	const int32 CenteredImpressive[] = { 16, 12, 7, 6, 4, 4 };
+	const int32 KeptGrand[] = { 27, 17, 13, 12, 8, 5, 6 };
+	const int32 CenteredGrand[] = { 26, 13, 12, 12, 7, 5, 5 };
+	const int32 KeptStately[] = { 33, 21, 18, 16, 12, 11, 7, 6, 6 };
+	const int32 CenteredStately[] = { 33, 20, 13, 12, 12, 7, 5, 4, 4 };
 	const int32* KeptByStep[] = { nullptr, KeptImpressive, KeptGrand, KeptStately, nullptr };
+	const int32* CenteredByStep[] = { nullptr, CenteredImpressive, CenteredGrand, CenteredStately, nullptr };
 
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Steps); ++Index)
 	{
@@ -841,7 +867,14 @@ bool FSolidTowerStepMeasureTest::RunTest(const FString& Parameters)
 			bool bSawGap = false;
 			bool bSawLanding = false;
 			SolidTowerStrongholdTestPrivate::TestKeptHexes(
-				*this, Plan, Floor, KeptByStep[Index][Floor], bSawStair, bSawGap, bSawLanding);
+				*this,
+				Plan,
+				Floor,
+				KeptByStep[Index][Floor],
+				CenteredByStep[Index][Floor],
+				bSawStair,
+				bSawGap,
+				bSawLanding);
 			bGroundStair |= Floor == 0 && bSawStair;
 			bGroundGap |= Floor == 0 && bSawGap;
 			bGroundLanding |= Floor == 0 && bSawLanding;

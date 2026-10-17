@@ -10,8 +10,8 @@
  * Impressive, Grand, and Stately are even steps between those ends.
  * Local +X runs in from the door. Yaw 0 looks into the tower, the same way a dungeon visit does.
  * Placement turns the whole tower so this door faces the grass. On cell 17,31 that is north.
- * The Meagre den stays the fourteen-cell outline. This floor uses the same 1.2 m pointy-top grid,
- * measured from the tower center.
+ * The Meagre den stays the fourteen-cell outline. This floor uses the same 1.2 m pointy-top grid.
+ * Each floor may shift that grid by at most 30 cm, so more whole cells sit in the circle.
  */
 namespace SolidTowerStronghold
 {
@@ -692,9 +692,70 @@ namespace SolidTowerStronghold
 			&& Distance - Reach < InteriorRadius;
 	}
 
-	inline FVector2D CellCenter(const int32 Col, const int32 Row)
+	/**
+	 * How far this floor's hex grid sits from the tower center.
+	 * At most 30 cm, and only when the shift keeps another whole cell.
+	 * A plan that is not one of the five tower sizes stays centered.
+	 * The cells stay pointy-top. A rotation would pull the yellow lines apart.
+	 */
+	inline FVector2D GridNudgeCm(const FPlan& Plan, const int32 Floor)
 	{
-		return SolidStrongholdGrid::HexCenter(Col, Row, FVector2D::ZeroVector);
+		if (!IsFloor(Plan, Floor))
+		{
+			return FVector2D::ZeroVector;
+		}
+		const FPlan* Defined[] = { &Average, &Impressive, &Grand, &Stately, &Imperious };
+		int32 Which = INDEX_NONE;
+		for (int32 Index = 0; Index < UE_ARRAY_COUNT(Defined); ++Index)
+		{
+			const FPlan& Known = *Defined[Index];
+			if (Plan.FloorCount == Known.FloorCount
+				&& FMath::IsNearlyEqual(Plan.GroundExteriorRadiusCm, Known.GroundExteriorRadiusCm, 0.5f)
+				&& FMath::IsNearlyEqual(Plan.TopExteriorRadiusCm, Known.TopExteriorRadiusCm, 0.5f))
+			{
+				Which = Index;
+				break;
+			}
+		}
+		if (Which == INDEX_NONE)
+		{
+			return FVector2D::ZeroVector;
+		}
+
+		// Centimetres from the tower center. Zero keeps that floor on the center.
+		static const FVector2D AverageNudge[] = {
+			{ 0.f, 0.f }, { -14.f, 8.f }, { 8.f, 28.f }, { -14.f, -24.f },
+		};
+		static const FVector2D ImpressiveNudge[] = {
+			{ -22.f, -18.f }, { 0.f, 0.f }, { -10.f, -16.f },
+			{ -20.f, 22.f }, { 28.f, -4.f }, { -14.f, 26.f },
+		};
+		static const FVector2D GrandNudge[] = {
+			{ 12.f, 2.f }, { 6.f, -28.f }, { 0.f, -30.f }, { 0.f, 0.f },
+			{ 0.f, -28.f }, { 0.f, 0.f }, { -10.f, 28.f },
+		};
+		static const FVector2D StatelyNudge[] = {
+			{ 0.f, 0.f }, { 4.f, -28.f }, { 24.f, 14.f }, { -30.f, 0.f }, { 0.f, 0.f },
+			{ -18.f, 0.f }, { 10.f, -28.f }, { 24.f, -18.f }, { -18.f, 24.f },
+		};
+		static const FVector2D ImperiousNudge[] = {
+			{ 24.f, 8.f }, { 0.f, 30.f }, { 24.f, -14.f }, { 0.f, 0.f }, { -14.f, -24.f },
+			{ 0.f, 0.f }, { 0.f, 0.f }, { 24.f, -14.f }, { 16.f, -10.f }, { -22.f, 12.f },
+		};
+		const FVector2D* Table[] = {
+			AverageNudge, ImpressiveNudge, GrandNudge, StatelyNudge, ImperiousNudge,
+		};
+		return Table[Which][Floor];
+	}
+
+	inline FVector2D CellCenter(const int32 Col, const int32 Row, const FVector2D& Origin)
+	{
+		return SolidStrongholdGrid::HexCenter(Col, Row, Origin);
+	}
+
+	inline FVector2D CellCenter(const FPlan& Plan, const int32 Floor, const int32 Col, const int32 Row)
+	{
+		return CellCenter(Col, Row, GridNudgeCm(Plan, Floor));
 	}
 
 	/** Inclusive column and row limit that covers the widest interior circle of this plan. */
@@ -709,13 +770,18 @@ namespace SolidTowerStronghold
 	}
 
 	/** Every vertex lies inside the interior circle at this floor's walking surface. */
-	inline bool HexFitsFloor(const FPlan& Plan, const int32 Floor, const int32 Col, const int32 Row)
+	inline bool HexFitsFloor(
+		const FPlan& Plan,
+		const int32 Floor,
+		const int32 Col,
+		const int32 Row,
+		const FVector2D& Origin)
 	{
 		if (!IsFloor(Plan, Floor))
 		{
 			return false;
 		}
-		const FVector2D Center = CellCenter(Col, Row);
+		const FVector2D Center = CellCenter(Col, Row, Origin);
 		FVector2D Vertices[6];
 		SolidStrongholdGrid::HexVertices(Center, Vertices);
 		const float Radius = InteriorRadiusCm(Plan, FloorZCm(Plan, Floor));
@@ -729,57 +795,109 @@ namespace SolidTowerStronghold
 		return true;
 	}
 
-	inline bool HexOnStair(const FPlan& Plan, const int32 Floor, const int32 Col, const int32 Row)
+	inline bool HexFitsFloor(const FPlan& Plan, const int32 Floor, const int32 Col, const int32 Row)
 	{
-		if (!HexFitsFloor(Plan, Floor, Col, Row))
+		return HexFitsFloor(Plan, Floor, Col, Row, GridNudgeCm(Plan, Floor));
+	}
+
+	inline bool HexOnStair(
+		const FPlan& Plan,
+		const int32 Floor,
+		const int32 Col,
+		const int32 Row,
+		const FVector2D& Origin)
+	{
+		if (!HexFitsFloor(Plan, Floor, Col, Row, Origin))
 		{
 			return false;
 		}
 		return CenterMeetsWedge(
 			Plan,
-			CellCenter(Col, Row),
+			CellCenter(Col, Row, Origin),
 			InteriorRadiusCm(Plan, FloorZCm(Plan, Floor)),
 			FlightWedge(Plan, Floor));
 	}
 
-	inline bool HexOnGap(const FPlan& Plan, const int32 Floor, const int32 Col, const int32 Row)
+	inline bool HexOnStair(const FPlan& Plan, const int32 Floor, const int32 Col, const int32 Row)
 	{
-		if (!HexFitsFloor(Plan, Floor, Col, Row))
+		return HexOnStair(Plan, Floor, Col, Row, GridNudgeCm(Plan, Floor));
+	}
+
+	inline bool HexOnGap(
+		const FPlan& Plan,
+		const int32 Floor,
+		const int32 Col,
+		const int32 Row,
+		const FVector2D& Origin)
+	{
+		if (!HexFitsFloor(Plan, Floor, Col, Row, Origin))
 		{
 			return false;
 		}
 		return CenterMeetsWedge(
 			Plan,
-			CellCenter(Col, Row),
+			CellCenter(Col, Row, Origin),
 			InteriorRadiusCm(Plan, FloorZCm(Plan, Floor)),
 			GapWedge(Plan, Floor));
 	}
 
-	/** The landing is floored, and it is not a hex. The ground floor has none. */
-	inline bool HexOnLanding(const FPlan& Plan, const int32 Floor, const int32 Col, const int32 Row)
+	inline bool HexOnGap(const FPlan& Plan, const int32 Floor, const int32 Col, const int32 Row)
 	{
-		if (!HexFitsFloor(Plan, Floor, Col, Row))
+		return HexOnGap(Plan, Floor, Col, Row, GridNudgeCm(Plan, Floor));
+	}
+
+	/** The landing is floored, and it is not a hex. The ground floor has none. */
+	inline bool HexOnLanding(
+		const FPlan& Plan,
+		const int32 Floor,
+		const int32 Col,
+		const int32 Row,
+		const FVector2D& Origin)
+	{
+		if (!HexFitsFloor(Plan, Floor, Col, Row, Origin))
 		{
 			return false;
 		}
 		return CenterMeetsWedge(
 			Plan,
-			CellCenter(Col, Row),
+			CellCenter(Col, Row, Origin),
 			InteriorRadiusCm(Plan, FloorZCm(Plan, Floor)),
 			LandingWedge(Plan, Floor));
 	}
 
-	/** A floor cell: inside the circle, and neither the stair, the hole, nor the landing. */
-	inline bool HexKept(const FPlan& Plan, const int32 Floor, const int32 Col, const int32 Row)
+	inline bool HexOnLanding(const FPlan& Plan, const int32 Floor, const int32 Col, const int32 Row)
 	{
-		return HexFitsFloor(Plan, Floor, Col, Row)
-			&& !HexOnStair(Plan, Floor, Col, Row)
-			&& !HexOnGap(Plan, Floor, Col, Row)
-			&& !HexOnLanding(Plan, Floor, Col, Row);
+		return HexOnLanding(Plan, Floor, Col, Row, GridNudgeCm(Plan, Floor));
 	}
 
-	/** Kept cells of one floor, row then column. The stair, the hole, and the landing are absent. */
-	inline void CollectKeptHexes(const FPlan& Plan, const int32 Floor, TArray<SolidStrongholdGrid::FHex>& OutHexes)
+	/** A floor cell: inside the circle, and neither the stair, the hole, nor the landing. */
+	inline bool HexKept(
+		const FPlan& Plan,
+		const int32 Floor,
+		const int32 Col,
+		const int32 Row,
+		const FVector2D& Origin)
+	{
+		return HexFitsFloor(Plan, Floor, Col, Row, Origin)
+			&& !HexOnStair(Plan, Floor, Col, Row, Origin)
+			&& !HexOnGap(Plan, Floor, Col, Row, Origin)
+			&& !HexOnLanding(Plan, Floor, Col, Row, Origin);
+	}
+
+	inline bool HexKept(const FPlan& Plan, const int32 Floor, const int32 Col, const int32 Row)
+	{
+		return HexKept(Plan, Floor, Col, Row, GridNudgeCm(Plan, Floor));
+	}
+
+	/**
+	 * Kept cells of one floor, row then column, on the grid whose origin is Origin.
+	 * The stair, the hole, and the landing are absent.
+	 */
+	inline void CollectKeptHexes(
+		const FPlan& Plan,
+		const int32 Floor,
+		TArray<SolidStrongholdGrid::FHex>& OutHexes,
+		const FVector2D& Origin)
 	{
 		OutHexes.Reset();
 		if (!IsFloor(Plan, Floor))
@@ -791,17 +909,23 @@ namespace SolidTowerStronghold
 		{
 			for (int32 Col = -Span; Col <= Span; ++Col)
 			{
-				if (!HexKept(Plan, Floor, Col, Row))
+				if (!HexKept(Plan, Floor, Col, Row, Origin))
 				{
 					continue;
 				}
 				SolidStrongholdGrid::FHex Hex;
-				Hex.Center = CellCenter(Col, Row);
+				Hex.Center = CellCenter(Col, Row, Origin);
 				Hex.Col = Col;
 				Hex.Row = Row;
 				OutHexes.Add(Hex);
 			}
 		}
+	}
+
+	/** Kept cells on this floor's shifted grid. */
+	inline void CollectKeptHexes(const FPlan& Plan, const int32 Floor, TArray<SolidStrongholdGrid::FHex>& OutHexes)
+	{
+		CollectKeptHexes(Plan, Floor, OutHexes, GridNudgeCm(Plan, Floor));
 	}
 
 	/** How far past the proud door the captain stands on the grass. Clears the capsule. */

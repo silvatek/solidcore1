@@ -1,6 +1,6 @@
 # Imperious Tower refinements
 
-Status: Ready
+Status: Done
 
 ## Story
 
@@ -10,7 +10,7 @@ A floor number is fixed to the wall beside each landing. The ground floor is flo
 
 A handrail runs along the inner edge of each climbing flight, and another runs along the open edge of each arrival hole. Both rails stop at the landing, so the player can step off the stair onto the floor.
 
-The yellow hex grid on each floor is shifted or rotated a little, so the cells sit better in the circle. The Meagre den's grid does not move.
+The yellow hex grid on each floor is shifted a little, so the cells sit better in the circle. The Meagre den's grid does not move.
 
 ## Acceptance
 
@@ -33,7 +33,7 @@ The yellow hex grid on each floor is shifted or rotated a little, so the cells s
 - The hole is an annular sector. The inner disc stays solid. Treads sit on the flight. Do not cut the landing out of the floor.
 - Rails are part of the interior, not furnishings. A bar and posts about waist height (`RailHeightCm`, 100 cm) follow the inner edge of each flight, rising with the treads, and the inner edge of each arrival hole. The hole's radial edge away from the landing is closed. Both rails stop at the landing, so that inner edge stays open onto the floor.
 - Signs are the floor number on a light plate on the curved wall beside the landing, facing the room. The number is dark strokes on that plate. A runtime text component was spawned on this wall and did not draw. Do not reuse `ASolidTownSign`. Ground is floor 1 even though the plan's floor index starts at 0.
-- The hex grid is pointy-top, 1.2 m flat to flat, origin at the tower center, in `SolidTowerStronghold::CellCenter`. A per-floor offset or rotation belongs in that tower grid, not in `SolidStrongholdGrid`. Leave `MeagreOrigin` and the fourteen-cell den alone.
-- Kept hexes are cells whose six vertices lie inside the interior circle and that are neither stair, hole, nor landing. `SolidTowerStrongholdTests` pins the counts, Imperious ground to top: 34, 26, 19, 19, 12, 12, 12, 7, 4, 5. Average, Impressive, Grand, and Stately have their own pins. A landing changes the wedges, and a grid nudge changes the counts again. Update those pins in the same commit as the geometry and say so in the commit. Do not delete the pins in an earlier commit.
+- The hex grid is pointy-top, 1.2 m flat to flat, in `SolidTowerStronghold::CellCenter`. Each defined tower floor may shift that origin by at most 30 cm (`GridNudgeCm`). The cells stay pointy-top, so the yellow lines still meet. A floor stays centered when a shift would not keep another whole cell. The shift belongs in the tower grid, not in `SolidStrongholdGrid`. Leave `MeagreOrigin` and the fourteen-cell den alone.
+- Kept hexes are cells whose six vertices lie inside the interior circle and that are neither stair, hole, nor landing. The centered counts stay in the test: Imperious 34, 26, 19, 19, 12, 12, 12, 7, 4, 5. With the shift, Imperious is 35, 28, 22, 19, 16, 12, 12, 8, 6, 7. Average is 16, 10, 6, 6 from 16, 7, 5, 4. Impressive is 21, 12, 12, 7, 5, 6 from 16, 12, 7, 6, 4, 4. Grand is 27, 17, 13, 12, 8, 5, 6 from 26, 13, 12, 12, 7, 5, 5. Stately is 33, 21, 18, 16, 12, 11, 7, 6, 6 from 33, 20, 13, 12, 12, 7, 5, 4, 4. Those pins changed in the same commit as the shift.
 - The yellow lines are `SolidStrongholdGrid::LineColor`. This story does not recolor them.
 - Do not add a map marker. Do not change the shell, the door click, or the grass outside the door.

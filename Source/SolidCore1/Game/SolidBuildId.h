@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0436")
+#define SOLID_BUILD_ID TEXT("SC1-0437")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A waist-high rail follows each tower flight and each arrival hole.")
+#define SOLID_BUILD_NOTE TEXT("Each tower floor may shift its hex grid a little, so more cells sit in the circle.")
 #endif

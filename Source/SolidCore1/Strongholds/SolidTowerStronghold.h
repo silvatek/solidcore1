@@ -502,6 +502,175 @@ namespace SolidTowerStronghold
 		return WrapTau(Angle - StartRad) < SweepRad;
 	}
 
+	/**
+	 * Handrail height above the local walking surface.
+	 * The captain's capsule is 192 cm, so this is about waist height.
+	 */
+	inline constexpr float RailHeightCm = 100.f;
+	/** Square section of the bar and the posts. */
+	inline constexpr float RailBarCm = 10.f;
+	/** Longest straight run of the bar along an arc, before the next post. */
+	inline constexpr float RailSpanCm = 50.f;
+
+	/** Inner edge of the stair band at this height. The flight and the hole meet the floor here. */
+	inline float RailInnerRadiusCm(const FPlan& Plan, const float ZCm)
+	{
+		return FMath::Max(InteriorRadiusCm(Plan, ZCm) - Plan.StairWidthCm, 0.f);
+	}
+
+	struct FRailPiece
+	{
+		FVector Location = FVector::ZeroVector;
+		FRotator Rotation = FRotator::ZeroRotator;
+		FVector SizeCm = FVector::OneVector;
+		/** A post stands on the walking surface. A bar is the handrail. */
+		bool bPost = false;
+		/** Closes the radial edge of the hole that is away from the landing. */
+		bool bHoleEnd = false;
+	};
+
+	inline FVector RailPoint(const float Angle, const float Radius, const float Z)
+	{
+		return FVector(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, Z);
+	}
+
+	inline FRotator RailRotation(const FVector& Direction)
+	{
+		const float Horiz = FVector(Direction.X, Direction.Y, 0.f).Size();
+		const float Yaw = FMath::RadiansToDegrees(FMath::Atan2(Direction.Y, Direction.X));
+		const float Pitch = FMath::RadiansToDegrees(FMath::Atan2(Direction.Z, Horiz));
+		return FRotator(Pitch, Yaw, 0.f);
+	}
+
+	inline void AddRailBar(TArray<FRailPiece>& Out, const FVector& A, const FVector& B, const bool bHoleEnd)
+	{
+		const FVector Delta = B - A;
+		const float Length = Delta.Size();
+		if (Length < 1.f)
+		{
+			return;
+		}
+		FRailPiece Bar;
+		Bar.Location = (A + B) * 0.5f;
+		Bar.Rotation = RailRotation(Delta);
+		Bar.SizeCm = FVector(Length, RailBarCm, RailBarCm);
+		Bar.bHoleEnd = bHoleEnd;
+		Out.Add(Bar);
+	}
+
+	inline void AddRailPost(TArray<FRailPiece>& Out, const FVector& BaseOnSurface, const float YawDeg, const bool bHoleEnd)
+	{
+		const float Height = RailHeightCm - RailBarCm * 0.5f;
+		if (Height < 1.f)
+		{
+			return;
+		}
+		FRailPiece Post;
+		Post.bPost = true;
+		Post.bHoleEnd = bHoleEnd;
+		Post.Location = BaseOnSurface + FVector(0.f, 0.f, Height * 0.5f);
+		Post.Rotation = FRotator(0.f, YawDeg, 0.f);
+		Post.SizeCm = FVector(RailBarCm, RailBarCm, Height);
+		Out.Add(Post);
+	}
+
+	/** Bars then posts along an arc. SurfaceZ(Along) is the walking surface, Along from 0 to 1. */
+	template<typename SurfaceFn>
+	inline void CollectArcRail(
+		TArray<FRailPiece>& Out,
+		const float StartRad,
+		const float SweepRad,
+		const float Radius,
+		SurfaceFn SurfaceZ)
+	{
+		if (SweepRad <= 0.f || Radius <= 1.f)
+		{
+			return;
+		}
+		const float Arc = SweepRad * Radius;
+		const int32 Count = FMath::Max(1, FMath::CeilToInt(Arc / RailSpanCm));
+		auto AtRail = [&](const float Along)
+		{
+			const float Angle = StartRad + Along * SweepRad;
+			return RailPoint(Angle, Radius, SurfaceZ(Along) + RailHeightCm);
+		};
+		for (int32 Index = 0; Index < Count; ++Index)
+		{
+			const float From = static_cast<float>(Index) / static_cast<float>(Count);
+			const float To = static_cast<float>(Index + 1) / static_cast<float>(Count);
+			AddRailBar(Out, AtRail(From), AtRail(To), false);
+		}
+		for (int32 Index = 0; Index <= Count; ++Index)
+		{
+			const float Along = static_cast<float>(Index) / static_cast<float>(Count);
+			const float Angle = StartRad + Along * SweepRad;
+			AddRailPost(Out, RailPoint(Angle, Radius, SurfaceZ(Along)), FMath::RadiansToDegrees(Angle), false);
+		}
+	}
+
+	/**
+	 * Inner edge of the flight that leaves this floor, rising with the treads.
+	 * It stops where the flight stops, so it does not cross the landing above.
+	 */
+	inline void CollectFlightRail(const FPlan& Plan, const int32 Floor, TArray<FRailPiece>& Out)
+	{
+		Out.Reset();
+		const FWedge Flight = FlightWedge(Plan, Floor);
+		if (!Flight.bOpen)
+		{
+			return;
+		}
+		const float FloorZ = FloorZCm(Plan, Floor);
+		const float Climb = static_cast<float>(Plan.StairTreadCount) * Plan.RiserCm();
+		CollectArcRail(
+			Out,
+			Flight.StartRad,
+			Flight.SweepRad,
+			RailInnerRadiusCm(Plan, FloorZ),
+			[FloorZ, Climb](const float Along)
+			{
+				return FloorZ + Along * Climb;
+			});
+	}
+
+	/**
+	 * Inner edge of the arrival hole, at this floor's walking surface.
+	 * The radial edge away from the landing is closed. The landing end stays open.
+	 */
+	inline void CollectHoleRail(const FPlan& Plan, const int32 Floor, TArray<FRailPiece>& Out)
+	{
+		Out.Reset();
+		const FWedge Gap = GapWedge(Plan, Floor);
+		if (!Gap.bOpen)
+		{
+			return;
+		}
+		const float FloorZ = FloorZCm(Plan, Floor);
+		const float Inner = RailInnerRadiusCm(Plan, FloorZ);
+		const float Outer = InteriorRadiusCm(Plan, FloorZ);
+		CollectArcRail(
+			Out,
+			Gap.StartRad,
+			Gap.SweepRad,
+			Inner,
+			[FloorZ](const float Along)
+			{
+				return FloorZ + Along * 0.f;
+			});
+		const float OuterPost = Outer - RailBarCm * 0.5f;
+		if (OuterPost <= Inner + RailBarCm)
+		{
+			return;
+		}
+		const float Angle = Gap.StartRad;
+		AddRailBar(
+			Out,
+			RailPoint(Angle, Inner, FloorZ + RailHeightCm),
+			RailPoint(Angle, OuterPost, FloorZ + RailHeightCm),
+			true);
+		AddRailPost(Out, RailPoint(Angle, OuterPost, FloorZ), FMath::RadiansToDegrees(Angle), true);
+	}
+
 	/** True when the hex center meets the annular sector of a flight or a hole. */
 	inline bool CenterMeetsWedge(
 		const FPlan& Plan,

@@ -86,6 +86,188 @@ namespace SolidTowerStrongholdTestPrivate
 		}
 	}
 
+	void TestRails(FAutomationTestBase& Test, const SolidTowerStronghold::FPlan& Plan)
+	{
+		auto AngleOf = [](const SolidTowerStronghold::FRailPiece& Piece)
+		{
+			return FMath::Atan2(Piece.Location.Y, Piece.Location.X);
+		};
+		for (int32 Floor = 0; Floor < Plan.FloorCount; ++Floor)
+		{
+			TArray<SolidTowerStronghold::FRailPiece> Hole;
+			TArray<SolidTowerStronghold::FRailPiece> Flight;
+			SolidTowerStronghold::CollectHoleRail(Plan, Floor, Hole);
+			SolidTowerStronghold::CollectFlightRail(Plan, Floor, Flight);
+			const SolidTowerStronghold::FWedge Gap = SolidTowerStronghold::GapWedge(Plan, Floor);
+			const SolidTowerStronghold::FWedge Climb = SolidTowerStronghold::FlightWedge(Plan, Floor);
+			const SolidTowerStronghold::FWedge Landing = SolidTowerStronghold::LandingWedge(Plan, Floor);
+			const float FloorZ = SolidTowerStronghold::FloorZCm(Plan, Floor);
+			const float Inner = SolidTowerStronghold::RailInnerRadiusCm(Plan, FloorZ);
+
+			if (!Gap.bOpen)
+			{
+				Test.TestEqual(TEXT("a floor with no hole has no hole rail"), Hole.Num(), 0);
+			}
+			else
+			{
+				Test.TestTrue(TEXT("an arrival hole has a rail"), Hole.Num() > 0);
+				bool bClosesFarEnd = false;
+				float HolePostMinZ = TNumericLimits<float>::Max();
+				float HolePostMaxZ = TNumericLimits<float>::Lowest();
+				int32 HolePosts = 0;
+				for (const SolidTowerStronghold::FRailPiece& Piece : Hole)
+				{
+					const float Angle = AngleOf(Piece);
+					const float AlongHole = SolidTowerStronghold::WrapTau(Angle - Gap.StartRad);
+					Test.TestTrue(
+						TEXT("the hole rail stays on the hole"),
+						AlongHole <= Gap.SweepRad + 0.002f);
+					if (Landing.bOpen)
+					{
+						const float Into = SolidTowerStronghold::WrapTau(Angle - Landing.StartRad);
+						const float Margin = (SolidTowerStronghold::RailBarCm * 0.5f) / FMath::Max(Inner, 1.f) + 0.02f;
+						Test.TestFalse(
+							TEXT("the hole rail stops for the landing"),
+							Into > Margin && Into < Landing.SweepRad - Margin);
+					}
+					if (Piece.bHoleEnd)
+					{
+						bClosesFarEnd = true;
+						Test.TestTrue(
+							TEXT("the hole's far edge is the end away from the landing"),
+							SolidTowerStronghold::WrapTau(Angle - Gap.StartRad) < 0.05f);
+						Test.TestTrue(
+							TEXT("the landing end of the hole stays open"),
+							SolidTowerStronghold::WrapTau(Angle - (Gap.StartRad + Gap.SweepRad)) > 0.2f);
+					}
+					else if (!Piece.bPost)
+					{
+						Test.TestTrue(
+							TEXT("the hole rail is waist height"),
+							FMath::IsNearlyEqual(Piece.Location.Z, FloorZ + SolidTowerStronghold::RailHeightCm, 0.5f));
+						Test.TestTrue(
+							TEXT("the hole rail follows the inner edge"),
+							FMath::IsNearlyEqual(FVector2D(Piece.Location.X, Piece.Location.Y).Size(), Inner, SolidTowerStronghold::RailBarCm));
+					}
+					if (Piece.bPost)
+					{
+						HolePostMinZ = FMath::Min(HolePostMinZ, Piece.Location.Z);
+						HolePostMaxZ = FMath::Max(HolePostMaxZ, Piece.Location.Z);
+						++HolePosts;
+						Test.TestTrue(
+							TEXT("a hole post reaches the rail"),
+							FMath::IsNearlyEqual(
+								Piece.SizeCm.Z,
+								SolidTowerStronghold::RailHeightCm - SolidTowerStronghold::RailBarCm * 0.5f,
+								0.5f));
+					}
+				}
+				Test.TestTrue(TEXT("the hole's far radial edge is closed"), bClosesFarEnd);
+				Test.TestTrue(TEXT("the hole rail has posts"), HolePosts > 0);
+				Test.TestTrue(TEXT("the hole rail stays level"), HolePostMaxZ - HolePostMinZ < 0.5f);
+				const float Mid = Gap.StartRad + Gap.SweepRad * 0.5f;
+				const FVector StepOff = SolidTowerStronghold::RailPoint(
+					Mid, Inner, FloorZ + SolidTowerStronghold::RailHeightCm);
+				float Nearest = TNumericLimits<float>::Max();
+				for (const SolidTowerStronghold::FRailPiece& Piece : Hole)
+				{
+					if (!Piece.bPost && !Piece.bHoleEnd)
+					{
+						Nearest = FMath::Min(Nearest, FVector::Dist(Piece.Location, StepOff));
+					}
+				}
+				Test.TestTrue(TEXT("the hole rail blocks a step off the hole"), Nearest < SolidTowerStronghold::RailSpanCm);
+			}
+
+			if (!Climb.bOpen)
+			{
+				Test.TestEqual(TEXT("a floor with no flight has no flight rail"), Flight.Num(), 0);
+			}
+			else
+			{
+				Test.TestTrue(TEXT("a climbing flight has a rail"), Flight.Num() > 0);
+				const float ClimbRise = static_cast<float>(Plan.StairTreadCount) * Plan.RiserCm();
+				const SolidTowerStronghold::FRailPiece* FirstPost = nullptr;
+				const SolidTowerStronghold::FRailPiece* LastPost = nullptr;
+				for (const SolidTowerStronghold::FRailPiece& Piece : Flight)
+				{
+					Test.TestFalse(TEXT("the flight rail is not the hole's end"), Piece.bHoleEnd);
+					const float Angle = AngleOf(Piece);
+					const float AlongFlight = SolidTowerStronghold::WrapTau(Angle - Climb.StartRad);
+					Test.TestTrue(
+						TEXT("the flight rail stays on the flight"),
+						AlongFlight <= Climb.SweepRad + 0.002f);
+					if (Landing.bOpen)
+					{
+						const float Into = SolidTowerStronghold::WrapTau(Angle - Landing.StartRad);
+						const float Margin = (SolidTowerStronghold::RailBarCm * 0.5f) / FMath::Max(Inner, 1.f) + 0.02f;
+						Test.TestFalse(
+							TEXT("the flight rail stops for the landing"),
+							Into > Margin && Into < Landing.SweepRad - Margin);
+					}
+					if (!Piece.bPost)
+					{
+						Test.TestTrue(
+							TEXT("the flight rail follows the inner edge"),
+							FMath::IsNearlyEqual(FVector2D(Piece.Location.X, Piece.Location.Y).Size(), Inner, SolidTowerStronghold::RailBarCm));
+					}
+					else
+					{
+						if (!FirstPost)
+						{
+							FirstPost = &Piece;
+						}
+						LastPost = &Piece;
+					}
+				}
+				Test.TestTrue(TEXT("the flight rail has a first post"), FirstPost != nullptr);
+				Test.TestTrue(TEXT("the flight rail has a last post"), LastPost != nullptr);
+				if (FirstPost && LastPost)
+				{
+					Test.TestTrue(
+						TEXT("the flight rail rises with the treads"),
+						FMath::IsNearlyEqual(LastPost->Location.Z - FirstPost->Location.Z, ClimbRise, 0.5f));
+					Test.TestTrue(
+						TEXT("the flight rail starts at waist height"),
+						FMath::IsNearlyEqual(
+							FirstPost->Location.Z + FirstPost->SizeCm.Z * 0.5f,
+							FloorZ + SolidTowerStronghold::RailHeightCm - SolidTowerStronghold::RailBarCm * 0.5f,
+							0.5f));
+				}
+				const float Mid = Climb.StartRad + Climb.SweepRad * 0.5f;
+				const float MidSurface = FloorZ + ClimbRise * 0.5f;
+				const FVector StepOff = SolidTowerStronghold::RailPoint(
+					Mid, Inner, MidSurface + SolidTowerStronghold::RailHeightCm);
+				float Nearest = TNumericLimits<float>::Max();
+				for (const SolidTowerStronghold::FRailPiece& Piece : Flight)
+				{
+					if (!Piece.bPost)
+					{
+						Nearest = FMath::Min(Nearest, FVector::Dist(Piece.Location, StepOff));
+					}
+				}
+				Test.TestTrue(TEXT("the flight rail blocks a step off the inner edge"), Nearest < SolidTowerStronghold::RailSpanCm);
+			}
+
+			if (Landing.bOpen)
+			{
+				const float Mid = Landing.StartRad + Landing.SweepRad * 0.5f;
+				const FVector Stand = SolidTowerStronghold::RailPoint(
+					Mid, Inner, FloorZ + SolidTowerStronghold::RailHeightCm);
+				float Nearest = TNumericLimits<float>::Max();
+				for (const SolidTowerStronghold::FRailPiece& Piece : Hole)
+				{
+					Nearest = FMath::Min(Nearest, FVector::Dist(Piece.Location, Stand));
+				}
+				for (const SolidTowerStronghold::FRailPiece& Piece : Flight)
+				{
+					Nearest = FMath::Min(Nearest, FVector::Dist(Piece.Location, Stand));
+				}
+				Test.TestTrue(TEXT("the landing stays open onto the floor"), Nearest > 40.f);
+			}
+		}
+	}
+
 	void TestLandings(FAutomationTestBase& Test, const SolidTowerStronghold::FPlan& Plan)
 	{
 		Test.TestFalse(TEXT("the ground floor has no landing"), SolidTowerStronghold::HasLanding(Plan, 0));
@@ -175,6 +357,7 @@ namespace SolidTowerStrongholdTestPrivate
 			const float PlateEnd = FMath::Sqrt(PlateBack * PlateBack + HalfPlate * HalfPlate);
 			Test.TestTrue(TEXT("the plate's top corners stay inside the curved wall"), PlateEnd < WallAtTop - 1.f);
 		}
+		TestRails(Test, Plan);
 	}
 
 	void TestFloorNumberReads(FAutomationTestBase& Test)

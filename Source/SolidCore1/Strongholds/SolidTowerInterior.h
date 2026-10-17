@@ -14,6 +14,8 @@ class UStaticMeshComponent;
  * Each floor is a stone disc. The arrival hole is an annular gap, so the middle stays floored.
  * A flat landing in the stair band follows that hole. The next flight starts at its far end.
  * The wall beside each landing shows that floor's number on a light plate. Ground is 1.
+ * A rail follows the inner edge of each flight and the inner edge of each arrival hole.
+ * Both stop at the landing, so the landing stays open onto the floor.
  * Stair treads sit on the flight. The yellow grid is the kept hexes.
  * The curved wall follows the interior taper, with the dark door on local -X.
  * A click on that door leaves. Companions stay outside.
@@ -41,6 +43,7 @@ public:
 	UStaticMeshComponent* GetDoorMesh() const { return DoorMesh; }
 	UInstancedStaticMeshComponent* GetFloorGrid() const { return FloorGrid; }
 	UInstancedStaticMeshComponent* GetStairs() const { return Stairs; }
+	UInstancedStaticMeshComponent* GetRails() const { return Rails; }
 	int32 GetFloorSignCount() const { return FloorSignPlates.Num(); }
 	UStaticMeshComponent* GetFloorSignPlate(int32 Index) const;
 	UInstancedStaticMeshComponent* GetFloorSignDigits() const { return FloorSignDigits; }
@@ -75,6 +78,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<UInstancedStaticMeshComponent> Stairs;
+
+	/** Waist-high rail on each flight and each arrival hole. The landing is left open. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
+	TObjectPtr<UInstancedStaticMeshComponent> Rails;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TArray<TObjectPtr<UPointLightComponent>> Lights;

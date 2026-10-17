@@ -384,6 +384,55 @@ bool FSolidTowerInteriorVisualsTest::RunTest(const FString& Parameters)
 			Stairs->GetInstanceCount(),
 			(Plan.FloorCount - 1) * Plan.StairTreadCount);
 
+		UInstancedStaticMeshComponent* Rails = Interior->GetRails();
+		TestNotNull(*FString::Printf(TEXT("%s rails"), Label), Rails);
+		if (Rails)
+		{
+			TArray<SolidTowerStronghold::FRailPiece> ExpectedRails;
+			for (int32 Floor = 0; Floor < Plan.FloorCount; ++Floor)
+			{
+				TArray<SolidTowerStronghold::FRailPiece> Hole;
+				TArray<SolidTowerStronghold::FRailPiece> Flight;
+				SolidTowerStronghold::CollectHoleRail(Plan, Floor, Hole);
+				SolidTowerStronghold::CollectFlightRail(Plan, Floor, Flight);
+				ExpectedRails.Append(Hole);
+				ExpectedRails.Append(Flight);
+			}
+			TestEqual(
+				*FString::Printf(TEXT("%s rail pieces"), Label),
+				Rails->GetInstanceCount(),
+				ExpectedRails.Num());
+			TestTrue(
+				*FString::Printf(TEXT("%s rails block a step"), Label),
+				Rails->GetCollisionEnabled() == ECollisionEnabled::QueryAndPhysics
+					&& Rails->GetCollisionResponseToChannel(ECC_Pawn) == ECR_Block);
+			if (ExpectedRails.Num() > 0)
+			{
+				FTransform Placed;
+				TestTrue(
+					*FString::Printf(TEXT("%s first rail piece"), Label),
+					Rails->GetInstanceTransform(0, Placed, /*bWorldSpace=*/false));
+				TestTrue(
+					*FString::Printf(TEXT("%s first rail is on the inner edge"), Label),
+					Placed.GetLocation().Equals(ExpectedRails[0].Location, 0.05f));
+				TestTrue(
+					*FString::Printf(TEXT("%s first rail faces along itself"), Label),
+					Placed.GetRotation().GetForwardVector().Equals(ExpectedRails[0].Rotation.Vector(), 0.01f));
+				const FVector Scale = Placed.GetScale3D() * 100.f;
+				TestTrue(
+					*FString::Printf(TEXT("%s first rail is the bar or post"), Label),
+					Scale.Equals(ExpectedRails[0].SizeCm, 0.05f));
+				FTransform LastPlaced;
+				const int32 LastRail = ExpectedRails.Num() - 1;
+				TestTrue(
+					*FString::Printf(TEXT("%s last rail piece"), Label),
+					Rails->GetInstanceTransform(LastRail, LastPlaced, /*bWorldSpace=*/false));
+				TestTrue(
+					*FString::Printf(TEXT("%s last rail is placed"), Label),
+					LastPlaced.GetLocation().Equals(ExpectedRails[LastRail].Location, 0.05f));
+			}
+		}
+
 		int32 ExpectedSigns = 0;
 		for (int32 Floor = 0; Floor < Plan.FloorCount; ++Floor)
 		{

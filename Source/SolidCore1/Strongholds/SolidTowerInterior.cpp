@@ -419,6 +419,13 @@ ASolidTowerInterior::ASolidTowerInterior()
 	Stairs->SetCollisionResponseToAllChannels(ECR_Block);
 	Stairs->SetCastShadow(true);
 
+	Rails = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("Rails"));
+	Rails->SetupAttachment(SceneRoot);
+	Rails->SetMobility(EComponentMobility::Movable);
+	Rails->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+	Rails->SetCollisionResponseToAllChannels(ECR_Block);
+	Rails->SetCastShadow(true);
+
 	FloorSignDigits = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("FloorSignDigits"));
 	FloorSignDigits->SetupAttachment(SceneRoot);
 	FloorSignDigits->SetMobility(EComponentMobility::Movable);
@@ -510,6 +517,10 @@ void ASolidTowerInterior::DiscardParts()
 	if (Stairs)
 	{
 		Stairs->ClearInstances();
+	}
+	if (Rails)
+	{
+		Rails->ClearInstances();
 	}
 	for (TObjectPtr<UPointLightComponent>& Light : Lights)
 	{
@@ -682,6 +693,15 @@ void ASolidTowerInterior::BuildVisuals()
 			Stairs->SetMaterial(0, Material);
 		}
 	}
+	if (Rails)
+	{
+		Rails->SetStaticMesh(Cube);
+		Rails->ClearInstances();
+		if (UMaterialInterface* Material = SolidMaterials::CreateSolidColor(this, Rock, TEXT("TowerRail"), 0.94f))
+		{
+			Rails->SetMaterial(0, Material);
+		}
+	}
 
 	for (int32 Floor = 0; Floor < Plan.FloorCount; ++Floor)
 	{
@@ -736,6 +756,29 @@ void ASolidTowerInterior::BuildVisuals()
 					Plan.StairTreadCm / SolidTowerInteriorPrivate::CubeSizeCm,
 					Plan.StairWidthCm / SolidTowerInteriorPrivate::CubeSizeCm,
 					Riser / SolidTowerInteriorPrivate::CubeSizeCm)));
+		}
+	}
+
+	if (Rails)
+	{
+		for (int32 Floor = 0; Floor < Plan.FloorCount; ++Floor)
+		{
+			TArray<SolidTowerStronghold::FRailPiece> Hole;
+			TArray<SolidTowerStronghold::FRailPiece> Flight;
+			SolidTowerStronghold::CollectHoleRail(Plan, Floor, Hole);
+			SolidTowerStronghold::CollectFlightRail(Plan, Floor, Flight);
+			auto Place = [this](const TArray<SolidTowerStronghold::FRailPiece>& Pieces)
+			{
+				for (const SolidTowerStronghold::FRailPiece& Piece : Pieces)
+				{
+					Rails->AddInstance(FTransform(
+						Piece.Rotation,
+						Piece.Location,
+						Piece.SizeCm / SolidTowerInteriorPrivate::CubeSizeCm));
+				}
+			};
+			Place(Hole);
+			Place(Flight);
 		}
 	}
 

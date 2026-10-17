@@ -37,6 +37,7 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Fortress stronghold](Planning/fortress-stronghold.md)
 - [Imperious dungeon](Planning/imperious-dungeon.md)
 - [Basic furniture management](Planning/basic-furniture-management.md)
+- [Multiple storage containers](Planning/multiple-storage-containers.md)
 
 ## Done
 

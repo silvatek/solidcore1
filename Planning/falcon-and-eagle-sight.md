@@ -8,7 +8,7 @@ The player chooses Falcon Sight. The camera sits higher than raven sight and low
 
 The player chooses Eagle Sight to see the whole map. The camera rises until the entire map is in view. On the ground it moves from the captain toward the centre of the world, along the line between them, and it stops at the closest point on that line that is still over ground with no fog.
 
-The player presses F9. The view moves to the next sight mode that is available. A mode the player does not have yet is skipped.
+The player presses F9. The view moves from true sight to raven sight, then to Falcon Sight, then to Eagle Sight, and then back to true sight. A mode the player does not have yet is skipped.
 
 The player looks at the sight marker. Falcon Sight shows the same eagle as raven sight, with a + in one corner. Eagle Sight shows that same eagle, with ++ in one corner.
 
@@ -19,7 +19,8 @@ The player looks at the sight marker. Falcon Sight shows the same eagle as raven
 - In Eagle Sight the camera is high enough that the entire map is visible.
 - In Eagle Sight the camera's ground position lies on the line from the captain to the centre of the world, as close to that centre as possible while the terrain under the camera has `Fog` of `0.0f`.
 - True sight behaves as it does now.
-- F9 cycles through the sight modes that are available, and skips a mode that is not.
+- When every sight mode is available, F9 cycles true sight, raven sight, Falcon Sight, Eagle Sight, and then true sight again.
+- F9 skips a mode that is not available and uses the next available mode in that order.
 - Falcon Sight shows the raven sight marker with a + in one corner.
 - Eagle Sight shows the raven sight marker with ++ in one corner.
 
@@ -30,4 +31,4 @@ The player looks at the sight marker. Falcon Sight shows the same eagle as raven
 - The world is a 1024 m square. Its centre is the middle of that square.
 - Fog on a terrain point is `FSolidTerrainPoint.Fog`. The bands and the rule that the camera stays over clear ground are in [Source/SolidCore1/Fog/README.md](../Source/SolidCore1/Fog/README.md).
 - The raven marker is the eagle returned by `SolidSight::Marker` for raven sight, drawn in the translucent oval at the top right. True sight keeps the eye. The + and ++ are the initial marks only.
-- Not decided: which corner holds the + or ++, the order of the F9 cycle, when Falcon Sight and Eagle Sight unlock, and whether Falcon's height is measured above the ground under the camera.
+- Not decided: which corner holds the + or ++, when Falcon Sight and Eagle Sight unlock, and whether Falcon's height is measured above the ground under the camera.

@@ -6,6 +6,7 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 
 Open stories live in [`Planning`](Planning). Each file is one idea. A shipped story moves to [`Planning/Done`](Planning/Done).
 
+- [Fog stays cleared](Planning/fog-stays-cleared.md)
 - [White material for full fog](Planning/white-fog-terrain.md)
 - [Hide trees and buildings in full fog](Planning/hide-props-in-full-fog.md)
 - [Better building and tree models](Planning/better-building-and-tree-models.md)

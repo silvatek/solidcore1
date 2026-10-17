@@ -8,7 +8,7 @@ The player is inside a stronghold and presses `\`. Arrange mode starts, and the 
 
 A click or Enter on a piece lifts it. The piece follows the pointer and snaps to the hex under the tip. A click or Enter on cells that can hold it puts it down. While a piece is held, Q, E, and the mouse wheel each turn it by one facing. The wheel does not zoom during that hold. Esc puts a held piece back. Esc with nothing held leaves the mode, and the captain is visible again.
 
-A new piece comes from the furnishing list: Fireplace, Bed, and Chest. Choosing one lifts it, the same way a moved piece is lifted. A click in this mode does not walk the captain and does not use the door.
+A new piece comes from a column that lists the furnishing catalog, in catalog order. The column sits beside the floor and does not cover the hexes. The wheel over the column scrolls it. Up and Down move through the rows, and Enter or a click on a row lifts that kind. The column hides while a piece is held, so the wheel can turn the piece and the floor stays clear. The catalog will hold dozens of kinds. The three in this story fit, so the scrollbar stays hidden. A click in this mode does not walk the captain and does not use the door.
 
 ## Acceptance
 
@@ -25,10 +25,14 @@ A new piece comes from the furnishing list: Fireplace, Bed, and Chest. Choosing 
 - A fireplace occupies one hex. A chest occupies one hex. A bed occupies two neighboring hexes. The second hex is the next one in the direction the bed faces.
 - A placement off the floor, on a stair, on a landing, or overlapping another piece is not legal. The ghost still shows. Confirm does not put it down, and the piece stays held.
 - Q and E rotate a held piece by one facing. One facing is 60 degrees, and six steps return it to the facing it started with. The mouse wheel does the same, one facing per notch. Wheel up matches Q. Wheel down matches E.
-- Q, E, and the wheel do nothing when no piece is held. The wheel still zooms then.
-- Esc while a piece is held returns it to the cells and facing it had, and the mode stays on. A piece that was lifted from the list, and not yet put down, is discarded.
+- While no piece is held, the wheel still zooms, except over the catalog column, where it scrolls that column only. Q and E do nothing then.
+- Esc while a piece is held returns it to the cells and facing it had, and the mode stays on. A piece that was lifted from the catalog, and not yet put down, is discarded. The column shows again.
 - Esc with nothing held leaves the mode.
-- The furnishing list shows Fireplace, Bed, and Chest, in that order, while the mode is on and nothing is held. A click on a row, or the keys 1, 2, and 3, lifts that kind as a new piece. Those keys do not lift a second piece while one is held.
+- While the mode is on and nothing is held, a column lists every kind in the furnishing catalog, in catalog order. This story's rows are Fireplace, Bed, and Chest. The column sits beside the floor and does not cover a hex.
+- The column shows as many rows as fit in its frame. Further kinds scroll. A scrollbar shows when the rows do not fit, and it stays hidden when they do. Fireplace, Bed, and Chest fit, so the thumb is hidden.
+- Up and Down move the highlight through the catalog, and the column scrolls to keep that row in the frame. A click on a row lifts that kind. Enter lifts the highlighted kind when the pointer is not over a placed piece.
+- Enter or a click on a placed piece still lifts that piece. The catalog highlight does not change which placed piece a click lifts.
+- Lifting a piece hides the column. Putting the piece down, or putting it back, shows the column again. Up, Down, and a click where the column was do nothing while it is hidden.
 - A new game still starts with the fireplace, the bed, and the chest already placed in the Meagre den. This story does not add a fourth kind.
 - Moving a chest keeps the items in its slots. The pack and the worn boxes stay as they were.
 - A placed piece is moved or left where it is. This story does not delete one that is already down.
@@ -36,14 +40,14 @@ A new piece comes from the furnishing list: Fireplace, Bed, and Chest. Choosing 
 - Leaving the stronghold ends the mode first. A held piece goes back, a new piece that was never put down is discarded, and the captain is drawn for the leave. The leave then proceeds as it does now, including Build party when that page opens on a leave.
 - After the player leaves and comes back, each piece is still on the hex where they put it, with the same facing. A new game has none of those moves.
 - The whole floor the captain is on can be arranged. Another floor of the tower is not.
-- This story binds the mouse, `\`, Enter, Esc, Q, E, the wheel, and 1, 2, and 3. Gamepad buttons stay as they are. The same actions are focus, confirm, cancel, and rotate, so a later story can bind a pad without a new placement rule.
+- This story binds the mouse, `\`, Enter, Esc, Q, E, the wheel, Up, and Down. No number key lifts a kind. Gamepad buttons stay as they are. Focus, confirm, cancel, rotate, and the catalog highlight are the actions, so a later story can bind a pad to the same column without a new placement rule.
 
 ## Implementation notes
 
 - `\` is `EKeys::Backslash`. Inventory stays `EKeys::Slash`.
-- Zoom is `MouseWheelAxis` on `IA_Zoom`. While a piece is held, that axis rotates and is not applied as zoom.
+- Zoom is `MouseWheelAxis` on `IA_Zoom`. While a piece is held, that axis rotates and is not applied as zoom. While the catalog column is under the pointer, the same axis scrolls the column, the way a wheel over a party scrollbox scrolls that box only.
 - Q and E are unbound today. One facing is 60 degrees, the step `SolidStrongholdGrid::HexVertices` uses. `SolidStrongholdFurniture::SpanCell` already places the bed's second cell along `RotationDeg`.
 - Hide the captain with `SetActorHiddenInGame`. The pawn stays, so the camera does not jump. His mesh and his capsule do not answer the pointer ray.
 - The placed list is the stronghold's used furnishings. The starter three from `UsedFurnishings` are the new-game list. A move edits that list. Store it on the travel session, the way the pack is stored, so `OpenLevel` brings the same placements back.
-- A catalog choice builds a pending piece and does not write the list until confirm. Esc drops that pending piece.
+- A catalog row builds a pending piece and does not write the placed list until confirm. Esc drops that pending piece. The column is one scrollbox. Its rows are `SolidStrongholdFurniture::Catalog` in order. This story does not add a kind, and it does not add a filter. A later kind is another row in that catalog, and the same column scrolls to it.
 - Stairs, landings, and hexes the tower plan already rejects stay unavailable. The den's fourteen hexes are the Meagre floor.

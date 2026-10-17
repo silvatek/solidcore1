@@ -493,18 +493,18 @@ bool FSolidTowerInteriorVisualsTest::RunTest(const FString& Parameters)
 					FirstStroke.GetLocation().Equals(FirstExpected, 0.05f));
 			}
 		}
-		const SolidTowerStronghold::FFloorSign Top = SolidTowerStronghold::FloorSignFor(Plan, Plan.FloorCount - 1);
+		const SolidTowerStronghold::FFloorSign TopSign = SolidTowerStronghold::FloorSignFor(Plan, Top);
 		TArray<SolidTowerStronghold::FFloorSignStroke> TopNumber;
 		SolidTowerStronghold::CollectFloorSignStrokes(Plan.FloorCount, TopNumber);
-		TestTrue(*FString::Printf(TEXT("%s top sign is present"), Label), Top.bPresent && Top.Number == Plan.FloorCount);
+		TestTrue(*FString::Printf(TEXT("%s top sign is present"), Label), TopSign.bPresent && TopSign.Number == Plan.FloorCount);
 		if (Digits && TopNumber.Num() > 0 && Digits->GetInstanceCount() > 0)
 		{
 			FTransform LastStroke;
 			TestTrue(
 				*FString::Printf(TEXT("%s top stroke"), Label),
 				Digits->GetInstanceTransform(Digits->GetInstanceCount() - 1, LastStroke, /*bWorldSpace=*/false));
-			const FVector TopExpected = Top.Location
-				+ FRotator(0.f, Top.YawDeg, 0.f).RotateVector(TopNumber.Last().CenterCm);
+			const FVector TopExpected = TopSign.Location
+				+ FRotator(0.f, TopSign.YawDeg, 0.f).RotateVector(TopNumber.Last().CenterCm);
 			TestTrue(
 				*FString::Printf(TEXT("%s top number is the floor count"), Label),
 				LastStroke.GetLocation().Equals(TopExpected, 0.05f));

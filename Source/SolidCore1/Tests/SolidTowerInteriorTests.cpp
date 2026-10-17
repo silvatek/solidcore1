@@ -8,6 +8,7 @@
 #include "SolidTowerStronghold.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/TextRenderComponent.h"
 #include "Engine/StaticMesh.h"
 #include "MeshDescription.h"
 #include "StaticMeshAttributes.h"
@@ -304,6 +305,7 @@ bool FSolidTowerInteriorVisualsTest::RunTest(const FString& Parameters)
 		}
 		Interior->SetPlan(Plan);
 		Interior->BuildVisuals();
+		Interior->BuildVisuals();
 
 		TestEqual(*FString::Printf(TEXT("%s floor count"), Label), Interior->GetFloorCount(), Plan.FloorCount);
 		TestEqual(*FString::Printf(TEXT("%s wall count"), Label), Interior->GetWallCount(), Plan.FloorCount);
@@ -382,6 +384,70 @@ bool FSolidTowerInteriorVisualsTest::RunTest(const FString& Parameters)
 			*FString::Printf(TEXT("%s treads"), Label),
 			Stairs->GetInstanceCount(),
 			(Plan.FloorCount - 1) * Plan.StairTreadCount);
+
+		int32 ExpectedSigns = 0;
+		for (int32 Floor = 0; Floor < Plan.FloorCount; ++Floor)
+		{
+			if (SolidTowerStronghold::FloorSignFor(Plan, Floor).bPresent)
+			{
+				++ExpectedSigns;
+			}
+		}
+		TestEqual(*FString::Printf(TEXT("%s floor numbers"), Label), Interior->GetFloorSignCount(), ExpectedSigns);
+		TestTrue(*FString::Printf(TEXT("%s has a number upstairs"), Label), ExpectedSigns > 0);
+		int32 SignIndex = 0;
+		for (int32 Floor = 0; Floor < Plan.FloorCount; ++Floor)
+		{
+			const SolidTowerStronghold::FFloorSign Sign = SolidTowerStronghold::FloorSignFor(Plan, Floor);
+			if (!Sign.bPresent)
+			{
+				continue;
+			}
+			UTextRenderComponent* Text = Interior->GetFloorSign(SignIndex);
+			TestNotNull(*FString::Printf(TEXT("%s floor number"), Label), Text);
+			if (!Text)
+			{
+				return;
+			}
+			TestEqual(
+				*FString::Printf(TEXT("%s number text"), Label),
+				Text->Text.ToString(),
+				FString::FromInt(Sign.Number));
+			TestTrue(
+				*FString::Printf(TEXT("%s number is on the wall"), Label),
+				Text->GetRelativeLocation().Equals(Sign.Location, 0.05f));
+			TestTrue(
+				*FString::Printf(TEXT("%s number faces the room"), Label),
+				Text->GetRelativeRotation().Equals(FRotator(0.f, Sign.YawDeg, 0.f), 0.05f));
+			TestTrue(
+				*FString::Printf(TEXT("%s number is readable"), Label),
+				FMath::IsNearlyEqual(Text->WorldSize, SolidTowerStronghold::FloorSignWorldSize, 0.01f));
+			TestTrue(
+				*FString::Printf(TEXT("%s number is light"), Label),
+				Text->TextRenderColor == FColor::White);
+			TestTrue(
+				*FString::Printf(TEXT("%s number does not block"), Label),
+				Text->GetCollisionEnabled() == ECollisionEnabled::NoCollision);
+			++SignIndex;
+		}
+		UTextRenderComponent* FirstSign = Interior->GetFloorSign(0);
+		TestNotNull(*FString::Printf(TEXT("%s first number"), Label), FirstSign);
+		if (FirstSign)
+		{
+			TestEqual(
+				*FString::Printf(TEXT("%s first landing reads 2"), Label),
+				FirstSign->Text.ToString(),
+				FString(TEXT("2")));
+		}
+		UTextRenderComponent* TopSign = Interior->GetFloorSign(ExpectedSigns - 1);
+		TestNotNull(*FString::Printf(TEXT("%s top number"), Label), TopSign);
+		if (TopSign)
+		{
+			TestEqual(
+				*FString::Printf(TEXT("%s top number is the floor count"), Label),
+				TopSign->Text.ToString(),
+				FString::FromInt(Plan.FloorCount));
+		}
 
 		TestTrue(
 			*FString::Printf(TEXT("%s door is on local -X"), Label),

@@ -90,12 +90,15 @@ namespace SolidTowerStrongholdTestPrivate
 	{
 		Test.TestFalse(TEXT("the ground floor has no landing"), SolidTowerStronghold::HasLanding(Plan, 0));
 		Test.TestFalse(TEXT("the ground landing wedge stays shut"), SolidTowerStronghold::LandingWedge(Plan, 0).bOpen);
+		Test.TestFalse(TEXT("the ground floor has no number"), SolidTowerStronghold::FloorSignFor(Plan, 0).bPresent);
+		Test.TestEqual(TEXT("ground is floor 1"), SolidTowerStronghold::FloorNumber(0), 1);
 		for (int32 Floor = 1; Floor < Plan.FloorCount; ++Floor)
 		{
 			const bool bArrives = SolidTowerStronghold::FlightSweepRad(Plan, Floor - 1) > 0.f;
 			if (!bArrives)
 			{
 				Test.TestFalse(TEXT("a floor with no arriving flight has no landing"), SolidTowerStronghold::HasLanding(Plan, Floor));
+				Test.TestFalse(TEXT("a floor with no landing has no number"), SolidTowerStronghold::FloorSignFor(Plan, Floor).bPresent);
 				continue;
 			}
 
@@ -119,6 +122,9 @@ namespace SolidTowerStrongholdTestPrivate
 					&& FMath::IsNearlyEqual(Gap.StartRad, SolidTowerStronghold::FlightStartRad(Plan, Floor - 1), 0.001f)
 					&& FMath::IsNearlyEqual(Gap.SweepRad, SolidTowerStronghold::FlightSweepRad(Plan, Floor - 1), 0.001f)
 					&& Gap.SweepRad > Landing.SweepRad + 0.05f);
+			const SolidTowerStronghold::FFloorSign Sign = SolidTowerStronghold::FloorSignFor(Plan, Floor);
+			Test.TestTrue(TEXT("an arrival floor has a number"), Sign.bPresent);
+			Test.TestEqual(TEXT("the number counts from ground as 1"), Sign.Number, SolidTowerStronghold::FloorNumber(Floor));
 			if (Floor < Plan.FloorCount - 1)
 			{
 				Test.TestTrue(
@@ -131,7 +137,31 @@ namespace SolidTowerStrongholdTestPrivate
 			else
 			{
 				Test.TestFalse(TEXT("the top floor has no flight up"), SolidTowerStronghold::FlightWedge(Plan, Floor).bOpen);
+				Test.TestEqual(TEXT("the top sign is the floor count"), Sign.Number, Plan.FloorCount);
 			}
+
+			const float WallRadius = SolidTowerStronghold::InteriorRadiusCm(Plan, SolidTowerStronghold::FloorZCm(Plan, Floor))
+				- SolidTowerStronghold::FloorSignInsetCm;
+			const FVector2D SignXY(Sign.Location.X, Sign.Location.Y);
+			Test.TestTrue(
+				TEXT("the number stands just inside the wall"),
+				FMath::IsNearlyEqual(SignXY.Size(), WallRadius, 0.05f));
+			Test.TestTrue(
+				TEXT("the number is above the landing"),
+				FMath::IsNearlyEqual(
+					Sign.Location.Z,
+					SolidTowerStronghold::FloorZCm(Plan, Floor) + SolidTowerStronghold::FloorSignLiftCm,
+					0.05f));
+			const float Mid = Landing.StartRad + Landing.SweepRad * 0.5f;
+			Test.TestTrue(
+				TEXT("the number is beside the middle of the landing"),
+				FMath::IsNearlyEqual(
+					SolidTowerStronghold::WrapTau(FMath::Atan2(SignXY.Y, SignXY.X)),
+					SolidTowerStronghold::WrapTau(Mid),
+					0.001f));
+			const FVector Facing = FRotator(0.f, Sign.YawDeg, 0.f).Vector();
+			const FVector Inward = FVector(-SignXY.X, -SignXY.Y, 0.f).GetSafeNormal();
+			Test.TestTrue(TEXT("the number faces the room"), Facing.Equals(Inward, 0.01f));
 		}
 	}
 }

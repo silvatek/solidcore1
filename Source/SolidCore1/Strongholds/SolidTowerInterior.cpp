@@ -6,6 +6,7 @@
 #include "Components/PointLightComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
+#include "Components/TextRenderComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"
 #include "MeshDescription.h"
@@ -455,6 +456,15 @@ UStaticMeshComponent* ASolidTowerInterior::GetWall(const int32 Index) const
 	return Walls[Index].Get();
 }
 
+UTextRenderComponent* ASolidTowerInterior::GetFloorSign(const int32 Index) const
+{
+	if (!FloorSigns.IsValidIndex(Index))
+	{
+		return nullptr;
+	}
+	return FloorSigns[Index].Get();
+}
+
 FVector ASolidTowerInterior::GetCaptainSpawnWorld() const
 {
 	const FVector2D Center = SolidTowerStronghold::DoorHexCenter(Plan);
@@ -505,6 +515,15 @@ void ASolidTowerInterior::DiscardParts()
 		}
 	}
 	Lights.Reset();
+	for (TObjectPtr<UTextRenderComponent>& Sign : FloorSigns)
+	{
+		if (UTextRenderComponent* Text = Sign.Get())
+		{
+			Text->DestroyComponent();
+			Sign = nullptr;
+		}
+	}
+	FloorSigns.Reset();
 }
 
 void ASolidTowerInterior::BuildVisuals()
@@ -588,6 +607,36 @@ void ASolidTowerInterior::BuildVisuals()
 			SolidTowerStronghold::FWedge{});
 		UStaticMesh* CapBuilt = SolidTowerInteriorPrivate::Commit(this, Cap, TEXT("the cap"));
 		CapMesh = SolidTowerInteriorPrivate::AddStone(this, SceneRoot, CapBuilt, Rock, TEXT("TowerCeiling"));
+	}
+
+	for (int32 Floor = 0; Floor < Plan.FloorCount; ++Floor)
+	{
+		const SolidTowerStronghold::FFloorSign Sign = SolidTowerStronghold::FloorSignFor(Plan, Floor);
+		if (!Sign.bPresent)
+		{
+			continue;
+		}
+		UTextRenderComponent* Text = NewObject<UTextRenderComponent>(this, NAME_None, RF_Transient);
+		if (!Text)
+		{
+			continue;
+		}
+		Text->SetupAttachment(SceneRoot);
+		Text->SetMobility(EComponentMobility::Movable);
+		Text->SetHorizontalAlignment(EHTA_Center);
+		Text->SetVerticalAlignment(EVRTA_TextCenter);
+		Text->SetWorldSize(SolidTowerStronghold::FloorSignWorldSize);
+		Text->SetTextRenderColor(FColor::White);
+		Text->SetText(FText::FromString(FString::FromInt(Sign.Number)));
+		Text->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Text->SetCastShadow(false);
+		Text->SetRelativeLocation(Sign.Location);
+		Text->SetRelativeRotation(FRotator(0.f, Sign.YawDeg, 0.f));
+		if (GetWorld())
+		{
+			Text->RegisterComponent();
+		}
+		FloorSigns.Add(Text);
 	}
 
 	UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));

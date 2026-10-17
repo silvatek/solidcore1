@@ -311,6 +311,32 @@ namespace SolidTowerStronghold
 		return FlightWedge(Plan, Floor - 1);
 	}
 
+	/** Ground is floor 1. The plan's floor index starts at 0. */
+	inline int32 FloorNumber(const int32 Floor)
+	{
+		return Floor + 1;
+	}
+
+	/** How far above the walking surface the floor number sits. */
+	inline constexpr float FloorSignLiftCm = 150.f;
+	/** How far inside the curved wall the number stands, so it clears the stone. */
+	inline constexpr float FloorSignInsetCm = 8.f;
+	/** Height of the floor-number glyphs. */
+	inline constexpr float FloorSignWorldSize = 48.f;
+
+	/**
+	 * The number on the wall beside this floor's landing.
+	 * Absent when this floor has no landing. The text faces the room.
+	 */
+	struct FFloorSign
+	{
+		int32 Number = 0;
+		FVector Location = FVector::ZeroVector;
+		/** Yaw that points the text's forward axis into the room. */
+		float YawDeg = 0.f;
+		bool bPresent = false;
+	};
+
 	/** Flat arc in the stair band after the arriving flight, at this floor's walking surface. */
 	inline FWedge LandingWedge(const FPlan& Plan, const int32 Floor)
 	{
@@ -324,6 +350,25 @@ namespace SolidTowerStronghold
 		Wedge.StartRad = FlightStartRad(Plan, Floor - 1) + FlightSweepRad(Plan, Floor - 1);
 		Wedge.SweepRad = Sweep;
 		return Wedge;
+	}
+
+	inline FFloorSign FloorSignFor(const FPlan& Plan, const int32 Floor)
+	{
+		FFloorSign Sign;
+		const FWedge Landing = LandingWedge(Plan, Floor);
+		if (!Landing.bOpen)
+		{
+			return Sign;
+		}
+		const float Angle = Landing.StartRad + Landing.SweepRad * 0.5f;
+		const float Z = FloorZCm(Plan, Floor);
+		const float Radius = FMath::Max(InteriorRadiusCm(Plan, Z) - FloorSignInsetCm, 0.f);
+		const float InwardYaw = Angle + PI;
+		Sign.bPresent = true;
+		Sign.Number = FloorNumber(Floor);
+		Sign.Location = FVector(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, Z + FloorSignLiftCm);
+		Sign.YawDeg = FMath::RadiansToDegrees(InwardYaw);
+		return Sign;
 	}
 
 	inline float WrapTau(const float Angle)

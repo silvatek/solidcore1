@@ -4,13 +4,18 @@ Status: Ready
 
 ## Story
 
-The player finds an item lying on the ground in the open world. It is there because that ground's biome is one where the item occurs. Most of these are crafting materials. The player points at it, close to the captain, and the name shows. A click picks it up into the pack, and the pile is gone. A click the pack cannot hold leaves the pile where it is. Ground still in full fog shows no pile. A pile already taken is still gone after the player leaves a stronghold or a lair and comes back.
+The player walks through forest that is no longer in full fog and finds sticks and pitch scattered on the ground. Those are the materials this story places. A pile is one stick or one pitch, on forest ground, because forest is where they occur. The player points at it, close to the captain, and the name shows. A click picks it up into the pack, and the pile is gone. A click the pack cannot hold leaves the pile where it is. Ground still in full fog shows no pile. A pile already taken is still gone after the player leaves a stronghold or a lair and comes back.
 
 ## Acceptance
 
 - A pile is one catalog item, with a count of one, lying on open-world ground.
+- Stick and pitch are the piles this story places. No other catalog item is placed.
+- A stick occurs on Forest. A pitch occurs on Forest. No other biome gets either.
 - Its terrain point's biome is one that item is allowed to occur in. No other biome has that pile.
 - Sea is not a biome an item occurs in.
+- A forest point holds at most one pile. A forest point that has a tree holds no pile.
+- The piles are a scatter of the remaining forest points, not every one. At most 64 are placed.
+- When at least two are placed, both a stick and a pitch are among them. They alternate, and the first is a stick.
 - The dungeon, the tower, and the Iglin tunnels have no piles.
 - A pile whose point has `FSolidTerrainPoint.Fog` of `1.0f` is not drawn, and the pointer does not name it.
 - When that fog is no longer `1.0f`, the pile is there.
@@ -28,12 +33,13 @@ The player finds an item lying on the ground in the open world. It is there beca
 - After the player enters and leaves a stronghold, or enters and leaves the Iglin tunnels, a taken pile is still gone and an untaken pile is still there. The pack still holds what was picked up.
 - A new game has no pile taken. The pack is the starting pack.
 - Closing the monster message still clears the pack down to Rags on the body. It does not put taken piles back on the ground.
-- This story does not scatter sticks and pitch through the forest, and it does not add rough stones.
+- This story does not add rough stones.
 
 ## Implementation notes
 
-- Catalog materials today are coins, stick (`6c2a91e8`, Inferior, stacks to 10), and pitch (`d4f07b3a`, Common, stacks to 10). Coins are not a ground find. There is no rough-stone id. Do not add one here.
-- Which biomes hold sticks and pitch is [Sticks and pitch in the forest](forest-sticks-and-pitch.md). Rough stones are [Rough stones](rough-stones.md). This story is the pile and the pickup. A test places one stick on a forest point and does not fill the forest.
+- Stick is `6c2a91e8`, Inferior, stacks to 10. Pitch is `d4f07b3a`, Common, stacks to 10. Coins are not a ground find. There is no rough-stone id. Rough stones stay [Rough stones](rough-stones.md).
+- Scatter the piles the way `SolidForestTrees::CollectSpawnPositions` scatters trees. The input set is forest points that did not receive a tree. Fisher–Yates, then `round(count * density)` clamped to the max and to the count. Density is `0.05`. The max is 64. Jitter is 90 cm, the same as `ForestTreeJitterCm`. Trees use `ForestTreeSeed` 42. The piles use their own seed, 43, so a tree-seed change does not move them.
+- Walking that chosen list, an even index is a stick and an odd index is a pitch. A test map with 40 treeless forest points places two piles, stick then pitch. A map with no forest places none. One placed stick is still enough to test the click and the pack.
 - `SolidInventory::PlacePack` writes a cell and replaces what was there. It does not merge. Add an insert that fills the first same-id stack under `FSolidItemType::MaxStacked`, then the first empty cell, and returns false when neither exists.
 - The pack is `FGameState::Inventory`, six cells, carried on the travel session. Taken pile ids have to ride on that state too. `OpenLevel` builds a new world. The same piles come back from the map, and the taken ids are skipped.
 - `SolidInventory::Clear` empties the pack and leaves Rags on the body. Leave the taken ids taken.
@@ -42,5 +48,5 @@ The player finds an item lying on the ground in the open world. It is there beca
 - Terrain points are 2 m apart (`PointSpacing` 200 cm). 4 m is two of those, so a pile on a neighbouring point is in reach.
 - The tip is the catalog name, drawn the way `CavePassageTip` is drawn. Empty when the pointer is not over a pile in reach. The pointer has to be showing, the same check as `SolidDungeonPassage::AcceptsPointer`.
 - A pile is a small marker on the ground at its point. This story does not pick a Fab mesh.
-- The point's own biome is the test. A road cell is Road, not the biome the road replaced.
+- The point's own biome is the test. A road cell is Road, not the biome the road replaced. A road through forest does not keep the sticks.
 - No piles on `?SolidLevel=Dungeon`, `Tower`, or the lair.

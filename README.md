@@ -27,7 +27,6 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Basic NPCs](Planning/basic-npcs.md)
 - [Pathfinding over bridges](Planning/pathfinding-over-bridges.md)
 - [Foraging](Planning/foraging.md)
-- [Sticks and pitch in the forest](Planning/forest-sticks-and-pitch.md)
 - [Rough stones](Planning/rough-stones.md)
 - [World map location markers](Planning/world-map-location-markers.md)
 - [Party builder drag and drop](Planning/party-builder-drag-and-drop.md)

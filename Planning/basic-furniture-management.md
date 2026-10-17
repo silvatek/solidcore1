@@ -4,7 +4,7 @@ Status: Ready
 
 ## Story
 
-The player is inside a stronghold and presses `\`. Arrange mode starts, and the captain is hidden so the floor is clear to see. The pointer highlights the hex under it. A piece on that hex shows its name.
+The player is inside a stronghold. The interior wall carries a sign that reads Arrange furniture. A click on that sign, or `\`, starts arrange mode, and the captain is hidden so the floor is clear to see. The same click, or `\` again, leaves the mode. The pointer highlights the hex under it. A piece on that hex shows its name.
 
 A click or Enter on a piece lifts it. The piece follows the pointer and snaps to the hex under the tip. A click or Enter on cells that can hold it puts it down. While a piece is held, Q, E, and the mouse wheel each turn it by one facing. The wheel does not zoom during that hold. Esc puts a held piece back, or closes the browser when that is what is open. Esc with nothing held, and the browser closed, leaves the mode, and the captain is visible again.
 
@@ -12,7 +12,10 @@ A new piece starts from an empty hex. A click or Enter on one, while nothing is 
 
 ## Acceptance
 
-- `\` inside a stronghold toggles arrange mode. The Meagre den and the tower both take it. `\` in the open world, in the Iglin tunnels, or while a menu, the inventory, the journal, a message, or the party builder is open, does nothing.
+- `\` inside a stronghold toggles arrange mode. A click on the Arrange furniture sign does the same. The Meagre den and the tower both take it. `\` in the open world, in the Iglin tunnels, or while a menu, the inventory, the journal, a message, or the party builder is open, does nothing. The sign is not in those places.
+- The sign reads Arrange furniture. It is fixed on the interior wall, facing the room, and it is clear of the door and of any floor-number plate. The Meagre den has one, beside the entrance. Each tower floor has one. It is not a furnishing, it occupies no hex, and arrange mode cannot move it.
+- A click on the sign toggles the mode when the pointer is showing. While the right button looks, the click does nothing. The click does not walk the captain, does not use the door, and does not open the browser or lift a piece.
+- Toggling the mode off, by the sign or by `\`, returns a held piece, discards a new piece that was never put down, and closes the browser. The captain is drawn again.
 - `/` still opens the inventory. `\` does not.
 - While the mode is on, the captain is not drawn. He stays on the cell he was on. WASD, the left stick, and a click do not move him. The camera stays where it was.
 - His body does not take the pointer. A piece or a hex behind him can be highlighted.
@@ -39,7 +42,7 @@ A new piece starts from an empty hex. A click or Enter on one, while nothing is 
 - A new game still starts with the fireplace, the bed, and the chest already placed in the Meagre den. This story does not add a fourth kind.
 - Moving a chest keeps the items in its slots. The pack and the worn boxes stay as they were.
 - A placed piece is moved or left where it is. This story does not delete one that is already down.
-- While the mode is on, a click does not start a walk, and it does not enter or leave through the door.
+- While the mode is on, a click does not start a walk, and it does not enter or leave through the door. A click on the Arrange furniture sign still leaves the mode.
 - Leaving the stronghold ends the mode first. A held piece goes back, a new piece that was never put down is discarded, and the captain is drawn for the leave. The leave then proceeds as it does now, including Build party when that page opens on a leave.
 - After the player leaves and comes back, each piece is still on the hex where they put it, with the same facing. A new game has none of those moves.
 - The whole floor the captain is on can be arranged. Another floor of the tower is not.
@@ -47,7 +50,8 @@ A new piece starts from an empty hex. A click or Enter on one, while nothing is 
 
 ## Implementation notes
 
-- `\` is `EKeys::Backslash`. Inventory stays `EKeys::Slash`.
+- `\` is `EKeys::Backslash`. Inventory stays `EKeys::Slash`. The sign is the same toggle.
+- The sign is a light plate on the wall with the words Arrange furniture in dark letters, facing the room. Build the letters so they draw on the interior wall. A runtime text component was spawned on the tower wall and did not draw, and `ASolidTownSign` stays the outdoor welcome board. The floor-number plate is a separate sign. This plate is a pointer query hit and does not block the captain. The den plate sits on the rock beside the mouth. A tower plate sits on that floor's curved wall, inset like `FloorSignInsetCm`, clear of `FloorSignFor` and of the door.
 - Zoom is `MouseWheelAxis` on `IA_Zoom`. While a piece is held, that axis rotates and is not applied as zoom. While the catalog column is under the pointer, the same axis scrolls the column, the way a wheel over a party scrollbox scrolls that box only.
 - Q and E are unbound today. One facing is 60 degrees, the step `SolidStrongholdGrid::HexVertices` uses. `SolidStrongholdFurniture::SpanCell` already places the bed's second cell along `RotationDeg`.
 - Hide the captain with `SetActorHiddenInGame`. The pawn stays, so the camera does not jump. His mesh and his capsule do not answer the pointer ray.

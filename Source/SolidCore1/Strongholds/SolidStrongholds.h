@@ -66,6 +66,7 @@ namespace SolidStrongholds
 	 * Ordered by map row, then column.
 	 * A tower is included here. Only a dungeon spawns the cliff mouth.
 	 * A tower with a plan spawns its shell at the cell center, turned so the door faces this grass.
+	 * A click on that door enters. Leaving stands on the grass outside the same door.
 	 * @return Number of entrances written.
 	 */
 	int32 CollectEntrances(

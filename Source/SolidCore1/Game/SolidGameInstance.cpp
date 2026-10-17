@@ -61,3 +61,8 @@ void USolidGameInstance::ClearLairMouthSpawn()
 {
 	Session.bReturnToLairMouth = false;
 }
+
+void USolidGameInstance::ClearTowerDoorSpawn()
+{
+	Session.bReturnToTowerDoor = false;
+}

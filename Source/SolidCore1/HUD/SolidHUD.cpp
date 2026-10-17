@@ -2181,6 +2181,7 @@ void ASolidHUD::DrawMainMenuPopup()
 	int32 MaxPartySize = 0;
 	bool bInDungeon = false;
 	bool bInLair = false;
+	bool bInTower = false;
 	bool bCaveEnabled = false;
 	if (UWorld* World = GetWorld())
 	{
@@ -2189,6 +2190,7 @@ void ASolidHUD::DrawMainMenuPopup()
 			MaxPartySize = GameMode->GetMaxPartySize();
 			bInDungeon = GameMode->IsInDungeon();
 			bInLair = GameMode->IsInLair();
+			bInTower = GameMode->IsInTower();
 			bCaveEnabled = GameMode->IsCaveEnabled();
 		}
 	}
@@ -2203,7 +2205,7 @@ void ASolidHUD::DrawMainMenuPopup()
 		const bool bParty = Entry.Item != ESolidMainMenuItem::BuildParty
 			|| SolidPartyBuilder::CanOpen(MaxPartySize);
 		const bool bCave = Entry.Item != ESolidMainMenuItem::Dungeon
-			|| (!bInLair && SolidMainMenu::CanUseCaveRow(bCaveEnabled, bInDungeon));
+			|| (!bInLair && !bInTower && SolidMainMenu::CanUseCaveRow(bCaveEnabled, bInDungeon));
 		Enabled.Add(bParty && bCave);
 	}
 	TArray<SolidMenuPointer::FRow> Rows;

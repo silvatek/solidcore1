@@ -5,6 +5,7 @@
 #include "SolidDungeonLevel.h"
 #include "SolidDungeonPassage.h"
 #include "SolidGameState.h"
+#include "SolidTowerStronghold.h"
 #include "SolidWorldMap.h"
 
 /**
@@ -381,6 +382,9 @@ namespace SolidLair
 		SolidDungeonPassage::EHit Action = SolidDungeonPassage::EHit::None;
 		bool bLair = false;
 		TCHAR EndMarker = 0;
+		/** A tower door. TowerCell is the map cell of that door. */
+		bool bTower = false;
+		FIntPoint TowerCell = FIntPoint::ZeroValue;
 	};
 
 	inline FPassageHit HitOnMouth(const bool bLairMouth, const TCHAR EndMarker, const bool bInside)
@@ -392,10 +396,24 @@ namespace SolidLair
 		return Hit;
 	}
 
-	/** Enter is ignored while that place is shut. Leave stays available. */
+	/** A tower door. The door stays open even while the cave is shut. */
+	inline FPassageHit HitOnTower(const FIntPoint Cell, const bool bInside)
+	{
+		FPassageHit Hit;
+		Hit.bTower = true;
+		Hit.TowerCell = Cell;
+		Hit.Action = bInside ? SolidDungeonPassage::EHit::Leave : SolidDungeonPassage::EHit::Enter;
+		return Hit;
+	}
+
+	/** Enter is ignored while that place is shut. Leave stays available. A tower door stays open. */
 	inline FPassageHit AllowPassage(const FPassageHit& Hit, const bool bCaveEnabled, const bool bTunnelsOpen)
 	{
 		if (Hit.Action != SolidDungeonPassage::EHit::Enter)
+		{
+			return Hit;
+		}
+		if (Hit.bTower)
 		{
 			return Hit;
 		}
@@ -411,6 +429,12 @@ namespace SolidLair
 		if (Hit.Action == SolidDungeonPassage::EHit::None)
 		{
 			return TEXT("");
+		}
+		if (Hit.bTower)
+		{
+			return Hit.Action == SolidDungeonPassage::EHit::Enter
+				? SolidTowerStronghold::EnterLabel
+				: SolidTowerStronghold::LeaveLabel;
 		}
 		if (Hit.bLair)
 		{

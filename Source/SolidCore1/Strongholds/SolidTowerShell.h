@@ -12,7 +12,7 @@ class UStaticMeshComponent;
  * One course per floor. The foot of each course is the head of the course below,
  * so the side is one smooth taper, closed by a flat cap at the top exterior radius.
  * The dark door is a slab on local -X.
- * A click does not enter. The captain can walk up to the stone.
+ * A click on that door enters. The captain can walk up to the stone.
  */
 UCLASS()
 class SOLIDCORE1_API ASolidTowerShell : public AActor
@@ -34,6 +34,10 @@ public:
 	UStaticMeshComponent* GetCapMesh() const { return CapMesh; }
 	UStaticMeshComponent* GetDoorMesh() const { return DoorMesh; }
 
+	/** Map cell this shell stands on. A click on the door enters that cell. */
+	void SetTowerCell(FIntPoint Cell) { TowerCell = Cell; }
+	FIntPoint GetTowerCell() const { return TowerCell; }
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<USceneComponent> SceneRoot;
@@ -49,6 +53,7 @@ protected:
 
 private:
 	SolidTowerStronghold::FPlan Plan = SolidTowerStronghold::Imperious;
+	FIntPoint TowerCell = FIntPoint::ZeroValue;
 
 	void DiscardParts();
 	UStaticMeshComponent* AddPart(UStaticMesh* Mesh, const FVector& Location, const FVector& Scale, const FLinearColor& Color, const TCHAR* DebugName);

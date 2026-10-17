@@ -7,6 +7,8 @@
 #include "Strongholds/SolidDungeonEntrance.h"
 #include "Strongholds/SolidDungeonInterior.h"
 #include "Strongholds/SolidDungeonPassage.h"
+#include "Strongholds/SolidTowerInterior.h"
+#include "Strongholds/SolidTowerShell.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Animation/AnimSequence.h"
 #include "Camera/CameraComponent.h"
@@ -428,7 +430,7 @@ void ASolidCharacter::UpdateNameLabelVisibility()
 	{
 		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 		{
-			bInStronghold = GameMode->IsInDungeon() || GameMode->IsInLair();
+			bInStronghold = GameMode->IsInDungeon() || GameMode->IsInLair() || GameMode->IsInTower();
 			for (const TObjectPtr<ASolidCompanionCharacter>& Companion : GameMode->GetCompanions())
 			{
 				if (IsValid(Companion))
@@ -1033,7 +1035,7 @@ void ASolidCharacter::MainMenuConfirm()
 		const ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
 		const bool bInDungeon = GameMode && GameMode->IsInDungeon();
 		const bool bCaveEnabled = GameMode && GameMode->IsCaveEnabled();
-		if (GameMode && GameMode->IsInLair())
+		if (GameMode && (GameMode->IsInLair() || GameMode->IsInTower()))
 		{
 			return;
 		}
@@ -1401,6 +1403,22 @@ namespace
 				}
 			}
 		}
+		for (TActorIterator<ASolidTowerShell> Shell(World); Shell; ++Shell)
+		{
+			const UStaticMeshComponent* Door = Shell->GetDoorMesh();
+			if (Door && Hits(Door->CalcBounds(Door->GetComponentTransform()).GetBox()))
+			{
+				return SolidLair::HitOnTower(Shell->GetTowerCell(), false);
+			}
+		}
+		for (TActorIterator<ASolidTowerInterior> Interior(World); Interior; ++Interior)
+		{
+			const UStaticMeshComponent* Door = Interior->GetDoorMesh();
+			if (Door && Hits(Door->CalcBounds(Door->GetComponentTransform()).GetBox()))
+			{
+				return SolidLair::HitOnTower(Interior->GetTowerCell(), true);
+			}
+		}
 		return SolidLair::FPassageHit();
 	}
 }
@@ -1462,7 +1480,11 @@ void ASolidCharacter::ActivatePassage(const SolidLair::FPassageHit& Hit)
 	UE_LOG(LogSolid, Warning, TEXT("Closed passage: %s"), SolidLair::PassageTip(Hit));
 	if (Hit.Action == SolidDungeonPassage::EHit::Enter)
 	{
-		if (Hit.bLair)
+		if (Hit.bTower)
+		{
+			GameMode->TravelToTower(Hit.TowerCell);
+		}
+		else if (Hit.bLair)
 		{
 			GameMode->TravelToLair(Hit.EndMarker);
 		}
@@ -1470,6 +1492,11 @@ void ASolidCharacter::ActivatePassage(const SolidLair::FPassageHit& Hit)
 		{
 			GameMode->TravelToDungeon();
 		}
+		return;
+	}
+	if (Hit.bTower)
+	{
+		GameMode->TravelFromTower();
 		return;
 	}
 	if (Hit.bLair)

@@ -28,6 +28,10 @@ public:
 	bool WantsLairMouthSpawn() const { return bHasSession && Session.bReturnToLairMouth; }
 	void ClearLairMouthSpawn();
 
+	bool IsInTower() const { return bHasSession && Session.bInTower; }
+	bool WantsTowerDoorSpawn() const { return bHasSession && Session.bReturnToTowerDoor; }
+	void ClearTowerDoorSpawn();
+
 	/**
 	 * World time for a journal line. A new process advances the date once.
 	 * OpenLevel, including the cave, keeps this clock.

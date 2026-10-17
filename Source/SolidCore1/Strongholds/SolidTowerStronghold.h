@@ -416,4 +416,51 @@ namespace SolidTowerStronghold
 			}
 		}
 	}
+
+	/** How far past the proud door the captain stands on the grass. Clears the capsule. */
+	inline constexpr float DoorStandClearCm = 120.f;
+
+	inline const TCHAR* EnterLabel = TEXT("Enter Stronghold");
+	inline const TCHAR* LeaveLabel = TEXT("Exit Stronghold");
+
+	/**
+	 * Grass side of the door, just past the stone.
+	 * Grass-facing yaw 90 is north, so the stand point adds +Y.
+	 */
+	inline FVector2D OutsideDoorXY(const FVector2D& CellCenterXY, const float GrassFacingYawDeg, const FPlan& Plan)
+	{
+		const float YawRad = FMath::DegreesToRadians(GrassFacingYawDeg);
+		const FVector2D Grass(FMath::Cos(YawRad), FMath::Sin(YawRad));
+		const float Distance = Plan.GroundExteriorRadiusCm + DoorProudCm + DoorStandClearCm;
+		return CellCenterXY + Grass * Distance;
+	}
+
+	/** On the grass, looking out from the door. The same yaw the mouth uses. */
+	inline float OutsideDoorYawDeg(const float GrassFacingYawDeg)
+	{
+		return GrassFacingYawDeg;
+	}
+
+	/**
+	 * Floor-0 kept hex nearest the door.
+	 * The captain arrives there, and yaw 0 looks into the tower.
+	 */
+	inline FVector2D DoorHexCenter(const FPlan& Plan)
+	{
+		TArray<SolidStrongholdGrid::FHex> Hexes;
+		CollectKeptHexes(Plan, 0, Hexes);
+		const FVector2D DoorPoint = DoorOutward(Plan) * FMath::Max(Plan.GroundInteriorRadiusCm() - 30.f, 0.f);
+		FVector2D Best = FVector2D::ZeroVector;
+		float BestDist = TNumericLimits<float>::Max();
+		for (const SolidStrongholdGrid::FHex& Hex : Hexes)
+		{
+			const float Dist = FVector2D::DistSquared(Hex.Center, DoorPoint);
+			if (Dist < BestDist)
+			{
+				BestDist = Dist;
+				Best = Hex.Center;
+			}
+		}
+		return Best;
+	}
 }

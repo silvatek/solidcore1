@@ -3,6 +3,7 @@
 #include "SolidDungeonLevel.h"
 #include "SolidGameInstance.h"
 #include "SolidStrongholds.h"
+#include "SolidTowerStronghold.h"
 #include "SolidTerrainChunk.h"
 #include "SolidTerrainFog.h"
 #include "SolidTerrainMap.h"
@@ -629,6 +630,50 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 						}
 					}
 					Instance->ClearLairMouthSpawn();
+				}
+			}
+			else if (Instance->WantsTowerDoorSpawn() && TerrainMap->GetWorldMap())
+			{
+				USolidWorldMap* WorldMap = TerrainMap->GetWorldMap();
+				TArray<SolidStrongholds::FEntrance> Entrances;
+				SolidStrongholds::CollectEntrances(
+					WorldMap,
+					TerrainMap->GetWorldMinXY(),
+					TerrainMap->GetWorldMaxXY(),
+					Entrances);
+				const FSolidTravelSession& Session = Instance->GetSession();
+				const SolidStrongholds::FEntrance* Chosen = nullptr;
+				SolidTowerStronghold::FPlan Plan;
+				for (const SolidStrongholds::FEntrance& Entrance : Entrances)
+				{
+					if (Entrance.Cell != Session.TowerCell
+						|| !SolidTowerStronghold::PlanFor(Entrance.Stronghold, Plan))
+					{
+						continue;
+					}
+					Chosen = &Entrance;
+					break;
+				}
+				FVector2D CellXY = FVector2D::ZeroVector;
+				if (Chosen && WorldMap->CellToWorldXY(
+					Chosen->Cell,
+					TerrainMap->GetWorldMinXY(),
+					TerrainMap->GetWorldMaxXY(),
+					CellXY))
+				{
+					PawnXY = SolidTowerStronghold::OutsideDoorXY(CellXY, Chosen->FacingYawDeg, Plan);
+					FacingYawDeg = SolidTowerStronghold::OutsideDoorYawDeg(Chosen->FacingYawDeg);
+					FacingPitchDeg = 0.f;
+					bHaveYaw = true;
+					bCaveMouth = true;
+					if (const APawn* Pawn = Cast<APawn>(Focus))
+					{
+						if (!Pawn->Controller)
+						{
+							return;
+						}
+					}
+					Instance->ClearTowerDoorSpawn();
 				}
 			}
 		}

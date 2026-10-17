@@ -4,6 +4,7 @@
 #include "Misc/Parse.h"
 #include "SolidGameState.h"
 #include "SolidSight.h"
+#include "SolidStronghold.h"
 #include "SolidStrongholdGrid.h"
 
 /**
@@ -18,6 +19,7 @@ namespace SolidDungeonLevel
 	inline const TCHAR* WorldMapPath = TEXT("/Game/ThirdPerson/Lvl_ThirdPerson");
 	inline const TCHAR* OptionKey = TEXT("SolidLevel");
 	inline const TCHAR* DungeonValue = TEXT("Dungeon");
+	inline const TCHAR* TowerValue = TEXT("Tower");
 
 	inline const TCHAR* EnterLabel = TEXT("Enter cave");
 	inline const TCHAR* LeaveLabel = TEXT("Leave cave");
@@ -85,8 +87,13 @@ namespace SolidDungeonLevel
 		return FString();
 	}
 
-	/** True when a travel URL asked for the dungeon interior. */
-	inline bool RequestsDungeon(const FString& Options)
+	inline FString TowerEnterOptions()
+	{
+		return FString::Printf(TEXT("?%s=%s"), OptionKey, TowerValue);
+	}
+
+	/** True when the travel URL's SolidLevel value is Expected. A later ? is not part of the value. */
+	inline bool OptionEquals(const FString& Options, const TCHAR* Expected)
 	{
 		FString Value;
 		if (!FParse::Value(*Options, *FString::Printf(TEXT("%s="), OptionKey), Value))
@@ -98,7 +105,19 @@ namespace SolidDungeonLevel
 		{
 			Value.LeftInline(Query);
 		}
-		return Value.Equals(DungeonValue, ESearchCase::IgnoreCase);
+		return Value.Equals(Expected, ESearchCase::IgnoreCase);
+	}
+
+	/** True when a travel URL asked for the dungeon interior. */
+	inline bool RequestsDungeon(const FString& Options)
+	{
+		return OptionEquals(Options, DungeonValue);
+	}
+
+	/** True when a travel URL asked for a tower interior. This is not the cave. */
+	inline bool RequestsTower(const FString& Options)
+	{
+		return OptionEquals(Options, TowerValue);
 	}
 }
 
@@ -119,4 +138,12 @@ struct FSolidTravelSession
 	bool bReturnToLairMouth = false;
 	/** X or Y. The end to enter, or the end to stand at after leaving. */
 	TCHAR LairEnd = 0;
+	/** Next loaded world is a tower interior. */
+	bool bInTower = false;
+	/** Next open-world spawn stands on the grass in front of this tower's door. */
+	bool bReturnToTowerDoor = false;
+	/** Map cell of the tower door. Meaningful while inside, and while returning. */
+	FIntPoint TowerCell = FIntPoint::ZeroValue;
+	/** Size and type of that tower. Meaningful while inside, and while returning. */
+	FSolidStronghold Tower;
 };

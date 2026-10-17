@@ -31,6 +31,7 @@
 #include "Strongholds/SolidDungeonInterior.h"
 #include "Strongholds/SolidDungeonLevel.h"
 #include "Strongholds/SolidStrongholds.h"
+#include "Strongholds/SolidTowerInterior.h"
 #include "Strongholds/SolidTowerShell.h"
 #include "Strongholds/SolidTowerStronghold.h"
 #include "SolidGameInstance.h"
@@ -184,6 +185,13 @@ void ASolidGameMode::BeginPlay()
 		return;
 	}
 
+	if (IsInTower())
+	{
+		BeginTowerInterior();
+		FinishTravelArrival();
+		return;
+	}
+
 	FinishTravelArrival();
 	EnsureTerrainStreamer();
 
@@ -219,6 +227,16 @@ bool ASolidGameMode::IsInLair() const
 	return Instance && Instance->IsInLair();
 }
 
+bool ASolidGameMode::IsInTower() const
+{
+	if (SolidDungeonLevel::RequestsTower(OptionsString))
+	{
+		return true;
+	}
+	const USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>();
+	return Instance && Instance->IsInTower();
+}
+
 bool ASolidGameMode::AreTunnelsOpen() const
 {
 	return SolidLair::TunnelsOpen(Configuration);
@@ -229,7 +247,11 @@ void ASolidGameMode::SaveTravelSession(
 	const bool bReturnToDungeonMouth,
 	const bool bInLair,
 	const bool bReturnToLairMouth,
-	const TCHAR LairEnd)
+	const TCHAR LairEnd,
+	const bool bInTower,
+	const bool bReturnToTowerDoor,
+	const FIntPoint TowerCell,
+	const FSolidStronghold Tower)
 {
 	USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>();
 	if (!Instance)
@@ -245,6 +267,10 @@ void ASolidGameMode::SaveTravelSession(
 	Session.bInLair = bInLair;
 	Session.bReturnToLairMouth = bReturnToLairMouth;
 	Session.LairEnd = LairEnd;
+	Session.bInTower = bInTower;
+	Session.bReturnToTowerDoor = bReturnToTowerDoor;
+	Session.TowerCell = TowerCell;
+	Session.Tower = Tower;
 	if (Party)
 	{
 		Session.SelectedCompanionIndices = Party->GetSelectedCompanionIndices();
@@ -352,6 +378,11 @@ void ASolidGameMode::FinishTravelArrival()
 		HideTemplateProps();
 		PlaceCaptainInLair();
 	}
+	else if (IsInTower())
+	{
+		HideTemplateProps();
+		PlaceCaptainInTower();
+	}
 
 	UWorld* World = GetWorld();
 	if (!World)
@@ -361,7 +392,8 @@ void ASolidGameMode::FinishTravelArrival()
 
 	const bool bDone = bCaptainTravelApplied
 		&& (!IsInDungeon() || bCaptainPlacedInDungeon)
-		&& (!IsInLair() || bCaptainPlacedInLair);
+		&& (!IsInLair() || bCaptainPlacedInLair)
+		&& (!IsInTower() || bCaptainPlacedInTower);
 	if (bDone)
 	{
 		World->GetTimerManager().ClearTimer(CaptainArrivalTimer);
@@ -518,7 +550,7 @@ void ASolidGameMode::TravelToDungeon()
 		return;
 	}
 	UWorld* World = GetWorld();
-	if (!World || IsInDungeon() || IsInLair())
+	if (!World || IsInDungeon() || IsInLair() || IsInTower())
 	{
 		return;
 	}
@@ -552,7 +584,7 @@ void ASolidGameMode::TravelToLair(const TCHAR EndMarker)
 		return;
 	}
 	UWorld* World = GetWorld();
-	if (!World || IsInLair() || IsInDungeon())
+	if (!World || IsInLair() || IsInDungeon() || IsInTower())
 	{
 		return;
 	}
@@ -589,6 +621,160 @@ void ASolidGameMode::TravelFromLair(const TCHAR EndMarker)
 	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::LeaveOptions());
 }
 
+void ASolidGameMode::TravelToTower(const FIntPoint Cell)
+{
+	UWorld* World = GetWorld();
+	if (!World || IsInDungeon() || IsInLair() || IsInTower())
+	{
+		return;
+	}
+
+	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World);
+	USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
+	USolidWorldMap* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
+	if (!WorldMap || !WorldMap->IsLoaded())
+	{
+		return;
+	}
+
+	TArray<SolidStrongholds::FEntrance> Entrances;
+	SolidStrongholds::CollectEntrances(
+		WorldMap,
+		Terrain->GetWorldMinXY(),
+		Terrain->GetWorldMaxXY(),
+		Entrances);
+	const SolidStrongholds::FEntrance* Chosen = nullptr;
+	for (const SolidStrongholds::FEntrance& Entrance : Entrances)
+	{
+		SolidTowerStronghold::FPlan Plan;
+		if (Entrance.Cell != Cell || !SolidTowerStronghold::PlanFor(Entrance.Stronghold, Plan))
+		{
+			continue;
+		}
+		Chosen = &Entrance;
+		break;
+	}
+	if (!Chosen)
+	{
+		return;
+	}
+
+	const SolidWorldTime::FStamp When = WorldStamp();
+	SolidEvents::RememberStronghold(Configuration, When, /*bEnter=*/true);
+	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Enter Stronghold"), *SolidWorldTime::Format(When));
+	SaveTravelSession(
+		/*bInDungeon=*/false,
+		/*bReturnToDungeonMouth=*/false,
+		/*bInLair=*/false,
+		/*bReturnToLairMouth=*/false,
+		/*LairEnd=*/0,
+		/*bInTower=*/true,
+		/*bReturnToTowerDoor=*/false,
+		Chosen->Cell,
+		Chosen->Stronghold);
+	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::TowerEnterOptions());
+}
+
+void ASolidGameMode::TravelFromTower()
+{
+	UWorld* World = GetWorld();
+	if (!World || !IsInTower())
+	{
+		return;
+	}
+
+	FIntPoint Cell = FIntPoint::ZeroValue;
+	FSolidStronghold Tower;
+	if (const USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>())
+	{
+		Cell = Instance->GetSession().TowerCell;
+		Tower = Instance->GetSession().Tower;
+	}
+
+	const SolidWorldTime::FStamp When = WorldStamp();
+	SolidEvents::RememberStronghold(Configuration, When, /*bEnter=*/false);
+	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Exit Stronghold"), *SolidWorldTime::Format(When));
+	SaveTravelSession(
+		/*bInDungeon=*/false,
+		/*bReturnToDungeonMouth=*/false,
+		/*bInLair=*/false,
+		/*bReturnToLairMouth=*/false,
+		/*LairEnd=*/0,
+		/*bInTower=*/false,
+		/*bReturnToTowerDoor=*/true,
+		Cell,
+		Tower);
+	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::LeaveOptions());
+}
+
+void ASolidGameMode::BeginTowerInterior()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	if (!TowerInterior)
+	{
+		FActorSpawnParameters Params;
+		Params.Owner = this;
+		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		TowerInterior = World->SpawnActor<ASolidTowerInterior>(
+			ASolidTowerInterior::StaticClass(),
+			FVector::ZeroVector,
+			FRotator::ZeroRotator,
+			Params);
+		if (TowerInterior)
+		{
+			FSolidStronghold Tower;
+			FIntPoint Cell = FIntPoint::ZeroValue;
+			if (const USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>())
+			{
+				Tower = Instance->GetSession().Tower;
+				Cell = Instance->GetSession().TowerCell;
+			}
+			SolidTowerStronghold::FPlan Plan;
+			if (!SolidTowerStronghold::PlanFor(Tower, Plan))
+			{
+				Plan = SolidTowerStronghold::Imperious;
+			}
+			TowerInterior->SetTowerCell(Cell);
+			TowerInterior->SetPlan(Plan);
+			TowerInterior->BuildVisuals();
+		}
+	}
+
+	HideTemplateProps();
+	PlaceCaptainInTower();
+	UE_LOG(LogSolid, Warning, TEXT("Tower interior loaded. Companions return when the captain leaves."));
+}
+
+void ASolidGameMode::PlaceCaptainInTower()
+{
+	if (bCaptainPlacedInTower || !TowerInterior)
+	{
+		return;
+	}
+
+	ASolidCharacter* Captain = FindCaptain(GetWorld());
+	if (!Captain)
+	{
+		return;
+	}
+
+	float HalfHeight = 96.f;
+	if (const UCapsuleComponent* Capsule = Captain->GetCapsuleComponent())
+	{
+		HalfHeight = Capsule->GetScaledCapsuleHalfHeight();
+	}
+	FVector Spawn = TowerInterior->GetCaptainSpawnWorld();
+	Spawn.Z += HalfHeight + 4.f;
+	const FRotator View = TowerInterior->GetCaptainView();
+	Captain->ArriveByPortal(Spawn, View.Yaw, View.Pitch);
+	bCaptainPlacedInTower = Captain->GetController() != nullptr;
+}
+
 void ASolidGameMode::RefreshEvents()
 {
 	UWorld* World = GetWorld();
@@ -597,7 +783,7 @@ void ASolidGameMode::RefreshEvents()
 		return;
 	}
 
-	if (IsInDungeon() || IsInLair())
+	if (IsInDungeon() || IsInLair() || IsInTower())
 	{
 		return;
 	}
@@ -1059,7 +1245,7 @@ void ASolidGameMode::EnsureCompanion()
 		}
 	} Refresh{this};
 
-	if (IsInDungeon() || IsInLair())
+	if (IsInDungeon() || IsInLair() || IsInTower())
 	{
 		for (const TObjectPtr<ASolidCompanionCharacter>& Companion : SpawnedCompanions)
 		{
@@ -1551,6 +1737,7 @@ void ASolidGameMode::EnsureVegetation()
 				}
 
 				Shell->SetPlan(Plan);
+				Shell->SetTowerCell(Entrance.Cell);
 				Shell->BuildVisuals();
 				SpawnedTowerShells.Add(Shell);
 				++Spawned;

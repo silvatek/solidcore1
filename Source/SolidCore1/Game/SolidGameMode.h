@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "SolidGameState.h"
+#include "SolidStronghold.h"
 #include "GameFramework/GameModeBase.h"
 #include "Party/SolidCompany.h"
 #include "SolidSight.h"
@@ -14,6 +15,7 @@ class ASolidDungeonInterior;
 class ASolidLairInterior;
 class ASolidCompanionCharacter;
 class ASolidTownSign;
+class ASolidTowerInterior;
 class ASolidTowerShell;
 class ASolidTree;
 class USkeletalMesh;
@@ -173,6 +175,9 @@ public:
 	/** True after a click on an Iglin tunnel mouth, until a click leaves. */
 	bool IsInLair() const;
 
+	/** True after a click on a tower door, until a click leaves. */
+	bool IsInTower() const;
+
 	/** Closing the monster message opens the starting cave. It starts closed. */
 	bool IsCaveEnabled() const { return Configuration.bCaveEnabled; }
 
@@ -196,6 +201,12 @@ public:
 
 	/** Load the open world again and stand the captain at that tunnel mouth. */
 	void TravelFromLair(TCHAR EndMarker);
+
+	/** Unload the open world and load the tower at this map cell. Companions stay outside. */
+	void TravelToTower(FIntPoint Cell);
+
+	/** Load the open world again and stand the captain on the grass outside that door. */
+	void TravelFromTower();
 
 	/**
 	 * Create the company catalog and party on the first call.
@@ -225,15 +236,21 @@ protected:
 		bool bReturnToDungeonMouth,
 		bool bInLair = false,
 		bool bReturnToLairMouth = false,
-		TCHAR LairEnd = 0);
+		TCHAR LairEnd = 0,
+		bool bInTower = false,
+		bool bReturnToTowerDoor = false,
+		FIntPoint TowerCell = FIntPoint::ZeroValue,
+		FSolidStronghold Tower = FSolidStronghold());
 	void RestoreTravelSession();
 	void BeginDungeonInterior();
 	void BeginLairInterior();
+	void BeginTowerInterior();
 	/** Sight, title, and the closed-visit spawn. Retries while the pawn is still absent. */
 	void FinishTravelArrival();
 	void ApplyCaptainFromSession();
 	void PlaceCaptainInDungeon();
 	void PlaceCaptainInLair();
+	void PlaceCaptainInTower();
 	/** The third-person playground blocks sit inside the room. Hide them for this visit. */
 	void HideTemplateProps();
 	SolidWorldTime::FStamp WorldStamp() const;
@@ -285,7 +302,10 @@ protected:
 	ASolidDungeonInterior* DungeonInterior = nullptr;
 	/** Interior spawned for this tunnel visit. The world keeps the actor alive. */
 	ASolidLairInterior* LairInterior = nullptr;
+	/** Interior spawned for this tower visit. The world keeps the actor alive. */
+	ASolidTowerInterior* TowerInterior = nullptr;
 	bool bCaptainTravelApplied = false;
 	bool bCaptainPlacedInDungeon = false;
 	bool bCaptainPlacedInLair = false;
+	bool bCaptainPlacedInTower = false;
 };

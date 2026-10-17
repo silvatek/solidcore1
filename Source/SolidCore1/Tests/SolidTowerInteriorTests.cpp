@@ -8,7 +8,6 @@
 #include "SolidTowerStronghold.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "Components/TextRenderComponent.h"
 #include "Engine/StaticMesh.h"
 #include "MeshDescription.h"
 #include "StaticMeshAttributes.h"
@@ -395,7 +394,11 @@ bool FSolidTowerInteriorVisualsTest::RunTest(const FString& Parameters)
 		}
 		TestEqual(*FString::Printf(TEXT("%s floor numbers"), Label), Interior->GetFloorSignCount(), ExpectedSigns);
 		TestTrue(*FString::Printf(TEXT("%s has a number upstairs"), Label), ExpectedSigns > 0);
+		UInstancedStaticMeshComponent* Digits = Interior->GetFloorSignDigits();
+		TestNotNull(*FString::Printf(TEXT("%s digit strokes"), Label), Digits);
 		int32 SignIndex = 0;
+		int32 StrokeIndex = 0;
+		int32 ExpectedStrokes = 0;
 		for (int32 Floor = 0; Floor < Plan.FloorCount; ++Floor)
 		{
 			const SolidTowerStronghold::FFloorSign Sign = SolidTowerStronghold::FloorSignFor(Plan, Floor);
@@ -403,50 +406,108 @@ bool FSolidTowerInteriorVisualsTest::RunTest(const FString& Parameters)
 			{
 				continue;
 			}
-			UTextRenderComponent* Text = Interior->GetFloorSign(SignIndex);
-			TestNotNull(*FString::Printf(TEXT("%s floor number"), Label), Text);
-			if (!Text)
+			UStaticMeshComponent* Plate = Interior->GetFloorSignPlate(SignIndex);
+			TestNotNull(*FString::Printf(TEXT("%s floor plate"), Label), Plate);
+			if (!Plate)
 			{
 				return;
 			}
-			TestEqual(
-				*FString::Printf(TEXT("%s number text"), Label),
-				Text->Text.ToString(),
-				FString::FromInt(Sign.Number));
+			const FVector PlateAt = SolidTowerStronghold::FloorSignPlateLocation(Sign.Location, Sign.YawDeg);
 			TestTrue(
-				*FString::Printf(TEXT("%s number is on the wall"), Label),
-				Text->GetRelativeLocation().Equals(Sign.Location, 0.05f));
+				*FString::Printf(TEXT("%s plate is on the wall"), Label),
+				Plate->GetRelativeLocation().Equals(PlateAt, 0.05f));
+			const FVector FacingDir = FRotator(0.f, Sign.YawDeg, 0.f).Vector();
 			TestTrue(
-				*FString::Printf(TEXT("%s number faces the room"), Label),
-				Text->GetRelativeRotation().Equals(FRotator(0.f, Sign.YawDeg, 0.f), 0.05f));
+				*FString::Printf(TEXT("%s plate faces the room"), Label),
+				Plate->GetRelativeRotation().Vector().Equals(FacingDir, 0.01f));
+			const FVector PlateScale = Plate->GetRelativeScale3D();
 			TestTrue(
-				*FString::Printf(TEXT("%s number is readable"), Label),
-				FMath::IsNearlyEqual(Text->WorldSize, SolidTowerStronghold::FloorSignWorldSize, 0.01f));
+				*FString::Printf(TEXT("%s plate is the sign board"), Label),
+				FMath::IsNearlyEqual(PlateScale.X * 100.f, SolidTowerStronghold::FloorSignPlateDepthCm, 0.05f)
+					&& FMath::IsNearlyEqual(PlateScale.Y * 100.f, SolidTowerStronghold::FloorSignPlateWidthCm, 0.05f)
+					&& FMath::IsNearlyEqual(PlateScale.Z * 100.f, SolidTowerStronghold::FloorSignPlateHeightCm, 0.05f));
 			TestTrue(
-				*FString::Printf(TEXT("%s number is light"), Label),
-				Text->TextRenderColor == FColor::White);
+				*FString::Printf(TEXT("%s plate is closer to the wall than the number"), Label),
+				Plate->GetRelativeLocation().SizeSquared2D() > Sign.Location.SizeSquared2D());
 			TestTrue(
-				*FString::Printf(TEXT("%s number does not block"), Label),
-				Text->GetCollisionEnabled() == ECollisionEnabled::NoCollision);
+				*FString::Printf(TEXT("%s plate does not block"), Label),
+				Plate->GetCollisionEnabled() == ECollisionEnabled::NoCollision);
+			UStaticMesh* PlateMesh = Plate->GetStaticMesh().Get();
+			TestNotNull(*FString::Printf(TEXT("%s plate mesh"), Label), PlateMesh);
+
+			TArray<SolidTowerStronghold::FFloorSignStroke> Strokes;
+			SolidTowerStronghold::CollectFloorSignStrokes(Sign.Number, Strokes);
+			ExpectedStrokes += Strokes.Num();
+			if (Digits)
+			{
+				const FRotator Facing(0.f, Sign.YawDeg, 0.f);
+				for (const SolidTowerStronghold::FFloorSignStroke& Stroke : Strokes)
+				{
+					FTransform Instance;
+					TestTrue(
+						*FString::Printf(TEXT("%s digit stroke is placed"), Label),
+						Digits->GetInstanceTransform(StrokeIndex, Instance, /*bWorldSpace=*/false));
+					const FVector Expected = Sign.Location + Facing.RotateVector(Stroke.CenterCm);
+					TestTrue(
+						*FString::Printf(TEXT("%s digit stroke is on the plate"), Label),
+						Instance.GetLocation().Equals(Expected, 0.05f));
+					TestTrue(
+						*FString::Printf(TEXT("%s digit stroke faces the room"), Label),
+						Instance.GetRotation().GetForwardVector().Equals(Facing.Vector(), 0.01f));
+					++StrokeIndex;
+				}
+			}
 			++SignIndex;
 		}
-		UTextRenderComponent* FirstSign = Interior->GetFloorSign(0);
-		TestNotNull(*FString::Printf(TEXT("%s first number"), Label), FirstSign);
-		if (FirstSign)
+		if (Digits)
 		{
+			TestEqual(
+				*FString::Printf(TEXT("%s digit stroke count"), Label),
+				Digits->GetInstanceCount(),
+				ExpectedStrokes);
+			TestTrue(
+				*FString::Printf(TEXT("%s digits do not block"), Label),
+				Digits->GetCollisionEnabled() == ECollisionEnabled::NoCollision);
+		}
+		UStaticMeshComponent* FirstPlate = Interior->GetFloorSignPlate(0);
+		TestNotNull(*FString::Printf(TEXT("%s first plate"), Label), FirstPlate);
+		if (FirstPlate && Digits)
+		{
+			TArray<SolidTowerStronghold::FFloorSignStroke> Two;
+			SolidTowerStronghold::CollectFloorSignStrokes(2, Two);
 			TestEqual(
 				*FString::Printf(TEXT("%s first landing reads 2"), Label),
-				FirstSign->Text.ToString(),
-				FString(TEXT("2")));
+				Two.Num(),
+				5);
+			if (Two.Num() > 0)
+			{
+				FTransform FirstStroke;
+				TestTrue(
+					*FString::Printf(TEXT("%s first stroke"), Label),
+					Digits->GetInstanceTransform(0, FirstStroke, /*bWorldSpace=*/false));
+				const SolidTowerStronghold::FFloorSign First = SolidTowerStronghold::FloorSignFor(Plan, 1);
+				const FVector FirstExpected = First.Location
+					+ FRotator(0.f, First.YawDeg, 0.f).RotateVector(Two[0].CenterCm);
+				TestTrue(
+					*FString::Printf(TEXT("%s first landing's strokes are the two"), Label),
+					FirstStroke.GetLocation().Equals(FirstExpected, 0.05f));
+			}
 		}
-		UTextRenderComponent* TopSign = Interior->GetFloorSign(ExpectedSigns - 1);
-		TestNotNull(*FString::Printf(TEXT("%s top number"), Label), TopSign);
-		if (TopSign)
+		const SolidTowerStronghold::FFloorSign Top = SolidTowerStronghold::FloorSignFor(Plan, Plan.FloorCount - 1);
+		TArray<SolidTowerStronghold::FFloorSignStroke> TopNumber;
+		SolidTowerStronghold::CollectFloorSignStrokes(Plan.FloorCount, TopNumber);
+		TestTrue(*FString::Printf(TEXT("%s top sign is present"), Label), Top.bPresent && Top.Number == Plan.FloorCount);
+		if (Digits && TopNumber.Num() > 0 && Digits->GetInstanceCount() > 0)
 		{
-			TestEqual(
+			FTransform LastStroke;
+			TestTrue(
+				*FString::Printf(TEXT("%s top stroke"), Label),
+				Digits->GetInstanceTransform(Digits->GetInstanceCount() - 1, LastStroke, /*bWorldSpace=*/false));
+			const FVector TopExpected = Top.Location
+				+ FRotator(0.f, Top.YawDeg, 0.f).RotateVector(TopNumber.Last().CenterCm);
+			TestTrue(
 				*FString::Printf(TEXT("%s top number is the floor count"), Label),
-				TopSign->Text.ToString(),
-				FString::FromInt(Plan.FloorCount));
+				LastStroke.GetLocation().Equals(TopExpected, 0.05f));
 		}
 
 		TestTrue(

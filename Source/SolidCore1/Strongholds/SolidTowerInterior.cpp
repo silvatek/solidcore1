@@ -6,7 +6,6 @@
 #include "Components/PointLightComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
-#include "Components/TextRenderComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"
 #include "MeshDescription.h"
@@ -419,6 +418,12 @@ ASolidTowerInterior::ASolidTowerInterior()
 	Stairs->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	Stairs->SetCollisionResponseToAllChannels(ECR_Block);
 	Stairs->SetCastShadow(true);
+
+	FloorSignDigits = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("FloorSignDigits"));
+	FloorSignDigits->SetupAttachment(SceneRoot);
+	FloorSignDigits->SetMobility(EComponentMobility::Movable);
+	FloorSignDigits->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	FloorSignDigits->SetCastShadow(false);
 }
 
 void ASolidTowerInterior::OnConstruction(const FTransform& Transform)
@@ -456,13 +461,13 @@ UStaticMeshComponent* ASolidTowerInterior::GetWall(const int32 Index) const
 	return Walls[Index].Get();
 }
 
-UTextRenderComponent* ASolidTowerInterior::GetFloorSign(const int32 Index) const
+UStaticMeshComponent* ASolidTowerInterior::GetFloorSignPlate(const int32 Index) const
 {
-	if (!FloorSigns.IsValidIndex(Index))
+	if (!FloorSignPlates.IsValidIndex(Index))
 	{
 		return nullptr;
 	}
-	return FloorSigns[Index].Get();
+	return FloorSignPlates[Index].Get();
 }
 
 FVector ASolidTowerInterior::GetCaptainSpawnWorld() const
@@ -515,15 +520,19 @@ void ASolidTowerInterior::DiscardParts()
 		}
 	}
 	Lights.Reset();
-	for (TObjectPtr<UTextRenderComponent>& Sign : FloorSigns)
+	for (TObjectPtr<UStaticMeshComponent>& Plate : FloorSignPlates)
 	{
-		if (UTextRenderComponent* Text = Sign.Get())
+		if (UStaticMeshComponent* Mesh = Plate.Get())
 		{
-			Text->DestroyComponent();
-			Sign = nullptr;
+			Mesh->DestroyComponent();
+			Plate = nullptr;
 		}
 	}
-	FloorSigns.Reset();
+	FloorSignPlates.Reset();
+	if (FloorSignDigits)
+	{
+		FloorSignDigits->ClearInstances();
+	}
 }
 
 void ASolidTowerInterior::BuildVisuals()
@@ -607,36 +616,6 @@ void ASolidTowerInterior::BuildVisuals()
 			SolidTowerStronghold::FWedge{});
 		UStaticMesh* CapBuilt = SolidTowerInteriorPrivate::Commit(this, Cap, TEXT("the cap"));
 		CapMesh = SolidTowerInteriorPrivate::AddStone(this, SceneRoot, CapBuilt, Rock, TEXT("TowerCeiling"));
-	}
-
-	for (int32 Floor = 0; Floor < Plan.FloorCount; ++Floor)
-	{
-		const SolidTowerStronghold::FFloorSign Sign = SolidTowerStronghold::FloorSignFor(Plan, Floor);
-		if (!Sign.bPresent)
-		{
-			continue;
-		}
-		UTextRenderComponent* Text = NewObject<UTextRenderComponent>(this, NAME_None, RF_Transient);
-		if (!Text)
-		{
-			continue;
-		}
-		Text->SetupAttachment(SceneRoot);
-		Text->SetMobility(EComponentMobility::Movable);
-		Text->SetHorizontalAlignment(EHTA_Center);
-		Text->SetVerticalAlignment(EVRTA_TextCenter);
-		Text->SetWorldSize(SolidTowerStronghold::FloorSignWorldSize);
-		Text->SetTextRenderColor(FColor::White);
-		Text->SetText(FText::FromString(FString::FromInt(Sign.Number)));
-		Text->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		Text->SetCastShadow(false);
-		Text->SetRelativeLocation(Sign.Location);
-		Text->SetRelativeRotation(FRotator(0.f, Sign.YawDeg, 0.f));
-		if (GetWorld())
-		{
-			Text->RegisterComponent();
-		}
-		FloorSigns.Add(Text);
 	}
 
 	UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
@@ -760,4 +739,67 @@ void ASolidTowerInterior::BuildVisuals()
 		}
 	}
 
+	if (FloorSignDigits)
+	{
+		FloorSignDigits->SetStaticMesh(Cube);
+		FloorSignDigits->ClearInstances();
+		const FColor Ink = SolidTowerStronghold::FloorSignTextColor();
+		const FLinearColor InkLinear(Ink.R / 255.f, Ink.G / 255.f, Ink.B / 255.f, 1.f);
+		if (UMaterialInterface* Material = SolidMaterials::CreateSolidColor(
+			this, InkLinear, TEXT("TowerFloorNumber"), 0.9f))
+		{
+			FloorSignDigits->SetMaterial(0, Material);
+		}
+	}
+
+	for (int32 Floor = 0; Floor < Plan.FloorCount; ++Floor)
+	{
+		const SolidTowerStronghold::FFloorSign Sign = SolidTowerStronghold::FloorSignFor(Plan, Floor);
+		if (!Sign.bPresent)
+		{
+			continue;
+		}
+
+		const FRotator Facing(0.f, Sign.YawDeg, 0.f);
+		UStaticMeshComponent* Plate = NewObject<UStaticMeshComponent>(this, NAME_None, RF_Transient);
+		if (Plate)
+		{
+			Plate->SetupAttachment(SceneRoot);
+			Plate->SetMobility(EComponentMobility::Movable);
+			Plate->SetStaticMesh(Cube);
+			Plate->SetRelativeLocation(SolidTowerStronghold::FloorSignPlateLocation(Sign.Location, Sign.YawDeg));
+			Plate->SetRelativeRotation(Facing);
+			Plate->SetRelativeScale3D(FVector(
+				SolidTowerStronghold::FloorSignPlateDepthCm / SolidTowerInteriorPrivate::CubeSizeCm,
+				SolidTowerStronghold::FloorSignPlateWidthCm / SolidTowerInteriorPrivate::CubeSizeCm,
+				SolidTowerStronghold::FloorSignPlateHeightCm / SolidTowerInteriorPrivate::CubeSizeCm));
+			Plate->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			Plate->SetCastShadow(false);
+			Plate->SetVisibility(true);
+			if (UMaterialInterface* Material = SolidMaterials::CreateSolidColor(
+				this, SolidTowerStronghold::FloorSignPlateColor(), TEXT("TowerFloorPlate"), 0.88f))
+			{
+				Plate->SetMaterial(0, Material);
+			}
+			if (GetWorld())
+			{
+				Plate->RegisterComponent();
+			}
+			FloorSignPlates.Add(Plate);
+		}
+
+		if (!FloorSignDigits)
+		{
+			continue;
+		}
+		TArray<SolidTowerStronghold::FFloorSignStroke> Strokes;
+		SolidTowerStronghold::CollectFloorSignStrokes(Sign.Number, Strokes);
+		for (const SolidTowerStronghold::FFloorSignStroke& Stroke : Strokes)
+		{
+			FloorSignDigits->AddInstance(FTransform(
+				Facing,
+				Sign.Location + Facing.RotateVector(Stroke.CenterCm),
+				Stroke.SizeCm / SolidTowerInteriorPrivate::CubeSizeCm));
+		}
+	}
 }

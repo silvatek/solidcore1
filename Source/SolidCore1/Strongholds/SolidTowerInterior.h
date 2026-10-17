@@ -8,13 +8,12 @@
 class UInstancedStaticMeshComponent;
 class UPointLightComponent;
 class UStaticMeshComponent;
-class UTextRenderComponent;
 
 /**
  * One tower visit, at the origin, the same way the den is.
  * Each floor is a stone disc. The arrival hole is an annular gap, so the middle stays floored.
  * A flat landing in the stair band follows that hole. The next flight starts at its far end.
- * The wall beside each landing shows that floor's number. Ground is 1.
+ * The wall beside each landing shows that floor's number on a light plate. Ground is 1.
  * Stair treads sit on the flight. The yellow grid is the kept hexes.
  * The curved wall follows the interior taper, with the dark door on local -X.
  * A click on that door leaves. Companions stay outside.
@@ -42,8 +41,9 @@ public:
 	UStaticMeshComponent* GetDoorMesh() const { return DoorMesh; }
 	UInstancedStaticMeshComponent* GetFloorGrid() const { return FloorGrid; }
 	UInstancedStaticMeshComponent* GetStairs() const { return Stairs; }
-	int32 GetFloorSignCount() const { return FloorSigns.Num(); }
-	UTextRenderComponent* GetFloorSign(int32 Index) const;
+	int32 GetFloorSignCount() const { return FloorSignPlates.Num(); }
+	UStaticMeshComponent* GetFloorSignPlate(int32 Index) const;
+	UInstancedStaticMeshComponent* GetFloorSignDigits() const { return FloorSignDigits; }
 
 	/** Feet on the kept hex nearest the door. */
 	FVector GetCaptainSpawnWorld() const;
@@ -79,9 +79,13 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TArray<TObjectPtr<UPointLightComponent>> Lights;
 
-	/** Floor numbers on the wall beside each landing. Not a town sign. */
+	/** Light plate fixed to the wall behind each floor number. Not a town sign. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
-	TArray<TObjectPtr<UTextRenderComponent>> FloorSigns;
+	TArray<TObjectPtr<UStaticMeshComponent>> FloorSignPlates;
+
+	/** Dark strokes of those numbers. The same cube the floors use, so the digit draws. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
+	TObjectPtr<UInstancedStaticMeshComponent> FloorSignDigits;
 
 private:
 	SolidTowerStronghold::FPlan Plan = SolidTowerStronghold::Imperious;

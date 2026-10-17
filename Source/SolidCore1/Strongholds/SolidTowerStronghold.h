@@ -319,10 +319,121 @@ namespace SolidTowerStronghold
 
 	/** How far above the walking surface the floor number sits. */
 	inline constexpr float FloorSignLiftCm = 150.f;
-	/** How far inside the curved wall the number stands, so it clears the stone. */
-	inline constexpr float FloorSignInsetCm = 8.f;
-	/** Height of the floor-number glyphs. */
-	inline constexpr float FloorSignWorldSize = 48.f;
+	/** How far inside the curved wall the number's plane stands, so the plate stays in the room. */
+	inline constexpr float FloorSignInsetCm = 32.f;
+	/** One digit. A two-digit number, such as 10, is two of these with a gap between. */
+	inline constexpr float FloorSignDigitWidthCm = 44.f;
+	inline constexpr float FloorSignDigitHeightCm = 72.f;
+	inline constexpr float FloorSignDigitStrokeCm = 11.f;
+	inline constexpr float FloorSignDigitGapCm = 12.f;
+	/** Thickness of a stroke, toward the room from the plate. */
+	inline constexpr float FloorSignDigitDepthCm = 5.f;
+	/** Light plate behind the strokes. The number reads on this, not on the bare stone. */
+	inline constexpr float FloorSignPlateWidthCm = 140.f;
+	inline constexpr float FloorSignPlateHeightCm = 110.f;
+	inline constexpr float FloorSignPlateDepthCm = 8.f;
+	/** Clear space between the plate's room face and the back of the strokes. */
+	inline constexpr float FloorSignPlateGapCm = 2.f;
+
+	inline FLinearColor FloorSignPlateColor()
+	{
+		return FLinearColor(0.90f, 0.86f, 0.74f);
+	}
+
+	inline FColor FloorSignTextColor()
+	{
+		return FColor(24, 18, 12);
+	}
+
+	/**
+	 * One dark bar of a floor number, in the sign's own frame.
+	 * +X points into the room, +Y is to the viewer's left, +Z is up.
+	 * The number is centered on the origin. The viewer's right is -Y.
+	 */
+	struct FFloorSignStroke
+	{
+		FVector CenterCm = FVector::ZeroVector;
+		FVector SizeCm = FVector::OneVector;
+	};
+
+	/** Which bars a digit uses. Bit 0 is the top bar, then upper right, lower right, bottom, lower left, upper left, middle. */
+	inline int32 FloorSignDigitMask(const int32 Digit)
+	{
+		switch (Digit)
+		{
+		case 0: return (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4) | (1 << 5);
+		case 1: return (1 << 1) | (1 << 2);
+		case 2: return (1 << 0) | (1 << 1) | (1 << 3) | (1 << 4) | (1 << 6);
+		case 3: return (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 6);
+		case 4: return (1 << 1) | (1 << 2) | (1 << 5) | (1 << 6);
+		case 5: return (1 << 0) | (1 << 2) | (1 << 3) | (1 << 5) | (1 << 6);
+		case 6: return (1 << 0) | (1 << 2) | (1 << 3) | (1 << 4) | (1 << 5) | (1 << 6);
+		case 7: return (1 << 0) | (1 << 1) | (1 << 2);
+		case 8: return (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 4) | (1 << 5) | (1 << 6);
+		case 9: return (1 << 0) | (1 << 1) | (1 << 2) | (1 << 3) | (1 << 5) | (1 << 6);
+		default: return 0;
+		}
+	}
+
+	/**
+	 * Dark strokes for this floor number, centered on the sign.
+	 * A runtime text component on this wall did not draw, so the number is these bars.
+	 */
+	inline void CollectFloorSignStrokes(const int32 Number, TArray<FFloorSignStroke>& Out)
+	{
+		Out.Reset();
+		TArray<int32, TInlineAllocator<4>> Digits;
+		int32 Remaining = FMath::Max(Number, 0);
+		if (Remaining == 0)
+		{
+			Digits.Add(0);
+		}
+		while (Remaining > 0)
+		{
+			Digits.Add(Remaining % 10);
+			Remaining /= 10;
+		}
+
+		const float Pitch = FloorSignDigitWidthCm + FloorSignDigitGapCm;
+		const int32 Count = Digits.Num();
+		const float LeftU = -0.5f * static_cast<float>(Count - 1) * Pitch;
+		const float HalfBar = FloorSignDigitWidthCm * 0.5f - FloorSignDigitStrokeCm * 0.5f;
+		const float Outer = FloorSignDigitHeightCm * 0.5f - FloorSignDigitStrokeCm * 0.5f;
+		const float Rise = FloorSignDigitHeightCm * 0.25f;
+
+		for (int32 Index = 0; Index < Count; ++Index)
+		{
+			const int32 Digit = Digits[Count - 1 - Index];
+			const int32 Mask = FloorSignDigitMask(Digit);
+			const float DigitY = -(LeftU + static_cast<float>(Index) * Pitch);
+			auto Add = [&](const int32 Bit, const float VisualRightCm, const float UpCm, const float WidthCm, const float HeightCm)
+			{
+				if ((Mask & Bit) == 0)
+				{
+					return;
+				}
+				FFloorSignStroke Stroke;
+				Stroke.CenterCm = FVector(0.f, DigitY - VisualRightCm, UpCm);
+				Stroke.SizeCm = FVector(FloorSignDigitDepthCm, WidthCm, HeightCm);
+				Out.Add(Stroke);
+			};
+			Add(1 << 0, 0.f, Outer, FloorSignDigitWidthCm, FloorSignDigitStrokeCm);
+			Add(1 << 3, 0.f, -Outer, FloorSignDigitWidthCm, FloorSignDigitStrokeCm);
+			Add(1 << 6, 0.f, 0.f, FloorSignDigitWidthCm, FloorSignDigitStrokeCm);
+			Add(1 << 1, HalfBar, Rise, FloorSignDigitStrokeCm, FloorSignDigitHeightCm * 0.5f);
+			Add(1 << 2, HalfBar, -Rise, FloorSignDigitStrokeCm, FloorSignDigitHeightCm * 0.5f);
+			Add(1 << 5, -HalfBar, Rise, FloorSignDigitStrokeCm, FloorSignDigitHeightCm * 0.5f);
+			Add(1 << 4, -HalfBar, -Rise, FloorSignDigitStrokeCm, FloorSignDigitHeightCm * 0.5f);
+		}
+	}
+
+	/** Where the light plate sits, toward the wall from the strokes. */
+	inline FVector FloorSignPlateLocation(const FVector& NumberLocation, const float YawDeg)
+	{
+		const FVector Inward = FRotator(0.f, YawDeg, 0.f).Vector();
+		const float TowardWall = FloorSignDigitDepthCm * 0.5f + FloorSignPlateGapCm + FloorSignPlateDepthCm * 0.5f;
+		return NumberLocation - Inward * TowardWall;
+	}
 
 	/**
 	 * The number on the wall beside this floor's landing.
@@ -361,12 +472,12 @@ namespace SolidTowerStronghold
 			return Sign;
 		}
 		const float Angle = Landing.StartRad + Landing.SweepRad * 0.5f;
-		const float Z = FloorZCm(Plan, Floor);
-		const float Radius = FMath::Max(InteriorRadiusCm(Plan, Z) - FloorSignInsetCm, 0.f);
+		const float SignZ = FloorZCm(Plan, Floor) + FloorSignLiftCm;
+		const float Radius = FMath::Max(InteriorRadiusCm(Plan, SignZ) - FloorSignInsetCm, 0.f);
 		const float InwardYaw = Angle + PI;
 		Sign.bPresent = true;
 		Sign.Number = FloorNumber(Floor);
-		Sign.Location = FVector(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, Z + FloorSignLiftCm);
+		Sign.Location = FVector(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, SignZ);
 		Sign.YawDeg = FMath::RadiansToDegrees(InwardYaw);
 		return Sign;
 	}

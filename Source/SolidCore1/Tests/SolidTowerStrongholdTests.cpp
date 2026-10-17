@@ -140,7 +140,8 @@ namespace SolidTowerStrongholdTestPrivate
 				Test.TestEqual(TEXT("the top sign is the floor count"), Sign.Number, Plan.FloorCount);
 			}
 
-			const float WallRadius = SolidTowerStronghold::InteriorRadiusCm(Plan, SolidTowerStronghold::FloorZCm(Plan, Floor))
+			const float SignZ = SolidTowerStronghold::FloorZCm(Plan, Floor) + SolidTowerStronghold::FloorSignLiftCm;
+			const float WallRadius = SolidTowerStronghold::InteriorRadiusCm(Plan, SignZ)
 				- SolidTowerStronghold::FloorSignInsetCm;
 			const FVector2D SignXY(Sign.Location.X, Sign.Location.Y);
 			Test.TestTrue(
@@ -162,7 +163,84 @@ namespace SolidTowerStrongholdTestPrivate
 			const FVector Facing = FRotator(0.f, Sign.YawDeg, 0.f).Vector();
 			const FVector Inward = FVector(-SignXY.X, -SignXY.Y, 0.f).GetSafeNormal();
 			Test.TestTrue(TEXT("the number faces the room"), Facing.Equals(Inward, 0.01f));
+			const FVector Plate = SolidTowerStronghold::FloorSignPlateLocation(Sign.Location, Sign.YawDeg);
+			const float WallAtTop = SolidTowerStronghold::InteriorRadiusCm(
+				Plan,
+				SignZ + SolidTowerStronghold::FloorSignPlateHeightCm * 0.5f);
+			Test.TestTrue(
+				TEXT("the plate sits toward the wall from the number"),
+				Plate.SizeSquared2D() > SignXY.SizeSquared());
+			const float HalfPlate = SolidTowerStronghold::FloorSignPlateWidthCm * 0.5f;
+			const float PlateBack = Plate.Size2D() + SolidTowerStronghold::FloorSignPlateDepthCm * 0.5f;
+			const float PlateEnd = FMath::Sqrt(PlateBack * PlateBack + HalfPlate * HalfPlate);
+			Test.TestTrue(TEXT("the plate's top corners stay inside the curved wall"), PlateEnd < WallAtTop - 1.f);
 		}
+	}
+
+	void TestFloorNumberReads(FAutomationTestBase& Test)
+	{
+		TArray<SolidTowerStronghold::FFloorSignStroke> Two;
+		SolidTowerStronghold::CollectFloorSignStrokes(2, Two);
+		Test.TestEqual(TEXT("a two is five strokes"), Two.Num(), 5);
+		const float Side = SolidTowerStronghold::FloorSignDigitWidthCm * 0.5f
+			- SolidTowerStronghold::FloorSignDigitStrokeCm * 0.5f;
+		bool bTop = false;
+		bool bUpperRight = false;
+		bool bLowerLeft = false;
+		bool bUpperLeft = false;
+		for (const SolidTowerStronghold::FFloorSignStroke& Stroke : Two)
+		{
+			if (Stroke.CenterCm.Z > SolidTowerStronghold::FloorSignDigitHeightCm * 0.25f
+				&& FMath::Abs(Stroke.CenterCm.Y) < Side * 0.5f)
+			{
+				bTop = true;
+			}
+			if (Stroke.CenterCm.Y < -Side * 0.5f && Stroke.CenterCm.Z > 0.f)
+			{
+				bUpperRight = true;
+			}
+			if (Stroke.CenterCm.Y > Side * 0.5f && Stroke.CenterCm.Z < 0.f)
+			{
+				bLowerLeft = true;
+			}
+			if (Stroke.CenterCm.Y > Side * 0.5f && Stroke.CenterCm.Z > 0.f)
+			{
+				bUpperLeft = true;
+			}
+		}
+		Test.TestTrue(TEXT("two has a top bar"), bTop);
+		Test.TestTrue(TEXT("two has an upper-right bar"), bUpperRight);
+		Test.TestTrue(TEXT("two has a lower-left bar"), bLowerLeft);
+		Test.TestFalse(TEXT("two has no upper-left bar"), bUpperLeft);
+
+		TArray<SolidTowerStronghold::FFloorSignStroke> Ten;
+		TArray<SolidTowerStronghold::FFloorSignStroke> One;
+		TArray<SolidTowerStronghold::FFloorSignStroke> Zero;
+		SolidTowerStronghold::CollectFloorSignStrokes(10, Ten);
+		SolidTowerStronghold::CollectFloorSignStrokes(1, One);
+		SolidTowerStronghold::CollectFloorSignStrokes(0, Zero);
+		Test.TestEqual(TEXT("ten is a one beside a zero"), Ten.Num(), One.Num() + Zero.Num());
+		int32 LeftStrokes = 0;
+		int32 RightStrokes = 0;
+		bool bLeftIsNarrow = true;
+		for (const SolidTowerStronghold::FFloorSignStroke& Stroke : Ten)
+		{
+			if (Stroke.CenterCm.Y > 0.f)
+			{
+				++LeftStrokes;
+				if (Stroke.SizeCm.Y > SolidTowerStronghold::FloorSignDigitWidthCm * 0.5f)
+				{
+					bLeftIsNarrow = false;
+				}
+			}
+			else
+			{
+				++RightStrokes;
+			}
+		}
+		Test.TestEqual(TEXT("the one in ten is on the viewer's left"), LeftStrokes, One.Num());
+		Test.TestEqual(TEXT("the zero in ten is on the viewer's right"), RightStrokes, Zero.Num());
+		Test.TestTrue(TEXT("that left digit has no wide bar"), bLeftIsNarrow);
 	}
 }
 
@@ -262,6 +340,7 @@ bool FSolidTowerStrongholdMeasureTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("the top floor has no flight"), TopFlight.bOpen);
 	TestTrue(TEXT("the top floor has a hole"), TopGap.bOpen);
 	SolidTowerStrongholdTestPrivate::TestLandings(*this, Plan);
+	SolidTowerStrongholdTestPrivate::TestFloorNumberReads(*this);
 	TestTrue(
 		TEXT("the hole is the flight below"),
 		FMath::IsNearlyEqual(TopGap.StartRad, SolidTowerStronghold::FlightStartRad(Plan, 8), 0.001f)

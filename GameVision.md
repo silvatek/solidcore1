@@ -2,6 +2,14 @@
 
 This file is the design north star. It describes how the game plays. The world is described in [`Content/WorldLore.md`](Content/WorldLore.md). One-off work lives in [`Planning`](Planning).
 
+## The title
+
+Solid Core is a working title. It has two meanings.
+
+A large part of the story is the hunt for the solid core of a dragon's egg. That core can be forged into a weapon powerful enough to defeat the final boss.
+
+The same words are a rule for building the game. Whatever functionality is added, the core game logic and the conceptual model stay solid. That core stays intact.
+
 ## The game
 
 Solid Core is an open-world real-time strategy role-playing game set in a medieval fantasy world.

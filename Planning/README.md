@@ -13,6 +13,7 @@ The line under the title is the status.
 
 - `New` — not refined yet.
 - `Ready` — refined, and not shipped.
+- `Waiting` — refined, and another story has to ship first. The status line names that story. Set this to `Ready` only when that file is in `Done/`. An agent does not start a `Waiting` story.
 - `In Progress` — an agent has started the story. Set this when work starts on a `Ready` story.
 - `Done` — set this when the story ships, then move the file to `Done/`. Files already in `Done/` stay as they are.
 

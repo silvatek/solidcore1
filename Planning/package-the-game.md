@@ -1,10 +1,10 @@
 # Package the game
 
-Status: Ready
+Status: Waiting on [Generate the character mesh outside the editor](character-mesh-outside-the-editor.md)
 
 ## Story
 
-The developer cooks a Windows Development package and starts that executable outside the Unreal Editor. It opens on the same map as Play In Editor. The world is the `WorldMap.txt` world. The captain, the companions, the ground, the fog curtains, the buildings, and the trees match that session.
+[Generate the character mesh outside the editor](character-mesh-outside-the-editor.md) is in `Planning/Done/` before this story starts. The developer then cooks a Windows Development package and starts that executable outside the Unreal Editor. It opens on the same map as Play In Editor. The world is the `WorldMap.txt` world. The captain, the companions, the ground, the fog curtains, the buildings, and the trees match that session.
 
 ## Acceptance
 
@@ -14,9 +14,9 @@ The developer cooks a Windows Development package and starts that executable out
 - The cooked asset registry contains the packs the game finds by name or folder: `/Game/Viking`, `/Game/Fab`, `/Game/Medieval_Assassin_Girl`, `/Game/Elf_Blacksmith`, and `/Game/Characters`. A missing source `.uasset` on disk still resolves through that registry.
 - These loads succeed in the cooked game: `/Engine/BasicShapes/Cube`, `Cylinder`, `Cone`, and `Sphere`; `/Game/LevelPrototyping/Materials/M_FlatCol` (and `MI_DefaultColorway` when FlatCol is absent); `SK_Viking` and `Anim_Viking_idle1`, `Anim_Viking_walk`, `Anim_Viking_run`, `Anim_Viking_jump`; `Mat_025_grass`; the Assassin body `SKM_base_mesh_ue` and clips `anim_assassin_idle_2`, `anim_assassin_Walk`, `anim_assassin_run`; the Blacksmith body `SK_Elf_Blacksmith`.
 - Half, full, and outer fog curtains are translucent unlit two-sided materials in the cooked game, at the same colors and opacities Play In Editor uses now: half `(0.55, 0.62, 0.68)` at `0.40`, full `(0.48, 0.54, 0.60)` at `0.70`, outer `(0.92, 0.94, 0.96)` at `0.82`. The parent is a cooked content material. The curtain is that material.
-- Companions in the cooked game wear the generated low-poly body: the same seed, shirt, trousers, skin, and clips as Play In Editor. The Game target stays `TargetType.Game`.
+- Companions in the cooked game wear the generated low-poly body from that shipped story: the same seed, shirt, trousers, skin, and clips as Play In Editor. This story does not build that mesh. The Game target stays `TargetType.Game`.
 - The cook stays Development with distribution off.
-- Tests cover the cook list, the staged world map, the fog parent, and a body built without editor-only data. They run in the editor. The Windows machine runs `tools/package.bat`, and play of that executable is the check that the cooked game matches Play In Editor.
+- Tests cover the cook list, the staged world map, and the fog parent. They run in the editor. The Windows machine runs `tools/package.bat`, and play of that executable is the check that the cooked game matches Play In Editor.
 
 ## Implementation notes
 
@@ -25,6 +25,6 @@ The developer cooks a Windows Development package and starts that executable out
 - Viking, grass, the Assassin, and the Blacksmith are found from `tools/fab-assets.json` and from `FPaths::FileExists` on the source `.uasset` (`SolidFabManifest::ContentFileExists`). A pak has neither the `tools` folder nor those source files. The fallback is an asset-registry search. Soft paths set in a C++ constructor are not cook dependencies, and `BP_SolidCharacter.uasset` does not store `SK_Viking`. Cook the discovery folders with `DirectoriesToAlwaysCook` (or an equivalent explicit list). `bCookAll` stays off: it still misses `/Engine/BasicShapes` and it cooks the comparison map. The machine that cooks already has the packs from Add to Project. This story does not commit them.
 - Buildings, trees, the cave, the tower, furnishings, forage, nameplates, and companion eyes `LoadObject` engine BasicShapes. Terrain color and the fog fallback `LoadObject` `M_FlatCol`. Those string loads are cooked only when a cooked package references them, or when their folders are always cooked.
 - `SolidTerrainFog::CreateProgrammaticTranslucentMist` is `WITH_EDITOR` and uses `GetEditorOnlyData` plus `PostEditChange`. A game build takes the opaque FlatCol fallback. Ship a project material, translucent, unlit, two-sided, with `MistColor` and `Opacity`, and instance it at runtime in every build. The cook has to include that asset. Leave `MaterialEditingLibrary` unused (SC1-0042). Curtain sizes and the trail rules stay as in [Source/SolidCore1/Fog/README.md](../Source/SolidCore1/Fog/README.md).
-- A cooked companion wears the generated body. That build is [character-mesh-outside-the-editor.md](character-mesh-outside-the-editor.md). The Game target stays `TargetType.Game`.
+- The generated body is already in the Game target when this story starts. Leave that build in the shipped character-mesh story.
 - Quit already leaves a game outside the editor (`SolidExit`). Input actions are created in code. Neither needs cook work.
 - Add `tools/package.bat` to the tools list in `README.md` when the script lands. A cloud agent does not cook, and does not run the editor.

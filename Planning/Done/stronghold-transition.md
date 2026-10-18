@@ -1,6 +1,6 @@
 # Stronghold transition
 
-Status: Ready
+Status: Done
 
 ## Story
 

@@ -31,7 +31,6 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [World map location markers](Planning/world-map-location-markers.md)
 - [Party builder drag and drop](Planning/party-builder-drag-and-drop.md)
 - [Open the party builder on leaving a stronghold](Planning/party-builder-on-stronghold-exit.md)
-- [Stronghold transition](Planning/stronghold-transition.md)
 - [Stronghold markers select size only](Planning/stronghold-markers-size-only.md)
 - [Stronghold type classes](Planning/stronghold-type-classes.md)
 - [Fortress stronghold](Planning/fortress-stronghold.md)
@@ -77,6 +76,7 @@ Shipped stories live in [`Planning/Done`](Planning/Done).
 - [Content pipeline](Planning/Done/content-pipeline.md)
 - [Automation](Planning/Done/automation.md)
 - [Editor build](Planning/Done/editor-build.md)
+- [Stronghold transition](Planning/Done/stronghold-transition.md)
 
 ## Controls (runtime defaults)
 

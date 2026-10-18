@@ -1478,11 +1478,9 @@ SolidLair::FPassageHit ASolidCharacter::AllowPassage(const SolidLair::FPassageHi
 {
 	const UWorld* World = GetWorld();
 	const ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
-	const bool bCaveOpen = GameMode
-		&& SolidStrongholdTransition::CompanyCaveAcceptsEnter(GameMode->GetConfiguration());
 	const SolidLair::FPassageHit Allowed = SolidLair::AllowPassage(
 		Hit,
-		bCaveOpen,
+		GameMode && GameMode->IsCaveEnabled(),
 		GameMode && GameMode->AreTunnelsOpen());
 	if (!GameMode || Allowed.Action != SolidDungeonPassage::EHit::Enter)
 	{

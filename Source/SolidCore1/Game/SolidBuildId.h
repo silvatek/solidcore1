@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0466")
+#define SOLID_BUILD_ID TEXT("SC1-0467")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The starting cave accepts enter once Meagre is unlocked.")
+#define SOLID_BUILD_NOTE TEXT("The cave mouth waits on the monster message again.")
 #endif

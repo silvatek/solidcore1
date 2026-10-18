@@ -1,4 +1,4 @@
-# Hide the battle plan with no companions
+# Early game battle plans
 
 Status: New
 

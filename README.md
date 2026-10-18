@@ -18,7 +18,7 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Falcon Sight and Eagle Sight](Planning/falcon-and-eagle-sight.md)
 - [More terrain textures](Planning/more-terrain-textures.md)
 - [Sight indicator after Raven Sight](Planning/sight-indicator-after-raven.md)
-- [Hide the battle plan with no companions](Planning/hide-battle-plan-without-companions.md)
+- [Early game battle plans](Planning/early-game-battle-plans.md)
 - [Journal scrollbar](Planning/journal-scrollbar.md)
 - [Replace FAB_Doctor with an automated test](Planning/fab-doctor-automated-test.md)
 - [Hold battle plan](Planning/hold-battle-plan.md)

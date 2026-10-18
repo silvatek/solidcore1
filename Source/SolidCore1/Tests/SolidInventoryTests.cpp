@@ -978,4 +978,52 @@ bool FSolidInventoryCraftPressTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidInventoryInsertPackTest,
+	"SolidCore1.Inventory.InsertPack",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidInventoryInsertPackTest::RunTest(const FString& Parameters)
+{
+	SolidInventory::FLoadout Loadout = SolidInventory::StartingLoadout();
+	const int32 Body = SolidInventory::WornIndex(SolidInventory::ESlot::Body);
+	const TCHAR* WornBody = Loadout.Worn[Body];
+	SolidInventory::WriteCraft(Loadout, 0, SolidItemType::IdStick, 4);
+
+	TestFalse(TEXT("an unknown id is refused"), SolidInventory::InsertPack(Loadout, TEXT("missing")));
+	TestFalse(TEXT("an empty id is refused"), SolidInventory::InsertPack(Loadout, TEXT("")));
+	TestTrue(TEXT("the first stick takes the first cell"), SolidInventory::InsertPack(Loadout, SolidItemType::IdStick));
+	TestEqual(TEXT("that cell is a stick"), FString(Loadout.Pack[0]), FString(SolidItemType::IdStick));
+	TestEqual(TEXT("the stack holds one"), Loadout.PackStack[0], 1);
+	TestTrue(TEXT("the second stick joins the stack"), SolidInventory::InsertPack(Loadout, SolidItemType::IdStick));
+	TestEqual(TEXT("the stack holds two"), Loadout.PackStack[0], 2);
+	TestTrue(TEXT("the second cell is still empty"), Loadout.Pack[1] == nullptr);
+
+	TestTrue(TEXT("pitch starts its own stack"), SolidInventory::InsertPack(Loadout, SolidItemType::IdPitch));
+	TestEqual(TEXT("pitch sits in the next cell"), FString(Loadout.Pack[1]), FString(SolidItemType::IdPitch));
+	TestEqual(TEXT("the stick stack is unchanged"), Loadout.PackStack[0], 2);
+
+	SolidInventory::WritePack(Loadout, 0, SolidItemType::IdStick, 10);
+	TestTrue(TEXT("a full stick stack spills into an empty cell"), SolidInventory::InsertPack(Loadout, SolidItemType::IdStick));
+	TestEqual(TEXT("the full stack stays at ten"), Loadout.PackStack[0], 10);
+	TestEqual(TEXT("the spill is a stick"), FString(Loadout.Pack[2]), FString(SolidItemType::IdStick));
+	TestEqual(TEXT("the spill holds one"), Loadout.PackStack[2], 1);
+
+	SolidInventory::FLoadout Full = SolidInventory::StartingLoadout();
+	for (int32 Index = 0; Index < SolidInventory::PackCount; ++Index)
+	{
+		SolidInventory::WritePack(Full, Index, SolidItemType::IdStick, 10);
+	}
+	TestFalse(TEXT("a pack of full stick stacks refuses another"), SolidInventory::InsertPack(Full, SolidItemType::IdStick));
+	for (int32 Index = 0; Index < SolidInventory::PackCount; ++Index)
+	{
+		TestEqual(TEXT("a refused insert leaves the stack"), Full.PackStack[Index], 10);
+	}
+
+	TestEqual(TEXT("the body is untouched"), FString(Loadout.Worn[Body]), FString(WornBody));
+	TestEqual(TEXT("the craft slot is untouched"), FString(Loadout.Craft[0]), FString(SolidItemType::IdStick));
+	TestEqual(TEXT("the craft count is untouched"), Loadout.CraftStack[0], 4);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

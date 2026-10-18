@@ -1,4 +1,5 @@
 #include "SolidTerrainStreamer.h"
+#include "SolidGameMode.h"
 #include "Lairs/SolidLair.h"
 #include "SolidDungeonLevel.h"
 #include "SolidGameInstance.h"
@@ -192,6 +193,10 @@ int32 ASolidTerrainStreamer::ClearExplorationFogAtFocus()
 	const int32 Changed = TerrainMap->ApplyExplorationFogAround(Loc.X, Loc.Y);
 	LastFogApplyLocation = Loc;
 	bHasFogApplyLocation = true;
+	if (ASolidGameMode* Mode = GetWorld() ? GetWorld()->GetAuthGameMode<ASolidGameMode>() : nullptr)
+	{
+		Mode->SeedForagePiles();
+	}
 
 	if (Changed > 0 && bRenderExplorationFogMeshes)
 	{
@@ -528,6 +533,10 @@ void ASolidTerrainStreamer::CenterExplorationFogOnFocus()
 	const FVector Loc = Focus->GetActorLocation();
 	TerrainMap->CenterExplorationFogOn(Loc.X, Loc.Y);
 	bDidCenterFogOnPlayer = true;
+	if (ASolidGameMode* Mode = GetWorld() ? GetWorld()->GetAuthGameMode<ASolidGameMode>() : nullptr)
+	{
+		Mode->SeedForagePiles();
+	}
 	bHasFogApplyLocation = false;
 
 	if (bRenderExplorationFogMeshes)

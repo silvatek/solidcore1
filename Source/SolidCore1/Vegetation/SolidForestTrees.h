@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SolidTerrainTypes.h"
 
 class USolidTerrainMap;
 
@@ -30,4 +31,15 @@ namespace SolidForestTrees
 		int32 Seed,
 		const FScatterParams& Params,
 		TArray<FVector2D>& OutXY);
+
+	/**
+	 * Forest point indexes a scatter would use, before jitter.
+	 * The same seed and params as CollectSpawnPositions pick the same points.
+	 * @return Number of indexes written.
+	 */
+	int32 CollectChosenPointIndices(
+		const TArray<FSolidTerrainPoint>& Points,
+		int32 Seed,
+		const FScatterParams& Params,
+		TArray<int32>& OutIndices);
 }

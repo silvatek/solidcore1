@@ -38,6 +38,8 @@
 #include "Strongholds/SolidTowerStronghold.h"
 #include "SolidGameInstance.h"
 #include "Kismet/GameplayStatics.h"
+#include "Vegetation/SolidForage.h"
+#include "Vegetation/SolidForagePile.h"
 #include "Vegetation/SolidForestTrees.h"
 #include "Vegetation/SolidTree.h"
 #include "Components/CapsuleComponent.h"
@@ -1435,6 +1437,119 @@ void ASolidGameMode::EnsureCompanion()
 	}
 }
 
+void ASolidGameMode::ChooseForagePiles(const USolidTerrainMap* Map)
+{
+	if (bForageChosen || !Map || !Map->IsBuilt())
+	{
+		return;
+	}
+	if (!SolidForage::WorldHasPiles(IsInDungeon(), IsInTower(), IsInLair()))
+	{
+		return;
+	}
+
+	SolidForestTrees::FScatterParams Trees;
+	Trees.Density = ForestTreeDensity;
+	Trees.MaxTrees = MaxForestTrees;
+	Trees.JitterCm = ForestTreeJitterCm;
+
+	TArray<int32> TreePoints;
+	SolidForestTrees::CollectChosenPointIndices(Map->GetPoints(), ForestTreeSeed, Trees, TreePoints);
+
+	SolidForage::FScatterParams Piles;
+	Piles.Density = SolidForage::Density;
+	Piles.MaxPiles = SolidForage::MaxPiles;
+	Piles.JitterCm = ForestTreeJitterCm;
+	SolidForage::CollectChoices(Map->GetPoints(), TreePoints, SolidForage::Seed, Piles, ForageChoices);
+	bForageChosen = true;
+	UE_LOG(LogSolid, Warning, TEXT("Chose %d forage piles"), ForageChoices.Num());
+}
+
+void ASolidGameMode::SeedForagePiles()
+{
+	if (!bForageChosen || ForageChoices.Num() == 0)
+	{
+		return;
+	}
+	if (!SolidForage::WorldHasPiles(IsInDungeon(), IsInTower(), IsInLair()))
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World || World->bIsTearingDown)
+	{
+		return;
+	}
+
+	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World);
+	const USolidTerrainMap* Map = Streamer ? Streamer->GetTerrainMap() : nullptr;
+	if (!Map || !Map->IsBuilt())
+	{
+		return;
+	}
+
+	TArray<int32> Ready;
+	SolidForage::CollectReadyToSeed(
+		Map->GetPoints(), ForageChoices, Configuration.TakenForagePiles, SeededForage, Ready);
+	if (Ready.Num() == 0)
+	{
+		return;
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	int32 Spawned = 0;
+	for (const int32 Index : Ready)
+	{
+		const SolidForage::FChoice& Choice = ForageChoices[Index];
+		FVector SpawnLoc(Choice.XY.X, Choice.XY.Y, 0.f);
+		const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
+		SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
+
+		ASolidForagePile* Pile = World->SpawnActor<ASolidForagePile>(
+			ASolidForagePile::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+		if (!Pile)
+		{
+			continue;
+		}
+
+		Pile->SetChoice(Index, Choice.ItemId);
+		Pile->BuildVisuals();
+		SpawnedForagePiles.Add(Pile);
+		SeededForage.Add(Index);
+		++Spawned;
+	}
+
+	if (Spawned > 0)
+	{
+		UE_LOG(LogSolid, Warning, TEXT("Seeded %d forage piles"), Spawned);
+	}
+}
+
+bool ASolidGameMode::TakeForagePile(ASolidForagePile* Pile)
+{
+	if (!Pile)
+	{
+		return false;
+	}
+	const int32 Index = Pile->GetChoiceIndex();
+	if (!ForageChoices.IsValidIndex(Index))
+	{
+		return false;
+	}
+	if (!SolidForage::TakePile(Configuration, Index, ForageChoices[Index].ItemId))
+	{
+		return false;
+	}
+
+	SpawnedForagePiles.Remove(Pile);
+	Pile->Destroy();
+	return true;
+}
+
 void ASolidGameMode::EnsureVegetation()
 {
 	if (!bAutoSpawnVegetation)
@@ -1942,4 +2057,7 @@ void ASolidGameMode::EnsureVegetation()
 			UE_LOG(LogSolid, Warning, TEXT("Spawned %d bridges"), Spawned);
 		}
 	}
+
+	ChooseForagePiles(Streamer->GetTerrainMap());
+	SeedForagePiles();
 }

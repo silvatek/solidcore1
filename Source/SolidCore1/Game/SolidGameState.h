@@ -39,6 +39,11 @@ struct FGameState
 	TArray<SolidJournal::FJournalEntry> Journal;
 	/** Worn boxes and the captain's pack. Each box stores an item id. A new game starts in the starting kit. Killed by monsters clears it to Rags. */
 	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+	/**
+	 * Indexes in the forest pile scatter the captain has picked up.
+	 * A new game has none. Closing the monster message does not put those piles back.
+	 */
+	TArray<int32> TakenForagePiles;
 	/** The cave chest. It starts with a rusty sword, old boots, coins, sticks, and pitch. Taking an item keeps it out. */
 	SolidStorage::FContainer CaveChest = SolidStorage::StartingCaveChest();
 	/** The company base. A new game is the Meagre Dungeon on its map cell. */

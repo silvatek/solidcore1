@@ -20,6 +20,7 @@ class UStaticMeshComponent;
 class UTextRenderComponent;
 class ASolidCharacterStage;
 class ASolidHUD;
+class ASolidForagePile;
 class ASolidStrongholdStone;
 
 /**
@@ -110,6 +111,8 @@ protected:
 	void ActivatePassage(const SolidLair::FPassageHit& Hit);
 	/** A site stone under the pointer, when a click may ask it for a type. */
 	ASolidStrongholdStone* StoneUnderPointer() const;
+	/** Nearest forage pile along the pointer ray. Ground distance is the captain's, in cm. */
+	ASolidForagePile* NearestForagePile(float& OutGroundDistanceCm) const;
 	void OfferStrongholdStone(const ASolidStrongholdStone* Stone);
 	void ConfirmStrongholdChoice();
 	void TickClickMove();

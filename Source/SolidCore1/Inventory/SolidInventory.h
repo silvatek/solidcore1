@@ -242,6 +242,51 @@ namespace SolidInventory
 		return true;
 	}
 
+	/**
+	 * Add one of an item to the pack.
+	 * The first same-id stack under MaxStacked takes it. Otherwise the first empty cell does.
+	 * False when the id is unknown, or every stack of that item is full and no cell is empty.
+	 * Worn boxes and crafting slots stay as they were.
+	 */
+	inline bool InsertPack(FLoadout& Loadout, const TCHAR* ItemId)
+	{
+		const FSolidItemType* Item = SolidItemType::FindById(ItemId);
+		if (!Item)
+		{
+			return false;
+		}
+
+		for (int32 Index = 0; Index < PackCount; ++Index)
+		{
+			if (!Loadout.Pack[Index] || Loadout.PackStack[Index] <= 0)
+			{
+				continue;
+			}
+			if (FCString::Strcmp(Loadout.Pack[Index], Item->Id) != 0)
+			{
+				continue;
+			}
+			if (Item->MaxStacked > 0 && Loadout.PackStack[Index] >= Item->MaxStacked)
+			{
+				continue;
+			}
+			Loadout.Pack[Index] = Item->Id;
+			Loadout.PackStack[Index] += 1;
+			return true;
+		}
+
+		for (int32 Index = 0; Index < PackCount; ++Index)
+		{
+			if (Loadout.Pack[Index] && Loadout.PackStack[Index] > 0)
+			{
+				continue;
+			}
+			WritePack(Loadout, Index, Item->Id, 1);
+			return true;
+		}
+		return false;
+	}
+
 	/** Empty every worn box and every pack cell, then put Rags on the body. */
 	inline void Clear(FLoadout& Loadout)
 	{

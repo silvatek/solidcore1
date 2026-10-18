@@ -4,12 +4,14 @@
 #include "SolidGameState.h"
 #include "SolidStronghold.h"
 #include "GameFramework/GameModeBase.h"
+#include "Vegetation/SolidForage.h"
 #include "Party/SolidCompany.h"
 #include "SolidSight.h"
 #include "SolidGameMode.generated.h"
 
 class ASolidBridge;
 class ASolidBuilding;
+class ASolidForagePile;
 class ASolidDungeonEntrance;
 class ASolidDungeonInterior;
 class ASolidLairInterior;
@@ -19,6 +21,7 @@ class ASolidTowerInterior;
 class ASolidStrongholdStone;
 class ASolidTowerShell;
 class ASolidTree;
+class USolidTerrainMap;
 class USkeletalMesh;
 class USolidCompany;
 class USolidParty;
@@ -179,6 +182,15 @@ public:
 	/** True after a click on a tower door, until a click leaves. */
 	bool IsInTower() const;
 
+	/** Spawn chosen piles whose fog is now below full. Safe to call again. */
+	void SeedForagePiles();
+
+	/**
+	 * Pick up one seeded pile into the pack.
+	 * False when the pack cannot hold it. The pile stays, and nothing else changes.
+	 */
+	bool TakeForagePile(ASolidForagePile* Pile);
+
 	/** Closing the monster message opens the starting cave. It starts closed. */
 	bool IsCaveEnabled() const { return Configuration.bCaveEnabled; }
 
@@ -238,6 +250,7 @@ protected:
 	void FireParadeEvents();
 	void EnsureCompanion();
 	void EnsureVegetation();
+	void ChooseForagePiles(const USolidTerrainMap* Map);
 	void SaveTravelSession(
 		bool bInDungeon,
 		bool bReturnToDungeonMouth,
@@ -285,6 +298,16 @@ protected:
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidTree>> SpawnedForestTrees;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<ASolidForagePile>> SpawnedForagePiles;
+
+	/** Scatter indexes already given a pile actor this visit. */
+	TArray<int32> SeededForage;
+
+	/** Choices for this open-world visit. The same map and seed rebuild the same list. */
+	TArray<SolidForage::FChoice> ForageChoices;
+	bool bForageChosen = false;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidBuilding>> SpawnedTownBuildings;

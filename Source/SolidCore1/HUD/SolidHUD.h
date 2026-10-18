@@ -117,6 +117,10 @@ public:
 	void SetCavePassageTip(const FString& Tip);
 	const FString& GetCavePassageTip() const { return CavePassageTip; }
 
+	/** Catalog name of a pile within reach, or empty. A passage tip wins when both are set. */
+	void SetForageTip(const FString& Tip);
+	const FString& GetForageTip() const { return ForageTip; }
+
 	/** An event message. A click, Enter, Esc, or F10 closes it. */
 	void ShowMessage(const TCHAR* MessageId, const TCHAR* Text);
 	bool IsMessageVisible() const { return bShowMessage; }
@@ -220,6 +224,9 @@ protected:
 
 	/** Enter cave / Leave cave, or empty when the pointer is elsewhere. */
 	FString CavePassageTip;
+
+	/** Stick or Pitch, or empty when the pointer is not over a pile within reach. */
+	FString ForageTip;
 
 	/** Event message. Empty when none is showing. */
 	bool bShowMessage = false;

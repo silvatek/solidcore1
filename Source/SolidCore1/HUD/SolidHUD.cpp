@@ -1443,14 +1443,15 @@ void ASolidHUD::DrawHUD()
 					Canvas->DrawItem(BoneItem);
 				}
 			}
-			if (!CavePassageTip.IsEmpty())
+			const FString& PointerTip = CavePassageTip.IsEmpty() ? ForageTip : CavePassageTip;
+			if (!PointerTip.IsEmpty())
 			{
 				UFont* TipFont = GEngine ? GEngine->GetSmallFont() : nullptr;
-				float TextW = static_cast<float>(CavePassageTip.Len() * 8);
+				float TextW = static_cast<float>(PointerTip.Len() * 8);
 				float TextH = 14.f;
 				if (TipFont)
 				{
-					Canvas->StrLen(TipFont, CavePassageTip, TextW, TextH);
+					Canvas->StrLen(TipFont, PointerTip, TextW, TextH);
 				}
 				const float Band = SolidHudTheme::BandThickness(SolidHudTheme::HudFrame());
 				const float Pad = 6.f;
@@ -1465,7 +1466,7 @@ void ASolidHUD::DrawHUD()
 				{
 					FCanvasTextItem TextItem(
 						FVector2D(Box.X + Band + Pad, Box.Y + Band + Pad),
-						FText::FromString(CavePassageTip),
+						FText::FromString(PointerTip),
 						TipFont,
 						SolidHudTheme::OakAndBronze().Ink);
 					TextItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
@@ -1479,6 +1480,11 @@ void ASolidHUD::DrawHUD()
 void ASolidHUD::SetCavePassageTip(const FString& Tip)
 {
 	CavePassageTip = Tip;
+}
+
+void ASolidHUD::SetForageTip(const FString& Tip)
+{
+	ForageTip = Tip;
 }
 
 void ASolidHUD::ShowMessage(const TCHAR* InMessageId, const TCHAR* Text)

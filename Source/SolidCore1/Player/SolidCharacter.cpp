@@ -40,6 +40,9 @@
 #include "Character/SolidCharacterStage.h"
 #include "HUD/SolidHUD.h"
 #include "Inventory/SolidInventory.h"
+#include "Inventory/SolidItemType.h"
+#include "Vegetation/SolidForage.h"
+#include "Vegetation/SolidForagePile.h"
 #include "Menus/SolidCharacterEditor.h"
 #include "Menus/SolidMainMenu.h"
 #include "SolidBodyParams.h"
@@ -1573,6 +1576,53 @@ ASolidStrongholdStone* ASolidCharacter::StoneUnderPointer() const
 	return nullptr;
 }
 
+ASolidForagePile* ASolidCharacter::NearestForagePile(float& OutGroundDistanceCm) const
+{
+	OutGroundDistanceCm = 0.f;
+	if (!SolidDungeonPassage::AcceptsPointer(IsPointerShown(), IsMenuOverlayOpen() || IsPartyFormationDrillActive()))
+	{
+		return nullptr;
+	}
+
+	FVector Origin = FVector::ZeroVector;
+	FVector Direction = FVector::ZeroVector;
+	if (!ReadPointerRay(Origin, Direction))
+	{
+		return nullptr;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return nullptr;
+	}
+
+	ASolidForagePile* Best = nullptr;
+	float BestRay = 0.f;
+	for (TActorIterator<ASolidForagePile> Pile(World); Pile; ++Pile)
+	{
+		const UStaticMeshComponent* Mesh = Pile->GetPileMesh();
+		if (!Mesh)
+		{
+			continue;
+		}
+		const FBox Box = Mesh->CalcBounds(Mesh->GetComponentTransform()).GetBox();
+		float RayCm = 0.f;
+		if (!SolidForage::RayBoxDistance(Origin, Direction, Box, SolidClickMove::MaxRayCm, RayCm))
+		{
+			continue;
+		}
+		if (Best && RayCm >= BestRay)
+		{
+			continue;
+		}
+		Best = *Pile;
+		BestRay = RayCm;
+		OutGroundDistanceCm = FVector::Dist2D(GetActorLocation(), Best->GetActorLocation());
+	}
+	return Best;
+}
+
 void ASolidCharacter::OfferStrongholdStone(const ASolidStrongholdStone* Stone)
 {
 	UWorld* World = GetWorld();
@@ -1691,6 +1741,10 @@ void ASolidCharacter::UpdateCavePassageHover()
 		return;
 	}
 	HUD->SetCavePassageTip(SolidLair::PassageTip(PassageUnderPointer()));
+	float GroundCm = 0.f;
+	const ASolidForagePile* Pile = NearestForagePile(GroundCm);
+	const bool bNamed = Pile && SolidForage::IsWithinReach(GroundCm);
+	HUD->SetForageTip(bNamed ? FString(SolidItemType::NameFor(Pile->GetItemId())) : FString());
 }
 
 bool ASolidCharacter::ReadPointerPosition(float& OutX, float& OutY) const
@@ -1812,6 +1866,20 @@ void ASolidCharacter::PollClickMovePress()
 	{
 		ActivatePassage(Passage);
 		return;
+	}
+	float ForageGroundCm = 0.f;
+	if (ASolidForagePile* Pile = NearestForagePile(ForageGroundCm))
+	{
+		if (SolidForage::IsWithinReach(ForageGroundCm))
+		{
+			UWorld* World = GetWorld();
+			ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+			if (GameMode && GameMode->TakeForagePile(Pile))
+			{
+				ClearClickMove();
+			}
+			return;
+		}
 	}
 	if (const ASolidStrongholdStone* Stone = StoneUnderPointer())
 	{

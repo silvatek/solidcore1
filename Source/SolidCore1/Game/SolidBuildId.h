@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0445")
+#define SOLID_BUILD_ID TEXT("SC1-0446")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Event types live in SolidEvent.h. SolidEvents.h is the event list.")
+#define SOLID_BUILD_NOTE TEXT("Killed by monsters enables Meagre, Relion Humble, and Kanfold Average. Dragongate still lists every size.")
 #endif

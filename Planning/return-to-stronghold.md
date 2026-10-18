@@ -23,6 +23,7 @@ Closing the monster message enables the Meagre size and returns the captain to t
 - `EnableCave` sets `bCaveEnabled` and `FResult.bEnterCave`. `PresentEventResult` calls `TravelToDungeon` when `bEnterCave` is set. `TravelToDungeon` returns immediately unless `bCaveEnabled` is set.
 - `CompanyCaveAcceptsEnter`, the F10 row (`CanUseCaveRow`), the menu dimming, and the mouth passage read `bCaveEnabled`. After this story the cave is open when Meagre is enabled and the cave is still the company stronghold. `bCaveEnabled` can go once those readers have moved.
 - `ReturnToStronghold` is the trip. It replaces `bEnterCave`. While the company stronghold is the Meagre cave, it uses the cave trip. When the active stronghold is a tower, it uses that tower's trip.
-- Enter Dragongate already lists `EnableStrongholdSize(Meagre)`. Remove that one line here. Leave the other six sizes.
+- Killed by monsters already enables Meagre, beside `EnableCave` and `ClearInventory`. Enter Relion already enables Humble. Enter Kanfold already enables Average. Enter Dragongate still lists those three as well.
+- Enter Dragongate already lists `EnableStrongholdSize(Meagre)`. Remove that one line here. Leave the other six sizes on Dragongate, and leave Humble on Relion and Average on Kanfold.
 - Do not use the word den. See [Remove den from the code](remove-den-from-the-code.md).
 - Tests that expect `EnableCave`, `bEnterCave`, or `bCaveEnabled` after the monster close change with this behavior. Follow the test policy in `AGENTS.md`.

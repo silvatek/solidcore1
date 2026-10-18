@@ -53,6 +53,35 @@ namespace SolidEventTestPrivate
 		}
 		return false;
 	}
+
+	int32 CountSizeUnlocks(const SolidEvents::FEvent& Event, const ESolidStrongholdSize Size)
+	{
+		int32 Count = 0;
+		const int32 ChangeCount = FMath::Min(Event.ChangeCount, SolidEvents::MaxChangesPerEvent);
+		for (int32 Index = 0; Index < ChangeCount; ++Index)
+		{
+			const SolidEvents::FChange& Change = Event.Changes[Index];
+			if (Change.Kind == SolidEvents::EChange::EnableStrongholdSize && Change.StrongholdSize == Size)
+			{
+				++Count;
+			}
+		}
+		return Count;
+	}
+
+	int32 CountAnySizeUnlock(const SolidEvents::FEvent& Event)
+	{
+		int32 Count = 0;
+		const int32 ChangeCount = FMath::Min(Event.ChangeCount, SolidEvents::MaxChangesPerEvent);
+		for (int32 Index = 0; Index < ChangeCount; ++Index)
+		{
+			if (Event.Changes[Index].Kind == SolidEvents::EChange::EnableStrongholdSize)
+			{
+				++Count;
+			}
+		}
+		return Count;
+	}
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -1432,6 +1461,90 @@ bool FSolidEventsDragongateUnlocksSizesTest::RunTest(const FString& Parameters)
 			*FString::Printf(TEXT("%s stays unlocked"), SolidStronghold::SizeName(Size)),
 			SolidEvents::IsStrongholdSizeUnlocked(Played, Size));
 	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidEventsEarlySizeUnlocksTest,
+	"SolidCore1.Events.EarlySizeUnlocks",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidEventsEarlySizeUnlocksTest::RunTest(const FString& Parameters)
+{
+	const TCHAR* Homes[] = {
+		TEXT("Killed by monsters"),
+		TEXT("Enter Relion"),
+		TEXT("Enter Kanfold"),
+	};
+	const ESolidStrongholdSize HomeSize[] = {
+		ESolidStrongholdSize::Meagre,
+		ESolidStrongholdSize::Humble,
+		ESolidStrongholdSize::Average,
+	};
+	for (int32 Home = 0; Home < UE_ARRAY_COUNT(Homes); ++Home)
+	{
+		const SolidEvents::FEvent* Event = SolidEventTestPrivate::FindEvent(Homes[Home]);
+		TestNotNull(*FString::Printf(TEXT("%s is listed"), Homes[Home]), Event);
+		if (!Event)
+		{
+			continue;
+		}
+		TestEqual(
+			*FString::Printf(TEXT("%s unlocks one size"), Homes[Home]),
+			SolidEventTestPrivate::CountAnySizeUnlock(*Event),
+			1);
+		TestEqual(
+			*FString::Printf(TEXT("%s unlocks %s"), Homes[Home], SolidStronghold::SizeName(HomeSize[Home])),
+			SolidEventTestPrivate::CountSizeUnlocks(*Event, HomeSize[Home]),
+			1);
+		TestTrue(
+			*FString::Printf(TEXT("%s journal names %s"), Homes[Home], SolidStronghold::SizeName(HomeSize[Home])),
+			SolidJournal::Describe(*Event).Contains(
+				FString::Printf(TEXT("%s size unlocked"), SolidStronghold::SizeName(HomeSize[Home]))));
+	}
+
+	const SolidEvents::FEvent* Dragongate = SolidEventTestPrivate::FindEvent(TEXT("Enter Dragongate"));
+	TestNotNull(TEXT("Enter Dragongate is listed"), Dragongate);
+	if (Dragongate)
+	{
+		TestEqual(
+			TEXT("Enter Dragongate still lists Meagre"),
+			SolidEventTestPrivate::CountSizeUnlocks(*Dragongate, ESolidStrongholdSize::Meagre),
+			1);
+		TestEqual(
+			TEXT("Enter Dragongate still lists Humble"),
+			SolidEventTestPrivate::CountSizeUnlocks(*Dragongate, ESolidStrongholdSize::Humble),
+			1);
+		TestEqual(
+			TEXT("Enter Dragongate still lists Average"),
+			SolidEventTestPrivate::CountSizeUnlocks(*Dragongate, ESolidStrongholdSize::Average),
+			1);
+	}
+
+	FGameState Closed;
+	const SolidEvents::FResult Monster = SolidEvents::NotifyMessageClosed(Closed, SolidMessages::IdKilledByMonsters);
+	TestTrue(TEXT("Killed by monsters fires"), Monster.bFired);
+	TestTrue(TEXT("the close unlocks Meagre"), SolidEvents::IsStrongholdSizeUnlocked(Closed, ESolidStrongholdSize::Meagre));
+	TestFalse(TEXT("the close leaves Humble locked"), SolidEvents::IsStrongholdSizeUnlocked(Closed, ESolidStrongholdSize::Humble));
+	TestFalse(TEXT("the close leaves Average locked"), SolidEvents::IsStrongholdSizeUnlocked(Closed, ESolidStrongholdSize::Average));
+
+	FGameState Relion;
+	SolidEvents::NotifyOccupiedTown(Relion, SolidTowns::Iglin);
+	const SolidEvents::FResult EnteredRelion = SolidEvents::NotifyOccupiedTown(Relion, SolidTowns::Relion);
+	TestTrue(TEXT("Enter Relion fires"), EnteredRelion.bFired);
+	TestFalse(TEXT("Enter Relion leaves Meagre locked"), SolidEvents::IsStrongholdSizeUnlocked(Relion, ESolidStrongholdSize::Meagre));
+	TestTrue(TEXT("Enter Relion unlocks Humble"), SolidEvents::IsStrongholdSizeUnlocked(Relion, ESolidStrongholdSize::Humble));
+	TestFalse(TEXT("Enter Relion leaves Average locked"), SolidEvents::IsStrongholdSizeUnlocked(Relion, ESolidStrongholdSize::Average));
+
+	FGameState Kanfold;
+	const SolidEvents::FResult EnteredKanfold = SolidEvents::NotifyOccupiedTown(Kanfold, SolidTowns::Kanfold);
+	TestTrue(TEXT("Enter Kanfold fires"), EnteredKanfold.bFired);
+	TestFalse(TEXT("Enter Kanfold leaves Meagre locked"), SolidEvents::IsStrongholdSizeUnlocked(Kanfold, ESolidStrongholdSize::Meagre));
+	TestFalse(TEXT("Enter Kanfold leaves Humble locked"), SolidEvents::IsStrongholdSizeUnlocked(Kanfold, ESolidStrongholdSize::Humble));
+	TestTrue(TEXT("Enter Kanfold unlocks Average"), SolidEvents::IsStrongholdSizeUnlocked(Kanfold, ESolidStrongholdSize::Average));
+	TestFalse(
+		TEXT("Enter Kanfold leaves Impressive locked"),
+		SolidEvents::IsStrongholdSizeUnlocked(Kanfold, ESolidStrongholdSize::Impressive));
 	return true;
 }
 

@@ -13,7 +13,7 @@
  * The parameter is unused. The deck and the gap past the lip do not count.
  * That event shows a message. Closing that message is its own event.
  * Killed by monsters closes the monster message, opens the starting cave,
- * sends the captain inside, and clears his inventory down to Rags.
+ * sends the captain inside, clears his inventory down to Rags, and enables Meagre.
  * Entering Iglin titles the captain Orphan. It does not enable raven sight.
  * Driven from the village fires on a later entry to Iglin, after that close,
  * shows "You are driven from the village", titles the captain Outcast,
@@ -25,8 +25,10 @@
  * Each event belongs to an act. Iglin, Reach broken bridge, and Killed by monsters
  * are ACT_0. Driven from the village is ACT_1.
  * Relion is ACT_2, Kanfold is ACT_3, and Dragongate is ACT_4.
- * Enter Dragongate lists one EnableStrongholdSize change for every size.
- * That list is temporary. Each size will move to its own event.
+ * Killed by monsters enables Meagre. Enter Relion enables Humble.
+ * Enter Kanfold enables Average. Enter Dragongate still lists one
+ * EnableStrongholdSize change for every size, including those three.
+ * The duplicates stay until each size has only one event.
  */
 namespace SolidEvents
 {
@@ -38,7 +40,8 @@ namespace SolidEvents
 			.DisplayMessage(SolidMessages::IdKilledByMonsters),
 		OnMessageClosed(IdKilledByMonsters, TEXT("Killed by monsters"), SolidMessages::IdKilledByMonsters, ACT_0)
 			.EnableCave()
-			.ClearInventory(),
+			.ClearInventory()
+			.EnableStrongholdSize(ESolidStrongholdSize::Meagre),
 		EnterTown(IdDrivenFromVillage, TEXT("Driven from the village"), SolidTowns::Iglin, ACT_1)
 			.Require(IdKilledByMonsters)
 			.DisplayMessage(SolidMessages::IdDrivenFromVillage)
@@ -48,11 +51,13 @@ namespace SolidEvents
 			.EnableSight(ESolidSight::Raven)
 			.SetMaxPartySize(1)
 			.SetPlayerTitle(TitleVagrant)
-			.RepairBridge(),
+			.RepairBridge()
+			.EnableStrongholdSize(ESolidStrongholdSize::Humble),
 		EnterTown(IdEnterKanfold, TEXT("Enter Kanfold"), SolidTowns::Kanfold, ACT_3)
 			.EnableSight(ESolidSight::Raven)
 			.SetMaxPartySize(2)
-			.SetPlayerTitle(TitleRanger),
+			.SetPlayerTitle(TitleRanger)
+			.EnableStrongholdSize(ESolidStrongholdSize::Average),
 		EnterTown(IdEnterDragongate, TEXT("Enter Dragongate"), SolidTowns::Dragongate, ACT_4)
 			.EnableSight(ESolidSight::Raven)
 			.SetMaxPartySize(RosterCount)

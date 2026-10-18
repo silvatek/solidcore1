@@ -47,10 +47,18 @@ Screenshots are taken with the Windows snipping tool. That switch puts Unreal in
 
 These agents have access to C++ and Unreal Engine. The agent builds and runs the tests. Do not run PIE.
 
+`tools\pie.bat` writes `PIE` into `ue.lock` in the repo root, launches Play In Editor, waits until the Unreal Editor process has closed, then writes `Free`. The file is gitignored.
+
+Before building or testing, read `ue.lock`. A missing file means the machine is free. If the word in the file is not `Free`, say that word in chat and wait until the file says `Free`. Ignore surrounding whitespace. Do not build or test while waiting.
+
+When the machine is free, write this agent's own id into `ue.lock` as the only word (the cloud agent run id when this session has one). Then:
+
 1. Build with `tools\build.bat`.
 2. Run the tests with `tools\test.bat`.
 
-The developer then runs the game in PIE if necessary, and sends a screenshot when they do. Wait for that report before treating play as verified. When a screenshot arrives, review it.
+After that build and test session has finished, write `Free` if the file still contains this agent's id.
+
+The developer then runs `tools\pie.bat` when play is needed, and sends a screenshot when they do. Wait for that report before treating play as verified. When a screenshot arrives, review it.
 
 Screenshots are taken with the Windows snipping tool. That switch puts Unreal in the background, so the HUD frame rate drops. Ignore FPS in a screenshot unless the user says they are worried about it. Foreground PIE is about 120 FPS.
 

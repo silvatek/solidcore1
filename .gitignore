@@ -52,3 +52,6 @@ Content/Medieval_Assassin_Girl
 Content/Elf_Blacksmith
 
 temp.md
+
+# Play In Editor / agent build lock (tools/pie.bat, solidcore1-ue agents)
+/ue.lock

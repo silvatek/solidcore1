@@ -30,8 +30,8 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Basic NPCs](Planning/basic-npcs.md)
 - [Pathfinding over bridges](Planning/pathfinding-over-bridges.md)
 - [Rough stones](Planning/rough-stones.md)
-- [Party builder drag and drop](Planning/party-builder-drag-and-drop.md)
-- [Open the party builder on leaving a stronghold](Planning/party-builder-on-stronghold-exit.md)
+- [Squad builder drag and drop](Planning/squad-builder-drag-and-drop.md)
+- [Open the squad builder on leaving a stronghold](Planning/squad-builder-on-stronghold-exit.md)
 - [Stronghold type classes](Planning/stronghold-type-classes.md)
 - [Fortress stronghold](Planning/fortress-stronghold.md)
 - [Imperious dungeon](Planning/imperious-dungeon.md)
@@ -40,13 +40,12 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Name the company's stronghold](Planning/name-the-stronghold.md)
 - [Return to the stronghold](Planning/return-to-stronghold.md)
 - [Enable a lair from an event](Planning/enable-lair.md)
-- [Rename Party to Squad](Planning/rename-party-to-squad.md)
 
 ## Done
 
 Shipped stories live in [`Planning/Done`](Planning/Done).
 
-- [Captain + Party](Planning/Done/captain-and-party.md)
+- [Captain + Squad](Planning/Done/captain-and-squad.md)
 - [Company roster](Planning/Done/company-roster.md)
 - [Battle plans](Planning/Done/battle-plans.md)
 - [World + biomes](Planning/Done/world-and-biomes.md)
@@ -80,6 +79,7 @@ Shipped stories live in [`Planning/Done`](Planning/Done).
 - [World map location markers](Planning/Done/world-map-location-markers.md)
 - [Stronghold markers select size only](Planning/Done/stronghold-markers-size-only.md)
 - [Foraging](Planning/Done/foraging.md)
+- [Rename Party to Squad](Planning/Done/rename-party-to-squad.md)
 
 ## Controls (runtime defaults)
 
@@ -122,15 +122,15 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.GameMode.*` | Default spawn flags, pawn BP resolution |
 | `SolidCore1.Companion.*` | Defaults, SetFollowTarget |
 | `SolidCore1.Body.*` | Bone roles; a seeded body on the Viking skeleton stays under the polygon budget and keeps shirt, trouser, and skin slots; a name picks a Unicode face |
-| `SolidCore1.Company.*` | Viking, Assassin, and Blacksmith meshes; roster of five with vocations, torso colors, and leg colors; party selection; fielded count follows the party limit; selection survives ensure |
+| `SolidCore1.Company.*` | Viking, Assassin, and Blacksmith meshes; roster of five with vocations, torso colors, and leg colors; squad selection; fielded count follows the squad limit; selection survives ensure |
 | `SolidCore1.Streamer.*` | FindExisting / EnsureExists (null + idempotent) |
 | `SolidCore1.Clip.*` | SelectClip idle/walk/run/jump rules |
 | `SolidCore1.NameLabel.*` | Style sizes/colors/plates; Outcast / Sam defaults; vocation initial on the companion plate; captain plate hidden when alone or in a stronghold |
-| `SolidCore1.BattlePlan.*` | Formation slots; Company/Party assign; selection survives party ensure; drill legs; F5 Parade fires Enter Relion and Enter Dragongate once; left shoulder plus a face button is the first four slots, right shoulder the last four |
+| `SolidCore1.BattlePlan.*` | Formation slots; Company/Squad assign; selection survives squad ensure; drill legs; F5 Parade fires Enter Relion and Enter Dragongate once; left shoulder plus a face button is the first four slots, right shoulder the last four |
 | `SolidCore1.Credits.*` | Author / Cursor+Grok / Fab attribution; HUD toggle |
-| `SolidCore1.MainMenu.*` | F10 menu entries (Use portal, Test Drill, Journal, Credits, Build party, Enter cave, Character editor, Inventory) and selection; Enter cave stays dim until the cave is open, and Leave cave stays available; Menu opens and closes the menu |
+| `SolidCore1.MainMenu.*` | F10 menu entries (Use portal, Test Drill, Journal, Credits, Build squad, Enter cave, Character editor, Inventory) and selection; Enter cave stays dim until the cave is open, and Leave cave stays available; Menu opens and closes the menu |
 | `SolidCore1.CharacterEditor.*` | Character editor row, F10 returns to the world, height build and gender sliders, Sam's red shirt and Alex's blue shirt, attribute numbers |
-| `SolidCore1.PartyBuilder.*` | Build party stays locked below two companions; toggles the company up to the event cap |
+| `SolidCore1.SquadBuilder.*` | Build squad stays locked below two companions; toggles the company up to the event cap |
 | `SolidCore1.MenuPointer.*` | Pointer hit-tests a menu or portal row; a miss leaves the keys' selection |
 | `SolidCore1.Portal.*` | Town list, including Dragongate and Rathen, then the grass north of the Iglin tunnels; keys 1–8; a town landing stays on one cell of that town; the tunnel landing records Driven from the village; portal page |
 | `SolidCore1.WorldTime.*` | Session 1 is 200/45 AtF; session 9 at 84 minutes is 01:24, 200/53 AtF; day 100 rolls the year |
@@ -142,7 +142,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.Pointer.*` | Bronze arrow tip, two head triangles and no tail, outline, and hide-while-looking |
 | `SolidCore1.ClickMove.*` | Single click, raven-only; WASD is true sight; ground ray |
 | `SolidCore1.Sight.*` | True sight at start; F9 or a right stick click switches to raven sight and back; entering true sight levels the camera and keeps the yaw; eye and eagle markers |
-| `SolidCore1.Events.*` | Enter-town events, Reach broken bridge, Killed by monsters, and Driven from the village: each has an eight-digit id and an act (Iglin, the bridge, and the monster message are ACT_0, the return to Iglin is ACT_1, Relion ACT_2, Kanfold ACT_3, Dragongate ACT_4); messages have their own ids; the ramp shows "You are killed by monsters"; closing it opens the cave, sends the captain inside, and clears his inventory to Rags; Enter Iglin titles the captain Orphan; the next entry to Iglin shows "You are driven from the village", titles Outcast, and opens the Iglin tunnel mouths; Relion and Reach broken bridge wait until Iglin has fired; nothing before Relion enables raven sight; Relion, Kanfold, and Dragongate enable raven sight; max party size through the whole company; captain title through Captain; Relion repairs the Iglin bridge; a named town cell is that town; an EnableStrongholdSize change enables one stronghold size; Killed by monsters enables Meagre, Enter Relion enables Humble, and Enter Kanfold enables Average; Enter Dragongate still lists one for every size, including those three, until each size has only one event; Enter Iglin does not enable a size |
+| `SolidCore1.Events.*` | Enter-town events, Reach broken bridge, Killed by monsters, and Driven from the village: each has an eight-digit id and an act (Iglin, the bridge, and the monster message are ACT_0, the return to Iglin is ACT_1, Relion ACT_2, Kanfold ACT_3, Dragongate ACT_4); messages have their own ids; the ramp shows "You are killed by monsters"; closing it opens the cave, sends the captain inside, and clears his inventory to Rags; Enter Iglin titles the captain Orphan; the next entry to Iglin shows "You are driven from the village", titles Outcast, and opens the Iglin tunnel mouths; Relion and Reach broken bridge wait until Iglin has fired; nothing before Relion enables raven sight; Relion, Kanfold, and Dragongate enable raven sight; max squad size through the whole company; captain title through Captain; Relion repairs the Iglin bridge; a named town cell is that town; an EnableStrongholdSize change enables one stronghold size; Killed by monsters enables Meagre, Enter Relion enables Humble, and Enter Kanfold enables Average; Enter Dragongate still lists one for every size, including those three, until each size has only one event; Enter Iglin does not enable a size |
 | `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |
 | `SolidCore1.Content.*` | Required Content + Engine assets the code loads; Assassin and Blacksmith folders; recorded Fab paths |
 
@@ -266,7 +266,7 @@ See [`Source/SolidCore1/Fog/README.md`](Source/SolidCore1/Fog/README.md) — tra
 
 ## Name labels (SC1-0091 / SC1-0093)
 
-Floating nameplates (`SolidNameLabel`) sit above each Party member and face the view camera: TextRender plus thin cube **border** and contrasting **background** plates. Defaults: Captain **"Outcast"** (larger warm amber on dark plate), Companions muted slate plates. The captain's plate shows in raven sight only, and only when at least one companion is with him outside a stronghold. Enter Iglin renames the captain to Orphan. Driven from the village sets Outcast. Relion renames the captain to Vagrant, Kanfold to Ranger, and Dragongate to Captain. Override via `CharacterDisplayName` / `SetCharacterDisplayName`.
+Floating nameplates (`SolidNameLabel`) sit above each Squad member and face the view camera: TextRender plus thin cube **border** and contrasting **background** plates. Defaults: Captain **"Outcast"** (larger warm amber on dark plate), Companions muted slate plates. The captain's plate shows in raven sight only, and only when at least one companion is with him outside a stronghold. Enter Iglin renames the captain to Orphan. Driven from the village sets Outcast. Relion renames the captain to Vagrant, Kanfold to Ranger, and Dragongate to Captain. Override via `CharacterDisplayName` / `SetCharacterDisplayName`.
 
 ## Battle plans (SC1-0095 / SC1-0101)
 
@@ -276,18 +276,18 @@ Floating nameplates (`SolidNameLabel`) sit above each Party member and face the 
   - **F3 Tight mob** (Narrow) — close triangle behind
   - **F4 Loose mob** (Wide) — spread triangle behind
   - **F5 Parade** (Standard) — line in front of the Captain, facing him, far enough that the rank fits in his view. Selecting it fires Enter Iglin if needed, then Enter Relion and Enter Dragongate, so the rank, raven sight, and the repaired Iglin bridge are ready even at the start of a session. Those events still fire only once.
-- **Party** (`USolidParty`) holds up to 8 **assigned** plans and one **active** plan (default **F1 Line**).
+- **Squad** (`USolidSquad`) holds up to 8 **assigned** plans and one **active** plan (default **F1 Line**).
 - Each plan has a **formation** plus **spacing** (`Narrow` / `Standard` / `Wide`) that scales follow distances.
-- Captain switches assigned slots with **F1–F8**, or a shoulder button plus a face button (left shoulder for the first four, right shoulder for the last four). Only filled slots work. The choice stays put when town events refresh the party.
+- Captain switches assigned slots with **F1–F8**, or a shoulder button plus a face button (left shoulder for the first four, right shoulder for the last four). Only filled slots work. The choice stays put when town events refresh the squad.
 - **Test Drill** (main menu) runs a formation drill: F1 walk 1.5s → F2 / F3 / F4 each blend +90° yaw over 250 ms then walk 1.5s (square path; player move/look suppressed while active).
 - HUD shows a **Battle Plans** panel under the tech block: all 8 slots, F-key + name when assigned, active slot highlighted in amber (aligned marker column).
 - Engine viewmode debug binds (wireframe/unlit/lit/…) are moved to **Ctrl+F1–F5** in `Config/DefaultInput.ini` so bare F-keys stay free for battle plans. Restart the editor after pulling.
 
 ## Companion (SC1-0024 / SC1-0093)
 
-`ASolidCompanionCharacter` follows with simple steering (no NavMesh — works on procedural terrain). The captain stays on `SK_Viking`. A companion wears a low-poly body skinned to the Viking skeleton: a chest, a tapered cylinder over each shoulder, arms, and legs down to the feet at body thickness. The hip cylinder's bottom meets the outside of the thighs. The shirt, the trousers, and the skin on the head and hands are separate matte colors. Those colors live on the companion record and are applied on the actor, so a shared body is not recolored while it is on screen. Sam's shirt is red and his trousers are blue. Alex wears the swap. Both use light pink skin. The F10 character editor shows one companion on a plain background so those colors can be checked without the open world. Space swaps that body for the Viking skeleton, drawn as bone lines. Bones that share a joint use different colours. Home turns the figure clockwise and End turns it the other way. Resting the pointer on a bone shows that bone's name in black. Clothing and weapon bones are left off that view: axe_, sheath_, cloack_, beard_, shield_, and skirt_. Thigh and calf twist bones are left off too. calf and foot stay, so the hip-to-knee line and the knee-to-ankle line are both drawn. Page Up and Page Down cycle the company. Up and Down select height, build, or gender, and Left and Right change that value. The pointer can drag the same sliders. F10 returns to the world. The face is chosen from the same unicode points, including U+1F611. The engine font has no emoji, so the expression is drawn on the front of the head. The body stays lighter than the Viking sculpt. The three sliders run from 0 to 1 and set every proportion. Build 0 is short and wide, and build 1 is tall and thin. Gender 0 is feminine and gender 1 is masculine. Height 0.5 leaves that size; 0 shortens it and 1 lengthens it. At 0.5 on every slider every part stays at its catalogue size and every bone keeps the Viking length. Moving a slider changes those part diameters and lengths, and the bones inside the part take that size. The head and the hands are not parts, so they stay the Viking size. The body is being built one piece at a time. The pieces so far are the two thighs and the two calves. Each thigh is a truncated cone the length of calf_l or calf_r, from the hip to the knee, 20 cm across at the hip and 15 cm across at the knee. Each calf is one cone the length of foot_l or foot_r, from the knee to the ankle, 15 cm across at the knee and 12 cm at the ankle. Each foot is a cylinder the length of ball_l or ball_r, from the ankle to the toe, 10 cm across. Each toe is a truncated cone past the foot, 10 cm across at the end towards the ankle and 5 cm at the toe. The hips are one shirt piece around thigh_l, thigh_r, and spine_01. It is the length of spine_01. The bottom is 50 cm side to side and 20 cm front to back, and the top is 30 cm side to side and 20 cm front to back. Each spine bone above spine_01 is its own shirt piece, still 20 cm front to back, widening from that 30 cm waist to 40 cm side to side at the top of the spine. The shoulders are one shirt piece around clavicle_l, clavicle_r, upperarm_l, upperarm_r, and neck_01. It is the length of neck_01. Its base is the same oval as the top of the spine_03 piece. It widens past the upperarm bones, then narrows to a circle of 20 cm diameter at neck_01. The drawn body is one list of named parts. Each part draws its own triangles, and the list draws the whole character. A part's name is the region it shows, which is often different from the skeleton bone it wraps. Each part stores that bone list, a shirt, trouser, or skin colour, and the side-to-side and front-to-back diameters at the start and the end of its cone. The shoulders also store a mid section, fitted when the piece is drawn. The upper arm is a shirt cone the length of lowerarm_l or lowerarm_r, 8.4 cm at the shoulder and 6.8 cm at the elbow. The lower arm is a shirt cone the length of hand_l or hand_r, 5 cm at the elbow and 6.8 cm at the wrist. The shoulder_jnt, finger, head, and eye bones are still bare, and so are the twist bones. Hovering a piece names the bones in it. The head is opaque. A companion's face still comes from the display name, and that body is built once and reused. They play Viking clips. The company catalog still lists the Assassin mesh for Sam, Morgan, and Quinn (`anim_assassin_idle_2`, `anim_assassin_Walk`, `anim_assassin_run`; `anim_assassin_idle_1` is a crouch) and the Blacksmith mesh for Alex and Max. Those catalog meshes are replaced when the actor applies its visuals. The event roster is Sam, Alex, Max, Morgan, and Quinn. The selection starts as Sam and Alex, and only that selection walks, up to the current max party size. That cap starts at 0 and is raised by town events; Dragongate raises it to five. Offsets come from the active Battle Plan. HUD lists each companion name and distance.
+`ASolidCompanionCharacter` follows with simple steering (no NavMesh — works on procedural terrain). The captain stays on `SK_Viking`. A companion wears a low-poly body skinned to the Viking skeleton: a chest, a tapered cylinder over each shoulder, arms, and legs down to the feet at body thickness. The hip cylinder's bottom meets the outside of the thighs. The shirt, the trousers, and the skin on the head and hands are separate matte colors. Those colors live on the companion record and are applied on the actor, so a shared body is not recolored while it is on screen. Sam's shirt is red and his trousers are blue. Alex wears the swap. Both use light pink skin. The F10 character editor shows one companion on a plain background so those colors can be checked without the open world. Space swaps that body for the Viking skeleton, drawn as bone lines. Bones that share a joint use different colours. Home turns the figure clockwise and End turns it the other way. Resting the pointer on a bone shows that bone's name in black. Clothing and weapon bones are left off that view: axe_, sheath_, cloack_, beard_, shield_, and skirt_. Thigh and calf twist bones are left off too. calf and foot stay, so the hip-to-knee line and the knee-to-ankle line are both drawn. Page Up and Page Down cycle the company. Up and Down select height, build, or gender, and Left and Right change that value. The pointer can drag the same sliders. F10 returns to the world. The face is chosen from the same unicode points, including U+1F611. The engine font has no emoji, so the expression is drawn on the front of the head. The body stays lighter than the Viking sculpt. The three sliders run from 0 to 1 and set every proportion. Build 0 is short and wide, and build 1 is tall and thin. Gender 0 is feminine and gender 1 is masculine. Height 0.5 leaves that size; 0 shortens it and 1 lengthens it. At 0.5 on every slider every part stays at its catalogue size and every bone keeps the Viking length. Moving a slider changes those part diameters and lengths, and the bones inside the part take that size. The head and the hands are not parts, so they stay the Viking size. The body is being built one piece at a time. The pieces so far are the two thighs and the two calves. Each thigh is a truncated cone the length of calf_l or calf_r, from the hip to the knee, 20 cm across at the hip and 15 cm across at the knee. Each calf is one cone the length of foot_l or foot_r, from the knee to the ankle, 15 cm across at the knee and 12 cm at the ankle. Each foot is a cylinder the length of ball_l or ball_r, from the ankle to the toe, 10 cm across. Each toe is a truncated cone past the foot, 10 cm across at the end towards the ankle and 5 cm at the toe. The hips are one shirt piece around thigh_l, thigh_r, and spine_01. It is the length of spine_01. The bottom is 50 cm side to side and 20 cm front to back, and the top is 30 cm side to side and 20 cm front to back. Each spine bone above spine_01 is its own shirt piece, still 20 cm front to back, widening from that 30 cm waist to 40 cm side to side at the top of the spine. The shoulders are one shirt piece around clavicle_l, clavicle_r, upperarm_l, upperarm_r, and neck_01. It is the length of neck_01. Its base is the same oval as the top of the spine_03 piece. It widens past the upperarm bones, then narrows to a circle of 20 cm diameter at neck_01. The drawn body is one list of named parts. Each part draws its own triangles, and the list draws the whole character. A part's name is the region it shows, which is often different from the skeleton bone it wraps. Each part stores that bone list, a shirt, trouser, or skin colour, and the side-to-side and front-to-back diameters at the start and the end of its cone. The shoulders also store a mid section, fitted when the piece is drawn. The upper arm is a shirt cone the length of lowerarm_l or lowerarm_r, 8.4 cm at the shoulder and 6.8 cm at the elbow. The lower arm is a shirt cone the length of hand_l or hand_r, 5 cm at the elbow and 6.8 cm at the wrist. The shoulder_jnt, finger, head, and eye bones are still bare, and so are the twist bones. Hovering a piece names the bones in it. The head is opaque. A companion's face still comes from the display name, and that body is built once and reused. They play Viking clips. The company catalog still lists the Assassin mesh for Sam, Morgan, and Quinn (`anim_assassin_idle_2`, `anim_assassin_Walk`, `anim_assassin_run`; `anim_assassin_idle_1` is a crouch) and the Blacksmith mesh for Alex and Max. Those catalog meshes are replaced when the actor applies its visuals. The event roster is Sam, Alex, Max, Morgan, and Quinn. The selection starts as Sam and Alex, and only that selection walks, up to the current max squad size. That cap starts at 0 and is raised by town events; Dragongate raises it to five. Offsets come from the active Battle Plan. HUD lists each companion name and distance.
 
-**Party camera** (SC1-0025/0026/0084): the Captain spring-arm shifts `TargetOffset` toward the Party center and may lengthen so Companions stay in frame (`bFrameCompanions`; implementation in `SolidPartyCamera.cpp`). SC1-0026 uses screen-space fit, disables boom collision while Companions are present, and zooms in much slower than out. SC1-0027 lifts the camera via `SocketOffset` when the predicted camera point would sink below procedural terrain.
+**Squad camera** (SC1-0025/0026/0084): the Captain spring-arm shifts `TargetOffset` toward the Squad center and may lengthen so Companions stay in frame (`bFrameCompanions`; implementation in `SolidSquadCamera.cpp`). SC1-0026 uses screen-space fit, disables boom collision while Companions are present, and zooms in much slower than out. SC1-0027 lifts the camera via `SocketOffset` when the predicted camera point would sink below procedural terrain.
 
 ## Create the open-world map
 
@@ -334,7 +334,7 @@ Source/
       SolidCharacterVisuals.cpp          # Captain mesh + clip selection
       SolidCharacterFormationDrill.cpp   # Square-walk formation drill
       SolidPlayerController.*
-      SolidPartyCamera.cpp               # Party framing + terrain boom lift
+      SolidSquadCamera.cpp               # Squad framing + terrain boom lift
       SolidClickMove.h                   # Raven-sight click-to-move ground ray
       SolidSight.h                       # True sight / raven sight toggle
       SolidCameraFog.h                   # Boom scale that keeps the camera over Fog == 0
@@ -344,8 +344,8 @@ Source/
       SolidCharacterStage.*              # Plain room for the character editor
     Game/
       SolidGameMode.*
-      SolidGameState.*                   # FGameState: party, sight, journal, and inventory
-      SolidGameInstance.*                # Captain, party, events, and the world-time clock across the cave trip
+      SolidGameState.*                   # FGameState: squad, sight, journal, and inventory
+      SolidGameInstance.*                # Captain, squad, events, and the world-time clock across the cave trip
       SolidWorldTime.h                   # Journal date and clock
       SolidSessionSave.h                 # How many play sessions have started
       SolidBuildId.h                     # SC1-NNNN shown on the debug HUD
@@ -415,9 +415,9 @@ Source/
       SolidRecipe.h           # Recipe: name, output item, inputs with counts, known flag; Torch takes one stick and one pitch
     Menus/
       SolidCharacterEditor.*  # F10 character editor: page cycle, height build and gender sliders, Sam and Alex colors
-      SolidMainMenu.*         # F10 menu entries (Use portal, Test Drill, Journal, Credits, Build party, Enter cave, Character editor, Inventory)
-      SolidPartyBuilder.*    # company list, locked until two companions are allowed
-      SolidPortal.h           # Town list, Iglin tunnels row, and party landing
+      SolidMainMenu.*         # F10 menu entries (Use portal, Test Drill, Journal, Credits, Build squad, Enter cave, Character editor, Inventory)
+      SolidSquadBuilder.*    # company list, locked until two companions are allowed
+      SolidPortal.h           # Town list, Iglin tunnels row, and squad landing
       SolidMenuPointer.h      # Pointer hit targets for the menu and portal list
       SolidCredits.*          # Credits page copy
     Tests/

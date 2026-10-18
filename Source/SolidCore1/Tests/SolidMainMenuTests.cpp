@@ -60,12 +60,12 @@ bool FSolidMainMenuEntriesTest::RunTest(const FString& Parameters)
 	FSolidMainMenuEntry Found;
 	TestTrue(TEXT("find first"), SolidMainMenu::FindEntry(0, Found));
 	TestEqual(TEXT("found label"), Found.Label, FString(TEXT("Use portal")));
-	TestTrue(TEXT("fifth is Build party"), SolidMainMenu::FindEntry(4, Found));
-	TestEqual(TEXT("fifth label"), Found.Label, FString(TEXT("Build party")));
+	TestTrue(TEXT("fifth is Build squad"), SolidMainMenu::FindEntry(4, Found));
+	TestEqual(TEXT("fifth label"), Found.Label, FString(TEXT("Build squad")));
 	TestEqual(
-		TEXT("party action"),
+		TEXT("squad action"),
 		static_cast<uint8>(SolidMainMenu::ActionForItem(Found.Item)),
-		static_cast<uint8>(ESolidMainMenuAction::OpenParty));
+		static_cast<uint8>(ESolidMainMenuAction::OpenSquad));
 	TestTrue(TEXT("sixth is Enter cave"), SolidMainMenu::FindEntry(5, Found));
 	TestEqual(TEXT("sixth label"), Found.Label, FString(TEXT("Enter cave")));
 	TestEqual(
@@ -89,7 +89,7 @@ bool FSolidMainMenuEntriesTest::RunTest(const FString& Parameters)
 	const int32 Last = SolidMainMenu::EntryCount() - 1;
 	TestEqual(TEXT("wrap down"), SolidMainMenu::WrapIndex(0, 1), 1);
 	TestEqual(TEXT("wrap to credits"), SolidMainMenu::WrapIndex(2, 1), 3);
-	TestEqual(TEXT("wrap to Build party"), SolidMainMenu::WrapIndex(3, 1), 4);
+	TestEqual(TEXT("wrap to Build squad"), SolidMainMenu::WrapIndex(3, 1), 4);
 	TestEqual(TEXT("wrap to Enter cave"), SolidMainMenu::WrapIndex(4, 1), 5);
 	TestEqual(TEXT("wrap past end"), SolidMainMenu::WrapIndex(Last, 1), 0);
 	TestEqual(TEXT("wrap up"), SolidMainMenu::WrapIndex(0, -1), Last);
@@ -120,7 +120,7 @@ bool FSolidMainMenuHudTest::RunTest(const FString& Parameters)
 	HUD->MoveMainMenuSelection(1);
 	TestEqual(TEXT("down selects Credits"), HUD->GetMainMenuIndex(), 3);
 	HUD->MoveMainMenuSelection(1);
-	TestEqual(TEXT("down selects Build party"), HUD->GetMainMenuIndex(), 4);
+	TestEqual(TEXT("down selects Build squad"), HUD->GetMainMenuIndex(), 4);
 	HUD->MoveMainMenuSelection(1);
 	TestEqual(TEXT("down selects Enter cave"), HUD->GetMainMenuIndex(), 5);
 	const int32 MenuCount = SolidMainMenu::EntryCount();
@@ -166,15 +166,15 @@ bool FSolidMainMenuHudTest::RunTest(const FString& Parameters)
 	HUD->CloseMenuOverlay();
 	TestFalse(TEXT("Esc closes journal"), HUD->IsJournalVisible());
 
-	HUD->OpenPartyBuilder();
-	TestTrue(TEXT("party builder opens"), HUD->IsPartyBuilderOpen());
-	TestFalse(TEXT("party builder closes the menu"), HUD->IsMainMenuOpen());
+	HUD->OpenSquadBuilder();
+	TestTrue(TEXT("squad builder opens"), HUD->IsSquadBuilderOpen());
+	TestFalse(TEXT("squad builder closes the menu"), HUD->IsMainMenuOpen());
 	HUD->HandleMenuKey();
-	TestFalse(TEXT("F10 closes the party builder"), HUD->IsPartyBuilderOpen());
-	TestFalse(TEXT("closing the party builder does not open the menu"), HUD->IsMainMenuOpen());
-	HUD->OpenPartyBuilder();
+	TestFalse(TEXT("F10 closes the squad builder"), HUD->IsSquadBuilderOpen());
+	TestFalse(TEXT("closing the squad builder does not open the menu"), HUD->IsMainMenuOpen());
+	HUD->OpenSquadBuilder();
 	HUD->CloseMenuOverlay();
-	TestFalse(TEXT("Esc closes the party builder"), HUD->IsPartyBuilderOpen());
+	TestFalse(TEXT("Esc closes the squad builder"), HUD->IsSquadBuilderOpen());
 	return true;
 }
 

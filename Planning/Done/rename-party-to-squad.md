@@ -1,6 +1,6 @@
 # Rename Party to Squad
 
-Status: Ready
+Status: Done
 
 ## Story
 

@@ -8,7 +8,7 @@ class UTextRenderComponent;
 class UObject;
 
 /**
- * Floating nameplates above Party members (TextRender + cube plates, no UMG).
+ * Floating nameplates above Squad members (TextRender + cube plates, no UMG).
  * Captain style is larger / warmer so it reads as the highlighted label.
  * Plates: outer border + contrasting background behind the text.
  */

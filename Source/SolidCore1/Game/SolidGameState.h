@@ -16,12 +16,12 @@ struct FLeftStronghold
 };
 
 /**
- * Live company state. The game starts in true sight with an empty party.
+ * Live company state. The game starts in true sight with an empty squad.
  * The game mode holds the current copy. The travel session carries it across the cave trip.
  */
 struct FGameState
 {
-	int32 MaxPartySize = 0;
+	int32 MaxSquadSize = 0;
 	const TCHAR* CaptainTitle = SolidEvents::TitleOutcast;
 	bool bTrueSightEnabled = true;
 	bool bRavenSightEnabled = false;
@@ -69,7 +69,7 @@ namespace SolidEvents
 		/** An Enable sight change ran. Sight is the mode to switch to. */
 		bool bSetSight = false;
 		ESolidSight Sight = ESolidSight::True;
-		int32 MaxPartySize = 0;
+		int32 MaxSquadSize = 0;
 		bool bSetTitle = false;
 		const TCHAR* CaptainTitle = TitleOutcast;
 		/** A Repair bridge change ran. */
@@ -81,7 +81,7 @@ namespace SolidEvents
 		const TCHAR* MessageId = nullptr;
 	};
 
-	int32 PartyCount(const FGameState& State);
+	int32 SquadCount(const FGameState& State);
 	bool IsSightEnabled(const FGameState& State, ESolidSight Sight);
 
 	/** True when an event has unlocked this stronghold size. */

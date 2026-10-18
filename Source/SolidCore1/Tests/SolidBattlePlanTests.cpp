@@ -1,8 +1,8 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "Party/SolidBattlePlan.h"
-#include "Party/SolidCompany.h"
-#include "Party/SolidParty.h"
+#include "Squad/SolidBattlePlan.h"
+#include "Squad/SolidCompany.h"
+#include "Squad/SolidSquad.h"
 #include "SolidGameMode.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -141,37 +141,37 @@ bool FSolidCompanyDefaultPlansTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidPartyAssignedPlansTest,
-	"SolidCore1.BattlePlan.PartyAssigned",
+	FSolidSquadAssignedPlansTest,
+	"SolidCore1.BattlePlan.SquadAssigned",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 
-bool FSolidPartyAssignedPlansTest::RunTest(const FString& Parameters)
+bool FSolidSquadAssignedPlansTest::RunTest(const FString& Parameters)
 {
 	USolidCompany* Company = NewObject<USolidCompany>();
-	USolidParty* Party = NewObject<USolidParty>();
+	USolidSquad* Squad = NewObject<USolidSquad>();
 	TestNotNull(TEXT("company"), Company);
-	TestNotNull(TEXT("party"), Party);
+	TestNotNull(TEXT("squad"), Squad);
 
-	Party->InitializeFromCompany(Company);
-	TestEqual(TEXT("assigned starter count"), Party->GetAssignedCount(), 5);
+	Squad->InitializeFromCompany(Company);
+	TestEqual(TEXT("assigned starter count"), Squad->GetAssignedCount(), 5);
 	TestTrue(TEXT("active is line by default"),
-		Party->GetActiveFormation() == ESolidBattleFormation::Line);
-	TestEqual(TEXT("active slot is F1"), Party->GetActiveAssignedSlot(), 0);
+		Squad->GetActiveFormation() == ESolidBattleFormation::Line);
+	TestEqual(TEXT("active slot is F1"), Squad->GetActiveAssignedSlot(), 0);
 	TestTrue(TEXT("default spacing standard"),
-		Party->GetActiveSpacing() == ESolidBattleSpacing::Standard);
+		Squad->GetActiveSpacing() == ESolidBattleSpacing::Standard);
 
-	TestTrue(TEXT("select F2 column"), Party->SelectAssignedSlot(1));
-	TestTrue(TEXT("active column"), Party->GetActiveFormation() == ESolidBattleFormation::Column);
-	TestTrue(TEXT("select F3 tight mob"), Party->SelectAssignedSlot(2));
-	TestTrue(TEXT("active mob"), Party->GetActiveFormation() == ESolidBattleFormation::Mob);
-	TestTrue(TEXT("tight narrow"), Party->GetActiveSpacing() == ESolidBattleSpacing::Narrow);
-	TestTrue(TEXT("select F4 loose mob"), Party->SelectAssignedSlot(3));
-	TestTrue(TEXT("loose wide"), Party->GetActiveSpacing() == ESolidBattleSpacing::Wide);
-	TestTrue(TEXT("select F5 parade"), Party->SelectAssignedSlot(4));
-	TestTrue(TEXT("active parade"), Party->GetActiveFormation() == ESolidBattleFormation::Parade);
-	TestFalse(TEXT("reject empty F6"), Party->SelectAssignedSlot(5));
-	TestFalse(TEXT("reject F8 when only 5"), Party->SelectAssignedSlot(7));
-	TestEqual(TEXT("slot unchanged after reject"), Party->GetActiveAssignedSlot(), 4);
+	TestTrue(TEXT("select F2 column"), Squad->SelectAssignedSlot(1));
+	TestTrue(TEXT("active column"), Squad->GetActiveFormation() == ESolidBattleFormation::Column);
+	TestTrue(TEXT("select F3 tight mob"), Squad->SelectAssignedSlot(2));
+	TestTrue(TEXT("active mob"), Squad->GetActiveFormation() == ESolidBattleFormation::Mob);
+	TestTrue(TEXT("tight narrow"), Squad->GetActiveSpacing() == ESolidBattleSpacing::Narrow);
+	TestTrue(TEXT("select F4 loose mob"), Squad->SelectAssignedSlot(3));
+	TestTrue(TEXT("loose wide"), Squad->GetActiveSpacing() == ESolidBattleSpacing::Wide);
+	TestTrue(TEXT("select F5 parade"), Squad->SelectAssignedSlot(4));
+	TestTrue(TEXT("active parade"), Squad->GetActiveFormation() == ESolidBattleFormation::Parade);
+	TestFalse(TEXT("reject empty F6"), Squad->SelectAssignedSlot(5));
+	TestFalse(TEXT("reject F8 when only 5"), Squad->SelectAssignedSlot(7));
+	TestEqual(TEXT("slot unchanged after reject"), Squad->GetActiveAssignedSlot(), 4);
 
 	// Max 8 assigned — grow the Company catalog first so indices are unique.
 	TArray<int32> TooMany;
@@ -183,8 +183,8 @@ bool FSolidPartyAssignedPlansTest::RunTest(const FString& Parameters)
 		Extra.Spacing = ESolidBattleSpacing::Standard;
 		TooMany.Add(Company->AddBattlePlan(Extra));
 	}
-	TestTrue(TEXT("set assigned"), Party->SetAssignedBattlePlans(TooMany));
-	TestEqual(TEXT("capped at 8"), Party->GetAssignedCount(), SolidBattleFormationSlots::MaxAssignedBattlePlans);
+	TestTrue(TEXT("set assigned"), Squad->SetAssignedBattlePlans(TooMany));
+	TestEqual(TEXT("capped at 8"), Squad->GetAssignedCount(), SolidBattleFormationSlots::MaxAssignedBattlePlans);
 	return true;
 }
 
@@ -198,27 +198,27 @@ bool FSolidGameModeBattlePlanSelectTest::RunTest(const FString& Parameters)
 	ASolidGameMode* GameMode = NewObject<ASolidGameMode>();
 	TestNotNull(TEXT("gamemode"), GameMode);
 	TestNotNull(TEXT("company"), GameMode->GetCompany());
-	TestNotNull(TEXT("party"), GameMode->GetParty());
+	TestNotNull(TEXT("squad"), GameMode->GetSquad());
 	TestEqual(TEXT("company plans"), GameMode->GetCompany()->GetBattlePlanCount(), 5);
 	TestTrue(TEXT("default line"),
-		GameMode->GetParty()->GetActiveFormation() == ESolidBattleFormation::Line);
-	TestEqual(TEXT("default F1"), GameMode->GetParty()->GetActiveAssignedSlot(), 0);
+		GameMode->GetSquad()->GetActiveFormation() == ESolidBattleFormation::Line);
+	TestEqual(TEXT("default F1"), GameMode->GetSquad()->GetActiveAssignedSlot(), 0);
 
 	TestTrue(TEXT("F2 column"), GameMode->SelectBattlePlanSlot(1));
 	TestTrue(TEXT("formation column"),
-		GameMode->GetParty()->GetActiveFormation() == ESolidBattleFormation::Column);
+		GameMode->GetSquad()->GetActiveFormation() == ESolidBattleFormation::Column);
 	TestTrue(TEXT("F3 tight"), GameMode->SelectBattlePlanSlot(2));
 	TestTrue(TEXT("F4 loose"), GameMode->SelectBattlePlanSlot(3));
 	TestTrue(TEXT("loose wide"),
-		GameMode->GetParty()->GetActiveSpacing() == ESolidBattleSpacing::Wide);
-	TestEqual(TEXT("other plans leave the party empty"), GameMode->GetMaxPartySize(), 0);
+		GameMode->GetSquad()->GetActiveSpacing() == ESolidBattleSpacing::Wide);
+	TestEqual(TEXT("other plans leave the squad empty"), GameMode->GetMaxSquadSize(), 0);
 	TestFalse(TEXT("other plans leave raven sight locked"), GameMode->IsSightEnabled(ESolidSight::Raven));
 
 	TestTrue(TEXT("F5 parade"), GameMode->SelectBattlePlanSlot(4));
 	TestTrue(TEXT("formation parade"),
-		GameMode->GetParty()->GetActiveFormation() == ESolidBattleFormation::Parade);
+		GameMode->GetSquad()->GetActiveFormation() == ESolidBattleFormation::Parade);
 	TestTrue(TEXT("parade unlocks raven sight"), GameMode->IsSightEnabled(ESolidSight::Raven));
-	TestEqual(TEXT("parade raises the party cap"), GameMode->GetMaxPartySize(), SolidEvents::RosterCount);
+	TestEqual(TEXT("parade raises the squad cap"), GameMode->GetMaxSquadSize(), SolidEvents::RosterCount);
 	TestEqual(
 		TEXT("parade titles the captain"),
 		FString(GameMode->GetConfiguration().CaptainTitle),
@@ -265,20 +265,20 @@ bool FSolidGameModeBattlePlanSurvivesEnsureTest::RunTest(const FString& Paramete
 	TestNotNull(TEXT("gamemode"), GameMode);
 
 	TestTrue(TEXT("F2 column"), GameMode->SelectBattlePlanSlot(1));
-	TestEqual(TEXT("slot is F2"), GameMode->GetParty()->GetActiveAssignedSlot(), 1);
+	TestEqual(TEXT("slot is F2"), GameMode->GetSquad()->GetActiveAssignedSlot(), 1);
 
-	// Enter-town refresh calls EnsureCompanyAndParty on a timer. That used to
-	// rebuild the party and snap the active plan back to Line.
-	GameMode->EnsureCompanyAndParty();
-	TestEqual(TEXT("slot stays F2"), GameMode->GetParty()->GetActiveAssignedSlot(), 1);
+	// Enter-town refresh calls EnsureCompanyAndSquad on a timer. That used to
+	// rebuild the squad and snap the active plan back to Line.
+	GameMode->EnsureCompanyAndSquad();
+	TestEqual(TEXT("slot stays F2"), GameMode->GetSquad()->GetActiveAssignedSlot(), 1);
 	TestTrue(TEXT("formation stays column"),
-		GameMode->GetParty()->GetActiveFormation() == ESolidBattleFormation::Column);
+		GameMode->GetSquad()->GetActiveFormation() == ESolidBattleFormation::Column);
 
 	TestTrue(TEXT("F5 parade"), GameMode->SelectBattlePlanSlot(4));
-	GameMode->EnsureCompanyAndParty();
-	TestEqual(TEXT("slot stays F5"), GameMode->GetParty()->GetActiveAssignedSlot(), 4);
+	GameMode->EnsureCompanyAndSquad();
+	TestEqual(TEXT("slot stays F5"), GameMode->GetSquad()->GetActiveAssignedSlot(), 4);
 	TestTrue(TEXT("formation stays parade"),
-		GameMode->GetParty()->GetActiveFormation() == ESolidBattleFormation::Parade);
+		GameMode->GetSquad()->GetActiveFormation() == ESolidBattleFormation::Parade);
 	return true;
 }
 

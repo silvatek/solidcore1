@@ -2,20 +2,20 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
-#include "Party/SolidBattlePlan.h"
-#include "Party/SolidCompany.h"
-#include "SolidParty.generated.h"
+#include "Squad/SolidBattlePlan.h"
+#include "Squad/SolidCompany.h"
+#include "SolidSquad.generated.h"
 
 class USolidCompany;
 
 /**
- * Party — Captain plus the companions chosen from the company.
+ * Squad — Captain plus the companions chosen from the company.
  * Up to 8 assigned battle plans are drawn from the company catalog, one of which is active.
  * The selected companion list is the choice; the fielded list is that choice clamped
- * to the current max party size (the events own that limit).
+ * to the current max squad size (the events own that limit).
  */
 UCLASS()
-class SOLIDCORE1_API USolidParty : public UObject
+class SOLIDCORE1_API USolidSquad : public UObject
 {
 	GENERATED_BODY()
 
@@ -63,14 +63,14 @@ protected:
 	TObjectPtr<USolidCompany> Company;
 
 	/** Indices into Company::AllBattlePlans (max 8). */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Party|BattlePlans")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Squad|BattlePlans")
 	TArray<int32> AssignedCompanyPlanIndices;
 
 	/** Index into AssignedCompanyPlanIndices. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Party|BattlePlans")
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Squad|BattlePlans")
 	int32 ActiveAssignedSlot = 0;
 
-	/** Indices into Company::AllCompanions, in the order they join the party. */
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Party|Companions")
+	/** Indices into Company::AllCompanions, in the order they join the squad. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Squad|Companions")
 	TArray<int32> SelectedCompanionIndices;
 };

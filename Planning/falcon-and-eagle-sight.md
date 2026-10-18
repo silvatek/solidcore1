@@ -4,7 +4,7 @@ Status: Ready
 
 ## Story
 
-The player uses raven sight as a tactical view of the party. The camera stays within 50 m of the captain, and it does not move above ground that still has fog.
+The player uses raven sight as a tactical view of the squad. The camera stays within 50 m of the captain, and it does not move above ground that still has fog.
 
 The player chooses Falcon Sight. The camera sits higher than raven sight and lower than eagle sight, between 20 m and 200 m above the ground, and within 50 m of the captain both east-west and north-south.
 

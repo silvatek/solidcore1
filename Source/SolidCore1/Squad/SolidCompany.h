@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
-#include "Party/SolidBattlePlan.h"
+#include "Squad/SolidBattlePlan.h"
 
 class USkeletalMesh;
 
@@ -147,7 +147,7 @@ struct FSolidCompanion
 };
 
 /**
- * Company — catalog of battle plans and every companion the party may field.
+ * Company — catalog of battle plans and every companion the squad may field.
  */
 UCLASS()
 class SOLIDCORE1_API USolidCompany : public UObject

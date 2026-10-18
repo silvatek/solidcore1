@@ -10,9 +10,9 @@
 #include "Companion/SolidCompanionCharacter.h"
 #include "SolidBodyMesh.h"
 #include "SolidBodyParams.h"
-#include "Party/SolidBattlePlan.h"
-#include "Party/SolidCompany.h"
-#include "Party/SolidParty.h"
+#include "Squad/SolidBattlePlan.h"
+#include "Squad/SolidCompany.h"
+#include "Squad/SolidSquad.h"
 #include "Terrain/SolidBridge.h"
 #include "SolidGroundMove.h"
 #include "Terrain/SolidTerrainMap.h"
@@ -146,10 +146,10 @@ ASolidGameMode::ASolidGameMode()
 				 "Expected /Game/Characters/BP_SolidCharacter (parent SolidCharacter)."));
 	}
 
-	EnsureCompanyAndParty();
+	EnsureCompanyAndSquad();
 }
 
-void ASolidGameMode::EnsureCompanyAndParty()
+void ASolidGameMode::EnsureCompanyAndSquad()
 {
 	if (!Company)
 	{
@@ -159,12 +159,12 @@ void ASolidGameMode::EnsureCompanyAndParty()
 	Company->InitializeDefaultCharacterMeshes();
 	Company->InitializeDefaultCompanions();
 
-	if (!Party)
+	if (!Squad)
 	{
-		Party = NewObject<USolidParty>(this, TEXT("Party"));
+		Squad = NewObject<USolidSquad>(this, TEXT("Squad"));
 		// Bind once. InitializeFromCompany always activates F1 and reselects
 		// Sam and Alex, and the enter-town timer calls this every 0.1s.
-		Party->InitializeFromCompany(Company);
+		Squad->InitializeFromCompany(Company);
 	}
 }
 
@@ -172,7 +172,7 @@ void ASolidGameMode::BeginPlay()
 {
 	Super::BeginPlay();
 	UE_LOG(LogSolid, Warning, TEXT("Build %s"), SOLID_BUILD_ID);
-	EnsureCompanyAndParty();
+	EnsureCompanyAndSquad();
 	RestoreTravelSession();
 
 	if (IsInDungeon())
@@ -275,10 +275,10 @@ void ASolidGameMode::SaveTravelSession(
 	Session.bReturnToTowerDoor = bReturnToTowerDoor;
 	Session.TowerCell = TowerCell;
 	Session.Tower = Tower;
-	if (Party)
+	if (Squad)
 	{
-		Session.SelectedCompanionIndices = Party->GetSelectedCompanionIndices();
-		Session.ActiveBattlePlanSlot = Party->GetActiveAssignedSlot();
+		Session.SelectedCompanionIndices = Squad->GetSelectedCompanionIndices();
+		Session.ActiveBattlePlanSlot = Squad->GetActiveAssignedSlot();
 	}
 	if (UWorld* World = GetWorld())
 	{
@@ -303,11 +303,11 @@ void ASolidGameMode::RestoreTravelSession()
 
 	const FSolidTravelSession& Session = Instance->GetSession();
 	Configuration = Session.Configuration;
-	EnsureCompanyAndParty();
-	if (Party)
+	EnsureCompanyAndSquad();
+	if (Squad)
 	{
-		Party->SetSelectedCompanions(Session.SelectedCompanionIndices);
-		Party->SelectAssignedSlot(Session.ActiveBattlePlanSlot);
+		Squad->SetSelectedCompanions(Session.SelectedCompanionIndices);
+		Squad->SelectAssignedSlot(Session.ActiveBattlePlanSlot);
 	}
 }
 
@@ -573,7 +573,7 @@ void ASolidGameMode::TravelToWorld()
 		return;
 	}
 	// Companions are spawned again once this world is the open world.
-	// The party builder is not opened here.
+	// The squad builder is not opened here.
 	const SolidWorldTime::FStamp When = WorldStamp();
 	SolidEvents::RememberStronghold(Configuration, When, /*bEnter=*/false);
 	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Exit Stronghold"), *SolidWorldTime::Format(When));
@@ -882,11 +882,11 @@ void ASolidGameMode::NoteTownEntry(const int32 TownId)
 	if (Result.bFired)
 	{
 		UE_LOG(LogSolid, Warning,
-			TEXT("Event: entered town %d (%s). Sight %s. Max party %d. Title %s. Bridge %s."),
+			TEXT("Event: entered town %d (%s). Sight %s. Max squad %d. Title %s. Bridge %s."),
 			TownId,
 			*SolidTowns::NameFor(TownId),
 			Result.bSetSight ? SolidSight::Label(Result.Sight) : TEXT("unchanged"),
-			Configuration.MaxPartySize,
+			Configuration.MaxSquadSize,
 			Configuration.CaptainTitle ? Configuration.CaptainTitle : TEXT(""),
 			Result.bRepairBridge ? TEXT("repaired") : TEXT("unchanged"));
 	}
@@ -1010,13 +1010,13 @@ void ASolidGameMode::RepairBrokenBridges()
 
 bool ASolidGameMode::SelectBattlePlanSlot(const int32 SlotIndex)
 {
-	EnsureCompanyAndParty();
-	if (!Party)
+	EnsureCompanyAndSquad();
+	if (!Squad)
 	{
 		return false;
 	}
 
-	if (const FSolidBattlePlan* Plan = Party->GetAssignedBattlePlan(SlotIndex))
+	if (const FSolidBattlePlan* Plan = Squad->GetAssignedBattlePlan(SlotIndex))
 	{
 		if (Plan->Formation == ESolidBattleFormation::Parade)
 		{
@@ -1024,16 +1024,16 @@ bool ASolidGameMode::SelectBattlePlanSlot(const int32 SlotIndex)
 		}
 	}
 
-	if (!Party->SelectAssignedSlot(SlotIndex))
+	if (!Squad->SelectAssignedSlot(SlotIndex))
 	{
 		return false;
 	}
 
-	UE_LOG(LogSolid, Warning, TEXT("%s"), *Party->GetActiveBattlePlanDebugString());
+	UE_LOG(LogSolid, Warning, TEXT("%s"), *Squad->GetActiveBattlePlanDebugString());
 	return true;
 }
 
-bool ASolidGameMode::TeleportPartyToTown(const int32 TownId)
+bool ASolidGameMode::TeleportSquadToTown(const int32 TownId)
 {
 	UWorld* World = GetWorld();
 	if (!World || !SolidTowns::Find(TownId))
@@ -1074,7 +1074,7 @@ bool ASolidGameMode::TeleportPartyToTown(const int32 TownId)
 	}
 
 	const FVector2D Landing = SolidPortal::LandingXY(CellXY, Streamer->StartTownPawnOffsetXY);
-	const FVector Delta = SolidPortal::PartyDelta(Captain->GetActorLocation(), Landing);
+	const FVector Delta = SolidPortal::SquadDelta(Captain->GetActorLocation(), Landing);
 	const float LandZ = Streamer->GetHeightAt(FVector(Landing.X, Landing.Y, 0.f)) + Streamer->CollisionHeightBias;
 	float CapsuleHalf = 96.f;
 	if (const UCapsuleComponent* Capsule = Captain->GetCapsuleComponent())
@@ -1100,7 +1100,7 @@ bool ASolidGameMode::TeleportPartyToTown(const int32 TownId)
 	return true;
 }
 
-bool ASolidGameMode::TeleportPartyToTunnelMouth(const TCHAR EndMarker)
+bool ASolidGameMode::TeleportSquadToTunnelMouth(const TCHAR EndMarker)
 {
 	UWorld* World = GetWorld();
 	const TCHAR End = SolidLair::IsEndMarker(EndMarker) ? FChar::ToUpper(EndMarker) : 0;
@@ -1140,7 +1140,7 @@ bool ASolidGameMode::TeleportPartyToTunnelMouth(const TCHAR EndMarker)
 	}
 
 	const FVector2D Landing = SolidPortal::NorthOfEntrance(Mouth->WorldXY);
-	const FVector Delta = SolidPortal::PartyDelta(Captain->GetActorLocation(), Landing);
+	const FVector Delta = SolidPortal::SquadDelta(Captain->GetActorLocation(), Landing);
 	const float LandZ = Streamer->GetHeightAt(FVector(Landing.X, Landing.Y, 0.f)) + Streamer->CollisionHeightBias;
 	float CapsuleHalf = 96.f;
 	if (const UCapsuleComponent* Capsule = Captain->GetCapsuleComponent())
@@ -1194,7 +1194,7 @@ ASolidCompanionCharacter* ASolidGameMode::SpawnCompanion(
 	APawn* PlayerPawn,
 	UClass* ClassToSpawn,
 	const FString& DisplayName,
-	const int32 PartySlotIndex,
+	const int32 SquadSlotIndex,
 	const TSoftObjectPtr<USkeletalMesh>& Mesh,
 	const ESolidVocation Vocation)
 {
@@ -1203,16 +1203,16 @@ ASolidCompanionCharacter* ASolidGameMode::SpawnCompanion(
 		return nullptr;
 	}
 
-	EnsureCompanyAndParty();
-	const ESolidBattleFormation Formation = Party
-		? Party->GetActiveFormation()
+	EnsureCompanyAndSquad();
+	const ESolidBattleFormation Formation = Squad
+		? Squad->GetActiveFormation()
 		: ESolidBattleFormation::Line;
-	const ESolidBattleSpacing Spacing = Party
-		? Party->GetActiveSpacing()
+	const ESolidBattleSpacing Spacing = Squad
+		? Squad->GetActiveSpacing()
 		: ESolidBattleSpacing::Standard;
-	const int32 FormationCount = FMath::Max(SolidEvents::PartyCount(Configuration), 1);
+	const int32 FormationCount = FMath::Max(SolidEvents::SquadCount(Configuration), 1);
 	const FVector2D Slot = SolidBattleFormationSlots::SlotOffset(
-		Formation, PartySlotIndex, FormationCount, Spacing);
+		Formation, SquadSlotIndex, FormationCount, Spacing);
 
 	const FVector PlayerLoc = PlayerPawn->GetActorLocation();
 	const FVector PlayerFwd = PlayerPawn->GetActorForwardVector();
@@ -1252,7 +1252,7 @@ ASolidCompanionCharacter* ASolidGameMode::SpawnCompanion(
 	Companion->SideOffset = Slot.Y;
 	Companion->CatchUpDistance = FMath::Max(700.f, Behind + 400.f);
 	Companion->SetCompanionMesh(Mesh);
-	Companion->SetPartySlotIndex(PartySlotIndex);
+	Companion->SetSquadSlotIndex(SquadSlotIndex);
 	Companion->SetVocation(Vocation);
 	Companion->SetCharacterDisplayName(DisplayName);
 	FLinearColor TorsoColor;
@@ -1278,11 +1278,11 @@ ASolidCompanionCharacter* ASolidGameMode::SpawnCompanion(
 
 	UE_LOG(LogSolid, Warning,
 		TEXT("Spawned companion %s slot=%d at %s (fwd=%.0f right=%.0f) following %s"),
-		*DisplayName, PartySlotIndex, *SpawnLoc.ToCompactString(), Slot.X, Slot.Y, *PlayerPawn->GetName());
+		*DisplayName, SquadSlotIndex, *SpawnLoc.ToCompactString(), Slot.X, Slot.Y, *PlayerPawn->GetName());
 	return Companion;
 }
 
-void ASolidGameMode::RefreshFieldedParty()
+void ASolidGameMode::RefreshFieldedSquad()
 {
 	EnsureCompanion();
 }
@@ -1319,7 +1319,7 @@ void ASolidGameMode::EnsureCompanion()
 		return;
 	}
 
-	EnsureCompanyAndParty();
+	EnsureCompanyAndSquad();
 
 	// Drop stale entries (PIE teardown / destroyed actors).
 	SpawnedCompanions.RemoveAll([](const TObjectPtr<ASolidCompanionCharacter>& Companion)
@@ -1327,17 +1327,17 @@ void ASolidGameMode::EnsureCompanion()
 		return !IsValid(Companion);
 	});
 
-	const int32 Wanted = SolidEvents::PartyCount(Configuration);
+	const int32 Wanted = SolidEvents::SquadCount(Configuration);
 	TArray<FSolidCompanion> Fielded;
-	if (Party)
+	if (Squad)
 	{
-		Party->CollectFieldedCompanions(Wanted, Fielded);
+		Squad->CollectFieldedCompanions(Wanted, Fielded);
 	}
 
 	for (int32 Index = SpawnedCompanions.Num() - 1; Index >= 0; --Index)
 	{
 		ASolidCompanionCharacter* Companion = SpawnedCompanions[Index];
-		const int32 Slot = Companion ? Companion->GetPartySlotIndex() : INDEX_NONE;
+		const int32 Slot = Companion ? Companion->GetSquadSlotIndex() : INDEX_NONE;
 		const bool bKeep = Companion
 			&& Fielded.IsValidIndex(Slot)
 			&& Companion->GetCharacterDisplayName() == Fielded[Slot].Name;
@@ -1372,7 +1372,7 @@ void ASolidGameMode::EnsureCompanion()
 		if (Companion)
 		{
 			UE_LOG(LogSolid, Warning,
-				TEXT("Removed companion %s (max party %d)."),
+				TEXT("Removed companion %s (max squad %d)."),
 				*Companion->GetCharacterDisplayName(),
 				Wanted);
 			Companion->Destroy();
@@ -1414,7 +1414,7 @@ void ASolidGameMode::EnsureCompanion()
 	{
 		for (const TObjectPtr<ASolidCompanionCharacter>& Companion : SpawnedCompanions)
 		{
-			if (Companion && Companion->GetPartySlotIndex() == Slot)
+			if (Companion && Companion->GetSquadSlotIndex() == Slot)
 			{
 				return true;
 			}

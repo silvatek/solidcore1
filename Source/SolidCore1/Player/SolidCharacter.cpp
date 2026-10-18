@@ -35,7 +35,7 @@
 #include "InputCoreTypes.h"
 #include "SolidClipLocomotion.h"
 #include "SolidCore1.h"
-#include "Party/SolidBattlePlan.h"
+#include "Squad/SolidBattlePlan.h"
 #include "SolidGameMode.h"
 #include "Character/SolidCharacterStage.h"
 #include "HUD/SolidHUD.h"
@@ -46,7 +46,7 @@
 #include "Menus/SolidCharacterEditor.h"
 #include "Menus/SolidMainMenu.h"
 #include "SolidBodyParams.h"
-#include "Menus/SolidPartyBuilder.h"
+#include "Menus/SolidSquadBuilder.h"
 #include "Menus/SolidPortal.h"
 #include "SolidNameLabel.h"
 #include "Components/SceneComponent.h"
@@ -58,7 +58,7 @@
 // Captain core: construction, lifecycle, movement / look / zoom / sprint.
 // Input factory → SolidCharacterInput.cpp
 // Visuals / clip selection → SolidCharacterVisuals.cpp (shared play via SolidClipLocomotion)
-// Party camera → SolidPartyCamera.cpp
+// Squad camera → SolidSquadCamera.cpp
 
 ASolidCharacter::ASolidCharacter()
 {
@@ -211,7 +211,7 @@ void ASolidCharacter::OnRep_PlayerState()
 void ASolidCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-	TickPartyFormationDrill(DeltaTime);
+	TickSquadFormationDrill(DeltaTime);
 	UpdatePointerMouseLook();
 	UpdateMenuPointerHover();
 	UpdateCavePassageHover();
@@ -235,13 +235,13 @@ void ASolidCharacter::Tick(float DeltaTime)
 		}
 		else
 		{
-			UpdatePartyCameraFraming(DeltaTime);
+			UpdateSquadCameraFraming(DeltaTime);
 			ClampCameraAboveTerrain(DeltaTime);
 		}
 	}
 	else
 	{
-		UpdatePartyCameraFraming(DeltaTime);
+		UpdateSquadCameraFraming(DeltaTime);
 		ClampCameraAboveTerrain(DeltaTime);
 	}
 	SolidNameLabel::FaceViewCamera(NameLabelRoot, GetWorld());
@@ -359,7 +359,7 @@ bool ASolidCharacter::IsMenuOverlayOpen() const
 	{
 		return HUD->IsMainMenuOpen()
 			|| HUD->IsPortalOpen()
-			|| HUD->IsPartyBuilderOpen()
+			|| HUD->IsSquadBuilderOpen()
 			|| HUD->IsCreditsVisible()
 			|| HUD->IsJournalVisible()
 			|| HUD->IsInventoryVisible()
@@ -377,7 +377,7 @@ void ASolidCharacter::ApplySightPresentation()
 	bUseControllerRotationYaw = bTrue;
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{
-		if (!IsPartyFormationDrillActive())
+		if (!IsSquadFormationDrillActive())
 		{
 			Move->bOrientRotationToMovement = !bTrue;
 		}
@@ -486,7 +486,7 @@ void ASolidCharacter::ToggleSight()
 
 void ASolidCharacter::ToggleSightFromInput()
 {
-	if (IsMenuOverlayOpen() || IsPartyFormationDrillActive())
+	if (IsMenuOverlayOpen() || IsSquadFormationDrillActive())
 	{
 		return;
 	}
@@ -615,7 +615,7 @@ void ASolidCharacter::NudgeCharacterEditorSlider(const int32 Direction)
 	{
 		return;
 	}
-	PushEditorBodyToParty(Name, Controls.Height, Controls.Build, Controls.Gender);
+	PushEditorBodyToSquad(Name, Controls.Height, Controls.Build, Controls.Gender);
 	SyncCharacterStage();
 }
 
@@ -646,11 +646,11 @@ void ASolidCharacter::ApplyEditorSliderFraction(const int32 Slider, const float 
 	{
 		return;
 	}
-	PushEditorBodyToParty(Name, Controls.Height, Controls.Build, Controls.Gender);
+	PushEditorBodyToSquad(Name, Controls.Height, Controls.Build, Controls.Gender);
 	SyncCharacterStage();
 }
 
-void ASolidCharacter::PushEditorBodyToParty(
+void ASolidCharacter::PushEditorBodyToSquad(
 	const FString& Name,
 	const float Height,
 	const float Build,
@@ -857,9 +857,9 @@ void ASolidCharacter::MainMenuMoveUp()
 		{
 			HUD->MovePortalSelection(-1);
 		}
-		else if (HUD->IsPartyBuilderOpen())
+		else if (HUD->IsSquadBuilderOpen())
 		{
-			HUD->MovePartyBuilderSelection(-1);
+			HUD->MoveSquadBuilderSelection(-1);
 		}
 		else if (HUD->IsMainMenuOpen())
 		{
@@ -886,9 +886,9 @@ void ASolidCharacter::MainMenuMoveDown()
 		{
 			HUD->MovePortalSelection(1);
 		}
-		else if (HUD->IsPartyBuilderOpen())
+		else if (HUD->IsSquadBuilderOpen())
 		{
-			HUD->MovePartyBuilderSelection(1);
+			HUD->MoveSquadBuilderSelection(1);
 		}
 		else if (HUD->IsMainMenuOpen())
 		{
@@ -965,9 +965,9 @@ void ASolidCharacter::ChooseMainMenuIndex(const int32 Index)
 		ConfirmPortalSelection();
 		return;
 	}
-	if (HUD->IsPartyBuilderOpen())
+	if (HUD->IsSquadBuilderOpen())
 	{
-		TogglePartyBuilderRow(Index);
+		ToggleSquadBuilderRow(Index);
 		return;
 	}
 	if (!HUD->IsMainMenuOpen() || Index < 0 || Index >= SolidMainMenu::EntryCount())
@@ -996,8 +996,8 @@ void ASolidCharacter::ConfirmPortalSelection()
 	ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
 	const bool bTown = Choice.Place == SolidPortal::EPlace::Town;
 	const bool bArrived = GameMode && (bTown
-		? GameMode->TeleportPartyToTown(Choice.TownId)
-		: GameMode->TeleportPartyToTunnelMouth(Choice.TunnelEnd));
+		? GameMode->TeleportSquadToTown(Choice.TownId)
+		: GameMode->TeleportSquadToTunnelMouth(Choice.TunnelEnd));
 	if (!bArrived)
 	{
 		return;
@@ -1007,9 +1007,9 @@ void ASolidCharacter::ConfirmPortalSelection()
 
 void ASolidCharacter::ArriveByPortal(const FVector& NewLocation, const float YawDegrees, const float PitchDegrees)
 {
-	if (IsPartyFormationDrillActive())
+	if (IsSquadFormationDrillActive())
 	{
-		StopPartyFormationDrill();
+		StopSquadFormationDrill();
 	}
 	SetActorLocation(NewLocation);
 	SetActorRotation(FRotator(0.f, YawDegrees, 0.f));
@@ -1055,9 +1055,9 @@ void ASolidCharacter::MainMenuConfirm()
 		ConfirmPortalSelection();
 		return;
 	}
-	if (HUD->IsPartyBuilderOpen())
+	if (HUD->IsSquadBuilderOpen())
 	{
-		TogglePartyBuilderRow(HUD->GetPartyBuilderIndex());
+		ToggleSquadBuilderRow(HUD->GetSquadBuilderIndex());
 		return;
 	}
 	if (!HUD->IsMainMenuOpen())
@@ -1071,8 +1071,8 @@ void ASolidCharacter::MainMenuConfirm()
 		return;
 	}
 
-	if (SolidMainMenu::ActionForItem(Entry.Item) == ESolidMainMenuAction::OpenParty
-		&& !SolidPartyBuilder::CanOpen(CurrentMaxPartySize()))
+	if (SolidMainMenu::ActionForItem(Entry.Item) == ESolidMainMenuAction::OpenSquad
+		&& !SolidSquadBuilder::CanOpen(CurrentMaxSquadSize()))
 	{
 		return;
 	}
@@ -1104,7 +1104,7 @@ void ASolidCharacter::MainMenuConfirm()
 		HUD->OpenPortal();
 		break;
 	case ESolidMainMenuAction::StartTestDrill:
-		StartPartyFormationDrill();
+		StartSquadFormationDrill();
 		break;
 	case ESolidMainMenuAction::ShowJournal:
 		HUD->SetJournalVisible(true);
@@ -1112,15 +1112,15 @@ void ASolidCharacter::MainMenuConfirm()
 	case ESolidMainMenuAction::ShowCredits:
 		HUD->SetCreditsVisible(true);
 		break;
-	case ESolidMainMenuAction::OpenParty:
+	case ESolidMainMenuAction::OpenSquad:
 		if (UWorld* World = GetWorld())
 		{
 			if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 			{
-				GameMode->EnsureCompanyAndParty();
+				GameMode->EnsureCompanyAndSquad();
 			}
 		}
-		HUD->OpenPartyBuilder();
+		HUD->OpenSquadBuilder();
 		break;
 	case ESolidMainMenuAction::TravelDungeon:
 		if (UWorld* World = GetWorld())
@@ -1143,7 +1143,7 @@ void ASolidCharacter::MainMenuConfirm()
 		{
 			if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 			{
-				GameMode->EnsureCompanyAndParty();
+				GameMode->EnsureCompanyAndSquad();
 			}
 		}
 		HUD->OpenCharacterEditor();
@@ -1157,19 +1157,19 @@ void ASolidCharacter::MainMenuConfirm()
 	}
 }
 
-int32 ASolidCharacter::CurrentMaxPartySize() const
+int32 ASolidCharacter::CurrentMaxSquadSize() const
 {
 	if (UWorld* World = GetWorld())
 	{
 		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 		{
-			return GameMode->GetMaxPartySize();
+			return GameMode->GetMaxSquadSize();
 		}
 	}
 	return 0;
 }
 
-void ASolidCharacter::TogglePartyBuilderRow(const int32 Index)
+void ASolidCharacter::ToggleSquadBuilderRow(const int32 Index)
 {
 	ASolidHUD* HUD = GetSolidHUD();
 	UWorld* World = GetWorld();
@@ -1179,18 +1179,18 @@ void ASolidCharacter::TogglePartyBuilderRow(const int32 Index)
 		return;
 	}
 
-	GameMode->EnsureCompanyAndParty();
-	TArray<SolidPartyBuilder::FRow> Rows;
-	SolidPartyBuilder::CollectRows(GameMode->GetParty(), Rows);
+	GameMode->EnsureCompanyAndSquad();
+	TArray<SolidSquadBuilder::FRow> Rows;
+	SolidSquadBuilder::CollectRows(GameMode->GetSquad(), Rows);
 	if (!Rows.IsValidIndex(Index))
 	{
 		return;
 	}
 
-	HUD->SetPartyBuilderIndex(Index);
-	if (SolidPartyBuilder::Toggle(GameMode->GetParty(), Rows[Index].CompanyIndex, GameMode->GetMaxPartySize()))
+	HUD->SetSquadBuilderIndex(Index);
+	if (SolidSquadBuilder::Toggle(GameMode->GetSquad(), Rows[Index].CompanyIndex, GameMode->GetMaxSquadSize()))
 	{
-		GameMode->RefreshFieldedParty();
+		GameMode->RefreshFieldedSquad();
 	}
 }
 
@@ -1262,7 +1262,7 @@ void ASolidCharacter::SelectBattlePlanFaceTop()
 
 void ASolidCharacter::Move(const FInputActionValue& Value)
 {
-	if (IsPartyFormationDrillActive() || IsMenuOverlayOpen())
+	if (IsSquadFormationDrillActive() || IsMenuOverlayOpen())
 	{
 		return;
 	}
@@ -1293,7 +1293,7 @@ void ASolidCharacter::Move(const FInputActionValue& Value)
 
 void ASolidCharacter::Look(const FInputActionValue& Value)
 {
-	if (IsPartyFormationDrillActive() || IsMenuOverlayOpen())
+	if (IsSquadFormationDrillActive() || IsMenuOverlayOpen())
 	{
 		return;
 	}
@@ -1386,7 +1386,7 @@ bool ASolidCharacter::ResolveClickMoveDestination(
 
 void ASolidCharacter::ClickMoveFromInput()
 {
-	if (!SolidClickMove::AllowsClick(!IsTrueSight(), IsMenuOverlayOpen() || IsPartyFormationDrillActive()))
+	if (!SolidClickMove::AllowsClick(!IsTrueSight(), IsMenuOverlayOpen() || IsSquadFormationDrillActive()))
 	{
 		return;
 	}
@@ -1542,7 +1542,7 @@ SolidLair::FPassageHit ASolidCharacter::AllowPassage(const SolidLair::FPassageHi
 
 ASolidStrongholdStone* ASolidCharacter::StoneUnderPointer() const
 {
-	if (!SolidDungeonPassage::AcceptsPointer(IsPointerShown(), IsMenuOverlayOpen() || IsPartyFormationDrillActive()))
+	if (!SolidDungeonPassage::AcceptsPointer(IsPointerShown(), IsMenuOverlayOpen() || IsSquadFormationDrillActive()))
 	{
 		return nullptr;
 	}
@@ -1579,7 +1579,7 @@ ASolidStrongholdStone* ASolidCharacter::StoneUnderPointer() const
 ASolidForagePile* ASolidCharacter::NearestForagePile(float& OutGroundDistanceCm) const
 {
 	OutGroundDistanceCm = 0.f;
-	if (!SolidDungeonPassage::AcceptsPointer(IsPointerShown(), IsMenuOverlayOpen() || IsPartyFormationDrillActive()))
+	if (!SolidDungeonPassage::AcceptsPointer(IsPointerShown(), IsMenuOverlayOpen() || IsSquadFormationDrillActive()))
 	{
 		return nullptr;
 	}
@@ -1669,7 +1669,7 @@ SolidLair::FPassageHit ASolidCharacter::PassageOverlapping(const FVector& Locati
 
 SolidLair::FPassageHit ASolidCharacter::PassageUnderPointer() const
 {
-	if (!SolidDungeonPassage::AcceptsPointer(IsPointerShown(), IsMenuOverlayOpen() || IsPartyFormationDrillActive()))
+	if (!SolidDungeonPassage::AcceptsPointer(IsPointerShown(), IsMenuOverlayOpen() || IsSquadFormationDrillActive()))
 	{
 		return SolidLair::FPassageHit();
 	}
@@ -1777,7 +1777,7 @@ bool ASolidCharacter::ReadPointerPosition(float& OutX, float& OutY) const
 void ASolidCharacter::UpdateMenuPointerHover()
 {
 	ASolidHUD* HUD = GetSolidHUD();
-	const bool bChoiceList = HUD && (HUD->IsMainMenuOpen() || HUD->IsPortalOpen() || HUD->IsPartyBuilderOpen() || HUD->IsStrongholdChoiceOpen());
+	const bool bChoiceList = HUD && (HUD->IsMainMenuOpen() || HUD->IsPortalOpen() || HUD->IsSquadBuilderOpen() || HUD->IsStrongholdChoiceOpen());
 	if (!bChoiceList)
 	{
 		bMenuPointerSampled = false;
@@ -1785,7 +1785,7 @@ void ASolidCharacter::UpdateMenuPointerHover()
 		return;
 	}
 
-	const int32 Page = HUD->IsStrongholdChoiceOpen() ? 4 : (HUD->IsPartyBuilderOpen() ? 3 : (HUD->IsPortalOpen() ? 2 : 1));
+	const int32 Page = HUD->IsStrongholdChoiceOpen() ? 4 : (HUD->IsSquadBuilderOpen() ? 3 : (HUD->IsPortalOpen() ? 2 : 1));
 	if (Page != MenuPointerPage)
 	{
 		MenuPointerPage = Page;
@@ -1852,7 +1852,7 @@ void ASolidCharacter::PollClickMovePress()
 	}
 	if (ASolidHUD* HUD = GetSolidHUD())
 	{
-		if ((HUD->IsMainMenuOpen() || HUD->IsPortalOpen() || HUD->IsPartyBuilderOpen() || HUD->IsStrongholdChoiceOpen())
+		if ((HUD->IsMainMenuOpen() || HUD->IsPortalOpen() || HUD->IsSquadBuilderOpen() || HUD->IsStrongholdChoiceOpen())
 			&& ReadPointerPosition(X, Y)
 			&& HUD->SelectChoiceAt(X, Y))
 		{
@@ -2008,7 +2008,7 @@ void ASolidCharacter::TickClickMove()
 		ClearClickMove();
 		return;
 	}
-	if (IsMenuOverlayOpen() || IsPartyFormationDrillActive())
+	if (IsMenuOverlayOpen() || IsSquadFormationDrillActive())
 	{
 		return;
 	}
@@ -2033,7 +2033,7 @@ void ASolidCharacter::TickClickMove()
 
 void ASolidCharacter::UpdatePointerMouseLook()
 {
-	if (IsPartyFormationDrillActive() || IsMenuOverlayOpen())
+	if (IsSquadFormationDrillActive() || IsMenuOverlayOpen())
 	{
 		return;
 	}
@@ -2108,7 +2108,7 @@ void ASolidCharacter::Zoom(const FInputActionValue& Value)
 
 void ASolidCharacter::StartSprint()
 {
-	if (IsPartyFormationDrillActive() || IsMenuOverlayOpen())
+	if (IsSquadFormationDrillActive() || IsMenuOverlayOpen())
 	{
 		return;
 	}

@@ -1,4 +1,4 @@
-#include "Party/SolidCompany.h"
+#include "Squad/SolidCompany.h"
 #include "SolidBodyMesh.h"
 #include "SolidClipLocomotion.h"
 #include "UObject/SoftObjectPath.h"

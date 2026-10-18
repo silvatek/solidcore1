@@ -13,16 +13,17 @@
 #include "Journal/SolidJournal.h"
 #include "Menus/SolidMainMenu.h"
 #include "Menus/SolidMenuPointer.h"
-#include "Menus/SolidPartyBuilder.h"
+#include "Menus/SolidSquadBuilder.h"
 #include "Menus/SolidPortal.h"
 #include "SolidCharacter.h"
 #include "SolidSight.h"
 #include "SolidGameMode.h"
+#include "SolidGameInstance.h"
 #include "SolidPlayerController.h"
 #include "Companion/SolidCompanionCharacter.h"
-#include "Party/SolidBattlePlan.h"
-#include "Party/SolidParty.h"
-#include "Party/SolidPartyDrill.h"
+#include "Squad/SolidBattlePlan.h"
+#include "Squad/SolidSquad.h"
+#include "Squad/SolidSquadDrill.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Terrain/SolidTerrainTypes.h"
@@ -317,7 +318,7 @@ namespace SolidHUDPrivate
 	static float DrawBattlePlansPanel(
 		UCanvas* Canvas,
 		UFont* Font,
-		const USolidParty* Party,
+		const USolidSquad* Squad,
 		const float StartY)
 	{
 		if (!Canvas)
@@ -332,7 +333,7 @@ namespace SolidHUDPrivate
 		const float GapAbove = 10.f;
 		const float PanelTop = StartY + GapAbove;
 
-		const int32 ActiveSlot = Party ? Party->GetActiveAssignedSlot() : INDEX_NONE;
+		const int32 ActiveSlot = Squad ? Squad->GetActiveAssignedSlot() : INDEX_NONE;
 		const int32 SlotCount = SolidBattleFormationSlots::MaxAssignedBattlePlans;
 
 		TArray<FString> SlotLines;
@@ -340,7 +341,7 @@ namespace SolidHUDPrivate
 		SlotLines.Add(TEXT("Battle Plans"));
 		for (int32 Slot = 0; Slot < SlotCount; ++Slot)
 		{
-			const FSolidBattlePlan* Plan = Party ? Party->GetAssignedBattlePlan(Slot) : nullptr;
+			const FSolidBattlePlan* Plan = Squad ? Squad->GetAssignedBattlePlan(Slot) : nullptr;
 			SlotLines.Add(FormatBattlePlanSlotLine(Slot, Plan));
 		}
 
@@ -393,9 +394,9 @@ namespace SolidHUDPrivate
 		{
 			const bool bTitle = (LineIndex == 0);
 			const int32 Slot = LineIndex - 1;
-			const bool bActive = !bTitle && Party && Slot == ActiveSlot
-				&& Party->GetAssignedBattlePlan(Slot) != nullptr;
-			const bool bFilled = !bTitle && Party && Party->GetAssignedBattlePlan(Slot) != nullptr;
+			const bool bActive = !bTitle && Squad && Slot == ActiveSlot
+				&& Squad->GetAssignedBattlePlan(Slot) != nullptr;
+			const bool bFilled = !bTitle && Squad && Squad->GetAssignedBattlePlan(Slot) != nullptr;
 
 			FLinearColor Color = TitleColor;
 			if (!bTitle)
@@ -1119,9 +1120,9 @@ bool ASolidHUD::SelectChoiceAt(const float X, const float Y)
 		}
 		return true;
 	}
-	if (bShowPartyBuilder)
+	if (bShowSquadBuilder)
 	{
-		SetPartyBuilderIndex(Hit);
+		SetSquadBuilderIndex(Hit);
 		return true;
 	}
 	if (bShowMainMenu)
@@ -1311,14 +1312,14 @@ void ASolidHUD::DrawHUD()
 
 	if (const ASolidCharacter* Captain = Cast<ASolidCharacter>(Pawn))
 	{
-		if (Captain->IsPartyFormationDrillActive())
+		if (Captain->IsSquadFormationDrillActive())
 		{
 			Lines.Add(FString::Printf(
 				TEXT("Drill  leg %d/%d  %s %.2fs"),
-				Captain->GetPartyFormationDrillLeg() + 1,
-				SolidPartyDrill::NumLegs,
-				Captain->IsPartyFormationDrillTurning() ? TEXT("turn") : TEXT("walk"),
-				Captain->GetPartyFormationDrillPhaseRemaining()));
+				Captain->GetSquadFormationDrillLeg() + 1,
+				SolidSquadDrill::NumLegs,
+				Captain->IsSquadFormationDrillTurning() ? TEXT("turn") : TEXT("walk"),
+				Captain->GetSquadFormationDrillPhaseRemaining()));
 		}
 	}
 
@@ -1327,12 +1328,12 @@ void ASolidHUD::DrawHUD()
 	}
 
 	UFont* Font = GEngine ? GEngine->GetSmallFont() : nullptr;
-	const USolidParty* Party = nullptr;
+	const USolidSquad* Squad = nullptr;
 	if (UWorld* World = GetWorld())
 	{
 		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 		{
-			Party = GameMode->GetParty();
+			Squad = GameMode->GetSquad();
 		}
 	}
 	if (bShowCharacterEditor)
@@ -1341,7 +1342,7 @@ void ASolidHUD::DrawHUD()
 	}
 	else
 	{
-		SolidHUDPrivate::DrawBattlePlansPanel(Canvas, Font, Party, BelowTech);
+		SolidHUDPrivate::DrawBattlePlansPanel(Canvas, Font, Squad, BelowTech);
 	}
 
 	SolidHUDPrivate::ForgetChoicePointerRows(this);
@@ -1353,9 +1354,9 @@ void ASolidHUD::DrawHUD()
 	{
 		DrawStrongholdChoice();
 	}
-	else if (bShowPartyBuilder)
+	else if (bShowSquadBuilder)
 	{
-		DrawPartyBuilderPopup();
+		DrawSquadBuilderPopup();
 	}
 	else if (bShowInventory)
 	{
@@ -1555,9 +1556,9 @@ void ASolidHUD::HandleMenuKey()
 		return;
 	}
 
-	if (bShowPartyBuilder)
+	if (bShowSquadBuilder)
 	{
-		bShowPartyBuilder = false;
+		bShowSquadBuilder = false;
 		return;
 	}
 
@@ -1599,7 +1600,7 @@ void ASolidHUD::CloseMenuOverlay()
 	bShowPortal = false;
 	bShowStrongholdChoice = false;
 	StrongholdChoiceTypes.Reset();
-	bShowPartyBuilder = false;
+	bShowSquadBuilder = false;
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowInventory = false;
@@ -1636,7 +1637,7 @@ void ASolidHUD::OpenCharacterEditor()
 {
 	bShowMainMenu = false;
 	bShowPortal = false;
-	bShowPartyBuilder = false;
+	bShowSquadBuilder = false;
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowInventory = false;
@@ -1892,7 +1893,7 @@ void ASolidHUD::DrawCharacterEditorPanel()
 	}
 }
 
-void ASolidHUD::OpenPartyBuilder()
+void ASolidHUD::OpenSquadBuilder()
 {
 	bShowMainMenu = false;
 	bShowPortal = false;
@@ -1902,57 +1903,57 @@ void ASolidHUD::OpenPartyBuilder()
 	bShowCharacterEditor = false;
 	bCharacterEditorSkeleton = false;
 	SkeletonBoneTip.Reset();
-	bShowPartyBuilder = true;
-	PartyBuilderIndex = 0;
+	bShowSquadBuilder = true;
+	SquadBuilderIndex = 0;
 	SolidHUDPrivate::ForgetChoicePointerRows(this);
 }
 
-void ASolidHUD::MovePartyBuilderSelection(const int32 Delta)
+void ASolidHUD::MoveSquadBuilderSelection(const int32 Delta)
 {
 	int32 Count = 0;
 	if (UWorld* World = GetWorld())
 	{
 		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 		{
-			if (const USolidParty* Party = GameMode->GetParty())
+			if (const USolidSquad* Squad = GameMode->GetSquad())
 			{
-				Count = Party->GetCompany() ? Party->GetCompany()->GetCompanionCount() : 0;
+				Count = Squad->GetCompany() ? Squad->GetCompany()->GetCompanionCount() : 0;
 			}
 		}
 	}
 	if (Count <= 0)
 	{
-		PartyBuilderIndex = 0;
+		SquadBuilderIndex = 0;
 		return;
 	}
 
-	int32 Wrapped = (PartyBuilderIndex + Delta) % Count;
+	int32 Wrapped = (SquadBuilderIndex + Delta) % Count;
 	if (Wrapped < 0)
 	{
 		Wrapped += Count;
 	}
-	PartyBuilderIndex = Wrapped;
+	SquadBuilderIndex = Wrapped;
 }
 
-void ASolidHUD::SetPartyBuilderIndex(const int32 Index)
+void ASolidHUD::SetSquadBuilderIndex(const int32 Index)
 {
 	int32 Count = 0;
 	if (UWorld* World = GetWorld())
 	{
 		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 		{
-			if (const USolidParty* Party = GameMode->GetParty())
+			if (const USolidSquad* Squad = GameMode->GetSquad())
 			{
-				Count = Party->GetCompany() ? Party->GetCompany()->GetCompanionCount() : 0;
+				Count = Squad->GetCompany() ? Squad->GetCompany()->GetCompanionCount() : 0;
 			}
 		}
 	}
 	if (Count <= 0)
 	{
-		PartyBuilderIndex = 0;
+		SquadBuilderIndex = 0;
 		return;
 	}
-	PartyBuilderIndex = FMath::Clamp(Index, 0, Count - 1);
+	SquadBuilderIndex = FMath::Clamp(Index, 0, Count - 1);
 }
 
 void ASolidHUD::OpenPortal()
@@ -1961,7 +1962,7 @@ void ASolidHUD::OpenPortal()
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowInventory = false;
-	bShowPartyBuilder = false;
+	bShowSquadBuilder = false;
 	bShowCharacterEditor = false;
 	bCharacterEditorSkeleton = false;
 	SkeletonBoneTip.Reset();
@@ -2039,7 +2040,7 @@ void ASolidHUD::ToggleInventory()
 
 	bShowMainMenu = false;
 	bShowPortal = false;
-	bShowPartyBuilder = false;
+	bShowSquadBuilder = false;
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowCharacterEditor = false;
@@ -2213,7 +2214,7 @@ void ASolidHUD::DrawJournalPopup() const
 
 void ASolidHUD::DrawMainMenuPopup()
 {
-	int32 MaxPartySize = 0;
+	int32 MaxSquadSize = 0;
 	bool bInDungeon = false;
 	bool bInLair = false;
 	bool bInTower = false;
@@ -2223,7 +2224,7 @@ void ASolidHUD::DrawMainMenuPopup()
 	{
 		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 		{
-			MaxPartySize = GameMode->GetMaxPartySize();
+			MaxSquadSize = GameMode->GetMaxSquadSize();
 			bInDungeon = GameMode->IsInDungeon();
 			bInLair = GameMode->IsInLair();
 			bInTower = GameMode->IsInTower();
@@ -2239,35 +2240,35 @@ void ASolidHUD::DrawMainMenuPopup()
 	for (const FSolidMainMenuEntry& Entry : Entries)
 	{
 		Labels.Add(Entry.Label);
-		const bool bParty = Entry.Item != ESolidMainMenuItem::BuildParty
-			|| SolidPartyBuilder::CanOpen(MaxPartySize);
+		const bool bSquad = Entry.Item != ESolidMainMenuItem::BuildSquad
+			|| SolidSquadBuilder::CanOpen(MaxSquadSize);
 		const bool bCave = Entry.Item != ESolidMainMenuItem::Dungeon
 			|| (!bInLair && !bInTower && SolidMainMenu::CanUseCaveRow(bCaveEnabled, bInDungeon)
 				&& (bInDungeon || bCompanyCave));
-		Enabled.Add(bParty && bCave);
+		Enabled.Add(bSquad && bCave);
 	}
 	TArray<SolidMenuPointer::FRow> Rows;
 	SolidHUDPrivate::DrawChoicePopup(Canvas, TEXT("Main Menu"), Labels, MainMenuIndex, Rows, &Enabled);
 	SetChoicePointerRows(Rows);
 }
 
-void ASolidHUD::DrawPartyBuilderPopup()
+void ASolidHUD::DrawSquadBuilderPopup()
 {
-	const USolidParty* Party = nullptr;
-	int32 MaxPartySize = 0;
+	const USolidSquad* Squad = nullptr;
+	int32 MaxSquadSize = 0;
 	if (UWorld* World = GetWorld())
 	{
 		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 		{
-			Party = GameMode->GetParty();
-			MaxPartySize = GameMode->GetMaxPartySize();
+			Squad = GameMode->GetSquad();
+			MaxSquadSize = GameMode->GetMaxSquadSize();
 		}
 	}
 
-	TArray<SolidPartyBuilder::FRow> Choices;
-	SolidPartyBuilder::CollectRows(Party, Choices);
+	TArray<SolidSquadBuilder::FRow> Choices;
+	SolidSquadBuilder::CollectRows(Squad, Choices);
 	int32 SelectedCount = 0;
-	for (const SolidPartyBuilder::FRow& Choice : Choices)
+	for (const SolidSquadBuilder::FRow& Choice : Choices)
 	{
 		if (Choice.bSelected)
 		{
@@ -2277,15 +2278,15 @@ void ASolidHUD::DrawPartyBuilderPopup()
 
 	TArray<FString> Labels;
 	TArray<bool> Enabled;
-	for (const SolidPartyBuilder::FRow& Choice : Choices)
+	for (const SolidSquadBuilder::FRow& Choice : Choices)
 	{
 		Labels.Add(Choice.Label);
-		Enabled.Add(SolidPartyBuilder::IsChoiceAvailable(Choice.bSelected, SelectedCount, MaxPartySize));
+		Enabled.Add(SolidSquadBuilder::IsChoiceAvailable(Choice.bSelected, SelectedCount, MaxSquadSize));
 	}
 
-	const FString Title = FString::Printf(TEXT("Build party  %d/%d"), SelectedCount, MaxPartySize);
+	const FString Title = FString::Printf(TEXT("Build squad  %d/%d"), SelectedCount, MaxSquadSize);
 	TArray<SolidMenuPointer::FRow> Rows;
-	SolidHUDPrivate::DrawChoicePopup(Canvas, Title, Labels, PartyBuilderIndex, Rows, &Enabled);
+	SolidHUDPrivate::DrawChoicePopup(Canvas, Title, Labels, SquadBuilderIndex, Rows, &Enabled);
 	SetChoicePointerRows(Rows);
 }
 
@@ -2303,7 +2304,7 @@ void ASolidHUD::OpenStrongholdChoice(
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowInventory = false;
-	bShowPartyBuilder = false;
+	bShowSquadBuilder = false;
 	bShowCharacterEditor = false;
 	bCharacterEditorSkeleton = false;
 	SkeletonBoneTip.Reset();

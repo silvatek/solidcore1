@@ -12,7 +12,7 @@ A new piece starts from an empty hex that can hold one. A click or Enter on one,
 
 ## Acceptance
 
-- `\` inside a stronghold toggles arrange mode. A click on the Arrange furniture sign does the same. The company's stronghold takes it, and so does the new one once it is theirs. `\` in the open world, in the Iglin tunnels, or while a menu, the inventory, the journal, a message, or the party builder is open, does nothing. The sign is not in those places.
+- `\` inside a stronghold toggles arrange mode. A click on the Arrange furniture sign does the same. The company's stronghold takes it, and so does the new one once it is theirs. `\` in the open world, in the Iglin tunnels, or while a menu, the inventory, the journal, a message, or the squad builder is open, does nothing. The sign is not in those places.
 - The sign reads Arrange furniture. It is fixed on the interior wall, facing the room, and it is clear of the door and of any floor-number plate. The company's stronghold has one beside the entrance. Each floor has one. It is not a furnishing, it occupies no hex, and arrange mode cannot move it.
 - A click on the sign toggles the mode when the pointer is showing. While the right button looks, the click does nothing. The click does not walk the captain, does not use the door, and does not open the browser or lift a piece.
 - Toggling the mode off, by the sign or by `\`, returns a held piece, discards a new piece that was never put down, and closes the browser. The captain is drawn again.
@@ -49,7 +49,7 @@ A new piece starts from an empty hex that can hold one. A click or Enter on one,
 - Moving a chest keeps the items in its slots. The pack and the worn boxes stay as they were.
 - A placed piece is moved or left where it is. This story does not delete one that is already down.
 - While the mode is on, a click does not start a walk, and it does not enter or leave through the door. A click on the Arrange furniture sign still leaves the mode. A click does not open a storage container. [Multiple storage containers](multiple-storage-containers.md) opens one only while this mode is off.
-- Leaving the stronghold ends the mode first. A held piece goes back, a new piece that was never put down is discarded, and the captain is drawn for the leave. The leave then proceeds as it does now, including Build party when that page opens on a leave.
+- Leaving the stronghold ends the mode first. A held piece goes back, a new piece that was never put down is discarded, and the captain is drawn for the leave. The leave then proceeds as it does now, including Build squad when that page opens on a leave.
 - After the player leaves and comes back, each piece is still on the floor and hex where they put it, with the same facing. A new game has none of those moves.
 - The whole floor the captain is on can be arranged. Another floor of the stronghold is not.
 - This story binds the mouse, `\`, Enter, Esc, Q, E, the wheel, Up, and Down. No number key lifts a kind. Gamepad buttons stay as they are. Focus, confirm, cancel, rotate, and the catalog highlight are the actions, so a later story can bind a pad to the same column without a new placement rule.
@@ -58,7 +58,7 @@ A new piece starts from an empty hex that can hold one. A click or Enter on one,
 
 - `\` is `EKeys::Backslash`. Inventory stays `EKeys::Slash`. The sign is the same toggle.
 - The sign is a light plate on the wall with the words Arrange furniture in dark letters, facing the room. Build the letters so they draw on the interior wall. A runtime text component was spawned on the tower wall and did not draw, and `ASolidTownSign` stays the outdoor welcome board. The floor-number plate is a separate sign. This plate is a pointer query hit and does not block the captain. On the stronghold the company starts with, the plate sits on the rock beside the mouth. On a tower floor it sits on that floor's curved wall, inset like `FloorSignInsetCm`, clear of `FloorSignFor` and of the door.
-- Zoom is `MouseWheelAxis` on `IA_Zoom`. While a piece is held, that axis rotates and is not applied as zoom. While the catalog column is under the pointer, the same axis scrolls the column, the way a wheel over a party scrollbox scrolls that box only.
+- Zoom is `MouseWheelAxis` on `IA_Zoom`. While a piece is held, that axis rotates and is not applied as zoom. While the catalog column is under the pointer, the same axis scrolls the column, the way a wheel over a squad scrollbox scrolls that box only.
 - Q and E are unbound today. One facing is 60 degrees, the step `SolidStrongholdGrid::HexVertices` uses. `SolidStrongholdFurniture::SpanCell` already places the bed's second cell along `RotationDeg`.
 - Hide the captain with `SetActorHiddenInGame`. The pawn stays, so the camera does not jump. His mesh and his capsule do not answer the pointer ray.
 - The placed list is the stronghold's used furnishings. The starter three from `UsedFurnishings` are the new-game list. A move edits that list. Store it on the travel session, the way the pack is stored, so `OpenLevel` brings the same placements back.

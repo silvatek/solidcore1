@@ -110,8 +110,8 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 	TestNull(TEXT("slot 5 is empty"), SolidEvents::RosterName(5));
 
 	FGameState State;
-	TestEqual(TEXT("party starts empty"), State.MaxPartySize, 0);
-	TestEqual(TEXT("no companions yet"), SolidEvents::PartyCount(State), 0);
+	TestEqual(TEXT("squad starts empty"), State.MaxSquadSize, 0);
+	TestEqual(TEXT("no companions yet"), SolidEvents::SquadCount(State), 0);
 	TestTrue(TEXT("true sight is on"), SolidEvents::IsSightEnabled(State, ESolidSight::True));
 	TestFalse(TEXT("raven sight is locked"), SolidEvents::IsSightEnabled(State, ESolidSight::Raven));
 	TestFalse(
@@ -120,7 +120,7 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 
 	const SolidEvents::FResult Nowhere = SolidEvents::NotifyOccupiedTown(State, INDEX_NONE);
 	TestFalse(TEXT("open ground fires nothing"), Nowhere.bFired);
-	TestEqual(TEXT("still an empty party"), State.MaxPartySize, 0);
+	TestEqual(TEXT("still an empty squad"), State.MaxSquadSize, 0);
 
 	const SolidEvents::FResult Iglin = SolidEvents::NotifyOccupiedTown(State, 0);
 	TestTrue(TEXT("entering town 0 fires"), Iglin.bFired);
@@ -128,7 +128,7 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("Iglin leaves the bridge broken"), Iglin.bRepairBridge);
 	TestFalse(TEXT("the Iglin bridge starts broken"), State.bIglinBridgeRepaired);
 	TestFalse(TEXT("Iglin leaves raven sight locked"), State.bRavenSightEnabled);
-	TestEqual(TEXT("Iglin leaves the party empty"), State.MaxPartySize, 0);
+	TestEqual(TEXT("Iglin leaves the squad empty"), State.MaxSquadSize, 0);
 	TestEqual(TEXT("Iglin is recorded"), State.FiredCount, 1);
 
 	const SolidEvents::FResult Relion = SolidEvents::NotifyOccupiedTown(State, 1);
@@ -142,8 +142,8 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("true sight stays available"), SolidEvents::IsSightEnabled(State, ESolidSight::True));
 	TestTrue(TEXT("Relion repairs the bridge"), Relion.bRepairBridge);
 	TestTrue(TEXT("the Iglin bridge is repaired"), State.bIglinBridgeRepaired);
-	TestEqual(TEXT("town 1 party size"), State.MaxPartySize, 1);
-	TestEqual(TEXT("town 1 companion count"), SolidEvents::PartyCount(State), 1);
+	TestEqual(TEXT("town 1 squad size"), State.MaxSquadSize, 1);
+	TestEqual(TEXT("town 1 companion count"), SolidEvents::SquadCount(State), 1);
 	TestEqual(TEXT("Sam joins at Relion"), FString(SolidEvents::RosterName(0)), FString(TEXT("Sam")));
 
 	const SolidEvents::FResult StillRelion = SolidEvents::NotifyOccupiedTown(State, 1);
@@ -151,13 +151,13 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 
 	const SolidEvents::FResult Leave = SolidEvents::NotifyOccupiedTown(State, INDEX_NONE);
 	TestFalse(TEXT("leaving town fires nothing"), Leave.bFired);
-	TestEqual(TEXT("party size sticks after leaving"), State.MaxPartySize, 1);
+	TestEqual(TEXT("squad size sticks after leaving"), State.MaxSquadSize, 1);
 
 	const SolidEvents::FResult RelionAgain = SolidEvents::NotifyOccupiedTown(State, 1);
 	TestFalse(TEXT("town 1 event already fired"), RelionAgain.bFired);
 	TestFalse(TEXT("re-entering Relion does not repair again"), RelionAgain.bRepairBridge);
 	TestTrue(TEXT("the repaired bridge stays"), State.bIglinBridgeRepaired);
-	TestEqual(TEXT("re-entering Relion does not shrink the party"), State.MaxPartySize, 1);
+	TestEqual(TEXT("re-entering Relion does not shrink the squad"), State.MaxSquadSize, 1);
 
 	const SolidEvents::FResult Kanfold = SolidEvents::NotifyOccupiedTown(State, 2);
 	TestTrue(TEXT("entering town 2 fires"), Kanfold.bFired);
@@ -166,14 +166,14 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 		Kanfold.bSetSight,
 		SolidEventTestPrivate::EventEnablesRavenSight(TEXT("Enter Kanfold")));
 	TestTrue(TEXT("raven sight still unlocked"), SolidEvents::IsSightEnabled(State, ESolidSight::Raven));
-	TestEqual(TEXT("town 2 party size"), State.MaxPartySize, 2);
-	TestEqual(TEXT("Sam and Alex"), SolidEvents::PartyCount(State), 2);
+	TestEqual(TEXT("town 2 squad size"), State.MaxSquadSize, 2);
+	TestEqual(TEXT("Sam and Alex"), SolidEvents::SquadCount(State), 2);
 	TestEqual(TEXT("Alex is the second companion"), FString(SolidEvents::RosterName(1)), FString(TEXT("Alex")));
 
 	FGameState Skipped;
 	const SolidEvents::FResult OtherTown = SolidEvents::NotifyOccupiedTown(Skipped, 4);
 	TestFalse(TEXT("Jethan has no event"), OtherTown.bFired);
-	TestEqual(TEXT("Jethan leaves the party empty"), Skipped.MaxPartySize, 0);
+	TestEqual(TEXT("Jethan leaves the squad empty"), Skipped.MaxSquadSize, 0);
 	TestFalse(TEXT("Jethan does not unlock raven sight"), Skipped.bRavenSightEnabled);
 
 	const SolidEvents::FResult KanfoldFirst = SolidEvents::NotifyOccupiedTown(Skipped, 2);
@@ -182,7 +182,7 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 		TEXT("Kanfold sight follows the event when Relion was skipped"),
 		Skipped.bRavenSightEnabled,
 		SolidEventTestPrivate::EventEnablesRavenSight(TEXT("Enter Kanfold")));
-	TestEqual(TEXT("town 2 still fields Sam and Alex"), SolidEvents::PartyCount(Skipped), 2);
+	TestEqual(TEXT("town 2 still fields Sam and Alex"), SolidEvents::SquadCount(Skipped), 2);
 
 	const SolidEvents::FResult Dragongate = SolidEvents::NotifyOccupiedTown(State, 5);
 	TestTrue(TEXT("entering Dragongate fires"), Dragongate.bFired);
@@ -191,13 +191,13 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 		Dragongate.bSetSight,
 		SolidEventTestPrivate::EventEnablesRavenSight(TEXT("Enter Dragongate")));
 	TestTrue(TEXT("raven sight stays unlocked"), SolidEvents::IsSightEnabled(State, ESolidSight::Raven));
-	TestEqual(TEXT("Dragongate party size"), State.MaxPartySize, SolidEvents::RosterCount);
-	TestEqual(TEXT("the whole company"), SolidEvents::PartyCount(State), 5);
+	TestEqual(TEXT("Dragongate squad size"), State.MaxSquadSize, SolidEvents::RosterCount);
+	TestEqual(TEXT("the whole company"), SolidEvents::SquadCount(State), 5);
 
 	SolidEvents::NotifyOccupiedTown(State, INDEX_NONE);
 	const SolidEvents::FResult DragongateAgain = SolidEvents::NotifyOccupiedTown(State, 5);
 	TestFalse(TEXT("re-entering Dragongate does not fire again"), DragongateAgain.bFired);
-	TestEqual(TEXT("re-entering Dragongate keeps the party"), State.MaxPartySize, 5);
+	TestEqual(TEXT("re-entering Dragongate keeps the squad"), State.MaxSquadSize, 5);
 
 	FGameState GateFirst;
 	const SolidEvents::FResult GateOnly = SolidEvents::NotifyOccupiedTown(GateFirst, 5);
@@ -206,13 +206,13 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 		TEXT("Dragongate sight follows the event on its own"),
 		GateFirst.bRavenSightEnabled,
 		SolidEventTestPrivate::EventEnablesRavenSight(TEXT("Enter Dragongate")));
-	TestEqual(TEXT("Dragongate fields the company"), SolidEvents::PartyCount(GateFirst), 5);
+	TestEqual(TEXT("Dragongate fields the company"), SolidEvents::SquadCount(GateFirst), 5);
 	SolidEvents::NotifyOccupiedTown(GateFirst, INDEX_NONE);
 	const SolidEvents::FResult GateReturn = SolidEvents::NotifyOccupiedTown(GateFirst, 5);
 	TestFalse(TEXT("Dragongate event already fired"), GateReturn.bFired);
 	const SolidEvents::FResult KanfoldLater = SolidEvents::NotifyOccupiedTown(GateFirst, 2);
 	TestTrue(TEXT("Kanfold still fires after Dragongate"), KanfoldLater.bFired);
-	TestEqual(TEXT("Kanfold sets the party to Sam and Alex"), GateFirst.MaxPartySize, 2);
+	TestEqual(TEXT("Kanfold sets the squad to Sam and Alex"), GateFirst.MaxSquadSize, 2);
 	const bool bEitherTownEnablesSight =
 		SolidEventTestPrivate::EventEnablesRavenSight(TEXT("Enter Dragongate"))
 		|| SolidEventTestPrivate::EventEnablesRavenSight(TEXT("Enter Kanfold"));
@@ -225,7 +225,7 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("gamemode"), GameMode);
 	if (GameMode)
 	{
-		TestEqual(TEXT("game starts with max party 0"), GameMode->GetMaxPartySize(), 0);
+		TestEqual(TEXT("game starts with max squad 0"), GameMode->GetMaxSquadSize(), 0);
 		TestTrue(TEXT("game starts in true sight"), GameMode->IsSightEnabled(ESolidSight::True));
 		TestFalse(TEXT("game starts with raven sight locked"), GameMode->IsSightEnabled(ESolidSight::Raven));
 	}
@@ -314,7 +314,7 @@ bool FSolidEventsCaptainTitleTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("journal titles Captain"), Detail.Contains(TEXT("Title Captain")));
 	TestTrue(
 		TEXT("journal lists the company"),
-		Detail.Contains(TEXT("Party 5: Sam, Alex, Max, Morgan, Quinn")));
+		Detail.Contains(TEXT("Squad 5: Sam, Alex, Max, Morgan, Quinn")));
 	return true;
 }
 
@@ -420,7 +420,7 @@ bool FSolidEventsLaterTownsEnableRavenTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Kanfold.Sight),
 		static_cast<uint8>(ESolidSight::Raven));
 	TestTrue(TEXT("Kanfold unlocks raven sight"), KanfoldState.bRavenSightEnabled);
-	TestEqual(TEXT("Kanfold still fields Sam and Alex"), KanfoldState.MaxPartySize, 2);
+	TestEqual(TEXT("Kanfold still fields Sam and Alex"), KanfoldState.MaxSquadSize, 2);
 	TestEqual(
 		TEXT("Kanfold still titles Ranger"),
 		FString(KanfoldState.CaptainTitle),
@@ -435,7 +435,7 @@ bool FSolidEventsLaterTownsEnableRavenTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Dragongate.Sight),
 		static_cast<uint8>(ESolidSight::Raven));
 	TestTrue(TEXT("Dragongate unlocks raven sight"), GateState.bRavenSightEnabled);
-	TestEqual(TEXT("Dragongate still fields the company"), GateState.MaxPartySize, SolidEvents::RosterCount);
+	TestEqual(TEXT("Dragongate still fields the company"), GateState.MaxSquadSize, SolidEvents::RosterCount);
 	TestEqual(
 		TEXT("Dragongate still titles Captain"),
 		FString(GateState.CaptainTitle),
@@ -529,7 +529,7 @@ bool FSolidEventsRequiresTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("Relion waits for Iglin"), Blocked.bFired);
 	TestFalse(TEXT("an early visit does not repair the bridge"), Early.bIglinBridgeRepaired);
 	TestEqual(TEXT("Relion is not recorded yet"), Early.FiredCount, 0);
-	TestEqual(TEXT("the party stays empty"), Early.MaxPartySize, 0);
+	TestEqual(TEXT("the squad stays empty"), Early.MaxSquadSize, 0);
 
 	const SolidEvents::FResult Iglin = SolidEvents::NotifyOccupiedTown(Early, 0);
 	TestTrue(TEXT("Iglin fires"), Iglin.bFired);
@@ -574,7 +574,7 @@ bool FSolidEventsReachBrokenBridgeTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("the ramp does not retitle"), Reached.bSetTitle);
 	TestFalse(TEXT("the ramp does not repair the bridge"), Reached.bRepairBridge);
 	TestFalse(TEXT("the Iglin bridge stays broken"), Early.bIglinBridgeRepaired);
-	TestEqual(TEXT("the party stays empty"), Early.MaxPartySize, 0);
+	TestEqual(TEXT("the squad stays empty"), Early.MaxSquadSize, 0);
 	TestEqual(TEXT("Iglin and the ramp are recorded"), Early.FiredCount, 2);
 
 	const int32 BridgeIndex = SolidEvents::FindIndexById(SolidEvents::IdReachBrokenBridge);
@@ -1164,7 +1164,7 @@ bool FSolidEventsBuilderTest::RunTest(const FString& Parameters)
 {
 	const SolidEvents::FEvent Town = SolidEvents::EnterTown(TEXT("aabbccdd"), TEXT("Sample town"), 4, SolidEvents::ACT_1)
 		.EnableSight(ESolidSight::Raven)
-		.SetMaxPartySize(2)
+		.SetMaxSquadSize(2)
 		.SetPlayerTitle(SolidEvents::TitleRanger)
 		.Require(SolidEvents::IdEnterIglin);
 	TestEqual(TEXT("sample id"), FString(Town.Id), FString(TEXT("aabbccdd")));
@@ -1185,7 +1185,7 @@ bool FSolidEventsBuilderTest::RunTest(const FString& Parameters)
 		TEXT("sample sight is raven"),
 		static_cast<uint8>(Town.Changes[0].Sight),
 		static_cast<uint8>(ESolidSight::Raven));
-	TestEqual(TEXT("sample party size"), Town.Changes[1].PartySize, 2);
+	TestEqual(TEXT("sample squad size"), Town.Changes[1].SquadSize, 2);
 	TestEqual(TEXT("sample title"), FString(Town.Changes[2].Title), FString(SolidEvents::TitleRanger));
 	TestEqual(TEXT("sample requirement count"), Town.RequireCount, 1);
 	TestEqual(TEXT("sample requirement"), FString(Town.Requires[0]), FString(SolidEvents::IdEnterIglin));

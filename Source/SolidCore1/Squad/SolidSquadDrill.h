@@ -3,10 +3,10 @@
 #include "CoreMinimal.h"
 
 /**
- * Party formation drill (main menu: Test Drill): walk a square while cycling assigned battle plans F1–F4.
+ * Squad formation drill (main menu: Test Drill): walk a square while cycling assigned battle plans F1–F4.
  * Leg 0 (F1): walk only. Legs 1–3 (F2–F4): blend +90° yaw over TurnDurationSeconds, then walk.
  */
-namespace SolidPartyDrill
+namespace SolidSquadDrill
 {
 	inline constexpr float LegDurationSeconds = 1.5f;
 	inline constexpr float TurnDurationSeconds = 0.25f;

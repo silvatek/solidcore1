@@ -1,7 +1,7 @@
-#include "Party/SolidParty.h"
-#include "Party/SolidCompany.h"
+#include "Squad/SolidSquad.h"
+#include "Squad/SolidCompany.h"
 
-void USolidParty::InitializeFromCompany(USolidCompany* InCompany)
+void USolidSquad::InitializeFromCompany(USolidCompany* InCompany)
 {
 	Company = InCompany;
 	if (!Company)
@@ -41,7 +41,7 @@ void USolidParty::InitializeFromCompany(USolidCompany* InCompany)
 	SetSelectedCompanions(StarterCompanions);
 }
 
-bool USolidParty::SetAssignedBattlePlans(const TArray<int32>& CompanyPlanIndices)
+bool USolidSquad::SetAssignedBattlePlans(const TArray<int32>& CompanyPlanIndices)
 {
 	AssignedCompanyPlanIndices.Reset();
 	if (!Company)
@@ -73,7 +73,7 @@ bool USolidParty::SetAssignedBattlePlans(const TArray<int32>& CompanyPlanIndices
 	return true;
 }
 
-bool USolidParty::SelectAssignedSlot(const int32 SlotIndex)
+bool USolidSquad::SelectAssignedSlot(const int32 SlotIndex)
 {
 	if (!AssignedCompanyPlanIndices.IsValidIndex(SlotIndex))
 	{
@@ -83,7 +83,7 @@ bool USolidParty::SelectAssignedSlot(const int32 SlotIndex)
 	return true;
 }
 
-const FSolidBattlePlan* USolidParty::GetAssignedBattlePlan(const int32 SlotIndex) const
+const FSolidBattlePlan* USolidSquad::GetAssignedBattlePlan(const int32 SlotIndex) const
 {
 	if (!Company || !AssignedCompanyPlanIndices.IsValidIndex(SlotIndex))
 	{
@@ -92,12 +92,12 @@ const FSolidBattlePlan* USolidParty::GetAssignedBattlePlan(const int32 SlotIndex
 	return Company->GetBattlePlan(AssignedCompanyPlanIndices[SlotIndex]);
 }
 
-const FSolidBattlePlan* USolidParty::GetActiveBattlePlan() const
+const FSolidBattlePlan* USolidSquad::GetActiveBattlePlan() const
 {
 	return GetAssignedBattlePlan(ActiveAssignedSlot);
 }
 
-ESolidBattleFormation USolidParty::GetActiveFormation() const
+ESolidBattleFormation USolidSquad::GetActiveFormation() const
 {
 	if (const FSolidBattlePlan* Plan = GetActiveBattlePlan())
 	{
@@ -106,7 +106,7 @@ ESolidBattleFormation USolidParty::GetActiveFormation() const
 	return ESolidBattleFormation::Line;
 }
 
-ESolidBattleSpacing USolidParty::GetActiveSpacing() const
+ESolidBattleSpacing USolidSquad::GetActiveSpacing() const
 {
 	if (const FSolidBattlePlan* Plan = GetActiveBattlePlan())
 	{
@@ -115,7 +115,7 @@ ESolidBattleSpacing USolidParty::GetActiveSpacing() const
 	return ESolidBattleSpacing::Standard;
 }
 
-FString USolidParty::GetActiveBattlePlanDebugString() const
+FString USolidSquad::GetActiveBattlePlanDebugString() const
 {
 	const FSolidBattlePlan* Plan = GetActiveBattlePlan();
 	if (!Plan)
@@ -131,7 +131,7 @@ FString USolidParty::GetActiveBattlePlanDebugString() const
 		SolidBattleFormationSlots::SpacingName(Plan->Spacing));
 }
 
-bool USolidParty::SetSelectedCompanions(const TArray<int32>& CompanyCompanionIndices)
+bool USolidSquad::SetSelectedCompanions(const TArray<int32>& CompanyCompanionIndices)
 {
 	SelectedCompanionIndices.Reset();
 	if (!Company)
@@ -150,7 +150,7 @@ bool USolidParty::SetSelectedCompanions(const TArray<int32>& CompanyCompanionInd
 	return true;
 }
 
-void USolidParty::CollectFieldedCompanions(const int32 MaxCount, TArray<FSolidCompanion>& Out) const
+void USolidSquad::CollectFieldedCompanions(const int32 MaxCount, TArray<FSolidCompanion>& Out) const
 {
 	Out.Reset();
 	if (!Company || MaxCount <= 0)

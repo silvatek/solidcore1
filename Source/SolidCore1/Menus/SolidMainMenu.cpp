@@ -8,7 +8,7 @@ void SolidMainMenu::CollectEntries(TArray<FSolidMainMenuEntry>& OutEntries, cons
 	OutEntries.Add({ ESolidMainMenuItem::TestDrill, TEXT("Test Drill") });
 	OutEntries.Add({ ESolidMainMenuItem::Journal, TEXT("Journal") });
 	OutEntries.Add({ ESolidMainMenuItem::Credits, TEXT("Credits") });
-	OutEntries.Add({ ESolidMainMenuItem::BuildParty, TEXT("Build party") });
+	OutEntries.Add({ ESolidMainMenuItem::BuildSquad, TEXT("Build squad") });
 	OutEntries.Add({ ESolidMainMenuItem::Dungeon, SolidDungeonLevel::MenuLabel(bInDungeon) });
 	OutEntries.Add({ ESolidMainMenuItem::CharacterEditor, TEXT("Character editor") });
 	OutEntries.Add({ ESolidMainMenuItem::Inventory, TEXT("Inventory") });
@@ -45,8 +45,8 @@ ESolidMainMenuAction SolidMainMenu::ActionForItem(const ESolidMainMenuItem Item)
 		return ESolidMainMenuAction::ShowJournal;
 	case ESolidMainMenuItem::Credits:
 		return ESolidMainMenuAction::ShowCredits;
-	case ESolidMainMenuItem::BuildParty:
-		return ESolidMainMenuAction::OpenParty;
+	case ESolidMainMenuItem::BuildSquad:
+		return ESolidMainMenuAction::OpenSquad;
 	case ESolidMainMenuItem::Dungeon:
 		return ESolidMainMenuAction::TravelDungeon;
 	case ESolidMainMenuItem::CharacterEditor:

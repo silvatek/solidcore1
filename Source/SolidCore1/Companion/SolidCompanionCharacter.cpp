@@ -8,8 +8,8 @@
 #include "SolidGroundMove.h"
 #include "SolidMaterials.h"
 #include "SolidNameLabel.h"
-#include "Party/SolidBattlePlan.h"
-#include "Party/SolidParty.h"
+#include "Squad/SolidBattlePlan.h"
+#include "Squad/SolidSquad.h"
 #include "GameFramework/GameModeBase.h"
 #include "Animation/AnimSequence.h"
 #include "Components/CapsuleComponent.h"
@@ -92,7 +92,7 @@ ASolidCompanionCharacter::ASolidCompanionCharacter()
 	FaceText->SetupAttachment(FaceRoot);
 	FaceText->SetVisibility(false);
 
-	// Default mesh/clips are Fab Viking; Party members may override CompanionMesh later.
+	// Default mesh/clips are Fab Viking; Squad members may override CompanionMesh later.
 	CompanionMesh = TSoftObjectPtr<USkeletalMesh>(
 		FSoftObjectPath(SolidClipLocomotion::DefaultMeshPath));
 	IdleAnim = TSoftObjectPtr<UAnimSequence>(
@@ -993,15 +993,15 @@ void ASolidCompanionCharacter::UpdateFollow(const float DeltaSeconds)
 	{
 		if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 		{
-			if (const USolidParty* Party = GameMode->GetParty())
+			if (const USolidSquad* Squad = GameMode->GetSquad())
 			{
-				Formation = Party->GetActiveFormation();
+				Formation = Squad->GetActiveFormation();
 				const int32 CompanionCount = FMath::Max(GameMode->GetCompanions().Num(), 1);
 				const FVector2D Slot = SolidBattleFormationSlots::SlotOffset(
 					Formation,
-					PartySlotIndex,
+					SquadSlotIndex,
 					CompanionCount,
-					Party->GetActiveSpacing());
+					Squad->GetActiveSpacing());
 				AlongForward = Slot.X;
 				AlongRight = Slot.Y;
 			}

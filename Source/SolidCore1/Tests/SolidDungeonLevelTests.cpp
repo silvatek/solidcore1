@@ -63,7 +63,7 @@ bool FSolidDungeonTravelSessionTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("session kept"), Instance->HasSession());
 	TestTrue(TEXT("captain is in the cave"), Instance->IsInDungeon());
 	TestFalse(TEXT("cave trip does not spawn at the mouth yet"), Instance->WantsDungeonMouthSpawn());
-	TestEqual(TEXT("party selection kept"), Instance->GetSession().SelectedCompanionIndices.Num(), 2);
+	TestEqual(TEXT("squad selection kept"), Instance->GetSession().SelectedCompanionIndices.Num(), 2);
 	TestEqual(TEXT("battle plan kept"), Instance->GetSession().ActiveBattlePlanSlot, 2);
 	TestEqual(
 		TEXT("sight kept"),

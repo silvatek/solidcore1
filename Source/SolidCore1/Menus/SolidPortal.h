@@ -127,7 +127,7 @@ namespace SolidPortal
 	}
 
 	/** Planar shift that puts the captain on LandingXY. Companions keep their formation offset. */
-	inline FVector PartyDelta(const FVector& CaptainLocation, const FVector2D& LandingXY)
+	inline FVector SquadDelta(const FVector& CaptainLocation, const FVector2D& LandingXY)
 	{
 		return FVector(LandingXY.X - CaptainLocation.X, LandingXY.Y - CaptainLocation.Y, 0.f);
 	}

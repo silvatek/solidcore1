@@ -1,87 +1,87 @@
 #include "SolidCharacter.h"
 #include "SolidCore1.h"
-#include "Party/SolidPartyDrill.h"
+#include "Squad/SolidSquadDrill.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 
-void ASolidCharacter::StartPartyFormationDrill()
+void ASolidCharacter::StartSquadFormationDrill()
 {
-	if (PartyFormationDrill.bActive)
+	if (SquadFormationDrill.bActive)
 	{
 		UE_LOG(LogSolid, Warning, TEXT("Formation drill restarted."));
 	}
 
-	PartyFormationDrill.bActive = true;
-	PartyFormationDrill.CurrentLeg = 0;
-	PartyFormationDrill.Phase = SolidPartyDrill::EPhase::Walking;
-	PartyFormationDrill.PhaseSecondsRemaining = 0.f;
-	BeginPartyFormationDrillLeg();
+	SquadFormationDrill.bActive = true;
+	SquadFormationDrill.CurrentLeg = 0;
+	SquadFormationDrill.Phase = SolidSquadDrill::EPhase::Walking;
+	SquadFormationDrill.PhaseSecondsRemaining = 0.f;
+	BeginSquadFormationDrillLeg();
 }
 
-void ASolidCharacter::StopPartyFormationDrill()
+void ASolidCharacter::StopSquadFormationDrill()
 {
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{
-		Move->bOrientRotationToMovement = PartyFormationDrill.bSavedOrientRotationToMovement;
+		Move->bOrientRotationToMovement = SquadFormationDrill.bSavedOrientRotationToMovement;
 	}
 
-	PartyFormationDrill.bActive = false;
-	PartyFormationDrill.CurrentLeg = 0;
-	PartyFormationDrill.Phase = SolidPartyDrill::EPhase::Walking;
-	PartyFormationDrill.PhaseSecondsRemaining = 0.f;
+	SquadFormationDrill.bActive = false;
+	SquadFormationDrill.CurrentLeg = 0;
+	SquadFormationDrill.Phase = SolidSquadDrill::EPhase::Walking;
+	SquadFormationDrill.PhaseSecondsRemaining = 0.f;
 	ApplyWalkSpeed();
 }
 
-bool ASolidCharacter::IsPartyFormationDrillActive() const
+bool ASolidCharacter::IsSquadFormationDrillActive() const
 {
-	return PartyFormationDrill.bActive;
+	return SquadFormationDrill.bActive;
 }
 
-bool ASolidCharacter::IsPartyFormationDrillTurning() const
+bool ASolidCharacter::IsSquadFormationDrillTurning() const
 {
-	return PartyFormationDrill.bActive
-		&& PartyFormationDrill.Phase == SolidPartyDrill::EPhase::Turning;
+	return SquadFormationDrill.bActive
+		&& SquadFormationDrill.Phase == SolidSquadDrill::EPhase::Turning;
 }
 
-void ASolidCharacter::BeginPartyFormationDrillWalk()
+void ASolidCharacter::BeginSquadFormationDrillWalk()
 {
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{
-		Move->bOrientRotationToMovement = PartyFormationDrill.bSavedOrientRotationToMovement;
+		Move->bOrientRotationToMovement = SquadFormationDrill.bSavedOrientRotationToMovement;
 		Move->MaxWalkSpeed = WalkSpeed;
 	}
 	bIsSprinting = false;
 
-	PartyFormationDrill.Phase = SolidPartyDrill::EPhase::Walking;
-	PartyFormationDrill.PhaseSecondsRemaining = SolidPartyDrill::LegDurationSeconds;
+	SquadFormationDrill.Phase = SolidSquadDrill::EPhase::Walking;
+	SquadFormationDrill.PhaseSecondsRemaining = SolidSquadDrill::LegDurationSeconds;
 }
 
-void ASolidCharacter::BeginPartyFormationDrillLeg()
+void ASolidCharacter::BeginSquadFormationDrillLeg()
 {
-	const int32 Leg = PartyFormationDrill.CurrentLeg;
-	if (Leg < 0 || Leg >= SolidPartyDrill::NumLegs)
+	const int32 Leg = SquadFormationDrill.CurrentLeg;
+	if (Leg < 0 || Leg >= SolidSquadDrill::NumLegs)
 	{
-		StopPartyFormationDrill();
+		StopSquadFormationDrill();
 		return;
 	}
 
-	const int32 PlanSlot = SolidPartyDrill::PlanSlotForLeg(Leg);
+	const int32 PlanSlot = SolidSquadDrill::PlanSlotForLeg(Leg);
 	SelectBattlePlanSlot(PlanSlot);
 
 	if (UCharacterMovementComponent* Move = GetCharacterMovement())
 	{
-		PartyFormationDrill.bSavedOrientRotationToMovement = Move->bOrientRotationToMovement;
+		SquadFormationDrill.bSavedOrientRotationToMovement = Move->bOrientRotationToMovement;
 		Move->MaxWalkSpeed = WalkSpeed;
 	}
 	bIsSprinting = false;
 
-	if (SolidPartyDrill::TurnsBeforeWalk(Leg))
+	if (SolidSquadDrill::TurnsBeforeWalk(Leg))
 	{
 		const float StartYaw = GetActorRotation().Yaw;
-		PartyFormationDrill.TurnStartYaw = StartYaw;
-		PartyFormationDrill.TurnTargetYaw = StartYaw + SolidPartyDrill::TurnYawDegrees;
-		PartyFormationDrill.Phase = SolidPartyDrill::EPhase::Turning;
-		PartyFormationDrill.PhaseSecondsRemaining = SolidPartyDrill::TurnDurationSeconds;
+		SquadFormationDrill.TurnStartYaw = StartYaw;
+		SquadFormationDrill.TurnTargetYaw = StartYaw + SolidSquadDrill::TurnYawDegrees;
+		SquadFormationDrill.Phase = SolidSquadDrill::EPhase::Turning;
+		SquadFormationDrill.PhaseSecondsRemaining = SolidSquadDrill::TurnDurationSeconds;
 
 		if (UCharacterMovementComponent* Move = GetCharacterMovement())
 		{
@@ -92,23 +92,23 @@ void ASolidCharacter::BeginPartyFormationDrillLeg()
 		UE_LOG(LogSolid, Warning,
 			TEXT("Formation drill leg %d/%d → F%d turn +%.0f° over %.2fs"),
 			Leg + 1,
-			SolidPartyDrill::NumLegs,
+			SolidSquadDrill::NumLegs,
 			PlanSlot + 1,
-			SolidPartyDrill::TurnYawDegrees,
-			SolidPartyDrill::TurnDurationSeconds);
+			SolidSquadDrill::TurnYawDegrees,
+			SolidSquadDrill::TurnDurationSeconds);
 		return;
 	}
 
-	BeginPartyFormationDrillWalk();
+	BeginSquadFormationDrillWalk();
 	UE_LOG(LogSolid, Warning,
 		TEXT("Formation drill leg %d/%d → F%d walk %.1fs"),
 		Leg + 1,
-		SolidPartyDrill::NumLegs,
+		SolidSquadDrill::NumLegs,
 		PlanSlot + 1,
-		SolidPartyDrill::LegDurationSeconds);
+		SolidSquadDrill::LegDurationSeconds);
 }
 
-void ASolidCharacter::ApplyPartyFormationDrillYaw(const float YawDegrees)
+void ASolidCharacter::ApplySquadFormationDrillYaw(const float YawDegrees)
 {
 	SetActorRotation(FRotator(0.f, YawDegrees, 0.f));
 	if (AController* C = GetController())
@@ -119,57 +119,57 @@ void ASolidCharacter::ApplyPartyFormationDrillYaw(const float YawDegrees)
 	}
 }
 
-void ASolidCharacter::TickPartyFormationDrill(const float DeltaTime)
+void ASolidCharacter::TickSquadFormationDrill(const float DeltaTime)
 {
-	if (!PartyFormationDrill.bActive)
+	if (!SquadFormationDrill.bActive)
 	{
 		return;
 	}
 
-	if (PartyFormationDrill.Phase == SolidPartyDrill::EPhase::Turning)
+	if (SquadFormationDrill.Phase == SolidSquadDrill::EPhase::Turning)
 	{
-		const float Duration = FMath::Max(SolidPartyDrill::TurnDurationSeconds, KINDA_SMALL_NUMBER);
-		PartyFormationDrill.PhaseSecondsRemaining -= DeltaTime;
+		const float Duration = FMath::Max(SolidSquadDrill::TurnDurationSeconds, KINDA_SMALL_NUMBER);
+		SquadFormationDrill.PhaseSecondsRemaining -= DeltaTime;
 		const float Alpha = FMath::Clamp(
-			1.f - (PartyFormationDrill.PhaseSecondsRemaining / Duration),
+			1.f - (SquadFormationDrill.PhaseSecondsRemaining / Duration),
 			0.f,
 			1.f);
 		const float Yaw = FMath::Lerp(
-			PartyFormationDrill.TurnStartYaw,
-			PartyFormationDrill.TurnTargetYaw,
+			SquadFormationDrill.TurnStartYaw,
+			SquadFormationDrill.TurnTargetYaw,
 			Alpha);
-		ApplyPartyFormationDrillYaw(Yaw);
+		ApplySquadFormationDrillYaw(Yaw);
 
-		if (PartyFormationDrill.PhaseSecondsRemaining > 0.f)
+		if (SquadFormationDrill.PhaseSecondsRemaining > 0.f)
 		{
 			return;
 		}
 
-		ApplyPartyFormationDrillYaw(PartyFormationDrill.TurnTargetYaw);
-		BeginPartyFormationDrillWalk();
+		ApplySquadFormationDrillYaw(SquadFormationDrill.TurnTargetYaw);
+		BeginSquadFormationDrillWalk();
 		UE_LOG(LogSolid, Warning,
 			TEXT("Formation drill leg %d/%d walk %.1fs"),
-			PartyFormationDrill.CurrentLeg + 1,
-			SolidPartyDrill::NumLegs,
-			SolidPartyDrill::LegDurationSeconds);
+			SquadFormationDrill.CurrentLeg + 1,
+			SolidSquadDrill::NumLegs,
+			SolidSquadDrill::LegDurationSeconds);
 		return;
 	}
 
 	AddMovementInput(GetActorForwardVector(), 1.f);
 
-	PartyFormationDrill.PhaseSecondsRemaining -= DeltaTime;
-	if (PartyFormationDrill.PhaseSecondsRemaining > 0.f)
+	SquadFormationDrill.PhaseSecondsRemaining -= DeltaTime;
+	if (SquadFormationDrill.PhaseSecondsRemaining > 0.f)
 	{
 		return;
 	}
 
-	++PartyFormationDrill.CurrentLeg;
-	if (PartyFormationDrill.CurrentLeg >= SolidPartyDrill::NumLegs)
+	++SquadFormationDrill.CurrentLeg;
+	if (SquadFormationDrill.CurrentLeg >= SolidSquadDrill::NumLegs)
 	{
 		UE_LOG(LogSolid, Warning, TEXT("Formation drill complete."));
-		StopPartyFormationDrill();
+		StopSquadFormationDrill();
 		return;
 	}
 
-	BeginPartyFormationDrillLeg();
+	BeginSquadFormationDrillLeg();
 }

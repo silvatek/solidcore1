@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "Party/SolidCompany.h"
+#include "Squad/SolidCompany.h"
 #include "SolidCharacterStage.generated.h"
 
 class ASolidCompanionCharacter;
@@ -12,7 +12,7 @@ class UStaticMeshComponent;
 
 /**
  * Plain room in front of the camera, with one companion idle inside it.
- * The companion is a stage preview: it does not follow and it is not in the party.
+ * The companion is a stage preview: it does not follow and it is not in the squad.
  */
 UCLASS()
 class SOLIDCORE1_API ASolidCharacterStage : public AActor

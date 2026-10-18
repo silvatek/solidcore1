@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "InputCoreTypes.h"
 
-/** Raven sight is the third-person party camera. True sight is first person. */
+/** Raven sight is the third-person squad camera. True sight is first person. */
 enum class ESolidSight : uint8
 {
 	Raven,

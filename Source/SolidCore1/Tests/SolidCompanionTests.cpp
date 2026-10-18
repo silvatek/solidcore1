@@ -47,18 +47,18 @@ bool FSolidCompanionFollowTargetTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidCompanionAlexPartySlotTest,
-	"SolidCore1.Companion.AlexPartySlot",
+	FSolidCompanionAlexSquadSlotTest,
+	"SolidCore1.Companion.AlexSquadSlot",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 
-bool FSolidCompanionAlexPartySlotTest::RunTest(const FString& Parameters)
+bool FSolidCompanionAlexSquadSlotTest::RunTest(const FString& Parameters)
 {
 	ASolidCompanionCharacter* Alex = NewObject<ASolidCompanionCharacter>();
 	TestNotNull(TEXT("alex"), Alex);
-	Alex->SetPartySlotIndex(1);
+	Alex->SetSquadSlotIndex(1);
 	Alex->SetCharacterDisplayName(TEXT("Alex"));
 	TestEqual(TEXT("alex name"), Alex->GetCharacterDisplayName(), FString(TEXT("Alex")));
-	TestEqual(TEXT("alex party slot"), Alex->GetPartySlotIndex(), 1);
+	TestEqual(TEXT("alex squad slot"), Alex->GetSquadSlotIndex(), 1);
 	TestEqual(TEXT("alex label text"), Alex->GetNameLabel()->Text.ToString(), FString(TEXT("Alex (W)")));
 	return true;
 }

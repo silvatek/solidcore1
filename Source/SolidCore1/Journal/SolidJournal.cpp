@@ -42,9 +42,9 @@ FString SolidJournal::Describe(const SolidEvents::FEvent& Event)
 				Part = MessageText;
 			}
 			break;
-		case SolidEvents::EChange::MaxPartySize:
+		case SolidEvents::EChange::MaxSquadSize:
 		{
-			const int32 Count = FMath::Clamp(Change.PartySize, 0, SolidEvents::RosterCount);
+			const int32 Count = FMath::Clamp(Change.SquadSize, 0, SolidEvents::RosterCount);
 			FString Names;
 			for (int32 Slot = 0; Slot < Count; ++Slot)
 			{
@@ -56,11 +56,11 @@ FString SolidJournal::Describe(const SolidEvents::FEvent& Event)
 			}
 			if (Names.IsEmpty())
 			{
-				Part = FString::Printf(TEXT("Party %d"), Count);
+				Part = FString::Printf(TEXT("Squad %d"), Count);
 			}
 			else
 			{
-				Part = FString::Printf(TEXT("Party %d: %s"), Count, *Names);
+				Part = FString::Printf(TEXT("Squad %d: %s"), Count, *Names);
 			}
 			break;
 		}

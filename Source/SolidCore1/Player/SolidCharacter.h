@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
-#include "Party/SolidPartyDrill.h"
+#include "Squad/SolidSquadDrill.h"
 #include "SolidSight.h"
 #include "Lairs/SolidLair.h"
 #include "Strongholds/SolidDungeonPassage.h"
@@ -25,7 +25,7 @@ class ASolidStrongholdStone;
 
 /**
  * Captain — the single player-controlled character.
- * Party camera framing lives in SolidPartyCamera.cpp;
+ * Squad camera framing lives in SolidSquadCamera.cpp;
  * visuals/clip selection in SolidCharacterVisuals.cpp (shared play via SolidClipLocomotion);
  * runtime input in SolidCharacterInput.cpp.
  */
@@ -55,12 +55,12 @@ public:
 	const FString& GetCharacterDisplayName() const { return CharacterDisplayName; }
 
 	/** Square-walk formation demo (main menu: Test Drill). Cycles F1–F4, 1.5s per side. */
-	void StartPartyFormationDrill();
-	void StopPartyFormationDrill();
-	bool IsPartyFormationDrillActive() const;
-	bool IsPartyFormationDrillTurning() const;
-	int32 GetPartyFormationDrillLeg() const { return PartyFormationDrill.CurrentLeg; }
-	float GetPartyFormationDrillPhaseRemaining() const { return PartyFormationDrill.PhaseSecondsRemaining; }
+	void StartSquadFormationDrill();
+	void StopSquadFormationDrill();
+	bool IsSquadFormationDrillActive() const;
+	bool IsSquadFormationDrillTurning() const;
+	int32 GetSquadFormationDrillLeg() const { return SquadFormationDrill.CurrentLeg; }
+	float GetSquadFormationDrillPhaseRemaining() const { return SquadFormationDrill.PhaseSecondsRemaining; }
 
 	/** Mouse-wheel boom limit (cm). Fog curtains are taller than this. */
 	float GetCameraZoomMax() const { return CameraZoomMax; }
@@ -80,10 +80,10 @@ public:
 
 protected:
 	void ApplyNameLabel();
-	void BeginPartyFormationDrillLeg();
-	void BeginPartyFormationDrillWalk();
-	void ApplyPartyFormationDrillYaw(float YawDegrees);
-	void TickPartyFormationDrill(float DeltaTime);
+	void BeginSquadFormationDrillLeg();
+	void BeginSquadFormationDrillWalk();
+	void ApplySquadFormationDrillYaw(float YawDegrees);
+	void TickSquadFormationDrill(float DeltaTime);
 
 	virtual void PostInitializeComponents() override;
 	virtual void BeginPlay() override;
@@ -127,7 +127,7 @@ protected:
 	bool IsMenuOverlayOpen() const;
 	ASolidHUD* GetSolidHUD() const;
 
-	/** Select Party assigned battle-plan slot (0 = F1 … 7 = F8). */
+	/** Select Squad assigned battle-plan slot (0 = F1 … 7 = F8). */
 	void SelectBattlePlanSlot(int32 SlotIndex);
 	void SelectBattlePlanSlotFromInput(int32 SlotIndex);
 	void SelectBattlePlanSlot1();
@@ -168,12 +168,12 @@ protected:
 	void MoveCharacterEditor(int32 Delta);
 	void NudgeCharacterEditorSlider(int32 Direction);
 	void ApplyEditorSliderFraction(int32 Slider, float Fraction);
-	void PushEditorBodyToParty(const FString& Name, float Height, float Build, float Gender);
+	void PushEditorBodyToSquad(const FString& Name, float Height, float Build, float Gender);
 	void SyncCharacterStage();
 	void SetEditorWorldHidden(bool bHideWorld);
 	void SetEditorCameraLocked(bool bLocked);
-	int32 CurrentMaxPartySize() const;
-	void TogglePartyBuilderRow(int32 Index);
+	int32 CurrentMaxSquadSize() const;
+	void ToggleSquadBuilderRow(int32 Index);
 	void MainMenuChoose1();
 	void MainMenuChoose2();
 	void MainMenuChoose3();
@@ -202,10 +202,10 @@ protected:
 	bool PlayLocomotionClip(UAnimSequence* Anim);
 
 	/**
-	 * Party camera: pull the boom toward the Party center and optionally lengthen
+	 * Squad camera: pull the boom toward the Squad center and optionally lengthen
 	 * so the Captain and active Companions stay framed. (Company is not framed.)
 	 */
-	void UpdatePartyCameraFraming(float DeltaTime);
+	void UpdateSquadCameraFraming(float DeltaTime);
 
 	/** Lift the boom socket so the camera stays above procedural terrain (no arm collapse). */
 	void ClampCameraAboveTerrain(float DeltaTime);
@@ -228,7 +228,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character|Name", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UTextRenderComponent> NameLabel;
 
-	/** When true, camera frames the Party (Captain + Companions currently in the world). */
+	/** When true, camera frames the Squad (Captain + Companions currently in the world). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing")
 	bool bFrameCompanions = true;
 
@@ -238,11 +238,11 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "400.0"))
 	float FramingMaxArmLength = 4000.f;
 
-	/** Extra world centimeters outside the projected Party extents. */
+	/** Extra world centimeters outside the projected Squad extents. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "0.0"))
 	float FramingPadding = 280.f;
 
-	/** Zoom-out speed when the Party needs a wider shot. */
+	/** Zoom-out speed when the Squad needs a wider shot. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "0.1"))
 	float FramingZoomOutSpeed = 8.f;
 
@@ -255,7 +255,7 @@ protected:
 
 	/**
 	 * Spring-arm collision against hills collapses TargetArmLength and clips Companions.
-	 * When true, collision probes are disabled while any Companion is in the Party frame.
+	 * When true, collision probes are disabled while any Companion is in the Squad frame.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing")
 	bool bDisableBoomCollisionWhileFraming = true;
@@ -276,7 +276,7 @@ protected:
 	float CameraTerrainLiftMax = 280.f;
 
 	/**
-	 * When true, Party framing may lengthen the boom past zoom.
+	 * When true, Squad framing may lengthen the boom past zoom.
 	 * When false (default), mouse-wheel zoom fully controls arm length; framing only recenters.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing")
@@ -394,7 +394,7 @@ protected:
 	TObjectPtr<UAnimSequence> ActiveLocomotionAnim;
 
 	/** Square-walk formation demo state. */
-	SolidPartyDrill::FState PartyFormationDrill;
+	SolidSquadDrill::FState SquadFormationDrill;
 
 	/** Plain room and one companion, shown from the F10 character editor. */
 	UPROPERTY(Transient)

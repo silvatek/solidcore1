@@ -103,7 +103,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidStreamerRelocateCompanionsWithFocusTest::RunTest(const FString& Parameters)
 {
-	UWorld* World = UWorld::CreateWorld(EWorldType::Game, false, TEXT("SolidStreamerPartyRelocateWorld"));
+	UWorld* World = UWorld::CreateWorld(EWorldType::Game, false, TEXT("SolidStreamerSquadRelocateWorld"));
 	TestNotNull(TEXT("created world"), World);
 	if (!World)
 	{

@@ -2,8 +2,8 @@
 #include "Misc/AutomationTest.h"
 #include <initializer_list>
 #include "Companion/SolidCompanionCharacter.h"
-#include "Party/SolidCompany.h"
-#include "Party/SolidParty.h"
+#include "Squad/SolidCompany.h"
+#include "Squad/SolidSquad.h"
 #include "SolidClipLocomotion.h"
 #include "SolidGameMode.h"
 #include "UObject/SoftObjectPath.h"
@@ -34,12 +34,12 @@ namespace
 
 	bool FieldedNamesAre(
 		FAutomationTestBase& Test,
-		USolidParty* Party,
+		USolidSquad* Squad,
 		const int32 MaxCount,
 		std::initializer_list<const TCHAR*> Expected)
 	{
 		TArray<FSolidCompanion> Fielded;
-		Party->CollectFieldedCompanions(MaxCount, Fielded);
+		Squad->CollectFieldedCompanions(MaxCount, Fielded);
 		if (Fielded.Num() != static_cast<int32>(Expected.size()))
 		{
 			Test.AddError(FString::Printf(
@@ -47,7 +47,7 @@ namespace
 				Fielded.Num(), static_cast<int32>(Expected.size()), MaxCount));
 			return false;
 		}
-		USolidCompany* Company = Party ? Party->GetCompany() : nullptr;
+		USolidCompany* Company = Squad ? Squad->GetCompany() : nullptr;
 		int32 Index = 0;
 		for (const TCHAR* Name : Expected)
 		{
@@ -215,34 +215,34 @@ bool FSolidCompanyRosterTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidPartyCompanionSelectionTest,
-	"SolidCore1.Company.PartySelection",
+	FSolidSquadCompanionSelectionTest,
+	"SolidCore1.Company.SquadSelection",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 
-bool FSolidPartyCompanionSelectionTest::RunTest(const FString& Parameters)
+bool FSolidSquadCompanionSelectionTest::RunTest(const FString& Parameters)
 {
 	USolidCompany* Company = NewObject<USolidCompany>();
-	USolidParty* Party = NewObject<USolidParty>();
+	USolidSquad* Squad = NewObject<USolidSquad>();
 	TestNotNull(TEXT("company"), Company);
-	TestNotNull(TEXT("party"), Party);
+	TestNotNull(TEXT("squad"), Squad);
 
-	USolidParty* Bare = NewObject<USolidParty>();
-	TestNotNull(TEXT("unbound party"), Bare);
+	USolidSquad* Bare = NewObject<USolidSquad>();
+	TestNotNull(TEXT("unbound squad"), Bare);
 	TArray<int32> UnboundChoice;
 	UnboundChoice.Add(0);
 	TestFalse(TEXT("no company rejects a selection"), Bare->SetSelectedCompanions(UnboundChoice));
-	TestTrue(TEXT("unbound party fields nobody"), FieldedNamesAre(*this, Bare, 2, {}));
+	TestTrue(TEXT("unbound squad fields nobody"), FieldedNamesAre(*this, Bare, 2, {}));
 
-	Party->InitializeFromCompany(Company);
-	TestEqual(TEXT("Sam and Alex start selected"), Party->GetSelectedCompanionCount(), 2);
-	const TArray<int32>& Starter = Party->GetSelectedCompanionIndices();
+	Squad->InitializeFromCompany(Company);
+	TestEqual(TEXT("Sam and Alex start selected"), Squad->GetSelectedCompanionCount(), 2);
+	const TArray<int32>& Starter = Squad->GetSelectedCompanionIndices();
 	TestEqual(TEXT("starter slot 0"), Starter.Num() > 0 ? Starter[0] : INDEX_NONE, 0);
 	TestEqual(TEXT("starter slot 1"), Starter.Num() > 1 ? Starter[1] : INDEX_NONE, 1);
-	TestTrue(TEXT("max 0 fields nobody"), FieldedNamesAre(*this, Party, 0, {}));
-	TestTrue(TEXT("max 1 fields Sam"), FieldedNamesAre(*this, Party, 1, { TEXT("Sam") }));
-	TestTrue(TEXT("max 2 fields Sam and Alex"), FieldedNamesAre(*this, Party, 2, { TEXT("Sam"), TEXT("Alex") }));
+	TestTrue(TEXT("max 0 fields nobody"), FieldedNamesAre(*this, Squad, 0, {}));
+	TestTrue(TEXT("max 1 fields Sam"), FieldedNamesAre(*this, Squad, 1, { TEXT("Sam") }));
+	TestTrue(TEXT("max 2 fields Sam and Alex"), FieldedNamesAre(*this, Squad, 2, { TEXT("Sam"), TEXT("Alex") }));
 	TestTrue(TEXT("a higher max still fields only the selection"),
-		FieldedNamesAre(*this, Party, 9, { TEXT("Sam"), TEXT("Alex") }));
+		FieldedNamesAre(*this, Squad, 9, { TEXT("Sam"), TEXT("Alex") }));
 
 	const int32 MaxIndex = Company->FindCompanionIndexByName(TEXT("Max"));
 	const int32 QuinnIndex = Company->FindCompanionIndexByName(TEXT("Quinn"));
@@ -252,54 +252,54 @@ bool FSolidPartyCompanionSelectionTest::RunTest(const FString& Parameters)
 	MaxAndQuinn.Add(MaxIndex);
 	MaxAndQuinn.Add(QuinnIndex);
 	MaxAndQuinn.Add(-1);
-	TestTrue(TEXT("select Max then Quinn"), Party->SetSelectedCompanions(MaxAndQuinn));
-	TestEqual(TEXT("invalid index and duplicate skipped"), Party->GetSelectedCompanionCount(), 2);
-	const TArray<int32>& Chosen = Party->GetSelectedCompanionIndices();
+	TestTrue(TEXT("select Max then Quinn"), Squad->SetSelectedCompanions(MaxAndQuinn));
+	TestEqual(TEXT("invalid index and duplicate skipped"), Squad->GetSelectedCompanionCount(), 2);
+	const TArray<int32>& Chosen = Squad->GetSelectedCompanionIndices();
 	TestEqual(TEXT("first chosen"), Chosen.Num() > 0 ? Chosen[0] : INDEX_NONE, MaxIndex);
 	TestEqual(TEXT("second chosen"), Chosen.Num() > 1 ? Chosen[1] : INDEX_NONE, QuinnIndex);
-	TestTrue(TEXT("max 2 fields Max and Quinn"), FieldedNamesAre(*this, Party, 2, { TEXT("Max"), TEXT("Quinn") }));
-	TestTrue(TEXT("max 1 fields Max"), FieldedNamesAre(*this, Party, 1, { TEXT("Max") }));
+	TestTrue(TEXT("max 2 fields Max and Quinn"), FieldedNamesAre(*this, Squad, 2, { TEXT("Max"), TEXT("Quinn") }));
+	TestTrue(TEXT("max 1 fields Max"), FieldedNamesAre(*this, Squad, 1, { TEXT("Max") }));
 
-	TestTrue(TEXT("empty selection is allowed"), Party->SetSelectedCompanions(TArray<int32>()));
-	TestEqual(TEXT("nothing selected"), Party->GetSelectedCompanionCount(), 0);
-	TestTrue(TEXT("empty selection fields nobody"), FieldedNamesAre(*this, Party, 2, {}));
+	TestTrue(TEXT("empty selection is allowed"), Squad->SetSelectedCompanions(TArray<int32>()));
+	TestEqual(TEXT("nothing selected"), Squad->GetSelectedCompanionCount(), 0);
+	TestTrue(TEXT("empty selection fields nobody"), FieldedNamesAre(*this, Squad, 2, {}));
 
-	TestTrue(TEXT("select again before unbind"), Party->SetSelectedCompanions(MaxAndQuinn));
-	Party->InitializeFromCompany(nullptr);
-	TestEqual(TEXT("clearing the company drops the selection"), Party->GetSelectedCompanionCount(), 0);
-	TestNull(TEXT("company unbound"), Party->GetCompany());
+	TestTrue(TEXT("select again before unbind"), Squad->SetSelectedCompanions(MaxAndQuinn));
+	Squad->InitializeFromCompany(nullptr);
+	TestEqual(TEXT("clearing the company drops the selection"), Squad->GetSelectedCompanionCount(), 0);
+	TestNull(TEXT("company unbound"), Squad->GetCompany());
 	return true;
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidPartySelectionSurvivesEnsureTest,
+	FSolidSquadSelectionSurvivesEnsureTest,
 	"SolidCore1.Company.SelectionSurvivesEnsure",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 
-bool FSolidPartySelectionSurvivesEnsureTest::RunTest(const FString& Parameters)
+bool FSolidSquadSelectionSurvivesEnsureTest::RunTest(const FString& Parameters)
 {
 	ASolidGameMode* GameMode = NewObject<ASolidGameMode>();
 	TestNotNull(TEXT("gamemode"), GameMode);
 	USolidCompany* Company = GameMode->GetCompany();
-	USolidParty* Party = GameMode->GetParty();
+	USolidSquad* Squad = GameMode->GetSquad();
 	TestNotNull(TEXT("company"), Company);
-	TestNotNull(TEXT("party"), Party);
+	TestNotNull(TEXT("squad"), Squad);
 	TestEqual(TEXT("catalog seeded"), Company->GetCompanionCount(), 5);
 	TestTrue(TEXT("game starts with Sam and Alex selected"),
-		FieldedNamesAre(*this, Party, 2, { TEXT("Sam"), TEXT("Alex") }));
+		FieldedNamesAre(*this, Squad, 2, { TEXT("Sam"), TEXT("Alex") }));
 
 	const int32 Morgan = Company->FindCompanionIndexByName(TEXT("Morgan"));
 	const int32 Quinn = Company->FindCompanionIndexByName(TEXT("Quinn"));
 	TArray<int32> MorganAndQuinn;
 	MorganAndQuinn.Add(Morgan);
 	MorganAndQuinn.Add(Quinn);
-	TestTrue(TEXT("select Morgan and Quinn"), Party->SetSelectedCompanions(MorganAndQuinn));
+	TestTrue(TEXT("select Morgan and Quinn"), Squad->SetSelectedCompanions(MorganAndQuinn));
 
-	// Enter-town refresh calls EnsureCompanyAndParty on a timer. That must not
+	// Enter-town refresh calls EnsureCompanyAndSquad on a timer. That must not
 	// put Sam and Alex back.
-	GameMode->EnsureCompanyAndParty();
+	GameMode->EnsureCompanyAndSquad();
 	TestTrue(TEXT("selection stays Morgan and Quinn"),
-		FieldedNamesAre(*this, Party, 2, { TEXT("Morgan"), TEXT("Quinn") }));
+		FieldedNamesAre(*this, Squad, 2, { TEXT("Morgan"), TEXT("Quinn") }));
 	TestEqual(TEXT("catalog stays five"), Company->GetCompanionCount(), 5);
 	return true;
 }

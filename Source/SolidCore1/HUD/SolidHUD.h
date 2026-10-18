@@ -33,12 +33,12 @@ public:
 	void CancelInventoryDrag();
 	bool IsInventoryDragging() const { return bInventoryDrag; }
 
-	/** Company list opened from Build party. */
-	void OpenPartyBuilder();
-	bool IsPartyBuilderOpen() const { return bShowPartyBuilder; }
-	int32 GetPartyBuilderIndex() const { return PartyBuilderIndex; }
-	void MovePartyBuilderSelection(int32 Delta);
-	void SetPartyBuilderIndex(int32 Index);
+	/** Company list opened from Build squad. */
+	void OpenSquadBuilder();
+	bool IsSquadBuilderOpen() const { return bShowSquadBuilder; }
+	int32 GetSquadBuilderIndex() const { return SquadBuilderIndex; }
+	void MoveSquadBuilderSelection(int32 Delta);
+	void SetSquadBuilderIndex(int32 Index);
 
 	/** Town list opened from Use portal. */
 	void OpenPortal();
@@ -96,7 +96,7 @@ public:
 
 	/** F10. Closes an open page, including the character editor, or toggles the main menu. */
 	void HandleMenuKey();
-	/** Esc. Closes the menu, the portal, the party builder, the journal, the inventory, the credits page, the character editor, and a stronghold type choice. */
+	/** Esc. Closes the menu, the portal, the squad builder, the journal, the inventory, the credits page, the character editor, and a stronghold type choice. */
 	void CloseMenuOverlay();
 	/** Hide the menu list. Leaves the credits page as it is. */
 	void CloseMainMenu();
@@ -139,7 +139,7 @@ protected:
 	void DrawMainMenuPopup();
 	void DrawPortalPopup();
 	void DrawStrongholdChoice();
-	void DrawPartyBuilderPopup();
+	void DrawSquadBuilderPopup();
 	/** Wall-clock timestamps (seconds) for frames in the rolling FPS window. */
 	TArray<double> RecentFrameTimes;
 
@@ -159,13 +159,13 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "HUD")
 	bool bShowInventory = false;
 
-	/** Party builder, opened from the main menu once two companions are allowed. */
+	/** Squad builder, opened from the main menu once two companions are allowed. */
 	UPROPERTY(VisibleAnywhere, Category = "HUD")
-	bool bShowPartyBuilder = false;
+	bool bShowSquadBuilder = false;
 
-	/** Highlighted companion while the party builder is open. */
+	/** Highlighted companion while the squad builder is open. */
 	UPROPERTY(VisibleAnywhere, Category = "HUD")
-	int32 PartyBuilderIndex = 0;
+	int32 SquadBuilderIndex = 0;
 
 	/** F10 main menu. Off until toggled. */
 	UPROPERTY(VisibleAnywhere, Category = "HUD")

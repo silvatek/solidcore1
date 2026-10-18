@@ -118,7 +118,7 @@ bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Iglin stays first"), IglinStill != INDEX_NONE && Relion != INDEX_NONE && IglinStill < Relion);
 	TestTrue(TEXT("lists Enter Relion second"), Relion != INDEX_NONE);
 	TestTrue(TEXT("Relion enables raven sight"), SolidJournalTestPrivate::ContainsText(AfterRelion, TEXT("Raven sight enabled")));
-	TestTrue(TEXT("Relion party is Sam"), SolidJournalTestPrivate::ContainsText(AfterRelion, TEXT("Party 1: Sam")));
+	TestTrue(TEXT("Relion squad is Sam"), SolidJournalTestPrivate::ContainsText(AfterRelion, TEXT("Squad 1: Sam")));
 	TestFalse(TEXT("Alex is not in yet"), SolidJournalTestPrivate::ContainsText(AfterRelion, TEXT("Alex")));
 	if (Relion != INDEX_NONE)
 	{
@@ -140,7 +140,7 @@ bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Iglin stays first"), IglinThird != INDEX_NONE && RelionThird != INDEX_NONE && IglinThird < RelionThird);
 	TestTrue(TEXT("Relion stays second"), RelionThird != INDEX_NONE && Kanfold != INDEX_NONE && RelionThird < Kanfold);
 	TestTrue(TEXT("Kanfold is third"), Kanfold != INDEX_NONE);
-	TestTrue(TEXT("Kanfold party is both"), SolidJournalTestPrivate::ContainsText(AfterKanfold, TEXT("Party 2: Sam, Alex")));
+	TestTrue(TEXT("Kanfold squad is both"), SolidJournalTestPrivate::ContainsText(AfterKanfold, TEXT("Squad 2: Sam, Alex")));
 	TestFalse(TEXT("filled journal is not empty"), SolidJournalTestPrivate::ContainsText(AfterKanfold, TEXT("No events yet.")));
 
 	FGameState Skipped;

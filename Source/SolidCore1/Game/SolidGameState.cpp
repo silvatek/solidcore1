@@ -70,9 +70,9 @@ void ApplyChange(FGameState& State, const FChange& Change, FResult& Result)
 		Result.bSetSight = true;
 		Result.Sight = Change.Sight;
 		break;
-	case EChange::MaxPartySize:
-		State.MaxPartySize = FMath::Max(0, Change.PartySize);
-		Result.MaxPartySize = State.MaxPartySize;
+	case EChange::MaxSquadSize:
+		State.MaxSquadSize = FMath::Max(0, Change.SquadSize);
+		Result.MaxSquadSize = State.MaxSquadSize;
 		break;
 	case EChange::CaptainTitle:
 		if (Change.Title && Change.Title[0])
@@ -111,9 +111,9 @@ void ApplyChange(FGameState& State, const FChange& Change, FResult& Result)
 	}
 }
 
-int32 PartyCount(const FGameState& State)
+int32 SquadCount(const FGameState& State)
 {
-	return FMath::Clamp(State.MaxPartySize, 0, RosterCount);
+	return FMath::Clamp(State.MaxSquadSize, 0, RosterCount);
 }
 
 bool IsSightEnabled(const FGameState& State, const ESolidSight Sight)
@@ -181,7 +181,7 @@ FResult NotifyOccupiedTown(
 	const SolidWorldTime::FStamp& When)
 {
 	FResult Result;
-	Result.MaxPartySize = State.MaxPartySize;
+	Result.MaxSquadSize = State.MaxSquadSize;
 	Result.CaptainTitle = State.CaptainTitle;
 	if (State.OccupiedTown == TownId)
 	{
@@ -209,7 +209,7 @@ FResult NotifyOccupiedTown(
 		TryFireEvent(State, Index, When, Result);
 	}
 
-	Result.MaxPartySize = State.MaxPartySize;
+	Result.MaxSquadSize = State.MaxSquadSize;
 	return Result;
 }
 
@@ -218,7 +218,7 @@ FResult NotifyReachBrokenBridge(
 	const SolidWorldTime::FStamp& When)
 {
 	FResult Result;
-	Result.MaxPartySize = State.MaxPartySize;
+	Result.MaxSquadSize = State.MaxSquadSize;
 	Result.CaptainTitle = State.CaptainTitle;
 
 	for (int32 Index = 0; Index < DefinitionCount; ++Index)
@@ -230,7 +230,7 @@ FResult NotifyReachBrokenBridge(
 		TryFireEvent(State, Index, When, Result);
 	}
 
-	Result.MaxPartySize = State.MaxPartySize;
+	Result.MaxSquadSize = State.MaxSquadSize;
 	return Result;
 }
 
@@ -240,7 +240,7 @@ FResult NotifyMessageClosed(
 	const SolidWorldTime::FStamp& When)
 {
 	FResult Result;
-	Result.MaxPartySize = State.MaxPartySize;
+	Result.MaxSquadSize = State.MaxSquadSize;
 	Result.CaptainTitle = State.CaptainTitle;
 	if (!MessageId || !MessageId[0])
 	{
@@ -261,7 +261,7 @@ FResult NotifyMessageClosed(
 		TryFireEvent(State, Index, When, Result);
 	}
 
-	Result.MaxPartySize = State.MaxPartySize;
+	Result.MaxSquadSize = State.MaxSquadSize;
 	return Result;
 }
 
@@ -271,7 +271,7 @@ FResult MarkComplete(
 	const SolidWorldTime::FStamp& When)
 {
 	FResult Result;
-	Result.MaxPartySize = State.MaxPartySize;
+	Result.MaxSquadSize = State.MaxSquadSize;
 	Result.CaptainTitle = State.CaptainTitle;
 	if (!EventId || !EventId[0])
 	{
@@ -279,7 +279,7 @@ FResult MarkComplete(
 	}
 
 	TryFireEvent(State, FindIndexById(EventId), When, Result, /*bForce=*/true);
-	Result.MaxPartySize = State.MaxPartySize;
+	Result.MaxSquadSize = State.MaxSquadSize;
 	return Result;
 }
 

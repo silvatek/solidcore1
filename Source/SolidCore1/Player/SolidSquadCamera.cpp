@@ -37,7 +37,7 @@ void ASolidCharacter::ApplyRavenSightCamera()
 	CameraBoom->bDoCollisionTest = true;
 }
 
-void ASolidCharacter::UpdatePartyCameraFraming(float DeltaTime)
+void ASolidCharacter::UpdateSquadCameraFraming(float DeltaTime)
 {
 	if (IsTrueSight())
 	{
@@ -50,27 +50,27 @@ void ASolidCharacter::UpdatePartyCameraFraming(float DeltaTime)
 		return;
 	}
 
-	// Only the locally controlled Captain drives the Party framing camera.
+	// Only the locally controlled Captain drives the Squad framing camera.
 	if (!IsLocallyControlled())
 	{
 		return;
 	}
 
-	struct FPartyMember
+	struct FSquadMember
 	{
 		FVector Location;
 		float CapsuleHalfHeight;
 	};
 
-	// Party ≈ Captain + Companions currently present (not the full Company).
-	TArray<FPartyMember, TInlineAllocator<8>> PartyMembers;
+	// Squad ≈ Captain + Companions currently present (not the full Company).
+	TArray<FSquadMember, TInlineAllocator<8>> SquadMembers;
 	{
 		float HalfHeight = 96.f;
 		if (const UCapsuleComponent* Capsule = GetCapsuleComponent())
 		{
 			HalfHeight = Capsule->GetScaledCapsuleHalfHeight();
 		}
-		PartyMembers.Add({ GetActorLocation(), HalfHeight });
+		SquadMembers.Add({ GetActorLocation(), HalfHeight });
 	}
 
 	if (UWorld* World = GetWorld())
@@ -86,29 +86,29 @@ void ASolidCharacter::UpdatePartyCameraFraming(float DeltaTime)
 			{
 				HalfHeight = Capsule->GetScaledCapsuleHalfHeight();
 			}
-			PartyMembers.Add({ It->GetActorLocation(), HalfHeight });
+			SquadMembers.Add({ It->GetActorLocation(), HalfHeight });
 		}
 	}
 
-	const bool bPartyHasCompanions = PartyMembers.Num() > 1;
+	const bool bSquadHasCompanions = SquadMembers.Num() > 1;
 
 	if (bDisableBoomCollisionWhileFraming)
 	{
 		// SC1-0025 popped narrower when the boom probe hit hills and collapsed arm length.
-		CameraBoom->bDoCollisionTest = !bPartyHasCompanions;
+		CameraBoom->bDoCollisionTest = !bSquadHasCompanions;
 	}
 
 	FVector DesiredTargetOffset = FVector::ZeroVector;
 	float FramingFitArm = 0.f;
 
-	if (bPartyHasCompanions)
+	if (bSquadHasCompanions)
 	{
 		FVector Center = FVector::ZeroVector;
-		for (const FPartyMember& Member : PartyMembers)
+		for (const FSquadMember& Member : SquadMembers)
 		{
 			Center += Member.Location;
 		}
-		Center /= static_cast<float>(PartyMembers.Num());
+		Center /= static_cast<float>(SquadMembers.Num());
 
 		FVector ToCenter = Center - GetActorLocation();
 		ToCenter.Z *= 0.45f;
@@ -125,7 +125,7 @@ void ASolidCharacter::UpdatePartyCameraFraming(float DeltaTime)
 
 		float MaxRight = 0.f;
 		float MaxUp = 0.f;
-		for (const FPartyMember& Member : PartyMembers)
+		for (const FSquadMember& Member : SquadMembers)
 		{
 			const FVector Delta = Member.Location - Center;
 			MaxRight = FMath::Max(MaxRight, FMath::Abs(FVector::DotProduct(Delta, CamRight)) + 45.f);
@@ -153,7 +153,7 @@ void ASolidCharacter::UpdatePartyCameraFraming(float DeltaTime)
 	// Wheel zoom owns arm length by default. Framing may only pull out if explicitly allowed
 	// (otherwise zoom-in hits CameraZoomMin while arm stays long — feels "stuck").
 	float DesiredArmLength = UserZoomArmLength;
-	if (bPartyHasCompanions && bFramingCanOverrideZoom && FramingFitArm > DesiredArmLength)
+	if (bSquadHasCompanions && bFramingCanOverrideZoom && FramingFitArm > DesiredArmLength)
 	{
 		DesiredArmLength = FramingFitArm;
 	}

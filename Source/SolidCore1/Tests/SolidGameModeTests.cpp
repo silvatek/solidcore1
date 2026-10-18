@@ -30,7 +30,7 @@ bool FSolidGameModeDefaultsTest::RunTest(const FString& Parameters)
 	TestNull(TEXT("no companion until Ensure"), GameMode->GetCompanion());
 	TestEqual(TEXT("companions empty until Ensure"), GameMode->GetCompanions().Num(), 0);
 	TestNotNull(TEXT("company created"), GameMode->GetCompany());
-	TestNotNull(TEXT("party created"), GameMode->GetParty());
+	TestNotNull(TEXT("squad created"), GameMode->GetSquad());
 	return true;
 }
 

@@ -3,7 +3,7 @@
 #include "SolidNameLabel.h"
 #include "SolidCharacter.h"
 #include "Companion/SolidCompanionCharacter.h"
-#include "Party/SolidCompany.h"
+#include "Squad/SolidCompany.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
 

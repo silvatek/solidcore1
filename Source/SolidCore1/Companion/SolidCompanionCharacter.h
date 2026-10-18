@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
-#include "Party/SolidCompany.h"
+#include "Squad/SolidCompany.h"
 #include "SolidCompanionCharacter.generated.h"
 
 class USkeletalMesh;
@@ -13,9 +13,9 @@ class UStaticMeshComponent;
 class UTextRenderComponent;
 
 /**
- * Companion — NPC Party member that steers toward a battle-plan slot around the Captain.
+ * Companion — NPC Squad member that steers toward a battle-plan slot around the Captain.
  * Uses direct CharacterMovement (no NavMesh) so it works on procedural terrain.
- * Mesh/clips default to Fab Viking via SoftObjectPtrs (Party members may use different meshes).
+ * Mesh/clips default to Fab Viking via SoftObjectPtrs (Squad members may use different meshes).
  */
 UCLASS()
 class SOLIDCORE1_API ASolidCompanionCharacter : public ACharacter
@@ -73,14 +73,14 @@ public:
 	float SideOffset = 80.f;
 
 	/**
-	 * Index in the Party formation (0 = Sam, 1 = Alex, …).
-	 * When a Party Battle Plan is active, follow point comes from this slot.
+	 * Index in the Squad formation (0 = Sam, 1 = Alex, …).
+	 * When a Squad Battle Plan is active, follow point comes from this slot.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion|Follow", meta = (ClampMin = "0"))
-	int32 PartySlotIndex = 0;
+	int32 SquadSlotIndex = 0;
 
-	void SetPartySlotIndex(int32 NewSlotIndex) { PartySlotIndex = FMath::Max(0, NewSlotIndex); }
-	int32 GetPartySlotIndex() const { return PartySlotIndex; }
+	void SetSquadSlotIndex(int32 NewSlotIndex) { SquadSlotIndex = FMath::Max(0, NewSlotIndex); }
+	int32 GetSquadSlotIndex() const { return SquadSlotIndex; }
 
 	/** Mesh from the company roster. Applied on spawn, before visuals load. */
 	void SetCompanionMesh(const TSoftObjectPtr<USkeletalMesh>& NewMesh);
@@ -109,7 +109,7 @@ public:
 	/** Rebuild the worn body from the current name and controls. */
 	void RebuildBody();
 
-	/** Shown on the character-editor stage. Does not follow the captain or join the party. */
+	/** Shown on the character-editor stage. Does not follow the captain or join the squad. */
 	void SetStagePreview(bool bPreview);
 	bool IsStagePreview() const { return bStagePreview; }
 

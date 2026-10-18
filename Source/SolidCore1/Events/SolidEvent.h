@@ -13,7 +13,7 @@
  */
 namespace SolidEvents
 {
-	/** Sight, party size, and title, plus one unlock for every stronghold size. */
+	/** Sight, squad size, and title, plus one unlock for every stronghold size. */
 	inline constexpr int32 MaxChangesPerEvent = 3 + SolidStronghold::SizeCount;
 	inline constexpr int32 MaxRequiresPerEvent = 4;
 	inline constexpr int32 MaxEvents = 16;
@@ -48,8 +48,8 @@ namespace SolidEvents
 	{
 		/** Unlock a sight and switch the captain to it. */
 		EnableSight,
-		/** How many companions may be in the party. */
-		MaxPartySize,
+		/** How many companions may be in the squad. */
+		MaxSquadSize,
 		/** The captain's nameplate. Orphan, then Outcast, then Vagrant, then Ranger, then Captain. */
 		CaptainTitle,
 		/** Draw the center of a broken bridge and open that crossing. */
@@ -74,9 +74,9 @@ namespace SolidEvents
 
 	struct FChange
 	{
-		EChange Kind = EChange::MaxPartySize;
+		EChange Kind = EChange::MaxSquadSize;
 		ESolidSight Sight = ESolidSight::Raven;
-		int32 PartySize = 0;
+		int32 SquadSize = 0;
 		const TCHAR* Title = nullptr;
 		/** Message id for a ShowMessage change. */
 		const TCHAR* MessageId = nullptr;
@@ -98,11 +98,11 @@ namespace SolidEvents
 			return Change;
 		}
 
-		inline constexpr FChange SetMaxPartySize(const int32 Size)
+		inline constexpr FChange SetMaxSquadSize(const int32 Size)
 		{
 			FChange Change;
-			Change.Kind = EChange::MaxPartySize;
-			Change.PartySize = Size;
+			Change.Kind = EChange::MaxSquadSize;
+			Change.SquadSize = Size;
 			return Change;
 		}
 
@@ -174,9 +174,9 @@ namespace SolidEvents
 			return With(Change::EnableSight(Mode));
 		}
 
-		constexpr FEvent SetMaxPartySize(const int32 Size) const
+		constexpr FEvent SetMaxSquadSize(const int32 Size) const
 		{
-			return With(Change::SetMaxPartySize(Size));
+			return With(Change::SetMaxSquadSize(Size));
 		}
 
 		constexpr FEvent SetPlayerTitle(const TCHAR* InName) const
@@ -272,7 +272,7 @@ namespace SolidEvents
 	}
 
 	/**
-	 * Companions join in this order as Max Party Size grows.
+	 * Companions join in this order as Max Squad Size grows.
 	 * Size 1 is Sam. Size 2 is Sam and Alex. Size 5 is the whole company.
 	 */
 	inline const TCHAR* RosterNames[] = {

@@ -5,7 +5,7 @@
 #include "Companion/SolidCompanionCharacter.h"
 #include "Menus/SolidCharacterEditor.h"
 #include "Menus/SolidMainMenu.h"
-#include "Party/SolidCompany.h"
+#include "Squad/SolidCompany.h"
 #include "SolidBodyMesh.h"
 #include "SolidBodyParams.h"
 #include "SolidHUD.h"

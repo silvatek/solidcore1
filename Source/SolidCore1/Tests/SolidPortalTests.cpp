@@ -81,7 +81,7 @@ bool FSolidPortalLandingTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("lands south of the cell center"), Landing.Equals(FVector2D(1000.f, 1550.f), 0.1f));
 
 	const FVector Captain(10.f, 20.f, 300.f);
-	const FVector Delta = SolidPortal::PartyDelta(Captain, Landing);
+	const FVector Delta = SolidPortal::SquadDelta(Captain, Landing);
 	TestTrue(TEXT("delta is planar"), FMath::IsNearlyZero(Delta.Z));
 	TestTrue(TEXT("delta reaches the landing"), FVector2D(Captain.X + Delta.X, Captain.Y + Delta.Y).Equals(Landing, 0.1f));
 

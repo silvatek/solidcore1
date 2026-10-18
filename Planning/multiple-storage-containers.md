@@ -26,7 +26,7 @@ The chest the company already has still starts with the rusty sword, the old boo
 - A click on the fireplace or the bed does not open a container and does not change which container is open.
 - Closing the inventory forgets the place in the cycle. Leaving the stronghold forgets it too. The next `/` shows the first storage piece again.
 - Outside the stronghold, in the Iglin tunnels, and in a stronghold the company has left, the container grid stays off. Page Up, Page Down, and the shoulder buttons do not open a container there. A click there does not open one.
-- While a menu, the journal, a message, or the party builder is open, a click does not open a container. While arrange mode is on, a click does not open one either. This story does not add arrange mode.
+- While a menu, the journal, a message, or the squad builder is open, a click does not open a container. While arrange mode is on, a click does not open one either. This story does not add arrange mode.
 - `ClearInventory` still clears worn boxes, the pack, and the crafting slots. It does not clear a container.
 - A move to another stronghold keeps every container: the same items, in the same slots, with the same counts, on the same piece. The pack stays with the captain.
 - A cave trip and a tower trip keep those containers. Coming back shows the same slots in the piece the player opens.

@@ -1,17 +1,17 @@
-#include "SolidPartyBuilder.h"
-#include "Party/SolidCompany.h"
-#include "Party/SolidParty.h"
+#include "SolidSquadBuilder.h"
+#include "Squad/SolidCompany.h"
+#include "Squad/SolidSquad.h"
 
-void SolidPartyBuilder::CollectRows(const USolidParty* Party, TArray<FRow>& OutRows)
+void SolidSquadBuilder::CollectRows(const USolidSquad* Squad, TArray<FRow>& OutRows)
 {
 	OutRows.Reset();
-	const USolidCompany* Company = Party ? Party->GetCompany() : nullptr;
+	const USolidCompany* Company = Squad ? Squad->GetCompany() : nullptr;
 	if (!Company)
 	{
 		return;
 	}
 
-	const TArray<int32>& Selected = Party->GetSelectedCompanionIndices();
+	const TArray<int32>& Selected = Squad->GetSelectedCompanionIndices();
 	for (int32 Index = 0; Index < Company->GetCompanionCount(); ++Index)
 	{
 		const FSolidCompanion* Companion = Company->GetCompanion(Index);
@@ -29,26 +29,26 @@ void SolidPartyBuilder::CollectRows(const USolidParty* Party, TArray<FRow>& OutR
 	}
 }
 
-bool SolidPartyBuilder::Toggle(USolidParty* Party, const int32 CompanyIndex, const int32 MaxPartySize)
+bool SolidSquadBuilder::Toggle(USolidSquad* Squad, const int32 CompanyIndex, const int32 MaxSquadSize)
 {
-	if (!Party || !Party->GetCompany() || !Party->GetCompany()->GetCompanion(CompanyIndex))
+	if (!Squad || !Squad->GetCompany() || !Squad->GetCompany()->GetCompanion(CompanyIndex))
 	{
 		return false;
 	}
 
-	TArray<int32> Next = Party->GetSelectedCompanionIndices();
+	TArray<int32> Next = Squad->GetSelectedCompanionIndices();
 	const int32 At = Next.IndexOfByKey(CompanyIndex);
 	if (At != INDEX_NONE)
 	{
 		Next.RemoveAt(At);
-		return Party->SetSelectedCompanions(Next);
+		return Squad->SetSelectedCompanions(Next);
 	}
 
-	if (Next.Num() >= MaxPartySize)
+	if (Next.Num() >= MaxSquadSize)
 	{
 		return false;
 	}
 
 	Next.Add(CompanyIndex);
-	return Party->SetSelectedCompanions(Next);
+	return Squad->SetSelectedCompanions(Next);
 }

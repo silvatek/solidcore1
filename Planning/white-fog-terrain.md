@@ -4,7 +4,7 @@ Status: Ready
 
 ## Story
 
-The player looks at ground the party has not reached. On ground still in full fog, that ground is plain white instead of the biome color. Grassland is still the grass material, and every other biome is still its world-map color, wherever the ground is not in full fog. The full-fog wall already hides the unseen ground, so the player should not see the white. It is there if something gets past the wall. The curtains do not change. When the player comes close enough that the ground is no longer in full fog, that ground shows its biome color again.
+The player looks at ground the squad has not reached. On ground still in full fog, that ground is plain white instead of the biome color. Grassland is still the grass material, and every other biome is still its world-map color, wherever the ground is not in full fog. The full-fog wall already hides the unseen ground, so the player should not see the white. It is there if something gets past the wall. The curtains do not change. When the player comes close enough that the ground is no longer in full fog, that ground shows its biome color again.
 
 ## Acceptance
 

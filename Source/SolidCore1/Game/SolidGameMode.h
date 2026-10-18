@@ -5,7 +5,7 @@
 #include "SolidStronghold.h"
 #include "GameFramework/GameModeBase.h"
 #include "Vegetation/SolidForage.h"
-#include "Party/SolidCompany.h"
+#include "Squad/SolidCompany.h"
 #include "SolidSight.h"
 #include "SolidGameMode.generated.h"
 
@@ -24,7 +24,7 @@ class ASolidTree;
 class USolidTerrainMap;
 class USkeletalMesh;
 class USolidCompany;
-class USolidParty;
+class USolidSquad;
 
 UCLASS()
 class SOLIDCORE1_API ASolidGameMode : public AGameModeBase
@@ -38,7 +38,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")
 	bool bAutoSpawnTerrainStreamer = true;
 
-	/** Spawn the party's selected companions, up to the event max party size (starts empty). */
+	/** Spawn the squad's selected companions, up to the event max squad size (starts empty). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	bool bAutoSpawnCompanion = true;
 
@@ -94,16 +94,16 @@ public:
 	const TArray<TObjectPtr<ASolidBridge>>& GetBridges() const { return SpawnedBridges; }
 
 	USolidCompany* GetCompany() const { return Company; }
-	USolidParty* GetParty() const { return Party; }
+	USolidSquad* GetSquad() const { return Squad; }
 
-	/** Starting selection (Sam, then Alex). The event roster is the whole company. The live party starts empty. */
+	/** Starting selection (Sam, then Alex). The event roster is the whole company. The live squad starts empty. */
 	static constexpr int32 DefaultCompanionCount = 2;
 
-	/** Companions an event currently allows in the party. Starts at 0. */
-	int32 GetMaxPartySize() const { return Configuration.MaxPartySize; }
+	/** Companions an event currently allows in the squad. Starts at 0. */
+	int32 GetMaxSquadSize() const { return Configuration.MaxSquadSize; }
 
 	/** Spawn or remove companions so the field matches the current selection. */
-	void RefreshFieldedParty();
+	void RefreshFieldedSquad();
 
 	/** Live configuration, including which events have fired. */
 	const FGameState& GetConfiguration() const { return Configuration; }
@@ -155,7 +155,7 @@ public:
 	bool IsSightEnabled(ESolidSight Sight) const;
 
 	/**
-	 * Select Party assigned battle-plan slot (0 = F1). Returns false if empty/out of range.
+	 * Select Squad assigned battle-plan slot (0 = F1). Returns false if empty/out of range.
 	 * Parade first fires Enter Relion and Enter Dragongate, so a fresh launch
 	 * still has companions and raven sight. The captain does not move.
 	 */
@@ -165,13 +165,13 @@ public:
 	 * Move the captain onto one cell of TownId and shift companions by the same planar delta.
 	 * Arriving fires the enter-town event for that place.
 	 */
-	bool TeleportPartyToTown(int32 TownId);
+	bool TeleportSquadToTown(int32 TownId);
 
 	/**
-	 * Stand the party on the grass just north of a tunnel mouth.
+	 * Stand the squad on the grass just north of a tunnel mouth.
 	 * Records Driven from the village, including when its requirements have not fired.
 	 */
-	bool TeleportPartyToTunnelMouth(TCHAR EndMarker);
+	bool TeleportSquadToTunnelMouth(TCHAR EndMarker);
 
 	/** True after F10 Enter cave, until F10 Leave cave. */
 	bool IsInDungeon() const;
@@ -205,7 +205,7 @@ public:
 
 	/**
 	 * Load the open world again and stand the captain at the dungeon mouth.
-	 * Companions spawn beside him. The party builder stays closed.
+	 * Companions spawn beside him. The squad builder stays closed.
 	 */
 	void TravelToWorld();
 
@@ -228,11 +228,11 @@ public:
 	void TravelFromTower();
 
 	/**
-	 * Create the company catalog and party on the first call.
+	 * Create the company catalog and squad on the first call.
 	 * Later calls (event refresh, companion spawn) keep the active battle plan
-	 * and the companions selected for the party.
+	 * and the companions selected for the squad.
 	 */
-	void EnsureCompanyAndParty();
+	void EnsureCompanyAndSquad();
 
 protected:
 	virtual void BeginPlay() override;
@@ -246,7 +246,7 @@ protected:
 	void PresentEventResult(const SolidEvents::FResult& Result);
 	/** Draw the center of every broken bridge. Enter Relion calls this. */
 	void RepairBrokenBridges();
-	/** Fire Enter Iglin if needed, then Enter Relion and Enter Dragongate, and field the party. */
+	/** Fire Enter Iglin if needed, then Enter Relion and Enter Dragongate, and field the squad. */
 	void FireParadeEvents();
 	void EnsureCompanion();
 	void EnsureVegetation();
@@ -280,7 +280,7 @@ protected:
 		APawn* PlayerPawn,
 		UClass* ClassToSpawn,
 		const FString& DisplayName,
-		int32 PartySlotIndex,
+		int32 SquadSlotIndex,
 		const TSoftObjectPtr<USkeletalMesh>& Mesh,
 		ESolidVocation Vocation);
 
@@ -288,9 +288,9 @@ protected:
 	TObjectPtr<USolidCompany> Company;
 
 	UPROPERTY(Transient)
-	TObjectPtr<USolidParty> Party;
+	TObjectPtr<USolidSquad> Squad;
 
-	/** Company/party configuration. Enter-town events mutate this. */
+	/** Company/squad configuration. Enter-town events mutate this. */
 	FGameState Configuration;
 
 	UPROPERTY(Transient)

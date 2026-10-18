@@ -8,7 +8,7 @@ A new game is the start of act 0. The only battle plan enabled is Starter. Attac
 
 An event can enable a battle plan, and an event can disable one. Closing the monster message disables Starter and enables Attack and Defend. Enter Relion enables Parade. Enter Kanfold enables Line, Column, Tight mob, and Loose mob. Enter Kanfold and Enter Dragongate each disable Starter, Attack, and Defend. Those three are off before the squad cap is above one.
 
-While fewer than eight battle plans are enabled, the squad's selection is every enabled plan. The battle-plan list is hidden while that selection has fewer than two plans. Where Starter, Attack, and Defend place a companion does not matter.
+While fewer than eight battle plans are enabled, the squad's selection is every enabled plan. The battle-plan list is hidden while that selection has fewer than two plans. Where Starter, Attack, and Defend place a companion does not matter. How companions stand relative to each other does not matter when none are out, or when only one is out.
 
 ## Acceptance
 
@@ -28,7 +28,7 @@ While fewer than eight battle plans are enabled, the squad's selection is every 
 - The battle-plan list is the panel under the tech readout. It is hidden while the squad has fewer than two plans selected. With two or more, it shows the title Battle Plans, one row for each assigned plan, and an empty row through F8. The character editor still hides the panel while that page is open.
 - The journal records `Starter disabled`, `Attack enabled`, `Attack disabled`, `Defend enabled`, `Defend disabled`, `Parade enabled`, `Line enabled`, `Column enabled`, `Tight mob enabled`, and `Loose mob enabled` for those changes.
 - A cave trip and a tower trip keep which plans are enabled, which of them are selected, and which one is active.
-- This story does not add an F10 row, and it does not change where Line, Column, Tight mob, Loose mob, or Parade place a companion.
+- How companions stand relative to each other does not matter when the squad has no companion, or only one. This story does not add an F10 row, and it does not change where Line, Column, Tight mob, Loose mob, or Parade place a companion.
 
 ## Implementation notes
 

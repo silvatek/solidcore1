@@ -41,16 +41,6 @@ bool FSolidMainMenuEntriesTest::RunTest(const FString& Parameters)
 	FSolidMainMenuEntry Missing;
 	TestFalse(TEXT("no entry past the end"), SolidMainMenu::FindEntry(SolidMainMenu::EntryCount(), Missing));
 
-	TArray<FSolidMainMenuEntry> InCave;
-	SolidMainMenu::CollectEntries(InCave, true);
-	for (const FSolidMainMenuEntry& Entry : InCave)
-	{
-		if (Entry.Item == ESolidMainMenuItem::Dungeon)
-		{
-			TestEqual(TEXT("cave row leaves"), Entry.Label, FString(TEXT("Leave cave")));
-		}
-	}
-
 	const int32 Count = SolidMainMenu::EntryCount();
 	const int32 Last = Count - 1;
 	TestEqual(TEXT("wrap down"), SolidMainMenu::WrapIndex(0, 1), Count > 1 ? 1 : 0);
@@ -135,6 +125,82 @@ bool FSolidMainMenuHudTest::RunTest(const FString& Parameters)
 	HUD->OpenSquadBuilder();
 	HUD->CloseMenuOverlay();
 	TestFalse(TEXT("Esc closes the squad builder"), HUD->IsSquadBuilderOpen());
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidMainMenuOrderTest,
+	"SolidCore1.MainMenu.Order",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidMainMenuOrderTest::RunTest(const FString& Parameters)
+{
+	const TCHAR* Labels[] = {
+		TEXT("Use portal"),
+		TEXT("Journal"),
+		TEXT("Build squad"),
+		TEXT("Character editor"),
+		TEXT("Credits"),
+		TEXT("Exit Game"),
+	};
+	const ESolidMainMenuItem Items[] = {
+		ESolidMainMenuItem::UsePortal,
+		ESolidMainMenuItem::Journal,
+		ESolidMainMenuItem::BuildSquad,
+		ESolidMainMenuItem::CharacterEditor,
+		ESolidMainMenuItem::Credits,
+		ESolidMainMenuItem::ExitGame,
+	};
+	const ESolidMainMenuAction Actions[] = {
+		ESolidMainMenuAction::OpenPortal,
+		ESolidMainMenuAction::ShowJournal,
+		ESolidMainMenuAction::OpenSquad,
+		ESolidMainMenuAction::OpenCharacterEditor,
+		ESolidMainMenuAction::ShowCredits,
+		ESolidMainMenuAction::Quit,
+	};
+
+	TArray<FSolidMainMenuEntry> Entries;
+	SolidMainMenu::CollectEntries(Entries);
+	TestEqual(TEXT("six rows"), Entries.Num(), 6);
+	if (Entries.Num() != 6)
+	{
+		return false;
+	}
+
+	for (int32 Index = 0; Index < 6; ++Index)
+	{
+		TestEqual(TEXT("row label"), Entries[Index].Label, FString(Labels[Index]));
+		TestEqual(
+			TEXT("row item"),
+			static_cast<uint8>(Entries[Index].Item),
+			static_cast<uint8>(Items[Index]));
+		TestEqual(
+			TEXT("row action"),
+			static_cast<uint8>(SolidMainMenu::ActionForItem(Entries[Index].Item)),
+			static_cast<uint8>(Actions[Index]));
+	}
+
+	TestEqual(TEXT("Credits then Exit Game"), Entries[4].Label, FString(TEXT("Credits")));
+	TestEqual(TEXT("Exit Game is last"), Entries[5].Label, FString(TEXT("Exit Game")));
+	FSolidMainMenuEntry PastEnd;
+	TestFalse(TEXT("key 7 has no row"), SolidMainMenu::FindEntry(6, PastEnd));
+	TestFalse(TEXT("key 8 has no row"), SolidMainMenu::FindEntry(7, PastEnd));
+
+	int32 QuitRows = 0;
+	for (const FSolidMainMenuEntry& Entry : Entries)
+	{
+		if (SolidMainMenu::ActionForItem(Entry.Item) == ESolidMainMenuAction::Quit)
+		{
+			++QuitRows;
+			TestEqual(TEXT("quit row is Exit Game"), Entry.Label, FString(TEXT("Exit Game")));
+		}
+		TestFalse(TEXT("no Test Drill row"), Entry.Label == TEXT("Test Drill"));
+		TestFalse(TEXT("no Inventory row"), Entry.Label == TEXT("Inventory"));
+		TestFalse(TEXT("no Enter cave row"), Entry.Label == TEXT("Enter cave"));
+		TestFalse(TEXT("no Leave cave row"), Entry.Label == TEXT("Leave cave"));
+	}
+	TestEqual(TEXT("only Exit Game quits"), QuitRows, 1);
 	return true;
 }
 

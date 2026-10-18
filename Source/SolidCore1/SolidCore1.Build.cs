@@ -47,5 +47,10 @@ public class SolidCore1 : ModuleRules
 			"Slate",
 			"SlateCore"
 		});
+
+		if (Target.bBuildEditor)
+		{
+			PrivateDependencyModuleNames.Add("UnrealEd");
+		}
 	}
 }

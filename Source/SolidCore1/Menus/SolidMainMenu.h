@@ -7,13 +7,11 @@
 enum class ESolidMainMenuItem : uint8
 {
 	UsePortal,
-	TestDrill,
 	Journal,
-	Credits,
 	BuildSquad,
-	Dungeon,
 	CharacterEditor,
-	Inventory,
+	Credits,
+	ExitGame,
 };
 
 /** What confirming a menu entry does. The pawn performs the action. */
@@ -21,18 +19,16 @@ enum class ESolidMainMenuAction : uint8
 {
 	None,
 	OpenPortal,
-	StartTestDrill,
 	ShowJournal,
 	ShowCredits,
 	OpenSquad,
-	TravelDungeon,
 	OpenCharacterEditor,
-	ShowInventory,
+	Quit,
 };
 
 struct FSolidMainMenuEntry
 {
-	ESolidMainMenuItem Item = ESolidMainMenuItem::TestDrill;
+	ESolidMainMenuItem Item = ESolidMainMenuItem::UsePortal;
 	FString Label;
 };
 
@@ -49,14 +45,7 @@ namespace SolidMainMenu
 		return Key == ControllerKey();
 	}
 
-	/** bInDungeon swaps the cave row between Enter cave and Leave cave. */
-	void CollectEntries(TArray<FSolidMainMenuEntry>& OutEntries, bool bInDungeon = false);
-
-	/** Enter cave stays closed until an event opens it. Leave cave stays available. */
-	inline bool CanUseCaveRow(const bool bCaveEnabled, const bool bInDungeon)
-	{
-		return bInDungeon || bCaveEnabled;
-	}
+	void CollectEntries(TArray<FSolidMainMenuEntry>& OutEntries);
 	int32 EntryCount();
 	bool FindEntry(int32 Index, FSolidMainMenuEntry& OutEntry);
 	ESolidMainMenuAction ActionForItem(ESolidMainMenuItem Item);

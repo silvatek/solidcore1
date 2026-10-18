@@ -35,5 +35,5 @@ A name sign stands on the grass outside the stronghold, next to the entrance. Th
 - The sign uses the town sign's pole and board: a thin dark-brown pole, a flat light-brown board, white letters with a black border. One line, the name. Not "Welcome to".
 - Place it a step to the right of the frame, on the grass. The cave mouth is `SolidStrongholds::FEntrance`. A tower uses the door that faces that entrance's grass. The board's face points at the grass, the way the entrance's local +X does. It does not cover the opening or the standing spot.
 - A click hit on the pole or the board opens the page. The mouth and the tower door keep their own hits.
-- This story does not add an F10 row. [Reorder the game menu](reorder-game-menu.md) does not gain one from here.
+- This story does not add an F10 row. [Reorder the game menu](Done/reorder-game-menu.md) does not gain one from here.
 - The product commit adds the name and sign tests. It does not edit the menu order tests.

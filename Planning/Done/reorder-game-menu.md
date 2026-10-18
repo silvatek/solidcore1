@@ -1,10 +1,10 @@
 # Reorder the game menu
 
-Status: Ready
+Status: Done
 
 ## Story
 
-The player opens the game menu and finds six rows. They are Use portal, Journal, Build squad, Character editor, Credits, and Exit Game. The last two rows are always Credits, then Exit Game. A later row goes before Credits. Test Drill is not a row. [Drill](drill-battle-plan.md) is that battle plan. The stronghold name is not a row. [Name the company's stronghold](name-the-stronghold.md) is the sign beside the entrance. [Exit the game](exit-the-game.md) is the last row.
+The player opens the game menu and finds six rows. They are Use portal, Journal, Build squad, Character editor, Credits, and Exit Game. The last two rows are always Credits, then Exit Game. A later row goes before Credits. Test Drill is not a row. [Drill](../drill-battle-plan.md) is that battle plan. The stronghold name is not a row. [Name the company's stronghold](../name-the-stronghold.md) is the sign beside the entrance. [Exit the game](exit-the-game.md) is the last row.
 
 Inventory is not on the menu. / still opens the inventory, and View on Xbox and Create on PlayStation still open it.
 
@@ -26,10 +26,10 @@ Enter cave is not on the menu. Leave cave is the same row, so it is not on the m
 
 ## Implementation notes
 
-- `SolidMainMenu::CollectEntries` is the on-screen order. The enum comment says the same. Reorder the enum to match, and drop `TestDrill`, `Dungeon`, and `Inventory`. Drop `StartTestDrill`, `TravelDungeon`, and `ShowInventory`. `ToggleInventory` stays. [Drill](drill-battle-plan.md) is the square.
+- `SolidMainMenu::CollectEntries` is the on-screen order. The enum comment says the same. Reorder the enum to match, and drop `TestDrill`, `Dungeon`, and `Inventory`. Drop `StartTestDrill`, `TravelDungeon`, and `ShowInventory`. `ToggleInventory` stays. [Drill](../drill-battle-plan.md) is the square.
 - `CanUseCaveRow` and the dimming of the cave row in `DrawMainMenuPopup` exist for that row. Remove them with the row. The click path is the passage check and the travel calls, not the menu.
 - Keys 7 and 8 call `ChooseMainMenuIndex` past the last row once the menu has six entries. That function already returns when the index is past `EntryCount`, so the main menu needs no new key code. Leave the portal and squad-builder uses of those keys. Key 6 confirms Exit Game. [Exit the game](exit-the-game.md) is the confirmation and the close.
-- [Open the squad builder on leaving a stronghold](squad-builder-on-stronghold-exit.md) leaves the den by the click. [Return to the stronghold](return-to-stronghold.md) and [Imperious dungeon](imperious-dungeon.md) enter the Meagre cave by the click. [Enable a lair from an event](enable-lair.md) does not enter the tunnels from the menu. Those stories no longer ask for this row.
+- [Open the squad builder on leaving a stronghold](../squad-builder-on-stronghold-exit.md) leaves the den by the click. [Return to the stronghold](../return-to-stronghold.md) and [Imperious dungeon](../imperious-dungeon.md) enter the Meagre cave by the click. [Enable a lair from an event](../enable-lair.md) does not enter the tunnels from the menu. Those stories no longer ask for this row.
 - The menu label is Build squad. This story keeps that label.
 - The suite lines in `README.md` for `SolidCore1.MainMenu.*` name the old eight rows and the dim cave row. Update them in the product commit.
 - Tests that assume the old list change before the product commit, so they pass on the current code and on this order. The product commit does not edit those tests. It adds the assertions for this order.

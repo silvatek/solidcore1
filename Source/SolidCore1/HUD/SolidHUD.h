@@ -48,6 +48,16 @@ public:
 	void MovePortalSelection(int32 Delta);
 	void SetPortalIndex(int32 Index);
 
+	/** Exit Game asks before it closes. Yes is the first row. */
+	void OpenExitConfirm();
+	void CloseExitConfirm();
+	bool IsExitConfirmOpen() const { return bShowExitConfirm; }
+	int32 GetExitConfirmIndex() const { return ExitConfirmIndex; }
+	void MoveExitConfirm(int32 Delta);
+	void SetExitConfirmIndex(int32 Index);
+	/** Closes the page. True when the selected row is Yes. */
+	bool AcceptExitConfirm();
+
 	/** A site stone asked for a type. Esc closes it and leaves the stone. */
 	void OpenStrongholdChoice(FIntPoint Cell, ESolidStrongholdSize Size, const TArray<ESolidStrongholdType>& Types);
 	void CloseStrongholdChoice();
@@ -96,7 +106,7 @@ public:
 
 	/** F10. Closes an open page, including the character editor, or toggles the main menu. */
 	void HandleMenuKey();
-	/** Esc. Closes the menu, the portal, the squad builder, the journal, the inventory, the credits page, the character editor, and a stronghold type choice. */
+	/** Esc. Closes the menu, the exit confirmation, the portal, the squad builder, the journal, the inventory, the credits page, the character editor, and a stronghold type choice. */
 	void CloseMenuOverlay();
 	/** Hide the menu list. Leaves the credits page as it is. */
 	void CloseMainMenu();
@@ -138,6 +148,7 @@ protected:
 	void DrawCharacterEditorPanel();
 	void DrawMainMenuPopup();
 	void DrawPortalPopup();
+	void DrawExitConfirm();
 	void DrawStrongholdChoice();
 	void DrawSquadBuilderPopup();
 	/** Wall-clock timestamps (seconds) for frames in the rolling FPS window. */
@@ -178,6 +189,14 @@ protected:
 	/** Highlighted town while the portal list is open. */
 	UPROPERTY(VisibleAnywhere, Category = "HUD")
 	int32 PortalIndex = 0;
+
+	/** Exit Game confirmation. Yes and No. */
+	UPROPERTY(VisibleAnywhere, Category = "HUD")
+	bool bShowExitConfirm = false;
+
+	/** Highlighted row while the exit confirmation is open. Yes is 0. */
+	UPROPERTY(VisibleAnywhere, Category = "HUD")
+	int32 ExitConfirmIndex = 0;
 
 	/** Type list for a stronghold site. Choosing a row commits the move. */
 	bool bShowStrongholdChoice = false;

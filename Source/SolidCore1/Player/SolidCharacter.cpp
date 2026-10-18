@@ -47,6 +47,7 @@
 #include "Menus/SolidMainMenu.h"
 #include "SolidBodyParams.h"
 #include "Menus/SolidSquadBuilder.h"
+#include "Menus/SolidExit.h"
 #include "Menus/SolidPortal.h"
 #include "SolidNameLabel.h"
 #include "Components/SceneComponent.h"
@@ -853,7 +854,11 @@ void ASolidCharacter::MainMenuMoveUp()
 			HUD->MoveStrongholdChoice(-1);
 			return;
 		}
-		if (HUD->IsPortalOpen())
+		if (HUD->IsExitConfirmOpen())
+		{
+			HUD->MoveExitConfirm(-1);
+		}
+		else if (HUD->IsPortalOpen())
 		{
 			HUD->MovePortalSelection(-1);
 		}
@@ -882,7 +887,11 @@ void ASolidCharacter::MainMenuMoveDown()
 			HUD->MoveStrongholdChoice(1);
 			return;
 		}
-		if (HUD->IsPortalOpen())
+		if (HUD->IsExitConfirmOpen())
+		{
+			HUD->MoveExitConfirm(1);
+		}
+		else if (HUD->IsPortalOpen())
 		{
 			HUD->MovePortalSelection(1);
 		}
@@ -942,6 +951,16 @@ void ASolidCharacter::ChooseMainMenuIndex(const int32 Index)
 	ASolidHUD* HUD = GetSolidHUD();
 	if (!HUD)
 	{
+		return;
+	}
+	if (HUD->IsExitConfirmOpen())
+	{
+		if (Index < 0 || Index >= SolidExit::ChoiceCount)
+		{
+			return;
+		}
+		HUD->SetExitConfirmIndex(Index);
+		ConfirmExitSelection();
 		return;
 	}
 	if (HUD->IsStrongholdChoiceOpen())
@@ -1045,6 +1064,11 @@ void ASolidCharacter::MainMenuConfirm()
 		HUD->CloseMessage();
 		return;
 	}
+	if (HUD->IsExitConfirmOpen())
+	{
+		ConfirmExitSelection();
+		return;
+	}
 	if (HUD->IsStrongholdChoiceOpen())
 	{
 		ConfirmStrongholdChoice();
@@ -1076,26 +1100,6 @@ void ASolidCharacter::MainMenuConfirm()
 	{
 		return;
 	}
-	if (SolidMainMenu::ActionForItem(Entry.Item) == ESolidMainMenuAction::TravelDungeon)
-	{
-		const UWorld* World = GetWorld();
-		const ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
-		const bool bInDungeon = GameMode && GameMode->IsInDungeon();
-		const bool bCaveEnabled = GameMode && GameMode->IsCaveEnabled();
-		if (GameMode && (GameMode->IsInLair() || GameMode->IsInTower()))
-		{
-			return;
-		}
-		if (!SolidMainMenu::CanUseCaveRow(bCaveEnabled, bInDungeon))
-		{
-			return;
-		}
-		if (!bInDungeon
-			&& (!GameMode || !SolidStrongholdTransition::CompanyCaveAcceptsEnter(GameMode->GetConfiguration())))
-		{
-			return;
-		}
-	}
 
 	HUD->CloseMainMenu();
 	switch (SolidMainMenu::ActionForItem(Entry.Item))
@@ -1103,14 +1107,14 @@ void ASolidCharacter::MainMenuConfirm()
 	case ESolidMainMenuAction::OpenPortal:
 		HUD->OpenPortal();
 		break;
-	case ESolidMainMenuAction::StartTestDrill:
-		StartSquadFormationDrill();
-		break;
 	case ESolidMainMenuAction::ShowJournal:
 		HUD->SetJournalVisible(true);
 		break;
 	case ESolidMainMenuAction::ShowCredits:
 		HUD->SetCreditsVisible(true);
+		break;
+	case ESolidMainMenuAction::Quit:
+		HUD->OpenExitConfirm();
 		break;
 	case ESolidMainMenuAction::OpenSquad:
 		if (UWorld* World = GetWorld())
@@ -1121,22 +1125,6 @@ void ASolidCharacter::MainMenuConfirm()
 			}
 		}
 		HUD->OpenSquadBuilder();
-		break;
-	case ESolidMainMenuAction::TravelDungeon:
-		if (UWorld* World = GetWorld())
-		{
-			if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
-			{
-				if (GameMode->IsInDungeon())
-				{
-					GameMode->TravelToWorld();
-				}
-				else
-				{
-					GameMode->TravelToDungeon();
-				}
-			}
-		}
 		break;
 	case ESolidMainMenuAction::OpenCharacterEditor:
 		if (UWorld* World = GetWorld())
@@ -1149,12 +1137,19 @@ void ASolidCharacter::MainMenuConfirm()
 		HUD->OpenCharacterEditor();
 		SyncCharacterStage();
 		break;
-	case ESolidMainMenuAction::ShowInventory:
-		HUD->ToggleInventory();
-		break;
 	default:
 		break;
 	}
+}
+
+void ASolidCharacter::ConfirmExitSelection()
+{
+	ASolidHUD* HUD = GetSolidHUD();
+	if (!HUD || !HUD->AcceptExitConfirm())
+	{
+		return;
+	}
+	SolidExit::Perform(this, Cast<APlayerController>(GetController()));
 }
 
 int32 ASolidCharacter::CurrentMaxSquadSize() const
@@ -1777,7 +1772,7 @@ bool ASolidCharacter::ReadPointerPosition(float& OutX, float& OutY) const
 void ASolidCharacter::UpdateMenuPointerHover()
 {
 	ASolidHUD* HUD = GetSolidHUD();
-	const bool bChoiceList = HUD && (HUD->IsMainMenuOpen() || HUD->IsPortalOpen() || HUD->IsSquadBuilderOpen() || HUD->IsStrongholdChoiceOpen());
+	const bool bChoiceList = HUD && (HUD->IsMainMenuOpen() || HUD->IsExitConfirmOpen() || HUD->IsPortalOpen() || HUD->IsSquadBuilderOpen() || HUD->IsStrongholdChoiceOpen());
 	if (!bChoiceList)
 	{
 		bMenuPointerSampled = false;
@@ -1785,7 +1780,7 @@ void ASolidCharacter::UpdateMenuPointerHover()
 		return;
 	}
 
-	const int32 Page = HUD->IsStrongholdChoiceOpen() ? 4 : (HUD->IsSquadBuilderOpen() ? 3 : (HUD->IsPortalOpen() ? 2 : 1));
+	const int32 Page = HUD->IsExitConfirmOpen() ? 5 : (HUD->IsStrongholdChoiceOpen() ? 4 : (HUD->IsSquadBuilderOpen() ? 3 : (HUD->IsPortalOpen() ? 2 : 1)));
 	if (Page != MenuPointerPage)
 	{
 		MenuPointerPage = Page;
@@ -1852,7 +1847,7 @@ void ASolidCharacter::PollClickMovePress()
 	}
 	if (ASolidHUD* HUD = GetSolidHUD())
 	{
-		if ((HUD->IsMainMenuOpen() || HUD->IsPortalOpen() || HUD->IsSquadBuilderOpen() || HUD->IsStrongholdChoiceOpen())
+		if ((HUD->IsMainMenuOpen() || HUD->IsExitConfirmOpen() || HUD->IsPortalOpen() || HUD->IsSquadBuilderOpen() || HUD->IsStrongholdChoiceOpen())
 			&& ReadPointerPosition(X, Y)
 			&& HUD->SelectChoiceAt(X, Y))
 		{

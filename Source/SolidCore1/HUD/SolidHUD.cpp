@@ -14,6 +14,7 @@
 #include "Menus/SolidMainMenu.h"
 #include "Menus/SolidMenuPointer.h"
 #include "Menus/SolidSquadBuilder.h"
+#include "Menus/SolidExit.h"
 #include "Menus/SolidPortal.h"
 #include "SolidCharacter.h"
 #include "SolidSight.h"
@@ -1106,6 +1107,11 @@ bool ASolidHUD::SelectChoiceAt(const float X, const float Y)
 		return false;
 	}
 
+	if (bShowExitConfirm)
+	{
+		SetExitConfirmIndex(Hit);
+		return true;
+	}
 	if (bShowPortal)
 	{
 		SetPortalIndex(Hit);
@@ -1346,7 +1352,11 @@ void ASolidHUD::DrawHUD()
 	}
 
 	SolidHUDPrivate::ForgetChoicePointerRows(this);
-	if (bShowPortal)
+	if (bShowExitConfirm)
+	{
+		DrawExitConfirm();
+	}
+	else if (bShowPortal)
 	{
 		DrawPortalPopup();
 	}
@@ -1534,6 +1544,12 @@ void ASolidHUD::HandleMenuKey()
 		return;
 	}
 
+	if (bShowExitConfirm)
+	{
+		bShowExitConfirm = false;
+		return;
+	}
+
 	if (bShowCharacterEditor)
 	{
 		bShowCharacterEditor = false;
@@ -1597,6 +1613,7 @@ void ASolidHUD::CloseMenuOverlay()
 	}
 
 	bShowMainMenu = false;
+	bShowExitConfirm = false;
 	bShowPortal = false;
 	bShowStrongholdChoice = false;
 	StrongholdChoiceTypes.Reset();
@@ -1636,6 +1653,7 @@ namespace
 void ASolidHUD::OpenCharacterEditor()
 {
 	bShowMainMenu = false;
+	bShowExitConfirm = false;
 	bShowPortal = false;
 	bShowSquadBuilder = false;
 	bShowCredits = false;
@@ -1896,6 +1914,7 @@ void ASolidHUD::DrawCharacterEditorPanel()
 void ASolidHUD::OpenSquadBuilder()
 {
 	bShowMainMenu = false;
+	bShowExitConfirm = false;
 	bShowPortal = false;
 	bShowCredits = false;
 	bShowJournal = false;
@@ -1959,6 +1978,7 @@ void ASolidHUD::SetSquadBuilderIndex(const int32 Index)
 void ASolidHUD::OpenPortal()
 {
 	bShowMainMenu = false;
+	bShowExitConfirm = false;
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowInventory = false;
@@ -2039,6 +2059,7 @@ void ASolidHUD::ToggleInventory()
 	}
 
 	bShowMainMenu = false;
+	bShowExitConfirm = false;
 	bShowPortal = false;
 	bShowSquadBuilder = false;
 	bShowCredits = false;
@@ -2215,26 +2236,16 @@ void ASolidHUD::DrawJournalPopup() const
 void ASolidHUD::DrawMainMenuPopup()
 {
 	int32 MaxSquadSize = 0;
-	bool bInDungeon = false;
-	bool bInLair = false;
-	bool bInTower = false;
-	bool bCaveEnabled = false;
-	bool bCompanyCave = false;
 	if (UWorld* World = GetWorld())
 	{
 		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 		{
 			MaxSquadSize = GameMode->GetMaxSquadSize();
-			bInDungeon = GameMode->IsInDungeon();
-			bInLair = GameMode->IsInLair();
-			bInTower = GameMode->IsInTower();
-			bCaveEnabled = GameMode->IsCaveEnabled();
-			bCompanyCave = SolidStrongholdTransition::CompanyCaveAcceptsEnter(GameMode->GetConfiguration());
 		}
 	}
 
 	TArray<FSolidMainMenuEntry> Entries;
-	SolidMainMenu::CollectEntries(Entries, bInDungeon);
+	SolidMainMenu::CollectEntries(Entries);
 	TArray<FString> Labels;
 	TArray<bool> Enabled;
 	for (const FSolidMainMenuEntry& Entry : Entries)
@@ -2242,13 +2253,65 @@ void ASolidHUD::DrawMainMenuPopup()
 		Labels.Add(Entry.Label);
 		const bool bSquad = Entry.Item != ESolidMainMenuItem::BuildSquad
 			|| SolidSquadBuilder::CanOpen(MaxSquadSize);
-		const bool bCave = Entry.Item != ESolidMainMenuItem::Dungeon
-			|| (!bInLair && !bInTower && SolidMainMenu::CanUseCaveRow(bCaveEnabled, bInDungeon)
-				&& (bInDungeon || bCompanyCave));
-		Enabled.Add(bSquad && bCave);
+		Enabled.Add(bSquad);
 	}
 	TArray<SolidMenuPointer::FRow> Rows;
 	SolidHUDPrivate::DrawChoicePopup(Canvas, TEXT("Main Menu"), Labels, MainMenuIndex, Rows, &Enabled);
+	SetChoicePointerRows(Rows);
+}
+
+void ASolidHUD::OpenExitConfirm()
+{
+	bShowMainMenu = false;
+	bShowCredits = false;
+	bShowJournal = false;
+	bShowInventory = false;
+	CancelInventoryDrag();
+	bShowSquadBuilder = false;
+	bShowCharacterEditor = false;
+	bCharacterEditorSkeleton = false;
+	SkeletonBoneTip.Reset();
+	bShowPortal = false;
+	bShowStrongholdChoice = false;
+	StrongholdChoiceTypes.Reset();
+	bShowExitConfirm = true;
+	ExitConfirmIndex = SolidExit::YesIndex;
+	SolidHUDPrivate::ForgetChoicePointerRows(this);
+}
+
+void ASolidHUD::CloseExitConfirm()
+{
+	bShowExitConfirm = false;
+}
+
+void ASolidHUD::MoveExitConfirm(const int32 Delta)
+{
+	ExitConfirmIndex = SolidExit::WrapIndex(ExitConfirmIndex, Delta);
+}
+
+void ASolidHUD::SetExitConfirmIndex(const int32 Index)
+{
+	ExitConfirmIndex = FMath::Clamp(Index, 0, SolidExit::ChoiceCount - 1);
+}
+
+bool ASolidHUD::AcceptExitConfirm()
+{
+	if (!bShowExitConfirm)
+	{
+		return false;
+	}
+	const bool bYes = SolidExit::IsYes(ExitConfirmIndex);
+	bShowExitConfirm = false;
+	return bYes;
+}
+
+void ASolidHUD::DrawExitConfirm()
+{
+	TArray<FString> Labels;
+	Labels.Add(SolidExit::Label(SolidExit::YesIndex));
+	Labels.Add(SolidExit::Label(SolidExit::NoIndex));
+	TArray<SolidMenuPointer::FRow> Rows;
+	SolidHUDPrivate::DrawChoicePopup(Canvas, SolidExit::Prompt(), Labels, ExitConfirmIndex, Rows);
 	SetChoicePointerRows(Rows);
 }
 
@@ -2301,6 +2364,7 @@ void ASolidHUD::OpenStrongholdChoice(
 	}
 
 	bShowMainMenu = false;
+	bShowExitConfirm = false;
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowInventory = false;

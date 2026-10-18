@@ -1,6 +1,6 @@
 # Exit the game
 
-Status: Ready
+Status: Done
 
 ## Story
 

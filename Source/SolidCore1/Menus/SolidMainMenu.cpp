@@ -1,17 +1,14 @@
 #include "SolidMainMenu.h"
-#include "SolidDungeonLevel.h"
 
-void SolidMainMenu::CollectEntries(TArray<FSolidMainMenuEntry>& OutEntries, const bool bInDungeon)
+void SolidMainMenu::CollectEntries(TArray<FSolidMainMenuEntry>& OutEntries)
 {
 	OutEntries.Reset();
 	OutEntries.Add({ ESolidMainMenuItem::UsePortal, TEXT("Use portal") });
-	OutEntries.Add({ ESolidMainMenuItem::TestDrill, TEXT("Test Drill") });
 	OutEntries.Add({ ESolidMainMenuItem::Journal, TEXT("Journal") });
-	OutEntries.Add({ ESolidMainMenuItem::Credits, TEXT("Credits") });
 	OutEntries.Add({ ESolidMainMenuItem::BuildSquad, TEXT("Build squad") });
-	OutEntries.Add({ ESolidMainMenuItem::Dungeon, SolidDungeonLevel::MenuLabel(bInDungeon) });
 	OutEntries.Add({ ESolidMainMenuItem::CharacterEditor, TEXT("Character editor") });
-	OutEntries.Add({ ESolidMainMenuItem::Inventory, TEXT("Inventory") });
+	OutEntries.Add({ ESolidMainMenuItem::Credits, TEXT("Credits") });
+	OutEntries.Add({ ESolidMainMenuItem::ExitGame, TEXT("Exit Game") });
 }
 
 int32 SolidMainMenu::EntryCount()
@@ -39,20 +36,16 @@ ESolidMainMenuAction SolidMainMenu::ActionForItem(const ESolidMainMenuItem Item)
 	{
 	case ESolidMainMenuItem::UsePortal:
 		return ESolidMainMenuAction::OpenPortal;
-	case ESolidMainMenuItem::TestDrill:
-		return ESolidMainMenuAction::StartTestDrill;
 	case ESolidMainMenuItem::Journal:
 		return ESolidMainMenuAction::ShowJournal;
-	case ESolidMainMenuItem::Credits:
-		return ESolidMainMenuAction::ShowCredits;
 	case ESolidMainMenuItem::BuildSquad:
 		return ESolidMainMenuAction::OpenSquad;
-	case ESolidMainMenuItem::Dungeon:
-		return ESolidMainMenuAction::TravelDungeon;
 	case ESolidMainMenuItem::CharacterEditor:
 		return ESolidMainMenuAction::OpenCharacterEditor;
-	case ESolidMainMenuItem::Inventory:
-		return ESolidMainMenuAction::ShowInventory;
+	case ESolidMainMenuItem::Credits:
+		return ESolidMainMenuAction::ShowCredits;
+	case ESolidMainMenuItem::ExitGame:
+		return ESolidMainMenuAction::Quit;
 	default:
 		return ESolidMainMenuAction::None;
 	}

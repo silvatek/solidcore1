@@ -184,6 +184,7 @@ protected:
 	void MainMenuChoose8();
 	void ChooseMainMenuIndex(int32 Index);
 	void ConfirmPortalSelection();
+	void ConfirmExitSelection();
 
 	void ApplyWalkSpeed() const;
 	void AddMappingContext();

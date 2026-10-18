@@ -34,7 +34,7 @@ Parental controls may arrive later, especially if a player-versus-player mode is
 
 ## Death
 
-Death leaves a mark on the Captain and on Companions. The player can reduce that mark. Some consequence always remains. The exact mark that remains will be defined as development continues.
+Death has consequences for the Captain and for Companions. The main consequence is item loss. The player can reduce those consequences. A consequence always remains, and the full set will be defined as development continues.
 
 When the Captain dies, magic returns them to the Stronghold. The body and the gear stay where the Captain died.
 

@@ -37,6 +37,7 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Multiple storage containers](Planning/multiple-storage-containers.md)
 - [Name the company's stronghold](Planning/name-the-stronghold.md)
 - [Return to the stronghold](Planning/return-to-stronghold.md)
+- [Package the game](Planning/package-the-game.md)
 
 ## Done
 

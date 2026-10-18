@@ -30,10 +30,12 @@
  * Each event belongs to an act. Iglin, Reach broken bridge, and Killed by monsters
  * are ACT_0. Driven from the village is ACT_1.
  * Relion is ACT_2, Kanfold is ACT_3, and Dragongate is ACT_4.
+ * Enter Dragongate unlocks every stronghold size.
  */
 namespace SolidEvents
 {
-	inline constexpr int32 MaxChangesPerEvent = 4;
+	/** Sight, party size, and title, plus one unlock for every stronghold size. */
+	inline constexpr int32 MaxChangesPerEvent = 3 + SolidStronghold::SizeCount;
 	inline constexpr int32 MaxRequiresPerEvent = 4;
 	inline constexpr int32 MaxEvents = 16;
 	inline constexpr int32 EventIdLength = 8;
@@ -79,7 +81,7 @@ namespace SolidEvents
 		ShowMessage,
 		/** Empty the captain's worn boxes and pack, then put Rags on the body. */
 		ClearInventory,
-		/** Unlock one stronghold size. No shipped event carries this yet. */
+		/** Unlock one stronghold size. Enter Dragongate carries one for every size. */
 		UnlockStrongholdSize,
 	};
 
@@ -228,6 +230,17 @@ namespace SolidEvents
 			return With(Change::UnlockStrongholdSize(Size));
 		}
 
+		/** One unlock change for each size, from Meagre through Imperious. */
+		constexpr FEvent UnlockAllStrongholdSizes() const
+		{
+			FEvent Event = *this;
+			for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
+			{
+				Event = Event.UnlockStrongholdSize(Size);
+			}
+			return Event;
+		}
+
 		constexpr FEvent Require(const TCHAR* EventId) const
 		{
 			FEvent Event = *this;
@@ -330,7 +343,8 @@ namespace SolidEvents
 		EnterTown(IdEnterDragongate, TEXT("Enter Dragongate"), SolidTowns::Dragongate, ACT_4)
 			.EnableSight(ESolidSight::Raven)
 			.SetMaxPartySize(RosterCount)
-			.SetPlayerTitle(TitleCaptain),
+			.SetPlayerTitle(TitleCaptain)
+			.UnlockAllStrongholdSizes(),
 	};
 
 	static_assert(UE_ARRAY_COUNT(Definitions) <= MaxEvents, "Raise SolidEvents::MaxEvents");

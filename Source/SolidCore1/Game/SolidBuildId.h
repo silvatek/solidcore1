@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0441")
+#define SOLID_BUILD_ID TEXT("SC1-0442")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A site stone offers a built type, and choosing it moves the company inside.")
+#define SOLID_BUILD_NOTE TEXT("Enter Dragongate unlocks every stronghold size.")
 #endif

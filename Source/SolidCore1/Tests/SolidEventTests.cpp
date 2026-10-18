@@ -1368,4 +1368,82 @@ bool FSolidEventsUnlockStrongholdSizeTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidEventsDragongateUnlocksSizesTest,
+	"SolidCore1.Events.DragongateUnlocksSizes",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidEventsDragongateUnlocksSizesTest::RunTest(const FString& Parameters)
+{
+	const int32 EventIndex = SolidEvents::FindIndexById(SolidEvents::IdEnterDragongate);
+	TestTrue(TEXT("Enter Dragongate is listed"), EventIndex != INDEX_NONE);
+	if (EventIndex == INDEX_NONE)
+	{
+		return false;
+	}
+
+	const SolidEvents::FEvent& Event = SolidEvents::Definitions[EventIndex];
+	bool Seen[SolidStronghold::SizeCount] = {};
+	int32 Unlocks = 0;
+	const int32 ChangeCount = FMath::Min(Event.ChangeCount, SolidEvents::MaxChangesPerEvent);
+	for (int32 Index = 0; Index < ChangeCount; ++Index)
+	{
+		const SolidEvents::FChange& Change = Event.Changes[Index];
+		if (Change.Kind != SolidEvents::EChange::UnlockStrongholdSize)
+		{
+			continue;
+		}
+		++Unlocks;
+		const int32 SizeIndex = static_cast<int32>(Change.StrongholdSize);
+		if (SizeIndex >= 0 && SizeIndex < SolidStronghold::SizeCount)
+		{
+			Seen[SizeIndex] = true;
+		}
+	}
+	TestEqual(TEXT("Enter Dragongate unlocks every size"), Unlocks, SolidStronghold::SizeCount);
+	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
+	{
+		TestTrue(
+			*FString::Printf(TEXT("Enter Dragongate unlocks %s"), SolidStronghold::SizeName(Size)),
+			Seen[static_cast<int32>(Size)]);
+	}
+
+	const FString Detail = SolidJournal::Describe(Event);
+	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
+	{
+		TestTrue(
+			*FString::Printf(TEXT("the journal names %s"), SolidStronghold::SizeName(Size)),
+			Detail.Contains(FString::Printf(TEXT("%s size unlocked"), SolidStronghold::SizeName(Size))));
+	}
+
+	FGameState Before;
+	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
+	{
+		TestFalse(
+			*FString::Printf(TEXT("%s starts locked"), SolidStronghold::SizeName(Size)),
+			SolidEvents::IsStrongholdSizeUnlocked(Before, Size));
+	}
+
+	FGameState Played;
+	const SolidEvents::FResult Fired = SolidEvents::NotifyOccupiedTown(Played, SolidTowns::Dragongate);
+	TestTrue(TEXT("Enter Dragongate fires"), Fired.bFired);
+	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
+	{
+		TestTrue(
+			*FString::Printf(TEXT("Enter Dragongate unlocks %s on the company"), SolidStronghold::SizeName(Size)),
+			SolidEvents::IsStrongholdSizeUnlocked(Played, Size));
+	}
+
+	SolidEvents::NotifyOccupiedTown(Played, INDEX_NONE);
+	const SolidEvents::FResult Again = SolidEvents::NotifyOccupiedTown(Played, SolidTowns::Dragongate);
+	TestFalse(TEXT("Enter Dragongate fires once"), Again.bFired);
+	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
+	{
+		TestTrue(
+			*FString::Printf(TEXT("%s stays unlocked"), SolidStronghold::SizeName(Size)),
+			SolidEvents::IsStrongholdSizeUnlocked(Played, Size));
+	}
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

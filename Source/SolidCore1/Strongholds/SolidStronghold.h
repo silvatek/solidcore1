@@ -53,7 +53,7 @@ namespace SolidStronghold
 		ESolidStrongholdType::Tower,
 	};
 
-	inline const ESolidStrongholdSize Sizes[] = {
+	inline constexpr ESolidStrongholdSize Sizes[] = {
 		ESolidStrongholdSize::Meagre,
 		ESolidStrongholdSize::Humble,
 		ESolidStrongholdSize::Average,

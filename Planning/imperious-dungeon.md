@@ -25,7 +25,8 @@ The floors use the same 1.2 m hex grid as the cave. The Meagre den stays the fou
 - The floor plan is not chosen. Do not copy the tower: ten floors, a 30 m taper, round rooms, or the stair spiral. A dungeon is not a tower.
 - Do not add a world-map `!` in this story. The owner places the marker. The line is `Stronghold (Imperious Dungeon)`, size then type.
 - There is no shelf row for an Imperious Dungeon. Meagre Dungeon is Mountain. Imperious Tower is Grassland. A size and type with no row keeps the marker's own biome. Do not assume Mountain or Grassland until a shelf is chosen.
-- `SolidDungeonLevel` is the dungeon trip, and the comment there says every dungeon size uses it. `ASolidDungeonInterior` still builds only the Meagre den. `?SolidLevel=Dungeon` is that den. The menu has no cave row.
+- `SolidDungeonLevel` is the dungeon trip, and the comment there says every dungeon size uses it. `ASolidDungeonInterior` still builds only the Meagre floor. `?SolidLevel=Dungeon` is that floor. The menu has no cave row.
+- [Stronghold type classes](stronghold-type-classes.md) leaves the dungeon subclass built for Meagre only, with the fourteen-hex ground floor. This story is what marks Imperious built and supplies its floor through that subclass.
 - `UsesCaveMouth` is true for every dungeon. `FindCaveMouth` returns the first dungeon in map order, and leave-cave stands the captain there. A second dungeon mouth would spawn a cliff mouth and can take that return if its cell sorts first. The visit has to remember which mouth, the way the tower remembers its cell.
 - The tower trip is `?SolidLevel=Tower`. Its door click does not call the cave travel. This dungeon must not either. The Meagre den is the click on its own mouth.
 - Furnishings are catalogued for the Meagre Dungeon only. This story does not place the cave's fireplace, bed, and chest on the larger floors, and it does not decide what an Imperious Dungeon contains.

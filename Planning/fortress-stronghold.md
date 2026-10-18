@@ -4,7 +4,7 @@ Status: New
 
 ## Story
 
-A developer adds the fortress as a stronghold type. The player can then visit a fortress.
+A developer makes the fortress a place the player can visit. [Stronghold type classes](stronghold-type-classes.md) already has the fortress subclass. This story fills that subclass in.
 
 ## Acceptance
 

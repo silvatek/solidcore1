@@ -196,6 +196,9 @@ public:
 	/** World XY of one map cell center. Same rectangle as SampleBiome. */
 	bool CellToWorldXY(FIntPoint Cell, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 
+	/** Map cell under a world XY. Column 0 is east, row 0 is north. */
+	bool CellAtWorld(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, FIntPoint& OutCell) const;
+
 	/** Built-in fallback colors when the key line is missing a named tint. */
 	static FLinearColor DefaultColorForBiome(ESolidBiome Biome);
 

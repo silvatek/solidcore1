@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0454")
+#define SOLID_BUILD_ID TEXT("SC1-0455")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Foraging code compiles. Sticks and pitch appear as the fog lifts.")
+#define SOLID_BUILD_NOTE TEXT("Every forest cell within 200 m of Iglin has a stick and pitch.")
 #endif

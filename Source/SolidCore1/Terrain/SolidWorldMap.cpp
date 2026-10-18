@@ -1077,6 +1077,23 @@ bool USolidWorldMap::CellToWorldXY(
 	return CellsToWorldXY(Cells, WorldMinXY, WorldMaxXY, OutWorldXY);
 }
 
+bool USolidWorldMap::CellAtWorld(
+	const float WorldX,
+	const float WorldY,
+	const FVector2D WorldMinXY,
+	const FVector2D WorldMaxXY,
+	FIntPoint& OutCell) const
+{
+	int32 MapX = 0;
+	int32 MapY = 0;
+	if (!WorldXYToCell(WorldX, WorldY, WorldMinXY, WorldMaxXY, MapX, MapY))
+	{
+		return false;
+	}
+	OutCell = FIntPoint(MapX, MapY);
+	return true;
+}
+
 bool USolidWorldMap::GetLocationWorldXY(
 	const int32 Id,
 	const FVector2D WorldMinXY,

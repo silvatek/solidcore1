@@ -18,7 +18,7 @@ The player puts a rusty sword and a rough stone into the crafting slots and pres
 - A point that has a tree has none. A point that already has a stick or a pitch has none.
 - A point holds at most one rough stone.
 - The piles are a scatter of those points, not every one. At most 64 are chosen.
-- Fog, the click, the pack, the cube, and a trip through a stronghold or a lair follow [Foraging](foraging.md). This story does not change those rules.
+- Fog, the click, the pack, the cube, and a trip through a stronghold or a lair follow [Foraging](Done/foraging.md). This story does not change those rules.
 - The taken indexes are this scatter's indexes, kept apart from the forest pile indexes. Taking a rough stone does not remove a stick or a pitch.
 - The dungeon, the tower, and the Iglin tunnels have none.
 - Cheap sword is a catalog weapon. The page name is Cheap sword. It is Common and stacks to 1.
@@ -33,7 +33,7 @@ The player puts a rusty sword and a rough stone into the crafting slots and pres
 ## Implementation notes
 
 - Rough stone is `e7b31a52`. Kind is Material, quality is Inferior, and the stack limit is 10. Cheap sword is `3c8f41b6`. Kind is Weapon, quality is Common, and the stack limit is 1. Add both to `SolidItemType::Catalog`. `MaxItems` is 16, and the catalog has room. The suite line in `README.md` that lists the catalog items gains both in the same commit. The crafting line gains this recipe in that same commit.
-- [Foraging](foraging.md) is the pile, the cube, the click, the pack insert, and the fog test. The mesh function returns that same cube for this id. This story does not give rough stone its own mesh.
+- [Foraging](Done/foraging.md) is the pile, the cube, the click, the pack insert, and the fog test. The mesh function returns that same cube for this id. This story does not give rough stone its own mesh.
 - A neighbor is one of the eight points at one grid step, 200 cm. A diagonal step counts. The point's stored biome is the test, the value `SampleBiome` already wrote. River means the 4 m channel, not the whole `*` cell. The dry bank inside that cell can hold a pile when its biome is allowed and a channel point is a neighbor.
 - Mountain takes the whole cell, so the piles sit on the points just outside it.
 - Town is excluded, so a bank that took a town biome has none. Rathen sits on such a bank. Road is excluded the way a road through forest has no sticks.

@@ -1,6 +1,6 @@
 # Foraging
 
-Status: In Progress
+Status: Done
 
 ## Story
 
@@ -43,7 +43,7 @@ The player walks through forest and finds sticks and pitch scattered on the grou
 
 ## Implementation notes
 
-- Stick is `6c2a91e8`, Inferior, stacks to 10. Pitch is `d4f07b3a`, Common, stacks to 10. Coins are not a ground find. Rough stone is [Rough stones](rough-stones.md). This story does not add that id and does not place those piles.
+- Stick is `6c2a91e8`, Inferior, stacks to 10. Pitch is `d4f07b3a`, Common, stacks to 10. Coins are not a ground find. Rough stone is [Rough stones](../rough-stones.md). This story does not add that id and does not place those piles.
 - Scatter the piles the way `SolidForestTrees::CollectSpawnPositions` scatters trees. The input set is forest points that did not receive a tree. Fisher–Yates, then `round(count * density)` clamped to the max and to the count. Density is `0.05`. The max is 64. Jitter is 90 cm, the same as `ForestTreeJitterCm`. Trees use `ForestTreeSeed` 42. The piles use their own seed, 43, so a tree-seed change does not move them.
 - Walking that chosen list, an even index is a stick and an odd index is a pitch. The list is the choice of points. It is not a spawn of actors on ground the player has not reached. A test map with 40 treeless forest points chooses two piles, stick then pitch. A map with no forest chooses none. One placed stick is still enough to test the click and the pack.
 - After that scatter, walk world-map forest cells (`#`) whose center is within 100 m of Iglin. A cell missing a stick or a pitch gets one, on the lowest-index treeless forest point in that cell that does not already hold a pile. No jitter, so the pile stays on that point. A point with a tree still holds no pile.
@@ -51,7 +51,7 @@ The player walks through forest and finds sticks and pitch scattered on the grou
 - The pack is `FGameState::Inventory`, six cells, carried on the travel session. The taken set is the indexes in the chosen scatter list, and it rides on that state too. `OpenLevel` builds a new world. The same list comes back, and a taken index is skipped.
 - A pickup calls `ClearClickMove`, the same way `ActivatePassage` does, so a raven walk already under way stops. The nearest pile is the first hit along the pointer ray. The 4 m test still applies to that pile.
 - `SolidInventory::Clear` empties the pack and leaves Rags on the body. Leave the taken ids taken.
-- Full fog is `FSolidTerrainPoint.Fog` of `1.0f`. Bands are in [Source/SolidCore1/Fog/README.md](../Source/SolidCore1/Fog/README.md). Do not seed a chosen point while its `Fog` is `1.0f`. `CenterExplorationFogOn` opens the first bubble, and `ApplyExplorationFogAround` lowers fog as the pawn moves and never raises it. After each of those, seed chosen points whose `Fog` is now below `1.0f`, that are not taken, and that have no pile yet. A test with every point at `1.0f` seeds nothing. Lowering one chosen point below `1.0f` seeds that pile and leaves the others unseeded. Trees and buildings use the same fog value in [Hide trees and buildings in full fog](hide-props-in-full-fog.md).
+- Full fog is `FSolidTerrainPoint.Fog` of `1.0f`. Bands are in [Source/SolidCore1/Fog/README.md](../../Source/SolidCore1/Fog/README.md). Do not seed a chosen point while its `Fog` is `1.0f`. `CenterExplorationFogOn` opens the first bubble, and `ApplyExplorationFogAround` lowers fog as the pawn moves and never raises it. After each of those, seed chosen points whose `Fog` is now below `1.0f`, that are not taken, and that have no pile yet. A test with every point at `1.0f` seeds nothing. Lowering one chosen point below `1.0f` seeds that pile and leaves the others unseeded. Trees and buildings use the same fog value in [Hide trees and buildings in full fog](../hide-props-in-full-fog.md).
 - A left click already prefers a passage (`PassageUnderPointer`), then `ClickMoveFromInput`. A pile in reach sits between those two. `SolidClickMove::AllowsClick` is raven sight only. `IsMenuOverlayOpen` includes the inventory, the journal, the message, and the party builder. The passage ray is `SolidClickMove::MaxRayCm` (800 m). The 4 m test is the captain's ground distance to the pile, not that ray.
 - Terrain points are 2 m apart (`PointSpacing` 200 cm). 4 m is two of those, so a pile on a neighbouring point is in reach.
 - The tip is the catalog name, drawn the way `CavePassageTip` is drawn. Empty when the pointer is not over a pile in reach. The pointer has to be showing, the same check as `SolidDungeonPassage::AcceptsPointer`.

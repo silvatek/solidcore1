@@ -298,7 +298,7 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 		TEXT("an empty furnishing list still moves the starting pieces"),
 		SolidStrongholdTransition::Commit(State, AverageCell, ESolidStrongholdSize::Average, ESolidStrongholdType::Tower));
 	TestEqual(TEXT("the company is in a tower"), static_cast<uint8>(State.ActiveStronghold.Type), static_cast<uint8>(ESolidStrongholdType::Tower));
-	TestEqual(TEXT("the company is Average"), static_cast<uint8>(State.ActiveStronghold.Size), static_cast<uint8>(ESolidStrongholdSize::Average));
+	TestEqual(TEXT("the stronghold size is average"), static_cast<uint8>(State.ActiveStronghold.Size), static_cast<uint8>(ESolidStrongholdSize::Average));
 	TestEqual(TEXT("the company is on the site"), State.ActiveStrongholdCell, AverageCell);
 	TestEqual(TEXT("the stronghold was left"), State.LeftStrongholds.Num(), 1);
 	TestEqual(

@@ -1,6 +1,6 @@
 # Stronghold markers select size only
 
-Status: New
+Status: Ready
 
 ## Story
 

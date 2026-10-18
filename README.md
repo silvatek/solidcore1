@@ -38,6 +38,7 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Name the company's stronghold](Planning/name-the-stronghold.md)
 - [Return to the stronghold](Planning/return-to-stronghold.md)
 - [Package the game](Planning/package-the-game.md)
+- [Drop the Assassin and Blacksmith packs](Planning/remove-assassin-and-blacksmith.md)
 
 ## Done
 

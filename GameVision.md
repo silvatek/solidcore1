@@ -54,7 +54,7 @@ Later unlocks include automatic pickup, storage that does not run out, and Stron
 
 A numeric model runs every part of the game, including weapon damage. Those numbers stay off the screen. Each value is drawn from a range, so repeated play still leaves the exact figure unknown.
 
-The player sees qualitative grades. Item quality uses `ESolidItemQuality` in `Source/SolidCore1/Inventory/SolidItemType.h`: Inferior, Common, Superior, Exquisite, and Legendary. Some items have no grade.
+The player sees qualitative grades. Item quality is `ESolidItemQuality`.
 
 ## The journal
 

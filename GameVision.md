@@ -54,7 +54,9 @@ How a thing works and how it looks are separate choices, as far as the game can 
 
 ## Early work, later relief
 
-The early game asks for a lot of work by hand. That work is deliberate. Progress unlocks ways to do less of it, and that relief is the reward.
+The early game asks for a lot of work by hand. That work is deliberate. New sources of that work appear as the game progresses. Automation keeps the amount of it in balance.
+
+A quest unlocks each piece of automation. The player chooses, for each one, whether to do the quest or keep doing the work by hand.
 
 Early work includes foraging by hand, crafting by hand, walking back to recover the gear left on a body, and making extra journeys because storage is limited.
 

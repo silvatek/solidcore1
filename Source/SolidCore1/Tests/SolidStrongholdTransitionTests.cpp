@@ -1,5 +1,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
+#include "Lairs/SolidLair.h"
+#include "SolidDungeonLevel.h"
 #include "SolidGameState.h"
 #include "SolidHUD.h"
 #include "SolidInventory.h"
@@ -8,6 +10,7 @@
 #include "SolidStrongholdTransition.h"
 #include "SolidTowerStronghold.h"
 #include "SolidWorldMap.h"
+#include "Towns/SolidTowns.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -437,6 +440,78 @@ bool FSolidStrongholdChoiceTest::RunTest(const FString& Parameters)
 	HUD->CloseMenuOverlay();
 	TestFalse(TEXT("Esc leaves the stone"), HUD->IsStrongholdChoiceOpen());
 	TestFalse(TEXT("Esc does not open the menu"), HUD->IsMainMenuOpen());
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidStrongholdCaveMouthAfterDragongateTest,
+	"SolidCore1.Stronghold.CaveMouthAfterDragongate",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidStrongholdCaveMouthAfterDragongateTest::RunTest(const FString& Parameters)
+{
+	const SolidLair::FPassageHit CaveEnter = SolidLair::HitOnMouth(false, 0, false);
+
+	FGameState Fresh;
+	TestFalse(TEXT("a new game leaves the cave shut"), Fresh.bCaveEnabled);
+	TestFalse(TEXT("a new game does not accept enter"), SolidStrongholdTransition::CompanyCaveAcceptsEnter(Fresh));
+	TestEqual(
+		TEXT("a new game ignores the mouth"),
+		static_cast<uint8>(SolidLair::AllowPassage(CaveEnter, SolidStrongholdTransition::CompanyCaveAcceptsEnter(Fresh), false).Action),
+		static_cast<uint8>(SolidDungeonPassage::EHit::None));
+
+	FGameState Humble;
+	Unlock(Humble, ESolidStrongholdSize::Humble);
+	TestFalse(TEXT("another size does not open the cave"), SolidStrongholdTransition::CompanyCaveAcceptsEnter(Humble));
+
+	FGameState Unlocked;
+	Unlock(Unlocked, ESolidStrongholdSize::Meagre);
+	TestFalse(TEXT("unlocking Meagre leaves the cave flag shut"), Unlocked.bCaveEnabled);
+	TestTrue(TEXT("an unlocked Meagre cave accepts enter"), SolidStrongholdTransition::CompanyCaveAcceptsEnter(Unlocked));
+
+	FGameState Opened;
+	Opened.bCaveEnabled = true;
+	TestTrue(TEXT("the monster message still accepts enter"), SolidStrongholdTransition::CompanyCaveAcceptsEnter(Opened));
+
+	FGameState Played;
+	const SolidEvents::FResult Fired = SolidEvents::NotifyOccupiedTown(Played, SolidTowns::Dragongate);
+	TestTrue(TEXT("Enter Dragongate fires"), Fired.bFired);
+	TestFalse(TEXT("Enter Dragongate leaves the cave flag shut"), Played.bCaveEnabled);
+	TestTrue(TEXT("Enter Dragongate unlocks Meagre"), SolidEvents::IsStrongholdSizeUnlocked(Played, ESolidStrongholdSize::Meagre));
+	TestEqual(
+		TEXT("the company is still in the cave"),
+		static_cast<uint8>(Played.ActiveStronghold.Type),
+		static_cast<uint8>(ESolidStrongholdType::Dungeon));
+	TestEqual(
+		TEXT("the cave is still Meagre"),
+		static_cast<uint8>(Played.ActiveStronghold.Size),
+		static_cast<uint8>(ESolidStrongholdSize::Meagre));
+	TestEqual(TEXT("the cave stays on its cell"), Played.ActiveStrongholdCell, SolidStronghold::StartingCell());
+	TestTrue(TEXT("the cave accepts enter after Dragongate"), SolidStrongholdTransition::CompanyCaveAcceptsEnter(Played));
+
+	const SolidLair::FPassageHit Allowed = SolidLair::AllowPassage(
+		CaveEnter,
+		SolidStrongholdTransition::CompanyCaveAcceptsEnter(Played),
+		false);
+	TestEqual(
+		TEXT("the mouth offers Enter cave"),
+		static_cast<uint8>(Allowed.Action),
+		static_cast<uint8>(SolidDungeonPassage::EHit::Enter));
+	TestFalse(TEXT("the hit stays the cave mouth"), Allowed.bLair);
+	TestEqual(
+		TEXT("the tip is Enter cave"),
+		FString(SolidLair::PassageTip(Allowed)),
+		FString(SolidDungeonLevel::EnterLabel));
+
+	const FIntPoint AverageCell(10, 12);
+	TestTrue(
+		TEXT("the company can leave for a tower"),
+		SolidStrongholdTransition::Commit(Played, AverageCell, ESolidStrongholdSize::Average, ESolidStrongholdType::Tower));
+	TestFalse(TEXT("a left cave does not accept enter"), SolidStrongholdTransition::CompanyCaveAcceptsEnter(Played));
+	TestEqual(
+		TEXT("the mouth stays shut after the company moves"),
+		static_cast<uint8>(SolidLair::AllowPassage(CaveEnter, SolidStrongholdTransition::CompanyCaveAcceptsEnter(Played), false).Action),
+		static_cast<uint8>(SolidDungeonPassage::EHit::None));
 	return true;
 }
 

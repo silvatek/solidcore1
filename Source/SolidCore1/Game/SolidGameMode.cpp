@@ -567,7 +567,7 @@ SolidWorldTime::FStamp ASolidGameMode::WorldStamp() const
 
 void ASolidGameMode::TravelToDungeon()
 {
-	if (!IsCaveEnabled())
+	if (!SolidStrongholdTransition::CompanyCaveAcceptsEnter(Configuration))
 	{
 		return;
 	}

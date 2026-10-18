@@ -211,13 +211,17 @@ namespace SolidStrongholdTransition
 		return true;
 	}
 
-	/** F10 Enter cave and the stronghold mouth. True only while that stronghold is still the company base and open. */
+	/**
+	 * The cave mouth, and the travel into it.
+	 * True while the starting cave is still the company base, and either the monster message has opened it or Meagre is unlocked.
+	 */
 	inline bool CompanyCaveAcceptsEnter(const FGameState& State)
 	{
-		return State.bCaveEnabled
-			&& State.ActiveStronghold.Type == ESolidStrongholdType::Dungeon
+		const bool bStartingCave = State.ActiveStronghold.Type == ESolidStrongholdType::Dungeon
 			&& State.ActiveStronghold.Size == ESolidStrongholdSize::Meagre
 			&& State.ActiveStrongholdCell == SolidStronghold::StartingCell();
+		return bStartingCave
+			&& (State.bCaveEnabled || SolidEvents::IsStrongholdSizeUnlocked(State, ESolidStrongholdSize::Meagre));
 	}
 
 	/** A tower door the company has left is not a passage. Any other tower door stays one. */

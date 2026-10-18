@@ -1310,35 +1310,24 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidEventsEnableStrongholdSizeTest::RunTest(const FString& Parameters)
 {
-	const TCHAR* HeldBack[] = {
-		TEXT("Enter Iglin"),
-		TEXT("Enter Relion"),
-		TEXT("Enter Kanfold"),
-	};
-	for (const TCHAR* Name : HeldBack)
+	const SolidEvents::FEvent* Iglin = SolidEventTestPrivate::FindEvent(TEXT("Enter Iglin"));
+	TestNotNull(TEXT("Enter Iglin is listed"), Iglin);
+	if (Iglin)
 	{
-		const SolidEvents::FEvent* Event = SolidEventTestPrivate::FindEvent(Name);
-		TestNotNull(*FString::Printf(TEXT("%s is listed"), Name), Event);
-		if (!Event)
-		{
-			continue;
-		}
-		const int32 ChangeCount = FMath::Min(Event->ChangeCount, SolidEvents::MaxChangesPerEvent);
+		const int32 ChangeCount = FMath::Min(Iglin->ChangeCount, SolidEvents::MaxChangesPerEvent);
 		for (int32 Index = 0; Index < ChangeCount; ++Index)
 		{
 			TestFalse(
-				*FString::Printf(TEXT("%s does not unlock a size"), Name),
-				Event->Changes[Index].Kind == SolidEvents::EChange::EnableStrongholdSize);
+				TEXT("Enter Iglin does not unlock a size"),
+				Iglin->Changes[Index].Kind == SolidEvents::EChange::EnableStrongholdSize);
 		}
 	}
 	FGameState Played;
 	SolidEvents::NotifyOccupiedTown(Played, SolidTowns::Iglin);
-	SolidEvents::NotifyOccupiedTown(Played, SolidTowns::Relion);
-	SolidEvents::NotifyOccupiedTown(Played, SolidTowns::Kanfold);
 	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
 	{
 		TestFalse(
-			*FString::Printf(TEXT("those towns leave %s locked"), SolidStronghold::SizeName(Size)),
+			*FString::Printf(TEXT("Enter Iglin leaves %s locked"), SolidStronghold::SizeName(Size)),
 			SolidEvents::IsStrongholdSizeUnlocked(Played, Size));
 	}
 

@@ -9,7 +9,7 @@ Driven from the village enables the Iglin tunnels. That is an `EnableLair` chang
 ## Acceptance
 
 - `EChange` has `EnableLair`. `Change::EnableLair` and `FEvent::EnableLair` add it. The change names one lair. On `IdDrivenFromVillage` that lair is the Iglin tunnels (`SolidLair::IglinTunnels`).
-- `IdDrivenFromVillage` still shows "You are driven from the village", titles the captain Outcast, and requires `IdKilledByMonsters`. It does not send the captain inside. F10 Enter cave still does not make the tunnel trip.
+- `IdDrivenFromVillage` still shows "You are driven from the village", titles the captain Outcast, and requires `IdKilledByMonsters`. It does not send the captain inside. The menu does not make the tunnel trip.
 - Before that change, the Iglin tunnels are shut. A click on either mouth does nothing, and `TravelToLair` does not enter. Leave stays available.
 - After the change, both mouths accept a click. Enter Iglin and Killed by monsters still leave the tunnels shut.
 - The portal to the grass north of the X mouth still records `IdDrivenFromVillage` when Killed by monsters has not fired. That recording runs `EnableLair`, so the tunnels open. It does not open the cave and it does not enter the tunnels. A second use does not record the event again.

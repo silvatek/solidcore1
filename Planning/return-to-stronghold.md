@@ -10,10 +10,10 @@ Closing the monster message enables the Meagre size and returns the captain to t
 
 - `IdKilledByMonsters` carries `EnableStrongholdSize(ESolidStrongholdSize::Meagre)`, `ReturnToStronghold`, and `ClearInventory`. It does not carry `EnableCave`.
 - `EnableCave` is gone. A search of `Source` does not find that name.
-- Before that close, Meagre is locked. The cave mouth ignores a click, and F10 Enter cave does nothing.
-- The close enables Meagre. While the cave is still the company stronghold, the mouth accepts a click and F10 Enter cave enters.
+- Before that close, Meagre is locked. The cave mouth ignores a click.
+- The close enables Meagre. While the cave is still the company stronghold, the mouth accepts a click.
 - `ReturnToStronghold` sends the captain into the company stronghold. On this close, that is the cave. After the company has moved, the same change enters the stronghold they have then.
-- Once the company has left the cave, the mouth and F10 Enter cave stay shut. Meagre stays enabled.
+- Once the company has left the cave, the mouth stays shut. Meagre stays enabled.
 - Enter Dragongate does not list Meagre. It still lists Humble, Average, Impressive, Grand, Stately, and Imperious. F5 Parade does not enable Meagre and does not open the cave.
 - The journal for that close records the Meagre size and the return. It does not say Cave enabled.
 - Driven from the village still requires `IdKilledByMonsters`. The close still clears the inventory to Rags.
@@ -21,7 +21,7 @@ Closing the monster message enables the Meagre size and returns the captain to t
 ## Implementation notes
 
 - `EnableCave` sets `bCaveEnabled` and `FResult.bEnterCave`. `PresentEventResult` calls `TravelToDungeon` when `bEnterCave` is set. `TravelToDungeon` returns immediately unless `bCaveEnabled` is set.
-- `CompanyCaveAcceptsEnter`, the F10 row (`CanUseCaveRow`), the menu dimming, and the mouth passage read `bCaveEnabled`. After this story the cave is open when Meagre is enabled and the cave is still the company stronghold. `bCaveEnabled` can go once those readers have moved.
+- `CompanyCaveAcceptsEnter` and the mouth passage read `bCaveEnabled`. After this story the cave is open when Meagre is enabled and the cave is still the company stronghold. `bCaveEnabled` can go once those readers have moved. [Reorder the game menu](reorder-game-menu.md) removes the F10 row, so this story does not add it back.
 - `ReturnToStronghold` is the trip. It replaces `bEnterCave`. While the company stronghold is the Meagre cave, it uses the cave trip. When the active stronghold is a tower, it uses that tower's trip.
 - Killed by monsters already enables Meagre, beside `EnableCave` and `ClearInventory`. Enter Relion already enables Humble. Enter Kanfold already enables Average. Enter Dragongate still lists those three as well.
 - Enter Dragongate already lists `EnableStrongholdSize(Meagre)`. Remove that one line here. Leave the other six sizes on Dragongate, and leave Humble on Relion and Average on Kanfold.

@@ -27,17 +27,9 @@ The owner uses this repo partly to evaluate whether AI coding works without deta
 
 ## Collaborative workflow
 
-The agent pushes to GitHub. The user verifies on their machine. Do not run the editor, automation, or PIE from the agent environment.
+The agent pushes to GitHub. The CI agent builds and runs the automated tests on the Windows machine. The user playtests in PIE. Do not run the editor, automation, or PIE from a Cursor-hosted agent environment.
 
-After a push, the user:
-
-1. Pulls the changes.
-2. Rebuilds the code.
-3. Runs the tests.
-4. Runs the game in PIE.
-5. Typically, but not always, sends a screenshot for the agent to review.
-
-Wait for that report before treating the change as verified. When a screenshot arrives, review it.
+After a push to `main`, ask the CI agent to build and test that commit. See **CI agent** below. When the build and tests pass, the CI agent asks the user to play that build in PIE. The user typically, but not always, sends a screenshot. Wait for the CI report and the user's PIE report before treating the change as verified. When a screenshot arrives, review it.
 
 Screenshots are taken with the Windows snipping tool. That switch puts Unreal in the background, so the HUD frame rate drops. Ignore FPS in a screenshot unless the user says they are worried about it. Foreground PIE is about 120 FPS.
 
@@ -48,8 +40,33 @@ Cloud agents are a **code + git workshop**. They do not replace the Windows Unre
 - Checkout `main` and pull from GitHub before editing. Ship on `main`. No feature branch and no pull request unless the user asks for one in that conversation.
 - Do not run the Unreal Editor, `tools/test.bat`, automation, or PIE from the cloud VM. Fab packs are not present here.
 - Before every push, run `python3 tools/cloud_agent_check.py`. The cloud environment `install` runs the same script. Fix errors before pushing; treat warnings as review notes.
-- After a push, wait for the user's pull → rebuild → tests → PIE report (and screenshot when they send one) before treating the change as verified.
+- After a push, ask the CI agent to build and test that commit. Wait for its report and for the user's PIE report before treating the change as verified.
 - Do not install Unreal Engine on the cloud VM.
+
+## CI agent
+
+Build and test requests go to the CI agent on Steve's Windows machine. It runs one request at a time, in the order they arrive. It pulls the commit you name, runs `tools\build.bat`, then `tools\test.bat`, and reports the commit, the build exit code, and the pass/fail counts. It does not change code. It does not launch the editor. When the build and tests pass, it asks Steve to play that commit in PIE.
+
+The agent is [CI Agent](https://cursor.com/agents/bc-09011649-80ef-4557-8bc8-972e8712a355), id `bc-09011649-80ef-4557-8bc8-972e8712a355`. If that agent is archived, call `GET https://api.cursor.com/v1/agents` and use the active agent named `CI Agent`.
+
+Send the request as a follow-up run. Authenticate with the user's Cursor API key: HTTP Basic with the key as the username and an empty password, or `Authorization: Bearer <key>`. Endpoint reference: <https://cursor.com/docs/cloud-agent/api/endpoints>.
+
+```
+POST https://api.cursor.com/v1/agents/bc-09011649-80ef-4557-8bc8-972e8712a355/runs
+Content-Type: application/json
+
+{
+  "prompt": {
+    "text": "Build and test commit <full sha> on main.\n<one line: what changed>\nDo not change any code. Pull that commit, run tools\\build.bat, then tools\\test.bat, and report the commit, the build exit code, and the pass/fail counts."
+  }
+}
+```
+
+Name the full commit SHA you pushed to `main`, and one line describing the change. Push before you send the request.
+
+A `409` response with `agent_busy` means a run is already active. Wait, then send the same prompt again. Leave the active run running.
+
+When the new run finishes, read `GET https://api.cursor.com/v1/agents/bc-09011649-80ef-4557-8bc8-972e8712a355/runs/<runId>`. The report is the `result` field of a `FINISHED` run.
 
 ## Planning
 

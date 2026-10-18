@@ -42,6 +42,7 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Remove den from the code](Planning/remove-den-from-the-code.md)
 - [Return to the stronghold](Planning/return-to-stronghold.md)
 - [Enable a lair from an event](Planning/enable-lair.md)
+- [Rename Party to Squad](Planning/rename-party-to-squad.md)
 
 ## Done
 

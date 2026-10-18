@@ -45,7 +45,7 @@ Cloud agents are a **code + git workshop**. They do not replace the Windows Unre
 
 ## CI agent
 
-Build and test requests go to the CI agent on Steve's Windows machine. It runs one request at a time, in the order they arrive. It pulls the commit you name, runs `tools\build.bat`, then `tools\test.bat`, and reports the commit, the build exit code, and the pass/fail counts. It does not change code. It does not launch the editor. When the build and tests pass, it asks Steve to play that commit in PIE.
+Build and test requests go to the CI agent on a Windows developer PC. It runs one request at a time, in the order they arrive. It pulls the commit you name, runs `tools\build.bat`, then `tools\test.bat`, and reports the commit, the build exit code, and the pass/fail counts. It does not change code. It does not launch the editor. When the build and tests pass, it asks for a PIE playtest of that commit on that Windows developer PC.
 
 The agent is [CI Agent](https://cursor.com/agents/bc-09011649-80ef-4557-8bc8-972e8712a355), id `bc-09011649-80ef-4557-8bc8-972e8712a355`. If that agent is archived, call `GET https://api.cursor.com/v1/agents` and use the active agent named `CI Agent`.
 

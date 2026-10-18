@@ -24,6 +24,7 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Hold battle plan](Planning/hold-battle-plan.md)
 - [Events auto-trigger other events](Planning/events-auto-trigger.md)
 - [Reorder the game menu](Planning/reorder-game-menu.md)
+- [Exit the game](Planning/exit-the-game.md)
 - [Stamina](Planning/stamina.md)
 - [Basic monsters](Planning/basic-monsters.md)
 - [Basic NPCs](Planning/basic-npcs.md)

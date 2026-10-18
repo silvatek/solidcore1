@@ -1413,9 +1413,12 @@ bool FSolidEventsEnableLairTest::RunTest(const FString& Parameters)
 	if (Enable)
 	{
 		TestEqual(
-			TEXT("the return names the Iglin tunnels"),
-			FString(Enable->LairName ? Enable->LairName : TEXT("")),
-			FString(SolidLair::IglinTunnels.Name));
+			TEXT("the return carries the Iglin tunnels id"),
+			FString(Enable->LairId ? Enable->LairId : TEXT("")),
+			FString(SolidLair::IdIglinTunnels));
+		TestTrue(
+			TEXT("the change does not store the display name"),
+			FCString::Strcmp(Enable->LairId, SolidLair::IglinTunnels.Name) != 0);
 	}
 
 	const TCHAR* MessageText = SolidMessages::TextFor(SolidMessages::IdDrivenFromVillage);
@@ -1451,14 +1454,14 @@ bool FSolidEventsEnableLairTest::RunTest(const FString& Parameters)
 	{
 		SolidEvents::ApplyChange(State, *Enable, Result);
 	}
-	TestTrue(TEXT("applying it enables the Iglin tunnels"), SolidEvents::IsLairEnabled(State, SolidLair::IglinTunnels.Name));
+	TestTrue(TEXT("applying it enables the Iglin tunnels"), SolidEvents::IsLairEnabled(State, SolidLair::IdIglinTunnels));
 	TestTrue(TEXT("the tunnels are open"), SolidLair::TunnelsOpen(State));
-	TestFalse(TEXT("another lair stays shut"), SolidEvents::IsLairEnabled(State, TEXT("Other tunnels")));
+	TestFalse(TEXT("another lair stays shut"), SolidEvents::IsLairEnabled(State, TEXT("aabbcc99")));
 	TestFalse(TEXT("the cave stays shut"), State.bCaveEnabled);
 	TestFalse(TEXT("EnableLair does not enter the cave"), Result.bEnterCave);
 
 	const SolidEvents::FEvent Other = SolidEvents::EnterTown(TEXT("aabbcc02"), TEXT("Sample lair"), 0, SolidEvents::ACT_0)
-		.EnableLair(TEXT("Other tunnels"));
+		.EnableLair(TEXT("aabbcc99"));
 	TestEqual(TEXT("a built enable has one change"), Other.ChangeCount, 1);
 	TestEqual(
 		TEXT("a built enable is EnableLair"),
@@ -1467,7 +1470,7 @@ bool FSolidEventsEnableLairTest::RunTest(const FString& Parameters)
 	FGameState OtherState;
 	SolidEvents::FResult OtherResult;
 	SolidEvents::ApplyChange(OtherState, Other.Changes[0], OtherResult);
-	TestTrue(TEXT("the named lair opens"), SolidEvents::IsLairEnabled(OtherState, TEXT("Other tunnels")));
+	TestTrue(TEXT("the id opens"), SolidEvents::IsLairEnabled(OtherState, TEXT("aabbcc99")));
 	TestFalse(TEXT("that change leaves the Iglin tunnels shut"), SolidLair::TunnelsOpen(OtherState));
 	TestFalse(TEXT("a different lair does not enter the cave"), OtherResult.bEnterCave);
 

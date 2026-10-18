@@ -2,6 +2,7 @@
 
 #include "Events/SolidEvent.h"
 #include "Events/SolidMessages.h"
+#include "Lairs/SolidLairId.h"
 #include "Towns/SolidTowns.h"
 
 /**
@@ -29,7 +30,7 @@ namespace SolidEvents
 			.Require(IdKilledByMonsters)
 			.DisplayMessage(SolidMessages::IdDrivenFromVillage)
 			.SetPlayerTitle(TitleOutcast)
-			.EnableLair(TEXT("Iglin tunnels")),
+			.EnableLair(SolidLair::IdIglinTunnels),
 		EnterTown(IdEnterRelion, TEXT("Enter Relion"), SolidTowns::Relion, ACT_2)
 			.Require(IdEnterIglin)
 			.EnableSight(ESolidSight::Raven)

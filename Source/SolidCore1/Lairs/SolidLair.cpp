@@ -39,7 +39,7 @@ namespace SolidLairMouth
 	/** LairEntrance is the interior X end. LairExit is the interior Y end. */
 	TCHAR EndForBang(const FSolidWorldBang& Bang)
 	{
-		if (!Bang.Name.Equals(SolidLair::IglinTunnels.Name, ESearchCase::IgnoreCase))
+		if (!Bang.LairId.Equals(SolidLair::IdIglinTunnels, ESearchCase::CaseSensitive))
 		{
 			return 0;
 		}

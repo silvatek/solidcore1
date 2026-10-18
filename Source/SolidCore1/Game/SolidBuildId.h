@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0461")
+#define SOLID_BUILD_ID TEXT("SC1-0462")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Driven from the village enables the Iglin tunnels.")
+#define SOLID_BUILD_NOTE TEXT("Lairs use stable ids.")
 #endif

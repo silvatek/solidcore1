@@ -515,6 +515,7 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 				? ESolidWorldBang::LairEntrance
 				: ESolidWorldBang::LairExit;
 			Mark.Name = Lair->Name;
+			Mark.LairId = Lair->Id;
 			break;
 		}
 		default:

@@ -1,5 +1,6 @@
 #include "SolidJournal.h"
 #include "Events/SolidMessages.h"
+#include "Lairs/SolidLair.h"
 #include "SolidGameState.h"
 #include "SolidSight.h"
 #include "SolidStronghold.h"
@@ -37,9 +38,9 @@ FString SolidJournal::Describe(const SolidEvents::FEvent& Event)
 			Part = FString::Printf(TEXT("%s size unlocked"), SolidStronghold::SizeName(Change.StrongholdSize));
 			break;
 		case SolidEvents::EChange::EnableLair:
-			if (Change.LairName && Change.LairName[0])
+			if (const TCHAR* LairName = SolidLair::NameFor(Change.LairId))
 			{
-				Part = FString::Printf(TEXT("%s enabled"), Change.LairName);
+				Part = FString::Printf(TEXT("%s enabled"), LairName);
 			}
 			break;
 		case SolidEvents::EChange::ShowMessage:

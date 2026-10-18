@@ -50,6 +50,20 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidLairMazeTest::RunTest(const FString& Parameters)
 {
 	TestEqual(TEXT("lair name"), FString(SolidLair::IglinTunnels.Name), FString(TEXT("Iglin tunnels")));
+	TestEqual(TEXT("lair id"), FString(SolidLair::IglinTunnels.Id), FString(SolidLair::IdIglinTunnels));
+	const FString LairId(SolidLair::IdIglinTunnels);
+	TestEqual(TEXT("lair id is eight digits"), LairId.Len(), SolidLair::IdLength);
+	bool bLairIdHex = LairId.Len() == SolidLair::IdLength;
+	for (const TCHAR Char : LairId)
+	{
+		bLairIdHex = bLairIdHex && FChar::IsHexDigit(Char);
+	}
+	TestTrue(TEXT("lair id is hex"), bLairIdHex);
+	TestTrue(
+		TEXT("find by id"),
+		SolidLair::FindById(SolidLair::IdIglinTunnels) == &SolidLair::IglinTunnels);
+	TestTrue(TEXT("the display name still finds it"), SolidLair::FindByName(TEXT("Iglin tunnels")) == &SolidLair::IglinTunnels);
+	TestNull(TEXT("an unknown id is missing"), SolidLair::FindById(TEXT("00000000")));
 	TestEqual(TEXT("enter journal"), SolidLair::VisitJournalText(true), FString(TEXT("Enter Iglin tunnels")));
 	TestEqual(TEXT("exit journal"), SolidLair::VisitJournalText(false), FString(TEXT("Exit Iglin tunnels")));
 	TestTrue(TEXT("the doorway is wider than the captain"), SolidLair::DoorwayWidthCm > 110.f);

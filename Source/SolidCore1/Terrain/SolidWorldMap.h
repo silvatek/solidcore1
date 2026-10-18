@@ -25,6 +25,8 @@ struct FSolidWorldBang
 	ESolidWorldBang Kind = ESolidWorldBang::None;
 	int32 LocationId = INDEX_NONE;
 	FString Name;
+	/** Eight hex digits when this cell is a lair mouth. Empty otherwise. */
+	FString LairId;
 	/** Unused for a stronghold site. */
 	ESolidStrongholdType StrongholdType = ESolidStrongholdType::Dungeon;
 	ESolidStrongholdSize StrongholdSize = ESolidStrongholdSize::Meagre;

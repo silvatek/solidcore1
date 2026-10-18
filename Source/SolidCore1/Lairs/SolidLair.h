@@ -5,6 +5,7 @@
 #include "SolidDungeonLevel.h"
 #include "SolidDungeonPassage.h"
 #include "SolidGameState.h"
+#include "SolidLairId.h"
 #include "SolidTowerStronghold.h"
 #include "SolidWorldMap.h"
 
@@ -73,18 +74,51 @@ namespace SolidLair
 
 	struct FDefinition
 	{
+		/** Eight hex digits. */
+		const TCHAR* Id = TEXT("");
 		const TCHAR* Name = TEXT("");
 	};
 
-	inline const FDefinition IglinTunnels = { TEXT("Iglin tunnels") };
+	inline const FDefinition Definitions[] = {
+		{ IdIglinTunnels, TEXT("Iglin tunnels") },
+	};
+
+	inline constexpr int32 DefinitionCount = UE_ARRAY_COUNT(Definitions);
+
+	inline const FDefinition& IglinTunnels = Definitions[0];
+
+	inline const FDefinition* FindById(const TCHAR* Id)
+	{
+		if (!Id || !Id[0])
+		{
+			return nullptr;
+		}
+		for (const FDefinition& Lair : Definitions)
+		{
+			if (Lair.Id && FCString::Strcmp(Lair.Id, Id) == 0)
+			{
+				return &Lair;
+			}
+		}
+		return nullptr;
+	}
 
 	inline const FDefinition* FindByName(const FString& Name)
 	{
-		if (Name.Equals(IglinTunnels.Name, ESearchCase::IgnoreCase))
+		for (const FDefinition& Lair : Definitions)
 		{
-			return &IglinTunnels;
+			if (Name.Equals(Lair.Name, ESearchCase::IgnoreCase))
+			{
+				return &Lair;
+			}
 		}
 		return nullptr;
+	}
+
+	inline const TCHAR* NameFor(const TCHAR* Id)
+	{
+		const FDefinition* Lair = FindById(Id);
+		return Lair ? Lair->Name : nullptr;
 	}
 
 	/**
@@ -187,7 +221,7 @@ namespace SolidLair
 	/** True when a click on a lair mouth may enter. */
 	inline bool TunnelsOpen(const FGameState& State)
 	{
-		return SolidEvents::IsLairEnabled(State, IglinTunnels.Name);
+		return SolidEvents::IsLairEnabled(State, IdIglinTunnels);
 	}
 
 	inline FString EnterOptions(const TCHAR End)

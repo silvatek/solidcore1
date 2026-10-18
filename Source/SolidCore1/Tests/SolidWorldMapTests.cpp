@@ -1464,6 +1464,7 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("lair entrance"), Map->FindBang(EnterCol, EnterRow, Entrance));
 	TestEqual(TEXT("entrance kind"), static_cast<uint8>(Entrance.Kind), static_cast<uint8>(ESolidWorldBang::LairEntrance));
 	TestEqual(TEXT("entrance name"), Entrance.Name, FString(SolidLair::IglinTunnels.Name));
+	TestEqual(TEXT("entrance id"), Entrance.LairId, FString(SolidLair::IdIglinTunnels));
 	TestEqual(
 		TEXT("a lair entrance uses the mountain shelf"),
 		static_cast<uint8>(Map->GetBiomeAtCell(EnterCol, EnterRow)),
@@ -1473,6 +1474,7 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("lair exit"), Map->FindBang(ExitCol, ExitRow, Exit));
 	TestEqual(TEXT("exit kind"), static_cast<uint8>(Exit.Kind), static_cast<uint8>(ESolidWorldBang::LairExit));
 	TestEqual(TEXT("exit name"), Exit.Name, FString(SolidLair::IglinTunnels.Name));
+	TestEqual(TEXT("exit id"), Exit.LairId, FString(SolidLair::IdIglinTunnels));
 	TestFalse(TEXT("an unknown lair is not a mark"), Map->FindBang(MissingLairCol, MissingLairRow, Ignored));
 
 	const FVector2D WorldMin(-6400.f, -6400.f);

@@ -15,7 +15,7 @@ A name sign stands on the grass outside the stronghold, next to the entrance. Th
 - One name sign stands on the grass beside the company stronghold's entrance, clear of the opening and of the spot where the captain stands. The board faces the grass. It shows the current name on one line.
 - The sign is there while the mouth is shut, and after the mouth is open. A click on the sign does not enter. A click on the opening does not open the name.
 - Clicking the sign opens a page. The title is the current name. Enter keeps the typed name, trimmed, and closes the page. The board then shows that name. Esc closes the page and keeps the previous name. A name that is empty after trimming is not kept.
-- The F10 menu has no row for the name. The last two rows are Credits, then Exit.
+- The F10 menu has no row for the name. The last two rows are Credits, then Exit Game.
 - A kept name is at most 24 characters. Anything past that is dropped.
 - A kept name stays when the company moves to another size or type. It stays across a cave trip and a tower trip.
 - With no kept name, a move away from the starting stronghold drops `The cave`. The name becomes the new size and type.

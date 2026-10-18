@@ -10,7 +10,7 @@ The player can visit a fortress. A fortress is an outer wall with one or more bu
 
 Meagre is not a fortress size. Humble and Average each have one building, the Keep. A larger fortress has more buildings. A building may have more than one floor.
 
-The hexes on every floor of every building, added together, match the hexes on every floor of the tower of that same size.
+From Average upward, the hexes on every floor of every building, added together, match the hexes on every floor of the tower of that same size. Humble sits halfway between the Meagre dungeon and the Average tower.
 
 The captain enters and leaves through a gate in the outer wall. A building inside has doorways and no doors on them.
 
@@ -22,6 +22,7 @@ The captain enters and leaves through a gate in the outer wall. A building insid
 - Impressive, Grand, Stately, and Imperious each have more than one building.
 - A building may have more than one floor.
 - For Average, Impressive, Grand, Stately, and Imperious, the hexes on all floors of all buildings equal the kept hexes on all floors of the tower of that size.
+- Humble's hex total is halfway between the Meagre dungeon hex count and the Average tower's kept-hex total.
 - The stronghold entrance and the stronghold exit are one gate in the outer wall. The captain uses that gate to enter and to leave.
 - A doorway in a building inside the wall has no door. That doorway is not a second way onto the grass.
 - A building wall may form part of the outer wall.
@@ -32,7 +33,7 @@ The captain enters and leaves through a gate in the outer wall. A building insid
 
 - [Stronghold type classes](stronghold-type-classes.md) leaves fortress `Supported` false for every size, with no cliff mouth, no visit, and no ground floor. This story makes `Supported` true from Humble through Imperious and supplies the fortress through that subclass. Meagre stays false. Meagre Fortress is not a final pair.
 - The hex total for a size is the sum of `SolidTowerStronghold::CollectKeptHexes` on every floor of the plan `PlanFor` returns for the tower of that size. Average, Impressive, Grand, Stately, and Imperious are those plans. Do not copy the counts into the fortress.
-- Humble Tower is not a pair, and `PlanFor` returns false for it, so Humble has no tower total to match. The Keep's hex total at Humble is not chosen. Do not invent one.
+- Humble Tower is not a pair, and `PlanFor` returns false for it. Humble's hex total is the mean of the Meagre dungeon cell count and the Average tower kept-hex total. The Meagre count is `SolidStrongholdGrid::MeagreCells`. The Average total is the sum of `CollectKeptHexes` over every floor of `SolidTowerStronghold::Average`. Do not copy either count into the fortress. A mean that is not a whole number rounds the way `LerpCount` rounds a halfway count.
 - How many buildings each larger size has, what the buildings past the Keep are called, and how the hexes split across floors are not chosen. A larger fortress has more than one building. Do not pick a count beyond that.
 - Whether Impressive and the sizes above it still include a Keep is not chosen.
 - The outer wall's shape, the gate's size, and which building walls join the outer wall are not chosen.

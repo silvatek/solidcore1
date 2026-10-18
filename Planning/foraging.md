@@ -1,6 +1,6 @@
 # Foraging
 
-Status: Ready
+Status: In Progress
 
 ## Story
 

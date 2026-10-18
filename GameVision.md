@@ -20,6 +20,8 @@ Each player has one Captain. The Captain leads a Company of Companions from a si
 
 The Company keeps one Stronghold. The player can raise it to a larger size or change it to another type.
 
+The Company, the Stronghold, and the Stronghold NPCs form the basis of the strategy.
+
 ## Views
 
 The game has a first-person view and a third-person view. The player can switch between them in most situations. Game events turn particular views on and off.

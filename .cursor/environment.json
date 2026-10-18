@@ -1,0 +1,5 @@
+{
+  "name": "solidcore1-agent",
+  "install": "python3 tools/cloud_agent_check.py",
+  "user": "ubuntu"
+}

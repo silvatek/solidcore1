@@ -41,8 +41,9 @@ Build/
 Thumbs.db
 Desktop.ini
 
-# Cursor / tooling
-.cursor/
+# Cursor / tooling (.cursor/* so environment.json can be force-tracked)
+.cursor/*
+!.cursor/environment.json
 
 # FAB content
 Content/Fab

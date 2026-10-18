@@ -41,6 +41,16 @@ Wait for that report before treating the change as verified. When a screenshot a
 
 Screenshots are taken with the Windows snipping tool. That switch puts Unreal in the background, so the HUD frame rate drops. Ignore FPS in a screenshot unless the user says they are worried about it. Foreground PIE is about 120 FPS.
 
+## Cursor Cloud
+
+Cloud agents are a **code + git workshop**. They do not replace the Windows Unreal machine.
+
+- Checkout `main` and pull from GitHub before editing. Ship on `main`. No feature branch and no pull request unless the user asks for one in that conversation.
+- Do not run the Unreal Editor, `tools/test.bat`, automation, or PIE from the cloud VM. Fab packs are not present here.
+- Before every push, run `python3 tools/cloud_agent_check.py`. The cloud environment `install` runs the same script. Fix errors before pushing; treat warnings as review notes.
+- After a push, wait for the user's pull → rebuild → tests → PIE report (and screenshot when they send one) before treating the change as verified.
+- Do not install Unreal Engine on the cloud VM.
+
 ## Planning
 
 - One file in `Planning/` is one open story. `README.md` lists those files. The file is the story.

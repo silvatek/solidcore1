@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0443")
+#define SOLID_BUILD_ID TEXT("SC1-0444")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Enter Dragongate lists one EnableStrongholdSize change for each size.")
+#define SOLID_BUILD_NOTE TEXT("Cloud agent check script and Cursor Cloud workflow.")
 #endif

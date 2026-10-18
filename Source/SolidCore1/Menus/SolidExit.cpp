@@ -1,10 +1,10 @@
 #include "SolidExit.h"
+#include "Engine/Engine.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/KismetSystemLibrary.h"
 
 #if WITH_EDITOR
-#include "Editor/UnrealEdEngine.h"
 #include "UnrealEdGlobals.h"
 #endif
 
@@ -34,9 +34,11 @@ void SolidExit::Perform(const UObject* WorldContext, APlayerController* Player)
 	UKismetSystemLibrary::QuitGame(WorldContext, Player, EQuitPreference::Quit, false);
 
 #if WITH_EDITOR
-	if (Request.bCloseEditor && GUnrealEd)
+	if (Request.bCloseEditor && GEngine)
 	{
-		GUnrealEd->CloseEditor();
+		// Yes is handled from Tick, and CloseEditor waits on that same queue.
+		// QUIT_EDITOR is the editor's own deferred close, so it runs after this stack returns.
+		GEngine->DeferredCommands.Add(TEXT("QUIT_EDITOR"));
 	}
 #endif
 }

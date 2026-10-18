@@ -4,6 +4,8 @@ Status: Ready
 
 ## Story
 
+Do not start this story until [Stronghold type classes](stronghold-type-classes.md) is Done.
+
 The player gives the company's stronghold a name. Until they choose one, the name is the size and the type, as in Average Tower. The stronghold the company starts with is size Meagre and type Dungeon, and its name is The cave.
 
 A name sign stands on the grass outside the stronghold, next to the entrance. The board shows the current name. The player clicks the sign and types a name, then presses Enter. That name is kept. Esc leaves the name as it was. The F10 menu has no row for this.

@@ -4,6 +4,8 @@ Status: Ready
 
 ## Story
 
+Do not start this story until [Stronghold type classes](stronghold-type-classes.md) is Done.
+
 The player is inside a stronghold. The interior wall carries a sign that reads Arrange furniture. A click on that sign, or `\`, starts arrange mode, and the captain is hidden so the floor is clear to see. The same click, or `\` again, leaves the mode. The pointer highlights the hex under it. A piece on that hex shows its name.
 
 A click or Enter on a piece lifts it. The piece follows the pointer and snaps to the hex under the tip. A click or Enter on cells that can hold it puts it down. While a piece is held, Q, E, and the mouse wheel each turn it by one facing. The wheel does not zoom during that hold. Esc puts a held piece back, or closes the browser when that is what is open. Esc with nothing held, and the browser closed, leaves the mode, and the captain is visible again. While the mode is on, F10 and `/` do nothing, so the main menu and the inventory stay closed.

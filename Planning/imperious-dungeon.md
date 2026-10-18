@@ -4,6 +4,8 @@ Status: Ready
 
 ## Story
 
+Do not start this story until [Stronghold type classes](stronghold-type-classes.md) is Done.
+
 The player enters an Imperious Dungeon. It is the largest dungeon, a closed visit of the same kind as the Meagre cave, and it is not the Imperious Tower.
 
 The captain goes in alone. Companions wait on the grass outside the mouth he used. A click on the dark opening enters. A click inside leaves, and he stands on the grass in front of that same mouth, looking out.

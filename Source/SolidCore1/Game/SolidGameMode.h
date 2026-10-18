@@ -183,8 +183,8 @@ public:
 	void TravelToDungeon();
 
 	/**
-	 * Load the open world again and stand the captain at the dungeon mouth.
-	 * Companions spawn beside him. The squad builder stays closed.
+	 * Load the open world again and stand the captain at the cave mouth.
+	 * Companions spawn beside him. Build squad opens on the grass when there is something to arrange.
 	 */
 	void TravelToWorld();
 
@@ -203,7 +203,7 @@ public:
 	 */
 	bool EnterChosenStronghold(FIntPoint Cell, ESolidStrongholdSize Size, ESolidStrongholdType Type);
 
-	/** Load the open world again and stand the captain on the grass outside that door. */
+	/** Load the open world again and stand the captain on the grass outside that door. Build squad uses the same arrange check as the cave. */
 	void TravelFromTower();
 
 	/**

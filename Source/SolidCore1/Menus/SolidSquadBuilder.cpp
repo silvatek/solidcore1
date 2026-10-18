@@ -1,4 +1,5 @@
 #include "SolidSquadBuilder.h"
+#include "SolidHUD.h"
 #include "Squad/SolidBattlePlan.h"
 #include "Squad/SolidCompany.h"
 #include "Squad/SolidSquad.h"
@@ -690,5 +691,33 @@ bool SolidSquadBuilder::Drop(
 	Squad->SetHeldFormation(Formation, Spacing);
 	Squad->SetAssignedBattlePlans(Slots);
 	FollowActivePlan(Squad, ActivePlan, Slots, Formation, Spacing);
+	return true;
+}
+
+bool SolidSquadBuilder::HasAnythingToArrange(const USolidSquad* Squad, const int32 MaxSquadSize)
+{
+	const USolidCompany* Company = Squad ? Squad->GetCompany() : nullptr;
+	const bool bNoCompanions = MaxSquadSize <= 0 || !Company || Company->GetCompanionCount() <= 0;
+	if (!bNoCompanions)
+	{
+		return true;
+	}
+	if (!Company || Company->GetBattlePlanCount() == 0 || Company->HasOnlyDefaultBattlePlans())
+	{
+		return false;
+	}
+	return true;
+}
+
+bool SolidSquadBuilder::OpenAfterStrongholdLeave(
+	ASolidHUD* HUD,
+	const USolidSquad* Squad,
+	const int32 MaxSquadSize)
+{
+	if (!HUD || !HasAnythingToArrange(Squad, MaxSquadSize))
+	{
+		return false;
+	}
+	HUD->OpenSquadBuilder();
 	return true;
 }

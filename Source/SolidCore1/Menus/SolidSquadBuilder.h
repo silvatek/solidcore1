@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 
+class ASolidHUD;
 class USolidSquad;
 
 /**
@@ -21,6 +22,18 @@ namespace SolidSquadBuilder
 	{
 		return MaxSquadSize >= MinSquadSizeToOpen;
 	}
+
+	/**
+	 * True when the page has a change to make.
+	 * Nothing to arrange when no companion is allowed and every battle plan is one the company starts with.
+	 */
+	bool HasAnythingToArrange(const USolidSquad* Squad, int32 MaxSquadSize);
+
+	/**
+	 * Opens Build squad when there is something to arrange. A miss leaves the page as it was.
+	 * The caller offers this once, after a stronghold leave, when the captain is standing outside.
+	 */
+	bool OpenAfterStrongholdLeave(ASolidHUD* HUD, const USolidSquad* Squad, int32 MaxSquadSize);
 
 	/** Rows that fit in Company, Plans, and the squad column before a thumb appears. */
 	inline constexpr int32 WindowRows = 5;

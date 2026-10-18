@@ -158,6 +158,9 @@ public:
 	/** Seed Line / Column / Tight mob / Loose mob / Parade starter plans (idempotent). */
 	void InitializeDefaultBattlePlans();
 
+	/** True when the catalog is those starter plans and no others, in that order. */
+	bool HasOnlyDefaultBattlePlans() const;
+
 	/** Seed Viking, Assassin, and Blacksmith. Captain stays on Viking (idempotent). */
 	void InitializeDefaultCharacterMeshes();
 

@@ -1,5 +1,7 @@
 #include "SolidTerrainStreamer.h"
 #include "SolidGameMode.h"
+#include "Menus/SolidSquadBuilder.h"
+#include "SolidHUD.h"
 #include "Lairs/SolidLair.h"
 #include "SolidDungeonLevel.h"
 #include "SolidGameInstance.h"
@@ -575,6 +577,7 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 	float FacingPitchDeg = 0.f;
 	bool bHaveYaw = false;
 	bool bCaveMouth = false;
+	bool bStrongholdLeave = false;
 
 	if (UWorld* World = GetWorld())
 	{
@@ -603,6 +606,7 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 							return;
 						}
 					}
+					bStrongholdLeave = true;
 					Instance->ClearDungeonMouthSpawn();
 				}
 			}
@@ -638,6 +642,7 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 							return;
 						}
 					}
+					// A lair is not a stronghold leave. Build squad stays closed.
 					Instance->ClearLairMouthSpawn();
 				}
 			}
@@ -691,6 +696,7 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 							return;
 						}
 					}
+					bStrongholdLeave = true;
 					Instance->ClearTowerDoorSpawn();
 				}
 			}
@@ -756,6 +762,28 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 
 	bDidRelocateToStartTown = true;
 	bHasFogApplyLocation = false;
+	if (bStrongholdLeave)
+	{
+		ASolidHUD* HUD = nullptr;
+		const USolidSquad* Squad = nullptr;
+		int32 MaxSquad = 0;
+		if (UWorld* World = GetWorld())
+		{
+			if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+			{
+				Squad = GameMode->GetSquad();
+				MaxSquad = GameMode->GetMaxSquadSize();
+			}
+			if (const APawn* Pawn = Cast<APawn>(Focus))
+			{
+				if (APlayerController* Controller = Cast<APlayerController>(Pawn->GetController()))
+				{
+					HUD = Cast<ASolidHUD>(Controller->GetHUD());
+				}
+			}
+		}
+		SolidSquadBuilder::OpenAfterStrongholdLeave(HUD, Squad, MaxSquad);
+	}
 	UE_LOG(LogSolid, Warning,
 		TEXT("Relocated focus to %s (%.0f, %.0f) Z=%.1f (from %.0f, %.0f)"),
 		bCaveMouth ? TEXT("cave mouth") : TEXT("start town"),

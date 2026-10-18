@@ -442,4 +442,72 @@ bool FSolidSquadBuilderConfirmTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidSquadBuilderStrongholdLeaveTest,
+	"SolidCore1.SquadBuilder.StrongholdLeave",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidSquadBuilderStrongholdLeaveTest::RunTest(const FString& Parameters)
+{
+	USolidCompany* Company = NewObject<USolidCompany>();
+	USolidSquad* Squad = NewObject<USolidSquad>();
+	TestNotNull(TEXT("company"), Company);
+	TestNotNull(TEXT("squad"), Squad);
+	Squad->InitializeFromCompany(Company);
+	TestTrue(TEXT("the company starts with the five plans"), Company->HasOnlyDefaultBattlePlans());
+	TestEqual(TEXT("Sam and Alex stay selected"), Squad->GetSelectedCompanionCount(), 2);
+	TestFalse(TEXT("the menu stays locked below two"), SolidSquadBuilder::CanOpen(1));
+	TestFalse(
+		TEXT("no companion and the starter plans have nothing to arrange"),
+		SolidSquadBuilder::HasAnythingToArrange(Squad, 0));
+
+	ASolidHUD* HUD = NewObject<ASolidHUD>();
+	TestNotNull(TEXT("hud"), HUD);
+	const TArray<int32> Selected = Squad->GetSelectedCompanionIndices();
+	TestFalse(
+		TEXT("that leave leaves the page closed"),
+		SolidSquadBuilder::OpenAfterStrongholdLeave(HUD, Squad, 0));
+	TestFalse(TEXT("the page stayed closed"), HUD->IsSquadBuilderOpen());
+	TestTrue(TEXT("the squad was not changed"), Squad->GetSelectedCompanionIndices() == Selected);
+
+	TestTrue(
+		TEXT("one companion is something to arrange"),
+		SolidSquadBuilder::HasAnythingToArrange(Squad, 1));
+	TestTrue(
+		TEXT("one companion opens the page"),
+		SolidSquadBuilder::OpenAfterStrongholdLeave(HUD, Squad, 1));
+	TestTrue(TEXT("Build squad is open"), HUD->IsSquadBuilderOpen());
+	TestTrue(TEXT("Sam and Alex are still selected"), Squad->GetSelectedCompanionIndices() == Selected);
+	HUD->HandleMenuKey();
+	TestFalse(TEXT("F10 closes the page"), HUD->IsSquadBuilderOpen());
+	TestFalse(TEXT("F10 does not open the menu"), HUD->IsMainMenuOpen());
+	TestFalse(TEXT("closing does not open it again"), HUD->IsSquadBuilderOpen());
+
+	TestTrue(
+		TEXT("the next leave opens it again"),
+		SolidSquadBuilder::OpenAfterStrongholdLeave(HUD, Squad, 2));
+	HUD->CloseMenuOverlay();
+	TestFalse(TEXT("Esc closes the page"), HUD->IsSquadBuilderOpen());
+	TestFalse(TEXT("Esc does not open the menu"), HUD->IsMainMenuOpen());
+	HUD->OpenSquadBuilder();
+	TestTrue(TEXT("the menu can still open Build squad"), HUD->IsSquadBuilderOpen());
+	HUD->CloseMenuOverlay();
+
+	FSolidBattlePlan Extra;
+	Extra.Name = TEXT("Hold");
+	Extra.Formation = ESolidBattleFormation::Line;
+	Extra.Spacing = ESolidBattleSpacing::Standard;
+	Company->AddBattlePlan(Extra);
+	TestFalse(TEXT("a further plan is not the starter catalog"), Company->HasOnlyDefaultBattlePlans());
+	TestTrue(
+		TEXT("a further plan is something to arrange with no companion allowed"),
+		SolidSquadBuilder::HasAnythingToArrange(Squad, 0));
+	TestTrue(
+		TEXT("that plan opens the page"),
+		SolidSquadBuilder::OpenAfterStrongholdLeave(HUD, Squad, 0));
+	TestTrue(TEXT("Build squad opened for the plan"), HUD->IsSquadBuilderOpen());
+	TestTrue(TEXT("the squad is still unchanged"), Squad->GetSelectedCompanionIndices() == Selected);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

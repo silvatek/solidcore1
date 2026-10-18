@@ -3,6 +3,40 @@
 #include "SolidClipLocomotion.h"
 #include "UObject/SoftObjectPath.h"
 
+namespace
+{
+	void AddDefaultBattlePlans(TArray<FSolidBattlePlan>& Plans)
+	{
+		Plans.Add({
+			TEXT("Line"),
+			ESolidBattleFormation::Line,
+			ESolidBattleSpacing::Standard});
+		Plans.Add({
+			TEXT("Column"),
+			ESolidBattleFormation::Column,
+			ESolidBattleSpacing::Standard});
+		Plans.Add({
+			TEXT("Tight mob"),
+			ESolidBattleFormation::Mob,
+			ESolidBattleSpacing::Narrow});
+		Plans.Add({
+			TEXT("Loose mob"),
+			ESolidBattleFormation::Mob,
+			ESolidBattleSpacing::Wide});
+		Plans.Add({
+			TEXT("Parade"),
+			ESolidBattleFormation::Parade,
+			ESolidBattleSpacing::Standard});
+	}
+
+	bool SamePlan(const FSolidBattlePlan& Have, const FSolidBattlePlan& Want)
+	{
+		return Have.Name == Want.Name
+			&& Have.Formation == Want.Formation
+			&& Have.Spacing == Want.Spacing;
+	}
+}
+
 void USolidCompany::InitializeDefaultBattlePlans()
 {
 	if (AllBattlePlans.Num() > 0)
@@ -10,26 +44,25 @@ void USolidCompany::InitializeDefaultBattlePlans()
 		return;
 	}
 
-	AllBattlePlans.Add({
-		TEXT("Line"),
-		ESolidBattleFormation::Line,
-		ESolidBattleSpacing::Standard});
-	AllBattlePlans.Add({
-		TEXT("Column"),
-		ESolidBattleFormation::Column,
-		ESolidBattleSpacing::Standard});
-	AllBattlePlans.Add({
-		TEXT("Tight mob"),
-		ESolidBattleFormation::Mob,
-		ESolidBattleSpacing::Narrow});
-	AllBattlePlans.Add({
-		TEXT("Loose mob"),
-		ESolidBattleFormation::Mob,
-		ESolidBattleSpacing::Wide});
-	AllBattlePlans.Add({
-		TEXT("Parade"),
-		ESolidBattleFormation::Parade,
-		ESolidBattleSpacing::Standard});
+	AddDefaultBattlePlans(AllBattlePlans);
+}
+
+bool USolidCompany::HasOnlyDefaultBattlePlans() const
+{
+	TArray<FSolidBattlePlan> Defaults;
+	AddDefaultBattlePlans(Defaults);
+	if (AllBattlePlans.Num() != Defaults.Num())
+	{
+		return false;
+	}
+	for (int32 Index = 0; Index < Defaults.Num(); ++Index)
+	{
+		if (!SamePlan(AllBattlePlans[Index], Defaults[Index]))
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 const FSolidBattlePlan* USolidCompany::GetBattlePlan(const int32 Index) const

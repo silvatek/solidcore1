@@ -591,7 +591,7 @@ void ASolidGameMode::TravelToWorld()
 		return;
 	}
 	// Companions are spawned again once this world is the open world.
-	// The squad builder is not opened here.
+	// Build squad opens after he is standing outside, when there is something to arrange.
 	const SolidWorldTime::FStamp When = WorldStamp();
 	SolidEvents::RememberStronghold(Configuration, When, /*bEnter=*/false);
 	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Exit Stronghold"), *SolidWorldTime::Format(When));

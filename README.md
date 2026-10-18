@@ -394,6 +394,10 @@ Source/
       SolidHUD.*              # Debug HUD, battle-plan panel, journal and inventory boards, menu and credits drawing
       SolidHudTheme.h         # Oak-and-bronze frame
       SolidPointer.h          # In-game mouse pointer: two head triangles, tip on the hotspot, no tail
+    Events/
+      SolidEvent.h            # Event type, change helpers, and the builders for a town, a bridge, and a closed message
+      SolidEvents.h           # The shipped event list
+      SolidMessages.h         # Message ids and text
     Journal/
       SolidJournalEntry.h     # One line: Event or Stronghold
       SolidJournal.*          # Journal page: time column, entry column, larger board

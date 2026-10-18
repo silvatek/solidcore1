@@ -10,6 +10,8 @@ The player can visit a fortress. A fortress is an outer wall with one or more bu
 
 Meagre is not a fortress size. Humble and Average each have one building, the Keep. A larger fortress has more buildings. A building may have more than one floor. A higher floor uses the same hexes as the floor below. The floors do not step inward the way a tower's floors do.
 
+The outer wall and the building walls are straight. A usable hex lies entirely inside them. A building with more than one floor has a stair and a landing. The landing holds no usable hex, and neither does the stair.
+
 From Average upward, the hexes on every floor of every building, added together, match the hexes on every floor of the tower of that same size. Humble sits halfway between the Meagre dungeon and the Average tower.
 
 A size has one hex total. Dungeon, Fortress, and Tower share that total wherever the size is supported. The player does not pick a type because it holds more hexes. From Average through Imperious the tower sets that total. Its rooms are one shape, and its floors step in a constant progression, so its hex count is the constrained one. A dungeon and a fortress change the number and size of their rooms and buildings to meet it.
@@ -24,6 +26,10 @@ The captain enters and leaves through a gate in the outer wall. A building insid
 - Impressive, Grand, Stately, and Imperious each have more than one building.
 - A building may have more than one floor.
 - A higher floor of a building has the same hexes as the floor below it.
+- The outer wall and the building walls are straight.
+- A usable hex lies entirely inside the walls.
+- A building with more than one floor has a stair and a landing on each of those floors.
+- The landing holds no usable hex. The stair holds no usable hex.
 - For Average, Impressive, Grand, Stately, and Imperious, the hexes on all floors of all buildings equal the kept hexes on all floors of the tower of that size.
 - Humble's hex total is halfway between the Meagre dungeon hex count and the Average tower's kept-hex total.
 - Where more than one type supports a size, those types have the same hex total.
@@ -40,10 +46,10 @@ The captain enters and leaves through a gate in the outer wall. A building insid
 - Humble Tower is not a pair, and `PlanFor` returns false for it. Humble's hex total is the mean of the Meagre dungeon cell count and the Average tower kept-hex total. The Meagre count is `SolidStrongholdGrid::MeagreCells`. The Average total is the sum of `CollectKeptHexes` over every floor of `SolidTowerStronghold::Average`. Do not copy either count into the fortress. A mean that is not a whole number rounds the way `LerpCount` rounds a halfway count.
 - A size has one hex total. Dungeon, Fortress, and Tower use it wherever that type supports the size. A type that does not support the size stays out of the comparison. Meagre's total is the dungeon cell count. Humble's total is the mean above, and a Humble dungeon that later becomes supported uses that same total. From Average through Imperious the total is the tower's kept hexes, and a dungeon of one of those sizes uses that same total. [Imperious dungeon](imperious-dungeon.md) uses the Imperious total.
 - The tower is the constrained count from Average through Imperious. Every room is the round plan in `SolidTowerStronghold`, and the floors step from Average to Imperious by `SizeAlong`. Leave that plan as it is. A fortress meets the total by the number and size of its buildings, and by repeating a building's ground hexes on each of its floors. A dungeon meets the total by the number and size of its rooms. Humble has no tower, so its total stays the mean above.
-- How many buildings each larger size has, what the buildings past the Keep are called, and how many floors each building has are not chosen. A larger fortress has more than one building. Do not pick a count beyond that. Each floor of a building uses that building's ground hexes. Do not shrink an upper floor the way the tower's radius steps inward.
+- How many buildings each larger size has, what the buildings past the Keep are called, and how many floors each building has are not chosen. A larger fortress has more than one building. Do not pick a count beyond that. Each floor of a building repeats that building's ground hexes. Do not shrink an upper floor the way the tower's radius steps inward.
 - Whether Impressive and the sizes above it still include a Keep is not chosen.
-- The outer wall's shape, the gate's size, and which building walls join the outer wall are not chosen.
-- How the captain moves between floors inside a building is not chosen. A building may keep every hex of that building on one floor.
+- The walls are straight. They do not follow the hex edges. A usable hex is one whose six vertices lie inside the inner face. The yard plan, the gate's size, and which building walls join the outer wall are not chosen.
+- The stair width is the tower's `StairWidthCm`. The landing run is the tower's `LandingRunCm`. A hex whose center lies on the stair or the landing is not usable, the same exclusion `HexOnStair` and `HexOnLanding` already apply in a tower. The stair and the landing repeat on every floor of that building, so the usable hexes stay the same. A building with one floor has no stair and no landing.
 - The ground inside the outer wall, outside the buildings, is not part of the hex total.
 - The gate is the only stronghold entrance and exit. It faces the grass beside the cell, the same way the cave mouth and the tower door face the grass. The visit remembers that cell, the way a tower visit remembers its cell.
 - The type-picker already lists a type when that subclass returns `Supported` for the site size, the size is unlocked, and the size is larger than the active stronghold. This story does not change that rule. After it, a qualifying site lists Fortress for Humble through Imperious.

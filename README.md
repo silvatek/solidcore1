@@ -14,7 +14,6 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Better building and tree models](Planning/better-building-and-tree-models.md)
 - [HUD and menu borders and themes](Planning/hud-menu-borders-and-themes.md)
 - [Companions move only with the captain](Planning/companions-move-with-captain.md)
-- [Test Drill ends in Parade](Planning/test-drill-ends-in-parade.md)
 - [Drill battle plan](Planning/drill-battle-plan.md)
 - [Falcon Sight and Eagle Sight](Planning/falcon-and-eagle-sight.md)
 - [More terrain textures](Planning/more-terrain-textures.md)

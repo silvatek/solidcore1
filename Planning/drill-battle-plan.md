@@ -24,7 +24,7 @@ The player selects the Drill battle plan. The squad repeats the test drill, and 
 - The square is `SolidPartyDrill`: four legs, `LegDurationSeconds` 1.5, `TurnDurationSeconds` 0.25, `TurnYawDegrees` 90. Leg 0 does not turn. Legs 1–3 do. `StartPartyFormationDrill` starts it, and today the fourth leg calls `StopPartyFormationDrill`. While Drill is active, wrap to leg 0 instead.
 - Each leg currently calls `SelectBattlePlanSlot`, which changes the active plan. Keep the active slot on Drill. Apply that leg's arrangement (the plans on F1–F4) without selecting those slots and without the Parade event check.
 - `SelectBattlePlanSlotFromInput` already ignores the menu and still runs during the drill. Leaving Drill through that path stops the square. A portal arrival already calls `StopPartyFormationDrill`. Keep that.
-- [Test Drill ends in Parade](test-drill-ends-in-parade.md) is this menu item. Do not implement it. The square does not end in Parade, and it does not add companions.
+- The square does not end in Parade, and it does not add companions.
 - [Reorder the game menu](reorder-game-menu.md) also leaves Test Drill off the menu. This story does not add Inventory or the cave row back, and it does not put a row after Credits.
 - [Hold battle plan](hold-battle-plan.md) is a different plan. This story does not make companions stay put.
 - Tests that assume five company plans, five assigned slots, and an empty F6 change before the product commit, so they pass on the current catalog and on a sixth plan. The product commit does not edit those tests. It adds Drill and the repeating square.

@@ -42,6 +42,11 @@ int32 USolidCompany::AddBattlePlan(const FSolidBattlePlan& Plan)
 	return AllBattlePlans.Add(Plan);
 }
 
+int32 USolidCompany::AddCompanion(const FSolidCompanion& Companion)
+{
+	return AllCompanions.Add(Companion);
+}
+
 void USolidCompany::InitializeDefaultCharacterMeshes()
 {
 	if (AllCharacterMeshes.Num() > 0)

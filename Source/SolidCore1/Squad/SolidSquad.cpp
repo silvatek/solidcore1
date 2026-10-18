@@ -8,6 +8,8 @@ void USolidSquad::InitializeFromCompany(USolidCompany* InCompany)
 	{
 		AssignedCompanyPlanIndices.Reset();
 		ActiveAssignedSlot = 0;
+		HeldFormation = ESolidBattleFormation::Line;
+		HeldSpacing = ESolidBattleSpacing::Standard;
 		SelectedCompanionIndices.Reset();
 		return;
 	}
@@ -26,6 +28,7 @@ void USolidSquad::InitializeFromCompany(USolidCompany* InCompany)
 
 	// Default active: F1 (first assigned slot — Line in the starter catalog).
 	ActiveAssignedSlot = 0;
+	RememberHeldFormation();
 
 	TArray<int32> StarterCompanions;
 	const int32 Sam = Company->FindCompanionIndexByName(TEXT("Sam"));
@@ -41,46 +44,118 @@ void USolidSquad::InitializeFromCompany(USolidCompany* InCompany)
 	SetSelectedCompanions(StarterCompanions);
 }
 
+int32 USolidSquad::GetAssignedCount() const
+{
+	int32 Count = 0;
+	for (const int32 CompanyIndex : AssignedCompanyPlanIndices)
+	{
+		if (CompanyIndex != INDEX_NONE)
+		{
+			++Count;
+		}
+	}
+	return Count;
+}
+
 bool USolidSquad::SetAssignedBattlePlans(const TArray<int32>& CompanyPlanIndices)
 {
-	AssignedCompanyPlanIndices.Reset();
 	if (!Company)
 	{
+		AssignedCompanyPlanIndices.Reset();
 		ActiveAssignedSlot = 0;
 		return false;
 	}
 
+	TArray<int32> Next;
+	Next.Init(INDEX_NONE, SolidBattleFormationSlots::MaxAssignedBattlePlans);
+	int32 Write = 0;
 	for (const int32 CompanyIndex : CompanyPlanIndices)
 	{
+		if (Write >= SolidBattleFormationSlots::MaxAssignedBattlePlans)
+		{
+			break;
+		}
+		if (CompanyIndex == INDEX_NONE)
+		{
+			Next[Write++] = INDEX_NONE;
+			continue;
+		}
 		if (!Company->GetBattlePlan(CompanyIndex))
 		{
 			continue;
 		}
-		AssignedCompanyPlanIndices.AddUnique(CompanyIndex);
-		if (AssignedCompanyPlanIndices.Num() >= SolidBattleFormationSlots::MaxAssignedBattlePlans)
+		bool bAlready = false;
+		for (int32 Slot = 0; Slot < Write; ++Slot)
 		{
-			break;
+			if (Next[Slot] == CompanyIndex)
+			{
+				bAlready = true;
+				break;
+			}
 		}
+		if (bAlready)
+		{
+			continue;
+		}
+		Next[Write++] = CompanyIndex;
 	}
 
-	if (AssignedCompanyPlanIndices.Num() == 0)
+	AssignedCompanyPlanIndices = Next;
+
+	int32 Filled = 0;
+	int32 LastFilled = INDEX_NONE;
+	for (int32 Slot = 0; Slot < Next.Num(); ++Slot)
+	{
+		if (Next[Slot] != INDEX_NONE)
+		{
+			++Filled;
+			LastFilled = Slot;
+		}
+	}
+	if (Filled == 0)
 	{
 		ActiveAssignedSlot = 0;
 		return false;
 	}
-
-	ActiveAssignedSlot = FMath::Clamp(ActiveAssignedSlot, 0, AssignedCompanyPlanIndices.Num() - 1);
+	if (ActiveAssignedSlot != INDEX_NONE && !GetAssignedBattlePlan(ActiveAssignedSlot))
+	{
+		ActiveAssignedSlot = LastFilled;
+	}
+	RememberHeldFormation();
 	return true;
 }
 
 bool USolidSquad::SelectAssignedSlot(const int32 SlotIndex)
 {
-	if (!AssignedCompanyPlanIndices.IsValidIndex(SlotIndex))
+	if (!GetAssignedBattlePlan(SlotIndex))
 	{
 		return false;
 	}
 	ActiveAssignedSlot = SlotIndex;
+	RememberHeldFormation();
 	return true;
+}
+
+void USolidSquad::ClearActiveBattlePlan()
+{
+	ActiveAssignedSlot = INDEX_NONE;
+}
+
+void USolidSquad::SetHeldFormation(
+	const ESolidBattleFormation Formation,
+	const ESolidBattleSpacing Spacing)
+{
+	HeldFormation = Formation;
+	HeldSpacing = Spacing;
+}
+
+void USolidSquad::RememberHeldFormation()
+{
+	if (const FSolidBattlePlan* Plan = GetActiveBattlePlan())
+	{
+		HeldFormation = Plan->Formation;
+		HeldSpacing = Plan->Spacing;
+	}
 }
 
 const FSolidBattlePlan* USolidSquad::GetAssignedBattlePlan(const int32 SlotIndex) const
@@ -103,7 +178,7 @@ ESolidBattleFormation USolidSquad::GetActiveFormation() const
 	{
 		return Plan->Formation;
 	}
-	return ESolidBattleFormation::Line;
+	return HeldFormation;
 }
 
 ESolidBattleSpacing USolidSquad::GetActiveSpacing() const
@@ -112,7 +187,7 @@ ESolidBattleSpacing USolidSquad::GetActiveSpacing() const
 	{
 		return Plan->Spacing;
 	}
-	return ESolidBattleSpacing::Standard;
+	return HeldSpacing;
 }
 
 FString USolidSquad::GetActiveBattlePlanDebugString() const
@@ -125,10 +200,23 @@ FString USolidSquad::GetActiveBattlePlanDebugString() const
 	return FString::Printf(
 		TEXT("BattlePlan F%d/%d %s (%s, %s)"),
 		ActiveAssignedSlot + 1,
-		AssignedCompanyPlanIndices.Num(),
+		GetAssignedCount(),
 		*Plan->Name,
 		SolidBattleFormationSlots::FormationName(Plan->Formation),
 		SolidBattleFormationSlots::SpacingName(Plan->Spacing));
+}
+
+int32 USolidSquad::GetSelectedCompanionCount() const
+{
+	int32 Count = 0;
+	for (const int32 CompanyIndex : SelectedCompanionIndices)
+	{
+		if (CompanyIndex != INDEX_NONE)
+		{
+			++Count;
+		}
+	}
+	return Count;
 }
 
 bool USolidSquad::SetSelectedCompanions(const TArray<int32>& CompanyCompanionIndices)
@@ -141,11 +229,25 @@ bool USolidSquad::SetSelectedCompanions(const TArray<int32>& CompanyCompanionInd
 
 	for (const int32 CompanyIndex : CompanyCompanionIndices)
 	{
+		if (CompanyIndex == INDEX_NONE)
+		{
+			SelectedCompanionIndices.Add(INDEX_NONE);
+			continue;
+		}
 		if (!Company->GetCompanion(CompanyIndex))
 		{
 			continue;
 		}
-		SelectedCompanionIndices.AddUnique(CompanyIndex);
+		if (SelectedCompanionIndices.Contains(CompanyIndex))
+		{
+			continue;
+		}
+		SelectedCompanionIndices.Add(CompanyIndex);
+	}
+
+	while (SelectedCompanionIndices.Num() > 0 && SelectedCompanionIndices.Last() == INDEX_NONE)
+	{
+		SelectedCompanionIndices.Pop();
 	}
 	return true;
 }
@@ -158,17 +260,14 @@ void USolidSquad::CollectFieldedCompanions(const int32 MaxCount, TArray<FSolidCo
 		return;
 	}
 
-	for (const int32 CompanyIndex : SelectedCompanionIndices)
+	const int32 Slots = FMath::Min(MaxCount, SelectedCompanionIndices.Num());
+	for (int32 Slot = 0; Slot < Slots; ++Slot)
 	{
-		const FSolidCompanion* Companion = Company->GetCompanion(CompanyIndex);
+		const FSolidCompanion* Companion = Company->GetCompanion(SelectedCompanionIndices[Slot]);
 		if (!Companion)
 		{
 			continue;
 		}
 		Out.Add(*Companion);
-		if (Out.Num() >= MaxCount)
-		{
-			break;
-		}
 	}
 }

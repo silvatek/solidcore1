@@ -278,7 +278,11 @@ void ASolidGameMode::SaveTravelSession(
 	if (Squad)
 	{
 		Session.SelectedCompanionIndices = Squad->GetSelectedCompanionIndices();
+		Session.AssignedBattlePlanIndices = Squad->GetAssignedCompanyPlanIndices();
 		Session.ActiveBattlePlanSlot = Squad->GetActiveAssignedSlot();
+		Session.bBattlePlanActive = Session.ActiveBattlePlanSlot != INDEX_NONE;
+		Session.HeldFormation = static_cast<uint8>(Squad->GetActiveFormation());
+		Session.HeldSpacing = static_cast<uint8>(Squad->GetActiveSpacing());
 	}
 	if (UWorld* World = GetWorld())
 	{
@@ -307,7 +311,21 @@ void ASolidGameMode::RestoreTravelSession()
 	if (Squad)
 	{
 		Squad->SetSelectedCompanions(Session.SelectedCompanionIndices);
-		Squad->SelectAssignedSlot(Session.ActiveBattlePlanSlot);
+		if (Session.AssignedBattlePlanIndices.Num() > 0)
+		{
+			Squad->SetAssignedBattlePlans(Session.AssignedBattlePlanIndices);
+		}
+		if (Session.bBattlePlanActive)
+		{
+			Squad->SelectAssignedSlot(Session.ActiveBattlePlanSlot);
+		}
+		else
+		{
+			Squad->SetHeldFormation(
+				static_cast<ESolidBattleFormation>(Session.HeldFormation),
+				static_cast<ESolidBattleSpacing>(Session.HeldSpacing));
+			Squad->ClearActiveBattlePlan();
+		}
 	}
 }
 

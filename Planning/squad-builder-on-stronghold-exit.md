@@ -29,5 +29,5 @@ Esc or F10 closes the page and does not open the menu. The player can open Build
 - `bReturnToLairMouth` is the tunnel return. Leave that path closed.
 - `CanOpen` stays. Below two companions, skip the open. The menu row stays dim for the same reason.
 - The den leave is the click on the dark opening. [Reorder the game menu](Done/reorder-game-menu.md) removes the menu row, so there is no F10 Leave cave. The tower leave is the interior click, which calls `TravelFromTower`.
-- This story does not change how the page arranges the squad. [Squad builder drag and drop](squad-builder-drag-and-drop.md) is that page.
+- This story does not change how the page arranges the squad. [Squad builder drag and drop](Done/squad-builder-drag-and-drop.md) is that page.
 - A test can set the session return flag and the squad cap, then assert the page opens or stays closed, without PIE. Cover a den return, a tower return, a tunnel return, and a cap below two. Say so if an existing travel test assumed the page stays closed.

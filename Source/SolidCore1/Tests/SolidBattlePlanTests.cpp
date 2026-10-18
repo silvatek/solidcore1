@@ -1,5 +1,6 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
+#include "Menus/SolidSquadBuilder.h"
 #include "Squad/SolidBattlePlan.h"
 #include "Squad/SolidCompany.h"
 #include "Squad/SolidSquad.h"
@@ -314,6 +315,73 @@ bool FSolidBattlePlanGamepadSlotTest::RunTest(const FString& Parameters)
 			SolidBattlePlanInput::SlotForShoulderAndFace(true, true, Faces[Index]),
 			Index);
 	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattlePlanEmptyKeyTest,
+	"SolidCore1.BattlePlan.EmptyKey",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattlePlanEmptyKeyTest::RunTest(const FString& Parameters)
+{
+	USolidCompany* Company = NewObject<USolidCompany>();
+	USolidSquad* Squad = NewObject<USolidSquad>();
+	TestNotNull(TEXT("company"), Company);
+	TestNotNull(TEXT("squad"), Squad);
+	Squad->InitializeFromCompany(Company);
+
+	SolidSquadBuilder::FDrag Drag;
+	Drag.Kind = SolidSquadBuilder::EDrag::Plan;
+	Drag.Index = 2;
+	Drag.Slot = 2;
+	SolidSquadBuilder::FHit Hit;
+	Hit.Kind = SolidSquadBuilder::EHit::PlansBox;
+	TestTrue(TEXT("F3 returns to Plans"), SolidSquadBuilder::Drop(Squad, 2, Drag, Hit));
+	TestNull(TEXT("F3 is empty"), Squad->GetAssignedBattlePlan(2));
+	TestEqual(TEXT("F2 stays Column"), Squad->GetAssignedBattlePlan(1)->Name, FString(TEXT("Column")));
+	TestEqual(TEXT("F4 stays Loose mob"), Squad->GetAssignedBattlePlan(3)->Name, FString(TEXT("Loose mob")));
+	TestFalse(TEXT("an empty key in the middle does nothing"), Squad->SelectAssignedSlot(2));
+	TestEqual(TEXT("the active key stays F1"), Squad->GetActiveAssignedSlot(), 0);
+	TestTrue(TEXT("F4 still selects"), Squad->SelectAssignedSlot(3));
+	TestTrue(TEXT("F4 is still loose"), Squad->GetActiveSpacing() == ESolidBattleSpacing::Wide);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattlePlanParadeOtherKeyTest,
+	"SolidCore1.BattlePlan.ParadeOtherKey",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattlePlanParadeOtherKeyTest::RunTest(const FString& Parameters)
+{
+	ASolidGameMode* GameMode = NewObject<ASolidGameMode>();
+	TestNotNull(TEXT("gamemode"), GameMode);
+	USolidSquad* Squad = GameMode->GetSquad();
+	TestNotNull(TEXT("squad"), Squad);
+
+	const int32 FiredBefore = GameMode->GetConfiguration().FiredCount;
+	SolidSquadBuilder::FDrag Drag;
+	Drag.Kind = SolidSquadBuilder::EDrag::Plan;
+	Drag.Index = 4;
+	Drag.Slot = 4;
+	SolidSquadBuilder::FHit Hit;
+	Hit.Kind = SolidSquadBuilder::EHit::KeyBox;
+	Hit.Index = 5;
+	TestTrue(TEXT("Parade moves onto F6"), SolidSquadBuilder::Drop(Squad, 2, Drag, Hit));
+	TestEqual(TEXT("the drop does not fire"), GameMode->GetConfiguration().FiredCount, FiredBefore);
+	TestEqual(TEXT("F1 stays the active plan"), Squad->GetActiveAssignedSlot(), 0);
+	TestTrue(TEXT("F6 now holds Parade"), Squad->GetAssignedBattlePlan(5)->Formation == ESolidBattleFormation::Parade);
+	TestNull(TEXT("F5 is empty"), Squad->GetAssignedBattlePlan(4));
+
+	TestTrue(TEXT("F6 parade"), GameMode->SelectBattlePlanSlot(5));
+	TestTrue(TEXT("formation parade"), Squad->GetActiveFormation() == ESolidBattleFormation::Parade);
+	TestTrue(TEXT("parade unlocks raven sight"), GameMode->IsSightEnabled(ESolidSight::Raven));
+	TestEqual(TEXT("parade raises the squad cap"), GameMode->GetMaxSquadSize(), SolidEvents::RosterCount);
+	const int32 FiredOnce = GameMode->GetConfiguration().FiredCount;
+	TestTrue(TEXT("parade fired"), FiredOnce > FiredBefore);
+	TestTrue(TEXT("F6 parade again"), GameMode->SelectBattlePlanSlot(5));
+	TestEqual(TEXT("parade events fire once"), GameMode->GetConfiguration().FiredCount, FiredOnce);
 	return true;
 }
 

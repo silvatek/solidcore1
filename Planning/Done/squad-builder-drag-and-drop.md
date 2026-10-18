@@ -1,6 +1,6 @@
 # Squad builder drag and drop
 
-Status: Ready
+Status: Done
 
 ## Story
 

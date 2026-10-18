@@ -99,6 +99,7 @@ protected:
 	void PollClickMovePress();
 	void UpdateCharacterEditorPointer();
 	void UpdateInventoryPointer();
+	void UpdateSquadBuilderPointer();
 	void UpdateMenuPointerHover();
 	void UpdateCavePassageHover();
 	bool ReadPointerPosition(float& OutX, float& OutY) const;
@@ -173,7 +174,6 @@ protected:
 	void SetEditorWorldHidden(bool bHideWorld);
 	void SetEditorCameraLocked(bool bLocked);
 	int32 CurrentMaxSquadSize() const;
-	void ToggleSquadBuilderRow(int32 Index);
 	void MainMenuChoose1();
 	void MainMenuChoose2();
 	void MainMenuChoose3();
@@ -374,6 +374,8 @@ protected:
 	bool bClickSawRelease = false;
 	/** Previous frame's left button while the inventory page is open. */
 	bool bInventoryPointerWasDown = false;
+	/** Previous frame's left button while the squad builder is open. */
+	bool bSquadPointerWasDown = false;
 	/** Last pointer sample while a choice list was open. A still pointer does not fight the keys. */
 	bool bMenuPointerSampled = false;
 	FVector2D MenuPointerSample = FVector2D::ZeroVector;

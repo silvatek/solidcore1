@@ -997,6 +997,190 @@ namespace SolidHUDPrivate
 			Canvas->DrawItem(HintItem);
 		}
 	}
+
+	static void DrawPageHeading(
+		UCanvas* Canvas,
+		UFont* Font,
+		const FString& Text,
+		const SolidSquadBuilder::FRect& Rect,
+		const float OriginX,
+		const float OriginY,
+		const FLinearColor& Color)
+	{
+		if (!Canvas || !Font || Text.IsEmpty())
+		{
+			return;
+		}
+		FCanvasTextItem Item(
+			FVector2D(OriginX + Rect.X, OriginY + Rect.Y),
+			FText::FromString(Text),
+			Font,
+			Color);
+		Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+		Canvas->DrawItem(Item);
+	}
+
+	static void DrawSquadThumb(
+		UCanvas* Canvas,
+		const bool bShow,
+		const SolidSquadBuilder::FRect& Thumb,
+		const float OriginX,
+		const float OriginY,
+		const FLinearColor& Color)
+	{
+		if (!Canvas || !bShow)
+		{
+			return;
+		}
+		FillRect(Canvas, OriginX + Thumb.X, OriginY + Thumb.Y, Thumb.W, Thumb.H, Color);
+	}
+
+	static void DrawSquadPage(UCanvas* Canvas, const SolidSquadBuilder::FPage& Page, const float OriginX, const float OriginY)
+	{
+		if (!Canvas)
+		{
+			return;
+		}
+		UFont* Font = GEngine ? GEngine->GetSmallFont() : nullptr;
+		const SolidHudTheme::FPalette Palette = SolidHudTheme::OakAndBronze();
+
+		DrawPageHeading(Canvas, Font, TEXT("Company"), Page.CompanyHeading, OriginX, OriginY, Palette.Title);
+		DrawPageHeading(Canvas, Font, TEXT("Squad"), Page.SquadHeading, OriginX, OriginY, Palette.Title);
+		DrawPageHeading(Canvas, Font, TEXT("Plans"), Page.PlansHeading, OriginX, OriginY, Palette.Title);
+
+		for (int32 Index = 0; Index < Page.VocationChips.Num(); ++Index)
+		{
+			const SolidSquadBuilder::FRect& Chip = Page.VocationChips[Index];
+			const float X = OriginX + Chip.X;
+			const float Y = OriginY + Chip.Y;
+			const bool bSelected = static_cast<int32>(Page.Vocation) == Index;
+			if (bSelected)
+			{
+				FillRect(Canvas, X, Y, Chip.W, Chip.H, Palette.Bronze);
+			}
+			else
+			{
+				DrawSlotBox(Canvas, X, Y, Chip.W, Chip.H);
+			}
+			DrawCenteredLine(
+				Canvas,
+				Font,
+				SolidSquadBuilder::VocationFilterName(static_cast<SolidSquadBuilder::EVocationFilter>(Index)),
+				X,
+				Y,
+				Chip.W,
+				Chip.H,
+				bSelected ? Palette.Fill : Palette.Ink);
+		}
+		for (int32 Index = 0; Index < Page.FormationChips.Num(); ++Index)
+		{
+			const SolidSquadBuilder::FRect& Chip = Page.FormationChips[Index];
+			const float X = OriginX + Chip.X;
+			const float Y = OriginY + Chip.Y;
+			const bool bSelected = static_cast<int32>(Page.Formation) == Index;
+			if (bSelected)
+			{
+				FillRect(Canvas, X, Y, Chip.W, Chip.H, Palette.Bronze);
+			}
+			else
+			{
+				DrawSlotBox(Canvas, X, Y, Chip.W, Chip.H);
+			}
+			DrawCenteredLine(
+				Canvas,
+				Font,
+				SolidSquadBuilder::FormationFilterName(static_cast<SolidSquadBuilder::EFormationFilter>(Index)),
+				X,
+				Y,
+				Chip.W,
+				Chip.H,
+				bSelected ? Palette.Fill : Palette.Ink);
+		}
+
+		DrawSlotBox(
+			Canvas,
+			OriginX + Page.CompanyBox.X,
+			OriginY + Page.CompanyBox.Y,
+			Page.CompanyBox.W,
+			Page.CompanyBox.H);
+		DrawSlotBox(
+			Canvas,
+			OriginX + Page.SquadFrame.X,
+			OriginY + Page.SquadFrame.Y,
+			Page.SquadFrame.W,
+			Page.SquadFrame.H);
+		DrawSlotBox(
+			Canvas,
+			OriginX + Page.PlansBox.X,
+			OriginY + Page.PlansBox.Y,
+			Page.PlansBox.W,
+			Page.PlansBox.H);
+
+		for (const SolidSquadBuilder::FEntry& Row : Page.CompanyRows)
+		{
+			if (!Row.bVisible)
+			{
+				continue;
+			}
+			DrawCenteredLine(
+				Canvas,
+				Font,
+				Row.Label,
+				OriginX + Row.Rect.X,
+				OriginY + Row.Rect.Y,
+				Row.Rect.W,
+				Row.Rect.H,
+				Palette.Ink);
+		}
+		for (const SolidSquadBuilder::FEntry& Box : Page.SquadSlots)
+		{
+			if (!Box.bVisible)
+			{
+				continue;
+			}
+			DrawSlotBox(Canvas, OriginX + Box.Rect.X, OriginY + Box.Rect.Y, Box.Rect.W, Box.Rect.H);
+			DrawCenteredLine(
+				Canvas,
+				Font,
+				Box.Label,
+				OriginX + Box.Rect.X,
+				OriginY + Box.Rect.Y,
+				Box.Rect.W,
+				Box.Rect.H,
+				Palette.Ink);
+		}
+		for (const SolidSquadBuilder::FEntry& Row : Page.PlanRows)
+		{
+			if (!Row.bVisible)
+			{
+				continue;
+			}
+			DrawCenteredLine(
+				Canvas,
+				Font,
+				Row.Label,
+				OriginX + Row.Rect.X,
+				OriginY + Row.Rect.Y,
+				Row.Rect.W,
+				Row.Rect.H,
+				Palette.Ink);
+		}
+		for (int32 Slot = 0; Slot < Page.Keys.Num(); ++Slot)
+		{
+			const SolidSquadBuilder::FEntry& Key = Page.Keys[Slot];
+			const float X = OriginX + Key.Rect.X;
+			const float Y = OriginY + Key.Rect.Y;
+			DrawSlotBox(Canvas, X, Y, Key.Rect.W, Key.Rect.H);
+			const FString Text = Key.Label.IsEmpty()
+				? FString::Printf(TEXT("F%d"), Slot + 1)
+				: FString::Printf(TEXT("F%d  %s"), Slot + 1, *Key.Label);
+			DrawCenteredLine(Canvas, Font, Text, X, Y, Key.Rect.W, Key.Rect.H, Palette.Ink);
+		}
+
+		DrawSquadThumb(Canvas, Page.bCompanyThumb, Page.CompanyThumb, OriginX, OriginY, Palette.BronzeBright);
+		DrawSquadThumb(Canvas, Page.bSquadThumb, Page.SquadThumb, OriginX, OriginY, Palette.BronzeBright);
+		DrawSquadThumb(Canvas, Page.bPlansThumb, Page.PlansThumb, OriginX, OriginY, Palette.BronzeBright);
+	}
 }
 
 void ASolidHUD::EnsureSightIndicator()
@@ -1124,11 +1308,6 @@ bool ASolidHUD::SelectChoiceAt(const float X, const float Y)
 		{
 			StrongholdChoiceIndex = FMath::Clamp(Hit, 0, Count - 1);
 		}
-		return true;
-	}
-	if (bShowSquadBuilder)
-	{
-		SetSquadBuilderIndex(Hit);
 		return true;
 	}
 	if (bShowMainMenu)
@@ -1414,14 +1593,16 @@ void ASolidHUD::DrawHUD()
 		{
 			const FVector2D Hotspot(MouseX, MouseY);
 			SolidHUDPrivate::DrawPointer(Canvas, Hotspot);
-			if (bInventoryDrag && !InventoryDragName.IsEmpty())
+			const bool bShowDragName = (bInventoryDrag && !InventoryDragName.IsEmpty())
+				|| (bSquadDrag && !SquadDrag.Label.IsEmpty());
+			if (bShowDragName)
 			{
 				UFont* DragFont = GEngine ? GEngine->GetSmallFont() : nullptr;
 				if (DragFont)
 				{
 					FCanvasTextItem DragItem(
 						FVector2D(MouseX + 28.f, MouseY + 18.f),
-						FText::FromString(InventoryDragName),
+						FText::FromString(bInventoryDrag ? InventoryDragName : SquadDrag.Label),
 						DragFont,
 						FLinearColor::White);
 					DragItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
@@ -1574,7 +1755,7 @@ void ASolidHUD::HandleMenuKey()
 
 	if (bShowSquadBuilder)
 	{
-		bShowSquadBuilder = false;
+		ForgetSquadBuilderPage();
 		return;
 	}
 
@@ -1617,7 +1798,7 @@ void ASolidHUD::CloseMenuOverlay()
 	bShowPortal = false;
 	bShowStrongholdChoice = false;
 	StrongholdChoiceTypes.Reset();
-	bShowSquadBuilder = false;
+	ForgetSquadBuilderPage();
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowInventory = false;
@@ -1655,7 +1836,7 @@ void ASolidHUD::OpenCharacterEditor()
 	bShowMainMenu = false;
 	bShowExitConfirm = false;
 	bShowPortal = false;
-	bShowSquadBuilder = false;
+	ForgetSquadBuilderPage();
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowInventory = false;
@@ -1911,6 +2092,21 @@ void ASolidHUD::DrawCharacterEditorPanel()
 	}
 }
 
+void ASolidHUD::CancelSquadDrag()
+{
+	bSquadDrag = false;
+	SquadDrag = SolidSquadBuilder::FDrag();
+}
+
+void ASolidHUD::ForgetSquadBuilderPage()
+{
+	bShowSquadBuilder = false;
+	bSquadPageReady = false;
+	SquadBuilderView = SolidSquadBuilder::FView();
+	SquadPage = SolidSquadBuilder::FPage();
+	CancelSquadDrag();
+}
+
 void ASolidHUD::OpenSquadBuilder()
 {
 	bShowMainMenu = false;
@@ -1919,60 +2115,88 @@ void ASolidHUD::OpenSquadBuilder()
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowInventory = false;
+	CancelInventoryDrag();
 	bShowCharacterEditor = false;
 	bCharacterEditorSkeleton = false;
 	SkeletonBoneTip.Reset();
+	ForgetSquadBuilderPage();
 	bShowSquadBuilder = true;
-	SquadBuilderIndex = 0;
 	SolidHUDPrivate::ForgetChoicePointerRows(this);
 }
 
-void ASolidHUD::MoveSquadBuilderSelection(const int32 Delta)
+void ASolidHUD::PressSquadBuilder(const float X, const float Y)
 {
-	int32 Count = 0;
-	if (UWorld* World = GetWorld())
+	if (!bSquadPageReady)
 	{
-		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
-		{
-			if (const USolidSquad* Squad = GameMode->GetSquad())
-			{
-				Count = Squad->GetCompany() ? Squad->GetCompany()->GetCompanionCount() : 0;
-			}
-		}
-	}
-	if (Count <= 0)
-	{
-		SquadBuilderIndex = 0;
 		return;
 	}
-
-	int32 Wrapped = (SquadBuilderIndex + Delta) % Count;
-	if (Wrapped < 0)
+	const SolidSquadBuilder::FHit Hit = SolidSquadBuilder::HitTest(
+		SquadPage,
+		X - SquadOriginX,
+		Y - SquadOriginY);
+	if (Hit.Kind == SolidSquadBuilder::EHit::VocationFilter
+		&& Hit.Index >= 0
+		&& Hit.Index < SolidSquadBuilder::VocationFilterCount)
 	{
-		Wrapped += Count;
+		SolidSquadBuilder::ChooseVocation(
+			SquadBuilderView,
+			static_cast<SolidSquadBuilder::EVocationFilter>(Hit.Index));
+		return;
 	}
-	SquadBuilderIndex = Wrapped;
+	if (Hit.Kind == SolidSquadBuilder::EHit::FormationFilter
+		&& Hit.Index >= 0
+		&& Hit.Index < SolidSquadBuilder::FormationFilterCount)
+	{
+		SolidSquadBuilder::ChooseFormation(
+			SquadBuilderView,
+			static_cast<SolidSquadBuilder::EFormationFilter>(Hit.Index));
+		return;
+	}
+	SolidSquadBuilder::FDrag Drag;
+	if (!SolidSquadBuilder::BeginDrag(SquadPage, Hit, Drag))
+	{
+		return;
+	}
+	bSquadDrag = true;
+	SquadDrag = Drag;
 }
 
-void ASolidHUD::SetSquadBuilderIndex(const int32 Index)
+void ASolidHUD::ReleaseSquadBuilder(const float X, const float Y)
 {
-	int32 Count = 0;
-	if (UWorld* World = GetWorld())
+	if (!bSquadDrag)
 	{
-		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
-		{
-			if (const USolidSquad* Squad = GameMode->GetSquad())
-			{
-				Count = Squad->GetCompany() ? Squad->GetCompany()->GetCompanionCount() : 0;
-			}
-		}
-	}
-	if (Count <= 0)
-	{
-		SquadBuilderIndex = 0;
 		return;
 	}
-	SquadBuilderIndex = FMath::Clamp(Index, 0, Count - 1);
+	const SolidSquadBuilder::FDrag Drag = SquadDrag;
+	CancelSquadDrag();
+	if (!bSquadPageReady)
+	{
+		return;
+	}
+	const SolidSquadBuilder::FHit Hit = SolidSquadBuilder::HitTest(
+		SquadPage,
+		X - SquadOriginX,
+		Y - SquadOriginY);
+	UWorld* World = GetWorld();
+	ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+	if (!GameMode)
+	{
+		return;
+	}
+	if (SolidSquadBuilder::Drop(GameMode->GetSquad(), GameMode->GetMaxSquadSize(), Drag, Hit)
+		&& Drag.Kind == SolidSquadBuilder::EDrag::Companion)
+	{
+		GameMode->RefreshFieldedSquad();
+	}
+}
+
+void ASolidHUD::ScrollSquadBuilder(const float X, const float Y, const float Wheel)
+{
+	if (!bSquadPageReady)
+	{
+		return;
+	}
+	SolidSquadBuilder::Scroll(SquadPage, X - SquadOriginX, Y - SquadOriginY, Wheel, SquadBuilderView);
 }
 
 void ASolidHUD::OpenPortal()
@@ -1982,7 +2206,7 @@ void ASolidHUD::OpenPortal()
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowInventory = false;
-	bShowSquadBuilder = false;
+	ForgetSquadBuilderPage();
 	bShowCharacterEditor = false;
 	bCharacterEditorSkeleton = false;
 	SkeletonBoneTip.Reset();
@@ -2061,7 +2285,7 @@ void ASolidHUD::ToggleInventory()
 	bShowMainMenu = false;
 	bShowExitConfirm = false;
 	bShowPortal = false;
-	bShowSquadBuilder = false;
+	ForgetSquadBuilderPage();
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowCharacterEditor = false;
@@ -2267,7 +2491,7 @@ void ASolidHUD::OpenExitConfirm()
 	bShowJournal = false;
 	bShowInventory = false;
 	CancelInventoryDrag();
-	bShowSquadBuilder = false;
+	ForgetSquadBuilderPage();
 	bShowCharacterEditor = false;
 	bCharacterEditorSkeleton = false;
 	SkeletonBoneTip.Reset();
@@ -2317,6 +2541,7 @@ void ASolidHUD::DrawExitConfirm()
 
 void ASolidHUD::DrawSquadBuilderPopup()
 {
+	bSquadPageReady = false;
 	const USolidSquad* Squad = nullptr;
 	int32 MaxSquadSize = 0;
 	if (UWorld* World = GetWorld())
@@ -2328,29 +2553,74 @@ void ASolidHUD::DrawSquadBuilderPopup()
 		}
 	}
 
-	TArray<SolidSquadBuilder::FRow> Choices;
-	SolidSquadBuilder::CollectRows(Squad, Choices);
-	int32 SelectedCount = 0;
-	for (const SolidSquadBuilder::FRow& Choice : Choices)
+	SolidSquadBuilder::FPage Page;
+	SolidSquadBuilder::Layout(Squad, MaxSquadSize, SquadBuilderView, Page);
+	SquadBuilderView.CompanyScroll = Page.CompanyScroll;
+	SquadBuilderView.PlansScroll = Page.PlansScroll;
+	SquadBuilderView.SquadScroll = Page.SquadScroll;
+
+	if (!Canvas)
 	{
-		if (Choice.bSelected)
-		{
-			++SelectedCount;
-		}
+		return;
 	}
 
-	TArray<FString> Labels;
-	TArray<bool> Enabled;
-	for (const SolidSquadBuilder::FRow& Choice : Choices)
+	UFont* TitleFont = GEngine ? GEngine->GetMediumFont() : nullptr;
+	UFont* Font = GEngine ? GEngine->GetSmallFont() : nullptr;
+	if (!TitleFont)
 	{
-		Labels.Add(Choice.Label);
-		Enabled.Add(SolidSquadBuilder::IsChoiceAvailable(Choice.bSelected, SelectedCount, MaxSquadSize));
+		TitleFont = Font;
+	}
+	float TitleW = static_cast<float>(Page.Title.Len() * 8);
+	float TitleH = 18.f;
+	if (TitleFont)
+	{
+		Canvas->StrLen(TitleFont, Page.Title, TitleW, TitleH);
 	}
 
-	const FString Title = FString::Printf(TEXT("Build squad  %d/%d"), SelectedCount, MaxSquadSize);
-	TArray<SolidMenuPointer::FRow> Rows;
-	SolidHUDPrivate::DrawChoicePopup(Canvas, Title, Labels, SquadBuilderIndex, Rows, &Enabled);
-	SetChoicePointerRows(Rows);
+	float ContentW = 0.f;
+	float ContentH = 0.f;
+	SolidSquadBuilder::ContentSize(ContentW, ContentH);
+	float BoardW = 0.f;
+	float BoardH = 0.f;
+	SolidJournal::BoardSize(
+		static_cast<float>(Canvas->SizeX),
+		static_cast<float>(Canvas->SizeY),
+		ContentW,
+		ContentH,
+		BoardW,
+		BoardH);
+	const float BoxX = (static_cast<float>(Canvas->SizeX) - BoardW) * 0.5f;
+	const float BoxY = (static_cast<float>(Canvas->SizeY) - BoardH) * 0.5f;
+	const float OriginX = BoxX + SolidJournal::BoardPad;
+	const float OriginY = BoxY + SolidJournal::BoardPad;
+
+	FCanvasTileItem Dim(
+		FVector2D(0.f, 0.f),
+		FVector2D(static_cast<float>(Canvas->SizeX), static_cast<float>(Canvas->SizeY)),
+		FLinearColor(0.f, 0.f, 0.f, 0.72f));
+	Dim.BlendMode = SE_BLEND_Translucent;
+	Canvas->DrawItem(Dim);
+
+	const SolidHudTheme::FFrame Frame = SolidHudTheme::MenuFrame();
+	SolidHUDPrivate::DrawOakFrame(Canvas, BoxX, BoxY, BoardW, BoardH, Frame);
+	const SolidHudTheme::FPalette Palette = SolidHudTheme::OakAndBronze();
+	const float Band = SolidHudTheme::BandThickness(Frame);
+	const SolidJournal::FTitlePlate Plate = SolidJournal::TitlePlate(BoxX, BoxY, BoardW, TitleW, TitleH, Band);
+	SolidHUDPrivate::FillRect(Canvas, Plate.X, Plate.Y, Plate.W, Plate.H, Palette.Bronze);
+	if (TitleFont)
+	{
+		const float NameX = Plate.X + (Plate.W - TitleW) * 0.5f;
+		const float NameY = Plate.Y + (Plate.H - TitleH) * 0.5f;
+		FCanvasTextItem NameItem(FVector2D(NameX, NameY), FText::FromString(Page.Title), TitleFont, Palette.Title);
+		NameItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+		Canvas->DrawItem(NameItem);
+	}
+
+	SolidHUDPrivate::DrawSquadPage(Canvas, Page, OriginX, OriginY);
+	SquadPage = Page;
+	SquadOriginX = OriginX;
+	SquadOriginY = OriginY;
+	bSquadPageReady = true;
 }
 
 void ASolidHUD::OpenStrongholdChoice(
@@ -2368,7 +2638,7 @@ void ASolidHUD::OpenStrongholdChoice(
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowInventory = false;
-	bShowSquadBuilder = false;
+	ForgetSquadBuilderPage();
 	bShowCharacterEditor = false;
 	bCharacterEditorSkeleton = false;
 	SkeletonBoneTip.Reset();

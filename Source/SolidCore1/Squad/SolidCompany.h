@@ -171,6 +171,9 @@ public:
 	/** Append a plan to the Company catalog; returns its index. */
 	int32 AddBattlePlan(const FSolidBattlePlan& Plan);
 
+	/** Append a companion to the company catalog; returns the company index. */
+	int32 AddCompanion(const FSolidCompanion& Companion);
+
 	const FSolidCharacterMesh* GetCharacterMesh(int32 Index) const;
 
 	int32 FindCharacterMeshIndexByName(const FString& Name) const;

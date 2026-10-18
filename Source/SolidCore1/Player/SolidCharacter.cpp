@@ -221,6 +221,7 @@ void ASolidCharacter::Tick(float DeltaTime)
 	UpdateBodyShadow();
 	UpdateCharacterEditorPointer();
 	UpdateInventoryPointer();
+	UpdateSquadBuilderPointer();
 	UpdateLocomotionAnim();
 	if (const ASolidHUD* SolidHud = GetSolidHUD())
 	{
@@ -862,11 +863,7 @@ void ASolidCharacter::MainMenuMoveUp()
 		{
 			HUD->MovePortalSelection(-1);
 		}
-		else if (HUD->IsSquadBuilderOpen())
-		{
-			HUD->MoveSquadBuilderSelection(-1);
-		}
-		else if (HUD->IsMainMenuOpen())
+		else if (!HUD->IsSquadBuilderOpen() && HUD->IsMainMenuOpen())
 		{
 			HUD->MoveMainMenuSelection(-1);
 		}
@@ -895,11 +892,7 @@ void ASolidCharacter::MainMenuMoveDown()
 		{
 			HUD->MovePortalSelection(1);
 		}
-		else if (HUD->IsSquadBuilderOpen())
-		{
-			HUD->MoveSquadBuilderSelection(1);
-		}
-		else if (HUD->IsMainMenuOpen())
+		else if (!HUD->IsSquadBuilderOpen() && HUD->IsMainMenuOpen())
 		{
 			HUD->MoveMainMenuSelection(1);
 		}
@@ -986,7 +979,6 @@ void ASolidCharacter::ChooseMainMenuIndex(const int32 Index)
 	}
 	if (HUD->IsSquadBuilderOpen())
 	{
-		ToggleSquadBuilderRow(Index);
 		return;
 	}
 	if (!HUD->IsMainMenuOpen() || Index < 0 || Index >= SolidMainMenu::EntryCount())
@@ -1081,7 +1073,6 @@ void ASolidCharacter::MainMenuConfirm()
 	}
 	if (HUD->IsSquadBuilderOpen())
 	{
-		ToggleSquadBuilderRow(HUD->GetSquadBuilderIndex());
 		return;
 	}
 	if (!HUD->IsMainMenuOpen())
@@ -1162,31 +1153,6 @@ int32 ASolidCharacter::CurrentMaxSquadSize() const
 		}
 	}
 	return 0;
-}
-
-void ASolidCharacter::ToggleSquadBuilderRow(const int32 Index)
-{
-	ASolidHUD* HUD = GetSolidHUD();
-	UWorld* World = GetWorld();
-	ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
-	if (!HUD || !GameMode)
-	{
-		return;
-	}
-
-	GameMode->EnsureCompanyAndSquad();
-	TArray<SolidSquadBuilder::FRow> Rows;
-	SolidSquadBuilder::CollectRows(GameMode->GetSquad(), Rows);
-	if (!Rows.IsValidIndex(Index))
-	{
-		return;
-	}
-
-	HUD->SetSquadBuilderIndex(Index);
-	if (SolidSquadBuilder::Toggle(GameMode->GetSquad(), Rows[Index].CompanyIndex, GameMode->GetMaxSquadSize()))
-	{
-		GameMode->RefreshFieldedSquad();
-	}
 }
 
 void ASolidCharacter::SelectBattlePlanSlot(const int32 SlotIndex)
@@ -1772,7 +1738,7 @@ bool ASolidCharacter::ReadPointerPosition(float& OutX, float& OutY) const
 void ASolidCharacter::UpdateMenuPointerHover()
 {
 	ASolidHUD* HUD = GetSolidHUD();
-	const bool bChoiceList = HUD && (HUD->IsMainMenuOpen() || HUD->IsExitConfirmOpen() || HUD->IsPortalOpen() || HUD->IsSquadBuilderOpen() || HUD->IsStrongholdChoiceOpen());
+	const bool bChoiceList = HUD && (HUD->IsMainMenuOpen() || HUD->IsExitConfirmOpen() || HUD->IsPortalOpen() || HUD->IsStrongholdChoiceOpen());
 	if (!bChoiceList)
 	{
 		bMenuPointerSampled = false;
@@ -1780,7 +1746,7 @@ void ASolidCharacter::UpdateMenuPointerHover()
 		return;
 	}
 
-	const int32 Page = HUD->IsExitConfirmOpen() ? 5 : (HUD->IsStrongholdChoiceOpen() ? 4 : (HUD->IsSquadBuilderOpen() ? 3 : (HUD->IsPortalOpen() ? 2 : 1)));
+	const int32 Page = HUD->IsExitConfirmOpen() ? 5 : (HUD->IsStrongholdChoiceOpen() ? 4 : (HUD->IsPortalOpen() ? 2 : 1));
 	if (Page != MenuPointerPage)
 	{
 		MenuPointerPage = Page;
@@ -1847,7 +1813,11 @@ void ASolidCharacter::PollClickMovePress()
 	}
 	if (ASolidHUD* HUD = GetSolidHUD())
 	{
-		if ((HUD->IsMainMenuOpen() || HUD->IsExitConfirmOpen() || HUD->IsPortalOpen() || HUD->IsSquadBuilderOpen() || HUD->IsStrongholdChoiceOpen())
+		if (HUD->IsSquadBuilderOpen())
+		{
+			return;
+		}
+		if ((HUD->IsMainMenuOpen() || HUD->IsExitConfirmOpen() || HUD->IsPortalOpen() || HUD->IsStrongholdChoiceOpen())
 			&& ReadPointerPosition(X, Y)
 			&& HUD->SelectChoiceAt(X, Y))
 		{
@@ -1926,6 +1896,50 @@ void ASolidCharacter::UpdateInventoryPointer()
 		}
 	}
 	bInventoryPointerWasDown = bDown;
+}
+
+void ASolidCharacter::UpdateSquadBuilderPointer()
+{
+	ASolidHUD* HUD = GetSolidHUD();
+	bool bDown = false;
+	if (const ASolidPlayerController* SolidController = Cast<ASolidPlayerController>(Controller))
+	{
+		bDown = SolidController->IsLeftMouseHeld();
+	}
+	else if (const APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	{
+		bDown = PlayerController->IsInputKeyDown(EKeys::LeftMouseButton);
+	}
+
+	if (!HUD || !HUD->IsSquadBuilderOpen())
+	{
+		if (HUD)
+		{
+			HUD->CancelSquadDrag();
+		}
+		bSquadPointerWasDown = bDown;
+		return;
+	}
+
+	float X = 0.f;
+	float Y = 0.f;
+	const bool bHasPoint = ReadPointerPosition(X, Y);
+	if (bDown && !bSquadPointerWasDown && bHasPoint)
+	{
+		HUD->PressSquadBuilder(X, Y);
+	}
+	else if (!bDown && bSquadPointerWasDown)
+	{
+		if (bHasPoint)
+		{
+			HUD->ReleaseSquadBuilder(X, Y);
+		}
+		else
+		{
+			HUD->CancelSquadDrag();
+		}
+	}
+	bSquadPointerWasDown = bDown;
 }
 
 void ASolidCharacter::UpdateCharacterEditorPointer()
@@ -2082,6 +2096,19 @@ void ASolidCharacter::StopJumpFromInput()
 
 void ASolidCharacter::Zoom(const FInputActionValue& Value)
 {
+	if (ASolidHUD* HUD = GetSolidHUD())
+	{
+		if (HUD->IsSquadBuilderOpen())
+		{
+			float X = 0.f;
+			float Y = 0.f;
+			if (ReadPointerPosition(X, Y))
+			{
+				HUD->ScrollSquadBuilder(X, Y, Value.Get<float>());
+			}
+			return;
+		}
+	}
 	if (IsMenuOverlayOpen() || IsTrueSight())
 	{
 		return;

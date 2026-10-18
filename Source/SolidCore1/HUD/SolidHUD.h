@@ -4,6 +4,7 @@
 #include "Menus/SolidCharacterEditor.h"
 #include "Menus/SolidMenuPointer.h"
 #include "Inventory/SolidInventory.h"
+#include "Menus/SolidSquadBuilder.h"
 #include "GameFramework/HUD.h"
 #include "SolidStronghold.h"
 #include "SolidHUD.generated.h"
@@ -32,12 +33,16 @@ public:
 	void ReleaseInventory(float X, float Y);
 	void CancelInventoryDrag();
 
-	/** Company list opened from Build squad. */
+	/** Company, squad boxes, and battle-plan keys. Drag a name onto a box. */
 	void OpenSquadBuilder();
 	bool IsSquadBuilderOpen() const { return bShowSquadBuilder; }
-	int32 GetSquadBuilderIndex() const { return SquadBuilderIndex; }
-	void MoveSquadBuilderSelection(int32 Delta);
-	void SetSquadBuilderIndex(int32 Index);
+	void PressSquadBuilder(float X, float Y);
+	void ReleaseSquadBuilder(float X, float Y);
+	void CancelSquadDrag();
+	/** Wheel over Company, the squad column, or Plans. A key does not scroll. */
+	void ScrollSquadBuilder(float X, float Y, float Wheel);
+	/** Esc, F10, and every other close forget the filters and the drag. */
+	void ForgetSquadBuilderPage();
 
 	/** Town list opened from Use portal. */
 	void OpenPortal();
@@ -173,9 +178,14 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "HUD")
 	bool bShowSquadBuilder = false;
 
-	/** Highlighted companion while the squad builder is open. */
-	UPROPERTY(VisibleAnywhere, Category = "HUD")
-	int32 SquadBuilderIndex = 0;
+	/** Filters and scroll. Replaced when the page closes. */
+	SolidSquadBuilder::FView SquadBuilderView;
+	bool bSquadPageReady = false;
+	SolidSquadBuilder::FPage SquadPage;
+	float SquadOriginX = 0.f;
+	float SquadOriginY = 0.f;
+	bool bSquadDrag = false;
+	SolidSquadBuilder::FDrag SquadDrag;
 
 	/** F10 main menu. Off until toggled. */
 	UPROPERTY(VisibleAnywhere, Category = "HUD")

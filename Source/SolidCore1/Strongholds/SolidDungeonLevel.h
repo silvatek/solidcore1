@@ -119,7 +119,15 @@ struct FSolidTravelSession
 {
 	FGameState Configuration;
 	TArray<int32> SelectedCompanionIndices;
+	/** Eight keys, with INDEX_NONE where a key is empty. Empty leaves the starter assignment. */
+	TArray<int32> AssignedBattlePlanIndices;
 	int32 ActiveBattlePlanSlot = 0;
+	/** False when the active plan was dropped back on Plans. */
+	bool bBattlePlanActive = true;
+	/** Formation kept while no plan is active. Line is 0. */
+	uint8 HeldFormation = 0;
+	/** Standard spacing is 1. */
+	uint8 HeldSpacing = 1;
 	ESolidSight Sight = ESolidSight::True;
 	/** Next open-world spawn stands on the grass in front of the mouth. */
 	bool bReturnToDungeonMouth = false;

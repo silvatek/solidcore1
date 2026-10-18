@@ -28,7 +28,7 @@ During a fight the player moves the Captain and switches among the battle plans 
 
 The game is for most age groups. Blood and gore stay minimal by default.
 
-The player fights monsters. A monster is a reptile or an insect. Humans and humanoids stay out of combat.
+The Captain and the Companions are human. Human and humanoid NPCs may fight alongside them. Every opponent is a monster, and a monster is a reptile or an insect. A player-versus-player mode, if one is added, is where a player can fight a human or a humanoid.
 
 Parental controls may arrive later, especially if a player-versus-player mode is added.
 

@@ -302,7 +302,7 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the company is on the site"), State.ActiveStrongholdCell, AverageCell);
 	TestEqual(TEXT("the stronghold was left"), State.LeftStrongholds.Num(), 1);
 	TestEqual(
-		TEXT("the left stronghold is the stronghold"),
+		TEXT("the stronghold that was just left is a Dungeon"),
 		static_cast<uint8>(State.LeftStrongholds[0].Stronghold.Type),
 		static_cast<uint8>(ESolidStrongholdType::Dungeon));
 	TestEqual(TEXT("the left stronghold keeps its cell"), State.LeftStrongholds[0].Cell, SolidStronghold::StartingCell());

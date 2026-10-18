@@ -12,7 +12,9 @@ Meagre is not a fortress size. Every fortress has a Keep. The Keep has a larger 
 
 Humble and Average are the Keep alone. A larger fortress adds buildings in this order. Impressive adds Barracks. Grand adds a Gatehouse. Stately and Imperious add Workshops. Barracks have one floor, except in Stately and Imperious, where they have more than one. A Gatehouse has at least two floors, and it may have few hexes on a floor. Each Workshop has one floor. A fortress has no Hall, no Chapel, and no Kitchen.
 
-A building may have more than one floor. A higher floor uses the same hexes as the floor below. The floors do not step inward the way a tower's floors do.
+An Imperious fortress has one Workshop and a Stores. Stores has one floor. Every Imperious building stands against the outer wall, and its doorway faces the yard. The Imperious Keep's ground plan is square. Its Gatehouse has no usable hex on the ground floor and four on the floor above.
+
+A building may have more than one floor. A higher floor uses the same hexes as the floor below. The Imperious Gatehouse ground floor does not: it has no usable hex. The floors do not step inward the way a tower's floors do.
 
 The outer wall and the building walls are straight. A usable hex lies entirely inside them. A building with more than one floor has a stair and a landing. The landing holds no usable hex, and neither does the stair.
 
@@ -31,12 +33,16 @@ The captain enters and leaves through a gate in the outer wall. A fortress witho
 - The Keep has more floors than any other building in that fortress.
 - Impressive has the Keep and Barracks. Its Barracks have one floor.
 - Grand has the Keep, Barracks, and a Gatehouse. Its Barracks have one floor.
-- Stately and Imperious have the Keep, Barracks, a Gatehouse, and one or more Workshops. Their Barracks have more than one floor.
+- Stately has the Keep, Barracks, a Gatehouse, and one or more Workshops. Its Barracks have more than one floor.
+- Imperious has the Keep, Barracks, a Gatehouse, one Workshop, and a Stores. Its Barracks have more than one floor. Stores has one floor.
+- Every Imperious building stands against the outer wall. Its doorway faces the yard.
+- The Imperious Keep's ground plan is square.
+- The Imperious Gatehouse has no usable hex on the ground floor and four on the floor above.
 - A Gatehouse has at least two floors.
 - A Workshop has one floor.
 - A fortress has no Hall, no Chapel, and no Kitchen.
 - A building may have more than one floor.
-- A higher floor of a building has the same hexes as the floor below it.
+- A higher floor of a building has the same hexes as the floor below it. The Imperious Gatehouse is the exception: its ground floor has no usable hex.
 - The outer wall and the building walls are straight.
 - A usable hex lies entirely inside the walls.
 - A building with more than one floor has a stair and a landing on each of those floors.
@@ -57,7 +63,7 @@ The captain enters and leaves through a gate in the outer wall. A fortress witho
 - Humble Tower is not a pair, and `PlanFor` returns false for it. Humble's hex total is the mean of the Meagre dungeon cell count and the Average tower kept-hex total. The Meagre count is `SolidStrongholdGrid::MeagreCells`. The Average total is the sum of `CollectKeptHexes` over every floor of `SolidTowerStronghold::Average`. Do not copy either count into the fortress. A mean that is not a whole number rounds the way `LerpCount` rounds a halfway count.
 - A size has one hex total. Dungeon, Fortress, and Tower use it wherever that type supports the size. A type that does not support the size stays out of the comparison. Meagre's total is the dungeon cell count. Humble's total is the mean above, and a Humble dungeon that later becomes supported uses that same total. From Average through Imperious the total is the tower's kept hexes, and a dungeon of one of those sizes uses that same total. [Imperious dungeon](imperious-dungeon.md) uses the Imperious total.
 - The tower is the constrained count from Average through Imperious. Every room is the round plan in `SolidTowerStronghold`, and the floors step from Average to Imperious by `SizeAlong`. Leave that plan as it is. A fortress meets the total by the number and size of its buildings, and by repeating a building's ground hexes on each of its floors. A dungeon meets the total by the number and size of its rooms. Humble has no tower, so its total stays the mean above.
-- Buildings are added in this order: Barracks, then a Gatehouse, then Workshops. Humble and Average are the Keep alone. Impressive adds Barracks, one floor. Grand adds a Gatehouse. Stately and Imperious add one or more Workshops, and their Barracks have more than one floor. The Keep has more floors than every other building, and more usable hexes on a floor. A Gatehouse has at least two floors. A Workshop has one floor. There is no Hall, no Chapel, and no Kitchen. How many floors the Keep has, how many floors a Gatehouse has past two, how many floors Stately and Imperious Barracks have past one, and how many Workshops a size has, are not chosen beyond that. Each floor of a building repeats that building's ground hexes. Do not shrink an upper floor the way the tower's radius steps inward.
+- Buildings are added in this order: Barracks, then a Gatehouse, then Workshops. Humble and Average are the Keep alone. Impressive adds Barracks, one floor. Grand adds a Gatehouse. Stately adds one or more Workshops, and its Barracks have more than one floor. Imperious has one Workshop and a Stores, and its Barracks have more than one floor. Stores has one floor. Every Imperious building stands against the outer wall, and its doorway faces the yard. The Imperious Keep's ground plan is square. Its Gatehouse ground floor is the gate and has no usable hex. The floor above has four. The Keep has more floors than every other building, and more usable hexes on a floor. A Gatehouse has at least two floors. A Workshop has one floor. There is no Hall, no Chapel, and no Kitchen. How many floors the Keep has, how many floors a Gatehouse has past two, and how many floors Stately and Imperious Barracks have past one, are not chosen beyond that. Each floor of a building repeats that building's ground hexes, except the Imperious Gatehouse ground floor. Do not shrink an upper floor the way the tower's radius steps inward.
 - A fortress without a Gatehouse still has the gate in the outer wall. The Gatehouse is the building on that gate, not the opening itself.
 - The walls are straight. They do not follow the hex edges. A usable hex is one whose six vertices lie inside the inner face. The yard plan, the gate's size, and which building walls join the outer wall are not chosen. The mockup elevations use the tower's `FloorPitchCm` for a storey and add a parapet above it. This story does not choose that height.
 - The stair width is the tower's `StairWidthCm`. The landing run is the tower's `LandingRunCm`. A hex whose center lies on the stair or the landing is not usable, the same exclusion `HexOnStair` and `HexOnLanding` already apply in a tower. The stair and the landing repeat on every floor of that building, so the usable hexes stay the same. A building with one floor has no stair and no landing.

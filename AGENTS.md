@@ -54,6 +54,7 @@ Cloud agents are a **code + git workshop**. They do not replace the Windows Unre
 ## Planning
 
 - One file in `Planning/` is one open story. `README.md` lists those files. The file is the story.
+- When an agent starts work on a `Ready` story, set that story's status to `In Progress`.
 - When a story ships, move its file to `Planning/Done/`.
 - `ideas.md` is the inbox. Copy each new idea into a new file under `Planning/`. Do not edit `ideas.md`.
 

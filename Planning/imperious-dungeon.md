@@ -25,6 +25,7 @@ The floors use the same 1.2 m hex grid as the cave. The Meagre den stays the fou
 ## Implementation notes
 
 - The floor plan is not chosen. Do not copy the tower: ten floors, a 30 m taper, round rooms, or the stair spiral. A dungeon is not a tower.
+- The Imperious hex total is the total an Imperious tower uses, and the total an Imperious fortress uses. [Fortress stronghold](fortress-stronghold.md) records the rule: a size has one hex total, shared by every type that supports that size. The player does not pick a type because it holds more hexes.
 - Do not add a world-map `!` in this story. The owner places the marker. The line is `Stronghold (Imperious Dungeon)`, size then type.
 - There is no shelf row for an Imperious Dungeon. Meagre Dungeon is Mountain. Imperious Tower is Grassland. A size and type with no row keeps the marker's own biome. Do not assume Mountain or Grassland until a shelf is chosen.
 - `SolidDungeonLevel` is the dungeon trip, and the comment there says every dungeon size uses it. `ASolidDungeonInterior` still builds only the Meagre floor. `?SolidLevel=Dungeon` is that floor. The menu has no cave row.

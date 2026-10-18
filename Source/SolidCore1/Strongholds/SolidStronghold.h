@@ -88,7 +88,7 @@ namespace SolidStronghold
 		FSolidStrongholdView Leave;
 	};
 
-	/** Meagre Dungeon: level, into the stronghold on entry, and level, out over the grass on leave. */
+	/** Meagre Dungeon: level, into the cave on entry, and level, out over the grass on leave. */
 	inline const FVisitView VisitViews[] = {
 		{ Starting, { 0.f, 0.f }, { 0.f, 0.f } },
 	};

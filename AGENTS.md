@@ -105,4 +105,4 @@ Warn the user when a `!` in the grid has no description line for that row and co
 
 - C++ types: `Solid*`. New Blueprints: `BP_SolidCharacter`, `BP_SolidGameMode`, paths under `/Game/Characters/`.
 - Do not create new assets named `BP_SolidCore1*`.
-- Do not use the word den. The company's first stronghold is the cave: size Meagre, type Dungeon. Comments and test labels that still say it are removed by [Remove den from the code](Planning/remove-den-from-the-code.md).
+- Do not use the word den. The company's first stronghold is the cave: size Meagre, type Dungeon. Its interior is the cave. Its fourteen-cell plan is the Meagre floor.

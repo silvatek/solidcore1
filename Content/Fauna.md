@@ -22,7 +22,7 @@ Humans are generated based on a set of core numeric parameters. Each parameter c
 
 # Suarobestia
 
-Use the Allosaurus skeleton & animations. Flying creatures don't actually need to fly in-game at first, so we can just add folded wings to the base mesh.
+Use the Velociraptor skeleton & animations from PBR Velociraptor (Animated), https://www.fab.com/listings/5d5fa3d3-4459-4677-be46-c686f733908c. Flying creatures don't actually need to fly in-game at first, so we can just add folded wings to the base mesh.
 
 Main parameters are...
 

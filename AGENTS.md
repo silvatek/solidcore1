@@ -27,6 +27,8 @@ The owner uses this repo partly to evaluate whether AI coding works without deta
 
 ## Collaborative workflow
 
+### Cloud agents
+
 The agent pushes to GitHub. The user verifies on their machine. Do not run the editor, automation, or PIE from the agent environment.
 
 After a push, the user:
@@ -38,6 +40,17 @@ After a push, the user:
 5. Typically, but not always, sends a screenshot for the agent to review.
 
 Wait for that report before treating the change as verified. When a screenshot arrives, review it.
+
+Screenshots are taken with the Windows snipping tool. That switch puts Unreal in the background, so the HUD frame rate drops. Ignore FPS in a screenshot unless the user says they are worried about it. Foreground PIE is about 120 FPS.
+
+### solidcore1-ue agents
+
+These agents have access to C++ and Unreal Engine. The agent builds and runs the tests. Do not run PIE.
+
+1. Build with `tools\build.bat`.
+2. Run the tests with `tools\test.bat`.
+
+The developer then runs the game in PIE if necessary, and sends a screenshot when they do. Wait for that report before treating play as verified. When a screenshot arrives, review it.
 
 Screenshots are taken with the Windows snipping tool. That switch puts Unreal in the background, so the HUD frame rate drops. Ignore FPS in a screenshot unless the user says they are worried about it. Foreground PIE is about 120 FPS.
 

@@ -93,7 +93,7 @@ namespace SolidForage
 	int32 CollectChoices(
 		const TArray<FSolidTerrainPoint>& Points,
 		const TArray<int32>& TreePointIndices,
-		int32 Seed,
+		int32 ChoiceSeed,
 		const FScatterParams& Params,
 		TArray<FChoice>& OutChoices);
 

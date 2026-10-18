@@ -5,14 +5,14 @@
 int32 SolidForage::CollectChoices(
 	const TArray<FSolidTerrainPoint>& Points,
 	const TArray<int32>& TreePointIndices,
-	const int32 Seed,
+	const int32 ChoiceSeed,
 	const FScatterParams& Params,
 	TArray<FChoice>& OutChoices)
 {
 	OutChoices.Reset();
-	const float Density = FMath::Clamp(Params.Density, 0.f, 1.f);
+	const float UsedDensity = FMath::Clamp(Params.Density, 0.f, 1.f);
 	const int32 MaxCount = FMath::Max(Params.MaxPiles, 0);
-	if (MaxCount == 0 || Density <= 0.f)
+	if (MaxCount == 0 || UsedDensity <= 0.f)
 	{
 		return 0;
 	}
@@ -37,7 +37,7 @@ int32 SolidForage::CollectChoices(
 		return 0;
 	}
 
-	FRandomStream Rng(Seed != 0 ? Seed : SolidForage::Seed);
+	FRandomStream Rng(ChoiceSeed != 0 ? ChoiceSeed : SolidForage::Seed);
 	for (int32 I = OpenForest.Num() - 1; I > 0; --I)
 	{
 		const int32 J = Rng.RandRange(0, I);
@@ -45,7 +45,7 @@ int32 SolidForage::CollectChoices(
 	}
 
 	const int32 Target = FMath::Clamp(
-		FMath::RoundToInt(static_cast<float>(OpenForest.Num()) * Density),
+		FMath::RoundToInt(static_cast<float>(OpenForest.Num()) * UsedDensity),
 		0,
 		FMath::Min(MaxCount, OpenForest.Num()));
 	if (Target <= 0)

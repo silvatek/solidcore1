@@ -1601,12 +1601,12 @@ ASolidForagePile* ASolidCharacter::NearestForagePile(float& OutGroundDistanceCm)
 	float BestRay = 0.f;
 	for (TActorIterator<ASolidForagePile> Pile(World); Pile; ++Pile)
 	{
-		const UStaticMeshComponent* Mesh = Pile->GetPileMesh();
-		if (!Mesh)
+		const UStaticMeshComponent* PileMesh = Pile->GetPileMesh();
+		if (!PileMesh)
 		{
 			continue;
 		}
-		const FBox Box = Mesh->CalcBounds(Mesh->GetComponentTransform()).GetBox();
+		const FBox Box = PileMesh->CalcBounds(PileMesh->GetComponentTransform()).GetBox();
 		float RayCm = 0.f;
 		if (!SolidForage::RayBoxDistance(Origin, Direction, Box, SolidClickMove::MaxRayCm, RayCm))
 		{

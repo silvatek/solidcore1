@@ -353,12 +353,12 @@ bool FSolidForagePickupTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the cube is a query hit"), Mesh->GetCollisionEnabled() == ECollisionEnabled::QueryOnly);
 	TestTrue(TEXT("the cube ignores the captain"), Mesh->GetCollisionResponseToChannel(ECC_Pawn) == ECR_Ignore);
 	TestTrue(TEXT("the cube answers a visibility query"), Mesh->GetCollisionResponseToChannel(ECC_Visibility) == ECR_Block);
-	UStaticMesh* Cube = Mesh->GetStaticMesh();
+	UStaticMesh* LoadedMesh = Mesh->GetStaticMesh();
 	UStaticMesh* ExpectedCube = LoadObject<UStaticMesh>(nullptr, SolidForage::CubeMesh);
-	TestNotNull(TEXT("cube mesh"), Cube);
-	if (Cube)
+	TestNotNull(TEXT("cube mesh"), LoadedMesh);
+	if (LoadedMesh)
 	{
-		TestTrue(TEXT("the mesh is the engine cube"), Cube == ExpectedCube);
+		TestTrue(TEXT("the mesh is the engine cube"), LoadedMesh == ExpectedCube);
 		TestTrue(TEXT("the cube is about 40 cm"), FMath::IsNearlyEqual(Mesh->GetRelativeScale3D().X, SolidForage::CubeCm / 100.f, 0.01f));
 		TestTrue(TEXT("the cube sits on the ground"), FMath::IsNearlyEqual(Mesh->GetRelativeLocation().Z, SolidForage::CubeCm * 0.5f, 0.01f));
 	}

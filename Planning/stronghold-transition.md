@@ -40,7 +40,7 @@ The company has one stronghold. At the start the player uses the Meagre Dungeon.
 ## Implementation notes
 
 - `SolidStronghold::Starting` is the Meagre Dungeon. Sizes run Meagre, Humble, Average, Impressive, Grand, Stately, Imperious. Larger means later in that list. Types are Dungeon, Fortress, and Tower.
-- The size list already says later upgrades move up the list. A change unlocks one size. Enter Dragongate carries that change once for every size. Enter Iglin, Relion, and Kanfold do not.
+- The size list already says later upgrades move up the list. `EnableStrongholdSize` enables one size. Enter Dragongate lists that change once for every size. That list is temporary: each size will move to its own event. Enter Iglin, Relion, and Kanfold do not enable a size.
 - `FGameState` does not record an active stronghold. The cave is implied by `EnableCave` and `CaveChest`. Record the active stronghold, including type, size, and site, and carry it on the travel session the way the company is carried.
 - A `!` line today is `Town`, `Stronghold`, `LairEntrance`, or `LairExit`. `Stronghold` is size then type, as in `MeagreDungeon` and `Imperious Tower`. A site is a new kind, `StrongholdSite`, then a size name and no type. `SolidStronghold::FromToken` will not parse `Humble` alone, because it expects size and type joined. Match the size names in `SolidStronghold::Sizes`. `ESolidWorldBang` and `WorldMapParseBangLocation` need the new kind. The suite line in `README.md` that lists those four kinds needs the same word.
 - The site cells are not named. Do not invent them. The owner places the `!` lines. Do not delete `! 17, 31` in a commit that has not added those sites. The tower line comes out once the sites are the places a new stronghold is created.

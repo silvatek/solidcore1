@@ -30,7 +30,8 @@
  * Each event belongs to an act. Iglin, Reach broken bridge, and Killed by monsters
  * are ACT_0. Driven from the village is ACT_1.
  * Relion is ACT_2, Kanfold is ACT_3, and Dragongate is ACT_4.
- * Enter Dragongate unlocks every stronghold size.
+ * Enter Dragongate lists one EnableStrongholdSize change for every size.
+ * That list is temporary. Each size will move to its own event.
  */
 namespace SolidEvents
 {
@@ -81,8 +82,11 @@ namespace SolidEvents
 		ShowMessage,
 		/** Empty the captain's worn boxes and pack, then put Rags on the body. */
 		ClearInventory,
-		/** Unlock one stronghold size. Enter Dragongate carries one for every size. */
-		UnlockStrongholdSize,
+		/**
+		 * Enable one stronghold size.
+		 * Enter Dragongate lists one for every size until each size has its own event.
+		 */
+		EnableStrongholdSize,
 	};
 
 	/** Nameplate before Enter Iglin. Driven from the village sets this again. */
@@ -101,7 +105,7 @@ namespace SolidEvents
 		const TCHAR* Title = nullptr;
 		/** Message id for a ShowMessage change. */
 		const TCHAR* MessageId = nullptr;
-		/** Size for an UnlockStrongholdSize change. */
+		/** Size for an EnableStrongholdSize change. */
 		ESolidStrongholdSize StrongholdSize = ESolidStrongholdSize::Meagre;
 	};
 
@@ -164,10 +168,10 @@ namespace SolidEvents
 			return Change;
 		}
 
-		inline constexpr FChange UnlockStrongholdSize(const ESolidStrongholdSize Size)
+		inline constexpr FChange EnableStrongholdSize(const ESolidStrongholdSize Size)
 		{
 			FChange Change;
-			Change.Kind = EChange::UnlockStrongholdSize;
+			Change.Kind = EChange::EnableStrongholdSize;
 			Change.StrongholdSize = Size;
 			return Change;
 		}
@@ -225,20 +229,9 @@ namespace SolidEvents
 			return With(Change::ClearInventory());
 		}
 
-		constexpr FEvent UnlockStrongholdSize(const ESolidStrongholdSize Size) const
+		constexpr FEvent EnableStrongholdSize(const ESolidStrongholdSize Size) const
 		{
-			return With(Change::UnlockStrongholdSize(Size));
-		}
-
-		/** One unlock change for each size, from Meagre through Imperious. */
-		constexpr FEvent UnlockAllStrongholdSizes() const
-		{
-			FEvent Event = *this;
-			for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
-			{
-				Event = Event.UnlockStrongholdSize(Size);
-			}
-			return Event;
+			return With(Change::EnableStrongholdSize(Size));
 		}
 
 		constexpr FEvent Require(const TCHAR* EventId) const
@@ -344,7 +337,13 @@ namespace SolidEvents
 			.EnableSight(ESolidSight::Raven)
 			.SetMaxPartySize(RosterCount)
 			.SetPlayerTitle(TitleCaptain)
-			.UnlockAllStrongholdSizes(),
+			.EnableStrongholdSize(ESolidStrongholdSize::Meagre)
+			.EnableStrongholdSize(ESolidStrongholdSize::Humble)
+			.EnableStrongholdSize(ESolidStrongholdSize::Average)
+			.EnableStrongholdSize(ESolidStrongholdSize::Impressive)
+			.EnableStrongholdSize(ESolidStrongholdSize::Grand)
+			.EnableStrongholdSize(ESolidStrongholdSize::Stately)
+			.EnableStrongholdSize(ESolidStrongholdSize::Imperious),
 	};
 
 	static_assert(UE_ARRAY_COUNT(Definitions) <= MaxEvents, "Raise SolidEvents::MaxEvents");

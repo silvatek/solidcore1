@@ -97,7 +97,7 @@ void ApplyChange(FGameState& State, const FChange& Change, FResult& Result)
 	case EChange::ClearInventory:
 		SolidInventory::Clear(State.Inventory);
 		break;
-	case EChange::UnlockStrongholdSize:
+	case EChange::EnableStrongholdSize:
 	{
 		const int32 Index = static_cast<int32>(Change.StrongholdSize);
 		if (Index >= 0 && Index < SolidStronghold::SizeCount)

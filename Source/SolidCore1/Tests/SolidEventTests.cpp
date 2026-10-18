@@ -1304,11 +1304,11 @@ bool FSolidEventsClearInventoryTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidEventsUnlockStrongholdSizeTest,
-	"SolidCore1.Events.UnlockStrongholdSize",
+	FSolidEventsEnableStrongholdSizeTest,
+	"SolidCore1.Events.EnableStrongholdSize",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 
-bool FSolidEventsUnlockStrongholdSizeTest::RunTest(const FString& Parameters)
+bool FSolidEventsEnableStrongholdSizeTest::RunTest(const FString& Parameters)
 {
 	const TCHAR* HeldBack[] = {
 		TEXT("Enter Iglin"),
@@ -1328,7 +1328,7 @@ bool FSolidEventsUnlockStrongholdSizeTest::RunTest(const FString& Parameters)
 		{
 			TestFalse(
 				*FString::Printf(TEXT("%s does not unlock a size"), Name),
-				Event->Changes[Index].Kind == SolidEvents::EChange::UnlockStrongholdSize);
+				Event->Changes[Index].Kind == SolidEvents::EChange::EnableStrongholdSize);
 		}
 	}
 	FGameState Played;
@@ -1343,12 +1343,12 @@ bool FSolidEventsUnlockStrongholdSizeTest::RunTest(const FString& Parameters)
 	}
 
 	const SolidEvents::FEvent Built = SolidEvents::EnterTown(TEXT("aabbcc01"), TEXT("Sample unlock"), 0, SolidEvents::ACT_0)
-		.UnlockStrongholdSize(ESolidStrongholdSize::Humble);
-	TestEqual(TEXT("a built unlock has one change"), Built.ChangeCount, 1);
+		.EnableStrongholdSize(ESolidStrongholdSize::Humble);
+	TestEqual(TEXT("a built enable has one change"), Built.ChangeCount, 1);
 	TestEqual(
-		TEXT("a built unlock is UnlockStrongholdSize"),
+		TEXT("a built enable is EnableStrongholdSize"),
 		static_cast<uint8>(Built.Changes[0].Kind),
-		static_cast<uint8>(SolidEvents::EChange::UnlockStrongholdSize));
+		static_cast<uint8>(SolidEvents::EChange::EnableStrongholdSize));
 	TestEqual(
 		TEXT("a built unlock names Humble"),
 		static_cast<uint8>(Built.Changes[0].StrongholdSize),
@@ -1389,7 +1389,7 @@ bool FSolidEventsDragongateUnlocksSizesTest::RunTest(const FString& Parameters)
 	for (int32 Index = 0; Index < ChangeCount; ++Index)
 	{
 		const SolidEvents::FChange& Change = Event.Changes[Index];
-		if (Change.Kind != SolidEvents::EChange::UnlockStrongholdSize)
+		if (Change.Kind != SolidEvents::EChange::EnableStrongholdSize)
 		{
 			continue;
 		}

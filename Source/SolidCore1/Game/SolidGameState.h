@@ -52,7 +52,7 @@ struct FGameState
 	bool bStrongholdSizeUnlocked[SolidStronghold::SizeCount] = {};
 	/** Strongholds the company has left, oldest first. */
 	TArray<FLeftStronghold> LeftStrongholds;
-	/** Furnishings in the active stronghold. A new game carries the Meagre den's pieces. */
+	/** Furnishings in the active stronghold. A new game carries the Meagre stronghold's pieces. */
 	TArray<SolidStrongholdFurniture::FUsed> Furnishings = SolidStrongholdFurniture::StartingFurnishings();
 };
 

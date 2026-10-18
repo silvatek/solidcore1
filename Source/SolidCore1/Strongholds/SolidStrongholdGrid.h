@@ -7,7 +7,7 @@
  * Pointy-top hexes on a stronghold floor, for placing furniture.
  * Dungeons, fortresses, and towers share this grid.
  * "Across" is flat side to flat side (the horizontal width), not point to point.
- * The Meagre Dungeon is an irregular den of fourteen cells, not a filled rectangle.
+ * The Meagre Dungeon is an irregular stronghold of fourteen cells, not a filled rectangle.
  */
 namespace SolidStrongholdGrid
 {
@@ -49,7 +49,7 @@ namespace SolidStrongholdGrid
 	};
 
 	/**
-	 * Meagre den, mouth to the west. Fourteen cells, with a vestibule on the entrance.
+	 * Meagre stronghold, mouth to the west. Fourteen cells, with a vestibule on the entrance.
 	 *     (-1,1) (0,1) (1,1) (2,1)
 	 * (-2,0) (-1,0) (0,0) (1,0) (2,0)
 	 *        (0,-1) (1,-1) (2,-1)

@@ -112,7 +112,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 {
-	TestTrue(TEXT("the starting den is built"), SolidStrongholdTransition::IsBuilt(SolidStronghold::Starting));
+	TestTrue(TEXT("the starting stronghold is built"), SolidStrongholdTransition::IsBuilt(SolidStronghold::Starting));
 	TestFalse(
 		TEXT("a Meagre fortress is not a pair"),
 		SolidStrongholdTransition::IsFinalPair(FSolidStronghold{ ESolidStrongholdType::Fortress, ESolidStrongholdSize::Meagre }));
@@ -158,7 +158,7 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 
 	FGameState State;
 	State.bCaveEnabled = true;
-	TestTrue(TEXT("the open den still accepts enter"), SolidStrongholdTransition::CompanyCaveAcceptsEnter(State));
+	TestTrue(TEXT("the open stronghold still accepts enter"), SolidStrongholdTransition::CompanyCaveAcceptsEnter(State));
 
 	TArray<ESolidStrongholdType> Types;
 	TestEqual(
@@ -281,7 +281,7 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 	TestFalse(
 		TEXT("a type that was not offered does not commit"),
 		SolidStrongholdTransition::Commit(State, ImperiousCell, ESolidStrongholdSize::Imperious, ESolidStrongholdType::Dungeon));
-	TestEqual(TEXT("a refused type leaves the den"), static_cast<uint8>(State.ActiveStronghold.Type), static_cast<uint8>(ESolidStrongholdType::Dungeon));
+	TestEqual(TEXT("a refused type leaves the stronghold"), static_cast<uint8>(State.ActiveStronghold.Type), static_cast<uint8>(ESolidStrongholdType::Dungeon));
 	TestEqual(TEXT("a refused type leaves the size"), static_cast<uint8>(State.ActiveStronghold.Size), static_cast<uint8>(ESolidStrongholdSize::Meagre));
 	TestEqual(TEXT("a refused type leaves the cell"), State.ActiveStrongholdCell, SolidStronghold::StartingCell());
 	TestEqual(TEXT("a refused type leaves no history"), State.LeftStrongholds.Num(), 0);
@@ -300,13 +300,13 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the company is in a tower"), static_cast<uint8>(State.ActiveStronghold.Type), static_cast<uint8>(ESolidStrongholdType::Tower));
 	TestEqual(TEXT("the company is Average"), static_cast<uint8>(State.ActiveStronghold.Size), static_cast<uint8>(ESolidStrongholdSize::Average));
 	TestEqual(TEXT("the company is on the site"), State.ActiveStrongholdCell, AverageCell);
-	TestEqual(TEXT("the den was left"), State.LeftStrongholds.Num(), 1);
+	TestEqual(TEXT("the stronghold was left"), State.LeftStrongholds.Num(), 1);
 	TestEqual(
-		TEXT("the left stronghold is the den"),
+		TEXT("the left stronghold is the stronghold"),
 		static_cast<uint8>(State.LeftStrongholds[0].Stronghold.Type),
 		static_cast<uint8>(ESolidStrongholdType::Dungeon));
-	TestEqual(TEXT("the left den keeps its cell"), State.LeftStrongholds[0].Cell, SolidStronghold::StartingCell());
-	TestFalse(TEXT("the den no longer accepts enter"), SolidStrongholdTransition::CompanyCaveAcceptsEnter(State));
+	TestEqual(TEXT("the left stronghold keeps its cell"), State.LeftStrongholds[0].Cell, SolidStronghold::StartingCell());
+	TestFalse(TEXT("the stronghold no longer accepts enter"), SolidStrongholdTransition::CompanyCaveAcceptsEnter(State));
 	TestTrue(TEXT("the chest moved with the company"), SameChest(State.CaveChest, Chest));
 	TestTrue(TEXT("the pack stayed with the captain"), SameLoadout(State.Inventory, Pack));
 	TestEqual(TEXT("the starting pieces moved"), State.Furnishings.Num(), Started.Num());
@@ -365,7 +365,7 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the bed moved"), Beds, 1);
 
 	TestFalse(
-		TEXT("inside the tower the chest is not the den"),
+		TEXT("inside the tower the chest is not the stronghold"),
 		SolidStrongholdTransition::CompanyChestOpen(State, true, false, MapTowerCell));
 	TestTrue(
 		TEXT("the chest opens in the company tower"),

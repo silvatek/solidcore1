@@ -9,7 +9,7 @@ class UPointLightComponent;
 class UStaticMeshComponent;
 
 /**
- * Dungeon chamber shared by every size. Meagre, the cave, is an irregular den of fourteen hexes.
+ * Dungeon chamber shared by every size. Meagre, the cave, is an irregular stronghold of fourteen hexes.
  * Rock follows that outline. The west entrance is wider than the captain, with the lip outside the flat.
  * The captain arrives alone. A left click on the dark opening leaves. F10 leaves too.
  */
@@ -29,7 +29,7 @@ public:
 
 	/** Feet position inside the room. */
 	FVector GetCaptainSpawnWorld() const;
-	/** Level, looking into the den. From the Meagre Dungeon visit view. */
+	/** Level, looking into the stronghold. From the Meagre Dungeon visit view. */
 	FRotator GetCaptainView() const;
 	float GetCaptainYaw() const;
 

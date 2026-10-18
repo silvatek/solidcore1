@@ -24,7 +24,7 @@ namespace SolidDungeonLevel
 	inline const TCHAR* EnterLabel = TEXT("Enter cave");
 	inline const TCHAR* LeaveLabel = TEXT("Leave cave");
 
-	/** Meagre den ceiling. The floor plan is the fourteen-hex outline in SolidStrongholdGrid. */
+	/** Meagre stronghold ceiling. The floor plan is the fourteen-hex outline in SolidStrongholdGrid. */
 	inline constexpr float RoomHeightCm = 320.f;
 	inline constexpr float ShellCm = 48.f;
 	/** Dark opening on the entrance hex. The cliff mouth outside is larger. */
@@ -35,7 +35,7 @@ namespace SolidDungeonLevel
 	 */
 	inline constexpr float DoorwayWidthCm = 140.f;
 
-	/** Feet on the cell inside the entrance. The visit view turns him into the den. */
+	/** Feet on the cell inside the entrance. The visit view turns him into the stronghold. */
 	inline FVector CaptainSpawnLocal()
 	{
 		const SolidStrongholdGrid::FCell Cell = SolidStrongholdGrid::MeagreCaptainCell();
@@ -44,7 +44,7 @@ namespace SolidDungeonLevel
 		return FVector(Center.X, Center.Y, 0.f);
 	}
 
-	/** Local +X runs away from the mouth, into the den. Yaw 180 would look back at the mouth. */
+	/** Local +X runs away from the mouth, into the stronghold. Yaw 180 would look back at the mouth. */
 
 	inline bool ContainsLocal(const FVector& Point)
 	{
@@ -65,7 +65,7 @@ namespace SolidDungeonLevel
 		return false;
 	}
 
-	/** A step west of the mouth, outside the den. */
+	/** A step west of the mouth, outside the stronghold. */
 	inline FVector PastMouthLocal()
 	{
 		const FVector2D Mouth = SolidStrongholdGrid::MeagreMouthMidpoint();

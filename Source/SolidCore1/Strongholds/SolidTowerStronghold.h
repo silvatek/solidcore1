@@ -10,7 +10,7 @@
  * Impressive, Grand, and Stately are even steps between those ends.
  * Local +X runs in from the door. Yaw 0 looks into the tower, the same way a dungeon visit does.
  * Placement turns the whole tower so this door faces the grass.
- * The Meagre den stays the fourteen-cell outline. This floor uses the same 1.2 m pointy-top grid.
+ * The Meagre stronghold stays the fourteen-cell outline. This floor uses the same 1.2 m pointy-top grid.
  * Each floor may shift that grid by at most 30 cm, so more whole cells sit in the circle.
  */
 namespace SolidTowerStronghold

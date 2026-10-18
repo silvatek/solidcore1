@@ -105,7 +105,7 @@ protected:
 	bool IsPointerShown() const;
 	SolidLair::FPassageHit PassageUnderPointer() const;
 	SolidLair::FPassageHit PassageOverlapping(const FVector& Location) const;
-	/** Enter is ignored until that place is open. A den or tower the company has left is not an enter. Leave stays available. */
+	/** Enter is ignored until that place is open. A stronghold or tower the company has left is not an enter. Leave stays available. */
 	SolidLair::FPassageHit AllowPassage(const SolidLair::FPassageHit& Hit) const;
 	void ActivatePassage(const SolidLair::FPassageHit& Hit);
 	/** A site stone under the pointer, when a click may ask it for a type. */

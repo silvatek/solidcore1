@@ -219,7 +219,7 @@ namespace SolidStrongholdTransition
 		return true;
 	}
 
-	/** F10 Enter cave and the den mouth. True only while that den is still the company base and open. */
+	/** F10 Enter cave and the stronghold mouth. True only while that stronghold is still the company base and open. */
 	inline bool CompanyCaveAcceptsEnter(const FGameState& State)
 	{
 		return State.bCaveEnabled

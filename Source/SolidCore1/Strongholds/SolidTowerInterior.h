@@ -11,7 +11,7 @@ class UPointLightComponent;
 class UStaticMeshComponent;
 
 /**
- * One tower visit, at the origin, the same way the den is.
+ * One tower visit, at the origin, the same way the stronghold is.
  * Each floor is a stone disc. The arrival hole is an annular gap, so the middle stays floored.
  * A flat landing in the stair band follows that hole. The next flight starts at its far end.
  * The wall beside each landing shows that floor's number on a light plate. Ground is 1.

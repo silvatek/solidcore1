@@ -236,7 +236,7 @@ namespace SolidStrongholdFurniture
 		OutUsed.Add({ IndexOfKind(EKind::Chest), 0, 2, 1, 0.f });
 	}
 
-	/** The pieces a new game carries. The Meagre den is where they start. */
+	/** The pieces a new game carries. The Meagre stronghold is where they start. */
 	inline TArray<FUsed> StartingFurnishings()
 	{
 		TArray<FUsed> Used;

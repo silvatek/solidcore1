@@ -39,7 +39,7 @@ bool FSolidStrongholdGridMeasureTest::RunTest(const FString& Parameters)
 
 	TArray<SolidStrongholdGrid::FCell> Cells;
 	SolidStrongholdGrid::MeagreCells(Cells);
-	TestEqual(TEXT("meagre den is fourteen hexes"), Cells.Num(), SolidStrongholdGrid::MeagreCellCount);
+	TestEqual(TEXT("meagre stronghold is fourteen hexes"), Cells.Num(), SolidStrongholdGrid::MeagreCellCount);
 	TestEqual(TEXT("fourteen cells"), SolidStrongholdGrid::MeagreCellCount, 14);
 
 	TArray<SolidStrongholdGrid::FHex> Hexes;
@@ -104,7 +104,7 @@ bool FSolidStrongholdGridMeasureTest::RunTest(const FString& Parameters)
 	TArray<SolidStrongholdGrid::FSegment> Boundary;
 	SolidStrongholdGrid::CollectBoundarySegments(Hexes, Boundary);
 	TestTrue(TEXT("the wall is shorter than every edge"), Boundary.Num() < Segments.Num());
-	TestTrue(TEXT("the den has an outline"), Boundary.Num() > 8);
+	TestTrue(TEXT("the stronghold has an outline"), Boundary.Num() > 8);
 
 	for (const SolidStrongholdGrid::FSegment& Segment : Segments)
 	{

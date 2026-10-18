@@ -4,7 +4,7 @@ Status: Ready
 
 ## Story
 
-Do not start this story until [Stronghold type classes](stronghold-type-classes.md) is Done.
+Do not start this story until [Stronghold type classes](Done/stronghold-type-classes.md) is Done.
 
 The player gives the company's stronghold a name. Until they choose one, the name is the size and the type, as in Average Tower. The stronghold the company starts with is size Meagre and type Dungeon, and its name is The cave.
 

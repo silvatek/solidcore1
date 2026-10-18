@@ -4,11 +4,11 @@
 #include "SolidGameState.h"
 #include "SolidStrongholdFurniture.h"
 #include "SolidStrongholdGrid.h"
-#include "SolidTowerStronghold.h"
+#include "SolidStrongholdType.h"
 
 /**
  * Moving the company from the stronghold it has to a site.
- * A click offers a type only when that size is unlocked, larger, and already built.
+ * A click offers a type only when that size is unlocked, larger, and the subclass can build it.
  * Choosing a type commits. Esc never reaches this.
  * The swap itself is immediate, so it does not show a progress bar.
  */
@@ -32,17 +32,8 @@ namespace SolidStrongholdTransition
 	/** A final pair that already has an interior. Meagre Dungeon, and a tower from Average through Imperious. */
 	inline bool IsBuilt(const FSolidStronghold& Stronghold)
 	{
-		if (!IsFinalPair(Stronghold))
-		{
-			return false;
-		}
-		if (Stronghold.Type == ESolidStrongholdType::Dungeon
-			&& Stronghold.Size == ESolidStrongholdSize::Meagre)
-		{
-			return true;
-		}
-		SolidTowerStronghold::FPlan Plan;
-		return SolidTowerStronghold::PlanFor(Stronghold, Plan);
+		return IsFinalPair(Stronghold)
+			&& SolidStronghold::TypeOf(Stronghold.Type).Supported(Stronghold.Size);
 	}
 
 	enum class EOffer : uint8
@@ -70,8 +61,7 @@ namespace SolidStrongholdTransition
 
 		for (const ESolidStrongholdType Type : SolidStronghold::Types)
 		{
-			const FSolidStronghold Pair{ Type, SiteSize };
-			if (IsBuilt(Pair))
+			if (SolidStronghold::TypeOf(Type).Supported(SiteSize))
 			{
 				OutTypes.Add(Type);
 			}
@@ -183,14 +173,12 @@ namespace SolidStrongholdTransition
 		}
 
 		const FSolidStronghold Next{ Type, SiteSize };
-		SolidTowerStronghold::FPlan Plan;
-		if (!SolidTowerStronghold::PlanFor(Next, Plan))
+		TArray<SolidStrongholdGrid::FHex> Hexes;
+		SolidStronghold::TypeOf(Type).CollectGroundHexes(SiteSize, Hexes);
+		if (Hexes.Num() == 0)
 		{
 			return false;
 		}
-
-		TArray<SolidStrongholdGrid::FHex> Hexes;
-		SolidTowerStronghold::CollectKeptHexes(Plan, 0, Hexes);
 		TArray<SolidStrongholdFurniture::FUsed> Moved = State.Furnishings;
 		if (Moved.Num() == 0)
 		{

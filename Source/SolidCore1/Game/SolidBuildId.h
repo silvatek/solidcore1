@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0467")
+#define SOLID_BUILD_ID TEXT("SC1-0468")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The cave mouth waits on the monster message again.")
+#define SOLID_BUILD_NOTE TEXT("Dungeon, Fortress, and Tower are subclasses of one stronghold type.")
 #endif

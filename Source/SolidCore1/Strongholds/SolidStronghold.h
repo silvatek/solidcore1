@@ -177,10 +177,7 @@ namespace SolidStronghold
 	}
 
 	/** The cliff mouth. A tower places its own exterior, so it does not use this. */
-	inline bool UsesCaveMouth(const FSolidStronghold& Stronghold)
-	{
-		return Stronghold.Type == ESolidStrongholdType::Dungeon;
-	}
+	bool UsesCaveMouth(const FSolidStronghold& Stronghold);
 
 	/** "MeagreDungeon" or "Meagre Dungeon": size, then type. */
 	inline bool FromToken(const FString& Token, FSolidStronghold& Out)

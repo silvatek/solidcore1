@@ -34,6 +34,7 @@
 #include "Strongholds/SolidTowerInterior.h"
 #include "Strongholds/SolidStrongholdStone.h"
 #include "Strongholds/SolidStrongholdTransition.h"
+#include "Strongholds/SolidStrongholdType.h"
 #include "Strongholds/SolidTowerShell.h"
 #include "Strongholds/SolidTowerStronghold.h"
 #include "SolidGameInstance.h"
@@ -734,6 +735,19 @@ bool ASolidGameMode::EnterChosenStronghold(
 	const SolidWorldTime::FStamp When = WorldStamp();
 	SolidEvents::RememberStronghold(Configuration, When, /*bEnter=*/true);
 	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Enter Stronghold"), *SolidWorldTime::Format(When));
+
+	const ESolidStrongholdTrip Trip = SolidStronghold::TypeOf(Type).Trip();
+	if (Trip == ESolidStrongholdTrip::Cave)
+	{
+		SaveTravelSession(/*bInDungeon=*/true, /*bReturnToDungeonMouth=*/false);
+		UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::EnterOptions());
+		return true;
+	}
+	if (Trip != ESolidStrongholdTrip::Tower)
+	{
+		return true;
+	}
+
 	SaveTravelSession(
 		/*bInDungeon=*/false,
 		/*bReturnToDungeonMouth=*/false,

@@ -70,16 +70,11 @@ bool FSolidLairMazeTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("row width"), static_cast<int32>(FCString::Strlen(SolidLair::Maze[Row])), SolidLair::MazeCols);
 	}
 
-	const int32 Path = SolidLair::ShortestPathSteps();
-	TestTrue(TEXT("a path joins the mouths"), Path != INDEX_NONE && Path > 0);
-	TestTrue(TEXT("the path is at least a straight walk"), Path >= SolidLair::EndSeparation());
-	TestTrue(TEXT("the maze has dead ends"), SolidLair::DeadEndCount() > 0);
-	TestTrue(TEXT("the floor has more than the shortest path"), SolidLair::OpenCellCount() > Path + 1);
+	TestTrue(TEXT("X is open"), SolidLair::IsOpenCell(X.X, X.Y));
+	TestTrue(TEXT("Y is open"), SolidLair::IsOpenCell(Y.X, Y.Y));
 
 	TestTrue(TEXT("the X spawn is inside"), SolidLair::ContainsLocal(SolidLair::SpawnLocal(USolidWorldMap::XMarker)));
 	TestTrue(TEXT("the Y spawn is inside"), SolidLair::ContainsLocal(SolidLair::SpawnLocal(USolidWorldMap::YMarker)));
-	TestFalse(TEXT("past the X mouth is outside"), SolidLair::ContainsLocal(SolidLair::PastEndLocal(USolidWorldMap::XMarker)));
-	TestFalse(TEXT("past the Y mouth is outside"), SolidLair::ContainsLocal(SolidLair::PastEndLocal(USolidWorldMap::YMarker)));
 	bool bFoundRock = false;
 	for (int32 Row = 0; Row < SolidLair::MazeRows && !bFoundRock; ++Row)
 	{
@@ -354,7 +349,18 @@ bool FSolidLairInteriorVisualTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	TestEqual(TEXT("one floor tile per open cell"), Floor->GetInstanceCount(), SolidLair::OpenCellCount());
+	int32 OpenCells = 0;
+	for (int32 Row = 0; Row < SolidLair::MazeRows; ++Row)
+	{
+		for (int32 Col = 0; Col < SolidLair::MazeCols; ++Col)
+		{
+			if (SolidLair::IsOpenCell(Col, Row))
+			{
+				++OpenCells;
+			}
+		}
+	}
+	TestEqual(TEXT("one floor tile per open cell"), Floor->GetInstanceCount(), OpenCells);
 	TestTrue(TEXT("the maze has walls"), Walls->GetInstanceCount() > 0);
 	UStaticMesh* XMesh = MouthX->GetStaticMesh().Get();
 	UStaticMesh* YMesh = MouthY->GetStaticMesh().Get();

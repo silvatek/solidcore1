@@ -61,6 +61,9 @@ public:
 	 */
 	void EnsureStartTownRelocate() { TryRelocateFocusToStartTown(); }
 
+	/** Move the focus pawn once to the WorldMap location-0 centroid. */
+	void TryRelocateFocusToStartTown();
+
 	/** Apply the same XY delta (and terrain Z snap) to every companion in the world. */
 	void RelocateCompanionsByDelta(const FVector& DeltaXY);
 
@@ -237,8 +240,6 @@ protected:
 	void CollectBiomeMaterials(TMap<ESolidBiome, UMaterialInterface*>& OutMaterials) const;
 	float SampleHeightAtWorld(const FVector& WorldLocation) const;
 	void TrySnapFocusToTerrain(AActor* Focus);
-	/** Move the focus pawn once to the WorldMap location-0 centroid. */
-	void TryRelocateFocusToStartTown();
 	/** After the player is at their start position, center fog on that pawn. */
 	void CenterExplorationFogOnFocus();
 	void DisableLandscapeActorsOnce();

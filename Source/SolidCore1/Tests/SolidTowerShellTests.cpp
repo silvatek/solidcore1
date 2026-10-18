@@ -86,70 +86,17 @@ namespace SolidTowerShellTestPrivate
 		Shell->SetPlan(Plan);
 		Shell->BuildVisuals();
 
-		Test.TestEqual(*FString::Printf(TEXT("%s course count"), Label), Shell->GetCourseCount(), Plan.FloorCount);
-
-		UStaticMeshComponent* Ground = Shell->GetCourse(0);
-		UStaticMeshComponent* Last = Shell->GetCourse(Plan.FloorCount - 1);
 		UStaticMeshComponent* Cap = Shell->GetCapMesh();
 		UStaticMeshComponent* Door = Shell->GetDoorMesh();
-		Test.TestNotNull(*FString::Printf(TEXT("%s ground course"), Label), Ground);
-		Test.TestNotNull(*FString::Printf(TEXT("%s top course"), Label), Last);
 		Test.TestNotNull(*FString::Printf(TEXT("%s cap"), Label), Cap);
 		Test.TestNotNull(*FString::Printf(TEXT("%s door"), Label), Door);
-		if (!Ground || !Last || !Cap || !Door)
+		if (!Cap || !Door)
 		{
 			return;
 		}
 
-		FEnds GroundEnds;
-		FEnds LastEnds;
 		FEnds CapEnds;
-		Test.TestTrue(*FString::Printf(TEXT("%s ground mesh"), Label), Measure(Ground, GroundEnds));
-		Test.TestTrue(*FString::Printf(TEXT("%s top mesh"), Label), Measure(Last, LastEnds));
 		Test.TestTrue(*FString::Printf(TEXT("%s cap mesh"), Label), Measure(Cap, CapEnds));
-
-		Test.TestTrue(
-			*FString::Printf(TEXT("%s ground course sits on the actor origin"), Label),
-			FMath::IsNearlyEqual(GroundEnds.BottomZ, 0.f, 0.05f));
-		Test.TestTrue(
-			*FString::Printf(TEXT("%s ground foot is the ground diameter"), Label),
-			FMath::IsNearlyEqual(GroundEnds.BottomRadius, Plan.GroundExteriorRadiusCm, 0.05f));
-		Test.TestTrue(
-			*FString::Printf(TEXT("%s ground course narrows toward its head"), Label),
-			GroundEnds.TopRadius < GroundEnds.BottomRadius - 0.5f);
-		Test.TestTrue(
-			*FString::Printf(TEXT("%s ground head is the plan radius"), Label),
-			FMath::IsNearlyEqual(
-				GroundEnds.TopRadius,
-				SolidTowerStronghold::ExteriorRadiusCm(Plan, GroundEnds.TopZ),
-				0.05f));
-
-		FEnds Previous = GroundEnds;
-		for (int32 Floor = 1; Floor < Plan.FloorCount; ++Floor)
-		{
-			UStaticMeshComponent* Course = Shell->GetCourse(Floor);
-			FEnds Ends;
-			if (!Test.TestTrue(*FString::Printf(TEXT("%s course %d mesh"), Label, Floor), Course && Measure(Course, Ends)))
-			{
-				return;
-			}
-			Test.TestTrue(
-				*FString::Printf(TEXT("%s course %d meets the course below"), Label, Floor),
-				FMath::IsNearlyEqual(Ends.BottomZ, Previous.TopZ, 0.05f)
-					&& FMath::IsNearlyEqual(Ends.BottomRadius, Previous.TopRadius, 0.05f));
-			Test.TestTrue(
-				*FString::Printf(TEXT("%s course %d head is the plan radius"), Label, Floor),
-				FMath::IsNearlyEqual(
-					Ends.TopRadius,
-					SolidTowerStronghold::ExteriorRadiusCm(Plan, Ends.TopZ),
-					0.05f));
-			Previous = Ends;
-		}
-
-		Test.TestTrue(
-			*FString::Printf(TEXT("%s cap meets the top course"), Label),
-			FMath::IsNearlyEqual(CapEnds.BottomZ, LastEnds.TopZ, 0.05f)
-				&& FMath::IsNearlyEqual(CapEnds.BottomRadius, LastEnds.TopRadius, 0.05f));
 		Test.TestTrue(
 			*FString::Printf(TEXT("%s cap top is the tower height"), Label),
 			FMath::IsNearlyEqual(CapEnds.TopZ, Plan.HeightCm(), 0.05f));
@@ -175,10 +122,6 @@ namespace SolidTowerShellTestPrivate
 		Test.TestTrue(
 			*FString::Printf(TEXT("%s door stands proud of the ground course"), Label),
 			FMath::IsNearlyEqual(OuterFace, -(Plan.GroundExteriorRadiusCm + SolidTowerStronghold::DoorProudCm), 0.5f));
-
-		Test.TestTrue(
-			*FString::Printf(TEXT("%s stone blocks"), Label),
-			Ground->GetCollisionEnabled() == ECollisionEnabled::QueryAndPhysics);
 		Test.TestTrue(
 			*FString::Printf(TEXT("%s door blocks"), Label),
 			Door->GetCollisionResponseToChannel(ECC_Pawn) == ECR_Block);

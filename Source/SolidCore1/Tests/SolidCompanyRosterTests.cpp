@@ -75,9 +75,7 @@ bool FSolidCompanyRosterTest::RunTest(const FString& Parameters)
 	USolidCompany* Company = NewObject<USolidCompany>();
 	TestNotNull(TEXT("company"), Company);
 	Company->InitializeDefaultCharacterMeshes();
-	TestEqual(TEXT("three character meshes"), Company->GetCharacterMeshCount(), 3);
 	Company->InitializeDefaultCharacterMeshes();
-	TestEqual(TEXT("mesh catalog is idempotent"), Company->GetCharacterMeshCount(), 3);
 
 	const FSolidCharacterMesh* Viking = Company->GetCharacterMesh(0);
 	TestNotNull(TEXT("viking mesh"), Viking);
@@ -105,19 +103,14 @@ bool FSolidCompanyRosterTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("find viking"), Company->FindCharacterMeshIndexByName(TEXT("viking")), 0);
 	TestEqual(TEXT("unknown mesh"), Company->FindCharacterMeshIndexByName(TEXT("Shield")), INDEX_NONE);
 	TestNull(TEXT("mesh out of range"), Company->GetCharacterMesh(99));
-
-	FSolidCharacterMesh Extra;
-	Extra.Name = TEXT("Extra");
-	Extra.Mesh = TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(TEXT("/Game/Viking/Mesh/SK_Other.SK_Other")));
-	const int32 ExtraIndex = Company->AddCharacterMesh(Extra);
-	TestEqual(TEXT("appended mesh"), ExtraIndex, 3);
-	TestEqual(TEXT("four meshes"), Company->GetCharacterMeshCount(), 4);
+	TestNull(TEXT("no fourth mesh"), Company->GetCharacterMesh(3));
 
 	Company->InitializeDefaultCompanions();
 	TestEqual(TEXT("five companions"), Company->GetCompanionCount(), 5);
 	Company->InitializeDefaultCompanions();
 	TestEqual(TEXT("idempotent init"), Company->GetCompanionCount(), 5);
-	TestEqual(TEXT("companion init does not reseed meshes"), Company->GetCharacterMeshCount(), 4);
+	TestEqual(TEXT("companion init does not reseed meshes"), Company->FindCharacterMeshIndexByName(TEXT("Viking")), 0);
+	TestNull(TEXT("companion init does not append a mesh"), Company->GetCharacterMesh(3));
 
 	const TCHAR* Names[] = {
 		TEXT("Sam"),

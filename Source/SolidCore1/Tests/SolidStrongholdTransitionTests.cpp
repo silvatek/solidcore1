@@ -152,10 +152,6 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 			SolidStrongholdTransition::IsBuilt(FSolidStronghold{ ESolidStrongholdType::Fortress, Size }));
 	}
 
-	TestFalse(TEXT("an immediate move shows no bar"), SolidStrongholdTransition::ShowsProgress(0.0));
-	TestFalse(TEXT("a short move shows no bar"), SolidStrongholdTransition::ShowsProgress(0.249));
-	TestTrue(TEXT("a noticeable move would show a bar"), SolidStrongholdTransition::ShowsProgress(SolidStrongholdTransition::NoticeableSeconds));
-
 	FGameState State;
 	State.bCaveEnabled = true;
 	TestTrue(TEXT("the open stronghold still accepts enter"), SolidStrongholdTransition::CompanyCaveAcceptsEnter(State));

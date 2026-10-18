@@ -27,7 +27,6 @@ bool FSolidDungeonLevelTravelTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("dungeon option with a trailer"), SolidDungeonLevel::RequestsDungeon(TEXT("?SolidLevel=Dungeon?listen")));
 
 	TestTrue(TEXT("captain spawn is inside the room"), SolidDungeonLevel::ContainsLocal(SolidDungeonLevel::CaptainSpawnLocal()));
-	TestFalse(TEXT("past the mouth is outside"), SolidDungeonLevel::ContainsLocal(SolidDungeonLevel::PastMouthLocal()));
 	const FVector2D Notch = SolidStrongholdGrid::HexCenter(-2, 1, SolidStrongholdGrid::MeagreOrigin());
 	TestFalse(TEXT("the open notch is outside"), SolidDungeonLevel::ContainsLocal(FVector(Notch.X, Notch.Y, 100.f)));
 	TestTrue(TEXT("the doorway is wider than the captain"), SolidDungeonLevel::DoorwayWidthCm > 110.f);

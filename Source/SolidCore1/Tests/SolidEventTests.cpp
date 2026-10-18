@@ -468,8 +468,9 @@ bool FSolidEventsRequiresTest::RunTest(const FString& Parameters)
 	{
 		const SolidEvents::FEvent& Event = SolidEvents::Definitions[Index];
 		const FString Id = Event.Id ? FString(Event.Id) : FString();
-		TestEqual(TEXT("id is eight digits"), Id.Len(), SolidEvents::EventIdLength);
-		bool bHex = Id.Len() == SolidEvents::EventIdLength;
+		const int32 IdLength = FCString::Strlen(SolidEvents::IdEnterIglin);
+		TestEqual(TEXT("id is eight digits"), Id.Len(), IdLength);
+		bool bHex = Id.Len() == IdLength;
 		for (const TCHAR Char : Id)
 		{
 			bHex = bHex && FChar::IsHexDigit(Char);

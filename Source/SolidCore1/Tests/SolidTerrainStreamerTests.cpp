@@ -74,7 +74,7 @@ bool FSolidStreamerStartTownRelocateFlagTest::RunTest(const FString& Parameters)
 	Streamer->FocusActor = Focus;
 
 	// Relocate only — do not Tick/UpdateStreaming (chunk mesh builds spam Error under NullRHI).
-	Streamer->EnsureStartTownRelocate();
+	Streamer->TryRelocateFocusToStartTown();
 
 	TestTrue(TEXT("relocate attempted once focus exists"), Streamer->HasAttemptedStartTownRelocate());
 

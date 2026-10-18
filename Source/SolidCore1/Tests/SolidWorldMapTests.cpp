@@ -23,8 +23,10 @@ bool FSolidWorldMapLoadDefaultTest::RunTest(const FString& Parameters)
 	USolidWorldMap* Map = NewObject<USolidWorldMap>();
 	TestTrue(TEXT("LoadDefault succeeds"), Map->LoadDefault());
 	TestTrue(TEXT("reports loaded"), Map->IsLoaded());
-	TestTrue(TEXT("has starting town Z cells"), Map->HasStartTown());
-	TestTrue(TEXT("start town cell count > 0"), Map->GetStartTownCellCount() > 0);
+	FVector2D StartXY = FVector2D::ZeroVector;
+	TestTrue(
+		TEXT("has starting town Z cells"),
+		Map->GetStartTownWorldXY(FVector2D(-100.f, -100.f), FVector2D(100.f, 100.f), StartXY));
 
 	// Row 0 is all sea (north edge of the file).
 	TestEqual(
@@ -100,7 +102,10 @@ bool FSolidWorldMapParseKeyAndSampleTest::RunTest(const FString& Parameters)
 
 	USolidWorldMap* Map = NewObject<USolidWorldMap>();
 	TestTrue(TEXT("LoadFromString"), Map->LoadFromString(Text));
-	TestEqual(TEXT("one start cell"), Map->GetStartTownCellCount(), 1);
+	FVector2D StartXY = FVector2D::ZeroVector;
+	TestTrue(
+		TEXT("one start cell"),
+		Map->GetStartTownWorldXY(FVector2D(-6400.f, -6400.f), FVector2D(6400.f, 6400.f), StartXY));
 	TestEqual(
 		TEXT("the named town is Town"),
 		static_cast<uint8>(Map->GetBiomeAtCell(USolidWorldMap::MapWidth / 2, 0)),
@@ -247,7 +252,6 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 {
 	USolidWorldMap* Map = NewObject<USolidWorldMap>();
 	TestTrue(TEXT("LoadDefault"), Map->LoadDefault());
-	TestTrue(TEXT("the shipped towns are on the map"), Map->GetLocationCount() >= 6);
 
 	FSolidWorldLocation Iglin;
 	TestTrue(TEXT("location 0"), Map->FindLocation(0, Iglin));
@@ -354,8 +358,6 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 		}
 	}
 
-	TestEqual(TEXT("start is only location 0"), Map->GetStartTownCellCount(), Iglin.Cells.Num());
-
 	const FSolidWorldLocation* Named[] = { &Iglin, &Relion, &Kanfold, &Visolar, &Jethan, &Rathen };
 	for (const FSolidWorldLocation* Loc : Named)
 	{
@@ -421,7 +423,6 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 
 	USolidWorldMap* Synthetic = NewObject<USolidWorldMap>();
 	TestTrue(TEXT("synthetic loads named towns"), Synthetic->LoadFromString(Text));
-	TestEqual(TEXT("start is the named Iglin cell"), Synthetic->GetStartTownCellCount(), 1);
 	TestEqual(
 		TEXT("Iglin cell is Town"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(4, 2)),
@@ -587,7 +588,10 @@ bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 			static_cast<uint8>(Map->GetBiomeAtCell(Cell[0], Cell[1])),
 			static_cast<uint8>(ESolidBiome::Grassland));
 	}
-	TestFalse(TEXT("digits are not the start"), Map->HasStartTown());
+	FVector2D DigitStart = FVector2D::ZeroVector;
+	TestFalse(
+		TEXT("digits are not the start"),
+		Map->GetStartTownWorldXY(FVector2D(-100.f, -100.f), FVector2D(100.f, 100.f), DigitStart));
 	FSolidWorldLocation Outpost;
 	TestFalse(TEXT("a numbered key line is not a location"), Map->FindLocation(15, Outpost));
 	FSolidWorldLocation IglinKey;
@@ -1059,7 +1063,10 @@ bool FSolidWorldMapXYMarkerTest::RunTest(const FString& Parameters)
 
 	const FLinearColor Grass = Map->GetBiomeColor(ESolidBiome::Grassland);
 	TestTrue(TEXT("the X key leaves grass green"), Grass.G > Grass.R && Grass.G > Grass.B);
-	TestFalse(TEXT("the map still has no start from X or Y"), Map->HasStartTown());
+	FVector2D LetterStart = FVector2D::ZeroVector;
+	TestFalse(
+		TEXT("the map still has no start from X or Y"),
+		Map->GetStartTownWorldXY(FVector2D(-100.f, -100.f), FVector2D(100.f, 100.f), LetterStart));
 
 	FSolidStronghold Stronghold;
 	TestFalse(TEXT("X is not a stronghold"), Map->StrongholdAtCell(XCol, MarkerRow, Stronghold));
@@ -1260,8 +1267,10 @@ bool FSolidWorldMapBangLocationTest::RunTest(const FString& Parameters)
 		Map->GetMarkerAtCell(IglinCol, IglinRow),
 		USolidWorldMap::LocationMarker);
 	TestEqual(TEXT("top-left is location 0"), Map->GetLocationIdAtCell(IglinCol, IglinRow), 0);
-	TestTrue(TEXT("location 0 is the start"), Map->HasStartTown());
-	TestEqual(TEXT("one start cell"), Map->GetStartTownCellCount(), 1);
+	FVector2D StartXY = FVector2D::ZeroVector;
+	TestTrue(
+		TEXT("location 0 is the start"),
+		Map->GetStartTownWorldXY(FVector2D(-100.f, -100.f), FVector2D(100.f, 100.f), StartXY));
 
 	FSolidWorldLocation Iglin;
 	TestTrue(TEXT("location 0"), Map->FindLocation(0, Iglin));

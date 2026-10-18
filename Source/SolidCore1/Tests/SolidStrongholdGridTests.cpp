@@ -39,8 +39,7 @@ bool FSolidStrongholdGridMeasureTest::RunTest(const FString& Parameters)
 
 	TArray<SolidStrongholdGrid::FCell> Cells;
 	SolidStrongholdGrid::MeagreCells(Cells);
-	TestEqual(TEXT("the Meagre floor is fourteen hexes"), Cells.Num(), SolidStrongholdGrid::MeagreCellCount);
-	TestEqual(TEXT("fourteen cells"), SolidStrongholdGrid::MeagreCellCount, 14);
+	TestEqual(TEXT("the Meagre floor is fourteen hexes"), Cells.Num(), 14);
 
 	TArray<SolidStrongholdGrid::FHex> Hexes;
 	SolidStrongholdGrid::CollectMeagreHexes(Hexes);

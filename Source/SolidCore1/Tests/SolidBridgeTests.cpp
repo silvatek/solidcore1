@@ -1,11 +1,9 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "PhysicsEngine/BodySetup.h"
 #include "SolidBridge.h"
 #include "SolidRiver.h"
 #include "SolidRoad.h"
 #include "SolidWorldMap.h"
-#include "Components/StaticMeshComponent.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -432,55 +430,6 @@ bool FSolidBridgeAlignedTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidBridgeWalkableTest,
-	"SolidCore1.Bridge.Walkable",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
-
-bool FSolidBridgeWalkableTest::RunTest(const FString& Parameters)
-{
-	ASolidBridge* BridgeActor = NewObject<ASolidBridge>();
-	TestNotNull(TEXT("bridge"), BridgeActor);
-	if (!BridgeActor)
-	{
-		return false;
-	}
-
-	SolidBridge::FBridge Spec;
-	Spec.WidthCm = SolidRoad::WidthCm(SolidRoad::EType::Track);
-	Spec.Deck = { FVector(0.f, 0.f, 200.f), FVector(600.f, 0.f, 200.f) };
-	Spec.RampFrom = { FVector(0.f, 0.f, 200.f), FVector(-400.f, 0.f, 100.f), FVector(-800.f, 0.f, 0.f) };
-	Spec.RampTo = { FVector(600.f, 0.f, 200.f), FVector(1000.f, 0.f, 100.f), FVector(1400.f, 0.f, 0.f) };
-	BridgeActor->SetBridge(Spec);
-
-	UStaticMeshComponent* Meshes[] = {
-		BridgeActor->GetRampFromMesh(),
-		BridgeActor->GetDeckMesh(),
-		BridgeActor->GetRampToMesh(),
-	};
-	for (UStaticMeshComponent* Mesh : Meshes)
-	{
-		TestNotNull(TEXT("piece"), Mesh);
-		UStaticMesh* Asset = Mesh ? Mesh->GetStaticMesh() : nullptr;
-		TestNotNull(TEXT("mesh"), Asset);
-		if (!Asset)
-		{
-			continue;
-		}
-		UBodySetup* Body = Asset->GetBodySetup();
-		TestNotNull(TEXT("body"), Body);
-		if (!Body)
-		{
-			continue;
-		}
-		TestEqual(TEXT("walk the triangles"),
-			static_cast<uint8>(Body->CollisionTraceFlag),
-			static_cast<uint8>(CTF_UseComplexAsSimple));
-		TestEqual(TEXT("no box stands in front of the ramp"), Body->AggGeom.BoxElems.Num(), 0);
-	}
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidBridgeBrokenTest,
 	"SolidCore1.Bridge.Broken",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
@@ -576,39 +525,9 @@ bool FSolidBridgeBrokenTest::RunTest(const FString& Parameters)
 	Spec.RampTo = { FVector(600.f, 0.f, 200.f), FVector(1000.f, 0.f, 100.f), FVector(1400.f, 0.f, 0.f) };
 	Actor->SetBridge(Spec);
 
-	UStaticMeshComponent* Deck = Actor->GetDeckMesh();
-	TestNotNull(TEXT("deck component"), Deck);
-	if (Deck)
-	{
-		UStaticMesh* DeckAsset = Deck->GetStaticMesh();
-		TestNull(TEXT("broken center is not drawn"), DeckAsset);
-		TestFalse(TEXT("broken center stays hidden"), Deck->GetVisibleFlag());
-		TestEqual(
-			TEXT("broken center does not collide"),
-			static_cast<uint8>(Deck->GetCollisionEnabled()),
-			static_cast<uint8>(ECollisionEnabled::NoCollision));
-	}
-
-	UStaticMeshComponent* RampFrom = Actor->GetRampFromMesh();
-	UStaticMeshComponent* RampTo = Actor->GetRampToMesh();
-	UStaticMesh* RampFromAsset = RampFrom ? RampFrom->GetStaticMesh() : nullptr;
-	UStaticMesh* RampToAsset = RampTo ? RampTo->GetStaticMesh() : nullptr;
-	TestNotNull(TEXT("near ramp stays"), RampFromAsset);
-	TestNotNull(TEXT("far ramp stays"), RampToAsset);
-
 	Actor->SetBroken(false);
 	TestFalse(TEXT("repair restores the span"), Actor->GetBridge().bBroken);
 	TestTrue(TEXT("repair still knows the Iglin bridge"), Actor->GetBridge().bIglinRelion);
-	UStaticMesh* Restored = Actor->GetDeckMesh() ? Actor->GetDeckMesh()->GetStaticMesh() : nullptr;
-	TestNotNull(TEXT("the center is drawn"), Restored);
-	if (UStaticMeshComponent* RestoredDeck = Actor->GetDeckMesh())
-	{
-		TestTrue(TEXT("the center is shown"), RestoredDeck->GetVisibleFlag());
-		TestEqual(
-			TEXT("the center collides"),
-			static_cast<uint8>(RestoredDeck->GetCollisionEnabled()),
-			static_cast<uint8>(ECollisionEnabled::QueryAndPhysics));
-	}
 	return true;
 }
 

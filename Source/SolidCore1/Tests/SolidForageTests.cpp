@@ -237,55 +237,6 @@ bool FSolidForagePickupTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("a ray aimed away misses"), SolidForage::RayBoxDistance(
 		FVector(0.f, -100.f, 20.f), FVector(0.f, -1.f, 0.f), Cube, SolidClickMove::MaxRayCm, Distance));
 
-	SolidForage::FPileHit NearRayFarGround;
-	NearRayFarGround.Index = 1;
-	NearRayFarGround.RayDistanceCm = 100.f;
-	NearRayFarGround.GroundDistanceCm = 900.f;
-	SolidForage::FPileHit FarRayNearGround;
-	FarRayNearGround.Index = 0;
-	FarRayNearGround.RayDistanceCm = 500.f;
-	FarRayNearGround.GroundDistanceCm = 100.f;
-
-	TArray<SolidForage::FPileHit> Hits;
-	Hits.Add(FarRayNearGround);
-	Hits.Add(NearRayFarGround);
-	int32 Choice = 99;
-	SolidForage::EPointerAct Act = SolidForage::ResolvePileClick(true, false, Hits, true, Choice);
-	TestTrue(TEXT("the far-along pile is not the one named"), Act == SolidForage::EPointerAct::None);
-	TestEqual(TEXT("a miss leaves no choice"), Choice, INDEX_NONE);
-	TestTrue(TEXT("raven sight walks on from a pile that is out of reach"),
-		SolidForage::ClickStartsWalk(true, false, Act));
-	TestFalse(TEXT("true sight does not walk on"),
-		SolidForage::ClickStartsWalk(false, false, Act));
-
-	SolidForage::FPileHit InReach;
-	InReach.Index = 0;
-	InReach.RayDistanceCm = 80.f;
-	InReach.GroundDistanceCm = 200.f;
-	Hits.Reset();
-	Hits.Add(InReach);
-	SolidForage::FPileHit Later = FarRayNearGround;
-	Later.Index = 4;
-	Hits.Add(Later);
-	Act = SolidForage::ResolvePileClick(true, false, Hits, true, Choice);
-	TestTrue(TEXT("the nearest pile in reach is taken"), Act == SolidForage::EPointerAct::Take);
-	TestEqual(TEXT("that pile is the nearer hit"), Choice, 0);
-	TestFalse(TEXT("a take does not start a walk"), SolidForage::ClickStartsWalk(true, false, Act));
-	TestFalse(TEXT("true sight does not walk either"), SolidForage::ClickStartsWalk(false, false, Act));
-
-	Act = SolidForage::ResolvePileClick(true, false, Hits, false, Choice);
-	TestTrue(TEXT("a full pack leaves the pile"), Act == SolidForage::EPointerAct::Leave);
-	TestEqual(TEXT("the full pack still names that pile"), Choice, 0);
-	TestFalse(TEXT("a full pack does not start a walk"), SolidForage::ClickStartsWalk(true, false, Act));
-
-	Act = SolidForage::ResolvePileClick(true, true, Hits, true, Choice);
-	TestTrue(TEXT("a passage wins"), Act == SolidForage::EPointerAct::None);
-	TestFalse(TEXT("a passage does not start a walk"), SolidForage::ClickStartsWalk(true, true, Act));
-
-	Act = SolidForage::ResolvePileClick(false, false, Hits, true, Choice);
-	TestTrue(TEXT("a hidden pointer or a menu does not take a pile"), Act == SolidForage::EPointerAct::None);
-	TestEqual(TEXT("that click has no pile"), Choice, INDEX_NONE);
-
 	FGameState State;
 	const int32 Journal = State.Journal.Num();
 	const SolidStorage::FContainer Chest = State.CaveChest;

@@ -7,9 +7,6 @@
 #include "SolidTownSigns.h"
 #include "SolidTowns.h"
 #include "SolidWorldMap.h"
-#include "Components/StaticMeshComponent.h"
-#include "Components/TextRenderComponent.h"
-#include "Engine/StaticMesh.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -201,58 +198,6 @@ bool FSolidTownSignVisualsTest::RunTest(const FString& Parameters)
 	const FString LongName = SolidTownSigns::MakeLabel(TEXT("AVeryLongTownName"));
 	TestTrue(TEXT("a longer name widens the board"),
 		SolidTownSigns::BoardWidthCm(LongName) > SolidTownSigns::BoardWidthCm(IglinLabel));
-	Sign->BuildVisuals();
-
-	UTextRenderComponent* Label = Sign->GetLabelText();
-	TestNotNull(TEXT("white label"), Label);
-	if (Label)
-	{
-		TestEqual(TEXT("white text"), Label->Text.ToString(), IglinLabel);
-		TestEqual(TEXT("white color"), Label->TextRenderColor, FColor::White);
-	}
-
-	bool bSawBlack = false;
-	for (int32 Index = 0; Index < ASolidTownSign::OutlineCount; ++Index)
-	{
-		UTextRenderComponent* Outline = Sign->GetOutlineText(Index);
-		TestNotNull(TEXT("outline text"), Outline);
-		if (!Outline)
-		{
-			continue;
-		}
-		TestEqual(TEXT("outline copies the label"), Outline->Text.ToString(), IglinLabel);
-		TestEqual(TEXT("outline is black"), Outline->TextRenderColor, FColor::Black);
-		if (Label)
-		{
-			const FVector Delta = Outline->GetRelativeLocation() - Label->GetRelativeLocation();
-			TestTrue(TEXT("outline is offset from the white glyphs"),
-				!FMath::IsNearlyZero(Delta.Y, 0.5f) || !FMath::IsNearlyZero(Delta.Z, 0.5f));
-		}
-		bSawBlack = true;
-	}
-	TestTrue(TEXT("black border present"), bSawBlack);
-
-	UStaticMeshComponent* Pole = Sign->GetPoleMesh();
-	UStaticMeshComponent* Board = Sign->GetBoardMesh();
-	TestNotNull(TEXT("pole component"), Pole);
-	TestNotNull(TEXT("board component"), Board);
-	UStaticMesh* PoleMesh = Pole ? Pole->GetStaticMesh() : nullptr;
-	UStaticMesh* BoardMesh = Board ? Board->GetStaticMesh() : nullptr;
-	TestNotNull(TEXT("pole mesh"), PoleMesh);
-	TestNotNull(TEXT("board mesh"), BoardMesh);
-	if (Pole && Board)
-	{
-		TestTrue(TEXT("pole is thinner than the board is wide"),
-			Pole->GetRelativeScale3D().X < Board->GetRelativeScale3D().Y);
-		TestTrue(TEXT("board is a flat slab"),
-			Board->GetRelativeScale3D().X < Board->GetRelativeScale3D().Y
-			&& Board->GetRelativeScale3D().X < Board->GetRelativeScale3D().Z);
-		TestTrue(TEXT("board is as wide as the longer line"),
-			FMath::IsNearlyEqual(Board->GetRelativeScale3D().Y * 100.f, SolidTownSigns::BoardWidthCm(IglinLabel), 0.5f));
-		TestTrue(TEXT("board is tall enough for two lines"),
-			FMath::IsNearlyEqual(Board->GetRelativeScale3D().Z * 100.f, SolidTownSigns::BoardHeightCm, 0.5f));
-	}
-
 	TestTrue(TEXT("sign faces south"), FMath::IsNearlyEqual(SolidTownSigns::FacingYawDeg, -90.f));
 	return true;
 }

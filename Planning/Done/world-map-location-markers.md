@@ -1,6 +1,6 @@
 # World map location markers
 
-Status: New
+Status: Done
 
 ## Story
 

@@ -30,7 +30,6 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Pathfinding over bridges](Planning/pathfinding-over-bridges.md)
 - [Foraging](Planning/foraging.md)
 - [Rough stones](Planning/rough-stones.md)
-- [World map location markers](Planning/world-map-location-markers.md)
 - [Party builder drag and drop](Planning/party-builder-drag-and-drop.md)
 - [Open the party builder on leaving a stronghold](Planning/party-builder-on-stronghold-exit.md)
 - [Stronghold markers select size only](Planning/stronghold-markers-size-only.md)
@@ -79,6 +78,7 @@ Shipped stories live in [`Planning/Done`](Planning/Done).
 - [Editor build](Planning/Done/editor-build.md)
 - [Stronghold transition](Planning/Done/stronghold-transition.md)
 - [Remove den from the code](Planning/Done/remove-den-from-the-code.md)
+- [World map location markers](Planning/Done/world-map-location-markers.md)
 
 ## Controls (runtime defaults)
 

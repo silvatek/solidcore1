@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0460")
+#define SOLID_BUILD_ID TEXT("SC1-0461")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Remove C++ symbols that only their own tests called.")
+#define SOLID_BUILD_NOTE TEXT("Driven from the village enables the Iglin tunnels.")
 #endif

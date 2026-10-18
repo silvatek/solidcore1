@@ -173,7 +173,7 @@ public:
 	/** Closing the monster message opens the starting cave. It starts closed. */
 	bool IsCaveEnabled() const { return Configuration.bCaveEnabled; }
 
-	/** Driven from the village opens the Iglin tunnel mouths. They start shut. */
+	/** An EnableLair change opens the Iglin tunnel mouths. They start shut. */
 	bool AreTunnelsOpen() const;
 
 	/** The captain closed a shown message. Fires MessageClosed for that id. */

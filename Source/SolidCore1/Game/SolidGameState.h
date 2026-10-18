@@ -29,6 +29,12 @@ struct FGameState
 	bool bIglinBridgeRepaired = false;
 	/** Closing the monster message opens the starting cave. It starts closed. */
 	bool bCaveEnabled = false;
+	/**
+	 * Lairs an EnableLair change has opened, by name.
+	 * A new game has none. The change names the lair. The event id does not.
+	 */
+	const TCHAR* EnabledLairs[SolidEvents::MaxEnabledLairs] = {};
+	int32 EnabledLairCount = 0;
 	/** Numbered cell the captain is standing on, or INDEX_NONE. */
 	int32 OccupiedTown = INDEX_NONE;
 	bool bFired[SolidEvents::MaxEvents] = {};
@@ -89,6 +95,24 @@ namespace SolidEvents
 	{
 		const int32 Index = static_cast<int32>(Size);
 		return Index >= 0 && Index < SolidStronghold::SizeCount && State.bStrongholdSizeUnlocked[Index];
+	}
+
+	/** True when an EnableLair change has named this lair. */
+	inline bool IsLairEnabled(const FGameState& State, const TCHAR* Name)
+	{
+		if (!Name || !Name[0])
+		{
+			return false;
+		}
+		const int32 Count = State.EnabledLairCount < MaxEnabledLairs ? State.EnabledLairCount : MaxEnabledLairs;
+		for (int32 Index = 0; Index < Count; ++Index)
+		{
+			if (State.EnabledLairs[Index] && FCString::Strcmp(State.EnabledLairs[Index], Name) == 0)
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 	/**

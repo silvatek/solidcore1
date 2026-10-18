@@ -106,6 +106,16 @@ void ApplyChange(FGameState& State, const FChange& Change, FResult& Result)
 		}
 		break;
 	}
+	case EChange::EnableLair:
+		if (Change.LairName && Change.LairName[0] && !IsLairEnabled(State, Change.LairName))
+		{
+			if (State.EnabledLairCount < MaxEnabledLairs)
+			{
+				State.EnabledLairs[State.EnabledLairCount] = Change.LairName;
+				++State.EnabledLairCount;
+			}
+		}
+		break;
 	default:
 		break;
 	}

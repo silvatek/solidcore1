@@ -1,6 +1,6 @@
 # Enable a lair from an event
 
-Status: Ready
+Status: Done
 
 ## Story
 

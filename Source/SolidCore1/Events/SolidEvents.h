@@ -23,12 +23,13 @@ namespace SolidEvents
 			.EnableCave()
 			.ClearInventory()
 			.EnableStrongholdSize(ESolidStrongholdSize::Meagre),
-		// Opens the Iglin tunnel mouths. It does not send the captain inside.
+		// It does not send the captain inside.
 		// The portal to the grass north of the X mouth records this event without waiting for the close.
 		EnterTown(IdDrivenFromVillage, TEXT("Driven from the village"), SolidTowns::Iglin, ACT_1)
 			.Require(IdKilledByMonsters)
 			.DisplayMessage(SolidMessages::IdDrivenFromVillage)
-			.SetPlayerTitle(TitleOutcast),
+			.SetPlayerTitle(TitleOutcast)
+			.EnableLair(TEXT("Iglin tunnels")),
 		EnterTown(IdEnterRelion, TEXT("Enter Relion"), SolidTowns::Relion, ACT_2)
 			.Require(IdEnterIglin)
 			.EnableSight(ESolidSight::Raven)

@@ -187,8 +187,7 @@ namespace SolidLair
 	/** True when a click on a lair mouth may enter. */
 	inline bool TunnelsOpen(const FGameState& State)
 	{
-		const int32 Index = SolidEvents::FindIndexById(SolidEvents::IdDrivenFromVillage);
-		return Index != INDEX_NONE && Index < SolidEvents::MaxEvents && State.bFired[Index];
+		return SolidEvents::IsLairEnabled(State, IglinTunnels.Name);
 	}
 
 	inline FString EnterOptions(const TCHAR End)

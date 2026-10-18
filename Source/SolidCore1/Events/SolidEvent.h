@@ -15,6 +15,8 @@ namespace SolidEvents
 {
 	/** Sight, squad size, and title, plus one unlock for every stronghold size. */
 	inline constexpr int32 MaxChangesPerEvent = 3 + SolidStronghold::SizeCount;
+	/** Lair names an EnableLair change can record. One lair ships. */
+	inline constexpr int32 MaxEnabledLairs = 4;
 	inline constexpr int32 MaxRequiresPerEvent = 4;
 	inline constexpr int32 MaxEvents = 16;
 
@@ -61,6 +63,8 @@ namespace SolidEvents
 		ClearInventory,
 		/** Enable one stronghold size. */
 		EnableStrongholdSize,
+		/** Open the lair named by LairName. */
+		EnableLair,
 	};
 
 	/** Nameplate before Enter Iglin. Driven from the village sets this again. */
@@ -81,6 +85,8 @@ namespace SolidEvents
 		const TCHAR* MessageId = nullptr;
 		/** Size for an EnableStrongholdSize change. */
 		ESolidStrongholdSize StrongholdSize = ESolidStrongholdSize::Meagre;
+		/** Lair name for an EnableLair change. */
+		const TCHAR* LairName = nullptr;
 	};
 
 	/**
@@ -149,6 +155,14 @@ namespace SolidEvents
 			Change.StrongholdSize = Size;
 			return Change;
 		}
+
+		inline constexpr FChange EnableLair(const TCHAR* Name)
+		{
+			FChange Change;
+			Change.Kind = EChange::EnableLair;
+			Change.LairName = Name;
+			return Change;
+		}
 	}
 
 	struct FEvent
@@ -206,6 +220,11 @@ namespace SolidEvents
 		constexpr FEvent EnableStrongholdSize(const ESolidStrongholdSize Size) const
 		{
 			return With(Change::EnableStrongholdSize(Size));
+		}
+
+		constexpr FEvent EnableLair(const TCHAR* LairName) const
+		{
+			return With(Change::EnableLair(LairName));
 		}
 
 		constexpr FEvent Require(const TCHAR* EventId) const

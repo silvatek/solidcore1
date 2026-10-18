@@ -6,6 +6,7 @@
 #include "SolidHUD.h"
 #include "SolidGameMode.h"
 #include "Journal/SolidJournal.h"
+#include "Lairs/SolidLair.h"
 #include "SolidSight.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Terrain/SolidWorldMap.h"
@@ -1384,6 +1385,98 @@ bool FSolidEventsEnableStrongholdSizeTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("Meagre stays locked"), SolidEvents::IsStrongholdSizeUnlocked(State, ESolidStrongholdSize::Meagre));
 	SolidEvents::ApplyChange(State, Built.Changes[0], Result);
 	TestTrue(TEXT("unlocking Humble again keeps it"), SolidEvents::IsStrongholdSizeUnlocked(State, ESolidStrongholdSize::Humble));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidEventsEnableLairTest,
+	"SolidCore1.Events.EnableLair",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidEventsEnableLairTest::RunTest(const FString& Parameters)
+{
+	const SolidEvents::FEvent* Driven = SolidEventTestPrivate::FindEvent(TEXT("Driven from the village"));
+	TestNotNull(TEXT("Driven from the village is listed"), Driven);
+	const SolidEvents::FChange* Enable = nullptr;
+	if (Driven)
+	{
+		const int32 ChangeCount = FMath::Min(Driven->ChangeCount, SolidEvents::MaxChangesPerEvent);
+		for (int32 Index = 0; Index < ChangeCount; ++Index)
+		{
+			if (Driven->Changes[Index].Kind == SolidEvents::EChange::EnableLair)
+			{
+				Enable = &Driven->Changes[Index];
+			}
+		}
+	}
+	TestNotNull(TEXT("the return carries EnableLair"), Enable);
+	if (Enable)
+	{
+		TestEqual(
+			TEXT("the return names the Iglin tunnels"),
+			FString(Enable->LairName ? Enable->LairName : TEXT("")),
+			FString(SolidLair::IglinTunnels.Name));
+	}
+
+	const TCHAR* MessageText = SolidMessages::TextFor(SolidMessages::IdDrivenFromVillage);
+	const FString Detail = Driven ? SolidJournal::Describe(*Driven) : FString();
+	TestTrue(TEXT("the journal names the lair"), Detail.Contains(FString::Printf(TEXT("%s enabled"), SolidLair::IglinTunnels.Name)));
+	TestTrue(TEXT("the journal keeps the message"), MessageText && Detail.Contains(MessageText));
+	TestTrue(TEXT("the journal keeps the title"), Detail.Contains(TEXT("Title Outcast")));
+
+	auto LacksEnableLair = [](const TCHAR* EventName)
+	{
+		const SolidEvents::FEvent* Event = SolidEventTestPrivate::FindEvent(EventName);
+		if (!Event)
+		{
+			return false;
+		}
+		const int32 ChangeCount = FMath::Min(Event->ChangeCount, SolidEvents::MaxChangesPerEvent);
+		for (int32 Index = 0; Index < ChangeCount; ++Index)
+		{
+			if (Event->Changes[Index].Kind == SolidEvents::EChange::EnableLair)
+			{
+				return false;
+			}
+		}
+		return true;
+	};
+	TestTrue(TEXT("Enter Iglin does not enable a lair"), LacksEnableLair(TEXT("Enter Iglin")));
+	TestTrue(TEXT("Killed by monsters does not enable a lair"), LacksEnableLair(TEXT("Killed by monsters")));
+
+	FGameState State;
+	TestFalse(TEXT("the tunnels start shut"), SolidLair::TunnelsOpen(State));
+	SolidEvents::FResult Result;
+	if (Enable)
+	{
+		SolidEvents::ApplyChange(State, *Enable, Result);
+	}
+	TestTrue(TEXT("applying it enables the Iglin tunnels"), SolidEvents::IsLairEnabled(State, SolidLair::IglinTunnels.Name));
+	TestTrue(TEXT("the tunnels are open"), SolidLair::TunnelsOpen(State));
+	TestFalse(TEXT("another lair stays shut"), SolidEvents::IsLairEnabled(State, TEXT("Other tunnels")));
+	TestFalse(TEXT("the cave stays shut"), State.bCaveEnabled);
+	TestFalse(TEXT("EnableLair does not enter the cave"), Result.bEnterCave);
+
+	const SolidEvents::FEvent Other = SolidEvents::EnterTown(TEXT("aabbcc02"), TEXT("Sample lair"), 0, SolidEvents::ACT_0)
+		.EnableLair(TEXT("Other tunnels"));
+	TestEqual(TEXT("a built enable has one change"), Other.ChangeCount, 1);
+	TestEqual(
+		TEXT("a built enable is EnableLair"),
+		static_cast<uint8>(Other.Changes[0].Kind),
+		static_cast<uint8>(SolidEvents::EChange::EnableLair));
+	FGameState OtherState;
+	SolidEvents::FResult OtherResult;
+	SolidEvents::ApplyChange(OtherState, Other.Changes[0], OtherResult);
+	TestTrue(TEXT("the named lair opens"), SolidEvents::IsLairEnabled(OtherState, TEXT("Other tunnels")));
+	TestFalse(TEXT("that change leaves the Iglin tunnels shut"), SolidLair::TunnelsOpen(OtherState));
+	TestFalse(TEXT("a different lair does not enter the cave"), OtherResult.bEnterCave);
+
+	if (Enable)
+	{
+		SolidEvents::ApplyChange(State, *Enable, Result);
+	}
+	TestTrue(TEXT("enabling the tunnels again keeps them open"), SolidLair::TunnelsOpen(State));
+	TestEqual(TEXT("the tunnels are recorded once"), State.EnabledLairCount, 1);
 	return true;
 }
 

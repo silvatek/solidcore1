@@ -36,6 +36,12 @@ FString SolidJournal::Describe(const SolidEvents::FEvent& Event)
 		case SolidEvents::EChange::EnableStrongholdSize:
 			Part = FString::Printf(TEXT("%s size unlocked"), SolidStronghold::SizeName(Change.StrongholdSize));
 			break;
+		case SolidEvents::EChange::EnableLair:
+			if (Change.LairName && Change.LairName[0])
+			{
+				Part = FString::Printf(TEXT("%s enabled"), Change.LairName);
+			}
+			break;
 		case SolidEvents::EChange::ShowMessage:
 			if (const TCHAR* MessageText = SolidMessages::TextFor(Change.MessageId))
 			{

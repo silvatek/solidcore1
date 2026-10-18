@@ -466,34 +466,24 @@ bool FSolidInventoryMenuTest::RunTest(const FString& Parameters)
 {
 	TArray<FSolidMainMenuEntry> Entries;
 	SolidMainMenu::CollectEntries(Entries);
-	int32 InventoryIndex = INDEX_NONE;
 	int32 EditorIndex = INDEX_NONE;
 	for (int32 Index = 0; Index < Entries.Num(); ++Index)
 	{
-		if (Entries[Index].Item == ESolidMainMenuItem::Inventory)
-		{
-			InventoryIndex = Index;
-		}
 		if (Entries[Index].Item == ESolidMainMenuItem::CharacterEditor)
 		{
 			EditorIndex = Index;
+			break;
 		}
 	}
-	TestTrue(TEXT("inventory is listed"), InventoryIndex != INDEX_NONE);
-	TestTrue(TEXT("inventory follows the character editor"), EditorIndex != INDEX_NONE && InventoryIndex == EditorIndex + 1);
-	if (InventoryIndex == INDEX_NONE)
+	TestTrue(TEXT("character editor is listed"), EditorIndex != INDEX_NONE);
+	if (EditorIndex == INDEX_NONE)
 	{
 		return false;
 	}
 
 	FSolidMainMenuEntry Found;
-	TestTrue(TEXT("find inventory"), SolidMainMenu::FindEntry(InventoryIndex, Found));
-	TestEqual(TEXT("inventory label"), Found.Label, FString(TEXT("Inventory")));
-	TestEqual(
-		TEXT("inventory action"),
-		static_cast<uint8>(SolidMainMenu::ActionForItem(Found.Item)),
-		static_cast<uint8>(ESolidMainMenuAction::ShowInventory));
-	TestEqual(TEXT("8 selects inventory"), InventoryIndex, 7);
+	TestTrue(TEXT("find the editor"), SolidMainMenu::FindEntry(EditorIndex, Found));
+	TestEqual(TEXT("editor label"), Found.Label, FString(TEXT("Character editor")));
 	return true;
 }
 

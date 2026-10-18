@@ -24,11 +24,6 @@ public:
 
 	void BuildVisuals();
 
-	UStaticMeshComponent* GetPoleMesh() const { return PoleMesh; }
-	UStaticMeshComponent* GetBoardMesh() const { return BoardMesh; }
-	UTextRenderComponent* GetLabelText() const { return LabelText; }
-	UTextRenderComponent* GetOutlineText(int32 Index) const;
-
 	static constexpr int32 OutlineCount = 4;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Sign")

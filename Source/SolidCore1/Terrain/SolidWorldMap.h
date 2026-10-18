@@ -163,17 +163,11 @@ public:
 	/** Display / material color from the key (or built-in defaults). */
 	FLinearColor GetBiomeColor(ESolidBiome Biome) const;
 
-	bool HasStartTown() const { return bHasStartTown; }
-
 	/**
 	 * World XY of the starting-town centroid, using the same world rectangle as SampleBiome.
 	 * Location 0. Returns false when that town has no cells.
 	 */
 	bool GetStartTownWorldXY(FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
-
-	int32 GetStartTownCellCount() const { return StartTownCells.Num(); }
-
-	int32 GetLocationCount() const { return Locations.Num(); }
 
 	/** Copy of a numbered location, including its map cells. */
 	bool FindLocation(int32 Id, FSolidWorldLocation& OutLocation) const;

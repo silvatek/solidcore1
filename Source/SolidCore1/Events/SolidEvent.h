@@ -17,7 +17,6 @@ namespace SolidEvents
 	inline constexpr int32 MaxChangesPerEvent = 3 + SolidStronghold::SizeCount;
 	inline constexpr int32 MaxRequiresPerEvent = 4;
 	inline constexpr int32 MaxEvents = 16;
-	inline constexpr int32 EventIdLength = 8;
 
 	/** Stable ids. Eight hex digits. Requirements name these. */
 	inline constexpr const TCHAR* IdEnterIglin = TEXT("c4e1a7b2");

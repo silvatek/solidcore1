@@ -452,33 +452,6 @@ void ASolidTowerInterior::SetPlan(const SolidTowerStronghold::FPlan& InPlan)
 	Plan = InPlan;
 }
 
-UStaticMeshComponent* ASolidTowerInterior::GetFloor(const int32 Index) const
-{
-	if (!Floors.IsValidIndex(Index))
-	{
-		return nullptr;
-	}
-	return Floors[Index].Get();
-}
-
-UStaticMeshComponent* ASolidTowerInterior::GetWall(const int32 Index) const
-{
-	if (!Walls.IsValidIndex(Index))
-	{
-		return nullptr;
-	}
-	return Walls[Index].Get();
-}
-
-UStaticMeshComponent* ASolidTowerInterior::GetFloorSignPlate(const int32 Index) const
-{
-	if (!FloorSignPlates.IsValidIndex(Index))
-	{
-		return nullptr;
-	}
-	return FloorSignPlates[Index].Get();
-}
-
 FVector ASolidTowerInterior::GetCaptainSpawnWorld() const
 {
 	const FVector2D Center = SolidTowerStronghold::DoorHexCenter(Plan);

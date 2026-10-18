@@ -55,12 +55,6 @@ public:
 	 */
 	bool HasAttemptedStartTownRelocate() const { return bDidRelocateToStartTown; }
 
-	/**
-	 * Run the one-shot start-town relocate (Captain + companions) without streaming chunks.
-	 * Used by GameMode timing and automation tests.
-	 */
-	void EnsureStartTownRelocate() { TryRelocateFocusToStartTown(); }
-
 	/** Move the focus pawn once to the WorldMap location-0 centroid. */
 	void TryRelocateFocusToStartTown();
 

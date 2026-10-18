@@ -141,117 +141,6 @@ namespace SolidLair
 		return FIntPoint(INDEX_NONE, INDEX_NONE);
 	}
 
-	inline int32 OpenCellCount()
-	{
-		int32 Count = 0;
-		for (int32 Row = 0; Row < MazeRows; ++Row)
-		{
-			for (int32 Col = 0; Col < MazeCols; ++Col)
-			{
-				if (IsOpenCell(Col, Row))
-				{
-					++Count;
-				}
-			}
-		}
-		return Count;
-	}
-
-	inline int32 ShortestPathSteps()
-	{
-		const FIntPoint Start = CellOf(USolidWorldMap::XMarker);
-		const FIntPoint Goal = CellOf(USolidWorldMap::YMarker);
-		if (Start.X < 0 || Goal.X < 0)
-		{
-			return INDEX_NONE;
-		}
-
-		TArray<int32> Dist;
-		Dist.Init(INDEX_NONE, MazeCols * MazeRows);
-		auto SlotOf = [](const int32 Col, const int32 Row)
-		{
-			return Row * MazeCols + Col;
-		};
-
-		TArray<FIntPoint> Queue;
-		Queue.Add(Start);
-		Dist[SlotOf(Start.X, Start.Y)] = 0;
-		int32 Head = 0;
-		const FIntPoint Steps[] = {
-			FIntPoint(1, 0), FIntPoint(-1, 0), FIntPoint(0, 1), FIntPoint(0, -1),
-		};
-		while (Head < Queue.Num())
-		{
-			const FIntPoint At = Queue[Head];
-			++Head;
-			const int32 Base = Dist[SlotOf(At.X, At.Y)];
-			if (At == Goal)
-			{
-				return Base;
-			}
-			for (const FIntPoint& Step : Steps)
-			{
-				const int32 Col = At.X + Step.X;
-				const int32 Row = At.Y + Step.Y;
-				if (!IsOpenCell(Col, Row))
-				{
-					continue;
-				}
-				const int32 Slot = SlotOf(Col, Row);
-				if (Dist[Slot] != INDEX_NONE)
-				{
-					continue;
-				}
-				Dist[Slot] = Base + 1;
-				Queue.Add(FIntPoint(Col, Row));
-			}
-		}
-		return INDEX_NONE;
-	}
-
-	/** Open cells with one way out, apart from the mouths. */
-	inline int32 DeadEndCount()
-	{
-		int32 Count = 0;
-		const FIntPoint Steps[] = {
-			FIntPoint(1, 0), FIntPoint(-1, 0), FIntPoint(0, 1), FIntPoint(0, -1),
-		};
-		for (int32 Row = 0; Row < MazeRows; ++Row)
-		{
-			for (int32 Col = 0; Col < MazeCols; ++Col)
-			{
-				if (!IsOpenCell(Col, Row) || IsEndMarker(MazeAt(Col, Row)))
-				{
-					continue;
-				}
-				int32 Neighbors = 0;
-				for (const FIntPoint& Step : Steps)
-				{
-					if (IsOpenCell(Col + Step.X, Row + Step.Y))
-					{
-						++Neighbors;
-					}
-				}
-				if (Neighbors == 1)
-				{
-					++Count;
-				}
-			}
-		}
-		return Count;
-	}
-
-	inline int32 EndSeparation()
-	{
-		const FIntPoint Start = CellOf(USolidWorldMap::XMarker);
-		const FIntPoint Goal = CellOf(USolidWorldMap::YMarker);
-		if (Start.X < 0 || Goal.X < 0)
-		{
-			return 0;
-		}
-		return FMath::Abs(Start.X - Goal.X) + FMath::Abs(Start.Y - Goal.Y);
-	}
-
 	inline FVector2D CellCenter(const int32 Col, const int32 Row)
 	{
 		return FVector2D((static_cast<float>(Col) + 0.5f) * CellCm, (static_cast<float>(Row) + 0.5f) * CellCm);
@@ -288,14 +177,6 @@ namespace SolidLair
 		const int32 Col = FMath::FloorToInt(Point.X / CellCm);
 		const int32 Row = FMath::FloorToInt(Point.Y / CellCm);
 		return IsOpenCell(Col, Row);
-	}
-
-	/** A step outside the doorway, on the rock side of that mouth. */
-	inline FVector PastEndLocal(const TCHAR End)
-	{
-		const FVector2D Mouth = MouthMidpoint(End);
-		const float Out = FChar::ToUpper(End) == USolidWorldMap::XMarker ? -40.f : 40.f;
-		return FVector(Mouth.X + Out, Mouth.Y, 100.f);
 	}
 
 	inline FString VisitJournalText(const bool bEnter)

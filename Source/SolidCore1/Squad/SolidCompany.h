@@ -171,14 +171,9 @@ public:
 	/** Append a plan to the Company catalog; returns its index. */
 	int32 AddBattlePlan(const FSolidBattlePlan& Plan);
 
-	int32 GetCharacterMeshCount() const { return AllCharacterMeshes.Num(); }
-
 	const FSolidCharacterMesh* GetCharacterMesh(int32 Index) const;
 
 	int32 FindCharacterMeshIndexByName(const FString& Name) const;
-
-	/** Append a mesh to the catalog; returns its index. */
-	int32 AddCharacterMesh(const FSolidCharacterMesh& CharacterMesh);
 
 	/** Soft mesh referenced by this companion, or unset when the index misses. */
 	TSoftObjectPtr<USkeletalMesh> GetMeshForCompanion(const FSolidCompanion& Companion) const;

@@ -40,11 +40,6 @@ namespace SolidMainMenu
 		return EKeys::Gamepad_Special_Right;
 	}
 
-	inline bool IsControllerKey(const FKey& Key)
-	{
-		return Key == ControllerKey();
-	}
-
 	void CollectEntries(TArray<FSolidMainMenuEntry>& OutEntries);
 	int32 EntryCount();
 	bool FindEntry(int32 Index, FSolidMainMenuEntry& OutEntry);

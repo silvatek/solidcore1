@@ -55,8 +55,6 @@ namespace SolidStrongholdGrid
 	 *        (0,-1) (1,-1) (2,-1)
 	 *           (0,-2) (1,-2)
 	 */
-	inline constexpr int32 MeagreCellCount = 14;
-
 	inline void MeagreCells(TArray<FCell>& OutCells)
 	{
 		OutCells.Reset();

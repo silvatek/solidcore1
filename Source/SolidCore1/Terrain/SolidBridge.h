@@ -93,10 +93,6 @@ public:
 	bool HasBridge() const { return bHasBridge; }
 	const SolidBridge::FBridge& GetBridge() const { return Bridge; }
 
-	UStaticMeshComponent* GetRampFromMesh() const { return RampFromMesh; }
-	UStaticMeshComponent* GetDeckMesh() const { return DeckMesh; }
-	UStaticMeshComponent* GetRampToMesh() const { return RampToMesh; }
-
 protected:
 	UPROPERTY(VisibleAnywhere, Category = "Bridge")
 	TObjectPtr<USceneComponent> SceneRoot;

@@ -79,14 +79,6 @@ namespace SolidStrongholdTransition
 		return OutTypes.Num() > 0 ? EOffer::Choose : EOffer::None;
 	}
 
-	/** Longer than this, a move would show a bar. An immediate swap does not. */
-	inline constexpr double NoticeableSeconds = 0.25;
-
-	inline bool ShowsProgress(const double ElapsedSeconds)
-	{
-		return ElapsedSeconds >= NoticeableSeconds;
-	}
-
 	inline bool AreNeighbors(const SolidStrongholdGrid::FHex& A, const SolidStrongholdGrid::FHex& B)
 	{
 		return FMath::IsNearlyEqual(

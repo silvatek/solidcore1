@@ -39,18 +39,9 @@ public:
 	void PlaceFurnishings(const TArray<SolidStrongholdFurniture::FUsed>& Used);
 
 	const SolidTowerStronghold::FPlan& GetPlan() const { return Plan; }
-	int32 GetFloorCount() const { return Floors.Num(); }
-	UStaticMeshComponent* GetFloor(int32 Index) const;
-	int32 GetWallCount() const { return Walls.Num(); }
-	UStaticMeshComponent* GetWall(int32 Index) const;
 	UStaticMeshComponent* GetCapMesh() const { return CapMesh; }
 	UStaticMeshComponent* GetDoorMesh() const { return DoorMesh; }
 	UInstancedStaticMeshComponent* GetFloorGrid() const { return FloorGrid; }
-	UInstancedStaticMeshComponent* GetStairs() const { return Stairs; }
-	UInstancedStaticMeshComponent* GetRails() const { return Rails; }
-	int32 GetFloorSignCount() const { return FloorSignPlates.Num(); }
-	UStaticMeshComponent* GetFloorSignPlate(int32 Index) const;
-	UInstancedStaticMeshComponent* GetFloorSignDigits() const { return FloorSignDigits; }
 
 	/** Feet on the kept hex nearest the door. */
 	FVector GetCaptainSpawnWorld() const;

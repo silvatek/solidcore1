@@ -235,15 +235,6 @@ void ASolidTowerShell::SetPlan(const SolidTowerStronghold::FPlan& InPlan)
 	Plan = InPlan;
 }
 
-UStaticMeshComponent* ASolidTowerShell::GetCourse(const int32 Index) const
-{
-	if (!Courses.IsValidIndex(Index))
-	{
-		return nullptr;
-	}
-	return Courses[Index].Get();
-}
-
 void ASolidTowerShell::DiscardParts()
 {
 	auto Drop = [](TObjectPtr<UStaticMeshComponent>& Part)

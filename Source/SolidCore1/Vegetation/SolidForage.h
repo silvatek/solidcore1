@@ -50,16 +50,6 @@ namespace SolidForage
 		float GroundDistanceCm = 0.f;
 	};
 
-	enum class EPointerAct : uint8
-	{
-		/** Not a pile in reach. A raven click may still walk. */
-		None,
-		/** Take the pile and stop a walk already under way. */
-		Take,
-		/** The pile is in reach and the pack cannot hold it. The click changes nothing. */
-		Leave,
-	};
-
 	/** This story places a stick or a pitch, and only on forest. Sea, road, and coins are not finds. */
 	inline bool OccursInBiome(const TCHAR* ItemId, const ESolidBiome Biome)
 	{
@@ -216,41 +206,5 @@ namespace SolidForage
 			}
 		}
 		return Best;
-	}
-
-	/**
-	 * What a click does to a pile. A passage, a hidden pointer, or a menu is not a pickup.
-	 * OutChoiceIndex is the scatter index when the act is Take or Leave.
-	 */
-	inline EPointerAct ResolvePileClick(
-		const bool bPointerAccepts,
-		const bool bPassage,
-		const TArray<FPileHit>& Hits,
-		const bool bPackCanHold,
-		int32& OutChoiceIndex)
-	{
-		OutChoiceIndex = INDEX_NONE;
-		if (!bPointerAccepts || bPassage)
-		{
-			return EPointerAct::None;
-		}
-
-		const int32 HitIndex = NearestHitIndex(Hits);
-		if (HitIndex == INDEX_NONE || !IsWithinReach(Hits[HitIndex].GroundDistanceCm))
-		{
-			return EPointerAct::None;
-		}
-
-		OutChoiceIndex = Hits[HitIndex].Index;
-		return bPackCanHold ? EPointerAct::Take : EPointerAct::Leave;
-	}
-
-	/**
-	 * A raven click walks when the pile did not take the click.
-	 * A passage still wins, and true sight does not walk.
-	 */
-	inline bool ClickStartsWalk(const bool bRavenSight, const bool bPassage, const EPointerAct Act)
-	{
-		return bRavenSight && !bPassage && Act == EPointerAct::None;
 	}
 }

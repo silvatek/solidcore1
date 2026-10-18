@@ -31,7 +31,6 @@ public:
 	void PressInventory(float X, float Y);
 	void ReleaseInventory(float X, float Y);
 	void CancelInventoryDrag();
-	bool IsInventoryDragging() const { return bInventoryDrag; }
 
 	/** Company list opened from Build squad. */
 	void OpenSquadBuilder();

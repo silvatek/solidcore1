@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0459")
+#define SOLID_BUILD_ID TEXT("SC1-0460")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Exit Game closes the editor after the tick.")
+#define SOLID_BUILD_NOTE TEXT("Remove C++ symbols that only their own tests called.")
 #endif

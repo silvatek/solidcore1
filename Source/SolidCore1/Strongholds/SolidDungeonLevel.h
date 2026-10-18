@@ -65,13 +65,6 @@ namespace SolidDungeonLevel
 		return false;
 	}
 
-	/** A step west of the mouth, outside the cave. */
-	inline FVector PastMouthLocal()
-	{
-		const FVector2D Mouth = SolidStrongholdGrid::MeagreMouthMidpoint();
-		return FVector(Mouth.X - SolidStrongholdGrid::FlatToFlatCm * 0.5f, Mouth.Y, 100.f);
-	}
-
 	inline const TCHAR* MenuLabel(const bool bInDungeon)
 	{
 		return bInDungeon ? LeaveLabel : EnterLabel;

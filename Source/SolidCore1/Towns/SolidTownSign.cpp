@@ -83,18 +83,6 @@ FString ASolidTownSign::GetLabel() const
 	return SolidTownSigns::MakeLabel(TownName);
 }
 
-UTextRenderComponent* ASolidTownSign::GetOutlineText(const int32 Index) const
-{
-	switch (Index)
-	{
-	case 0: return OutlineUp;
-	case 1: return OutlineDown;
-	case 2: return OutlineLeft;
-	case 3: return OutlineRight;
-	default: return nullptr;
-	}
-}
-
 void ASolidTownSign::BuildVisuals()
 {
 	const FString Label = GetLabel();

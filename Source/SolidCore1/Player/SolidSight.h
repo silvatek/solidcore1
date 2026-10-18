@@ -25,11 +25,6 @@ namespace SolidSight
 		return EKeys::Gamepad_RightThumbstick;
 	}
 
-	inline bool IsControllerToggle(const FKey& Key)
-	{
-		return Key == ControllerToggleKey();
-	}
-
 	inline bool IsTrueSight(ESolidSight Sight)
 	{
 		return Sight == ESolidSight::True;

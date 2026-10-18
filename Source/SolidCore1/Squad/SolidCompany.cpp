@@ -153,11 +153,6 @@ int32 USolidCompany::FindCharacterMeshIndexByName(const FString& Name) const
 	return INDEX_NONE;
 }
 
-int32 USolidCompany::AddCharacterMesh(const FSolidCharacterMesh& CharacterMesh)
-{
-	return AllCharacterMeshes.Add(CharacterMesh);
-}
-
 TSoftObjectPtr<USkeletalMesh> USolidCompany::GetMeshForCompanion(const FSolidCompanion& Companion) const
 {
 	if (const FSolidCharacterMesh* CharacterMesh = GetCharacterMesh(Companion.CharacterMeshIndex))

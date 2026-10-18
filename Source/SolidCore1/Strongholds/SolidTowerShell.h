@@ -29,8 +29,6 @@ public:
 	void BuildVisuals();
 
 	const SolidTowerStronghold::FPlan& GetPlan() const { return Plan; }
-	int32 GetCourseCount() const { return Courses.Num(); }
-	UStaticMeshComponent* GetCourse(int32 Index) const;
 	UStaticMeshComponent* GetCapMesh() const { return CapMesh; }
 	UStaticMeshComponent* GetDoorMesh() const { return DoorMesh; }
 

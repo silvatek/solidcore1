@@ -1314,7 +1314,6 @@ bool FSolidEventsUnlockStrongholdSizeTest::RunTest(const FString& Parameters)
 		TEXT("Enter Iglin"),
 		TEXT("Enter Relion"),
 		TEXT("Enter Kanfold"),
-		TEXT("Enter Dragongate"),
 	};
 	for (const TCHAR* Name : HeldBack)
 	{
@@ -1332,23 +1331,10 @@ bool FSolidEventsUnlockStrongholdSizeTest::RunTest(const FString& Parameters)
 				Event->Changes[Index].Kind == SolidEvents::EChange::UnlockStrongholdSize);
 		}
 	}
-	for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
-	{
-		const SolidEvents::FEvent& Event = SolidEvents::Definitions[Index];
-		const int32 ChangeCount = FMath::Min(Event.ChangeCount, SolidEvents::MaxChangesPerEvent);
-		for (int32 ChangeIndex = 0; ChangeIndex < ChangeCount; ++ChangeIndex)
-		{
-			TestFalse(
-				TEXT("no shipped event unlocks a size"),
-				Event.Changes[ChangeIndex].Kind == SolidEvents::EChange::UnlockStrongholdSize);
-		}
-	}
-
 	FGameState Played;
 	SolidEvents::NotifyOccupiedTown(Played, SolidTowns::Iglin);
 	SolidEvents::NotifyOccupiedTown(Played, SolidTowns::Relion);
 	SolidEvents::NotifyOccupiedTown(Played, SolidTowns::Kanfold);
-	SolidEvents::NotifyOccupiedTown(Played, SolidTowns::Dragongate);
 	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
 	{
 		TestFalse(

@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0463")
+#define SOLID_BUILD_ID TEXT("SC1-0464")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Squad builder drags companions and plans.")
+#define SOLID_BUILD_NOTE TEXT("Squad builder Confirm closes the page.")
 #endif

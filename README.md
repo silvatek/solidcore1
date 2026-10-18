@@ -134,7 +134,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.Credits.*` | Author / Cursor+Grok / Fab attribution; HUD toggle |
 | `SolidCore1.MainMenu.*` | F10 menu entries (Use portal, Journal, Build squad, Character editor, Credits, Exit Game) and selection; Credits then Exit Game are the last two rows; Build squad stays dim below two companions; Menu opens and closes the menu |
 | `SolidCore1.CharacterEditor.*` | Character editor row, F10 returns to the world, height build and gender sliders, Sam's red shirt and Alex's blue shirt, attribute numbers |
-| `SolidCore1.SquadBuilder.*` | Build squad stays locked below two companions; companions and battle plans are dragged onto boxes |
+| `SolidCore1.SquadBuilder.*` | Build squad stays locked below two companions; companions and battle plans are dragged onto boxes; Confirm closes the page |
 | `SolidCore1.MenuPointer.*` | Pointer hit-tests a menu or portal row; a miss leaves the keys' selection |
 | `SolidCore1.Exit.*` | Exit Game is the last row, after Credits; the page asks Exit the game?; Yes asks to quit, and a PIE yes also asks to close the editor; No and Esc leave the game running |
 | `SolidCore1.Portal.*` | Town list, including Dragongate and Rathen, then the grass north of the Iglin tunnels; keys 1–8; a town landing stays on one cell of that town; the tunnel landing records Driven from the village; portal page |
@@ -421,7 +421,7 @@ Source/
     Menus/
       SolidCharacterEditor.*  # F10 character editor: page cycle, height build and gender sliders, Sam and Alex colors
       SolidMainMenu.*         # F10 menu entries (Use portal, Test Drill, Journal, Credits, Build squad, Enter cave, Character editor, Inventory)
-      SolidSquadBuilder.*    # company and plan lists, drag onto squad boxes and F1–F8, locked until two companions are allowed
+      SolidSquadBuilder.*    # company and plan lists, drag onto squad boxes and F1–F8, Confirm closes the page, locked until two companions are allowed
       SolidPortal.h           # Town list, Iglin tunnels row, and squad landing
       SolidMenuPointer.h      # Pointer hit targets for the menu and portal list
       SolidCredits.*          # Credits page copy

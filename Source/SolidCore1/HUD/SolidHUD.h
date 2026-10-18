@@ -43,6 +43,8 @@ public:
 	void ScrollSquadBuilder(float X, float Y, float Wheel);
 	/** Esc, F10, and every other close forget the filters and the drag. */
 	void ForgetSquadBuilderPage();
+	/** Keeps the boxes and the keys, refreshes who walks with the captain, and closes the page. */
+	void ConfirmSquadBuilder();
 
 	/** Town list opened from Use portal. */
 	void OpenPortal();

@@ -10,6 +10,7 @@ class USolidSquad;
  * one per companion the events allow, and F1 through F8 are fixed keys.
  * A press picks up a name. A release on another box swaps, fills an empty box,
  * or, on the Company or Plans box, leaves the source empty.
+ * Confirm keeps that arrangement, refreshes who walks with the captain, and closes the page.
  */
 namespace SolidSquadBuilder
 {
@@ -43,10 +44,16 @@ namespace SolidSquadBuilder
 
 	inline constexpr float BlockH = HeadingH + BlockGap + ChipH + BlockGap + ViewH;
 
+	/** Sits under the lists. The journal board already has room for it. */
+	inline constexpr float ConfirmGap = 18.f;
+	inline constexpr float ConfirmH = 28.f;
+	inline constexpr float ConfirmW = 180.f;
+	inline constexpr const TCHAR* ConfirmLabel = TEXT("Confirm");
+
 	inline void ContentSize(float& OutW, float& OutH)
 	{
 		OutW = ListW + ColumnGap + ColumnW;
-		OutH = BlockH + SectionGap + BlockH;
+		OutH = BlockH + SectionGap + BlockH + ConfirmGap + ConfirmH;
 	}
 
 	enum class EVocationFilter : uint8
@@ -148,6 +155,7 @@ namespace SolidSquadBuilder
 		PlansBox,
 		PlanRow,
 		KeyBox,
+		Confirm,
 	};
 
 	struct FHit
@@ -207,6 +215,7 @@ namespace SolidSquadBuilder
 		FRect CompanyThumb;
 		FRect PlansThumb;
 		FRect SquadThumb;
+		FRect Confirm;
 	};
 
 	void Layout(const USolidSquad* Squad, int32 MaxSquadSize, const FView& View, FPage& OutPage);

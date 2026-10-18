@@ -1180,6 +1180,23 @@ namespace SolidHUDPrivate
 		DrawSquadThumb(Canvas, Page.bCompanyThumb, Page.CompanyThumb, OriginX, OriginY, Palette.BronzeBright);
 		DrawSquadThumb(Canvas, Page.bSquadThumb, Page.SquadThumb, OriginX, OriginY, Palette.BronzeBright);
 		DrawSquadThumb(Canvas, Page.bPlansThumb, Page.PlansThumb, OriginX, OriginY, Palette.BronzeBright);
+
+		FillRect(
+			Canvas,
+			OriginX + Page.Confirm.X,
+			OriginY + Page.Confirm.Y,
+			Page.Confirm.W,
+			Page.Confirm.H,
+			Palette.Bronze);
+		DrawCenteredLine(
+			Canvas,
+			Font,
+			SolidSquadBuilder::ConfirmLabel,
+			OriginX + Page.Confirm.X,
+			OriginY + Page.Confirm.Y,
+			Page.Confirm.W,
+			Page.Confirm.H,
+			Palette.Fill);
 	}
 }
 
@@ -2107,6 +2124,22 @@ void ASolidHUD::ForgetSquadBuilderPage()
 	CancelSquadDrag();
 }
 
+void ASolidHUD::ConfirmSquadBuilder()
+{
+	if (!bShowSquadBuilder)
+	{
+		return;
+	}
+	if (UWorld* World = GetWorld())
+	{
+		if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+		{
+			GameMode->RefreshFieldedSquad();
+		}
+	}
+	ForgetSquadBuilderPage();
+}
+
 void ASolidHUD::OpenSquadBuilder()
 {
 	bShowMainMenu = false;
@@ -2150,6 +2183,11 @@ void ASolidHUD::PressSquadBuilder(const float X, const float Y)
 		SolidSquadBuilder::ChooseFormation(
 			SquadBuilderView,
 			static_cast<SolidSquadBuilder::EFormationFilter>(Hit.Index));
+		return;
+	}
+	if (Hit.Kind == SolidSquadBuilder::EHit::Confirm)
+	{
+		ConfirmSquadBuilder();
 		return;
 	}
 	SolidSquadBuilder::FDrag Drag;

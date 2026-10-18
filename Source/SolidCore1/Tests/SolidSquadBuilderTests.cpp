@@ -1,6 +1,8 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
+#include "Journal/SolidJournal.h"
 #include "Menus/SolidSquadBuilder.h"
+#include "SolidHUD.h"
 #include "Squad/SolidBattlePlan.h"
 #include "Squad/SolidCompany.h"
 #include "Squad/SolidSquad.h"
@@ -358,6 +360,85 @@ bool FSolidSquadBuilderScrollTest::RunTest(const FString& Parameters)
 	}
 	TestTrue(TEXT("Mob lists a tight or loose extra"), Page.PlanRows.Num() > 0);
 	TestFalse(TEXT("a line extra is hidden"), HasLabel(Page.PlanRows, TEXT("ExtraPlan1")));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidSquadBuilderConfirmTest,
+	"SolidCore1.SquadBuilder.Confirm",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidSquadBuilderConfirmTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidSquadBuilderTestPrivate;
+
+	USolidCompany* Company = NewObject<USolidCompany>();
+	USolidSquad* Squad = NewObject<USolidSquad>();
+	TestNotNull(TEXT("company"), Company);
+	TestNotNull(TEXT("squad"), Squad);
+	Squad->InitializeFromCompany(Company);
+
+	SolidSquadBuilder::FView View;
+	SolidSquadBuilder::FPage Page;
+	SolidSquadBuilder::Layout(Squad, 2, View, Page);
+
+	float ContentW = 0.f;
+	float ContentH = 0.f;
+	SolidSquadBuilder::ContentSize(ContentW, ContentH);
+	TestEqual(TEXT("Confirm sits on the bottom of the page"), Page.Confirm.Y + Page.Confirm.H, ContentH);
+	TestTrue(TEXT("Confirm is below the plans box"), Page.Confirm.Y >= Page.PlansBox.Y + Page.PlansBox.H);
+	TestTrue(TEXT("Confirm is below the keys"), Page.Keys.Num() == 8 && Page.Confirm.Y >= Page.Keys[7].Rect.Y + Page.Keys[7].Rect.H);
+	TestEqual(TEXT("Confirm label"), FString(SolidSquadBuilder::ConfirmLabel), FString(TEXT("Confirm")));
+
+	TestTrue(
+		TEXT("Confirm fits the journal board"),
+		ContentW + SolidJournal::BoardPad * 2.f <= SolidJournal::MinBoardWidth
+		&& ContentH + SolidJournal::BoardPad * 2.f <= SolidJournal::MinBoardHeight);
+	float BoardW = 0.f;
+	float BoardH = 0.f;
+	SolidJournal::BoardSize(1920.f, 1080.f, ContentW, ContentH, BoardW, BoardH);
+	TestTrue(
+		TEXT("a roomy view stays the journal share"),
+		FMath::IsNearlyEqual(BoardW, 1920.f * SolidJournal::BoardWidthFraction, 0.5f)
+		&& FMath::IsNearlyEqual(BoardH, 1080.f * SolidJournal::BoardHeightFraction, 0.5f));
+
+	const SolidSquadBuilder::FHit Button = SolidSquadBuilder::HitTest(
+		Page,
+		Page.Confirm.X + 1.f,
+		Page.Confirm.Y + 1.f);
+	TestEqual(TEXT("the button is Confirm"), static_cast<uint8>(Button.Kind), static_cast<uint8>(SolidSquadBuilder::EHit::Confirm));
+	SolidSquadBuilder::FDrag Began;
+	TestFalse(TEXT("Confirm is not a drag"), SolidSquadBuilder::BeginDrag(Page, Button, Began));
+	TestFalse(TEXT("the wheel ignores Confirm"), SolidSquadBuilder::Scroll(
+		Page,
+		Page.Confirm.X + 1.f,
+		Page.Confirm.Y + 1.f,
+		-1.f,
+		View));
+	TestEqual(TEXT("Confirm did not scroll the company"), View.CompanyScroll, 0.f);
+
+	const TArray<int32> CompanionsBefore = Squad->GetSelectedCompanionIndices();
+	const TArray<int32> PlansBefore = Squad->GetAssignedCompanyPlanIndices();
+	const int32 ActiveBefore = Squad->GetActiveAssignedSlot();
+	TestFalse(
+		TEXT("a companion dropped on Confirm stays put"),
+		SolidSquadBuilder::Drop(Squad, 2, CompanionDrag(0, 0), Hit(SolidSquadBuilder::EHit::Confirm, INDEX_NONE)));
+	TestFalse(
+		TEXT("a plan dropped on Confirm stays put"),
+		SolidSquadBuilder::Drop(Squad, 2, PlanDrag(0, 0), Hit(SolidSquadBuilder::EHit::Confirm, INDEX_NONE)));
+	TestTrue(TEXT("the squad is unchanged"), Squad->GetSelectedCompanionIndices() == CompanionsBefore);
+	TestTrue(TEXT("the keys are unchanged"), Squad->GetAssignedCompanyPlanIndices() == PlansBefore);
+	TestEqual(TEXT("the active plan is unchanged"), Squad->GetActiveAssignedSlot(), ActiveBefore);
+
+	ASolidHUD* HUD = NewObject<ASolidHUD>();
+	TestNotNull(TEXT("hud"), HUD);
+	HUD->ConfirmSquadBuilder();
+	TestFalse(TEXT("Confirm on a closed page stays closed"), HUD->IsSquadBuilderOpen());
+	HUD->OpenSquadBuilder();
+	TestTrue(TEXT("the page opens"), HUD->IsSquadBuilderOpen());
+	HUD->ConfirmSquadBuilder();
+	TestFalse(TEXT("Confirm closes the page"), HUD->IsSquadBuilderOpen());
+	TestFalse(TEXT("Confirm does not open the menu"), HUD->IsMainMenuOpen());
 	return true;
 }
 

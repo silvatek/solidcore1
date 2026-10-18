@@ -356,6 +356,14 @@ void SolidSquadBuilder::Layout(
 		Key.bVisible = true;
 		OutPage.Keys.Add(Key);
 	}
+
+	float ContentW = 0.f;
+	float ContentH = 0.f;
+	ContentSize(ContentW, ContentH);
+	OutPage.Confirm.W = ConfirmW;
+	OutPage.Confirm.H = ConfirmH;
+	OutPage.Confirm.X = (ContentW - ConfirmW) * 0.5f;
+	OutPage.Confirm.Y = ContentH - ConfirmH;
 }
 
 SolidSquadBuilder::FHit SolidSquadBuilder::HitTest(const FPage& Page, const float X, const float Y)
@@ -426,6 +434,10 @@ SolidSquadBuilder::FHit SolidSquadBuilder::HitTest(const FPage& Page, const floa
 			return Hit;
 		}
 	}
+	if (Page.Confirm.Contains(X, Y))
+	{
+		Hit.Kind = EHit::Confirm;
+	}
 	return Hit;
 }
 
@@ -437,6 +449,10 @@ bool SolidSquadBuilder::Scroll(
 	FView& InOutView)
 {
 	if (FMath::IsNearlyZero(Wheel))
+	{
+		return false;
+	}
+	if (Page.Confirm.Contains(X, Y))
 	{
 		return false;
 	}
@@ -479,6 +495,10 @@ bool SolidSquadBuilder::Scroll(
 bool SolidSquadBuilder::BeginDrag(const FPage& Page, const FHit& Hit, FDrag& OutDrag)
 {
 	OutDrag = FDrag();
+	if (Hit.Kind == EHit::Confirm)
+	{
+		return false;
+	}
 	if (Hit.Kind == EHit::CompanyRow)
 	{
 		for (const FEntry& Row : Page.CompanyRows)
@@ -542,7 +562,8 @@ bool SolidSquadBuilder::Drop(
 	const FDrag& Drag,
 	const FHit& Hit)
 {
-	if (!Squad || !Squad->GetCompany() || Drag.Kind == EDrag::None || Hit.Kind == EHit::None)
+	if (!Squad || !Squad->GetCompany() || Drag.Kind == EDrag::None || Hit.Kind == EHit::None
+		|| Hit.Kind == EHit::Confirm)
 	{
 		return false;
 	}

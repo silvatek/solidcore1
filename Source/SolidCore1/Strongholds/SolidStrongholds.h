@@ -75,6 +75,19 @@ namespace SolidStrongholds
 		FVector2D WorldMaxXY,
 		TArray<FEntrance>& OutEntrances);
 
+	/**
+	 * Mouth or door for one cell and a known stronghold.
+	 * Used for a map Stronghold line, and for a site the company has built on.
+	 * False when the cell has no grassland neighbor or the world points fail.
+	 */
+	bool MakeEntrance(
+		const USolidWorldMap* WorldMap,
+		FVector2D WorldMinXY,
+		FVector2D WorldMaxXY,
+		FIntPoint Cell,
+		const FSolidStronghold& Stronghold,
+		FEntrance& OutEntrance);
+
 	/** Grass neighbor of one map cell. North, then west, south, and east, matching CollectEntrances. */
 	struct FGrassFace
 	{

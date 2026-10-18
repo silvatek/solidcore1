@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0447")
+#define SOLID_BUILD_ID TEXT("SC1-0448")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Event list comments name how an event is used, not the changes already on it.")
+#define SOLID_BUILD_NOTE TEXT("Leave a site-built tower at its door; drop the hardwired Imperious Tower visit.")
 #endif

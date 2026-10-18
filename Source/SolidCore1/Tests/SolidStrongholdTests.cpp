@@ -452,7 +452,37 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 				}
 			}
 		}
-		TestEqual(TEXT("the Imperious Tower line stays"), ImperiousTowers, 1);
+		TestEqual(TEXT("the Imperious Tower visit is gone"), ImperiousTowers, 0);
+
+		ESolidStrongholdSize ImperiousSite = ESolidStrongholdSize::Meagre;
+		TestTrue(
+			TEXT("the Imperious site stays"),
+			Map->StrongholdSiteAtCell(35, 15, ImperiousSite));
+		TestEqual(
+			TEXT("that site is Imperious"),
+			static_cast<uint8>(ImperiousSite),
+			static_cast<uint8>(ESolidStrongholdSize::Imperious));
+
+		SolidStrongholds::FEntrance SiteDoor;
+		const FSolidStronghold Built{
+			ESolidStrongholdType::Tower,
+			ESolidStrongholdSize::Imperious};
+		const FVector2D WorldMin(0.f, 0.f);
+		const FVector2D WorldMax(102400.f, 102400.f);
+		TestTrue(
+			TEXT("a built site still has a door face"),
+			SolidStrongholds::MakeEntrance(
+				Map,
+				WorldMin,
+				WorldMax,
+				FIntPoint(35, 15),
+				Built,
+				SiteDoor));
+		TestEqual(TEXT("that door uses the site cell"), SiteDoor.Cell, FIntPoint(35, 15));
+		TestEqual(
+			TEXT("that door keeps the tower size"),
+			static_cast<uint8>(SiteDoor.Stronghold.Size),
+			static_cast<uint8>(ESolidStrongholdSize::Imperious));
 	}
 
 	FGameState Moved;

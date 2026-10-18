@@ -635,14 +635,13 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 			else if (Instance->WantsTowerDoorSpawn() && TerrainMap->GetWorldMap())
 			{
 				USolidWorldMap* WorldMap = TerrainMap->GetWorldMap();
+				const FVector2D WorldMin = TerrainMap->GetWorldMinXY();
+				const FVector2D WorldMax = TerrainMap->GetWorldMaxXY();
 				TArray<SolidStrongholds::FEntrance> Entrances;
-				SolidStrongholds::CollectEntrances(
-					WorldMap,
-					TerrainMap->GetWorldMinXY(),
-					TerrainMap->GetWorldMaxXY(),
-					Entrances);
+				SolidStrongholds::CollectEntrances(WorldMap, WorldMin, WorldMax, Entrances);
 				const FSolidTravelSession& Session = Instance->GetSession();
-				const SolidStrongholds::FEntrance* Chosen = nullptr;
+				SolidStrongholds::FEntrance Chosen;
+				bool bHaveEntrance = false;
 				SolidTowerStronghold::FPlan Plan;
 				for (const SolidStrongholds::FEntrance& Entrance : Entrances)
 				{
@@ -651,18 +650,28 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 					{
 						continue;
 					}
-					Chosen = &Entrance;
+					Chosen = Entrance;
+					bHaveEntrance = true;
 					break;
 				}
-				FVector2D CellXY = FVector2D::ZeroVector;
-				if (Chosen && WorldMap->CellToWorldXY(
-					Chosen->Cell,
-					TerrainMap->GetWorldMinXY(),
-					TerrainMap->GetWorldMaxXY(),
-					CellXY))
+				if (!bHaveEntrance
+					&& SolidTowerStronghold::PlanFor(Session.Tower, Plan)
+					&& SolidStrongholds::MakeEntrance(
+						WorldMap,
+						WorldMin,
+						WorldMax,
+						Session.TowerCell,
+						Session.Tower,
+						Chosen))
 				{
-					PawnXY = SolidTowerStronghold::OutsideDoorXY(CellXY, Chosen->FacingYawDeg, Plan);
-					FacingYawDeg = SolidTowerStronghold::OutsideDoorYawDeg(Chosen->FacingYawDeg);
+					bHaveEntrance = true;
+				}
+				FVector2D CellXY = FVector2D::ZeroVector;
+				if (bHaveEntrance
+					&& WorldMap->CellToWorldXY(Chosen.Cell, WorldMin, WorldMax, CellXY))
+				{
+					PawnXY = SolidTowerStronghold::OutsideDoorXY(CellXY, Chosen.FacingYawDeg, Plan);
+					FacingYawDeg = SolidTowerStronghold::OutsideDoorYawDeg(Chosen.FacingYawDeg);
 					FacingPitchDeg = 0.f;
 					bHaveYaw = true;
 					bCaveMouth = true;

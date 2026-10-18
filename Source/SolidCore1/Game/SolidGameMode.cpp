@@ -639,13 +639,12 @@ void ASolidGameMode::TravelToTower(const FIntPoint Cell)
 		return;
 	}
 
+	const FVector2D WorldMin = Terrain->GetWorldMinXY();
+	const FVector2D WorldMax = Terrain->GetWorldMaxXY();
 	TArray<SolidStrongholds::FEntrance> Entrances;
-	SolidStrongholds::CollectEntrances(
-		WorldMap,
-		Terrain->GetWorldMinXY(),
-		Terrain->GetWorldMaxXY(),
-		Entrances);
-	const SolidStrongholds::FEntrance* Chosen = nullptr;
+	SolidStrongholds::CollectEntrances(WorldMap, WorldMin, WorldMax, Entrances);
+	FSolidStronghold Tower;
+	bool bHaveTower = false;
 	for (const SolidStrongholds::FEntrance& Entrance : Entrances)
 	{
 		SolidTowerStronghold::FPlan Plan;
@@ -653,10 +652,30 @@ void ASolidGameMode::TravelToTower(const FIntPoint Cell)
 		{
 			continue;
 		}
-		Chosen = &Entrance;
+		Tower = Entrance.Stronghold;
+		bHaveTower = true;
 		break;
 	}
-	if (!Chosen)
+	if (!bHaveTower
+		&& Configuration.ActiveStrongholdCell == Cell
+		&& Configuration.ActiveStronghold.Type == ESolidStrongholdType::Tower)
+	{
+		SolidTowerStronghold::FPlan Plan;
+		SolidStrongholds::FEntrance SiteEntrance;
+		if (SolidTowerStronghold::PlanFor(Configuration.ActiveStronghold, Plan)
+			&& SolidStrongholds::MakeEntrance(
+				WorldMap,
+				WorldMin,
+				WorldMax,
+				Cell,
+				Configuration.ActiveStronghold,
+				SiteEntrance))
+		{
+			Tower = Configuration.ActiveStronghold;
+			bHaveTower = true;
+		}
+	}
+	if (!bHaveTower)
 	{
 		return;
 	}
@@ -672,8 +691,8 @@ void ASolidGameMode::TravelToTower(const FIntPoint Cell)
 		/*LairEnd=*/0,
 		/*bInTower=*/true,
 		/*bReturnToTowerDoor=*/false,
-		Chosen->Cell,
-		Chosen->Stronghold);
+		Cell,
+		Tower);
 	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::TowerEnterOptions());
 }
 

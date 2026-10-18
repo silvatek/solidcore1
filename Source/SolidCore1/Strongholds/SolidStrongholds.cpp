@@ -25,6 +25,61 @@ namespace
 	}
 }
 
+bool SolidStrongholds::MakeEntrance(
+	const USolidWorldMap* WorldMap,
+	const FVector2D WorldMinXY,
+	const FVector2D WorldMaxXY,
+	const FIntPoint Cell,
+	const FSolidStronghold& Stronghold,
+	FEntrance& OutEntrance)
+{
+	OutEntrance = FEntrance();
+	if (!WorldMap || !WorldMap->IsLoaded() || !InBounds(Cell.X, Cell.Y))
+	{
+		return false;
+	}
+
+	const FIntPoint* ChosenStep = nullptr;
+	FIntPoint GrassCell = FIntPoint::ZeroValue;
+	for (const FIntPoint& Step : NeighborSteps)
+	{
+		const int32 NextX = Cell.X + Step.X;
+		const int32 NextY = Cell.Y + Step.Y;
+		if (!InBounds(NextX, NextY))
+		{
+			continue;
+		}
+		if (WorldMap->GetBiomeAtCell(NextX, NextY) != ESolidBiome::Grassland)
+		{
+			continue;
+		}
+		ChosenStep = &Step;
+		GrassCell = FIntPoint(NextX, NextY);
+		break;
+	}
+	if (!ChosenStep)
+	{
+		return false;
+	}
+
+	FVector2D CaveXY = FVector2D::ZeroVector;
+	FVector2D GrassXY = FVector2D::ZeroVector;
+	if (!WorldMap->CellToWorldXY(Cell, WorldMinXY, WorldMaxXY, CaveXY)
+		|| !WorldMap->CellToWorldXY(GrassCell, WorldMinXY, WorldMaxXY, GrassXY))
+	{
+		return false;
+	}
+
+	OutEntrance.Stronghold = Stronghold;
+	OutEntrance.Cell = Cell;
+	OutEntrance.GrassCell = GrassCell;
+	OutEntrance.EdgeXY = (CaveXY + GrassXY) * 0.5f;
+	const FVector2D TowardGrass = (GrassXY - CaveXY).GetSafeNormal();
+	OutEntrance.WorldXY = OutEntrance.EdgeXY + TowardGrass * FaceInsetCm;
+	OutEntrance.FacingYawDeg = YawFacingGrass(*ChosenStep);
+	return true;
+}
+
 int32 SolidStrongholds::CollectEntrances(
 	const USolidWorldMap* WorldMap,
 	const FVector2D WorldMinXY,
@@ -47,45 +102,17 @@ int32 SolidStrongholds::CollectEntrances(
 				continue;
 			}
 
-			const FIntPoint* ChosenStep = nullptr;
-			FIntPoint GrassCell = FIntPoint::ZeroValue;
-			for (const FIntPoint& Step : NeighborSteps)
-			{
-				const int32 NextX = Col + Step.X;
-				const int32 NextY = Row + Step.Y;
-				if (!InBounds(NextX, NextY))
-				{
-					continue;
-				}
-				if (WorldMap->GetBiomeAtCell(NextX, NextY) != ESolidBiome::Grassland)
-				{
-					continue;
-				}
-				ChosenStep = &Step;
-				GrassCell = FIntPoint(NextX, NextY);
-				break;
-			}
-			if (!ChosenStep)
-			{
-				continue;
-			}
-
-			FVector2D CaveXY = FVector2D::ZeroVector;
-			FVector2D GrassXY = FVector2D::ZeroVector;
-			if (!WorldMap->CellToWorldXY(FIntPoint(Col, Row), WorldMinXY, WorldMaxXY, CaveXY)
-				|| !WorldMap->CellToWorldXY(GrassCell, WorldMinXY, WorldMaxXY, GrassXY))
-			{
-				continue;
-			}
-
 			FEntrance Entrance;
-			Entrance.Stronghold = Attributes;
-			Entrance.Cell = FIntPoint(Col, Row);
-			Entrance.GrassCell = GrassCell;
-			Entrance.EdgeXY = (CaveXY + GrassXY) * 0.5f;
-			const FVector2D TowardGrass = (GrassXY - CaveXY).GetSafeNormal();
-			Entrance.WorldXY = Entrance.EdgeXY + TowardGrass * FaceInsetCm;
-			Entrance.FacingYawDeg = YawFacingGrass(*ChosenStep);
+			if (!MakeEntrance(
+				WorldMap,
+				WorldMinXY,
+				WorldMaxXY,
+				FIntPoint(Col, Row),
+				Attributes,
+				Entrance))
+			{
+				continue;
+			}
 			OutEntrances.Add(Entrance);
 		}
 	}

@@ -1,4 +1,4 @@
-# Journal scrollbar
+# Journal Filters and Scrollbar
 
 Status: New
 

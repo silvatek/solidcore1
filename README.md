@@ -19,7 +19,7 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [More terrain textures](Planning/more-terrain-textures.md)
 - [Sight indicator after Raven Sight](Planning/sight-indicator-after-raven.md)
 - [Early game battle plans](Planning/early-game-battle-plans.md)
-- [Journal scrollbar](Planning/journal-scrollbar.md)
+- [Journal Filters and Scrollbar](Planning/journal-filters-and-scrollbar.md)
 - [Replace FAB_Doctor with an automated test](Planning/fab-doctor-automated-test.md)
 - [Hold battle plan](Planning/hold-battle-plan.md)
 - [Events auto-trigger other events](Planning/events-auto-trigger.md)

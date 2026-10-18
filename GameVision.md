@@ -32,7 +32,7 @@ First person carries the role-playing. Third person carries the strategy.
 
 Combat is won by preparation. The Squad's members, their equipment, and the battle plan in use decide the outcome.
 
-During a fight the player moves the Captain and switches among the battle plans available to the Squad. A Squad has up to eight battle plans.
+During a fight the player moves the Captain and switches among the battle plans available to the Squad. The Company defines the battle plans, and the Squad carries a selection of them. Choosing which plans the Squad can use is one of the strategic elements.
 
 ## Who the player fights
 

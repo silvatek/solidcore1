@@ -2,9 +2,10 @@
 setlocal EnableExtensions
 rem Launch SolidCore1 in Play In Editor and hold ue.lock until the editor exits.
 rem
-rem Writes the word PIE into ue.lock at the repo root, starts Unreal Editor with
-rem -immersive (the switch that opens the editor and starts PIE), waits until
-rem UnrealEditor.exe has exited, then writes the word Free.
+rem Launches only when ue.lock is missing or its word is Free. Then writes PIE,
+rem starts Unreal Editor with -immersive (the switch that opens the editor and
+rem starts PIE), waits until UnrealEditor.exe has exited, and writes Free.
+rem Any other word leaves the lock unchanged and does not start the editor.
 rem
 rem Usage:
 rem   tools\pie.bat
@@ -39,7 +40,10 @@ if not exist "%PROJECT%" (
   exit /b 1
 )
 
-(echo PIE) > "%LOCK%"
+call :LockIsFree
+if errorlevel 1 exit /b 1
+
+> "%LOCK%" echo PIE
 echo Lock: %LOCK%
 echo Word: PIE
 echo Launching Play In Editor ^(-immersive^)
@@ -59,6 +63,25 @@ ping -n 3 127.0.0.1 >nul
 goto WaitForEditor
 
 :EditorClosed
-(echo Free) > "%LOCK%"
+> "%LOCK%" echo Free
 echo Word: Free
 exit /b %ERR%
+
+:LockIsFree
+setlocal EnableExtensions EnableDelayedExpansion
+if not exist "%LOCK%" exit /b 0
+set "LOCKWORD="
+for /f "usebackq tokens=*" %%W in ("%LOCK%") do (
+  if not defined LOCKWORD set "LOCKWORD=%%W"
+)
+if not defined LOCKWORD goto LockBusy
+:LockTrim
+if "!LOCKWORD:~-1!"==" " set "LOCKWORD=!LOCKWORD:~0,-1!" & goto LockTrim
+if "!LOCKWORD:~-1!"=="	" set "LOCKWORD=!LOCKWORD:~0,-1!" & goto LockTrim
+if not defined LOCKWORD goto LockBusy
+if "!LOCKWORD!"=="Free" exit /b 0
+:LockBusy
+echo ERROR: ue.lock is not Free. Not launching the editor.
+echo Lock: %LOCK%
+echo Word: "!LOCKWORD!"
+exit /b 1

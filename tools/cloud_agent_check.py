@@ -153,6 +153,16 @@ def check_editor_lock(errors: list[str]) -> None:
             errors.append("tools/pie.bat must write the words PIE and Free into ue.lock")
         if "-immersive" not in script:
             errors.append("tools/pie.bat must launch Unreal Editor with -immersive")
+        launch_at = script.find('"%EDITOR%" "%PROJECT%" -immersive')
+        gate_at = script.find("call :LockIsFree")
+        if gate_at < 0 or launch_at < 0 or gate_at > launch_at:
+            errors.append(
+                "tools/pie.bat must check ue.lock before launching the editor"
+            )
+        if 'if not exist "%LOCK%"' not in script:
+            errors.append("tools/pie.bat must launch when ue.lock does not exist")
+        if 'if "!LOCKWORD!"=="Free"' not in script:
+            errors.append("tools/pie.bat must treat the word Free as the free lock")
 
     agents = ROOT / "AGENTS.md"
     if not agents.is_file():

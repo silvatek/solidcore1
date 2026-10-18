@@ -89,6 +89,26 @@ Follow the Automated tests policy in `README.md`:
 - New product code ships with tests in the same commit.
 - Never pass `TObjectPtr<T>` (or a ternary that yields one) to `TestNotNull` / `TestNull`. Bind a raw `T*` or call `.Get()`.
 
+## Unused code
+
+A later pass searches for unused code and, when it finds some, writes a story to remove it. This section is the definition that pass uses.
+
+Unused code is a C++ symbol under `Source/SolidCore1/`, outside `Tests/`, that product code never uses. A symbol that only its own tests call is unused. A symbol the Unreal Engine calls is used, including when no other C++ names it.
+
+A symbol is a function or method (the header declaration and the `.cpp` body are one symbol), a class, struct, or enum, or a file-scope variable or constant. A `.h` / `.cpp` pair is unused when every symbol in it is unused.
+
+A use is the symbol's name, as a whole word, in other product C++ under `Source/SolidCore1/` outside `Tests/`, in `Config/` when the engine loads that class, struct, enum, or property, or in `SolidCore1.Build.cs` or a `.Target.cs` file.
+
+A reference that appears only in a test of that symbol, or only in a test of the type that owns it, is the symbol's own test. That reference does not keep the symbol. A reference from a test of other product code does keep it, because that other behavior depends on it.
+
+These names are engine calls, so they stay:
+
+- a method marked `override`
+- a `UFUNCTION` with `BlueprintCallable`, `BlueprintImplementableEvent`, `BlueprintNativeEvent`, `CallInEditor`, or `Exec`
+- a type `Config/` names for the engine to instantiate
+
+The search leaves unused includes, unused parameters, comments, commented-out blocks, and code inside a function that itself has a use.
+
 ## Fab content
 
 - Packs under `Content/Fab` and `Content/Viking` are gitignored. Restore only via Epic Launcher **Add to Project**. See `README.md` and `tools/fab-assets.json`.

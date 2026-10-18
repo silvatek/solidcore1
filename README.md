@@ -38,6 +38,7 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Name the company's stronghold](Planning/name-the-stronghold.md)
 - [Return to the stronghold](Planning/return-to-stronghold.md)
 - [Enable a lair from an event](Planning/enable-lair.md)
+- [Remove unused code](Planning/remove-unused-code.md)
 
 ## Done
 

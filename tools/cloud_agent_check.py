@@ -132,6 +132,43 @@ def check_planning(errors: list[str], warnings: list[str]) -> None:
             )
 
 
+def check_editor_lock(errors: list[str]) -> None:
+    gitignore = ROOT / ".gitignore"
+    if not gitignore.is_file():
+        errors.append("missing .gitignore")
+    else:
+        patterns = [
+            raw.split("#", 1)[0].strip()
+            for raw in gitignore.read_text(encoding="utf-8").splitlines()
+        ]
+        if "/ue.lock" not in patterns:
+            errors.append(".gitignore must ignore /ue.lock")
+
+    pie = ROOT / "tools" / "pie.bat"
+    if not pie.is_file():
+        errors.append("missing tools/pie.bat")
+    else:
+        script = pie.read_text(encoding="utf-8")
+        if "echo PIE" not in script or "echo Free" not in script:
+            errors.append("tools/pie.bat must write the words PIE and Free into ue.lock")
+        if "-immersive" not in script:
+            errors.append("tools/pie.bat must launch Unreal Editor with -immersive")
+
+    agents = ROOT / "AGENTS.md"
+    if not agents.is_file():
+        errors.append("missing AGENTS.md")
+        return
+    text = agents.read_text(encoding="utf-8")
+    parts = text.split("### solidcore1-ue agents", 1)
+    if len(parts) < 2:
+        errors.append("AGENTS.md is missing the solidcore1-ue agents section")
+        return
+    body = parts[1].split("\n## ", 1)[0]
+    for needle in ("ue.lock", "tools\\pie.bat", "`PIE`", "`Free`"):
+        if needle not in body:
+            errors.append(f"solidcore1-ue agents section must mention {needle}")
+
+
 def check_forbidden_patterns(errors: list[str]) -> None:
     source = ROOT / "Source"
     if not source.is_dir():
@@ -182,6 +219,7 @@ def main() -> int:
     check_world_map(errors, warnings)
     check_build_id(errors)
     check_planning(errors, warnings)
+    check_editor_lock(errors)
     check_forbidden_patterns(errors)
 
     for message in warnings:

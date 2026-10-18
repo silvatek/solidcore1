@@ -15,7 +15,7 @@ The player walks through forest and finds sticks and pitch scattered on the grou
 - Sea is not a biome an item occurs in.
 - A forest point holds at most one pile. A forest point that has a tree holds no pile.
 - The piles are a scatter of the remaining forest points, not every one. At most 64 are chosen.
-- Within 200 m of Iglin, every forest cell on the world map has at least one stick and one pitch. The scatter's 64 does not limit those. A cell the scatter already filled is left as it is.
+- Within 100 m of Iglin, every forest cell on the world map has at least one stick and one pitch. The scatter's 64 does not limit those. A cell the scatter already filled is left as it is.
 - When at least two are placed, both a stick and a pitch are among them. They alternate, and the first is a stick.
 - Every pile uses the same simple mesh. A stick and a pitch are that same shape. The catalog name on the pointer is what differs.
 - This story does not give a stick its own mesh, or a pitch its own. A later story does that, one mesh for each kind of pile.
@@ -46,7 +46,7 @@ The player walks through forest and finds sticks and pitch scattered on the grou
 - Stick is `6c2a91e8`, Inferior, stacks to 10. Pitch is `d4f07b3a`, Common, stacks to 10. Coins are not a ground find. Rough stone is [Rough stones](rough-stones.md). This story does not add that id and does not place those piles.
 - Scatter the piles the way `SolidForestTrees::CollectSpawnPositions` scatters trees. The input set is forest points that did not receive a tree. Fisher–Yates, then `round(count * density)` clamped to the max and to the count. Density is `0.05`. The max is 64. Jitter is 90 cm, the same as `ForestTreeJitterCm`. Trees use `ForestTreeSeed` 42. The piles use their own seed, 43, so a tree-seed change does not move them.
 - Walking that chosen list, an even index is a stick and an odd index is a pitch. The list is the choice of points. It is not a spawn of actors on ground the player has not reached. A test map with 40 treeless forest points chooses two piles, stick then pitch. A map with no forest chooses none. One placed stick is still enough to test the click and the pack.
-- After that scatter, walk world-map forest cells (`#`) whose center is within 200 m of Iglin. A cell missing a stick or a pitch gets one, on the lowest-index treeless forest point in that cell that does not already hold a pile. No jitter, so the pile stays on that point. A point with a tree still holds no pile.
+- After that scatter, walk world-map forest cells (`#`) whose center is within 100 m of Iglin. A cell missing a stick or a pitch gets one, on the lowest-index treeless forest point in that cell that does not already hold a pile. No jitter, so the pile stays on that point. A point with a tree still holds no pile.
 - `SolidInventory::PlacePack` writes a cell and replaces what was there. It does not merge. Add an insert that fills the first same-id stack under `FSolidItemType::MaxStacked`, then the first empty cell, and returns false when neither exists.
 - The pack is `FGameState::Inventory`, six cells, carried on the travel session. The taken set is the indexes in the chosen scatter list, and it rides on that state too. `OpenLevel` builds a new world. The same list comes back, and a taken index is skipped.
 - A pickup calls `ClearClickMove`, the same way `ActivatePassage` does, so a raven walk already under way stops. The nearest pile is the first hit along the pointer ray. The 4 m test still applies to that pile.

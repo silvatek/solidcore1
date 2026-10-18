@@ -20,7 +20,7 @@ namespace SolidForage
 	/** Hard cap on the scattered piles. The Iglin forest guarantee is not part of this cap. */
 	inline constexpr int32 MaxPiles = 64;
 	/** Forest cells this close to Iglin each keep a stick and a pitch (cm). */
-	inline constexpr float IglinRadiusCm = 20000.f;
+	inline constexpr float IglinRadiusCm = 10000.f;
 	/** Captain ground distance that names a pile and allows a click to take it (cm). */
 	inline constexpr float ReachCm = 400.f;
 	/** Placeholder cube, on a side (cm). */

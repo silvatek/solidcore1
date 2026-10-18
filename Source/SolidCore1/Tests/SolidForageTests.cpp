@@ -467,7 +467,7 @@ bool FSolidForageIglinTest::RunTest(const FString& Parameters)
 			}
 		}
 	}
-	TestTrue(TEXT("forest cells sit within 200 m of Iglin"), NearCells.Num() > 0);
+	TestEqual(TEXT("six forest cells are within 100 m of Iglin"), NearCells.Num(), 6);
 
 	TArray<SolidForage::FChoice> Choices;
 	const int32 Added = SolidForage::GuaranteeForestCells(
@@ -505,7 +505,7 @@ bool FSolidForageIglinTest::RunTest(const FString& Parameters)
 		FVector2D Center = FVector2D::ZeroVector;
 		TestTrue(TEXT("the cell has a center"),
 			WorldMap->CellToWorldXY(Cell, WorldMin, WorldMax, Center));
-		TestTrue(TEXT("the cell is within 200 m of Iglin"),
+		TestTrue(TEXT("the cell is within 100 m of Iglin"),
 			FVector2D::Distance(Center, IglinXY) <= SolidForage::IglinRadiusCm);
 
 		const int32 Key = CellKey(Cell);

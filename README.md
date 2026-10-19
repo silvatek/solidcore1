@@ -53,6 +53,7 @@ Shipped stories live in [`Planning/Done`](Planning/Done).
 - [Imperious Tower refinements](Planning/Done/imperious-tower-refinements.md)
 - [No starter monolith](Planning/Done/no-starter-monolith.md)
 - [Fog follows the player](Planning/Done/fog-follows-the-player.md)
+- [Fog stays cleared](Planning/Done/fog-stays-cleared.md)
 - [Procedural terrain](Planning/Done/procedural-terrain.md)
 - [Town + forest](Planning/Done/town-and-forest.md)
 - [Roads](Planning/Done/roads.md)

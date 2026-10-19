@@ -27,13 +27,22 @@ Odd rows shift half a flat-to-flat along X, the same as `HexCenter`.
 
 ## Hex total for a size
 
-A size has one hex total. Every supported type at that size meets it.
+A size has one room kit. Dungeon, Fortress, and Tower at that size use the **same number and sizes of rooms**. The tower is the constraint: its kept-hex floors set the bands. Rounding those bands down to a few fixed room sizes can cut the overall hex count below the old per-type totals; that is fine.
 
-- **Meagre** — fourteen cells (`MeagreCells`).
-- **Humble** — mean of Meagre and the Average tower total (drawn fortress Keep is 13 + 13 = 26).
-- **Average through Imperious** — sum of `CollectKeptHexes` on every floor of that size's tower `PlanFor` result.
+### Imperious kit (in progress)
 
-Do not copy the tower's round rooms or taper into a fortress or dungeon. Those types meet the total by how many rooms or buildings they have, and how large each is.
+From the Imperious Tower kept hexes per floor (`35, 28, 22, 19, 16, 12, 12, 8, 6, 7`):
+
+| Band | Tower floors | Room size | Count |
+|------|--------------|-----------|------:|
+| Large | 0–2 | 20 hexes | 3 |
+| Medium | 3–6 | 12 hexes | 4 |
+| Small | 7–9 | 6 hexes | 3 |
+
+Kit total **126** (tower kept total was 165). How the rooms are arranged differs by type (tower shaft, fortress yard, dungeon passages). Passages and yards hold no usable hexes.
+
+- **Meagre** — still the shipped fourteen-cell cave until a smaller size adopts the kit.
+- Smaller sizes (Humble through Stately) — not chosen yet; same idea: take the tower floors for that size and band them into large / medium / small rooms.
 
 ## Usable hex rule
 
@@ -61,9 +70,10 @@ Embed that count in the canvas so the stats stay honest when a room moves. Pytho
 
 - **Tower** — one round shaft, taper, spiral stair band, kept hexes inside the interior radius. Imperious is the large end; Average through Stately step with `SizeAlong`.
 - **Fortress** — rectangular outer wall, yard (yard hexes are **not** in the total), buildings with straight walls. Keep is largest footprint and tallest. Stairs and landings live inside multi-floor buildings.
-- **Dungeon** — rooms (rectangular or irregular) joined by **passages** and **stairs**. Passages have no usable hexes. No hard limit on the overall footprint. The Meagre den stays the shipped fourteen-cell outline. Larger sizes meet the hex total by room count and size, not by copying the tower.
+- **Dungeon** — the shared rooms joined by **passages** and **stairs**. Passages have no usable hexes. No hard limit on the overall footprint. Rooms may be rectangular or irregular so long as the hex counts match the kit.
 
 ## Precedents
 
 - Tower plan canvas: Imperious Tower plan (ground / mid / top floors, elevation, kept-hex table).
 - Fortress plan canvas: Fortress mockups (Humble, Impressive, Imperious; plan, elevations, south-east oblique).
+- Dungeon / shared kit canvas: Imperious room kit (3×20, 4×12, 3×6) with a dungeon layout.

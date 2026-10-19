@@ -4,10 +4,15 @@
 #include "SolidStronghold.h"
 #include "SolidStrongholdGrid.h"
 #include "SolidStrongholdTransition.h"
-#include "SolidStrongholdType.h"
-#include "SolidDungeonExterior.h"
-#include "SolidTowerExterior.h"
-#include "SolidTowerStronghold.h"
+#include "Strongholds/Dungeon/SolidDungeon.h"
+#include "Strongholds/Fortress/SolidFortress.h"
+#include "Strongholds/Tower/SolidTower.h"
+#include "Strongholds/Dungeon/SolidDungeonExterior.h"
+#include "Strongholds/Dungeon/SolidDungeonInterior.h"
+#include "Strongholds/Dungeon/SolidDungeonLevel.h"
+#include "Strongholds/Tower/SolidTowerExterior.h"
+#include "Strongholds/Tower/SolidTowerInterior.h"
+#include "Strongholds/Tower/SolidTowerStronghold.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -103,6 +108,12 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("a copied dungeon names the dungeon exterior"),
 		DungeonCopy->ExteriorClass() == ASolidDungeonExterior::StaticClass());
+	TestTrue(
+		TEXT("a meagre dungeon names the dungeon interior"),
+		DungeonOwned->InteriorClass() == ASolidDungeonInterior::StaticClass());
+	TestTrue(
+		TEXT("a copied dungeon names the dungeon interior"),
+		DungeonCopy->InteriorClass() == ASolidDungeonInterior::StaticClass());
 	TestNull(
 		TEXT("a humble dungeon has no exterior"),
 		SolidStronghold::Make(
@@ -111,18 +122,38 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 			OriginCell,
 			SolidStronghold::WorldXY(OriginCell))->ExteriorClass());
 	TestNull(
+		TEXT("a humble dungeon has no interior"),
+		SolidStronghold::Make(
+			ESolidStrongholdType::Dungeon,
+			ESolidStrongholdSize::Humble,
+			OriginCell,
+			SolidStronghold::WorldXY(OriginCell))->InteriorClass());
+	TestNull(
 		TEXT("a fortress has no exterior"),
 		SolidStronghold::Make(
 			ESolidStrongholdType::Fortress,
 			ESolidStrongholdSize::Imperious,
 			OriginCell,
 			SolidStronghold::WorldXY(OriginCell))->ExteriorClass());
+	TestNull(
+		TEXT("a fortress has no interior"),
+		SolidStronghold::Make(
+			ESolidStrongholdType::Fortress,
+			ESolidStrongholdSize::Imperious,
+			OriginCell,
+			SolidStronghold::WorldXY(OriginCell))->InteriorClass());
 	TestTrue(
 		TEXT("an average tower names the tower exterior"),
 		TowerOwned->ExteriorClass() == ASolidTowerExterior::StaticClass());
 	TestTrue(
 		TEXT("a copied tower names the tower exterior"),
 		TowerCopy->ExteriorClass() == ASolidTowerExterior::StaticClass());
+	TestTrue(
+		TEXT("an average tower names the tower interior"),
+		TowerOwned->InteriorClass() == ASolidTowerInterior::StaticClass());
+	TestTrue(
+		TEXT("a copied tower names the tower interior"),
+		TowerCopy->InteriorClass() == ASolidTowerInterior::StaticClass());
 	TestNull(
 		TEXT("a humble tower has no exterior"),
 		SolidStronghold::Make(
@@ -130,6 +161,29 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 			ESolidStrongholdSize::Humble,
 			OriginCell,
 			SolidStronghold::WorldXY(OriginCell))->ExteriorClass());
+	TestNull(
+		TEXT("a humble tower has no interior"),
+		SolidStronghold::Make(
+			ESolidStrongholdType::Tower,
+			ESolidStrongholdSize::Humble,
+			OriginCell,
+			SolidStronghold::WorldXY(OriginCell))->InteriorClass());
+	ASolidDungeonInterior* Cave = NewObject<ASolidDungeonInterior>();
+	ASolidTowerInterior* Room = NewObject<ASolidTowerInterior>();
+	TestNotNull(TEXT("dungeon interior"), Cave);
+	TestNotNull(TEXT("tower interior"), Room);
+	if (Cave && Room)
+	{
+		const TArray<SolidStrongholdFurniture::FUsed> Carried;
+		DungeonOwned->ConfigureInterior(Cave, Carried);
+		TowerOwned->ConfigureInterior(Room, Carried);
+		TestNotNull(TEXT("the dungeon fill builds the mouth"), Cave->GetMouthMesh());
+		TestEqual(TEXT("the dungeon opening is the mouth"), Cave->GetPassageMesh(), Cave->GetMouthMesh());
+		TestEqual(TEXT("the dungeon fill keeps the cell"), Cave->GetStrongholdCell(), OriginCell);
+		TestEqual(TEXT("the tower fill keeps the cell"), Room->GetStrongholdCell(), OriginCell);
+		TestNotNull(TEXT("the tower fill builds the door"), Room->GetDoorMesh());
+		TestEqual(TEXT("the tower opening is the door"), Room->GetPassageMesh(), Room->GetDoorMesh());
+	}
 	TestTrue(
 		TEXT("a copy keeps the world position"),
 		DungeonCopy->Location.Equals(DungeonOwned->Location, 0.01f));
@@ -188,7 +242,7 @@ bool FSolidStrongholdTypeSupportedTest::RunTest(const FString& Parameters)
 		TArray<SolidStrongholdGrid::FHex> CaveFloor;
 		if (bMeagre)
 		{
-			SolidStrongholdGrid::CollectMeagreHexes(CaveFloor);
+			SolidDungeonLevel::CollectMeagreHexes(CaveFloor);
 		}
 		TestTrue(
 			*FString::Printf(TEXT("%s dungeon ground floor"), SolidStronghold::SizeName(Size)),

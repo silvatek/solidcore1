@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "Strongholds/SolidStrongholdInterior.h"
 #include "SolidDungeonInterior.generated.h"
 
 class UInstancedStaticMeshComponent;
@@ -14,7 +14,7 @@ class UStaticMeshComponent;
  * The captain arrives alone. A left click on the dark opening leaves. F10 leaves too.
  */
 UCLASS()
-class SOLIDCORE1_API ASolidDungeonInterior : public AActor
+class SOLIDCORE1_API ASolidDungeonInterior : public ASolidStrongholdInterior
 {
 	GENERATED_BODY()
 
@@ -28,9 +28,9 @@ public:
 	void BuildVisuals();
 
 	/** Feet position inside the room. */
-	FVector GetCaptainSpawnWorld() const;
+	virtual FVector GetCaptainSpawnWorld() const override;
 	/** Level, looking into the cave. From the Meagre Dungeon visit view. */
-	FRotator GetCaptainView() const;
+	virtual FRotator GetCaptainView() const override;
 	float GetCaptainYaw() const;
 
 	/** Cave pieces from the furnishing catalog, on the single Meagre floor. No-op without a world. */
@@ -38,6 +38,7 @@ public:
 
 	UStaticMeshComponent* GetFloorMesh() const { return FloorMesh; }
 	UStaticMeshComponent* GetMouthMesh() const { return MouthMesh; }
+	virtual UStaticMeshComponent* GetPassageMesh() const override { return MouthMesh; }
 	UPointLightComponent* GetRoomLight() const { return RoomLight; }
 	UInstancedStaticMeshComponent* GetFloorGrid() const { return FloorGrid; }
 

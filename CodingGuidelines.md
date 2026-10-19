@@ -28,7 +28,7 @@ Facts the object is are public fields. Questions it answers are `const` methods.
 
 The destructor is virtual when subclasses exist. A copy that must keep the subclass implements `Clone` and returns `TUniquePtr` to the base, as `FSolidBodyPart::Clone` does.
 
-One concept is one header and one `.cpp`. Small subclasses of one base may share that pair, as `FSolidDungeon`, `FSolidFortress`, and `FSolidTower` share `SolidStrongholdType.h`.
+One concept is one header and one `.cpp`. `FSolidDungeon`, `FSolidFortress`, and `FSolidTower` each have their own pair.
 
 A header in another folder is included by its module path (`Inventory/SolidItemType.h`). A header in the same folder is included by its file name.
 

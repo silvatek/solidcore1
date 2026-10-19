@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SolidStrongholdExterior.h"
+#include "Strongholds/SolidStrongholdExterior.h"
 #include "SolidTowerStronghold.h"
 #include "SolidTowerExterior.generated.h"
 
@@ -31,10 +31,7 @@ public:
 	const SolidTowerStronghold::FPlan& GetPlan() const { return Plan; }
 	UStaticMeshComponent* GetCapMesh() const { return CapMesh; }
 	UStaticMeshComponent* GetDoorMesh() const { return DoorMesh; }
-
-	/** Map cell this exterior stands on. A click on the door enters that cell. */
-	void SetTowerCell(FIntPoint Cell) { TowerCell = Cell; }
-	FIntPoint GetTowerCell() const { return TowerCell; }
+	virtual UStaticMeshComponent* GetPassageMesh() const override { return DoorMesh; }
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
@@ -51,7 +48,6 @@ protected:
 
 private:
 	SolidTowerStronghold::FPlan Plan = SolidTowerStronghold::Imperious;
-	FIntPoint TowerCell = FIntPoint::ZeroValue;
 
 	void DiscardParts();
 	UStaticMeshComponent* AddPart(UStaticMesh* Mesh, const FVector& Location, const FVector& Scale, const FLinearColor& Color, const TCHAR* DebugName);

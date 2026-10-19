@@ -1,9 +1,9 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "SolidDungeonExterior.h"
+#include "Strongholds/Dungeon/SolidDungeonExterior.h"
 #include "SolidGameState.h"
 #include "SolidStrongholds.h"
-#include "SolidStrongholdType.h"
+#include "Strongholds/Dungeon/SolidDungeon.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidWorldMap.h"
 #include "Components/StaticMeshComponent.h"
@@ -355,6 +355,21 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 		TEXT("leaving stands in front of the east face"),
 		FMath::IsNearlyEqual(EastStand.X, CellCenter.X + EastForward + Dungeon.LeaveStandCm(), 0.1f)
 			&& FMath::IsNearlyEqual(EastStand.Y, CellCenter.Y + EastLeft.Y * EastLateral, 0.1f));
+
+	TUniquePtr<FSolidStronghold> Leaving = Cave->Clone();
+	TestNotNull(TEXT("the cave clones"), Leaving.Get());
+	if (Leaving)
+	{
+		Leaving->Location = CellCenter;
+		Leaving->Orientation = ESolidStrongholdOrientation::North;
+		const SolidStronghold::FExitStand NorthExit = SolidStronghold::ExitStand(*Leaving);
+		TestTrue(TEXT("exit stands in front of the north mouth"), NorthExit.XY.Equals(NorthStand, 0.1f));
+		TestTrue(TEXT("exit faces away to the north"), FMath::IsNearlyEqual(NorthExit.YawDeg, 90.f, 0.1f));
+		Leaving->Orientation = ESolidStrongholdOrientation::East;
+		const SolidStronghold::FExitStand EastExit = SolidStronghold::ExitStand(*Leaving);
+		TestTrue(TEXT("exit stands in front of the east mouth"), EastExit.XY.Equals(EastStand, 0.1f));
+		TestTrue(TEXT("exit faces away to the east"), FMath::IsNearlyEqual(EastExit.YawDeg, 0.f, 0.1f));
+	}
 
 	Cave->Orientation = ESolidStrongholdOrientation::North;
 	ASolidDungeonExterior* Rock = NewObject<ASolidDungeonExterior>();

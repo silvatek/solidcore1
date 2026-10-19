@@ -52,17 +52,12 @@ void USolidGameInstance::Capture(const FSolidTravelSession& InSession)
 	bHasSession = true;
 }
 
-void USolidGameInstance::ClearDungeonMouthSpawn()
+void USolidGameInstance::ClearStrongholdExit()
 {
-	Session.bReturnToDungeonMouth = false;
+	Session.bExitStronghold = false;
 }
 
 void USolidGameInstance::ClearLairMouthSpawn()
 {
 	Session.bReturnToLairMouth = false;
-}
-
-void USolidGameInstance::ClearTowerDoorSpawn()
-{
-	Session.bReturnToTowerDoor = false;
 }

@@ -1,11 +1,13 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "SolidDungeonLevel.h"
+#include "Strongholds/Dungeon/SolidDungeonLevel.h"
+#include "Strongholds/SolidStrongholdTransition.h"
 #include "SolidGameInstance.h"
+#include "SolidTravel.h"
 #include "SolidLair.h"
-#include "SolidTowerInterior.h"
-#include "SolidTowerExterior.h"
-#include "SolidTowerStronghold.h"
+#include "Strongholds/Tower/SolidTowerInterior.h"
+#include "Strongholds/Tower/SolidTowerExterior.h"
+#include "Strongholds/Tower/SolidTowerStronghold.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -77,12 +79,10 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidTowerTravelTest::RunTest(const FString& Parameters)
 {
-	TestTrue(TEXT("tower options request the tower"), SolidDungeonLevel::RequestsTower(SolidDungeonLevel::TowerEnterOptions()));
-	TestFalse(TEXT("tower options are not the cave"), SolidDungeonLevel::RequestsDungeon(SolidDungeonLevel::TowerEnterOptions()));
-	TestTrue(TEXT("cave options still request the cave"), SolidDungeonLevel::RequestsDungeon(SolidDungeonLevel::EnterOptions()));
-	TestFalse(TEXT("cave options are not the tower"), SolidDungeonLevel::RequestsTower(SolidDungeonLevel::EnterOptions()));
-	TestFalse(TEXT("an empty url is not the tower"), SolidDungeonLevel::RequestsTower(FString()));
-	TestFalse(TEXT("an empty url is not the cave"), SolidDungeonLevel::RequestsDungeon(FString()));
+	TestTrue(TEXT("stronghold options request the visit"), SolidTravel::RequestsStronghold(SolidTravel::EnterStrongholdOptions()));
+	TestFalse(TEXT("leave options stay in the world"), SolidTravel::RequestsStronghold(SolidTravel::LeaveOptions()));
+	TestFalse(TEXT("an empty url is the open world"), SolidTravel::RequestsStronghold(FString()));
+	TestTrue(TEXT("a stronghold option with a trailer"), SolidTravel::RequestsStronghold(TEXT("?SolidLevel=Stronghold?listen")));
 
 	USolidGameInstance* Instance = NewObject<USolidGameInstance>();
 	TestNotNull(TEXT("game instance"), Instance);
@@ -91,64 +91,63 @@ bool FSolidTowerTravelTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	TestFalse(TEXT("fresh instance is not in a tower"), Instance->IsInTower());
-	TestFalse(TEXT("fresh instance does not return to a tower door"), Instance->WantsTowerDoorSpawn());
-	TestFalse(TEXT("fresh instance is the open world"), Instance->IsInDungeon());
+	TestFalse(TEXT("fresh instance is the open world"), Instance->IsInStronghold());
+	TestFalse(TEXT("fresh instance does not stand outside"), Instance->WantsStrongholdExit());
 
 	FSolidTravelSession Inside;
-	Inside.bInTower = true;
-	Inside.bInDungeon = false;
-	Inside.bReturnToDungeonMouth = false;
+	Inside.bInStronghold = true;
+	Inside.bExitStronghold = false;
 	Instance->Capture(Inside);
-	TestTrue(TEXT("a tower session is inside"), Instance->IsInTower());
-	TestFalse(TEXT("a tower session is not the cave"), Instance->IsInDungeon());
-	TestFalse(TEXT("a tower session does not spawn at the cave mouth"), Instance->WantsDungeonMouthSpawn());
-	TestFalse(TEXT("a tower session does not stand outside yet"), Instance->WantsTowerDoorSpawn());
+	TestTrue(TEXT("a stronghold session is inside"), Instance->IsInStronghold());
+	TestFalse(TEXT("a stronghold session does not stand outside yet"), Instance->WantsStrongholdExit());
 
 	FSolidTravelSession Leave;
-	Leave.bInTower = false;
-	Leave.bReturnToTowerDoor = true;
-	Leave.bReturnToDungeonMouth = false;
+	Leave.bInStronghold = false;
+	Leave.bExitStronghold = true;
 	Instance->Capture(Leave);
-	TestTrue(TEXT("leaving stands at the tower door"), Instance->WantsTowerDoorSpawn());
-	TestFalse(TEXT("leaving the tower is not a cave spawn"), Instance->WantsDungeonMouthSpawn());
-	TestFalse(TEXT("leaving the tower is the open world"), Instance->IsInTower());
-	Instance->ClearTowerDoorSpawn();
-	TestFalse(TEXT("tower door spawn is used once"), Instance->WantsTowerDoorSpawn());
+	TestTrue(TEXT("leaving stands outside the entrance"), Instance->WantsStrongholdExit());
+	TestFalse(TEXT("leaving the stronghold is the open world"), Instance->IsInStronghold());
+	Instance->ClearStrongholdExit();
+	TestFalse(TEXT("the outside stand is used once"), Instance->WantsStrongholdExit());
 
-	FSolidTravelSession CaveLeave;
-	CaveLeave.bInDungeon = false;
-	CaveLeave.bReturnToDungeonMouth = true;
-	Instance->Capture(CaveLeave);
-	TestFalse(TEXT("a cave leave is not a tower spawn"), Instance->WantsTowerDoorSpawn());
-	TestTrue(TEXT("a cave leave still stands at the mouth"), Instance->WantsDungeonMouthSpawn());
-
-	const SolidLair::FPassageHit TowerEnter = SolidLair::HitOnTower(FIntPoint(16, 30), false);
-	const SolidLair::FPassageHit TowerLeave = SolidLair::HitOnTower(FIntPoint(16, 30), true);
-	const SolidLair::FPassageHit CaveEnter = SolidLair::HitOnMouth(false, 0, false);
-	TestEqual(TEXT("tower enter tip"), FString(SolidLair::PassageTip(TowerEnter)), FString(SolidTowerStronghold::EnterLabel));
-	TestEqual(TEXT("tower leave tip"), FString(SolidLair::PassageTip(TowerLeave)), FString(SolidTowerStronghold::LeaveLabel));
-	TestEqual(TEXT("cave tip stays Enter cave"), FString(SolidLair::PassageTip(CaveEnter)), FString(SolidDungeonLevel::EnterLabel));
+	const FIntPoint DoorCell(16, 30);
+	const SolidLair::FPassageHit TowerEnter = SolidLair::HitOnStronghold(DoorCell, false);
+	const SolidLair::FPassageHit TowerLeave = SolidLair::HitOnStronghold(DoorCell, true);
+	const SolidLair::FPassageHit CaveEnter = SolidLair::HitOnStronghold(SolidStronghold::StartingCell(), false);
+	TestEqual(TEXT("a tower enter logs Enter stronghold"), FString(SolidLair::PassageTip(TowerEnter)), FString(TEXT("Enter stronghold")));
+	TestEqual(TEXT("a tower leave logs Exit stronghold"), FString(SolidLair::PassageTip(TowerLeave)), FString(TEXT("Exit stronghold")));
+	TestEqual(TEXT("a cave enter logs Enter stronghold"), FString(SolidLair::PassageTip(CaveEnter)), FString(TEXT("Enter stronghold")));
+	const SolidLair::FPassageHit CaveLeaveHit = SolidLair::HitOnStronghold(SolidStronghold::StartingCell(), true);
+	TestEqual(TEXT("a cave leave logs Exit stronghold"), FString(SolidLair::PassageTip(CaveLeaveHit)), FString(TEXT("Exit stronghold")));
 	TestEqual(
-		TEXT("a shut cave still lets the tower door open"),
-		static_cast<uint8>(SolidLair::AllowPassage(TowerEnter, false, false).Action),
-		static_cast<uint8>(SolidDungeonPassage::EHit::Enter));
+		TEXT("a shut cave still lets the tower door through the tunnel gate"),
+		static_cast<uint8>(SolidLair::AllowPassage(TowerEnter, false).Action),
+		static_cast<uint8>(SolidLair::EHit::Enter));
 	TestEqual(
 		TEXT("that click keeps the cell"),
-		SolidLair::AllowPassage(TowerEnter, false, false).TowerCell.X,
+		SolidLair::AllowPassage(TowerEnter, false).StrongholdCell.X,
 		static_cast<int32>(16));
-	TestEqual(
-		TEXT("a shut cave still drops the cave door"),
-		static_cast<uint8>(SolidLair::AllowPassage(CaveEnter, false, true).Action),
-		static_cast<uint8>(SolidDungeonPassage::EHit::None));
+	FGameState Closed;
+	TestFalse(
+		TEXT("a shut stronghold refuses the cave door"),
+		Closed.ActiveStronghold->AcceptsEnter(Closed, Closed.ActiveStronghold->Cell));
+	FGameState TowerState;
+	TowerState.ActiveStronghold = SolidStronghold::Make(
+		ESolidStrongholdType::Tower,
+		ESolidStrongholdSize::Average,
+		DoorCell,
+		SolidStronghold::WorldXY(DoorCell));
+	TestTrue(
+		TEXT("a shut cave still lets the company tower door open"),
+		TowerState.ActiveStronghold->AcceptsEnter(TowerState, DoorCell));
 
 	ASolidTowerExterior* Shell = NewObject<ASolidTowerExterior>();
 	TestNotNull(TEXT("shell"), Shell);
 	if (Shell)
 	{
-		Shell->SetTowerCell(FIntPoint(16, 30));
-		TestEqual(TEXT("shell remembers its cell"), Shell->GetTowerCell().X, static_cast<int32>(16));
-		TestEqual(TEXT("shell remembers its column"), Shell->GetTowerCell().Y, static_cast<int32>(30));
+		Shell->SetStrongholdCell(DoorCell);
+		TestEqual(TEXT("shell remembers its cell"), Shell->GetStrongholdCell().X, static_cast<int32>(16));
+		TestEqual(TEXT("shell remembers its column"), Shell->GetStrongholdCell().Y, static_cast<int32>(30));
 	}
 
 	const FVector2D Cell(1000.f, 2000.f);
@@ -162,6 +161,26 @@ bool FSolidTowerTravelTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("the stand point is outside the stone"),
 		FVector2D::Distance(Stand, Cell) > Imperious.GroundExteriorRadiusCm);
+
+	TUniquePtr<FSolidStronghold> Tower = SolidStronghold::Make(
+		ESolidStrongholdType::Tower,
+		ESolidStrongholdSize::Imperious,
+		FIntPoint(16, 30),
+		Cell);
+	TestNotNull(TEXT("an Imperious tower"), Tower.Get());
+	if (Tower)
+	{
+		Tower->Orientation = ESolidStrongholdOrientation::North;
+		const SolidStronghold::FExitStand NorthExit = SolidStronghold::ExitStand(*Tower);
+		TestTrue(TEXT("north exit stands on the north grass"), NorthExit.XY.Equals(Stand, 0.1f));
+		TestTrue(TEXT("north exit faces away"), FMath::IsNearlyEqual(NorthExit.YawDeg, 90.f, 0.1f));
+
+		Tower->Orientation = ESolidStrongholdOrientation::East;
+		const FVector2D EastDoor = SolidTowerStronghold::OutsideDoorXY(Cell, 0.f, Imperious);
+		const SolidStronghold::FExitStand EastExit = SolidStronghold::ExitStand(*Tower);
+		TestTrue(TEXT("east exit stands on the east grass"), EastExit.XY.Equals(EastDoor, 0.1f));
+		TestTrue(TEXT("east exit faces away"), FMath::IsNearlyEqual(EastExit.YawDeg, 0.f, 0.1f));
+	}
 
 	return true;
 }

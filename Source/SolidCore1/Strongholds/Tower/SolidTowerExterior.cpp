@@ -1,7 +1,7 @@
 #include "SolidTowerExterior.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
-#include "SolidStrongholds.h"
+#include "Strongholds/SolidStrongholds.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"

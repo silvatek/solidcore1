@@ -5,6 +5,7 @@
 #include "SolidGameState.h"
 #include "SolidHUD.h"
 #include "SolidGameMode.h"
+#include "Strongholds/SolidStrongholdTransition.h"
 #include "Journal/SolidJournal.h"
 #include "Lairs/SolidLair.h"
 #include "SolidSight.h"
@@ -648,16 +649,16 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidEventsCaveTest::RunTest(const FString& Parameters)
 {
 	FGameState State;
-	TestFalse(TEXT("the cave starts closed"), State.bCaveEnabled);
+	TestFalse(TEXT("the cave starts closed"), State.bStrongholdsEnabled);
 
 	const SolidEvents::FResult Blocked = SolidEvents::NotifyReachBrokenBridge(State);
-	TestFalse(TEXT("an early stand does not enter"), Blocked.bEnterCave);
-	TestFalse(TEXT("an early stand leaves the cave closed"), State.bCaveEnabled);
+	TestFalse(TEXT("an early stand does not enter"), Blocked.bEnterStronghold);
+	TestFalse(TEXT("an early stand leaves the cave closed"), State.bStrongholdsEnabled);
 
 	const SolidEvents::FResult Iglin = SolidEvents::NotifyOccupiedTown(State, 0);
 	TestTrue(TEXT("Iglin fires"), Iglin.bFired);
-	TestFalse(TEXT("Iglin leaves the cave closed"), Iglin.bEnterCave);
-	TestFalse(TEXT("Iglin does not open the cave"), State.bCaveEnabled);
+	TestFalse(TEXT("Iglin leaves the cave closed"), Iglin.bEnterStronghold);
+	TestFalse(TEXT("Iglin does not open the cave"), State.bStrongholdsEnabled);
 
 	const SolidEvents::FEvent* Event = SolidEventTestPrivate::FindEvent(TEXT("Reach broken bridge"));
 	TestNotNull(TEXT("Reach broken bridge is listed"), Event);
@@ -675,8 +676,8 @@ bool FSolidEventsCaveTest::RunTest(const FString& Parameters)
 	}
 
 	const SolidEvents::FResult Reached = SolidEvents::NotifyReachBrokenBridge(State);
-	TestEqual(TEXT("the ramp follows its cave change"), Reached.bEnterCave, bReachOpensCave);
-	TestEqual(TEXT("the cave follows the ramp event"), State.bCaveEnabled, bReachOpensCave);
+	TestEqual(TEXT("the ramp follows its cave change"), Reached.bEnterStronghold, bReachOpensCave);
+	TestEqual(TEXT("the cave follows the ramp event"), State.bStrongholdsEnabled, bReachOpensCave);
 	TestEqual(
 		TEXT("the journal records the cave when the ramp opens it"),
 		Event && SolidJournal::Describe(*Event).Contains(TEXT("Cave enabled")),
@@ -695,14 +696,16 @@ bool FSolidEventsCaveTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the journal lists the cave when the ramp opens it"), bSawCave, bReachOpensCave);
 
 	const SolidEvents::FResult Again = SolidEvents::NotifyReachBrokenBridge(State);
-	TestFalse(TEXT("the cave trip happens once"), Again.bEnterCave);
-	TestEqual(TEXT("the cave stays with the ramp event"), State.bCaveEnabled, bReachOpensCave);
+	TestFalse(TEXT("the cave trip happens once"), Again.bEnterStronghold);
+	TestEqual(TEXT("the cave stays with the ramp event"), State.bStrongholdsEnabled, bReachOpensCave);
 
 	ASolidGameMode* GameMode = NewObject<ASolidGameMode>();
 	TestNotNull(TEXT("gamemode"), GameMode);
 	if (GameMode)
 	{
-		TestFalse(TEXT("a new game keeps the cave closed"), GameMode->IsCaveEnabled());
+		TestFalse(
+			TEXT("a new game keeps strongholds closed"),
+			SolidStrongholdTransition::StrongholdsEnabled(GameMode->GetConfiguration()));
 	}
 	return true;
 }
@@ -793,17 +796,17 @@ bool FSolidEventsMessageTest::RunTest(const FString& Parameters)
 		TEXT("the ramp result names the monster message"),
 		FString(Reached.MessageId),
 		FString(SolidMessages::IdKilledByMonsters));
-	TestFalse(TEXT("the ramp leaves the cave closed"), Reached.bEnterCave);
-	TestFalse(TEXT("showing the message does not open the cave"), State.bCaveEnabled);
+	TestFalse(TEXT("the ramp leaves the cave closed"), Reached.bEnterStronghold);
+	TestFalse(TEXT("showing the message does not open the cave"), State.bStrongholdsEnabled);
 
 	const SolidEvents::FResult Other = SolidEvents::NotifyMessageClosed(State, TEXT("missing"));
 	TestFalse(TEXT("another message does not fire"), Other.bFired);
-	TestFalse(TEXT("another message leaves the cave closed"), State.bCaveEnabled);
+	TestFalse(TEXT("another message leaves the cave closed"), State.bStrongholdsEnabled);
 
 	const SolidEvents::FResult Closed = SolidEvents::NotifyMessageClosed(State, SolidMessages::IdKilledByMonsters);
 	TestTrue(TEXT("closing the message fires"), Closed.bFired);
-	TestTrue(TEXT("closing the message sends the captain inside"), Closed.bEnterCave);
-	TestTrue(TEXT("the cave is open"), State.bCaveEnabled);
+	TestTrue(TEXT("closing the message sends the captain inside"), Closed.bEnterStronghold);
+	TestTrue(TEXT("the cave is open"), State.bStrongholdsEnabled);
 
 	TArray<SolidJournal::FRow> Rows;
 	SolidJournal::CollectRows(State, Rows);
@@ -825,8 +828,8 @@ bool FSolidEventsMessageTest::RunTest(const FString& Parameters)
 
 	const SolidEvents::FResult ClosedAgain = SolidEvents::NotifyMessageClosed(State, SolidMessages::IdKilledByMonsters);
 	TestFalse(TEXT("closing the message fires once"), ClosedAgain.bFired);
-	TestFalse(TEXT("a second close does not travel again"), ClosedAgain.bEnterCave);
-	TestTrue(TEXT("the cave stays open"), State.bCaveEnabled);
+	TestFalse(TEXT("a second close does not travel again"), ClosedAgain.bEnterStronghold);
+	TestTrue(TEXT("the cave stays open"), State.bStrongholdsEnabled);
 
 	ASolidHUD* HUD = NewObject<ASolidHUD>();
 	TestNotNull(TEXT("hud"), HUD);
@@ -944,7 +947,7 @@ bool FSolidEventsDrivenFromVillageTest::RunTest(const FString& Parameters)
 
 	SolidEvents::NotifyReachBrokenBridge(State);
 	const SolidEvents::FResult Closed = SolidEvents::NotifyMessageClosed(State, SolidMessages::IdKilledByMonsters);
-	TestTrue(TEXT("the close still opens the cave"), Closed.bEnterCave);
+	TestTrue(TEXT("the close still opens the cave"), Closed.bEnterStronghold);
 	TestFalse(TEXT("the close is not the return"), HasFiredDriven(State));
 
 	const SolidEvents::FResult StillThere = SolidEvents::NotifyOccupiedTown(State, 0);
@@ -963,8 +966,8 @@ bool FSolidEventsDrivenFromVillageTest::RunTest(const FString& Parameters)
 		TEXT("the return result names the village message"),
 		FString(Returned.MessageId),
 		FString(SolidMessages::IdDrivenFromVillage));
-	TestFalse(TEXT("the return does not send the captain inside again"), Returned.bEnterCave);
-	TestTrue(TEXT("the cave stays open"), State.bCaveEnabled);
+	TestFalse(TEXT("the return does not send the captain inside again"), Returned.bEnterStronghold);
+	TestTrue(TEXT("the cave stays open"), State.bStrongholdsEnabled);
 	TestTrue(TEXT("the return is recorded"), HasFiredDriven(State));
 
 	TArray<SolidJournal::FRow> Rows;
@@ -1291,7 +1294,7 @@ bool FSolidEventsClearInventoryTest::RunTest(const FString& Parameters)
 
 	const SolidEvents::FResult Closed = SolidEvents::NotifyMessageClosed(State, SolidMessages::IdKilledByMonsters);
 	TestTrue(TEXT("closing the message fires"), Closed.bFired);
-	TestTrue(TEXT("closing the message still opens the cave"), Closed.bEnterCave);
+	TestTrue(TEXT("closing the message still opens the cave"), Closed.bEnterStronghold);
 	for (int32 Index = 0; Index < SolidInventory::WornCount; ++Index)
 	{
 		const SolidInventory::ESlot Slot = static_cast<SolidInventory::ESlot>(Index);
@@ -1465,8 +1468,8 @@ bool FSolidEventsEnableLairTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("applying it enables the Iglin tunnels"), SolidEvents::IsLairEnabled(State, SolidLair::IdIglinTunnels));
 	TestTrue(TEXT("the tunnels are open"), SolidLair::TunnelsOpen(State));
 	TestFalse(TEXT("another lair stays shut"), SolidEvents::IsLairEnabled(State, TEXT("aabbcc99")));
-	TestFalse(TEXT("the cave stays shut"), State.bCaveEnabled);
-	TestFalse(TEXT("EnableLair does not enter the cave"), Result.bEnterCave);
+	TestFalse(TEXT("the cave stays shut"), State.bStrongholdsEnabled);
+	TestFalse(TEXT("EnableLair does not enter the cave"), Result.bEnterStronghold);
 
 	const SolidEvents::FEvent Other = SolidEvents::EnterTown(TEXT("aabbcc02"), TEXT("Sample lair"), 0, SolidEvents::ACT_0)
 		.EnableLair(TEXT("aabbcc99"));
@@ -1480,7 +1483,7 @@ bool FSolidEventsEnableLairTest::RunTest(const FString& Parameters)
 	SolidEvents::ApplyChange(OtherState, Other.Changes[0], OtherResult);
 	TestTrue(TEXT("the id opens"), SolidEvents::IsLairEnabled(OtherState, TEXT("aabbcc99")));
 	TestFalse(TEXT("that change leaves the Iglin tunnels shut"), SolidLair::TunnelsOpen(OtherState));
-	TestFalse(TEXT("a different lair does not enter the cave"), OtherResult.bEnterCave);
+	TestFalse(TEXT("a different lair does not enter the cave"), OtherResult.bEnterStronghold);
 
 	if (Enable)
 	{

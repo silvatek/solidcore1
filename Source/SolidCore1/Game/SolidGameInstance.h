@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
-#include "SolidDungeonLevel.h"
+#include "SolidTravelSession.h"
 #include "SolidWorldTime.h"
 #include "SolidGameInstance.generated.h"
 
@@ -20,17 +20,16 @@ public:
 	bool HasSession() const { return bHasSession; }
 	const FSolidTravelSession& GetSession() const { return Session; }
 
-	bool IsInDungeon() const { return bHasSession && Session.bInDungeon; }
-	bool WantsDungeonMouthSpawn() const { return bHasSession && Session.bReturnToDungeonMouth; }
-	void ClearDungeonMouthSpawn();
+	bool IsInStronghold() const { return bHasSession && Session.bInStronghold; }
+	bool WantsStrongholdExit() const { return bHasSession && Session.bExitStronghold; }
+	void ClearStrongholdExit();
 
 	bool IsInLair() const { return bHasSession && Session.bInLair; }
 	bool WantsLairMouthSpawn() const { return bHasSession && Session.bReturnToLairMouth; }
 	void ClearLairMouthSpawn();
 
-	bool IsInTower() const { return bHasSession && Session.bInTower; }
-	bool WantsTowerDoorSpawn() const { return bHasSession && Session.bReturnToTowerDoor; }
-	void ClearTowerDoorSpawn();
+	/** A stronghold interior or the Iglin tunnels. */
+	bool IsInClosedVisit() const { return IsInStronghold() || IsInLair(); }
 
 	/**
 	 * World time for a journal line. A new process advances the date once.

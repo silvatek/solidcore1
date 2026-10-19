@@ -62,7 +62,7 @@ void USolidTerrainWorldSubsystem::TryEnsureStreamer(const TCHAR* Reason)
 
 	if (const USolidGameInstance* Instance = World->GetGameInstance<USolidGameInstance>())
 	{
-		if (Instance->IsInDungeon() || Instance->IsInLair() || Instance->IsInTower())
+		if (Instance->IsInClosedVisit())
 		{
 			bStreamerEnsured = true;
 			return;

@@ -85,6 +85,10 @@ bool FSolidStrongholdCatalogTest::RunTest(const FString& Parameters)
 		TEXT("the entrance hover names it, then asks for a click"),
 		SolidStronghold::EnterHover(MeagreDungeon.Name),
 		FString(TEXT("Meagre Dungeon\nClick to enter")));
+	TestEqual(
+		TEXT("inside, the pointer says Leave stronghold"),
+		FString(SolidStronghold::LeaveHover),
+		FString(TEXT("Leave stronghold")));
 
 	const SolidStronghold::FVisitView Cave = SolidStronghold::VisitViewFor(MeagreDungeon);
 	TestTrue(TEXT("entering the cave levels the camera"), FMath::IsNearlyZero(Cave.Enter.PitchDeg, 0.1f));

@@ -2,9 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "SolidGameState.h"
-#include "SolidStrongholdFurniture.h"
+#include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
 #include "SolidStrongholdGrid.h"
-#include "SolidStrongholdType.h"
 
 /**
  * Moving the company from the stronghold it has to a site.
@@ -198,29 +197,19 @@ namespace SolidStrongholdTransition
 		return true;
 	}
 
-	/** F10 Enter cave and the stronghold mouth. True only while that stronghold is still the company base and open. */
-	inline bool CompanyCaveAcceptsEnter(const FGameState& State)
+	/** Strongholds stay shut until the monster message closes. */
+	inline bool StrongholdsEnabled(const FGameState& State)
 	{
-		return State.bCaveEnabled
-			&& State.ActiveStronghold->Type == ESolidStrongholdType::Dungeon
-			&& State.ActiveStronghold->Size == ESolidStrongholdSize::Meagre
-			&& State.ActiveStronghold->Cell == SolidStronghold::StartingCell();
-	}
-
-	/** The company tower door is a passage. A previous door, and any other map door, is not. */
-	inline bool TowerDoorAcceptsEnter(const FGameState& State, const FIntPoint Cell)
-	{
-		return State.ActiveStronghold
-			&& State.ActiveStronghold->Type == ESolidStrongholdType::Tower
-			&& State.ActiveStronghold->Cell == Cell;
+		return State.bStrongholdsEnabled;
 	}
 
 	/** The company chest is open on the inventory page while the captain is inside the base that holds it. */
-	inline bool CompanyChestOpen(
-		const FGameState& State,
-		const bool bInDungeon,
-		const bool bInTower)
+	inline bool CompanyChestOpen(const FGameState& State, const bool bInStronghold)
 	{
+		if (!bInStronghold || !State.ActiveStronghold)
+		{
+			return false;
+		}
 		bool bHasChest = false;
 		for (const SolidStrongholdFurniture::FUsed& Piece : State.Furnishings)
 		{
@@ -234,15 +223,10 @@ namespace SolidStrongholdTransition
 		{
 			return false;
 		}
-		if (bInDungeon)
+		if (State.ActiveStronghold->Type == ESolidStrongholdType::Dungeon)
 		{
-			return CompanyCaveAcceptsEnter(State);
+			return State.ActiveStronghold->AcceptsEnter(State, State.ActiveStronghold->Cell);
 		}
-		if (bInTower)
-		{
-			return State.ActiveStronghold
-				&& State.ActiveStronghold->Type == ESolidStrongholdType::Tower;
-		}
-		return false;
+		return State.ActiveStronghold->Type == ESolidStrongholdType::Tower;
 	}
 }

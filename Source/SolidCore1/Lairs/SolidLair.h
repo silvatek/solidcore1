@@ -2,11 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "Misc/Parse.h"
-#include "SolidDungeonLevel.h"
-#include "SolidDungeonPassage.h"
+#include "SolidTravel.h"
 #include "SolidGameState.h"
 #include "SolidLairId.h"
-#include "SolidTowerStronghold.h"
 #include "SolidWorldMap.h"
 
 /**
@@ -228,7 +226,7 @@ namespace SolidLair
 	{
 		return FString::Printf(
 			TEXT("?%s=%s?%s=%c"),
-			SolidDungeonLevel::OptionKey,
+			SolidTravel::OptionKey,
 			VisitValue,
 			EndOptionKey,
 			FChar::ToUpper(End));
@@ -237,7 +235,7 @@ namespace SolidLair
 	inline bool RequestsVisit(const FString& Options)
 	{
 		FString Value;
-		if (!FParse::Value(*Options, *FString::Printf(TEXT("%s="), SolidDungeonLevel::OptionKey), Value))
+		if (!FParse::Value(*Options, *FString::Printf(TEXT("%s="), SolidTravel::OptionKey), Value))
 		{
 			return false;
 		}
@@ -287,18 +285,26 @@ namespace SolidLair
 		FVector2D WorldMaxXY,
 		TArray<FEntrance>& OutEntrances);
 
+	/** What a click on a dark opening does. */
+	enum class EHit : uint8
+	{
+		None,
+		Enter,
+		Leave,
+	};
+
 	/**
-	 * A click on a closed mouth. Enter and leave are the same two actions as the cave.
+	 * A click on a closed mouth. Enter and leave are the same two actions.
 	 * bLair marks a lair mouth. EndMarker names which end.
 	 */
 	struct FPassageHit
 	{
-		SolidDungeonPassage::EHit Action = SolidDungeonPassage::EHit::None;
+		EHit Action = EHit::None;
 		bool bLair = false;
 		TCHAR EndMarker = 0;
-		/** A tower door. TowerCell is the map cell of that door. */
-		bool bTower = false;
-		FIntPoint TowerCell = FIntPoint::ZeroValue;
+		/** A stronghold opening. StrongholdCell is the map cell of that opening. */
+		bool bStronghold = false;
+		FIntPoint StrongholdCell = FIntPoint::ZeroValue;
 	};
 
 	inline FPassageHit HitOnMouth(const bool bLairMouth, const TCHAR EndMarker, const bool bInside)
@@ -306,54 +312,48 @@ namespace SolidLair
 		FPassageHit Hit;
 		Hit.bLair = bLairMouth;
 		Hit.EndMarker = bLairMouth ? FChar::ToUpper(EndMarker) : 0;
-		Hit.Action = bInside ? SolidDungeonPassage::EHit::Leave : SolidDungeonPassage::EHit::Enter;
+		Hit.Action = bInside ? EHit::Leave : EHit::Enter;
 		return Hit;
 	}
 
-	/** A tower door. The door stays open even while the cave is shut. */
-	inline FPassageHit HitOnTower(const FIntPoint Cell, const bool bInside)
+	/** A stronghold opening. The company stronghold decides whether the click may enter. */
+	inline FPassageHit HitOnStronghold(const FIntPoint Cell, const bool bInside)
 	{
 		FPassageHit Hit;
-		Hit.bTower = true;
-		Hit.TowerCell = Cell;
-		Hit.Action = bInside ? SolidDungeonPassage::EHit::Leave : SolidDungeonPassage::EHit::Enter;
+		Hit.bStronghold = true;
+		Hit.StrongholdCell = Cell;
+		Hit.Action = bInside ? EHit::Leave : EHit::Enter;
 		return Hit;
 	}
 
-	/** Enter is ignored while that place is shut. Leave stays available. A tower door stays open. */
-	inline FPassageHit AllowPassage(const FPassageHit& Hit, const bool bCaveEnabled, const bool bTunnelsOpen)
+	/** A lair enter is ignored while the tunnels are shut. Leave stays available. A stronghold opening is left for the stronghold. */
+	inline FPassageHit AllowPassage(const FPassageHit& Hit, const bool bTunnelsOpen)
 	{
-		if (Hit.Action != SolidDungeonPassage::EHit::Enter)
+		if (Hit.Action != EHit::Enter || Hit.bStronghold || !Hit.bLair)
 		{
 			return Hit;
 		}
-		if (Hit.bTower)
-		{
-			return Hit;
-		}
-		if (Hit.bLair)
-		{
-			return bTunnelsOpen ? Hit : FPassageHit();
-		}
-		return bCaveEnabled ? Hit : FPassageHit();
+		return bTunnelsOpen ? Hit : FPassageHit();
 	}
 
 	inline const TCHAR* PassageTip(const FPassageHit& Hit)
 	{
-		if (Hit.Action == SolidDungeonPassage::EHit::None)
+		if (Hit.Action == EHit::None)
 		{
 			return TEXT("");
 		}
-		if (Hit.bTower)
+		if (Hit.Action == EHit::Leave && !Hit.bLair)
 		{
-			return Hit.Action == SolidDungeonPassage::EHit::Enter
-				? SolidTowerStronghold::EnterLabel
-				: SolidTowerStronghold::LeaveLabel;
+			return SolidStronghold::ExitLabel;
 		}
 		if (Hit.bLair)
 		{
-			return Hit.Action == SolidDungeonPassage::EHit::Enter ? EnterLabel : LeaveLabel;
+			return Hit.Action == EHit::Enter ? EnterLabel : LeaveLabel;
 		}
-		return SolidDungeonPassage::TipText(Hit.Action);
+		if (Hit.bStronghold)
+		{
+			return SolidStronghold::EnterLabel;
+		}
+		return TEXT("");
 	}
 }

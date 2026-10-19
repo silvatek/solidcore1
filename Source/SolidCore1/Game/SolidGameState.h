@@ -6,7 +6,7 @@
 #include "Inventory/SolidStorage.h"
 #include "Journal/SolidJournalEntry.h"
 #include "SolidStronghold.h"
-#include "Strongholds/SolidStrongholdFurniture.h"
+#include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
 
 /**
  * Live company state. The game starts in true sight with an empty squad.
@@ -27,8 +27,8 @@ struct FGameState
 	bool bRavenSightEnabled = false;
 	/** Enter Relion restores the Iglin span. It starts broken. */
 	bool bIglinBridgeRepaired = false;
-	/** Closing the monster message opens the starting cave. It starts closed. */
-	bool bCaveEnabled = false;
+	/** Closing the monster message opens strongholds. They start closed. */
+	bool bStrongholdsEnabled = false;
 	/**
 	 * Lairs an EnableLair change has opened, by id.
 	 * A new game has none. The change carries the lair id. The event id does not.
@@ -78,8 +78,8 @@ namespace SolidEvents
 		const TCHAR* CaptainTitle = TitleOutcast;
 		/** A Repair bridge change ran. */
 		bool bRepairBridge = false;
-		/** An Enable cave change ran. The captain is sent inside. */
-		bool bEnterCave = false;
+		/** An Enable cave change ran. The captain enters the stronghold. */
+		bool bEnterStronghold = false;
 		/** A Show message change ran. MessageId names the line to show. */
 		bool bShowMessage = false;
 		const TCHAR* MessageId = nullptr;

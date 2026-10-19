@@ -5,7 +5,7 @@
 #include "Lairs/SolidLair.h"
 #include "Lairs/SolidLairInterior.h"
 #include "Lairs/SolidLairEntrance.h"
-#include "SolidDungeonLevel.h"
+#include "Strongholds/Dungeon/SolidDungeonLevel.h"
 #include "SolidGameState.h"
 #include "SolidStronghold.h"
 #include "SolidStrongholds.h"
@@ -131,36 +131,38 @@ bool FSolidLairGateTest::RunTest(const FString& Parameters)
 	SolidEvents::NotifyReachBrokenBridge(State);
 	SolidEvents::NotifyMessageClosed(State, SolidMessages::IdKilledByMonsters);
 	TestFalse(TEXT("the cave close leaves the tunnels shut"), SolidLair::TunnelsOpen(State));
-	TestTrue(TEXT("that close still opens the cave"), State.bCaveEnabled);
+	TestTrue(TEXT("that close still opens the cave"), State.bStrongholdsEnabled);
 
 	SolidEvents::NotifyOccupiedTown(State, INDEX_NONE);
 	SolidEvents::NotifyOccupiedTown(State, SolidTowns::Iglin);
 	TestTrue(TEXT("Driven from the village opens the tunnels"), SolidLair::TunnelsOpen(State));
 
-	const SolidLair::FPassageHit CaveEnter = SolidLair::HitOnMouth(false, 0, false);
+	const SolidLair::FPassageHit CaveEnter = SolidLair::HitOnStronghold(SolidStronghold::StartingCell(), false);
 	const SolidLair::FPassageHit TunnelEnter = SolidLair::HitOnMouth(true, USolidWorldMap::XMarker, false);
 	const SolidLair::FPassageHit TunnelLeave = SolidLair::HitOnMouth(true, USolidWorldMap::YMarker, true);
-	TestEqual(TEXT("a shut tunnel click is ignored"), static_cast<uint8>(SolidLair::AllowPassage(TunnelEnter, true, false).Action), static_cast<uint8>(SolidDungeonPassage::EHit::None));
+	TestEqual(TEXT("a shut tunnel click is ignored"), static_cast<uint8>(SolidLair::AllowPassage(TunnelEnter, false).Action), static_cast<uint8>(SolidLair::EHit::None));
 	TestEqual(
 		TEXT("an open tunnel click enters"),
-		static_cast<uint8>(SolidLair::AllowPassage(TunnelEnter, false, true).Action),
-		static_cast<uint8>(SolidDungeonPassage::EHit::Enter));
-	TestTrue(TEXT("that click keeps the X end"), SolidLair::AllowPassage(TunnelEnter, false, true).bLair);
+		static_cast<uint8>(SolidLair::AllowPassage(TunnelEnter, true).Action),
+		static_cast<uint8>(SolidLair::EHit::Enter));
+	TestTrue(TEXT("that click keeps the X end"), SolidLair::AllowPassage(TunnelEnter, true).bLair);
 	TestEqual(
 		TEXT("the X end is kept"),
-		static_cast<int32>(SolidLair::AllowPassage(TunnelEnter, false, true).EndMarker),
+		static_cast<int32>(SolidLair::AllowPassage(TunnelEnter, true).EndMarker),
 		static_cast<int32>(USolidWorldMap::XMarker));
 	TestEqual(
 		TEXT("leaving stays available while the tunnels are shut"),
-		static_cast<uint8>(SolidLair::AllowPassage(TunnelLeave, false, false).Action),
-		static_cast<uint8>(SolidDungeonPassage::EHit::Leave));
+		static_cast<uint8>(SolidLair::AllowPassage(TunnelLeave, false).Action),
+		static_cast<uint8>(SolidLair::EHit::Leave));
 	TestEqual(
-		TEXT("a shut cave click is still ignored"),
-		static_cast<uint8>(SolidLair::AllowPassage(CaveEnter, false, true).Action),
-		static_cast<uint8>(SolidDungeonPassage::EHit::None));
+		TEXT("the lair gate leaves a stronghold mouth"),
+		static_cast<uint8>(SolidLair::AllowPassage(CaveEnter, false).Action),
+		static_cast<uint8>(SolidLair::EHit::Enter));
 	TestEqual(TEXT("tunnel tip"), FString(SolidLair::PassageTip(TunnelEnter)), FString(SolidLair::EnterLabel));
 	TestEqual(TEXT("leave tip"), FString(SolidLair::PassageTip(TunnelLeave)), FString(SolidLair::LeaveLabel));
-	TestEqual(TEXT("cave tip stays Enter cave"), FString(SolidLair::PassageTip(CaveEnter)), FString(SolidDungeonLevel::EnterLabel));
+	TestEqual(TEXT("a cave enter logs Enter stronghold"), FString(SolidLair::PassageTip(CaveEnter)), FString(TEXT("Enter stronghold")));
+	const SolidLair::FPassageHit CaveLeave = SolidLair::HitOnStronghold(SolidStronghold::StartingCell(), true);
+	TestEqual(TEXT("a cave leave logs Exit stronghold"), FString(SolidLair::PassageTip(CaveLeave)), FString(TEXT("Exit stronghold")));
 	TestTrue(TEXT("a miss has no tip"), FString(SolidLair::PassageTip(SolidLair::FPassageHit())).IsEmpty());
 
 	SolidEvents::RememberLair(State, SolidWorldTime::FStamp(), true);
@@ -180,12 +182,12 @@ bool FSolidLairTravelTest::RunTest(const FString& Parameters)
 	const FString EnterY = SolidLair::EnterOptions(TEXT('y'));
 	TestTrue(TEXT("X options request the tunnels"), SolidLair::RequestsVisit(EnterX));
 	TestTrue(TEXT("Y options request the tunnels"), SolidLair::RequestsVisit(EnterY));
-	TestFalse(TEXT("tunnel options are not the cave"), SolidDungeonLevel::RequestsDungeon(EnterX));
-	TestFalse(TEXT("cave options are not the tunnels"), SolidLair::RequestsVisit(SolidDungeonLevel::EnterOptions()));
+	TestFalse(TEXT("tunnel options are not the stronghold"), SolidTravel::RequestsStronghold(EnterX));
+	TestFalse(TEXT("stronghold options are not the tunnels"), SolidLair::RequestsVisit(SolidTravel::EnterStrongholdOptions()));
 	TestFalse(TEXT("the open world is not the tunnels"), SolidLair::RequestsVisit(FString()));
 	TestEqual(TEXT("X end"), static_cast<int32>(SolidLair::RequestedEnd(EnterX)), static_cast<int32>(USolidWorldMap::XMarker));
 	TestEqual(TEXT("Y end"), static_cast<int32>(SolidLair::RequestedEnd(EnterY)), static_cast<int32>(USolidWorldMap::YMarker));
-	TestEqual(TEXT("a cave url has no tunnel end"), static_cast<int32>(SolidLair::RequestedEnd(SolidDungeonLevel::EnterOptions())), 0);
+	TestEqual(TEXT("a stronghold url has no tunnel end"), static_cast<int32>(SolidLair::RequestedEnd(SolidTravel::EnterStrongholdOptions())), 0);
 	return true;
 }
 

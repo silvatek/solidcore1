@@ -1,8 +1,8 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "SolidDungeonLevel.h"
+#include "Strongholds/Dungeon/SolidDungeonLevel.h"
 #include "SolidStronghold.h"
-#include "SolidTowerStronghold.h"
+#include "Strongholds/Tower/SolidTowerStronghold.h"
 #include "SolidStrongholdGrid.h"
 
 #if WITH_DEV_AUTOMATION_TESTS

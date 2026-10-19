@@ -259,7 +259,7 @@ bool FSolidPortalTunnelMouthTest::RunTest(const FString& Parameters)
 	const SolidEvents::FResult Recorded = SolidEvents::MarkComplete(State, SolidEvents::IdDrivenFromVillage);
 	TestTrue(TEXT("the portal records Driven from the village"), Recorded.bFired);
 	TestTrue(TEXT("the tunnels open"), SolidLair::TunnelsOpen(State));
-	TestFalse(TEXT("the cave stays shut"), State.bCaveEnabled);
+	TestFalse(TEXT("the cave stays shut"), State.bStrongholdsEnabled);
 	TestTrue(TEXT("killed by monsters is still unfired"), KilledIndex != INDEX_NONE && !State.bFired[KilledIndex]);
 	TestTrue(TEXT("the title is set"), Recorded.bSetTitle);
 	TestEqual(TEXT("title is Outcast"), FString(State.CaptainTitle), FString(SolidEvents::TitleOutcast));

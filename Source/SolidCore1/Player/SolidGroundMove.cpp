@@ -50,7 +50,7 @@ namespace
 
 		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 		{
-			if (GameMode->IsInDungeon() || GameMode->IsInLair() || GameMode->IsInTower())
+			if (GameMode->IsInClosedVisit())
 			{
 				return false;
 			}

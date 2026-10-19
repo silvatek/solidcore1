@@ -7,7 +7,7 @@
  * Pointy-top hexes on a stronghold floor, for placing furniture.
  * Dungeons, fortresses, and towers share this grid.
  * "Across" is flat side to flat side (the horizontal width), not point to point.
- * The company's first stronghold is fourteen irregular cells, not a filled rectangle.
+ * Which cells a stronghold keeps is that type's floor, not this grid.
  */
 namespace SolidStrongholdGrid
 {
@@ -47,44 +47,6 @@ namespace SolidStrongholdGrid
 		int32 Col = 0;
 		int32 Row = 0;
 	};
-
-	/**
-	 * Meagre floor, mouth to the west. Fourteen cells, with a vestibule on the entrance.
-	 *     (-1,1) (0,1) (1,1) (2,1)
-	 * (-2,0) (-1,0) (0,0) (1,0) (2,0)
-	 *        (0,-1) (1,-1) (2,-1)
-	 *           (0,-2) (1,-2)
-	 */
-	inline void MeagreCells(TArray<FCell>& OutCells)
-	{
-		OutCells.Reset();
-		const FCell Cells[] = {
-			{ -2, 0 }, { -1, 0 }, { 0, 0 }, { 1, 0 }, { 2, 0 },
-			{ -1, 1 }, { 0, 1 }, { 1, 1 }, { 2, 1 },
-			{ 0, -1 }, { 1, -1 }, { 2, -1 },
-			{ 0, -2 }, { 1, -2 },
-		};
-		for (const FCell& Cell : Cells)
-		{
-			OutCells.Add(Cell);
-		}
-	}
-
-	inline FCell MeagreEntranceCell()
-	{
-		return FCell{ -2, 0 };
-	}
-
-	inline FCell MeagreCaptainCell()
-	{
-		return FCell{ -1, 0 };
-	}
-
-	/** Cell coordinates are measured from here. */
-	inline FVector2D MeagreOrigin()
-	{
-		return FVector2D::ZeroVector;
-	}
 
 	struct FHex
 	{
@@ -132,30 +94,6 @@ namespace SolidStrongholdGrid
 			}
 		}
 		return true;
-	}
-
-	inline void CollectMeagreHexes(TArray<FHex>& OutHexes)
-	{
-		OutHexes.Reset();
-		TArray<FCell> Cells;
-		MeagreCells(Cells);
-		const FVector2D Origin = MeagreOrigin();
-		for (const FCell& Cell : Cells)
-		{
-			FHex Hex;
-			Hex.Center = HexCenter(Cell.Col, Cell.Row, Origin);
-			Hex.Col = Cell.Col;
-			Hex.Row = Cell.Row;
-			OutHexes.Add(Hex);
-		}
-	}
-
-	/** Midpoint of the entrance hex's west flat, where the mouth sits. */
-	inline FVector2D MeagreMouthMidpoint()
-	{
-		const FCell Entrance = MeagreEntranceCell();
-		const FVector2D Center = HexCenter(Entrance.Col, Entrance.Row, MeagreOrigin());
-		return Center + FVector2D(-FlatToFlatCm * 0.5f, 0.f);
 	}
 
 	struct FEdgeKey
@@ -217,7 +155,7 @@ namespace SolidStrongholdGrid
 		}
 	}
 
-	/** Edges that belong to only one cell. The rock wall follows these. */
+	/** Edges that belong to only one cell. */
 	inline void CollectBoundarySegments(const TArray<FHex>& Hexes, TArray<FSegment>& OutSegments)
 	{
 		OutSegments.Reset();

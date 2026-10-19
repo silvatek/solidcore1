@@ -1,8 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
-#include "SolidStrongholdFurniture.h"
+#include "Strongholds/SolidStrongholdInterior.h"
+#include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
 #include "SolidTowerStronghold.h"
 #include "SolidTowerInterior.generated.h"
 
@@ -22,7 +22,7 @@ class UStaticMeshComponent;
  * A click on that door leaves. Companions stay outside.
  */
 UCLASS()
-class SOLIDCORE1_API ASolidTowerInterior : public AActor
+class SOLIDCORE1_API ASolidTowerInterior : public ASolidStrongholdInterior
 {
 	GENERATED_BODY()
 
@@ -41,16 +41,13 @@ public:
 	const SolidTowerStronghold::FPlan& GetPlan() const { return Plan; }
 	UStaticMeshComponent* GetCapMesh() const { return CapMesh; }
 	UStaticMeshComponent* GetDoorMesh() const { return DoorMesh; }
+	virtual UStaticMeshComponent* GetPassageMesh() const override { return DoorMesh; }
 	UInstancedStaticMeshComponent* GetFloorGrid() const { return FloorGrid; }
 
 	/** Feet on the kept hex nearest the door. */
-	FVector GetCaptainSpawnWorld() const;
+	virtual FVector GetCaptainSpawnWorld() const override;
 	/** Yaw 0 looks into the tower. */
-	FRotator GetCaptainView() const;
-
-	/** Map cell this visit belongs to. A click inside leaves by that door. */
-	void SetTowerCell(FIntPoint Cell) { TowerCell = Cell; }
-	FIntPoint GetTowerCell() const { return TowerCell; }
+	virtual FRotator GetCaptainView() const override;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
@@ -91,7 +88,6 @@ protected:
 
 private:
 	SolidTowerStronghold::FPlan Plan = SolidTowerStronghold::Imperious;
-	FIntPoint TowerCell = FIntPoint::ZeroValue;
 
 	void DiscardParts();
 };

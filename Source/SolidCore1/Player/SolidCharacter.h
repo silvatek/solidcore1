@@ -6,7 +6,6 @@
 #include "Squad/SolidSquadDrill.h"
 #include "SolidSight.h"
 #include "Lairs/SolidLair.h"
-#include "Strongholds/SolidDungeonPassage.h"
 #include "SolidCharacter.generated.h"
 
 class USpringArmComponent;

@@ -1,11 +1,11 @@
 #include "SolidDungeonInterior.h"
-#include "SolidFurnishing.h"
-#include "SolidStrongholdFurniture.h"
-#include "SolidStrongholdGrid.h"
+#include "Strongholds/Furnishings/SolidFurnishing.h"
+#include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
+#include "Strongholds/SolidStrongholdGrid.h"
 #include "SolidDungeonLevel.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
-#include "SolidStrongholds.h"
+#include "Strongholds/SolidStrongholds.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SceneComponent.h"
@@ -462,7 +462,7 @@ void ASolidDungeonInterior::BuildVisuals()
 	TArray<SolidStrongholdGrid::FHex> Hexes;
 	TArray<SolidStrongholdGrid::FSegment> Segments;
 	TArray<SolidStrongholdGrid::FSegment> Boundary;
-	SolidStrongholdGrid::CollectMeagreHexes(Hexes);
+	SolidDungeonLevel::CollectMeagreHexes(Hexes);
 	SolidStrongholdGrid::CollectSegments(Hexes, Segments);
 	SolidStrongholdGrid::CollectBoundarySegments(Hexes, Boundary);
 
@@ -470,7 +470,7 @@ void ASolidDungeonInterior::BuildVisuals()
 	const float Shell = SolidDungeonLevel::ShellCm;
 	const float MouthHeight = SolidDungeonLevel::MouthHeightCm;
 	const FLinearColor Rock = SolidStrongholds::RockColor();
-	const FVector2D MouthMid = SolidStrongholdGrid::MeagreMouthMidpoint();
+	const FVector2D MouthMid = SolidDungeonLevel::MeagreMouthMidpoint();
 
 	if (UStaticMesh* FloorSlab = BuildCaveSlab(this, Hexes, Boundary, -Shell, 0.f))
 	{
@@ -545,9 +545,9 @@ void ASolidDungeonInterior::BuildVisuals()
 	const float DoorHalf = SolidDungeonLevel::DoorwayWidthCm * 0.5f;
 	const float LipThickness = 10.f;
 	const float CornerOverlap = Shell * 0.35f;
-	const SolidStrongholdGrid::FCell EntranceCell = SolidStrongholdGrid::MeagreEntranceCell();
+	const SolidStrongholdGrid::FCell EntranceCell = SolidDungeonLevel::MeagreEntranceCell();
 	const FVector2D EntranceCenter = SolidStrongholdGrid::HexCenter(
-		EntranceCell.Col, EntranceCell.Row, SolidStrongholdGrid::MeagreOrigin());
+		EntranceCell.Col, EntranceCell.Row, SolidDungeonLevel::MeagreOrigin());
 	bool bPlacedMouth = false;
 	for (const SolidStrongholdGrid::FSegment& Edge : Boundary)
 	{
@@ -718,7 +718,7 @@ void ASolidDungeonInterior::PlaceStarterFurnishings()
 	}
 
 	TArray<SolidStrongholdGrid::FHex> Hexes;
-	SolidStrongholdGrid::CollectMeagreHexes(Hexes);
+	SolidDungeonLevel::CollectMeagreHexes(Hexes);
 
 	int32 Placed = 0;
 	for (const SolidStrongholdFurniture::FUsed& UsedPiece : Used)

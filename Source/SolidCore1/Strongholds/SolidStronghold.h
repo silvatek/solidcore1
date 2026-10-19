@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "SolidStrongholdGrid.h"
 #include "SolidTerrainTypes.h"
+#include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
 
 /** What the company base is. Dungeon is the first; Fortress and Tower come later. */
 enum class ESolidStrongholdType : uint8
@@ -45,7 +46,12 @@ enum class ESolidStrongholdOrientation : uint8
 };
 
 class AActor;
+class ASolidStrongholdExterior;
+struct FGameState;
+class ASolidTerrainStreamer;
 class USolidWorldMap;
+class UWorld;
+struct FActorSpawnParameters;
 
 /**
  * A company base: one type, one size, a name, the map cell it stands on, and the way its exit faces.
@@ -87,11 +93,27 @@ public:
 	/** Which trip this type takes. */
 	virtual ESolidStrongholdTrip Trip() const { return ESolidStrongholdTrip::None; }
 
+	/** True when a click on the opening at this map cell may enter. */
+	virtual bool AcceptsEnter(const FGameState&, FIntPoint) const { return false; }
+
 	/** Actor class for this stronghold's exterior. Null when this kind draws none. */
 	virtual UClass* ExteriorClass() const { return nullptr; }
 
 	/** Fill an actor of ExteriorClass() from this stronghold. */
 	virtual void ConfigureExterior(AActor* Exterior) const {}
+
+	/** Actor class for this stronghold's interior. Null when this kind has no visit. */
+	virtual UClass* InteriorClass() const { return nullptr; }
+
+	/**
+	 * Fill an actor of InteriorClass() from this stronghold.
+	 * Furnishings are the pieces the company carried in.
+	 */
+	virtual void ConfigureInterior(
+		AActor*,
+		const TArray<SolidStrongholdFurniture::FUsed>&) const
+	{
+	}
 
 	/**
 	 * World yaw of that exterior.
@@ -112,6 +134,18 @@ public:
 
 	/** A copy that keeps this subclass, the way a body part clones its own mesh. */
 	virtual TUniquePtr<FSolidStronghold> Clone() const;
+
+	/** Centimetres from the cell center to where the captain stands on leaving, along the exit. */
+	virtual float ExitReachCm() const { return 250.f; }
+
+	/** Centimetres across the exit that put that stand on the entrance. */
+	virtual float ExitLateralCm() const { return 0.f; }
+
+	/** World position just outside the entrance, along Orientation. */
+	FVector2D ExitStandXY() const;
+
+	/** Records the direction the exit faces when this type takes it from the map. */
+	virtual void RememberExit(const USolidWorldMap* Map);
 };
 
 namespace SolidStronghold
@@ -122,6 +156,9 @@ namespace SolidStronghold
 		ESolidStrongholdSize Size,
 		FIntPoint Cell,
 		FVector2D WorldXY);
+
+	/** The subclass for this enum. The same instance on every call. */
+	const FSolidStronghold& TypeOf(ESolidStrongholdType Type);
 
 	/**
 	 * Cell center on the shipped terrain, in world centimetres.
@@ -134,6 +171,17 @@ namespace SolidStronghold
 	 * North and south use the taller cell. East and west use the shorter one.
 	 */
 	float CellExtentAlongExitCm(ESolidStrongholdOrientation Orientation);
+
+	/**
+	 * Spawns the exterior of each company stronghold.
+	 * The stronghold names the actor, the world position, and the facing.
+	 */
+	void SpawnStrongholds(
+		UWorld* World,
+		ASolidTerrainStreamer* Streamer,
+		const TArray<FSolidStronghold*>& Company,
+		const FActorSpawnParameters& SpawnParams,
+		TArray<TObjectPtr<ASolidStrongholdExterior>>& Exteriors);
 }
 
 /**
@@ -229,6 +277,43 @@ namespace SolidStronghold
 		}
 	}
 
+	/** The cardinal an exit yaw names. 90 is north, 0 is east, -90 is south, 180 is west. */
+	inline ESolidStrongholdOrientation OrientationFromYaw(const float YawDeg)
+	{
+		const float Yaw = FRotator::NormalizeAxis(YawDeg);
+		if (FMath::IsNearlyEqual(Yaw, 90.f, 1.f))
+		{
+			return ESolidStrongholdOrientation::North;
+		}
+		if (FMath::IsNearlyEqual(Yaw, 0.f, 1.f))
+		{
+			return ESolidStrongholdOrientation::East;
+		}
+		if (FMath::IsNearlyEqual(Yaw, -90.f, 1.f))
+		{
+			return ESolidStrongholdOrientation::South;
+		}
+		return ESolidStrongholdOrientation::West;
+	}
+
+	/** Where ExitStronghold stands the captain: just outside the entrance, facing away. */
+	struct FExitStand
+	{
+		FVector2D XY = FVector2D::ZeroVector;
+		float YawDeg = 0.f;
+		float PitchDeg = 0.f;
+	};
+
+	inline FExitStand ExitStand(const FSolidStronghold& Stronghold)
+	{
+		FExitStand Stand;
+		const FVisitView Visit = VisitViewFor(Stronghold);
+		Stand.YawDeg = LeaveYawDeg(OrientationYawDeg(Stronghold.Orientation), Visit.Leave);
+		Stand.PitchDeg = Visit.Leave.PitchDeg;
+		Stand.XY = Stronghold.ExitStandXY();
+		return Stand;
+	}
+
 	inline const TCHAR* TypeName(ESolidStrongholdType Type)
 	{
 		switch (Type)
@@ -269,6 +354,15 @@ namespace SolidStronghold
 	{
 		return Name + TEXT("\n") + EnterHoverPrompt;
 	}
+
+	/** Pointer box inside a stronghold. */
+	inline const TCHAR* LeaveHover = TEXT("Leave stronghold");
+
+	/** Journal line and click log for going in. The same words for every size and type. */
+	inline const TCHAR* EnterLabel = TEXT("Enter stronghold");
+
+	/** Journal line and click log for going out. The same words for every size and type. */
+	inline const TCHAR* ExitLabel = TEXT("Exit stronghold");
 
 	/**
 	 * The shelf a defined stronghold sits on. The map cell uses this biome.

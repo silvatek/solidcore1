@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SolidStrongholdExterior.h"
+#include "Strongholds/SolidStrongholdExterior.h"
 #include "SolidDungeonExterior.generated.h"
 
 class USolidTerrainMap;
@@ -53,6 +53,7 @@ public:
 
 	UStaticMeshComponent* GetRockMesh() const { return RockMesh; }
 	UStaticMeshComponent* GetMouthMesh() const { return MouthMesh; }
+	virtual UStaticMeshComponent* GetPassageMesh() const override { return MouthMesh; }
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")

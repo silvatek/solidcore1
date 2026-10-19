@@ -1,12 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SolidStronghold.h"
+#include "Strongholds/SolidStronghold.h"
 
-/**
- * Dungeon, Fortress, and Tower.
- * TypeOf returns the one instance of the subclass for an enum value.
- */
 namespace SolidStronghold
 {
 	/** Meagre is the fourteen-hex cave. Larger dungeons are not built yet. */
@@ -22,8 +18,13 @@ namespace SolidStronghold
 
 		virtual bool Supported(ESolidStrongholdSize Size) const override;
 		virtual ESolidStrongholdTrip Trip() const override;
+		virtual bool AcceptsEnter(const FGameState& State, FIntPoint OpeningCell) const override;
 		virtual UClass* ExteriorClass() const override;
 		virtual void ConfigureExterior(AActor* Exterior) const override;
+		virtual UClass* InteriorClass() const override;
+		virtual void ConfigureInterior(
+			AActor* Interior,
+			const TArray<SolidStrongholdFurniture::FUsed>& Furnishings) const override;
 
 		/** Front face width. The opening plus the stone on each side. */
 		float FaceWidthCm() const;
@@ -50,56 +51,13 @@ namespace SolidStronghold
 		/** World position in front of the mouth, outside the exit. */
 		FVector2D LeaveStandXY(FVector2D CellCenterXY, ESolidStrongholdOrientation InOrientation) const;
 
+		virtual float ExitReachCm() const override;
+		virtual float ExitLateralCm() const override;
+
 		virtual void CollectGroundHexes(
 			ESolidStrongholdSize Size,
 			TArray<SolidStrongholdGrid::FHex>& OutHexes) const override;
 
 		virtual TUniquePtr<FSolidStronghold> Clone() const override;
 	};
-
-	/** No size is built yet. There is no visit and no ground floor. */
-	class FSolidFortress : public FSolidStronghold
-	{
-	public:
-		FSolidFortress()
-		{
-			Type = ESolidStrongholdType::Fortress;
-		}
-
-		static const FSolidFortress& Instance();
-
-		virtual bool Supported(ESolidStrongholdSize Size) const override;
-		virtual ESolidStrongholdTrip Trip() const override;
-		virtual void CollectGroundHexes(
-			ESolidStrongholdSize Size,
-			TArray<SolidStrongholdGrid::FHex>& OutHexes) const override;
-
-		virtual TUniquePtr<FSolidStronghold> Clone() const override;
-	};
-
-	/** Average through Imperious. The ground floor is the hexes the tower plan keeps. */
-	class FSolidTower : public FSolidStronghold
-	{
-	public:
-		FSolidTower()
-		{
-			Type = ESolidStrongholdType::Tower;
-		}
-
-		static const FSolidTower& Instance();
-
-		virtual bool Supported(ESolidStrongholdSize Size) const override;
-		virtual ESolidStrongholdTrip Trip() const override;
-		virtual UClass* ExteriorClass() const override;
-		virtual void ConfigureExterior(AActor* Exterior) const override;
-		virtual float ExteriorYawDeg(const USolidWorldMap* Map) const override;
-		virtual void CollectGroundHexes(
-			ESolidStrongholdSize Size,
-			TArray<SolidStrongholdGrid::FHex>& OutHexes) const override;
-
-		virtual TUniquePtr<FSolidStronghold> Clone() const override;
-	};
-
-	/** The subclass for this enum. The same instance on every call. */
-	const FSolidStronghold& TypeOf(ESolidStrongholdType Type);
 }

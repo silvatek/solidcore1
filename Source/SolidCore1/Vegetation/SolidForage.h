@@ -67,10 +67,10 @@ namespace SolidForage
 		return CubeMesh;
 	}
 
-	/** The dungeon, the tower, and the Iglin tunnels have no piles. */
-	inline bool WorldHasPiles(const bool bDungeon, const bool bTower, const bool bLair)
+	/** A closed visit has no piles. */
+	inline bool WorldHasPiles(const bool bClosedVisit)
 	{
-		return !bDungeon && !bTower && !bLair;
+		return !bClosedVisit;
 	}
 
 	inline bool IsWithinReach(const float GroundDistanceCm)

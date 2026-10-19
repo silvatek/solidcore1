@@ -1,9 +1,8 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "SolidTowerExterior.h"
+#include "Strongholds/Tower/SolidTowerExterior.h"
 #include "SolidStrongholds.h"
-#include "SolidStrongholdType.h"
-#include "SolidTowerStronghold.h"
+#include "Strongholds/Tower/SolidTowerStronghold.h"
 #include "SolidWorldMap.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -171,8 +170,8 @@ bool FSolidTowerExteriorTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	Spire->ConfigureExterior(Shell);
-	TestEqual(TEXT("the exterior stands on the tower column"), Shell->GetTowerCell().X, ImperiousCell.X);
-	TestEqual(TEXT("the exterior stands on the tower row"), Shell->GetTowerCell().Y, ImperiousCell.Y);
+	TestEqual(TEXT("the exterior stands on the tower column"), Shell->GetStrongholdCell().X, ImperiousCell.X);
+	TestEqual(TEXT("the exterior stands on the tower row"), Shell->GetStrongholdCell().Y, ImperiousCell.Y);
 	TestEqual(
 		TEXT("the exterior uses the Imperious plan"),
 		Shell->GetPlan().FloorCount,
@@ -191,6 +190,14 @@ bool FSolidTowerExteriorTest::RunTest(const FString& Parameters)
 			Spire->ExteriorYawDeg(Map),
 			SolidTowerStronghold::ExteriorYawDeg(GrassYaw),
 			0.01f));
+	if (Map)
+	{
+		Spire->RememberExit(Map);
+		TestEqual(
+			TEXT("the tower exit faces that grass"),
+			static_cast<uint8>(Spire->Orientation),
+			static_cast<uint8>(SolidStronghold::OrientationFromYaw(GrassYaw)));
+	}
 
 	return true;
 }

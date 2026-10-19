@@ -1,8 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SolidStronghold.h"
-#include "SolidStrongholdGrid.h"
+#include "Strongholds/SolidStronghold.h"
+#include "Strongholds/SolidStrongholdGrid.h"
 
 /**
  * A round tower, measured in the tower's own plan.
@@ -930,9 +930,6 @@ namespace SolidTowerStronghold
 
 	/** How far past the proud door the captain stands on the grass. Clears the capsule. */
 	inline constexpr float DoorStandClearCm = 120.f;
-
-	inline const TCHAR* EnterLabel = TEXT("Enter Stronghold");
-	inline const TCHAR* LeaveLabel = TEXT("Exit Stronghold");
 
 	/**
 	 * Grass side of the door, just past the stone.

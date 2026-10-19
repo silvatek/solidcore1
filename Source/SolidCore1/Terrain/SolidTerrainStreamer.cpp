@@ -3,11 +3,9 @@
 #include "Menus/SolidSquadBuilder.h"
 #include "SolidHUD.h"
 #include "Lairs/SolidLair.h"
-#include "SolidDungeonLevel.h"
+#include "Strongholds/Dungeon/SolidDungeonLevel.h"
 #include "SolidGameInstance.h"
-#include "SolidStrongholds.h"
-#include "SolidStrongholdType.h"
-#include "SolidTowerStronghold.h"
+#include "SolidStronghold.h"
 #include "SolidTerrainChunk.h"
 #include "SolidTerrainFog.h"
 #include "SolidTerrainMap.h"
@@ -584,19 +582,15 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 	{
 		if (USolidGameInstance* Instance = World->GetGameInstance<USolidGameInstance>())
 		{
-			if (Instance->WantsDungeonMouthSpawn() && TerrainMap->GetWorldMap())
+			if (Instance->WantsStrongholdExit())
 			{
 				const FSolidStronghold* Stronghold = Instance->GetSession().Configuration.ActiveStronghold.Get();
-				if (Stronghold && Stronghold->Type == ESolidStrongholdType::Dungeon)
+				if (Stronghold)
 				{
-					const SolidStronghold::FVisitView Visit = SolidStronghold::VisitViewFor(*Stronghold);
-					PawnXY = SolidStronghold::FSolidDungeon::Instance().LeaveStandXY(
-						Stronghold->Location,
-						Stronghold->Orientation);
-					FacingYawDeg = SolidStronghold::LeaveYawDeg(
-						SolidStronghold::OrientationYawDeg(Stronghold->Orientation),
-						Visit.Leave);
-					FacingPitchDeg = Visit.Leave.PitchDeg;
+					const SolidStronghold::FExitStand Stand = SolidStronghold::ExitStand(*Stronghold);
+					PawnXY = Stand.XY;
+					FacingYawDeg = Stand.YawDeg;
+					FacingPitchDeg = Stand.PitchDeg;
 					bHaveYaw = true;
 					bCaveMouth = true;
 					if (const APawn* Pawn = Cast<APawn>(Focus))
@@ -607,7 +601,11 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 						}
 					}
 					bStrongholdLeave = true;
-					Instance->ClearDungeonMouthSpawn();
+					Instance->ClearStrongholdExit();
+				}
+				else
+				{
+					Instance->ClearStrongholdExit();
 				}
 			}
 			else if (Instance->WantsLairMouthSpawn() && TerrainMap->GetWorldMap())
@@ -644,43 +642,6 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 					}
 					// A lair is not a stronghold leave. Build squad stays closed.
 					Instance->ClearLairMouthSpawn();
-				}
-			}
-			else if (Instance->WantsTowerDoorSpawn() && TerrainMap->GetWorldMap())
-			{
-				USolidWorldMap* WorldMap = TerrainMap->GetWorldMap();
-				const FVector2D WorldMin = TerrainMap->GetWorldMinXY();
-				const FVector2D WorldMax = TerrainMap->GetWorldMaxXY();
-				const FSolidTravelSession& Session = Instance->GetSession();
-				const FSolidStronghold* Stronghold = Session.Configuration.ActiveStronghold.Get();
-				SolidStrongholds::FEntrance Chosen;
-				SolidTowerStronghold::FPlan Plan;
-				FVector2D CellXY = FVector2D::ZeroVector;
-				if (Stronghold
-					&& Stronghold->Type == ESolidStrongholdType::Tower
-					&& SolidTowerStronghold::PlanFor(*Stronghold, Plan)
-					&& SolidStrongholds::MakeEntrance(
-						WorldMap,
-						WorldMin,
-						WorldMax,
-						Stronghold->Cell,
-						Chosen)
-					&& WorldMap->CellToWorldXY(Chosen.Cell, WorldMin, WorldMax, CellXY))
-				{
-					PawnXY = SolidTowerStronghold::OutsideDoorXY(CellXY, Chosen.FacingYawDeg, Plan);
-					FacingYawDeg = SolidTowerStronghold::OutsideDoorYawDeg(Chosen.FacingYawDeg);
-					FacingPitchDeg = 0.f;
-					bHaveYaw = true;
-					bCaveMouth = true;
-					if (const APawn* Pawn = Cast<APawn>(Focus))
-					{
-						if (!Pawn->Controller)
-						{
-							return;
-						}
-					}
-					bStrongholdLeave = true;
-					Instance->ClearTowerDoorSpawn();
 				}
 			}
 		}
@@ -742,6 +703,21 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 	}
 
 	RelocateCompanionsByDelta(Delta);
+	if (bStrongholdLeave && bHaveYaw)
+	{
+		if (UWorld* PartyWorld = GetWorld())
+		{
+			for (TActorIterator<ASolidCompanionCharacter> It(PartyWorld); It; ++It)
+			{
+				ASolidCompanionCharacter* Companion = *It;
+				if (!IsValid(Companion) || Companion->IsStagePreview())
+				{
+					continue;
+				}
+				Companion->SetActorRotation(FRotator(0.f, FacingYawDeg, 0.f));
+			}
+		}
+	}
 
 	bDidRelocateToStartTown = true;
 	bHasFogApplyLocation = false;
@@ -769,7 +745,7 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 	}
 	UE_LOG(LogSolid, Warning,
 		TEXT("Relocated focus to %s (%.0f, %.0f) Z=%.1f (from %.0f, %.0f)"),
-		bCaveMouth ? TEXT("cave mouth") : TEXT("start town"),
+		bStrongholdLeave ? TEXT("stronghold entrance") : (bCaveMouth ? TEXT("cave mouth") : TEXT("start town")),
 		PawnXY.X, PawnXY.Y, NewLoc.Z, OldLoc.X, OldLoc.Y);
 }
 

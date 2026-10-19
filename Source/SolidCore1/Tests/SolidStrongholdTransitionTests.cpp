@@ -4,9 +4,9 @@
 #include "SolidHUD.h"
 #include "SolidInventory.h"
 #include "SolidStronghold.h"
-#include "SolidStrongholdFurniture.h"
+#include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
 #include "SolidStrongholdTransition.h"
-#include "SolidTowerStronghold.h"
+#include "Strongholds/Tower/SolidTowerStronghold.h"
 #include "SolidWorldMap.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -160,8 +160,14 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 	}
 
 	FGameState State;
-	State.bCaveEnabled = true;
-	TestTrue(TEXT("the open stronghold still accepts enter"), SolidStrongholdTransition::CompanyCaveAcceptsEnter(State));
+	TestFalse(TEXT("strongholds start closed"), SolidStrongholdTransition::StrongholdsEnabled(State));
+	TestFalse(
+		TEXT("a closed stronghold refuses enter"),
+		State.ActiveStronghold->AcceptsEnter(State, State.ActiveStronghold->Cell));
+	State.bStrongholdsEnabled = true;
+	TestTrue(
+		TEXT("the open stronghold still accepts enter"),
+		State.ActiveStronghold->AcceptsEnter(State, State.ActiveStronghold->Cell));
 
 	TArray<ESolidStrongholdType> Types;
 	TestEqual(
@@ -277,7 +283,7 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 	const FIntPoint MapTowerCell(30, 16);
 
 	FGameState State;
-	State.bCaveEnabled = true;
+	State.bStrongholdsEnabled = true;
 	SolidStorage::WriteSlot(State.CaveChest, SolidStorage::Index(0, 0), SolidItemType::IdRustySword, 4);
 	SolidInventory::WritePack(State.Inventory, 0, SolidItemType::IdStick, 2);
 	const SolidStorage::FContainer Chest = State.CaveChest;
@@ -314,11 +320,16 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(State.PreviousStrongholds[0]->Type),
 		static_cast<uint8>(ESolidStrongholdType::Dungeon));
 	TestEqual(TEXT("the previous stronghold keeps its cell"), State.PreviousStrongholds[0]->Cell, SolidStronghold::StartingCell());
-	TestFalse(TEXT("the stronghold no longer accepts enter"), SolidStrongholdTransition::CompanyCaveAcceptsEnter(State));
+	TestFalse(
+		TEXT("the cave door is no longer the passage"),
+		State.PreviousStrongholds[0]->AcceptsEnter(State, SolidStronghold::StartingCell()));
+	TestTrue(
+		TEXT("the company tower door is the passage"),
+		State.ActiveStronghold->AcceptsEnter(State, AverageCell));
 	TestTrue(TEXT("the chest moved with the company"), SameChest(State.CaveChest, Chest));
 	TestTrue(TEXT("the pack stayed with the captain"), SameLoadout(State.Inventory, Pack));
 	TestEqual(TEXT("the starting pieces moved"), State.Furnishings.Num(), Started.Num());
-	TestFalse(TEXT("a map tower door is not a passage"), SolidStrongholdTransition::TowerDoorAcceptsEnter(State, MapTowerCell));
+	TestFalse(TEXT("a map tower door is not a passage"), State.ActiveStronghold->AcceptsEnter(State, MapTowerCell));
 
 	SolidTowerStronghold::FPlan AveragePlan;
 	TestTrue(TEXT("Average has a plan"), SolidTowerStronghold::PlanFor(*State.ActiveStronghold, AveragePlan));
@@ -349,9 +360,9 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the company is on the later site"), State.ActiveStronghold->Cell, ImperiousCell);
 	TestEqual(TEXT("two previous strongholds are recorded"), State.PreviousStrongholds.Num(), 2);
 	TestEqual(TEXT("the later previous stronghold is the Average tower"), State.PreviousStrongholds[1]->Cell, AverageCell);
-	TestFalse(TEXT("a previous tower door is not a passage"), SolidStrongholdTransition::TowerDoorAcceptsEnter(State, AverageCell));
-	TestFalse(TEXT("another tower door is not a passage"), SolidStrongholdTransition::TowerDoorAcceptsEnter(State, MapTowerCell));
-	TestTrue(TEXT("the active door is not a previous door"), SolidStrongholdTransition::TowerDoorAcceptsEnter(State, ImperiousCell));
+	TestFalse(TEXT("a previous tower door is not a passage"), State.ActiveStronghold->AcceptsEnter(State, AverageCell));
+	TestFalse(TEXT("another tower door is not a passage"), State.ActiveStronghold->AcceptsEnter(State, MapTowerCell));
+	TestTrue(TEXT("the active door is not a previous door"), State.ActiveStronghold->AcceptsEnter(State, ImperiousCell));
 	TestTrue(TEXT("the chest still holds the same slots"), SameChest(State.CaveChest, Chest));
 	TestTrue(TEXT("the pack is still the captain's"), SameLoadout(State.Inventory, Pack));
 
@@ -376,11 +387,11 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the bed moved"), Beds, 1);
 
 	TestFalse(
-		TEXT("inside the tower the chest is not the stronghold"),
-		SolidStrongholdTransition::CompanyChestOpen(State, true, false));
+		TEXT("outside, the chest stays shut"),
+		SolidStrongholdTransition::CompanyChestOpen(State, false));
 	TestTrue(
 		TEXT("the chest opens in the company tower"),
-		SolidStrongholdTransition::CompanyChestOpen(State, false, true));
+		SolidStrongholdTransition::CompanyChestOpen(State, true));
 
 	TArray<SolidStrongholdFurniture::FUsed> Stuck = Started;
 	TestFalse(TEXT("pieces do not sit on an empty floor"), SolidStrongholdTransition::PlaceOnFloor(Stuck, TArray<SolidStrongholdGrid::FHex>()));

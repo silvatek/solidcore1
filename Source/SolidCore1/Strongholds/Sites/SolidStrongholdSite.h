@@ -2,10 +2,14 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "SolidStronghold.h"
-#include "SolidStrongholdSite.generated.h"
+#include "Strongholds/SolidStronghold.h"
 
+class ASolidTerrainStreamer;
 class UStaticMeshComponent;
+class UWorld;
+struct FActorSpawnParameters;
+
+#include "SolidStrongholdSite.generated.h"
 
 /**
  * A stronghold site in the world.
@@ -25,6 +29,18 @@ public:
 
 	void SetSite(FIntPoint Cell, ESolidStrongholdSize Size);
 	void BuildVisuals();
+
+	/**
+	 * Spawns each stronghold site that has no exterior.
+	 * The site is drawn as a stone block.
+	 */
+	static void Spawn(
+		UWorld* World,
+		ASolidTerrainStreamer* Streamer,
+		const TArray<const FSolidStronghold*>& Company,
+		const FActorSpawnParameters& SpawnParams,
+		TArray<TObjectPtr<ASolidStrongholdSite>>& Sites,
+		bool& bSitesSpawned);
 
 	/** Edge length of the block, in centimetres. */
 	static constexpr float BlockCm = 200.f;

@@ -32,7 +32,7 @@ FGameState& FGameState::operator=(const FGameState& Other)
 	bTrueSightEnabled = Other.bTrueSightEnabled;
 	bRavenSightEnabled = Other.bRavenSightEnabled;
 	bIglinBridgeRepaired = Other.bIglinBridgeRepaired;
-	bCaveEnabled = Other.bCaveEnabled;
+	bStrongholdsEnabled = Other.bStrongholdsEnabled;
 	for (int32 Index = 0; Index < SolidEvents::MaxEnabledLairs; ++Index)
 	{
 		EnabledLairs[Index] = Other.EnabledLairs[Index];
@@ -158,8 +158,8 @@ void ApplyChange(FGameState& State, const FChange& Change, FResult& Result)
 		Result.bRepairBridge = true;
 		break;
 	case EChange::EnableCave:
-		State.bCaveEnabled = true;
-		Result.bEnterCave = true;
+		State.bStrongholdsEnabled = true;
+		Result.bEnterStronghold = true;
 		break;
 	case EChange::ShowMessage:
 		Result.bShowMessage = true;
@@ -241,7 +241,7 @@ void RememberStronghold(
 		State,
 		When,
 		SolidJournal::EJournalType::Stronghold,
-		bEnter ? FString(TEXT("Enter Stronghold")) : FString(TEXT("Exit Stronghold")));
+		bEnter ? FString(SolidStronghold::EnterLabel) : FString(SolidStronghold::ExitLabel));
 }
 
 void RememberLair(

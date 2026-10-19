@@ -28,14 +28,11 @@
 #include "Lairs/SolidLair.h"
 #include "Lairs/SolidLairEntrance.h"
 #include "Lairs/SolidLairInterior.h"
-#include "Strongholds/SolidStrongholdSpawn.h"
-#include "Strongholds/SolidDungeonInterior.h"
-#include "Strongholds/SolidDungeonLevel.h"
+#include "Strongholds/Sites/SolidStrongholdSite.h"
+#include "SolidTravel.h"
+#include "Strongholds/SolidStrongholdInterior.h"
 #include "Strongholds/SolidStrongholds.h"
-#include "Strongholds/SolidTowerInterior.h"
 #include "Strongholds/SolidStrongholdTransition.h"
-#include "Strongholds/SolidStrongholdType.h"
-#include "Strongholds/SolidTowerStronghold.h"
 #include "SolidGameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Vegetation/SolidForage.h"
@@ -175,9 +172,9 @@ void ASolidGameMode::BeginPlay()
 	EnsureCompanyAndSquad();
 	RestoreTravelSession();
 
-	if (IsInDungeon())
+	if (IsInStronghold())
 	{
-		BeginDungeonInterior();
+		BeginStrongholdInterior();
 		FinishTravelArrival();
 		return;
 	}
@@ -185,13 +182,6 @@ void ASolidGameMode::BeginPlay()
 	if (IsInLair())
 	{
 		BeginLairInterior();
-		FinishTravelArrival();
-		return;
-	}
-
-	if (IsInTower())
-	{
-		BeginTowerInterior();
 		FinishTravelArrival();
 		return;
 	}
@@ -211,14 +201,14 @@ void ASolidGameMode::BeginPlay()
 	EnsureVegetation();
 }
 
-bool ASolidGameMode::IsInDungeon() const
+bool ASolidGameMode::IsInStronghold() const
 {
-	if (SolidDungeonLevel::RequestsDungeon(OptionsString))
+	if (SolidTravel::RequestsStronghold(OptionsString))
 	{
 		return true;
 	}
 	const USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>();
-	return Instance && Instance->IsInDungeon();
+	return Instance && Instance->IsInStronghold();
 }
 
 bool ASolidGameMode::IsInLair() const
@@ -231,29 +221,17 @@ bool ASolidGameMode::IsInLair() const
 	return Instance && Instance->IsInLair();
 }
 
-bool ASolidGameMode::IsInTower() const
-{
-	if (SolidDungeonLevel::RequestsTower(OptionsString))
-	{
-		return true;
-	}
-	const USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>();
-	return Instance && Instance->IsInTower();
-}
-
 bool ASolidGameMode::AreTunnelsOpen() const
 {
 	return SolidLair::TunnelsOpen(Configuration);
 }
 
 void ASolidGameMode::SaveTravelSession(
-	const bool bInDungeon,
-	const bool bReturnToDungeonMouth,
+	const bool bInStronghold,
 	const bool bInLair,
 	const bool bReturnToLairMouth,
 	const TCHAR LairEnd,
-	const bool bInTower,
-	const bool bReturnToTowerDoor)
+	const bool bExitStronghold)
 {
 	USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>();
 	if (!Instance)
@@ -264,13 +242,11 @@ void ASolidGameMode::SaveTravelSession(
 
 	FSolidTravelSession Session;
 	Session.Configuration = Configuration;
-	Session.bInDungeon = bInDungeon;
-	Session.bReturnToDungeonMouth = bReturnToDungeonMouth;
+	Session.bInStronghold = bInStronghold;
 	Session.bInLair = bInLair;
 	Session.bReturnToLairMouth = bReturnToLairMouth;
 	Session.LairEnd = LairEnd;
-	Session.bInTower = bInTower;
-	Session.bReturnToTowerDoor = bReturnToTowerDoor;
+	Session.bExitStronghold = bExitStronghold;
 	if (Squad)
 	{
 		Session.SelectedCompanionIndices = Squad->GetSelectedCompanionIndices();
@@ -357,9 +333,9 @@ void ASolidGameMode::ApplyCaptainFromSession()
 	bCaptainTravelApplied = true;
 }
 
-void ASolidGameMode::PlaceCaptainInDungeon()
+void ASolidGameMode::PlaceCaptainInStronghold()
 {
-	if (bCaptainPlacedInDungeon || !DungeonInterior)
+	if (bCaptainPlacedInStronghold || !StrongholdInterior)
 	{
 		return;
 	}
@@ -375,31 +351,26 @@ void ASolidGameMode::PlaceCaptainInDungeon()
 	{
 		HalfHeight = Capsule->GetScaledCapsuleHalfHeight();
 	}
-	FVector Spawn = DungeonInterior->GetCaptainSpawnWorld();
+	FVector Spawn = StrongholdInterior->GetCaptainSpawnWorld();
 	Spawn.Z += HalfHeight + 4.f;
-	const FRotator View = DungeonInterior->GetCaptainView();
+	const FRotator View = StrongholdInterior->GetCaptainView();
 	Captain->ArriveByPortal(Spawn, View.Yaw, View.Pitch);
 	// The pawn can exist a frame before it is possessed. Wait, or the old tilt sticks.
-	bCaptainPlacedInDungeon = Captain->GetController() != nullptr;
+	bCaptainPlacedInStronghold = Captain->GetController() != nullptr;
 }
 
 void ASolidGameMode::FinishTravelArrival()
 {
 	ApplyCaptainFromSession();
-	if (IsInDungeon())
+	if (IsInStronghold())
 	{
 		HideTemplateProps();
-		PlaceCaptainInDungeon();
+		PlaceCaptainInStronghold();
 	}
 	else if (IsInLair())
 	{
 		HideTemplateProps();
 		PlaceCaptainInLair();
-	}
-	else if (IsInTower())
-	{
-		HideTemplateProps();
-		PlaceCaptainInTower();
 	}
 
 	UWorld* World = GetWorld();
@@ -409,9 +380,8 @@ void ASolidGameMode::FinishTravelArrival()
 	}
 
 	const bool bDone = bCaptainTravelApplied
-		&& (!IsInDungeon() || bCaptainPlacedInDungeon)
-		&& (!IsInLair() || bCaptainPlacedInLair)
-		&& (!IsInTower() || bCaptainPlacedInTower);
+		&& (!IsInStronghold() || bCaptainPlacedInStronghold)
+		&& (!IsInLair() || bCaptainPlacedInLair);
 	if (bDone)
 	{
 		World->GetTimerManager().ClearTimer(CaptainArrivalTimer);
@@ -425,7 +395,7 @@ void ASolidGameMode::FinishTravelArrival()
 	}
 }
 
-void ASolidGameMode::BeginDungeonInterior()
+void ASolidGameMode::BeginStrongholdInterior()
 {
 	UWorld* World = GetWorld();
 	if (!World)
@@ -433,25 +403,32 @@ void ASolidGameMode::BeginDungeonInterior()
 		return;
 	}
 
-	if (!DungeonInterior)
+	if (!StrongholdInterior)
 	{
+		const FSolidStronghold* Stronghold = Configuration.ActiveStronghold.Get();
+		UClass* InteriorClass = Stronghold ? Stronghold->InteriorClass() : nullptr;
+		if (!InteriorClass)
+		{
+			UE_LOG(LogSolid, Error, TEXT("This stronghold has no interior."));
+			return;
+		}
+
 		FActorSpawnParameters Params;
 		Params.Owner = this;
 		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		DungeonInterior = World->SpawnActor<ASolidDungeonInterior>(
-			ASolidDungeonInterior::StaticClass(),
-			FVector::ZeroVector,
-			FRotator::ZeroRotator,
-			Params);
-		if (DungeonInterior)
+		const FVector Origin = FVector::ZeroVector;
+		const FRotator Rotation = FRotator::ZeroRotator;
+		AActor* Spawned = World->SpawnActor(InteriorClass, &Origin, &Rotation, Params);
+		StrongholdInterior = Cast<ASolidStrongholdInterior>(Spawned);
+		if (StrongholdInterior)
 		{
-			DungeonInterior->BuildVisuals();
+			Stronghold->ConfigureInterior(StrongholdInterior, Configuration.Furnishings);
 		}
 	}
 
 	HideTemplateProps();
-	PlaceCaptainInDungeon();
-	UE_LOG(LogSolid, Warning, TEXT("Dungeon interior loaded. Companions return when the captain leaves."));
+	PlaceCaptainInStronghold();
+	UE_LOG(LogSolid, Warning, TEXT("Stronghold interior loaded. Companions return when the captain leaves."));
 }
 
 void ASolidGameMode::BeginLairInterior()
@@ -548,7 +525,7 @@ void ASolidGameMode::HideTemplateProps()
 	}
 	if (Hidden > 0)
 	{
-		UE_LOG(LogSolid, Warning, TEXT("Hid %d template blocks in the dungeon."), Hidden);
+		UE_LOG(LogSolid, Warning, TEXT("Hid %d template blocks in this visit."), Hidden);
 	}
 }
 
@@ -561,40 +538,6 @@ SolidWorldTime::FStamp ASolidGameMode::WorldStamp() const
 	return SolidWorldTime::FromSession(1, 0.0);
 }
 
-void ASolidGameMode::TravelToDungeon()
-{
-	if (!IsCaveEnabled())
-	{
-		return;
-	}
-	UWorld* World = GetWorld();
-	if (!World || IsInDungeon() || IsInLair() || IsInTower())
-	{
-		return;
-	}
-	const SolidWorldTime::FStamp When = WorldStamp();
-	SolidEvents::RememberStronghold(Configuration, When, /*bEnter=*/true);
-	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Enter Stronghold"), *SolidWorldTime::Format(When));
-	SaveTravelSession(/*bInDungeon=*/true, /*bReturnToDungeonMouth=*/false);
-	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::EnterOptions());
-}
-
-void ASolidGameMode::TravelToWorld()
-{
-	UWorld* World = GetWorld();
-	if (!World || !IsInDungeon())
-	{
-		return;
-	}
-	// Companions are spawned again once this world is the open world.
-	// Build squad opens after he is standing outside, when there is something to arrange.
-	const SolidWorldTime::FStamp When = WorldStamp();
-	SolidEvents::RememberStronghold(Configuration, When, /*bEnter=*/false);
-	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Exit Stronghold"), *SolidWorldTime::Format(When));
-	SaveTravelSession(/*bInDungeon=*/false, /*bReturnToDungeonMouth=*/true);
-	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::LeaveOptions());
-}
-
 void ASolidGameMode::TravelToLair(const TCHAR EndMarker)
 {
 	if (!AreTunnelsOpen() || !SolidLair::IsEndMarker(EndMarker))
@@ -602,7 +545,7 @@ void ASolidGameMode::TravelToLair(const TCHAR EndMarker)
 		return;
 	}
 	UWorld* World = GetWorld();
-	if (!World || IsInLair() || IsInDungeon() || IsInTower())
+	if (!World || IsInClosedVisit())
 	{
 		return;
 	}
@@ -611,12 +554,11 @@ void ASolidGameMode::TravelToLair(const TCHAR EndMarker)
 	SolidEvents::RememberLair(Configuration, When, /*bEnter=*/true);
 	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Enter Iglin tunnels"), *SolidWorldTime::Format(When));
 	SaveTravelSession(
-		/*bInDungeon=*/false,
-		/*bReturnToDungeonMouth=*/false,
+		/*bInStronghold=*/false,
 		/*bInLair=*/true,
 		/*bReturnToLairMouth=*/false,
 		End);
-	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidLair::EnterOptions(End));
+	UGameplayStatics::OpenLevel(World, FName(SolidTravel::WorldMapPath), true, SolidLair::EnterOptions(End));
 }
 
 void ASolidGameMode::TravelFromLair(const TCHAR EndMarker)
@@ -631,48 +573,31 @@ void ASolidGameMode::TravelFromLair(const TCHAR EndMarker)
 	SolidEvents::RememberLair(Configuration, When, /*bEnter=*/false);
 	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Exit Iglin tunnels"), *SolidWorldTime::Format(When));
 	SaveTravelSession(
-		/*bInDungeon=*/false,
-		/*bReturnToDungeonMouth=*/false,
+		/*bInStronghold=*/false,
 		/*bInLair=*/false,
 		/*bReturnToLairMouth=*/true,
 		End);
-	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::LeaveOptions());
+	UGameplayStatics::OpenLevel(World, FName(SolidTravel::WorldMapPath), true, SolidTravel::LeaveOptions());
 }
 
 void ASolidGameMode::EnterStronghold()
 {
+	if (!SolidStrongholdTransition::StrongholdsEnabled(Configuration))
+	{
+		return;
+	}
 	UWorld* World = GetWorld();
 	const FSolidStronghold* Stronghold = Configuration.ActiveStronghold.Get();
-	if (!World || IsInDungeon() || IsInLair() || IsInTower() || !Stronghold)
+	if (!World || IsInClosedVisit() || !Stronghold || !Stronghold->InteriorClass())
 	{
 		return;
 	}
 
 	const SolidWorldTime::FStamp When = WorldStamp();
 	SolidEvents::RememberStronghold(Configuration, When, /*bEnter=*/true);
-	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Enter Stronghold"), *SolidWorldTime::Format(When));
-
-	const ESolidStrongholdTrip Trip = SolidStronghold::TypeOf(Stronghold->Type).Trip();
-	if (Trip == ESolidStrongholdTrip::Cave)
-	{
-		SaveTravelSession(/*bInDungeon=*/true, /*bReturnToDungeonMouth=*/false);
-		UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::EnterOptions());
-		return;
-	}
-	if (Trip != ESolidStrongholdTrip::Tower)
-	{
-		return;
-	}
-
-	SaveTravelSession(
-		/*bInDungeon=*/false,
-		/*bReturnToDungeonMouth=*/false,
-		/*bInLair=*/false,
-		/*bReturnToLairMouth=*/false,
-		/*LairEnd=*/0,
-		/*bInTower=*/true,
-		/*bReturnToTowerDoor=*/false);
-	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::TowerEnterOptions());
+	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  %s"), *SolidWorldTime::Format(When), SolidStronghold::EnterLabel);
+	SaveTravelSession(/*bInStronghold=*/true);
+	UGameplayStatics::OpenLevel(World, FName(SolidTravel::WorldMapPath), true, SolidTravel::EnterStrongholdOptions());
 }
 
 bool ASolidGameMode::EnterChosenStronghold(
@@ -681,7 +606,7 @@ bool ASolidGameMode::EnterChosenStronghold(
 	const ESolidStrongholdType Type)
 {
 	UWorld* World = GetWorld();
-	if (!World || IsInDungeon() || IsInLair() || IsInTower())
+	if (!World || IsInClosedVisit())
 	{
 		return false;
 	}
@@ -694,90 +619,25 @@ bool ASolidGameMode::EnterChosenStronghold(
 	return true;
 }
 
-void ASolidGameMode::TravelFromTower()
+void ASolidGameMode::ExitStronghold()
 {
 	UWorld* World = GetWorld();
-	if (!World || !IsInTower())
+	if (!World || !IsInStronghold())
 	{
 		return;
 	}
 
+	// Companions spawn again beside him once this world is the open world, facing the same way.
 	const SolidWorldTime::FStamp When = WorldStamp();
 	SolidEvents::RememberStronghold(Configuration, When, /*bEnter=*/false);
-	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Exit Stronghold"), *SolidWorldTime::Format(When));
+	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  %s"), *SolidWorldTime::Format(When), SolidStronghold::ExitLabel);
 	SaveTravelSession(
-		/*bInDungeon=*/false,
-		/*bReturnToDungeonMouth=*/false,
+		/*bInStronghold=*/false,
 		/*bInLair=*/false,
 		/*bReturnToLairMouth=*/false,
 		/*LairEnd=*/0,
-		/*bInTower=*/false,
-		/*bReturnToTowerDoor=*/true);
-	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::LeaveOptions());
-}
-
-void ASolidGameMode::BeginTowerInterior()
-{
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return;
-	}
-
-	if (!TowerInterior)
-	{
-		FActorSpawnParameters Params;
-		Params.Owner = this;
-		Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-		TowerInterior = World->SpawnActor<ASolidTowerInterior>(
-			ASolidTowerInterior::StaticClass(),
-			FVector::ZeroVector,
-			FRotator::ZeroRotator,
-			Params);
-		if (TowerInterior)
-		{
-			const FSolidStronghold* Stronghold = Configuration.ActiveStronghold.Get();
-			const FIntPoint Cell = Stronghold ? Stronghold->Cell : FIntPoint::ZeroValue;
-			SolidTowerStronghold::FPlan Plan;
-			if (!Stronghold || !SolidTowerStronghold::PlanFor(*Stronghold, Plan))
-			{
-				Plan = SolidTowerStronghold::Imperious;
-			}
-			TowerInterior->SetTowerCell(Cell);
-			TowerInterior->SetPlan(Plan);
-			TowerInterior->BuildVisuals();
-			TowerInterior->PlaceFurnishings(Configuration.Furnishings);
-		}
-	}
-
-	HideTemplateProps();
-	PlaceCaptainInTower();
-	UE_LOG(LogSolid, Warning, TEXT("Tower interior loaded. Companions return when the captain leaves."));
-}
-
-void ASolidGameMode::PlaceCaptainInTower()
-{
-	if (bCaptainPlacedInTower || !TowerInterior)
-	{
-		return;
-	}
-
-	ASolidCharacter* Captain = FindCaptain(GetWorld());
-	if (!Captain)
-	{
-		return;
-	}
-
-	float HalfHeight = 96.f;
-	if (const UCapsuleComponent* Capsule = Captain->GetCapsuleComponent())
-	{
-		HalfHeight = Capsule->GetScaledCapsuleHalfHeight();
-	}
-	FVector Spawn = TowerInterior->GetCaptainSpawnWorld();
-	Spawn.Z += HalfHeight + 4.f;
-	const FRotator View = TowerInterior->GetCaptainView();
-	Captain->ArriveByPortal(Spawn, View.Yaw, View.Pitch);
-	bCaptainPlacedInTower = Captain->GetController() != nullptr;
+		/*bExitStronghold=*/true);
+	UGameplayStatics::OpenLevel(World, FName(SolidTravel::WorldMapPath), true, SolidTravel::LeaveOptions());
 }
 
 void ASolidGameMode::RefreshEvents()
@@ -788,7 +648,7 @@ void ASolidGameMode::RefreshEvents()
 		return;
 	}
 
-	if (IsInDungeon() || IsInLair() || IsInTower())
+	if (IsInClosedVisit())
 	{
 		return;
 	}
@@ -875,9 +735,9 @@ void ASolidGameMode::PresentEventResult(const SolidEvents::FResult& Result)
 			}
 		}
 	}
-	if (Result.bEnterCave)
+	if (Result.bEnterStronghold)
 	{
-		TravelToDungeon();
+		EnterStronghold();
 	}
 }
 
@@ -886,9 +746,9 @@ void ASolidGameMode::NoteMessageClosed(const TCHAR* MessageId)
 	const SolidEvents::FResult Result = SolidEvents::NotifyMessageClosed(Configuration, MessageId, WorldStamp());
 	if (Result.bFired)
 	{
-		UE_LOG(LogSolid, Warning, TEXT("Event: message %s closed. Cave %s."),
+		UE_LOG(LogSolid, Warning, TEXT("Event: message %s closed. Stronghold %s."),
 			MessageId ? MessageId : TEXT(""),
-			Result.bEnterCave ? TEXT("entered") : TEXT("unchanged"));
+			Result.bEnterStronghold ? TEXT("entered") : TEXT("unchanged"));
 	}
 	PresentEventResult(Result);
 }
@@ -1250,7 +1110,7 @@ void ASolidGameMode::EnsureCompanion()
 		}
 	} Refresh{this};
 
-	if (IsInDungeon() || IsInLair() || IsInTower())
+	if (IsInClosedVisit())
 	{
 		for (const TObjectPtr<ASolidCompanionCharacter>& Companion : SpawnedCompanions)
 		{
@@ -1392,7 +1252,7 @@ void ASolidGameMode::ChooseForagePiles(const USolidTerrainMap* Map)
 	{
 		return;
 	}
-	if (!SolidForage::WorldHasPiles(IsInDungeon(), IsInTower(), IsInLair()))
+	if (!SolidForage::WorldHasPiles(IsInClosedVisit()))
 	{
 		return;
 	}
@@ -1440,7 +1300,7 @@ void ASolidGameMode::SeedForagePiles()
 	{
 		return;
 	}
-	if (!SolidForage::WorldHasPiles(IsInDungeon(), IsInTower(), IsInLair()))
+	if (!SolidForage::WorldHasPiles(IsInClosedVisit()))
 	{
 		return;
 	}
@@ -1796,7 +1656,7 @@ void ASolidGameMode::EnsureVegetation()
 		UE_LOG(LogSolid, Warning, TEXT("Spawned %d tunnel mouths"), TunnelMouths);
 	}
 
-	TArray<const FSolidStronghold*> Owned;
+	TArray<FSolidStronghold*> Owned;
 	if (Configuration.ActiveStronghold)
 	{
 		Owned.Add(Configuration.ActiveStronghold.Get());
@@ -1814,10 +1674,16 @@ void ASolidGameMode::EnsureVegetation()
 		Owned,
 		SpawnParams,
 		SpawnedStrongholdExteriors);
-	SolidStronghold::SpawnStrongholdSites(
+	TArray<const FSolidStronghold*> SiteCompany;
+	SiteCompany.Reserve(Owned.Num());
+	for (FSolidStronghold* Stronghold : Owned)
+	{
+		SiteCompany.Add(Stronghold);
+	}
+	ASolidStrongholdSite::Spawn(
 		World,
 		Streamer,
-		Owned,
+		SiteCompany,
 		SpawnParams,
 		SpawnedStrongholdSites,
 		bSpawnedStrongholdSites);

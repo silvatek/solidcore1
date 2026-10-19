@@ -247,35 +247,35 @@ bool FSolidJournalWorldTimeTest::RunTest(const FString& Parameters)
 	TArray<SolidJournal::FRow> AfterCave;
 	SolidJournal::CollectRows(State, AfterCave);
 	TestEqual(TEXT("cave trips are noted again"), State.Journal.Num(), 4);
-	const int32 EnterAt = SolidJournalTestPrivate::FindEntry(AfterCave, TEXT("Enter Stronghold"));
-	const int32 LeaveAt = SolidJournalTestPrivate::FindEntry(AfterCave, TEXT("Exit Stronghold"));
-	const int32 EnterAgain = SolidJournalTestPrivate::FindEntry(AfterCave, TEXT("Enter Stronghold"), LeaveAt == INDEX_NONE ? 0 : LeaveAt + 1);
+	const int32 EnterAt = SolidJournalTestPrivate::FindEntry(AfterCave, TEXT("Enter stronghold"));
+	const int32 LeaveAt = SolidJournalTestPrivate::FindEntry(AfterCave, TEXT("Exit stronghold"));
+	const int32 EnterAgain = SolidJournalTestPrivate::FindEntry(AfterCave, TEXT("Enter stronghold"), LeaveAt == INDEX_NONE ? 0 : LeaveAt + 1);
 	TestTrue(TEXT("enter is recorded"), EnterAt != INDEX_NONE);
 	TestTrue(TEXT("exit is recorded"), LeaveAt != INDEX_NONE && LeaveAt > EnterAt);
 	TestTrue(TEXT("a second enter is its own line"), EnterAgain != INDEX_NONE && EnterAgain > LeaveAt);
 	if (LeaveAt != INDEX_NONE)
 	{
 		TestEqual(TEXT("exit uses the later minute"), AfterCave[LeaveAt].Stamp, FString(TEXT("01:30, 200/53 AtF")));
-		TestEqual(TEXT("exit text stays in its column"), AfterCave[LeaveAt].Text, FString(TEXT("Exit Stronghold")));
+		TestEqual(TEXT("exit text stays in its column"), AfterCave[LeaveAt].Text, FString(TEXT("Exit stronghold")));
 	}
 	TestFalse(TEXT("the line does not name the dungeon"), SolidJournalTestPrivate::ContainsText(AfterCave, TEXT("Meagre")));
 	TestFalse(TEXT("the line does not name the type"), SolidJournalTestPrivate::ContainsText(AfterCave, TEXT("Dungeon")));
 
 	FGameState Copied = State;
 	TestEqual(TEXT("the cave trip keeps the journal"), Copied.Journal.Num(), State.Journal.Num());
-	TestEqual(TEXT("copied exit text"), Copied.Journal[2].Text, FString(TEXT("Exit Stronghold")));
+	TestEqual(TEXT("copied exit text"), Copied.Journal[2].Text, FString(TEXT("Exit stronghold")));
 	TestTrue(TEXT("exit is a stronghold line"), Copied.Journal[2].Type == SolidJournal::EJournalType::Stronghold);
 	TestEqual(TEXT("a stronghold line has no event index"), Copied.Journal[2].EventIndex, INDEX_NONE);
 
 	FGameState Marked;
 	SolidJournal::FJournalEntry Visit;
 	Visit.Type = SolidJournal::EJournalType::Stronghold;
-	Visit.Text = TEXT("Enter Stronghold");
+	Visit.Text = TEXT("Enter stronghold");
 	Visit.EventIndex = 1;
 	Marked.Journal.Add(Visit);
 	TArray<SolidJournal::FRow> MarkedRows;
 	SolidJournal::CollectRows(Marked, MarkedRows);
-	TestTrue(TEXT("stronghold text is the summary"), SolidJournalTestPrivate::ContainsText(MarkedRows, TEXT("Enter Stronghold")));
+	TestTrue(TEXT("stronghold text is the summary"), SolidJournalTestPrivate::ContainsText(MarkedRows, TEXT("Enter stronghold")));
 	TestFalse(TEXT("a stronghold line does not describe an event"), SolidJournalTestPrivate::ContainsText(MarkedRows, TEXT("Raven sight")));
 	return true;
 }

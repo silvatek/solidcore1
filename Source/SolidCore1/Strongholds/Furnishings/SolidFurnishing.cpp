@@ -1,7 +1,7 @@
 #include "SolidFurnishing.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
-#include "SolidStrongholdGrid.h"
+#include "Strongholds/SolidStrongholdGrid.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"

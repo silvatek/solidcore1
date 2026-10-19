@@ -13,12 +13,11 @@ class ASolidBridge;
 class ASolidBuilding;
 class ASolidForagePile;
 class ASolidLairEntrance;
-class ASolidDungeonInterior;
 class ASolidLairInterior;
 class ASolidCompanionCharacter;
 class ASolidTownSign;
-class ASolidTowerInterior;
 class ASolidStrongholdExterior;
+class ASolidStrongholdInterior;
 class ASolidStrongholdSite;
 class ASolidTree;
 class USolidTerrainMap;
@@ -152,14 +151,14 @@ public:
 	 */
 	bool TeleportSquadToTunnelMouth(TCHAR EndMarker);
 
-	/** True after F10 Enter cave, until F10 Leave cave. */
-	bool IsInDungeon() const;
+	/** True while the company stronghold interior is loaded. */
+	bool IsInStronghold() const;
 
 	/** True after a click on an Iglin tunnel mouth, until a click leaves. */
 	bool IsInLair() const;
 
-	/** True after a click on a tower door, until a click leaves. */
-	bool IsInTower() const;
+	/** A stronghold interior or the Iglin tunnels. */
+	bool IsInClosedVisit() const { return IsInStronghold() || IsInLair(); }
 
 	/** Spawn chosen piles whose fog is now below full. Safe to call again. */
 	void SeedForagePiles();
@@ -170,23 +169,11 @@ public:
 	 */
 	bool TakeForagePile(ASolidForagePile* Pile);
 
-	/** Closing the monster message opens the starting cave. It starts closed. */
-	bool IsCaveEnabled() const { return Configuration.bCaveEnabled; }
-
 	/** An EnableLair change opens the Iglin tunnel mouths. They start shut. */
 	bool AreTunnelsOpen() const;
 
 	/** The captain closed a shown message. Fires MessageClosed for that id. */
 	void NoteMessageClosed(const TCHAR* MessageId);
-
-	/** Unload the open world (companions included) and load the dungeon interior. */
-	void TravelToDungeon();
-
-	/**
-	 * Load the open world again and stand the captain at the cave mouth.
-	 * Companions spawn beside him. Build squad opens on the grass when there is something to arrange.
-	 */
-	void TravelToWorld();
 
 	/** Unload the open world and load the Iglin tunnels at one end. X or Y. */
 	void TravelToLair(TCHAR EndMarker);
@@ -203,8 +190,12 @@ public:
 	 */
 	bool EnterChosenStronghold(FIntPoint Cell, ESolidStrongholdSize Size, ESolidStrongholdType Type);
 
-	/** Load the open world again and stand the captain on the grass outside that door. Build squad uses the same arrange check as the cave. */
-	void TravelFromTower();
+	/**
+	 * Load the open world again.
+	 * The captain and party stand just outside the entrance, facing away along its orientation.
+	 * Build squad opens on the grass when there is something to arrange.
+	 */
+	void ExitStronghold();
 
 	/**
 	 * Create the company catalog and squad on the first call.
@@ -231,23 +222,19 @@ protected:
 	void EnsureVegetation();
 	void ChooseForagePiles(const USolidTerrainMap* Map);
 	void SaveTravelSession(
-		bool bInDungeon,
-		bool bReturnToDungeonMouth,
+		bool bInStronghold,
 		bool bInLair = false,
 		bool bReturnToLairMouth = false,
 		TCHAR LairEnd = 0,
-		bool bInTower = false,
-		bool bReturnToTowerDoor = false);
+		bool bExitStronghold = false);
 	void RestoreTravelSession();
-	void BeginDungeonInterior();
+	void BeginStrongholdInterior();
 	void BeginLairInterior();
-	void BeginTowerInterior();
 	/** Sight, title, and the closed-visit spawn. Retries while the pawn is still absent. */
 	void FinishTravelArrival();
 	void ApplyCaptainFromSession();
-	void PlaceCaptainInDungeon();
+	void PlaceCaptainInStronghold();
 	void PlaceCaptainInLair();
-	void PlaceCaptainInTower();
 	/** The third-person playground blocks sit inside the room. Hide them for this visit. */
 	void HideTemplateProps();
 	SolidWorldTime::FStamp WorldStamp() const;
@@ -311,14 +298,11 @@ protected:
 	FTimerHandle VegetationSpawnTimer;
 	FTimerHandle CaptainArrivalTimer;
 
-	/** Interior spawned for this dungeon visit. The world keeps the actor alive. */
-	ASolidDungeonInterior* DungeonInterior = nullptr;
+	/** Interior spawned for this stronghold visit. The world keeps the actor alive. */
+	ASolidStrongholdInterior* StrongholdInterior = nullptr;
 	/** Interior spawned for this tunnel visit. The world keeps the actor alive. */
 	ASolidLairInterior* LairInterior = nullptr;
-	/** Interior spawned for this tower visit. The world keeps the actor alive. */
-	ASolidTowerInterior* TowerInterior = nullptr;
 	bool bCaptainTravelApplied = false;
-	bool bCaptainPlacedInDungeon = false;
+	bool bCaptainPlacedInStronghold = false;
 	bool bCaptainPlacedInLair = false;
-	bool bCaptainPlacedInTower = false;
 };

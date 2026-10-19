@@ -1,8 +1,9 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "SolidDungeonInterior.h"
-#include "SolidFurnishing.h"
-#include "SolidStrongholdFurniture.h"
+#include "Strongholds/Dungeon/SolidDungeonInterior.h"
+#include "Strongholds/Dungeon/SolidDungeonLevel.h"
+#include "Strongholds/Furnishings/SolidFurnishing.h"
+#include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
 #include "SolidStrongholdGrid.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -127,15 +128,15 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the cave chest is the storage piece"), SolidStrongholdFurniture::IsStorage(Third));
 
 	TArray<SolidStrongholdGrid::FHex> Hexes;
-	SolidStrongholdGrid::CollectMeagreHexes(Hexes);
+	SolidDungeonLevel::CollectMeagreHexes(Hexes);
 
 	auto CellKey = [](const int32 Col, const int32 Row) -> int64
 	{
 		return (static_cast<int64>(Col) << 32) | static_cast<uint32>(Row);
 	};
 	TSet<int64> UsedCells;
-	const SolidStrongholdGrid::FCell Captain = SolidStrongholdGrid::MeagreCaptainCell();
-	const SolidStrongholdGrid::FCell Entrance = SolidStrongholdGrid::MeagreEntranceCell();
+	const SolidStrongholdGrid::FCell Captain = SolidDungeonLevel::MeagreCaptainCell();
+	const SolidStrongholdGrid::FCell Entrance = SolidDungeonLevel::MeagreEntranceCell();
 	for (const SolidStrongholdFurniture::FUsed& Placement : Placements)
 	{
 		TestEqual(TEXT("cave pieces sit on the single floor"), Placement.Level, 0);

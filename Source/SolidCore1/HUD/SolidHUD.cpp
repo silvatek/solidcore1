@@ -1,14 +1,13 @@
 #include "SolidHUD.h"
 #include "HUD/SolidHudTheme.h"
 #include "HUD/SolidPointer.h"
-#include "Strongholds/SolidDungeonPassage.h"
 #include "SolidBuildId.h"
 #include "Menus/SolidCharacterEditor.h"
 #include "SolidBodyParams.h"
 #include "Menus/SolidCredits.h"
 #include "Inventory/SolidInventory.h"
 #include "Inventory/SolidStorage.h"
-#include "Strongholds/SolidStrongholdFurniture.h"
+#include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
 #include "Strongholds/SolidStrongholdTransition.h"
 #include "Journal/SolidJournal.h"
 #include "Menus/SolidMainMenu.h"
@@ -1679,7 +1678,7 @@ void ASolidHUD::DrawHUD()
 				const float TextH = LineH * static_cast<float>(Lines.Num()) + LineGap * static_cast<float>(Lines.Num() - 1);
 				const float Band = SolidHudTheme::BandThickness(SolidHudTheme::HudFrame());
 				const float Pad = 6.f;
-				const SolidDungeonPassage::FTipBox Box = SolidDungeonPassage::PlaceTip(
+				const SolidPointer::FTipBox Box = SolidPointer::PlaceTip(
 					Hotspot,
 					TextW + (Band + Pad) * 2.f,
 					TextH + (Band + Pad) * 2.f,
@@ -2462,10 +2461,7 @@ void ASolidHUD::DrawInventoryPopup()
 	}
 
 	const bool bShowChest = GameMode
-		&& SolidStrongholdTransition::CompanyChestOpen(
-			State,
-			GameMode->IsInDungeon(),
-			GameMode->IsInTower());
+		&& SolidStrongholdTransition::CompanyChestOpen(State, GameMode->IsInStronghold());
 	SolidInventory::FPage Page;
 	SolidInventory::Layout(State.Inventory, Page, bShowChest ? &State.CaveChest : nullptr);
 

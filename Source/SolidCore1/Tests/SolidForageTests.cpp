@@ -7,11 +7,12 @@
 #include "Inventory/SolidItemType.h"
 #include "Inventory/SolidStorage.h"
 #include "SolidClickMove.h"
-#include "SolidDungeonLevel.h"
+#include "Strongholds/Dungeon/SolidDungeonLevel.h"
 #include "SolidForestTrees.h"
 #include "SolidForage.h"
 #include "SolidForagePile.h"
 #include "SolidGameState.h"
+#include "SolidTravelSession.h"
 #include "SolidTerrainMap.h"
 #include "SolidTerrainTestHelpers.h"
 #include "SolidTowns.h"
@@ -79,10 +80,8 @@ bool FSolidForageScatterTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("pitch uses the same cube"), FString(SolidForage::MeshPath(SolidItemType::IdPitch)), FString(SolidForage::CubeMesh));
 	TestEqual(TEXT("any id uses the cube for now"), FString(SolidForage::MeshPath(SolidItemType::IdCoins)), FString(SolidForage::CubeMesh));
 
-	TestTrue(TEXT("the open world has piles"), SolidForage::WorldHasPiles(false, false, false));
-	TestFalse(TEXT("the dungeon has no piles"), SolidForage::WorldHasPiles(true, false, false));
-	TestFalse(TEXT("a tower has no piles"), SolidForage::WorldHasPiles(false, true, false));
-	TestFalse(TEXT("the tunnels have no piles"), SolidForage::WorldHasPiles(false, false, true));
+	TestTrue(TEXT("the open world has piles"), SolidForage::WorldHasPiles(false));
+	TestFalse(TEXT("a closed visit has no piles"), SolidForage::WorldHasPiles(true));
 
 	TArray<FSolidTerrainPoint> Points = ForestRow(40);
 	Points.Add(ForagePoint(40, ESolidBiome::Sea));

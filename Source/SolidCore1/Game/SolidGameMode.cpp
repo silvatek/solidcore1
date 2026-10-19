@@ -1873,39 +1873,52 @@ void ASolidGameMode::EnsureVegetation()
 		UE_LOG(LogSolid, Warning, TEXT("Spawned %d cave entrances and %d tunnel mouths"), Spawned, TunnelMouths);
 	}
 
-	if (SpawnedDungeonExteriors.Num() == 0)
+	const bool bSpawnDungeonExteriors = SpawnedDungeonExteriors.Num() == 0;
+	const bool bSpawnTowerExteriors = SpawnedTowerExteriors.Num() == 0;
+	if (bSpawnDungeonExteriors || bSpawnTowerExteriors)
 	{
 		USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
-		USolidWorldMap* RockMap = Terrain ? Terrain->GetWorldMap() : nullptr;
-		int32 Rocks = 0;
-		if (RockMap && RockMap->IsLoaded())
+		USolidWorldMap* ExteriorMap = Terrain ? Terrain->GetWorldMap() : nullptr;
+		int32 DungeonCount = 0;
+		int32 TowerCount = 0;
+		if (ExteriorMap && ExteriorMap->IsLoaded())
 		{
 			const FVector2D WorldMin = Terrain->GetWorldMinXY();
 			const FVector2D WorldMax = Terrain->GetWorldMaxXY();
-			TArray<const FSolidStronghold*> Dungeons;
+			TArray<const FSolidStronghold*> Owned;
 			if (Configuration.ActiveStronghold)
 			{
-				Dungeons.Add(Configuration.ActiveStronghold.Get());
+				Owned.Add(Configuration.ActiveStronghold.Get());
 			}
 			for (const TUniquePtr<FSolidStronghold>& Previous : Configuration.PreviousStrongholds)
 			{
 				if (Previous)
 				{
-					Dungeons.Add(Previous.Get());
+					Owned.Add(Previous.Get());
 				}
 			}
-			for (const FSolidStronghold* Stronghold : Dungeons)
+			for (const FSolidStronghold* Stronghold : Owned)
 			{
-				if (!Stronghold
-					|| Stronghold->Type != ESolidStrongholdType::Dungeon
-					|| !Stronghold->Supported(Stronghold->Size)
-					|| SolidStronghold::UsesCaveMouth(*Stronghold))
+				if (!Stronghold)
+				{
+					continue;
+				}
+				UClass* ExteriorClass = Stronghold->ExteriorClass();
+				if (!ExteriorClass)
+				{
+					continue;
+				}
+				const bool bDungeon = ExteriorClass->IsChildOf(ASolidDungeonExterior::StaticClass());
+				const bool bTower = ExteriorClass->IsChildOf(ASolidTowerExterior::StaticClass());
+				if ((bDungeon && !bSpawnDungeonExteriors)
+					|| (bTower && !bSpawnTowerExteriors)
+					|| (!bDungeon && !bTower))
 				{
 					continue;
 				}
 
 				FVector2D CellXY = FVector2D::ZeroVector;
-				if (!RockMap->CellToWorldXY(Stronghold->Cell, WorldMin, WorldMax, CellXY))
+				if (!ExteriorMap->CellToWorldXY(Stronghold->Cell, WorldMin, WorldMax, CellXY))
 				{
 					continue;
 				}
@@ -1913,25 +1926,33 @@ void ASolidGameMode::EnsureVegetation()
 				FVector SpawnLoc(CellXY.X, CellXY.Y, 0.f);
 				const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
 				SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
-				const float Yaw = SolidStronghold::OrientationYawDeg(Stronghold->Orientation);
-				ASolidDungeonExterior* Rock = World->SpawnActor<ASolidDungeonExterior>(
-					ASolidDungeonExterior::StaticClass(),
-					SpawnLoc,
-					FRotator(0.f, Yaw, 0.f),
-					SpawnParams);
-				if (!Rock)
+				const FRotator Rotation(0.f, Stronghold->ExteriorYawDeg(ExteriorMap), 0.f);
+				AActor* Exterior = World->SpawnActor(ExteriorClass, &SpawnLoc, &Rotation, SpawnParams);
+				if (!Exterior)
 				{
 					continue;
 				}
-
-				Rock->BuildVisuals();
-				SpawnedDungeonExteriors.Add(Rock);
-				++Rocks;
+				Stronghold->ConfigureExterior(Exterior);
+				if (ASolidDungeonExterior* Rock = Cast<ASolidDungeonExterior>(Exterior))
+				{
+					SpawnedDungeonExteriors.Add(Rock);
+					++DungeonCount;
+				}
+				else if (ASolidTowerExterior* Shell = Cast<ASolidTowerExterior>(Exterior))
+				{
+					SpawnedTowerExteriors.Add(Shell);
+					++TowerCount;
+				}
 			}
 		}
-		if (Rocks > 0)
+		if (DungeonCount > 0 || TowerCount > 0)
 		{
-			UE_LOG(LogSolid, Warning, TEXT("Spawned %d dungeon exteriors"), Rocks);
+			UE_LOG(
+				LogSolid,
+				Warning,
+				TEXT("Spawned %d dungeon exteriors and %d tower exteriors"),
+				DungeonCount,
+				TowerCount);
 		}
 	}
 
@@ -1940,7 +1961,6 @@ void ASolidGameMode::EnsureVegetation()
 		USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
 		USolidWorldMap* SiteMap = Terrain ? Terrain->GetWorldMap() : nullptr;
 		int32 Stones = 0;
-		int32 Shells = 0;
 		if (SiteMap && SiteMap->IsLoaded())
 		{
 			const FVector2D WorldMin = Terrain->GetWorldMinXY();
@@ -1957,23 +1977,25 @@ void ASolidGameMode::EnsureVegetation()
 					}
 
 					const FIntPoint SiteCell(Col, Row);
-					const FSolidStronghold* Exterior = nullptr;
-					if (Configuration.ActiveStronghold
-						&& SiteCell == Configuration.ActiveStronghold->Cell
-						&& Configuration.ActiveStronghold->Type == ESolidStrongholdType::Tower)
+					const FSolidStronghold* Owned = nullptr;
+					if (Configuration.ActiveStronghold && SiteCell == Configuration.ActiveStronghold->Cell)
 					{
-						Exterior = Configuration.ActiveStronghold.Get();
+						Owned = Configuration.ActiveStronghold.Get();
 					}
 					else
 					{
 						for (const TUniquePtr<FSolidStronghold>& Previous : Configuration.PreviousStrongholds)
 						{
-							if (Previous && Previous->Cell == SiteCell && Previous->Type == ESolidStrongholdType::Tower)
+							if (Previous && Previous->Cell == SiteCell)
 							{
-								Exterior = Previous.Get();
+								Owned = Previous.Get();
 								break;
 							}
 						}
+					}
+					if (Owned && Owned->ExteriorClass())
+					{
+						continue;
 					}
 
 					FVector2D CellXY = FVector2D::ZeroVector;
@@ -1983,32 +2005,6 @@ void ASolidGameMode::EnsureVegetation()
 					}
 					FVector SpawnLoc(CellXY.X, CellXY.Y, 0.f);
 					const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
-					SolidStrongholds::FGrassFace Face;
-					const float Yaw = SolidStrongholds::FindGrassFace(SiteMap, SiteCell, Face)
-						? Face.FacingYawDeg
-						: 0.f;
-
-					SolidTowerStronghold::FPlan Plan;
-					if (Exterior && SolidTowerStronghold::PlanFor(*Exterior, Plan))
-					{
-						SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
-						ASolidTowerExterior* Shell = World->SpawnActor<ASolidTowerExterior>(
-							ASolidTowerExterior::StaticClass(),
-							SpawnLoc,
-							FRotator(0.f, SolidTowerStronghold::ExteriorYawDeg(Yaw), 0.f),
-							SpawnParams);
-						if (!Shell)
-						{
-							continue;
-						}
-						Shell->SetPlan(Plan);
-						Shell->SetTowerCell(SiteCell);
-						Shell->BuildVisuals();
-						SpawnedTowerExteriors.Add(Shell);
-						++Shells;
-						continue;
-					}
-
 					SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
 					ASolidStrongholdStone* Stone = World->SpawnActor<ASolidStrongholdStone>(
 						ASolidStrongholdStone::StaticClass(),
@@ -2026,7 +2022,7 @@ void ASolidGameMode::EnsureVegetation()
 				}
 			}
 		}
-		UE_LOG(LogSolid, Warning, TEXT("Spawned %d stronghold stones and %d site exteriors"), Stones, Shells);
+		UE_LOG(LogSolid, Warning, TEXT("Spawned %d stronghold stones"), Stones);
 	}
 
 	if (SpawnedBridges.Num() == 0)

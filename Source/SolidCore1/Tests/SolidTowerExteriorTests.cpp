@@ -1,7 +1,10 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "SolidTowerExterior.h"
+#include "SolidStrongholds.h"
+#include "SolidStrongholdType.h"
 #include "SolidTowerStronghold.h"
+#include "SolidWorldMap.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "MeshDescription.h"
@@ -142,6 +145,51 @@ bool FSolidTowerExteriorTest::RunTest(const FString& Parameters)
 		FMath::IsNearlyEqual(SolidTowerStronghold::ExteriorYawDeg(90.f), -90.f, 0.01f));
 	TestTrue(TEXT("east grass puts the door east"),
 		FMath::IsNearlyEqual(SolidTowerStronghold::ExteriorYawDeg(0.f), 180.f, 0.01f));
+
+	const FIntPoint ImperiousCell(35, 15);
+	TUniquePtr<FSolidStronghold> Spire = SolidStronghold::Make(
+		ESolidStrongholdType::Tower,
+		ESolidStrongholdSize::Imperious,
+		ImperiousCell);
+	TestNotNull(TEXT("an Imperious tower"), Spire.Get());
+	if (!Spire)
+	{
+		return false;
+	}
+	TestTrue(
+		TEXT("the tower names the tower exterior"),
+		Spire->ExteriorClass() == ASolidTowerExterior::StaticClass());
+	TestTrue(
+		TEXT("no map leaves the tower door on local -X at yaw 180"),
+		FMath::IsNearlyEqual(Spire->ExteriorYawDeg(nullptr), SolidTowerStronghold::ExteriorYawDeg(0.f), 0.01f));
+
+	ASolidTowerExterior* Shell = NewObject<ASolidTowerExterior>();
+	TestNotNull(TEXT("tower exterior"), Shell);
+	if (!Shell)
+	{
+		return false;
+	}
+	Spire->ConfigureExterior(Shell);
+	TestEqual(TEXT("the exterior stands on the tower column"), Shell->GetTowerCell().X, ImperiousCell.X);
+	TestEqual(TEXT("the exterior stands on the tower row"), Shell->GetTowerCell().Y, ImperiousCell.Y);
+	TestEqual(
+		TEXT("the exterior uses the Imperious plan"),
+		Shell->GetPlan().FloorCount,
+		SolidTowerStronghold::Imperious.FloorCount);
+	UStaticMeshComponent* Door = Shell->GetDoorMesh();
+	TestNotNull(TEXT("the tower stronghold builds the door"), Door);
+
+	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("shipped map loads"), Map && Map->LoadDefault());
+	SolidStrongholds::FGrassFace Face;
+	const bool bGrass = Map && SolidStrongholds::FindGrassFace(Map, ImperiousCell, Face);
+	const float GrassYaw = bGrass ? Face.FacingYawDeg : 0.f;
+	TestTrue(
+		TEXT("the tower exterior turns toward the site grass"),
+		Map && FMath::IsNearlyEqual(
+			Spire->ExteriorYawDeg(Map),
+			SolidTowerStronghold::ExteriorYawDeg(GrassYaw),
+			0.01f));
 
 	return true;
 }

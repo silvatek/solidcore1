@@ -22,6 +22,8 @@ public:
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
 
+	/** Rock size, from the dungeon that owns this exterior. */
+	void SetFace(float InFaceWidthCm, float InFaceHeightCm, float InSlopeRunCm);
 	void BuildVisuals();
 
 	UStaticMeshComponent* GetRockMesh() const { return RockMesh; }
@@ -38,6 +40,10 @@ protected:
 	TObjectPtr<UStaticMeshComponent> MouthMesh;
 
 private:
+	float FaceWidthCm = 0.f;
+	float FaceHeightCm = 0.f;
+	float SlopeRunCm = 0.f;
+
 	void DiscardParts();
 	UStaticMeshComponent* AddPart(
 		UStaticMesh* Mesh,

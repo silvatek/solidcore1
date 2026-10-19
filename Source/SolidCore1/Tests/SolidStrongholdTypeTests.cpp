@@ -5,6 +5,8 @@
 #include "SolidStrongholdGrid.h"
 #include "SolidStrongholdTransition.h"
 #include "SolidStrongholdType.h"
+#include "SolidDungeonExterior.h"
+#include "SolidTowerExterior.h"
 #include "SolidTowerStronghold.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -93,6 +95,28 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(TowerCopy->Size),
 		static_cast<uint8>(ESolidStrongholdSize::Average));
 	TestTrue(TEXT("a copy is its own stronghold"), DungeonCopy.Get() != DungeonOwned.Get());
+
+	TestTrue(
+		TEXT("a meagre dungeon names the dungeon exterior"),
+		DungeonOwned->ExteriorClass() == ASolidDungeonExterior::StaticClass());
+	TestTrue(
+		TEXT("a copied dungeon names the dungeon exterior"),
+		DungeonCopy->ExteriorClass() == ASolidDungeonExterior::StaticClass());
+	TestNull(
+		TEXT("a humble dungeon has no exterior"),
+		SolidStronghold::Make(ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Humble)->ExteriorClass());
+	TestNull(
+		TEXT("a fortress has no exterior"),
+		SolidStronghold::Make(ESolidStrongholdType::Fortress, ESolidStrongholdSize::Imperious)->ExteriorClass());
+	TestTrue(
+		TEXT("an average tower names the tower exterior"),
+		TowerOwned->ExteriorClass() == ASolidTowerExterior::StaticClass());
+	TestTrue(
+		TEXT("a copied tower names the tower exterior"),
+		TowerCopy->ExteriorClass() == ASolidTowerExterior::StaticClass());
+	TestNull(
+		TEXT("a humble tower has no exterior"),
+		SolidStronghold::Make(ESolidStrongholdType::Tower, ESolidStrongholdSize::Humble)->ExteriorClass());
 	return true;
 }
 

@@ -2,7 +2,6 @@
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
 #include "SolidStrongholds.h"
-#include "SolidStrongholdType.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -300,6 +299,16 @@ void ASolidDungeonExterior::BeginPlay()
 	BuildVisuals();
 }
 
+void ASolidDungeonExterior::SetFace(
+	const float InFaceWidthCm,
+	const float InFaceHeightCm,
+	const float InSlopeRunCm)
+{
+	FaceWidthCm = InFaceWidthCm;
+	FaceHeightCm = InFaceHeightCm;
+	SlopeRunCm = InSlopeRunCm;
+}
+
 void ASolidDungeonExterior::DiscardParts()
 {
 	auto Drop = [](TObjectPtr<UStaticMeshComponent>& Part)
@@ -355,12 +364,16 @@ void ASolidDungeonExterior::BuildVisuals()
 {
 	DiscardParts();
 
-	const SolidStronghold::FSolidDungeon& Dungeon = SolidStronghold::FSolidDungeon::Instance();
+	if (FaceWidthCm <= 0.f || FaceHeightCm <= 0.f || SlopeRunCm <= 0.f)
+	{
+		return;
+	}
+
 	UStaticMesh* Rock = SolidDungeonExteriorPrivate::BuildRock(
 		this,
-		Dungeon.FaceWidthCm(),
-		Dungeon.FaceHeightCm(),
-		Dungeon.SlopeRunCm(),
+		FaceWidthCm,
+		FaceHeightCm,
+		SlopeRunCm,
 		SolidStrongholds::OpeningWidthCm,
 		SolidStrongholds::OpeningHeightCm);
 	RockMesh = AddPart(Rock, FVector::ZeroVector, FVector::OneVector, SolidStrongholds::RockColor(), TEXT("DungeonExterior"));

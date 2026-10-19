@@ -1,10 +1,17 @@
 #include "SolidStrongholdType.h"
+#include "SolidDungeonExterior.h"
 #include "SolidStrongholds.h"
+#include "SolidTowerExterior.h"
 #include "SolidTowerStronghold.h"
 
 TUniquePtr<FSolidStronghold> FSolidStronghold::Clone() const
 {
 	return MakeUnique<FSolidStronghold>(*this);
+}
+
+float FSolidStronghold::ExteriorYawDeg(const USolidWorldMap*) const
+{
+	return SolidStronghold::OrientationYawDeg(Orientation);
 }
 
 namespace SolidStronghold
@@ -28,6 +35,26 @@ namespace SolidStronghold
 	ESolidStrongholdTrip FSolidDungeon::Trip() const
 	{
 		return ESolidStrongholdTrip::Cave;
+	}
+
+	UClass* FSolidDungeon::ExteriorClass() const
+	{
+		if (!Supported(Size) || UsesCliffMouth())
+		{
+			return nullptr;
+		}
+		return ASolidDungeonExterior::StaticClass();
+	}
+
+	void FSolidDungeon::ConfigureExterior(AActor* Exterior) const
+	{
+		ASolidDungeonExterior* Rock = Cast<ASolidDungeonExterior>(Exterior);
+		if (!Rock)
+		{
+			return;
+		}
+		Rock->SetFace(FaceWidthCm(), FaceHeightCm(), SlopeRunCm());
+		Rock->BuildVisuals();
 	}
 
 	float FSolidDungeon::FaceWidthCm() const
@@ -127,6 +154,41 @@ namespace SolidStronghold
 	ESolidStrongholdTrip FSolidTower::Trip() const
 	{
 		return ESolidStrongholdTrip::Tower;
+	}
+
+	UClass* FSolidTower::ExteriorClass() const
+	{
+		if (!Supported(Size))
+		{
+			return nullptr;
+		}
+		return ASolidTowerExterior::StaticClass();
+	}
+
+	void FSolidTower::ConfigureExterior(AActor* Exterior) const
+	{
+		ASolidTowerExterior* Shell = Cast<ASolidTowerExterior>(Exterior);
+		if (!Shell)
+		{
+			return;
+		}
+		SolidTowerStronghold::FPlan Plan;
+		if (!SolidTowerStronghold::PlanFor(*this, Plan))
+		{
+			return;
+		}
+		Shell->SetPlan(Plan);
+		Shell->SetTowerCell(Cell);
+		Shell->BuildVisuals();
+	}
+
+	float FSolidTower::ExteriorYawDeg(const USolidWorldMap* Map) const
+	{
+		SolidStrongholds::FGrassFace Face;
+		const float GrassYaw = (Map && SolidStrongholds::FindGrassFace(Map, Cell, Face))
+			? Face.FacingYawDeg
+			: 0.f;
+		return SolidTowerStronghold::ExteriorYawDeg(GrassYaw);
 	}
 
 	void FSolidTower::CollectGroundHexes(

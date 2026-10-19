@@ -23,6 +23,8 @@ namespace SolidStronghold
 		virtual bool Supported(ESolidStrongholdSize Size) const override;
 		virtual bool UsesCliffMouth() const override;
 		virtual ESolidStrongholdTrip Trip() const override;
+		virtual UClass* ExteriorClass() const override;
+		virtual void ConfigureExterior(AActor* Exterior) const override;
 
 		/** Front face width. The opening plus the stone on each side. */
 		float FaceWidthCm() const;
@@ -77,6 +79,9 @@ namespace SolidStronghold
 		virtual bool Supported(ESolidStrongholdSize Size) const override;
 		virtual bool UsesCliffMouth() const override;
 		virtual ESolidStrongholdTrip Trip() const override;
+		virtual UClass* ExteriorClass() const override;
+		virtual void ConfigureExterior(AActor* Exterior) const override;
+		virtual float ExteriorYawDeg(const USolidWorldMap* Map) const override;
 		virtual void CollectGroundHexes(
 			ESolidStrongholdSize Size,
 			TArray<SolidStrongholdGrid::FHex>& OutHexes) const override;

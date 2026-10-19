@@ -175,6 +175,12 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Cave->Orientation),
 		static_cast<uint8>(ESolidStrongholdOrientation::North));
 	TestTrue(
+		TEXT("the cave names the dungeon exterior"),
+		Cave->ExteriorClass() == ASolidDungeonExterior::StaticClass());
+	TestTrue(
+		TEXT("the cave exterior faces north"),
+		FMath::IsNearlyEqual(Cave->ExteriorYawDeg(nullptr), 90.f, 0.01f));
+	TestTrue(
 		TEXT("north is world +Y"),
 		FMath::IsNearlyEqual(SolidStronghold::OrientationYawDeg(ESolidStrongholdOrientation::North), 90.f, 0.01f));
 	TestTrue(
@@ -188,6 +194,9 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 		FMath::IsNearlyEqual(SolidStronghold::OrientationYawDeg(ESolidStrongholdOrientation::West), 180.f, 0.01f));
 
 	Cave->Orientation = ESolidStrongholdOrientation::East;
+	TestTrue(
+		TEXT("the cave exterior follows the exit"),
+		FMath::IsNearlyEqual(Cave->ExteriorYawDeg(nullptr), 0.f, 0.01f));
 	TUniquePtr<FSolidStronghold> Copy = Cave->Clone();
 	FSolidStronghold* Cloned = Copy.Get();
 	TestNotNull(TEXT("the cave clones"), Cloned);
@@ -238,7 +247,7 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	Rock->BuildVisuals();
+	Cave->ConfigureExterior(Rock);
 
 	UStaticMeshComponent* Stone = Rock->GetRockMesh();
 	UStaticMeshComponent* Mouth = Rock->GetMouthMesh();

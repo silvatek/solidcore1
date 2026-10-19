@@ -305,7 +305,7 @@ protected:
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidStrongholdStone>> SpawnedStrongholdStones;
 
-	/** Site stones and site exteriors are placed together, including when every site is an exterior. */
+	/** Standing stones on stronghold sites that have no exterior of their own. */
 	bool bSpawnedStrongholdSites = false;
 
 	UPROPERTY(Transient)

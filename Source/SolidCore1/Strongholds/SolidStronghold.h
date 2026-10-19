@@ -44,6 +44,9 @@ enum class ESolidStrongholdOrientation : uint8
 	West,
 };
 
+class AActor;
+class USolidWorldMap;
+
 /**
  * A company base: one type, one size, the map cell it stands on, and the way its exit faces.
  * Dungeon, Fortress, and Tower are the subclasses.
@@ -79,6 +82,18 @@ public:
 
 	/** Which trip this type takes. */
 	virtual ESolidStrongholdTrip Trip() const { return ESolidStrongholdTrip::None; }
+
+	/** Actor class for this stronghold's exterior. Null when this kind draws none. */
+	virtual UClass* ExteriorClass() const { return nullptr; }
+
+	/** Fill an actor of ExteriorClass() from this stronghold. */
+	virtual void ConfigureExterior(AActor* Exterior) const {}
+
+	/**
+	 * World yaw of that exterior.
+	 * A dungeon points local +X along its exit. A tower turns its door toward the grass.
+	 */
+	virtual float ExteriorYawDeg(const USolidWorldMap* Map) const;
 
 	/**
 	 * Ground-floor hexes this type keeps at Size.

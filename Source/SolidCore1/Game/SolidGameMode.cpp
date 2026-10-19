@@ -1860,7 +1860,12 @@ void ASolidGameMode::EnsureVegetation()
 		Streamer,
 		Owned,
 		SpawnParams,
-		SpawnedStrongholdExteriors,
+		SpawnedStrongholdExteriors);
+	SolidStronghold::SpawnStrongholdStones(
+		World,
+		Streamer,
+		Owned,
+		SpawnParams,
 		SpawnedStrongholdStones,
 		bSpawnedStrongholdSites);
 

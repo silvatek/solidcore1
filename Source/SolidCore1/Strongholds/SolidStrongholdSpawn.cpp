@@ -16,9 +16,7 @@ namespace SolidStronghold
 		ASolidTerrainStreamer* Streamer,
 		const TArray<const FSolidStronghold*>& Company,
 		const FActorSpawnParameters& SpawnParams,
-		TArray<TObjectPtr<ASolidStrongholdExterior>>& Exteriors,
-		TArray<TObjectPtr<ASolidStrongholdStone>>& Stones,
-		bool& bStonesSpawned)
+		TArray<TObjectPtr<ASolidStrongholdExterior>>& Exteriors)
 	{
 		if (!World || !Streamer || !Streamer->GetTerrainMap() || !Streamer->GetTerrainMap()->IsBuilt())
 		{
@@ -28,10 +26,6 @@ namespace SolidStronghold
 		Exteriors.RemoveAll([](const TObjectPtr<ASolidStrongholdExterior>& Exterior)
 		{
 			return !IsValid(Exterior);
-		});
-		Stones.RemoveAll([](const TObjectPtr<ASolidStrongholdStone>& Stone)
-		{
-			return !IsValid(Stone);
 		});
 
 		if (Exteriors.Num() == 0)
@@ -79,7 +73,28 @@ namespace SolidStronghold
 				UE_LOG(LogSolid, Warning, TEXT("Spawned %d stronghold exteriors"), Spawned);
 			}
 		}
+	}
 
+	void SpawnStrongholdStones(
+		UWorld* World,
+		ASolidTerrainStreamer* Streamer,
+		const TArray<const FSolidStronghold*>& Company,
+		const FActorSpawnParameters& SpawnParams,
+		TArray<TObjectPtr<ASolidStrongholdStone>>& Stones,
+		bool& bStonesSpawned)
+	{
+		if (!World || !Streamer || !Streamer->GetTerrainMap() || !Streamer->GetTerrainMap()->IsBuilt())
+		{
+			return;
+		}
+
+		Stones.RemoveAll([](const TObjectPtr<ASolidStrongholdStone>& Stone)
+		{
+			return !IsValid(Stone);
+		});
+
+		USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
+		USolidWorldMap* Map = Terrain->GetWorldMap();
 		if (bStonesSpawned || !Map || !Map->IsLoaded())
 		{
 			return;

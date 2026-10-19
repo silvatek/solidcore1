@@ -13,7 +13,6 @@ namespace SolidStronghold
 {
 	/**
 	 * Spawns the exterior of each company stronghold.
-	 * Also spawns a marker stone on a stronghold site that has no exterior.
 	 * The stronghold names the actor, the world position, and the facing.
 	 */
 	void SpawnStrongholds(
@@ -21,7 +20,16 @@ namespace SolidStronghold
 		ASolidTerrainStreamer* Streamer,
 		const TArray<const FSolidStronghold*>& Company,
 		const FActorSpawnParameters& SpawnParams,
-		TArray<TObjectPtr<ASolidStrongholdExterior>>& Exteriors,
+		TArray<TObjectPtr<ASolidStrongholdExterior>>& Exteriors);
+
+	/**
+	 * Spawns a marker stone on each stronghold site that has no exterior.
+	 */
+	void SpawnStrongholdStones(
+		UWorld* World,
+		ASolidTerrainStreamer* Streamer,
+		const TArray<const FSolidStronghold*>& Company,
+		const FActorSpawnParameters& SpawnParams,
 		TArray<TObjectPtr<ASolidStrongholdStone>>& Stones,
 		bool& bStonesSpawned);
 }

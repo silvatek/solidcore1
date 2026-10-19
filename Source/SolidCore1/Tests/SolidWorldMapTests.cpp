@@ -569,7 +569,7 @@ bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 		Text += TEXT("\n");
 	}
 	Text += TEXT(". = Grassland (light green)\n");
-	Text += TEXT("15 = Outpost, biome=Forest\n");
+	Text += TEXT("15 = Numbered key, biome=Forest\n");
 	Text += TEXT("0 = Starting village, biome=Town\n");
 
 	USolidWorldMap* Map = NewObject<USolidWorldMap>();
@@ -592,8 +592,8 @@ bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 	TestFalse(
 		TEXT("digits are not the start"),
 		Map->GetStartTownWorldXY(FVector2D(-100.f, -100.f), FVector2D(100.f, 100.f), DigitStart));
-	FSolidWorldLocation Outpost;
-	TestFalse(TEXT("a numbered key line is not a location"), Map->FindLocation(15, Outpost));
+	FSolidWorldLocation NumberedKey;
+	TestFalse(TEXT("a numbered key line is not a location"), Map->FindLocation(15, NumberedKey));
 	FSolidWorldLocation IglinKey;
 	TestFalse(TEXT("a location key line is not a town"), Map->FindLocation(0, IglinKey));
 	const FLinearColor Grass = Map->GetBiomeColor(ESolidBiome::Grassland);

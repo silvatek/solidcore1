@@ -87,6 +87,12 @@ Cloud agents are a **code + git workshop**. They do not replace the Windows Unre
 - When a story ships, move its file to `Planning/Done/`.
 - `ideas.md` is the inbox. Copy each new idea into a new file under `Planning/`. Do not edit `ideas.md`.
 
+## Names
+
+Name a new function or type with a word the design already uses. Captain, Company, Squad, Companion, and Stronghold are those words. `CodingGuidelines.md` says the same.
+
+Read the request and the names next to the new code before choosing. When those already use one of those words, use it. Do not invent a broader word so one function can also cover a neighbour. `SpawnOutposts` was that miss. The request said "the stronghold spawning code," and the list beside the call is `SpawnedStrongholdExteriors`.
+
 ## Tests
 
 Follow the Automated tests policy in `CodingGuidelines.md`.

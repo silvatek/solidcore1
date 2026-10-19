@@ -8,6 +8,8 @@ Use a **Cursor canvas** (not an in-transcript HTML fragment, and not a repo file
 
 When the owner likes the plan, **write the learnings into the open Planning story** (hex splits, interior sizes, stairs, elevations, what is not chosen). That story commit uses the `Plan: ` prefix. The canvas itself is not committed.
 
+Canvas colours are for reading the plan only (for example light walkable floor and accent hexes on a dungeon mockup). They are **not** the in-game look. Shipped interiors use stone, as the Meagre cave and the towers already do.
+
 ## Shared constants
 
 Match the shipped grid and the tower plan. Do not invent a second hex size.

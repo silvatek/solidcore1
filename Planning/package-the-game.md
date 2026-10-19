@@ -1,10 +1,10 @@
 # Package the game
 
-Status: Waiting on [Generate the character mesh outside the editor](character-mesh-outside-the-editor.md)
+Status: Ready
 
 ## Story
 
-[Generate the character mesh outside the editor](character-mesh-outside-the-editor.md) is in `Planning/Done/` before this story starts. The developer then cooks a Windows Development package and starts that executable outside the Unreal Editor. It opens on the same map as Play In Editor. The world is the `WorldMap.txt` world. The captain, the companions, the ground, the fog curtains, the buildings, and the trees match that session.
+This story depends on [Generate the character mesh outside the editor](character-mesh-outside-the-editor.md), which is Ready. That story ships first. The developer then cooks a Windows Development package and starts that executable outside the Unreal Editor. It opens on the same map as Play In Editor. The world is the `WorldMap.txt` world. The captain, the companions, the ground, the fog curtains, the buildings, and the trees match that session.
 
 ## Acceptance
 

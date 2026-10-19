@@ -29,6 +29,7 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Basic NPCs](Planning/basic-npcs.md)
 - [Pathfinding over bridges](Planning/pathfinding-over-bridges.md)
 - [Rough stones](Planning/rough-stones.md)
+- [Stronghold type classes](Planning/stronghold-type-classes.md)
 - [Fortress stronghold](Planning/fortress-stronghold.md)
 - [Imperious dungeon](Planning/imperious-dungeon.md)
 - [Basic furniture management](Planning/basic-furniture-management.md)
@@ -84,7 +85,6 @@ Shipped stories live in [`Planning/Done`](Planning/Done).
 - [Enable a lair from an event](Planning/Done/enable-lair.md)
 - [Squad builder drag and drop](Planning/Done/squad-builder-drag-and-drop.md)
 - [Open the squad builder on leaving a stronghold](Planning/Done/squad-builder-on-stronghold-exit.md)
-- [Stronghold type classes](Planning/Done/stronghold-type-classes.md)
 - [Dungeon exterior](Planning/Done/dungeon-exterior.md)
 
 ## Controls (runtime defaults)

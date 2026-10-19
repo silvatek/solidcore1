@@ -4,7 +4,7 @@ Status: Ready
 
 ## Story
 
-Do not start this story until [Stronghold type classes](Done/stronghold-type-classes.md) is Done.
+Do not start this story until [Stronghold type classes](stronghold-type-classes.md) is Done.
 
 The player is inside a stronghold. The interior wall carries a sign that reads Arrange furniture. A click on that sign, or `\`, starts arrange mode, and the captain is hidden so the floor is clear to see. The same click, or `\` again, leaves the mode. The pointer highlights the hex under it. A piece on that hex shows its name.
 

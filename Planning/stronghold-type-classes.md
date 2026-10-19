@@ -1,6 +1,6 @@
 # Stronghold type classes
 
-Status: Done
+Status: In Progress
 
 ## Story
 

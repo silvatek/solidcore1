@@ -4,7 +4,7 @@ Status: Ready
 
 ## Story
 
-Do not start this story until [Stronghold type classes](stronghold-type-classes.md) is Done.
+Do not start this story until [Stronghold type classes](Done/stronghold-type-classes.md) is Done.
 
 The player has more than one storage container in a stronghold. Each container keeps its own items. The player opens one container and sees that container's slots. While the inventory panel is open, the player cycles through every storage container in that stronghold. The page shows one of them at a time.
 

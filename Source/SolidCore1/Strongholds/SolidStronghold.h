@@ -177,7 +177,7 @@ namespace SolidStronghold
 	/** WorldMap.txt column of that dungeon, counting from 1 at the left. */
 	inline constexpr int32 StartingColumn = 17;
 	/** The new-game Meagre Dungeon. Later strongholds use "{size} {type}" until renamed. */
-	inline const TCHAR* StartingCaveName = TEXT("The Cave");
+	inline const TCHAR* StartingStrongholdName = TEXT("The Cave");
 
 	/** Map cell of the starting stronghold. X is the column, Y is the row, counting from 0. */
 	inline FIntPoint StartingCell()

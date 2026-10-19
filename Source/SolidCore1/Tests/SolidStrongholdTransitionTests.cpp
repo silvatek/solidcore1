@@ -307,7 +307,7 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the stronghold size is average"), static_cast<uint8>(State.ActiveStronghold->Size), static_cast<uint8>(ESolidStrongholdSize::Average));
 	TestEqual(TEXT("the company is on the site"), State.ActiveStronghold->Cell, AverageCell);
 	TestEqual(TEXT("the new tower is named from its size and type"), State.ActiveStronghold->Name, FString(TEXT("Average Tower")));
-	TestEqual(TEXT("the cave keeps its name"), State.PreviousStrongholds[0]->Name, FString(SolidStronghold::StartingCaveName));
+	TestEqual(TEXT("the cave keeps its name"), State.PreviousStrongholds[0]->Name, FString(SolidStronghold::StartingStrongholdName));
 	TestEqual(TEXT("one previous stronghold is recorded"), State.PreviousStrongholds.Num(), 1);
 	TestEqual(
 		TEXT("the previous stronghold is a Dungeon"),

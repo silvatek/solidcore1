@@ -404,7 +404,7 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 		TEXT("a new game is meagre"),
 		static_cast<uint8>(Fresh.ActiveStronghold->Size),
 		static_cast<uint8>(ESolidStrongholdSize::Meagre));
-	TestEqual(TEXT("the starting cave is named The Cave"), Fresh.ActiveStronghold->Name, FString(SolidStronghold::StartingCaveName));
+	TestEqual(TEXT("the starting cave is named The Cave"), Fresh.ActiveStronghold->Name, FString(SolidStronghold::StartingStrongholdName));
 	TestEqual(
 		TEXT("the cave hover shows that name"),
 		SolidStronghold::EnterHover(Fresh.ActiveStronghold->Name),

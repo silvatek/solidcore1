@@ -27,54 +27,27 @@ Match the shipped grid and the tower plan. Do not invent a second hex size.
 
 Odd rows shift half a flat-to-flat along X, the same as `HexCenter`.
 
-## Room kit (settled)
+## Strongholds by size and type
 
-Three room sizes: **Large** = 20 hexes, **Medium** = 12, **Small** = 6.
+Three room sizes: **Large** (L) = 20 hexes, **Medium** (M) = 12, **Small** (S) = 6.
 
 A size has one kit. Dungeon, Fortress, and Tower at that size use the **same number and sizes of rooms**. Larger sizes add more cells, stepping relatively smoothly. Passages and yards hold no usable hexes.
 
-| Size | Large (20) | Medium (12) | Small (6) | Hex total |
-|------|-----------:|------------:|----------:|----------:|
-| Meagre | 0 | 1 | 0 | 12 |
-| Humble | 0 | 1 | 1 | 18 |
-| Average | 0 | 1 | 2 | 24 |
-| Impressive | 0 | 3 | 2 | 48 |
-| Grand | 1 | 4 | 2 | 80 |
-| Stately | 2 | 4 | 2 | 100 |
-| Imperious | 3 | 4 | 3 | 126 |
+| Size | L | M | S | Hexes | Tower floors | Keep |
+|------|--:|--:|--:|------:|--------------|------|
+| Meagre | 0 | 1 | 0 | 12 | — | — |
+| Humble | 0 | 1 | 1 | 18 | — | 1× M |
+| Average | 0 | 1 | 2 | 24 | 7–9 | 1× M |
+| Impressive | 0 | 3 | 2 | 48 | 5–9 | 2× M |
+| Grand | 1 | 4 | 2 | 80 | 3–9 | 1× L, 2× M |
+| Stately | 2 | 4 | 2 | 100 | 2–9 | 2× L, 1× M |
+| Imperious | 3 | 4 | 3 | 126 | 1–10 | 3× L |
 
 The shipped Meagre dungeon is still the fourteen-cell cave. The Meagre kit row (one medium) is the shared target when a type at that size uses rooms; it does not change the cave until a story does.
 
-### Tower floors
+Tower rooms fit in a **constant tower geometry**: a contiguous band of floors taken from the Imperious tower (floors numbered **1 at the ground** through **10 at the top**). Each floor is one room. The Imperious kept-hex counts per floor (`35, 28, 22, 19, 16, 12, 12, 8, 6, 7` on floors 1–10) are larger than the room sizes; the room is the usable kit cell count that fits that floor. Floor 1–3 are large, 4–7 medium, 8–10 small. Meagre and Humble have no tower.
 
-Tower rooms fit in a **constant tower geometry**: a contiguous band of floors taken from the Imperious tower (floors numbered **1 at the ground** through **10 at the top**). Each floor is one room. The Imperious kept-hex counts per floor (`35, 28, 22, 19, 16, 12, 12, 8, 6, 7` on floors 1–10) are larger than the room sizes; the room is the usable kit cell count that fits that floor.
-
-| Size | Floors (inclusive) | Rooms |
-|------|--------------------|-------|
-| Average | 7–9 | 1× medium, 2× small |
-| Impressive | 5–9 | 3× medium, 2× small |
-| Grand | 3–9 | 1× large, 4× medium, 2× small |
-| Stately | 2–9 | 2× large, 4× medium, 2× small |
-| Imperious | 1–10 | 3× large, 4× medium, 3× small |
-
-Meagre and Humble have no tower. Floor 1–3 are large, 4–7 medium, 8–10 small.
-
-### Fortress keep
-
-Every fortress has a large **Keep** as its main building. Keep floors are kit rooms stacked in that building:
-
-| Size | Keep floors | Keep hexes | Remainder (other buildings) |
-|------|-------------|----------:|-----------------------------|
-| Humble | 1× medium | 12 | 1× small |
-| Average | 1× medium | 12 | 2× small |
-| Impressive | 2× medium | 24 | 1× medium, 2× small |
-| Grand | 1× large, 2× medium | 44 | 2× medium, 2× small |
-| Stately | 2× large, 1× medium | 52 | 3× medium, 2× small |
-| Imperious | 3× large | 60 | 4× medium, 3× small |
-
-Meagre is not a fortress size. How the remainder is split across Barracks, Gatehouse, Workshops, and Stores is a fortress layout choice; the keep column above is fixed.
-
-### Dungeon
+Every fortress has a large **Keep** as its main building. Keep floors are kit rooms stacked in that building (column above). Meagre is not a fortress size. The remainder of the kit (kit rooms minus Keep) goes to other buildings; how that split lands across Barracks, Gatehouse, Workshops, and Stores is a fortress layout choice.
 
 A dungeon joins the same kit with **passages** and **stairs**. Layout is flexible. **Level 1 is the top** (the mouth); deeper levels have higher numbers — the opposite of tower and fortress floor numbers.
 

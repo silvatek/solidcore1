@@ -252,7 +252,7 @@ protected:
 	/** Top-right eye / eagle widget has been added to the viewport. */
 	bool bSightIndicatorAdded = false;
 
-	/** Enter cave / Leave cave, or empty when the pointer is elsewhere. */
+	/** Stronghold name and "Click to enter", a leave or lair line, or empty when the pointer is elsewhere. */
 	FString CavePassageTip;
 
 	/** Stick or Pitch, or empty when the pointer is not over a pile within reach. */

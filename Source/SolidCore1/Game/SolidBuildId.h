@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0481")
+#define SOLID_BUILD_ID TEXT("SC1-0482")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The cave mouth stays wide at the ground, and the rock is centered on the shelf.")
+#define SOLID_BUILD_NOTE TEXT("The starting cave is named The Cave, and the entrance hover shows that name.")
 #endif

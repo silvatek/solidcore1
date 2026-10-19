@@ -48,7 +48,7 @@ class AActor;
 class USolidWorldMap;
 
 /**
- * A company base: one type, one size, the map cell it stands on, and the way its exit faces.
+ * A company base: one type, one size, a name, the map cell it stands on, and the way its exit faces.
  * Dungeon, Fortress, and Tower are the subclasses.
  * These are plain C++ classes, not Unreal objects and not Blueprints.
  */
@@ -60,13 +60,7 @@ public:
 		ESolidStrongholdType InType,
 		ESolidStrongholdSize InSize,
 		FIntPoint InCell = FIntPoint::ZeroValue,
-		FVector2D InLocation = FVector2D::ZeroVector)
-		: Type(InType)
-		, Size(InSize)
-		, Cell(InCell)
-		, Location(InLocation)
-	{
-	}
+		FVector2D InLocation = FVector2D::ZeroVector);
 
 	virtual ~FSolidStronghold() = default;
 	FSolidStronghold(const FSolidStronghold&) = default;
@@ -74,6 +68,12 @@ public:
 
 	ESolidStrongholdType Type = ESolidStrongholdType::Dungeon;
 	ESolidStrongholdSize Size = ESolidStrongholdSize::Meagre;
+	/**
+	 * What the company calls this stronghold.
+	 * A new one is "{size} {type}", such as "Average Fortress".
+	 * The starting cave is "The Cave". A later story lets the player change it.
+	 */
+	FString Name;
 	/** Map cell. X is the column and Y is the row, counting from 0. Prefer Location. */
 	FIntPoint Cell = FIntPoint::ZeroValue;
 	/** World centimetres of the cell center. Height is the ground under this point. */
@@ -176,6 +176,8 @@ namespace SolidStronghold
 	inline constexpr int32 StartingRow = 9;
 	/** WorldMap.txt column of that dungeon, counting from 1 at the left. */
 	inline constexpr int32 StartingColumn = 17;
+	/** The new-game Meagre Dungeon. Later strongholds use "{size} {type}" until renamed. */
+	inline const TCHAR* StartingCaveName = TEXT("The Cave");
 
 	/** Map cell of the starting stronghold. X is the column, Y is the row, counting from 0. */
 	inline FIntPoint StartingCell()
@@ -260,6 +262,15 @@ namespace SolidStronghold
 	inline FString Label(const FSolidStronghold& Stronghold)
 	{
 		return FString::Printf(TEXT("%s %s"), SizeName(Stronghold.Size), TypeName(Stronghold.Type));
+	}
+
+	/** Second line of the entrance hover. */
+	inline const TCHAR* EnterHoverPrompt = TEXT("Click to enter");
+
+	/** Stronghold name, then "Click to enter" on the next line. */
+	inline FString EnterHover(const FString& Name)
+	{
+		return Name + TEXT("\n") + EnterHoverPrompt;
 	}
 
 	/**

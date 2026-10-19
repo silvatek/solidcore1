@@ -11,6 +11,7 @@ FGameState::FGameState()
 	if (ActiveStronghold)
 	{
 		ActiveStronghold->Orientation = ESolidStrongholdOrientation::North;
+		ActiveStronghold->Name = SolidStronghold::StartingCaveName;
 	}
 }
 
@@ -58,6 +59,7 @@ FGameState& FGameState::operator=(const FGameState& Other)
 	if (!Other.ActiveStronghold && ActiveStronghold)
 	{
 		ActiveStronghold->Orientation = ESolidStrongholdOrientation::North;
+		ActiveStronghold->Name = SolidStronghold::StartingCaveName;
 	}
 	MaxStrongholdSize = Other.MaxStrongholdSize;
 	PreviousStrongholds.Reset();

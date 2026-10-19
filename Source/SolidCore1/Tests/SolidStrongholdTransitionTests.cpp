@@ -306,6 +306,8 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the company is in a tower"), static_cast<uint8>(State.ActiveStronghold->Type), static_cast<uint8>(ESolidStrongholdType::Tower));
 	TestEqual(TEXT("the stronghold size is average"), static_cast<uint8>(State.ActiveStronghold->Size), static_cast<uint8>(ESolidStrongholdSize::Average));
 	TestEqual(TEXT("the company is on the site"), State.ActiveStronghold->Cell, AverageCell);
+	TestEqual(TEXT("the new tower is named from its size and type"), State.ActiveStronghold->Name, FString(TEXT("Average Tower")));
+	TestEqual(TEXT("the cave keeps its name"), State.PreviousStrongholds[0]->Name, FString(SolidStronghold::StartingCaveName));
 	TestEqual(TEXT("one previous stronghold is recorded"), State.PreviousStrongholds.Num(), 1);
 	TestEqual(
 		TEXT("the previous stronghold is a Dungeon"),
@@ -337,9 +339,12 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 		}
 	}
 
+	State.ActiveStronghold->Name = TEXT("Stone Watch");
 	TestTrue(
 		TEXT("the next size commits"),
 		SolidStrongholdTransition::Commit(State, ImperiousCell, ESolidStrongholdSize::Imperious, ESolidStrongholdType::Tower));
+	TestEqual(TEXT("the imperious tower is named from its size and type"), State.ActiveStronghold->Name, FString(TEXT("Imperious Tower")));
+	TestEqual(TEXT("the average tower keeps the name it had"), State.PreviousStrongholds[1]->Name, FString(TEXT("Stone Watch")));
 	TestEqual(TEXT("the company is Imperious"), static_cast<uint8>(State.ActiveStronghold->Size), static_cast<uint8>(ESolidStrongholdSize::Imperious));
 	TestEqual(TEXT("the company is on the later site"), State.ActiveStronghold->Cell, ImperiousCell);
 	TestEqual(TEXT("two previous strongholds are recorded"), State.PreviousStrongholds.Num(), 2);

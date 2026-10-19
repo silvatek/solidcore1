@@ -1706,7 +1706,20 @@ void ASolidCharacter::UpdateCavePassageHover()
 	{
 		return;
 	}
-	HUD->SetCavePassageTip(SolidLair::PassageTip(PassageUnderPointer()));
+	const SolidLair::FPassageHit Hit = PassageUnderPointer();
+	FString Tip(SolidLair::PassageTip(Hit));
+	if (Hit.Action == SolidDungeonPassage::EHit::Enter && !Hit.bLair)
+	{
+		const UWorld* World = GetWorld();
+		const ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+		const FSolidStronghold* Stronghold = GameMode ? GameMode->GetConfiguration().ActiveStronghold.Get() : nullptr;
+		if (Stronghold)
+		{
+			const FString Name = Stronghold->Name.IsEmpty() ? SolidStronghold::Label(*Stronghold) : Stronghold->Name;
+			Tip = SolidStronghold::EnterHover(Name);
+		}
+	}
+	HUD->SetCavePassageTip(Tip);
 	float GroundCm = 0.f;
 	const ASolidForagePile* Pile = NearestForagePile(GroundCm);
 	const bool bNamed = Pile && SolidForage::IsWithinReach(GroundCm);

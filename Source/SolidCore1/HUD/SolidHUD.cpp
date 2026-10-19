@@ -1655,13 +1655,28 @@ void ASolidHUD::DrawHUD()
 			const FString& PointerTip = CavePassageTip.IsEmpty() ? ForageTip : CavePassageTip;
 			if (!PointerTip.IsEmpty())
 			{
-				UFont* TipFont = GEngine ? GEngine->GetSmallFont() : nullptr;
-				float TextW = static_cast<float>(PointerTip.Len() * 8);
-				float TextH = 14.f;
-				if (TipFont)
+				TArray<FString> Lines;
+				PointerTip.ParseIntoArrayLines(Lines);
+				if (Lines.Num() == 0)
 				{
-					Canvas->StrLen(TipFont, PointerTip, TextW, TextH);
+					Lines.Add(PointerTip);
 				}
+				UFont* TipFont = GEngine ? GEngine->GetSmallFont() : nullptr;
+				float TextW = 0.f;
+				float LineH = 14.f;
+				for (const FString& Line : Lines)
+				{
+					float LineW = static_cast<float>(Line.Len() * 8);
+					float MeasuredH = 14.f;
+					if (TipFont)
+					{
+						Canvas->StrLen(TipFont, Line, LineW, MeasuredH);
+					}
+					TextW = FMath::Max(TextW, LineW);
+					LineH = FMath::Max(LineH, MeasuredH);
+				}
+				const float LineGap = Lines.Num() > 1 ? 2.f : 0.f;
+				const float TextH = LineH * static_cast<float>(Lines.Num()) + LineGap * static_cast<float>(Lines.Num() - 1);
 				const float Band = SolidHudTheme::BandThickness(SolidHudTheme::HudFrame());
 				const float Pad = 6.f;
 				const SolidDungeonPassage::FTipBox Box = SolidDungeonPassage::PlaceTip(
@@ -1673,13 +1688,17 @@ void ASolidHUD::DrawHUD()
 				SolidHUDPrivate::DrawOakFrame(Canvas, Box.X, Box.Y, Box.W, Box.H, SolidHudTheme::HudFrame());
 				if (TipFont)
 				{
-					FCanvasTextItem TextItem(
-						FVector2D(Box.X + Band + Pad, Box.Y + Band + Pad),
-						FText::FromString(PointerTip),
-						TipFont,
-						SolidHudTheme::OakAndBronze().Ink);
-					TextItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
-					Canvas->DrawItem(TextItem);
+					for (int32 LineIndex = 0; LineIndex < Lines.Num(); ++LineIndex)
+					{
+						const float LineY = Box.Y + Band + Pad + static_cast<float>(LineIndex) * (LineH + LineGap);
+						FCanvasTextItem TextItem(
+							FVector2D(Box.X + Band + Pad, LineY),
+							FText::FromString(Lines[LineIndex]),
+							TipFont,
+							SolidHudTheme::OakAndBronze().Ink);
+						TextItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+						Canvas->DrawItem(TextItem);
+					}
 				}
 			}
 		}

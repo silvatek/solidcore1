@@ -80,6 +80,14 @@ bool FSolidStrongholdCatalogTest::RunTest(const FString& Parameters)
 		TEXT("starting label"),
 		SolidStronghold::Label(MeagreDungeon),
 		FString(TEXT("Meagre Dungeon")));
+	TestEqual(
+		TEXT("a new stronghold is named from its size and type"),
+		MeagreDungeon.Name,
+		FString(TEXT("Meagre Dungeon")));
+	TestEqual(
+		TEXT("the entrance hover names it, then asks for a click"),
+		SolidStronghold::EnterHover(MeagreDungeon.Name),
+		FString(TEXT("Meagre Dungeon\nClick to enter")));
 
 	const SolidStronghold::FVisitView Cave = SolidStronghold::VisitViewFor(MeagreDungeon);
 	TestTrue(TEXT("entering the cave levels the camera"), FMath::IsNearlyZero(Cave.Enter.PitchDeg, 0.1f));
@@ -396,6 +404,20 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 		TEXT("a new game is meagre"),
 		static_cast<uint8>(Fresh.ActiveStronghold->Size),
 		static_cast<uint8>(ESolidStrongholdSize::Meagre));
+	TestEqual(TEXT("the starting cave is named The Cave"), Fresh.ActiveStronghold->Name, FString(SolidStronghold::StartingCaveName));
+	TestEqual(
+		TEXT("the cave hover shows that name"),
+		SolidStronghold::EnterHover(Fresh.ActiveStronghold->Name),
+		FString(TEXT("The Cave\nClick to enter")));
+	TUniquePtr<FSolidStronghold> AverageFortress = SolidStronghold::Make(
+		ESolidStrongholdType::Fortress,
+		ESolidStrongholdSize::Average,
+		FIntPoint(1, 2),
+		FVector2D(3.f, 4.f));
+	TestEqual(TEXT("a new fortress is Average Fortress"), AverageFortress->Name, FString(TEXT("Average Fortress")));
+	AverageFortress->Name = TEXT("High Keep");
+	const TUniquePtr<FSolidStronghold> Kept = AverageFortress->Clone();
+	TestEqual(TEXT("a clone keeps a chosen name"), Kept->Name, FString(TEXT("High Keep")));
 	TestEqual(TEXT("a new game uses the starting column"), Fresh.ActiveStronghold->Cell.X, SolidStronghold::StartingColumn - 1);
 	TestEqual(TEXT("a new game uses the starting row"), Fresh.ActiveStronghold->Cell.Y, SolidStronghold::StartingRow - 1);
 	const FVector2D StartingXY = SolidStronghold::WorldXY(SolidStronghold::StartingCell());

@@ -5,6 +5,19 @@
 #include "SolidTowerStronghold.h"
 #include "SolidWorldMap.h"
 
+FSolidStronghold::FSolidStronghold(
+	const ESolidStrongholdType InType,
+	const ESolidStrongholdSize InSize,
+	const FIntPoint InCell,
+	const FVector2D InLocation)
+	: Type(InType)
+	, Size(InSize)
+	, Cell(InCell)
+	, Location(InLocation)
+{
+	Name = SolidStronghold::Label(*this);
+}
+
 TUniquePtr<FSolidStronghold> FSolidStronghold::Clone() const
 {
 	return MakeUnique<FSolidStronghold>(*this);
@@ -284,6 +297,7 @@ namespace SolidStronghold
 		Stronghold->Size = Size;
 		Stronghold->Cell = Cell;
 		Stronghold->Location = InWorldXY;
+		Stronghold->Name = Label(*Stronghold);
 		return Stronghold;
 	}
 

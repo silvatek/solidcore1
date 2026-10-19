@@ -20,7 +20,91 @@ namespace SolidDungeonExteriorTestPrivate
 		int32 Vertices = 0;
 		float MidCrownZ = -1.f;
 		float FrontOpeningY = 0.f;
+		FVector CrownNormal = FVector::ZeroVector;
+		FVector SideNormal = FVector::ZeroVector;
+		float CrownWoundZ = 1.f;
 	};
+
+	bool Facing(const UStaticMeshComponent* Part, FBounds& Out)
+	{
+		if (!Part)
+		{
+			return false;
+		}
+		UStaticMesh* Mesh = Part->GetStaticMesh();
+		FMeshDescription* Description = Mesh ? Mesh->GetMeshDescription(0) : nullptr;
+		if (!Description)
+		{
+			return false;
+		}
+
+		FStaticMeshAttributes Attributes(*Description);
+		TVertexAttributesRef<FVector3f> Positions = Attributes.GetVertexPositions();
+		TVertexInstanceAttributesRef<FVector3f> Normals = Attributes.GetVertexInstanceNormals();
+		float CrownZ = -TNumericLimits<float>::Max();
+		float SideY = CrownZ;
+		FVertexID CrownVertex = INDEX_NONE;
+		FVertexID SideVertex = INDEX_NONE;
+		for (const FVertexID VertexID : Description->Vertices().GetElementIDs())
+		{
+			const FVector3f Position = Positions[VertexID];
+			if (Position.Z > CrownZ)
+			{
+				CrownZ = Position.Z;
+				CrownVertex = VertexID;
+			}
+			if (Position.Y > SideY)
+			{
+				SideY = Position.Y;
+				SideVertex = VertexID;
+			}
+		}
+		if (CrownVertex == INDEX_NONE || SideVertex == INDEX_NONE)
+		{
+			return false;
+		}
+
+		auto AverageNormal = [&Description, &Normals](const FVertexID VertexID) -> FVector
+		{
+			FVector Sum = FVector::ZeroVector;
+			for (const FVertexInstanceID InstanceID : Description->GetVertexVertexInstanceIDs(VertexID))
+			{
+				const FVector3f Normal = Normals[InstanceID];
+				Sum += FVector(Normal.X, Normal.Y, Normal.Z);
+			}
+			return Sum.GetSafeNormal();
+		};
+		Out.CrownNormal = AverageNormal(CrownVertex);
+		Out.SideNormal = AverageNormal(SideVertex);
+
+		Out.CrownWoundZ = 1.f;
+		for (const FTriangleID TriangleID : Description->Triangles().GetElementIDs())
+		{
+			const TArrayView<const FVertexInstanceID> Corners = Description->GetTriangleVertexInstances(TriangleID);
+			if (Corners.Num() < 3)
+			{
+				continue;
+			}
+			const FVertexID Vertices[3] = {
+				Description->GetVertexInstanceVertex(Corners[0]),
+				Description->GetVertexInstanceVertex(Corners[1]),
+				Description->GetVertexInstanceVertex(Corners[2]),
+			};
+			const FVector3f P0 = Positions[Vertices[0]];
+			const FVector3f P1 = Positions[Vertices[1]];
+			const FVector3f P2 = Positions[Vertices[2]];
+			const FVector Centroid = FVector(P0 + P1 + P2) / 3.f;
+			if (Centroid.Z < CrownZ - 40.f || FMath::Abs(Centroid.Y) > 80.f)
+			{
+				continue;
+			}
+			const FVector Cross = FVector::CrossProduct(
+				FVector(P1 - P0),
+				FVector(P2 - P0));
+			Out.CrownWoundZ = FMath::Min(Out.CrownWoundZ, Cross.GetSafeNormal().Z);
+		}
+		return true;
+	}
 
 	bool Measure(
 		const UStaticMeshComponent* Part,
@@ -218,6 +302,18 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("the front is wider than a triangle"),
 		Bounds.FrontOpeningY > Dungeon.FaceWidthCm() * 0.35f);
+
+	SolidDungeonExteriorTestPrivate::FBounds Facing;
+	TestTrue(TEXT("rock facing"), SolidDungeonExteriorTestPrivate::Facing(Stone, Facing));
+	TestTrue(
+		TEXT("the crown normal points up"),
+		Facing.CrownNormal.Z > 0.5f);
+	TestTrue(
+		TEXT("the side normal points outward"),
+		Facing.SideNormal.Y > 0.2f);
+	TestTrue(
+		TEXT("the crown is wound clockwise from outside"),
+		Facing.CrownWoundZ < 0.f);
 
 	return true;
 }

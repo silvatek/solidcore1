@@ -85,13 +85,15 @@ namespace SolidDungeonExteriorPrivate
 		{
 			return;
 		}
-		const bool bOutward = FVector::DotProduct(Cross, Positions[A] - Interior) >= 0.f;
-		const int32 Second = bOutward ? B : C;
-		const int32 Third = bOutward ? C : B;
+		// The tower winds clockwise from the outside. That cross product points inward.
+		// The stored normal still points outward, so the lit side is the stone.
+		const bool bCrossOutward = FVector::DotProduct(Cross, Positions[A] - Interior) >= 0.f;
+		const int32 Second = bCrossOutward ? C : B;
+		const int32 Third = bCrossOutward ? B : C;
 		Triangles.Add(A);
 		Triangles.Add(Second);
 		Triangles.Add(Third);
-		const FVector Normal = (bOutward ? Cross : -Cross).GetSafeNormal();
+		const FVector Normal = (bCrossOutward ? Cross : -Cross).GetSafeNormal();
 		Normals[A] += Normal;
 		Normals[Second] += Normal;
 		Normals[Third] += Normal;

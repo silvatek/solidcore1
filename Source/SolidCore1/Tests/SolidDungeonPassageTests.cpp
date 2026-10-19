@@ -1,6 +1,6 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "SolidDungeonEntrance.h"
+#include "Lairs/SolidLairEntrance.h"
 #include "SolidDungeonInterior.h"
 #include "SolidDungeonLevel.h"
 #include "SolidDungeonPassage.h"
@@ -35,7 +35,7 @@ bool FSolidDungeonPassageHitTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("leave tip"), FString(SolidDungeonPassage::TipText(SolidDungeonPassage::EHit::Leave)), FString(SolidDungeonLevel::LeaveLabel));
 	TestTrue(TEXT("a miss has no tip"), FString(SolidDungeonPassage::TipText(SolidDungeonPassage::EHit::None)).IsEmpty());
 
-	ASolidDungeonEntrance* Entrance = NewObject<ASolidDungeonEntrance>();
+	ASolidLairEntrance* Entrance = NewObject<ASolidLairEntrance>();
 	TestNotNull(TEXT("entrance"), Entrance);
 	if (!Entrance)
 	{

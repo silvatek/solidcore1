@@ -12,7 +12,7 @@
 class ASolidBridge;
 class ASolidBuilding;
 class ASolidForagePile;
-class ASolidDungeonEntrance;
+class ASolidLairEntrance;
 class ASolidDungeonInterior;
 class ASolidLairInterior;
 class ASolidCompanionCharacter;
@@ -293,7 +293,7 @@ protected:
 	TArray<TObjectPtr<ASolidTownSign>> SpawnedTownSigns;
 
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<ASolidDungeonEntrance>> SpawnedDungeonEntrances;
+	TArray<TObjectPtr<ASolidLairEntrance>> SpawnedLairEntrances;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidStrongholdExterior>> SpawnedStrongholdExteriors;

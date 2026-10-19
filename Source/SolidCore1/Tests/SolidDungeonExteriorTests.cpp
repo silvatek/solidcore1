@@ -294,6 +294,7 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 			static_cast<uint8>(ESolidStrongholdOrientation::East));
 	}
 
+	const SolidStronghold::FSolidDungeon& Dungeon = SolidStronghold::FSolidDungeon::Instance();
 	ESolidBiome Shelf = ESolidBiome::Mountain;
 	TestTrue(TEXT("the cave names a shelf"), SolidStronghold::BiomeFor(*Cave, Shelf));
 	TestEqual(

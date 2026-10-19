@@ -2,23 +2,23 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "SolidDungeonEntrance.generated.h"
+#include "SolidLairEntrance.generated.h"
 
 class UStaticMeshComponent;
 
 /**
  * Stone frame in a cliff, between a mountain cell and the adjacent grassland.
- * Each Iglin tunnel end uses one. The dungeon exterior is the rock, not this frame.
+ * Each Iglin tunnel end uses one.
  * The opening is solid. A left click on the dark mouth enters that place.
  * Local +X faces the grass. The stone sits toward the cliff of the actor origin.
  */
 UCLASS()
-class SOLIDCORE1_API ASolidDungeonEntrance : public AActor
+class SOLIDCORE1_API ASolidLairEntrance : public AActor
 {
 	GENERATED_BODY()
 
 public:
-	ASolidDungeonEntrance();
+	ASolidLairEntrance();
 
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
@@ -30,7 +30,7 @@ public:
 	UStaticMeshComponent* GetRightJamb() const { return RightJamb; }
 	UStaticMeshComponent* GetLintel() const { return Lintel; }
 
-	/** Marks this frame as one end of the Iglin tunnels. The cave frame stays unmarked. */
+	/** Marks this frame as one end of the Iglin tunnels. */
 	void SetLairEnd(TCHAR Marker)
 	{
 		bLairMouth = true;
@@ -41,23 +41,23 @@ public:
 	TCHAR GetEndMarker() const { return static_cast<TCHAR>(EndMarker); }
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lair")
 	TObjectPtr<USceneComponent> SceneRoot;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lair")
 	TObjectPtr<UStaticMeshComponent> MouthMesh;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lair")
 	TObjectPtr<UStaticMeshComponent> LeftJamb;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lair")
 	TObjectPtr<UStaticMeshComponent> RightJamb;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lair")
 	TObjectPtr<UStaticMeshComponent> Lintel;
 
 private:
-	/** False on the cave. True on a tunnel end. */
+	/** False until SetLairEnd. True on a tunnel end. */
 	bool bLairMouth = false;
 	/** X or Y when this frame is a tunnel end. */
 	uint8 EndMarker = 0;

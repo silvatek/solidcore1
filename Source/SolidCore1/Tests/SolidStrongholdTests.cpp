@@ -1,14 +1,11 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "SolidDungeonEntrance.h"
 #include "SolidGameInstance.h"
 #include "SolidGameState.h"
 #include "SolidStronghold.h"
 #include "SolidStrongholds.h"
 #include "SolidTerrainMap.h"
 #include "SolidWorldMap.h"
-#include "Components/StaticMeshComponent.h"
-#include "Engine/StaticMesh.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -302,54 +299,6 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 			TestTrue(TEXT("yaw faces north"), FMath::IsNearlyEqual(Entrance.FacingYawDeg, 90.f, 0.1f));
 		}
 	}
-
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidDungeonEntranceVisualsTest,
-	"SolidCore1.Stronghold.DungeonEntranceVisuals",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
-
-bool FSolidDungeonEntranceVisualsTest::RunTest(const FString& Parameters)
-{
-	ASolidDungeonEntrance* Entrance = NewObject<ASolidDungeonEntrance>();
-	TestNotNull(TEXT("entrance"), Entrance);
-	Entrance->BuildVisuals();
-
-	UStaticMeshComponent* Mouth = Entrance->GetMouthMesh();
-	UStaticMeshComponent* Left = Entrance->GetLeftJamb();
-	UStaticMeshComponent* Right = Entrance->GetRightJamb();
-	UStaticMeshComponent* Lintel = Entrance->GetLintel();
-	TestNotNull(TEXT("mouth"), Mouth);
-	TestNotNull(TEXT("left jamb"), Left);
-	TestNotNull(TEXT("right jamb"), Right);
-	TestNotNull(TEXT("lintel"), Lintel);
-	if (!Mouth || !Left || !Right || !Lintel)
-	{
-		return false;
-	}
-
-	UStaticMesh* MouthMesh = Mouth->GetStaticMesh();
-	UStaticMesh* LeftMesh = Left->GetStaticMesh();
-	UStaticMesh* LintelMesh = Lintel->GetStaticMesh();
-	TestNotNull(TEXT("mouth cube"), MouthMesh);
-	TestNotNull(TEXT("jamb cube"), LeftMesh);
-	TestNotNull(TEXT("lintel cube"), LintelMesh);
-
-	TestTrue(TEXT("mouth is wider than it is deep"), Mouth->GetRelativeScale3D().Y > Mouth->GetRelativeScale3D().X);
-	TestTrue(TEXT("jambs are thinner than the mouth"), Left->GetRelativeScale3D().Y < Mouth->GetRelativeScale3D().Y);
-	TestTrue(TEXT("left jamb is on -Y"), Left->GetRelativeLocation().Y < 0.f);
-	TestTrue(TEXT("right jamb is on +Y"), Right->GetRelativeLocation().Y > 0.f);
-	TestTrue(TEXT("lintel sits above the mouth"), Lintel->GetRelativeLocation().Z > Mouth->GetRelativeLocation().Z);
-	TestTrue(TEXT("mouth meets the ground"), FMath::IsNearlyEqual(
-		Mouth->GetRelativeLocation().Z - Mouth->GetRelativeScale3D().Z * 50.f, 0.f, 1.f));
-	const float MouthFront = Mouth->GetRelativeLocation().X + Mouth->GetRelativeScale3D().X * 50.f;
-	const float LintelFront = Lintel->GetRelativeLocation().X + Lintel->GetRelativeScale3D().X * 50.f;
-	TestTrue(TEXT("mouth is recessed behind the lintel front"), MouthFront < LintelFront - 1.f);
-	TestTrue(TEXT("the grass face of the frame sits toward the cliff"),
-		FMath::IsNearlyEqual(LintelFront, SolidStrongholds::FrameFrontLocalX, 1.f));
-	TestTrue(TEXT("the grass spawn stands in front of the mouth"), MouthFront < -40.f);
 
 	return true;
 }

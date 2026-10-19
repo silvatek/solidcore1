@@ -4,7 +4,7 @@
 #include "SolidClickMove.h"
 #include "SolidGroundMove.h"
 #include "Lairs/SolidLairInterior.h"
-#include "Strongholds/SolidDungeonEntrance.h"
+#include "Lairs/SolidLairEntrance.h"
 #include "Strongholds/SolidDungeonExterior.h"
 #include "Strongholds/SolidDungeonInterior.h"
 #include "Strongholds/SolidDungeonPassage.h"
@@ -1427,7 +1427,7 @@ namespace
 			return SolidLair::FPassageHit();
 		}
 
-		for (TActorIterator<ASolidDungeonEntrance> Entrance(World); Entrance; ++Entrance)
+		for (TActorIterator<ASolidLairEntrance> Entrance(World); Entrance; ++Entrance)
 		{
 			const UStaticMeshComponent* Mouth = Entrance->GetMouthMesh();
 			if (Mouth && Hits(Mouth->CalcBounds(Mouth->GetComponentTransform()).GetBox()))

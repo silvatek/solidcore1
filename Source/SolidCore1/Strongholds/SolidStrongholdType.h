@@ -21,7 +21,6 @@ namespace SolidStronghold
 		static const FSolidDungeon& Instance();
 
 		virtual bool Supported(ESolidStrongholdSize Size) const override;
-		virtual bool UsesCliffMouth() const override;
 		virtual ESolidStrongholdTrip Trip() const override;
 		virtual UClass* ExteriorClass() const override;
 		virtual void ConfigureExterior(AActor* Exterior) const override;
@@ -70,7 +69,6 @@ namespace SolidStronghold
 		static const FSolidFortress& Instance();
 
 		virtual bool Supported(ESolidStrongholdSize Size) const override;
-		virtual bool UsesCliffMouth() const override;
 		virtual ESolidStrongholdTrip Trip() const override;
 		virtual void CollectGroundHexes(
 			ESolidStrongholdSize Size,
@@ -91,7 +89,6 @@ namespace SolidStronghold
 		static const FSolidTower& Instance();
 
 		virtual bool Supported(ESolidStrongholdSize Size) const override;
-		virtual bool UsesCliffMouth() const override;
 		virtual ESolidStrongholdTrip Trip() const override;
 		virtual UClass* ExteriorClass() const override;
 		virtual void ConfigureExterior(AActor* Exterior) const override;

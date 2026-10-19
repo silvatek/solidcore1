@@ -84,9 +84,6 @@ public:
 	/** True when the current code can build this type at Size. */
 	virtual bool Supported(ESolidStrongholdSize) const { return false; }
 
-	/** The cliff mouth. A stronghold that places its own exterior returns false. */
-	virtual bool UsesCliffMouth() const { return false; }
-
 	/** Which trip this type takes. */
 	virtual ESolidStrongholdTrip Trip() const { return ESolidStrongholdTrip::None; }
 
@@ -304,9 +301,6 @@ namespace SolidStronghold
 		}
 		return false;
 	}
-
-	/** The cliff mouth. A stronghold that places its own exterior does not use this. */
-	bool UsesCaveMouth(const FSolidStronghold& Stronghold);
 
 	/** "MeagreDungeon" or "Meagre Dungeon": size, then type. */
 	inline bool FromToken(const FString& Token, ESolidStrongholdType& OutType, ESolidStrongholdSize& OutSize)

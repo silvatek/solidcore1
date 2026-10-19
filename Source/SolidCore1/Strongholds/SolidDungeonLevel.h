@@ -27,7 +27,7 @@ namespace SolidDungeonLevel
 	/** Meagre ceiling. The floor plan is the fourteen-hex outline in SolidStrongholdGrid. */
 	inline constexpr float RoomHeightCm = 320.f;
 	inline constexpr float ShellCm = 48.f;
-	/** Dark opening on the entrance hex. The cliff mouth outside is larger. */
+	/** Dark opening on the entrance hex. The rock mouth outside is larger. */
 	inline constexpr float MouthHeightCm = 240.f;
 	/**
 	 * Clear width of the cave door. Wider than the captain, and wider than one hex edge,

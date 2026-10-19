@@ -26,8 +26,8 @@
 #include "Towns/SolidTownSign.h"
 #include "Towns/SolidTownSigns.h"
 #include "Lairs/SolidLair.h"
+#include "Lairs/SolidLairEntrance.h"
 #include "Lairs/SolidLairInterior.h"
-#include "Strongholds/SolidDungeonEntrance.h"
 #include "Strongholds/SolidStrongholdSpawn.h"
 #include "Strongholds/SolidDungeonInterior.h"
 #include "Strongholds/SolidDungeonLevel.h"
@@ -1544,7 +1544,7 @@ void ASolidGameMode::EnsureVegetation()
 	{
 		return !IsValid(Sign);
 	});
-	SpawnedDungeonEntrances.RemoveAll([](const TObjectPtr<ASolidDungeonEntrance>& Entrance)
+	SpawnedLairEntrances.RemoveAll([](const TObjectPtr<ASolidLairEntrance>& Entrance)
 	{
 		return !IsValid(Entrance);
 	});
@@ -1577,11 +1577,11 @@ void ASolidGameMode::EnsureVegetation()
 		}
 	}
 
-	if (SpawnedDungeonEntrances.Num() == 0)
+	if (SpawnedLairEntrances.Num() == 0)
 	{
-		for (TActorIterator<ASolidDungeonEntrance> It(World); It; ++It)
+		for (TActorIterator<ASolidLairEntrance> It(World); It; ++It)
 		{
-			SpawnedDungeonEntrances.Add(*It);
+			SpawnedLairEntrances.Add(*It);
 		}
 	}
 
@@ -1644,7 +1644,6 @@ void ASolidGameMode::EnsureVegetation()
 	}
 
 	TArray<SolidTownSigns::FPlacement> SignPlacements;
-	TArray<SolidStrongholds::FEntrance> CliffMouths;
 	TArray<SolidLair::FEntrance> TunnelEntrances;
 	TArray<FVector2D> SignClearCenters;
 	if (const USolidWorldMap* WorldMap = Streamer->GetTerrainMap()->GetWorldMap())
@@ -1652,30 +1651,6 @@ void ASolidGameMode::EnsureVegetation()
 		const FVector2D WorldMin = Streamer->GetTerrainMap()->GetWorldMinXY();
 		const FVector2D WorldMax = Streamer->GetTerrainMap()->GetWorldMaxXY();
 		SolidTownSigns::CollectPlacements(WorldMap, WorldMin, WorldMax, SignPlacements);
-		if (Configuration.ActiveStronghold)
-		{
-			SolidStrongholds::FEntrance Entrance;
-			if (SolidStronghold::UsesCaveMouth(*Configuration.ActiveStronghold)
-				&& SolidStrongholds::MakeEntrance(
-					WorldMap,
-					WorldMin,
-					WorldMax,
-					Configuration.ActiveStronghold->Cell,
-					Entrance))
-			{
-				CliffMouths.Add(Entrance);
-			}
-		}
-		for (const TUniquePtr<FSolidStronghold>& Previous : Configuration.PreviousStrongholds)
-		{
-			SolidStrongholds::FEntrance Entrance;
-			if (Previous
-				&& SolidStronghold::UsesCaveMouth(*Previous)
-				&& SolidStrongholds::MakeEntrance(WorldMap, WorldMin, WorldMax, Previous->Cell, Entrance))
-			{
-				CliffMouths.Add(Entrance);
-			}
-		}
 		SolidLair::CollectEntrances(WorldMap, WorldMin, WorldMax, TunnelEntrances);
 		SignClearCenters.Reserve(SignPlacements.Num());
 		for (const SolidTownSigns::FPlacement& Placement : SignPlacements)
@@ -1793,30 +1768,8 @@ void ASolidGameMode::EnsureVegetation()
 		UE_LOG(LogSolid, Warning, TEXT("Spawned %d town signs"), Spawned);
 	}
 
-	if (SpawnedDungeonEntrances.Num() == 0)
+	if (SpawnedLairEntrances.Num() == 0)
 	{
-		int32 Spawned = 0;
-		for (const SolidStrongholds::FEntrance& Entrance : CliffMouths)
-		{
-			FVector SpawnLoc(Entrance.WorldXY.X, Entrance.WorldXY.Y, 0.f);
-			const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
-			SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
-
-			ASolidDungeonEntrance* Cave = World->SpawnActor<ASolidDungeonEntrance>(
-				ASolidDungeonEntrance::StaticClass(),
-				SpawnLoc,
-				FRotator(0.f, Entrance.FacingYawDeg, 0.f),
-				SpawnParams);
-			if (!Cave)
-			{
-				continue;
-			}
-
-			Cave->BuildVisuals();
-			SpawnedDungeonEntrances.Add(Cave);
-			++Spawned;
-		}
-
 		int32 TunnelMouths = 0;
 		for (const SolidLair::FEntrance& Entrance : TunnelEntrances)
 		{
@@ -1824,8 +1777,8 @@ void ASolidGameMode::EnsureVegetation()
 			const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
 			SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
 
-			ASolidDungeonEntrance* Mouth = World->SpawnActor<ASolidDungeonEntrance>(
-				ASolidDungeonEntrance::StaticClass(),
+			ASolidLairEntrance* Mouth = World->SpawnActor<ASolidLairEntrance>(
+				ASolidLairEntrance::StaticClass(),
 				SpawnLoc,
 				FRotator(0.f, Entrance.FacingYawDeg, 0.f),
 				SpawnParams);
@@ -1836,11 +1789,11 @@ void ASolidGameMode::EnsureVegetation()
 
 			Mouth->SetLairEnd(Entrance.EndMarker);
 			Mouth->BuildVisuals();
-			SpawnedDungeonEntrances.Add(Mouth);
+			SpawnedLairEntrances.Add(Mouth);
 			++TunnelMouths;
 		}
 
-		UE_LOG(LogSolid, Warning, TEXT("Spawned %d cave entrances and %d tunnel mouths"), Spawned, TunnelMouths);
+		UE_LOG(LogSolid, Warning, TEXT("Spawned %d tunnel mouths"), TunnelMouths);
 	}
 
 	TArray<const FSolidStronghold*> Owned;

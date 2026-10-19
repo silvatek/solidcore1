@@ -4,7 +4,7 @@
 #include "Inventory/SolidInventory.h"
 #include "Lairs/SolidLair.h"
 #include "Lairs/SolidLairInterior.h"
-#include "SolidDungeonEntrance.h"
+#include "Lairs/SolidLairEntrance.h"
 #include "SolidDungeonLevel.h"
 #include "SolidGameState.h"
 #include "SolidStronghold.h"
@@ -232,27 +232,27 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("a sealed letter is not a mouth"), SolidLair::CollectEntrances(Map, WorldMin, WorldMax, Entrances), 0);
 	}
 
-	ASolidDungeonEntrance* Cave = NewObject<ASolidDungeonEntrance>();
-	ASolidDungeonEntrance* Tunnel = NewObject<ASolidDungeonEntrance>();
-	TestNotNull(TEXT("cave frame"), Cave);
+	ASolidLairEntrance* Unmarked = NewObject<ASolidLairEntrance>();
+	ASolidLairEntrance* Tunnel = NewObject<ASolidLairEntrance>();
+	TestNotNull(TEXT("unmarked frame"), Unmarked);
 	TestNotNull(TEXT("tunnel frame"), Tunnel);
-	if (!Cave || !Tunnel)
+	if (!Unmarked || !Tunnel)
 	{
 		return false;
 	}
-	TestFalse(TEXT("a fresh frame is the cave"), Cave->IsLairMouth());
+	TestFalse(TEXT("a fresh frame is unmarked"), Unmarked->IsLairMouth());
 	Tunnel->SetLairEnd(USolidWorldMap::YMarker);
 	TestTrue(TEXT("a tunnel frame is marked"), Tunnel->IsLairMouth());
 	TestEqual(TEXT("the end is Y"), static_cast<int32>(Tunnel->GetEndMarker()), static_cast<int32>(USolidWorldMap::YMarker));
-	Cave->BuildVisuals();
+	Unmarked->BuildVisuals();
 	Tunnel->BuildVisuals();
-	UStaticMeshComponent* CaveMouth = Cave->GetMouthMesh();
+	UStaticMeshComponent* UnmarkedMouth = Unmarked->GetMouthMesh();
 	UStaticMeshComponent* TunnelMouth = Tunnel->GetMouthMesh();
-	TestNotNull(TEXT("cave opening"), CaveMouth);
+	TestNotNull(TEXT("unmarked opening"), UnmarkedMouth);
 	TestNotNull(TEXT("tunnel opening"), TunnelMouth);
-	if (CaveMouth && TunnelMouth)
+	if (UnmarkedMouth && TunnelMouth)
 	{
-		TestTrue(TEXT("the openings are the same size"), CaveMouth->GetRelativeScale3D().Equals(TunnelMouth->GetRelativeScale3D(), 0.01f));
+		TestTrue(TEXT("the openings are the same size"), UnmarkedMouth->GetRelativeScale3D().Equals(TunnelMouth->GetRelativeScale3D(), 0.01f));
 	}
 
 	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
@@ -467,6 +467,54 @@ bool FSolidLairTorchLightTest::RunTest(const FString& Parameters)
 	Interior->ApplyTorchLight(Spot, SolidLair::HandsHoldTorch(Packed));
 	TestTrue(TEXT("a packed torch stays unlit"), FMath::IsNearlyZero(Torch->Intensity));
 	TestFalse(TEXT("a packed torch stays hidden"), Torch->IsVisible());
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidLairEntranceVisualsTest,
+	"SolidCore1.Lair.EntranceVisuals",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidLairEntranceVisualsTest::RunTest(const FString& Parameters)
+{
+	ASolidLairEntrance* Entrance = NewObject<ASolidLairEntrance>();
+	TestNotNull(TEXT("entrance"), Entrance);
+	Entrance->BuildVisuals();
+
+	UStaticMeshComponent* Mouth = Entrance->GetMouthMesh();
+	UStaticMeshComponent* Left = Entrance->GetLeftJamb();
+	UStaticMeshComponent* Right = Entrance->GetRightJamb();
+	UStaticMeshComponent* Lintel = Entrance->GetLintel();
+	TestNotNull(TEXT("mouth"), Mouth);
+	TestNotNull(TEXT("left jamb"), Left);
+	TestNotNull(TEXT("right jamb"), Right);
+	TestNotNull(TEXT("lintel"), Lintel);
+	if (!Mouth || !Left || !Right || !Lintel)
+	{
+		return false;
+	}
+
+	UStaticMesh* MouthMesh = Mouth->GetStaticMesh();
+	UStaticMesh* LeftMesh = Left->GetStaticMesh();
+	UStaticMesh* LintelMesh = Lintel->GetStaticMesh();
+	TestNotNull(TEXT("mouth cube"), MouthMesh);
+	TestNotNull(TEXT("jamb cube"), LeftMesh);
+	TestNotNull(TEXT("lintel cube"), LintelMesh);
+
+	TestTrue(TEXT("mouth is wider than it is deep"), Mouth->GetRelativeScale3D().Y > Mouth->GetRelativeScale3D().X);
+	TestTrue(TEXT("jambs are thinner than the mouth"), Left->GetRelativeScale3D().Y < Mouth->GetRelativeScale3D().Y);
+	TestTrue(TEXT("left jamb is on -Y"), Left->GetRelativeLocation().Y < 0.f);
+	TestTrue(TEXT("right jamb is on +Y"), Right->GetRelativeLocation().Y > 0.f);
+	TestTrue(TEXT("lintel sits above the mouth"), Lintel->GetRelativeLocation().Z > Mouth->GetRelativeLocation().Z);
+	TestTrue(TEXT("mouth meets the ground"), FMath::IsNearlyEqual(
+		Mouth->GetRelativeLocation().Z - Mouth->GetRelativeScale3D().Z * 50.f, 0.f, 1.f));
+	const float MouthFront = Mouth->GetRelativeLocation().X + Mouth->GetRelativeScale3D().X * 50.f;
+	const float LintelFront = Lintel->GetRelativeLocation().X + Lintel->GetRelativeScale3D().X * 50.f;
+	TestTrue(TEXT("mouth is recessed behind the lintel front"), MouthFront < LintelFront - 1.f);
+	TestTrue(TEXT("the grass face of the frame sits toward the cliff"),
+		FMath::IsNearlyEqual(LintelFront, SolidStrongholds::FrameFrontLocalX, 1.f));
+	TestTrue(TEXT("the grass spawn stands in front of the mouth"), MouthFront < -40.f);
+
 	return true;
 }
 

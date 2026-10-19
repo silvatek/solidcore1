@@ -586,14 +586,8 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 		{
 			if (Instance->WantsDungeonMouthSpawn() && TerrainMap->GetWorldMap())
 			{
-				USolidWorldMap* WorldMap = TerrainMap->GetWorldMap();
-				const FVector2D WorldMin = TerrainMap->GetWorldMinXY();
-				const FVector2D WorldMax = TerrainMap->GetWorldMaxXY();
 				const FSolidStronghold* Stronghold = Instance->GetSession().Configuration.ActiveStronghold.Get();
-				bool bPlaced = false;
-				if (Stronghold
-					&& Stronghold->Type == ESolidStrongholdType::Dungeon
-					&& !SolidStronghold::UsesCaveMouth(*Stronghold))
+				if (Stronghold && Stronghold->Type == ESolidStrongholdType::Dungeon)
 				{
 					const SolidStronghold::FVisitView Visit = SolidStronghold::VisitViewFor(*Stronghold);
 					PawnXY = SolidStronghold::FSolidDungeon::Instance().LeaveStandXY(
@@ -605,24 +599,6 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 					FacingPitchDeg = Visit.Leave.PitchDeg;
 					bHaveYaw = true;
 					bCaveMouth = true;
-					bPlaced = true;
-				}
-				SolidStrongholds::FEntrance Cave;
-				if (!bPlaced
-					&& Stronghold
-					&& SolidStronghold::UsesCaveMouth(*Stronghold)
-					&& SolidStrongholds::MakeEntrance(WorldMap, WorldMin, WorldMax, Stronghold->Cell, Cave))
-				{
-					const SolidStronghold::FVisitView Visit = SolidStronghold::VisitViewFor(*Stronghold);
-					PawnXY = Cave.WorldXY;
-					FacingYawDeg = SolidStronghold::LeaveYawDeg(Cave.FacingYawDeg, Visit.Leave);
-					FacingPitchDeg = Visit.Leave.PitchDeg;
-					bHaveYaw = true;
-					bCaveMouth = true;
-					bPlaced = true;
-				}
-				if (bPlaced)
-				{
 					if (const APawn* Pawn = Cast<APawn>(Focus))
 					{
 						if (!Pawn->Controller)

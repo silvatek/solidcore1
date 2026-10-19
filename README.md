@@ -108,7 +108,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.GroundMove.*` | Sea, mountain, and the river channel block a step; the rest of a river cell stays open; an intact bridge is the only crossing; a broken center does not open the channel; the gap in front of a broken ramp stays closed; a diagonal step slides along the edge; a step already on closed ground may only leave; a ramp is the ramp surface, not the deck or the gap past the lip |
 | `SolidCore1.Towns.*` | Town names and type (Town or WallGate); Dragongate is the wall gate, with a 4 m gap and two equal towers; a two-cell gate follows the long axis |
 | `SolidCore1.Stronghold.*` | Types and sizes; a defined stronghold names its shelf, Meagre Dungeon on grassland with its exit facing north, and Imperious Tower on grassland; the starting stronghold is a Meagre Dungeon named on the map, and a new game records that base at its cell and carries it with the company; the mouth faces the grassland neighbor; the cave starts closed until the monster message is closed; F10 cave travel keeps companions outside; a click on the dark opening enters and leaves once the cave is open; the Meagre Dungeon visit view levels the camera into the cave and out over the grass; the Meagre floor is fourteen irregular hexes; a furnishing catalog places the fireplace, bed, and chest on that single floor; the chest is storage and the fireplace and bed are not; the Imperious Tower plan is ten floors in 30 m, a 50 cm wall, and hexes that stay off the stair and the landing; a tower plan is one struct; Average Tower is four floors, 12 m tall, and 8 m across at the ground; Impressive, Grand, and Stately step evenly from Average to Imperious; the Imperious exterior is ten stone courses that meet edge to edge under a flat 6 m cap with a dark 1.4 by 2.4 m door, Average is four courses under a 5.6 m cap, and the exterior turns so that door faces the grass; a click on the tower door enters, the interior is a stone disc per floor with the arrival hole, a flat landing of about two metres in the stair band, with that floor's number on the wall beside it, a waist-high rail along each flight and each arrival hole that stops for the landing, the stair treads, and the yellow grid shifted a little so more cells sit in the circle, and leaving stands on the grass outside that door; a stronghold site lists a built type only when that size is unlocked and larger than the company base, Esc leaves the site, and choosing the type moves the furnishings into that interior and stops the old entrance |
-| `SolidCore1.Lair.*` | Iglin tunnels: `LairEntrance` south of Iglin and `LairExit` east of Relion use the cave mouth on their own cliffs (those lines are the interior `X` and `Y` ends); the maze joins those ends, including a straight run for early testing; the mouths stay shut until an EnableLair change carries the Iglin tunnels id; a click enters and leaves by the end that was hit; each mouth is a dim light and the middle has none; a torch in either hand lights the captain, and a torch in the pack does not; his body does not cast a shadow in the tunnels |
+| `SolidCore1.Lair.*` | Iglin tunnels: `LairEntrance` south of Iglin and `LairExit` east of Relion use a cliff frame on their own cliffs (those lines are the interior `X` and `Y` ends); the maze joins those ends, including a straight run for early testing; the mouths stay shut until an EnableLair change carries the Iglin tunnels id; a click enters and leaves by the end that was hit; each mouth is a dim light and the middle has none; a torch in either hand lights the captain, and a torch in the pack does not; his body does not cast a shadow in the tunnels |
 | `SolidCore1.Noise.*` | Hash / value / fBm / height / grass tone |
 | `SolidCore1.Types.*` | Biome names (incl. Sea/River), height offsets, border triangles use the higher shelf, `FSolidTerrainPoint` defaults |
 | `SolidCore1.Vegetation.*` | Tree RNG variation, town building pack on cells marked `o` or a `!` named as a town, one welcome sign at the middle of each named town; Dragongate's sign stands east of the gate on the north edge, facing north |
@@ -377,8 +377,7 @@ Source/
       SolidWallgate.*       # Stone wall and two towers for a WallGate town
     Strongholds/
       SolidStronghold.h       # Type (Dungeon, Fortress, Tower), size (Meagre … Imperious), and the shelf each defined stronghold sits on
-      SolidStrongholds.*      # Mouth on the grassland face of a C cell
-      SolidDungeonEntrance.*  # Rock frame and solid dark opening
+      SolidStrongholds.*      # Grass face of a map cell, and the sizes of a cliff frame
       SolidDungeonPassage.h  # Click on the dark opening to enter or leave
       SolidDungeonLevel.h        # Travel options; captain only; room bounds
       SolidStrongholdGrid.h         # 1.2 m pointy-top hexes shared by every stronghold floor
@@ -391,6 +390,8 @@ Source/
       SolidStrongholdTransition.h   # The move: which types are offered, where the furniture goes, and which old entrance stays shut
       SolidFurnishing.*             # One placed piece: hearth, bed, or chest
       SolidDungeonInterior.*     # Irregular fourteen-hex Meagre floor
+    Lairs/
+      SolidLairEntrance.*     # Cliff frame and solid dark opening for an Iglin tunnel end
     HUD/
       SolidHUD.*              # Debug HUD, battle-plan panel, journal and inventory boards, menu and credits drawing
       SolidHudTheme.h         # Oak-and-bronze frame

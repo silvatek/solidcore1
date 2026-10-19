@@ -41,11 +41,6 @@ namespace SolidStronghold
 		return InSize == ESolidStrongholdSize::Meagre;
 	}
 
-	bool FSolidDungeon::UsesCliffMouth() const
-	{
-		return false;
-	}
-
 	ESolidStrongholdTrip FSolidDungeon::Trip() const
 	{
 		return ESolidStrongholdTrip::Cave;
@@ -53,7 +48,7 @@ namespace SolidStronghold
 
 	UClass* FSolidDungeon::ExteriorClass() const
 	{
-		if (!Supported(Size) || UsesCliffMouth())
+		if (!Supported(Size))
 		{
 			return nullptr;
 		}
@@ -157,11 +152,6 @@ namespace SolidStronghold
 		return false;
 	}
 
-	bool FSolidFortress::UsesCliffMouth() const
-	{
-		return false;
-	}
-
 	ESolidStrongholdTrip FSolidFortress::Trip() const
 	{
 		return ESolidStrongholdTrip::None;
@@ -188,11 +178,6 @@ namespace SolidStronghold
 	bool FSolidTower::Supported(const ESolidStrongholdSize InSize) const
 	{
 		return SolidTowerStronghold::IsDefinedSize(InSize);
-	}
-
-	bool FSolidTower::UsesCliffMouth() const
-	{
-		return false;
 	}
 
 	ESolidStrongholdTrip FSolidTower::Trip() const
@@ -315,10 +300,5 @@ namespace SolidStronghold
 			checkNoEntry();
 			return FSolidDungeon::Instance();
 		}
-	}
-
-	bool UsesCaveMouth(const FSolidStronghold& Stronghold)
-	{
-		return TypeOf(Stronghold.Type).UsesCliffMouth();
 	}
 }

@@ -1,7 +1,7 @@
-#include "SolidDungeonEntrance.h"
+#include "SolidLairEntrance.h"
+#include "Strongholds/SolidStrongholds.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
-#include "SolidStrongholds.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -35,7 +35,7 @@ namespace
 	}
 }
 
-ASolidDungeonEntrance::ASolidDungeonEntrance()
+ASolidLairEntrance::ASolidLairEntrance()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
@@ -57,24 +57,24 @@ ASolidDungeonEntrance::ASolidDungeonEntrance()
 	}
 }
 
-void ASolidDungeonEntrance::OnConstruction(const FTransform& Transform)
+void ASolidLairEntrance::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 	BuildVisuals();
 }
 
-void ASolidDungeonEntrance::BeginPlay()
+void ASolidLairEntrance::BeginPlay()
 {
 	Super::BeginPlay();
 	BuildVisuals();
 }
 
-void ASolidDungeonEntrance::BuildVisuals()
+void ASolidLairEntrance::BuildVisuals()
 {
 	UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
 	if (!Cube)
 	{
-		UE_LOG(LogSolid, Error, TEXT("SolidDungeonEntrance: missing Engine BasicShapes Cube."));
+		UE_LOG(LogSolid, Error, TEXT("SolidLairEntrance: missing Engine BasicShapes Cube."));
 		return;
 	}
 
@@ -95,7 +95,7 @@ void ASolidDungeonEntrance::BuildVisuals()
 		FVector(-Recess * 0.5f + ShiftX, 0.f, Height * 0.5f),
 		FVector(Depth - Recess, Width - Gap, Height),
 		SolidStrongholds::MouthColor(),
-		TEXT("CaveMouth"));
+		TEXT("LairMouth"));
 	if (MouthMesh)
 	{
 		MouthMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
@@ -110,7 +110,7 @@ void ASolidDungeonEntrance::BuildVisuals()
 		FVector(ShiftX, -JambY, Height * 0.5f),
 		FVector(Depth, Frame, Height),
 		SolidStrongholds::RockColor(),
-		TEXT("CaveLeftJamb"));
+		TEXT("LairLeftJamb"));
 	PlacePart(
 		RightJamb,
 		Cube,
@@ -118,7 +118,7 @@ void ASolidDungeonEntrance::BuildVisuals()
 		FVector(ShiftX, JambY, Height * 0.5f),
 		FVector(Depth, Frame, Height),
 		SolidStrongholds::RockColor(),
-		TEXT("CaveRightJamb"));
+		TEXT("LairRightJamb"));
 	PlacePart(
 		Lintel,
 		Cube,
@@ -126,5 +126,5 @@ void ASolidDungeonEntrance::BuildVisuals()
 		FVector(ShiftX, 0.f, Height + Frame * 0.5f),
 		FVector(Depth, Width + Frame * 2.f, Frame),
 		SolidStrongholds::RockColor(),
-		TEXT("CaveLintel"));
+		TEXT("LairLintel"));
 }

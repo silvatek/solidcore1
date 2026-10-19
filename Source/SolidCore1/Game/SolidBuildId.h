@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0479")
+#define SOLID_BUILD_ID TEXT("SC1-0480")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A stronghold site is the actor. The stone is how it is drawn.")
+#define SOLID_BUILD_NOTE TEXT("The dungeon mouth is round, and the rock runs under the cell.")
 #endif

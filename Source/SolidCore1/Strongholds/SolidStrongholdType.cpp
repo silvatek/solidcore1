@@ -54,7 +54,7 @@ namespace SolidStronghold
 		{
 			return;
 		}
-		Rock->SetFace(FaceWidthCm(), FaceHeightCm(), SlopeRunCm());
+		Rock->SetFace(FaceWidthCm(), FaceHeightCm(), SlopeRunCm(), FaceForwardCm(Orientation));
 		Rock->BuildVisuals();
 	}
 
@@ -73,6 +73,12 @@ namespace SolidStronghold
 		return 2.f * FaceHeightCm();
 	}
 
+	float FSolidDungeon::FaceForwardCm(const ESolidStrongholdOrientation InOrientation) const
+	{
+		const float HalfCell = CellExtentAlongExitCm(InOrientation) * 0.5f;
+		return FMath::Max(0.f, HalfCell - SolidStrongholds::MouthBorderGapCm);
+	}
+
 	float FSolidDungeon::LeaveStandCm() const
 	{
 		return 250.f;
@@ -83,7 +89,8 @@ namespace SolidStronghold
 		const ESolidStrongholdOrientation InOrientation) const
 	{
 		const float YawRad = FMath::DegreesToRadians(SolidStronghold::OrientationYawDeg(InOrientation));
-		return CellCenterXY + FVector2D(FMath::Cos(YawRad), FMath::Sin(YawRad)) * LeaveStandCm();
+		const float Ahead = FaceForwardCm(InOrientation) + LeaveStandCm();
+		return CellCenterXY + FVector2D(FMath::Cos(YawRad), FMath::Sin(YawRad)) * Ahead;
 	}
 
 	void FSolidDungeon::CollectGroundHexes(
@@ -222,6 +229,25 @@ namespace SolidStronghold
 		return FVector2D(
 			Half - (static_cast<float>(Cell.X) + 0.5f) * CellW,
 			Half - (static_cast<float>(Cell.Y) + 0.5f) * CellH);
+	}
+
+	float CellExtentAlongExitCm(const ESolidStrongholdOrientation Orientation)
+	{
+		constexpr float PointSpacing = 200.f;
+		constexpr int32 Grid = 513;
+		const float Extent = static_cast<float>(Grid - 1) * PointSpacing;
+		const float EastCm = Extent / static_cast<float>(USolidWorldMap::MapWidth);
+		const float NorthCm = Extent / static_cast<float>(USolidWorldMap::MapHeight);
+		switch (Orientation)
+		{
+		case ESolidStrongholdOrientation::East:
+		case ESolidStrongholdOrientation::West:
+			return EastCm;
+		case ESolidStrongholdOrientation::North:
+		case ESolidStrongholdOrientation::South:
+		default:
+			return NorthCm;
+		}
 	}
 
 	TUniquePtr<FSolidStronghold> Make(

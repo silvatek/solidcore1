@@ -131,6 +131,12 @@ namespace SolidStronghold
 	 * The terrain is 513 points at 200 cm, centered on the origin, and the map is 128 by 64 cells.
 	 */
 	FVector2D WorldXY(FIntPoint Cell);
+
+	/**
+	 * Full size of one map cell along an exit, in centimetres.
+	 * North and south use the taller cell. East and west use the shorter one.
+	 */
+	float CellExtentAlongExitCm(ESolidStrongholdOrientation Orientation);
 }
 
 /**

@@ -2,9 +2,13 @@
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
 #include "SolidStrongholds.h"
+#include "Terrain/SolidTerrainMap.h"
+#include "Terrain/SolidTerrainStreamer.h"
+#include "Terrain/SolidWorldMap.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "EngineUtils.h"
 #include "Materials/MaterialInterface.h"
 #include "MeshDescription.h"
 #include "PhysicsEngine/BodySetup.h"
@@ -12,8 +16,22 @@
 
 namespace SolidDungeonExteriorPrivate
 {
-	constexpr float CubeSizeCm = 100.f;
 	constexpr int32 ProfileCount = 33;
+
+	void BuryGround(TArray<FVector>& Positions, const float BurialCm)
+	{
+		if (BurialCm <= 0.f)
+		{
+			return;
+		}
+		for (FVector& Position : Positions)
+		{
+			if (Position.Z <= 1.f)
+			{
+				Position.Z -= BurialCm;
+			}
+		}
+	}
 	constexpr int32 RingCount = 12;
 	constexpr float SuperellipseN = 4.f;
 
@@ -37,36 +55,38 @@ namespace SolidDungeonExteriorPrivate
 		OutZ = FaceHeight * FMath::Pow(SinT, Exponent) * Scale;
 	}
 
-	/** Opening edge, pulled a little into the stone so the rim is irregular and the hole stays filled. */
+	/**
+	 * Opening edge. An ellipse stands on the ground inside the opening size,
+	 * widest through the middle and narrower at the ground, with a lumpy rim.
+	 */
 	FVector2D OpeningRim(const float Theta, const float OpeningWidth, const float OpeningHeight)
 	{
-		const float HalfWidth = OpeningWidth * 0.5f;
-		const float YDir = FMath::Cos(Theta);
-		const float ZDir = FMath::Sin(Theta);
-		float AlongY = TNumericLimits<float>::Max();
-		if (FMath::Abs(YDir) > KINDA_SMALL_NUMBER)
-		{
-			AlongY = HalfWidth / FMath::Abs(YDir);
-		}
-		float AlongZ = TNumericLimits<float>::Max();
-		if (ZDir > KINDA_SMALL_NUMBER)
-		{
-			AlongZ = OpeningHeight / ZDir;
-		}
-		const float HitT = FMath::Min(AlongY, AlongZ);
-		const FVector2D Hit(YDir * HitT, ZDir * HitT);
-		const FVector2D Center(0.f, OpeningHeight * 0.5f);
-		FVector2D Inward = (Hit - Center).GetSafeNormal();
+		const float RadiusY = OpeningWidth * 0.5f;
+		const float RadiusZ = OpeningHeight / 1.7f;
+		const float CenterZ = OpeningHeight - RadiusZ;
+		const float GroundSin = FMath::Clamp(-CenterZ / RadiusZ, -1.f, 1.f);
+		const float GroundAngle = FMath::Asin(GroundSin);
+		const float Along = Theta / PI;
+		const float Angle = FMath::Lerp(GroundAngle, PI - GroundAngle, Along);
+		const FVector2D Center(0.f, CenterZ);
+		FVector2D Rim(
+			RadiusY * FMath::Cos(Angle),
+			CenterZ + RadiusZ * FMath::Sin(Angle));
+		FVector2D Inward = (Rim - Center).GetSafeNormal();
 		if (Inward.IsNearlyZero())
 		{
 			Inward = FVector2D(0.f, 1.f);
 		}
 		const FVector2D Tangent(-Inward.Y, Inward.X);
-		const float Pull = 8.f * (0.5f + 0.5f * FMath::Sin(Theta * 6.f + 0.4f));
-		const float Slide = 6.f * FMath::Sin(Theta * 8.f + 1.1f);
-		FVector2D Rim = Hit - Inward * Pull + Tangent * Slide;
-		Rim.X = FMath::Clamp(Rim.X, -HalfWidth, HalfWidth);
+		const float Pull = 16.f * (0.55f + 0.45f * FMath::Sin(Theta * 3.f + 0.6f));
+		const float Slide = 10.f * FMath::Sin(Theta * 5.f + 1.1f);
+		Rim += -Inward * Pull + Tangent * Slide;
+		Rim.X = FMath::Clamp(Rim.X, -RadiusY, RadiusY);
 		Rim.Y = FMath::Clamp(Rim.Y, 0.f, OpeningHeight);
+		if (Along < 0.02f || Along > 0.98f)
+		{
+			Rim.Y = 0.f;
+		}
 		return Rim;
 	}
 
@@ -104,7 +124,8 @@ namespace SolidDungeonExteriorPrivate
 		const float FaceHeight,
 		const float SlopeRun,
 		const float OpeningWidth,
-		const float OpeningHeight)
+		const float OpeningHeight,
+		const float BurialCm)
 	{
 		if (!Outer || FaceWidth <= KINDA_SMALL_NUMBER || FaceHeight <= KINDA_SMALL_NUMBER || SlopeRun <= KINDA_SMALL_NUMBER)
 		{
@@ -139,6 +160,7 @@ namespace SolidDungeonExteriorPrivate
 			const FVector2D Rim = OpeningRim(Theta, OpeningWidth, OpeningHeight);
 			Positions[InnerBase + Step] = FVector(0.f, Rim.X, Rim.Y);
 		}
+		BuryGround(Positions, BurialCm);
 
 		TArray<int32> Triangles;
 		Triangles.Reserve(ProfileCount * (RingCount + 2) * 6);
@@ -277,6 +299,161 @@ namespace SolidDungeonExteriorPrivate
 		}
 		return Mesh;
 	}
+
+	UStaticMesh* BuildMouth(
+		UObject* Outer,
+		const float OpeningWidth,
+		const float OpeningHeight,
+		const float Depth,
+		const float BurialCm)
+	{
+		if (!Outer || OpeningWidth <= KINDA_SMALL_NUMBER || OpeningHeight <= KINDA_SMALL_NUMBER || Depth <= KINDA_SMALL_NUMBER)
+		{
+			return nullptr;
+		}
+
+		const int32 FrontCenter = 0;
+		const int32 BackCenter = 1;
+		const int32 FrontBase = 2;
+		const int32 BackBase = FrontBase + ProfileCount;
+		const int32 VertexCount = BackBase + ProfileCount;
+		TArray<FVector> Positions;
+		TArray<FVector> Normals;
+		Positions.SetNum(VertexCount);
+		Normals.SetNumZeroed(VertexCount);
+		Positions[FrontCenter] = FVector(0.f, 0.f, OpeningHeight * 0.42f);
+		Positions[BackCenter] = FVector(-Depth, 0.f, OpeningHeight * 0.42f);
+		for (int32 Step = 0; Step < ProfileCount; ++Step)
+		{
+			const float Theta = PI * static_cast<float>(Step) / static_cast<float>(ProfileCount - 1);
+			const FVector2D Rim = OpeningRim(Theta, OpeningWidth, OpeningHeight);
+			Positions[FrontBase + Step] = FVector(0.f, Rim.X, Rim.Y);
+			Positions[BackBase + Step] = FVector(-Depth, Rim.X, Rim.Y);
+		}
+		BuryGround(Positions, BurialCm);
+
+		TArray<int32> Triangles;
+		Triangles.Reserve(ProfileCount * 12);
+		const FVector Interior(-Depth * 0.5f, 0.f, OpeningHeight * 0.42f);
+		for (int32 Step = 0; Step < ProfileCount - 1; ++Step)
+		{
+			const int32 FrontA = FrontBase + Step;
+			const int32 FrontB = FrontA + 1;
+			const int32 BackA = BackBase + Step;
+			const int32 BackB = BackA + 1;
+			AddFace(Positions, Normals, Triangles, FrontCenter, FrontA, FrontB, Interior);
+			AddFace(Positions, Normals, Triangles, BackCenter, BackB, BackA, Interior);
+			AddFace(Positions, Normals, Triangles, FrontA, BackA, FrontB, Interior);
+			AddFace(Positions, Normals, Triangles, BackA, BackB, FrontB, Interior);
+		}
+
+		for (FVector& Normal : Normals)
+		{
+			if (Normal.SizeSquared() < KINDA_SMALL_NUMBER)
+			{
+				Normal = FVector::ForwardVector;
+			}
+			else
+			{
+				Normal.Normalize();
+			}
+		}
+
+		FMeshDescription MeshDescription;
+		FStaticMeshAttributes Attributes(MeshDescription);
+		Attributes.Register();
+
+		TVertexAttributesRef<FVector3f> VertexPositions = Attributes.GetVertexPositions();
+		TVertexInstanceAttributesRef<FVector3f> InstanceNormals = Attributes.GetVertexInstanceNormals();
+		TVertexInstanceAttributesRef<FVector3f> InstanceTangents = Attributes.GetVertexInstanceTangents();
+		TVertexInstanceAttributesRef<float> InstanceBinormalSigns = Attributes.GetVertexInstanceBinormalSigns();
+		TVertexInstanceAttributesRef<FVector2f> InstanceUVs = Attributes.GetVertexInstanceUVs();
+		TVertexInstanceAttributesRef<FVector4f> InstanceColors = Attributes.GetVertexInstanceColors();
+		TPolygonGroupAttributesRef<FName> PolygonGroupNames = Attributes.GetPolygonGroupMaterialSlotNames();
+		InstanceUVs.SetNumChannels(1);
+
+		const FName SlotName(TEXT("Mouth"));
+		const FPolygonGroupID PolygonGroup = MeshDescription.CreatePolygonGroup();
+		PolygonGroupNames[PolygonGroup] = SlotName;
+
+		TArray<FVertexID> VertexIDs;
+		VertexIDs.Reserve(Positions.Num());
+		for (const FVector& Position : Positions)
+		{
+			const FVertexID VertexID = MeshDescription.CreateVertex();
+			VertexPositions[VertexID] = FVector3f(Position);
+			VertexIDs.Add(VertexID);
+		}
+
+		for (int32 Tri = 0; Tri + 2 < Triangles.Num(); Tri += 3)
+		{
+			TArray<FVertexInstanceID, TInlineAllocator<3>> Corners;
+			for (int32 Corner = 0; Corner < 3; ++Corner)
+			{
+				const int32 Vert = Triangles[Tri + Corner];
+				const FVertexInstanceID InstanceID = MeshDescription.CreateVertexInstance(VertexIDs[Vert]);
+				const FVector Normal = Normals[Vert];
+				InstanceNormals[InstanceID] = FVector3f(Normal);
+				FVector Tangent = FVector::CrossProduct(FVector::UpVector, Normal).GetSafeNormal();
+				if (Tangent.IsNearlyZero())
+				{
+					Tangent = FVector::ForwardVector;
+				}
+				InstanceTangents[InstanceID] = FVector3f(Tangent);
+				InstanceBinormalSigns[InstanceID] = 1.f;
+				InstanceUVs.Set(InstanceID, 0, FVector2f(0.f, 0.f));
+				InstanceColors[InstanceID] = FVector4f(1.f, 1.f, 1.f, 1.f);
+				Corners.Add(InstanceID);
+			}
+			MeshDescription.CreatePolygon(PolygonGroup, Corners);
+		}
+
+		UStaticMesh* Mesh = NewObject<UStaticMesh>(Outer, NAME_None, RF_Transient);
+		Mesh->bAllowCPUAccess = true;
+		Mesh->NeverStream = true;
+		{
+			FMeshNaniteSettings NaniteSettings = Mesh->GetNaniteSettings();
+			NaniteSettings.bEnabled = false;
+			Mesh->SetNaniteSettings(NaniteSettings);
+		}
+		Mesh->SetStaticMaterials({ FStaticMaterial(nullptr, SlotName, SlotName) });
+
+		UStaticMesh::FBuildMeshDescriptionsParams BuildParams;
+		BuildParams.bBuildSimpleCollision = false;
+		BuildParams.bFastBuild = false;
+		BuildParams.bAllowCpuAccess = true;
+		BuildParams.bCommitMeshDescription = true;
+		BuildParams.bMarkPackageDirty = false;
+
+		const TArray<const FMeshDescription*> Descriptions = { &MeshDescription };
+		if (!Mesh->BuildFromMeshDescriptions(Descriptions, BuildParams))
+		{
+			UE_LOG(LogSolid, Error, TEXT("SolidDungeonExterior: failed to build the mouth."));
+			return nullptr;
+		}
+		{
+			FMeshNaniteSettings NaniteSettings = Mesh->GetNaniteSettings();
+			NaniteSettings.bEnabled = false;
+			Mesh->SetNaniteSettings(NaniteSettings);
+		}
+
+		if (!Mesh->GetBodySetup())
+		{
+			Mesh->CreateBodySetup();
+		}
+		if (UBodySetup* BodySetup = Mesh->GetBodySetup())
+		{
+			BodySetup->AggGeom.BoxElems.Empty();
+			BodySetup->AggGeom.ConvexElems.Empty();
+			BodySetup->AggGeom.SphereElems.Empty();
+			BodySetup->AggGeom.SphylElems.Empty();
+			BodySetup->CollisionTraceFlag = CTF_UseComplexAsSimple;
+			BodySetup->bDoubleSidedGeometry = true;
+			BodySetup->InvalidatePhysicsData();
+			BodySetup->CreatePhysicsMeshes();
+		}
+		return Mesh;
+	}
 }
 
 ASolidDungeonExterior::ASolidDungeonExterior()
@@ -299,14 +476,83 @@ void ASolidDungeonExterior::BeginPlay()
 	BuildVisuals();
 }
 
+float ASolidDungeonExterior::GroundDropCm(
+	const USolidTerrainMap* Terrain,
+	const float SurfaceBias,
+	const FVector& ActorLocation)
+{
+	if (!Terrain || !Terrain->IsBuilt())
+	{
+		return 0.f;
+	}
+	const USolidWorldMap* Map = Terrain->GetWorldMap();
+	if (!Map || !Map->IsLoaded())
+	{
+		return 0.f;
+	}
+
+	const FVector2D WorldMin = Terrain->GetWorldMinXY();
+	const FVector2D WorldMax = Terrain->GetWorldMaxXY();
+	FIntPoint Cell = FIntPoint::ZeroValue;
+	if (!Map->CellAtWorld(ActorLocation.X, ActorLocation.Y, WorldMin, WorldMax, Cell))
+	{
+		return 0.f;
+	}
+
+	const float ExtentX = FMath::Max(WorldMax.X - WorldMin.X, 1.f);
+	const float ExtentY = FMath::Max(WorldMax.Y - WorldMin.Y, 1.f);
+	const float CellW = ExtentX / static_cast<float>(USolidWorldMap::MapWidth);
+	const float CellH = ExtentY / static_cast<float>(USolidWorldMap::MapHeight);
+	const float XMax = WorldMax.X - static_cast<float>(Cell.X) * CellW;
+	const float XMin = XMax - CellW;
+	const float YMax = WorldMax.Y - static_cast<float>(Cell.Y) * CellH;
+	const float YMin = YMax - CellH;
+	const float Spacing = FMath::Max(Terrain->PointSpacing, 1.f);
+	const int32 X0 = FMath::Clamp(FMath::FloorToInt((XMin - WorldMin.X) / Spacing), 0, Terrain->GridWidth - 1);
+	const int32 X1 = FMath::Clamp(FMath::CeilToInt((XMax - WorldMin.X) / Spacing), 0, Terrain->GridWidth - 1);
+	const int32 Y0 = FMath::Clamp(FMath::FloorToInt((YMin - WorldMin.Y) / Spacing), 0, Terrain->GridHeight - 1);
+	const int32 Y1 = FMath::Clamp(FMath::CeilToInt((YMax - WorldMin.Y) / Spacing), 0, Terrain->GridHeight - 1);
+
+	float Lowest = TNumericLimits<float>::Max();
+	int32 Count = 0;
+	for (int32 IndexY = Y0; IndexY <= Y1; ++IndexY)
+	{
+		for (int32 IndexX = X0; IndexX <= X1; ++IndexX)
+		{
+			const FSolidTerrainPoint& Point = Terrain->GetPoint(IndexX, IndexY);
+			FIntPoint PointCell = FIntPoint::ZeroValue;
+			if (!Map->CellAtWorld(Point.X, Point.Y, WorldMin, WorldMax, PointCell) || PointCell != Cell)
+			{
+				continue;
+			}
+			Lowest = FMath::Min(Lowest, Point.Height);
+			++Count;
+		}
+	}
+	if (Count == 0)
+	{
+		return 0.f;
+	}
+
+	const float Target = Lowest + SurfaceBias - GroundBurialCm;
+	return FMath::Max(0.f, ActorLocation.Z - Target);
+}
+
+void ASolidDungeonExterior::SetGroundDrop(const float InGroundDropCm)
+{
+	ChosenDropCm = InGroundDropCm;
+}
+
 void ASolidDungeonExterior::SetFace(
 	const float InFaceWidthCm,
 	const float InFaceHeightCm,
-	const float InSlopeRunCm)
+	const float InSlopeRunCm,
+	const float InFaceForwardCm)
 {
 	FaceWidthCm = InFaceWidthCm;
 	FaceHeightCm = InFaceHeightCm;
 	SlopeRunCm = InSlopeRunCm;
+	FaceForwardCm = InFaceForwardCm;
 }
 
 void ASolidDungeonExterior::DiscardParts()
@@ -369,30 +615,45 @@ void ASolidDungeonExterior::BuildVisuals()
 		return;
 	}
 
+	float Drop = ChosenDropCm;
+	if (Drop < 0.f)
+	{
+		const USolidTerrainMap* Terrain = nullptr;
+		float SurfaceBias = 0.f;
+		if (UWorld* World = GetWorld())
+		{
+			for (TActorIterator<ASolidTerrainStreamer> It(World); It; ++It)
+			{
+				Terrain = It->GetTerrainMap();
+				SurfaceBias = It->CollisionHeightBias;
+				break;
+			}
+		}
+		Drop = GroundDropCm(Terrain, SurfaceBias, GetActorLocation());
+	}
+
 	UStaticMesh* Rock = SolidDungeonExteriorPrivate::BuildRock(
 		this,
 		FaceWidthCm,
 		FaceHeightCm,
 		SlopeRunCm,
 		SolidStrongholds::OpeningWidthCm,
-		SolidStrongholds::OpeningHeightCm);
-	RockMesh = AddPart(Rock, FVector::ZeroVector, FVector::OneVector, SolidStrongholds::RockColor(), TEXT("DungeonExterior"));
+		SolidStrongholds::OpeningHeightCm,
+		Drop);
+	const FVector Face(FaceForwardCm, 0.f, 0.f);
+	RockMesh = AddPart(Rock, Face, FVector::OneVector, SolidStrongholds::RockColor(), TEXT("DungeonExterior"));
 
-	UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
-	if (!Cube)
-	{
-		UE_LOG(LogSolid, Error, TEXT("SolidDungeonExterior: missing Engine BasicShapes Cube."));
-		return;
-	}
-
-	const float Width = SolidStrongholds::OpeningWidthCm;
-	const float Height = SolidStrongholds::OpeningHeightCm;
 	const float Depth = SolidStrongholds::FrameThicknessCm;
-	const float Recess = SolidStrongholds::MouthRecessCm;
+	UStaticMesh* Mouth = SolidDungeonExteriorPrivate::BuildMouth(
+		this,
+		SolidStrongholds::OpeningWidthCm,
+		SolidStrongholds::OpeningHeightCm,
+		Depth,
+		Drop);
 	MouthMesh = AddPart(
-		Cube,
-		FVector(-Recess - Depth * 0.5f, 0.f, Height * 0.5f),
-		FVector(Depth / SolidDungeonExteriorPrivate::CubeSizeCm, Width / SolidDungeonExteriorPrivate::CubeSizeCm, Height / SolidDungeonExteriorPrivate::CubeSizeCm),
+		Mouth,
+		Face + FVector(-SolidStrongholds::MouthRecessCm, 0.f, 0.f),
+		FVector::OneVector,
 		SolidStrongholds::MouthColor(),
 		TEXT("DungeonMouth"));
 }

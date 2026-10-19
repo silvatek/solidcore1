@@ -188,7 +188,7 @@ The summary prints ran/passed/failed counts and, on failure, lists each failed t
 
 ## Build ID (HUD)
 
-PIE shows a top-left debug HUD (`Build SC1-NNNN`, a one-line `Change:` note, pawn/terrain Z, chunk load, material, camera pitch). Both strings live in `Source/SolidCore1/Game/SolidBuildId.h` (`SOLID_BUILD_ID` / `SOLID_BUILD_NOTE`) and are bumped on every GitHub push so screenshots identify which binary you ran.
+PIE shows a top-left debug HUD (`Build SC1-NNNN`, a one-line `Change:` note, pawn/terrain Z, chunk load, material, camera pitch). Both strings live in `Source/SolidCore1/Game/SolidBuildId.h` (`SOLID_BUILD_ID` / `SOLID_BUILD_NOTE`) and are bumped when the product changes, so screenshots identify which binary you ran. A documentation change or a test change does not bump them.
 
 ## Character visuals (clip locomotion)
 

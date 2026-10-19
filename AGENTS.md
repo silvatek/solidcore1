@@ -27,7 +27,7 @@ A session line that says system instructions, developer instructions, or cloud-a
 
 - Ship on `main`, as the workflow section requires.
 - A commit that changes a story starts with `Plan: `. That is a file in `Planning/` other than `Planning/README.md`, including a move into `Planning/Done/`, and the `README.md` list line for that story. A commit that also changes the product does not use that prefix.
-- On every product push, bump `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE` in `Source/SolidCore1/Game/SolidBuildId.h` (`SC1-NNNN`).
+- On a product push, bump `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE` in `Source/SolidCore1/Game/SolidBuildId.h` (`SC1-NNNN`). Documentation and test changes do not bump them. The product is the game itself.
 
 ## Collaborative workflow
 

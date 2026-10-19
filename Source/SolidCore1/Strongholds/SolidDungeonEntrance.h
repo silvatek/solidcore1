@@ -7,10 +7,9 @@
 class UStaticMeshComponent;
 
 /**
- * Stone mouth on the cliff between a closed cell and the adjacent grassland.
- * The cave uses one. Each Iglin tunnel end uses another, the same frame.
+ * Stone frame in a cliff, between a mountain cell and the adjacent grassland.
+ * Each Iglin tunnel end uses one. The dungeon exterior is the rock, not this frame.
  * The opening is solid. A left click on the dark mouth enters that place.
- * F10 Enter cave does the same for the cave mouth only.
  * Local +X faces the grass. The stone sits toward the cliff of the actor origin.
  */
 UCLASS()

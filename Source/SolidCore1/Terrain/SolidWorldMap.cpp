@@ -979,8 +979,18 @@ ESolidBiome USolidWorldMap::SampleBiome(
 	}
 
 	// The road shares the grassland shelf, so this is a texture change there.
-	// Mountain and sea keep their shelves. The channel itself stays water.
-	if (Ground != ESolidBiome::River
+	// A stronghold keeps the shelf it names. Mountain and sea keep theirs because
+	// those shelves sit at a different height. The channel itself stays water.
+	bool bNamedShelf = false;
+	ESolidStrongholdType HoldType = ESolidStrongholdType::Dungeon;
+	ESolidStrongholdSize HoldSize = ESolidStrongholdSize::Meagre;
+	if (StrongholdAtCell(MapX, MapY, HoldType, HoldSize))
+	{
+		ESolidBiome Named = ESolidBiome::Grassland;
+		bNamedShelf = SolidStronghold::BiomeFor(FSolidStronghold(HoldType, HoldSize), Named);
+	}
+	if (!bNamedShelf
+		&& Ground != ESolidBiome::River
 		&& IsOnRoad(WorldX, WorldY, WorldMinXY, WorldMaxXY)
 		&& SolidTerrainTypes::BiomeHeightOffsetCm(Ground)
 			== SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Road))

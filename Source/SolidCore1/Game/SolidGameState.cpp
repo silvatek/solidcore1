@@ -7,6 +7,10 @@ FGameState::FGameState()
 		ESolidStrongholdSize::Meagre,
 		SolidStronghold::StartingCell()))
 {
+	if (ActiveStronghold)
+	{
+		ActiveStronghold->Orientation = ESolidStrongholdOrientation::North;
+	}
 }
 
 FGameState::FGameState(const FGameState& Other)
@@ -49,6 +53,10 @@ FGameState& FGameState::operator=(const FGameState& Other)
 			ESolidStrongholdType::Dungeon,
 			ESolidStrongholdSize::Meagre,
 			SolidStronghold::StartingCell());
+	if (!Other.ActiveStronghold && ActiveStronghold)
+	{
+		ActiveStronghold->Orientation = ESolidStrongholdOrientation::North;
+	}
 	MaxStrongholdSize = Other.MaxStrongholdSize;
 	PreviousStrongholds.Reset();
 	PreviousStrongholds.Reserve(Other.PreviousStrongholds.Num());

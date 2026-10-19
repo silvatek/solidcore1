@@ -5,6 +5,7 @@
 #include "SolidGroundMove.h"
 #include "Lairs/SolidLairInterior.h"
 #include "Strongholds/SolidDungeonEntrance.h"
+#include "Strongholds/SolidDungeonRock.h"
 #include "Strongholds/SolidDungeonInterior.h"
 #include "Strongholds/SolidDungeonPassage.h"
 #include "Strongholds/SolidStrongholdStone.h"
@@ -1432,6 +1433,14 @@ namespace
 			if (Mouth && Hits(Mouth->CalcBounds(Mouth->GetComponentTransform()).GetBox()))
 			{
 				return SolidLair::HitOnMouth(Entrance->IsLairMouth(), Entrance->GetEndMarker(), false);
+			}
+		}
+		for (TActorIterator<ASolidDungeonRock> Rock(World); Rock; ++Rock)
+		{
+			const UStaticMeshComponent* Mouth = Rock->GetMouthMesh();
+			if (Mouth && Hits(Mouth->CalcBounds(Mouth->GetComponentTransform()).GetBox()))
+			{
+				return SolidLair::HitOnMouth(false, 0, false);
 			}
 		}
 		for (TActorIterator<ASolidDungeonInterior> Interior(World); Interior; ++Interior)

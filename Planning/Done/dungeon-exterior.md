@@ -1,6 +1,6 @@
 # Dungeon exterior
 
-Status: In Progress
+Status: Done
 
 ## Story
 
@@ -30,8 +30,9 @@ Dungeon, Fortress, and Tower each draw their own exterior and each provide one c
 - The front face matches the frame `ASolidDungeonEntrance` builds. `OpeningWidthCm` is 380, `OpeningHeightCm` is 420, and `FrameThicknessCm` is 80, so the face is 540 cm wide and 500 cm tall. The slope's horizontal run is twice that height, 1000 cm. Read those three constants. Do not copy 540, 500, or 1000 into a second definition. The old frame depth, `OpeningDepthCm`, is not the depth of this rock.
 - Those widths and the run are the overall size, not a box. The surface is somewhat rounded and lumpy, a natural stone, and so is the rim of the entrance. The amount of that lumpiness, inside the size above, is chosen with the mesh. Do not build the straight wedge, the flat front rectangle, or the triangular sides. The dark opening is still a solid face on the front, in the mouth color, and the rest of the rock uses the rock color. A click on the opening enters. A click on the stone does not.
 - The run is longer than one world-map cell. The slope may cross the edge behind the front. Do not shorten it to stay inside the cell.
-- `SolidStronghold::Shelves` lists the starting Meagre Dungeon as Mountain. This story changes that row to Grassland. The marker on the map stays `!`.
-- `UsesCliffMouth` is true for the dungeon and false for the tower and the fortress. This story makes it false for the dungeon. The rock is placed on the cell and turned toward the grass neighbor, the way the tower shell is placed at the cell center and turned toward its door. It does not use `FaceInsetCm` to sit a frame on the far side of a mountain edge.
+- `SolidStronghold::Shelves` lists the starting Meagre Dungeon as Mountain. This story changes that row to Grassland. The marker on the map stays `!`. A road may leave that cell, and the cell still samples as its shelf. The road texture does not replace a named stronghold shelf.
+- `UsesCliffMouth` was true for the dungeon and false for the tower and the fortress. This story makes it false for the dungeon.
+- `FSolidStronghold::Orientation` is the direction the exit faces, shared by every stronghold type. The starting Meagre Dungeon faces north. The rock stands at the cell center and turns with `OrientationYawDeg`. It does not search for a grass neighbor and it does not use `FaceInsetCm`.
 - Keep the new exterior on `FSolidDungeon`. Put a behavior on `FSolidStronghold` only when every stronghold type shares it.
 - The rock is built in code, the way the tower shell is built. It is not a Fab mesh. The dark opening stays solid. A click enters. Walking up to the rock stops on the stone.
 - Grassland is walkable, so the cell itself is no longer closed ground. The rock is what occupies it.
@@ -39,5 +40,5 @@ Dungeon, Fortress, and Tower each draw their own exterior and each provide one c
 - Tests that require the cave shelf to be Mountain change in their own commit before the product change, reading the shelf from `SolidStronghold` rather than a copied biome. They are `SolidCore1.Stronghold.ShippedEntrance` ("cave cell is Mountain"), `SolidCore1.Stronghold.FaceChoice` ("a stronghold is Mountain"), the road test "the cave cell keeps the mountain shelf", and the ground-move test "cave cell uses the mountain". The `SolidCore1.Stronghold.*` line and the world-map paragraph in `README.md` say Meagre Dungeon is Mountain. Those sentences change in the product commit.
 - A test of the dungeon entrance may do nothing when that entrance is not on a mountain shelf. The check still runs while the shelf is Mountain, and it does not run after this story moves the shelf to Grassland.
 - Lair tests that say a tunnel mouth cell is mountain stay. Those cells are the tunnels.
-- [Fortress stronghold](fortress-stronghold.md) says the cave mouth stays as it is. This story replaces that cliff mouth. The fortress gate still faces the grass neighbor, the same facing the tower door uses.
-- [Imperious dungeon](imperious-dungeon.md) says Meagre Dungeon is Mountain. That sentence changes when this story ships.
+- [Fortress stronghold](../fortress-stronghold.md) says the cave mouth stays as it is. This story replaces that cliff mouth. The fortress gate still faces the grass neighbor, the same facing the tower door uses.
+- [Imperious dungeon](../imperious-dungeon.md) says Meagre Dungeon is Grassland. That sentence changed when this story shipped.

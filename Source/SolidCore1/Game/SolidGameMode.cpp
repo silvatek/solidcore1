@@ -28,6 +28,7 @@
 #include "Lairs/SolidLair.h"
 #include "Lairs/SolidLairInterior.h"
 #include "Strongholds/SolidDungeonEntrance.h"
+#include "Strongholds/SolidDungeonRock.h"
 #include "Strongholds/SolidDungeonInterior.h"
 #include "Strongholds/SolidDungeonLevel.h"
 #include "Strongholds/SolidStrongholds.h"
@@ -1549,6 +1550,10 @@ void ASolidGameMode::EnsureVegetation()
 	{
 		return !IsValid(Entrance);
 	});
+	SpawnedDungeonRocks.RemoveAll([](const TObjectPtr<ASolidDungeonRock>& Rock)
+	{
+		return !IsValid(Rock);
+	});
 	SpawnedTowerShells.RemoveAll([](const TObjectPtr<ASolidTowerShell>& Shell)
 	{
 		return !IsValid(Shell);
@@ -1591,6 +1596,14 @@ void ASolidGameMode::EnsureVegetation()
 		for (TActorIterator<ASolidDungeonEntrance> It(World); It; ++It)
 		{
 			SpawnedDungeonEntrances.Add(*It);
+		}
+	}
+
+	if (SpawnedDungeonRocks.Num() == 0)
+	{
+		for (TActorIterator<ASolidDungeonRock> It(World); It; ++It)
+		{
+			SpawnedDungeonRocks.Add(*It);
 		}
 	}
 
@@ -1858,6 +1871,68 @@ void ASolidGameMode::EnsureVegetation()
 		}
 
 		UE_LOG(LogSolid, Warning, TEXT("Spawned %d cave entrances and %d tunnel mouths"), Spawned, TunnelMouths);
+	}
+
+	if (SpawnedDungeonRocks.Num() == 0)
+	{
+		USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
+		USolidWorldMap* RockMap = Terrain ? Terrain->GetWorldMap() : nullptr;
+		int32 Rocks = 0;
+		if (RockMap && RockMap->IsLoaded())
+		{
+			const FVector2D WorldMin = Terrain->GetWorldMinXY();
+			const FVector2D WorldMax = Terrain->GetWorldMaxXY();
+			TArray<const FSolidStronghold*> Dungeons;
+			if (Configuration.ActiveStronghold)
+			{
+				Dungeons.Add(Configuration.ActiveStronghold.Get());
+			}
+			for (const TUniquePtr<FSolidStronghold>& Previous : Configuration.PreviousStrongholds)
+			{
+				if (Previous)
+				{
+					Dungeons.Add(Previous.Get());
+				}
+			}
+			for (const FSolidStronghold* Stronghold : Dungeons)
+			{
+				if (!Stronghold
+					|| Stronghold->Type != ESolidStrongholdType::Dungeon
+					|| !Stronghold->Supported(Stronghold->Size)
+					|| SolidStronghold::UsesCaveMouth(*Stronghold))
+				{
+					continue;
+				}
+
+				FVector2D CellXY = FVector2D::ZeroVector;
+				if (!RockMap->CellToWorldXY(Stronghold->Cell, WorldMin, WorldMax, CellXY))
+				{
+					continue;
+				}
+
+				FVector SpawnLoc(CellXY.X, CellXY.Y, 0.f);
+				const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
+				SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
+				const float Yaw = SolidStronghold::OrientationYawDeg(Stronghold->Orientation);
+				ASolidDungeonRock* Rock = World->SpawnActor<ASolidDungeonRock>(
+					ASolidDungeonRock::StaticClass(),
+					SpawnLoc,
+					FRotator(0.f, Yaw, 0.f),
+					SpawnParams);
+				if (!Rock)
+				{
+					continue;
+				}
+
+				Rock->BuildVisuals();
+				SpawnedDungeonRocks.Add(Rock);
+				++Rocks;
+			}
+		}
+		if (Rocks > 0)
+		{
+			UE_LOG(LogSolid, Warning, TEXT("Spawned %d dungeon rocks"), Rocks);
+		}
 	}
 
 	if (!bSpawnedStrongholdSites)

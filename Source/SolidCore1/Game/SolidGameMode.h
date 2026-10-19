@@ -13,6 +13,7 @@ class ASolidBridge;
 class ASolidBuilding;
 class ASolidForagePile;
 class ASolidDungeonEntrance;
+class ASolidDungeonRock;
 class ASolidDungeonInterior;
 class ASolidLairInterior;
 class ASolidCompanionCharacter;
@@ -46,7 +47,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	TSubclassOf<ASolidCompanionCharacter> CompanionClass;
 
-	/** Spawn Forest trees, Town buildings, welcome signs, cave entrances, and tower shells. */
+	/** Spawn Forest trees, Town buildings, welcome signs, cave rocks, tunnel mouths, and tower shells. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation")
 	bool bAutoSpawnVegetation = true;
 
@@ -294,6 +295,9 @@ protected:
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidDungeonEntrance>> SpawnedDungeonEntrances;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<ASolidDungeonRock>> SpawnedDungeonRocks;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidTowerShell>> SpawnedTowerShells;

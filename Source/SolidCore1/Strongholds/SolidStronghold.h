@@ -35,8 +35,17 @@ enum class ESolidStrongholdTrip : uint8
 	Tower,
 };
 
+/** Which way a stronghold exit faces. */
+enum class ESolidStrongholdOrientation : uint8
+{
+	North,
+	East,
+	South,
+	West,
+};
+
 /**
- * A company base: one type, one size, and the map cell it stands on.
+ * A company base: one type, one size, the map cell it stands on, and the way its exit faces.
  * Dungeon, Fortress, and Tower are the subclasses.
  * These are plain C++ classes, not Unreal objects and not Blueprints.
  */
@@ -59,11 +68,13 @@ public:
 	ESolidStrongholdSize Size = ESolidStrongholdSize::Meagre;
 	/** Map cell. X is the column and Y is the row, counting from 0. */
 	FIntPoint Cell = FIntPoint::ZeroValue;
+	/** Direction the exit faces. The starting cave faces north. */
+	ESolidStrongholdOrientation Orientation = ESolidStrongholdOrientation::North;
 
 	/** True when the current code can build this type at Size. */
 	virtual bool Supported(ESolidStrongholdSize) const { return false; }
 
-	/** The cliff mouth. A tower and a fortress place their own exterior. */
+	/** The cliff mouth. A stronghold that places its own exterior returns false. */
 	virtual bool UsesCliffMouth() const { return false; }
 
 	/** Which trip this type takes. */
@@ -171,6 +182,19 @@ namespace SolidStronghold
 		return FRotator::NormalizeAxis(MouthYawDeg + Leave.YawDeg);
 	}
 
+	/** World yaw of an exit. Local +X of the exterior points this way. North is world +Y. */
+	inline float OrientationYawDeg(const ESolidStrongholdOrientation Orientation)
+	{
+		switch (Orientation)
+		{
+		case ESolidStrongholdOrientation::North: return 90.f;
+		case ESolidStrongholdOrientation::East: return 0.f;
+		case ESolidStrongholdOrientation::South: return -90.f;
+		case ESolidStrongholdOrientation::West: return 180.f;
+		default: return 90.f;
+		}
+	}
+
 	inline const TCHAR* TypeName(ESolidStrongholdType Type)
 	{
 		switch (Type)
@@ -215,7 +239,7 @@ namespace SolidStronghold
 	};
 
 	inline const FShelf Shelves[] = {
-		{ ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre, ESolidBiome::Mountain },
+		{ ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre, ESolidBiome::Grassland },
 		{ ESolidStrongholdType::Tower, ESolidStrongholdSize::Imperious, ESolidBiome::Grassland },
 	};
 
@@ -235,7 +259,7 @@ namespace SolidStronghold
 		return false;
 	}
 
-	/** The cliff mouth. A tower places its own exterior, so it does not use this. */
+	/** The cliff mouth. A stronghold that places its own exterior does not use this. */
 	bool UsesCaveMouth(const FSolidStronghold& Stronghold);
 
 	/** "MeagreDungeon" or "Meagre Dungeon": size, then type. */

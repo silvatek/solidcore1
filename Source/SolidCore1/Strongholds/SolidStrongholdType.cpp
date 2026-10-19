@@ -1,4 +1,5 @@
 #include "SolidStrongholdType.h"
+#include "SolidStrongholds.h"
 #include "SolidTowerStronghold.h"
 
 TUniquePtr<FSolidStronghold> FSolidStronghold::Clone() const
@@ -21,12 +22,40 @@ namespace SolidStronghold
 
 	bool FSolidDungeon::UsesCliffMouth() const
 	{
-		return true;
+		return false;
 	}
 
 	ESolidStrongholdTrip FSolidDungeon::Trip() const
 	{
 		return ESolidStrongholdTrip::Cave;
+	}
+
+	float FSolidDungeon::FaceWidthCm() const
+	{
+		return SolidStrongholds::OpeningWidthCm + 2.f * SolidStrongholds::FrameThicknessCm;
+	}
+
+	float FSolidDungeon::FaceHeightCm() const
+	{
+		return SolidStrongholds::OpeningHeightCm + SolidStrongholds::FrameThicknessCm;
+	}
+
+	float FSolidDungeon::SlopeRunCm() const
+	{
+		return 2.f * FaceHeightCm();
+	}
+
+	float FSolidDungeon::LeaveStandCm() const
+	{
+		return 250.f;
+	}
+
+	FVector2D FSolidDungeon::LeaveStandXY(
+		const FVector2D CellCenterXY,
+		const ESolidStrongholdOrientation InOrientation) const
+	{
+		const float YawRad = FMath::DegreesToRadians(SolidStronghold::OrientationYawDeg(InOrientation));
+		return CellCenterXY + FVector2D(FMath::Cos(YawRad), FMath::Sin(YawRad)) * LeaveStandCm();
 	}
 
 	void FSolidDungeon::CollectGroundHexes(

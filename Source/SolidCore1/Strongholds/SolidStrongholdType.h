@@ -23,6 +23,18 @@ namespace SolidStronghold
 		virtual bool Supported(ESolidStrongholdSize Size) const override;
 		virtual bool UsesCliffMouth() const override;
 		virtual ESolidStrongholdTrip Trip() const override;
+
+		/** Front face width. The opening plus the stone on each side. */
+		float FaceWidthCm() const;
+		/** Front face height. The opening plus the stone above it. The rock is no taller. */
+		float FaceHeightCm() const;
+		/** How far the slope runs back from the front face to the ground. Twice the face height. */
+		float SlopeRunCm() const;
+		/** Centimetres in front of the face where the captain stands on leaving. */
+		float LeaveStandCm() const;
+		/** World position in front of the cell center, outside the exit. */
+		FVector2D LeaveStandXY(FVector2D CellCenterXY, ESolidStrongholdOrientation InOrientation) const;
+
 		virtual void CollectGroundHexes(
 			ESolidStrongholdSize Size,
 			TArray<SolidStrongholdGrid::FHex>& OutHexes) const override;

@@ -1,6 +1,6 @@
 # Fog stays cleared
 
-Status: Ready
+Status: In Progress
 
 ## Story
 

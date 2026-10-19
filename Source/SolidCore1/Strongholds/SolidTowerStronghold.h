@@ -201,10 +201,10 @@ namespace SolidTowerStronghold
 
 	/**
 	 * Grass-facing yaw points local +X at the grass, the cave-mouth convention.
-	 * The tower door is local -X, so the shell turns half a turn from that yaw.
-	 * North grass (facing yaw 90) puts the door at shell yaw -90.
+	 * The tower door is local -X, so the exterior turns half a turn from that yaw.
+	 * North grass (facing yaw 90) puts the door at exterior yaw -90.
 	 */
-	inline float ShellYawDeg(const float GrassFacingYawDeg)
+	inline float ExteriorYawDeg(const float GrassFacingYawDeg)
 	{
 		return FMath::UnwindDegrees(GrassFacingYawDeg + 180.f);
 	}

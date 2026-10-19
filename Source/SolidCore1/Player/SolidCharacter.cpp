@@ -5,13 +5,13 @@
 #include "SolidGroundMove.h"
 #include "Lairs/SolidLairInterior.h"
 #include "Strongholds/SolidDungeonEntrance.h"
-#include "Strongholds/SolidDungeonRock.h"
+#include "Strongholds/SolidDungeonExterior.h"
 #include "Strongholds/SolidDungeonInterior.h"
 #include "Strongholds/SolidDungeonPassage.h"
 #include "Strongholds/SolidStrongholdStone.h"
 #include "Strongholds/SolidStrongholdTransition.h"
 #include "Strongholds/SolidTowerInterior.h"
-#include "Strongholds/SolidTowerShell.h"
+#include "Strongholds/SolidTowerExterior.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Animation/AnimSequence.h"
 #include "Camera/CameraComponent.h"
@@ -1435,7 +1435,7 @@ namespace
 				return SolidLair::HitOnMouth(Entrance->IsLairMouth(), Entrance->GetEndMarker(), false);
 			}
 		}
-		for (TActorIterator<ASolidDungeonRock> Rock(World); Rock; ++Rock)
+		for (TActorIterator<ASolidDungeonExterior> Rock(World); Rock; ++Rock)
 		{
 			const UStaticMeshComponent* Mouth = Rock->GetMouthMesh();
 			if (Mouth && Hits(Mouth->CalcBounds(Mouth->GetComponentTransform()).GetBox()))
@@ -1463,7 +1463,7 @@ namespace
 				}
 			}
 		}
-		for (TActorIterator<ASolidTowerShell> Shell(World); Shell; ++Shell)
+		for (TActorIterator<ASolidTowerExterior> Shell(World); Shell; ++Shell)
 		{
 			const UStaticMeshComponent* Door = Shell->GetDoorMesh();
 			if (Door && Hits(Door->CalcBounds(Door->GetComponentTransform()).GetBox()))

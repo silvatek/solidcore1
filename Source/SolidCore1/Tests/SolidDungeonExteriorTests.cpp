@@ -1,6 +1,6 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "SolidDungeonRock.h"
+#include "SolidDungeonExterior.h"
 #include "SolidGameState.h"
 #include "SolidStrongholds.h"
 #include "SolidStrongholdType.h"
@@ -11,7 +11,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace SolidDungeonRockTestPrivate
+namespace SolidDungeonExteriorTestPrivate
 {
 	struct FBounds
 	{
@@ -73,11 +73,11 @@ namespace SolidDungeonRockTestPrivate
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidDungeonRockTest,
-	"SolidCore1.Stronghold.DungeonRock",
+	FSolidDungeonExteriorTest,
+	"SolidCore1.Stronghold.DungeonExterior",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 
-bool FSolidDungeonRockTest::RunTest(const FString& Parameters)
+bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 {
 	FGameState State;
 	FSolidStronghold* Cave = State.ActiveStronghold.Get();
@@ -148,7 +148,7 @@ bool FSolidDungeonRockTest::RunTest(const FString& Parameters)
 		FMath::IsNearlyEqual(EastStand.X, CellCenter.X + Dungeon.LeaveStandCm(), 0.1f)
 			&& FMath::IsNearlyEqual(EastStand.Y, CellCenter.Y, 0.1f));
 
-	ASolidDungeonRock* Rock = NewObject<ASolidDungeonRock>();
+	ASolidDungeonExterior* Rock = NewObject<ASolidDungeonExterior>();
 	TestNotNull(TEXT("rock"), Rock);
 	if (!Rock)
 	{
@@ -192,10 +192,10 @@ bool FSolidDungeonRockTest::RunTest(const FString& Parameters)
 		TEXT("the stone blocks a step"),
 		Stone->GetCollisionResponseToChannel(ECC_Pawn) == ECR_Block);
 
-	SolidDungeonRockTestPrivate::FBounds Bounds;
+	SolidDungeonExteriorTestPrivate::FBounds Bounds;
 	TestTrue(
 		TEXT("rock mesh"),
-		SolidDungeonRockTestPrivate::Measure(Stone, Dungeon.SlopeRunCm(), SolidStrongholds::OpeningHeightCm, Bounds));
+		SolidDungeonExteriorTestPrivate::Measure(Stone, Dungeon.SlopeRunCm(), SolidStrongholds::OpeningHeightCm, Bounds));
 	TestTrue(TEXT("the rock is not a box"), Bounds.Vertices > 100);
 	TestTrue(
 		TEXT("the rock reaches the face height"),

@@ -4,7 +4,7 @@
 #include "SolidGameInstance.h"
 #include "SolidLair.h"
 #include "SolidTowerInterior.h"
-#include "SolidTowerShell.h"
+#include "SolidTowerExterior.h"
 #include "SolidTowerStronghold.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -142,7 +142,7 @@ bool FSolidTowerTravelTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(SolidLair::AllowPassage(CaveEnter, false, true).Action),
 		static_cast<uint8>(SolidDungeonPassage::EHit::None));
 
-	ASolidTowerShell* Shell = NewObject<ASolidTowerShell>();
+	ASolidTowerExterior* Shell = NewObject<ASolidTowerExterior>();
 	TestNotNull(TEXT("shell"), Shell);
 	if (Shell)
 	{

@@ -76,7 +76,7 @@ Average, Grand, and Stately are not drawn. They use the roster above, the Keep r
 - A Gatehouse stands on the gate. Its ground-floor openings face the grass and the yard. A floor above that passage is a room.
 - A doorway in a building has no door. It faces the yard. That doorway is not a second way onto the grass.
 - The outer wall is one storey high and has a parapet. A building of more than one floor stands above the wall.
-- The cave mouth, the cave interior, the tower shell, the tower door, and the tower interior stay as they are.
+- The cave mouth, the cave interior, the tower exterior, the tower door, and the tower interior stay as they are.
 - This story adds no world-map `!` line.
 
 ## Implementation notes
@@ -100,7 +100,7 @@ Average, Grand, and Stately are not drawn. They use the roster above, the Keep r
 - The type-picker already lists a type when that subclass returns `Supported` for the site size, the size is unlocked, and the size is larger than the active stronghold. This story does not change that rule. After it, a qualifying site lists Fortress for Humble through Imperious.
 - Do not add a world-map `!`. The owner places the marker. A fortress line is `Stronghold`, size then type, as in `Stronghold (Average Fortress)`. A site stays `StrongholdSite` and a size, with no type. The Imperious site already on the map is `! 16, 36 = StrongholdSite (Imperious)`.
 - There is no shelf row for a fortress. A size and type with no row keeps the marker's own biome. Do not assume Mountain or Grassland.
-- The fortress does not use the cliff mouth and does not use the tower shell.
+- The fortress does not use the cliff mouth and does not use the tower exterior.
 - Furnishings stay the Meagre Dungeon catalog. This story does not place the fireplace, the bed, or the chest, and it does not decide what a fortress contains.
 - Floors use the shared 1.2 m pointy-top grid.
 - The product commit adds tests for the roster, the drawn hex counts, the Keep rules, the stair and landing exclusion, the Imperious Gatehouse ground floor, and the hex total against the tower sum or the Humble mean. The tests do not paste the tower's per-floor counts.

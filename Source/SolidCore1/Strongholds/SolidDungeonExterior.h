@@ -2,22 +2,22 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "SolidDungeonRock.generated.h"
+#include "SolidDungeonExterior.generated.h"
 
 class UStaticMeshComponent;
 
 /**
- * Rock exterior of a dungeon, standing on its map cell.
+ * Exterior of a dungeon stronghold. It is the rock on that stronghold's map cell.
  * Local +X faces the exit. The dark mouth is the clickable opening.
  * The stone is rounded and lumpy inside the face size. A click on the stone does not enter.
  */
 UCLASS()
-class SOLIDCORE1_API ASolidDungeonRock : public AActor
+class SOLIDCORE1_API ASolidDungeonExterior : public AActor
 {
 	GENERATED_BODY()
 
 public:
-	ASolidDungeonRock();
+	ASolidDungeonExterior();
 
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;

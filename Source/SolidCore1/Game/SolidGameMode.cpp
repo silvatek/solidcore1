@@ -28,7 +28,7 @@
 #include "Lairs/SolidLair.h"
 #include "Lairs/SolidLairInterior.h"
 #include "Strongholds/SolidDungeonEntrance.h"
-#include "Strongholds/SolidDungeonRock.h"
+#include "Strongholds/SolidDungeonExterior.h"
 #include "Strongholds/SolidDungeonInterior.h"
 #include "Strongholds/SolidDungeonLevel.h"
 #include "Strongholds/SolidStrongholds.h"
@@ -36,7 +36,7 @@
 #include "Strongholds/SolidStrongholdStone.h"
 #include "Strongholds/SolidStrongholdTransition.h"
 #include "Strongholds/SolidStrongholdType.h"
-#include "Strongholds/SolidTowerShell.h"
+#include "Strongholds/SolidTowerExterior.h"
 #include "Strongholds/SolidTowerStronghold.h"
 #include "SolidGameInstance.h"
 #include "Kismet/GameplayStatics.h"
@@ -1550,11 +1550,11 @@ void ASolidGameMode::EnsureVegetation()
 	{
 		return !IsValid(Entrance);
 	});
-	SpawnedDungeonRocks.RemoveAll([](const TObjectPtr<ASolidDungeonRock>& Rock)
+	SpawnedDungeonExteriors.RemoveAll([](const TObjectPtr<ASolidDungeonExterior>& Rock)
 	{
 		return !IsValid(Rock);
 	});
-	SpawnedTowerShells.RemoveAll([](const TObjectPtr<ASolidTowerShell>& Shell)
+	SpawnedTowerExteriors.RemoveAll([](const TObjectPtr<ASolidTowerExterior>& Shell)
 	{
 		return !IsValid(Shell);
 	});
@@ -1599,19 +1599,19 @@ void ASolidGameMode::EnsureVegetation()
 		}
 	}
 
-	if (SpawnedDungeonRocks.Num() == 0)
+	if (SpawnedDungeonExteriors.Num() == 0)
 	{
-		for (TActorIterator<ASolidDungeonRock> It(World); It; ++It)
+		for (TActorIterator<ASolidDungeonExterior> It(World); It; ++It)
 		{
-			SpawnedDungeonRocks.Add(*It);
+			SpawnedDungeonExteriors.Add(*It);
 		}
 	}
 
-	if (SpawnedTowerShells.Num() == 0)
+	if (SpawnedTowerExteriors.Num() == 0)
 	{
-		for (TActorIterator<ASolidTowerShell> It(World); It; ++It)
+		for (TActorIterator<ASolidTowerExterior> It(World); It; ++It)
 		{
-			SpawnedTowerShells.Add(*It);
+			SpawnedTowerExteriors.Add(*It);
 		}
 	}
 
@@ -1873,7 +1873,7 @@ void ASolidGameMode::EnsureVegetation()
 		UE_LOG(LogSolid, Warning, TEXT("Spawned %d cave entrances and %d tunnel mouths"), Spawned, TunnelMouths);
 	}
 
-	if (SpawnedDungeonRocks.Num() == 0)
+	if (SpawnedDungeonExteriors.Num() == 0)
 	{
 		USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
 		USolidWorldMap* RockMap = Terrain ? Terrain->GetWorldMap() : nullptr;
@@ -1914,8 +1914,8 @@ void ASolidGameMode::EnsureVegetation()
 				const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
 				SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
 				const float Yaw = SolidStronghold::OrientationYawDeg(Stronghold->Orientation);
-				ASolidDungeonRock* Rock = World->SpawnActor<ASolidDungeonRock>(
-					ASolidDungeonRock::StaticClass(),
+				ASolidDungeonExterior* Rock = World->SpawnActor<ASolidDungeonExterior>(
+					ASolidDungeonExterior::StaticClass(),
 					SpawnLoc,
 					FRotator(0.f, Yaw, 0.f),
 					SpawnParams);
@@ -1925,13 +1925,13 @@ void ASolidGameMode::EnsureVegetation()
 				}
 
 				Rock->BuildVisuals();
-				SpawnedDungeonRocks.Add(Rock);
+				SpawnedDungeonExteriors.Add(Rock);
 				++Rocks;
 			}
 		}
 		if (Rocks > 0)
 		{
-			UE_LOG(LogSolid, Warning, TEXT("Spawned %d dungeon rocks"), Rocks);
+			UE_LOG(LogSolid, Warning, TEXT("Spawned %d dungeon exteriors"), Rocks);
 		}
 	}
 
@@ -1992,10 +1992,10 @@ void ASolidGameMode::EnsureVegetation()
 					if (Exterior && SolidTowerStronghold::PlanFor(*Exterior, Plan))
 					{
 						SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
-						ASolidTowerShell* Shell = World->SpawnActor<ASolidTowerShell>(
-							ASolidTowerShell::StaticClass(),
+						ASolidTowerExterior* Shell = World->SpawnActor<ASolidTowerExterior>(
+							ASolidTowerExterior::StaticClass(),
 							SpawnLoc,
-							FRotator(0.f, SolidTowerStronghold::ShellYawDeg(Yaw), 0.f),
+							FRotator(0.f, SolidTowerStronghold::ExteriorYawDeg(Yaw), 0.f),
 							SpawnParams);
 						if (!Shell)
 						{
@@ -2004,7 +2004,7 @@ void ASolidGameMode::EnsureVegetation()
 						Shell->SetPlan(Plan);
 						Shell->SetTowerCell(SiteCell);
 						Shell->BuildVisuals();
-						SpawnedTowerShells.Add(Shell);
+						SpawnedTowerExteriors.Add(Shell);
 						++Shells;
 						continue;
 					}
@@ -2026,7 +2026,7 @@ void ASolidGameMode::EnsureVegetation()
 				}
 			}
 		}
-		UE_LOG(LogSolid, Warning, TEXT("Spawned %d stronghold stones and %d site shells"), Stones, Shells);
+		UE_LOG(LogSolid, Warning, TEXT("Spawned %d stronghold stones and %d site exteriors"), Stones, Shells);
 	}
 
 	if (SpawnedBridges.Num() == 0)

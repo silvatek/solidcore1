@@ -13,14 +13,14 @@ class ASolidBridge;
 class ASolidBuilding;
 class ASolidForagePile;
 class ASolidDungeonEntrance;
-class ASolidDungeonRock;
+class ASolidDungeonExterior;
 class ASolidDungeonInterior;
 class ASolidLairInterior;
 class ASolidCompanionCharacter;
 class ASolidTownSign;
 class ASolidTowerInterior;
 class ASolidStrongholdStone;
-class ASolidTowerShell;
+class ASolidTowerExterior;
 class ASolidTree;
 class USolidTerrainMap;
 class USkeletalMesh;
@@ -47,7 +47,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	TSubclassOf<ASolidCompanionCharacter> CompanionClass;
 
-	/** Spawn Forest trees, Town buildings, welcome signs, cave rocks, tunnel mouths, and tower shells. */
+	/** Spawn Forest trees, Town buildings, welcome signs, dungeon exteriors, tunnel mouths, and tower exteriors. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation")
 	bool bAutoSpawnVegetation = true;
 
@@ -297,15 +297,15 @@ protected:
 	TArray<TObjectPtr<ASolidDungeonEntrance>> SpawnedDungeonEntrances;
 
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<ASolidDungeonRock>> SpawnedDungeonRocks;
+	TArray<TObjectPtr<ASolidDungeonExterior>> SpawnedDungeonExteriors;
 
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<ASolidTowerShell>> SpawnedTowerShells;
+	TArray<TObjectPtr<ASolidTowerExterior>> SpawnedTowerExteriors;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidStrongholdStone>> SpawnedStrongholdStones;
 
-	/** Site stones and site shells are placed together, including when every site is a shell. */
+	/** Site stones and site exteriors are placed together, including when every site is an exterior. */
 	bool bSpawnedStrongholdSites = false;
 
 	UPROPERTY(Transient)

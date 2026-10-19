@@ -1,4 +1,4 @@
-#include "SolidTowerShell.h"
+#include "SolidTowerExterior.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
 #include "SolidStrongholds.h"
@@ -10,7 +10,7 @@
 #include "PhysicsEngine/BodySetup.h"
 #include "StaticMeshAttributes.h"
 
-namespace SolidTowerShellPrivate
+namespace SolidTowerExteriorPrivate
 {
 	constexpr float CubeSizeCm = 100.f;
 	constexpr int32 SideCount = 64;
@@ -182,7 +182,7 @@ namespace SolidTowerShellPrivate
 		const TArray<const FMeshDescription*> Descriptions = { &MeshDescription };
 		if (!Mesh->BuildFromMeshDescriptions(Descriptions, BuildParams))
 		{
-			UE_LOG(LogSolid, Error, TEXT("SolidTowerShell: failed to build a course."));
+			UE_LOG(LogSolid, Error, TEXT("SolidTowerExterior: failed to build a course."));
 			return nullptr;
 		}
 		{
@@ -210,7 +210,7 @@ namespace SolidTowerShellPrivate
 	}
 }
 
-ASolidTowerShell::ASolidTowerShell()
+ASolidTowerExterior::ASolidTowerExterior()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
@@ -218,24 +218,24 @@ ASolidTowerShell::ASolidTowerShell()
 	SetRootComponent(SceneRoot);
 }
 
-void ASolidTowerShell::OnConstruction(const FTransform& Transform)
+void ASolidTowerExterior::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 	BuildVisuals();
 }
 
-void ASolidTowerShell::BeginPlay()
+void ASolidTowerExterior::BeginPlay()
 {
 	Super::BeginPlay();
 	BuildVisuals();
 }
 
-void ASolidTowerShell::SetPlan(const SolidTowerStronghold::FPlan& InPlan)
+void ASolidTowerExterior::SetPlan(const SolidTowerStronghold::FPlan& InPlan)
 {
 	Plan = InPlan;
 }
 
-void ASolidTowerShell::DiscardParts()
+void ASolidTowerExterior::DiscardParts()
 {
 	auto Drop = [](TObjectPtr<UStaticMeshComponent>& Part)
 	{
@@ -255,7 +255,7 @@ void ASolidTowerShell::DiscardParts()
 	Drop(DoorMesh);
 }
 
-UStaticMeshComponent* ASolidTowerShell::AddPart(
+UStaticMeshComponent* ASolidTowerExterior::AddPart(
 	UStaticMesh* Mesh,
 	const FVector& Location,
 	const FVector& Scale,
@@ -292,7 +292,7 @@ UStaticMeshComponent* ASolidTowerShell::AddPart(
 	return Part;
 }
 
-void ASolidTowerShell::BuildVisuals()
+void ASolidTowerExterior::BuildVisuals()
 {
 	DiscardParts();
 
@@ -304,7 +304,7 @@ void ASolidTowerShell::BuildVisuals()
 	UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
 	if (!Cube)
 	{
-		UE_LOG(LogSolid, Error, TEXT("SolidTowerShell: missing Engine BasicShapes Cube."));
+		UE_LOG(LogSolid, Error, TEXT("SolidTowerExterior: missing Engine BasicShapes Cube."));
 		return;
 	}
 
@@ -337,7 +337,7 @@ void ASolidTowerShell::BuildVisuals()
 		const float BottomZ = RingZ[Floor];
 		const float TopZ = RingZ[Floor + 1];
 		const float Height = TopZ - BottomZ;
-		UStaticMesh* CourseMesh = SolidTowerShellPrivate::BuildFrustum(
+		UStaticMesh* CourseMesh = SolidTowerExteriorPrivate::BuildFrustum(
 			this,
 			RingRadius[Floor],
 			RingRadius[Floor + 1],
@@ -361,7 +361,7 @@ void ASolidTowerShell::BuildVisuals()
 		const int32 CapRing = RingZ.Num() - 2;
 		const float BottomZ = RingZ[CapRing];
 		const float TopZ = RingZ[CapRing + 1];
-		UStaticMesh* Cap = SolidTowerShellPrivate::BuildFrustum(
+		UStaticMesh* Cap = SolidTowerExteriorPrivate::BuildFrustum(
 			this,
 			RingRadius[CapRing],
 			RingRadius[CapRing + 1],
@@ -382,9 +382,9 @@ void ASolidTowerShell::BuildVisuals()
 			Cube,
 			SolidTowerStronghold::DoorSlabCenterCm(Plan),
 			FVector(
-				SolidTowerStronghold::DoorSlabDepthCm / SolidTowerShellPrivate::CubeSizeCm,
-				Plan.DoorWidthCm / SolidTowerShellPrivate::CubeSizeCm,
-				Plan.DoorHeightCm / SolidTowerShellPrivate::CubeSizeCm),
+				SolidTowerStronghold::DoorSlabDepthCm / SolidTowerExteriorPrivate::CubeSizeCm,
+				Plan.DoorWidthCm / SolidTowerExteriorPrivate::CubeSizeCm,
+				Plan.DoorHeightCm / SolidTowerExteriorPrivate::CubeSizeCm),
 			SolidStrongholds::MouthColor(),
 			TEXT("TowerDoor"));
 	}

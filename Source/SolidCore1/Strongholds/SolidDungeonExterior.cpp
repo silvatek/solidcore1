@@ -1,4 +1,4 @@
-#include "SolidDungeonRock.h"
+#include "SolidDungeonExterior.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
 #include "SolidStrongholds.h"
@@ -11,7 +11,7 @@
 #include "PhysicsEngine/BodySetup.h"
 #include "StaticMeshAttributes.h"
 
-namespace SolidDungeonRockPrivate
+namespace SolidDungeonExteriorPrivate
 {
 	constexpr float CubeSizeCm = 100.f;
 	constexpr int32 ProfileCount = 33;
@@ -250,7 +250,7 @@ namespace SolidDungeonRockPrivate
 		const TArray<const FMeshDescription*> Descriptions = { &MeshDescription };
 		if (!Mesh->BuildFromMeshDescriptions(Descriptions, BuildParams))
 		{
-			UE_LOG(LogSolid, Error, TEXT("SolidDungeonRock: failed to build the rock."));
+			UE_LOG(LogSolid, Error, TEXT("SolidDungeonExterior: failed to build the rock."));
 			return nullptr;
 		}
 		{
@@ -278,7 +278,7 @@ namespace SolidDungeonRockPrivate
 	}
 }
 
-ASolidDungeonRock::ASolidDungeonRock()
+ASolidDungeonExterior::ASolidDungeonExterior()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
@@ -286,19 +286,19 @@ ASolidDungeonRock::ASolidDungeonRock()
 	SetRootComponent(SceneRoot);
 }
 
-void ASolidDungeonRock::OnConstruction(const FTransform& Transform)
+void ASolidDungeonExterior::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 	BuildVisuals();
 }
 
-void ASolidDungeonRock::BeginPlay()
+void ASolidDungeonExterior::BeginPlay()
 {
 	Super::BeginPlay();
 	BuildVisuals();
 }
 
-void ASolidDungeonRock::DiscardParts()
+void ASolidDungeonExterior::DiscardParts()
 {
 	auto Drop = [](TObjectPtr<UStaticMeshComponent>& Part)
 	{
@@ -312,7 +312,7 @@ void ASolidDungeonRock::DiscardParts()
 	Drop(MouthMesh);
 }
 
-UStaticMeshComponent* ASolidDungeonRock::AddPart(
+UStaticMeshComponent* ASolidDungeonExterior::AddPart(
 	UStaticMesh* Mesh,
 	const FVector& Location,
 	const FVector& Scale,
@@ -349,24 +349,24 @@ UStaticMeshComponent* ASolidDungeonRock::AddPart(
 	return Part;
 }
 
-void ASolidDungeonRock::BuildVisuals()
+void ASolidDungeonExterior::BuildVisuals()
 {
 	DiscardParts();
 
 	const SolidStronghold::FSolidDungeon& Dungeon = SolidStronghold::FSolidDungeon::Instance();
-	UStaticMesh* Rock = SolidDungeonRockPrivate::BuildRock(
+	UStaticMesh* Rock = SolidDungeonExteriorPrivate::BuildRock(
 		this,
 		Dungeon.FaceWidthCm(),
 		Dungeon.FaceHeightCm(),
 		Dungeon.SlopeRunCm(),
 		SolidStrongholds::OpeningWidthCm,
 		SolidStrongholds::OpeningHeightCm);
-	RockMesh = AddPart(Rock, FVector::ZeroVector, FVector::OneVector, SolidStrongholds::RockColor(), TEXT("DungeonRock"));
+	RockMesh = AddPart(Rock, FVector::ZeroVector, FVector::OneVector, SolidStrongholds::RockColor(), TEXT("DungeonExterior"));
 
 	UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
 	if (!Cube)
 	{
-		UE_LOG(LogSolid, Error, TEXT("SolidDungeonRock: missing Engine BasicShapes Cube."));
+		UE_LOG(LogSolid, Error, TEXT("SolidDungeonExterior: missing Engine BasicShapes Cube."));
 		return;
 	}
 
@@ -377,7 +377,7 @@ void ASolidDungeonRock::BuildVisuals()
 	MouthMesh = AddPart(
 		Cube,
 		FVector(-Recess - Depth * 0.5f, 0.f, Height * 0.5f),
-		FVector(Depth / SolidDungeonRockPrivate::CubeSizeCm, Width / SolidDungeonRockPrivate::CubeSizeCm, Height / SolidDungeonRockPrivate::CubeSizeCm),
+		FVector(Depth / SolidDungeonExteriorPrivate::CubeSizeCm, Width / SolidDungeonExteriorPrivate::CubeSizeCm, Height / SolidDungeonExteriorPrivate::CubeSizeCm),
 		SolidStrongholds::MouthColor(),
 		TEXT("DungeonMouth"));
 }

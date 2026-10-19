@@ -1,6 +1,6 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "SolidTowerShell.h"
+#include "SolidTowerExterior.h"
 #include "SolidTowerStronghold.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -9,7 +9,7 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace SolidTowerShellTestPrivate
+namespace SolidTowerExteriorTestPrivate
 {
 	struct FEnds
 	{
@@ -76,7 +76,7 @@ namespace SolidTowerShellTestPrivate
 		const SolidTowerStronghold::FPlan& Plan,
 		const TCHAR* Label)
 	{
-		ASolidTowerShell* Shell = NewObject<ASolidTowerShell>();
+		ASolidTowerExterior* Shell = NewObject<ASolidTowerExterior>();
 		Test.TestNotNull(*FString::Printf(TEXT("%s shell"), Label), Shell);
 		if (!Shell)
 		{
@@ -129,19 +129,19 @@ namespace SolidTowerShellTestPrivate
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidTowerShellTest,
-	"SolidCore1.Stronghold.TowerShell",
+	FSolidTowerExteriorTest,
+	"SolidCore1.Stronghold.TowerExterior",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 
-bool FSolidTowerShellTest::RunTest(const FString& Parameters)
+bool FSolidTowerExteriorTest::RunTest(const FString& Parameters)
 {
-	SolidTowerShellTestPrivate::TestShell(*this, SolidTowerStronghold::Imperious, TEXT("Imperious"));
-	SolidTowerShellTestPrivate::TestShell(*this, SolidTowerStronghold::Average, TEXT("Average"));
+	SolidTowerExteriorTestPrivate::TestShell(*this, SolidTowerStronghold::Imperious, TEXT("Imperious"));
+	SolidTowerExteriorTestPrivate::TestShell(*this, SolidTowerStronghold::Average, TEXT("Average"));
 
 	TestTrue(TEXT("north grass puts the door north"),
-		FMath::IsNearlyEqual(SolidTowerStronghold::ShellYawDeg(90.f), -90.f, 0.01f));
+		FMath::IsNearlyEqual(SolidTowerStronghold::ExteriorYawDeg(90.f), -90.f, 0.01f));
 	TestTrue(TEXT("east grass puts the door east"),
-		FMath::IsNearlyEqual(SolidTowerStronghold::ShellYawDeg(0.f), 180.f, 0.01f));
+		FMath::IsNearlyEqual(SolidTowerStronghold::ExteriorYawDeg(0.f), 180.f, 0.01f));
 
 	return true;
 }

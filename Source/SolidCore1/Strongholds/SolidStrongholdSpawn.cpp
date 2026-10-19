@@ -2,7 +2,7 @@
 #include "SolidCore1.h"
 #include "SolidStronghold.h"
 #include "SolidStrongholdExterior.h"
-#include "SolidStrongholdStone.h"
+#include "SolidStrongholdSite.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Terrain/SolidWorldMap.h"
@@ -75,35 +75,35 @@ namespace SolidStronghold
 		}
 	}
 
-	void SpawnStrongholdStones(
+	void SpawnStrongholdSites(
 		UWorld* World,
 		ASolidTerrainStreamer* Streamer,
 		const TArray<const FSolidStronghold*>& Company,
 		const FActorSpawnParameters& SpawnParams,
-		TArray<TObjectPtr<ASolidStrongholdStone>>& Stones,
-		bool& bStonesSpawned)
+		TArray<TObjectPtr<ASolidStrongholdSite>>& Sites,
+		bool& bSitesSpawned)
 	{
 		if (!World || !Streamer || !Streamer->GetTerrainMap() || !Streamer->GetTerrainMap()->IsBuilt())
 		{
 			return;
 		}
 
-		Stones.RemoveAll([](const TObjectPtr<ASolidStrongholdStone>& Stone)
+		Sites.RemoveAll([](const TObjectPtr<ASolidStrongholdSite>& Site)
 		{
-			return !IsValid(Stone);
+			return !IsValid(Site);
 		});
 
 		USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
 		USolidWorldMap* Map = Terrain->GetWorldMap();
-		if (bStonesSpawned || !Map || !Map->IsLoaded())
+		if (bSitesSpawned || !Map || !Map->IsLoaded())
 		{
 			return;
 		}
 
 		const FVector2D WorldMin = Terrain->GetWorldMinXY();
 		const FVector2D WorldMax = Terrain->GetWorldMaxXY();
-		bStonesSpawned = true;
-		int32 SpawnedStones = 0;
+		bSitesSpawned = true;
+		int32 SpawnedSites = 0;
 		for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
 		{
 			for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
@@ -138,21 +138,21 @@ namespace SolidStronghold
 				FVector SpawnLoc(SiteXY.X, SiteXY.Y, 0.f);
 				const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
 				SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
-				ASolidStrongholdStone* Stone = World->SpawnActor<ASolidStrongholdStone>(
-					ASolidStrongholdStone::StaticClass(),
+				ASolidStrongholdSite* Site = World->SpawnActor<ASolidStrongholdSite>(
+					ASolidStrongholdSite::StaticClass(),
 					SpawnLoc,
 					FRotator::ZeroRotator,
 					SpawnParams);
-				if (!Stone)
+				if (!Site)
 				{
 					continue;
 				}
-				Stone->SetSite(SiteCell, SiteSize);
-				Stone->BuildVisuals();
-				Stones.Add(Stone);
-				++SpawnedStones;
+				Site->SetSite(SiteCell, SiteSize);
+				Site->BuildVisuals();
+				Sites.Add(Site);
+				++SpawnedSites;
 			}
 		}
-		UE_LOG(LogSolid, Warning, TEXT("Spawned %d stronghold stones"), SpawnedStones);
+		UE_LOG(LogSolid, Warning, TEXT("Spawned %d stronghold sites"), SpawnedSites);
 	}
 }

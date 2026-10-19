@@ -44,7 +44,7 @@ namespace SolidStrongholdTransition
 
 	/**
 	 * Types a click on a site of this size may list.
-	 * None leaves the stone as it is and does not ask.
+	 * None leaves the site as it is and does not ask.
 	 */
 	inline EOffer Consider(
 		const FGameState& State,

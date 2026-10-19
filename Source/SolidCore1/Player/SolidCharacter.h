@@ -21,7 +21,7 @@ class UTextRenderComponent;
 class ASolidCharacterStage;
 class ASolidHUD;
 class ASolidForagePile;
-class ASolidStrongholdStone;
+class ASolidStrongholdSite;
 
 /**
  * Captain — the single player-controlled character.
@@ -110,11 +110,11 @@ protected:
 	/** Enter is ignored until that place is open. A previous stronghold is not an enter. Leave stays available. */
 	SolidLair::FPassageHit AllowPassage(const SolidLair::FPassageHit& Hit) const;
 	void ActivatePassage(const SolidLair::FPassageHit& Hit);
-	/** A site stone under the pointer, when a click may ask it for a type. */
-	ASolidStrongholdStone* StoneUnderPointer() const;
+	/** A stronghold site under the pointer, when a click may ask it for a type. */
+	ASolidStrongholdSite* SiteUnderPointer() const;
 	/** Nearest forage pile along the pointer ray. Ground distance is the captain's, in cm. */
 	ASolidForagePile* NearestForagePile(float& OutGroundDistanceCm) const;
-	void OfferStrongholdStone(const ASolidStrongholdStone* Stone);
+	void OfferStrongholdSite(const ASolidStrongholdSite* Site);
 	void ConfirmStrongholdChoice();
 	void TickClickMove();
 	void ClearClickMove();

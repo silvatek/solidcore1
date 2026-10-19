@@ -64,7 +64,7 @@ public:
 	/** Closes the page. True when the selected row is Yes. */
 	bool AcceptExitConfirm();
 
-	/** A site stone asked for a type. Esc closes it and leaves the stone. */
+	/** A stronghold site asked for a type. Esc closes it and leaves the site. */
 	void OpenStrongholdChoice(FIntPoint Cell, ESolidStrongholdSize Size, const TArray<ESolidStrongholdType>& Types);
 	void CloseStrongholdChoice();
 	bool IsStrongholdChoiceOpen() const { return bShowStrongholdChoice; }

@@ -3,21 +3,22 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "SolidStronghold.h"
-#include "SolidStrongholdStone.generated.h"
+#include "SolidStrongholdSite.generated.h"
 
 class UStaticMeshComponent;
 
 /**
- * A stone block on a stronghold site.
+ * A stronghold site in the world.
+ * The site is drawn as a stone block.
  * A click asks for a type only when that size is unlocked, larger than the company base, and already built.
  */
 UCLASS()
-class SOLIDCORE1_API ASolidStrongholdStone : public AActor
+class SOLIDCORE1_API ASolidStrongholdSite : public AActor
 {
 	GENERATED_BODY()
 
 public:
-	ASolidStrongholdStone();
+	ASolidStrongholdSite();
 
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;

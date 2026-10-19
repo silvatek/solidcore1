@@ -1,4 +1,4 @@
-#include "SolidStrongholdStone.h"
+#include "SolidStrongholdSite.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
 #include "SolidStrongholds.h"
@@ -7,7 +7,7 @@
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"
 
-ASolidStrongholdStone::ASolidStrongholdStone()
+ASolidStrongholdSite::ASolidStrongholdSite()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
@@ -19,25 +19,25 @@ ASolidStrongholdStone::ASolidStrongholdStone()
 	BlockMesh->SetCollisionProfileName(TEXT("BlockAll"));
 }
 
-void ASolidStrongholdStone::OnConstruction(const FTransform& Transform)
+void ASolidStrongholdSite::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 	BuildVisuals();
 }
 
-void ASolidStrongholdStone::BeginPlay()
+void ASolidStrongholdSite::BeginPlay()
 {
 	Super::BeginPlay();
 	BuildVisuals();
 }
 
-void ASolidStrongholdStone::SetSite(const FIntPoint InCell, const ESolidStrongholdSize InSize)
+void ASolidStrongholdSite::SetSite(const FIntPoint InCell, const ESolidStrongholdSize InSize)
 {
 	Cell = InCell;
 	Size = InSize;
 }
 
-void ASolidStrongholdStone::BuildVisuals()
+void ASolidStrongholdSite::BuildVisuals()
 {
 	if (!BlockMesh)
 	{
@@ -47,7 +47,7 @@ void ASolidStrongholdStone::BuildVisuals()
 	UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
 	if (!Cube)
 	{
-		UE_LOG(LogSolid, Error, TEXT("SolidStrongholdStone: missing Engine BasicShapes Cube."));
+		UE_LOG(LogSolid, Error, TEXT("SolidStrongholdSite: missing Engine BasicShapes Cube."));
 		return;
 	}
 
@@ -57,7 +57,7 @@ void ASolidStrongholdStone::BuildVisuals()
 	BlockMesh->SetRelativeRotation(FRotator::ZeroRotator);
 	BlockMesh->SetRelativeScale3D(FVector(BlockCm / ShapeSize));
 	if (UMaterialInterface* Material = SolidMaterials::CreateSolidColor(
-		this, SolidStrongholds::RockColor(), TEXT("StrongholdStone"), 0.94f))
+		this, SolidStrongholds::RockColor(), TEXT("StrongholdSite"), 0.94f))
 	{
 		BlockMesh->SetMaterial(0, Material);
 	}

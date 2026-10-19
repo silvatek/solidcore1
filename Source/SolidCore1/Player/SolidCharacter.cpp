@@ -8,7 +8,7 @@
 #include "Strongholds/SolidDungeonExterior.h"
 #include "Strongholds/SolidDungeonInterior.h"
 #include "Strongholds/SolidDungeonPassage.h"
-#include "Strongholds/SolidStrongholdStone.h"
+#include "Strongholds/SolidStrongholdSite.h"
 #include "Strongholds/SolidStrongholdTransition.h"
 #include "Strongholds/SolidTowerInterior.h"
 #include "Strongholds/SolidTowerExterior.h"
@@ -1510,7 +1510,7 @@ SolidLair::FPassageHit ASolidCharacter::AllowPassage(const SolidLair::FPassageHi
 	return Allowed;
 }
 
-ASolidStrongholdStone* ASolidCharacter::StoneUnderPointer() const
+ASolidStrongholdSite* ASolidCharacter::SiteUnderPointer() const
 {
 	if (!SolidDungeonPassage::AcceptsPointer(IsPointerShown(), IsMenuOverlayOpen() || IsSquadFormationDrillActive()))
 	{
@@ -1530,9 +1530,9 @@ ASolidStrongholdStone* ASolidCharacter::StoneUnderPointer() const
 		return nullptr;
 	}
 
-	for (TActorIterator<ASolidStrongholdStone> Stone(World); Stone; ++Stone)
+	for (TActorIterator<ASolidStrongholdSite> Site(World); Site; ++Site)
 	{
-		const UStaticMeshComponent* Block = Stone->GetBlockMesh();
+		const UStaticMeshComponent* Block = Site->GetBlockMesh();
 		if (!Block)
 		{
 			continue;
@@ -1540,7 +1540,7 @@ ASolidStrongholdStone* ASolidCharacter::StoneUnderPointer() const
 		const FBox Box = Block->CalcBounds(Block->GetComponentTransform()).GetBox();
 		if (SolidDungeonPassage::RayHitsBox(Origin, Direction, Box, SolidClickMove::MaxRayCm))
 		{
-			return *Stone;
+			return *Site;
 		}
 	}
 	return nullptr;
@@ -1593,23 +1593,23 @@ ASolidForagePile* ASolidCharacter::NearestForagePile(float& OutGroundDistanceCm)
 	return Best;
 }
 
-void ASolidCharacter::OfferStrongholdStone(const ASolidStrongholdStone* Stone)
+void ASolidCharacter::OfferStrongholdSite(const ASolidStrongholdSite* Site)
 {
 	UWorld* World = GetWorld();
 	ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
 	ASolidHUD* HUD = GetSolidHUD();
-	if (!Stone || !GameMode || !HUD)
+	if (!Site || !GameMode || !HUD)
 	{
 		return;
 	}
 
 	TArray<ESolidStrongholdType> Types;
-	if (SolidStrongholdTransition::Consider(GameMode->GetConfiguration(), Stone->GetSize(), Types)
+	if (SolidStrongholdTransition::Consider(GameMode->GetConfiguration(), Site->GetSize(), Types)
 		!= SolidStrongholdTransition::EOffer::Choose)
 	{
 		return;
 	}
-	HUD->OpenStrongholdChoice(Stone->GetCell(), Stone->GetSize(), Types);
+	HUD->OpenStrongholdChoice(Site->GetCell(), Site->GetSize(), Types);
 }
 
 void ASolidCharacter::ConfirmStrongholdChoice()
@@ -1851,9 +1851,9 @@ void ASolidCharacter::PollClickMovePress()
 			return;
 		}
 	}
-	if (const ASolidStrongholdStone* Stone = StoneUnderPointer())
+	if (const ASolidStrongholdSite* Site = SiteUnderPointer())
 	{
-		OfferStrongholdStone(Stone);
+		OfferStrongholdSite(Site);
 		return;
 	}
 	ClickMoveFromInput();

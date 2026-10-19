@@ -19,7 +19,7 @@ class ASolidCompanionCharacter;
 class ASolidTownSign;
 class ASolidTowerInterior;
 class ASolidStrongholdExterior;
-class ASolidStrongholdStone;
+class ASolidStrongholdSite;
 class ASolidTree;
 class USolidTerrainMap;
 class USkeletalMesh;
@@ -198,7 +198,7 @@ public:
 	void EnterStronghold();
 
 	/**
-	 * A click on a site stone chose this type.
+	 * A click on a stronghold site chose this type.
 	 * The company moves, then the interior opens before the new exterior is on screen.
 	 */
 	bool EnterChosenStronghold(FIntPoint Cell, ESolidStrongholdSize Size, ESolidStrongholdType Type);
@@ -299,9 +299,9 @@ protected:
 	TArray<TObjectPtr<ASolidStrongholdExterior>> SpawnedStrongholdExteriors;
 
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<ASolidStrongholdStone>> SpawnedStrongholdStones;
+	TArray<TObjectPtr<ASolidStrongholdSite>> SpawnedStrongholdSites;
 
-	/** Standing stones on stronghold sites that have no exterior of their own. */
+	/** Stronghold sites that have no exterior of their own. Each is drawn as a stone. */
 	bool bSpawnedStrongholdSites = false;
 
 	UPROPERTY(Transient)

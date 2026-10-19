@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 
 class ASolidStrongholdExterior;
-class ASolidStrongholdStone;
+class ASolidStrongholdSite;
 class ASolidTerrainStreamer;
 class FSolidStronghold;
 class UWorld;
@@ -23,13 +23,14 @@ namespace SolidStronghold
 		TArray<TObjectPtr<ASolidStrongholdExterior>>& Exteriors);
 
 	/**
-	 * Spawns a marker stone on each stronghold site that has no exterior.
+	 * Spawns each stronghold site that has no exterior.
+	 * The site is drawn as a stone block.
 	 */
-	void SpawnStrongholdStones(
+	void SpawnStrongholdSites(
 		UWorld* World,
 		ASolidTerrainStreamer* Streamer,
 		const TArray<const FSolidStronghold*>& Company,
 		const FActorSpawnParameters& SpawnParams,
-		TArray<TObjectPtr<ASolidStrongholdStone>>& Stones,
-		bool& bStonesSpawned);
+		TArray<TObjectPtr<ASolidStrongholdSite>>& Sites,
+		bool& bSitesSpawned);
 }

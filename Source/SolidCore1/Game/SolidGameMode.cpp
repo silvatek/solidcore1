@@ -1861,12 +1861,12 @@ void ASolidGameMode::EnsureVegetation()
 		Owned,
 		SpawnParams,
 		SpawnedStrongholdExteriors);
-	SolidStronghold::SpawnStrongholdStones(
+	SolidStronghold::SpawnStrongholdSites(
 		World,
 		Streamer,
 		Owned,
 		SpawnParams,
-		SpawnedStrongholdStones,
+		SpawnedStrongholdSites,
 		bSpawnedStrongholdSites);
 
 	if (SpawnedBridges.Num() == 0)

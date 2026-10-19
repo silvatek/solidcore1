@@ -437,12 +437,12 @@ bool FSolidStrongholdChoiceTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("a missing row does not change the selection"), HUD->GetStrongholdChoiceIndex(), 1);
 
 	HUD->HandleMenuKey();
-	TestFalse(TEXT("F10 leaves the stone"), HUD->IsStrongholdChoiceOpen());
+	TestFalse(TEXT("F10 leaves the site"), HUD->IsStrongholdChoiceOpen());
 	TestFalse(TEXT("leaving the choice does not open the menu"), HUD->IsMainMenuOpen());
 
 	HUD->OpenStrongholdChoice(Cell, ESolidStrongholdSize::Imperious, Types);
 	HUD->CloseMenuOverlay();
-	TestFalse(TEXT("Esc leaves the stone"), HUD->IsStrongholdChoiceOpen());
+	TestFalse(TEXT("Esc leaves the site"), HUD->IsStrongholdChoiceOpen());
 	TestFalse(TEXT("Esc does not open the menu"), HUD->IsMainMenuOpen());
 	return true;
 }

@@ -4,7 +4,7 @@ Status: New
 
 ## Story
 
-The Meagre Dungeon sits on grassland, the same shelf as the Imperious Tower. Its exterior is a large rock with a cave entrance, standing on that cell. A click on the entrance enters the cave.
+The Meagre Dungeon sits on grassland, the same shelf as the Imperious Tower. Its exterior is a rock with a cave entrance, standing on that cell. The front face is about the size of the cave entrance that ships now. From the top of that face the rock slopes back down to the ground, over about twice its height. A click on the entrance enters the cave.
 
 Dungeon, Fortress, and Tower each draw their own exterior and each provide one clickable entrance. That entrance is the transition into the interior. The dungeon no longer uses a cliff mouth cut into a mountain cell.
 
@@ -14,6 +14,9 @@ Dungeon, Fortress, and Tower each draw their own exterior and each provide one c
 - The world-map line stays `! 9, 17 = Stronghold (MeagreDungeon)`. That cell samples as grassland. The `!` stays where it is.
 - The north neighbor of that cell stays grassland. The entrance still faces north.
 - The dungeon exterior is a rock on the stronghold cell, with one dark cave entrance. The entrance is the clickable opening.
+- The front face is the outer size of the current cave frame. Its width is `OpeningWidthCm` plus `FrameThicknessCm` on each side. Its height is `OpeningHeightCm` plus `FrameThicknessCm` on top. That height is the rock's maximum height.
+- The dark opening is `OpeningWidthCm` wide and `OpeningHeightCm` tall. It sits on the ground, centered in the face. The stone on each side of it, and the stone above it, is `FrameThicknessCm` thick.
+- Behind the front face, the top of the rock falls in a straight slope to the ground. The horizontal distance from the front face to where that slope meets the ground is twice the face height.
 - A click on that opening enters the cave once the cave is open. Leaving stands on the grass outside it, looking out. The cave still starts closed until the monster message is closed.
 - Companions still wait outside. The interior, the fourteen hexes, the furnishings, and the journal lines stay.
 - The Iglin tunnel mouths stay the cliff frame on their own mountain cells. They are not this rock, and their cells stay mountain.
@@ -23,7 +26,9 @@ Dungeon, Fortress, and Tower each draw their own exterior and each provide one c
 
 ## Implementation notes
 
-- The rock's proportions are not chosen. That is why this story is still New.
+- The front face matches the frame `ASolidDungeonEntrance` builds. `OpeningWidthCm` is 380, `OpeningHeightCm` is 420, and `FrameThicknessCm` is 80, so the face is 540 cm wide and 500 cm tall. The slope's horizontal run is twice that height, 1000 cm. Read those three constants. Do not copy 540, 500, or 1000 into a second definition. The old frame depth, `OpeningDepthCm`, is not the depth of this rock.
+- The mesh is a wedge. The front is that rectangle. The top edge of the front is the crest, and the top surface is a straight slope to the ground at the back. The sides are the triangle of that slope. The dark opening is a solid face on the front, in the mouth color. The rest of the rock uses the rock color. A click on the opening enters. A click on the slope does not.
+- The run is longer than one world-map cell. The slope may cross the edge behind the front. Do not shorten it to stay inside the cell.
 - `SolidStronghold::Shelves` lists the starting Meagre Dungeon as Mountain. This story changes that row to Grassland. The marker on the map stays `!`.
 - `UsesCliffMouth` is true for the dungeon and false for the tower and the fortress. This story makes it false for the dungeon. The rock is placed on the cell and turned toward the grass neighbor, the way the tower shell is placed at the cell center and turned toward its door. It does not use `FaceInsetCm` to sit a frame on the far side of a mountain edge.
 - The rock is built in code, the way the tower shell is built. It is not a Fab mesh. The dark opening stays solid. A click enters. Walking up to the rock stops on the stone.

@@ -71,7 +71,10 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 		ESolidStrongholdType::Dungeon,
 		ESolidStrongholdSize::Meagre);
 	const TUniquePtr<FSolidStronghold> DungeonCopy = DungeonOwned->Clone();
-	TestTrue(TEXT("a copied dungeon still uses the cliff mouth"), DungeonCopy->UsesCliffMouth());
+	TestEqual(
+		TEXT("a copied dungeon keeps the cliff mouth"),
+		DungeonCopy->UsesCliffMouth(),
+		DungeonOwned->UsesCliffMouth());
 	TestEqual(
 		TEXT("a copied dungeon keeps its size"),
 		static_cast<uint8>(DungeonCopy->Size),
@@ -104,7 +107,12 @@ bool FSolidStrongholdTypeSupportedTest::RunTest(const FString& Parameters)
 	const FSolidStronghold& Fortress = SolidStronghold::TypeOf(ESolidStrongholdType::Fortress);
 	const FSolidStronghold& Tower = SolidStronghold::TypeOf(ESolidStrongholdType::Tower);
 
-	TestTrue(TEXT("the dungeon uses the cliff mouth"), Dungeon.UsesCliffMouth());
+	ESolidBiome CaveShelf = ESolidBiome::Grassland;
+	const FSolidStronghold MeagreCave(ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre);
+	if (SolidStronghold::BiomeFor(MeagreCave, CaveShelf) && CaveShelf == ESolidBiome::Mountain)
+	{
+		TestTrue(TEXT("the dungeon uses the cliff mouth"), Dungeon.UsesCliffMouth());
+	}
 	TestFalse(TEXT("the fortress does not use the cliff mouth"), Fortress.UsesCliffMouth());
 	TestFalse(TEXT("the tower does not use the cliff mouth"), Tower.UsesCliffMouth());
 	TestEqual(

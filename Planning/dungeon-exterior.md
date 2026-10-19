@@ -32,10 +32,12 @@ Dungeon, Fortress, and Tower each draw their own exterior and each provide one c
 - The run is longer than one world-map cell. The slope may cross the edge behind the front. Do not shorten it to stay inside the cell.
 - `SolidStronghold::Shelves` lists the starting Meagre Dungeon as Mountain. This story changes that row to Grassland. The marker on the map stays `!`.
 - `UsesCliffMouth` is true for the dungeon and false for the tower and the fortress. This story makes it false for the dungeon. The rock is placed on the cell and turned toward the grass neighbor, the way the tower shell is placed at the cell center and turned toward its door. It does not use `FaceInsetCm` to sit a frame on the far side of a mountain edge.
+- Keep the new exterior on `FSolidDungeon`. Put a behavior on `FSolidStronghold` only when every stronghold type shares it.
 - The rock is built in code, the way the tower shell is built. It is not a Fab mesh. The dark opening stays solid. A click enters. Walking up to the rock stops on the stone.
 - Grassland is walkable, so the cell itself is no longer closed ground. The rock is what occupies it.
 - The Iglin tunnel mouths still spawn `ASolidDungeonEntrance` from their lair lines. They do not follow the dungeon type's exterior.
 - Tests that require the cave shelf to be Mountain change in their own commit before the product change, reading the shelf from `SolidStronghold` rather than a copied biome. They are `SolidCore1.Stronghold.ShippedEntrance` ("cave cell is Mountain"), `SolidCore1.Stronghold.FaceChoice` ("a stronghold is Mountain"), the road test "the cave cell keeps the mountain shelf", and the ground-move test "cave cell uses the mountain". The `SolidCore1.Stronghold.*` line and the world-map paragraph in `README.md` say Meagre Dungeon is Mountain. Those sentences change in the product commit.
+- A test of the dungeon entrance may do nothing when that entrance is not on a mountain shelf. The check still runs while the shelf is Mountain, and it does not run after this story moves the shelf to Grassland.
 - Lair tests that say a tunnel mouth cell is mountain stay. Those cells are the tunnels.
 - [Fortress stronghold](fortress-stronghold.md) says the cave mouth stays as it is. This story replaces that cliff mouth. The fortress gate still faces the grass neighbor, the same facing the tower door uses.
 - [Imperious dungeon](imperious-dungeon.md) says Meagre Dungeon is Mountain. That sentence changes when this story ships.

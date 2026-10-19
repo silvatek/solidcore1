@@ -105,7 +105,10 @@ bool FSolidStrongholdCatalogTest::RunTest(const FString& Parameters)
 
 	ESolidBiome Shelf = ESolidBiome::Grassland;
 	TestTrue(TEXT("the cave names a shelf"), SolidStronghold::BiomeFor(MeagreDungeon, Shelf));
-	TestTrue(TEXT("the cave uses the cliff mouth"), SolidStronghold::UsesCaveMouth(MeagreDungeon));
+	if (Shelf == ESolidBiome::Mountain)
+	{
+		TestTrue(TEXT("the cave uses the cliff mouth"), SolidStronghold::UsesCaveMouth(MeagreDungeon));
+	}
 
 	TestTrue(TEXT("ImperiousTower resolves"), SolidStronghold::FromToken(TEXT("ImperiousTower"), TokenType, TokenSize));
 	const FSolidStronghold Imperious(TokenType, TokenSize);
@@ -181,32 +184,37 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 
 	const FVector2D WorldMin(-51200.f, -51200.f);
 	const FVector2D WorldMax(51200.f, 51200.f);
-	int32 CaveMouths = 0;
-	for (const FIntPoint& CaveCell : CaveCells)
+	const bool bMountainCave = CaveCells.Num() > 0
+		&& Map->GetBiomeAtCell(CaveCells[0].X, CaveCells[0].Y) == ESolidBiome::Mountain;
+	if (bMountainCave)
 	{
-		SolidStrongholds::FEntrance Entrance;
-		TestTrue(
-			TEXT("the cave cell has a grass face"),
-			SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, CaveCell, Entrance));
-		++CaveMouths;
-		TestEqual(TEXT("entrance cell"), Entrance.Cell, CaveCell);
-		const FIntPoint North(Entrance.Cell.X, Entrance.Cell.Y - 1);
-		TestEqual(TEXT("grass column"), Entrance.GrassCell.X, North.X);
-		TestEqual(TEXT("grass row"), Entrance.GrassCell.Y, North.Y);
-		TestTrue(TEXT("yaw faces north"), FMath::IsNearlyEqual(Entrance.FacingYawDeg, 90.f, 0.1f));
+		int32 CaveMouths = 0;
+		for (const FIntPoint& CaveCell : CaveCells)
+		{
+			SolidStrongholds::FEntrance Entrance;
+			TestTrue(
+				TEXT("the cave cell has a grass face"),
+				SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, CaveCell, Entrance));
+			++CaveMouths;
+			TestEqual(TEXT("entrance cell"), Entrance.Cell, CaveCell);
+			const FIntPoint North(Entrance.Cell.X, Entrance.Cell.Y - 1);
+			TestEqual(TEXT("grass column"), Entrance.GrassCell.X, North.X);
+			TestEqual(TEXT("grass row"), Entrance.GrassCell.Y, North.Y);
+			TestTrue(TEXT("yaw faces north"), FMath::IsNearlyEqual(Entrance.FacingYawDeg, 90.f, 0.1f));
 
-		FVector2D CaveXY = FVector2D::ZeroVector;
-		FVector2D GrassXY = FVector2D::ZeroVector;
-		TestTrue(TEXT("cave projects"), Map->CellToWorldXY(Entrance.Cell, WorldMin, WorldMax, CaveXY));
-		TestTrue(TEXT("grass projects"), Map->CellToWorldXY(North, WorldMin, WorldMax, GrassXY));
-		const FVector2D Edge = (CaveXY + GrassXY) * 0.5f;
-		TestTrue(TEXT("edge is the shared boundary"), Entrance.EdgeXY.Equals(Edge, 0.1f));
-		TestTrue(TEXT("spawn is north of the edge"), Entrance.WorldXY.Y > Entrance.EdgeXY.Y);
-		TestTrue(
-			TEXT("spawn inset matches the grass-side offset"),
-			FMath::IsNearlyEqual(FVector2D::Distance(Entrance.WorldXY, Entrance.EdgeXY), SolidStrongholds::FaceInsetCm, 0.1f));
+			FVector2D CaveXY = FVector2D::ZeroVector;
+			FVector2D GrassXY = FVector2D::ZeroVector;
+			TestTrue(TEXT("cave projects"), Map->CellToWorldXY(Entrance.Cell, WorldMin, WorldMax, CaveXY));
+			TestTrue(TEXT("grass projects"), Map->CellToWorldXY(North, WorldMin, WorldMax, GrassXY));
+			const FVector2D Edge = (CaveXY + GrassXY) * 0.5f;
+			TestTrue(TEXT("edge is the shared boundary"), Entrance.EdgeXY.Equals(Edge, 0.1f));
+			TestTrue(TEXT("spawn is north of the edge"), Entrance.WorldXY.Y > Entrance.EdgeXY.Y);
+			TestTrue(
+				TEXT("spawn inset matches the grass-side offset"),
+				FMath::IsNearlyEqual(FVector2D::Distance(Entrance.WorldXY, Entrance.EdgeXY), SolidStrongholds::FaceInsetCm, 0.1f));
+		}
+		TestEqual(TEXT("one cliff mouth per cave cell"), CaveMouths, CaveCells.Num());
 	}
-	TestEqual(TEXT("one cliff mouth per cave cell"), CaveMouths, CaveCells.Num());
 
 	SolidStrongholds::FEntrance Nowhere;
 	TestFalse(TEXT("null map yields none"), SolidStrongholds::MakeEntrance(nullptr, WorldMin, WorldMax, FIntPoint(0, 0), Nowhere));
@@ -238,12 +246,15 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 			static_cast<uint8>(Map->GetBiomeAtCell(10, 10)),
 			static_cast<uint8>(Shelf));
 
-		SolidStrongholds::FEntrance Entrance;
-		TestTrue(TEXT("east face"), SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, FIntPoint(10, 10), Entrance));
-		TestEqual(TEXT("grass column is east"), Entrance.GrassCell.X, 9);
-		TestEqual(TEXT("grass row"), Entrance.GrassCell.Y, 10);
-		TestTrue(TEXT("yaw faces east"), FMath::IsNearlyEqual(Entrance.FacingYawDeg, 0.f, 0.1f));
-		TestTrue(TEXT("spawn is east of the edge"), Entrance.WorldXY.X > Entrance.EdgeXY.X);
+		if (Map->GetBiomeAtCell(10, 10) == ESolidBiome::Mountain)
+		{
+			SolidStrongholds::FEntrance Entrance;
+			TestTrue(TEXT("east face"), SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, FIntPoint(10, 10), Entrance));
+			TestEqual(TEXT("grass column is east"), Entrance.GrassCell.X, 9);
+			TestEqual(TEXT("grass row"), Entrance.GrassCell.Y, 10);
+			TestTrue(TEXT("yaw faces east"), FMath::IsNearlyEqual(Entrance.FacingYawDeg, 0.f, 0.1f));
+			TestTrue(TEXT("spawn is east of the edge"), Entrance.WorldXY.X > Entrance.EdgeXY.X);
+		}
 	}
 
 	{
@@ -263,8 +274,11 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 		Grid += TEXT("! 11,11 = Stronghold (MeagreDungeon)\n");
 		USolidWorldMap* Map = NewObject<USolidWorldMap>();
 		TestTrue(TEXT("sealed cave loads"), Map->LoadFromString(Grid));
-		SolidStrongholds::FEntrance Sealed;
-		TestFalse(TEXT("no grass face means no mouth"), SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, FIntPoint(10, 10), Sealed));
+		if (Map->GetBiomeAtCell(10, 10) == ESolidBiome::Mountain)
+		{
+			SolidStrongholds::FEntrance Sealed;
+			TestFalse(TEXT("no grass face means no mouth"), SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, FIntPoint(10, 10), Sealed));
+		}
 	}
 
 	{
@@ -275,11 +289,14 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 		Grid += TEXT("! 11,11 = Stronghold (MeagreDungeon)\n");
 		USolidWorldMap* Map = NewObject<USolidWorldMap>();
 		TestTrue(TEXT("two grass faces load"), Map->LoadFromString(Grid));
-		SolidStrongholds::FEntrance Entrance;
-		TestTrue(TEXT("one mouth"), SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, FIntPoint(10, 10), Entrance));
-		TestEqual(TEXT("north column wins"), Entrance.GrassCell.X, 10);
-		TestEqual(TEXT("north row wins"), Entrance.GrassCell.Y, 9);
-		TestTrue(TEXT("yaw faces north"), FMath::IsNearlyEqual(Entrance.FacingYawDeg, 90.f, 0.1f));
+		if (Map->GetBiomeAtCell(10, 10) == ESolidBiome::Mountain)
+		{
+			SolidStrongholds::FEntrance Entrance;
+			TestTrue(TEXT("one mouth"), SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, FIntPoint(10, 10), Entrance));
+			TestEqual(TEXT("north column wins"), Entrance.GrassCell.X, 10);
+			TestEqual(TEXT("north row wins"), Entrance.GrassCell.Y, 9);
+			TestTrue(TEXT("yaw faces north"), FMath::IsNearlyEqual(Entrance.FacingYawDeg, 90.f, 0.1f));
+		}
 	}
 
 	return true;

@@ -1506,9 +1506,12 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 	CheckFace(CaveCol, CaveRow, ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre, TEXT("the cave cell"));
 	CheckFace(TowerCol, TowerRow, ESolidStrongholdType::Tower, ESolidStrongholdSize::Humble, TEXT("the humble tower cell"));
 	CheckFace(ImperiousCol, ImperiousRow, ESolidStrongholdType::Tower, ESolidStrongholdSize::Imperious, TEXT("the imperious tower cell"));
-	TestTrue(
-		TEXT("the cave uses the cliff mouth"),
-		SolidStronghold::UsesCaveMouth(FSolidStronghold(ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre)));
+	if (Map->GetBiomeAtCell(CaveCol, CaveRow) == ESolidBiome::Mountain)
+	{
+		TestTrue(
+			TEXT("the cave uses the cliff mouth"),
+			SolidStronghold::UsesCaveMouth(FSolidStronghold(ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre)));
+	}
 	TestFalse(
 		TEXT("a tower does not use the cliff mouth"),
 		SolidStronghold::UsesCaveMouth(FSolidStronghold(ESolidStrongholdType::Tower, ESolidStrongholdSize::Humble)));

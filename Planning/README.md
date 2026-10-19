@@ -6,6 +6,7 @@ One file is one story.
 - A shipped story is a file in `Done/`. Move the file when it ships. Do not leave a copy here.
 - `ideas.md` at the repo root is the inbox. Copy a new idea into a file here. Do not edit `ideas.md`.
 - `README.md` lists the files. The file is the story.
+- A commit that changes a story starts with `Plan: `. A product commit does not. That prefix is how the two are told apart.
 
 ## Status
 

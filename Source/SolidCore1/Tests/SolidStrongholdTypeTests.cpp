@@ -34,24 +34,24 @@ namespace
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidStrongholdTypeOfTest,
-	"SolidCore1.Stronghold.TypeOf",
+	"SolidCore1.Stronghold->TypeOf",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 
 bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 {
-	const SolidStronghold::FSolidStrongholdType& Dungeon = SolidStronghold::TypeOf(ESolidStrongholdType::Dungeon);
-	const SolidStronghold::FSolidStrongholdType& Fortress = SolidStronghold::TypeOf(ESolidStrongholdType::Fortress);
-	const SolidStronghold::FSolidStrongholdType& Tower = SolidStronghold::TypeOf(ESolidStrongholdType::Tower);
+	const FSolidStronghold& Dungeon = SolidStronghold::TypeOf(ESolidStrongholdType::Dungeon);
+	const FSolidStronghold& Fortress = SolidStronghold::TypeOf(ESolidStrongholdType::Fortress);
+	const FSolidStronghold& Tower = SolidStronghold::TypeOf(ESolidStrongholdType::Tower);
 
 	TestTrue(
 		TEXT("TypeOf returns the dungeon subclass"),
-		&Dungeon == &SolidStronghold::FSolidDungeonType::Instance());
+		&Dungeon == &SolidStronghold::FSolidDungeon::Instance());
 	TestTrue(
 		TEXT("TypeOf returns the fortress subclass"),
-		&Fortress == &SolidStronghold::FSolidFortressType::Instance());
+		&Fortress == &SolidStronghold::FSolidFortress::Instance());
 	TestTrue(
 		TEXT("TypeOf returns the tower subclass"),
-		&Tower == &SolidStronghold::FSolidTowerType::Instance());
+		&Tower == &SolidStronghold::FSolidTower::Instance());
 
 	TestTrue(
 		TEXT("the dungeon instance stays"),
@@ -66,19 +66,43 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("dungeon and fortress differ"), &Dungeon != &Fortress);
 	TestTrue(TEXT("dungeon and tower differ"), &Dungeon != &Tower);
 	TestTrue(TEXT("fortress and tower differ"), &Fortress != &Tower);
+
+	const TUniquePtr<FSolidStronghold> DungeonOwned = SolidStronghold::Make(
+		ESolidStrongholdType::Dungeon,
+		ESolidStrongholdSize::Meagre);
+	const TUniquePtr<FSolidStronghold> DungeonCopy = DungeonOwned->Clone();
+	TestTrue(TEXT("a copied dungeon still uses the cliff mouth"), DungeonCopy->UsesCliffMouth());
+	TestEqual(
+		TEXT("a copied dungeon keeps its size"),
+		static_cast<uint8>(DungeonCopy->Size),
+		static_cast<uint8>(ESolidStrongholdSize::Meagre));
+
+	const TUniquePtr<FSolidStronghold> TowerOwned = SolidStronghold::Make(
+		ESolidStrongholdType::Tower,
+		ESolidStrongholdSize::Average);
+	const TUniquePtr<FSolidStronghold> TowerCopy = TowerOwned->Clone();
+	TestEqual(
+		TEXT("a copied tower keeps the tower trip"),
+		static_cast<uint8>(TowerCopy->Trip()),
+		static_cast<uint8>(ESolidStrongholdTrip::Tower));
+	TestEqual(
+		TEXT("a copied tower keeps its size"),
+		static_cast<uint8>(TowerCopy->Size),
+		static_cast<uint8>(ESolidStrongholdSize::Average));
+	TestTrue(TEXT("a copy is its own stronghold"), DungeonCopy.Get() != DungeonOwned.Get());
 	return true;
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidStrongholdTypeSupportedTest,
-	"SolidCore1.Stronghold.TypeSupported",
+	"SolidCore1.Stronghold->TypeSupported",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 
 bool FSolidStrongholdTypeSupportedTest::RunTest(const FString& Parameters)
 {
-	const SolidStronghold::FSolidStrongholdType& Dungeon = SolidStronghold::TypeOf(ESolidStrongholdType::Dungeon);
-	const SolidStronghold::FSolidStrongholdType& Fortress = SolidStronghold::TypeOf(ESolidStrongholdType::Fortress);
-	const SolidStronghold::FSolidStrongholdType& Tower = SolidStronghold::TypeOf(ESolidStrongholdType::Tower);
+	const FSolidStronghold& Dungeon = SolidStronghold::TypeOf(ESolidStrongholdType::Dungeon);
+	const FSolidStronghold& Fortress = SolidStronghold::TypeOf(ESolidStrongholdType::Fortress);
+	const FSolidStronghold& Tower = SolidStronghold::TypeOf(ESolidStrongholdType::Tower);
 
 	TestTrue(TEXT("the dungeon uses the cliff mouth"), Dungeon.UsesCliffMouth());
 	TestFalse(TEXT("the fortress does not use the cliff mouth"), Fortress.UsesCliffMouth());
@@ -98,9 +122,9 @@ bool FSolidStrongholdTypeSupportedTest::RunTest(const FString& Parameters)
 
 	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
 	{
-		const FSolidStronghold Cave{ ESolidStrongholdType::Dungeon, Size };
-		const FSolidStronghold Hold{ ESolidStrongholdType::Fortress, Size };
-		const FSolidStronghold Spire{ ESolidStrongholdType::Tower, Size };
+		const FSolidStronghold Cave(ESolidStrongholdType::Dungeon, Size);
+		const FSolidStronghold Hold(ESolidStrongholdType::Fortress, Size);
+		const FSolidStronghold Spire(ESolidStrongholdType::Tower, Size);
 		const bool bMeagre = Size == ESolidStrongholdSize::Meagre;
 		const bool bTowerSize = Size >= ESolidStrongholdSize::Average && Size <= ESolidStrongholdSize::Imperious;
 
@@ -168,7 +192,7 @@ bool FSolidStrongholdTypeSupportedTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidStrongholdTypeChoiceTest,
-	"SolidCore1.Stronghold.TypeChoice",
+	"SolidCore1.Stronghold->TypeChoice",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 
 bool FSolidStrongholdTypeChoiceTest::RunTest(const FString& Parameters)
@@ -185,14 +209,11 @@ bool FSolidStrongholdTypeChoiceTest::RunTest(const FString& Parameters)
 		SolidStronghold::TypeOf(ESolidStrongholdType::Tower).Supported(ESolidStrongholdSize::Imperious));
 
 	FGameState State;
-	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
-	{
-		State.bStrongholdSizeUnlocked[static_cast<int32>(Size)] = true;
-	}
+	State.MaxStrongholdSize = ESolidStrongholdSize::Imperious;
 
 	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
 	{
-		const bool bLarger = static_cast<int32>(Size) > static_cast<int32>(State.ActiveStronghold.Size);
+		const bool bLarger = static_cast<int32>(Size) > static_cast<int32>(State.ActiveStronghold->Size);
 		const bool bUnlocked = SolidEvents::IsStrongholdSizeUnlocked(State, Size);
 		SolidStrongholdTransition::Consider(State, Size, Listed);
 		for (const ESolidStrongholdType Type : SolidStronghold::Types)

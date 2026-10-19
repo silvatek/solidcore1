@@ -1,6 +1,65 @@
 #include "SolidGameState.h"
 #include "Lairs/SolidLair.h"
 
+FGameState::FGameState()
+	: ActiveStronghold(SolidStronghold::Make(
+		ESolidStrongholdType::Dungeon,
+		ESolidStrongholdSize::Meagre,
+		SolidStronghold::StartingCell()))
+{
+}
+
+FGameState::FGameState(const FGameState& Other)
+{
+	*this = Other;
+}
+
+FGameState& FGameState::operator=(const FGameState& Other)
+{
+	if (this == &Other)
+	{
+		return *this;
+	}
+
+	MaxSquadSize = Other.MaxSquadSize;
+	CaptainTitle = Other.CaptainTitle;
+	bTrueSightEnabled = Other.bTrueSightEnabled;
+	bRavenSightEnabled = Other.bRavenSightEnabled;
+	bIglinBridgeRepaired = Other.bIglinBridgeRepaired;
+	bCaveEnabled = Other.bCaveEnabled;
+	for (int32 Index = 0; Index < SolidEvents::MaxEnabledLairs; ++Index)
+	{
+		EnabledLairs[Index] = Other.EnabledLairs[Index];
+	}
+	EnabledLairCount = Other.EnabledLairCount;
+	OccupiedTown = Other.OccupiedTown;
+	for (int32 Index = 0; Index < SolidEvents::MaxEvents; ++Index)
+	{
+		bFired[Index] = Other.bFired[Index];
+		FiredOrder[Index] = Other.FiredOrder[Index];
+	}
+	FiredCount = Other.FiredCount;
+	Journal = Other.Journal;
+	Inventory = Other.Inventory;
+	TakenForagePiles = Other.TakenForagePiles;
+	CaveChest = Other.CaveChest;
+	ActiveStronghold = Other.ActiveStronghold
+		? Other.ActiveStronghold->Clone()
+		: SolidStronghold::Make(
+			ESolidStrongholdType::Dungeon,
+			ESolidStrongholdSize::Meagre,
+			SolidStronghold::StartingCell());
+	MaxStrongholdSize = Other.MaxStrongholdSize;
+	PreviousStrongholds.Reset();
+	PreviousStrongholds.Reserve(Other.PreviousStrongholds.Num());
+	for (const TUniquePtr<FSolidStronghold>& Previous : Other.PreviousStrongholds)
+	{
+		PreviousStrongholds.Add(Previous ? Previous->Clone() : nullptr);
+	}
+	Furnishings = Other.Furnishings;
+	return *this;
+}
+
 namespace
 {
 	bool RequirementsMet(const FGameState& State, const SolidEvents::FEvent& Event)
@@ -100,9 +159,9 @@ void ApplyChange(FGameState& State, const FChange& Change, FResult& Result)
 	case EChange::EnableStrongholdSize:
 	{
 		const int32 Index = static_cast<int32>(Change.StrongholdSize);
-		if (Index >= 0 && Index < SolidStronghold::SizeCount)
+		if (Index > static_cast<int32>(State.MaxStrongholdSize) && Index < SolidStronghold::SizeCount)
 		{
-			State.bStrongholdSizeUnlocked[Index] = true;
+			State.MaxStrongholdSize = Change.StrongholdSize;
 		}
 		break;
 	}

@@ -171,18 +171,12 @@ bool FSolidRoadParseTest::RunTest(const FString& Parameters)
 
 	TestTrue(TEXT("stronghold name"), SolidRoad::Parse(TEXT("Road: (MeagreDungeon) -> (Iglin), trail"), Def));
 	TestTrue(TEXT("from the stronghold"), Def.From.bStronghold);
-	TestEqual(
-		TEXT("Meagre"),
-		static_cast<uint8>(Def.From.Stronghold.Size),
-		static_cast<uint8>(ESolidStrongholdSize::Meagre));
-	TestEqual(
-		TEXT("Dungeon"),
-		static_cast<uint8>(Def.From.Stronghold.Type),
-		static_cast<uint8>(ESolidStrongholdType::Dungeon));
+	TestEqual(TEXT("MeagreDungeon"), Def.From.StrongholdName, FString(TEXT("MeagreDungeon")));
 	TestEqual(TEXT("to Iglin"), Def.To.LocationId, SolidTowns::Iglin);
 
 	TestTrue(TEXT("spaced stronghold name"), SolidRoad::Parse(TEXT("Road: Meagre Dungeon -> iglin, trail"), Def));
 	TestTrue(TEXT("spaces still name the stronghold"), Def.From.bStronghold);
+	TestEqual(TEXT("the spaced name is kept"), Def.From.StrongholdName, FString(TEXT("Meagre Dungeon")));
 	TestEqual(TEXT("iglin ignores case"), Def.To.LocationId, SolidTowns::Iglin);
 	return true;
 }
@@ -221,6 +215,8 @@ bool FSolidRoadNamedEndTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestTrue(TEXT("the stronghold end is not a town id"), Route->Definition.From.bStronghold);
+	TestTrue(TEXT("the stronghold end is located"), Route->Definition.From.bLocated);
+	TestEqual(TEXT("the stronghold end is that cell"), Route->Definition.From.Cell, FIntPoint(CaveCol, CaveRow));
 	TestEqual(TEXT("the town end is Iglin"), Route->Definition.To.LocationId, SolidTowns::Iglin);
 	TestTrue(TEXT("the trail has cells"), Route->Cells.Num() >= 2);
 	if (Route->Cells.Num() < 2)
@@ -586,6 +582,7 @@ bool FSolidRoadShippedTest::RunTest(const FString& Parameters)
 	}
 
 	TestTrue(TEXT("the trail starts at a stronghold"), Roads[0].Definition.From.bStronghold);
+	TestEqual(TEXT("the trail starts at 9,17"), Roads[0].Definition.From.Cell, FIntPoint(16, 8));
 	TestEqual(
 		TEXT("the trail starts on the cave"),
 		Map->GetMarkerAtCell(Roads[0].Cells[0].X, Roads[0].Cells[0].Y),

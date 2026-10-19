@@ -970,8 +970,9 @@ bool FSolidWorldMapDesertMarkerTest::RunTest(const FString& Parameters)
 			{
 				++Mountains;
 			}
-			FSolidStronghold NamedCave;
-			if (Shipped->StrongholdAtCell(Col, Row, NamedCave))
+			ESolidStrongholdType NamedType = ESolidStrongholdType::Dungeon;
+			ESolidStrongholdSize NamedSize = ESolidStrongholdSize::Meagre;
+			if (Shipped->StrongholdAtCell(Col, Row, NamedType, NamedSize))
 			{
 				++Caves;
 			}
@@ -1068,9 +1069,10 @@ bool FSolidWorldMapXYMarkerTest::RunTest(const FString& Parameters)
 		TEXT("the map still has no start from X or Y"),
 		Map->GetStartTownWorldXY(FVector2D(-100.f, -100.f), FVector2D(100.f, 100.f), LetterStart));
 
-	FSolidStronghold Stronghold;
-	TestFalse(TEXT("X is not a stronghold"), Map->StrongholdAtCell(XCol, MarkerRow, Stronghold));
-	TestFalse(TEXT("Y is not a stronghold"), Map->StrongholdAtCell(YCol, MarkerRow, Stronghold));
+	ESolidStrongholdType LetterType = ESolidStrongholdType::Dungeon;
+	ESolidStrongholdSize LetterSize = ESolidStrongholdSize::Meagre;
+	TestFalse(TEXT("X is not a stronghold"), Map->StrongholdAtCell(XCol, MarkerRow, LetterType, LetterSize));
+	TestFalse(TEXT("Y is not a stronghold"), Map->StrongholdAtCell(YCol, MarkerRow, LetterType, LetterSize));
 
 	TArray<SolidLair::FEntrance> Mouths;
 	TestEqual(TEXT("letters are not tunnel mouths"), SolidLair::CollectEntrances(Map, WorldMin, WorldMax, Mouths), 0);
@@ -1486,44 +1488,26 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("a town ! is a town"), Map->IsMarkedTown(RelionXY.X, RelionXY.Y, WorldMin, WorldMax));
 	TestFalse(TEXT("a stronghold ! is not a town"), Map->IsMarkedTown(CaveXY.X, CaveXY.Y, WorldMin, WorldMax));
 
-	TArray<SolidStrongholds::FEntrance> Mouths;
-	TestEqual(TEXT("three stronghold mouths"), SolidStrongholds::CollectEntrances(Map, WorldMin, WorldMax, Mouths), 3);
-	bool bFoundCave = false;
-	bool bFoundTower = false;
-	bool bFoundImperious = false;
-	for (const SolidStrongholds::FEntrance& Mouth : Mouths)
+	auto CheckFace = [&](const int32 Col, const int32 Row, const ESolidStrongholdType Type, const ESolidStrongholdSize Size, const TCHAR* Label)
 	{
-		if (Mouth.Cell == FIntPoint(CaveCol, CaveRow))
-		{
-			bFoundCave = true;
-			TestTrue(TEXT("the cave mouth is the cliff mouth"), SolidStronghold::UsesCaveMouth(Mouth.Stronghold));
-			TestEqual(
-				TEXT("cave mouth size"),
-				static_cast<uint8>(Mouth.Stronghold.Size),
-				static_cast<uint8>(ESolidStrongholdSize::Meagre));
-		}
-		if (Mouth.Cell == FIntPoint(TowerCol, TowerRow))
-		{
-			bFoundTower = true;
-			TestFalse(TEXT("an unlisted tower is not the cliff mouth"), SolidStronghold::UsesCaveMouth(Mouth.Stronghold));
-			TestEqual(
-				TEXT("tower mouth type"),
-				static_cast<uint8>(Mouth.Stronghold.Type),
-				static_cast<uint8>(ESolidStrongholdType::Tower));
-		}
-		if (Mouth.Cell == FIntPoint(ImperiousCol, ImperiousRow))
-		{
-			bFoundImperious = true;
-			TestFalse(TEXT("Imperious Tower is not the cliff mouth"), SolidStronghold::UsesCaveMouth(Mouth.Stronghold));
-			TestEqual(
-				TEXT("imperious mouth size"),
-				static_cast<uint8>(Mouth.Stronghold.Size),
-				static_cast<uint8>(ESolidStrongholdSize::Imperious));
-		}
-	}
-	TestTrue(TEXT("the cave mouth is placed"), bFoundCave);
-	TestTrue(TEXT("the tower mouth is placed"), bFoundTower);
-	TestTrue(TEXT("the imperious mouth is placed"), bFoundImperious);
+		ESolidStrongholdType ReadType = ESolidStrongholdType::Fortress;
+		ESolidStrongholdSize ReadSize = ESolidStrongholdSize::Humble;
+		TestTrue(Label, Map->StrongholdAtCell(Col, Row, ReadType, ReadSize));
+		TestEqual(Label, static_cast<uint8>(ReadType), static_cast<uint8>(Type));
+		TestEqual(Label, static_cast<uint8>(ReadSize), static_cast<uint8>(Size));
+		SolidStrongholds::FEntrance Face;
+		TestTrue(Label, SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, FIntPoint(Col, Row), Face));
+		TestEqual(Label, Face.Cell, FIntPoint(Col, Row));
+	};
+	CheckFace(CaveCol, CaveRow, ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre, TEXT("the cave cell"));
+	CheckFace(TowerCol, TowerRow, ESolidStrongholdType::Tower, ESolidStrongholdSize::Humble, TEXT("the humble tower cell"));
+	CheckFace(ImperiousCol, ImperiousRow, ESolidStrongholdType::Tower, ESolidStrongholdSize::Imperious, TEXT("the imperious tower cell"));
+	TestTrue(
+		TEXT("the cave uses the cliff mouth"),
+		SolidStronghold::UsesCaveMouth(FSolidStronghold(ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre)));
+	TestFalse(
+		TEXT("a tower does not use the cliff mouth"),
+		SolidStronghold::UsesCaveMouth(FSolidStronghold(ESolidStrongholdType::Tower, ESolidStrongholdSize::Humble)));
 
 	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
 	TestTrue(TEXT("shipped map loads"), Shipped->LoadDefault());
@@ -1596,8 +1580,9 @@ bool FSolidWorldMapStrongholdSiteTest::RunTest(const FString& Parameters)
 	ESolidStrongholdSize ReadSize = ESolidStrongholdSize::Stately;
 	TestTrue(TEXT("the site cell reports its size"), Map->StrongholdSiteAtCell(HumbleCol, HumbleRow, ReadSize));
 	TestEqual(TEXT("reported size"), static_cast<uint8>(ReadSize), static_cast<uint8>(ESolidStrongholdSize::Humble));
-	FSolidStronghold AsStronghold;
-	TestFalse(TEXT("a site is not a stronghold"), Map->StrongholdAtCell(HumbleCol, HumbleRow, AsStronghold));
+	ESolidStrongholdType AsType = ESolidStrongholdType::Dungeon;
+	ESolidStrongholdSize AsSize = ESolidStrongholdSize::Meagre;
+	TestFalse(TEXT("a site is not a stronghold"), Map->StrongholdAtCell(HumbleCol, HumbleRow, AsType, AsSize));
 
 	FSolidWorldBang Average;
 	TestTrue(TEXT("a size without brackets is a site"), Map->FindBang(AverageCol, AverageRow, Average));
@@ -1632,9 +1617,11 @@ bool FSolidWorldMapStrongholdSiteTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("site cell"), Map->CellToWorldXY(FIntPoint(HumbleCol, HumbleRow), WorldMin, WorldMax, SiteXY));
 	TestFalse(TEXT("a site is not a town"), Map->IsMarkedTown(SiteXY.X, SiteXY.Y, WorldMin, WorldMax));
 
-	TArray<SolidStrongholds::FEntrance> Mouths;
-	TestEqual(TEXT("a site adds no mouth"), SolidStrongholds::CollectEntrances(Map, WorldMin, WorldMax, Mouths), 1);
-	TestTrue(TEXT("the mouth is the stronghold"), Mouths.Num() == 1 && Mouths[0].Cell == FIntPoint(CaveCol, CaveRow));
+	SolidStrongholds::FEntrance CaveFace;
+	TestTrue(
+		TEXT("the stronghold cell has a grass face"),
+		SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, FIntPoint(CaveCol, CaveRow), CaveFace));
+	TestEqual(TEXT("the face is the stronghold"), CaveFace.Cell, FIntPoint(CaveCol, CaveRow));
 	return true;
 }
 

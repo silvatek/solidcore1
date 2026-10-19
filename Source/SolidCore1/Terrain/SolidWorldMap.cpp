@@ -334,6 +334,33 @@ namespace
 		}
 		return true;
 	}
+
+	void LocateStrongholdEnd(const TMap<int32, FSolidWorldBang>& Marks, SolidRoad::FEndpoint& End)
+	{
+		if (!End.bStronghold)
+		{
+			return;
+		}
+		FString Want = End.StrongholdName;
+		Want.ReplaceInline(TEXT(" "), TEXT(""));
+		for (const TPair<int32, FSolidWorldBang>& Pair : Marks)
+		{
+			const FSolidWorldBang& Mark = Pair.Value;
+			if (Mark.Kind != ESolidWorldBang::Stronghold)
+			{
+				continue;
+			}
+			FString Have = Mark.Name;
+			Have.ReplaceInline(TEXT(" "), TEXT(""));
+			if (!Have.Equals(Want, ESearchCase::IgnoreCase))
+			{
+				continue;
+			}
+			End.Cell = Mark.Cell;
+			End.bLocated = true;
+			return;
+		}
+	}
 }
 
 bool USolidWorldMap::LoadFromString(const FString& Text)
@@ -471,8 +498,9 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 		}
 		case FWorldMapBangRef::EKind::Stronghold:
 		{
-			FSolidStronghold Attributes;
-			if (!SolidStronghold::FromToken(Ref.Identifier, Attributes))
+			ESolidStrongholdType HoldType = ESolidStrongholdType::Dungeon;
+			ESolidStrongholdSize HoldSize = ESolidStrongholdSize::Meagre;
+			if (!SolidStronghold::FromToken(Ref.Identifier, HoldType, HoldSize))
 			{
 				UE_LOG(LogSolid, Warning,
 					TEXT("WorldMap: ! %d,%d stronghold '%s' is unknown; ignored."),
@@ -480,9 +508,9 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 				continue;
 			}
 			Mark.Kind = ESolidWorldBang::Stronghold;
-			Mark.StrongholdType = Attributes.Type;
-			Mark.StrongholdSize = Attributes.Size;
-			Mark.Name = SolidStronghold::Label(Attributes);
+			Mark.StrongholdType = HoldType;
+			Mark.StrongholdSize = HoldSize;
+			Mark.Name = SolidStronghold::Label(FSolidStronghold(HoldType, HoldSize));
 			break;
 		}
 		case FWorldMapBangRef::EKind::StrongholdSite:
@@ -568,6 +596,11 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 	}
 
 	bIsLoaded = true;
+	for (SolidRoad::FDefinition& RoadDef : RoadDefs)
+	{
+		LocateStrongholdEnd(BangMarks, RoadDef.From);
+		LocateStrongholdEnd(BangMarks, RoadDef.To);
+	}
 	BuildRoads(RoadDefs);
 	UE_LOG(LogSolid, Warning,
 		TEXT("WorldMap loaded: %dx%d startTownCells=%d locations=%d roads=%d"),
@@ -624,9 +657,7 @@ ESolidBiome USolidWorldMap::GetBiomeAtCell(int32 MapX, int32 MapY) const
 	{
 		if (Mark->Kind == ESolidWorldBang::Stronghold)
 		{
-			FSolidStronghold Attributes;
-			Attributes.Type = Mark->StrongholdType;
-			Attributes.Size = Mark->StrongholdSize;
+			const FSolidStronghold Attributes(Mark->StrongholdType, Mark->StrongholdSize);
 			ESolidBiome Shelf = ESolidBiome::Grassland;
 			if (SolidStronghold::BiomeFor(Attributes, Shelf))
 			{
@@ -657,15 +688,19 @@ bool USolidWorldMap::FindBang(const int32 MapX, const int32 MapY, FSolidWorldBan
 	return false;
 }
 
-bool USolidWorldMap::StrongholdAtCell(const int32 MapX, const int32 MapY, FSolidStronghold& Out) const
+bool USolidWorldMap::StrongholdAtCell(
+	const int32 MapX,
+	const int32 MapY,
+	ESolidStrongholdType& OutType,
+	ESolidStrongholdSize& OutSize) const
 {
 	FSolidWorldBang Mark;
 	if (!FindBang(MapX, MapY, Mark) || Mark.Kind != ESolidWorldBang::Stronghold)
 	{
 		return false;
 	}
-	Out.Type = Mark.StrongholdType;
-	Out.Size = Mark.StrongholdSize;
+	OutType = Mark.StrongholdType;
+	OutSize = Mark.StrongholdSize;
 	return true;
 }
 
@@ -786,7 +821,7 @@ void USolidWorldMap::BuildRoads(const TArray<SolidRoad::FDefinition>& Definition
 			const auto EndName = [](const SolidRoad::FEndpoint& End)
 			{
 				return End.bStronghold
-					? SolidStronghold::Label(End.Stronghold)
+					? End.StrongholdName
 					: SolidTowns::NameFor(End.LocationId);
 			};
 			const FString From = EndName(Definition.From);

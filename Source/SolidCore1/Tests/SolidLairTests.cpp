@@ -214,10 +214,13 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 		TArray<SolidLair::FEntrance> Entrances;
 		TestEqual(TEXT("letters are not tunnel mouths"), SolidLair::CollectEntrances(Map, WorldMin, WorldMax, Entrances), 0);
 
-		TArray<SolidStrongholds::FEntrance> Caves;
-		TestEqual(TEXT("the cave mouth is separate"), SolidStrongholds::CollectEntrances(Map, WorldMin, WorldMax, Caves), 1);
-		FSolidStronghold Stronghold;
-		TestFalse(TEXT("X is still not a stronghold"), Map->StrongholdAtCell(10, 10, Stronghold));
+		SolidStrongholds::FEntrance CaveFace;
+		TestTrue(
+			TEXT("the cave cell has a grass face"),
+			SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, FIntPoint(14, 10), CaveFace));
+		ESolidStrongholdType HoldType = ESolidStrongholdType::Dungeon;
+		ESolidStrongholdSize HoldSize = ESolidStrongholdSize::Meagre;
+		TestFalse(TEXT("X is still not a stronghold"), Map->StrongholdAtCell(10, 10, HoldType, HoldSize));
 	}
 
 	{

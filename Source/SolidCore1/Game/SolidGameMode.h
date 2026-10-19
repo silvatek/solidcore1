@@ -194,8 +194,8 @@ public:
 	/** Load the open world again and stand the captain at that tunnel mouth. */
 	void TravelFromLair(TCHAR EndMarker);
 
-	/** Unload the open world and load the tower at this map cell. Companions stay outside. */
-	void TravelToTower(FIntPoint Cell);
+	/** Unload the open world and load the company stronghold. Companions stay outside. */
+	void EnterStronghold();
 
 	/**
 	 * A click on a site stone chose this type.
@@ -237,9 +237,7 @@ protected:
 		bool bReturnToLairMouth = false,
 		TCHAR LairEnd = 0,
 		bool bInTower = false,
-		bool bReturnToTowerDoor = false,
-		FIntPoint TowerCell = FIntPoint::ZeroValue,
-		FSolidStronghold Tower = FSolidStronghold());
+		bool bReturnToTowerDoor = false);
 	void RestoreTravelSession();
 	void BeginDungeonInterior();
 	void BeginLairInterior();

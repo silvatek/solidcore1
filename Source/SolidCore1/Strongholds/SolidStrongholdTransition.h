@@ -53,7 +53,7 @@ namespace SolidStrongholdTransition
 	{
 		OutTypes.Reset();
 		const int32 SiteIndex = static_cast<int32>(SiteSize);
-		const int32 ActiveIndex = static_cast<int32>(State.ActiveStronghold.Size);
+		const int32 ActiveIndex = static_cast<int32>(State.ActiveStronghold->Size);
 		if (SiteIndex <= ActiveIndex || !SolidEvents::IsStrongholdSizeUnlocked(State, SiteSize))
 		{
 			return EOffer::None;
@@ -172,7 +172,6 @@ namespace SolidStrongholdTransition
 			return false;
 		}
 
-		const FSolidStronghold Next{ Type, SiteSize };
 		TArray<SolidStrongholdGrid::FHex> Hexes;
 		SolidStronghold::TypeOf(Type).CollectGroundHexes(SiteSize, Hexes);
 		if (Hexes.Num() == 0)
@@ -189,12 +188,8 @@ namespace SolidStrongholdTransition
 			return false;
 		}
 
-		FLeftStronghold Left;
-		Left.Stronghold = State.ActiveStronghold;
-		Left.Cell = State.ActiveStrongholdCell;
-		State.LeftStrongholds.Add(Left);
-		State.ActiveStronghold = Next;
-		State.ActiveStrongholdCell = SiteCell;
+		State.PreviousStrongholds.Add(State.ActiveStronghold->Clone());
+		State.ActiveStronghold = SolidStronghold::Make(Type, SiteSize, SiteCell);
 		State.Furnishings = Moved;
 		return true;
 	}
@@ -203,30 +198,24 @@ namespace SolidStrongholdTransition
 	inline bool CompanyCaveAcceptsEnter(const FGameState& State)
 	{
 		return State.bCaveEnabled
-			&& State.ActiveStronghold.Type == ESolidStrongholdType::Dungeon
-			&& State.ActiveStronghold.Size == ESolidStrongholdSize::Meagre
-			&& State.ActiveStrongholdCell == SolidStronghold::StartingCell();
+			&& State.ActiveStronghold->Type == ESolidStrongholdType::Dungeon
+			&& State.ActiveStronghold->Size == ESolidStrongholdSize::Meagre
+			&& State.ActiveStronghold->Cell == SolidStronghold::StartingCell();
 	}
 
-	/** A tower door the company has left is not a passage. Any other tower door stays one. */
+	/** The company tower door is a passage. A previous door, and any other map door, is not. */
 	inline bool TowerDoorAcceptsEnter(const FGameState& State, const FIntPoint Cell)
 	{
-		for (const FLeftStronghold& Left : State.LeftStrongholds)
-		{
-			if (Left.Cell == Cell && Left.Stronghold.Type == ESolidStrongholdType::Tower)
-			{
-				return false;
-			}
-		}
-		return true;
+		return State.ActiveStronghold
+			&& State.ActiveStronghold->Type == ESolidStrongholdType::Tower
+			&& State.ActiveStronghold->Cell == Cell;
 	}
 
 	/** The company chest is open on the inventory page while the captain is inside the base that holds it. */
 	inline bool CompanyChestOpen(
 		const FGameState& State,
 		const bool bInDungeon,
-		const bool bInTower,
-		const FIntPoint TowerCell)
+		const bool bInTower)
 	{
 		bool bHasChest = false;
 		for (const SolidStrongholdFurniture::FUsed& Piece : State.Furnishings)
@@ -247,8 +236,8 @@ namespace SolidStrongholdTransition
 		}
 		if (bInTower)
 		{
-			return State.ActiveStronghold.Type == ESolidStrongholdType::Tower
-				&& State.ActiveStrongholdCell == TowerCell;
+			return State.ActiveStronghold
+				&& State.ActiveStronghold->Type == ESolidStrongholdType::Tower;
 		}
 		return false;
 	}

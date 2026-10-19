@@ -1355,8 +1355,16 @@ bool FSolidEventsEnableStrongholdSizeTest::RunTest(const FString& Parameters)
 	}
 	FGameState Played;
 	SolidEvents::NotifyOccupiedTown(Played, SolidTowns::Iglin);
+	TestEqual(
+		TEXT("Enter Iglin leaves the ceiling at Meagre"),
+		static_cast<uint8>(Played.MaxStrongholdSize),
+		static_cast<uint8>(ESolidStrongholdSize::Meagre));
 	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
 	{
+		if (Size == ESolidStrongholdSize::Meagre)
+		{
+			continue;
+		}
 		TestFalse(
 			*FString::Printf(TEXT("Enter Iglin leaves %s locked"), SolidStronghold::SizeName(Size)),
 			SolidEvents::IsStrongholdSizeUnlocked(Played, Size));
@@ -1381,8 +1389,8 @@ bool FSolidEventsEnableStrongholdSizeTest::RunTest(const FString& Parameters)
 	SolidEvents::FResult Result;
 	SolidEvents::ApplyChange(State, Built.Changes[0], Result);
 	TestTrue(TEXT("Humble is unlocked"), SolidEvents::IsStrongholdSizeUnlocked(State, ESolidStrongholdSize::Humble));
+	TestTrue(TEXT("Meagre is unlocked with Humble"), SolidEvents::IsStrongholdSizeUnlocked(State, ESolidStrongholdSize::Meagre));
 	TestFalse(TEXT("Average stays locked"), SolidEvents::IsStrongholdSizeUnlocked(State, ESolidStrongholdSize::Average));
-	TestFalse(TEXT("Meagre stays locked"), SolidEvents::IsStrongholdSizeUnlocked(State, ESolidStrongholdSize::Meagre));
 	SolidEvents::ApplyChange(State, Built.Changes[0], Result);
 	TestTrue(TEXT("unlocking Humble again keeps it"), SolidEvents::IsStrongholdSizeUnlocked(State, ESolidStrongholdSize::Humble));
 	return true;
@@ -1532,8 +1540,16 @@ bool FSolidEventsDragongateUnlocksSizesTest::RunTest(const FString& Parameters)
 	}
 
 	FGameState Before;
+	TestEqual(
+		TEXT("a new game stops at Meagre"),
+		static_cast<uint8>(Before.MaxStrongholdSize),
+		static_cast<uint8>(ESolidStrongholdSize::Meagre));
 	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
 	{
+		if (Size == ESolidStrongholdSize::Meagre)
+		{
+			continue;
+		}
 		TestFalse(
 			*FString::Printf(TEXT("%s starts locked"), SolidStronghold::SizeName(Size)),
 			SolidEvents::IsStrongholdSizeUnlocked(Before, Size));
@@ -1629,15 +1645,15 @@ bool FSolidEventsEarlySizeUnlocksTest::RunTest(const FString& Parameters)
 	SolidEvents::NotifyOccupiedTown(Relion, SolidTowns::Iglin);
 	const SolidEvents::FResult EnteredRelion = SolidEvents::NotifyOccupiedTown(Relion, SolidTowns::Relion);
 	TestTrue(TEXT("Enter Relion fires"), EnteredRelion.bFired);
-	TestFalse(TEXT("Enter Relion leaves Meagre locked"), SolidEvents::IsStrongholdSizeUnlocked(Relion, ESolidStrongholdSize::Meagre));
+	TestTrue(TEXT("Enter Relion unlocks Meagre with Humble"), SolidEvents::IsStrongholdSizeUnlocked(Relion, ESolidStrongholdSize::Meagre));
 	TestTrue(TEXT("Enter Relion unlocks Humble"), SolidEvents::IsStrongholdSizeUnlocked(Relion, ESolidStrongholdSize::Humble));
 	TestFalse(TEXT("Enter Relion leaves Average locked"), SolidEvents::IsStrongholdSizeUnlocked(Relion, ESolidStrongholdSize::Average));
 
 	FGameState Kanfold;
 	const SolidEvents::FResult EnteredKanfold = SolidEvents::NotifyOccupiedTown(Kanfold, SolidTowns::Kanfold);
 	TestTrue(TEXT("Enter Kanfold fires"), EnteredKanfold.bFired);
-	TestFalse(TEXT("Enter Kanfold leaves Meagre locked"), SolidEvents::IsStrongholdSizeUnlocked(Kanfold, ESolidStrongholdSize::Meagre));
-	TestFalse(TEXT("Enter Kanfold leaves Humble locked"), SolidEvents::IsStrongholdSizeUnlocked(Kanfold, ESolidStrongholdSize::Humble));
+	TestTrue(TEXT("Enter Kanfold unlocks Meagre with Average"), SolidEvents::IsStrongholdSizeUnlocked(Kanfold, ESolidStrongholdSize::Meagre));
+	TestTrue(TEXT("Enter Kanfold unlocks Humble with Average"), SolidEvents::IsStrongholdSizeUnlocked(Kanfold, ESolidStrongholdSize::Humble));
 	TestTrue(TEXT("Enter Kanfold unlocks Average"), SolidEvents::IsStrongholdSizeUnlocked(Kanfold, ESolidStrongholdSize::Average));
 	TestFalse(
 		TEXT("Enter Kanfold leaves Impressive locked"),

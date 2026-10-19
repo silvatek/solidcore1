@@ -240,7 +240,9 @@ namespace SolidStrongholdFurniture
 	inline TArray<FUsed> StartingFurnishings()
 	{
 		TArray<FUsed> Used;
-		UsedFurnishings(SolidStronghold::Starting, Used);
+		UsedFurnishings(
+			FSolidStronghold(ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre),
+			Used);
 		return Used;
 	}
 }

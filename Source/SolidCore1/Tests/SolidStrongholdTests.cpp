@@ -63,20 +63,24 @@ bool FSolidStrongholdCatalogTest::RunTest(const FString& Parameters)
 			FString(SizeNames[Index]));
 	}
 
+	const FSolidStronghold MeagreDungeon(
+		ESolidStrongholdType::Dungeon,
+		ESolidStrongholdSize::Meagre,
+		SolidStronghold::StartingCell());
 	TestEqual(
 		TEXT("starting type"),
-		static_cast<uint8>(SolidStronghold::Starting.Type),
+		static_cast<uint8>(MeagreDungeon.Type),
 		static_cast<uint8>(ESolidStrongholdType::Dungeon));
 	TestEqual(
 		TEXT("starting size"),
-		static_cast<uint8>(SolidStronghold::Starting.Size),
+		static_cast<uint8>(MeagreDungeon.Size),
 		static_cast<uint8>(ESolidStrongholdSize::Meagre));
 	TestEqual(
 		TEXT("starting label"),
-		SolidStronghold::Label(SolidStronghold::Starting),
+		SolidStronghold::Label(MeagreDungeon),
 		FString(TEXT("Meagre Dungeon")));
 
-	const SolidStronghold::FVisitView Cave = SolidStronghold::VisitViewFor(SolidStronghold::Starting);
+	const SolidStronghold::FVisitView Cave = SolidStronghold::VisitViewFor(MeagreDungeon);
 	TestTrue(TEXT("entering the cave levels the camera"), FMath::IsNearlyZero(Cave.Enter.PitchDeg, 0.1f));
 	TestTrue(TEXT("entering the cave looks in"), FMath::IsNearlyZero(Cave.Enter.YawDeg, 0.1f));
 	TestTrue(TEXT("leaving the cave levels the camera"), FMath::IsNearlyZero(Cave.Leave.PitchDeg, 0.1f));
@@ -92,64 +96,33 @@ bool FSolidStrongholdCatalogTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("an unlisted stronghold still arrives level"), FMath::IsNearlyZero(Unlisted.Enter.PitchDeg, 0.1f));
 	TestTrue(TEXT("an unlisted stronghold still leaves level"), FMath::IsNearlyZero(Unlisted.Leave.PitchDeg, 0.1f));
 
-	FSolidStronghold FromToken;
-	TestTrue(TEXT("MeagreDungeon resolves"), SolidStronghold::FromToken(TEXT("MeagreDungeon"), FromToken));
-	TestEqual(
-		TEXT("the token is a Dungeon"),
-		static_cast<uint8>(FromToken.Type),
-		static_cast<uint8>(ESolidStrongholdType::Dungeon));
-	TestEqual(
-		TEXT("the token is Meagre"),
-		static_cast<uint8>(FromToken.Size),
-		static_cast<uint8>(ESolidStrongholdSize::Meagre));
-	TestFalse(TEXT("M does not resolve"), SolidStronghold::FromToken(TEXT("M"), FromToken));
+	ESolidStrongholdType TokenType = ESolidStrongholdType::Fortress;
+	ESolidStrongholdSize TokenSize = ESolidStrongholdSize::Imperious;
+	TestTrue(TEXT("MeagreDungeon resolves"), SolidStronghold::FromToken(TEXT("MeagreDungeon"), TokenType, TokenSize));
+	TestEqual(TEXT("the token is a Dungeon"), static_cast<uint8>(TokenType), static_cast<uint8>(ESolidStrongholdType::Dungeon));
+	TestEqual(TEXT("the token is Meagre"), static_cast<uint8>(TokenSize), static_cast<uint8>(ESolidStrongholdSize::Meagre));
+	TestFalse(TEXT("M does not resolve"), SolidStronghold::FromToken(TEXT("M"), TokenType, TokenSize));
 
 	ESolidBiome Shelf = ESolidBiome::Grassland;
-	TestTrue(TEXT("the cave names a shelf"), SolidStronghold::BiomeFor(SolidStronghold::Starting, Shelf));
+	TestTrue(TEXT("the cave names a shelf"), SolidStronghold::BiomeFor(MeagreDungeon, Shelf));
 	TestEqual(TEXT("the cave shelf is mountain"), static_cast<uint8>(Shelf), static_cast<uint8>(ESolidBiome::Mountain));
-	TestTrue(TEXT("the cave uses the cliff mouth"), SolidStronghold::UsesCaveMouth(SolidStronghold::Starting));
+	TestTrue(TEXT("the cave uses the cliff mouth"), SolidStronghold::UsesCaveMouth(MeagreDungeon));
 
-	FSolidStronghold Imperious;
-	TestTrue(TEXT("ImperiousTower resolves"), SolidStronghold::FromToken(TEXT("ImperiousTower"), Imperious));
-	TestEqual(
-		TEXT("Imperious Tower type"),
-		static_cast<uint8>(Imperious.Type),
-		static_cast<uint8>(ESolidStrongholdType::Tower));
-	TestEqual(
-		TEXT("Imperious Tower size"),
-		static_cast<uint8>(Imperious.Size),
-		static_cast<uint8>(ESolidStrongholdSize::Imperious));
+	TestTrue(TEXT("ImperiousTower resolves"), SolidStronghold::FromToken(TEXT("ImperiousTower"), TokenType, TokenSize));
+	const FSolidStronghold Imperious(TokenType, TokenSize);
+	TestEqual(TEXT("Imperious Tower type"), static_cast<uint8>(Imperious.Type), static_cast<uint8>(ESolidStrongholdType::Tower));
+	TestEqual(TEXT("Imperious Tower size"), static_cast<uint8>(Imperious.Size), static_cast<uint8>(ESolidStrongholdSize::Imperious));
 	TestTrue(TEXT("the tower names a shelf"), SolidStronghold::BiomeFor(Imperious, Shelf));
 	TestEqual(TEXT("the tower shelf is grassland"), static_cast<uint8>(Shelf), static_cast<uint8>(ESolidBiome::Grassland));
 	TestFalse(TEXT("the tower does not use the cliff mouth"), SolidStronghold::UsesCaveMouth(Imperious));
 
-	FSolidStronghold HumbleTower;
-	TestTrue(TEXT("Humble Tower resolves"), SolidStronghold::FromToken(TEXT("Humble Tower"), HumbleTower));
+	TestTrue(TEXT("Humble Tower resolves"), SolidStronghold::FromToken(TEXT("Humble Tower"), TokenType, TokenSize));
+	const FSolidStronghold HumbleTower(TokenType, TokenSize);
 	TestFalse(TEXT("an unlisted stronghold names no shelf"), SolidStronghold::BiomeFor(HumbleTower, Shelf));
 	TestEqual(
 		TEXT("a failed shelf lookup leaves the previous biome"),
 		static_cast<uint8>(Shelf),
 		static_cast<uint8>(ESolidBiome::Grassland));
-
-	TArray<SolidStrongholds::FEntrance> Mouths;
-	SolidStrongholds::FEntrance TowerMouth;
-	TowerMouth.Stronghold = Imperious;
-	TowerMouth.WorldXY = FVector2D(10.f, 10.f);
-	Mouths.Add(TowerMouth);
-	SolidStrongholds::FEntrance CaveMouth;
-	CaveMouth.Stronghold = SolidStronghold::Starting;
-	CaveMouth.WorldXY = FVector2D(40.f, 80.f);
-	Mouths.Add(CaveMouth);
-	const SolidStrongholds::FEntrance* Chosen = SolidStrongholds::FindCaveMouth(Mouths);
-	TestTrue(TEXT("leaving the cave skips a tower mouth"), Chosen != nullptr);
-	if (Chosen)
-	{
-		TestTrue(TEXT("the cave mouth is the dungeon"), SolidStronghold::UsesCaveMouth(Chosen->Stronghold));
-		TestTrue(TEXT("the cave mouth is the later entrance"), Chosen->WorldXY.Equals(CaveMouth.WorldXY, 0.1f));
-	}
-	Mouths.Reset();
-	Mouths.Add(TowerMouth);
-	TestTrue(TEXT("a tower alone is not a cave mouth"), SolidStrongholds::FindCaveMouth(Mouths) == nullptr);
 	return true;
 }
 
@@ -169,11 +142,13 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 	{
 		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
 		{
-			FSolidStronghold Named;
-			if (!Map->StrongholdAtCell(Col, Row, Named))
+			ESolidStrongholdType NamedType = ESolidStrongholdType::Fortress;
+			ESolidStrongholdSize NamedSize = ESolidStrongholdSize::Imperious;
+			if (!Map->StrongholdAtCell(Col, Row, NamedType, NamedSize))
 			{
 				continue;
 			}
+			const FSolidStronghold Named(NamedType, NamedSize);
 			if (Named.Type != ESolidStrongholdType::Dungeon || Named.Size != ESolidStrongholdSize::Meagre)
 			{
 				ESolidBiome Expected = ESolidBiome::Grassland;
@@ -205,25 +180,15 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 
 	const FVector2D WorldMin(-51200.f, -51200.f);
 	const FVector2D WorldMax(51200.f, 51200.f);
-	TArray<SolidStrongholds::FEntrance> Entrances;
-	SolidStrongholds::CollectEntrances(Map, WorldMin, WorldMax, Entrances);
 	int32 CaveMouths = 0;
-	for (const SolidStrongholds::FEntrance& Entrance : Entrances)
+	for (const FIntPoint& CaveCell : CaveCells)
 	{
-		if (!SolidStronghold::UsesCaveMouth(Entrance.Stronghold))
-		{
-			continue;
-		}
+		SolidStrongholds::FEntrance Entrance;
+		TestTrue(
+			TEXT("the cave cell has a grass face"),
+			SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, CaveCell, Entrance));
 		++CaveMouths;
-		TestEqual(
-			TEXT("entrance type"),
-			static_cast<uint8>(Entrance.Stronghold.Type),
-			static_cast<uint8>(ESolidStrongholdType::Dungeon));
-		TestEqual(
-			TEXT("entrance size"),
-			static_cast<uint8>(Entrance.Stronghold.Size),
-			static_cast<uint8>(ESolidStrongholdSize::Meagre));
-		TestTrue(TEXT("entrance is a cave cell"), CaveCells.Contains(Entrance.Cell));
+		TestEqual(TEXT("entrance cell"), Entrance.Cell, CaveCell);
 		const FIntPoint North(Entrance.Cell.X, Entrance.Cell.Y - 1);
 		TestEqual(TEXT("grass column"), Entrance.GrassCell.X, North.X);
 		TestEqual(TEXT("grass row"), Entrance.GrassCell.Y, North.Y);
@@ -242,7 +207,8 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 	}
 	TestEqual(TEXT("one cliff mouth per cave cell"), CaveMouths, CaveCells.Num());
 
-	TestEqual(TEXT("null map yields none"), SolidStrongholds::CollectEntrances(nullptr, WorldMin, WorldMax, Entrances), 0);
+	SolidStrongholds::FEntrance Nowhere;
+	TestFalse(TEXT("null map yields none"), SolidStrongholds::MakeEntrance(nullptr, WorldMin, WorldMax, FIntPoint(0, 0), Nowhere));
 	return true;
 }
 
@@ -268,15 +234,12 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 			static_cast<uint8>(Map->GetBiomeAtCell(10, 10)),
 			static_cast<uint8>(ESolidBiome::Mountain));
 
-		TArray<SolidStrongholds::FEntrance> Entrances;
-		TestEqual(TEXT("east face"), SolidStrongholds::CollectEntrances(Map, WorldMin, WorldMax, Entrances), 1);
-		if (Entrances.Num() == 1)
-		{
-			TestEqual(TEXT("grass column is east"), Entrances[0].GrassCell.X, 9);
-			TestEqual(TEXT("grass row"), Entrances[0].GrassCell.Y, 10);
-			TestTrue(TEXT("yaw faces east"), FMath::IsNearlyEqual(Entrances[0].FacingYawDeg, 0.f, 0.1f));
-			TestTrue(TEXT("spawn is east of the edge"), Entrances[0].WorldXY.X > Entrances[0].EdgeXY.X);
-		}
+		SolidStrongholds::FEntrance Entrance;
+		TestTrue(TEXT("east face"), SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, FIntPoint(10, 10), Entrance));
+		TestEqual(TEXT("grass column is east"), Entrance.GrassCell.X, 9);
+		TestEqual(TEXT("grass row"), Entrance.GrassCell.Y, 10);
+		TestTrue(TEXT("yaw faces east"), FMath::IsNearlyEqual(Entrance.FacingYawDeg, 0.f, 0.1f));
+		TestTrue(TEXT("spawn is east of the edge"), Entrance.WorldXY.X > Entrance.EdgeXY.X);
 	}
 
 	{
@@ -296,8 +259,8 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 		Grid += TEXT("! 11,11 = Stronghold (MeagreDungeon)\n");
 		USolidWorldMap* Map = NewObject<USolidWorldMap>();
 		TestTrue(TEXT("sealed cave loads"), Map->LoadFromString(Grid));
-		TArray<SolidStrongholds::FEntrance> Entrances;
-		TestEqual(TEXT("no grass face means no mouth"), SolidStrongholds::CollectEntrances(Map, WorldMin, WorldMax, Entrances), 0);
+		SolidStrongholds::FEntrance Sealed;
+		TestFalse(TEXT("no grass face means no mouth"), SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, FIntPoint(10, 10), Sealed));
 	}
 
 	{
@@ -308,14 +271,11 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 		Grid += TEXT("! 11,11 = Stronghold (MeagreDungeon)\n");
 		USolidWorldMap* Map = NewObject<USolidWorldMap>();
 		TestTrue(TEXT("two grass faces load"), Map->LoadFromString(Grid));
-		TArray<SolidStrongholds::FEntrance> Entrances;
-		TestEqual(TEXT("one mouth"), SolidStrongholds::CollectEntrances(Map, WorldMin, WorldMax, Entrances), 1);
-		if (Entrances.Num() == 1)
-		{
-			TestEqual(TEXT("north column wins"), Entrances[0].GrassCell.X, 10);
-			TestEqual(TEXT("north row wins"), Entrances[0].GrassCell.Y, 9);
-			TestTrue(TEXT("yaw faces north"), FMath::IsNearlyEqual(Entrances[0].FacingYawDeg, 90.f, 0.1f));
-		}
+		SolidStrongholds::FEntrance Entrance;
+		TestTrue(TEXT("one mouth"), SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, FIntPoint(10, 10), Entrance));
+		TestEqual(TEXT("north column wins"), Entrance.GrassCell.X, 10);
+		TestEqual(TEXT("north row wins"), Entrance.GrassCell.Y, 9);
+		TestTrue(TEXT("yaw faces north"), FMath::IsNearlyEqual(Entrance.FacingYawDeg, 90.f, 0.1f));
 	}
 
 	return true;
@@ -371,7 +331,7 @@ bool FSolidDungeonEntranceVisualsTest::RunTest(const FString& Parameters)
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidStrongholdSizeTokenTest,
-	"SolidCore1.Stronghold.SizeToken",
+	"SolidCore1.Stronghold->SizeToken",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 
 bool FSolidStrongholdSizeTokenTest::RunTest(const FString& Parameters)
@@ -384,8 +344,9 @@ bool FSolidStrongholdSizeTokenTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("spaces around a size are ignored"), SolidStronghold::SizeFromToken(TEXT("  Average  "), Size));
 	TestEqual(TEXT("trimmed size"), static_cast<uint8>(Size), static_cast<uint8>(ESolidStrongholdSize::Average));
 
-	FSolidStronghold Joined;
-	TestFalse(TEXT("a size alone is not a stronghold"), SolidStronghold::FromToken(TEXT("Humble"), Joined));
+	ESolidStrongholdType JoinedType = ESolidStrongholdType::Dungeon;
+	ESolidStrongholdSize JoinedSize = ESolidStrongholdSize::Meagre;
+	TestFalse(TEXT("a size alone is not a stronghold"), SolidStronghold::FromToken(TEXT("Humble"), JoinedType, JoinedSize));
 	TestFalse(TEXT("a size and type is not a size"), SolidStronghold::SizeFromToken(TEXT("Humble Tower"), Size));
 	TestFalse(TEXT("a joined token is not a size"), SolidStronghold::SizeFromToken(TEXT("MeagreDungeon"), Size));
 	TestFalse(TEXT("an empty token is not a size"), SolidStronghold::SizeFromToken(TEXT(""), Size));
@@ -407,16 +368,23 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 	const FGameState Fresh;
 	TestEqual(
 		TEXT("a new game is a dungeon"),
-		static_cast<uint8>(Fresh.ActiveStronghold.Type),
-		static_cast<uint8>(SolidStronghold::Starting.Type));
+		static_cast<uint8>(Fresh.ActiveStronghold->Type),
+		static_cast<uint8>(ESolidStrongholdType::Dungeon));
 	TestEqual(
 		TEXT("a new game is meagre"),
-		static_cast<uint8>(Fresh.ActiveStronghold.Size),
-		static_cast<uint8>(SolidStronghold::Starting.Size));
-	TestEqual(TEXT("a new game uses the starting column"), Fresh.ActiveStrongholdCell.X, SolidStronghold::StartingColumn - 1);
-	TestEqual(TEXT("a new game uses the starting row"), Fresh.ActiveStrongholdCell.Y, SolidStronghold::StartingRow - 1);
+		static_cast<uint8>(Fresh.ActiveStronghold->Size),
+		static_cast<uint8>(ESolidStrongholdSize::Meagre));
+	TestEqual(TEXT("a new game uses the starting column"), Fresh.ActiveStronghold->Cell.X, SolidStronghold::StartingColumn - 1);
+	TestEqual(TEXT("a new game uses the starting row"), Fresh.ActiveStronghold->Cell.Y, SolidStronghold::StartingRow - 1);
+	TestTrue(
+		TEXT("a new game has reached Meagre"),
+		SolidEvents::IsStrongholdSizeUnlocked(Fresh, ESolidStrongholdSize::Meagre));
 	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
 	{
+		if (Size == ESolidStrongholdSize::Meagre)
+		{
+			continue;
+		}
 		TestFalse(
 			*FString::Printf(TEXT("%s starts locked"), SolidStronghold::SizeName(Size)),
 			SolidEvents::IsStrongholdSizeUnlocked(Fresh, Size));
@@ -441,12 +409,13 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 		{
 			for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
 			{
-				FSolidStronghold Named;
-				if (!Map->StrongholdAtCell(Col, Row, Named))
+				ESolidStrongholdType NamedType = ESolidStrongholdType::Dungeon;
+				ESolidStrongholdSize NamedSize = ESolidStrongholdSize::Meagre;
+				if (!Map->StrongholdAtCell(Col, Row, NamedType, NamedSize))
 				{
 					continue;
 				}
-				if (Named.Type == ESolidStrongholdType::Tower && Named.Size == ESolidStrongholdSize::Imperious)
+				if (NamedType == ESolidStrongholdType::Tower && NamedSize == ESolidStrongholdSize::Imperious)
 				{
 					++ImperiousTowers;
 				}
@@ -464,9 +433,6 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 			static_cast<uint8>(ESolidStrongholdSize::Imperious));
 
 		SolidStrongholds::FEntrance SiteDoor;
-		const FSolidStronghold Built{
-			ESolidStrongholdType::Tower,
-			ESolidStrongholdSize::Imperious};
 		const FVector2D WorldMin(0.f, 0.f);
 		const FVector2D WorldMax(102400.f, 102400.f);
 		TestTrue(
@@ -476,20 +442,16 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 				WorldMin,
 				WorldMax,
 				FIntPoint(35, 15),
-				Built,
 				SiteDoor));
 		TestEqual(TEXT("that door uses the site cell"), SiteDoor.Cell, FIntPoint(35, 15));
-		TestEqual(
-			TEXT("that door keeps the tower size"),
-			static_cast<uint8>(SiteDoor.Stronghold.Size),
-			static_cast<uint8>(ESolidStrongholdSize::Imperious));
 	}
 
 	FGameState Moved;
-	Moved.ActiveStronghold.Type = ESolidStrongholdType::Tower;
-	Moved.ActiveStronghold.Size = ESolidStrongholdSize::Average;
-	Moved.ActiveStrongholdCell = FIntPoint(4, 6);
-	Moved.bStrongholdSizeUnlocked[static_cast<int32>(ESolidStrongholdSize::Average)] = true;
+	Moved.ActiveStronghold = SolidStronghold::Make(
+		ESolidStrongholdType::Tower,
+		ESolidStrongholdSize::Average,
+		FIntPoint(4, 6));
+	Moved.MaxStrongholdSize = ESolidStrongholdSize::Average;
 
 	USolidGameInstance* Instance = NewObject<USolidGameInstance>();
 	TestNotNull(TEXT("game instance"), Instance);
@@ -503,20 +465,23 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 	const FGameState& Carried = Instance->GetSession().Configuration;
 	TestEqual(
 		TEXT("the trip keeps the type"),
-		static_cast<uint8>(Carried.ActiveStronghold.Type),
+		static_cast<uint8>(Carried.ActiveStronghold->Type),
 		static_cast<uint8>(ESolidStrongholdType::Tower));
 	TestEqual(
 		TEXT("the trip keeps the size"),
-		static_cast<uint8>(Carried.ActiveStronghold.Size),
+		static_cast<uint8>(Carried.ActiveStronghold->Size),
 		static_cast<uint8>(ESolidStrongholdSize::Average));
-	TestEqual(TEXT("the trip keeps the column"), Carried.ActiveStrongholdCell.X, 4);
-	TestEqual(TEXT("the trip keeps the row"), Carried.ActiveStrongholdCell.Y, 6);
+	TestEqual(TEXT("the trip keeps the column"), Carried.ActiveStronghold->Cell.X, 4);
+	TestEqual(TEXT("the trip keeps the row"), Carried.ActiveStronghold->Cell.Y, 6);
 	TestTrue(
 		TEXT("the trip keeps the unlocked size"),
 		SolidEvents::IsStrongholdSizeUnlocked(Carried, ESolidStrongholdSize::Average));
-	TestFalse(
-		TEXT("the trip does not unlock another size"),
+	TestTrue(
+		TEXT("the trip keeps the sizes below that"),
 		SolidEvents::IsStrongholdSizeUnlocked(Carried, ESolidStrongholdSize::Humble));
+	TestFalse(
+		TEXT("the trip does not unlock a larger size"),
+		SolidEvents::IsStrongholdSizeUnlocked(Carried, ESolidStrongholdSize::Impressive));
 	return true;
 }
 

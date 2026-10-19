@@ -1667,17 +1667,13 @@ void ASolidCharacter::ActivatePassage(const SolidLair::FPassageHit& Hit)
 	UE_LOG(LogSolid, Warning, TEXT("Closed passage: %s"), SolidLair::PassageTip(Hit));
 	if (Hit.Action == SolidDungeonPassage::EHit::Enter)
 	{
-		if (Hit.bTower)
-		{
-			GameMode->TravelToTower(Hit.TowerCell);
-		}
-		else if (Hit.bLair)
+		if (Hit.bLair)
 		{
 			GameMode->TravelToLair(Hit.EndMarker);
 		}
 		else
 		{
-			GameMode->TravelToDungeon();
+			GameMode->EnterStronghold();
 		}
 		return;
 	}

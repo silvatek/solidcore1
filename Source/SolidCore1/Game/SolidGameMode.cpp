@@ -254,9 +254,7 @@ void ASolidGameMode::SaveTravelSession(
 	const bool bReturnToLairMouth,
 	const TCHAR LairEnd,
 	const bool bInTower,
-	const bool bReturnToTowerDoor,
-	const FIntPoint TowerCell,
-	const FSolidStronghold Tower)
+	const bool bReturnToTowerDoor)
 {
 	USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>();
 	if (!Instance)
@@ -274,8 +272,6 @@ void ASolidGameMode::SaveTravelSession(
 	Session.LairEnd = LairEnd;
 	Session.bInTower = bInTower;
 	Session.bReturnToTowerDoor = bReturnToTowerDoor;
-	Session.TowerCell = TowerCell;
-	Session.Tower = Tower;
 	if (Squad)
 	{
 		Session.SelectedCompanionIndices = Squad->GetSelectedCompanionIndices();
@@ -644,59 +640,11 @@ void ASolidGameMode::TravelFromLair(const TCHAR EndMarker)
 	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::LeaveOptions());
 }
 
-void ASolidGameMode::TravelToTower(const FIntPoint Cell)
+void ASolidGameMode::EnterStronghold()
 {
 	UWorld* World = GetWorld();
-	if (!World || IsInDungeon() || IsInLair() || IsInTower())
-	{
-		return;
-	}
-
-	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World);
-	USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
-	USolidWorldMap* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
-	if (!WorldMap || !WorldMap->IsLoaded())
-	{
-		return;
-	}
-
-	const FVector2D WorldMin = Terrain->GetWorldMinXY();
-	const FVector2D WorldMax = Terrain->GetWorldMaxXY();
-	TArray<SolidStrongholds::FEntrance> Entrances;
-	SolidStrongholds::CollectEntrances(WorldMap, WorldMin, WorldMax, Entrances);
-	FSolidStronghold Tower;
-	bool bHaveTower = false;
-	for (const SolidStrongholds::FEntrance& Entrance : Entrances)
-	{
-		SolidTowerStronghold::FPlan Plan;
-		if (Entrance.Cell != Cell || !SolidTowerStronghold::PlanFor(Entrance.Stronghold, Plan))
-		{
-			continue;
-		}
-		Tower = Entrance.Stronghold;
-		bHaveTower = true;
-		break;
-	}
-	if (!bHaveTower
-		&& Configuration.ActiveStrongholdCell == Cell
-		&& Configuration.ActiveStronghold.Type == ESolidStrongholdType::Tower)
-	{
-		SolidTowerStronghold::FPlan Plan;
-		SolidStrongholds::FEntrance SiteEntrance;
-		if (SolidTowerStronghold::PlanFor(Configuration.ActiveStronghold, Plan)
-			&& SolidStrongholds::MakeEntrance(
-				WorldMap,
-				WorldMin,
-				WorldMax,
-				Cell,
-				Configuration.ActiveStronghold,
-				SiteEntrance))
-		{
-			Tower = Configuration.ActiveStronghold;
-			bHaveTower = true;
-		}
-	}
-	if (!bHaveTower)
+	const FSolidStronghold* Stronghold = Configuration.ActiveStronghold.Get();
+	if (!World || IsInDungeon() || IsInLair() || IsInTower() || !Stronghold)
 	{
 		return;
 	}
@@ -704,6 +652,19 @@ void ASolidGameMode::TravelToTower(const FIntPoint Cell)
 	const SolidWorldTime::FStamp When = WorldStamp();
 	SolidEvents::RememberStronghold(Configuration, When, /*bEnter=*/true);
 	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Enter Stronghold"), *SolidWorldTime::Format(When));
+
+	const ESolidStrongholdTrip Trip = SolidStronghold::TypeOf(Stronghold->Type).Trip();
+	if (Trip == ESolidStrongholdTrip::Cave)
+	{
+		SaveTravelSession(/*bInDungeon=*/true, /*bReturnToDungeonMouth=*/false);
+		UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::EnterOptions());
+		return;
+	}
+	if (Trip != ESolidStrongholdTrip::Tower)
+	{
+		return;
+	}
+
 	SaveTravelSession(
 		/*bInDungeon=*/false,
 		/*bReturnToDungeonMouth=*/false,
@@ -711,9 +672,7 @@ void ASolidGameMode::TravelToTower(const FIntPoint Cell)
 		/*bReturnToLairMouth=*/false,
 		/*LairEnd=*/0,
 		/*bInTower=*/true,
-		/*bReturnToTowerDoor=*/false,
-		Cell,
-		Tower);
+		/*bReturnToTowerDoor=*/false);
 	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::TowerEnterOptions());
 }
 
@@ -732,33 +691,7 @@ bool ASolidGameMode::EnterChosenStronghold(
 		return false;
 	}
 
-	const SolidWorldTime::FStamp When = WorldStamp();
-	SolidEvents::RememberStronghold(Configuration, When, /*bEnter=*/true);
-	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Enter Stronghold"), *SolidWorldTime::Format(When));
-
-	const ESolidStrongholdTrip Trip = SolidStronghold::TypeOf(Type).Trip();
-	if (Trip == ESolidStrongholdTrip::Cave)
-	{
-		SaveTravelSession(/*bInDungeon=*/true, /*bReturnToDungeonMouth=*/false);
-		UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::EnterOptions());
-		return true;
-	}
-	if (Trip != ESolidStrongholdTrip::Tower)
-	{
-		return true;
-	}
-
-	SaveTravelSession(
-		/*bInDungeon=*/false,
-		/*bReturnToDungeonMouth=*/false,
-		/*bInLair=*/false,
-		/*bReturnToLairMouth=*/false,
-		/*LairEnd=*/0,
-		/*bInTower=*/true,
-		/*bReturnToTowerDoor=*/false,
-		Configuration.ActiveStrongholdCell,
-		Configuration.ActiveStronghold);
-	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::TowerEnterOptions());
+	EnterStronghold();
 	return true;
 }
 
@@ -768,14 +701,6 @@ void ASolidGameMode::TravelFromTower()
 	if (!World || !IsInTower())
 	{
 		return;
-	}
-
-	FIntPoint Cell = FIntPoint::ZeroValue;
-	FSolidStronghold Tower;
-	if (const USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>())
-	{
-		Cell = Instance->GetSession().TowerCell;
-		Tower = Instance->GetSession().Tower;
 	}
 
 	const SolidWorldTime::FStamp When = WorldStamp();
@@ -788,9 +713,7 @@ void ASolidGameMode::TravelFromTower()
 		/*bReturnToLairMouth=*/false,
 		/*LairEnd=*/0,
 		/*bInTower=*/false,
-		/*bReturnToTowerDoor=*/true,
-		Cell,
-		Tower);
+		/*bReturnToTowerDoor=*/true);
 	UGameplayStatics::OpenLevel(World, FName(SolidDungeonLevel::WorldMapPath), true, SolidDungeonLevel::LeaveOptions());
 }
 
@@ -814,15 +737,10 @@ void ASolidGameMode::BeginTowerInterior()
 			Params);
 		if (TowerInterior)
 		{
-			FSolidStronghold Tower;
-			FIntPoint Cell = FIntPoint::ZeroValue;
-			if (const USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>())
-			{
-				Tower = Instance->GetSession().Tower;
-				Cell = Instance->GetSession().TowerCell;
-			}
+			const FSolidStronghold* Stronghold = Configuration.ActiveStronghold.Get();
+			const FIntPoint Cell = Stronghold ? Stronghold->Cell : FIntPoint::ZeroValue;
 			SolidTowerStronghold::FPlan Plan;
-			if (!SolidTowerStronghold::PlanFor(Tower, Plan))
+			if (!Stronghold || !SolidTowerStronghold::PlanFor(*Stronghold, Plan))
 			{
 				Plan = SolidTowerStronghold::Imperious;
 			}
@@ -1743,7 +1661,7 @@ void ASolidGameMode::EnsureVegetation()
 	}
 
 	TArray<SolidTownSigns::FPlacement> SignPlacements;
-	TArray<SolidStrongholds::FEntrance> CaveEntrances;
+	TArray<SolidStrongholds::FEntrance> CliffMouths;
 	TArray<SolidLair::FEntrance> TunnelEntrances;
 	TArray<FVector2D> SignClearCenters;
 	if (const USolidWorldMap* WorldMap = Streamer->GetTerrainMap()->GetWorldMap())
@@ -1751,7 +1669,30 @@ void ASolidGameMode::EnsureVegetation()
 		const FVector2D WorldMin = Streamer->GetTerrainMap()->GetWorldMinXY();
 		const FVector2D WorldMax = Streamer->GetTerrainMap()->GetWorldMaxXY();
 		SolidTownSigns::CollectPlacements(WorldMap, WorldMin, WorldMax, SignPlacements);
-		SolidStrongholds::CollectEntrances(WorldMap, WorldMin, WorldMax, CaveEntrances);
+		if (Configuration.ActiveStronghold)
+		{
+			SolidStrongholds::FEntrance Entrance;
+			if (SolidStronghold::UsesCaveMouth(*Configuration.ActiveStronghold)
+				&& SolidStrongholds::MakeEntrance(
+					WorldMap,
+					WorldMin,
+					WorldMax,
+					Configuration.ActiveStronghold->Cell,
+					Entrance))
+			{
+				CliffMouths.Add(Entrance);
+			}
+		}
+		for (const TUniquePtr<FSolidStronghold>& Previous : Configuration.PreviousStrongholds)
+		{
+			SolidStrongholds::FEntrance Entrance;
+			if (Previous
+				&& SolidStronghold::UsesCaveMouth(*Previous)
+				&& SolidStrongholds::MakeEntrance(WorldMap, WorldMin, WorldMax, Previous->Cell, Entrance))
+			{
+				CliffMouths.Add(Entrance);
+			}
+		}
 		SolidLair::CollectEntrances(WorldMap, WorldMin, WorldMax, TunnelEntrances);
 		SignClearCenters.Reserve(SignPlacements.Num());
 		for (const SolidTownSigns::FPlacement& Placement : SignPlacements)
@@ -1872,13 +1813,8 @@ void ASolidGameMode::EnsureVegetation()
 	if (SpawnedDungeonEntrances.Num() == 0)
 	{
 		int32 Spawned = 0;
-		for (const SolidStrongholds::FEntrance& Entrance : CaveEntrances)
+		for (const SolidStrongholds::FEntrance& Entrance : CliffMouths)
 		{
-			if (!SolidStronghold::UsesCaveMouth(Entrance.Stronghold))
-			{
-				continue;
-			}
-
 			FVector SpawnLoc(Entrance.WorldXY.X, Entrance.WorldXY.Y, 0.f);
 			const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
 			SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
@@ -1924,54 +1860,6 @@ void ASolidGameMode::EnsureVegetation()
 		UE_LOG(LogSolid, Warning, TEXT("Spawned %d cave entrances and %d tunnel mouths"), Spawned, TunnelMouths);
 	}
 
-	if (SpawnedTowerShells.Num() == 0)
-	{
-		USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
-		USolidWorldMap* TowerMap = Terrain ? Terrain->GetWorldMap() : nullptr;
-		int32 Spawned = 0;
-		if (TowerMap && TowerMap->IsLoaded())
-		{
-			const FVector2D WorldMin = Terrain->GetWorldMinXY();
-			const FVector2D WorldMax = Terrain->GetWorldMaxXY();
-			for (const SolidStrongholds::FEntrance& Entrance : CaveEntrances)
-			{
-				SolidTowerStronghold::FPlan Plan;
-				if (!SolidTowerStronghold::PlanFor(Entrance.Stronghold, Plan))
-				{
-					continue;
-				}
-
-				FVector2D CellXY = FVector2D::ZeroVector;
-				if (!TowerMap->CellToWorldXY(Entrance.Cell, WorldMin, WorldMax, CellXY))
-				{
-					continue;
-				}
-
-				FVector SpawnLoc(CellXY.X, CellXY.Y, 0.f);
-				const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
-				SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
-
-				ASolidTowerShell* Shell = World->SpawnActor<ASolidTowerShell>(
-					ASolidTowerShell::StaticClass(),
-					SpawnLoc,
-					FRotator(0.f, SolidTowerStronghold::ShellYawDeg(Entrance.FacingYawDeg), 0.f),
-					SpawnParams);
-				if (!Shell)
-				{
-					continue;
-				}
-
-				Shell->SetPlan(Plan);
-				Shell->SetTowerCell(Entrance.Cell);
-				Shell->BuildVisuals();
-				SpawnedTowerShells.Add(Shell);
-				++Spawned;
-			}
-		}
-
-		UE_LOG(LogSolid, Warning, TEXT("Spawned %d tower shells"), Spawned);
-	}
-
 	if (!bSpawnedStrongholdSites)
 	{
 		USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
@@ -1994,22 +1882,20 @@ void ASolidGameMode::EnsureVegetation()
 					}
 
 					const FIntPoint SiteCell(Col, Row);
-					FSolidStronghold Exterior;
-					bool bShell = false;
-					if (SiteCell == Configuration.ActiveStrongholdCell
-						&& Configuration.ActiveStronghold.Type == ESolidStrongholdType::Tower)
+					const FSolidStronghold* Exterior = nullptr;
+					if (Configuration.ActiveStronghold
+						&& SiteCell == Configuration.ActiveStronghold->Cell
+						&& Configuration.ActiveStronghold->Type == ESolidStrongholdType::Tower)
 					{
-						Exterior = Configuration.ActiveStronghold;
-						bShell = true;
+						Exterior = Configuration.ActiveStronghold.Get();
 					}
 					else
 					{
-						for (const FLeftStronghold& Left : Configuration.LeftStrongholds)
+						for (const TUniquePtr<FSolidStronghold>& Previous : Configuration.PreviousStrongholds)
 						{
-							if (Left.Cell == SiteCell && Left.Stronghold.Type == ESolidStrongholdType::Tower)
+							if (Previous && Previous->Cell == SiteCell && Previous->Type == ESolidStrongholdType::Tower)
 							{
-								Exterior = Left.Stronghold;
-								bShell = true;
+								Exterior = Previous.Get();
 								break;
 							}
 						}
@@ -2028,7 +1914,7 @@ void ASolidGameMode::EnsureVegetation()
 						: 0.f;
 
 					SolidTowerStronghold::FPlan Plan;
-					if (bShell && SolidTowerStronghold::PlanFor(Exterior, Plan))
+					if (Exterior && SolidTowerStronghold::PlanFor(*Exterior, Plan))
 					{
 						SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
 						ASolidTowerShell* Shell = World->SpawnActor<ASolidTowerShell>(

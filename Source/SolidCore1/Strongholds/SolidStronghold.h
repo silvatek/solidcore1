@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SolidStrongholdGrid.h"
 #include "SolidTerrainTypes.h"
 
 /** What the company base is. Dungeon is the first; Fortress and Tower come later. */
@@ -26,12 +27,71 @@ enum class ESolidStrongholdSize : uint8
 	Imperious,
 };
 
-/** A company base: one type and one size. */
-struct FSolidStronghold
+/** The closed visit. Cave is the dungeon trip. Tower is the tower trip. None does not travel. */
+enum class ESolidStrongholdTrip : uint8
 {
+	None,
+	Cave,
+	Tower,
+};
+
+/**
+ * A company base: one type, one size, and the map cell it stands on.
+ * Dungeon, Fortress, and Tower are the subclasses.
+ * These are plain C++ classes, not Unreal objects and not Blueprints.
+ */
+class FSolidStronghold
+{
+public:
+	FSolidStronghold() = default;
+	FSolidStronghold(ESolidStrongholdType InType, ESolidStrongholdSize InSize, FIntPoint InCell = FIntPoint::ZeroValue)
+		: Type(InType)
+		, Size(InSize)
+		, Cell(InCell)
+	{
+	}
+
+	virtual ~FSolidStronghold() = default;
+	FSolidStronghold(const FSolidStronghold&) = default;
+	FSolidStronghold& operator=(const FSolidStronghold&) = default;
+
 	ESolidStrongholdType Type = ESolidStrongholdType::Dungeon;
 	ESolidStrongholdSize Size = ESolidStrongholdSize::Meagre;
+	/** Map cell. X is the column and Y is the row, counting from 0. */
+	FIntPoint Cell = FIntPoint::ZeroValue;
+
+	/** True when the current code can build this type at Size. */
+	virtual bool Supported(ESolidStrongholdSize) const { return false; }
+
+	/** The cliff mouth. A tower and a fortress place their own exterior. */
+	virtual bool UsesCliffMouth() const { return false; }
+
+	/** Which trip this type takes. */
+	virtual ESolidStrongholdTrip Trip() const { return ESolidStrongholdTrip::None; }
+
+	/**
+	 * Ground-floor hexes this type keeps at Size.
+	 * Empty when that size has no floor. A move onto an empty floor is refused.
+	 */
+	virtual void CollectGroundHexes(
+		ESolidStrongholdSize,
+		TArray<SolidStrongholdGrid::FHex>& OutHexes) const
+	{
+		OutHexes.Reset();
+	}
+
+	/** A copy that keeps this subclass, the way a body part clones its own mesh. */
+	virtual TUniquePtr<FSolidStronghold> Clone() const;
 };
+
+namespace SolidStronghold
+{
+	/** An owned dungeon, fortress, or tower of this size, standing on Cell. */
+	TUniquePtr<FSolidStronghold> Make(
+		ESolidStrongholdType Type,
+		ESolidStrongholdSize Size,
+		FIntPoint Cell = FIntPoint::ZeroValue);
+}
 
 /**
  * Camera when the captain arrives.
@@ -66,9 +126,6 @@ namespace SolidStronghold
 	inline constexpr int32 TypeCount = UE_ARRAY_COUNT(Types);
 	inline constexpr int32 SizeCount = UE_ARRAY_COUNT(Sizes);
 
-	/** The company starts in a Meagre Dungeon. The world map names that cell. */
-	inline const FSolidStronghold Starting = { ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre };
-
 	/** WorldMap.txt row of that dungeon, counting from 1 at the top. */
 	inline constexpr int32 StartingRow = 9;
 	/** WorldMap.txt column of that dungeon, counting from 1 at the left. */
@@ -83,14 +140,15 @@ namespace SolidStronghold
 	/** Enter and leave aims for one stronghold. Missing rows use a level in/out aim. */
 	struct FVisitView
 	{
-		FSolidStronghold Stronghold;
+		ESolidStrongholdType Type = ESolidStrongholdType::Dungeon;
+		ESolidStrongholdSize Size = ESolidStrongholdSize::Meagre;
 		FSolidStrongholdView Enter;
 		FSolidStrongholdView Leave;
 	};
 
 	/** Meagre Dungeon: level, into the cave on entry, and level, out over the grass on leave. */
 	inline const FVisitView VisitViews[] = {
-		{ Starting, { 0.f, 0.f }, { 0.f, 0.f } },
+		{ ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre, { 0.f, 0.f }, { 0.f, 0.f } },
 	};
 
 	inline constexpr int32 VisitViewCount = UE_ARRAY_COUNT(VisitViews);
@@ -99,12 +157,12 @@ namespace SolidStronghold
 	{
 		for (const FVisitView& View : VisitViews)
 		{
-			if (View.Stronghold.Type == Stronghold.Type && View.Stronghold.Size == Stronghold.Size)
+			if (View.Type == Stronghold.Type && View.Size == Stronghold.Size)
 			{
 				return View;
 			}
 		}
-		return { Stronghold, { 0.f, 0.f }, { 0.f, 0.f } };
+		return { Stronghold.Type, Stronghold.Size, { 0.f, 0.f }, { 0.f, 0.f } };
 	}
 
 	/** World yaw for the grass outside a mouth that already faces the grass. */
@@ -151,13 +209,14 @@ namespace SolidStronghold
 	 */
 	struct FShelf
 	{
-		FSolidStronghold Stronghold;
+		ESolidStrongholdType Type = ESolidStrongholdType::Dungeon;
+		ESolidStrongholdSize Size = ESolidStrongholdSize::Meagre;
 		ESolidBiome Biome = ESolidBiome::Grassland;
 	};
 
 	inline const FShelf Shelves[] = {
-		{ Starting, ESolidBiome::Mountain },
-		{ { ESolidStrongholdType::Tower, ESolidStrongholdSize::Imperious }, ESolidBiome::Grassland },
+		{ ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre, ESolidBiome::Mountain },
+		{ ESolidStrongholdType::Tower, ESolidStrongholdSize::Imperious, ESolidBiome::Grassland },
 	};
 
 	inline constexpr int32 ShelfCount = UE_ARRAY_COUNT(Shelves);
@@ -167,7 +226,7 @@ namespace SolidStronghold
 	{
 		for (const FShelf& Shelf : Shelves)
 		{
-			if (Shelf.Stronghold.Type == Stronghold.Type && Shelf.Stronghold.Size == Stronghold.Size)
+			if (Shelf.Type == Stronghold.Type && Shelf.Size == Stronghold.Size)
 			{
 				OutBiome = Shelf.Biome;
 				return true;
@@ -180,7 +239,7 @@ namespace SolidStronghold
 	bool UsesCaveMouth(const FSolidStronghold& Stronghold);
 
 	/** "MeagreDungeon" or "Meagre Dungeon": size, then type. */
-	inline bool FromToken(const FString& Token, FSolidStronghold& Out)
+	inline bool FromToken(const FString& Token, ESolidStrongholdType& OutType, ESolidStrongholdSize& OutSize)
 	{
 		FString Compact = Token;
 		Compact.ReplaceInline(TEXT(" "), TEXT(""));
@@ -195,8 +254,8 @@ namespace SolidStronghold
 				const FString Joined = FString(SizeName(Size)) + TypeName(Type);
 				if (Compact.Equals(Joined, ESearchCase::IgnoreCase))
 				{
-					Out.Size = Size;
-					Out.Type = Type;
+					OutType = Type;
+					OutSize = Size;
 					return true;
 				}
 			}

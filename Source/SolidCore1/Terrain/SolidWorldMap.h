@@ -178,7 +178,7 @@ public:
 	bool FindBang(int32 MapX, int32 MapY, FSolidWorldBang& Out) const;
 
 	/** True when a ! line names this cell as a stronghold. A stronghold site is not one. */
-	bool StrongholdAtCell(int32 MapX, int32 MapY, FSolidStronghold& Out) const;
+	bool StrongholdAtCell(int32 MapX, int32 MapY, ESolidStrongholdType& OutType, ESolidStrongholdSize& OutSize) const;
 
 	/** True when a ! line names this cell as a stronghold site. OutSize is that size. */
 	bool StrongholdSiteAtCell(int32 MapX, int32 MapY, ESolidStrongholdSize& OutSize) const;

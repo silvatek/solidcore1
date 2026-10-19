@@ -585,17 +585,20 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 		{
 			if (Instance->WantsDungeonMouthSpawn() && TerrainMap->GetWorldMap())
 			{
-				TArray<SolidStrongholds::FEntrance> Entrances;
-				SolidStrongholds::CollectEntrances(
-					TerrainMap->GetWorldMap(),
-					TerrainMap->GetWorldMinXY(),
-					TerrainMap->GetWorldMaxXY(),
-					Entrances);
-				if (const SolidStrongholds::FEntrance* Cave = SolidStrongholds::FindCaveMouth(Entrances))
+				const FSolidStronghold* Stronghold = Instance->GetSession().Configuration.ActiveStronghold.Get();
+				SolidStrongholds::FEntrance Cave;
+				if (Stronghold
+					&& SolidStronghold::UsesCaveMouth(*Stronghold)
+					&& SolidStrongholds::MakeEntrance(
+						TerrainMap->GetWorldMap(),
+						TerrainMap->GetWorldMinXY(),
+						TerrainMap->GetWorldMaxXY(),
+						Stronghold->Cell,
+						Cave))
 				{
-					PawnXY = Cave->WorldXY;
-					const SolidStronghold::FVisitView Visit = SolidStronghold::VisitViewFor(Cave->Stronghold);
-					FacingYawDeg = SolidStronghold::LeaveYawDeg(Cave->FacingYawDeg, Visit.Leave);
+					PawnXY = Cave.WorldXY;
+					const SolidStronghold::FVisitView Visit = SolidStronghold::VisitViewFor(*Stronghold);
+					FacingYawDeg = SolidStronghold::LeaveYawDeg(Cave.FacingYawDeg, Visit.Leave);
 					FacingPitchDeg = Visit.Leave.PitchDeg;
 					bHaveYaw = true;
 					bCaveMouth = true;
@@ -651,37 +654,20 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 				USolidWorldMap* WorldMap = TerrainMap->GetWorldMap();
 				const FVector2D WorldMin = TerrainMap->GetWorldMinXY();
 				const FVector2D WorldMax = TerrainMap->GetWorldMaxXY();
-				TArray<SolidStrongholds::FEntrance> Entrances;
-				SolidStrongholds::CollectEntrances(WorldMap, WorldMin, WorldMax, Entrances);
 				const FSolidTravelSession& Session = Instance->GetSession();
+				const FSolidStronghold* Stronghold = Session.Configuration.ActiveStronghold.Get();
 				SolidStrongholds::FEntrance Chosen;
-				bool bHaveEntrance = false;
 				SolidTowerStronghold::FPlan Plan;
-				for (const SolidStrongholds::FEntrance& Entrance : Entrances)
-				{
-					if (Entrance.Cell != Session.TowerCell
-						|| !SolidTowerStronghold::PlanFor(Entrance.Stronghold, Plan))
-					{
-						continue;
-					}
-					Chosen = Entrance;
-					bHaveEntrance = true;
-					break;
-				}
-				if (!bHaveEntrance
-					&& SolidTowerStronghold::PlanFor(Session.Tower, Plan)
+				FVector2D CellXY = FVector2D::ZeroVector;
+				if (Stronghold
+					&& Stronghold->Type == ESolidStrongholdType::Tower
+					&& SolidTowerStronghold::PlanFor(*Stronghold, Plan)
 					&& SolidStrongholds::MakeEntrance(
 						WorldMap,
 						WorldMin,
 						WorldMax,
-						Session.TowerCell,
-						Session.Tower,
-						Chosen))
-				{
-					bHaveEntrance = true;
-				}
-				FVector2D CellXY = FVector2D::ZeroVector;
-				if (bHaveEntrance
+						Stronghold->Cell,
+						Chosen)
 					&& WorldMap->CellToWorldXY(Chosen.Cell, WorldMin, WorldMax, CellXY))
 				{
 					PawnXY = SolidTowerStronghold::OutsideDoorXY(CellXY, Chosen.FacingYawDeg, Plan);

@@ -99,8 +99,6 @@ bool FSolidTowerTravelTest::RunTest(const FString& Parameters)
 	Inside.bInTower = true;
 	Inside.bInDungeon = false;
 	Inside.bReturnToDungeonMouth = false;
-	Inside.TowerCell = FIntPoint(16, 30);
-	Inside.Tower = { ESolidStrongholdType::Tower, ESolidStrongholdSize::Imperious };
 	Instance->Capture(Inside);
 	TestTrue(TEXT("a tower session is inside"), Instance->IsInTower());
 	TestFalse(TEXT("a tower session is not the cave"), Instance->IsInDungeon());
@@ -111,7 +109,6 @@ bool FSolidTowerTravelTest::RunTest(const FString& Parameters)
 	Leave.bInTower = false;
 	Leave.bReturnToTowerDoor = true;
 	Leave.bReturnToDungeonMouth = false;
-	Leave.TowerCell = FIntPoint(16, 30);
 	Instance->Capture(Leave);
 	TestTrue(TEXT("leaving stands at the tower door"), Instance->WantsTowerDoorSpawn());
 	TestFalse(TEXT("leaving the tower is not a cave spawn"), Instance->WantsDungeonMouthSpawn());

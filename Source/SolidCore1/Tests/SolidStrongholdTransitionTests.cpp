@@ -15,7 +15,10 @@ namespace
 {
 	void Unlock(FGameState& State, const ESolidStrongholdSize Size)
 	{
-		State.bStrongholdSizeUnlocked[static_cast<int32>(Size)] = true;
+		if (static_cast<int32>(Size) > static_cast<int32>(State.MaxStrongholdSize))
+		{
+			State.MaxStrongholdSize = Size;
+		}
 	}
 
 	bool SameId(const TCHAR* A, const TCHAR* B)
@@ -112,7 +115,11 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 {
-	TestTrue(TEXT("the starting stronghold is built"), SolidStrongholdTransition::IsBuilt(SolidStronghold::Starting));
+	TestTrue(
+		TEXT("the starting stronghold is built"),
+		SolidStrongholdTransition::IsBuilt(FSolidStronghold(
+			ESolidStrongholdType::Dungeon,
+			ESolidStrongholdSize::Meagre)));
 	TestFalse(
 		TEXT("a Meagre fortress is not a pair"),
 		SolidStrongholdTransition::IsFinalPair(FSolidStronghold{ ESolidStrongholdType::Fortress, ESolidStrongholdSize::Meagre }));
@@ -187,7 +194,7 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Types[0]),
 		static_cast<uint8>(ESolidStrongholdType::Tower));
 
-	State.ActiveStronghold = FSolidStronghold{ ESolidStrongholdType::Tower, ESolidStrongholdSize::Average };
+	State.ActiveStronghold = SolidStronghold::Make(ESolidStrongholdType::Tower, ESolidStrongholdSize::Average);
 	Unlock(State, ESolidStrongholdSize::Average);
 	TestEqual(
 		TEXT("the same size does nothing"),
@@ -273,43 +280,42 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 	const SolidInventory::FLoadout Pack = State.Inventory;
 	const TArray<SolidStrongholdFurniture::FUsed> Started = State.Furnishings;
 
+	TestFalse(
+		TEXT("a locked size does not commit"),
+		SolidStrongholdTransition::Commit(State, AverageCell, ESolidStrongholdSize::Average, ESolidStrongholdType::Tower));
 	Unlock(State, ESolidStrongholdSize::Imperious);
 	TestFalse(
 		TEXT("a type that was not offered does not commit"),
 		SolidStrongholdTransition::Commit(State, ImperiousCell, ESolidStrongholdSize::Imperious, ESolidStrongholdType::Dungeon));
-	TestEqual(TEXT("a refused type leaves the stronghold"), static_cast<uint8>(State.ActiveStronghold.Type), static_cast<uint8>(ESolidStrongholdType::Dungeon));
-	TestEqual(TEXT("a refused type leaves the size"), static_cast<uint8>(State.ActiveStronghold.Size), static_cast<uint8>(ESolidStrongholdSize::Meagre));
-	TestEqual(TEXT("a refused type leaves the cell"), State.ActiveStrongholdCell, SolidStronghold::StartingCell());
-	TestEqual(TEXT("a refused type leaves no history"), State.LeftStrongholds.Num(), 0);
+	TestEqual(TEXT("a refused type leaves the stronghold"), static_cast<uint8>(State.ActiveStronghold->Type), static_cast<uint8>(ESolidStrongholdType::Dungeon));
+	TestEqual(TEXT("a refused type leaves the size"), static_cast<uint8>(State.ActiveStronghold->Size), static_cast<uint8>(ESolidStrongholdSize::Meagre));
+	TestEqual(TEXT("a refused type leaves the cell"), State.ActiveStronghold->Cell, SolidStronghold::StartingCell());
+	TestEqual(TEXT("a refused type leaves no history"), State.PreviousStrongholds.Num(), 0);
 	TestTrue(TEXT("a refused type leaves the pieces"), SamePieces(State.Furnishings, Started));
 	TestTrue(TEXT("a refused type leaves the chest"), SameChest(State.CaveChest, Chest));
 	TestTrue(TEXT("a refused type leaves the pack"), SameLoadout(State.Inventory, Pack));
 
 	State.Furnishings.Reset();
-	TestFalse(
-		TEXT("a locked size does not commit"),
-		SolidStrongholdTransition::Commit(State, AverageCell, ESolidStrongholdSize::Average, ESolidStrongholdType::Tower));
-	Unlock(State, ESolidStrongholdSize::Average);
 	TestTrue(
 		TEXT("an empty furnishing list still moves the starting pieces"),
 		SolidStrongholdTransition::Commit(State, AverageCell, ESolidStrongholdSize::Average, ESolidStrongholdType::Tower));
-	TestEqual(TEXT("the company is in a tower"), static_cast<uint8>(State.ActiveStronghold.Type), static_cast<uint8>(ESolidStrongholdType::Tower));
-	TestEqual(TEXT("the stronghold size is average"), static_cast<uint8>(State.ActiveStronghold.Size), static_cast<uint8>(ESolidStrongholdSize::Average));
-	TestEqual(TEXT("the company is on the site"), State.ActiveStrongholdCell, AverageCell);
-	TestEqual(TEXT("the stronghold was left"), State.LeftStrongholds.Num(), 1);
+	TestEqual(TEXT("the company is in a tower"), static_cast<uint8>(State.ActiveStronghold->Type), static_cast<uint8>(ESolidStrongholdType::Tower));
+	TestEqual(TEXT("the stronghold size is average"), static_cast<uint8>(State.ActiveStronghold->Size), static_cast<uint8>(ESolidStrongholdSize::Average));
+	TestEqual(TEXT("the company is on the site"), State.ActiveStronghold->Cell, AverageCell);
+	TestEqual(TEXT("one previous stronghold is recorded"), State.PreviousStrongholds.Num(), 1);
 	TestEqual(
-		TEXT("the stronghold that was just left is a Dungeon"),
-		static_cast<uint8>(State.LeftStrongholds[0].Stronghold.Type),
+		TEXT("the previous stronghold is a Dungeon"),
+		static_cast<uint8>(State.PreviousStrongholds[0]->Type),
 		static_cast<uint8>(ESolidStrongholdType::Dungeon));
-	TestEqual(TEXT("the left stronghold keeps its cell"), State.LeftStrongholds[0].Cell, SolidStronghold::StartingCell());
+	TestEqual(TEXT("the previous stronghold keeps its cell"), State.PreviousStrongholds[0]->Cell, SolidStronghold::StartingCell());
 	TestFalse(TEXT("the stronghold no longer accepts enter"), SolidStrongholdTransition::CompanyCaveAcceptsEnter(State));
 	TestTrue(TEXT("the chest moved with the company"), SameChest(State.CaveChest, Chest));
 	TestTrue(TEXT("the pack stayed with the captain"), SameLoadout(State.Inventory, Pack));
 	TestEqual(TEXT("the starting pieces moved"), State.Furnishings.Num(), Started.Num());
-	TestTrue(TEXT("the map tower door stays a passage"), SolidStrongholdTransition::TowerDoorAcceptsEnter(State, MapTowerCell));
+	TestFalse(TEXT("a map tower door is not a passage"), SolidStrongholdTransition::TowerDoorAcceptsEnter(State, MapTowerCell));
 
 	SolidTowerStronghold::FPlan AveragePlan;
-	TestTrue(TEXT("Average has a plan"), SolidTowerStronghold::PlanFor(State.ActiveStronghold, AveragePlan));
+	TestTrue(TEXT("Average has a plan"), SolidTowerStronghold::PlanFor(*State.ActiveStronghold, AveragePlan));
 	TArray<SolidStrongholdGrid::FHex> AverageHexes;
 	SolidTowerStronghold::CollectKeptHexes(AveragePlan, 0, AverageHexes);
 	for (const SolidStrongholdFurniture::FUsed& Piece : State.Furnishings)
@@ -330,18 +336,18 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("the next size commits"),
 		SolidStrongholdTransition::Commit(State, ImperiousCell, ESolidStrongholdSize::Imperious, ESolidStrongholdType::Tower));
-	TestEqual(TEXT("the company is Imperious"), static_cast<uint8>(State.ActiveStronghold.Size), static_cast<uint8>(ESolidStrongholdSize::Imperious));
-	TestEqual(TEXT("the company is on the later site"), State.ActiveStrongholdCell, ImperiousCell);
-	TestEqual(TEXT("both strongholds were left"), State.LeftStrongholds.Num(), 2);
-	TestEqual(TEXT("the Average tower was left"), State.LeftStrongholds[1].Cell, AverageCell);
-	TestFalse(TEXT("a left tower door is not a passage"), SolidStrongholdTransition::TowerDoorAcceptsEnter(State, AverageCell));
-	TestTrue(TEXT("another tower door stays a passage"), SolidStrongholdTransition::TowerDoorAcceptsEnter(State, MapTowerCell));
-	TestTrue(TEXT("the active door is not a left door"), SolidStrongholdTransition::TowerDoorAcceptsEnter(State, ImperiousCell));
+	TestEqual(TEXT("the company is Imperious"), static_cast<uint8>(State.ActiveStronghold->Size), static_cast<uint8>(ESolidStrongholdSize::Imperious));
+	TestEqual(TEXT("the company is on the later site"), State.ActiveStronghold->Cell, ImperiousCell);
+	TestEqual(TEXT("two previous strongholds are recorded"), State.PreviousStrongholds.Num(), 2);
+	TestEqual(TEXT("the later previous stronghold is the Average tower"), State.PreviousStrongholds[1]->Cell, AverageCell);
+	TestFalse(TEXT("a previous tower door is not a passage"), SolidStrongholdTransition::TowerDoorAcceptsEnter(State, AverageCell));
+	TestFalse(TEXT("another tower door is not a passage"), SolidStrongholdTransition::TowerDoorAcceptsEnter(State, MapTowerCell));
+	TestTrue(TEXT("the active door is not a previous door"), SolidStrongholdTransition::TowerDoorAcceptsEnter(State, ImperiousCell));
 	TestTrue(TEXT("the chest still holds the same slots"), SameChest(State.CaveChest, Chest));
 	TestTrue(TEXT("the pack is still the captain's"), SameLoadout(State.Inventory, Pack));
 
 	SolidTowerStronghold::FPlan ImperiousPlan;
-	TestTrue(TEXT("Imperious has a plan"), SolidTowerStronghold::PlanFor(State.ActiveStronghold, ImperiousPlan));
+	TestTrue(TEXT("Imperious has a plan"), SolidTowerStronghold::PlanFor(*State.ActiveStronghold, ImperiousPlan));
 	TArray<SolidStrongholdGrid::FHex> ImperiousHexes;
 	SolidTowerStronghold::CollectKeptHexes(ImperiousPlan, 0, ImperiousHexes);
 	int32 Beds = 0;
@@ -362,13 +368,10 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 
 	TestFalse(
 		TEXT("inside the tower the chest is not the stronghold"),
-		SolidStrongholdTransition::CompanyChestOpen(State, true, false, MapTowerCell));
+		SolidStrongholdTransition::CompanyChestOpen(State, true, false));
 	TestTrue(
 		TEXT("the chest opens in the company tower"),
-		SolidStrongholdTransition::CompanyChestOpen(State, false, true, ImperiousCell));
-	TestFalse(
-		TEXT("the chest stays shut in another tower"),
-		SolidStrongholdTransition::CompanyChestOpen(State, false, true, MapTowerCell));
+		SolidStrongholdTransition::CompanyChestOpen(State, false, true));
 
 	TArray<SolidStrongholdFurniture::FUsed> Stuck = Started;
 	TestFalse(TEXT("pieces do not sit on an empty floor"), SolidStrongholdTransition::PlaceOnFloor(Stuck, TArray<SolidStrongholdGrid::FHex>()));

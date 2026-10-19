@@ -2442,17 +2442,11 @@ void ASolidHUD::DrawInventoryPopup()
 		}
 	}
 
-	FIntPoint TowerCell = FIntPoint::ZeroValue;
-	if (const USolidGameInstance* Instance = GameMode ? GameMode->GetGameInstance<USolidGameInstance>() : nullptr)
-	{
-		TowerCell = Instance->GetSession().TowerCell;
-	}
 	const bool bShowChest = GameMode
 		&& SolidStrongholdTransition::CompanyChestOpen(
 			State,
 			GameMode->IsInDungeon(),
-			GameMode->IsInTower(),
-			TowerCell);
+			GameMode->IsInTower());
 	SolidInventory::FPage Page;
 	SolidInventory::Layout(State.Inventory, Page, bShowChest ? &State.CaveChest : nullptr);
 

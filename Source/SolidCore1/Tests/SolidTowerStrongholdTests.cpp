@@ -632,8 +632,10 @@ bool FSolidTowerPlanMeasureTest::RunTest(const FString& Parameters)
 			&& FMath::IsNearlyEqual(Plan.StairWidthCm, SolidTowerStronghold::Imperious.StairWidthCm, 0.01f)
 			&& FMath::IsNearlyEqual(Plan.StairRunCm(), SolidTowerStronghold::Imperious.StairRunCm(), 0.01f));
 
-	FSolidStronghold AverageTower;
-	TestTrue(TEXT("Average Tower resolves"), SolidStronghold::FromToken(TEXT("Average Tower"), AverageTower));
+	ESolidStrongholdType TokenType = ESolidStrongholdType::Dungeon;
+	ESolidStrongholdSize TokenSize = ESolidStrongholdSize::Meagre;
+	TestTrue(TEXT("Average Tower resolves"), SolidStronghold::FromToken(TEXT("Average Tower"), TokenType, TokenSize));
+	const FSolidStronghold AverageTower(TokenType, TokenSize);
 	SolidTowerStronghold::FPlan Resolved;
 	TestTrue(TEXT("Average Tower has this plan"), SolidTowerStronghold::PlanFor(AverageTower, Resolved));
 	TestEqual(TEXT("the resolved plan is Average"), Resolved.FloorCount, Plan.FloorCount);
@@ -644,19 +646,21 @@ bool FSolidTowerPlanMeasureTest::RunTest(const FString& Parameters)
 		TEXT("the resolved cap matches Average"),
 		FMath::IsNearlyEqual(Resolved.TopExteriorRadiusCm, Plan.TopExteriorRadiusCm, 0.01f));
 
-	FSolidStronghold ImperiousTower;
-	TestTrue(TEXT("Imperious Tower resolves"), SolidStronghold::FromToken(TEXT("Imperious Tower"), ImperiousTower));
+	TestTrue(TEXT("Imperious Tower resolves"), SolidStronghold::FromToken(TEXT("Imperious Tower"), TokenType, TokenSize));
+	const FSolidStronghold ImperiousTower(TokenType, TokenSize);
 	TestTrue(TEXT("Imperious Tower has its plan"), SolidTowerStronghold::PlanFor(ImperiousTower, Resolved));
 	TestEqual(TEXT("the resolved plan is Imperious"), Resolved.FloorCount, SolidTowerStronghold::Imperious.FloorCount);
 
-	FSolidStronghold HumbleTower;
-	TestTrue(TEXT("Humble Tower resolves"), SolidStronghold::FromToken(TEXT("Humble Tower"), HumbleTower));
+	TestTrue(TEXT("Humble Tower resolves"), SolidStronghold::FromToken(TEXT("Humble Tower"), TokenType, TokenSize));
+	const FSolidStronghold HumbleTower(TokenType, TokenSize);
 	Resolved = Plan;
 	TestFalse(TEXT("Humble Tower has no plan"), SolidTowerStronghold::PlanFor(HumbleTower, Resolved));
 	TestEqual(TEXT("a missing plan leaves the previous value"), Resolved.FloorCount, Plan.FloorCount);
 	TestFalse(
 		TEXT("a dungeon has no tower plan"),
-		SolidTowerStronghold::PlanFor(SolidStronghold::Starting, Resolved));
+		SolidTowerStronghold::PlanFor(
+			FSolidStronghold(ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre),
+			Resolved));
 	TestEqual(TEXT("a dungeon leaves the previous value"), Resolved.FloorCount, Plan.FloorCount);
 
 	const float SampleZ[] = { 0.f, 600.f, 1200.f };
@@ -841,8 +845,10 @@ bool FSolidTowerStepMeasureTest::RunTest(const FString& Parameters)
 				Plan.GroundExteriorRadiusCm > Steps[Index - 1].GroundExteriorRadiusCm);
 		}
 
-		FSolidStronghold Stronghold;
-		TestTrue(TEXT("the size token resolves"), SolidStronghold::FromToken(Tokens[Index], Stronghold));
+		ESolidStrongholdType TokenType = ESolidStrongholdType::Dungeon;
+		ESolidStrongholdSize TokenSize = ESolidStrongholdSize::Meagre;
+		TestTrue(TEXT("the size token resolves"), SolidStronghold::FromToken(Tokens[Index], TokenType, TokenSize));
+		const FSolidStronghold Stronghold(TokenType, TokenSize);
 		FPlan Resolved;
 		TestTrue(TEXT("the size has this plan"), PlanFor(Stronghold, Resolved));
 		SolidTowerStrongholdTestPrivate::TestLandings(*this, Plan);

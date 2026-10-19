@@ -8,19 +8,19 @@
 #include "SolidStronghold.h"
 #include "Strongholds/SolidStrongholdFurniture.h"
 
-/** A stronghold the company has left. The exterior stays. It is no longer a passage. */
-struct FLeftStronghold
-{
-	FSolidStronghold Stronghold;
-	FIntPoint Cell = FIntPoint::ZeroValue;
-};
-
 /**
  * Live company state. The game starts in true sight with an empty squad.
  * The game mode holds the current copy. The travel session carries it across the cave trip.
+ * Copying clones the company stronghold and each previous one, so a tower stays a tower.
  */
 struct FGameState
 {
+	FGameState();
+	FGameState(const FGameState& Other);
+	FGameState& operator=(const FGameState& Other);
+	FGameState(FGameState&&) = default;
+	FGameState& operator=(FGameState&&) = default;
+
 	int32 MaxSquadSize = 0;
 	const TCHAR* CaptainTitle = SolidEvents::TitleOutcast;
 	bool bTrueSightEnabled = true;
@@ -53,16 +53,14 @@ struct FGameState
 	/** The cave chest. It starts with a rusty sword, old boots, coins, sticks, and pitch. Taking an item keeps it out. */
 	SolidStorage::FContainer CaveChest = SolidStorage::StartingCaveChest();
 	/** The company base. A new game is the Meagre Dungeon on its map cell. */
-	FSolidStronghold ActiveStronghold = SolidStronghold::Starting;
-	/** Map cell of that base. X is the column and Y is the row, counting from 0. */
-	FIntPoint ActiveStrongholdCell = SolidStronghold::StartingCell();
+	TUniquePtr<FSolidStronghold> ActiveStronghold;
 	/**
-	 * Sizes an event has unlocked. The index matches ESolidStrongholdSize.
-	 * A new game has none. The starting dungeon is the company base, not an unlock.
+	 * Highest size an event has unlocked. A new game is Meagre, the company base.
+	 * A larger size unlocks every size up to it. Sizes are not skipped.
 	 */
-	bool bStrongholdSizeUnlocked[SolidStronghold::SizeCount] = {};
-	/** Strongholds the company has left, oldest first. */
-	TArray<FLeftStronghold> LeftStrongholds;
+	ESolidStrongholdSize MaxStrongholdSize = ESolidStrongholdSize::Meagre;
+	/** Strongholds the company moved on from, oldest first. The exterior stays. It is no longer a passage. */
+	TArray<TUniquePtr<FSolidStronghold>> PreviousStrongholds;
 	/** Furnishings in the active stronghold. A new game carries the Meagre stronghold's pieces. */
 	TArray<SolidStrongholdFurniture::FUsed> Furnishings = SolidStrongholdFurniture::StartingFurnishings();
 };
@@ -90,11 +88,10 @@ namespace SolidEvents
 	int32 SquadCount(const FGameState& State);
 	bool IsSightEnabled(const FGameState& State, ESolidSight Sight);
 
-	/** True when an event has unlocked this stronghold size. */
+	/** True when this size is within the highest size an event has unlocked. */
 	inline bool IsStrongholdSizeUnlocked(const FGameState& State, const ESolidStrongholdSize Size)
 	{
-		const int32 Index = static_cast<int32>(Size);
-		return Index >= 0 && Index < SolidStronghold::SizeCount && State.bStrongholdSizeUnlocked[Index];
+		return static_cast<int32>(Size) <= static_cast<int32>(State.MaxStrongholdSize);
 	}
 
 	/** True when an EnableLair change has recorded this lair id. */

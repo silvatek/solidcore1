@@ -1,7 +1,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SolidStronghold.h"
 #include "SolidTerrainTypes.h"
 
 class USolidWorldMap;
@@ -31,11 +30,16 @@ namespace SolidRoad
 
 	struct FEndpoint
 	{
-		/** Town location id. INDEX_NONE for a stronghold name. */
+		/** Town location id. INDEX_NONE when this end is a stronghold. */
 		int32 LocationId = INDEX_NONE;
 		/** True when the end is a stronghold name, such as MeagreDungeon. */
 		bool bStronghold = false;
-		FSolidStronghold Stronghold;
+		/** True once that name has been found on a Stronghold line in the same file. */
+		bool bLocated = false;
+		/** Map cell of that stronghold. X is the column, Y is the row, counting from 0. */
+		FIntPoint Cell = FIntPoint::ZeroValue;
+		/** The name from the road line. MeagreDungeon and Meagre Dungeon are the same name. */
+		FString StrongholdName;
 	};
 
 	struct FDefinition
@@ -152,6 +156,7 @@ namespace SolidRoad
 	/**
 	 * "Road: Iglin -> Relion, track" or "Road: MeagreDungeon -> Iglin, trail".
 	 * An end is a town name or a stronghold name.
+	 * A stronghold name is resolved to the cell of the Stronghold line with that name.
 	 * Brackets around a name are optional. False when the line is not a road,
 	 * or an end is not one of those.
 	 */

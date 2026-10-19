@@ -47,7 +47,6 @@ namespace SolidStrongholds
 
 	struct FEntrance
 	{
-		FSolidStronghold Stronghold;
 		/** Stronghold map cell. */
 		FIntPoint Cell = FIntPoint::ZeroValue;
 		/** Adjacent grassland the mouth faces. */
@@ -61,23 +60,9 @@ namespace SolidStrongholds
 	};
 
 	/**
-	 * One entrance per stronghold cell that shares an edge with grassland.
-	 * Neighbors are tried north, east, south, then west; the first grassland wins.
-	 * Ordered by map row, then column.
-	 * A tower is included here. Only a dungeon spawns the cliff mouth.
-	 * A tower with a plan spawns its shell at the cell center, turned so the door faces this grass.
-	 * A click on that door enters. Leaving stands on the grass outside the same door.
-	 * @return Number of entrances written.
-	 */
-	int32 CollectEntrances(
-		const USolidWorldMap* WorldMap,
-		FVector2D WorldMinXY,
-		FVector2D WorldMaxXY,
-		TArray<FEntrance>& OutEntrances);
-
-	/**
-	 * Mouth or door for one cell and a known stronghold.
-	 * Used for a map Stronghold line, and for a site the company has built on.
+	 * Grass face of one cell.
+	 * The working door is the company's active stronghold.
+	 * A previous stronghold uses the same face for its exterior mesh.
 	 * False when the cell has no grassland neighbor or the world points fail.
 	 */
 	bool MakeEntrance(
@@ -85,10 +70,9 @@ namespace SolidStrongholds
 		FVector2D WorldMinXY,
 		FVector2D WorldMaxXY,
 		FIntPoint Cell,
-		const FSolidStronghold& Stronghold,
 		FEntrance& OutEntrance);
 
-	/** Grass neighbor of one map cell. North, then west, south, and east, matching CollectEntrances. */
+	/** Grass neighbor of one map cell. North, then west, south, and east, matching MakeEntrance. */
 	struct FGrassFace
 	{
 		FIntPoint GrassCell = FIntPoint::ZeroValue;
@@ -96,17 +80,4 @@ namespace SolidStrongholds
 	};
 
 	bool FindGrassFace(const USolidWorldMap* WorldMap, FIntPoint Cell, FGrassFace& Out);
-
-	/** The first dungeon mouth. A tower entrance is not a place to leave the cave. */
-	inline const FEntrance* FindCaveMouth(const TArray<FEntrance>& Entrances)
-	{
-		for (const FEntrance& Entrance : Entrances)
-		{
-			if (SolidStronghold::UsesCaveMouth(Entrance.Stronghold))
-			{
-				return &Entrance;
-			}
-		}
-		return nullptr;
-	}
 }

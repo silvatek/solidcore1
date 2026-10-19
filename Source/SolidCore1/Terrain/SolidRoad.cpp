@@ -1,4 +1,5 @@
 #include "SolidRoad.h"
+#include "SolidStronghold.h"
 #include "SolidTowns.h"
 #include "SolidWorldMap.h"
 
@@ -25,11 +26,12 @@ namespace SolidRoad
 				return true;
 			}
 
-			FSolidStronghold Hold;
-			if (SolidStronghold::FromToken(Token, Hold))
+			ESolidStrongholdType HoldType = ESolidStrongholdType::Dungeon;
+			ESolidStrongholdSize HoldSize = ESolidStrongholdSize::Meagre;
+			if (SolidStronghold::FromToken(Token, HoldType, HoldSize))
 			{
 				Out.bStronghold = true;
-				Out.Stronghold = Hold;
+				Out.StrongholdName = Token;
 				return true;
 			}
 			return false;
@@ -184,20 +186,9 @@ namespace SolidRoad
 			OutCells.Reset();
 			if (End.bStronghold)
 			{
-				for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+				if (End.bLocated)
 				{
-					for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
-					{
-						FSolidStronghold Attributes;
-						if (!Map.StrongholdAtCell(Col, Row, Attributes))
-						{
-							continue;
-						}
-						if (Attributes.Type == End.Stronghold.Type && Attributes.Size == End.Stronghold.Size)
-						{
-							OutCells.Add(FIntPoint(Col, Row));
-						}
-					}
+					OutCells.Add(End.Cell);
 				}
 				return;
 			}

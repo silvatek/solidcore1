@@ -30,7 +30,6 @@ bool SolidStrongholds::MakeEntrance(
 	const FVector2D WorldMinXY,
 	const FVector2D WorldMaxXY,
 	const FIntPoint Cell,
-	const FSolidStronghold& Stronghold,
 	FEntrance& OutEntrance)
 {
 	OutEntrance = FEntrance();
@@ -70,7 +69,6 @@ bool SolidStrongholds::MakeEntrance(
 		return false;
 	}
 
-	OutEntrance.Stronghold = Stronghold;
 	OutEntrance.Cell = Cell;
 	OutEntrance.GrassCell = GrassCell;
 	OutEntrance.EdgeXY = (CaveXY + GrassXY) * 0.5f;
@@ -78,46 +76,6 @@ bool SolidStrongholds::MakeEntrance(
 	OutEntrance.WorldXY = OutEntrance.EdgeXY + TowardGrass * FaceInsetCm;
 	OutEntrance.FacingYawDeg = YawFacingGrass(*ChosenStep);
 	return true;
-}
-
-int32 SolidStrongholds::CollectEntrances(
-	const USolidWorldMap* WorldMap,
-	const FVector2D WorldMinXY,
-	const FVector2D WorldMaxXY,
-	TArray<FEntrance>& OutEntrances)
-{
-	OutEntrances.Reset();
-	if (!WorldMap || !WorldMap->IsLoaded())
-	{
-		return 0;
-	}
-
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
-	{
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
-		{
-			FSolidStronghold Attributes;
-			if (!WorldMap->StrongholdAtCell(Col, Row, Attributes))
-			{
-				continue;
-			}
-
-			FEntrance Entrance;
-			if (!MakeEntrance(
-				WorldMap,
-				WorldMinXY,
-				WorldMaxXY,
-				FIntPoint(Col, Row),
-				Attributes,
-				Entrance))
-			{
-				continue;
-			}
-			OutEntrances.Add(Entrance);
-		}
-	}
-
-	return OutEntrances.Num();
 }
 
 bool SolidStrongholds::FindGrassFace(

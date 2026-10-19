@@ -139,12 +139,8 @@ struct FSolidTravelSession
 	bool bReturnToLairMouth = false;
 	/** X or Y. The end to enter, or the end to stand at after leaving. */
 	TCHAR LairEnd = 0;
-	/** Next loaded world is a tower interior. */
+	/** Next loaded world is the company tower interior. */
 	bool bInTower = false;
-	/** Next open-world spawn stands on the grass in front of this tower's door. */
+	/** Next open-world spawn stands on the grass in front of the company tower door. */
 	bool bReturnToTowerDoor = false;
-	/** Map cell of the tower door. Meaningful while inside, and while returning. */
-	FIntPoint TowerCell = FIntPoint::ZeroValue;
-	/** Size and type of that tower. Meaningful while inside, and while returning. */
-	FSolidStronghold Tower;
 };

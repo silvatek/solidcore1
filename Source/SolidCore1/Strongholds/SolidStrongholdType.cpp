@@ -1,97 +1,112 @@
 #include "SolidStrongholdType.h"
 #include "SolidTowerStronghold.h"
 
+TUniquePtr<FSolidStronghold> FSolidStronghold::Clone() const
+{
+	return MakeUnique<FSolidStronghold>(*this);
+}
+
 namespace SolidStronghold
 {
-	const FSolidDungeonType& FSolidDungeonType::Instance()
+	const FSolidDungeon& FSolidDungeon::Instance()
 	{
-		static const FSolidDungeonType Dungeon;
+		static const FSolidDungeon Dungeon;
 		return Dungeon;
 	}
 
-	bool FSolidDungeonType::Supported(const ESolidStrongholdSize Size) const
+	bool FSolidDungeon::Supported(const ESolidStrongholdSize InSize) const
 	{
-		return Size == ESolidStrongholdSize::Meagre;
+		return InSize == ESolidStrongholdSize::Meagre;
 	}
 
-	bool FSolidDungeonType::UsesCliffMouth() const
+	bool FSolidDungeon::UsesCliffMouth() const
 	{
 		return true;
 	}
 
-	ESolidStrongholdTrip FSolidDungeonType::Trip() const
+	ESolidStrongholdTrip FSolidDungeon::Trip() const
 	{
 		return ESolidStrongholdTrip::Cave;
 	}
 
-	void FSolidDungeonType::CollectGroundHexes(
-		const ESolidStrongholdSize Size,
+	void FSolidDungeon::CollectGroundHexes(
+		const ESolidStrongholdSize InSize,
 		TArray<SolidStrongholdGrid::FHex>& OutHexes) const
 	{
 		OutHexes.Reset();
-		if (!Supported(Size))
+		if (!Supported(InSize))
 		{
 			return;
 		}
 		SolidStrongholdGrid::CollectMeagreHexes(OutHexes);
 	}
 
-	const FSolidFortressType& FSolidFortressType::Instance()
+	TUniquePtr<FSolidStronghold> FSolidDungeon::Clone() const
 	{
-		static const FSolidFortressType Fortress;
+		return MakeUnique<FSolidDungeon>(*this);
+	}
+
+	const FSolidFortress& FSolidFortress::Instance()
+	{
+		static const FSolidFortress Fortress;
 		return Fortress;
 	}
 
-	bool FSolidFortressType::Supported(ESolidStrongholdSize) const
+	bool FSolidFortress::Supported(ESolidStrongholdSize) const
 	{
 		return false;
 	}
 
-	bool FSolidFortressType::UsesCliffMouth() const
+	bool FSolidFortress::UsesCliffMouth() const
 	{
 		return false;
 	}
 
-	ESolidStrongholdTrip FSolidFortressType::Trip() const
+	ESolidStrongholdTrip FSolidFortress::Trip() const
 	{
 		return ESolidStrongholdTrip::None;
 	}
 
-	void FSolidFortressType::CollectGroundHexes(
+	void FSolidFortress::CollectGroundHexes(
 		ESolidStrongholdSize,
 		TArray<SolidStrongholdGrid::FHex>& OutHexes) const
 	{
 		OutHexes.Reset();
 	}
 
-	const FSolidTowerType& FSolidTowerType::Instance()
+	TUniquePtr<FSolidStronghold> FSolidFortress::Clone() const
 	{
-		static const FSolidTowerType Tower;
+		return MakeUnique<FSolidFortress>(*this);
+	}
+
+	const FSolidTower& FSolidTower::Instance()
+	{
+		static const FSolidTower Tower;
 		return Tower;
 	}
 
-	bool FSolidTowerType::Supported(const ESolidStrongholdSize Size) const
+	bool FSolidTower::Supported(const ESolidStrongholdSize InSize) const
 	{
-		return SolidTowerStronghold::IsDefinedSize(Size);
+		return SolidTowerStronghold::IsDefinedSize(InSize);
 	}
 
-	bool FSolidTowerType::UsesCliffMouth() const
+	bool FSolidTower::UsesCliffMouth() const
 	{
 		return false;
 	}
 
-	ESolidStrongholdTrip FSolidTowerType::Trip() const
+	ESolidStrongholdTrip FSolidTower::Trip() const
 	{
 		return ESolidStrongholdTrip::Tower;
 	}
 
-	void FSolidTowerType::CollectGroundHexes(
-		const ESolidStrongholdSize Size,
+	void FSolidTower::CollectGroundHexes(
+		const ESolidStrongholdSize InSize,
 		TArray<SolidStrongholdGrid::FHex>& OutHexes) const
 	{
 		OutHexes.Reset();
 		SolidTowerStronghold::FPlan Plan;
-		const FSolidStronghold Stronghold{ ESolidStrongholdType::Tower, Size };
+		const FSolidStronghold Stronghold{ ESolidStrongholdType::Tower, InSize };
 		if (!SolidTowerStronghold::PlanFor(Stronghold, Plan))
 		{
 			return;
@@ -99,19 +114,36 @@ namespace SolidStronghold
 		SolidTowerStronghold::CollectKeptHexes(Plan, 0, OutHexes);
 	}
 
-	const FSolidStrongholdType& TypeOf(const ESolidStrongholdType Type)
+	TUniquePtr<FSolidStronghold> FSolidTower::Clone() const
+	{
+		return MakeUnique<FSolidTower>(*this);
+	}
+
+	TUniquePtr<FSolidStronghold> Make(
+		const ESolidStrongholdType Type,
+		const ESolidStrongholdSize Size,
+		const FIntPoint Cell)
+	{
+		TUniquePtr<FSolidStronghold> Stronghold = TypeOf(Type).Clone();
+		Stronghold->Type = Type;
+		Stronghold->Size = Size;
+		Stronghold->Cell = Cell;
+		return Stronghold;
+	}
+
+	const FSolidStronghold& TypeOf(const ESolidStrongholdType Type)
 	{
 		switch (Type)
 		{
 		case ESolidStrongholdType::Dungeon:
-			return FSolidDungeonType::Instance();
+			return FSolidDungeon::Instance();
 		case ESolidStrongholdType::Fortress:
-			return FSolidFortressType::Instance();
+			return FSolidFortress::Instance();
 		case ESolidStrongholdType::Tower:
-			return FSolidTowerType::Instance();
+			return FSolidTower::Instance();
 		default:
 			checkNoEntry();
-			return FSolidDungeonType::Instance();
+			return FSolidDungeon::Instance();
 		}
 	}
 

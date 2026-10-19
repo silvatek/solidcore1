@@ -74,3 +74,4 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
    3. Push that commit on its own, so the tests can run against the current build.
    4. The product change comes next and does not edit the tests.
    5. Run the same tests again against the new build.
+6. After a significant product change, run the full suite, filter `SolidCore1`, before pushing. A change in one area can break a test elsewhere.

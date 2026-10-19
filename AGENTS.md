@@ -89,6 +89,8 @@ Cloud agents are a **code + git workshop**. They do not replace the Windows Unre
 
 Follow the Automated tests policy in `CodingGuidelines.md`.
 
+After a significant product change, run the full suite, filter `SolidCore1`, before pushing.
+
 ## Unused code
 
 A later pass searches for unused code and, when it finds some, writes a story to remove it. This section is the definition that pass uses.

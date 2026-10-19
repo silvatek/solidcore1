@@ -61,7 +61,7 @@ Embed that count in the canvas so the stats stay honest when a room moves. Pytho
 
 - **Tower** — one round shaft, taper, spiral stair band, kept hexes inside the interior radius. Imperious is the large end; Average through Stately step with `SizeAlong`.
 - **Fortress** — rectangular outer wall, yard (yard hexes are **not** in the total), buildings with straight walls. Keep is largest footprint and tallest. Stairs and landings live inside multi-floor buildings.
-- **Dungeon** — rooms (rectangular or irregular) joined by **passages** and **stairs**. No hard limit on the overall footprint. The Meagre den stays the shipped fourteen-cell outline. Larger sizes meet the hex total by room count and size, not by copying the tower.
+- **Dungeon** — rooms (rectangular or irregular) joined by **passages** and **stairs**. Passages have no usable hexes. No hard limit on the overall footprint. The Meagre den stays the shipped fourteen-cell outline. Larger sizes meet the hex total by room count and size, not by copying the tower.
 
 ## Precedents
 

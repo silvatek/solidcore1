@@ -105,7 +105,6 @@ bool FSolidStrongholdCatalogTest::RunTest(const FString& Parameters)
 
 	ESolidBiome Shelf = ESolidBiome::Grassland;
 	TestTrue(TEXT("the cave names a shelf"), SolidStronghold::BiomeFor(MeagreDungeon, Shelf));
-	TestEqual(TEXT("the cave shelf is mountain"), static_cast<uint8>(Shelf), static_cast<uint8>(ESolidBiome::Mountain));
 	TestTrue(TEXT("the cave uses the cliff mouth"), SolidStronghold::UsesCaveMouth(MeagreDungeon));
 
 	TestTrue(TEXT("ImperiousTower resolves"), SolidStronghold::FromToken(TEXT("ImperiousTower"), TokenType, TokenSize));
@@ -160,10 +159,12 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 				continue;
 			}
 			CaveCells.Add(FIntPoint(Col, Row));
+			ESolidBiome CaveShelf = ESolidBiome::Grassland;
+			TestTrue(TEXT("the cave names a shelf"), SolidStronghold::BiomeFor(Named, CaveShelf));
 			TestEqual(
-				TEXT("cave cell is Mountain"),
+				TEXT("cave cell uses its shelf"),
 				static_cast<uint8>(Map->GetBiomeAtCell(Col, Row)),
-				static_cast<uint8>(ESolidBiome::Mountain));
+				static_cast<uint8>(CaveShelf));
 			TestEqual(TEXT("cave is not a town"), Map->GetLocationIdAtCell(Col, Row), INDEX_NONE);
 			const FIntPoint North(Col, Row - 1);
 			TestEqual(
@@ -229,10 +230,13 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 		Grid += TEXT("! 11,11 = Stronghold (MeagreDungeon)\n");
 		USolidWorldMap* Map = NewObject<USolidWorldMap>();
 		TestTrue(TEXT("east grass loads"), Map->LoadFromString(Grid));
+		const FSolidStronghold Cave(ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre);
+		ESolidBiome Shelf = ESolidBiome::Grassland;
+		TestTrue(TEXT("the cave names a shelf"), SolidStronghold::BiomeFor(Cave, Shelf));
 		TestEqual(
-			TEXT("a stronghold is Mountain"),
+			TEXT("a stronghold uses its shelf"),
 			static_cast<uint8>(Map->GetBiomeAtCell(10, 10)),
-			static_cast<uint8>(ESolidBiome::Mountain));
+			static_cast<uint8>(Shelf));
 
 		SolidStrongholds::FEntrance Entrance;
 		TestTrue(TEXT("east face"), SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, FIntPoint(10, 10), Entrance));

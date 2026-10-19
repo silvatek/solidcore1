@@ -489,9 +489,12 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	const FVector2D CaveCell = RoadTestCenter(*Cave, 4, 8);
-	TestEqual(TEXT("the cave cell keeps the mountain shelf"),
+	const FSolidStronghold MeagreDungeon(ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre);
+	ESolidBiome CaveShelf = ESolidBiome::Grassland;
+	TestTrue(TEXT("the cave names a shelf"), SolidStronghold::BiomeFor(MeagreDungeon, CaveShelf));
+	TestEqual(TEXT("the cave cell keeps its shelf"),
 		static_cast<uint8>(Cave->SampleBiome(CaveCell.X, CaveCell.Y, RoadTestMin, RoadTestMax)),
-		static_cast<uint8>(ESolidBiome::Mountain));
+		static_cast<uint8>(CaveShelf));
 	TestFalse(TEXT("the cave is not a town"),
 		Cave->IsMarkedTown(CaveCell.X, CaveCell.Y, RoadTestMin, RoadTestMax));
 

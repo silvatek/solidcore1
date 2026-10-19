@@ -1,6 +1,6 @@
 # Dungeon exterior
 
-Status: Ready
+Status: In Progress
 
 ## Story
 

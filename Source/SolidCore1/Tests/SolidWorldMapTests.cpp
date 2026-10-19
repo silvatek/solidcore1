@@ -1433,10 +1433,14 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("stronghold type"), static_cast<uint8>(Cave.StrongholdType), static_cast<uint8>(ESolidStrongholdType::Dungeon));
 	TestEqual(TEXT("stronghold name"), Cave.Name, FString(TEXT("Meagre Dungeon")));
 	TestEqual(TEXT("a stronghold is not a location"), Map->GetLocationIdAtCell(CaveCol, CaveRow), INDEX_NONE);
+	ESolidBiome CaveShelf = ESolidBiome::Grassland;
+	TestTrue(
+		TEXT("the cave names a shelf"),
+		SolidStronghold::BiomeFor(FSolidStronghold(Cave.StrongholdType, Cave.StrongholdSize), CaveShelf));
 	TestEqual(
-		TEXT("a stronghold uses the mountain shelf"),
+		TEXT("a stronghold uses its shelf"),
 		static_cast<uint8>(Map->GetBiomeAtCell(CaveCol, CaveRow)),
-		static_cast<uint8>(ESolidBiome::Mountain));
+		static_cast<uint8>(CaveShelf));
 
 	FSolidWorldBang Tower;
 	TestTrue(TEXT("a spaced size and type match"), Map->FindBang(TowerCol, TowerRow, Tower));

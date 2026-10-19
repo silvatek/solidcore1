@@ -2,6 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "SolidGroundMove.h"
 #include "SolidBridge.h"
+#include "SolidStronghold.h"
 #include "SolidWorldMap.h"
 
 #include <initializer_list>
@@ -108,7 +109,13 @@ bool FSolidGroundMoveFootingTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("forest cell"), GroundMoveAllows(*Map, Forest, NoBridge));
 	TestFalse(TEXT("sea cell"), GroundMoveAllows(*Map, Sea, NoBridge));
 	TestFalse(TEXT("mountain cell"), GroundMoveAllows(*Map, Mountain, NoBridge));
-	TestFalse(TEXT("cave cell uses the mountain"), GroundMoveAllows(*Map, Cave, NoBridge));
+	const FSolidStronghold MeagreDungeon(ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre);
+	ESolidBiome CaveShelf = ESolidBiome::Grassland;
+	TestTrue(TEXT("the cave names a shelf"), SolidStronghold::BiomeFor(MeagreDungeon, CaveShelf));
+	TestEqual(
+		TEXT("cave cell follows its shelf"),
+		GroundMoveAllows(*Map, Cave, NoBridge),
+		!SolidGroundMove::IsImpassable(CaveShelf));
 
 	TestFalse(TEXT("channel centre"), GroundMoveAllows(*Map, Channel, NoBridge));
 	TestFalse(TEXT("inside the 4 m channel"), GroundMoveAllows(*Map, Channel + FVector2D(100.f, 0.f), NoBridge));

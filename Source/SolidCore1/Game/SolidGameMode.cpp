@@ -1855,7 +1855,7 @@ void ASolidGameMode::EnsureVegetation()
 			Owned.Add(Previous.Get());
 		}
 	}
-	SolidStronghold::SpawnOutposts(
+	SolidStronghold::SpawnStrongholds(
 		World,
 		Streamer,
 		Owned,

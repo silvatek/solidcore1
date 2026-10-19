@@ -11,7 +11,7 @@
 
 namespace SolidStronghold
 {
-	void SpawnOutposts(
+	void SpawnStrongholds(
 		UWorld* World,
 		ASolidTerrainStreamer* Streamer,
 		const TArray<const FSolidStronghold*>& Company,

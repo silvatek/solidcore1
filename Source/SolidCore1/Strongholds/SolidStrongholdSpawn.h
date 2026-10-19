@@ -12,10 +12,11 @@ struct FActorSpawnParameters;
 namespace SolidStronghold
 {
 	/**
-	 * Places each company stronghold's exterior, and a standing stone on a site that has none.
+	 * Spawns the exterior of each company stronghold.
+	 * Also spawns a marker stone on a stronghold site that has no exterior.
 	 * The stronghold names the actor, the world position, and the facing.
 	 */
-	void SpawnOutposts(
+	void SpawnStrongholds(
 		UWorld* World,
 		ASolidTerrainStreamer* Streamer,
 		const TArray<const FSolidStronghold*>& Company,

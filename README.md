@@ -28,6 +28,7 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Basic NPCs](Planning/basic-npcs.md)
 - [Pathfinding over bridges](Planning/pathfinding-over-bridges.md)
 - [Rough stones](Planning/rough-stones.md)
+- [Dungeon exterior](Planning/dungeon-exterior.md)
 - [Fortress stronghold](Planning/fortress-stronghold.md)
 - [Imperious dungeon](Planning/imperious-dungeon.md)
 - [Basic furniture management](Planning/basic-furniture-management.md)

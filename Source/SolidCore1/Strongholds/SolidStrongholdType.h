@@ -38,9 +38,17 @@ namespace SolidStronghold
 		 * East and west use the shorter one. The actor yaw turns that into a world direction.
 		 */
 		float FaceForwardCm(ESolidStrongholdOrientation InOrientation) const;
+		/**
+		 * Local +Y shift that centers the stone on this cell's terrain points.
+		 * Cell edges fall on those points. The east and north edge points belong
+		 * to this cell, and the west and south edge points belong to the neighbor,
+		 * so the points in the cell sit half a step (100 cm) east and north of
+		 * the geometric center. Across the exit, that is this offset.
+		 */
+		float ShelfLateralCm(ESolidStrongholdOrientation InOrientation) const;
 		/** Centimetres in front of the face where the captain stands on leaving. */
 		float LeaveStandCm() const;
-		/** World position in front of the cell center, outside the exit. */
+		/** World position in front of the mouth, outside the exit. */
 		FVector2D LeaveStandXY(FVector2D CellCenterXY, ESolidStrongholdOrientation InOrientation) const;
 
 		virtual void CollectGroundHexes(

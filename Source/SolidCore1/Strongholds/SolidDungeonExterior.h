@@ -9,8 +9,9 @@ class UStaticMeshComponent;
 
 /**
  * Exterior of a dungeon stronghold. It is the rock on that stronghold's map cell.
- * Local +X faces the exit. The face sits just inside the next cell, so the shift
- * follows the stronghold's orientation. The dark mouth is a rounded opening.
+ * Local +X faces the exit. The face sits just inside the next cell, and local +Y
+ * shifts the stone onto the center of that cell's terrain points. Both follow
+ * the stronghold's orientation. The mouth is a round arch, widest at the ground.
  * The ground edge continues down to 10 cm below the lowest terrain point in the cell.
  * The stone is rounded and lumpy inside the face size. A click on the stone does not enter.
  */
@@ -35,8 +36,16 @@ public:
 	 */
 	static float GroundDropCm(const USolidTerrainMap* Terrain, float SurfaceBias, const FVector& ActorLocation);
 
-	/** Rock size and how far the face sits in front of the actor, from the dungeon that owns this exterior. */
-	void SetFace(float InFaceWidthCm, float InFaceHeightCm, float InSlopeRunCm, float InFaceForwardCm);
+	/**
+	 * Rock size, how far the face sits in front of the actor, and the local +Y
+	 * shift onto the shelf center. The dungeon that owns this exterior supplies them.
+	 */
+	void SetFace(
+		float InFaceWidthCm,
+		float InFaceHeightCm,
+		float InSlopeRunCm,
+		float InFaceForwardCm,
+		float InShelfLateralCm);
 
 	/** Use this drop instead of measuring the cell. A negative value measures the cell. */
 	void SetGroundDrop(float InGroundDropCm);
@@ -60,6 +69,7 @@ private:
 	float FaceHeightCm = 0.f;
 	float SlopeRunCm = 0.f;
 	float FaceForwardCm = 0.f;
+	float ShelfLateralCm = 0.f;
 	/** Negative until a caller sets a drop. BuildVisuals then measures the cell. */
 	float ChosenDropCm = -1.f;
 

@@ -54,7 +54,12 @@ namespace SolidStronghold
 		{
 			return;
 		}
-		Rock->SetFace(FaceWidthCm(), FaceHeightCm(), SlopeRunCm(), FaceForwardCm(Orientation));
+		Rock->SetFace(
+			FaceWidthCm(),
+			FaceHeightCm(),
+			SlopeRunCm(),
+			FaceForwardCm(Orientation),
+			ShelfLateralCm(Orientation));
 		Rock->BuildVisuals();
 	}
 
@@ -79,6 +84,22 @@ namespace SolidStronghold
 		return FMath::Max(0.f, HalfCell - SolidStrongholds::MouthBorderGapCm);
 	}
 
+	float FSolidDungeon::ShelfLateralCm(const ESolidStrongholdOrientation InOrientation) const
+	{
+		constexpr float PointSpacing = 200.f;
+		const float HalfStep = PointSpacing * 0.5f;
+		switch (InOrientation)
+		{
+		case ESolidStrongholdOrientation::North:
+		case ESolidStrongholdOrientation::West:
+			return -HalfStep;
+		case ESolidStrongholdOrientation::South:
+		case ESolidStrongholdOrientation::East:
+		default:
+			return HalfStep;
+		}
+	}
+
 	float FSolidDungeon::LeaveStandCm() const
 	{
 		return 250.f;
@@ -90,7 +111,9 @@ namespace SolidStronghold
 	{
 		const float YawRad = FMath::DegreesToRadians(SolidStronghold::OrientationYawDeg(InOrientation));
 		const float Ahead = FaceForwardCm(InOrientation) + LeaveStandCm();
-		return CellCenterXY + FVector2D(FMath::Cos(YawRad), FMath::Sin(YawRad)) * Ahead;
+		const FVector2D Forward(FMath::Cos(YawRad), FMath::Sin(YawRad));
+		const FVector2D Left(-Forward.Y, Forward.X);
+		return CellCenterXY + Forward * Ahead + Left * ShelfLateralCm(InOrientation);
 	}
 
 	void FSolidDungeon::CollectGroundHexes(

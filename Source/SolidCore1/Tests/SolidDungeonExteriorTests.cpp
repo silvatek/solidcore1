@@ -145,13 +145,13 @@ namespace SolidDungeonExteriorTestPrivate
 			Out.Max.Y = FMath::Max(Out.Max.Y, Point.Y);
 			Out.Max.Z = FMath::Max(Out.Max.Z, Point.Z);
 			++Out.Vertices;
-			if (FMath::Abs(Point.X - MidX) <= MidBand && FMath::Abs(Point.Y) < 40.f)
+			if (FMath::Abs(Point.X - MidX) <= MidBand && FMath::Abs(Point.Y - Location.Y) < 40.f)
 			{
 				Out.MidCrownZ = FMath::Max(Out.MidCrownZ, Point.Z);
 			}
 			if (FMath::Abs(Point.X - Location.X) < 5.f && FMath::Abs(Point.Z - OpeningHeight) < 30.f)
 			{
-				Out.FrontOpeningY = FMath::Max(Out.FrontOpeningY, FMath::Abs(Point.Y));
+				Out.FrontOpeningY = FMath::Max(Out.FrontOpeningY, FMath::Abs(Point.Y - Location.Y));
 			}
 		}
 		return Out.Vertices > 0;
@@ -182,10 +182,63 @@ namespace SolidDungeonExteriorTestPrivate
 			{
 				continue;
 			}
-			const float PointY = Location.Y + Raw.Y * Scale.Y;
+			const float PointY = Raw.Y * Scale.Y;
 			Half = FMath::Max(Half, FMath::Abs(PointY));
 		}
 		return Half;
+	}
+
+	float ReachFrom(const FBounds& Bounds, const float CenterY)
+	{
+		return FMath::Max(FMath::Abs(Bounds.Min.Y - CenterY), FMath::Abs(Bounds.Max.Y - CenterY));
+	}
+
+	bool FrontCovers(const UStaticMeshComponent* Part, const float LocalY, const float LocalZ)
+	{
+		if (!Part)
+		{
+			return false;
+		}
+		UStaticMesh* Mesh = Part->GetStaticMesh();
+		FMeshDescription* Description = Mesh ? Mesh->GetMeshDescription(0) : nullptr;
+		if (!Description)
+		{
+			return false;
+		}
+		FStaticMeshAttributes Attributes(*Description);
+		TVertexAttributesRef<FVector3f> Positions = Attributes.GetVertexPositions();
+		for (const FTriangleID TriangleID : Description->Triangles().GetElementIDs())
+		{
+			const TArrayView<const FVertexInstanceID> Corners = Description->GetTriangleVertexInstances(TriangleID);
+			if (Corners.Num() < 3)
+			{
+				continue;
+			}
+			const FVector3f P0 = Positions[Description->GetVertexInstanceVertex(Corners[0])];
+			const FVector3f P1 = Positions[Description->GetVertexInstanceVertex(Corners[1])];
+			const FVector3f P2 = Positions[Description->GetVertexInstanceVertex(Corners[2])];
+			if (FMath::Abs(P0.X) > 1.f || FMath::Abs(P1.X) > 1.f || FMath::Abs(P2.X) > 1.f)
+			{
+				continue;
+			}
+			const FVector2D A(P0.Y, P0.Z);
+			const FVector2D B(P1.Y, P1.Z);
+			const FVector2D C(P2.Y, P2.Z);
+			const FVector2D P(LocalY, LocalZ);
+			const float Den = (B.Y - C.Y) * (A.X - C.X) + (C.X - B.X) * (A.Y - C.Y);
+			if (FMath::Abs(Den) < 0.01f)
+			{
+				continue;
+			}
+			const float Wa = ((B.Y - C.Y) * (P.X - C.X) + (C.X - B.X) * (P.Y - C.Y)) / Den;
+			const float Wb = ((C.Y - A.Y) * (P.X - C.X) + (A.X - C.X) * (P.Y - C.Y)) / Den;
+			const float Wc = 1.f - Wa - Wb;
+			if (Wa >= -0.02f && Wb >= -0.02f && Wc >= -0.02f)
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 }
 
@@ -278,17 +331,31 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 		TEXT("the north face uses the taller cell"),
 		FMath::IsNearlyEqual(NorthForward, NorthHalf - SolidStrongholds::MouthBorderGapCm, 0.1f));
 
+	const float NorthLateral = Dungeon.ShelfLateralCm(ESolidStrongholdOrientation::North);
+	const float EastLateral = Dungeon.ShelfLateralCm(ESolidStrongholdOrientation::East);
+	TestTrue(
+		TEXT("the north shelf center is east of the cell center"),
+		FMath::IsNearlyEqual(NorthLateral, -100.f, 0.1f));
+	TestTrue(
+		TEXT("the east shelf center is north of the cell center"),
+		FMath::IsNearlyEqual(EastLateral, 100.f, 0.1f));
 	const FVector2D CellCenter(1000.f, 2000.f);
 	const FVector2D NorthStand = Dungeon.LeaveStandXY(CellCenter, ESolidStrongholdOrientation::North);
+	const float NorthYaw = FMath::DegreesToRadians(
+		SolidStronghold::OrientationYawDeg(ESolidStrongholdOrientation::North));
+	const FVector2D NorthLeft(-FMath::Sin(NorthYaw), FMath::Cos(NorthYaw));
 	TestTrue(
 		TEXT("leaving stands in front of the north face"),
-		FMath::IsNearlyEqual(NorthStand.X, CellCenter.X, 0.1f)
+		FMath::IsNearlyEqual(NorthStand.X, CellCenter.X + NorthLeft.X * NorthLateral, 0.1f)
 			&& FMath::IsNearlyEqual(NorthStand.Y, CellCenter.Y + NorthForward + Dungeon.LeaveStandCm(), 0.1f));
 	const FVector2D EastStand = Dungeon.LeaveStandXY(CellCenter, ESolidStrongholdOrientation::East);
+	const float EastYaw = FMath::DegreesToRadians(
+		SolidStronghold::OrientationYawDeg(ESolidStrongholdOrientation::East));
+	const FVector2D EastLeft(-FMath::Sin(EastYaw), FMath::Cos(EastYaw));
 	TestTrue(
 		TEXT("leaving stands in front of the east face"),
 		FMath::IsNearlyEqual(EastStand.X, CellCenter.X + EastForward + Dungeon.LeaveStandCm(), 0.1f)
-			&& FMath::IsNearlyEqual(EastStand.Y, CellCenter.Y, 0.1f));
+			&& FMath::IsNearlyEqual(EastStand.Y, CellCenter.Y + EastLeft.Y * EastLateral, 0.1f));
 
 	Cave->Orientation = ESolidStrongholdOrientation::North;
 	ASolidDungeonExterior* Rock = NewObject<ASolidDungeonExterior>();
@@ -315,25 +382,37 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("mouth shape"),
 		SolidDungeonExteriorTestPrivate::Measure(Mouth, 0.f, SolidStrongholds::OpeningHeightCm, MouthBounds));
+	const float ShelfY = Mouth->GetRelativeLocation().Y;
+	const float MouthReach = SolidDungeonExteriorTestPrivate::ReachFrom(MouthBounds, ShelfY);
 	TestTrue(
 		TEXT("the mouth is the opening"),
 		FMath::IsNearlyEqual(MouthBounds.Max.Z - MouthBounds.Min.Z, SolidStrongholds::OpeningHeightCm, 30.f)
-			&& FMath::Max(FMath::Abs(MouthBounds.Min.Y), MouthBounds.Max.Y) > SolidStrongholds::OpeningWidthCm * 0.35f
-			&& FMath::Max(FMath::Abs(MouthBounds.Min.Y), MouthBounds.Max.Y) <= SolidStrongholds::OpeningWidthCm * 0.5f + 1.f);
+			&& MouthReach > SolidStrongholds::OpeningWidthCm * 0.35f
+			&& MouthReach <= SolidStrongholds::OpeningWidthCm * 0.5f + 1.f);
 	TestTrue(
 		TEXT("the mouth meets the ground"),
 		FMath::IsNearlyEqual(MouthBounds.Min.Z, 0.f, 1.f));
 	TestTrue(
-		TEXT("the mouth is centered"),
-		FMath::IsNearlyZero((MouthBounds.Min.Y + MouthBounds.Max.Y) * 0.5f, 1.f));
+		TEXT("the mouth is centered on the shelf"),
+		FMath::IsNearlyEqual(ShelfY, NorthLateral, 0.1f)
+			&& FMath::IsNearlyEqual((MouthBounds.Min.Y + MouthBounds.Max.Y) * 0.5f, ShelfY, 1.f));
 	const float GroundHalf = SolidDungeonExteriorTestPrivate::HalfWidthNear(Mouth, 20.f, 25.f);
 	const float MiddleHalf = SolidDungeonExteriorTestPrivate::HalfWidthNear(
 		Mouth,
 		SolidStrongholds::OpeningHeightCm * 0.45f,
 		40.f);
+	const float CrownHalf = SolidDungeonExteriorTestPrivate::HalfWidthNear(
+		Mouth,
+		SolidStrongholds::OpeningHeightCm * 0.82f,
+		30.f);
 	TestTrue(
-		TEXT("the mouth is rounder than a rectangle"),
-		GroundHalf > 40.f && MiddleHalf > GroundHalf + 20.f);
+		TEXT("the mouth stays wide at the ground"),
+		GroundHalf > SolidStrongholds::OpeningWidthCm * 0.4f
+			&& GroundHalf + 1.f >= MiddleHalf
+			&& CrownHalf + 30.f < GroundHalf);
+	TestTrue(
+		TEXT("the mouth covers the bottom of the opening"),
+		SolidDungeonExteriorTestPrivate::FrontCovers(Mouth, 0.f, 12.f));
 	const float MouthFront = MouthBounds.Max.X;
 	TestTrue(
 		TEXT("the mouth sits behind the front"),
@@ -353,9 +432,10 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("the rock reaches the face height"),
 		FMath::IsNearlyEqual(Bounds.Max.Z, Dungeon.FaceHeightCm(), 1.f));
+	const float RockReach = SolidDungeonExteriorTestPrivate::ReachFrom(Bounds, Stone->GetRelativeLocation().Y);
 	TestTrue(
 		TEXT("the rock reaches the face width"),
-		FMath::IsNearlyEqual(FMath::Max(FMath::Abs(Bounds.Min.Y), Bounds.Max.Y), Dungeon.FaceWidthCm() * 0.5f, 1.f));
+		FMath::IsNearlyEqual(RockReach, Dungeon.FaceWidthCm() * 0.5f, 1.f));
 	TestTrue(
 		TEXT("the slope runs the full distance"),
 		FMath::IsNearlyEqual(Bounds.Min.X, NorthForward - Dungeon.SlopeRunCm(), 1.f)
@@ -363,8 +443,11 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("the rock stays inside the face"),
 		Bounds.Max.Z <= Dungeon.FaceHeightCm() + 1.f
-			&& FMath::Max(FMath::Abs(Bounds.Min.Y), Bounds.Max.Y) <= Dungeon.FaceWidthCm() * 0.5f + 1.f
+			&& RockReach <= Dungeon.FaceWidthCm() * 0.5f + 1.f
 			&& Bounds.Min.Z >= -1.f);
+	TestTrue(
+		TEXT("the rock sits on the shelf center"),
+		FMath::IsNearlyEqual(Stone->GetRelativeLocation().Y, NorthLateral, 0.1f));
 	TestTrue(
 		TEXT("the slope is rounder than a wedge"),
 		Bounds.MidCrownZ > Dungeon.FaceHeightCm() * 0.65f);

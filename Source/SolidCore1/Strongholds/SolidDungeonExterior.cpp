@@ -56,35 +56,31 @@ namespace SolidDungeonExteriorPrivate
 	}
 
 	/**
-	 * Opening edge. An ellipse stands on the ground inside the opening size,
-	 * widest through the middle and narrower at the ground, with a lumpy rim.
+	 * Opening edge. A half-ellipse stands on the ground, full width at the
+	 * bottom and round at the crown. Lumpiness stays on the upper rim so the
+	 * ground ends remain the widest part of the opening.
 	 */
 	FVector2D OpeningRim(const float Theta, const float OpeningWidth, const float OpeningHeight)
 	{
 		const float RadiusY = OpeningWidth * 0.5f;
-		const float RadiusZ = OpeningHeight / 1.7f;
-		const float CenterZ = OpeningHeight - RadiusZ;
-		const float GroundSin = FMath::Clamp(-CenterZ / RadiusZ, -1.f, 1.f);
-		const float GroundAngle = FMath::Asin(GroundSin);
 		const float Along = Theta / PI;
-		const float Angle = FMath::Lerp(GroundAngle, PI - GroundAngle, Along);
-		const FVector2D Center(0.f, CenterZ);
-		FVector2D Rim(
-			RadiusY * FMath::Cos(Angle),
-			CenterZ + RadiusZ * FMath::Sin(Angle));
-		FVector2D Inward = (Rim - Center).GetSafeNormal();
-		if (Inward.IsNearlyZero())
+		const float Angle = Along * PI;
+		const float Lift = FMath::Sin(Angle);
+		FVector2D Rim(RadiusY * FMath::Cos(Angle), OpeningHeight * Lift);
+		const float Wave = 0.55f + 0.45f * FMath::Sin(Theta * 3.f + 0.6f);
+		const float Pull = 12.f * Lift * Wave;
+		const float Slide = 8.f * Lift * FMath::Sin(Theta * 5.f + 1.1f);
+		const FVector2D Toward = (-Rim).GetSafeNormal();
+		const FVector2D Tangent(-Toward.Y, Toward.X);
+		if (!Toward.IsNearlyZero())
 		{
-			Inward = FVector2D(0.f, 1.f);
+			Rim += Toward * Pull + Tangent * Slide;
 		}
-		const FVector2D Tangent(-Inward.Y, Inward.X);
-		const float Pull = 16.f * (0.55f + 0.45f * FMath::Sin(Theta * 3.f + 0.6f));
-		const float Slide = 10.f * FMath::Sin(Theta * 5.f + 1.1f);
-		Rim += -Inward * Pull + Tangent * Slide;
 		Rim.X = FMath::Clamp(Rim.X, -RadiusY, RadiusY);
 		Rim.Y = FMath::Clamp(Rim.Y, 0.f, OpeningHeight);
 		if (Along < 0.02f || Along > 0.98f)
 		{
+			Rim.X = Along < 0.5f ? RadiusY : -RadiusY;
 			Rim.Y = 0.f;
 		}
 		return Rim;
@@ -346,6 +342,10 @@ namespace SolidDungeonExteriorPrivate
 			AddFace(Positions, Normals, Triangles, FrontA, BackA, FrontB, Interior);
 			AddFace(Positions, Normals, Triangles, BackA, BackB, FrontB, Interior);
 		}
+		const int32 FrontLast = FrontBase + ProfileCount - 1;
+		const int32 BackLast = BackBase + ProfileCount - 1;
+		AddFace(Positions, Normals, Triangles, FrontCenter, FrontLast, FrontBase, Interior);
+		AddFace(Positions, Normals, Triangles, BackCenter, BackBase, BackLast, Interior);
 
 		for (FVector& Normal : Normals)
 		{
@@ -547,12 +547,14 @@ void ASolidDungeonExterior::SetFace(
 	const float InFaceWidthCm,
 	const float InFaceHeightCm,
 	const float InSlopeRunCm,
-	const float InFaceForwardCm)
+	const float InFaceForwardCm,
+	const float InShelfLateralCm)
 {
 	FaceWidthCm = InFaceWidthCm;
 	FaceHeightCm = InFaceHeightCm;
 	SlopeRunCm = InSlopeRunCm;
 	FaceForwardCm = InFaceForwardCm;
+	ShelfLateralCm = InShelfLateralCm;
 }
 
 void ASolidDungeonExterior::DiscardParts()
@@ -640,7 +642,7 @@ void ASolidDungeonExterior::BuildVisuals()
 		SolidStrongholds::OpeningWidthCm,
 		SolidStrongholds::OpeningHeightCm,
 		Drop);
-	const FVector Face(FaceForwardCm, 0.f, 0.f);
+	const FVector Face(FaceForwardCm, ShelfLateralCm, 0.f);
 	RockMesh = AddPart(Rock, Face, FVector::OneVector, SolidStrongholds::RockColor(), TEXT("DungeonExterior"));
 
 	const float Depth = SolidStrongholds::FrameThicknessCm;

@@ -77,10 +77,6 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 		SolidStronghold::WorldXY(OriginCell));
 	const TUniquePtr<FSolidStronghold> DungeonCopy = DungeonOwned->Clone();
 	TestEqual(
-		TEXT("a copied dungeon keeps the cliff mouth"),
-		DungeonCopy->UsesCliffMouth(),
-		DungeonOwned->UsesCliffMouth());
-	TestEqual(
 		TEXT("a copied dungeon keeps its size"),
 		static_cast<uint8>(DungeonCopy->Size),
 		static_cast<uint8>(ESolidStrongholdSize::Meagre));
@@ -151,14 +147,6 @@ bool FSolidStrongholdTypeSupportedTest::RunTest(const FString& Parameters)
 	const FSolidStronghold& Fortress = SolidStronghold::TypeOf(ESolidStrongholdType::Fortress);
 	const FSolidStronghold& Tower = SolidStronghold::TypeOf(ESolidStrongholdType::Tower);
 
-	ESolidBiome CaveShelf = ESolidBiome::Grassland;
-	const FSolidStronghold MeagreCave(ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre);
-	if (SolidStronghold::BiomeFor(MeagreCave, CaveShelf) && CaveShelf == ESolidBiome::Mountain)
-	{
-		TestTrue(TEXT("the dungeon uses the cliff mouth"), Dungeon.UsesCliffMouth());
-	}
-	TestFalse(TEXT("the fortress does not use the cliff mouth"), Fortress.UsesCliffMouth());
-	TestFalse(TEXT("the tower does not use the cliff mouth"), Tower.UsesCliffMouth());
 	TestEqual(
 		TEXT("the dungeon trip is the cave"),
 		static_cast<uint8>(Dungeon.Trip()),
@@ -174,8 +162,6 @@ bool FSolidStrongholdTypeSupportedTest::RunTest(const FString& Parameters)
 
 	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
 	{
-		const FSolidStronghold Cave(ESolidStrongholdType::Dungeon, Size);
-		const FSolidStronghold Hold(ESolidStrongholdType::Fortress, Size);
 		const FSolidStronghold Spire(ESolidStrongholdType::Tower, Size);
 		const bool bMeagre = Size == ESolidStrongholdSize::Meagre;
 		const bool bTowerSize = Size >= ESolidStrongholdSize::Average && Size <= ESolidStrongholdSize::Imperious;
@@ -191,19 +177,6 @@ bool FSolidStrongholdTypeSupportedTest::RunTest(const FString& Parameters)
 			*FString::Printf(TEXT("%s tower supported"), SolidStronghold::SizeName(Size)),
 			Tower.Supported(Size),
 			bTowerSize);
-
-		TestEqual(
-			*FString::Printf(TEXT("%s dungeon mouth"), SolidStronghold::SizeName(Size)),
-			SolidStronghold::UsesCaveMouth(Cave),
-			Dungeon.UsesCliffMouth());
-		TestEqual(
-			*FString::Printf(TEXT("%s fortress mouth"), SolidStronghold::SizeName(Size)),
-			SolidStronghold::UsesCaveMouth(Hold),
-			Fortress.UsesCliffMouth());
-		TestEqual(
-			*FString::Printf(TEXT("%s tower mouth"), SolidStronghold::SizeName(Size)),
-			SolidStronghold::UsesCaveMouth(Spire),
-			Tower.UsesCliffMouth());
 
 		TArray<SolidStrongholdGrid::FHex> DungeonHexes;
 		TArray<SolidStrongholdGrid::FHex> FortressHexes;

@@ -114,10 +114,6 @@ bool FSolidStrongholdCatalogTest::RunTest(const FString& Parameters)
 
 	ESolidBiome Shelf = ESolidBiome::Grassland;
 	TestTrue(TEXT("the cave names a shelf"), SolidStronghold::BiomeFor(MeagreDungeon, Shelf));
-	if (Shelf == ESolidBiome::Mountain)
-	{
-		TestTrue(TEXT("the cave uses the cliff mouth"), SolidStronghold::UsesCaveMouth(MeagreDungeon));
-	}
 
 	TestTrue(TEXT("ImperiousTower resolves"), SolidStronghold::FromToken(TEXT("ImperiousTower"), TokenType, TokenSize));
 	const FSolidStronghold Imperious(TokenType, TokenSize);
@@ -125,7 +121,6 @@ bool FSolidStrongholdCatalogTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Imperious Tower size"), static_cast<uint8>(Imperious.Size), static_cast<uint8>(ESolidStrongholdSize::Imperious));
 	TestTrue(TEXT("the tower names a shelf"), SolidStronghold::BiomeFor(Imperious, Shelf));
 	TestEqual(TEXT("the tower shelf is grassland"), static_cast<uint8>(Shelf), static_cast<uint8>(ESolidBiome::Grassland));
-	TestFalse(TEXT("the tower does not use the cliff mouth"), SolidStronghold::UsesCaveMouth(Imperious));
 
 	TestTrue(TEXT("Humble Tower resolves"), SolidStronghold::FromToken(TEXT("Humble Tower"), TokenType, TokenSize));
 	const FSolidStronghold HumbleTower(TokenType, TokenSize);

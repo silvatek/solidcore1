@@ -92,20 +92,7 @@ Keyboard and gamepad defaults are in [`Content/Controls.md`](Content/Controls.md
 
 ## Automated tests
 
-UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_DEV_AUTOMATION_TESTS`).
-
-### Policy
-
-1. **All existing tests must keep passing** when you change product code — **without modifying those tests**.
-2. If a change **must** update an existing test (API rename, intentional behavior change), say so explicitly in the commit / change description and why.
-3. **New product code ships with tests in the same commit** (same PR/change set). Prefer pure logic / `NewObject` unit tests; add heavier PIE tests only when needed.
-4. **Never pass `TObjectPtr<T>` to `TestNotNull` / `TestNull`.** UE 5.8 cannot deduce `const ValueType*` from it (`GetStaticMesh()` is the usual trap). Bind a raw `T*` first, or call `.Get()`.
-5. When a product change would invalidate an assumption in an existing test, remove that assumption **before** the product change. The test has to pass on the current code and on the code that is about to be written. Read a constant the product already defines, such as `USolidWorldMap::MapWidth`, instead of copying a number.
-   1. Name the tests that assume the old behavior.
-   2. Update those tests only. Do not change product code in that commit.
-   3. That commit is pushed on its own, so the tests can be run against the current build.
-   4. The product change comes next and does not edit the tests.
-   5. The same tests are run again against the new build.
+UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_DEV_AUTOMATION_TESTS`). The rules for writing and changing them are in [`CodingGuidelines.md`](CodingGuidelines.md).
 
 ### Suite (filter `SolidCore1`)
 

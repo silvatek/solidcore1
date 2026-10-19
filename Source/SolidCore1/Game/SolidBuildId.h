@@ -8,9 +8,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0469")
+#define SOLID_BUILD_ID TEXT("SC1-0470")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Coding guidelines: a game concept is a C++ class.")
+#define SOLID_BUILD_NOTE TEXT("Coding guidelines cover comments, tests, and pointer ownership.")
 #endif

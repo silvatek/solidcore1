@@ -85,12 +85,7 @@ Cloud agents are a **code + git workshop**. They do not replace the Windows Unre
 
 ## Tests
 
-Follow the Automated tests policy in `README.md`:
-
-- Existing tests must keep passing. Do not edit them to make a change pass unless the API or behavior change requires it — and say so in the commit.
-- If a product change would invalidate a test assumption, first change only the tests so they pass on the current code and on the intended code. Use a product constant instead of a copied number. Push that on its own. The product change comes after, and it does not edit those tests.
-- New product code ships with tests in the same commit.
-- Never pass `TObjectPtr<T>` (or a ternary that yields one) to `TestNotNull` / `TestNull`. Bind a raw `T*` or call `.Get()`.
+Follow the Automated tests policy in `CodingGuidelines.md`.
 
 ## Unused code
 

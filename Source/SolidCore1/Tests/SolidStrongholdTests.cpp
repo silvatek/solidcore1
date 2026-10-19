@@ -5,6 +5,7 @@
 #include "SolidGameState.h"
 #include "SolidStronghold.h"
 #include "SolidStrongholds.h"
+#include "SolidTerrainMap.h"
 #include "SolidWorldMap.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -397,6 +398,28 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(ESolidStrongholdSize::Meagre));
 	TestEqual(TEXT("a new game uses the starting column"), Fresh.ActiveStronghold->Cell.X, SolidStronghold::StartingColumn - 1);
 	TestEqual(TEXT("a new game uses the starting row"), Fresh.ActiveStronghold->Cell.Y, SolidStronghold::StartingRow - 1);
+	const FVector2D StartingXY = SolidStronghold::WorldXY(SolidStronghold::StartingCell());
+	TestTrue(
+		TEXT("a new game stands at the starting cell's world position"),
+		Fresh.ActiveStronghold->Location.Equals(StartingXY, 0.01f));
+	USolidTerrainMap* Terrain = NewObject<USolidTerrainMap>();
+	TestNotNull(TEXT("terrain"), Terrain);
+	if (Terrain)
+	{
+		Terrain->Build(1337, 0.00012f, 3000.f, 0.f, 513, 513, 200.f);
+		USolidWorldMap* Map = NewObject<USolidWorldMap>();
+		FVector2D Projected = FVector2D::ZeroVector;
+		TestTrue(
+			TEXT("the starting cell projects"),
+			Map && Map->CellToWorldXY(
+				SolidStronghold::StartingCell(),
+				Terrain->GetWorldMinXY(),
+				Terrain->GetWorldMaxXY(),
+				Projected));
+		TestTrue(
+			TEXT("that projection is the stronghold location"),
+			Fresh.ActiveStronghold->Location.Equals(Projected, 0.01f));
+	}
 	TestTrue(
 		TEXT("a new game has reached Meagre"),
 		SolidEvents::IsStrongholdSizeUnlocked(Fresh, ESolidStrongholdSize::Meagre));
@@ -468,10 +491,12 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 	}
 
 	FGameState Moved;
+	const FIntPoint MovedCell(4, 6);
 	Moved.ActiveStronghold = SolidStronghold::Make(
 		ESolidStrongholdType::Tower,
 		ESolidStrongholdSize::Average,
-		FIntPoint(4, 6));
+		MovedCell,
+		SolidStronghold::WorldXY(MovedCell));
 	Moved.MaxStrongholdSize = ESolidStrongholdSize::Average;
 
 	USolidGameInstance* Instance = NewObject<USolidGameInstance>();

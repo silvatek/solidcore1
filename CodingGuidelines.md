@@ -52,6 +52,10 @@ A method name is the question or the act, as `Supported` and `CollectGroundHexes
 
 Words come from the design: Captain, Company, Squad, Companion, Stronghold. The word den is not a name in this code.
 
+## Coordinates
+
+Use world coordinates, in centimetres, rather than world-map cells. Convert a cell when the world map is first loaded, and keep the world position from then on. A new field stores that world position. Leave an existing cell field in place until a change is already editing that code.
+
 ## Comments
 
 A comment above a function or a method says what it does and why it exists. It leaves out the steps inside the body.

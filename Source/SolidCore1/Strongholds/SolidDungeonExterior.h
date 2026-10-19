@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "SolidStrongholdExterior.h"
 #include "SolidDungeonExterior.generated.h"
 
 class UStaticMeshComponent;
@@ -12,7 +12,7 @@ class UStaticMeshComponent;
  * The stone is rounded and lumpy inside the face size. A click on the stone does not enter.
  */
 UCLASS()
-class SOLIDCORE1_API ASolidDungeonExterior : public AActor
+class SOLIDCORE1_API ASolidDungeonExterior : public ASolidStrongholdExterior
 {
 	GENERATED_BODY()
 

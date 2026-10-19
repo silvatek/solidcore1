@@ -150,7 +150,8 @@ bool FSolidTowerExteriorTest::RunTest(const FString& Parameters)
 	TUniquePtr<FSolidStronghold> Spire = SolidStronghold::Make(
 		ESolidStrongholdType::Tower,
 		ESolidStrongholdSize::Imperious,
-		ImperiousCell);
+		ImperiousCell,
+		SolidStronghold::WorldXY(ImperiousCell));
 	TestNotNull(TEXT("an Imperious tower"), Spire.Get());
 	if (!Spire)
 	{

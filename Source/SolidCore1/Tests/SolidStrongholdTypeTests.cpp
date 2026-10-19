@@ -69,9 +69,12 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("dungeon and tower differ"), &Dungeon != &Tower);
 	TestTrue(TEXT("fortress and tower differ"), &Fortress != &Tower);
 
+	const FIntPoint OriginCell = FIntPoint::ZeroValue;
 	const TUniquePtr<FSolidStronghold> DungeonOwned = SolidStronghold::Make(
 		ESolidStrongholdType::Dungeon,
-		ESolidStrongholdSize::Meagre);
+		ESolidStrongholdSize::Meagre,
+		OriginCell,
+		SolidStronghold::WorldXY(OriginCell));
 	const TUniquePtr<FSolidStronghold> DungeonCopy = DungeonOwned->Clone();
 	TestEqual(
 		TEXT("a copied dungeon keeps the cliff mouth"),
@@ -84,7 +87,9 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 
 	const TUniquePtr<FSolidStronghold> TowerOwned = SolidStronghold::Make(
 		ESolidStrongholdType::Tower,
-		ESolidStrongholdSize::Average);
+		ESolidStrongholdSize::Average,
+		OriginCell,
+		SolidStronghold::WorldXY(OriginCell));
 	const TUniquePtr<FSolidStronghold> TowerCopy = TowerOwned->Clone();
 	TestEqual(
 		TEXT("a copied tower keeps the tower trip"),
@@ -104,10 +109,18 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 		DungeonCopy->ExteriorClass() == ASolidDungeonExterior::StaticClass());
 	TestNull(
 		TEXT("a humble dungeon has no exterior"),
-		SolidStronghold::Make(ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Humble)->ExteriorClass());
+		SolidStronghold::Make(
+			ESolidStrongholdType::Dungeon,
+			ESolidStrongholdSize::Humble,
+			OriginCell,
+			SolidStronghold::WorldXY(OriginCell))->ExteriorClass());
 	TestNull(
 		TEXT("a fortress has no exterior"),
-		SolidStronghold::Make(ESolidStrongholdType::Fortress, ESolidStrongholdSize::Imperious)->ExteriorClass());
+		SolidStronghold::Make(
+			ESolidStrongholdType::Fortress,
+			ESolidStrongholdSize::Imperious,
+			OriginCell,
+			SolidStronghold::WorldXY(OriginCell))->ExteriorClass());
 	TestTrue(
 		TEXT("an average tower names the tower exterior"),
 		TowerOwned->ExteriorClass() == ASolidTowerExterior::StaticClass());
@@ -116,7 +129,14 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 		TowerCopy->ExteriorClass() == ASolidTowerExterior::StaticClass());
 	TestNull(
 		TEXT("a humble tower has no exterior"),
-		SolidStronghold::Make(ESolidStrongholdType::Tower, ESolidStrongholdSize::Humble)->ExteriorClass());
+		SolidStronghold::Make(
+			ESolidStrongholdType::Tower,
+			ESolidStrongholdSize::Humble,
+			OriginCell,
+			SolidStronghold::WorldXY(OriginCell))->ExteriorClass());
+	TestTrue(
+		TEXT("a copy keeps the world position"),
+		DungeonCopy->Location.Equals(DungeonOwned->Location, 0.01f));
 	return true;
 }
 

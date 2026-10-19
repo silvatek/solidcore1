@@ -56,10 +56,15 @@ class FSolidStronghold
 {
 public:
 	FSolidStronghold() = default;
-	FSolidStronghold(ESolidStrongholdType InType, ESolidStrongholdSize InSize, FIntPoint InCell = FIntPoint::ZeroValue)
+	FSolidStronghold(
+		ESolidStrongholdType InType,
+		ESolidStrongholdSize InSize,
+		FIntPoint InCell = FIntPoint::ZeroValue,
+		FVector2D InLocation = FVector2D::ZeroVector)
 		: Type(InType)
 		, Size(InSize)
 		, Cell(InCell)
+		, Location(InLocation)
 	{
 	}
 
@@ -69,8 +74,10 @@ public:
 
 	ESolidStrongholdType Type = ESolidStrongholdType::Dungeon;
 	ESolidStrongholdSize Size = ESolidStrongholdSize::Meagre;
-	/** Map cell. X is the column and Y is the row, counting from 0. */
+	/** Map cell. X is the column and Y is the row, counting from 0. Prefer Location. */
 	FIntPoint Cell = FIntPoint::ZeroValue;
+	/** World centimetres of the cell center. Height is the ground under this point. */
+	FVector2D Location = FVector2D::ZeroVector;
 	/** Direction the exit faces. The starting cave faces north. */
 	ESolidStrongholdOrientation Orientation = ESolidStrongholdOrientation::North;
 
@@ -112,11 +119,18 @@ public:
 
 namespace SolidStronghold
 {
-	/** An owned dungeon, fortress, or tower of this size, standing on Cell. */
+	/** An owned dungeon, fortress, or tower of this size, standing at WorldXY. */
 	TUniquePtr<FSolidStronghold> Make(
 		ESolidStrongholdType Type,
 		ESolidStrongholdSize Size,
-		FIntPoint Cell = FIntPoint::ZeroValue);
+		FIntPoint Cell,
+		FVector2D WorldXY);
+
+	/**
+	 * Cell center on the shipped terrain, in world centimetres.
+	 * The terrain is 513 points at 200 cm, centered on the origin, and the map is 128 by 64 cells.
+	 */
+	FVector2D WorldXY(FIntPoint Cell);
 }
 
 /**

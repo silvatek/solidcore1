@@ -13,14 +13,13 @@ class ASolidBridge;
 class ASolidBuilding;
 class ASolidForagePile;
 class ASolidDungeonEntrance;
-class ASolidDungeonExterior;
 class ASolidDungeonInterior;
 class ASolidLairInterior;
 class ASolidCompanionCharacter;
 class ASolidTownSign;
 class ASolidTowerInterior;
+class ASolidStrongholdExterior;
 class ASolidStrongholdStone;
-class ASolidTowerExterior;
 class ASolidTree;
 class USolidTerrainMap;
 class USkeletalMesh;
@@ -297,10 +296,7 @@ protected:
 	TArray<TObjectPtr<ASolidDungeonEntrance>> SpawnedDungeonEntrances;
 
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<ASolidDungeonExterior>> SpawnedDungeonExteriors;
-
-	UPROPERTY(Transient)
-	TArray<TObjectPtr<ASolidTowerExterior>> SpawnedTowerExteriors;
+	TArray<TObjectPtr<ASolidStrongholdExterior>> SpawnedStrongholdExteriors;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidStrongholdStone>> SpawnedStrongholdStones;

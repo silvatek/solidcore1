@@ -5,7 +5,8 @@ FGameState::FGameState()
 	: ActiveStronghold(SolidStronghold::Make(
 		ESolidStrongholdType::Dungeon,
 		ESolidStrongholdSize::Meagre,
-		SolidStronghold::StartingCell()))
+		SolidStronghold::StartingCell(),
+		SolidStronghold::WorldXY(SolidStronghold::StartingCell())))
 {
 	if (ActiveStronghold)
 	{
@@ -52,7 +53,8 @@ FGameState& FGameState::operator=(const FGameState& Other)
 		: SolidStronghold::Make(
 			ESolidStrongholdType::Dungeon,
 			ESolidStrongholdSize::Meagre,
-			SolidStronghold::StartingCell());
+			SolidStronghold::StartingCell(),
+			SolidStronghold::WorldXY(SolidStronghold::StartingCell()));
 	if (!Other.ActiveStronghold && ActiveStronghold)
 	{
 		ActiveStronghold->Orientation = ESolidStrongholdOrientation::North;

@@ -194,7 +194,11 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Types[0]),
 		static_cast<uint8>(ESolidStrongholdType::Tower));
 
-	State.ActiveStronghold = SolidStronghold::Make(ESolidStrongholdType::Tower, ESolidStrongholdSize::Average);
+	State.ActiveStronghold = SolidStronghold::Make(
+		ESolidStrongholdType::Tower,
+		ESolidStrongholdSize::Average,
+		FIntPoint::ZeroValue,
+		SolidStronghold::WorldXY(FIntPoint::ZeroValue));
 	Unlock(State, ESolidStrongholdSize::Average);
 	TestEqual(
 		TEXT("the same size does nothing"),

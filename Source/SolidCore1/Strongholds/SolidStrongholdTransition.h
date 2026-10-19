@@ -189,7 +189,11 @@ namespace SolidStrongholdTransition
 		}
 
 		State.PreviousStrongholds.Add(State.ActiveStronghold->Clone());
-		State.ActiveStronghold = SolidStronghold::Make(Type, SiteSize, SiteCell);
+		State.ActiveStronghold = SolidStronghold::Make(
+			Type,
+			SiteSize,
+			SiteCell,
+			SolidStronghold::WorldXY(SiteCell));
 		State.Furnishings = Moved;
 		return true;
 	}

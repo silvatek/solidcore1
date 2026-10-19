@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "GameFramework/Actor.h"
+#include "SolidStrongholdExterior.h"
 #include "SolidTowerStronghold.h"
 #include "SolidTowerExterior.generated.h"
 
@@ -15,7 +15,7 @@ class UStaticMeshComponent;
  * A click on that door enters. The captain can walk up to the stone.
  */
 UCLASS()
-class SOLIDCORE1_API ASolidTowerExterior : public AActor
+class SOLIDCORE1_API ASolidTowerExterior : public ASolidStrongholdExterior
 {
 	GENERATED_BODY()
 

@@ -3,6 +3,7 @@
 #include "SolidStrongholds.h"
 #include "SolidTowerExterior.h"
 #include "SolidTowerStronghold.h"
+#include "SolidWorldMap.h"
 
 TUniquePtr<FSolidStronghold> FSolidStronghold::Clone() const
 {
@@ -210,15 +211,30 @@ namespace SolidStronghold
 		return MakeUnique<FSolidTower>(*this);
 	}
 
+	FVector2D WorldXY(const FIntPoint Cell)
+	{
+		constexpr float PointSpacing = 200.f;
+		constexpr int32 Grid = 513;
+		const float Extent = static_cast<float>(Grid - 1) * PointSpacing;
+		const float Half = Extent * 0.5f;
+		const float CellW = Extent / static_cast<float>(USolidWorldMap::MapWidth);
+		const float CellH = Extent / static_cast<float>(USolidWorldMap::MapHeight);
+		return FVector2D(
+			Half - (static_cast<float>(Cell.X) + 0.5f) * CellW,
+			Half - (static_cast<float>(Cell.Y) + 0.5f) * CellH);
+	}
+
 	TUniquePtr<FSolidStronghold> Make(
 		const ESolidStrongholdType Type,
 		const ESolidStrongholdSize Size,
-		const FIntPoint Cell)
+		const FIntPoint Cell,
+		const FVector2D InWorldXY)
 	{
 		TUniquePtr<FSolidStronghold> Stronghold = TypeOf(Type).Clone();
 		Stronghold->Type = Type;
 		Stronghold->Size = Size;
 		Stronghold->Cell = Cell;
+		Stronghold->Location = InWorldXY;
 		return Stronghold;
 	}
 

@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0475")
+#define SOLID_BUILD_ID TEXT("SC1-0476")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A stronghold names its own exterior.")
+#define SOLID_BUILD_NOTE TEXT("Stronghold exteriors spawn from the stronghold's world position.")
 #endif

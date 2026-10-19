@@ -152,6 +152,8 @@ Warn the user when a `!` in the grid has no description line for that row and co
 
 Coding guidelines are `CodingGuidelines.md`. A game concept is a C++ class. Follow that file when adding or changing product C++.
 
+When asked to refactor code, finish with a summary of the code before and after. Give the quantitative change (counts of lines, types, functions, or whatever the edit actually moved) and a qualitative reading of what is clearer or simpler.
+
 ## Naming
 
 - C++ types: `Solid*`. New Blueprints: `BP_SolidCharacter`, `BP_SolidGameMode`, paths under `/Game/Characters/`.

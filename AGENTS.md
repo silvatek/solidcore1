@@ -55,6 +55,8 @@ These agents have access to C++ and Unreal Engine. The agent builds and runs the
 
 Before building or testing, read `ue.lock`. A missing file means the machine is free. If the word in the file is not `Free`, say that word in chat and wait until the file says `Free`. Ignore surrounding whitespace. Do not build or test while waiting.
 
+A wait for `ue.lock` that times out is not a reason to read the file again at once. Say in chat that the wait timed out and which word is in the file, then wait 2 minutes for a reply. If no reply arrives, read the file and wait again.
+
 When the machine is free, write this agent's own id into `ue.lock` as the only word (the cloud agent run id when this session has one). Then:
 
 1. Build with `tools\build.bat`.

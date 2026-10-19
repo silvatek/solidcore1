@@ -1,6 +1,6 @@
 # Objects sit in the terrain
 
-Status: New
+Status: Ready
 
 ## Story
 

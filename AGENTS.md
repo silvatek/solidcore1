@@ -147,6 +147,10 @@ Warn the user when a `!` in the grid has no description line for that row and co
 - Fog clears from the **pawn trail**, not the camera.
 - Before changing exploration fog, read `Source/SolidCore1/Fog/README.md`. Do not reintroduce height-fog StartDistance as a clear radius, camera/view probes, or dense per-cell lattices.
 
+## Coding
+
+Coding guidelines are `CodingGuidelines.md`. A game concept is a C++ class. Follow that file when adding or changing product C++.
+
 ## Naming
 
 - C++ types: `Solid*`. New Blueprints: `BP_SolidCharacter`, `BP_SolidGameMode`, paths under `/Game/Characters/`.

@@ -12,6 +12,7 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [White material for full fog](Planning/white-fog-terrain.md)
 - [Hide trees and buildings in full fog](Planning/hide-props-in-full-fog.md)
 - [Better building and tree models](Planning/better-building-and-tree-models.md)
+- [Objects sit in the terrain](Planning/objects-sit-in-the-terrain.md)
 - [HUD and menu borders and themes](Planning/hud-menu-borders-and-themes.md)
 - [Companions move only with the captain](Planning/companions-move-with-captain.md)
 - [Drill battle plan](Planning/drill-battle-plan.md)

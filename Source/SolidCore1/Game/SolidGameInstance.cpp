@@ -52,6 +52,12 @@ void USolidGameInstance::Capture(const FSolidTravelSession& InSession)
 	bHasSession = true;
 }
 
+void USolidGameInstance::StoreExplorationFog(const TArray<float>& Fog)
+{
+	ExplorationFog = Fog;
+	bHasExplorationFog = Fog.Num() > 0;
+}
+
 void USolidGameInstance::ClearStrongholdExit()
 {
 	Session.bExitStronghold = false;

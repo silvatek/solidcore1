@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0491")
+#define SOLID_BUILD_ID TEXT("SC1-0492")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Enter stronghold and exit stronghold.")
+#define SOLID_BUILD_NOTE TEXT("Fog stays cleared across stronghold and lair trips.")
 #endif

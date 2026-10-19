@@ -532,9 +532,25 @@ void ASolidTerrainStreamer::CenterExplorationFogOnFocus()
 	}
 
 	const FVector Loc = Focus->GetActorLocation();
-	TerrainMap->CenterExplorationFogOn(Loc.X, Loc.Y);
+	bool bRestoredTrail = false;
+	UWorld* World = GetWorld();
+	ASolidGameMode* Mode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+	if (Mode && !Mode->IsInClosedVisit())
+	{
+		if (const USolidGameInstance* Instance = World->GetGameInstance<USolidGameInstance>())
+		{
+			if (Instance->HasExplorationFog())
+			{
+				bRestoredTrail = TerrainMap->ApplyExplorationFog(Instance->GetExplorationFog());
+			}
+		}
+	}
+	if (!bRestoredTrail)
+	{
+		TerrainMap->CenterExplorationFogOn(Loc.X, Loc.Y);
+	}
 	bDidCenterFogOnPlayer = true;
-	if (ASolidGameMode* Mode = GetWorld() ? GetWorld()->GetAuthGameMode<ASolidGameMode>() : nullptr)
+	if (Mode)
 	{
 		Mode->SeedForagePiles();
 	}
@@ -548,7 +564,8 @@ void ASolidTerrainStreamer::CenterExplorationFogOnFocus()
 	}
 
 	UE_LOG(LogSolid, Warning,
-		TEXT("Centered exploration fog on player (%.0f, %.0f)"),
+		TEXT("%s exploration fog at player (%.0f, %.0f)"),
+		bRestoredTrail ? TEXT("Restored") : TEXT("Centered"),
 		Loc.X, Loc.Y);
 }
 

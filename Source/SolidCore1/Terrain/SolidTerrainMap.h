@@ -90,6 +90,15 @@ public:
 	 */
 	void CenterExplorationFogOn(float WorldX, float WorldY);
 
+	/** Copy each point's Fog into OutFog (row-major, same order as GetPoints). */
+	void CopyExplorationFog(TArray<float>& OutFog) const;
+
+	/**
+	 * Replace each point's Fog from InFog. Requires InFog.Num() == GetPointCount().
+	 * Used when OpenLevel rebuilds the map and the trail must stay cleared.
+	 */
+	bool ApplyExplorationFog(const TArray<float>& InFog);
+
 	FVector2D GetWorldMinXY() const { return OriginXY; }
 	FVector2D GetWorldMaxXY() const
 	{

@@ -97,6 +97,53 @@ bool FSolidMapTrailClearTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidMapExplorationFogSurvivesRebuildTest,
+	"SolidCore1.Map.ExplorationFogSurvivesRebuild",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidMapExplorationFogSurvivesRebuildTest::RunTest(const FString& Parameters)
+{
+	USolidTerrainMap* Map = SolidTerrainTestHelpers::MakeSmallMap();
+	TestNotNull(TEXT("map object"), Map);
+
+	FVector2D TrailXY = FVector2D::ZeroVector;
+	TestTrue(TEXT("found fully-fogged trail point"),
+		SolidTerrainTestHelpers::FindFullyFoggedTrailPoint(Map, TrailXY));
+	FVector2D UntouchedXY = FVector2D::ZeroVector;
+	TestTrue(TEXT("found untouched full-fog point"),
+		SolidTerrainTestHelpers::FindUntouchedFullFogPoint(Map, TrailXY, UntouchedXY));
+
+	Map->ApplyExplorationFogAround(TrailXY.X, TrailXY.Y);
+	TestTrue(TEXT("trail cleared before travel"),
+		FMath::IsNearlyEqual(Map->SamplePoint(TrailXY.X, TrailXY.Y).Fog, 0.f));
+	TestTrue(TEXT("untouched still full fog before travel"),
+		FMath::IsNearlyEqual(Map->SamplePoint(UntouchedXY.X, UntouchedXY.Y).Fog, 1.f));
+
+	TArray<float> Stored;
+	Map->CopyExplorationFog(Stored);
+	TestEqual(TEXT("stored fog count matches map"), Stored.Num(), Map->GetPointCount());
+
+	// OpenLevel rebuilds the map and would otherwise open a fresh bubble at the landing.
+	Map->CenterExplorationFogOn(0.f, 0.f);
+	TestTrue(TEXT("precondition: rebuild raised trail fog"),
+		Map->SamplePoint(TrailXY.X, TrailXY.Y).Fog > KINDA_SMALL_NUMBER);
+
+	TestTrue(TEXT("restore applies stored fog"), Map->ApplyExplorationFog(Stored));
+	TestTrue(TEXT("trail still clear after restore"),
+		FMath::IsNearlyEqual(Map->SamplePoint(TrailXY.X, TrailXY.Y).Fog, 0.f));
+	TestTrue(TEXT("untouched still full fog after restore"),
+		FMath::IsNearlyEqual(Map->SamplePoint(UntouchedXY.X, UntouchedXY.Y).Fog, 1.f));
+
+	TArray<float> WrongSize;
+	WrongSize.Add(0.f);
+	TestFalse(TEXT("wrong-size restore is rejected"), Map->ApplyExplorationFog(WrongSize));
+	TestTrue(TEXT("rejected restore leaves trail clear"),
+		FMath::IsNearlyEqual(Map->SamplePoint(TrailXY.X, TrailXY.Y).Fog, 0.f));
+
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidMapTrailNeverIncreasesFogTest,
 	"SolidCore1.Map.TrailNeverIncreasesFog",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)

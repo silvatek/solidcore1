@@ -273,6 +273,29 @@ void USolidTerrainMap::CenterExplorationFogOn(const float WorldX, const float Wo
 	}
 }
 
+void USolidTerrainMap::CopyExplorationFog(TArray<float>& OutFog) const
+{
+	OutFog.Reset(Points.Num());
+	for (const FSolidTerrainPoint& Point : Points)
+	{
+		OutFog.Add(Point.Fog);
+	}
+}
+
+bool USolidTerrainMap::ApplyExplorationFog(const TArray<float>& InFog)
+{
+	if (!IsBuilt() || InFog.Num() != Points.Num())
+	{
+		return false;
+	}
+
+	for (int32 Index = 0; Index < Points.Num(); ++Index)
+	{
+		Points[Index].Fog = InFog[Index];
+	}
+	return true;
+}
+
 int32 USolidTerrainMap::ApplyExplorationFogAround(float WorldX, float WorldY)
 {
 	if (!IsBuilt())

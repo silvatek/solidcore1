@@ -265,6 +265,19 @@ void ASolidGameMode::SaveTravelSession(
 				Session.Sight = Captain->GetSight();
 			}
 		}
+		// Leaving the open world: keep the trail fog across OpenLevel.
+		if (!IsInClosedVisit() && (bInStronghold || bInLair))
+		{
+			if (const ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World))
+			{
+				if (const USolidTerrainMap* Map = Streamer->GetTerrainMap())
+				{
+					TArray<float> Fog;
+					Map->CopyExplorationFog(Fog);
+					Instance->StoreExplorationFog(Fog);
+				}
+			}
+		}
 	}
 	Instance->Capture(Session);
 }

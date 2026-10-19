@@ -20,6 +20,14 @@ public:
 	bool HasSession() const { return bHasSession; }
 	const FSolidTravelSession& GetSession() const { return Session; }
 
+	/**
+	 * Point Fog values from the open-world terrain map. OpenLevel rebuilds that
+	 * map; these values restore the trail after a stronghold or lair visit.
+	 */
+	void StoreExplorationFog(const TArray<float>& Fog);
+	bool HasExplorationFog() const { return bHasExplorationFog; }
+	const TArray<float>& GetExplorationFog() const { return ExplorationFog; }
+
 	bool IsInStronghold() const { return bHasSession && Session.bInStronghold; }
 	bool WantsStrongholdExit() const { return bHasSession && Session.bExitStronghold; }
 	void ClearStrongholdExit();
@@ -42,6 +50,8 @@ private:
 
 	bool bHasSession = false;
 	FSolidTravelSession Session;
+	bool bHasExplorationFog = false;
+	TArray<float> ExplorationFog;
 	/** 1 on the first launch. Not reset by the cave trip. */
 	int32 SessionNumber = 1;
 	/** Platform seconds when this play session started. 0 until OnStart. */

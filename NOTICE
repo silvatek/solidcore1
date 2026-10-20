@@ -1,0 +1,36 @@
+SolidCore1
+Copyright Silvatek
+
+The Apache License, Version 2.0 applies to original SolidCore1 source, the configuration written for this project, and the documentation.
+
+It does not apply to the following, and this repository does not grant you those rights.
+
+Unreal Engine
+Used under the Unreal Engine End User License Agreement. The Free tier on
+https://www.unrealengine.com/license is that agreement: no seat fee for a game,
+and a royalty after 1,000,000 USD lifetime gross revenue for that product.
+https://www.unrealengine.com/eula/unreal
+
+Template Examples committed in this repository stay under that EULA. They are
+Content/ThirdPerson, Content/LevelPrototyping, Content/Input, and the open-world
+landscape under Content/Maps and Content/__ExternalActors__ that comes from the
+Open World template.
+
+A distributed build needs an end-user license that disclaims Epic's
+representations, warranties, conditions, and liabilities for Unreal Engine.
+The credits page states that disclaimer. Before a build collects revenue,
+submit Epic's Release Form at https://www.unrealengine.com/release.
+
+Fab
+Viking and Elf Blacksmith are Fab Standard License (Personal and Professional
+tiers, both listed at 0 USD). Their source files are not in git. Share those
+files only with collaborators in a private repository. The tier you accept
+follows gross commercial revenue over the prior 12 months. This repository
+does not record which offer was accepted.
+https://www.fab.com/eula
+
+025 Grass and Free Medieval Assassin Girl are Creative Commons Attribution 4.0.
+https://creativecommons.org/licenses/by/4.0/
+The grass listing is a GLB. This project uses that art as a Unreal material.
+The credits page names the creators, links the deed and the listings, and
+notes that change. Those packs are not in git. See tools/fab-assets.json.

@@ -45,7 +45,8 @@ Desktop.ini
 .cursor/*
 !.cursor/environment.json
 
-# FAB content
+# FAB content. These names are the packs Add to Project uses today.
+# A pack under any other Content folder is still Fab content. Do not commit it.
 Content/Fab
 Content/Viking
 Content/Medieval_Assassin_Girl

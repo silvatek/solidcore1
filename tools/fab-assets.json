@@ -48,8 +48,10 @@
         "sellerUrl": "https://www.fab.com/sellers/NoblesseOblige-No.1",
         "source": "Fab",
         "license": "CC-BY",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
         "isFree": true,
-        "credit": "025_Grass seamless material by NoblesseOblige-No.1, used from Fab (CC-BY)."
+        "changes": "Unreal material made from the Fab GLB.",
+        "credit": "025_Grass seamless material by NoblesseOblige-No.1, used from Fab (CC-BY). https://creativecommons.org/licenses/by/4.0/ Changed: Unreal material made from the Fab GLB."
       },
       "expectedName": "Mat_025_grass.uasset",
       "searchRoots": ["Content/Fab"],
@@ -70,8 +72,9 @@
         "sellerUrl": "https://www.fab.com/sellers/Dimentrius3dArtist",
         "source": "Fab",
         "license": "CC-BY",
+        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
         "isFree": true,
-        "credit": "Free Medieval Assassin Girl by Dimentrius3dArtist, used from Fab (CC-BY)."
+        "credit": "Free Medieval Assassin Girl by Dimentrius3dArtist, used from Fab (CC-BY). https://creativecommons.org/licenses/by/4.0/"
       },
       "assetToken": "Assassin",
       "contentFolder": "Medieval_Assassin_Girl",

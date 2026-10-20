@@ -22,7 +22,9 @@ Blueprint classes stay `BP_SolidCharacter` and `BP_SolidGameMode`. A new game co
 
 ## Shape of a class
 
-The header shows the shape. The `.cpp` holds a method body that is more than a few lines.
+A function is declared in a header only when there is a compelling reason to do so. Another file calling it is that reason. So is a method the engine calls, such as an override or a `UFUNCTION`. A helper that only its `.cpp` uses stays in that `.cpp`.
+
+The definition stays in the `.cpp`. Define the function in the header when the caller has to see the body. A template is that case. `SolidClickMove::IntersectHeight` is one.
 
 Facts the object is are public fields. Questions it answers are `const` methods.
 

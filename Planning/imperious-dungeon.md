@@ -12,13 +12,13 @@ The captain goes in alone. Companions wait on the grass outside the mouth he use
 
 The floors use the same 1.2 m hex grid as the cave. The Meagre den stays the fourteen-hex cave. A click on its mouth still opens it.
 
-Rooms and hex totals follow **Strongholds by size and type** in `Source/SolidCore1/Strongholds/README.md`. The Imperious row is three large rooms (20 hexes), four medium (12), and three small (6), **126 hexes** in all. Dungeon, Fortress, and Tower at Imperious share that kit. [Tower stronghold by size](tower-stronghold-by-size.md) puts those rooms on Imperious floors 1–10. [Fortress stronghold](fortress-stronghold.md) puts three large rooms in the Keep and the rest in other buildings.
+Rooms and hex totals follow **Strongholds by size and type** in `Source/SolidCore1/Strongholds/README.md`. The Imperious row is three large rooms (20 hexes), four medium (12), and three small (6), **126 hexes** in all. Dungeon, Fortress, and Tower at Imperious share that kit. [Tower stronghold by size](Done/tower-stronghold-by-size.md) puts those rooms on Imperious floors 1–10. [Fortress stronghold](fortress-stronghold.md) puts three large rooms in the Keep and the rest in other buildings.
 
 A dungeon joins the kit with passages and stairs. Layout is flexible. Level 1 is the top (the mouth); deeper levels have higher numbers — the opposite of tower and fortress floor numbers. Passages hold no usable hexes. Shipped interiors are stone; mockup colours are plan ink only. The arrangement of the ten rooms is chosen in the mockup before coding.
 
 ## Acceptance
 
-- An Imperious Dungeon is a dungeon visit. Until [Tower stronghold by size](tower-stronghold-by-size.md) ships, the tower door, the tower interior, and the tower's return to its own door are unchanged by this story.
+- An Imperious Dungeon is a dungeon visit. Until [Tower stronghold by size](Done/tower-stronghold-by-size.md) ships, the tower door, the tower interior, and the tower's return to its own door are unchanged by this story.
 - The captain enters alone. Companions are not inside. Leaving stands him on the grass outside the mouth he entered, looking out over the grass.
 - Leaving the Imperious Dungeon does not move him to the Meagre cave mouth. Leaving the Meagre cave does not move him to the Imperious Dungeon.
 - From the open world, a click on the Meagre mouth still loads that den. The menu has no cave row.
@@ -31,6 +31,7 @@ A dungeon joins the kit with passages and stairs. Layout is flexible. Level 1 is
 ## Implementation notes
 
 - The plan of record is **Strongholds by size and type** in `Source/SolidCore1/Strongholds/README.md`. Imperious is 3×20 + 4×12 + 3×6. Do not invent a second kit. The player does not pick a type because it holds more hexes.
+- How the type, the exterior actor, and the interior actor are written follows **Code structure** in `Source/SolidCore1/Strongholds/README.md`.
 - Do not copy the tower: ten floors in one shaft, a 30 m taper, round rooms, or the stair spiral. A dungeon is not a tower. Join the kit with passages and stairs; wing the arrangement.
 - Do not add a world-map `!` in this story. The owner places the marker. The line is `Stronghold (Imperious Dungeon)`, size then type.
 - There is no shelf row for an Imperious Dungeon. Meagre Dungeon is Grassland. Imperious Tower is Grassland. A size and type with no row keeps the marker's own biome. Do not assume Mountain or Grassland until a shelf is chosen.

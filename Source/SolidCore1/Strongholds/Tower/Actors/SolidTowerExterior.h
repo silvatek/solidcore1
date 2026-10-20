@@ -1,8 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Strongholds/SolidStrongholdExterior.h"
-#include "SolidTowerStronghold.h"
+#include "Strongholds/Actors/SolidStrongholdExterior.h"
+#include "Strongholds/Tower/SolidTower.h"
 #include "SolidTowerExterior.generated.h"
 
 class UStaticMeshComponent;
@@ -25,10 +25,11 @@ public:
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
 
-	void SetPlan(const SolidTowerStronghold::FPlan& InPlan);
+	/** The caller keeps this tower alive. The game state owns the ones the company places. */
+	void SetTower(const SolidStronghold::FSolidTower& InTower) { Tower = &InTower; }
 	void BuildVisuals();
 
-	const SolidTowerStronghold::FPlan& GetPlan() const { return Plan; }
+	const SolidStronghold::FPlan& GetPlan() const { check(Tower); return Tower->Plan(); }
 	UStaticMeshComponent* GetCapMesh() const { return CapMesh; }
 	UStaticMeshComponent* GetDoorMesh() const { return DoorMesh; }
 	virtual UStaticMeshComponent* GetPassageMesh() const override { return DoorMesh; }
@@ -47,7 +48,8 @@ protected:
 	TObjectPtr<UStaticMeshComponent> DoorMesh;
 
 private:
-	SolidTowerStronghold::FPlan Plan = SolidTowerStronghold::Imperious;
+	/** The game state owns this tower. Null until Configure sets it, so the first construction draws nothing. */
+	const SolidStronghold::FSolidTower* Tower = nullptr;
 
 	void DiscardParts();
 	UStaticMeshComponent* AddPart(UStaticMesh* Mesh, const FVector& Location, const FVector& Scale, const FLinearColor& Color, const TCHAR* DebugName);

@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Strongholds/SolidStronghold.h"
-#include "Strongholds/SolidStrongholdGrid.h"
+#include "Strongholds/Furnishings/SolidStrongholdGrid.h"
 
 /**
  * Dungeon interior, traveled to from the open world.

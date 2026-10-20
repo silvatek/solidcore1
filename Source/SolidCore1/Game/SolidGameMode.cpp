@@ -30,9 +30,8 @@
 #include "Lairs/SolidLairInterior.h"
 #include "Strongholds/Sites/SolidStrongholdSite.h"
 #include "SolidTravel.h"
-#include "Strongholds/SolidStrongholdInterior.h"
-#include "Strongholds/SolidStrongholds.h"
-#include "Strongholds/SolidStrongholdTransition.h"
+#include "Strongholds/Actors/SolidStrongholdInterior.h"
+#include "Strongholds/SolidStronghold.h"
 #include "SolidGameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Vegetation/SolidForage.h"
@@ -595,13 +594,14 @@ void ASolidGameMode::TravelFromLair(const TCHAR EndMarker)
 
 void ASolidGameMode::EnterStronghold()
 {
-	if (!SolidStrongholdTransition::StrongholdsEnabled(Configuration))
-	{
-		return;
-	}
 	UWorld* World = GetWorld();
 	const FSolidStronghold* Stronghold = Configuration.ActiveStronghold.Get();
 	if (!World || IsInClosedVisit() || !Stronghold || !Stronghold->InteriorClass())
+	{
+		return;
+	}
+	// The active stronghold accepts the click once strongholds are open.
+	if (!Stronghold->AcceptsEnter(Configuration, Stronghold->Cell))
 	{
 		return;
 	}

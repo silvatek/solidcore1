@@ -3,7 +3,6 @@
 #include "SolidGameInstance.h"
 #include "SolidGameState.h"
 #include "SolidStronghold.h"
-#include "SolidStrongholds.h"
 #include "SolidTerrainMap.h"
 #include "SolidWorldMap.h"
 

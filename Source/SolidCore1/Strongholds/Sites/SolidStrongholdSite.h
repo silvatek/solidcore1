@@ -14,7 +14,7 @@ struct FActorSpawnParameters;
 /**
  * A stronghold site in the world.
  * The site is drawn as a stone block.
- * A click asks for a type only when that size is unlocked, larger than the company base, and already built.
+ * A click lists each size and type that is unlocked, larger than the company base, and already built.
  */
 UCLASS()
 class SOLIDCORE1_API ASolidStrongholdSite : public AActor

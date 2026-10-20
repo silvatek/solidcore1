@@ -1,5 +1,5 @@
 #include "SolidLair.h"
-#include "SolidStrongholds.h"
+#include "SolidStronghold.h"
 
 namespace SolidLairMouth
 {

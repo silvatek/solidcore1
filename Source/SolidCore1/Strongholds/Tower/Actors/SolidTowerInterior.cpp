@@ -2,7 +2,7 @@
 #include "SolidCore1.h"
 #include "Strongholds/Furnishings/SolidFurnishing.h"
 #include "SolidMaterials.h"
-#include "Strongholds/SolidStrongholds.h"
+#include "Strongholds/SolidStronghold.h"
 #include "EngineUtils.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
@@ -187,7 +187,7 @@ namespace SolidTowerInteriorPrivate
 		const float InnerR,
 		const float ZTop,
 		const float Thickness,
-		const SolidTowerStronghold::FWedge& Gap)
+		const SolidStronghold::FWedge& Gap)
 	{
 		if (OuterR <= KINDA_SMALL_NUMBER || Thickness <= KINDA_SMALL_NUMBER)
 		{
@@ -208,7 +208,7 @@ namespace SolidTowerInteriorPrivate
 			const float Mid = AngleAt(Side) + PI / static_cast<float>(SideCount);
 			Hole[Side] = bAnnulus
 				&& Gap.bOpen
-				&& SolidTowerStronghold::AngleInSweep(Mid, Gap.StartRad, Gap.SweepRad);
+				&& SolidStronghold::AngleInSweep(Mid, Gap.StartRad, Gap.SweepRad);
 		}
 
 		if (bAnnulus)
@@ -295,7 +295,7 @@ namespace SolidTowerInteriorPrivate
 
 	void AddWallSlice(
 		FMesh& Mesh,
-		const SolidTowerStronghold::FPlan& Plan,
+		const SolidStronghold::FSolidTower& Tower,
 		const float Z0,
 		const float Z1,
 		const float Angle0,
@@ -307,8 +307,8 @@ namespace SolidTowerInteriorPrivate
 		}
 		const FVector2D D0(FMath::Cos(Angle0), FMath::Sin(Angle0));
 		const FVector2D D1(FMath::Cos(Angle1), FMath::Sin(Angle1));
-		const float R0 = SolidTowerStronghold::InteriorRadiusCm(Plan, Z0);
-		const float R1 = SolidTowerStronghold::InteriorRadiusCm(Plan, Z1);
+		const float R0 = Tower.InteriorRadiusCm(Z0);
+		const float R1 = Tower.InteriorRadiusCm(Z1);
 		const FVector B0(D0.X * R0, D0.Y * R0, Z0);
 		const FVector B1(D1.X * R0, D1.Y * R0, Z0);
 		const FVector T0(D0.X * R1, D0.Y * R1, Z1);
@@ -323,7 +323,7 @@ namespace SolidTowerInteriorPrivate
 	 */
 	void AddWallBand(
 		FMesh& Mesh,
-		const SolidTowerStronghold::FPlan& Plan,
+		const SolidStronghold::FSolidTower& Tower,
 		const float Z0,
 		const float Z1,
 		const bool bDoorGap)
@@ -333,13 +333,14 @@ namespace SolidTowerInteriorPrivate
 			return;
 		}
 
+		const SolidStronghold::FPlan& Plan = Tower.Plan();
 		float Gap0 = 0.f;
 		float Gap1 = 0.f;
 		if (bDoorGap)
 		{
-			const float Radius = FMath::Max(SolidTowerStronghold::InteriorRadiusCm(Plan, Z0), 1.f);
+			const float Radius = FMath::Max(Tower.InteriorRadiusCm(Z0), 1.f);
 			const float Half = FMath::Asin(FMath::Clamp((Plan.DoorWidthCm * 0.5f) / Radius, 0.f, 1.f));
-			Gap0 = SolidTowerStronghold::WrapTau(Plan.DoorAngleRad - Half);
+			Gap0 = SolidStronghold::WrapTau(Plan.DoorAngleRad - Half);
 			Gap1 = Gap0 + Half * 2.f;
 		}
 
@@ -349,16 +350,16 @@ namespace SolidTowerInteriorPrivate
 			const float A1 = AngleAt(Side + 1);
 			if (!bDoorGap || A1 <= Gap0 || A0 >= Gap1)
 			{
-				AddWallSlice(Mesh, Plan, Z0, Z1, A0, A1);
+				AddWallSlice(Mesh, Tower, Z0, Z1, A0, A1);
 				continue;
 			}
 			if (A0 < Gap0)
 			{
-				AddWallSlice(Mesh, Plan, Z0, Z1, A0, Gap0);
+				AddWallSlice(Mesh, Tower, Z0, Z1, A0, Gap0);
 			}
 			if (A1 > Gap1)
 			{
-				AddWallSlice(Mesh, Plan, Z0, Z1, Gap1, A1);
+				AddWallSlice(Mesh, Tower, Z0, Z1, Gap1, A1);
 			}
 		}
 	}
@@ -447,14 +448,13 @@ void ASolidTowerInterior::BeginPlay()
 	BuildVisuals();
 }
 
-void ASolidTowerInterior::SetPlan(const SolidTowerStronghold::FPlan& InPlan)
-{
-	Plan = InPlan;
-}
-
 FVector ASolidTowerInterior::GetCaptainSpawnWorld() const
 {
-	const FVector2D Center = SolidTowerStronghold::DoorHexCenter(Plan);
+	if (!Tower)
+	{
+		return FVector::ZeroVector;
+	}
+	const FVector2D Center = Tower->DoorHexCenter();
 	return FVector(Center.X, Center.Y, 0.f);
 }
 
@@ -524,7 +524,12 @@ void ASolidTowerInterior::DiscardParts()
 void ASolidTowerInterior::BuildVisuals()
 {
 	DiscardParts();
-	if (!SceneRoot || Plan.FloorCount <= 0)
+	if (!SceneRoot || !Tower)
+	{
+		return;
+	}
+	const SolidStronghold::FPlan& Plan = Tower->Plan();
+	if (Plan.FloorCount <= 0)
 	{
 		return;
 	}
@@ -534,8 +539,8 @@ void ASolidTowerInterior::BuildVisuals()
 	Walls.Reserve(Plan.FloorCount);
 	for (int32 Floor = 0; Floor < Plan.FloorCount; ++Floor)
 	{
-		const float Z = SolidTowerStronghold::FloorZCm(Plan, Floor);
-		const float Outer = SolidTowerStronghold::InteriorRadiusCm(Plan, Z);
+		const float Z = Tower->FloorZCm(Floor);
+		const float Outer = Tower->InteriorRadiusCm(Z);
 		const float Inner = FMath::Max(Outer - Plan.StairWidthCm, 0.f);
 		SolidTowerInteriorPrivate::FMesh Slab;
 		// The hole is the arriving flight. The landing that follows it stays in this slab.
@@ -545,7 +550,7 @@ void ASolidTowerInterior::BuildVisuals()
 			Inner,
 			Z,
 			Plan.SlabCm,
-			SolidTowerStronghold::GapWedge(Plan, Floor));
+			SolidStronghold::GapWedge(Plan, Floor));
 		UStaticMesh* SlabMesh = SolidTowerInteriorPrivate::Commit(this, Slab, TEXT("a floor"));
 		if (UStaticMeshComponent* Part = SolidTowerInteriorPrivate::AddStone(this, SceneRoot, SlabMesh, Rock, TEXT("TowerFloor")))
 		{
@@ -553,18 +558,18 @@ void ASolidTowerInterior::BuildVisuals()
 		}
 
 		const float NextZ = (Floor + 1 < Plan.FloorCount)
-			? SolidTowerStronghold::FloorZCm(Plan, Floor + 1)
-			: Plan.HeightCm();
+			? Tower->FloorZCm(Floor + 1)
+			: Tower->HeightCm();
 		SolidTowerInteriorPrivate::FMesh Wall;
-		if (SolidTowerStronghold::HasDoor(Floor))
+		if (Tower->HasDoor(Floor))
 		{
 			const float Lintel = FMath::Min(Z + Plan.DoorHeightCm, NextZ);
-			SolidTowerInteriorPrivate::AddWallBand(Wall, Plan, Z, Lintel, true);
-			SolidTowerInteriorPrivate::AddWallBand(Wall, Plan, Lintel, NextZ, false);
+			SolidTowerInteriorPrivate::AddWallBand(Wall, *Tower, Z, Lintel, true);
+			SolidTowerInteriorPrivate::AddWallBand(Wall, *Tower, Lintel, NextZ, false);
 		}
 		else
 		{
-			SolidTowerInteriorPrivate::AddWallBand(Wall, Plan, Z, NextZ, false);
+			SolidTowerInteriorPrivate::AddWallBand(Wall, *Tower, Z, NextZ, false);
 		}
 		UStaticMesh* WallMesh = SolidTowerInteriorPrivate::Commit(this, Wall, TEXT("a wall"));
 		if (UStaticMeshComponent* Part = SolidTowerInteriorPrivate::AddStone(this, SceneRoot, WallMesh, Rock, TEXT("TowerWall")))
@@ -581,7 +586,7 @@ void ASolidTowerInterior::BuildVisuals()
 			Light->SetIntensity(2500.f);
 			Light->SetAttenuationRadius(FMath::Max(Outer * 1.6f, 400.f));
 			Light->SetLightColor(FLinearColor(1.f, 0.82f, 0.55f));
-			Light->SetRelativeLocation(FVector(0.f, 0.f, Z + Plan.ClearHeightCm() * 0.55f));
+			Light->SetRelativeLocation(FVector(0.f, 0.f, Z + Tower->ClearHeightCm() * 0.55f));
 			if (GetWorld())
 			{
 				Light->RegisterComponent();
@@ -592,14 +597,14 @@ void ASolidTowerInterior::BuildVisuals()
 
 	{
 		SolidTowerInteriorPrivate::FMesh Cap;
-		const float Z = Plan.HeightCm();
+		const float Z = Tower->HeightCm();
 		SolidTowerInteriorPrivate::BuildSlab(
 			Cap,
-			SolidTowerStronghold::InteriorRadiusCm(Plan, Z),
+			Tower->InteriorRadiusCm(Z),
 			0.f,
 			Z,
 			Plan.SlabCm,
-			SolidTowerStronghold::FWedge{});
+			SolidStronghold::FWedge{});
 		UStaticMesh* CapBuilt = SolidTowerInteriorPrivate::Commit(this, Cap, TEXT("the cap"));
 		CapMesh = SolidTowerInteriorPrivate::AddStone(this, SceneRoot, CapBuilt, Rock, TEXT("TowerCeiling"));
 	}
@@ -613,11 +618,11 @@ void ASolidTowerInterior::BuildVisuals()
 
 	if (Plan.DoorWidthCm > 0.f && Plan.DoorHeightCm > 0.f)
 	{
-		const FVector2D Out = SolidTowerStronghold::DoorOutward(Plan);
-		const float HalfDepth = SolidTowerStronghold::DoorSlabDepthCm * 0.5f;
+		const FVector2D Out = Tower->DoorOutward();
+		const float HalfDepth = SolidStronghold::DoorSlabDepthCm * 0.5f;
 		const FVector Center(
-			Out.X * (Plan.GroundInteriorRadiusCm() - HalfDepth),
-			Out.Y * (Plan.GroundInteriorRadiusCm() - HalfDepth),
+			Out.X * (Tower->GroundInteriorRadiusCm() - HalfDepth),
+			Out.Y * (Tower->GroundInteriorRadiusCm() - HalfDepth),
 			Plan.DoorHeightCm * 0.5f);
 		DoorMesh = NewObject<UStaticMeshComponent>(this, NAME_None, RF_Transient);
 		if (DoorMesh)
@@ -631,7 +636,7 @@ void ASolidTowerInterior::BuildVisuals()
 				FMath::RadiansToDegrees(FMath::Atan2(Out.Y, Out.X)),
 				0.f));
 			DoorMesh->SetRelativeScale3D(FVector(
-				SolidTowerStronghold::DoorSlabDepthCm / SolidTowerInteriorPrivate::CubeSizeCm,
+				SolidStronghold::DoorSlabDepthCm / SolidTowerInteriorPrivate::CubeSizeCm,
 				Plan.DoorWidthCm / SolidTowerInteriorPrivate::CubeSizeCm,
 				Plan.DoorHeightCm / SolidTowerInteriorPrivate::CubeSizeCm));
 			DoorMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
@@ -680,10 +685,10 @@ void ASolidTowerInterior::BuildVisuals()
 
 	for (int32 Floor = 0; Floor < Plan.FloorCount; ++Floor)
 	{
-		const float Z = SolidTowerStronghold::FloorZCm(Plan, Floor);
+		const float Z = Tower->FloorZCm(Floor);
 		TArray<SolidStrongholdGrid::FHex> Hexes;
 		TArray<SolidStrongholdGrid::FSegment> Segments;
-		SolidTowerStronghold::CollectKeptHexes(Plan, Floor, Hexes);
+		Tower->CollectFloorHexes(Floor, Hexes);
 		SolidStrongholdGrid::CollectSegments(Hexes, Segments);
 		if (FloorGrid)
 		{
@@ -708,13 +713,13 @@ void ASolidTowerInterior::BuildVisuals()
 			}
 		}
 
-		const SolidTowerStronghold::FWedge Flight = SolidTowerStronghold::FlightWedge(Plan, Floor);
+		const SolidStronghold::FWedge Flight = SolidStronghold::FlightWedge(Plan, Floor);
 		if (!Stairs || !Flight.bOpen || Plan.StairTreadCount <= 0)
 		{
 			continue;
 		}
-		const float Centerline = SolidTowerStronghold::InteriorRadiusCm(Plan, Z) - Plan.StairWidthCm * 0.5f;
-		const float Riser = Plan.RiserCm();
+		const float Centerline = Tower->InteriorRadiusCm(Z) - Plan.StairWidthCm * 0.5f;
+		const float Riser = Tower->RiserCm();
 		for (int32 Tread = 0; Tread < Plan.StairTreadCount; ++Tread)
 		{
 			const float Along = (static_cast<float>(Tread) + 0.5f) / static_cast<float>(Plan.StairTreadCount);
@@ -738,13 +743,13 @@ void ASolidTowerInterior::BuildVisuals()
 	{
 		for (int32 Floor = 0; Floor < Plan.FloorCount; ++Floor)
 		{
-			TArray<SolidTowerStronghold::FRailPiece> Hole;
-			TArray<SolidTowerStronghold::FRailPiece> Flight;
-			SolidTowerStronghold::CollectHoleRail(Plan, Floor, Hole);
-			SolidTowerStronghold::CollectFlightRail(Plan, Floor, Flight);
-			auto Place = [this](const TArray<SolidTowerStronghold::FRailPiece>& Pieces)
+			TArray<SolidStronghold::FSolidHandrail::FPiece> Hole;
+			TArray<SolidStronghold::FSolidHandrail::FPiece> Flight;
+			SolidStronghold::CollectHoleRail(Plan, Floor, Hole);
+			SolidStronghold::CollectFlightRail(Plan, Floor, Flight);
+			auto Place = [this](const TArray<SolidStronghold::FSolidHandrail::FPiece>& Pieces)
 			{
-				for (const SolidTowerStronghold::FRailPiece& Piece : Pieces)
+				for (const SolidStronghold::FSolidHandrail::FPiece& Piece : Pieces)
 				{
 					Rails->AddInstance(FTransform(
 						Piece.Rotation,
@@ -761,7 +766,7 @@ void ASolidTowerInterior::BuildVisuals()
 	{
 		FloorSignDigits->SetStaticMesh(Cube);
 		FloorSignDigits->ClearInstances();
-		const FColor Ink = SolidTowerStronghold::FloorSignTextColor();
+		const FColor Ink = SolidStronghold::FSolidFloorSign::TextColor();
 		const FLinearColor InkLinear(Ink.R / 255.f, Ink.G / 255.f, Ink.B / 255.f, 1.f);
 		if (UMaterialInterface* Material = SolidMaterials::CreateSolidColor(
 			this, InkLinear, TEXT("TowerFloorNumber"), 0.9f))
@@ -772,30 +777,28 @@ void ASolidTowerInterior::BuildVisuals()
 
 	for (int32 Floor = 0; Floor < Plan.FloorCount; ++Floor)
 	{
-		const SolidTowerStronghold::FFloorSign Sign = SolidTowerStronghold::FloorSignFor(Plan, Floor);
-		if (!Sign.bPresent)
+		const SolidStronghold::FSolidFloorSign Sign = SolidStronghold::FloorSignFor(Plan, Floor);
+		if (!Sign.IsPresent())
 		{
 			continue;
 		}
 
-		const FRotator Facing(0.f, Sign.YawDeg, 0.f);
+		const FRotator Facing(0.f, Sign.YawDeg(), 0.f);
 		UStaticMeshComponent* Plate = NewObject<UStaticMeshComponent>(this, NAME_None, RF_Transient);
 		if (Plate)
 		{
 			Plate->SetupAttachment(SceneRoot);
 			Plate->SetMobility(EComponentMobility::Movable);
 			Plate->SetStaticMesh(Cube);
-			Plate->SetRelativeLocation(SolidTowerStronghold::FloorSignPlateLocation(Sign.Location, Sign.YawDeg));
+			Plate->SetRelativeLocation(Sign.PlateLocation());
 			Plate->SetRelativeRotation(Facing);
-			Plate->SetRelativeScale3D(FVector(
-				SolidTowerStronghold::FloorSignPlateDepthCm / SolidTowerInteriorPrivate::CubeSizeCm,
-				SolidTowerStronghold::FloorSignPlateWidthCm / SolidTowerInteriorPrivate::CubeSizeCm,
-				SolidTowerStronghold::FloorSignPlateHeightCm / SolidTowerInteriorPrivate::CubeSizeCm));
+			Plate->SetRelativeScale3D(
+				SolidStronghold::FSolidFloorSign::PlateSizeCm() / SolidTowerInteriorPrivate::CubeSizeCm);
 			Plate->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			Plate->SetCastShadow(false);
 			Plate->SetVisibility(true);
 			if (UMaterialInterface* Material = SolidMaterials::CreateSolidColor(
-				this, SolidTowerStronghold::FloorSignPlateColor(), TEXT("TowerFloorPlate"), 0.88f))
+				this, SolidStronghold::FSolidFloorSign::PlateColor(), TEXT("TowerFloorPlate"), 0.88f))
 			{
 				Plate->SetMaterial(0, Material);
 			}
@@ -810,13 +813,13 @@ void ASolidTowerInterior::BuildVisuals()
 		{
 			continue;
 		}
-		TArray<SolidTowerStronghold::FFloorSignStroke> Strokes;
-		SolidTowerStronghold::CollectFloorSignStrokes(Sign.Number, Strokes);
-		for (const SolidTowerStronghold::FFloorSignStroke& Stroke : Strokes)
+		TArray<SolidStronghold::FSolidFloorSign::FStroke> Strokes;
+		Sign.CollectStrokes(Strokes);
+		for (const SolidStronghold::FSolidFloorSign::FStroke& Stroke : Strokes)
 		{
 			FloorSignDigits->AddInstance(FTransform(
 				Facing,
-				Sign.Location + Facing.RotateVector(Stroke.CenterCm),
+				Sign.Location() + Facing.RotateVector(Stroke.CenterCm),
 				Stroke.SizeCm / SolidTowerInteriorPrivate::CubeSizeCm));
 		}
 	}
@@ -825,7 +828,7 @@ void ASolidTowerInterior::BuildVisuals()
 void ASolidTowerInterior::PlaceFurnishings(const TArray<SolidStrongholdFurniture::FUsed>& Used)
 {
 	UWorld* World = GetWorld();
-	if (!World || !World->IsGameWorld() || World->bIsTearingDown || !IsActorInitialized() || Used.Num() == 0)
+	if (!Tower || !World || !World->IsGameWorld() || World->bIsTearingDown || !IsActorInitialized() || Used.Num() == 0)
 	{
 		return;
 	}
@@ -849,7 +852,7 @@ void ASolidTowerInterior::PlaceFurnishings(const TArray<SolidStrongholdFurniture
 	}
 
 	TArray<SolidStrongholdGrid::FHex> Hexes;
-	SolidTowerStronghold::CollectKeptHexes(Plan, 0, Hexes);
+	Tower->CollectFloorHexes(0, Hexes);
 
 	int32 Placed = 0;
 	for (const SolidStrongholdFurniture::FUsed& UsedPiece : Used)

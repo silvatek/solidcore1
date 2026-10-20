@@ -1,13 +1,13 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "Strongholds/Dungeon/SolidDungeonLevel.h"
-#include "Strongholds/SolidStrongholdTransition.h"
+#include "SolidStronghold.h"
 #include "SolidGameInstance.h"
 #include "SolidTravel.h"
 #include "SolidLair.h"
-#include "Strongholds/Tower/SolidTowerInterior.h"
-#include "Strongholds/Tower/SolidTowerExterior.h"
-#include "Strongholds/Tower/SolidTowerStronghold.h"
+#include "Strongholds/Tower/Actors/SolidTowerInterior.h"
+#include "Strongholds/Tower/Actors/SolidTowerExterior.h"
+#include "Strongholds/Tower/SolidTower.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -36,14 +36,15 @@ namespace SolidTowerInteriorTestPrivate
 		return Radius;
 	}
 
-	int32 ExpectedGridCount(const SolidTowerStronghold::FPlan& Plan)
+	int32 ExpectedGridCount(const SolidStronghold::FSolidTower& Tower)
 	{
+		const SolidStronghold::FPlan& Plan = Tower.Plan();
 		int32 Count = 0;
 		for (int32 Floor = 0; Floor < Plan.FloorCount; ++Floor)
 		{
 			TArray<SolidStrongholdGrid::FHex> Hexes;
 			TArray<SolidStrongholdGrid::FSegment> Segments;
-			SolidTowerStronghold::CollectKeptHexes(Plan, Floor, Hexes);
+			Tower.CollectFloorHexes(Floor, Hexes);
 			SolidStrongholdGrid::CollectSegments(Hexes, Segments);
 			for (const SolidStrongholdGrid::FSegment& Segment : Segments)
 			{
@@ -56,10 +57,10 @@ namespace SolidTowerInteriorTestPrivate
 		return Count;
 	}
 
-	bool SpawnIsKeptHex(const SolidTowerStronghold::FPlan& Plan, const FVector& Spawn)
+	bool SpawnIsKeptHex(const SolidStronghold::FPlan& Plan, const FVector& Spawn)
 	{
 		TArray<SolidStrongholdGrid::FHex> Hexes;
-		SolidTowerStronghold::CollectKeptHexes(Plan, 0, Hexes);
+		SolidStronghold::CollectKeptHexes(Plan, 0, Hexes);
 		const FVector2D At(Spawn.X, Spawn.Y);
 		for (const SolidStrongholdGrid::FHex& Hex : Hexes)
 		{
@@ -137,8 +138,12 @@ bool FSolidTowerTravelTest::RunTest(const FString& Parameters)
 		ESolidStrongholdSize::Average,
 		DoorCell,
 		SolidStronghold::WorldXY(DoorCell));
+	TestFalse(
+		TEXT("a shut stronghold refuses the tower door"),
+		TowerState.ActiveStronghold->AcceptsEnter(TowerState, DoorCell));
+	TowerState.bStrongholdsEnabled = true;
 	TestTrue(
-		TEXT("a shut cave still lets the company tower door open"),
+		TEXT("the active tower accepts enter once strongholds are open"),
 		TowerState.ActiveStronghold->AcceptsEnter(TowerState, DoorCell));
 
 	ASolidTowerExterior* Shell = NewObject<ASolidTowerExterior>();
@@ -151,16 +156,18 @@ bool FSolidTowerTravelTest::RunTest(const FString& Parameters)
 	}
 
 	const FVector2D Cell(1000.f, 2000.f);
-	const SolidTowerStronghold::FPlan& Imperious = SolidTowerStronghold::Imperious;
-	const FVector2D Stand = SolidTowerStronghold::OutsideDoorXY(Cell, 90.f, Imperious);
-	const float Clearance = Imperious.GroundExteriorRadiusCm
-		+ SolidTowerStronghold::DoorProudCm
-		+ SolidTowerStronghold::DoorStandClearCm;
+	SolidStronghold::FSolidTower ImperiousTower;
+	ImperiousTower.Size = ESolidStrongholdSize::Imperious;
+	ImperiousTower.BindPlan();
+	const FVector2D Stand = ImperiousTower.OutsideDoorXY(Cell, 90.f);
+	const float Clearance = ImperiousTower.Plan().GroundExteriorRadiusCm
+		+ SolidStronghold::DoorProudCm
+		+ SolidStronghold::DoorStandClearCm;
 	TestTrue(TEXT("north grass stands north of the cell"), FMath::IsNearlyEqual(Stand.X, Cell.X, 0.1f));
 	TestTrue(TEXT("north grass adds the stand distance"), FMath::IsNearlyEqual(Stand.Y, Cell.Y + Clearance, 0.1f));
 	TestTrue(
 		TEXT("the stand point is outside the stone"),
-		FVector2D::Distance(Stand, Cell) > Imperious.GroundExteriorRadiusCm);
+		FVector2D::Distance(Stand, Cell) > ImperiousTower.Plan().GroundExteriorRadiusCm);
 
 	TUniquePtr<FSolidStronghold> Tower = SolidStronghold::Make(
 		ESolidStrongholdType::Tower,
@@ -176,7 +183,7 @@ bool FSolidTowerTravelTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("north exit faces away"), FMath::IsNearlyEqual(NorthExit.YawDeg, 90.f, 0.1f));
 
 		Tower->Orientation = ESolidStrongholdOrientation::East;
-		const FVector2D EastDoor = SolidTowerStronghold::OutsideDoorXY(Cell, 0.f, Imperious);
+		const FVector2D EastDoor = ImperiousTower.OutsideDoorXY(Cell, 0.f);
 		const SolidStronghold::FExitStand EastExit = SolidStronghold::ExitStand(*Tower);
 		TestTrue(TEXT("east exit stands on the east grass"), EastExit.XY.Equals(EastDoor, 0.1f));
 		TestTrue(TEXT("east exit faces away"), FMath::IsNearlyEqual(EastExit.YawDeg, 0.f, 0.1f));
@@ -192,7 +199,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidTowerInteriorVisualsTest::RunTest(const FString& Parameters)
 {
-	auto CheckPlan = [this](const SolidTowerStronghold::FPlan& Plan, const TCHAR* Label)
+	auto CheckPlan = [this](const SolidStronghold::FSolidTower& Tower, const TCHAR* Label)
 	{
 		ASolidTowerInterior* Interior = NewObject<ASolidTowerInterior>();
 		TestNotNull(TEXT("interior"), Interior);
@@ -200,7 +207,8 @@ bool FSolidTowerInteriorVisualsTest::RunTest(const FString& Parameters)
 		{
 			return;
 		}
-		Interior->SetPlan(Plan);
+		const SolidStronghold::FPlan& Plan = Tower.Plan();
+		Interior->SetTower(Tower);
 		Interior->BuildVisuals();
 		Interior->BuildVisuals();
 
@@ -216,7 +224,7 @@ bool FSolidTowerInteriorVisualsTest::RunTest(const FString& Parameters)
 		TestEqual(
 			*FString::Printf(TEXT("%s yellow grid"), Label),
 			Grid->GetInstanceCount(),
-			SolidTowerInteriorTestPrivate::ExpectedGridCount(Plan));
+			SolidTowerInteriorTestPrivate::ExpectedGridCount(Tower));
 
 		TestTrue(
 			*FString::Printf(TEXT("%s door is on local -X"), Label),
@@ -234,10 +242,10 @@ bool FSolidTowerInteriorVisualsTest::RunTest(const FString& Parameters)
 			Door->GetCollisionResponseToChannel(ECC_Visibility) == ECR_Block);
 		const FVector Spawn = Interior->GetCaptainSpawnWorld();
 		TestTrue(
-			*FString::Printf(TEXT("%s spawn is a kept hex"), Label),
+			*FString::Printf(TEXT("%s spawn is the cell by the door"), Label),
 			SolidTowerInteriorTestPrivate::SpawnIsKeptHex(Plan, Spawn));
-		const FVector2D DoorPoint = SolidTowerStronghold::DoorOutward(Plan)
-			* FMath::Max(Plan.GroundInteriorRadiusCm() - 30.f, 0.f);
+		const FVector2D DoorPoint = Tower.DoorOutward()
+			* FMath::Max(Tower.GroundInteriorRadiusCm() - 30.f, 0.f);
 		const FVector2D SpawnXY(Spawn.X, Spawn.Y);
 		TestTrue(
 			*FString::Printf(TEXT("%s spawn is nearer the door than the center"), Label),
@@ -255,13 +263,28 @@ bool FSolidTowerInteriorVisualsTest::RunTest(const FString& Parameters)
 				*FString::Printf(TEXT("%s ceiling is the top interior"), Label),
 				FMath::IsNearlyEqual(
 					SolidTowerInteriorTestPrivate::MaxRadius(CapMesh),
-					Plan.TopInteriorRadiusCm(),
+					Tower.TopInteriorRadiusCm(),
 					1.f));
 		}
 	};
 
-	CheckPlan(SolidTowerStronghold::Imperious, TEXT("Imperious"));
-	CheckPlan(SolidTowerStronghold::Average, TEXT("Average"));
+	auto TowerOf = [](const ESolidStrongholdSize Size)
+	{
+		SolidStronghold::FSolidTower Tower;
+		Tower.Size = Size;
+		Tower.BindPlan();
+		return Tower;
+	};
+	const SolidStronghold::FSolidTower ImperiousTower = TowerOf(ESolidStrongholdSize::Imperious);
+	const SolidStronghold::FSolidTower StatelyTower = TowerOf(ESolidStrongholdSize::Stately);
+	const SolidStronghold::FSolidTower GrandTower = TowerOf(ESolidStrongholdSize::Grand);
+	const SolidStronghold::FSolidTower ImpressiveTower = TowerOf(ESolidStrongholdSize::Impressive);
+	const SolidStronghold::FSolidTower AverageTower = TowerOf(ESolidStrongholdSize::Average);
+	CheckPlan(ImperiousTower, TEXT("Imperious"));
+	CheckPlan(StatelyTower, TEXT("Stately"));
+	CheckPlan(GrandTower, TEXT("Grand"));
+	CheckPlan(ImpressiveTower, TEXT("Impressive"));
+	CheckPlan(AverageTower, TEXT("Average"));
 	return true;
 }
 

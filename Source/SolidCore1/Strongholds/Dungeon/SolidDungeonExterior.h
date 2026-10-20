@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Strongholds/SolidStrongholdExterior.h"
+#include "Strongholds/Actors/SolidStrongholdExterior.h"
 #include "SolidDungeonExterior.generated.h"
 
 class USolidTerrainMap;

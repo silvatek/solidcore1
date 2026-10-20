@@ -64,16 +64,16 @@ public:
 	/** Closes the page. True when the selected row is Yes. */
 	bool AcceptExitConfirm();
 
-	/** A stronghold site asked for a type. Esc closes it and leaves the site. */
-	void OpenStrongholdChoice(FIntPoint Cell, ESolidStrongholdSize Size, const TArray<ESolidStrongholdType>& Types);
+	/** A stronghold site asked for a size and a type. Esc closes it and leaves the site. */
+	void OpenStrongholdChoice(FIntPoint Cell, const TArray<FSolidStrongholdChoice>& Choices);
 	void CloseStrongholdChoice();
 	bool IsStrongholdChoiceOpen() const { return bShowStrongholdChoice; }
 	void MoveStrongholdChoice(int32 Delta);
 	void SetStrongholdChoiceIndex(int32 Index);
 	int32 GetStrongholdChoiceIndex() const { return StrongholdChoiceIndex; }
-	int32 GetStrongholdChoiceCount() const { return StrongholdChoiceTypes.Num(); }
+	int32 GetStrongholdChoiceCount() const { return StrongholdChoices.Num(); }
 	FIntPoint GetStrongholdChoiceCell() const { return StrongholdChoiceCell; }
-	ESolidStrongholdSize GetStrongholdChoiceSize() const { return static_cast<ESolidStrongholdSize>(StrongholdChoiceSize); }
+	ESolidStrongholdSize GetStrongholdChoiceSize() const;
 	ESolidStrongholdType GetStrongholdChoiceType() const;
 
 	/** F12. The tech readout in the corner. Battle plans stay up either way. */
@@ -112,7 +112,7 @@ public:
 
 	/** F10. Closes an open page, including the character editor, or toggles the main menu. */
 	void HandleMenuKey();
-	/** Esc. Closes the menu, the exit confirmation, the portal, the squad builder, the journal, the inventory, the credits page, the character editor, and a stronghold type choice. */
+	/** Esc. Closes the menu, the exit confirmation, the portal, the squad builder, the journal, the inventory, the credits page, the character editor, and a stronghold choice. */
 	void CloseMenuOverlay();
 	/** Hide the menu list. Leaves the credits page as it is. */
 	void CloseMainMenu();
@@ -209,12 +209,11 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "HUD")
 	int32 ExitConfirmIndex = 0;
 
-	/** Type list for a stronghold site. Choosing a row commits the move. */
+	/** Size and type rows for a stronghold site. Choosing a row commits the move. */
 	bool bShowStrongholdChoice = false;
 	int32 StrongholdChoiceIndex = 0;
 	FIntPoint StrongholdChoiceCell = FIntPoint::ZeroValue;
-	uint8 StrongholdChoiceSize = 0;
-	TArray<uint8> StrongholdChoiceTypes;
+	TArray<FSolidStrongholdChoice> StrongholdChoices;
 
 	/** Tech readout (build, FPS, pawn, terrain). On until F12. */
 	UPROPERTY(VisibleAnywhere, Category = "HUD")

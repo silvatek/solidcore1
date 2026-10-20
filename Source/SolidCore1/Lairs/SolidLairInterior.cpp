@@ -3,7 +3,7 @@
 #include "SolidGameMode.h"
 #include "SolidLair.h"
 #include "SolidMaterials.h"
-#include "SolidStrongholds.h"
+#include "SolidStronghold.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SceneComponent.h"

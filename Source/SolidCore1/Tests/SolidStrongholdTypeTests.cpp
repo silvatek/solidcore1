@@ -2,17 +2,15 @@
 #include "Misc/AutomationTest.h"
 #include "SolidGameState.h"
 #include "SolidStronghold.h"
-#include "SolidStrongholdGrid.h"
-#include "SolidStrongholdTransition.h"
+#include "Strongholds/Furnishings/SolidStrongholdGrid.h"
 #include "Strongholds/Dungeon/SolidDungeon.h"
 #include "Strongholds/Fortress/SolidFortress.h"
 #include "Strongholds/Tower/SolidTower.h"
 #include "Strongholds/Dungeon/SolidDungeonExterior.h"
 #include "Strongholds/Dungeon/SolidDungeonInterior.h"
 #include "Strongholds/Dungeon/SolidDungeonLevel.h"
-#include "Strongholds/Tower/SolidTowerExterior.h"
-#include "Strongholds/Tower/SolidTowerInterior.h"
-#include "Strongholds/Tower/SolidTowerStronghold.h"
+#include "Strongholds/Tower/Actors/SolidTowerExterior.h"
+#include "Strongholds/Tower/Actors/SolidTowerInterior.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -100,6 +98,22 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 		TEXT("a copied tower keeps its size"),
 		static_cast<uint8>(TowerCopy->Size),
 		static_cast<uint8>(ESolidStrongholdSize::Average));
+
+	const SolidStronghold::FSolidTower* AverageTower = static_cast<const SolidStronghold::FSolidTower*>(TowerOwned.Get());
+	const SolidStronghold::FSolidTower* AverageCopy = static_cast<const SolidStronghold::FSolidTower*>(TowerCopy.Get());
+	SolidStronghold::FSolidTowerBand AverageBand;
+	TestTrue(TEXT("Average has a floor band"), SolidStronghold::FindTowerBand(ESolidStrongholdSize::Average, AverageBand));
+	TestEqual(TEXT("a made tower keeps its floor count"), AverageTower->Plan().FloorCount, SolidStronghold::BandFloorCount(AverageBand));
+	TestEqual(TEXT("a made tower keeps its ground floor"), AverageTower->Plan().SourceFloor, SolidStronghold::BandSourceFloor(AverageBand));
+	TestTrue(
+		TEXT("the tower height is its plan height"),
+		FMath::IsNearlyEqual(AverageTower->HeightCm(), SolidStronghold::HeightCm(AverageTower->Plan()), 0.01f));
+	TestEqual(TEXT("a copied tower keeps its plan"), AverageCopy->Plan().FloorCount, AverageTower->Plan().FloorCount);
+	TArray<SolidStrongholdGrid::FHex> TowerGround;
+	TArray<SolidStrongholdGrid::FHex> PlanGround;
+	AverageTower->CollectFloorHexes(0, TowerGround);
+	AverageCopy->CollectFloorHexes(0, PlanGround);
+	TestTrue(TEXT("a copied tower keeps its ground floor"), SameHexes(TowerGround, PlanGround));
 	TestTrue(TEXT("a copy is its own stronghold"), DungeonCopy.Get() != DungeonOwned.Get());
 
 	TestTrue(
@@ -146,14 +160,25 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 		TEXT("an average tower names the tower exterior"),
 		TowerOwned->ExteriorClass() == ASolidTowerExterior::StaticClass());
 	TestTrue(
-		TEXT("a copied tower names the tower exterior"),
+		TEXT("a copied average tower names the tower exterior"),
 		TowerCopy->ExteriorClass() == ASolidTowerExterior::StaticClass());
 	TestTrue(
 		TEXT("an average tower names the tower interior"),
 		TowerOwned->InteriorClass() == ASolidTowerInterior::StaticClass());
 	TestTrue(
-		TEXT("a copied tower names the tower interior"),
+		TEXT("a copied average tower names the tower interior"),
 		TowerCopy->InteriorClass() == ASolidTowerInterior::StaticClass());
+	const TUniquePtr<FSolidStronghold> ImperiousOwned = SolidStronghold::Make(
+		ESolidStrongholdType::Tower,
+		ESolidStrongholdSize::Imperious,
+		OriginCell,
+		SolidStronghold::WorldXY(OriginCell));
+	TestTrue(
+		TEXT("an Imperious tower names the tower exterior"),
+		ImperiousOwned->ExteriorClass() == ASolidTowerExterior::StaticClass());
+	TestTrue(
+		TEXT("an Imperious tower names the tower interior"),
+		ImperiousOwned->InteriorClass() == ASolidTowerInterior::StaticClass());
 	TestNull(
 		TEXT("a humble tower has no exterior"),
 		SolidStronghold::Make(
@@ -176,7 +201,7 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 	{
 		const TArray<SolidStrongholdFurniture::FUsed> Carried;
 		DungeonOwned->ConfigureInterior(Cave, Carried);
-		TowerOwned->ConfigureInterior(Room, Carried);
+		ImperiousOwned->ConfigureInterior(Room, Carried);
 		TestNotNull(TEXT("the dungeon fill builds the mouth"), Cave->GetMouthMesh());
 		TestEqual(TEXT("the dungeon opening is the mouth"), Cave->GetPassageMesh(), Cave->GetMouthMesh());
 		TestEqual(TEXT("the dungeon fill keeps the cell"), Cave->GetStrongholdCell(), OriginCell);
@@ -216,9 +241,15 @@ bool FSolidStrongholdTypeSupportedTest::RunTest(const FString& Parameters)
 
 	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
 	{
-		const FSolidStronghold Spire(ESolidStrongholdType::Tower, Size);
+		SolidStronghold::FSolidTower Spire;
+		Spire.Size = Size;
+		Spire.BindPlan();
 		const bool bMeagre = Size == ESolidStrongholdSize::Meagre;
-		const bool bTowerSize = Size >= ESolidStrongholdSize::Average && Size <= ESolidStrongholdSize::Imperious;
+		const bool bTowerSize = Size == ESolidStrongholdSize::Average
+			|| Size == ESolidStrongholdSize::Impressive
+			|| Size == ESolidStrongholdSize::Grand
+			|| Size == ESolidStrongholdSize::Stately
+			|| Size == ESolidStrongholdSize::Imperious;
 
 		TestEqual(
 			*FString::Printf(TEXT("%s dungeon supported"), SolidStronghold::SizeName(Size)),
@@ -252,15 +283,34 @@ bool FSolidStrongholdTypeSupportedTest::RunTest(const FString& Parameters)
 			FortressHexes.Num(),
 			0);
 
-		TArray<SolidStrongholdGrid::FHex> Kept;
-		SolidTowerStronghold::FPlan Plan;
-		if (SolidTowerStronghold::PlanFor(Spire, Plan))
+		TArray<SolidStrongholdGrid::FHex> Room;
+		if (Spire.Supported(Size))
 		{
-			SolidTowerStronghold::CollectKeptHexes(Plan, 0, Kept);
+			Spire.CollectFloorHexes(0, Room);
 		}
 		TestTrue(
 			*FString::Printf(TEXT("%s tower ground floor"), SolidStronghold::SizeName(Size)),
-			SameHexes(TowerHexes, Kept));
+			SameHexes(TowerHexes, Room));
+		if (Size == ESolidStrongholdSize::Imperious)
+		{
+			TestEqual(TEXT("Imperious ground floor has 20 hex tiles"), TowerHexes.Num(), 20);
+		}
+		if (Size == ESolidStrongholdSize::Average)
+		{
+			TestEqual(TEXT("Average ground floor has 12 hex tiles"), TowerHexes.Num(), 12);
+		}
+		if (Size == ESolidStrongholdSize::Impressive)
+		{
+			TestEqual(TEXT("Impressive ground floor has 12 hex tiles"), TowerHexes.Num(), 12);
+		}
+		if (Size == ESolidStrongholdSize::Grand)
+		{
+			TestEqual(TEXT("Grand ground floor has 20 hex tiles"), TowerHexes.Num(), 20);
+		}
+		if (Size == ESolidStrongholdSize::Stately)
+		{
+			TestEqual(TEXT("Stately ground floor has 20 hex tiles"), TowerHexes.Num(), 20);
+		}
 	}
 
 	TArray<SolidStrongholdGrid::FHex> MeagreFloor;
@@ -277,32 +327,43 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidStrongholdTypeChoiceTest::RunTest(const FString& Parameters)
 {
 	FGameState Locked;
-	TArray<ESolidStrongholdType> Listed;
+	Locked.bStrongholdSiteRestrictions = true;
+	TArray<FSolidStrongholdChoice> Listed;
 	TestEqual(
 		TEXT("a locked size lists nothing"),
-		static_cast<uint8>(SolidStrongholdTransition::Consider(Locked, ESolidStrongholdSize::Imperious, Listed)),
+		static_cast<uint8>(SolidStrongholdTransition::Consider(Locked, Listed)),
 		static_cast<uint8>(SolidStrongholdTransition::EOffer::None));
-	TestEqual(TEXT("a locked Imperious site is empty"), Listed.Num(), 0);
+	TestEqual(TEXT("a locked company lists nothing"), Listed.Num(), 0);
 	TestTrue(
 		TEXT("Imperious tower can be built"),
 		SolidStronghold::TypeOf(ESolidStrongholdType::Tower).Supported(ESolidStrongholdSize::Imperious));
+	TestTrue(
+		TEXT("Average tower can be built"),
+		SolidStronghold::TypeOf(ESolidStrongholdType::Tower).Supported(ESolidStrongholdSize::Average));
+	TestTrue(
+		TEXT("Impressive tower can be built"),
+		SolidStronghold::TypeOf(ESolidStrongholdType::Tower).Supported(ESolidStrongholdSize::Impressive));
+	TestTrue(
+		TEXT("Grand tower can be built"),
+		SolidStronghold::TypeOf(ESolidStrongholdType::Tower).Supported(ESolidStrongholdSize::Grand));
+	TestTrue(
+		TEXT("Stately tower can be built"),
+		SolidStronghold::TypeOf(ESolidStrongholdType::Tower).Supported(ESolidStrongholdSize::Stately));
 
 	FGameState State;
+	State.bStrongholdSiteRestrictions = true;
 	State.MaxStrongholdSize = ESolidStrongholdSize::Imperious;
+	SolidStrongholdTransition::Consider(State, Listed);
 
 	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
 	{
 		const bool bLarger = static_cast<int32>(Size) > static_cast<int32>(State.ActiveStronghold->Size);
 		const bool bUnlocked = SolidEvents::IsStrongholdSizeUnlocked(State, Size);
-		SolidStrongholdTransition::Consider(State, Size, Listed);
 		for (const ESolidStrongholdType Type : SolidStronghold::Types)
 		{
 			const bool bSupported = SolidStronghold::TypeOf(Type).Supported(Size);
-			const bool bListed = Listed.Contains(Type);
-			const FString Label = FString::Printf(
-				TEXT("%s %s"),
-				SolidStronghold::SizeName(Size),
-				SolidStronghold::TypeName(Type));
+			const bool bListed = SolidStrongholdTransition::Offers(Listed, Size, Type);
+			const FString Label = SolidStronghold::Label(Size, Type);
 			if (bLarger && bUnlocked && bSupported)
 			{
 				TestTrue(*FString::Printf(TEXT("%s is listed"), *Label), bListed);
@@ -313,6 +374,43 @@ bool FSolidStrongholdTypeChoiceTest::RunTest(const FString& Parameters)
 			}
 		}
 	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidStrongholdRoomsTest,
+	"SolidCore1.Stronghold.Rooms",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidStrongholdRoomsTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("a large room is 20 hexes"), SolidStronghold::RoomHexes(ESolidStrongholdRoom::Large), 20);
+	TestEqual(TEXT("a medium room is 12 hexes"), SolidStronghold::RoomHexes(ESolidStrongholdRoom::Medium), 12);
+	TestEqual(TEXT("a small room is 6 hexes"), SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small), 6);
+
+	const int32 Large[] = { 0, 0, 0, 0, 1, 2, 3 };
+	const int32 Medium[] = { 1, 1, 1, 3, 4, 4, 4 };
+	const int32 Small[] = { 0, 1, 2, 2, 2, 2, 3 };
+	TestEqual(TEXT("every size has rooms"), SolidStronghold::SizeCount, static_cast<int32>(UE_ARRAY_COUNT(Large)));
+
+	for (int32 Index = 0; Index < SolidStronghold::SizeCount; ++Index)
+	{
+		const ESolidStrongholdSize Size = SolidStronghold::Sizes[Index];
+		const SolidStronghold::FRooms Rooms = SolidStronghold::RoomsFor(Size);
+		const FString Name = SolidStronghold::SizeName(Size);
+		TestEqual(*FString::Printf(TEXT("%s rooms are that size"), *Name), static_cast<uint8>(Rooms.Size), static_cast<uint8>(Size));
+		TestEqual(*FString::Printf(TEXT("%s large rooms"), *Name), Rooms.Large, Large[Index]);
+		TestEqual(*FString::Printf(TEXT("%s medium rooms"), *Name), Rooms.Medium, Medium[Index]);
+		TestEqual(*FString::Printf(TEXT("%s small rooms"), *Name), Rooms.Small, Small[Index]);
+	}
+
+	TestEqual(TEXT("Meagre rooms are 12 hexes"), SolidStronghold::Hexes(SolidStronghold::RoomsFor(ESolidStrongholdSize::Meagre)), 12);
+	TestEqual(TEXT("Humble rooms are 18 hexes"), SolidStronghold::Hexes(SolidStronghold::RoomsFor(ESolidStrongholdSize::Humble)), 18);
+	TestEqual(TEXT("Average rooms are 24 hexes"), SolidStronghold::Hexes(SolidStronghold::RoomsFor(ESolidStrongholdSize::Average)), 24);
+	TestEqual(TEXT("Impressive rooms are 48 hexes"), SolidStronghold::Hexes(SolidStronghold::RoomsFor(ESolidStrongholdSize::Impressive)), 48);
+	TestEqual(TEXT("Grand rooms are 80 hexes"), SolidStronghold::Hexes(SolidStronghold::RoomsFor(ESolidStrongholdSize::Grand)), 80);
+	TestEqual(TEXT("Stately rooms are 100 hexes"), SolidStronghold::Hexes(SolidStronghold::RoomsFor(ESolidStrongholdSize::Stately)), 100);
+	TestEqual(TEXT("Imperious rooms are 126 hexes"), SolidStronghold::Hexes(SolidStronghold::RoomsFor(ESolidStrongholdSize::Imperious)), 126);
 	return true;
 }
 

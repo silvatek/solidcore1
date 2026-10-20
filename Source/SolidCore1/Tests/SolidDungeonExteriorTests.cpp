@@ -2,7 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "Strongholds/Dungeon/SolidDungeonExterior.h"
 #include "SolidGameState.h"
-#include "SolidStrongholds.h"
+#include "SolidStronghold.h"
 #include "Strongholds/Dungeon/SolidDungeon.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidWorldMap.h"

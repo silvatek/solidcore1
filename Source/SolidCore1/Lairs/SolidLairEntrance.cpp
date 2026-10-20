@@ -1,5 +1,5 @@
 #include "SolidLairEntrance.h"
-#include "Strongholds/SolidStrongholds.h"
+#include "Strongholds/SolidStronghold.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
 #include "Components/SceneComponent.h"

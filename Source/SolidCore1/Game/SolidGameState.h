@@ -27,7 +27,7 @@ struct FGameState
 	bool bRavenSightEnabled = false;
 	/** Enter Relion restores the Iglin span. It starts broken. */
 	bool bIglinBridgeRepaired = false;
-	/** Closing the monster message opens strongholds. They start closed. */
+	/** Strongholds start closed. A size unlock or EnableCave opens them. */
 	bool bStrongholdsEnabled = false;
 	/**
 	 * Lairs an EnableLair change has opened, by id.
@@ -59,6 +59,11 @@ struct FGameState
 	 * A larger size unlocks every size up to it. Sizes are not skipped.
 	 */
 	ESolidStrongholdSize MaxStrongholdSize = ESolidStrongholdSize::Meagre;
+	/**
+	 * When set, a site offers only a size larger than the company stronghold.
+	 * Off for the moment, so a site can offer Meagre Dungeon.
+	 */
+	bool bStrongholdSiteRestrictions = false;
 	/** Strongholds the company moved on from, oldest first. The exterior stays. It is no longer a passage. */
 	TArray<TUniquePtr<FSolidStronghold>> PreviousStrongholds;
 	/** Furnishings in the active stronghold. A new game carries the Meagre stronghold's pieces. */

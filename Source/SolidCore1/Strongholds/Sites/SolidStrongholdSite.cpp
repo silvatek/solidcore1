@@ -1,7 +1,7 @@
 #include "SolidStrongholdSite.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
-#include "Strongholds/SolidStrongholds.h"
+#include "Strongholds/SolidStronghold.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Terrain/SolidWorldMap.h"

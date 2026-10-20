@@ -1,18 +1,16 @@
-# Stronghold mockups
+# Code structure
 
-How agents draw tower, fortress, and dungeon plans before those plans land in a story or in C++.
+The stronghold type is a class that owns its measurements. A type would preferably not use a separate plan structure. The exterior actor (shell) and the interior actor (visit) hold a pointer to that stronghold.
 
-## Deliverable
+`Strongholds/<Type>/` holds the stronghold class. `Strongholds/<Type>/Actors/` holds the exterior actor (shell) and the interior actor (visit). Shared stronghold bases stay in `Strongholds/Actors/`. Furnishings stay in `Strongholds/Furnishings/`.
 
-Use a **Cursor canvas** (not an in-transcript HTML fragment, and not a repo file). The fortress and Imperious Tower plans were canvases the owner opened beside the chat. Keep one canvas per stronghold type while iterating; update it in place as the owner steers.
+The class is the placed stronghold. Its fields are the measurements. Values derived from those fields are methods. Public methods cover what that stronghold does. Details only the placed instance needs stay private. Configure points the exterior actor (shell) and the interior actor (visit) at this instance.
 
-When the owner likes the plan, **write the learnings into the open Planning story** (hex splits, interior sizes, stairs, elevations, what is not chosen). That story commit uses the `Plan: ` prefix. The canvas itself is not committed.
-
-Canvas colours are for reading the plan only (for example light walkable floor and accent hexes on a dungeon mockup). They are **not** the in-game look. Shipped interiors use stone, as the Meagre cave and the towers already do.
+The actors hold a pointer to the stronghold. It stays null until Configure, so the first construction draws nothing. The game state owns the stronghold. The exterior actor (shell) and the interior actor (visit) ask the stronghold for the measurements they draw.
 
 ## Shared constants
 
-Match the shipped grid and the tower plan. Do not invent a second hex size.
+The shipped grid and the stair measurements. Do not invent a second hex size.
 
 | Constant | Value | Source |
 |----------|-------|--------|
@@ -23,9 +21,11 @@ Match the shipped grid and the tower plan. Do not invent a second hex size.
 | Stair clear width | 140 cm | `FPlan::StairWidthCm` |
 | Landing run | 200 cm | `LandingRunCm` |
 | Storey pitch | 300 cm | `FPlan::FloorPitchCm` |
-| Stair tread depth (mockup) | 26 cm | tower tread |
+| Stair tread depth | 26 cm | `FPlan::StairTreadCm` |
 
 Odd rows shift half a flat-to-flat along X, the same as `HexCenter`.
+
+# Stronghold Details
 
 ## Strongholds by size and type
 
@@ -57,7 +57,23 @@ Straight walls (or the tower's interior circle). A hex counts only when **all si
 
 Exclude a hex whose **center** lies on a stair flight or on a landing. Same idea as `HexOnStair` / `HexOnLanding` on a tower. A one-floor room has no stair and no landing.
 
-Embed that count in the canvas so the stats stay honest when a room moves. Python in the shell is fine for searching dimensions that hit a target count before drawing.
+## Type cues
+
+- **Tower** — one round shaft, taper, spiral stair band. Usable rooms are the kit sizes on the Imperious floor band for that size (table above). Average through Imperious only.
+- **Fortress** — rectangular outer wall, yard (yard hexes are **not** in the total), buildings with straight walls. Keep is the main building and uses the keep floors above. Stairs and landings live inside multi-floor buildings.
+- **Dungeon** — the shared rooms joined by **passages** and **stairs**. Passages have no usable hexes and are at least as long as they are wide. No hard limit on the overall footprint. Rooms may be rectangular or irregular so long as the hex counts match the kit. **Level 1 is the top** (the mouth); deeper levels have higher numbers.
+
+# Stronghold Mockups
+
+How agents draw tower, fortress, and dungeon plans before those plans land in a story or in C++.
+
+## Deliverable
+
+Use a **Cursor canvas** (not an in-transcript HTML fragment, and not a repo file). The fortress and Imperious Tower plans were canvases the owner opened beside the chat. Keep one canvas per stronghold type while iterating; update it in place as the owner steers.
+
+When the owner likes the plan, **write the learnings into the open Planning story** (hex splits, interior sizes, stairs, elevations, what is not chosen). That story commit uses the `Plan: ` prefix. The canvas itself is not committed.
+
+Canvas colours are for reading the plan only (for example light walkable floor and accent hexes on a dungeon mockup). They are **not** the in-game look. Shipped interiors use stone, as the Meagre cave and the towers already do.
 
 ## What to draw
 
@@ -66,18 +82,14 @@ Embed that count in the canvas so the stats stay honest when a room moves. Pytho
 3. **Outside views** when the exterior matters — elevation and a simple oblique, using the tower pitch for storey height so heights stay comparable.
 4. **Table** — per room or building: floors, hexes each floor, total, and how it meets the size budget.
 
+Embed the usable-hex count in the canvas so the stats stay honest when a room moves. Python in the shell is fine for searching dimensions that hit a target count before drawing.
+
 ## Loop with the owner
 
 1. Sketch the roster (which rooms or buildings, how many floors, rough hex split that sums to the size total).
 2. Find straight interiors (or irregular outlines) on the grid that produce those counts.
 3. Draw the canvas. Iterate from owner feedback (walls, stairs, placement, outside views).
 4. Record settled numbers and rules in the Planning story. Leave undrawn sizes undrawn; do not invent their plans unless asked.
-
-## Type cues
-
-- **Tower** — one round shaft, taper, spiral stair band. Usable rooms are the kit sizes on the Imperious floor band for that size (table above). Average through Imperious only.
-- **Fortress** — rectangular outer wall, yard (yard hexes are **not** in the total), buildings with straight walls. Keep is the main building and uses the keep floors above. Stairs and landings live inside multi-floor buildings.
-- **Dungeon** — the shared rooms joined by **passages** and **stairs**. Passages have no usable hexes and are at least as long as they are wide. No hard limit on the overall footprint. Rooms may be rectangular or irregular so long as the hex counts match the kit. **Level 1 is the top** (the mouth); deeper levels have higher numbers.
 
 ## Precedents
 

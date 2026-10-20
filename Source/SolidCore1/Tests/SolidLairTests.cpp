@@ -8,7 +8,6 @@
 #include "Strongholds/Dungeon/SolidDungeonLevel.h"
 #include "SolidGameState.h"
 #include "SolidStronghold.h"
-#include "SolidStrongholds.h"
 #include "SolidWorldMap.h"
 #include "Towns/SolidTowns.h"
 #include "Components/InstancedStaticMeshComponent.h"

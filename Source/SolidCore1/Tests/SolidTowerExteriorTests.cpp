@@ -1,8 +1,8 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "Strongholds/Tower/SolidTowerExterior.h"
-#include "SolidStrongholds.h"
-#include "Strongholds/Tower/SolidTowerStronghold.h"
+#include "Strongholds/Tower/Actors/SolidTowerExterior.h"
+#include "SolidStronghold.h"
+#include "Strongholds/Tower/SolidTower.h"
 #include "SolidWorldMap.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -73,9 +73,17 @@ namespace SolidTowerExteriorTestPrivate
 		return Part->GetRelativeLocation().Z - Part->GetRelativeScale3D().Z * 50.f;
 	}
 
+	SolidStronghold::FSolidTower TowerOf(const ESolidStrongholdSize Size)
+	{
+		SolidStronghold::FSolidTower Tower;
+		Tower.Size = Size;
+		Tower.BindPlan();
+		return Tower;
+	}
+
 	void TestShell(
 		FAutomationTestBase& Test,
-		const SolidTowerStronghold::FPlan& Plan,
+		const SolidStronghold::FSolidTower& Tower,
 		const TCHAR* Label)
 	{
 		ASolidTowerExterior* Shell = NewObject<ASolidTowerExterior>();
@@ -85,7 +93,8 @@ namespace SolidTowerExteriorTestPrivate
 			return;
 		}
 
-		Shell->SetPlan(Plan);
+		const SolidStronghold::FPlan& Plan = Tower.Plan();
+		Shell->SetTower(Tower);
 		Shell->BuildVisuals();
 
 		UStaticMeshComponent* Cap = Shell->GetCapMesh();
@@ -101,14 +110,14 @@ namespace SolidTowerExteriorTestPrivate
 		Test.TestTrue(*FString::Printf(TEXT("%s cap mesh"), Label), Measure(Cap, CapEnds));
 		Test.TestTrue(
 			*FString::Printf(TEXT("%s cap top is the tower height"), Label),
-			FMath::IsNearlyEqual(CapEnds.TopZ, Plan.HeightCm(), 0.05f));
+			FMath::IsNearlyEqual(CapEnds.TopZ, Tower.HeightCm(), 0.05f));
 		Test.TestTrue(
 			*FString::Printf(TEXT("%s cap is the top diameter"), Label),
 			FMath::IsNearlyEqual(CapEnds.TopRadius, Plan.TopExteriorRadiusCm, 0.05f));
 
 		UStaticMesh* DoorMesh = Door->GetStaticMesh();
 		Test.TestNotNull(*FString::Printf(TEXT("%s door cube"), Label), DoorMesh);
-		const FVector DoorCenter = SolidTowerStronghold::DoorSlabCenterCm(Plan);
+		const FVector DoorCenter = Tower.DoorSlabCenterCm();
 		Test.TestTrue(
 			*FString::Printf(TEXT("%s door is on local -X"), Label),
 			Door->GetRelativeLocation().X < 0.f
@@ -123,7 +132,7 @@ namespace SolidTowerExteriorTestPrivate
 		const float OuterFace = Door->GetRelativeLocation().X - Door->GetRelativeScale3D().X * 50.f;
 		Test.TestTrue(
 			*FString::Printf(TEXT("%s door stands proud of the ground course"), Label),
-			FMath::IsNearlyEqual(OuterFace, -(Plan.GroundExteriorRadiusCm + SolidTowerStronghold::DoorProudCm), 0.5f));
+			FMath::IsNearlyEqual(OuterFace, -(Plan.GroundExteriorRadiusCm + SolidStronghold::DoorProudCm), 0.5f));
 		Test.TestTrue(
 			*FString::Printf(TEXT("%s door blocks"), Label),
 			Door->GetCollisionResponseToChannel(ECC_Pawn) == ECR_Block);
@@ -137,13 +146,27 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidTowerExteriorTest::RunTest(const FString& Parameters)
 {
-	SolidTowerExteriorTestPrivate::TestShell(*this, SolidTowerStronghold::Imperious, TEXT("Imperious"));
-	SolidTowerExteriorTestPrivate::TestShell(*this, SolidTowerStronghold::Average, TEXT("Average"));
+	const SolidStronghold::FSolidTower ImperiousTower =
+		SolidTowerExteriorTestPrivate::TowerOf(ESolidStrongholdSize::Imperious);
+	const SolidStronghold::FSolidTower StatelyTower =
+		SolidTowerExteriorTestPrivate::TowerOf(ESolidStrongholdSize::Stately);
+	const SolidStronghold::FSolidTower GrandTower =
+		SolidTowerExteriorTestPrivate::TowerOf(ESolidStrongholdSize::Grand);
+	const SolidStronghold::FSolidTower ImpressiveTower =
+		SolidTowerExteriorTestPrivate::TowerOf(ESolidStrongholdSize::Impressive);
+	const SolidStronghold::FSolidTower AverageTower =
+		SolidTowerExteriorTestPrivate::TowerOf(ESolidStrongholdSize::Average);
+	SolidTowerExteriorTestPrivate::TestShell(*this, ImperiousTower, TEXT("Imperious"));
+	SolidTowerExteriorTestPrivate::TestShell(*this, StatelyTower, TEXT("Stately"));
+	SolidTowerExteriorTestPrivate::TestShell(*this, GrandTower, TEXT("Grand"));
+	SolidTowerExteriorTestPrivate::TestShell(*this, ImpressiveTower, TEXT("Impressive"));
+	SolidTowerExteriorTestPrivate::TestShell(*this, AverageTower, TEXT("Average"));
 
+	const SolidStronghold::FSolidTower Facing;
 	TestTrue(TEXT("north grass puts the door north"),
-		FMath::IsNearlyEqual(SolidTowerStronghold::ExteriorYawDeg(90.f), -90.f, 0.01f));
+		FMath::IsNearlyEqual(Facing.ExteriorYawDeg(90.f), -90.f, 0.01f));
 	TestTrue(TEXT("east grass puts the door east"),
-		FMath::IsNearlyEqual(SolidTowerStronghold::ExteriorYawDeg(0.f), 180.f, 0.01f));
+		FMath::IsNearlyEqual(Facing.ExteriorYawDeg(0.f), 180.f, 0.01f));
 
 	const FIntPoint ImperiousCell(35, 15);
 	TUniquePtr<FSolidStronghold> Spire = SolidStronghold::Make(
@@ -161,7 +184,7 @@ bool FSolidTowerExteriorTest::RunTest(const FString& Parameters)
 		Spire->ExteriorClass() == ASolidTowerExterior::StaticClass());
 	TestTrue(
 		TEXT("no map leaves the tower door on local -X at yaw 180"),
-		FMath::IsNearlyEqual(Spire->ExteriorYawDeg(nullptr), SolidTowerStronghold::ExteriorYawDeg(0.f), 0.01f));
+		FMath::IsNearlyEqual(Spire->ExteriorYawDeg(nullptr), Facing.ExteriorYawDeg(0.f), 0.01f));
 
 	ASolidTowerExterior* Shell = NewObject<ASolidTowerExterior>();
 	TestNotNull(TEXT("tower exterior"), Shell);
@@ -175,7 +198,7 @@ bool FSolidTowerExteriorTest::RunTest(const FString& Parameters)
 	TestEqual(
 		TEXT("the exterior uses the Imperious plan"),
 		Shell->GetPlan().FloorCount,
-		SolidTowerStronghold::Imperious.FloorCount);
+		SolidStronghold::Imperious.FloorCount);
 	UStaticMeshComponent* Door = Shell->GetDoorMesh();
 	TestNotNull(TEXT("the tower stronghold builds the door"), Door);
 
@@ -188,7 +211,7 @@ bool FSolidTowerExteriorTest::RunTest(const FString& Parameters)
 		TEXT("the tower exterior turns toward the site grass"),
 		Map && FMath::IsNearlyEqual(
 			Spire->ExteriorYawDeg(Map),
-			SolidTowerStronghold::ExteriorYawDeg(GrassYaw),
+			Facing.ExteriorYawDeg(GrassYaw),
 			0.01f));
 	if (Map)
 	{

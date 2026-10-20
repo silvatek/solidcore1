@@ -1,10 +1,10 @@
 # Tower stronghold by size
 
-Status: Ready
+Status: Done
 
 ## Story
 
-Do not start this story until [Stronghold type classes](Done/stronghold-type-classes.md) is Done.
+Do not start this story until [Stronghold type classes](stronghold-type-classes.md) is Done.
 
 The player visits a tower whose floors and usable rooms follow **Strongholds by size and type** in `Source/SolidCore1/Strongholds/README.md`. Average through Imperious share one constant tower geometry: floors taken from the Imperious tower. Floors are numbered **1 at the ground** through **10 at the top**. Each floor is one kit room. Large rooms are 20 hexes, medium 12, small 6. Meagre and Humble have no tower.
 
@@ -20,7 +20,7 @@ Floor 1–3 are large, 4–7 medium, 8–10 small. The Imperious kept-hex counts
 
 A smaller tower is the contiguous band of Imperious floors for its size. Its ground floor is the lowest floor of that band. Its door faces the grass as today. Enter and leave stay a click on that door. Companions wait outside. The Meagre cave and its mouth stay as they are.
 
-Dungeon and fortress at the same size use the same kit totals. [Fortress stronghold](fortress-stronghold.md) and [Imperious dungeon](imperious-dungeon.md) meet those totals with their own layouts. This story changes the tower only.
+Dungeon and fortress at the same size use the same kit totals. [Fortress stronghold](../fortress-stronghold.md) and [Imperious dungeon](../imperious-dungeon.md) meet those totals with their own layouts. This story changes the tower only.
 
 ## Acceptance
 
@@ -40,8 +40,11 @@ Dungeon and fortress at the same size use the same kit totals. [Fortress strongh
 ## Implementation notes
 
 - The plan of record is **Strongholds by size and type** in `Source/SolidCore1/Strongholds/README.md`. Do not invent a second kit or a second floor numbering.
+- How the type, the exterior actor, and the interior actor are written follows **Code structure** in `Source/SolidCore1/Strongholds/README.md`.
+- The site stone lists a size and a type, so a later size can be tried from the Imperious marker. `FSolidTower::Supported` is true for Average, Impressive, Grand, Stately, and Imperious. Average is Imperious floors 7–9: the door is on floor 7, and the floors below it are gone. Impressive is Imperious floors 5–9: the door is on floor 5. Grand is Imperious floors 3–9: the door is on floor 3. Stately is Imperious floors 2–9: the door is on floor 2. The flight starts just past that door, so the stair does not cross the doorway. A floor sign reads this tower's own floor. Ground is 1, so the first landing reads 2. It does not read the Imperious floor that geometry came from.
+- Imperious hex tiles are `CollectFloorHexes`. Floors 1–3 keep 20, floors 4–7 keep 12, floors 8–10 keep 6. The tiles are the innermost cells that fit, still off the stair and landing. The ground floor leaves the cell nearest the door empty, so a piece there cannot block the exit and the stair. The yellow grid draws those tiles. A band uses those counts for the Imperious floors it keeps. Story floor 7 keeps 11 cells when centered on Impressive and Grand. Impressive shifts that floor by 4 cm and 8 cm, and Grand shifts it by 2 cm and 7 cm, so the medium room keeps 12. Stately's story floor 7 already keeps 12, so that grid stays centered.
 - Today's tower uses `SizeAlong` to lerp floor counts and radii from Average (four floors) to Imperious (ten), and `CollectKeptHexes` keeps every hex inside the disc off the stair and landing. That kept total is larger than the kit (Imperious kept sum 165 vs kit 126). This story replaces that with the Imperious floor band and the kit room per floor.
 - Keep the shared spiral stair, wall thickness, stair width, landing run, and floor pitch unless the band forces a change. The exterior still turns so the door faces the grass.
 - A test for each supported size sums usable hexes across floors and equals the kit hex total in the table. A test per floor checks the room size for that Imperious floor index. Name any existing tests that assumed the old kept counts or the old `SizeAlong` floor counts, and update those tests in a prior commit when the policy requires it.
-- [Fortress stronghold](fortress-stronghold.md) and [Imperious dungeon](imperious-dungeon.md) already target the same kit totals. They do not need this story to ship first for their acceptance, and this story does not implement them.
+- [Fortress stronghold](../fortress-stronghold.md) and [Imperious dungeon](../imperious-dungeon.md) already target the same kit totals. They do not need this story to ship first for their acceptance, and this story does not implement them.
 - Furnishings stay unset on tower floors. This story does not place the cave's fireplace, bed, or chest in the tower.

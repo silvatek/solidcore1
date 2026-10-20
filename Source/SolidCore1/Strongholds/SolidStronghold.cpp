@@ -1,6 +1,7 @@
 #include "SolidStronghold.h"
 #include "SolidCore1.h"
-#include "SolidStrongholdExterior.h"
+#include "SolidGameState.h"
+#include "Strongholds/Actors/SolidStrongholdExterior.h"
 #include "Strongholds/Dungeon/SolidDungeon.h"
 #include "Strongholds/Fortress/SolidFortress.h"
 #include "Strongholds/Tower/SolidTower.h"
@@ -91,6 +92,7 @@ namespace SolidStronghold
 		Stronghold->Cell = Cell;
 		Stronghold->Location = InWorldXY;
 		Stronghold->Name = Label(*Stronghold);
+		Stronghold->BindPlan();
 		return Stronghold;
 	}
 
@@ -174,4 +176,324 @@ namespace SolidStronghold
 			}
 		}
 	}
+}
+
+namespace
+{
+	/** Map step (column, row) toward grass. Row +1 is south; column +1 is west. */
+	const FIntPoint NeighborSteps[] = {
+		FIntPoint(0, -1),
+		FIntPoint(-1, 0),
+		FIntPoint(0, 1),
+		FIntPoint(1, 0),
+	};
+
+	bool InBounds(const int32 X, const int32 Y)
+	{
+		return X >= 0 && X < USolidWorldMap::MapWidth && Y >= 0 && Y < USolidWorldMap::MapHeight;
+	}
+
+	float YawFacingGrass(const FIntPoint& Step)
+	{
+		// Column +1 is world -X. Row +1 is world -Y.
+		const float WorldX = -static_cast<float>(Step.X);
+		const float WorldY = -static_cast<float>(Step.Y);
+		return FMath::RadiansToDegrees(FMath::Atan2(WorldY, WorldX));
+	}
+}
+
+bool SolidStrongholds::MakeEntrance(
+	const USolidWorldMap* WorldMap,
+	const FVector2D WorldMinXY,
+	const FVector2D WorldMaxXY,
+	const FIntPoint Cell,
+	FEntrance& OutEntrance)
+{
+	OutEntrance = FEntrance();
+	if (!WorldMap || !WorldMap->IsLoaded() || !InBounds(Cell.X, Cell.Y))
+	{
+		return false;
+	}
+
+	const FIntPoint* ChosenStep = nullptr;
+	FIntPoint GrassCell = FIntPoint::ZeroValue;
+	for (const FIntPoint& Step : NeighborSteps)
+	{
+		const int32 NextX = Cell.X + Step.X;
+		const int32 NextY = Cell.Y + Step.Y;
+		if (!InBounds(NextX, NextY))
+		{
+			continue;
+		}
+		if (WorldMap->GetBiomeAtCell(NextX, NextY) != ESolidBiome::Grassland)
+		{
+			continue;
+		}
+		ChosenStep = &Step;
+		GrassCell = FIntPoint(NextX, NextY);
+		break;
+	}
+	if (!ChosenStep)
+	{
+		return false;
+	}
+
+	FVector2D CaveXY = FVector2D::ZeroVector;
+	FVector2D GrassXY = FVector2D::ZeroVector;
+	if (!WorldMap->CellToWorldXY(Cell, WorldMinXY, WorldMaxXY, CaveXY)
+		|| !WorldMap->CellToWorldXY(GrassCell, WorldMinXY, WorldMaxXY, GrassXY))
+	{
+		return false;
+	}
+
+	OutEntrance.Cell = Cell;
+	OutEntrance.GrassCell = GrassCell;
+	OutEntrance.EdgeXY = (CaveXY + GrassXY) * 0.5f;
+	const FVector2D TowardGrass = (GrassXY - CaveXY).GetSafeNormal();
+	OutEntrance.WorldXY = OutEntrance.EdgeXY + TowardGrass * FaceInsetCm;
+	OutEntrance.FacingYawDeg = YawFacingGrass(*ChosenStep);
+	return true;
+}
+
+bool SolidStrongholds::FindGrassFace(
+	const USolidWorldMap* WorldMap,
+	const FIntPoint Cell,
+	FGrassFace& Out)
+{
+	Out = FGrassFace();
+	if (!WorldMap || !WorldMap->IsLoaded())
+	{
+		return false;
+	}
+
+	for (const FIntPoint& Step : NeighborSteps)
+	{
+		const int32 NextX = Cell.X + Step.X;
+		const int32 NextY = Cell.Y + Step.Y;
+		if (!InBounds(NextX, NextY))
+		{
+			continue;
+		}
+		if (WorldMap->GetBiomeAtCell(NextX, NextY) != ESolidBiome::Grassland)
+		{
+			continue;
+		}
+		Out.GrassCell = FIntPoint(NextX, NextY);
+		Out.FacingYawDeg = YawFacingGrass(Step);
+		return true;
+	}
+	return false;
+}
+
+bool SolidStrongholdTransition::IsFinalPair(const FSolidStronghold& Stronghold)
+{
+	if (Stronghold.Size == ESolidStrongholdSize::Meagre)
+	{
+		return Stronghold.Type == ESolidStrongholdType::Dungeon;
+	}
+	if (Stronghold.Size == ESolidStrongholdSize::Humble)
+	{
+		return Stronghold.Type == ESolidStrongholdType::Dungeon
+			|| Stronghold.Type == ESolidStrongholdType::Fortress;
+	}
+	return true;
+}
+
+bool SolidStrongholdTransition::IsBuilt(const FSolidStronghold& Stronghold)
+{
+	return IsFinalPair(Stronghold)
+		&& SolidStronghold::TypeOf(Stronghold.Type).Supported(Stronghold.Size);
+}
+
+SolidStrongholdTransition::EOffer SolidStrongholdTransition::Consider(
+	const FGameState& State,
+	TArray<FSolidStrongholdChoice>& OutChoices)
+{
+	OutChoices.Reset();
+	if (!State.ActiveStronghold)
+	{
+		return EOffer::None;
+	}
+
+	const int32 ActiveIndex = static_cast<int32>(State.ActiveStronghold->Size);
+	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
+	{
+		if (!SolidEvents::IsStrongholdSizeUnlocked(State, Size))
+		{
+			continue;
+		}
+		if (State.bStrongholdSiteRestrictions && static_cast<int32>(Size) <= ActiveIndex)
+		{
+			continue;
+		}
+		for (const ESolidStrongholdType Type : SolidStronghold::Types)
+		{
+			if (!SolidStronghold::TypeOf(Type).Supported(Size))
+			{
+				continue;
+			}
+			FSolidStrongholdChoice Choice;
+			Choice.Size = Size;
+			Choice.Type = Type;
+			OutChoices.Add(Choice);
+		}
+	}
+	return OutChoices.Num() > 0 ? EOffer::Choose : EOffer::None;
+}
+
+bool SolidStrongholdTransition::Offers(
+	const TArray<FSolidStrongholdChoice>& Choices,
+	const ESolidStrongholdSize Size,
+	const ESolidStrongholdType Type)
+{
+	for (const FSolidStrongholdChoice& Choice : Choices)
+	{
+		if (Choice.Size == Size && Choice.Type == Type)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+bool SolidStrongholdTransition::AreNeighbors(const SolidStrongholdGrid::FHex& A, const SolidStrongholdGrid::FHex& B)
+{
+	return FMath::IsNearlyEqual(
+		FVector2D::Distance(A.Center, B.Center),
+		SolidStrongholdGrid::FlatToFlatCm,
+		15.f);
+}
+
+bool SolidStrongholdTransition::PlaceOnFloor(
+	TArray<SolidStrongholdFurniture::FUsed>& Pieces,
+	const TArray<SolidStrongholdGrid::FHex>& Hexes)
+{
+	TArray<SolidStrongholdFurniture::FUsed> Next = Pieces;
+	TArray<int32> Taken;
+	for (SolidStrongholdFurniture::FUsed& Piece : Next)
+	{
+		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(Piece.ItemIndex);
+		if (!Item)
+		{
+			return false;
+		}
+
+		if (SolidStrongholdFurniture::HexCount(Item->Kind) >= 2)
+		{
+			int32 Anchor = INDEX_NONE;
+			int32 Span = INDEX_NONE;
+			for (int32 Index = 0; Index < Hexes.Num() && Anchor == INDEX_NONE; ++Index)
+			{
+				if (Taken.Contains(Index))
+				{
+					continue;
+				}
+				for (int32 Other = 0; Other < Hexes.Num(); ++Other)
+				{
+					if (Other == Index || Taken.Contains(Other) || !AreNeighbors(Hexes[Index], Hexes[Other]))
+					{
+						continue;
+					}
+					Anchor = Index;
+					Span = Other;
+					break;
+				}
+			}
+			if (Anchor == INDEX_NONE)
+			{
+				return false;
+			}
+			Taken.Add(Anchor);
+			Taken.Add(Span);
+			const FVector2D Delta = Hexes[Span].Center - Hexes[Anchor].Center;
+			Piece.Level = 0;
+			Piece.X = Hexes[Anchor].Col;
+			Piece.Y = Hexes[Anchor].Row;
+			Piece.RotationDeg = FMath::RadiansToDegrees(FMath::Atan2(Delta.Y, Delta.X));
+		}
+		else
+		{
+			int32 Anchor = INDEX_NONE;
+			for (int32 Index = 0; Index < Hexes.Num(); ++Index)
+			{
+				if (!Taken.Contains(Index))
+				{
+					Anchor = Index;
+					break;
+				}
+			}
+			if (Anchor == INDEX_NONE)
+			{
+				return false;
+			}
+			Taken.Add(Anchor);
+			Piece.Level = 0;
+			Piece.X = Hexes[Anchor].Col;
+			Piece.Y = Hexes[Anchor].Row;
+			Piece.RotationDeg = 0.f;
+		}
+	}
+
+	Pieces = Next;
+	return true;
+}
+
+bool SolidStrongholdTransition::Commit(
+	FGameState& State,
+	const FIntPoint SiteCell,
+	const ESolidStrongholdSize Size,
+	const ESolidStrongholdType Type)
+{
+	TArray<FSolidStrongholdChoice> Choices;
+	if (Consider(State, Choices) != EOffer::Choose || !Offers(Choices, Size, Type))
+	{
+		return false;
+	}
+
+	TArray<SolidStrongholdGrid::FHex> Hexes;
+	SolidStronghold::TypeOf(Type).CollectGroundHexes(Size, Hexes);
+	if (Hexes.Num() == 0)
+	{
+		return false;
+	}
+	TArray<SolidStrongholdFurniture::FUsed> Moved = State.Furnishings;
+	if (Moved.Num() == 0)
+	{
+		Moved = SolidStrongholdFurniture::StartingFurnishings();
+	}
+	if (!PlaceOnFloor(Moved, Hexes))
+	{
+		return false;
+	}
+
+	State.PreviousStrongholds.Add(MoveTemp(State.ActiveStronghold));
+	State.ActiveStronghold = SolidStronghold::Make(
+		Type,
+		Size,
+		SiteCell,
+		SolidStronghold::WorldXY(SiteCell));
+	State.Furnishings = Moved;
+	return true;
+}
+
+bool SolidStrongholdTransition::CompanyChestOpen(const FGameState& State, const bool bInStronghold)
+{
+	if (!bInStronghold || !State.ActiveStronghold)
+	{
+		return false;
+	}
+	bool bHasChest = false;
+	for (const SolidStrongholdFurniture::FUsed& Piece : State.Furnishings)
+	{
+		if (SolidStrongholdFurniture::IsStorage(SolidStrongholdFurniture::ItemAt(Piece.ItemIndex)))
+		{
+			bHasChest = true;
+			break;
+		}
+	}
+	if (!bHasChest)
+	{
+		return false;
+	}
+	return State.ActiveStronghold->AcceptsEnter(State, State.ActiveStronghold->Cell);
 }

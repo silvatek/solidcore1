@@ -6,9 +6,9 @@
 #include "Lairs/SolidLairInterior.h"
 #include "Lairs/SolidLairEntrance.h"
 #include "Strongholds/Sites/SolidStrongholdSite.h"
-#include "Strongholds/SolidStrongholdExterior.h"
-#include "Strongholds/SolidStrongholdInterior.h"
-#include "Strongholds/SolidStrongholdTransition.h"
+#include "Strongholds/Actors/SolidStrongholdExterior.h"
+#include "Strongholds/Actors/SolidStrongholdInterior.h"
+#include "SolidStronghold.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Animation/AnimSequence.h"
 #include "Camera/CameraComponent.h"
@@ -1581,13 +1581,13 @@ void ASolidCharacter::OfferStrongholdSite(const ASolidStrongholdSite* Site)
 		return;
 	}
 
-	TArray<ESolidStrongholdType> Types;
-	if (SolidStrongholdTransition::Consider(GameMode->GetConfiguration(), Site->GetSize(), Types)
+	TArray<FSolidStrongholdChoice> Choices;
+	if (SolidStrongholdTransition::Consider(GameMode->GetConfiguration(), Choices)
 		!= SolidStrongholdTransition::EOffer::Choose)
 	{
 		return;
 	}
-	HUD->OpenStrongholdChoice(Site->GetCell(), Site->GetSize(), Types);
+	HUD->OpenStrongholdChoice(Site->GetCell(), Choices);
 }
 
 void ASolidCharacter::ConfirmStrongholdChoice()

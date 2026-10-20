@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Strongholds/SolidStrongholdInterior.h"
+#include "Strongholds/Actors/SolidStrongholdInterior.h"
 #include "SolidDungeonInterior.generated.h"
 
 class UInstancedStaticMeshComponent;

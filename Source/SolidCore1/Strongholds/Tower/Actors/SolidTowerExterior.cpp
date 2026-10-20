@@ -1,7 +1,7 @@
 #include "SolidTowerExterior.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
-#include "Strongholds/SolidStrongholds.h"
+#include "Strongholds/SolidStronghold.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -230,11 +230,6 @@ void ASolidTowerExterior::BeginPlay()
 	BuildVisuals();
 }
 
-void ASolidTowerExterior::SetPlan(const SolidTowerStronghold::FPlan& InPlan)
-{
-	Plan = InPlan;
-}
-
 void ASolidTowerExterior::DiscardParts()
 {
 	auto Drop = [](TObjectPtr<UStaticMeshComponent>& Part)
@@ -295,6 +290,11 @@ UStaticMeshComponent* ASolidTowerExterior::AddPart(
 void ASolidTowerExterior::BuildVisuals()
 {
 	DiscardParts();
+	if (!Tower)
+	{
+		return;
+	}
+	const SolidStronghold::FPlan& Plan = Tower->Plan();
 
 	if (Plan.FloorCount <= 0)
 	{
@@ -310,25 +310,25 @@ void ASolidTowerExterior::BuildVisuals()
 
 	const FLinearColor Rock = SolidStrongholds::RockColor();
 	const bool bHasCap = Plan.SlabCm > 1.f;
-	const float CapBottomZ = bHasCap ? Plan.HeightCm() - Plan.SlabCm : Plan.HeightCm();
+	const float CapBottomZ = bHasCap ? Tower->HeightCm() - Plan.SlabCm : Tower->HeightCm();
 
 	TArray<float> RingZ;
 	RingZ.Reserve(Plan.FloorCount + 2);
 	for (int32 Floor = 0; Floor < Plan.FloorCount; ++Floor)
 	{
-		RingZ.Add(SolidTowerStronghold::FloorZCm(Plan, Floor));
+		RingZ.Add(Tower->FloorZCm(Floor));
 	}
 	RingZ.Add(CapBottomZ);
 	if (bHasCap)
 	{
-		RingZ.Add(Plan.HeightCm());
+		RingZ.Add(Tower->HeightCm());
 	}
 
 	TArray<float> RingRadius;
 	RingRadius.Reserve(RingZ.Num());
 	for (const float Z : RingZ)
 	{
-		RingRadius.Add(SolidTowerStronghold::ExteriorRadiusCm(Plan, Z));
+		RingRadius.Add(Tower->ExteriorRadiusCm(Z));
 	}
 
 	Courses.Reserve(Plan.FloorCount);
@@ -376,13 +376,13 @@ void ASolidTowerExterior::BuildVisuals()
 			TEXT("TowerCap"));
 	}
 
-	if (SolidTowerStronghold::HasDoor(0) && Plan.DoorWidthCm > 0.f && Plan.DoorHeightCm > 0.f)
+	if (Tower->HasDoor(0) && Plan.DoorWidthCm > 0.f && Plan.DoorHeightCm > 0.f)
 	{
 		DoorMesh = AddPart(
 			Cube,
-			SolidTowerStronghold::DoorSlabCenterCm(Plan),
+			Tower->DoorSlabCenterCm(),
 			FVector(
-				SolidTowerStronghold::DoorSlabDepthCm / SolidTowerExteriorPrivate::CubeSizeCm,
+				SolidStronghold::DoorSlabDepthCm / SolidTowerExteriorPrivate::CubeSizeCm,
 				Plan.DoorWidthCm / SolidTowerExteriorPrivate::CubeSizeCm,
 				Plan.DoorHeightCm / SolidTowerExteriorPrivate::CubeSizeCm),
 			SolidStrongholds::MouthColor(),

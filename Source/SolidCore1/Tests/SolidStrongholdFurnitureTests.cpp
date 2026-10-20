@@ -4,7 +4,7 @@
 #include "Strongholds/Dungeon/SolidDungeonLevel.h"
 #include "Strongholds/Furnishings/SolidFurnishing.h"
 #include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
-#include "SolidStrongholdGrid.h"
+#include "Strongholds/Furnishings/SolidStrongholdGrid.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 

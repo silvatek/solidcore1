@@ -1,9 +1,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Strongholds/SolidStrongholdInterior.h"
+#include "Strongholds/Actors/SolidStrongholdInterior.h"
 #include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
-#include "SolidTowerStronghold.h"
+#include "Strongholds/Tower/SolidTower.h"
 #include "SolidTowerInterior.generated.h"
 
 class UInstancedStaticMeshComponent;
@@ -17,7 +17,7 @@ class UStaticMeshComponent;
  * The wall beside each landing shows that floor's number on a light plate. Ground is 1.
  * A rail follows the inner edge of each flight and the inner edge of each arrival hole.
  * Both stop at the landing, so the landing stays open onto the floor.
- * Stair treads sit on the flight. The yellow grid is the kept hexes.
+ * Stair treads sit on the flight. The yellow grid is the furniture cells.
  * The curved wall follows the interior taper, with the dark door on local -X.
  * A click on that door leaves. Companions stay outside.
  */
@@ -32,19 +32,19 @@ public:
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
 
-	void SetPlan(const SolidTowerStronghold::FPlan& InPlan);
+	/** The caller keeps this tower alive. The game state owns the ones the company places. */
+	void SetTower(const SolidStronghold::FSolidTower& InTower) { Tower = &InTower; }
 	void BuildVisuals();
 
 	/** Pieces the company carried in. Cells that are not on this floor are skipped. */
 	void PlaceFurnishings(const TArray<SolidStrongholdFurniture::FUsed>& Used);
 
-	const SolidTowerStronghold::FPlan& GetPlan() const { return Plan; }
 	UStaticMeshComponent* GetCapMesh() const { return CapMesh; }
 	UStaticMeshComponent* GetDoorMesh() const { return DoorMesh; }
 	virtual UStaticMeshComponent* GetPassageMesh() const override { return DoorMesh; }
 	UInstancedStaticMeshComponent* GetFloorGrid() const { return FloorGrid; }
 
-	/** Feet on the kept hex nearest the door. */
+	/** Feet on the cell nearest the door. */
 	virtual FVector GetCaptainSpawnWorld() const override;
 	/** Yaw 0 looks into the tower. */
 	virtual FRotator GetCaptainView() const override;
@@ -87,7 +87,8 @@ protected:
 	TObjectPtr<UInstancedStaticMeshComponent> FloorSignDigits;
 
 private:
-	SolidTowerStronghold::FPlan Plan = SolidTowerStronghold::Imperious;
+	/** The game state owns this tower. Null until Configure sets it, so the first construction draws nothing. */
+	const SolidStronghold::FSolidTower* Tower = nullptr;
 
 	void DiscardParts();
 };

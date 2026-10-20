@@ -19,7 +19,7 @@ Rooms, hex totals, and Keep floors follow **Strongholds by size and type** in `S
 | Stately | 2 | 4 | 2 | 100 | 2× L, 1× M |
 | Imperious | 3 | 4 | 3 | 126 | 3× L |
 
-Every fortress has a Keep as its main building. Keep floors are the kit rooms in the Keep column. The remainder of the kit (kit minus Keep) goes to other buildings. [Tower stronghold by size](tower-stronghold-by-size.md) is the tower side of the same plan. [Imperious dungeon](imperious-dungeon.md) is the Imperious dungeon side.
+Every fortress has a Keep as its main building. Keep floors are the kit rooms in the Keep column. The remainder of the kit (kit minus Keep) goes to other buildings. [Tower stronghold by size](Done/tower-stronghold-by-size.md) is the tower side of the same plan. [Imperious dungeon](imperious-dungeon.md) is the Imperious dungeon side.
 
 Humble and Average are the Keep alone, aside from leftover small rooms a mockup still places (annex or yard building). A larger fortress adds buildings in this order. Impressive adds Barracks. Grand adds a Gatehouse. Stately adds Workshops. Imperious has one Workshop and a Stores. Barracks have one floor, except in Stately and Imperious. Imperious Barracks have two floors. Stately Barracks have more than one floor. A Gatehouse has at least two floors, and it may have few hexes on a floor. Each Workshop has one floor. Stores has one floor. A fortress has no Hall, no Chapel, and no Kitchen.
 
@@ -66,15 +66,16 @@ Humble, Impressive, and Imperious had earlier drawn plans with different per-bui
 - A Gatehouse stands on the gate. Its ground-floor openings face the grass and the yard. A floor above that passage is a room.
 - A doorway in a building has no door. It faces the yard. That doorway is not a second way onto the grass.
 - The outer wall is one storey high and has a parapet. A building of more than one floor stands above the wall.
-- The cave mouth, the cave interior, the tower exterior, the tower door, and the tower interior stay as they are until [Tower stronghold by size](tower-stronghold-by-size.md) changes the tower.
+- The cave mouth, the cave interior, the tower exterior, the tower door, and the tower interior stay as they are until [Tower stronghold by size](Done/tower-stronghold-by-size.md) changes the tower.
 - This story adds no world-map `!` line.
 
 ## Implementation notes
 
 - The plan of record is **Strongholds by size and type** in `Source/SolidCore1/Strongholds/README.md`. Keep floors and kit totals come from that table. Do not invent a second kit.
+- How the type, the exterior actor, and the interior actor are written follows **Code structure** in `Source/SolidCore1/Strongholds/README.md`.
 - [Stronghold type classes](Done/stronghold-type-classes.md) leaves fortress `Supported` false for every size, with no visit and no ground floor. This story makes `Supported` true from Humble through Imperious and supplies the fortress through that subclass. Meagre stays false. Meagre Fortress is not a final pair.
 - Hex totals are the shared room kits, not the sum of `CollectKeptHexes` on the tower plan. A test sums fortress usable hexes and compares them with the kit for that size.
-- [Tower stronghold by size](tower-stronghold-by-size.md) puts Average through Imperious on Imperious floor bands with one kit room per floor. [Imperious dungeon](imperious-dungeon.md) uses the Imperious kit (126) with passages and stairs. This story does not implement those.
+- [Tower stronghold by size](Done/tower-stronghold-by-size.md) puts Average through Imperious on Imperious floor bands with one kit room per floor. [Imperious dungeon](imperious-dungeon.md) uses the Imperious kit (126) with passages and stairs. This story does not implement those.
 - Split the Keep remainder across the other buildings in a mockup before coding; do not invent a split in a later pass unless the owner draws one.
 - Older mockups (Humble 13+13, Impressive 18×3+9, Imperious 27×4 + 14×2 + 15 + 10 + 4) are obsolete. Redraw against the kit before implementing.
 - Buildings are added in this order: Barracks, then a Gatehouse, then Workshops. Imperious then has a Stores in place of a second Workshop. There is no Hall, no Chapel, and no Kitchen. Each floor of a building repeats that building's ground hexes, except a Gatehouse ground floor that is only a passage. Do not shrink an upper floor the way the tower's radius steps inward.

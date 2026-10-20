@@ -62,6 +62,7 @@ FGameState& FGameState::operator=(const FGameState& Other)
 		ActiveStronghold->Name = SolidStronghold::StartingStrongholdName;
 	}
 	MaxStrongholdSize = Other.MaxStrongholdSize;
+	bStrongholdSiteRestrictions = Other.bStrongholdSiteRestrictions;
 	PreviousStrongholds.Reset();
 	PreviousStrongholds.Reserve(Other.PreviousStrongholds.Num());
 	for (const TUniquePtr<FSolidStronghold>& Previous : Other.PreviousStrongholds)
@@ -170,6 +171,7 @@ void ApplyChange(FGameState& State, const FChange& Change, FResult& Result)
 		break;
 	case EChange::EnableStrongholdSize:
 	{
+		State.bStrongholdsEnabled = true;
 		const int32 Index = static_cast<int32>(Change.StrongholdSize);
 		if (Index > static_cast<int32>(State.MaxStrongholdSize) && Index < SolidStronghold::SizeCount)
 		{

@@ -7,7 +7,6 @@
 #include "SolidTerrainTestHelpers.h"
 #include "SolidLair.h"
 #include "SolidStronghold.h"
-#include "SolidStrongholds.h"
 #include "SolidTowns.h"
 #include "SolidWorldMap.h"
 

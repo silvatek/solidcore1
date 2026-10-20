@@ -55,13 +55,13 @@ namespace SolidEvents
 		CaptainTitle,
 		/** Draw the center of a broken bridge and open that crossing. */
 		RepairBridge,
-		/** Open the starting cave and send the captain inside. */
+		/** Open strongholds and send the captain into the active one. */
 		EnableCave,
 		/** Show the message named by MessageId. */
 		ShowMessage,
 		/** Empty the captain's worn boxes and pack, then put Rags on the body. */
 		ClearInventory,
-		/** Enable one stronghold size. */
+		/** Enable one stronghold size. Strongholds open. */
 		EnableStrongholdSize,
 		/** Open the lair named by LairId. */
 		EnableLair,

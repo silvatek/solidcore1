@@ -8,7 +8,6 @@
 #include "Inventory/SolidInventory.h"
 #include "Inventory/SolidStorage.h"
 #include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
-#include "Strongholds/SolidStrongholdTransition.h"
 #include "Journal/SolidJournal.h"
 #include "Menus/SolidMainMenu.h"
 #include "Menus/SolidMenuPointer.h"
@@ -1319,7 +1318,7 @@ bool ASolidHUD::SelectChoiceAt(const float X, const float Y)
 	}
 	if (bShowStrongholdChoice)
 	{
-		const int32 Count = StrongholdChoiceTypes.Num();
+		const int32 Count = StrongholdChoices.Num();
 		if (Count > 0)
 		{
 			StrongholdChoiceIndex = FMath::Clamp(Hit, 0, Count - 1);
@@ -1784,7 +1783,7 @@ void ASolidHUD::HandleMenuKey()
 	if (bShowStrongholdChoice)
 	{
 		bShowStrongholdChoice = false;
-		StrongholdChoiceTypes.Reset();
+		StrongholdChoices.Reset();
 		return;
 	}
 
@@ -1832,7 +1831,7 @@ void ASolidHUD::CloseMenuOverlay()
 	bShowExitConfirm = false;
 	bShowPortal = false;
 	bShowStrongholdChoice = false;
-	StrongholdChoiceTypes.Reset();
+	StrongholdChoices.Reset();
 	ForgetSquadBuilderPage();
 	bShowCredits = false;
 	bShowJournal = false;
@@ -2544,7 +2543,7 @@ void ASolidHUD::OpenExitConfirm()
 	SkeletonBoneTip.Reset();
 	bShowPortal = false;
 	bShowStrongholdChoice = false;
-	StrongholdChoiceTypes.Reset();
+	StrongholdChoices.Reset();
 	bShowExitConfirm = true;
 	ExitConfirmIndex = SolidExit::YesIndex;
 	SolidHUDPrivate::ForgetChoicePointerRows(this);
@@ -2672,10 +2671,9 @@ void ASolidHUD::DrawSquadBuilderPopup()
 
 void ASolidHUD::OpenStrongholdChoice(
 	const FIntPoint Cell,
-	const ESolidStrongholdSize Size,
-	const TArray<ESolidStrongholdType>& Types)
+	const TArray<FSolidStrongholdChoice>& Choices)
 {
-	if (Types.Num() == 0)
+	if (Choices.Num() == 0)
 	{
 		return;
 	}
@@ -2693,24 +2691,19 @@ void ASolidHUD::OpenStrongholdChoice(
 	bShowStrongholdChoice = true;
 	StrongholdChoiceIndex = 0;
 	StrongholdChoiceCell = Cell;
-	StrongholdChoiceSize = static_cast<uint8>(Size);
-	StrongholdChoiceTypes.Reset();
-	for (const ESolidStrongholdType Type : Types)
-	{
-		StrongholdChoiceTypes.Add(static_cast<uint8>(Type));
-	}
+	StrongholdChoices = Choices;
 	SolidHUDPrivate::ForgetChoicePointerRows(this);
 }
 
 void ASolidHUD::CloseStrongholdChoice()
 {
 	bShowStrongholdChoice = false;
-	StrongholdChoiceTypes.Reset();
+	StrongholdChoices.Reset();
 }
 
 void ASolidHUD::SetStrongholdChoiceIndex(const int32 Index)
 {
-	if (StrongholdChoiceTypes.IsValidIndex(Index))
+	if (StrongholdChoices.IsValidIndex(Index))
 	{
 		StrongholdChoiceIndex = Index;
 	}
@@ -2718,7 +2711,7 @@ void ASolidHUD::SetStrongholdChoiceIndex(const int32 Index)
 
 void ASolidHUD::MoveStrongholdChoice(const int32 Delta)
 {
-	const int32 Count = StrongholdChoiceTypes.Num();
+	const int32 Count = StrongholdChoices.Num();
 	if (Count <= 0)
 	{
 		StrongholdChoiceIndex = 0;
@@ -2733,24 +2726,33 @@ void ASolidHUD::MoveStrongholdChoice(const int32 Delta)
 	StrongholdChoiceIndex = Next;
 }
 
+ESolidStrongholdSize ASolidHUD::GetStrongholdChoiceSize() const
+{
+	if (!StrongholdChoices.IsValidIndex(StrongholdChoiceIndex))
+	{
+		return ESolidStrongholdSize::Meagre;
+	}
+	return StrongholdChoices[StrongholdChoiceIndex].Size;
+}
+
 ESolidStrongholdType ASolidHUD::GetStrongholdChoiceType() const
 {
-	if (!StrongholdChoiceTypes.IsValidIndex(StrongholdChoiceIndex))
+	if (!StrongholdChoices.IsValidIndex(StrongholdChoiceIndex))
 	{
 		return ESolidStrongholdType::Tower;
 	}
-	return static_cast<ESolidStrongholdType>(StrongholdChoiceTypes[StrongholdChoiceIndex]);
+	return StrongholdChoices[StrongholdChoiceIndex].Type;
 }
 
 void ASolidHUD::DrawStrongholdChoice()
 {
 	TArray<FString> Labels;
-	for (const uint8 Type : StrongholdChoiceTypes)
+	for (const FSolidStrongholdChoice& Choice : StrongholdChoices)
 	{
-		Labels.Add(SolidStronghold::TypeName(static_cast<ESolidStrongholdType>(Type)));
+		Labels.Add(SolidStronghold::Label(Choice.Size, Choice.Type));
 	}
 	TArray<SolidMenuPointer::FRow> Rows;
-	SolidHUDPrivate::DrawChoicePopup(Canvas, TEXT("Choose a type"), Labels, StrongholdChoiceIndex, Rows);
+	SolidHUDPrivate::DrawChoicePopup(Canvas, TEXT("Choose a stronghold"), Labels, StrongholdChoiceIndex, Rows);
 	SetChoicePointerRows(Rows);
 }
 

@@ -5,7 +5,6 @@
 #include "SolidGameState.h"
 #include "SolidHUD.h"
 #include "SolidGameMode.h"
-#include "Strongholds/SolidStrongholdTransition.h"
 #include "Journal/SolidJournal.h"
 #include "Lairs/SolidLair.h"
 #include "SolidSight.h"
@@ -705,7 +704,7 @@ bool FSolidEventsCaveTest::RunTest(const FString& Parameters)
 	{
 		TestFalse(
 			TEXT("a new game keeps strongholds closed"),
-			SolidStrongholdTransition::StrongholdsEnabled(GameMode->GetConfiguration()));
+			GameMode->GetConfiguration().bStrongholdsEnabled);
 	}
 	return true;
 }
@@ -1561,6 +1560,8 @@ bool FSolidEventsDragongateUnlocksSizesTest::RunTest(const FString& Parameters)
 	FGameState Played;
 	const SolidEvents::FResult Fired = SolidEvents::NotifyOccupiedTown(Played, SolidTowns::Dragongate);
 	TestTrue(TEXT("Enter Dragongate fires"), Fired.bFired);
+	TestTrue(TEXT("Enter Dragongate opens strongholds"), Played.bStrongholdsEnabled);
+	TestFalse(TEXT("Enter Dragongate does not enter"), Fired.bEnterStronghold);
 	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
 	{
 		TestTrue(
@@ -1648,6 +1649,8 @@ bool FSolidEventsEarlySizeUnlocksTest::RunTest(const FString& Parameters)
 	SolidEvents::NotifyOccupiedTown(Relion, SolidTowns::Iglin);
 	const SolidEvents::FResult EnteredRelion = SolidEvents::NotifyOccupiedTown(Relion, SolidTowns::Relion);
 	TestTrue(TEXT("Enter Relion fires"), EnteredRelion.bFired);
+	TestTrue(TEXT("Enter Relion opens strongholds"), Relion.bStrongholdsEnabled);
+	TestFalse(TEXT("Enter Relion does not enter"), EnteredRelion.bEnterStronghold);
 	TestTrue(TEXT("Enter Relion unlocks Meagre with Humble"), SolidEvents::IsStrongholdSizeUnlocked(Relion, ESolidStrongholdSize::Meagre));
 	TestTrue(TEXT("Enter Relion unlocks Humble"), SolidEvents::IsStrongholdSizeUnlocked(Relion, ESolidStrongholdSize::Humble));
 	TestFalse(TEXT("Enter Relion leaves Average locked"), SolidEvents::IsStrongholdSizeUnlocked(Relion, ESolidStrongholdSize::Average));
@@ -1655,6 +1658,8 @@ bool FSolidEventsEarlySizeUnlocksTest::RunTest(const FString& Parameters)
 	FGameState Kanfold;
 	const SolidEvents::FResult EnteredKanfold = SolidEvents::NotifyOccupiedTown(Kanfold, SolidTowns::Kanfold);
 	TestTrue(TEXT("Enter Kanfold fires"), EnteredKanfold.bFired);
+	TestTrue(TEXT("Enter Kanfold opens strongholds"), Kanfold.bStrongholdsEnabled);
+	TestFalse(TEXT("Enter Kanfold does not enter"), EnteredKanfold.bEnterStronghold);
 	TestTrue(TEXT("Enter Kanfold unlocks Meagre with Average"), SolidEvents::IsStrongholdSizeUnlocked(Kanfold, ESolidStrongholdSize::Meagre));
 	TestTrue(TEXT("Enter Kanfold unlocks Humble with Average"), SolidEvents::IsStrongholdSizeUnlocked(Kanfold, ESolidStrongholdSize::Humble));
 	TestTrue(TEXT("Enter Kanfold unlocks Average"), SolidEvents::IsStrongholdSizeUnlocked(Kanfold, ESolidStrongholdSize::Average));

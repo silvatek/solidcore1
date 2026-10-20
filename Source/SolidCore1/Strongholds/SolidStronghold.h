@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SolidStrongholdGrid.h"
+#include "Strongholds/Furnishings/SolidStrongholdGrid.h"
 #include "SolidTerrainTypes.h"
 #include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
 
@@ -26,6 +26,24 @@ enum class ESolidStrongholdSize : uint8
 	Grand,
 	Stately,
 	Imperious,
+};
+
+/**
+ * One room size. Large, medium, and small.
+ * Dungeon, Fortress, and Tower use these same rooms.
+ */
+enum class ESolidStrongholdRoom : uint8
+{
+	Large,
+	Medium,
+	Small,
+};
+
+/** One row on the site stone: a size and a type the player can take. */
+struct FSolidStrongholdChoice
+{
+	ESolidStrongholdSize Size = ESolidStrongholdSize::Meagre;
+	ESolidStrongholdType Type = ESolidStrongholdType::Dungeon;
 };
 
 /** The closed visit. Cave is the dungeon trip. Tower is the tower trip. None does not travel. */
@@ -146,6 +164,9 @@ public:
 
 	/** Records the direction the exit faces when this type takes it from the map. */
 	virtual void RememberExit(const USolidWorldMap* Map);
+
+	/** After Make sets the size. A tower copies that size's measurements into its plan. */
+	virtual void BindPlan() {}
 };
 
 namespace SolidStronghold
@@ -216,6 +237,67 @@ namespace SolidStronghold
 
 	inline constexpr int32 TypeCount = UE_ARRAY_COUNT(Types);
 	inline constexpr int32 SizeCount = UE_ARRAY_COUNT(Sizes);
+
+	/** Usable hexes in one room of this size. A large room is 20, a medium room 12, a small room 6. */
+	inline constexpr int32 RoomHexes(const ESolidStrongholdRoom Room)
+	{
+		switch (Room)
+		{
+		case ESolidStrongholdRoom::Large: return 20;
+		case ESolidStrongholdRoom::Medium: return 12;
+		case ESolidStrongholdRoom::Small: return 6;
+		default: return 0;
+		}
+	}
+
+	/**
+	 * How many large, medium, and small rooms one stronghold size has.
+	 * Dungeon, Fortress, and Tower at that size have these same rooms.
+	 * The Meagre cave still uses its fourteen-cell floor. These counts do not replace that floor.
+	 */
+	struct FRooms
+	{
+		ESolidStrongholdSize Size = ESolidStrongholdSize::Meagre;
+		int32 Large = 0;
+		int32 Medium = 0;
+		int32 Small = 0;
+	};
+
+	/** Rooms for each stronghold size, in the same order as Sizes. */
+	inline constexpr FRooms RoomsBySize[] = {
+		{ ESolidStrongholdSize::Meagre, 0, 1, 0 },
+		{ ESolidStrongholdSize::Humble, 0, 1, 1 },
+		{ ESolidStrongholdSize::Average, 0, 1, 2 },
+		{ ESolidStrongholdSize::Impressive, 0, 3, 2 },
+		{ ESolidStrongholdSize::Grand, 1, 4, 2 },
+		{ ESolidStrongholdSize::Stately, 2, 4, 2 },
+		{ ESolidStrongholdSize::Imperious, 3, 4, 3 },
+	};
+
+	static_assert(UE_ARRAY_COUNT(RoomsBySize) == SizeCount, "every stronghold size has rooms");
+
+	/** Usable hexes in these rooms. */
+	inline constexpr int32 Hexes(const FRooms& Rooms)
+	{
+		return Rooms.Large * RoomHexes(ESolidStrongholdRoom::Large)
+			+ Rooms.Medium * RoomHexes(ESolidStrongholdRoom::Medium)
+			+ Rooms.Small * RoomHexes(ESolidStrongholdRoom::Small);
+	}
+
+	/** The rooms for this stronghold size. A size with no row has none of them. */
+	inline FRooms RoomsFor(const ESolidStrongholdSize Size)
+	{
+		for (const FRooms& Rooms : RoomsBySize)
+		{
+			if (Rooms.Size == Size)
+			{
+				return Rooms;
+			}
+		}
+		FRooms None;
+		None.Size = Size;
+		return None;
+	}
 
 	/** WorldMap.txt row of that dungeon, counting from 1 at the top. */
 	inline constexpr int32 StartingRow = 9;
@@ -341,9 +423,14 @@ namespace SolidStronghold
 	}
 
 	/** "Meagre Dungeon". */
+	inline FString Label(const ESolidStrongholdSize Size, const ESolidStrongholdType Type)
+	{
+		return FString::Printf(TEXT("%s %s"), SizeName(Size), TypeName(Type));
+	}
+
 	inline FString Label(const FSolidStronghold& Stronghold)
 	{
-		return FString::Printf(TEXT("%s %s"), SizeName(Stronghold.Size), TypeName(Stronghold.Type));
+		return Label(Stronghold.Size, Stronghold.Type);
 	}
 
 	/** Second line of the entrance hover. */
@@ -442,4 +529,143 @@ namespace SolidStronghold
 		}
 		return false;
 	}
+}
+
+/**
+ * Where each stronghold meets the open world.
+ * Pure logic — no actor spawning (safe for automation).
+ * The dungeon interior is a separate visit; this only places the outside mouth.
+ */
+namespace SolidStrongholds
+{
+	/**
+	 * How far the mouth stands from the shared cell edge, toward the grass (cm).
+	 * Terrain points are 200 cm apart and the mountain shelf is the point on
+	 * the cave side of that edge. 280 cm clears the slope so the sill sits on
+	 * the grassland and the back of the frame meets the cliff.
+	 */
+	inline constexpr float FaceInsetCm = 280.f;
+
+	inline constexpr float OpeningWidthCm = 380.f;
+	inline constexpr float OpeningHeightCm = 420.f;
+	inline constexpr float OpeningDepthCm = 240.f;
+	/**
+	 * Grass-facing face of the rock frame, in actor space (cm).
+	 * Local +X faces the grass. The face sits toward the cliff so the actor
+	 * origin, where the captain stands, is in front of the stone.
+	 */
+	inline constexpr float FrameFrontLocalX = -OpeningDepthCm * 0.5f;
+	inline constexpr float FrameThicknessCm = 80.f;
+	/** Black mouth sits this far behind the rock front so the faces do not z-fight. */
+	inline constexpr float MouthRecessCm = 16.f;
+	/** The dungeon mouth sits this far inside the facing cell border. */
+	inline constexpr float MouthBorderGapCm = 120.f;
+	/** Side gap so the mouth does not share a face with the jambs. */
+	inline constexpr float MouthGapCm = 6.f;
+
+	inline FLinearColor RockColor()
+	{
+		return FLinearColor(0.30f, 0.28f, 0.26f);
+	}
+
+	inline FLinearColor MouthColor()
+	{
+		return FLinearColor(0.015f, 0.012f, 0.01f);
+	}
+
+	struct FEntrance
+	{
+		/** Stronghold map cell. */
+		FIntPoint Cell = FIntPoint::ZeroValue;
+		/** Adjacent grassland the mouth faces. */
+		FIntPoint GrassCell = FIntPoint::ZeroValue;
+		/** Midpoint of the shared edge. */
+		FVector2D EdgeXY = FVector2D::ZeroVector;
+		/** Spawn point on the grass side of that edge. */
+		FVector2D WorldXY = FVector2D::ZeroVector;
+		/** Local +X faces the grassland. */
+		float FacingYawDeg = 0.f;
+	};
+
+	/**
+	 * Grass face of one cell.
+	 * The working door is the company's active stronghold.
+	 * A previous stronghold uses the same face for its exterior mesh.
+	 * False when the cell has no grassland neighbor or the world points fail.
+	 */
+	bool MakeEntrance(
+		const USolidWorldMap* WorldMap,
+		FVector2D WorldMinXY,
+		FVector2D WorldMaxXY,
+		FIntPoint Cell,
+		FEntrance& OutEntrance);
+
+	/** Grass neighbor of one map cell. North, then west, south, and east, matching MakeEntrance. */
+	struct FGrassFace
+	{
+		FIntPoint GrassCell = FIntPoint::ZeroValue;
+		float FacingYawDeg = 0.f;
+	};
+
+	bool FindGrassFace(const USolidWorldMap* WorldMap, FIntPoint Cell, FGrassFace& Out);
+}
+
+/**
+ * Moving the company from the stronghold it has to a site.
+ * A click lists a size and a type when that size is unlocked and the subclass can build it.
+ * While site restrictions apply, that size is also larger than the company stronghold.
+ * The site marker does not pick the size. Choosing a row commits. Esc never reaches this.
+ * The swap itself is immediate, so it does not show a progress bar.
+ */
+namespace SolidStrongholdTransition
+{
+	/** A pair the game will one day offer. Meagre Fortress, Meagre Tower, and Humble Tower are outside it. */
+	bool IsFinalPair(const FSolidStronghold& Stronghold);
+
+	/** A final pair that already has an interior. Meagre Dungeon, and an Average, Impressive, Grand, Stately, or Imperious tower. */
+	bool IsBuilt(const FSolidStronghold& Stronghold);
+
+	enum class EOffer : uint8
+	{
+		None,
+		Choose,
+	};
+
+	/**
+	 * Rows a click on a site stone may list.
+	 * Each row is an unlocked size the subclass can build.
+	 * While bStrongholdSiteRestrictions is set, that size is also larger than the company stronghold.
+	 * None leaves the site as it is and does not ask.
+	 */
+	EOffer Consider(const FGameState& State, TArray<FSolidStrongholdChoice>& OutChoices);
+
+	bool Offers(
+		const TArray<FSolidStrongholdChoice>& Choices,
+		ESolidStrongholdSize Size,
+		ESolidStrongholdType Type);
+
+	bool AreNeighbors(const SolidStrongholdGrid::FHex& A, const SolidStrongholdGrid::FHex& B);
+
+	/**
+	 * Put the carried pieces on kept cells of one floor.
+	 * A bed takes two neighbors. The fireplace and the chest take one cell each.
+	 */
+	bool PlaceOnFloor(
+		TArray<SolidStrongholdFurniture::FUsed>& Pieces,
+		const TArray<SolidStrongholdGrid::FHex>& Hexes);
+
+	/**
+	 * The site becomes the company base. Furnishings move onto its ground floor.
+	 * The stronghold the company leaves moves into PreviousStrongholds.
+	 * The chest keeps its slots. The captain's pack stays with him.
+	 * Returns false when the click would not have offered that size and type.
+	 */
+	bool Commit(
+		FGameState& State,
+		FIntPoint SiteCell,
+		ESolidStrongholdSize Size,
+		ESolidStrongholdType Type);
+
+	/** The company chest is open on the inventory page while the captain is inside the base that holds it. */
+	bool CompanyChestOpen(const FGameState& State, bool bInStronghold);
 }

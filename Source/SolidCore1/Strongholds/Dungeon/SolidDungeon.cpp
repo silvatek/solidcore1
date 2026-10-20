@@ -3,8 +3,7 @@
 #include "SolidDungeonInterior.h"
 #include "SolidDungeonLevel.h"
 #include "SolidGameState.h"
-#include "Strongholds/SolidStrongholdTransition.h"
-#include "Strongholds/SolidStrongholds.h"
+#include "Strongholds/SolidStronghold.h"
 
 namespace SolidStronghold
 {
@@ -27,11 +26,9 @@ namespace SolidStronghold
 	bool FSolidDungeon::AcceptsEnter(const FGameState& State, const FIntPoint OpeningCell) const
 	{
 		const FSolidStronghold* Active = State.ActiveStronghold.Get();
-		return SolidStrongholdTransition::StrongholdsEnabled(State)
+		return State.bStrongholdsEnabled
 			&& Active
 			&& Active->Type == ESolidStrongholdType::Dungeon
-			&& Active->Size == ESolidStrongholdSize::Meagre
-			&& Active->Cell == SolidStronghold::StartingCell()
 			&& Active->Cell == OpeningCell;
 	}
 

@@ -1,6 +1,6 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "SolidStrongholdGrid.h"
+#include "Strongholds/Furnishings/SolidStrongholdGrid.h"
 #include "Strongholds/Dungeon/SolidDungeonInterior.h"
 #include "Strongholds/Dungeon/SolidDungeonLevel.h"
 #include "Components/InstancedStaticMeshComponent.h"

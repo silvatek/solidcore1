@@ -1,7 +1,7 @@
 # SolidCore1 — agent rules
 
 UE 5.8 C++ Viking-only open world. Product repo: `github.com/silvatek/solidcore1`.
-Human docs: `README.md`. Open stories: `Planning/`. Shipped stories: `Planning/Done/`. Fog history: `Source/SolidCore1/Fog/README.md`. Lair notes: `Content/Lairs.md`. Stronghold mockups: `Source/SolidCore1/Strongholds/README.md`.
+Human docs: `README.md`. Open stories: `Planning/`. Shipped stories: `Planning/Done/`. Fog history: `Source/SolidCore1/Fog/README.md`. Lair notes: `Content/Lairs.md`. Stronghold mockups and code structure: `Source/SolidCore1/Strongholds/README.md`.
 
 ## Workflow overrides the agent harness
 

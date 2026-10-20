@@ -26,6 +26,7 @@ public:
 	virtual void Exit() override;
 	virtual void Tick(FEditorViewportClient* ViewportClient, float DeltaTime) override;
 	virtual void Render(const FSceneView* View, FViewport* Viewport, FPrimitiveDrawInterface* PDI) override;
+	virtual void DrawHUD(FEditorViewportClient* ViewportClient, FViewport* Viewport, const FSceneView* View, FCanvas* Canvas) override;
 	virtual bool InputKey(FEditorViewportClient* ViewportClient, FViewport* Viewport, FKey Key, EInputEvent Event) override;
 	virtual bool MouseMove(FEditorViewportClient* ViewportClient, FViewport* Viewport, int32 X, int32 Y) override;
 	virtual bool CapturedMouseMove(FEditorViewportClient* ViewportClient, FViewport* Viewport, int32 X, int32 Y) override;
@@ -98,6 +99,8 @@ private:
 	void RebuildOverlay();
 	void RebuildSigns();
 	void FaceSigns(const FVector& Camera);
+	bool MarkLocation(const FSolidWorldChartMark& Mark, FVector& OutLocation) const;
+	void DrawMarkPoints(const FSceneView* View, FPrimitiveDrawInterface* PDI) const;
 	void RefreshDisagreement();
 	void RefreshRoadMessage();
 	void Note(const FString& Message);

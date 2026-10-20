@@ -7,6 +7,8 @@
 #include "Terrain/SolidWorldMap.h"
 #include "Towns/SolidTowns.h"
 
+#include "CanvasItem.h"
+#include "CanvasTypes.h"
 #include "Components/LineBatchComponent.h"
 #include "Components/TextRenderComponent.h"
 #include "EditorModeManager.h"
@@ -594,6 +596,7 @@ void FSolidWorldChartEdMode::Render(const FSceneView* View, FViewport* Viewport,
 	if (View)
 	{
 		FaceSigns(View->ViewLocation);
+		DrawMarkPoints(View, PDI);
 	}
 	const USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
 	if (!PDI || !Terrain || !Terrain->IsBuilt() || !bStroke)
@@ -1233,19 +1236,17 @@ void FSolidWorldChartEdMode::RebuildSigns()
 		return;
 	}
 
-	FVector2D ChartMin = FVector2D::ZeroVector;
-	FVector2D ChartMax = FVector2D::ZeroVector;
-	USolidWorldChart::DefaultWorldBounds(ChartMin, ChartMax);
-	const FVector2D Delta = Terrain->GetWorldMinXY() - ChartMin;
-
 	FActorSpawnParameters Params;
 	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	Params.ObjectFlags = RF_Transient;
 	Params.bHideFromSceneOutliner = true;
 	for (const FSolidWorldChartMark& Mark : Chart->Marks)
 	{
-		const FVector2D XY = Mark.PositionCm + Delta;
-		const FVector Location(XY.X, XY.Y, Terrain->SampleHeight(XY.X, XY.Y) + 800.f);
+		FVector Location = FVector::ZeroVector;
+		if (!MarkLocation(Mark, Location))
+		{
+			continue;
+		}
 		ATextRenderActor* Sign = World->SpawnActor<ATextRenderActor>(
 			ATextRenderActor::StaticClass(), Location, FRotator::ZeroRotator, Params);
 		if (!Sign)
@@ -1291,6 +1292,110 @@ void FSolidWorldChartEdMode::FaceSigns(const FVector& Camera)
 		Sign->SetActorRotation(FRotationMatrix::MakeFromX(ToCamera).Rotator());
 		const float Height = FMath::Max(CloseHeightCm, ToCamera.Size() * FarHeightOverDistance);
 		Sign->SetActorScale3D(FVector(Height / CloseHeightCm));
+	}
+}
+
+bool FSolidWorldChartEdMode::MarkLocation(const FSolidWorldChartMark& Mark, FVector& OutLocation) const
+{
+	const USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
+	if (!Terrain || !Terrain->IsBuilt())
+	{
+		return false;
+	}
+	FVector2D ChartMin = FVector2D::ZeroVector;
+	FVector2D ChartMax = FVector2D::ZeroVector;
+	USolidWorldChart::DefaultWorldBounds(ChartMin, ChartMax);
+	const FVector2D XY = Mark.PositionCm + (Terrain->GetWorldMinXY() - ChartMin);
+	OutLocation = FVector(XY.X, XY.Y, Terrain->SampleHeight(XY.X, XY.Y) + 800.f);
+	return true;
+}
+
+void FSolidWorldChartEdMode::DrawMarkPoints(const FSceneView* View, FPrimitiveDrawInterface* PDI) const
+{
+	if (!View || !PDI || !Chart)
+	{
+		return;
+	}
+	for (const FSolidWorldChartMark& Mark : Chart->Marks)
+	{
+		FVector Location = FVector::ZeroVector;
+		if (!MarkLocation(Mark, Location) || View->WorldToScreen(Location).W <= 0.f)
+		{
+			continue;
+		}
+		// Pixel sized, so the pin stays the same size when the whole map is in view.
+		PDI->DrawPoint(Location, FLinearColor::Black, 28.f, SDPG_Foreground);
+		PDI->DrawPoint(Location, FLinearColor(1.f, 0.82f, 0.1f), 16.f, SDPG_Foreground);
+	}
+}
+
+void FSolidWorldChartEdMode::DrawHUD(
+	FEditorViewportClient* ViewportClient,
+	FViewport* Viewport,
+	const FSceneView* View,
+	FCanvas* Canvas)
+{
+	FEdMode::DrawHUD(ViewportClient, Viewport, View, Canvas);
+	if (!View || !Canvas || !Chart || !GEngine || !GEngine->GetSmallFont())
+	{
+		return;
+	}
+	UFont* Font = GEngine->GetSmallFont();
+	const FIntRect ViewRect = View->UnscaledViewRect;
+	const bool bSignsMatch = Signs.Num() == Chart->Marks.Num();
+	for (int32 Index = 0; Index < Chart->Marks.Num(); ++Index)
+	{
+		const FSolidWorldChartMark& Mark = Chart->Marks[Index];
+		FVector Location = FVector::ZeroVector;
+		if (!MarkLocation(Mark, Location) || Mark.Name.IsEmpty())
+		{
+			continue;
+		}
+		const FVector4 Screen = View->WorldToScreen(Location);
+		if (Screen.W <= 0.f)
+		{
+			continue;
+		}
+		FVector2D Pixel;
+		if (!View->ScreenToPixel(Screen, Pixel))
+		{
+			continue;
+		}
+		if (Pixel.X < ViewRect.Min.X - 80.f || Pixel.X > ViewRect.Max.X + 80.f
+			|| Pixel.Y < ViewRect.Min.Y - 40.f || Pixel.Y > ViewRect.Max.Y + 80.f)
+		{
+			continue;
+		}
+
+		// The in-world name is 12 m tall. Once that is under 160 px, draw a fixed screen label.
+		FVector2D Above = Pixel;
+		const FVector4 AboveScreen = View->WorldToScreen(Location + FVector(0.f, 0.f, 1200.f));
+		float Projected = 0.f;
+		if (AboveScreen.W > 0.f && View->ScreenToPixel(AboveScreen, Above))
+		{
+			Projected = static_cast<float>(FVector2D::Distance(Pixel, Above));
+		}
+		const bool bScreenName = Projected < 160.f;
+		if (bSignsMatch && Signs[Index])
+		{
+			Signs[Index]->SetIsTemporarilyHiddenInEditor(bScreenName);
+		}
+		if (!bScreenName)
+		{
+			continue;
+		}
+
+		FCanvasTextItem Label(
+			FVector2D(Pixel.X, Pixel.Y - 20.f),
+			FText::FromString(Mark.Name),
+			Font,
+			FLinearColor::White);
+		Label.EnableShadow(FLinearColor::Black, FVector2D(1.5f, 1.5f));
+		Label.bCentreX = true;
+		Label.bOutlined = true;
+		Label.OutlineColor = FLinearColor::Black;
+		Label.Scale = FVector2D(1.8f);
+		Canvas->DrawItem(Label);
 	}
 }
 

@@ -72,7 +72,6 @@ private:
 	TObjectPtr<ULineBatchComponent> Lines;
 	TArray<TObjectPtr<ATextRenderActor>> Signs;
 	TSharedPtr<FSolidWorldChartToolkit> ChartToolkit;
-	bool bToolkitRegistered = false;
 
 	bool bStroke = false;
 	bool bRectangle = false;

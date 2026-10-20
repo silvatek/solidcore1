@@ -18,7 +18,6 @@
 #include "Misc/PackageName.h"
 #include "Misc/Paths.h"
 #include "SceneView.h"
-#include "Toolkits/ToolkitManager.h"
 #include "UObject/SavePackage.h"
 
 #include "Widgets/Input/SButton.h"
@@ -564,20 +563,16 @@ void FSolidWorldChartEdMode::Enter()
 	Toolkit = ChartToolkit;
 	if (Owner && Owner->GetToolkitHost().IsValid())
 	{
+		// Init subscribes to the mode change. The editor registers this toolkit
+		// once, after Enter returns. Registering it here as well asserts.
 		ChartToolkit->Init(Owner->GetToolkitHost());
-		FToolkitManager::Get().RegisterNewToolkit(Toolkit.ToSharedRef());
-		bToolkitRegistered = true;
 	}
 }
 
 void FSolidWorldChartEdMode::Exit()
 {
 	ClearChartActors();
-	if (bToolkitRegistered && Toolkit.IsValid())
-	{
-		FToolkitManager::Get().CloseToolkit(Toolkit.ToSharedRef());
-	}
-	bToolkitRegistered = false;
+	// The mode manager already closed this toolkit when the mode was deactivated.
 	Toolkit.Reset();
 	ChartToolkit.Reset();
 	Chart = nullptr;

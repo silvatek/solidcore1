@@ -63,6 +63,7 @@ namespace
 		case ESolidWorldChartMarkKind::StrongholdSite: return TEXT("Stronghold site");
 		case ESolidWorldChartMarkKind::LairEntrance: return TEXT("Lair entrance");
 		case ESolidWorldChartMarkKind::LairExit: return TEXT("Lair exit");
+		case ESolidWorldChartMarkKind::Custom: return TEXT("Custom");
 		case ESolidWorldChartMarkKind::Town:
 		default: return TEXT("Town");
 		}
@@ -76,6 +77,7 @@ namespace
 		case ESolidWorldChartMarkKind::StrongholdSite: return FLinearColor(0.72f, 0.38f, 0.95f);
 		case ESolidWorldChartMarkKind::LairEntrance: return FLinearColor(0.15f, 0.82f, 0.90f);
 		case ESolidWorldChartMarkKind::LairExit: return FLinearColor(0.35f, 0.48f, 1.f);
+		case ESolidWorldChartMarkKind::Custom: return FLinearColor(1.f, 0.35f, 0.75f);
 		case ESolidWorldChartMarkKind::Town:
 		default: return FLinearColor(1.f, 0.78f, 0.15f);
 		}
@@ -188,6 +190,7 @@ public:
 		MarkKinds.Add(MakeShared<FString>(TEXT("Stronghold site")));
 		MarkKinds.Add(MakeShared<FString>(TEXT("Lair entrance")));
 		MarkKinds.Add(MakeShared<FString>(TEXT("Lair exit")));
+		MarkKinds.Add(MakeShared<FString>(TEXT("Custom")));
 		RoadTypes.Add(MakeShared<FString>(TEXT("Trail")));
 		RoadTypes.Add(MakeShared<FString>(TEXT("Track")));
 		RoadTypes.Add(MakeShared<FString>(TEXT("Road")));
@@ -348,6 +351,31 @@ public:
 							if (Mode)
 							{
 								Mode->LairIndex = Index;
+							}
+						})
+					]
+				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f)
+				[
+					SNew(SBox)
+					.Visibility_Lambda([this]()
+					{
+						return Mode && Mode->MarkKind == ESolidWorldChartMarkKind::Custom
+							? EVisibility::Visible
+							: EVisibility::Collapsed;
+					})
+					[
+						SNew(SEditableTextBox)
+						.HintText(NSLOCTEXT("SolidWorldChart", "NoteHint", "A short note"))
+						.Text_Lambda([this]()
+						{
+							return FText::FromString(Mode ? Mode->CustomNote : FString());
+						})
+						.OnTextChanged_Lambda([this](const FText& Text)
+						{
+							if (Mode)
+							{
+								Mode->CustomNote = Text.ToString();
 							}
 						})
 					]
@@ -792,6 +820,9 @@ void FSolidWorldChartEdMode::PlaceCurrentMark()
 				MarkKind == ESolidWorldChartMarkKind::LairEntrance,
 				Error);
 		}
+		break;
+	case ESolidWorldChartMarkKind::Custom:
+		bPlaced = Chart->PlaceCustom(CurrentCell, CustomNote, Error);
 		break;
 	default:
 		break;

@@ -14,6 +14,8 @@ enum class ESolidWorldChartMarkKind : uint8
 	StrongholdSite,
 	LairEntrance,
 	LairExit,
+	/** A short note. It does not change the land, and it is not a road end. */
+	Custom,
 };
 
 /** How wide a chart road is. The route is solved when a world map loads the chart. */
@@ -39,7 +41,7 @@ struct FSolidWorldChartMark
 	ESolidWorldChartMarkKind Kind = ESolidWorldChartMarkKind::Town;
 
 	/**
-	 * Town, stronghold, site, or lair name.
+	 * Town, stronghold, site, or lair name, or the text of a custom note.
 	 * MeagreDungeon and Meagre Dungeon are the same stronghold name.
 	 */
 	UPROPERTY(EditAnywhere, Category = "WorldChart")
@@ -157,6 +159,12 @@ public:
 
 	/** Put one end of a lair the game already has. The mouth resolves as mountain. */
 	bool PlaceLairMouth(FIntPoint Cell, const FString& LairName, bool bEntrance, FString& OutError);
+
+	/**
+	 * Put a custom note on this cell, replacing any mark already there.
+	 * The note is one line, at most 48 characters. It does not change the paint.
+	 */
+	bool PlaceCustom(FIntPoint Cell, const FString& Note, FString& OutError);
 
 	/** Remove the mark on this cell. */
 	bool DeleteMark(FIntPoint Cell, FString& OutError);

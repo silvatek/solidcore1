@@ -468,6 +468,34 @@ bool USolidWorldChart::PlaceLairMouth(
 	return PlaceMark(Cell, Mark, OutError);
 }
 
+bool USolidWorldChart::PlaceCustom(const FIntPoint Cell, const FString& Note, FString& OutError)
+{
+	FString Clean = Note;
+	Clean.ReplaceInline(TEXT("\r"), TEXT(" "));
+	Clean.ReplaceInline(TEXT("\n"), TEXT(" "));
+	Clean.TrimStartAndEndInline();
+	while (Clean.Contains(TEXT("  ")))
+	{
+		Clean.ReplaceInline(TEXT("  "), TEXT(" "));
+	}
+	if (Clean.IsEmpty())
+	{
+		OutError = TEXT("A note needs some text.");
+		return false;
+	}
+	constexpr int32 MaxNote = 48;
+	if (Clean.Len() > MaxNote)
+	{
+		OutError = TEXT("A note is at most 48 characters.");
+		return false;
+	}
+
+	FSolidWorldChartMark Mark;
+	Mark.Kind = ESolidWorldChartMarkKind::Custom;
+	Mark.Name = Clean;
+	return PlaceMark(Cell, Mark, OutError);
+}
+
 bool USolidWorldChart::DeleteMark(const FIntPoint Cell, FString& OutError)
 {
 	OutError.Reset();

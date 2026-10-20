@@ -743,6 +743,8 @@ bool USolidWorldMap::RememberChartMark(const FSolidWorldChartMark& Mark, const F
 		Bang.LairId = Lair->Id;
 		break;
 	}
+	case ESolidWorldChartMarkKind::Custom:
+		return false;
 	default:
 		return false;
 	}

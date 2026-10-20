@@ -178,6 +178,40 @@ bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("a site road has an empty strip"), SiteRoute.Num(), 0);
 
 	TestTrue(TEXT("undo removes the site road"), Chart->Undo());
+
+	const FIntPoint NoteCell(90, 50);
+	const int32 NoteIndexOnMap = NoteCell.Y * USolidWorldMap::MapWidth + NoteCell.X;
+	const uint8 PaintBefore = static_cast<uint8>(Chart->Cells[NoteIndexOnMap]);
+	TestFalse(TEXT("an empty note is rejected"), Chart->PlaceCustom(NoteCell, TEXT("   "), Error));
+	TestTrue(TEXT("the empty note says it needs text"), Error.Contains(TEXT("note")));
+	TestFalse(TEXT("a long note is rejected"), Chart->PlaceCustom(NoteCell, FString::ChrN(49, TEXT('a')), Error));
+	TestTrue(TEXT("a note places"), Chart->PlaceCustom(NoteCell, TEXT("  Bridge  here  "), Error));
+	const int32 NoteMark = Chart->MarkAtCell(NoteCell);
+	TestTrue(TEXT("the note is on the cell"), NoteMark != INDEX_NONE);
+	if (NoteMark != INDEX_NONE)
+	{
+		TestEqual(
+			TEXT("the note kind"),
+			static_cast<uint8>(Chart->Marks[NoteMark].Kind),
+			static_cast<uint8>(ESolidWorldChartMarkKind::Custom));
+		TestEqual(TEXT("the note is one trimmed line"), Chart->Marks[NoteMark].Name, FString(TEXT("Bridge here")));
+	}
+	TestEqual(TEXT("a note leaves the paint"), static_cast<uint8>(Chart->Cells[NoteIndexOnMap]), PaintBefore);
+
+	USolidWorldMap* Noted = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("a chart with a note still loads"), Noted->LoadFromChart(Chart));
+	TestEqual(
+		TEXT("a note does not change the biome"),
+		static_cast<uint8>(Noted->GetBiomeAtCell(NoteCell.X, NoteCell.Y)),
+		PaintBefore);
+	FSolidWorldBang NotedBang;
+	TestFalse(TEXT("a note is not a world place"), Noted->FindBang(NoteCell.X, NoteCell.Y, NotedBang));
+
+	TestTrue(TEXT("a note is not a road end"), Chart->AddRoad(TEXT("Bridge here"), TEXT("Iglin"), ESolidWorldChartRoadType::Trail, Error));
+	TestTrue(TEXT("the tool does not treat the note as a town"), Error.Contains(TEXT("not a town or stronghold")));
+	TestTrue(TEXT("undo removes the note road"), Chart->Undo());
+	TestTrue(TEXT("undo removes the note"), Chart->Undo());
+	TestEqual(TEXT("the cell has no mark"), Chart->MarkAtCell(NoteCell), static_cast<int32>(INDEX_NONE));
 	return true;
 }
 

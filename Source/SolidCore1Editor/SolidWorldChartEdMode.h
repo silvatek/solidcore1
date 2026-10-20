@@ -45,6 +45,7 @@ public:
 	int32 SizeIndex = 0;
 	int32 TypeIndex = 0;
 	int32 LairIndex = 0;
+	FString CustomNote;
 	ESolidWorldChartRoadType RoadType = ESolidWorldChartRoadType::Trail;
 	FString RoadFrom;
 	FString RoadTo;

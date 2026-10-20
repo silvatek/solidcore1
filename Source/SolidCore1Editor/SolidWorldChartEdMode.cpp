@@ -609,7 +609,6 @@ void FSolidWorldChartEdMode::Render(const FSceneView* View, FViewport* Viewport,
 	if (View)
 	{
 		FaceSigns(View->ViewLocation);
-		DrawMarkPoints(View, PDI);
 	}
 	const USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
 	if (!PDI || !Terrain || !Terrain->IsBuilt() || !bStroke)
@@ -1293,7 +1292,7 @@ void FSolidWorldChartEdMode::FaceSigns(const FVector& Camera)
 	constexpr float FarHeightOverDistance = 0.02f;
 	for (const TObjectPtr<ATextRenderActor>& Sign : Signs)
 	{
-		if (!Sign)
+		if (!Sign || Sign->IsTemporarilyHiddenInEditor())
 		{
 			continue;
 		}
@@ -1302,9 +1301,17 @@ void FSolidWorldChartEdMode::FaceSigns(const FVector& Camera)
 		{
 			continue;
 		}
-		Sign->SetActorRotation(FRotationMatrix::MakeFromX(ToCamera).Rotator());
+		const FRotator Facing = FRotationMatrix::MakeFromX(ToCamera).Rotator();
+		if (!Sign->GetActorRotation().Equals(Facing, 0.5f))
+		{
+			Sign->SetActorRotation(Facing);
+		}
 		const float Height = FMath::Max(CloseHeightCm, ToCamera.Size() * FarHeightOverDistance);
-		Sign->SetActorScale3D(FVector(Height / CloseHeightCm));
+		const FVector Scale(Height / CloseHeightCm);
+		if (!Sign->GetActorScale3D().Equals(Scale, 0.02f))
+		{
+			Sign->SetActorScale3D(Scale);
+		}
 	}
 }
 
@@ -1323,25 +1330,6 @@ bool FSolidWorldChartEdMode::MarkLocation(const FSolidWorldChartMark& Mark, FVec
 	return true;
 }
 
-void FSolidWorldChartEdMode::DrawMarkPoints(const FSceneView* View, FPrimitiveDrawInterface* PDI) const
-{
-	if (!View || !PDI || !Chart)
-	{
-		return;
-	}
-	for (const FSolidWorldChartMark& Mark : Chart->Marks)
-	{
-		FVector Location = FVector::ZeroVector;
-		if (!MarkLocation(Mark, Location) || View->WorldToScreen(Location).W <= 0.f)
-		{
-			continue;
-		}
-		// Pixel sized, so the pin stays the same size when the whole map is in view.
-		PDI->DrawPoint(Location, FLinearColor::Black, 28.f, SDPG_Foreground);
-		PDI->DrawPoint(Location, MarkColor(Mark.Kind), 16.f, SDPG_Foreground);
-	}
-}
-
 void FSolidWorldChartEdMode::DrawHUD(
 	FEditorViewportClient* ViewportClient,
 	FViewport* Viewport,
@@ -1349,7 +1337,7 @@ void FSolidWorldChartEdMode::DrawHUD(
 	FCanvas* Canvas)
 {
 	FEdMode::DrawHUD(ViewportClient, Viewport, View, Canvas);
-	if (!View || !Canvas || !Chart || !GEngine || !GEngine->GetSmallFont())
+	if (!View || !Canvas || Canvas->IsHitTesting() || !Chart || !GEngine || !GEngine->GetSmallFont())
 	{
 		return;
 	}
@@ -1394,7 +1382,7 @@ void FSolidWorldChartEdMode::DrawHUD(
 			Projected = static_cast<float>(FVector2D::Distance(Pixel, Above));
 		}
 		const bool bFar = Projected < 160.f;
-		if (bSignsMatch && Signs[Index])
+		if (bSignsMatch && Signs[Index] && Signs[Index]->IsTemporarilyHiddenInEditor() != bFar)
 		{
 			Signs[Index]->SetIsTemporarilyHiddenInEditor(bFar);
 		}
@@ -1402,6 +1390,21 @@ void FSolidWorldChartEdMode::DrawHUD(
 		{
 			continue;
 		}
+		// Screen tiles, not scene points. Two scene points on one spot shimmer.
+		constexpr float Outer = 18.f;
+		constexpr float Inner = 10.f;
+		FCanvasTileItem Halo(
+			Pixel - FVector2D(Outer * 0.5f, Outer * 0.5f),
+			FVector2D(Outer, Outer),
+			FLinearColor::Black);
+		Halo.BlendMode = SE_BLEND_Opaque;
+		Canvas->DrawItem(Halo);
+		FCanvasTileItem Core(
+			Pixel - FVector2D(Inner * 0.5f, Inner * 0.5f),
+			FVector2D(Inner, Inner),
+			MarkColor(Mark.Kind));
+		Core.BlendMode = SE_BLEND_Opaque;
+		Canvas->DrawItem(Core);
 		const float DistSq = static_cast<float>(FVector2D::DistSquared(Pixel, Mouse));
 		if (DistSq <= HoveredDistSq)
 		{

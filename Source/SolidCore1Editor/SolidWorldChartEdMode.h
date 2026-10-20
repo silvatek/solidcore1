@@ -101,7 +101,6 @@ private:
 	void RebuildSigns();
 	void FaceSigns(const FVector& Camera);
 	bool MarkLocation(const FSolidWorldChartMark& Mark, FVector& OutLocation) const;
-	void DrawMarkPoints(const FSceneView* View, FPrimitiveDrawInterface* PDI) const;
 	void RefreshDisagreement();
 	void RefreshRoadMessage();
 	void Note(const FString& Message);

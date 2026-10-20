@@ -1,10 +1,10 @@
 # Record the world chart
 
-Status: In Progress
+Status: Done
 
 ## Story
 
-The developer has the shipped world in a chart as well as in `WorldMap.txt`. The chart holds the same cells, marks, and roads. The game still builds the world from the text file. [Paint the world chart](paint-the-world-chart.md) and [Load the world from the chart](load-the-world-from-the-chart.md) are Ready and depend on this story. This story ships first.
+The developer has the shipped world in a chart as well as in `WorldMap.txt`. The chart holds the same cells, marks, and roads. The game still builds the world from the text file. [Paint the world chart](../paint-the-world-chart.md) and [Load the world from the chart](../load-the-world-from-the-chart.md) are Ready and depend on this story. This story ships first.
 
 ## Acceptance
 

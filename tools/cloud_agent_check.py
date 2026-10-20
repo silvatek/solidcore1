@@ -217,6 +217,31 @@ def check_editor_lock(errors: list[str]) -> None:
         if 'if "!LOCKWORD!"=="Free"' not in script:
             errors.append("tools/pie.bat must treat the word Free as the free lock")
 
+    editor = ROOT / "tools" / "editor.bat"
+    if not editor.is_file():
+        errors.append("missing tools/editor.bat")
+    else:
+        script = editor.read_text(encoding="utf-8")
+        if "echo Editor" not in script or "echo Free" not in script:
+            errors.append("tools/editor.bat must write the words Editor and Free into ue.lock")
+        launch_lines = [
+            line
+            for line in script.splitlines()
+            if '"%EDITOR%"' in line and '"%PROJECT%"' in line
+        ]
+        if not launch_lines or "-immersive" in launch_lines[0]:
+            errors.append("tools/editor.bat must launch the editor without starting PIE")
+        launch_at = script.find('"%EDITOR%" "%PROJECT%"')
+        gate_at = script.find("call :LockIsFree")
+        if gate_at < 0 or launch_at < 0 or gate_at > launch_at:
+            errors.append(
+                "tools/editor.bat must check ue.lock before launching the editor"
+            )
+        if 'if not exist "%LOCK%"' not in script:
+            errors.append("tools/editor.bat must launch when ue.lock does not exist")
+        if 'if "!LOCKWORD!"=="Free"' not in script:
+            errors.append("tools/editor.bat must treat the word Free as the free lock")
+
     agents = ROOT / "AGENTS.md"
     if not agents.is_file():
         errors.append("missing AGENTS.md")
@@ -227,7 +252,7 @@ def check_editor_lock(errors: list[str]) -> None:
         errors.append("AGENTS.md is missing the solidcore1-ue agents section")
         return
     body = parts[1].split("\n## ", 1)[0]
-    for needle in ("ue.lock", "tools\\pie.bat", "`PIE`", "`Free`"):
+    for needle in ("ue.lock", "tools\\pie.bat", "tools\\editor.bat", "`PIE`", "`Editor`", "`Free`"):
         if needle not in body:
             errors.append(f"solidcore1-ue agents section must mention {needle}")
 

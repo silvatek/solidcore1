@@ -28,3 +28,4 @@ This story depends on [Generate the character mesh outside the editor](character
 - The generated body is already in the Game target when this story starts. Leave that build in the shipped character-mesh story.
 - Quit already leaves a game outside the editor (`SolidExit`). Input actions are created in code. Neither needs cook work.
 - Add `tools/package.bat` to the tools list in `README.md` when the script lands. A cloud agent does not cook, and does not run the editor.
+- [Load the world from the chart](load-the-world-from-the-chart.md) is Ready and does not block this story. While it is open, stage `Content/WorldMap.txt` as above. When that story ships first, follow `/Game/World/WorldChart` instead and drop the UFS note for the text file. [Remove WorldMap.txt](remove-world-map-txt.md) deletes the file after the chart is what the game loads.

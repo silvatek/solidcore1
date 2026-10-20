@@ -68,6 +68,19 @@ namespace
 		}
 	}
 
+	FLinearColor MarkColor(const ESolidWorldChartMarkKind Kind)
+	{
+		switch (Kind)
+		{
+		case ESolidWorldChartMarkKind::Stronghold: return FLinearColor(0.95f, 0.22f, 0.18f);
+		case ESolidWorldChartMarkKind::StrongholdSite: return FLinearColor(0.72f, 0.38f, 0.95f);
+		case ESolidWorldChartMarkKind::LairEntrance: return FLinearColor(0.15f, 0.82f, 0.90f);
+		case ESolidWorldChartMarkKind::LairExit: return FLinearColor(0.35f, 0.48f, 1.f);
+		case ESolidWorldChartMarkKind::Town:
+		default: return FLinearColor(1.f, 0.78f, 0.15f);
+		}
+	}
+
 	bool HitGround(const USolidTerrainMap& Terrain, const FVector& Origin, const FVector& Direction, FVector& OutHit)
 	{
 		const FVector Dir = Direction.GetSafeNormal();
@@ -1325,7 +1338,7 @@ void FSolidWorldChartEdMode::DrawMarkPoints(const FSceneView* View, FPrimitiveDr
 		}
 		// Pixel sized, so the pin stays the same size when the whole map is in view.
 		PDI->DrawPoint(Location, FLinearColor::Black, 28.f, SDPG_Foreground);
-		PDI->DrawPoint(Location, FLinearColor(1.f, 0.82f, 0.1f), 16.f, SDPG_Foreground);
+		PDI->DrawPoint(Location, MarkColor(Mark.Kind), 16.f, SDPG_Foreground);
 	}
 }
 
@@ -1343,6 +1356,11 @@ void FSolidWorldChartEdMode::DrawHUD(
 	UFont* Font = GEngine->GetSmallFont();
 	const FIntRect ViewRect = View->UnscaledViewRect;
 	const bool bSignsMatch = Signs.Num() == Chart->Marks.Num();
+	const FVector2D Mouse(Viewport ? Viewport->GetMouseX() : -1.f, Viewport ? Viewport->GetMouseY() : -1.f);
+	constexpr float HoverRadiusPx = 20.f;
+	int32 HoveredIndex = INDEX_NONE;
+	float HoveredDistSq = HoverRadiusPx * HoverRadiusPx;
+	FVector2D HoveredPixel = FVector2D::ZeroVector;
 	for (int32 Index = 0; Index < Chart->Marks.Num(); ++Index)
 	{
 		const FSolidWorldChartMark& Mark = Chart->Marks[Index];
@@ -1367,7 +1385,7 @@ void FSolidWorldChartEdMode::DrawHUD(
 			continue;
 		}
 
-		// The in-world name is 12 m tall. Once that is under 160 px, draw a fixed screen label.
+		// The in-world name is 12 m tall. Farther out, the pin stands in for it.
 		FVector2D Above = Pixel;
 		const FVector4 AboveScreen = View->WorldToScreen(Location + FVector(0.f, 0.f, 1200.f));
 		float Projected = 0.f;
@@ -1375,28 +1393,40 @@ void FSolidWorldChartEdMode::DrawHUD(
 		{
 			Projected = static_cast<float>(FVector2D::Distance(Pixel, Above));
 		}
-		const bool bScreenName = Projected < 160.f;
+		const bool bFar = Projected < 160.f;
 		if (bSignsMatch && Signs[Index])
 		{
-			Signs[Index]->SetIsTemporarilyHiddenInEditor(bScreenName);
+			Signs[Index]->SetIsTemporarilyHiddenInEditor(bFar);
 		}
-		if (!bScreenName)
+		if (!bFar)
 		{
 			continue;
 		}
-
-		FCanvasTextItem Label(
-			FVector2D(Pixel.X, Pixel.Y - 20.f),
-			FText::FromString(Mark.Name),
-			Font,
-			FLinearColor::White);
-		Label.EnableShadow(FLinearColor::Black, FVector2D(1.5f, 1.5f));
-		Label.bCentreX = true;
-		Label.bOutlined = true;
-		Label.OutlineColor = FLinearColor::Black;
-		Label.Scale = FVector2D(1.8f);
-		Canvas->DrawItem(Label);
+		const float DistSq = static_cast<float>(FVector2D::DistSquared(Pixel, Mouse));
+		if (DistSq <= HoveredDistSq)
+		{
+			HoveredDistSq = DistSq;
+			HoveredIndex = Index;
+			HoveredPixel = Pixel;
+		}
 	}
+
+	if (HoveredIndex == INDEX_NONE)
+	{
+		return;
+	}
+	const FSolidWorldChartMark& Hovered = Chart->Marks[HoveredIndex];
+	FCanvasTextItem Label(
+		FVector2D(HoveredPixel.X, HoveredPixel.Y - 20.f),
+		FText::FromString(Hovered.Name),
+		Font,
+		FLinearColor::White);
+	Label.EnableShadow(FLinearColor::Black, FVector2D(1.5f, 1.5f));
+	Label.bCentreX = true;
+	Label.bOutlined = true;
+	Label.OutlineColor = FLinearColor::Black;
+	Label.Scale = FVector2D(1.8f);
+	Canvas->DrawItem(Label);
 }
 
 void FSolidWorldChartEdMode::RefreshDisagreement()

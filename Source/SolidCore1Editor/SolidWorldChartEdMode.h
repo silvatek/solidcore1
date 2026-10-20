@@ -64,8 +64,9 @@ public:
 	FString ToolLine() const { return ToolMessage; }
 	void RefreshPanel();
 
-private:
 	static const TCHAR* OpenWorldLevel;
+
+private:
 
 	TObjectPtr<USolidWorldChart> Chart;
 	TObjectPtr<ASolidTerrainStreamer> Streamer;

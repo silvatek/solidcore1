@@ -53,7 +53,7 @@ These agents have access to C++ and Unreal Engine. The agent builds and runs the
 
 `tools\pie.bat` reads `ue.lock` in the repo root before it launches. A missing file, or the word `Free`, lets it start. It writes `PIE`, launches Play In Editor, waits until the Unreal Editor process has closed, then writes `Free`. Any other word leaves the file unchanged and the editor is not started. The file is gitignored.
 
-`tools\editor.bat` uses that same lock. A missing file, or the word `Free`, lets it start. It writes `Editor`, launches the Unreal Editor without Play In Editor, waits until that process has closed, then writes `Free`. Any other word leaves the file unchanged and does not start the editor.
+`tools\editor.bat` uses that same lock. A missing file, or the word `Free`, lets it start. It writes `Editor`, launches the Unreal Editor without Play In Editor, waits until that process has closed, then writes `Free`. Any other word leaves the file unchanged and does not start the editor. It opens `/Game/ThirdPerson/Lvl_ThirdPerson` and switches to the World chart mode.
 
 Before building or testing, read `ue.lock`. A missing file means the machine is free. If the word in the file is not `Free`, say that word in chat and wait until the file says `Free`. Ignore surrounding whitespace. Do not build or test while waiting.
 

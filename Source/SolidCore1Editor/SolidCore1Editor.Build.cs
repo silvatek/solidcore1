@@ -20,7 +20,8 @@ public class SolidCore1Editor : ModuleRules
 
 		PrivateDependencyModuleNames.AddRange(new string[]
 		{
-			"EditorFramework"
+			"EditorFramework",
+			"LevelEditor"
 		});
 
 		// The chart headers include siblings by the short names the game module uses.

@@ -11,6 +11,8 @@ rem Usage:
 rem   tools\editor.bat
 rem   tools\editor.bat -log
 rem
+rem Opens /Game/ThirdPerson/Lvl_ThirdPerson and switches to the World chart mode.
+rem
 rem Optional env:
 rem   UE_ROOT   Engine root (default: C:\Program Files\Epic Games\UE_5.8)
 rem   PROJECT   Path to .uproject (default: this repo's SolidCore1.uproject)
@@ -51,7 +53,7 @@ echo Project: %PROJECT%
 echo Engine:  %UE_ROOT%
 echo.
 
-"%EDITOR%" "%PROJECT%" %*
+"%EDITOR%" "%PROJECT%" /Game/ThirdPerson/Lvl_ThirdPerson -SolidWorldChart %*
 set "ERR=%ERRORLEVEL%"
 
 echo Editor launch returned ^(%ERR%^). Waiting until UnrealEditor.exe has exited.

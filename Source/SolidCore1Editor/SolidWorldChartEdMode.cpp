@@ -582,12 +582,19 @@ void FSolidWorldChartEdMode::Exit()
 void FSolidWorldChartEdMode::Tick(FEditorViewportClient* ViewportClient, float DeltaTime)
 {
 	FEdMode::Tick(ViewportClient, DeltaTime);
-	FaceSigns(ViewportClient);
+	if (ViewportClient)
+	{
+		FaceSigns(ViewportClient->GetViewLocation());
+	}
 }
 
 void FSolidWorldChartEdMode::Render(const FSceneView* View, FViewport* Viewport, FPrimitiveDrawInterface* PDI)
 {
 	FEdMode::Render(View, Viewport, PDI);
+	if (View)
+	{
+		FaceSigns(View->ViewLocation);
+	}
 	const USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
 	if (!PDI || !Terrain || !Terrain->IsBuilt() || !bStroke)
 	{
@@ -1253,6 +1260,8 @@ void FSolidWorldChartEdMode::RebuildSigns()
 			Text->SetHorizontalAlignment(EHTA_Center);
 			Text->SetVerticalAlignment(EVRTA_TextCenter);
 			Text->SetTextRenderColor(FColor::White);
+			Text->LDMaxDrawDistance = 0.f;
+			Text->bNeverDistanceCull = true;
 			if (GEngine && GEngine->GetMediumFont())
 			{
 				Text->SetFont(GEngine->GetMediumFont());
@@ -1262,25 +1271,26 @@ void FSolidWorldChartEdMode::RebuildSigns()
 	}
 }
 
-void FSolidWorldChartEdMode::FaceSigns(const FEditorViewportClient* ViewportClient)
+void FSolidWorldChartEdMode::FaceSigns(const FVector& Camera)
 {
-	if (!ViewportClient)
-	{
-		return;
-	}
-	const FVector Camera = ViewportClient->GetViewLocation();
+	// Close up, a name stays 12 m tall. Farther away it stays about two percent of the
+	// distance tall, and turns to face the camera so a top-down view can still read it.
+	constexpr float CloseHeightCm = 1200.f;
+	constexpr float FarHeightOverDistance = 0.02f;
 	for (const TObjectPtr<ATextRenderActor>& Sign : Signs)
 	{
 		if (!Sign)
 		{
 			continue;
 		}
-		FVector ToCamera = Camera - Sign->GetActorLocation();
-		ToCamera.Z = 0.f;
-		if (!ToCamera.IsNearlyZero())
+		const FVector ToCamera = Camera - Sign->GetActorLocation();
+		if (ToCamera.IsNearlyZero())
 		{
-			Sign->SetActorRotation(FRotationMatrix::MakeFromX(ToCamera).Rotator());
+			continue;
 		}
+		Sign->SetActorRotation(FRotationMatrix::MakeFromX(ToCamera).Rotator());
+		const float Height = FMath::Max(CloseHeightCm, ToCamera.Size() * FarHeightOverDistance);
+		Sign->SetActorScale3D(FVector(Height / CloseHeightCm));
 	}
 }
 

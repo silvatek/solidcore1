@@ -97,7 +97,7 @@ private:
 	void ClearChartActors();
 	void RebuildOverlay();
 	void RebuildSigns();
-	void FaceSigns(const FEditorViewportClient* ViewportClient);
+	void FaceSigns(const FVector& Camera);
 	void RefreshDisagreement();
 	void RefreshRoadMessage();
 	void Note(const FString& Message);

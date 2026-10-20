@@ -12,7 +12,7 @@ The same words are a rule for building the game. Whatever functionality is added
 
 ## The game
 
-Solid Core is an open-world real-time strategy role-playing game set in a medieval fantasy world.
+Solid Core is an open-world real-time, strategic role-playing game set in a medieval fantasy world.
 
 ## The company
 

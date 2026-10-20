@@ -42,6 +42,7 @@ public:
 	/**
 	 * Allocate and fill the TerrainPoint grid from deterministic noise + biome rules.
 	 * Safe to call once; ignored if already built unless bForceRebuild.
+	 * When InWorldMap is set, that map is the biome source and LoadDefault is not called.
 	 */
 	void Build(
 		int32 InSeed,
@@ -51,7 +52,8 @@ public:
 		int32 InGridWidth = 513,
 		int32 InGridHeight = 513,
 		float InPointSpacing = 200.f,
-		bool bForceRebuild = false);
+		bool bForceRebuild = false,
+		USolidWorldMap* InWorldMap = nullptr);
 
 	bool IsBuilt() const { return bIsBuilt && Points.Num() == GridWidth * GridHeight; }
 

@@ -11,6 +11,7 @@
 #include "SolidTerrainMap.h"
 #include "SolidTerrainMaterials.h"
 #include "SolidTerrainNoise.h"
+#include "SolidWorldChart.h"
 #include "SolidWorldMap.h"
 #include "SolidCore1.h"
 #include "Companion/SolidCompanionCharacter.h"
@@ -79,6 +80,11 @@ ASolidTerrainStreamer* ASolidTerrainStreamer::EnsureExists(UWorld* World)
 
 void ASolidTerrainStreamer::BeginPlay()
 {
+	if (bChartView)
+	{
+		return;
+	}
+
 	Super::BeginPlay();
 	EnsureTerrainMap();
 	TryRelocateFocusToStartTown();
@@ -145,6 +151,11 @@ FSolidTerrainPoint ASolidTerrainStreamer::GetTerrainPointAt(const FVector& World
 
 void ASolidTerrainStreamer::Tick(float DeltaSeconds)
 {
+	if (bChartView)
+	{
+		return;
+	}
+
 	Super::Tick(DeltaSeconds);
 
 	UpdateTerrainFog(DeltaSeconds);
@@ -862,6 +873,11 @@ void ASolidTerrainStreamer::TrySnapFocusToTerrain(AActor* Focus)
 
 void ASolidTerrainStreamer::UpdateStreaming()
 {
+	if (bChartView)
+	{
+		return;
+	}
+
 	EnsureTerrainMap();
 	TryRelocateFocusToStartTown();
 	DisableLandscapeActorsOnce();
@@ -945,4 +961,271 @@ void ASolidTerrainStreamer::UpdateStreaming()
 	}
 
 	TrySnapFocusToTerrain(Focus);
+}
+
+namespace
+{
+	void KeepLevelClean(UPackage* Package, const bool bWasDirty)
+	{
+#if WITH_EDITOR
+		if (Package && !bWasDirty)
+		{
+			Package->SetDirtyFlag(false);
+		}
+#else
+		(void)Package;
+		(void)bWasDirty;
+#endif
+	}
+}
+
+void ASolidTerrainStreamer::ClearChartView()
+{
+#if WITH_EDITOR
+	RestoreChartLandscapes();
+#endif
+	for (const TPair<FIntPoint, TObjectPtr<ASolidTerrainChunk>>& Pair : LoadedChunks)
+	{
+		if (Pair.Value)
+		{
+			Pair.Value->Destroy();
+		}
+	}
+	LoadedChunks.Empty();
+	bChartView = false;
+}
+
+void ASolidTerrainStreamer::BuildChartView(const USolidWorldChart* Chart)
+{
+	bChartView = true;
+	bRenderExplorationFogMeshes = false;
+
+	UPackage* LevelPackage = nullptr;
+	bool bWasDirty = false;
+#if WITH_EDITOR
+	if (ULevel* Level = GetLevel())
+	{
+		LevelPackage = Level->GetOutermost();
+		bWasDirty = LevelPackage && LevelPackage->IsDirty();
+	}
+#endif
+
+	for (const TPair<FIntPoint, TObjectPtr<ASolidTerrainChunk>>& Pair : LoadedChunks)
+	{
+		if (Pair.Value)
+		{
+			Pair.Value->Destroy();
+		}
+	}
+	LoadedChunks.Empty();
+
+	UWorld* World = GetWorld();
+	if (!World || !Chart)
+	{
+		KeepLevelClean(LevelPackage, bWasDirty);
+		return;
+	}
+
+	USolidWorldMap* Map = NewObject<USolidWorldMap>(this);
+	if (!Map->LoadFromChart(Chart))
+	{
+		KeepLevelClean(LevelPackage, bWasDirty);
+		return;
+	}
+
+	if (!TerrainMap)
+	{
+		TerrainMap = NewObject<USolidTerrainMap>(this, TEXT("TerrainMap"));
+	}
+
+	float Spacing = TerrainPointSpacing;
+	if (QuadsPerSide > 0)
+	{
+		Spacing = ChunkWorldSize / static_cast<float>(QuadsPerSide);
+	}
+	TerrainMap->Build(
+		Seed,
+		FrequencyScale,
+		Amplitude,
+		BaseHeight,
+		TerrainMapSize,
+		TerrainMapSize,
+		Spacing,
+		true,
+		Map);
+
+#if WITH_EDITOR
+	HideChartLandscapes();
+#endif
+
+	const FVector2D WorldMin = TerrainMap->GetWorldMinXY();
+	const FVector2D WorldMax = TerrainMap->GetWorldMaxXY();
+	const FIntPoint MinChunk = WorldToChunkCoord(FVector(WorldMin.X, WorldMin.Y, 0.f));
+	const FIntPoint MaxChunk = WorldToChunkCoord(FVector(WorldMax.X - 1.f, WorldMax.Y - 1.f, 0.f));
+	for (int32 Y = MinChunk.Y; Y <= MaxChunk.Y; ++Y)
+	{
+		for (int32 X = MinChunk.X; X <= MaxChunk.X; ++X)
+		{
+			const FIntPoint Coord(X, Y);
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = this;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+#if WITH_EDITOR
+			SpawnParams.bHideFromSceneOutliner = true;
+			SpawnParams.ObjectFlags = RF_Transient;
+#endif
+			const FVector SpawnLoc(
+				static_cast<float>(Coord.X) * ChunkWorldSize,
+				static_cast<float>(Coord.Y) * ChunkWorldSize,
+				0.f);
+			ASolidTerrainChunk* Chunk = World->SpawnActor<ASolidTerrainChunk>(
+				ASolidTerrainChunk::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+			if (!Chunk)
+			{
+				continue;
+			}
+#if WITH_EDITOR
+			Chunk->bIsEditorOnlyActor = true;
+#endif
+			BuildChunkActor(Chunk, Coord);
+			LoadedChunks.Add(Coord, Chunk);
+		}
+	}
+
+	KeepLevelClean(LevelPackage, bWasDirty);
+	UE_LOG(LogSolid, Warning, TEXT("World chart terrain: %d chunks."), LoadedChunks.Num());
+}
+
+#if WITH_EDITOR
+void ASolidTerrainStreamer::HideChartLandscapes()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+
+	UClass* LandscapeClass = FindObject<UClass>(nullptr, TEXT("/Script/Landscape.Landscape"));
+	UClass* LandscapeProxyClass = FindObject<UClass>(nullptr, TEXT("/Script/Landscape.LandscapeProxy"));
+	UClass* StreamingProxyClass = FindObject<UClass>(nullptr, TEXT("/Script/Landscape.LandscapeStreamingProxy"));
+	for (TActorIterator<AActor> It(World); It; ++It)
+	{
+		UClass* ActorClass = It->GetClass();
+		const bool bIsLandscape =
+			(LandscapeClass && ActorClass->IsChildOf(LandscapeClass))
+			|| (LandscapeProxyClass && ActorClass->IsChildOf(LandscapeProxyClass))
+			|| (StreamingProxyClass && ActorClass->IsChildOf(StreamingProxyClass));
+		if (!bIsLandscape || It->IsTemporarilyHiddenInEditor())
+		{
+			continue;
+		}
+		It->SetIsTemporarilyHiddenInEditor(true);
+		ChartHiddenLandscapes.Add(*It);
+	}
+}
+
+void ASolidTerrainStreamer::RestoreChartLandscapes()
+{
+	for (const TWeakObjectPtr<AActor>& Actor : ChartHiddenLandscapes)
+	{
+		if (Actor.IsValid())
+		{
+			Actor->SetIsTemporarilyHiddenInEditor(false);
+		}
+	}
+	ChartHiddenLandscapes.Reset();
+}
+#endif
+
+void ASolidTerrainStreamer::RebuildChartView(const USolidWorldChart* Chart, const TArray<FIntPoint>& Cells)
+{
+	if (!bChartView || !TerrainMap || !Chart)
+	{
+		BuildChartView(Chart);
+		return;
+	}
+
+	UPackage* LevelPackage = nullptr;
+	bool bWasDirty = false;
+#if WITH_EDITOR
+	if (ULevel* Level = GetLevel())
+	{
+		LevelPackage = Level->GetOutermost();
+		bWasDirty = LevelPackage && LevelPackage->IsDirty();
+	}
+#endif
+
+	USolidWorldMap* Map = NewObject<USolidWorldMap>(this);
+	if (!Map->LoadFromChart(Chart))
+	{
+		KeepLevelClean(LevelPackage, bWasDirty);
+		return;
+	}
+
+	float Spacing = TerrainPointSpacing;
+	if (QuadsPerSide > 0)
+	{
+		Spacing = ChunkWorldSize / static_cast<float>(QuadsPerSide);
+	}
+	bRenderExplorationFogMeshes = false;
+	TerrainMap->Build(
+		Seed,
+		FrequencyScale,
+		Amplitude,
+		BaseHeight,
+		TerrainMapSize,
+		TerrainMapSize,
+		Spacing,
+		true,
+		Map);
+
+	UWorld* World = GetWorld();
+	const USolidWorldMap* WorldMap = TerrainMap->GetWorldMap();
+	TSet<FIntPoint> Chunks;
+	if (WorldMap)
+	{
+		for (const FIntPoint& Cell : Cells)
+		{
+			FVector2D Centre = FVector2D::ZeroVector;
+			if (!WorldMap->CellToWorldXY(Cell, TerrainMap->GetWorldMinXY(), TerrainMap->GetWorldMaxXY(), Centre))
+			{
+				continue;
+			}
+			Chunks.Add(WorldToChunkCoord(FVector(Centre.X, Centre.Y, 0.f)));
+		}
+	}
+
+	for (const FIntPoint& Coord : Chunks)
+	{
+		ASolidTerrainChunk* Chunk = LoadedChunks.FindRef(Coord);
+		if (!Chunk && World)
+		{
+			FActorSpawnParameters SpawnParams;
+			SpawnParams.Owner = this;
+			SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+#if WITH_EDITOR
+			SpawnParams.bHideFromSceneOutliner = true;
+			SpawnParams.ObjectFlags = RF_Transient;
+#endif
+			const FVector SpawnLoc(
+				static_cast<float>(Coord.X) * ChunkWorldSize,
+				static_cast<float>(Coord.Y) * ChunkWorldSize,
+				0.f);
+			Chunk = World->SpawnActor<ASolidTerrainChunk>(
+				ASolidTerrainChunk::StaticClass(), SpawnLoc, FRotator::ZeroRotator, SpawnParams);
+			if (Chunk)
+			{
+#if WITH_EDITOR
+				Chunk->bIsEditorOnlyActor = true;
+#endif
+				LoadedChunks.Add(Coord, Chunk);
+			}
+		}
+		if (Chunk)
+		{
+			BuildChunkActor(Chunk, Coord);
+		}
+	}
+
+	KeepLevelClean(LevelPackage, bWasDirty);
 }

@@ -79,6 +79,24 @@ struct FSolidWorldChartRoad
 };
 
 /**
+ * What a cell shows under the cursor.
+ * Painted is the marker biome. Resolved is the biome the world map uses.
+ * A mark can replace the paint: a lair mouth is mountain, a named town is town.
+ */
+struct FSolidWorldChartRead
+{
+	bool bValid = false;
+	ESolidBiome Painted = ESolidBiome::Grassland;
+	ESolidBiome Resolved = ESolidBiome::Grassland;
+	/** True when Resolved is not the painted marker biome. */
+	bool bMarkOverrides = false;
+	bool bHasMark = false;
+	FSolidWorldChartMark Mark;
+	/** Indexes into Roads whose solved route includes this cell. */
+	TArray<int32> RoadIndexes;
+};
+
+/**
  * The shipped world as a data asset. Cells hold marker biomes. Marks and roads
  * hold the same facts as Content/WorldMap.txt. The game still builds the world
  * from that text file. The editor saves the import at /Game/World/WorldChart.
@@ -114,6 +132,63 @@ public:
 
 	static ESolidWorldChartRoadType ChartRoadType(SolidRoad::EType Type);
 
+	/**
+	 * Centre of one map cell, in the chart's centimetre rectangle.
+	 * Column 0 is east, row 0 is north. The brush is this one cell.
+	 */
+	static bool CellCentre(FIntPoint Cell, FVector2D& OutCm);
+
+	/**
+	 * Paint marker biomes. Swamp and road are rejected. Marks stay where they are.
+	 * One call is one undo step. A run is the cells of one drag. A rectangle is inclusive.
+	 */
+	bool PaintCell(FIntPoint Cell, ESolidBiome Biome, FString& OutError);
+	bool PaintRun(const TArray<FIntPoint>& CellsToPaint, ESolidBiome Biome, FString& OutError);
+	bool PaintRectangle(FIntPoint From, FIntPoint To, ESolidBiome Biome, FString& OutError);
+
+	/** Put a SolidTowns town on this cell, replacing any mark already there. */
+	bool PlaceTown(FIntPoint Cell, const FString& Name, FString& OutError);
+
+	/** Put a stronghold the game already has. The name is its size and type. */
+	bool PlaceStronghold(FIntPoint Cell, ESolidStrongholdSize Size, ESolidStrongholdType Type, FString& OutError);
+
+	/** Put a stronghold site. A site has a size and no type, and it is not a road end. */
+	bool PlaceSite(FIntPoint Cell, ESolidStrongholdSize Size, FString& OutError);
+
+	/** Put one end of a lair the game already has. The mouth resolves as mountain. */
+	bool PlaceLairMouth(FIntPoint Cell, const FString& LairName, bool bEntrance, FString& OutError);
+
+	/** Remove the mark on this cell. */
+	bool DeleteMark(FIntPoint Cell, FString& OutError);
+
+	/**
+	 * Store a road from a town or stronghold to another.
+	 * A missing end is named in OutError, and the road is still stored.
+	 * The solver then leaves that route empty. A site is not an end.
+	 */
+	bool AddRoad(const FString& From, const FString& To, ESolidWorldChartRoadType Type, FString& OutError);
+
+	/** Empty when both ends are a placed town or stronghold. Otherwise the reason. */
+	FString RoadEndError(const FString& From, const FString& To) const;
+
+	/** Solved cells of one road, including both ends. Empty when an end is missing. */
+	bool RouteForRoad(int32 RoadIndex, TArray<FIntPoint>& OutCells) const;
+
+	/** Resolved biome, painted biome, mark, and roads through this cell. */
+	bool ReadCell(FIntPoint Cell, FSolidWorldChartRead& Out) const;
+
+	/** Index of the mark on this cell, or INDEX_NONE. */
+	int32 MarkAtCell(FIntPoint Cell) const;
+
+	/** Put back the chart from before the last paint, mark, or road. */
+	bool Undo();
+
+	/**
+	 * Empty when this chart matches WorldMap.txt text.
+	 * Otherwise a sentence the World chart mode can show.
+	 */
+	FString Disagreement(const FString& WorldMapText) const;
+
 	/** Marker biome of each cell. Row-major. Row 0 is north, column 0 is east. A ! is grassland. */
 	UPROPERTY(EditAnywhere, Category = "WorldChart")
 	TArray<ESolidBiome> Cells;
@@ -123,4 +198,19 @@ public:
 
 	UPROPERTY(EditAnywhere, Category = "WorldChart")
 	TArray<FSolidWorldChartRoad> Roads;
+
+private:
+	/** Cells, marks, and roads from before one edit. Not saved with the asset. */
+	struct FSnapshot
+	{
+		TArray<ESolidBiome> Cells;
+		TArray<FSolidWorldChartMark> Marks;
+		TArray<FSolidWorldChartRoad> Roads;
+	};
+
+	void PushUndo();
+	bool CellIndex(FIntPoint Cell, int32& OutIndex) const;
+	bool PlaceMark(FIntPoint Cell, const FSolidWorldChartMark& Mark, FString& OutError);
+
+	TArray<FSnapshot> UndoStack;
 };

@@ -9,5 +9,6 @@ public class SolidCore1EditorTarget : TargetRules
 		DefaultBuildSettings = BuildSettingsVersion.V7;
 		IncludeOrderVersion = EngineIncludeOrderVersion.Latest;
 		ExtraModuleNames.Add("SolidCore1");
+		ExtraModuleNames.Add("SolidCore1Editor");
 	}
 }

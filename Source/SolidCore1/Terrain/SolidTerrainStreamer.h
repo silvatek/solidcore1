@@ -9,6 +9,7 @@ class AExponentialHeightFog;
 class ASolidTerrainChunk;
 class UMaterialInterface;
 class USolidTerrainMap;
+class USolidWorldChart;
 
 /**
  * Spawns / destroys runtime procedural terrain chunks around a focus actor (usually the player pawn).
@@ -44,6 +45,20 @@ public:
 		return ResolvedTerrainMaterial ? ResolvedTerrainMaterial.Get() : TerrainMaterial.Get();
 	}
 	USolidTerrainMap* GetTerrainMap() const { return TerrainMap; }
+
+	/**
+	 * Editor ground for the world chart. Every chunk of the centred world, and no
+	 * exploration fog, so the chart stays visible. Play still builds from WorldMap.txt.
+	 */
+	void BuildChartView(const USolidWorldChart* Chart);
+
+	/** Rebuild the chart ground, and only the chunks that contain these cells. */
+	void RebuildChartView(const USolidWorldChart* Chart, const TArray<FIntPoint>& Cells);
+
+	/** Destroy the chart chunks. */
+	void ClearChartView();
+
+	bool IsChartView() const { return bChartView; }
 	FSolidTerrainPoint GetTerrainPointAt(const FVector& WorldLocation) const;
 
 	/** Smoothed fog amount currently applied to height fog [0, 1]. */
@@ -240,6 +255,16 @@ protected:
 
 	UPROPERTY()
 	TMap<FIntPoint, TObjectPtr<ASolidTerrainChunk>> LoadedChunks;
+
+	/** True while the World chart mode owns this streamer. Tick and streaming leave it alone. */
+	bool bChartView = false;
+
+#if WITH_EDITOR
+	/** Landscapes hidden for the chart view. Restored when the mode exits. Not saved. */
+	TArray<TWeakObjectPtr<AActor>> ChartHiddenLandscapes;
+	void HideChartLandscapes();
+	void RestoreChartLandscapes();
+#endif
 
 	/** Cached lit grassland material so chunks do not each create their own. */
 	UPROPERTY(Transient)

@@ -12,7 +12,8 @@ void USolidTerrainMap::Build(
 	int32 InGridWidth,
 	int32 InGridHeight,
 	float InPointSpacing,
-	bool bForceRebuild)
+	bool bForceRebuild,
+	USolidWorldMap* InWorldMap)
 {
 	if (bIsBuilt && !bForceRebuild && Points.Num() == GridWidth * GridHeight)
 	{
@@ -29,11 +30,18 @@ void USolidTerrainMap::Build(
 		-0.5f * static_cast<float>(GridWidth - 1) * PointSpacing,
 		-0.5f * static_cast<float>(GridHeight - 1) * PointSpacing);
 
-	if (!WorldMap)
+	if (InWorldMap)
 	{
-		WorldMap = NewObject<USolidWorldMap>(this, TEXT("WorldMap"));
+		WorldMap = InWorldMap;
 	}
-	WorldMap->LoadDefault();
+	else
+	{
+		if (!WorldMap)
+		{
+			WorldMap = NewObject<USolidWorldMap>(this, TEXT("WorldMap"));
+		}
+		WorldMap->LoadDefault();
+	}
 
 	// Fully fogged until the player is placed. The Z cell is the spawn, not the fog center.
 	FogOriginXY = FVector2D::ZeroVector;

@@ -74,7 +74,11 @@ struct FSolidWorldLocation
  * Location 0 is the starting town.
  * A road end is a town name or a stronghold name.
  * Road lines are solved into routes when the file loads.
+ * A world chart holds the same cells, marks, and roads. LoadDefault still reads the text file.
  */
+class USolidWorldChart;
+struct FSolidWorldChartMark;
+
 UCLASS()
 class SOLIDCORE1_API USolidWorldMap : public UObject
 {
@@ -123,6 +127,13 @@ public:
 	bool LoadFromString(const FString& Text);
 	bool LoadFromFile(const FString& FilePath);
 
+	/**
+	 * Build this map from a world chart. Each mark's position becomes a cell once.
+	 * Biomes, marks, and solved roads match the text file that filled that chart.
+	 * LoadDefault still reads Content/WorldMap.txt.
+	 */
+	bool LoadFromChart(const USolidWorldChart* Chart);
+
 	bool IsLoaded() const { return bIsLoaded; }
 
 	/**
@@ -133,6 +144,12 @@ public:
 	 * The river marker is River for the whole cell. SampleBiome paints only the channel.
 	 */
 	ESolidBiome GetBiomeAtCell(int32 MapX, int32 MapY) const;
+
+	/**
+	 * Marker biome at a cell, before a named town, a stronghold shelf, or a lair mouth replaces it.
+	 * A ! is grassland. Swamp and road are not marker biomes.
+	 */
+	ESolidBiome GetMarkerBiomeAtCell(int32 MapX, int32 MapY) const;
 
 	/** Marker character at a cell, or 0 when the map is not loaded. Digits stay digits. */
 	TCHAR GetMarkerAtCell(int32 MapX, int32 MapY) const;
@@ -203,6 +220,13 @@ protected:
 	bool WorldXYToCell(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, int32& OutMapX, int32& OutMapY) const;
 	void BuildRoads(const TArray<SolidRoad::FDefinition>& Definitions);
 	bool CellsToWorldXY(const TArray<FIntPoint>& Cells, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
+	void ResetLoad();
+	/** Turn one chart mark into the ! description the map already reads. An unknown name is skipped. */
+	bool RememberChartMark(const FSolidWorldChartMark& Mark, FIntPoint Cell);
+	/** One location per town id. Two cells with the same name are one town. Iglin is the start. */
+	void CollectNamedTowns();
+	/** Give every biome a colour. A colour the text file already set stays. */
+	void AddDefaultBiomeColors();
 	static ESolidBiome MarkerToBiome(TCHAR Marker);
 	static FLinearColor ColorFromName(const FString& ColorName);
 	static bool IsGridMarker(TCHAR Marker);

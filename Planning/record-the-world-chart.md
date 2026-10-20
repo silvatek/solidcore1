@@ -1,6 +1,6 @@
 # Record the world chart
 
-Status: Ready
+Status: In Progress
 
 ## Story
 

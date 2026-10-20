@@ -4,8 +4,10 @@
 #include "Strongholds/Furnishings/SolidStrongholdGrid.h"
 #include "SolidTerrainTypes.h"
 #include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
+#include "SolidStronghold.generated.h"
 
 /** What the company base is. Dungeon is the first; Fortress and Tower come later. */
+UENUM()
 enum class ESolidStrongholdType : uint8
 {
 	Dungeon,
@@ -17,6 +19,7 @@ enum class ESolidStrongholdType : uint8
  * How grand the company base is.
  * Meagre is the start. Later upgrades move up this list.
  */
+UENUM()
 enum class ESolidStrongholdSize : uint8
 {
 	Meagre,

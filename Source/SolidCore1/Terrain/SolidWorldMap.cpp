@@ -3,6 +3,7 @@
 #include "SolidLair.h"
 #include "SolidRiver.h"
 #include "SolidTowns.h"
+#include "SolidWorldChart.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 
@@ -403,13 +404,7 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 		return false;
 	}
 
-	Markers.SetNum(MapWidth * MapHeight);
-	StartTownCells.Reset();
-	Locations.Reset();
-	Roads.Reset();
-	RoadSpans.Reset();
-	RoadSpansByCell.Reset();
-	bHasStartTown = false;
+	ResetLoad();
 
 	for (int32 Row = 0; Row < MapHeight; ++Row)
 	{
@@ -421,7 +416,6 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 		}
 	}
 
-	BiomeColors.Reset();
 	TArray<SolidRoad::FDefinition> RoadDefs;
 	TArray<FWorldMapBangRef> BangRefs;
 	for (const FString& RawLine : Lines)
@@ -450,8 +444,6 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 		}
 	}
 
-	BangMarks.Reset();
-	BangLocationIds.Init(INDEX_NONE, MapWidth * MapHeight);
 	for (const FWorldMapBangRef& Ref : BangRefs)
 	{
 		if (Ref.MapX == INDEX_NONE || Ref.MapY == INDEX_NONE || Ref.Kind == FWorldMapBangRef::EKind::Skip)
@@ -552,48 +544,8 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 		BangMarks.Add(Index, Mark);
 	}
 
-	for (int32 Row = 0; Row < MapHeight; ++Row)
-	{
-		for (int32 Col = 0; Col < MapWidth; ++Col)
-		{
-			const int32 Id = ResolveLocationId(Col, Row);
-			if (Id == INDEX_NONE)
-			{
-				continue;
-			}
-			FSolidWorldLocation& Loc = Locations.FindOrAdd(Id);
-			if (Loc.Id == INDEX_NONE)
-			{
-				Loc.Id = Id;
-				Loc.Biome = ESolidBiome::Town;
-			}
-			Loc.Cells.Add(FIntPoint(Col, Row));
-			if (Id == 0)
-			{
-				StartTownCells.Add(FIntPoint(Col, Row));
-			}
-		}
-	}
-	bHasStartTown = StartTownCells.Num() > 0;
-
-	for (TPair<int32, FSolidWorldLocation>& Pair : Locations)
-	{
-		Pair.Value.Name = SolidTowns::NameFor(Pair.Key);
-	}
-
-	// Ensure every biome used by markers has a color.
-	static const ESolidBiome AllBiomes[] = {
-		ESolidBiome::Grassland, ESolidBiome::Forest, ESolidBiome::Mountain, ESolidBiome::Town,
-		ESolidBiome::Desert, ESolidBiome::Swamp, ESolidBiome::Sea, ESolidBiome::River,
-		ESolidBiome::Road,
-	};
-	for (const ESolidBiome Biome : AllBiomes)
-	{
-		if (!BiomeColors.Contains(Biome))
-		{
-			BiomeColors.Add(Biome, DefaultColorForBiome(Biome));
-		}
-	}
+	CollectNamedTowns();
+	AddDefaultBiomeColors();
 
 	bIsLoaded = true;
 	for (SolidRoad::FDefinition& RoadDef : RoadDefs)
@@ -634,6 +586,247 @@ bool USolidWorldMap::LoadDefault(const bool bForceReload)
 
 	UE_LOG(LogSolid, Error, TEXT("WorldMap: failed to read Content/WorldMap.txt."));
 	return false;
+}
+
+void USolidWorldMap::ResetLoad()
+{
+	Markers.SetNum(MapWidth * MapHeight);
+	StartTownCells.Reset();
+	Locations.Reset();
+	Roads.Reset();
+	RoadSpans.Reset();
+	RoadSpansByCell.Reset();
+	bHasStartTown = false;
+	BangMarks.Reset();
+	BangLocationIds.Init(INDEX_NONE, MapWidth * MapHeight);
+	BiomeColors.Reset();
+	bIsLoaded = false;
+}
+
+void USolidWorldMap::CollectNamedTowns()
+{
+	for (int32 Row = 0; Row < MapHeight; ++Row)
+	{
+		for (int32 Col = 0; Col < MapWidth; ++Col)
+		{
+			const int32 Id = ResolveLocationId(Col, Row);
+			if (Id == INDEX_NONE)
+			{
+				continue;
+			}
+			FSolidWorldLocation& Loc = Locations.FindOrAdd(Id);
+			if (Loc.Id == INDEX_NONE)
+			{
+				Loc.Id = Id;
+				Loc.Biome = ESolidBiome::Town;
+			}
+			Loc.Cells.Add(FIntPoint(Col, Row));
+			if (Id == 0)
+			{
+				StartTownCells.Add(FIntPoint(Col, Row));
+			}
+		}
+	}
+	bHasStartTown = StartTownCells.Num() > 0;
+
+	for (TPair<int32, FSolidWorldLocation>& Pair : Locations)
+	{
+		Pair.Value.Name = SolidTowns::NameFor(Pair.Key);
+	}
+}
+
+void USolidWorldMap::AddDefaultBiomeColors()
+{
+	static const ESolidBiome AllBiomes[] = {
+		ESolidBiome::Grassland, ESolidBiome::Forest, ESolidBiome::Mountain, ESolidBiome::Town,
+		ESolidBiome::Desert, ESolidBiome::Swamp, ESolidBiome::Sea, ESolidBiome::River,
+		ESolidBiome::Road,
+	};
+	for (const ESolidBiome Biome : AllBiomes)
+	{
+		if (!BiomeColors.Contains(Biome))
+		{
+			BiomeColors.Add(Biome, DefaultColorForBiome(Biome));
+		}
+	}
+}
+
+namespace
+{
+	/** Swamp and road are not marker biomes, so a chart cell of either loads as grassland. */
+	TCHAR MarkerForChartBiome(const ESolidBiome Biome)
+	{
+		switch (Biome)
+		{
+		case ESolidBiome::Sea:
+			return USolidWorldMap::SeaMarker;
+		case ESolidBiome::Forest:
+			return USolidWorldMap::ForestMarker;
+		case ESolidBiome::Town:
+			return USolidWorldMap::TownMarker;
+		case ESolidBiome::Mountain:
+			return TEXT('M');
+		case ESolidBiome::Desert:
+			return USolidWorldMap::DesertMarker;
+		case ESolidBiome::River:
+			return USolidWorldMap::RiverMarker;
+		case ESolidBiome::Grassland:
+		case ESolidBiome::Swamp:
+		case ESolidBiome::Road:
+		default:
+			return USolidWorldMap::GrassMarker;
+		}
+	}
+}
+
+bool USolidWorldMap::RememberChartMark(const FSolidWorldChartMark& Mark, const FIntPoint Cell)
+{
+	if (Cell.X < 0 || Cell.Y < 0 || Cell.X >= MapWidth || Cell.Y >= MapHeight)
+	{
+		return false;
+	}
+	const int32 Index = Cell.Y * MapWidth + Cell.X;
+	if (BangMarks.Contains(Index))
+	{
+		return false;
+	}
+
+	FSolidWorldBang Bang;
+	Bang.Cell = Cell;
+	switch (Mark.Kind)
+	{
+	case ESolidWorldChartMarkKind::Town:
+	{
+		const SolidTowns::FTownInfo* Town = SolidTowns::FindByName(Mark.Name);
+		if (!Town)
+		{
+			return false;
+		}
+		Bang.Kind = ESolidWorldBang::Town;
+		Bang.LocationId = Town->Id;
+		Bang.Name = Town->Name;
+		BangLocationIds[Index] = Town->Id;
+		break;
+	}
+	case ESolidWorldChartMarkKind::Stronghold:
+	{
+		ESolidStrongholdType HoldType = Mark.StrongholdType;
+		ESolidStrongholdSize HoldSize = Mark.StrongholdSize;
+		SolidStronghold::FromToken(Mark.Name, HoldType, HoldSize);
+		Bang.Kind = ESolidWorldBang::Stronghold;
+		Bang.StrongholdType = HoldType;
+		Bang.StrongholdSize = HoldSize;
+		Bang.Name = SolidStronghold::Label(FSolidStronghold(HoldType, HoldSize));
+		break;
+	}
+	case ESolidWorldChartMarkKind::StrongholdSite:
+	{
+		ESolidStrongholdSize Size = Mark.StrongholdSize;
+		SolidStronghold::SizeFromToken(Mark.Name, Size);
+		Bang.Kind = ESolidWorldBang::StrongholdSite;
+		Bang.StrongholdSize = Size;
+		Bang.Name = SolidStronghold::SizeName(Size);
+		break;
+	}
+	case ESolidWorldChartMarkKind::LairEntrance:
+	case ESolidWorldChartMarkKind::LairExit:
+	{
+		const SolidLair::FDefinition* Lair = SolidLair::FindByName(Mark.Name);
+		if (!Lair)
+		{
+			return false;
+		}
+		Bang.Kind = Mark.Kind == ESolidWorldChartMarkKind::LairEntrance
+			? ESolidWorldBang::LairEntrance
+			: ESolidWorldBang::LairExit;
+		Bang.Name = Lair->Name;
+		Bang.LairId = Lair->Id;
+		break;
+	}
+	default:
+		return false;
+	}
+
+	// A town id and the text file both use !. The chart stored that cell as grassland.
+	Markers[Index] = static_cast<uint8>(LocationMarker);
+	BangMarks.Add(Index, Bang);
+	return true;
+}
+
+bool USolidWorldMap::LoadFromChart(const USolidWorldChart* Chart)
+{
+	if (!Chart || Chart->Cells.Num() != MapWidth * MapHeight)
+	{
+		UE_LOG(LogSolid, Error, TEXT("WorldChart: the chart does not cover the %dx%d map."), MapWidth, MapHeight);
+		return false;
+	}
+
+	ResetLoad();
+	for (int32 Index = 0; Index < Chart->Cells.Num(); ++Index)
+	{
+		Markers[Index] = static_cast<uint8>(MarkerForChartBiome(Chart->Cells[Index]));
+	}
+
+	// A mark position becomes a cell once. That conversion needs a loaded map.
+	bIsLoaded = true;
+
+	FVector2D WorldMin = FVector2D::ZeroVector;
+	FVector2D WorldMax = FVector2D::ZeroVector;
+	USolidWorldChart::DefaultWorldBounds(WorldMin, WorldMax);
+	for (const FSolidWorldChartMark& Mark : Chart->Marks)
+	{
+		FIntPoint Cell = FIntPoint::ZeroValue;
+		if (!CellAtWorld(Mark.PositionCm.X, Mark.PositionCm.Y, WorldMin, WorldMax, Cell))
+		{
+			continue;
+		}
+		RememberChartMark(Mark, Cell);
+	}
+
+	CollectNamedTowns();
+	AddDefaultBiomeColors();
+
+	TArray<SolidRoad::FDefinition> RoadDefs;
+	for (const FSolidWorldChartRoad& Road : Chart->Roads)
+	{
+		const FString Line = FString::Printf(
+			TEXT("Road: %s -> %s, %s"),
+			*Road.FromName,
+			*Road.ToName,
+			USolidWorldChart::RoadTypeName(Road.Type));
+		SolidRoad::FDefinition RoadDef;
+		if (SolidRoad::Parse(Line, RoadDef))
+		{
+			RoadDefs.Add(RoadDef);
+		}
+		else
+		{
+			UE_LOG(LogSolid, Warning, TEXT("WorldChart: ignored road %s -> %s."), *Road.FromName, *Road.ToName);
+		}
+	}
+	for (SolidRoad::FDefinition& RoadDef : RoadDefs)
+	{
+		LocateStrongholdEnd(BangMarks, RoadDef.From);
+		LocateStrongholdEnd(BangMarks, RoadDef.To);
+	}
+
+	bIsLoaded = true;
+	BuildRoads(RoadDefs);
+	UE_LOG(LogSolid, Warning,
+		TEXT("WorldChart loaded: %dx%d startTownCells=%d locations=%d roads=%d"),
+		MapWidth, MapHeight, StartTownCells.Num(), Locations.Num(), Roads.Num());
+	return true;
+}
+
+ESolidBiome USolidWorldMap::GetMarkerBiomeAtCell(const int32 MapX, const int32 MapY) const
+{
+	if (!bIsLoaded || Markers.Num() != MapWidth * MapHeight)
+	{
+		return ESolidBiome::Grassland;
+	}
+	const int32 X = FMath::Clamp(MapX, 0, MapWidth - 1);
+	const int32 Y = FMath::Clamp(MapY, 0, MapHeight - 1);
+	return MarkerToBiome(static_cast<TCHAR>(Markers[Y * MapWidth + X]));
 }
 
 ESolidBiome USolidWorldMap::GetBiomeAtCell(int32 MapX, int32 MapY) const

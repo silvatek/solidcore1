@@ -74,7 +74,7 @@ struct FSolidWorldLocation
  * Location 0 is the starting town.
  * A road end is a town name or a stronghold name.
  * Road lines are solved into routes when the file loads.
- * A world chart holds the same cells, marks, and roads. LoadDefault still reads the text file.
+ * A world chart holds the same cells, marks, and roads. LoadDefault reads /Game/World/WorldChart.
  */
 class USolidWorldChart;
 struct FSolidWorldChartMark;
@@ -121,7 +121,7 @@ public:
 	static constexpr TCHAR XMarker = TEXT('X');
 	static constexpr TCHAR YMarker = TEXT('Y');
 
-	/** Load Content/WorldMap.txt. Idempotent when already loaded. */
+	/** Load /Game/World/WorldChart. A missing asset fails. Idempotent when already loaded. */
 	bool LoadDefault(bool bForceReload = false);
 
 	bool LoadFromString(const FString& Text);
@@ -130,7 +130,7 @@ public:
 	/**
 	 * Build this map from a world chart. Each mark's position becomes a cell once.
 	 * Biomes, marks, and solved roads match the text file that filled that chart.
-	 * LoadDefault still reads Content/WorldMap.txt.
+	 * A custom note is not a mark on this map. LoadDefault reads the shipped chart.
 	 */
 	bool LoadFromChart(const USolidWorldChart* Chart);
 

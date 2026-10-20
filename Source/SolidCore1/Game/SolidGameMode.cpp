@@ -41,6 +41,7 @@
 #include "Components/CapsuleComponent.h"
 #include "Engine/StaticMeshActor.h"
 #include "Engine/World.h"
+#include "UObject/ConstructorHelpers.h"
 #include "EngineUtils.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/Pawn.h"
@@ -123,6 +124,14 @@ static_assert(
 
 ASolidGameMode::ASolidGameMode()
 {
+	// Full object path. The cooker follows this finder because the pointer is stored.
+	static ConstructorHelpers::FObjectFinder<USolidWorldChart> ChartAsset(
+		TEXT("/Game/World/WorldChart.WorldChart"));
+	if (ChartAsset.Succeeded())
+	{
+		WorldChart = ChartAsset.Object;
+	}
+
 	PlayerControllerClass = ASolidPlayerController::StaticClass();
 	HUDClass = ASolidHUD::StaticClass();
 	bAutoSpawnTerrainStreamer = true;

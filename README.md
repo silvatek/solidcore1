@@ -38,7 +38,6 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Drop the Assassin and Blacksmith packs](Planning/remove-assassin-and-blacksmith.md)
 - [Generate the character mesh outside the editor](Planning/character-mesh-outside-the-editor.md)
 - [Company lists use TArray](Planning/company-lists-as-tarray.md)
-- [Load the world from the chart](Planning/load-the-world-from-the-chart.md)
 - [Remove WorldMap.txt](Planning/remove-world-map-txt.md)
 
 ## Done
@@ -92,6 +91,7 @@ Shipped stories live in [`Planning/Done`](Planning/Done).
 - [Tower stronghold by size](Planning/Done/tower-stronghold-by-size.md)
 - [Record the world chart](Planning/Done/record-the-world-chart.md)
 - [Paint the world chart](Planning/Done/paint-the-world-chart.md)
+- [Load the world from the chart](Planning/Done/load-the-world-from-the-chart.md)
 
 ## Controls (runtime defaults)
 

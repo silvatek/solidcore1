@@ -4,6 +4,7 @@
 #include "SolidRiver.h"
 #include "SolidTowns.h"
 #include "SolidWorldChart.h"
+#include "Game/SolidGameMode.h"
 #include "Misc/FileHelper.h"
 #include "Misc/Paths.h"
 
@@ -578,14 +579,31 @@ bool USolidWorldMap::LoadDefault(const bool bForceReload)
 		return true;
 	}
 
-	const FString ContentPath = FPaths::ProjectContentDir() / TEXT("WorldMap.txt");
-	if (FPaths::FileExists(ContentPath) && LoadFromFile(ContentPath))
+	const USolidWorldChart* Chart = GetDefault<ASolidGameMode>()->WorldChart;
+	if (!Chart)
 	{
-		return true;
+		Chart = LoadObject<USolidWorldChart>(nullptr, USolidWorldChart::ShippedPath());
+	}
+	if (!Chart || !LoadFromChart(Chart))
+	{
+		UE_LOG(LogSolid, Error, TEXT("WorldChart: failed to load /Game/World/WorldChart."));
+		return false;
 	}
 
-	UE_LOG(LogSolid, Error, TEXT("WorldMap: failed to read Content/WorldMap.txt."));
-	return false;
+	// The chart stores cells, marks, and roads. The text file still names the tints.
+	// River is "blue" there, which is the sea tint, not the default river colour.
+	const FString ContentPath = FPaths::ProjectContentDir() / TEXT("WorldMap.txt");
+	FString Text;
+	if (FFileHelper::LoadFileToString(Text, *ContentPath))
+	{
+		TArray<FString> Lines;
+		Text.ParseIntoArrayLines(Lines, false);
+		for (const FString& Line : Lines)
+		{
+			ParseKeyLine(Line);
+		}
+	}
+	return true;
 }
 
 void USolidWorldMap::ResetLoad()

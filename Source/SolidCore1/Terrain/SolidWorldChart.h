@@ -100,8 +100,8 @@ struct FSolidWorldChartRead
 
 /**
  * The shipped world as a data asset. Cells hold marker biomes. Marks and roads
- * hold the same facts as Content/WorldMap.txt. The game still builds the world
- * from that text file. The editor saves the import at /Game/World/WorldChart.
+ * hold the same facts as Content/WorldMap.txt. The game builds the world from
+ * /Game/World/WorldChart. The editor saves the import at that path.
  */
 UCLASS(BlueprintType)
 class SOLIDCORE1_API USolidWorldChart : public UDataAsset

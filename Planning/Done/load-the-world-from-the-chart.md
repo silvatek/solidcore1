@@ -1,10 +1,10 @@
 # Load the world from the chart
 
-Status: Ready
+Status: Done
 
 ## Story
 
-This story depends on [Record the world chart](Done/record-the-world-chart.md), which is Done. That story ships first. The game then builds the world from `/Game/World/WorldChart`. Terrain, towns, roads, the cave, and the Iglin tunnels match the text file. The text file stays so a test can compare the two. [Paint the world chart](Done/paint-the-world-chart.md) is Done. [Remove WorldMap.txt](remove-world-map-txt.md) is Ready and depends on this story. This story ships first.
+This story depends on [Record the world chart](record-the-world-chart.md), which is Done. That story ships first. The game then builds the world from `/Game/World/WorldChart`. Terrain, towns, roads, the cave, and the Iglin tunnels match the text file. The text file stays so a test can compare the two. [Paint the world chart](paint-the-world-chart.md) is Done. [Remove WorldMap.txt](../remove-world-map-txt.md) is Ready and depends on this story. This story ships first.
 
 ## Acceptance
 
@@ -17,6 +17,6 @@ This story depends on [Record the world chart](Done/record-the-world-chart.md), 
 
 ## Implementation notes
 
-- The chart has to be a cook reference. A bare `LoadObject` of a path string is not one. [Package the game](package-the-game.md) still says the cooked game reads `Content/WorldMap.txt` and stages that file as UFS. While that story is open, update it so the cook follows the chart, and drop that UFS note. If that story has already shipped, the cook change lands here.
+- The chart has to be a cook reference. A bare `LoadObject` of a path string is not one. [Package the game](../package-the-game.md) follows `/Game/World/WorldChart` and does not stage the text file as UFS.
 - The text file stays. The parity test reads it. Deleting it is [Remove WorldMap.txt](remove-world-map-txt.md).
 - Town facts stay in `SolidTowns` and `SolidEvents`, keyed by the id the name already has. Iglin stays location 0.

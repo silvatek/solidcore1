@@ -4,6 +4,7 @@
 #include "SolidGameState.h"
 #include "SolidStronghold.h"
 #include "GameFramework/GameModeBase.h"
+#include "Terrain/SolidWorldChart.h"
 #include "Vegetation/SolidForage.h"
 #include "Squad/SolidCompany.h"
 #include "SolidSight.h"
@@ -32,6 +33,13 @@ class SOLIDCORE1_API ASolidGameMode : public AGameModeBase
 
 public:
 	ASolidGameMode();
+
+	/**
+	 * Cook reference for /Game/World/WorldChart.
+	 * A path-string LoadObject is not one. LoadDefault reads this asset.
+	 */
+	UPROPERTY()
+	TObjectPtr<USolidWorldChart> WorldChart;
 
 	/** When true, spawns a terrain streamer at BeginPlay if the level does not already have one. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain")

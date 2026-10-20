@@ -389,4 +389,63 @@ bool FSolidWorldChartRulesTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidShippedWorldChartTest,
+	"SolidCore1.WorldMap.ShippedChartMatchesText",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidShippedWorldChartTest::RunTest(const FString& Parameters)
+{
+	const FString Path = FPaths::ProjectContentDir() / TEXT("WorldMap.txt");
+	FString Text;
+	if (!TestTrue(TEXT("WorldMap.txt reads"), FFileHelper::LoadFileToString(Text, *Path)))
+	{
+		return false;
+	}
+
+	USolidWorldMap* TextMap = NewObject<USolidWorldMap>();
+	if (!TestTrue(TEXT("text loads"), TextMap->LoadFromString(Text)))
+	{
+		return false;
+	}
+
+	USolidWorldChart* Chart = LoadObject<USolidWorldChart>(nullptr, USolidWorldChart::ShippedPath());
+	if (!TestNotNull(TEXT("/Game/World/WorldChart"), Chart))
+	{
+		return false;
+	}
+
+	USolidWorldMap* ChartMap = NewObject<USolidWorldMap>();
+	USolidWorldMap* DefaultMap = NewObject<USolidWorldMap>();
+	if (!TestTrue(TEXT("shipped chart loads"), ChartMap->LoadFromChart(Chart))
+		|| !TestTrue(TEXT("LoadDefault loads the chart"), DefaultMap->LoadDefault()))
+	{
+		return false;
+	}
+
+	TestTrue(TEXT("the shipped chart matches the text file"), MapsMatch(*this, *TextMap, *ChartMap));
+	TestTrue(TEXT("LoadDefault matches the text file"), MapsMatch(*this, *TextMap, *DefaultMap));
+
+	const FIntPoint Cave = SolidStronghold::StartingCell();
+	FSolidWorldBang CaveBang;
+	TestTrue(TEXT("the cave is the Meagre Dungeon mark"), DefaultMap->FindBang(Cave.X, Cave.Y, CaveBang));
+	TestEqual(
+		TEXT("the cave stays Meagre"),
+		static_cast<uint8>(CaveBang.StrongholdSize),
+		static_cast<uint8>(ESolidStrongholdSize::Meagre));
+	TestEqual(
+		TEXT("the cave stays a Dungeon"),
+		static_cast<uint8>(CaveBang.StrongholdType),
+		static_cast<uint8>(ESolidStrongholdType::Dungeon));
+	TestEqual(TEXT("the cave row stays 9"), CaveBang.Cell.Y + 1, SolidStronghold::StartingRow);
+	TestEqual(TEXT("the cave column stays 17"), CaveBang.Cell.X + 1, SolidStronghold::StartingColumn);
+
+	FSolidWorldLocation Iglin;
+	TestTrue(TEXT("Iglin stays location 0"), DefaultMap->FindLocation(0, Iglin) && Iglin.Id == 0);
+	FSolidWorldLocation Gate;
+	TestTrue(TEXT("Dragongate stays one town"), DefaultMap->FindLocation(SolidTowns::Dragongate, Gate));
+	TestEqual(TEXT("Dragongate stays on two cells"), Gate.Cells.Num(), 2);
+	return true;
+}
+
 #endif

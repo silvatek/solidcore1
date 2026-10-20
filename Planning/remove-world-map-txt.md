@@ -4,7 +4,7 @@ Status: Ready
 
 ## Story
 
-This story depends on [Load the world from the chart](load-the-world-from-the-chart.md), which is Ready, and [Paint the world chart](Done/paint-the-world-chart.md), which is Done. Those stories ship first. The developer then edits the world in the World chart mode, and the game loads that chart. `Content/WorldMap.txt` is gone.
+This story depends on [Load the world from the chart](Done/load-the-world-from-the-chart.md), which is Done, and [Paint the world chart](Done/paint-the-world-chart.md), which is Done. Those stories ship first. The developer then edits the world in the World chart mode, and the game loads that chart. `Content/WorldMap.txt` is gone.
 
 ## Acceptance
 

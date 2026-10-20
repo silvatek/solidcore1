@@ -14,6 +14,16 @@ A value that only carries data stays a struct. `FSolidStrongholdView` is a pitch
 
 Code that already uses a namespace and a struct for a game concept stays as it is until a story changes that concept. The story that adds behavior moves the concept onto a class.
 
+## Encapsulation and cohesion
+
+Code strives to maximise encapsulation and cohesion. Specialisation and generalisation through C++ classes is the usual way to do that.
+
+Encapsulation keeps a type's data and the operations on that data together. Callers use those operations. The type hides the logic that implements them, and it hides the way the data is stored, so a change to that logic or that storage stays inside the type.
+
+Cohesion means the parts of a type all serve the one thing that type is. A stronghold type that holds the stronghold's size, its exit, and the answers about that stronghold is cohesive. A type that also formats the journal and samples the terrain is not.
+
+A general type is the shared concept. A specialised type is one kind of it, and it adds or replaces what is particular to that kind. `FSolidStronghold` is the general company base. `FSolidDungeon` and `FSolidTower` are specialisations of it.
+
 ## Plain C++ unless the engine owns it
 
 A game concept the engine does not spawn, tick, or save is a plain C++ class, as `FSolidDungeon` is. It is a `UObject` or a Blueprint when the engine or content has to own it, as `ASolidCharacter` and `USolidCompany` do.

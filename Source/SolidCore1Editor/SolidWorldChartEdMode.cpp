@@ -129,6 +129,27 @@ namespace
 		OutWestSouth = FVector2D(East - CellW, North - CellH);
 		OutEastNorth = FVector2D(East, North);
 	}
+
+	void DrawCellOutline(
+		FPrimitiveDrawInterface* PDI,
+		const USolidTerrainMap& Terrain,
+		const FIntPoint& Cell,
+		const FLinearColor& Color,
+		float Thickness)
+	{
+		FVector2D WestSouth = FVector2D::ZeroVector;
+		FVector2D EastNorth = FVector2D::ZeroVector;
+		CellCorners(Cell, Terrain.GetWorldMinXY(), Terrain.GetWorldMaxXY(), WestSouth, EastNorth);
+		const float Lift = 180.f;
+		const FVector A(WestSouth.X, WestSouth.Y, Terrain.SampleHeight(WestSouth.X, WestSouth.Y) + Lift);
+		const FVector B(EastNorth.X, WestSouth.Y, Terrain.SampleHeight(EastNorth.X, WestSouth.Y) + Lift);
+		const FVector C(EastNorth.X, EastNorth.Y, Terrain.SampleHeight(EastNorth.X, EastNorth.Y) + Lift);
+		const FVector D(WestSouth.X, EastNorth.Y, Terrain.SampleHeight(WestSouth.X, EastNorth.Y) + Lift);
+		PDI->DrawLine(A, B, Color, SDPG_Foreground, Thickness);
+		PDI->DrawLine(B, C, Color, SDPG_Foreground, Thickness);
+		PDI->DrawLine(C, D, Color, SDPG_Foreground, Thickness);
+		PDI->DrawLine(D, A, Color, SDPG_Foreground, Thickness);
+	}
 }
 
 class FSolidWorldChartToolkit : public FModeToolkit
@@ -236,16 +257,101 @@ public:
 				]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f)
 				[
-					SNew(STextBlock).Text(NSLOCTEXT("SolidWorldChart", "Paint", "Paint"))
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 4.f, 0.f)
+					[
+						SNew(SButton)
+						.Text(NSLOCTEXT("SolidWorldChart", "ViewTool", "View"))
+						.ButtonColorAndOpacity_Lambda([this]()
+						{
+							return Mode && Mode->Tool == ESolidWorldChartTool::View
+								? FLinearColor(0.25f, 0.55f, 0.25f)
+								: FLinearColor::White;
+						})
+						.OnClicked_Lambda([this]()
+						{
+							if (Mode)
+							{
+								Mode->SetTool(ESolidWorldChartTool::View);
+							}
+							return FReply::Handled();
+						})
+					]
+					+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 4.f, 0.f)
+					[
+						SNew(SButton)
+						.Text(NSLOCTEXT("SolidWorldChart", "PaintTool", "Paint"))
+						.ButtonColorAndOpacity_Lambda([this]()
+						{
+							return Mode && Mode->Tool == ESolidWorldChartTool::Paint
+								? FLinearColor(0.25f, 0.55f, 0.25f)
+								: FLinearColor::White;
+						})
+						.OnClicked_Lambda([this]()
+						{
+							if (Mode)
+							{
+								Mode->SetTool(ESolidWorldChartTool::Paint);
+							}
+							return FReply::Handled();
+						})
+					]
+					+ SHorizontalBox::Slot().FillWidth(1.f)
+					[
+						SNew(SButton)
+						.Text(NSLOCTEXT("SolidWorldChart", "PlaceTool", "Place"))
+						.ButtonColorAndOpacity_Lambda([this]()
+						{
+							return Mode && Mode->Tool == ESolidWorldChartTool::Place
+								? FLinearColor(0.25f, 0.55f, 0.25f)
+								: FLinearColor::White;
+						})
+						.OnClicked_Lambda([this]()
+						{
+							if (Mode)
+							{
+								Mode->SetTool(ESolidWorldChartTool::Place);
+							}
+							return FReply::Handled();
+						})
+					]
 				]
-				+ SVerticalBox::Slot().AutoHeight()
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f)
 				[
-					BrushRow
+					SNew(SBox)
+					.Visibility_Lambda([this]()
+					{
+						return Mode && Mode->Tool == ESolidWorldChartTool::Paint
+							? EVisibility::Visible
+							: EVisibility::Collapsed;
+					})
+					[
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
+						[
+							SNew(STextBlock).Text(NSLOCTEXT("SolidWorldChart", "Paint", "Paint"))
+						]
+						+ SVerticalBox::Slot().AutoHeight()
+						[
+							BrushRow
+						]
+					]
 				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 2.f)
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f)
 				[
-					SNew(STextBlock).Text(NSLOCTEXT("SolidWorldChart", "Mark", "Mark"))
-				]
+					SNew(SBox)
+					.Visibility_Lambda([this]()
+					{
+						return Mode && Mode->Tool == ESolidWorldChartTool::Place
+							? EVisibility::Visible
+							: EVisibility::Collapsed;
+					})
+					[
+						SNew(SVerticalBox)
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 0.f, 0.f, 2.f)
+						[
+							SNew(STextBlock).Text(NSLOCTEXT("SolidWorldChart", "Mark", "Mark"))
+						]
 				+ SVerticalBox::Slot().AutoHeight()
 				[
 					MakeCombo(MarkKinds, [this]()
@@ -380,34 +486,15 @@ public:
 						})
 					]
 				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f)
-				[
-					SNew(SHorizontalBox)
-					+ SHorizontalBox::Slot().FillWidth(1.f).Padding(0.f, 0.f, 4.f, 0.f)
-					[
-						SNew(SButton)
-						.Text(NSLOCTEXT("SolidWorldChart", "Place", "Place"))
-						.OnClicked_Lambda([this]()
-						{
-							if (Mode)
-							{
-								Mode->PlaceCurrentMark();
-							}
-							return FReply::Handled();
-						})
-					]
-					+ SHorizontalBox::Slot().FillWidth(1.f)
-					[
-						SNew(SButton)
-						.Text(NSLOCTEXT("SolidWorldChart", "Delete", "Delete"))
-						.OnClicked_Lambda([this]()
-						{
-							if (Mode)
-							{
-								Mode->DeleteCurrentMark();
-							}
-							return FReply::Handled();
-						})
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f)
+						[
+							SNew(STextBlock)
+							.AutoWrapText(true)
+							.Text(NSLOCTEXT(
+								"SolidWorldChart",
+								"PlaceHint",
+								"Left click places this mark. Delete removes the mark under the cursor."))
+						]
 					]
 				]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 2.f)
@@ -600,6 +687,7 @@ void FSolidWorldChartEdMode::Enter()
 	RefreshDisagreement();
 	RefreshRoadMessage();
 	Hover = TEXT("Hover a cell.");
+	ToolMessage = TEXT("View. Left click does not edit.");
 
 	ChartToolkit = MakeShared<FSolidWorldChartToolkit>(this);
 	ChartToolkit->BuildPanel();
@@ -639,7 +727,20 @@ void FSolidWorldChartEdMode::Render(const FSceneView* View, FViewport* Viewport,
 		FaceSigns(View->ViewLocation);
 	}
 	const USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
-	if (!PDI || !Terrain || !Terrain->IsBuilt() || !bStroke)
+	if (!PDI || !Terrain || !Terrain->IsBuilt())
+	{
+		return;
+	}
+	if (bHasCell && !bStroke)
+	{
+		const FLinearColor Color = Tool == ESolidWorldChartTool::Place
+			? MarkColor(MarkKind)
+			: Tool == ESolidWorldChartTool::Paint
+				? USolidWorldMap::DefaultColorForBiome(BrushBiome)
+				: FLinearColor::White;
+		DrawCellOutline(PDI, *Terrain, CurrentCell, Color, Tool == ESolidWorldChartTool::Place ? 5.f : 3.f);
+	}
+	if (!bStroke)
 	{
 		return;
 	}
@@ -675,19 +776,40 @@ bool FSolidWorldChartEdMode::InputKey(
 		UndoChart();
 		return true;
 	}
-	// Alt copies the biome on hover and orbits the camera. It does not paint.
-	if (Key == EKeys::LeftMouseButton && ViewportClient && Viewport && !ViewportClient->IsAltPressed())
+	if (Key == EKeys::Delete && Event == IE_Pressed && Tool == ESolidWorldChartTool::Place)
 	{
-		if (Event == IE_Pressed)
+		DeleteCurrentMark();
+		return true;
+	}
+	// Alt orbits the camera. In Paint it also copies the biome under the cursor.
+	if (Key != EKeys::LeftMouseButton || !ViewportClient || !Viewport || ViewportClient->IsAltPressed())
+	{
+		return false;
+	}
+	if (Tool == ESolidWorldChartTool::View)
+	{
+		return false;
+	}
+	if (Event == IE_Pressed)
+	{
+		if (Tool == ESolidWorldChartTool::Place)
+		{
+			PlaceUnderCursor(ViewportClient, Viewport);
+		}
+		else
 		{
 			BeginStroke(ViewportClient, Viewport);
-			return true;
 		}
-		if (Event == IE_Released)
+		return true;
+	}
+	if (Event == IE_Released)
+	{
+		bPlacedClick = false;
+		if (Tool == ESolidWorldChartTool::Paint)
 		{
 			EndStroke();
-			return true;
 		}
+		return true;
 	}
 	return false;
 }
@@ -728,12 +850,22 @@ bool FSolidWorldChartEdMode::StartTracking(FEditorViewportClient* ViewportClient
 	{
 		return false;
 	}
+	if (Tool == ESolidWorldChartTool::Place)
+	{
+		PlaceUnderCursor(ViewportClient, Viewport);
+		return true;
+	}
+	if (Tool != ESolidWorldChartTool::Paint)
+	{
+		return false;
+	}
 	BeginStroke(ViewportClient, Viewport);
 	return bStroke;
 }
 
 bool FSolidWorldChartEdMode::EndTracking(FEditorViewportClient* ViewportClient, FViewport* Viewport)
 {
+	bPlacedClick = false;
 	if (!bStroke)
 	{
 		return false;
@@ -759,6 +891,31 @@ void FSolidWorldChartEdMode::AddReferencedObjects(FReferenceCollector& Collector
 	Collector.AddReferencedObjects(Signs);
 }
 
+void FSolidWorldChartEdMode::SetTool(const ESolidWorldChartTool InTool)
+{
+	if (bStroke)
+	{
+		bStroke = false;
+		StrokeCells.Reset();
+	}
+	bPlacedClick = false;
+	Tool = InTool;
+	switch (Tool)
+	{
+	case ESolidWorldChartTool::Paint:
+		Note(TEXT("Paint. Left click paints. Shift is a rectangle. Alt copies the biome."));
+		break;
+	case ESolidWorldChartTool::Place:
+		Note(TEXT("Place. Left click puts the mark on that cell. Delete removes the mark under the cursor."));
+		break;
+	case ESolidWorldChartTool::View:
+	default:
+		Note(TEXT("View. Left click does not edit."));
+		break;
+	}
+	RefreshPanel();
+}
+
 void FSolidWorldChartEdMode::SetBrush(const ESolidBiome Biome)
 {
 	BrushBiome = Biome;
@@ -780,7 +937,7 @@ void FSolidWorldChartEdMode::PlaceCurrentMark()
 	}
 	if (!bHasCell)
 	{
-		Note(TEXT("Hover a cell, then place the mark."));
+		Note(TEXT("Click a cell on the map."));
 		return;
 	}
 
@@ -842,7 +999,6 @@ void FSolidWorldChartEdMode::PlaceCurrentMark()
 	RebuildOverlay();
 	RebuildSigns();
 	RefreshDisagreement();
-	Hover = DescribeCell(CurrentCell);
 	RefreshPanel();
 }
 
@@ -850,7 +1006,7 @@ void FSolidWorldChartEdMode::DeleteCurrentMark()
 {
 	if (!Chart || !bHasCell)
 	{
-		Note(TEXT("Hover a mark, then delete it."));
+		Note(TEXT("Hover a mark, then press Delete."));
 		return;
 	}
 	FString Error;
@@ -1020,7 +1176,7 @@ void FSolidWorldChartEdMode::HoverAt(
 	}
 	bHasCell = true;
 	CurrentCell = Cell;
-	if (ViewportClient && ViewportClient->IsAltPressed())
+	if (Tool == ESolidWorldChartTool::Paint && ViewportClient && ViewportClient->IsAltPressed())
 	{
 		SampleBrush(Cell);
 	}
@@ -1032,9 +1188,29 @@ void FSolidWorldChartEdMode::HoverAt(
 	}
 }
 
+void FSolidWorldChartEdMode::PlaceUnderCursor(FEditorViewportClient* ViewportClient, FViewport* Viewport)
+{
+	if (bPlacedClick || !ViewportClient || !Viewport)
+	{
+		return;
+	}
+	bPlacedClick = true;
+	FIntPoint Cell = FIntPoint::ZeroValue;
+	if (!CursorCell(ViewportClient, Viewport, Viewport->GetMouseX(), Viewport->GetMouseY(), Cell))
+	{
+		Note(TEXT("Click a cell on the map."));
+		RefreshPanel();
+		return;
+	}
+	bHasCell = true;
+	CurrentCell = Cell;
+	Hover = DescribeCell(Cell);
+	PlaceCurrentMark();
+}
+
 void FSolidWorldChartEdMode::BeginStroke(FEditorViewportClient* ViewportClient, FViewport* Viewport)
 {
-	if (bStroke || !ViewportClient || !Viewport)
+	if (Tool != ESolidWorldChartTool::Paint || bStroke || !ViewportClient || !Viewport)
 	{
 		return;
 	}

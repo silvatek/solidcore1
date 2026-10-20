@@ -10,6 +10,17 @@ class FSolidWorldChartToolkit;
 class SWidget;
 class ULineBatchComponent;
 
+/** What a left click does in the world chart. */
+enum class ESolidWorldChartTool : uint8
+{
+	/** Left click does not edit. */
+	View,
+	/** Left click paints the brush biome. Shift drags a rectangle. */
+	Paint,
+	/** Left click places the current mark on that cell. */
+	Place,
+};
+
 /**
  * World chart mode. Paint, marks, and roads edit /Game/World/WorldChart.
  * The ground is the existing terrain build, fed by that chart.
@@ -39,6 +50,7 @@ public:
 	virtual void AddReferencedObjects(FReferenceCollector& Collector) override;
 	virtual FString GetReferencerName() const override { return TEXT("FSolidWorldChartEdMode"); }
 
+	ESolidWorldChartTool Tool = ESolidWorldChartTool::View;
 	ESolidBiome BrushBiome = ESolidBiome::Grassland;
 	ESolidWorldChartMarkKind MarkKind = ESolidWorldChartMarkKind::Town;
 	int32 TownIndex = 0;
@@ -50,6 +62,7 @@ public:
 	FString RoadFrom;
 	FString RoadTo;
 
+	void SetTool(ESolidWorldChartTool InTool);
 	void SetBrush(ESolidBiome Biome);
 	void RoadNamesChanged();
 	void PlaceCurrentMark();
@@ -78,6 +91,8 @@ private:
 
 	bool bStroke = false;
 	bool bRectangle = false;
+	/** True after this left click has already placed a mark. */
+	bool bPlacedClick = false;
 	FIntPoint Anchor = FIntPoint::ZeroValue;
 	FIntPoint CurrentCell = FIntPoint::ZeroValue;
 	bool bHasCell = false;
@@ -92,6 +107,7 @@ private:
 	bool IsOpenWorld(const UWorld* World) const;
 	bool CursorCell(FEditorViewportClient* ViewportClient, FViewport* Viewport, int32 X, int32 Y, FIntPoint& OutCell) const;
 	void HoverAt(FEditorViewportClient* ViewportClient, FViewport* Viewport, int32 X, int32 Y);
+	void PlaceUnderCursor(FEditorViewportClient* ViewportClient, FViewport* Viewport);
 	void BeginStroke(FEditorViewportClient* ViewportClient, FViewport* Viewport);
 	void ExtendStroke(FEditorViewportClient* ViewportClient, FViewport* Viewport, int32 X, int32 Y);
 	void EndStroke();

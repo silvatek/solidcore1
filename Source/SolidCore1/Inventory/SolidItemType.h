@@ -115,4 +115,22 @@ namespace SolidItemType
 		}
 		return FString::Printf(TEXT("%s %d"), Name, Count);
 	}
+
+	/** Inferior's hidden power at the middle of the roll. Each grade multiplies this by PowerMedianRatio. */
+	inline constexpr double PowerMedian = 12.0;
+	/** How many times higher the next grade's middle power is. */
+	inline constexpr double PowerMedianRatio = 1.6;
+	/** Log step of one standard deviation. The first four grades use this on both sides. */
+	inline constexpr double PowerSpread = 0.28;
+	/** Legendary's high side. The low side stays at PowerSpread, so Exquisite can still win. */
+	inline constexpr double LegendaryUpside = 0.14;
+	/** How wide the ease is, in standard deviations, from PowerSpread down to LegendaryUpside. */
+	inline constexpr double PowerGlide = 0.4;
+
+	/**
+	 * Hidden power for one grade.
+	 * StandardNormal is one draw from a standard normal. NA is not a grade and returns 0.
+	 * A grade returns at least 1.
+	 */
+	int32 PowerFor(ESolidItemQuality Quality, double StandardNormal);
 }

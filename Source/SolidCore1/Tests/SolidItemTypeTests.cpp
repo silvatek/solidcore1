@@ -221,4 +221,63 @@ bool FSolidItemTypeStickAndPitchTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidItemTypePowerTest,
+	"SolidCore1.Inventory.Power",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidItemTypePowerTest::RunTest(const FString& Parameters)
+{
+	static_assert(SolidItemType::PowerMedian == 12.0, "Inferior median");
+	static_assert(SolidItemType::PowerMedianRatio == 1.6, "grade step");
+	static_assert(SolidItemType::PowerSpread == 0.28, "log step");
+	static_assert(SolidItemType::LegendaryUpside == 0.14, "legendary high side");
+	static_assert(SolidItemType::PowerGlide == 0.4, "legendary ease width");
+
+	TestEqual(TEXT("NA has no power"), SolidItemType::PowerFor(ESolidItemQuality::NA, 0.0), 0);
+	TestEqual(TEXT("NA has no power above the middle"), SolidItemType::PowerFor(ESolidItemQuality::NA, 2.0), 0);
+	TestEqual(
+		TEXT("a draw that is not a number has no power"),
+		SolidItemType::PowerFor(ESolidItemQuality::Inferior, TNumericLimits<double>::QuietNaN()),
+		0);
+
+	const ESolidItemQuality Grades[] = {
+		ESolidItemQuality::Inferior,
+		ESolidItemQuality::Common,
+		ESolidItemQuality::Superior,
+		ESolidItemQuality::Exquisite,
+		ESolidItemQuality::Legendary,
+	};
+	const int32 Middle[] = { 12, 19, 31, 49, 79 };
+	const int32 OneUp[] = { 16, 25, 41, 65, 94 };
+	const int32 OneDown[] = { 9, 15, 23, 37, 62 };
+	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Grades); ++Index)
+	{
+		TestEqual(TEXT("the middle of the grade"), SolidItemType::PowerFor(Grades[Index], 0.0), Middle[Index]);
+		TestEqual(TEXT("one deviation up"), SolidItemType::PowerFor(Grades[Index], 1.0), OneUp[Index]);
+		TestEqual(TEXT("one deviation down"), SolidItemType::PowerFor(Grades[Index], -1.0), OneDown[Index]);
+	}
+
+	TestEqual(TEXT("legendary two deviations up"), SolidItemType::PowerFor(ESolidItemQuality::Legendary, 2.0), 108);
+	TestTrue(
+		TEXT("legendary's high side is shorter than the full spread"),
+		SolidItemType::PowerFor(ESolidItemQuality::Legendary, 1.0) < 104
+			&& SolidItemType::PowerFor(ESolidItemQuality::Legendary, 2.0) < 138);
+	TestEqual(TEXT("a far low roll stays at 1"), SolidItemType::PowerFor(ESolidItemQuality::Inferior, -20.0), 1);
+	TestEqual(TEXT("a far high roll fits an int32"), SolidItemType::PowerFor(ESolidItemQuality::Inferior, 80.0), MAX_int32);
+
+	for (const ESolidItemQuality Grade : Grades)
+	{
+		int32 Previous = 0;
+		for (int32 Step = -16; Step <= 16; ++Step)
+		{
+			const double Z = static_cast<double>(Step) * 0.25;
+			const int32 Power = SolidItemType::PowerFor(Grade, Z);
+			TestTrue(TEXT("a higher draw is not a lower power"), Power >= Previous);
+			Previous = Power;
+		}
+	}
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

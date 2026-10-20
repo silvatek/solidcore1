@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0506")
+#define SOLID_BUILD_ID TEXT("SC1-0507")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The world loads from the chart.")
+#define SOLID_BUILD_NOTE TEXT("Item power uses the rising spread.")
 #endif

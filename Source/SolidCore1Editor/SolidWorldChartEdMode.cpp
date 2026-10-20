@@ -625,7 +625,8 @@ bool FSolidWorldChartEdMode::InputKey(
 		UndoChart();
 		return true;
 	}
-	if (Key == EKeys::LeftMouseButton && ViewportClient && Viewport)
+	// Alt copies the biome on hover and orbits the camera. It does not paint.
+	if (Key == EKeys::LeftMouseButton && ViewportClient && Viewport && !ViewportClient->IsAltPressed())
 	{
 		if (Event == IE_Pressed)
 		{
@@ -648,10 +649,11 @@ bool FSolidWorldChartEdMode::MouseMove(
 	int32 Y)
 {
 	HoverAt(ViewportClient, Viewport, X, Y);
-	if (bStroke)
+	if (!bStroke)
 	{
-		ExtendStroke(ViewportClient, Viewport, X, Y);
+		return false;
 	}
+	ExtendStroke(ViewportClient, Viewport, X, Y);
 	return true;
 }
 
@@ -661,17 +663,31 @@ bool FSolidWorldChartEdMode::CapturedMouseMove(
 	int32 X,
 	int32 Y)
 {
+	if (!bStroke)
+	{
+		return false;
+	}
 	return MouseMove(ViewportClient, Viewport, X, Y);
 }
 
 bool FSolidWorldChartEdMode::StartTracking(FEditorViewportClient* ViewportClient, FViewport* Viewport)
 {
+	// Right-mouse look, middle-mouse pan, and Alt orbit also start tracking.
+	// A stroke is the left button only, and InputKey already began it.
+	if (!Viewport || !Viewport->KeyState(EKeys::LeftMouseButton) || (ViewportClient && ViewportClient->IsAltPressed()))
+	{
+		return false;
+	}
 	BeginStroke(ViewportClient, Viewport);
-	return true;
+	return bStroke;
 }
 
 bool FSolidWorldChartEdMode::EndTracking(FEditorViewportClient* ViewportClient, FViewport* Viewport)
 {
+	if (!bStroke)
+	{
+		return false;
+	}
 	EndStroke();
 	return true;
 }

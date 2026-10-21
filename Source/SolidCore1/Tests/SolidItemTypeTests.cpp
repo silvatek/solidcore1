@@ -240,7 +240,7 @@ bool FSolidItemTypePowerTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("NA has no power above the middle"), SolidItemType::PowerFor(ESolidItemQuality::NA, 2.0), 0);
 	TestEqual(
 		TEXT("a draw that is not a number has no power"),
-		SolidItemType::PowerFor(ESolidItemQuality::Inferior, TNumericLimits<double>::QuietNaN()),
+		SolidItemType::PowerFor(ESolidItemQuality::Inferior, std::numeric_limits<double>::quiet_NaN()),
 		0);
 
 	const ESolidItemQuality Grades[] = {

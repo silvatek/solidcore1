@@ -8,9 +8,9 @@ This story depends on [Early game battle plans](early-game-battle-plans.md), whi
 
 A weapon has Speed and Power. Armour has Strength. The specific amounts are chosen in play. The captain and a companion swap a weapon or their armour in the inventory, and the fight uses what they have on. A monster has one fixed weapon, such as claws or teeth, and one fixed armour. Those stay on the monster.
 
-The squad selects from the battle plans it already has. A group of monsters has a set of battle plans too. The three reptiles beside the Iglin bridge are one group, and that set holds one plan.
+The squad selects from the battle plans it already has. Each of those plans stores attack or retreat on itself. Starter, Attack, Tight mob, and Loose mob store attack. Defend, Parade, Line, and Column store retreat. Each plan also stores TargetStrategy on itself. The only value is Random, and Random picks a target purely at random. A group of monsters has a set of battle plans too. The three reptiles beside the Iglin bridge are one group, and that set holds Starter.
 
-When combat starts, the captain, each companion in the squad, and each monster reads the active plan. A plan that says to attack sends them to select a target, prepare, attack, and recover, and then through that again. Speed is how long prepare takes and how long recover takes. The attack lowers the target's armour Strength by the weapon's Power. Strength at 0 or below kills them. A plan that says to retreat sends them back from their enemies, and damage that lands while they retreat is reduced significantly.
+When combat starts, the captain, each companion in the squad, and each monster reads the active plan. A plan that stores attack sends them to select a target by that plan's TargetStrategy, prepare, attack, and recover, and then through that again. Speed is how long prepare takes and how long recover takes. The attack lowers the target's armour Strength by the weapon's Power. Strength at 0 or below kills them. A plan that stores retreat sends them back from their enemies, and damage that lands while they retreat is reduced significantly.
 
 [Basic monsters](basic-monsters.md) leaves a click on those reptiles with the fight unstarted. This story is that fight.
 
@@ -24,18 +24,22 @@ When combat starts, the captain, each companion in the squad, and each monster r
 - A monster has one fixed armour, with Strength. The monster does not swap it.
 - Speed, Power, and Strength stay off the screen. Their amounts are chosen in play. The fight uses the amounts on the weapon and the armour.
 - The squad's battle plans are the set it can already select. This story leaves that set, and which plan is active, as [Early game battle plans](early-game-battle-plans.md) left them.
-- A group of monsters has a set of battle plans. The three reptiles are one group. Their set holds one plan, and that plan is the active plan.
+- Starter, Attack, Tight mob, and Loose mob each store attack on the plan. Defend, Parade, Line, and Column each store retreat on the plan. The fight reads that value from the plan.
+- Each of those plans stores TargetStrategy on the plan. The only value is Random. Random chooses any opponent still in the fight, and each of them is equally likely.
+- A group of monsters has a set of battle plans. The three reptiles are one group. Their set holds Starter, and Starter is the active plan.
 - When combat starts, the captain, each companion in the squad, and each monster in the fight reads the active plan and follows it.
-- A plan that says to attack selects a target, then prepares, attacks, and recovers. Prepare takes that weapon's Speed. Recover takes that weapon's Speed. After recover, the cycle starts again.
+- A plan that stores attack selects a target by that plan's TargetStrategy, then prepares, attacks, and recovers. Prepare takes that weapon's Speed. Recover takes that weapon's Speed. After recover, the cycle starts again.
 - The attack reduces the target's armour Strength by the weapon's Power. Strength at 0 or below kills that captain, companion, or monster.
-- A plan that says to retreat moves that captain, companion, or monster back from enemies. Incoming damage is reduced significantly while they are retreating.
+- A plan that stores retreat moves that captain, companion, or monster back from enemies. Incoming damage is reduced significantly while they are retreating.
 - A companion who is not in the squad stays at the stronghold.
 - Standing on the Iglin ramp still fires Reach broken bridge. The three reptiles still do not.
 
 ## Implementation notes
 
 - Play-testing chooses the amounts of Speed, Power, and Strength. This story does not fix those numbers.
-- Which catalog plan says to attack, which says to retreat, how a target is chosen, what starts the fight, and how far the retreat reduction goes are still to be named before this story is Ready.
+- An opponent of the captain or a companion is a monster still in the fight. An opponent of a monster is the captain, or a companion in the squad, still in the fight.
+- What starts the fight, and how far the retreat reduction goes, are still to be named before this story is Ready.
+- Attack or retreat, and TargetStrategy, are fields on the battle plan, beside its name, formation, and spacing. The fight reads them from the plan it is using. [Hold battle plan](hold-battle-plan.md) and [Drill battle plan](drill-battle-plan.md) are other stories. The values here are on the plans [Early game battle plans](early-game-battle-plans.md) names.
 - `SolidItemType::PowerFor` rolls a hidden power from the item's grade. This story's Power is the attribute on the weapon. Leave that roll as it is. The attack spends the weapon's Power.
 - The captain's loadout already puts a weapon in the main hand and armour on the body. A companion has those same two slots. The monster's weapon and armour are not catalog ids.
 - Damage in the retreat rule is the Power taken off Strength.

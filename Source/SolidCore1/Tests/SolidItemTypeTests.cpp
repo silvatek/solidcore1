@@ -2,6 +2,8 @@
 #include "Misc/AutomationTest.h"
 #include "Inventory/SolidItemType.h"
 
+#include <limits>
+
 #if WITH_DEV_AUTOMATION_TESTS
 
 namespace SolidItemTypeTestPrivate

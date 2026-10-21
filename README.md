@@ -6,7 +6,7 @@ The design north star is [`GameVision.md`](GameVision.md). The world is [`Conten
 
 ## To-do
 
-Open stories live in [`Planning`](Planning). Each file is one idea. A shipped story moves to [`Planning/Done`](Planning/Done).
+Open stories live in [`Planning`](Planning). Each file is one idea. A story moves to [`Planning/Done`](Planning/Done) after it has been properly tested and you have agreed with the agent that it is done. You say whether you are happy with the implementation. The agent confirms that every acceptance criterion is met.
 
 - [White material for full fog](Planning/white-fog-terrain.md)
 - [Hide trees and buildings in full fog](Planning/hide-props-in-full-fog.md)
@@ -41,7 +41,7 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 
 ## Done
 
-Shipped stories live in [`Planning/Done`](Planning/Done).
+Stories in [`Planning/Done`](Planning/Done) have been tested, and you and the agent have agreed they are done.
 
 - [Captain + Squad](Planning/Done/captain-and-squad.md)
 - [Company roster](Planning/Done/company-roster.md)

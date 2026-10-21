@@ -43,7 +43,7 @@ After a push, the user:
 4. Runs the game in PIE.
 5. Typically, but not always, sends a screenshot for the agent to review.
 
-Wait for that report before treating the change as verified. When a screenshot arrives, review it.
+Wait for that report before treating the change as verified. When a screenshot arrives, review it. The story stays `In Progress` through that wait. `Done` waits for the testing and the agreement in the Planning section.
 
 Screenshots are taken with the Windows snipping tool. That switch puts Unreal in the background, so the HUD frame rate drops. Ignore FPS in a screenshot unless the user says they are worried about it. Foreground PIE is about 120 FPS.
 
@@ -66,7 +66,7 @@ When the machine is free, write this agent's own id into `ue.lock` as the only w
 
 After that build and test session has finished, write `Free` if the file still contains this agent's id.
 
-The developer runs `tools\editor.bat` to open the editor without play, and `tools\pie.bat` when play is needed. They send a screenshot when they do. Wait for that report before treating the editor or play as verified. When a screenshot arrives, review it.
+The developer runs `tools\editor.bat` to open the editor without play, and `tools\pie.bat` when play is needed. They send a screenshot when they do. Wait for that report before treating the editor or play as verified. When a screenshot arrives, review it. A `tools\test.bat` pass keeps the story `In Progress`. `Done` waits for the user's report and the agreement in the Planning section.
 
 Screenshots are taken with the Windows snipping tool. That switch puts Unreal in the background, so the HUD frame rate drops. Ignore FPS in a screenshot unless the user says they are worried about it. Foreground PIE is about 120 FPS.
 
@@ -77,7 +77,7 @@ Cloud agents are a **code + git workshop**. They do not replace the Windows Unre
 - Checkout `main` and pull from GitHub before editing. Ship on `main`. No feature branch and no pull request unless the user asks for one in that conversation. `tools/cloud_agent_check.py` fails on any other branch.
 - Do not run the Unreal Editor, `tools/test.bat`, automation, or PIE from the cloud VM. Fab packs are not present here.
 - Before every push, run `python3 tools/cloud_agent_check.py`. The cloud environment `install` runs the same script. Fix errors before pushing; treat warnings as review notes.
-- After a push, wait for the user's pull → rebuild → tests → PIE report (and screenshot when they send one) before treating the change as verified.
+- After a push, wait for the user's pull → rebuild → tests → PIE report (and screenshot when they send one) before treating the change as verified. The story stays `In Progress` until that report and the agreement in the Planning section.
 - Do not install Unreal Engine on the cloud VM.
 
 ## Planning
@@ -86,7 +86,8 @@ Cloud agents are a **code + git workshop**. They do not replace the Windows Unre
 - A commit that changes a story starts with `Plan: `, as the Git section says. A product commit does not.
 - When an agent starts work on a `Ready` story, set that story's status to `In Progress`.
 - If asked to start coding for a story that is not marked `Ready`, request confirmation before proceeding.
-- When a story ships, move its file to `Planning/Done/`.
+- Leave the story `In Progress` when the product commit lands on `main`. Properly tested means the checks in Collaborative workflow and Cursor Cloud have happened. The user has pulled, rebuilt, run the tests, and run PIE when the story changes play. The agent has reviewed that report, and any screenshot. A solidcore1-ue agent's `tools\test.bat` pass is part of the work and leaves the story `In Progress`.
+- Set `Done` only after that testing, and only after the user and the agent agree the story is done. The agreement is a discussion. The user says whether they are happy with the implementation. The agent confirms that every acceptance criterion is met. Then set the status to `Done`, move the file to `Planning/Done/`, and update the `README.md` list line. That move is a `Plan:` commit.
 - `ideas.md` is the inbox. Copy each new idea into a new file under `Planning/`. Do not edit `ideas.md`.
 
 ## Names

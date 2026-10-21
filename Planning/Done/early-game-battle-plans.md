@@ -1,6 +1,6 @@
 # Early game battle plans
 
-Status: In Progress
+Status: Done
 
 ## Story
 
@@ -26,7 +26,7 @@ While fewer than eight battle plans are enabled, the squad's selection is every 
 - When Parade was not enabled, Dragongate leaves the selection as Line, Column, Tight mob, Loose mob. An active Attack or Defend becomes Line.
 - Selecting Parade still fires Enter Iglin if it has not fired, then Enter Relion and Enter Dragongate. It still does not fire Enter Kanfold. After that, Parade and the four formation plans are enabled, and the list is shown. Attack, Defend, Line, Column, Tight mob, and Loose mob do not fire those events.
 - While fewer than eight plans are enabled, the squad's selection is exactly the enabled plans, in catalog order, skipping a disabled plan. The active plan stays the one the player had selected when that plan is still enabled. When the active plan is disabled, the active plan becomes the first plan in the new selection.
-- When eight or more plans are enabled, this story does not replace the selection. [Drill battle plan](drill-battle-plan.md) and [Hold battle plan](hold-battle-plan.md) are not enabled here.
+- When eight or more plans are enabled, this story does not replace the selection. [Drill battle plan](../drill-battle-plan.md) and [Hold battle plan](../hold-battle-plan.md) are not enabled here.
 - A battle plan that is already implemented and is not named in this story stays supported. This story does not remove it from the catalog, does not break selecting it, and does not change whether it is enabled except where an event named here disables a plan this story names. While fewer than eight plans are enabled, syncing the selection still includes that plan when it is enabled, in catalog order with the plans this story names.
 - The battle-plan list is the panel under the tech readout. It is hidden while the squad has fewer than two plans selected. With two or more, it shows the title Battle Plans, one row for each assigned plan, and an empty row through F8. The character editor still hides the panel while that page is open.
 - The journal records `Starter disabled`, `Attack enabled`, `Attack disabled`, `Defend enabled`, `Defend disabled`, `Parade enabled`, `Line enabled`, `Column enabled`, `Tight mob enabled`, and `Loose mob enabled` for those changes.
@@ -37,7 +37,7 @@ While fewer than eight battle plans are enabled, the squad's selection is every 
 
 - `FGameState` stores one enabled flag per catalog plan. A new game sets Starter and clears the rest. `FGameState` is already the travel session's `Configuration`, so the flags survive `OpenLevel`. The session already stores `ActiveBattlePlanSlot`. Restoring the session syncs the selection from the flags, then selects that slot when it still holds a plan.
 - Two change kinds, `EnableBattlePlan` and `DisableBattlePlan`. Each names a plan. The events this story edits use `Starter`, `Attack`, `Defend`, `Parade`, `Line`, `Column`, `Tight mob`, and `Loose mob`. `ApplyChange` sets the flag for any name that is in the catalog, including a plan this story does not name. A name that is not in the catalog changes nothing. Disabling a plan that is already off leaves it off. Enabling a plan that is already on leaves it on. Raise `MaxChangesPerEvent` from 10 to 17. Killed by monsters grows to 6 and Enter Relion to 6. Enter Kanfold grows to 11. Enter Dragongate grows to 17.
-- `IdKilledByMonsters` gains the Starter disable and the Attack and Defend enables after the changes it already lists. Enter Relion gains Parade. Enter Kanfold and Enter Dragongate each gain the three disables and then the four formation plans. [Return to the stronghold](return-to-stronghold.md) still owns replacing `EnableCave` on the monster close. This story does not remove that change.
+- `IdKilledByMonsters` gains the Starter disable and the Attack and Defend enables after the changes it already lists. Enter Relion gains Parade. Enter Kanfold and Enter Dragongate each gain the three disables and then the four formation plans. [Return to the stronghold](../return-to-stronghold.md) still owns replacing `EnableCave` on the monster close. This story does not remove that change.
 - `USolidSquad::InitializeFromCompany` currently assigns every catalog plan, up to eight. After that init, and after an event applies, sync the selection to the enabled plans while fewer than eight are enabled. Keep the active plan by name when it is still in the list. `SelectBattlePlanSlot` still fires `FireParadeEvents` only for the Parade formation.
 - The list is `DrawBattlePlansPanel`. Skip it when the assigned count is below 2. The character-editor branch already skips it. The keys in `SelectBattlePlanSlotFromInput` stay bound.
 - Tests that require five plans, Line at index 0, five assigned slots, or Parade on F5 change before the product commit, so they pass on the current catalog and on this one. The product commit does not edit those tests. It adds Starter, Attack, Defend, the flags, and the event lines.

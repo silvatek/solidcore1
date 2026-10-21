@@ -23,7 +23,7 @@ The player chooses the Hold battle plan. The player then moves the captain, and 
 
 ## Implementation notes
 
-- Add Hold to the company catalog in `AddDefaultBattlePlans`. `HasOnlyDefaultBattlePlans` stays on the five plans the company starts with today until [Early game battle plans](early-game-battle-plans.md) rewrites that catalog. Hold is beyond those five, so a leave opens Build squad when no companion is allowed.
+- Add Hold to the company catalog in `AddDefaultBattlePlans`. `HasOnlyDefaultBattlePlans` compares the catalog with that list. [Early game battle plans](Done/early-game-battle-plans.md) is that list. Hold is beyond it, so a leave opens Build squad when no companion is allowed.
 - `ESolidBattleFormation` gains `Hold`. `FormationName` returns `Hold`. `SlotOffset` for Hold is unused while companions hold in place. `FacesCaptain` is false for Hold. The squad builder filter list is All, Line, Column, Mob, Parade, Hold.
 - Companions follow through `ASolidCompanionCharacter::UpdateFollow`, which always steers to the active formation slot around the captain. While Hold is active, skip that steer and leave each companion where they are. Selecting Hold (including again) records the freeze at that moment. Selecting another plan clears it.
 - `SelectBattlePlanSlot` fires Parade events only for the Parade formation. Hold must not match that check. Spacing on Hold stays Standard and is unused while companions are frozen.

@@ -12,6 +12,8 @@ A road already runs inside that cell. The route is a path of cells, and the stri
 
 The chart and the game work on the terrain grid, the surface that strip already uses. A terrain point carries the biome. The World chart mode works on those points.
 
+Paint writes the points under a round brush. The developer chooses the brush width. The smallest brush is one point, 2 m across. A click stamps that brush. A drag lays it along the path, so a diagonal or a curve is one stroke at that width. Shift-drag fills the rectangle from the press to the release, and that rectangle's edges run north–south and east–west. Alt copies the biome of the point under the cursor. The palette is grassland, forest, mountain, town, desert, sea, and river. Painting river sets those points to river. Road stays a strip of its own width. The land starts as the old cells copied onto the points they cover.
+
 ## Acceptance
 
 - The terrain grid stays 513 by 513 points at 200 cm.
@@ -21,6 +23,10 @@ The chart and the game work on the terrain grid, the surface that strip already 
 - A road strip stays 1 m, 2 m, 3 m, or 4 m, painted on the terrain quads.
 - A town, a stronghold, a stronghold site, a lair mouth, and a custom note are placed on that grid.
 - The World chart mode reads and changes that grid.
+- Paint writes the terrain points under a round brush. The developer chooses the width. The smallest width is one point, 2 m.
+- A click stamps the brush. A drag lays it along the cursor path. Shift-drag fills the rectangle between the press and the release. Alt copies the biome of the point under the cursor.
+- The palette is grassland, forest, mountain, town, desert, sea, and river. Painting river sets the points under the brush to river.
+- The starting land is the old cells copied onto the points inside them.
 
 ## Implementation notes
 
@@ -29,3 +35,5 @@ The chart and the game work on the terrain grid, the surface that strip already 
 - `SolidRoad::Solve` walks map cells. The strip is then offset by half a terrain quad (`TerrainQuadCm` 200) so it sits on the quad. The biome joins the strip on that quad.
 - A mark stores a world position. `LoadFromChart` turns that position into a cell. On the grid, the position stays on the point.
 - [Remove WorldMap.txt](remove-world-map-txt.md) has already shipped. The chart this story changes is `/Game/World/WorldChart`.
+- A Shift-drag is the axis-aligned fill. The round brush is the stroke that follows a diagonal or a curve. Swamp stays off the palette, as it does today.
+- How far a town, a stronghold shelf, or a lair mouth replaces the paint around its point is still open. Today each of those replaces the whole cell.

@@ -30,10 +30,8 @@ bool FSolidCreditsCopyTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("notes grass CC-BY"), Joined.Contains(TEXT("CC-BY")));
 	TestTrue(TEXT("links the CC-BY deed"), Joined.Contains(SolidCredits::CcByLicense));
 	TestTrue(TEXT("notes the grass adaptation"), Joined.Contains(SolidCredits::GrassChanges));
-	TestTrue(TEXT("credits assassin creator"), Joined.Contains(SolidCredits::AssassinCreator));
-	TestTrue(TEXT("credits assassin listing"), Joined.Contains(SolidCredits::AssassinListing));
-	TestTrue(TEXT("credits blacksmith creator"), Joined.Contains(SolidCredits::BlacksmithCreator));
-	TestTrue(TEXT("credits blacksmith listing"), Joined.Contains(SolidCredits::BlacksmithListing));
+	TestTrue(TEXT("credits the Viking listing"), Joined.Contains(SolidCredits::VikingListing));
+	TestTrue(TEXT("credits the grass listing"), Joined.Contains(SolidCredits::GrassListing));
 	TestTrue(TEXT("mentions F10"), Joined.Contains(TEXT("F10")));
 	TestTrue(TEXT("Unreal engine notice"), Joined.Contains(SolidCredits::EngineNotice));
 	TestTrue(TEXT("Unreal trademark notice"), Joined.Contains(SolidCredits::EngineTrademark));

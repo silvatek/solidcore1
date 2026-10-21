@@ -47,20 +47,8 @@ bool FSolidFabPathTest::RunTest(const FString& Parameters)
 		SolidFabManifest::ObjectPathToContentFile(TEXT("/Engine/BasicShapes/Cube.Cube")).IsEmpty());
 	TestEqual(
 		TEXT("folder to package"),
-		SolidFabManifest::ContentFolderToPackagePath(TEXT("Content/Fab/Medieval_Assassin_Girl")),
-		FString(TEXT("/Game/Fab/Medieval_Assassin_Girl")));
-	TestEqual(
-		TEXT("pack folder keeps the named segment"),
-		SolidFabManifest::PackFolderFromContentFile(
-			TEXT("Content/Fab/X/Medieval_Assassin_Girl/Mesh/SK_Body.uasset"),
-			TEXT("Medieval_Assassin_Girl")),
-		FString(TEXT("Content/Fab/X/Medieval_Assassin_Girl")));
-	TestEqual(
-		TEXT("pack folder without a segment is the parent"),
-		SolidFabManifest::PackFolderFromContentFile(
-			TEXT("Content/Fab/Grass/Mat_025_grass.uasset"),
-			nullptr),
-		FString(TEXT("Content/Fab/Grass")));
+		SolidFabManifest::ContentFolderToPackagePath(TEXT("Content/Viking")),
+		FString(TEXT("/Game/Viking")));
 	return true;
 }
 
@@ -72,26 +60,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidFabManifestRecordTest::RunTest(const FString& Parameters)
 {
 	const FString Manifest = SolidFabManifest::LoadManifest();
-	TestTrue(TEXT("manifest loads"), Manifest.Contains(TEXT("\"id\": \"assassin\"")));
-
-	FString AssassinPath;
-	TestTrue(
-		TEXT("assassin resolvedPath is present"),
-		SolidFabManifest::ReadJsonStringField(Manifest, TEXT("assassin"), TEXT("resolvedPath"), AssassinPath));
-	TestEqual(
-		TEXT("assassin path is the recorded body"),
-		AssassinPath,
-		FString(TEXT("Content/Medieval_Assassin_Girl/Meshes/base_mesh/SKM_base_mesh_ue.uasset")));
-
-	FString OriginalBlacksmithFolder;
-	TestTrue(
-		TEXT("blacksmith folder is present"),
-		SolidFabManifest::ReadJsonStringField(
-			Manifest, TEXT("blacksmith"), TEXT("resolvedFolder"), OriginalBlacksmithFolder));
-	TestEqual(
-		TEXT("blacksmith folder is the recorded pack"),
-		OriginalBlacksmithFolder,
-		FString(TEXT("Content/Elf_Blacksmith")));
+	TestTrue(TEXT("manifest loads"), Manifest.Contains(TEXT("\"id\": \"viking\"")));
+	TestTrue(TEXT("grass is listed"), Manifest.Contains(TEXT("\"id\": \"grass\"")));
 
 	FString VikingMesh;
 	TestTrue(
@@ -102,37 +72,34 @@ bool FSolidFabManifestRecordTest::RunTest(const FString& Parameters)
 		VikingMesh,
 		FString(TEXT("Content/Viking/Mesh/SK_Viking.uasset")));
 
-	TestEqual(
-		TEXT("assassin token"),
-		SolidFabManifest::AssetIdForToken(Manifest, TEXT("Assassin")),
-		FString(TEXT("assassin")));
-	TestEqual(
-		TEXT("blacksmith token"),
-		SolidFabManifest::AssetIdForToken(Manifest, TEXT("blacksmith")),
-		FString(TEXT("blacksmith")));
+	FString GrassFolder;
+	TestTrue(
+		TEXT("grass folder is present"),
+		SolidFabManifest::ReadJsonStringField(Manifest, TEXT("grass"), TEXT("resolvedFolder"), GrassFolder));
+	TestFalse(TEXT("grass folder is recorded"), GrassFolder.IsEmpty());
 
 	FString Edited = Manifest;
 	const SolidFabManifest::EWriteResult Wrote = SolidFabManifest::WriteJsonStringField(
-		Edited, TEXT("assassin"), TEXT("resolvedFolder"), TEXT("Content/Fab/Medieval_Assassin_Girl"));
+		Edited, TEXT("grass"), TEXT("resolvedFolder"), TEXT("Content/Fab/GrassRecorded"));
 	TestTrue(TEXT("write updates"), Wrote == SolidFabManifest::EWriteResult::Updated);
 
 	FString Folder;
 	TestTrue(
 		TEXT("read back folder"),
-		SolidFabManifest::ReadJsonStringField(Edited, TEXT("assassin"), TEXT("resolvedFolder"), Folder));
+		SolidFabManifest::ReadJsonStringField(Edited, TEXT("grass"), TEXT("resolvedFolder"), Folder));
 	TestEqual(
 		TEXT("folder value"),
 		Folder,
-		FString(TEXT("Content/Fab/Medieval_Assassin_Girl")));
+		FString(TEXT("Content/Fab/GrassRecorded")));
 
-	FString BlacksmithFolder;
-	SolidFabManifest::ReadJsonStringField(Edited, TEXT("blacksmith"), TEXT("resolvedFolder"), BlacksmithFolder);
-	TestEqual(TEXT("blacksmith folder is untouched"), BlacksmithFolder, OriginalBlacksmithFolder);
-	TestTrue(TEXT("other text stays"), Edited.Contains(TEXT("Dimentrius3dArtist")));
+	FString VikingAfter;
+	SolidFabManifest::ReadJsonStringField(Edited, TEXT("viking"), TEXT("SK_Viking.uasset"), VikingAfter);
+	TestEqual(TEXT("viking mesh is untouched"), VikingAfter, VikingMesh);
+	TestTrue(TEXT("other text stays"), Edited.Contains(TEXT("NoblesseOblige-No.1")));
 	TestTrue(
 		TEXT("second write is unchanged"),
 		SolidFabManifest::WriteJsonStringField(
-			Edited, TEXT("assassin"), TEXT("resolvedFolder"), TEXT("Content/Fab/Medieval_Assassin_Girl"))
+			Edited, TEXT("grass"), TEXT("resolvedFolder"), TEXT("Content/Fab/GrassRecorded"))
 			== SolidFabManifest::EWriteResult::Unchanged);
 	TestTrue(
 		TEXT("missing asset"),

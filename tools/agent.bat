@@ -1,41 +1,22 @@
 @echo off
 setlocal EnableExtensions
-rem Build, run the default automation suite, and write agent.ok when both succeed.
+rem Start the solidcore1-ue worker. When it exits 0, write agent.ok in the repo root.
 rem
 rem Usage:
 rem   tools\agent.bat
 rem
-rem Deletes agent.ok in the repo root first. A failing build or test leaves the
-rem marker absent and returns that script's exit code. The marker is gitignored.
-rem The first line is Passed. The second line is the commit, or unknown.
+rem The marker is gitignored and stays on this machine. The line in the file is
+rem Passed. A non-zero exit leaves any existing marker unchanged.
 
 set "SCRIPT_DIR=%~dp0"
 set "ROOT=%SCRIPT_DIR%.."
 for %%I in ("%ROOT%") do set "ROOT=%%~fI"
 set "MARKER=%ROOT%\agent.ok"
 
-if exist "%MARKER%" del /f /q "%MARKER%"
-
-call "%SCRIPT_DIR%build.bat"
+agent worker start --name "solidcore1-ue" --worker-dir $HOME\Dev\solidcore1
 set "ERR=%ERRORLEVEL%"
 if not "%ERR%"=="0" exit /b %ERR%
-
-call "%SCRIPT_DIR%test.bat"
-set "ERR=%ERRORLEVEL%"
-if not "%ERR%"=="0" exit /b %ERR%
-
-set "SHA=unknown"
-set "SHAFILE=%TEMP%\solidcore1-agent-sha.txt"
-if exist "%SHAFILE%" del /f /q "%SHAFILE%"
-git -C "%ROOT%" rev-parse HEAD > "%SHAFILE%" 2>nul
-if exist "%SHAFILE%" (
-  for /f "usebackq delims=" %%H in ("%SHAFILE%") do set "SHA=%%H"
-  del /f /q "%SHAFILE%"
-)
-if not defined SHA set "SHA=unknown"
 
 > "%MARKER%" echo Passed
->> "%MARKER%" echo %SHA%
 echo Marker: %MARKER%
-echo Commit: %SHA%
 exit /b 0

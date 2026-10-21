@@ -1,14 +1,14 @@
 # The game state owns the journal
 
-Status: In Progress
+Status: Done
 
 ## Story
 
-[The game instance owns the play state](Done/game-instance-owns-the-play-state.md) is Done. The session has one `USolidGameState`. The journal is still an array on that object.
+[The game instance owns the play state](game-instance-owns-the-play-state.md) is Done. The session has one `USolidGameState`. The journal is still an array on that object.
 
 A developer gives that play state one journal. `USolidJournal` is a `UCLASS`. `USolidGameState` owns it. A cave trip and a tower trip keep that object.
 
-The journal holds the lines, and the journal code that writes and reads those lines moves onto that class. The HUD still paints the page. [Journal Filters and Scrollbar](journal-filters-and-scrollbar.md) is Ready and depends on this story. This story ships first.
+The journal holds the lines, and the journal code that writes and reads those lines moves onto that class. The HUD still paints the page. [Journal Filters and Scrollbar](../journal-filters-and-scrollbar.md) is Ready and depends on this story. This story ships first.
 
 ## Acceptance
 
@@ -36,4 +36,4 @@ The journal holds the lines, and the journal code that writes and reads those li
 - An event still fires on the play state. The line it used to write through `SolidEvents::Remember` is `USolidJournal::Remember`.
 - `Describe` does not use the stored lines. It stays a method on the class because the detail text is journal text.
 - The canvas draw stays in `SolidHUD.cpp`. Moving it onto the journal would pull `UCanvas` into the play state.
-- [Journal Filters and Scrollbar](journal-filters-and-scrollbar.md) removes the cap of 64 and adds the filters and the scrollbar. It starts after this story is Done. This story does not add them.
+- [Journal Filters and Scrollbar](../journal-filters-and-scrollbar.md) removes the cap of 64 and adds the filters and the scrollbar. It starts after this story is Done. This story does not add them.

@@ -278,26 +278,19 @@ def check_agent_marker(errors: list[str]) -> None:
         errors.append("missing tools/agent.bat")
     else:
         script = agent.read_text(encoding="utf-8")
-        delete_at = script.find('if exist "%MARKER%" del /f /q "%MARKER%"')
-        build_at = script.find('call "%SCRIPT_DIR%build.bat"')
-        test_at = script.find('call "%SCRIPT_DIR%test.bat"')
+        start_at = script.find(
+            'agent worker start --name "solidcore1-ue" '
+            "--worker-dir $HOME\\Dev\\solidcore1"
+        )
         passed_at = script.find('> "%MARKER%" echo Passed')
-        if min(delete_at, build_at, test_at, passed_at) < 0 or not (
-            delete_at < build_at < test_at < passed_at
-        ):
+        if start_at < 0 or passed_at < start_at:
             errors.append(
-                "tools/agent.bat must delete agent.ok, run build.bat, run test.bat, "
-                "then write Passed"
+                "tools/agent.bat must start the solidcore1-ue worker, then write Passed"
             )
-        else:
-            if "exit /b" not in script[build_at:test_at]:
-                errors.append(
-                    "tools/agent.bat must stop before test.bat when the build fails"
-                )
-            if "exit /b" not in script[test_at:passed_at]:
-                errors.append(
-                    "tools/agent.bat must stop before the marker when the tests fail"
-                )
+        elif "exit /b" not in script[start_at:passed_at]:
+            errors.append(
+                "tools/agent.bat must skip the marker when the worker exits non-zero"
+            )
 
     agents = ROOT / "AGENTS.md"
     if not agents.is_file():
@@ -309,7 +302,7 @@ def check_agent_marker(errors: list[str]) -> None:
         errors.append("AGENTS.md is missing the solidcore1-ue agents section")
         return
     body = parts[1].split("\n## ", 1)[0]
-    for needle in ("agent.ok", "tools\\agent.bat", "`Passed`", "newer than"):
+    for needle in ("agent.ok", "tools\\agent.bat", "`Passed`", "tools\\build.bat", "tools\\test.bat"):
         if needle not in body:
             errors.append(f"solidcore1-ue agents section must mention {needle}")
 

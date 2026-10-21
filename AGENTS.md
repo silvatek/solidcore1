@@ -59,19 +59,13 @@ Before building or testing, read `ue.lock`. A missing file means the machine is 
 
 A wait for `ue.lock` that times out is not a reason to read the file again at once. Say in chat that the wait timed out and which word is in the file, then wait 2 minutes for a reply. If no reply arrives, read the file and wait again.
 
-When the machine is free, write this agent's own id into `ue.lock` as the only word (the cloud agent run id when this session has one). Then look for `agent.ok` in the repo root before running build or test.
+Look for `agent.ok` in the repo root before running build or test.
 
-`tools\agent.bat` is that run. It deletes `agent.ok`, builds with `tools\build.bat`, then runs `tools\test.bat`. When both succeed it writes `agent.ok`. The first line is `Passed`. The second line is the commit that passed. The file is gitignored and stays on this machine.
+`tools\agent.bat` starts the solidcore1-ue worker (`agent worker start --name "solidcore1-ue"`). When that command exits 0 it writes `agent.ok`. The line in the file is `Passed`. The file is gitignored and stays on this machine.
 
-Read `agent.ok` to decide whether those scripts should run:
-
-- The file is missing. This tree has not passed build and test on this machine. Run `tools\agent.bat`.
-- The file is present, and every file under `Source/` and `Config/`, and every `*.uproject`, `*.Build.cs`, and `*.Target.cs`, is older than it. This tree already passed. Skip `tools\build.bat` and `tools\test.bat`.
-- One of those files is newer than `agent.ok`. The passing run is stale. Run `tools\agent.bat`.
-
-A markdown change, including `Planning/` and this file, leaves a present `agent.ok` current.
-
-After that session has finished, write `Free` if `ue.lock` still contains this agent's id. That includes a session that skips build and test because `agent.ok` is already current.
+- `agent.ok` is missing. Skip `tools\build.bat` and `tools\test.bat`.
+- `agent.ok` is present, and the change is under `Source/` or `Config/`, or it touches a `*.uproject`, `*.Build.cs`, or `*.Target.cs` file. This machine has finished a successful worker run, so build and test. When `ue.lock` is free, write this agent's own id into it as the only word (the cloud agent run id when this session has one). Then build with `tools\build.bat` and run the tests with `tools\test.bat`. After that session has finished, write `Free` if `ue.lock` still contains this agent's id.
+- `agent.ok` is present, and the change is markdown, including `Planning/` and this file. Skip `tools\build.bat` and `tools\test.bat`.
 
 The developer runs `tools\editor.bat` to open the editor without play, and `tools\pie.bat` when play is needed. They send a screenshot when they do. Wait for that report before treating the editor or play as verified. When a screenshot arrives, review it. A `tools\test.bat` pass keeps the story `In Progress`. `Done` waits for the user's report and the agreement in the Planning section.
 
@@ -107,7 +101,7 @@ Read the request and the names next to the new code before choosing. When those 
 
 Follow the Automated tests policy in `CodingGuidelines.md`.
 
-After a significant product change, run the full suite, filter `SolidCore1`, before pushing. On a solidcore1-ue machine, read `agent.ok` first and run `tools\agent.bat` when the solidcore1-ue agents section says the marker is missing or stale.
+After a significant product change, run the full suite, filter `SolidCore1`, before pushing. On a solidcore1-ue machine, read `agent.ok` first. Run `tools\build.bat` and `tools\test.bat` when that file is present, as the solidcore1-ue agents section says.
 
 ## Unused code
 

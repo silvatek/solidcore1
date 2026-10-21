@@ -49,6 +49,52 @@ namespace SolidMonster
 		return !bClosedVisit;
 	}
 
+	/**
+	 * A bone span taller than this is not the body.
+	 * The inner samples set the height, so one far bone does not shrink the mesh.
+	 */
+	inline constexpr float SpanOutlierCm = 1000.f;
+
+	/** Unscaled bottom and height of the body, in centimetres. */
+	struct FStandingSpan
+	{
+		float BottomZ = 0.f;
+		float Height = 0.f;
+	};
+
+	/**
+	 * Standing span of sample Z values.
+	 * The samples are sorted. Fewer than 50 samples, or a span of SpanOutlierCm or less, uses the full range.
+	 * A taller span uses the 5th and 95th percentile.
+	 */
+	inline FStandingSpan StandingSpan(TArray<float>& SamplesZ)
+	{
+		FStandingSpan Span;
+		if (SamplesZ.Num() == 0)
+		{
+			return Span;
+		}
+
+		SamplesZ.Sort();
+		const int32 Last = SamplesZ.Num() - 1;
+		int32 Low = 0;
+		int32 High = Last;
+		const float FullHeight = SamplesZ[Last] - SamplesZ[0];
+		if (FullHeight > SpanOutlierCm && SamplesZ.Num() >= 50)
+		{
+			Low = Last * 5 / 100;
+			High = Last * 95 / 100;
+			if (High < Low)
+			{
+				High = Low;
+			}
+		}
+
+		Span.BottomZ = SamplesZ[Low];
+		Span.Height = SamplesZ[High] - SamplesZ[Low];
+		return Span;
+	}
+
 	/** Uniform scale that makes a mesh bounds height the standing height. A zero height stays at 1. */
 	inline float UniformScale(const float BoundsHeightCm)
 	{

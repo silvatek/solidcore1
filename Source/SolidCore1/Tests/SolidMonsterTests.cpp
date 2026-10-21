@@ -58,6 +58,28 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 		TEXT("a centered mesh drops its bottom to the feet"),
 		FMath::IsNearlyEqual(SolidMonster::MeshFootOffsetCm(0.f, 100.f, 1.f), 100.f));
 
+	TArray<float> BodyZ;
+	for (int32 Sample = 0; Sample < 20; ++Sample)
+	{
+		BodyZ.Add(Sample * 10.f);
+	}
+	const SolidMonster::FStandingSpan Short = SolidMonster::StandingSpan(BodyZ);
+	TestTrue(TEXT("a short body keeps its full height"), FMath::IsNearlyEqual(Short.Height, 190.f));
+	TestTrue(TEXT("a short body keeps its feet"), FMath::IsNearlyEqual(Short.BottomZ, 0.f));
+
+	TArray<float> OutlierZ;
+	for (int32 Sample = 0; Sample < 100; ++Sample)
+	{
+		OutlierZ.Add(Sample * 1.8f);
+	}
+	OutlierZ.Add(50000.f);
+	const SolidMonster::FStandingSpan Trimmed = SolidMonster::StandingSpan(OutlierZ);
+	TestTrue(TEXT("one far bone does not set the height"), Trimmed.Height < 500.f);
+	TestTrue(TEXT("the body height remains"), Trimmed.Height > 100.f);
+
+	TArray<float> EmptyZ;
+	TestTrue(TEXT("no samples have no height"), SolidMonster::StandingSpan(EmptyZ).Height == 0.f);
+
 	TArray<FSolidTerrainPoint> Points;
 	Points.Add(PointAt(500.f, ESolidBiome::Grassland));
 	Points.Add(PointAt(900.f, ESolidBiome::Grassland));

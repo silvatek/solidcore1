@@ -6,8 +6,47 @@
 #include "Animation/AnimSequence.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
+#include "BoneIndices.h"
 #include "Engine/SkeletalMesh.h"
 #include "Materials/MaterialInterface.h"
+#include "ReferenceSkeleton.h"
+
+namespace SolidMonsterActorPrivate
+{
+	/** Z of each reference-pose bone in component space. That span is the body, not the asset bounds. */
+	void CollectRefPoseZ(const USkeletalMesh* Mesh, TArray<float>& OutZ)
+	{
+		OutZ.Reset();
+		if (!Mesh)
+		{
+			return;
+		}
+
+		const FReferenceSkeleton& Ref = Mesh->GetRefSkeleton();
+		const TArray<FTransform>& LocalPose = Ref.GetRefBonePose();
+		const int32 BoneCount = LocalPose.Num();
+		if (BoneCount <= 0)
+		{
+			return;
+		}
+
+		TArray<FTransform> ComponentPose;
+		ComponentPose.SetNum(BoneCount);
+		TArray<FBoneIndexType> Required;
+		Required.Reserve(BoneCount);
+		for (int32 Bone = 0; Bone < BoneCount; ++Bone)
+		{
+			Required.Add(static_cast<FBoneIndexType>(Bone));
+		}
+		Mesh->FillComponentSpaceTransforms(LocalPose, Required, ComponentPose);
+
+		OutZ.Reserve(BoneCount);
+		for (const FTransform& Bone : ComponentPose)
+		{
+			OutZ.Add(Bone.GetLocation().Z);
+		}
+	}
+}
 
 ASolidMonster::ASolidMonster()
 {
@@ -68,13 +107,20 @@ void ASolidMonster::BuildVisuals()
 	TSoftObjectPtr<USkeletalMesh> UnusedMesh;
 	SolidClipLocomotion::ApplyMeshAndSingleNodeMode(Body, UnusedMesh, nullptr, TEXT("Monster"), true);
 
-	const FBoxSphereBounds Bounds = Mesh->GetBounds();
-	const float Scale = SolidMonster::UniformScale(Bounds.BoxExtent.Z * 2.f);
+	TArray<float> BoneZ;
+	SolidMonsterActorPrivate::CollectRefPoseZ(Mesh, BoneZ);
+	SolidMonster::FStandingSpan Span = SolidMonster::StandingSpan(BoneZ);
+	if (Span.Height <= KINDA_SMALL_NUMBER)
+	{
+		const FBoxSphereBounds Bounds = Mesh->GetBounds();
+		Span.BottomZ = Bounds.Origin.Z - Bounds.BoxExtent.Z;
+		Span.Height = Bounds.BoxExtent.Z * 2.f;
+	}
+
+	const float Scale = SolidMonster::UniformScale(Span.Height);
 	Body->SetRelativeScale3D(FVector(Scale));
-	Body->SetRelativeLocation(FVector(
-		0.f,
-		0.f,
-		SolidMonster::MeshFootOffsetCm(Bounds.Origin.Z, Bounds.BoxExtent.Z, Scale)));
+	Body->SetRelativeLocation(FVector(0.f, 0.f, -Span.BottomZ * Scale));
+	UE_LOG(LogSolid, Log, TEXT("SolidMonster standing height %.1f cm, scale %.3f"), Span.Height, Scale);
 	Body->SetRelativeRotation(FRotator(0.f, SolidMonster::MeshFacingYawDeg, 0.f));
 
 	if (UMaterialInterface* Green = SolidContentLookup::FindVelociraptorGreen(Mesh))

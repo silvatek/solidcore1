@@ -10,6 +10,7 @@
 #include "Engine/SkeletalMesh.h"
 #include "Materials/MaterialInterface.h"
 #include "ReferenceSkeleton.h"
+#include "Rendering/SkeletalMeshRenderData.h"
 
 namespace SolidMonsterActorPrivate
 {
@@ -44,6 +45,30 @@ namespace SolidMonsterActorPrivate
 		for (const FTransform& Bone : ComponentPose)
 		{
 			OutZ.Add(Bone.GetLocation().Z);
+		}
+	}
+
+	/** Z of each LOD0 vertex. That is the mesh the player sees, not the bone span. */
+	void CollectVertexZ(const USkeletalMesh* Mesh, TArray<float>& OutZ)
+	{
+		OutZ.Reset();
+		if (!Mesh)
+		{
+			return;
+		}
+
+		const FSkeletalMeshRenderData* Render = Mesh->GetResourceForRendering();
+		if (!Render || Render->LODRenderData.Num() == 0)
+		{
+			return;
+		}
+
+		const FPositionVertexBuffer& Positions = Render->LODRenderData[0].StaticVertexBuffers.PositionVertexBuffer;
+		const uint32 Count = Positions.GetNumVertices();
+		OutZ.Reserve(Count);
+		for (uint32 Index = 0; Index < Count; ++Index)
+		{
+			OutZ.Add(Positions.VertexPosition(Index).Z);
 		}
 	}
 }
@@ -107,9 +132,14 @@ void ASolidMonster::BuildVisuals()
 	TSoftObjectPtr<USkeletalMesh> UnusedMesh;
 	SolidClipLocomotion::ApplyMeshAndSingleNodeMode(Body, UnusedMesh, nullptr, TEXT("Monster"), true);
 
-	TArray<float> BoneZ;
-	SolidMonsterActorPrivate::CollectRefPoseZ(Mesh, BoneZ);
-	SolidMonster::FStandingSpan Span = SolidMonster::StandingSpan(BoneZ);
+	TArray<float> Samples;
+	SolidMonsterActorPrivate::CollectVertexZ(Mesh, Samples);
+	const bool bFromMesh = Samples.Num() > 0;
+	if (!bFromMesh)
+	{
+		SolidMonsterActorPrivate::CollectRefPoseZ(Mesh, Samples);
+	}
+	SolidMonster::FStandingSpan Span = SolidMonster::StandingSpan(Samples);
 	if (Span.Height <= KINDA_SMALL_NUMBER)
 	{
 		const FBoxSphereBounds Bounds = Mesh->GetBounds();
@@ -120,7 +150,13 @@ void ASolidMonster::BuildVisuals()
 	const float Scale = SolidMonster::UniformScale(Span.Height);
 	Body->SetRelativeScale3D(FVector(Scale));
 	Body->SetRelativeLocation(FVector(0.f, 0.f, -Span.BottomZ * Scale));
-	UE_LOG(LogSolid, Log, TEXT("SolidMonster standing height %.1f cm, scale %.3f"), Span.Height, Scale);
+	const float FullHeight = Samples.Num() > 0 ? Samples.Last() - Samples[0] : 0.f;
+	UE_LOG(LogSolid, Log, TEXT("SolidMonster %s samples %d, full %.1f cm, chosen %.1f cm, scale %.3f"),
+		bFromMesh ? TEXT("mesh") : TEXT("bones"),
+		Samples.Num(),
+		FullHeight,
+		Span.Height,
+		Scale);
 	Body->SetRelativeRotation(FRotator(0.f, SolidMonster::MeshFacingYawDeg, 0.f));
 
 	if (UMaterialInterface* Green = SolidContentLookup::FindVelociraptorGreen(Mesh))

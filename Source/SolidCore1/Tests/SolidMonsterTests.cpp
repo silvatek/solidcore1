@@ -74,8 +74,21 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 	}
 	OutlierZ.Add(50000.f);
 	const SolidMonster::FStandingSpan Trimmed = SolidMonster::StandingSpan(OutlierZ);
-	TestTrue(TEXT("one far bone does not set the height"), Trimmed.Height < 500.f);
+	TestTrue(TEXT("one far sample does not set the height"), Trimmed.Height < 500.f);
 	TestTrue(TEXT("the body height remains"), Trimmed.Height > 100.f);
+
+	TArray<float> Scattered;
+	for (int32 Sample = 0; Sample < 80; ++Sample)
+	{
+		Scattered.Add(Sample * 2.f);
+	}
+	for (int32 Sample = 0; Sample < 20; ++Sample)
+	{
+		Scattered.Add(8000.f);
+	}
+	const SolidMonster::FStandingSpan Dense = SolidMonster::StandingSpan(Scattered);
+	TestTrue(TEXT("a far cloud does not set the height"), Dense.Height < 400.f);
+	TestTrue(TEXT("the dense band is the body"), Dense.Height > 100.f);
 
 	TArray<float> EmptyZ;
 	TestTrue(TEXT("no samples have no height"), SolidMonster::StandingSpan(EmptyZ).Height == 0.f);

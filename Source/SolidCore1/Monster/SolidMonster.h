@@ -50,8 +50,8 @@ namespace SolidMonster
 	}
 
 	/**
-	 * A bone span taller than this is not the body.
-	 * The inner samples set the height, so one far bone does not shrink the mesh.
+	 * A sample span taller than this is not one body.
+	 * The densest band inside this limit sets the height, so far samples do not shrink the mesh.
 	 */
 	inline constexpr float SpanOutlierCm = 1000.f;
 
@@ -63,9 +63,9 @@ namespace SolidMonster
 	};
 
 	/**
-	 * Standing span of sample Z values.
-	 * The samples are sorted. Fewer than 50 samples, or a span of SpanOutlierCm or less, uses the full range.
-	 * A taller span uses the 5th and 95th percentile.
+	 * Standing span of sample Z values. The samples are sorted.
+	 * Fewer than 50 samples, or a span of SpanOutlierCm or less, uses the full range.
+	 * A taller span uses the band of that limit which holds the most samples.
 	 */
 	inline FStandingSpan StandingSpan(TArray<float>& SamplesZ)
 	{
@@ -77,21 +77,39 @@ namespace SolidMonster
 
 		SamplesZ.Sort();
 		const int32 Last = SamplesZ.Num() - 1;
-		int32 Low = 0;
-		int32 High = Last;
 		const float FullHeight = SamplesZ[Last] - SamplesZ[0];
-		if (FullHeight > SpanOutlierCm && SamplesZ.Num() >= 50)
+		if (FullHeight <= SpanOutlierCm || SamplesZ.Num() < 50)
 		{
-			Low = Last * 5 / 100;
-			High = Last * 95 / 100;
-			if (High < Low)
+			Span.BottomZ = SamplesZ[0];
+			Span.Height = FullHeight;
+			return Span;
+		}
+
+		int32 BestLow = 0;
+		int32 BestHigh = 0;
+		int32 BestCount = 0;
+		int32 End = 0;
+		for (int32 Start = 0; Start <= Last; ++Start)
+		{
+			if (End < Start)
 			{
-				High = Low;
+				End = Start;
+			}
+			while (End < Last && SamplesZ[End + 1] - SamplesZ[Start] <= SpanOutlierCm)
+			{
+				++End;
+			}
+			const int32 BandCount = End - Start + 1;
+			if (BandCount > BestCount)
+			{
+				BestCount = BandCount;
+				BestLow = Start;
+				BestHigh = End;
 			}
 		}
 
-		Span.BottomZ = SamplesZ[Low];
-		Span.Height = SamplesZ[High] - SamplesZ[Low];
+		Span.BottomZ = SamplesZ[BestLow];
+		Span.Height = SamplesZ[BestHigh] - SamplesZ[BestLow];
 		return Span;
 	}
 

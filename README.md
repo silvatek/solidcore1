@@ -162,160 +162,57 @@ World Partition and Large Worlds are enabled in project config for open-world sc
 ## Project layout
 
 ```
-SolidCore1.uproject
+.gitignore
+.cursor/
+  environment.json             # Cloud agent environment
+AGENTS.md                      # Agent workflow
+AgentBuild.md                  # Self-hosted Windows build
+CodingGuidelines.md
 Config/
+  DefaultEditor.ini
+  DefaultEngine.ini
+  DefaultGame.ini
+  DefaultInput.ini
 Content/
-  Characters/          # BP_SolidCharacter, BP_SolidGameMode
-  Maps/                # optional L_OpenWorld (+ World Partition externals)
-  Viking/              # Fab Viking mesh + locomotion clips (see Fab assets)
-  WorldMap.txt         # ASCII 128×64 biome overlay + color key
-tools/
-  fab-assets.json      # Fab listing IDs, plus recorded paths once a search finds them
-  fab_manifest.ps1     # read or update one recorded path
-  fab_doctor.bat       # recorded path first, then search; write back a find
-  fab_mesh_info.bat    # list meshes and animations in a downloaded pack
-  build.bat            # SolidCore1Editor Win64 Development
-  run_automation_tests.bat
+  __ExternalActors__/          # World Partition actors for the maps
+  __ExternalObjects__/         # World Partition objects for the maps
+  Characters/                  # BP_SolidCharacter, BP_SolidGameMode
+  Controls.md                  # Keyboard and gamepad defaults
+  Fauna.md                     # Fauna body types
+  Input/                       # Enhanced Input actions and mapping contexts
+  Lairs.md
+  LevelPrototyping/            # Template meshes and FlatCol
+  Maps/                        # L_OpenWorld
+  ThirdPerson/                 # Lvl_ThirdPerson, the startup map
+  Viking/                      # README.md only; the Fab pack is gitignored
+  World/                       # World chart
+  WorldLore.md
+  WorldMap.txt                 # ASCII 128×64 biome overlay and color key
+GameVision.md                  # Design north star
+ideas.md                       # Story inbox
+LICENSE
+NOTICE
+Planning/                      # One open story per file
+  README.md                    # How a story file works
+  Done/                        # Finished stories
+README.md
+SolidCore1.uproject
 Source/
   SolidCore1.Target.cs
   SolidCore1Editor.Target.cs
-  SolidCore1/
-    SolidCore1.Build.cs
-    SolidCore1.h / .cpp                # Module startup and the log
-    Player/
-      SolidCharacter.h / .cpp            # Captain core (move/look/zoom/sprint)
-      SolidCharacterInput.cpp            # Runtime Enhanced Input factory
-      SolidCharacterVisuals.cpp          # Captain mesh + clip selection
-      SolidCharacterFormationDrill.cpp   # Square-walk formation drill
-      SolidPlayerController.*
-      SolidSquadCamera.cpp               # Squad framing + terrain boom lift
-      SolidClickMove.h                   # Raven-sight click-to-move ground ray
-      SolidSight.h                       # True sight / raven sight toggle
-      SolidCameraFog.h                   # Boom scale that keeps the camera over Fog == 0
-    Character/
-      SolidNameLabel.*                   # Floating nameplates
-      SolidClipLocomotion.*              # Shared single-node clip apply/play
-      SolidCharacterStage.*              # Plain room for the character editor
-    Game/
-      SolidGameMode.*
-      SolidGameState.*                   # USolidGameState: journal, inventory, events, previous strongholds
-      SolidGameInstance.*                # Company (and its stronghold), travel session, fog trail, and world-time clock
-      SolidWorldTime.h                   # Journal date and clock
-      SolidSessionSave.h                 # How many play sessions have started
-      SolidBuildId.h                     # SC1-NNNN shown on the debug HUD
-    Content/
-      SolidMaterials.*                   # Shared FlatCol solid-color MID helper
-      SolidContentLookup.*               # Recorded Fab path, then Viking/grass by name and companion packs by folder
-      SolidFabManifest.*                 # tools/fab-assets.json recorded paths
-      SolidContentPaths.h                # Canonical BP soft-class paths
-    Companion/
-      SolidCompanionCharacter.*          # Companion NPC follower
-    Fog/
-      README.md               # FoW history, rejected approaches, invariants
-      SolidTerrainFog.*       # FoW bands, boundary mesh, materials, height-fog helpers
-    Terrain/
-      SolidTerrainTypes.h
-      SolidWorldMap.*         # Parse/scale Content/WorldMap.txt; location 0 centroid
-      SolidRiver.h            # 4 m river channel and pond
-      SolidRoad.*             # Trail, track, road, and highway routes
-      SolidBridge.*           # Ramp, flat center, and ramp where a road crosses a river
-      SolidTerrainMap.*
-      SolidTerrainNoise.h
-      SolidTerrainChunk.*
-      SolidTerrainStreamer.*
-      SolidTerrainMaterials.*   # Grass + per-biome FlatCol resolve
-      SolidTerrainWorldSubsystem.*
-    Vegetation/
-      SolidTree.*             # Placeholder cylinder+cone tree
-      SolidForestTrees.*      # Random Forest-biome tree placement
-    Towns/
-      SolidBuilding.*         # Grey cuboid + red gable roof
-      SolidTownBuildings.*    # Non-overlapping town building pack
-      SolidTownSign.*         # Pole, board, "Welcome to" over the town name
-      SolidTownSigns.*        # One sign per named town, at the middle of its cells
-      SolidTowns.h            # Town names, type, and welcome-sign position, keyed by the WorldMap index
-      SolidWallgate.*       # Stone wall and two towers for a WallGate town
-    Strongholds/
-      SolidStronghold.*       # Type, size, the shelf, the grass face, the cliff frame, and the move to a site
-      SolidDungeonPassage.h  # Click on the dark opening to enter or leave
-      SolidDungeonLevel.h        # Travel options; captain only; room bounds
-      SolidTower.*                  # The tower visit. Average through Stately are Imperious floor bands. Imperious is the full shaft. Each floor may shift its hex grid by at most 30 cm
-      SolidDungeonExterior.*        # Dungeon exterior: a rock with one dark mouth, centered on the stronghold cell
-      Tower/Actors/SolidTowerExterior.*  # Tower exterior: smooth stone courses, a flat cap, and a dark door, centered on the tower cell
-      Tower/Actors/SolidTowerInterior.*  # Tower visit: discs, arrival holes, flat landings, floor numbers, rails, treads, yellow grid, and the door that leaves
-      Furnishings/SolidStrongholdGrid.h  # 1.2 m pointy-top hexes shared by every stronghold floor
-      Furnishings/SolidFloorSign.h      # The floor number: dark bars on a light plate
-      Furnishings/SolidHandrail.h       # A waist-high bar and the posts that hold it
-      SolidStrongholdFurniture.h    # Furnishing catalog, and the pieces each stronghold uses
-      SolidStrongholdSite.*         # A stronghold site, drawn as a stone block. A click lists each unlocked larger size that has a built type
-      SolidFurnishing.*             # One placed piece: hearth, bed, or chest
-      SolidDungeonInterior.*     # Irregular fourteen-hex Meagre floor
-    Lairs/
-      SolidLairEntrance.*     # Cliff frame and solid dark opening for an Iglin tunnel end
-    HUD/
-      SolidHUD.*              # Debug HUD, battle-plan panel, journal and inventory boards, menu and credits drawing
-      SolidHudTheme.h         # Oak-and-bronze frame
-      SolidPointer.h          # In-game mouse pointer: two head triangles, tip on the hotspot, no tail
-    Events/
-      SolidEvent.h            # Event type, change helpers, and the builders for a town, a bridge, and a closed message
-      SolidEvents.h           # The shipped event list
-      SolidMessages.h         # Message ids and text
-    Journal/
-      SolidJournalEntry.h     # One line: Event or Stronghold
-      SolidJournal.*          # Journal page: time column, entry column, larger board
-    Inventory/
-      SolidItemType.h         # Item catalog: id, name, kind, quality, and max stack
-      SolidStorage.h          # Cave chest slots; rusty sword, old boots, 20 coins, five sticks, and three pitch
-      SolidInventory.*        # Worn boxes and pack store those ids; slot names above the boxes; four crafting slots; Craft spends a known recipe into the first empty pack cell; drag between slots and the chest; starting kit; clear to Rags; / to open
-    Crafting/
-      SolidRecipe.h           # Recipe: name, output item, inputs with counts, known flag; Torch takes one stick and one pitch
-    Menus/
-      SolidCharacterEditor.*  # F10 character editor: page cycle, height build and gender sliders, Sam and Alex colors
-      SolidMainMenu.*         # F10 menu entries (Use portal, Test Drill, Journal, Credits, Build squad, Enter cave, Character editor, Inventory)
-      SolidSquadBuilder.*    # company and plan lists, drag onto squad boxes and F1–F8, Confirm closes the page, a stronghold leave opens it when there is something to arrange, locked until two companions are allowed
-      SolidPortal.h           # Town list, Iglin tunnels row, and squad landing
-      SolidMenuPointer.h      # Pointer hit targets for the menu and portal list
-      SolidCredits.*          # Credits page copy
-    Tests/
-      README.md                       # What the SolidCore1 suite covers
-      SolidTerrainTestHelpers.h   # Shared MakeSmallMap fixture
-      SolidWorldMapTests.cpp
-      SolidRiverTests.cpp
-      SolidRoadTests.cpp
-      SolidTerrainFogTests.cpp
-      SolidTerrainFogMeshTests.cpp
-      SolidTerrainMapTests.cpp
-      SolidTerrainMapMoreTests.cpp
-      SolidTerrainNoiseTests.cpp
-      SolidTerrainTypesTests.cpp
-      SolidVegetationTests.cpp
-      SolidTownSignTests.cpp
-      SolidTownsTests.cpp
-      SolidWallgateTests.cpp
-      SolidStrongholdTests.cpp
-      SolidDungeonLevelTests.cpp
-      SolidStrongholdGridTests.cpp
-      SolidStrongholdFurnitureTests.cpp
-      SolidStrongholdTransitionTests.cpp
-      SolidGameModeTests.cpp
-      SolidCompanionTests.cpp
-      SolidTerrainStreamerTests.cpp
-      SolidClipLocomotionTests.cpp
-      SolidBuildIdTests.cpp
-      SolidPointerTests.cpp
-      SolidClickMoveTests.cpp
-      SolidCharacterEditorTests.cpp
-      SolidMainMenuTests.cpp
-      SolidInventoryTests.cpp
-      SolidItemTypeTests.cpp
-      SolidStorageTests.cpp
-      SolidRecipeTests.cpp
-      SolidPortalTests.cpp
-      SolidMenuPointerTests.cpp
-      SolidSightTests.cpp
-      SolidContentDependencyTests.cpp
+  SolidCore1/                  # This folder contains all the project source code
+  SolidCore1Editor/            # Editor module and the World chart mode
 tools/
-  run_automation_tests.bat
+  build.bat                    # SolidCore1Editor Win64 Development
+  cloud_agent_check.py         # Branch and repo checks before a push
+  editor.bat                   # Open the editor on Lvl_ThirdPerson
+  fab-assets.json              # Fab listing IDs and recorded paths
+  fab_doctor.bat               # Recorded path first, then search; write back a find
+  fab_manifest.ps1             # Read or update one recorded path
+  fab_mesh_info.bat            # List meshes and animations in a downloaded pack
+  fab_mesh_info.ps1
+  pie.bat                      # Play In Editor
+  test.bat                     # Run the SolidCore1 automation tests
 ```
 
 ## Requirements

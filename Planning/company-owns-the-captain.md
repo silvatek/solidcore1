@@ -1,6 +1,6 @@
 # The company owns the captain
 
-Status: Ready
+Status: In Progress
 
 ## Story
 

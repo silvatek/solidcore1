@@ -1,6 +1,6 @@
 # The game instance owns the company
 
-Status: Ready
+Status: In Progress
 
 ## Story
 

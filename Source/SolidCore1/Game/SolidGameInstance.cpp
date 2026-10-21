@@ -29,11 +29,11 @@ USolidCompany* USolidGameInstance::GetCompany()
 
 USolidGameState* USolidGameInstance::GetConfiguration()
 {
-	if (!Configuration)
+	if (!GameState)
 	{
-		Configuration = NewObject<USolidGameState>(this, TEXT("Configuration"));
+		GameState = NewObject<USolidGameState>(this, TEXT("GameState"));
 	}
-	return Configuration;
+	return GameState;
 }
 
 void USolidGameInstance::BeginWorldSession()

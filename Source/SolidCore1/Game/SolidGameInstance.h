@@ -67,7 +67,7 @@ private:
 	TObjectPtr<USolidCompany> Company;
 
 	UPROPERTY()
-	TObjectPtr<USolidGameState> Configuration;
+	TObjectPtr<USolidGameState> GameState;
 
 	bool bHasSession = false;
 	FSolidTravelSession Session;

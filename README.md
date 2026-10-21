@@ -4,6 +4,32 @@ UE **5.8** C++ open-world starter with World Partition–oriented config, a Viki
 
 The design north star is [`GameVision.md`](GameVision.md). The world is [`Content/WorldLore.md`](Content/WorldLore.md). Coding guidelines are [`CodingGuidelines.md`](CodingGuidelines.md).
 
+## Contents
+
+- [To-do](#to-do)
+- [Done](#done)
+- [Controls (runtime defaults)](#controls-runtime-defaults)
+- [Automated tests](#automated-tests)
+  - [Suite (filter `SolidCore1`)](#suite-filter-solidcore1)
+- [Fab assets (Epic Games Launcher)](#fab-assets-epic-games-launcher)
+- [Build ID (HUD)](#build-id-hud)
+- [Character visuals (clip locomotion)](#character-visuals-clip-locomotion)
+  - [Reliable setup: Blueprint pawn (recommended)](#reliable-setup-blueprint-pawn-recommended)
+- [Open and build](#open-and-build)
+  - [Option A — Editor](#option-a--editor)
+  - [Option B — Generate + command-line compile](#option-b--generate--command-line-compile)
+- [Runtime procedural terrain chunks](#runtime-procedural-terrain-chunks)
+- [Exploration fog (fog-of-war)](#exploration-fog-fog-of-war)
+- [WorldMap biomes (SC1-0105)](#worldmap-biomes-sc1-0105)
+- [Forest trees (SC1-0076 / SC1-0110)](#forest-trees-sc1-0076--sc1-0110)
+- [Name labels (SC1-0091 / SC1-0093)](#name-labels-sc1-0091--sc1-0093)
+- [Battle plans (SC1-0095 / SC1-0101)](#battle-plans-sc1-0095--sc1-0101)
+- [Companion (SC1-0024 / SC1-0093)](#companion-sc1-0024--sc1-0093)
+- [Create the open-world map](#create-the-open-world-map)
+- [Project layout](#project-layout)
+- [Requirements](#requirements)
+- [Notes](#notes)
+
 ## To-do
 
 Open stories live in [`Planning`](Planning). Each file is one idea. A story moves to [`Planning/Done`](Planning/Done) after it has been properly tested and you have agreed with the agent that it is done. You say whether you are happy with the implementation. The agent confirms that every acceptance criterion is met.

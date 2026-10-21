@@ -1,0 +1,1 @@
+agent worker start --name "solidcore1-ue" --worker-dir $HOME\Dev\solidcore1

@@ -37,7 +37,6 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Package the game](Planning/package-the-game.md)
 - [Drop the Assassin and Blacksmith packs](Planning/remove-assassin-and-blacksmith.md)
 - [Generate the character mesh outside the editor](Planning/character-mesh-outside-the-editor.md)
-- [Company lists use TArray](Planning/company-lists-as-tarray.md)
 - [Remove WorldMap.txt](Planning/remove-world-map-txt.md)
 
 ## Done

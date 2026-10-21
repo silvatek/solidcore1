@@ -2,9 +2,8 @@
 # Read-only: does not edit tools/fab-assets.json.
 #
 # Usage:
-#   tools\fab_mesh_info.bat Medieval_Assassin_Girl
-#   tools\fab_mesh_info.bat Elf_Blacksmith
-#   tools\fab_mesh_info.bat Content\Medieval_Assassin_Girl
+#   tools\fab_mesh_info.bat Viking
+#   tools\fab_mesh_info.bat Content\Viking
 param(
     [Parameter(Position = 0)]
     [string]$Query
@@ -19,8 +18,8 @@ function Write-Usage {
     Write-Output 'SolidCore1 Fab mesh info'
     Write-Output 'Usage: tools\fab_mesh_info.bat <folder name or path>'
     Write-Output 'Examples:'
-    Write-Output '  tools\fab_mesh_info.bat Medieval_Assassin_Girl'
-    Write-Output '  tools\fab_mesh_info.bat Elf_Blacksmith'
+    Write-Output '  tools\fab_mesh_info.bat Viking'
+    Write-Output '  tools\fab_mesh_info.bat Content\Viking'
     Write-Output 'Prints folders, mesh files (size and SKM / SK / PA), and animation names.'
     Write-Output 'Does not change tools\fab-assets.json.'
 }
@@ -129,32 +128,6 @@ foreach ($folder in $folders) {
 
     $assets = @(Get-ChildItem -LiteralPath $folder -Recurse -File -ErrorAction SilentlyContinue |
         Where-Object { $_.Extension -eq '.uasset' -or $_.Extension -eq '.umap' })
-
-    $leafName = Split-Path -Leaf $folder
-    $bodyRel = $null
-    if ($leafName -eq 'Medieval_Assassin_Girl') {
-        $bodyRel = 'Meshes/base_mesh/SKM_base_mesh_ue.uasset'
-    }
-    elseif ($leafName -eq 'Elf_Blacksmith') {
-        $bodyRel = 'Mesh/SK_Elf_Blacksmith.uasset'
-    }
-    Write-Output ''
-    if ($bodyRel) {
-        $body = $folder
-        foreach ($part in ($bodyRel -split '[\\/]')) {
-            $body = Join-Path $body $part
-        }
-        if (Test-Path -LiteralPath $body -PathType Leaf) {
-            $bodyItem = Get-Item -LiteralPath $body
-            Write-Output ("Body: {0}  {1} bytes" -f (Get-RelativePath $bodyItem.FullName $folder), $bodyItem.Length)
-        }
-        else {
-            Write-Output "Body: MISSING $bodyRel"
-        }
-    }
-    else {
-        Write-Output 'Body: no known body path for this folder'
-    }
 
     $meshes = New-Object System.Collections.Generic.List[object]
     $anims = New-Object System.Collections.Generic.List[object]

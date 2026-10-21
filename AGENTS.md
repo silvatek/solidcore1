@@ -126,8 +126,8 @@ The search leaves unused includes, unused parameters, comments, commented-out bl
 ## Fab content
 
 - Packs under `Content/Fab` and `Content/Viking` are gitignored. Restore only via Epic Launcher **Add to Project**. See `README.md` and `tools/fab-assets.json`.
-- C++ finds Viking/grass by **asset name** under `/Game/Viking` then `/Game/Fab`. The Assassin body is `Meshes/base_mesh/SKM_base_mesh_ue.uasset` inside `Medieval_Assassin_Girl` (`SK_Mannequin.uasset` is the skeleton). The Blacksmith body is `Mesh/SK_Elf_Blacksmith.uasset` inside `Elf_Blacksmith` (`SK_Elf_Blacksmith_Skeleton.uasset` is the skeleton; `SeparatedMesh` parts are not the body). `resolvedPath` / `resolvedFolder` / `resolvedPaths` in `tools/fab-assets.json` are tried first when the recorded file is that body; a different recorded file is replaced when the body is found. Do not relocate folders after Add to Project.
-- Assassin companions play `anim_assassin_idle_2`, `anim_assassin_Walk`, and `anim_assassin_run` from `Medieval_Assassin_Girl`. `anim_assassin_idle_1` is a crouch. The Blacksmith pack has no locomotion clips, so those companions stay on Viking clips. `tools/fab_mesh_info.bat <folder>` lists meshes and animations in a downloaded pack and does not edit the manifest.
+- C++ finds Viking and grass by **asset name** under `/Game/Viking` then `/Game/Fab`. `resolvedPath` / `resolvedFolder` / `resolvedPaths` in `tools/fab-assets.json` are tried first. A find is written back. Do not relocate folders after Add to Project.
+- Companions wear the generated body and the Viking clips. `tools/fab_mesh_info.bat <folder>` lists meshes and animations in a downloaded pack and does not edit the manifest.
 - Grass is required (`Mat_025_grass`).
 
 ## World map

@@ -22,12 +22,7 @@ struct FSolidCharacterMesh
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CharacterMesh")
 	TSoftObjectPtr<USkeletalMesh> Mesh;
 
-	/**
-	 * Asset-registry token used when Mesh is not a direct path.
-	 * Viking is SK_Viking. Assassin is the pack folder Medieval_Assassin_Girl.
-	 * Blacksmith is the pack folder Elf_Blacksmith. Those folders may sit
-	 * anywhere under Content.
-	 */
+	/** Asset-registry token. Viking is SK_Viking. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "CharacterMesh")
 	FString AssetToken;
 };
@@ -170,7 +165,7 @@ public:
 	/** True when the catalog is those starter plans and no others, in that order. */
 	bool HasOnlyDefaultBattlePlans() const;
 
-	/** Seed Viking, Assassin, and Blacksmith. Captain stays on Viking (idempotent). */
+	/** Seed Viking. The captain stays on Viking (idempotent). */
 	void InitializeDefaultCharacterMeshes();
 
 	/** Seed Sam, Alex, Max, Morgan, and Quinn, each with a mesh and a vocation (idempotent). */

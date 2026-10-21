@@ -42,14 +42,6 @@ namespace SolidFabManifest
 	/** Content/Fab/Pack -> /Game/Fab/Pack */
 	FString ContentFolderToPackagePath(const FString& ProjectRelativeFolder);
 
-	/**
-	 * Content path of the pack directory.
-	 * Content/Fab/X/Medieval_Assassin_Girl/Mesh/SK.uasset + Medieval_Assassin_Girl
-	 * -> Content/Fab/X/Medieval_Assassin_Girl.
-	 * Without a matching segment, the file's parent directory.
-	 */
-	FString PackFolderFromContentFile(const FString& ProjectRelativeUasset, const TCHAR* FolderSegment);
-
 	FString ManifestPath();
 	FString LoadManifest();
 
@@ -68,9 +60,6 @@ namespace SolidFabManifest
 	EWriteResult WriteJsonStringField(
 		FString& Json, const TCHAR* AssetId, const TCHAR* Field, const FString& Value);
 
-	/** Asset id whose assetToken matches, or empty. */
-	FString AssetIdForToken(const FString& Json, const TCHAR* Token);
-
 	bool ContentFileExists(const FString& ProjectRelativeUasset);
 	bool ContentDirectoryExists(const FString& ProjectRelativeFolder);
 
@@ -78,12 +67,6 @@ namespace SolidFabManifest
 
 	/** Write resolvedPath and resolvedFolder (the file's parent) when they differ. */
 	void RememberDiscoveredFile(const TCHAR* AssetId, const UObject* Asset);
-
-	/**
-	 * Write resolvedPath and resolvedFolder.
-	 * The folder is the pack directory named FolderSegment when that segment is in the path.
-	 */
-	void RememberDiscoveredMesh(const TCHAR* AssetId, const TCHAR* FolderSegment, const UObject* Asset);
 
 	/** Write one field from an object's Content path. Used for the Viking file map. */
 	void RememberNamedFile(const TCHAR* AssetId, const TCHAR* Field, const UObject* Asset);

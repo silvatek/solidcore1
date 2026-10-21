@@ -58,53 +58,6 @@
       "resolvedPath": "Content/Fab/025_Grass【Material___SeamlessTexture___Instance___Blueprint】/Mat_025_grass/Materials/Mat_025_grass.uasset",
       "resolvedFolder": "Content/Fab/025_Grass【Material___SeamlessTexture___Instance___Blueprint】/Mat_025_grass/Materials",
       "notes": "resolvedPath, then resolvedFolder, then Mat_025_grass under /Game/Fab. A find is written back."
-    },
-    {
-      "id": "assassin",
-      "title": "Free Medieval Assassin Girl",
-      "listingUuid": "2986b290-90ed-4a0e-a891-cacf442033f9",
-      "listing": "https://www.fab.com/listings/2986b290-90ed-4a0e-a891-cacf442033f9",
-      "required": true,
-      "format": "unreal-engine",
-      "engine": "5.8",
-      "attribution": {
-        "creator": "Dimentrius3dArtist",
-        "sellerUrl": "https://www.fab.com/sellers/Dimentrius3dArtist",
-        "source": "Fab",
-        "license": "CC-BY",
-        "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
-        "isFree": true,
-        "credit": "Free Medieval Assassin Girl by Dimentrius3dArtist, used from Fab (CC-BY). https://creativecommons.org/licenses/by/4.0/"
-      },
-      "assetToken": "Assassin",
-      "contentFolder": "Medieval_Assassin_Girl",
-      "searchRoots": ["Content"],
-      "resolvedPath": "Content/Medieval_Assassin_Girl/Meshes/base_mesh/SKM_base_mesh_ue.uasset",
-      "resolvedFolder": "Content/Medieval_Assassin_Girl",
-      "notes": "Body is Meshes/base_mesh/SKM_base_mesh_ue.uasset inside Medieval_Assassin_Girl. A recorded file is kept when it is that body; otherwise the body replaces it. Captain stays on SK_Viking."
-    },
-    {
-      "id": "blacksmith",
-      "title": "Elf Blacksmith",
-      "listingUuid": "d01abf8c-9798-4bcb-8617-2d1d560d318a",
-      "listing": "https://www.fab.com/listings/d01abf8c-9798-4bcb-8617-2d1d560d318a",
-      "required": true,
-      "format": "unreal-engine",
-      "engine": "5.8",
-      "attribution": {
-        "creator": "Art.Hiraeth",
-        "sellerUrl": "https://www.fab.com/sellers/Art.Hiraeth",
-        "source": "Fab",
-        "license": "Fab Standard (Personal / Professional)",
-        "isFree": false,
-        "credit": "Elf Blacksmith by Art.Hiraeth, used from Fab as an element of this project."
-      },
-      "assetToken": "Blacksmith",
-      "contentFolder": "Elf_Blacksmith",
-      "searchRoots": ["Content"],
-      "resolvedPath": "Content/Elf_Blacksmith/Mesh/SK_Elf_Blacksmith.uasset",
-      "resolvedFolder": "Content/Elf_Blacksmith",
-      "notes": "Body is Mesh/SK_Elf_Blacksmith.uasset inside Elf_Blacksmith. SK_Elf_Blacksmith_Skeleton.uasset is the skeleton. SeparatedMesh parts are not the body. The pack has no locomotion clips. A recorded file is kept when it is that body; otherwise the body replaces it. Captain stays on SK_Viking."
     }
   ]
 }

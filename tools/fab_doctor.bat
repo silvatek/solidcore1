@@ -18,8 +18,6 @@ powershell -NoProfile -Command "$j = Get-Content -Raw -LiteralPath '%SCRIPT_DIR%
 if errorlevel 1 (
   echo ca4ba583-8d90-4069-b51f-50e694530b2f
   echo 94bfee39-8d7d-409c-89c9-40433550ee3a
-  echo 2986b290-90ed-4a0e-a891-cacf442033f9
-  echo d01abf8c-9798-4bcb-8617-2d1d560d318a
 )
 echo.
 
@@ -113,9 +111,6 @@ echo   uuid:    94bfee39-8d7d-409c-89c9-40433550ee3a
 echo   listing: https://www.fab.com/listings/94bfee39-8d7d-409c-89c9-40433550ee3a
 echo.
 
-call :CheckCompanion assassin Assassin Medieval_Assassin_Girl 2986b290-90ed-4a0e-a891-cacf442033f9 "Meshes\base_mesh\SKM_base_mesh_ue.uasset"
-call :CheckCompanion blacksmith Blacksmith Elf_Blacksmith d01abf8c-9798-4bcb-8617-2d1d560d318a "Mesh\SK_Elf_Blacksmith.uasset"
-
 echo Restore
 echo   1. Epic Games Launcher -^> Unreal Engine -^> Fab. Sign in.
 echo   2. Open each listing. Add to My Library if needed.
@@ -130,48 +125,6 @@ if "%MISSING%"=="1" (
   exit /b 1
 )
 echo RESULT: required Fab assets are present.
-exit /b 0
-
-:CheckCompanion
-rem %1 manifest id  %2 label  %3 content folder name  %4 listing uuid  %5 body file under the folder
-echo [required] %~2 companion mesh  (%~5 in %~3)
-set "COMPANION="
-set "COMPANION_HOW=search"
-set "BODY_REL=%~5"
-call :GetField "%~1" resolvedPath
-if defined FIELD_VALUE (
-  call :IsBodyMesh "!FIELD_VALUE!" "!BODY_REL!"
-  if defined BODY_MATCH if exist "%ROOT%\!FIELD_VALUE:/=\!" (
-    set "COMPANION=%ROOT%\!FIELD_VALUE:/=\!"
-    set "COMPANION_HOW=recorded"
-  )
-)
-if not defined COMPANION (
-  call :GetField "%~1" resolvedFolder
-  if defined FIELD_VALUE if exist "%ROOT%\!FIELD_VALUE:/=\!\!BODY_REL!" (
-    set "COMPANION=%ROOT%\!FIELD_VALUE:/=\!\!BODY_REL!"
-    set "COMPANION_HOW=recorded folder"
-  )
-)
-if not defined COMPANION (
-  call :SearchNamedFolder "%~3"
-  if defined FOUND_DIR (
-    call :RememberFile "%~1" resolvedFolder "!FOUND_DIR!"
-    if exist "!FOUND_DIR!\!BODY_REL!" (
-      set "COMPANION=!FOUND_DIR!\!BODY_REL!"
-    )
-  )
-)
-if defined COMPANION (
-  echo   OK  !COMPANION:%ROOT%\=!  (!COMPANION_HOW!)
-  call :RememberFile "%~1" resolvedPath "!COMPANION!"
-) else (
-  echo   MISSING  !BODY_REL! in %~3
-  set "MISSING=1"
-)
-echo   uuid:    %~4
-echo   listing: https://www.fab.com/listings/%~4
-echo.
 exit /b 0
 
 :GetField
@@ -208,23 +161,6 @@ set "REL_PATH=!REL_PATH:%ROOT_ABS%\=!"
 set "REL_PATH=!REL_PATH:\=/!"
 if "!REL_PATH:~0,1!"=="/" set "REL_PATH=!REL_PATH:~1!"
 if "!REL_PATH:~-1!"=="/" set "REL_PATH=!REL_PATH:~0,-1!"
-exit /b 0
-
-:SearchNamedFolder
-set "FOUND_DIR="
-for /f "delims=" %%D in ('dir /b /s /ad "%ROOT%\Content" 2^>nul ^| findstr /i /l /e /c:"\%~1"') do (
-  if not defined FOUND_DIR set "FOUND_DIR=%%D"
-)
-exit /b 0
-
-:IsBodyMesh
-set "BODY_MATCH="
-set "BODY_CHECK=%~1"
-set "BODY_EXPECT=%~2"
-set "BODY_CHECK=!BODY_CHECK:\=/!"
-set "BODY_EXPECT=!BODY_EXPECT:\=/!"
-echo !BODY_CHECK! | findstr /i /e /l /c:"!BODY_EXPECT!" >nul
-if not errorlevel 1 set "BODY_MATCH=1"
 exit /b 0
 
 :FirstSk

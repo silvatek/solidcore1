@@ -2,7 +2,6 @@
 #include "Character/SolidSkeletonHover.h"
 #include "SolidBodyMesh.h"
 #include "SolidClipLocomotion.h"
-#include "SolidContentLookup.h"
 #include "SolidCore1.h"
 #include "SolidGameMode.h"
 #include "SolidGroundMove.h"
@@ -366,25 +365,6 @@ void ASolidCompanionCharacter::CacheLocomotionAnims()
 	if (CachedIdleAnim || CachedWalkAnim || CachedRunAnim)
 	{
 		return;
-	}
-
-	if (const USkeletalMesh* MeshAsset = GetMesh() ? GetMesh()->GetSkeletalMeshAsset() : nullptr)
-	{
-		const FString Package = MeshAsset->GetOutermost()->GetName();
-		if (SolidContentLookup::PackageContainsFolder(Package, SolidContentLookup::AssassinContentFolder))
-		{
-			UAnimSequence* Idle = SolidContentLookup::FindPackClip(
-				SolidContentLookup::AssassinContentFolder, SolidContentLookup::AssassinIdleName);
-			if (Idle)
-			{
-				CachedIdleAnim = Idle;
-				CachedWalkAnim = SolidContentLookup::FindPackClip(
-					SolidContentLookup::AssassinContentFolder, SolidContentLookup::AssassinWalkName);
-				CachedRunAnim = SolidContentLookup::FindPackClip(
-					SolidContentLookup::AssassinContentFolder, SolidContentLookup::AssassinRunName);
-				return;
-			}
-		}
 	}
 
 	CachedIdleAnim = SolidClipLocomotion::LoadClip(

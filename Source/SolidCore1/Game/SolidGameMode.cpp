@@ -1,7 +1,6 @@
 #include "SolidGameMode.h"
 #include "SolidBuildId.h"
 #include "SolidCharacter.h"
-#include "SolidContentLookup.h"
 #include "SolidContentPaths.h"
 #include "UObject/SoftObjectPath.h"
 #include "HUD/SolidHUD.h"
@@ -52,30 +51,9 @@ namespace
 {
 	TSoftObjectPtr<USkeletalMesh> ResolveFieldedMesh(USolidCompany* Company, const FSolidCompanion& Companion)
 	{
-		TSoftObjectPtr<USkeletalMesh> Mesh = Company
+		return Company
 			? Company->GetMeshForCompanion(Companion)
 			: TSoftObjectPtr<USkeletalMesh>();
-		const FSolidCharacterMesh* Entry = Company
-			? Company->GetCharacterMesh(Companion.CharacterMeshIndex)
-			: nullptr;
-		if (!Entry || Entry->Name.Equals(TEXT("Viking"), ESearchCase::IgnoreCase))
-		{
-			return Mesh;
-		}
-
-		if (USkeletalMesh* Found = SolidContentLookup::FindSkeletalMeshByToken(*Entry->AssetToken))
-		{
-			return Found;
-		}
-		if (!Mesh.IsNull())
-		{
-			return Mesh;
-		}
-
-		// Distinct from the Viking path so a missing pack does not dress the companion as the captain.
-		const FString Path = FString::Printf(
-			TEXT("/Game/Fab/%s/%s.%s"), *Entry->Name, *Entry->Name, *Entry->Name);
-		return TSoftObjectPtr<USkeletalMesh>(FSoftObjectPath(Path));
 	}
 
 	void CopyBodyControls(ASolidCompanionCharacter* Companion, const FSolidCompanion* Record, const FString& DisplayName)

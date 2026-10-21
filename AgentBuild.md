@@ -19,7 +19,7 @@ Managed cloud agents remain useful for planning and light repo edits. Use the se
 - Unreal Engine **5.8** at `C:\Program Files\Epic Games\UE_5.8` (or set `UE_ROOT` to your install)
 - Visual Studio 2022 with **Game development with C++** (same as `README.md`)
 - A local git checkout of `github.com/silvatek/solidcore1` that already opens and builds in the editor
-- Fab packs restored via Epic Launcher **Add to Project** (Viking, grass, Assassin, Blacksmith). Confirm with `tools\fab_doctor.bat`
+- Fab packs restored via Epic Launcher **Add to Project** (Viking and grass). Confirm with `tools\fab_doctor.bat`
 - [Git for Windows](https://git-scm.com/download/win) (includes Git Bash). The Cursor CLI installer requires this for a private worker
 - Outbound HTTPS to:
   - `api2.cursor.sh` and `api2direct.cursor.sh` (agent session)

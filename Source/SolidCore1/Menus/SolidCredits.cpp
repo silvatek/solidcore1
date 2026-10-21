@@ -24,13 +24,6 @@ void SolidCredits::CollectLines(TArray<FString>& OutLines)
 	OutLines.Add(FString::Printf(TEXT("  %s"), CcByLicense));
 	OutLines.Add(FString::Printf(TEXT("  %s"), GrassListing));
 	OutLines.Add(FString::Printf(TEXT("  %s"), GrassChanges));
-	OutLines.Add(FString::Printf(TEXT("Assassin  %s"), AssassinCreator));
-	OutLines.Add(FString::Printf(TEXT("  %s"), AssassinLicense));
-	OutLines.Add(FString::Printf(TEXT("  %s"), CcByLicense));
-	OutLines.Add(FString::Printf(TEXT("  %s"), AssassinListing));
-	OutLines.Add(FString::Printf(TEXT("Blacksmith  %s"), BlacksmithCreator));
-	OutLines.Add(FString::Printf(TEXT("  %s"), BlacksmithLicense));
-	OutLines.Add(FString::Printf(TEXT("  %s"), BlacksmithListing));
 	OutLines.Add(TEXT(""));
 	OutLines.Add(ToggleHint);
 }

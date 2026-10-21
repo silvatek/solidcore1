@@ -40,14 +40,12 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 
 ## Fab assets (Epic Games Launcher)
 
-Grass, Viking, the Assassin, and the Blacksmith come from Fab. There is **no official download API**. Native UE `.uasset` packs cannot be batch-exported — each listing is **Add to Project** on its own. `resolvedPath`, `resolvedFolder`, and `resolvedPaths` in `tools/fab-assets.json` are tried first. If that file or folder is missing, Viking and grass are found by **asset name** under `/Game/Viking` or `/Game/Fab`, and the Assassin and Blacksmith packs are the folders `Medieval_Assassin_Girl` and `Elf_Blacksmith` anywhere under Content. A find is written back into the manifest. Do **not** move folders after Add to Project.
+Grass and Viking come from Fab. There is **no official download API**. Native UE `.uasset` packs cannot be batch-exported — each listing is **Add to Project** on its own. `resolvedPath`, `resolvedFolder`, and `resolvedPaths` in `tools/fab-assets.json` are tried first. If that file or folder is missing, Viking and grass are found by **asset name** under `/Game/Viking` or `/Game/Fab`. A find is written back into the manifest. Do **not** move folders after Add to Project.
 
 | Asset | Listing | Required | Resolved as |
 |-------|---------|----------|-------------|
-| Viking (Art.Hiraeth) | [fab.com/listings/ca4ba583-…](https://www.fab.com/listings/ca4ba583-8d90-4069-b51f-50e694530b2f) | Yes | `SK_Viking` + `Anim_Viking_*` (captain) |
+| Viking (Art.Hiraeth) | [fab.com/listings/ca4ba583-…](https://www.fab.com/listings/ca4ba583-8d90-4069-b51f-50e694530b2f) | Yes | `SK_Viking` + `Anim_Viking_*` (captain and companion clips) |
 | 025 Grass | [fab.com/listings/94bfee39-…](https://www.fab.com/listings/94bfee39-8d7d-409c-89c9-40433550ee3a) | Yes | `Mat_025_grass` |
-| Free Medieval Assassin Girl (Dimentrius3dArtist) | [fab.com/listings/2986b290-…](https://www.fab.com/listings/2986b290-90ed-4a0e-a891-cacf442033f9) | Yes | `Meshes/base_mesh/SKM_base_mesh_ue` in `Medieval_Assassin_Girl` |
-| Elf Blacksmith (Art.Hiraeth) | [fab.com/listings/d01abf8c-…](https://www.fab.com/listings/d01abf8c-9798-4bcb-8617-2d1d560d318a) | Yes | `Mesh/SK_Elf_Blacksmith` in `Elf_Blacksmith` |
 
 **Restore (Launcher + UE 5.8):**
 
@@ -59,16 +57,15 @@ Grass, Viking, the Assassin, and the Blacksmith come from Fab. There is **no off
 tools\fab_doctor.bat
 ```
 
-tries each recorded path in `tools/fab-assets.json` first, then searches. Viking and grass fall back to `Content/Viking` or `Content/Fab`. The Assassin body is `Meshes/base_mesh/SKM_base_mesh_ue.uasset` (`SK_Mannequin.uasset` beside it is the skeleton). The Blacksmith body is `Mesh/SK_Elf_Blacksmith.uasset` (`SK_Elf_Blacksmith_Skeleton.uasset` is the skeleton). A different recorded file is replaced when that body is found. Official notes: [Exporting Assets from Fab in Launcher](https://dev.epicgames.com/documentation/en-us/fab/exporting-assets-from-fab-in-launcher).
+tries each recorded path in `tools/fab-assets.json` first, then searches. Viking and grass fall back to `Content/Viking` or `Content/Fab`. A find is written back. Official notes: [Exporting Assets from Fab in Launcher](https://dev.epicgames.com/documentation/en-us/fab/exporting-assets-from-fab-in-launcher).
 
 ```bat
-tools\fab_mesh_info.bat Medieval_Assassin_Girl
-tools\fab_mesh_info.bat Elf_Blacksmith
+tools\fab_mesh_info.bat Viking
 ```
 
 lists that pack's folders, mesh files (size and SKM / SK / PA), and animation names. It does not change `fab-assets.json`.
 
-The packs are not in git. `.gitignore` keeps `Content/Fab`, `Content/Viking`, `Content/Medieval_Assassin_Girl`, and `Content/Elf_Blacksmith` out of the repository. A clone does not contain them. Add to Project, then run `tools\fab_doctor.bat`. Do not commit a pack that lands under a different folder name. Viking and the Blacksmith are Fab Standard, so their source files stay off the public repo. Grass and the Assassin are CC-BY.
+The packs are not in git. `.gitignore` keeps `Content/Fab` and `Content/Viking` out of the repository, and also `Content/Medieval_Assassin_Girl` and `Content/Elf_Blacksmith`, so a leftover local copy of those packs is not committed. A clone does not contain the packs. Add to Project, then run `tools\fab_doctor.bat`. Do not commit a pack that lands under a different folder name. Viking is Fab Standard, so its source files stay off the public repo. Grass is CC-BY.
 
 Not yet covered (need PIE): character movement, companion steering on terrain, streamer chunk load/unload, HUD drawing.
 
@@ -227,7 +224,7 @@ USolidGameInstance                  # Session root
     USolidCaptain                   # Title, occupied town, and which sights are unlocked
       ASolidCharacter               # Weak pointer to the live pawn. Current sight stays on the actor
     FSolidBattlePlan[]              # Line, Column, Tight mob, Loose mob, Parade
-    FSolidCharacterMesh[]           # Viking, Assassin, Blacksmith
+    FSolidCharacterMesh[]           # Viking
     FSolidCompanion[]               # Sam, Alex, Max, Morgan, Quinn
     FSolidStronghold                # Active base: Dungeon, Fortress, or Tower
   USolidGameState                   # Events, squad cap, lairs, and the unlocked stronghold size

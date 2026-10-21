@@ -325,35 +325,6 @@ FString SolidFabManifest::ContentFolderToPackagePath(const FString& ProjectRelat
 	return FString(TEXT("/Game/")) + Normal.Mid(8);
 }
 
-FString SolidFabManifest::PackFolderFromContentFile(const FString& ProjectRelativeUasset, const TCHAR* FolderSegment)
-{
-	const FString File = NormalizeContentPath(ProjectRelativeUasset);
-	if (File.IsEmpty())
-	{
-		return FString();
-	}
-	if (FolderSegment && FolderSegment[0])
-	{
-		const FString Segment = FString(TEXT("/")) + FolderSegment;
-		int32 SearchFrom = 0;
-		while (SearchFrom < File.Len())
-		{
-			const int32 At = File.Find(Segment, ESearchCase::IgnoreCase, ESearchDir::FromStart, SearchFrom);
-			if (At == INDEX_NONE)
-			{
-				break;
-			}
-			const int32 After = At + Segment.Len();
-			if (After >= File.Len() || File[After] == TEXT('/'))
-			{
-				return File.Left(After);
-			}
-			SearchFrom = At + 1;
-		}
-	}
-	return ParentContentFolder(File);
-}
-
 FString SolidFabManifest::ManifestPath()
 {
 	if (FPaths::ProjectDir().IsEmpty())
@@ -428,56 +399,6 @@ SolidFabManifest::EWriteResult SolidFabManifest::WriteJsonStringField(
 	return EWriteResult::Updated;
 }
 
-FString SolidFabManifest::AssetIdForToken(const FString& Json, const TCHAR* Token)
-{
-	if (!Token || !Token[0])
-	{
-		return FString();
-	}
-
-	int32 From = 0;
-	while (From < Json.Len())
-	{
-		const int32 At = FindFrom(Json, TEXT("\"assetToken\""), From);
-		if (At == INDEX_NONE)
-		{
-			return FString();
-		}
-
-		FString TokenValue;
-		int32 ValueStart = 0;
-		int32 ValueEnd = 0;
-		if (!ReadStringAt(Json, At, Json.Len(), TokenValue, ValueStart, ValueEnd)
-			|| !TokenValue.Equals(Token, ESearchCase::IgnoreCase))
-		{
-			From = At + 12;
-			continue;
-		}
-
-		int32 IdKey = INDEX_NONE;
-		for (int32 Cursor = At; Cursor >= 0; --Cursor)
-		{
-			if (Json.Mid(Cursor).StartsWith(TEXT("\"id\"")))
-			{
-				IdKey = Cursor;
-				break;
-			}
-		}
-		if (IdKey == INDEX_NONE)
-		{
-			return FString();
-		}
-
-		FString AssetId;
-		if (ReadStringAt(Json, IdKey, Json.Len(), AssetId, ValueStart, ValueEnd))
-		{
-			return AssetId;
-		}
-		return FString();
-	}
-	return FString();
-}
-
 bool SolidFabManifest::ContentFileExists(const FString& ProjectRelativeUasset)
 {
 	if (ProjectRelativeUasset.IsEmpty() || FPaths::ProjectDir().IsEmpty())
@@ -528,30 +449,6 @@ void SolidFabManifest::RememberDiscoveredFile(const TCHAR* AssetId, const UObjec
 	bool bChanged = false;
 	AssignField(Json, AssetId, TEXT("resolvedPath"), File, bChanged);
 	const FString Folder = ParentContentFolder(File);
-	if (!Folder.IsEmpty())
-	{
-		AssignField(Json, AssetId, TEXT("resolvedFolder"), Folder, bChanged);
-	}
-	StoreIfChanged(Json, bChanged);
-}
-
-void SolidFabManifest::RememberDiscoveredMesh(
-	const TCHAR* AssetId, const TCHAR* FolderSegment, const UObject* Asset)
-{
-	if (!AssetId || !AssetId[0] || !Asset)
-	{
-		return;
-	}
-	const FString File = ObjectPathToContentFile(Asset->GetPathName());
-	if (File.IsEmpty())
-	{
-		return;
-	}
-
-	FString Json = LoadManifest();
-	bool bChanged = false;
-	AssignField(Json, AssetId, TEXT("resolvedPath"), File, bChanged);
-	const FString Folder = PackFolderFromContentFile(File, FolderSegment);
 	if (!Folder.IsEmpty())
 	{
 		AssignField(Json, AssetId, TEXT("resolvedFolder"), Folder, bChanged);

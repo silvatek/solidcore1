@@ -13,7 +13,7 @@ set "ROOT=%SCRIPT_DIR%.."
 for %%I in ("%ROOT%") do set "ROOT=%%~fI"
 set "MARKER=%ROOT%\agent.ok"
 
-agent worker start --name "solidcore1-ue" --worker-dir $HOME\Dev\solidcore1
+call agent worker start --name "solidcore1-ue" --worker-dir $HOME\Dev\solidcore1
 set "ERR=%ERRORLEVEL%"
 if not "%ERR%"=="0" exit /b %ERR%
 

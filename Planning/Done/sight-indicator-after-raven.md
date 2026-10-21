@@ -1,6 +1,6 @@
 # Sight indicator after Raven Sight
 
-Status: In Progress
+Status: Done
 
 ## Story
 

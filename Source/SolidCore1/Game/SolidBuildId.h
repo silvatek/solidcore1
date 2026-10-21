@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0508")
+#define SOLID_BUILD_ID TEXT("SC1-0509")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Company lists use TArray.")
+#define SOLID_BUILD_NOTE TEXT("Sight indicator after raven sight unlocks.")
 #endif

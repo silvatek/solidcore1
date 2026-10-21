@@ -99,6 +99,28 @@ bool FSolidSightMarkerTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidSightIndicatorTest,
+	"SolidCore1.Sight.Indicator",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidSightIndicatorTest::RunTest(const FString& Parameters)
+{
+	TestFalse(
+		TEXT("raven sight locked hides the indicator"),
+		SolidSight::ShowsIndicator(false, false));
+	TestFalse(
+		TEXT("character editor hides it while raven sight is locked"),
+		SolidSight::ShowsIndicator(false, true));
+	TestTrue(
+		TEXT("raven sight unlocked shows the indicator"),
+		SolidSight::ShowsIndicator(true, false));
+	TestFalse(
+		TEXT("character editor hides it after raven sight unlocks"),
+		SolidSight::ShowsIndicator(true, true));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidSightHorizontalViewTest,
 	"SolidCore1.Sight.HorizontalView",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)

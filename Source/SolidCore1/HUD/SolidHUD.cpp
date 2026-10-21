@@ -1336,16 +1336,21 @@ bool ASolidHUD::SelectChoiceAt(const float X, const float Y)
 void ASolidHUD::DrawHUD()
 {
 	Super::DrawHUD();
-	if (bShowCharacterEditor)
+	bool bRavenSightEnabled = false;
+	if (const UWorld* World = GetWorld())
 	{
-		if (bSightIndicatorAdded)
+		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 		{
-			RemoveSightIndicator();
+			bRavenSightEnabled = GameMode->IsSightEnabled(ESolidSight::Raven);
 		}
 	}
-	else
+	if (SolidSight::ShowsIndicator(bRavenSightEnabled, bShowCharacterEditor))
 	{
 		EnsureSightIndicator();
+	}
+	else if (bSightIndicatorAdded)
+	{
+		RemoveSightIndicator();
 	}
 
 	if (!Canvas)

@@ -58,4 +58,13 @@ namespace SolidSight
 	{
 		return IsTrueSight(Sight) ? TEXT("\U0001F441") : TEXT("\U0001F985");
 	}
+
+	/**
+	 * Top-right oval. Hidden until raven sight unlocks, and while the character editor is open.
+	 * The editor hides it even when raven sight is unlocked.
+	 */
+	inline bool ShowsIndicator(const bool bRavenSightEnabled, const bool bCharacterEditorOpen)
+	{
+		return bRavenSightEnabled && !bCharacterEditorOpen;
+	}
 }

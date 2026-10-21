@@ -17,7 +17,6 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Drill battle plan](Planning/drill-battle-plan.md)
 - [Falcon Sight and Eagle Sight](Planning/falcon-and-eagle-sight.md)
 - [More terrain textures](Planning/more-terrain-textures.md)
-- [Sight indicator after Raven Sight](Planning/sight-indicator-after-raven.md)
 - [Early game battle plans](Planning/early-game-battle-plans.md)
 - [Journal Filters and Scrollbar](Planning/journal-filters-and-scrollbar.md)
 - [Replace FAB_Doctor with an automated test](Planning/fab-doctor-automated-test.md)
@@ -60,6 +59,7 @@ Shipped stories live in [`Planning/Done`](Planning/Done).
 - [Bridges](Planning/Done/bridges.md)
 - [Town signs](Planning/Done/town-signs.md)
 - [True sight / raven sight](Planning/Done/true-sight-raven-sight.md)
+- [Sight indicator after Raven Sight](Planning/Done/sight-indicator-after-raven.md)
 - [Events](Planning/Done/events.md)
 - [Journal](Planning/Done/journal.md)
 - [Inventory](Planning/Done/inventory.md)
@@ -141,7 +141,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 | `SolidCore1.HUD.DebugToggle` | F12 shows and hides the tech readout |
 | `SolidCore1.Pointer.*` | Bronze arrow tip, two head triangles and no tail, outline, and hide-while-looking |
 | `SolidCore1.ClickMove.*` | Single click, raven-only; WASD is true sight; ground ray |
-| `SolidCore1.Sight.*` | True sight at start; F9 or a right stick click switches to raven sight and back; entering true sight levels the camera and keeps the yaw; eye and eagle markers |
+| `SolidCore1.Sight.*` | True sight at start; F9 or a right stick click switches to raven sight and back; entering true sight levels the camera and keeps the yaw; eye and eagle markers; top-right indicator hidden until raven sight unlocks, and while the character editor is open |
 | `SolidCore1.Events.*` | Enter-town events, Reach broken bridge, Killed by monsters, and Driven from the village: each has an eight-digit id and an act (Iglin, the bridge, and the monster message are ACT_0, the return to Iglin is ACT_1, Relion ACT_2, Kanfold ACT_3, Dragongate ACT_4); messages have their own ids; the ramp shows "You are killed by monsters"; closing it opens strongholds, sends the captain into the active stronghold, and clears his inventory to Rags; Enter Iglin titles the captain Orphan; the next entry to Iglin shows "You are driven from the village", titles Outcast, and an EnableLair change carries the Iglin tunnels id; Enter Iglin and Killed by monsters leave the tunnels shut; the journal names that lair as enabled with the message and the title; Relion and Reach broken bridge wait until Iglin has fired; nothing before Relion enables raven sight; Relion, Kanfold, and Dragongate enable raven sight; max squad size through the whole company; captain title through Captain; Relion repairs the Iglin bridge; a named town cell is that town; an EnableStrongholdSize change enables one stronghold size and opens strongholds; Killed by monsters enables Meagre, Enter Relion enables Humble, and Enter Kanfold enables Average; Enter Dragongate still lists one for every size, including those three, until each size has only one event; Enter Iglin does not enable a size |
 | `SolidCore1.Build.*` | `SOLID_BUILD_ID` / note present |
 | `SolidCore1.Content.*` | Required Content + Engine assets the code loads; Assassin and Blacksmith folders; recorded Fab paths |

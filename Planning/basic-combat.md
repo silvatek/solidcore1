@@ -14,14 +14,14 @@ A click on those reptiles still leaves the fight unstarted. Entering DetectionRa
 
 ## Acceptance
 
-- The weapon in the main hand is the one the fight uses. An attack lands on the armour they have on.
+- The captain's weapon in the main hand is the one the captain's attack uses. A companion's attack uses that companion's fixed weapon and armour. An attack lands on the armour the target has on.
 - Each monster has DetectionRange and EscapeDistance. The three reptiles start each at 5 m. The two values are separate. Play-testing may change either one. The starting figure for each is 5 m.
 - The captain or a companion in the squad entering any monster's DetectionRange starts combat. The group then follows its plan. While the captain is alive, one living companion still inside an EscapeDistance keeps combat going.
 - Combat ends when the captain and every companion in the squad are outside every monster's EscapeDistance. The attack cycle and the retreat stop. Entering a DetectionRange again starts combat again.
 - Combat ends when every monster in the fight is dead, or when the captain and every companion in the squad are dead. That ends it even while the other side is still inside an EscapeDistance. The attack cycle and the retreat stop. A dead monster does not start combat again.
 - A click on a monster does not start combat.
 - A monster moves no farther than its EscapeDistance from its spawn point. That point is the place [Basic monsters](basic-monsters.md) put it.
-- An empty main hand makes no attack. Prepare, attack, and recover do not run for that captain or companion. A monster's fixed weapon is never empty.
+- An empty main hand makes no attack. Prepare, attack, and recover do not run for that captain. A companion's fixed weapon is never empty. A monster's fixed weapon is never empty.
 - The fight reads attack or retreat, and TargetStrategy, from the plan. Random chooses any opponent still in the fight, and each of them is equally likely.
 - When combat starts, the captain, each companion in the squad, and each monster in the fight reads the active plan and follows it.
 - A plan that stores attack selects a target by that plan's TargetStrategy, then prepares, attacks, and recovers. Prepare takes that weapon's Speed. Recover takes that weapon's Speed. After recover, the cycle starts again.

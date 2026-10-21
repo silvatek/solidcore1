@@ -24,7 +24,7 @@ Humans are generated based on a set of core numeric parameters. Each parameter c
 
 Use the Velociraptor skeleton & animations from PBR Velociraptor (Animated), https://www.fab.com/listings/5d5fa3d3-4459-4677-be46-c686f733908c, at /Game/Fab/PBR_Velociraptor__Animated_. Flying creatures don't actually need to fly in-game at first, so we can just add folded wings to the base mesh.
 
-The downloaded mesh is the body for now. Eventually a Velociraptor is built the way a human mesh is built, and the way the Character Editor changes one: the same scaling and deforming procedural mesh generation, on this skeleton, so the clips still play.
+The downloaded mesh is the body for now. Its standing height is 220 cm, a uniform scale of that mesh, and the feet sit on the ground. Eventually a Velociraptor is built the way a human mesh is built, and the way the Character Editor changes one: the same scaling and deforming procedural mesh generation, on this skeleton, so the clips still play.
 
 Main parameters are...
 

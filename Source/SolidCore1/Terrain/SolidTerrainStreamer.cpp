@@ -209,6 +209,7 @@ int32 ASolidTerrainStreamer::ClearExplorationFogAtFocus()
 	if (ASolidGameMode* Mode = GetWorld() ? GetWorld()->GetAuthGameMode<ASolidGameMode>() : nullptr)
 	{
 		Mode->SeedForagePiles();
+		Mode->SeedMonsters();
 	}
 
 	if (Changed > 0 && bRenderExplorationFogMeshes)
@@ -565,6 +566,7 @@ void ASolidTerrainStreamer::CenterExplorationFogOnFocus()
 	if (Mode)
 	{
 		Mode->SeedForagePiles();
+		Mode->SeedMonsters();
 	}
 	bHasFogApplyLocation = false;
 

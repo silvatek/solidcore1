@@ -6,6 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "Terrain/SolidWorldChart.h"
 #include "Vegetation/SolidForage.h"
+#include "Monster/SolidMonster.h"
 #include "Company/SolidCompany.h"
 #include "SolidSight.h"
 #include "SolidGameMode.generated.h"
@@ -13,6 +14,7 @@
 class ASolidBridge;
 class ASolidBuilding;
 class ASolidForagePile;
+class ASolidMonster;
 class ASolidLairEntrance;
 class ASolidLairInterior;
 class ASolidCompanionCharacter;
@@ -165,6 +167,9 @@ public:
 	/** Spawn chosen piles whose fog is now below full. Safe to call again. */
 	void SeedForagePiles();
 
+	/** Spawn chosen reptiles whose fog is now below full. Safe to call again. */
+	void SeedMonsters();
+
 	/**
 	 * Pick up one seeded pile into the pack.
 	 * False when the pack cannot hold it. The pile stays, and nothing else changes.
@@ -225,6 +230,7 @@ protected:
 	void SyncBattlePlans();
 	void EnsureVegetation();
 	void ChooseForagePiles(const USolidTerrainMap* Map);
+	void ChooseMonsters(const USolidTerrainMap* Map);
 	void SaveTravelSession(
 		bool bInStronghold,
 		bool bInLair = false,
@@ -270,6 +276,16 @@ protected:
 	/** Choices for this open-world visit. The same map and seed rebuild the same list. */
 	TArray<SolidForage::FChoice> ForageChoices;
 	bool bForageChosen = false;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<ASolidMonster>> SpawnedMonsters;
+
+	/** Choice indexes already given a monster this visit. A closed visit stores none. */
+	TArray<int32> SeededMonsters;
+
+	/** The same points again on the next open-world visit. */
+	TArray<SolidMonster::FChoice> MonsterChoices;
+	bool bMonstersChosen = false;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidBuilding>> SpawnedTownBuildings;

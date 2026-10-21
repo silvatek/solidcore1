@@ -399,6 +399,163 @@ SolidFabManifest::EWriteResult SolidFabManifest::WriteJsonStringField(
 	return EWriteResult::Updated;
 }
 
+SolidFabManifest::EWriteResult SolidFabManifest::EnsureResolvedPath(
+	FString& Json, const TCHAR* AssetId, const TCHAR* Field, const FString& Value)
+{
+	if (!AssetId || !AssetId[0] || !Field || !Field[0])
+	{
+		return EWriteResult::Missing;
+	}
+
+	const EWriteResult Existing = WriteJsonStringField(Json, AssetId, Field, Value);
+	if (Existing != EWriteResult::Missing)
+	{
+		return Existing;
+	}
+
+	int32 Start = 0;
+	int32 End = 0;
+	if (!FindAssetSpan(Json, AssetId, Start, End))
+	{
+		return EWriteResult::Missing;
+	}
+
+	const FString Normal = NormalizeContentPath(Value);
+	const FString Pair = FString::Printf(TEXT("\"%s\": \"%s\""), Field, *EscapeManifestValue(Normal));
+	const int32 KeyAt = FindFrom(Json, TEXT("\"resolvedPaths\""), Start);
+	if (KeyAt == INDEX_NONE || KeyAt >= End)
+	{
+		const FString Insert = FString::Printf(TEXT(",\n      \"resolvedPaths\": { %s }"), *Pair);
+		Json = Json.Left(End) + Insert + Json.Mid(End);
+		return EWriteResult::Updated;
+	}
+
+	int32 Brace = KeyAt;
+	while (Brace < End && Json[Brace] != TEXT('{'))
+	{
+		++Brace;
+	}
+	if (Brace >= End || Json[Brace] != TEXT('{'))
+	{
+		return EWriteResult::Missing;
+	}
+
+	int32 Depth = 0;
+	bool bInString = false;
+	bool bEscape = false;
+	int32 Close = INDEX_NONE;
+	for (int32 Cursor = Brace; Cursor <= End; ++Cursor)
+	{
+		const TCHAR Char = Json[Cursor];
+		if (bInString)
+		{
+			if (bEscape)
+			{
+				bEscape = false;
+				continue;
+			}
+			if (Char == TEXT('\\'))
+			{
+				bEscape = true;
+				continue;
+			}
+			if (Char == TEXT('"'))
+			{
+				bInString = false;
+			}
+			continue;
+		}
+		if (Char == TEXT('"'))
+		{
+			bInString = true;
+			continue;
+		}
+		if (Char == TEXT('{'))
+		{
+			++Depth;
+		}
+		else if (Char == TEXT('}'))
+		{
+			--Depth;
+			if (Depth == 0)
+			{
+				Close = Cursor;
+				break;
+			}
+		}
+	}
+	if (Close == INDEX_NONE)
+	{
+		return EWriteResult::Missing;
+	}
+
+	bool bEmpty = true;
+	for (int32 Cursor = Brace + 1; Cursor < Close; ++Cursor)
+	{
+		if (!FChar::IsWhitespace(Json[Cursor]))
+		{
+			bEmpty = false;
+			break;
+		}
+	}
+
+	const FString Insert = bEmpty
+		? FString::Printf(TEXT(" %s "), *Pair)
+		: FString::Printf(TEXT(", %s "), *Pair);
+	Json = Json.Left(Close) + Insert + Json.Mid(Close);
+	return EWriteResult::Updated;
+}
+
+void SolidFabManifest::CollectContentFiles(const FString& Json, const TCHAR* AssetId, TArray<FString>& OutFiles)
+{
+	OutFiles.Reset();
+	int32 Start = 0;
+	int32 End = 0;
+	if (!FindAssetSpan(Json, AssetId, Start, End))
+	{
+		return;
+	}
+
+	bool bInString = false;
+	bool bEscape = false;
+	FString Current;
+	for (int32 Cursor = Start; Cursor <= End; ++Cursor)
+	{
+		const TCHAR Char = Json[Cursor];
+		if (bInString)
+		{
+			if (bEscape)
+			{
+				bEscape = false;
+				Current.AppendChar(Char);
+				continue;
+			}
+			if (Char == TEXT('\\'))
+			{
+				bEscape = true;
+				continue;
+			}
+			if (Char == TEXT('"'))
+			{
+				bInString = false;
+				if (Current.StartsWith(TEXT("Content/")) && Current.EndsWith(TEXT(".uasset")))
+				{
+					OutFiles.Add(Current);
+				}
+				Current.Reset();
+				continue;
+			}
+			Current.AppendChar(Char);
+			continue;
+		}
+		if (Char == TEXT('"'))
+		{
+			bInString = true;
+			Current.Reset();
+		}
+	}
+}
+
 bool SolidFabManifest::ContentFileExists(const FString& ProjectRelativeUasset)
 {
 	if (ProjectRelativeUasset.IsEmpty() || FPaths::ProjectDir().IsEmpty())
@@ -472,4 +629,26 @@ void SolidFabManifest::RememberNamedFile(const TCHAR* AssetId, const TCHAR* Fiel
 	bool bChanged = false;
 	AssignField(Json, AssetId, Field, File, bChanged);
 	StoreIfChanged(Json, bChanged);
+}
+
+void SolidFabManifest::RememberResolvedPath(const TCHAR* AssetId, const UObject* Asset)
+{
+	if (!AssetId || !AssetId[0] || !Asset)
+	{
+		return;
+	}
+	const FString File = ObjectPathToContentFile(Asset->GetPathName());
+	if (File.IsEmpty())
+	{
+		return;
+	}
+
+	const FString Field = FPaths::GetCleanFilename(File);
+	FString Json = LoadManifest();
+	const EWriteResult Result = EnsureResolvedPath(Json, AssetId, *Field, File);
+	if (Result == EWriteResult::Updated)
+	{
+		UE_LOG(LogSolid, Warning, TEXT("Recorded Fab %s %s -> %s"), AssetId, *Field, *File);
+	}
+	StoreIfChanged(Json, Result == EWriteResult::Updated);
 }

@@ -60,6 +60,16 @@ namespace SolidFabManifest
 	EWriteResult WriteJsonStringField(
 		FString& Json, const TCHAR* AssetId, const TCHAR* Field, const FString& Value);
 
+	/**
+	 * Write one resolvedPaths entry. A missing key is inserted. An equal value is left as it is.
+	 * Missing when the asset is not in the manifest.
+	 */
+	EWriteResult EnsureResolvedPath(
+		FString& Json, const TCHAR* AssetId, const TCHAR* Field, const FString& Value);
+
+	/** Content file values recorded on one asset. */
+	void CollectContentFiles(const FString& Json, const TCHAR* AssetId, TArray<FString>& OutFiles);
+
 	bool ContentFileExists(const FString& ProjectRelativeUasset);
 	bool ContentDirectoryExists(const FString& ProjectRelativeFolder);
 
@@ -70,4 +80,7 @@ namespace SolidFabManifest
 
 	/** Write one field from an object's Content path. Used for the Viking file map. */
 	void RememberNamedFile(const TCHAR* AssetId, const TCHAR* Field, const UObject* Asset);
+
+	/** Record an asset under resolvedPaths, keyed by its file name. */
+	void RememberResolvedPath(const TCHAR* AssetId, const UObject* Asset);
 }

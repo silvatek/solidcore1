@@ -24,6 +24,9 @@ void SolidCredits::CollectLines(TArray<FString>& OutLines)
 	OutLines.Add(FString::Printf(TEXT("  %s"), CcByLicense));
 	OutLines.Add(FString::Printf(TEXT("  %s"), GrassListing));
 	OutLines.Add(FString::Printf(TEXT("  %s"), GrassChanges));
+	OutLines.Add(FString::Printf(TEXT("Velociraptor  %s"), VelociraptorCreator));
+	OutLines.Add(FString::Printf(TEXT("  %s"), VelociraptorLicense));
+	OutLines.Add(FString::Printf(TEXT("  %s"), VelociraptorListing));
 	OutLines.Add(TEXT(""));
 	OutLines.Add(ToggleHint);
 }

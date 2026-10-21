@@ -46,6 +46,7 @@ Grass and Viking come from Fab. There is **no official download API**. Native UE
 |-------|---------|----------|-------------|
 | Viking (Art.Hiraeth) | [fab.com/listings/ca4ba583-…](https://www.fab.com/listings/ca4ba583-8d90-4069-b51f-50e694530b2f) | Yes | `SK_Viking` + `Anim_Viking_*` (captain and companion clips) |
 | 025 Grass | [fab.com/listings/94bfee39-…](https://www.fab.com/listings/94bfee39-8d7d-409c-89c9-40433550ee3a) | Yes | `Mat_025_grass` |
+| PBR Velociraptor (Animated) (Ferocious Industries) | [fab.com/listings/5d5fa3d3-…](https://www.fab.com/listings/5d5fa3d3-4459-4677-be46-c686f733908c) | Yes | Green skin, in-place idle. Add to Project at `Content/Fab/PBR_Velociraptor__Animated_` |
 
 **Restore (Launcher + UE 5.8):**
 
@@ -257,6 +258,7 @@ ASolidGameMode                      # World root. OpenLevel replaces it
   ASolidLairInterior                # This tunnel visit
   ASolidTree[]
   ASolidForagePile[]
+  ASolidMonster[]                 # Three reptiles beside the Iglin ramp
   ASolidBuilding[]
   ASolidTownSign[]
   ASolidBridge[]

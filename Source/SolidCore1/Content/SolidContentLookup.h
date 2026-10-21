@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 
 class UAnimSequence;
+class UMaterialInterface;
 class USkeletalMesh;
 
 /**
@@ -29,4 +30,22 @@ namespace SolidContentLookup
 	UAnimSequence* FindVikingWalk();
 	UAnimSequence* FindVikingRun();
 	UAnimSequence* FindVikingJump();
+
+	/**
+	 * The green Velociraptor body.
+	 * Recorded paths, then the recorded folder, then a Velociraptor skeletal mesh under Content.
+	 * A name that starts with SK_ wins, and otherwise the shortest name wins.
+	 * Skeleton, physics, and morph assets are skipped. A find is written back.
+	 */
+	USkeletalMesh* FindVelociraptorMesh();
+
+	/**
+	 * The in-place idle in the mesh's folder.
+	 * The name contains Idle and none of Root, Attack, Death, Hit, Roar, Walk, and Run.
+	 * The shortest such name wins. A find is written back.
+	 */
+	UAnimSequence* FindVelociraptorIdle(const USkeletalMesh* Mesh);
+
+	/** The material whose name contains Green, in the Velociraptor pack. The shortest name wins. */
+	UMaterialInterface* FindVelociraptorGreen(const USkeletalMesh* Mesh);
 }

@@ -32,6 +32,12 @@ bool FSolidCreditsCopyTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("notes the grass adaptation"), Joined.Contains(SolidCredits::GrassChanges));
 	TestTrue(TEXT("credits the Viking listing"), Joined.Contains(SolidCredits::VikingListing));
 	TestTrue(TEXT("credits the grass listing"), Joined.Contains(SolidCredits::GrassListing));
+	TestTrue(TEXT("credits the Velociraptor creator"), Joined.Contains(SolidCredits::VelociraptorCreator));
+	TestTrue(TEXT("credits the Velociraptor license"), Joined.Contains(SolidCredits::VelociraptorLicense));
+	TestTrue(TEXT("credits the Velociraptor listing"), Joined.Contains(SolidCredits::VelociraptorListing));
+	const int32 GrassAt = Joined.Find(SolidCredits::GrassListing);
+	const int32 RaptorAt = Joined.Find(SolidCredits::VelociraptorListing);
+	TestTrue(TEXT("the Velociraptor block follows the grass listing"), GrassAt != INDEX_NONE && RaptorAt > GrassAt);
 	TestTrue(TEXT("mentions F10"), Joined.Contains(TEXT("F10")));
 	TestTrue(TEXT("Unreal engine notice"), Joined.Contains(SolidCredits::EngineNotice));
 	TestTrue(TEXT("Unreal trademark notice"), Joined.Contains(SolidCredits::EngineTrademark));

@@ -142,6 +142,10 @@ bool FSolidContentVikingRequiredTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("Anim_Viking_walk"), Walk);
 	TestNotNull(TEXT("Anim_Viking_run"), Run);
 	TestNotNull(TEXT("Anim_Viking_jump"), Jump);
+	USkeletalMesh* Raptor = SolidContentLookup::FindVelociraptorMesh();
+	UAnimSequence* RaptorIdle = SolidContentLookup::FindVelociraptorIdle(Raptor);
+	TestNotNull(TEXT("Velociraptor mesh (/Game/Fab/PBR_Velociraptor__Animated_)"), Raptor);
+	TestNotNull(TEXT("Velociraptor idle"), RaptorIdle);
 	if (Mesh)
 	{
 		const FString Path = Mesh->GetPathName();

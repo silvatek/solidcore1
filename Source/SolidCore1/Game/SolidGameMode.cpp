@@ -35,6 +35,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Vegetation/SolidForage.h"
 #include "Vegetation/SolidForagePile.h"
+#include "Monster/SolidMonster.h"
+#include "Monster/SolidMonsterActor.h"
 #include "Vegetation/SolidForestTrees.h"
 #include "Vegetation/SolidTree.h"
 #include "Components/CapsuleComponent.h"
@@ -1481,6 +1483,127 @@ void ASolidGameMode::SeedForagePiles()
 	}
 }
 
+void ASolidGameMode::ChooseMonsters(const USolidTerrainMap* Map)
+{
+	if (bMonstersChosen || !Map || !Map->IsBuilt())
+	{
+		return;
+	}
+	if (!SolidMonster::WorldHasMonsters(IsInClosedVisit()))
+	{
+		return;
+	}
+	if (!bForageChosen)
+	{
+		ChooseForagePiles(Map);
+	}
+
+	SolidForestTrees::FScatterParams Trees;
+	Trees.Density = ForestTreeDensity;
+	Trees.MaxTrees = MaxForestTrees;
+	Trees.JitterCm = ForestTreeJitterCm;
+
+	TArray<int32> TreePoints;
+	SolidForestTrees::CollectChosenPointIndices(Map->GetPoints(), ForestTreeSeed, Trees, TreePoints);
+
+	TArray<int32> ForagePoints;
+	ForagePoints.Reserve(ForageChoices.Num());
+	for (const SolidForage::FChoice& Choice : ForageChoices)
+	{
+		ForagePoints.Add(Choice.PointIndex);
+	}
+
+	TArray<SolidBridge::FBridge> Bridges;
+	Bridges.Reserve(SpawnedBridges.Num());
+	for (const TObjectPtr<ASolidBridge>& Actor : SpawnedBridges)
+	{
+		const ASolidBridge* Bridge = Actor.Get();
+		if (Bridge && Bridge->HasBridge())
+		{
+			Bridges.Add(Bridge->GetBridge());
+		}
+	}
+
+	FVector2D IglinXY = FVector2D::ZeroVector;
+	const USolidWorldMap* WorldMap = Map->GetWorldMap();
+	if (WorldMap)
+	{
+		WorldMap->GetLocationWorldXY(
+			SolidTowns::Iglin, Map->GetWorldMinXY(), Map->GetWorldMaxXY(), IglinXY);
+	}
+
+	const int32 Chosen = SolidMonster::CollectChoices(
+		Map->GetPoints(), TreePoints, ForagePoints, IglinXY, Bridges, MonsterChoices);
+	bMonstersChosen = true;
+	UE_LOG(LogSolid, Warning, TEXT("Chose %d monsters beside the Iglin ramp"), Chosen);
+}
+
+void ASolidGameMode::SeedMonsters()
+{
+	if (!bMonstersChosen || MonsterChoices.Num() == 0)
+	{
+		return;
+	}
+	if (!SolidMonster::WorldHasMonsters(IsInClosedVisit()))
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World || World->bIsTearingDown)
+	{
+		return;
+	}
+
+	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World);
+	const USolidTerrainMap* Map = Streamer ? Streamer->GetTerrainMap() : nullptr;
+	if (!Map || !Map->IsBuilt())
+	{
+		return;
+	}
+
+	TArray<int32> Ready;
+	SolidMonster::CollectReadyToSeed(Map->GetPoints(), MonsterChoices, SeededMonsters, Ready);
+	if (Ready.Num() == 0)
+	{
+		return;
+	}
+
+	FActorSpawnParameters SpawnParams;
+	SpawnParams.Owner = this;
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+
+	int32 Spawned = 0;
+	for (const int32 Index : Ready)
+	{
+		const SolidMonster::FChoice& Choice = MonsterChoices[Index];
+		FVector SpawnLoc(Choice.XY.X, Choice.XY.Y, 0.f);
+		const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
+		SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
+
+		ASolidMonster* Monster = World->SpawnActor<ASolidMonster>(
+			ASolidMonster::StaticClass(),
+			SpawnLoc,
+			FRotator(0.f, Choice.YawDeg, 0.f),
+			SpawnParams);
+		if (!Monster)
+		{
+			continue;
+		}
+
+		Monster->SetChoice(Index);
+		Monster->BuildVisuals();
+		SpawnedMonsters.Add(Monster);
+		SeededMonsters.Add(Index);
+		++Spawned;
+	}
+
+	if (Spawned > 0)
+	{
+		UE_LOG(LogSolid, Warning, TEXT("Seeded %d monsters"), Spawned);
+	}
+}
+
 bool ASolidGameMode::TakeForagePile(ASolidForagePile* Pile)
 {
 	if (!Pile)
@@ -1858,4 +1981,6 @@ void ASolidGameMode::EnsureVegetation()
 
 	ChooseForagePiles(Streamer->GetTerrainMap());
 	SeedForagePiles();
+	ChooseMonsters(Streamer->GetTerrainMap());
+	SeedMonsters();
 }

@@ -62,6 +62,7 @@ bool FSolidFabManifestRecordTest::RunTest(const FString& Parameters)
 	const FString Manifest = SolidFabManifest::LoadManifest();
 	TestTrue(TEXT("manifest loads"), Manifest.Contains(TEXT("\"id\": \"viking\"")));
 	TestTrue(TEXT("grass is listed"), Manifest.Contains(TEXT("\"id\": \"grass\"")));
+	TestTrue(TEXT("velociraptor is listed"), Manifest.Contains(TEXT("\"id\": \"velociraptor\"")));
 
 	FString VikingMesh;
 	TestTrue(
@@ -105,6 +106,24 @@ bool FSolidFabManifestRecordTest::RunTest(const FString& Parameters)
 		TEXT("missing asset"),
 		SolidFabManifest::WriteJsonStringField(Edited, TEXT("nobody"), TEXT("resolvedPath"), TEXT("Content/X.uasset"))
 			== SolidFabManifest::EWriteResult::Missing);
+
+	const TCHAR* RaptorFile = TEXT("Content/Fab/PBR_Velociraptor__Animated_/SK_Velociraptor.uasset");
+	TestTrue(
+		TEXT("a Velociraptor path is recorded"),
+		SolidFabManifest::EnsureResolvedPath(Edited, TEXT("velociraptor"), TEXT("SK_Velociraptor.uasset"), RaptorFile)
+			== SolidFabManifest::EWriteResult::Updated);
+	FString RaptorRecorded;
+	TestTrue(
+		TEXT("the recorded path reads back"),
+		SolidFabManifest::ReadJsonStringField(Edited, TEXT("velociraptor"), TEXT("SK_Velociraptor.uasset"), RaptorRecorded));
+	TestEqual(TEXT("the recorded path"), RaptorRecorded, FString(RaptorFile));
+	TestTrue(
+		TEXT("a second record is unchanged"),
+		SolidFabManifest::EnsureResolvedPath(Edited, TEXT("velociraptor"), TEXT("SK_Velociraptor.uasset"), RaptorFile)
+			== SolidFabManifest::EWriteResult::Unchanged);
+	FString VikingStill;
+	SolidFabManifest::ReadJsonStringField(Edited, TEXT("viking"), TEXT("SK_Viking.uasset"), VikingStill);
+	TestEqual(TEXT("viking mesh is still untouched"), VikingStill, VikingMesh);
 
 	return true;
 }

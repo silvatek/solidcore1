@@ -40,5 +40,10 @@ namespace SolidCredits
 	inline constexpr const TCHAR* GrassChanges =
 		TEXT("Changed: Unreal material made from the Fab GLB.");
 
+	inline constexpr const TCHAR* VelociraptorCreator = TEXT("Ferocious Industries");
+	inline constexpr const TCHAR* VelociraptorLicense = TEXT("Fab Standard (Personal / Professional)");
+	inline constexpr const TCHAR* VelociraptorListing =
+		TEXT("https://www.fab.com/listings/5d5fa3d3-4459-4677-be46-c686f733908c");
+
 	void CollectLines(TArray<FString>& OutLines);
 }

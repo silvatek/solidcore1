@@ -1,6 +1,6 @@
 # The game state owns the journal
 
-Status: Ready
+Status: In Progress
 
 ## Story
 

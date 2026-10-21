@@ -1,6 +1,6 @@
 # Work on the terrain grid
 
-Status: New
+Status: Ready
 
 ## Story
 
@@ -12,7 +12,7 @@ A road already runs inside that cell. The route is a path of cells, and the stri
 
 The chart and the game work on the terrain grid, the surface that strip already uses. A terrain point carries the biome. The World chart mode works on those points.
 
-Paint writes the points under a round brush. The developer chooses the brush width. The smallest brush is one point, 2 m across. A click stamps that brush. A drag lays it along the path, so a diagonal or a curve is one stroke at that width. Shift-drag fills the rectangle from the press to the release, and that rectangle's edges run north–south and east–west. Alt copies the biome of the point under the cursor. The palette is grassland, forest, mountain, town, desert, sea, and river. Painting river sets those points to river. Road stays a strip of its own width. The land starts as the old cells copied onto the points they cover.
+Paint writes the points under a round brush. The developer chooses the brush width. The smallest brush is one point, 2 m across. A click stamps that brush. A drag lays it along the path, so a diagonal or a curve is one stroke at that width. Shift-drag fills the rectangle from the press to the release, and that rectangle's edges run north–south and east–west. Alt copies the biome of the point under the cursor. The palette is grassland, forest, mountain, town, desert, sea, and river. Painting river sets those points to river. Road stays a strip of its own width. The land starts as the biome each old cell shows in play, copied onto the points inside it. The marker point is then town or grassland.
 
 A town stays what it is now. The town biome is painted with that brush, the same way as grassland or forest. A town marker links the painted town ground connected to it to one town `SolidTowns` already defines. Two towns of different names whose paint meets is not a map this story builds. If two such markers fall in one painted region, the region keeps the first marker. A stronghold, a stronghold site, a lair entrance, and a lair exit stay one point. A custom note stays one point. The point under a marker is town when the marker is a town, and grassland for every other marker. That is the rule now, and it continues. A single biome point standing on its own is a valid map.
 
@@ -32,7 +32,7 @@ A road keeps its route-finding. The solver keeps its steps and its costs: off mo
 - Paint writes the terrain points under a round brush. The developer chooses the width. The smallest width is one point, 2 m.
 - A click stamps the brush. A drag lays it along the cursor path. Shift-drag fills the rectangle between the press and the release. Alt copies the biome of the point under the cursor.
 - The palette is grassland, forest, mountain, town, desert, sea, and river. Painting river sets the points under the brush to river.
-- The starting land is the old cells copied onto the points inside them.
+- The starting land copies the biome each old cell shows in play onto the points inside it. The marker point is then town or grassland.
 
 ## Implementation notes
 

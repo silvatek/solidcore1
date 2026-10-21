@@ -280,7 +280,7 @@ def check_agent_marker(errors: list[str]) -> None:
         script = agent.read_text(encoding="utf-8")
         start_at = script.find(
             'agent worker start --name "solidcore1-ue" '
-            "--worker-dir $HOME\\Dev\\solidcore1"
+            "--worker-dir Dev\\solidcore1"
         )
         passed_at = script.find('> "%MARKER%" echo Passed')
         if start_at < 0 or passed_at < start_at:

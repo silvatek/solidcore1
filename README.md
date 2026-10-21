@@ -20,6 +20,7 @@ The design north star is [`GameVision.md`](GameVision.md). The world is [`Conten
 - [Exploration fog (fog-of-war)](#exploration-fog-fog-of-war)
 - [Create the open-world map](#create-the-open-world-map)
 - [Project layout](#project-layout)
+- [Data structure](#data-structure)
 - [Requirements](#requirements)
 - [Notes](#notes)
 
@@ -213,6 +214,54 @@ tools/
   fab_mesh_info.ps1
   pie.bat                      # Play In Editor
   test.bat                     # Run the SolidCore1 automation tests
+```
+
+## Data structure
+
+The game instance lasts for the play session. OpenLevel keeps it. The game mode and the terrain streamer belong to the loaded world.
+
+```
+USolidGameInstance                  # Session root
+  USolidCompany                     # Catalog, the captain, and the company base
+    USolidCaptain                   # Title, occupied town, and which sights are unlocked
+      ASolidCharacter               # Weak pointer to the live pawn. Current sight stays on the actor
+    FSolidBattlePlan[]              # Line, Column, Tight mob, Loose mob, Parade
+    FSolidCharacterMesh[]           # Viking, Assassin, Blacksmith
+    FSolidCompanion[]               # Sam, Alex, Max, Morgan, Quinn
+    FSolidStronghold                # Active base: Dungeon, Fortress, or Tower
+  USolidGameState                   # Events, squad cap, lairs, and the unlocked stronghold size
+    FJournalEntry[]                 # Event, stronghold, and lair lines
+    FLoadout                        # Worn boxes, pack, and crafting slots
+    FContainer                      # Cave chest
+    FSolidStronghold[]              # Bases the company moved on from
+    FUsed[]                         # Furnishings in the active stronghold
+  FSolidTravelSession               # Squad choices carried across a closed visit
+  float[]                           # Fog trail, copied off the terrain map before a visit
+ASolidGameMode                      # World root. OpenLevel replaces it
+  USolidSquad                       # Indexes into the company. Does not own it
+  USolidWorldChart                  # /Game/World/WorldChart
+    ESolidBiome[]                   # Marker biome of each cell
+    FSolidWorldChartMark[]          # Towns, strongholds, sites, lair mouths, notes
+    FSolidWorldChartRoad[]          # Two end names and a type
+  ASolidTerrainStreamer
+    USolidTerrainMap
+      FSolidTerrainPoint[]          # Height, biome, threat, and fog
+      USolidWorldMap                # The chart, loaded for play
+        uint8[]                     # 128×64 markers
+        FSolidWorldBang[]           # Named ! cells
+        FRoute[]                    # Solved roads
+    ASolidTerrainChunk[]
+  ASolidCompanionCharacter[]        # Fielded squad
+  ASolidStrongholdExterior[]
+  ASolidStrongholdInterior          # This stronghold visit
+  ASolidStrongholdSite[]
+  ASolidLairEntrance[]
+  ASolidLairInterior                # This tunnel visit
+  ASolidTree[]
+  ASolidForagePile[]
+  ASolidBuilding[]
+  ASolidTownSign[]
+  ASolidBridge[]
 ```
 
 ## Requirements

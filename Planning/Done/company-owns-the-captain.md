@@ -1,6 +1,6 @@
 # The company owns the captain
 
-Status: In Progress
+Status: Done
 
 ## Story
 
@@ -35,4 +35,4 @@ The captain holds the title, the occupied town, and the sight-enabled flags. Tho
 - The weak actor pointer is how the captain finds his body in this world. Companions still follow that actor. They do not follow the `USolidCaptain` object.
 - The mesh stays off this object. The company catalog's Viking entry is a mesh a companion can wear. The captain stays on `SK_Viking`, loaded by name in `ApplyCharacterVisuals`. A mesh pointer here would keep an asset the pawn already loads.
 - `OccupiedTown` stays the numbered cell. This story does not turn it into a world position.
-- [Falcon Sight and Eagle Sight](falcon-and-eagle-sight.md) adds sight modes. This story moves the two flags that exist. A later unlock flag for a sight belongs on the captain with these two.
+- [Falcon Sight and Eagle Sight](../falcon-and-eagle-sight.md) adds sight modes. This story moves the two flags that exist. A later unlock flag for a sight belongs on the captain with these two.

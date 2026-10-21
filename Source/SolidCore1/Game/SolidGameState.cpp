@@ -33,18 +33,13 @@ FGameState& FGameState::operator=(const FGameState& Other)
 	bRavenSightEnabled = Other.bRavenSightEnabled;
 	bIglinBridgeRepaired = Other.bIglinBridgeRepaired;
 	bStrongholdsEnabled = Other.bStrongholdsEnabled;
-	for (int32 Index = 0; Index < SolidEvents::MaxEnabledLairs; ++Index)
-	{
-		EnabledLairs[Index] = Other.EnabledLairs[Index];
-	}
-	EnabledLairCount = Other.EnabledLairCount;
+	EnabledLairs = Other.EnabledLairs;
 	OccupiedTown = Other.OccupiedTown;
 	for (int32 Index = 0; Index < SolidEvents::MaxEvents; ++Index)
 	{
 		bFired[Index] = Other.bFired[Index];
-		FiredOrder[Index] = Other.FiredOrder[Index];
 	}
-	FiredCount = Other.FiredCount;
+	FiredOrder = Other.FiredOrder;
 	Journal = Other.Journal;
 	Inventory = Other.Inventory;
 	TakenForagePiles = Other.TakenForagePiles;
@@ -107,10 +102,9 @@ namespace
 
 		const SolidEvents::FEvent& Event = SolidEvents::Definitions[Index];
 		State.bFired[Index] = true;
-		if (State.FiredCount < SolidEvents::MaxEvents)
+		if (State.FiredOrder.Num() < SolidEvents::MaxEvents)
 		{
-			State.FiredOrder[State.FiredCount] = Index;
-			++State.FiredCount;
+			State.FiredOrder.Add(Index);
 		}
 		SolidEvents::Remember(State, When, SolidJournal::EJournalType::Event, FString(), Index);
 		Result.bFired = true;
@@ -182,10 +176,9 @@ void ApplyChange(FGameState& State, const FChange& Change, FResult& Result)
 	case EChange::EnableLair:
 		if (Change.LairId && Change.LairId[0] && !IsLairEnabled(State, Change.LairId))
 		{
-			if (State.EnabledLairCount < MaxEnabledLairs)
+			if (State.EnabledLairs.Num() < MaxEnabledLairs)
 			{
-				State.EnabledLairs[State.EnabledLairCount] = Change.LairId;
-				++State.EnabledLairCount;
+				State.EnabledLairs.Add(Change.LairId);
 			}
 		}
 		break;

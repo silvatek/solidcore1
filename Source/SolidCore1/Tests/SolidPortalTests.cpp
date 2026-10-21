@@ -292,16 +292,16 @@ bool FSolidPortalTunnelMouthTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the journal names the event"), bNamed);
 	TestTrue(TEXT("the journal records the message and title"), bDetail);
 
-	const int32 FiredCount = State.FiredCount;
+	const int32 FiredCount = State.FiredOrder.Num();
 	const int32 JournalCount = State.Journal.Num();
 	const SolidEvents::FResult Again = SolidEvents::MarkComplete(State, SolidEvents::IdDrivenFromVillage);
 	TestFalse(TEXT("a second portal does not record it again"), Again.bFired);
-	TestEqual(TEXT("fired once"), State.FiredCount, FiredCount);
+	TestEqual(TEXT("fired once"), State.FiredOrder.Num(), FiredCount);
 	TestEqual(TEXT("one journal line"), State.Journal.Num(), JournalCount);
 
 	FGameState Empty;
 	TestFalse(TEXT("an unknown id does nothing"), SolidEvents::MarkComplete(Empty, TEXT("missing")).bFired);
-	TestEqual(TEXT("unknown id leaves the journal empty"), Empty.FiredCount, 0);
+	TestEqual(TEXT("unknown id leaves the journal empty"), Empty.FiredOrder.Num(), 0);
 	return true;
 }
 

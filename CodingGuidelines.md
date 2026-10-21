@@ -56,6 +56,12 @@ A `TObjectPtr` member with `UPROPERTY` is an engine subobject the actor owns, su
 
 A raw `new` is not an owning pointer. Ownership is a `TUniquePtr` or an engine subobject.
 
+## Lists and arrays
+
+A runtime list is a `TArray`. Its length is `Num()`. Prefer `TInlineAllocator` sized to the known cap when the list rides on a copied company value such as `FGameState`. Check the cap before `Add`.
+
+A fixed slot, a compile-time table, and a geometric tuple stay a C array. Worn and pack boxes, craft and chest cells, `bFired` per definition index, `Changes` and `Requires` on a constexpr event, recipe `Inputs`, catalogs sized with `UE_ARRAY_COUNT`, and hex corners or triangle vertices are those cases.
+
 ## Names
 
 Types start with `Solid`. Unreal's prefixes stay: `F` for a plain class or struct, `A` for an actor, `U` for a `UObject`, `E` for an enum.

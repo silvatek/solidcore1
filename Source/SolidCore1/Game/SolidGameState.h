@@ -33,14 +33,12 @@ struct FGameState
 	 * Lairs an EnableLair change has opened, by id.
 	 * A new game has none. The change carries the lair id. The event id does not.
 	 */
-	const TCHAR* EnabledLairs[SolidEvents::MaxEnabledLairs] = {};
-	int32 EnabledLairCount = 0;
+	TArray<const TCHAR*, TInlineAllocator<SolidEvents::MaxEnabledLairs>> EnabledLairs;
 	/** Numbered cell the captain is standing on, or INDEX_NONE. */
 	int32 OccupiedTown = INDEX_NONE;
 	bool bFired[SolidEvents::MaxEvents] = {};
 	/** Definition indexes, in the order the events fired. */
-	int32 FiredOrder[SolidEvents::MaxEvents] = {};
-	int32 FiredCount = 0;
+	TArray<int32, TInlineAllocator<SolidEvents::MaxEvents>> FiredOrder;
 	/** Journal, including repeated stronghold trips. */
 	TArray<SolidJournal::FJournalEntry> Journal;
 	/** Worn boxes and the captain's pack. Each box stores an item id. A new game starts in the starting kit. Killed by monsters clears it to Rags. */
@@ -106,10 +104,9 @@ namespace SolidEvents
 		{
 			return false;
 		}
-		const int32 Count = State.EnabledLairCount < MaxEnabledLairs ? State.EnabledLairCount : MaxEnabledLairs;
-		for (int32 Index = 0; Index < Count; ++Index)
+		for (const TCHAR* Enabled : State.EnabledLairs)
 		{
-			if (State.EnabledLairs[Index] && FCString::Strcmp(State.EnabledLairs[Index], Id) == 0)
+			if (Enabled && FCString::Strcmp(Enabled, Id) == 0)
 			{
 				return true;
 			}

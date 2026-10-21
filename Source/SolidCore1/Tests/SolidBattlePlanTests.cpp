@@ -228,9 +228,8 @@ bool FSolidGameModeBattlePlanSelectTest::RunTest(const FString& Parameters)
 
 	auto Fired = [](const FGameState& State, const TCHAR* Name)
 	{
-		for (int32 Index = 0; Index < State.FiredCount; ++Index)
+		for (const int32 EventIndex : State.FiredOrder)
 		{
-			const int32 EventIndex = State.FiredOrder[Index];
 			if (EventIndex >= 0
 				&& EventIndex < SolidEvents::DefinitionCount
 				&& FCString::Strcmp(SolidEvents::Definitions[EventIndex].Name, Name) == 0)
@@ -247,9 +246,9 @@ bool FSolidGameModeBattlePlanSelectTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("parade does not fire Enter Kanfold"), Fired(State, TEXT("Enter Kanfold")));
 	TestFalse(TEXT("parade does not fire Reach broken bridge"), Fired(State, TEXT("Reach broken bridge")));
 	TestFalse(TEXT("parade does not fire Driven from the village"), Fired(State, TEXT("Driven from the village")));
-	const int32 FiredCount = State.FiredCount;
+	const int32 FiredCount = State.FiredOrder.Num();
 	TestTrue(TEXT("F5 parade again"), GameMode->SelectBattlePlanSlot(4));
-	TestEqual(TEXT("parade events fire once"), GameMode->GetConfiguration().FiredCount, FiredCount);
+	TestEqual(TEXT("parade events fire once"), GameMode->GetConfiguration().FiredOrder.Num(), FiredCount);
 
 	TestFalse(TEXT("F6 empty"), GameMode->SelectBattlePlanSlot(5));
 	return true;
@@ -360,7 +359,7 @@ bool FSolidBattlePlanParadeOtherKeyTest::RunTest(const FString& Parameters)
 	USolidSquad* Squad = GameMode->GetSquad();
 	TestNotNull(TEXT("squad"), Squad);
 
-	const int32 FiredBefore = GameMode->GetConfiguration().FiredCount;
+	const int32 FiredBefore = GameMode->GetConfiguration().FiredOrder.Num();
 	SolidSquadBuilder::FDrag Drag;
 	Drag.Kind = SolidSquadBuilder::EDrag::Plan;
 	Drag.Index = 4;
@@ -369,7 +368,7 @@ bool FSolidBattlePlanParadeOtherKeyTest::RunTest(const FString& Parameters)
 	Hit.Kind = SolidSquadBuilder::EHit::KeyBox;
 	Hit.Index = 5;
 	TestTrue(TEXT("Parade moves onto F6"), SolidSquadBuilder::Drop(Squad, 2, Drag, Hit));
-	TestEqual(TEXT("the drop does not fire"), GameMode->GetConfiguration().FiredCount, FiredBefore);
+	TestEqual(TEXT("the drop does not fire"), GameMode->GetConfiguration().FiredOrder.Num(), FiredBefore);
 	TestEqual(TEXT("F1 stays the active plan"), Squad->GetActiveAssignedSlot(), 0);
 	TestTrue(TEXT("F6 now holds Parade"), Squad->GetAssignedBattlePlan(5)->Formation == ESolidBattleFormation::Parade);
 	TestNull(TEXT("F5 is empty"), Squad->GetAssignedBattlePlan(4));
@@ -378,10 +377,10 @@ bool FSolidBattlePlanParadeOtherKeyTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("formation parade"), Squad->GetActiveFormation() == ESolidBattleFormation::Parade);
 	TestTrue(TEXT("parade unlocks raven sight"), GameMode->IsSightEnabled(ESolidSight::Raven));
 	TestEqual(TEXT("parade raises the squad cap"), GameMode->GetMaxSquadSize(), SolidEvents::RosterCount);
-	const int32 FiredOnce = GameMode->GetConfiguration().FiredCount;
+	const int32 FiredOnce = GameMode->GetConfiguration().FiredOrder.Num();
 	TestTrue(TEXT("parade fired"), FiredOnce > FiredBefore);
 	TestTrue(TEXT("F6 parade again"), GameMode->SelectBattlePlanSlot(5));
-	TestEqual(TEXT("parade events fire once"), GameMode->GetConfiguration().FiredCount, FiredOnce);
+	TestEqual(TEXT("parade events fire once"), GameMode->GetConfiguration().FiredOrder.Num(), FiredOnce);
 	return true;
 }
 

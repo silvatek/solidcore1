@@ -130,7 +130,7 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("the Iglin bridge starts broken"), State.bIglinBridgeRepaired);
 	TestFalse(TEXT("Iglin leaves raven sight locked"), State.bRavenSightEnabled);
 	TestEqual(TEXT("Iglin leaves the squad empty"), State.MaxSquadSize, 0);
-	TestEqual(TEXT("Iglin is recorded"), State.FiredCount, 1);
+	TestEqual(TEXT("Iglin is recorded"), State.FiredOrder.Num(), 1);
 
 	const SolidEvents::FResult Relion = SolidEvents::NotifyOccupiedTown(State, 1);
 	TestTrue(TEXT("entering town 1 fires"), Relion.bFired);
@@ -530,7 +530,7 @@ bool FSolidEventsRequiresTest::RunTest(const FString& Parameters)
 	const SolidEvents::FResult Blocked = SolidEvents::NotifyOccupiedTown(Early, 1);
 	TestFalse(TEXT("Relion waits for Iglin"), Blocked.bFired);
 	TestFalse(TEXT("an early visit does not repair the bridge"), Early.bIglinBridgeRepaired);
-	TestEqual(TEXT("Relion is not recorded yet"), Early.FiredCount, 0);
+	TestEqual(TEXT("Relion is not recorded yet"), Early.FiredOrder.Num(), 0);
 	TestEqual(TEXT("the squad stays empty"), Early.MaxSquadSize, 0);
 
 	const SolidEvents::FResult Iglin = SolidEvents::NotifyOccupiedTown(Early, 0);
@@ -564,7 +564,7 @@ bool FSolidEventsReachBrokenBridgeTest::RunTest(const FString& Parameters)
 	FGameState Early;
 	const SolidEvents::FResult Blocked = SolidEvents::NotifyReachBrokenBridge(Early);
 	TestFalse(TEXT("the ramp waits for Iglin"), Blocked.bFired);
-	TestEqual(TEXT("an early stand is not recorded"), Early.FiredCount, 0);
+	TestEqual(TEXT("an early stand is not recorded"), Early.FiredOrder.Num(), 0);
 	TestEqual(TEXT("an early stand is not journaled"), Early.Journal.Num(), 0);
 	TestEqual(TEXT("the ramp does not occupy a town"), Early.OccupiedTown, INDEX_NONE);
 
@@ -577,7 +577,7 @@ bool FSolidEventsReachBrokenBridgeTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("the ramp does not repair the bridge"), Reached.bRepairBridge);
 	TestFalse(TEXT("the Iglin bridge stays broken"), Early.bIglinBridgeRepaired);
 	TestEqual(TEXT("the squad stays empty"), Early.MaxSquadSize, 0);
-	TestEqual(TEXT("Iglin and the ramp are recorded"), Early.FiredCount, 2);
+	TestEqual(TEXT("Iglin and the ramp are recorded"), Early.FiredOrder.Num(), 2);
 
 	const int32 BridgeIndex = SolidEvents::FindIndexById(SolidEvents::IdReachBrokenBridge);
 	TestTrue(TEXT("the ramp is journaled"), Early.Journal.Num() == 2 && BridgeIndex != INDEX_NONE
@@ -608,7 +608,7 @@ bool FSolidEventsReachBrokenBridgeTest::RunTest(const FString& Parameters)
 	const int32 JournalCount = Early.Journal.Num();
 	const SolidEvents::FResult Again = SolidEvents::NotifyReachBrokenBridge(Early);
 	TestFalse(TEXT("the ramp fires once"), Again.bFired);
-	TestEqual(TEXT("a second stand is not recorded"), Early.FiredCount, 2);
+	TestEqual(TEXT("a second stand is not recorded"), Early.FiredOrder.Num(), 2);
 	TestEqual(TEXT("a second stand is not journaled"), Early.Journal.Num(), JournalCount);
 	return true;
 }
@@ -1489,7 +1489,7 @@ bool FSolidEventsEnableLairTest::RunTest(const FString& Parameters)
 		SolidEvents::ApplyChange(State, *Enable, Result);
 	}
 	TestTrue(TEXT("enabling the tunnels again keeps them open"), SolidLair::TunnelsOpen(State));
-	TestEqual(TEXT("the tunnels are recorded once"), State.EnabledLairCount, 1);
+	TestEqual(TEXT("the tunnels are recorded once"), State.EnabledLairs.Num(), 1);
 	return true;
 }
 

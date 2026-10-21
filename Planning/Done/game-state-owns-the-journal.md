@@ -36,4 +36,4 @@ The journal holds the lines, and the journal code that writes and reads those li
 - An event still fires on the play state. The line it used to write through `SolidEvents::Remember` is `USolidJournal::Remember`.
 - `Describe` does not use the stored lines. It stays a method on the class because the detail text is journal text.
 - The canvas draw stays in `SolidHUD.cpp`. Moving it onto the journal would pull `UCanvas` into the play state.
-- [Journal Filters and Scrollbar](journal-filters-and-scrollbar.md) removes the cap of 64 and adds the filters and the scrollbar. It starts after this story is Done. This story does not add them.
+- [Journal Filters and Scrollbar](../journal-filters-and-scrollbar.md) removes the cap of 64 and adds the filters and the scrollbar. It starts after this story is Done. This story does not add them.

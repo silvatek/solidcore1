@@ -1258,7 +1258,7 @@ namespace SolidHUDPrivate
 		}
 
 		Lines.Add(FString::Printf(
-			TEXT("Red post %.0f cm  blue post %.0f cm  grid %.0f cm"),
+			TEXT("Red %.0f cm cell  blue %.0f cm cell  reptile cell  grid %.0f cm"),
 			SolidMonsterMeasure::RedPostCm,
 			SolidMonsterMeasure::BluePostCm,
 			SolidMonsterMeasure::GridStepCm));

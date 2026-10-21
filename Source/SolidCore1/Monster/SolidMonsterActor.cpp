@@ -1,5 +1,6 @@
 #include "SolidMonsterActor.h"
 #include "SolidMonster.h"
+#include "Game/SolidMonsterMeasure.h"
 #include "SolidClipLocomotion.h"
 #include "SolidContentLookup.h"
 #include "SolidCore1.h"
@@ -148,14 +149,18 @@ void ASolidMonster::BuildVisuals()
 	}
 
 	const float Scale = SolidMonster::UniformScale(Span.Height);
+	const float FootZ = Samples.Num() > 0 ? Samples[0] : Span.BottomZ;
+	const float LocalZ = -FootZ * Scale;
 	Body->SetRelativeScale3D(FVector(Scale));
-	Body->SetRelativeLocation(FVector(0.f, 0.f, -Span.BottomZ * Scale));
+	Body->SetRelativeLocation(FVector(0.f, 0.f, LocalZ));
 	const float FullHeight = Samples.Num() > 0 ? Samples.Last() - Samples[0] : 0.f;
-	UE_LOG(LogSolid, Log, TEXT("SolidMonster %s samples %d, full %.1f cm, chosen %.1f cm, scale %.3f"),
+	UE_LOG(LogSolid, Log, TEXT("SolidMonster %s samples %d, full %.1f cm, chosen %.1f cm, foot %.1f cm, localZ %+.1f, scale %.3f"),
 		bFromMesh ? TEXT("mesh") : TEXT("bones"),
 		Samples.Num(),
 		FullHeight,
 		Span.Height,
+		FootZ,
+		LocalZ,
 		Scale);
 	Body->SetRelativeRotation(FRotator(0.f, SolidMonster::MeshFacingYawDeg, 0.f));
 

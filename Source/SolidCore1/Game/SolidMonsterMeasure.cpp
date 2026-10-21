@@ -8,8 +8,7 @@
 
 namespace SolidMonsterMeasurePrivate
 {
-	/** Engine cylinder and cube are 100 cm, with the pivot at the centre. The cylinder's radius is 50 cm. */
-	constexpr float ShapeHalfWidthCm = 50.f;
+	/** Engine cube is 100 cm, with the pivot at the centre. */
 	constexpr float ShapeHeightCm = 100.f;
 
 	void Prepare(UStaticMeshComponent* Part, const bool bCastShadow)
@@ -96,11 +95,10 @@ void ASolidMonsterMeasure::BuildVisuals()
 	using namespace SolidMonsterMeasure;
 	using namespace SolidMonsterMeasurePrivate;
 
-	UStaticMesh* Cylinder = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cylinder.Cylinder"));
 	UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
-	if (!Cylinder || !Cube)
+	if (!Cube)
 	{
-		UE_LOG(LogSolid, Error, TEXT("SolidMonsterMeasure: missing Engine BasicShapes."));
+		UE_LOG(LogSolid, Error, TEXT("SolidMonsterMeasure: missing Engine BasicShapes Cube."));
 		return;
 	}
 
@@ -108,19 +106,20 @@ void ASolidMonsterMeasure::BuildVisuals()
 	const FLinearColor Blue(0.10f, 0.28f, 0.95f);
 	const FLinearColor Yellow(0.95f, 0.75f, 0.05f);
 
+	const float PostWidthScale = PostWidthCm / ShapeHeightCm;
 	Place(
 		RedPost,
-		Cylinder,
-		FVector(0.f, RedPostSideCm, RedPostCm * 0.5f),
-		FVector(PostRadiusCm / ShapeHalfWidthCm, PostRadiusCm / ShapeHalfWidthCm, RedPostCm / ShapeHeightCm),
+		Cube,
+		FVector(RedPostXCm, RedPostSideCm, RedPostCm * 0.5f),
+		FVector(PostWidthScale, PostWidthScale, RedPostCm / ShapeHeightCm),
 		Red,
 		TEXT("MonsterPost100"),
 		this);
 	Place(
 		BluePost,
-		Cylinder,
-		FVector(0.f, BluePostSideCm, BluePostCm * 0.5f),
-		FVector(PostRadiusCm / ShapeHalfWidthCm, PostRadiusCm / ShapeHalfWidthCm, BluePostCm / ShapeHeightCm),
+		Cube,
+		FVector(BluePostXCm, BluePostSideCm, BluePostCm * 0.5f),
+		FVector(PostWidthScale, PostWidthScale, BluePostCm / ShapeHeightCm),
 		Blue,
 		TEXT("MonsterPost200"),
 		this);

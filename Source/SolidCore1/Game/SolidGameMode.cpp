@@ -1588,10 +1588,15 @@ void ASolidGameMode::SeedMonsters()
 		const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
 		SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
 
+		const FRotator Face(0.f, Choice.YawDeg, 0.f);
+		const FVector MonsterLoc = SpawnLoc + Face.RotateVector(FVector(
+			SolidMonsterMeasure::MonsterXCm,
+			SolidMonsterMeasure::MonsterYCm,
+			0.f));
 		ASolidMonster* Monster = World->SpawnActor<ASolidMonster>(
 			ASolidMonster::StaticClass(),
-			SpawnLoc,
-			FRotator(0.f, Choice.YawDeg, 0.f),
+			MonsterLoc,
+			Face,
 			SpawnParams);
 		if (!Monster)
 		{
@@ -1607,7 +1612,7 @@ void ASolidGameMode::SeedMonsters()
 		World->SpawnActor<ASolidMonsterMeasure>(
 			ASolidMonsterMeasure::StaticClass(),
 			SpawnLoc,
-			FRotator(0.f, Choice.YawDeg, 0.f),
+			Face,
 			SpawnParams);
 		break;
 	}

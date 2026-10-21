@@ -12,16 +12,21 @@ class UStaticMeshComponent;
  */
 namespace SolidMonsterMeasure
 {
-	/** Red cylinder beside the reptile (cm). */
+	/** Red cube in one grid cell (cm). */
 	inline constexpr float RedPostCm = 100.f;
-	/** Blue cylinder beside the red post (cm). */
+	/** Blue cube in another grid cell (cm). */
 	inline constexpr float BluePostCm = 200.f;
-	/** How far the red post stands to the reptile's right (cm). */
+	/** Red cell, measured from the grid centre (cm). */
+	inline constexpr float RedPostXCm = 150.f;
 	inline constexpr float RedPostSideCm = 150.f;
-	/** How far the blue post stands to the reptile's right (cm). */
-	inline constexpr float BluePostSideCm = 300.f;
-	/** Post thickness (cm). */
-	inline constexpr float PostRadiusCm = 20.f;
+	/** Blue cell, measured from the grid centre (cm). */
+	inline constexpr float BluePostXCm = -150.f;
+	inline constexpr float BluePostSideCm = 150.f;
+	/** Reptile cell, measured from the grid centre (cm). */
+	inline constexpr float MonsterXCm = 150.f;
+	inline constexpr float MonsterYCm = -150.f;
+	/** Cube width so a post sits inside its cell (cm). */
+	inline constexpr float PostWidthCm = 70.f;
 
 	/** Half the painted square, measured from the reptile's feet (cm). */
 	inline constexpr float GridHalfCm = 400.f;

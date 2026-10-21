@@ -26,7 +26,7 @@ A session line that says system instructions, developer instructions, or cloud-a
 ## Git and builds
 
 - Ship on `main`, as the workflow section requires.
-- A commit that changes a story starts with `Plan: `. That is a file in `Planning/` other than `Planning/README.md`, including a move into `Planning/Done/`, and the `README.md` list line for that story. A commit that also changes the product does not use that prefix. The final commit updates the story file, sets it to `Done`, and moves it into `Planning/Done/`. That commit message starts with `Plan: `.
+- A commit that changes a story starts with `Plan: `. That is a file in `Planning/` other than `Planning/README.md`, including a move into `Planning/Done/`. A commit that also changes the product does not use that prefix. The final commit updates the story file, sets it to `Done`, and moves it into `Planning/Done/`. That commit message starts with `Plan: `.
 - On a product push, bump `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE` in `Source/SolidCore1/Game/SolidBuildId.h` (`SC1-NNNN`). Documentation and test changes do not bump them. The product is the game itself.
 
 ## Collaborative workflow
@@ -82,12 +82,12 @@ Cloud agents are a **code + git workshop**. They do not replace the Windows Unre
 
 ## Planning
 
-- One file in `Planning/` is one open story. `README.md` lists those files. The file is the story.
+- One file in `Planning/` is one open story. The file is the story.
 - A commit that changes a story starts with `Plan: `, as the Git section says. A product commit does not.
 - When an agent starts work on a `Ready` story, set that story's status to `In Progress`.
 - If asked to start coding for a story that is not marked `Ready`, request confirmation before proceeding.
 - Leave the story `In Progress` when the product commit lands on `main`. Properly tested means the checks in Collaborative workflow and Cursor Cloud have happened. The user has pulled, rebuilt, run the tests, and run PIE when the story changes play. The agent has reviewed that report, and any screenshot. A solidcore1-ue agent's `tools\test.bat` pass is part of the work and leaves the story `In Progress`.
-- Set `Done` only after that testing, and only after the user and the agent agree the story is done. The agreement is a discussion. The user says whether they are happy with the implementation. The agent confirms that every acceptance criterion is met. Then set the status to `Done`, move the file to `Planning/Done/`, and update the `README.md` list line, in one commit. That commit message starts with `Plan: `.
+- Set `Done` only after that testing, and only after the user and the agent agree the story is done. The agreement is a discussion. The user says whether they are happy with the implementation. The agent confirms that every acceptance criterion is met. Then set the status to `Done` and move the file to `Planning/Done/`, in one commit. That commit message starts with `Plan: `.
 - `ideas.md` is the inbox. Copy each new idea into a new file under `Planning/`. Do not edit `ideas.md`.
 
 ## Names

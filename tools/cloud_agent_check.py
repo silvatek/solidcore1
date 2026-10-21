@@ -107,20 +107,11 @@ def check_planning(errors: list[str], warnings: list[str]) -> None:
         errors.append("missing README.md")
         return
 
-    on_disk = {p.name for p in planning.glob("*.md") if p.name != "README.md"}
-    todo_section = readme.read_text(encoding="utf-8").split("## Done", 1)[0]
-    listed = set(re.findall(r"Planning/([\w-]+\.md)", todo_section))
+    text = readme.read_text(encoding="utf-8")
+    if not re.search(r"^## Planning\s*$", text, re.MULTILINE):
+        errors.append("README.md is missing the Planning section")
 
-    unlisted = sorted(on_disk - listed)
-    missing = sorted(listed - on_disk)
-    if unlisted:
-        errors.append(
-            "Planning stories not listed in README.md To-do: " + ", ".join(unlisted)
-        )
-    if missing:
-        errors.append(
-            "README.md To-do links missing files in Planning/: " + ", ".join(missing)
-        )
+    on_disk = {p.name for p in planning.glob("*.md") if p.name != "README.md"}
 
     # Soft check: Done/ files should not also sit in Planning/.
     done = ROOT / "Planning" / "Done"

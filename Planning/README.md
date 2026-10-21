@@ -5,7 +5,7 @@ One file is one story.
 - An open story is a file in this folder.
 - A story in `Done/` has been properly tested, and the user and the agent have agreed it is done. Move the file then. Do not leave a copy here.
 - `ideas.md` at the repo root is the inbox. Copy a new idea into a file here. Do not edit `ideas.md`.
-- `README.md` lists the files. The file is the story.
+- The file is the story.
 - A commit that changes a story starts with `Plan: `. A product commit does not. That prefix is how the two are told apart. The final commit updates the story file and moves it into `Done/`. That commit message starts with `Plan: `.
 
 ## Status

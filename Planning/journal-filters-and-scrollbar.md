@@ -4,7 +4,7 @@ Status: Ready
 
 ## Story
 
-This story depends on [The game state owns the journal](game-state-owns-the-journal.md), which is Ready. That story ships first.
+This story depends on [The game state owns the journal](Done/game-state-owns-the-journal.md), which is Done. That story ships first.
 
 The player opens the journal. Every line stays. The list grows well past what fits on the board. The player filters the lines and moves through them with a scrollbar.
 

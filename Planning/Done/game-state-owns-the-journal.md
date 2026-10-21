@@ -1,14 +1,14 @@
 # The game state owns the journal
 
-Status: In Progress
+Status: Done
 
 ## Story
 
-[The game instance owns the play state](Done/game-instance-owns-the-play-state.md) is Done. The session has one `USolidGameState`. The journal is still an array on that object.
+[The game instance owns the play state](game-instance-owns-the-play-state.md) is Done. The session has one `USolidGameState`. The journal is still an array on that object.
 
 A developer gives that play state one journal. `USolidJournal` is a `UCLASS`. `USolidGameState` owns it. A cave trip and a tower trip keep that object.
 
-The journal holds the lines, and the journal code that writes and reads those lines moves onto that class. The HUD still paints the page. [Journal Filters and Scrollbar](journal-filters-and-scrollbar.md) is Ready and depends on this story. This story ships first.
+The journal holds the lines, and the journal code that writes and reads those lines moves onto that class. The HUD still paints the page. [Journal Filters and Scrollbar](../journal-filters-and-scrollbar.md) is Ready and depends on this story. This story ships first.
 
 ## Acceptance
 

@@ -37,6 +37,7 @@
 #include "Vegetation/SolidForagePile.h"
 #include "Monster/SolidMonster.h"
 #include "Monster/SolidMonsterActor.h"
+#include "SolidMonsterMeasure.h"
 #include "Vegetation/SolidForestTrees.h"
 #include "Vegetation/SolidTree.h"
 #include "Components/CapsuleComponent.h"
@@ -1569,6 +1570,12 @@ void ASolidGameMode::SeedMonsters()
 		return;
 	}
 
+	// One reptile, so the posts beside it are the size reference. The choice still holds three.
+	if (SpawnedMonsters.Num() > 0)
+	{
+		return;
+	}
+
 	FActorSpawnParameters SpawnParams;
 	SpawnParams.Owner = this;
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -1596,6 +1603,13 @@ void ASolidGameMode::SeedMonsters()
 		SpawnedMonsters.Add(Monster);
 		SeededMonsters.Add(Index);
 		++Spawned;
+
+		World->SpawnActor<ASolidMonsterMeasure>(
+			ASolidMonsterMeasure::StaticClass(),
+			SpawnLoc,
+			FRotator(0.f, Choice.YawDeg, 0.f),
+			SpawnParams);
+		break;
 	}
 
 	if (Spawned > 0)

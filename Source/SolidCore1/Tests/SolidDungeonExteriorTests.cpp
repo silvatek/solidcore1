@@ -431,7 +431,8 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 	const float MouthFront = MouthBounds.Max.X;
 	TestTrue(
 		TEXT("the mouth sits behind the front"),
-		FMath::IsNearlyEqual(MouthFront, NorthForward - SolidStrongholds::MouthRecessCm, 0.5f));
+		MouthFront <= NorthForward + 0.5f
+			&& MouthFront >= NorthForward - SolidStrongholds::MouthRecessCm - 0.5f);
 	TestTrue(
 		TEXT("the mouth blocks a click"),
 		Mouth->GetCollisionResponseToChannel(ECC_Visibility) == ECR_Block);

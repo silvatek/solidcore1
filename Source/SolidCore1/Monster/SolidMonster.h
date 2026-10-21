@@ -124,6 +124,13 @@ namespace SolidMonster
 	}
 
 	/**
+	 * The drawn body is smaller than the vertex span.
+	 * Beside the 1 m post, the span scale draws a body about a third of a metre tall.
+	 * This factor brings that drawn body up to the standing height.
+	 */
+	inline constexpr float DrawnBodyFactor = 3.f;
+
+	/**
 	 * Relative Z that puts the scaled bounds bottom on the actor origin.
 	 * BoundsOriginZ and BoundsExtentZ are the mesh bounds before the scale.
 	 */

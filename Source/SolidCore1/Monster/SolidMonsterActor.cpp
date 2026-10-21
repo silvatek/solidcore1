@@ -148,7 +148,7 @@ void ASolidMonster::BuildVisuals()
 		Span.Height = Bounds.BoxExtent.Z * 2.f;
 	}
 
-	const float Scale = SolidMonster::UniformScale(Span.Height);
+	const float Scale = SolidMonster::UniformScale(Span.Height) * SolidMonster::DrawnBodyFactor;
 	const float FootZ = Samples.Num() > 0 ? Samples[0] : Span.BottomZ;
 	const float LocalZ = -FootZ * Scale;
 	Body->SetRelativeScale3D(FVector(Scale));

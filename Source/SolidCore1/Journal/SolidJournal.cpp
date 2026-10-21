@@ -1,12 +1,46 @@
 #include "SolidJournal.h"
+#include "Events/SolidEvents.h"
 #include "Events/SolidMessages.h"
 #include "Lairs/SolidLair.h"
-#include "SolidGameState.h"
 #include "SolidSight.h"
 #include "SolidStronghold.h"
 #include "SolidWorldTime.h"
 
-FString SolidJournal::Describe(const SolidEvents::FEvent& Event)
+void USolidJournal::Remember(
+	const SolidWorldTime::FStamp& When,
+	const EJournalType Type,
+	const FString& Text,
+	const int32 EventIndex)
+{
+	if (Entries.Num() >= MaxEntries)
+	{
+		Entries.RemoveAt(0);
+	}
+
+	FJournalEntry Entry;
+	Entry.Type = Type;
+	Entry.Year = When.Year;
+	Entry.Day = When.Day;
+	Entry.MinuteOfSession = When.MinuteOfSession;
+	Entry.EventIndex = EventIndex;
+	Entry.Text = Text;
+	Entries.Add(Entry);
+}
+
+void USolidJournal::RememberStronghold(const SolidWorldTime::FStamp& When, const bool bEnter)
+{
+	Remember(
+		When,
+		EJournalType::Stronghold,
+		bEnter ? FString(SolidStronghold::EnterLabel) : FString(SolidStronghold::ExitLabel));
+}
+
+void USolidJournal::RememberLair(const SolidWorldTime::FStamp& When, const bool bEnter)
+{
+	Remember(When, EJournalType::Lair, SolidLair::VisitJournalText(bEnter));
+}
+
+FString USolidJournal::Describe(const SolidEvents::FEvent& Event)
 {
 	FString Text;
 	const int32 ChangeCount = FMath::Min(Event.ChangeCount, SolidEvents::MaxChangesPerEvent);
@@ -85,19 +119,19 @@ FString SolidJournal::Describe(const SolidEvents::FEvent& Event)
 	return Text;
 }
 
-void SolidJournal::CollectRows(const USolidGameState& State, TArray<FRow>& OutRows)
+void USolidJournal::CollectRows(TArray<FRow>& OutRows) const
 {
 	OutRows.Reset();
 	OutRows.Add({ ERowKind::Title, FString(), FString(Title) });
 	OutRows.Add({ ERowKind::Heading, FString(TimeHeading), FString(SummaryHeading) });
 
-	if (State.Journal.Num() <= 0)
+	if (Entries.Num() <= 0)
 	{
 		OutRows.Add({ ERowKind::Empty, FString(), FString(EmptyText) });
 	}
 	else
 	{
-		for (const FJournalEntry& Entry : State.Journal)
+		for (const FJournalEntry& Entry : Entries)
 		{
 			FString Text = Entry.Text;
 			FString Detail;

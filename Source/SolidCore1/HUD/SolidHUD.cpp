@@ -590,7 +590,7 @@ namespace SolidHUDPrivate
 	}
 
 	/** Large journal board. Time and the entry are separate columns. The close hint stays at the bottom. */
-	static void DrawJournalBoard(UCanvas* Canvas, const TArray<SolidJournal::FRow>& Rows)
+	static void DrawJournalBoard(UCanvas* Canvas, const TArray<USolidJournal::FRow>& Rows)
 	{
 		if (!Canvas || Rows.Num() == 0)
 		{
@@ -608,11 +608,11 @@ namespace SolidHUDPrivate
 		float LineHeight = 18.f;
 		float TitleW = 0.f;
 		float TitleH = 18.f;
-		FString TitleText(SolidJournal::Title);
+		FString TitleText(USolidJournal::Title);
 		int32 FlowRows = 0;
-		for (const SolidJournal::FRow& Row : Rows)
+		for (const USolidJournal::FRow& Row : Rows)
 		{
-			if (Row.Kind == SolidJournal::ERowKind::Title)
+			if (Row.Kind == USolidJournal::ERowKind::Title)
 			{
 				if (!Row.Text.IsEmpty())
 				{
@@ -620,7 +620,7 @@ namespace SolidHUDPrivate
 				}
 				continue;
 			}
-			if (Row.Kind != SolidJournal::ERowKind::Hint)
+			if (Row.Kind != USolidJournal::ERowKind::Hint)
 			{
 				++FlowRows;
 			}
@@ -658,12 +658,12 @@ namespace SolidHUDPrivate
 			TitleH = 18.f;
 		}
 
-		const float ColumnSpan = StampWidth > 0.f ? StampWidth + SolidJournal::ColumnGap : 0.f;
+		const float ColumnSpan = StampWidth > 0.f ? StampWidth + USolidJournal::ColumnGap : 0.f;
 		const float ContentW = ColumnSpan + TextWidth;
-		const float ContentH = static_cast<float>(FlowRows) * (LineHeight + SolidJournal::LineGap) + LineHeight;
+		const float ContentH = static_cast<float>(FlowRows) * (LineHeight + USolidJournal::LineGap) + LineHeight;
 		float BoardW = 0.f;
 		float BoardH = 0.f;
-		SolidJournal::BoardSize(
+		USolidJournal::BoardSize(
 			static_cast<float>(Canvas->SizeX),
 			static_cast<float>(Canvas->SizeY),
 			ContentW,
@@ -686,7 +686,7 @@ namespace SolidHUDPrivate
 
 		const SolidHudTheme::FPalette Palette = SolidHudTheme::OakAndBronze();
 		const float Band = SolidHudTheme::BandThickness(Frame);
-		const SolidJournal::FTitlePlate Plate = SolidJournal::TitlePlate(BoxX, BoxY, BoardW, TitleW, TitleH, Band);
+		const USolidJournal::FTitlePlate Plate = USolidJournal::TitlePlate(BoxX, BoxY, BoardW, TitleW, TitleH, Band);
 		FillRect(Canvas, Plate.X, Plate.Y, Plate.W, Plate.H, Palette.Bronze);
 		if (!TitleText.IsEmpty())
 		{
@@ -697,14 +697,14 @@ namespace SolidHUDPrivate
 			Canvas->DrawItem(NameItem);
 		}
 
-		const float OriginX = BoxX + SolidJournal::BoardPad;
-		const SolidJournal::FColumns Columns = SolidJournal::Columns(OriginX, StampWidth);
-		const float HintY = BoxY + BoardH - SolidJournal::BoardPad - LineHeight;
-		float Y = BoxY + SolidJournal::BoardPad;
+		const float OriginX = BoxX + USolidJournal::BoardPad;
+		const USolidJournal::FColumns Columns = USolidJournal::Columns(OriginX, StampWidth);
+		const float HintY = BoxY + BoardH - USolidJournal::BoardPad - LineHeight;
+		float Y = BoxY + USolidJournal::BoardPad;
 
-		for (const SolidJournal::FRow& Row : Rows)
+		for (const USolidJournal::FRow& Row : Rows)
 		{
-			if (Row.Kind == SolidJournal::ERowKind::Title || Row.Kind == SolidJournal::ERowKind::Hint)
+			if (Row.Kind == USolidJournal::ERowKind::Title || Row.Kind == USolidJournal::ERowKind::Hint)
 			{
 				continue;
 			}
@@ -714,7 +714,7 @@ namespace SolidHUDPrivate
 				break;
 			}
 
-			const bool bHeading = Row.Kind == SolidJournal::ERowKind::Heading;
+			const bool bHeading = Row.Kind == USolidJournal::ERowKind::Heading;
 			const FLinearColor Color = bHeading ? Palette.Title : Palette.Ink;
 
 			if (!Row.Stamp.IsEmpty())
@@ -738,18 +738,18 @@ namespace SolidHUDPrivate
 				FillRect(
 					Canvas,
 					BoxX + RuleInset,
-					Y + LineHeight + SolidJournal::LineGap * 0.35f,
+					Y + LineHeight + USolidJournal::LineGap * 0.35f,
 					FMath::Max(0.f, BoardW - RuleInset * 2.f),
 					2.f,
 					Palette.Bronze);
 			}
 
-			Y += LineHeight + SolidJournal::LineGap;
+			Y += LineHeight + USolidJournal::LineGap;
 		}
 
-		for (const SolidJournal::FRow& Row : Rows)
+		for (const USolidJournal::FRow& Row : Rows)
 		{
-			if (Row.Kind != SolidJournal::ERowKind::Hint || Row.Text.IsEmpty())
+			if (Row.Kind != USolidJournal::ERowKind::Hint || Row.Text.IsEmpty())
 			{
 				continue;
 			}
@@ -861,11 +861,11 @@ namespace SolidHUDPrivate
 
 		float BoardW = 0.f;
 		float BoardH = 0.f;
-		SolidJournal::BoardSize(
+		USolidJournal::BoardSize(
 			static_cast<float>(Canvas->SizeX),
 			static_cast<float>(Canvas->SizeY),
 			Page.ContentW,
-			Page.ContentH + LineHeight + SolidJournal::LineGap,
+			Page.ContentH + LineHeight + USolidJournal::LineGap,
 			BoardW,
 			BoardH);
 
@@ -889,7 +889,7 @@ namespace SolidHUDPrivate
 
 		const SolidHudTheme::FPalette Palette = SolidHudTheme::OakAndBronze();
 		const float Band = SolidHudTheme::BandThickness(Frame);
-		const SolidJournal::FTitlePlate Plate = SolidJournal::TitlePlate(BoxX, BoxY, BoardW, TitleW, TitleH, Band);
+		const USolidJournal::FTitlePlate Plate = USolidJournal::TitlePlate(BoxX, BoxY, BoardW, TitleW, TitleH, Band);
 		FillRect(Canvas, Plate.X, Plate.Y, Plate.W, Plate.H, Palette.Bronze);
 		if (TitleFont)
 		{
@@ -985,9 +985,9 @@ namespace SolidHUDPrivate
 
 		if (Font)
 		{
-			const float HintY = BoxY + BoardH - SolidJournal::BoardPad - LineHeight;
+			const float HintY = BoxY + BoardH - USolidJournal::BoardPad - LineHeight;
 			FCanvasTextItem HintItem(
-				FVector2D(BoxX + SolidJournal::BoardPad, HintY),
+				FVector2D(BoxX + USolidJournal::BoardPad, HintY),
 				FText::FromString(SolidInventory::CloseHint),
 				Font,
 				Palette.Hint);
@@ -2515,8 +2515,8 @@ void ASolidHUD::DrawJournalPopup() const
 		}
 	}
 
-	TArray<SolidJournal::FRow> Rows;
-	SolidJournal::CollectRows(*State, Rows);
+	TArray<USolidJournal::FRow> Rows;
+	State->GetJournal()->CollectRows(Rows);
 	SolidHUDPrivate::DrawJournalBoard(Canvas, Rows);
 }
 
@@ -2645,7 +2645,7 @@ void ASolidHUD::DrawSquadBuilderPopup()
 	SolidSquadBuilder::ContentSize(ContentW, ContentH);
 	float BoardW = 0.f;
 	float BoardH = 0.f;
-	SolidJournal::BoardSize(
+	USolidJournal::BoardSize(
 		static_cast<float>(Canvas->SizeX),
 		static_cast<float>(Canvas->SizeY),
 		ContentW,
@@ -2654,8 +2654,8 @@ void ASolidHUD::DrawSquadBuilderPopup()
 		BoardH);
 	const float BoxX = (static_cast<float>(Canvas->SizeX) - BoardW) * 0.5f;
 	const float BoxY = (static_cast<float>(Canvas->SizeY) - BoardH) * 0.5f;
-	const float OriginX = BoxX + SolidJournal::BoardPad;
-	const float OriginY = BoxY + SolidJournal::BoardPad;
+	const float OriginX = BoxX + USolidJournal::BoardPad;
+	const float OriginY = BoxY + USolidJournal::BoardPad;
 
 	FCanvasTileItem Dim(
 		FVector2D(0.f, 0.f),
@@ -2668,7 +2668,7 @@ void ASolidHUD::DrawSquadBuilderPopup()
 	SolidHUDPrivate::DrawOakFrame(Canvas, BoxX, BoxY, BoardW, BoardH, Frame);
 	const SolidHudTheme::FPalette Palette = SolidHudTheme::OakAndBronze();
 	const float Band = SolidHudTheme::BandThickness(Frame);
-	const SolidJournal::FTitlePlate Plate = SolidJournal::TitlePlate(BoxX, BoxY, BoardW, TitleW, TitleH, Band);
+	const USolidJournal::FTitlePlate Plate = USolidJournal::TitlePlate(BoxX, BoxY, BoardW, TitleW, TitleH, Band);
 	SolidHUDPrivate::FillRect(Canvas, Plate.X, Plate.Y, Plate.W, Plate.H, Palette.Bronze);
 	if (TitleFont)
 	{

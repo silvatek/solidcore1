@@ -240,12 +240,12 @@ bool FSolidForagePickupTest::RunTest(const FString& Parameters)
 
 	USolidGameState& State = *NewObject<USolidGameState>();
 	USolidCaptain& StateCaptain = *NewObject<USolidCaptain>();
-	const int32 Journal = State.Journal.Num();
+	const int32 Journal = State.GetJournal()->Entries.Num();
 	const SolidStorage::FContainer Chest = State.CaveChest;
 	const TCHAR* Body = State.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)];
 	TestEqual(TEXT("a new game has taken no piles"), State.TakenForagePiles.Num(), 0);
 	TestTrue(TEXT("one stick is enough to fill the pack"), SolidForage::TakePile(State, 0, SolidItemType::IdStick));
-	TestEqual(TEXT("the pickup writes no journal line"), State.Journal.Num(), Journal);
+	TestEqual(TEXT("the pickup writes no journal line"), State.GetJournal()->Entries.Num(), Journal);
 	TestTrue(TEXT("the scatter index is remembered"), State.TakenForagePiles.Contains(0));
 	TestEqual(TEXT("the pack holds the stick"), FString(State.Inventory.Pack[0]), FString(SolidItemType::IdStick));
 	TestEqual(TEXT("the stack is one"), State.Inventory.PackStack[0], 1);
@@ -275,11 +275,11 @@ bool FSolidForagePickupTest::RunTest(const FString& Parameters)
 	USolidCaptain& ClearedCaptain = *NewObject<USolidCaptain>();
 	Cleared.TakenForagePiles.Add(4);
 	SolidInventory::WritePack(Cleared.Inventory, 0, SolidItemType::IdPitch, 2);
-	const int32 ClearedJournal = Cleared.Journal.Num();
+	const int32 ClearedJournal = Cleared.GetJournal()->Entries.Num();
 	SolidEvents::FResult Result;
 	SolidEvents::ApplyChange(Cleared, ClearedCaptain, SolidEvents::Change::ClearInventory(), Result);
 	TestTrue(TEXT("closing the monster message leaves the pile taken"), Cleared.TakenForagePiles.Contains(4));
-	TestEqual(TEXT("that clear writes no journal line"), Cleared.Journal.Num(), ClearedJournal);
+	TestEqual(TEXT("that clear writes no journal line"), Cleared.GetJournal()->Entries.Num(), ClearedJournal);
 	TestTrue(TEXT("the pack no longer holds the pitch"), Cleared.Inventory.Pack[0] == nullptr);
 	TestEqual(
 		TEXT("the body is back to rags"),

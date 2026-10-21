@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0514")
+#define SOLID_BUILD_ID TEXT("SC1-0515")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Squad folder renamed to Company.")
+#define SOLID_BUILD_NOTE TEXT("USolidGameState owns USolidJournal.")
 #endif

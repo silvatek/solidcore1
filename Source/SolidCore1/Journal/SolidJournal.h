@@ -1,36 +1,72 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Events/SolidEvents.h"
-#include "Journal/SolidJournalEntry.h"
+#include "UObject/Object.h"
+#include "SolidWorldTime.h"
+#include "SolidJournal.generated.h"
 
-class USolidGameState;
+namespace SolidEvents
+{
+	struct FEvent;
+}
 
 /**
- * Journal page opened from the F10 menu.
- * The name sits in the top border. Time and Summary head the two columns.
- * A longer page will scroll; the board stays this size either way.
+ * One journal line. Event lines point at the event catalog.
+ * Stronghold lines and lair lines are the visit text, and the same trip can be written again.
  */
-namespace SolidJournal
+enum class EJournalType : uint8
 {
-	inline constexpr const TCHAR* Title = TEXT("Journal");
-	inline constexpr const TCHAR* TimeHeading = TEXT("Time");
-	inline constexpr const TCHAR* SummaryHeading = TEXT("Summary");
-	inline constexpr const TCHAR* EmptyText = TEXT("No events yet.");
-	inline constexpr const TCHAR* CloseHint = TEXT("F10 to close");
+	Stronghold,
+	Event,
+	Lair,
+};
+
+struct FJournalEntry
+{
+	EJournalType Type = EJournalType::Event;
+	int32 Year = SolidWorldTime::StartYear;
+	int32 Day = SolidWorldTime::StartDay;
+	int32 MinuteOfSession = 0;
+	/** Catalog index when Type is Event. */
+	int32 EventIndex = INDEX_NONE;
+	/** Visit text when Type is Stronghold or Lair. */
+	FString Text;
+};
+
+/**
+ * The play state's one journal for the session.
+ * Holds the lines. The HUD paints the page from CollectRows.
+ * OpenLevel keeps this object when the game state keeps it.
+ */
+UCLASS()
+class SOLIDCORE1_API USolidJournal : public UObject
+{
+	GENERATED_BODY()
+
+public:
+	static constexpr const TCHAR* Title = TEXT("Journal");
+	static constexpr const TCHAR* TimeHeading = TEXT("Time");
+	static constexpr const TCHAR* SummaryHeading = TEXT("Summary");
+	static constexpr const TCHAR* EmptyText = TEXT("No events yet.");
+	static constexpr const TCHAR* CloseHint = TEXT("F10 to close");
 
 	/** Gap between the time column and the entry column. */
-	inline constexpr float ColumnGap = 48.f;
+	static constexpr float ColumnGap = 48.f;
 	/** Oak inside the bronze binding. */
-	inline constexpr float BoardPad = 36.f;
-	inline constexpr float LineGap = 8.f;
+	static constexpr float BoardPad = 36.f;
+	static constexpr float LineGap = 8.f;
 	/** The page stays at least this large. */
-	inline constexpr float MinBoardWidth = 880.f;
-	inline constexpr float MinBoardHeight = 520.f;
+	static constexpr float MinBoardWidth = 880.f;
+	static constexpr float MinBoardHeight = 520.f;
 	/** Share of the view, then raised to the minimum and kept on screen. */
-	inline constexpr float BoardWidthFraction = 0.55f;
-	inline constexpr float BoardHeightFraction = 0.62f;
-	inline constexpr float BoardMargin = 40.f;
+	static constexpr float BoardWidthFraction = 0.55f;
+	static constexpr float BoardHeightFraction = 0.62f;
+	static constexpr float BoardMargin = 40.f;
+	static constexpr float TitlePlatePadX = 18.f;
+	static constexpr float TitlePlatePadY = 4.f;
+
+	/** Oldest line drops off once the page is this full. */
+	static constexpr int32 MaxEntries = 64;
 
 	enum class ERowKind : uint8
 	{
@@ -69,19 +105,35 @@ namespace SolidJournal
 		float H = 0.f;
 	};
 
-	inline constexpr float TitlePlatePadX = 18.f;
-	inline constexpr float TitlePlatePadY = 4.f;
+	/** Lines in the order they were written. Not a UPROPERTY. */
+	TArray<FJournalEntry> Entries;
 
-	/** One line describing an event's configuration changes. */
-	FString Describe(const SolidEvents::FEvent& Event);
+	void Remember(
+		const SolidWorldTime::FStamp& When,
+		EJournalType Type,
+		const FString& Text,
+		int32 EventIndex = INDEX_NONE);
 
-	void CollectRows(const USolidGameState& State, TArray<FRow>& OutRows);
+	/**
+	 * Enter or exit. The line does not name the stronghold.
+	 * An upgrade will be its own entry. The same trip can be noted again.
+	 */
+	void RememberStronghold(const SolidWorldTime::FStamp& When, bool bEnter);
+
+	/** Enter or exit the Iglin tunnels. The same trip can be noted again. */
+	void RememberLair(const SolidWorldTime::FStamp& When, bool bEnter);
+
+	/** One line describing an event's configuration changes. Does not read Entries. */
+	static FString Describe(const SolidEvents::FEvent& Event);
+
+	/** Title, Time and Summary, the lines, detail under an event, and F10 to close. */
+	void CollectRows(TArray<FRow>& OutRows) const;
 
 	/**
 	 * Board size in pixels. Content can widen it, and the view keeps it on screen.
 	 * ContentW and ContentH are the measured lines, without the board padding.
 	 */
-	inline void BoardSize(
+	static void BoardSize(
 		const float ViewW,
 		const float ViewH,
 		const float ContentW,
@@ -98,7 +150,7 @@ namespace SolidJournal
 	}
 
 	/** The name sits on the top bronze band, centered along that edge. */
-	inline FTitlePlate TitlePlate(
+	static FTitlePlate TitlePlate(
 		const float BoardX,
 		const float BoardY,
 		const float BoardW,
@@ -115,7 +167,7 @@ namespace SolidJournal
 	}
 
 	/** Time on the left. Entry text starts to the right of the widest stamp. */
-	inline FColumns Columns(const float OriginX, const float StampWidth)
+	static FColumns Columns(const float OriginX, const float StampWidth)
 	{
 		FColumns Out;
 		Out.StampX = OriginX;
@@ -126,4 +178,4 @@ namespace SolidJournal
 		}
 		return Out;
 	}
-}
+};

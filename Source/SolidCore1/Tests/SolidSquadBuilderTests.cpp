@@ -392,15 +392,15 @@ bool FSolidSquadBuilderConfirmTest::RunTest(const FString& Parameters)
 
 	TestTrue(
 		TEXT("Confirm fits the journal board"),
-		ContentW + SolidJournal::BoardPad * 2.f <= SolidJournal::MinBoardWidth
-		&& ContentH + SolidJournal::BoardPad * 2.f <= SolidJournal::MinBoardHeight);
+		ContentW + USolidJournal::BoardPad * 2.f <= USolidJournal::MinBoardWidth
+		&& ContentH + USolidJournal::BoardPad * 2.f <= USolidJournal::MinBoardHeight);
 	float BoardW = 0.f;
 	float BoardH = 0.f;
-	SolidJournal::BoardSize(1920.f, 1080.f, ContentW, ContentH, BoardW, BoardH);
+	USolidJournal::BoardSize(1920.f, 1080.f, ContentW, ContentH, BoardW, BoardH);
 	TestTrue(
 		TEXT("a roomy view stays the journal share"),
-		FMath::IsNearlyEqual(BoardW, 1920.f * SolidJournal::BoardWidthFraction, 0.5f)
-		&& FMath::IsNearlyEqual(BoardH, 1080.f * SolidJournal::BoardHeightFraction, 0.5f));
+		FMath::IsNearlyEqual(BoardW, 1920.f * USolidJournal::BoardWidthFraction, 0.5f)
+		&& FMath::IsNearlyEqual(BoardH, 1080.f * USolidJournal::BoardHeightFraction, 0.5f));
 
 	const SolidSquadBuilder::FHit Button = SolidSquadBuilder::HitTest(
 		Page,

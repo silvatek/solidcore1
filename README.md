@@ -230,7 +230,7 @@ USolidGameInstance                  # Session root
     FSolidCompanion[]               # Sam, Alex, Max, Morgan, Quinn
     FSolidStronghold                # Active base: Dungeon, Fortress, or Tower
   USolidGameState                   # Events, squad cap, lairs, and the unlocked stronghold size
-    FJournalEntry[]                 # Event, stronghold, and lair lines
+    USolidJournal                   # Event, stronghold, and lair lines
     FLoadout                        # Worn boxes, pack, and crafting slots
     FContainer                      # Cave chest
     FSolidStronghold[]              # Bases the company moved on from

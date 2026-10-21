@@ -520,18 +520,18 @@ namespace SolidInventory
 	{
 		float BoardW = 0.f;
 		float BoardH = 0.f;
-		SolidJournal::BoardSize(
+		USolidJournal::BoardSize(
 			CanvasW,
 			CanvasH,
 			Page.ContentW,
-			Page.ContentH + LineHeight + SolidJournal::LineGap,
+			Page.ContentH + LineHeight + USolidJournal::LineGap,
 			BoardW,
 			BoardH);
 		const float BoxX = (CanvasW - BoardW) * 0.5f;
 		const float BoxY = (CanvasH - BoardH) * 0.5f;
 		FView View;
 		View.OriginX = BoxX + (BoardW - Page.ContentW) * 0.5f;
-		View.OriginY = BoxY + SolidJournal::BoardPad;
+		View.OriginY = BoxY + USolidJournal::BoardPad;
 		return View;
 	}
 

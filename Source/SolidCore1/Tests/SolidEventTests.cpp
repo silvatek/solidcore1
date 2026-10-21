@@ -316,11 +316,11 @@ bool FSolidEventsCaptainTitleTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("Relion is listed"), RelionEvent);
 	TestTrue(
 		TEXT("journal records the repair"),
-		RelionEvent && SolidJournal::Describe(*RelionEvent).Contains(TEXT("Iglin bridge repaired")));
+		RelionEvent && USolidJournal::Describe(*RelionEvent).Contains(TEXT("Iglin bridge repaired")));
 
 	const SolidEvents::FEvent* DragongateEvent = SolidEventTestPrivate::FindEvent(TEXT("Enter Dragongate"));
 	TestNotNull(TEXT("Dragongate is listed"), DragongateEvent);
-	const FString Detail = DragongateEvent ? SolidJournal::Describe(*DragongateEvent) : FString();
+	const FString Detail = DragongateEvent ? USolidJournal::Describe(*DragongateEvent) : FString();
 	TestTrue(TEXT("journal titles Captain"), Detail.Contains(TEXT("Title Captain")));
 	TestTrue(
 		TEXT("journal lists the company"),
@@ -463,7 +463,7 @@ bool FSolidEventsLaterTownsEnableRavenTest::RunTest(const FString& Parameters)
 		}
 		TestTrue(
 			*FString::Printf(TEXT("%s journal enables raven sight"), Event.Name),
-			SolidJournal::Describe(Event).Contains(TEXT("Raven sight enabled")));
+			USolidJournal::Describe(Event).Contains(TEXT("Raven sight enabled")));
 	}
 	return true;
 }
@@ -521,7 +521,7 @@ bool FSolidEventsRequiresTest::RunTest(const FString& Parameters)
 				FString(BridgeEvent.Requires[0]),
 				FString(SolidEvents::IdEnterIglin));
 		}
-		const FString BridgeChanges = SolidJournal::Describe(BridgeEvent);
+		const FString BridgeChanges = USolidJournal::Describe(BridgeEvent);
 		TestEqual(
 			TEXT("Reach broken bridge journal follows its changes"),
 			BridgeEvent.ChangeCount > 0,
@@ -570,7 +570,7 @@ bool FSolidEventsReachBrokenBridgeTest::RunTest(const FString& Parameters)
 			TEXT("the ramp trigger"),
 			static_cast<uint8>(Event->Trigger),
 			static_cast<uint8>(SolidEvents::ETrigger::ReachBrokenBridge));
-		RampChanges = SolidJournal::Describe(*Event);
+		RampChanges = USolidJournal::Describe(*Event);
 	}
 
 	USolidGameState& Early = *NewObject<USolidGameState>();
@@ -578,7 +578,7 @@ bool FSolidEventsReachBrokenBridgeTest::RunTest(const FString& Parameters)
 	const SolidEvents::FResult Blocked = SolidEvents::NotifyReachBrokenBridge(Early, EarlyCaptain);
 	TestFalse(TEXT("the ramp waits for Iglin"), Blocked.bFired);
 	TestEqual(TEXT("an early stand is not recorded"), Early.FiredOrder.Num(), 0);
-	TestEqual(TEXT("an early stand is not journaled"), Early.Journal.Num(), 0);
+	TestEqual(TEXT("an early stand is not journaled"), Early.GetJournal()->Entries.Num(), 0);
 	TestEqual(TEXT("the ramp does not occupy a town"), EarlyCaptain.OccupiedTown, INDEX_NONE);
 
 	const SolidEvents::FResult Iglin = SolidEvents::NotifyOccupiedTown(Early, EarlyCaptain, 0);
@@ -593,16 +593,16 @@ bool FSolidEventsReachBrokenBridgeTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Iglin and the ramp are recorded"), Early.FiredOrder.Num(), 2);
 
 	const int32 BridgeIndex = SolidEvents::FindIndexById(SolidEvents::IdReachBrokenBridge);
-	TestTrue(TEXT("the ramp is journaled"), Early.Journal.Num() == 2 && BridgeIndex != INDEX_NONE
-		&& Early.Journal[1].EventIndex == BridgeIndex
-		&& Early.Journal[1].Type == SolidJournal::EJournalType::Event);
+	TestTrue(TEXT("the ramp is journaled"), Early.GetJournal()->Entries.Num() == 2 && BridgeIndex != INDEX_NONE
+		&& Early.GetJournal()->Entries[1].EventIndex == BridgeIndex
+		&& Early.GetJournal()->Entries[1].Type == EJournalType::Event);
 
-	TArray<SolidJournal::FRow> Rows;
-	SolidJournal::CollectRows(Early, Rows);
+	TArray<USolidJournal::FRow> Rows;
+	Early.GetJournal()->CollectRows(Rows);
 	int32 RampRow = INDEX_NONE;
 	for (int32 Index = 0; Index < Rows.Num(); ++Index)
 	{
-		if (Rows[Index].Kind == SolidJournal::ERowKind::Entry && Rows[Index].Text == TEXT("Reach broken bridge"))
+		if (Rows[Index].Kind == USolidJournal::ERowKind::Entry && Rows[Index].Text == TEXT("Reach broken bridge"))
 		{
 			RampRow = Index;
 			break;
@@ -611,18 +611,18 @@ bool FSolidEventsReachBrokenBridgeTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the journal lists Reach broken bridge"), RampRow != INDEX_NONE);
 	const bool bDetail = RampRow != INDEX_NONE
 		&& RampRow + 1 < Rows.Num()
-		&& Rows[RampRow + 1].Kind == SolidJournal::ERowKind::Detail;
+		&& Rows[RampRow + 1].Kind == USolidJournal::ERowKind::Detail;
 	TestEqual(TEXT("the ramp detail follows the event"), bDetail, !RampChanges.IsEmpty());
 	if (bDetail && RampRow + 1 < Rows.Num())
 	{
 		TestEqual(TEXT("the ramp change line is the event"), Rows[RampRow + 1].Text, RampChanges);
 	}
 
-	const int32 JournalCount = Early.Journal.Num();
+	const int32 JournalCount = Early.GetJournal()->Entries.Num();
 	const SolidEvents::FResult Again = SolidEvents::NotifyReachBrokenBridge(Early, EarlyCaptain);
 	TestFalse(TEXT("the ramp fires once"), Again.bFired);
 	TestEqual(TEXT("a second stand is not recorded"), Early.FiredOrder.Num(), 2);
-	TestEqual(TEXT("a second stand is not journaled"), Early.Journal.Num(), JournalCount);
+	TestEqual(TEXT("a second stand is not journaled"), Early.GetJournal()->Entries.Num(), JournalCount);
 	return true;
 }
 
@@ -693,15 +693,15 @@ bool FSolidEventsCaveTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the cave follows the ramp event"), State.bStrongholdsEnabled, bReachOpensCave);
 	TestEqual(
 		TEXT("the journal records the cave when the ramp opens it"),
-		Event && SolidJournal::Describe(*Event).Contains(TEXT("Cave enabled")),
+		Event && USolidJournal::Describe(*Event).Contains(TEXT("Cave enabled")),
 		bReachOpensCave);
 
-	TArray<SolidJournal::FRow> Rows;
-	SolidJournal::CollectRows(State, Rows);
+	TArray<USolidJournal::FRow> Rows;
+	State.GetJournal()->CollectRows(Rows);
 	bool bSawCave = false;
-	for (const SolidJournal::FRow& Row : Rows)
+	for (const USolidJournal::FRow& Row : Rows)
 	{
-		if (Row.Kind == SolidJournal::ERowKind::Detail && Row.Text.Contains(TEXT("Cave enabled")))
+		if (Row.Kind == USolidJournal::ERowKind::Detail && Row.Text.Contains(TEXT("Cave enabled")))
 		{
 			bSawCave = true;
 		}
@@ -771,7 +771,7 @@ bool FSolidEventsMessageTest::RunTest(const FString& Parameters)
 			FString(SolidMessages::IdKilledByMonsters));
 		TestTrue(
 			TEXT("the ramp journal is the message"),
-			SolidJournal::Describe(*Reach).Contains(TEXT("You are killed by monsters")));
+			USolidJournal::Describe(*Reach).Contains(TEXT("You are killed by monsters")));
 	}
 
 	const SolidEvents::FEvent* Killed = SolidEventTestPrivate::FindEvent(TEXT("Killed by monsters"));
@@ -799,7 +799,7 @@ bool FSolidEventsMessageTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the close enables the cave"), bEnablesCave);
 		TestTrue(
 			TEXT("the close journal records the cave"),
-			SolidJournal::Describe(*Killed).Contains(TEXT("Cave enabled")));
+			USolidJournal::Describe(*Killed).Contains(TEXT("Cave enabled")));
 	}
 
 	USolidGameState& State = *NewObject<USolidGameState>();
@@ -823,17 +823,17 @@ bool FSolidEventsMessageTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("closing the message sends the captain inside"), Closed.bEnterStronghold);
 	TestTrue(TEXT("the cave is open"), State.bStrongholdsEnabled);
 
-	TArray<SolidJournal::FRow> Rows;
-	SolidJournal::CollectRows(State, Rows);
+	TArray<USolidJournal::FRow> Rows;
+	State.GetJournal()->CollectRows(Rows);
 	bool bSawMessage = false;
 	bool bSawCave = false;
-	for (const SolidJournal::FRow& Row : Rows)
+	for (const USolidJournal::FRow& Row : Rows)
 	{
-		if (Row.Kind == SolidJournal::ERowKind::Detail && Row.Text.Contains(TEXT("You are killed by monsters")))
+		if (Row.Kind == USolidJournal::ERowKind::Detail && Row.Text.Contains(TEXT("You are killed by monsters")))
 		{
 			bSawMessage = true;
 		}
-		if (Row.Kind == SolidJournal::ERowKind::Detail && Row.Text.Contains(TEXT("Cave enabled")))
+		if (Row.Kind == USolidJournal::ERowKind::Detail && Row.Text.Contains(TEXT("Cave enabled")))
 		{
 			bSawCave = true;
 		}
@@ -941,7 +941,7 @@ bool FSolidEventsDrivenFromVillageTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the return shows the village message"), bShowsVillage);
 		TestTrue(
 			TEXT("the return journal is the message"),
-			SolidJournal::Describe(*Driven).Contains(TEXT("You are driven from the village")));
+			USolidJournal::Describe(*Driven).Contains(TEXT("You are driven from the village")));
 	}
 
 	auto HasFiredDriven = [DrivenIndex](const USolidGameState& State)
@@ -986,12 +986,12 @@ bool FSolidEventsDrivenFromVillageTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the cave stays open"), State.bStrongholdsEnabled);
 	TestTrue(TEXT("the return is recorded"), HasFiredDriven(State));
 
-	TArray<SolidJournal::FRow> Rows;
-	SolidJournal::CollectRows(State, Rows);
+	TArray<USolidJournal::FRow> Rows;
+	State.GetJournal()->CollectRows(Rows);
 	bool bSawDriven = false;
-	for (const SolidJournal::FRow& Row : Rows)
+	for (const USolidJournal::FRow& Row : Rows)
 	{
-		if (Row.Kind == SolidJournal::ERowKind::Detail
+		if (Row.Kind == USolidJournal::ERowKind::Detail
 			&& Row.Text.Contains(TEXT("You are driven from the village")))
 		{
 			bSawDriven = true;
@@ -1045,7 +1045,7 @@ bool FSolidEventsOrphanTitleTest::RunTest(const FString& Parameters)
 			FString(CaptainTitleName(ESolidCaptainTitle::Orphan)));
 		TestTrue(
 			TEXT("Iglin journal is Title Orphan"),
-			SolidJournal::Describe(*IglinEvent).Contains(TEXT("Title Orphan")));
+			USolidJournal::Describe(*IglinEvent).Contains(TEXT("Title Orphan")));
 	}
 
 	const SolidEvents::FEvent* Driven = SolidEventTestPrivate::FindEvent(TEXT("Driven from the village"));
@@ -1067,7 +1067,7 @@ bool FSolidEventsOrphanTitleTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the return names Outcast"), bTitlesOutcast);
 		TestTrue(
 			TEXT("the return journal is Title Outcast"),
-			SolidJournal::Describe(*Driven).Contains(TEXT("Title Outcast")));
+			USolidJournal::Describe(*Driven).Contains(TEXT("Title Outcast")));
 	}
 
 	USolidGameState& State = *NewObject<USolidGameState>();
@@ -1093,13 +1093,13 @@ bool FSolidEventsOrphanTitleTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the return state is Outcast"), FString(CaptainTitleName(StateCaptain.Title)), FString(CaptainTitleName(ESolidCaptainTitle::Outcast)));
 	TestTrue(TEXT("the return still shows the message"), Returned.bShowMessage);
 
-	TArray<SolidJournal::FRow> Rows;
-	SolidJournal::CollectRows(State, Rows);
+	TArray<USolidJournal::FRow> Rows;
+	State.GetJournal()->CollectRows(Rows);
 	bool bSawOrphan = false;
 	bool bSawOutcast = false;
-	for (const SolidJournal::FRow& Row : Rows)
+	for (const USolidJournal::FRow& Row : Rows)
 	{
-		if (Row.Kind != SolidJournal::ERowKind::Detail)
+		if (Row.Kind != USolidJournal::ERowKind::Detail)
 		{
 			continue;
 		}
@@ -1277,7 +1277,7 @@ bool FSolidEventsClearInventoryTest::RunTest(const FString& Parameters)
 		}
 		TestTrue(
 			TEXT("the close journal records the clear"),
-			SolidJournal::Describe(*Killed).Contains(TEXT("Inventory cleared")));
+			USolidJournal::Describe(*Killed).Contains(TEXT("Inventory cleared")));
 	}
 	TestTrue(TEXT("the close clears the inventory"), bClearsInventory);
 
@@ -1336,12 +1336,12 @@ bool FSolidEventsClearInventoryTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the close empties the pack"), State.Inventory.Pack[Index] == nullptr);
 	}
 
-	TArray<SolidJournal::FRow> Rows;
-	SolidJournal::CollectRows(State, Rows);
+	TArray<USolidJournal::FRow> Rows;
+	State.GetJournal()->CollectRows(Rows);
 	bool bSawClear = false;
-	for (const SolidJournal::FRow& Row : Rows)
+	for (const USolidJournal::FRow& Row : Rows)
 	{
-		if (Row.Kind == SolidJournal::ERowKind::Detail && Row.Text.Contains(TEXT("Inventory cleared")))
+		if (Row.Kind == USolidJournal::ERowKind::Detail && Row.Text.Contains(TEXT("Inventory cleared")))
 		{
 			bSawClear = true;
 		}
@@ -1408,7 +1408,7 @@ bool FSolidEventsEnableStrongholdSizeTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(ESolidStrongholdSize::Humble));
 	TestTrue(
 		TEXT("the journal names the size"),
-		SolidJournal::Describe(Built).Contains(TEXT("Humble size unlocked")));
+		USolidJournal::Describe(Built).Contains(TEXT("Humble size unlocked")));
 
 	USolidGameState& State = *NewObject<USolidGameState>();
 	USolidCaptain& StateCaptain = *NewObject<USolidCaptain>();
@@ -1456,7 +1456,7 @@ bool FSolidEventsEnableLairTest::RunTest(const FString& Parameters)
 	}
 
 	const TCHAR* MessageText = SolidMessages::TextFor(SolidMessages::IdDrivenFromVillage);
-	const FString Detail = Driven ? SolidJournal::Describe(*Driven) : FString();
+	const FString Detail = Driven ? USolidJournal::Describe(*Driven) : FString();
 	TestTrue(TEXT("the journal names the lair"), Detail.Contains(FString::Printf(TEXT("%s enabled"), SolidLair::IglinTunnels.Name)));
 	TestTrue(TEXT("the journal keeps the message"), MessageText && Detail.Contains(MessageText));
 	TestTrue(TEXT("the journal keeps the title"), Detail.Contains(TEXT("Title Outcast")));
@@ -1559,7 +1559,7 @@ bool FSolidEventsDragongateUnlocksSizesTest::RunTest(const FString& Parameters)
 			Seen[static_cast<int32>(Size)]);
 	}
 
-	const FString Detail = SolidJournal::Describe(Event);
+	const FString Detail = USolidJournal::Describe(Event);
 	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
 	{
 		TestTrue(
@@ -1644,7 +1644,7 @@ bool FSolidEventsEarlySizeUnlocksTest::RunTest(const FString& Parameters)
 			1);
 		TestTrue(
 			*FString::Printf(TEXT("%s journal names %s"), Homes[Home], SolidStronghold::SizeName(HomeSize[Home])),
-			SolidJournal::Describe(*Event).Contains(
+			USolidJournal::Describe(*Event).Contains(
 				FString::Printf(TEXT("%s size unlocked"), SolidStronghold::SizeName(HomeSize[Home]))));
 	}
 

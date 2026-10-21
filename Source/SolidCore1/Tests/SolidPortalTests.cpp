@@ -271,19 +271,19 @@ bool FSolidPortalTunnelMouthTest::RunTest(const FString& Parameters)
 		FString(Recorded.MessageId ? Recorded.MessageId : TEXT("")),
 		FString(SolidMessages::IdDrivenFromVillage));
 
-	TArray<SolidJournal::FRow> Rows;
-	SolidJournal::CollectRows(State, Rows);
+	TArray<USolidJournal::FRow> Rows;
+	State.GetJournal()->CollectRows(Rows);
 	bool bNamed = false;
 	bool bDetail = false;
 	const TCHAR* MessageText = SolidMessages::TextFor(SolidMessages::IdDrivenFromVillage);
-	for (const SolidJournal::FRow& JournalRow : Rows)
+	for (const USolidJournal::FRow& JournalRow : Rows)
 	{
-		if (JournalRow.Kind == SolidJournal::ERowKind::Entry
+		if (JournalRow.Kind == USolidJournal::ERowKind::Entry
 			&& JournalRow.Text == FString(TEXT("Driven from the village")))
 		{
 			bNamed = true;
 		}
-		if (JournalRow.Kind == SolidJournal::ERowKind::Detail
+		if (JournalRow.Kind == USolidJournal::ERowKind::Detail
 			&& JournalRow.Text.Contains(TEXT("Title Outcast"))
 			&& MessageText
 			&& JournalRow.Text.Contains(MessageText))
@@ -295,11 +295,11 @@ bool FSolidPortalTunnelMouthTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the journal records the message and title"), bDetail);
 
 	const int32 FiredCount = State.FiredOrder.Num();
-	const int32 JournalCount = State.Journal.Num();
+	const int32 JournalCount = State.GetJournal()->Entries.Num();
 	const SolidEvents::FResult Again = SolidEvents::MarkComplete(State, StateCaptain, SolidEvents::IdDrivenFromVillage);
 	TestFalse(TEXT("a second portal does not record it again"), Again.bFired);
 	TestEqual(TEXT("fired once"), State.FiredOrder.Num(), FiredCount);
-	TestEqual(TEXT("one journal line"), State.Journal.Num(), JournalCount);
+	TestEqual(TEXT("one journal line"), State.GetJournal()->Entries.Num(), JournalCount);
 
 	USolidGameState& Empty = *NewObject<USolidGameState>();
 	USolidCaptain& EmptyCaptain = *NewObject<USolidCaptain>();

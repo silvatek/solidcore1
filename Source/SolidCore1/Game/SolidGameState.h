@@ -5,7 +5,7 @@
 #include "Events/SolidEvents.h"
 #include "Inventory/SolidInventory.h"
 #include "Inventory/SolidStorage.h"
-#include "Journal/SolidJournalEntry.h"
+#include "Journal/SolidJournal.h"
 #include "SolidStronghold.h"
 #include "Company/SolidCaptain.h"
 #include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
@@ -15,6 +15,7 @@
  * Live play state. The game starts with an empty squad.
  * The game instance owns one for the play session. OpenLevel keeps this object.
  * The company owns the captain and the active stronghold. Previous strongholds stay on this object.
+ * This object owns the journal.
  */
 UCLASS()
 class SOLIDCORE1_API USolidGameState : public UObject
@@ -22,6 +23,12 @@ class SOLIDCORE1_API USolidGameState : public UObject
 	GENERATED_BODY()
 
 public:
+	/**
+	 * The play state's one journal. Created on first ask. OpenLevel keeps this object.
+	 * Lines live on the journal. Callers ask here, then call the journal method.
+	 */
+	USolidJournal* GetJournal();
+
 	int32 MaxSquadSize = 0;
 	/** Enter Relion restores the Iglin span. It starts broken. */
 	bool bIglinBridgeRepaired = false;
@@ -35,8 +42,6 @@ public:
 	bool bFired[SolidEvents::MaxEvents] = {};
 	/** Definition indexes, in the order the events fired. */
 	TArray<int32, TInlineAllocator<SolidEvents::MaxEvents>> FiredOrder;
-	/** Journal, including repeated stronghold trips. */
-	TArray<SolidJournal::FJournalEntry> Journal;
 	/** Worn boxes and the captain's pack. Each box stores an item id. A new game starts in the starting kit. Killed by monsters clears it to Rags. */
 	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
 	/**
@@ -60,6 +65,10 @@ public:
 	TArray<TUniquePtr<FSolidStronghold>> PreviousStrongholds;
 	/** Furnishings in the active stronghold. A new game carries the Meagre stronghold's pieces. */
 	TArray<SolidStrongholdFurniture::FUsed> Furnishings = SolidStrongholdFurniture::StartingFurnishings();
+
+protected:
+	UPROPERTY()
+	TObjectPtr<USolidJournal> Journal;
 };
 
 namespace SolidEvents
@@ -118,28 +127,6 @@ namespace SolidEvents
 		USolidCaptain& Captain,
 		const FChange& Change,
 		FResult& Result);
-
-	void Remember(
-		USolidGameState& State,
-		const SolidWorldTime::FStamp& When,
-		SolidJournal::EJournalType Type,
-		const FString& Text,
-		int32 EventIndex = INDEX_NONE);
-
-	/**
-	 * Enter or exit. The line does not name the stronghold.
-	 * An upgrade will be its own entry. The same trip can be noted again.
-	 */
-	void RememberStronghold(
-		USolidGameState& State,
-		const SolidWorldTime::FStamp& When,
-		bool bEnter);
-
-	/** Enter or exit the Iglin tunnels. The same trip can be noted again. */
-	void RememberLair(
-		USolidGameState& State,
-		const SolidWorldTime::FStamp& When,
-		bool bEnter);
 
 	/**
 	 * The captain is now on TownId (INDEX_NONE when the cell is not numbered).

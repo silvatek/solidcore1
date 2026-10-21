@@ -1,5 +1,4 @@
 #include "SolidGameState.h"
-#include "Lairs/SolidLair.h"
 
 namespace
 {
@@ -40,7 +39,7 @@ namespace
 		{
 			State.FiredOrder.Add(Index);
 		}
-		SolidEvents::Remember(State, When, SolidJournal::EJournalType::Event, FString(), Index);
+		State.GetJournal()->Remember(When, EJournalType::Event, FString(), Index);
 		Result.bFired = true;
 		const int32 ChangeCount = FMath::Min(Event.ChangeCount, SolidEvents::MaxChangesPerEvent);
 		for (int32 ChangeIndex = 0; ChangeIndex < ChangeCount; ++ChangeIndex)
@@ -49,6 +48,15 @@ namespace
 		}
 		return true;
 	}
+}
+
+USolidJournal* USolidGameState::GetJournal()
+{
+	if (!Journal)
+	{
+		Journal = NewObject<USolidJournal>(this, TEXT("Journal"));
+	}
+	return Journal;
 }
 
 namespace SolidEvents
@@ -138,52 +146,6 @@ bool IsSightEnabled(const USolidCaptain& Captain, const ESolidSight Sight)
 	default:
 		return false;
 	}
-}
-
-void Remember(
-	USolidGameState& State,
-	const SolidWorldTime::FStamp& When,
-	const SolidJournal::EJournalType Type,
-	const FString& Text,
-	const int32 EventIndex)
-{
-	if (State.Journal.Num() >= SolidJournal::MaxEntries)
-	{
-		State.Journal.RemoveAt(0);
-	}
-
-	SolidJournal::FJournalEntry Entry;
-	Entry.Type = Type;
-	Entry.Year = When.Year;
-	Entry.Day = When.Day;
-	Entry.MinuteOfSession = When.MinuteOfSession;
-	Entry.EventIndex = EventIndex;
-	Entry.Text = Text;
-	State.Journal.Add(Entry);
-}
-
-void RememberStronghold(
-	USolidGameState& State,
-	const SolidWorldTime::FStamp& When,
-	const bool bEnter)
-{
-	Remember(
-		State,
-		When,
-		SolidJournal::EJournalType::Stronghold,
-		bEnter ? FString(SolidStronghold::EnterLabel) : FString(SolidStronghold::ExitLabel));
-}
-
-void RememberLair(
-	USolidGameState& State,
-	const SolidWorldTime::FStamp& When,
-	const bool bEnter)
-{
-	Remember(
-		State,
-		When,
-		SolidJournal::EJournalType::Lair,
-		SolidLair::VisitJournalText(bEnter));
 }
 
 FResult NotifyOccupiedTown(

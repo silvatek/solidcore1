@@ -633,7 +633,7 @@ void ASolidGameMode::TravelToLair(const TCHAR EndMarker)
 	}
 	const TCHAR End = FChar::ToUpper(EndMarker);
 	const SolidWorldTime::FStamp When = WorldStamp();
-	SolidEvents::RememberLair(*GetConfiguration(), When, /*bEnter=*/true);
+	GetConfiguration()->GetJournal()->RememberLair(When, /*bEnter=*/true);
 	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Enter Iglin tunnels"), *SolidWorldTime::Format(When));
 	SaveTravelSession(
 		/*bInStronghold=*/false,
@@ -652,7 +652,7 @@ void ASolidGameMode::TravelFromLair(const TCHAR EndMarker)
 	}
 	const TCHAR End = SolidLair::IsEndMarker(EndMarker) ? FChar::ToUpper(EndMarker) : USolidWorldMap::XMarker;
 	const SolidWorldTime::FStamp When = WorldStamp();
-	SolidEvents::RememberLair(*GetConfiguration(), When, /*bEnter=*/false);
+	GetConfiguration()->GetJournal()->RememberLair(When, /*bEnter=*/false);
 	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Exit Iglin tunnels"), *SolidWorldTime::Format(When));
 	SaveTravelSession(
 		/*bInStronghold=*/false,
@@ -678,7 +678,7 @@ void ASolidGameMode::EnterStronghold()
 	}
 
 	const SolidWorldTime::FStamp When = WorldStamp();
-	SolidEvents::RememberStronghold(*GetConfiguration(), When, /*bEnter=*/true);
+	GetConfiguration()->GetJournal()->RememberStronghold(When, /*bEnter=*/true);
 	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  %s"), *SolidWorldTime::Format(When), SolidStronghold::EnterLabel);
 	SaveTravelSession(/*bInStronghold=*/true);
 	UGameplayStatics::OpenLevel(World, FName(SolidTravel::WorldMapPath), true, SolidTravel::EnterStrongholdOptions());
@@ -714,7 +714,7 @@ void ASolidGameMode::ExitStronghold()
 
 	// Companions spawn again beside him once this world is the open world, facing the same way.
 	const SolidWorldTime::FStamp When = WorldStamp();
-	SolidEvents::RememberStronghold(*GetConfiguration(), When, /*bEnter=*/false);
+	GetConfiguration()->GetJournal()->RememberStronghold(When, /*bEnter=*/false);
 	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  %s"), *SolidWorldTime::Format(When), SolidStronghold::ExitLabel);
 	SaveTravelSession(
 		/*bInStronghold=*/false,

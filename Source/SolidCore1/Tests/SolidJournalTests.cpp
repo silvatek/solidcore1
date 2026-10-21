@@ -10,12 +10,12 @@
 
 namespace SolidJournalTestPrivate
 {
-	int32 FindEntry(const TArray<SolidJournal::FRow>& Rows, const TCHAR* Text, const int32 Start = 0)
+	int32 FindEntry(const TArray<USolidJournal::FRow>& Rows, const TCHAR* Text, const int32 Start = 0)
 	{
 		for (int32 Index = Start; Index < Rows.Num(); ++Index)
 		{
-			const SolidJournal::FRow& Row = Rows[Index];
-			if (Row.Kind == SolidJournal::ERowKind::Entry && Row.Text == Text)
+			const USolidJournal::FRow& Row = Rows[Index];
+			if (Row.Kind == USolidJournal::ERowKind::Entry && Row.Text == Text)
 			{
 				return Index;
 			}
@@ -23,9 +23,9 @@ namespace SolidJournalTestPrivate
 		return INDEX_NONE;
 	}
 
-	bool ContainsText(const TArray<SolidJournal::FRow>& Rows, const TCHAR* Text)
+	bool ContainsText(const TArray<USolidJournal::FRow>& Rows, const TCHAR* Text)
 	{
-		for (const SolidJournal::FRow& Row : Rows)
+		for (const USolidJournal::FRow& Row : Rows)
 		{
 			if (Row.Text.Contains(Text))
 			{
@@ -45,7 +45,7 @@ namespace SolidJournalTestPrivate
 		{
 			if (FCString::Strcmp(SolidEvents::Definitions[Index].Name, EventName) == 0)
 			{
-				return SolidJournal::Describe(SolidEvents::Definitions[Index]);
+				return USolidJournal::Describe(SolidEvents::Definitions[Index]);
 			}
 		}
 		return FString();
@@ -59,13 +59,13 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidJournalEmptyTest::RunTest(const FString& Parameters)
 {
-	TArray<SolidJournal::FRow> Rows;
-	SolidJournal::CollectRows(*NewObject<USolidGameState>(), Rows);
+	TArray<USolidJournal::FRow> Rows;
+	NewObject<USolidJournal>()->CollectRows(Rows);
 	TestTrue(TEXT("title"), SolidJournalTestPrivate::ContainsText(Rows, TEXT("Journal")));
 	int32 Heading = INDEX_NONE;
 	for (int32 Index = 0; Index < Rows.Num(); ++Index)
 	{
-		if (Rows[Index].Kind == SolidJournal::ERowKind::Heading)
+		if (Rows[Index].Kind == USolidJournal::ERowKind::Heading)
 		{
 			Heading = Index;
 			break;
@@ -74,11 +74,11 @@ bool FSolidJournalEmptyTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("column headings"), Heading != INDEX_NONE);
 	if (Heading != INDEX_NONE)
 	{
-		TestEqual(TEXT("time heading"), Rows[Heading].Stamp, FString(SolidJournal::TimeHeading));
-		TestEqual(TEXT("summary heading"), Rows[Heading].Text, FString(SolidJournal::SummaryHeading));
+		TestEqual(TEXT("time heading"), Rows[Heading].Stamp, FString(USolidJournal::TimeHeading));
+		TestEqual(TEXT("summary heading"), Rows[Heading].Text, FString(USolidJournal::SummaryHeading));
 	}
 	TestTrue(TEXT("empty copy"), SolidJournalTestPrivate::ContainsText(Rows, TEXT("No events yet.")));
-	TestTrue(TEXT("close hint"), SolidJournalTestPrivate::ContainsText(Rows, SolidJournal::CloseHint));
+	TestTrue(TEXT("close hint"), SolidJournalTestPrivate::ContainsText(Rows, USolidJournal::CloseHint));
 	TestFalse(TEXT("no Relion yet"), SolidJournalTestPrivate::ContainsText(Rows, TEXT("Relion")));
 	return true;
 }
@@ -93,8 +93,8 @@ bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 	USolidGameState& State = *NewObject<USolidGameState>();
 	USolidCaptain& StateCaptain = *NewObject<USolidCaptain>();
 	SolidEvents::NotifyOccupiedTown(State, StateCaptain, 0);
-	TArray<SolidJournal::FRow> AtStart;
-	SolidJournal::CollectRows(State, AtStart);
+	TArray<USolidJournal::FRow> AtStart;
+	State.GetJournal()->CollectRows(AtStart);
 	const int32 Iglin = SolidJournalTestPrivate::FindEntry(AtStart, TEXT("Enter Iglin"));
 	TestTrue(TEXT("Iglin is the first entry"), Iglin != INDEX_NONE);
 	if (Iglin != INDEX_NONE)
@@ -102,7 +102,7 @@ bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("Iglin stamp"), AtStart[Iglin].Stamp, FString(TEXT("00:00, 200/45 AtF")));
 		const FString IglinChanges = SolidJournalTestPrivate::DescribeEvent(TEXT("Enter Iglin"));
 		const bool bIglinDetail = Iglin + 1 < AtStart.Num()
-			&& AtStart[Iglin + 1].Kind == SolidJournal::ERowKind::Detail;
+			&& AtStart[Iglin + 1].Kind == USolidJournal::ERowKind::Detail;
 		TestEqual(TEXT("Iglin detail follows the event"), bIglinDetail, !IglinChanges.IsEmpty());
 		if (bIglinDetail)
 		{
@@ -113,8 +113,8 @@ bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("Iglin is not the empty journal"), SolidJournalTestPrivate::ContainsText(AtStart, TEXT("No events yet.")));
 
 	SolidEvents::NotifyOccupiedTown(State, StateCaptain, 1);
-	TArray<SolidJournal::FRow> AfterRelion;
-	SolidJournal::CollectRows(State, AfterRelion);
+	TArray<USolidJournal::FRow> AfterRelion;
+	State.GetJournal()->CollectRows(AfterRelion);
 	const int32 IglinStill = SolidJournalTestPrivate::FindEntry(AfterRelion, TEXT("Enter Iglin"));
 	const int32 Relion = SolidJournalTestPrivate::FindEntry(AfterRelion, TEXT("Enter Relion"));
 	TestTrue(TEXT("Iglin stays first"), IglinStill != INDEX_NONE && Relion != INDEX_NONE && IglinStill < Relion);
@@ -126,7 +126,7 @@ bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 	{
 		TestEqual(TEXT("Relion stamp stays in its column"), AfterRelion[Relion].Stamp, FString(TEXT("00:00, 200/45 AtF")));
 		TestTrue(TEXT("Relion detail follows the entry"), Relion + 1 < AfterRelion.Num()
-			&& AfterRelion[Relion + 1].Kind == SolidJournal::ERowKind::Detail);
+			&& AfterRelion[Relion + 1].Kind == USolidJournal::ERowKind::Detail);
 		if (Relion + 1 < AfterRelion.Num())
 		{
 			TestTrue(TEXT("detail leaves the time column empty"), AfterRelion[Relion + 1].Stamp.IsEmpty());
@@ -134,8 +134,8 @@ bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 	}
 
 	SolidEvents::NotifyOccupiedTown(State, StateCaptain, 2);
-	TArray<SolidJournal::FRow> AfterKanfold;
-	SolidJournal::CollectRows(State, AfterKanfold);
+	TArray<USolidJournal::FRow> AfterKanfold;
+	State.GetJournal()->CollectRows(AfterKanfold);
 	const int32 IglinThird = SolidJournalTestPrivate::FindEntry(AfterKanfold, TEXT("Enter Iglin"));
 	const int32 RelionThird = SolidJournalTestPrivate::FindEntry(AfterKanfold, TEXT("Enter Relion"));
 	const int32 Kanfold = SolidJournalTestPrivate::FindEntry(AfterKanfold, TEXT("Enter Kanfold"));
@@ -150,8 +150,8 @@ bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 	SolidEvents::NotifyOccupiedTown(Skipped, SkippedCaptain, 2);
 	SolidEvents::NotifyOccupiedTown(Skipped, SkippedCaptain, 0);
 	SolidEvents::NotifyOccupiedTown(Skipped, SkippedCaptain, 1);
-	TArray<SolidJournal::FRow> Reversed;
-	SolidJournal::CollectRows(Skipped, Reversed);
+	TArray<USolidJournal::FRow> Reversed;
+	Skipped.GetJournal()->CollectRows(Reversed);
 	const int32 KanfoldFirst = SolidJournalTestPrivate::FindEntry(Reversed, TEXT("Enter Kanfold"));
 	const int32 IglinSecond = SolidJournalTestPrivate::FindEntry(Reversed, TEXT("Enter Iglin"));
 	const int32 RelionSecond = SolidJournalTestPrivate::FindEntry(Reversed, TEXT("Enter Relion"));
@@ -175,13 +175,13 @@ bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 	{
 		if (FCString::Strcmp(SolidEvents::Definitions[Index].Name, TEXT("Enter Kanfold")) == 0)
 		{
-			KanfoldChanges = SolidJournal::Describe(SolidEvents::Definitions[Index]);
+			KanfoldChanges = USolidJournal::Describe(SolidEvents::Definitions[Index]);
 			break;
 		}
 	}
 	const bool bKanfoldSight = KanfoldFirst != INDEX_NONE
 		&& KanfoldFirst + 1 < Reversed.Num()
-		&& Reversed[KanfoldFirst + 1].Kind == SolidJournal::ERowKind::Detail
+		&& Reversed[KanfoldFirst + 1].Kind == USolidJournal::ERowKind::Detail
 		&& Reversed[KanfoldFirst + 1].Text.Contains(TEXT("Raven sight"));
 	TestEqual(
 		TEXT("Kanfold sight line matches the event"),
@@ -203,8 +203,8 @@ bool FSolidJournalCaptainTitleTest::RunTest(const FString& Parameters)
 	SolidEvents::NotifyOccupiedTown(State, StateCaptain, 1);
 	SolidEvents::NotifyOccupiedTown(State, StateCaptain, 2);
 
-	TArray<SolidJournal::FRow> Rows;
-	SolidJournal::CollectRows(State, Rows);
+	TArray<USolidJournal::FRow> Rows;
+	State.GetJournal()->CollectRows(Rows);
 	TestTrue(TEXT("Relion records Vagrant"), SolidJournalTestPrivate::ContainsText(Rows, TEXT("Title Vagrant")));
 	TestTrue(TEXT("Kanfold records Ranger"), SolidJournalTestPrivate::ContainsText(Rows, TEXT("Title Ranger")));
 	const int32 Iglin = SolidJournalTestPrivate::FindEntry(Rows, TEXT("Enter Iglin"));
@@ -212,7 +212,7 @@ bool FSolidJournalCaptainTitleTest::RunTest(const FString& Parameters)
 	const FString IglinChanges = SolidJournalTestPrivate::DescribeEvent(TEXT("Enter Iglin"));
 	const bool bIglinTitle = Iglin != INDEX_NONE
 		&& Iglin + 1 < Rows.Num()
-		&& Rows[Iglin + 1].Kind == SolidJournal::ERowKind::Detail
+		&& Rows[Iglin + 1].Kind == USolidJournal::ERowKind::Detail
 		&& Rows[Iglin + 1].Text.Contains(TEXT("Title"));
 	TestEqual(
 		TEXT("Iglin title line follows the event"),
@@ -233,25 +233,25 @@ bool FSolidJournalWorldTimeTest::RunTest(const FString& Parameters)
 	USolidCaptain& StateCaptain = *NewObject<USolidCaptain>();
 	SolidEvents::NotifyOccupiedTown(State, StateCaptain, 0, Ninth);
 
-	TArray<SolidJournal::FRow> Lines;
-	SolidJournal::CollectRows(State, Lines);
+	TArray<USolidJournal::FRow> Lines;
+	State.GetJournal()->CollectRows(Lines);
 	const int32 Iglin = SolidJournalTestPrivate::FindEntry(Lines, TEXT("Enter Iglin"));
 	TestTrue(TEXT("ninth session lists Iglin"), Iglin != INDEX_NONE);
 	if (Iglin != INDEX_NONE)
 	{
 		TestEqual(TEXT("ninth session stamps Iglin"), Lines[Iglin].Stamp, FString(TEXT("01:24, 200/53 AtF")));
 	}
-	TestTrue(TEXT("Iglin is an event line"), State.Journal.Num() == 1
-		&& State.Journal[0].Type == SolidJournal::EJournalType::Event);
+	TestTrue(TEXT("Iglin is an event line"), State.GetJournal()->Entries.Num() == 1
+		&& State.GetJournal()->Entries[0].Type == EJournalType::Event);
 
-	SolidEvents::RememberStronghold(State, Ninth, /*bEnter=*/true);
+	State.GetJournal()->RememberStronghold(Ninth, /*bEnter=*/true);
 	const SolidWorldTime::FStamp Later = SolidWorldTime::FromSession(9, 90.0 * 60.0);
-	SolidEvents::RememberStronghold(State, Later, /*bEnter=*/false);
-	SolidEvents::RememberStronghold(State, Later, /*bEnter=*/true);
+	State.GetJournal()->RememberStronghold(Later, /*bEnter=*/false);
+	State.GetJournal()->RememberStronghold(Later, /*bEnter=*/true);
 
-	TArray<SolidJournal::FRow> AfterCave;
-	SolidJournal::CollectRows(State, AfterCave);
-	TestEqual(TEXT("cave trips are noted again"), State.Journal.Num(), 4);
+	TArray<USolidJournal::FRow> AfterCave;
+	State.GetJournal()->CollectRows(AfterCave);
+	TestEqual(TEXT("cave trips are noted again"), State.GetJournal()->Entries.Num(), 4);
 	const int32 EnterAt = SolidJournalTestPrivate::FindEntry(AfterCave, TEXT("Enter stronghold"));
 	const int32 LeaveAt = SolidJournalTestPrivate::FindEntry(AfterCave, TEXT("Exit stronghold"));
 	const int32 EnterAgain = SolidJournalTestPrivate::FindEntry(AfterCave, TEXT("Enter stronghold"), LeaveAt == INDEX_NONE ? 0 : LeaveAt + 1);
@@ -266,20 +266,20 @@ bool FSolidJournalWorldTimeTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("the line does not name the dungeon"), SolidJournalTestPrivate::ContainsText(AfterCave, TEXT("Meagre")));
 	TestFalse(TEXT("the line does not name the type"), SolidJournalTestPrivate::ContainsText(AfterCave, TEXT("Dungeon")));
 
-	TestEqual(TEXT("the play state keeps the journal"), State.Journal.Num(), 4);
-	TestEqual(TEXT("exit text stays"), State.Journal[2].Text, FString(TEXT("Exit stronghold")));
-	TestTrue(TEXT("exit is a stronghold line"), State.Journal[2].Type == SolidJournal::EJournalType::Stronghold);
-	TestEqual(TEXT("a stronghold line has no event index"), State.Journal[2].EventIndex, INDEX_NONE);
+	TestEqual(TEXT("the play state keeps the journal"), State.GetJournal()->Entries.Num(), 4);
+	TestEqual(TEXT("exit text stays"), State.GetJournal()->Entries[2].Text, FString(TEXT("Exit stronghold")));
+	TestTrue(TEXT("exit is a stronghold line"), State.GetJournal()->Entries[2].Type == EJournalType::Stronghold);
+	TestEqual(TEXT("a stronghold line has no event index"), State.GetJournal()->Entries[2].EventIndex, INDEX_NONE);
 
 	USolidGameState& Marked = *NewObject<USolidGameState>();
 	USolidCaptain& MarkedCaptain = *NewObject<USolidCaptain>();
-	SolidJournal::FJournalEntry Visit;
-	Visit.Type = SolidJournal::EJournalType::Stronghold;
+	FJournalEntry Visit;
+	Visit.Type = EJournalType::Stronghold;
 	Visit.Text = TEXT("Enter stronghold");
 	Visit.EventIndex = 1;
-	Marked.Journal.Add(Visit);
-	TArray<SolidJournal::FRow> MarkedRows;
-	SolidJournal::CollectRows(Marked, MarkedRows);
+	Marked.GetJournal()->Entries.Add(Visit);
+	TArray<USolidJournal::FRow> MarkedRows;
+	Marked.GetJournal()->CollectRows(MarkedRows);
 	TestTrue(TEXT("stronghold text is the summary"), SolidJournalTestPrivate::ContainsText(MarkedRows, TEXT("Enter stronghold")));
 	TestFalse(TEXT("a stronghold line does not describe an event"), SolidJournalTestPrivate::ContainsText(MarkedRows, TEXT("Raven sight")));
 	return true;
@@ -294,39 +294,39 @@ bool FSolidJournalPageTest::RunTest(const FString& Parameters)
 {
 	float Wide = 0.f;
 	float Tall = 0.f;
-	SolidJournal::BoardSize(1920.f, 1080.f, 200.f, 80.f, Wide, Tall);
-	TestTrue(TEXT("a roomy view uses the width share"), FMath::IsNearlyEqual(Wide, 1920.f * SolidJournal::BoardWidthFraction, 0.5f));
-	TestTrue(TEXT("a roomy view uses the height share"), FMath::IsNearlyEqual(Tall, 1080.f * SolidJournal::BoardHeightFraction, 0.5f));
-	TestTrue(TEXT("the page is wider than the old shrink-wrap"), Wide >= SolidJournal::MinBoardWidth);
-	TestTrue(TEXT("the page is taller than the old shrink-wrap"), Tall >= SolidJournal::MinBoardHeight);
+	USolidJournal::BoardSize(1920.f, 1080.f, 200.f, 80.f, Wide, Tall);
+	TestTrue(TEXT("a roomy view uses the width share"), FMath::IsNearlyEqual(Wide, 1920.f * USolidJournal::BoardWidthFraction, 0.5f));
+	TestTrue(TEXT("a roomy view uses the height share"), FMath::IsNearlyEqual(Tall, 1080.f * USolidJournal::BoardHeightFraction, 0.5f));
+	TestTrue(TEXT("the page is wider than the old shrink-wrap"), Wide >= USolidJournal::MinBoardWidth);
+	TestTrue(TEXT("the page is taller than the old shrink-wrap"), Tall >= USolidJournal::MinBoardHeight);
 
 	float FittedW = 0.f;
 	float FittedH = 0.f;
-	SolidJournal::BoardSize(800.f, 600.f, 100.f, 40.f, FittedW, FittedH);
+	USolidJournal::BoardSize(800.f, 600.f, 100.f, 40.f, FittedW, FittedH);
 	TestTrue(TEXT("a small view keeps the board on screen"),
-		FittedW <= 800.f - SolidJournal::BoardMargin * 2.f + 0.5f
-		&& FittedH <= 600.f - SolidJournal::BoardMargin * 2.f + 0.5f
+		FittedW <= 800.f - USolidJournal::BoardMargin * 2.f + 0.5f
+		&& FittedH <= 600.f - USolidJournal::BoardMargin * 2.f + 0.5f
 		&& FittedW > 0.f
 		&& FittedH > 0.f);
 
 	float Grown = 0.f;
 	float GrownH = 0.f;
-	SolidJournal::BoardSize(1920.f, 1080.f, 2000.f, 40.f, Grown, GrownH);
+	USolidJournal::BoardSize(1920.f, 1080.f, 2000.f, 40.f, Grown, GrownH);
 	TestTrue(TEXT("wide text stays inside the view"),
-		FMath::IsNearlyEqual(Grown, 1920.f - SolidJournal::BoardMargin * 2.f, 0.5f));
+		FMath::IsNearlyEqual(Grown, 1920.f - USolidJournal::BoardMargin * 2.f, 0.5f));
 
-	const SolidJournal::FColumns Columns = SolidJournal::Columns(36.f, 180.f);
+	const USolidJournal::FColumns Columns = USolidJournal::Columns(36.f, 180.f);
 	TestTrue(TEXT("the entry column clears the time column"),
-		Columns.TextX >= Columns.StampX + 180.f + SolidJournal::ColumnGap - 0.1f);
+		Columns.TextX >= Columns.StampX + 180.f + USolidJournal::ColumnGap - 0.1f);
 
-	const SolidJournal::FColumns Empty = SolidJournal::Columns(36.f, 0.f);
+	const USolidJournal::FColumns Empty = USolidJournal::Columns(36.f, 0.f);
 	TestTrue(TEXT("an empty time column does not indent the text"), FMath::IsNearlyEqual(Empty.TextX, 36.f, 0.1f));
 
 	const float BoardX = 100.f;
 	const float BoardY = 200.f;
 	const float BoardW = 900.f;
 	const float Band = 9.f;
-	const SolidJournal::FTitlePlate Plate = SolidJournal::TitlePlate(BoardX, BoardY, BoardW, 70.f, 18.f, Band);
+	const USolidJournal::FTitlePlate Plate = USolidJournal::TitlePlate(BoardX, BoardY, BoardW, 70.f, 18.f, Band);
 	const float BandBottom = BoardY + Band;
 	TestTrue(TEXT("the title covers the top border"), Plate.Y < BandBottom && Plate.Y + Plate.H > BoardY);
 	TestTrue(TEXT("the title is centered on the top border"),

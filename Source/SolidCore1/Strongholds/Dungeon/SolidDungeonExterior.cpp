@@ -301,8 +301,7 @@ namespace SolidDungeonExteriorPrivate
 		const float OpeningWidth,
 		const float OpeningHeight,
 		const float Depth,
-		const float BurialCm,
-		const float LipCm)
+		const float BurialCm)
 	{
 		if (!Outer || OpeningWidth <= KINDA_SMALL_NUMBER || OpeningHeight <= KINDA_SMALL_NUMBER || Depth <= KINDA_SMALL_NUMBER)
 		{
@@ -313,8 +312,7 @@ namespace SolidDungeonExteriorPrivate
 		const int32 BackCenter = 1;
 		const int32 FrontBase = 2;
 		const int32 BackBase = FrontBase + ProfileCount;
-		const int32 LipBase = BackBase + ProfileCount;
-		const int32 VertexCount = LipBase + ProfileCount;
+		const int32 VertexCount = BackBase + ProfileCount;
 		TArray<FVector> Positions;
 		TArray<FVector> Normals;
 		Positions.SetNum(VertexCount);
@@ -327,12 +325,11 @@ namespace SolidDungeonExteriorPrivate
 			const FVector2D Rim = OpeningRim(Theta, OpeningWidth, OpeningHeight);
 			Positions[FrontBase + Step] = FVector(0.f, Rim.X, Rim.Y);
 			Positions[BackBase + Step] = FVector(-Depth, Rim.X, Rim.Y);
-			Positions[LipBase + Step] = FVector(LipCm, Rim.X, Rim.Y);
 		}
 		BuryGround(Positions, BurialCm);
 
 		TArray<int32> Triangles;
-		Triangles.Reserve(ProfileCount * 18);
+		Triangles.Reserve(ProfileCount * 12);
 		const FVector Interior(-Depth * 0.5f, 0.f, OpeningHeight * 0.42f);
 		for (int32 Step = 0; Step < ProfileCount - 1; ++Step)
 		{
@@ -349,23 +346,6 @@ namespace SolidDungeonExteriorPrivate
 		const int32 BackLast = BackBase + ProfileCount - 1;
 		AddFace(Positions, Normals, Triangles, FrontCenter, FrontLast, FrontBase, Interior);
 		AddFace(Positions, Normals, Triangles, BackCenter, BackBase, BackLast, Interior);
-
-		// The dark face stays on local X = 0. The lip meets the rock front, and
-		// the wall between them closes the slot beside the mouth.
-		const FVector Tunnel(LipCm * 0.5f, 0.f, OpeningHeight * 0.42f);
-		for (int32 Step = 0; Step < ProfileCount - 1; ++Step)
-		{
-			const int32 LipA = LipBase + Step;
-			const int32 LipB = LipA + 1;
-			const int32 FaceA = FrontBase + Step;
-			const int32 FaceB = FaceA + 1;
-			AddFace(Positions, Normals, Triangles, LipA, FaceA, LipB, Tunnel);
-			AddFace(Positions, Normals, Triangles, FaceA, FaceB, LipB, Tunnel);
-		}
-		const int32 LipLast = LipBase + ProfileCount - 1;
-		const FVector BelowSill(LipCm * 0.5f, 0.f, -OpeningHeight);
-		AddFace(Positions, Normals, Triangles, LipBase, LipLast, FrontBase, BelowSill);
-		AddFace(Positions, Normals, Triangles, LipLast, FrontLast, FrontBase, BelowSill);
 
 		for (FVector& Normal : Normals)
 		{
@@ -666,18 +646,16 @@ void ASolidDungeonExterior::BuildVisuals()
 	RockMesh = AddPart(Rock, Face, FVector::OneVector, SolidStrongholds::RockColor(), TEXT("DungeonExterior"));
 
 	const float Depth = SolidStrongholds::FrameThicknessCm;
-	const float Lip = SolidStrongholds::MouthRecessCm;
 	UStaticMesh* Mouth = SolidDungeonExteriorPrivate::BuildMouth(
 		this,
 		SolidStrongholds::OpeningWidthCm,
 		SolidStrongholds::OpeningHeightCm,
 		Depth,
-		Drop,
-		Lip);
-	// The component origin is the dark face. The mesh lip reaches the rock front.
+		Drop);
+	// The dark face fills the opening in the rock front. A set-back leaves a slot through the side.
 	MouthMesh = AddPart(
 		Mouth,
-		Face + FVector(-Lip, 0.f, 0.f),
+		Face,
 		FVector::OneVector,
 		SolidStrongholds::MouthColor(),
 		TEXT("DungeonMouth"));

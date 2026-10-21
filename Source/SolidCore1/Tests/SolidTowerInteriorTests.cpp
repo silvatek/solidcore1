@@ -4,7 +4,7 @@
 #include "SolidStronghold.h"
 #include "SolidGameInstance.h"
 #include "SolidGameState.h"
-#include "Squad/SolidCompany.h"
+#include "Company/SolidCompany.h"
 #include "SolidTravel.h"
 #include "SolidLair.h"
 #include "Strongholds/Tower/Actors/SolidTowerInterior.h"

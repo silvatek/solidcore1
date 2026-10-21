@@ -1,4 +1,4 @@
-﻿#include "SolidGameMode.h"
+#include "SolidGameMode.h"
 #include "SolidBuildId.h"
 #include "SolidCharacter.h"
 #include "SolidContentLookup.h"
@@ -10,9 +10,9 @@
 #include "Companion/SolidCompanionCharacter.h"
 #include "SolidBodyMesh.h"
 #include "SolidBodyParams.h"
-#include "Squad/SolidBattlePlan.h"
-#include "Squad/SolidCompany.h"
-#include "Squad/SolidSquad.h"
+#include "Company/SolidBattlePlan.h"
+#include "Company/SolidCompany.h"
+#include "Company/SolidSquad.h"
 #include "Terrain/SolidBridge.h"
 #include "SolidGroundMove.h"
 #include "Terrain/SolidTerrainMap.h"
@@ -257,7 +257,7 @@ void ASolidGameMode::BeginPlay()
 	FinishTravelArrival();
 	EnsureTerrainStreamer();
 
-	// Player pawn / terrain may not be ready on the first PIE frame â€” keep sampling.
+	// Player pawn / terrain may not be ready on the first PIE frame — keep sampling.
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(

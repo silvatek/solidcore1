@@ -29,7 +29,7 @@ The captain holds the title, the occupied town, and the sight-enabled flags. Tho
 
 ## Implementation notes
 
-- Create the captain the first time the company is asked, the way the game instance creates the company. The header and the `.cpp` are `Source/SolidCore1/Squad/SolidCaptain.h` and `SolidCaptain.cpp`.
+- Create the captain the first time the company is asked, the way the game instance creates the company. The header and the `.cpp` are `Source/SolidCore1/Company/SolidCaptain.h` and `SolidCaptain.cpp`.
 - `NotifyOccupiedTown` and `ApplyChange` write the title, the town, and the sight flags on the captain. They still write the journal, the fired events, and the other play state on `USolidGameState`. A notify that applies changes passes the captain through.
 - `FResult::CaptainTitle` is the `ESolidCaptainTitle` an event just set. The pawn shows the word that file returns for it. The kept title is the enum on the captain. The event header includes the captain header for the enum. The captain header does not include the event header.
 - The weak actor pointer is how the captain finds his body in this world. Companions still follow that actor. They do not follow the `USolidCaptain` object.

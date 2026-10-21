@@ -1,7 +1,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "SolidGameState.h"
-#include "Squad/SolidCompany.h"
+#include "Company/SolidCompany.h"
 #include "SolidStronghold.h"
 #include "Strongholds/Furnishings/SolidStrongholdGrid.h"
 #include "Strongholds/Dungeon/SolidDungeon.h"

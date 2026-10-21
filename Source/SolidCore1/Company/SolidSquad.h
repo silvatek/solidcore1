@@ -2,8 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
-#include "Squad/SolidBattlePlan.h"
-#include "Squad/SolidCompany.h"
+#include "Company/SolidBattlePlan.h"
+#include "Company/SolidCompany.h"
 #include "SolidSquad.generated.h"
 
 class USolidCompany;

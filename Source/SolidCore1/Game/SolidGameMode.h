@@ -6,7 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "Terrain/SolidWorldChart.h"
 #include "Vegetation/SolidForage.h"
-#include "Squad/SolidCompany.h"
+#include "Company/SolidCompany.h"
 #include "SolidSight.h"
 #include "SolidGameMode.generated.h"
 

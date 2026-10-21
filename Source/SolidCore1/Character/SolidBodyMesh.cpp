@@ -1,6 +1,6 @@
 #include "SolidBodyMesh.h"
 
-#include "Squad/SolidCompany.h"
+#include "Company/SolidCompany.h"
 #include "SolidContentLookup.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"

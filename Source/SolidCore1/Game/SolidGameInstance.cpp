@@ -2,7 +2,7 @@
 #include "SolidGameState.h"
 #include "SolidSessionSave.h"
 #include "SolidCore1.h"
-#include "Squad/SolidCompany.h"
+#include "Company/SolidCompany.h"
 #include "Kismet/GameplayStatics.h"
 #include "HAL/PlatformTime.h"
 

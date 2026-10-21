@@ -2,7 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "SolidGameInstance.h"
 #include "SolidGameState.h"
-#include "Squad/SolidCompany.h"
+#include "Company/SolidCompany.h"
 #include "SolidStronghold.h"
 #include "SolidTerrainMap.h"
 #include "SolidWorldMap.h"

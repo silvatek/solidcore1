@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
-#include "Squad/SolidSquadDrill.h"
+#include "Company/SolidSquadDrill.h"
 #include "SolidSight.h"
 #include "Lairs/SolidLair.h"
 #include "SolidCharacter.generated.h"

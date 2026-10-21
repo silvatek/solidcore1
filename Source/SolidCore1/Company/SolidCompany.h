@@ -2,8 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
-#include "Squad/SolidBattlePlan.h"
-#include "Squad/SolidCaptain.h"
+#include "Company/SolidBattlePlan.h"
+#include "Company/SolidCaptain.h"
 #include "Strongholds/SolidStronghold.h"
 
 class USkeletalMesh;

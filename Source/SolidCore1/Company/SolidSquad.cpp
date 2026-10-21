@@ -1,5 +1,5 @@
-#include "Squad/SolidSquad.h"
-#include "Squad/SolidCompany.h"
+#include "Company/SolidSquad.h"
+#include "Company/SolidCompany.h"
 
 void USolidSquad::InitializeFromCompany(USolidCompany* InCompany)
 {

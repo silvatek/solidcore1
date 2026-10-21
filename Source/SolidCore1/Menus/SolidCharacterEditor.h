@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Squad/SolidCompany.h"
+#include "Company/SolidCompany.h"
 
 /** One slider track in the character-editor panel. */
 struct FSolidSliderBar

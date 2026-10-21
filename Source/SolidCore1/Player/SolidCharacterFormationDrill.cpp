@@ -1,6 +1,6 @@
 #include "SolidCharacter.h"
 #include "SolidCore1.h"
-#include "Squad/SolidSquadDrill.h"
+#include "Company/SolidSquadDrill.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Controller.h"
 

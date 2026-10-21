@@ -13,7 +13,7 @@
 #include "SolidForagePile.h"
 #include "SolidGameInstance.h"
 #include "SolidGameState.h"
-#include "Squad/SolidCaptain.h"
+#include "Company/SolidCaptain.h"
 #include "SolidTravelSession.h"
 #include "SolidTerrainMap.h"
 #include "SolidTerrainTestHelpers.h"

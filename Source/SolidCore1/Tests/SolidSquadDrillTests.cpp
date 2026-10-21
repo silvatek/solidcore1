@@ -1,6 +1,6 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "Squad/SolidSquadDrill.h"
+#include "Company/SolidSquadDrill.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 

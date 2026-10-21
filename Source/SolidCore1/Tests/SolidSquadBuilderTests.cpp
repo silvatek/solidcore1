@@ -3,9 +3,9 @@
 #include "Journal/SolidJournal.h"
 #include "Menus/SolidSquadBuilder.h"
 #include "SolidHUD.h"
-#include "Squad/SolidBattlePlan.h"
-#include "Squad/SolidCompany.h"
-#include "Squad/SolidSquad.h"
+#include "Company/SolidBattlePlan.h"
+#include "Company/SolidCompany.h"
+#include "Company/SolidSquad.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 

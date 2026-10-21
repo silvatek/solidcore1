@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "SolidSight.h"
 #include "SolidStronghold.h"
-#include "Squad/SolidCaptain.h"
+#include "Company/SolidCaptain.h"
 
 /**
  * One event: a trigger, the changes it applies, and the events that must already have fired.

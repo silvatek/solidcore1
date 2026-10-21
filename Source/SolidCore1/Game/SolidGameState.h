@@ -7,7 +7,7 @@
 #include "Inventory/SolidStorage.h"
 #include "Journal/SolidJournalEntry.h"
 #include "SolidStronghold.h"
-#include "Squad/SolidCaptain.h"
+#include "Company/SolidCaptain.h"
 #include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
 #include "SolidGameState.generated.h"
 

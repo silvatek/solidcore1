@@ -1,7 +1,7 @@
 #include "SolidStronghold.h"
 #include "SolidCore1.h"
 #include "SolidGameState.h"
-#include "Squad/SolidCompany.h"
+#include "Company/SolidCompany.h"
 #include "Strongholds/Actors/SolidStrongholdExterior.h"
 #include "Strongholds/Dungeon/SolidDungeon.h"
 #include "Strongholds/Fortress/SolidFortress.h"

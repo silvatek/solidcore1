@@ -7,7 +7,7 @@
 #include "Lairs/SolidLairEntrance.h"
 #include "Strongholds/Dungeon/SolidDungeonLevel.h"
 #include "SolidGameState.h"
-#include "Squad/SolidCaptain.h"
+#include "Company/SolidCaptain.h"
 #include "SolidStronghold.h"
 #include "SolidWorldMap.h"
 #include "Towns/SolidTowns.h"

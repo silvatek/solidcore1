@@ -5,7 +5,7 @@
 #include "Lairs/SolidLair.h"
 #include "Strongholds/Dungeon/SolidDungeonLevel.h"
 #include "SolidGameInstance.h"
-#include "Squad/SolidCompany.h"
+#include "Company/SolidCompany.h"
 #include "SolidStronghold.h"
 #include "SolidTerrainChunk.h"
 #include "SolidTerrainFog.h"

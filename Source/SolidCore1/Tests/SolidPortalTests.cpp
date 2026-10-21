@@ -4,7 +4,7 @@
 #include "Journal/SolidJournal.h"
 #include "Lairs/SolidLair.h"
 #include "SolidGameState.h"
-#include "Squad/SolidCaptain.h"
+#include "Company/SolidCaptain.h"
 #include "SolidHUD.h"
 #include "SolidPortal.h"
 #include "Terrain/SolidWorldMap.h"

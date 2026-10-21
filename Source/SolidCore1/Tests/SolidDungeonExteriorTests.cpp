@@ -1,7 +1,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "Strongholds/Dungeon/SolidDungeonExterior.h"
-#include "Squad/SolidCompany.h"
+#include "Company/SolidCompany.h"
 #include "SolidStronghold.h"
 #include "Strongholds/Dungeon/SolidDungeon.h"
 #include "Terrain/SolidTerrainMap.h"

@@ -3,7 +3,7 @@
 #include "Events/SolidEvents.h"
 #include "Journal/SolidJournal.h"
 #include "SolidGameState.h"
-#include "Squad/SolidCaptain.h"
+#include "Company/SolidCaptain.h"
 #include "SolidWorldTime.h"
 
 #if WITH_DEV_AUTOMATION_TESTS

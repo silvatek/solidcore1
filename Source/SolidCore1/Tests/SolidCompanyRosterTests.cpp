@@ -2,8 +2,8 @@
 #include "Misc/AutomationTest.h"
 #include <initializer_list>
 #include "Companion/SolidCompanionCharacter.h"
-#include "Squad/SolidCompany.h"
-#include "Squad/SolidSquad.h"
+#include "Company/SolidCompany.h"
+#include "Company/SolidSquad.h"
 #include "SolidClipLocomotion.h"
 #include "SolidGameInstance.h"
 #include "SolidGameMode.h"

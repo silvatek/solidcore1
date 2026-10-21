@@ -98,14 +98,27 @@ bool FSolidSquadBuilderDragTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("squad thumb stays hidden"), Page.bSquadThumb);
 	TestEqual(TEXT("plans list is empty"), Page.PlanRows.Num(), 0);
 	TestEqual(TEXT("eight keys"), Page.Keys.Num(), 8);
-	TestEqual(TEXT("F1 is Line"), Page.Keys[0].Label, FString(TEXT("Line")));
-	TestEqual(TEXT("F2 is Column"), Page.Keys[1].Label, FString(TEXT("Column")));
-	TestEqual(TEXT("F3 is Tight mob"), Page.Keys[2].Label, FString(TEXT("Tight mob")));
-	TestEqual(TEXT("F4 is Loose mob"), Page.Keys[3].Label, FString(TEXT("Loose mob")));
-	TestEqual(TEXT("F5 is Parade"), Page.Keys[4].Label, FString(TEXT("Parade")));
-	TestTrue(TEXT("F6 is empty"), Page.Keys[5].Label.IsEmpty());
-	TestTrue(TEXT("F7 is empty"), Page.Keys[6].Label.IsEmpty());
-	TestTrue(TEXT("F8 is empty"), Page.Keys[7].Label.IsEmpty());
+	int32 FilledKeys = 0;
+	for (int32 Slot = 0; Slot < Page.Keys.Num(); ++Slot)
+	{
+		const FSolidBattlePlan* Plan = Squad->GetAssignedBattlePlan(Slot);
+		if (Plan)
+		{
+			TestEqual(
+				*FString::Printf(TEXT("F%d shows its plan"), Slot + 1),
+				Page.Keys[Slot].Label,
+				Plan->Name);
+			++FilledKeys;
+		}
+		else
+		{
+			TestTrue(
+				*FString::Printf(TEXT("F%d is empty"), Slot + 1),
+				Page.Keys[Slot].Label.IsEmpty());
+		}
+	}
+	TestEqual(TEXT("every assigned plan is on a key"), FilledKeys, Squad->GetAssignedCount());
+	TestTrue(TEXT("F1 holds a plan"), Squad->GetAssignedBattlePlan(0) != nullptr);
 	TestEqual(TEXT("opens on All companions"), static_cast<uint8>(Page.Vocation), static_cast<uint8>(SolidSquadBuilder::EVocationFilter::All));
 	TestEqual(TEXT("opens on All plans"), static_cast<uint8>(Page.Formation), static_cast<uint8>(SolidSquadBuilder::EFormationFilter::All));
 
@@ -233,39 +246,54 @@ bool FSolidSquadBuilderDragTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the column is no longer full"), Squad->GetSelectedCompanionCount() < 2);
 
 	TestTrue(TEXT("F1 starts active"), Squad->SelectAssignedSlot(0));
-	const int32 Line = 0;
-	const int32 Column = 1;
+	const FSolidBattlePlan* FromPlan = Squad->GetAssignedBattlePlan(0);
+	const FSolidBattlePlan* ToPlan = Squad->GetAssignedBattlePlan(3);
+	const FSolidBattlePlan* StayPlan = Squad->GetAssignedBattlePlan(1);
+	TestNotNull(TEXT("F1 has a plan"), FromPlan);
+	TestNotNull(TEXT("F4 has a plan"), ToPlan);
+	TestNotNull(TEXT("F2 has a plan"), StayPlan);
+	if (!FromPlan || !ToPlan || !StayPlan)
+	{
+		return false;
+	}
+	const int32 FromIndex = Squad->GetAssignedCompanyPlanIndices()[0];
+	const int32 StayIndex = Squad->GetAssignedCompanyPlanIndices()[1];
+	const FString FromName = FromPlan->Name;
+	const FString ToName = ToPlan->Name;
+	const FString StayName = StayPlan->Name;
+	const ESolidBattleFormation FromFormation = FromPlan->Formation;
+	const ESolidBattleSpacing FromSpacing = FromPlan->Spacing;
 	TestTrue(
 		TEXT("the active plan moves to F4"),
-		SolidSquadBuilder::Drop(Squad, 2, PlanDrag(Line, 0), Hit(SolidSquadBuilder::EHit::KeyBox, 3)));
-	TestEqual(TEXT("the mark follows Line"), Squad->GetActiveAssignedSlot(), 3);
-	TestTrue(TEXT("formation stays Line"), Squad->GetActiveFormation() == ESolidBattleFormation::Line);
-	TestEqual(TEXT("F4 holds Line"), Squad->GetAssignedBattlePlan(3)->Name, FString(TEXT("Line")));
-	TestEqual(TEXT("F1 now holds Loose mob"), Squad->GetAssignedBattlePlan(0)->Name, FString(TEXT("Loose mob")));
-	int32 LineKeys = 0;
+		SolidSquadBuilder::Drop(Squad, 2, PlanDrag(FromIndex, 0), Hit(SolidSquadBuilder::EHit::KeyBox, 3)));
+	TestEqual(TEXT("the mark follows that plan"), Squad->GetActiveAssignedSlot(), 3);
+	TestTrue(TEXT("formation stays"), Squad->GetActiveFormation() == FromFormation);
+	TestEqual(TEXT("F4 holds the plan from F1"), Squad->GetAssignedBattlePlan(3)->Name, FromName);
+	TestEqual(TEXT("F1 holds the plan from F4"), Squad->GetAssignedBattlePlan(0)->Name, ToName);
+	int32 FromKeys = 0;
 	for (const int32 PlanIndex : Squad->GetAssignedCompanyPlanIndices())
 	{
-		if (PlanIndex == Line)
+		if (PlanIndex == FromIndex)
 		{
-			++LineKeys;
+			++FromKeys;
 		}
 	}
-	TestEqual(TEXT("Line is on one key"), LineKeys, 1);
+	TestEqual(TEXT("that plan is on one key"), FromKeys, 1);
 
 	TestTrue(
-		TEXT("Line returns to Plans"),
-		SolidSquadBuilder::Drop(Squad, 2, PlanDrag(Line, 3), Hit(SolidSquadBuilder::EHit::PlansBox, INDEX_NONE)));
+		TEXT("that plan returns to Plans"),
+		SolidSquadBuilder::Drop(Squad, 2, PlanDrag(FromIndex, 3), Hit(SolidSquadBuilder::EHit::PlansBox, INDEX_NONE)));
 	TestEqual(TEXT("no plan is active"), Squad->GetActiveAssignedSlot(), INDEX_NONE);
-	TestTrue(TEXT("companions keep Line"), Squad->GetActiveFormation() == ESolidBattleFormation::Line);
-	TestTrue(TEXT("spacing stays standard"), Squad->GetActiveSpacing() == ESolidBattleSpacing::Standard);
+	TestTrue(TEXT("companions keep the formation"), Squad->GetActiveFormation() == FromFormation);
+	TestTrue(TEXT("spacing stays"), Squad->GetActiveSpacing() == FromSpacing);
 	TestNull(TEXT("F4 is empty"), Squad->GetAssignedBattlePlan(3));
 	TestFalse(TEXT("an empty key does nothing"), Squad->SelectAssignedSlot(3));
 	TestEqual(TEXT("the empty key did not select itself"), Squad->GetActiveAssignedSlot(), INDEX_NONE);
 
 	TestFalse(
 		TEXT("a plan misses a squad box"),
-		SolidSquadBuilder::Drop(Squad, 2, PlanDrag(Column, 1), Hit(SolidSquadBuilder::EHit::SquadBox, 0)));
-	TestEqual(TEXT("Column stays on F2"), Squad->GetAssignedBattlePlan(1)->Name, FString(TEXT("Column")));
+		SolidSquadBuilder::Drop(Squad, 2, PlanDrag(StayIndex, 1), Hit(SolidSquadBuilder::EHit::SquadBox, 0)));
+	TestEqual(TEXT("F2 stays"), Squad->GetAssignedBattlePlan(1)->Name, StayName);
 	return true;
 }
 

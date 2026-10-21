@@ -10,6 +10,86 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
+namespace SolidBattlePlanTestPrivate
+{
+	int32 FindCompanyPlan(const USolidCompany* Company, const TCHAR* Name)
+	{
+		if (!Company || !Name)
+		{
+			return INDEX_NONE;
+		}
+		for (int32 Index = 0; Index < Company->GetBattlePlanCount(); ++Index)
+		{
+			const FSolidBattlePlan* Plan = Company->GetBattlePlan(Index);
+			if (Plan && Plan->Name == Name)
+			{
+				return Index;
+			}
+		}
+		return INDEX_NONE;
+	}
+
+	const FSolidBattlePlan* FindPlan(const USolidCompany* Company, const TCHAR* Name)
+	{
+		const int32 Index = FindCompanyPlan(Company, Name);
+		return Index == INDEX_NONE ? nullptr : Company->GetBattlePlan(Index);
+	}
+
+	int32 FindAssignedSlot(const USolidSquad* Squad, const TCHAR* Name)
+	{
+		if (!Squad || !Name)
+		{
+			return INDEX_NONE;
+		}
+		for (int32 Slot = 0; Slot < SolidBattleFormationSlots::MaxAssignedBattlePlans; ++Slot)
+		{
+			const FSolidBattlePlan* Plan = Squad->GetAssignedBattlePlan(Slot);
+			if (Plan && Plan->Name == Name)
+			{
+				return Slot;
+			}
+		}
+		return INDEX_NONE;
+	}
+
+	/**
+	 * The assigned slot for a catalog plan.
+	 * The starter squad already has every plan, so that slot is the answer.
+	 * A later catalog leaves a plan off the keys until it is placed, then synced onto the first empty key.
+	 */
+	int32 SlotForPlan(USolidSquad* Squad, const TCHAR* Name)
+	{
+		const int32 Existing = FindAssignedSlot(Squad, Name);
+		if (Existing != INDEX_NONE)
+		{
+			return Existing;
+		}
+		if (!Squad)
+		{
+			return INDEX_NONE;
+		}
+		USolidCompany* Company = Squad->GetCompany();
+		const int32 CompanyIndex = FindCompanyPlan(Company, Name);
+		if (CompanyIndex == INDEX_NONE)
+		{
+			return INDEX_NONE;
+		}
+
+		TArray<int32> Slots = Squad->GetAssignedCompanyPlanIndices();
+		Slots.SetNum(SolidBattleFormationSlots::MaxAssignedBattlePlans);
+		for (int32& Slot : Slots)
+		{
+			if (Slot == INDEX_NONE)
+			{
+				Slot = CompanyIndex;
+				break;
+			}
+		}
+		Squad->SetAssignedBattlePlans(Slots);
+		return FindAssignedSlot(Squad, Name);
+	}
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidBattleFormationSlotsTest,
 	"SolidCore1.BattlePlan.FormationSlots",
@@ -110,25 +190,25 @@ bool FSolidCompanyDefaultPlansTest::RunTest(const FString& Parameters)
 	USolidCompany* Company = NewObject<USolidCompany>();
 	TestNotNull(TEXT("company"), Company);
 	Company->InitializeDefaultBattlePlans();
-	TestEqual(TEXT("five starter plans"), Company->GetBattlePlanCount(), 5);
+	const int32 CatalogCount = Company->GetBattlePlanCount();
+	TestTrue(TEXT("the catalog has the five formations"), CatalogCount >= 5);
 	Company->InitializeDefaultBattlePlans();
-	TestEqual(TEXT("idempotent init"), Company->GetBattlePlanCount(), 5);
+	TestEqual(TEXT("idempotent init"), Company->GetBattlePlanCount(), CatalogCount);
 
-	const FSolidBattlePlan* Line = Company->GetBattlePlan(0);
-	const FSolidBattlePlan* Column = Company->GetBattlePlan(1);
-	const FSolidBattlePlan* Tight = Company->GetBattlePlan(2);
-	const FSolidBattlePlan* Loose = Company->GetBattlePlan(3);
-	const FSolidBattlePlan* Parade = Company->GetBattlePlan(4);
+	const FSolidBattlePlan* Line = SolidBattlePlanTestPrivate::FindPlan(Company, TEXT("Line"));
+	const FSolidBattlePlan* Column = SolidBattlePlanTestPrivate::FindPlan(Company, TEXT("Column"));
+	const FSolidBattlePlan* Tight = SolidBattlePlanTestPrivate::FindPlan(Company, TEXT("Tight mob"));
+	const FSolidBattlePlan* Loose = SolidBattlePlanTestPrivate::FindPlan(Company, TEXT("Loose mob"));
+	const FSolidBattlePlan* Parade = SolidBattlePlanTestPrivate::FindPlan(Company, TEXT("Parade"));
 	TestNotNull(TEXT("line plan"), Line);
 	TestNotNull(TEXT("column plan"), Column);
 	TestNotNull(TEXT("tight mob"), Tight);
 	TestNotNull(TEXT("loose mob"), Loose);
 	TestNotNull(TEXT("parade plan"), Parade);
-	TestEqual(TEXT("line name"), Line->Name, FString(TEXT("Line")));
-	TestEqual(TEXT("column name"), Column->Name, FString(TEXT("Column")));
-	TestEqual(TEXT("tight name"), Tight->Name, FString(TEXT("Tight mob")));
-	TestEqual(TEXT("loose name"), Loose->Name, FString(TEXT("Loose mob")));
-	TestEqual(TEXT("parade name"), Parade->Name, FString(TEXT("Parade")));
+	if (!Line || !Column || !Tight || !Loose || !Parade)
+	{
+		return false;
+	}
 	TestTrue(TEXT("line formation"), Line->Formation == ESolidBattleFormation::Line);
 	TestTrue(TEXT("column formation"), Column->Formation == ESolidBattleFormation::Column);
 	TestTrue(TEXT("tight formation mob"), Tight->Formation == ESolidBattleFormation::Mob);
@@ -156,25 +236,31 @@ bool FSolidSquadAssignedPlansTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("squad"), Squad);
 
 	Squad->InitializeFromCompany(Company);
-	TestEqual(TEXT("assigned starter count"), Squad->GetAssignedCount(), 5);
+	const int32 AssignedCap = FMath::Min(
+		Company->GetBattlePlanCount(), SolidBattleFormationSlots::MaxAssignedBattlePlans);
+	TestEqual(TEXT("starter keys follow the catalog"), Squad->GetAssignedCount(), AssignedCap);
 	TestTrue(TEXT("active is line by default"),
 		Squad->GetActiveFormation() == ESolidBattleFormation::Line);
 	TestEqual(TEXT("active slot is F1"), Squad->GetActiveAssignedSlot(), 0);
 	TestTrue(TEXT("default spacing standard"),
 		Squad->GetActiveSpacing() == ESolidBattleSpacing::Standard);
 
-	TestTrue(TEXT("select F2 column"), Squad->SelectAssignedSlot(1));
+	const int32 ColumnSlot = SolidBattlePlanTestPrivate::SlotForPlan(Squad, TEXT("Column"));
+	const int32 TightSlot = SolidBattlePlanTestPrivate::SlotForPlan(Squad, TEXT("Tight mob"));
+	const int32 LooseSlot = SolidBattlePlanTestPrivate::SlotForPlan(Squad, TEXT("Loose mob"));
+	const int32 ParadeSlot = SolidBattlePlanTestPrivate::SlotForPlan(Squad, TEXT("Parade"));
+	TestTrue(TEXT("column has a key"), ColumnSlot != INDEX_NONE);
+	TestTrue(TEXT("select column"), Squad->SelectAssignedSlot(ColumnSlot));
 	TestTrue(TEXT("active column"), Squad->GetActiveFormation() == ESolidBattleFormation::Column);
-	TestTrue(TEXT("select F3 tight mob"), Squad->SelectAssignedSlot(2));
+	TestTrue(TEXT("select tight mob"), Squad->SelectAssignedSlot(TightSlot));
 	TestTrue(TEXT("active mob"), Squad->GetActiveFormation() == ESolidBattleFormation::Mob);
 	TestTrue(TEXT("tight narrow"), Squad->GetActiveSpacing() == ESolidBattleSpacing::Narrow);
-	TestTrue(TEXT("select F4 loose mob"), Squad->SelectAssignedSlot(3));
+	TestTrue(TEXT("select loose mob"), Squad->SelectAssignedSlot(LooseSlot));
 	TestTrue(TEXT("loose wide"), Squad->GetActiveSpacing() == ESolidBattleSpacing::Wide);
-	TestTrue(TEXT("select F5 parade"), Squad->SelectAssignedSlot(4));
+	TestTrue(TEXT("select parade"), Squad->SelectAssignedSlot(ParadeSlot));
 	TestTrue(TEXT("active parade"), Squad->GetActiveFormation() == ESolidBattleFormation::Parade);
-	TestFalse(TEXT("reject empty F6"), Squad->SelectAssignedSlot(5));
-	TestFalse(TEXT("reject F8 when only 5"), Squad->SelectAssignedSlot(7));
-	TestEqual(TEXT("slot unchanged after reject"), Squad->GetActiveAssignedSlot(), 4);
+	TestFalse(TEXT("reject the first key past the assigned plans"), Squad->SelectAssignedSlot(Squad->GetAssignedCount()));
+	TestEqual(TEXT("slot unchanged after reject"), Squad->GetActiveAssignedSlot(), ParadeSlot);
 
 	// Max 8 assigned — grow the Company catalog first so indices are unique.
 	TArray<int32> TooMany;
@@ -203,22 +289,28 @@ bool FSolidGameModeBattlePlanSelectTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("gamemode"), GameMode);
 	TestNotNull(TEXT("company"), GameMode->GetCompany());
 	TestNotNull(TEXT("squad"), GameMode->GetSquad());
-	TestEqual(TEXT("company plans"), GameMode->GetCompany()->GetBattlePlanCount(), 5);
+	TestNotNull(TEXT("line is in the catalog"), SolidBattlePlanTestPrivate::FindPlan(GameMode->GetCompany(), TEXT("Line")));
+	TestNotNull(TEXT("parade is in the catalog"), SolidBattlePlanTestPrivate::FindPlan(GameMode->GetCompany(), TEXT("Parade")));
 	TestTrue(TEXT("default line"),
 		GameMode->GetSquad()->GetActiveFormation() == ESolidBattleFormation::Line);
 	TestEqual(TEXT("default F1"), GameMode->GetSquad()->GetActiveAssignedSlot(), 0);
 
-	TestTrue(TEXT("F2 column"), GameMode->SelectBattlePlanSlot(1));
+	USolidSquad* Squad = GameMode->GetSquad();
+	const int32 ColumnSlot = SolidBattlePlanTestPrivate::SlotForPlan(Squad, TEXT("Column"));
+	const int32 TightSlot = SolidBattlePlanTestPrivate::SlotForPlan(Squad, TEXT("Tight mob"));
+	const int32 LooseSlot = SolidBattlePlanTestPrivate::SlotForPlan(Squad, TEXT("Loose mob"));
+	TestTrue(TEXT("column"), GameMode->SelectBattlePlanSlot(ColumnSlot));
 	TestTrue(TEXT("formation column"),
 		GameMode->GetSquad()->GetActiveFormation() == ESolidBattleFormation::Column);
-	TestTrue(TEXT("F3 tight"), GameMode->SelectBattlePlanSlot(2));
-	TestTrue(TEXT("F4 loose"), GameMode->SelectBattlePlanSlot(3));
+	TestTrue(TEXT("tight"), GameMode->SelectBattlePlanSlot(TightSlot));
+	TestTrue(TEXT("loose"), GameMode->SelectBattlePlanSlot(LooseSlot));
 	TestTrue(TEXT("loose wide"),
 		GameMode->GetSquad()->GetActiveSpacing() == ESolidBattleSpacing::Wide);
 	TestEqual(TEXT("other plans leave the squad empty"), GameMode->GetMaxSquadSize(), 0);
 	TestFalse(TEXT("other plans leave raven sight locked"), GameMode->IsSightEnabled(ESolidSight::Raven));
 
-	TestTrue(TEXT("F5 parade"), GameMode->SelectBattlePlanSlot(4));
+	const int32 ParadeSlot = SolidBattlePlanTestPrivate::SlotForPlan(Squad, TEXT("Parade"));
+	TestTrue(TEXT("parade"), GameMode->SelectBattlePlanSlot(ParadeSlot));
 	TestTrue(TEXT("formation parade"),
 		GameMode->GetSquad()->GetActiveFormation() == ESolidBattleFormation::Parade);
 	TestTrue(TEXT("parade unlocks raven sight"), GameMode->IsSightEnabled(ESolidSight::Raven));
@@ -260,10 +352,13 @@ bool FSolidGameModeBattlePlanSelectTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("parade does not fire Reach broken bridge"), Fired(State, TEXT("Reach broken bridge")));
 	TestFalse(TEXT("parade does not fire Driven from the village"), Fired(State, TEXT("Driven from the village")));
 	const int32 FiredCount = State.FiredOrder.Num();
-	TestTrue(TEXT("F5 parade again"), GameMode->SelectBattlePlanSlot(4));
+	const int32 ParadeAgain = SolidBattlePlanTestPrivate::FindAssignedSlot(Squad, TEXT("Parade"));
+	TestTrue(TEXT("parade again"), GameMode->SelectBattlePlanSlot(ParadeAgain));
 	TestEqual(TEXT("parade events fire once"), GameMode->GetConfiguration()->FiredOrder.Num(), FiredCount);
 
-	TestFalse(TEXT("F6 empty"), GameMode->SelectBattlePlanSlot(5));
+	TestFalse(
+		TEXT("the first key past the assigned plans is empty"),
+		GameMode->SelectBattlePlanSlot(GameMode->GetSquad()->GetAssignedCount()));
 	return true;
 }
 
@@ -278,19 +373,27 @@ bool FSolidGameModeBattlePlanSurvivesEnsureTest::RunTest(const FString& Paramete
 	ASolidGameMode* GameMode = NewObject<ASolidGameMode>(Instance);
 	TestNotNull(TEXT("gamemode"), GameMode);
 
-	TestTrue(TEXT("F2 column"), GameMode->SelectBattlePlanSlot(1));
-	TestEqual(TEXT("slot is F2"), GameMode->GetSquad()->GetActiveAssignedSlot(), 1);
+	USolidSquad* Squad = GameMode->GetSquad();
+	const int32 ColumnSlot = SolidBattlePlanTestPrivate::SlotForPlan(Squad, TEXT("Column"));
+	TestTrue(TEXT("column"), GameMode->SelectBattlePlanSlot(ColumnSlot));
+	const int32 ColumnAfter = GameMode->GetSquad()->GetActiveAssignedSlot();
+	TestTrue(TEXT("formation is column"),
+		GameMode->GetSquad()->GetActiveFormation() == ESolidBattleFormation::Column);
 
 	// Enter-town refresh calls EnsureCompanyAndSquad on a timer. That used to
 	// rebuild the squad and snap the active plan back to Line.
 	GameMode->EnsureCompanyAndSquad();
-	TestEqual(TEXT("slot stays F2"), GameMode->GetSquad()->GetActiveAssignedSlot(), 1);
+	TestEqual(TEXT("slot stays column"), GameMode->GetSquad()->GetActiveAssignedSlot(), ColumnAfter);
 	TestTrue(TEXT("formation stays column"),
 		GameMode->GetSquad()->GetActiveFormation() == ESolidBattleFormation::Column);
 
-	TestTrue(TEXT("F5 parade"), GameMode->SelectBattlePlanSlot(4));
+	const int32 ParadeSlot = SolidBattlePlanTestPrivate::SlotForPlan(Squad, TEXT("Parade"));
+	TestTrue(TEXT("parade"), GameMode->SelectBattlePlanSlot(ParadeSlot));
+	const int32 ParadeAfter = GameMode->GetSquad()->GetActiveAssignedSlot();
+	TestTrue(TEXT("formation is parade"),
+		GameMode->GetSquad()->GetActiveFormation() == ESolidBattleFormation::Parade);
 	GameMode->EnsureCompanyAndSquad();
-	TestEqual(TEXT("slot stays F5"), GameMode->GetSquad()->GetActiveAssignedSlot(), 4);
+	TestEqual(TEXT("slot stays parade"), GameMode->GetSquad()->GetActiveAssignedSlot(), ParadeAfter);
 	TestTrue(TEXT("formation stays parade"),
 		GameMode->GetSquad()->GetActiveFormation() == ESolidBattleFormation::Parade);
 	return true;
@@ -344,20 +447,28 @@ bool FSolidBattlePlanEmptyKeyTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("squad"), Squad);
 	Squad->InitializeFromCompany(Company);
 
+	const int32 TightSlot = SolidBattlePlanTestPrivate::FindAssignedSlot(Squad, TEXT("Tight mob"));
+	const int32 TightIndex = SolidBattlePlanTestPrivate::FindCompanyPlan(Company, TEXT("Tight mob"));
+	const int32 ColumnSlot = SolidBattlePlanTestPrivate::FindAssignedSlot(Squad, TEXT("Column"));
+	const int32 LooseSlot = SolidBattlePlanTestPrivate::FindAssignedSlot(Squad, TEXT("Loose mob"));
+	TestTrue(TEXT("tight mob is on a key"), TightSlot != INDEX_NONE);
+	TestTrue(TEXT("column is on a key"), ColumnSlot != INDEX_NONE);
+	TestTrue(TEXT("loose mob is on a key"), LooseSlot != INDEX_NONE);
+
 	SolidSquadBuilder::FDrag Drag;
 	Drag.Kind = SolidSquadBuilder::EDrag::Plan;
-	Drag.Index = 2;
-	Drag.Slot = 2;
+	Drag.Index = TightIndex;
+	Drag.Slot = TightSlot;
 	SolidSquadBuilder::FHit Hit;
 	Hit.Kind = SolidSquadBuilder::EHit::PlansBox;
-	TestTrue(TEXT("F3 returns to Plans"), SolidSquadBuilder::Drop(Squad, 2, Drag, Hit));
-	TestNull(TEXT("F3 is empty"), Squad->GetAssignedBattlePlan(2));
-	TestEqual(TEXT("F2 stays Column"), Squad->GetAssignedBattlePlan(1)->Name, FString(TEXT("Column")));
-	TestEqual(TEXT("F4 stays Loose mob"), Squad->GetAssignedBattlePlan(3)->Name, FString(TEXT("Loose mob")));
-	TestFalse(TEXT("an empty key in the middle does nothing"), Squad->SelectAssignedSlot(2));
+	TestTrue(TEXT("tight mob returns to Plans"), SolidSquadBuilder::Drop(Squad, 2, Drag, Hit));
+	TestNull(TEXT("that key is empty"), Squad->GetAssignedBattlePlan(TightSlot));
+	TestEqual(TEXT("column stays"), Squad->GetAssignedBattlePlan(ColumnSlot)->Name, FString(TEXT("Column")));
+	TestEqual(TEXT("loose mob stays"), Squad->GetAssignedBattlePlan(LooseSlot)->Name, FString(TEXT("Loose mob")));
+	TestFalse(TEXT("an empty key in the middle does nothing"), Squad->SelectAssignedSlot(TightSlot));
 	TestEqual(TEXT("the active key stays F1"), Squad->GetActiveAssignedSlot(), 0);
-	TestTrue(TEXT("F4 still selects"), Squad->SelectAssignedSlot(3));
-	TestTrue(TEXT("F4 is still loose"), Squad->GetActiveSpacing() == ESolidBattleSpacing::Wide);
+	TestTrue(TEXT("loose mob still selects"), Squad->SelectAssignedSlot(LooseSlot));
+	TestTrue(TEXT("loose mob is still wide"), Squad->GetActiveSpacing() == ESolidBattleSpacing::Wide);
 	return true;
 }
 
@@ -375,10 +486,13 @@ bool FSolidBattlePlanParadeOtherKeyTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("squad"), Squad);
 
 	const int32 FiredBefore = GameMode->GetConfiguration()->FiredOrder.Num();
+	const int32 ParadeIndex = SolidBattlePlanTestPrivate::FindCompanyPlan(GameMode->GetCompany(), TEXT("Parade"));
+	const int32 ParadeSlot = SolidBattlePlanTestPrivate::SlotForPlan(Squad, TEXT("Parade"));
+	TestTrue(TEXT("parade has a key"), ParadeSlot != INDEX_NONE && ParadeSlot != 5);
 	SolidSquadBuilder::FDrag Drag;
 	Drag.Kind = SolidSquadBuilder::EDrag::Plan;
-	Drag.Index = 4;
-	Drag.Slot = 4;
+	Drag.Index = ParadeIndex;
+	Drag.Slot = ParadeSlot;
 	SolidSquadBuilder::FHit Hit;
 	Hit.Kind = SolidSquadBuilder::EHit::KeyBox;
 	Hit.Index = 5;
@@ -386,7 +500,7 @@ bool FSolidBattlePlanParadeOtherKeyTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the drop does not fire"), GameMode->GetConfiguration()->FiredOrder.Num(), FiredBefore);
 	TestEqual(TEXT("F1 stays the active plan"), Squad->GetActiveAssignedSlot(), 0);
 	TestTrue(TEXT("F6 now holds Parade"), Squad->GetAssignedBattlePlan(5)->Formation == ESolidBattleFormation::Parade);
-	TestNull(TEXT("F5 is empty"), Squad->GetAssignedBattlePlan(4));
+	TestNull(TEXT("the old key is empty"), Squad->GetAssignedBattlePlan(ParadeSlot));
 
 	TestTrue(TEXT("F6 parade"), GameMode->SelectBattlePlanSlot(5));
 	TestTrue(TEXT("formation parade"), Squad->GetActiveFormation() == ESolidBattleFormation::Parade);
@@ -394,7 +508,8 @@ bool FSolidBattlePlanParadeOtherKeyTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("parade raises the squad cap"), GameMode->GetMaxSquadSize(), SolidEvents::RosterCount);
 	const int32 FiredOnce = GameMode->GetConfiguration()->FiredOrder.Num();
 	TestTrue(TEXT("parade fired"), FiredOnce > FiredBefore);
-	TestTrue(TEXT("F6 parade again"), GameMode->SelectBattlePlanSlot(5));
+	const int32 ParadeAgain = SolidBattlePlanTestPrivate::FindAssignedSlot(Squad, TEXT("Parade"));
+	TestTrue(TEXT("parade again"), GameMode->SelectBattlePlanSlot(ParadeAgain));
 	TestEqual(TEXT("parade events fire once"), GameMode->GetConfiguration()->FiredOrder.Num(), FiredOnce);
 	return true;
 }

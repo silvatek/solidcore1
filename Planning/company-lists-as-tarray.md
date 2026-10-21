@@ -1,6 +1,6 @@
 # Company lists use TArray
 
-Status: Ready
+Status: In Progress
 
 ## Story
 

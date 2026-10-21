@@ -6,7 +6,7 @@ Status: New
 
 This story depends on [Early game battle plans](early-game-battle-plans.md), which is In Progress, and [Basic monsters](basic-monsters.md), which is Ready. Those stories ship first.
 
-A weapon has Speed and Power. Armour has Strength. The specific amounts are chosen in play. The captain and a companion swap a weapon or their armour in the inventory, and the fight uses what they have on. A monster has one fixed weapon, such as claws or teeth, and one fixed armour. Those stay on the monster. Each monster has DetectionRange. When the captain or a companion in the squad enters that range, the monsters attack and combat starts. When the captain and every companion in the squad are beyond it, combat ends. A monster stays within a few metres of its spawn point.
+A weapon has Speed and Power. Armour has Strength. The specific amounts are chosen in play. The captain and a companion swap a weapon or their armour in the inventory, and the fight uses what they have on. A monster has one fixed weapon, such as claws or teeth, and one fixed armour. Those stay on the monster. Each monster has DetectionRange. When the captain or a companion in the squad enters that range, the monsters attack and combat starts. When the captain and every companion in the squad are beyond it, combat ends. Combat also ends when one side is completely killed. A monster stays within a few metres of its spawn point.
 
 The squad selects from the battle plans it already has. Each of those plans stores attack or retreat on itself. Starter, Attack, Tight mob, and Loose mob store attack. Defend, Parade, Line, and Column store retreat. Each plan also stores TargetStrategy on itself. The only value is Random, and Random picks a target purely at random. A group of monsters has a set of battle plans too. The three reptiles beside the Iglin bridge are one group, and that set holds Starter.
 
@@ -23,8 +23,9 @@ A click on those reptiles still leaves the fight unstarted. Entering DetectionRa
 - The captain and a companion swap that armour in the inventory. An attack lands on the armour they have on.
 - A monster has one fixed armour, with Strength. The monster does not swap it.
 - Each monster has DetectionRange. The three reptiles each have it.
-- The captain or a companion in the squad entering any of those ranges starts combat. The group then follows its plan. One companion still inside keeps combat going.
+- The captain or a companion in the squad entering any of those ranges starts combat. The group then follows its plan. One living companion still inside keeps combat going.
 - Combat ends when the captain and every companion in the squad are outside every monster's DetectionRange. The attack cycle and the retreat stop. Entering a range again starts combat again.
+- Combat ends when every monster in the fight is dead, or when the captain and every companion in the squad are dead. That ends it even while the other side is still inside a DetectionRange. The attack cycle and the retreat stop. A dead monster does not start combat again.
 - A click on a monster does not start combat.
 - A monster moves no more than a few metres from its spawn point. That point is the place [Basic monsters](basic-monsters.md) put it.
 - Speed, Power, and Strength stay off the screen. Their amounts are chosen in play. The fight uses the amounts on the weapon and the armour.
@@ -43,7 +44,8 @@ A click on those reptiles still leaves the fight unstarted. Entering DetectionRa
 
 - Play-testing chooses the amounts of Speed, Power, and Strength. This story does not fix those numbers.
 - The retreat reduction starts at 75%. A blow on someone who is retreating takes 25% of the weapon's Power off their Strength. Play-testing may change the 75%.
-- An opponent of the captain or a companion is a monster still in the fight. An opponent of a monster is the captain, or a companion in the squad, still in the fight.
+- An opponent of the captain or a companion is a living monster in the fight. An opponent of a monster is the living captain, or a living companion in the squad.
+- A side is the monsters in the fight, or the captain and the companions in the squad. Strength at 0 or below is dead. The blow that kills the last one on a side ends combat.
 - DetectionRange is on the monster. Its amount is still to be named before this story is Ready. The leash is a few metres from the spawn point, and play-testing chooses the exact metres. Distance is horizontal.
 - A companion who is not in the squad stays at the stronghold, so that companion does not enter a range and does not keep combat going.
 - Attack or retreat, and TargetStrategy, are fields on the battle plan, beside its name, formation, and spacing. The fight reads them from the plan it is using. [Hold battle plan](hold-battle-plan.md) and [Drill battle plan](drill-battle-plan.md) are other stories. The values here are on the plans [Early game battle plans](early-game-battle-plans.md) names.

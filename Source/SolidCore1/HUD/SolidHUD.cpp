@@ -2464,8 +2464,12 @@ void ASolidHUD::DrawInventoryPopup()
 		}
 	}
 
+	const USolidCompany* Company = GameMode ? GameMode->GetCompany() : nullptr;
 	const bool bShowChest = GameMode
-		&& SolidStrongholdTransition::CompanyChestOpen(State, GameMode->IsInStronghold());
+		&& SolidStrongholdTransition::CompanyChestOpen(
+			State,
+			Company ? Company->GetStronghold() : nullptr,
+			GameMode->IsInStronghold());
 	SolidInventory::FPage Page;
 	SolidInventory::Layout(State.Inventory, Page, bShowChest ? &State.CaveChest : nullptr);
 

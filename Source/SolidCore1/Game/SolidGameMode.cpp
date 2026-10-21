@@ -154,12 +154,29 @@ ASolidGameMode::ASolidGameMode()
 	EnsureCompanyAndSquad();
 }
 
+USolidCompany* ASolidGameMode::GetCompany() const
+{
+	if (USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>())
+	{
+		return Instance->GetCompany();
+	}
+	// Unit tests construct the mode with the instance as Outer (no World yet).
+	if (USolidGameInstance* Instance = Cast<USolidGameInstance>(GetOuter()))
+	{
+		return Instance->GetCompany();
+	}
+	return nullptr;
+}
+
 void ASolidGameMode::EnsureCompanyAndSquad()
 {
+	USolidCompany* Company = GetCompany();
 	if (!Company)
 	{
-		Company = NewObject<USolidCompany>(this, TEXT("Company"));
+		return;
 	}
+	// Defaults are seeded when the game instance creates the company.
+	// Idempotent calls leave a catalog that already has entries.
 	Company->InitializeDefaultBattlePlans();
 	Company->InitializeDefaultCharacterMeshes();
 	Company->InitializeDefaultCompanions();
@@ -426,7 +443,8 @@ void ASolidGameMode::BeginStrongholdInterior()
 
 	if (!StrongholdInterior)
 	{
-		const FSolidStronghold* Stronghold = Configuration.ActiveStronghold.Get();
+		const USolidCompany* Company = GetCompany();
+		const FSolidStronghold* Stronghold = Company ? Company->GetStronghold() : nullptr;
 		UClass* InteriorClass = Stronghold ? Stronghold->InteriorClass() : nullptr;
 		if (!InteriorClass)
 		{
@@ -604,13 +622,14 @@ void ASolidGameMode::TravelFromLair(const TCHAR EndMarker)
 void ASolidGameMode::EnterStronghold()
 {
 	UWorld* World = GetWorld();
-	const FSolidStronghold* Stronghold = Configuration.ActiveStronghold.Get();
+	USolidCompany* Company = GetCompany();
+	const FSolidStronghold* Stronghold = Company ? Company->GetStronghold() : nullptr;
 	if (!World || IsInClosedVisit() || !Stronghold || !Stronghold->InteriorClass())
 	{
 		return;
 	}
 	// The active stronghold accepts the click once strongholds are open.
-	if (!Stronghold->AcceptsEnter(Configuration, Stronghold->Cell))
+	if (!Stronghold->AcceptsEnter(Configuration, Stronghold, Stronghold->Cell))
 	{
 		return;
 	}
@@ -632,7 +651,8 @@ bool ASolidGameMode::EnterChosenStronghold(
 	{
 		return false;
 	}
-	if (!SolidStrongholdTransition::Commit(Configuration, Cell, Size, Type))
+	USolidCompany* Company = GetCompany();
+	if (!Company || !SolidStrongholdTransition::Commit(*Company, Configuration, Cell, Size, Type))
 	{
 		return false;
 	}
@@ -1090,6 +1110,7 @@ ASolidCompanionCharacter* ASolidGameMode::SpawnCompanion(
 	FLinearColor LegColor;
 	FLinearColor SkinColor;
 	SolidCompanionColors::ColorsForName(DisplayName, TorsoColor, LegColor, SkinColor);
+	USolidCompany* Company = GetCompany();
 	if (Company)
 	{
 		if (const FSolidCompanion* Record = Company->GetCompanion(Company->FindCompanionIndexByName(DisplayName)))
@@ -1164,6 +1185,7 @@ void ASolidGameMode::EnsureCompanion()
 	{
 		Squad->CollectFieldedCompanions(Wanted, Fielded);
 	}
+	USolidCompany* Company = GetCompany();
 
 	for (int32 Index = SpawnedCompanions.Num() - 1; Index >= 0; --Index)
 	{
@@ -1679,9 +1701,12 @@ void ASolidGameMode::EnsureVegetation()
 	}
 
 	TArray<FSolidStronghold*> Owned;
-	if (Configuration.ActiveStronghold)
+	if (USolidCompany* Company = GetCompany())
 	{
-		Owned.Add(Configuration.ActiveStronghold.Get());
+		if (FSolidStronghold* Active = Company->GetStronghold())
+		{
+			Owned.Add(Active);
+		}
 	}
 	for (const TUniquePtr<FSolidStronghold>& Previous : Configuration.PreviousStrongholds)
 	{

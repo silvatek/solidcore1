@@ -4,6 +4,7 @@
 #include "Squad/SolidBattlePlan.h"
 #include "Squad/SolidCompany.h"
 #include "Squad/SolidSquad.h"
+#include "SolidGameInstance.h"
 #include "SolidGameMode.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -196,7 +197,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidGameModeBattlePlanSelectTest::RunTest(const FString& Parameters)
 {
-	ASolidGameMode* GameMode = NewObject<ASolidGameMode>();
+	USolidGameInstance* Instance = NewObject<USolidGameInstance>();
+	ASolidGameMode* GameMode = NewObject<ASolidGameMode>(Instance);
 	TestNotNull(TEXT("gamemode"), GameMode);
 	TestNotNull(TEXT("company"), GameMode->GetCompany());
 	TestNotNull(TEXT("squad"), GameMode->GetSquad());
@@ -261,7 +263,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidGameModeBattlePlanSurvivesEnsureTest::RunTest(const FString& Parameters)
 {
-	ASolidGameMode* GameMode = NewObject<ASolidGameMode>();
+	USolidGameInstance* Instance = NewObject<USolidGameInstance>();
+	ASolidGameMode* GameMode = NewObject<ASolidGameMode>(Instance);
 	TestNotNull(TEXT("gamemode"), GameMode);
 
 	TestTrue(TEXT("F2 column"), GameMode->SelectBattlePlanSlot(1));
@@ -354,7 +357,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidBattlePlanParadeOtherKeyTest::RunTest(const FString& Parameters)
 {
-	ASolidGameMode* GameMode = NewObject<ASolidGameMode>();
+	USolidGameInstance* Instance = NewObject<USolidGameInstance>();
+	ASolidGameMode* GameMode = NewObject<ASolidGameMode>(Instance);
 	TestNotNull(TEXT("gamemode"), GameMode);
 	USolidSquad* Squad = GameMode->GetSquad();
 	TestNotNull(TEXT("squad"), Squad);

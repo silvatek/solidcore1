@@ -1,7 +1,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "Strongholds/Dungeon/SolidDungeonExterior.h"
-#include "SolidGameState.h"
+#include "Squad/SolidCompany.h"
 #include "SolidStronghold.h"
 #include "Strongholds/Dungeon/SolidDungeon.h"
 #include "Terrain/SolidTerrainMap.h"
@@ -249,8 +249,9 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 {
-	FGameState State;
-	FSolidStronghold* Cave = State.ActiveStronghold.Get();
+	USolidCompany* Company = NewObject<USolidCompany>();
+	Company->InitializeStartingStronghold();
+	FSolidStronghold* Cave = Company->GetStronghold();
 	TestNotNull(TEXT("a new game has a stronghold"), Cave);
 	if (!Cave)
 	{

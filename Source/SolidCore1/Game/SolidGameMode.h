@@ -100,7 +100,8 @@ public:
 
 	const TArray<TObjectPtr<ASolidBridge>>& GetBridges() const { return SpawnedBridges; }
 
-	USolidCompany* GetCompany() const { return Company; }
+	/** The game instance's company. Null when the instance is missing. */
+	USolidCompany* GetCompany() const;
 	USolidSquad* GetSquad() const { return Squad; }
 
 	/** Starting selection (Sam, then Alex). The event roster is the whole company. The live squad starts empty. */
@@ -206,9 +207,9 @@ public:
 	void ExitStronghold();
 
 	/**
-	 * Create the company catalog and squad on the first call.
+	 * Bind the game instance's company and create the squad on the first call.
 	 * Later calls (event refresh, companion spawn) keep the active battle plan
-	 * and the companions selected for the squad.
+	 * and the companions selected for the squad. Does not create another company.
 	 */
 	void EnsureCompanyAndSquad();
 
@@ -255,9 +256,6 @@ protected:
 		int32 SquadSlotIndex,
 		const TSoftObjectPtr<USkeletalMesh>& Mesh,
 		ESolidVocation Vocation);
-
-	UPROPERTY(Transient)
-	TObjectPtr<USolidCompany> Company;
 
 	UPROPERTY(Transient)
 	TObjectPtr<USolidSquad> Squad;

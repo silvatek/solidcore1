@@ -37,7 +37,6 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Drop the Assassin and Blacksmith packs](Planning/remove-assassin-and-blacksmith.md)
 - [Generate the character mesh outside the editor](Planning/character-mesh-outside-the-editor.md)
 - [Remove WorldMap.txt](Planning/remove-world-map-txt.md)
-- [The game instance owns the company](Planning/game-instance-owns-the-company.md)
 
 ## Done
 
@@ -93,6 +92,7 @@ Shipped stories live in [`Planning/Done`](Planning/Done).
 - [Paint the world chart](Planning/Done/paint-the-world-chart.md)
 - [Load the world from the chart](Planning/Done/load-the-world-from-the-chart.md)
 - [Company lists use TArray](Planning/Done/company-lists-as-tarray.md)
+- [The game instance owns the company](Planning/Done/game-instance-owns-the-company.md)
 
 ## Controls (runtime defaults)
 
@@ -345,8 +345,8 @@ Source/
       SolidCharacterStage.*              # Plain room for the character editor
     Game/
       SolidGameMode.*
-      SolidGameState.*                   # FGameState: squad, sight, journal, and inventory
-      SolidGameInstance.*                # Captain, squad, events, and the world-time clock across the cave trip
+      SolidGameState.*                   # FGameState: squad, sight, journal, inventory, and previous strongholds
+      SolidGameInstance.*                # Company (and its stronghold), travel session, fog trail, and world-time clock
       SolidWorldTime.h                   # Journal date and clock
       SolidSessionSave.h                 # How many play sessions have started
       SolidBuildId.h                     # SC1-NNNN shown on the debug HUD

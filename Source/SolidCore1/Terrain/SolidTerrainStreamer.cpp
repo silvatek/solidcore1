@@ -5,6 +5,7 @@
 #include "Lairs/SolidLair.h"
 #include "Strongholds/Dungeon/SolidDungeonLevel.h"
 #include "SolidGameInstance.h"
+#include "Squad/SolidCompany.h"
 #include "SolidStronghold.h"
 #include "SolidTerrainChunk.h"
 #include "SolidTerrainFog.h"
@@ -612,7 +613,8 @@ void ASolidTerrainStreamer::TryRelocateFocusToStartTown()
 		{
 			if (Instance->WantsStrongholdExit())
 			{
-				const FSolidStronghold* Stronghold = Instance->GetSession().Configuration.ActiveStronghold.Get();
+				const USolidCompany* Company = Instance->GetCompany();
+				const FSolidStronghold* Stronghold = Company ? Company->GetStronghold() : nullptr;
 				if (Stronghold)
 				{
 					const SolidStronghold::FExitStand Stand = SolidStronghold::ExitStand(*Stronghold);

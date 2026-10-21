@@ -5,6 +5,7 @@
 #include "Squad/SolidCompany.h"
 #include "Squad/SolidSquad.h"
 #include "SolidClipLocomotion.h"
+#include "SolidGameInstance.h"
 #include "SolidGameMode.h"
 #include "UObject/SoftObjectPath.h"
 
@@ -271,7 +272,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidSquadSelectionSurvivesEnsureTest::RunTest(const FString& Parameters)
 {
-	ASolidGameMode* GameMode = NewObject<ASolidGameMode>();
+	USolidGameInstance* Instance = NewObject<USolidGameInstance>();
+	ASolidGameMode* GameMode = NewObject<ASolidGameMode>(Instance);
 	TestNotNull(TEXT("gamemode"), GameMode);
 	USolidCompany* Company = GameMode->GetCompany();
 	USolidSquad* Squad = GameMode->GetSquad();

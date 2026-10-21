@@ -2,6 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "SolidGameInstance.h"
 #include "SolidGameState.h"
+#include "Squad/SolidCompany.h"
 #include "SolidStronghold.h"
 #include "SolidTerrainMap.h"
 #include "SolidWorldMap.h"
@@ -343,18 +344,22 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 {
 	const FGameState Fresh;
+	USolidCompany* Company = NewObject<USolidCompany>();
+	Company->InitializeStartingStronghold();
+	const FSolidStronghold* StartingCave = Company->GetStronghold();
+	TestNotNull(TEXT("a new game has a stronghold"), StartingCave);
 	TestEqual(
 		TEXT("a new game is a dungeon"),
-		static_cast<uint8>(Fresh.ActiveStronghold->Type),
+		static_cast<uint8>(StartingCave->Type),
 		static_cast<uint8>(ESolidStrongholdType::Dungeon));
 	TestEqual(
 		TEXT("a new game is meagre"),
-		static_cast<uint8>(Fresh.ActiveStronghold->Size),
+		static_cast<uint8>(StartingCave->Size),
 		static_cast<uint8>(ESolidStrongholdSize::Meagre));
-	TestEqual(TEXT("the starting cave is named The Cave"), Fresh.ActiveStronghold->Name, FString(SolidStronghold::StartingStrongholdName));
+	TestEqual(TEXT("the starting cave is named The Cave"), StartingCave->Name, FString(SolidStronghold::StartingStrongholdName));
 	TestEqual(
 		TEXT("the cave hover shows that name"),
-		SolidStronghold::EnterHover(Fresh.ActiveStronghold->Name),
+		SolidStronghold::EnterHover(StartingCave->Name),
 		FString(TEXT("The Cave\nClick to enter")));
 	TUniquePtr<FSolidStronghold> AverageFortress = SolidStronghold::Make(
 		ESolidStrongholdType::Fortress,
@@ -365,12 +370,12 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 	AverageFortress->Name = TEXT("High Keep");
 	const TUniquePtr<FSolidStronghold> Kept = AverageFortress->Clone();
 	TestEqual(TEXT("a clone keeps a chosen name"), Kept->Name, FString(TEXT("High Keep")));
-	TestEqual(TEXT("a new game uses the starting column"), Fresh.ActiveStronghold->Cell.X, SolidStronghold::StartingColumn - 1);
-	TestEqual(TEXT("a new game uses the starting row"), Fresh.ActiveStronghold->Cell.Y, SolidStronghold::StartingRow - 1);
+	TestEqual(TEXT("a new game uses the starting column"), StartingCave->Cell.X, SolidStronghold::StartingColumn - 1);
+	TestEqual(TEXT("a new game uses the starting row"), StartingCave->Cell.Y, SolidStronghold::StartingRow - 1);
 	const FVector2D StartingXY = SolidStronghold::WorldXY(SolidStronghold::StartingCell());
 	TestTrue(
 		TEXT("a new game stands at the starting cell's world position"),
-		Fresh.ActiveStronghold->Location.Equals(StartingXY, 0.01f));
+		StartingCave->Location.Equals(StartingXY, 0.01f));
 	USolidTerrainMap* Terrain = NewObject<USolidTerrainMap>();
 	TestNotNull(TEXT("terrain"), Terrain);
 	if (Terrain)
@@ -387,7 +392,7 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 				Projected));
 		TestTrue(
 			TEXT("that projection is the stronghold location"),
-			Fresh.ActiveStronghold->Location.Equals(Projected, 0.01f));
+			StartingCave->Location.Equals(Projected, 0.01f));
 	}
 	TestTrue(
 		TEXT("a new game has reached Meagre"),
@@ -461,11 +466,6 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 
 	FGameState Moved;
 	const FIntPoint MovedCell(4, 6);
-	Moved.ActiveStronghold = SolidStronghold::Make(
-		ESolidStrongholdType::Tower,
-		ESolidStrongholdSize::Average,
-		MovedCell,
-		SolidStronghold::WorldXY(MovedCell));
 	Moved.MaxStrongholdSize = ESolidStrongholdSize::Average;
 
 	USolidGameInstance* Instance = NewObject<USolidGameInstance>();
@@ -474,20 +474,28 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
+	USolidCompany* TripCompany = Instance->GetCompany();
+	TripCompany->SetStronghold(SolidStronghold::Make(
+		ESolidStrongholdType::Tower,
+		ESolidStrongholdSize::Average,
+		MovedCell,
+		SolidStronghold::WorldXY(MovedCell)));
 	FSolidTravelSession Session;
 	Session.Configuration = Moved;
 	Instance->Capture(Session);
 	const FGameState& Carried = Instance->GetSession().Configuration;
+	const FSolidStronghold* CarriedStronghold = TripCompany->GetStronghold();
+	TestNotNull(TEXT("the trip keeps a stronghold on the company"), CarriedStronghold);
 	TestEqual(
 		TEXT("the trip keeps the type"),
-		static_cast<uint8>(Carried.ActiveStronghold->Type),
+		static_cast<uint8>(CarriedStronghold->Type),
 		static_cast<uint8>(ESolidStrongholdType::Tower));
 	TestEqual(
 		TEXT("the trip keeps the size"),
-		static_cast<uint8>(Carried.ActiveStronghold->Size),
+		static_cast<uint8>(CarriedStronghold->Size),
 		static_cast<uint8>(ESolidStrongholdSize::Average));
-	TestEqual(TEXT("the trip keeps the column"), Carried.ActiveStronghold->Cell.X, 4);
-	TestEqual(TEXT("the trip keeps the row"), Carried.ActiveStronghold->Cell.Y, 6);
+	TestEqual(TEXT("the trip keeps the column"), CarriedStronghold->Cell.X, 4);
+	TestEqual(TEXT("the trip keeps the row"), CarriedStronghold->Cell.Y, 6);
 	TestTrue(
 		TEXT("the trip keeps the unlocked size"),
 		SolidEvents::IsStrongholdSizeUnlocked(Carried, ESolidStrongholdSize::Average));

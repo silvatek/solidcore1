@@ -1,20 +1,6 @@
 #include "SolidGameState.h"
 #include "Lairs/SolidLair.h"
 
-FGameState::FGameState()
-	: ActiveStronghold(SolidStronghold::Make(
-		ESolidStrongholdType::Dungeon,
-		ESolidStrongholdSize::Meagre,
-		SolidStronghold::StartingCell(),
-		SolidStronghold::WorldXY(SolidStronghold::StartingCell())))
-{
-	if (ActiveStronghold)
-	{
-		ActiveStronghold->Orientation = ESolidStrongholdOrientation::North;
-		ActiveStronghold->Name = SolidStronghold::StartingStrongholdName;
-	}
-}
-
 FGameState::FGameState(const FGameState& Other)
 {
 	*this = Other;
@@ -44,18 +30,6 @@ FGameState& FGameState::operator=(const FGameState& Other)
 	Inventory = Other.Inventory;
 	TakenForagePiles = Other.TakenForagePiles;
 	CaveChest = Other.CaveChest;
-	ActiveStronghold = Other.ActiveStronghold
-		? Other.ActiveStronghold->Clone()
-		: SolidStronghold::Make(
-			ESolidStrongholdType::Dungeon,
-			ESolidStrongholdSize::Meagre,
-			SolidStronghold::StartingCell(),
-			SolidStronghold::WorldXY(SolidStronghold::StartingCell()));
-	if (!Other.ActiveStronghold && ActiveStronghold)
-	{
-		ActiveStronghold->Orientation = ESolidStrongholdOrientation::North;
-		ActiveStronghold->Name = SolidStronghold::StartingStrongholdName;
-	}
 	MaxStrongholdSize = Other.MaxStrongholdSize;
 	bStrongholdSiteRestrictions = Other.bStrongholdSiteRestrictions;
 	PreviousStrongholds.Reset();

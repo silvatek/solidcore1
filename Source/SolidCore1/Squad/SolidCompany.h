@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
 #include "Squad/SolidBattlePlan.h"
+#include "Strongholds/SolidStronghold.h"
 
 class USkeletalMesh;
 
@@ -148,6 +149,7 @@ struct FSolidCompanion
 
 /**
  * Company — catalog of battle plans and every companion the squad may field.
+ * Owns the active stronghold. The game instance holds one company for the play session.
  */
 UCLASS()
 class SOLIDCORE1_API USolidCompany : public UObject
@@ -166,6 +168,12 @@ public:
 
 	/** Seed Sam, Alex, Max, Morgan, and Quinn, each with a mesh and a vocation (idempotent). */
 	void InitializeDefaultCompanions();
+
+	/**
+	 * Seed the Meagre Dungeon on the starting cell, facing north, named The cave.
+	 * Idempotent while a stronghold is already held.
+	 */
+	void InitializeStartingStronghold();
 
 	int32 GetBattlePlanCount() const { return AllBattlePlans.Num(); }
 
@@ -196,6 +204,16 @@ public:
 
 	int32 FindCompanionIndexByName(const FString& Name) const;
 
+	/** The company base. Null until InitializeStartingStronghold or SetStronghold. */
+	const FSolidStronghold* GetStronghold() const { return ActiveStronghold.Get(); }
+	FSolidStronghold* GetStronghold() { return ActiveStronghold.Get(); }
+
+	/** Take ownership of the company base. Replaces any previous stronghold. */
+	void SetStronghold(TUniquePtr<FSolidStronghold> Stronghold);
+
+	/** Release ownership of the company base. Used when Commit moves it to history. */
+	TUniquePtr<FSolidStronghold> TakeStronghold();
+
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Company|BattlePlans")
 	TArray<FSolidBattlePlan> AllBattlePlans;
@@ -205,4 +223,7 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Company|Companions")
 	TArray<FSolidCompanion> AllCompanions;
+
+	/** Not a UPROPERTY: FSolidDungeon, FSolidFortress, and FSolidTower stay plain classes. */
+	TUniquePtr<FSolidStronghold> ActiveStronghold;
 };

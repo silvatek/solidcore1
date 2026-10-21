@@ -9,13 +9,13 @@
 #include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
 
 /**
- * Live company state. The game starts in true sight with an empty squad.
+ * Live play state. The game starts in true sight with an empty squad.
  * The game mode holds the current copy. The travel session carries it across the cave trip.
- * Copying clones the company stronghold and each previous one, so a tower stays a tower.
+ * The company owns the active stronghold. Copying clones each previous stronghold.
  */
 struct FGameState
 {
-	FGameState();
+	FGameState() = default;
 	FGameState(const FGameState& Other);
 	FGameState& operator=(const FGameState& Other);
 	FGameState(FGameState&&) = default;
@@ -50,8 +50,6 @@ struct FGameState
 	TArray<int32> TakenForagePiles;
 	/** The cave chest. It starts with a rusty sword, old boots, coins, sticks, and pitch. Taking an item keeps it out. */
 	SolidStorage::FContainer CaveChest = SolidStorage::StartingCaveChest();
-	/** The company base. A new game is the Meagre Dungeon on its map cell. */
-	TUniquePtr<FSolidStronghold> ActiveStronghold;
 	/**
 	 * Highest size an event has unlocked. A new game is Meagre, the company base.
 	 * A larger size unlocks every size up to it. Sizes are not skipped.

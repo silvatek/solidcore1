@@ -3,6 +3,8 @@
 #include "Strongholds/Dungeon/SolidDungeonLevel.h"
 #include "SolidStronghold.h"
 #include "SolidGameInstance.h"
+#include "SolidGameState.h"
+#include "Squad/SolidCompany.h"
 #include "SolidTravel.h"
 #include "SolidLair.h"
 #include "Strongholds/Tower/Actors/SolidTowerInterior.h"
@@ -129,22 +131,27 @@ bool FSolidTowerTravelTest::RunTest(const FString& Parameters)
 		SolidLair::AllowPassage(TowerEnter, false).StrongholdCell.X,
 		static_cast<int32>(16));
 	FGameState Closed;
+	USolidCompany* ClosedCompany = NewObject<USolidCompany>();
+	ClosedCompany->InitializeStartingStronghold();
+	const FSolidStronghold* ClosedCave = ClosedCompany->GetStronghold();
 	TestFalse(
 		TEXT("a shut stronghold refuses the cave door"),
-		Closed.ActiveStronghold->AcceptsEnter(Closed, Closed.ActiveStronghold->Cell));
+		ClosedCave->AcceptsEnter(Closed, ClosedCave, ClosedCave->Cell));
 	FGameState TowerState;
-	TowerState.ActiveStronghold = SolidStronghold::Make(
+	USolidCompany* TowerCompany = NewObject<USolidCompany>();
+	TowerCompany->SetStronghold(SolidStronghold::Make(
 		ESolidStrongholdType::Tower,
 		ESolidStrongholdSize::Average,
 		DoorCell,
-		SolidStronghold::WorldXY(DoorCell));
+		SolidStronghold::WorldXY(DoorCell)));
+	const FSolidStronghold* Tower = TowerCompany->GetStronghold();
 	TestFalse(
 		TEXT("a shut stronghold refuses the tower door"),
-		TowerState.ActiveStronghold->AcceptsEnter(TowerState, DoorCell));
+		Tower->AcceptsEnter(TowerState, Tower, DoorCell));
 	TowerState.bStrongholdsEnabled = true;
 	TestTrue(
 		TEXT("the active tower accepts enter once strongholds are open"),
-		TowerState.ActiveStronghold->AcceptsEnter(TowerState, DoorCell));
+		Tower->AcceptsEnter(TowerState, Tower, DoorCell));
 
 	ASolidTowerExterior* Shell = NewObject<ASolidTowerExterior>();
 	TestNotNull(TEXT("shell"), Shell);
@@ -169,22 +176,22 @@ bool FSolidTowerTravelTest::RunTest(const FString& Parameters)
 		TEXT("the stand point is outside the stone"),
 		FVector2D::Distance(Stand, Cell) > ImperiousTower.Plan().GroundExteriorRadiusCm);
 
-	TUniquePtr<FSolidStronghold> Tower = SolidStronghold::Make(
+	TUniquePtr<FSolidStronghold> ExitTower = SolidStronghold::Make(
 		ESolidStrongholdType::Tower,
 		ESolidStrongholdSize::Imperious,
 		FIntPoint(16, 30),
 		Cell);
-	TestNotNull(TEXT("an Imperious tower"), Tower.Get());
-	if (Tower)
+	TestNotNull(TEXT("an Imperious tower"), ExitTower.Get());
+	if (ExitTower)
 	{
-		Tower->Orientation = ESolidStrongholdOrientation::North;
-		const SolidStronghold::FExitStand NorthExit = SolidStronghold::ExitStand(*Tower);
+		ExitTower->Orientation = ESolidStrongholdOrientation::North;
+		const SolidStronghold::FExitStand NorthExit = SolidStronghold::ExitStand(*ExitTower);
 		TestTrue(TEXT("north exit stands on the north grass"), NorthExit.XY.Equals(Stand, 0.1f));
 		TestTrue(TEXT("north exit faces away"), FMath::IsNearlyEqual(NorthExit.YawDeg, 90.f, 0.1f));
 
-		Tower->Orientation = ESolidStrongholdOrientation::East;
+		ExitTower->Orientation = ESolidStrongholdOrientation::East;
 		const FVector2D EastDoor = ImperiousTower.OutsideDoorXY(Cell, 0.f);
-		const SolidStronghold::FExitStand EastExit = SolidStronghold::ExitStand(*Tower);
+		const SolidStronghold::FExitStand EastExit = SolidStronghold::ExitStand(*ExitTower);
 		TestTrue(TEXT("east exit stands on the east grass"), EastExit.XY.Equals(EastDoor, 0.1f));
 		TestTrue(TEXT("east exit faces away"), FMath::IsNearlyEqual(EastExit.YawDeg, 0.f, 0.1f));
 	}

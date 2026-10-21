@@ -284,9 +284,11 @@ namespace SolidStronghold
 		return ESolidStrongholdTrip::Tower;
 	}
 
-	bool FSolidTower::AcceptsEnter(const FGameState& State, const FIntPoint OpeningCell) const
+	bool FSolidTower::AcceptsEnter(
+		const FGameState& State,
+		const FSolidStronghold* Active,
+		const FIntPoint OpeningCell) const
 	{
-		const FSolidStronghold* Active = State.ActiveStronghold.Get();
 		return State.bStrongholdsEnabled
 			&& Active
 			&& Active->Type == ESolidStrongholdType::Tower

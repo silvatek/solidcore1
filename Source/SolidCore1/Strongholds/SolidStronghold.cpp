@@ -1,6 +1,7 @@
 #include "SolidStronghold.h"
 #include "SolidCore1.h"
 #include "SolidGameState.h"
+#include "Squad/SolidCompany.h"
 #include "Strongholds/Actors/SolidStrongholdExterior.h"
 #include "Strongholds/Dungeon/SolidDungeon.h"
 #include "Strongholds/Fortress/SolidFortress.h"
@@ -307,15 +308,16 @@ bool SolidStrongholdTransition::IsBuilt(const FSolidStronghold& Stronghold)
 
 SolidStrongholdTransition::EOffer SolidStrongholdTransition::Consider(
 	const FGameState& State,
+	const FSolidStronghold* Active,
 	TArray<FSolidStrongholdChoice>& OutChoices)
 {
 	OutChoices.Reset();
-	if (!State.ActiveStronghold)
+	if (!Active)
 	{
 		return EOffer::None;
 	}
 
-	const int32 ActiveIndex = static_cast<int32>(State.ActiveStronghold->Size);
+	const int32 ActiveIndex = static_cast<int32>(Active->Size);
 	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
 	{
 		if (!SolidEvents::IsStrongholdSizeUnlocked(State, Size))
@@ -439,13 +441,14 @@ bool SolidStrongholdTransition::PlaceOnFloor(
 }
 
 bool SolidStrongholdTransition::Commit(
+	USolidCompany& Company,
 	FGameState& State,
 	const FIntPoint SiteCell,
 	const ESolidStrongholdSize Size,
 	const ESolidStrongholdType Type)
 {
 	TArray<FSolidStrongholdChoice> Choices;
-	if (Consider(State, Choices) != EOffer::Choose || !Offers(Choices, Size, Type))
+	if (Consider(State, Company.GetStronghold(), Choices) != EOffer::Choose || !Offers(Choices, Size, Type))
 	{
 		return false;
 	}
@@ -466,19 +469,22 @@ bool SolidStrongholdTransition::Commit(
 		return false;
 	}
 
-	State.PreviousStrongholds.Add(MoveTemp(State.ActiveStronghold));
-	State.ActiveStronghold = SolidStronghold::Make(
+	State.PreviousStrongholds.Add(Company.TakeStronghold());
+	Company.SetStronghold(SolidStronghold::Make(
 		Type,
 		Size,
 		SiteCell,
-		SolidStronghold::WorldXY(SiteCell));
+		SolidStronghold::WorldXY(SiteCell)));
 	State.Furnishings = Moved;
 	return true;
 }
 
-bool SolidStrongholdTransition::CompanyChestOpen(const FGameState& State, const bool bInStronghold)
+bool SolidStrongholdTransition::CompanyChestOpen(
+	const FGameState& State,
+	const FSolidStronghold* Active,
+	const bool bInStronghold)
 {
-	if (!bInStronghold || !State.ActiveStronghold)
+	if (!bInStronghold || !Active)
 	{
 		return false;
 	}
@@ -495,5 +501,5 @@ bool SolidStrongholdTransition::CompanyChestOpen(const FGameState& State, const 
 	{
 		return false;
 	}
-	return State.ActiveStronghold->AcceptsEnter(State, State.ActiveStronghold->Cell);
+	return Active->AcceptsEnter(State, Active, Active->Cell);
 }

@@ -6,7 +6,9 @@
 #include "SolidWorldTime.h"
 #include "SolidGameInstance.generated.h"
 
-/** Holds the captain's trip across the open world and a closed visit. */
+class USolidCompany;
+
+/** Holds the captain's trip across the open world and a closed visit. Owns the company. */
 UCLASS()
 class SOLIDCORE1_API USolidGameInstance : public UGameInstance
 {
@@ -15,6 +17,12 @@ class SOLIDCORE1_API USolidGameInstance : public UGameInstance
 public:
 	/** A play session. Not called again when the cave reloads this process. */
 	virtual void OnStart() override;
+
+	/**
+	 * The play session's one company. Created on first ask with the starter catalog
+	 * and the Meagre Dungeon. OpenLevel keeps this object.
+	 */
+	USolidCompany* GetCompany();
 
 	void Capture(const FSolidTravelSession& InSession);
 	bool HasSession() const { return bHasSession; }
@@ -47,6 +55,9 @@ public:
 
 private:
 	void BeginWorldSession();
+
+	UPROPERTY()
+	TObjectPtr<USolidCompany> Company;
 
 	bool bHasSession = false;
 	FSolidTravelSession Session;

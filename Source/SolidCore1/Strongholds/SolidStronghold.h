@@ -70,6 +70,7 @@ class AActor;
 class ASolidStrongholdExterior;
 struct FGameState;
 class ASolidTerrainStreamer;
+class USolidCompany;
 class USolidWorldMap;
 class UWorld;
 struct FActorSpawnParameters;
@@ -114,8 +115,14 @@ public:
 	/** Which trip this type takes. */
 	virtual ESolidStrongholdTrip Trip() const { return ESolidStrongholdTrip::None; }
 
-	/** True when a click on the opening at this map cell may enter. */
-	virtual bool AcceptsEnter(const FGameState&, FIntPoint) const { return false; }
+	/**
+	 * True when a click on the opening at this map cell may enter.
+	 * Active is the company's stronghold. Callers ask the company for that pointer.
+	 */
+	virtual bool AcceptsEnter(const FGameState&, const FSolidStronghold* Active, FIntPoint) const
+	{
+		return false;
+	}
 
 	/** Actor class for this stronghold's exterior. Null when this kind draws none. */
 	virtual UClass* ExteriorClass() const { return nullptr; }
@@ -640,7 +647,10 @@ namespace SolidStrongholdTransition
 	 * While bStrongholdSiteRestrictions is set, that size is also larger than the company stronghold.
 	 * None leaves the site as it is and does not ask.
 	 */
-	EOffer Consider(const FGameState& State, TArray<FSolidStrongholdChoice>& OutChoices);
+	EOffer Consider(
+		const FGameState& State,
+		const FSolidStronghold* Active,
+		TArray<FSolidStrongholdChoice>& OutChoices);
 
 	bool Offers(
 		const TArray<FSolidStrongholdChoice>& Choices,
@@ -664,11 +674,15 @@ namespace SolidStrongholdTransition
 	 * Returns false when the click would not have offered that size and type.
 	 */
 	bool Commit(
+		USolidCompany& Company,
 		FGameState& State,
 		FIntPoint SiteCell,
 		ESolidStrongholdSize Size,
 		ESolidStrongholdType Type);
 
 	/** The company chest is open on the inventory page while the captain is inside the base that holds it. */
-	bool CompanyChestOpen(const FGameState& State, bool bInStronghold);
+	bool CompanyChestOpen(
+		const FGameState& State,
+		const FSolidStronghold* Active,
+		bool bInStronghold);
 }

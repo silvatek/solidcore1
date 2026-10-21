@@ -1482,8 +1482,9 @@ SolidLair::FPassageHit ASolidCharacter::AllowPassage(const SolidLair::FPassageHi
 		return Allowed;
 	}
 	const FGameState& State = GameMode->GetConfiguration();
-	const FSolidStronghold* Stronghold = State.ActiveStronghold.Get();
-	return Stronghold && Stronghold->AcceptsEnter(State, Allowed.StrongholdCell)
+	const USolidCompany* Company = GameMode->GetCompany();
+	const FSolidStronghold* Stronghold = Company ? Company->GetStronghold() : nullptr;
+	return Stronghold && Stronghold->AcceptsEnter(State, Stronghold, Allowed.StrongholdCell)
 		? Allowed
 		: SolidLair::FPassageHit();
 }
@@ -1581,9 +1582,14 @@ void ASolidCharacter::OfferStrongholdSite(const ASolidStrongholdSite* Site)
 		return;
 	}
 
+	const USolidCompany* Company = GameMode->GetCompany();
 	TArray<FSolidStrongholdChoice> Choices;
-	if (SolidStrongholdTransition::Consider(GameMode->GetConfiguration(), Choices)
-		!= SolidStrongholdTransition::EOffer::Choose)
+	if (!Company
+		|| SolidStrongholdTransition::Consider(
+			GameMode->GetConfiguration(),
+			Company->GetStronghold(),
+			Choices)
+			!= SolidStrongholdTransition::EOffer::Choose)
 	{
 		return;
 	}
@@ -1682,7 +1688,8 @@ void ASolidCharacter::UpdateCavePassageHover()
 	const SolidLair::FPassageHit Hit = PassageUnderPointer();
 	const UWorld* World = GetWorld();
 	const ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
-	const FSolidStronghold* Stronghold = GameMode ? GameMode->GetConfiguration().ActiveStronghold.Get() : nullptr;
+	const USolidCompany* Company = GameMode ? GameMode->GetCompany() : nullptr;
+	const FSolidStronghold* Stronghold = Company ? Company->GetStronghold() : nullptr;
 	FString Tip;
 	if (Hit.bStronghold && Hit.Action == SolidLair::EHit::Enter && Stronghold)
 	{

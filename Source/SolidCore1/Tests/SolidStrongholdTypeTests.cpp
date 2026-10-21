@@ -1,6 +1,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "SolidGameState.h"
+#include "Squad/SolidCompany.h"
 #include "SolidStronghold.h"
 #include "Strongholds/Furnishings/SolidStrongholdGrid.h"
 #include "Strongholds/Dungeon/SolidDungeon.h"
@@ -327,11 +328,13 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidStrongholdTypeChoiceTest::RunTest(const FString& Parameters)
 {
 	FGameState Locked;
+	USolidCompany* LockedCompany = NewObject<USolidCompany>();
+	LockedCompany->InitializeStartingStronghold();
 	Locked.bStrongholdSiteRestrictions = true;
 	TArray<FSolidStrongholdChoice> Listed;
 	TestEqual(
 		TEXT("a locked size lists nothing"),
-		static_cast<uint8>(SolidStrongholdTransition::Consider(Locked, Listed)),
+		static_cast<uint8>(SolidStrongholdTransition::Consider(Locked, LockedCompany->GetStronghold(), Listed)),
 		static_cast<uint8>(SolidStrongholdTransition::EOffer::None));
 	TestEqual(TEXT("a locked company lists nothing"), Listed.Num(), 0);
 	TestTrue(
@@ -351,13 +354,15 @@ bool FSolidStrongholdTypeChoiceTest::RunTest(const FString& Parameters)
 		SolidStronghold::TypeOf(ESolidStrongholdType::Tower).Supported(ESolidStrongholdSize::Stately));
 
 	FGameState State;
+	USolidCompany* Company = NewObject<USolidCompany>();
+	Company->InitializeStartingStronghold();
 	State.bStrongholdSiteRestrictions = true;
 	State.MaxStrongholdSize = ESolidStrongholdSize::Imperious;
-	SolidStrongholdTransition::Consider(State, Listed);
+	SolidStrongholdTransition::Consider(State, Company->GetStronghold(), Listed);
 
 	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
 	{
-		const bool bLarger = static_cast<int32>(Size) > static_cast<int32>(State.ActiveStronghold->Size);
+		const bool bLarger = static_cast<int32>(Size) > static_cast<int32>(Company->GetStronghold()->Size);
 		const bool bUnlocked = SolidEvents::IsStrongholdSizeUnlocked(State, Size);
 		for (const ESolidStrongholdType Type : SolidStronghold::Types)
 		{

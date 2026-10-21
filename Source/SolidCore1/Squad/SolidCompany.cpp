@@ -135,6 +135,35 @@ void USolidCompany::InitializeDefaultCompanions()
 	Add(TEXT("Quinn"), Assassin, ESolidVocation::Warrior);
 }
 
+void USolidCompany::InitializeStartingStronghold()
+{
+	if (ActiveStronghold)
+	{
+		return;
+	}
+
+	ActiveStronghold = SolidStronghold::Make(
+		ESolidStrongholdType::Dungeon,
+		ESolidStrongholdSize::Meagre,
+		SolidStronghold::StartingCell(),
+		SolidStronghold::WorldXY(SolidStronghold::StartingCell()));
+	if (ActiveStronghold)
+	{
+		ActiveStronghold->Orientation = ESolidStrongholdOrientation::North;
+		ActiveStronghold->Name = SolidStronghold::StartingStrongholdName;
+	}
+}
+
+void USolidCompany::SetStronghold(TUniquePtr<FSolidStronghold> Stronghold)
+{
+	ActiveStronghold = MoveTemp(Stronghold);
+}
+
+TUniquePtr<FSolidStronghold> USolidCompany::TakeStronghold()
+{
+	return MoveTemp(ActiveStronghold);
+}
+
 void SolidCompanionColors::PaletteForName(
 	const FString& Name,
 	FLinearColor& OutTorso,

@@ -1,6 +1,7 @@
 #include "SolidGameInstance.h"
 #include "SolidSessionSave.h"
 #include "SolidCore1.h"
+#include "Squad/SolidCompany.h"
 #include "Kismet/GameplayStatics.h"
 #include "HAL/PlatformTime.h"
 
@@ -10,6 +11,19 @@ void USolidGameInstance::OnStart()
 {
 	Super::OnStart();
 	BeginWorldSession();
+}
+
+USolidCompany* USolidGameInstance::GetCompany()
+{
+	if (!Company)
+	{
+		Company = NewObject<USolidCompany>(this, TEXT("Company"));
+		Company->InitializeDefaultBattlePlans();
+		Company->InitializeDefaultCharacterMeshes();
+		Company->InitializeDefaultCompanions();
+		Company->InitializeStartingStronghold();
+	}
+	return Company;
 }
 
 void USolidGameInstance::BeginWorldSession()

@@ -2,6 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "SolidCharacter.h"
 #include "SolidContentPaths.h"
+#include "SolidGameInstance.h"
 #include "SolidGameMode.h"
 #include "GameFramework/Pawn.h"
 
@@ -14,7 +15,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidGameModeDefaultsTest::RunTest(const FString& Parameters)
 {
-	ASolidGameMode* GameMode = NewObject<ASolidGameMode>();
+	USolidGameInstance* Instance = NewObject<USolidGameInstance>();
+	ASolidGameMode* GameMode = NewObject<ASolidGameMode>(Instance);
 	TestNotNull(TEXT("gamemode"), GameMode);
 	TestTrue(TEXT("auto terrain streamer"), GameMode->bAutoSpawnTerrainStreamer);
 	TestTrue(TEXT("auto companion"), GameMode->bAutoSpawnCompanion);

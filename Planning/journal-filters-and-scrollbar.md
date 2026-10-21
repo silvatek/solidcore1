@@ -4,6 +4,8 @@ Status: Ready
 
 ## Story
 
+This story depends on [The game state owns the journal](game-state-owns-the-journal.md), which is Ready. That story ships first.
+
 The player opens the journal. Every line stays. The list grows well past what fits on the board. The player filters the lines and moves through them with a scrollbar.
 
 ## Acceptance
@@ -23,11 +25,11 @@ The player opens the journal. Every line stays. The list grows well past what fi
 
 ## Implementation notes
 
-- `SolidJournal::MaxEntries` is 64. `Remember` drops the oldest line at that count. Remove the cap and the constant. No current test asserts it. The journal is the in-session array. This story does not add a save.
+- `USolidJournal::Remember` drops the oldest line at `MaxEntries`, which is 64. Remove the cap and the constant. No current test asserts it. The lines stay `Entries` on that journal. This story does not add a save.
 - `BoardSize` currently grows the height with the measured lines, then clamps it to the screen. Stop letting the line count raise the height. Keep the minimum, the view fraction, and the margin. Width may still follow the widest line, as it does now.
 - The filter row, the column headings, and the close hint are outside the scrolling window. `DrawJournalBoard` stops at the hint today and drops the rest. Draw the window instead.
-- `CollectRows` gains the filter. The default is All, so the current call sites stay on the full list. A detail is a row under its event, not its own journal entry. Stronghold and Lair omit those details.
-- The empty copy for All replaces `EmptyText`, which is `No events yet.` `SolidCore1.Journal.Empty` asserts that literal. Before the product change, change only that assertion so it reads `SolidJournal::EmptyText`. It passes on the current code and on this story. Push that commit alone. The product commit does not edit that test. It sets `EmptyText` to `No lines yet.` and adds the other three strings. `SolidCore1.Journal.TriggeredOrder` uses `No events yet.` only in `TestFalse` on a filled journal, so it still passes.
+- `USolidJournal::CollectRows` gains the filter. The default is All, so the current call sites stay on the full list. A detail is a row under its event, not its own journal entry. Stronghold and Lair omit those details.
+- The empty copy for All replaces `EmptyText`, which is `No events yet.` `SolidCore1.Journal.Empty` asserts that literal. Before the product change, change only that assertion so it reads `USolidJournal::EmptyText`. It passes on the current code and on this story. Push that commit alone. The product commit does not edit that test. It sets `EmptyText` to `No lines yet.` and adds the other three strings. `SolidCore1.Journal.TriggeredOrder` uses `No events yet.` only in `TestFalse` on a filled journal, so it still passes.
 - The filter and the scroll offset live on the journal page. `SetJournalVisible(true)` selects All and scrolls to the latest line. Closing the page discards both.
 - The main menu closes before the journal opens. `ChooseMainMenuIndex` already returns when the menu is closed, and keys 1–8 and the number pad call it. Handle the journal there, before the menu check. Keys 5–8 do nothing on this page.
 - The board stays canvas-drawn. Filter words and the thumb are rectangles in that same pixel space. A press on the thumb drags until release. The wheel already reaches this page: zoom returns while any menu overlay is open, and the journal is one.

@@ -82,6 +82,8 @@ agent worker start --name "solidcore1-ue"
 
 Keep that window open. The worker stays connected until you stop it (Ctrl+C) and can be reused across sessions.
 
+`tools\agent.bat` starts that worker with `--worker-dir $HOME\Dev\solidcore1`. When the command exits 0 it writes `agent.ok` in the repo root. The file is gitignored. Agents look for it before `tools\build.bat` and `tools\test.bat`, as `AGENTS.md` describes.
+
 Useful variants:
 
 ```powershell

@@ -56,3 +56,6 @@ temp.md
 
 # Play In Editor / agent build lock (tools/pie.bat, solidcore1-ue agents)
 /ue.lock
+
+# Successful tools/agent.bat run. Stays on this machine.
+/agent.ok

@@ -248,6 +248,75 @@ def check_editor_lock(errors: list[str]) -> None:
             errors.append(f"solidcore1-ue agents section must mention {needle}")
 
 
+def check_agent_marker(errors: list[str]) -> None:
+    gitignore = ROOT / ".gitignore"
+    if not gitignore.is_file():
+        errors.append("missing .gitignore")
+    else:
+        patterns = [
+            raw.split("#", 1)[0].strip()
+            for raw in gitignore.read_text(encoding="utf-8").splitlines()
+        ]
+        if "/agent.ok" not in patterns:
+            errors.append(".gitignore must ignore /agent.ok")
+
+    if (ROOT / ".git").exists():
+        try:
+            tracked = subprocess.check_output(
+                ["git", "ls-files", "--", "agent.ok"],
+                cwd=ROOT,
+                text=True,
+                stderr=subprocess.DEVNULL,
+            ).strip()
+        except (OSError, subprocess.CalledProcessError):
+            tracked = ""
+        if tracked:
+            errors.append("agent.ok must stay untracked")
+
+    agent = ROOT / "tools" / "agent.bat"
+    if not agent.is_file():
+        errors.append("missing tools/agent.bat")
+    else:
+        script = agent.read_text(encoding="utf-8")
+        start_at = script.find(
+            'agent worker start --name "solidcore1-ue" '
+            "--worker-dir $HOME\\Dev\\solidcore1"
+        )
+        passed_at = script.find('> "%MARKER%" echo Passed')
+        if start_at < 0 or passed_at < start_at:
+            errors.append(
+                "tools/agent.bat must start the solidcore1-ue worker, then write Passed"
+            )
+        elif "exit /b" not in script[start_at:passed_at]:
+            errors.append(
+                "tools/agent.bat must skip the marker when the worker exits non-zero"
+            )
+
+    agents = ROOT / "AGENTS.md"
+    if not agents.is_file():
+        errors.append("missing AGENTS.md")
+        return
+    text = agents.read_text(encoding="utf-8")
+    parts = text.split("### solidcore1-ue agents", 1)
+    if len(parts) < 2:
+        errors.append("AGENTS.md is missing the solidcore1-ue agents section")
+        return
+    body = parts[1].split("\n## ", 1)[0]
+    for needle in ("agent.ok", "tools\\agent.bat", "`Passed`", "tools\\build.bat", "tools\\test.bat"):
+        if needle not in body:
+            errors.append(f"solidcore1-ue agents section must mention {needle}")
+
+    cloud = text.split("## Cursor Cloud", 1)
+    if len(cloud) < 2:
+        errors.append("AGENTS.md is missing the Cursor Cloud section")
+        return
+    cloud_body = cloud[1].split("\n## ", 1)[0]
+    if "agent.ok" not in cloud_body or "tools/agent.bat" not in cloud_body:
+        errors.append(
+            "Cursor Cloud section must mention agent.ok and tools/agent.bat"
+        )
+
+
 def check_forbidden_patterns(errors: list[str]) -> None:
     source = ROOT / "Source"
     if not source.is_dir():
@@ -300,6 +369,7 @@ def main() -> int:
     check_planning(errors, warnings)
     check_ship_on_main(errors)
     check_editor_lock(errors)
+    check_agent_marker(errors)
     check_forbidden_patterns(errors)
 
     for message in warnings:

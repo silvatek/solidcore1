@@ -6,7 +6,7 @@ Status: New
 
 This story depends on [Early game battle plans](early-game-battle-plans.md), which is Ready, and [Basic monsters](basic-monsters.md), which is Ready. Those stories ship first.
 
-A weapon has Speed and Power. Armour has Strength. The captain and a companion swap a weapon or their armour in the inventory, and the fight uses what they have on. A monster has one fixed weapon, such as claws or teeth, and one fixed armour. Those stay on the monster.
+A weapon has Speed and Power. Armour has Strength. The specific amounts are chosen in play. The captain and a companion swap a weapon or their armour in the inventory, and the fight uses what they have on. A monster has one fixed weapon, such as claws or teeth, and one fixed armour. Those stay on the monster.
 
 The squad selects from the battle plans it already has. A group of monsters has a set of battle plans too. The three reptiles beside the Iglin bridge are one group, and that set holds one plan.
 
@@ -22,7 +22,7 @@ When combat starts, the captain, each companion in the squad, and each monster r
 - Armour has Strength. Armour is the piece on the body. Rags have Strength. A helmet, boots, and a belt do not add Strength.
 - The captain and a companion swap that armour in the inventory. An attack lands on the armour they have on.
 - A monster has one fixed armour, with Strength. The monster does not swap it.
-- Speed, Power, and Strength stay off the screen.
+- Speed, Power, and Strength stay off the screen. Their amounts are chosen in play. The fight uses the amounts on the weapon and the armour.
 - The squad's battle plans are the set it can already select. This story leaves that set, and which plan is active, as [Early game battle plans](early-game-battle-plans.md) left them.
 - A group of monsters has a set of battle plans. The three reptiles are one group. Their set holds one plan, and that plan is the active plan.
 - When combat starts, the captain, each companion in the squad, and each monster in the fight reads the active plan and follows it.
@@ -34,7 +34,8 @@ When combat starts, the captain, each companion in the squad, and each monster r
 
 ## Implementation notes
 
-- The amounts of Speed, Power, and Strength, which catalog plan says to attack, which says to retreat, how a target is chosen, what starts the fight, and how far the retreat reduction goes are still to be named before this story is Ready.
+- Play-testing chooses the amounts of Speed, Power, and Strength. This story does not fix those numbers.
+- Which catalog plan says to attack, which says to retreat, how a target is chosen, what starts the fight, and how far the retreat reduction goes are still to be named before this story is Ready.
 - `SolidItemType::PowerFor` rolls a hidden power from the item's grade. This story's Power is the attribute on the weapon. Leave that roll as it is. The attack spends the weapon's Power.
 - The captain's loadout already puts a weapon in the main hand and armour on the body. A companion has those same two slots. The monster's weapon and armour are not catalog ids.
 - Damage in the retreat rule is the Power taken off Strength.

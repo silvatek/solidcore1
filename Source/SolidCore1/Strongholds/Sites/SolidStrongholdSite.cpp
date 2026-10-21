@@ -1,6 +1,7 @@
 #include "SolidStrongholdSite.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
+#include "Terrain/SolidTerrainSeat.h"
 #include "Strongholds/SolidStronghold.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
@@ -60,6 +61,11 @@ void ASolidStrongholdSite::BuildVisuals()
 	BlockMesh->SetRelativeLocation(FVector(0.f, 0.f, BlockCm * 0.5f));
 	BlockMesh->SetRelativeRotation(FRotator::ZeroRotator);
 	BlockMesh->SetRelativeScale3D(FVector(BlockCm / ShapeSize));
+	SolidTerrainSeat::FFootprint Seat;
+	Seat.HalfXCm = BlockCm * 0.5f;
+	Seat.HalfYCm = BlockCm * 0.5f;
+	const float Drop = SolidTerrainSeat::DropCm(this, Seat);
+	SolidTerrainSeat::BuryCentered(BlockMesh, 0.f, BlockCm, Drop, ShapeSize);
 	if (UMaterialInterface* Material = SolidMaterials::CreateSolidColor(
 		this, SolidStrongholds::RockColor(), TEXT("StrongholdSite"), 0.94f))
 	{

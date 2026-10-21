@@ -2,6 +2,7 @@
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
 #include "Strongholds/SolidStronghold.h"
+#include "Terrain/SolidTerrainSeat.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -41,6 +42,7 @@ namespace SolidTowerExteriorPrivate
 	 * Sides are wound clockwise from the outside, the same way the terrain is.
 	 * The foot and the head are closed only when asked, so two courses can meet
 	 * without two faces on the same disc.
+	 * BurialCm drops a vertical skirt under the foot. The taper above the foot stays.
 	 */
 	UStaticMesh* BuildFrustum(
 		UObject* Outer,
@@ -48,7 +50,8 @@ namespace SolidTowerExteriorPrivate
 		const float TopRadius,
 		const float Height,
 		const bool bCloseBottom,
-		const bool bCloseTop)
+		const bool bCloseTop,
+		const float BurialCm)
 	{
 		if (!Outer || Height <= KINDA_SMALL_NUMBER || BottomRadius <= KINDA_SMALL_NUMBER || TopRadius <= KINDA_SMALL_NUMBER)
 		{
@@ -83,18 +86,28 @@ namespace SolidTowerExteriorPrivate
 			// Clockwise when seen from outside: the next angle, this angle, then up.
 			AddCorner(Positions, Normals, Triangles, Bottom1, Bottom0, Top0, SideNormal);
 			AddCorner(Positions, Normals, Triangles, Bottom1, Top0, Top1, SideNormal);
+
+			if (BurialCm > 0.f)
+			{
+				const FVector Buried0(Bottom0.X, Bottom0.Y, -BurialCm);
+				const FVector Buried1(Bottom1.X, Bottom1.Y, -BurialCm);
+				const FVector SkirtNormal = FVector(SideNormal.X, SideNormal.Y, 0.f).GetSafeNormal();
+				AddCorner(Positions, Normals, Triangles, Buried1, Buried0, Bottom0, SkirtNormal);
+				AddCorner(Positions, Normals, Triangles, Buried1, Bottom0, Bottom1, SkirtNormal);
+			}
 		}
 
 		if (bCloseBottom)
 		{
-			const FVector Center(0.f, 0.f, 0.f);
+			const float FootZ = BurialCm > 0.f ? -BurialCm : 0.f;
+			const FVector Center(0.f, 0.f, FootZ);
 			const FVector Down(0.f, 0.f, -1.f);
 			for (int32 Side = 0; Side < SideCount; ++Side)
 			{
 				const float Angle0 = 2.f * PI * static_cast<float>(Side) / static_cast<float>(SideCount);
 				const float Angle1 = 2.f * PI * static_cast<float>(Side + 1) / static_cast<float>(SideCount);
-				const FVector Rim0(FMath::Cos(Angle0) * BottomRadius, FMath::Sin(Angle0) * BottomRadius, 0.f);
-				const FVector Rim1(FMath::Cos(Angle1) * BottomRadius, FMath::Sin(Angle1) * BottomRadius, 0.f);
+				const FVector Rim0(FMath::Cos(Angle0) * BottomRadius, FMath::Sin(Angle0) * BottomRadius, FootZ);
+				const FVector Rim1(FMath::Cos(Angle1) * BottomRadius, FMath::Sin(Angle1) * BottomRadius, FootZ);
 				AddCorner(Positions, Normals, Triangles, Center, Rim0, Rim1, Down);
 			}
 		}
@@ -309,6 +322,10 @@ void ASolidTowerExterior::BuildVisuals()
 	}
 
 	const FLinearColor Rock = SolidStrongholds::RockColor();
+	SolidTerrainSeat::FFootprint Seat;
+	Seat.bRound = true;
+	Seat.HalfXCm = Plan.GroundExteriorRadiusCm + SolidStronghold::DoorProudCm;
+	const float Drop = SolidTerrainSeat::DropCm(this, Seat);
 	const bool bHasCap = Plan.SlabCm > 1.f;
 	const float CapBottomZ = bHasCap ? Tower->HeightCm() - Plan.SlabCm : Tower->HeightCm();
 
@@ -343,7 +360,8 @@ void ASolidTowerExterior::BuildVisuals()
 			RingRadius[Floor + 1],
 			Height,
 			Floor == 0,
-			!bHasCap && Floor == Plan.FloorCount - 1);
+			!bHasCap && Floor == Plan.FloorCount - 1,
+			Floor == 0 ? Drop : 0.f);
 		UStaticMeshComponent* Course = AddPart(
 			CourseMesh,
 			FVector(0.f, 0.f, BottomZ),
@@ -367,7 +385,8 @@ void ASolidTowerExterior::BuildVisuals()
 			RingRadius[CapRing + 1],
 			TopZ - BottomZ,
 			false,
-			true);
+			true,
+			0.f);
 		CapMesh = AddPart(
 			Cap,
 			FVector(0.f, 0.f, BottomZ),
@@ -387,5 +406,11 @@ void ASolidTowerExterior::BuildVisuals()
 				Plan.DoorHeightCm / SolidTowerExteriorPrivate::CubeSizeCm),
 			SolidStrongholds::MouthColor(),
 			TEXT("TowerDoor"));
+		SolidTerrainSeat::BuryCentered(
+			DoorMesh,
+			0.f,
+			Plan.DoorHeightCm,
+			Drop,
+			SolidTowerExteriorPrivate::CubeSizeCm);
 	}
 }

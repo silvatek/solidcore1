@@ -1,6 +1,7 @@
 #include "SolidBuilding.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
+#include "Terrain/SolidTerrainSeat.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -231,6 +232,12 @@ void ASolidBuilding::BuildVisuals()
 	{
 		BodyMesh->SetMaterial(0, BodyMat);
 	}
+
+	SolidTerrainSeat::FFootprint Seat;
+	Seat.HalfXCm = FootprintXCm * 0.5f;
+	Seat.HalfYCm = FootprintYCm * 0.5f;
+	const float Drop = SolidTerrainSeat::DropCm(this, Seat);
+	SolidTerrainSeat::BuryCentered(BodyMesh, 0.f, BodyHeightCm, Drop, ShapeSize);
 
 	// A stone wall has no roof. A zero-height prism would collapse onto the top.
 	if (RoofHeightCm < 1.f)

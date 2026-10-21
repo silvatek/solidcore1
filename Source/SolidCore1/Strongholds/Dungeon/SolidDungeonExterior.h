@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Strongholds/Actors/SolidStrongholdExterior.h"
+#include "Terrain/SolidTerrainSeat.h"
 #include "SolidDungeonExterior.generated.h"
 
 class USolidTerrainMap;
@@ -27,7 +28,7 @@ public:
 	virtual void BeginPlay() override;
 
 	/** How far the ground edge is buried under the lowest terrain point in the cell. */
-	static constexpr float GroundBurialCm = 10.f;
+	static constexpr float GroundBurialCm = SolidTerrainSeat::BurialCm;
 
 	/**
 	 * How far below the actor origin the ground edge must reach.

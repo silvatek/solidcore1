@@ -2,6 +2,7 @@
 #include "SolidCore1.h"
 #include "SolidForage.h"
 #include "SolidMaterials.h"
+#include "Terrain/SolidTerrainSeat.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -60,6 +61,11 @@ void ASolidForagePile::BuildVisuals()
 	PileMesh->SetStaticMesh(Mesh);
 	PileMesh->SetRelativeScale3D(FVector(Scale));
 	PileMesh->SetRelativeLocation(FVector(0.f, 0.f, SolidForage::CubeCm * 0.5f));
+	SolidTerrainSeat::FFootprint Seat;
+	Seat.HalfXCm = SolidForage::CubeCm * 0.5f;
+	Seat.HalfYCm = SolidForage::CubeCm * 0.5f;
+	const float Drop = SolidTerrainSeat::DropCm(this, Seat);
+	SolidTerrainSeat::BuryCentered(PileMesh, 0.f, SolidForage::CubeCm, Drop, 100.f);
 	if (UMaterialInterface* Mat = SolidMaterials::CreateSolidColor(this, PileColor, TEXT("ForagePile"), 1.f))
 	{
 		PileMesh->SetMaterial(0, Mat);

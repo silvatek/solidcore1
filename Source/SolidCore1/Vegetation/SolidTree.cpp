@@ -1,6 +1,7 @@
 #include "SolidTree.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
+#include "Terrain/SolidTerrainSeat.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -107,4 +108,10 @@ void ASolidTree::BuildVisuals()
 	{
 		CanopyMesh->SetMaterial(0, CanopyMat);
 	}
+
+	SolidTerrainSeat::FFootprint Seat;
+	Seat.bRound = true;
+	Seat.HalfXCm = TrunkRadiusCm;
+	const float Drop = SolidTerrainSeat::DropCm(this, Seat);
+	SolidTerrainSeat::BuryCentered(TrunkMesh, 0.f, TrunkHeightCm, Drop, ShapeHeight);
 }

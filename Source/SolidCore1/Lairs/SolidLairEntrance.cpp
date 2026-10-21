@@ -2,6 +2,7 @@
 #include "Strongholds/SolidStronghold.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
+#include "Terrain/SolidTerrainSeat.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -127,4 +128,14 @@ void ASolidLairEntrance::BuildVisuals()
 		FVector(Depth, Width + Frame * 2.f, Frame),
 		SolidStrongholds::RockColor(),
 		TEXT("LairLintel"));
+
+	SolidTerrainSeat::FFootprint Seat;
+	Seat.LocalCenter = FVector2D(ShiftX, 0.f);
+	Seat.HalfXCm = Depth * 0.5f;
+	Seat.HalfYCm = Width * 0.5f + Frame;
+	const float Drop = SolidTerrainSeat::DropCm(this, Seat);
+	constexpr float ShapeHeight = 100.f;
+	SolidTerrainSeat::BuryCentered(MouthMesh, 0.f, Height, Drop, ShapeHeight);
+	SolidTerrainSeat::BuryCentered(LeftJamb, 0.f, Height, Drop, ShapeHeight);
+	SolidTerrainSeat::BuryCentered(RightJamb, 0.f, Height, Drop, ShapeHeight);
 }

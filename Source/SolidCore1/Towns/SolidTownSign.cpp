@@ -2,6 +2,7 @@
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
 #include "SolidTownSigns.h"
+#include "Terrain/SolidTerrainSeat.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"
@@ -116,6 +117,12 @@ void ASolidTownSign::BuildVisuals()
 		{
 			PoleMesh->SetMaterial(0, PoleMat);
 		}
+
+		SolidTerrainSeat::FFootprint Seat;
+		Seat.HalfXCm = SolidTownSigns::PoleThicknessCm * 0.5f;
+		Seat.HalfYCm = SolidTownSigns::PoleThicknessCm * 0.5f;
+		const float Drop = SolidTerrainSeat::DropCm(this, Seat);
+		SolidTerrainSeat::BuryCentered(PoleMesh, 0.f, SolidTownSigns::PoleHeightCm, Drop, ShapeSize);
 	}
 
 	if (BoardMesh)

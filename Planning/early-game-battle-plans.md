@@ -1,6 +1,6 @@
 # Early game battle plans
 
-Status: Ready
+Status: In Progress
 
 ## Story
 

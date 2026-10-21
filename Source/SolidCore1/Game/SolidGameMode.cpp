@@ -960,6 +960,74 @@ bool ASolidGameMode::SelectBattlePlanSlot(const int32 SlotIndex)
 	return true;
 }
 
+bool ASolidGameMode::TeleportSquadToReptile()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World);
+	APlayerController* PC = World->GetFirstPlayerController();
+	ASolidCharacter* Captain = PC ? Cast<ASolidCharacter>(PC->GetPawn()) : nullptr;
+	if (!Streamer || !Captain)
+	{
+		return false;
+	}
+
+	const AActor* Anchor = nullptr;
+	for (TActorIterator<ASolidMonsterMeasure> It(World); It; ++It)
+	{
+		Anchor = *It;
+		break;
+	}
+	FVector GridOrigin = FVector::ZeroVector;
+	FRotator Face = FRotator::ZeroRotator;
+	if (Anchor)
+	{
+		GridOrigin = Anchor->GetActorLocation();
+		Face = Anchor->GetActorRotation();
+	}
+	else
+	{
+		for (TActorIterator<ASolidMonster> It(World); It; ++It)
+		{
+			Anchor = *It;
+			break;
+		}
+		if (!Anchor)
+		{
+			UE_LOG(LogSolid, Warning, TEXT("View reptile: no reptile on the grid."));
+			return false;
+		}
+		Face = Anchor->GetActorRotation();
+		GridOrigin = Anchor->GetActorLocation() - Face.RotateVector(FVector(
+			SolidMonsterMeasure::MonsterXCm,
+			SolidMonsterMeasure::MonsterYCm,
+			0.f));
+	}
+
+	const FVector2D Local = SolidMonsterMeasure::ViewStandLocalXY();
+	const FVector Landing = GridOrigin + Face.RotateVector(FVector(Local.X, Local.Y, 0.f));
+	const float LandZ = Streamer->GetHeightAt(Landing) + Streamer->CollisionHeightBias;
+	float CapsuleHalf = 96.f;
+	if (const UCapsuleComponent* Capsule = Captain->GetCapsuleComponent())
+	{
+		CapsuleHalf = Capsule->GetScaledCapsuleHalfHeight();
+	}
+	const FVector NewLoc(Landing.X, Landing.Y, LandZ + CapsuleHalf + Streamer->SnapHeightPadding);
+	const FVector Delta = SolidPortal::SquadDelta(Captain->GetActorLocation(), FVector2D(NewLoc.X, NewLoc.Y));
+
+	Captain->ArriveByPortal(NewLoc, Face.Yaw, SolidMonsterMeasure::ViewPitchDeg);
+	Streamer->RelocateCompanionsByDelta(Delta);
+
+	UE_LOG(LogSolid, Warning,
+		TEXT("View reptile at (%.0f, %.0f) yaw %.0f pitch %.0f"),
+		NewLoc.X, NewLoc.Y, Face.Yaw, SolidMonsterMeasure::ViewPitchDeg);
+	return true;
+}
+
 bool ASolidGameMode::TeleportSquadToTown(const int32 TownId)
 {
 	UWorld* World = GetWorld();

@@ -25,6 +25,16 @@ namespace SolidMonsterMeasure
 	/** Reptile cell, measured from the grid centre (cm). */
 	inline constexpr float MonsterXCm = 150.f;
 	inline constexpr float MonsterYCm = -150.f;
+	/** How far the captain stands back from the reptile, along the grid's local −X (cm). */
+	inline constexpr float ViewStandCm = 450.f;
+	/** Camera pitch when View reptile places the captain (degrees, negative looks down). */
+	inline constexpr float ViewPitchDeg = -30.f;
+
+	/** Captain feet on the grid, local to the grid centre, looking toward the reptile. */
+	inline FVector2D ViewStandLocalXY()
+	{
+		return FVector2D(MonsterXCm - ViewStandCm, MonsterYCm);
+	}
 	/** Cube width so a post sits inside its cell (cm). */
 	inline constexpr float PostWidthCm = 70.f;
 

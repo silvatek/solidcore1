@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0527")
+#define SOLID_BUILD_ID TEXT("SC1-0528")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The reptile matches the 1 m post.")
+#define SOLID_BUILD_NOTE TEXT("F10 View reptile stands the captain on the grid.")
 #endif

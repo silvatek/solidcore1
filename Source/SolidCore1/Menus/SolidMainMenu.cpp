@@ -7,6 +7,7 @@ void SolidMainMenu::CollectEntries(TArray<FSolidMainMenuEntry>& OutEntries)
 	OutEntries.Add({ ESolidMainMenuItem::Journal, TEXT("Journal") });
 	OutEntries.Add({ ESolidMainMenuItem::BuildSquad, TEXT("Build squad") });
 	OutEntries.Add({ ESolidMainMenuItem::CharacterEditor, TEXT("Character editor") });
+	OutEntries.Add({ ESolidMainMenuItem::ViewReptile, TEXT("View reptile") });
 	OutEntries.Add({ ESolidMainMenuItem::Credits, TEXT("Credits") });
 	OutEntries.Add({ ESolidMainMenuItem::ExitGame, TEXT("Exit Game") });
 }
@@ -42,6 +43,8 @@ ESolidMainMenuAction SolidMainMenu::ActionForItem(const ESolidMainMenuItem Item)
 		return ESolidMainMenuAction::OpenSquad;
 	case ESolidMainMenuItem::CharacterEditor:
 		return ESolidMainMenuAction::OpenCharacterEditor;
+	case ESolidMainMenuItem::ViewReptile:
+		return ESolidMainMenuAction::PlaceCaptain;
 	case ESolidMainMenuItem::Credits:
 		return ESolidMainMenuAction::ShowCredits;
 	case ESolidMainMenuItem::ExitGame:

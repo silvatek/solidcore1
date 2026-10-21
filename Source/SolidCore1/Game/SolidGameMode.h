@@ -155,6 +155,12 @@ public:
 	 */
 	bool TeleportSquadToTunnelMouth(TCHAR EndMarker);
 
+	/**
+	 * Stand the captain on the measuring grid, facing the reptile.
+	 * False when that reptile has not been seeded.
+	 */
+	bool TeleportSquadToReptile();
+
 	/** True while the company stronghold interior is loaded. */
 	bool IsInStronghold() const;
 

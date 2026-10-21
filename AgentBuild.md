@@ -101,7 +101,7 @@ The worker registers the git remote of `--worker-dir` (or the current directory)
 1. Open [cursor.com/agents](https://cursor.com/agents).
 2. In the environment / machine picker, choose **My Machines** → `solidcore1-ue` (or the name you passed).
 3. Send a task that needs a build or tests, for example:
-   - “Pull `main`, implement X, bump the build id if the product changed, run `tools\build.bat` then `tools\test.bat`, fix failures, push to `main`.”
+   - “Pull `main`, implement X, bump the build id if the product changed, run `tools\agent.bat`, fix failures, push to `main`.”
 
 From Slack / GitHub / Linear triggers, target the named machine with `worker=solidcore1-ue` or `machine=solidcore1-ue` (see [My Machines](https://cursor.com/docs/cloud-agent/self-hosted/my-machines)). The machine must belong to your Cursor user and be registered for this repo.
 
@@ -110,6 +110,7 @@ From Slack / GitHub / Linear triggers, target the named machine with `worker=sol
 These match your normal Windows workflow:
 
 ```bat
+tools\agent.bat
 tools\build.bat
 tools\test.bat
 tools\test.bat SolidCore1.Fog
@@ -118,6 +119,7 @@ tools\fab_doctor.bat
 
 Notes:
 
+- `tools\agent.bat` runs build, then the default test suite. When both succeed it writes `agent.ok` in the repo root. That file is gitignored. Read it before building again, as `AGENTS.md` describes.
 - `tools\build.bat` builds **SolidCore1Editor | Win64 | Development** via Unreal Build Tool.
 - `tools\test.bat` runs UE Automation headlessly (`UnrealEditor-Cmd`, filter default `SolidCore1`) and prints ran / passed / failed. (`README.md` still mentions `run_automation_tests.bat`; the script on disk is `tools\test.bat`.)
 - Do **not** install Unreal into a Linux cloud environment. Build and test only on this worker.
@@ -177,7 +179,7 @@ This lets the agent drive the desktop (screenshots, clicks). On Windows, treat i
 
 1. Start the worker (`--name "solidcore1-ue"`).
 2. From [cursor.com/agents](https://cursor.com/agents), select that machine.
-3. Ask: “Run `tools\build.bat`, then `tools\test.bat`. Report pass/fail counts. Do not change code.”
+3. Ask: “Run `tools\agent.bat`. Report pass/fail counts. Do not change code.”
 4. Confirm the summary matches a local manual run.
 5. Only then give the agent an implement → build → test → push task.
 

@@ -59,12 +59,19 @@ Before building or testing, read `ue.lock`. A missing file means the machine is 
 
 A wait for `ue.lock` that times out is not a reason to read the file again at once. Say in chat that the wait timed out and which word is in the file, then wait 2 minutes for a reply. If no reply arrives, read the file and wait again.
 
-When the machine is free, write this agent's own id into `ue.lock` as the only word (the cloud agent run id when this session has one). Then:
+When the machine is free, write this agent's own id into `ue.lock` as the only word (the cloud agent run id when this session has one). Then look for `agent.ok` in the repo root before running build or test.
 
-1. Build with `tools\build.bat`.
-2. Run the tests with `tools\test.bat`.
+`tools\agent.bat` is that run. It deletes `agent.ok`, builds with `tools\build.bat`, then runs `tools\test.bat`. When both succeed it writes `agent.ok`. The first line is `Passed`. The second line is the commit that passed. The file is gitignored and stays on this machine.
 
-After that build and test session has finished, write `Free` if the file still contains this agent's id.
+Read `agent.ok` to decide whether those scripts should run:
+
+- The file is missing. This tree has not passed build and test on this machine. Run `tools\agent.bat`.
+- The file is present, and every file under `Source/` and `Config/`, and every `*.uproject`, `*.Build.cs`, and `*.Target.cs`, is older than it. This tree already passed. Skip `tools\build.bat` and `tools\test.bat`.
+- One of those files is newer than `agent.ok`. The passing run is stale. Run `tools\agent.bat`.
+
+A markdown change, including `Planning/` and this file, leaves a present `agent.ok` current.
+
+After that session has finished, write `Free` if `ue.lock` still contains this agent's id. That includes a session that skips build and test because `agent.ok` is already current.
 
 The developer runs `tools\editor.bat` to open the editor without play, and `tools\pie.bat` when play is needed. They send a screenshot when they do. Wait for that report before treating the editor or play as verified. When a screenshot arrives, review it. A `tools\test.bat` pass keeps the story `In Progress`. `Done` waits for the user's report and the agreement in the Planning section.
 
@@ -75,7 +82,7 @@ Screenshots are taken with the Windows snipping tool. That switch puts Unreal in
 Cloud agents are a **code + git workshop**. They do not replace the Windows Unreal machine.
 
 - Checkout `main` and pull from GitHub before editing. Ship on `main`. No feature branch and no pull request unless the user asks for one in that conversation. `tools/cloud_agent_check.py` fails on any other branch.
-- Do not run the Unreal Editor, `tools/test.bat`, automation, or PIE from the cloud VM. Fab packs are not present here.
+- Do not run the Unreal Editor, `tools/test.bat`, `tools/agent.bat`, automation, or PIE from the cloud VM. Fab packs are not present here. `agent.ok` is gitignored and exists only after a successful `tools\agent.bat` on the Windows machine. On this VM, skip build and test.
 - Before every push, run `python3 tools/cloud_agent_check.py`. The cloud environment `install` runs the same script. Fix errors before pushing; treat warnings as review notes.
 - After a push, wait for the user's pull → rebuild → tests → PIE report (and screenshot when they send one) before treating the change as verified. The story stays `In Progress` until that report and the agreement in the Planning section.
 - Do not install Unreal Engine on the cloud VM.
@@ -100,7 +107,7 @@ Read the request and the names next to the new code before choosing. When those 
 
 Follow the Automated tests policy in `CodingGuidelines.md`.
 
-After a significant product change, run the full suite, filter `SolidCore1`, before pushing.
+After a significant product change, run the full suite, filter `SolidCore1`, before pushing. On a solidcore1-ue machine, read `agent.ok` first and run `tools\agent.bat` when the solidcore1-ue agents section says the marker is missing or stale.
 
 ## Unused code
 

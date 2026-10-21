@@ -204,6 +204,7 @@ Source/
   SolidCore1/                  # This folder contains all the project source code
   SolidCore1Editor/            # Editor module and the World chart mode
 tools/
+  agent.bat                    # Build, test, and write agent.ok on success
   build.bat                    # SolidCore1Editor Win64 Development
   cloud_agent_check.py         # Branch and repo checks before a push
   editor.bat                   # Open the editor on Lvl_ThirdPerson

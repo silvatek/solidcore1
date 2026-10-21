@@ -1,6 +1,6 @@
 # Objects sit in the terrain
 
-Status: In Progress
+Status: Done
 
 ## Story
 

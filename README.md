@@ -91,6 +91,7 @@ Shipped stories live in [`Planning/Done`](Planning/Done).
 - [Record the world chart](Planning/Done/record-the-world-chart.md)
 - [Paint the world chart](Planning/Done/paint-the-world-chart.md)
 - [Load the world from the chart](Planning/Done/load-the-world-from-the-chart.md)
+- [Company lists use TArray](Planning/Done/company-lists-as-tarray.md)
 
 ## Controls (runtime defaults)
 

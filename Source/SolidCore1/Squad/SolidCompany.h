@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
 #include "Squad/SolidBattlePlan.h"
+#include "Squad/SolidCaptain.h"
 #include "Strongholds/SolidStronghold.h"
 
 class USkeletalMesh;
@@ -149,7 +150,7 @@ struct FSolidCompanion
 
 /**
  * Company — catalog of battle plans and every companion the squad may field.
- * Owns the active stronghold. The game instance holds one company for the play session.
+ * Owns the captain and the active stronghold. The game instance holds one company for the play session.
  */
 UCLASS()
 class SOLIDCORE1_API USolidCompany : public UObject
@@ -157,6 +158,12 @@ class SOLIDCORE1_API USolidCompany : public UObject
 	GENERATED_BODY()
 
 public:
+	/**
+	 * The company's one captain. Created on first ask. OpenLevel keeps this object.
+	 * Title, occupied town, and sight unlocks live here.
+	 */
+	USolidCaptain* GetCaptain();
+
 	/** Seed Line / Column / Tight mob / Loose mob / Parade starter plans (idempotent). */
 	void InitializeDefaultBattlePlans();
 
@@ -215,6 +222,9 @@ public:
 	TUniquePtr<FSolidStronghold> TakeStronghold();
 
 protected:
+	UPROPERTY()
+	TObjectPtr<USolidCaptain> Captain;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Company|BattlePlans")
 	TArray<FSolidBattlePlan> AllBattlePlans;
 

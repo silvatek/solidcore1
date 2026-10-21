@@ -4,6 +4,7 @@
 #include "Journal/SolidJournal.h"
 #include "Lairs/SolidLair.h"
 #include "SolidGameState.h"
+#include "Squad/SolidCaptain.h"
 #include "SolidHUD.h"
 #include "SolidPortal.h"
 #include "Terrain/SolidWorldMap.h"
@@ -255,14 +256,15 @@ bool FSolidPortalTunnelMouthTest::RunTest(const FString& Parameters)
 		INDEX_NONE);
 
 	USolidGameState& State = *NewObject<USolidGameState>();
+	USolidCaptain& StateCaptain = *NewObject<USolidCaptain>();
 	const int32 KilledIndex = SolidEvents::FindIndexById(SolidEvents::IdKilledByMonsters);
-	const SolidEvents::FResult Recorded = SolidEvents::MarkComplete(State, SolidEvents::IdDrivenFromVillage);
+	const SolidEvents::FResult Recorded = SolidEvents::MarkComplete(State, StateCaptain, SolidEvents::IdDrivenFromVillage);
 	TestTrue(TEXT("the portal records Driven from the village"), Recorded.bFired);
 	TestTrue(TEXT("the tunnels open"), SolidLair::TunnelsOpen(State));
 	TestFalse(TEXT("the cave stays shut"), State.bStrongholdsEnabled);
 	TestTrue(TEXT("killed by monsters is still unfired"), KilledIndex != INDEX_NONE && !State.bFired[KilledIndex]);
 	TestTrue(TEXT("the title is set"), Recorded.bSetTitle);
-	TestEqual(TEXT("title is Outcast"), FString(State.CaptainTitle), FString(SolidEvents::TitleOutcast));
+	TestEqual(TEXT("title is Outcast"), FString(CaptainTitleName(StateCaptain.Title)), FString(CaptainTitleName(ESolidCaptainTitle::Outcast)));
 	TestTrue(TEXT("the village message is shown"), Recorded.bShowMessage);
 	TestEqual(
 		TEXT("message id"),
@@ -294,13 +296,14 @@ bool FSolidPortalTunnelMouthTest::RunTest(const FString& Parameters)
 
 	const int32 FiredCount = State.FiredOrder.Num();
 	const int32 JournalCount = State.Journal.Num();
-	const SolidEvents::FResult Again = SolidEvents::MarkComplete(State, SolidEvents::IdDrivenFromVillage);
+	const SolidEvents::FResult Again = SolidEvents::MarkComplete(State, StateCaptain, SolidEvents::IdDrivenFromVillage);
 	TestFalse(TEXT("a second portal does not record it again"), Again.bFired);
 	TestEqual(TEXT("fired once"), State.FiredOrder.Num(), FiredCount);
 	TestEqual(TEXT("one journal line"), State.Journal.Num(), JournalCount);
 
 	USolidGameState& Empty = *NewObject<USolidGameState>();
-	TestFalse(TEXT("an unknown id does nothing"), SolidEvents::MarkComplete(Empty, TEXT("missing")).bFired);
+	USolidCaptain& EmptyCaptain = *NewObject<USolidCaptain>();
+	TestFalse(TEXT("an unknown id does nothing"), SolidEvents::MarkComplete(Empty, EmptyCaptain, TEXT("missing")).bFired);
 	TestEqual(TEXT("unknown id leaves the journal empty"), Empty.FiredOrder.Num(), 0);
 	return true;
 }

@@ -35,6 +35,8 @@
 #include "SolidClipLocomotion.h"
 #include "SolidCore1.h"
 #include "Squad/SolidBattlePlan.h"
+#include "Squad/SolidCaptain.h"
+#include "Squad/SolidCompany.h"
 #include "SolidGameMode.h"
 #include "Character/SolidCharacterStage.h"
 #include "HUD/SolidHUD.h"
@@ -199,6 +201,34 @@ void ASolidCharacter::PossessedBy(AController* NewController)
 	EnsureRuntimeInputAssets();
 	AddMappingContext();
 	ApplyMeshGroundOffset();
+	if (ASolidGameMode* GameMode = Cast<ASolidGameMode>(GetWorld() ? GetWorld()->GetAuthGameMode() : nullptr))
+	{
+		if (USolidCompany* Company = GameMode->GetCompany())
+		{
+			if (USolidCaptain* Captain = Company->GetCaptain())
+			{
+				Captain->SetActor(this);
+			}
+		}
+	}
+}
+
+void ASolidCharacter::UnPossessed()
+{
+	if (ASolidGameMode* GameMode = Cast<ASolidGameMode>(GetWorld() ? GetWorld()->GetAuthGameMode() : nullptr))
+	{
+		if (USolidCompany* Company = GameMode->GetCompany())
+		{
+			if (USolidCaptain* Captain = Company->GetCaptain())
+			{
+				if (Captain->GetActor() == this)
+				{
+					Captain->SetActor(nullptr);
+				}
+			}
+		}
+	}
+	Super::UnPossessed();
 }
 
 void ASolidCharacter::OnRep_PlayerState()

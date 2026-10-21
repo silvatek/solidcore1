@@ -7,6 +7,7 @@
 #include "Lairs/SolidLairEntrance.h"
 #include "Strongholds/Dungeon/SolidDungeonLevel.h"
 #include "SolidGameState.h"
+#include "Squad/SolidCaptain.h"
 #include "SolidStronghold.h"
 #include "SolidWorldMap.h"
 #include "Towns/SolidTowns.h"
@@ -123,17 +124,18 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidLairGateTest::RunTest(const FString& Parameters)
 {
 	USolidGameState& State = *NewObject<USolidGameState>();
+	USolidCaptain& StateCaptain = *NewObject<USolidCaptain>();
 	TestFalse(TEXT("the tunnels start shut"), SolidLair::TunnelsOpen(State));
 
-	SolidEvents::NotifyOccupiedTown(State, SolidTowns::Iglin);
+	SolidEvents::NotifyOccupiedTown(State, StateCaptain, SolidTowns::Iglin);
 	TestFalse(TEXT("Iglin leaves the tunnels shut"), SolidLair::TunnelsOpen(State));
-	SolidEvents::NotifyReachBrokenBridge(State);
-	SolidEvents::NotifyMessageClosed(State, SolidMessages::IdKilledByMonsters);
+	SolidEvents::NotifyReachBrokenBridge(State, StateCaptain);
+	SolidEvents::NotifyMessageClosed(State, StateCaptain, SolidMessages::IdKilledByMonsters);
 	TestFalse(TEXT("the cave close leaves the tunnels shut"), SolidLair::TunnelsOpen(State));
 	TestTrue(TEXT("that close still opens the cave"), State.bStrongholdsEnabled);
 
-	SolidEvents::NotifyOccupiedTown(State, INDEX_NONE);
-	SolidEvents::NotifyOccupiedTown(State, SolidTowns::Iglin);
+	SolidEvents::NotifyOccupiedTown(State, StateCaptain, INDEX_NONE);
+	SolidEvents::NotifyOccupiedTown(State, StateCaptain, SolidTowns::Iglin);
 	TestTrue(TEXT("Driven from the village opens the tunnels"), SolidLair::TunnelsOpen(State));
 
 	const SolidLair::FPassageHit CaveEnter = SolidLair::HitOnStronghold(SolidStronghold::StartingCell(), false);

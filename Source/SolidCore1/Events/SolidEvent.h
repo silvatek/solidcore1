@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "SolidSight.h"
 #include "SolidStronghold.h"
+#include "Squad/SolidCaptain.h"
 
 /**
  * One event: a trigger, the changes it applies, and the events that must already have fired.
@@ -67,20 +68,12 @@ namespace SolidEvents
 		EnableLair,
 	};
 
-	/** Nameplate before Enter Iglin. Driven from the village sets this again. */
-	inline constexpr const TCHAR* TitleOutcast = TEXT("Outcast");
-	/** Enter Iglin. */
-	inline constexpr const TCHAR* TitleOrphan = TEXT("Orphan");
-	inline constexpr const TCHAR* TitleVagrant = TEXT("Vagrant");
-	inline constexpr const TCHAR* TitleRanger = TEXT("Ranger");
-	inline constexpr const TCHAR* TitleCaptain = TEXT("Captain");
-
 	struct FChange
 	{
 		EChange Kind = EChange::MaxSquadSize;
 		ESolidSight Sight = ESolidSight::Raven;
 		int32 SquadSize = 0;
-		const TCHAR* Title = nullptr;
+		ESolidCaptainTitle Title = ESolidCaptainTitle::Outcast;
 		/** Message id for a ShowMessage change. */
 		const TCHAR* MessageId = nullptr;
 		/** Size for an EnableStrongholdSize change. */
@@ -111,7 +104,7 @@ namespace SolidEvents
 			return Change;
 		}
 
-		inline constexpr FChange SetPlayerTitle(const TCHAR* Name)
+		inline constexpr FChange SetPlayerTitle(const ESolidCaptainTitle Name)
 		{
 			FChange Change;
 			Change.Kind = EChange::CaptainTitle;
@@ -192,7 +185,7 @@ namespace SolidEvents
 			return With(Change::SetMaxSquadSize(Size));
 		}
 
-		constexpr FEvent SetPlayerTitle(const TCHAR* InName) const
+		constexpr FEvent SetPlayerTitle(const ESolidCaptainTitle InName) const
 		{
 			return With(Change::SetPlayerTitle(InName));
 		}

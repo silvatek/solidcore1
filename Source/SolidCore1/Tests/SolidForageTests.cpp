@@ -13,6 +13,7 @@
 #include "SolidForagePile.h"
 #include "SolidGameInstance.h"
 #include "SolidGameState.h"
+#include "Squad/SolidCaptain.h"
 #include "SolidTravelSession.h"
 #include "SolidTerrainMap.h"
 #include "SolidTerrainTestHelpers.h"
@@ -238,6 +239,7 @@ bool FSolidForagePickupTest::RunTest(const FString& Parameters)
 		FVector(0.f, -100.f, 20.f), FVector(0.f, -1.f, 0.f), Cube, SolidClickMove::MaxRayCm, Distance));
 
 	USolidGameState& State = *NewObject<USolidGameState>();
+	USolidCaptain& StateCaptain = *NewObject<USolidCaptain>();
 	const int32 Journal = State.Journal.Num();
 	const SolidStorage::FContainer Chest = State.CaveChest;
 	const TCHAR* Body = State.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)];
@@ -260,6 +262,7 @@ bool FSolidForagePickupTest::RunTest(const FString& Parameters)
 	}
 
 	USolidGameState& Full = *NewObject<USolidGameState>();
+	USolidCaptain& FullCaptain = *NewObject<USolidCaptain>();
 	for (int32 Index = 0; Index < SolidInventory::PackCount; ++Index)
 	{
 		SolidInventory::WritePack(Full.Inventory, Index, SolidItemType::IdStick, 10);
@@ -269,11 +272,12 @@ bool FSolidForagePickupTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the full stack stays full"), Full.Inventory.PackStack[0], 10);
 
 	USolidGameState& Cleared = *NewObject<USolidGameState>();
+	USolidCaptain& ClearedCaptain = *NewObject<USolidCaptain>();
 	Cleared.TakenForagePiles.Add(4);
 	SolidInventory::WritePack(Cleared.Inventory, 0, SolidItemType::IdPitch, 2);
 	const int32 ClearedJournal = Cleared.Journal.Num();
 	SolidEvents::FResult Result;
-	SolidEvents::ApplyChange(Cleared, SolidEvents::Change::ClearInventory(), Result);
+	SolidEvents::ApplyChange(Cleared, ClearedCaptain, SolidEvents::Change::ClearInventory(), Result);
 	TestTrue(TEXT("closing the monster message leaves the pile taken"), Cleared.TakenForagePiles.Contains(4));
 	TestEqual(TEXT("that clear writes no journal line"), Cleared.Journal.Num(), ClearedJournal);
 	TestTrue(TEXT("the pack no longer holds the pitch"), Cleared.Inventory.Pack[0] == nullptr);

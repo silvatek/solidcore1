@@ -3,6 +3,7 @@
 #include "Events/SolidEvents.h"
 #include "Journal/SolidJournal.h"
 #include "SolidGameState.h"
+#include "Squad/SolidCaptain.h"
 #include "SolidWorldTime.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -90,7 +91,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 {
 	USolidGameState& State = *NewObject<USolidGameState>();
-	SolidEvents::NotifyOccupiedTown(State, 0);
+	USolidCaptain& StateCaptain = *NewObject<USolidCaptain>();
+	SolidEvents::NotifyOccupiedTown(State, StateCaptain, 0);
 	TArray<SolidJournal::FRow> AtStart;
 	SolidJournal::CollectRows(State, AtStart);
 	const int32 Iglin = SolidJournalTestPrivate::FindEntry(AtStart, TEXT("Enter Iglin"));
@@ -110,7 +112,7 @@ bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("Iglin does not mention Relion"), SolidJournalTestPrivate::ContainsText(AtStart, TEXT("Relion")));
 	TestFalse(TEXT("Iglin is not the empty journal"), SolidJournalTestPrivate::ContainsText(AtStart, TEXT("No events yet.")));
 
-	SolidEvents::NotifyOccupiedTown(State, 1);
+	SolidEvents::NotifyOccupiedTown(State, StateCaptain, 1);
 	TArray<SolidJournal::FRow> AfterRelion;
 	SolidJournal::CollectRows(State, AfterRelion);
 	const int32 IglinStill = SolidJournalTestPrivate::FindEntry(AfterRelion, TEXT("Enter Iglin"));
@@ -131,7 +133,7 @@ bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 		}
 	}
 
-	SolidEvents::NotifyOccupiedTown(State, 2);
+	SolidEvents::NotifyOccupiedTown(State, StateCaptain, 2);
 	TArray<SolidJournal::FRow> AfterKanfold;
 	SolidJournal::CollectRows(State, AfterKanfold);
 	const int32 IglinThird = SolidJournalTestPrivate::FindEntry(AfterKanfold, TEXT("Enter Iglin"));
@@ -144,9 +146,10 @@ bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("filled journal is not empty"), SolidJournalTestPrivate::ContainsText(AfterKanfold, TEXT("No events yet.")));
 
 	USolidGameState& Skipped = *NewObject<USolidGameState>();
-	SolidEvents::NotifyOccupiedTown(Skipped, 2);
-	SolidEvents::NotifyOccupiedTown(Skipped, 0);
-	SolidEvents::NotifyOccupiedTown(Skipped, 1);
+	USolidCaptain& SkippedCaptain = *NewObject<USolidCaptain>();
+	SolidEvents::NotifyOccupiedTown(Skipped, SkippedCaptain, 2);
+	SolidEvents::NotifyOccupiedTown(Skipped, SkippedCaptain, 0);
+	SolidEvents::NotifyOccupiedTown(Skipped, SkippedCaptain, 1);
 	TArray<SolidJournal::FRow> Reversed;
 	SolidJournal::CollectRows(Skipped, Reversed);
 	const int32 KanfoldFirst = SolidJournalTestPrivate::FindEntry(Reversed, TEXT("Enter Kanfold"));
@@ -195,9 +198,10 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidJournalCaptainTitleTest::RunTest(const FString& Parameters)
 {
 	USolidGameState& State = *NewObject<USolidGameState>();
-	SolidEvents::NotifyOccupiedTown(State, 0);
-	SolidEvents::NotifyOccupiedTown(State, 1);
-	SolidEvents::NotifyOccupiedTown(State, 2);
+	USolidCaptain& StateCaptain = *NewObject<USolidCaptain>();
+	SolidEvents::NotifyOccupiedTown(State, StateCaptain, 0);
+	SolidEvents::NotifyOccupiedTown(State, StateCaptain, 1);
+	SolidEvents::NotifyOccupiedTown(State, StateCaptain, 2);
 
 	TArray<SolidJournal::FRow> Rows;
 	SolidJournal::CollectRows(State, Rows);
@@ -226,7 +230,8 @@ bool FSolidJournalWorldTimeTest::RunTest(const FString& Parameters)
 {
 	const SolidWorldTime::FStamp Ninth = SolidWorldTime::FromSession(9, 84.0 * 60.0);
 	USolidGameState& State = *NewObject<USolidGameState>();
-	SolidEvents::NotifyOccupiedTown(State, 0, Ninth);
+	USolidCaptain& StateCaptain = *NewObject<USolidCaptain>();
+	SolidEvents::NotifyOccupiedTown(State, StateCaptain, 0, Ninth);
 
 	TArray<SolidJournal::FRow> Lines;
 	SolidJournal::CollectRows(State, Lines);
@@ -267,6 +272,7 @@ bool FSolidJournalWorldTimeTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("a stronghold line has no event index"), State.Journal[2].EventIndex, INDEX_NONE);
 
 	USolidGameState& Marked = *NewObject<USolidGameState>();
+	USolidCaptain& MarkedCaptain = *NewObject<USolidCaptain>();
 	SolidJournal::FJournalEntry Visit;
 	Visit.Type = SolidJournal::EJournalType::Stronghold;
 	Visit.Text = TEXT("Enter stronghold");

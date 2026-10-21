@@ -2,6 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "Menus/SolidSquadBuilder.h"
 #include "Squad/SolidBattlePlan.h"
+#include "Squad/SolidCaptain.h"
 #include "Squad/SolidCompany.h"
 #include "Squad/SolidSquad.h"
 #include "SolidGameInstance.h"
@@ -222,11 +223,15 @@ bool FSolidGameModeBattlePlanSelectTest::RunTest(const FString& Parameters)
 		GameMode->GetSquad()->GetActiveFormation() == ESolidBattleFormation::Parade);
 	TestTrue(TEXT("parade unlocks raven sight"), GameMode->IsSightEnabled(ESolidSight::Raven));
 	TestEqual(TEXT("parade raises the squad cap"), GameMode->GetMaxSquadSize(), SolidEvents::RosterCount);
+	TestNotNull(TEXT("parade company captain"), GameMode->GetCompany()->GetCaptain());
 	TestEqual(
 		TEXT("parade titles the captain"),
-		FString(GameMode->GetConfiguration()->CaptainTitle),
-		FString(SolidEvents::TitleCaptain));
-	TestEqual(TEXT("parade leaves the captain where he stands"), GameMode->GetConfiguration()->OccupiedTown, INDEX_NONE);
+		FString(CaptainTitleName(GameMode->GetCompany()->GetCaptain()->Title)),
+		FString(CaptainTitleName(ESolidCaptainTitle::Captain)));
+	TestEqual(
+		TEXT("parade leaves the captain where he stands"),
+		GameMode->GetCompany()->GetCaptain()->OccupiedTown,
+		INDEX_NONE);
 
 	auto Fired = [](const USolidGameState& State, const TCHAR* Name)
 	{

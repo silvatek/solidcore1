@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0512")
+#define SOLID_BUILD_ID TEXT("SC1-0513")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Game instance play state is GameState.")
+#define SOLID_BUILD_NOTE TEXT("Company owns the captain.")
 #endif

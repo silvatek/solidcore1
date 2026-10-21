@@ -19,6 +19,7 @@ namespace
 
 	bool TryFireEvent(
 		USolidGameState& State,
+		USolidCaptain& Captain,
 		const int32 Index,
 		const SolidWorldTime::FStamp& When,
 		SolidEvents::FResult& Result,
@@ -44,7 +45,7 @@ namespace
 		const int32 ChangeCount = FMath::Min(Event.ChangeCount, SolidEvents::MaxChangesPerEvent);
 		for (int32 ChangeIndex = 0; ChangeIndex < ChangeCount; ++ChangeIndex)
 		{
-			SolidEvents::ApplyChange(State, Event.Changes[ChangeIndex], Result);
+			SolidEvents::ApplyChange(State, Captain, Event.Changes[ChangeIndex], Result);
 		}
 		return true;
 	}
@@ -53,18 +54,22 @@ namespace
 namespace SolidEvents
 {
 
-void ApplyChange(USolidGameState& State, const FChange& Change, FResult& Result)
+void ApplyChange(
+	USolidGameState& State,
+	USolidCaptain& Captain,
+	const FChange& Change,
+	FResult& Result)
 {
 	switch (Change.Kind)
 	{
 	case EChange::EnableSight:
 		if (Change.Sight == ESolidSight::Raven)
 		{
-			State.bRavenSightEnabled = true;
+			Captain.bRavenSightEnabled = true;
 		}
 		else
 		{
-			State.bTrueSightEnabled = true;
+			Captain.bTrueSightEnabled = true;
 		}
 		Result.bSetSight = true;
 		Result.Sight = Change.Sight;
@@ -74,12 +79,9 @@ void ApplyChange(USolidGameState& State, const FChange& Change, FResult& Result)
 		Result.MaxSquadSize = State.MaxSquadSize;
 		break;
 	case EChange::CaptainTitle:
-		if (Change.Title && Change.Title[0])
-		{
-			State.CaptainTitle = Change.Title;
-			Result.bSetTitle = true;
-			Result.CaptainTitle = Change.Title;
-		}
+		Captain.Title = Change.Title;
+		Result.bSetTitle = true;
+		Result.CaptainTitle = Change.Title;
 		break;
 	case EChange::RepairBridge:
 		State.bIglinBridgeRepaired = true;
@@ -125,14 +127,14 @@ int32 SquadCount(const USolidGameState& State)
 	return FMath::Clamp(State.MaxSquadSize, 0, RosterCount);
 }
 
-bool IsSightEnabled(const USolidGameState& State, const ESolidSight Sight)
+bool IsSightEnabled(const USolidCaptain& Captain, const ESolidSight Sight)
 {
 	switch (Sight)
 	{
 	case ESolidSight::True:
-		return State.bTrueSightEnabled;
+		return Captain.bTrueSightEnabled;
 	case ESolidSight::Raven:
-		return State.bRavenSightEnabled;
+		return Captain.bRavenSightEnabled;
 	default:
 		return false;
 	}
@@ -186,18 +188,19 @@ void RememberLair(
 
 FResult NotifyOccupiedTown(
 	USolidGameState& State,
+	USolidCaptain& Captain,
 	const int32 TownId,
 	const SolidWorldTime::FStamp& When)
 {
 	FResult Result;
 	Result.MaxSquadSize = State.MaxSquadSize;
-	Result.CaptainTitle = State.CaptainTitle;
-	if (State.OccupiedTown == TownId)
+	Result.CaptainTitle = Captain.Title;
+	if (Captain.OccupiedTown == TownId)
 	{
 		return Result;
 	}
 
-	State.OccupiedTown = TownId;
+	Captain.OccupiedTown = TownId;
 	if (TownId == INDEX_NONE)
 	{
 		return Result;
@@ -215,7 +218,7 @@ FResult NotifyOccupiedTown(
 		{
 			continue;
 		}
-		TryFireEvent(State, Index, When, Result);
+		TryFireEvent(State, Captain, Index, When, Result);
 	}
 
 	Result.MaxSquadSize = State.MaxSquadSize;
@@ -224,11 +227,12 @@ FResult NotifyOccupiedTown(
 
 FResult NotifyReachBrokenBridge(
 	USolidGameState& State,
+	USolidCaptain& Captain,
 	const SolidWorldTime::FStamp& When)
 {
 	FResult Result;
 	Result.MaxSquadSize = State.MaxSquadSize;
-	Result.CaptainTitle = State.CaptainTitle;
+	Result.CaptainTitle = Captain.Title;
 
 	for (int32 Index = 0; Index < DefinitionCount; ++Index)
 	{
@@ -236,7 +240,7 @@ FResult NotifyReachBrokenBridge(
 		{
 			continue;
 		}
-		TryFireEvent(State, Index, When, Result);
+		TryFireEvent(State, Captain, Index, When, Result);
 	}
 
 	Result.MaxSquadSize = State.MaxSquadSize;
@@ -245,12 +249,13 @@ FResult NotifyReachBrokenBridge(
 
 FResult NotifyMessageClosed(
 	USolidGameState& State,
+	USolidCaptain& Captain,
 	const TCHAR* MessageId,
 	const SolidWorldTime::FStamp& When)
 {
 	FResult Result;
 	Result.MaxSquadSize = State.MaxSquadSize;
-	Result.CaptainTitle = State.CaptainTitle;
+	Result.CaptainTitle = Captain.Title;
 	if (!MessageId || !MessageId[0])
 	{
 		return Result;
@@ -267,7 +272,7 @@ FResult NotifyMessageClosed(
 		{
 			continue;
 		}
-		TryFireEvent(State, Index, When, Result);
+		TryFireEvent(State, Captain, Index, When, Result);
 	}
 
 	Result.MaxSquadSize = State.MaxSquadSize;
@@ -276,18 +281,19 @@ FResult NotifyMessageClosed(
 
 FResult MarkComplete(
 	USolidGameState& State,
+	USolidCaptain& Captain,
 	const TCHAR* EventId,
 	const SolidWorldTime::FStamp& When)
 {
 	FResult Result;
 	Result.MaxSquadSize = State.MaxSquadSize;
-	Result.CaptainTitle = State.CaptainTitle;
+	Result.CaptainTitle = Captain.Title;
 	if (!EventId || !EventId[0])
 	{
 		return Result;
 	}
 
-	TryFireEvent(State, FindIndexById(EventId), When, Result, /*bForce=*/true);
+	TryFireEvent(State, Captain, FindIndexById(EventId), When, Result, /*bForce=*/true);
 	Result.MaxSquadSize = State.MaxSquadSize;
 	return Result;
 }

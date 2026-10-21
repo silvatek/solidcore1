@@ -37,6 +37,15 @@ namespace
 	}
 }
 
+USolidCaptain* USolidCompany::GetCaptain()
+{
+	if (!Captain)
+	{
+		Captain = NewObject<USolidCaptain>(this, TEXT("Captain"));
+	}
+	return Captain;
+}
+
 void USolidCompany::InitializeDefaultBattlePlans()
 {
 	if (AllBattlePlans.Num() > 0)

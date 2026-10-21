@@ -15,7 +15,7 @@ namespace SolidEvents
 {
 	inline const FEvent Definitions[] = {
 		EnterTown(IdEnterIglin, TEXT("Enter Iglin"), SolidTowns::Iglin, ACT_0)
-			.SetPlayerTitle(TitleOrphan),
+			.SetPlayerTitle(ESolidCaptainTitle::Orphan),
 		// Either ramp of the Iglin bridge. The deck and the gap past the lip do not count.
 		ReachBrokenBridge(IdReachBrokenBridge, TEXT("Reach broken bridge"), ACT_0)
 			.Require(IdEnterIglin)
@@ -29,24 +29,24 @@ namespace SolidEvents
 		EnterTown(IdDrivenFromVillage, TEXT("Driven from the village"), SolidTowns::Iglin, ACT_1)
 			.Require(IdKilledByMonsters)
 			.DisplayMessage(SolidMessages::IdDrivenFromVillage)
-			.SetPlayerTitle(TitleOutcast)
+			.SetPlayerTitle(ESolidCaptainTitle::Outcast)
 			.EnableLair(SolidLair::IdIglinTunnels),
 		EnterTown(IdEnterRelion, TEXT("Enter Relion"), SolidTowns::Relion, ACT_2)
 			.Require(IdEnterIglin)
 			.EnableSight(ESolidSight::Raven)
 			.SetMaxSquadSize(1)
-			.SetPlayerTitle(TitleVagrant)
+			.SetPlayerTitle(ESolidCaptainTitle::Vagrant)
 			.RepairBridge()
 			.EnableStrongholdSize(ESolidStrongholdSize::Humble),
 		EnterTown(IdEnterKanfold, TEXT("Enter Kanfold"), SolidTowns::Kanfold, ACT_3)
 			.EnableSight(ESolidSight::Raven)
 			.SetMaxSquadSize(2)
-			.SetPlayerTitle(TitleRanger)
+			.SetPlayerTitle(ESolidCaptainTitle::Ranger)
 			.EnableStrongholdSize(ESolidStrongholdSize::Average),
 		EnterTown(IdEnterDragongate, TEXT("Enter Dragongate"), SolidTowns::Dragongate, ACT_4)
 			.EnableSight(ESolidSight::Raven)
 			.SetMaxSquadSize(RosterCount)
-			.SetPlayerTitle(TitleCaptain)
+			.SetPlayerTitle(ESolidCaptainTitle::Captain)
 			.EnableStrongholdSize(ESolidStrongholdSize::Meagre)
 			.EnableStrongholdSize(ESolidStrongholdSize::Humble)
 			.EnableStrongholdSize(ESolidStrongholdSize::Average)

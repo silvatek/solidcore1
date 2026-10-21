@@ -20,10 +20,7 @@ FString SolidJournal::Describe(const SolidEvents::FEvent& Event)
 			Part = FString::Printf(TEXT("%s enabled"), SolidSight::Label(Change.Sight));
 			break;
 		case SolidEvents::EChange::CaptainTitle:
-			if (Change.Title && Change.Title[0])
-			{
-				Part = FString::Printf(TEXT("Title %s"), Change.Title);
-			}
+			Part = FString::Printf(TEXT("Title %s"), CaptainTitleName(Change.Title));
 			break;
 		case SolidEvents::EChange::RepairBridge:
 			Part = TEXT("Iglin bridge repaired");

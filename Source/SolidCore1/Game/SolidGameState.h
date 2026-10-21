@@ -7,13 +7,14 @@
 #include "Inventory/SolidStorage.h"
 #include "Journal/SolidJournalEntry.h"
 #include "SolidStronghold.h"
+#include "Squad/SolidCaptain.h"
 #include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
 #include "SolidGameState.generated.h"
 
 /**
- * Live play state. The game starts in true sight with an empty squad.
+ * Live play state. The game starts with an empty squad.
  * The game instance owns one for the play session. OpenLevel keeps this object.
- * The company owns the active stronghold. Previous strongholds stay on this object.
+ * The company owns the captain and the active stronghold. Previous strongholds stay on this object.
  */
 UCLASS()
 class SOLIDCORE1_API USolidGameState : public UObject
@@ -22,9 +23,6 @@ class SOLIDCORE1_API USolidGameState : public UObject
 
 public:
 	int32 MaxSquadSize = 0;
-	const TCHAR* CaptainTitle = SolidEvents::TitleOutcast;
-	bool bTrueSightEnabled = true;
-	bool bRavenSightEnabled = false;
 	/** Enter Relion restores the Iglin span. It starts broken. */
 	bool bIglinBridgeRepaired = false;
 	/** Strongholds start closed. A size unlock or EnableCave opens them. */
@@ -34,8 +32,6 @@ public:
 	 * A new game has none. The change carries the lair id. The event id does not.
 	 */
 	TArray<const TCHAR*, TInlineAllocator<SolidEvents::MaxEnabledLairs>> EnabledLairs;
-	/** Numbered cell the captain is standing on, or INDEX_NONE. */
-	int32 OccupiedTown = INDEX_NONE;
 	bool bFired[SolidEvents::MaxEvents] = {};
 	/** Definition indexes, in the order the events fired. */
 	TArray<int32, TInlineAllocator<SolidEvents::MaxEvents>> FiredOrder;
@@ -76,7 +72,7 @@ namespace SolidEvents
 		ESolidSight Sight = ESolidSight::True;
 		int32 MaxSquadSize = 0;
 		bool bSetTitle = false;
-		const TCHAR* CaptainTitle = TitleOutcast;
+		ESolidCaptainTitle CaptainTitle = ESolidCaptainTitle::Outcast;
 		/** A Repair bridge change ran. */
 		bool bRepairBridge = false;
 		/** An Enable cave change ran. The captain enters the stronghold. */
@@ -87,7 +83,7 @@ namespace SolidEvents
 	};
 
 	int32 SquadCount(const USolidGameState& State);
-	bool IsSightEnabled(const USolidGameState& State, ESolidSight Sight);
+	bool IsSightEnabled(const USolidCaptain& Captain, ESolidSight Sight);
 
 	/** True when this size is within the highest size an event has unlocked. */
 	inline bool IsStrongholdSizeUnlocked(const USolidGameState& State, const ESolidStrongholdSize Size)
@@ -115,8 +111,13 @@ namespace SolidEvents
 	/**
 	 * Run one change. An event runs each of its changes this way.
 	 * A size unlock is recorded on the company. No shipped event carries one yet.
+	 * Title, town, and sight flags write on the captain.
 	 */
-	void ApplyChange(USolidGameState& State, const FChange& Change, FResult& Result);
+	void ApplyChange(
+		USolidGameState& State,
+		USolidCaptain& Captain,
+		const FChange& Change,
+		FResult& Result);
 
 	void Remember(
 		USolidGameState& State,
@@ -146,6 +147,7 @@ namespace SolidEvents
 	 */
 	FResult NotifyOccupiedTown(
 		USolidGameState& State,
+		USolidCaptain& Captain,
 		int32 TownId,
 		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
 
@@ -156,6 +158,7 @@ namespace SolidEvents
 	 */
 	FResult NotifyReachBrokenBridge(
 		USolidGameState& State,
+		USolidCaptain& Captain,
 		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
 
 	/**
@@ -164,6 +167,7 @@ namespace SolidEvents
 	 */
 	FResult NotifyMessageClosed(
 		USolidGameState& State,
+		USolidCaptain& Captain,
 		const TCHAR* MessageId,
 		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
 
@@ -173,6 +177,7 @@ namespace SolidEvents
 	 */
 	FResult MarkComplete(
 		USolidGameState& State,
+		USolidCaptain& Captain,
 		const TCHAR* EventId,
 		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
 }

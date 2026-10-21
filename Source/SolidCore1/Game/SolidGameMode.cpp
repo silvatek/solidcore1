@@ -402,13 +402,14 @@ void ASolidGameMode::ApplyCaptainFromSession()
 	}
 
 	const FSolidTravelSession& Session = Instance->GetSession();
-	if (SolidEvents::IsSightEnabled(*GetConfiguration(), Session.Sight))
+	USolidCaptain* SessionCaptain = GetCompany() ? GetCompany()->GetCaptain() : nullptr;
+	if (SessionCaptain && SolidEvents::IsSightEnabled(*SessionCaptain, Session.Sight))
 	{
 		Captain->SetSight(Session.Sight);
 	}
-	if (GetConfiguration()->CaptainTitle)
+	if (SessionCaptain)
 	{
-		Captain->SetCharacterDisplayName(GetConfiguration()->CaptainTitle);
+		Captain->SetCharacterDisplayName(CaptainTitleName(SessionCaptain->Title));
 	}
 	bCaptainTravelApplied = true;
 }
@@ -771,7 +772,13 @@ void ASolidGameMode::RefreshEvents()
 
 void ASolidGameMode::NoteTownEntry(const int32 TownId)
 {
-	const SolidEvents::FResult Result = SolidEvents::NotifyOccupiedTown(*GetConfiguration(), TownId, WorldStamp());
+	USolidCaptain* SessionCaptain = GetCompany() ? GetCompany()->GetCaptain() : nullptr;
+	if (!GetConfiguration() || !SessionCaptain)
+	{
+		return;
+	}
+	const SolidEvents::FResult Result = SolidEvents::NotifyOccupiedTown(
+		*GetConfiguration(), *SessionCaptain, TownId, WorldStamp());
 	if (Result.bFired)
 	{
 		UE_LOG(LogSolid, Warning,
@@ -780,7 +787,7 @@ void ASolidGameMode::NoteTownEntry(const int32 TownId)
 			*SolidTowns::NameFor(TownId),
 			Result.bSetSight ? SolidSight::Label(Result.Sight) : TEXT("unchanged"),
 			GetConfiguration()->MaxSquadSize,
-			GetConfiguration()->CaptainTitle ? GetConfiguration()->CaptainTitle : TEXT(""),
+			CaptainTitleName(SessionCaptain->Title),
 			Result.bRepairBridge ? TEXT("repaired") : TEXT("unchanged"));
 	}
 
@@ -795,9 +802,9 @@ void ASolidGameMode::NoteTownEntry(const int32 TownId)
 		{
 			Captain->SetSight(Result.Sight);
 		}
-		if (Result.bSetTitle && Result.CaptainTitle)
+		if (Result.bSetTitle)
 		{
-			Captain->SetCharacterDisplayName(Result.CaptainTitle);
+			Captain->SetCharacterDisplayName(CaptainTitleName(Result.CaptainTitle));
 		}
 	}
 	PresentEventResult(Result);
@@ -827,7 +834,13 @@ void ASolidGameMode::PresentEventResult(const SolidEvents::FResult& Result)
 
 void ASolidGameMode::NoteMessageClosed(const TCHAR* MessageId)
 {
-	const SolidEvents::FResult Result = SolidEvents::NotifyMessageClosed(*GetConfiguration(), MessageId, WorldStamp());
+	USolidCaptain* SessionCaptain = GetCompany() ? GetCompany()->GetCaptain() : nullptr;
+	if (!GetConfiguration() || !SessionCaptain)
+	{
+		return;
+	}
+	const SolidEvents::FResult Result = SolidEvents::NotifyMessageClosed(
+		*GetConfiguration(), *SessionCaptain, MessageId, WorldStamp());
 	if (Result.bFired)
 	{
 		UE_LOG(LogSolid, Warning, TEXT("Event: message %s closed. Stronghold %s."),
@@ -851,7 +864,13 @@ void ASolidGameMode::NoteBrokenBridgeRamp(const FVector& Location)
 			continue;
 		}
 
-		const SolidEvents::FResult Result = SolidEvents::NotifyReachBrokenBridge(*GetConfiguration(), WorldStamp());
+		USolidCaptain* SessionCaptain = GetCompany() ? GetCompany()->GetCaptain() : nullptr;
+		if (!GetConfiguration() || !SessionCaptain)
+		{
+			return;
+		}
+		const SolidEvents::FResult Result = SolidEvents::NotifyReachBrokenBridge(
+			*GetConfiguration(), *SessionCaptain, WorldStamp());
 		if (Result.bFired)
 		{
 			UE_LOG(LogSolid, Warning, TEXT("Event: Reach broken bridge."));
@@ -863,31 +882,37 @@ void ASolidGameMode::NoteBrokenBridgeRamp(const FVector& Location)
 
 void ASolidGameMode::FireParadeEvents()
 {
-	const int32 Stay = GetConfiguration()->OccupiedTown;
-	auto Visit = [this](const int32 TownId)
+	USolidCaptain* SessionCaptain = GetCompany() ? GetCompany()->GetCaptain() : nullptr;
+	if (!SessionCaptain)
+	{
+		return;
+	}
+	const int32 Stay = SessionCaptain->OccupiedTown;
+	auto Visit = [this, SessionCaptain](const int32 TownId)
 	{
 		if (TownId == INDEX_NONE)
 		{
 			return;
 		}
 		// A repeat visit to the town the captain is already on does not fire.
-		if (GetConfiguration()->OccupiedTown == TownId)
+		if (SessionCaptain->OccupiedTown == TownId)
 		{
-			GetConfiguration()->OccupiedTown = INDEX_NONE;
+			SessionCaptain->OccupiedTown = INDEX_NONE;
 		}
 		NoteTownEntry(TownId);
 	};
 	Visit(TownIdForEvent(TEXT("Enter Iglin")));
 	Visit(TownIdForEvent(TEXT("Enter Relion")));
 	Visit(TownIdForEvent(TEXT("Enter Dragongate")));
-	GetConfiguration()->OccupiedTown = Stay;
+	SessionCaptain->OccupiedTown = Stay;
 	EnsureCompanion();
 }
 
 bool ASolidGameMode::IsSightEnabled(const ESolidSight Sight) const
 {
-	const USolidGameState* State = GetConfiguration();
-	return State && SolidEvents::IsSightEnabled(*State, Sight);
+	USolidCompany* Company = GetCompany();
+	USolidCaptain* Captain = Company ? Company->GetCaptain() : nullptr;
+	return Captain && SolidEvents::IsSightEnabled(*Captain, Sight);
 }
 
 void ASolidGameMode::RepairBrokenBridges()
@@ -1046,20 +1071,25 @@ bool ASolidGameMode::TeleportSquadToTunnelMouth(const TCHAR EndMarker)
 	Captain->ArriveByPortal(NewLoc, SolidPortal::YawTowardMouth(Mouth->FacingYawDeg));
 	Streamer->RelocateCompanionsByDelta(Delta);
 
-	const SolidEvents::FResult Result = SolidEvents::MarkComplete(
-		*GetConfiguration(), SolidEvents::IdDrivenFromVillage, WorldStamp());
-	if (Result.bFired)
+	USolidGameState* PlayState = GetConfiguration();
+	USolidCaptain* SessionCaptain = GetCompany() ? GetCompany()->GetCaptain() : nullptr;
+	if (PlayState && SessionCaptain)
 	{
-		UE_LOG(LogSolid, Warning, TEXT("Event: Driven from the village recorded by the tunnel portal."));
-	}
-	if (ASolidCharacter* Landed = FindCaptain(GetWorld()))
-	{
-		if (Result.bSetTitle && Result.CaptainTitle)
+		const SolidEvents::FResult Result = SolidEvents::MarkComplete(
+			*PlayState, *SessionCaptain, SolidEvents::IdDrivenFromVillage, WorldStamp());
+		if (Result.bFired)
 		{
-			Landed->SetCharacterDisplayName(Result.CaptainTitle);
+			UE_LOG(LogSolid, Warning, TEXT("Event: Driven from the village recorded by the tunnel portal."));
 		}
+		if (ASolidCharacter* Landed = FindCaptain(GetWorld()))
+		{
+			if (Result.bSetTitle)
+			{
+				Landed->SetCharacterDisplayName(CaptainTitleName(Result.CaptainTitle));
+			}
+		}
+		PresentEventResult(Result);
 	}
-	PresentEventResult(Result);
 	RefreshEvents();
 
 	UE_LOG(LogSolid, Warning,

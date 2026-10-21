@@ -10,7 +10,7 @@ The player walks from Iglin toward the broken bridge and meets three reptiles on
 
 - Three monsters stand on the open world, on the Iglin side of the Iglin–Relion bridge.
 - Each one uses the green Velociraptor skeletal mesh from `/Game/Fab/PBR_Velociraptor__Animated_`. The same mesh is used three times. The other four skins stay unused.
-- The standing height is 220 cm. The feet sit on the ground.
+- The standing height is 100 cm. The feet sit on the ground.
 - Each one loops that mesh's in-place idle clip. They stay in that pose.
 - They face the outer end of the Iglin ramp. Yaw only.
 - A monster's terrain point is Grassland, and it is walkable.
@@ -28,13 +28,13 @@ The player walks from Iglin toward the broken bridge and meets three reptiles on
 - Seeing them writes no journal line.
 - Any Blueprint or AnimBP in the download stays unused. The captain stays on the Viking mesh.
 - Insects stay a later body. `Content/Lairs.md` still leaves the tunnels empty of monsters.
-- The 220 cm height is a uniform scale of the downloaded mesh. A later body builds a Velociraptor the way a human mesh is built, and the way the Character Editor changes one. [`Content/Fauna.md`](../Content/Fauna.md) records that. This story places the downloaded mesh.
+- The 100 cm height is a uniform scale of the downloaded mesh. A later body builds a Velociraptor the way a human mesh is built, and the way the Character Editor changes one. [`Content/Fauna.md`](../Content/Fauna.md) records that. This story places the downloaded mesh.
 
 ## Implementation notes
 
 - The listing is PBR Velociraptor (Animated) by Ferocious Industries, [https://www.fab.com/listings/5d5fa3d3-4459-4677-be46-c686f733908c](https://www.fab.com/listings/5d5fa3d3-4459-4677-be46-c686f733908c). It is the green skin, about 15144 triangles, with albedo, normal, ambient occlusion, and a secondary 2K texture. Restore it with Launcher **Add to Project**. There is no download API. Add to Project puts the pack at `/Game/Fab/PBR_Velociraptor__Animated_`, which is `Content/Fab/PBR_Velociraptor__Animated_`. `tools/fab-assets.json` gains a `velociraptor` entry with `required` true and that path as `resolvedFolder`. The body and the idle are recorded in `resolvedPaths` the way Viking records `SK_Viking` and `Anim_Viking_idle1`. Look in that folder first. A miss searches under Content for a skeletal mesh whose name contains `Velociraptor` and contains none of `Skeleton`, `Physics`, and `Morph`. A name that starts with `SK_` wins, and otherwise the shortest such name wins. The green material is the one whose name contains `Green`. The idle is the AnimSequence in that mesh's folder whose name contains `Idle` and contains none of `Root`, `Attack`, `Death`, `Hit`, `Roar`, `Walk`, and `Run`. The shortest such name wins. A find is written back. Do not move the folder.
 - Credits gain a Velociraptor block after the grass listing: creator Ferocious Industries, the Fab Standard line, and that listing URL. The `SolidCore1.Credits.*` line in `README.md` gains it in the same commit.
-- Scale the mesh so its bounds height is 220 cm. The scale is uniform. The capsule half-height is half of that, and the radius is 60 cm. The actor origin is the feet. That scale is not the human-body deform. `SolidBodyMesh` and the Character Editor stay on the Viking skeleton.
+- Scale the mesh so its bounds height is 100 cm. The scale is uniform. The capsule half-height is half of that, and the radius is 27 cm, the same proportion as 60 cm on a 220 cm body. The actor origin is the feet. That scale is not the human-body deform. `SolidBodyMesh` and the Character Editor stay on the Viking skeleton.
 - Play the idle with `SolidClipLocomotion` on an `AnimSingleNodeInstance`, looping. Leave any AnimBP in the download unassigned.
 - Choose the points in a function tests can call without a world. The Iglin town center comes from the world map. The ramp polylines come from the `SolidBridge::FBridge` whose `bIglinRelion` is set. Distance is horizontal. Sort by distance to the outer end, then by point index. Separation is 400 cm. The near limit is 800 cm. The far limit is 4000 cm. The count is 3.
 - Run that choice after the tree choice and the foraging choice, and skip a point index either of those already took. Seed when `Fog` falls below `1.0f`, the same moment as a foraging pile. Entering a stronghold or the tunnels stores no taken index for a monster. The next open-world visit chooses the same points and seeds the ones whose fog is already clear.

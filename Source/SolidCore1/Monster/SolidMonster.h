@@ -11,9 +11,12 @@
 namespace SolidMonster
 {
 	/** Standing height of the downloaded mesh after a uniform scale (cm). */
-	inline constexpr float StandingHeightCm = 220.f;
-	/** Capsule radius. The actor origin is the feet, so the capsule sits above it (cm). */
-	inline constexpr float CapsuleRadiusCm = 60.f;
+	inline constexpr float StandingHeightCm = 100.f;
+	/**
+	 * Capsule radius (cm). The same proportion as 60 cm on a 220 cm body, rounded.
+	 * It stays under the half height, and the actor origin is the feet.
+	 */
+	inline constexpr float CapsuleRadiusCm = 27.f;
 	/** Half of the standing height. The capsule bottom is the actor origin (cm). */
 	inline constexpr float CapsuleHalfHeightCm = StandingHeightCm * 0.5f;
 	/** Nearest a point may be to the Iglin ramp's outer end (cm). */

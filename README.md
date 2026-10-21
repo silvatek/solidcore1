@@ -37,7 +37,6 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A story move
 - [Drop the Assassin and Blacksmith packs](Planning/remove-assassin-and-blacksmith.md)
 - [Generate the character mesh outside the editor](Planning/character-mesh-outside-the-editor.md)
 - [Remove WorldMap.txt](Planning/remove-world-map-txt.md)
-- [The game instance owns the play state](Planning/game-instance-owns-the-play-state.md)
 
 ## Done
 
@@ -94,6 +93,7 @@ Stories in [`Planning/Done`](Planning/Done) have been tested, and you and the ag
 - [Load the world from the chart](Planning/Done/load-the-world-from-the-chart.md)
 - [Company lists use TArray](Planning/Done/company-lists-as-tarray.md)
 - [The game instance owns the company](Planning/Done/game-instance-owns-the-company.md)
+- [The game instance owns the play state](Planning/Done/game-instance-owns-the-play-state.md)
 
 ## Controls (runtime defaults)
 

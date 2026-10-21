@@ -1,6 +1,6 @@
 # The game instance owns the play state
 
-Status: In Progress
+Status: Done
 
 ## Story
 

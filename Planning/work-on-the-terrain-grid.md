@@ -4,7 +4,7 @@ Status: New
 
 ## Story
 
-This story depends on [Remove WorldMap.txt](remove-world-map-txt.md), which is Ready. That story ships first. `Content/WorldMap.txt` is gone. The game already loads `/Game/World/WorldChart`. The text file was the check that the chart still matched it.
+This story depends on [Remove WorldMap.txt](remove-world-map-txt.md), which is Ready. That story ships first. It starts from the world that story leaves: `Content/WorldMap.txt` is gone, and the game loads `/Game/World/WorldChart`.
 
 The open world is a square of terrain points, 513 on a side, 200 cm apart. The chart still stores the land as the old text cells: 128 columns by 64 rows across that square, so a cell is 8 m east–west and 16 m north–south. Those rectangles came from the character cells. A forest, a mountain, a town, or the sea fills the whole cell. The ground steps at the cell edge. A mountain rises 10 m. The other land sits 1 m up. Those steps are the blocks in the World chart view.
 
@@ -28,4 +28,4 @@ The chart and the game work on the terrain grid, the surface that strip already 
 - `SampleBiome` paints a road strip and a 4 m river inside a cell. Every other biome returns the whole cell. That split is the chart view: a thin road, and block shelves.
 - `SolidRoad::Solve` walks map cells. The strip is then offset by half a terrain quad (`TerrainQuadCm` 200) so it sits on the quad. The biome joins the strip on that quad.
 - A mark stores a world position. `LoadFromChart` turns that position into a cell. On the grid, the position stays on the point.
-- [Remove WorldMap.txt](remove-world-map-txt.md) ships first. It deletes the text file, the parity test, and the check that the chart matches that file. `LoadDefault` also reads the colour key from that file. That read goes with the file. This story then stores the land on the terrain grid. The chart is no longer 128 by 64 cells, so that check would have nothing to compare.
+- [Remove WorldMap.txt](remove-world-map-txt.md) has already shipped. The chart this story changes is `/Game/World/WorldChart`.

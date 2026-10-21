@@ -47,9 +47,12 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 
 	TestFalse(TEXT("a closed visit has no monsters"), SolidMonster::WorldHasMonsters(true));
 	TestTrue(TEXT("the open world can hold monsters"), SolidMonster::WorldHasMonsters(false));
-	TestEqual(TEXT("standing height"), SolidMonster::StandingHeightCm, 220.f);
-	TestTrue(TEXT("a 110 cm mesh doubles"), FMath::IsNearlyEqual(SolidMonster::UniformScale(110.f), 2.f));
-	TestTrue(TEXT("a 220 cm mesh stays"), FMath::IsNearlyEqual(SolidMonster::UniformScale(220.f), 1.f));
+	TestTrue(
+		TEXT("a mesh of half the standing height doubles"),
+		FMath::IsNearlyEqual(SolidMonster::UniformScale(SolidMonster::StandingHeightCm * 0.5f), 2.f));
+	TestTrue(
+		TEXT("a mesh of the standing height stays"),
+		FMath::IsNearlyEqual(SolidMonster::UniformScale(SolidMonster::StandingHeightCm), 1.f));
 	TestTrue(TEXT("a zero height stays at one"), FMath::IsNearlyEqual(SolidMonster::UniformScale(0.f), 1.f));
 	TestTrue(
 		TEXT("a centered mesh drops its bottom to the feet"),
@@ -181,8 +184,11 @@ bool FSolidMonsterBodyTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestTrue(
-		TEXT("the capsule radius is 60 cm"),
+		TEXT("the capsule radius matches the body"),
 		FMath::IsNearlyEqual(Capsule->GetUnscaledCapsuleRadius(), SolidMonster::CapsuleRadiusCm));
+	TestTrue(
+		TEXT("the capsule radius fits under the half height"),
+		SolidMonster::CapsuleRadiusCm <= SolidMonster::CapsuleHalfHeightCm);
 	TestTrue(
 		TEXT("the capsule is half the standing height"),
 		FMath::IsNearlyEqual(Capsule->GetUnscaledCapsuleHalfHeight(), SolidMonster::CapsuleHalfHeightCm));

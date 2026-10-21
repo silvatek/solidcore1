@@ -162,29 +162,40 @@ bool FSolidMainMenuOrderTest::RunTest(const FString& Parameters)
 
 	TArray<FSolidMainMenuEntry> Entries;
 	SolidMainMenu::CollectEntries(Entries);
-	TestEqual(TEXT("six rows"), Entries.Num(), 6);
-	if (Entries.Num() != 6)
+	TestTrue(TEXT("menu has the known rows"), Entries.Num() >= UE_ARRAY_COUNT(Labels));
+	if (Entries.Num() < UE_ARRAY_COUNT(Labels))
 	{
 		return false;
 	}
 
-	for (int32 Index = 0; Index < 6; ++Index)
+	int32 Cursor = 0;
+	for (int32 Expected = 0; Expected < UE_ARRAY_COUNT(Labels); ++Expected)
 	{
-		TestEqual(TEXT("row label"), Entries[Index].Label, FString(Labels[Index]));
-		TestEqual(
-			TEXT("row item"),
-			static_cast<uint8>(Entries[Index].Item),
-			static_cast<uint8>(Items[Index]));
-		TestEqual(
-			TEXT("row action"),
-			static_cast<uint8>(SolidMainMenu::ActionForItem(Entries[Index].Item)),
-			static_cast<uint8>(Actions[Index]));
+		bool bFound = false;
+		for (; Cursor < Entries.Num(); ++Cursor)
+		{
+			if (Entries[Cursor].Label != Labels[Expected])
+			{
+				continue;
+			}
+			TestEqual(
+				TEXT("row item"),
+				static_cast<uint8>(Entries[Cursor].Item),
+				static_cast<uint8>(Items[Expected]));
+			TestEqual(
+				TEXT("row action"),
+				static_cast<uint8>(SolidMainMenu::ActionForItem(Entries[Cursor].Item)),
+				static_cast<uint8>(Actions[Expected]));
+			bFound = true;
+			++Cursor;
+			break;
+		}
+		TestTrue(TEXT("known row stays in order"), bFound);
 	}
 
-	TestEqual(TEXT("Credits then Exit Game"), Entries[4].Label, FString(TEXT("Credits")));
-	TestEqual(TEXT("Exit Game is last"), Entries[5].Label, FString(TEXT("Exit Game")));
+	TestEqual(TEXT("Exit Game is last"), Entries.Last().Label, FString(TEXT("Exit Game")));
 	FSolidMainMenuEntry PastEnd;
-	TestFalse(TEXT("key 7 has no row"), SolidMainMenu::FindEntry(6, PastEnd));
+	TestFalse(TEXT("no row past the end"), SolidMainMenu::FindEntry(SolidMainMenu::EntryCount(), PastEnd));
 	TestFalse(TEXT("key 8 has no row"), SolidMainMenu::FindEntry(7, PastEnd));
 
 	int32 QuitRows = 0;

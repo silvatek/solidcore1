@@ -1,6 +1,6 @@
 # Combat preparation
 
-Status: New
+Status: Ready
 
 ## Story
 

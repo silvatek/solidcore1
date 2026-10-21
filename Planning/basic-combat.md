@@ -1,10 +1,10 @@
 # Basic combat
 
-Status: New
+Status: Ready
 
 ## Story
 
-This story depends on [Combat preparation](combat-preparation.md), which is New. That story ships first.
+This story depends on [Combat preparation](combat-preparation.md), which is Ready. That story ships first.
 
 Each monster has DetectionRange and EscapeDistance. Each starts at 5 m. Play can change either one on its own. When the captain or a companion in the squad enters DetectionRange, the monsters attack and combat starts. When the captain and every companion in the squad are beyond EscapeDistance, combat ends. Combat also ends when one side is completely killed, and when the captain dies. A monster stays within its EscapeDistance of its spawn point.
 

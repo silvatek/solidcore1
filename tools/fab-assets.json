@@ -75,7 +75,10 @@
         "credit": "PBR Velociraptor (Animated) by Ferocious Industries, used from Fab as an element of this project."
       },
       "resolvedFolder": "Content/Fab/PBR_Velociraptor__Animated_",
-      "resolvedPaths": {},
+      "resolvedPaths": {
+        "pbr_velociraptor_animated.uasset": "Content/Fab/PBR_Velociraptor__Animated_/pbr_velociraptor_animated/SkeletalMeshes/pbr_velociraptor_animated.uasset",
+        "pbr_velociraptor_animatedRaptorArmature__rmature_Raptor_Idle1_Anim_RaptorArmature_.uasset": "Content/Fab/PBR_Velociraptor__Animated_/pbr_velociraptor_animated/SkeletalMeshes/pbr_velociraptor_animatedRaptorArmature__rmature_Raptor_Idle1_Anim_RaptorArmature_.uasset"
+      },
       "notes": "resolvedPaths are tried first, then resolvedFolder, then a Velociraptor skeletal mesh under Content. The idle is the shortest Idle clip in that mesh's folder. A find is written back. Do not move the folder."
     }
   ]

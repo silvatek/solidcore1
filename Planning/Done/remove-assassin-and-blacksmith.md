@@ -1,6 +1,6 @@
 # Drop the Assassin and Blacksmith packs
 
-Status: In Progress
+Status: Done
 
 ## Story
 

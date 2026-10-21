@@ -240,6 +240,49 @@ namespace SolidDungeonExteriorTestPrivate
 		}
 		return false;
 	}
+
+	bool WallReachesLip(const UStaticMeshComponent* Part, const float LipX)
+	{
+		if (!Part)
+		{
+			return false;
+		}
+		UStaticMesh* Mesh = Part->GetStaticMesh();
+		FMeshDescription* Description = Mesh ? Mesh->GetMeshDescription(0) : nullptr;
+		if (!Description)
+		{
+			return false;
+		}
+		FStaticMeshAttributes Attributes(*Description);
+		TVertexAttributesRef<FVector3f> Positions = Attributes.GetVertexPositions();
+		for (const FTriangleID TriangleID : Description->Triangles().GetElementIDs())
+		{
+			const TArrayView<const FVertexInstanceID> Corners = Description->GetTriangleVertexInstances(TriangleID);
+			if (Corners.Num() < 3)
+			{
+				continue;
+			}
+			bool bOnFace = false;
+			bool bOnLip = false;
+			float Side = 0.f;
+			float Top = 0.f;
+			for (int32 Corner = 0; Corner < 3; ++Corner)
+			{
+				const FVector3f Point = Positions[Description->GetVertexInstanceVertex(Corners[Corner])];
+				bOnFace |= FMath::Abs(Point.X) <= 1.f;
+				bOnLip |= FMath::Abs(Point.X - LipX) <= 1.f;
+				Side = FMath::Max(Side, FMath::Abs(Point.Y));
+				Top = FMath::Max(Top, Point.Z);
+			}
+			if (bOnFace && bOnLip
+				&& Side > SolidStrongholds::OpeningWidthCm * 0.2f
+				&& Top > SolidStrongholds::OpeningHeightCm * 0.25f)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -544,6 +587,68 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 			FMath::IsNearlyEqual(BuriedBounds.Max.Z, Dungeon.FaceHeightCm(), 1.f));
 	}
 
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidDungeonExteriorMouthTest,
+	"SolidCore1.Stronghold.DungeonExteriorMouth",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidDungeonExteriorMouthTest::RunTest(const FString& Parameters)
+{
+	USolidCompany* Company = NewObject<USolidCompany>();
+	Company->InitializeStartingStronghold();
+	FSolidStronghold* Cave = Company->GetStronghold();
+	TestNotNull(TEXT("a new game has a stronghold"), Cave);
+	if (!Cave)
+	{
+		return false;
+	}
+
+	Cave->Orientation = ESolidStrongholdOrientation::North;
+	ASolidDungeonExterior* Rock = NewObject<ASolidDungeonExterior>();
+	TestNotNull(TEXT("rock"), Rock);
+	if (!Rock)
+	{
+		return false;
+	}
+	Cave->ConfigureExterior(Rock);
+
+	UStaticMeshComponent* Stone = Rock->GetRockMesh();
+	UStaticMeshComponent* Mouth = Rock->GetMouthMesh();
+	TestNotNull(TEXT("stone"), Stone);
+	TestNotNull(TEXT("mouth"), Mouth);
+	if (!Stone || !Mouth)
+	{
+		return false;
+	}
+
+	const SolidStronghold::FSolidDungeon& Dungeon = SolidStronghold::FSolidDungeon::Instance();
+	SolidDungeonExteriorTestPrivate::FBounds MouthBounds;
+	SolidDungeonExteriorTestPrivate::FBounds RockBounds;
+	TestTrue(
+		TEXT("mouth shape"),
+		SolidDungeonExteriorTestPrivate::Measure(Mouth, 0.f, SolidStrongholds::OpeningHeightCm, MouthBounds));
+	TestTrue(
+		TEXT("rock mesh"),
+		SolidDungeonExteriorTestPrivate::Measure(
+			Stone,
+			Dungeon.SlopeRunCm(),
+			SolidStrongholds::OpeningHeightCm,
+			RockBounds));
+	TestTrue(
+		TEXT("the mouth front meets the rock"),
+		FMath::IsNearlyEqual(MouthBounds.Max.X, RockBounds.Max.X, 1.f));
+	TestTrue(
+		TEXT("the dark face stays behind the rock"),
+		FMath::IsNearlyEqual(
+			Mouth->GetRelativeLocation().X,
+			RockBounds.Max.X - SolidStrongholds::MouthRecessCm,
+			1.f));
+	TestTrue(
+		TEXT("a wall closes the side of the mouth"),
+		SolidDungeonExteriorTestPrivate::WallReachesLip(Mouth, SolidStrongholds::MouthRecessCm));
 	return true;
 }
 

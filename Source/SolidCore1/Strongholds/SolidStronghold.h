@@ -566,7 +566,11 @@ namespace SolidStrongholds
 	 */
 	inline constexpr float FrameFrontLocalX = -OpeningDepthCm * 0.5f;
 	inline constexpr float FrameThicknessCm = 80.f;
-	/** Black mouth sits this far behind the rock front so the faces do not z-fight. */
+	/**
+	 * The dark mouth face sits this far behind the rock front (cm).
+	 * The dungeon mouth grows a wall across that gap so the side is closed.
+	 * The lair mouth uses the same set-back inside its frame.
+	 */
 	inline constexpr float MouthRecessCm = 16.f;
 	/** The dungeon mouth sits this far inside the facing cell border. */
 	inline constexpr float MouthBorderGapCm = 120.f;

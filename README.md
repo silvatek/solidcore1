@@ -37,6 +37,7 @@ Open stories live in [`Planning`](Planning). Each file is one idea. A shipped st
 - [Drop the Assassin and Blacksmith packs](Planning/remove-assassin-and-blacksmith.md)
 - [Generate the character mesh outside the editor](Planning/character-mesh-outside-the-editor.md)
 - [Remove WorldMap.txt](Planning/remove-world-map-txt.md)
+- [The game instance owns the play state](Planning/game-instance-owns-the-play-state.md)
 
 ## Done
 

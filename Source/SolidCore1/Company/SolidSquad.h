@@ -7,6 +7,7 @@
 #include "SolidSquad.generated.h"
 
 class USolidCompany;
+class USolidGameState;
 
 /**
  * Squad — Captain plus the companions chosen from the company.
@@ -20,8 +21,15 @@ class SOLIDCORE1_API USolidSquad : public UObject
 	GENERATED_BODY()
 
 public:
-	/** Bind to Company, assign starter plans, activate F1, select Sam then Alex. */
+	/** Bind to Company, assign the catalog up to eight keys, activate F1, and select Sam then Alex. */
 	void InitializeFromCompany(USolidCompany* InCompany);
+
+	/**
+	 * While fewer than eight catalog plans are enabled, the keys are those plans in catalog order.
+	 * The active plan stays when it is still enabled. A disabled active plan becomes the first key.
+	 * Eight or more enabled plans leave the keys as they are.
+	 */
+	void SyncEnabledBattlePlans(USolidGameState& State);
 
 	USolidCompany* GetCompany() const { return Company; }
 

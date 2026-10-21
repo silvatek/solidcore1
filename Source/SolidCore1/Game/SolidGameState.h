@@ -11,6 +11,9 @@
 #include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
 #include "SolidGameState.generated.h"
 
+class USolidCompany;
+class USolidSquad;
+
 /**
  * Live play state. The game starts with an empty squad.
  * The game instance owns one for the play session. OpenLevel keeps this object.
@@ -65,6 +68,13 @@ public:
 	TArray<TUniquePtr<FSolidStronghold>> PreviousStrongholds;
 	/** Furnishings in the active stronghold. A new game carries the Meagre stronghold's pieces. */
 	TArray<SolidStrongholdFurniture::FUsed> Furnishings = SolidStrongholdFurniture::StartingFurnishings();
+	/**
+	 * Catalog plans that are on, by name.
+	 * A new game lists Starter once the catalog has been seeded. Every other plan is off.
+	 */
+	TArray<FString> EnabledBattlePlans;
+	/** Set when the catalog has been seeded. A second seed leaves the flags alone. */
+	bool bBattlePlansSeeded = false;
 
 protected:
 	UPROPERTY()
@@ -99,6 +109,29 @@ namespace SolidEvents
 	{
 		return static_cast<int32>(Size) <= static_cast<int32>(State.MaxStrongholdSize);
 	}
+
+	/**
+	 * A new game enables Starter and leaves every other catalog plan off.
+	 * Does nothing once that has been recorded, and does nothing while the catalog is empty.
+	 */
+	void SeedBattlePlans(USolidGameState& State, const USolidCompany& Company);
+
+	/** True when this catalog plan is on. A missing name is off. */
+	bool IsBattlePlanEnabled(const USolidGameState& State, const TCHAR* Name);
+
+	/**
+	 * Put the enabled plans back on the keys when fewer than eight are on,
+	 * then select the plan that was active when that plan is still on.
+	 * Eight or more leaves the keys as they were.
+	 */
+	void RestoreAssignedBattlePlans(
+		USolidSquad& Squad,
+		USolidGameState& State,
+		const TArray<int32>& AssignedIndices,
+		int32 ActiveSlot,
+		bool bActive,
+		uint8 HeldFormation,
+		uint8 HeldSpacing);
 
 	/** True when an EnableLair change has recorded this lair id. */
 	inline bool IsLairEnabled(const USolidGameState& State, const TCHAR* Id)

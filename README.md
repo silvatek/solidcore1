@@ -223,11 +223,11 @@ USolidGameInstance                  # Session root
   USolidCompany                     # Catalog, the captain, and the company base
     USolidCaptain                   # Title, occupied town, and which sights are unlocked
       ASolidCharacter               # Weak pointer to the live pawn. Current sight stays on the actor
-    FSolidBattlePlan[]              # Line, Column, Tight mob, Loose mob, Parade
+    FSolidBattlePlan[]              # Starter, Attack, Defend, Parade, Line, Column, Tight mob, Loose mob
     FSolidCharacterMesh[]           # Viking
     FSolidCompanion[]               # Sam, Alex, Max, Morgan, Quinn
     FSolidStronghold                # Active base: Dungeon, Fortress, or Tower
-  USolidGameState                   # Events, squad cap, lairs, and the unlocked stronghold size
+  USolidGameState                   # Events, squad cap, enabled battle plans, lairs, and the unlocked stronghold size
     USolidJournal                   # Event, stronghold, and lair lines
     FLoadout                        # Worn boxes, pack, and crafting slots
     FContainer                      # Cave chest

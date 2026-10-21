@@ -1,4 +1,7 @@
 #include "SolidGameState.h"
+#include "Company/SolidBattlePlan.h"
+#include "Company/SolidCompany.h"
+#include "Company/SolidSquad.h"
 
 namespace
 {
@@ -125,8 +128,143 @@ void ApplyChange(
 			}
 		}
 		break;
+	case EChange::EnableBattlePlan:
+	case EChange::DisableBattlePlan:
+	{
+		USolidCompany* Company = Cast<USolidCompany>(Captain.GetOuter());
+		if (!Company || !Change.BattlePlanName || !Change.BattlePlanName[0])
+		{
+			break;
+		}
+		SeedBattlePlans(State, *Company);
+		if (Company->FindBattlePlanIndexByName(Change.BattlePlanName) == INDEX_NONE)
+		{
+			break;
+		}
+		const int32 Found = State.EnabledBattlePlans.IndexOfByKey(FString(Change.BattlePlanName));
+		if (Change.Kind == EChange::EnableBattlePlan)
+		{
+			if (Found == INDEX_NONE)
+			{
+				State.EnabledBattlePlans.Add(Change.BattlePlanName);
+			}
+		}
+		else if (Found != INDEX_NONE)
+		{
+			State.EnabledBattlePlans.RemoveAt(Found);
+		}
+		break;
+	}
 	default:
 		break;
+	}
+}
+
+void SeedBattlePlans(USolidGameState& State, const USolidCompany& Company)
+{
+	if (State.bBattlePlansSeeded || Company.GetBattlePlanCount() <= 0)
+	{
+		return;
+	}
+	State.bBattlePlansSeeded = true;
+	State.EnabledBattlePlans.Reset();
+	if (Company.FindBattlePlanIndexByName(TEXT("Starter")) != INDEX_NONE)
+	{
+		State.EnabledBattlePlans.Add(TEXT("Starter"));
+	}
+}
+
+bool IsBattlePlanEnabled(const USolidGameState& State, const TCHAR* Name)
+{
+	return Name && Name[0] && State.EnabledBattlePlans.Contains(FString(Name));
+}
+
+namespace
+{
+	int32 EnabledInCatalog(const USolidGameState& State, const USolidCompany& Company)
+	{
+		int32 Count = 0;
+		for (int32 Index = 0; Index < Company.GetBattlePlanCount(); ++Index)
+		{
+			const FSolidBattlePlan* Plan = Company.GetBattlePlan(Index);
+			if (Plan && IsBattlePlanEnabled(State, *Plan->Name))
+			{
+				++Count;
+			}
+		}
+		return Count;
+	}
+
+	int32 SlotForPlanName(const USolidSquad& Squad, const FString& Name)
+	{
+		if (Name.IsEmpty())
+		{
+			return INDEX_NONE;
+		}
+		for (int32 Slot = 0; Slot < SolidBattleFormationSlots::MaxAssignedBattlePlans; ++Slot)
+		{
+			const FSolidBattlePlan* Plan = Squad.GetAssignedBattlePlan(Slot);
+			if (Plan && Plan->Name == Name)
+			{
+				return Slot;
+			}
+		}
+		return INDEX_NONE;
+	}
+}
+
+void RestoreAssignedBattlePlans(
+	USolidSquad& Squad,
+	USolidGameState& State,
+	const TArray<int32>& AssignedIndices,
+	const int32 ActiveSlot,
+	const bool bActive,
+	const uint8 HeldFormation,
+	const uint8 HeldSpacing)
+{
+	USolidCompany* Company = Squad.GetCompany();
+	if (!Company)
+	{
+		return;
+	}
+	SeedBattlePlans(State, *Company);
+
+	FString ActiveName;
+	if (bActive && AssignedIndices.IsValidIndex(ActiveSlot))
+	{
+		if (const FSolidBattlePlan* Plan = Company->GetBattlePlan(AssignedIndices[ActiveSlot]))
+		{
+			ActiveName = Plan->Name;
+		}
+	}
+
+	if (EnabledInCatalog(State, *Company) < SolidBattleFormationSlots::MaxAssignedBattlePlans)
+	{
+		Squad.SyncEnabledBattlePlans(State);
+	}
+	else if (AssignedIndices.Num() > 0)
+	{
+		Squad.SetAssignedBattlePlans(AssignedIndices);
+	}
+
+	if (!bActive)
+	{
+		Squad.SetHeldFormation(
+			static_cast<ESolidBattleFormation>(HeldFormation),
+			static_cast<ESolidBattleSpacing>(HeldSpacing));
+		Squad.ClearActiveBattlePlan();
+		return;
+	}
+
+	const int32 ByName = SlotForPlanName(Squad, ActiveName);
+	if (ByName != INDEX_NONE)
+	{
+		Squad.SelectAssignedSlot(ByName);
+		return;
+	}
+	if (Squad.GetAssignedBattlePlan(ActiveSlot))
+	{
+		Squad.SelectAssignedSlot(ActiveSlot);
 	}
 }
 

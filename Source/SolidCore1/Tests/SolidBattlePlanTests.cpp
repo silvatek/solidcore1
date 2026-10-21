@@ -88,6 +88,82 @@ namespace SolidBattlePlanTestPrivate
 		Squad->SetAssignedBattlePlans(Slots);
 		return FindAssignedSlot(Squad, Name);
 	}
+
+	FString AssignedNames(const USolidSquad* Squad)
+	{
+		FString Names;
+		if (!Squad)
+		{
+			return Names;
+		}
+		for (int32 Slot = 0; Slot < SolidBattleFormationSlots::MaxAssignedBattlePlans; ++Slot)
+		{
+			const FSolidBattlePlan* Plan = Squad->GetAssignedBattlePlan(Slot);
+			if (!Plan)
+			{
+				continue;
+			}
+			if (!Names.IsEmpty())
+			{
+				Names += TEXT(", ");
+			}
+			Names += Plan->Name;
+		}
+		return Names;
+	}
+
+	bool EventChangesBattlePlan(const TCHAR* EventName)
+	{
+		for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
+		{
+			const SolidEvents::FEvent& Event = SolidEvents::Definitions[Index];
+			if (FCString::Strcmp(Event.Name, EventName) != 0)
+			{
+				continue;
+			}
+			const int32 ChangeCount = FMath::Min(Event.ChangeCount, SolidEvents::MaxChangesPerEvent);
+			for (int32 ChangeIndex = 0; ChangeIndex < ChangeCount; ++ChangeIndex)
+			{
+				const SolidEvents::EChange Kind = Event.Changes[ChangeIndex].Kind;
+				if (Kind == SolidEvents::EChange::EnableBattlePlan
+					|| Kind == SolidEvents::EChange::DisableBattlePlan)
+				{
+					return true;
+				}
+			}
+			return false;
+		}
+		return false;
+	}
+
+	struct FPlay
+	{
+		USolidGameInstance* Instance = nullptr;
+		ASolidGameMode* GameMode = nullptr;
+		USolidCompany* Company = nullptr;
+		USolidSquad* Squad = nullptr;
+		USolidGameState* State = nullptr;
+		USolidCaptain* Captain = nullptr;
+
+		bool Open()
+		{
+			Instance = NewObject<USolidGameInstance>();
+			GameMode = Instance ? NewObject<ASolidGameMode>(Instance) : nullptr;
+			Company = GameMode ? GameMode->GetCompany() : nullptr;
+			Squad = GameMode ? GameMode->GetSquad() : nullptr;
+			State = GameMode ? GameMode->GetConfiguration() : nullptr;
+			Captain = Company ? Company->GetCaptain() : nullptr;
+			return Instance && GameMode && Company && Squad && State && Captain;
+		}
+
+		void Sync()
+		{
+			if (Squad && State)
+			{
+				Squad->SyncEnabledBattlePlans(*State);
+			}
+		}
+	};
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -511,6 +587,429 @@ bool FSolidBattlePlanParadeOtherKeyTest::RunTest(const FString& Parameters)
 	const int32 ParadeAgain = SolidBattlePlanTestPrivate::FindAssignedSlot(Squad, TEXT("Parade"));
 	TestTrue(TEXT("parade again"), GameMode->SelectBattlePlanSlot(ParadeAgain));
 	TestEqual(TEXT("parade events fire once"), GameMode->GetConfiguration()->FiredOrder.Num(), FiredOnce);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattlePlanNewGameTest,
+	"SolidCore1.BattlePlan.NewGame",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattlePlanNewGameTest::RunTest(const FString& Parameters)
+{
+	USolidCompany* Company = NewObject<USolidCompany>();
+	Company->InitializeDefaultBattlePlans();
+	const TCHAR* Order[] = {
+		TEXT("Starter"), TEXT("Attack"), TEXT("Defend"), TEXT("Parade"),
+		TEXT("Line"), TEXT("Column"), TEXT("Tight mob"), TEXT("Loose mob"),
+	};
+	int32 Previous = INDEX_NONE;
+	for (const TCHAR* Name : Order)
+	{
+		const int32 Index = SolidBattlePlanTestPrivate::FindCompanyPlan(Company, Name);
+		TestTrue(*FString::Printf(TEXT("%s is in the catalog"), Name), Index != INDEX_NONE && Index > Previous);
+		Previous = Index;
+		const FSolidBattlePlan* Plan = Company->GetBattlePlan(Index);
+		if (FCString::Strcmp(Name, TEXT("Starter")) == 0
+			|| FCString::Strcmp(Name, TEXT("Attack")) == 0
+			|| FCString::Strcmp(Name, TEXT("Defend")) == 0)
+		{
+			TestTrue(*FString::Printf(TEXT("%s uses Line"), Name), Plan && Plan->Formation == ESolidBattleFormation::Line);
+			TestTrue(*FString::Printf(TEXT("%s uses standard spacing"), Name), Plan && Plan->Spacing == ESolidBattleSpacing::Standard);
+		}
+	}
+
+	SolidBattlePlanTestPrivate::FPlay Play;
+	if (!Play.Open())
+	{
+		AddError(TEXT("a new game"));
+		return false;
+	}
+	TestEqual(TEXT("Starter is the only key"), SolidBattlePlanTestPrivate::AssignedNames(Play.Squad), FString(TEXT("Starter")));
+	TestEqual(TEXT("F1 is active"), Play.Squad->GetActiveAssignedSlot(), 0);
+	TestEqual(TEXT("the active plan is Starter"), Play.Squad->GetActiveBattlePlan()->Name, FString(TEXT("Starter")));
+	TestFalse(TEXT("one plan hides the list"), SolidBattlePlanList::IsShown(Play.Squad->GetAssignedCount()));
+	TestTrue(TEXT("F1 selects Starter"), Play.GameMode->SelectBattlePlanSlot(0));
+	TestFalse(TEXT("F2 is empty"), Play.GameMode->SelectBattlePlanSlot(1));
+	TestEqual(TEXT("selecting Starter fires nothing"), Play.State->FiredOrder.Num(), 0);
+	TestTrue(TEXT("Starter is on"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Starter")));
+	TestFalse(TEXT("Attack starts off"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Attack")));
+	TestFalse(TEXT("Line starts off"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Line")));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattlePlanEarlyEventsTest,
+	"SolidCore1.BattlePlan.EarlyEvents",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattlePlanEarlyEventsTest::RunTest(const FString& Parameters)
+{
+	TestFalse(TEXT("Enter Iglin leaves plans"), SolidBattlePlanTestPrivate::EventChangesBattlePlan(TEXT("Enter Iglin")));
+	TestFalse(TEXT("Reach broken bridge leaves plans"), SolidBattlePlanTestPrivate::EventChangesBattlePlan(TEXT("Reach broken bridge")));
+	TestFalse(TEXT("Driven from the village leaves plans"), SolidBattlePlanTestPrivate::EventChangesBattlePlan(TEXT("Driven from the village")));
+	TestTrue(TEXT("Killed by monsters edits plans"), SolidBattlePlanTestPrivate::EventChangesBattlePlan(TEXT("Killed by monsters")));
+
+	SolidBattlePlanTestPrivate::FPlay Play;
+	if (!Play.Open())
+	{
+		return false;
+	}
+	SolidEvents::NotifyOccupiedTown(*Play.State, *Play.Captain, SolidTowns::Iglin);
+	SolidEvents::NotifyReachBrokenBridge(*Play.State, *Play.Captain);
+	TestTrue(TEXT("the message still leaves Starter on"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Starter")));
+	TestFalse(TEXT("the message does not enable Attack"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Attack")));
+	TestEqual(TEXT("the keys stay on Starter"), SolidBattlePlanTestPrivate::AssignedNames(Play.Squad), FString(TEXT("Starter")));
+
+	Play.GameMode->NoteMessageClosed(SolidMessages::IdKilledByMonsters);
+	const TArray<FString> AfterClose = Play.State->EnabledBattlePlans;
+	SolidEvents::MarkComplete(*Play.State, *Play.Captain, SolidEvents::IdDrivenFromVillage);
+	TestTrue(TEXT("Driven from the village keeps the flags"), Play.State->EnabledBattlePlans == AfterClose);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattlePlanMonsterCloseTest,
+	"SolidCore1.BattlePlan.MonsterClose",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattlePlanMonsterCloseTest::RunTest(const FString& Parameters)
+{
+	SolidBattlePlanTestPrivate::FPlay Play;
+	if (!Play.Open())
+	{
+		return false;
+	}
+	Play.GameMode->NoteMessageClosed(SolidMessages::IdKilledByMonsters);
+	TestEqual(TEXT("Attack then Defend"), SolidBattlePlanTestPrivate::AssignedNames(Play.Squad), FString(TEXT("Attack, Defend")));
+	TestNull(TEXT("F3 is empty"), Play.Squad->GetAssignedBattlePlan(2));
+	TestNull(TEXT("F8 is empty"), Play.Squad->GetAssignedBattlePlan(7));
+	TestEqual(TEXT("Attack is active"), Play.Squad->GetActiveBattlePlan()->Name, FString(TEXT("Attack")));
+	TestEqual(TEXT("Attack is on F1"), Play.Squad->GetActiveAssignedSlot(), 0);
+	TestTrue(TEXT("two plans show the list"), SolidBattlePlanList::IsShown(Play.Squad->GetAssignedCount()));
+	TestFalse(TEXT("Starter is off"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Starter")));
+	TestTrue(TEXT("Defend is on"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Defend")));
+
+	const int32 Fired = Play.State->FiredOrder.Num();
+	TestTrue(TEXT("Attack selects"), Play.GameMode->SelectBattlePlanSlot(0));
+	TestTrue(TEXT("Defend selects"), Play.GameMode->SelectBattlePlanSlot(1));
+	TestEqual(TEXT("Attack and Defend fire nothing more"), Play.State->FiredOrder.Num(), Fired);
+
+	const FString Detail = USolidJournal::Describe(SolidEvents::Definitions[SolidEvents::FindIndexById(SolidEvents::IdKilledByMonsters)]);
+	TestTrue(TEXT("journal records Starter disabled"), Detail.Contains(TEXT("Starter disabled")));
+	TestTrue(TEXT("journal records Attack enabled"), Detail.Contains(TEXT("Attack enabled")));
+	TestTrue(TEXT("journal records Defend enabled"), Detail.Contains(TEXT("Defend enabled")));
+	TestTrue(TEXT("the cave line stays"), Detail.Contains(TEXT("Cave enabled")));
+
+	SolidEvents::FResult Result;
+	SolidEvents::ApplyChange(*Play.State, *Play.Captain, SolidEvents::Change::EnableBattlePlan(TEXT("Attack")), Result);
+	SolidEvents::ApplyChange(*Play.State, *Play.Captain, SolidEvents::Change::DisableBattlePlan(TEXT("Starter")), Result);
+	TestEqual(TEXT("Attack stays on once"), Play.State->EnabledBattlePlans.FilterByPredicate([](const FString& Name) { return Name == TEXT("Attack"); }).Num(), 1);
+	TestFalse(TEXT("Starter stays off"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Starter")));
+	const TArray<FString> Flags = Play.State->EnabledBattlePlans;
+	SolidEvents::ApplyChange(*Play.State, *Play.Captain, SolidEvents::Change::EnableBattlePlan(TEXT("Not a plan")), Result);
+	TestTrue(TEXT("an unknown plan changes nothing"), Play.State->EnabledBattlePlans == Flags);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattlePlanEnterRelionTest,
+	"SolidCore1.BattlePlan.EnterRelion",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattlePlanEnterRelionTest::RunTest(const FString& Parameters)
+{
+	SolidBattlePlanTestPrivate::FPlay Play;
+	if (!Play.Open())
+	{
+		return false;
+	}
+	Play.GameMode->NoteMessageClosed(SolidMessages::IdKilledByMonsters);
+	SolidEvents::NotifyOccupiedTown(*Play.State, *Play.Captain, SolidTowns::Iglin);
+	const SolidEvents::FResult Relion = SolidEvents::NotifyOccupiedTown(*Play.State, *Play.Captain, SolidTowns::Relion);
+	TestTrue(TEXT("Enter Relion fires"), Relion.bFired);
+	Play.Sync();
+	TestEqual(
+		TEXT("Attack, Defend, Parade"),
+		SolidBattlePlanTestPrivate::AssignedNames(Play.Squad),
+		FString(TEXT("Attack, Defend, Parade")));
+	TestEqual(TEXT("Attack stays active"), Play.Squad->GetActiveBattlePlan()->Name, FString(TEXT("Attack")));
+	TestEqual(TEXT("Parade is on F3"), Play.Squad->GetAssignedBattlePlan(2)->Name, FString(TEXT("Parade")));
+	TestNull(TEXT("F4 is empty"), Play.Squad->GetAssignedBattlePlan(3));
+	TestTrue(TEXT("the list is shown"), SolidBattlePlanList::IsShown(Play.Squad->GetAssignedCount()));
+	const FString Detail = USolidJournal::Describe(SolidEvents::Definitions[SolidEvents::FindIndexById(SolidEvents::IdEnterRelion)]);
+	TestTrue(TEXT("journal records Parade enabled"), Detail.Contains(TEXT("Parade enabled")));
+	TestTrue(TEXT("Relion still repairs the bridge"), Detail.Contains(TEXT("Iglin bridge repaired")));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattlePlanActiveSurvivesEnableTest,
+	"SolidCore1.BattlePlan.ActiveSurvivesEnable",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattlePlanActiveSurvivesEnableTest::RunTest(const FString& Parameters)
+{
+	SolidBattlePlanTestPrivate::FPlay Play;
+	if (!Play.Open())
+	{
+		return false;
+	}
+	Play.GameMode->NoteMessageClosed(SolidMessages::IdKilledByMonsters);
+	TestTrue(TEXT("Defend can be active"), Play.Squad->SelectAssignedSlot(1));
+	SolidEvents::FResult Result;
+	SolidEvents::ApplyChange(*Play.State, *Play.Captain, SolidEvents::Change::EnableBattlePlan(TEXT("Parade")), Result);
+	Play.Sync();
+	TestEqual(TEXT("Defend stays active"), Play.Squad->GetActiveBattlePlan()->Name, FString(TEXT("Defend")));
+	TestEqual(
+		TEXT("Parade joins after Defend"),
+		SolidBattlePlanTestPrivate::AssignedNames(Play.Squad),
+		FString(TEXT("Attack, Defend, Parade")));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattlePlanEnterKanfoldTest,
+	"SolidCore1.BattlePlan.EnterKanfold",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattlePlanEnterKanfoldTest::RunTest(const FString& Parameters)
+{
+	SolidBattlePlanTestPrivate::FPlay Without;
+	if (!Without.Open())
+	{
+		return false;
+	}
+	Without.GameMode->NoteMessageClosed(SolidMessages::IdKilledByMonsters);
+	const SolidEvents::FResult Kanfold = SolidEvents::NotifyOccupiedTown(*Without.State, *Without.Captain, SolidTowns::Kanfold);
+	TestTrue(TEXT("Enter Kanfold fires"), Kanfold.bFired);
+	Without.Sync();
+	TestEqual(TEXT("the squad cap is 2"), Without.State->MaxSquadSize, 2);
+	TestEqual(
+		TEXT("the four formations"),
+		SolidBattlePlanTestPrivate::AssignedNames(Without.Squad),
+		FString(TEXT("Line, Column, Tight mob, Loose mob")));
+	TestEqual(TEXT("Attack becomes Line"), Without.Squad->GetActiveBattlePlan()->Name, FString(TEXT("Line")));
+	TestFalse(TEXT("Starter is off"), SolidEvents::IsBattlePlanEnabled(*Without.State, TEXT("Starter")));
+	TestFalse(TEXT("Attack is off"), SolidEvents::IsBattlePlanEnabled(*Without.State, TEXT("Attack")));
+	TestFalse(TEXT("Defend is off"), SolidEvents::IsBattlePlanEnabled(*Without.State, TEXT("Defend")));
+	TestFalse(TEXT("Parade stays off"), SolidEvents::IsBattlePlanEnabled(*Without.State, TEXT("Parade")));
+	TestNull(TEXT("F5 is empty"), Without.Squad->GetAssignedBattlePlan(4));
+	const int32 Fired = Without.State->FiredOrder.Num();
+	TestTrue(TEXT("Line selects"), Without.GameMode->SelectBattlePlanSlot(0));
+	TestEqual(TEXT("Line does not fire a town"), Without.State->FiredOrder.Num(), Fired);
+
+	SolidBattlePlanTestPrivate::FPlay With;
+	if (!With.Open())
+	{
+		return false;
+	}
+	With.GameMode->NoteMessageClosed(SolidMessages::IdKilledByMonsters);
+	SolidEvents::NotifyOccupiedTown(*With.State, *With.Captain, SolidTowns::Iglin);
+	SolidEvents::NotifyOccupiedTown(*With.State, *With.Captain, SolidTowns::Relion);
+	With.Sync();
+	const int32 ParadeSlot = SolidBattlePlanTestPrivate::FindAssignedSlot(With.Squad, TEXT("Parade"));
+	TestTrue(TEXT("Parade is selected"), With.Squad->SelectAssignedSlot(ParadeSlot));
+	SolidEvents::NotifyOccupiedTown(*With.State, *With.Captain, SolidTowns::Kanfold);
+	With.Sync();
+	TestEqual(
+		TEXT("Parade leads the four"),
+		SolidBattlePlanTestPrivate::AssignedNames(With.Squad),
+		FString(TEXT("Parade, Line, Column, Tight mob, Loose mob")));
+	TestEqual(TEXT("Parade stays active"), With.Squad->GetActiveBattlePlan()->Name, FString(TEXT("Parade")));
+	TestEqual(TEXT("Parade is on F1"), With.Squad->GetActiveAssignedSlot(), 0);
+	TestNull(TEXT("F6 is empty"), With.Squad->GetAssignedBattlePlan(5));
+
+	const FString Detail = USolidJournal::Describe(SolidEvents::Definitions[SolidEvents::FindIndexById(SolidEvents::IdEnterKanfold)]);
+	TestTrue(
+		TEXT("journal records the Kanfold plan edits"),
+		Detail.Contains(TEXT("Starter disabled. Attack disabled. Defend disabled. Line enabled. Column enabled. Tight mob enabled. Loose mob enabled")));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattlePlanEnterDragongateTest,
+	"SolidCore1.BattlePlan.EnterDragongate",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattlePlanEnterDragongateTest::RunTest(const FString& Parameters)
+{
+	SolidBattlePlanTestPrivate::FPlay Without;
+	if (!Without.Open())
+	{
+		return false;
+	}
+	Without.GameMode->NoteMessageClosed(SolidMessages::IdKilledByMonsters);
+	const SolidEvents::FResult Gate = SolidEvents::NotifyOccupiedTown(*Without.State, *Without.Captain, SolidTowns::Dragongate);
+	TestTrue(TEXT("Enter Dragongate fires"), Gate.bFired);
+	Without.Sync();
+	TestEqual(TEXT("the squad cap is the company"), Without.State->MaxSquadSize, SolidEvents::RosterCount);
+	TestEqual(
+		TEXT("the four formations"),
+		SolidBattlePlanTestPrivate::AssignedNames(Without.Squad),
+		FString(TEXT("Line, Column, Tight mob, Loose mob")));
+	TestEqual(TEXT("Attack becomes Line"), Without.Squad->GetActiveBattlePlan()->Name, FString(TEXT("Line")));
+	TestFalse(TEXT("Parade stays off"), SolidEvents::IsBattlePlanEnabled(*Without.State, TEXT("Parade")));
+	TestFalse(TEXT("Dragongate does not enter the cave"), Gate.bEnterStronghold);
+
+	SolidBattlePlanTestPrivate::FPlay With;
+	if (!With.Open())
+	{
+		return false;
+	}
+	With.GameMode->NoteMessageClosed(SolidMessages::IdKilledByMonsters);
+	SolidEvents::NotifyOccupiedTown(*With.State, *With.Captain, SolidTowns::Iglin);
+	SolidEvents::NotifyOccupiedTown(*With.State, *With.Captain, SolidTowns::Relion);
+	With.Sync();
+	SolidEvents::NotifyOccupiedTown(*With.State, *With.Captain, SolidTowns::Dragongate);
+	With.Sync();
+	TestEqual(
+		TEXT("Parade leads the four"),
+		SolidBattlePlanTestPrivate::AssignedNames(With.Squad),
+		FString(TEXT("Parade, Line, Column, Tight mob, Loose mob")));
+	TestEqual(TEXT("Attack becomes Parade"), With.Squad->GetActiveBattlePlan()->Name, FString(TEXT("Parade")));
+	TestEqual(TEXT("Parade is on F1"), With.Squad->GetActiveAssignedSlot(), 0);
+	TestTrue(TEXT("Parade stays on"), SolidEvents::IsBattlePlanEnabled(*With.State, TEXT("Parade")));
+
+	SolidEvents::NotifyOccupiedTown(*With.State, *With.Captain, SolidTowns::Kanfold);
+	With.Sync();
+	TestEqual(
+		TEXT("Kanfold then Dragongate does not duplicate Line"),
+		With.State->EnabledBattlePlans.FilterByPredicate([](const FString& Name) { return Name == TEXT("Line"); }).Num(),
+		1);
+	TestEqual(
+		TEXT("the keys stay Parade and the four"),
+		SolidBattlePlanTestPrivate::AssignedNames(With.Squad),
+		FString(TEXT("Parade, Line, Column, Tight mob, Loose mob")));
+
+	const FString Detail = USolidJournal::Describe(SolidEvents::Definitions[SolidEvents::FindIndexById(SolidEvents::IdEnterDragongate)]);
+	TestTrue(
+		TEXT("journal records the Dragongate plan edits"),
+		Detail.Contains(TEXT("Starter disabled. Attack disabled. Defend disabled. Line enabled. Column enabled. Tight mob enabled. Loose mob enabled")));
+	TestTrue(TEXT("Dragongate still titles Captain"), Detail.Contains(TEXT("Title Captain")));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattlePlanParadeSkipsKanfoldTest,
+	"SolidCore1.BattlePlan.ParadeSkipsKanfold",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattlePlanParadeSkipsKanfoldTest::RunTest(const FString& Parameters)
+{
+	SolidBattlePlanTestPrivate::FPlay Play;
+	if (!Play.Open())
+	{
+		return false;
+	}
+	const int32 ParadeSlot = SolidBattlePlanTestPrivate::SlotForPlan(Play.Squad, TEXT("Parade"));
+	TestTrue(TEXT("Parade selects"), Play.GameMode->SelectBattlePlanSlot(ParadeSlot));
+	auto Fired = [](const USolidGameState& State, const TCHAR* Name)
+	{
+		for (const int32 EventIndex : State.FiredOrder)
+		{
+			if (EventIndex >= 0
+				&& EventIndex < SolidEvents::DefinitionCount
+				&& FCString::Strcmp(SolidEvents::Definitions[EventIndex].Name, Name) == 0)
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+	TestTrue(TEXT("Parade fires Enter Iglin"), Fired(*Play.State, TEXT("Enter Iglin")));
+	TestTrue(TEXT("Parade fires Enter Relion"), Fired(*Play.State, TEXT("Enter Relion")));
+	TestTrue(TEXT("Parade fires Enter Dragongate"), Fired(*Play.State, TEXT("Enter Dragongate")));
+	TestFalse(TEXT("Parade skips Enter Kanfold"), Fired(*Play.State, TEXT("Enter Kanfold")));
+	TestTrue(TEXT("Parade is on"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Parade")));
+	TestTrue(TEXT("Line is on"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Line")));
+	TestTrue(TEXT("Column is on"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Column")));
+	TestTrue(TEXT("Tight mob is on"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Tight mob")));
+	TestTrue(TEXT("Loose mob is on"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Loose mob")));
+	TestFalse(TEXT("Starter is off"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Starter")));
+	TestFalse(TEXT("Attack is off"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Attack")));
+	TestFalse(TEXT("Defend is off"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Defend")));
+	TestEqual(TEXT("Parade stays the active plan"), Play.Squad->GetActiveBattlePlan()->Name, FString(TEXT("Parade")));
+	TestTrue(TEXT("the list is shown"), SolidBattlePlanList::IsShown(Play.Squad->GetAssignedCount()));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattlePlanEightPlansStayTest,
+	"SolidCore1.BattlePlan.EightPlansStay",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattlePlanEightPlansStayTest::RunTest(const FString& Parameters)
+{
+	SolidBattlePlanTestPrivate::FPlay Play;
+	if (!Play.Open())
+	{
+		return false;
+	}
+	const TCHAR* Names[] = {
+		TEXT("Starter"), TEXT("Attack"), TEXT("Defend"), TEXT("Parade"),
+		TEXT("Line"), TEXT("Column"), TEXT("Tight mob"), TEXT("Loose mob"),
+	};
+	SolidEvents::FResult Result;
+	for (const TCHAR* Name : Names)
+	{
+		SolidEvents::ApplyChange(*Play.State, *Play.Captain, SolidEvents::Change::EnableBattlePlan(Name), Result);
+	}
+	FSolidBattlePlan Extra;
+	Extra.Name = TEXT("Skirmish");
+	Extra.Formation = ESolidBattleFormation::Line;
+	Extra.Spacing = ESolidBattleSpacing::Standard;
+	const int32 Skirmish = Play.Company->AddBattlePlan(Extra);
+	TArray<int32> Custom;
+	Custom.Add(Skirmish);
+	Custom.Add(SolidBattlePlanTestPrivate::FindCompanyPlan(Play.Company, TEXT("Line")));
+	TestTrue(TEXT("a custom selection"), Play.Squad->SetAssignedBattlePlans(Custom));
+	const TArray<int32> Before = Play.Squad->GetAssignedCompanyPlanIndices();
+	Play.Sync();
+	TestTrue(TEXT("eight enabled plans leave the keys"), Play.Squad->GetAssignedCompanyPlanIndices() == Before);
+
+	SolidBattlePlanTestPrivate::FPlay Few;
+	if (!Few.Open())
+	{
+		return false;
+	}
+	const int32 Added = Few.Company->AddBattlePlan(Extra);
+	SolidEvents::ApplyChange(*Few.State, *Few.Captain, SolidEvents::Change::EnableBattlePlan(TEXT("Skirmish")), Result);
+	Few.Sync();
+	TestEqual(
+		TEXT("an enabled extra plan joins in catalog order"),
+		SolidBattlePlanTestPrivate::AssignedNames(Few.Squad),
+		FString(TEXT("Starter, Skirmish")));
+	TestEqual(TEXT("Skirmish is the added plan"), Few.Squad->GetAssignedBattlePlan(1)->Name, Few.Company->GetBattlePlan(Added)->Name);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattlePlanTripKeepsPlansTest,
+	"SolidCore1.BattlePlan.TripKeepsPlans",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattlePlanTripKeepsPlansTest::RunTest(const FString& Parameters)
+{
+	SolidBattlePlanTestPrivate::FPlay Play;
+	if (!Play.Open())
+	{
+		return false;
+	}
+	Play.GameMode->NoteMessageClosed(SolidMessages::IdKilledByMonsters);
+	TestTrue(TEXT("Defend is active for the trip"), Play.Squad->SelectAssignedSlot(1));
+	const TArray<int32> Saved = Play.Squad->GetAssignedCompanyPlanIndices();
+	TArray<int32> Mess;
+	Mess.Add(SolidBattlePlanTestPrivate::FindCompanyPlan(Play.Company, TEXT("Starter")));
+	Play.Squad->SetAssignedBattlePlans(Mess);
+	SolidEvents::RestoreAssignedBattlePlans(*Play.Squad, *Play.State, Saved, 1, true, 0, 1);
+	TestEqual(
+		TEXT("the trip keeps Attack and Defend"),
+		SolidBattlePlanTestPrivate::AssignedNames(Play.Squad),
+		FString(TEXT("Attack, Defend")));
+	TestEqual(TEXT("the trip keeps Defend active"), Play.Squad->GetActiveBattlePlan()->Name, FString(TEXT("Defend")));
+	TestTrue(TEXT("Attack stays on"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Attack")));
+	TestFalse(TEXT("Starter stays off"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Starter")));
 	return true;
 }
 

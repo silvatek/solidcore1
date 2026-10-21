@@ -1,5 +1,6 @@
 #include "Company/SolidSquad.h"
 #include "Company/SolidCompany.h"
+#include "SolidGameState.h"
 
 void USolidSquad::InitializeFromCompany(USolidCompany* InCompany)
 {
@@ -26,7 +27,7 @@ void USolidSquad::InitializeFromCompany(USolidCompany* InCompany)
 	}
 	SetAssignedBattlePlans(Starter);
 
-	// Default active: F1 (first assigned slot — Line in the starter catalog).
+	// Default active: F1. The play state then keeps the enabled plans.
 	ActiveAssignedSlot = 0;
 	RememberHeldFormation();
 
@@ -42,6 +43,64 @@ void USolidSquad::InitializeFromCompany(USolidCompany* InCompany)
 		StarterCompanions.Add(Alex);
 	}
 	SetSelectedCompanions(StarterCompanions);
+}
+
+void USolidSquad::SyncEnabledBattlePlans(USolidGameState& State)
+{
+	if (!Company)
+	{
+		return;
+	}
+	SolidEvents::SeedBattlePlans(State, *Company);
+
+	TArray<int32> Enabled;
+	for (int32 Index = 0; Index < Company->GetBattlePlanCount(); ++Index)
+	{
+		const FSolidBattlePlan* Plan = Company->GetBattlePlan(Index);
+		if (Plan && SolidEvents::IsBattlePlanEnabled(State, *Plan->Name))
+		{
+			Enabled.Add(Index);
+		}
+	}
+	if (Enabled.Num() >= SolidBattleFormationSlots::MaxAssignedBattlePlans)
+	{
+		return;
+	}
+
+	const FSolidBattlePlan* Active = GetActiveBattlePlan();
+	const FString ActiveName = Active ? Active->Name : FString();
+	const bool bHadActive = Active != nullptr;
+	SetAssignedBattlePlans(Enabled);
+	if (!bHadActive)
+	{
+		return;
+	}
+
+	int32 Keep = INDEX_NONE;
+	for (int32 Slot = 0; Slot < SolidBattleFormationSlots::MaxAssignedBattlePlans; ++Slot)
+	{
+		const FSolidBattlePlan* Plan = GetAssignedBattlePlan(Slot);
+		if (Plan && Plan->Name == ActiveName)
+		{
+			Keep = Slot;
+			break;
+		}
+	}
+	if (Keep == INDEX_NONE)
+	{
+		for (int32 Slot = 0; Slot < SolidBattleFormationSlots::MaxAssignedBattlePlans; ++Slot)
+		{
+			if (GetAssignedBattlePlan(Slot))
+			{
+				Keep = Slot;
+				break;
+			}
+		}
+	}
+	if (Keep != INDEX_NONE)
+	{
+		SelectAssignedSlot(Keep);
+	}
 }
 
 int32 USolidSquad::GetAssignedCount() const

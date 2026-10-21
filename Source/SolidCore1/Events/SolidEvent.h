@@ -14,8 +14,12 @@
  */
 namespace SolidEvents
 {
-	/** Sight, squad size, and title, plus one unlock for every stronghold size. */
-	inline constexpr int32 MaxChangesPerEvent = 3 + SolidStronghold::SizeCount;
+	/**
+	 * Sight, squad size, and title, one unlock for every stronghold size,
+	 * and the seven battle-plan edits on Enter Dragongate.
+	 */
+	inline constexpr int32 MaxChangesPerEvent = 3 + SolidStronghold::SizeCount + 7;
+	static_assert(MaxChangesPerEvent == 17, "Enter Dragongate needs one slot per change");
 	/** Lair ids an EnableLair change can record. One lair ships. */
 	inline constexpr int32 MaxEnabledLairs = 4;
 	inline constexpr int32 MaxRequiresPerEvent = 4;
@@ -66,6 +70,10 @@ namespace SolidEvents
 		EnableStrongholdSize,
 		/** Open the lair named by LairId. */
 		EnableLair,
+		/** Turn one catalog plan on. The name is BattlePlanName. */
+		EnableBattlePlan,
+		/** Turn one catalog plan off. The name is BattlePlanName. */
+		DisableBattlePlan,
 	};
 
 	struct FChange
@@ -80,6 +88,8 @@ namespace SolidEvents
 		ESolidStrongholdSize StrongholdSize = ESolidStrongholdSize::Meagre;
 		/** Lair id for an EnableLair change. Eight hex digits. */
 		const TCHAR* LairId = nullptr;
+		/** Plan name for an EnableBattlePlan or DisableBattlePlan change. */
+		const TCHAR* BattlePlanName = nullptr;
 	};
 
 	/**
@@ -156,6 +166,22 @@ namespace SolidEvents
 			Change.LairId = Id;
 			return Change;
 		}
+
+		inline constexpr FChange EnableBattlePlan(const TCHAR* Name)
+		{
+			FChange Change;
+			Change.Kind = EChange::EnableBattlePlan;
+			Change.BattlePlanName = Name;
+			return Change;
+		}
+
+		inline constexpr FChange DisableBattlePlan(const TCHAR* Name)
+		{
+			FChange Change;
+			Change.Kind = EChange::DisableBattlePlan;
+			Change.BattlePlanName = Name;
+			return Change;
+		}
 	}
 
 	struct FEvent
@@ -218,6 +244,16 @@ namespace SolidEvents
 		constexpr FEvent EnableLair(const TCHAR* InLairId) const
 		{
 			return With(Change::EnableLair(InLairId));
+		}
+
+		constexpr FEvent EnableBattlePlan(const TCHAR* PlanName) const
+		{
+			return With(Change::EnableBattlePlan(PlanName));
+		}
+
+		constexpr FEvent DisableBattlePlan(const TCHAR* PlanName) const
+		{
+			return With(Change::DisableBattlePlan(PlanName));
 		}
 
 		constexpr FEvent Require(const TCHAR* EventId) const

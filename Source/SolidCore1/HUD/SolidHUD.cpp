@@ -320,7 +320,7 @@ namespace SolidHUDPrivate
 		const USolidSquad* Squad,
 		const float StartY)
 	{
-		if (!Canvas)
+		if (!Canvas || !SolidBattlePlanList::IsShown(Squad ? Squad->GetAssignedCount() : 0))
 		{
 			return StartY;
 		}

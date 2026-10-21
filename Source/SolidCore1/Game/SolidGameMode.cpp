@@ -208,6 +208,16 @@ void ASolidGameMode::EnsureCompanyAndSquad()
 		// Bind once. InitializeFromCompany always activates F1 and reselects
 		// Sam and Alex, and the enter-town timer calls this every 0.1s.
 		Squad->InitializeFromCompany(Company);
+		SyncBattlePlans();
+	}
+}
+
+void ASolidGameMode::SyncBattlePlans()
+{
+	USolidGameState* State = GetConfiguration();
+	if (Squad && State)
+	{
+		Squad->SyncEnabledBattlePlans(*State);
 	}
 }
 
@@ -341,20 +351,16 @@ void ASolidGameMode::RestoreTravelSession()
 	if (Squad)
 	{
 		Squad->SetSelectedCompanions(Session.SelectedCompanionIndices);
-		if (Session.AssignedBattlePlanIndices.Num() > 0)
+		if (USolidGameState* State = GetConfiguration())
 		{
-			Squad->SetAssignedBattlePlans(Session.AssignedBattlePlanIndices);
-		}
-		if (Session.bBattlePlanActive)
-		{
-			Squad->SelectAssignedSlot(Session.ActiveBattlePlanSlot);
-		}
-		else
-		{
-			Squad->SetHeldFormation(
-				static_cast<ESolidBattleFormation>(Session.HeldFormation),
-				static_cast<ESolidBattleSpacing>(Session.HeldSpacing));
-			Squad->ClearActiveBattlePlan();
+			SolidEvents::RestoreAssignedBattlePlans(
+				*Squad,
+				*State,
+				Session.AssignedBattlePlanIndices,
+				Session.ActiveBattlePlanSlot,
+				Session.bBattlePlanActive,
+				Session.HeldFormation,
+				Session.HeldSpacing);
 		}
 	}
 }
@@ -767,6 +773,7 @@ void ASolidGameMode::NoteTownEntry(const int32 TownId)
 			GetConfiguration()->MaxSquadSize,
 			CaptainTitleName(SessionCaptain->Title),
 			Result.bRepairBridge ? TEXT("repaired") : TEXT("unchanged"));
+		SyncBattlePlans();
 	}
 
 	if (Result.bRepairBridge)
@@ -824,6 +831,7 @@ void ASolidGameMode::NoteMessageClosed(const TCHAR* MessageId)
 		UE_LOG(LogSolid, Warning, TEXT("Event: message %s closed. Stronghold %s."),
 			MessageId ? MessageId : TEXT(""),
 			Result.bEnterStronghold ? TEXT("entered") : TEXT("unchanged"));
+		SyncBattlePlans();
 	}
 	PresentEventResult(Result);
 }
@@ -852,6 +860,7 @@ void ASolidGameMode::NoteBrokenBridgeRamp(const FVector& Location)
 		if (Result.bFired)
 		{
 			UE_LOG(LogSolid, Warning, TEXT("Event: Reach broken bridge."));
+			SyncBattlePlans();
 		}
 		PresentEventResult(Result);
 		return;
@@ -913,17 +922,35 @@ bool ASolidGameMode::SelectBattlePlanSlot(const int32 SlotIndex)
 		return false;
 	}
 
-	if (const FSolidBattlePlan* Plan = Squad->GetAssignedBattlePlan(SlotIndex))
+	const FSolidBattlePlan* Chosen = Squad->GetAssignedBattlePlan(SlotIndex);
+	if (!Chosen)
 	{
-		if (Plan->Formation == ESolidBattleFormation::Parade)
-		{
-			FireParadeEvents();
-		}
+		return false;
 	}
-
+	const FString ChosenName = Chosen->Name;
+	const bool bParade = Chosen->Formation == ESolidBattleFormation::Parade;
 	if (!Squad->SelectAssignedSlot(SlotIndex))
 	{
 		return false;
+	}
+
+	if (bParade)
+	{
+		FireParadeEvents();
+	}
+
+	const FSolidBattlePlan* Active = Squad->GetActiveBattlePlan();
+	if (!Active || Active->Name != ChosenName)
+	{
+		for (int32 Slot = 0; Slot < SolidBattleFormationSlots::MaxAssignedBattlePlans; ++Slot)
+		{
+			const FSolidBattlePlan* Plan = Squad->GetAssignedBattlePlan(Slot);
+			if (Plan && Plan->Name == ChosenName)
+			{
+				Squad->SelectAssignedSlot(Slot);
+				break;
+			}
+		}
 	}
 
 	UE_LOG(LogSolid, Warning, TEXT("%s"), *Squad->GetActiveBattlePlanDebugString());
@@ -1058,6 +1085,7 @@ bool ASolidGameMode::TeleportSquadToTunnelMouth(const TCHAR EndMarker)
 		if (Result.bFired)
 		{
 			UE_LOG(LogSolid, Warning, TEXT("Event: Driven from the village recorded by the tunnel portal."));
+			SyncBattlePlans();
 		}
 		if (ASolidCharacter* Landed = FindCaptain(GetWorld()))
 		{

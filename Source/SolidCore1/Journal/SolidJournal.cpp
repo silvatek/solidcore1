@@ -74,6 +74,18 @@ FString USolidJournal::Describe(const SolidEvents::FEvent& Event)
 				Part = FString::Printf(TEXT("%s enabled"), LairName);
 			}
 			break;
+		case SolidEvents::EChange::EnableBattlePlan:
+			if (Change.BattlePlanName && Change.BattlePlanName[0])
+			{
+				Part = FString::Printf(TEXT("%s enabled"), Change.BattlePlanName);
+			}
+			break;
+		case SolidEvents::EChange::DisableBattlePlan:
+			if (Change.BattlePlanName && Change.BattlePlanName[0])
+			{
+				Part = FString::Printf(TEXT("%s disabled"), Change.BattlePlanName);
+			}
+			break;
 		case SolidEvents::EChange::ShowMessage:
 			if (const TCHAR* MessageText = SolidMessages::TextFor(Change.MessageId))
 			{

@@ -159,10 +159,10 @@ public:
 	 */
 	USolidCaptain* GetCaptain();
 
-	/** Seed Line / Column / Tight mob / Loose mob / Parade starter plans (idempotent). */
+	/** Seed the catalog once. A catalog that already has plans is left as it is. */
 	void InitializeDefaultBattlePlans();
 
-	/** True when the catalog is those starter plans and no others, in that order. */
+	/** True when the catalog is those plans and no others, in that order. */
 	bool HasOnlyDefaultBattlePlans() const;
 
 	/** Seed Viking. The captain stays on Viking (idempotent). */
@@ -180,6 +180,9 @@ public:
 	int32 GetBattlePlanCount() const { return AllBattlePlans.Num(); }
 
 	const FSolidBattlePlan* GetBattlePlan(int32 Index) const;
+
+	/** Catalog index of a plan name, or INDEX_NONE. */
+	int32 FindBattlePlanIndexByName(const FString& Name) const;
 
 	/** Append a plan to the Company catalog; returns its index. */
 	int32 AddBattlePlan(const FSolidBattlePlan& Plan);

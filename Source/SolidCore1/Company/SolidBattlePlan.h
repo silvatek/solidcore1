@@ -235,6 +235,16 @@ namespace SolidBattleFormationSlots
 	}
 }
 
+/** The battle-plan list under the tech readout. */
+namespace SolidBattlePlanList
+{
+	/** Hidden while the squad has fewer than two plans on keys. */
+	inline bool IsShown(const int32 AssignedCount)
+	{
+		return AssignedCount >= 2;
+	}
+}
+
 /**
  * Gamepad chords for the eight assigned slots.
  * The face order is bottom, right, left, top: A B X Y, and Cross Circle Square Triangle.

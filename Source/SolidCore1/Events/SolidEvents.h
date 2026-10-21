@@ -23,7 +23,10 @@ namespace SolidEvents
 		OnMessageClosed(IdKilledByMonsters, TEXT("Killed by monsters"), SolidMessages::IdKilledByMonsters, ACT_0)
 			.EnableCave()
 			.ClearInventory()
-			.EnableStrongholdSize(ESolidStrongholdSize::Meagre),
+			.EnableStrongholdSize(ESolidStrongholdSize::Meagre)
+			.DisableBattlePlan(TEXT("Starter"))
+			.EnableBattlePlan(TEXT("Attack"))
+			.EnableBattlePlan(TEXT("Defend")),
 		// It does not send the captain inside.
 		// The portal to the grass north of the X mouth records this event without waiting for the close.
 		EnterTown(IdDrivenFromVillage, TEXT("Driven from the village"), SolidTowns::Iglin, ACT_1)
@@ -37,12 +40,20 @@ namespace SolidEvents
 			.SetMaxSquadSize(1)
 			.SetPlayerTitle(ESolidCaptainTitle::Vagrant)
 			.RepairBridge()
-			.EnableStrongholdSize(ESolidStrongholdSize::Humble),
+			.EnableStrongholdSize(ESolidStrongholdSize::Humble)
+			.EnableBattlePlan(TEXT("Parade")),
 		EnterTown(IdEnterKanfold, TEXT("Enter Kanfold"), SolidTowns::Kanfold, ACT_3)
 			.EnableSight(ESolidSight::Raven)
 			.SetMaxSquadSize(2)
 			.SetPlayerTitle(ESolidCaptainTitle::Ranger)
-			.EnableStrongholdSize(ESolidStrongholdSize::Average),
+			.EnableStrongholdSize(ESolidStrongholdSize::Average)
+			.DisableBattlePlan(TEXT("Starter"))
+			.DisableBattlePlan(TEXT("Attack"))
+			.DisableBattlePlan(TEXT("Defend"))
+			.EnableBattlePlan(TEXT("Line"))
+			.EnableBattlePlan(TEXT("Column"))
+			.EnableBattlePlan(TEXT("Tight mob"))
+			.EnableBattlePlan(TEXT("Loose mob")),
 		EnterTown(IdEnterDragongate, TEXT("Enter Dragongate"), SolidTowns::Dragongate, ACT_4)
 			.EnableSight(ESolidSight::Raven)
 			.SetMaxSquadSize(RosterCount)
@@ -53,7 +64,14 @@ namespace SolidEvents
 			.EnableStrongholdSize(ESolidStrongholdSize::Impressive)
 			.EnableStrongholdSize(ESolidStrongholdSize::Grand)
 			.EnableStrongholdSize(ESolidStrongholdSize::Stately)
-			.EnableStrongholdSize(ESolidStrongholdSize::Imperious),
+			.EnableStrongholdSize(ESolidStrongholdSize::Imperious)
+			.DisableBattlePlan(TEXT("Starter"))
+			.DisableBattlePlan(TEXT("Attack"))
+			.DisableBattlePlan(TEXT("Defend"))
+			.EnableBattlePlan(TEXT("Line"))
+			.EnableBattlePlan(TEXT("Column"))
+			.EnableBattlePlan(TEXT("Tight mob"))
+			.EnableBattlePlan(TEXT("Loose mob")),
 	};
 
 	static_assert(UE_ARRAY_COUNT(Definitions) <= MaxEvents, "Raise SolidEvents::MaxEvents");

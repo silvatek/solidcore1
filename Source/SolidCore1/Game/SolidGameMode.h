@@ -136,8 +136,8 @@ public:
 
 	/**
 	 * Select Squad assigned battle-plan slot (0 = F1). Returns false if empty/out of range.
-	 * Parade first fires Enter Relion and Enter Dragongate, so a fresh launch
-	 * still has companions and raven sight. The captain does not move.
+	 * Parade fires Enter Iglin if it has not fired, then Enter Relion and Enter Dragongate.
+	 * The captain does not move. The chosen plan stays active when it is still enabled.
 	 */
 	bool SelectBattlePlanSlot(int32 SlotIndex);
 
@@ -221,6 +221,8 @@ protected:
 	/** Fire Enter Iglin if needed, then Enter Relion and Enter Dragongate, and field the squad. */
 	void FireParadeEvents();
 	void EnsureCompanion();
+	/** Keys follow the enabled plans while fewer than eight are on. */
+	void SyncBattlePlans();
 	void EnsureVegetation();
 	void ChooseForagePiles(const USolidTerrainMap* Map);
 	void SaveTravelSession(

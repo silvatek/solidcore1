@@ -8,6 +8,22 @@ namespace
 	void AddDefaultBattlePlans(TArray<FSolidBattlePlan>& Plans)
 	{
 		Plans.Add({
+			TEXT("Starter"),
+			ESolidBattleFormation::Line,
+			ESolidBattleSpacing::Standard});
+		Plans.Add({
+			TEXT("Attack"),
+			ESolidBattleFormation::Line,
+			ESolidBattleSpacing::Standard});
+		Plans.Add({
+			TEXT("Defend"),
+			ESolidBattleFormation::Line,
+			ESolidBattleSpacing::Standard});
+		Plans.Add({
+			TEXT("Parade"),
+			ESolidBattleFormation::Parade,
+			ESolidBattleSpacing::Standard});
+		Plans.Add({
 			TEXT("Line"),
 			ESolidBattleFormation::Line,
 			ESolidBattleSpacing::Standard});
@@ -23,10 +39,6 @@ namespace
 			TEXT("Loose mob"),
 			ESolidBattleFormation::Mob,
 			ESolidBattleSpacing::Wide});
-		Plans.Add({
-			TEXT("Parade"),
-			ESolidBattleFormation::Parade,
-			ESolidBattleSpacing::Standard});
 	}
 
 	bool SamePlan(const FSolidBattlePlan& Have, const FSolidBattlePlan& Want)
@@ -77,6 +89,18 @@ bool USolidCompany::HasOnlyDefaultBattlePlans() const
 const FSolidBattlePlan* USolidCompany::GetBattlePlan(const int32 Index) const
 {
 	return AllBattlePlans.IsValidIndex(Index) ? &AllBattlePlans[Index] : nullptr;
+}
+
+int32 USolidCompany::FindBattlePlanIndexByName(const FString& Name) const
+{
+	for (int32 Index = 0; Index < AllBattlePlans.Num(); ++Index)
+	{
+		if (AllBattlePlans[Index].Name == Name)
+		{
+			return Index;
+		}
+	}
+	return INDEX_NONE;
 }
 
 int32 USolidCompany::AddBattlePlan(const FSolidBattlePlan& Plan)

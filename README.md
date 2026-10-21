@@ -346,7 +346,7 @@ Source/
       SolidCharacterStage.*              # Plain room for the character editor
     Game/
       SolidGameMode.*
-      SolidGameState.*                   # FGameState: squad, sight, journal, inventory, and previous strongholds
+      SolidGameState.*                   # USolidGameState: journal, inventory, events, previous strongholds
       SolidGameInstance.*                # Company (and its stronghold), travel session, fog trail, and world-time clock
       SolidWorldTime.h                   # Journal date and clock
       SolidSessionSave.h                 # How many play sessions have started

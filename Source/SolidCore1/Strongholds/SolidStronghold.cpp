@@ -307,7 +307,7 @@ bool SolidStrongholdTransition::IsBuilt(const FSolidStronghold& Stronghold)
 }
 
 SolidStrongholdTransition::EOffer SolidStrongholdTransition::Consider(
-	const FGameState& State,
+	const USolidGameState& State,
 	const FSolidStronghold* Active,
 	TArray<FSolidStrongholdChoice>& OutChoices)
 {
@@ -442,7 +442,7 @@ bool SolidStrongholdTransition::PlaceOnFloor(
 
 bool SolidStrongholdTransition::Commit(
 	USolidCompany& Company,
-	FGameState& State,
+	USolidGameState& State,
 	const FIntPoint SiteCell,
 	const ESolidStrongholdSize Size,
 	const ESolidStrongholdType Type)
@@ -480,7 +480,7 @@ bool SolidStrongholdTransition::Commit(
 }
 
 bool SolidStrongholdTransition::CompanyChestOpen(
-	const FGameState& State,
+	const USolidGameState& State,
 	const FSolidStronghold* Active,
 	const bool bInStronghold)
 {

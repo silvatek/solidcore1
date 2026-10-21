@@ -327,7 +327,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidStrongholdTypeChoiceTest::RunTest(const FString& Parameters)
 {
-	FGameState Locked;
+	USolidGameState& Locked = *NewObject<USolidGameState>();
 	USolidCompany* LockedCompany = NewObject<USolidCompany>();
 	LockedCompany->InitializeStartingStronghold();
 	Locked.bStrongholdSiteRestrictions = true;
@@ -353,7 +353,7 @@ bool FSolidStrongholdTypeChoiceTest::RunTest(const FString& Parameters)
 		TEXT("Stately tower can be built"),
 		SolidStronghold::TypeOf(ESolidStrongholdType::Tower).Supported(ESolidStrongholdSize::Stately));
 
-	FGameState State;
+	USolidGameState& State = *NewObject<USolidGameState>();
 	USolidCompany* Company = NewObject<USolidCompany>();
 	Company->InitializeStartingStronghold();
 	State.bStrongholdSiteRestrictions = true;

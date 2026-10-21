@@ -254,7 +254,7 @@ bool FSolidPortalTunnelMouthTest::RunTest(const FString& Parameters)
 		Map->SampleLocationId(Landing.X, Landing.Y, GameMin, GameMax),
 		INDEX_NONE);
 
-	FGameState State;
+	USolidGameState& State = *NewObject<USolidGameState>();
 	const int32 KilledIndex = SolidEvents::FindIndexById(SolidEvents::IdKilledByMonsters);
 	const SolidEvents::FResult Recorded = SolidEvents::MarkComplete(State, SolidEvents::IdDrivenFromVillage);
 	TestTrue(TEXT("the portal records Driven from the village"), Recorded.bFired);
@@ -299,7 +299,7 @@ bool FSolidPortalTunnelMouthTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("fired once"), State.FiredOrder.Num(), FiredCount);
 	TestEqual(TEXT("one journal line"), State.Journal.Num(), JournalCount);
 
-	FGameState Empty;
+	USolidGameState& Empty = *NewObject<USolidGameState>();
 	TestFalse(TEXT("an unknown id does nothing"), SolidEvents::MarkComplete(Empty, TEXT("missing")).bFired);
 	TestEqual(TEXT("unknown id leaves the journal empty"), Empty.FiredOrder.Num(), 0);
 	return true;

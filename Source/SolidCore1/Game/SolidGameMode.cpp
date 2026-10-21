@@ -1,4 +1,4 @@
-#include "SolidGameMode.h"
+﻿#include "SolidGameMode.h"
 #include "SolidBuildId.h"
 #include "SolidCharacter.h"
 #include "SolidContentLookup.h"
@@ -168,6 +168,49 @@ USolidCompany* ASolidGameMode::GetCompany() const
 	return nullptr;
 }
 
+USolidGameState* ASolidGameMode::GetConfiguration() const
+{
+	if (USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>())
+	{
+		return Instance->GetConfiguration();
+	}
+	// Unit tests construct the mode with the instance as Outer (no World yet).
+	if (USolidGameInstance* Instance = Cast<USolidGameInstance>(GetOuter()))
+	{
+		return Instance->GetConfiguration();
+	}
+	return nullptr;
+}
+
+int32 ASolidGameMode::GetMaxSquadSize() const
+{
+	const USolidGameState* State = GetConfiguration();
+	return State ? State->MaxSquadSize : 0;
+}
+
+bool ASolidGameMode::MoveCarriedItem(
+	const SolidInventory::FSlotHit& From,
+	const SolidInventory::FSlotHit& To,
+	const bool bChestOpen)
+{
+	USolidGameState* State = GetConfiguration();
+	if (!State)
+	{
+		return false;
+	}
+	return SolidInventory::Move(
+		bChestOpen ? &State->CaveChest : nullptr,
+		State->Inventory,
+		From,
+		To);
+}
+
+bool ASolidGameMode::CraftFromInventory()
+{
+	USolidGameState* State = GetConfiguration();
+	return State && SolidInventory::Craft(State->Inventory);
+}
+
 void ASolidGameMode::EnsureCompanyAndSquad()
 {
 	USolidCompany* Company = GetCompany();
@@ -214,7 +257,7 @@ void ASolidGameMode::BeginPlay()
 	FinishTravelArrival();
 	EnsureTerrainStreamer();
 
-	// Player pawn / terrain may not be ready on the first PIE frame — keep sampling.
+	// Player pawn / terrain may not be ready on the first PIE frame â€” keep sampling.
 	if (UWorld* World = GetWorld())
 	{
 		World->GetTimerManager().SetTimer(
@@ -248,7 +291,8 @@ bool ASolidGameMode::IsInLair() const
 
 bool ASolidGameMode::AreTunnelsOpen() const
 {
-	return SolidLair::TunnelsOpen(Configuration);
+	const USolidGameState* State = GetConfiguration();
+	return State && SolidLair::TunnelsOpen(*State);
 }
 
 void ASolidGameMode::SaveTravelSession(
@@ -266,7 +310,6 @@ void ASolidGameMode::SaveTravelSession(
 	}
 
 	FSolidTravelSession Session;
-	Session.Configuration = Configuration;
 	Session.bInStronghold = bInStronghold;
 	Session.bInLair = bInLair;
 	Session.bReturnToLairMouth = bReturnToLairMouth;
@@ -316,7 +359,6 @@ void ASolidGameMode::RestoreTravelSession()
 	}
 
 	const FSolidTravelSession& Session = Instance->GetSession();
-	Configuration = Session.Configuration;
 	EnsureCompanyAndSquad();
 	if (Squad)
 	{
@@ -360,13 +402,13 @@ void ASolidGameMode::ApplyCaptainFromSession()
 	}
 
 	const FSolidTravelSession& Session = Instance->GetSession();
-	if (SolidEvents::IsSightEnabled(Configuration, Session.Sight))
+	if (SolidEvents::IsSightEnabled(*GetConfiguration(), Session.Sight))
 	{
 		Captain->SetSight(Session.Sight);
 	}
-	if (Configuration.CaptainTitle)
+	if (GetConfiguration()->CaptainTitle)
 	{
-		Captain->SetCharacterDisplayName(Configuration.CaptainTitle);
+		Captain->SetCharacterDisplayName(GetConfiguration()->CaptainTitle);
 	}
 	bCaptainTravelApplied = true;
 }
@@ -461,7 +503,7 @@ void ASolidGameMode::BeginStrongholdInterior()
 		StrongholdInterior = Cast<ASolidStrongholdInterior>(Spawned);
 		if (StrongholdInterior)
 		{
-			Stronghold->ConfigureInterior(StrongholdInterior, Configuration.Furnishings);
+			Stronghold->ConfigureInterior(StrongholdInterior, GetConfiguration()->Furnishings);
 		}
 	}
 
@@ -590,7 +632,7 @@ void ASolidGameMode::TravelToLair(const TCHAR EndMarker)
 	}
 	const TCHAR End = FChar::ToUpper(EndMarker);
 	const SolidWorldTime::FStamp When = WorldStamp();
-	SolidEvents::RememberLair(Configuration, When, /*bEnter=*/true);
+	SolidEvents::RememberLair(*GetConfiguration(), When, /*bEnter=*/true);
 	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Enter Iglin tunnels"), *SolidWorldTime::Format(When));
 	SaveTravelSession(
 		/*bInStronghold=*/false,
@@ -609,7 +651,7 @@ void ASolidGameMode::TravelFromLair(const TCHAR EndMarker)
 	}
 	const TCHAR End = SolidLair::IsEndMarker(EndMarker) ? FChar::ToUpper(EndMarker) : USolidWorldMap::XMarker;
 	const SolidWorldTime::FStamp When = WorldStamp();
-	SolidEvents::RememberLair(Configuration, When, /*bEnter=*/false);
+	SolidEvents::RememberLair(*GetConfiguration(), When, /*bEnter=*/false);
 	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Exit Iglin tunnels"), *SolidWorldTime::Format(When));
 	SaveTravelSession(
 		/*bInStronghold=*/false,
@@ -629,13 +671,13 @@ void ASolidGameMode::EnterStronghold()
 		return;
 	}
 	// The active stronghold accepts the click once strongholds are open.
-	if (!Stronghold->AcceptsEnter(Configuration, Stronghold, Stronghold->Cell))
+	if (!Stronghold->AcceptsEnter(*GetConfiguration(), Stronghold, Stronghold->Cell))
 	{
 		return;
 	}
 
 	const SolidWorldTime::FStamp When = WorldStamp();
-	SolidEvents::RememberStronghold(Configuration, When, /*bEnter=*/true);
+	SolidEvents::RememberStronghold(*GetConfiguration(), When, /*bEnter=*/true);
 	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  %s"), *SolidWorldTime::Format(When), SolidStronghold::EnterLabel);
 	SaveTravelSession(/*bInStronghold=*/true);
 	UGameplayStatics::OpenLevel(World, FName(SolidTravel::WorldMapPath), true, SolidTravel::EnterStrongholdOptions());
@@ -652,7 +694,7 @@ bool ASolidGameMode::EnterChosenStronghold(
 		return false;
 	}
 	USolidCompany* Company = GetCompany();
-	if (!Company || !SolidStrongholdTransition::Commit(*Company, Configuration, Cell, Size, Type))
+	if (!Company || !SolidStrongholdTransition::Commit(*Company, *GetConfiguration(), Cell, Size, Type))
 	{
 		return false;
 	}
@@ -671,7 +713,7 @@ void ASolidGameMode::ExitStronghold()
 
 	// Companions spawn again beside him once this world is the open world, facing the same way.
 	const SolidWorldTime::FStamp When = WorldStamp();
-	SolidEvents::RememberStronghold(Configuration, When, /*bEnter=*/false);
+	SolidEvents::RememberStronghold(*GetConfiguration(), When, /*bEnter=*/false);
 	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  %s"), *SolidWorldTime::Format(When), SolidStronghold::ExitLabel);
 	SaveTravelSession(
 		/*bInStronghold=*/false,
@@ -729,7 +771,7 @@ void ASolidGameMode::RefreshEvents()
 
 void ASolidGameMode::NoteTownEntry(const int32 TownId)
 {
-	const SolidEvents::FResult Result = SolidEvents::NotifyOccupiedTown(Configuration, TownId, WorldStamp());
+	const SolidEvents::FResult Result = SolidEvents::NotifyOccupiedTown(*GetConfiguration(), TownId, WorldStamp());
 	if (Result.bFired)
 	{
 		UE_LOG(LogSolid, Warning,
@@ -737,8 +779,8 @@ void ASolidGameMode::NoteTownEntry(const int32 TownId)
 			TownId,
 			*SolidTowns::NameFor(TownId),
 			Result.bSetSight ? SolidSight::Label(Result.Sight) : TEXT("unchanged"),
-			Configuration.MaxSquadSize,
-			Configuration.CaptainTitle ? Configuration.CaptainTitle : TEXT(""),
+			GetConfiguration()->MaxSquadSize,
+			GetConfiguration()->CaptainTitle ? GetConfiguration()->CaptainTitle : TEXT(""),
 			Result.bRepairBridge ? TEXT("repaired") : TEXT("unchanged"));
 	}
 
@@ -785,7 +827,7 @@ void ASolidGameMode::PresentEventResult(const SolidEvents::FResult& Result)
 
 void ASolidGameMode::NoteMessageClosed(const TCHAR* MessageId)
 {
-	const SolidEvents::FResult Result = SolidEvents::NotifyMessageClosed(Configuration, MessageId, WorldStamp());
+	const SolidEvents::FResult Result = SolidEvents::NotifyMessageClosed(*GetConfiguration(), MessageId, WorldStamp());
 	if (Result.bFired)
 	{
 		UE_LOG(LogSolid, Warning, TEXT("Event: message %s closed. Stronghold %s."),
@@ -809,7 +851,7 @@ void ASolidGameMode::NoteBrokenBridgeRamp(const FVector& Location)
 			continue;
 		}
 
-		const SolidEvents::FResult Result = SolidEvents::NotifyReachBrokenBridge(Configuration, WorldStamp());
+		const SolidEvents::FResult Result = SolidEvents::NotifyReachBrokenBridge(*GetConfiguration(), WorldStamp());
 		if (Result.bFired)
 		{
 			UE_LOG(LogSolid, Warning, TEXT("Event: Reach broken bridge."));
@@ -821,7 +863,7 @@ void ASolidGameMode::NoteBrokenBridgeRamp(const FVector& Location)
 
 void ASolidGameMode::FireParadeEvents()
 {
-	const int32 Stay = Configuration.OccupiedTown;
+	const int32 Stay = GetConfiguration()->OccupiedTown;
 	auto Visit = [this](const int32 TownId)
 	{
 		if (TownId == INDEX_NONE)
@@ -829,22 +871,23 @@ void ASolidGameMode::FireParadeEvents()
 			return;
 		}
 		// A repeat visit to the town the captain is already on does not fire.
-		if (Configuration.OccupiedTown == TownId)
+		if (GetConfiguration()->OccupiedTown == TownId)
 		{
-			Configuration.OccupiedTown = INDEX_NONE;
+			GetConfiguration()->OccupiedTown = INDEX_NONE;
 		}
 		NoteTownEntry(TownId);
 	};
 	Visit(TownIdForEvent(TEXT("Enter Iglin")));
 	Visit(TownIdForEvent(TEXT("Enter Relion")));
 	Visit(TownIdForEvent(TEXT("Enter Dragongate")));
-	Configuration.OccupiedTown = Stay;
+	GetConfiguration()->OccupiedTown = Stay;
 	EnsureCompanion();
 }
 
 bool ASolidGameMode::IsSightEnabled(const ESolidSight Sight) const
 {
-	return SolidEvents::IsSightEnabled(Configuration, Sight);
+	const USolidGameState* State = GetConfiguration();
+	return State && SolidEvents::IsSightEnabled(*State, Sight);
 }
 
 void ASolidGameMode::RepairBrokenBridges()
@@ -1004,7 +1047,7 @@ bool ASolidGameMode::TeleportSquadToTunnelMouth(const TCHAR EndMarker)
 	Streamer->RelocateCompanionsByDelta(Delta);
 
 	const SolidEvents::FResult Result = SolidEvents::MarkComplete(
-		Configuration, SolidEvents::IdDrivenFromVillage, WorldStamp());
+		*GetConfiguration(), SolidEvents::IdDrivenFromVillage, WorldStamp());
 	if (Result.bFired)
 	{
 		UE_LOG(LogSolid, Warning, TEXT("Event: Driven from the village recorded by the tunnel portal."));
@@ -1061,7 +1104,7 @@ ASolidCompanionCharacter* ASolidGameMode::SpawnCompanion(
 	const ESolidBattleSpacing Spacing = Squad
 		? Squad->GetActiveSpacing()
 		: ESolidBattleSpacing::Standard;
-	const int32 FormationCount = FMath::Max(SolidEvents::SquadCount(Configuration), 1);
+	const int32 FormationCount = FMath::Max(SolidEvents::SquadCount(*GetConfiguration()), 1);
 	const FVector2D Slot = SolidBattleFormationSlots::SlotOffset(
 		Formation, SquadSlotIndex, FormationCount, Spacing);
 
@@ -1179,7 +1222,7 @@ void ASolidGameMode::EnsureCompanion()
 		return !IsValid(Companion);
 	});
 
-	const int32 Wanted = SolidEvents::SquadCount(Configuration);
+	const int32 Wanted = SolidEvents::SquadCount(*GetConfiguration());
 	TArray<FSolidCompanion> Fielded;
 	if (Squad)
 	{
@@ -1364,7 +1407,7 @@ void ASolidGameMode::SeedForagePiles()
 
 	TArray<int32> Ready;
 	SolidForage::CollectReadyToSeed(
-		Map->GetPoints(), ForageChoices, Configuration.TakenForagePiles, SeededForage, Ready);
+		Map->GetPoints(), ForageChoices, GetConfiguration()->TakenForagePiles, SeededForage, Ready);
 	if (Ready.Num() == 0)
 	{
 		return;
@@ -1413,7 +1456,7 @@ bool ASolidGameMode::TakeForagePile(ASolidForagePile* Pile)
 	{
 		return false;
 	}
-	if (!SolidForage::TakePile(Configuration, Index, ForageChoices[Index].ItemId))
+	if (!SolidForage::TakePile(*GetConfiguration(), Index, ForageChoices[Index].ItemId))
 	{
 		return false;
 	}
@@ -1708,7 +1751,7 @@ void ASolidGameMode::EnsureVegetation()
 			Owned.Add(Active);
 		}
 	}
-	for (const TUniquePtr<FSolidStronghold>& Previous : Configuration.PreviousStrongholds)
+	for (const TUniquePtr<FSolidStronghold>& Previous : GetConfiguration()->PreviousStrongholds)
 	{
 		if (Previous)
 		{
@@ -1765,7 +1808,7 @@ void ASolidGameMode::EnsureVegetation()
 					continue;
 				}
 				SolidBridge::FBridge Spec = Bridge;
-				if (Configuration.bIglinBridgeRepaired)
+				if (GetConfiguration()->bIglinBridgeRepaired)
 				{
 					Spec.bBroken = false;
 				}

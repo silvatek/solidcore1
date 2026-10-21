@@ -343,7 +343,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 {
-	const FGameState Fresh;
+	const USolidGameState& Fresh = *NewObject<USolidGameState>();
 	USolidCompany* Company = NewObject<USolidCompany>();
 	Company->InitializeStartingStronghold();
 	const FSolidStronghold* StartingCave = Company->GetStronghold();
@@ -464,26 +464,25 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("that door uses the site cell"), SiteDoor.Cell, FIntPoint(35, 15));
 	}
 
-	FGameState Moved;
-	const FIntPoint MovedCell(4, 6);
-	Moved.MaxStrongholdSize = ESolidStrongholdSize::Average;
-
 	USolidGameInstance* Instance = NewObject<USolidGameInstance>();
 	TestNotNull(TEXT("game instance"), Instance);
 	if (!Instance)
 	{
 		return false;
 	}
+	USolidGameState* Moved = Instance->GetConfiguration();
+	const FIntPoint MovedCell(4, 6);
+	Moved->MaxStrongholdSize = ESolidStrongholdSize::Average;
+
 	USolidCompany* TripCompany = Instance->GetCompany();
 	TripCompany->SetStronghold(SolidStronghold::Make(
 		ESolidStrongholdType::Tower,
 		ESolidStrongholdSize::Average,
 		MovedCell,
 		SolidStronghold::WorldXY(MovedCell)));
-	FSolidTravelSession Session;
-	Session.Configuration = Moved;
-	Instance->Capture(Session);
-	const FGameState& Carried = Instance->GetSession().Configuration;
+	Instance->Capture(FSolidTravelSession());
+	const USolidGameState* Carried = Instance->GetConfiguration();
+	TestTrue(TEXT("the trip is the same play state"), Carried == Moved);
 	const FSolidStronghold* CarriedStronghold = TripCompany->GetStronghold();
 	TestNotNull(TEXT("the trip keeps a stronghold on the company"), CarriedStronghold);
 	TestEqual(
@@ -498,13 +497,13 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the trip keeps the row"), CarriedStronghold->Cell.Y, 6);
 	TestTrue(
 		TEXT("the trip keeps the unlocked size"),
-		SolidEvents::IsStrongholdSizeUnlocked(Carried, ESolidStrongholdSize::Average));
+		SolidEvents::IsStrongholdSizeUnlocked(*Carried, ESolidStrongholdSize::Average));
 	TestTrue(
 		TEXT("the trip keeps the sizes below that"),
-		SolidEvents::IsStrongholdSizeUnlocked(Carried, ESolidStrongholdSize::Humble));
+		SolidEvents::IsStrongholdSizeUnlocked(*Carried, ESolidStrongholdSize::Humble));
 	TestFalse(
 		TEXT("the trip does not unlock a larger size"),
-		SolidEvents::IsStrongholdSizeUnlocked(Carried, ESolidStrongholdSize::Impressive));
+		SolidEvents::IsStrongholdSizeUnlocked(*Carried, ESolidStrongholdSize::Impressive));
 	return true;
 }
 

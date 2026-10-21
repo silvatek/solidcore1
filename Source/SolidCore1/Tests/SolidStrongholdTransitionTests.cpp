@@ -13,7 +13,7 @@
 
 namespace
 {
-	void Unlock(FGameState& State, const ESolidStrongholdSize Size)
+	void Unlock(USolidGameState& State, const ESolidStrongholdSize Size)
 	{
 		if (static_cast<int32>(Size) > static_cast<int32>(State.MaxStrongholdSize))
 		{
@@ -94,7 +94,7 @@ namespace
 		return true;
 	}
 
-	int32 OfferedCount(const FGameState& State, const FSolidStronghold* Active)
+	int32 OfferedCount(const USolidGameState& State, const FSolidStronghold* Active)
 	{
 		int32 Count = 0;
 		if (!Active)
@@ -181,7 +181,7 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 			SolidStrongholdTransition::IsBuilt(FSolidStronghold{ ESolidStrongholdType::Fortress, Size }));
 	}
 
-	FGameState Open;
+	USolidGameState& Open = *NewObject<USolidGameState>();
 	USolidCompany* OpenCompany = NewObject<USolidCompany>();
 	OpenCompany->InitializeStartingStronghold();
 	TestFalse(TEXT("site restrictions start off"), Open.bStrongholdSiteRestrictions);
@@ -194,15 +194,14 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 		TEXT("Meagre Dungeon is a row"),
 		SolidStrongholdTransition::Offers(OpenChoices, ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon));
 	TestEqual(TEXT("the open list is that one row"), OpenChoices.Num(), 1);
-	FGameState Copied = Open;
-	TestFalse(TEXT("a copy keeps site restrictions off"), Copied.bStrongholdSiteRestrictions);
+	TestFalse(TEXT("site restrictions stay off on the same object"), Open.bStrongholdSiteRestrictions);
 	const FIntPoint MeagreSite(12, 12);
 	TestTrue(
 		TEXT("Meagre Dungeon can be chosen"),
 		SolidStrongholdTransition::Commit(*OpenCompany, Open, MeagreSite, ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon));
 	TestEqual(TEXT("the company is on that site"), OpenCompany->GetStronghold()->Cell, MeagreSite);
 
-	FGameState State;
+	USolidGameState& State = *NewObject<USolidGameState>();
 	USolidCompany* Company = NewObject<USolidCompany>();
 	Company->InitializeStartingStronghold();
 	State.bStrongholdSiteRestrictions = true;
@@ -316,7 +315,7 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 				continue;
 			}
 			++Sites;
-			FGameState Fresh;
+			USolidGameState& Fresh = *NewObject<USolidGameState>();
 			USolidCompany* FreshCompany = NewObject<USolidCompany>();
 			FreshCompany->InitializeStartingStronghold();
 			Fresh.bStrongholdSiteRestrictions = true;
@@ -368,7 +367,7 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 
 	USolidCompany* Company = NewObject<USolidCompany>();
 	Company->InitializeStartingStronghold();
-	FGameState State;
+	USolidGameState& State = *NewObject<USolidGameState>();
 	State.bStrongholdSiteRestrictions = true;
 	State.bStrongholdsEnabled = false;
 	SolidStorage::WriteSlot(State.CaveChest, SolidStorage::Index(0, 0), SolidItemType::IdRustySword, 4);

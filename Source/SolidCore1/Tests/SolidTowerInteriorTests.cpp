@@ -130,14 +130,14 @@ bool FSolidTowerTravelTest::RunTest(const FString& Parameters)
 		TEXT("that click keeps the cell"),
 		SolidLair::AllowPassage(TowerEnter, false).StrongholdCell.X,
 		static_cast<int32>(16));
-	FGameState Closed;
+	USolidGameState& Closed = *NewObject<USolidGameState>();
 	USolidCompany* ClosedCompany = NewObject<USolidCompany>();
 	ClosedCompany->InitializeStartingStronghold();
 	const FSolidStronghold* ClosedCave = ClosedCompany->GetStronghold();
 	TestFalse(
 		TEXT("a shut stronghold refuses the cave door"),
 		ClosedCave->AcceptsEnter(Closed, ClosedCave, ClosedCave->Cell));
-	FGameState TowerState;
+	USolidGameState& TowerState = *NewObject<USolidGameState>();
 	USolidCompany* TowerCompany = NewObject<USolidCompany>();
 	TowerCompany->SetStronghold(SolidStronghold::Make(
 		ESolidStrongholdType::Tower,

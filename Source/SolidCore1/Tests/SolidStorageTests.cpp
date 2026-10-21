@@ -93,7 +93,7 @@ bool FSolidStorageCaveChestTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(ESolidItemKind::Weapon));
 	TestEqual(TEXT("the page names the sword"), FString(SolidItemType::NameFor(Sword->Id)), FString(Sword->Name));
 
-	const FGameState State;
+	const USolidGameState& State = *NewObject<USolidGameState>();
 	const SolidStorage::FContainer& Chest = State.CaveChest;
 	TestEqual(TEXT("the chest cell count is the grid"), SolidStorage::Count, SolidStorage::Columns * SolidStorage::Rows);
 	TestEqual(

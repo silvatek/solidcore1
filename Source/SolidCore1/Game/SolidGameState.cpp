@@ -1,50 +1,9 @@
 #include "SolidGameState.h"
 #include "Lairs/SolidLair.h"
 
-FGameState::FGameState(const FGameState& Other)
-{
-	*this = Other;
-}
-
-FGameState& FGameState::operator=(const FGameState& Other)
-{
-	if (this == &Other)
-	{
-		return *this;
-	}
-
-	MaxSquadSize = Other.MaxSquadSize;
-	CaptainTitle = Other.CaptainTitle;
-	bTrueSightEnabled = Other.bTrueSightEnabled;
-	bRavenSightEnabled = Other.bRavenSightEnabled;
-	bIglinBridgeRepaired = Other.bIglinBridgeRepaired;
-	bStrongholdsEnabled = Other.bStrongholdsEnabled;
-	EnabledLairs = Other.EnabledLairs;
-	OccupiedTown = Other.OccupiedTown;
-	for (int32 Index = 0; Index < SolidEvents::MaxEvents; ++Index)
-	{
-		bFired[Index] = Other.bFired[Index];
-	}
-	FiredOrder = Other.FiredOrder;
-	Journal = Other.Journal;
-	Inventory = Other.Inventory;
-	TakenForagePiles = Other.TakenForagePiles;
-	CaveChest = Other.CaveChest;
-	MaxStrongholdSize = Other.MaxStrongholdSize;
-	bStrongholdSiteRestrictions = Other.bStrongholdSiteRestrictions;
-	PreviousStrongholds.Reset();
-	PreviousStrongholds.Reserve(Other.PreviousStrongholds.Num());
-	for (const TUniquePtr<FSolidStronghold>& Previous : Other.PreviousStrongholds)
-	{
-		PreviousStrongholds.Add(Previous ? Previous->Clone() : nullptr);
-	}
-	Furnishings = Other.Furnishings;
-	return *this;
-}
-
 namespace
 {
-	bool RequirementsMet(const FGameState& State, const SolidEvents::FEvent& Event)
+	bool RequirementsMet(const USolidGameState& State, const SolidEvents::FEvent& Event)
 	{
 		const int32 Count = FMath::Min(Event.RequireCount, SolidEvents::MaxRequiresPerEvent);
 		for (int32 Index = 0; Index < Count; ++Index)
@@ -59,7 +18,7 @@ namespace
 	}
 
 	bool TryFireEvent(
-		FGameState& State,
+		USolidGameState& State,
 		const int32 Index,
 		const SolidWorldTime::FStamp& When,
 		SolidEvents::FResult& Result,
@@ -94,7 +53,7 @@ namespace
 namespace SolidEvents
 {
 
-void ApplyChange(FGameState& State, const FChange& Change, FResult& Result)
+void ApplyChange(USolidGameState& State, const FChange& Change, FResult& Result)
 {
 	switch (Change.Kind)
 	{
@@ -161,12 +120,12 @@ void ApplyChange(FGameState& State, const FChange& Change, FResult& Result)
 	}
 }
 
-int32 SquadCount(const FGameState& State)
+int32 SquadCount(const USolidGameState& State)
 {
 	return FMath::Clamp(State.MaxSquadSize, 0, RosterCount);
 }
 
-bool IsSightEnabled(const FGameState& State, const ESolidSight Sight)
+bool IsSightEnabled(const USolidGameState& State, const ESolidSight Sight)
 {
 	switch (Sight)
 	{
@@ -180,7 +139,7 @@ bool IsSightEnabled(const FGameState& State, const ESolidSight Sight)
 }
 
 void Remember(
-	FGameState& State,
+	USolidGameState& State,
 	const SolidWorldTime::FStamp& When,
 	const SolidJournal::EJournalType Type,
 	const FString& Text,
@@ -202,7 +161,7 @@ void Remember(
 }
 
 void RememberStronghold(
-	FGameState& State,
+	USolidGameState& State,
 	const SolidWorldTime::FStamp& When,
 	const bool bEnter)
 {
@@ -214,7 +173,7 @@ void RememberStronghold(
 }
 
 void RememberLair(
-	FGameState& State,
+	USolidGameState& State,
 	const SolidWorldTime::FStamp& When,
 	const bool bEnter)
 {
@@ -226,7 +185,7 @@ void RememberLair(
 }
 
 FResult NotifyOccupiedTown(
-	FGameState& State,
+	USolidGameState& State,
 	const int32 TownId,
 	const SolidWorldTime::FStamp& When)
 {
@@ -264,7 +223,7 @@ FResult NotifyOccupiedTown(
 }
 
 FResult NotifyReachBrokenBridge(
-	FGameState& State,
+	USolidGameState& State,
 	const SolidWorldTime::FStamp& When)
 {
 	FResult Result;
@@ -285,7 +244,7 @@ FResult NotifyReachBrokenBridge(
 }
 
 FResult NotifyMessageClosed(
-	FGameState& State,
+	USolidGameState& State,
 	const TCHAR* MessageId,
 	const SolidWorldTime::FStamp& When)
 {
@@ -316,7 +275,7 @@ FResult NotifyMessageClosed(
 }
 
 FResult MarkComplete(
-	FGameState& State,
+	USolidGameState& State,
 	const TCHAR* EventId,
 	const SolidWorldTime::FStamp& When)
 {

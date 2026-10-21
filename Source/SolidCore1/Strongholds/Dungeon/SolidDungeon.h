@@ -19,7 +19,7 @@ namespace SolidStronghold
 		virtual bool Supported(ESolidStrongholdSize Size) const override;
 		virtual ESolidStrongholdTrip Trip() const override;
 		virtual bool AcceptsEnter(
-			const FGameState& State,
+			const USolidGameState& State,
 			const FSolidStronghold* Active,
 			FIntPoint OpeningCell) const override;
 		virtual UClass* ExteriorClass() const override;

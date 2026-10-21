@@ -108,13 +108,16 @@ public:
 	static constexpr int32 DefaultCompanionCount = 2;
 
 	/** Companions an event currently allows in the squad. Starts at 0. */
-	int32 GetMaxSquadSize() const { return Configuration.MaxSquadSize; }
+	int32 GetMaxSquadSize() const;
 
 	/** Spawn or remove companions so the field matches the current selection. */
 	void RefreshFieldedSquad();
 
-	/** Live configuration, including which events have fired. */
-	const FGameState& GetConfiguration() const { return Configuration; }
+	/**
+	 * The game instance's play state. Null when the instance is missing.
+	 * Inventory, journal, chest, events, previous strongholds, and furnishings live here.
+	 */
+	USolidGameState* GetConfiguration() const;
 
 	/**
 	 * Drag between worn boxes, pack cells, and, when the chest is open, its cells.
@@ -123,20 +126,10 @@ public:
 	bool MoveCarriedItem(
 		const SolidInventory::FSlotHit& From,
 		const SolidInventory::FSlotHit& To,
-		bool bChestOpen)
-	{
-		return SolidInventory::Move(
-			bChestOpen ? &Configuration.CaveChest : nullptr,
-			Configuration.Inventory,
-			From,
-			To);
-	}
+		bool bChestOpen);
 
 	/** Press the Craft button. Spends the recipe and puts one result in the pack. */
-	bool CraftFromInventory()
-	{
-		return SolidInventory::Craft(Configuration.Inventory);
-	}
+	bool CraftFromInventory();
 
 	/** True when F9 may switch to this sight. Raven sight starts locked. */
 	bool IsSightEnabled(ESolidSight Sight) const;
@@ -259,9 +252,6 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<USolidSquad> Squad;
-
-	/** Company/squad configuration. Enter-town events mutate this. */
-	FGameState Configuration;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidCompanionCharacter>> SpawnedCompanions;

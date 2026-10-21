@@ -7,8 +7,9 @@
 #include "SolidGameInstance.generated.h"
 
 class USolidCompany;
+class USolidGameState;
 
-/** Holds the captain's trip across the open world and a closed visit. Owns the company. */
+/** Holds the captain's trip across the open world and a closed visit. Owns the company and the play state. */
 UCLASS()
 class SOLIDCORE1_API USolidGameInstance : public UGameInstance
 {
@@ -23,6 +24,12 @@ public:
 	 * and the Meagre Dungeon. OpenLevel keeps this object.
 	 */
 	USolidCompany* GetCompany();
+
+	/**
+	 * The play session's one play state. Created on first ask. OpenLevel keeps this object.
+	 * Inventory, journal, chest, events, previous strongholds, and furnishings live here.
+	 */
+	USolidGameState* GetConfiguration();
 
 	void Capture(const FSolidTravelSession& InSession);
 	bool HasSession() const { return bHasSession; }
@@ -58,6 +65,9 @@ private:
 
 	UPROPERTY()
 	TObjectPtr<USolidCompany> Company;
+
+	UPROPERTY()
+	TObjectPtr<USolidGameState> Configuration;
 
 	bool bHasSession = false;
 	FSolidTravelSession Session;

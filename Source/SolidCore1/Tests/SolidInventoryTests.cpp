@@ -130,7 +130,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidInventoryStartingKitTest::RunTest(const FString& Parameters)
 {
-	const FGameState State;
+	const USolidGameState& State = *NewObject<USolidGameState>();
 	const SolidInventory::FLoadout& Kit = State.Inventory;
 	TestEqual(
 		TEXT("head"),

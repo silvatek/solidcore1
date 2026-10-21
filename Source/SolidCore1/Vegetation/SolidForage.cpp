@@ -278,7 +278,7 @@ void SolidForage::CollectReadyToSeed(
 	}
 }
 
-bool SolidForage::TakePile(FGameState& State, const int32 ChoiceIndex, const TCHAR* ItemId)
+bool SolidForage::TakePile(USolidGameState& State, const int32 ChoiceIndex, const TCHAR* ItemId)
 {
 	if (ChoiceIndex < 0 || State.TakenForagePiles.Contains(ChoiceIndex))
 	{

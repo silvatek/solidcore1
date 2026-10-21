@@ -165,7 +165,7 @@ void ASolidLairInterior::Tick(const float DeltaSeconds)
 
 	ApplyTorchLight(
 		Captain->GetActorLocation(),
-		SolidLair::HandsHoldTorch(Mode->GetConfiguration().Inventory));
+		SolidLair::HandsHoldTorch(Mode->GetConfiguration()->Inventory));
 }
 
 UPointLightComponent* ASolidLairInterior::GetMouthLight(const TCHAR End) const

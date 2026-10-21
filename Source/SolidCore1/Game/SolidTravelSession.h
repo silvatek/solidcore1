@@ -1,13 +1,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SolidGameState.h"
 #include "SolidSight.h"
 
 /** What survives the trip between the open world and a closed visit. */
 struct FSolidTravelSession
 {
-	FGameState Configuration;
 	TArray<int32> SelectedCompanionIndices;
 	/** Eight keys, with INDEX_NONE where a key is empty. Empty leaves the starter assignment. */
 	TArray<int32> AssignedBattlePlanIndices;

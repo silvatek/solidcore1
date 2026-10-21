@@ -88,7 +88,7 @@ FString SolidJournal::Describe(const SolidEvents::FEvent& Event)
 	return Text;
 }
 
-void SolidJournal::CollectRows(const FGameState& State, TArray<FRow>& OutRows)
+void SolidJournal::CollectRows(const USolidGameState& State, TArray<FRow>& OutRows)
 {
 	OutRows.Reset();
 	OutRows.Add({ ERowKind::Title, FString(), FString(Title) });

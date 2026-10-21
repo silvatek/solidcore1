@@ -4,7 +4,7 @@
 #include "Inventory/SolidItemType.h"
 #include "SolidTerrainTypes.h"
 
-struct FGameState;
+class USolidGameState;
 class USolidWorldMap;
 
 /**
@@ -120,7 +120,7 @@ namespace SolidForage
 	 * False when that index was already taken or the pack cannot hold the item.
 	 * Writes no journal line.
 	 */
-	bool TakePile(FGameState& State, int32 ChoiceIndex, const TCHAR* ItemId);
+	bool TakePile(USolidGameState& State, int32 ChoiceIndex, const TCHAR* ItemId);
 
 	/** Entry distance along a ray, or false when the ray misses the box. Inside the box is 0. */
 	inline bool RayBoxDistance(

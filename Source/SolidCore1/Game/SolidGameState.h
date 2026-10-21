@@ -1,26 +1,26 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "UObject/Object.h"
 #include "Events/SolidEvents.h"
 #include "Inventory/SolidInventory.h"
 #include "Inventory/SolidStorage.h"
 #include "Journal/SolidJournalEntry.h"
 #include "SolidStronghold.h"
 #include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
+#include "SolidGameState.generated.h"
 
 /**
  * Live play state. The game starts in true sight with an empty squad.
- * The game mode holds the current copy. The travel session carries it across the cave trip.
- * The company owns the active stronghold. Copying clones each previous stronghold.
+ * The game instance owns one for the play session. OpenLevel keeps this object.
+ * The company owns the active stronghold. Previous strongholds stay on this object.
  */
-struct FGameState
+UCLASS()
+class SOLIDCORE1_API USolidGameState : public UObject
 {
-	FGameState() = default;
-	FGameState(const FGameState& Other);
-	FGameState& operator=(const FGameState& Other);
-	FGameState(FGameState&&) = default;
-	FGameState& operator=(FGameState&&) = default;
+	GENERATED_BODY()
 
+public:
 	int32 MaxSquadSize = 0;
 	const TCHAR* CaptainTitle = SolidEvents::TitleOutcast;
 	bool bTrueSightEnabled = true;
@@ -86,17 +86,17 @@ namespace SolidEvents
 		const TCHAR* MessageId = nullptr;
 	};
 
-	int32 SquadCount(const FGameState& State);
-	bool IsSightEnabled(const FGameState& State, ESolidSight Sight);
+	int32 SquadCount(const USolidGameState& State);
+	bool IsSightEnabled(const USolidGameState& State, ESolidSight Sight);
 
 	/** True when this size is within the highest size an event has unlocked. */
-	inline bool IsStrongholdSizeUnlocked(const FGameState& State, const ESolidStrongholdSize Size)
+	inline bool IsStrongholdSizeUnlocked(const USolidGameState& State, const ESolidStrongholdSize Size)
 	{
 		return static_cast<int32>(Size) <= static_cast<int32>(State.MaxStrongholdSize);
 	}
 
 	/** True when an EnableLair change has recorded this lair id. */
-	inline bool IsLairEnabled(const FGameState& State, const TCHAR* Id)
+	inline bool IsLairEnabled(const USolidGameState& State, const TCHAR* Id)
 	{
 		if (!Id || !Id[0])
 		{
@@ -116,10 +116,10 @@ namespace SolidEvents
 	 * Run one change. An event runs each of its changes this way.
 	 * A size unlock is recorded on the company. No shipped event carries one yet.
 	 */
-	void ApplyChange(FGameState& State, const FChange& Change, FResult& Result);
+	void ApplyChange(USolidGameState& State, const FChange& Change, FResult& Result);
 
 	void Remember(
-		FGameState& State,
+		USolidGameState& State,
 		const SolidWorldTime::FStamp& When,
 		SolidJournal::EJournalType Type,
 		const FString& Text,
@@ -130,13 +130,13 @@ namespace SolidEvents
 	 * An upgrade will be its own entry. The same trip can be noted again.
 	 */
 	void RememberStronghold(
-		FGameState& State,
+		USolidGameState& State,
 		const SolidWorldTime::FStamp& When,
 		bool bEnter);
 
 	/** Enter or exit the Iglin tunnels. The same trip can be noted again. */
 	void RememberLair(
-		FGameState& State,
+		USolidGameState& State,
 		const SolidWorldTime::FStamp& When,
 		bool bEnter);
 
@@ -145,7 +145,7 @@ namespace SolidEvents
 	 * A change of town fires every unfired EnterTown event whose parameter matches.
 	 */
 	FResult NotifyOccupiedTown(
-		FGameState& State,
+		USolidGameState& State,
 		int32 TownId,
 		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
 
@@ -155,7 +155,7 @@ namespace SolidEvents
 	 * An unmet requirement is not recorded. A later call retries.
 	 */
 	FResult NotifyReachBrokenBridge(
-		FGameState& State,
+		USolidGameState& State,
 		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
 
 	/**
@@ -163,7 +163,7 @@ namespace SolidEvents
 	 * Fires every unfired MessageClosed event for that id whose requirements are met.
 	 */
 	FResult NotifyMessageClosed(
-		FGameState& State,
+		USolidGameState& State,
 		const TCHAR* MessageId,
 		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
 
@@ -172,7 +172,7 @@ namespace SolidEvents
 	 * even when its requirements have not fired. A second call does nothing.
 	 */
 	FResult MarkComplete(
-		FGameState& State,
+		USolidGameState& State,
 		const TCHAR* EventId,
 		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
 }

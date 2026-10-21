@@ -217,7 +217,7 @@ namespace SolidLair
 	}
 
 	/** True when a click on a lair mouth may enter. */
-	inline bool TunnelsOpen(const FGameState& State)
+	inline bool TunnelsOpen(const USolidGameState& State)
 	{
 		return SolidEvents::IsLairEnabled(State, IdIglinTunnels);
 	}

@@ -24,7 +24,7 @@ namespace SolidStronghold
 	}
 
 	bool FSolidDungeon::AcceptsEnter(
-		const FGameState& State,
+		const USolidGameState& State,
 		const FSolidStronghold* Active,
 		const FIntPoint OpeningCell) const
 	{

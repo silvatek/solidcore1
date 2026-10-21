@@ -11,6 +11,7 @@
 #include "SolidForestTrees.h"
 #include "SolidForage.h"
 #include "SolidForagePile.h"
+#include "SolidGameInstance.h"
 #include "SolidGameState.h"
 #include "SolidTravelSession.h"
 #include "SolidTerrainMap.h"
@@ -236,7 +237,7 @@ bool FSolidForagePickupTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("a ray aimed away misses"), SolidForage::RayBoxDistance(
 		FVector(0.f, -100.f, 20.f), FVector(0.f, -1.f, 0.f), Cube, SolidClickMove::MaxRayCm, Distance));
 
-	FGameState State;
+	USolidGameState& State = *NewObject<USolidGameState>();
 	const int32 Journal = State.Journal.Num();
 	const SolidStorage::FContainer Chest = State.CaveChest;
 	const TCHAR* Body = State.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)];
@@ -258,7 +259,7 @@ bool FSolidForagePickupTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("the cave chest keeps its count"), State.CaveChest.Counts[Index], Chest.Counts[Index]);
 	}
 
-	FGameState Full;
+	USolidGameState& Full = *NewObject<USolidGameState>();
 	for (int32 Index = 0; Index < SolidInventory::PackCount; ++Index)
 	{
 		SolidInventory::WritePack(Full.Inventory, Index, SolidItemType::IdStick, 10);
@@ -267,7 +268,7 @@ bool FSolidForagePickupTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the pile is not remembered"), Full.TakenForagePiles.Num(), 0);
 	TestEqual(TEXT("the full stack stays full"), Full.Inventory.PackStack[0], 10);
 
-	FGameState Cleared;
+	USolidGameState& Cleared = *NewObject<USolidGameState>();
 	Cleared.TakenForagePiles.Add(4);
 	SolidInventory::WritePack(Cleared.Inventory, 0, SolidItemType::IdPitch, 2);
 	const int32 ClearedJournal = Cleared.Journal.Num();
@@ -281,12 +282,20 @@ bool FSolidForagePickupTest::RunTest(const FString& Parameters)
 		FString(Cleared.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)]),
 		FString(SolidItemType::IdRags));
 
-	FSolidTravelSession Session;
-	Session.Configuration.TakenForagePiles.Add(5);
-	Session.Configuration.Inventory = State.Inventory;
-	const FGameState Restored = Session.Configuration;
-	TestTrue(TEXT("the trip remembers the taken index"), Restored.TakenForagePiles.Contains(5));
-	TestEqual(TEXT("the trip keeps the pack"), FString(Restored.Inventory.Pack[0]), FString(SolidItemType::IdStick));
+	USolidGameInstance* Instance = NewObject<USolidGameInstance>();
+	TestNotNull(TEXT("game instance"), Instance);
+	if (!Instance)
+	{
+		return false;
+	}
+	USolidGameState* Kept = Instance->GetConfiguration();
+	Kept->TakenForagePiles.Add(5);
+	Kept->Inventory = State.Inventory;
+	Instance->Capture(FSolidTravelSession());
+	const USolidGameState* Restored = Instance->GetConfiguration();
+	TestTrue(TEXT("the trip is the same play state"), Restored == Kept);
+	TestTrue(TEXT("the trip remembers the taken index"), Restored->TakenForagePiles.Contains(5));
+	TestEqual(TEXT("the trip keeps the pack"), FString(Restored->Inventory.Pack[0]), FString(SolidItemType::IdStick));
 
 	ASolidForagePile* Pile = NewObject<ASolidForagePile>();
 	TestNotNull(TEXT("pile"), Pile);

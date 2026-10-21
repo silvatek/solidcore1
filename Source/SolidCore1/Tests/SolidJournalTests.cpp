@@ -59,7 +59,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidJournalEmptyTest::RunTest(const FString& Parameters)
 {
 	TArray<SolidJournal::FRow> Rows;
-	SolidJournal::CollectRows(FGameState(), Rows);
+	SolidJournal::CollectRows(*NewObject<USolidGameState>(), Rows);
 	TestTrue(TEXT("title"), SolidJournalTestPrivate::ContainsText(Rows, TEXT("Journal")));
 	int32 Heading = INDEX_NONE;
 	for (int32 Index = 0; Index < Rows.Num(); ++Index)
@@ -89,7 +89,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 {
-	FGameState State;
+	USolidGameState& State = *NewObject<USolidGameState>();
 	SolidEvents::NotifyOccupiedTown(State, 0);
 	TArray<SolidJournal::FRow> AtStart;
 	SolidJournal::CollectRows(State, AtStart);
@@ -143,7 +143,7 @@ bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Kanfold squad is both"), SolidJournalTestPrivate::ContainsText(AfterKanfold, TEXT("Squad 2: Sam, Alex")));
 	TestFalse(TEXT("filled journal is not empty"), SolidJournalTestPrivate::ContainsText(AfterKanfold, TEXT("No events yet.")));
 
-	FGameState Skipped;
+	USolidGameState& Skipped = *NewObject<USolidGameState>();
 	SolidEvents::NotifyOccupiedTown(Skipped, 2);
 	SolidEvents::NotifyOccupiedTown(Skipped, 0);
 	SolidEvents::NotifyOccupiedTown(Skipped, 1);
@@ -194,7 +194,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidJournalCaptainTitleTest::RunTest(const FString& Parameters)
 {
-	FGameState State;
+	USolidGameState& State = *NewObject<USolidGameState>();
 	SolidEvents::NotifyOccupiedTown(State, 0);
 	SolidEvents::NotifyOccupiedTown(State, 1);
 	SolidEvents::NotifyOccupiedTown(State, 2);
@@ -225,7 +225,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidJournalWorldTimeTest::RunTest(const FString& Parameters)
 {
 	const SolidWorldTime::FStamp Ninth = SolidWorldTime::FromSession(9, 84.0 * 60.0);
-	FGameState State;
+	USolidGameState& State = *NewObject<USolidGameState>();
 	SolidEvents::NotifyOccupiedTown(State, 0, Ninth);
 
 	TArray<SolidJournal::FRow> Lines;
@@ -261,13 +261,12 @@ bool FSolidJournalWorldTimeTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("the line does not name the dungeon"), SolidJournalTestPrivate::ContainsText(AfterCave, TEXT("Meagre")));
 	TestFalse(TEXT("the line does not name the type"), SolidJournalTestPrivate::ContainsText(AfterCave, TEXT("Dungeon")));
 
-	FGameState Copied = State;
-	TestEqual(TEXT("the cave trip keeps the journal"), Copied.Journal.Num(), State.Journal.Num());
-	TestEqual(TEXT("copied exit text"), Copied.Journal[2].Text, FString(TEXT("Exit stronghold")));
-	TestTrue(TEXT("exit is a stronghold line"), Copied.Journal[2].Type == SolidJournal::EJournalType::Stronghold);
-	TestEqual(TEXT("a stronghold line has no event index"), Copied.Journal[2].EventIndex, INDEX_NONE);
+	TestEqual(TEXT("the play state keeps the journal"), State.Journal.Num(), 4);
+	TestEqual(TEXT("exit text stays"), State.Journal[2].Text, FString(TEXT("Exit stronghold")));
+	TestTrue(TEXT("exit is a stronghold line"), State.Journal[2].Type == SolidJournal::EJournalType::Stronghold);
+	TestEqual(TEXT("a stronghold line has no event index"), State.Journal[2].EventIndex, INDEX_NONE);
 
-	FGameState Marked;
+	USolidGameState& Marked = *NewObject<USolidGameState>();
 	SolidJournal::FJournalEntry Visit;
 	Visit.Type = SolidJournal::EJournalType::Stronghold;
 	Visit.Text = TEXT("Enter stronghold");

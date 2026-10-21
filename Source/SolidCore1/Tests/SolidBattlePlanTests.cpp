@@ -224,11 +224,11 @@ bool FSolidGameModeBattlePlanSelectTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("parade raises the squad cap"), GameMode->GetMaxSquadSize(), SolidEvents::RosterCount);
 	TestEqual(
 		TEXT("parade titles the captain"),
-		FString(GameMode->GetConfiguration().CaptainTitle),
+		FString(GameMode->GetConfiguration()->CaptainTitle),
 		FString(SolidEvents::TitleCaptain));
-	TestEqual(TEXT("parade leaves the captain where he stands"), GameMode->GetConfiguration().OccupiedTown, INDEX_NONE);
+	TestEqual(TEXT("parade leaves the captain where he stands"), GameMode->GetConfiguration()->OccupiedTown, INDEX_NONE);
 
-	auto Fired = [](const FGameState& State, const TCHAR* Name)
+	auto Fired = [](const USolidGameState& State, const TCHAR* Name)
 	{
 		for (const int32 EventIndex : State.FiredOrder)
 		{
@@ -241,7 +241,13 @@ bool FSolidGameModeBattlePlanSelectTest::RunTest(const FString& Parameters)
 		}
 		return false;
 	};
-	const FGameState& State = GameMode->GetConfiguration();
+	const USolidGameState* StatePtr = GameMode->GetConfiguration();
+	TestNotNull(TEXT("play state"), StatePtr);
+	if (!StatePtr)
+	{
+		return false;
+	}
+	const USolidGameState& State = *StatePtr;
 	TestTrue(TEXT("parade fires Enter Iglin"), Fired(State, TEXT("Enter Iglin")));
 	TestTrue(TEXT("parade fires Enter Relion"), Fired(State, TEXT("Enter Relion")));
 	TestTrue(TEXT("parade fires Enter Dragongate"), Fired(State, TEXT("Enter Dragongate")));
@@ -250,7 +256,7 @@ bool FSolidGameModeBattlePlanSelectTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("parade does not fire Driven from the village"), Fired(State, TEXT("Driven from the village")));
 	const int32 FiredCount = State.FiredOrder.Num();
 	TestTrue(TEXT("F5 parade again"), GameMode->SelectBattlePlanSlot(4));
-	TestEqual(TEXT("parade events fire once"), GameMode->GetConfiguration().FiredOrder.Num(), FiredCount);
+	TestEqual(TEXT("parade events fire once"), GameMode->GetConfiguration()->FiredOrder.Num(), FiredCount);
 
 	TestFalse(TEXT("F6 empty"), GameMode->SelectBattlePlanSlot(5));
 	return true;
@@ -363,7 +369,7 @@ bool FSolidBattlePlanParadeOtherKeyTest::RunTest(const FString& Parameters)
 	USolidSquad* Squad = GameMode->GetSquad();
 	TestNotNull(TEXT("squad"), Squad);
 
-	const int32 FiredBefore = GameMode->GetConfiguration().FiredOrder.Num();
+	const int32 FiredBefore = GameMode->GetConfiguration()->FiredOrder.Num();
 	SolidSquadBuilder::FDrag Drag;
 	Drag.Kind = SolidSquadBuilder::EDrag::Plan;
 	Drag.Index = 4;
@@ -372,7 +378,7 @@ bool FSolidBattlePlanParadeOtherKeyTest::RunTest(const FString& Parameters)
 	Hit.Kind = SolidSquadBuilder::EHit::KeyBox;
 	Hit.Index = 5;
 	TestTrue(TEXT("Parade moves onto F6"), SolidSquadBuilder::Drop(Squad, 2, Drag, Hit));
-	TestEqual(TEXT("the drop does not fire"), GameMode->GetConfiguration().FiredOrder.Num(), FiredBefore);
+	TestEqual(TEXT("the drop does not fire"), GameMode->GetConfiguration()->FiredOrder.Num(), FiredBefore);
 	TestEqual(TEXT("F1 stays the active plan"), Squad->GetActiveAssignedSlot(), 0);
 	TestTrue(TEXT("F6 now holds Parade"), Squad->GetAssignedBattlePlan(5)->Formation == ESolidBattleFormation::Parade);
 	TestNull(TEXT("F5 is empty"), Squad->GetAssignedBattlePlan(4));
@@ -381,10 +387,10 @@ bool FSolidBattlePlanParadeOtherKeyTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("formation parade"), Squad->GetActiveFormation() == ESolidBattleFormation::Parade);
 	TestTrue(TEXT("parade unlocks raven sight"), GameMode->IsSightEnabled(ESolidSight::Raven));
 	TestEqual(TEXT("parade raises the squad cap"), GameMode->GetMaxSquadSize(), SolidEvents::RosterCount);
-	const int32 FiredOnce = GameMode->GetConfiguration().FiredOrder.Num();
+	const int32 FiredOnce = GameMode->GetConfiguration()->FiredOrder.Num();
 	TestTrue(TEXT("parade fired"), FiredOnce > FiredBefore);
 	TestTrue(TEXT("F6 parade again"), GameMode->SelectBattlePlanSlot(5));
-	TestEqual(TEXT("parade events fire once"), GameMode->GetConfiguration().FiredOrder.Num(), FiredOnce);
+	TestEqual(TEXT("parade events fire once"), GameMode->GetConfiguration()->FiredOrder.Num(), FiredOnce);
 	return true;
 }
 

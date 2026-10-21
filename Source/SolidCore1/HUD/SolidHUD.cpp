@@ -2389,7 +2389,12 @@ void ASolidHUD::PressInventory(const float X, const float Y)
 	{
 		return;
 	}
-	const FGameState& State = GameMode->GetConfiguration();
+	const USolidGameState* StatePtr = GameMode->GetConfiguration();
+	if (!StatePtr)
+	{
+		return;
+	}
+	const USolidGameState& State = *StatePtr;
 	const SolidStorage::FContainer* Chest = bInventoryChestOpen ? &State.CaveChest : nullptr;
 	const TCHAR* ItemId = SolidInventory::ItemAt(State.Inventory, Chest, Hit);
 	if (!ItemId || !ItemId[0])
@@ -2453,12 +2458,12 @@ void ASolidHUD::DrawInventoryPopup()
 {
 	bInventoryHitReady = false;
 	bInventoryChestOpen = false;
-	FGameState State;
 	const ASolidGameMode* GameMode = nullptr;
+	USolidGameState* State = NewObject<USolidGameState>();
 	if (UWorld* World = GetWorld())
 	{
 		GameMode = World->GetAuthGameMode<ASolidGameMode>();
-		if (GameMode)
+		if (GameMode && GameMode->GetConfiguration())
 		{
 			State = GameMode->GetConfiguration();
 		}
@@ -2467,11 +2472,11 @@ void ASolidHUD::DrawInventoryPopup()
 	const USolidCompany* Company = GameMode ? GameMode->GetCompany() : nullptr;
 	const bool bShowChest = GameMode
 		&& SolidStrongholdTransition::CompanyChestOpen(
-			State,
+			*State,
 			Company ? Company->GetStronghold() : nullptr,
 			GameMode->IsInStronghold());
 	SolidInventory::FPage Page;
-	SolidInventory::Layout(State.Inventory, Page, bShowChest ? &State.CaveChest : nullptr);
+	SolidInventory::Layout(State->Inventory, Page, bShowChest ? &State->CaveChest : nullptr);
 
 	float LineHeight = 16.f;
 	if (Canvas)
@@ -2498,17 +2503,20 @@ void ASolidHUD::DrawInventoryPopup()
 
 void ASolidHUD::DrawJournalPopup() const
 {
-	FGameState State;
+	USolidGameState* State = NewObject<USolidGameState>();
 	if (UWorld* World = GetWorld())
 	{
 		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 		{
-			State = GameMode->GetConfiguration();
+			if (USolidGameState* Live = GameMode->GetConfiguration())
+			{
+				State = Live;
+			}
 		}
 	}
 
 	TArray<SolidJournal::FRow> Rows;
-	SolidJournal::CollectRows(State, Rows);
+	SolidJournal::CollectRows(*State, Rows);
 	SolidHUDPrivate::DrawJournalBoard(Canvas, Rows);
 }
 

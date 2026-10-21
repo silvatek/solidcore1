@@ -4,7 +4,7 @@
 #include "Events/SolidEvents.h"
 #include "Journal/SolidJournalEntry.h"
 
-struct FGameState;
+class USolidGameState;
 
 /**
  * Journal page opened from the F10 menu.
@@ -75,7 +75,7 @@ namespace SolidJournal
 	/** One line describing an event's configuration changes. */
 	FString Describe(const SolidEvents::FEvent& Event);
 
-	void CollectRows(const FGameState& State, TArray<FRow>& OutRows);
+	void CollectRows(const USolidGameState& State, TArray<FRow>& OutRows);
 
 	/**
 	 * Board size in pixels. Content can widen it, and the view keeps it on screen.

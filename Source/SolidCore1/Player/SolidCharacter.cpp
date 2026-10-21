@@ -1481,10 +1481,10 @@ SolidLair::FPassageHit ASolidCharacter::AllowPassage(const SolidLair::FPassageHi
 	{
 		return Allowed;
 	}
-	const FGameState& State = GameMode->GetConfiguration();
+	const USolidGameState* State = GameMode->GetConfiguration();
 	const USolidCompany* Company = GameMode->GetCompany();
 	const FSolidStronghold* Stronghold = Company ? Company->GetStronghold() : nullptr;
-	return Stronghold && Stronghold->AcceptsEnter(State, Stronghold, Allowed.StrongholdCell)
+	return State && Stronghold && Stronghold->AcceptsEnter(*State, Stronghold, Allowed.StrongholdCell)
 		? Allowed
 		: SolidLair::FPassageHit();
 }
@@ -1583,10 +1583,12 @@ void ASolidCharacter::OfferStrongholdSite(const ASolidStrongholdSite* Site)
 	}
 
 	const USolidCompany* Company = GameMode->GetCompany();
+	USolidGameState* State = GameMode->GetConfiguration();
 	TArray<FSolidStrongholdChoice> Choices;
 	if (!Company
+		|| !State
 		|| SolidStrongholdTransition::Consider(
-			GameMode->GetConfiguration(),
+			*State,
 			Company->GetStronghold(),
 			Choices)
 			!= SolidStrongholdTransition::EOffer::Choose)

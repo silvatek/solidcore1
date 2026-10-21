@@ -1,4 +1,5 @@
 #include "SolidGameInstance.h"
+#include "SolidGameState.h"
 #include "SolidSessionSave.h"
 #include "SolidCore1.h"
 #include "Squad/SolidCompany.h"
@@ -24,6 +25,15 @@ USolidCompany* USolidGameInstance::GetCompany()
 		Company->InitializeStartingStronghold();
 	}
 	return Company;
+}
+
+USolidGameState* USolidGameInstance::GetConfiguration()
+{
+	if (!Configuration)
+	{
+		Configuration = NewObject<USolidGameState>(this, TEXT("Configuration"));
+	}
+	return Configuration;
 }
 
 void USolidGameInstance::BeginWorldSession()

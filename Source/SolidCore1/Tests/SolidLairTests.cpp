@@ -122,7 +122,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidLairGateTest::RunTest(const FString& Parameters)
 {
-	FGameState State;
+	USolidGameState& State = *NewObject<USolidGameState>();
 	TestFalse(TEXT("the tunnels start shut"), SolidLair::TunnelsOpen(State));
 
 	SolidEvents::NotifyOccupiedTown(State, SolidTowns::Iglin);

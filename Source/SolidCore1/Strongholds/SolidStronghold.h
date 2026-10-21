@@ -68,7 +68,7 @@ enum class ESolidStrongholdOrientation : uint8
 
 class AActor;
 class ASolidStrongholdExterior;
-struct FGameState;
+class USolidGameState;
 class ASolidTerrainStreamer;
 class USolidCompany;
 class USolidWorldMap;
@@ -119,7 +119,7 @@ public:
 	 * True when a click on the opening at this map cell may enter.
 	 * Active is the company's stronghold. Callers ask the company for that pointer.
 	 */
-	virtual bool AcceptsEnter(const FGameState&, const FSolidStronghold* Active, FIntPoint) const
+	virtual bool AcceptsEnter(const USolidGameState&, const FSolidStronghold* Active, FIntPoint) const
 	{
 		return false;
 	}
@@ -648,7 +648,7 @@ namespace SolidStrongholdTransition
 	 * None leaves the site as it is and does not ask.
 	 */
 	EOffer Consider(
-		const FGameState& State,
+		const USolidGameState& State,
 		const FSolidStronghold* Active,
 		TArray<FSolidStrongholdChoice>& OutChoices);
 
@@ -675,14 +675,14 @@ namespace SolidStrongholdTransition
 	 */
 	bool Commit(
 		USolidCompany& Company,
-		FGameState& State,
+		USolidGameState& State,
 		FIntPoint SiteCell,
 		ESolidStrongholdSize Size,
 		ESolidStrongholdType Type);
 
 	/** The company chest is open on the inventory page while the captain is inside the base that holds it. */
 	bool CompanyChestOpen(
-		const FGameState& State,
+		const USolidGameState& State,
 		const FSolidStronghold* Active,
 		bool bInStronghold);
 }

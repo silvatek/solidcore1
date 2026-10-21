@@ -2,6 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "Events/SolidEvents.h"
 #include "Events/SolidMessages.h"
+#include "SolidGameInstance.h"
 #include "SolidGameState.h"
 #include "SolidHUD.h"
 #include "SolidGameMode.h"
@@ -110,7 +111,7 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("slot 4 is Quinn"), FString(SolidEvents::RosterName(4)), FString(TEXT("Quinn")));
 	TestNull(TEXT("slot 5 is empty"), SolidEvents::RosterName(5));
 
-	FGameState State;
+	USolidGameState& State = *NewObject<USolidGameState>();
 	TestEqual(TEXT("squad starts empty"), State.MaxSquadSize, 0);
 	TestEqual(TEXT("no companions yet"), SolidEvents::SquadCount(State), 0);
 	TestTrue(TEXT("true sight is on"), SolidEvents::IsSightEnabled(State, ESolidSight::True));
@@ -171,7 +172,7 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Sam and Alex"), SolidEvents::SquadCount(State), 2);
 	TestEqual(TEXT("Alex is the second companion"), FString(SolidEvents::RosterName(1)), FString(TEXT("Alex")));
 
-	FGameState Skipped;
+	USolidGameState& Skipped = *NewObject<USolidGameState>();
 	const SolidEvents::FResult OtherTown = SolidEvents::NotifyOccupiedTown(Skipped, 4);
 	TestFalse(TEXT("Jethan has no event"), OtherTown.bFired);
 	TestEqual(TEXT("Jethan leaves the squad empty"), Skipped.MaxSquadSize, 0);
@@ -200,7 +201,7 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("re-entering Dragongate does not fire again"), DragongateAgain.bFired);
 	TestEqual(TEXT("re-entering Dragongate keeps the squad"), State.MaxSquadSize, 5);
 
-	FGameState GateFirst;
+	USolidGameState& GateFirst = *NewObject<USolidGameState>();
 	const SolidEvents::FResult GateOnly = SolidEvents::NotifyOccupiedTown(GateFirst, 5);
 	TestTrue(TEXT("Dragongate fires on its own"), GateOnly.bFired);
 	TestEqual(
@@ -222,7 +223,8 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 		GateFirst.bRavenSightEnabled,
 		bEitherTownEnablesSight);
 
-	ASolidGameMode* GameMode = NewObject<ASolidGameMode>();
+	USolidGameInstance* Instance = NewObject<USolidGameInstance>();
+	ASolidGameMode* GameMode = NewObject<ASolidGameMode>(Instance);
 	TestNotNull(TEXT("gamemode"), GameMode);
 	if (GameMode)
 	{
@@ -240,7 +242,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidEventsCaptainTitleTest::RunTest(const FString& Parameters)
 {
-	FGameState State;
+	USolidGameState& State = *NewObject<USolidGameState>();
 	TestEqual(TEXT("starts as Outcast"), FString(State.CaptainTitle), FString(SolidEvents::TitleOutcast));
 
 	const SolidEvents::FResult Iglin = SolidEvents::NotifyOccupiedTown(State, 0);
@@ -274,7 +276,7 @@ bool FSolidEventsCaptainTitleTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Kanfold sets the title"), Kanfold.bSetTitle);
 	TestEqual(TEXT("Kanfold is Ranger"), FString(State.CaptainTitle), FString(SolidEvents::TitleRanger));
 
-	FGameState Skipped;
+	USolidGameState& Skipped = *NewObject<USolidGameState>();
 	const SolidEvents::FResult KanfoldFirst = SolidEvents::NotifyOccupiedTown(Skipped, 2);
 	TestTrue(TEXT("Kanfold titles Ranger without Relion"), KanfoldFirst.bSetTitle);
 	TestFalse(TEXT("Kanfold leaves the bridge broken"), KanfoldFirst.bRepairBridge);
@@ -295,7 +297,7 @@ bool FSolidEventsCaptainTitleTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("Dragongate does not fire twice"), DragongateAgain.bFired);
 	TestEqual(TEXT("title stays Captain"), FString(State.CaptainTitle), FString(SolidEvents::TitleCaptain));
 
-	FGameState GateFirst;
+	USolidGameState& GateFirst = *NewObject<USolidGameState>();
 	const SolidEvents::FResult GateOnly = SolidEvents::NotifyOccupiedTown(GateFirst, 5);
 	TestTrue(TEXT("Dragongate titles Captain on its own"), GateOnly.bSetTitle);
 	TestEqual(TEXT("first visit is Captain"), FString(GateFirst.CaptainTitle), FString(SolidEvents::TitleCaptain));
@@ -412,7 +414,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidEventsLaterTownsEnableRavenTest::RunTest(const FString& Parameters)
 {
-	FGameState KanfoldState;
+	USolidGameState& KanfoldState = *NewObject<USolidGameState>();
 	const SolidEvents::FResult Kanfold = SolidEvents::NotifyOccupiedTown(KanfoldState, 2);
 	TestTrue(TEXT("Kanfold fires"), Kanfold.bFired);
 	TestTrue(TEXT("Kanfold switches sight"), Kanfold.bSetSight);
@@ -427,7 +429,7 @@ bool FSolidEventsLaterTownsEnableRavenTest::RunTest(const FString& Parameters)
 		FString(KanfoldState.CaptainTitle),
 		FString(SolidEvents::TitleRanger));
 
-	FGameState GateState;
+	USolidGameState& GateState = *NewObject<USolidGameState>();
 	const SolidEvents::FResult Dragongate = SolidEvents::NotifyOccupiedTown(GateState, 5);
 	TestTrue(TEXT("Dragongate fires"), Dragongate.bFired);
 	TestTrue(TEXT("Dragongate switches sight"), Dragongate.bSetSight);
@@ -526,7 +528,7 @@ bool FSolidEventsRequiresTest::RunTest(const FString& Parameters)
 			bNamesOne);
 	}
 
-	FGameState Early;
+	USolidGameState& Early = *NewObject<USolidGameState>();
 	const SolidEvents::FResult Blocked = SolidEvents::NotifyOccupiedTown(Early, 1);
 	TestFalse(TEXT("Relion waits for Iglin"), Blocked.bFired);
 	TestFalse(TEXT("an early visit does not repair the bridge"), Early.bIglinBridgeRepaired);
@@ -561,7 +563,7 @@ bool FSolidEventsReachBrokenBridgeTest::RunTest(const FString& Parameters)
 		RampChanges = SolidJournal::Describe(*Event);
 	}
 
-	FGameState Early;
+	USolidGameState& Early = *NewObject<USolidGameState>();
 	const SolidEvents::FResult Blocked = SolidEvents::NotifyReachBrokenBridge(Early);
 	TestFalse(TEXT("the ramp waits for Iglin"), Blocked.bFired);
 	TestEqual(TEXT("an early stand is not recorded"), Early.FiredOrder.Num(), 0);
@@ -647,7 +649,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidEventsCaveTest::RunTest(const FString& Parameters)
 {
-	FGameState State;
+	USolidGameState& State = *NewObject<USolidGameState>();
 	TestFalse(TEXT("the cave starts closed"), State.bStrongholdsEnabled);
 
 	const SolidEvents::FResult Blocked = SolidEvents::NotifyReachBrokenBridge(State);
@@ -698,13 +700,14 @@ bool FSolidEventsCaveTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("the cave trip happens once"), Again.bEnterStronghold);
 	TestEqual(TEXT("the cave stays with the ramp event"), State.bStrongholdsEnabled, bReachOpensCave);
 
-	ASolidGameMode* GameMode = NewObject<ASolidGameMode>();
+	USolidGameInstance* Instance = NewObject<USolidGameInstance>();
+	ASolidGameMode* GameMode = NewObject<ASolidGameMode>(Instance);
 	TestNotNull(TEXT("gamemode"), GameMode);
 	if (GameMode)
 	{
 		TestFalse(
 			TEXT("a new game keeps strongholds closed"),
-			GameMode->GetConfiguration().bStrongholdsEnabled);
+			GameMode->GetConfiguration()->bStrongholdsEnabled);
 	}
 	return true;
 }
@@ -787,7 +790,7 @@ bool FSolidEventsMessageTest::RunTest(const FString& Parameters)
 			SolidJournal::Describe(*Killed).Contains(TEXT("Cave enabled")));
 	}
 
-	FGameState State;
+	USolidGameState& State = *NewObject<USolidGameState>();
 	SolidEvents::NotifyOccupiedTown(State, 0);
 	const SolidEvents::FResult Reached = SolidEvents::NotifyReachBrokenBridge(State);
 	TestTrue(TEXT("the ramp shows the message"), Reached.bShowMessage);
@@ -928,12 +931,12 @@ bool FSolidEventsDrivenFromVillageTest::RunTest(const FString& Parameters)
 			SolidJournal::Describe(*Driven).Contains(TEXT("You are driven from the village")));
 	}
 
-	auto HasFiredDriven = [DrivenIndex](const FGameState& State)
+	auto HasFiredDriven = [DrivenIndex](const USolidGameState& State)
 	{
 		return DrivenIndex != INDEX_NONE && DrivenIndex < SolidEvents::MaxEvents && State.bFired[DrivenIndex];
 	};
 
-	FGameState State;
+	USolidGameState& State = *NewObject<USolidGameState>();
 	const SolidEvents::FResult First = SolidEvents::NotifyOccupiedTown(State, 0);
 	TestTrue(TEXT("the first visit records Iglin"), First.bFired);
 	TestFalse(TEXT("the first visit shows no message"), First.bShowMessage);
@@ -1054,7 +1057,7 @@ bool FSolidEventsOrphanTitleTest::RunTest(const FString& Parameters)
 			SolidJournal::Describe(*Driven).Contains(TEXT("Title Outcast")));
 	}
 
-	FGameState State;
+	USolidGameState& State = *NewObject<USolidGameState>();
 	TestEqual(TEXT("starts as Outcast"), FString(State.CaptainTitle), FString(SolidEvents::TitleOutcast));
 	const SolidEvents::FResult Entered = SolidEvents::NotifyOccupiedTown(State, 0);
 	TestTrue(TEXT("Iglin sets the title"), Entered.bSetTitle);
@@ -1126,7 +1129,7 @@ bool FSolidEventsRavenSightWaitsForRelionTest::RunTest(const FString& Parameters
 		TEXT("Relion enables raven sight"),
 		SolidEventTestPrivate::EventEnablesRavenSight(TEXT("Enter Relion")));
 
-	FGameState State;
+	USolidGameState& State = *NewObject<USolidGameState>();
 	const SolidEvents::FResult Iglin = SolidEvents::NotifyOccupiedTown(State, 0);
 	TestTrue(TEXT("Iglin fires"), Iglin.bFired);
 	TestFalse(TEXT("Iglin does not switch sight"), Iglin.bSetSight);
@@ -1272,7 +1275,7 @@ bool FSolidEventsClearInventoryTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Built.Changes[0].Kind),
 		static_cast<uint8>(SolidEvents::EChange::ClearInventory));
 
-	FGameState State;
+	USolidGameState& State = *NewObject<USolidGameState>();
 	State.Inventory = SolidInventory::StartingLoadout();
 	SolidInventory::PlaceWorn(State.Inventory, SolidInventory::ESlot::Body, SolidItemType::IdTorch);
 	SolidInventory::PlaceWorn(State.Inventory, SolidInventory::ESlot::Boots, SolidItemType::IdCrudeSpear);
@@ -1355,7 +1358,7 @@ bool FSolidEventsEnableStrongholdSizeTest::RunTest(const FString& Parameters)
 				Iglin->Changes[Index].Kind == SolidEvents::EChange::EnableStrongholdSize);
 		}
 	}
-	FGameState Played;
+	USolidGameState& Played = *NewObject<USolidGameState>();
 	SolidEvents::NotifyOccupiedTown(Played, SolidTowns::Iglin);
 	TestEqual(
 		TEXT("Enter Iglin leaves the ceiling at Meagre"),
@@ -1387,7 +1390,7 @@ bool FSolidEventsEnableStrongholdSizeTest::RunTest(const FString& Parameters)
 		TEXT("the journal names the size"),
 		SolidJournal::Describe(Built).Contains(TEXT("Humble size unlocked")));
 
-	FGameState State;
+	USolidGameState& State = *NewObject<USolidGameState>();
 	SolidEvents::FResult Result;
 	SolidEvents::ApplyChange(State, Built.Changes[0], Result);
 	TestTrue(TEXT("Humble is unlocked"), SolidEvents::IsStrongholdSizeUnlocked(State, ESolidStrongholdSize::Humble));
@@ -1457,7 +1460,7 @@ bool FSolidEventsEnableLairTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Enter Iglin does not enable a lair"), LacksEnableLair(TEXT("Enter Iglin")));
 	TestTrue(TEXT("Killed by monsters does not enable a lair"), LacksEnableLair(TEXT("Killed by monsters")));
 
-	FGameState State;
+	USolidGameState& State = *NewObject<USolidGameState>();
 	TestFalse(TEXT("the tunnels start shut"), SolidLair::TunnelsOpen(State));
 	SolidEvents::FResult Result;
 	if (Enable)
@@ -1477,7 +1480,7 @@ bool FSolidEventsEnableLairTest::RunTest(const FString& Parameters)
 		TEXT("a built enable is EnableLair"),
 		static_cast<uint8>(Other.Changes[0].Kind),
 		static_cast<uint8>(SolidEvents::EChange::EnableLair));
-	FGameState OtherState;
+	USolidGameState& OtherState = *NewObject<USolidGameState>();
 	SolidEvents::FResult OtherResult;
 	SolidEvents::ApplyChange(OtherState, Other.Changes[0], OtherResult);
 	TestTrue(TEXT("the id opens"), SolidEvents::IsLairEnabled(OtherState, TEXT("aabbcc99")));
@@ -1541,7 +1544,7 @@ bool FSolidEventsDragongateUnlocksSizesTest::RunTest(const FString& Parameters)
 			Detail.Contains(FString::Printf(TEXT("%s size unlocked"), SolidStronghold::SizeName(Size))));
 	}
 
-	FGameState Before;
+	USolidGameState& Before = *NewObject<USolidGameState>();
 	TestEqual(
 		TEXT("a new game stops at Meagre"),
 		static_cast<uint8>(Before.MaxStrongholdSize),
@@ -1557,7 +1560,7 @@ bool FSolidEventsDragongateUnlocksSizesTest::RunTest(const FString& Parameters)
 			SolidEvents::IsStrongholdSizeUnlocked(Before, Size));
 	}
 
-	FGameState Played;
+	USolidGameState& Played = *NewObject<USolidGameState>();
 	const SolidEvents::FResult Fired = SolidEvents::NotifyOccupiedTown(Played, SolidTowns::Dragongate);
 	TestTrue(TEXT("Enter Dragongate fires"), Fired.bFired);
 	TestTrue(TEXT("Enter Dragongate opens strongholds"), Played.bStrongholdsEnabled);
@@ -1638,14 +1641,14 @@ bool FSolidEventsEarlySizeUnlocksTest::RunTest(const FString& Parameters)
 			1);
 	}
 
-	FGameState Closed;
+	USolidGameState& Closed = *NewObject<USolidGameState>();
 	const SolidEvents::FResult Monster = SolidEvents::NotifyMessageClosed(Closed, SolidMessages::IdKilledByMonsters);
 	TestTrue(TEXT("Killed by monsters fires"), Monster.bFired);
 	TestTrue(TEXT("the close unlocks Meagre"), SolidEvents::IsStrongholdSizeUnlocked(Closed, ESolidStrongholdSize::Meagre));
 	TestFalse(TEXT("the close leaves Humble locked"), SolidEvents::IsStrongholdSizeUnlocked(Closed, ESolidStrongholdSize::Humble));
 	TestFalse(TEXT("the close leaves Average locked"), SolidEvents::IsStrongholdSizeUnlocked(Closed, ESolidStrongholdSize::Average));
 
-	FGameState Relion;
+	USolidGameState& Relion = *NewObject<USolidGameState>();
 	SolidEvents::NotifyOccupiedTown(Relion, SolidTowns::Iglin);
 	const SolidEvents::FResult EnteredRelion = SolidEvents::NotifyOccupiedTown(Relion, SolidTowns::Relion);
 	TestTrue(TEXT("Enter Relion fires"), EnteredRelion.bFired);
@@ -1655,7 +1658,7 @@ bool FSolidEventsEarlySizeUnlocksTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Enter Relion unlocks Humble"), SolidEvents::IsStrongholdSizeUnlocked(Relion, ESolidStrongholdSize::Humble));
 	TestFalse(TEXT("Enter Relion leaves Average locked"), SolidEvents::IsStrongholdSizeUnlocked(Relion, ESolidStrongholdSize::Average));
 
-	FGameState Kanfold;
+	USolidGameState& Kanfold = *NewObject<USolidGameState>();
 	const SolidEvents::FResult EnteredKanfold = SolidEvents::NotifyOccupiedTown(Kanfold, SolidTowns::Kanfold);
 	TestTrue(TEXT("Enter Kanfold fires"), EnteredKanfold.bFired);
 	TestTrue(TEXT("Enter Kanfold opens strongholds"), Kanfold.bStrongholdsEnabled);

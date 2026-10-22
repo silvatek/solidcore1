@@ -63,9 +63,10 @@ namespace
 		return Monsters[FMath::RandRange(0, Monsters.Num() - 1)];
 	}
 
+	/** A blow comes off that armour. Strength stops at zero. */
 	void Land(FSolidArmour& Armour, const int32 Power)
 	{
-		Armour.Strength -= static_cast<float>(Power);
+		Armour.Strength = FMath::Max(0.f, Armour.Strength - static_cast<float>(Power));
 	}
 
 	const TCHAR* ItemWeaponName(const FSolidItem& Item)

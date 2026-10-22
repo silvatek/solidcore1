@@ -509,4 +509,75 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattleArmourFloorTest,
+	"SolidCore1.Battle.ArmourFloor",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattleArmourFloorTest::RunTest(const FString& Parameters)
+{
+	USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
+	FSolidMonsterGroup Group = SolidBattleTestPrivate::OneRaptor(TEXT("Attack"));
+	FSolidMonster* Raptor = Group.Get(0);
+	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+	FSolidBattle Battle(Squad, &Group);
+	Battle.Inventory = &Inventory;
+	const int32 MainIndex = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
+	const FSolidItem* MainHand = MainIndex != INDEX_NONE && Inventory.Worn[MainIndex].IsWeapon()
+		? &Inventory.Worn[MainIndex]
+		: nullptr;
+	if (!Raptor || !MainHand || MainHand->Weapon.Speed <= KINDA_SMALL_NUMBER)
+	{
+		AddError(TEXT("the one raptor gave the battle no spear and no monster"));
+		return false;
+	}
+	Raptor->Weapon.Speed = MainHand->Weapon.Speed * 2.f;
+
+	const float SquadStart = Battle.GetSquadDefence();
+	const float GroupStart = Battle.GetGroupDefence();
+
+	if (!Battle.AdvanceToNextEvent())
+	{
+		AddError(TEXT("the fight did not start"));
+		return false;
+	}
+	TestEqual(TEXT("they prepare"), Battle.Log.Num(), 2);
+	TestEqual(TEXT("the captain prepares"), Battle.Log[0].Summary(), FString(TEXT("Captain prepares.")));
+	TestEqual(TEXT("the raptor prepares"), Battle.Log[1].Summary(), FString(TEXT("Raptor prepares.")));
+	TestEqual(TEXT("the squad's armour"), Battle.GetSquadDefence(), SquadStart);
+	TestEqual(TEXT("the group's armour"), Battle.GetGroupDefence(), GroupStart);
+
+	if (!Battle.AdvanceToNextEvent())
+	{
+		AddError(TEXT("the spear did not land"));
+		return false;
+	}
+	TestEqual(TEXT("the spear"), Battle.Log.Num(), 3);
+	TestEqual(TEXT("the spear line"), Battle.Log[2].Summary(), FString(TEXT("Captain attacks Raptor with Crude spear.")));
+	TestEqual(TEXT("the squad is still whole"), Battle.GetSquadDefence(), SquadStart);
+	TestEqual(TEXT("the spear leaves the hide at 0"), Battle.GetGroupDefence(), 0.f);
+
+	if (!Battle.AdvanceToNextEvent())
+	{
+		AddError(TEXT("the claws did not land"));
+		return false;
+	}
+	TestEqual(TEXT("the captain prepares again and the raptor attacks"), Battle.Log.Num(), 5);
+	TestEqual(TEXT("recover ends in another prepare"), Battle.Log[3].Summary(), FString(TEXT("Captain prepares.")));
+	TestEqual(TEXT("the claws line"), Battle.Log[4].Summary(), FString(TEXT("Raptor attacks Captain with Claws.")));
+	TestEqual(TEXT("the claws leave the rags at 0"), Battle.GetSquadDefence(), 0.f);
+	TestEqual(TEXT("the hide stays at 0"), Battle.GetGroupDefence(), 0.f);
+
+	if (!Battle.AdvanceToNextEvent())
+	{
+		AddError(TEXT("the second spear did not land"));
+		return false;
+	}
+	TestEqual(TEXT("the second spear"), Battle.Log.Num(), 6);
+	TestEqual(TEXT("the second spear line"), Battle.Log[5].Summary(), FString(TEXT("Captain attacks Raptor with Crude spear.")));
+	TestEqual(TEXT("the rags stay at 0"), Battle.GetSquadDefence(), 0.f);
+	TestEqual(TEXT("another spear stays at 0"), Battle.GetGroupDefence(), 0.f);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

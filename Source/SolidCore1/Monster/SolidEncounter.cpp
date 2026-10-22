@@ -116,15 +116,21 @@ namespace SolidEncounterPrivate
 		}
 	}
 
-	/** Monster battle plans. A group finds its plan in this array by name. */
-	void AddBattlePlans(TArray<FSolidBattlePlan>& Plans)
+	/** Monster battle plans. Built once. A group finds its plan here by name. */
+	const TArray<FSolidBattlePlan>& BattlePlans()
 	{
-		Plans.Add({
-			TEXT("Attack"),
-			ESolidBattleFormation::Mob,
-			ESolidBattleSpacing::Standard,
-			ESolidAggression::Attack,
-			ESolidTargetStrategy::Random});
+		static const TArray<FSolidBattlePlan> Plans = []
+		{
+			TArray<FSolidBattlePlan> Built;
+			Built.Add({
+				TEXT("Attack"),
+				ESolidBattleFormation::Mob,
+				ESolidBattleSpacing::Standard,
+				ESolidAggression::Attack,
+				ESolidTargetStrategy::Random});
+			return Built;
+		}();
+		return Plans;
 	}
 
 	/** The group's plan is the monster battle plan of that name. */
@@ -136,10 +142,8 @@ namespace SolidEncounterPrivate
 		{
 			return;
 		}
-		TArray<FSolidBattlePlan> Plans;
-		AddBattlePlans(Plans);
 		const TCHAR* Key = Spec.Plan;
-		const FSolidBattlePlan* Plan = Plans.FindByPredicate([Key](const FSolidBattlePlan& Candidate)
+		const FSolidBattlePlan* Plan = BattlePlans().FindByPredicate([Key](const FSolidBattlePlan& Candidate)
 		{
 			return Candidate.Is(Key);
 		});

@@ -93,7 +93,6 @@ Cloud agents are a **code + git workshop**. They do not replace the Windows Unre
 - If asked to start coding for a story that is not marked `Ready`, request confirmation before proceeding.
 - Leave the story `In Progress` when the product commit lands on `main`. Properly tested means the checks in Collaborative workflow and Cursor Cloud have happened. The user has pulled, rebuilt, run the tests, and run PIE when the story changes play. The agent has reviewed that report, and any screenshot. A solidcore1-ue agent's `tools\test.bat` pass is part of the work and leaves the story `In Progress`.
 - Set `Done` only after that testing, and only after the user and the agent agree the story is done. The agreement is a discussion. The user says whether they are happy with the implementation. The agent confirms that every acceptance criterion is met. Then set the status to `Done` and move the file to `Planning/Done/`, in one commit. That commit message starts with `Plan: `.
-- `ideas.md` is the inbox. Copy each new idea into a new file under `Planning/`. Do not edit `ideas.md`.
 
 ## Names
 

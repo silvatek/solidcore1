@@ -188,7 +188,6 @@ Content/
   WorldLore.md
   WorldMap.txt                 # ASCII 128×64 biome overlay and color key
 GameVision.md                  # Design north star
-ideas.md                       # Story inbox
 LICENSE
 NOTICE
 Planning/                      # One open story per file

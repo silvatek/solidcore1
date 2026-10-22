@@ -1,6 +1,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "Battle/SolidBattle.h"
+#include "Battle/SolidBattlePanel.h"
 #include "Company/SolidCompany.h"
 #include "Inventory/SolidInventory.h"
 #include "Inventory/SolidItem.h"
@@ -229,6 +230,39 @@ bool FSolidBattleWeaponsTest::RunTest(const FString& Parameters)
 	SolidInventory::PlaceWorn(Inventory, SolidInventory::ESlot::MainHand, nullptr);
 	TestEqual(TEXT("an empty main hand has no weapon"), Battle.SquadWeapon(0).Power, 0);
 	TestEqual(TEXT("the companion still has a spear"), Battle.SquadWeapon(1).Power, CompanionSpear.Power);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattlePanelTest,
+	"SolidCore1.Battle.Panel",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattlePanelTest::RunTest(const FString& Parameters)
+{
+	USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
+	FSolidMonsterGroup Group = SolidBattleTestPrivate::OneRaptor(TEXT("Attack"));
+	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+	FSolidBattle Battle(Squad, &Group);
+	Battle.Inventory = &Inventory;
+
+	TArray<FSolidBattlePanel::FRow> Rows;
+	FSolidBattlePanel::CollectRows(Battle, Rows);
+	TestEqual(TEXT("the page names the fight"), Rows.Num() >= 1 ? Rows[0].Text : FString(), FString(FSolidBattlePanel::Title));
+	TestEqual(TEXT("the page has a time column"), Rows.Num() >= 2 ? Rows[1].Stamp : FString(), FString(FSolidBattlePanel::TimeHeading));
+	TestEqual(TEXT("the page has a summary column"), Rows.Num() >= 2 ? Rows[1].Text : FString(), FString(FSolidBattlePanel::SummaryHeading));
+	TestEqual(TEXT("an unstarted log says so"), Rows.Num() >= 3 ? Rows[2].Text : FString(), FString(FSolidBattlePanel::EmptyText));
+
+	Battle.AdvanceToNextEvent();
+	FSolidBattlePanel::CollectRows(Battle, Rows);
+	TestEqual(TEXT("the heading stays"), Rows.Num() >= 2 ? Rows[1].Text : FString(), FString(FSolidBattlePanel::SummaryHeading));
+	TestTrue(TEXT("the log has a line"), Battle.Log.Num() >= 1);
+	if (Battle.Log.Num() >= 1 && Rows.Num() >= 3)
+	{
+		TestEqual(TEXT("the first line is at the start"), Rows[2].Stamp, TEXT("0"));
+		TestEqual(TEXT("the first line is the log"), Rows[2].Text, Battle.Log[0].Summary());
+	}
+	TestEqual(TEXT("one row for each log line"), Rows.Num(), Battle.Log.Num() + 2);
 	return true;
 }
 

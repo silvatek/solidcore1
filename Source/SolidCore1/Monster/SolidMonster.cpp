@@ -74,6 +74,11 @@ int32 SolidMonster::PowerFor(const ESolidMonsterSize Size, const double Standard
 	return SolidItemType::PowerForGrade(Grade, Grade == SizeCount - 1, StandardNormal);
 }
 
+bool FSolidMonster::Detects(const FVector2D& Point) const
+{
+	return FVector2D::Distance(XY, Point) <= DetectionRange;
+}
+
 void FSolidMonster::Arm(const TCHAR* WeaponName, const TCHAR* ArmourName, const double StandardNormal)
 {
 	Weapon.Name = (WeaponName && WeaponName[0]) ? WeaponName : TEXT("");

@@ -22,6 +22,7 @@ A click on those reptiles still leaves the battle unstarted. Entering DetectionR
 - The battle ends when the captain and every companion in the squad are outside every monster's EscapeDistance. The attack cycle and the retreat stop. Entering a DetectionRange again starts the battle again.
 - The battle ends when every monster in the battle is dead, or when the captain and every companion in the squad are dead. That ends it even while the other side is still inside an EscapeDistance. The attack cycle and the retreat stop. A dead monster does not start the battle again.
 - A click on a monster does not start the battle.
+- While a fight is underway, a board in the journal's oak and bronze sits on the right and lists the battle log. The newest lines stay when the board fills. The world stays visible and the controls stay with the captain. The board stays up after the last blow.
 - A monster moves no farther than its EscapeDistance from its spawn point. That point is the place [Basic monsters](basic-monsters.md) put it.
 - An empty main hand makes no attack. Prepare, attack, and recover do not run for that captain. A companion's fixed weapon is never empty. A monster's fixed weapon is never empty.
 - The battle reads attack or retreat, and TargetStrategy, from the plan. Random chooses any opponent still in the battle, and each of them is equally likely.
@@ -45,6 +46,7 @@ A click on those reptiles still leaves the battle unstarted. Entering DetectionR
 - The captain's death records Killed by monsters when that event has not already fired. Closing the monster message still records it too, and a second record does nothing. The death enables Meagre, as any death in this battle does. The wake leaves Rags in the armour slot and empties the rest of the inventory. The wake uses the company stronghold, the cave until the company has moved. The stronghold chest stays as it was. The journal records `Meagre size unlocked` when this death is what enables it.
 - DetectionRange and EscapeDistance each start at 5 m, which is 500 cm. Distance is horizontal. A distance inside or equal to DetectionRange can start the battle. A distance beyond EscapeDistance is outside it. Play-testing may change either figure on its own.
 - The blow has no range. A later story adds attack range. This story does not. The attack spends the weapon's Power from [Combat preparation](Done/combat-preparation.md).
+- The battle board reads a copy of the captain's kit. The play kit stays as it is, and this board does not record Killed by monsters. The wake is what records that death.
 - [Open the squad builder on leaving a stronghold](Done/squad-builder-on-stronghold-exit.md) is the Build squad page. The leave after this wake opens that page. The usual "nothing to arrange" check does not keep it closed. Closing the page spawns the selected companions outside, on the grass the leave already uses.
 - A companion who is not in the squad stays at the stronghold, so that companion does not enter a range and does not keep the battle going.
 - Damage in the retreat rule is the Power taken off Strength.

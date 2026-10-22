@@ -7,6 +7,7 @@
 #include "Terrain/SolidWorldChart.h"
 #include "Vegetation/SolidForage.h"
 #include "Monster/SolidEncounter.h"
+#include "Battle/SolidBattle.h"
 #include "Company/SolidCompany.h"
 #include "SolidSight.h"
 #include "SolidGameMode.generated.h"
@@ -104,6 +105,19 @@ public:
 	/** The game instance's company. Null when the instance is missing. */
 	USolidCompany* GetCompany() const;
 	USolidSquad* GetSquad() const { return Squad; }
+
+	/**
+	 * The fight underway. Null until a monster detects the captain.
+	 * The board keeps it after the last blow.
+	 */
+	const FSolidBattle* GetBattle() const { return Battle.Get(); }
+
+	/**
+	 * Start a fight when a monster detects the captain, then move that fight forward.
+	 * The log reads a copy of the kit. The play kit stays as it is.
+	 * Once the captain's body is at 0, the log stays and the fight does not move.
+	 */
+	void AdvanceBattle(float DeltaSeconds, const FVector& CaptainLocation);
 
 	/** Starting selection (Sam, then Alex). The event roster is the whole company. The live squad starts empty. */
 	static constexpr int32 DefaultCompanionCount = 2;
@@ -279,6 +293,11 @@ protected:
 	/** Open-world encounters from the catalog, after Place. The same again on the next visit. */
 	TArray<FSolidEncounter> Encounters;
 	bool bMonstersChosen = false;
+
+	/** The current fight. The group it points at lives in Encounters. */
+	TUniquePtr<FSolidBattle> Battle;
+	/** Copy of the kit the fight reads. The play kit stays as it is. */
+	SolidInventory::FLoadout BattleLoadout;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidBuilding>> SpawnedTownBuildings;

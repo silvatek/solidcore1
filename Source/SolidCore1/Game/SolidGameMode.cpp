@@ -37,6 +37,7 @@
 #include "Vegetation/SolidForagePile.h"
 #include "Monster/SolidEncounter.h"
 #include "Monster/SolidEncounters.h"
+#include "Inventory/SolidItem.h"
 #include "Vegetation/SolidForestTrees.h"
 #include "Vegetation/SolidTree.h"
 #include "Components/CapsuleComponent.h"
@@ -1984,4 +1985,79 @@ void ASolidGameMode::EnsureVegetation()
 	SeedForagePiles();
 	ChooseMonsters(Streamer->GetTerrainMap());
 	SeedMonsters();
+}
+
+namespace
+{
+	/** True while the copied kit still has armour on the body. */
+	bool CaptainStillStanding(const SolidInventory::FLoadout& Loadout)
+	{
+		const int32 Body = SolidInventory::WornIndex(SolidInventory::ESlot::Body);
+		if (Body == INDEX_NONE)
+		{
+			return false;
+		}
+		const FSolidItem& Worn = Loadout.Worn[Body];
+		return Worn.IsArmour() && Worn.Armour.Strength > 0.f;
+	}
+
+	FSolidMonsterGroup* GroupThatDetects(TArray<FSolidEncounter>& Encounters, const FVector2D& Here)
+	{
+		for (FSolidEncounter& Encounter : Encounters)
+		{
+			for (FSolidMonsterGroup& Group : Encounter.Groups)
+			{
+				for (int32 Index = 0; Index < Group.Num(); ++Index)
+				{
+					const FSolidMonster* Monster = Group.Get(Index);
+					if (Monster && Monster->Detects(Here))
+					{
+						return &Group;
+					}
+				}
+			}
+		}
+		return nullptr;
+	}
+}
+
+void ASolidGameMode::AdvanceBattle(const float DeltaSeconds, const FVector& CaptainLocation)
+{
+	if (IsInClosedVisit())
+	{
+		return;
+	}
+	if (!FMath::IsFinite(DeltaSeconds) || DeltaSeconds < 0.f)
+	{
+		return;
+	}
+
+	if (!Battle)
+	{
+		if (!Squad)
+		{
+			return;
+		}
+		FSolidMonsterGroup* Detected = GroupThatDetects(Encounters, FVector2D(CaptainLocation.X, CaptainLocation.Y));
+		if (!Detected)
+		{
+			return;
+		}
+		if (const USolidGameState* State = GetConfiguration())
+		{
+			BattleLoadout = State->Inventory;
+		}
+		else
+		{
+			BattleLoadout = SolidInventory::StartingLoadout();
+		}
+		Battle = MakeUnique<FSolidBattle>(Squad, Detected);
+		Battle->Inventory = &BattleLoadout;
+	}
+
+	if (!CaptainStillStanding(BattleLoadout))
+	{
+		return;
+	}
+	Battle->Advance(DeltaSeconds);
 }

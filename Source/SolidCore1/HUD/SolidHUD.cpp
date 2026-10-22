@@ -9,6 +9,8 @@
 #include "Inventory/SolidStorage.h"
 #include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
 #include "Journal/SolidJournal.h"
+#include "Battle/SolidBattlePanel.h"
+#include "Battle/SolidBattle.h"
 #include "Menus/SolidMainMenu.h"
 #include "Menus/SolidMenuPointer.h"
 #include "Menus/SolidSquadBuilder.h"
@@ -756,6 +758,182 @@ namespace SolidHUDPrivate
 			HintItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
 			Canvas->DrawItem(HintItem);
 			break;
+		}
+	}
+
+	/** Oak board on the right. The same frame as the journal. The world stays visible around it. */
+	static void DrawBattleBoard(UCanvas* Canvas, const FSolidBattle& Battle)
+	{
+		if (!Canvas)
+		{
+			return;
+		}
+
+		TArray<FSolidBattlePanel::FRow> Rows;
+		FSolidBattlePanel::CollectRows(Battle, Rows);
+		if (Rows.Num() == 0)
+		{
+			return;
+		}
+
+		UFont* Font = GEngine ? GEngine->GetMediumFont() : nullptr;
+		if (!Font && GEngine)
+		{
+			Font = GEngine->GetSmallFont();
+		}
+
+		float StampWidth = 0.f;
+		float TextWidth = 0.f;
+		float LineHeight = 18.f;
+		float TitleW = 0.f;
+		float TitleH = 18.f;
+		FString TitleText(FSolidBattlePanel::Title);
+		for (const FSolidBattlePanel::FRow& Row : Rows)
+		{
+			if (Row.Kind == FSolidBattlePanel::EKind::Title)
+			{
+				if (!Row.Text.IsEmpty())
+				{
+					TitleText = Row.Text;
+				}
+				continue;
+			}
+
+			float StampW = 0.f;
+			float StampH = 0.f;
+			float TextW = 0.f;
+			float TextH = 0.f;
+			if (Font)
+			{
+				if (!Row.Stamp.IsEmpty())
+				{
+					Canvas->StrLen(Font, Row.Stamp, StampW, StampH);
+				}
+				Canvas->StrLen(Font, Row.Text.IsEmpty() ? TEXT(" ") : Row.Text, TextW, TextH);
+			}
+			else
+			{
+				StampW = static_cast<float>(Row.Stamp.Len() * 8);
+				TextW = static_cast<float>(FMath::Max(Row.Text.Len(), 1) * 8);
+				StampH = 18.f;
+				TextH = 18.f;
+			}
+			StampWidth = FMath::Max(StampWidth, StampW);
+			TextWidth = FMath::Max(TextWidth, TextW);
+			LineHeight = FMath::Max(LineHeight, FMath::Max(StampH, TextH));
+		}
+		if (Font)
+		{
+			Canvas->StrLen(Font, TitleText, TitleW, TitleH);
+		}
+		else
+		{
+			TitleW = static_cast<float>(TitleText.Len() * 8);
+			TitleH = 18.f;
+		}
+
+		const float ViewW = static_cast<float>(Canvas->SizeX);
+		const float ViewH = static_cast<float>(Canvas->SizeY);
+		const float Margin = 24.f;
+		const float ColumnSpan = StampWidth > 0.f ? StampWidth + USolidJournal::ColumnGap : 0.f;
+		const float ContentW = ColumnSpan + TextWidth;
+		const float LineStep = LineHeight + USolidJournal::LineGap;
+		const float MaxBoardW = FMath::Max(0.f, FMath::Min(ViewW * 0.42f, ViewW - Margin * 2.f));
+		const float MaxBoardH = FMath::Max(0.f, ViewH - Margin * 2.f);
+		const float BoardW = FMath::Min(MaxBoardW, ContentW + USolidJournal::BoardPad * 2.f);
+		int32 FlowRows = 0;
+		for (const FSolidBattlePanel::FRow& Row : Rows)
+		{
+			if (Row.Kind != FSolidBattlePanel::EKind::Title)
+			{
+				++FlowRows;
+			}
+		}
+		const float WantH = static_cast<float>(FlowRows) * LineStep + USolidJournal::BoardPad * 2.f;
+		const float BoardH = FMath::Min(MaxBoardH, FMath::Max(WantH, LineStep + USolidJournal::BoardPad * 2.f));
+		const float BoxX = ViewW - Margin - BoardW;
+		const float BoxY = Margin;
+
+		const SolidHudTheme::FFrame Frame = SolidHudTheme::MenuFrame();
+		DrawOakFrame(Canvas, BoxX, BoxY, BoardW, BoardH, Frame);
+
+		const SolidHudTheme::FPalette Palette = SolidHudTheme::OakAndBronze();
+		const float Band = SolidHudTheme::BandThickness(Frame);
+		const USolidJournal::FTitlePlate Plate = USolidJournal::TitlePlate(BoxX, BoxY, BoardW, TitleW, TitleH, Band);
+		FillRect(Canvas, Plate.X, Plate.Y, Plate.W, Plate.H, Palette.Bronze);
+		if (!TitleText.IsEmpty() && Font)
+		{
+			const float NameX = Plate.X + (Plate.W - TitleW) * 0.5f;
+			const float NameY = Plate.Y + (Plate.H - TitleH) * 0.5f;
+			FCanvasTextItem NameItem(FVector2D(NameX, NameY), FText::FromString(TitleText), Font, Palette.Title);
+			NameItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+			Canvas->DrawItem(NameItem);
+		}
+
+		const float OriginX = BoxX + USolidJournal::BoardPad;
+		const USolidJournal::FColumns Columns = USolidJournal::Columns(OriginX, StampWidth);
+		const float Bottom = BoxY + BoardH - USolidJournal::BoardPad;
+		float Y = BoxY + USolidJournal::BoardPad;
+
+		int32 FirstEntry = INDEX_NONE;
+		int32 EntryCount = 0;
+		for (int32 Index = 0; Index < Rows.Num(); ++Index)
+		{
+			if (Rows[Index].Kind == FSolidBattlePanel::EKind::Entry || Rows[Index].Kind == FSolidBattlePanel::EKind::Empty)
+			{
+				if (FirstEntry == INDEX_NONE)
+				{
+					FirstEntry = Index;
+				}
+				++EntryCount;
+			}
+		}
+		const float HeadingRoom = LineStep;
+		const int32 Fit = FMath::Max(0, FMath::FloorToInt((Bottom - (Y + HeadingRoom)) / LineStep));
+		const int32 Skip = FMath::Max(0, EntryCount - Fit);
+
+		for (int32 Index = 0; Index < Rows.Num(); ++Index)
+		{
+			const FSolidBattlePanel::FRow& Row = Rows[Index];
+			if (Row.Kind == FSolidBattlePanel::EKind::Title)
+			{
+				continue;
+			}
+			if (Row.Kind == FSolidBattlePanel::EKind::Entry && FirstEntry != INDEX_NONE && Index < FirstEntry + Skip)
+			{
+				continue;
+			}
+			if (Y + LineHeight > Bottom)
+			{
+				break;
+			}
+
+			const bool bHeading = Row.Kind == FSolidBattlePanel::EKind::Heading;
+			const FLinearColor Color = bHeading ? Palette.Title : Palette.Ink;
+			if (Font && !Row.Stamp.IsEmpty())
+			{
+				FCanvasTextItem StampItem(FVector2D(Columns.StampX, Y), FText::FromString(Row.Stamp), Font, Color);
+				StampItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+				Canvas->DrawItem(StampItem);
+			}
+			if (Font && !Row.Text.IsEmpty())
+			{
+				FCanvasTextItem TextItem(FVector2D(Columns.TextX, Y), FText::FromString(Row.Text), Font, Color);
+				TextItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+				Canvas->DrawItem(TextItem);
+			}
+			if (bHeading)
+			{
+				const float RuleInset = Band + 18.f;
+				FillRect(
+					Canvas,
+					BoxX + RuleInset,
+					Y + LineHeight + USolidJournal::LineGap * 0.35f,
+					FMath::Max(0.f, BoardW - RuleInset * 2.f),
+					2.f,
+					Palette.Bronze);
+			}
+			Y += LineStep;
 		}
 	}
 
@@ -1580,6 +1758,19 @@ void ASolidHUD::DrawHUD()
 	else if (bShowMainMenu)
 	{
 		DrawMainMenuPopup();
+	}
+	else if (!bShowCharacterEditor)
+	{
+		if (UWorld* BattleWorld = GetWorld())
+		{
+			if (const ASolidGameMode* GameMode = BattleWorld->GetAuthGameMode<ASolidGameMode>())
+			{
+				if (const FSolidBattle* Battle = GameMode->GetBattle())
+				{
+					SolidHUDPrivate::DrawBattleBoard(Canvas, *Battle);
+				}
+			}
+		}
 	}
 
 	if (bShowMessage)

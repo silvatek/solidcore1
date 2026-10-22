@@ -241,6 +241,13 @@ void ASolidCharacter::OnRep_PlayerState()
 void ASolidCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (!IsMenuOverlayOpen())
+	{
+		if (ASolidGameMode* GameMode = GetWorld() ? GetWorld()->GetAuthGameMode<ASolidGameMode>() : nullptr)
+		{
+			GameMode->AdvanceBattle(DeltaTime, GetActorLocation());
+		}
+	}
 	TickSquadFormationDrill(DeltaTime);
 	UpdatePointerMouseLook();
 	UpdateMenuPointerHover();

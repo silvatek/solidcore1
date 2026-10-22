@@ -490,4 +490,25 @@ bool FSolidMonsterBattlePlanTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidMonsterDetectionTest,
+	"SolidCore1.Monster.Detection",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidMonsterDetectionTest::RunTest(const FString& Parameters)
+{
+	FSolidRaptor Raptor;
+	Raptor.XY = FVector2D::ZeroVector;
+	const float Range = FSolidMonster::StartDetectionRangeCm;
+	TestEqual(TEXT("detection starts at 5 m"), Raptor.DetectionRange, Range);
+	TestTrue(TEXT("standing on the monster is inside"), Raptor.Detects(FVector2D::ZeroVector));
+	TestTrue(TEXT("the edge is inside"), Raptor.Detects(FVector2D(Range, 0.f)));
+	TestFalse(TEXT("past the edge is outside"), Raptor.Detects(FVector2D(Range + 1.f, 0.f)));
+
+	Raptor.DetectionRange = Range * 0.5f;
+	TestFalse(TEXT("a shorter range leaves the old edge outside"), Raptor.Detects(FVector2D(Range, 0.f)));
+	TestTrue(TEXT("the new edge is inside"), Raptor.Detects(FVector2D(Raptor.DetectionRange, 0.f)));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

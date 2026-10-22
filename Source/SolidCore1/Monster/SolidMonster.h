@@ -91,6 +91,13 @@ public:
 	/** This monster's armour. Strength is the starting figure. */
 	FSolidArmour Armour;
 
+	/** How close the captain must be before this monster starts a fight. Centimetres. Starts at 5 m. */
+	static constexpr float StartDetectionRangeCm = 500.f;
+	float DetectionRange = StartDetectionRangeCm;
+
+	/** True when that ground point is inside DetectionRange. Distance is horizontal. */
+	bool Detects(const FVector2D& Point) const;
+
 	/**
 	 * Stores the weapon and armour this monster keeps.
 	 * Power is the size roll for StandardNormal. Speed and Strength are the starting figures.

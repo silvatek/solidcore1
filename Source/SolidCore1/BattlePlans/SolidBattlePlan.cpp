@@ -4,7 +4,8 @@ bool FSolidBattlePlan::SameAs(const FSolidBattlePlan& Other) const
 {
 	return Name == Other.Name
 		&& Formation == Other.Formation
-		&& Spacing == Other.Spacing;
+		&& Spacing == Other.Spacing
+		&& AttackOrRetreat == Other.AttackOrRetreat;
 }
 
 bool FSolidBattlePlan::Is(const FString& PlanName) const
@@ -17,6 +18,16 @@ bool FSolidBattlePlan::IsParade() const
 	return Formation == ESolidBattleFormation::Parade;
 }
 
+bool FSolidBattlePlan::Attacks() const
+{
+	return AttackOrRetreat == ESolidBattleAttackOrRetreat::Attack;
+}
+
+bool FSolidBattlePlan::Retreats() const
+{
+	return AttackOrRetreat == ESolidBattleAttackOrRetreat::Retreat;
+}
+
 FSolidBattlePlan FSolidBattlePlan::Defined(const TCHAR* PlanName)
 {
 	FSolidBattlePlan Plan;
@@ -25,6 +36,7 @@ FSolidBattlePlan FSolidBattlePlan::Defined(const TCHAR* PlanName)
 		Plan.Name = TEXT("Attack");
 		Plan.Formation = ESolidBattleFormation::Mob;
 		Plan.Spacing = ESolidBattleSpacing::Standard;
+		Plan.AttackOrRetreat = ESolidBattleAttackOrRetreat::Attack;
 	}
 	return Plan;
 }

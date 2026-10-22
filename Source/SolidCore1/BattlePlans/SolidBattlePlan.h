@@ -26,9 +26,16 @@ enum class ESolidBattleSpacing : uint8
 	Wide UMETA(DisplayName = "Wide"),
 };
 
+/** Attack or retreat, stored on a battle plan. */
+enum class ESolidBattleAttackOrRetreat : uint8
+{
+	Attack,
+	Retreat,
+};
+
 /**
  * One battle plan. The company catalog holds these.
- * Name, formation, and spacing are what the plan is. The squad selects from that catalog.
+ * Name, formation, spacing, and attack or retreat are what the plan is. The squad selects from that catalog.
  */
 class FSolidBattlePlan
 {
@@ -36,8 +43,10 @@ public:
 	FString Name;
 	ESolidBattleFormation Formation = ESolidBattleFormation::Column;
 	ESolidBattleSpacing Spacing = ESolidBattleSpacing::Standard;
+	/** Attack or retreat. */
+	ESolidBattleAttackOrRetreat AttackOrRetreat = ESolidBattleAttackOrRetreat::Attack;
 
-	/** True when the name, the formation, and the spacing are the same. */
+	/** True when the name, the formation, the spacing, and attack or retreat are the same. */
 	bool SameAs(const FSolidBattlePlan& Other) const;
 
 	/** True when this plan has that name. */
@@ -45,6 +54,12 @@ public:
 
 	/** True when companions stand in front of the captain and face him. */
 	bool IsParade() const;
+
+	/** True when this plan stores attack. */
+	bool Attacks() const;
+
+	/** True when this plan stores retreat. */
+	bool Retreats() const;
 
 	/**
 	 * The defined plan of that name.

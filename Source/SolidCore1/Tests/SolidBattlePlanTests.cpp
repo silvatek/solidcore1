@@ -202,6 +202,12 @@ bool FSolidBattlePlanIdentityTest::RunTest(const FString& Parameters)
 	FSolidBattlePlan Column = Starter;
 	Column.Formation = ESolidBattleFormation::Column;
 	TestFalse(TEXT("a new formation stays the same plan"), Column.SameAs(Starter));
+
+	FSolidBattlePlan Retreating = Starter;
+	Retreating.AttackOrRetreat = ESolidBattleAttackOrRetreat::Retreat;
+	TestTrue(TEXT("Starter attacks"), Starter.Attacks());
+	TestTrue(TEXT("the other plan retreats"), Retreating.Retreats());
+	TestFalse(TEXT("a retreat stays the same plan"), Retreating.SameAs(Starter));
 	return true;
 }
 
@@ -659,6 +665,18 @@ bool FSolidBattlePlanNewGameTest::RunTest(const FString& Parameters)
 		{
 			TestTrue(*FString::Printf(TEXT("%s uses Line"), Name), Plan && Plan->Formation == ESolidBattleFormation::Line);
 			TestTrue(*FString::Printf(TEXT("%s uses standard spacing"), Name), Plan && Plan->Spacing == ESolidBattleSpacing::Standard);
+		}
+		const bool bAttacks = FCString::Strcmp(Name, TEXT("Starter")) == 0
+			|| FCString::Strcmp(Name, TEXT("Attack")) == 0
+			|| FCString::Strcmp(Name, TEXT("Tight mob")) == 0
+			|| FCString::Strcmp(Name, TEXT("Loose mob")) == 0;
+		if (bAttacks)
+		{
+			TestTrue(*FString::Printf(TEXT("%s attacks"), Name), Plan && Plan->Attacks());
+		}
+		else
+		{
+			TestTrue(*FString::Printf(TEXT("%s retreats"), Name), Plan && Plan->Retreats());
 		}
 	}
 

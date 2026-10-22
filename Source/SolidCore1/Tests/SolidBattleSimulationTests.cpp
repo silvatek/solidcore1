@@ -3,8 +3,10 @@
 #include "Battle/SolidBattle.h"
 #include "Company/SolidCompany.h"
 #include "Inventory/SolidInventory.h"
+#include "Inventory/SolidItem.h"
 #include "Inventory/SolidItemType.h"
 #include "Monster/SolidEncounters.h"
+#include "Monster/SolidRaptor.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -30,6 +32,7 @@ struct FSolidBattleSimulation
 		Squad->InitializeFromCompany(Company);
 		Squad->SetSelectedCompanions({});
 		Battle = FSolidBattle(Squad, nullptr);
+		Battle.Inventory = &Inventory;
 	}
 
 	/** The encounter the game builds from that definition. The battle links its first group. */
@@ -227,6 +230,25 @@ bool FSolidBattleSidesTest::RunTest(const FString& Parameters)
 
 	const SolidEncounter::FGroup& Spec = Sim.Encounter.Definition.Groups[0];
 	TestEqual(TEXT("the group has the definition's raptors"), Sim.Battle.Group->Num(), Spec.Count);
+
+	const FSolidItemType* Spear = SolidItemType::FindById(SolidItemType::IdCrudeSpear);
+	const int32 SpearPower = Spear
+		? SolidItemType::PowerFor(Spear->Quality, FSolidItem::StartingDraw)
+		: 0;
+	const float RagsStrength = FSolidItem::FromId(SolidItemType::IdRags, 1).Armour.Strength;
+	FSolidRaptor One;
+	One.Size = ESolidMonsterSize::Small;
+	One.Arm(FSolidRaptor::Claws, FSolidRaptor::Hide, FSolidItem::StartingDraw);
+	TestEqual(TEXT("the squad's power is the crude spear"), Sim.Battle.GetSquadPower(), SpearPower);
+	TestEqual(TEXT("the squad's defence is the rags"), Sim.Battle.GetSquadDefence(), RagsStrength);
+	TestEqual(
+		TEXT("the group's power is its claws"),
+		Sim.Battle.GetGroupPower(),
+		Spec.Count * One.Weapon.Power);
+	TestEqual(
+		TEXT("the group's defence is its hides"),
+		Sim.Battle.GetGroupDefence(),
+		static_cast<float>(Spec.Count) * One.Armour.Strength);
 	for (int32 Index = 0; Index < Sim.Battle.Group->Num(); ++Index)
 	{
 		const FSolidMonster* Monster = Sim.Battle.Group->Get(Index);

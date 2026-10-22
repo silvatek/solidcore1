@@ -4,9 +4,15 @@
 #include "Company/SolidSquad.h"
 #include "Monster/SolidMonsterGroup.h"
 
+namespace SolidInventory
+{
+	struct FLoadout;
+}
+
 /**
- * One battle. It links one squad and one monster group.
- * Those two already hold their battle plans. This reads the active plan on each.
+ * One battle. It links one squad, the captain's loadout, and one monster group.
+ * The squad and the group already hold their battle plans. This reads the active plan on each.
+ * Power is weapon Power. Defence is armour Strength. A later gauge can show the totals.
  */
 class FSolidBattle
 {
@@ -17,6 +23,12 @@ public:
 	/** The squad in this battle. Empty when that squad has gone. */
 	TWeakObjectPtr<USolidSquad> Squad;
 
+	/**
+	 * The captain's worn boxes and pack. The play state owns the loadout.
+	 * Null when this battle has not been given one.
+	 */
+	SolidInventory::FLoadout* Inventory = nullptr;
+
 	/** The monster group in this battle. The encounter owns the group. */
 	FSolidMonsterGroup* Group = nullptr;
 
@@ -25,4 +37,16 @@ public:
 
 	/** The group's active plan, or null when this battle has no group. */
 	const FSolidBattlePlan* GetGroupPlan() const;
+
+	/** Power of the captain's main hand, plus each companion the squad has out. */
+	int32 GetSquadPower() const;
+
+	/** Armour Strength of the captain's body, plus each companion the squad has out. */
+	float GetSquadDefence() const;
+
+	/** Power of every monster in the group. */
+	int32 GetGroupPower() const;
+
+	/** Armour Strength of every monster in the group. */
+	float GetGroupDefence() const;
 };

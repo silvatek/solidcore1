@@ -222,6 +222,8 @@ FString FSolidBattleLogEntry::Summary() const
 			*Weapon);
 	case ESolidBattleLogKind::Abandon:
 		return FString::Printf(TEXT("%s abandons the attack."), *Actor);
+	case ESolidBattleLogKind::Abort:
+		return FString::Printf(TEXT("%s aborts the attack on %s."), *Actor, *Target);
 	case ESolidBattleLogKind::Prepare:
 	default:
 		return FString::Printf(TEXT("%s prepares."), *Actor);
@@ -409,6 +411,24 @@ void FSolidBattle::Advance(const float Delta)
 	const bool bGroupAttacks = GetGroupPlan() && GetGroupPlan()->Attacks();
 	const FString CaptainName(TEXT("Captain"));
 
+	/** A blow on armour already at 0 does not land. */
+	auto Strike = [&](
+		FSolidArmour& Armour,
+		const int32 Power,
+		const float When,
+		const FString& Actor,
+		const FString& TargetName,
+		const FString& Weapon)
+	{
+		if (Armour.Strength <= 0.f)
+		{
+			Record(When, ESolidBattleLogKind::Abort, Actor, TargetName, FString());
+			return;
+		}
+		const bool bKilled = Land(Armour, Power);
+		Record(When, ESolidBattleLogKind::Attack, Actor, TargetName, Weapon, bKilled);
+	};
+
 	if (const FSolidItem* MainHand = WornItem(Inventory, SolidInventory::ESlot::MainHand))
 	{
 		if (MainHand->IsWeapon())
@@ -431,8 +451,7 @@ void FSolidBattle::Advance(const float Delta)
 				{
 					if (CaptainCycle.Target && Monsters.Contains(CaptainCycle.Target))
 					{
-						const bool bKilled = Land(CaptainCycle.Target->Armour, Power);
-						Record(When, ESolidBattleLogKind::Attack, CaptainName, MonsterName(CaptainCycle.Target), WeaponName, bKilled);
+						Strike(CaptainCycle.Target->Armour, Power, When, CaptainName, MonsterName(CaptainCycle.Target), WeaponName);
 					}
 				},
 				[&](const float When)
@@ -488,8 +507,7 @@ void FSolidBattle::Advance(const float Delta)
 					{
 						if (Cycle.Target && Monsters.Contains(Cycle.Target))
 						{
-							const bool bKilled = Land(Cycle.Target->Armour, Power);
-							Record(When, ESolidBattleLogKind::Attack, Actor, MonsterName(Cycle.Target), WeaponName, bKilled);
+							Strike(Cycle.Target->Armour, Power, When, Actor, MonsterName(Cycle.Target), WeaponName);
 						}
 					},
 					[&](const float When)
@@ -539,8 +557,7 @@ void FSolidBattle::Advance(const float Delta)
 			},
 			[&](const float When)
 			{
-				const bool bKilled = Land(Body->Armour, Power);
-				Record(When, ESolidBattleLogKind::Attack, Actor, CaptainName, WeaponName, bKilled);
+				Strike(Body->Armour, Power, When, Actor, CaptainName, WeaponName);
 			},
 			[&](const float When)
 			{

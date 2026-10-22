@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0565")
+#define SOLID_BUILD_ID TEXT("SC1-0566")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A battle finishes when one side has no armour left.")
+#define SOLID_BUILD_NOTE TEXT("An attack on a dead enemy is aborted.")
 #endif

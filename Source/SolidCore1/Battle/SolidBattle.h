@@ -16,11 +16,12 @@ enum class ESolidBattleLogKind : uint8
 	Prepare,
 	Attack,
 	Abandon,
+	Abort,
 };
 
 /**
  * One line in the battle log.
- * A prepare, an attack, or a prepare that was abandoned. A later screen can show Summary().
+ * A prepare, an attack, a prepare that was abandoned, or an attack on someone already dead.
  */
 struct FSolidBattleLogEntry
 {
@@ -29,9 +30,9 @@ struct FSolidBattleLogEntry
 	ESolidBattleLogKind Kind = ESolidBattleLogKind::Prepare;
 	/** Captain, a companion's name, or the monster's kind. */
 	FString Actor;
-	/** Who an attack struck. Empty for a prepare or an abandon. */
+	/** Who an attack struck, or who an abort was aimed at. Empty for a prepare or an abandon. */
 	FString Target;
-	/** Weapon an attack used. Empty for a prepare or an abandon. */
+	/** Weapon an attack used. Empty for a prepare, an abandon, or an abort. */
 	FString Weapon;
 	/** True when this attack left the target's armour at 0. */
 	bool bKilled = false;
@@ -46,6 +47,7 @@ struct FSolidBattleLogEntry
  * Power is weapon Power. Defence is armour Strength. A later gauge can show the totals.
  * Each fighter prepares and recovers on their own weapon Speed. The blow lands when that prepare ends.
  * That blow cannot drop armour Strength below 0. A blow that leaves it at 0 says kills.
+ * An attack on armour already at 0 is aborted.
  * The battle is finished when either side has no armour left. An escape will finish it too, once a side can leave.
  * The log records those moments, in order.
  */

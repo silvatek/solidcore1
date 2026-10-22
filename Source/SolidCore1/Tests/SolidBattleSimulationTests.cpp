@@ -808,4 +808,99 @@ bool FSolidBattleRagsTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattleAbortTest,
+	"SolidCore1.Battle.Abort",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattleAbortTest::RunTest(const FString& Parameters)
+{
+	auto HasLine = [](const FSolidBattle& Battle, const TCHAR* Sentence)
+	{
+		for (const FSolidBattleLogEntry& Entry : Battle.Log)
+		{
+			if (Entry.Summary() == Sentence)
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+
+	{
+		USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
+		FSolidMonsterGroup Group = SolidBattleTestPrivate::OneRaptor(TEXT("Attack"));
+		if (!Group.Get(0))
+		{
+			AddError(TEXT("the one raptor gave the battle no monster"));
+			return false;
+		}
+		SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+		FSolidBattle Battle(Squad, &Group);
+		Battle.Inventory = &Inventory;
+
+		int32 Guard = 0;
+		while (!HasLine(Battle, TEXT("Captain kills Raptor with Crude spear.")))
+		{
+			if (!Battle.AdvanceToNextEvent() || ++Guard > 40)
+			{
+				AddError(TEXT("the spear did not kill"));
+				return false;
+			}
+		}
+		TestEqual(TEXT("the hide is gone"), Battle.GetGroupDefence(), 0.f);
+
+		while (!HasLine(Battle, TEXT("Captain aborts the attack on Raptor.")))
+		{
+			if (!Battle.AdvanceToNextEvent() || ++Guard > 40)
+			{
+				AddError(TEXT("the spear was not aborted"));
+				return false;
+			}
+		}
+		TestEqual(TEXT("the aborted spear leaves the hide at 0"), Battle.GetGroupDefence(), 0.f);
+	}
+
+	{
+		USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
+		FSolidEncounter Encounter = SolidBattleTestPrivate::BuildEncounter(TEXT("Iglin Bridge"));
+		if (Encounter.Groups.Num() < 1)
+		{
+			AddError(TEXT("Iglin Bridge gave the battle no monster group"));
+			return false;
+		}
+		SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+		FSolidBattle Battle(Squad, &Encounter.Groups[0]);
+		Battle.Inventory = &Inventory;
+
+		int32 Guard = 0;
+		int32 KillAt = INDEX_NONE;
+		while (KillAt == INDEX_NONE || Battle.Log.Num() < KillAt + 3)
+		{
+			if (!Battle.AdvanceToNextEvent() || ++Guard > 40)
+			{
+				AddError(TEXT("the claws did not reach a dead captain"));
+				return false;
+			}
+			if (KillAt == INDEX_NONE)
+			{
+				for (int32 Index = 0; Index < Battle.Log.Num(); ++Index)
+				{
+					if (Battle.Log[Index].Summary() == TEXT("Raptor kills Captain with Claws."))
+					{
+						KillAt = Index;
+						break;
+					}
+				}
+			}
+		}
+		TestEqual(TEXT("the second raptor aborts"), Battle.Log[KillAt + 1].Summary(), FString(TEXT("Raptor aborts the attack on Captain.")));
+		TestEqual(TEXT("the third raptor aborts"), Battle.Log[KillAt + 2].Summary(), FString(TEXT("Raptor aborts the attack on Captain.")));
+		TestEqual(TEXT("the rags are gone"), Battle.GetSquadDefence(), 0.f);
+		TestTrue(TEXT("the group still has hide"), Battle.GetGroupDefence() > 0.f);
+		TestTrue(TEXT("one side has no armour left"), Battle.Finished());
+	}
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

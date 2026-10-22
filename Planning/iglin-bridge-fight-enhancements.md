@@ -1,6 +1,6 @@
 # Iglin Bridge Fight Enhancements
 
-Status: New
+Status: Ready
 
 ## Story
 

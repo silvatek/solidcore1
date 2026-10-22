@@ -26,7 +26,7 @@ This story does not introduce a new class. Companion, Company, and Squad are alr
 - After Enter Dragongate fires on an empty company and an empty squad, the company's list is Max, Morgan, Quinn, the max squad size is the roster count, and the squad is empty.
 - When Enter Relion and Enter Kanfold have already fired, Enter Dragongate leaves the company's list as Sam, Alex, Max, Morgan, Quinn. The squad stays Sam and Alex.
 - When Enter Relion has fired and Enter Kanfold has not, Enter Dragongate leaves the company's list as Sam, Max, Morgan, Quinn. The squad stays Sam. Alex stays on the global list. Parade takes this path: it fires Enter Iglin, Enter Relion, and Enter Dragongate, and it skips Enter Kanfold.
-- When Enter Kanfold has fired and Enter Relion has not, Enter Dragongate leaves the company's list as Alex, Max, Morgan, Quinn. The squad stays Alex. The cap is already 2 and only Alex is selected, so one slot is open. Max, Morgan, and Quinn still stay out of the squad.
+- When Enter Kanfold has fired and Enter Relion has not, Enter Dragongate leaves the company's list as Alex, Max, Morgan, Quinn. The squad stays Alex. The cap is already 2 and only Alex is selected, so one slot is open. Players do not skip Relion. Max, Morgan, and Quinn still stay out of the squad.
 - Enter Iglin, Reach broken bridge, Killed by monsters, and Driven from the village leave the company's `AllCompanions` and the squad selection as they were.
 - A second visit to the same town leaves the company list and the squad as the first visit left them.
 - Before Relion, Kanfold, or Dragongate, the company's `AllCompanions` is empty and the squad is empty.

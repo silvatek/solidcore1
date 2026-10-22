@@ -467,4 +467,64 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattleIglinBridgeTest,
+	"SolidCore1.Battle.IglinBridge",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
+{
+	USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
+	FSolidEncounter Encounter = SolidBattleTestPrivate::BuildEncounter(TEXT("Iglin Bridge"));
+	if (Encounter.Groups.Num() < 1)
+	{
+		AddError(TEXT("Iglin Bridge gave the battle no monster group"));
+		return false;
+	}
+	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+	FSolidBattle Battle(Squad, &Encounter.Groups[0]);
+	Battle.Inventory = &Inventory;
+
+	FSolidRaptor Sample;
+	Sample.Size = ESolidMonsterSize::Small;
+	Sample.Arm(FSolidRaptor::Claws, FSolidRaptor::Hide, FSolidItem::StartingDraw);
+	const FSolidItemType* SpearType = SolidItemType::FindById(SolidItemType::IdCrudeSpear);
+	const int32 Spear = SpearType
+		? SolidItemType::PowerFor(SpearType->Quality, FSolidItem::StartingDraw)
+		: 0;
+	const float SquadStart = Battle.GetSquadDefence();
+	const float GroupStart = Battle.GetGroupDefence();
+
+	if (!Battle.AdvanceToNextEvent())
+	{
+		AddError(TEXT("the fight did not start"));
+		return false;
+	}
+	TestEqual(TEXT("they prepare"), Battle.Log.Num(), 4);
+	TestEqual(TEXT("the captain prepares"), Battle.Log[0].Summary(), FString(TEXT("Captain prepares.")));
+	TestEqual(TEXT("the first raptor prepares"), Battle.Log[1].Summary(), FString(TEXT("Raptor prepares.")));
+	TestEqual(TEXT("the second raptor prepares"), Battle.Log[2].Summary(), FString(TEXT("Raptor prepares.")));
+	TestEqual(TEXT("the third raptor prepares"), Battle.Log[3].Summary(), FString(TEXT("Raptor prepares.")));
+	TestEqual(TEXT("the squad's armour"), Battle.GetSquadDefence(), SquadStart);
+	TestEqual(TEXT("the group's armour"), Battle.GetGroupDefence(), GroupStart);
+
+	if (!Battle.AdvanceToNextEvent())
+	{
+		AddError(TEXT("the first blows did not land"));
+		return false;
+	}
+	TestEqual(TEXT("they attack"), Battle.Log.Num(), 8);
+	TestEqual(TEXT("the spear"), Battle.Log[4].Summary(), FString(TEXT("Captain attacks Raptor with Crude spear.")));
+	TestEqual(TEXT("the first claws"), Battle.Log[5].Summary(), FString(TEXT("Raptor attacks Captain with Claws.")));
+	TestEqual(TEXT("the second claws"), Battle.Log[6].Summary(), FString(TEXT("Raptor attacks Captain with Claws.")));
+	TestEqual(TEXT("the third claws"), Battle.Log[7].Summary(), FString(TEXT("Raptor attacks Captain with Claws.")));
+	const float SquadAfter = SquadStart - 3.f * static_cast<float>(Sample.Weapon.Power);
+	const float GroupAfter = GroupStart - static_cast<float>(Spear);
+	TestEqual(TEXT("the squad's armour after the claws"), Battle.GetSquadDefence(), SquadAfter);
+	TestEqual(TEXT("the group's armour after the spear"), Battle.GetGroupDefence(), GroupAfter);
+	TestTrue(TEXT("the squad is defeated"), SquadAfter <= 0.f);
+	TestTrue(TEXT("the group is defeated"), GroupAfter <= 0.f);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

@@ -487,6 +487,18 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
 	FSolidBattle Battle(Squad, &Encounter.Groups[0]);
 	Battle.Inventory = &Inventory;
+	const int32 MainIndex = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
+	const FSolidItem* MainHand = MainIndex != INDEX_NONE && Inventory.Worn[MainIndex].IsWeapon()
+		? &Inventory.Worn[MainIndex]
+		: nullptr;
+	const FSolidMonster* Sample = Encounter.Groups[0].Get(0);
+	if (!MainHand || !Sample)
+	{
+		AddError(TEXT("Iglin Bridge gave the battle no spear and no raptor"));
+		return false;
+	}
+	const float Spear = static_cast<float>(MainHand->Power());
+	const float Claw = static_cast<float>(Sample->Weapon.Power);
 
 	const float SquadStart = Battle.GetSquadDefence();
 	const float GroupStart = Battle.GetGroupDefence();
@@ -513,24 +525,59 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the spear"), Battle.Log[4].Summary(), FString(TEXT("Captain attacks Raptor with Crude spear.")));
 	TestEqual(TEXT("the first claws"), Battle.Log[5].Summary(), FString(TEXT("Raptor attacks Captain with Claws.")));
 	TestEqual(TEXT("the second claws"), Battle.Log[6].Summary(), FString(TEXT("Raptor attacks Captain with Claws.")));
-	const FString LastClaws = Battle.Log[7].Summary();
-	TestTrue(
-		TEXT("the third raptor strikes the captain"),
-		LastClaws.StartsWith(TEXT("Raptor ")) && LastClaws.EndsWith(TEXT(" with Claws.")));
-	TestTrue(TEXT("the claws come off the rags"), Battle.GetSquadDefence() < SquadStart);
-	TestTrue(TEXT("the rags stay at or above 0"), Battle.GetSquadDefence() >= 0.f);
-	TestTrue(TEXT("the spear wounds the group"), Battle.GetGroupDefence() < GroupStart);
+	TestEqual(TEXT("the third claws"), Battle.Log[7].Summary(), FString(TEXT("Raptor attacks Captain with Claws.")));
+	const float SquadAfter = SquadStart - static_cast<float>(Battle.Group->Num()) * Claw;
+	const float GroupAfter = GroupStart - Spear;
+	TestEqual(TEXT("the rags after three claws"), Battle.GetSquadDefence(), SquadAfter);
+	TestEqual(TEXT("the hides after one spear"), Battle.GetGroupDefence(), GroupAfter);
 	TestFalse(TEXT("both sides still have armour"), Battle.Finished());
 
-	int32 Guard = 0;
-	while (!Battle.Finished())
+	if (!Battle.AdvanceToNextEvent())
 	{
-		if (!Battle.AdvanceToNextEvent() || ++Guard > 40)
-		{
-			AddError(TEXT("Iglin Bridge did not finish"));
-			return false;
-		}
+		AddError(TEXT("they did not prepare again"));
+		return false;
 	}
+	TestEqual(TEXT("they prepare again"), Battle.Log.Num(), 12);
+	TestEqual(TEXT("the captain prepares again"), Battle.Log[8].Summary(), FString(TEXT("Captain prepares.")));
+	TestEqual(TEXT("the first raptor prepares again"), Battle.Log[9].Summary(), FString(TEXT("Raptor prepares.")));
+	TestEqual(TEXT("the second raptor prepares again"), Battle.Log[10].Summary(), FString(TEXT("Raptor prepares.")));
+	TestEqual(TEXT("the third raptor prepares again"), Battle.Log[11].Summary(), FString(TEXT("Raptor prepares.")));
+	TestEqual(TEXT("the rags hold"), Battle.GetSquadDefence(), SquadAfter);
+	TestEqual(TEXT("the hides hold"), Battle.GetGroupDefence(), GroupAfter);
+	TestFalse(TEXT("the fight is still going"), Battle.Finished());
+
+	if (!Battle.AdvanceToNextEvent())
+	{
+		AddError(TEXT("the second blows did not land"));
+		return false;
+	}
+	TestEqual(TEXT("they attack again"), Battle.Log.Num(), 16);
+	const FString SecondSpear = Battle.Log[12].Summary();
+	const float GroupNow = Battle.GetGroupDefence();
+	const float SameHide = GroupAfter - (FSolidRaptor::HideStrength - Spear);
+	const float FreshHide = GroupAfter - Spear;
+	const bool bFinishedThatHide = FMath::IsNearlyEqual(GroupNow, SameHide);
+	const bool bOpenedAnother = FMath::IsNearlyEqual(GroupNow, FreshHide);
+	TestTrue(TEXT("the second spear lands on one hide"), bFinishedThatHide || bOpenedAnother);
+	if (bFinishedThatHide)
+	{
+		TestEqual(
+			TEXT("the spear finishes the wounded hide"),
+			SecondSpear,
+			FString(TEXT("Captain kills Raptor with Crude spear.")));
+	}
+	else
+	{
+		TestEqual(
+			TEXT("the spear wounds a fresh hide"),
+			SecondSpear,
+			FString(TEXT("Captain attacks Raptor with Crude spear.")));
+	}
+	TestEqual(TEXT("the first claws kill"), Battle.Log[13].Summary(), FString(TEXT("Raptor kills Captain with Claws.")));
+	TestEqual(TEXT("the second claws kill"), Battle.Log[14].Summary(), FString(TEXT("Raptor kills Captain with Claws.")));
+	TestEqual(TEXT("the third claws kill"), Battle.Log[15].Summary(), FString(TEXT("Raptor kills Captain with Claws.")));
+	TestEqual(TEXT("the rags are gone"), Battle.GetSquadDefence(), 0.f);
+	TestTrue(TEXT("the group still has hide"), GroupNow > 0.f);
 	TestTrue(TEXT("one side has no armour left"), Battle.Finished());
 	return true;
 }

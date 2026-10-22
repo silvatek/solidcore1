@@ -505,10 +505,8 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the first claws"), LogSummary(*this, Battle, 5), TEXT("Raptor attacks Captain with Claws."));
 	TestEqual(TEXT("the second claws"), LogSummary(*this, Battle, 6), TEXT("Raptor attacks Captain with Claws."));
 	TestEqual(TEXT("the third claws"), LogSummary(*this, Battle, 7), TEXT("Raptor attacks Captain with Claws."));
-	const float SquadAfter = SquadStart - static_cast<float>(Battle.Group->Num()) * Claw;
-	const float GroupAfter = GroupStart - Spear;
-	TestEqual(TEXT("the rags after three claws"), Battle.GetSquadDefence(), SquadAfter);
-	TestEqual(TEXT("the hides after one spear"), Battle.GetGroupDefence(), GroupAfter);
+	TestEqual(TEXT("the rags after three claws"), Battle.GetSquadDefence(), SquadStart - 3 * Claw);
+	TestEqual(TEXT("the hides after one spear"), Battle.GetGroupDefence(), GroupStart - Spear);
 	TestFalse(TEXT("both sides still have armour"), Battle.Finished());
 
 	Battle.AdvanceToNextEvent();
@@ -516,14 +514,13 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the first raptor prepares again"), LogSummary(*this, Battle, 9), TEXT("Raptor prepares."));
 	TestEqual(TEXT("the second raptor prepares again"), LogSummary(*this, Battle, 10), TEXT("Raptor prepares."));
 	TestEqual(TEXT("the third raptor prepares again"), LogSummary(*this, Battle, 11), TEXT("Raptor prepares."));
-	TestEqual(TEXT("the rags hold"), Battle.GetSquadDefence(), SquadAfter);
-	TestEqual(TEXT("the hides hold"), Battle.GetGroupDefence(), GroupAfter);
+	TestEqual(TEXT("the rags hold"), Battle.GetSquadDefence(), SquadStart - 3 * Claw);
+	TestEqual(TEXT("the hides hold"), Battle.GetGroupDefence(), GroupStart - Spear);
 	TestFalse(TEXT("the fight is still going"), Battle.Finished());
 
 	Battle.AdvanceToNextEvent();
 	TestEqual(TEXT("the spear finishes that hide"), LogSummary(*this, Battle, 12), TEXT("Captain kills Raptor with Crude spear."));
-	const float GroupNow = GroupAfter - (FSolidRaptor::HideStrength - Spear);
-	TestEqual(TEXT("the wounded hide is gone"), Battle.GetGroupDefence(), GroupNow);
+	TestEqual(TEXT("the wounded hide is gone"), Battle.GetGroupDefence(), GroupStart - FSolidRaptor::HideStrength);
 	TestEqual(TEXT("the first claws kill"), LogSummary(*this, Battle, 13), TEXT("Raptor kills Captain with Claws."));
 	TestEqual(TEXT("the second claws abort"), LogSummary(*this, Battle, 14), TEXT("Raptor aborts the attack on Captain."));
 	TestEqual(TEXT("the third claws abort"), LogSummary(*this, Battle, 15), TEXT("Raptor aborts the attack on Captain."));
@@ -676,26 +673,23 @@ bool FSolidBattleKillTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the group's armour"), Battle.GetGroupDefence(), Hide);
 
 	Battle.AdvanceToNextEvent();
-	const float AfterSpear = FMath::Max(0.f, Hide - Spear);
-	const float AfterClaw = FMath::Max(0.f, Rags - Claws);
 	TestEqual(TEXT("the spear"), LogSummary(*this, Battle, 2), TEXT("Captain attacks Raptor with Crude spear."));
 	TestEqual(TEXT("the claws"), LogSummary(*this, Battle, 3), TEXT("Raptor attacks Captain with Claws."));
-	TestEqual(TEXT("the rags after one claw"), Battle.GetSquadDefence(), AfterClaw);
-	TestEqual(TEXT("the hide after one spear"), Battle.GetGroupDefence(), AfterSpear);
+	TestEqual(TEXT("the rags after one claw"), Battle.GetSquadDefence(), Rags - Claws);
+	TestEqual(TEXT("the hide after one spear"), Battle.GetGroupDefence(), Hide - Spear);
 
 	Battle.AdvanceToNextEvent();
 	TestEqual(TEXT("the captain prepares again"), LogSummary(*this, Battle, 4), TEXT("Captain prepares."));
 	TestEqual(TEXT("the raptor prepares again"), LogSummary(*this, Battle, 5), TEXT("Raptor prepares."));
-	TestEqual(TEXT("the rags hold"), Battle.GetSquadDefence(), AfterClaw);
-	TestEqual(TEXT("the hide holds"), Battle.GetGroupDefence(), AfterSpear);
+	TestEqual(TEXT("the rags hold"), Battle.GetSquadDefence(), Rags - Claws);
+	TestEqual(TEXT("the hide holds"), Battle.GetGroupDefence(), Hide - Spear);
 
 	Battle.AdvanceToNextEvent();
-	const float SecondClaw = FMath::Max(0.f, AfterClaw - Claws);
 	TestEqual(TEXT("the spear kills"), LogSummary(*this, Battle, 6), TEXT("Captain kills Raptor with Crude spear."));
 	TestEqual(TEXT("the claws still attack"), LogSummary(*this, Battle, 7), TEXT("Raptor attacks Captain with Claws."));
 	TestEqual(TEXT("eight lines"), Battle.Log.Num(), 8);
-	TestTrue(TEXT("two claws leave the rags up"), SecondClaw > 0.f);
-	TestEqual(TEXT("the rags after two claws"), Battle.GetSquadDefence(), SecondClaw);
+	TestTrue(TEXT("two claws leave the rags up"), Battle.GetSquadDefence() > 0.f);
+	TestEqual(TEXT("the rags after two claws"), Battle.GetSquadDefence(), Rags - 2 * Claws);
 	TestEqual(TEXT("the hide is gone"), Battle.GetGroupDefence(), 0.f);
 
 	const FString KillLine(TEXT("Raptor kills Captain with Claws."));

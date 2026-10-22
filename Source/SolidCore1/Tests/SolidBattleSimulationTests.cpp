@@ -520,6 +520,18 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the claws come off the rags"), Battle.GetSquadDefence() < SquadStart);
 	TestTrue(TEXT("the rags stay at or above 0"), Battle.GetSquadDefence() >= 0.f);
 	TestTrue(TEXT("the spear wounds the group"), Battle.GetGroupDefence() < GroupStart);
+	TestFalse(TEXT("both sides still have armour"), Battle.Finished());
+
+	int32 Guard = 0;
+	while (!Battle.Finished())
+	{
+		if (!Battle.AdvanceToNextEvent() || ++Guard > 40)
+		{
+			AddError(TEXT("Iglin Bridge did not finish"));
+			return false;
+		}
+	}
+	TestTrue(TEXT("one side has no armour left"), Battle.Finished());
 	return true;
 }
 

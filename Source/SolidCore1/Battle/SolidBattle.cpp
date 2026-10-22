@@ -204,6 +204,11 @@ float FSolidBattle::GetGroupDefence() const
 	return Total;
 }
 
+bool FSolidBattle::Finished() const
+{
+	return GetSquadDefence() <= 0.f || GetGroupDefence() <= 0.f;
+}
+
 FString FSolidBattleLogEntry::Summary() const
 {
 	switch (Kind)

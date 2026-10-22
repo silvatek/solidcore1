@@ -46,6 +46,7 @@ struct FSolidBattleLogEntry
  * Power is weapon Power. Defence is armour Strength. A later gauge can show the totals.
  * Each fighter prepares and recovers on their own weapon Speed. The blow lands when that prepare ends.
  * That blow cannot drop armour Strength below 0. A blow that leaves it at 0 says kills.
+ * The battle is finished when either side has no armour left. An escape will finish it too, once a side can leave.
  * The log records those moments, in order.
  */
 class FSolidBattle
@@ -89,6 +90,12 @@ public:
 
 	/** Armour Strength of every monster in the group. */
 	float GetGroupDefence() const;
+
+	/**
+	 * True when either side has no armour left.
+	 * An escape finishes the battle too, once a side can leave.
+	 */
+	bool Finished() const;
 
 	/**
 	 * Move each fighter forward by Delta, in the same unit as weapon Speed.

@@ -1006,4 +1006,97 @@ bool FSolidInventoryInsertPackTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidInventoryBodyArmourTest,
+	"SolidCore1.Inventory.BodyArmour",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidInventoryBodyArmourTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidInventoryTestPrivate;
+
+	TestFalse(
+		TEXT("a weapon does not fit the body"),
+		SolidInventory::WornSlotAccepts(SolidInventory::ESlot::Body, ESolidItemKind::Weapon));
+	TestFalse(
+		TEXT("a tool does not fit the body"),
+		SolidInventory::WornSlotAccepts(SolidInventory::ESlot::Body, ESolidItemKind::Tool));
+	TestFalse(
+		TEXT("food does not fit the body"),
+		SolidInventory::WornSlotAccepts(SolidInventory::ESlot::Body, ESolidItemKind::Food));
+	TestFalse(
+		TEXT("a material does not fit the body"),
+		SolidInventory::WornSlotAccepts(SolidInventory::ESlot::Body, ESolidItemKind::Material));
+	TestTrue(
+		TEXT("armour fits the body"),
+		SolidInventory::WornSlotAccepts(SolidInventory::ESlot::Body, ESolidItemKind::Armor));
+
+	SolidInventory::FLoadout Loadout = SolidInventory::StartingLoadout();
+	SolidStorage::FContainer Chest = SolidStorage::StartingCaveChest();
+	const int32 Body = SolidInventory::WornIndex(SolidInventory::ESlot::Body);
+	const int32 Pack = SolidInventory::PackIndex(0, 0);
+
+	TestFalse(TEXT("the body armour cannot be cleared"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Body, nullptr));
+	TestEqual(TEXT("the body still wears Rags"), HeldId(Loadout.Worn[Body]), FString(SolidItemType::IdRags));
+	TestFalse(TEXT("a torch cannot replace the body armour"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Body, SolidItemType::IdTorch));
+	TestEqual(TEXT("the body keeps Rags after the torch"), HeldId(Loadout.Worn[Body]), FString(SolidItemType::IdRags));
+	TestFalse(TEXT("a sword cannot replace the body armour"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Body, SolidItemType::IdRustySword));
+	TestEqual(TEXT("the body keeps Rags after the sword"), HeldId(Loadout.Worn[Body]), FString(SolidItemType::IdRags));
+	TestTrue(TEXT("Rags can replace the body armour"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Body, SolidItemType::IdRags));
+
+	TestFalse(
+		TEXT("dragging the body armour onto an empty pack cell does nothing"),
+		SolidInventory::Move(&Chest, Loadout, WornHit(SolidInventory::ESlot::Body), PackHit(0, 0)));
+	TestTrue(TEXT("the pack cell stays empty"), Loadout.Pack[Pack] == nullptr);
+	TestEqual(TEXT("the body keeps Rags"), HeldId(Loadout.Worn[Body]), FString(SolidItemType::IdRags));
+
+	const int32 ChestIndex = EmptyChestIndex(Chest);
+	TestTrue(TEXT("the chest has an empty cell"), ChestIndex != INDEX_NONE);
+	if (ChestIndex == INDEX_NONE)
+	{
+		return false;
+	}
+	TestFalse(
+		TEXT("dragging the body armour onto an empty chest cell does nothing"),
+		SolidInventory::Move(&Chest, Loadout, WornHit(SolidInventory::ESlot::Body), ChestHit(ChestIndex)));
+	TestTrue(TEXT("the chest cell stays empty"), Chest.Slots[ChestIndex] == nullptr);
+	TestEqual(TEXT("the body keeps Rags off the chest"), HeldId(Loadout.Worn[Body]), FString(SolidItemType::IdRags));
+
+	TestFalse(
+		TEXT("dragging the body armour onto an empty crafting slot does nothing"),
+		SolidInventory::Move(&Chest, Loadout, WornHit(SolidInventory::ESlot::Body), CraftHit(0)));
+	TestTrue(TEXT("the crafting slot stays empty"), Loadout.Craft[0] == nullptr);
+	TestEqual(TEXT("the body keeps Rags off the crafting slot"), HeldId(Loadout.Worn[Body]), FString(SolidItemType::IdRags));
+
+	TestTrue(TEXT("the sword can sit in the pack"), SolidInventory::PlacePack(Loadout, 0, 0, SolidItemType::IdRustySword));
+	TestFalse(
+		TEXT("dragging the sword onto the body does nothing"),
+		SolidInventory::Move(&Chest, Loadout, PackHit(0, 0), WornHit(SolidInventory::ESlot::Body)));
+	TestEqual(TEXT("the body still holds armour"), HeldId(Loadout.Worn[Body]), FString(SolidItemType::IdRags));
+	TestEqual(TEXT("the pack keeps the sword"), HeldId(Loadout.Pack[Pack]), FString(SolidItemType::IdRustySword));
+	TestFalse(
+		TEXT("dragging the body armour onto the sword does nothing"),
+		SolidInventory::Move(&Chest, Loadout, WornHit(SolidInventory::ESlot::Body), PackHit(0, 0)));
+	TestEqual(TEXT("the body still holds armour beside the sword"), HeldId(Loadout.Worn[Body]), FString(SolidItemType::IdRags));
+	TestEqual(TEXT("the sword stays in the pack"), HeldId(Loadout.Pack[Pack]), FString(SolidItemType::IdRustySword));
+
+	TestTrue(TEXT("Rags can sit in the pack"), SolidInventory::PlacePack(Loadout, 0, 0, SolidItemType::IdRags));
+	TestTrue(
+		TEXT("dragging other armour onto the body swaps"),
+		SolidInventory::Move(&Chest, Loadout, PackHit(0, 0), WornHit(SolidInventory::ESlot::Body)));
+	TestEqual(TEXT("the body still holds armour"), HeldId(Loadout.Worn[Body]), FString(SolidItemType::IdRags));
+	TestEqual(TEXT("the pack holds the armour that was on the body"), HeldId(Loadout.Pack[Pack]), FString(SolidItemType::IdRags));
+
+	const FSolidItemType* Worn = SolidItemType::FindById(Loadout.Worn[Body]);
+	TestNotNull(TEXT("the worn piece is listed"), Worn);
+	if (!Worn)
+	{
+		return false;
+	}
+	TestTrue(TEXT("the body piece is armour"), Worn->Type == ESolidItemKind::Armor);
+	TestNotNull(TEXT("that armour has Strength"), Worn->Armour);
+
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

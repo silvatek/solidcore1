@@ -170,8 +170,9 @@ namespace SolidInventory
 	}
 
 	/**
-	 * Armor fits only the body. A helmet fits only the head, boots only the boots, and a belt only the belt.
-	 * A weapon, a tool, food, and a material fit any worn box.
+	 * Armor fits only the body, and the body accepts only armour.
+	 * A helmet fits only the head, boots only the boots, and a belt only the belt.
+	 * A weapon, a tool, food, and a material fit any worn box except the body.
 	 */
 	inline bool WornSlotAccepts(const ESlot Slot, const ESolidItemKind Kind)
 	{
@@ -186,13 +187,14 @@ namespace SolidInventory
 		case ESolidItemKind::Belt:
 			return Slot == ESlot::Belt;
 		default:
-			return true;
+			return Slot != ESlot::Body;
 		}
 	}
 
 	/**
 	 * Store an item id in a worn box.
-	 * A null or empty id clears it. An id that is not in the catalog is refused.
+	 * A null or empty id clears it. The body refuses that clear and keeps its armour.
+	 * An id that is not in the catalog is refused.
 	 * False when the slot is not a worn box, the id is unknown, or the kind does not fit.
 	 */
 	inline bool PlaceWorn(FLoadout& Loadout, const ESlot Slot, const TCHAR* ItemId)
@@ -204,6 +206,10 @@ namespace SolidInventory
 		}
 		if (!ItemId || !ItemId[0])
 		{
+			if (Slot == ESlot::Body)
+			{
+				return false;
+			}
 			WriteWorn(Loadout, Index, nullptr, 0);
 			return true;
 		}
@@ -671,7 +677,11 @@ namespace SolidInventory
 		return Loadout.WornStack[Index];
 	}
 
-	/** Put an item id into a slot. A null or empty id clears it. False when the slot or the id is refused. */
+	/**
+	 * Put an item id into a slot. A null or empty id clears it.
+	 * The body refuses a clear, and it refuses anything that is not armour.
+	 * False when the slot or the id is refused.
+	 */
 	inline bool PutAt(
 		FLoadout& Loadout,
 		SolidStorage::FContainer* Chest,
@@ -748,6 +758,10 @@ namespace SolidInventory
 		}
 		if (!ItemId || !ItemId[0])
 		{
+			if (Hit.Slot == ESlot::Body)
+			{
+				return false;
+			}
 			WriteWorn(Loadout, Index, nullptr, 0);
 			return true;
 		}
@@ -763,6 +777,7 @@ namespace SolidInventory
 	/**
 	 * Move an item from one slot to another.
 	 * Worn boxes, pack cells, chest cells, and crafting slots all count. An occupied destination swaps when both items fit.
+	 * Dragging the body armour onto an empty slot does nothing, and the body still holds armour.
 	 * The same slot, an empty source, a kind that does not fit, or a chest move without a chest does nothing.
 	 */
 	inline bool Move(

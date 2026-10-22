@@ -26,6 +26,9 @@ public:
 	/** Index into Available. INDEX_NONE while none is active. */
 	int32 ActivePlan = INDEX_NONE;
 
+	/** This group's plan is the monster battle plan of that name. A missing name leaves none. */
+	void GivePlan(const TCHAR* Name);
+
 	/** The active plan, or null when none is active. */
 	const FSolidBattlePlan* GetActivePlan() const;
 

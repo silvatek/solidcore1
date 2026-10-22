@@ -1,5 +1,44 @@
 #include "SolidMonsterGroup.h"
 
+namespace
+{
+	/** Monster battle plans. Built once. A group finds its plan here by name. */
+	const TArray<FSolidBattlePlan>& BattlePlans()
+	{
+		static const TArray<FSolidBattlePlan> Plans = []
+		{
+			TArray<FSolidBattlePlan> Built;
+			Built.Add({
+				TEXT("Attack"),
+				ESolidBattleFormation::Mob,
+				ESolidBattleSpacing::Standard,
+				ESolidAggression::Attack,
+				ESolidTargetStrategy::Random});
+			return Built;
+		}();
+		return Plans;
+	}
+}
+
+void FSolidMonsterGroup::GivePlan(const TCHAR* Name)
+{
+	Available.Reset();
+	ActivePlan = INDEX_NONE;
+	if (!Name || !Name[0])
+	{
+		return;
+	}
+	const FSolidBattlePlan* Plan = BattlePlans().FindByPredicate([Name](const FSolidBattlePlan& Candidate)
+	{
+		return Candidate.Is(Name);
+	});
+	if (Plan)
+	{
+		Available.Add(*Plan);
+		ActivePlan = 0;
+	}
+}
+
 FSolidMonster* FSolidMonsterGroup::Get(const int32 Index)
 {
 	if (!Members.IsValidIndex(Index))

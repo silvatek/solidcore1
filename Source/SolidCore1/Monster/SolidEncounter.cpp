@@ -1,7 +1,6 @@
 #include "SolidEncounter.h"
 #include "SolidRaptor.h"
 #include "SolidGroundMove.h"
-#include "BattlePlans/SolidBattlePlan.h"
 #include "Inventory/SolidItem.h"
 
 namespace SolidEncounterPrivate
@@ -113,44 +112,6 @@ namespace SolidEncounterPrivate
 			return IglinRampOuterEnd(Bridges, IglinTownXY, OutXY);
 		default:
 			return false;
-		}
-	}
-
-	/** Monster battle plans. Built once. A group finds its plan here by name. */
-	const TArray<FSolidBattlePlan>& BattlePlans()
-	{
-		static const TArray<FSolidBattlePlan> Plans = []
-		{
-			TArray<FSolidBattlePlan> Built;
-			Built.Add({
-				TEXT("Attack"),
-				ESolidBattleFormation::Mob,
-				ESolidBattleSpacing::Standard,
-				ESolidAggression::Attack,
-				ESolidTargetStrategy::Random});
-			return Built;
-		}();
-		return Plans;
-	}
-
-	/** The group's plan is the monster battle plan of that name. */
-	void GivePlan(FSolidMonsterGroup& Group, const SolidEncounter::FGroup& Spec)
-	{
-		Group.Available.Reset();
-		Group.ActivePlan = INDEX_NONE;
-		if (!Spec.Plan || !Spec.Plan[0])
-		{
-			return;
-		}
-		const TCHAR* Key = Spec.Plan;
-		const FSolidBattlePlan* Plan = BattlePlans().FindByPredicate([Key](const FSolidBattlePlan& Candidate)
-		{
-			return Candidate.Is(Key);
-		});
-		if (Plan)
-		{
-			Group.Available.Add(*Plan);
-			Group.ActivePlan = 0;
 		}
 	}
 
@@ -332,7 +293,7 @@ FSolidEncounter::FSolidEncounter(const SolidEncounter::FDefinition& InDefinition
 	Groups.SetNum(FMath::Max(0, Definition.GroupCount));
 	for (int32 GroupIndex = 0; GroupIndex < Definition.GroupCount && Groups.IsValidIndex(GroupIndex); ++GroupIndex)
 	{
-		SolidEncounterPrivate::GivePlan(Groups[GroupIndex], Definition.Groups[GroupIndex]);
+		Groups[GroupIndex].GivePlan(Definition.Groups[GroupIndex].Plan);
 		SolidEncounterPrivate::Recruit(Groups[GroupIndex], Definition.Groups[GroupIndex]);
 	}
 }
@@ -353,7 +314,7 @@ int32 FSolidEncounter::Place(
 		Group.Seeded.Reset();
 		if (GroupIndex < Definition.GroupCount)
 		{
-			SolidEncounterPrivate::GivePlan(Group, Definition.Groups[GroupIndex]);
+			Group.GivePlan(Definition.Groups[GroupIndex].Plan);
 			SolidEncounterPrivate::Recruit(Group, Definition.Groups[GroupIndex]);
 		}
 	}

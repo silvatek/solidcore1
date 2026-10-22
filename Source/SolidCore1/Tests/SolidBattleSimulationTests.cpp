@@ -12,24 +12,16 @@
 
 /**
  * One Small raptor in claws and hide.
- * A plan name copies that plan from the company onto the group. A missing name leaves none.
+ * The plan name is a monster group battle plan. A missing name leaves none.
  */
-FSolidMonsterGroup OneRaptor(const USolidCompany* Company, const TCHAR* PlanName)
+FSolidMonsterGroup OneRaptor(const TCHAR* PlanName)
 {
 	FSolidMonsterGroup Built;
 	TUniquePtr<FSolidRaptor> Raptor = MakeUnique<FSolidRaptor>();
 	Raptor->Size = ESolidMonsterSize::Small;
 	Raptor->Arm(FSolidRaptor::Claws, FSolidRaptor::Hide, FSolidItem::StartingDraw);
 	Built.Members.Add(MoveTemp(Raptor));
-	if (Company && PlanName && PlanName[0])
-	{
-		const FSolidBattlePlan* Plan = Company->GetBattlePlan(Company->FindBattlePlanIndexByName(PlanName));
-		if (Plan)
-		{
-			Built.Available.Add(*Plan);
-			Built.ActivePlan = 0;
-		}
-	}
+	Built.GivePlan(PlanName);
 	return Built;
 }
 
@@ -206,7 +198,7 @@ bool FSolidBattleActivePlanTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the battle reads Defend"), Sim.SquadPlanName(), FString(TEXT("Defend")));
 	TestTrue(TEXT("Defend stores retreat"), Sim.SquadRetreats());
 
-	Sim.UseGroup(OneRaptor(Sim.Company, nullptr));
+	Sim.UseGroup(OneRaptor(nullptr));
 	if (!Sim.Battle.Group)
 	{
 		AddError(TEXT("the one raptor gave the battle no monster group"));
@@ -316,7 +308,7 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 	{
 		FSolidBattleSimulation Sim;
 		Sim.SquadPlan(TEXT("Starter"));
-		Sim.UseGroup(OneRaptor(Sim.Company, TEXT("Attack")));
+		Sim.UseGroup(OneRaptor(TEXT("Attack")));
 		FSolidMonster* Raptor = Sim.Battle.Group ? Sim.Battle.Group->Get(0) : nullptr;
 		const FSolidItem* MainHand = Sim.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::MainHand)].IsWeapon()
 			? &Sim.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::MainHand)]
@@ -378,7 +370,7 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 	{
 		FSolidBattleSimulation Sim;
 		Sim.SquadPlan(TEXT("Defend"));
-		Sim.UseGroup(OneRaptor(Sim.Company, TEXT("Attack")));
+		Sim.UseGroup(OneRaptor(TEXT("Attack")));
 		if (!Sim.Battle.Group || !Sim.Battle.Group->Get(0))
 		{
 			AddError(TEXT("the one raptor gave the battle no monster"));
@@ -397,7 +389,7 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 			AddError(TEXT("the main hand did not empty"));
 			return false;
 		}
-		Sim.UseGroup(OneRaptor(Sim.Company, TEXT("Attack")));
+		Sim.UseGroup(OneRaptor(TEXT("Attack")));
 		if (!Sim.Battle.Group || !Sim.Battle.Group->Get(0))
 		{
 			AddError(TEXT("the one raptor gave the battle no monster"));

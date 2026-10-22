@@ -126,7 +126,8 @@ namespace SolidMonster
 	/**
 	 * The drawn body is smaller than the vertex span.
 	 * The span scale is about 0.10. Three times that scale is knee-high on the captain, about half a metre.
-	 * Six times that scale brings the drawn body up to the standing height.
+	 * Six times that scale is the Small reptile, the body agreed beside the captain and the 1 m post.
+	 * A later size scales up or down from Small.
 	 */
 	inline constexpr float DrawnBodyFactor = 6.f;
 

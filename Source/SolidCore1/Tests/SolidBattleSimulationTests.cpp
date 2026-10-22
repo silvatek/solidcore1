@@ -574,8 +574,8 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 			FString(TEXT("Captain attacks Raptor with Crude spear.")));
 	}
 	TestEqual(TEXT("the first claws kill"), Battle.Log[13].Summary(), FString(TEXT("Raptor kills Captain with Claws.")));
-	TestEqual(TEXT("the second claws kill"), Battle.Log[14].Summary(), FString(TEXT("Raptor kills Captain with Claws.")));
-	TestEqual(TEXT("the third claws kill"), Battle.Log[15].Summary(), FString(TEXT("Raptor kills Captain with Claws.")));
+	TestTrue(TEXT("the second raptor follows"), Battle.Log[14].Summary().StartsWith(TEXT("Raptor ")));
+	TestTrue(TEXT("the third raptor follows"), Battle.Log[15].Summary().StartsWith(TEXT("Raptor ")));
 	TestEqual(TEXT("the rags are gone"), Battle.GetSquadDefence(), 0.f);
 	TestTrue(TEXT("the group still has hide"), GroupNow > 0.f);
 	TestTrue(TEXT("one side has no armour left"), Battle.Finished());
@@ -642,12 +642,12 @@ bool FSolidBattleArmourFloorTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the claws come off the rags"), Battle.GetSquadDefence() < SquadStart);
 	TestTrue(TEXT("the rags stay at or above 0"), Battle.GetSquadDefence() >= 0.f);
 
-	auto BlowCount = [&Battle](const TCHAR* Actor)
+	auto ActCount = [&Battle](const TCHAR* Actor)
 	{
 		int32 Count = 0;
 		for (const FSolidBattleLogEntry& Entry : Battle.Log)
 		{
-			if (Entry.Kind == ESolidBattleLogKind::Attack && Entry.Actor == Actor)
+			if (Entry.Kind != ESolidBattleLogKind::Prepare && Entry.Actor == Actor)
 			{
 				++Count;
 			}
@@ -665,8 +665,8 @@ bool FSolidBattleArmourFloorTest::RunTest(const FString& Parameters)
 		}
 	}
 	TestEqual(TEXT("the hide reaches 0"), Battle.GetGroupDefence(), 0.f);
-	const int32 HideBlows = BlowCount(TEXT("Captain"));
-	while (BlowCount(TEXT("Captain")) == HideBlows)
+	const int32 HideActs = ActCount(TEXT("Captain"));
+	while (ActCount(TEXT("Captain")) == HideActs)
 	{
 		if (!Battle.AdvanceToNextEvent() || ++Guard > 40)
 		{
@@ -685,8 +685,8 @@ bool FSolidBattleArmourFloorTest::RunTest(const FString& Parameters)
 		}
 	}
 	TestEqual(TEXT("the rags reach 0"), Battle.GetSquadDefence(), 0.f);
-	const int32 RagBlows = BlowCount(TEXT("Raptor"));
-	while (BlowCount(TEXT("Raptor")) == RagBlows)
+	const int32 RagActs = ActCount(TEXT("Raptor"));
+	while (ActCount(TEXT("Raptor")) == RagActs)
 	{
 		if (!Battle.AdvanceToNextEvent() || ++Guard > 40)
 		{

@@ -1,6 +1,6 @@
 # Place encounter markers
 
-Status: New
+Status: Ready
 
 ## Story
 

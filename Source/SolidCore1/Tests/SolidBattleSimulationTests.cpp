@@ -12,19 +12,6 @@
 
 namespace SolidBattleTestPrivate
 {
-	/** Power of the spear in the captain's main hand. The fight subtracts it from armour. */
-	float SpearPower(const SolidInventory::FLoadout& Inventory)
-	{
-		const int32 Index = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
-		return static_cast<float>(Inventory.Worn[Index].Power());
-	}
-
-	/** Power of the claws on the group's first monster. The fight subtracts it from armour. */
-	float ClawPower(const FSolidMonsterGroup& Group)
-	{
-		return static_cast<float>(Group.Get(0)->Weapon.Power);
-	}
-
 	/**
 	 * The summary of that log line.
 	 * A missing line is reported, and the summary comes back empty, so an assertion can use it directly.
@@ -66,16 +53,12 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 		SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
 		FSolidBattle Battle(Squad, &Group);
 		Battle.Inventory = &Inventory;
-		const int32 MainIndex = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
-		const FSolidItem* MainHand = MainIndex != INDEX_NONE && Inventory.Worn[MainIndex].IsWeapon()
-			? &Inventory.Worn[MainIndex]
-			: nullptr;
-		if (!Raptor || !MainHand || MainHand->Weapon.Speed <= KINDA_SMALL_NUMBER)
+		const float SpearSpeed = Battle.SquadWeapon(0).Speed;
+		if (!Raptor || SpearSpeed <= KINDA_SMALL_NUMBER)
 		{
 			AddError(TEXT("the one raptor gave the battle no spear and no monster"));
 			return false;
 		}
-		const float SpearSpeed = MainHand->Weapon.Speed;
 		Raptor->Weapon.Speed = SpearSpeed * 2.f;
 
 		Battle.AdvanceToNextEvent();
@@ -112,11 +95,7 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 		SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
 		FSolidBattle Battle(Squad, &Encounter.Groups[0]);
 		Battle.Inventory = &Inventory;
-		const int32 MainIndex = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
-		const FSolidItem* MainHand = MainIndex != INDEX_NONE ? &Inventory.Worn[MainIndex] : nullptr;
-		const FSolidMonster* First = Encounter.Groups[0].Get(0);
-		if (!MainHand || !MainHand->IsWeapon() || !First
-			|| !FMath::IsNearlyEqual(MainHand->Weapon.Speed, First->Weapon.Speed))
+		if (!FMath::IsNearlyEqual(Battle.SquadWeapon(0).Speed, Battle.MonsterWeapon(0).Speed))
 		{
 			AddError(TEXT("the spear and the claws do not share a Speed"));
 			return false;
@@ -200,16 +179,13 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 		SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
 		FSolidBattle Battle(Squad, &Group);
 		Battle.Inventory = &Inventory;
-		const int32 MainIndex = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
-		const FSolidItem* MainHand = MainIndex != INDEX_NONE && Inventory.Worn[MainIndex].IsWeapon()
-			? &Inventory.Worn[MainIndex]
-			: nullptr;
-		if (!MainHand || MainHand->Weapon.Speed <= KINDA_SMALL_NUMBER)
+		const float SpearSpeed = Battle.SquadWeapon(0).Speed;
+		if (SpearSpeed <= KINDA_SMALL_NUMBER)
 		{
 			AddError(TEXT("the one raptor gave the battle no spear"));
 			return false;
 		}
-		Raptor->Weapon.Speed = MainHand->Weapon.Speed * 2.f;
+		Raptor->Weapon.Speed = SpearSpeed * 2.f;
 		Battle.AdvanceToNextEvent();
 		SolidBattleTestPrivate::SelectSquadPlan(Squad, TEXT("Defend"));
 		Battle.AdvanceToNextEvent();
@@ -260,8 +236,8 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 	FSolidBattle Battle(Squad, &Encounter.Groups[0]);
 	Battle.Inventory = &Inventory;
 
-	const float Spear = SolidBattleTestPrivate::SpearPower(Inventory);
-	const float Claw = SolidBattleTestPrivate::ClawPower(Encounter.Groups[0]);
+	const float Spear = Battle.SquadWeapon(0).Power;
+	const float Claw = Battle.MonsterWeapon(0).Power;
 
 	const float SquadStart = Battle.GetSquadDefence();
 	const float GroupStart = Battle.GetGroupDefence();
@@ -318,16 +294,13 @@ bool FSolidBattleArmourFloorTest::RunTest(const FString& Parameters)
 	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
 	FSolidBattle Battle(Squad, &Group);
 	Battle.Inventory = &Inventory;
-	const int32 MainIndex = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
-	const FSolidItem* MainHand = MainIndex != INDEX_NONE && Inventory.Worn[MainIndex].IsWeapon()
-		? &Inventory.Worn[MainIndex]
-		: nullptr;
-	if (!Raptor || !MainHand || MainHand->Weapon.Speed <= KINDA_SMALL_NUMBER)
+	const float SpearSpeed = Battle.SquadWeapon(0).Speed;
+	if (!Raptor || SpearSpeed <= KINDA_SMALL_NUMBER)
 	{
 		AddError(TEXT("the one raptor gave the battle no spear and no monster"));
 		return false;
 	}
-	Raptor->Weapon.Speed = MainHand->Weapon.Speed * 2.f;
+	Raptor->Weapon.Speed = SpearSpeed * 2.f;
 
 	const float SquadStart = Battle.GetSquadDefence();
 	const float GroupStart = Battle.GetGroupDefence();
@@ -420,24 +393,14 @@ bool FSolidBattleKillTest::RunTest(const FString& Parameters)
 {
 	USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
 	FSolidMonsterGroup Group = SolidBattleTestPrivate::OneRaptor(TEXT("Attack"));
-	FSolidMonster* Raptor = Group.Get(0);
 	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
 	FSolidBattle Battle(Squad, &Group);
 	Battle.Inventory = &Inventory;
-	const int32 MainIndex = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
-	const FSolidItem* MainHand = MainIndex != INDEX_NONE && Inventory.Worn[MainIndex].IsWeapon()
-		? &Inventory.Worn[MainIndex]
-		: nullptr;
-	if (!Raptor || !MainHand)
-	{
-		AddError(TEXT("the one raptor gave the battle no spear and no monster"));
-		return false;
-	}
 
 	const float Rags = Battle.GetSquadDefence();
 	const float Hide = Battle.GetGroupDefence();
-	const float Spear = static_cast<float>(MainHand->Power());
-	const float Claws = static_cast<float>(Raptor->Weapon.Power);
+	const float Spear = Battle.SquadWeapon(0).Power;
+	const float Claws = Battle.MonsterWeapon(0).Power;
 	TestEqual(TEXT("the hide is 20"), Hide, 20.f);
 
 	Battle.AdvanceToNextEvent();

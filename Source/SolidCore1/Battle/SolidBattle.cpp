@@ -5,10 +5,10 @@
 
 namespace
 {
-	/** Power of a companion's fixed weapon. An unknown id adds none. */
-	int32 CompanionPower(const FSolidCompanion& Companion)
+	/** True when that weapon can land a blow. An empty name cannot. */
+	bool CanStrike(const FSolidWeapon& Weapon)
 	{
-		return FSolidItem::FromId(*Companion.WeaponId, 1).Power();
+		return Weapon.Name && Weapon.Name[0];
 	}
 
 	/** Armour Strength of a companion's fixed armour. Anything else adds none. */
@@ -91,15 +91,6 @@ namespace
 		return Armour.Strength <= 0.f;
 	}
 
-	const TCHAR* ItemWeaponName(const FSolidItem& Item)
-	{
-		if (Item.Type && Item.Type->Name && Item.Type->Name[0])
-		{
-			return Item.Type->Name;
-		}
-		return Item.Weapon.Name ? Item.Weapon.Name : TEXT("");
-	}
-
 	FString MonsterName(const FSolidMonster* Monster)
 	{
 		const TCHAR* Kind = Monster ? Monster->Kind() : nullptr;
@@ -124,32 +115,70 @@ const FSolidBattlePlan* FSolidBattle::GetGroupPlan() const
 	return Group ? Group->GetActivePlan() : nullptr;
 }
 
+FSolidWeapon FSolidBattle::SquadWeapon(const int32 Index) const
+{
+	if (Index < 0)
+	{
+		return FSolidWeapon();
+	}
+	if (Index == 0)
+	{
+		const FSolidItem* MainHand = WornItem(Inventory, SolidInventory::ESlot::MainHand);
+		return MainHand && MainHand->IsWeapon() ? MainHand->Weapon : FSolidWeapon();
+	}
+
+	const USolidSquad* Side = Squad.Get();
+	const USolidCompany* Company = Side ? Side->GetCompany() : nullptr;
+	if (!Company)
+	{
+		return FSolidWeapon();
+	}
+	int32 Member = 1;
+	for (const int32 CompanionIndex : Side->GetSelectedCompanionIndices())
+	{
+		const FSolidCompanion* Companion = Company->GetCompanion(CompanionIndex);
+		if (!Companion)
+		{
+			continue;
+		}
+		if (Member == Index)
+		{
+			const FSolidItem Weapon = FSolidItem::FromId(*Companion->WeaponId, 1);
+			return Weapon.IsWeapon() ? Weapon.Weapon : FSolidWeapon();
+		}
+		++Member;
+	}
+	return FSolidWeapon();
+}
+
+FSolidWeapon FSolidBattle::MonsterWeapon(const int32 Index) const
+{
+	if (!Group || Index < 0)
+	{
+		return FSolidWeapon();
+	}
+	const FSolidMonster* Monster = Group->Get(Index);
+	return Monster ? Monster->Weapon : FSolidWeapon();
+}
+
 int32 FSolidBattle::GetSquadPower() const
 {
+	int32 Total = SquadWeapon(0).Power;
 	const USolidSquad* Side = Squad.Get();
-	if (!Side)
-	{
-		return 0;
-	}
-
-	int32 Total = 0;
-	if (const FSolidItem* MainHand = WornItem(Inventory, SolidInventory::ESlot::MainHand))
-	{
-		Total += MainHand->Power();
-	}
-
-	const USolidCompany* Company = Side->GetCompany();
+	const USolidCompany* Company = Side ? Side->GetCompany() : nullptr;
 	if (!Company)
 	{
 		return Total;
 	}
+	int32 Member = 1;
 	for (const int32 Index : Side->GetSelectedCompanionIndices())
 	{
-		const FSolidCompanion* Companion = Company->GetCompanion(Index);
-		if (Companion)
+		if (!Company->GetCompanion(Index))
 		{
-			Total += CompanionPower(*Companion);
+			continue;
 		}
+		Total += SquadWeapon(Member).Power;
+		++Member;
 	}
 	return Total;
 }
@@ -197,11 +226,7 @@ int32 FSolidBattle::GetGroupPower() const
 	int32 Total = 0;
 	for (int32 Index = 0; Index < Group->Num(); ++Index)
 	{
-		const FSolidMonster* Monster = Group->Get(Index);
-		if (Monster)
-		{
-			Total += Monster->Weapon.Power;
-		}
+		Total += MonsterWeapon(Index).Power;
 	}
 	return Total;
 }
@@ -359,22 +384,21 @@ float FSolidBattle::TimeUntilNextEvent()
 
 	const bool bSquadAttacks = GetSquadPlan() && GetSquadPlan()->Attacks();
 	const bool bGroupAttacks = GetGroupPlan() && GetGroupPlan()->Attacks();
-	const FSolidItem* MainHand = WornItem(Inventory, SolidInventory::ESlot::MainHand);
-	NoteCycle(MainHand && MainHand->IsWeapon(), &CaptainCycle, bSquadAttacks);
+	NoteCycle(CanStrike(SquadWeapon(0)), &CaptainCycle, bSquadAttacks);
 
 	if (const USolidSquad* Side = Squad.Get())
 	{
 		if (const USolidCompany* Company = Side->GetCompany())
 		{
+			int32 Member = 1;
 			for (const int32 Index : Side->GetSelectedCompanionIndices())
 			{
-				const FSolidCompanion* Companion = Company->GetCompanion(Index);
-				if (!Companion)
+				if (!Company->GetCompanion(Index))
 				{
 					continue;
 				}
-				const FSolidItem Weapon = FSolidItem::FromId(*Companion->WeaponId, 1);
-				NoteCycle(Weapon.IsWeapon(), CompanionCycles.Find(Index), bSquadAttacks);
+				NoteCycle(CanStrike(SquadWeapon(Member)), CompanionCycles.Find(Index), bSquadAttacks);
+				++Member;
 			}
 		}
 	}
@@ -450,40 +474,34 @@ void FSolidBattle::Advance(const float Delta)
 		Record(When, ESolidBattleLogKind::Attack, Actor, TargetName, Weapon, bKilled);
 	};
 
-	if (const FSolidItem* MainHand = WornItem(Inventory, SolidInventory::ESlot::MainHand))
+	const FSolidWeapon CaptainWeapon = SquadWeapon(0);
+	if (CanStrike(CaptainWeapon))
 	{
-		if (MainHand->IsWeapon())
-		{
-			const FString WeaponName(ItemWeaponName(*MainHand));
-			const int32 Power = MainHand->Power();
-			AdvanceCycle(
-				CaptainCycle,
-				MainHand->Weapon.Speed,
-				Delta,
-				bSquadAttacks,
-				Now,
-				Arrived,
-				[&](const float When)
+		const FString WeaponName(CaptainWeapon.Name);
+		const int32 Power = CaptainWeapon.Power;
+		AdvanceCycle(
+			CaptainCycle,
+			CaptainWeapon.Speed,
+			Delta,
+			bSquadAttacks,
+			Now,
+			Arrived,
+			[&](const float When)
+			{
+				HoldTarget(CaptainCycle.Target, Monsters);
+				Record(When, ESolidBattleLogKind::Prepare, CaptainName, FString(), FString());
+			},
+			[&](const float When)
+			{
+				if (CaptainCycle.Target && Monsters.Contains(CaptainCycle.Target))
 				{
-					HoldTarget(CaptainCycle.Target, Monsters);
-					Record(When, ESolidBattleLogKind::Prepare, CaptainName, FString(), FString());
-				},
-				[&](const float When)
-				{
-					if (CaptainCycle.Target && Monsters.Contains(CaptainCycle.Target))
-					{
-						Strike(CaptainCycle.Target->Armour, Power, When, CaptainName, MonsterName(CaptainCycle.Target), WeaponName);
-					}
-				},
-				[&](const float When)
-				{
-					Record(When, ESolidBattleLogKind::Abandon, CaptainName, FString(), FString());
-				});
-		}
-		else
-		{
-			CaptainCycle.bEngaged = false;
-		}
+					Strike(CaptainCycle.Target->Armour, Power, When, CaptainName, MonsterName(CaptainCycle.Target), WeaponName);
+				}
+			},
+			[&](const float When)
+			{
+				Record(When, ESolidBattleLogKind::Abandon, CaptainName, FString(), FString());
+			});
 	}
 	else
 	{
@@ -495,6 +513,7 @@ void FSolidBattle::Advance(const float Delta)
 	{
 		if (const USolidCompany* Company = Side->GetCompany())
 		{
+			int32 Member = 1;
 			for (const int32 Index : Side->GetSelectedCompanionIndices())
 			{
 				const FSolidCompanion* Companion = Company->GetCompanion(Index);
@@ -502,19 +521,20 @@ void FSolidBattle::Advance(const float Delta)
 				{
 					continue;
 				}
-				const FSolidItem Weapon = FSolidItem::FromId(*Companion->WeaponId, 1);
-				if (!Weapon.IsWeapon())
+				const FSolidWeapon Weapon = SquadWeapon(Member);
+				++Member;
+				if (!CanStrike(Weapon))
 				{
 					continue;
 				}
 				StillOut.Add(Index);
 				FCycle& Cycle = CompanionCycles.FindOrAdd(Index);
 				const FString Actor = Companion->Name;
-				const FString WeaponName(ItemWeaponName(Weapon));
-				const int32 Power = Weapon.Power();
+				const FString WeaponName(Weapon.Name);
+				const int32 Power = Weapon.Power;
 				AdvanceCycle(
 					Cycle,
-					Weapon.Weapon.Speed,
+					Weapon.Speed,
 					Delta,
 					bSquadAttacks,
 					Now,
@@ -559,15 +579,21 @@ void FSolidBattle::Advance(const float Delta)
 		return;
 	}
 
-	for (FSolidMonster* Monster : Monsters)
+	for (int32 Index = 0; Group && Index < Group->Num(); ++Index)
 	{
+		FSolidMonster* Monster = Group->Get(Index);
+		if (!Monster)
+		{
+			continue;
+		}
 		FCycle& Cycle = MonsterCycles.FindOrAdd(Monster);
-		const int32 Power = Monster->Weapon.Power;
+		const FSolidWeapon Weapon = MonsterWeapon(Index);
+		const int32 Power = Weapon.Power;
 		const FString Actor = MonsterName(Monster);
-		const FString WeaponName(Monster->Weapon.Name ? Monster->Weapon.Name : TEXT(""));
+		const FString WeaponName(Weapon.Name ? Weapon.Name : TEXT(""));
 		AdvanceCycle(
 			Cycle,
-			Monster->Weapon.Speed,
+			Weapon.Speed,
 			Delta,
 			bGroupAttacks,
 			Now,

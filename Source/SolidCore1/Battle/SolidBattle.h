@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Templates/Function.h"
+#include "Combat/SolidWeapon.h"
 #include "Company/SolidSquad.h"
 #include "Monster/SolidMonsterGroup.h"
 
@@ -44,7 +45,8 @@ struct FSolidBattleLogEntry
 /**
  * One battle. It links one squad, the captain's loadout, and one monster group.
  * The squad and the group already hold their battle plans. This reads the active plan on each.
- * Power is weapon Power. Defence is armour Strength. A later gauge can show the totals.
+ * SquadWeapon and MonsterWeapon are the weapon each member fights with.
+ * Power is that weapon's Power. Defence is armour Strength. A later gauge can show the totals.
  * Each fighter prepares and recovers on their own weapon Speed. The blow lands when that prepare ends.
  * That blow cannot drop armour Strength below 0. A blow that leaves it at 0 says kills.
  * An attack on armour already at 0 is aborted.
@@ -81,6 +83,19 @@ public:
 
 	/** The group's active plan, or null when this battle has no group. */
 	const FSolidBattlePlan* GetGroupPlan() const;
+
+	/**
+	 * The weapon that squad member fights with.
+	 * Index 0 is the captain. Each later index is a companion the squad has out, in squad order.
+	 * An empty hand, or a missing member, is an empty weapon.
+	 */
+	FSolidWeapon SquadWeapon(int32 Index) const;
+
+	/**
+	 * The weapon that monster fights with.
+	 * The index is that member of the group. A missing monster is an empty weapon.
+	 */
+	FSolidWeapon MonsterWeapon(int32 Index) const;
 
 	/** Power of the captain's main hand, plus each companion the squad has out. */
 	int32 GetSquadPower() const;

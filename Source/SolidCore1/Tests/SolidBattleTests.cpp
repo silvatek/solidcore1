@@ -196,4 +196,40 @@ bool FSolidBattleRagsTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattleWeaponsTest,
+	"SolidCore1.Battle.Weapons",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattleWeaponsTest::RunTest(const FString& Parameters)
+{
+	USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
+	const int32 Sam = Squad->GetCompany()->FindCompanionIndexByName(TEXT("Sam"));
+	if (!TestTrue(TEXT("Sam is in the company"), Sam != INDEX_NONE))
+	{
+		return false;
+	}
+	Squad->SetSelectedCompanions({ Sam });
+	FSolidMonsterGroup Group = SolidBattleTestPrivate::OneRaptor(TEXT("Attack"));
+	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+	FSolidBattle Battle(Squad, &Group);
+	Battle.Inventory = &Inventory;
+
+	const FSolidWeapon Spear = Battle.SquadWeapon(0);
+	const FSolidWeapon CompanionSpear = Battle.SquadWeapon(1);
+	const FSolidWeapon Claws = Battle.MonsterWeapon(0);
+	TestEqual(TEXT("the captain's weapon is the crude spear"), FString(Spear.Name), TEXT("Crude spear"));
+	TestEqual(TEXT("the companion's weapon is the crude spear"), FString(CompanionSpear.Name), TEXT("Crude spear"));
+	TestEqual(TEXT("the raptor's weapon is claws"), FString(Claws.Name), TEXT("Claws"));
+	TestEqual(TEXT("the squad's power is both spears"), Battle.GetSquadPower(), Spear.Power + CompanionSpear.Power);
+	TestEqual(TEXT("the group's power is the claws"), Battle.GetGroupPower(), Claws.Power);
+	TestEqual(TEXT("a missing squad member has no weapon"), Battle.SquadWeapon(2).Power, 0);
+	TestEqual(TEXT("a missing monster has no weapon"), Battle.MonsterWeapon(1).Power, 0);
+
+	SolidInventory::PlaceWorn(Inventory, SolidInventory::ESlot::MainHand, nullptr);
+	TestEqual(TEXT("an empty main hand has no weapon"), Battle.SquadWeapon(0).Power, 0);
+	TestEqual(TEXT("the companion still has a spear"), Battle.SquadWeapon(1).Power, CompanionSpear.Power);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

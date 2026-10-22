@@ -8,6 +8,7 @@
 #include "Monster/SolidEncounters.h"
 #include "Monster/SolidRaptorActor.h"
 #include "Monster/SolidRaptor.h"
+#include "Inventory/SolidItem.h"
 #include "Terrain/SolidBridge.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -175,7 +176,29 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 		TestTrue(
 			TEXT("the Iglin-bridge raptors are Small"),
 			Member->Size == ESolidMonsterSize::Small);
+		TestEqual(
+			TEXT("the raptor wears claws"),
+			FString(Member->Weapon.Name),
+			FString(TEXT("Claws")));
+		TestEqual(
+			TEXT("the raptor wears hide"),
+			FString(Member->Armour.Name),
+			FString(TEXT("Hide")));
+		TestEqual(
+			TEXT("claws use the Small starting roll"),
+			Member->Weapon.Power,
+			SolidMonster::PowerFor(Member->Size, FSolidItem::StartingDraw));
+		TestTrue(
+			TEXT("claws have Speed"),
+			Member->Weapon.Speed > 0.f && FMath::IsFinite(Member->Weapon.Speed));
+		TestTrue(
+			TEXT("hide has Strength"),
+			Member->Armour.Strength > 0.f && FMath::IsFinite(Member->Armour.Strength));
 	}
+	const int32 SharedPower = Group.Get(0)->Weapon.Power;
+	Group.Get(1)->Weapon.Power = SharedPower + 1;
+	TestEqual(TEXT("one raptor keeps its own weapon"), Group.Get(0)->Weapon.Power, SharedPower);
+	TestEqual(TEXT("the third raptor keeps its own weapon"), Group.Get(2)->Weapon.Power, SharedPower);
 	for (int32 Index = 1; Index < Group.Num(); ++Index)
 	{
 		const FSolidMonster* Prev = Group.Get(Index - 1);

@@ -1,4 +1,5 @@
 #include "SolidMonster.h"
+#include "Inventory/SolidItemType.h"
 
 FSolidMonsterStandingSpan FSolidMonster::StandingSpan(TArray<float>& SamplesZ)
 {
@@ -53,6 +54,33 @@ float FSolidMonster::UniformScale(const float BoundsHeightCm)
 		return 1.f;
 	}
 	return StandingHeightCm / BoundsHeightCm;
+}
+
+int32 SolidMonster::PowerFor(const ESolidMonsterSize Size, const double StandardNormal)
+{
+	int32 Grade = INDEX_NONE;
+	for (int32 Index = 0; Index < SizeCount; ++Index)
+	{
+		if (Sizes[Index] == Size)
+		{
+			Grade = Index;
+			break;
+		}
+	}
+	if (Grade == INDEX_NONE)
+	{
+		return 0;
+	}
+	return SolidItemType::PowerForGrade(Grade, Grade == SizeCount - 1, StandardNormal);
+}
+
+void FSolidMonster::Arm(const TCHAR* WeaponName, const TCHAR* ArmourName, const double StandardNormal)
+{
+	Weapon.Name = (WeaponName && WeaponName[0]) ? WeaponName : TEXT("");
+	Weapon.Speed = 1.f;
+	Weapon.Power = SolidMonster::PowerFor(Size, StandardNormal);
+	Armour.Name = (ArmourName && ArmourName[0]) ? ArmourName : TEXT("");
+	Armour.Strength = 1.f;
 }
 
 float FSolidMonster::MeshFootOffsetCm(

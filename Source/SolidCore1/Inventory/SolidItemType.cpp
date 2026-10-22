@@ -56,10 +56,9 @@ namespace SolidItemTypePrivate
 	}
 }
 
-int32 SolidItemType::PowerFor(const ESolidItemQuality Quality, const double StandardNormal)
+int32 SolidItemType::PowerForGrade(const int32 Grade, const bool bNarrowUpside, const double StandardNormal)
 {
-	const int32 Grade = SolidItemTypePrivate::GradeIndex(Quality);
-	if (Grade == INDEX_NONE || !FMath::IsFinite(StandardNormal))
+	if (Grade < 0 || !FMath::IsFinite(StandardNormal))
 	{
 		return 0;
 	}
@@ -70,7 +69,7 @@ int32 SolidItemType::PowerFor(const ESolidItemQuality Quality, const double Stan
 		Median *= PowerMedianRatio;
 	}
 
-	const double Upside = (Quality == ESolidItemQuality::Legendary) ? LegendaryUpside : PowerSpread;
+	const double Upside = bNarrowUpside ? LegendaryUpside : PowerSpread;
 	const double Step = SolidItemTypePrivate::LogStep(StandardNormal, PowerSpread, Upside, PowerGlide);
 	const double Value = Median * FMath::Exp(Step);
 	if (!FMath::IsFinite(Value) || Value >= static_cast<double>(MAX_int32))
@@ -78,4 +77,12 @@ int32 SolidItemType::PowerFor(const ESolidItemQuality Quality, const double Stan
 		return MAX_int32;
 	}
 	return FMath::Max(1, static_cast<int32>(FMath::FloorToDouble(Value + 0.5)));
+}
+
+int32 SolidItemType::PowerFor(const ESolidItemQuality Quality, const double StandardNormal)
+{
+	return PowerForGrade(
+		SolidItemTypePrivate::GradeIndex(Quality),
+		Quality == ESolidItemQuality::Legendary,
+		StandardNormal);
 }

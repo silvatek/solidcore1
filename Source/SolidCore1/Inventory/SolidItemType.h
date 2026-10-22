@@ -133,4 +133,12 @@ namespace SolidItemType
 	 * A grade returns at least 1.
 	 */
 	int32 PowerFor(ESolidItemQuality Quality, double StandardNormal);
+
+	/**
+	 * The roll PowerFor uses, addressed by grade index.
+	 * Grade 0 is the first step. Each step raises the middle by PowerMedianRatio.
+	 * bNarrowUpside is the top step's shorter high side.
+	 * A grade below zero, or a draw that is not a number, returns 0.
+	 */
+	int32 PowerForGrade(int32 GradeIndex, bool bNarrowUpside, double StandardNormal);
 }

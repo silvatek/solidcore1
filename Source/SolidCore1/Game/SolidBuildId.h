@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0541")
+#define SOLID_BUILD_ID TEXT("SC1-0542")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A slot holds an item. A stack is that item's count.")
+#define SOLID_BUILD_NOTE TEXT("A monster's weapon power comes from its size.")
 #endif

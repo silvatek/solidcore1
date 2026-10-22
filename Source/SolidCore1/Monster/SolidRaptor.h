@@ -25,6 +25,10 @@ public:
 	 * A later size scales up or down from Small.
 	 */
 	static constexpr float SmallDrawnBodyFactor = 6.f;
+	/** This raptor's weapon. */
+	static constexpr const TCHAR* Claws = TEXT("Claws");
+	/** This raptor's armour. */
+	static constexpr const TCHAR* Hide = TEXT("Hide");
 
 	virtual float DrawnBodyFactor() const override;
 	virtual const TCHAR* Kind() const override { return TEXT("Raptor"); }

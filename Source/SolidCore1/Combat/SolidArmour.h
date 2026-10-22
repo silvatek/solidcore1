@@ -5,6 +5,7 @@
 /**
  * Armour, the piece worn on the body.
  * Strength is how much that piece is. Play-testing chooses the amount. It stays off the screen.
+ * On a monster, Strength is the starting figure stored on that monster's armour.
  * A helmet, boots, and a belt are not armour, and they add no Strength.
  */
 class FSolidArmour

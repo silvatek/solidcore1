@@ -1,6 +1,7 @@
 #include "SolidEncounter.h"
 #include "SolidRaptor.h"
 #include "SolidGroundMove.h"
+#include "Inventory/SolidItem.h"
 
 namespace SolidEncounterPrivate
 {
@@ -124,6 +125,7 @@ namespace SolidEncounterPrivate
 		{
 			TUniquePtr<FSolidRaptor> Raptor = MakeUnique<FSolidRaptor>();
 			Raptor->Size = Size;
+			Raptor->Arm(FSolidRaptor::Claws, FSolidRaptor::Hide, FSolidItem::StartingDraw);
 			return Raptor;
 		}
 		default:

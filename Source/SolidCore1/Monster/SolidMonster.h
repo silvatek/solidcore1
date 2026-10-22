@@ -1,6 +1,8 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Combat/SolidArmour.h"
+#include "Combat/SolidWeapon.h"
 
 class AActor;
 class UWorld;
@@ -45,6 +47,13 @@ namespace SolidMonster
 		default: return TEXT("");
 		}
 	}
+
+	/**
+	 * Hidden power for one size. The roll is the one an item uses for quality.
+	 * Tiny is the first step. Each larger size raises the middle the way the next grade does.
+	 * The largest size narrows the high side. StandardNormal is one draw. A size returns at least 1.
+	 */
+	int32 PowerFor(ESolidMonsterSize Size, double StandardNormal);
 }
 
 /**
@@ -58,8 +67,8 @@ struct FSolidMonsterStandingSpan
 };
 
 /**
- * One monster: a place on the ground, a standing size, and the answers that kind is asked.
- * Raptor is the first subclass. Later kinds bring their own mesh, skeleton, and clips.
+ * One monster: a place on the ground, a standing size, a weapon, an armour, and the answers that kind is asked.
+ * The weapon and the armour are this monster's. They are not items. Raptor is the first subclass.
  */
 class FSolidMonster
 {
@@ -77,6 +86,16 @@ public:
 	float YawDeg = 0.f;
 	/** How large this monster is. The Iglin-bridge raptors are Small. */
 	ESolidMonsterSize Size = ESolidMonsterSize::Small;
+	/** This monster's weapon. Claws and teeth are names. Power is the size roll. */
+	FSolidWeapon Weapon;
+	/** This monster's armour. Strength is the starting figure. */
+	FSolidArmour Armour;
+
+	/**
+	 * Stores the weapon and armour this monster keeps.
+	 * Power is the size roll for StandardNormal. Speed and Strength are the starting figures.
+	 */
+	void Arm(const TCHAR* WeaponName, const TCHAR* ArmourName, double StandardNormal);
 
 	/** Standing height of the body after a uniform scale (cm). */
 	static constexpr float StandingHeightCm = 100.f;

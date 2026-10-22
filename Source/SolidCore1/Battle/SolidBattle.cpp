@@ -108,6 +108,32 @@ namespace
 		const TCHAR* Kind = Monster ? Monster->Kind() : nullptr;
 		return FString(Kind && Kind[0] ? Kind : TEXT("Monster"));
 	}
+
+	/** Selected companions who fight. A cap walks that many boxes from the top. */
+	void FightingCompanions(const USolidSquad* Side, const int32 FieldedCount, TArray<int32>& Out)
+	{
+		Out.Reset();
+		if (!Side)
+		{
+			return;
+		}
+		const USolidCompany* Company = Side->GetCompany();
+		if (!Company)
+		{
+			return;
+		}
+		const TArray<int32>& Selected = Side->GetSelectedCompanionIndices();
+		const int32 Slots = FieldedCount == INDEX_NONE
+			? Selected.Num()
+			: FMath::Min(FMath::Max(FieldedCount, 0), Selected.Num());
+		for (int32 Slot = 0; Slot < Slots; ++Slot)
+		{
+			if (Company->GetCompanion(Selected[Slot]))
+			{
+				Out.Add(Selected[Slot]);
+			}
+		}
+	}
 }
 
 FSolidBattle::FSolidBattle(USolidSquad* InSquad, FSolidMonsterGroup* InGroup)
@@ -145,22 +171,19 @@ FSolidWeapon FSolidBattle::SquadWeapon(const int32 Index) const
 	{
 		return FSolidWeapon();
 	}
-	int32 Member = 1;
-	for (const int32 CompanionIndex : Side->GetSelectedCompanionIndices())
+	TArray<int32> Fighting;
+	FightingCompanions(Side, FieldedCount, Fighting);
+	if (!Fighting.IsValidIndex(Index - 1))
 	{
-		const FSolidCompanion* Companion = Company->GetCompanion(CompanionIndex);
-		if (!Companion)
-		{
-			continue;
-		}
-		if (Member == Index)
-		{
-			const FSolidItem Weapon = FSolidItem::FromId(*Companion->WeaponId, 1);
-			return Weapon.IsWeapon() ? Weapon.Weapon : FSolidWeapon();
-		}
-		++Member;
+		return FSolidWeapon();
 	}
-	return FSolidWeapon();
+	const FSolidCompanion* Companion = Company->GetCompanion(Fighting[Index - 1]);
+	if (!Companion)
+	{
+		return FSolidWeapon();
+	}
+	const FSolidItem Weapon = FSolidItem::FromId(*Companion->WeaponId, 1);
+	return Weapon.IsWeapon() ? Weapon.Weapon : FSolidWeapon();
 }
 
 FSolidWeapon FSolidBattle::MonsterWeapon(const int32 Index) const
@@ -177,20 +200,15 @@ int32 FSolidBattle::GetSquadPower() const
 {
 	int32 Total = SquadWeapon(0).Power;
 	const USolidSquad* Side = Squad.Get();
-	const USolidCompany* Company = Side ? Side->GetCompany() : nullptr;
-	if (!Company)
+	if (!Side)
 	{
 		return Total;
 	}
-	int32 Member = 1;
-	for (const int32 Index : Side->GetSelectedCompanionIndices())
+	TArray<int32> Fighting;
+	FightingCompanions(Side, FieldedCount, Fighting);
+	for (int32 Member = 0; Member < Fighting.Num(); ++Member)
 	{
-		if (!Company->GetCompanion(Index))
-		{
-			continue;
-		}
-		Total += SquadWeapon(Member).Power;
-		++Member;
+		Total += SquadWeapon(Member + 1).Power;
 	}
 	return Total;
 }
@@ -217,7 +235,9 @@ float FSolidBattle::GetSquadDefence() const
 	{
 		return Total;
 	}
-	for (const int32 Index : Side->GetSelectedCompanionIndices())
+	TArray<int32> Fighting;
+	FightingCompanions(Side, FieldedCount, Fighting);
+	for (const int32 Index : Fighting)
 	{
 		const FSolidCompanion* Companion = Company->GetCompanion(Index);
 		if (Companion)
@@ -418,17 +438,13 @@ float FSolidBattle::TimeUntilNextEvent()
 
 	if (const USolidSquad* Side = Squad.Get())
 	{
-		if (const USolidCompany* Company = Side->GetCompany())
+		if (Side->GetCompany())
 		{
-			int32 Member = 1;
-			for (const int32 Index : Side->GetSelectedCompanionIndices())
+			TArray<int32> Fighting;
+			FightingCompanions(Side, FieldedCount, Fighting);
+			for (int32 Member = 0; Member < Fighting.Num(); ++Member)
 			{
-				if (!Company->GetCompanion(Index))
-				{
-					continue;
-				}
-				NoteCycle(CanStrike(SquadWeapon(Member)), CompanionCycles.Find(Index), bSquadAttacks);
-				++Member;
+				NoteCycle(CanStrike(SquadWeapon(Member + 1)), CompanionCycles.Find(Fighting[Member]), bSquadAttacks);
 			}
 		}
 	}
@@ -550,16 +566,17 @@ void FSolidBattle::Advance(const float Delta)
 	{
 		if (const USolidCompany* Company = Side->GetCompany())
 		{
-			int32 Member = 1;
-			for (const int32 Index : Side->GetSelectedCompanionIndices())
+			TArray<int32> Fighting;
+			FightingCompanions(Side, FieldedCount, Fighting);
+			for (int32 Member = 0; Member < Fighting.Num(); ++Member)
 			{
+				const int32 Index = Fighting[Member];
 				const FSolidCompanion* Companion = Company->GetCompanion(Index);
 				if (!Companion)
 				{
 					continue;
 				}
-				const FSolidWeapon Weapon = SquadWeapon(Member);
-				++Member;
+				const FSolidWeapon Weapon = SquadWeapon(Member + 1);
 				if (!CanStrike(Weapon))
 				{
 					continue;

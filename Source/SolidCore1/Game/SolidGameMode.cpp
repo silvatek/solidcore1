@@ -2055,6 +2055,15 @@ void ASolidGameMode::AdvanceBattle(const float DeltaSeconds, const FVector& Capt
 		Battle->Inventory = &BattleLoadout;
 	}
 
+	if (const USolidGameState* State = GetConfiguration())
+	{
+		Battle->FieldedCount = SolidEvents::SquadCount(*State);
+	}
+	else
+	{
+		Battle->FieldedCount = 0;
+	}
+
 	if (!CaptainStillStanding(BattleLoadout))
 	{
 		return;

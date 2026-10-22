@@ -87,6 +87,13 @@ public:
 	/** The monster group in this battle. The encounter owns the group. */
 	FSolidMonsterGroup* Group = nullptr;
 
+	/**
+	 * How many selected boxes fight, from the top.
+	 * INDEX_NONE fights every selected companion. Zero fights none.
+	 * The live fight uses the squad cap, which starts at none.
+	 */
+	int32 FieldedCount = INDEX_NONE;
+
 	/** Battle time. 0 is the start. The unit is weapon Speed. */
 	float Time = 0.f;
 

@@ -266,4 +266,50 @@ bool FSolidBattlePanelTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattleFieldedTest,
+	"SolidCore1.Battle.Fielded",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattleFieldedTest::RunTest(const FString& Parameters)
+{
+	USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
+	USolidCompany* Company = Squad->GetCompany();
+	const int32 Sam = Company ? Company->FindCompanionIndexByName(TEXT("Sam")) : INDEX_NONE;
+	const int32 Alex = Company ? Company->FindCompanionIndexByName(TEXT("Alex")) : INDEX_NONE;
+	if (Sam == INDEX_NONE || Alex == INDEX_NONE)
+	{
+		AddError(TEXT("the company has no Sam or Alex"));
+		return false;
+	}
+	Squad->SetSelectedCompanions({ Sam, Alex });
+	FSolidMonsterGroup Group = SolidBattleTestPrivate::OneRaptor(TEXT("Attack"));
+	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+	FSolidBattle Battle(Squad, &Group);
+	Battle.Inventory = &Inventory;
+	Battle.FieldedCount = 0;
+
+	const int32 Spear = Battle.SquadWeapon(0).Power;
+	TestEqual(TEXT("a cap of none leaves the next weapon empty"), Battle.SquadWeapon(1).Power, 0);
+	TestEqual(TEXT("a cap of none is the captain's spear"), Battle.GetSquadPower(), Spear);
+
+	Battle.AdvanceToNextEvent();
+	bool bCompanion = false;
+	for (const FSolidBattleLogEntry& Entry : Battle.Log)
+	{
+		if (Entry.Actor == TEXT("Sam") || Entry.Actor == TEXT("Alex"))
+		{
+			bCompanion = true;
+		}
+	}
+	TestFalse(TEXT("Sam and Alex stay out of the log"), bCompanion);
+
+	FSolidBattle One(Squad, &Group);
+	One.Inventory = &Inventory;
+	One.FieldedCount = 1;
+	TestEqual(TEXT("a cap of one is Sam's spear"), FString(One.SquadWeapon(1).Name), TEXT("Crude spear"));
+	TestEqual(TEXT("a cap of one leaves Alex out"), One.SquadWeapon(2).Power, 0);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

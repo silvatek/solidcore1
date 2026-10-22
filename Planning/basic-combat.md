@@ -1,6 +1,6 @@
 # Basic combat
 
-Status: Ready
+Status: In Progress
 
 ## Story
 

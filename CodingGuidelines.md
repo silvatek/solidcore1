@@ -4,15 +4,15 @@ Rules for new C++ and for C++ a story is already changing. How the game plays is
 
 ## A game concept is a class
 
-A thing the design names is a C++ class. The class holds the data for one of those things and the answers to the questions that thing is asked.
+A thing the design names is one C++ class, and the class name is that thing. The class holds the data for one of those things and the answers to the questions that thing is asked. A caller asks the object. Those answers are methods on it.
 
-`FSolidStronghold` and `FSolidBodyPart` are the examples. Each kind is a subclass. A call site asks the object, as it does with `FSolidStronghold::Supported`.
+`FSolidStronghold` and `FSolidBodyPart` are the examples. Each kind is a subclass. A call site asks the object, as it does with `FSolidStronghold::Supported`. Monster is `FSolidMonster`. Where it stands, how tall it is, and the scale of its body are questions that object answers. `SolidMonster::CollectChoices` left those questions as free functions in a namespace. That was the miss.
 
 An enum can stay as a token a map or a save stores. A lookup such as `SolidStronghold::TypeOf` returns the class for that token.
 
-A value that only carries data stays a struct. `FSolidStrongholdView` is a pitch and a yaw. A calculation that is not a thing in the game stays a function in a namespace. `SolidTerrainNoise` is that kind of calculation.
+A value that only carries data stays a struct. `FSolidStrongholdView` is a pitch and a yaw. A calculation the design does not name as its own thing stays a function in a namespace. `SolidTerrainNoise` is that kind of calculation. The namespace names the calculation. It does not stand in for a thing the design names, and a test that can call a function without a world does not make that function the concept.
 
-Code that already uses a namespace and a struct for a game concept stays as it is until a story changes that concept. The story that adds behavior moves the concept onto a class.
+Code that already uses a namespace and a struct for a game concept stays as it is until a story changes that concept. That story moves the concept onto the class. A concept the story is introducing starts as the class.
 
 ## Encapsulation and cohesion
 

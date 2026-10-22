@@ -125,10 +125,10 @@ namespace SolidMonster
 
 	/**
 	 * The drawn body is smaller than the vertex span.
-	 * Beside the 1 m post, the span scale draws a body about a third of a metre tall.
-	 * This factor brings that drawn body up to the standing height.
+	 * The span scale is about 0.10. Three times that scale is knee-high on the captain, about half a metre.
+	 * Six times that scale brings the drawn body up to the standing height.
 	 */
-	inline constexpr float DrawnBodyFactor = 3.f;
+	inline constexpr float DrawnBodyFactor = 6.f;
 
 	/**
 	 * Relative Z that puts the scaled bounds bottom on the actor origin.

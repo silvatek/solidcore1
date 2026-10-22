@@ -20,11 +20,11 @@ The player walks from Iglin toward the broken bridge and meets three reptiles on
 - A point that has a tree has none. A point already chosen for a foraging pile has none.
 - A point whose `Fog` is `1.0f` is not seeded. When that `Fog` falls below `1.0f`, a chosen monster on it is seeded then. A point that stays at `1.0f` never receives one.
 - The dungeon, the tower, and the Iglin tunnels have none. Leaving one of those and returning to the open world shows the same three places again.
-- The capsule blocks the captain and a companion. It ignores the visibility channel, so a ground click still hits the ground.
-- Walking into the body stops the captain. The captain, a companion, and the monster all stay unhurt.
+- The capsule blocks the captain. It ignores the visibility channel, so a ground click still hits the ground.
+- Walking into the body stops the captain. The captain and the monster stay unhurt.
 - A click on a monster leaves the fight unstarted, leaves every item where it is, and fires no event.
 - The pointer shows no name for a monster. A monster has no nameplate.
-- The squad camera stays on the captain and the companions.
+- The camera stays on the captain.
 - Standing beside a monster leaves Reach broken bridge unfired. The ramp still fires it, including after the bridge is repaired. Repairing the bridge leaves the three where they are.
 - Seeing them writes no journal line.
 - Any Blueprint or AnimBP in the download stays unused. The captain stays on the Viking mesh.
@@ -40,6 +40,7 @@ The player walks from Iglin toward the broken bridge and meets three reptiles on
 - Play the idle with `SolidClipLocomotion` on an `AnimSingleNodeInstance`, looping. Leave any AnimBP in the download unassigned.
 - Choose the points in a function tests can call without a world. The Iglin town center comes from the world map. The ramp polylines come from the `SolidBridge::FBridge` whose `bIglinRelion` is set. Distance is horizontal. Sort by distance to the outer end, then by point index. Separation is 400 cm. The near limit is 800 cm. The far limit is 4000 cm. The count is 3.
 - Run that choice after the tree choice and the foraging choice, and skip a point index either of those already took. Seed when `Fog` falls below `1.0f`, the same moment as a foraging pile. Entering a stronghold or the tunnels stores no taken index for a monster. The next open-world visit chooses the same points and seeds the ones whose fog is already clear.
+- This encounter is on the walk from Iglin to the bridge. No companion is in the world yet, so the story does not ask one to meet these reptiles.
 - Collision blocks Pawn and ignores Visibility. There is no damage function and no health. Click-to-move stays as it is, because the trace still hits the ground.
 - Tests live in `SolidCore1.Monster.*`. A fake point set with one ramp returns the three nearest grassland points inside the band. It skips a road point, a river point, a tree point, a foraging point, a point inside 8 m, and a point past 40 m, and it keeps 4 m between the three. A map with no Iglin bridge returns none. The README suite table gains that line in the product commit.
 - The content test that loads Viking also loads this body and this idle once the pack is added. Until Add to Project, that load fails the same way a missing Viking mesh fails.

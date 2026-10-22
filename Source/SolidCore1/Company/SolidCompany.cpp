@@ -14,7 +14,12 @@ namespace
 			ESolidBattleSpacing::Standard,
 			ESolidAggression::Attack,
 			ESolidTargetStrategy::Random});
-		Plans.Add(FSolidBattlePlan::Defined(TEXT("Attack")));
+		Plans.Add({
+			TEXT("Attack"),
+			ESolidBattleFormation::Mob,
+			ESolidBattleSpacing::Standard,
+			ESolidAggression::Attack,
+			ESolidTargetStrategy::Random});
 		Plans.Add({
 			TEXT("Defend"),
 			ESolidBattleFormation::Line,

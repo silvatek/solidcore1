@@ -116,23 +116,20 @@ namespace SolidEncounterPrivate
 		}
 	}
 
-	/** The defined plan named on the group spec becomes that group's available plan, and the active one. */
+	/** The plan named on the group spec. Attack is this group's own plan. */
 	void GivePlan(FSolidMonsterGroup& Group, const SolidEncounter::FGroup& Spec)
 	{
-		if (!Spec.Plan || !Spec.Plan[0])
-		{
-			Group.Available.Reset();
-			Group.ActivePlan = INDEX_NONE;
-			return;
-		}
-		const FSolidBattlePlan Plan = FSolidBattlePlan::Defined(Spec.Plan);
-		if (Plan.Is(Spec.Plan))
-		{
-			Group.SetAvailable(Plan);
-			return;
-		}
 		Group.Available.Reset();
 		Group.ActivePlan = INDEX_NONE;
+		if (Spec.Plan && FCString::Strcmp(Spec.Plan, TEXT("Attack")) == 0)
+		{
+			Group.SetAvailable({
+				TEXT("Attack"),
+				ESolidBattleFormation::Mob,
+				ESolidBattleSpacing::Standard,
+				ESolidAggression::Attack,
+				ESolidTargetStrategy::Random});
+		}
 	}
 
 	TUniquePtr<FSolidMonster> MakeMonster(

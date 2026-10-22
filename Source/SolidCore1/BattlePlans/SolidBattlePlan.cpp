@@ -38,17 +38,3 @@ bool FSolidBattlePlan::PicksAtRandom() const
 {
 	return TargetStrategy == ESolidTargetStrategy::Random;
 }
-
-FSolidBattlePlan FSolidBattlePlan::Defined(const TCHAR* PlanName)
-{
-	if (PlanName && FCString::Strcmp(PlanName, TEXT("Attack")) == 0)
-	{
-		return {
-			TEXT("Attack"),
-			ESolidBattleFormation::Mob,
-			ESolidBattleSpacing::Standard,
-			ESolidAggression::Attack,
-			ESolidTargetStrategy::Random};
-	}
-	return {};
-}

@@ -429,16 +429,6 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidMonsterBattlePlanTest::RunTest(const FString& Parameters)
 {
-	const FSolidBattlePlan Attack = FSolidBattlePlan::Defined(TEXT("Attack"));
-	TestTrue(TEXT("Attack is the defined plan"), Attack.Is(TEXT("Attack")));
-	TestEqual(TEXT("Attack names itself"), Attack.Name, FString(TEXT("Attack")));
-	TestTrue(TEXT("Attack uses Mob"), Attack.Formation == ESolidBattleFormation::Mob);
-	TestTrue(TEXT("Attack uses standard spacing"), Attack.Spacing == ESolidBattleSpacing::Standard);
-	TestTrue(TEXT("Attack stores attack"), Attack.AttackOrRetreat == ESolidAggression::Attack);
-	TestTrue(TEXT("Attack attacks"), Attack.Attacks());
-	TestTrue(TEXT("Attack stores Random"), Attack.TargetStrategy == ESolidTargetStrategy::Random);
-	TestTrue(TEXT("Attack picks at random"), Attack.PicksAtRandom());
-
 	FSolidEncounter Iglin(SolidEncounter::Definitions[0]);
 	TestEqual(TEXT("Iglin Bridge has one group"), Iglin.Groups.Num(), 1);
 	if (Iglin.Groups.Num() != 1)
@@ -450,10 +440,18 @@ bool FSolidMonsterBattlePlanTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("that plan is active"), Group.ActivePlan, 0);
 	const FSolidBattlePlan* Active = Group.GetActivePlan();
 	TestNotNull(TEXT("the active plan"), Active);
+	FSolidBattlePlan Attack;
 	if (Active)
 	{
 		TestTrue(TEXT("the active plan is Attack"), Active->Is(TEXT("Attack")));
-		TestTrue(TEXT("it is the defined Attack plan"), Active->SameAs(Attack));
+		TestEqual(TEXT("Attack names itself"), Active->Name, FString(TEXT("Attack")));
+		TestTrue(TEXT("Attack uses Mob"), Active->Formation == ESolidBattleFormation::Mob);
+		TestTrue(TEXT("Attack uses standard spacing"), Active->Spacing == ESolidBattleSpacing::Standard);
+		TestTrue(TEXT("Attack stores attack"), Active->AttackOrRetreat == ESolidAggression::Attack);
+		TestTrue(TEXT("Attack attacks"), Active->Attacks());
+		TestTrue(TEXT("Attack stores Random"), Active->TargetStrategy == ESolidTargetStrategy::Random);
+		TestTrue(TEXT("Attack picks at random"), Active->PicksAtRandom());
+		Attack = *Active;
 	}
 
 	TArray<FSolidTerrainPoint> Points;

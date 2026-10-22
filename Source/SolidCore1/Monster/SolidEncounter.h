@@ -35,7 +35,7 @@ namespace SolidEncounter
 		EMonsterKind Kind = EMonsterKind::Raptor;
 		ESolidMonsterSize Size = ESolidMonsterSize::Small;
 		int32 Count = 0;
-		/** Name of the defined battle plan this group uses. Empty until a definition sets one. */
+		/** Name of this group's battle plan. Empty until a definition sets one. */
 		const TCHAR* Plan = TEXT("");
 	};
 

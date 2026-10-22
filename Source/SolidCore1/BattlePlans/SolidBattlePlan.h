@@ -75,13 +75,6 @@ public:
 
 	/** True when this plan picks a target at random. */
 	bool PicksAtRandom() const;
-
-	/**
-	 * The defined plan of that name.
-	 * Attack sets its name, the Mob formation, standard spacing, attack, and Random.
-	 * Any other name is an empty plan.
-	 */
-	static FSolidBattlePlan Defined(const TCHAR* PlanName);
 };
 
 /**

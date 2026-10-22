@@ -11,10 +11,33 @@
 #if WITH_DEV_AUTOMATION_TESTS
 
 /**
+ * One Small raptor in claws and hide.
+ * A plan name copies that plan from the company onto the group. A missing name leaves none.
+ */
+FSolidMonsterGroup OneRaptor(const USolidCompany* Company, const TCHAR* PlanName)
+{
+	FSolidMonsterGroup Built;
+	TUniquePtr<FSolidRaptor> Raptor = MakeUnique<FSolidRaptor>();
+	Raptor->Size = ESolidMonsterSize::Small;
+	Raptor->Arm(FSolidRaptor::Claws, FSolidRaptor::Hide, FSolidItem::StartingDraw);
+	Built.Members.Add(MoveTemp(Raptor));
+	if (Company && PlanName && PlanName[0])
+	{
+		const FSolidBattlePlan* Plan = Company->GetBattlePlan(Company->FindBattlePlanIndexByName(PlanName));
+		if (Plan)
+		{
+			Built.Available.Add(*Plan);
+			Built.ActivePlan = 0;
+		}
+	}
+	return Built;
+}
+
+/**
  * One battle between a real squad and a real monster group.
  * The squad and the group keep their own plans. The battle only links them.
  * A new game fields no companion, and the captain wears the starting loadout.
- * An existing encounter is the definition of that name.
+ * A shipped encounter is the definition of that name. A group built here is linked on its own.
  */
 struct FSolidBattleSimulation
 {
@@ -23,6 +46,8 @@ struct FSolidBattleSimulation
 	/** The captain's worn boxes and pack. A new game uses the starting kit. */
 	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
 	FSolidEncounter Encounter;
+	/** A group this simulation built. UseGroup links the battle to it. */
+	FSolidMonsterGroup Group;
 	FSolidBattle Battle;
 
 	FSolidBattleSimulation()
@@ -54,6 +79,13 @@ struct FSolidBattleSimulation
 		}
 		UseEncounter(*Definition);
 		return true;
+	}
+
+	/** The battle links this group. This simulation keeps the group. */
+	void UseGroup(FSolidMonsterGroup InGroup)
+	{
+		Group = MoveTemp(InGroup);
+		Battle.Group = &Group;
 	}
 
 	/** Name of the item in that worn box. Empty when the box is empty. */
@@ -174,12 +206,10 @@ bool FSolidBattleActivePlanTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the battle reads Defend"), Sim.SquadPlanName(), FString(TEXT("Defend")));
 	TestTrue(TEXT("Defend stores retreat"), Sim.SquadRetreats());
 
-	SolidEncounter::FDefinition Bare{ TEXT("Bare"), SolidEncounter::ESite::IglinBridgeRamp };
-	Bare = Bare.WithGroup(SolidEncounter::EMonsterKind::Raptor, ESolidMonsterSize::Small, 1);
-	Sim.UseEncounter(Bare);
+	Sim.UseGroup(OneRaptor(Sim.Company, nullptr));
 	if (!Sim.Battle.Group)
 	{
-		AddError(TEXT("the bare definition gave the battle no monster group"));
+		AddError(TEXT("the one raptor gave the battle no monster group"));
 		return false;
 	}
 	TestTrue(TEXT("a group with no plan name has none"), Sim.GroupPlanName().IsEmpty());
@@ -283,13 +313,10 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 		: 0;
 	const float Rags = FSolidItem::FromId(SolidItemType::IdRags, 1).Armour.Strength;
 
-	SolidEncounter::FDefinition One{ TEXT("One"), SolidEncounter::ESite::IglinBridgeRamp };
-	One = One.WithGroup(SolidEncounter::EMonsterKind::Raptor, ESolidMonsterSize::Small, 1, TEXT("Attack"));
-
 	{
 		FSolidBattleSimulation Sim;
 		Sim.SquadPlan(TEXT("Starter"));
-		Sim.UseEncounter(One);
+		Sim.UseGroup(OneRaptor(Sim.Company, TEXT("Attack")));
 		FSolidMonster* Raptor = Sim.Battle.Group ? Sim.Battle.Group->Get(0) : nullptr;
 		const FSolidItem* MainHand = Sim.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::MainHand)].IsWeapon()
 			? &Sim.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::MainHand)]
@@ -351,7 +378,7 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 	{
 		FSolidBattleSimulation Sim;
 		Sim.SquadPlan(TEXT("Defend"));
-		Sim.UseEncounter(One);
+		Sim.UseGroup(OneRaptor(Sim.Company, TEXT("Attack")));
 		if (!Sim.Battle.Group || !Sim.Battle.Group->Get(0))
 		{
 			AddError(TEXT("the one raptor gave the battle no monster"));
@@ -370,7 +397,7 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 			AddError(TEXT("the main hand did not empty"));
 			return false;
 		}
-		Sim.UseEncounter(One);
+		Sim.UseGroup(OneRaptor(Sim.Company, TEXT("Attack")));
 		if (!Sim.Battle.Group || !Sim.Battle.Group->Get(0))
 		{
 			AddError(TEXT("the one raptor gave the battle no monster"));

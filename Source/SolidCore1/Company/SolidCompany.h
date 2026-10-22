@@ -231,7 +231,7 @@ protected:
 	UPROPERTY()
 	TObjectPtr<USolidCaptain> Captain;
 
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Company|BattlePlans")
+	/** Not a UPROPERTY: FSolidBattlePlan is a plain class. */
 	TArray<FSolidBattlePlan> AllBattlePlans;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Company|CharacterMeshes")

@@ -930,7 +930,7 @@ bool ASolidGameMode::SelectBattlePlanSlot(const int32 SlotIndex)
 		return false;
 	}
 	const FString ChosenName = Chosen->Name;
-	const bool bParade = Chosen->Formation == ESolidBattleFormation::Parade;
+	const bool bParade = Chosen->IsParade();
 	if (!Squad->SelectAssignedSlot(SlotIndex))
 	{
 		return false;
@@ -942,12 +942,12 @@ bool ASolidGameMode::SelectBattlePlanSlot(const int32 SlotIndex)
 	}
 
 	const FSolidBattlePlan* Active = Squad->GetActiveBattlePlan();
-	if (!Active || Active->Name != ChosenName)
+	if (!Active || !Active->Is(ChosenName))
 	{
 		for (int32 Slot = 0; Slot < SolidBattleFormationSlots::MaxAssignedBattlePlans; ++Slot)
 		{
 			const FSolidBattlePlan* Plan = Squad->GetAssignedBattlePlan(Slot);
-			if (Plan && Plan->Name == ChosenName)
+			if (Plan && Plan->Is(ChosenName))
 			{
 				Squad->SelectAssignedSlot(Slot);
 				break;

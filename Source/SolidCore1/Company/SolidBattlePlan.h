@@ -26,20 +26,25 @@ enum class ESolidBattleSpacing : uint8
 	Wide UMETA(DisplayName = "Wide"),
 };
 
-/** One entry in the Company's catalog of battle plans. */
-USTRUCT(BlueprintType)
-struct FSolidBattlePlan
+/**
+ * One battle plan. The company catalog holds these.
+ * Name, formation, and spacing are what the plan is. The squad selects from that catalog.
+ */
+class FSolidBattlePlan
 {
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BattlePlan")
+public:
 	FString Name;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BattlePlan")
 	ESolidBattleFormation Formation = ESolidBattleFormation::Column;
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "BattlePlan")
 	ESolidBattleSpacing Spacing = ESolidBattleSpacing::Standard;
+
+	/** True when the name, the formation, and the spacing are the same. */
+	bool SameAs(const FSolidBattlePlan& Other) const;
+
+	/** True when this plan has that name. */
+	bool Is(const FString& PlanName) const;
+
+	/** True when companions stand in front of the captain and face him. */
+	bool IsParade() const;
 };
 
 /**

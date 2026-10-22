@@ -41,13 +41,6 @@ namespace
 			ESolidBattleFormation::Mob,
 			ESolidBattleSpacing::Wide});
 	}
-
-	bool SamePlan(const FSolidBattlePlan& Have, const FSolidBattlePlan& Want)
-	{
-		return Have.Name == Want.Name
-			&& Have.Formation == Want.Formation
-			&& Have.Spacing == Want.Spacing;
-	}
 }
 
 USolidCaptain* USolidCompany::GetCaptain()
@@ -79,7 +72,7 @@ bool USolidCompany::HasOnlyDefaultBattlePlans() const
 	}
 	for (int32 Index = 0; Index < Defaults.Num(); ++Index)
 	{
-		if (!SamePlan(AllBattlePlans[Index], Defaults[Index]))
+		if (!AllBattlePlans[Index].SameAs(Defaults[Index]))
 		{
 			return false;
 		}
@@ -96,7 +89,7 @@ int32 USolidCompany::FindBattlePlanIndexByName(const FString& Name) const
 {
 	for (int32 Index = 0; Index < AllBattlePlans.Num(); ++Index)
 	{
-		if (AllBattlePlans[Index].Name == Name)
+		if (AllBattlePlans[Index].Is(Name))
 		{
 			return Index;
 		}

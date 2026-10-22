@@ -204,7 +204,7 @@ namespace
 		for (int32 Slot = 0; Slot < SolidBattleFormationSlots::MaxAssignedBattlePlans; ++Slot)
 		{
 			const FSolidBattlePlan* Plan = Squad.GetAssignedBattlePlan(Slot);
-			if (Plan && Plan->Name == Name)
+			if (Plan && Plan->Is(Name))
 			{
 				return Slot;
 			}

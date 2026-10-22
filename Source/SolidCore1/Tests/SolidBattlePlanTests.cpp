@@ -167,6 +167,45 @@ namespace SolidBattlePlanTestPrivate
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattlePlanIdentityTest,
+	"SolidCore1.BattlePlan.Identity",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattlePlanIdentityTest::RunTest(const FString& Parameters)
+{
+	FSolidBattlePlan Starter;
+	Starter.Name = TEXT("Starter");
+	Starter.Formation = ESolidBattleFormation::Line;
+	Starter.Spacing = ESolidBattleSpacing::Standard;
+
+	FSolidBattlePlan Copy = Starter;
+	TestTrue(TEXT("a copy is the same plan"), Copy.SameAs(Starter));
+	TestTrue(TEXT("the name is Starter"), Starter.Is(TEXT("Starter")));
+	TestFalse(TEXT("the name is Attack"), Starter.Is(TEXT("Attack")));
+
+	FSolidBattlePlan Parade;
+	Parade.Name = TEXT("Parade");
+	Parade.Formation = ESolidBattleFormation::Parade;
+	Parade.Spacing = ESolidBattleSpacing::Standard;
+	TestFalse(TEXT("Parade is Starter"), Parade.SameAs(Starter));
+	TestTrue(TEXT("Parade faces the captain"), Parade.IsParade());
+	TestFalse(TEXT("Starter faces the captain"), Starter.IsParade());
+
+	FSolidBattlePlan Renamed = Starter;
+	Renamed.Name = TEXT("Attack");
+	TestFalse(TEXT("a new name stays the same plan"), Renamed.SameAs(Starter));
+
+	FSolidBattlePlan Wider = Starter;
+	Wider.Spacing = ESolidBattleSpacing::Wide;
+	TestFalse(TEXT("a new spacing stays the same plan"), Wider.SameAs(Starter));
+
+	FSolidBattlePlan Column = Starter;
+	Column.Formation = ESolidBattleFormation::Column;
+	TestFalse(TEXT("a new formation stays the same plan"), Column.SameAs(Starter));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidBattleFormationSlotsTest,
 	"SolidCore1.BattlePlan.FormationSlots",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)

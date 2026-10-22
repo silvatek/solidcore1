@@ -80,7 +80,7 @@ void USolidSquad::SyncEnabledBattlePlans(USolidGameState& State)
 	for (int32 Slot = 0; Slot < SolidBattleFormationSlots::MaxAssignedBattlePlans; ++Slot)
 	{
 		const FSolidBattlePlan* Plan = GetAssignedBattlePlan(Slot);
-		if (Plan && Plan->Name == ActiveName)
+		if (Plan && Plan->Is(ActiveName))
 		{
 			Keep = Slot;
 			break;

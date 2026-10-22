@@ -649,8 +649,12 @@ bool FSolidBattlePlanNewGameTest::RunTest(const FString& Parameters)
 		TestTrue(*FString::Printf(TEXT("%s is in the catalog"), Name), Index != INDEX_NONE && Index > Previous);
 		Previous = Index;
 		const FSolidBattlePlan* Plan = Company->GetBattlePlan(Index);
-		if (FCString::Strcmp(Name, TEXT("Starter")) == 0
-			|| FCString::Strcmp(Name, TEXT("Attack")) == 0
+		if (FCString::Strcmp(Name, TEXT("Attack")) == 0)
+		{
+			TestTrue(*FString::Printf(TEXT("%s uses Mob"), Name), Plan && Plan->Formation == ESolidBattleFormation::Mob);
+			TestTrue(*FString::Printf(TEXT("%s uses standard spacing"), Name), Plan && Plan->Spacing == ESolidBattleSpacing::Standard);
+		}
+		else if (FCString::Strcmp(Name, TEXT("Starter")) == 0
 			|| FCString::Strcmp(Name, TEXT("Defend")) == 0)
 		{
 			TestTrue(*FString::Printf(TEXT("%s uses Line"), Name), Plan && Plan->Formation == ESolidBattleFormation::Line);

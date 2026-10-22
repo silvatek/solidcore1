@@ -431,6 +431,8 @@ bool FSolidMonsterBattlePlanTest::RunTest(const FString& Parameters)
 {
 	const FSolidBattlePlan Attack = FSolidBattlePlan::Defined(TEXT("Attack"));
 	TestTrue(TEXT("Attack is the defined plan"), Attack.Is(TEXT("Attack")));
+	TestTrue(TEXT("Attack uses Mob"), Attack.Formation == ESolidBattleFormation::Mob);
+	TestTrue(TEXT("Attack uses standard spacing"), Attack.Spacing == ESolidBattleSpacing::Standard);
 
 	FSolidEncounter Iglin(SolidEncounter::Definitions[0]);
 	TestEqual(TEXT("Iglin Bridge has one group"), Iglin.Groups.Num(), 1);

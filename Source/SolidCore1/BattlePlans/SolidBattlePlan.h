@@ -48,7 +48,7 @@ public:
 
 	/**
 	 * The defined plan of that name.
-	 * Attack is Line at standard spacing. Any other name is an empty plan.
+	 * Attack is Mob at standard spacing. Any other name is an empty plan.
 	 */
 	static FSolidBattlePlan Defined(const TCHAR* PlanName);
 };

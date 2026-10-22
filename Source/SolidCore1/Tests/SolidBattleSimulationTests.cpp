@@ -543,4 +543,66 @@ bool FSolidBattleAbortTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattleRetreatTest,
+	"SolidCore1.Battle.Retreat",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattleRetreatTest::RunTest(const FString& Parameters)
+{
+	const float Kept = 1.f - FSolidBattle::RetreatReduction;
+
+	{
+		USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Defend"));
+		FSolidMonsterGroup Group = SolidBattleTestPrivate::OneRaptor(TEXT("Attack"));
+		SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+		FSolidBattle Battle(Squad, &Group);
+		Battle.Inventory = &Inventory;
+
+		const float Claw = Battle.MonsterWeapon(0).Power;
+		const float SquadStart = Battle.GetSquadDefence();
+		const float GroupStart = Battle.GetGroupDefence();
+
+		Battle.AdvanceToNextEvent();
+		TestEqual(TEXT("the raptor prepares"), LogSummary(*this, Battle, 0), TEXT("Raptor prepares."));
+		TestEqual(TEXT("the rags are still whole"), Battle.GetSquadDefence(), SquadStart);
+		TestEqual(TEXT("the hide is still whole"), Battle.GetGroupDefence(), GroupStart);
+
+		Battle.AdvanceToNextEvent();
+		TestEqual(TEXT("the claws"), LogSummary(*this, Battle, 1), TEXT("Raptor attacks Captain with Claws."));
+		TestEqual(TEXT("two lines while the squad retreats"), Battle.Log.Num(), 2);
+		TestEqual(TEXT("the rags lose a quarter of the claws"), Battle.GetSquadDefence(), SquadStart - Claw * Kept);
+		TestEqual(TEXT("the hide stays whole"), Battle.GetGroupDefence(), GroupStart);
+	}
+
+	{
+		USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
+		FSolidMonsterGroup Group = SolidBattleTestPrivate::OneRaptor(nullptr);
+		FSolidBattlePlan Retreat;
+		Retreat.Name = TEXT("Retreat");
+		Retreat.AttackOrRetreat = ESolidAggression::Retreat;
+		Group.Available.Add(Retreat);
+		Group.ActivePlan = 0;
+		SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+		FSolidBattle Battle(Squad, &Group);
+		Battle.Inventory = &Inventory;
+
+		const float Spear = Battle.SquadWeapon(0).Power;
+		const float SquadStart = Battle.GetSquadDefence();
+		const float GroupStart = Battle.GetGroupDefence();
+
+		Battle.AdvanceToNextEvent();
+		TestEqual(TEXT("the captain prepares"), LogSummary(*this, Battle, 0), TEXT("Captain prepares."));
+		TestEqual(TEXT("the rags hold"), Battle.GetSquadDefence(), SquadStart);
+		TestEqual(TEXT("the hide holds"), Battle.GetGroupDefence(), GroupStart);
+
+		Battle.AdvanceToNextEvent();
+		TestEqual(TEXT("the spear"), LogSummary(*this, Battle, 1), TEXT("Captain attacks Raptor with Crude spear."));
+		TestEqual(TEXT("two lines while the raptor retreats"), Battle.Log.Num(), 2);
+		TestEqual(TEXT("the rags stay whole"), Battle.GetSquadDefence(), SquadStart);
+		TestEqual(TEXT("the hide loses a quarter of the spear"), Battle.GetGroupDefence(), GroupStart - Spear * Kept);
+	}
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

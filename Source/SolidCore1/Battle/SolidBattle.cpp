@@ -84,10 +84,21 @@ namespace
 		}
 	}
 
-	/** A blow comes off that armour. Strength stops at zero. True when that leaves it at zero. */
-	bool Land(FSolidArmour& Armour, const int32 Power)
+	/** Power that lands. A retreating target loses RetreatReduction of it. */
+	float SpentPower(const int32 Power, const bool bRetreating)
 	{
-		Armour.Strength = FMath::Max(0.f, Armour.Strength - static_cast<float>(Power));
+		const float Full = static_cast<float>(Power);
+		if (!bRetreating)
+		{
+			return Full;
+		}
+		return Full * (1.f - FSolidBattle::RetreatReduction);
+	}
+
+	/** A blow comes off that armour. Strength stops at zero. True when that leaves it at zero. */
+	bool Land(FSolidArmour& Armour, const float Power)
+	{
+		Armour.Strength = FMath::Max(0.f, Armour.Strength - Power);
 		return Armour.Strength <= 0.f;
 	}
 
@@ -460,6 +471,7 @@ void FSolidBattle::Advance(const float Delta)
 	auto Strike = [&](
 		FSolidArmour& Armour,
 		const int32 Power,
+		const bool bRetreating,
 		const float When,
 		const FString& Actor,
 		const FString& TargetName,
@@ -470,7 +482,7 @@ void FSolidBattle::Advance(const float Delta)
 			Record(When, ESolidBattleLogKind::Abort, Actor, TargetName, FString());
 			return;
 		}
-		const bool bKilled = Land(Armour, Power);
+		const bool bKilled = Land(Armour, SpentPower(Power, bRetreating));
 		Record(When, ESolidBattleLogKind::Attack, Actor, TargetName, Weapon, bKilled);
 	};
 
@@ -493,10 +505,11 @@ void FSolidBattle::Advance(const float Delta)
 			},
 			[&](const float When)
 			{
-				if (CaptainCycle.Target && Monsters.Contains(CaptainCycle.Target))
-				{
-					Strike(CaptainCycle.Target->Armour, Power, When, CaptainName, MonsterName(CaptainCycle.Target), WeaponName);
-				}
+					if (CaptainCycle.Target && Monsters.Contains(CaptainCycle.Target))
+					{
+						const bool bRetreats = GetGroupPlan() && GetGroupPlan()->Retreats();
+						Strike(CaptainCycle.Target->Armour, Power, bRetreats, When, CaptainName, MonsterName(CaptainCycle.Target), WeaponName);
+					}
 			},
 			[&](const float When)
 			{
@@ -548,7 +561,8 @@ void FSolidBattle::Advance(const float Delta)
 					{
 						if (Cycle.Target && Monsters.Contains(Cycle.Target))
 						{
-							Strike(Cycle.Target->Armour, Power, When, Actor, MonsterName(Cycle.Target), WeaponName);
+							const bool bRetreats = GetGroupPlan() && GetGroupPlan()->Retreats();
+							Strike(Cycle.Target->Armour, Power, bRetreats, When, Actor, MonsterName(Cycle.Target), WeaponName);
 						}
 					},
 					[&](const float When)
@@ -604,7 +618,8 @@ void FSolidBattle::Advance(const float Delta)
 			},
 			[&](const float When)
 			{
-				Strike(Body->Armour, Power, When, Actor, CaptainName, WeaponName);
+				const bool bRetreats = GetSquadPlan() && GetSquadPlan()->Retreats();
+				Strike(Body->Armour, Power, bRetreats, When, Actor, CaptainName, WeaponName);
 			},
 			[&](const float When)
 			{

@@ -50,6 +50,7 @@ struct FSolidBattleLogEntry
  * Each fighter prepares and recovers on their own weapon Speed. The blow lands when that prepare ends.
  * That blow cannot drop armour Strength below 0. A blow that leaves it at 0 says kills.
  * An attack on armour already at 0 is aborted.
+ * A blow on a fighter who is retreating is reduced by RetreatReduction.
  * A fighter keeps the same enemy while that enemy can still be struck.
  * The battle is finished when either side has no armour left. An escape will finish it too, once a side can leave.
  * The log records those moments, in order.
@@ -59,6 +60,9 @@ class FSolidBattle
 public:
 	FSolidBattle() = default;
 	FSolidBattle(USolidSquad* InSquad, FSolidMonsterGroup* InGroup);
+
+	/** Fraction of Power a blow loses while the target is retreating. Play-testing chooses it. */
+	static constexpr float RetreatReduction = 0.75f;
 
 	/** The squad in this battle. Empty when that squad has gone. */
 	TWeakObjectPtr<USolidSquad> Squad;

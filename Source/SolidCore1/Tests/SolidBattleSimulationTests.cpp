@@ -84,19 +84,6 @@ namespace SolidBattleTestPrivate
 		const FSolidItemType* Type = SolidItemType::FindById(Inventory.Worn[Index].Id());
 		return Type ? FString(Type->Name) : FString();
 	}
-
-	int32 CountLog(const TArray<FSolidBattleLogEntry>& Log, const ESolidBattleLogKind Kind, const TCHAR* Actor)
-	{
-		int32 Count = 0;
-		for (const FSolidBattleLogEntry& Entry : Log)
-		{
-			if (Entry.Kind == Kind && Entry.Actor == Actor)
-			{
-				++Count;
-			}
-		}
-		return Count;
-	}
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -295,9 +282,8 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 		}
 		TestTrue(TEXT("they prepare at the start"), FMath::IsNearlyEqual(Battle.Time, 0.f));
 		TestEqual(TEXT("two prepares"), Battle.Log.Num(), 2);
-		TestTrue(TEXT("the captain prepares first"), Battle.Log[0].Kind == ESolidBattleLogKind::Prepare && Battle.Log[0].Actor == TEXT("Captain"));
-		TestEqual(TEXT("the captain's prepare line"), Battle.Log[0].Text(), FString(TEXT("Captain prepares.")));
-		TestTrue(TEXT("the raptor prepares"), Battle.Log[1].Kind == ESolidBattleLogKind::Prepare && Battle.Log[1].Actor == TEXT("Raptor"));
+		TestEqual(TEXT("the captain prepares first"), Battle.Log[0].Summary(), FString(TEXT("Captain prepares.")));
+		TestEqual(TEXT("the raptor prepares"), Battle.Log[1].Summary(), FString(TEXT("Raptor prepares.")));
 		TestEqual(TEXT("the hide is still whole"), Raptor->Armour.Strength, Hide);
 		TestEqual(TEXT("the rags are still whole"), Battle.GetSquadDefence(), Rags);
 
@@ -308,10 +294,7 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 		}
 		TestTrue(TEXT("the spear is the first blow"), FMath::IsNearlyEqual(Battle.Time, SpearSpeed));
 		TestEqual(TEXT("the spear is the only new line"), Battle.Log.Num(), 3);
-		TestTrue(TEXT("the captain attacks"), Battle.Log[2].Kind == ESolidBattleLogKind::Attack && Battle.Log[2].Actor == TEXT("Captain"));
-		TestEqual(TEXT("the spear names the raptor"), Battle.Log[2].Target, FString(TEXT("Raptor")));
-		TestEqual(TEXT("the spear names itself"), Battle.Log[2].Weapon, FString(TEXT("Crude spear")));
-		TestEqual(TEXT("the spear line"), Battle.Log[2].Text(), FString(TEXT("Captain attacks Raptor with Crude spear.")));
+		TestEqual(TEXT("the spear line"), Battle.Log[2].Summary(), FString(TEXT("Captain attacks Raptor with Crude spear.")));
 		TestEqual(TEXT("the spear comes off that hide"), Raptor->Armour.Strength, Hide - static_cast<float>(Spear));
 		TestEqual(TEXT("the claws are still preparing"), Battle.GetSquadDefence(), Rags);
 
@@ -322,16 +305,9 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 		}
 		TestTrue(TEXT("the claws land on their own Speed"), FMath::IsNearlyEqual(Battle.Time, SpearSpeed * 2.f));
 		TestEqual(TEXT("the captain prepares again and the raptor attacks"), Battle.Log.Num(), 5);
-		TestTrue(TEXT("recover ends in another prepare"), Battle.Log[3].Kind == ESolidBattleLogKind::Prepare && Battle.Log[3].Actor == TEXT("Captain"));
-		TestTrue(TEXT("the raptor attacks"), Battle.Log[4].Kind == ESolidBattleLogKind::Attack && Battle.Log[4].Actor == TEXT("Raptor"));
-		TestEqual(TEXT("the claws name the captain"), Battle.Log[4].Target, FString(TEXT("Captain")));
-		TestEqual(TEXT("the claws name themselves"), Battle.Log[4].Weapon, FString(TEXT("Claws")));
-		TestEqual(TEXT("the claws line"), Battle.Log[4].Text(), FString(TEXT("Raptor attacks Captain with Claws.")));
+		TestEqual(TEXT("recover ends in another prepare"), Battle.Log[3].Summary(), FString(TEXT("Captain prepares.")));
+		TestEqual(TEXT("the claws line"), Battle.Log[4].Summary(), FString(TEXT("Raptor attacks Captain with Claws.")));
 		TestEqual(TEXT("the spear has landed once"), Raptor->Armour.Strength, Hide - static_cast<float>(Spear));
-		TestEqual(
-			TEXT("the captain attacked once"),
-			SolidBattleTestPrivate::CountLog(Battle.Log, ESolidBattleLogKind::Attack, TEXT("Captain")),
-			1);
 		TestEqual(TEXT("the claws come off the rags"), Battle.GetSquadDefence(), Rags - static_cast<float>(Claws));
 	}
 
@@ -363,12 +339,13 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 			return false;
 		}
 		TestEqual(TEXT("everyone prepared, then everyone attacked"), Battle.Log.Num(), 2 * (1 + Count));
-		TestTrue(TEXT("the captain attacks before the raptors"), Battle.Log[1 + Count].Kind == ESolidBattleLogKind::Attack
-			&& Battle.Log[1 + Count].Actor == TEXT("Captain"));
-		TestEqual(
-			TEXT("each raptor attacks"),
-			SolidBattleTestPrivate::CountLog(Battle.Log, ESolidBattleLogKind::Attack, TEXT("Raptor")),
-			Count);
+		TestEqual(TEXT("the captain prepares first"), Battle.Log[0].Summary(), FString(TEXT("Captain prepares.")));
+		TestEqual(TEXT("the captain attacks before the raptors"), Battle.Log[1 + Count].Summary(), FString(TEXT("Captain attacks Raptor with Crude spear.")));
+		for (int32 Index = 0; Index < Count; ++Index)
+		{
+			TestEqual(TEXT("a raptor prepares"), Battle.Log[1 + Index].Summary(), FString(TEXT("Raptor prepares.")));
+			TestEqual(TEXT("a raptor attacks"), Battle.Log[2 + Count + Index].Summary(), FString(TEXT("Raptor attacks Captain with Claws.")));
+		}
 		TestEqual(
 			TEXT("each raptor's claws come off the rags"),
 			Battle.GetSquadDefence(),
@@ -413,14 +390,9 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 			AddError(TEXT("the raptor did not attack"));
 			return false;
 		}
-		TestEqual(
-			TEXT("a retreat does not prepare"),
-			SolidBattleTestPrivate::CountLog(Battle.Log, ESolidBattleLogKind::Prepare, TEXT("Captain")),
-			0);
-		TestEqual(
-			TEXT("a retreat does not strike"),
-			SolidBattleTestPrivate::CountLog(Battle.Log, ESolidBattleLogKind::Attack, TEXT("Captain")),
-			0);
+		TestEqual(TEXT("a retreat leaves the raptor's two lines"), Battle.Log.Num(), 2);
+		TestEqual(TEXT("the raptor prepares"), Battle.Log[0].Summary(), FString(TEXT("Raptor prepares.")));
+		TestEqual(TEXT("the raptor attacks"), Battle.Log[1].Summary(), FString(TEXT("Raptor attacks Captain with Claws.")));
 		TestEqual(TEXT("the hide stays whole"), Group.Get(0)->Armour.Strength, Hide);
 		TestEqual(TEXT("the claws still come off the rags"), Battle.GetSquadDefence(), Rags - static_cast<float>(Claws));
 	}
@@ -458,13 +430,10 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 			AddError(TEXT("the prepare did not finish"));
 			return false;
 		}
-		TestEqual(TEXT("the last line is the abandon"), Battle.Log.Num(), 3);
-		TestTrue(TEXT("the captain abandons the attack"), Battle.Log[2].Kind == ESolidBattleLogKind::Abandon && Battle.Log[2].Actor == TEXT("Captain"));
-		TestEqual(TEXT("the abandon line"), Battle.Log[2].Text(), FString(TEXT("Captain abandons the attack.")));
-		TestEqual(
-			TEXT("the abandoned blow does not land"),
-			SolidBattleTestPrivate::CountLog(Battle.Log, ESolidBattleLogKind::Attack, TEXT("Captain")),
-			0);
+		TestEqual(TEXT("three lines"), Battle.Log.Num(), 3);
+		TestEqual(TEXT("the captain prepares"), Battle.Log[0].Summary(), FString(TEXT("Captain prepares.")));
+		TestEqual(TEXT("the raptor prepares"), Battle.Log[1].Summary(), FString(TEXT("Raptor prepares.")));
+		TestEqual(TEXT("the captain abandons the attack"), Battle.Log[2].Summary(), FString(TEXT("Captain abandons the attack.")));
 		TestEqual(TEXT("the hide stays whole"), Raptor->Armour.Strength, Hide);
 	}
 
@@ -489,14 +458,9 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 			AddError(TEXT("the raptor did not attack"));
 			return false;
 		}
-		TestEqual(
-			TEXT("an empty main hand does not prepare"),
-			SolidBattleTestPrivate::CountLog(Battle.Log, ESolidBattleLogKind::Prepare, TEXT("Captain")),
-			0);
-		TestEqual(
-			TEXT("an empty main hand does not strike"),
-			SolidBattleTestPrivate::CountLog(Battle.Log, ESolidBattleLogKind::Attack, TEXT("Captain")),
-			0);
+		TestEqual(TEXT("an empty main hand leaves the raptor's two lines"), Battle.Log.Num(), 2);
+		TestEqual(TEXT("the raptor prepares"), Battle.Log[0].Summary(), FString(TEXT("Raptor prepares.")));
+		TestEqual(TEXT("the raptor attacks"), Battle.Log[1].Summary(), FString(TEXT("Raptor attacks Captain with Claws.")));
 		TestEqual(TEXT("the hide stays whole"), Group.Get(0)->Armour.Strength, Hide);
 		TestEqual(TEXT("the claws still come off the rags"), Battle.GetSquadDefence(), Rags - static_cast<float>(Claws));
 	}

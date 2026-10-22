@@ -20,7 +20,7 @@ enum class ESolidBattleLogKind : uint8
 
 /**
  * One line in the battle log.
- * A prepare, an attack, or a prepare that was abandoned. A later screen can show Text().
+ * A prepare, an attack, or a prepare that was abandoned. A later screen can show Summary().
  */
 struct FSolidBattleLogEntry
 {
@@ -35,7 +35,7 @@ struct FSolidBattleLogEntry
 	FString Weapon;
 
 	/** One line a later screen can show. */
-	FString Text() const;
+	FString Summary() const;
 };
 
 /**

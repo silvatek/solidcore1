@@ -202,7 +202,7 @@ float FSolidBattle::GetGroupDefence() const
 	return Total;
 }
 
-FString FSolidBattleLogEntry::Text() const
+FString FSolidBattleLogEntry::Summary() const
 {
 	switch (Kind)
 	{

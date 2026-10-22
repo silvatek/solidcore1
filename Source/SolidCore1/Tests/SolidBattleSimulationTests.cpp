@@ -139,9 +139,10 @@ bool FSolidBattleSquadAndGroupTest::RunTest(const FString& Parameters)
 {
 	FSolidBattleSimulation Sim;
 	Sim.SquadPlan(TEXT("Starter"));
-	TestTrue(TEXT("Iglin Bridge is an encounter"), Sim.UseEncounter(TEXT("Iglin Bridge")));
-	if (Sim.Encounter.Groups.Num() == 0)
+	Sim.UseEncounter(TEXT("Iglin Bridge"));
+	if (!Sim.Battle.Group)
 	{
+		AddError(TEXT("Iglin Bridge gave the battle no monster group"));
 		return false;
 	}
 
@@ -173,15 +174,20 @@ bool FSolidBattleActivePlanTest::RunTest(const FString& Parameters)
 	SolidEncounter::FDefinition Bare{ TEXT("Bare"), SolidEncounter::ESite::IglinBridgeRamp };
 	Bare = Bare.WithGroup(SolidEncounter::EMonsterKind::Raptor, ESolidMonsterSize::Small, 1);
 	Sim.UseEncounter(Bare);
-	TestNotNull(TEXT("the bare group"), Sim.Battle.Group);
 	if (!Sim.Battle.Group)
 	{
+		AddError(TEXT("the bare definition gave the battle no monster group"));
 		return false;
 	}
 	TestTrue(TEXT("a group with no plan name has none"), Sim.GroupPlanName().IsEmpty());
 	TestEqual(TEXT("that group has its one raptor"), Sim.Battle.Group->Num(), 1);
 
-	TestTrue(TEXT("Iglin Bridge is an encounter"), Sim.UseEncounter(TEXT("Iglin Bridge")));
+	Sim.UseEncounter(TEXT("Iglin Bridge"));
+	if (!Sim.Battle.Group)
+	{
+		AddError(TEXT("Iglin Bridge gave the battle no monster group"));
+		return false;
+	}
 	TestEqual(TEXT("Iglin Bridge reads Attack"), Sim.GroupPlanName(), FString(TEXT("Attack")));
 	TestTrue(TEXT("Attack stores attack"), Sim.GroupAttacks());
 	return true;
@@ -197,23 +203,25 @@ bool FSolidBattleSidesTest::RunTest(const FString& Parameters)
 	FSolidBattleSimulation Sim;
 
 	USolidSquad* Squad = Sim.Battle.Squad.Get();
-	TestNotNull(TEXT("the squad"), Squad);
-	if (!Squad)
+	if (!TestNotNull(TEXT("the squad"), Squad))
 	{
 		return false;
 	}
 	USolidCaptain* Captain = Squad->GetCompany() ? Squad->GetCompany()->GetCaptain() : nullptr;
-	TestNotNull(TEXT("the captain is with the squad"), Captain);
+	if (!TestNotNull(TEXT("the captain is with the squad"), Captain))
+	{
+		return false;
+	}
 	TestEqual(TEXT("no companion is out"), Squad->GetSelectedCompanionCount(), 0);
 	TestEqual(TEXT("the main hand is the crude spear"), Sim.WornName(SolidInventory::ESlot::MainHand), FString(TEXT("Crude spear")));
 	TestEqual(TEXT("the body is Rags"), Sim.WornName(SolidInventory::ESlot::Body), FString(TEXT("Rags")));
 	TestEqual(TEXT("the head is the dented helmet"), Sim.WornName(SolidInventory::ESlot::Head), FString(TEXT("Dented helmet")));
 	TestNull(TEXT("no monster group yet"), Sim.Battle.Group);
 
-	TestTrue(TEXT("Iglin Bridge is an encounter"), Sim.UseEncounter(TEXT("Iglin Bridge")));
-	TestNotNull(TEXT("the Iglin Bridge group"), Sim.Battle.Group);
+	Sim.UseEncounter(TEXT("Iglin Bridge"));
 	if (!Sim.Battle.Group || Sim.Encounter.Definition.GroupCount < 1)
 	{
+		AddError(TEXT("Iglin Bridge gave the battle no monster group"));
 		return false;
 	}
 
@@ -223,10 +231,9 @@ bool FSolidBattleSidesTest::RunTest(const FString& Parameters)
 	{
 		const FSolidMonster* Monster = Sim.Battle.Group->Get(Index);
 		const FString Which = FString::Printf(TEXT("raptor %d"), Index + 1);
-		TestNotNull(*Which, Monster);
-		if (!Monster)
+		if (!TestNotNull(*Which, Monster))
 		{
-			continue;
+			return false;
 		}
 		TestEqual(*FString::Printf(TEXT("%s is a raptor"), *Which), FString(Monster->Kind()), FString(TEXT("Raptor")));
 		TestEqual(*FString::Printf(TEXT("%s is Small"), *Which), static_cast<int32>(Monster->Size), static_cast<int32>(ESolidMonsterSize::Small));

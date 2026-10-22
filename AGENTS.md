@@ -37,9 +37,9 @@ The Cursor client sometimes drops the connection. The user then does not see the
 
 ### Cloud agents
 
-The agent pushes to GitHub. The user verifies on their machine. Do not run the editor, automation, or PIE from the agent environment.
+A cloud agent runs on the Cursor-hosted Linux VM. It pushes to GitHub. Do not run the editor, automation, or PIE on this VM.
 
-After a push, the user:
+After a push, the user verifies on their Windows machine:
 
 1. Pulls the changes.
 2. Rebuilds the code.
@@ -53,7 +53,7 @@ Screenshots are taken with the Windows snipping tool. That switch puts Unreal in
 
 ### solidcore1-ue agents
 
-These agents have access to C++ and Unreal Engine. The agent builds and runs the tests. Do not run PIE.
+These agents run on the Windows worker. They have access to C++ and Unreal Engine. The agent builds and runs the tests on that worker. Do not run PIE.
 
 `tools\pie.bat` reads `ue.lock` in the repo root before it launches. A missing file, or the word `Free`, lets it start. It writes `PIE`, launches Play In Editor, waits until the Unreal Editor process has closed, then writes `Free`. Any other word leaves the file unchanged and the editor is not started. The file is gitignored.
 
@@ -77,7 +77,7 @@ Screenshots are taken with the Windows snipping tool. That switch puts Unreal in
 
 ## Cursor Cloud
 
-Cloud agents are a **code + git workshop**. They do not replace the Windows Unreal machine.
+Cloud agents are a **code + git workshop** on the Cursor-hosted Linux VM. They do not replace the Windows Unreal machine. A solidcore1-ue agent runs on that machine and follows the section above.
 
 - Checkout `main` and pull from GitHub before editing. Ship on `main`. No feature branch and no pull request unless the user asks for one in that conversation. `tools/cloud_agent_check.py` fails on any other branch.
 - Do not run the Unreal Editor, `tools/test.bat`, `tools/agent.bat`, automation, or PIE from the cloud VM. Fab packs are not present here. `agent.ok` is gitignored and exists only after a successful `tools\agent.bat` on the Windows machine. On this VM, skip build and test.
@@ -104,7 +104,7 @@ Read the request and the names next to the new code before choosing. When those 
 
 Follow the Automated tests policy in `CodingGuidelines.md`.
 
-After a significant product change, run the full suite, filter `SolidCore1`, before pushing. On a solidcore1-ue machine, read `agent.ok` first. Run `tools\build.bat` and `tools\test.bat` when that file is present, as the solidcore1-ue agents section says.
+After a significant product change, a solidcore1-ue agent runs the full suite, filter `SolidCore1`, before pushing. Read `agent.ok` first. Run `tools\build.bat` and `tools\test.bat` when that file is present, as the solidcore1-ue agents section says. A cloud agent on the Linux VM skips that suite.
 
 ## Unused code
 

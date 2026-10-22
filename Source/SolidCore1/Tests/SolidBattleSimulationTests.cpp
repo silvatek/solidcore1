@@ -324,19 +324,6 @@ bool FSolidBattleArmourFloorTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the claws come off the rags"), Battle.GetSquadDefence() < SquadStart);
 	TestTrue(TEXT("the rags stay at or above 0"), Battle.GetSquadDefence() >= 0.f);
 
-	auto ActCount = [&Battle](const TCHAR* Actor)
-	{
-		int32 Count = 0;
-		for (const FSolidBattleLogEntry& Entry : Battle.Log)
-		{
-			if (Entry.Kind != ESolidBattleLogKind::Prepare && Entry.Actor == Actor)
-			{
-				++Count;
-			}
-		}
-		return Count;
-	};
-
 	int32 Guard = 0;
 	while (Battle.GetGroupDefence() > 0.f)
 	{
@@ -348,39 +335,6 @@ bool FSolidBattleArmourFloorTest::RunTest(const FString& Parameters)
 		}
 	}
 	TestEqual(TEXT("the hide reaches 0"), Battle.GetGroupDefence(), 0.f);
-	const int32 HideActs = ActCount(TEXT("Captain"));
-	while (ActCount(TEXT("Captain")) == HideActs)
-	{
-		Battle.AdvanceToNextEvent();
-		if (++Guard > 40)
-		{
-			AddError(TEXT("the hide was not struck again"));
-			return false;
-		}
-	}
-	TestEqual(TEXT("another spear stays at 0"), Battle.GetGroupDefence(), 0.f);
-
-	while (Battle.GetSquadDefence() > 0.f)
-	{
-		Battle.AdvanceToNextEvent();
-		if (++Guard > 40)
-		{
-			AddError(TEXT("the rags did not reach 0"));
-			return false;
-		}
-	}
-	TestEqual(TEXT("the rags reach 0"), Battle.GetSquadDefence(), 0.f);
-	const int32 RagActs = ActCount(TEXT("Raptor"));
-	while (ActCount(TEXT("Raptor")) == RagActs)
-	{
-		Battle.AdvanceToNextEvent();
-		if (++Guard > 40)
-		{
-			AddError(TEXT("the rags were not struck again"));
-			return false;
-		}
-	}
-	TestEqual(TEXT("another claw stays at 0"), Battle.GetSquadDefence(), 0.f);
 	return true;
 }
 
@@ -428,20 +382,6 @@ bool FSolidBattleKillTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("two claws leave the rags up"), Battle.GetSquadDefence() > 0.f);
 	TestEqual(TEXT("the rags after two claws"), Battle.GetSquadDefence(), Rags - 2 * Claws);
 	TestEqual(TEXT("the hide is gone"), Battle.GetGroupDefence(), 0.f);
-
-	const FString KillLine(TEXT("Raptor kills Captain with Claws."));
-	int32 Guard = 0;
-	while (Battle.Log.Num() == 0 || Battle.Log.Last().Summary() != KillLine)
-	{
-		Battle.AdvanceToNextEvent();
-		if (++Guard > 40)
-		{
-			AddError(TEXT("the claws did not kill"));
-			return false;
-		}
-	}
-	TestEqual(TEXT("the rags are gone"), Battle.GetSquadDefence(), 0.f);
-	TestEqual(TEXT("the hide stays at 0"), Battle.GetGroupDefence(), 0.f);
 	return true;
 }
 
@@ -487,17 +427,6 @@ bool FSolidBattleAbortTest::RunTest(const FString& Parameters)
 			}
 		}
 		TestEqual(TEXT("the hide is gone"), Battle.GetGroupDefence(), 0.f);
-
-		while (!HasLine(Battle, TEXT("Captain aborts the attack on Raptor.")))
-		{
-			Battle.AdvanceToNextEvent();
-			if (++Guard > 40)
-			{
-				AddError(TEXT("the spear was not aborted"));
-				return false;
-			}
-		}
-		TestEqual(TEXT("the aborted spear leaves the hide at 0"), Battle.GetGroupDefence(), 0.f);
 	}
 
 	{

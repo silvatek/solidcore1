@@ -1,6 +1,10 @@
 # Planning
 
-One file is one story.
+## User story
+
+A user story is a few sentences about a player doing something in the game, or a developer doing something in the source or the build. It names any game concept the story introduces. The Acceptance section says what is true when the story is done. Implementation notes hold details that do not belong in the story or the acceptance criteria, and that section is left out when there are none.
+
+One file is one user story.
 
 - An open story is a file in this folder.
 - A story in `Done/` has met the Definition of Done. Move the file then. Do not leave a copy here.

@@ -340,4 +340,63 @@ bool FSolidMonsterSpawnTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidMonsterMountainTest,
+	"SolidCore1.Monster.Mountain",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidMonsterMountainTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidMonsterTestPrivate;
+
+	TArray<FSolidTerrainPoint> Points;
+	Points.Add(PointAt(900.f, ESolidBiome::Grassland));
+	Points.Add(PointAt(1100.f, ESolidBiome::Mountain));
+	Points.Add(PointAt(1500.f, ESolidBiome::Grassland));
+	Points.Add(PointAt(2000.f, ESolidBiome::Grassland));
+	Points.Add(PointAt(2600.f, ESolidBiome::Grassland));
+
+	TArray<int32> NoSkip;
+	TArray<SolidBridge::FBridge> Bridges;
+	Bridges.Add(IglinBridge(true));
+	const FVector2D Iglin(-20000.f, 0.f);
+	const float Spacing = 200.f;
+
+	FSolidEncounter Beside(SolidEncounter::Definitions[0]);
+	TestEqual(
+		TEXT("three reptiles stand off the cliff"),
+		Beside.Place(Points, NoSkip, NoSkip, Iglin, Bridges, Spacing),
+		3);
+	if (Beside.Groups.Num() != 1 || Beside.Groups[0].Num() != 3)
+	{
+		return false;
+	}
+	const int32 OffCliff[] = { 2, 3, 4 };
+	for (int32 Index = 0; Index < 3; ++Index)
+	{
+		const FSolidMonster* Member = Beside.Groups[0].Get(Index);
+		TestTrue(
+			TEXT("the cliff corner is not used"),
+			Member && Member->PointIndex == OffCliff[Index]);
+	}
+
+	TArray<FSolidTerrainPoint> DiagonalPoints;
+	DiagonalPoints.Add(PointAt(900.f, ESolidBiome::Grassland));
+	FSolidTerrainPoint Corner = PointAt(1100.f, ESolidBiome::Mountain);
+	Corner.Y = 200.f;
+	DiagonalPoints.Add(Corner);
+	DiagonalPoints.Add(PointAt(1800.f, ESolidBiome::Grassland));
+	DiagonalPoints.Add(PointAt(2300.f, ESolidBiome::Grassland));
+	DiagonalPoints.Add(PointAt(3000.f, ESolidBiome::Grassland));
+
+	FSolidEncounter Diagonal(SolidEncounter::Definitions[0]);
+	TestEqual(
+		TEXT("three reptiles stand off a diagonal cliff"),
+		Diagonal.Place(DiagonalPoints, NoSkip, NoSkip, Iglin, Bridges, Spacing),
+		3);
+	const FSolidMonster* First = Diagonal.Groups.Num() == 1 ? Diagonal.Groups[0].Get(0) : nullptr;
+	TestTrue(TEXT("a diagonal mountain corner is not used"), First && First->PointIndex != 0);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

@@ -106,5 +106,6 @@ public:
 		const TArray<int32>& TreePointIndices,
 		const TArray<int32>& ForagePointIndices,
 		const FVector2D& IglinTownXY,
-		const TArray<SolidBridge::FBridge>& Bridges);
+		const TArray<SolidBridge::FBridge>& Bridges,
+		float PointSpacingCm = 200.f);
 };

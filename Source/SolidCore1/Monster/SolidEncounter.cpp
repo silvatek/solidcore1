@@ -131,6 +131,34 @@ namespace SolidEncounterPrivate
 		}
 	}
 
+	/**
+	 * True when XY is a corner of a quad that also has a point of Biome.
+	 * The limit is one diagonal step of PointSpacingCm, plus a centimetre.
+	 */
+	bool SharesQuadWith(
+		const TArray<FSolidTerrainPoint>& Points,
+		const FVector2D& XY,
+		const ESolidBiome Biome,
+		const float PointSpacingCm)
+	{
+		const float Limit = FMath::Max(PointSpacingCm, 1.f) * FMath::Sqrt(2.f) + 1.f;
+		const float LimitSq = Limit * Limit;
+		for (const FSolidTerrainPoint& Point : Points)
+		{
+			if (Point.Biome != Biome)
+			{
+				continue;
+			}
+			const float DX = Point.X - XY.X;
+			const float DY = Point.Y - XY.Y;
+			if (DX * DX + DY * DY <= LimitSq)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/** Members of one group on grassland in the band around Outer. Skips Taken points. */
 	int32 PlaceGroup(
 		FSolidMonsterGroup& Group,
@@ -138,7 +166,8 @@ namespace SolidEncounterPrivate
 		const SolidEncounter::FDefinition& Definition,
 		const TArray<FSolidTerrainPoint>& Points,
 		TSet<int32>& Taken,
-		const FVector2D& Outer)
+		const FVector2D& Outer,
+		const float PointSpacingCm)
 	{
 		Group.Members.Reset();
 		if (Spec.Count <= 0)
@@ -170,6 +199,11 @@ namespace SolidEncounterPrivate
 			const FVector2D XY(Point.X, Point.Y);
 			const float Distance = FVector2D::Distance(XY, Outer);
 			if (Distance < Definition.NearLimitCm || Distance > Definition.FarLimitCm)
+			{
+				continue;
+			}
+			// The mountain shelf is 10 m. A shared quad is that cliff.
+			if (SharesQuadWith(Points, XY, ESolidBiome::Mountain, PointSpacingCm))
 			{
 				continue;
 			}
@@ -245,7 +279,8 @@ int32 FSolidEncounter::Place(
 	const TArray<int32>& TreePointIndices,
 	const TArray<int32>& ForagePointIndices,
 	const FVector2D& IglinTownXY,
-	const TArray<SolidBridge::FBridge>& Bridges)
+	const TArray<SolidBridge::FBridge>& Bridges,
+	const float PointSpacingCm)
 {
 	Location = FVector2D::ZeroVector;
 	Groups.SetNum(FMath::Max(0, Definition.GroupCount));
@@ -287,7 +322,8 @@ int32 FSolidEncounter::Place(
 			Definition,
 			Points,
 			Taken,
-			Outer);
+			Outer,
+			PointSpacingCm);
 	}
 	return Placed;
 }

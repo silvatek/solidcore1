@@ -1539,7 +1539,7 @@ void ASolidGameMode::ChooseMonsters(const USolidTerrainMap* Map)
 	{
 		FSolidEncounter Encounter(Def);
 		Chosen += Encounter.Place(
-			Map->GetPoints(), TreePoints, ForagePoints, IglinXY, Bridges);
+			Map->GetPoints(), TreePoints, ForagePoints, IglinXY, Bridges, Map->PointSpacing);
 		Encounters.Add(MoveTemp(Encounter));
 	}
 	bMonstersChosen = true;

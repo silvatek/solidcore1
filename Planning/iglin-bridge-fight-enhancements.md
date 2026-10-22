@@ -14,7 +14,7 @@ The fight takes the place of the message that standing on the bridge shows today
 
 The first time the captain dies, FirstDeath fires. Like every event, it fires once. A later death does not fire it again. FirstDeath disables Starter and enables Attack and Defend. Driven from the village requires FirstDeath.
 
-This story depends on [Basic combat](basic-combat.md), which is Ready. That story ships first. [Combat preparation](Done/combat-preparation.md) is Done, and it ships before Basic combat.
+This story depends on [Basic combat](basic-combat.md), which is In Progress. That story ships first. [Combat preparation](Done/combat-preparation.md) is Done, and it ships before Basic combat.
 
 This story introduces no game concept. Raptor, the encounter, the captain's death, and the event list are already named. FirstDeath is another event on that list.
 
@@ -24,7 +24,7 @@ This story introduces no game concept. Raptor, the encounter, the captain's deat
 - The fight starts as [Basic combat](basic-combat.md) says, when the captain comes into DetectionRange. Staying outside that range leaves the raptors idle. From the moment the fight starts, this encounter kills the captain.
 - When those three Small raptors kill the captain, and the captain has killed none of them, the fight ends on that death. No Large raptor spawns.
 - When the captain kills one Small raptor, one Large raptor spawns into the same group. Killing another Small does not spawn a second Large.
-- When the captain runs away, that same Large spawns, once. Running away is getting beyond every living monster's EscapeDistance, which is how [Basic combat](basic-combat.md) would otherwise end the fight. This encounter keeps going.
+- When the captain runs away, that same Large spawns, once. Running away is getting beyond every living monster's EscapeDistance. [Leave a fight](leave-a-fight.md) is where that distance ends a fight. This encounter does not end. The Large spawns and the fight keeps going until the captain dies.
 - The Large stands taller than the Small three. It fights with them, on the group's plan. Play-testing chooses how much taller. Its armour Strength is huge.
 - When the Large spawns, the captain cannot move. Walking and click-to-move leave the captain where they are. The block lasts until the captain dies. After the wake, the captain can move again.
 - Any death of the captain, in this fight or later, anywhere in the game, uses one landing. The captain wakes in the company stronghold they have then, without the gear they had when they died. The first time, that stronghold is the cave. The wake is the one [Basic combat](basic-combat.md) specifies: Rags on the body, the rest of the inventory emptied, and the companions who were out despawned. The leave uses that story's Build squad check. The gear on the ground is [Gear left at the death](gear-left-at-the-death.md).

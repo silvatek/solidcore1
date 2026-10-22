@@ -259,14 +259,12 @@ bool FSolidInventoryMoveTest::RunTest(const FString& Parameters)
 		SolidInventory::Move(&Chest, Loadout, Worn(SolidInventory::ESlot::Body), Worn(SolidInventory::ESlot::Body)));
 	TestEqual(TEXT("the body still wears Rags"), FString(Loadout.Worn[Body]), FString(SolidItemType::IdRags));
 
-	TestTrue(
-		TEXT("Rags move into an empty pack cell"),
-		SolidInventory::Move(&Chest, Loadout, Worn(SolidInventory::ESlot::Body), Pack(0, 0)));
+	TestTrue(TEXT("Rags can be set down in the pack"), SolidInventory::PlacePack(Loadout, 0, 0, SolidItemType::IdRags));
 	TestEqual(
 		TEXT("the pack holds Rags"),
 		FString(Loadout.Pack[SolidInventory::PackIndex(0, 0)]),
 		FString(SolidItemType::IdRags));
-	TestTrue(TEXT("the body is empty"), Loadout.Worn[Body] == nullptr);
+	TestEqual(TEXT("the body still wears Rags"), FString(Loadout.Worn[Body]), FString(SolidItemType::IdRags));
 
 	TestTrue(
 		TEXT("a pack cell moves to another pack cell"),

@@ -40,13 +40,13 @@ void ASolidRaptor::BeginPlay()
 	BuildVisuals();
 }
 
-void ASolidRaptor::SetChoice(const int32 InChoiceIndex)
+void ASolidRaptor::SetRaptor(const FSolidRaptor& InRaptor)
 {
-	ChoiceIndex = InChoiceIndex;
+	Raptor = InRaptor;
+	BuildVisuals();
 }
 
 void ASolidRaptor::BuildVisuals()
 {
-	const FSolidRaptor Kind;
-	Kind.ApplyVisuals(Body, ActiveIdle);
+	Raptor.ApplyVisuals(Body, ActiveIdle);
 }

@@ -2,10 +2,12 @@
 
 #include "SolidMonster.h"
 
+class AActor;
 class UAnimSequence;
 class UMaterialInterface;
 class USkeletalMesh;
 class USkeletalMeshComponent;
+class UWorld;
 
 /**
  * A raptor: the green Velociraptor body beside the Iglin bridge for now.
@@ -26,6 +28,7 @@ public:
 
 	virtual float DrawnBodyFactor() const override;
 	virtual const TCHAR* Kind() const override { return TEXT("Raptor"); }
+	virtual AActor* Spawn(UWorld* World, const FVector& GroundLocation) const override;
 
 	/** Uniform standing scale times DrawnBodyFactor. */
 	float BodyScale(float SpanHeightCm) const;

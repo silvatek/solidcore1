@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "SolidRaptor.h"
 #include "SolidRaptorActor.generated.h"
 
 class UCapsuleComponent;
@@ -24,11 +25,10 @@ public:
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
 
-	/** The member index in the open-world group. */
-	void SetChoice(int32 InChoiceIndex);
+	/** Copy the encounter member this actor stands for, then draw it. */
+	void SetRaptor(const FSolidRaptor& InRaptor);
 	void BuildVisuals();
 
-	int32 GetChoiceIndex() const { return ChoiceIndex; }
 	const UCapsuleComponent* GetCapsule() const { return Capsule; }
 	const USkeletalMeshComponent* GetBody() const { return Body; }
 
@@ -42,6 +42,8 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Raptor")
 	TObjectPtr<USkeletalMeshComponent> Body;
 
-	int32 ChoiceIndex = INDEX_NONE;
+	/** The encounter member this actor shows. Default until SetRaptor. */
+	FSolidRaptor Raptor;
+
 	TObjectPtr<UAnimSequence> ActiveIdle;
 };

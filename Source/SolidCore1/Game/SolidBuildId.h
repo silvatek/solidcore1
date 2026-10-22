@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0535")
+#define SOLID_BUILD_ID TEXT("SC1-0536")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Encounter rows are written in SolidEncounters.h.")
+#define SOLID_BUILD_NOTE TEXT("Encounters spawn each ready monster.")
 #endif

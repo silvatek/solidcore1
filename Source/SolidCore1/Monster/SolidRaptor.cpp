@@ -1,4 +1,5 @@
 #include "SolidRaptor.h"
+#include "SolidRaptorActor.h"
 #include "SolidClipLocomotion.h"
 #include "SolidContentLookup.h"
 #include "SolidCore1.h"
@@ -6,6 +7,7 @@
 #include "BoneIndices.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Engine/SkeletalMesh.h"
+#include "Engine/World.h"
 #include "Materials/MaterialInterface.h"
 #include "ReferenceSkeleton.h"
 #include "Rendering/SkeletalMeshRenderData.h"
@@ -81,6 +83,29 @@ float FSolidRaptor::DrawnBodyFactor() const
 		// Later sizes scale from Small. Until those factors exist, draw as Small.
 		return SmallDrawnBodyFactor;
 	}
+}
+
+AActor* FSolidRaptor::Spawn(UWorld* World, const FVector& GroundLocation) const
+{
+	if (!World)
+	{
+		return nullptr;
+	}
+
+	FActorSpawnParameters Params;
+	Params.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	ASolidRaptor* RaptorActor = World->SpawnActor<ASolidRaptor>(
+		ASolidRaptor::StaticClass(),
+		GroundLocation,
+		FRotator(0.f, YawDeg, 0.f),
+		Params);
+	if (!RaptorActor)
+	{
+		return nullptr;
+	}
+
+	RaptorActor->SetRaptor(*this);
+	return RaptorActor;
 }
 
 float FSolidRaptor::BodyScale(const float SpanHeightCm) const

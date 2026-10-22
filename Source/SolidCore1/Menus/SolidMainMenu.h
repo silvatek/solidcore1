@@ -10,7 +10,6 @@ enum class ESolidMainMenuItem : uint8
 	Journal,
 	BuildSquad,
 	CharacterEditor,
-	ViewReptile,
 	Credits,
 	ExitGame,
 };
@@ -24,7 +23,6 @@ enum class ESolidMainMenuAction : uint8
 	ShowCredits,
 	OpenSquad,
 	OpenCharacterEditor,
-	PlaceCaptain,
 	Quit,
 };
 

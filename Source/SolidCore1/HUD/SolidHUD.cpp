@@ -20,8 +20,6 @@
 #include "SolidGameInstance.h"
 #include "SolidPlayerController.h"
 #include "Companion/SolidCompanionCharacter.h"
-#include "Game/SolidMonsterMeasure.h"
-#include "Monster/SolidRaptorActor.h"
 #include "Company/SolidBattlePlan.h"
 #include "Company/SolidSquad.h"
 #include "Company/SolidSquadDrill.h"
@@ -31,7 +29,6 @@
 #include "GameFramework/GameModeBase.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
-#include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "CanvasItem.h"
 #include "Engine/Canvas.h"
@@ -39,7 +36,6 @@
 #include "Engine/GameViewportClient.h"
 #include "GameFramework/PlayerController.h"
 #include "InputCoreTypes.h"
-#include "Engine/SkeletalMesh.h"
 #include "EngineUtils.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/Pawn.h"
@@ -1198,71 +1194,6 @@ namespace SolidHUDPrivate
 			Page.Confirm.H,
 			Palette.Fill);
 	}
-
-	/** Distance, mesh scale, and the known posts, so a screenshot can be measured. */
-	void AppendMonsterMeasure(TArray<FString>& Lines, UWorld* World, const APawn* Pawn)
-	{
-		if (!World)
-		{
-			return;
-		}
-
-		int32 Shown = 0;
-		for (TActorIterator<ASolidRaptor> It(World); It; ++It)
-		{
-			const ASolidRaptor* Raptor = *It;
-			if (!Raptor)
-			{
-				continue;
-			}
-			++Shown;
-
-			const FVector Feet = Raptor->GetActorLocation();
-			const USkeletalMeshComponent* Body = Raptor->GetBody();
-			const float ScaleZ = Body ? Body->GetRelativeScale3D().Z : 1.f;
-			const float LocalZ = Body ? Body->GetRelativeLocation().Z : 0.f;
-			float BoxCm = 0.f;
-			if (Body)
-			{
-				if (const USkeletalMesh* Mesh = Body->GetSkeletalMeshAsset())
-				{
-					BoxCm = Mesh->GetBounds().BoxExtent.Z * 2.f;
-				}
-			}
-
-			float BottomFromFeet = 0.f;
-			if (Body)
-			{
-				const FBoxSphereBounds WorldBounds = Body->CalcBounds(Body->GetComponentTransform());
-				BottomFromFeet = WorldBounds.Origin.Z - WorldBounds.BoxExtent.Z - Feet.Z;
-			}
-
-			const float Dist = Pawn ? FVector::Dist2D(Pawn->GetActorLocation(), Feet) : 0.f;
-			Lines.Add(FString::Printf(
-				TEXT("Monster  dist %.0f cm  scale %.3f  localZ %+.0f"),
-				Dist,
-				ScaleZ,
-				LocalZ));
-			Lines.Add(FString::Printf(
-				TEXT("Mesh box %.0f cm  scaled %.0f cm  bottom %+.0f cm"),
-				BoxCm,
-				BoxCm * ScaleZ,
-				BottomFromFeet));
-			Lines.Add(FString::Printf(TEXT("Feet  %.0f, %.0f, %.0f"), Feet.X, Feet.Y, Feet.Z));
-		}
-
-		if (Shown == 0)
-		{
-			Lines.Add(TEXT("Monster <none>"));
-			return;
-		}
-
-		Lines.Add(FString::Printf(
-			TEXT("Red %.0f cm cell  blue %.0f cm cell  reptile cell  grid %.0f cm"),
-			SolidMonsterMeasure::RedPostCm,
-			SolidMonsterMeasure::BluePostCm,
-			SolidMonsterMeasure::GridStepCm));
-	}
 }
 
 void ASolidHUD::EnsureSightIndicator()
@@ -1567,8 +1498,6 @@ void ASolidHUD::DrawHUD()
 			Lines.Add(TEXT("Companion <none>"));
 		}
 	}
-
-	SolidHUDPrivate::AppendMonsterMeasure(Lines, GetWorld(), Pawn);
 
 	if (const ASolidCharacter* Captain = Cast<ASolidCharacter>(Pawn))
 	{

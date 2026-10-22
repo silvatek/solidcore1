@@ -20,13 +20,13 @@ const FSolidMonster* FSolidMonsterGroup::Get(const int32 Index) const
 
 void FSolidMonsterGroup::CollectReadyToSeed(
 	const TArray<FSolidTerrainPoint>& Points,
-	const TArray<int32>& Seeded,
+	const TArray<int32>& AlreadySeeded,
 	TArray<int32>& OutReady) const
 {
 	OutReady.Reset();
 	for (int32 Index = 0; Index < Members.Num(); ++Index)
 	{
-		if (Seeded.Contains(Index))
+		if (AlreadySeeded.Contains(Index))
 		{
 			continue;
 		}

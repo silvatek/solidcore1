@@ -17,6 +17,9 @@ public:
 	/** Owned members. Empty until the encounter places them. */
 	TArray<TUniquePtr<FSolidMonster>> Members;
 
+	/** Member indexes that already have an actor this visit. Place starts this empty. */
+	TArray<int32> Seeded;
+
 	int32 Num() const { return Members.Num(); }
 
 	FSolidMonster* Get(int32 Index);
@@ -28,6 +31,6 @@ public:
 	 */
 	void CollectReadyToSeed(
 		const TArray<FSolidTerrainPoint>& Points,
-		const TArray<int32>& Seeded,
+		const TArray<int32>& AlreadySeeded,
 		TArray<int32>& OutReady) const;
 };

@@ -14,7 +14,6 @@
 class ASolidBridge;
 class ASolidBuilding;
 class ASolidForagePile;
-class ASolidRaptor;
 class ASolidLairEntrance;
 class ASolidLairInterior;
 class ASolidCompanionCharacter;
@@ -155,12 +154,6 @@ public:
 	 */
 	bool TeleportSquadToTunnelMouth(TCHAR EndMarker);
 
-	/**
-	 * Stand the captain on the measuring grid, facing the reptile.
-	 * False when that reptile has not been seeded.
-	 */
-	bool TeleportSquadToReptile();
-
 	/** True while the company stronghold interior is loaded. */
 	bool IsInStronghold() const;
 
@@ -173,7 +166,7 @@ public:
 	/** Spawn chosen piles whose fog is now below full. Safe to call again. */
 	void SeedForagePiles();
 
-	/** Spawn chosen reptiles whose fog is now below full. Safe to call again. */
+	/** Spawn each encounter member whose fog is now below full. Safe to call again. */
 	void SeedMonsters();
 
 	/**
@@ -282,12 +275,6 @@ protected:
 	/** Choices for this open-world visit. The same map and seed rebuild the same list. */
 	TArray<SolidForage::FChoice> ForageChoices;
 	bool bForageChosen = false;
-
-	UPROPERTY(Transient)
-	TArray<TObjectPtr<ASolidRaptor>> SpawnedMonsters;
-
-	/** Member indexes already given a monster actor this visit. A closed visit stores none. */
-	TArray<int32> SeededMonsters;
 
 	/** Open-world encounters from the catalog, after Place. The same again on the next visit. */
 	TArray<FSolidEncounter> Encounters;

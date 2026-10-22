@@ -252,6 +252,7 @@ int32 FSolidEncounter::Place(
 	for (FSolidMonsterGroup& Group : Groups)
 	{
 		Group.Members.Reset();
+		Group.Seeded.Reset();
 	}
 
 	FVector2D Outer = FVector2D::ZeroVector;

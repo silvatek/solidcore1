@@ -1157,15 +1157,6 @@ void ASolidCharacter::MainMenuConfirm()
 		HUD->OpenCharacterEditor();
 		SyncCharacterStage();
 		break;
-	case ESolidMainMenuAction::PlaceCaptain:
-		if (UWorld* World = GetWorld())
-		{
-			if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
-			{
-				GameMode->TeleportSquadToReptile();
-			}
-		}
-		break;
 	default:
 		break;
 	}

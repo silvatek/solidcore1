@@ -2,6 +2,9 @@
 
 #include "CoreMinimal.h"
 
+class AActor;
+class UWorld;
+
 /**
  * How large a monster is.
  * Small is the Iglin-bridge raptor. Later sizes scale up or down from Small.
@@ -119,6 +122,12 @@ public:
 
 	/** The kind name, such as "Raptor". */
 	virtual const TCHAR* Kind() const = 0;
+
+	/**
+	 * The actor for this member, standing on GroundLocation.
+	 * The subclass chooses the actor. A null world returns null.
+	 */
+	virtual AActor* Spawn(UWorld* World, const FVector& GroundLocation) const = 0;
 
 	/** A copy that keeps this subclass. */
 	virtual TUniquePtr<FSolidMonster> Clone() const = 0;

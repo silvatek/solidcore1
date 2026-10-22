@@ -302,4 +302,42 @@ bool FSolidMonsterBodyTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidMonsterSpawnTest,
+	"SolidCore1.Monster.Spawn",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidMonsterSpawnTest::RunTest(const FString& Parameters)
+{
+	using namespace SolidMonsterTestPrivate;
+
+	TArray<FSolidTerrainPoint> Points;
+	Points.Add(PointAt(900.f, ESolidBiome::Grassland, 0.f));
+	TArray<int32> NoSkip;
+	TArray<SolidBridge::FBridge> Bridges;
+	Bridges.Add(IglinBridge(true));
+
+	FSolidEncounter Encounter(SolidEncounter::Definitions[0]);
+	TestEqual(
+		TEXT("the encounter places one raptor"),
+		Encounter.Place(Points, NoSkip, NoSkip, FVector2D(-20000.f, 0.f), Bridges),
+		1);
+	if (Encounter.Groups.Num() != 1)
+	{
+		return false;
+	}
+
+	const FSolidMonster* Member = Encounter.Groups[0].Get(0);
+	TestNotNull(TEXT("the encounter member"), Member);
+	if (!Member)
+	{
+		return false;
+	}
+	TestTrue(TEXT("the member is a raptor"), FCString::Strcmp(Member->Kind(), TEXT("Raptor")) == 0);
+	TestNull(
+		TEXT("that member needs a world to stand"),
+		Member->Spawn(nullptr, FVector(Member->XY.X, Member->XY.Y, 0.f)));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

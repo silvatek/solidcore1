@@ -37,8 +37,6 @@
 #include "Vegetation/SolidForagePile.h"
 #include "Monster/SolidEncounter.h"
 #include "Monster/SolidEncounters.h"
-#include "Monster/SolidRaptorActor.h"
-#include "SolidMonsterMeasure.h"
 #include "Vegetation/SolidForestTrees.h"
 #include "Vegetation/SolidTree.h"
 #include "Components/CapsuleComponent.h"
@@ -961,74 +959,6 @@ bool ASolidGameMode::SelectBattlePlanSlot(const int32 SlotIndex)
 	return true;
 }
 
-bool ASolidGameMode::TeleportSquadToReptile()
-{
-	UWorld* World = GetWorld();
-	if (!World)
-	{
-		return false;
-	}
-
-	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World);
-	APlayerController* PC = World->GetFirstPlayerController();
-	ASolidCharacter* Captain = PC ? Cast<ASolidCharacter>(PC->GetPawn()) : nullptr;
-	if (!Streamer || !Captain)
-	{
-		return false;
-	}
-
-	const AActor* Anchor = nullptr;
-	for (TActorIterator<ASolidMonsterMeasure> It(World); It; ++It)
-	{
-		Anchor = *It;
-		break;
-	}
-	FVector GridOrigin = FVector::ZeroVector;
-	FRotator Face = FRotator::ZeroRotator;
-	if (Anchor)
-	{
-		GridOrigin = Anchor->GetActorLocation();
-		Face = Anchor->GetActorRotation();
-	}
-	else
-	{
-		for (TActorIterator<ASolidRaptor> It(World); It; ++It)
-		{
-			Anchor = *It;
-			break;
-		}
-		if (!Anchor)
-		{
-			UE_LOG(LogSolid, Warning, TEXT("View reptile: no reptile on the grid."));
-			return false;
-		}
-		Face = Anchor->GetActorRotation();
-		GridOrigin = Anchor->GetActorLocation() - Face.RotateVector(FVector(
-			SolidMonsterMeasure::MonsterXCm,
-			SolidMonsterMeasure::MonsterYCm,
-			0.f));
-	}
-
-	const FVector2D Local = SolidMonsterMeasure::ViewStandLocalXY();
-	const FVector Landing = GridOrigin + Face.RotateVector(FVector(Local.X, Local.Y, 0.f));
-	const float LandZ = Streamer->GetHeightAt(Landing) + Streamer->CollisionHeightBias;
-	float CapsuleHalf = 96.f;
-	if (const UCapsuleComponent* Capsule = Captain->GetCapsuleComponent())
-	{
-		CapsuleHalf = Capsule->GetScaledCapsuleHalfHeight();
-	}
-	const FVector NewLoc(Landing.X, Landing.Y, LandZ + CapsuleHalf + Streamer->SnapHeightPadding);
-	const FVector Delta = SolidPortal::SquadDelta(Captain->GetActorLocation(), FVector2D(NewLoc.X, NewLoc.Y));
-
-	Captain->ArriveByPortal(NewLoc, Face.Yaw, SolidMonsterMeasure::ViewPitchDeg);
-	Streamer->RelocateCompanionsByDelta(Delta);
-
-	UE_LOG(LogSolid, Warning,
-		TEXT("View reptile at (%.0f, %.0f) yaw %.0f pitch %.0f"),
-		NewLoc.X, NewLoc.Y, Face.Yaw, SolidMonsterMeasure::ViewPitchDeg);
-	return true;
-}
-
 bool ASolidGameMode::TeleportSquadToTown(const int32 TownId)
 {
 	UWorld* World = GetWorld();
@@ -1640,76 +1570,33 @@ void ASolidGameMode::SeedMonsters()
 		return;
 	}
 
-	// One reptile, so the posts beside it are the size reference. The Iglin group still holds three.
-	if (SpawnedMonsters.Num() > 0)
-	{
-		return;
-	}
-
-	FSolidMonsterGroup* Group = nullptr;
+	int32 Spawned = 0;
 	for (FSolidEncounter& Encounter : Encounters)
 	{
-		if (Encounter.Groups.Num() > 0 && Encounter.Groups[0].Num() > 0)
+		for (FSolidMonsterGroup& Group : Encounter.Groups)
 		{
-			Group = &Encounter.Groups[0];
-			break;
+			TArray<int32> Ready;
+			Group.CollectReadyToSeed(Map->GetPoints(), Group.Seeded, Ready);
+			for (const int32 Index : Ready)
+			{
+				FSolidMonster* Member = Group.Get(Index);
+				if (!Member)
+				{
+					continue;
+				}
+
+				FVector Ground(Member->XY.X, Member->XY.Y, 0.f);
+				const float LandZ = Streamer->GetHeightAt(Ground) + Streamer->CollisionHeightBias;
+				Ground.Z = LandZ + Streamer->SnapHeightPadding;
+				if (!Member->Spawn(World, Ground))
+				{
+					continue;
+				}
+
+				Group.Seeded.Add(Index);
+				++Spawned;
+			}
 		}
-	}
-	if (!Group)
-	{
-		return;
-	}
-
-	TArray<int32> Ready;
-	Group->CollectReadyToSeed(Map->GetPoints(), SeededMonsters, Ready);
-	if (Ready.Num() == 0)
-	{
-		return;
-	}
-
-	FActorSpawnParameters SpawnParams;
-	SpawnParams.Owner = this;
-	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
-
-	int32 Spawned = 0;
-	for (const int32 Index : Ready)
-	{
-		const FSolidMonster* Member = Group->Get(Index);
-		if (!Member)
-		{
-			continue;
-		}
-		FVector SpawnLoc(Member->XY.X, Member->XY.Y, 0.f);
-		const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
-		SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
-
-		const FRotator Face(0.f, Member->YawDeg, 0.f);
-		const FVector MonsterLoc = SpawnLoc + Face.RotateVector(FVector(
-			SolidMonsterMeasure::MonsterXCm,
-			SolidMonsterMeasure::MonsterYCm,
-			0.f));
-		ASolidRaptor* Raptor = World->SpawnActor<ASolidRaptor>(
-			ASolidRaptor::StaticClass(),
-			MonsterLoc,
-			Face,
-			SpawnParams);
-		if (!Raptor)
-		{
-			continue;
-		}
-
-		Raptor->SetChoice(Index);
-		Raptor->BuildVisuals();
-		SpawnedMonsters.Add(Raptor);
-		SeededMonsters.Add(Index);
-		++Spawned;
-
-		World->SpawnActor<ASolidMonsterMeasure>(
-			ASolidMonsterMeasure::StaticClass(),
-			SpawnLoc,
-			Face,
-			SpawnParams);
-		break;
 	}
 
 	if (Spawned > 0)

@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0563")
+#define SOLID_BUILD_ID TEXT("SC1-0564")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Rags are 40, a raptor's hide is 20, and a killing blow says kills.")
+#define SOLID_BUILD_NOTE TEXT("Rags are 70.")
 #endif

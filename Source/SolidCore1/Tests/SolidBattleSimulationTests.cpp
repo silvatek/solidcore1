@@ -731,4 +731,22 @@ bool FSolidBattleKillTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattleRagsTest,
+	"SolidCore1.Battle.Rags",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattleRagsTest::RunTest(const FString& Parameters)
+{
+	USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
+	FSolidMonsterGroup Group = SolidBattleTestPrivate::OneRaptor(TEXT("Attack"));
+	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+	FSolidBattle Battle(Squad, &Group);
+	Battle.Inventory = &Inventory;
+
+	TestEqual(TEXT("rags are 70"), SolidItemType::RagsStrength, 70.f);
+	TestEqual(TEXT("the squad wears those rags"), Battle.GetSquadDefence(), 70.f);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

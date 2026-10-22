@@ -208,10 +208,13 @@ bool FSolidSquadCompanionSelectionTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("unbound squad fields nobody"), FieldedNamesAre(*this, Bare, 2, {}));
 
 	Squad->InitializeFromCompany(Company);
-	TestEqual(TEXT("Sam and Alex start selected"), Squad->GetSelectedCompanionCount(), 2);
+	TestEqual(TEXT("the squad starts empty"), Squad->GetSelectedCompanionCount(), 0);
+	const int32 Sam = Company->FindCompanionIndexByName(TEXT("Sam"));
+	const int32 Alex = Company->FindCompanionIndexByName(TEXT("Alex"));
+	TestTrue(TEXT("select Sam then Alex"), Squad->SetSelectedCompanions({ Sam, Alex }));
 	const TArray<int32>& Starter = Squad->GetSelectedCompanionIndices();
-	TestEqual(TEXT("starter slot 0"), Starter.Num() > 0 ? Starter[0] : INDEX_NONE, 0);
-	TestEqual(TEXT("starter slot 1"), Starter.Num() > 1 ? Starter[1] : INDEX_NONE, 1);
+	TestEqual(TEXT("slot 0 is Sam"), Starter.Num() > 0 ? Starter[0] : INDEX_NONE, Sam);
+	TestEqual(TEXT("slot 1 is Alex"), Starter.Num() > 1 ? Starter[1] : INDEX_NONE, Alex);
 	TestTrue(TEXT("max 0 fields nobody"), FieldedNamesAre(*this, Squad, 0, {}));
 	TestTrue(TEXT("max 1 fields Sam"), FieldedNamesAre(*this, Squad, 1, { TEXT("Sam") }));
 	TestTrue(TEXT("max 2 fields Sam and Alex"), FieldedNamesAre(*this, Squad, 2, { TEXT("Sam"), TEXT("Alex") }));
@@ -260,8 +263,9 @@ bool FSolidSquadSelectionSurvivesEnsureTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("company"), Company);
 	TestNotNull(TEXT("squad"), Squad);
 	TestEqual(TEXT("catalog seeded"), Company->GetCompanionCount(), 5);
-	TestTrue(TEXT("game starts with Sam and Alex selected"),
-		FieldedNamesAre(*this, Squad, 2, { TEXT("Sam"), TEXT("Alex") }));
+	TestEqual(TEXT("the squad boxes start empty"), Squad->GetSelectedCompanionCount(), 0);
+	TestTrue(TEXT("game starts with nobody selected"),
+		FieldedNamesAre(*this, Squad, 2, {}));
 
 	const int32 Morgan = Company->FindCompanionIndexByName(TEXT("Morgan"));
 	const int32 Quinn = Company->FindCompanionIndexByName(TEXT("Quinn"));

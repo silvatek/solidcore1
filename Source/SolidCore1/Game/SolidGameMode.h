@@ -119,7 +119,7 @@ public:
 	 */
 	void AdvanceBattle(float DeltaSeconds, const FVector& CaptainLocation);
 
-	/** Starting selection (Sam, then Alex). The event roster is the whole company. The live squad starts empty. */
+	/** The event roster is the whole company. The squad boxes start empty. */
 	static constexpr int32 DefaultCompanionCount = 2;
 
 	/** Companions an event currently allows in the squad. Starts at 0. */

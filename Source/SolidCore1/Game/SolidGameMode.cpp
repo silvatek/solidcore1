@@ -101,7 +101,7 @@ namespace
 
 static_assert(
 	ASolidGameMode::DefaultCompanionCount <= SolidEvents::RosterCount,
-	"The starting selection cannot be larger than the event roster.");
+	"The default companion count cannot be larger than the event roster.");
 
 ASolidGameMode::ASolidGameMode()
 {
@@ -208,8 +208,8 @@ void ASolidGameMode::EnsureCompanyAndSquad()
 	if (!Squad)
 	{
 		Squad = NewObject<USolidSquad>(this, TEXT("Squad"));
-		// Bind once. InitializeFromCompany always activates F1 and reselects
-		// Sam and Alex, and the enter-town timer calls this every 0.1s.
+		// Bind once. InitializeFromCompany activates F1 and leaves the squad
+		// boxes empty, and the enter-town timer calls this every 0.1s.
 		Squad->InitializeFromCompany(Company);
 		SyncBattlePlans();
 	}

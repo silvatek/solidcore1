@@ -31,18 +31,8 @@ void USolidSquad::InitializeFromCompany(USolidCompany* InCompany)
 	ActiveAssignedSlot = 0;
 	RememberHeldFormation();
 
-	TArray<int32> StarterCompanions;
-	const int32 Sam = Company->FindCompanionIndexByName(TEXT("Sam"));
-	const int32 Alex = Company->FindCompanionIndexByName(TEXT("Alex"));
-	if (Sam != INDEX_NONE)
-	{
-		StarterCompanions.Add(Sam);
-	}
-	if (Alex != INDEX_NONE)
-	{
-		StarterCompanions.Add(Alex);
-	}
-	SetSelectedCompanions(StarterCompanions);
+	// Nobody walks out until the player puts them in a box.
+	SelectedCompanionIndices.Reset();
 }
 
 void USolidSquad::SyncEnabledBattlePlans(USolidGameState& State)

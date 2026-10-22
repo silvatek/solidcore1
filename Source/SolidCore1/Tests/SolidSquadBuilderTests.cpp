@@ -487,7 +487,7 @@ bool FSolidSquadBuilderStrongholdLeaveTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("squad"), Squad);
 	Squad->InitializeFromCompany(Company);
 	TestTrue(TEXT("the company starts with the five plans"), Company->HasOnlyDefaultBattlePlans());
-	TestEqual(TEXT("Sam and Alex stay selected"), Squad->GetSelectedCompanionCount(), 2);
+	TestEqual(TEXT("the squad starts empty"), Squad->GetSelectedCompanionCount(), 0);
 	TestFalse(TEXT("the menu stays locked below two"), SolidSquadBuilder::CanOpen(1));
 	TestFalse(
 		TEXT("no companion and the starter plans have nothing to arrange"),
@@ -509,7 +509,7 @@ bool FSolidSquadBuilderStrongholdLeaveTest::RunTest(const FString& Parameters)
 		TEXT("one companion opens the page"),
 		SolidSquadBuilder::OpenAfterStrongholdLeave(HUD, Squad, 1));
 	TestTrue(TEXT("Build squad is open"), HUD->IsSquadBuilderOpen());
-	TestTrue(TEXT("Sam and Alex are still selected"), Squad->GetSelectedCompanionIndices() == Selected);
+	TestTrue(TEXT("the leave did not fill the squad"), Squad->GetSelectedCompanionIndices() == Selected);
 	HUD->HandleMenuKey();
 	TestFalse(TEXT("F10 closes the page"), HUD->IsSquadBuilderOpen());
 	TestFalse(TEXT("F10 does not open the menu"), HUD->IsMainMenuOpen());

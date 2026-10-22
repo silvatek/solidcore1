@@ -21,7 +21,7 @@ class SOLIDCORE1_API USolidSquad : public UObject
 	GENERATED_BODY()
 
 public:
-	/** Bind to Company, assign the catalog up to eight keys, activate F1, and select Sam then Alex. */
+	/** Bind to Company, assign the catalog up to eight keys, and activate F1. The squad boxes start empty. */
 	void InitializeFromCompany(USolidCompany* InCompany);
 
 	/**

@@ -48,5 +48,5 @@ A click on those reptiles still leaves the battle unstarted. Entering DetectionR
 - The blow has no range. A later story adds attack range. This story does not. The attack spends the weapon's Power from [Combat preparation](Done/combat-preparation.md).
 - The battle board reads a copy of the captain's kit. The play kit stays as it is, and this board does not record Killed by monsters. The wake is what records that death.
 - [Open the squad builder on leaving a stronghold](Done/squad-builder-on-stronghold-exit.md) is the Build squad page. The leave after this wake opens that page. The usual "nothing to arrange" check does not keep it closed. Closing the page spawns the selected companions outside, on the grass the leave already uses.
-- A companion who is not in the squad stays at the stronghold, so that companion does not enter a range and does not keep the battle going.
+- A companion who is not in the squad stays at the stronghold, so that companion does not enter a range and does not keep the battle going. A new squad starts with every box empty. Sam, Alex, and the rest of the company stay unselected until the player puts them in the squad.
 - Damage in the retreat rule is the Power taken off Strength.

@@ -190,6 +190,12 @@ void FSolidRaptor::ApplyVisuals(USkeletalMeshComponent* Body, TObjectPtr<UAnimSe
 	SolidClipLocomotion::PlayLoopingClip(Body, Idle, ActiveIdle, TEXT("Monster"));
 }
 
+void FSolidRaptor::Arm(const TCHAR* WeaponName, const TCHAR* ArmourName, const double StandardNormal)
+{
+	FSolidMonster::Arm(WeaponName, ArmourName, StandardNormal);
+	Armour.Strength = HideStrength;
+}
+
 TUniquePtr<FSolidMonster> FSolidRaptor::Clone() const
 {
 	return MakeUnique<FSolidRaptor>(*this);

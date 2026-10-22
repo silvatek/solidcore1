@@ -53,6 +53,8 @@ namespace SolidItemType
 
 	/** Stable ids. Eight hex digits. A worn box or a pack cell stores one of these. */
 	inline constexpr const TCHAR* IdRags = TEXT("c3a91e04");
+	/** Rags' Strength. Play-testing chose 40. */
+	inline constexpr float RagsStrength = 40.f;
 	inline constexpr const TCHAR* IdDentedHelmet = TEXT("7e2b58d1");
 	inline constexpr const TCHAR* IdCrudeSpear = TEXT("91f6c0ab");
 	inline constexpr const TCHAR* IdTorch = TEXT("4d8e27c5");

@@ -67,7 +67,9 @@ FSolidItem FSolidItem::Make(const FSolidItemType& ItemType, const int32 Count, c
 	else if (ItemType.Type == ESolidItemKind::Armor)
 	{
 		Item.Armour.Name = ItemType.Name;
-		Item.Armour.Strength = 1.f;
+		Item.Armour.Strength = FCString::Strcmp(ItemType.Id, SolidItemType::IdRags) == 0
+			? SolidItemType::RagsStrength
+			: 1.f;
 	}
 	return Item;
 }

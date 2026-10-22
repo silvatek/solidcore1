@@ -29,6 +29,11 @@ public:
 	static constexpr const TCHAR* Claws = TEXT("Claws");
 	/** This raptor's armour. */
 	static constexpr const TCHAR* Hide = TEXT("Hide");
+	/** Hide Strength. Play-testing chose 20. */
+	static constexpr float HideStrength = 20.f;
+
+	/** Stores claws and hide. Strength is HideStrength. */
+	virtual void Arm(const TCHAR* WeaponName, const TCHAR* ArmourName, double StandardNormal) override;
 
 	virtual float DrawnBodyFactor() const override;
 	virtual const TCHAR* Kind() const override { return TEXT("Raptor"); }

@@ -33,6 +33,8 @@ struct FSolidBattleLogEntry
 	FString Target;
 	/** Weapon an attack used. Empty for a prepare or an abandon. */
 	FString Weapon;
+	/** True when this attack left the target's armour at 0. */
+	bool bKilled = false;
 
 	/** One line a later screen can show. */
 	FString Summary() const;
@@ -43,7 +45,7 @@ struct FSolidBattleLogEntry
  * The squad and the group already hold their battle plans. This reads the active plan on each.
  * Power is weapon Power. Defence is armour Strength. A later gauge can show the totals.
  * Each fighter prepares and recovers on their own weapon Speed. The blow lands when that prepare ends.
- * That blow cannot drop armour Strength below 0.
+ * That blow cannot drop armour Strength below 0. A blow that leaves it at 0 says kills.
  * The log records those moments, in order.
  */
 class FSolidBattle
@@ -125,7 +127,8 @@ private:
 		ESolidBattleLogKind Kind,
 		const FString& Actor,
 		const FString& Target,
-		const FString& Weapon);
+		const FString& Weapon,
+		bool bKilled = false);
 
 	/** Time until the next logged moment. Negative when nobody will act. */
 	float TimeUntilNextEvent();

@@ -63,10 +63,11 @@ namespace
 		return Monsters[FMath::RandRange(0, Monsters.Num() - 1)];
 	}
 
-	/** A blow comes off that armour. Strength stops at zero. */
-	void Land(FSolidArmour& Armour, const int32 Power)
+	/** A blow comes off that armour. Strength stops at zero. True when that leaves it at zero. */
+	bool Land(FSolidArmour& Armour, const int32 Power)
 	{
 		Armour.Strength = FMath::Max(0.f, Armour.Strength - static_cast<float>(Power));
+		return Armour.Strength <= 0.f;
 	}
 
 	const TCHAR* ItemWeaponName(const FSolidItem& Item)
@@ -208,7 +209,12 @@ FString FSolidBattleLogEntry::Summary() const
 	switch (Kind)
 	{
 	case ESolidBattleLogKind::Attack:
-		return FString::Printf(TEXT("%s attacks %s with %s."), *Actor, *Target, *Weapon);
+		return FString::Printf(
+			TEXT("%s %s %s with %s."),
+			*Actor,
+			bKilled ? TEXT("kills") : TEXT("attacks"),
+			*Target,
+			*Weapon);
 	case ESolidBattleLogKind::Abandon:
 		return FString::Printf(TEXT("%s abandons the attack."), *Actor);
 	case ESolidBattleLogKind::Prepare:
@@ -222,7 +228,8 @@ void FSolidBattle::Record(
 	const ESolidBattleLogKind Kind,
 	const FString& Actor,
 	const FString& Target,
-	const FString& Weapon)
+	const FString& Weapon,
+	const bool bKilled)
 {
 	FSolidBattleLogEntry Entry;
 	Entry.Time = When;
@@ -230,6 +237,7 @@ void FSolidBattle::Record(
 	Entry.Actor = Actor;
 	Entry.Target = Target;
 	Entry.Weapon = Weapon;
+	Entry.bKilled = bKilled;
 	Log.Add(Entry);
 }
 
@@ -418,8 +426,8 @@ void FSolidBattle::Advance(const float Delta)
 				{
 					if (CaptainCycle.Target && Monsters.Contains(CaptainCycle.Target))
 					{
-						Land(CaptainCycle.Target->Armour, Power);
-						Record(When, ESolidBattleLogKind::Attack, CaptainName, MonsterName(CaptainCycle.Target), WeaponName);
+						const bool bKilled = Land(CaptainCycle.Target->Armour, Power);
+						Record(When, ESolidBattleLogKind::Attack, CaptainName, MonsterName(CaptainCycle.Target), WeaponName, bKilled);
 					}
 				},
 				[&](const float When)
@@ -475,8 +483,8 @@ void FSolidBattle::Advance(const float Delta)
 					{
 						if (Cycle.Target && Monsters.Contains(Cycle.Target))
 						{
-							Land(Cycle.Target->Armour, Power);
-							Record(When, ESolidBattleLogKind::Attack, Actor, MonsterName(Cycle.Target), WeaponName);
+							const bool bKilled = Land(Cycle.Target->Armour, Power);
+							Record(When, ESolidBattleLogKind::Attack, Actor, MonsterName(Cycle.Target), WeaponName, bKilled);
 						}
 					},
 					[&](const float When)
@@ -526,8 +534,8 @@ void FSolidBattle::Advance(const float Delta)
 			},
 			[&](const float When)
 			{
-				Land(Body->Armour, Power);
-				Record(When, ESolidBattleLogKind::Attack, Actor, CaptainName, WeaponName);
+				const bool bKilled = Land(Body->Armour, Power);
+				Record(When, ESolidBattleLogKind::Attack, Actor, CaptainName, WeaponName, bKilled);
 			},
 			[&](const float When)
 			{

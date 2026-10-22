@@ -94,8 +94,9 @@ public:
 	/**
 	 * Stores the weapon and armour this monster keeps.
 	 * Power is the size roll for StandardNormal. Speed and Strength are the starting figures.
+	 * A kind replaces Strength when its armour is not that starting figure.
 	 */
-	void Arm(const TCHAR* WeaponName, const TCHAR* ArmourName, double StandardNormal);
+	virtual void Arm(const TCHAR* WeaponName, const TCHAR* ArmourName, double StandardNormal);
 
 	/** Standing height of the body after a uniform scale (cm). */
 	static constexpr float StandingHeightCm = 100.f;

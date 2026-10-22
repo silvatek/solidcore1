@@ -114,7 +114,8 @@ public:
 
 	/**
 	 * Start a fight when a monster detects the captain, then move that fight forward.
-	 * The log reads a copy of the kit. The play kit stays as it is.
+	 * The log reads a copy of the kit. When that copy's captain dies, Killed by monsters fires.
+	 * The event clears the play kit to Rags, opens the cave, and sends the captain inside.
 	 * Once the captain's body is at 0, the log stays and the fight does not move.
 	 */
 	void AdvanceBattle(float DeltaSeconds, const FVector& CaptainLocation);
@@ -234,6 +235,11 @@ protected:
 	void NoteBrokenBridgeRamp(const FVector& Location);
 	/** Show a message, or send the captain into the cave, when a result asks for it. */
 	void PresentEventResult(const SolidEvents::FResult& Result);
+	/**
+	 * The fight's copy of the captain has died.
+	 * Fires Killed by monsters once. That event does the rest.
+	 */
+	void WakeFromBattleDeath();
 	/** Draw the center of every broken bridge. Enter Relion calls this. */
 	void RepairBrokenBridges();
 	/** Fire Enter Iglin if needed, then Enter Relion and Enter Dragongate, and field the squad. */
@@ -296,8 +302,10 @@ protected:
 
 	/** The current fight. The group it points at lives in Encounters. */
 	TUniquePtr<FSolidBattle> Battle;
-	/** Copy of the kit the fight reads. The play kit stays as it is. */
+	/** Copy of the kit the fight reads. The play kit stays as it is until the copy's captain dies. */
 	SolidInventory::FLoadout BattleLoadout;
+	/** The copy's death has already fired Killed by monsters. */
+	bool bWokeFromBattleDeath = false;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidBuilding>> SpawnedTownBuildings;
@@ -331,4 +339,8 @@ protected:
 	bool bCaptainTravelApplied = false;
 	bool bCaptainPlacedInStronghold = false;
 	bool bCaptainPlacedInLair = false;
+
+#if WITH_DEV_AUTOMATION_TESTS
+	friend class FSolidBattleDeathWakesTheCaptainTest;
+#endif
 };

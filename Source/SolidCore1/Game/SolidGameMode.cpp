@@ -820,6 +820,30 @@ void ASolidGameMode::PresentEventResult(const SolidEvents::FResult& Result)
 	}
 }
 
+void ASolidGameMode::WakeFromBattleDeath()
+{
+	if (bWokeFromBattleDeath)
+	{
+		return;
+	}
+	USolidGameState* State = GetConfiguration();
+	USolidCaptain* Captain = GetCompany() ? GetCompany()->GetCaptain() : nullptr;
+	if (!State || !Captain)
+	{
+		return;
+	}
+
+	bWokeFromBattleDeath = true;
+	const SolidEvents::FResult Result = SolidEvents::NotifyCaptainKilled(*State, *Captain, WorldStamp());
+	UE_LOG(LogSolid, Warning, TEXT("Event: battle death. Killed by monsters %s."),
+		Result.bFired ? TEXT("fired") : TEXT("already recorded"));
+	if (Result.bFired)
+	{
+		SyncBattlePlans();
+	}
+	PresentEventResult(Result);
+}
+
 void ASolidGameMode::NoteMessageClosed(const TCHAR* MessageId)
 {
 	USolidCaptain* SessionCaptain = GetCompany() ? GetCompany()->GetCaptain() : nullptr;
@@ -2066,7 +2090,12 @@ void ASolidGameMode::AdvanceBattle(const float DeltaSeconds, const FVector& Capt
 
 	if (!CaptainStillStanding(BattleLoadout))
 	{
+		WakeFromBattleDeath();
 		return;
 	}
 	Battle->Advance(DeltaSeconds);
+	if (!CaptainStillStanding(BattleLoadout))
+	{
+		WakeFromBattleDeath();
+	}
 }

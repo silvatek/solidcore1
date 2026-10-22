@@ -8,6 +8,8 @@
 #include "Monster/SolidEncounters.h"
 #include "Monster/SolidRaptor.h"
 #include "SolidBattleTestHelpers.h"
+#include "SolidGameInstance.h"
+#include "SolidGameMode.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -712,6 +714,84 @@ bool FSolidBattleCaptainKilledTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("a death after the event adds no journal line"), State->GetJournal()->Entries.Num(), Recorded);
 		TestEqual(TEXT("Killed by monsters stays one record"), State->FiredOrder.Num(), 1);
 	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattleDeathWakesTheCaptainTest,
+	"SolidCore1.Battle.DeathWakesTheCaptain",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattleDeathWakesTheCaptainTest::RunTest(const FString& Parameters)
+{
+	const int32 KilledIndex = SolidEvents::FindIndexById(SolidEvents::IdKilledByMonsters);
+	if (KilledIndex == INDEX_NONE)
+	{
+		AddError(TEXT("Killed by monsters is not in the event list"));
+		return false;
+	}
+
+	USolidGameInstance* Instance = NewObject<USolidGameInstance>();
+	ASolidGameMode* GameMode = NewObject<ASolidGameMode>(Instance);
+	TestNotNull(TEXT("gamemode"), GameMode);
+	USolidGameState* State = GameMode->GetConfiguration();
+	USolidSquad* Squad = GameMode->GetSquad();
+	TestNotNull(TEXT("play state"), State);
+	TestNotNull(TEXT("squad"), Squad);
+	if (!State || !Squad)
+	{
+		return false;
+	}
+	TestFalse(TEXT("the death has not fired"), State->bFired[KilledIndex]);
+	TestFalse(TEXT("the cave starts closed"), State->bStrongholdsEnabled);
+
+	FSolidMonsterGroup Group = SolidBattleTestPrivate::OneRaptor(TEXT("Attack"));
+	FSolidMonster* Raptor = Group.Get(0);
+	if (!Raptor)
+	{
+		AddError(TEXT("the encounter has no raptor"));
+		return false;
+	}
+	Raptor->Weapon.Power = FMath::CeilToInt(SolidItemType::RagsStrength);
+	FSolidEncounter Encounter;
+	Encounter.Groups.Add(MoveTemp(Group));
+	GameMode->Encounters.Add(MoveTemp(Encounter));
+
+	const int32 Hand = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
+	const int32 Body = SolidInventory::WornIndex(SolidInventory::ESlot::Body);
+	TestEqual(
+		TEXT("the captain still has the spear"),
+		FString(State->Inventory.Worn[Hand].Id()),
+		FString(SolidItemType::IdCrudeSpear));
+
+	int32 Guard = 0;
+	while (!State->bFired[KilledIndex])
+	{
+		GameMode->AdvanceBattle(5.f, FVector::ZeroVector);
+		if (++Guard > 20)
+		{
+			AddError(TEXT("the battle did not fire Killed by monsters"));
+			return false;
+		}
+	}
+
+	TestTrue(TEXT("the death opens the cave"), State->bStrongholdsEnabled);
+	TestTrue(TEXT("the play kit drops the spear"), State->Inventory.Worn[Hand].IsEmpty());
+	TestEqual(
+		TEXT("the play kit keeps rags"),
+		FString(State->Inventory.Worn[Body].Id()),
+		FString(SolidItemType::IdRags));
+	TestTrue(TEXT("Attack is on"), SolidEvents::IsBattlePlanEnabled(*State, TEXT("Attack")));
+	TestTrue(TEXT("Defend is on"), SolidEvents::IsBattlePlanEnabled(*State, TEXT("Defend")));
+	TestFalse(TEXT("Starter is off"), SolidEvents::IsBattlePlanEnabled(*State, TEXT("Starter")));
+	const FSolidBattlePlan* Active = Squad->GetActiveBattlePlan();
+	TestTrue(TEXT("the squad follows Attack"), Active && Active->Is(TEXT("Attack")));
+	TestEqual(TEXT("the journal records it once"), State->GetJournal()->Entries.Num(), 1);
+
+	const int32 Lines = State->GetJournal()->Entries.Num();
+	GameMode->AdvanceBattle(5.f, FVector::ZeroVector);
+	TestEqual(TEXT("a later tick does not record it again"), State->GetJournal()->Entries.Num(), Lines);
+	TestEqual(TEXT("Killed by monsters stays one record"), State->FiredOrder.Num(), 1);
 	return true;
 }
 

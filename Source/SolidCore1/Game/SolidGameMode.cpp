@@ -36,6 +36,7 @@
 #include "Vegetation/SolidForage.h"
 #include "Vegetation/SolidForagePile.h"
 #include "Monster/SolidEncounter.h"
+#include "Monster/SolidEncounters.h"
 #include "Monster/SolidRaptorActor.h"
 #include "SolidMonsterMeasure.h"
 #include "Vegetation/SolidForestTrees.h"
@@ -1601,12 +1602,15 @@ void ASolidGameMode::ChooseMonsters(const USolidTerrainMap* Map)
 			SolidTowns::Iglin, Map->GetWorldMinXY(), Map->GetWorldMaxXY(), IglinXY);
 	}
 
-	Encounters = SolidEncounter::Catalog();
+	Encounters.Reset();
+	Encounters.Reserve(SolidEncounter::DefinitionCount);
 	int32 Chosen = 0;
-	for (FSolidEncounter& Encounter : Encounters)
+	for (const SolidEncounter::FDefinition& Def : SolidEncounter::Definitions)
 	{
+		FSolidEncounter Encounter(Def);
 		Chosen += Encounter.Place(
 			Map->GetPoints(), TreePoints, ForagePoints, IglinXY, Bridges);
+		Encounters.Add(MoveTemp(Encounter));
 	}
 	bMonstersChosen = true;
 	UE_LOG(LogSolid, Warning, TEXT("Chose %d monsters across %d encounters"), Chosen, Encounters.Num());

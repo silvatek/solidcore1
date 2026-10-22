@@ -99,25 +99,51 @@ namespace SolidEncounterPrivate
 		return bFound;
 	}
 
-	/** Three Small raptors on grassland in the band around Outer. */
-	int32 PlaceIglinRaptors(
+	bool ResolveSite(
+		const SolidEncounter::ESite Site,
+		const FVector2D& IglinTownXY,
+		const TArray<SolidBridge::FBridge>& Bridges,
+		FVector2D& OutXY)
+	{
+		switch (Site)
+		{
+		case SolidEncounter::ESite::IglinBridgeRamp:
+			return IglinRampOuterEnd(Bridges, IglinTownXY, OutXY);
+		default:
+			return false;
+		}
+	}
+
+	TUniquePtr<FSolidMonster> MakeMonster(
+		const SolidEncounter::EMonsterKind Kind,
+		const ESolidMonsterSize Size)
+	{
+		switch (Kind)
+		{
+		case SolidEncounter::EMonsterKind::Raptor:
+		{
+			TUniquePtr<FSolidRaptor> Raptor = MakeUnique<FSolidRaptor>();
+			Raptor->Size = Size;
+			return Raptor;
+		}
+		default:
+			return nullptr;
+		}
+	}
+
+	/** Members of one group on grassland in the band around Outer. Skips Taken points. */
+	int32 PlaceGroup(
 		FSolidMonsterGroup& Group,
+		const SolidEncounter::FGroup& Spec,
+		const SolidEncounter::FDefinition& Definition,
 		const TArray<FSolidTerrainPoint>& Points,
-		const TArray<int32>& TreePointIndices,
-		const TArray<int32>& ForagePointIndices,
+		TSet<int32>& Taken,
 		const FVector2D& Outer)
 	{
 		Group.Members.Reset();
-
-		TSet<int32> Taken;
-		Taken.Reserve(TreePointIndices.Num() + ForagePointIndices.Num());
-		for (const int32 Index : TreePointIndices)
+		if (Spec.Count <= 0)
 		{
-			Taken.Add(Index);
-		}
-		for (const int32 Index : ForagePointIndices)
-		{
-			Taken.Add(Index);
+			return 0;
 		}
 
 		struct FCandidate
@@ -143,7 +169,7 @@ namespace SolidEncounterPrivate
 
 			const FVector2D XY(Point.X, Point.Y);
 			const float Distance = FVector2D::Distance(XY, Outer);
-			if (Distance < FSolidEncounter::NearLimitCm || Distance > FSolidEncounter::FarLimitCm)
+			if (Distance < Definition.NearLimitCm || Distance > Definition.FarLimitCm)
 			{
 				continue;
 			}
@@ -165,10 +191,10 @@ namespace SolidEncounterPrivate
 		});
 
 		TArray<FVector2D> ChosenXY;
-		ChosenXY.Reserve(FSolidEncounter::IglinRaptorCount);
+		ChosenXY.Reserve(Spec.Count);
 		for (const FCandidate& Candidate : Candidates)
 		{
-			if (Group.Members.Num() >= FSolidEncounter::IglinRaptorCount)
+			if (Group.Members.Num() >= Spec.Count)
 			{
 				break;
 			}
@@ -176,7 +202,7 @@ namespace SolidEncounterPrivate
 			bool bTooClose = false;
 			for (const FVector2D& Have : ChosenXY)
 			{
-				if (FVector2D::Distance(Have, Candidate.XY) < FSolidEncounter::SeparationCm)
+				if (FVector2D::Distance(Have, Candidate.XY) < Definition.SeparationCm)
 				{
 					bTooClose = true;
 					break;
@@ -187,12 +213,16 @@ namespace SolidEncounterPrivate
 				continue;
 			}
 
-			TUniquePtr<FSolidRaptor> Raptor = MakeUnique<FSolidRaptor>();
-			Raptor->PointIndex = Candidate.Index;
-			Raptor->XY = Candidate.XY;
-			Raptor->YawDeg = YawFacing(Candidate.XY, Outer);
-			Raptor->Size = ESolidMonsterSize::Small;
-			Group.Members.Add(MoveTemp(Raptor));
+			TUniquePtr<FSolidMonster> Monster = MakeMonster(Spec.Kind, Spec.Size);
+			if (!Monster)
+			{
+				continue;
+			}
+			Monster->PointIndex = Candidate.Index;
+			Monster->XY = Candidate.XY;
+			Monster->YawDeg = YawFacing(Candidate.XY, Outer);
+			Taken.Add(Candidate.Index);
+			Group.Members.Add(MoveTemp(Monster));
 			ChosenXY.Add(Candidate.XY);
 		}
 		return Group.Members.Num();
@@ -204,19 +234,10 @@ bool SolidEncounter::WorldHasEncounters(const bool bClosedVisit)
 	return !bClosedVisit;
 }
 
-FSolidEncounter SolidEncounter::IglinBridge()
+FSolidEncounter::FSolidEncounter(const SolidEncounter::FDefinition& InDefinition)
+	: Definition(InDefinition)
 {
-	FSolidEncounter Encounter;
-	Encounter.Name = TEXT("Iglin Bridge");
-	Encounter.Groups.Add(FSolidMonsterGroup());
-	return Encounter;
-}
-
-TArray<FSolidEncounter> SolidEncounter::Catalog()
-{
-	TArray<FSolidEncounter> List;
-	List.Add(IglinBridge());
-	return List;
+	Groups.SetNum(FMath::Max(0, Definition.GroupCount));
 }
 
 int32 FSolidEncounter::Place(
@@ -227,31 +248,45 @@ int32 FSolidEncounter::Place(
 	const TArray<SolidBridge::FBridge>& Bridges)
 {
 	Location = FVector2D::ZeroVector;
+	Groups.SetNum(FMath::Max(0, Definition.GroupCount));
 	for (FSolidMonsterGroup& Group : Groups)
 	{
 		Group.Members.Reset();
 	}
 
-	if (!Name.Equals(TEXT("Iglin Bridge")))
-	{
-		return 0;
-	}
-	if (Groups.Num() == 0)
-	{
-		Groups.Add(FSolidMonsterGroup());
-	}
-
 	FVector2D Outer = FVector2D::ZeroVector;
-	if (!SolidEncounterPrivate::IglinRampOuterEnd(Bridges, IglinTownXY, Outer))
+	if (!SolidEncounterPrivate::ResolveSite(Definition.Site, IglinTownXY, Bridges, Outer))
 	{
 		return 0;
 	}
 
 	Location = Outer;
-	return SolidEncounterPrivate::PlaceIglinRaptors(
-		Groups[0],
-		Points,
-		TreePointIndices,
-		ForagePointIndices,
-		Outer);
+
+	TSet<int32> Taken;
+	Taken.Reserve(TreePointIndices.Num() + ForagePointIndices.Num());
+	for (const int32 Index : TreePointIndices)
+	{
+		Taken.Add(Index);
+	}
+	for (const int32 Index : ForagePointIndices)
+	{
+		Taken.Add(Index);
+	}
+
+	int32 Placed = 0;
+	for (int32 GroupIndex = 0; GroupIndex < Definition.GroupCount; ++GroupIndex)
+	{
+		if (!Groups.IsValidIndex(GroupIndex))
+		{
+			break;
+		}
+		Placed += SolidEncounterPrivate::PlaceGroup(
+			Groups[GroupIndex],
+			Definition.Groups[GroupIndex],
+			Definition,
+			Points,
+			Taken,
+			Outer);
+	}
+	return Placed;
 }

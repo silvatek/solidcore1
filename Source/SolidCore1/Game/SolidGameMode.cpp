@@ -35,7 +35,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Vegetation/SolidForage.h"
 #include "Vegetation/SolidForagePile.h"
-#include "Monster/SolidMonsterGroup.h"
+#include "Monster/SolidEncounter.h"
 #include "Monster/SolidRaptorActor.h"
 #include "SolidMonsterMeasure.h"
 #include "Vegetation/SolidForestTrees.h"
@@ -1558,7 +1558,7 @@ void ASolidGameMode::ChooseMonsters(const USolidTerrainMap* Map)
 	{
 		return;
 	}
-	if (!FSolidMonsterGroup::WorldHasMonsters(IsInClosedVisit()))
+	if (!SolidEncounter::WorldHasEncounters(IsInClosedVisit()))
 	{
 		return;
 	}
@@ -1601,19 +1601,24 @@ void ASolidGameMode::ChooseMonsters(const USolidTerrainMap* Map)
 			SolidTowns::Iglin, Map->GetWorldMinXY(), Map->GetWorldMaxXY(), IglinXY);
 	}
 
-	const int32 Chosen = MonsterGroup.PlaceBesideIglinRamp(
-		Map->GetPoints(), TreePoints, ForagePoints, IglinXY, Bridges);
+	Encounters = SolidEncounter::Catalog();
+	int32 Chosen = 0;
+	for (FSolidEncounter& Encounter : Encounters)
+	{
+		Chosen += Encounter.Place(
+			Map->GetPoints(), TreePoints, ForagePoints, IglinXY, Bridges);
+	}
 	bMonstersChosen = true;
-	UE_LOG(LogSolid, Warning, TEXT("Chose %d monsters beside the Iglin ramp"), Chosen);
+	UE_LOG(LogSolid, Warning, TEXT("Chose %d monsters across %d encounters"), Chosen, Encounters.Num());
 }
 
 void ASolidGameMode::SeedMonsters()
 {
-	if (!bMonstersChosen || MonsterGroup.Num() == 0)
+	if (!bMonstersChosen || Encounters.Num() == 0)
 	{
 		return;
 	}
-	if (!FSolidMonsterGroup::WorldHasMonsters(IsInClosedVisit()))
+	if (!SolidEncounter::WorldHasEncounters(IsInClosedVisit()))
 	{
 		return;
 	}
@@ -1631,15 +1636,29 @@ void ASolidGameMode::SeedMonsters()
 		return;
 	}
 
-	TArray<int32> Ready;
-	MonsterGroup.CollectReadyToSeed(Map->GetPoints(), SeededMonsters, Ready);
-	if (Ready.Num() == 0)
+	// One reptile, so the posts beside it are the size reference. The Iglin group still holds three.
+	if (SpawnedMonsters.Num() > 0)
 	{
 		return;
 	}
 
-	// One reptile, so the posts beside it are the size reference. The group still holds three.
-	if (SpawnedMonsters.Num() > 0)
+	FSolidMonsterGroup* Group = nullptr;
+	for (FSolidEncounter& Encounter : Encounters)
+	{
+		if (Encounter.Groups.Num() > 0 && Encounter.Groups[0].Num() > 0)
+		{
+			Group = &Encounter.Groups[0];
+			break;
+		}
+	}
+	if (!Group)
+	{
+		return;
+	}
+
+	TArray<int32> Ready;
+	Group->CollectReadyToSeed(Map->GetPoints(), SeededMonsters, Ready);
+	if (Ready.Num() == 0)
 	{
 		return;
 	}
@@ -1651,7 +1670,7 @@ void ASolidGameMode::SeedMonsters()
 	int32 Spawned = 0;
 	for (const int32 Index : Ready)
 	{
-		const FSolidMonster* Member = MonsterGroup.Get(Index);
+		const FSolidMonster* Member = Group->Get(Index);
 		if (!Member)
 		{
 			continue;

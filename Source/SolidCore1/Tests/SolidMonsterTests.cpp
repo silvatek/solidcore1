@@ -5,6 +5,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Monster/SolidMonster.h"
 #include "Monster/SolidMonsterGroup.h"
+#include "Monster/SolidEncounter.h"
 #include "Monster/SolidRaptorActor.h"
 #include "Monster/SolidRaptor.h"
 #include "Game/SolidMonsterMeasure.h"
@@ -49,8 +50,18 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 {
 	using namespace SolidMonsterTestPrivate;
 
-	TestFalse(TEXT("a closed visit has no monsters"), FSolidMonsterGroup::WorldHasMonsters(true));
-	TestTrue(TEXT("the open world can hold monsters"), FSolidMonsterGroup::WorldHasMonsters(false));
+	TestFalse(TEXT("a closed visit has no encounters"), SolidEncounter::WorldHasEncounters(true));
+	TestTrue(TEXT("the open world can hold encounters"), SolidEncounter::WorldHasEncounters(false));
+	const TArray<FSolidEncounter> Catalog = SolidEncounter::Catalog();
+	TestEqual(TEXT("the catalog has one encounter"), Catalog.Num(), 1);
+	if (Catalog.Num() == 1)
+	{
+		TestTrue(
+			TEXT("that encounter is Iglin Bridge"),
+			Catalog[0].Name.Equals(TEXT("Iglin Bridge")));
+		TestEqual(TEXT("Iglin Bridge has one group"), Catalog[0].Groups.Num(), 1);
+		TestEqual(TEXT("catalog members start empty"), Catalog[0].Groups[0].Num(), 0);
+	}
 	TestTrue(
 		TEXT("a mesh of half the standing height doubles"),
 		FMath::IsNearlyEqual(FSolidMonster::UniformScale(FSolidMonster::StandingHeightCm * 0.5f), 2.f));
@@ -129,15 +140,19 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 	TArray<SolidBridge::FBridge> Bridges;
 	Bridges.Add(IglinBridge(true));
 
-	FSolidMonsterGroup Group;
+	FSolidEncounter Encounter = SolidEncounter::IglinBridge();
 	TestEqual(
 		TEXT("three reptiles"),
-		Group.PlaceBesideIglinRamp(Points, Trees, Forage, Iglin, Bridges),
-		FSolidMonsterGroup::BesideIglinCount);
-	if (Group.Num() != 3)
+		Encounter.Place(Points, Trees, Forage, Iglin, Bridges),
+		FSolidEncounter::IglinRaptorCount);
+	TestTrue(
+		TEXT("the encounter focus is the Iglin ramp outer end"),
+		Encounter.Location.Equals(FVector2D(0.f, 0.f)));
+	if (Encounter.Groups.Num() != 1 || Encounter.Groups[0].Num() != 3)
 	{
 		return false;
 	}
+	FSolidMonsterGroup& Group = Encounter.Groups[0];
 
 	const int32 Expected[] = { 1, 6, 8 };
 	for (int32 Index = 0; Index < 3; ++Index)
@@ -166,7 +181,7 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 		TestTrue(
 			TEXT("later places stay 4 m apart"),
 			Prev && Cur
-				&& FVector2D::Distance(Cur->XY, Prev->XY) >= FSolidMonsterGroup::SeparationCm);
+				&& FVector2D::Distance(Cur->XY, Prev->XY) >= FSolidEncounter::SeparationCm);
 	}
 
 	const FVector2D Outer(0.f, 0.f);
@@ -186,44 +201,45 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 			&& Member->PointIndex != 7 && Member->PointIndex != 9);
 	}
 
-	FSolidMonsterGroup Repaired;
+	FSolidEncounter Repaired = SolidEncounter::IglinBridge();
 	Bridges[0].bBroken = false;
 	TestEqual(
 		TEXT("a repair keeps the same places"),
-		Repaired.PlaceBesideIglinRamp(Points, Trees, Forage, Iglin, Bridges),
+		Repaired.Place(Points, Trees, Forage, Iglin, Bridges),
 		Group.Num());
-	for (int32 Index = 0; Index < Group.Num() && Index < Repaired.Num(); ++Index)
+	for (int32 Index = 0; Index < Group.Num() && Index < Repaired.Groups[0].Num(); ++Index)
 	{
 		const FSolidMonster* Was = Group.Get(Index);
-		const FSolidMonster* Now = Repaired.Get(Index);
+		const FSolidMonster* Now = Repaired.Groups[0].Get(Index);
 		TestTrue(
 			TEXT("the repaired bridge uses the same point"),
 			Was && Now && Now->PointIndex == Was->PointIndex);
 	}
 
-	FSolidMonsterGroup None;
+	FSolidEncounter None = SolidEncounter::IglinBridge();
 	TArray<SolidBridge::FBridge> NoBridge;
 	TestEqual(
 		TEXT("no Iglin bridge places none"),
-		None.PlaceBesideIglinRamp(Points, Trees, Forage, Iglin, NoBridge),
+		None.Place(Points, Trees, Forage, Iglin, NoBridge),
 		0);
-	TestEqual(TEXT("the list is empty"), None.Num(), 0);
+	TestEqual(TEXT("the list is empty"), None.Groups[0].Num(), 0);
+	TestTrue(TEXT("a miss clears the location"), None.Location.IsNearlyZero());
 
 	TArray<SolidBridge::FBridge> Other;
 	Other.Add(IglinBridge(true));
 	Other[0].bIglinRelion = false;
 	TestEqual(
 		TEXT("another crossing places none"),
-		None.PlaceBesideIglinRamp(Points, Trees, Forage, Iglin, Other),
+		None.Place(Points, Trees, Forage, Iglin, Other),
 		0);
 
 	TArray<FSolidTerrainPoint> OnePoint;
 	OnePoint.Add(PointAt(900.f, ESolidBiome::Grassland));
 	TArray<int32> NoSkip;
-	FSolidMonsterGroup Few;
+	FSolidEncounter Few = SolidEncounter::IglinBridge();
 	TestEqual(
 		TEXT("one eligible point places one"),
-		Few.PlaceBesideIglinRamp(OnePoint, NoSkip, NoSkip, Iglin, Bridges),
+		Few.Place(OnePoint, NoSkip, NoSkip, Iglin, Bridges),
 		1);
 
 	TArray<int32> Ready;

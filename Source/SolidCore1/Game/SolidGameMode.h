@@ -6,7 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "Terrain/SolidWorldChart.h"
 #include "Vegetation/SolidForage.h"
-#include "Monster/SolidMonsterGroup.h"
+#include "Monster/SolidEncounter.h"
 #include "Company/SolidCompany.h"
 #include "SolidSight.h"
 #include "SolidGameMode.generated.h"
@@ -289,8 +289,8 @@ protected:
 	/** Member indexes already given a monster actor this visit. A closed visit stores none. */
 	TArray<int32> SeededMonsters;
 
-	/** The Iglin-ramp raptor group. The same members again on the next open-world visit. */
-	FSolidMonsterGroup MonsterGroup;
+	/** Open-world encounters from the catalog, after Place. The same again on the next visit. */
+	TArray<FSolidEncounter> Encounters;
 	bool bMonstersChosen = false;
 
 	UPROPERTY(Transient)

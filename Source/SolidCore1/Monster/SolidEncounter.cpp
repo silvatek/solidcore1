@@ -116,8 +116,8 @@ namespace SolidEncounterPrivate
 		}
 	}
 
-	/** The Iglin Bridge group's plans. */
-	void AddIglinBridgeBattlePlans(TArray<FSolidBattlePlan>& Plans)
+	/** Monster battle plans. A group finds its plan in this array by name. */
+	void AddBattlePlans(TArray<FSolidBattlePlan>& Plans)
 	{
 		Plans.Add({
 			TEXT("Attack"),
@@ -127,19 +127,25 @@ namespace SolidEncounterPrivate
 			ESolidTargetStrategy::Random});
 	}
 
-	/** Copy that group's plans into Available. The first plan is active. */
-	void GivePlans(FSolidMonsterGroup& Group, const SolidEncounter::FDefinition& Definition, const int32 GroupIndex)
+	/** The group's plan is the monster battle plan of that name. */
+	void GivePlan(FSolidMonsterGroup& Group, const SolidEncounter::FGroup& Spec)
 	{
 		Group.Available.Reset();
 		Group.ActivePlan = INDEX_NONE;
-		if (Definition.Name
-			&& GroupIndex == 0
-			&& FCString::Strcmp(Definition.Name, TEXT("Iglin Bridge")) == 0)
+		if (!Spec.Plan || !Spec.Plan[0])
 		{
-			AddIglinBridgeBattlePlans(Group.Available);
+			return;
 		}
-		if (Group.Available.Num() > 0)
+		TArray<FSolidBattlePlan> Plans;
+		AddBattlePlans(Plans);
+		const TCHAR* Key = Spec.Plan;
+		const FSolidBattlePlan* Plan = Plans.FindByPredicate([Key](const FSolidBattlePlan& Candidate)
 		{
+			return Candidate.Is(Key);
+		});
+		if (Plan)
+		{
+			Group.Available.Add(*Plan);
 			Group.ActivePlan = 0;
 		}
 	}
@@ -305,7 +311,7 @@ FSolidEncounter::FSolidEncounter(const SolidEncounter::FDefinition& InDefinition
 	Groups.SetNum(FMath::Max(0, Definition.GroupCount));
 	for (int32 GroupIndex = 0; GroupIndex < Definition.GroupCount && Groups.IsValidIndex(GroupIndex); ++GroupIndex)
 	{
-		SolidEncounterPrivate::GivePlans(Groups[GroupIndex], Definition, GroupIndex);
+		SolidEncounterPrivate::GivePlan(Groups[GroupIndex], Definition.Groups[GroupIndex]);
 	}
 }
 
@@ -326,7 +332,7 @@ int32 FSolidEncounter::Place(
 		Group.Seeded.Reset();
 		if (GroupIndex < Definition.GroupCount)
 		{
-			SolidEncounterPrivate::GivePlans(Group, Definition, GroupIndex);
+			SolidEncounterPrivate::GivePlan(Group, Definition.Groups[GroupIndex]);
 		}
 	}
 

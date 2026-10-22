@@ -474,8 +474,18 @@ bool FSolidMonsterBattlePlanTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("one group"), NoPlan.Groups.Num(), 1);
 	if (NoPlan.Groups.Num() == 1)
 	{
-		TestEqual(TEXT("another encounter's group has no plans"), NoPlan.Groups[0].Available.Num(), 0);
+		TestEqual(TEXT("a group with no plan name has none"), NoPlan.Groups[0].Available.Num(), 0);
 		TestNull(TEXT("that group has no active plan"), NoPlan.Groups[0].GetActivePlan());
+	}
+
+	SolidEncounter::FDefinition Missing{ TEXT("Missing"), SolidEncounter::ESite::IglinBridgeRamp };
+	Missing = Missing.WithGroup(SolidEncounter::EMonsterKind::Raptor, ESolidMonsterSize::Small, 1, TEXT("Defend"));
+	const FSolidEncounter NotInArray(Missing);
+	TestEqual(TEXT("one group for a missing name"), NotInArray.Groups.Num(), 1);
+	if (NotInArray.Groups.Num() == 1)
+	{
+		TestEqual(TEXT("a name absent from the monster plans has none"), NotInArray.Groups[0].Available.Num(), 0);
+		TestNull(TEXT("that group has no active plan either"), NotInArray.Groups[0].GetActivePlan());
 	}
 	return true;
 }

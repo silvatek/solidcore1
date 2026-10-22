@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Templates/Function.h"
 #include "Company/SolidSquad.h"
 #include "Monster/SolidMonsterGroup.h"
 
@@ -13,7 +14,7 @@ namespace SolidInventory
  * One battle. It links one squad, the captain's loadout, and one monster group.
  * The squad and the group already hold their battle plans. This reads the active plan on each.
  * Power is weapon Power. Defence is armour Strength. A later gauge can show the totals.
- * Each squad member and each monster attacks on their own.
+ * Each fighter prepares and recovers on their own weapon Speed. The blow lands when that prepare ends.
  */
 class FSolidBattle
 {
@@ -52,10 +53,39 @@ public:
 	float GetGroupDefence() const;
 
 	/**
-	 * One exchange.
-	 * Each squad member whose plan stores attack lands their own weapon's Power on one monster.
-	 * Each monster whose plan stores attack lands their own weapon's Power on the captain's armour.
-	 * A plan that stores retreat does not attack. An empty main hand does not attack.
+	 * Move each fighter forward by Time, in the same unit as weapon Speed.
+	 * A fighter whose plan stores attack prepares, lands their own blow, and recovers.
+	 * Prepare and recover each take that fighter's Speed. A retreat abandons a prepare when it ends.
+	 * An empty main hand does not prepare.
 	 */
-	void Attack();
+	void Advance(float Time);
+
+private:
+	/** Where one fighter is in prepare or recover. */
+	struct FCycle
+	{
+		enum class EStep : uint8
+		{
+			Prepare,
+			Recover,
+		};
+
+		EStep Step = EStep::Prepare;
+		float TimeLeft = 0.f;
+		bool bEngaged = false;
+		/** The monster chosen when this squad member started preparing. */
+		FSolidMonster* Target = nullptr;
+	};
+
+	void AdvanceCycle(
+		FCycle& Cycle,
+		float Speed,
+		float Time,
+		bool bAttacking,
+		TFunctionRef<void()> BeginPrepare,
+		TFunctionRef<void()> LandBlow);
+
+	FCycle CaptainCycle;
+	TMap<int32, FCycle> CompanionCycles;
+	TMap<FSolidMonster*, FCycle> MonsterCycles;
 };

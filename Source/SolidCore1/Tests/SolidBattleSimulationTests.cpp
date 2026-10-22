@@ -290,13 +290,22 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 		FSolidBattleSimulation Sim;
 		Sim.SquadPlan(TEXT("Starter"));
 		Sim.UseEncounter(One);
-		if (!Sim.Battle.Group || !Sim.Battle.Group->Get(0))
+		FSolidMonster* Raptor = Sim.Battle.Group ? Sim.Battle.Group->Get(0) : nullptr;
+		const FSolidItem* MainHand = Sim.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::MainHand)].IsWeapon()
+			? &Sim.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::MainHand)]
+			: nullptr;
+		if (!Raptor || !MainHand || MainHand->Weapon.Speed <= KINDA_SMALL_NUMBER)
 		{
-			AddError(TEXT("the one raptor gave the battle no monster"));
+			AddError(TEXT("the one raptor gave the battle no spear and no monster"));
 			return false;
 		}
-		Sim.Battle.Attack();
-		TestEqual(TEXT("the spear comes off that hide"), Sim.Battle.Group->Get(0)->Armour.Strength, Hide - static_cast<float>(Spear));
+		const float SpearSpeed = MainHand->Weapon.Speed;
+		Raptor->Weapon.Speed = SpearSpeed * 2.f;
+		Sim.Battle.Advance(SpearSpeed);
+		TestEqual(TEXT("the spear comes off that hide"), Raptor->Armour.Strength, Hide - static_cast<float>(Spear));
+		TestEqual(TEXT("the claws are still preparing"), Sim.Battle.GetSquadDefence(), Rags);
+		Sim.Battle.Advance(SpearSpeed);
+		TestEqual(TEXT("the spear has landed once"), Raptor->Armour.Strength, Hide - static_cast<float>(Spear));
 		TestEqual(TEXT("the claws come off the rags"), Sim.Battle.GetSquadDefence(), Rags - static_cast<float>(Claws));
 	}
 
@@ -310,7 +319,7 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 			return false;
 		}
 		const int32 Count = Sim.Battle.Group->Num();
-		Sim.Battle.Attack();
+		Sim.Battle.Advance(Sample.Weapon.Speed);
 		TestEqual(
 			TEXT("each raptor's claws come off the rags"),
 			Sim.Battle.GetSquadDefence(),
@@ -348,7 +357,7 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 			AddError(TEXT("the one raptor gave the battle no monster"));
 			return false;
 		}
-		Sim.Battle.Attack();
+		Sim.Battle.Advance(Sample.Weapon.Speed);
 		TestEqual(TEXT("a retreat does not strike"), Sim.Battle.Group->Get(0)->Armour.Strength, Hide);
 		TestEqual(TEXT("the claws still come off the rags"), Sim.Battle.GetSquadDefence(), Rags - static_cast<float>(Claws));
 	}
@@ -367,7 +376,7 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 			AddError(TEXT("the one raptor gave the battle no monster"));
 			return false;
 		}
-		Sim.Battle.Attack();
+		Sim.Battle.Advance(Sample.Weapon.Speed);
 		TestEqual(TEXT("an empty main hand does not strike"), Sim.Battle.Group->Get(0)->Armour.Strength, Hide);
 		TestEqual(TEXT("the claws still come off the rags"), Sim.Battle.GetSquadDefence(), Rags - static_cast<float>(Claws));
 	}

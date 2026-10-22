@@ -187,66 +187,185 @@ float FSolidBattle::GetGroupDefence() const
 	return Total;
 }
 
-void FSolidBattle::Attack()
+void FSolidBattle::AdvanceCycle(
+	FCycle& Cycle,
+	const float Speed,
+	const float Time,
+	const bool bAttacking,
+	const TFunctionRef<void()> BeginPrepare,
+	const TFunctionRef<void()> LandBlow)
 {
+	if (!FMath::IsFinite(Speed) || Speed <= KINDA_SMALL_NUMBER)
+	{
+		Cycle.bEngaged = false;
+		return;
+	}
+	if (!Cycle.bEngaged)
+	{
+		if (!bAttacking)
+		{
+			return;
+		}
+		Cycle.bEngaged = true;
+		Cycle.Step = FCycle::EStep::Prepare;
+		Cycle.TimeLeft = Speed;
+		BeginPrepare();
+	}
+
+	Cycle.TimeLeft -= Time;
+	while (Cycle.TimeLeft <= 0.f)
+	{
+		const float Overshoot = -Cycle.TimeLeft;
+		if (Cycle.Step == FCycle::EStep::Prepare)
+		{
+			if (!bAttacking)
+			{
+				Cycle.bEngaged = false;
+				return;
+			}
+			LandBlow();
+			Cycle.Step = FCycle::EStep::Recover;
+		}
+		else if (!bAttacking)
+		{
+			Cycle.bEngaged = false;
+			return;
+		}
+		else
+		{
+			Cycle.Step = FCycle::EStep::Prepare;
+			BeginPrepare();
+		}
+		Cycle.TimeLeft = Speed - Overshoot;
+	}
+}
+
+void FSolidBattle::Advance(const float Time)
+{
+	if (!FMath::IsFinite(Time) || Time < 0.f)
+	{
+		return;
+	}
+
 	TArray<FSolidMonster*> Monsters;
 	CollectMonsters(Group, Monsters);
-
-	if (const FSolidBattlePlan* Plan = GetSquadPlan())
+	for (auto It = MonsterCycles.CreateIterator(); It; ++It)
 	{
-		if (Plan->Attacks())
+		if (!Monsters.Contains(It.Key()))
 		{
-			if (const FSolidItem* MainHand = WornItem(Inventory, SolidInventory::ESlot::MainHand))
-			{
-				if (MainHand->IsWeapon())
-				{
-					if (FSolidMonster* Target = PickMonster(Monsters))
-					{
-						Land(Target->Armour, MainHand->Power());
-					}
-				}
-			}
-
-			if (const USolidSquad* Side = Squad.Get())
-			{
-				if (const USolidCompany* Company = Side->GetCompany())
-				{
-					for (const int32 Index : Side->GetSelectedCompanionIndices())
-					{
-						const FSolidCompanion* Companion = Company->GetCompanion(Index);
-						if (!Companion)
-						{
-							continue;
-						}
-						const FSolidItem Weapon = FSolidItem::FromId(*Companion->WeaponId, 1);
-						if (!Weapon.IsWeapon())
-						{
-							continue;
-						}
-						if (FSolidMonster* Target = PickMonster(Monsters))
-						{
-							Land(Target->Armour, Weapon.Power());
-						}
-					}
-				}
-			}
+			It.RemoveCurrent();
 		}
 	}
 
-	if (const FSolidBattlePlan* Plan = GetGroupPlan())
+	const bool bSquadAttacks = GetSquadPlan() && GetSquadPlan()->Attacks();
+	const bool bGroupAttacks = GetGroupPlan() && GetGroupPlan()->Attacks();
+
+	if (const FSolidItem* MainHand = WornItem(Inventory, SolidInventory::ESlot::MainHand))
 	{
-		if (!Plan->Attacks())
+		if (MainHand->IsWeapon())
 		{
-			return;
+			AdvanceCycle(
+				CaptainCycle,
+				MainHand->Weapon.Speed,
+				Time,
+				bSquadAttacks,
+				[&]()
+				{
+					CaptainCycle.Target = PickMonster(Monsters);
+				},
+				[&]()
+				{
+					if (CaptainCycle.Target && Monsters.Contains(CaptainCycle.Target))
+					{
+						Land(CaptainCycle.Target->Armour, MainHand->Power());
+					}
+				});
 		}
-		FSolidItem* Body = WornItem(Inventory, SolidInventory::ESlot::Body);
-		if (!Body || !Body->IsArmour())
+		else
 		{
-			return;
+			CaptainCycle.bEngaged = false;
 		}
+	}
+	else
+	{
+		CaptainCycle.bEngaged = false;
+	}
+
+	TSet<int32> StillOut;
+	if (const USolidSquad* Side = Squad.Get())
+	{
+		if (const USolidCompany* Company = Side->GetCompany())
+		{
+			for (const int32 Index : Side->GetSelectedCompanionIndices())
+			{
+				const FSolidCompanion* Companion = Company->GetCompanion(Index);
+				if (!Companion)
+				{
+					continue;
+				}
+				const FSolidItem Weapon = FSolidItem::FromId(*Companion->WeaponId, 1);
+				if (!Weapon.IsWeapon())
+				{
+					continue;
+				}
+				StillOut.Add(Index);
+				FCycle& Cycle = CompanionCycles.FindOrAdd(Index);
+				AdvanceCycle(
+					Cycle,
+					Weapon.Weapon.Speed,
+					Time,
+					bSquadAttacks,
+					[&]()
+					{
+						Cycle.Target = PickMonster(Monsters);
+					},
+					[&]()
+					{
+						if (Cycle.Target && Monsters.Contains(Cycle.Target))
+						{
+							const FSolidItem Blow = FSolidItem::FromId(*Companion->WeaponId, 1);
+							Land(Cycle.Target->Armour, Blow.Power());
+						}
+					});
+			}
+		}
+	}
+	for (auto It = CompanionCycles.CreateIterator(); It; ++It)
+	{
+		if (!StillOut.Contains(It.Key()))
+		{
+			It.RemoveCurrent();
+		}
+	}
+
+	FSolidItem* Body = WornItem(Inventory, SolidInventory::ESlot::Body);
+	if (!Body || !Body->IsArmour())
+	{
 		for (FSolidMonster* Monster : Monsters)
 		{
-			Land(Body->Armour, Monster->Weapon.Power);
+			if (FCycle* Cycle = MonsterCycles.Find(Monster))
+			{
+				Cycle->bEngaged = false;
+			}
 		}
+		return;
+	}
+
+	for (FSolidMonster* Monster : Monsters)
+	{
+		FCycle& Cycle = MonsterCycles.FindOrAdd(Monster);
+		const int32 Power = Monster->Weapon.Power;
+		AdvanceCycle(
+			Cycle,
+			Monster->Weapon.Speed,
+			Time,
+			bGroupAttacks,
+			[]()
+			{
+			},
+			[&]()
+			{
+				Land(Body->Armour, Power);
+			});
 	}
 }

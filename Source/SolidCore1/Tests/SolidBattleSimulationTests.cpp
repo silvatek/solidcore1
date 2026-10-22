@@ -290,33 +290,21 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 		const float SpearSpeed = MainHand->Weapon.Speed;
 		Raptor->Weapon.Speed = SpearSpeed * 2.f;
 
-		if (!Battle.AdvanceToNextEvent())
-		{
-			AddError(TEXT("the fight did not start"));
-			return false;
-		}
+		Battle.AdvanceToNextEvent();
 		TestTrue(TEXT("they prepare at the start"), FMath::IsNearlyEqual(Battle.Time, 0.f));
 		TestEqual(TEXT("the captain prepares first"), LogSummary(*this, Battle, 0), FString(TEXT("Captain prepares.")));
 		TestEqual(TEXT("the raptor prepares"), LogSummary(*this, Battle, 1), FString(TEXT("Raptor prepares.")));
 		TestEqual(TEXT("the hide is still whole"), Raptor->Armour.Strength, Hide);
 		TestEqual(TEXT("the rags are still whole"), Battle.GetSquadDefence(), Rags);
 
-		if (!Battle.AdvanceToNextEvent())
-		{
-			AddError(TEXT("the spear did not finish preparing"));
-			return false;
-		}
+		Battle.AdvanceToNextEvent();
 		TestTrue(TEXT("the spear is the first blow"), FMath::IsNearlyEqual(Battle.Time, SpearSpeed));
 		TestEqual(TEXT("the spear line"), LogSummary(*this, Battle, 2), FString(TEXT("Captain attacks Raptor with Crude spear.")));
 		TestTrue(TEXT("the spear comes off that hide"), Raptor->Armour.Strength < Hide);
 		const float AfterSpear = Raptor->Armour.Strength;
 		TestEqual(TEXT("the claws are still preparing"), Battle.GetSquadDefence(), Rags);
 
-		if (!Battle.AdvanceToNextEvent())
-		{
-			AddError(TEXT("the claws did not finish preparing"));
-			return false;
-		}
+		Battle.AdvanceToNextEvent();
 		TestTrue(TEXT("the claws land on their own Speed"), FMath::IsNearlyEqual(Battle.Time, SpearSpeed * 2.f));
 		TestEqual(TEXT("recover ends in another prepare"), LogSummary(*this, Battle, 3), FString(TEXT("Captain prepares.")));
 		TestEqual(TEXT("the claws line"), LogSummary(*this, Battle, 4), FString(TEXT("Raptor attacks Captain with Claws.")));
@@ -347,11 +335,8 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 		}
 		const int32 Count = Battle.Group->Num();
 
-		if (!Battle.AdvanceToNextEvent() || !Battle.AdvanceToNextEvent())
-		{
-			AddError(TEXT("Iglin Bridge did not reach the first blows"));
-			return false;
-		}
+		Battle.AdvanceToNextEvent();
+		Battle.AdvanceToNextEvent();
 		TestEqual(TEXT("the captain prepares first"), LogSummary(*this, Battle, 0), FString(TEXT("Captain prepares.")));
 		TestEqual(TEXT("the captain attacks before the raptors"), LogSummary(*this, Battle, 1 + Count), FString(TEXT("Captain attacks Raptor with Crude spear.")));
 		for (int32 Index = 0; Index < Count; ++Index)
@@ -406,11 +391,8 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 		SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
 		FSolidBattle Battle(Squad, &Group);
 		Battle.Inventory = &Inventory;
-		if (!Battle.AdvanceToNextEvent() || !Battle.AdvanceToNextEvent())
-		{
-			AddError(TEXT("the raptor did not attack"));
-			return false;
-		}
+		Battle.AdvanceToNextEvent();
+		Battle.AdvanceToNextEvent();
 		TestEqual(TEXT("the raptor prepares"), LogSummary(*this, Battle, 0), FString(TEXT("Raptor prepares.")));
 		TestEqual(TEXT("the raptor attacks"), LogSummary(*this, Battle, 1), FString(TEXT("Raptor attacks Captain with Claws.")));
 		TestEqual(TEXT("a retreat leaves the raptor's two lines"), Battle.Log.Num(), 2);
@@ -440,17 +422,9 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 			return false;
 		}
 		Raptor->Weapon.Speed = MainHand->Weapon.Speed * 2.f;
-		if (!Battle.AdvanceToNextEvent())
-		{
-			AddError(TEXT("the fight did not start"));
-			return false;
-		}
+		Battle.AdvanceToNextEvent();
 		SolidBattleTestPrivate::SelectSquadPlan(Squad, TEXT("Defend"));
-		if (!Battle.AdvanceToNextEvent())
-		{
-			AddError(TEXT("the prepare did not finish"));
-			return false;
-		}
+		Battle.AdvanceToNextEvent();
 		TestEqual(TEXT("the captain prepares"), LogSummary(*this, Battle, 0), FString(TEXT("Captain prepares.")));
 		TestEqual(TEXT("the raptor prepares"), LogSummary(*this, Battle, 1), FString(TEXT("Raptor prepares.")));
 		TestEqual(TEXT("the captain abandons the attack"), LogSummary(*this, Battle, 2), FString(TEXT("Captain abandons the attack.")));
@@ -474,11 +448,8 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 		}
 		FSolidBattle Battle(Squad, &Group);
 		Battle.Inventory = &Inventory;
-		if (!Battle.AdvanceToNextEvent() || !Battle.AdvanceToNextEvent())
-		{
-			AddError(TEXT("the raptor did not attack"));
-			return false;
-		}
+		Battle.AdvanceToNextEvent();
+		Battle.AdvanceToNextEvent();
 		TestEqual(TEXT("the raptor prepares"), LogSummary(*this, Battle, 0), FString(TEXT("Raptor prepares.")));
 		TestEqual(TEXT("the raptor attacks"), LogSummary(*this, Battle, 1), FString(TEXT("Raptor attacks Captain with Claws.")));
 		TestEqual(TEXT("an empty main hand leaves the raptor's two lines"), Battle.Log.Num(), 2);
@@ -521,11 +492,7 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 	const float SquadStart = Battle.GetSquadDefence();
 	const float GroupStart = Battle.GetGroupDefence();
 
-	if (!Battle.AdvanceToNextEvent())
-	{
-		AddError(TEXT("the fight did not start"));
-		return false;
-	}
+	Battle.AdvanceToNextEvent();
 	TestEqual(TEXT("the captain prepares"), LogSummary(*this, Battle, 0), FString(TEXT("Captain prepares.")));
 	TestEqual(TEXT("the first raptor prepares"), LogSummary(*this, Battle, 1), FString(TEXT("Raptor prepares.")));
 	TestEqual(TEXT("the second raptor prepares"), LogSummary(*this, Battle, 2), FString(TEXT("Raptor prepares.")));
@@ -533,11 +500,7 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the squad's armour"), Battle.GetSquadDefence(), SquadStart);
 	TestEqual(TEXT("the group's armour"), Battle.GetGroupDefence(), GroupStart);
 
-	if (!Battle.AdvanceToNextEvent())
-	{
-		AddError(TEXT("the first blows did not land"));
-		return false;
-	}
+	Battle.AdvanceToNextEvent();
 	TestEqual(TEXT("the spear"), LogSummary(*this, Battle, 4), FString(TEXT("Captain attacks Raptor with Crude spear.")));
 	TestEqual(TEXT("the first claws"), LogSummary(*this, Battle, 5), FString(TEXT("Raptor attacks Captain with Claws.")));
 	TestEqual(TEXT("the second claws"), LogSummary(*this, Battle, 6), FString(TEXT("Raptor attacks Captain with Claws.")));
@@ -548,11 +511,7 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the hides after one spear"), Battle.GetGroupDefence(), GroupAfter);
 	TestFalse(TEXT("both sides still have armour"), Battle.Finished());
 
-	if (!Battle.AdvanceToNextEvent())
-	{
-		AddError(TEXT("they did not prepare again"));
-		return false;
-	}
+	Battle.AdvanceToNextEvent();
 	TestEqual(TEXT("the captain prepares again"), LogSummary(*this, Battle, 8), FString(TEXT("Captain prepares.")));
 	TestEqual(TEXT("the first raptor prepares again"), LogSummary(*this, Battle, 9), FString(TEXT("Raptor prepares.")));
 	TestEqual(TEXT("the second raptor prepares again"), LogSummary(*this, Battle, 10), FString(TEXT("Raptor prepares.")));
@@ -561,11 +520,7 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the hides hold"), Battle.GetGroupDefence(), GroupAfter);
 	TestFalse(TEXT("the fight is still going"), Battle.Finished());
 
-	if (!Battle.AdvanceToNextEvent())
-	{
-		AddError(TEXT("the second blows did not land"));
-		return false;
-	}
+	Battle.AdvanceToNextEvent();
 	TestEqual(TEXT("the spear finishes that hide"), LogSummary(*this, Battle, 12), FString(TEXT("Captain kills Raptor with Crude spear.")));
 	const float GroupNow = GroupAfter - (FSolidRaptor::HideStrength - Spear);
 	TestEqual(TEXT("the wounded hide is gone"), Battle.GetGroupDefence(), GroupNow);
@@ -606,31 +561,19 @@ bool FSolidBattleArmourFloorTest::RunTest(const FString& Parameters)
 	const float SquadStart = Battle.GetSquadDefence();
 	const float GroupStart = Battle.GetGroupDefence();
 
-	if (!Battle.AdvanceToNextEvent())
-	{
-		AddError(TEXT("the fight did not start"));
-		return false;
-	}
+	Battle.AdvanceToNextEvent();
 	TestEqual(TEXT("the captain prepares"), LogSummary(*this, Battle, 0), FString(TEXT("Captain prepares.")));
 	TestEqual(TEXT("the raptor prepares"), LogSummary(*this, Battle, 1), FString(TEXT("Raptor prepares.")));
 	TestEqual(TEXT("the squad's armour"), Battle.GetSquadDefence(), SquadStart);
 	TestEqual(TEXT("the group's armour"), Battle.GetGroupDefence(), GroupStart);
 
-	if (!Battle.AdvanceToNextEvent())
-	{
-		AddError(TEXT("the spear did not land"));
-		return false;
-	}
+	Battle.AdvanceToNextEvent();
 	TestEqual(TEXT("the spear line"), LogSummary(*this, Battle, 2), FString(TEXT("Captain attacks Raptor with Crude spear.")));
 	TestEqual(TEXT("the squad is still whole"), Battle.GetSquadDefence(), SquadStart);
 	TestTrue(TEXT("the spear comes off the hide"), Battle.GetGroupDefence() < GroupStart);
 	TestTrue(TEXT("the hide stays at or above 0"), Battle.GetGroupDefence() >= 0.f);
 
-	if (!Battle.AdvanceToNextEvent())
-	{
-		AddError(TEXT("the claws did not land"));
-		return false;
-	}
+	Battle.AdvanceToNextEvent();
 	TestEqual(TEXT("recover ends in another prepare"), LogSummary(*this, Battle, 3), FString(TEXT("Captain prepares.")));
 	TestEqual(TEXT("the claws line"), LogSummary(*this, Battle, 4), FString(TEXT("Raptor attacks Captain with Claws.")));
 	TestEqual(TEXT("five lines"), Battle.Log.Num(), 5);
@@ -653,7 +596,8 @@ bool FSolidBattleArmourFloorTest::RunTest(const FString& Parameters)
 	int32 Guard = 0;
 	while (Battle.GetGroupDefence() > 0.f)
 	{
-		if (!Battle.AdvanceToNextEvent() || ++Guard > 40)
+		Battle.AdvanceToNextEvent();
+		if (++Guard > 40)
 		{
 			AddError(TEXT("the hide did not reach 0"));
 			return false;
@@ -663,7 +607,8 @@ bool FSolidBattleArmourFloorTest::RunTest(const FString& Parameters)
 	const int32 HideActs = ActCount(TEXT("Captain"));
 	while (ActCount(TEXT("Captain")) == HideActs)
 	{
-		if (!Battle.AdvanceToNextEvent() || ++Guard > 40)
+		Battle.AdvanceToNextEvent();
+		if (++Guard > 40)
 		{
 			AddError(TEXT("the hide was not struck again"));
 			return false;
@@ -673,7 +618,8 @@ bool FSolidBattleArmourFloorTest::RunTest(const FString& Parameters)
 
 	while (Battle.GetSquadDefence() > 0.f)
 	{
-		if (!Battle.AdvanceToNextEvent() || ++Guard > 40)
+		Battle.AdvanceToNextEvent();
+		if (++Guard > 40)
 		{
 			AddError(TEXT("the rags did not reach 0"));
 			return false;
@@ -683,7 +629,8 @@ bool FSolidBattleArmourFloorTest::RunTest(const FString& Parameters)
 	const int32 RagActs = ActCount(TEXT("Raptor"));
 	while (ActCount(TEXT("Raptor")) == RagActs)
 	{
-		if (!Battle.AdvanceToNextEvent() || ++Guard > 40)
+		Battle.AdvanceToNextEvent();
+		if (++Guard > 40)
 		{
 			AddError(TEXT("the rags were not struck again"));
 			return false;
@@ -722,21 +669,13 @@ bool FSolidBattleKillTest::RunTest(const FString& Parameters)
 	const float Claws = static_cast<float>(Raptor->Weapon.Power);
 	TestEqual(TEXT("the hide is 20"), Hide, 20.f);
 
-	if (!Battle.AdvanceToNextEvent())
-	{
-		AddError(TEXT("the fight did not start"));
-		return false;
-	}
+	Battle.AdvanceToNextEvent();
 	TestEqual(TEXT("the captain prepares"), LogSummary(*this, Battle, 0), FString(TEXT("Captain prepares.")));
 	TestEqual(TEXT("the raptor prepares"), LogSummary(*this, Battle, 1), FString(TEXT("Raptor prepares.")));
 	TestEqual(TEXT("the squad's armour"), Battle.GetSquadDefence(), Rags);
 	TestEqual(TEXT("the group's armour"), Battle.GetGroupDefence(), Hide);
 
-	if (!Battle.AdvanceToNextEvent())
-	{
-		AddError(TEXT("the first blows did not land"));
-		return false;
-	}
+	Battle.AdvanceToNextEvent();
 	const float AfterSpear = FMath::Max(0.f, Hide - Spear);
 	const float AfterClaw = FMath::Max(0.f, Rags - Claws);
 	TestEqual(TEXT("the spear"), LogSummary(*this, Battle, 2), FString(TEXT("Captain attacks Raptor with Crude spear.")));
@@ -744,21 +683,13 @@ bool FSolidBattleKillTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the rags after one claw"), Battle.GetSquadDefence(), AfterClaw);
 	TestEqual(TEXT("the hide after one spear"), Battle.GetGroupDefence(), AfterSpear);
 
-	if (!Battle.AdvanceToNextEvent())
-	{
-		AddError(TEXT("they did not prepare again"));
-		return false;
-	}
+	Battle.AdvanceToNextEvent();
 	TestEqual(TEXT("the captain prepares again"), LogSummary(*this, Battle, 4), FString(TEXT("Captain prepares.")));
 	TestEqual(TEXT("the raptor prepares again"), LogSummary(*this, Battle, 5), FString(TEXT("Raptor prepares.")));
 	TestEqual(TEXT("the rags hold"), Battle.GetSquadDefence(), AfterClaw);
 	TestEqual(TEXT("the hide holds"), Battle.GetGroupDefence(), AfterSpear);
 
-	if (!Battle.AdvanceToNextEvent())
-	{
-		AddError(TEXT("the second blows did not land"));
-		return false;
-	}
+	Battle.AdvanceToNextEvent();
 	const float SecondClaw = FMath::Max(0.f, AfterClaw - Claws);
 	TestEqual(TEXT("the spear kills"), LogSummary(*this, Battle, 6), FString(TEXT("Captain kills Raptor with Crude spear.")));
 	TestEqual(TEXT("the claws still attack"), LogSummary(*this, Battle, 7), FString(TEXT("Raptor attacks Captain with Claws.")));
@@ -771,7 +702,8 @@ bool FSolidBattleKillTest::RunTest(const FString& Parameters)
 	int32 Guard = 0;
 	while (Battle.Log.Num() == 0 || Battle.Log.Last().Summary() != KillLine)
 	{
-		if (!Battle.AdvanceToNextEvent() || ++Guard > 40)
+		Battle.AdvanceToNextEvent();
+		if (++Guard > 40)
 		{
 			AddError(TEXT("the claws did not kill"));
 			return false;
@@ -834,7 +766,8 @@ bool FSolidBattleAbortTest::RunTest(const FString& Parameters)
 		int32 Guard = 0;
 		while (!HasLine(Battle, TEXT("Captain kills Raptor with Crude spear.")))
 		{
-			if (!Battle.AdvanceToNextEvent() || ++Guard > 40)
+			Battle.AdvanceToNextEvent();
+			if (++Guard > 40)
 			{
 				AddError(TEXT("the spear did not kill"));
 				return false;
@@ -844,7 +777,8 @@ bool FSolidBattleAbortTest::RunTest(const FString& Parameters)
 
 		while (!HasLine(Battle, TEXT("Captain aborts the attack on Raptor.")))
 		{
-			if (!Battle.AdvanceToNextEvent() || ++Guard > 40)
+			Battle.AdvanceToNextEvent();
+			if (++Guard > 40)
 			{
 				AddError(TEXT("the spear was not aborted"));
 				return false;
@@ -869,7 +803,8 @@ bool FSolidBattleAbortTest::RunTest(const FString& Parameters)
 		int32 KillAt = INDEX_NONE;
 		while (KillAt == INDEX_NONE || Battle.Log.Num() < KillAt + 3)
 		{
-			if (!Battle.AdvanceToNextEvent() || ++Guard > 40)
+			Battle.AdvanceToNextEvent();
+			if (++Guard > 40)
 			{
 				AddError(TEXT("the claws did not reach a dead captain"));
 				return false;

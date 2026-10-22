@@ -81,6 +81,12 @@ bool FSolidSquadBuilderDragTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("company"), Company);
 	TestNotNull(TEXT("squad"), Squad);
 	Squad->InitializeFromCompany(Company);
+	const int32 Sam = Company->FindCompanionIndexByName(TEXT("Sam"));
+	const int32 Alex = Company->FindCompanionIndexByName(TEXT("Alex"));
+	TestTrue(TEXT("the company has Sam and Alex"), Sam != INDEX_NONE && Alex != INDEX_NONE);
+	TestTrue(
+		TEXT("the page starts with Sam and Alex in the boxes"),
+		Squad->SetSelectedCompanions({ Sam, Alex }));
 
 	SolidSquadBuilder::FView View;
 	SolidSquadBuilder::FPage Page;
@@ -124,8 +130,6 @@ bool FSolidSquadBuilderDragTest::RunTest(const FString& Parameters)
 
 	const int32 MaxIndex = Company->FindCompanionIndexByName(TEXT("Max"));
 	const int32 Morgan = Company->FindCompanionIndexByName(TEXT("Morgan"));
-	const int32 Sam = Company->FindCompanionIndexByName(TEXT("Sam"));
-	const int32 Alex = Company->FindCompanionIndexByName(TEXT("Alex"));
 
 	SolidSquadBuilder::Layout(Squad, 4, View, Page);
 	TestTrue(

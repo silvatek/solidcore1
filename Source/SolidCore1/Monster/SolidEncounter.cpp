@@ -172,6 +172,21 @@ namespace SolidEncounterPrivate
 		}
 	}
 
+	/** The members the definition names. Where they stand waits for Place. */
+	void Recruit(FSolidMonsterGroup& Group, const SolidEncounter::FGroup& Spec)
+	{
+		Group.Members.Reset();
+		for (int32 Index = 0; Index < Spec.Count; ++Index)
+		{
+			TUniquePtr<FSolidMonster> Monster = MakeMonster(Spec.Kind, Spec.Size);
+			if (!Monster)
+			{
+				break;
+			}
+			Group.Members.Add(MoveTemp(Monster));
+		}
+	}
+
 	/**
 	 * True when XY is a corner of a quad that also has a point of Biome.
 	 * The limit is one diagonal step of PointSpacingCm, plus a centimetre.
@@ -210,9 +225,9 @@ namespace SolidEncounterPrivate
 		const FVector2D& Outer,
 		const float PointSpacingCm)
 	{
-		Group.Members.Reset();
-		if (Spec.Count <= 0)
+		if (Spec.Count <= 0 || Group.Members.Num() <= 0)
 		{
+			Group.Members.Reset();
 			return 0;
 		}
 
@@ -266,10 +281,11 @@ namespace SolidEncounterPrivate
 		});
 
 		TArray<FVector2D> ChosenXY;
-		ChosenXY.Reserve(Spec.Count);
+		ChosenXY.Reserve(Group.Members.Num());
+		int32 Placed = 0;
 		for (const FCandidate& Candidate : Candidates)
 		{
-			if (Group.Members.Num() >= Spec.Count)
+			if (Placed >= Group.Members.Num())
 			{
 				break;
 			}
@@ -288,7 +304,7 @@ namespace SolidEncounterPrivate
 				continue;
 			}
 
-			TUniquePtr<FSolidMonster> Monster = MakeMonster(Spec.Kind, Spec.Size);
+			FSolidMonster* Monster = Group.Get(Placed);
 			if (!Monster)
 			{
 				continue;
@@ -297,10 +313,11 @@ namespace SolidEncounterPrivate
 			Monster->XY = Candidate.XY;
 			Monster->YawDeg = YawFacing(Candidate.XY, Outer);
 			Taken.Add(Candidate.Index);
-			Group.Members.Add(MoveTemp(Monster));
 			ChosenXY.Add(Candidate.XY);
+			++Placed;
 		}
-		return Group.Members.Num();
+		Group.Members.SetNum(Placed);
+		return Placed;
 	}
 }
 
@@ -316,6 +333,7 @@ FSolidEncounter::FSolidEncounter(const SolidEncounter::FDefinition& InDefinition
 	for (int32 GroupIndex = 0; GroupIndex < Definition.GroupCount && Groups.IsValidIndex(GroupIndex); ++GroupIndex)
 	{
 		SolidEncounterPrivate::GivePlan(Groups[GroupIndex], Definition.Groups[GroupIndex]);
+		SolidEncounterPrivate::Recruit(Groups[GroupIndex], Definition.Groups[GroupIndex]);
 	}
 }
 
@@ -332,17 +350,21 @@ int32 FSolidEncounter::Place(
 	for (int32 GroupIndex = 0; GroupIndex < Groups.Num(); ++GroupIndex)
 	{
 		FSolidMonsterGroup& Group = Groups[GroupIndex];
-		Group.Members.Reset();
 		Group.Seeded.Reset();
 		if (GroupIndex < Definition.GroupCount)
 		{
 			SolidEncounterPrivate::GivePlan(Group, Definition.Groups[GroupIndex]);
+			SolidEncounterPrivate::Recruit(Group, Definition.Groups[GroupIndex]);
 		}
 	}
 
 	FVector2D Outer = FVector2D::ZeroVector;
 	if (!SolidEncounterPrivate::ResolveSite(Definition.Site, IglinTownXY, Bridges, Outer))
 	{
+		for (FSolidMonsterGroup& Group : Groups)
+		{
+			Group.Members.Reset();
+		}
 		return 0;
 	}
 

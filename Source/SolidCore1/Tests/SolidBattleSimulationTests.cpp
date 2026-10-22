@@ -2,9 +2,8 @@
 #include "Misc/AutomationTest.h"
 #include "Battle/SolidBattle.h"
 #include "Company/SolidCompany.h"
-#include "Inventory/SolidItem.h"
 #include "Inventory/SolidItemType.h"
-#include "Monster/SolidRaptor.h"
+#include "Monster/SolidEncounters.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -12,12 +11,13 @@
  * One battle between a real squad and a real monster group.
  * The squad and the group keep their own plans. The battle only links them.
  * The company has the five companions. The squad starts with none of them out.
+ * The monster group is an encounter group, built from a definition.
  */
 struct FSolidBattleSimulation
 {
 	USolidCompany* Company = nullptr;
 	USolidSquad* Squad = nullptr;
-	FSolidMonsterGroup Group;
+	FSolidEncounter Encounter;
 	FSolidBattle Battle;
 
 	FSolidBattleSimulation()
@@ -26,7 +26,14 @@ struct FSolidBattleSimulation
 		Squad = NewObject<USolidSquad>();
 		Squad->InitializeFromCompany(Company);
 		Squad->SetSelectedCompanions({});
-		Battle = FSolidBattle(Squad, &Group);
+		Battle = FSolidBattle(Squad, nullptr);
+	}
+
+	/** The encounter the game builds from that definition. The battle links its first group. */
+	void UseEncounter(const SolidEncounter::FDefinition& Definition)
+	{
+		Encounter = FSolidEncounter(Definition);
+		Battle.Group = Encounter.Groups.Num() > 0 ? &Encounter.Groups[0] : nullptr;
 	}
 
 	/** Put that companion in the squad. */
@@ -44,15 +51,6 @@ struct FSolidBattleSimulation
 		TArray<int32> Selected = Squad->GetSelectedCompanionIndices();
 		Selected.Add(Index);
 		Squad->SetSelectedCompanions(Selected);
-	}
-
-	/** One Small raptor, with claws and hide, in the group. */
-	void Raptor()
-	{
-		TUniquePtr<FSolidRaptor> Monster = MakeUnique<FSolidRaptor>();
-		Monster->Size = ESolidMonsterSize::Small;
-		Monster->Arm(FSolidRaptor::Claws, FSolidRaptor::Hide, FSolidItem::StartingDraw);
-		Group.Members.Add(MoveTemp(Monster));
 	}
 
 	bool SquadHas(const TCHAR* Name) const
@@ -114,24 +112,6 @@ struct FSolidBattleSimulation
 		}
 	}
 
-	/** Give the group that company plan, and make it the active one. */
-	void GroupPlan(const TCHAR* Name)
-	{
-		Group.Available.Reset();
-		Group.ActivePlan = INDEX_NONE;
-		if (!Company || !Name)
-		{
-			return;
-		}
-		const FSolidBattlePlan* Plan = Company->GetBattlePlan(Company->FindBattlePlanIndexByName(Name));
-		if (!Plan)
-		{
-			return;
-		}
-		Group.Available.Add(*Plan);
-		Group.ActivePlan = 0;
-	}
-
 	FString SquadPlanName() const
 	{
 		const FSolidBattlePlan* Plan = Battle.GetSquadPlan();
@@ -172,10 +152,10 @@ bool FSolidBattleSquadAndGroupTest::RunTest(const FString& Parameters)
 {
 	FSolidBattleSimulation Sim;
 	Sim.SquadPlan(TEXT("Starter"));
-	Sim.GroupPlan(TEXT("Attack"));
+	Sim.UseEncounter(SolidEncounter::Definitions[0]);
 
 	TestTrue(TEXT("the battle links the squad"), Sim.Battle.Squad.Get() == Sim.Squad);
-	TestTrue(TEXT("the battle links the group"), Sim.Battle.Group == &Sim.Group);
+	TestTrue(TEXT("the battle links the Iglin Bridge group"), Sim.Battle.Group == &Sim.Encounter.Groups[0]);
 	TestEqual(TEXT("the squad plan is Starter"), Sim.SquadPlanName(), FString(TEXT("Starter")));
 	TestEqual(TEXT("the group plan is Attack"), Sim.GroupPlanName(), FString(TEXT("Attack")));
 	TestTrue(TEXT("Starter stores attack"), Sim.SquadAttacks());
@@ -193,15 +173,26 @@ bool FSolidBattleActivePlanTest::RunTest(const FString& Parameters)
 	FSolidBattleSimulation Sim;
 
 	TestEqual(TEXT("a new squad reads Starter"), Sim.SquadPlanName(), FString(TEXT("Starter")));
-	TestTrue(TEXT("the group has no plan yet"), Sim.GroupPlanName().IsEmpty());
+	TestNull(TEXT("no monster group yet"), Sim.Battle.Group);
 
 	Sim.SquadPlan(TEXT("Defend"));
 	TestEqual(TEXT("the battle reads Defend"), Sim.SquadPlanName(), FString(TEXT("Defend")));
 	TestTrue(TEXT("Defend stores retreat"), Sim.SquadRetreats());
 
-	Sim.GroupPlan(TEXT("Starter"));
-	TestEqual(TEXT("the battle reads the group's Starter"), Sim.GroupPlanName(), FString(TEXT("Starter")));
-	TestTrue(TEXT("the group's Starter stores attack"), Sim.GroupAttacks());
+	SolidEncounter::FDefinition Bare{ TEXT("Bare"), SolidEncounter::ESite::IglinBridgeRamp };
+	Bare = Bare.WithGroup(SolidEncounter::EMonsterKind::Raptor, ESolidMonsterSize::Small, 1);
+	Sim.UseEncounter(Bare);
+	TestNotNull(TEXT("the bare group"), Sim.Battle.Group);
+	if (!Sim.Battle.Group)
+	{
+		return false;
+	}
+	TestTrue(TEXT("a group with no plan name has none"), Sim.GroupPlanName().IsEmpty());
+	TestEqual(TEXT("that group has its one raptor"), Sim.Battle.Group->Num(), 1);
+
+	Sim.UseEncounter(SolidEncounter::Definitions[0]);
+	TestEqual(TEXT("Iglin Bridge reads Attack"), Sim.GroupPlanName(), FString(TEXT("Attack")));
+	TestTrue(TEXT("Attack stores attack"), Sim.GroupAttacks());
 	return true;
 }
 
@@ -223,12 +214,15 @@ bool FSolidBattleSidesTest::RunTest(const FString& Parameters)
 	USolidCaptain* Captain = Squad->GetCompany() ? Squad->GetCompany()->GetCaptain() : nullptr;
 	TestNotNull(TEXT("the captain is with the squad"), Captain);
 	TestEqual(TEXT("no companion is out yet"), Squad->GetSelectedCompanionCount(), 0);
-	TestEqual(TEXT("the group is empty"), Sim.Battle.Group->Num(), 0);
+	TestNull(TEXT("no monster group yet"), Sim.Battle.Group);
 
 	Sim.InSquad(TEXT("Sam"));
-	Sim.Raptor();
-	Sim.Raptor();
-	Sim.Raptor();
+	Sim.UseEncounter(SolidEncounter::Definitions[0]);
+	TestNotNull(TEXT("the Iglin Bridge group"), Sim.Battle.Group);
+	if (!Sim.Battle.Group)
+	{
+		return false;
+	}
 
 	TestTrue(TEXT("Sam is in the squad"), Sim.SquadHas(TEXT("Sam")));
 	TestFalse(TEXT("Alex is in the squad"), Sim.SquadHas(TEXT("Alex")));
@@ -236,7 +230,8 @@ bool FSolidBattleSidesTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Sam's armour is Rags"), Sim.CompanionArmour(TEXT("Sam")), FString(TEXT("Rags")));
 	TestEqual(TEXT("one companion is out"), Squad->GetSelectedCompanionCount(), 1);
 
-	TestEqual(TEXT("three raptors are in the group"), Sim.Battle.Group->Num(), 3);
+	const SolidEncounter::FGroup& Spec = SolidEncounter::Definitions[0].Groups[0];
+	TestEqual(TEXT("the group has the definition's raptors"), Sim.Battle.Group->Num(), Spec.Count);
 	for (int32 Index = 0; Index < Sim.Battle.Group->Num(); ++Index)
 	{
 		const FSolidMonster* Monster = Sim.Battle.Group->Get(Index);

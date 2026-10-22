@@ -9,7 +9,7 @@
 /**
  * Encounter definitions and a runtime encounter built from one.
  * Definitions are a static list, the way SolidEvents::Definitions are.
- * Place fills the runtime groups on the open world.
+ * The constructor fills each group's plan and its members. Place chooses where they stand.
  */
 namespace SolidEncounter
 {
@@ -23,7 +23,7 @@ namespace SolidEncounter
 		IglinBridgeRamp,
 	};
 
-	/** Which subclass Place creates for a group member. */
+	/** Which subclass a group member is. */
 	enum class EMonsterKind : uint8
 	{
 		Raptor,
@@ -81,7 +81,8 @@ namespace SolidEncounter
 
 /**
  * One encounter in play: its definition, the focus once placed, and the groups.
- * Built from a SolidEncounter::FDefinition. Place fills the members.
+ * Built from a SolidEncounter::FDefinition.
+ * The groups hold their plans and their members. Place chooses where those members stand.
  */
 class FSolidEncounter
 {
@@ -97,12 +98,12 @@ public:
 	 * For Iglin Bridge that is the Iglin ramp's outer end. Zero until then.
 	 */
 	FVector2D Location = FVector2D::ZeroVector;
-	/** Groups that act at this place. Empty members until Place. */
+	/** Groups from the definition. Members are armed. Place chooses their points. */
 	TArray<FSolidMonsterGroup> Groups;
 
 	/**
-	 * Fill Groups from Definition on the open world.
-	 * Resolves Definition.Site to Location and places each group's members.
+	 * Choose a point for each member already in the groups.
+	 * Resolves Definition.Site to Location. A member with no point is dropped.
 	 * @return Total members placed across every group.
 	 */
 	int32 Place(

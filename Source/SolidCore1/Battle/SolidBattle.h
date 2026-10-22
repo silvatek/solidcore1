@@ -52,7 +52,9 @@ struct FSolidBattleLogEntry
  * An attack on armour already at 0 is aborted.
  * A blow on a fighter who is retreating is reduced by RetreatReduction.
  * A fighter keeps the same enemy while that enemy can still be struck.
- * The battle is finished when either side has no armour left. An escape will finish it too, once a side can leave.
+ * The battle is finished when either side has no armour left. Advance then does nothing.
+ * Blows already due in the moment that finishes it still land.
+ * An escape will finish it too, once a side can leave.
  * The log records those moments, in order.
  */
 class FSolidBattle
@@ -124,13 +126,14 @@ public:
 	 * A fighter whose plan stores attack prepares, lands their own blow, and recovers.
 	 * Prepare and recover each take that fighter's Speed. A retreat abandons a prepare when it ends.
 	 * An empty main hand does not prepare. Each of those moments is appended to the log.
+	 * A battle that is already finished does not move.
 	 */
 	void Advance(float Delta);
 
 	/**
 	 * Move time forward to the next moment the log gains a line.
 	 * The opening prepares are at time 0. Later moments are the end of a prepare or a recover.
-	 * False when nobody will act.
+	 * False when nobody will act, and when the battle is already finished.
 	 */
 	bool AdvanceToNextEvent();
 

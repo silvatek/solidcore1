@@ -364,6 +364,11 @@ void FSolidBattle::AdvanceCycle(
 
 float FSolidBattle::TimeUntilNextEvent()
 {
+	if (Finished())
+	{
+		return -1.f;
+	}
+
 	float Best = -1.f;
 	auto Note = [&Best](const float Wait)
 	{
@@ -444,6 +449,10 @@ bool FSolidBattle::AdvanceToNextEvent()
 
 void FSolidBattle::Advance(const float Delta)
 {
+	if (Finished())
+	{
+		return;
+	}
 	if (!FMath::IsFinite(Delta) || Delta < 0.f)
 	{
 		return;

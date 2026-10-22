@@ -534,4 +534,41 @@ bool FSolidBattleRetreatTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattleFinishedTest,
+	"SolidCore1.Battle.Finished",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattleFinishedTest::RunTest(const FString& Parameters)
+{
+	USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
+	FSolidMonsterGroup Group = SolidBattleTestPrivate::OneRaptor(TEXT("Attack"));
+	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+	FSolidBattle Battle(Squad, &Group);
+	Battle.Inventory = &Inventory;
+
+	int32 Guard = 0;
+	while (Battle.GetGroupDefence() > 0.f)
+	{
+		Battle.AdvanceToNextEvent();
+		if (++Guard > 40)
+		{
+			AddError(TEXT("the hide did not reach 0"));
+			return false;
+		}
+	}
+	TestTrue(TEXT("the battle is finished"), Battle.Finished());
+	const int32 Lines = Battle.Log.Num();
+	const float When = Battle.Time;
+	const float Rags = Battle.GetSquadDefence();
+
+	Battle.AdvanceToNextEvent();
+	Battle.Advance(1.f);
+	TestEqual(TEXT("a finished battle adds no line"), Battle.Log.Num(), Lines);
+	TestEqual(TEXT("a finished battle does not move time"), Battle.Time, When);
+	TestEqual(TEXT("the hide stays at 0"), Battle.GetGroupDefence(), 0.f);
+	TestEqual(TEXT("the rags stay where the last blow left them"), Battle.GetSquadDefence(), Rags);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

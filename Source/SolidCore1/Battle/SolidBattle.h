@@ -6,6 +6,8 @@
 #include "Company/SolidSquad.h"
 #include "Monster/SolidMonsterGroup.h"
 
+class USolidGameState;
+
 namespace SolidInventory
 {
 	struct FLoadout;
@@ -54,6 +56,7 @@ struct FSolidBattleLogEntry
  * A fighter keeps the same enemy while that enemy can still be struck.
  * The battle is finished when either side has no armour left. Advance then does nothing.
  * Blows already due in the moment that finishes it still land.
+ * A blow that kills the captain records Killed by monsters on the play state, when that event has not already fired.
  * An escape will finish it too, once a side can leave.
  * The log records those moments, in order.
  */
@@ -74,6 +77,12 @@ public:
 	 * Null when this battle has not been given one.
 	 */
 	SolidInventory::FLoadout* Inventory = nullptr;
+
+	/**
+	 * The play state this battle records into.
+	 * Null when this battle has not been given one.
+	 */
+	USolidGameState* State = nullptr;
 
 	/** The monster group in this battle. The encounter owns the group. */
 	FSolidMonsterGroup* Group = nullptr;
@@ -161,6 +170,9 @@ private:
 		const FString& Target,
 		const FString& Weapon,
 		bool bKilled = false);
+
+	/** Record Killed by monsters when the play state has not already fired it. */
+	void NoteCaptainKilled() const;
 
 	/** Time until the next logged moment. Negative when nobody will act. */
 	float TimeUntilNextEvent();

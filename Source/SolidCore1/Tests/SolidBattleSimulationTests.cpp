@@ -1,6 +1,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "Battle/SolidBattle.h"
+#include "Game/SolidGameState.h"
 #include "Inventory/SolidInventory.h"
 #include "Inventory/SolidItem.h"
 #include "Inventory/SolidItemType.h"
@@ -568,6 +569,149 @@ bool FSolidBattleFinishedTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("a finished battle does not move time"), Battle.Time, When);
 	TestEqual(TEXT("the hide stays at 0"), Battle.GetGroupDefence(), 0.f);
 	TestEqual(TEXT("the rags stay where the last blow left them"), Battle.GetSquadDefence(), Rags);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattleCaptainKilledTest,
+	"SolidCore1.Battle.CaptainKilled",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattleCaptainKilledTest::RunTest(const FString& Parameters)
+{
+	const int32 KilledIndex = SolidEvents::FindIndexById(SolidEvents::IdKilledByMonsters);
+	if (KilledIndex == INDEX_NONE)
+	{
+		AddError(TEXT("Killed by monsters is not in the event list"));
+		return false;
+	}
+
+	const int32 Hand = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
+	const int32 Body = SolidInventory::WornIndex(SolidInventory::ESlot::Body);
+	auto HasLine = [](const FSolidBattle& Battle, const TCHAR* Sentence)
+	{
+		for (const FSolidBattleLogEntry& Entry : Battle.Log)
+		{
+			if (Entry.Summary() == Sentence)
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+
+	{
+		USolidGameState* State = NewObject<USolidGameState>();
+		USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
+		FSolidMonsterGroup Group = SolidBattleTestPrivate::OneRaptor(TEXT("Attack"));
+		SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+		FSolidBattle Battle(Squad, &Group);
+		Battle.Inventory = &Inventory;
+		Battle.State = State;
+
+		int32 Guard = 0;
+		while (Battle.GetGroupDefence() > 0.f)
+		{
+			Battle.AdvanceToNextEvent();
+			if (++Guard > 40)
+			{
+				AddError(TEXT("the hide did not reach 0"));
+				return false;
+			}
+		}
+		TestFalse(TEXT("a dead raptor leaves Killed by monsters unfired"), State->bFired[KilledIndex]);
+		TestFalse(TEXT("a dead raptor leaves the cave closed"), State->bStrongholdsEnabled);
+		TestEqual(
+			TEXT("a dead raptor leaves the spear"),
+			FString(State->Inventory.Worn[Hand].Id()),
+			FString(SolidItemType::IdCrudeSpear));
+	}
+
+	{
+		USolidGameState* State = NewObject<USolidGameState>();
+		USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
+		FSolidMonsterGroup Group = SolidBattleTestPrivate::OneRaptor(TEXT("Attack"));
+		FSolidMonster* Raptor = Group.Get(0);
+		if (!Raptor)
+		{
+			AddError(TEXT("the one raptor gave the battle no monster"));
+			return false;
+		}
+		Raptor->Weapon.Power = FMath::CeilToInt(SolidItemType::RagsStrength);
+		SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+		FSolidBattle Battle(Squad, &Group);
+		Battle.Inventory = &Inventory;
+		Battle.State = State;
+
+		int32 Guard = 0;
+		while (Battle.GetSquadDefence() > 0.f)
+		{
+			Battle.AdvanceToNextEvent();
+			if (++Guard > 40)
+			{
+				AddError(TEXT("the claws did not kill the captain"));
+				return false;
+			}
+		}
+		TestTrue(TEXT("the claws kill the captain"), HasLine(Battle, TEXT("Raptor kills Captain with Claws.")));
+		TestTrue(TEXT("the captain's death fires Killed by monsters"), State->bFired[KilledIndex]);
+		TestTrue(TEXT("the captain's death opens the cave"), State->bStrongholdsEnabled);
+		TestEqual(TEXT("the journal records it once"), State->GetJournal()->Entries.Num(), 1);
+		TestEqual(TEXT("that line is Killed by monsters"), State->GetJournal()->Entries[0].EventIndex, KilledIndex);
+		TestTrue(TEXT("the play kit drops the spear"), State->Inventory.Worn[Hand].IsEmpty());
+		TestEqual(
+			TEXT("the play kit keeps rags"),
+			FString(State->Inventory.Worn[Body].Id()),
+			FString(SolidItemType::IdRags));
+		TestEqual(TEXT("the battle rags are gone"), Battle.GetSquadDefence(), 0.f);
+
+		const int32 Lines = Battle.Log.Num();
+		Battle.AdvanceToNextEvent();
+		TestEqual(TEXT("a later tick adds no line"), Battle.Log.Num(), Lines);
+		TestEqual(TEXT("a later tick does not record it again"), State->GetJournal()->Entries.Num(), 1);
+	}
+
+	{
+		USolidGameState* State = NewObject<USolidGameState>();
+		USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
+		USolidCompany* Company = Squad->GetCompany();
+		USolidCaptain* Captain = Company ? Company->GetCaptain() : nullptr;
+		if (!Captain)
+		{
+			AddError(TEXT("the squad gave the battle no captain"));
+			return false;
+		}
+		SolidEvents::MarkComplete(*State, *Captain, SolidEvents::IdKilledByMonsters);
+		const int32 Recorded = State->GetJournal()->Entries.Num();
+
+		FSolidMonsterGroup Group = SolidBattleTestPrivate::OneRaptor(TEXT("Attack"));
+		FSolidMonster* Raptor = Group.Get(0);
+		if (!Raptor)
+		{
+			AddError(TEXT("the one raptor gave the battle no monster"));
+			return false;
+		}
+		Raptor->Weapon.Power = FMath::CeilToInt(SolidItemType::RagsStrength);
+		SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+		FSolidBattle Battle(Squad, &Group);
+		Battle.Inventory = &Inventory;
+		Battle.State = State;
+
+		int32 Guard = 0;
+		while (Battle.GetSquadDefence() > 0.f)
+		{
+			Battle.AdvanceToNextEvent();
+			if (++Guard > 40)
+			{
+				AddError(TEXT("the claws did not kill the captain"));
+				return false;
+			}
+		}
+		TestTrue(TEXT("the claws still kill the captain"), HasLine(Battle, TEXT("Raptor kills Captain with Claws.")));
+		TestEqual(TEXT("the battle rags are gone again"), Battle.GetSquadDefence(), 0.f);
+		TestEqual(TEXT("a death after the event adds no journal line"), State->GetJournal()->Entries.Num(), Recorded);
+		TestEqual(TEXT("Killed by monsters stays one record"), State->FiredOrder.Num(), 1);
+	}
 	return true;
 }
 

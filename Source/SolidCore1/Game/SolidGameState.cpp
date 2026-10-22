@@ -379,6 +379,14 @@ FResult NotifyMessageClosed(
 	return Result;
 }
 
+FResult NotifyCaptainKilled(
+	USolidGameState& State,
+	USolidCaptain& Captain,
+	const SolidWorldTime::FStamp& When)
+{
+	return MarkComplete(State, Captain, IdKilledByMonsters, When);
+}
+
 FResult MarkComplete(
 	USolidGameState& State,
 	USolidCaptain& Captain,

@@ -192,6 +192,16 @@ namespace SolidEvents
 		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
 
 	/**
+	 * The captain was killed in a battle.
+	 * Records Killed by monsters when that event has not already fired.
+	 * A second call does nothing.
+	 */
+	FResult NotifyCaptainKilled(
+		USolidGameState& State,
+		USolidCaptain& Captain,
+		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
+
+	/**
 	 * Record one event as already fired, including its journal line and changes,
 	 * even when its requirements have not fired. A second call does nothing.
 	 */

@@ -1,5 +1,6 @@
 #include "SolidBattle.h"
 #include "Company/SolidCompany.h"
+#include "Game/SolidGameState.h"
 #include "Inventory/SolidInventory.h"
 #include "Inventory/SolidItem.h"
 
@@ -287,6 +288,19 @@ FString FSolidBattleLogEntry::Summary() const
 	}
 }
 
+void FSolidBattle::NoteCaptainKilled() const
+{
+	USolidGameState* Play = State;
+	const USolidSquad* Side = Squad.Get();
+	USolidCompany* Company = Side ? Side->GetCompany() : nullptr;
+	USolidCaptain* Captain = Company ? Company->GetCaptain() : nullptr;
+	if (!Play || !Captain)
+	{
+		return;
+	}
+	SolidEvents::NotifyCaptainKilled(*Play, *Captain);
+}
+
 void FSolidBattle::Record(
 	const float When,
 	const ESolidBattleLogKind Kind,
@@ -476,7 +490,7 @@ void FSolidBattle::Advance(const float Delta)
 	const bool bGroupAttacks = GetGroupPlan() && GetGroupPlan()->Attacks();
 	const FString CaptainName(TEXT("Captain"));
 
-	/** A blow on armour already at 0 does not land. */
+	/** A blow on armour already at 0 does not land. True when this blow leaves the armour at 0. */
 	auto Strike = [&](
 		FSolidArmour& Armour,
 		const int32 Power,
@@ -489,10 +503,11 @@ void FSolidBattle::Advance(const float Delta)
 		if (Armour.Strength <= 0.f)
 		{
 			Record(When, ESolidBattleLogKind::Abort, Actor, TargetName, FString());
-			return;
+			return false;
 		}
 		const bool bKilled = Land(Armour, SpentPower(Power, bRetreating));
 		Record(When, ESolidBattleLogKind::Attack, Actor, TargetName, Weapon, bKilled);
+		return bKilled;
 	};
 
 	const FSolidWeapon CaptainWeapon = SquadWeapon(0);
@@ -602,6 +617,7 @@ void FSolidBattle::Advance(const float Delta)
 		return;
 	}
 
+	bool bCaptainKilled = false;
 	for (int32 Index = 0; Group && Index < Group->Num(); ++Index)
 	{
 		FSolidMonster* Monster = Group->Get(Index);
@@ -628,11 +644,18 @@ void FSolidBattle::Advance(const float Delta)
 			[&](const float When)
 			{
 				const bool bRetreats = GetSquadPlan() && GetSquadPlan()->Retreats();
-				Strike(Body->Armour, Power, bRetreats, When, Actor, CaptainName, WeaponName);
+				if (Strike(Body->Armour, Power, bRetreats, When, Actor, CaptainName, WeaponName))
+				{
+					bCaptainKilled = true;
+				}
 			},
 			[&](const float When)
 			{
 				Record(When, ESolidBattleLogKind::Abandon, Actor, FString(), FString());
 			});
+	}
+	if (bCaptainKilled)
+	{
+		NoteCaptainKilled();
 	}
 }

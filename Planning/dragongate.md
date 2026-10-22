@@ -8,24 +8,23 @@ Dragongate is a stone wall across a gap in the mountains. The gate is a 4 m open
 
 One Dragongate marker is where the gate stands. From that cell the wall runs east and west across whatever town and grassland lies between it and the mountains. `M.!.M` is one such gap. `Mo!oM` and `M.o!o..M` are others. Any mix of `o` and `.` belongs to the same wall. The marker can sit anywhere in the run. The town sign stands near it.
 
-The person editing the map follows two rules. The cell on each side of the marker is grassland or town, so the gap is wide enough for the gate. A mountain biome lies east of the marker, and a mountain biome lies west of it, for the wall to extend to. The World chart mode does not enforce these rules.
+The person editing the map chooses the cells, and follows two rules. The cell on each side of the marker is grassland or town, so the gap is wide enough for the gate. A mountain biome lies east of the marker, and a mountain biome lies west of it, for the wall to extend to. This story does not name those cells, and the code does not hard-code them. The World chart mode does not enforce the rules.
 
 The curtain fills the town cells and the grassland cells in that run. It then continues into the mountain on the east and on the west, far enough into the slope that no gap shows between the wall and the hillside. When the gap is too narrow, or a mountain is missing to the east or the west, or another of these rules is broken, the game draws no Dragongate model.
 
 ## Acceptance
 
-- The shipped map has one Dragongate marker. The cell on each side of it is grassland or town. A mountain biome lies east of the marker, and a mountain biome lies west of it.
+- The person editing the map chooses the cells. A valid run has one Dragongate marker, grassland or town on each side of it, and a mountain biome to the east and to the west. The story does not name the cells.
 - The World chart mode allows any edit. A gap too narrow for the gate, a missing mountain to the east or the west, or any other broken rule draws no wall, no opening, and no towers.
 - The gate stands on the marker cell. The opening is 4 m, with a tower on each side.
 - The curtain fills the town cells and the grassland cells between the marker and each mountain. `M.!.M`, `Mo!oM`, and `M.o!o..M` all do this. So does any other mix of `o` and `.` in that run.
 - The curtain continues into the mountain on the east and on the west, far enough that the slope meets the wall.
 - The town sign stands near the marker.
-- `Content/WorldMap.txt` and `/Game/World/WorldChart` describe the same run.
 
 ## Implementation notes
 
 - One cell is 8 m east to west. The opening is 4 m and each tower is 2.8 m along the wall, so the gate is 9.6 m. `GapCm` stays 400. `CollectPieces` today spans only the town's own cells. The new length is the run of `o` and `.` from the marker to each mountain, plus the overlap into that mountain. The gate stays on the marker when one side of the run is longer, as in `M.o!o..M`.
-- In the text grid, column 0 is east. `o` is a town cell. `.` is grassland. `!` is the Dragongate marker. `M` is mountain. The cells immediately east and west of the marker are grassland or town. The mountain the wall extends to can sit further along that row, as in `M.o!o..M`. The row today has `M!!M` at columns 32 to 35.
+- In the text grid, column 0 is east. `o` is a town cell. `.` is grassland. `!` is the Dragongate marker. `M` is mountain. The cells immediately east and west of the marker are grassland or town. The mountain the wall extends to can sit further along that row, as in `M.o!o..M`. The product code reads the run it is given. It does not replace the cells on row 14.
 - `CollectPieces` writes nothing for a Dragongate whose gap is narrower than the gate, or that has no mountain biome to the east, or none to the west. The marker, Enter Dragongate, and the town sign stay. A test covers a one-cell gap and a run with no mountain on one side.
 - The house pack skips a wall-gate location and still scatters on other town cells. An `o` in this run would grow a house on the curtain. The run carries the wall, so the pack stays off those cells.
 - The pass and a town cell sit on the 1 m shelf. A mountain point is on the 10 m shelf. Terrain points are 2 m apart, so the hillside is the quad between the last open point and the first mountain point. The wall is 4 m high. The curtain crosses that quad and finishes inside the mountain.

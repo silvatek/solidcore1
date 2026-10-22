@@ -12,22 +12,26 @@ One file is one story.
 
 The line under the title is the status.
 
-- `New` — not refined yet.
-- `Ready` — meets the Definition of Ready, and not shipped. A Ready story may depend on another Ready story. The story names that dependency. The named story ships first.
-- `In Progress` — an agent has started the story. Set this when work starts on a `Ready` story. The story stays `In Progress` after the code lands on `main`.
-- `Done` — meets the Definition of Done. Files already in `Done/` stay as they are.
+- `New` — identified, and not yet Ready for development.
+- `Ready` — meets the Definition of Ready.
+- `In Progress` — a programmer or an agent has started work on a Ready story, and it is not yet Done.
+- `Done` — meets the Definition of Done.
 
 ## Definition of Ready (DoR)
 
-The agent and the human developer must agree that the story is ready. Set `Ready` after that agreement.
+The agent and the human developer must agree that the story is ready. Set `Ready` after that agreement. A Ready story has not shipped.
 
 The story must have Acceptance Criteria. Those are the `Acceptance` section: what is true when the story is done.
 
 The story should call out any game concept it introduces, so the implementing agent knows to write a class for each one, following [`CodingGuidelines.md`](../CodingGuidelines.md). A game concept is a C++ class.
 
+A Ready story may depend on another Ready story. The story names that dependency. The named story ships first.
+
 ## Definition of Done (DoD)
 
 Set `Done` after the story has been properly tested and the user and the agent have agreed it is done, then move the file to `Done/`. The agreement is a discussion. The user says whether they are happy with the implementation. The agent confirms that every acceptance criterion is met. `AGENTS.md` says what properly tested means. The commit that updates the story file and moves it into `Done/` has a message that starts with `Plan: `.
+
+The story stays `In Progress` after the code lands on `main`. Files already in `Done/` stay as they are.
 
 ## Open story
 

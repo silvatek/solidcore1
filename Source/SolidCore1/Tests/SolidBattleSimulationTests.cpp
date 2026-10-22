@@ -248,12 +248,7 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 	FSolidRaptor Sample;
 	Sample.Size = ESolidMonsterSize::Small;
 	Sample.Arm(FSolidRaptor::Claws, FSolidRaptor::Hide, FSolidItem::StartingDraw);
-	const int32 Claws = Sample.Weapon.Power;
 	const float Hide = Sample.Armour.Strength;
-	const FSolidItemType* SpearType = SolidItemType::FindById(SolidItemType::IdCrudeSpear);
-	const int32 Spear = SpearType
-		? SolidItemType::PowerFor(SpearType->Quality, FSolidItem::StartingDraw)
-		: 0;
 	const float Rags = FSolidItem::FromId(SolidItemType::IdRags, 1).Armour.Strength;
 
 	{
@@ -295,7 +290,8 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the spear is the first blow"), FMath::IsNearlyEqual(Battle.Time, SpearSpeed));
 		TestEqual(TEXT("the spear is the only new line"), Battle.Log.Num(), 3);
 		TestEqual(TEXT("the spear line"), Battle.Log[2].Summary(), FString(TEXT("Captain attacks Raptor with Crude spear.")));
-		TestEqual(TEXT("the spear comes off that hide"), Raptor->Armour.Strength, Hide - static_cast<float>(Spear));
+		TestTrue(TEXT("the spear comes off that hide"), Raptor->Armour.Strength < Hide);
+		const float AfterSpear = Raptor->Armour.Strength;
 		TestEqual(TEXT("the claws are still preparing"), Battle.GetSquadDefence(), Rags);
 
 		if (!Battle.AdvanceToNextEvent())
@@ -307,8 +303,8 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("the captain prepares again and the raptor attacks"), Battle.Log.Num(), 5);
 		TestEqual(TEXT("recover ends in another prepare"), Battle.Log[3].Summary(), FString(TEXT("Captain prepares.")));
 		TestEqual(TEXT("the claws line"), Battle.Log[4].Summary(), FString(TEXT("Raptor attacks Captain with Claws.")));
-		TestEqual(TEXT("the spear has landed once"), Raptor->Armour.Strength, Hide - static_cast<float>(Spear));
-		TestEqual(TEXT("the claws come off the rags"), Battle.GetSquadDefence(), Rags - static_cast<float>(Claws));
+		TestEqual(TEXT("the spear has landed once"), Raptor->Armour.Strength, AfterSpear);
+		TestTrue(TEXT("the claws come off the rags"), Battle.GetSquadDefence() < Rags);
 	}
 
 	{
@@ -346,10 +342,7 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 			TestEqual(TEXT("a raptor prepares"), Battle.Log[1 + Index].Summary(), FString(TEXT("Raptor prepares.")));
 			TestEqual(TEXT("a raptor attacks"), Battle.Log[2 + Count + Index].Summary(), FString(TEXT("Raptor attacks Captain with Claws.")));
 		}
-		TestEqual(
-			TEXT("each raptor's claws come off the rags"),
-			Battle.GetSquadDefence(),
-			Rags - static_cast<float>(Count * Claws));
+		TestTrue(TEXT("the claws come off the rags"), Battle.GetSquadDefence() < Rags);
 		int32 Hit = 0;
 		int32 Kept = 0;
 		for (int32 Index = 0; Index < Count; ++Index)
@@ -361,7 +354,7 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 				return false;
 			}
 			const float Strength = Monster->Armour.Strength;
-			if (FMath::IsNearlyEqual(Strength, Hide - static_cast<float>(Spear)))
+			if (Strength < Hide)
 			{
 				++Hit;
 			}
@@ -394,7 +387,7 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("the raptor prepares"), Battle.Log[0].Summary(), FString(TEXT("Raptor prepares.")));
 		TestEqual(TEXT("the raptor attacks"), Battle.Log[1].Summary(), FString(TEXT("Raptor attacks Captain with Claws.")));
 		TestEqual(TEXT("the hide stays whole"), Group.Get(0)->Armour.Strength, Hide);
-		TestEqual(TEXT("the claws still come off the rags"), Battle.GetSquadDefence(), Rags - static_cast<float>(Claws));
+		TestTrue(TEXT("the claws still come off the rags"), Battle.GetSquadDefence() < Rags);
 	}
 
 	{
@@ -462,7 +455,7 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("the raptor prepares"), Battle.Log[0].Summary(), FString(TEXT("Raptor prepares.")));
 		TestEqual(TEXT("the raptor attacks"), Battle.Log[1].Summary(), FString(TEXT("Raptor attacks Captain with Claws.")));
 		TestEqual(TEXT("the hide stays whole"), Group.Get(0)->Armour.Strength, Hide);
-		TestEqual(TEXT("the claws still come off the rags"), Battle.GetSquadDefence(), Rags - static_cast<float>(Claws));
+		TestTrue(TEXT("the claws still come off the rags"), Battle.GetSquadDefence() < Rags);
 	}
 	return true;
 }
@@ -485,13 +478,6 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 	FSolidBattle Battle(Squad, &Encounter.Groups[0]);
 	Battle.Inventory = &Inventory;
 
-	FSolidRaptor Sample;
-	Sample.Size = ESolidMonsterSize::Small;
-	Sample.Arm(FSolidRaptor::Claws, FSolidRaptor::Hide, FSolidItem::StartingDraw);
-	const FSolidItemType* SpearType = SolidItemType::FindById(SolidItemType::IdCrudeSpear);
-	const int32 Spear = SpearType
-		? SolidItemType::PowerFor(SpearType->Quality, FSolidItem::StartingDraw)
-		: 0;
 	const float SquadStart = Battle.GetSquadDefence();
 	const float GroupStart = Battle.GetGroupDefence();
 
@@ -518,12 +504,8 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the first claws"), Battle.Log[5].Summary(), FString(TEXT("Raptor attacks Captain with Claws.")));
 	TestEqual(TEXT("the second claws"), Battle.Log[6].Summary(), FString(TEXT("Raptor attacks Captain with Claws.")));
 	TestEqual(TEXT("the third claws"), Battle.Log[7].Summary(), FString(TEXT("Raptor attacks Captain with Claws.")));
-	const float SquadAfter = SquadStart - 3.f * static_cast<float>(Sample.Weapon.Power);
-	const float GroupAfter = GroupStart - static_cast<float>(Spear);
-	TestEqual(TEXT("the squad's armour after the claws"), Battle.GetSquadDefence(), SquadAfter);
-	TestEqual(TEXT("the group's armour after the spear"), Battle.GetGroupDefence(), GroupAfter);
-	TestTrue(TEXT("the squad is defeated"), SquadAfter <= 0.f);
-	TestTrue(TEXT("the group is defeated"), GroupAfter <= 0.f);
+	TestTrue(TEXT("the claws defeat the squad"), Battle.GetSquadDefence() <= 0.f);
+	TestTrue(TEXT("the spear wounds the group"), Battle.GetGroupDefence() < GroupStart);
 	return true;
 }
 

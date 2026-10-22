@@ -25,7 +25,7 @@ The player walks from Iglin toward the broken bridge and meets three reptiles on
 - A click on a monster leaves the fight unstarted, leaves every item where it is, and fires no event.
 - The pointer shows no name for a monster. A monster has no nameplate.
 - The camera stays on the captain.
-- Standing beside a monster leaves Reach broken bridge unfired. The ramp still fires it, including after the bridge is repaired. Repairing the bridge leaves the three where they are.
+- Standing beside a monster leaves Reach broken bridge unfired. The ramp still fires it, including after the bridge is repaired.
 - Seeing them writes no journal line.
 - Any Blueprint or AnimBP in the download stays unused. The captain stays on the Viking mesh.
 - Insects stay a later body. `Content/Lairs.md` still leaves the tunnels empty of monsters.

@@ -4,7 +4,7 @@ Status: In Progress
 
 ## Story
 
-The player walks from Iglin toward the broken bridge and meets three reptiles on the grass beside that bridge. Each one is the same green Velociraptor from a Fab download. They stand and idle. The player can walk into one and has to stop. A click does nothing to them. The ramp still shows "You are killed by monsters" when the captain stands on it. These three do not fire that message.
+The player walks from Iglin toward the broken bridge and meets three reptiles on the grass beside that bridge. Each one is the same green Velociraptor from a Fab download. They stand and idle. The player can walk into one and has to stop. A click does nothing to them. Standing beside one does not fire Reach broken bridge.
 
 ## Acceptance
 
@@ -19,16 +19,15 @@ The player walks from Iglin toward the broken bridge and meets three reptiles on
 - The three points are the nearest eligible points to that outer end. A later point is at least 4 m from one already chosen. Fewer than three eligible points places as many as there are.
 - A point that has a tree has none. A point already chosen for a foraging pile has none.
 - A point whose `Fog` is `1.0f` is not seeded. When that `Fog` falls below `1.0f`, a chosen monster on it is seeded then. A point that stays at `1.0f` never receives one.
-- The dungeon, the tower, and the Iglin tunnels have none. Leaving one of those and returning to the open world shows the same three places again.
 - The capsule blocks the captain. It ignores the visibility channel, so a ground click still hits the ground.
 - Walking into the body stops the captain. The captain and the monster stay unhurt.
 - A click on a monster leaves the fight unstarted, leaves every item where it is, and fires no event.
 - The pointer shows no name for a monster. A monster has no nameplate.
 - The camera stays on the captain.
-- Standing beside a monster leaves Reach broken bridge unfired. The ramp still fires it, including after the bridge is repaired.
+- Standing beside a monster leaves Reach broken bridge unfired.
 - Seeing them writes no journal line.
 - Any Blueprint or AnimBP in the download stays unused. The captain stays on the Viking mesh.
-- Insects stay a later body. `Content/Lairs.md` still leaves the tunnels empty of monsters.
+- Insects stay a later body.
 - The 100 cm height is a uniform scale of the downloaded mesh. A later body builds a Velociraptor the way a human mesh is built, and the way the Character Editor changes one. [`Content/Fauna.md`](../Content/Fauna.md) records that. This story places the downloaded mesh.
 
 ## Implementation notes
@@ -39,7 +38,7 @@ The player walks from Iglin toward the broken bridge and meets three reptiles on
 - The vertex span still gives a scale of about 0.10. Three times that scale is knee-high on the captain, about half a metre, so the mesh is scaled by six to reach 100 cm. That drawn body is the Small size. A later size scales up or down from Small. The Iglin Bridge encounter places all three. Each member spawns its own actor on its chosen point. The mountain shelf is 10 m, so a grassland corner of a quad that also has a mountain corner stands in that cliff. Place skips a point within one diagonal step of a mountain point. The step is the terrain point spacing. Full fog still waits. A point in partial fog is seeded.
 - Play the idle with `SolidClipLocomotion` on an `AnimSingleNodeInstance`, looping. Leave any AnimBP in the download unassigned.
 - Choose the points in a function tests can call without a world. The Iglin town center comes from the world map. The ramp polylines come from the `SolidBridge::FBridge` whose `bIglinRelion` is set. Distance is horizontal. Sort by distance to the outer end, then by point index. Separation is 400 cm. The near limit is 800 cm. The far limit is 4000 cm. The count is 3.
-- Run that choice after the tree choice and the foraging choice, and skip a point index either of those already took. Seed when `Fog` falls below `1.0f`, the same moment as a foraging pile. Entering a stronghold or the tunnels stores no taken index for a monster. The next open-world visit chooses the same points and seeds the ones whose fog is already clear.
+- Run that choice after the tree choice and the foraging choice, and skip a point index either of those already took. Seed when `Fog` falls below `1.0f`, the same moment as a foraging pile.
 - This encounter is on the walk from Iglin to the bridge. No companion is in the world yet, so the story does not ask one to meet these reptiles.
 - Collision blocks Pawn and ignores Visibility. There is no damage function and no health. Click-to-move stays as it is, because the trace still hits the ground.
 - Tests live in `SolidCore1.Monster.*`. A fake point set with one ramp returns the three nearest grassland points inside the band. It skips a road point, a river point, a tree point, a foraging point, a point inside 8 m, and a point past 40 m, and it keeps 4 m between the three. A map with no Iglin bridge returns none. The README suite table gains that line in the product commit.

@@ -26,9 +26,6 @@ public:
 	/** Index into Available. INDEX_NONE while none is active. */
 	int32 ActivePlan = INDEX_NONE;
 
-	/** Available becomes this one plan, and that plan is active. */
-	void SetAvailable(const FSolidBattlePlan& Plan);
-
 	/** The active plan, or null when none is active. */
 	const FSolidBattlePlan* GetActivePlan() const;
 

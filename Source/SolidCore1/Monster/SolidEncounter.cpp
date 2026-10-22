@@ -116,19 +116,31 @@ namespace SolidEncounterPrivate
 		}
 	}
 
-	/** The plan named on the group spec. Attack is this group's own plan. */
-	void GivePlan(FSolidMonsterGroup& Group, const SolidEncounter::FGroup& Spec)
+	/** The Iglin Bridge group's plans. */
+	void AddIglinBridgeBattlePlans(TArray<FSolidBattlePlan>& Plans)
+	{
+		Plans.Add({
+			TEXT("Attack"),
+			ESolidBattleFormation::Mob,
+			ESolidBattleSpacing::Standard,
+			ESolidAggression::Attack,
+			ESolidTargetStrategy::Random});
+	}
+
+	/** Copy that group's plans into Available. The first plan is active. */
+	void GivePlans(FSolidMonsterGroup& Group, const SolidEncounter::FDefinition& Definition, const int32 GroupIndex)
 	{
 		Group.Available.Reset();
 		Group.ActivePlan = INDEX_NONE;
-		if (Spec.Plan && FCString::Strcmp(Spec.Plan, TEXT("Attack")) == 0)
+		if (Definition.Name
+			&& GroupIndex == 0
+			&& FCString::Strcmp(Definition.Name, TEXT("Iglin Bridge")) == 0)
 		{
-			Group.SetAvailable({
-				TEXT("Attack"),
-				ESolidBattleFormation::Mob,
-				ESolidBattleSpacing::Standard,
-				ESolidAggression::Attack,
-				ESolidTargetStrategy::Random});
+			AddIglinBridgeBattlePlans(Group.Available);
+		}
+		if (Group.Available.Num() > 0)
+		{
+			Group.ActivePlan = 0;
 		}
 	}
 
@@ -293,7 +305,7 @@ FSolidEncounter::FSolidEncounter(const SolidEncounter::FDefinition& InDefinition
 	Groups.SetNum(FMath::Max(0, Definition.GroupCount));
 	for (int32 GroupIndex = 0; GroupIndex < Definition.GroupCount && Groups.IsValidIndex(GroupIndex); ++GroupIndex)
 	{
-		SolidEncounterPrivate::GivePlan(Groups[GroupIndex], Definition.Groups[GroupIndex]);
+		SolidEncounterPrivate::GivePlans(Groups[GroupIndex], Definition, GroupIndex);
 	}
 }
 
@@ -314,7 +326,7 @@ int32 FSolidEncounter::Place(
 		Group.Seeded.Reset();
 		if (GroupIndex < Definition.GroupCount)
 		{
-			SolidEncounterPrivate::GivePlan(Group, Definition.Groups[GroupIndex]);
+			SolidEncounterPrivate::GivePlans(Group, Definition, GroupIndex);
 		}
 	}
 

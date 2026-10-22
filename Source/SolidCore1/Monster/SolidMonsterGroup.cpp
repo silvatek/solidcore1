@@ -18,13 +18,6 @@ const FSolidMonster* FSolidMonsterGroup::Get(const int32 Index) const
 	return Members[Index].Get();
 }
 
-void FSolidMonsterGroup::SetAvailable(const FSolidBattlePlan& Plan)
-{
-	Available.Reset();
-	Available.Add(Plan);
-	ActivePlan = 0;
-}
-
 const FSolidBattlePlan* FSolidMonsterGroup::GetActivePlan() const
 {
 	return Available.IsValidIndex(ActivePlan) ? &Available[ActivePlan] : nullptr;

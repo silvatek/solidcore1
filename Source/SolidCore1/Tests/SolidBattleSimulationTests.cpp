@@ -73,6 +73,19 @@ namespace SolidBattleTestPrivate
 		return FSolidEncounter();
 	}
 
+	/** Power of the spear in the captain's main hand. The fight subtracts it from armour. */
+	float SpearPower(const SolidInventory::FLoadout& Inventory)
+	{
+		const int32 Index = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
+		return static_cast<float>(Inventory.Worn[Index].Power());
+	}
+
+	/** Power of the claws on the group's first monster. The fight subtracts it from armour. */
+	float ClawPower(const FSolidMonsterGroup& Group)
+	{
+		return static_cast<float>(Group.Get(0)->Weapon.Power);
+	}
+
 	/** Name of the item in that worn box. Empty when the box is empty. */
 	FString WornName(const SolidInventory::FLoadout& Inventory, const SolidInventory::ESlot Slot)
 	{
@@ -472,8 +485,8 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 	FSolidBattle Battle(Squad, &Encounter.Groups[0]);
 	Battle.Inventory = &Inventory;
 
-	const float Spear = static_cast<float>(Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::MainHand)].Power());
-	const float Claw = static_cast<float>(Encounter.Groups[0].Get(0)->Weapon.Power);
+	const float Spear = SolidBattleTestPrivate::SpearPower(Inventory);
+	const float Claw = SolidBattleTestPrivate::ClawPower(Encounter.Groups[0]);
 
 	const float SquadStart = Battle.GetSquadDefence();
 	const float GroupStart = Battle.GetGroupDefence();

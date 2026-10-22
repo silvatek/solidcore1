@@ -53,14 +53,35 @@ namespace
 		}
 	}
 
-	/** One of these monsters, each of them equally likely. */
+	/** One living enemy, each of them equally likely. */
 	FSolidMonster* PickMonster(const TArray<FSolidMonster*>& Monsters)
 	{
-		if (Monsters.Num() == 0)
+		TArray<FSolidMonster*> Living;
+		for (FSolidMonster* Monster : Monsters)
+		{
+			if (Monster && Monster->Armour.Strength > 0.f)
+			{
+				Living.Add(Monster);
+			}
+		}
+		if (Living.Num() == 0)
 		{
 			return nullptr;
 		}
-		return Monsters[FMath::RandRange(0, Monsters.Num() - 1)];
+		return Living[FMath::RandRange(0, Living.Num() - 1)];
+	}
+
+	/** Keeps that enemy while they can still be struck. Otherwise takes another living one. */
+	void HoldTarget(FSolidMonster*& Target, const TArray<FSolidMonster*>& Monsters)
+	{
+		if (Target && Monsters.Contains(Target) && Target->Armour.Strength > 0.f)
+		{
+			return;
+		}
+		if (FSolidMonster* Next = PickMonster(Monsters))
+		{
+			Target = Next;
+		}
 	}
 
 	/** A blow comes off that armour. Strength stops at zero. True when that leaves it at zero. */
@@ -444,7 +465,7 @@ void FSolidBattle::Advance(const float Delta)
 				Arrived,
 				[&](const float When)
 				{
-					CaptainCycle.Target = PickMonster(Monsters);
+					HoldTarget(CaptainCycle.Target, Monsters);
 					Record(When, ESolidBattleLogKind::Prepare, CaptainName, FString(), FString());
 				},
 				[&](const float When)
@@ -500,7 +521,7 @@ void FSolidBattle::Advance(const float Delta)
 					Arrived,
 					[&](const float When)
 					{
-						Cycle.Target = PickMonster(Monsters);
+						HoldTarget(Cycle.Target, Monsters);
 						Record(When, ESolidBattleLogKind::Prepare, Actor, FString(), FString());
 					},
 					[&](const float When)

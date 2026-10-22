@@ -48,6 +48,7 @@ struct FSolidBattleLogEntry
  * Each fighter prepares and recovers on their own weapon Speed. The blow lands when that prepare ends.
  * That blow cannot drop armour Strength below 0. A blow that leaves it at 0 says kills.
  * An attack on armour already at 0 is aborted.
+ * A fighter keeps the same enemy while that enemy can still be struck.
  * The battle is finished when either side has no armour left. An escape will finish it too, once a side can leave.
  * The log records those moments, in order.
  */

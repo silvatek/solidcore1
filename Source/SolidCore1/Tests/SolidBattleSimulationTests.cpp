@@ -552,32 +552,17 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestEqual(TEXT("they attack again"), Battle.Log.Num(), 16);
-	const FString SecondSpear = Battle.Log[12].Summary();
-	const float GroupNow = Battle.GetGroupDefence();
-	const float SameHide = GroupAfter - (FSolidRaptor::HideStrength - Spear);
-	const float FreshHide = GroupAfter - Spear;
-	const bool bFinishedThatHide = FMath::IsNearlyEqual(GroupNow, SameHide);
-	const bool bOpenedAnother = FMath::IsNearlyEqual(GroupNow, FreshHide);
-	TestTrue(TEXT("the second spear lands on one hide"), bFinishedThatHide || bOpenedAnother);
-	if (bFinishedThatHide)
-	{
-		TestEqual(
-			TEXT("the spear finishes the wounded hide"),
-			SecondSpear,
-			FString(TEXT("Captain kills Raptor with Crude spear.")));
-	}
-	else
-	{
-		TestEqual(
-			TEXT("the spear wounds a fresh hide"),
-			SecondSpear,
-			FString(TEXT("Captain attacks Raptor with Crude spear.")));
-	}
+	TestEqual(
+		TEXT("the spear finishes that hide"),
+		Battle.Log[12].Summary(),
+		FString(TEXT("Captain kills Raptor with Crude spear.")));
+	const float GroupNow = GroupAfter - (FSolidRaptor::HideStrength - Spear);
+	TestEqual(TEXT("the wounded hide is gone"), Battle.GetGroupDefence(), GroupNow);
 	TestEqual(TEXT("the first claws kill"), Battle.Log[13].Summary(), FString(TEXT("Raptor kills Captain with Claws.")));
-	TestTrue(TEXT("the second raptor follows"), Battle.Log[14].Summary().StartsWith(TEXT("Raptor ")));
-	TestTrue(TEXT("the third raptor follows"), Battle.Log[15].Summary().StartsWith(TEXT("Raptor ")));
+	TestEqual(TEXT("the second claws abort"), Battle.Log[14].Summary(), FString(TEXT("Raptor aborts the attack on Captain.")));
+	TestEqual(TEXT("the third claws abort"), Battle.Log[15].Summary(), FString(TEXT("Raptor aborts the attack on Captain.")));
 	TestEqual(TEXT("the rags are gone"), Battle.GetSquadDefence(), 0.f);
-	TestTrue(TEXT("the group still has hide"), GroupNow > 0.f);
+	TestTrue(TEXT("the group still has hide"), Battle.GetGroupDefence() > 0.f);
 	TestTrue(TEXT("one side has no armour left"), Battle.Finished());
 	return true;
 }

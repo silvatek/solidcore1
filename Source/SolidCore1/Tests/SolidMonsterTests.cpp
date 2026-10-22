@@ -436,6 +436,8 @@ bool FSolidMonsterBattlePlanTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Attack uses standard spacing"), Attack.Spacing == ESolidBattleSpacing::Standard);
 	TestTrue(TEXT("Attack stores attack"), Attack.AttackOrRetreat == ESolidAggression::Attack);
 	TestTrue(TEXT("Attack attacks"), Attack.Attacks());
+	TestTrue(TEXT("Attack stores Random"), Attack.TargetStrategy == ESolidTargetStrategy::Random);
+	TestTrue(TEXT("Attack picks at random"), Attack.PicksAtRandom());
 
 	FSolidEncounter Iglin(SolidEncounter::Definitions[0]);
 	TestEqual(TEXT("Iglin Bridge has one group"), Iglin.Groups.Num(), 1);

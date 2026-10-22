@@ -34,9 +34,15 @@ enum class ESolidAggression : uint8
 	Retreat,
 };
 
+/** How a battle plan picks a target. The only value is Random. */
+enum class ESolidTargetStrategy : uint8
+{
+	Random,
+};
+
 /**
  * One battle plan. The company catalog holds these.
- * Name, formation, spacing, and attack, hold, or retreat are what the plan is. The squad selects from that catalog.
+ * Name, formation, spacing, aggression, and target strategy are what the plan is. The squad selects from that catalog.
  */
 class FSolidBattlePlan
 {
@@ -46,8 +52,10 @@ public:
 	ESolidBattleSpacing Spacing = ESolidBattleSpacing::Standard;
 	/** Attack, hold, or retreat. */
 	ESolidAggression AttackOrRetreat = ESolidAggression::Attack;
+	/** How this plan picks a target. */
+	ESolidTargetStrategy TargetStrategy = ESolidTargetStrategy::Random;
 
-	/** True when the name, the formation, the spacing, and attack, hold, or retreat are the same. */
+	/** True when the name, formation, spacing, aggression, and target strategy are the same. */
 	bool SameAs(const FSolidBattlePlan& Other) const;
 
 	/** True when this plan has that name. */
@@ -65,9 +73,12 @@ public:
 	/** True when this plan stores retreat. */
 	bool Retreats() const;
 
+	/** True when this plan picks a target at random. */
+	bool PicksAtRandom() const;
+
 	/**
 	 * The defined plan of that name.
-	 * Attack sets its name, the Mob formation, standard spacing, and attack.
+	 * Attack sets its name, the Mob formation, standard spacing, attack, and Random.
 	 * Any other name is an empty plan.
 	 */
 	static FSolidBattlePlan Defined(const TCHAR* PlanName);

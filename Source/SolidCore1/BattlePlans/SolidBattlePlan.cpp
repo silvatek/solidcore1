@@ -5,7 +5,8 @@ bool FSolidBattlePlan::SameAs(const FSolidBattlePlan& Other) const
 	return Name == Other.Name
 		&& Formation == Other.Formation
 		&& Spacing == Other.Spacing
-		&& AttackOrRetreat == Other.AttackOrRetreat;
+		&& AttackOrRetreat == Other.AttackOrRetreat
+		&& TargetStrategy == Other.TargetStrategy;
 }
 
 bool FSolidBattlePlan::Is(const FString& PlanName) const
@@ -33,6 +34,11 @@ bool FSolidBattlePlan::Retreats() const
 	return AttackOrRetreat == ESolidAggression::Retreat;
 }
 
+bool FSolidBattlePlan::PicksAtRandom() const
+{
+	return TargetStrategy == ESolidTargetStrategy::Random;
+}
+
 FSolidBattlePlan FSolidBattlePlan::Defined(const TCHAR* PlanName)
 {
 	if (PlanName && FCString::Strcmp(PlanName, TEXT("Attack")) == 0)
@@ -41,7 +47,8 @@ FSolidBattlePlan FSolidBattlePlan::Defined(const TCHAR* PlanName)
 			TEXT("Attack"),
 			ESolidBattleFormation::Mob,
 			ESolidBattleSpacing::Standard,
-			ESolidAggression::Attack};
+			ESolidAggression::Attack,
+			ESolidTargetStrategy::Random};
 	}
 	return {};
 }

@@ -689,6 +689,9 @@ bool FSolidBattlePlanNewGameTest::RunTest(const FString& Parameters)
 		{
 			TestTrue(*FString::Printf(TEXT("%s retreats"), Name), Plan && Plan->Retreats());
 		}
+		TestTrue(
+			*FString::Printf(TEXT("%s picks at random"), Name),
+			Plan && Plan->TargetStrategy == ESolidTargetStrategy::Random && Plan->PicksAtRandom());
 	}
 
 	SolidBattlePlanTestPrivate::FPlay Play;

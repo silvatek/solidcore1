@@ -1,4 +1,5 @@
 #include "Company/SolidCompany.h"
+#include "Inventory/SolidItemType.h"
 #include "SolidBodyMesh.h"
 #include "SolidClipLocomotion.h"
 #include "UObject/SoftObjectPath.h"
@@ -149,6 +150,8 @@ void USolidCompany::InitializeDefaultCompanions()
 		Companion.BodyHeight = Controls.Height;
 		Companion.BodyBuild = Controls.Build;
 		Companion.BodyGender = Controls.Gender;
+		Companion.WeaponId = SolidItemType::IdCrudeSpear;
+		Companion.ArmourId = SolidItemType::IdRags;
 		AllCompanions.Add(Companion);
 	};
 	Add(TEXT("Sam"), Viking, ESolidVocation::Rogue);

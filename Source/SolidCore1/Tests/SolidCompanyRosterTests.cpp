@@ -4,6 +4,8 @@
 #include "Companion/SolidCompanionCharacter.h"
 #include "Company/SolidCompany.h"
 #include "Company/SolidSquad.h"
+#include "Inventory/SolidInventory.h"
+#include "Inventory/SolidItemType.h"
 #include "SolidClipLocomotion.h"
 #include "SolidGameInstance.h"
 #include "SolidGameMode.h"
@@ -131,6 +133,14 @@ bool FSolidCompanyRosterTest::RunTest(const FString& Parameters)
 			*FString::Printf(TEXT("find %s"), Names[Index]),
 			Company->FindCompanionIndexByName(Names[Index]),
 			Index);
+		TestEqual(
+			*FString::Printf(TEXT("%s keeps the crude spear"), Names[Index]),
+			Companion->WeaponId,
+			FString(SolidItemType::IdCrudeSpear));
+		TestEqual(
+			*FString::Printf(TEXT("%s keeps Rags"), Names[Index]),
+			Companion->ArmourId,
+			FString(SolidItemType::IdRags));
 		bSeenWarrior |= Companion->Vocation == ESolidVocation::Warrior;
 		bSeenRogue |= Companion->Vocation == ESolidVocation::Rogue;
 		bSeenMage |= Companion->Vocation == ESolidVocation::Mage;
@@ -146,6 +156,30 @@ bool FSolidCompanyRosterTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("a companion is a rogue"), bSeenRogue);
 	TestTrue(TEXT("a companion is a mage"), bSeenMage);
 	TestTrue(TEXT("a companion is a cleric"), bSeenCleric);
+
+	SolidInventory::FLoadout Captain = SolidInventory::StartingLoadout();
+	const FString SamWeapon = Sam ? Sam->WeaponId : FString();
+	const FString SamArmour = Sam ? Sam->ArmourId : FString();
+	SolidInventory::PlacePack(Captain, 0, 0, SolidItemType::IdRustySword);
+	SolidInventory::FSlotHit FromPack;
+	FromPack.bHit = true;
+	FromPack.bPack = true;
+	FromPack.Index = SolidInventory::PackIndex(0, 0);
+	SolidInventory::FSlotHit ToHand;
+	ToHand.bHit = true;
+	ToHand.Slot = SolidInventory::ESlot::MainHand;
+	ToHand.Index = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
+	SolidStorage::FContainer Chest = SolidStorage::StartingCaveChest();
+	TestTrue(TEXT("the captain can swap weapons"), SolidInventory::Move(&Chest, Captain, FromPack, ToHand));
+	TestEqual(TEXT("Sam's spear stays"), Sam ? Sam->WeaponId : FString(), SamWeapon);
+	TestEqual(TEXT("Sam's armour stays"), Sam ? Sam->ArmourId : FString(), SamArmour);
+	SolidInventory::FPage Page;
+	SolidInventory::Layout(Captain, Page);
+	TestEqual(TEXT("the inventory page is the captain's"), FString(SolidInventory::Title), FString(TEXT("Inventory")));
+	for (const SolidInventory::FBox& Box : Page.Boxes)
+	{
+		TestFalse(TEXT("the page does not name a companion"), Box.Item.Contains(TEXT("Sam")) || Box.Label.Contains(TEXT("Sam")));
+	}
 
 	TestEqual(TEXT("find ignores case"), Company->FindCompanionIndexByName(TEXT("morgan")), 3);
 	TestEqual(TEXT("unknown name"), Company->FindCompanionIndexByName(TEXT("Nobody")), INDEX_NONE);

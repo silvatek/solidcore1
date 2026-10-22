@@ -141,6 +141,14 @@ struct FSolidCompanion
 	/** Gender slider, 0 to 1. 0 is feminine, 1 is masculine, 0.5 changes nothing. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	float BodyGender = 0.5f;
+
+	/** Fixed weapon. The companion does not swap it. The inventory page stays the captain's. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Companion")
+	FString WeaponId;
+
+	/** Fixed armour. The companion does not swap it. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Companion")
+	FString ArmourId;
 };
 
 /**

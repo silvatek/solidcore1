@@ -22,7 +22,7 @@ UE Automation tests for editor builds (`WITH_DEV_AUTOMATION_TESTS`). The rules f
 | `SolidCore1.GameMode.*` | Default spawn flags, pawn BP resolution |
 | `SolidCore1.Companion.*` | Defaults, SetFollowTarget |
 | `SolidCore1.Body.*` | Bone roles; a seeded body on the Viking skeleton stays under the polygon budget and keeps shirt, trouser, and skin slots; a name picks a Unicode face |
-| `SolidCore1.Company.*` | Viking mesh; roster of five with vocations, torso colors, and leg colors; squad selection; fielded count follows the squad limit; selection survives ensure |
+| `SolidCore1.Company.*` | Viking mesh; roster of five with vocations, torso colors, and leg colors; each keeps the crude spear and Rags and does not swap them; the inventory page stays the captain's; squad selection; fielded count follows the squad limit; selection survives ensure |
 | `SolidCore1.Streamer.*` | FindExisting / EnsureExists (null + idempotent) |
 | `SolidCore1.Clip.*` | SelectClip idle/walk/run/jump rules |
 | `SolidCore1.NameLabel.*` | Style sizes/colors/plates; Outcast / Sam defaults; vocation initial on the companion plate; captain plate hidden when alone or in a stronghold |

@@ -203,6 +203,13 @@ bool FSolidBattlePlanIdentityTest::RunTest(const FString& Parameters)
 	Column.Formation = ESolidBattleFormation::Column;
 	TestFalse(TEXT("a new formation stays the same plan"), Column.SameAs(Starter));
 
+	FSolidBattlePlan Holding = Starter;
+	Holding.AttackOrRetreat = ESolidAggression::Hold;
+	TestTrue(TEXT("the other plan holds"), Holding.Holds());
+	TestFalse(TEXT("hold attacks"), Holding.Attacks());
+	TestFalse(TEXT("hold retreats"), Holding.Retreats());
+	TestFalse(TEXT("a hold stays the same plan"), Holding.SameAs(Starter));
+
 	FSolidBattlePlan Retreating = Starter;
 	Retreating.AttackOrRetreat = ESolidAggression::Retreat;
 	TestTrue(TEXT("Starter attacks"), Starter.Attacks());
@@ -673,6 +680,10 @@ bool FSolidBattlePlanNewGameTest::RunTest(const FString& Parameters)
 		if (bAttacks)
 		{
 			TestTrue(*FString::Printf(TEXT("%s attacks"), Name), Plan && Plan->Attacks());
+		}
+		else if (FCString::Strcmp(Name, TEXT("Parade")) == 0)
+		{
+			TestTrue(*FString::Printf(TEXT("%s holds"), Name), Plan && Plan->Holds());
 		}
 		else
 		{

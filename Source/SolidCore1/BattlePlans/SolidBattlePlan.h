@@ -26,16 +26,17 @@ enum class ESolidBattleSpacing : uint8
 	Wide UMETA(DisplayName = "Wide"),
 };
 
-/** Attack or retreat, stored on a battle plan. */
+/** Attack, hold, or retreat, stored on a battle plan. */
 enum class ESolidAggression : uint8
 {
 	Attack,
+	Hold,
 	Retreat,
 };
 
 /**
  * One battle plan. The company catalog holds these.
- * Name, formation, spacing, and attack or retreat are what the plan is. The squad selects from that catalog.
+ * Name, formation, spacing, and attack, hold, or retreat are what the plan is. The squad selects from that catalog.
  */
 class FSolidBattlePlan
 {
@@ -43,10 +44,10 @@ public:
 	FString Name;
 	ESolidBattleFormation Formation = ESolidBattleFormation::Column;
 	ESolidBattleSpacing Spacing = ESolidBattleSpacing::Standard;
-	/** Attack or retreat. */
+	/** Attack, hold, or retreat. */
 	ESolidAggression AttackOrRetreat = ESolidAggression::Attack;
 
-	/** True when the name, the formation, the spacing, and attack or retreat are the same. */
+	/** True when the name, the formation, the spacing, and attack, hold, or retreat are the same. */
 	bool SameAs(const FSolidBattlePlan& Other) const;
 
 	/** True when this plan has that name. */
@@ -58,12 +59,16 @@ public:
 	/** True when this plan stores attack. */
 	bool Attacks() const;
 
+	/** True when this plan stores hold. */
+	bool Holds() const;
+
 	/** True when this plan stores retreat. */
 	bool Retreats() const;
 
 	/**
 	 * The defined plan of that name.
-	 * Attack is Mob at standard spacing. Any other name is an empty plan.
+	 * Attack sets its name, the Mob formation, standard spacing, and attack.
+	 * Any other name is an empty plan.
 	 */
 	static FSolidBattlePlan Defined(const TCHAR* PlanName);
 };

@@ -431,8 +431,10 @@ bool FSolidMonsterBattlePlanTest::RunTest(const FString& Parameters)
 {
 	const FSolidBattlePlan Attack = FSolidBattlePlan::Defined(TEXT("Attack"));
 	TestTrue(TEXT("Attack is the defined plan"), Attack.Is(TEXT("Attack")));
+	TestEqual(TEXT("Attack names itself"), Attack.Name, FString(TEXT("Attack")));
 	TestTrue(TEXT("Attack uses Mob"), Attack.Formation == ESolidBattleFormation::Mob);
 	TestTrue(TEXT("Attack uses standard spacing"), Attack.Spacing == ESolidBattleSpacing::Standard);
+	TestTrue(TEXT("Attack stores attack"), Attack.AttackOrRetreat == ESolidAggression::Attack);
 	TestTrue(TEXT("Attack attacks"), Attack.Attacks());
 
 	FSolidEncounter Iglin(SolidEncounter::Definitions[0]);

@@ -23,7 +23,7 @@ namespace
 			TEXT("Parade"),
 			ESolidBattleFormation::Parade,
 			ESolidBattleSpacing::Standard,
-			ESolidAggression::Retreat});
+			ESolidAggression::Hold});
 		Plans.Add({
 			TEXT("Line"),
 			ESolidBattleFormation::Line,

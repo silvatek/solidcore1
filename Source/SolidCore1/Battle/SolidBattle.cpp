@@ -67,6 +67,21 @@ namespace
 	{
 		Armour.Strength -= static_cast<float>(Power);
 	}
+
+	const TCHAR* ItemWeaponName(const FSolidItem& Item)
+	{
+		if (Item.Type && Item.Type->Name && Item.Type->Name[0])
+		{
+			return Item.Type->Name;
+		}
+		return Item.Weapon.Name ? Item.Weapon.Name : TEXT("");
+	}
+
+	FString MonsterName(const FSolidMonster* Monster)
+	{
+		const TCHAR* Kind = Monster ? Monster->Kind() : nullptr;
+		return FString(Kind && Kind[0] ? Kind : TEXT("Monster"));
+	}
 }
 
 FSolidBattle::FSolidBattle(USolidSquad* InSquad, FSolidMonsterGroup* InGroup)
@@ -187,13 +202,46 @@ float FSolidBattle::GetGroupDefence() const
 	return Total;
 }
 
+FString FSolidBattleLogEntry::Text() const
+{
+	switch (Kind)
+	{
+	case ESolidBattleLogKind::Attack:
+		return FString::Printf(TEXT("%s attacks %s with %s."), *Actor, *Target, *Weapon);
+	case ESolidBattleLogKind::Abandon:
+		return FString::Printf(TEXT("%s abandons the attack."), *Actor);
+	case ESolidBattleLogKind::Prepare:
+	default:
+		return FString::Printf(TEXT("%s prepares."), *Actor);
+	}
+}
+
+void FSolidBattle::Record(
+	const float When,
+	const ESolidBattleLogKind Kind,
+	const FString& Actor,
+	const FString& Target,
+	const FString& Weapon)
+{
+	FSolidBattleLogEntry Entry;
+	Entry.Time = When;
+	Entry.Kind = Kind;
+	Entry.Actor = Actor;
+	Entry.Target = Target;
+	Entry.Weapon = Weapon;
+	Log.Add(Entry);
+}
+
 void FSolidBattle::AdvanceCycle(
 	FCycle& Cycle,
 	const float Speed,
-	const float Time,
+	const float Delta,
 	const bool bAttacking,
-	const TFunctionRef<void()> BeginPrepare,
-	const TFunctionRef<void()> LandBlow)
+	const float Now,
+	const float Arrived,
+	const TFunctionRef<void(float When)> BeginPrepare,
+	const TFunctionRef<void(float When)> LandBlow,
+	const TFunctionRef<void(float When)> Abandon)
 {
 	if (!FMath::IsFinite(Speed) || Speed <= KINDA_SMALL_NUMBER)
 	{
@@ -209,10 +257,10 @@ void FSolidBattle::AdvanceCycle(
 		Cycle.bEngaged = true;
 		Cycle.Step = FCycle::EStep::Prepare;
 		Cycle.TimeLeft = Speed;
-		BeginPrepare();
+		BeginPrepare(Now);
 	}
 
-	Cycle.TimeLeft -= Time;
+	Cycle.TimeLeft -= Delta;
 	while (Cycle.TimeLeft <= 0.f)
 	{
 		const float Overshoot = -Cycle.TimeLeft;
@@ -221,9 +269,10 @@ void FSolidBattle::AdvanceCycle(
 			if (!bAttacking)
 			{
 				Cycle.bEngaged = false;
+				Abandon(Arrived);
 				return;
 			}
-			LandBlow();
+			LandBlow(Arrived);
 			Cycle.Step = FCycle::EStep::Recover;
 		}
 		else if (!bAttacking)
@@ -234,18 +283,103 @@ void FSolidBattle::AdvanceCycle(
 		else
 		{
 			Cycle.Step = FCycle::EStep::Prepare;
-			BeginPrepare();
+			BeginPrepare(Arrived);
 		}
 		Cycle.TimeLeft = Speed - Overshoot;
 	}
 }
 
-void FSolidBattle::Advance(const float Time)
+float FSolidBattle::TimeUntilNextEvent()
 {
-	if (!FMath::IsFinite(Time) || Time < 0.f)
+	float Best = -1.f;
+	auto Note = [&Best](const float Wait)
+	{
+		if (Wait < 0.f)
+		{
+			return;
+		}
+		if (Best < 0.f || Wait < Best)
+		{
+			Best = Wait;
+		}
+	};
+	auto NoteCycle = [&Note](const bool bCanFight, const FCycle* Cycle, const bool bAttacking)
+	{
+		if (!bCanFight)
+		{
+			return;
+		}
+		if (!Cycle || !Cycle->bEngaged)
+		{
+			if (bAttacking)
+			{
+				Note(0.f);
+			}
+			return;
+		}
+		Note(FMath::Max(0.f, Cycle->TimeLeft));
+	};
+
+	const bool bSquadAttacks = GetSquadPlan() && GetSquadPlan()->Attacks();
+	const bool bGroupAttacks = GetGroupPlan() && GetGroupPlan()->Attacks();
+	const FSolidItem* MainHand = WornItem(Inventory, SolidInventory::ESlot::MainHand);
+	NoteCycle(MainHand && MainHand->IsWeapon(), &CaptainCycle, bSquadAttacks);
+
+	if (const USolidSquad* Side = Squad.Get())
+	{
+		if (const USolidCompany* Company = Side->GetCompany())
+		{
+			for (const int32 Index : Side->GetSelectedCompanionIndices())
+			{
+				const FSolidCompanion* Companion = Company->GetCompanion(Index);
+				if (!Companion)
+				{
+					continue;
+				}
+				const FSolidItem Weapon = FSolidItem::FromId(*Companion->WeaponId, 1);
+				NoteCycle(Weapon.IsWeapon(), CompanionCycles.Find(Index), bSquadAttacks);
+			}
+		}
+	}
+
+	const FSolidItem* Body = WornItem(Inventory, SolidInventory::ESlot::Body);
+	const bool bBody = Body && Body->IsArmour();
+	if (Group && bBody)
+	{
+		for (int32 Index = 0; Index < Group->Num(); ++Index)
+		{
+			FSolidMonster* Monster = Group->Get(Index);
+			if (!Monster)
+			{
+				continue;
+			}
+			NoteCycle(true, MonsterCycles.Find(Monster), bGroupAttacks);
+		}
+	}
+	return Best;
+}
+
+bool FSolidBattle::AdvanceToNextEvent()
+{
+	const float Wait = TimeUntilNextEvent();
+	if (Wait < 0.f)
+	{
+		return false;
+	}
+	Advance(Wait);
+	return true;
+}
+
+void FSolidBattle::Advance(const float Delta)
+{
+	if (!FMath::IsFinite(Delta) || Delta < 0.f)
 	{
 		return;
 	}
+
+	const float Now = Time;
+	Time += Delta;
+	const float Arrived = Time;
 
 	TArray<FSolidMonster*> Monsters;
 	CollectMonsters(Group, Monsters);
@@ -259,26 +393,37 @@ void FSolidBattle::Advance(const float Time)
 
 	const bool bSquadAttacks = GetSquadPlan() && GetSquadPlan()->Attacks();
 	const bool bGroupAttacks = GetGroupPlan() && GetGroupPlan()->Attacks();
+	const FString CaptainName(TEXT("Captain"));
 
 	if (const FSolidItem* MainHand = WornItem(Inventory, SolidInventory::ESlot::MainHand))
 	{
 		if (MainHand->IsWeapon())
 		{
+			const FString WeaponName(ItemWeaponName(*MainHand));
+			const int32 Power = MainHand->Power();
 			AdvanceCycle(
 				CaptainCycle,
 				MainHand->Weapon.Speed,
-				Time,
+				Delta,
 				bSquadAttacks,
-				[&]()
+				Now,
+				Arrived,
+				[&](const float When)
 				{
 					CaptainCycle.Target = PickMonster(Monsters);
+					Record(When, ESolidBattleLogKind::Prepare, CaptainName, FString(), FString());
 				},
-				[&]()
+				[&](const float When)
 				{
 					if (CaptainCycle.Target && Monsters.Contains(CaptainCycle.Target))
 					{
-						Land(CaptainCycle.Target->Armour, MainHand->Power());
+						Land(CaptainCycle.Target->Armour, Power);
+						Record(When, ESolidBattleLogKind::Attack, CaptainName, MonsterName(CaptainCycle.Target), WeaponName);
 					}
+				},
+				[&](const float When)
+				{
+					Record(When, ESolidBattleLogKind::Abandon, CaptainName, FString(), FString());
 				});
 		}
 		else
@@ -310,22 +455,32 @@ void FSolidBattle::Advance(const float Time)
 				}
 				StillOut.Add(Index);
 				FCycle& Cycle = CompanionCycles.FindOrAdd(Index);
+				const FString Actor = Companion->Name;
+				const FString WeaponName(ItemWeaponName(Weapon));
+				const int32 Power = Weapon.Power();
 				AdvanceCycle(
 					Cycle,
 					Weapon.Weapon.Speed,
-					Time,
+					Delta,
 					bSquadAttacks,
-					[&]()
+					Now,
+					Arrived,
+					[&](const float When)
 					{
 						Cycle.Target = PickMonster(Monsters);
+						Record(When, ESolidBattleLogKind::Prepare, Actor, FString(), FString());
 					},
-					[&]()
+					[&](const float When)
 					{
 						if (Cycle.Target && Monsters.Contains(Cycle.Target))
 						{
-							const FSolidItem Blow = FSolidItem::FromId(*Companion->WeaponId, 1);
-							Land(Cycle.Target->Armour, Blow.Power());
+							Land(Cycle.Target->Armour, Power);
+							Record(When, ESolidBattleLogKind::Attack, Actor, MonsterName(Cycle.Target), WeaponName);
 						}
+					},
+					[&](const float When)
+					{
+						Record(When, ESolidBattleLogKind::Abandon, Actor, FString(), FString());
 					});
 			}
 		}
@@ -355,17 +510,27 @@ void FSolidBattle::Advance(const float Time)
 	{
 		FCycle& Cycle = MonsterCycles.FindOrAdd(Monster);
 		const int32 Power = Monster->Weapon.Power;
+		const FString Actor = MonsterName(Monster);
+		const FString WeaponName(Monster->Weapon.Name ? Monster->Weapon.Name : TEXT(""));
 		AdvanceCycle(
 			Cycle,
 			Monster->Weapon.Speed,
-			Time,
+			Delta,
 			bGroupAttacks,
-			[]()
+			Now,
+			Arrived,
+			[&](const float When)
 			{
+				Record(When, ESolidBattleLogKind::Prepare, Actor, FString(), FString());
 			},
-			[&]()
+			[&](const float When)
 			{
 				Land(Body->Armour, Power);
+				Record(When, ESolidBattleLogKind::Attack, Actor, CaptainName, WeaponName);
+			},
+			[&](const float When)
+			{
+				Record(When, ESolidBattleLogKind::Abandon, Actor, FString(), FString());
 			});
 	}
 }

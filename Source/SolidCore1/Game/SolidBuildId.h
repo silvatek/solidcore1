@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0559")
+#define SOLID_BUILD_ID TEXT("SC1-0560")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A monster group takes its plan from the monster battle plans.")
+#define SOLID_BUILD_NOTE TEXT("A battle log records each prepare and attack.")
 #endif

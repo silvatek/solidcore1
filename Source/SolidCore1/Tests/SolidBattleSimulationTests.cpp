@@ -10,106 +10,10 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-/**
- * One Small raptor in claws and hide.
- * The plan name is a monster group battle plan. A missing name leaves none.
- */
-FSolidMonsterGroup OneRaptor(const TCHAR* PlanName)
+namespace SolidBattleTestPrivate
 {
-	FSolidMonsterGroup Built;
-	TUniquePtr<FSolidRaptor> Raptor = MakeUnique<FSolidRaptor>();
-	Raptor->Size = ESolidMonsterSize::Small;
-	Raptor->Arm(FSolidRaptor::Claws, FSolidRaptor::Hide, FSolidItem::StartingDraw);
-	Built.Members.Add(MoveTemp(Raptor));
-	Built.GivePlan(PlanName);
-	return Built;
-}
-
-/**
- * One battle between a real squad and a real monster group.
- * The squad and the group keep their own plans. The battle only links them.
- * A new game fields no companion, and the captain wears the starting loadout.
- * A shipped encounter is the definition of that name. A group built here is linked on its own.
- */
-struct FSolidBattleSimulation
-{
-	USolidCompany* Company = nullptr;
-	USolidSquad* Squad = nullptr;
-	/** The captain's worn boxes and pack. A new game uses the starting kit. */
-	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
-	FSolidEncounter Encounter;
-	/** A group this simulation built. UseGroup links the battle to it. */
-	FSolidMonsterGroup Group;
-	FSolidBattle Battle;
-
-	FSolidBattleSimulation()
-	{
-		Company = NewObject<USolidCompany>();
-		Squad = NewObject<USolidSquad>();
-		Squad->InitializeFromCompany(Company);
-		Squad->SetSelectedCompanions({});
-		Battle = FSolidBattle(Squad, nullptr);
-		Battle.Inventory = &Inventory;
-	}
-
-	/** The encounter the game builds from that definition. The battle links its first group. */
-	void UseEncounter(const SolidEncounter::FDefinition& Definition)
-	{
-		Encounter = FSolidEncounter(Definition);
-		Battle.Group = Encounter.Groups.Num() > 0 ? &Encounter.Groups[0] : nullptr;
-	}
-
-	/** The shipped encounter of that name. False when the list has no such name. */
-	bool UseEncounter(const TCHAR* Name)
-	{
-		const SolidEncounter::FDefinition* Definition = FindEncounter(Name);
-		if (!Definition)
-		{
-			Encounter = FSolidEncounter();
-			Battle.Group = nullptr;
-			return false;
-		}
-		UseEncounter(*Definition);
-		return true;
-	}
-
-	/** The battle links this group. This simulation keeps the group. */
-	void UseGroup(FSolidMonsterGroup InGroup)
-	{
-		Group = MoveTemp(InGroup);
-		Battle.Group = &Group;
-	}
-
-	/** Name of the item in that worn box. Empty when the box is empty. */
-	FString WornName(const SolidInventory::ESlot Slot) const
-	{
-		const int32 Index = SolidInventory::WornIndex(Slot);
-		if (Index == INDEX_NONE)
-		{
-			return FString();
-		}
-		const FSolidItemType* Type = SolidItemType::FindById(Inventory.Worn[Index].Id());
-		return Type ? FString(Type->Name) : FString();
-	}
-
-	const SolidEncounter::FDefinition* FindEncounter(const TCHAR* Name) const
-	{
-		if (!Name || !Name[0])
-		{
-			return nullptr;
-		}
-		for (const SolidEncounter::FDefinition& Candidate : SolidEncounter::Definitions)
-		{
-			if (Candidate.Name && FCString::Strcmp(Candidate.Name, Name) == 0)
-			{
-				return &Candidate;
-			}
-		}
-		return nullptr;
-	}
-
 	/** Select that assigned plan on the squad. */
-	void SquadPlan(const TCHAR* Name)
+	void SelectSquadPlan(USolidSquad* Squad, const TCHAR* Name)
 	{
 		if (!Squad || !Name)
 		{
@@ -126,36 +30,74 @@ struct FSolidBattleSimulation
 		}
 	}
 
-	FString SquadPlanName() const
+	/** A new squad with no companion out. PlanName selects that assigned plan. */
+	USolidSquad* BuildSquad(const TCHAR* PlanName)
 	{
-		const FSolidBattlePlan* Plan = Battle.GetSquadPlan();
-		return Plan ? Plan->Name : FString();
+		USolidCompany* Company = NewObject<USolidCompany>();
+		USolidSquad* Squad = NewObject<USolidSquad>(Company);
+		Squad->InitializeFromCompany(Company);
+		Squad->SetSelectedCompanions({});
+		SelectSquadPlan(Squad, PlanName);
+		return Squad;
 	}
 
-	FString GroupPlanName() const
+	/**
+	 * One Small raptor in claws and hide.
+	 * The plan name is a monster group battle plan. A missing name leaves none.
+	 */
+	FSolidMonsterGroup OneRaptor(const TCHAR* PlanName)
 	{
-		const FSolidBattlePlan* Plan = Battle.GetGroupPlan();
-		return Plan ? Plan->Name : FString();
+		FSolidMonsterGroup Built;
+		TUniquePtr<FSolidRaptor> Raptor = MakeUnique<FSolidRaptor>();
+		Raptor->Size = ESolidMonsterSize::Small;
+		Raptor->Arm(FSolidRaptor::Claws, FSolidRaptor::Hide, FSolidItem::StartingDraw);
+		Built.Members.Add(MoveTemp(Raptor));
+		Built.GivePlan(PlanName);
+		return Built;
 	}
 
-	bool SquadAttacks() const
+	/** The shipped encounter of that name. No groups when the list has no such name. */
+	FSolidEncounter BuildEncounter(const TCHAR* Name)
 	{
-		const FSolidBattlePlan* Plan = Battle.GetSquadPlan();
-		return Plan && Plan->Attacks();
+		if (!Name || !Name[0])
+		{
+			return FSolidEncounter();
+		}
+		for (const SolidEncounter::FDefinition& Candidate : SolidEncounter::Definitions)
+		{
+			if (Candidate.Name && FCString::Strcmp(Candidate.Name, Name) == 0)
+			{
+				return FSolidEncounter(Candidate);
+			}
+		}
+		return FSolidEncounter();
 	}
 
-	bool SquadRetreats() const
+	/** Name of the item in that worn box. Empty when the box is empty. */
+	FString WornName(const SolidInventory::FLoadout& Inventory, const SolidInventory::ESlot Slot)
 	{
-		const FSolidBattlePlan* Plan = Battle.GetSquadPlan();
-		return Plan && Plan->Retreats();
+		const int32 Index = SolidInventory::WornIndex(Slot);
+		if (Index == INDEX_NONE)
+		{
+			return FString();
+		}
+		const FSolidItemType* Type = SolidItemType::FindById(Inventory.Worn[Index].Id());
+		return Type ? FString(Type->Name) : FString();
 	}
 
-	bool GroupAttacks() const
+	int32 CountLog(const TArray<FSolidBattleLogEntry>& Log, const ESolidBattleLogKind Kind, const TCHAR* Actor)
 	{
-		const FSolidBattlePlan* Plan = Battle.GetGroupPlan();
-		return Plan && Plan->Attacks();
+		int32 Count = 0;
+		for (const FSolidBattleLogEntry& Entry : Log)
+		{
+			if (Entry.Kind == Kind && Entry.Actor == Actor)
+			{
+				++Count;
+			}
+		}
+		return Count;
 	}
-};
+}
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidBattleSquadAndGroupTest,
@@ -164,21 +106,27 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidBattleSquadAndGroupTest::RunTest(const FString& Parameters)
 {
-	FSolidBattleSimulation Sim;
-	Sim.SquadPlan(TEXT("Starter"));
-	Sim.UseEncounter(TEXT("Iglin Bridge"));
-	if (!Sim.Battle.Group)
+	USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
+	FSolidEncounter Encounter = SolidBattleTestPrivate::BuildEncounter(TEXT("Iglin Bridge"));
+	if (Encounter.Groups.Num() < 1)
 	{
 		AddError(TEXT("Iglin Bridge gave the battle no monster group"));
 		return false;
 	}
 
-	TestTrue(TEXT("the battle links the squad"), Sim.Battle.Squad.Get() == Sim.Squad);
-	TestTrue(TEXT("the battle links the Iglin Bridge group"), Sim.Battle.Group == &Sim.Encounter.Groups[0]);
-	TestEqual(TEXT("the squad plan is Starter"), Sim.SquadPlanName(), FString(TEXT("Starter")));
-	TestEqual(TEXT("the group plan is Attack"), Sim.GroupPlanName(), FString(TEXT("Attack")));
-	TestTrue(TEXT("Starter stores attack"), Sim.SquadAttacks());
-	TestTrue(TEXT("Attack stores attack"), Sim.GroupAttacks());
+	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+	FSolidBattle Battle(Squad, &Encounter.Groups[0]);
+	Battle.Inventory = &Inventory;
+
+	const FSolidBattlePlan* SquadPlan = Battle.GetSquadPlan();
+	const FSolidBattlePlan* GroupPlan = Battle.GetGroupPlan();
+	TestTrue(TEXT("the battle links the squad"), Battle.Squad.Get() == Squad);
+	TestTrue(TEXT("the battle links the Iglin Bridge group"), Battle.Group == &Encounter.Groups[0]);
+	TestTrue(TEXT("the squad plan is Starter"), SquadPlan && SquadPlan->Is(TEXT("Starter")));
+	TestTrue(TEXT("the group plan is Attack"), GroupPlan && GroupPlan->Is(TEXT("Attack")));
+	TestTrue(TEXT("Starter stores attack"), SquadPlan && SquadPlan->Attacks());
+	TestTrue(TEXT("Attack stores attack"), GroupPlan && GroupPlan->Attacks());
+	TestEqual(TEXT("nothing is logged yet"), Battle.Log.Num(), 0);
 	return true;
 }
 
@@ -189,32 +137,47 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidBattleActivePlanTest::RunTest(const FString& Parameters)
 {
-	FSolidBattleSimulation Sim;
-
-	TestEqual(TEXT("a new squad reads Starter"), Sim.SquadPlanName(), FString(TEXT("Starter")));
-	TestNull(TEXT("no monster group yet"), Sim.Battle.Group);
-
-	Sim.SquadPlan(TEXT("Defend"));
-	TestEqual(TEXT("the battle reads Defend"), Sim.SquadPlanName(), FString(TEXT("Defend")));
-	TestTrue(TEXT("Defend stores retreat"), Sim.SquadRetreats());
-
-	Sim.UseGroup(OneRaptor(nullptr));
-	if (!Sim.Battle.Group)
 	{
-		AddError(TEXT("the one raptor gave the battle no monster group"));
-		return false;
-	}
-	TestTrue(TEXT("a group with no plan name has none"), Sim.GroupPlanName().IsEmpty());
-	TestEqual(TEXT("that group has its one raptor"), Sim.Battle.Group->Num(), 1);
+		USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
+		FSolidMonsterGroup Group = SolidBattleTestPrivate::OneRaptor(nullptr);
+		SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+		FSolidBattle Battle(Squad, &Group);
+		Battle.Inventory = &Inventory;
 
-	Sim.UseEncounter(TEXT("Iglin Bridge"));
-	if (!Sim.Battle.Group)
-	{
-		AddError(TEXT("Iglin Bridge gave the battle no monster group"));
-		return false;
+		const FSolidBattlePlan* SquadPlan = Battle.GetSquadPlan();
+		TestTrue(TEXT("a new squad reads Starter"), SquadPlan && SquadPlan->Is(TEXT("Starter")));
+		TestNull(TEXT("a group with no plan name has none"), Battle.GetGroupPlan());
+		TestEqual(TEXT("that group has its one raptor"), Battle.Group->Num(), 1);
 	}
-	TestEqual(TEXT("Iglin Bridge reads Attack"), Sim.GroupPlanName(), FString(TEXT("Attack")));
-	TestTrue(TEXT("Attack stores attack"), Sim.GroupAttacks());
+
+	{
+		USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Defend"));
+		FSolidMonsterGroup Group = SolidBattleTestPrivate::OneRaptor(nullptr);
+		SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+		FSolidBattle Battle(Squad, &Group);
+		Battle.Inventory = &Inventory;
+
+		const FSolidBattlePlan* SquadPlan = Battle.GetSquadPlan();
+		TestTrue(TEXT("the battle reads Defend"), SquadPlan && SquadPlan->Is(TEXT("Defend")));
+		TestTrue(TEXT("Defend stores retreat"), SquadPlan && SquadPlan->Retreats());
+	}
+
+	{
+		USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
+		FSolidEncounter Encounter = SolidBattleTestPrivate::BuildEncounter(TEXT("Iglin Bridge"));
+		if (Encounter.Groups.Num() < 1)
+		{
+			AddError(TEXT("Iglin Bridge gave the battle no monster group"));
+			return false;
+		}
+		SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+		FSolidBattle Battle(Squad, &Encounter.Groups[0]);
+		Battle.Inventory = &Inventory;
+
+		const FSolidBattlePlan* GroupPlan = Battle.GetGroupPlan();
+		TestTrue(TEXT("Iglin Bridge reads Attack"), GroupPlan && GroupPlan->Is(TEXT("Attack")));
+		TestTrue(TEXT("Attack stores attack"), GroupPlan && GroupPlan->Attacks());
+	}
 	return true;
 }
 
@@ -225,9 +188,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidBattleSidesTest::RunTest(const FString& Parameters)
 {
-	FSolidBattleSimulation Sim;
-
-	USolidSquad* Squad = Sim.Battle.Squad.Get();
+	USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
 	if (!TestNotNull(TEXT("the squad"), Squad))
 	{
 		return false;
@@ -238,20 +199,23 @@ bool FSolidBattleSidesTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestEqual(TEXT("no companion is out"), Squad->GetSelectedCompanionCount(), 0);
-	TestEqual(TEXT("the main hand is the crude spear"), Sim.WornName(SolidInventory::ESlot::MainHand), FString(TEXT("Crude spear")));
-	TestEqual(TEXT("the body is Rags"), Sim.WornName(SolidInventory::ESlot::Body), FString(TEXT("Rags")));
-	TestEqual(TEXT("the head is the dented helmet"), Sim.WornName(SolidInventory::ESlot::Head), FString(TEXT("Dented helmet")));
-	TestNull(TEXT("no monster group yet"), Sim.Battle.Group);
 
-	Sim.UseEncounter(TEXT("Iglin Bridge"));
-	if (!Sim.Battle.Group || Sim.Encounter.Definition.GroupCount < 1)
+	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+	TestEqual(TEXT("the main hand is the crude spear"), SolidBattleTestPrivate::WornName(Inventory, SolidInventory::ESlot::MainHand), FString(TEXT("Crude spear")));
+	TestEqual(TEXT("the body is Rags"), SolidBattleTestPrivate::WornName(Inventory, SolidInventory::ESlot::Body), FString(TEXT("Rags")));
+	TestEqual(TEXT("the head is the dented helmet"), SolidBattleTestPrivate::WornName(Inventory, SolidInventory::ESlot::Head), FString(TEXT("Dented helmet")));
+
+	FSolidEncounter Encounter = SolidBattleTestPrivate::BuildEncounter(TEXT("Iglin Bridge"));
+	if (Encounter.Groups.Num() < 1 || Encounter.Definition.GroupCount < 1)
 	{
 		AddError(TEXT("Iglin Bridge gave the battle no monster group"));
 		return false;
 	}
+	FSolidBattle Battle(Squad, &Encounter.Groups[0]);
+	Battle.Inventory = &Inventory;
 
-	const SolidEncounter::FGroup& Spec = Sim.Encounter.Definition.Groups[0];
-	TestEqual(TEXT("the group has the definition's raptors"), Sim.Battle.Group->Num(), Spec.Count);
+	const SolidEncounter::FGroup& Spec = Encounter.Definition.Groups[0];
+	TestEqual(TEXT("the group has the definition's raptors"), Battle.Group->Num(), Spec.Count);
 
 	const FSolidItemType* Spear = SolidItemType::FindById(SolidItemType::IdCrudeSpear);
 	const int32 SpearPower = Spear
@@ -261,19 +225,19 @@ bool FSolidBattleSidesTest::RunTest(const FString& Parameters)
 	FSolidRaptor One;
 	One.Size = ESolidMonsterSize::Small;
 	One.Arm(FSolidRaptor::Claws, FSolidRaptor::Hide, FSolidItem::StartingDraw);
-	TestEqual(TEXT("the squad's power is the crude spear"), Sim.Battle.GetSquadPower(), SpearPower);
-	TestEqual(TEXT("the squad's defence is the rags"), Sim.Battle.GetSquadDefence(), RagsStrength);
+	TestEqual(TEXT("the squad's power is the crude spear"), Battle.GetSquadPower(), SpearPower);
+	TestEqual(TEXT("the squad's defence is the rags"), Battle.GetSquadDefence(), RagsStrength);
 	TestEqual(
 		TEXT("the group's power is its claws"),
-		Sim.Battle.GetGroupPower(),
+		Battle.GetGroupPower(),
 		Spec.Count * One.Weapon.Power);
 	TestEqual(
 		TEXT("the group's defence is its hides"),
-		Sim.Battle.GetGroupDefence(),
+		Battle.GetGroupDefence(),
 		static_cast<float>(Spec.Count) * One.Armour.Strength);
-	for (int32 Index = 0; Index < Sim.Battle.Group->Num(); ++Index)
+	for (int32 Index = 0; Index < Battle.Group->Num(); ++Index)
 	{
-		const FSolidMonster* Monster = Sim.Battle.Group->Get(Index);
+		const FSolidMonster* Monster = Battle.Group->Get(Index);
 		const FString Which = FString::Printf(TEXT("raptor %d"), Index + 1);
 		if (!TestNotNull(*Which, Monster))
 		{
@@ -306,12 +270,15 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 	const float Rags = FSolidItem::FromId(SolidItemType::IdRags, 1).Armour.Strength;
 
 	{
-		FSolidBattleSimulation Sim;
-		Sim.SquadPlan(TEXT("Starter"));
-		Sim.UseGroup(OneRaptor(TEXT("Attack")));
-		FSolidMonster* Raptor = Sim.Battle.Group ? Sim.Battle.Group->Get(0) : nullptr;
-		const FSolidItem* MainHand = Sim.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::MainHand)].IsWeapon()
-			? &Sim.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::MainHand)]
+		USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
+		FSolidMonsterGroup Group = SolidBattleTestPrivate::OneRaptor(TEXT("Attack"));
+		FSolidMonster* Raptor = Group.Get(0);
+		SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+		FSolidBattle Battle(Squad, &Group);
+		Battle.Inventory = &Inventory;
+		const int32 MainIndex = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
+		const FSolidItem* MainHand = MainIndex != INDEX_NONE && Inventory.Worn[MainIndex].IsWeapon()
+			? &Inventory.Worn[MainIndex]
 			: nullptr;
 		if (!Raptor || !MainHand || MainHand->Weapon.Speed <= KINDA_SMALL_NUMBER)
 		{
@@ -320,34 +287,97 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 		}
 		const float SpearSpeed = MainHand->Weapon.Speed;
 		Raptor->Weapon.Speed = SpearSpeed * 2.f;
-		Sim.Battle.Advance(SpearSpeed);
+
+		if (!Battle.AdvanceToNextEvent())
+		{
+			AddError(TEXT("the fight did not start"));
+			return false;
+		}
+		TestTrue(TEXT("they prepare at the start"), FMath::IsNearlyEqual(Battle.Time, 0.f));
+		TestEqual(TEXT("two prepares"), Battle.Log.Num(), 2);
+		TestTrue(TEXT("the captain prepares first"), Battle.Log[0].Kind == ESolidBattleLogKind::Prepare && Battle.Log[0].Actor == TEXT("Captain"));
+		TestEqual(TEXT("the captain's prepare line"), Battle.Log[0].Text(), FString(TEXT("Captain prepares.")));
+		TestTrue(TEXT("the raptor prepares"), Battle.Log[1].Kind == ESolidBattleLogKind::Prepare && Battle.Log[1].Actor == TEXT("Raptor"));
+		TestEqual(TEXT("the hide is still whole"), Raptor->Armour.Strength, Hide);
+		TestEqual(TEXT("the rags are still whole"), Battle.GetSquadDefence(), Rags);
+
+		if (!Battle.AdvanceToNextEvent())
+		{
+			AddError(TEXT("the spear did not finish preparing"));
+			return false;
+		}
+		TestTrue(TEXT("the spear is the first blow"), FMath::IsNearlyEqual(Battle.Time, SpearSpeed));
+		TestEqual(TEXT("the spear is the only new line"), Battle.Log.Num(), 3);
+		TestTrue(TEXT("the captain attacks"), Battle.Log[2].Kind == ESolidBattleLogKind::Attack && Battle.Log[2].Actor == TEXT("Captain"));
+		TestEqual(TEXT("the spear names the raptor"), Battle.Log[2].Target, FString(TEXT("Raptor")));
+		TestEqual(TEXT("the spear names itself"), Battle.Log[2].Weapon, FString(TEXT("Crude spear")));
+		TestEqual(TEXT("the spear line"), Battle.Log[2].Text(), FString(TEXT("Captain attacks Raptor with Crude spear.")));
 		TestEqual(TEXT("the spear comes off that hide"), Raptor->Armour.Strength, Hide - static_cast<float>(Spear));
-		TestEqual(TEXT("the claws are still preparing"), Sim.Battle.GetSquadDefence(), Rags);
-		Sim.Battle.Advance(SpearSpeed);
+		TestEqual(TEXT("the claws are still preparing"), Battle.GetSquadDefence(), Rags);
+
+		if (!Battle.AdvanceToNextEvent())
+		{
+			AddError(TEXT("the claws did not finish preparing"));
+			return false;
+		}
+		TestTrue(TEXT("the claws land on their own Speed"), FMath::IsNearlyEqual(Battle.Time, SpearSpeed * 2.f));
+		TestEqual(TEXT("the captain prepares again and the raptor attacks"), Battle.Log.Num(), 5);
+		TestTrue(TEXT("recover ends in another prepare"), Battle.Log[3].Kind == ESolidBattleLogKind::Prepare && Battle.Log[3].Actor == TEXT("Captain"));
+		TestTrue(TEXT("the raptor attacks"), Battle.Log[4].Kind == ESolidBattleLogKind::Attack && Battle.Log[4].Actor == TEXT("Raptor"));
+		TestEqual(TEXT("the claws name the captain"), Battle.Log[4].Target, FString(TEXT("Captain")));
+		TestEqual(TEXT("the claws name themselves"), Battle.Log[4].Weapon, FString(TEXT("Claws")));
+		TestEqual(TEXT("the claws line"), Battle.Log[4].Text(), FString(TEXT("Raptor attacks Captain with Claws.")));
 		TestEqual(TEXT("the spear has landed once"), Raptor->Armour.Strength, Hide - static_cast<float>(Spear));
-		TestEqual(TEXT("the claws come off the rags"), Sim.Battle.GetSquadDefence(), Rags - static_cast<float>(Claws));
+		TestEqual(
+			TEXT("the captain attacked once"),
+			SolidBattleTestPrivate::CountLog(Battle.Log, ESolidBattleLogKind::Attack, TEXT("Captain")),
+			1);
+		TestEqual(TEXT("the claws come off the rags"), Battle.GetSquadDefence(), Rags - static_cast<float>(Claws));
 	}
 
 	{
-		FSolidBattleSimulation Sim;
-		Sim.SquadPlan(TEXT("Starter"));
-		Sim.UseEncounter(TEXT("Iglin Bridge"));
-		if (!Sim.Battle.Group || Sim.Battle.Group->Num() < 1)
+		USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
+		FSolidEncounter Encounter = SolidBattleTestPrivate::BuildEncounter(TEXT("Iglin Bridge"));
+		if (Encounter.Groups.Num() < 1 || Encounter.Groups[0].Num() < 1)
 		{
 			AddError(TEXT("Iglin Bridge gave the battle no monster group"));
 			return false;
 		}
-		const int32 Count = Sim.Battle.Group->Num();
-		Sim.Battle.Advance(Sample.Weapon.Speed);
+		SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+		FSolidBattle Battle(Squad, &Encounter.Groups[0]);
+		Battle.Inventory = &Inventory;
+		const int32 MainIndex = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
+		const FSolidItem* MainHand = MainIndex != INDEX_NONE ? &Inventory.Worn[MainIndex] : nullptr;
+		const FSolidMonster* First = Encounter.Groups[0].Get(0);
+		if (!MainHand || !MainHand->IsWeapon() || !First
+			|| !FMath::IsNearlyEqual(MainHand->Weapon.Speed, First->Weapon.Speed))
+		{
+			AddError(TEXT("the spear and the claws do not share a Speed"));
+			return false;
+		}
+		const int32 Count = Battle.Group->Num();
+
+		if (!Battle.AdvanceToNextEvent() || !Battle.AdvanceToNextEvent())
+		{
+			AddError(TEXT("Iglin Bridge did not reach the first blows"));
+			return false;
+		}
+		TestEqual(TEXT("everyone prepared, then everyone attacked"), Battle.Log.Num(), 2 * (1 + Count));
+		TestTrue(TEXT("the captain attacks before the raptors"), Battle.Log[1 + Count].Kind == ESolidBattleLogKind::Attack
+			&& Battle.Log[1 + Count].Actor == TEXT("Captain"));
+		TestEqual(
+			TEXT("each raptor attacks"),
+			SolidBattleTestPrivate::CountLog(Battle.Log, ESolidBattleLogKind::Attack, TEXT("Raptor")),
+			Count);
 		TestEqual(
 			TEXT("each raptor's claws come off the rags"),
-			Sim.Battle.GetSquadDefence(),
+			Battle.GetSquadDefence(),
 			Rags - static_cast<float>(Count * Claws));
 		int32 Hit = 0;
 		int32 Kept = 0;
 		for (int32 Index = 0; Index < Count; ++Index)
 		{
-			const FSolidMonster* Monster = Sim.Battle.Group->Get(Index);
+			const FSolidMonster* Monster = Battle.Group->Get(Index);
 			if (!Monster)
 			{
 				AddError(TEXT("a raptor was missing after the attack"));
@@ -368,36 +398,107 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 	}
 
 	{
-		FSolidBattleSimulation Sim;
-		Sim.SquadPlan(TEXT("Defend"));
-		Sim.UseGroup(OneRaptor(TEXT("Attack")));
-		if (!Sim.Battle.Group || !Sim.Battle.Group->Get(0))
+		USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Defend"));
+		FSolidMonsterGroup Group = SolidBattleTestPrivate::OneRaptor(TEXT("Attack"));
+		if (!Group.Get(0))
 		{
 			AddError(TEXT("the one raptor gave the battle no monster"));
 			return false;
 		}
-		Sim.Battle.Advance(Sample.Weapon.Speed);
-		TestEqual(TEXT("a retreat does not strike"), Sim.Battle.Group->Get(0)->Armour.Strength, Hide);
-		TestEqual(TEXT("the claws still come off the rags"), Sim.Battle.GetSquadDefence(), Rags - static_cast<float>(Claws));
+		SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+		FSolidBattle Battle(Squad, &Group);
+		Battle.Inventory = &Inventory;
+		if (!Battle.AdvanceToNextEvent() || !Battle.AdvanceToNextEvent())
+		{
+			AddError(TEXT("the raptor did not attack"));
+			return false;
+		}
+		TestEqual(
+			TEXT("a retreat does not prepare"),
+			SolidBattleTestPrivate::CountLog(Battle.Log, ESolidBattleLogKind::Prepare, TEXT("Captain")),
+			0);
+		TestEqual(
+			TEXT("a retreat does not strike"),
+			SolidBattleTestPrivate::CountLog(Battle.Log, ESolidBattleLogKind::Attack, TEXT("Captain")),
+			0);
+		TestEqual(TEXT("the hide stays whole"), Group.Get(0)->Armour.Strength, Hide);
+		TestEqual(TEXT("the claws still come off the rags"), Battle.GetSquadDefence(), Rags - static_cast<float>(Claws));
 	}
 
 	{
-		FSolidBattleSimulation Sim;
-		Sim.SquadPlan(TEXT("Starter"));
-		if (!SolidInventory::PlaceWorn(Sim.Inventory, SolidInventory::ESlot::MainHand, nullptr))
+		USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
+		FSolidMonsterGroup Group = SolidBattleTestPrivate::OneRaptor(TEXT("Attack"));
+		FSolidMonster* Raptor = Group.Get(0);
+		if (!Raptor)
+		{
+			AddError(TEXT("the one raptor gave the battle no monster"));
+			return false;
+		}
+		SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+		FSolidBattle Battle(Squad, &Group);
+		Battle.Inventory = &Inventory;
+		const int32 MainIndex = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
+		const FSolidItem* MainHand = MainIndex != INDEX_NONE && Inventory.Worn[MainIndex].IsWeapon()
+			? &Inventory.Worn[MainIndex]
+			: nullptr;
+		if (!MainHand || MainHand->Weapon.Speed <= KINDA_SMALL_NUMBER)
+		{
+			AddError(TEXT("the one raptor gave the battle no spear"));
+			return false;
+		}
+		Raptor->Weapon.Speed = MainHand->Weapon.Speed * 2.f;
+		if (!Battle.AdvanceToNextEvent())
+		{
+			AddError(TEXT("the fight did not start"));
+			return false;
+		}
+		SolidBattleTestPrivate::SelectSquadPlan(Squad, TEXT("Defend"));
+		if (!Battle.AdvanceToNextEvent())
+		{
+			AddError(TEXT("the prepare did not finish"));
+			return false;
+		}
+		TestEqual(TEXT("the last line is the abandon"), Battle.Log.Num(), 3);
+		TestTrue(TEXT("the captain abandons the attack"), Battle.Log[2].Kind == ESolidBattleLogKind::Abandon && Battle.Log[2].Actor == TEXT("Captain"));
+		TestEqual(TEXT("the abandon line"), Battle.Log[2].Text(), FString(TEXT("Captain abandons the attack.")));
+		TestEqual(
+			TEXT("the abandoned blow does not land"),
+			SolidBattleTestPrivate::CountLog(Battle.Log, ESolidBattleLogKind::Attack, TEXT("Captain")),
+			0);
+		TestEqual(TEXT("the hide stays whole"), Raptor->Armour.Strength, Hide);
+	}
+
+	{
+		USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
+		SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+		if (!SolidInventory::PlaceWorn(Inventory, SolidInventory::ESlot::MainHand, nullptr))
 		{
 			AddError(TEXT("the main hand did not empty"));
 			return false;
 		}
-		Sim.UseGroup(OneRaptor(TEXT("Attack")));
-		if (!Sim.Battle.Group || !Sim.Battle.Group->Get(0))
+		FSolidMonsterGroup Group = SolidBattleTestPrivate::OneRaptor(TEXT("Attack"));
+		if (!Group.Get(0))
 		{
 			AddError(TEXT("the one raptor gave the battle no monster"));
 			return false;
 		}
-		Sim.Battle.Advance(Sample.Weapon.Speed);
-		TestEqual(TEXT("an empty main hand does not strike"), Sim.Battle.Group->Get(0)->Armour.Strength, Hide);
-		TestEqual(TEXT("the claws still come off the rags"), Sim.Battle.GetSquadDefence(), Rags - static_cast<float>(Claws));
+		FSolidBattle Battle(Squad, &Group);
+		Battle.Inventory = &Inventory;
+		if (!Battle.AdvanceToNextEvent() || !Battle.AdvanceToNextEvent())
+		{
+			AddError(TEXT("the raptor did not attack"));
+			return false;
+		}
+		TestEqual(
+			TEXT("an empty main hand does not prepare"),
+			SolidBattleTestPrivate::CountLog(Battle.Log, ESolidBattleLogKind::Prepare, TEXT("Captain")),
+			0);
+		TestEqual(
+			TEXT("an empty main hand does not strike"),
+			SolidBattleTestPrivate::CountLog(Battle.Log, ESolidBattleLogKind::Attack, TEXT("Captain")),
+			0);
+		TestEqual(TEXT("the hide stays whole"), Group.Get(0)->Armour.Strength, Hide);
+		TestEqual(TEXT("the claws still come off the rags"), Battle.GetSquadDefence(), Rags - static_cast<float>(Claws));
 	}
 	return true;
 }

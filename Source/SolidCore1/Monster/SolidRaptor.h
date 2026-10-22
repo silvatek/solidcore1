@@ -24,10 +24,10 @@ public:
 	 */
 	static constexpr float SmallDrawnBodyFactor = 6.f;
 
-	virtual float DrawnBodyFactor() const override { return SmallDrawnBodyFactor; }
+	virtual float DrawnBodyFactor() const override;
 	virtual const TCHAR* Kind() const override { return TEXT("Raptor"); }
 
-	/** Uniform standing scale times the Small factor. */
+	/** Uniform standing scale times DrawnBodyFactor. */
 	float BodyScale(float SpanHeightCm) const;
 
 	/** The green Velociraptor skeletal mesh from the Fab pack. Null when the pack is missing. */

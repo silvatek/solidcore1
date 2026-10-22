@@ -61,8 +61,18 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("a centered mesh drops its bottom to the feet"),
 		FMath::IsNearlyEqual(FSolidMonster::MeshFootOffsetCm(0.f, 100.f, 1.f), 100.f));
+	TestEqual(TEXT("six monster sizes"), SolidMonster::SizeCount, 6);
 	TestTrue(
-		TEXT("a raptor draws six times the span scale"),
+		TEXT("the size list starts at Tiny"),
+		SolidMonster::Sizes[0] == ESolidMonsterSize::Tiny);
+	TestTrue(
+		TEXT("the size list ends at Immense"),
+		SolidMonster::Sizes[SolidMonster::SizeCount - 1] == ESolidMonsterSize::Immense);
+	TestTrue(
+		TEXT("Small is named Small"),
+		FCString::Strcmp(SolidMonster::SizeName(ESolidMonsterSize::Small), TEXT("Small")) == 0);
+	TestTrue(
+		TEXT("a Small raptor draws six times the span scale"),
 		FMath::IsNearlyEqual(FSolidRaptor().DrawnBodyFactor(), FSolidRaptor::SmallDrawnBodyFactor));
 
 	TArray<float> BodyZ;
@@ -145,6 +155,9 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 		TestTrue(
 			TEXT("each member is a raptor"),
 			FCString::Strcmp(Member->Kind(), TEXT("Raptor")) == 0);
+		TestTrue(
+			TEXT("the Iglin-bridge raptors are Small"),
+			Member->Size == ESolidMonsterSize::Small);
 	}
 	for (int32 Index = 1; Index < Group.Num(); ++Index)
 	{

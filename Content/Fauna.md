@@ -28,7 +28,7 @@ The downloaded mesh is the body for now. Its standing height is 100 cm, a unifor
 
 Main parameters are...
 
-- size: tiny to immense
+- size: Tiny, Small, Medium, Large, Huge, or Immense. The Iglin-bridge raptors are Small.
 - winged: true/false
 - colour
 
@@ -36,7 +36,7 @@ Main parameters are...
 
 Core parameters...
 
-- size: tiny to immense
+- size: Tiny, Small, Medium, Large, Huge, or Immense
 - segments: integer (number of body segments, 3 for insects, 4 for spiders, 10 for centipedes)
 - wings: (list of integers specifying which body segments have wings)
 - colour

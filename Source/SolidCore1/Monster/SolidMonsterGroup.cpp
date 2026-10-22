@@ -220,6 +220,7 @@ int32 FSolidMonsterGroup::PlaceBesideIglinRamp(
 		Raptor->PointIndex = Candidate.Index;
 		Raptor->XY = Candidate.XY;
 		Raptor->YawDeg = SolidMonsterGroupPrivate::YawFacing(Candidate.XY, Outer);
+		Raptor->Size = ESolidMonsterSize::Small;
 		Members.Add(MoveTemp(Raptor));
 		ChosenXY.Add(Candidate.XY);
 	}

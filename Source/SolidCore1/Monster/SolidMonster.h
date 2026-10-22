@@ -3,6 +3,48 @@
 #include "CoreMinimal.h"
 
 /**
+ * How large a monster is.
+ * Small is the Iglin-bridge raptor. Later sizes scale up or down from Small.
+ */
+enum class ESolidMonsterSize : uint8
+{
+	Tiny,
+	Small,
+	Medium,
+	Large,
+	Huge,
+	Immense,
+};
+
+namespace SolidMonster
+{
+	inline constexpr ESolidMonsterSize Sizes[] = {
+		ESolidMonsterSize::Tiny,
+		ESolidMonsterSize::Small,
+		ESolidMonsterSize::Medium,
+		ESolidMonsterSize::Large,
+		ESolidMonsterSize::Huge,
+		ESolidMonsterSize::Immense,
+	};
+
+	inline constexpr int32 SizeCount = UE_ARRAY_COUNT(Sizes);
+
+	inline const TCHAR* SizeName(const ESolidMonsterSize Size)
+	{
+		switch (Size)
+		{
+		case ESolidMonsterSize::Tiny: return TEXT("Tiny");
+		case ESolidMonsterSize::Small: return TEXT("Small");
+		case ESolidMonsterSize::Medium: return TEXT("Medium");
+		case ESolidMonsterSize::Large: return TEXT("Large");
+		case ESolidMonsterSize::Huge: return TEXT("Huge");
+		case ESolidMonsterSize::Immense: return TEXT("Immense");
+		default: return TEXT("");
+		}
+	}
+}
+
+/**
  * Unscaled bottom and height of a body, in centimetres.
  * StandingSpan fills these from mesh or bone samples.
  */
@@ -30,6 +72,8 @@ public:
 	FVector2D XY = FVector2D::ZeroVector;
 	/** Degrees. Yaw only. Faces the place the group chose. */
 	float YawDeg = 0.f;
+	/** How large this monster is. The Iglin-bridge raptors are Small. */
+	ESolidMonsterSize Size = ESolidMonsterSize::Small;
 
 	/** Standing height of the body after a uniform scale (cm). */
 	static constexpr float StandingHeightCm = 100.f;

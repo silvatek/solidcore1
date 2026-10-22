@@ -71,6 +71,18 @@ namespace SolidRaptorPrivate
 	}
 }
 
+float FSolidRaptor::DrawnBodyFactor() const
+{
+	switch (Size)
+	{
+	case ESolidMonsterSize::Small:
+		return SmallDrawnBodyFactor;
+	default:
+		// Later sizes scale from Small. Until those factors exist, draw as Small.
+		return SmallDrawnBodyFactor;
+	}
+}
+
 float FSolidRaptor::BodyScale(const float SpanHeightCm) const
 {
 	return UniformScale(SpanHeightCm) * DrawnBodyFactor();

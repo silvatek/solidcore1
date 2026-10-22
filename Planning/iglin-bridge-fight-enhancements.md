@@ -25,7 +25,7 @@ This story introduces no game concept. Raptor, the encounter, the captain's deat
 - When those three Small raptors kill the captain, and the captain has killed none of them, the fight ends on that death. No Large raptor spawns.
 - When the captain kills one Small raptor, one Large raptor spawns into the same group. Killing another Small does not spawn a second Large.
 - When the captain runs away, that same Large spawns, once. Running away is getting beyond every living monster's EscapeDistance, which is how [Basic combat](basic-combat.md) would otherwise end the fight. This encounter keeps going.
-- The Large stands taller than the Small three. It fights with them, on the group's plan. Play-testing chooses how much taller.
+- The Large stands taller than the Small three. It fights with them, on the group's plan. Play-testing chooses how much taller. Its armour Strength is huge.
 - When the Large spawns, the captain cannot move. Walking and click-to-move leave the captain where they are. The block lasts until the captain dies. After the wake, the captain can move again.
 - Any death of the captain, in this fight or later, anywhere in the game, uses one landing. The captain wakes in the company stronghold they have then, without the gear they had when they died. The first time, that stronghold is the cave. The wake is the one [Basic combat](basic-combat.md) specifies: Rags on the body, the rest of what they were carrying left where they died, the companions who were out despawned, and the next leave opening Build squad.
 - This bridge death is that landing's first use. The opening cannot skip it. A later captain death uses the same landing, in whatever stronghold the company has by then.
@@ -40,8 +40,8 @@ This story introduces no game concept. Raptor, the encounter, the captain's deat
 ## Implementation notes
 
 - The placed catalog row stays three Small raptors. The Large is spawned during the fight, into the group's members, and is not a fourth placed member. [Place encounter markers](place-encounter-markers.md) can still move the focus onto a chart mark. The band, the separation, and the count of three stay.
-- Small stands 100 cm, at `FSolidRaptor::SmallDrawnBodyFactor`. Large scales up from Small. The factor waits on play-testing, the way Speed and Strength do. The Large uses the same green mesh and the same idle until a later body.
-- Each raptor holds Claws and Hide. Power is `SolidMonster::PowerFor` of that raptor's size, so the Large hits above the Small three. Speed starts at 1 and Hide's Strength starts at 1.
+- Small stands 100 cm, at `FSolidRaptor::SmallDrawnBodyFactor`. Large scales up from Small. The height factor waits on play-testing. The Large uses the same green mesh and the same idle until a later body.
+- Each raptor holds Claws and Hide. Power is `SolidMonster::PowerFor` of that raptor's size, so the Large hits above the Small three. Speed starts at 1. The Small raptors' Hide starts at Strength 1. The Large's Hide has a huge Strength, so a rooted captain does not cut it down before the fight kills them.
 - Spawn the Large on a grassland point beside the captain, inside DetectionRange, clear of a mountain quad, a tree, and a foraging pile. The captain is already stopped, so the point has to be close enough for the fight to continue. One spawn. A second trigger finds the Large already there.
 - The movement block is this encounter only. It covers the captain's move, including click-to-move. Look can stay. The block clears on the wake.
 - The opening loadout is Rags on the body and the crude spear in the main hand. `SolidInventory::Clear` is the wake's inventory: Rags on the body, and the spear and anything else they were carrying gone from the captain. The stronghold chest stays. The gear left at the death site is the drop [Basic combat](basic-combat.md) already specifies.

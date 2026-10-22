@@ -2,6 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "Battle/SolidBattle.h"
 #include "Company/SolidCompany.h"
+#include "Inventory/SolidInventory.h"
 #include "Inventory/SolidItemType.h"
 #include "Monster/SolidEncounters.h"
 
@@ -10,13 +11,15 @@
 /**
  * One battle between a real squad and a real monster group.
  * The squad and the group keep their own plans. The battle only links them.
- * The company has the five companions. The squad starts with none of them out.
- * The monster group is an encounter group, built from a definition.
+ * A new game fields no companion, and the captain wears the starting loadout.
+ * An existing encounter is the definition of that name.
  */
 struct FSolidBattleSimulation
 {
 	USolidCompany* Company = nullptr;
 	USolidSquad* Squad = nullptr;
+	/** The captain's worn boxes and pack. A new game uses the starting kit. */
+	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
 	FSolidEncounter Encounter;
 	FSolidBattle Battle;
 
@@ -36,62 +39,46 @@ struct FSolidBattleSimulation
 		Battle.Group = Encounter.Groups.Num() > 0 ? &Encounter.Groups[0] : nullptr;
 	}
 
-	/** Put that companion in the squad. */
-	void InSquad(const TCHAR* Name)
+	/** The shipped encounter of that name. False when the list has no such name. */
+	bool UseEncounter(const TCHAR* Name)
 	{
-		if (!Company || !Squad || !Name)
+		const SolidEncounter::FDefinition* Definition = FindEncounter(Name);
+		if (!Definition)
 		{
-			return;
-		}
-		const int32 Index = Company->FindCompanionIndexByName(Name);
-		if (Index == INDEX_NONE)
-		{
-			return;
-		}
-		TArray<int32> Selected = Squad->GetSelectedCompanionIndices();
-		Selected.Add(Index);
-		Squad->SetSelectedCompanions(Selected);
-	}
-
-	bool SquadHas(const TCHAR* Name) const
-	{
-		if (!Company || !Squad || !Name)
-		{
+			Encounter = FSolidEncounter();
+			Battle.Group = nullptr;
 			return false;
 		}
-		const int32 Index = Company->FindCompanionIndexByName(Name);
-		return Index != INDEX_NONE && Squad->GetSelectedCompanionIndices().Contains(Index);
+		UseEncounter(*Definition);
+		return true;
 	}
 
-	FString CompanionWeapon(const TCHAR* Name) const
+	/** Name of the item in that worn box. Empty when the box is empty. */
+	FString WornName(const SolidInventory::ESlot Slot) const
 	{
-		const FSolidCompanion* Companion = FindCompanion(Name);
-		if (!Companion)
+		const int32 Index = SolidInventory::WornIndex(Slot);
+		if (Index == INDEX_NONE)
 		{
 			return FString();
 		}
-		const FSolidItemType* Type = SolidItemType::FindById(*Companion->WeaponId);
+		const FSolidItemType* Type = SolidItemType::FindById(Inventory.Worn[Index].Id());
 		return Type ? FString(Type->Name) : FString();
 	}
 
-	FString CompanionArmour(const TCHAR* Name) const
+	const SolidEncounter::FDefinition* FindEncounter(const TCHAR* Name) const
 	{
-		const FSolidCompanion* Companion = FindCompanion(Name);
-		if (!Companion)
-		{
-			return FString();
-		}
-		const FSolidItemType* Type = SolidItemType::FindById(*Companion->ArmourId);
-		return Type ? FString(Type->Name) : FString();
-	}
-
-	const FSolidCompanion* FindCompanion(const TCHAR* Name) const
-	{
-		if (!Company || !Name)
+		if (!Name || !Name[0])
 		{
 			return nullptr;
 		}
-		return Company->GetCompanion(Company->FindCompanionIndexByName(Name));
+		for (const SolidEncounter::FDefinition& Candidate : SolidEncounter::Definitions)
+		{
+			if (Candidate.Name && FCString::Strcmp(Candidate.Name, Name) == 0)
+			{
+				return &Candidate;
+			}
+		}
+		return nullptr;
 	}
 
 	/** Select that assigned plan on the squad. */
@@ -152,7 +139,11 @@ bool FSolidBattleSquadAndGroupTest::RunTest(const FString& Parameters)
 {
 	FSolidBattleSimulation Sim;
 	Sim.SquadPlan(TEXT("Starter"));
-	Sim.UseEncounter(SolidEncounter::Definitions[0]);
+	TestTrue(TEXT("Iglin Bridge is an encounter"), Sim.UseEncounter(TEXT("Iglin Bridge")));
+	if (Sim.Encounter.Groups.Num() == 0)
+	{
+		return false;
+	}
 
 	TestTrue(TEXT("the battle links the squad"), Sim.Battle.Squad.Get() == Sim.Squad);
 	TestTrue(TEXT("the battle links the Iglin Bridge group"), Sim.Battle.Group == &Sim.Encounter.Groups[0]);
@@ -190,7 +181,7 @@ bool FSolidBattleActivePlanTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("a group with no plan name has none"), Sim.GroupPlanName().IsEmpty());
 	TestEqual(TEXT("that group has its one raptor"), Sim.Battle.Group->Num(), 1);
 
-	Sim.UseEncounter(SolidEncounter::Definitions[0]);
+	TestTrue(TEXT("Iglin Bridge is an encounter"), Sim.UseEncounter(TEXT("Iglin Bridge")));
 	TestEqual(TEXT("Iglin Bridge reads Attack"), Sim.GroupPlanName(), FString(TEXT("Attack")));
 	TestTrue(TEXT("Attack stores attack"), Sim.GroupAttacks());
 	return true;
@@ -213,24 +204,20 @@ bool FSolidBattleSidesTest::RunTest(const FString& Parameters)
 	}
 	USolidCaptain* Captain = Squad->GetCompany() ? Squad->GetCompany()->GetCaptain() : nullptr;
 	TestNotNull(TEXT("the captain is with the squad"), Captain);
-	TestEqual(TEXT("no companion is out yet"), Squad->GetSelectedCompanionCount(), 0);
+	TestEqual(TEXT("no companion is out"), Squad->GetSelectedCompanionCount(), 0);
+	TestEqual(TEXT("the main hand is the crude spear"), Sim.WornName(SolidInventory::ESlot::MainHand), FString(TEXT("Crude spear")));
+	TestEqual(TEXT("the body is Rags"), Sim.WornName(SolidInventory::ESlot::Body), FString(TEXT("Rags")));
+	TestEqual(TEXT("the head is the dented helmet"), Sim.WornName(SolidInventory::ESlot::Head), FString(TEXT("Dented helmet")));
 	TestNull(TEXT("no monster group yet"), Sim.Battle.Group);
 
-	Sim.InSquad(TEXT("Sam"));
-	Sim.UseEncounter(SolidEncounter::Definitions[0]);
+	TestTrue(TEXT("Iglin Bridge is an encounter"), Sim.UseEncounter(TEXT("Iglin Bridge")));
 	TestNotNull(TEXT("the Iglin Bridge group"), Sim.Battle.Group);
-	if (!Sim.Battle.Group)
+	if (!Sim.Battle.Group || Sim.Encounter.Definition.GroupCount < 1)
 	{
 		return false;
 	}
 
-	TestTrue(TEXT("Sam is in the squad"), Sim.SquadHas(TEXT("Sam")));
-	TestFalse(TEXT("Alex is in the squad"), Sim.SquadHas(TEXT("Alex")));
-	TestEqual(TEXT("Sam's weapon is the crude spear"), Sim.CompanionWeapon(TEXT("Sam")), FString(TEXT("Crude spear")));
-	TestEqual(TEXT("Sam's armour is Rags"), Sim.CompanionArmour(TEXT("Sam")), FString(TEXT("Rags")));
-	TestEqual(TEXT("one companion is out"), Squad->GetSelectedCompanionCount(), 1);
-
-	const SolidEncounter::FGroup& Spec = SolidEncounter::Definitions[0].Groups[0];
+	const SolidEncounter::FGroup& Spec = Sim.Encounter.Definition.Groups[0];
 	TestEqual(TEXT("the group has the definition's raptors"), Sim.Battle.Group->Num(), Spec.Count);
 	for (int32 Index = 0; Index < Sim.Battle.Group->Num(); ++Index)
 	{

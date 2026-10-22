@@ -143,7 +143,7 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 	TArray<SolidBridge::FBridge> Bridges;
 	Bridges.Add(IglinBridge(true));
 
-	const SolidEncounter::FDefinition IglinDef = SolidEncounter::IglinBridge();
+	const SolidEncounter::FDefinition IglinDef = SolidEncounter::Definitions[0];
 	FSolidEncounter Encounter(IglinDef);
 	TestEqual(
 		TEXT("three reptiles"),

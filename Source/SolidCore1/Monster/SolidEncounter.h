@@ -71,15 +71,6 @@ namespace SolidEncounter
 		}
 	};
 
-	/** Three Small raptors beside the Iglin ramp. */
-	inline constexpr FDefinition IglinBridge()
-	{
-		FDefinition Def;
-		Def.Name = TEXT("Iglin Bridge");
-		Def.Site = ESite::IglinBridgeRamp;
-		return Def.WithGroup(EMonsterKind::Raptor, ESolidMonsterSize::Small, 3);
-	}
-
 	/** A closed visit has no encounters. The tunnels stay empty. */
 	bool WorldHasEncounters(bool bClosedVisit);
 }

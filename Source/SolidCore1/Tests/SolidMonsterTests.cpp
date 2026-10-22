@@ -5,7 +5,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Monster/SolidMonster.h"
 #include "Monster/SolidMonsterGroup.h"
-#include "Monster/SolidMonsterActor.h"
+#include "Monster/SolidRaptorActor.h"
 #include "Monster/SolidRaptor.h"
 #include "Game/SolidMonsterMeasure.h"
 #include "Terrain/SolidBridge.h"
@@ -233,14 +233,14 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidMonsterBodyTest::RunTest(const FString& Parameters)
 {
-	ASolidMonster* Monster = NewObject<ASolidMonster>();
-	TestNotNull(TEXT("monster"), Monster);
-	if (!Monster)
+	ASolidRaptor* Raptor = NewObject<ASolidRaptor>();
+	TestNotNull(TEXT("raptor"), Raptor);
+	if (!Raptor)
 	{
 		return false;
 	}
 
-	const UCapsuleComponent* Capsule = Monster->GetCapsule();
+	const UCapsuleComponent* Capsule = Raptor->GetCapsule();
 	TestNotNull(TEXT("capsule"), Capsule);
 	if (!Capsule)
 	{
@@ -260,9 +260,9 @@ bool FSolidMonsterBodyTest::RunTest(const FString& Parameters)
 		FMath::IsNearlyEqual(Capsule->GetRelativeLocation().Z, FSolidMonster::CapsuleHalfHeightCm));
 	TestTrue(TEXT("the capsule blocks a pawn"), Capsule->GetCollisionResponseToChannel(ECC_Pawn) == ECR_Block);
 	TestTrue(TEXT("the capsule ignores a click"), Capsule->GetCollisionResponseToChannel(ECC_Visibility) == ECR_Ignore);
-	TestFalse(TEXT("a monster takes no damage"), Monster->CanBeDamaged());
+	TestFalse(TEXT("a raptor takes no damage"), Raptor->CanBeDamaged());
 
-	const USkeletalMeshComponent* Body = Monster->GetBody();
+	const USkeletalMeshComponent* Body = Raptor->GetBody();
 	TestNotNull(TEXT("body"), Body);
 	if (Body)
 	{

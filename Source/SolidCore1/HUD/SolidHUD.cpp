@@ -21,7 +21,7 @@
 #include "SolidPlayerController.h"
 #include "Companion/SolidCompanionCharacter.h"
 #include "Game/SolidMonsterMeasure.h"
-#include "Monster/SolidMonsterActor.h"
+#include "Monster/SolidRaptorActor.h"
 #include "Company/SolidBattlePlan.h"
 #include "Company/SolidSquad.h"
 #include "Company/SolidSquadDrill.h"
@@ -1208,17 +1208,17 @@ namespace SolidHUDPrivate
 		}
 
 		int32 Shown = 0;
-		for (TActorIterator<ASolidMonster> It(World); It; ++It)
+		for (TActorIterator<ASolidRaptor> It(World); It; ++It)
 		{
-			const ASolidMonster* Monster = *It;
-			if (!Monster)
+			const ASolidRaptor* Raptor = *It;
+			if (!Raptor)
 			{
 				continue;
 			}
 			++Shown;
 
-			const FVector Feet = Monster->GetActorLocation();
-			const USkeletalMeshComponent* Body = Monster->GetBody();
+			const FVector Feet = Raptor->GetActorLocation();
+			const USkeletalMeshComponent* Body = Raptor->GetBody();
 			const float ScaleZ = Body ? Body->GetRelativeScale3D().Z : 1.f;
 			const float LocalZ = Body ? Body->GetRelativeLocation().Z : 0.f;
 			float BoxCm = 0.f;

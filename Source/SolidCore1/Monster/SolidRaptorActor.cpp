@@ -1,10 +1,10 @@
-#include "SolidMonsterActor.h"
+#include "SolidRaptorActor.h"
 #include "SolidMonster.h"
 #include "SolidRaptor.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 
-ASolidMonster::ASolidMonster()
+ASolidRaptor::ASolidRaptor()
 {
 	PrimaryActorTick.bCanEverTick = false;
 	SetCanBeDamaged(false);
@@ -28,25 +28,25 @@ ASolidMonster::ASolidMonster()
 	Body->SetRelativeRotation(FRotator(0.f, FSolidMonster::MeshFacingYawDeg, 0.f));
 }
 
-void ASolidMonster::OnConstruction(const FTransform& Transform)
+void ASolidRaptor::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);
 	BuildVisuals();
 }
 
-void ASolidMonster::BeginPlay()
+void ASolidRaptor::BeginPlay()
 {
 	Super::BeginPlay();
 	BuildVisuals();
 }
 
-void ASolidMonster::SetChoice(const int32 InChoiceIndex)
+void ASolidRaptor::SetChoice(const int32 InChoiceIndex)
 {
 	ChoiceIndex = InChoiceIndex;
 }
 
-void ASolidMonster::BuildVisuals()
+void ASolidRaptor::BuildVisuals()
 {
-	const FSolidRaptor Raptor;
-	Raptor.ApplyVisuals(Body, ActiveIdle);
+	const FSolidRaptor Kind;
+	Kind.ApplyVisuals(Body, ActiveIdle);
 }

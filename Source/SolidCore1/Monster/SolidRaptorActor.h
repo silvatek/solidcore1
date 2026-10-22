@@ -2,24 +2,24 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
-#include "SolidMonsterActor.generated.h"
+#include "SolidRaptorActor.generated.h"
 
 class UCapsuleComponent;
 class USkeletalMeshComponent;
 class UAnimSequence;
 
 /**
- * One monster on the open world.
+ * One raptor on the open world.
  * It stands and idles. It blocks a walk and ignores a ground click. It has no name.
- * The plain FSolidMonster (a raptor today) owns the kind answers; this actor is the engine shell.
+ * FSolidRaptor owns the kind answers; this actor is the engine shell for that kind.
  */
 UCLASS()
-class SOLIDCORE1_API ASolidMonster : public AActor
+class SOLIDCORE1_API ASolidRaptor : public AActor
 {
 	GENERATED_BODY()
 
 public:
-	ASolidMonster();
+	ASolidRaptor();
 
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
@@ -33,13 +33,13 @@ public:
 	const USkeletalMeshComponent* GetBody() const { return Body; }
 
 protected:
-	UPROPERTY(VisibleAnywhere, Category = "Monster")
+	UPROPERTY(VisibleAnywhere, Category = "Raptor")
 	TObjectPtr<USceneComponent> SceneRoot;
 
-	UPROPERTY(VisibleAnywhere, Category = "Monster")
+	UPROPERTY(VisibleAnywhere, Category = "Raptor")
 	TObjectPtr<UCapsuleComponent> Capsule;
 
-	UPROPERTY(VisibleAnywhere, Category = "Monster")
+	UPROPERTY(VisibleAnywhere, Category = "Raptor")
 	TObjectPtr<USkeletalMeshComponent> Body;
 
 	int32 ChoiceIndex = INDEX_NONE;

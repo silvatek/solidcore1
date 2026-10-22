@@ -258,7 +258,7 @@ ASolidGameMode                      # World root. OpenLevel replaces it
   ASolidLairInterior                # This tunnel visit
   ASolidTree[]
   ASolidForagePile[]
-  ASolidMonster[]                 # Three reptiles beside the Iglin ramp
+  ASolidRaptor[]                  # Three reptiles beside the Iglin ramp
   ASolidBuilding[]
   ASolidTownSign[]
   ASolidBridge[]

@@ -36,7 +36,7 @@
 #include "Vegetation/SolidForage.h"
 #include "Vegetation/SolidForagePile.h"
 #include "Monster/SolidMonsterGroup.h"
-#include "Monster/SolidMonsterActor.h"
+#include "Monster/SolidRaptorActor.h"
 #include "SolidMonsterMeasure.h"
 #include "Vegetation/SolidForestTrees.h"
 #include "Vegetation/SolidTree.h"
@@ -991,7 +991,7 @@ bool ASolidGameMode::TeleportSquadToReptile()
 	}
 	else
 	{
-		for (TActorIterator<ASolidMonster> It(World); It; ++It)
+		for (TActorIterator<ASolidRaptor> It(World); It; ++It)
 		{
 			Anchor = *It;
 			break;
@@ -1665,19 +1665,19 @@ void ASolidGameMode::SeedMonsters()
 			SolidMonsterMeasure::MonsterXCm,
 			SolidMonsterMeasure::MonsterYCm,
 			0.f));
-		ASolidMonster* Monster = World->SpawnActor<ASolidMonster>(
-			ASolidMonster::StaticClass(),
+		ASolidRaptor* Raptor = World->SpawnActor<ASolidRaptor>(
+			ASolidRaptor::StaticClass(),
 			MonsterLoc,
 			Face,
 			SpawnParams);
-		if (!Monster)
+		if (!Raptor)
 		{
 			continue;
 		}
 
-		Monster->SetChoice(Index);
-		Monster->BuildVisuals();
-		SpawnedMonsters.Add(Monster);
+		Raptor->SetChoice(Index);
+		Raptor->BuildVisuals();
+		SpawnedMonsters.Add(Raptor);
 		SeededMonsters.Add(Index);
 		++Spawned;
 

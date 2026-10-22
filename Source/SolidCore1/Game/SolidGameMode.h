@@ -14,7 +14,7 @@
 class ASolidBridge;
 class ASolidBuilding;
 class ASolidForagePile;
-class ASolidMonster;
+class ASolidRaptor;
 class ASolidLairEntrance;
 class ASolidLairInterior;
 class ASolidCompanionCharacter;
@@ -284,7 +284,7 @@ protected:
 	bool bForageChosen = false;
 
 	UPROPERTY(Transient)
-	TArray<TObjectPtr<ASolidMonster>> SpawnedMonsters;
+	TArray<TObjectPtr<ASolidRaptor>> SpawnedMonsters;
 
 	/** Member indexes already given a monster actor this visit. A closed visit stores none. */
 	TArray<int32> SeededMonsters;

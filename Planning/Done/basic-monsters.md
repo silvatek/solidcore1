@@ -1,6 +1,6 @@
 # Basic monsters
 
-Status: In Progress
+Status: Done
 
 ## Story
 

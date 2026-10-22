@@ -242,23 +242,23 @@ bool FSolidForagePickupTest::RunTest(const FString& Parameters)
 	USolidCaptain& StateCaptain = *NewObject<USolidCaptain>();
 	const int32 Journal = State.GetJournal()->Entries.Num();
 	const SolidStorage::FContainer Chest = State.CaveChest;
-	const TCHAR* Body = State.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)];
+	const FString Body = State.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)].Id();
 	TestEqual(TEXT("a new game has taken no piles"), State.TakenForagePiles.Num(), 0);
 	TestTrue(TEXT("one stick is enough to fill the pack"), SolidForage::TakePile(State, 0, SolidItemType::IdStick));
 	TestEqual(TEXT("the pickup writes no journal line"), State.GetJournal()->Entries.Num(), Journal);
 	TestTrue(TEXT("the scatter index is remembered"), State.TakenForagePiles.Contains(0));
-	TestEqual(TEXT("the pack holds the stick"), FString(State.Inventory.Pack[0]), FString(SolidItemType::IdStick));
-	TestEqual(TEXT("the stack is one"), State.Inventory.PackStack[0], 1);
+	TestEqual(TEXT("the pack holds the stick"), FString(State.Inventory.Pack[0].Id()), FString(SolidItemType::IdStick));
+	TestEqual(TEXT("the stack is one"), State.Inventory.Pack[0].Count, 1);
 	TestFalse(TEXT("the same pile cannot be taken twice"), SolidForage::TakePile(State, 0, SolidItemType::IdStick));
-	TestEqual(TEXT("the stack stays one"), State.Inventory.PackStack[0], 1);
+	TestEqual(TEXT("the stack stays one"), State.Inventory.Pack[0].Count, 1);
 	TestTrue(TEXT("a second stick joins the stack"), SolidForage::TakePile(State, 1, SolidItemType::IdStick));
-	TestEqual(TEXT("the stack is two"), State.Inventory.PackStack[0], 2);
-	TestEqual(TEXT("the body is untouched"), FString(State.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)]), FString(Body));
-	TestTrue(TEXT("the craft slots stay empty"), State.Inventory.Craft[0] == nullptr);
+	TestEqual(TEXT("the stack is two"), State.Inventory.Pack[0].Count, 2);
+	TestEqual(TEXT("the body is untouched"), FString(State.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)].Id()), FString(Body));
+	TestTrue(TEXT("the craft slots stay empty"), State.Inventory.Craft[0].IsEmpty());
 	for (int32 Index = 0; Index < SolidStorage::Count; ++Index)
 	{
-		TestEqual(TEXT("the cave chest keeps its item"), FString(State.CaveChest.Slots[Index]), FString(Chest.Slots[Index]));
-		TestEqual(TEXT("the cave chest keeps its count"), State.CaveChest.Counts[Index], Chest.Counts[Index]);
+		TestEqual(TEXT("the cave chest keeps its item"), FString(State.CaveChest.Slots[Index].Id()), FString(Chest.Slots[Index].Id()));
+		TestEqual(TEXT("the cave chest keeps its count"), State.CaveChest.Slots[Index].Count, Chest.Slots[Index].Count);
 	}
 
 	USolidGameState& Full = *NewObject<USolidGameState>();
@@ -269,7 +269,7 @@ bool FSolidForagePickupTest::RunTest(const FString& Parameters)
 	}
 	TestFalse(TEXT("a full pack does not take the pile"), SolidForage::TakePile(Full, 3, SolidItemType::IdStick));
 	TestEqual(TEXT("the pile is not remembered"), Full.TakenForagePiles.Num(), 0);
-	TestEqual(TEXT("the full stack stays full"), Full.Inventory.PackStack[0], 10);
+	TestEqual(TEXT("the full stack stays full"), Full.Inventory.Pack[0].Count, 10);
 
 	USolidGameState& Cleared = *NewObject<USolidGameState>();
 	USolidCaptain& ClearedCaptain = *NewObject<USolidCaptain>();
@@ -280,10 +280,10 @@ bool FSolidForagePickupTest::RunTest(const FString& Parameters)
 	SolidEvents::ApplyChange(Cleared, ClearedCaptain, SolidEvents::Change::ClearInventory(), Result);
 	TestTrue(TEXT("closing the monster message leaves the pile taken"), Cleared.TakenForagePiles.Contains(4));
 	TestEqual(TEXT("that clear writes no journal line"), Cleared.GetJournal()->Entries.Num(), ClearedJournal);
-	TestTrue(TEXT("the pack no longer holds the pitch"), Cleared.Inventory.Pack[0] == nullptr);
+	TestTrue(TEXT("the pack no longer holds the pitch"), Cleared.Inventory.Pack[0].IsEmpty());
 	TestEqual(
 		TEXT("the body is back to rags"),
-		FString(Cleared.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)]),
+		FString(Cleared.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)].Id()),
 		FString(SolidItemType::IdRags));
 
 	USolidGameInstance* Instance = NewObject<USolidGameInstance>();
@@ -299,7 +299,7 @@ bool FSolidForagePickupTest::RunTest(const FString& Parameters)
 	const USolidGameState* Restored = Instance->GetConfiguration();
 	TestTrue(TEXT("the trip is the same play state"), Restored == Kept);
 	TestTrue(TEXT("the trip remembers the taken index"), Restored->TakenForagePiles.Contains(5));
-	TestEqual(TEXT("the trip keeps the pack"), FString(Restored->Inventory.Pack[0]), FString(SolidItemType::IdStick));
+	TestEqual(TEXT("the trip keeps the pack"), FString(Restored->Inventory.Pack[0].Id()), FString(SolidItemType::IdStick));
 
 	ASolidForagePile* Pile = NewObject<ASolidForagePile>();
 	TestNotNull(TEXT("pile"), Pile);

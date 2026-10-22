@@ -64,7 +64,7 @@ namespace SolidStorageTestPrivate
 	{
 		for (int32 Index = 0; Index < SolidStorage::Count; ++Index)
 		{
-			if (Chest.Slots[Index] == nullptr)
+			if (Chest.Slots[Index].IsEmpty())
 			{
 				return Index;
 			}
@@ -98,7 +98,7 @@ bool FSolidStorageCaveChestTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the chest cell count is the grid"), SolidStorage::Count, SolidStorage::Columns * SolidStorage::Rows);
 	TestEqual(
 		TEXT("the first cell holds the sword"),
-		FString(Chest.Slots[SolidStorage::Index(0, 0)]),
+		FString(Chest.Slots[SolidStorage::Index(0, 0)].Id()),
 		FString(SolidItemType::IdRustySword));
 	const int32 EmptyIndex = SolidStorageTestPrivate::FirstEmptySlot(Chest);
 	TestTrue(TEXT("the chest starts with an empty cell"), EmptyIndex != INDEX_NONE);
@@ -119,10 +119,10 @@ bool FSolidStorageCaveChestTest::RunTest(const FString& Parameters)
 			SolidInventory::ESlot::Head,
 			1,
 			2));
-	TestTrue(TEXT("the chest cell is empty"), Held.Slots[SolidStorage::Index(0, 0)] == nullptr);
+	TestTrue(TEXT("the chest cell is empty"), Held.Slots[SolidStorage::Index(0, 0)].IsEmpty());
 	TestEqual(
 		TEXT("the pack holds the sword"),
-		FString(Loadout.Pack[SolidInventory::PackIndex(1, 2)]),
+		FString(Loadout.Pack[SolidInventory::PackIndex(1, 2)].Id()),
 		FString(SolidItemType::IdRustySword));
 	TestFalse(
 		TEXT("an empty chest cell cannot be taken"),
@@ -149,11 +149,11 @@ bool FSolidStorageCaveChestTest::RunTest(const FString& Parameters)
 			0));
 	TestEqual(
 		TEXT("the main hand holds the sword"),
-		FString(Loadout.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::MainHand)]),
+		FString(Loadout.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::MainHand)].Id()),
 		FString(SolidItemType::IdRustySword));
 	TestEqual(
 		TEXT("the chest holds the spear"),
-		FString(Held.Slots[0]),
+		FString(Held.Slots[0].Id()),
 		FString(SolidItemType::IdCrudeSpear));
 	TestFalse(
 		TEXT("a cell outside the chest is refused"),
@@ -244,36 +244,36 @@ bool FSolidInventoryMoveTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("the spear moves into the empty off hand"),
 		SolidInventory::Move(&Chest, Loadout, Worn(SolidInventory::ESlot::MainHand), Worn(SolidInventory::ESlot::OffHand)));
-	TestEqual(TEXT("the off hand holds the spear"), FString(Loadout.Worn[Off]), FString(SolidItemType::IdCrudeSpear));
-	TestTrue(TEXT("the main hand is empty"), Loadout.Worn[Main] == nullptr);
+	TestEqual(TEXT("the off hand holds the spear"), FString(Loadout.Worn[Off].Id()), FString(SolidItemType::IdCrudeSpear));
+	TestTrue(TEXT("the main hand is empty"), Loadout.Worn[Main].IsEmpty());
 
 	TestTrue(TEXT("the torch can be held"), SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::MainHand, SolidItemType::IdTorch));
 	TestTrue(
 		TEXT("the torch swaps with the spear"),
 		SolidInventory::Move(&Chest, Loadout, Worn(SolidInventory::ESlot::MainHand), Worn(SolidInventory::ESlot::OffHand)));
-	TestEqual(TEXT("the off hand holds the torch"), FString(Loadout.Worn[Off]), FString(SolidItemType::IdTorch));
-	TestEqual(TEXT("the main hand holds the spear"), FString(Loadout.Worn[Main]), FString(SolidItemType::IdCrudeSpear));
+	TestEqual(TEXT("the off hand holds the torch"), FString(Loadout.Worn[Off].Id()), FString(SolidItemType::IdTorch));
+	TestEqual(TEXT("the main hand holds the spear"), FString(Loadout.Worn[Main].Id()), FString(SolidItemType::IdCrudeSpear));
 
 	TestFalse(
 		TEXT("dropping on the same worn box does nothing"),
 		SolidInventory::Move(&Chest, Loadout, Worn(SolidInventory::ESlot::Body), Worn(SolidInventory::ESlot::Body)));
-	TestEqual(TEXT("the body still wears Rags"), FString(Loadout.Worn[Body]), FString(SolidItemType::IdRags));
+	TestEqual(TEXT("the body still wears Rags"), FString(Loadout.Worn[Body].Id()), FString(SolidItemType::IdRags));
 
 	TestTrue(TEXT("Rags can be set down in the pack"), SolidInventory::PlacePack(Loadout, 0, 0, SolidItemType::IdRags));
 	TestEqual(
 		TEXT("the pack holds Rags"),
-		FString(Loadout.Pack[SolidInventory::PackIndex(0, 0)]),
+		FString(Loadout.Pack[SolidInventory::PackIndex(0, 0)].Id()),
 		FString(SolidItemType::IdRags));
-	TestEqual(TEXT("the body still wears Rags"), FString(Loadout.Worn[Body]), FString(SolidItemType::IdRags));
+	TestEqual(TEXT("the body still wears Rags"), FString(Loadout.Worn[Body].Id()), FString(SolidItemType::IdRags));
 
 	TestTrue(
 		TEXT("a pack cell moves to another pack cell"),
 		SolidInventory::Move(&Chest, Loadout, Pack(0, 0), Pack(1, 2)));
 	TestEqual(
 		TEXT("the far pack cell holds Rags"),
-		FString(Loadout.Pack[SolidInventory::PackIndex(1, 2)]),
+		FString(Loadout.Pack[SolidInventory::PackIndex(1, 2)].Id()),
 		FString(SolidItemType::IdRags));
-	TestTrue(TEXT("the first pack cell is empty"), Loadout.Pack[SolidInventory::PackIndex(0, 0)] == nullptr);
+	TestTrue(TEXT("the first pack cell is empty"), Loadout.Pack[SolidInventory::PackIndex(0, 0)].IsEmpty());
 
 	TestTrue(TEXT("the sword can be set down in the pack"), SolidInventory::PlacePack(Loadout, 0, 1, SolidItemType::IdRustySword));
 	const int32 EmptyChest = SolidStorageTestPrivate::FirstEmptySlot(Chest);
@@ -287,45 +287,45 @@ bool FSolidInventoryMoveTest::RunTest(const FString& Parameters)
 		SolidInventory::Move(&Chest, Loadout, Pack(0, 1), ChestCell(EmptyChest)));
 	TestEqual(
 		TEXT("the chest cell holds the sword"),
-		FString(Chest.Slots[EmptyChest]),
+		FString(Chest.Slots[EmptyChest].Id()),
 		FString(SolidItemType::IdRustySword));
-	TestTrue(TEXT("the pack cell is empty after the return"), Loadout.Pack[SolidInventory::PackIndex(0, 1)] == nullptr);
+	TestTrue(TEXT("the pack cell is empty after the return"), Loadout.Pack[SolidInventory::PackIndex(0, 1)].IsEmpty());
 	TestEqual(
 		TEXT("the chest still holds its first sword"),
-		FString(Chest.Slots[SolidStorage::Index(0, 0)]),
+		FString(Chest.Slots[SolidStorage::Index(0, 0)].Id()),
 		FString(SolidItemType::IdRustySword));
 
 	TestTrue(
 		TEXT("Rags swap onto the occupied chest cell"),
 		SolidInventory::Move(&Chest, Loadout, Pack(1, 2), ChestCell(0)));
-	TestEqual(TEXT("the chest holds Rags"), FString(Chest.Slots[0]), FString(SolidItemType::IdRags));
+	TestEqual(TEXT("the chest holds Rags"), FString(Chest.Slots[0].Id()), FString(SolidItemType::IdRags));
 	TestEqual(
 		TEXT("the pack holds the sword that was in the chest"),
-		FString(Loadout.Pack[SolidInventory::PackIndex(1, 2)]),
+		FString(Loadout.Pack[SolidInventory::PackIndex(1, 2)].Id()),
 		FString(SolidItemType::IdRustySword));
 
 	TestFalse(
 		TEXT("an empty worn box cannot be dragged"),
 		SolidInventory::Move(&Chest, Loadout, Worn(SolidInventory::ESlot::Boots), Pack(0, 0)));
-	TestTrue(TEXT("the empty drop leaves the pack cell empty"), Loadout.Pack[SolidInventory::PackIndex(0, 0)] == nullptr);
+	TestTrue(TEXT("the empty drop leaves the pack cell empty"), Loadout.Pack[SolidInventory::PackIndex(0, 0)].IsEmpty());
 
 	SolidStorage::FContainer Untouched = Chest;
-	const FString SpearBefore = Loadout.Worn[Main];
+	const FString SpearBefore = Loadout.Worn[Main].Id();
 	TestFalse(
 		TEXT("a chest cell is refused when the chest is closed"),
 		SolidInventory::Move(nullptr, Loadout, Worn(SolidInventory::ESlot::MainHand), ChestCell(SolidStorage::Index(1, 1))));
-	TestEqual(TEXT("the spear stays in the main hand"), FString(Loadout.Worn[Main]), SpearBefore);
+	TestEqual(TEXT("the spear stays in the main hand"), FString(Loadout.Worn[Main].Id()), SpearBefore);
 	for (int32 Index = 0; Index < SolidStorage::Count; ++Index)
 	{
 		TestEqual(
 			TEXT("a closed chest is not written"),
-			FString(Chest.Slots[Index] ? Chest.Slots[Index] : TEXT("")),
-			FString(Untouched.Slots[Index] ? Untouched.Slots[Index] : TEXT("")));
+			FString(Chest.Slots[Index].Id()),
+			FString(Untouched.Slots[Index].Id()));
 	}
 	TestFalse(
 		TEXT("a drag out of a closed chest is refused"),
 		SolidInventory::Move(nullptr, Loadout, ChestCell(0), Worn(SolidInventory::ESlot::Boots)));
-	TestTrue(TEXT("the boots stay empty"), Loadout.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Boots)] == nullptr);
+	TestTrue(TEXT("the boots stay empty"), Loadout.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Boots)].IsEmpty());
 
 	return true;
 }
@@ -344,14 +344,14 @@ bool FSolidStorageChestStacksTest::RunTest(const FString& Parameters)
 	const int32 CoinIndex = SolidStorage::Index(0, 1);
 	TestEqual(
 		TEXT("old boots sit beside the sword"),
-		FString(Chest.Slots[BootsIndex]),
+		FString(Chest.Slots[BootsIndex].Id()),
 		FString(SolidItemType::IdOldBoots));
-	TestEqual(TEXT("one pair of old boots"), Chest.Counts[BootsIndex], 1);
+	TestEqual(TEXT("one pair of old boots"), Chest.Slots[BootsIndex].Count, 1);
 	TestEqual(
 		TEXT("coins sit under the sword"),
-		FString(Chest.Slots[CoinIndex]),
+		FString(Chest.Slots[CoinIndex].Id()),
 		FString(SolidItemType::IdCoins));
-	TestEqual(TEXT("twenty coins"), Chest.Counts[CoinIndex], SolidStorage::StartingCoinCount);
+	TestEqual(TEXT("twenty coins"), Chest.Slots[CoinIndex].Count, SolidStorage::StartingCoinCount);
 
 	SolidInventory::FPage Page;
 	SolidInventory::Layout(SolidInventory::StartingLoadout(), Page, &Chest);
@@ -379,7 +379,7 @@ bool FSolidStorageChestStacksTest::RunTest(const FString& Parameters)
 		SolidInventory::PlaceWorn(Loadout, SolidInventory::ESlot::Body, SolidItemType::IdOldBoots));
 	TestEqual(
 		TEXT("the body still wears rags"),
-		FString(Loadout.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)]),
+		FString(Loadout.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)].Id()),
 		FString(SolidItemType::IdRags));
 
 	TestTrue(
@@ -387,14 +387,14 @@ bool FSolidStorageChestStacksTest::RunTest(const FString& Parameters)
 		SolidInventory::Move(&Held, Loadout, ChestCell(CoinIndex), Pack(0, 0)));
 	TestEqual(
 		TEXT("the pack holds the coins"),
-		FString(Loadout.Pack[SolidInventory::PackIndex(0, 0)]),
+		FString(Loadout.Pack[SolidInventory::PackIndex(0, 0)].Id()),
 		FString(SolidItemType::IdCoins));
 	TestEqual(
 		TEXT("the pack keeps the stack"),
-		Loadout.PackStack[SolidInventory::PackIndex(0, 0)],
+		Loadout.Pack[SolidInventory::PackIndex(0, 0)].Count,
 		SolidStorage::StartingCoinCount);
-	TestTrue(TEXT("the chest cell is empty"), Held.Slots[CoinIndex] == nullptr);
-	TestEqual(TEXT("the empty cell has no count"), Held.Counts[CoinIndex], 0);
+	TestTrue(TEXT("the chest cell is empty"), Held.Slots[CoinIndex].IsEmpty());
+	TestEqual(TEXT("the empty cell has no count"), Held.Slots[CoinIndex].Count, 0);
 	return true;
 }
 
@@ -418,16 +418,16 @@ bool FSolidStorageChestMaterialsTest::RunTest(const FString& Parameters)
 	const int32 LastIndex = SolidStorage::Index(1, 2);
 	TestEqual(
 		TEXT("sticks sit beside the coins"),
-		FString(Chest.Slots[StickIndex]),
+		FString(Chest.Slots[StickIndex].Id()),
 		FString(SolidItemType::IdStick));
-	TestEqual(TEXT("the chest holds five sticks"), Chest.Counts[StickIndex], SolidStorage::StartingStickCount);
+	TestEqual(TEXT("the chest holds five sticks"), Chest.Slots[StickIndex].Count, SolidStorage::StartingStickCount);
 	TestEqual(
 		TEXT("pitch sits under the coins"),
-		FString(Chest.Slots[PitchIndex]),
+		FString(Chest.Slots[PitchIndex].Id()),
 		FString(SolidItemType::IdPitch));
-	TestEqual(TEXT("the chest holds three pitch"), Chest.Counts[PitchIndex], SolidStorage::StartingPitchCount);
-	TestTrue(TEXT("the last cell starts empty"), Chest.Slots[LastIndex] == nullptr);
-	TestEqual(TEXT("the last cell has no count"), Chest.Counts[LastIndex], 0);
+	TestEqual(TEXT("the chest holds three pitch"), Chest.Slots[PitchIndex].Count, SolidStorage::StartingPitchCount);
+	TestTrue(TEXT("the last cell starts empty"), Chest.Slots[LastIndex].IsEmpty());
+	TestEqual(TEXT("the last cell has no count"), Chest.Slots[LastIndex].Count, 0);
 
 	SolidInventory::FPage Page;
 	SolidInventory::Layout(SolidInventory::StartingLoadout(), Page, &Chest);
@@ -455,18 +455,18 @@ bool FSolidStorageChestMaterialsTest::RunTest(const FString& Parameters)
 		SolidInventory::Move(&Held, Loadout, ChestCell(StickIndex), Pack(0, 0)));
 	TestEqual(
 		TEXT("the pack holds the sticks"),
-		FString(Loadout.Pack[SolidInventory::PackIndex(0, 0)]),
+		FString(Loadout.Pack[SolidInventory::PackIndex(0, 0)].Id()),
 		FString(SolidItemType::IdStick));
 	TestEqual(
 		TEXT("the pack keeps the stick stack"),
-		Loadout.PackStack[SolidInventory::PackIndex(0, 0)],
+		Loadout.Pack[SolidInventory::PackIndex(0, 0)].Count,
 		SolidStorage::StartingStickCount);
-	TestTrue(TEXT("the stick cell is empty"), Held.Slots[StickIndex] == nullptr);
+	TestTrue(TEXT("the stick cell is empty"), Held.Slots[StickIndex].IsEmpty());
 	TestEqual(
 		TEXT("pitch stays in the chest"),
-		FString(Held.Slots[PitchIndex]),
+		FString(Held.Slots[PitchIndex].Id()),
 		FString(SolidItemType::IdPitch));
-	TestEqual(TEXT("pitch keeps its stack"), Held.Counts[PitchIndex], SolidStorage::StartingPitchCount);
+	TestEqual(TEXT("pitch keeps its stack"), Held.Slots[PitchIndex].Count, SolidStorage::StartingPitchCount);
 	return true;
 }
 

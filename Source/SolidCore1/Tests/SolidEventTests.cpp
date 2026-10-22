@@ -1306,11 +1306,11 @@ bool FSolidEventsClearInventoryTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the ramp still shows the message"), Reached.bShowMessage);
 	TestEqual(
 		TEXT("the ramp leaves the helmet"),
-		FString(State.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Head)]),
+		FString(State.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Head)].Id()),
 		FString(SolidItemType::IdDentedHelmet));
 	TestEqual(
 		TEXT("the ramp leaves the pack"),
-		FString(State.Inventory.Pack[SolidInventory::PackIndex(0, 0)]),
+		FString(State.Inventory.Pack[SolidInventory::PackIndex(0, 0)].Id()),
 		FString(SolidItemType::IdDentedHelmet));
 
 	const SolidEvents::FResult Closed = SolidEvents::NotifyMessageClosed(State, StateCaptain, SolidMessages::IdKilledByMonsters);
@@ -1323,17 +1323,17 @@ bool FSolidEventsClearInventoryTest::RunTest(const FString& Parameters)
 		{
 			TestEqual(
 				TEXT("the body wears rags"),
-				FString(State.Inventory.Worn[Index]),
+				FString(State.Inventory.Worn[Index].Id()),
 				FString(SolidItemType::IdRags));
 		}
 		else
 		{
-			TestTrue(TEXT("the close empties the other worn boxes"), State.Inventory.Worn[Index] == nullptr);
+			TestTrue(TEXT("the close empties the other worn boxes"), State.Inventory.Worn[Index].IsEmpty());
 		}
 	}
 	for (int32 Index = 0; Index < SolidInventory::PackCount; ++Index)
 	{
-		TestTrue(TEXT("the close empties the pack"), State.Inventory.Pack[Index] == nullptr);
+		TestTrue(TEXT("the close empties the pack"), State.Inventory.Pack[Index].IsEmpty());
 	}
 
 	TArray<USolidJournal::FRow> Rows;
@@ -1353,7 +1353,7 @@ bool FSolidEventsClearInventoryTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("closing the message fires once"), ClosedAgain.bFired);
 	TestEqual(
 		TEXT("a second close leaves the helmet"),
-		FString(State.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Head)]),
+		FString(State.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Head)].Id()),
 		FString(SolidItemType::IdDentedHelmet));
 	return true;
 }

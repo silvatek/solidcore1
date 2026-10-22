@@ -9,7 +9,7 @@
 
 /**
  * Captain's inventory. Worn boxes follow a person. The pack is a grid beside them.
- * A box stores an item id from SolidItemType. The page shows that item's name.
+ * A box stores one item. A count above one is a stack. The page shows that item's name.
  * / opens the page. F10, then Inventory, opens it too.
  */
 namespace SolidInventory
@@ -71,73 +71,53 @@ namespace SolidInventory
 
 	struct FLoadout
 	{
-		/** Item ids. Null is an empty box. */
-		const TCHAR* Worn[WornCount] = {};
-		int32 WornStack[WornCount] = {};
-		const TCHAR* Pack[PackCount] = {};
-		int32 PackStack[PackCount] = {};
+		/** One item in each worn box. An empty item is an empty box. */
+		FSolidItem Worn[WornCount];
+		FSolidItem Pack[PackCount];
 		/** Crafting slots on the inventory page. Empty until an item is dragged in. */
-		const TCHAR* Craft[CraftCount] = {};
-		int32 CraftStack[CraftCount] = {};
+		FSolidItem Craft[CraftCount];
 	};
 
-	inline void WriteWorn(FLoadout& Loadout, const int32 Index, const TCHAR* ItemId, const int32 Count)
+	inline void WriteWorn(FLoadout& Loadout, const int32 Index, const FSolidItem& Item)
 	{
 		if (Index < 0 || Index >= WornCount)
 		{
 			return;
 		}
-		if (!ItemId || !ItemId[0] || Count <= 0)
-		{
-			Loadout.Worn[Index] = nullptr;
-			Loadout.WornStack[Index] = 0;
-			return;
-		}
-		Loadout.Worn[Index] = ItemId;
-		Loadout.WornStack[Index] = Count;
+		Loadout.Worn[Index] = Item.IsEmpty() ? FSolidItem() : Item;
 	}
 
-	inline void WritePack(FLoadout& Loadout, const int32 Index, const TCHAR* ItemId, const int32 Count)
+	inline void WriteWorn(FLoadout& Loadout, const int32 Index, const TCHAR* ItemId, const int32 Count)
+	{
+		WriteWorn(Loadout, Index, FSolidItem::FromId(ItemId, Count));
+	}
+
+	inline void WritePack(FLoadout& Loadout, const int32 Index, const FSolidItem& Item)
 	{
 		if (Index < 0 || Index >= PackCount)
 		{
 			return;
 		}
-		if (!ItemId || !ItemId[0] || Count <= 0)
-		{
-			Loadout.Pack[Index] = nullptr;
-			Loadout.PackStack[Index] = 0;
-			return;
-		}
-		Loadout.Pack[Index] = ItemId;
-		Loadout.PackStack[Index] = Count;
+		Loadout.Pack[Index] = Item.IsEmpty() ? FSolidItem() : Item;
 	}
 
-	inline void WriteCraft(FLoadout& Loadout, const int32 Index, const TCHAR* ItemId, const int32 Count)
+	inline void WritePack(FLoadout& Loadout, const int32 Index, const TCHAR* ItemId, const int32 Count)
+	{
+		WritePack(Loadout, Index, FSolidItem::FromId(ItemId, Count));
+	}
+
+	inline void WriteCraft(FLoadout& Loadout, const int32 Index, const FSolidItem& Item)
 	{
 		if (Index < 0 || Index >= CraftCount)
 		{
 			return;
 		}
-		if (!ItemId || !ItemId[0] || Count <= 0)
-		{
-			Loadout.Craft[Index] = nullptr;
-			Loadout.CraftStack[Index] = 0;
-			return;
-		}
-		Loadout.Craft[Index] = ItemId;
-		Loadout.CraftStack[Index] = Count;
+		Loadout.Craft[Index] = Item.IsEmpty() ? FSolidItem() : Item;
 	}
 
-	/** How many of an item to store. At least one, and no more than that item allows. */
-	inline int32 StoredCount(const FSolidItemType& Item, const int32 Count)
+	inline void WriteCraft(FLoadout& Loadout, const int32 Index, const TCHAR* ItemId, const int32 Count)
 	{
-		const int32 AtLeastOne = Count < 1 ? 1 : Count;
-		if (Item.MaxStacked > 0 && AtLeastOne > Item.MaxStacked)
-		{
-			return Item.MaxStacked;
-		}
-		return AtLeastOne;
+		WriteCraft(Loadout, Index, FSolidItem::FromId(ItemId, Count));
 	}
 
 	/** What the captain is wearing when a play session starts. Boots and the pack are empty. */
@@ -192,7 +172,7 @@ namespace SolidInventory
 	}
 
 	/**
-	 * Store an item id in a worn box.
+	 * Store an item in a worn box.
 	 * A null or empty id clears it. The body refuses that clear and keeps its armour.
 	 * An id that is not in the catalog is refused.
 	 * False when the slot is not a worn box, the id is unknown, or the kind does not fit.
@@ -210,20 +190,20 @@ namespace SolidInventory
 			{
 				return false;
 			}
-			WriteWorn(Loadout, Index, nullptr, 0);
+			WriteWorn(Loadout, Index, FSolidItem());
 			return true;
 		}
-		const FSolidItemType* Item = SolidItemType::FindById(ItemId);
-		if (!Item || !WornSlotAccepts(Slot, Item->Type))
+		const FSolidItemType* ItemType = SolidItemType::FindById(ItemId);
+		if (!ItemType || !WornSlotAccepts(Slot, ItemType->Type))
 		{
 			return false;
 		}
-		WriteWorn(Loadout, Index, Item->Id, 1);
+		WriteWorn(Loadout, Index, FSolidItem::Make(*ItemType, 1, FSolidItem::StartingDraw));
 		return true;
 	}
 
 	/**
-	 * Store an item id in one pack cell.
+	 * Store an item in one pack cell.
 	 * A null or empty id clears it. An id that is not in the catalog is refused.
 	 * False when the cell is outside the grid, or the id is unknown.
 	 */
@@ -236,58 +216,55 @@ namespace SolidInventory
 		}
 		if (!ItemId || !ItemId[0])
 		{
-			WritePack(Loadout, Index, nullptr, 0);
+			WritePack(Loadout, Index, FSolidItem());
 			return true;
 		}
-		const FSolidItemType* Item = SolidItemType::FindById(ItemId);
-		if (!Item)
+		const FSolidItemType* ItemType = SolidItemType::FindById(ItemId);
+		if (!ItemType)
 		{
 			return false;
 		}
-		WritePack(Loadout, Index, Item->Id, 1);
+		WritePack(Loadout, Index, FSolidItem::Make(*ItemType, 1, FSolidItem::StartingDraw));
 		return true;
 	}
 
 	/**
 	 * Add one of an item to the pack.
-	 * The first same-id stack under MaxStacked takes it. Otherwise the first empty cell does.
+	 * The first same-id stack under MaxStacked takes it. A weapon has a Power, so it never joins a stack.
+	 * Otherwise the first empty cell does.
 	 * False when the id is unknown, or every stack of that item is full and no cell is empty.
 	 * Worn boxes and crafting slots stay as they were.
 	 */
 	inline bool InsertPack(FLoadout& Loadout, const TCHAR* ItemId)
 	{
-		const FSolidItemType* Item = SolidItemType::FindById(ItemId);
-		if (!Item)
+		const FSolidItemType* ItemType = SolidItemType::FindById(ItemId);
+		if (!ItemType)
 		{
 			return false;
 		}
 
 		for (int32 Index = 0; Index < PackCount; ++Index)
 		{
-			if (!Loadout.Pack[Index] || Loadout.PackStack[Index] <= 0)
+			FSolidItem& Slot = Loadout.Pack[Index];
+			if (Slot.IsEmpty() || !Slot.Is(ItemType->Id) || Slot.HasPower())
 			{
 				continue;
 			}
-			if (FCString::Strcmp(Loadout.Pack[Index], Item->Id) != 0)
+			if (ItemType->MaxStacked > 0 && Slot.Count >= ItemType->MaxStacked)
 			{
 				continue;
 			}
-			if (Item->MaxStacked > 0 && Loadout.PackStack[Index] >= Item->MaxStacked)
-			{
-				continue;
-			}
-			Loadout.Pack[Index] = Item->Id;
-			Loadout.PackStack[Index] += 1;
+			Slot.Count += 1;
 			return true;
 		}
 
 		for (int32 Index = 0; Index < PackCount; ++Index)
 		{
-			if (Loadout.Pack[Index] && Loadout.PackStack[Index] > 0)
+			if (!Loadout.Pack[Index].IsEmpty())
 			{
 				continue;
 			}
-			WritePack(Loadout, Index, Item->Id, 1);
+			WritePack(Loadout, Index, FSolidItem::Make(*ItemType, 1, FSolidItem::StartingDraw));
 			return true;
 		}
 		return false;
@@ -298,15 +275,15 @@ namespace SolidInventory
 	{
 		for (int32 Index = 0; Index < WornCount; ++Index)
 		{
-			WriteWorn(Loadout, Index, nullptr, 0);
+			WriteWorn(Loadout, Index, FSolidItem());
 		}
 		for (int32 Index = 0; Index < PackCount; ++Index)
 		{
-			WritePack(Loadout, Index, nullptr, 0);
+			WritePack(Loadout, Index, FSolidItem());
 		}
 		for (int32 Index = 0; Index < CraftCount; ++Index)
 		{
-			WriteCraft(Loadout, Index, nullptr, 0);
+			WriteCraft(Loadout, Index, FSolidItem());
 		}
 		const int32 Body = WornIndex(ESlot::Body);
 		if (Body != INDEX_NONE)
@@ -400,7 +377,7 @@ namespace SolidInventory
 		int32 Left[CraftCount];
 		for (int32 Slot = 0; Slot < CraftCount; ++Slot)
 		{
-			Left[Slot] = Loadout.Craft[Slot] ? Loadout.CraftStack[Slot] : 0;
+			Left[Slot] = Loadout.Craft[Slot].IsEmpty() ? 0 : Loadout.Craft[Slot].Count;
 		}
 		const int32 Inputs = FMath::Min(Recipe.InputCount, SolidCrafting::MaxInputs);
 		for (int32 Input = 0; Input < Inputs; ++Input)
@@ -413,7 +390,7 @@ namespace SolidInventory
 			}
 			for (int32 Slot = 0; Slot < CraftCount && Need > 0; ++Slot)
 			{
-				if (!Loadout.Craft[Slot] || Left[Slot] <= 0 || FCString::Strcmp(Loadout.Craft[Slot], ItemId) != 0)
+				if (Loadout.Craft[Slot].IsEmpty() || Left[Slot] <= 0 || !Loadout.Craft[Slot].Is(ItemId))
 				{
 					continue;
 				}
@@ -457,7 +434,7 @@ namespace SolidInventory
 	{
 		for (int32 Index = 0; Index < PackCount; ++Index)
 		{
-			if (!Loadout.Pack[Index] || !Loadout.Pack[Index][0])
+			if (Loadout.Pack[Index].IsEmpty())
 			{
 				return Index;
 			}
@@ -499,14 +476,16 @@ namespace SolidInventory
 		{
 			if (Left[Slot] <= 0)
 			{
-				WriteCraft(Loadout, Slot, nullptr, 0);
+				WriteCraft(Loadout, Slot, FSolidItem());
 			}
-			else if (Left[Slot] != Loadout.CraftStack[Slot])
+			else if (Left[Slot] != Loadout.Craft[Slot].Count)
 			{
-				WriteCraft(Loadout, Slot, Loadout.Craft[Slot], Left[Slot]);
+				FSolidItem Item = Loadout.Craft[Slot];
+				Item.Count = Left[Slot];
+				WriteCraft(Loadout, Slot, Item);
 			}
 		}
-		WritePack(Loadout, PackCell, Output->Id, 1);
+		WritePack(Loadout, PackCell, FSolidItem::FromId(Output->Id, 1));
 		return true;
 	}
 
@@ -598,8 +577,9 @@ namespace SolidInventory
 	}
 
 	/** The item in a worn box, a pack cell, a chest cell, or a crafting slot. Null when the slot is empty or missing. */
-	inline const TCHAR* ItemAt(const FLoadout& Loadout, const SolidStorage::FContainer* Chest, const FSlotHit& Hit)
+	inline const FSolidItem* ItemAt(const FLoadout& Loadout, const SolidStorage::FContainer* Chest, const FSlotHit& Hit)
 	{
+		const FSolidItem* Slot = nullptr;
 		if (!Hit.bHit)
 		{
 			return nullptr;
@@ -610,84 +590,54 @@ namespace SolidInventory
 			{
 				return nullptr;
 			}
-			return Chest->Slots[Hit.Index];
+			Slot = &Chest->Slots[Hit.Index];
 		}
-		if (Hit.bPack)
+		else if (Hit.bPack)
 		{
 			const int32 Index = PackIndex(Hit.Column, Hit.Row);
 			if (Index == INDEX_NONE)
 			{
 				return nullptr;
 			}
-			return Loadout.Pack[Index];
+			Slot = &Loadout.Pack[Index];
 		}
-		if (Hit.bCraft)
+		else if (Hit.bCraft)
 		{
 			if (Hit.Index < 0 || Hit.Index >= CraftCount)
 			{
 				return nullptr;
 			}
-			return Loadout.Craft[Hit.Index];
+			Slot = &Loadout.Craft[Hit.Index];
 		}
-		const int32 Index = WornIndex(Hit.Slot);
-		if (Index == INDEX_NONE)
+		else
 		{
-			return nullptr;
+			const int32 Index = WornIndex(Hit.Slot);
+			if (Index == INDEX_NONE)
+			{
+				return nullptr;
+			}
+			Slot = &Loadout.Worn[Index];
 		}
-		return Loadout.Worn[Index];
+		return Slot->IsEmpty() ? nullptr : Slot;
 	}
 
 	/** How many share the slot. Zero when the slot is empty or missing. */
 	inline int32 CountAt(const FLoadout& Loadout, const SolidStorage::FContainer* Chest, const FSlotHit& Hit)
 	{
-		if (!Hit.bHit)
-		{
-			return 0;
-		}
-		if (Hit.bChest)
-		{
-			if (!Chest || Hit.Index < 0 || Hit.Index >= SolidStorage::Count)
-			{
-				return 0;
-			}
-			return Chest->Counts[Hit.Index];
-		}
-		if (Hit.bPack)
-		{
-			const int32 Index = PackIndex(Hit.Column, Hit.Row);
-			if (Index == INDEX_NONE)
-			{
-				return 0;
-			}
-			return Loadout.PackStack[Index];
-		}
-		if (Hit.bCraft)
-		{
-			if (Hit.Index < 0 || Hit.Index >= CraftCount)
-			{
-				return 0;
-			}
-			return Loadout.CraftStack[Hit.Index];
-		}
-		const int32 Index = WornIndex(Hit.Slot);
-		if (Index == INDEX_NONE)
-		{
-			return 0;
-		}
-		return Loadout.WornStack[Index];
+		const FSolidItem* Item = ItemAt(Loadout, Chest, Hit);
+		return Item ? Item->Count : 0;
 	}
 
 	/**
-	 * Put an item id into a slot. A null or empty id clears it.
+	 * Put an item into a slot. An empty item clears it.
 	 * The body refuses a clear, and it refuses anything that is not armour.
-	 * False when the slot or the id is refused.
+	 * False when the slot or the item is refused.
 	 */
 	inline bool PutAt(
 		FLoadout& Loadout,
 		SolidStorage::FContainer* Chest,
 		const FSlotHit& Hit,
-		const TCHAR* ItemId,
-		const int32 Count = 1)
+		const FSolidItem& Item)
 	{
 		if (!Hit.bHit)
 		{
@@ -699,17 +649,7 @@ namespace SolidInventory
 			{
 				return false;
 			}
-			if (!ItemId || !ItemId[0])
-			{
-				SolidStorage::WriteSlot(*Chest, Hit.Index, nullptr, 0);
-				return true;
-			}
-			const FSolidItemType* Item = SolidItemType::FindById(ItemId);
-			if (!Item)
-			{
-				return false;
-			}
-			SolidStorage::WriteSlot(*Chest, Hit.Index, Item->Id, StoredCount(*Item, Count));
+			SolidStorage::WriteSlot(*Chest, Hit.Index, Item);
 			return true;
 		}
 		if (Hit.bPack)
@@ -719,17 +659,7 @@ namespace SolidInventory
 			{
 				return false;
 			}
-			if (!ItemId || !ItemId[0])
-			{
-				WritePack(Loadout, Index, nullptr, 0);
-				return true;
-			}
-			const FSolidItemType* Item = SolidItemType::FindById(ItemId);
-			if (!Item)
-			{
-				return false;
-			}
-			WritePack(Loadout, Index, Item->Id, StoredCount(*Item, Count));
+			WritePack(Loadout, Index, Item);
 			return true;
 		}
 		if (Hit.bCraft)
@@ -738,17 +668,7 @@ namespace SolidInventory
 			{
 				return false;
 			}
-			if (!ItemId || !ItemId[0])
-			{
-				WriteCraft(Loadout, Hit.Index, nullptr, 0);
-				return true;
-			}
-			const FSolidItemType* Item = SolidItemType::FindById(ItemId);
-			if (!Item)
-			{
-				return false;
-			}
-			WriteCraft(Loadout, Hit.Index, Item->Id, StoredCount(*Item, Count));
+			WriteCraft(Loadout, Hit.Index, Item);
 			return true;
 		}
 		const int32 Index = WornIndex(Hit.Slot);
@@ -756,21 +676,20 @@ namespace SolidInventory
 		{
 			return false;
 		}
-		if (!ItemId || !ItemId[0])
+		if (Item.IsEmpty())
 		{
 			if (Hit.Slot == ESlot::Body)
 			{
 				return false;
 			}
-			WriteWorn(Loadout, Index, nullptr, 0);
+			WriteWorn(Loadout, Index, FSolidItem());
 			return true;
 		}
-		const FSolidItemType* Item = SolidItemType::FindById(ItemId);
-		if (!Item || !WornSlotAccepts(Hit.Slot, Item->Type))
+		if (!Item.Type || !WornSlotAccepts(Hit.Slot, Item.Type->Type))
 		{
 			return false;
 		}
-		WriteWorn(Loadout, Index, Item->Id, StoredCount(*Item, Count));
+		WriteWorn(Loadout, Index, Item);
 		return true;
 	}
 
@@ -794,21 +713,21 @@ namespace SolidInventory
 		{
 			return false;
 		}
-		const TCHAR* Moving = ItemAt(Loadout, Chest, From);
-		if (!Moving || !Moving[0] || !SolidItemType::FindById(Moving))
+		const FSolidItem* MovingSlot = ItemAt(Loadout, Chest, From);
+		if (!MovingSlot)
 		{
 			return false;
 		}
-		const int32 MovingCount = CountAt(Loadout, Chest, From);
-		const TCHAR* Displaced = ItemAt(Loadout, Chest, To);
-		const int32 DisplacedCount = CountAt(Loadout, Chest, To);
-		if (!PutAt(Loadout, Chest, To, Moving, MovingCount))
+		const FSolidItem Moving = *MovingSlot;
+		const FSolidItem* DisplacedSlot = ItemAt(Loadout, Chest, To);
+		const FSolidItem Displaced = DisplacedSlot ? *DisplacedSlot : FSolidItem();
+		if (!PutAt(Loadout, Chest, To, Moving))
 		{
 			return false;
 		}
-		if (!PutAt(Loadout, Chest, From, Displaced, DisplacedCount))
+		if (!PutAt(Loadout, Chest, From, Displaced))
 		{
-			PutAt(Loadout, Chest, To, Displaced, DisplacedCount);
+			PutAt(Loadout, Chest, To, Displaced);
 			return false;
 		}
 		return true;

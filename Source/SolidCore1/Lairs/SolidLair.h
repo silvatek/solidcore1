@@ -60,8 +60,8 @@ namespace SolidLair
 		};
 		const int32 Main = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
 		const int32 Off = SolidInventory::WornIndex(SolidInventory::ESlot::OffHand);
-		const bool bMain = Main != INDEX_NONE && IsTorch(Loadout.Worn[Main]);
-		const bool bOff = Off != INDEX_NONE && IsTorch(Loadout.Worn[Off]);
+		const bool bMain = Main != INDEX_NONE && IsTorch(Loadout.Worn[Main].Id());
+		const bool bOff = Off != INDEX_NONE && IsTorch(Loadout.Worn[Off].Id());
 		return bMain || bOff;
 	}
 

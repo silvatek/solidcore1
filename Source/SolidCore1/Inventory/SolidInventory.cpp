@@ -44,7 +44,7 @@ namespace SolidInventory
 		const int32 Index = WornIndex(Slot);
 		if (Index != INDEX_NONE)
 		{
-			Box.Item = SolidItemType::PageLabel(Loadout.Worn[Index], Loadout.WornStack[Index]);
+			Box.Item = SolidItemType::PageLabel(Loadout.Worn[Index].Id(), Loadout.Worn[Index].Count);
 		}
 		return Box;
 	}
@@ -98,7 +98,7 @@ namespace SolidInventory
 				const int32 Index = PackIndex(Column, Row);
 				if (Index != INDEX_NONE)
 				{
-					Box.Item = SolidItemType::PageLabel(Loadout.Pack[Index], Loadout.PackStack[Index]);
+					Box.Item = SolidItemType::PageLabel(Loadout.Pack[Index].Id(), Loadout.Pack[Index].Count);
 				}
 				OutPage.Boxes.Add(Box);
 			}
@@ -130,7 +130,7 @@ namespace SolidInventory
 					const int32 Index = SolidStorage::Index(Column, Row);
 					if (Index != INDEX_NONE)
 					{
-						Box.Item = SolidItemType::PageLabel(Chest->Slots[Index], Chest->Counts[Index]);
+						Box.Item = SolidItemType::PageLabel(Chest->Slots[Index].Id(), Chest->Slots[Index].Count);
 					}
 					OutPage.Boxes.Add(Box);
 				}
@@ -163,7 +163,7 @@ namespace SolidInventory
 			Box.Y = RowY;
 			Box.W = PackCell;
 			Box.H = PackCell;
-			Box.Item = SolidItemType::PageLabel(Loadout.Craft[Index], Loadout.CraftStack[Index]);
+			Box.Item = SolidItemType::PageLabel(Loadout.Craft[Index].Id(), Loadout.Craft[Index].Count);
 			OutPage.Boxes.Add(Box);
 		}
 		OutPage.CraftButtonX = RowX + CraftCount * (PackCell + PackGap);

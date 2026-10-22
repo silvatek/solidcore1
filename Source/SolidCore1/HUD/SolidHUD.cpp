@@ -2394,16 +2394,14 @@ void ASolidHUD::PressInventory(const float X, const float Y)
 	}
 	const USolidGameState& State = *StatePtr;
 	const SolidStorage::FContainer* Chest = bInventoryChestOpen ? &State.CaveChest : nullptr;
-	const TCHAR* ItemId = SolidInventory::ItemAt(State.Inventory, Chest, Hit);
-	if (!ItemId || !ItemId[0])
+	const FSolidItem* Item = SolidInventory::ItemAt(State.Inventory, Chest, Hit);
+	if (!Item)
 	{
 		return;
 	}
 	bInventoryDrag = true;
 	InventoryDragFrom = Hit;
-	InventoryDragName = SolidItemType::PageLabel(
-		ItemId,
-		SolidInventory::CountAt(State.Inventory, Chest, Hit));
+	InventoryDragName = SolidItemType::PageLabel(Item->Id(), Item->Count);
 }
 
 void ASolidHUD::ReleaseInventory(const float X, const float Y)

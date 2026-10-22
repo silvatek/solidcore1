@@ -1,8 +1,6 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Combat/SolidArmour.h"
-#include "Combat/SolidWeapon.h"
 
 /**
  * What a carried thing is.
@@ -37,7 +35,6 @@ enum class ESolidItemQuality : uint8
  * One kind of thing the captain can carry.
  * Id is eight hex digits. Name is the text on the inventory page.
  * Quality is the grade. MaxStacked is how many of that item share one slot.
- * A weapon points at its Speed and Power. Body armour points at its Strength.
  */
 struct FSolidItemType
 {
@@ -46,10 +43,6 @@ struct FSolidItemType
 	ESolidItemKind Type = ESolidItemKind::Armor;
 	ESolidItemQuality Quality = ESolidItemQuality::Inferior;
 	int32 MaxStacked = 1;
-	/** Set on a weapon. Null on anything else. */
-	const FSolidWeapon* Weapon = nullptr;
-	/** Set on body armour. A helmet, boots, and a belt leave this empty. */
-	const FSolidArmour* Armour = nullptr;
 };
 
 /** The items a slot can store. Inventory keeps the id, and the page shows the name. */
@@ -70,11 +63,11 @@ namespace SolidItemType
 	inline constexpr const TCHAR* IdPitch = TEXT("d4f07b3a");
 
 	inline const FSolidItemType Catalog[] = {
-		{ IdRags, TEXT("Rags"), ESolidItemKind::Armor, ESolidItemQuality::Inferior, 1, nullptr, &SolidArmour::Rags },
+		{ IdRags, TEXT("Rags"), ESolidItemKind::Armor, ESolidItemQuality::Inferior, 1 },
 		{ IdDentedHelmet, TEXT("Dented helmet"), ESolidItemKind::Helmet, ESolidItemQuality::Inferior, 1 },
-		{ IdCrudeSpear, TEXT("Crude spear"), ESolidItemKind::Weapon, ESolidItemQuality::Inferior, 1, &SolidWeapon::CrudeSpear, nullptr },
+		{ IdCrudeSpear, TEXT("Crude spear"), ESolidItemKind::Weapon, ESolidItemQuality::Inferior, 1 },
 		{ IdTorch, TEXT("Torch"), ESolidItemKind::Tool, ESolidItemQuality::Common, 1 },
-		{ IdRustySword, TEXT("Rusty sword"), ESolidItemKind::Weapon, ESolidItemQuality::Inferior, 1, &SolidWeapon::RustySword, nullptr },
+		{ IdRustySword, TEXT("Rusty sword"), ESolidItemKind::Weapon, ESolidItemQuality::Inferior, 1 },
 		{ IdOldBoots, TEXT("Old boots"), ESolidItemKind::Boots, ESolidItemQuality::Inferior, 1 },
 		{ IdCoins, TEXT("Coins"), ESolidItemKind::Material, ESolidItemQuality::NA, 999 },
 		{ IdStick, TEXT("Stick"), ESolidItemKind::Material, ESolidItemQuality::Inferior, 10 },

@@ -306,27 +306,26 @@ bool FSolidWeaponAndArmourTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	TestNotNull(TEXT("the spear is a weapon"), Spear->Weapon);
-	TestNotNull(TEXT("the sword is a weapon"), Sword->Weapon);
-	if (!Spear->Weapon || !Sword->Weapon)
-	{
-		return false;
-	}
-	TestTrue(TEXT("the spear has Speed"), Spear->Weapon->Speed > 0.f && FMath::IsFinite(Spear->Weapon->Speed));
-	TestTrue(TEXT("the spear has Power"), Spear->Weapon->Power > 0.f && FMath::IsFinite(Spear->Weapon->Power));
-	TestTrue(TEXT("the sword has Speed"), Sword->Weapon->Speed > 0.f && FMath::IsFinite(Sword->Weapon->Speed));
-	TestTrue(TEXT("the sword has Power"), Sword->Weapon->Power > 0.f && FMath::IsFinite(Sword->Weapon->Power));
-	TestEqual(TEXT("the spear's weapon is the crude spear"), FString(Spear->Weapon->Name), FString(TEXT("Crude spear")));
-	TestEqual(TEXT("the sword's weapon is the rusty sword"), FString(Sword->Weapon->Name), FString(TEXT("Rusty sword")));
+	const FSolidItem SpearItem = FSolidItem::Make(*Spear, 1, FSolidItem::StartingDraw);
+	const FSolidItem SwordItem = FSolidItem::Make(*Sword, 1, FSolidItem::StartingDraw);
+	const FSolidItem RagsItem = FSolidItem::Make(*Rags, 1, FSolidItem::StartingDraw);
+	const FSolidItem HelmetItem = FSolidItem::Make(*Helmet, 1, FSolidItem::StartingDraw);
+	const FSolidItem BootsItem = FSolidItem::Make(*Boots, 1, FSolidItem::StartingDraw);
+	TestTrue(TEXT("the spear is a weapon"), SpearItem.IsWeapon());
+	TestTrue(TEXT("the sword is a weapon"), SwordItem.IsWeapon());
+	TestTrue(TEXT("the spear has Speed"), SpearItem.Weapon.Speed > 0.f && FMath::IsFinite(SpearItem.Weapon.Speed));
+	TestEqual(TEXT("the spear's Power is its grade"), SpearItem.Power(), SolidItemType::PowerFor(Spear->Quality, FSolidItem::StartingDraw));
+	TestTrue(TEXT("the sword has Speed"), SwordItem.Weapon.Speed > 0.f && FMath::IsFinite(SwordItem.Weapon.Speed));
+	TestEqual(TEXT("the sword's Power is its grade"), SwordItem.Power(), SolidItemType::PowerFor(Sword->Quality, FSolidItem::StartingDraw));
+	TestEqual(TEXT("the spear's weapon is the crude spear"), FString(SpearItem.Weapon.Name), FString(TEXT("Crude spear")));
+	TestEqual(TEXT("the sword's weapon is the rusty sword"), FString(SwordItem.Weapon.Name), FString(TEXT("Rusty sword")));
+	TestEqual(TEXT("a weapon's count is one"), SpearItem.Count, 1);
 
-	TestNotNull(TEXT("rags are armour"), Rags->Armour);
-	if (!Rags->Armour)
-	{
-		return false;
-	}
-	TestTrue(TEXT("rags have Strength"), Rags->Armour->Strength > 0.f && FMath::IsFinite(Rags->Armour->Strength));
-	TestNull(TEXT("the helmet adds no Strength"), Helmet->Armour);
-	TestNull(TEXT("boots add no Strength"), Boots->Armour);
+	TestTrue(TEXT("rags are armour"), RagsItem.IsArmour());
+	TestTrue(TEXT("rags have Strength"), RagsItem.Armour.Strength > 0.f && FMath::IsFinite(RagsItem.Armour.Strength));
+	TestEqual(TEXT("rags have no Power"), RagsItem.Power(), 0);
+	TestFalse(TEXT("the helmet adds no Strength"), HelmetItem.IsArmour());
+	TestFalse(TEXT("boots add no Strength"), BootsItem.IsArmour());
 
 	const ESolidItemKind NoStrength[] = {
 		ESolidItemKind::Helmet,
@@ -340,31 +339,34 @@ bool FSolidWeaponAndArmourTest::RunTest(const FString& Parameters)
 	for (int32 Index = 0; Index < SolidItemType::CatalogCount; ++Index)
 	{
 		const FSolidItemType& Item = SolidItemType::Catalog[Index];
+		const FSolidItem Made = FSolidItem::Make(Item, Item.MaxStacked, FSolidItem::StartingDraw);
 		if (Item.Type == ESolidItemKind::Weapon)
 		{
-			TestNotNull(TEXT("a weapon has Speed and Power"), Item.Weapon);
+			TestTrue(TEXT("a weapon has Speed and Power"), Made.IsWeapon() && Made.Power() > 0);
+			TestEqual(TEXT("a weapon does not stack"), Made.Count, 1);
 		}
 		else
 		{
-			TestNull(TEXT("anything else is not a weapon"), Item.Weapon);
+			TestFalse(TEXT("anything else is not a weapon"), Made.IsWeapon());
+			TestEqual(TEXT("anything else has no Power"), Made.Power(), 0);
 		}
 		if (Item.Type == ESolidItemKind::Armor)
 		{
-			TestNotNull(TEXT("armour has Strength"), Item.Armour);
-			if (Item.Armour)
-			{
-				TestTrue(TEXT("that Strength is an amount"), Item.Armour->Strength > 0.f);
-			}
+			TestTrue(TEXT("armour has Strength"), Made.IsArmour() && Made.Armour.Strength > 0.f);
 		}
 		else
 		{
-			TestNull(TEXT("a helmet, boots, a belt, and the rest add no Strength"), Item.Armour);
+			TestFalse(TEXT("a helmet, boots, a belt, and the rest add no Strength"), Made.IsArmour());
+		}
+		if (Item.MaxStacked > 1)
+		{
+			TestEqual(TEXT("a stack keeps its count"), Made.Count, Item.MaxStacked);
 		}
 	}
 
-	const FString SpearSpeed = FString::SanitizeFloat(Spear->Weapon->Speed);
-	const FString SpearPower = FString::SanitizeFloat(Spear->Weapon->Power);
-	const FString RagsStrength = FString::SanitizeFloat(Rags->Armour->Strength);
+	const FString SpearSpeed = FString::SanitizeFloat(SpearItem.Weapon.Speed);
+	const FString SpearPower = FString::FromInt(SpearItem.Power());
+	const FString RagsStrength = FString::SanitizeFloat(RagsItem.Armour.Strength);
 	TestEqual(TEXT("the page names the spear"), FString(SolidItemType::PageLabel(Spear->Id, 1)), FString(Spear->Name));
 	TestEqual(TEXT("the page names the sword"), FString(SolidItemType::PageLabel(Sword->Id, 1)), FString(Sword->Name));
 	TestEqual(TEXT("the page names rags"), FString(SolidItemType::PageLabel(Rags->Id, 1)), FString(Rags->Name));
@@ -412,20 +414,12 @@ bool FSolidWeaponAndArmourTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the captain swaps the sword onto the spear"), SolidInventory::Move(&Chest, Loadout, FromPack, ToHand));
 	const int32 Main = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
 	const int32 Pack = SolidInventory::PackIndex(0, 0);
-	TestEqual(TEXT("the main hand holds the sword"), FString(Loadout.Worn[Main]), FString(SolidItemType::IdRustySword));
-	TestEqual(TEXT("the pack holds the spear"), FString(Loadout.Pack[Pack]), FString(SolidItemType::IdCrudeSpear));
-	const FSolidItemType* Held = SolidItemType::FindById(Loadout.Worn[Main]);
-	const FSolidItemType* Packed = SolidItemType::FindById(Loadout.Pack[Pack]);
-	TestNotNull(TEXT("the held sword is listed"), Held);
-	TestNotNull(TEXT("the packed spear is listed"), Packed);
-	if (!Held || !Packed || !Held->Weapon || !Packed->Weapon)
-	{
-		return false;
-	}
-	TestTrue(TEXT("the swapped sword keeps its Speed"), Held->Weapon->Speed == Sword->Weapon->Speed);
-	TestTrue(TEXT("the swapped sword keeps its Power"), Held->Weapon->Power == Sword->Weapon->Power);
-	TestTrue(TEXT("the spear keeps its Speed in the pack"), Packed->Weapon->Speed == Spear->Weapon->Speed);
-	TestTrue(TEXT("the spear keeps its Power in the pack"), Packed->Weapon->Power == Spear->Weapon->Power);
+	TestEqual(TEXT("the main hand holds the sword"), FString(Loadout.Worn[Main].Id()), FString(SolidItemType::IdRustySword));
+	TestEqual(TEXT("the pack holds the spear"), FString(Loadout.Pack[Pack].Id()), FString(SolidItemType::IdCrudeSpear));
+	TestTrue(TEXT("the swapped sword keeps its Speed"), Loadout.Worn[Main].Weapon.Speed == SwordItem.Weapon.Speed);
+	TestEqual(TEXT("the swapped sword keeps its Power"), Loadout.Worn[Main].Power(), SwordItem.Power());
+	TestTrue(TEXT("the spear keeps its Speed in the pack"), Loadout.Pack[Pack].Weapon.Speed == SpearItem.Weapon.Speed);
+	TestEqual(TEXT("the spear keeps its Power in the pack"), Loadout.Pack[Pack].Power(), SpearItem.Power());
 
 	SolidInventory::Layout(Loadout, Page, &Chest);
 	for (const SolidInventory::FBox& Box : Page.Boxes)

@@ -31,7 +31,7 @@ The squad selects from the battle plans it already has. Each of those plans stor
 ## Implementation notes
 
 - Play-testing chooses the amounts of Speed, Power, and Strength. This story does not fix those numbers.
-- `SolidItemType::PowerFor` rolls a hidden power from the item's grade. This story's Power is the attribute on the weapon. Leave that roll as it is.
+- An item is one instance of an item type. A stack is an item whose count is greater than one, and that item has no Power. `SolidItemType::PowerFor` converts a weapon item's quality into its Power. Speed and Strength are chosen in play.
 - The captain's loadout already puts a weapon in the main hand and armour on the body. The body drag refuses a drop that would empty the slot, and accepts a swap onto other armour. A companion stores the crude spear and Rags on the company record. This story does not open an inventory page for a companion. The monster's weapon and armour are not catalog ids.
 - Attack or retreat, and TargetStrategy, are fields on the battle plan, beside its name, formation, and spacing. [Hold battle plan](hold-battle-plan.md) and [Drill battle plan](drill-battle-plan.md) are other stories. The values here are on the plans [Early game battle plans](Done/early-game-battle-plans.md) names.
 - [Basic combat](basic-combat.md) depends on this story. This story ships first.

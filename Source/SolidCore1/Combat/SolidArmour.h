@@ -12,14 +12,5 @@ class FSolidArmour
 public:
 	const TCHAR* Name = TEXT("");
 	/** How much this armour is. Play-testing chooses it. */
-	float Strength = 1.f;
+	float Strength = 0.f;
 };
-
-/**
- * Body armour a catalog item can point at.
- * The amount is a starting figure. Play-testing chooses it.
- */
-namespace SolidArmour
-{
-	inline const FSolidArmour Rags { TEXT("Rags"), 1.f };
-}

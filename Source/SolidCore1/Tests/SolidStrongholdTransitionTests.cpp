@@ -34,11 +34,16 @@ namespace
 		return FCString::Strcmp(A, B) == 0;
 	}
 
+	bool SameItem(const FSolidItem& A, const FSolidItem& B)
+	{
+		return A.Count == B.Count && A.Power() == B.Power() && SameId(A.Id(), B.Id());
+	}
+
 	bool SameChest(const SolidStorage::FContainer& A, const SolidStorage::FContainer& B)
 	{
 		for (int32 Index = 0; Index < SolidStorage::Count; ++Index)
 		{
-			if (A.Counts[Index] != B.Counts[Index] || !SameId(A.Slots[Index], B.Slots[Index]))
+			if (!SameItem(A.Slots[Index], B.Slots[Index]))
 			{
 				return false;
 			}
@@ -50,21 +55,21 @@ namespace
 	{
 		for (int32 Index = 0; Index < SolidInventory::WornCount; ++Index)
 		{
-			if (A.WornStack[Index] != B.WornStack[Index] || !SameId(A.Worn[Index], B.Worn[Index]))
+			if (!SameItem(A.Worn[Index], B.Worn[Index]))
 			{
 				return false;
 			}
 		}
 		for (int32 Index = 0; Index < SolidInventory::PackCount; ++Index)
 		{
-			if (A.PackStack[Index] != B.PackStack[Index] || !SameId(A.Pack[Index], B.Pack[Index]))
+			if (!SameItem(A.Pack[Index], B.Pack[Index]))
 			{
 				return false;
 			}
 		}
 		for (int32 Index = 0; Index < SolidInventory::CraftCount; ++Index)
 		{
-			if (A.CraftStack[Index] != B.CraftStack[Index] || !SameId(A.Craft[Index], B.Craft[Index]))
+			if (!SameItem(A.Craft[Index], B.Craft[Index]))
 			{
 				return false;
 			}
@@ -370,7 +375,7 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 	USolidGameState& State = *NewObject<USolidGameState>();
 	State.bStrongholdSiteRestrictions = true;
 	State.bStrongholdsEnabled = false;
-	SolidStorage::WriteSlot(State.CaveChest, SolidStorage::Index(0, 0), SolidItemType::IdRustySword, 4);
+	SolidStorage::WriteSlot(State.CaveChest, SolidStorage::Index(1, 2), SolidItemType::IdStick, 4);
 	SolidInventory::WritePack(State.Inventory, 0, SolidItemType::IdStick, 2);
 	const SolidStorage::FContainer Chest = State.CaveChest;
 	const SolidInventory::FLoadout Pack = State.Inventory;

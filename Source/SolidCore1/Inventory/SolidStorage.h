@@ -1,11 +1,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Inventory/SolidItemType.h"
+#include "Inventory/SolidItem.h"
 
 /**
  * A storage container's slots. The cave chest is the first one.
- * A slot stores an item id and how many share that cell. A null id is empty.
+ * A slot stores one item. A count above one is a stack. An empty item is an empty cell.
  */
 namespace SolidStorage
 {
@@ -23,24 +23,21 @@ namespace SolidStorage
 
 	struct FContainer
 	{
-		const TCHAR* Slots[Count] = {};
-		int32 Counts[Count] = {};
+		FSolidItem Slots[Count];
 	};
 
-	inline void WriteSlot(FContainer& Container, const int32 Index, const TCHAR* ItemId, const int32 StackCount)
+	inline void WriteSlot(FContainer& Container, const int32 Index, const FSolidItem& Item)
 	{
 		if (Index < 0 || Index >= Count)
 		{
 			return;
 		}
-		if (!ItemId || !ItemId[0] || StackCount <= 0)
-		{
-			Container.Slots[Index] = nullptr;
-			Container.Counts[Index] = 0;
-			return;
-		}
-		Container.Slots[Index] = ItemId;
-		Container.Counts[Index] = StackCount;
+		Container.Slots[Index] = Item.IsEmpty() ? FSolidItem() : Item;
+	}
+
+	inline void WriteSlot(FContainer& Container, const int32 Index, const TCHAR* ItemId, const int32 StackCount)
+	{
+		WriteSlot(Container, Index, FSolidItem::FromId(ItemId, StackCount));
 	}
 
 	inline int32 Index(const int32 Column, const int32 Row)

@@ -35,7 +35,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "Vegetation/SolidForage.h"
 #include "Vegetation/SolidForagePile.h"
-#include "Monster/SolidMonster.h"
+#include "Monster/SolidMonsterGroup.h"
 #include "Monster/SolidMonsterActor.h"
 #include "SolidMonsterMeasure.h"
 #include "Vegetation/SolidForestTrees.h"
@@ -1558,7 +1558,7 @@ void ASolidGameMode::ChooseMonsters(const USolidTerrainMap* Map)
 	{
 		return;
 	}
-	if (!SolidMonster::WorldHasMonsters(IsInClosedVisit()))
+	if (!FSolidMonsterGroup::WorldHasMonsters(IsInClosedVisit()))
 	{
 		return;
 	}
@@ -1601,19 +1601,19 @@ void ASolidGameMode::ChooseMonsters(const USolidTerrainMap* Map)
 			SolidTowns::Iglin, Map->GetWorldMinXY(), Map->GetWorldMaxXY(), IglinXY);
 	}
 
-	const int32 Chosen = SolidMonster::CollectChoices(
-		Map->GetPoints(), TreePoints, ForagePoints, IglinXY, Bridges, MonsterChoices);
+	const int32 Chosen = MonsterGroup.PlaceBesideIglinRamp(
+		Map->GetPoints(), TreePoints, ForagePoints, IglinXY, Bridges);
 	bMonstersChosen = true;
 	UE_LOG(LogSolid, Warning, TEXT("Chose %d monsters beside the Iglin ramp"), Chosen);
 }
 
 void ASolidGameMode::SeedMonsters()
 {
-	if (!bMonstersChosen || MonsterChoices.Num() == 0)
+	if (!bMonstersChosen || MonsterGroup.Num() == 0)
 	{
 		return;
 	}
-	if (!SolidMonster::WorldHasMonsters(IsInClosedVisit()))
+	if (!FSolidMonsterGroup::WorldHasMonsters(IsInClosedVisit()))
 	{
 		return;
 	}
@@ -1632,13 +1632,13 @@ void ASolidGameMode::SeedMonsters()
 	}
 
 	TArray<int32> Ready;
-	SolidMonster::CollectReadyToSeed(Map->GetPoints(), MonsterChoices, SeededMonsters, Ready);
+	MonsterGroup.CollectReadyToSeed(Map->GetPoints(), SeededMonsters, Ready);
 	if (Ready.Num() == 0)
 	{
 		return;
 	}
 
-	// One reptile, so the posts beside it are the size reference. The choice still holds three.
+	// One reptile, so the posts beside it are the size reference. The group still holds three.
 	if (SpawnedMonsters.Num() > 0)
 	{
 		return;
@@ -1651,12 +1651,16 @@ void ASolidGameMode::SeedMonsters()
 	int32 Spawned = 0;
 	for (const int32 Index : Ready)
 	{
-		const SolidMonster::FChoice& Choice = MonsterChoices[Index];
-		FVector SpawnLoc(Choice.XY.X, Choice.XY.Y, 0.f);
+		const FSolidMonster* Member = MonsterGroup.Get(Index);
+		if (!Member)
+		{
+			continue;
+		}
+		FVector SpawnLoc(Member->XY.X, Member->XY.Y, 0.f);
 		const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
 		SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
 
-		const FRotator Face(0.f, Choice.YawDeg, 0.f);
+		const FRotator Face(0.f, Member->YawDeg, 0.f);
 		const FVector MonsterLoc = SpawnLoc + Face.RotateVector(FVector(
 			SolidMonsterMeasure::MonsterXCm,
 			SolidMonsterMeasure::MonsterYCm,

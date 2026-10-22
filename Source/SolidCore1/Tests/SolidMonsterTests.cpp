@@ -4,7 +4,9 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Monster/SolidMonster.h"
+#include "Monster/SolidMonsterGroup.h"
 #include "Monster/SolidMonsterActor.h"
+#include "Monster/SolidRaptor.h"
 #include "Game/SolidMonsterMeasure.h"
 #include "Terrain/SolidBridge.h"
 
@@ -47,25 +49,28 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 {
 	using namespace SolidMonsterTestPrivate;
 
-	TestFalse(TEXT("a closed visit has no monsters"), SolidMonster::WorldHasMonsters(true));
-	TestTrue(TEXT("the open world can hold monsters"), SolidMonster::WorldHasMonsters(false));
+	TestFalse(TEXT("a closed visit has no monsters"), FSolidMonsterGroup::WorldHasMonsters(true));
+	TestTrue(TEXT("the open world can hold monsters"), FSolidMonsterGroup::WorldHasMonsters(false));
 	TestTrue(
 		TEXT("a mesh of half the standing height doubles"),
-		FMath::IsNearlyEqual(SolidMonster::UniformScale(SolidMonster::StandingHeightCm * 0.5f), 2.f));
+		FMath::IsNearlyEqual(FSolidMonster::UniformScale(FSolidMonster::StandingHeightCm * 0.5f), 2.f));
 	TestTrue(
 		TEXT("a mesh of the standing height stays"),
-		FMath::IsNearlyEqual(SolidMonster::UniformScale(SolidMonster::StandingHeightCm), 1.f));
-	TestTrue(TEXT("a zero height stays at one"), FMath::IsNearlyEqual(SolidMonster::UniformScale(0.f), 1.f));
+		FMath::IsNearlyEqual(FSolidMonster::UniformScale(FSolidMonster::StandingHeightCm), 1.f));
+	TestTrue(TEXT("a zero height stays at one"), FMath::IsNearlyEqual(FSolidMonster::UniformScale(0.f), 1.f));
 	TestTrue(
 		TEXT("a centered mesh drops its bottom to the feet"),
-		FMath::IsNearlyEqual(SolidMonster::MeshFootOffsetCm(0.f, 100.f, 1.f), 100.f));
+		FMath::IsNearlyEqual(FSolidMonster::MeshFootOffsetCm(0.f, 100.f, 1.f), 100.f));
+	TestTrue(
+		TEXT("a raptor draws six times the span scale"),
+		FMath::IsNearlyEqual(FSolidRaptor().DrawnBodyFactor(), FSolidRaptor::SmallDrawnBodyFactor));
 
 	TArray<float> BodyZ;
 	for (int32 Sample = 0; Sample < 20; ++Sample)
 	{
 		BodyZ.Add(Sample * 10.f);
 	}
-	const SolidMonster::FStandingSpan Short = SolidMonster::StandingSpan(BodyZ);
+	const FSolidMonsterStandingSpan Short = FSolidMonster::StandingSpan(BodyZ);
 	TestTrue(TEXT("a short body keeps its full height"), FMath::IsNearlyEqual(Short.Height, 190.f));
 	TestTrue(TEXT("a short body keeps its feet"), FMath::IsNearlyEqual(Short.BottomZ, 0.f));
 
@@ -75,7 +80,7 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 		OutlierZ.Add(Sample * 1.8f);
 	}
 	OutlierZ.Add(50000.f);
-	const SolidMonster::FStandingSpan Trimmed = SolidMonster::StandingSpan(OutlierZ);
+	const FSolidMonsterStandingSpan Trimmed = FSolidMonster::StandingSpan(OutlierZ);
 	TestTrue(TEXT("one far sample does not set the height"), Trimmed.Height < 500.f);
 	TestTrue(TEXT("the body height remains"), Trimmed.Height > 100.f);
 
@@ -88,12 +93,12 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 	{
 		Scattered.Add(8000.f);
 	}
-	const SolidMonster::FStandingSpan Dense = SolidMonster::StandingSpan(Scattered);
+	const FSolidMonsterStandingSpan Dense = FSolidMonster::StandingSpan(Scattered);
 	TestTrue(TEXT("a far cloud does not set the height"), Dense.Height < 400.f);
 	TestTrue(TEXT("the dense band is the body"), Dense.Height > 100.f);
 
 	TArray<float> EmptyZ;
-	TestTrue(TEXT("no samples have no height"), SolidMonster::StandingSpan(EmptyZ).Height == 0.f);
+	TestTrue(TEXT("no samples have no height"), FSolidMonster::StandingSpan(EmptyZ).Height == 0.f);
 
 	TArray<FSolidTerrainPoint> Points;
 	Points.Add(PointAt(500.f, ESolidBiome::Grassland));
@@ -114,12 +119,12 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 	TArray<SolidBridge::FBridge> Bridges;
 	Bridges.Add(IglinBridge(true));
 
-	TArray<SolidMonster::FChoice> Choices;
+	FSolidMonsterGroup Group;
 	TestEqual(
 		TEXT("three reptiles"),
-		SolidMonster::CollectChoices(Points, Trees, Forage, Iglin, Bridges, Choices),
-		SolidMonster::Count);
-	if (Choices.Num() != 3)
+		Group.PlaceBesideIglinRamp(Points, Trees, Forage, Iglin, Bridges),
+		FSolidMonsterGroup::BesideIglinCount);
+	if (Group.Num() != 3)
 	{
 		return false;
 	}
@@ -127,46 +132,67 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 	const int32 Expected[] = { 1, 6, 8 };
 	for (int32 Index = 0; Index < 3; ++Index)
 	{
-		TestEqual(TEXT("nearest grassland in the band"), Choices[Index].PointIndex, Expected[Index]);
+		const FSolidMonster* Member = Group.Get(Index);
+		TestNotNull(TEXT("member"), Member);
+		if (!Member)
+		{
+			return false;
+		}
+		TestEqual(TEXT("nearest grassland in the band"), Member->PointIndex, Expected[Index]);
 		TestTrue(
 			TEXT("the place is that point"),
-			Choices[Index].XY.Equals(FVector2D(Points[Expected[Index]].X, Points[Expected[Index]].Y)));
+			Member->XY.Equals(FVector2D(Points[Expected[Index]].X, Points[Expected[Index]].Y)));
+		TestTrue(
+			TEXT("each member is a raptor"),
+			FCString::Strcmp(Member->Kind(), TEXT("Raptor")) == 0);
 	}
-	for (int32 Index = 1; Index < Choices.Num(); ++Index)
+	for (int32 Index = 1; Index < Group.Num(); ++Index)
 	{
+		const FSolidMonster* Prev = Group.Get(Index - 1);
+		const FSolidMonster* Cur = Group.Get(Index);
 		TestTrue(
 			TEXT("later places stay 4 m apart"),
-			FVector2D::Distance(Choices[Index].XY, Choices[Index - 1].XY) >= SolidMonster::SeparationCm);
+			Prev && Cur
+				&& FVector2D::Distance(Cur->XY, Prev->XY) >= FSolidMonsterGroup::SeparationCm);
 	}
 
 	const FVector2D Outer(0.f, 0.f);
-	for (const SolidMonster::FChoice& Choice : Choices)
+	for (int32 Index = 0; Index < Group.Num(); ++Index)
 	{
-		const float Yaw = FMath::DegreesToRadians(Choice.YawDeg);
+		const FSolidMonster* Member = Group.Get(Index);
+		if (!Member)
+		{
+			continue;
+		}
+		const float Yaw = FMath::DegreesToRadians(Member->YawDeg);
 		const FVector2D Facing(FMath::Cos(Yaw), FMath::Sin(Yaw));
-		const FVector2D ToOuter = (Outer - Choice.XY).GetSafeNormal();
+		const FVector2D ToOuter = (Outer - Member->XY).GetSafeNormal();
 		TestTrue(TEXT("yaw looks at the Iglin ramp"), FVector2D::DotProduct(Facing, ToOuter) > 0.99f);
-		TestTrue(TEXT("a skipped point is not chosen"), Choice.PointIndex != 0 && Choice.PointIndex != 2
-			&& Choice.PointIndex != 3 && Choice.PointIndex != 4 && Choice.PointIndex != 5
-			&& Choice.PointIndex != 7 && Choice.PointIndex != 9);
+		TestTrue(TEXT("a skipped point is not chosen"), Member->PointIndex != 0 && Member->PointIndex != 2
+			&& Member->PointIndex != 3 && Member->PointIndex != 4 && Member->PointIndex != 5
+			&& Member->PointIndex != 7 && Member->PointIndex != 9);
 	}
 
-	TArray<SolidMonster::FChoice> Repaired;
+	FSolidMonsterGroup Repaired;
 	Bridges[0].bBroken = false;
 	TestEqual(
 		TEXT("a repair keeps the same places"),
-		SolidMonster::CollectChoices(Points, Trees, Forage, Iglin, Bridges, Repaired),
-		Choices.Num());
-	for (int32 Index = 0; Index < Choices.Num() && Index < Repaired.Num(); ++Index)
+		Repaired.PlaceBesideIglinRamp(Points, Trees, Forage, Iglin, Bridges),
+		Group.Num());
+	for (int32 Index = 0; Index < Group.Num() && Index < Repaired.Num(); ++Index)
 	{
-		TestEqual(TEXT("the repaired bridge uses the same point"), Repaired[Index].PointIndex, Choices[Index].PointIndex);
+		const FSolidMonster* Was = Group.Get(Index);
+		const FSolidMonster* Now = Repaired.Get(Index);
+		TestTrue(
+			TEXT("the repaired bridge uses the same point"),
+			Was && Now && Now->PointIndex == Was->PointIndex);
 	}
 
-	TArray<SolidMonster::FChoice> None;
+	FSolidMonsterGroup None;
 	TArray<SolidBridge::FBridge> NoBridge;
 	TestEqual(
 		TEXT("no Iglin bridge places none"),
-		SolidMonster::CollectChoices(Points, Trees, Forage, Iglin, NoBridge, None),
+		None.PlaceBesideIglinRamp(Points, Trees, Forage, Iglin, NoBridge),
 		0);
 	TestEqual(TEXT("the list is empty"), None.Num(), 0);
 
@@ -175,16 +201,16 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 	Other[0].bIglinRelion = false;
 	TestEqual(
 		TEXT("another crossing places none"),
-		SolidMonster::CollectChoices(Points, Trees, Forage, Iglin, Other, None),
+		None.PlaceBesideIglinRamp(Points, Trees, Forage, Iglin, Other),
 		0);
 
 	TArray<FSolidTerrainPoint> OnePoint;
 	OnePoint.Add(PointAt(900.f, ESolidBiome::Grassland));
 	TArray<int32> NoSkip;
-	TArray<SolidMonster::FChoice> Few;
+	FSolidMonsterGroup Few;
 	TestEqual(
 		TEXT("one eligible point places one"),
-		SolidMonster::CollectChoices(OnePoint, NoSkip, NoSkip, Iglin, Bridges, Few),
+		Few.PlaceBesideIglinRamp(OnePoint, NoSkip, NoSkip, Iglin, Bridges),
 		1);
 
 	TArray<int32> Ready;
@@ -192,7 +218,7 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 	Points[6].Fog = 0.5f;
 	Points[8].Fog = 0.f;
 	const TArray<int32> Seeded = { 2 };
-	SolidMonster::CollectReadyToSeed(Points, Choices, Seeded, Ready);
+	Group.CollectReadyToSeed(Points, Seeded, Ready);
 	TestEqual(TEXT("one clear point is ready"), Ready.Num(), 1);
 	TestFalse(TEXT("the fogged point waits"), Ready.Contains(0));
 	TestFalse(TEXT("the seeded point is not seeded again"), Ready.Contains(2));
@@ -222,16 +248,16 @@ bool FSolidMonsterBodyTest::RunTest(const FString& Parameters)
 	}
 	TestTrue(
 		TEXT("the capsule radius matches the body"),
-		FMath::IsNearlyEqual(Capsule->GetUnscaledCapsuleRadius(), SolidMonster::CapsuleRadiusCm));
+		FMath::IsNearlyEqual(Capsule->GetUnscaledCapsuleRadius(), FSolidMonster::CapsuleRadiusCm));
 	TestTrue(
 		TEXT("the capsule radius fits under the half height"),
-		SolidMonster::CapsuleRadiusCm <= SolidMonster::CapsuleHalfHeightCm);
+		FSolidMonster::CapsuleRadiusCm <= FSolidMonster::CapsuleHalfHeightCm);
 	TestTrue(
 		TEXT("the capsule is half the standing height"),
-		FMath::IsNearlyEqual(Capsule->GetUnscaledCapsuleHalfHeight(), SolidMonster::CapsuleHalfHeightCm));
+		FMath::IsNearlyEqual(Capsule->GetUnscaledCapsuleHalfHeight(), FSolidMonster::CapsuleHalfHeightCm));
 	TestTrue(
 		TEXT("the capsule bottom is the actor origin"),
-		FMath::IsNearlyEqual(Capsule->GetRelativeLocation().Z, SolidMonster::CapsuleHalfHeightCm));
+		FMath::IsNearlyEqual(Capsule->GetRelativeLocation().Z, FSolidMonster::CapsuleHalfHeightCm));
 	TestTrue(TEXT("the capsule blocks a pawn"), Capsule->GetCollisionResponseToChannel(ECC_Pawn) == ECR_Block);
 	TestTrue(TEXT("the capsule ignores a click"), Capsule->GetCollisionResponseToChannel(ECC_Visibility) == ECR_Ignore);
 	TestFalse(TEXT("a monster takes no damage"), Monster->CanBeDamaged());

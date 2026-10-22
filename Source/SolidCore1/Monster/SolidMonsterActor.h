@@ -9,8 +9,9 @@ class USkeletalMeshComponent;
 class UAnimSequence;
 
 /**
- * One reptile on the open world.
+ * One monster on the open world.
  * It stands and idles. It blocks a walk and ignores a ground click. It has no name.
+ * The plain FSolidMonster (a raptor today) owns the kind answers; this actor is the engine shell.
  */
 UCLASS()
 class SOLIDCORE1_API ASolidMonster : public AActor
@@ -23,7 +24,7 @@ public:
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
 
-	/** The choice index from the open-world scatter. */
+	/** The member index in the open-world group. */
 	void SetChoice(int32 InChoiceIndex);
 	void BuildVisuals();
 

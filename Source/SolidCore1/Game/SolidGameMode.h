@@ -6,7 +6,7 @@
 #include "GameFramework/GameModeBase.h"
 #include "Terrain/SolidWorldChart.h"
 #include "Vegetation/SolidForage.h"
-#include "Monster/SolidMonster.h"
+#include "Monster/SolidMonsterGroup.h"
 #include "Company/SolidCompany.h"
 #include "SolidSight.h"
 #include "SolidGameMode.generated.h"
@@ -286,11 +286,11 @@ protected:
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidMonster>> SpawnedMonsters;
 
-	/** Choice indexes already given a monster this visit. A closed visit stores none. */
+	/** Member indexes already given a monster actor this visit. A closed visit stores none. */
 	TArray<int32> SeededMonsters;
 
-	/** The same points again on the next open-world visit. */
-	TArray<SolidMonster::FChoice> MonsterChoices;
+	/** The Iglin-ramp raptor group. The same members again on the next open-world visit. */
+	FSolidMonsterGroup MonsterGroup;
 	bool bMonstersChosen = false;
 
 	UPROPERTY(Transient)

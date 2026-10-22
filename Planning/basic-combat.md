@@ -4,7 +4,7 @@ Status: Ready
 
 ## Story
 
-This story depends on [Combat preparation](combat-preparation.md), which is Ready. That story ships first.
+This story depends on [Combat preparation](Done/combat-preparation.md), which is Done. That story ships first.
 
 Each monster has DetectionRange and EscapeDistance. Each starts at 5 m. Play can change either one on its own. When the captain or a companion in the squad enters DetectionRange, the monsters attack and combat starts. When the captain and every companion in the squad are beyond EscapeDistance, combat ends. Combat also ends when one side is completely killed, and when the captain dies. A monster stays within its EscapeDistance of its spawn point.
 
@@ -42,7 +42,7 @@ A click on those reptiles still leaves the fight unstarted. Entering DetectionRa
 - A side is the monsters in the fight, or the captain and the companions in the squad. Strength at 0 or below is dead. The blow that kills the last one on a side ends combat. The blow that kills the captain ends combat even when a companion is still alive.
 - The captain's death is not the monster-message close. It does not record Killed by monsters. It does enable Meagre, as any death in this fight does. The wake leaves Rags in the armour slot and empties the rest of the inventory. The wake uses the company stronghold, the cave until the company has moved. The stronghold chest stays as it was. The journal records `Meagre size unlocked` when this death is what enables it.
 - DetectionRange and EscapeDistance each start at 5 m, which is 500 cm. Distance is horizontal. A distance inside or equal to DetectionRange can start combat. A distance beyond EscapeDistance is outside it. Play-testing may change either figure on its own.
-- The blow has no range. A later story adds attack range. This story does not. The attack spends the weapon's Power from [Combat preparation](combat-preparation.md).
+- The blow has no range. A later story adds attack range. This story does not. The attack spends the weapon's Power from [Combat preparation](Done/combat-preparation.md).
 - [Open the squad builder on leaving a stronghold](Done/squad-builder-on-stronghold-exit.md) is the Build squad page. The leave after this wake opens that page. The usual "nothing to arrange" check does not keep it closed. Closing the page spawns the selected companions outside, on the grass the leave already uses.
 - A companion who is not in the squad stays at the stronghold, so that companion does not enter a range and does not keep combat going.
 - Damage in the retreat rule is the Power taken off Strength.

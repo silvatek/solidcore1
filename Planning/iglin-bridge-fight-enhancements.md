@@ -14,7 +14,7 @@ The fight takes the place of the message that standing on the bridge shows today
 
 The first time the captain dies, FirstDeath fires. Like every event, it fires once. A later death does not fire it again. FirstDeath disables Starter and enables Attack and Defend. Driven from the village requires FirstDeath.
 
-This story depends on [Basic combat](basic-combat.md), which is Ready. That story ships first. [Combat preparation](combat-preparation.md) is In Progress, and it ships before Basic combat.
+This story depends on [Basic combat](basic-combat.md), which is Ready. That story ships first. [Combat preparation](Done/combat-preparation.md) is Done, and it ships before Basic combat.
 
 This story introduces no game concept. Raptor, the encounter, the captain's death, and the event list are already named. FirstDeath is another event on that list.
 

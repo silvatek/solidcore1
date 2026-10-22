@@ -12,9 +12,11 @@ When the three Small raptors kill the captain, the story moves on. When the capt
 
 The fight takes the place of the message that standing on the bridge shows today. Reach broken bridge is removed.
 
+The first time the captain dies, FirstDeath fires. Like every event, it fires once. A later death does not fire it again. FirstDeath disables Starter and enables Attack and Defend. Driven from the village requires FirstDeath.
+
 This story depends on [Basic combat](basic-combat.md), which is Ready. That story ships first. [Combat preparation](combat-preparation.md) is In Progress, and it ships before Basic combat.
 
-This story introduces no game concept. Raptor, the encounter, and the captain's death are already named.
+This story introduces no game concept. Raptor, the encounter, the captain's death, and the event list are already named. FirstDeath is another event on that list.
 
 ## Acceptance
 
@@ -28,7 +30,10 @@ This story introduces no game concept. Raptor, the encounter, and the captain's 
 - Any death of the captain, in this fight or later, anywhere in the game, uses one landing. The captain wakes in the company stronghold they have then, without the gear they had when they died. The first time, that stronghold is the cave. The wake is the one [Basic combat](basic-combat.md) specifies: Rags on the body, the rest of what they were carrying left where they died, the companions who were out despawned, and the next leave opening Build squad.
 - This bridge death is that landing's first use. The opening cannot skip it. A later captain death uses the same landing, in whatever stronghold the company has by then.
 - Reach broken bridge is removed. Standing on either ramp of the Iglin bridge records nothing and shows nothing. Reaching the bridge does not show "You are killed by monsters".
-- The captain's death leaves Killed by monsters unfired. [Basic combat](basic-combat.md) already keeps that event off a death. This story does not disable Starter, and it does not enable Attack or Defend. Driven from the village still requires Killed by monsters.
+- FirstDeath fires when the captain dies. It is ACT_0. The journal names it `First death`. It fires once. A second death leaves it unfired and leaves its changes as they are.
+- FirstDeath disables Starter and enables Attack and Defend. The squad's selection becomes Attack, then Defend. The active plan becomes Attack. The battle-plan list shows F1 Attack and F2 Defend. The journal records `Starter disabled`, `Attack enabled`, and `Defend enabled`.
+- Driven from the village requires FirstDeath. It does not require Killed by monsters. The portal to the grass north of the X mouth still records Driven from the village when FirstDeath has not fired.
+- Killed by monsters no longer disables Starter and no longer enables Attack or Defend. The gear they lose, and the wake in the current stronghold, stay on every captain death. FirstDeath does not take that landing. [Basic combat](basic-combat.md) still enables Meagre on a death.
 - Enter Relion still repairs the bridge. The center is drawn. The road stays `Iglin -> Relion, track`.
 - The product commit bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`.
 
@@ -41,6 +46,8 @@ This story introduces no game concept. Raptor, the encounter, and the captain's 
 - The movement block is this encounter only. It covers the captain's move, including click-to-move. Look can stay. The block clears on the wake.
 - The opening loadout is Rags on the body and the crude spear in the main hand. `SolidInventory::Clear` is the wake's inventory: Rags on the body, and the spear and anything else they were carrying gone from the captain. The stronghold chest stays. The gear left at the death site is the drop [Basic combat](basic-combat.md) already specifies.
 - A captain death outside a fight uses that same landing. [Basic combat](basic-combat.md) specifies it for a death in a fight. This story is what makes it every captain death. The bridge is only the first, mandatory, time.
-- Reach broken bridge is `IdReachBrokenBridge` (`a17c4e58`), trigger `ETrigger::ReachBrokenBridge`. `NoteBrokenBridgeRamp` calls `NotifyReachBrokenBridge` when the captain stands on an Iglin ramp. The event shows `SolidMessages::IdKilledByMonsters`. Closing that message is the separate event Killed by monsters (`e51b8c36`), which enables Meagre, clears the inventory, disables Starter, and enables Attack and Defend. [Return to the stronghold](return-to-stronghold.md) moves the trip onto that close. Removing the ramp event means that message is not shown, so that close does not run, unless some later story fires it. This story does not.
-- [Basic combat](basic-combat.md) says standing on the Iglin ramp still fires Reach broken bridge. This story removes that.
-- Tests that reach the later chain by standing on the ramp, or by calling `NotifyReachBrokenBridge`, need another setup once the event is gone. `SolidCore1.Events.ReachBrokenBridge` goes. The product commit updates the `SolidCore1.Events.*` line in `Source/SolidCore1/Tests/README.md`. Monster tests gain the Large spawn, the single spawn, the movement block, and the wake.
+- Reach broken bridge is `IdReachBrokenBridge` (`a17c4e58`), trigger `ETrigger::ReachBrokenBridge`. `NoteBrokenBridgeRamp` calls `NotifyReachBrokenBridge` when the captain stands on an Iglin ramp. The event shows `SolidMessages::IdKilledByMonsters`. Closing that message is Killed by monsters (`e51b8c36`). Today that close enables Meagre, clears the inventory, disables Starter, and enables Attack and Defend. [Return to the stronghold](return-to-stronghold.md) moves the trip onto that close.
+- FirstDeath is a new definition, `IdFirstDeath`, trigger captain death, name `First death`, ACT_0. `ETrigger` gains that trigger. The captain's death notifies it. The once-only rule is the one every event already has. Its changes are `DisableBattlePlan(Starter)`, `EnableBattlePlan(Attack)`, and `EnableBattlePlan(Defend)`. Driven from the village's `Require` names `IdFirstDeath` instead of `IdKilledByMonsters`. The portal still uses `MarkComplete` on Driven from the village, so it still records that event when FirstDeath has not fired.
+- The every-death landing keeps the gear loss and the wake. Those stay off FirstDeath, so a later death still loses the gear and still wakes in the current stronghold. Meagre stays on the death, as [Basic combat](basic-combat.md) has it. [Return to the stronghold](return-to-stronghold.md) currently puts the trip on the message close. This story puts the trip on every captain death.
+- Killed by monsters keeps the message id. Nothing in this story shows that message, and the plan changes have left that event. [Basic combat](basic-combat.md) says standing on the Iglin ramp still fires Reach broken bridge. This story removes that.
+- Tests that reach the later chain by standing on the ramp, or by calling `NotifyReachBrokenBridge`, notify FirstDeath from a captain death instead. `SolidCore1.Events.ReachBrokenBridge` goes. A FirstDeath test checks the one fire, the plan changes, and Driven from the village's new requirement. The product commit updates the `SolidCore1.Events.*` line in `Source/SolidCore1/Tests/README.md`. Monster tests gain the Large spawn, the single spawn, the movement block, and the wake.

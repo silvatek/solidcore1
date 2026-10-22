@@ -265,4 +265,113 @@ bool FSolidBattleSidesTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattleAttackTest,
+	"SolidCore1.Battle.Attack",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
+{
+	FSolidRaptor Sample;
+	Sample.Size = ESolidMonsterSize::Small;
+	Sample.Arm(FSolidRaptor::Claws, FSolidRaptor::Hide, FSolidItem::StartingDraw);
+	const int32 Claws = Sample.Weapon.Power;
+	const float Hide = Sample.Armour.Strength;
+	const FSolidItemType* SpearType = SolidItemType::FindById(SolidItemType::IdCrudeSpear);
+	const int32 Spear = SpearType
+		? SolidItemType::PowerFor(SpearType->Quality, FSolidItem::StartingDraw)
+		: 0;
+	const float Rags = FSolidItem::FromId(SolidItemType::IdRags, 1).Armour.Strength;
+
+	SolidEncounter::FDefinition One{ TEXT("One"), SolidEncounter::ESite::IglinBridgeRamp };
+	One = One.WithGroup(SolidEncounter::EMonsterKind::Raptor, ESolidMonsterSize::Small, 1, TEXT("Attack"));
+
+	{
+		FSolidBattleSimulation Sim;
+		Sim.SquadPlan(TEXT("Starter"));
+		Sim.UseEncounter(One);
+		if (!Sim.Battle.Group || !Sim.Battle.Group->Get(0))
+		{
+			AddError(TEXT("the one raptor gave the battle no monster"));
+			return false;
+		}
+		Sim.Battle.Attack();
+		TestEqual(TEXT("the spear comes off that hide"), Sim.Battle.Group->Get(0)->Armour.Strength, Hide - static_cast<float>(Spear));
+		TestEqual(TEXT("the claws come off the rags"), Sim.Battle.GetSquadDefence(), Rags - static_cast<float>(Claws));
+	}
+
+	{
+		FSolidBattleSimulation Sim;
+		Sim.SquadPlan(TEXT("Starter"));
+		Sim.UseEncounter(TEXT("Iglin Bridge"));
+		if (!Sim.Battle.Group || Sim.Battle.Group->Num() < 1)
+		{
+			AddError(TEXT("Iglin Bridge gave the battle no monster group"));
+			return false;
+		}
+		const int32 Count = Sim.Battle.Group->Num();
+		Sim.Battle.Attack();
+		TestEqual(
+			TEXT("each raptor's claws come off the rags"),
+			Sim.Battle.GetSquadDefence(),
+			Rags - static_cast<float>(Count * Claws));
+		int32 Hit = 0;
+		int32 Kept = 0;
+		for (int32 Index = 0; Index < Count; ++Index)
+		{
+			const FSolidMonster* Monster = Sim.Battle.Group->Get(Index);
+			if (!Monster)
+			{
+				AddError(TEXT("a raptor was missing after the attack"));
+				return false;
+			}
+			const float Strength = Monster->Armour.Strength;
+			if (FMath::IsNearlyEqual(Strength, Hide - static_cast<float>(Spear)))
+			{
+				++Hit;
+			}
+			else if (FMath::IsNearlyEqual(Strength, Hide))
+			{
+				++Kept;
+			}
+		}
+		TestEqual(TEXT("the spear hits one hide"), Hit, 1);
+		TestEqual(TEXT("the other hides stay"), Kept, Count - 1);
+	}
+
+	{
+		FSolidBattleSimulation Sim;
+		Sim.SquadPlan(TEXT("Defend"));
+		Sim.UseEncounter(One);
+		if (!Sim.Battle.Group || !Sim.Battle.Group->Get(0))
+		{
+			AddError(TEXT("the one raptor gave the battle no monster"));
+			return false;
+		}
+		Sim.Battle.Attack();
+		TestEqual(TEXT("a retreat does not strike"), Sim.Battle.Group->Get(0)->Armour.Strength, Hide);
+		TestEqual(TEXT("the claws still come off the rags"), Sim.Battle.GetSquadDefence(), Rags - static_cast<float>(Claws));
+	}
+
+	{
+		FSolidBattleSimulation Sim;
+		Sim.SquadPlan(TEXT("Starter"));
+		if (!SolidInventory::PlaceWorn(Sim.Inventory, SolidInventory::ESlot::MainHand, nullptr))
+		{
+			AddError(TEXT("the main hand did not empty"));
+			return false;
+		}
+		Sim.UseEncounter(One);
+		if (!Sim.Battle.Group || !Sim.Battle.Group->Get(0))
+		{
+			AddError(TEXT("the one raptor gave the battle no monster"));
+			return false;
+		}
+		Sim.Battle.Attack();
+		TestEqual(TEXT("an empty main hand does not strike"), Sim.Battle.Group->Get(0)->Armour.Strength, Hide);
+		TestEqual(TEXT("the claws still come off the rags"), Sim.Battle.GetSquadDefence(), Rags - static_cast<float>(Claws));
+	}
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

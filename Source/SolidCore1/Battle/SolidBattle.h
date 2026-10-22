@@ -13,6 +13,7 @@ namespace SolidInventory
  * One battle. It links one squad, the captain's loadout, and one monster group.
  * The squad and the group already hold their battle plans. This reads the active plan on each.
  * Power is weapon Power. Defence is armour Strength. A later gauge can show the totals.
+ * Each squad member and each monster attacks on their own.
  */
 class FSolidBattle
 {
@@ -49,4 +50,12 @@ public:
 
 	/** Armour Strength of every monster in the group. */
 	float GetGroupDefence() const;
+
+	/**
+	 * One exchange.
+	 * Each squad member whose plan stores attack lands their own weapon's Power on one monster.
+	 * Each monster whose plan stores attack lands their own weapon's Power on the captain's armour.
+	 * A plan that stores retreat does not attack. An empty main hand does not attack.
+	 */
+	void Attack();
 };

@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0556")
+#define SOLID_BUILD_ID TEXT("SC1-0557")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A battle totals each side's power and defence.")
+#define SOLID_BUILD_NOTE TEXT("Each fighter in a battle attacks on their own.")
 #endif

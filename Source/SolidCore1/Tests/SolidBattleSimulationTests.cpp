@@ -87,9 +87,9 @@ namespace SolidBattleTestPrivate
 
 	/**
 	 * The summary of that log line.
-	 * A missing line is reported and this returns false, so the test can stop before reading it.
+	 * A missing line is reported, and the summary comes back empty, so an assertion can use it directly.
 	 */
-	bool LogSummary(FAutomationTestBase& Test, const FSolidBattle& Battle, const int32 Index, FString& Summary)
+	FString LogSummary(FAutomationTestBase& Test, const FSolidBattle& Battle, const int32 Index)
 	{
 		if (!Battle.Log.IsValidIndex(Index))
 		{
@@ -97,10 +97,9 @@ namespace SolidBattleTestPrivate
 				TEXT("the log has %d lines, so there is no entry at index %d"),
 				Battle.Log.Num(),
 				Index));
-			return false;
+			return FString();
 		}
-		Summary = Battle.Log[Index].Summary();
-		return true;
+		return Battle.Log[Index].Summary();
 	}
 }
 
@@ -295,15 +294,8 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 		}
 		TestTrue(TEXT("they prepare at the start"), FMath::IsNearlyEqual(Battle.Time, 0.f));
 		TestEqual(TEXT("two prepares"), Battle.Log.Num(), 2);
-		FString CaptainPrepare;
-		FString RaptorPrepare;
-		if (!SolidBattleTestPrivate::LogSummary(*this, Battle, 0, CaptainPrepare)
-			|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 1, RaptorPrepare))
-		{
-			return false;
-		}
-		TestEqual(TEXT("the captain prepares first"), CaptainPrepare, FString(TEXT("Captain prepares.")));
-		TestEqual(TEXT("the raptor prepares"), RaptorPrepare, FString(TEXT("Raptor prepares.")));
+		TestEqual(TEXT("the captain prepares first"), SolidBattleTestPrivate::LogSummary(*this, Battle, 0), FString(TEXT("Captain prepares.")));
+		TestEqual(TEXT("the raptor prepares"), SolidBattleTestPrivate::LogSummary(*this, Battle, 1), FString(TEXT("Raptor prepares.")));
 		TestEqual(TEXT("the hide is still whole"), Raptor->Armour.Strength, Hide);
 		TestEqual(TEXT("the rags are still whole"), Battle.GetSquadDefence(), Rags);
 
@@ -314,12 +306,7 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 		}
 		TestTrue(TEXT("the spear is the first blow"), FMath::IsNearlyEqual(Battle.Time, SpearSpeed));
 		TestEqual(TEXT("the spear is the only new line"), Battle.Log.Num(), 3);
-		FString SpearLine;
-		if (!SolidBattleTestPrivate::LogSummary(*this, Battle, 2, SpearLine))
-		{
-			return false;
-		}
-		TestEqual(TEXT("the spear line"), SpearLine, FString(TEXT("Captain attacks Raptor with Crude spear.")));
+		TestEqual(TEXT("the spear line"), SolidBattleTestPrivate::LogSummary(*this, Battle, 2), FString(TEXT("Captain attacks Raptor with Crude spear.")));
 		TestTrue(TEXT("the spear comes off that hide"), Raptor->Armour.Strength < Hide);
 		const float AfterSpear = Raptor->Armour.Strength;
 		TestEqual(TEXT("the claws are still preparing"), Battle.GetSquadDefence(), Rags);
@@ -331,15 +318,8 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 		}
 		TestTrue(TEXT("the claws land on their own Speed"), FMath::IsNearlyEqual(Battle.Time, SpearSpeed * 2.f));
 		TestEqual(TEXT("the captain prepares again and the raptor attacks"), Battle.Log.Num(), 5);
-		FString CaptainPrepareAgain;
-		FString ClawsLine;
-		if (!SolidBattleTestPrivate::LogSummary(*this, Battle, 3, CaptainPrepareAgain)
-			|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 4, ClawsLine))
-		{
-			return false;
-		}
-		TestEqual(TEXT("recover ends in another prepare"), CaptainPrepareAgain, FString(TEXT("Captain prepares.")));
-		TestEqual(TEXT("the claws line"), ClawsLine, FString(TEXT("Raptor attacks Captain with Claws.")));
+		TestEqual(TEXT("recover ends in another prepare"), SolidBattleTestPrivate::LogSummary(*this, Battle, 3), FString(TEXT("Captain prepares.")));
+		TestEqual(TEXT("the claws line"), SolidBattleTestPrivate::LogSummary(*this, Battle, 4), FString(TEXT("Raptor attacks Captain with Claws.")));
 		TestEqual(TEXT("the spear has landed once"), Raptor->Armour.Strength, AfterSpear);
 		TestTrue(TEXT("the claws come off the rags"), Battle.GetSquadDefence() < Rags);
 	}
@@ -372,25 +352,12 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 			return false;
 		}
 		TestEqual(TEXT("everyone prepared, then everyone attacked"), Battle.Log.Num(), 2 * (1 + Count));
-		FString CaptainPrepare;
-		FString CaptainAttack;
-		if (!SolidBattleTestPrivate::LogSummary(*this, Battle, 0, CaptainPrepare)
-			|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 1 + Count, CaptainAttack))
-		{
-			return false;
-		}
-		TestEqual(TEXT("the captain prepares first"), CaptainPrepare, FString(TEXT("Captain prepares.")));
-		TestEqual(TEXT("the captain attacks before the raptors"), CaptainAttack, FString(TEXT("Captain attacks Raptor with Crude spear.")));
+		TestEqual(TEXT("the captain prepares first"), SolidBattleTestPrivate::LogSummary(*this, Battle, 0), FString(TEXT("Captain prepares.")));
+		TestEqual(TEXT("the captain attacks before the raptors"), SolidBattleTestPrivate::LogSummary(*this, Battle, 1 + Count), FString(TEXT("Captain attacks Raptor with Crude spear.")));
 		for (int32 Index = 0; Index < Count; ++Index)
 		{
-			FString RaptorPrepare;
-			FString Blow;
-			if (!SolidBattleTestPrivate::LogSummary(*this, Battle, 1 + Index, RaptorPrepare)
-				|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 2 + Count + Index, Blow))
-			{
-				return false;
-			}
-			TestEqual(TEXT("a raptor prepares"), RaptorPrepare, FString(TEXT("Raptor prepares.")));
+			TestEqual(TEXT("a raptor prepares"), SolidBattleTestPrivate::LogSummary(*this, Battle, 1 + Index), FString(TEXT("Raptor prepares.")));
+			const FString Blow = SolidBattleTestPrivate::LogSummary(*this, Battle, 2 + Count + Index);
 			if (Index + 1 < Count)
 			{
 				TestEqual(TEXT("a raptor attacks"), Blow, FString(TEXT("Raptor attacks Captain with Claws.")));
@@ -444,15 +411,8 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 			return false;
 		}
 		TestEqual(TEXT("a retreat leaves the raptor's two lines"), Battle.Log.Num(), 2);
-		FString RaptorPrepare;
-		FString RaptorAttack;
-		if (!SolidBattleTestPrivate::LogSummary(*this, Battle, 0, RaptorPrepare)
-			|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 1, RaptorAttack))
-		{
-			return false;
-		}
-		TestEqual(TEXT("the raptor prepares"), RaptorPrepare, FString(TEXT("Raptor prepares.")));
-		TestEqual(TEXT("the raptor attacks"), RaptorAttack, FString(TEXT("Raptor attacks Captain with Claws.")));
+		TestEqual(TEXT("the raptor prepares"), SolidBattleTestPrivate::LogSummary(*this, Battle, 0), FString(TEXT("Raptor prepares.")));
+		TestEqual(TEXT("the raptor attacks"), SolidBattleTestPrivate::LogSummary(*this, Battle, 1), FString(TEXT("Raptor attacks Captain with Claws.")));
 		TestEqual(TEXT("the hide stays whole"), Group.Get(0)->Armour.Strength, Hide);
 		TestTrue(TEXT("the claws still come off the rags"), Battle.GetSquadDefence() < Rags);
 	}
@@ -491,18 +451,9 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 			return false;
 		}
 		TestEqual(TEXT("three lines"), Battle.Log.Num(), 3);
-		FString CaptainPrepare;
-		FString RaptorPrepare;
-		FString CaptainAbandon;
-		if (!SolidBattleTestPrivate::LogSummary(*this, Battle, 0, CaptainPrepare)
-			|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 1, RaptorPrepare)
-			|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 2, CaptainAbandon))
-		{
-			return false;
-		}
-		TestEqual(TEXT("the captain prepares"), CaptainPrepare, FString(TEXT("Captain prepares.")));
-		TestEqual(TEXT("the raptor prepares"), RaptorPrepare, FString(TEXT("Raptor prepares.")));
-		TestEqual(TEXT("the captain abandons the attack"), CaptainAbandon, FString(TEXT("Captain abandons the attack.")));
+		TestEqual(TEXT("the captain prepares"), SolidBattleTestPrivate::LogSummary(*this, Battle, 0), FString(TEXT("Captain prepares.")));
+		TestEqual(TEXT("the raptor prepares"), SolidBattleTestPrivate::LogSummary(*this, Battle, 1), FString(TEXT("Raptor prepares.")));
+		TestEqual(TEXT("the captain abandons the attack"), SolidBattleTestPrivate::LogSummary(*this, Battle, 2), FString(TEXT("Captain abandons the attack.")));
 		TestEqual(TEXT("the hide stays whole"), Raptor->Armour.Strength, Hide);
 	}
 
@@ -528,15 +479,8 @@ bool FSolidBattleAttackTest::RunTest(const FString& Parameters)
 			return false;
 		}
 		TestEqual(TEXT("an empty main hand leaves the raptor's two lines"), Battle.Log.Num(), 2);
-		FString RaptorPrepare;
-		FString RaptorAttack;
-		if (!SolidBattleTestPrivate::LogSummary(*this, Battle, 0, RaptorPrepare)
-			|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 1, RaptorAttack))
-		{
-			return false;
-		}
-		TestEqual(TEXT("the raptor prepares"), RaptorPrepare, FString(TEXT("Raptor prepares.")));
-		TestEqual(TEXT("the raptor attacks"), RaptorAttack, FString(TEXT("Raptor attacks Captain with Claws.")));
+		TestEqual(TEXT("the raptor prepares"), SolidBattleTestPrivate::LogSummary(*this, Battle, 0), FString(TEXT("Raptor prepares.")));
+		TestEqual(TEXT("the raptor attacks"), SolidBattleTestPrivate::LogSummary(*this, Battle, 1), FString(TEXT("Raptor attacks Captain with Claws.")));
 		TestEqual(TEXT("the hide stays whole"), Group.Get(0)->Armour.Strength, Hide);
 		TestTrue(TEXT("the claws still come off the rags"), Battle.GetSquadDefence() < Rags);
 	}
@@ -582,21 +526,10 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestEqual(TEXT("they prepare"), Battle.Log.Num(), 4);
-	FString CaptainPrepare;
-	FString FirstRaptorPrepare;
-	FString SecondRaptorPrepare;
-	FString ThirdRaptorPrepare;
-	if (!SolidBattleTestPrivate::LogSummary(*this, Battle, 0, CaptainPrepare)
-		|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 1, FirstRaptorPrepare)
-		|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 2, SecondRaptorPrepare)
-		|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 3, ThirdRaptorPrepare))
-	{
-		return false;
-	}
-	TestEqual(TEXT("the captain prepares"), CaptainPrepare, FString(TEXT("Captain prepares.")));
-	TestEqual(TEXT("the first raptor prepares"), FirstRaptorPrepare, FString(TEXT("Raptor prepares.")));
-	TestEqual(TEXT("the second raptor prepares"), SecondRaptorPrepare, FString(TEXT("Raptor prepares.")));
-	TestEqual(TEXT("the third raptor prepares"), ThirdRaptorPrepare, FString(TEXT("Raptor prepares.")));
+	TestEqual(TEXT("the captain prepares"), SolidBattleTestPrivate::LogSummary(*this, Battle, 0), FString(TEXT("Captain prepares.")));
+	TestEqual(TEXT("the first raptor prepares"), SolidBattleTestPrivate::LogSummary(*this, Battle, 1), FString(TEXT("Raptor prepares.")));
+	TestEqual(TEXT("the second raptor prepares"), SolidBattleTestPrivate::LogSummary(*this, Battle, 2), FString(TEXT("Raptor prepares.")));
+	TestEqual(TEXT("the third raptor prepares"), SolidBattleTestPrivate::LogSummary(*this, Battle, 3), FString(TEXT("Raptor prepares.")));
 	TestEqual(TEXT("the squad's armour"), Battle.GetSquadDefence(), SquadStart);
 	TestEqual(TEXT("the group's armour"), Battle.GetGroupDefence(), GroupStart);
 
@@ -606,21 +539,10 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestEqual(TEXT("they attack"), Battle.Log.Num(), 8);
-	FString SpearLine;
-	FString FirstClaws;
-	FString SecondClaws;
-	FString ThirdClaws;
-	if (!SolidBattleTestPrivate::LogSummary(*this, Battle, 4, SpearLine)
-		|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 5, FirstClaws)
-		|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 6, SecondClaws)
-		|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 7, ThirdClaws))
-	{
-		return false;
-	}
-	TestEqual(TEXT("the spear"), SpearLine, FString(TEXT("Captain attacks Raptor with Crude spear.")));
-	TestEqual(TEXT("the first claws"), FirstClaws, FString(TEXT("Raptor attacks Captain with Claws.")));
-	TestEqual(TEXT("the second claws"), SecondClaws, FString(TEXT("Raptor attacks Captain with Claws.")));
-	TestEqual(TEXT("the third claws"), ThirdClaws, FString(TEXT("Raptor attacks Captain with Claws.")));
+	TestEqual(TEXT("the spear"), SolidBattleTestPrivate::LogSummary(*this, Battle, 4), FString(TEXT("Captain attacks Raptor with Crude spear.")));
+	TestEqual(TEXT("the first claws"), SolidBattleTestPrivate::LogSummary(*this, Battle, 5), FString(TEXT("Raptor attacks Captain with Claws.")));
+	TestEqual(TEXT("the second claws"), SolidBattleTestPrivate::LogSummary(*this, Battle, 6), FString(TEXT("Raptor attacks Captain with Claws.")));
+	TestEqual(TEXT("the third claws"), SolidBattleTestPrivate::LogSummary(*this, Battle, 7), FString(TEXT("Raptor attacks Captain with Claws.")));
 	const float SquadAfter = SquadStart - static_cast<float>(Battle.Group->Num()) * Claw;
 	const float GroupAfter = GroupStart - Spear;
 	TestEqual(TEXT("the rags after three claws"), Battle.GetSquadDefence(), SquadAfter);
@@ -633,21 +555,10 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestEqual(TEXT("they prepare again"), Battle.Log.Num(), 12);
-	FString CaptainPrepareAgain;
-	FString FirstRaptorPrepareAgain;
-	FString SecondRaptorPrepareAgain;
-	FString ThirdRaptorPrepareAgain;
-	if (!SolidBattleTestPrivate::LogSummary(*this, Battle, 8, CaptainPrepareAgain)
-		|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 9, FirstRaptorPrepareAgain)
-		|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 10, SecondRaptorPrepareAgain)
-		|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 11, ThirdRaptorPrepareAgain))
-	{
-		return false;
-	}
-	TestEqual(TEXT("the captain prepares again"), CaptainPrepareAgain, FString(TEXT("Captain prepares.")));
-	TestEqual(TEXT("the first raptor prepares again"), FirstRaptorPrepareAgain, FString(TEXT("Raptor prepares.")));
-	TestEqual(TEXT("the second raptor prepares again"), SecondRaptorPrepareAgain, FString(TEXT("Raptor prepares.")));
-	TestEqual(TEXT("the third raptor prepares again"), ThirdRaptorPrepareAgain, FString(TEXT("Raptor prepares.")));
+	TestEqual(TEXT("the captain prepares again"), SolidBattleTestPrivate::LogSummary(*this, Battle, 8), FString(TEXT("Captain prepares.")));
+	TestEqual(TEXT("the first raptor prepares again"), SolidBattleTestPrivate::LogSummary(*this, Battle, 9), FString(TEXT("Raptor prepares.")));
+	TestEqual(TEXT("the second raptor prepares again"), SolidBattleTestPrivate::LogSummary(*this, Battle, 10), FString(TEXT("Raptor prepares.")));
+	TestEqual(TEXT("the third raptor prepares again"), SolidBattleTestPrivate::LogSummary(*this, Battle, 11), FString(TEXT("Raptor prepares.")));
 	TestEqual(TEXT("the rags hold"), Battle.GetSquadDefence(), SquadAfter);
 	TestEqual(TEXT("the hides hold"), Battle.GetGroupDefence(), GroupAfter);
 	TestFalse(TEXT("the fight is still going"), Battle.Finished());
@@ -658,26 +569,12 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestEqual(TEXT("they attack again"), Battle.Log.Num(), 16);
-	FString SpearKill;
-	FString ClawKill;
-	FString SecondAbort;
-	FString ThirdAbort;
-	if (!SolidBattleTestPrivate::LogSummary(*this, Battle, 12, SpearKill)
-		|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 13, ClawKill)
-		|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 14, SecondAbort)
-		|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 15, ThirdAbort))
-	{
-		return false;
-	}
-	TestEqual(
-		TEXT("the spear finishes that hide"),
-		SpearKill,
-		FString(TEXT("Captain kills Raptor with Crude spear.")));
+	TestEqual(TEXT("the spear finishes that hide"), SolidBattleTestPrivate::LogSummary(*this, Battle, 12), FString(TEXT("Captain kills Raptor with Crude spear.")));
 	const float GroupNow = GroupAfter - (FSolidRaptor::HideStrength - Spear);
 	TestEqual(TEXT("the wounded hide is gone"), Battle.GetGroupDefence(), GroupNow);
-	TestEqual(TEXT("the first claws kill"), ClawKill, FString(TEXT("Raptor kills Captain with Claws.")));
-	TestEqual(TEXT("the second claws abort"), SecondAbort, FString(TEXT("Raptor aborts the attack on Captain.")));
-	TestEqual(TEXT("the third claws abort"), ThirdAbort, FString(TEXT("Raptor aborts the attack on Captain.")));
+	TestEqual(TEXT("the first claws kill"), SolidBattleTestPrivate::LogSummary(*this, Battle, 13), FString(TEXT("Raptor kills Captain with Claws.")));
+	TestEqual(TEXT("the second claws abort"), SolidBattleTestPrivate::LogSummary(*this, Battle, 14), FString(TEXT("Raptor aborts the attack on Captain.")));
+	TestEqual(TEXT("the third claws abort"), SolidBattleTestPrivate::LogSummary(*this, Battle, 15), FString(TEXT("Raptor aborts the attack on Captain.")));
 	TestEqual(TEXT("the rags are gone"), Battle.GetSquadDefence(), 0.f);
 	TestTrue(TEXT("the group still has hide"), Battle.GetGroupDefence() > 0.f);
 	TestTrue(TEXT("one side has no armour left"), Battle.Finished());
@@ -717,15 +614,8 @@ bool FSolidBattleArmourFloorTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestEqual(TEXT("they prepare"), Battle.Log.Num(), 2);
-	FString CaptainPrepare;
-	FString RaptorPrepare;
-	if (!SolidBattleTestPrivate::LogSummary(*this, Battle, 0, CaptainPrepare)
-		|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 1, RaptorPrepare))
-	{
-		return false;
-	}
-	TestEqual(TEXT("the captain prepares"), CaptainPrepare, FString(TEXT("Captain prepares.")));
-	TestEqual(TEXT("the raptor prepares"), RaptorPrepare, FString(TEXT("Raptor prepares.")));
+	TestEqual(TEXT("the captain prepares"), SolidBattleTestPrivate::LogSummary(*this, Battle, 0), FString(TEXT("Captain prepares.")));
+	TestEqual(TEXT("the raptor prepares"), SolidBattleTestPrivate::LogSummary(*this, Battle, 1), FString(TEXT("Raptor prepares.")));
 	TestEqual(TEXT("the squad's armour"), Battle.GetSquadDefence(), SquadStart);
 	TestEqual(TEXT("the group's armour"), Battle.GetGroupDefence(), GroupStart);
 
@@ -735,12 +625,7 @@ bool FSolidBattleArmourFloorTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestEqual(TEXT("the spear"), Battle.Log.Num(), 3);
-	FString SpearLine;
-	if (!SolidBattleTestPrivate::LogSummary(*this, Battle, 2, SpearLine))
-	{
-		return false;
-	}
-	TestEqual(TEXT("the spear line"), SpearLine, FString(TEXT("Captain attacks Raptor with Crude spear.")));
+	TestEqual(TEXT("the spear line"), SolidBattleTestPrivate::LogSummary(*this, Battle, 2), FString(TEXT("Captain attacks Raptor with Crude spear.")));
 	TestEqual(TEXT("the squad is still whole"), Battle.GetSquadDefence(), SquadStart);
 	TestTrue(TEXT("the spear comes off the hide"), Battle.GetGroupDefence() < GroupStart);
 	TestTrue(TEXT("the hide stays at or above 0"), Battle.GetGroupDefence() >= 0.f);
@@ -751,15 +636,8 @@ bool FSolidBattleArmourFloorTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestEqual(TEXT("the captain prepares again and the raptor attacks"), Battle.Log.Num(), 5);
-	FString CaptainPrepareAgain;
-	FString ClawsLine;
-	if (!SolidBattleTestPrivate::LogSummary(*this, Battle, 3, CaptainPrepareAgain)
-		|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 4, ClawsLine))
-	{
-		return false;
-	}
-	TestEqual(TEXT("recover ends in another prepare"), CaptainPrepareAgain, FString(TEXT("Captain prepares.")));
-	TestEqual(TEXT("the claws line"), ClawsLine, FString(TEXT("Raptor attacks Captain with Claws.")));
+	TestEqual(TEXT("recover ends in another prepare"), SolidBattleTestPrivate::LogSummary(*this, Battle, 3), FString(TEXT("Captain prepares.")));
+	TestEqual(TEXT("the claws line"), SolidBattleTestPrivate::LogSummary(*this, Battle, 4), FString(TEXT("Raptor attacks Captain with Claws.")));
 	TestTrue(TEXT("the claws come off the rags"), Battle.GetSquadDefence() < SquadStart);
 	TestTrue(TEXT("the rags stay at or above 0"), Battle.GetSquadDefence() >= 0.f);
 
@@ -854,15 +732,8 @@ bool FSolidBattleKillTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestEqual(TEXT("they prepare"), Battle.Log.Num(), 2);
-	FString CaptainPrepare;
-	FString RaptorPrepare;
-	if (!SolidBattleTestPrivate::LogSummary(*this, Battle, 0, CaptainPrepare)
-		|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 1, RaptorPrepare))
-	{
-		return false;
-	}
-	TestEqual(TEXT("the captain prepares"), CaptainPrepare, FString(TEXT("Captain prepares.")));
-	TestEqual(TEXT("the raptor prepares"), RaptorPrepare, FString(TEXT("Raptor prepares.")));
+	TestEqual(TEXT("the captain prepares"), SolidBattleTestPrivate::LogSummary(*this, Battle, 0), FString(TEXT("Captain prepares.")));
+	TestEqual(TEXT("the raptor prepares"), SolidBattleTestPrivate::LogSummary(*this, Battle, 1), FString(TEXT("Raptor prepares.")));
 	TestEqual(TEXT("the squad's armour"), Battle.GetSquadDefence(), Rags);
 	TestEqual(TEXT("the group's armour"), Battle.GetGroupDefence(), Hide);
 
@@ -874,15 +745,8 @@ bool FSolidBattleKillTest::RunTest(const FString& Parameters)
 	const float AfterSpear = FMath::Max(0.f, Hide - Spear);
 	const float AfterClaw = FMath::Max(0.f, Rags - Claws);
 	TestEqual(TEXT("they attack"), Battle.Log.Num(), 4);
-	FString SpearLine;
-	FString ClawsLine;
-	if (!SolidBattleTestPrivate::LogSummary(*this, Battle, 2, SpearLine)
-		|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 3, ClawsLine))
-	{
-		return false;
-	}
-	TestEqual(TEXT("the spear"), SpearLine, FString(TEXT("Captain attacks Raptor with Crude spear.")));
-	TestEqual(TEXT("the claws"), ClawsLine, FString(TEXT("Raptor attacks Captain with Claws.")));
+	TestEqual(TEXT("the spear"), SolidBattleTestPrivate::LogSummary(*this, Battle, 2), FString(TEXT("Captain attacks Raptor with Crude spear.")));
+	TestEqual(TEXT("the claws"), SolidBattleTestPrivate::LogSummary(*this, Battle, 3), FString(TEXT("Raptor attacks Captain with Claws.")));
 	TestEqual(TEXT("the rags after one claw"), Battle.GetSquadDefence(), AfterClaw);
 	TestEqual(TEXT("the hide after one spear"), Battle.GetGroupDefence(), AfterSpear);
 
@@ -892,15 +756,8 @@ bool FSolidBattleKillTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestEqual(TEXT("they prepare again"), Battle.Log.Num(), 6);
-	FString CaptainPrepareAgain;
-	FString RaptorPrepareAgain;
-	if (!SolidBattleTestPrivate::LogSummary(*this, Battle, 4, CaptainPrepareAgain)
-		|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 5, RaptorPrepareAgain))
-	{
-		return false;
-	}
-	TestEqual(TEXT("the captain prepares again"), CaptainPrepareAgain, FString(TEXT("Captain prepares.")));
-	TestEqual(TEXT("the raptor prepares again"), RaptorPrepareAgain, FString(TEXT("Raptor prepares.")));
+	TestEqual(TEXT("the captain prepares again"), SolidBattleTestPrivate::LogSummary(*this, Battle, 4), FString(TEXT("Captain prepares.")));
+	TestEqual(TEXT("the raptor prepares again"), SolidBattleTestPrivate::LogSummary(*this, Battle, 5), FString(TEXT("Raptor prepares.")));
 	TestEqual(TEXT("the rags hold"), Battle.GetSquadDefence(), AfterClaw);
 	TestEqual(TEXT("the hide holds"), Battle.GetGroupDefence(), AfterSpear);
 
@@ -911,15 +768,8 @@ bool FSolidBattleKillTest::RunTest(const FString& Parameters)
 	}
 	const float SecondClaw = FMath::Max(0.f, AfterClaw - Claws);
 	TestEqual(TEXT("the second blows"), Battle.Log.Num(), 8);
-	FString SpearKill;
-	FString ClawsStill;
-	if (!SolidBattleTestPrivate::LogSummary(*this, Battle, 6, SpearKill)
-		|| !SolidBattleTestPrivate::LogSummary(*this, Battle, 7, ClawsStill))
-	{
-		return false;
-	}
-	TestEqual(TEXT("the spear kills"), SpearKill, FString(TEXT("Captain kills Raptor with Crude spear.")));
-	TestEqual(TEXT("the claws still attack"), ClawsStill, FString(TEXT("Raptor attacks Captain with Claws.")));
+	TestEqual(TEXT("the spear kills"), SolidBattleTestPrivate::LogSummary(*this, Battle, 6), FString(TEXT("Captain kills Raptor with Crude spear.")));
+	TestEqual(TEXT("the claws still attack"), SolidBattleTestPrivate::LogSummary(*this, Battle, 7), FString(TEXT("Raptor attacks Captain with Claws.")));
 	TestTrue(TEXT("two claws leave the rags up"), SecondClaw > 0.f);
 	TestEqual(TEXT("the rags after two claws"), Battle.GetSquadDefence(), SecondClaw);
 	TestEqual(TEXT("the hide is gone"), Battle.GetGroupDefence(), 0.f);
@@ -1035,12 +885,7 @@ bool FSolidBattleAbortTest::RunTest(const FString& Parameters)
 			{
 				for (int32 Index = 0; Index < Battle.Log.Num(); ++Index)
 				{
-					FString Line;
-					if (!SolidBattleTestPrivate::LogSummary(*this, Battle, Index, Line))
-					{
-						return false;
-					}
-					if (Line == TEXT("Raptor kills Captain with Claws."))
+					if (SolidBattleTestPrivate::LogSummary(*this, Battle, Index) == TEXT("Raptor kills Captain with Claws."))
 					{
 						KillAt = Index;
 						break;
@@ -1048,15 +893,8 @@ bool FSolidBattleAbortTest::RunTest(const FString& Parameters)
 				}
 			}
 		}
-		FString SecondAbort;
-		FString ThirdAbort;
-		if (!SolidBattleTestPrivate::LogSummary(*this, Battle, KillAt + 1, SecondAbort)
-			|| !SolidBattleTestPrivate::LogSummary(*this, Battle, KillAt + 2, ThirdAbort))
-		{
-			return false;
-		}
-		TestEqual(TEXT("the second raptor aborts"), SecondAbort, FString(TEXT("Raptor aborts the attack on Captain.")));
-		TestEqual(TEXT("the third raptor aborts"), ThirdAbort, FString(TEXT("Raptor aborts the attack on Captain.")));
+		TestEqual(TEXT("the second raptor aborts"), SolidBattleTestPrivate::LogSummary(*this, Battle, KillAt + 1), FString(TEXT("Raptor aborts the attack on Captain.")));
+		TestEqual(TEXT("the third raptor aborts"), SolidBattleTestPrivate::LogSummary(*this, Battle, KillAt + 2), FString(TEXT("Raptor aborts the attack on Captain.")));
 		TestEqual(TEXT("the rags are gone"), Battle.GetSquadDefence(), 0.f);
 		TestTrue(TEXT("the group still has hide"), Battle.GetGroupDefence() > 0.f);
 		TestTrue(TEXT("one side has no armour left"), Battle.Finished());

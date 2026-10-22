@@ -27,7 +27,7 @@ enum class ESolidBattleSpacing : uint8
 };
 
 /** Attack or retreat, stored on a battle plan. */
-enum class ESolidBattleAttackOrRetreat : uint8
+enum class ESolidAggression : uint8
 {
 	Attack,
 	Retreat,
@@ -44,7 +44,7 @@ public:
 	ESolidBattleFormation Formation = ESolidBattleFormation::Column;
 	ESolidBattleSpacing Spacing = ESolidBattleSpacing::Standard;
 	/** Attack or retreat. */
-	ESolidBattleAttackOrRetreat AttackOrRetreat = ESolidBattleAttackOrRetreat::Attack;
+	ESolidAggression AttackOrRetreat = ESolidAggression::Attack;
 
 	/** True when the name, the formation, the spacing, and attack or retreat are the same. */
 	bool SameAs(const FSolidBattlePlan& Other) const;

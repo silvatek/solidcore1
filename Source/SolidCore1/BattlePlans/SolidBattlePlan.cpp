@@ -20,12 +20,12 @@ bool FSolidBattlePlan::IsParade() const
 
 bool FSolidBattlePlan::Attacks() const
 {
-	return AttackOrRetreat == ESolidBattleAttackOrRetreat::Attack;
+	return AttackOrRetreat == ESolidAggression::Attack;
 }
 
 bool FSolidBattlePlan::Retreats() const
 {
-	return AttackOrRetreat == ESolidBattleAttackOrRetreat::Retreat;
+	return AttackOrRetreat == ESolidAggression::Retreat;
 }
 
 FSolidBattlePlan FSolidBattlePlan::Defined(const TCHAR* PlanName)
@@ -36,7 +36,7 @@ FSolidBattlePlan FSolidBattlePlan::Defined(const TCHAR* PlanName)
 		Plan.Name = TEXT("Attack");
 		Plan.Formation = ESolidBattleFormation::Mob;
 		Plan.Spacing = ESolidBattleSpacing::Standard;
-		Plan.AttackOrRetreat = ESolidBattleAttackOrRetreat::Attack;
+		Plan.AttackOrRetreat = ESolidAggression::Attack;
 	}
 	return Plan;
 }

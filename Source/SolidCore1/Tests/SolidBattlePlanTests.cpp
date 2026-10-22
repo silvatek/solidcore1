@@ -204,7 +204,7 @@ bool FSolidBattlePlanIdentityTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("a new formation stays the same plan"), Column.SameAs(Starter));
 
 	FSolidBattlePlan Retreating = Starter;
-	Retreating.AttackOrRetreat = ESolidBattleAttackOrRetreat::Retreat;
+	Retreating.AttackOrRetreat = ESolidAggression::Retreat;
 	TestTrue(TEXT("Starter attacks"), Starter.Attacks());
 	TestTrue(TEXT("the other plan retreats"), Retreating.Retreats());
 	TestFalse(TEXT("a retreat stays the same plan"), Retreating.SameAs(Starter));

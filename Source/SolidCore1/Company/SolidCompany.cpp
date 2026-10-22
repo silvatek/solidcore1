@@ -12,38 +12,38 @@ namespace
 			TEXT("Starter"),
 			ESolidBattleFormation::Line,
 			ESolidBattleSpacing::Standard,
-			ESolidBattleAttackOrRetreat::Attack});
+			ESolidAggression::Attack});
 		Plans.Add(FSolidBattlePlan::Defined(TEXT("Attack")));
 		Plans.Add({
 			TEXT("Defend"),
 			ESolidBattleFormation::Line,
 			ESolidBattleSpacing::Standard,
-			ESolidBattleAttackOrRetreat::Retreat});
+			ESolidAggression::Retreat});
 		Plans.Add({
 			TEXT("Parade"),
 			ESolidBattleFormation::Parade,
 			ESolidBattleSpacing::Standard,
-			ESolidBattleAttackOrRetreat::Retreat});
+			ESolidAggression::Retreat});
 		Plans.Add({
 			TEXT("Line"),
 			ESolidBattleFormation::Line,
 			ESolidBattleSpacing::Standard,
-			ESolidBattleAttackOrRetreat::Retreat});
+			ESolidAggression::Retreat});
 		Plans.Add({
 			TEXT("Column"),
 			ESolidBattleFormation::Column,
 			ESolidBattleSpacing::Standard,
-			ESolidBattleAttackOrRetreat::Retreat});
+			ESolidAggression::Retreat});
 		Plans.Add({
 			TEXT("Tight mob"),
 			ESolidBattleFormation::Mob,
 			ESolidBattleSpacing::Narrow,
-			ESolidBattleAttackOrRetreat::Attack});
+			ESolidAggression::Attack});
 		Plans.Add({
 			TEXT("Loose mob"),
 			ESolidBattleFormation::Mob,
 			ESolidBattleSpacing::Wide,
-			ESolidBattleAttackOrRetreat::Attack});
+			ESolidAggression::Attack});
 	}
 }
 

@@ -1,5 +1,5 @@
 #include "SolidGameState.h"
-#include "Company/SolidBattlePlan.h"
+#include "BattlePlans/SolidBattlePlan.h"
 #include "Company/SolidCompany.h"
 #include "Company/SolidSquad.h"
 

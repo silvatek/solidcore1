@@ -1,6 +1,7 @@
 #include "SolidEncounter.h"
 #include "SolidRaptor.h"
 #include "SolidGroundMove.h"
+#include "BattlePlans/SolidBattlePlan.h"
 #include "Inventory/SolidItem.h"
 
 namespace SolidEncounterPrivate
@@ -113,6 +114,25 @@ namespace SolidEncounterPrivate
 		default:
 			return false;
 		}
+	}
+
+	/** The defined plan named on the group spec becomes that group's available plan, and the active one. */
+	void GivePlan(FSolidMonsterGroup& Group, const SolidEncounter::FGroup& Spec)
+	{
+		if (!Spec.Plan || !Spec.Plan[0])
+		{
+			Group.Available.Reset();
+			Group.ActivePlan = INDEX_NONE;
+			return;
+		}
+		const FSolidBattlePlan Plan = FSolidBattlePlan::Defined(Spec.Plan);
+		if (Plan.Is(Spec.Plan))
+		{
+			Group.SetAvailable(Plan);
+			return;
+		}
+		Group.Available.Reset();
+		Group.ActivePlan = INDEX_NONE;
 	}
 
 	TUniquePtr<FSolidMonster> MakeMonster(
@@ -274,6 +294,10 @@ FSolidEncounter::FSolidEncounter(const SolidEncounter::FDefinition& InDefinition
 	: Definition(InDefinition)
 {
 	Groups.SetNum(FMath::Max(0, Definition.GroupCount));
+	for (int32 GroupIndex = 0; GroupIndex < Definition.GroupCount && Groups.IsValidIndex(GroupIndex); ++GroupIndex)
+	{
+		SolidEncounterPrivate::GivePlan(Groups[GroupIndex], Definition.Groups[GroupIndex]);
+	}
 }
 
 int32 FSolidEncounter::Place(
@@ -286,10 +310,15 @@ int32 FSolidEncounter::Place(
 {
 	Location = FVector2D::ZeroVector;
 	Groups.SetNum(FMath::Max(0, Definition.GroupCount));
-	for (FSolidMonsterGroup& Group : Groups)
+	for (int32 GroupIndex = 0; GroupIndex < Groups.Num(); ++GroupIndex)
 	{
+		FSolidMonsterGroup& Group = Groups[GroupIndex];
 		Group.Members.Reset();
 		Group.Seeded.Reset();
+		if (GroupIndex < Definition.GroupCount)
+		{
+			SolidEncounterPrivate::GivePlan(Group, Definition.Groups[GroupIndex]);
+		}
 	}
 
 	FVector2D Outer = FVector2D::ZeroVector;

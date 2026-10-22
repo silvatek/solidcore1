@@ -3,7 +3,7 @@
 #include "Journal/SolidJournal.h"
 #include "Menus/SolidSquadBuilder.h"
 #include "SolidHUD.h"
-#include "Company/SolidBattlePlan.h"
+#include "BattlePlans/SolidBattlePlan.h"
 #include "Company/SolidCompany.h"
 #include "Company/SolidSquad.h"
 

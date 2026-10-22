@@ -34,7 +34,7 @@
 #include "InputCoreTypes.h"
 #include "SolidClipLocomotion.h"
 #include "SolidCore1.h"
-#include "Company/SolidBattlePlan.h"
+#include "BattlePlans/SolidBattlePlan.h"
 #include "Company/SolidCaptain.h"
 #include "Company/SolidCompany.h"
 #include "SolidGameMode.h"

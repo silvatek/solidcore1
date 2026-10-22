@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0543")
+#define SOLID_BUILD_ID TEXT("SC1-0544")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A battle plan is a class.")
+#define SOLID_BUILD_NOTE TEXT("The Iglin Bridge group uses the Attack plan.")
 #endif

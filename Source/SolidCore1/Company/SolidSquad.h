@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "UObject/Object.h"
-#include "Company/SolidBattlePlan.h"
+#include "BattlePlans/SolidBattlePlan.h"
 #include "Company/SolidCompany.h"
 #include "SolidSquad.generated.h"
 

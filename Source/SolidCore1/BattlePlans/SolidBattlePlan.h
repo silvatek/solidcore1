@@ -45,6 +45,12 @@ public:
 
 	/** True when companions stand in front of the captain and face him. */
 	bool IsParade() const;
+
+	/**
+	 * The defined plan of that name.
+	 * Attack is Line at standard spacing. Any other name is an empty plan.
+	 */
+	static FSolidBattlePlan Defined(const TCHAR* PlanName);
 };
 
 /**

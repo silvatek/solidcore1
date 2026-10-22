@@ -1,7 +1,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "Menus/SolidSquadBuilder.h"
-#include "Company/SolidBattlePlan.h"
+#include "BattlePlans/SolidBattlePlan.h"
 #include "Company/SolidCaptain.h"
 #include "Company/SolidCompany.h"
 #include "Company/SolidSquad.h"

@@ -12,10 +12,7 @@ namespace
 			TEXT("Starter"),
 			ESolidBattleFormation::Line,
 			ESolidBattleSpacing::Standard});
-		Plans.Add({
-			TEXT("Attack"),
-			ESolidBattleFormation::Line,
-			ESolidBattleSpacing::Standard});
+		Plans.Add(FSolidBattlePlan::Defined(TEXT("Attack")));
 		Plans.Add({
 			TEXT("Defend"),
 			ESolidBattleFormation::Line,

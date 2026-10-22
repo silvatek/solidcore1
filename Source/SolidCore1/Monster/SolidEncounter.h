@@ -35,6 +35,8 @@ namespace SolidEncounter
 		EMonsterKind Kind = EMonsterKind::Raptor;
 		ESolidMonsterSize Size = ESolidMonsterSize::Small;
 		int32 Count = 0;
+		/** Name of the defined battle plan this group uses. Empty until a definition sets one. */
+		const TCHAR* Plan = TEXT("");
 	};
 
 	/**
@@ -57,7 +59,8 @@ namespace SolidEncounter
 		constexpr FDefinition WithGroup(
 			const EMonsterKind Kind,
 			const ESolidMonsterSize Size,
-			const int32 Count) const
+			const int32 Count,
+			const TCHAR* Plan = TEXT("")) const
 		{
 			FDefinition Def = *this;
 			if (Def.GroupCount < MaxGroupsPerEncounter)
@@ -65,6 +68,7 @@ namespace SolidEncounter
 				Def.Groups[Def.GroupCount].Kind = Kind;
 				Def.Groups[Def.GroupCount].Size = Size;
 				Def.Groups[Def.GroupCount].Count = Count;
+				Def.Groups[Def.GroupCount].Plan = Plan;
 				++Def.GroupCount;
 			}
 			return Def;

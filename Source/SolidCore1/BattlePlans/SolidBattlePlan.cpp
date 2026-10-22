@@ -16,3 +16,15 @@ bool FSolidBattlePlan::IsParade() const
 {
 	return Formation == ESolidBattleFormation::Parade;
 }
+
+FSolidBattlePlan FSolidBattlePlan::Defined(const TCHAR* PlanName)
+{
+	FSolidBattlePlan Plan;
+	if (PlanName && FCString::Strcmp(PlanName, TEXT("Attack")) == 0)
+	{
+		Plan.Name = TEXT("Attack");
+		Plan.Formation = ESolidBattleFormation::Line;
+		Plan.Spacing = ESolidBattleSpacing::Standard;
+	}
+	return Plan;
+}

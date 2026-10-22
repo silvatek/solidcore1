@@ -422,4 +422,57 @@ bool FSolidMonsterMountainTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidMonsterBattlePlanTest,
+	"SolidCore1.Monster.BattlePlan",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidMonsterBattlePlanTest::RunTest(const FString& Parameters)
+{
+	const FSolidBattlePlan Attack = FSolidBattlePlan::Defined(TEXT("Attack"));
+	TestTrue(TEXT("Attack is the defined plan"), Attack.Is(TEXT("Attack")));
+
+	FSolidEncounter Iglin(SolidEncounter::Definitions[0]);
+	TestEqual(TEXT("Iglin Bridge has one group"), Iglin.Groups.Num(), 1);
+	if (Iglin.Groups.Num() != 1)
+	{
+		return false;
+	}
+	const FSolidMonsterGroup& Group = Iglin.Groups[0];
+	TestEqual(TEXT("the group has one available plan"), Group.Available.Num(), 1);
+	TestEqual(TEXT("that plan is active"), Group.ActivePlan, 0);
+	const FSolidBattlePlan* Active = Group.GetActivePlan();
+	TestNotNull(TEXT("the active plan"), Active);
+	if (Active)
+	{
+		TestTrue(TEXT("the active plan is Attack"), Active->Is(TEXT("Attack")));
+		TestTrue(TEXT("it is the defined Attack plan"), Active->SameAs(Attack));
+	}
+
+	TArray<FSolidTerrainPoint> Points;
+	const TArray<int32> Skip;
+	const TArray<SolidBridge::FBridge> Bridges;
+	TestEqual(
+		TEXT("no bridge places no reptiles"),
+		Iglin.Place(Points, Skip, Skip, FVector2D::ZeroVector, Bridges),
+		0);
+	const FSolidBattlePlan* Kept = Iglin.Groups[0].GetActivePlan();
+	TestNotNull(TEXT("the group keeps a plan"), Kept);
+	if (Kept)
+	{
+		TestTrue(TEXT("Attack stays the active plan"), Kept->SameAs(Attack));
+	}
+
+	SolidEncounter::FDefinition Bare{ TEXT("Bare"), SolidEncounter::ESite::IglinBridgeRamp };
+	Bare = Bare.WithGroup(SolidEncounter::EMonsterKind::Raptor, ESolidMonsterSize::Small, 1);
+	const FSolidEncounter NoPlan(Bare);
+	TestEqual(TEXT("one group"), NoPlan.Groups.Num(), 1);
+	if (NoPlan.Groups.Num() == 1)
+	{
+		TestEqual(TEXT("a group without a named plan has none available"), NoPlan.Groups[0].Available.Num(), 0);
+		TestNull(TEXT("that group has no active plan"), NoPlan.Groups[0].GetActivePlan());
+	}
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

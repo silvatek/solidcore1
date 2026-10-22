@@ -237,6 +237,9 @@ USolidGameInstance                  # Session root
   float[]                           # Fog trail, copied off the terrain map before a visit
 ASolidGameMode                      # World root. OpenLevel replaces it
   USolidSquad                       # Indexes into the company. Does not own it
+  FSolidEncounter[]                 # Iglin Bridge
+    FSolidMonsterGroup[]            # Available battle plans, and the active one
+      FSolidBattlePlan[]            # Iglin Bridge uses Attack
   USolidWorldChart                  # /Game/World/WorldChart
     ESolidBiome[]                   # Marker biome of each cell
     FSolidWorldChartMark[]          # Towns, strongholds, sites, lair mouths, notes

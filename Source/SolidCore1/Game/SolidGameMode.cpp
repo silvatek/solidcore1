@@ -9,7 +9,7 @@
 #include "Companion/SolidCompanionCharacter.h"
 #include "SolidBodyMesh.h"
 #include "SolidBodyParams.h"
-#include "Company/SolidBattlePlan.h"
+#include "BattlePlans/SolidBattlePlan.h"
 #include "Company/SolidCompany.h"
 #include "Company/SolidSquad.h"
 #include "Terrain/SolidBridge.h"

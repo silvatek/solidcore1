@@ -7,7 +7,7 @@
 #include "SolidGroundMove.h"
 #include "SolidMaterials.h"
 #include "SolidNameLabel.h"
-#include "Company/SolidBattlePlan.h"
+#include "BattlePlans/SolidBattlePlan.h"
 #include "Company/SolidSquad.h"
 #include "GameFramework/GameModeBase.h"
 #include "Animation/AnimSequence.h"

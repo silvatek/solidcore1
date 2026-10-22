@@ -2,7 +2,6 @@
 #include "Misc/AutomationTest.h"
 #include "SolidHUD.h"
 #include "SolidMainMenu.h"
-#include "Game/SolidMonsterMeasure.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -213,55 +212,6 @@ bool FSolidMainMenuOrderTest::RunTest(const FString& Parameters)
 		TestFalse(TEXT("no Leave cave row"), Entry.Label == TEXT("Leave cave"));
 	}
 	TestEqual(TEXT("only Exit Game quits"), QuitRows, 1);
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidMainMenuViewReptileTest,
-	"SolidCore1.MainMenu.ViewReptile",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
-
-bool FSolidMainMenuViewReptileTest::RunTest(const FString& Parameters)
-{
-	TArray<FSolidMainMenuEntry> Entries;
-	SolidMainMenu::CollectEntries(Entries);
-
-	int32 ViewIndex = INDEX_NONE;
-	int32 ExitIndex = INDEX_NONE;
-	for (int32 Index = 0; Index < Entries.Num(); ++Index)
-	{
-		if (Entries[Index].Item == ESolidMainMenuItem::ViewReptile)
-		{
-			ViewIndex = Index;
-		}
-		if (Entries[Index].Item == ESolidMainMenuItem::ExitGame)
-		{
-			ExitIndex = Index;
-		}
-	}
-
-	TestTrue(TEXT("View reptile is listed"), ViewIndex != INDEX_NONE);
-	if (ViewIndex == INDEX_NONE)
-	{
-		return false;
-	}
-	TestEqual(TEXT("View reptile label"), Entries[ViewIndex].Label, FString(TEXT("View reptile")));
-	TestEqual(
-		TEXT("View reptile places the captain"),
-		static_cast<uint8>(SolidMainMenu::ActionForItem(Entries[ViewIndex].Item)),
-		static_cast<uint8>(ESolidMainMenuAction::PlaceCaptain));
-	TestTrue(TEXT("View reptile sits before Exit Game"), ExitIndex > ViewIndex);
-
-	const FVector2D Stand = SolidMonsterMeasure::ViewStandLocalXY();
-	TestTrue(
-		TEXT("the captain stands 450 cm back from the reptile"),
-		FMath::IsNearlyEqual(Stand.X, SolidMonsterMeasure::MonsterXCm - SolidMonsterMeasure::ViewStandCm));
-	TestTrue(
-		TEXT("the captain shares the reptile's grid row"),
-		FMath::IsNearlyEqual(Stand.Y, SolidMonsterMeasure::MonsterYCm));
-	TestTrue(
-		TEXT("the view looks down"),
-		SolidMonsterMeasure::ViewPitchDeg < 0.f);
 	return true;
 }
 

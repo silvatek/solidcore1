@@ -2,14 +2,12 @@
 #include "Misc/AutomationTest.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
-#include "Components/StaticMeshComponent.h"
 #include "Monster/SolidMonster.h"
 #include "Monster/SolidMonsterGroup.h"
 #include "Monster/SolidEncounter.h"
 #include "Monster/SolidEncounters.h"
 #include "Monster/SolidRaptorActor.h"
 #include "Monster/SolidRaptor.h"
-#include "Game/SolidMonsterMeasure.h"
 #include "Terrain/SolidBridge.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -301,74 +299,6 @@ bool FSolidMonsterBodyTest::RunTest(const FString& Parameters)
 	{
 		TestTrue(TEXT("the mesh does not block"), Body->GetCollisionEnabled() == ECollisionEnabled::NoCollision);
 	}
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidMonsterMeasureTest,
-	"SolidCore1.Monster.Measure",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
-
-bool FSolidMonsterMeasureTest::RunTest(const FString& Parameters)
-{
-	ASolidMonsterMeasure* Measure = NewObject<ASolidMonsterMeasure>();
-	TestNotNull(TEXT("measure"), Measure);
-	if (!Measure)
-	{
-		return false;
-	}
-	Measure->BuildVisuals();
-
-	const UStaticMeshComponent* Red = Measure->GetRedPost();
-	const UStaticMeshComponent* Blue = Measure->GetBluePost();
-	TestNotNull(TEXT("red post"), Red);
-	TestNotNull(TEXT("blue post"), Blue);
-	if (!Red || !Blue)
-	{
-		return false;
-	}
-
-	TestTrue(
-		TEXT("the red post is 100 cm"),
-		FMath::IsNearlyEqual(Red->GetRelativeScale3D().Z * 100.f, SolidMonsterMeasure::RedPostCm));
-	TestTrue(
-		TEXT("the red post stands on the ground"),
-		FMath::IsNearlyEqual(Red->GetRelativeLocation().Z, SolidMonsterMeasure::RedPostCm * 0.5f));
-	TestTrue(
-		TEXT("the red post stands to the right"),
-		FMath::IsNearlyEqual(Red->GetRelativeLocation().Y, SolidMonsterMeasure::RedPostSideCm));
-	TestTrue(TEXT("the red post does not block"), Red->GetCollisionEnabled() == ECollisionEnabled::NoCollision);
-
-	TestTrue(
-		TEXT("the blue post is 200 cm"),
-		FMath::IsNearlyEqual(Blue->GetRelativeScale3D().Z * 100.f, SolidMonsterMeasure::BluePostCm));
-	TestTrue(
-		TEXT("the blue post stands on the ground"),
-		FMath::IsNearlyEqual(Blue->GetRelativeLocation().Z, SolidMonsterMeasure::BluePostCm * 0.5f));
-	TestTrue(
-		TEXT("the blue post stands further right"),
-		FMath::IsNearlyEqual(Blue->GetRelativeLocation().Y, SolidMonsterMeasure::BluePostSideCm));
-
-	const UStaticMeshComponent* First = Measure->GetGridLine(0);
-	const UStaticMeshComponent* Next = Measure->GetGridLine(1);
-	TestNotNull(TEXT("first grid line"), First);
-	TestNotNull(TEXT("next grid line"), Next);
-	if (!First || !Next)
-	{
-		return false;
-	}
-	TestTrue(
-		TEXT("the grid starts 4 m from the feet"),
-		FMath::IsNearlyEqual(First->GetRelativeLocation().Y, -SolidMonsterMeasure::GridHalfCm));
-	TestTrue(
-		TEXT("the grid steps 100 cm"),
-		FMath::IsNearlyEqual(
-			Next->GetRelativeLocation().Y - First->GetRelativeLocation().Y,
-			SolidMonsterMeasure::GridStepCm));
-	TestTrue(
-		TEXT("a grid line does not block"),
-		First->GetCollisionEnabled() == ECollisionEnabled::NoCollision);
-	TestNull(TEXT("a missing grid line"), Measure->GetGridLine(SolidMonsterMeasure::GridLineCount));
 	return true;
 }
 

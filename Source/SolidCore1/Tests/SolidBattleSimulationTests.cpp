@@ -468,26 +468,12 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 {
 	USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
 	FSolidEncounter Encounter = SolidBattleTestPrivate::BuildEncounter(TEXT("Iglin Bridge"));
-	if (Encounter.Groups.Num() < 1)
-	{
-		AddError(TEXT("Iglin Bridge gave the battle no monster group"));
-		return false;
-	}
 	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
 	FSolidBattle Battle(Squad, &Encounter.Groups[0]);
 	Battle.Inventory = &Inventory;
-	const int32 MainIndex = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
-	const FSolidItem* MainHand = MainIndex != INDEX_NONE && Inventory.Worn[MainIndex].IsWeapon()
-		? &Inventory.Worn[MainIndex]
-		: nullptr;
-	const FSolidMonster* Sample = Encounter.Groups[0].Get(0);
-	if (!MainHand || !Sample)
-	{
-		AddError(TEXT("Iglin Bridge gave the battle no spear and no raptor"));
-		return false;
-	}
-	const float Spear = static_cast<float>(MainHand->Power());
-	const float Claw = static_cast<float>(Sample->Weapon.Power);
+
+	const float Spear = static_cast<float>(Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::MainHand)].Power());
+	const float Claw = static_cast<float>(Encounter.Groups[0].Get(0)->Weapon.Power);
 
 	const float SquadStart = Battle.GetSquadDefence();
 	const float GroupStart = Battle.GetGroupDefence();

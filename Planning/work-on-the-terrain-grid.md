@@ -4,7 +4,7 @@ Status: Ready
 
 ## Story
 
-This story depends on [Remove WorldMap.txt](remove-world-map-txt.md), which is Ready. That story ships first. It starts from the world that story leaves: `Content/WorldMap.txt` is gone, and the game loads `/Game/World/WorldChart`.
+This story depends on [Remove WorldMap.txt](Done/remove-world-map-txt.md), which is Done. That story ships first. It starts from the world that story leaves: `Content/WorldMap.txt` is gone, and the game loads `/Game/World/WorldChart`.
 
 The open world is a square of terrain points, 513 on a side, 200 cm apart. The chart still stores the land as the old text cells: 128 columns by 64 rows across that square, so a cell is 8 m east–west and 16 m north–south. Those rectangles came from the character cells. A forest, a mountain, a town, or the sea fills the whole cell. The ground steps at the cell edge. A mountain rises 10 m. The other land sits 1 m up. Those steps are the blocks in the World chart view.
 
@@ -40,7 +40,7 @@ A road keeps its route-finding. The solver keeps its steps and its costs: off mo
 - `SampleBiome` paints a road strip and a 4 m river inside a cell. Every other biome returns the whole cell. That split is the chart view: a thin road, and block shelves.
 - `SolidRoad::Solve` keeps its steps, its costs, and the half-quad strip offset (`TerrainQuadCm` 200). A step reads the terrain point under it. The search does not move onto the 513 by 513 points.
 - A mark stores a world position. `LoadFromChart` turns that position into a cell. On the grid, the position stays on the point.
-- [Remove WorldMap.txt](remove-world-map-txt.md) has already shipped. The chart this story changes is `/Game/World/WorldChart`.
+- [Remove WorldMap.txt](Done/remove-world-map-txt.md) has already shipped. The chart this story changes is `/Game/World/WorldChart`.
 - A Shift-drag is the axis-aligned fill. The round brush is the stroke that follows a diagonal or a curve. Swamp stays off the palette, as it does today.
 - The point under a marker is the continuing simplification. A town marker's point is town. A stronghold, a site, a lair mouth, and a custom note use grassland. The code leaves a lone point as it was painted.
 - Dragongate is two town marks today, and they are one town. That stays when both marks stand in the same painted town ground.

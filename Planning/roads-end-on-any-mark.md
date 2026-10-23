@@ -14,7 +14,7 @@ This story follows [Place encounter markers](Done/place-encounter-markers.md), w
 
 ## Implementation notes
 
-Stage 1 is road ends. The import and disagreement stage is gone. [Remove WorldMap.txt](remove-world-map-txt.md) deleted the import and the disagreement line.
+Stage 1 is road ends. The import and disagreement stage is gone. [Remove WorldMap.txt](Done/remove-world-map-txt.md) deleted the import and the disagreement line.
 
 ### Stage 1 — road ends
 

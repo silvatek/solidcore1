@@ -4,7 +4,7 @@ Status: Done
 
 ## Story
 
-This story depends on [Record the world chart](record-the-world-chart.md), which is Done. That story ships first. The game then builds the world from `/Game/World/WorldChart`. Terrain, towns, roads, the cave, and the Iglin tunnels match the text file. The text file stays so a test can compare the two. [Paint the world chart](paint-the-world-chart.md) is Done. [Remove WorldMap.txt](../remove-world-map-txt.md) is Ready and depends on this story. This story ships first.
+This story depends on [Record the world chart](record-the-world-chart.md), which is Done. That story ships first. The game then builds the world from `/Game/World/WorldChart`. Terrain, towns, roads, the cave, and the Iglin tunnels match the text file. The text file stays so a test can compare the two. [Paint the world chart](paint-the-world-chart.md) is Done. [Remove WorldMap.txt](remove-world-map-txt.md) is Ready and depends on this story. This story ships first.
 
 ## Acceptance
 

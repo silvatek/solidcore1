@@ -4,7 +4,7 @@ Status: Done
 
 ## Story
 
-This story depends on [Record the world chart](record-the-world-chart.md), which is Done. That story ships first. The developer then edits `/Game/World/WorldChart` on the open-world level. Changing a biome and placing a mark are the edits `WorldMap.txt` is used for now. The game still reads the text file, so an edit does not change play. [Remove WorldMap.txt](../remove-world-map-txt.md) is Ready and depends on this story. This story ships first.
+This story depends on [Record the world chart](record-the-world-chart.md), which is Done. That story ships first. The developer then edits `/Game/World/WorldChart` on the open-world level. Changing a biome and placing a mark are the edits `WorldMap.txt` is used for now. The game still reads the text file, so an edit does not change play. [Remove WorldMap.txt](remove-world-map-txt.md) is Ready and depends on this story. This story ships first.
 
 ## Acceptance
 

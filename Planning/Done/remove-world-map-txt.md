@@ -1,10 +1,10 @@
 # Remove WorldMap.txt
 
-Status: In Progress
+Status: Done
 
 ## Story
 
-This story depends on [Load the world from the chart](Done/load-the-world-from-the-chart.md), which is Done, and [Paint the world chart](Done/paint-the-world-chart.md), which is Done. Those stories ship first. The developer then edits the world in the World chart mode, and the game loads that chart. `Content/WorldMap.txt` is gone.
+This story depends on [Load the world from the chart](load-the-world-from-the-chart.md), which is Done, and [Paint the world chart](paint-the-world-chart.md), which is Done. Those stories ship first. The developer then edits the world in the World chart mode, and the game loads that chart. `Content/WorldMap.txt` is gone.
 
 ## Acceptance
 
@@ -32,4 +32,4 @@ Stage 1 is the biome's colour. Stage 2 deletes `Content/WorldMap.txt`, the shipp
 
 ### Stage 3 — the docs
 
-`AGENTS.md` reviews `Content/World/WorldChart.uasset`: 128 by 64, the mark kinds, and the road ends. `README.md` and the `SolidCore1.WorldMap.*` blurb follow the chart and the World chart mode. `tools/cloud_agent_check.py` requires that asset. [Package the game](package-the-game.md) follows the chart. The loose text file is not staged. Shipped stories that mention the old file stay as history.
+`AGENTS.md` reviews `Content/World/WorldChart.uasset`: 128 by 64, the mark kinds, and the road ends. `README.md` and the `SolidCore1.WorldMap.*` blurb follow the chart and the World chart mode. `tools/cloud_agent_check.py` requires that asset. [Package the game](../package-the-game.md) follows the chart. The loose text file is not staged. Shipped stories that mention the old file stay as history.

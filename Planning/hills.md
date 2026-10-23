@@ -39,7 +39,7 @@ This story is one phase. The variance and the hills biome land together.
 - A hill top is the 3 m shelf plus the 4 m Medium span, 7 m, under the mountain shelf of 10 m.
 - The river channel is Low, on the 0 shelf, so it has the same small rise and fall as grassland. The sea is the flat water.
 - A road strip replaces the ground only when the shelves match. Hills stay hills under a route. Enter cost does not avoid them.
-- [Remove WorldMap.txt](remove-world-map-txt.md) has deleted the text file. Hills are painted on `/Game/World/WorldChart`. The letter `h` stays for `LoadFromString` and for `FSolidBiome::Marker()`.
+- [Remove WorldMap.txt](Done/remove-world-map-txt.md) has deleted the text file. Hills are painted on `/Game/World/WorldChart`. The letter `h` stays for `LoadFromString` and for `FSolidBiome::Marker()`.
 - Trees, sticks, and pitch stay on forest. An encounter mark still stands on grassland. Hills gain none of those. [Rough stones](rough-stones.md) may place a pile on hills when a neighbour is a mountain or a river. Hills are open ground, and that story does not exclude them.
 - [Work on the terrain grid](work-on-the-terrain-grid.md) says the other land sits 1 m up, and its palette has no hills. When that story is implemented, those lines keep the hills shelf, the height variance, and Hills on the palette.
 - `SolidCore1.Map.BiomeHeightOffset` assumes a point's height is the full-amplitude sample plus the shelf. Update that test in its own commit before the product change. It reads the variance from the biome. `SolidCore1.Types.BiomeHeightOffset` keeps the existing shelves and gains the hills shelf of 300 cm.

@@ -193,25 +193,31 @@ void ApplyChange(
 		{
 			break;
 		}
-		const FSolidCompanion* Source = nullptr;
-		for (const FSolidCompanion& Candidate : SolidCompanions::AllCompanions())
+		const TArray<FSolidCompanion>& Catalog = SolidCompanions::AllCompanions();
+		int32 CatalogIndex = INDEX_NONE;
+		for (int32 CandidateIndex = 0; CandidateIndex < Catalog.Num(); ++CandidateIndex)
 		{
-			if (Candidate.Name.Equals(Change.CompanionName, ESearchCase::IgnoreCase))
+			if (Catalog[CandidateIndex].Name.Equals(Change.CompanionName, ESearchCase::IgnoreCase))
 			{
-				Source = &Candidate;
+				CatalogIndex = CandidateIndex;
 				break;
 			}
 		}
-		if (!Source || Company->FindCompanionIndexByName(Source->Name) != INDEX_NONE)
+		if (CatalogIndex == INDEX_NONE
+			|| Company->FindCompanionIndexByName(Catalog[CatalogIndex].Name) != INDEX_NONE)
 		{
 			break;
 		}
 		Company->InitializeDefaultCharacterMeshes();
-		FSolidCompanion Copy = *Source;
+		FSolidCompanion Copy = Catalog[CatalogIndex];
 		Copy.CharacterMeshIndex = Company->FindCharacterMeshIndexByName(TEXT("Viking"));
 		const int32 Index = Company->AddCompanion(Copy);
 		USolidSquad* Squad = SquadFor(Captain);
-		if (!Squad || Squad->GetSelectedCompanionCount() >= State.MaxSquadSize)
+		// A free box takes the copy when this companion's place in the global list is inside the cap.
+		// Dragongate adds Max, Morgan, and Quinn while the cap is still below their place, so an open box stays empty.
+		if (!Squad
+			|| CatalogIndex >= State.MaxSquadSize
+			|| Squad->GetSelectedCompanionCount() >= State.MaxSquadSize)
 		{
 			break;
 		}

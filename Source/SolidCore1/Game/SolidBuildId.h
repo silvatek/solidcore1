@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0577")
+#define SOLID_BUILD_ID TEXT("SC1-0578")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The companion catalogue is built once.")
+#define SOLID_BUILD_NOTE TEXT("Kanfold adds Alex. Dragongate adds Max, Morgan, and Quinn.")
 #endif

@@ -46,6 +46,7 @@ namespace SolidEvents
 		EnterTown(IdEnterKanfold, TEXT("Enter Kanfold"), SolidTowns::Kanfold, ACT_3)
 			.EnableSight(ESolidSight::Raven)
 			.SetMaxSquadSize(2)
+			.AddCompanion(TEXT("Alex"))
 			.SetPlayerTitle(ESolidCaptainTitle::Ranger)
 			.EnableStrongholdSize(ESolidStrongholdSize::Average)
 			.DisableBattlePlan(TEXT("Starter"))
@@ -57,6 +58,9 @@ namespace SolidEvents
 			.EnableBattlePlan(TEXT("Loose mob")),
 		EnterTown(IdEnterDragongate, TEXT("Enter Dragongate"), SolidTowns::Dragongate, ACT_4)
 			.EnableSight(ESolidSight::Raven)
+			.AddCompanion(TEXT("Max"))
+			.AddCompanion(TEXT("Morgan"))
+			.AddCompanion(TEXT("Quinn"))
 			.SetMaxSquadSize(RosterCount)
 			.SetPlayerTitle(ESolidCaptainTitle::Captain)
 			.EnableStrongholdSize(ESolidStrongholdSize::Meagre)

@@ -46,6 +46,69 @@ namespace
 			: nullptr;
 		return Companion ? Companion->Name : FString();
 	}
+
+	FString SelectedNames(const USolidSquad* Squad)
+	{
+		if (!Squad || !Squad->GetCompany())
+		{
+			return FString();
+		}
+		FString Names;
+		for (const int32 Index : Squad->GetSelectedCompanionIndices())
+		{
+			const FSolidCompanion* Companion = Squad->GetCompany()->GetCompanion(Index);
+			if (!Companion)
+			{
+				continue;
+			}
+			if (!Names.IsEmpty())
+			{
+				Names += TEXT(", ");
+			}
+			Names += Companion->Name;
+		}
+		return Names;
+	}
+
+	FString CompanyNames(const USolidCompany* Company)
+	{
+		if (!Company)
+		{
+			return FString();
+		}
+		FString Names;
+		for (int32 Index = 0; Index < Company->GetCompanionCount(); ++Index)
+		{
+			const FSolidCompanion* Companion = Company->GetCompanion(Index);
+			if (!Companion)
+			{
+				continue;
+			}
+			if (!Names.IsEmpty())
+			{
+				Names += TEXT(", ");
+			}
+			Names += Companion->Name;
+		}
+		return Names;
+	}
+
+	int32 OccurrenceCount(const FString& Text, const TCHAR* Sentence)
+	{
+		int32 Count = 0;
+		int32 At = 0;
+		while (At >= 0 && At < Text.Len())
+		{
+			const int32 Found = Text.Find(Sentence, ESearchCase::CaseSensitive, ESearchDir::FromStart, At);
+			if (Found == INDEX_NONE)
+			{
+				break;
+			}
+			++Count;
+			At = Found + 1;
+		}
+		return Count;
+	}
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -206,6 +269,182 @@ bool FSolidCompanionJoinTest::RunTest(const FString& Parameters)
 	SolidEvents::ApplyChange(*Room.State, *Room.Captain, SolidEvents::Change::AddCompanion(TEXT("Sam")), Result);
 	TestEqual(TEXT("Sam stays one entry"), Room.Company->GetCompanionCount(), 2);
 	TestEqual(TEXT("Sam stays in his box"), SelectedName(Room.Squad), FString(TEXT("Sam")));
+
+	const TCHAR* PlanSentence = TEXT(
+		"Starter disabled. Attack disabled. Defend disabled. Line enabled. Column enabled. Tight mob enabled. Loose mob enabled");
+
+	const SolidEvents::FEvent& Kanfold = SolidEvents::Definitions[SolidEvents::FindIndexById(SolidEvents::IdEnterKanfold)];
+	TestEqual(TEXT("Kanfold has twelve changes"), Kanfold.ChangeCount, 12);
+	bool bAlexFollowsSize = false;
+	for (int32 Index = 0; Index + 1 < Kanfold.ChangeCount; ++Index)
+	{
+		if (Kanfold.Changes[Index].Kind == SolidEvents::EChange::MaxSquadSize
+			&& Kanfold.Changes[Index + 1].Kind == SolidEvents::EChange::AddCompanion
+			&& Kanfold.Changes[Index + 1].CompanionName
+			&& FCString::Strcmp(Kanfold.Changes[Index + 1].CompanionName, TEXT("Alex")) == 0)
+		{
+			bAlexFollowsSize = true;
+		}
+	}
+	TestTrue(TEXT("Alex is the change after the squad size"), bAlexFollowsSize);
+	const FString KanfoldDetail = USolidJournal::Describe(Kanfold);
+	const int32 KanfoldSquadAt = KanfoldDetail.Find(TEXT("Squad 2: Sam, Alex"));
+	const int32 AlexJoinsAt = KanfoldDetail.Find(TEXT("Alex joins"));
+	const int32 RangerAt = KanfoldDetail.Find(TEXT("Title Ranger"));
+	TestTrue(TEXT("Kanfold names Alex after the squad line and before the title"),
+		KanfoldSquadAt != INDEX_NONE && AlexJoinsAt != INDEX_NONE && RangerAt != INDEX_NONE
+		&& KanfoldSquadAt < AlexJoinsAt && AlexJoinsAt < RangerAt);
+	TestEqual(TEXT("Kanfold's battle plans stay one run"), OccurrenceCount(KanfoldDetail, PlanSentence), 1);
+
+	const SolidEvents::FEvent& Dragongate = SolidEvents::Definitions[SolidEvents::FindIndexById(SolidEvents::IdEnterDragongate)];
+	TestEqual(TEXT("Dragongate has twenty changes"), Dragongate.ChangeCount, 20);
+	int32 GateSizeAt = INDEX_NONE;
+	for (int32 Index = 0; Index < Dragongate.ChangeCount; ++Index)
+	{
+		if (Dragongate.Changes[Index].Kind == SolidEvents::EChange::MaxSquadSize)
+		{
+			GateSizeAt = Index;
+			break;
+		}
+	}
+	TestTrue(TEXT("Dragongate's size change has room for the three adds"), GateSizeAt >= 3);
+	if (GateSizeAt >= 3)
+	{
+		const TCHAR* GateNames[] = { TEXT("Max"), TEXT("Morgan"), TEXT("Quinn") };
+		for (int32 Step = 0; Step < 3; ++Step)
+		{
+			const SolidEvents::FChange& Added = Dragongate.Changes[GateSizeAt - 3 + Step];
+			TestTrue(*FString::Printf(TEXT("%s is added just before the squad size"), GateNames[Step]),
+				Added.Kind == SolidEvents::EChange::AddCompanion
+				&& Added.CompanionName
+				&& FCString::Strcmp(Added.CompanionName, GateNames[Step]) == 0);
+		}
+	}
+	const FString GateDetail = USolidJournal::Describe(Dragongate);
+	const int32 MaxJoinsAt = GateDetail.Find(TEXT("Max joins"));
+	const int32 MorganJoinsAt = GateDetail.Find(TEXT("Morgan joins"));
+	const int32 QuinnJoinsAt = GateDetail.Find(TEXT("Quinn joins"));
+	const int32 GateSquadAt = GateDetail.Find(TEXT("Squad 5: Sam, Alex, Max, Morgan, Quinn"));
+	const int32 CaptainAt = GateDetail.Find(TEXT("Title Captain"));
+	TestTrue(TEXT("Dragongate names the three before the squad line and the title"),
+		MaxJoinsAt != INDEX_NONE && MorganJoinsAt != INDEX_NONE && QuinnJoinsAt != INDEX_NONE
+		&& GateSquadAt != INDEX_NONE && CaptainAt != INDEX_NONE
+		&& MaxJoinsAt < MorganJoinsAt && MorganJoinsAt < QuinnJoinsAt
+		&& QuinnJoinsAt < GateSquadAt && GateSquadAt < CaptainAt);
+	TestEqual(TEXT("Dragongate's battle plans stay one run"), OccurrenceCount(GateDetail, PlanSentence), 1);
+
+	FPlay KanfoldOnly;
+	if (!TestTrue(TEXT("a Kanfold play opens"), KanfoldOnly.Open()))
+	{
+		return false;
+	}
+	EnterTown(KanfoldOnly, SolidTowns::Kanfold);
+	TestEqual(TEXT("Kanfold alone lists Alex"), CompanyNames(KanfoldOnly.Company), FString(TEXT("Alex")));
+	TestEqual(TEXT("Kanfold alone selects Alex"), SelectedNames(KanfoldOnly.Squad), FString(TEXT("Alex")));
+	TestEqual(TEXT("Kanfold's cap is 2"), KanfoldOnly.State->MaxSquadSize, 2);
+	const FSolidCompanion* Alex = KanfoldOnly.Company->GetCompanion(0);
+	TestNotNull(TEXT("Alex is on the company"), Alex);
+	if (Alex)
+	{
+		TestTrue(TEXT("Alex is a Warrior"), Alex->Vocation == ESolidVocation::Warrior);
+		TestEqual(TEXT("Alex wears the company's Viking mesh"), Alex->CharacterMeshIndex, KanfoldOnly.Company->FindCharacterMeshIndexByName(TEXT("Viking")));
+	}
+	TestTrue(TEXT("Sam stays on the global list"), KanfoldOnly.Company->FindCompanionIndexByName(TEXT("Sam")) == INDEX_NONE);
+	EnterTown(KanfoldOnly, SolidTowns::Kanfold);
+	TestEqual(TEXT("a second Kanfold stays Alex"), CompanyNames(KanfoldOnly.Company), FString(TEXT("Alex")));
+	TestEqual(TEXT("a second Kanfold keeps Alex selected"), SelectedNames(KanfoldOnly.Squad), FString(TEXT("Alex")));
+
+	FPlay Both;
+	if (!TestTrue(TEXT("a Relion and Kanfold play opens"), Both.Open()))
+	{
+		return false;
+	}
+	EnterTown(Both, SolidTowns::Iglin);
+	EnterTown(Both, SolidTowns::Relion);
+	EnterTown(Both, SolidTowns::Kanfold);
+	TestEqual(TEXT("Relion then Kanfold lists Sam then Alex"), CompanyNames(Both.Company), FString(TEXT("Sam, Alex")));
+	TestEqual(TEXT("Relion then Kanfold selects both"), SelectedNames(Both.Squad), FString(TEXT("Sam, Alex")));
+	EnterTown(Both, SolidTowns::Dragongate);
+	TestEqual(
+		TEXT("Dragongate adds the other three"),
+		CompanyNames(Both.Company),
+		FString(TEXT("Sam, Alex, Max, Morgan, Quinn")));
+	TestEqual(TEXT("Dragongate leaves Sam and Alex selected"), SelectedNames(Both.Squad), FString(TEXT("Sam, Alex")));
+	TestEqual(TEXT("Dragongate's cap is the roster"), Both.State->MaxSquadSize, SolidEvents::RosterCount);
+	EnterTown(Both, SolidTowns::Dragongate);
+	TestEqual(TEXT("a second Dragongate keeps the five"), CompanyNames(Both.Company), FString(TEXT("Sam, Alex, Max, Morgan, Quinn")));
+	TestEqual(TEXT("a second Dragongate keeps the squad"), SelectedNames(Both.Squad), FString(TEXT("Sam, Alex")));
+
+	FPlay Parade;
+	if (!TestTrue(TEXT("a parade play opens"), Parade.Open()))
+	{
+		return false;
+	}
+	EnterTown(Parade, SolidTowns::Iglin);
+	EnterTown(Parade, SolidTowns::Relion);
+	EnterTown(Parade, SolidTowns::Dragongate);
+	TestEqual(TEXT("Parade lists Sam then the three"), CompanyNames(Parade.Company), FString(TEXT("Sam, Max, Morgan, Quinn")));
+	TestEqual(TEXT("Parade keeps Sam selected"), SelectedNames(Parade.Squad), FString(TEXT("Sam")));
+	TestTrue(TEXT("Parade leaves Alex on the global list"), Parade.Company->FindCompanionIndexByName(TEXT("Alex")) == INDEX_NONE);
+
+	FPlay OpenSlot;
+	if (!TestTrue(TEXT("an open-slot play opens"), OpenSlot.Open()))
+	{
+		return false;
+	}
+	EnterTown(OpenSlot, SolidTowns::Kanfold);
+	EnterTown(OpenSlot, SolidTowns::Dragongate);
+	TestEqual(
+		TEXT("Kanfold then Dragongate lists Alex then the three"),
+		CompanyNames(OpenSlot.Company),
+		FString(TEXT("Alex, Max, Morgan, Quinn")));
+	TestEqual(TEXT("the open slot stays empty"), SelectedNames(OpenSlot.Squad), FString(TEXT("Alex")));
+	TestEqual(TEXT("the cap is the roster"), OpenSlot.State->MaxSquadSize, SolidEvents::RosterCount);
+
+	FPlay GateOnly;
+	if (!TestTrue(TEXT("a Dragongate play opens"), GateOnly.Open()))
+	{
+		return false;
+	}
+	EnterTown(GateOnly, SolidTowns::Dragongate);
+	TestEqual(TEXT("Dragongate alone lists the three"), CompanyNames(GateOnly.Company), FString(TEXT("Max, Morgan, Quinn")));
+	TestEqual(TEXT("Dragongate alone selects nobody"), SelectedNames(GateOnly.Squad), FString());
+	TestEqual(TEXT("Dragongate alone sets the roster cap"), GateOnly.State->MaxSquadSize, SolidEvents::RosterCount);
+
+	FPlay Early;
+	if (!TestTrue(TEXT("an early play opens"), Early.Open()))
+	{
+		return false;
+	}
+	EnterTown(Early, SolidTowns::Iglin);
+	const SolidEvents::FResult Bridge = SolidEvents::NotifyReachBrokenBridge(*Early.State, *Early.Captain);
+	TestTrue(TEXT("the bridge fires"), Bridge.bFired);
+	const SolidEvents::FResult Killed = SolidEvents::NotifyMessageClosed(
+		*Early.State, *Early.Captain, SolidMessages::IdKilledByMonsters);
+	TestTrue(TEXT("the death fires"), Killed.bFired);
+	SolidEvents::NotifyOccupiedTown(*Early.State, *Early.Captain, INDEX_NONE);
+	EnterTown(Early, SolidTowns::Iglin);
+	const int32 DrivenIndex = SolidEvents::FindIndexById(SolidEvents::IdDrivenFromVillage);
+	TestTrue(TEXT("driven from the village fires"), DrivenIndex != INDEX_NONE && Early.State->bFired[DrivenIndex]);
+	TestEqual(TEXT("the early events add nobody"), CompanyNames(Early.Company), FString());
+	TestEqual(TEXT("the early events select nobody"), SelectedNames(Early.Squad), FString());
+
+	FPlay AfterSam;
+	if (!TestTrue(TEXT("a Sam play opens"), AfterSam.Open()))
+	{
+		return false;
+	}
+	EnterTown(AfterSam, SolidTowns::Iglin);
+	EnterTown(AfterSam, SolidTowns::Relion);
+	const SolidEvents::FResult BridgeAfter = SolidEvents::NotifyReachBrokenBridge(*AfterSam.State, *AfterSam.Captain);
+	TestTrue(TEXT("the bridge still fires"), BridgeAfter.bFired);
+	const SolidEvents::FResult KilledAfter = SolidEvents::NotifyMessageClosed(
+		*AfterSam.State, *AfterSam.Captain, SolidMessages::IdKilledByMonsters);
+	TestTrue(TEXT("the death still fires"), KilledAfter.bFired);
+	EnterTown(AfterSam, SolidTowns::Iglin);
+	TestTrue(TEXT("driven from the village still fires"), DrivenIndex != INDEX_NONE && AfterSam.State->bFired[DrivenIndex]);
+	TestEqual(TEXT("the early events leave Sam on the company"), CompanyNames(AfterSam.Company), FString(TEXT("Sam")));
+	TestEqual(TEXT("the early events leave Sam selected"), SelectedNames(AfterSam.Squad), FString(TEXT("Sam")));
 	return true;
 }
 

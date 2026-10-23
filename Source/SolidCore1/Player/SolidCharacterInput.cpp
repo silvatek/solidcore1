@@ -1,7 +1,9 @@
 #include "SolidCharacter.h"
+#include "HUD/SolidPointer.h"
 #include "EnhancedInputSubsystems.h"
 #include "Engine/LocalPlayer.h"
 #include "GameFramework/Controller.h"
+#include "GameFramework/InputSettings.h"
 #include "GameFramework/PlayerController.h"
 #include "InputKeyEventArgs.h"
 #include "InputAction.h"
@@ -108,15 +110,62 @@ void ASolidCharacter::SimulateKey(FKey Key)
 	}
 }
 
-void ASolidCharacter::FaceTrueSight(const float YawDegrees)
+void ASolidCharacter::ReleaseRightMouse()
 {
-	const FRotator View(0.f, YawDegrees, 0.f);
-	SetActorRotation(View);
+	if (!bScriptRightMouse)
+	{
+		return;
+	}
+	bScriptRightMouse = false;
 	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
-		PlayerController->SetControlRotation(View);
-		PlayerController->RotationInput = FRotator::ZeroRotator;
+		const FInputKeyEventArgs Release = FInputKeyEventArgs::CreateSimulated(
+			EKeys::RightMouseButton, IE_Released, 0.f);
+		PlayerController->InputKey(Release);
 	}
+}
+
+void ASolidCharacter::DragRightMouse(const float YawDegrees, const float MaxDegrees)
+{
+	APlayerController* PlayerController = Cast<APlayerController>(Controller);
+	if (!PlayerController || MaxDegrees <= 0.f)
+	{
+		return;
+	}
+
+	const FRotator View = PlayerController->GetControlRotation();
+	const float YawError = FMath::FindDeltaAngleDegrees(View.Yaw, YawDegrees);
+	const float PitchError = FMath::FindDeltaAngleDegrees(View.Pitch, 0.f);
+	if (FMath::Abs(YawError) < 0.05f && FMath::Abs(PitchError) < 0.05f)
+	{
+		ReleaseRightMouse();
+		return;
+	}
+
+	if (!bScriptRightMouse)
+	{
+		bScriptRightMouse = true;
+		const FInputKeyEventArgs Press = FInputKeyEventArgs::CreateSimulated(
+			EKeys::RightMouseButton, IE_Pressed, 1.f);
+		PlayerController->InputKey(Press);
+	}
+
+	const UInputSettings* Settings = GetDefault<UInputSettings>();
+	const bool bLegacy = Settings && Settings->bEnableLegacyInputScales;
+	const float YawScale = bLegacy ? PlayerController->InputYawScale_DEPRECATED : 1.f;
+	const float PitchScale = bLegacy ? PlayerController->InputPitchScale_DEPRECATED : 1.f;
+	const float YawStep = FMath::Clamp(YawError, -MaxDegrees, MaxDegrees);
+	const float PitchStep = FMath::Clamp(PitchError, -MaxDegrees, MaxDegrees);
+	const FVector2D Pixels = SolidPointer::MouseDragPixels(YawStep, PitchStep, YawScale, PitchScale);
+	const FVector2D LookAxis = SolidPointer::MouseLookDelta(Pixels.X, Pixels.Y);
+	if (LookAxis.IsNearlyZero())
+	{
+		return;
+	}
+
+	AddControllerYawInput(LookAxis.X);
+	AddControllerPitchInput(LookAxis.Y);
+	FlushScriptLook();
 }
 
 void ASolidCharacter::SimulateLeftClick(const float ScreenX, const float ScreenY)

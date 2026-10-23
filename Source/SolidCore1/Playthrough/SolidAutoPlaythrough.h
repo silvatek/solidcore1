@@ -54,7 +54,8 @@ private:
 	void ResetWalk();
 	void NoteDistance(float DeltaSeconds, float DistanceCm);
 	bool BuildWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation);
-	void TickWalk(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
+	/** True while true sight is dragging the view and holding W. */
+	bool TickWalk(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
 	void TickWake(const ASolidGameMode& Mode);
 
 	bool bRunning = false;

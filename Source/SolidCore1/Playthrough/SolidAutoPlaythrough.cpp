@@ -20,6 +20,9 @@ namespace
 	constexpr float ProgressCm = 1.f;
 	/** A step this far onto a ramp is refused. The walk stays on the grass. */
 	constexpr float RampProbeCm = 80.f;
+	/** Right-button drag, degrees per second. A hitch cannot spend more than one slice. */
+	constexpr float TurnDegreesPerSecond = 180.f;
+	constexpr float MaxTurnSliceSeconds = 0.05f;
 	constexpr float SegmentStepCm = 50.f;
 	constexpr TCHAR EncounterName[] = TEXT("Iglin Bridge");
 
@@ -281,19 +284,25 @@ void FSolidAutoPlaythrough::Tick(const float DeltaSeconds, ASolidGameMode& Mode,
 {
 	if (!bRunning)
 	{
+		Captain.ReleaseRightMouse();
 		return;
 	}
 
+	bool bSteering = false;
 	switch (CurrentStep())
 	{
 	case EStep::WalkToMonsterEncounter:
-		TickWalk(DeltaSeconds, Mode, Captain);
+		bSteering = TickWalk(DeltaSeconds, Mode, Captain);
 		break;
 	case EStep::WakeInCave:
 		TickWake(Mode);
 		break;
 	default:
 		break;
+	}
+	if (!bSteering)
+	{
+		Captain.ReleaseRightMouse();
 	}
 }
 
@@ -460,7 +469,7 @@ bool FSolidAutoPlaythrough::BuildWalk(const ASolidGameMode& Mode, const FVector&
 	return Points.Num() > 0;
 }
 
-void FSolidAutoPlaythrough::TickWalk(
+bool FSolidAutoPlaythrough::TickWalk(
 	const float DeltaSeconds,
 	ASolidGameMode& Mode,
 	ASolidCharacter& Captain)
@@ -470,16 +479,16 @@ void FSolidAutoPlaythrough::TickWalk(
 	if (IglinBridgeDetects(Mode, Here))
 	{
 		Advance();
-		return;
+		return false;
 	}
 	if (!bWalkReady && !BuildWalk(Mode, Location))
 	{
-		return;
+		return false;
 	}
 	if (!Points.IsValidIndex(PointIndex))
 	{
 		Stop();
-		return;
+		return false;
 	}
 
 	const FVector2D Target = Points[PointIndex];
@@ -489,13 +498,13 @@ void FSolidAutoPlaythrough::TickWalk(
 		++PointIndex;
 		bHasBestDistance = false;
 		StallAccumulated = 0.f;
-		return;
+		return false;
 	}
 
 	NoteDistance(DeltaSeconds, FVector2D::Distance(Here, Target));
 	if (!bRunning)
 	{
-		return;
+		return false;
 	}
 
 	if (Captain.IsTrueSight())
@@ -505,16 +514,19 @@ void FSolidAutoPlaythrough::TickWalk(
 		const FVector2D Direction = SolidClickMove::PlanarDirection(Here, Target, SteerCm);
 		if (Direction.IsNearlyZero() || OnIglinRamp(Mode, Here + Direction * RampProbeCm))
 		{
-			return;
+			return false;
 		}
-		Captain.FaceTrueSight(FVector(Direction.X, Direction.Y, 0.f).Rotation().Yaw);
+		const float MaxDegrees = TurnDegreesPerSecond * FMath::Min(DeltaSeconds, MaxTurnSliceSeconds);
+		Captain.DragRightMouse(
+			FVector(Direction.X, Direction.Y, 0.f).Rotation().Yaw,
+			MaxDegrees);
 		Captain.SimulateKey(EKeys::W);
-		return;
+		return true;
 	}
 
 	if (SegmentOnIglinRamp(Mode, Here, Target))
 	{
-		return;
+		return false;
 	}
 	APlayerController* PlayerController = Cast<APlayerController>(Captain.GetController());
 	FVector2D Screen = FVector2D::ZeroVector;
@@ -523,6 +535,7 @@ void FSolidAutoPlaythrough::TickWalk(
 	{
 		Captain.SimulateLeftClick(Screen.X, Screen.Y);
 	}
+	return false;
 }
 
 void FSolidAutoPlaythrough::TickWake(const ASolidGameMode& Mode)

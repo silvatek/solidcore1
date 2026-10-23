@@ -1,5 +1,6 @@
 #include "SolidPlayerController.h"
 #include "HUD/SolidPointer.h"
+#include "SolidCharacter.h"
 #include "EnhancedInputSubsystems.h"
 #include "EnhancedPlayerInput.h"
 #include "Engine/GameViewportClient.h"
@@ -82,7 +83,12 @@ bool ASolidPlayerController::IsMouseButtonHeld(const FKey& Button) const
 
 bool ASolidPlayerController::IsRightMouseHeld() const
 {
-	return IsMouseButtonHeld(EKeys::RightMouseButton);
+	if (IsMouseButtonHeld(EKeys::RightMouseButton))
+	{
+		return true;
+	}
+	const ASolidCharacter* Captain = Cast<ASolidCharacter>(GetPawn());
+	return Captain && Captain->IsScriptRightMouseHeld();
 }
 
 bool ASolidPlayerController::IsLeftMouseHeld() const

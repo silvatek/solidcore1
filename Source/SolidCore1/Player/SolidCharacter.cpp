@@ -260,6 +260,7 @@ void ASolidCharacter::Tick(float DeltaTime)
 					if (!Instance->IsAutoPlaythroughRunning())
 					{
 						ClearClickMove();
+						ReleaseRightMouse();
 					}
 				}
 			}
@@ -594,6 +595,7 @@ bool ASolidCharacter::StopAutoPlaythrough()
 	}
 	Instance->GetAutoPlaythrough().Stop();
 	ClearClickMove();
+	ReleaseRightMouse();
 	return true;
 }
 

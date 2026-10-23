@@ -15,7 +15,7 @@ class SOLIDCORE1_API ASolidPlayerController : public APlayerController
 public:
 	ASolidPlayerController();
 
-	/** True when player input or Slate still has the button down. */
+	/** True when player input, Slate, or a script drag has the button down. */
 	bool IsRightMouseHeld() const;
 	bool IsLeftMouseHeld() const;
 

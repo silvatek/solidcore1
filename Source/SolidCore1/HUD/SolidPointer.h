@@ -56,6 +56,21 @@ namespace SolidPointer
 		return FVector2D(DeltaX, -DeltaY);
 	}
 
+	/**
+	 * Raw mouse pixels that produce this yaw and pitch after mouse look and the legacy scales.
+	 * A scale of 0 yields no pixels on that axis.
+	 */
+	inline FVector2D MouseDragPixels(
+		const float YawDegrees,
+		const float PitchDegrees,
+		const float YawScale,
+		const float PitchScale)
+	{
+		const float YawPixels = FMath::IsNearlyZero(YawScale) ? 0.f : YawDegrees / YawScale;
+		const float PitchPixels = FMath::IsNearlyZero(PitchScale) ? 0.f : -PitchDegrees / PitchScale;
+		return FVector2D(YawPixels, PitchPixels);
+	}
+
 	inline bool ShouldDraw(const bool bHasMousePosition, const bool bRightMouseDown)
 	{
 		return bHasMousePosition && !AllowsMouseLook(bRightMouseDown);

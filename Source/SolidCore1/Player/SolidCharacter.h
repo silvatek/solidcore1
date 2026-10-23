@@ -79,10 +79,14 @@ public:
 	 */
 	void SimulateKey(FKey Key);
 	/**
-	 * Aim true sight along this yaw, level. One assignment, so the view does not spin.
-	 * The body follows the controller. The script holds W after this.
+	 * One step of a right-button drag toward this yaw. Pitch comes level.
+	 * MaxDegrees caps each axis this frame, so the turn sweeps.
+	 * The button stays down until the view arrives, or until ReleaseRightMouse.
 	 */
-	void FaceTrueSight(float YawDegrees);
+	void DragRightMouse(float YawDegrees, float MaxDegrees);
+	/** Lets the right button up after a script drag. */
+	void ReleaseRightMouse();
+	bool IsScriptRightMouseHeld() const { return bScriptRightMouse; }
 	/** Move the pointer and press the left button. The click handler runs. */
 	void SimulateLeftClick(float ScreenX, float ScreenY);
 	/** The stick a move key produces after its mapping modifiers. W is (0, 1), forward. */
@@ -396,6 +400,8 @@ protected:
 	bool bScriptInput = false;
 	/** Left button held by SimulateLeftClick, for the click poll in that same call. */
 	bool bScriptClickDown = false;
+	/** Right button held by a script drag. Released when that drag stops. */
+	bool bScriptRightMouse = false;
 	/** Previous frame's left button, so one click is a single press. */
 	bool bLeftMouseWasDown = false;
 	/** False until the left button has been up on this pawn. A carried hold does not click. */

@@ -4,7 +4,7 @@ Status: Ready
 
 ## Story
 
-This story follows [Place encounter markers](place-encounter-markers.md), which is In Progress. That story ships first. Encounter marks and the members that stand at a mark stay as that story placed them. A road joins any two marks on the chart. A town end is the town name, and a stronghold end is the stronghold name. A stronghold site, a lair mouth, a custom note, or an encounter is an end as well. This story introduces no game concept. Road and Encounter are already named.
+This story follows [Place encounter markers](Done/place-encounter-markers.md), which is Done. That story ships first. Encounter marks and the members that stand at a mark stay as that story placed them. A road joins any two marks on the chart. A town end is the town name, and a stronghold end is the stronghold name. A stronghold site, a lair mouth, a custom note, or an encounter is an end as well. This story introduces no game concept. Road and Encounter are already named.
 
 ## Acceptance
 
@@ -15,7 +15,7 @@ This story follows [Place encounter markers](place-encounter-markers.md), which 
 
 ## Implementation notes
 
-Stage 1 is road ends. Stage 2 is import and disagreement. The notes under each stage are the design already agreed on [Place encounter markers](place-encounter-markers.md). [Remove WorldMap.txt](remove-world-map-txt.md) is Ready. Once that story has shipped, there is no disagreement line and no import to keep.
+Stage 1 is road ends. Stage 2 is import and disagreement. The notes under each stage are the design already agreed on [Place encounter markers](Done/place-encounter-markers.md). [Remove WorldMap.txt](remove-world-map-txt.md) is Ready. Once that story has shipped, there is no disagreement line and no import to keep.
 
 ### Stage 1 — road ends
 

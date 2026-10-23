@@ -1,6 +1,6 @@
 # Auto playthrough
 
-Status: Ready
+Status: In Progress
 
 ## Story
 
@@ -66,5 +66,21 @@ Choosing Auto playthrough on a new game runs the script to the end.
 - Killed by monsters enables Attack and Defend. Those plans sit outside the five the company starts with, so leaving the cave opens Build squad. The script closes that page and changes nothing on it.
 - The torch recipe is one stick and one pitch. The chest starts with five sticks and three pitch. The script opens the inventory, calls `SolidInventory::Move` and `Craft`, puts the torch in the main hand, and closes the page. A torch in the hand lights the tunnels. On the last squad page it calls `SolidSquadBuilder::Drop` for Max, then Morgan, then Quinn, and closes the page. The pages are on screen. The script does not drag with the pointer.
 - A test that needs no world reads the step names in order, the menu row, and the flag that dims that row after a start and after leaving Iglin. The walk is what PIE shows.
-- The detailed plan for stage 1 is the next plan commit, after this staging is agreed. That commit stays on this file.
 - Do not use the word den.
+
+### Stage 1 — the runner and the death
+
+Played before stage 2 is planned. This stage is the menu row, the dim flag, and a script that walks, closes the monster message, and stops when he wakes in the cave.
+
+- `FSolidAutoPlaythrough` is the class in `Playthrough/SolidAutoPlaythrough.h`. The game instance holds one by value. OpenLevel keeps that instance, so the cave trip keeps the same object. The captain's tick steps it on the live game mode.
+- A step is `FSolidAutoPlaythrough::EStep`. `CollectSteps` is the list, in order: Walk to the Iglin ramp, Close the monster message, Wake in the cave. `NameOf` is the words the test reads. A later stage edits `CollectSteps` and leaves the class.
+- `USolidGameState::bAutoPlaythroughDim` starts clear. `Start` sets it and begins at the first step. `NotifyOccupiedTown` sets it when the occupied town leaves Iglin for any other id, including none and a portal. The spawn arrives from none and leaves the flag clear. The flag stays set. The running script keeps going when that departure is recorded.
+- The row label is `Auto playthrough`, the item is `AutoPlaythrough`, and the action is `StartAutoPlaythrough`. It sits after Character editor and before Credits. Key 5 confirms it, key 6 confirms Credits, and key 7 confirms Exit Game. Key 8 has no row. The row uses the same dim drawing as Build squad. `CanStart` is false while the flag is set. Confirming a dim row returns before the menu closes.
+- Choosing a live row closes the menu and calls `Start`. The HUD draws `Auto playthrough` at the bottom of the screen while `IsRunning`, with the debug panel shown or hidden. `Stop` clears that line and leaves the menu closed. The flag stays set.
+- The player's Esc and F10 call `Stop`. They leave the menu closed and leave a message on screen. After the script has stopped, F10 opens the menu as before. While the script runs, move, look, mouse look, sprint, jump, and clicks leave the captain on the script. The script calls `CloseMessage` for the monster line. It does not send Esc or F10.
+- He walks at 500 cm/s. True sight calls `AddMovementInput` along the ground. Raven sight sets the click-move destination. A new game is true sight, so this stage walks that way.
+- The walk follows the Iglin–Relion road one cell at a time, along the painted strip, from the cell nearest the captain on toward the ramp. The last point is the middle of the Iglin ramp, the ramp whose buried end is closer to Iglin. Standing on that ramp ends the walk. The deck and the gap past the lip are not points on the list.
+- While a point is current, a distance that does not fall for 4 seconds calls `Stop`. Waiting for the bridge to spawn has no current point, so that wait does not start the clock.
+- The message step waits until the HUD shows `You are killed by monsters`, advances to the wake, then calls `CloseMessage`. That fires Killed by monsters and enters the cave. The wake step calls `Stop` once the captain has been placed in the stronghold interior.
+- A test with no world reads the three step names, the menu row before Credits, and the dim flag after `Start` and after leaving Iglin, including a running script that leaving Iglin does not stop. The walk is what PIE shows.
+- This stage leaves the torch, the village, the tunnels, the company, and the tower for later stages.

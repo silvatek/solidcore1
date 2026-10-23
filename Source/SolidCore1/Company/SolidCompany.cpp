@@ -123,7 +123,7 @@ int32 USolidCompany::AddCompanion(const FSolidCompanion& Companion)
 	return AllCompanions.Add(Companion);
 }
 
-namespace SolidCompanions
+namespace
 {
 	void AddCatalogCompanion(TArray<FSolidCompanion>& Catalog, const TCHAR* Name, const ESolidVocation Vocation)
 	{
@@ -141,20 +141,23 @@ namespace SolidCompanions
 		Companion.ArmourId = SolidItemType::IdRags;
 		Catalog.Add(Companion);
 	}
+}
 
+namespace SolidCompanions
+{
+	/** Sam, Alex, Max, Morgan, and Quinn. Built once. Later calls return this same list. */
 	const TArray<FSolidCompanion>& AllCompanions()
 	{
-		static TArray<FSolidCompanion> Catalog;
-		if (Catalog.Num() > 0)
+		static const TArray<FSolidCompanion> Catalog = []
 		{
-			return Catalog;
-		}
-
-		AddCatalogCompanion(Catalog, TEXT("Sam"), ESolidVocation::Rogue);
-		AddCatalogCompanion(Catalog, TEXT("Alex"), ESolidVocation::Warrior);
-		AddCatalogCompanion(Catalog, TEXT("Max"), ESolidVocation::Cleric);
-		AddCatalogCompanion(Catalog, TEXT("Morgan"), ESolidVocation::Mage);
-		AddCatalogCompanion(Catalog, TEXT("Quinn"), ESolidVocation::Warrior);
+			TArray<FSolidCompanion> Built;
+			AddCatalogCompanion(Built, TEXT("Sam"), ESolidVocation::Rogue);
+			AddCatalogCompanion(Built, TEXT("Alex"), ESolidVocation::Warrior);
+			AddCatalogCompanion(Built, TEXT("Max"), ESolidVocation::Cleric);
+			AddCatalogCompanion(Built, TEXT("Morgan"), ESolidVocation::Mage);
+			AddCatalogCompanion(Built, TEXT("Quinn"), ESolidVocation::Warrior);
+			return Built;
+		}();
 		return Catalog;
 	}
 }

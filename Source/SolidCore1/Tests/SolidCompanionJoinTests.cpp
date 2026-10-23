@@ -57,7 +57,7 @@ bool FSolidCompanionJoinTest::RunTest(const FString& Parameters)
 {
 	const TArray<FSolidCompanion>& Catalog = SolidCompanions::AllCompanions();
 	TestEqual(TEXT("the global list holds five"), Catalog.Num(), 5);
-	TestEqual(TEXT("a second read stays five"), SolidCompanions::AllCompanions().Num(), 5);
+	TestTrue(TEXT("the catalogue is the same list"), &SolidCompanions::AllCompanions() == &Catalog);
 	const TCHAR* Names[] = {
 		TEXT("Sam"),
 		TEXT("Alex"),

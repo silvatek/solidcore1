@@ -153,7 +153,7 @@ struct FSolidCompanion
 
 /**
  * Every companion an event can add: Sam, Alex, Max, Morgan, and Quinn.
- * The company's own list is USolidCompany::AllCompanions, and it starts empty.
+ * Built once and kept. The company's own list is USolidCompany::AllCompanions, and it starts empty.
  */
 namespace SolidCompanions
 {

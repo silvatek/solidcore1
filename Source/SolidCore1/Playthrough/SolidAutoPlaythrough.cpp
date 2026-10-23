@@ -4,9 +4,19 @@
 #include "SolidClickMove.h"
 #include "SolidGameMode.h"
 #include "GameFramework/PlayerController.h"
+#include "SolidGameInstance.h"
 #include "SolidGameState.h"
 #include "SolidGroundMove.h"
+#include "Company/SolidCaptain.h"
+#include "Components/StaticMeshComponent.h"
+#include "EngineUtils.h"
+#include "Events/SolidMessages.h"
+#include "HUD/SolidHUD.h"
+#include "Inventory/SolidInventory.h"
 #include "Monster/SolidEncounter.h"
+#include "Strongholds/Actors/SolidStrongholdInterior.h"
+#include "Strongholds/Dungeon/SolidDungeonLevel.h"
+#include "Strongholds/Furnishings/SolidStrongholdGrid.h"
 #include "Terrain/SolidBridge.h"
 #include "Terrain/SolidRoad.h"
 #include "Terrain/SolidTerrainMap.h"
@@ -25,6 +35,121 @@ namespace
 	constexpr float MaxTurnSliceSeconds = 0.05f;
 	constexpr float SegmentStepCm = 50.f;
 	constexpr TCHAR EncounterName[] = TEXT("Iglin Bridge");
+
+	bool SameItem(const FSolidItem& Item, const TCHAR* Id)
+	{
+		return Item.Id() && Id && FCString::Strcmp(Item.Id(), Id) == 0;
+	}
+
+	SolidInventory::FSlotHit ChestCell(const int32 Index)
+	{
+		SolidInventory::FSlotHit Hit;
+		Hit.bHit = true;
+		Hit.bChest = true;
+		Hit.Index = Index;
+		return Hit;
+	}
+
+	SolidInventory::FSlotHit CraftSlot(const int32 Index)
+	{
+		SolidInventory::FSlotHit Hit;
+		Hit.bHit = true;
+		Hit.bCraft = true;
+		Hit.Index = Index;
+		Hit.Column = Index;
+		return Hit;
+	}
+
+	SolidInventory::FSlotHit PackCell(const int32 Column, const int32 Row)
+	{
+		SolidInventory::FSlotHit Hit;
+		Hit.bHit = true;
+		Hit.bPack = true;
+		Hit.Column = Column;
+		Hit.Row = Row;
+		Hit.Index = SolidInventory::PackIndex(Column, Row);
+		return Hit;
+	}
+
+	SolidInventory::FSlotHit WornSlot(const SolidInventory::ESlot Slot)
+	{
+		SolidInventory::FSlotHit Hit;
+		Hit.bHit = true;
+		Hit.Slot = Slot;
+		Hit.Index = SolidInventory::WornIndex(Slot);
+		return Hit;
+	}
+
+	bool IsMeagreDungeon(const SolidRoad::FEndpoint& End)
+	{
+		if (!End.bStronghold)
+		{
+			return false;
+		}
+		FString Name = End.StrongholdName;
+		Name.ReplaceInline(TEXT(" "), TEXT(""));
+		return Name.Equals(TEXT("MeagreDungeon"), ESearchCase::IgnoreCase);
+	}
+
+	bool IsCaveTrail(const SolidRoad::FDefinition& Definition)
+	{
+		if (Definition.Type != SolidRoad::EType::Trail)
+		{
+			return false;
+		}
+		const bool bFromCave = IsMeagreDungeon(Definition.From)
+			&& !Definition.To.bStronghold
+			&& Definition.To.LocationId == SolidTowns::Iglin;
+		const bool bToCave = IsMeagreDungeon(Definition.To)
+			&& !Definition.From.bStronghold
+			&& Definition.From.LocationId == SolidTowns::Iglin;
+		return bFromCave || bToCave;
+	}
+
+	const SolidRoad::FRoute* FindCaveTrail(const USolidWorldChart& Chart)
+	{
+		for (const SolidRoad::FRoute& Route : Chart.GetRoads())
+		{
+			if (IsCaveTrail(Route.Definition))
+			{
+				return &Route;
+			}
+		}
+		return nullptr;
+	}
+
+	ASolidHUD* HudOf(const ASolidCharacter& Captain)
+	{
+		const APlayerController* PlayerController = Cast<APlayerController>(Captain.GetController());
+		return PlayerController ? Cast<ASolidHUD>(PlayerController->GetHUD()) : nullptr;
+	}
+
+	ASolidStrongholdInterior* FindInterior(UWorld* World)
+	{
+		if (!World)
+		{
+			return nullptr;
+		}
+		for (TActorIterator<ASolidStrongholdInterior> It(World); It; ++It)
+		{
+			return *It;
+		}
+		return nullptr;
+	}
+
+	/** The chest is on the page, and a message is not covering it. */
+	bool InventoryPageCanDraw(const ASolidGameMode& Mode, const ASolidCharacter& Captain)
+	{
+		const ASolidHUD* HUD = HudOf(Captain);
+		USolidGameState* State = Mode.GetConfiguration();
+		const USolidCompany* Company = Mode.GetCompany();
+		const FSolidStronghold* Hold = Company ? Company->GetStronghold() : nullptr;
+		return HUD
+			&& !HUD->IsMessageVisible()
+			&& State
+			&& Hold
+			&& SolidStrongholdTransition::CompanyChestOpen(*State, Hold, Mode.IsInStronghold());
+	}
 
 	bool IsIglinRelionRoad(const SolidRoad::FDefinition& Definition)
 	{
@@ -246,6 +371,11 @@ void FSolidAutoPlaythrough::CollectSteps(TArray<EStep>& OutSteps)
 	OutSteps.Reset();
 	OutSteps.Add(EStep::WalkToMonsterEncounter);
 	OutSteps.Add(EStep::WakeInCave);
+	OutSteps.Add(EStep::CraftTorch);
+	OutSteps.Add(EStep::PutTorchInMainHand);
+	OutSteps.Add(EStep::LeaveCave);
+	OutSteps.Add(EStep::WalkToIglin);
+	OutSteps.Add(EStep::CloseDrivenOutMessage);
 }
 
 const TCHAR* FSolidAutoPlaythrough::NameOf(const EStep Step)
@@ -256,9 +386,64 @@ const TCHAR* FSolidAutoPlaythrough::NameOf(const EStep Step)
 		return TEXT("Walk to the monster encounter");
 	case EStep::WakeInCave:
 		return TEXT("Wake in the cave");
+	case EStep::CraftTorch:
+		return TEXT("Craft the torch");
+	case EStep::PutTorchInMainHand:
+		return TEXT("Put the torch in the main hand");
+	case EStep::LeaveCave:
+		return TEXT("Leave the cave");
+	case EStep::WalkToIglin:
+		return TEXT("Walk to Iglin");
+	case EStep::CloseDrivenOutMessage:
+		return TEXT("Close the driven-out message");
 	default:
 		return TEXT("");
 	}
+}
+
+bool FSolidAutoPlaythrough::CraftTorch(SolidInventory::FLoadout& Loadout, SolidStorage::FContainer& Chest)
+{
+	const int32 Stick = SolidStorage::Index(1, 1);
+	const int32 Pitch = SolidStorage::Index(0, 2);
+	if (Stick == INDEX_NONE || Pitch == INDEX_NONE)
+	{
+		return false;
+	}
+	if (!SolidInventory::Move(&Chest, Loadout, ChestCell(Stick), CraftSlot(0)))
+	{
+		return false;
+	}
+	if (!SolidInventory::Move(&Chest, Loadout, ChestCell(Pitch), CraftSlot(1)))
+	{
+		return false;
+	}
+	if (!SolidInventory::Craft(Loadout))
+	{
+		return false;
+	}
+	if (!SolidInventory::Move(&Chest, Loadout, CraftSlot(0), ChestCell(Stick)))
+	{
+		return false;
+	}
+	return SolidInventory::Move(&Chest, Loadout, CraftSlot(1), ChestCell(Pitch));
+}
+
+bool FSolidAutoPlaythrough::PutTorchInMainHand(SolidInventory::FLoadout& Loadout)
+{
+	const int32 Hand = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
+	if (Hand == INDEX_NONE)
+	{
+		return false;
+	}
+	if (SameItem(Loadout.Worn[Hand], SolidItemType::IdTorch))
+	{
+		return true;
+	}
+	return SolidInventory::Move(
+		nullptr,
+		Loadout,
+		PackCell(0, 0),
+		WornSlot(SolidInventory::ESlot::MainHand));
 }
 
 bool FSolidAutoPlaythrough::CanStart(const USolidGameState& State)
@@ -297,7 +482,23 @@ void FSolidAutoPlaythrough::Tick(const float DeltaSeconds, ASolidGameMode& Mode,
 	case EStep::WakeInCave:
 		TickWake(Mode);
 		break;
+	case EStep::CraftTorch:
+		bSteering = TickCraft(DeltaSeconds, Mode, Captain);
+		break;
+	case EStep::PutTorchInMainHand:
+		bSteering = TickPutTorch(Mode, Captain);
+		break;
+	case EStep::LeaveCave:
+		bSteering = TickLeave(DeltaSeconds, Mode, Captain);
+		break;
+	case EStep::WalkToIglin:
+		bSteering = TickWalkToIglin(DeltaSeconds, Mode, Captain);
+		break;
+	case EStep::CloseDrivenOutMessage:
+		bSteering = TickCloseMessage(Captain);
+		break;
 	default:
+		Stop();
 		break;
 	}
 	if (!bSteering)
@@ -328,6 +529,7 @@ void FSolidAutoPlaythrough::Advance()
 void FSolidAutoPlaythrough::ResetWalk()
 {
 	bWalkReady = false;
+	bPageOpen = false;
 	PointIndex = 0;
 	Points.Reset();
 	bHasBestDistance = false;
@@ -507,12 +709,25 @@ bool FSolidAutoPlaythrough::TickWalk(
 		return false;
 	}
 
+	// The last point sits inside detection. Keep steering until a raptor sees him.
+	return Steer(DeltaSeconds, Mode, Captain, Target, bLast, true);
+}
+
+bool FSolidAutoPlaythrough::Steer(
+	const float DeltaSeconds,
+	const ASolidGameMode& Mode,
+	ASolidCharacter& Captain,
+	const FVector2D& Target,
+	const bool bLast,
+	const bool bAvoidRamps)
+{
+	const FVector Location = Captain.GetActorLocation();
+	const FVector2D Here(Location.X, Location.Y);
 	if (Captain.IsTrueSight())
 	{
-		// The last point sits inside detection. Keep steering until a raptor sees him.
 		const float SteerCm = bLast ? 1.f : ArriveCm;
 		const FVector2D Direction = SolidClickMove::PlanarDirection(Here, Target, SteerCm);
-		if (Direction.IsNearlyZero() || OnIglinRamp(Mode, Here + Direction * RampProbeCm))
+		if (Direction.IsNearlyZero() || (bAvoidRamps && OnIglinRamp(Mode, Here + Direction * RampProbeCm)))
 		{
 			return false;
 		}
@@ -524,7 +739,7 @@ bool FSolidAutoPlaythrough::TickWalk(
 		return true;
 	}
 
-	if (SegmentOnIglinRamp(Mode, Here, Target))
+	if (bAvoidRamps && SegmentOnIglinRamp(Mode, Here, Target))
 	{
 		return false;
 	}
@@ -538,10 +753,322 @@ bool FSolidAutoPlaythrough::TickWalk(
 	return false;
 }
 
+bool FSolidAutoPlaythrough::FollowPoints(
+	const float DeltaSeconds,
+	const FVector2D& Here,
+	FVector2D& OutTarget,
+	bool& bOutFinished)
+{
+	bOutFinished = false;
+	if (!Points.IsValidIndex(PointIndex))
+	{
+		bOutFinished = bWalkReady;
+		return false;
+	}
+
+	const FVector2D Target = Points[PointIndex];
+	const bool bLast = PointIndex + 1 >= Points.Num();
+	if (SolidClickMove::HasArrived(Here, Target, ArriveCm))
+	{
+		bHasBestDistance = false;
+		StallAccumulated = 0.f;
+		if (!bLast)
+		{
+			++PointIndex;
+			return false;
+		}
+		PointIndex = Points.Num();
+		bOutFinished = true;
+		return false;
+	}
+
+	NoteDistance(DeltaSeconds, FVector2D::Distance(Here, Target));
+	if (!bRunning)
+	{
+		return false;
+	}
+	OutTarget = Target;
+	return true;
+}
+
+bool FSolidAutoPlaythrough::BuildHexWalk(
+	const ASolidGameMode& Mode,
+	const SolidStrongholdGrid::FCell* Cells,
+	const int32 Count)
+{
+	ASolidStrongholdInterior* Interior = FindInterior(Mode.GetWorld());
+	if (!Interior || !Cells || Count <= 0)
+	{
+		return false;
+	}
+
+	Points.Reset();
+	Points.Reserve(Count);
+	const FTransform& ActorXf = Interior->GetActorTransform();
+	for (int32 Index = 0; Index < Count; ++Index)
+	{
+		const FVector2D Local = SolidStrongholdGrid::HexCenter(
+			Cells[Index].Col,
+			Cells[Index].Row,
+			SolidDungeonLevel::MeagreOrigin());
+		const FVector World = ActorXf.TransformPosition(FVector(Local.X, Local.Y, 0.f));
+		Points.Add(FVector2D(World.X, World.Y));
+	}
+	PointIndex = 0;
+	bWalkReady = Points.Num() > 0;
+	bHasBestDistance = false;
+	StallAccumulated = 0.f;
+	return bWalkReady;
+}
+
+bool FSolidAutoPlaythrough::BuildIglinTrail(const ASolidGameMode& Mode, const FVector& CaptainLocation)
+{
+	UWorld* World = Mode.GetWorld();
+	ASolidTerrainStreamer* Streamer = World ? ASolidTerrainStreamer::FindExisting(World) : nullptr;
+	USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
+	USolidWorldChart* Chart = Terrain ? Terrain->GetWorldMap() : nullptr;
+	if (!Chart || !Chart->IsLoaded())
+	{
+		return false;
+	}
+
+	const SolidRoad::FRoute* Road = FindCaveTrail(*Chart);
+	if (!Road || Road->Cells.Num() == 0)
+	{
+		return false;
+	}
+
+	TArray<FIntPoint> Cells = Road->Cells;
+	const bool bIglinFirst = !Road->Definition.From.bStronghold
+		&& Road->Definition.From.LocationId == SolidTowns::Iglin;
+	if (bIglinFirst)
+	{
+		Algo::Reverse(Cells);
+	}
+
+	const FVector2D WorldMin = Terrain->GetWorldMinXY();
+	const FVector2D WorldMax = Terrain->GetWorldMaxXY();
+	const FVector2D Paint = SolidRoad::StripPaintOffset();
+	TArray<FVector2D> Centers;
+	Centers.Reserve(Cells.Num());
+	for (const FIntPoint& Cell : Cells)
+	{
+		FVector2D Center = FVector2D::ZeroVector;
+		if (Chart->CellToWorldXY(Cell, WorldMin, WorldMax, Center))
+		{
+			Centers.Add(Center + Paint);
+		}
+	}
+	if (Centers.Num() == 0)
+	{
+		return false;
+	}
+
+	const FVector2D Here(CaptainLocation.X, CaptainLocation.Y);
+	int32 Start = 0;
+	float Nearest = TNumericLimits<float>::Max();
+	for (int32 Index = 0; Index < Centers.Num(); ++Index)
+	{
+		const float Dist = FVector2D::DistSquared(Centers[Index], Here);
+		if (Dist < Nearest)
+		{
+			Nearest = Dist;
+			Start = Index;
+		}
+	}
+
+	Points.Reset();
+	Points.Reserve(Centers.Num() - Start);
+	for (int32 Index = Start; Index < Centers.Num(); ++Index)
+	{
+		Points.Add(Centers[Index]);
+	}
+	PointIndex = 0;
+	bWalkReady = Points.Num() > 0;
+	bHasBestDistance = false;
+	StallAccumulated = 0.f;
+	return bWalkReady;
+}
+
 void FSolidAutoPlaythrough::TickWake(const ASolidGameMode& Mode)
 {
 	if (Mode.HasPlacedCaptainInStronghold())
 	{
-		Stop();
+		Advance();
 	}
+}
+
+bool FSolidAutoPlaythrough::TickCraft(
+	const float DeltaSeconds,
+	ASolidGameMode& Mode,
+	ASolidCharacter& Captain)
+{
+	if (bPageOpen)
+	{
+		USolidGameState* State = Mode.GetConfiguration();
+		if (!State)
+		{
+			return false;
+		}
+		if (!CraftTorch(State->Inventory, State->CaveChest))
+		{
+			Stop();
+			return false;
+		}
+		Advance();
+		return false;
+	}
+
+	if (!bWalkReady)
+	{
+		const SolidStrongholdGrid::FCell Cells[] = {
+			{ -1, 0 }, { 0, 0 }, { 1, 0 }, { 1, 1 },
+		};
+		if (!BuildHexWalk(Mode, Cells, UE_ARRAY_COUNT(Cells)))
+		{
+			return false;
+		}
+	}
+
+	const FVector2D Here(Captain.GetActorLocation().X, Captain.GetActorLocation().Y);
+	FVector2D Target = FVector2D::ZeroVector;
+	bool bFinished = false;
+	if (FollowPoints(DeltaSeconds, Here, Target, bFinished))
+	{
+		return Steer(DeltaSeconds, Mode, Captain, Target, false, false);
+	}
+	if (!bRunning || !bFinished || !InventoryPageCanDraw(Mode, Captain))
+	{
+		return false;
+	}
+
+	if (ASolidHUD* HUD = HudOf(Captain))
+	{
+		if (!HUD->IsInventoryVisible())
+		{
+			HUD->ToggleInventory();
+		}
+		bPageOpen = HUD->IsInventoryVisible();
+	}
+	return false;
+}
+
+bool FSolidAutoPlaythrough::TickPutTorch(ASolidGameMode& Mode, ASolidCharacter& Captain)
+{
+	USolidGameState* State = Mode.GetConfiguration();
+	if (!State)
+	{
+		return false;
+	}
+	if (!PutTorchInMainHand(State->Inventory))
+	{
+		Stop();
+		return false;
+	}
+	if (ASolidHUD* HUD = HudOf(Captain))
+	{
+		if (HUD->IsInventoryVisible())
+		{
+			HUD->ToggleInventory();
+		}
+	}
+	Advance();
+	return false;
+}
+
+bool FSolidAutoPlaythrough::ClickMouth(ASolidGameMode& Mode, ASolidCharacter& Captain)
+{
+	Captain.ReleaseRightMouse();
+	UWorld* World = Mode.GetWorld();
+	ASolidStrongholdInterior* Interior = FindInterior(World);
+	UStaticMeshComponent* Mouth = Interior ? Interior->GetPassageMesh() : nullptr;
+	APlayerController* PlayerController = Cast<APlayerController>(Captain.GetController());
+	if (!Mouth || !PlayerController)
+	{
+		return false;
+	}
+
+	FVector2D Screen = FVector2D::ZeroVector;
+	if (!PlayerController->ProjectWorldLocationToScreen(Mouth->GetComponentLocation(), Screen))
+	{
+		return false;
+	}
+	Captain.SimulateLeftClick(Screen.X, Screen.Y);
+	const USolidGameInstance* Instance = World ? World->GetGameInstance<USolidGameInstance>() : nullptr;
+	return Instance && Instance->WantsStrongholdExit();
+}
+
+bool FSolidAutoPlaythrough::TickLeave(
+	const float DeltaSeconds,
+	ASolidGameMode& Mode,
+	ASolidCharacter& Captain)
+{
+	if (!bWalkReady)
+	{
+		const SolidStrongholdGrid::FCell Cells[] = {
+			{ 1, 1 }, { 0, 1 }, { -1, 1 }, { -1, 0 }, { -2, 0 },
+		};
+		if (!BuildHexWalk(Mode, Cells, UE_ARRAY_COUNT(Cells)))
+		{
+			return false;
+		}
+	}
+
+	const FVector2D Here(Captain.GetActorLocation().X, Captain.GetActorLocation().Y);
+	FVector2D Target = FVector2D::ZeroVector;
+	bool bFinished = false;
+	if (FollowPoints(DeltaSeconds, Here, Target, bFinished))
+	{
+		return Steer(DeltaSeconds, Mode, Captain, Target, false, false);
+	}
+	if (!bRunning || !bFinished)
+	{
+		return false;
+	}
+	if (ClickMouth(Mode, Captain))
+	{
+		Advance();
+	}
+	return false;
+}
+
+bool FSolidAutoPlaythrough::TickWalkToIglin(
+	const float DeltaSeconds,
+	ASolidGameMode& Mode,
+	ASolidCharacter& Captain)
+{
+	USolidCompany* Company = Mode.GetCompany();
+	const USolidCaptain* Record = Company ? Company->GetCaptain() : nullptr;
+	if (Record && Record->OccupiedTown == SolidTowns::Iglin)
+	{
+		Advance();
+		return false;
+	}
+
+	const FVector Location = Captain.GetActorLocation();
+	if (!bWalkReady && !BuildIglinTrail(Mode, Location))
+	{
+		return false;
+	}
+
+	const FVector2D Here(Location.X, Location.Y);
+	FVector2D Target = FVector2D::ZeroVector;
+	bool bFinished = false;
+	if (FollowPoints(DeltaSeconds, Here, Target, bFinished))
+	{
+		return Steer(DeltaSeconds, Mode, Captain, Target, false, false);
+	}
+	return false;
+}
+
+bool FSolidAutoPlaythrough::TickCloseMessage(ASolidCharacter& Captain)
+{
+	ASolidHUD* HUD = HudOf(Captain);
+	if (!HUD || !HUD->IsMessageVisible() || HUD->GetMessageId() != SolidMessages::IdDrivenFromVillage)
+	{
+		return false;
+	}
+	HUD->CloseMessage();
+	Advance();
+	return false;
 }

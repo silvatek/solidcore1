@@ -1,6 +1,9 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "Company/SolidCaptain.h"
+#include "Inventory/SolidInventory.h"
+#include "Inventory/SolidItemType.h"
+#include "Inventory/SolidStorage.h"
 #include "Menus/SolidMainMenu.h"
 #include "Playthrough/SolidAutoPlaythrough.h"
 #include "SolidCharacter.h"
@@ -18,8 +21,8 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 {
 	TArray<FSolidAutoPlaythrough::EStep> Steps;
 	FSolidAutoPlaythrough::CollectSteps(Steps);
-	TestEqual(TEXT("stage 1 has two steps"), Steps.Num(), 2);
-	if (Steps.Num() < 2)
+	TestEqual(TEXT("stage 2 has seven steps"), Steps.Num(), 7);
+	if (Steps.Num() < 7)
 	{
 		return false;
 	}
@@ -27,10 +30,20 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 	const TCHAR* Names[] = {
 		TEXT("Walk to the monster encounter"),
 		TEXT("Wake in the cave"),
+		TEXT("Craft the torch"),
+		TEXT("Put the torch in the main hand"),
+		TEXT("Leave the cave"),
+		TEXT("Walk to Iglin"),
+		TEXT("Close the driven-out message"),
 	};
 	const FSolidAutoPlaythrough::EStep Kinds[] = {
 		FSolidAutoPlaythrough::EStep::WalkToMonsterEncounter,
 		FSolidAutoPlaythrough::EStep::WakeInCave,
+		FSolidAutoPlaythrough::EStep::CraftTorch,
+		FSolidAutoPlaythrough::EStep::PutTorchInMainHand,
+		FSolidAutoPlaythrough::EStep::LeaveCave,
+		FSolidAutoPlaythrough::EStep::WalkToIglin,
+		FSolidAutoPlaythrough::EStep::CloseDrivenOutMessage,
 	};
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Names); ++Index)
 	{
@@ -194,6 +207,71 @@ bool FSolidAutoPlaythroughKeysTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("A is mapped"), Character->StickForKey(EKeys::A, Stick));
 	TestTrue(TEXT("A is left"), Stick.Equals(FVector2D(-1.f, 0.f)));
 	TestFalse(TEXT("a click is not a move key"), Character->StickForKey(EKeys::LeftMouseButton, Stick));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidAutoPlaythroughTorchTest,
+	"SolidCore1.AutoPlaythrough.Torch",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidAutoPlaythroughTorchTest::RunTest(const FString& Parameters)
+{
+	SolidInventory::FLoadout Loadout;
+	SolidInventory::Clear(Loadout);
+	SolidStorage::FContainer Chest = SolidStorage::StartingCaveChest();
+	const int32 Body = SolidInventory::WornIndex(SolidInventory::ESlot::Body);
+	const int32 Hand = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
+	const int32 Stick = SolidStorage::Index(1, 1);
+	const int32 Pitch = SolidStorage::Index(0, 2);
+	const int32 Sword = SolidStorage::Index(0, 0);
+	const int32 Boots = SolidStorage::Index(1, 0);
+	const int32 Coins = SolidStorage::Index(0, 1);
+	const int32 Empty = SolidStorage::Index(1, 2);
+	if (Body == INDEX_NONE || Hand == INDEX_NONE || Stick == INDEX_NONE || Pitch == INDEX_NONE
+		|| Sword == INDEX_NONE || Boots == INDEX_NONE || Coins == INDEX_NONE || Empty == INDEX_NONE)
+	{
+		AddError(TEXT("a slot index is missing"));
+		return false;
+	}
+
+	TestTrue(TEXT("the body starts in rags"), Loadout.Worn[Body].Is(SolidItemType::IdRags));
+	TestTrue(TEXT("the hands start empty"), Loadout.Worn[Hand].IsEmpty());
+	TestTrue(TEXT("one stick and one pitch make a torch"), FSolidAutoPlaythrough::CraftTorch(Loadout, Chest));
+	TestTrue(TEXT("the torch goes to the main hand"), FSolidAutoPlaythrough::PutTorchInMainHand(Loadout));
+
+	TestTrue(TEXT("rags stay on the body"), Loadout.Worn[Body].Is(SolidItemType::IdRags));
+	TestEqual(TEXT("one set of rags"), Loadout.Worn[Body].Count, 1);
+	TestTrue(TEXT("the main hand holds the torch"), Loadout.Worn[Hand].Is(SolidItemType::IdTorch));
+	TestEqual(TEXT("one torch"), Loadout.Worn[Hand].Count, 1);
+	for (int32 Index = 0; Index < SolidInventory::WornCount; ++Index)
+	{
+		if (Index == Body || Index == Hand)
+		{
+			continue;
+		}
+		TestTrue(TEXT("the other worn boxes stay empty"), Loadout.Worn[Index].IsEmpty());
+	}
+	for (int32 Index = 0; Index < SolidInventory::PackCount; ++Index)
+	{
+		TestTrue(TEXT("the pack is empty"), Loadout.Pack[Index].IsEmpty());
+	}
+	for (int32 Index = 0; Index < SolidInventory::CraftCount; ++Index)
+	{
+		TestTrue(TEXT("the craft slots are empty"), Loadout.Craft[Index].IsEmpty());
+	}
+
+	TestTrue(TEXT("the sword stays"), Chest.Slots[Sword].Is(SolidItemType::IdRustySword));
+	TestEqual(TEXT("one sword"), Chest.Slots[Sword].Count, 1);
+	TestTrue(TEXT("the boots stay"), Chest.Slots[Boots].Is(SolidItemType::IdOldBoots));
+	TestEqual(TEXT("one pair of boots"), Chest.Slots[Boots].Count, 1);
+	TestTrue(TEXT("the coins stay"), Chest.Slots[Coins].Is(SolidItemType::IdCoins));
+	TestEqual(TEXT("the coin stack stays"), Chest.Slots[Coins].Count, SolidStorage::StartingCoinCount);
+	TestTrue(TEXT("the sticks are back"), Chest.Slots[Stick].Is(SolidItemType::IdStick));
+	TestEqual(TEXT("four sticks remain"), Chest.Slots[Stick].Count, SolidStorage::StartingStickCount - 1);
+	TestTrue(TEXT("the pitch is back"), Chest.Slots[Pitch].Is(SolidItemType::IdPitch));
+	TestEqual(TEXT("two pitch remain"), Chest.Slots[Pitch].Count, SolidStorage::StartingPitchCount - 1);
+	TestTrue(TEXT("the last chest cell stays empty"), Chest.Slots[Empty].IsEmpty());
 	return true;
 }
 

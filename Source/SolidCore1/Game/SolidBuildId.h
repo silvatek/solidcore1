@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0593")
+#define SOLID_BUILD_ID TEXT("SC1-0594")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Town buildings sit off the road.")
+#define SOLID_BUILD_NOTE TEXT("Auto playthrough crafts a torch and returns to Iglin.")
 #endif

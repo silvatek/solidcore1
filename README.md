@@ -132,7 +132,7 @@ C++ generates walkable terrain around the player at runtime:
 - `ASolidTerrainStreamer` — builds the map, relocates the pawn to location 0, then loads/unloads chunks
 - Debug HUD shows biome / threat / fog at the pawn plus map size
 
-Defaults: 64 m chunks (`ChunkWorldSize=6400`), 32 quads/side, radius 2 (5×5 chunks), `Amplitude=3000`. Grassland uses Fab `Mat_025_grass`; other biomes use FlatCol tinted by the WorldMap key colors.
+Defaults: 64 m chunks (`ChunkWorldSize=6400`), 32 quads/side, radius 2 (5×5 chunks), `Amplitude=3000`. Grassland uses Fab `Mat_025_grass`; other biomes use FlatCol tinted by that biome's colour. The World chart mode edits `/Game/World/WorldChart`.
 
 Default map is `/Game/ThirdPerson/Lvl_ThirdPerson` (SC1-0022) so Open World Landscape/HLOD outer hills are not in the scene — that cleared the horizon slivers. `L_OpenWorld` remains for comparison. SC1-0023/0082 force `BP_SolidGameMode` on PIE/game worlds so template maps keep Solid HUD + Viking pawn instead of the template default. On first stream, the pawn is snapped onto the procedural height. If a Landscape is present, actors are hidden/collision-disabled once. Chunks block the Camera channel and use complex-as-simple collision on the runtime static mesh.
 
@@ -184,9 +184,8 @@ Content/
   Maps/                        # L_OpenWorld
   ThirdPerson/                 # Lvl_ThirdPerson, the startup map
   Viking/                      # README.md only; the Fab pack is gitignored
-  World/                       # World chart
+  World/                       # WorldChart, the 128×64 shipped world
   WorldLore.md
-  WorldMap.txt                 # ASCII 128×64 biome overlay and color key
 GameVision.md                  # Design north star
 LICENSE
 NOTICE

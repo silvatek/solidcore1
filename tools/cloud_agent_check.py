@@ -14,6 +14,12 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def check_world_chart(errors: list[str]) -> None:
+    chart = ROOT / "Content" / "World" / "WorldChart.uasset"
+    if not chart.is_file():
+        errors.append("missing Content/World/WorldChart.uasset")
+
+
 def check_build_id(errors: list[str]) -> None:
     path = ROOT / "Source" / "SolidCore1" / "Game" / "SolidBuildId.h"
     if not path.is_file():
@@ -299,6 +305,7 @@ def main() -> int:
     errors: list[str] = []
     warnings: list[str] = []
 
+    check_world_chart(errors)
     check_build_id(errors)
     check_planning(errors, warnings)
     check_ship_on_main(errors)

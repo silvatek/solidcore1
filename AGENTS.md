@@ -149,24 +149,13 @@ The search leaves unused includes, unused parameters, comments, commented-out bl
 - Companions wear the generated body and the Viking clips. `tools/fab_mesh_info.bat <folder>` lists meshes and animations in a downloaded pack and does not edit the manifest.
 - Grass is required (`Mat_025_grass`).
 
-## World map
+## World chart
 
-Whenever `Content/WorldMap.txt` changes — a pull, a commit, a diff, or an edit in the conversation — review the file before doing anything else with it.
+Whenever `Content/World/WorldChart.uasset` changes — a pull, a commit, a diff, or an edit in the conversation — review that asset before doing anything else with it. `tools\dump-chart.bat` writes it as JSON. The game builds the world from `/Game/World/WorldChart`. `tools\editor.bat` opens the World chart mode on `/Game/ThirdPerson/Lvl_ThirdPerson`.
 
-The grid is 128 columns by 64 rows. A `!` in that grid needs a description line under the grid. Row, then column. The top-left cell is 1,1. Spaces around the comma and `=` are fine. Anything after `#` is a comment.
+The grid is 128 columns by 64 rows. Stored row 0 is north and stored column 0 is east. The dump counts from 1 at the top-left. A cell holds a marker biome. Swamp and road are not painted.
 
-```
-! 8,21 = Town Iglin
-! 9,12 = Stronghold MeagreDungeon
-! 10,11 = LairEntrance Iglin tunnels
-! 11,40 = LairExit Iglin tunnels
-```
-
-`Town` names a town. `Stronghold` is the size then the type, as in `MeagreDungeon`. `LairEntrance` and `LairExit` name a lair. The identifier may be wrapped in brackets, as in `Town (Iglin)`.
-
-A road line is `Road: start -> end, type`. An end is a town name or a stronghold name such as `MeagreDungeon`. Brackets around that name are optional. The Iglin tunnel mouths are the `LairEntrance` and `LairExit` lines. `LairEntrance` is the interior `X` end. `LairExit` is the interior `Y` end.
-
-Warn the user when a `!` in the grid has no description line for that row and column. Name each missing cell as `row,column`, counting from 1,1 at the top-left. A `!` whose line is missing still loads as grassland and is not a town.
+A mark is a town, a stronghold, a stronghold site, a lair entrance, a lair exit, a custom note, or an encounter. A named town resolves as town. A lair mouth resolves as mountain. A stronghold uses the shelf that stronghold names. A site, a note, and an encounter leave the paint. A road is two end names and a type: trail, track, road, or highway. An end is a town or a stronghold. A site is not an end. The Iglin tunnel entrance is the interior `X` end, and the exit is the interior `Y` end.
 
 ## Lairs
 

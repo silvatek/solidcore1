@@ -6,8 +6,8 @@ rem Usage:
 rem   tools\dump-chart.bat
 rem   tools\dump-chart.bat C:\temp\WorldChart.json
 rem
-rem The file lists the painted cells with the same letters as Content/WorldMap.txt,
-rem then each mark and each road. Row and column count from 1 at the top-left.
+rem The file lists the painted cells, then each mark and each road.
+rem Row and column count from 1 at the top-left.
 rem positionCm is the cell centre stored on the asset. groundCm is where the
 rem World chart mode draws that mark, on the terrain centred at the origin.
 rem

@@ -26,13 +26,10 @@ Stage 1 is the biome's colour. Stage 2 deletes `Content/WorldMap.txt`, the shipp
 
 ### Stage 2 — the text file is gone
 
-`Content/WorldMap.txt` is deleted. `ImportShippedWorldMap` and `Disagreement` are gone. `LoadFromString` and `ImportFromString` stay. `SolidCore1.WorldMap.ShippedChartMatchesText` loads the chart and checks the Meagre Dungeon mark. `tools/cloud_agent_check.py` no longer requires the file. `AGENTS.md` and `README.md` wait for stage 3.
+`Content/WorldMap.txt` is deleted. `ImportShippedWorldMap` and `Disagreement` are gone. `LoadFromString` and `ImportFromString` stay. `SolidCore1.WorldMap.ShippedChartMatchesText` loads the chart and checks the Meagre Dungeon mark. `tools/cloud_agent_check.py` no longer requires the file.
 
 `USolidWorldMap` is gone. The chart keeps the saved cells, marks, and roads, and it answers the queries the map answered. `LoadFromString` and `LoadFromChart` are on the chart. `LoadFromFile` is gone. Paint, a mark, and undo clear the solved routes, and the next query solves them again.
 
 ### Stage 3 — the docs
 
-- The world-map section of `AGENTS.md` is the review rule for the text file. Replace it with the chart at `/Game/World/WorldChart`, the 128×64 cell grid, and the mark kinds. A change to that asset is what a later agent reviews.
-- `README.md` still documents the marker characters and the `!` lines, and the `SolidCore1.WorldMap.*` filter blurb follows them. Point those at the chart and the mode, and at the tests that remain.
-- `tools/cloud_agent_check.py` passes without `Content/WorldMap.txt`. Stage 2 removed the check that required the file. Stage 3 points the script at the chart.
-- If [Package the game](package-the-game.md) is still open, its acceptance follows the chart. The loose text file is not staged.
+`AGENTS.md` reviews `Content/World/WorldChart.uasset`: 128 by 64, the mark kinds, and the road ends. `README.md` and the `SolidCore1.WorldMap.*` blurb follow the chart and the World chart mode. `tools/cloud_agent_check.py` requires that asset. [Package the game](package-the-game.md) follows the chart. The loose text file is not staged. Shipped stories that mention the old file stay as history.

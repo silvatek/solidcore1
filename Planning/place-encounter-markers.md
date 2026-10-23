@@ -1,6 +1,6 @@
 # Place encounter markers
 
-Status: Ready
+Status: In Progress
 
 ## Story
 
@@ -22,6 +22,8 @@ This story follows [Basic monsters](basic-monsters.md), which is In Progress. Th
 - The product commit bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`.
 
 ## Implementation notes
+
+Stage 1, in progress, is encounter marks and the members that stand at a mark. Stage 2 is road ends. Stage 3 is import and disagreement.
 
 - The mode is `FSolidWorldChartEdMode`, shown as World chart. `PlaceEncounter` sits with `PlaceTown` and `PlaceCustom` on `USolidWorldChart`. The editor calls it. The tests call it.
 - Add `Encounter` to `ESolidWorldChartMarkKind`, and add that row to the Place combo at the same index. The combo index is the enum value. A name the catalog does not list is refused. The list asks for the name only. Kind, size, and count stay on the definition.

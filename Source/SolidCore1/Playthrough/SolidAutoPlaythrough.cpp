@@ -48,7 +48,7 @@ const FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = 
 	FStep::WalkTo(TEXT("Walk to the entrance"), EntranceCells, UE_ARRAY_COUNT(EntranceCells)),
 	FStep::ExitStronghold(TEXT("Leave the cave")),
 	FStep::WalkTo(TEXT("Walk to Iglin"), EWalk::TrailToIglin),
-	FStep::CloseMessage(TEXT("Close the driven-out message"), SolidMessages::IdDrivenFromVillage),
+	FStep::CloseMessage(TEXT("Close the driven-out message"), SolidMessages::IdDrivenFromVillage).Pause(1.f),
 };
 
 namespace
@@ -490,7 +490,7 @@ bool FSolidAutoPlaythrough::TickCurrent(
 	case EStepType::WalkTo:
 		return TickWalkTo(DeltaSeconds, Mode, Captain, Step);
 	case EStepType::CloseMessage:
-		return TickCloseMessage(Captain, Step);
+		return TickCloseMessage(DeltaSeconds, Captain, Step);
 	case EStepType::CraftItem:
 		return TickCraftItem(Mode, Captain, Step);
 	case EStepType::ExitStronghold:
@@ -526,6 +526,7 @@ void FSolidAutoPlaythrough::ResetWalk()
 	bHasBestDistance = false;
 	BestDistanceCm = 0.f;
 	StallAccumulated = 0.f;
+	WaitAccumulated = 0.f;
 }
 
 void FSolidAutoPlaythrough::NoteDistance(const float DeltaSeconds, const float DistanceCm)
@@ -1076,10 +1077,19 @@ bool FSolidAutoPlaythrough::TickWalkToIglin(
 	return false;
 }
 
-bool FSolidAutoPlaythrough::TickCloseMessage(ASolidCharacter& Captain, const FStep& Step)
+bool FSolidAutoPlaythrough::TickCloseMessage(
+	const float DeltaSeconds,
+	ASolidCharacter& Captain,
+	const FStep& Step)
 {
 	ASolidHUD* HUD = HudOf(Captain);
 	if (!HUD || !HUD->IsMessageVisible() || !Step.MessageId || HUD->GetMessageId() != Step.MessageId)
+	{
+		WaitAccumulated = 0.f;
+		return false;
+	}
+	WaitAccumulated += DeltaSeconds;
+	if (WaitAccumulated < Step.PauseSeconds)
 	{
 		return false;
 	}

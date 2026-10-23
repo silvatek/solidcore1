@@ -47,6 +47,9 @@ public:
 		TrailToIglin,
 	};
 
+	/** A CloseMessage row waits this long after the message is showing. */
+	static constexpr float MessagePauseSeconds = 1.f;
+
 	/**
 	 * One row of the opening script.
 	 * WalkTo, CloseMessage, CraftItem, ExitStronghold, WakeInStronghold, and Custom build one.
@@ -65,6 +68,8 @@ public:
 		/** True when this row closes the inventory page. */
 		bool bClosePage = false;
 		const TCHAR* MessageId = nullptr;
+		/** Seconds to wait after the matching message is showing, then close. */
+		float PauseSeconds = 0.f;
 		/** Which custom row this is. The custom switch matches it. */
 		int32 CustomId = INDEX_NONE;
 
@@ -97,6 +102,7 @@ public:
 			Step.Type = EStepType::CloseMessage;
 			Step.Name = InName;
 			Step.MessageId = InMessageId;
+			Step.PauseSeconds = MessagePauseSeconds;
 			return Step;
 		}
 
@@ -145,6 +151,13 @@ public:
 		{
 			FStep Step = *this;
 			Step.bClosePage = true;
+			return Step;
+		}
+
+		constexpr FStep Pause(const float Seconds) const
+		{
+			FStep Step = *this;
+			Step.PauseSeconds = Seconds;
 			return Step;
 		}
 	};
@@ -217,7 +230,7 @@ private:
 	bool TickCraftItem(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickPutTorch(ASolidGameMode& Mode, ASolidCharacter& Captain, bool bClosePage);
 	bool TickExit(ASolidGameMode& Mode, ASolidCharacter& Captain);
-	bool TickCloseMessage(ASolidCharacter& Captain, const FStep& Step);
+	bool TickCloseMessage(float DeltaSeconds, ASolidCharacter& Captain, const FStep& Step);
 	bool ClickMouth(ASolidGameMode& Mode, ASolidCharacter& Captain);
 
 	bool bRunning = false;
@@ -230,4 +243,6 @@ private:
 	float BestDistanceCm = 0.f;
 	bool bHasBestDistance = false;
 	float StallAccumulated = 0.f;
+	/** Time the matching message has been showing on a CloseMessage row. */
+	float WaitAccumulated = 0.f;
 };

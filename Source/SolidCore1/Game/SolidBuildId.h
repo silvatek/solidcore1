@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0597")
+#define SOLID_BUILD_ID TEXT("SC1-0598")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Auto playthrough wakes in the stronghold as a step.")
+#define SOLID_BUILD_NOTE TEXT("Auto playthrough pauses a second before closing a message.")
 #endif

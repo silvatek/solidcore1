@@ -67,6 +67,13 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("a stuck step stops after 4 seconds"),
 		FMath::IsNearlyEqual(FSolidAutoPlaythrough::StallSeconds, 4.f));
+	TestTrue(
+		TEXT("a message stays up for one second"),
+		FMath::IsNearlyEqual(FSolidAutoPlaythrough::MessagePauseSeconds, 1.f));
+	const FSolidAutoPlaythrough::FStep& Close = FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount - 1];
+	TestTrue(
+		TEXT("the driven-out close uses that pause"),
+		FMath::IsNearlyEqual(Close.PauseSeconds, 1.f));
 	return true;
 }
 

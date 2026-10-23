@@ -1,6 +1,6 @@
 # Remove unused code
 
-Status: In Progress
+Status: Done
 
 ## Story
 
@@ -23,7 +23,7 @@ The list follows the unused-code definition in `AGENTS.md`. A use is a whole-wor
 
 `SolidStrongholdGrid::GetTypeHash` stays. `CollectSegments` puts `FEdgeKey` in a `TSet`, and that set calls `GetTypeHash` through argument-dependent lookup. No other C++ writes the name.
 
-`ASolidCharacter::StartSquadFormationDrill` has no caller. Test Drill is off the menu. [Drill battle plan](drill-battle-plan.md) is Ready and says this function starts the square. It stays.
+`ASolidCharacter::StartSquadFormationDrill` has no caller. Test Drill is off the menu. [Drill battle plan](../drill-battle-plan.md) is Ready and says this function starts the square. It stays.
 
 Nothing in the list below is called from product C++ outside its own declaration, its own definition, or a test of that same functionality. Two names are used only by other symbols in this list: `FSolidWorldChartRead` (only `ReadCell`) and `SolidForage::FPileHit` (only `NearestHitIndex`). They go with those functions.
 
@@ -51,7 +51,7 @@ No product caller:
 - `SolidDungeonLevel::MenuLabel`. The cave tip uses `EnterLabel` and `LeaveLabel`.
 - `FSolidTower::OutsideDoorYawDeg`. It returns the grass yaw unchanged. `OutsideDoorXY` stays.
 - `FSolidMonster::MeshFootOffsetCm`. A raptor places its mesh from the standing span. `UniformScale` and `StandingSpan` stay.
-- `FSolidBattlePlan::Holds`. The plan tests assert `Holds` itself. Parade stores `AttackOrRetreat`. The fight reads `Attacks` and `Retreats`. This is the aggression value `ESolidAggression::Hold`. It is not the Hold formation in [Hold battle plan](hold-battle-plan.md).
+- `FSolidBattlePlan::Holds`. The plan tests assert `Holds` itself. Parade stores `AttackOrRetreat`. The fight reads `Attacks` and `Retreats`. This is the aggression value `ESolidAggression::Hold`. It is not the Hold formation in [Hold battle plan](../hold-battle-plan.md).
 - `FSolidBattle::GetSquadPower`. The encounter, weapons, and fielded tests assert this total. Those tests already read `SquadWeapon`. A blow reads `SquadWeapon`.
 - `FSolidBattle::GetGroupPower`. The encounter and weapons tests assert this total. Those tests already read `MonsterWeapon`. A blow reads `MonsterWeapon`.
 

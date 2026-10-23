@@ -1,6 +1,6 @@
 # Remove unused code
 
-Status: New
+Status: Ready
 
 ## Story
 

@@ -1,6 +1,6 @@
 # Encounter enhancements
 
-Status: New
+Status: Ready
 
 ## Story
 

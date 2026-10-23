@@ -215,4 +215,90 @@ bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidWorldChartEncounterTest,
+	"SolidCore1.WorldChart.Encounter",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FSolidWorldChartEncounterTest::RunTest(const FString& Parameters)
+{
+	const FString Grid = PaintGrid();
+	USolidWorldChart* Chart = GrassChart();
+	if (!TestNotNull(TEXT("grass chart"), Chart))
+	{
+		return false;
+	}
+
+	USolidWorldMap* FromText = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("the text has no encounters"), FromText && FromText->LoadFromString(Grid));
+	if (FromText)
+	{
+		TestEqual(TEXT("LoadFromString keeps no encounter"), FromText->GetEncounterMarks().Num(), 0);
+	}
+
+	FString Error;
+	const FIntPoint Cell(12, 6);
+	TestFalse(TEXT("an unknown encounter is rejected"), Chart->PlaceEncounter(Cell, TEXT("Nope"), Error));
+	TestTrue(TEXT("the error names Nope"), Error.Contains(TEXT("Nope")));
+	TestEqual(TEXT("the unknown name left no mark"), Chart->MarkAtCell(Cell), static_cast<int32>(INDEX_NONE));
+
+	const int32 CellIndex = Cell.Y * USolidWorldMap::MapWidth + Cell.X;
+	const uint8 PaintBefore = static_cast<uint8>(Chart->Cells[CellIndex]);
+	TestTrue(TEXT("Iglin places first"), Chart->PlaceTown(Cell, TEXT("Iglin"), Error));
+	TestTrue(TEXT("the encounter replaces the town"), Chart->PlaceEncounter(Cell, TEXT("Iglin Bridge"), Error));
+	const int32 MarkIndex = Chart->MarkAtCell(Cell);
+	if (!TestTrue(TEXT("the encounter is on the cell"), MarkIndex != INDEX_NONE))
+	{
+		return false;
+	}
+	TestEqual(
+		TEXT("the mark is an encounter"),
+		static_cast<uint8>(Chart->Marks[MarkIndex].Kind),
+		static_cast<uint8>(ESolidWorldChartMarkKind::Encounter));
+	TestEqual(TEXT("the catalog name is stored"), Chart->Marks[MarkIndex].Name, FString(TEXT("Iglin Bridge")));
+	FVector2D Centre = FVector2D::ZeroVector;
+	TestTrue(TEXT("the cell has a centre"), USolidWorldChart::CellCentre(Cell, Centre));
+	TestTrue(
+		TEXT("the encounter sits on the cell centre"),
+		FVector2D::Distance(Chart->Marks[MarkIndex].PositionCm, Centre) <= 1.f);
+	TestEqual(TEXT("the encounter leaves the paint"), static_cast<uint8>(Chart->Cells[CellIndex]), PaintBefore);
+
+	TestTrue(TEXT("paint leaves the mark"), Chart->PaintCell(Cell, ESolidBiome::Forest, Error));
+	TestTrue(TEXT("the encounter is still on the cell"), Chart->MarkAtCell(Cell) != INDEX_NONE);
+	FSolidWorldChartRead Read;
+	TestTrue(TEXT("the cell reads"), Chart->ReadCell(Cell, Read));
+	TestEqual(TEXT("the paint is forest"), static_cast<uint8>(Read.Painted), static_cast<uint8>(ESolidBiome::Forest));
+	TestEqual(TEXT("the world map leaves the cell as painted"), static_cast<uint8>(Read.Resolved), static_cast<uint8>(ESolidBiome::Forest));
+	TestFalse(TEXT("an encounter does not override the paint"), Read.bMarkOverrides);
+	TestTrue(TEXT("the read has the mark"), Read.bHasMark);
+	TestEqual(TEXT("the read names the encounter"), Read.Mark.Name, FString(TEXT("Iglin Bridge")));
+
+	USolidWorldMap* Loaded = NewObject<USolidWorldMap>();
+	TestTrue(TEXT("the chart loads"), Loaded && Loaded->LoadFromChart(Chart));
+	if (Loaded)
+	{
+		TestEqual(
+			TEXT("the loaded cell stays forest"),
+			static_cast<uint8>(Loaded->GetBiomeAtCell(Cell.X, Cell.Y)),
+			static_cast<uint8>(ESolidBiome::Forest));
+		FSolidWorldBang Bang;
+		TestFalse(TEXT("an encounter is not a world place"), Loaded->FindBang(Cell.X, Cell.Y, Bang));
+		TestEqual(TEXT("the load keeps the encounter"), Loaded->GetEncounterMarks().Num(), 1);
+		if (Loaded->GetEncounterMarks().Num() == 1)
+		{
+			TestEqual(TEXT("the kept name"), Loaded->GetEncounterMarks()[0].Name, FString(TEXT("Iglin Bridge")));
+			TestTrue(
+				TEXT("the kept position is the cell centre"),
+				FVector2D::Distance(Loaded->GetEncounterMarks()[0].PositionCm, Centre) <= 1.f);
+		}
+	}
+
+	TestTrue(TEXT("delete clears the encounter"), Chart->DeleteMark(Cell, Error));
+	TestEqual(TEXT("the cell has no mark"), Chart->MarkAtCell(Cell), static_cast<int32>(INDEX_NONE));
+	TestFalse(TEXT("delete again fails"), Chart->DeleteMark(Cell, Error));
+	TestTrue(TEXT("undo restores the encounter"), Chart->Undo());
+	TestTrue(TEXT("the encounter is back"), Chart->MarkAtCell(Cell) != INDEX_NONE);
+	return true;
+}
+
 #endif

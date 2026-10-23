@@ -1,6 +1,7 @@
 #include "SolidWorldChartEdMode.h"
 
 #include "Lairs/SolidLair.h"
+#include "Monster/SolidEncounters.h"
 #include "Strongholds/SolidStronghold.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
@@ -64,6 +65,7 @@ namespace
 		case ESolidWorldChartMarkKind::LairEntrance: return TEXT("Lair entrance");
 		case ESolidWorldChartMarkKind::LairExit: return TEXT("Lair exit");
 		case ESolidWorldChartMarkKind::Custom: return TEXT("Custom");
+		case ESolidWorldChartMarkKind::Encounter: return TEXT("Encounter");
 		case ESolidWorldChartMarkKind::Town:
 		default: return TEXT("Town");
 		}
@@ -78,6 +80,7 @@ namespace
 		case ESolidWorldChartMarkKind::LairEntrance: return FLinearColor(0.15f, 0.82f, 0.90f);
 		case ESolidWorldChartMarkKind::LairExit: return FLinearColor(0.35f, 0.48f, 1.f);
 		case ESolidWorldChartMarkKind::Custom: return FLinearColor(1.f, 0.35f, 0.75f);
+		case ESolidWorldChartMarkKind::Encounter: return FLinearColor(0.95f, 0.72f, 0.15f);
 		case ESolidWorldChartMarkKind::Town:
 		default: return FLinearColor(1.f, 0.78f, 0.15f);
 		}
@@ -206,12 +209,17 @@ public:
 		{
 			Lairs.Add(MakeShared<FString>(Lair.Name));
 		}
+		for (const SolidEncounter::FDefinition& Encounter : SolidEncounter::Definitions)
+		{
+			Encounters.Add(MakeShared<FString>(Encounter.Name));
+		}
 		MarkKinds.Add(MakeShared<FString>(TEXT("Town")));
 		MarkKinds.Add(MakeShared<FString>(TEXT("Stronghold")));
 		MarkKinds.Add(MakeShared<FString>(TEXT("Stronghold site")));
 		MarkKinds.Add(MakeShared<FString>(TEXT("Lair entrance")));
 		MarkKinds.Add(MakeShared<FString>(TEXT("Lair exit")));
 		MarkKinds.Add(MakeShared<FString>(TEXT("Custom")));
+		MarkKinds.Add(MakeShared<FString>(TEXT("Encounter")));
 		RoadTypes.Add(MakeShared<FString>(TEXT("Trail")));
 		RoadTypes.Add(MakeShared<FString>(TEXT("Track")));
 		RoadTypes.Add(MakeShared<FString>(TEXT("Road")));
@@ -486,6 +494,31 @@ public:
 						})
 					]
 				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f)
+				[
+					SNew(SBox)
+					.Visibility_Lambda([this]()
+					{
+						return Mode && Mode->MarkKind == ESolidWorldChartMarkKind::Encounter
+							? EVisibility::Visible
+							: EVisibility::Collapsed;
+					})
+					[
+						MakeCombo(Encounters, [this]()
+						{
+							const int32 Index = Mode ? Mode->EncounterIndex : 0;
+							return Encounters.IsValidIndex(Index) && Encounters[Index].IsValid()
+								? *Encounters[Index]
+								: FString();
+						}, [this](const int32 Index)
+						{
+							if (Mode)
+							{
+								Mode->EncounterIndex = Index;
+							}
+						})
+					]
+				]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f)
 						[
 							SNew(STextBlock)
@@ -667,6 +700,7 @@ private:
 	TArray<TSharedPtr<FString>> Sizes;
 	TArray<TSharedPtr<FString>> Types;
 	TArray<TSharedPtr<FString>> Lairs;
+	TArray<TSharedPtr<FString>> Encounters;
 	TArray<TSharedPtr<FString>> MarkKinds;
 	TArray<TSharedPtr<FString>> RoadTypes;
 };
@@ -980,6 +1014,13 @@ void FSolidWorldChartEdMode::PlaceCurrentMark()
 		break;
 	case ESolidWorldChartMarkKind::Custom:
 		bPlaced = Chart->PlaceCustom(CurrentCell, CustomNote, Error);
+		break;
+	case ESolidWorldChartMarkKind::Encounter:
+		if (SolidEncounter::DefinitionCount > 0)
+		{
+			const int32 Index = FMath::Clamp(EncounterIndex, 0, SolidEncounter::DefinitionCount - 1);
+			bPlaced = Chart->PlaceEncounter(CurrentCell, SolidEncounter::Definitions[Index].Name, Error);
+		}
 		break;
 	default:
 		break;

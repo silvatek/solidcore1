@@ -617,6 +617,7 @@ void USolidWorldMap::ResetLoad()
 	bHasStartTown = false;
 	BangMarks.Reset();
 	BangLocationIds.Init(INDEX_NONE, MapWidth * MapHeight);
+	EncounterMarks.Reset();
 	BiomeColors.Reset();
 	bIsLoaded = false;
 }
@@ -762,6 +763,7 @@ bool USolidWorldMap::RememberChartMark(const FSolidWorldChartMark& Mark, const F
 		break;
 	}
 	case ESolidWorldChartMarkKind::Custom:
+	case ESolidWorldChartMarkKind::Encounter:
 		return false;
 	default:
 		return false;
@@ -795,6 +797,13 @@ bool USolidWorldMap::LoadFromChart(const USolidWorldChart* Chart)
 	USolidWorldChart::DefaultWorldBounds(WorldMin, WorldMax);
 	for (const FSolidWorldChartMark& Mark : Chart->Marks)
 	{
+		if (Mark.Kind == ESolidWorldChartMarkKind::Encounter)
+		{
+			FSolidWorldEncounterMark Found;
+			Found.Name = Mark.Name;
+			Found.PositionCm = Mark.PositionCm;
+			EncounterMarks.Add(Found);
+		}
 		FIntPoint Cell = FIntPoint::ZeroValue;
 		if (!CellAtWorld(Mark.PositionCm.X, Mark.PositionCm.Y, WorldMin, WorldMax, Cell))
 		{

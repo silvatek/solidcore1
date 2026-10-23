@@ -9,7 +9,8 @@
 #include "Monster/SolidRaptorActor.h"
 #include "Monster/SolidRaptor.h"
 #include "Inventory/SolidItem.h"
-#include "Terrain/SolidBridge.h"
+#include "Terrain/SolidWorldChart.h"
+#include "Terrain/SolidWorldMap.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -23,21 +24,6 @@ namespace SolidMonsterTestPrivate
 		Point.Biome = Biome;
 		Point.Fog = Fog;
 		return Point;
-	}
-
-	SolidBridge::FBridge IglinBridge(const bool bBroken)
-	{
-		SolidBridge::FBridge Bridge;
-		Bridge.bIglinRelion = true;
-		Bridge.bBroken = bBroken;
-		Bridge.WidthCm = 400.f;
-		Bridge.Deck.Add(FVector(5000.f, 0.f, 100.f));
-		Bridge.Deck.Add(FVector(6000.f, 0.f, 100.f));
-		Bridge.RampFrom.Add(FVector(5000.f, 0.f, 100.f));
-		Bridge.RampFrom.Add(FVector(0.f, 0.f, 0.f));
-		Bridge.RampTo.Add(FVector(6000.f, 0.f, 100.f));
-		Bridge.RampTo.Add(FVector(30000.f, 0.f, 0.f));
-		return Bridge;
 	}
 }
 
@@ -63,6 +49,15 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 			TEXT("Iglin Bridge places three raptors"),
 			SolidEncounter::Definitions[0].Groups[0].Count,
 			3);
+		TestTrue(
+			TEXT("the near limit stays 8 m"),
+			FMath::IsNearlyEqual(SolidEncounter::Definitions[0].NearLimitCm, 800.f));
+		TestTrue(
+			TEXT("the far limit stays 40 m"),
+			FMath::IsNearlyEqual(SolidEncounter::Definitions[0].FarLimitCm, 4000.f));
+		TestTrue(
+			TEXT("the separation stays 4 m"),
+			FMath::IsNearlyEqual(SolidEncounter::Definitions[0].SeparationCm, 400.f));
 	}
 	TestTrue(
 		TEXT("a mesh of half the standing height doubles"),
@@ -138,19 +133,17 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 
 	const TArray<int32> Trees = { 4 };
 	const TArray<int32> Forage = { 5 };
-	const FVector2D Iglin(-20000.f, 0.f);
-	TArray<SolidBridge::FBridge> Bridges;
-	Bridges.Add(IglinBridge(true));
+	const FVector2D Focus = FVector2D::ZeroVector;
 
 	const SolidEncounter::FDefinition IglinDef = SolidEncounter::Definitions[0];
 	FSolidEncounter Encounter(IglinDef);
 	TestEqual(
 		TEXT("three reptiles"),
-		Encounter.Place(Points, Trees, Forage, Iglin, Bridges),
+		Encounter.Place(Points, Trees, Forage, Focus),
 		IglinDef.Groups[0].Count);
 	TestTrue(
-		TEXT("the encounter focus is the Iglin ramp outer end"),
-		Encounter.Location.Equals(FVector2D(0.f, 0.f)));
+		TEXT("the encounter focus is the mark"),
+		Encounter.Location.Equals(Focus));
 	if (Encounter.Groups.Num() != 1 || Encounter.Groups[0].Num() != 3)
 	{
 		return false;
@@ -220,43 +213,11 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 		const float Yaw = FMath::DegreesToRadians(Member->YawDeg);
 		const FVector2D Facing(FMath::Cos(Yaw), FMath::Sin(Yaw));
 		const FVector2D ToOuter = (Outer - Member->XY).GetSafeNormal();
-		TestTrue(TEXT("yaw looks at the Iglin ramp"), FVector2D::DotProduct(Facing, ToOuter) > 0.99f);
+		TestTrue(TEXT("yaw looks at the mark"), FVector2D::DotProduct(Facing, ToOuter) > 0.99f);
 		TestTrue(TEXT("a skipped point is not chosen"), Member->PointIndex != 0 && Member->PointIndex != 2
 			&& Member->PointIndex != 3 && Member->PointIndex != 4 && Member->PointIndex != 5
 			&& Member->PointIndex != 7 && Member->PointIndex != 9);
 	}
-
-	FSolidEncounter Repaired(IglinDef);
-	Bridges[0].bBroken = false;
-	TestEqual(
-		TEXT("a repair keeps the same places"),
-		Repaired.Place(Points, Trees, Forage, Iglin, Bridges),
-		Group.Num());
-	for (int32 Index = 0; Index < Group.Num() && Index < Repaired.Groups[0].Num(); ++Index)
-	{
-		const FSolidMonster* Was = Group.Get(Index);
-		const FSolidMonster* Now = Repaired.Groups[0].Get(Index);
-		TestTrue(
-			TEXT("the repaired bridge uses the same point"),
-			Was && Now && Now->PointIndex == Was->PointIndex);
-	}
-
-	FSolidEncounter None(IglinDef);
-	TArray<SolidBridge::FBridge> NoBridge;
-	TestEqual(
-		TEXT("no Iglin bridge places none"),
-		None.Place(Points, Trees, Forage, Iglin, NoBridge),
-		0);
-	TestEqual(TEXT("the list is empty"), None.Groups[0].Num(), 0);
-	TestTrue(TEXT("a miss clears the location"), None.Location.IsNearlyZero());
-
-	TArray<SolidBridge::FBridge> Other;
-	Other.Add(IglinBridge(true));
-	Other[0].bIglinRelion = false;
-	TestEqual(
-		TEXT("another crossing places none"),
-		None.Place(Points, Trees, Forage, Iglin, Other),
-		0);
 
 	TArray<FSolidTerrainPoint> OnePoint;
 	OnePoint.Add(PointAt(900.f, ESolidBiome::Grassland));
@@ -264,7 +225,7 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 	FSolidEncounter Few(IglinDef);
 	TestEqual(
 		TEXT("one eligible point places one"),
-		Few.Place(OnePoint, NoSkip, NoSkip, Iglin, Bridges),
+		Few.Place(OnePoint, NoSkip, NoSkip, Focus),
 		1);
 
 	TArray<int32> Ready;
@@ -337,13 +298,11 @@ bool FSolidMonsterSpawnTest::RunTest(const FString& Parameters)
 	TArray<FSolidTerrainPoint> Points;
 	Points.Add(PointAt(900.f, ESolidBiome::Grassland, 0.f));
 	TArray<int32> NoSkip;
-	TArray<SolidBridge::FBridge> Bridges;
-	Bridges.Add(IglinBridge(true));
 
 	FSolidEncounter Encounter(SolidEncounter::Definitions[0]);
 	TestEqual(
 		TEXT("the encounter places one raptor"),
-		Encounter.Place(Points, NoSkip, NoSkip, FVector2D(-20000.f, 0.f), Bridges),
+		Encounter.Place(Points, NoSkip, NoSkip, FVector2D::ZeroVector),
 		1);
 	if (Encounter.Groups.Num() != 1)
 	{
@@ -380,15 +339,12 @@ bool FSolidMonsterMountainTest::RunTest(const FString& Parameters)
 	Points.Add(PointAt(2600.f, ESolidBiome::Grassland));
 
 	TArray<int32> NoSkip;
-	TArray<SolidBridge::FBridge> Bridges;
-	Bridges.Add(IglinBridge(true));
-	const FVector2D Iglin(-20000.f, 0.f);
 	const float Spacing = 200.f;
 
 	FSolidEncounter Beside(SolidEncounter::Definitions[0]);
 	TestEqual(
 		TEXT("three reptiles stand off the cliff"),
-		Beside.Place(Points, NoSkip, NoSkip, Iglin, Bridges, Spacing),
+		Beside.Place(Points, NoSkip, NoSkip, FVector2D::ZeroVector, Spacing),
 		3);
 	if (Beside.Groups.Num() != 1 || Beside.Groups[0].Num() != 3)
 	{
@@ -415,7 +371,7 @@ bool FSolidMonsterMountainTest::RunTest(const FString& Parameters)
 	FSolidEncounter Diagonal(SolidEncounter::Definitions[0]);
 	TestEqual(
 		TEXT("three reptiles stand off a diagonal cliff"),
-		Diagonal.Place(DiagonalPoints, NoSkip, NoSkip, Iglin, Bridges, Spacing),
+		Diagonal.Place(DiagonalPoints, NoSkip, NoSkip, FVector2D::ZeroVector, Spacing),
 		3);
 	const FSolidMonster* First = Diagonal.Groups.Num() == 1 ? Diagonal.Groups[0].Get(0) : nullptr;
 	TestTrue(TEXT("a diagonal mountain corner is not used"), First && First->PointIndex != 0);
@@ -456,10 +412,9 @@ bool FSolidMonsterBattlePlanTest::RunTest(const FString& Parameters)
 
 	TArray<FSolidTerrainPoint> Points;
 	const TArray<int32> Skip;
-	const TArray<SolidBridge::FBridge> Bridges;
 	TestEqual(
-		TEXT("no bridge places no reptiles"),
-		Iglin.Place(Points, Skip, Skip, FVector2D::ZeroVector, Bridges),
+		TEXT("no points place no reptiles"),
+		Iglin.Place(Points, Skip, Skip, FVector2D::ZeroVector),
 		0);
 	const FSolidBattlePlan* Kept = Iglin.Groups[0].GetActivePlan();
 	TestNotNull(TEXT("the group keeps a plan"), Kept);
@@ -468,7 +423,7 @@ bool FSolidMonsterBattlePlanTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("Attack stays the active plan"), Kept->SameAs(Attack));
 	}
 
-	SolidEncounter::FDefinition Bare{ TEXT("Bare"), SolidEncounter::ESite::IglinBridgeRamp };
+	SolidEncounter::FDefinition Bare{ TEXT("Bare") };
 	Bare = Bare.WithGroup(SolidEncounter::EMonsterKind::Raptor, ESolidMonsterSize::Small, 1);
 	const FSolidEncounter NoPlan(Bare);
 	TestEqual(TEXT("one group"), NoPlan.Groups.Num(), 1);
@@ -478,7 +433,7 @@ bool FSolidMonsterBattlePlanTest::RunTest(const FString& Parameters)
 		TestNull(TEXT("that group has no active plan"), NoPlan.Groups[0].GetActivePlan());
 	}
 
-	SolidEncounter::FDefinition Missing{ TEXT("Missing"), SolidEncounter::ESite::IglinBridgeRamp };
+	SolidEncounter::FDefinition Missing{ TEXT("Missing") };
 	Missing = Missing.WithGroup(SolidEncounter::EMonsterKind::Raptor, ESolidMonsterSize::Small, 1, TEXT("Defend"));
 	const FSolidEncounter NotInArray(Missing);
 	TestEqual(TEXT("one group for a missing name"), NotInArray.Groups.Num(), 1);
@@ -508,6 +463,83 @@ bool FSolidMonsterDetectionTest::RunTest(const FString& Parameters)
 	Raptor.DetectionRange = Range * 0.5f;
 	TestFalse(TEXT("a shorter range leaves the old edge outside"), Raptor.Detects(FVector2D(Range, 0.f)));
 	TestTrue(TEXT("the new edge is inside"), Raptor.Detects(FVector2D(Raptor.DetectionRange, 0.f)));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidMonsterMarkTest,
+	"SolidCore1.Monster.Mark",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
+{
+	FString Grid;
+	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	{
+		Grid += FString::ChrN(USolidWorldMap::MapWidth, USolidWorldMap::GrassMarker);
+		Grid += TEXT("\n");
+	}
+
+	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
+	USolidWorldMap* Empty = NewObject<USolidWorldMap>();
+	if (!TestNotNull(TEXT("chart"), Chart)
+		|| !TestNotNull(TEXT("map"), Empty)
+		|| !TestTrue(TEXT("grass imports"), Chart->ImportFromString(Grid))
+		|| !TestTrue(TEXT("the unmarked chart loads"), Empty->LoadFromChart(Chart)))
+	{
+		return false;
+	}
+	TestEqual(TEXT("a definition with no mark places nobody"), Empty->GetEncounterMarks().Num(), 0);
+
+	auto StandAt = [](const FSolidWorldEncounterMark& Mark) -> int32
+	{
+		const SolidEncounter::FDefinition* Def = SolidEncounter::FindByName(Mark.Name);
+		if (!Def)
+		{
+			return 0;
+		}
+		TArray<FSolidTerrainPoint> Points;
+		const float Offsets[] = { 900.f, 1400.f, 1800.f, 2300.f };
+		for (const float Offset : Offsets)
+		{
+			FSolidTerrainPoint Point;
+			Point.X = Mark.PositionCm.X + Offset;
+			Point.Y = Mark.PositionCm.Y;
+			Point.Biome = ESolidBiome::Grassland;
+			Points.Add(Point);
+		}
+		FSolidEncounter Encounter(*Def);
+		const TArray<int32> None;
+		const int32 Count = Encounter.Place(Points, None, None, Mark.PositionCm);
+		return Encounter.Location.Equals(Mark.PositionCm) ? Count : 0;
+	};
+
+	FString Error;
+	TestTrue(TEXT("the mark places"), Chart->PlaceEncounter(FIntPoint(10, 4), TEXT("Iglin Bridge"), Error));
+	USolidWorldMap* Marked = NewObject<USolidWorldMap>();
+	if (!TestTrue(TEXT("the marked chart loads"), Marked && Marked->LoadFromChart(Chart)))
+	{
+		return false;
+	}
+	TestEqual(TEXT("one mark"), Marked->GetEncounterMarks().Num(), 1);
+	if (Marked->GetEncounterMarks().Num() == 1)
+	{
+		TestEqual(TEXT("three members stand at the mark"), StandAt(Marked->GetEncounterMarks()[0]), 3);
+	}
+
+	TestTrue(TEXT("a second mark places"), Chart->PlaceEncounter(FIntPoint(22, 9), TEXT("iglin bridge"), Error));
+	USolidWorldMap* Two = NewObject<USolidWorldMap>();
+	if (!TestTrue(TEXT("both marks load"), Two && Two->LoadFromChart(Chart)))
+	{
+		return false;
+	}
+	TestEqual(TEXT("two marks with one name"), Two->GetEncounterMarks().Num(), 2);
+	int32 Total = 0;
+	for (const FSolidWorldEncounterMark& Mark : Two->GetEncounterMarks())
+	{
+		Total += StandAt(Mark);
+	}
+	TestEqual(TEXT("two marks place two encounters"), Total, 6);
 	return true;
 }
 

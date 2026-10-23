@@ -79,6 +79,13 @@ struct FSolidWorldLocation
 class USolidWorldChart;
 struct FSolidWorldChartMark;
 
+/** One encounter mark copied from a world chart. The position is the cell centre, in centimetres. */
+struct FSolidWorldEncounterMark
+{
+	FString Name;
+	FVector2D PositionCm = FVector2D::ZeroVector;
+};
+
 UCLASS()
 class SOLIDCORE1_API USolidWorldMap : public UObject
 {
@@ -130,9 +137,14 @@ public:
 	/**
 	 * Build this map from a world chart. Each mark's position becomes a cell once.
 	 * Biomes, marks, and solved roads match the text file that filled that chart.
-	 * A custom note is not a mark on this map. LoadDefault reads the shipped chart.
+	 * A custom note is not a mark on this map. An encounter keeps its name and its
+	 * position in centimetres, and it does not change the cell. LoadFromString
+	 * has no encounters. LoadDefault reads the shipped chart.
 	 */
 	bool LoadFromChart(const USolidWorldChart* Chart);
+
+	/** Encounter marks from the chart. Empty after LoadFromString. */
+	const TArray<FSolidWorldEncounterMark>& GetEncounterMarks() const { return EncounterMarks; }
 
 	bool IsLoaded() const { return bIsLoaded; }
 
@@ -221,7 +233,7 @@ protected:
 	void BuildRoads(const TArray<SolidRoad::FDefinition>& Definitions);
 	bool CellsToWorldXY(const TArray<FIntPoint>& Cells, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 	void ResetLoad();
-	/** Turn one chart mark into the ! description the map already reads. An unknown name is skipped. */
+	/** Turn one chart mark into the ! description the map already reads. A custom note and an encounter are skipped. */
 	bool RememberChartMark(const FSolidWorldChartMark& Mark, FIntPoint Cell);
 	/** One location per town id. Two cells with the same name are one town. Iglin is the start. */
 	void CollectNamedTowns();
@@ -259,6 +271,9 @@ protected:
 
 	UPROPERTY()
 	TMap<int32, FSolidWorldLocation> Locations;
+
+	/** Encounter names and positions from the last LoadFromChart. LoadFromString clears this. */
+	TArray<FSolidWorldEncounterMark> EncounterMarks;
 
 	TArray<SolidRoad::FRoute> Roads;
 	TArray<SolidRoad::FSpan> RoadSpans;

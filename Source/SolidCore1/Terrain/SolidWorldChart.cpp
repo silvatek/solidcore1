@@ -1,6 +1,7 @@
 #include "SolidWorldChart.h"
 #include "SolidCore1.h"
 #include "SolidLair.h"
+#include "Monster/SolidEncounters.h"
 #include "SolidStronghold.h"
 #include "SolidTerrainMap.h"
 #include "SolidTowns.h"
@@ -493,6 +494,21 @@ bool USolidWorldChart::PlaceCustom(const FIntPoint Cell, const FString& Note, FS
 	FSolidWorldChartMark Mark;
 	Mark.Kind = ESolidWorldChartMarkKind::Custom;
 	Mark.Name = Clean;
+	return PlaceMark(Cell, Mark, OutError);
+}
+
+bool USolidWorldChart::PlaceEncounter(const FIntPoint Cell, const FString& Name, FString& OutError)
+{
+	const SolidEncounter::FDefinition* Found = SolidEncounter::FindByName(Name);
+	if (!Found || !Found->Name)
+	{
+		OutError = FString::Printf(TEXT("%s is not an encounter."), *Name.TrimStartAndEnd());
+		return false;
+	}
+
+	FSolidWorldChartMark Mark;
+	Mark.Kind = ESolidWorldChartMarkKind::Encounter;
+	Mark.Name = Found->Name;
 	return PlaceMark(Cell, Mark, OutError);
 }
 

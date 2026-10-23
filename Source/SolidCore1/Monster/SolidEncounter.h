@@ -3,7 +3,6 @@
 #include "CoreMinimal.h"
 #include "SolidMonster.h"
 #include "SolidMonsterGroup.h"
-#include "Terrain/SolidBridge.h"
 #include "Terrain/SolidTerrainTypes.h"
 
 /**
@@ -15,13 +14,6 @@ namespace SolidEncounter
 {
 	inline constexpr int32 MaxGroupsPerEncounter = 4;
 	inline constexpr int32 MaxEncounters = 32;
-
-	/** Where the encounter finds its focus on the open world. */
-	enum class ESite : uint8
-	{
-		/** Outer end of the Iglin–Relion ramp nearer Iglin. */
-		IglinBridgeRamp,
-	};
 
 	/** Which subclass a group member is. */
 	enum class EMonsterKind : uint8
@@ -40,13 +32,13 @@ namespace SolidEncounter
 	};
 
 	/**
-	 * One shipped encounter: a name, a site, and the groups that stand there.
+	 * One shipped encounter: a name and the groups that stand there.
 	 * Constexpr-friendly, like SolidEvents::FEvent. Members are not stored here.
+	 * Where they stand is the chart mark. Place takes that position.
 	 */
 	struct FDefinition
 	{
 		const TCHAR* Name = TEXT("");
-		ESite Site = ESite::IglinBridgeRamp;
 		FGroup Groups[MaxGroupsPerEncounter] = {};
 		int32 GroupCount = 0;
 		/** Nearest a member may be to the encounter focus (cm). */
@@ -93,24 +85,20 @@ public:
 
 	/** The shipped definition this encounter was built from. */
 	SolidEncounter::FDefinition Definition;
-	/**
-	 * World centimetres of the encounter focus once Place has run.
-	 * For Iglin Bridge that is the Iglin ramp's outer end. Zero until then.
-	 */
+	/** World centimetres of the encounter focus once Place has run. */
 	FVector2D Location = FVector2D::ZeroVector;
 	/** Groups from the definition. Members are armed. Place chooses their points. */
 	TArray<FSolidMonsterGroup> Groups;
 
 	/**
 	 * Choose a point for each member already in the groups.
-	 * Resolves Definition.Site to Location. A member with no point is dropped.
+	 * Focus is the mark position, in centimetres. A member with no point is dropped.
 	 * @return Total members placed across every group.
 	 */
 	int32 Place(
 		const TArray<FSolidTerrainPoint>& Points,
 		const TArray<int32>& TreePointIndices,
 		const TArray<int32>& ForagePointIndices,
-		const FVector2D& IglinTownXY,
-		const TArray<SolidBridge::FBridge>& Bridges,
+		const FVector2D& Focus,
 		float PointSpacingCm = 200.f);
 };

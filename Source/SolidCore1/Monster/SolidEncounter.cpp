@@ -16,105 +16,6 @@ namespace SolidEncounterPrivate
 		return FMath::RadiansToDegrees(FMath::Atan2(Delta.Y, Delta.X));
 	}
 
-	/** Horizontal distance from a ramp sample to the deck. An empty deck uses the ramp's first sample. */
-	float DistanceFromDeck(const FVector& Sample, const TArray<FVector>& Deck, const FVector& Join)
-	{
-		const FVector2D At(Sample.X, Sample.Y);
-		if (Deck.Num() == 0)
-		{
-			return FVector2D::Distance(At, FVector2D(Join.X, Join.Y));
-		}
-
-		float Best = TNumericLimits<float>::Max();
-		for (const FVector& Point : Deck)
-		{
-			Best = FMath::Min(Best, FVector2D::Distance(At, FVector2D(Point.X, Point.Y)));
-		}
-		return Best;
-	}
-
-	/** The ramp sample farthest from the deck. False when the ramp is empty. */
-	bool OuterEnd(const TArray<FVector>& Ramp, const TArray<FVector>& Deck, FVector2D& OutXY)
-	{
-		if (Ramp.Num() == 0)
-		{
-			return false;
-		}
-
-		int32 BestIndex = 0;
-		float BestDistance = -1.f;
-		for (int32 Index = 0; Index < Ramp.Num(); ++Index)
-		{
-			const float Distance = DistanceFromDeck(Ramp[Index], Deck, Ramp[0]);
-			if (Distance > BestDistance || (Distance == BestDistance && Index > BestIndex))
-			{
-				BestDistance = Distance;
-				BestIndex = Index;
-			}
-		}
-		OutXY = FVector2D(Ramp[BestIndex].X, Ramp[BestIndex].Y);
-		return true;
-	}
-
-	/**
-	 * The ramp whose outer end is closer to Iglin.
-	 * False when no Iglin crossing has a ramp.
-	 */
-	bool IglinRampOuterEnd(const TArray<SolidBridge::FBridge>& Bridges, const FVector2D& IglinTownXY, FVector2D& OutXY)
-	{
-		bool bFound = false;
-		float BestTown = 0.f;
-		for (const SolidBridge::FBridge& Bridge : Bridges)
-		{
-			if (!Bridge.bIglinRelion)
-			{
-				continue;
-			}
-
-			FVector2D From = FVector2D::ZeroVector;
-			FVector2D To = FVector2D::ZeroVector;
-			const bool bFrom = OuterEnd(Bridge.RampFrom, Bridge.Deck, From);
-			const bool bTo = OuterEnd(Bridge.RampTo, Bridge.Deck, To);
-			if (!bFrom && !bTo)
-			{
-				continue;
-			}
-
-			FVector2D Outer = From;
-			if (!bFrom)
-			{
-				Outer = To;
-			}
-			else if (bTo && FVector2D::Distance(To, IglinTownXY) < FVector2D::Distance(From, IglinTownXY))
-			{
-				Outer = To;
-			}
-			const float Town = FVector2D::Distance(Outer, IglinTownXY);
-			if (!bFound || Town < BestTown)
-			{
-				bFound = true;
-				BestTown = Town;
-				OutXY = Outer;
-			}
-		}
-		return bFound;
-	}
-
-	bool ResolveSite(
-		const SolidEncounter::ESite Site,
-		const FVector2D& IglinTownXY,
-		const TArray<SolidBridge::FBridge>& Bridges,
-		FVector2D& OutXY)
-	{
-		switch (Site)
-		{
-		case SolidEncounter::ESite::IglinBridgeRamp:
-			return IglinRampOuterEnd(Bridges, IglinTownXY, OutXY);
-		default:
-			return false;
-		}
-	}
-
 	TUniquePtr<FSolidMonster> MakeMonster(
 		const SolidEncounter::EMonsterKind Kind,
 		const ESolidMonsterSize Size)
@@ -302,11 +203,10 @@ int32 FSolidEncounter::Place(
 	const TArray<FSolidTerrainPoint>& Points,
 	const TArray<int32>& TreePointIndices,
 	const TArray<int32>& ForagePointIndices,
-	const FVector2D& IglinTownXY,
-	const TArray<SolidBridge::FBridge>& Bridges,
+	const FVector2D& Focus,
 	const float PointSpacingCm)
 {
-	Location = FVector2D::ZeroVector;
+	Location = Focus;
 	Groups.SetNum(FMath::Max(0, Definition.GroupCount));
 	for (int32 GroupIndex = 0; GroupIndex < Groups.Num(); ++GroupIndex)
 	{
@@ -318,18 +218,6 @@ int32 FSolidEncounter::Place(
 			SolidEncounterPrivate::Recruit(Group, Definition.Groups[GroupIndex]);
 		}
 	}
-
-	FVector2D Outer = FVector2D::ZeroVector;
-	if (!SolidEncounterPrivate::ResolveSite(Definition.Site, IglinTownXY, Bridges, Outer))
-	{
-		for (FSolidMonsterGroup& Group : Groups)
-		{
-			Group.Members.Reset();
-		}
-		return 0;
-	}
-
-	Location = Outer;
 
 	TSet<int32> Taken;
 	Taken.Reserve(TreePointIndices.Num() + ForagePointIndices.Num());
@@ -355,7 +243,7 @@ int32 FSolidEncounter::Place(
 			Definition,
 			Points,
 			Taken,
-			Outer,
+			Focus,
 			PointSpacingCm);
 	}
 	return Placed;

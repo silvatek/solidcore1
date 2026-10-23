@@ -16,6 +16,8 @@ enum class ESolidWorldChartMarkKind : uint8
 	LairExit,
 	/** A short note. It does not change the land, and it is not a road end. */
 	Custom,
+	/** A catalog encounter. It does not change the land. */
+	Encounter,
 };
 
 /** How wide a chart road is. The route is solved when a world map loads the chart. */
@@ -165,6 +167,12 @@ public:
 	 * The note is one line, at most 48 characters. It does not change the paint.
 	 */
 	bool PlaceCustom(FIntPoint Cell, const FString& Note, FString& OutError);
+
+	/**
+	 * Put a catalog encounter on this cell, replacing any mark already there.
+	 * The name is the one in SolidEncounter::Definitions. The paint stays.
+	 */
+	bool PlaceEncounter(FIntPoint Cell, const FString& Name, FString& OutError);
 
 	/** Remove the mark on this cell. */
 	bool DeleteMark(FIntPoint Cell, FString& OutError);

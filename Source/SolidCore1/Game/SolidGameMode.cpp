@@ -1538,34 +1538,25 @@ void ASolidGameMode::ChooseMonsters(const USolidTerrainMap* Map)
 		ForagePoints.Add(Choice.PointIndex);
 	}
 
-	TArray<SolidBridge::FBridge> Bridges;
-	Bridges.Reserve(SpawnedBridges.Num());
-	for (const TObjectPtr<ASolidBridge>& Actor : SpawnedBridges)
-	{
-		const ASolidBridge* Bridge = Actor.Get();
-		if (Bridge && Bridge->HasBridge())
-		{
-			Bridges.Add(Bridge->GetBridge());
-		}
-	}
-
-	FVector2D IglinXY = FVector2D::ZeroVector;
 	const USolidWorldMap* WorldMap = Map->GetWorldMap();
+	Encounters.Reset();
+	int32 Chosen = 0;
 	if (WorldMap)
 	{
-		WorldMap->GetLocationWorldXY(
-			SolidTowns::Iglin, Map->GetWorldMinXY(), Map->GetWorldMaxXY(), IglinXY);
-	}
-
-	Encounters.Reset();
-	Encounters.Reserve(SolidEncounter::DefinitionCount);
-	int32 Chosen = 0;
-	for (const SolidEncounter::FDefinition& Def : SolidEncounter::Definitions)
-	{
-		FSolidEncounter Encounter(Def);
-		Chosen += Encounter.Place(
-			Map->GetPoints(), TreePoints, ForagePoints, IglinXY, Bridges, Map->PointSpacing);
-		Encounters.Add(MoveTemp(Encounter));
+		const TArray<FSolidWorldEncounterMark>& Marks = WorldMap->GetEncounterMarks();
+		Encounters.Reserve(Marks.Num());
+		for (const FSolidWorldEncounterMark& Mark : Marks)
+		{
+			const SolidEncounter::FDefinition* Def = SolidEncounter::FindByName(Mark.Name);
+			if (!Def)
+			{
+				continue;
+			}
+			FSolidEncounter Encounter(*Def);
+			Chosen += Encounter.Place(
+				Map->GetPoints(), TreePoints, ForagePoints, Mark.PositionCm, Map->PointSpacing);
+			Encounters.Add(MoveTemp(Encounter));
+		}
 	}
 	bMonstersChosen = true;
 	UE_LOG(LogSolid, Warning, TEXT("Chose %d monsters across %d encounters"), Chosen, Encounters.Num());

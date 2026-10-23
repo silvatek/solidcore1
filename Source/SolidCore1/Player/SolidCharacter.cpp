@@ -1344,7 +1344,7 @@ void ASolidCharacter::SelectBattlePlanFaceTop()
 
 void ASolidCharacter::Move(const FInputActionValue& Value)
 {
-	if (IsSquadFormationDrillActive() || IsMenuOverlayOpen() || IsAutoPlaythroughRunning())
+	if (!bScriptInput && (IsSquadFormationDrillActive() || IsMenuOverlayOpen() || IsAutoPlaythroughRunning()))
 	{
 		return;
 	}
@@ -1360,22 +1360,26 @@ void ASolidCharacter::Move(const FInputActionValue& Value)
 		ClearClickMove();
 	}
 
-	if (Controller != nullptr)
+	AddTrueSightMove(MovementVector);
+}
+
+void ASolidCharacter::AddTrueSightMove(const FVector2D& Stick)
+{
+	if (!Controller || Stick.IsNearlyZero())
 	{
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
-
-		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
-
-		AddMovementInput(ForwardDirection, MovementVector.Y);
-		AddMovementInput(RightDirection, MovementVector.X);
+		return;
 	}
+
+	const FRotator YawRotation(0.f, Controller->GetControlRotation().Yaw, 0.f);
+	const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+	const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+	AddMovementInput(ForwardDirection, Stick.Y);
+	AddMovementInput(RightDirection, Stick.X);
 }
 
 void ASolidCharacter::Look(const FInputActionValue& Value)
 {
-	if (IsSquadFormationDrillActive() || IsMenuOverlayOpen() || IsAutoPlaythroughRunning())
+	if (!bScriptInput && (IsSquadFormationDrillActive() || IsMenuOverlayOpen() || IsAutoPlaythroughRunning()))
 	{
 		return;
 	}
@@ -1906,11 +1910,15 @@ void ASolidCharacter::UpdateMenuPointerHover()
 void ASolidCharacter::PollClickMovePress()
 {
 	bool bDown = false;
-	if (const ASolidPlayerController* PlayerController = Cast<ASolidPlayerController>(Controller))
+	if (bScriptInput)
+	{
+		bDown = bScriptClickDown;
+	}
+	else if (const ASolidPlayerController* PlayerController = Cast<ASolidPlayerController>(Controller))
 	{
 		bDown = PlayerController->IsLeftMouseHeld();
 	}
-	if (IsAutoPlaythroughRunning())
+	if (IsAutoPlaythroughRunning() && !bScriptInput)
 	{
 		SolidClickMove::ConsumePress(bClickSawRelease, bLeftMouseWasDown, bDown);
 		return;

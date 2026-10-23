@@ -3,6 +3,7 @@
 #include "SolidCharacter.h"
 #include "SolidClickMove.h"
 #include "SolidGameMode.h"
+#include "GameFramework/PlayerController.h"
 #include "SolidGameState.h"
 #include "SolidGroundMove.h"
 #include "Monster/SolidEncounter.h"
@@ -506,7 +507,12 @@ void FSolidAutoPlaythrough::TickWalk(
 		{
 			return;
 		}
-		Captain.AddMovementInput(FVector(Direction.X, Direction.Y, 0.f), 1.f);
+		const FRotator View = Captain.GetControlRotation();
+		const float DesiredYaw = FVector(Direction.X, Direction.Y, 0.f).Rotation().Yaw;
+		Captain.SimulateMouseLook(
+			FMath::FindDeltaAngleDegrees(View.Yaw, DesiredYaw),
+			FMath::FindDeltaAngleDegrees(View.Pitch, 0.f));
+		Captain.SimulateKey(EKeys::W);
 		return;
 	}
 
@@ -514,7 +520,13 @@ void FSolidAutoPlaythrough::TickWalk(
 	{
 		return;
 	}
-	Captain.SetClickMoveDestination(FVector(Target.X, Target.Y, Location.Z));
+	APlayerController* PlayerController = Cast<APlayerController>(Captain.GetController());
+	FVector2D Screen = FVector2D::ZeroVector;
+	if (PlayerController
+		&& PlayerController->ProjectWorldLocationToScreen(FVector(Target.X, Target.Y, Location.Z), Screen))
+	{
+		Captain.SimulateLeftClick(Screen.X, Screen.Y);
+	}
 }
 
 void FSolidAutoPlaythrough::TickWake(const ASolidGameMode& Mode)

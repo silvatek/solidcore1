@@ -73,6 +73,17 @@ public:
 	bool HasClickMoveDestination() const { return bHasClickMoveDestination; }
 	/** Raven-sight walk toward a ground point. True sight ignores it. */
 	void SetClickMoveDestination(const FVector& Destination);
+	/**
+	 * One frame of a mapped key, such as W.
+	 * The mapping's modifiers run, then the bound handler. Hardware input stays ignored while the script runs.
+	 */
+	void SimulateKey(FKey Key);
+	/** The look axis the mouse and the right stick already produce. The view updates before this returns. */
+	void SimulateMouseLook(float DeltaX, float DeltaY);
+	/** Move the pointer and press the left button. The click handler runs. */
+	void SimulateLeftClick(float ScreenX, float ScreenY);
+	/** The stick a move key produces after its mapping modifiers. W is (0, 1), forward. */
+	bool StickForKey(FKey Key, FVector2D& OutStick);
 	/** Move the captain onto a landing. Pitch 0 is a level camera. Clears a click-walk and a formation drill. */
 	void ArriveByPortal(const FVector& NewLocation, float YawDegrees, float PitchDegrees = 0.f);
 	void ToggleSight();
@@ -95,6 +106,11 @@ protected:
 
 	void Move(const FInputActionValue& Value);
 	void Look(const FInputActionValue& Value);
+	/** WASD in true sight. X is right and Y is forward, both along the control yaw. */
+	void AddTrueSightMove(const FVector2D& Stick);
+	/** Apply a script look before the following step reads the view. */
+	void FlushScriptLook();
+	bool ValueForMappedKey(FKey Key, const UInputAction*& OutAction, FVector2D& OutStick) const;
 	/** Right-button look. The free pointer does not turn the camera. */
 	void UpdatePointerMouseLook();
 	void ClickMoveFromInput();
@@ -373,6 +389,10 @@ protected:
 	/** Ground point chosen by a raven-sight left click. */
 	bool bHasClickMoveDestination = false;
 	FVector ClickMoveDestination = FVector::ZeroVector;
+	/** Set while the script is inside a simulated key, look, or click. Hardware input stays ignored. */
+	bool bScriptInput = false;
+	/** Left button held by SimulateLeftClick, for the click poll in that same call. */
+	bool bScriptClickDown = false;
 	/** Previous frame's left button, so one click is a single press. */
 	bool bLeftMouseWasDown = false;
 	/** False until the left button has been up on this pawn. A carried hold does not click. */

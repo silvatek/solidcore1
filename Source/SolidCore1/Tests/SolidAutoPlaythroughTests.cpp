@@ -3,6 +3,7 @@
 #include "Company/SolidCaptain.h"
 #include "Menus/SolidMainMenu.h"
 #include "Playthrough/SolidAutoPlaythrough.h"
+#include "SolidCharacter.h"
 #include "SolidGameState.h"
 #include "Towns/SolidTowns.h"
 
@@ -166,6 +167,33 @@ bool FSolidAutoPlaythroughDimTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("Esc clears the script"), Play.IsRunning());
 	TestTrue(TEXT("Esc leaves the row dim"), Started->bAutoPlaythroughDim);
 	TestFalse(TEXT("the dim row does not start again"), FSolidAutoPlaythrough::CanStart(*Started));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidAutoPlaythroughKeysTest,
+	"SolidCore1.AutoPlaythrough.Keys",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidAutoPlaythroughKeysTest::RunTest(const FString& Parameters)
+{
+	ASolidCharacter* Character = NewObject<ASolidCharacter>();
+	TestNotNull(TEXT("character"), Character);
+	if (!Character)
+	{
+		return false;
+	}
+
+	FVector2D Stick = FVector2D::ZeroVector;
+	TestTrue(TEXT("W is mapped"), Character->StickForKey(EKeys::W, Stick));
+	TestTrue(TEXT("W is forward"), Stick.Equals(FVector2D(0.f, 1.f)));
+	TestTrue(TEXT("S is mapped"), Character->StickForKey(EKeys::S, Stick));
+	TestTrue(TEXT("S is back"), Stick.Equals(FVector2D(0.f, -1.f)));
+	TestTrue(TEXT("D is mapped"), Character->StickForKey(EKeys::D, Stick));
+	TestTrue(TEXT("D is right"), Stick.Equals(FVector2D(1.f, 0.f)));
+	TestTrue(TEXT("A is mapped"), Character->StickForKey(EKeys::A, Stick));
+	TestTrue(TEXT("A is left"), Stick.Equals(FVector2D(-1.f, 0.f)));
+	TestFalse(TEXT("a click is not a move key"), Character->StickForKey(EKeys::LeftMouseButton, Stick));
 	return true;
 }
 

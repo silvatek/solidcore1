@@ -364,42 +364,71 @@ namespace
 		}
 		return false;
 	}
+
+	/** The custom switch matches this. Wake is the row that waits for the cave. */
+	constexpr int32 WakeInCave = 1;
+
+	const SolidStrongholdGrid::FCell StandCells[] = {
+		{ -1, 0 }, { 0, 0 }, { 1, 0 }, { 1, 1 },
+	};
+
+	const SolidStrongholdGrid::FCell EntranceCells[] = {
+		{ 1, 1 }, { 0, 1 }, { -1, 1 }, { -1, 0 }, { -2, 0 },
+	};
 }
 
-void FSolidAutoPlaythrough::CollectSteps(TArray<EStep>& OutSteps)
-{
-	OutSteps.Reset();
-	OutSteps.Add(EStep::WalkToMonsterEncounter);
-	OutSteps.Add(EStep::WakeInCave);
-	OutSteps.Add(EStep::CraftTorch);
-	OutSteps.Add(EStep::PutTorchInMainHand);
-	OutSteps.Add(EStep::LeaveCave);
-	OutSteps.Add(EStep::WalkToIglin);
-	OutSteps.Add(EStep::CloseDrivenOutMessage);
-}
-
-const TCHAR* FSolidAutoPlaythrough::NameOf(const EStep Step)
-{
-	switch (Step)
+const FSolidAutoPlaythrough::FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = {
 	{
-	case EStep::WalkToMonsterEncounter:
-		return TEXT("Walk to the monster encounter");
-	case EStep::WakeInCave:
-		return TEXT("Wake in the cave");
-	case EStep::CraftTorch:
-		return TEXT("Craft the torch");
-	case EStep::PutTorchInMainHand:
-		return TEXT("Put the torch in the main hand");
-	case EStep::LeaveCave:
-		return TEXT("Leave the cave");
-	case EStep::WalkToIglin:
-		return TEXT("Walk to Iglin");
-	case EStep::CloseDrivenOutMessage:
-		return TEXT("Close the driven-out message");
-	default:
-		return TEXT("");
-	}
-}
+		.Type = EStepType::WalkTo,
+		.Name = TEXT("Walk to the monster encounter"),
+		.Walk = EWalk::MonsterEncounter,
+	},
+	{
+		.Type = EStepType::Custom,
+		.Name = TEXT("Wake in the cave"),
+		.CustomId = WakeInCave,
+	},
+	{
+		.Type = EStepType::WalkTo,
+		.Name = TEXT("Walk to the stand"),
+		.Walk = EWalk::Hexes,
+		.Cells = StandCells,
+		.CellCount = UE_ARRAY_COUNT(StandCells),
+	},
+	{
+		.Type = EStepType::CraftItem,
+		.Name = TEXT("Craft the torch"),
+		.ItemId = SolidItemType::IdTorch,
+	},
+	{
+		.Type = EStepType::CraftItem,
+		.Name = TEXT("Put the torch in the main hand"),
+		.ItemId = SolidItemType::IdTorch,
+		.bEquipMainHand = true,
+		.bClosePage = true,
+	},
+	{
+		.Type = EStepType::WalkTo,
+		.Name = TEXT("Walk to the entrance"),
+		.Walk = EWalk::Hexes,
+		.Cells = EntranceCells,
+		.CellCount = UE_ARRAY_COUNT(EntranceCells),
+	},
+	{
+		.Type = EStepType::ExitStronghold,
+		.Name = TEXT("Leave the cave"),
+	},
+	{
+		.Type = EStepType::WalkTo,
+		.Name = TEXT("Walk to Iglin"),
+		.Walk = EWalk::TrailToIglin,
+	},
+	{
+		.Type = EStepType::CloseMessage,
+		.Name = TEXT("Close the driven-out message"),
+		.MessageId = SolidMessages::IdDrivenFromVillage,
+	},
+};
 
 bool FSolidAutoPlaythrough::CraftTorch(SolidInventory::FLoadout& Loadout, SolidStorage::FContainer& Chest)
 {
@@ -473,54 +502,50 @@ void FSolidAutoPlaythrough::Tick(const float DeltaSeconds, ASolidGameMode& Mode,
 		return;
 	}
 
-	bool bSteering = false;
-	switch (CurrentStep())
+	if (StepIndex < 0 || StepIndex >= ScriptCount)
 	{
-	case EStep::WalkToMonsterEncounter:
-		bSteering = TickWalk(DeltaSeconds, Mode, Captain);
-		break;
-	case EStep::WakeInCave:
-		TickWake(Mode);
-		break;
-	case EStep::CraftTorch:
-		bSteering = TickCraft(DeltaSeconds, Mode, Captain);
-		break;
-	case EStep::PutTorchInMainHand:
-		bSteering = TickPutTorch(Mode, Captain);
-		break;
-	case EStep::LeaveCave:
-		bSteering = TickLeave(DeltaSeconds, Mode, Captain);
-		break;
-	case EStep::WalkToIglin:
-		bSteering = TickWalkToIglin(DeltaSeconds, Mode, Captain);
-		break;
-	case EStep::CloseDrivenOutMessage:
-		bSteering = TickCloseMessage(Captain);
-		break;
-	default:
 		Stop();
-		break;
+		Captain.ReleaseRightMouse();
+		return;
 	}
+
+	const bool bSteering = TickCurrent(DeltaSeconds, Mode, Captain, Script[StepIndex]);
 	if (!bSteering)
 	{
 		Captain.ReleaseRightMouse();
 	}
 }
 
-FSolidAutoPlaythrough::EStep FSolidAutoPlaythrough::CurrentStep() const
+bool FSolidAutoPlaythrough::TickCurrent(
+	const float DeltaSeconds,
+	ASolidGameMode& Mode,
+	ASolidCharacter& Captain,
+	const FStep& Step)
 {
-	TArray<EStep> Steps;
-	CollectSteps(Steps);
-	return Steps.IsValidIndex(StepIndex) ? Steps[StepIndex] : EStep::WakeInCave;
+	switch (Step.Type)
+	{
+	case EStepType::WalkTo:
+		return TickWalkTo(DeltaSeconds, Mode, Captain, Step);
+	case EStepType::CloseMessage:
+		return TickCloseMessage(Captain, Step);
+	case EStepType::CraftItem:
+		return TickCraftItem(Mode, Captain, Step);
+	case EStepType::ExitStronghold:
+		return TickExit(Mode, Captain);
+	case EStepType::Custom:
+		TickCustom(Step, Mode);
+		return false;
+	default:
+		Stop();
+		return false;
+	}
 }
 
 void FSolidAutoPlaythrough::Advance()
 {
 	++StepIndex;
 	ResetWalk();
-	TArray<EStep> Steps;
-	CollectSteps(Steps);
-	if (!Steps.IsValidIndex(StepIndex))
+	if (StepIndex >= ScriptCount)
 	{
 		Stop();
 	}
@@ -890,6 +915,64 @@ bool FSolidAutoPlaythrough::BuildIglinTrail(const ASolidGameMode& Mode, const FV
 	return bWalkReady;
 }
 
+bool FSolidAutoPlaythrough::TickWalkTo(
+	const float DeltaSeconds,
+	ASolidGameMode& Mode,
+	ASolidCharacter& Captain,
+	const FStep& Step)
+{
+	switch (Step.Walk)
+	{
+	case EWalk::MonsterEncounter:
+		return TickWalk(DeltaSeconds, Mode, Captain);
+	case EWalk::Hexes:
+		return TickHexWalk(DeltaSeconds, Mode, Captain, Step);
+	case EWalk::TrailToIglin:
+		return TickWalkToIglin(DeltaSeconds, Mode, Captain);
+	default:
+		Stop();
+		return false;
+	}
+}
+
+bool FSolidAutoPlaythrough::TickHexWalk(
+	const float DeltaSeconds,
+	ASolidGameMode& Mode,
+	ASolidCharacter& Captain,
+	const FStep& Step)
+{
+	if (!bWalkReady && !BuildHexWalk(Mode, Step.Cells, Step.CellCount))
+	{
+		return false;
+	}
+
+	const FVector2D Here(Captain.GetActorLocation().X, Captain.GetActorLocation().Y);
+	FVector2D Target = FVector2D::ZeroVector;
+	bool bFinished = false;
+	if (FollowPoints(DeltaSeconds, Here, Target, bFinished))
+	{
+		return Steer(DeltaSeconds, Mode, Captain, Target, false, false);
+	}
+	if (bRunning && bFinished)
+	{
+		Advance();
+	}
+	return false;
+}
+
+void FSolidAutoPlaythrough::TickCustom(const FStep& Step, const ASolidGameMode& Mode)
+{
+	switch (Step.CustomId)
+	{
+	case WakeInCave:
+		TickWake(Mode);
+		break;
+	default:
+		Stop();
+		break;
+	}
+}
+
 void FSolidAutoPlaythrough::TickWake(const ASolidGameMode& Mode)
 {
 	if (Mode.HasPlacedCaptainInStronghold())
@@ -898,11 +981,21 @@ void FSolidAutoPlaythrough::TickWake(const ASolidGameMode& Mode)
 	}
 }
 
-bool FSolidAutoPlaythrough::TickCraft(
-	const float DeltaSeconds,
+bool FSolidAutoPlaythrough::TickCraftItem(
 	ASolidGameMode& Mode,
-	ASolidCharacter& Captain)
+	ASolidCharacter& Captain,
+	const FStep& Step)
 {
+	if (!Step.ItemId || FCString::Strcmp(Step.ItemId, SolidItemType::IdTorch) != 0)
+	{
+		Stop();
+		return false;
+	}
+	if (Step.bEquipMainHand)
+	{
+		return TickPutTorch(Mode, Captain, Step.bClosePage);
+	}
+
 	if (bPageOpen)
 	{
 		USolidGameState* State = Mode.GetConfiguration();
@@ -919,29 +1012,10 @@ bool FSolidAutoPlaythrough::TickCraft(
 		return false;
 	}
 
-	if (!bWalkReady)
-	{
-		const SolidStrongholdGrid::FCell Cells[] = {
-			{ -1, 0 }, { 0, 0 }, { 1, 0 }, { 1, 1 },
-		};
-		if (!BuildHexWalk(Mode, Cells, UE_ARRAY_COUNT(Cells)))
-		{
-			return false;
-		}
-	}
-
-	const FVector2D Here(Captain.GetActorLocation().X, Captain.GetActorLocation().Y);
-	FVector2D Target = FVector2D::ZeroVector;
-	bool bFinished = false;
-	if (FollowPoints(DeltaSeconds, Here, Target, bFinished))
-	{
-		return Steer(DeltaSeconds, Mode, Captain, Target, false, false);
-	}
-	if (!bRunning || !bFinished || !InventoryPageCanDraw(Mode, Captain))
+	if (!InventoryPageCanDraw(Mode, Captain))
 	{
 		return false;
 	}
-
 	if (ASolidHUD* HUD = HudOf(Captain))
 	{
 		if (!HUD->IsInventoryVisible())
@@ -953,7 +1027,10 @@ bool FSolidAutoPlaythrough::TickCraft(
 	return false;
 }
 
-bool FSolidAutoPlaythrough::TickPutTorch(ASolidGameMode& Mode, ASolidCharacter& Captain)
+bool FSolidAutoPlaythrough::TickPutTorch(
+	ASolidGameMode& Mode,
+	ASolidCharacter& Captain,
+	const bool bClosePage)
 {
 	USolidGameState* State = Mode.GetConfiguration();
 	if (!State)
@@ -965,11 +1042,14 @@ bool FSolidAutoPlaythrough::TickPutTorch(ASolidGameMode& Mode, ASolidCharacter& 
 		Stop();
 		return false;
 	}
-	if (ASolidHUD* HUD = HudOf(Captain))
+	if (bClosePage)
 	{
-		if (HUD->IsInventoryVisible())
+		if (ASolidHUD* HUD = HudOf(Captain))
 		{
-			HUD->ToggleInventory();
+			if (HUD->IsInventoryVisible())
+			{
+				HUD->ToggleInventory();
+			}
 		}
 	}
 	Advance();
@@ -998,33 +1078,8 @@ bool FSolidAutoPlaythrough::ClickMouth(ASolidGameMode& Mode, ASolidCharacter& Ca
 	return Instance && Instance->WantsStrongholdExit();
 }
 
-bool FSolidAutoPlaythrough::TickLeave(
-	const float DeltaSeconds,
-	ASolidGameMode& Mode,
-	ASolidCharacter& Captain)
+bool FSolidAutoPlaythrough::TickExit(ASolidGameMode& Mode, ASolidCharacter& Captain)
 {
-	if (!bWalkReady)
-	{
-		const SolidStrongholdGrid::FCell Cells[] = {
-			{ 1, 1 }, { 0, 1 }, { -1, 1 }, { -1, 0 }, { -2, 0 },
-		};
-		if (!BuildHexWalk(Mode, Cells, UE_ARRAY_COUNT(Cells)))
-		{
-			return false;
-		}
-	}
-
-	const FVector2D Here(Captain.GetActorLocation().X, Captain.GetActorLocation().Y);
-	FVector2D Target = FVector2D::ZeroVector;
-	bool bFinished = false;
-	if (FollowPoints(DeltaSeconds, Here, Target, bFinished))
-	{
-		return Steer(DeltaSeconds, Mode, Captain, Target, false, false);
-	}
-	if (!bRunning || !bFinished)
-	{
-		return false;
-	}
 	if (ClickMouth(Mode, Captain))
 	{
 		Advance();
@@ -1061,10 +1116,10 @@ bool FSolidAutoPlaythrough::TickWalkToIglin(
 	return false;
 }
 
-bool FSolidAutoPlaythrough::TickCloseMessage(ASolidCharacter& Captain)
+bool FSolidAutoPlaythrough::TickCloseMessage(ASolidCharacter& Captain, const FStep& Step)
 {
 	ASolidHUD* HUD = HudOf(Captain);
-	if (!HUD || !HUD->IsMessageVisible() || HUD->GetMessageId() != SolidMessages::IdDrivenFromVillage)
+	if (!HUD || !HUD->IsMessageVisible() || !Step.MessageId || HUD->GetMessageId() != Step.MessageId)
 	{
 		return false;
 	}

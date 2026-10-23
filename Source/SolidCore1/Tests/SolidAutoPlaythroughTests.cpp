@@ -19,39 +19,49 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 {
-	TArray<FSolidAutoPlaythrough::EStep> Steps;
-	FSolidAutoPlaythrough::CollectSteps(Steps);
-	TestEqual(TEXT("stage 2 has seven steps"), Steps.Num(), 7);
-	if (Steps.Num() < 7)
-	{
-		return false;
-	}
-
 	const TCHAR* Names[] = {
 		TEXT("Walk to the monster encounter"),
 		TEXT("Wake in the cave"),
+		TEXT("Walk to the stand"),
 		TEXT("Craft the torch"),
 		TEXT("Put the torch in the main hand"),
+		TEXT("Walk to the entrance"),
 		TEXT("Leave the cave"),
 		TEXT("Walk to Iglin"),
 		TEXT("Close the driven-out message"),
 	};
-	const FSolidAutoPlaythrough::EStep Kinds[] = {
-		FSolidAutoPlaythrough::EStep::WalkToMonsterEncounter,
-		FSolidAutoPlaythrough::EStep::WakeInCave,
-		FSolidAutoPlaythrough::EStep::CraftTorch,
-		FSolidAutoPlaythrough::EStep::PutTorchInMainHand,
-		FSolidAutoPlaythrough::EStep::LeaveCave,
-		FSolidAutoPlaythrough::EStep::WalkToIglin,
-		FSolidAutoPlaythrough::EStep::CloseDrivenOutMessage,
+	const FSolidAutoPlaythrough::EStepType Types[] = {
+		FSolidAutoPlaythrough::EStepType::WalkTo,
+		FSolidAutoPlaythrough::EStepType::Custom,
+		FSolidAutoPlaythrough::EStepType::WalkTo,
+		FSolidAutoPlaythrough::EStepType::CraftItem,
+		FSolidAutoPlaythrough::EStepType::CraftItem,
+		FSolidAutoPlaythrough::EStepType::WalkTo,
+		FSolidAutoPlaythrough::EStepType::ExitStronghold,
+		FSolidAutoPlaythrough::EStepType::WalkTo,
+		FSolidAutoPlaythrough::EStepType::CloseMessage,
 	};
+	TestEqual(
+		TEXT("the script is the static list"),
+		FSolidAutoPlaythrough::ScriptCount,
+		static_cast<int32>(UE_ARRAY_COUNT(Names)));
+	TestEqual(
+		TEXT("each row has a type"),
+		static_cast<int32>(UE_ARRAY_COUNT(Types)),
+		static_cast<int32>(UE_ARRAY_COUNT(Names)));
+	if (FSolidAutoPlaythrough::ScriptCount != static_cast<int32>(UE_ARRAY_COUNT(Names)))
+	{
+		return false;
+	}
+
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Names); ++Index)
 	{
+		const FSolidAutoPlaythrough::FStep& Step = FSolidAutoPlaythrough::Script[Index];
 		TestEqual(
-			TEXT("step kind"),
-			static_cast<uint8>(Steps[Index]),
-			static_cast<uint8>(Kinds[Index]));
-		TestEqual(TEXT("step name"), FString(FSolidAutoPlaythrough::NameOf(Steps[Index])), FString(Names[Index]));
+			TEXT("step type"),
+			static_cast<uint8>(Step.Type),
+			static_cast<uint8>(Types[Index]));
+		TestEqual(TEXT("step name"), FString(Step.Name), FString(Names[Index]));
 	}
 
 	TestTrue(

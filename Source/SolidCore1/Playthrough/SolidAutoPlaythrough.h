@@ -28,17 +28,45 @@ namespace SolidStrongholdGrid
 class FSolidAutoPlaythrough
 {
 public:
-	/** One line of the script. Stage 2 ends when the driven-out message closes. */
-	enum class EStep : uint8
+	/** What a script row does. The fields on that row are the ones this type reads. */
+	enum class EStepType : uint8
 	{
-		WalkToMonsterEncounter,
-		WakeInCave,
-		CraftTorch,
-		PutTorchInMainHand,
-		LeaveCave,
-		WalkToIglin,
-		CloseDrivenOutMessage,
+		WalkTo,
+		CloseMessage,
+		CraftItem,
+		ExitStronghold,
+		Custom,
 	};
+
+	/** The route a WalkTo row follows. */
+	enum class EWalk : uint8
+	{
+		MonsterEncounter,
+		Hexes,
+		TrailToIglin,
+	};
+
+	/** One row of the opening script. */
+	struct FStep
+	{
+		EStepType Type = EStepType::Custom;
+		const TCHAR* Name = TEXT("");
+		EWalk Walk = EWalk::Hexes;
+		const SolidStrongholdGrid::FCell* Cells = nullptr;
+		int32 CellCount = 0;
+		const TCHAR* ItemId = nullptr;
+		/** True when this row moves the crafted item into the main hand. */
+		bool bEquipMainHand = false;
+		/** True when this row closes the inventory page. */
+		bool bClosePage = false;
+		const TCHAR* MessageId = nullptr;
+		/** Which custom row this is. The custom switch matches it. */
+		int32 CustomId = INDEX_NONE;
+	};
+
+	/** The opening script, in order. A later story edits this list. */
+	static const FStep Script[];
+	static constexpr int32 ScriptCount = 9;
 
 	/** The F10 row and the HUD line. */
 	static const TCHAR* Label() { return TEXT("Auto playthrough"); }
@@ -48,10 +76,6 @@ public:
 
 	/** Close enough to a road point to take the next one, in centimetres. */
 	static constexpr float ArriveCm = 200.f;
-
-	/** The list in order. A later stage edits this list. */
-	static void CollectSteps(TArray<EStep>& OutSteps);
-	static const TCHAR* NameOf(EStep Step);
 
 	/**
 	 * One stick and one pitch become a torch in the pack. The leftovers go back to the chest.
@@ -77,7 +101,7 @@ public:
 	void Tick(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
 
 private:
-	EStep CurrentStep() const;
+	/** Moves to the next row of Script. The list ending stops the script. */
 	void Advance();
 	void ResetWalk();
 	void NoteDistance(float DeltaSeconds, float DistanceCm);
@@ -97,14 +121,18 @@ private:
 		const FVector2D& Target,
 		bool bLast,
 		bool bAvoidRamps);
+	bool TickCurrent(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
+	bool TickWalkTo(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	/** True while true sight is dragging the view and holding W. */
 	bool TickWalk(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
-	void TickWake(const ASolidGameMode& Mode);
-	bool TickCraft(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
-	bool TickPutTorch(ASolidGameMode& Mode, ASolidCharacter& Captain);
-	bool TickLeave(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
+	bool TickHexWalk(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickWalkToIglin(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
-	bool TickCloseMessage(ASolidCharacter& Captain);
+	void TickCustom(const FStep& Step, const ASolidGameMode& Mode);
+	void TickWake(const ASolidGameMode& Mode);
+	bool TickCraftItem(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
+	bool TickPutTorch(ASolidGameMode& Mode, ASolidCharacter& Captain, bool bClosePage);
+	bool TickExit(ASolidGameMode& Mode, ASolidCharacter& Captain);
+	bool TickCloseMessage(ASolidCharacter& Captain, const FStep& Step);
 	bool ClickMouth(ASolidGameMode& Mode, ASolidCharacter& Captain);
 
 	bool bRunning = false;

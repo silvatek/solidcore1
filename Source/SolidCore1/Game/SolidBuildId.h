@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0594")
+#define SOLID_BUILD_ID TEXT("SC1-0595")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Auto playthrough crafts a torch and returns to Iglin.")
+#define SOLID_BUILD_NOTE TEXT("Auto playthrough runs a list of steps.")
 #endif

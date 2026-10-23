@@ -25,6 +25,7 @@ public class SolidCore1 : ModuleRules
 		PrivateIncludePaths.Add(ModuleDirectory + "/Monster");
 		PrivateIncludePaths.Add(ModuleDirectory + "/HUD");
 		PrivateIncludePaths.Add(ModuleDirectory + "/Menus");
+		PrivateIncludePaths.Add(ModuleDirectory + "/Playthrough");
 		PrivateIncludePaths.Add(ModuleDirectory + "/Journal");
 		PrivateIncludePaths.Add(ModuleDirectory + "/Inventory");
 		PrivateIncludePaths.Add(ModuleDirectory + "/Crafting");

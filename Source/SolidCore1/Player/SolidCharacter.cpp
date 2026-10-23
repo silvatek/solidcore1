@@ -38,6 +38,8 @@
 #include "Company/SolidCaptain.h"
 #include "Company/SolidCompany.h"
 #include "SolidGameMode.h"
+#include "SolidGameInstance.h"
+#include "Playthrough/SolidAutoPlaythrough.h"
 #include "Character/SolidCharacterStage.h"
 #include "HUD/SolidHUD.h"
 #include "Inventory/SolidInventory.h"
@@ -241,6 +243,28 @@ void ASolidCharacter::OnRep_PlayerState()
 void ASolidCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	if (IsAutoPlaythroughRunning())
+	{
+		if (bIsSprinting)
+		{
+			bIsSprinting = false;
+			ApplyWalkSpeed();
+		}
+		if (UWorld* World = GetWorld())
+		{
+			if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+			{
+				if (USolidGameInstance* Instance = World->GetGameInstance<USolidGameInstance>())
+				{
+					Instance->GetAutoPlaythrough().Tick(DeltaTime, *GameMode, *this);
+					if (!Instance->IsAutoPlaythroughRunning())
+					{
+						ClearClickMove();
+					}
+				}
+			}
+		}
+	}
 	if (!IsMenuOverlayOpen())
 	{
 		if (ASolidGameMode* GameMode = GetWorld() ? GetWorld()->GetAuthGameMode<ASolidGameMode>() : nullptr)
@@ -553,8 +577,32 @@ void ASolidCharacter::ToggleInventoryFromController()
 	}
 }
 
+bool ASolidCharacter::IsAutoPlaythroughRunning() const
+{
+	const UWorld* World = GetWorld();
+	const USolidGameInstance* Instance = World ? World->GetGameInstance<USolidGameInstance>() : nullptr;
+	return Instance && Instance->IsAutoPlaythroughRunning();
+}
+
+bool ASolidCharacter::StopAutoPlaythrough()
+{
+	UWorld* World = GetWorld();
+	USolidGameInstance* Instance = World ? World->GetGameInstance<USolidGameInstance>() : nullptr;
+	if (!Instance || !Instance->IsAutoPlaythroughRunning())
+	{
+		return false;
+	}
+	Instance->GetAutoPlaythrough().Stop();
+	ClearClickMove();
+	return true;
+}
+
 void ASolidCharacter::ToggleMainMenuFromInput()
 {
+	if (StopAutoPlaythrough())
+	{
+		return;
+	}
 	if (ASolidHUD* HUD = GetSolidHUD())
 	{
 		HUD->HandleMenuKey();
@@ -588,6 +636,10 @@ void ASolidCharacter::ToggleDebugPanelFromInput()
 
 void ASolidCharacter::CloseMenuOverlayFromInput()
 {
+	if (StopAutoPlaythrough())
+	{
+		return;
+	}
 	if (ASolidHUD* HUD = GetSolidHUD())
 	{
 		HUD->CloseMenuOverlay();
@@ -1082,6 +1134,10 @@ void ASolidCharacter::ArriveByPortal(const FVector& NewLocation, const float Yaw
 
 void ASolidCharacter::MainMenuConfirm()
 {
+	if (IsAutoPlaythroughRunning())
+	{
+		return;
+	}
 	ASolidHUD* HUD = GetSolidHUD();
 	if (!HUD)
 	{
@@ -1127,6 +1183,21 @@ void ASolidCharacter::MainMenuConfirm()
 	{
 		return;
 	}
+	if (Entry.Item == ESolidMainMenuItem::AutoPlaythrough)
+	{
+		const USolidGameState* State = nullptr;
+		if (UWorld* World = GetWorld())
+		{
+			if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+			{
+				State = GameMode->GetConfiguration();
+			}
+		}
+		if (State && !FSolidAutoPlaythrough::CanStart(*State))
+		{
+			return;
+		}
+	}
 
 	HUD->CloseMainMenu();
 	switch (SolidMainMenu::ActionForItem(Entry.Item))
@@ -1152,6 +1223,20 @@ void ASolidCharacter::MainMenuConfirm()
 			}
 		}
 		HUD->OpenSquadBuilder();
+		break;
+	case ESolidMainMenuAction::StartAutoPlaythrough:
+		if (UWorld* World = GetWorld())
+		{
+			if (USolidGameInstance* Instance = World->GetGameInstance<USolidGameInstance>())
+			{
+				if (USolidGameState* State = Instance->GetConfiguration())
+				{
+					bIsSprinting = false;
+					ApplyWalkSpeed();
+					Instance->GetAutoPlaythrough().Start(*State);
+				}
+			}
+		}
 		break;
 	case ESolidMainMenuAction::OpenCharacterEditor:
 		if (UWorld* World = GetWorld())
@@ -1259,7 +1344,7 @@ void ASolidCharacter::SelectBattlePlanFaceTop()
 
 void ASolidCharacter::Move(const FInputActionValue& Value)
 {
-	if (IsSquadFormationDrillActive() || IsMenuOverlayOpen())
+	if (IsSquadFormationDrillActive() || IsMenuOverlayOpen() || IsAutoPlaythroughRunning())
 	{
 		return;
 	}
@@ -1290,7 +1375,7 @@ void ASolidCharacter::Move(const FInputActionValue& Value)
 
 void ASolidCharacter::Look(const FInputActionValue& Value)
 {
-	if (IsSquadFormationDrillActive() || IsMenuOverlayOpen())
+	if (IsSquadFormationDrillActive() || IsMenuOverlayOpen() || IsAutoPlaythroughRunning())
 	{
 		return;
 	}
@@ -1307,6 +1392,12 @@ void ASolidCharacter::Look(const FInputActionValue& Value)
 void ASolidCharacter::ClearClickMove()
 {
 	bHasClickMoveDestination = false;
+}
+
+void ASolidCharacter::SetClickMoveDestination(const FVector& Destination)
+{
+	ClickMoveDestination = Destination;
+	bHasClickMoveDestination = true;
 }
 
 bool ASolidCharacter::SampleGroundZ(const float X, const float Y, float& OutZ) const
@@ -1819,6 +1910,11 @@ void ASolidCharacter::PollClickMovePress()
 	{
 		bDown = PlayerController->IsLeftMouseHeld();
 	}
+	if (IsAutoPlaythroughRunning())
+	{
+		SolidClickMove::ConsumePress(bClickSawRelease, bLeftMouseWasDown, bDown);
+		return;
+	}
 	// Travel to the cave loads a new pawn while this button is still down, and the
 	// captain arrives facing the other opening. That held press must not travel back.
 	if (!SolidClickMove::ConsumePress(bClickSawRelease, bLeftMouseWasDown, bDown))
@@ -2084,7 +2180,7 @@ void ASolidCharacter::TickClickMove()
 
 void ASolidCharacter::UpdatePointerMouseLook()
 {
-	if (IsSquadFormationDrillActive() || IsMenuOverlayOpen())
+	if (IsSquadFormationDrillActive() || IsMenuOverlayOpen() || IsAutoPlaythroughRunning())
 	{
 		return;
 	}
@@ -2115,7 +2211,7 @@ void ASolidCharacter::UpdatePointerMouseLook()
 
 void ASolidCharacter::StartJump()
 {
-	if (IsMenuOverlayOpen())
+	if (IsMenuOverlayOpen() || IsAutoPlaythroughRunning())
 	{
 		return;
 	}
@@ -2172,7 +2268,7 @@ void ASolidCharacter::Zoom(const FInputActionValue& Value)
 
 void ASolidCharacter::StartSprint()
 {
-	if (IsSquadFormationDrillActive() || IsMenuOverlayOpen())
+	if (IsSquadFormationDrillActive() || IsMenuOverlayOpen() || IsAutoPlaythroughRunning())
 	{
 		return;
 	}

@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0587")
+#define SOLID_BUILD_ID TEXT("SC1-0588")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Unused readers and counters are gone.")
+#define SOLID_BUILD_NOTE TEXT("Auto playthrough walks to the Iglin ramp and wakes in the cave.")
 #endif

@@ -35,6 +35,12 @@ public:
 	int32 MaxSquadSize = 0;
 	/** Enter Relion restores the Iglin span. It starts broken. */
 	bool bIglinBridgeRepaired = false;
+	/**
+	 * The Auto playthrough row stays dim for the rest of the game.
+	 * Choosing the row sets it. So does leaving Iglin, including a portal.
+	 * Spawn arrives from none and leaves it clear.
+	 */
+	bool bAutoPlaythroughDim = false;
 	/** Strongholds start closed. A size unlock or EnableCave opens them. */
 	bool bStrongholdsEnabled = false;
 	/**

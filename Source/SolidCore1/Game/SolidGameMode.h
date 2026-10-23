@@ -102,6 +102,9 @@ public:
 
 	const TArray<TObjectPtr<ASolidBridge>>& GetBridges() const { return SpawnedBridges; }
 
+	/** True once this visit has stood the captain inside the stronghold. */
+	bool HasPlacedCaptainInStronghold() const { return bCaptainPlacedInStronghold; }
+
 	/** The game instance's company. Null when the instance is missing. */
 	USolidCompany* GetCompany() const;
 	USolidSquad* GetSquad() const { return Squad; }

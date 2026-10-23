@@ -20,6 +20,8 @@
 #include "SolidSight.h"
 #include "SolidGameMode.h"
 #include "SolidGameInstance.h"
+#include "Playthrough/SolidAutoPlaythrough.h"
+#include "SolidGameState.h"
 #include "SolidPlayerController.h"
 #include "Companion/SolidCompanionCharacter.h"
 #include "BattlePlans/SolidBattlePlan.h"
@@ -1736,6 +1738,31 @@ void ASolidHUD::DrawHUD()
 	}
 
 	UFont* Font = GEngine ? GEngine->GetSmallFont() : nullptr;
+	if (Font)
+	{
+		if (const UWorld* LineWorld = GetWorld())
+		{
+			if (const USolidGameInstance* Instance = LineWorld->GetGameInstance<USolidGameInstance>())
+			{
+				if (Instance->IsAutoPlaythroughRunning())
+				{
+					const FString Line(FSolidAutoPlaythrough::Label());
+					float TextW = 0.f;
+					float TextH = 14.f;
+					Canvas->StrLen(Font, Line, TextW, TextH);
+					const float X = (static_cast<float>(Canvas->SizeX) - TextW) * 0.5f;
+					const float Y = static_cast<float>(Canvas->SizeY) - TextH - 28.f;
+					FCanvasTextItem TextItem(
+						FVector2D(X, Y),
+						FText::FromString(Line),
+						Font,
+						SolidHudTheme::OakAndBronze().Title);
+					TextItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+					Canvas->DrawItem(TextItem);
+				}
+			}
+		}
+	}
 	const USolidSquad* Squad = nullptr;
 	if (UWorld* World = GetWorld())
 	{
@@ -2737,11 +2764,13 @@ void ASolidHUD::DrawJournalPopup() const
 void ASolidHUD::DrawMainMenuPopup()
 {
 	int32 MaxSquadSize = 0;
+	const USolidGameState* State = nullptr;
 	if (UWorld* World = GetWorld())
 	{
 		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 		{
 			MaxSquadSize = GameMode->GetMaxSquadSize();
+			State = GameMode->GetConfiguration();
 		}
 	}
 
@@ -2752,9 +2781,16 @@ void ASolidHUD::DrawMainMenuPopup()
 	for (const FSolidMainMenuEntry& Entry : Entries)
 	{
 		Labels.Add(Entry.Label);
-		const bool bSquad = Entry.Item != ESolidMainMenuItem::BuildSquad
-			|| SolidSquadBuilder::CanOpen(MaxSquadSize);
-		Enabled.Add(bSquad);
+		bool bEnabled = true;
+		if (Entry.Item == ESolidMainMenuItem::BuildSquad)
+		{
+			bEnabled = SolidSquadBuilder::CanOpen(MaxSquadSize);
+		}
+		else if (Entry.Item == ESolidMainMenuItem::AutoPlaythrough)
+		{
+			bEnabled = !State || FSolidAutoPlaythrough::CanStart(*State);
+		}
+		Enabled.Add(bEnabled);
 	}
 	TArray<SolidMenuPointer::FRow> Rows;
 	SolidHUDPrivate::DrawChoicePopup(Canvas, TEXT("Main Menu"), Labels, MainMenuIndex, Rows, &Enabled);

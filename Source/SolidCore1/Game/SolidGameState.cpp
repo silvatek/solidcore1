@@ -1,5 +1,6 @@
 #include "SolidGameState.h"
 #include "SolidGameMode.h"
+#include "Towns/SolidTowns.h"
 #include "BattlePlans/SolidBattlePlan.h"
 #include "Company/SolidCompany.h"
 #include "Company/SolidSquad.h"
@@ -370,12 +371,18 @@ FResult NotifyOccupiedTown(
 	FResult Result;
 	Result.MaxSquadSize = State.MaxSquadSize;
 	Result.CaptainTitle = Captain.Title;
-	if (Captain.OccupiedTown == TownId)
+	const int32 PreviousTown = Captain.OccupiedTown;
+	if (PreviousTown == TownId)
 	{
 		return Result;
 	}
 
 	Captain.OccupiedTown = TownId;
+	// Leaving Iglin dims Auto playthrough. The spawn arrives from none and leaves the row available.
+	if (PreviousTown == SolidTowns::Iglin && TownId != SolidTowns::Iglin)
+	{
+		State.bAutoPlaythroughDim = true;
+	}
 	if (TownId == INDEX_NONE)
 	{
 		return Result;

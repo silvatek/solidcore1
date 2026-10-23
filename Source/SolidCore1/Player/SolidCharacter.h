@@ -71,6 +71,8 @@ public:
 	void SetSight(ESolidSight NewSight);
 	/** Raven-sight left click. Cleared on arrival, WASD, or true sight. */
 	bool HasClickMoveDestination() const { return bHasClickMoveDestination; }
+	/** Raven-sight walk toward a ground point. True sight ignores it. */
+	void SetClickMoveDestination(const FVector& Destination);
 	/** Move the captain onto a landing. Pitch 0 is a level camera. Clears a click-walk and a formation drill. */
 	void ArriveByPortal(const FVector& NewLocation, float YawDegrees, float PitchDegrees = 0.f);
 	void ToggleSight();
@@ -152,6 +154,9 @@ protected:
 	void ApplyTrueSightCamera();
 	void ApplyRavenSightCamera();
 	void ToggleMainMenuFromInput();
+	bool IsAutoPlaythroughRunning() const;
+	/** Player Esc and F10. True when a running script was stopped. */
+	bool StopAutoPlaythrough();
 	void ToggleInventoryFromSlash();
 	void ToggleInventoryFromController();
 	void ToggleDebugPanelFromInput();

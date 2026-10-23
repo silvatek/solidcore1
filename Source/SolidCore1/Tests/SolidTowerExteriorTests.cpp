@@ -195,9 +195,11 @@ bool FSolidTowerExteriorTest::RunTest(const FString& Parameters)
 	Spire->ConfigureExterior(Shell);
 	TestEqual(TEXT("the exterior stands on the tower column"), Shell->GetStrongholdCell().X, ImperiousCell.X);
 	TestEqual(TEXT("the exterior stands on the tower row"), Shell->GetStrongholdCell().Y, ImperiousCell.Y);
+	const SolidStronghold::FSolidTower* MadeTower =
+		static_cast<const SolidStronghold::FSolidTower*>(Spire.Get());
 	TestEqual(
 		TEXT("the exterior uses the Imperious plan"),
-		Shell->GetPlan().FloorCount,
+		MadeTower->FloorCount(),
 		SolidStronghold::Imperious.FloorCount);
 	UStaticMeshComponent* Door = Shell->GetDoorMesh();
 	TestNotNull(TEXT("the tower stronghold builds the door"), Door);

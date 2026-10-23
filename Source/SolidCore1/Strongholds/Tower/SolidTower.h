@@ -73,6 +73,7 @@ namespace SolidStronghold
 		/** Measurements for Size. Make fills this when it sets the size. */
 		const FPlan& Plan() const { return StoredPlan; }
 
+		int32 FloorCount() const { return StoredPlan.FloorCount; }
 		float HeightCm() const { return SolidStronghold::HeightCm(StoredPlan); }
 		float ClearHeightCm() const { return SolidStronghold::ClearHeightCm(StoredPlan); }
 		float GroundInteriorRadiusCm() const { return SolidStronghold::GroundInteriorRadiusCm(StoredPlan); }

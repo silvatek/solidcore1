@@ -67,9 +67,6 @@ public:
 	/** True when this plan stores attack. */
 	bool Attacks() const;
 
-	/** True when this plan stores hold. */
-	bool Holds() const;
-
 	/** True when this plan stores retreat. */
 	bool Retreats() const;
 

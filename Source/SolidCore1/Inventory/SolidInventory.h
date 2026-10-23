@@ -621,13 +621,6 @@ namespace SolidInventory
 		return Slot->IsEmpty() ? nullptr : Slot;
 	}
 
-	/** How many share the slot. Zero when the slot is empty or missing. */
-	inline int32 CountAt(const FLoadout& Loadout, const SolidStorage::FContainer* Chest, const FSlotHit& Hit)
-	{
-		const FSolidItem* Item = ItemAt(Loadout, Chest, Hit);
-		return Item ? Item->Count : 0;
-	}
-
 	/**
 	 * Put an item into a slot. An empty item clears it.
 	 * The body refuses a clear, and it refuses anything that is not armour.

@@ -47,7 +47,6 @@ public:
 
 	UStaticMeshComponent* GetBlockMesh() const { return BlockMesh; }
 	FIntPoint GetCell() const { return Cell; }
-	ESolidStrongholdSize GetSize() const { return Size; }
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")

@@ -42,14 +42,6 @@ namespace SolidForage
 		const TCHAR* ItemId = nullptr;
 	};
 
-	/** A pile the pointer ray meets. Ray distance picks the nearest. Ground distance is the 4 m test. */
-	struct FPileHit
-	{
-		int32 Index = INDEX_NONE;
-		float RayDistanceCm = 0.f;
-		float GroundDistanceCm = 0.f;
-	};
-
 	/** This story places a stick or a pitch, and only on forest. Sea, road, and coins are not finds. */
 	inline bool OccursInBiome(const TCHAR* ItemId, const ESolidBiome Biome)
 	{
@@ -186,25 +178,5 @@ namespace SolidForage
 		}
 		OutDistanceCm = FMath::Max(TMin, 0.f);
 		return true;
-	}
-
-	/** Smallest ray distance. The 4 m test is applied to that hit, not to a later one. */
-	inline int32 NearestHitIndex(const TArray<FPileHit>& Hits)
-	{
-		int32 Best = INDEX_NONE;
-		float BestRay = 0.f;
-		for (int32 Index = 0; Index < Hits.Num(); ++Index)
-		{
-			if (Hits[Index].Index == INDEX_NONE)
-			{
-				continue;
-			}
-			if (Best == INDEX_NONE || Hits[Index].RayDistanceCm < BestRay)
-			{
-				Best = Index;
-				BestRay = Hits[Index].RayDistanceCm;
-			}
-		}
-		return Best;
 	}
 }

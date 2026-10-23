@@ -29,7 +29,6 @@ public:
 	void SetTower(const SolidStronghold::FSolidTower& InTower) { Tower = &InTower; }
 	void BuildVisuals();
 
-	const SolidStronghold::FPlan& GetPlan() const { check(Tower); return Tower->Plan(); }
 	UStaticMeshComponent* GetCapMesh() const { return CapMesh; }
 	UStaticMeshComponent* GetDoorMesh() const { return DoorMesh; }
 	virtual UStaticMeshComponent* GetPassageMesh() const override { return DoorMesh; }

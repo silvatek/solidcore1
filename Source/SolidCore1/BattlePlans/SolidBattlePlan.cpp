@@ -24,11 +24,6 @@ bool FSolidBattlePlan::Attacks() const
 	return AttackOrRetreat == ESolidAggression::Attack;
 }
 
-bool FSolidBattlePlan::Holds() const
-{
-	return AttackOrRetreat == ESolidAggression::Hold;
-}
-
 bool FSolidBattlePlan::Retreats() const
 {
 	return AttackOrRetreat == ESolidAggression::Retreat;

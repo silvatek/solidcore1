@@ -58,7 +58,6 @@ public:
 	/** Destroy the chart chunks. */
 	void ClearChartView();
 
-	bool IsChartView() const { return bChartView; }
 	FSolidTerrainPoint GetTerrainPointAt(const FVector& WorldLocation) const;
 
 	/** Smoothed fog amount currently applied to height fog [0, 1]. */

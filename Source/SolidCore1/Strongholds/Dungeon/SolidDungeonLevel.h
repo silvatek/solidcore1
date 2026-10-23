@@ -117,9 +117,4 @@ namespace SolidDungeonLevel
 		}
 		return false;
 	}
-
-	inline const TCHAR* MenuLabel(const bool bInside)
-	{
-		return bInside ? LeaveLabel : EnterLabel;
-	}
 }

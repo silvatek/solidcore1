@@ -119,14 +119,8 @@ public:
 	 */
 	FSolidWeapon MonsterWeapon(int32 Index) const;
 
-	/** Power of the captain's main hand, plus each companion the squad has out. */
-	int32 GetSquadPower() const;
-
 	/** Armour Strength of the captain's body, plus each companion the squad has out. */
 	float GetSquadDefence() const;
-
-	/** Power of every monster in the group. */
-	int32 GetGroupPower() const;
 
 	/** Armour Strength of every monster in the group. */
 	float GetGroupDefence() const;

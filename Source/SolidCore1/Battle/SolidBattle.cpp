@@ -196,23 +196,6 @@ FSolidWeapon FSolidBattle::MonsterWeapon(const int32 Index) const
 	return Monster ? Monster->Weapon : FSolidWeapon();
 }
 
-int32 FSolidBattle::GetSquadPower() const
-{
-	int32 Total = SquadWeapon(0).Power;
-	const USolidSquad* Side = Squad.Get();
-	if (!Side)
-	{
-		return Total;
-	}
-	TArray<int32> Fighting;
-	FightingCompanions(Side, FieldedCount, Fighting);
-	for (int32 Member = 0; Member < Fighting.Num(); ++Member)
-	{
-		Total += SquadWeapon(Member + 1).Power;
-	}
-	return Total;
-}
-
 float FSolidBattle::GetSquadDefence() const
 {
 	const USolidSquad* Side = Squad.Get();
@@ -244,21 +227,6 @@ float FSolidBattle::GetSquadDefence() const
 		{
 			Total += CompanionDefence(*Companion);
 		}
-	}
-	return Total;
-}
-
-int32 FSolidBattle::GetGroupPower() const
-{
-	if (!Group)
-	{
-		return 0;
-	}
-
-	int32 Total = 0;
-	for (int32 Index = 0; Index < Group->Num(); ++Index)
-	{
-		Total += MonsterWeapon(Index).Power;
 	}
 	return Total;
 }

@@ -149,9 +149,6 @@ namespace SolidStronghold
 		 */
 		FVector2D OutsideDoorXY(const FVector2D& CellCenterXY, const float GrassFacingYawDeg) const;
 
-		/** On the grass, looking out from the door. The same yaw the mouth uses. */
-		float OutsideDoorYawDeg(const float GrassFacingYawDeg) const;
-
 		virtual float ExitReachCm() const override;
 		virtual void RememberExit(const USolidWorldChart* Map) override;
 		virtual void CollectGroundHexes(

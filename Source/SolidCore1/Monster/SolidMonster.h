@@ -136,12 +136,6 @@ public:
 	static float UniformScale(float BoundsHeightCm);
 
 	/**
-	 * Relative Z that puts the scaled bounds bottom on the actor origin.
-	 * BoundsOriginZ and BoundsExtentZ are the mesh bounds before the scale.
-	 */
-	static float MeshFootOffsetCm(float BoundsOriginZ, float BoundsExtentZ, float Scale);
-
-	/**
 	 * How much larger than the vertex-span scale the drawn body is.
 	 * A kind that uses the downloaded mesh as-is returns 1.
 	 */

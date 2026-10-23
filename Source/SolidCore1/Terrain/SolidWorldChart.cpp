@@ -296,11 +296,6 @@ bool USolidWorldChart::PaintRun(const TArray<FIntPoint>& CellsToPaint, const ESo
 	return true;
 }
 
-bool USolidWorldChart::PaintCell(const FIntPoint Cell, const ESolidBiome Biome, FString& OutError)
-{
-	return PaintRun({ Cell }, Biome, OutError);
-}
-
 bool USolidWorldChart::PaintRectangle(const FIntPoint From, const FIntPoint To, const ESolidBiome Biome, FString& OutError)
 {
 	const int32 X0 = FMath::Min(From.X, To.X);
@@ -589,39 +584,6 @@ int32 USolidWorldChart::MarkAtCell(const FIntPoint Cell) const
 		}
 	}
 	return INDEX_NONE;
-}
-
-bool USolidWorldChart::ReadCell(const FIntPoint Cell, FSolidWorldChartRead& Out) const
-{
-	Out = FSolidWorldChartRead();
-	int32 Index = INDEX_NONE;
-	if (!CellIndex(Cell, Index))
-	{
-		return false;
-	}
-	if (!EnsureQuery())
-	{
-		return false;
-	}
-
-	Out.bValid = true;
-	Out.Painted = Cells[Index];
-	Out.Resolved = GetBiomeAtCell(Cell.X, Cell.Y);
-	Out.bMarkOverrides = Out.Resolved != Out.Painted;
-	if (const int32 MarkIndex = MarkAtCell(Cell); MarkIndex != INDEX_NONE)
-	{
-		Out.bHasMark = true;
-		Out.Mark = Marks[MarkIndex];
-	}
-	const TArray<SolidRoad::FRoute>& Routes = GetRoads();
-	for (int32 RoadIndex = 0; RoadIndex < Routes.Num(); ++RoadIndex)
-	{
-		if (Routes[RoadIndex].Cells.Contains(Cell))
-		{
-			Out.RoadIndexes.Add(RoadIndex);
-		}
-	}
-	return true;
 }
 
 bool USolidWorldChart::Undo()

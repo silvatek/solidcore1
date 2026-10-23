@@ -178,15 +178,6 @@ namespace SolidLair
 		return FVector2D((static_cast<float>(Col) + 0.5f) * CellCm, (static_cast<float>(Row) + 0.5f) * CellCm);
 	}
 
-	/** Midpoint of the doorway on the outer side of that mouth's cell. */
-	inline FVector2D MouthMidpoint(const TCHAR End)
-	{
-		const FIntPoint Cell = CellOf(End);
-		const FVector2D Center = CellCenter(Cell.X, Cell.Y);
-		const float Side = FChar::ToUpper(End) == USolidWorldChart::XMarker ? -0.5f : 0.5f;
-		return Center + FVector2D(Side * CellCm, 0.f);
-	}
-
 	inline FVector SpawnLocal(const TCHAR End)
 	{
 		const FIntPoint Cell = CellOf(End);

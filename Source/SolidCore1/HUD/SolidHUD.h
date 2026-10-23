@@ -56,7 +56,6 @@ public:
 
 	/** Exit Game asks before it closes. Yes is the first row. */
 	void OpenExitConfirm();
-	void CloseExitConfirm();
 	bool IsExitConfirmOpen() const { return bShowExitConfirm; }
 	int32 GetExitConfirmIndex() const { return ExitConfirmIndex; }
 	void MoveExitConfirm(int32 Delta);
@@ -78,8 +77,6 @@ public:
 
 	/** F12. The tech readout in the corner. Battle plans stay up either way. */
 	void ToggleDebugPanel();
-	bool IsDebugPanelVisible() const { return bShowDebugPanel; }
-	void SetDebugPanelVisible(bool bVisible) { bShowDebugPanel = bVisible; }
 
 	/** One companion on a plain stage. Page Up and Page Down cycle the company. F10 returns to the world. */
 	void OpenCharacterEditor();

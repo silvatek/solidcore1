@@ -366,11 +366,6 @@ namespace SolidStronghold
 		return CellCenterXY + Grass * Distance;
 	}
 
-	float FSolidTower::OutsideDoorYawDeg(const float GrassFacingYawDeg) const
-	{
-		return GrassFacingYawDeg;
-	}
-
 	float FSolidTower::ExitReachCm() const
 	{
 		if (!Supported(Size))

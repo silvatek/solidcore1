@@ -336,8 +336,6 @@ namespace SolidStronghold
 		{ ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre, { 0.f, 0.f }, { 0.f, 0.f } },
 	};
 
-	inline constexpr int32 VisitViewCount = UE_ARRAY_COUNT(VisitViews);
-
 	inline FVisitView VisitViewFor(const FSolidStronghold& Stronghold)
 	{
 		for (const FVisitView& View : VisitViews)
@@ -476,8 +474,6 @@ namespace SolidStronghold
 		{ ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre, ESolidBiome::Grassland },
 		{ ESolidStrongholdType::Tower, ESolidStrongholdSize::Imperious, ESolidBiome::Grassland },
 	};
-
-	inline constexpr int32 ShelfCount = UE_ARRAY_COUNT(Shelves);
 
 	/** True when this stronghold names a shelf. */
 	inline bool BiomeFor(const FSolidStronghold& Stronghold, ESolidBiome& OutBiome)

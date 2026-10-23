@@ -2780,11 +2780,6 @@ void ASolidHUD::OpenExitConfirm()
 	SolidHUDPrivate::ForgetChoicePointerRows(this);
 }
 
-void ASolidHUD::CloseExitConfirm()
-{
-	bShowExitConfirm = false;
-}
-
 void ASolidHUD::MoveExitConfirm(const int32 Delta)
 {
 	ExitConfirmIndex = SolidExit::WrapIndex(ExitConfirmIndex, Delta);

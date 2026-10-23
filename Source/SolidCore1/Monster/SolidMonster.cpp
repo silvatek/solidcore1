@@ -87,12 +87,3 @@ void FSolidMonster::Arm(const TCHAR* WeaponName, const TCHAR* ArmourName, const 
 	Armour.Name = (ArmourName && ArmourName[0]) ? ArmourName : TEXT("");
 	Armour.Strength = 1.f;
 }
-
-float FSolidMonster::MeshFootOffsetCm(
-	const float BoundsOriginZ,
-	const float BoundsExtentZ,
-	const float Scale)
-{
-	const float Bottom = BoundsOriginZ - BoundsExtentZ;
-	return -Bottom * Scale;
-}

@@ -146,24 +146,6 @@ struct FSolidWorldEncounterMark
 };
 
 /**
- * What a cell shows under the cursor.
- * Painted is the marker biome. Resolved is the biome the chart uses.
- * A mark can replace the paint: a lair mouth is mountain, a named town is town.
- */
-struct FSolidWorldChartRead
-{
-	bool bValid = false;
-	ESolidBiome Painted = ESolidBiome::Grassland;
-	ESolidBiome Resolved = ESolidBiome::Grassland;
-	/** True when Resolved is not the painted marker biome. */
-	bool bMarkOverrides = false;
-	bool bHasMark = false;
-	FSolidWorldChartMark Mark;
-	/** Indexes into Roads whose solved route includes this cell. */
-	TArray<int32> RoadIndexes;
-};
-
-/**
  * The shipped world. Cells hold marker biomes. Marks and roads hold the towns,
  * strongholds, and roads. The same object answers the map queries: biomes,
  * towns, and solved routes. Those solved facts are not saved with the asset.
@@ -348,7 +330,6 @@ public:
 	 * Paint marker biomes. Swamp and road are rejected. Marks stay where they are.
 	 * One call is one undo step. A run is the cells of one drag. A rectangle is inclusive.
 	 */
-	bool PaintCell(FIntPoint Cell, ESolidBiome Biome, FString& OutError);
 	bool PaintRun(const TArray<FIntPoint>& CellsToPaint, ESolidBiome Biome, FString& OutError);
 	bool PaintRectangle(FIntPoint From, FIntPoint To, ESolidBiome Biome, FString& OutError);
 
@@ -391,9 +372,6 @@ public:
 
 	/** Solved cells of one road, including both ends. Empty when an end is missing. */
 	bool RouteForRoad(int32 RoadIndex, TArray<FIntPoint>& OutCells) const;
-
-	/** Resolved biome, painted biome, mark, and roads through this cell. */
-	bool ReadCell(FIntPoint Cell, FSolidWorldChartRead& Out) const;
 
 	/** Index of the mark on this cell, or INDEX_NONE. */
 	int32 MarkAtCell(FIntPoint Cell) const;

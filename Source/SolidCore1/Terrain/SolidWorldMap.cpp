@@ -1,4 +1,5 @@
 #include "SolidWorldMap.h"
+#include "SolidBiome.h"
 #include "SolidCore1.h"
 #include "SolidLair.h"
 #include "SolidRiver.h"
@@ -6,7 +7,6 @@
 #include "SolidWorldChart.h"
 #include "Game/SolidGameMode.h"
 #include "Misc/FileHelper.h"
-#include "Misc/Paths.h"
 
 namespace
 {
@@ -90,101 +90,7 @@ ESolidBiome USolidWorldMap::MarkerToBiome(const TCHAR Marker)
 
 FLinearColor USolidWorldMap::DefaultColorForBiome(const ESolidBiome Biome)
 {
-	switch (Biome)
-	{
-	case ESolidBiome::Grassland: return FLinearColor(0.45f, 0.72f, 0.28f);
-	case ESolidBiome::Forest: return FLinearColor(0.08f, 0.28f, 0.08f);
-	case ESolidBiome::Mountain: return FLinearColor(0.16f, 0.16f, 0.18f);
-	case ESolidBiome::Town: return FLinearColor(0.45f, 0.28f, 0.12f);
-	case ESolidBiome::Desert: return FLinearColor(0.85f, 0.75f, 0.32f);
-	case ESolidBiome::Swamp: return FLinearColor(0.22f, 0.32f, 0.18f);
-	case ESolidBiome::Sea: return FLinearColor(0.15f, 0.35f, 0.75f);
-	case ESolidBiome::River: return FLinearColor(0.20f, 0.48f, 0.85f);
-	case ESolidBiome::Road: return FLinearColor(0.52f, 0.38f, 0.20f);
-	default: return FLinearColor(0.4f, 0.4f, 0.4f);
-	}
-}
-
-FLinearColor USolidWorldMap::ColorFromName(const FString& ColorName)
-{
-	const FString Name = ColorName.TrimStartAndEnd().ToLower();
-	if (Name.Contains(TEXT("light green")) || Name.Equals(TEXT("lightgreen")))
-	{
-		return FLinearColor(0.45f, 0.72f, 0.28f);
-	}
-	if (Name.Contains(TEXT("dark green")) || Name.Equals(TEXT("darkgreen")))
-	{
-		return FLinearColor(0.08f, 0.28f, 0.08f);
-	}
-	if (Name.Contains(TEXT("green")))
-	{
-		return FLinearColor(0.20f, 0.55f, 0.18f);
-	}
-	if (Name.Contains(TEXT("blue")))
-	{
-		return FLinearColor(0.15f, 0.35f, 0.75f);
-	}
-	if (Name.Contains(TEXT("brown")))
-	{
-		return FLinearColor(0.45f, 0.28f, 0.12f);
-	}
-	if (Name.Contains(TEXT("dark grey")) || Name.Contains(TEXT("dark gray"))
-		|| Name.Equals(TEXT("darkgrey")) || Name.Equals(TEXT("darkgray")))
-	{
-		return FLinearColor(0.16f, 0.16f, 0.18f);
-	}
-	if (Name.Contains(TEXT("grey")) || Name.Contains(TEXT("gray")))
-	{
-		return FLinearColor(0.55f, 0.55f, 0.58f);
-	}
-	if (Name.Contains(TEXT("yellow")))
-	{
-		return FLinearColor(0.85f, 0.75f, 0.32f);
-	}
-	return FLinearColor(0.5f, 0.5f, 0.5f);
-}
-
-bool USolidWorldMap::ParseKeyLine(const FString& Line)
-{
-	// "~ = Sea (blue)" or "M = Mountain (dark grey)"
-	FString Trimmed = Line.TrimStartAndEnd();
-	if (Trimmed.Len() < 3 || Trimmed[1] != TEXT(' ') && Trimmed[1] != TEXT('='))
-	{
-		// Allow "S=Sea (blue)"
-	}
-
-	int32 EqIndex = INDEX_NONE;
-	if (!Trimmed.FindChar(TEXT('='), EqIndex) || EqIndex < 1)
-	{
-		return false;
-	}
-
-	const TCHAR Marker = WorldMapCanonicalMarker(Trimmed[0]);
-	if (!IsGridMarker(Marker))
-	{
-		return false;
-	}
-
-	// Letters, digits, and ! are not biome keys. A leftover "C = Cave" line must not recolor grass.
-	if (Marker == XMarker || Marker == YMarker || Marker == LocationMarker
-		|| Marker == TEXT('C') || Marker == TEXT('Z') || FChar::IsDigit(Marker))
-	{
-		return true;
-	}
-
-	FString Right = Trimmed.Mid(EqIndex + 1).TrimStartAndEnd();
-	FString ColorName;
-	int32 OpenParen = INDEX_NONE;
-	int32 CloseParen = INDEX_NONE;
-	if (Right.FindChar(TEXT('('), OpenParen) && Right.FindLastChar(TEXT(')'), CloseParen)
-		&& CloseParen > OpenParen)
-	{
-		ColorName = Right.Mid(OpenParen + 1, CloseParen - OpenParen - 1);
-	}
-
-	const ESolidBiome Biome = MarkerToBiome(Marker);
-	BiomeColors.Add(Biome, ColorName.IsEmpty() ? DefaultColorForBiome(Biome) : ColorFromName(ColorName));
-	return true;
+	return SolidBiome::Of(Biome).Color();
 }
 
 namespace
@@ -439,10 +345,6 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 		{
 			BangRefs.Add(BangRef);
 		}
-		else
-		{
-			ParseKeyLine(RawLine);
-		}
 	}
 
 	for (const FWorldMapBangRef& Ref : BangRefs)
@@ -546,7 +448,6 @@ bool USolidWorldMap::LoadFromString(const FString& Text)
 	}
 
 	CollectNamedTowns();
-	AddDefaultBiomeColors();
 
 	bIsLoaded = true;
 	for (SolidRoad::FDefinition& RoadDef : RoadDefs)
@@ -589,20 +490,6 @@ bool USolidWorldMap::LoadDefault(const bool bForceReload)
 		UE_LOG(LogSolid, Error, TEXT("WorldChart: failed to load /Game/World/WorldChart."));
 		return false;
 	}
-
-	// The chart stores cells, marks, and roads. The text file still names the tints.
-	// River is "blue" there, which is the sea tint, not the default river colour.
-	const FString ContentPath = FPaths::ProjectContentDir() / TEXT("WorldMap.txt");
-	FString Text;
-	if (FFileHelper::LoadFileToString(Text, *ContentPath))
-	{
-		TArray<FString> Lines;
-		Text.ParseIntoArrayLines(Lines, false);
-		for (const FString& Line : Lines)
-		{
-			ParseKeyLine(Line);
-		}
-	}
 	return true;
 }
 
@@ -618,7 +505,6 @@ void USolidWorldMap::ResetLoad()
 	BangMarks.Reset();
 	BangLocationIds.Init(INDEX_NONE, MapWidth * MapHeight);
 	EncounterMarks.Reset();
-	BiomeColors.Reset();
 	bIsLoaded = false;
 }
 
@@ -651,22 +537,6 @@ void USolidWorldMap::CollectNamedTowns()
 	for (TPair<int32, FSolidWorldLocation>& Pair : Locations)
 	{
 		Pair.Value.Name = SolidTowns::NameFor(Pair.Key);
-	}
-}
-
-void USolidWorldMap::AddDefaultBiomeColors()
-{
-	static const ESolidBiome AllBiomes[] = {
-		ESolidBiome::Grassland, ESolidBiome::Forest, ESolidBiome::Mountain, ESolidBiome::Town,
-		ESolidBiome::Desert, ESolidBiome::Swamp, ESolidBiome::Sea, ESolidBiome::River,
-		ESolidBiome::Road,
-	};
-	for (const ESolidBiome Biome : AllBiomes)
-	{
-		if (!BiomeColors.Contains(Biome))
-		{
-			BiomeColors.Add(Biome, DefaultColorForBiome(Biome));
-		}
 	}
 }
 
@@ -813,7 +683,6 @@ bool USolidWorldMap::LoadFromChart(const USolidWorldChart* Chart)
 	}
 
 	CollectNamedTowns();
-	AddDefaultBiomeColors();
 
 	TArray<SolidRoad::FDefinition> RoadDefs;
 	for (const FSolidWorldChartRoad& Road : Chart->Roads)
@@ -1267,10 +1136,6 @@ int32 USolidWorldMap::SampleLocationId(
 
 FLinearColor USolidWorldMap::GetBiomeColor(const ESolidBiome Biome) const
 {
-	if (const FLinearColor* Found = BiomeColors.Find(Biome))
-	{
-		return *Found;
-	}
 	return DefaultColorForBiome(Biome);
 }
 

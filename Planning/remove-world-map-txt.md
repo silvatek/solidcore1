@@ -1,6 +1,6 @@
 # Remove WorldMap.txt
 
-Status: Ready
+Status: In Progress
 
 ## Story
 
@@ -17,6 +17,12 @@ This story depends on [Load the world from the chart](Done/load-the-world-from-t
 - `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE` bump. The note says the text map is gone.
 
 ## Implementation notes
+
+Stage 1 is the biome's colour. Stage 2 deletes `Content/WorldMap.txt`, the shipped-chart comparison, the import, and the disagreement line, and checks the Meagre Dungeon mark on the chart. Stage 3 points `AGENTS.md`, `README.md`, and `tools/cloud_agent_check.py` at the chart.
+
+### Stage 1 — a biome names its colour
+
+`FSolidBiome` answers for an `ESolidBiome` token. `Color()` is the tint play uses, and the river uses the sea blue. `GetBiomeColor` and `DefaultColorForBiome` ask the biome. A colour line in a text map is ignored. `Content/WorldMap.txt` stays until stage 2. `LoadFromString` stays.
 
 - The world-map section of `AGENTS.md` is the review rule for the text file. Replace it with the chart at `/Game/World/WorldChart`, the 128×64 cell grid, and the mark kinds. A change to that asset is what a later agent reviews.
 - `README.md` still documents the marker characters and the `!` lines, and the `SolidCore1.WorldMap.*` filter blurb follows them. Point those at the chart and the mode, and at the tests that remain.

@@ -1,6 +1,8 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
+#include "SolidBiome.h"
 #include "SolidTerrainTypes.h"
+#include "SolidWorldMap.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -102,6 +104,51 @@ bool FSolidBiomeBorderTextureTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(SolidTerrainTypes::BorderBiome(
 			ESolidBiome::Sea, ESolidBiome::River, ESolidBiome::Sea, ESolidBiome::River)),
 		static_cast<uint8>(ESolidBiome::Sea));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBiomeColorTest,
+	"SolidCore1.Types.BiomeColor",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBiomeColorTest::RunTest(const FString& Parameters)
+{
+	const FLinearColor Sea = SolidBiome::Of(ESolidBiome::Sea).Color();
+	const FLinearColor River = SolidBiome::Of(ESolidBiome::River).Color();
+	TestTrue(TEXT("sea is blue"), Sea.Equals(FLinearColor(0.15f, 0.35f, 0.75f)));
+	TestTrue(TEXT("the river uses the sea blue"), River.Equals(Sea));
+	TestTrue(TEXT("grassland is light green"),
+		SolidBiome::Of(ESolidBiome::Grassland).Color().Equals(FLinearColor(0.45f, 0.72f, 0.28f)));
+	TestTrue(TEXT("forest is dark green"),
+		SolidBiome::Of(ESolidBiome::Forest).Color().Equals(FLinearColor(0.08f, 0.28f, 0.08f)));
+	TestTrue(TEXT("mountain is dark grey"),
+		SolidBiome::Of(ESolidBiome::Mountain).Color().Equals(FLinearColor(0.16f, 0.16f, 0.18f)));
+	TestTrue(TEXT("town is brown"),
+		SolidBiome::Of(ESolidBiome::Town).Color().Equals(FLinearColor(0.45f, 0.28f, 0.12f)));
+	TestTrue(TEXT("desert is yellow"),
+		SolidBiome::Of(ESolidBiome::Desert).Color().Equals(FLinearColor(0.85f, 0.75f, 0.32f)));
+	TestTrue(TEXT("swamp is a dark green"),
+		SolidBiome::Of(ESolidBiome::Swamp).Color().Equals(FLinearColor(0.22f, 0.32f, 0.18f)));
+	TestTrue(TEXT("road is brown"),
+		SolidBiome::Of(ESolidBiome::Road).Color().Equals(FLinearColor(0.52f, 0.38f, 0.20f)));
+
+	TestTrue(TEXT("the map asks the biome"),
+		USolidWorldMap::DefaultColorForBiome(ESolidBiome::River).Equals(River));
+
+	FString Text;
+	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	{
+		Text += FString::ChrN(USolidWorldMap::MapWidth, USolidWorldMap::GrassMarker);
+		Text += TEXT("\n");
+	}
+	Text += TEXT("* = River (red)\n");
+	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	if (!TestTrue(TEXT("a map with a colour line loads"), Map && Map->LoadFromString(Text)))
+	{
+		return false;
+	}
+	TestTrue(TEXT("a colour line leaves the river blue"), Map->GetBiomeColor(ESolidBiome::River).Equals(River));
 	return true;
 }
 

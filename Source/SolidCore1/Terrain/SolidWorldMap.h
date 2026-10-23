@@ -62,7 +62,8 @@ struct FSolidWorldLocation
 };
 
 /**
- * ASCII WorldMap.txt biome overlay (128×64 markers + color key + named locations).
+ * ASCII WorldMap.txt biome overlay (128×64 markers and named locations).
+ * A colour line in that file is ignored. The biome names the tint.
  * Scaled across the TerrainMap world bounds. The world stays square, so a cell is
  * 8 m east–west and 16 m north–south.
  * A ! is one cell, named by a line such as "! 8,21 = Town Iglin": row 8, column 21,
@@ -191,7 +192,7 @@ public:
 	/** True when this cell is the town marker, or a ! named as a town. A road strip is not a town. */
 	bool IsMarkedTown(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 
-	/** Display / material color from the key (or built-in defaults). */
+	/** Tint for this biome. */
 	FLinearColor GetBiomeColor(ESolidBiome Biome) const;
 
 	/**
@@ -224,11 +225,10 @@ public:
 	/** Map cell under a world XY. Column 0 is east, row 0 is north. */
 	bool CellAtWorld(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, FIntPoint& OutCell) const;
 
-	/** Built-in fallback colors when the key line is missing a named tint. */
+	/** The biome's colour. The same answer as GetBiomeColor. */
 	static FLinearColor DefaultColorForBiome(ESolidBiome Biome);
 
 protected:
-	bool ParseKeyLine(const FString& Line);
 	bool WorldXYToCell(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, int32& OutMapX, int32& OutMapY) const;
 	void BuildRoads(const TArray<SolidRoad::FDefinition>& Definitions);
 	bool CellsToWorldXY(const TArray<FIntPoint>& Cells, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
@@ -237,10 +237,7 @@ protected:
 	bool RememberChartMark(const FSolidWorldChartMark& Mark, FIntPoint Cell);
 	/** One location per town id. Two cells with the same name are one town. Iglin is the start. */
 	void CollectNamedTowns();
-	/** Give every biome a colour. A colour the text file already set stays. */
-	void AddDefaultBiomeColors();
 	static ESolidBiome MarkerToBiome(TCHAR Marker);
-	static FLinearColor ColorFromName(const FString& ColorName);
 	static bool IsGridMarker(TCHAR Marker);
 
 	/** Location id of a named town ! on this cell, or INDEX_NONE. */
@@ -258,9 +255,6 @@ protected:
 
 	/** Description of each ! cell that has a line. Key is row-major cell index. */
 	TMap<int32, FSolidWorldBang> BangMarks;
-
-	UPROPERTY()
-	TMap<ESolidBiome, FLinearColor> BiomeColors;
 
 	UPROPERTY()
 	bool bHasStartTown = false;

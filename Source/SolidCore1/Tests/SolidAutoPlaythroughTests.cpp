@@ -17,20 +17,18 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 {
 	TArray<FSolidAutoPlaythrough::EStep> Steps;
 	FSolidAutoPlaythrough::CollectSteps(Steps);
-	TestEqual(TEXT("stage 1 has three steps"), Steps.Num(), 3);
-	if (Steps.Num() < 3)
+	TestEqual(TEXT("stage 1 has two steps"), Steps.Num(), 2);
+	if (Steps.Num() < 2)
 	{
 		return false;
 	}
 
 	const TCHAR* Names[] = {
-		TEXT("Walk to the Iglin ramp"),
-		TEXT("Close the monster message"),
+		TEXT("Walk to the monster encounter"),
 		TEXT("Wake in the cave"),
 	};
 	const FSolidAutoPlaythrough::EStep Kinds[] = {
-		FSolidAutoPlaythrough::EStep::WalkToIglinRamp,
-		FSolidAutoPlaythrough::EStep::CloseMonsterMessage,
+		FSolidAutoPlaythrough::EStep::WalkToMonsterEncounter,
 		FSolidAutoPlaythrough::EStep::WakeInCave,
 	};
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Names); ++Index)

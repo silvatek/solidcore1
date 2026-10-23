@@ -16,8 +16,7 @@ public:
 	/** One line of the script. Stage 1 ends when he wakes in the cave. */
 	enum class EStep : uint8
 	{
-		WalkToIglinRamp,
-		CloseMonsterMessage,
+		WalkToMonsterEncounter,
 		WakeInCave,
 	};
 
@@ -45,7 +44,7 @@ public:
 
 	/**
 	 * One frame. The captain's tick calls this on the live game mode.
-	 * Closing the monster message can load the cave before this returns.
+	 * The battle's death can load the cave before a later frame.
 	 */
 	void Tick(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
 
@@ -56,7 +55,6 @@ private:
 	void NoteDistance(float DeltaSeconds, float DistanceCm);
 	bool BuildWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation);
 	void TickWalk(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
-	void TickMessage(ASolidCharacter& Captain);
 	void TickWake(const ASolidGameMode& Mode);
 
 	bool bRunning = false;

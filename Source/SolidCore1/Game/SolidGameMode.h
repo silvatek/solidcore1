@@ -115,6 +115,9 @@ public:
 	 */
 	const FSolidBattle* GetBattle() const { return Battle.Get(); }
 
+	/** Open-world encounters after Place. Empty before the monsters are chosen. */
+	const TArray<FSolidEncounter>& GetEncounters() const { return Encounters; }
+
 	/**
 	 * Start a fight when a monster detects the captain, then move that fight forward.
 	 * The log reads a copy of the kit. When that copy's captain dies, Killed by monsters fires.

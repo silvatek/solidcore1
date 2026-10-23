@@ -5,8 +5,7 @@
 #include "SolidGameMode.h"
 #include "SolidGameState.h"
 #include "SolidGroundMove.h"
-#include "SolidHUD.h"
-#include "Events/SolidMessages.h"
+#include "Monster/SolidEncounter.h"
 #include "Terrain/SolidBridge.h"
 #include "Terrain/SolidRoad.h"
 #include "Terrain/SolidTerrainMap.h"
@@ -14,11 +13,14 @@
 #include "Terrain/SolidWorldChart.h"
 #include "Towns/SolidTowns.h"
 #include "Algo/Reverse.h"
-#include "GameFramework/PlayerController.h"
 
 namespace
 {
 	constexpr float ProgressCm = 1.f;
+	/** A step this far onto a ramp is refused. The walk stays on the grass. */
+	constexpr float RampProbeCm = 80.f;
+	constexpr float SegmentStepCm = 50.f;
+	constexpr TCHAR EncounterName[] = TEXT("Iglin Bridge");
 
 	bool IsIglinRelionRoad(const SolidRoad::FDefinition& Definition)
 	{
@@ -40,41 +42,13 @@ namespace
 		return nullptr;
 	}
 
-	/** The ramp whose buried end is closer to Iglin. The point is on that ramp, off the lip. */
-	bool IglinRampPoint(const SolidBridge::FBridge& Bridge, const FVector2D& IglinXY, FVector2D& OutPoint)
+	bool IsIglinBridge(const FSolidEncounter& Encounter)
 	{
-		const TArray<FVector>* Ramp = nullptr;
-		float Best = TNumericLimits<float>::Max();
-		auto Consider = [&Ramp, &Best, &IglinXY](const TArray<FVector>& Line)
-		{
-			if (Line.Num() == 0)
-			{
-				return;
-			}
-			const FVector& Buried = Line.Last();
-			const float Dist = FVector2D::DistSquared(IglinXY, FVector2D(Buried.X, Buried.Y));
-			if (Dist < Best)
-			{
-				Best = Dist;
-				Ramp = &Line;
-			}
-		};
-		Consider(Bridge.RampFrom);
-		Consider(Bridge.RampTo);
-		if (!Ramp || Ramp->Num() == 0)
-		{
-			return false;
-		}
-
-		const int32 Index = Ramp->Num() == 1
-			? 0
-			: FMath::Clamp(Ramp->Num() / 2, 1, Ramp->Num() - 1);
-		const FVector& Point = (*Ramp)[Index];
-		OutPoint = FVector2D(Point.X, Point.Y);
-		return true;
+		return Encounter.Definition.Name
+			&& FCString::Strcmp(Encounter.Definition.Name, EncounterName) == 0;
 	}
 
-	bool OnIglinRamp(const ASolidGameMode& Mode, const FVector& Location)
+	bool OnIglinRamp(const ASolidGameMode& Mode, const FVector2D& Point)
 	{
 		for (const TObjectPtr<ASolidBridge>& Actor : Mode.GetBridges())
 		{
@@ -83,7 +57,7 @@ namespace
 			{
 				continue;
 			}
-			if (SolidGroundMove::OnRamp(Bridge->GetBridge(), Location.X, Location.Y))
+			if (SolidGroundMove::OnRamp(Bridge->GetBridge(), Point.X, Point.Y))
 			{
 				return true;
 			}
@@ -91,18 +65,182 @@ namespace
 		return false;
 	}
 
-	ASolidHUD* HudFor(ASolidCharacter& Captain)
+	bool SegmentOnIglinRamp(const ASolidGameMode& Mode, const FVector2D& From, const FVector2D& To)
 	{
-		APlayerController* Controller = Cast<APlayerController>(Captain.GetController());
-		return Controller ? Cast<ASolidHUD>(Controller->GetHUD()) : nullptr;
+		const float Length = FVector2D::Distance(From, To);
+		const int32 Steps = FMath::Max(1, FMath::CeilToInt(Length / SegmentStepCm));
+		for (int32 Step = 0; Step <= Steps; ++Step)
+		{
+			const float T = static_cast<float>(Step) / static_cast<float>(Steps);
+			if (OnIglinRamp(Mode, FMath::Lerp(From, To, T)))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/** True when a placed Iglin Bridge member can see this ground point. */
+	bool IglinBridgeDetects(const ASolidGameMode& Mode, const FVector2D& Here)
+	{
+		for (const FSolidEncounter& Encounter : Mode.GetEncounters())
+		{
+			if (!IsIglinBridge(Encounter))
+			{
+				continue;
+			}
+			for (const FSolidMonsterGroup& Group : Encounter.Groups)
+			{
+				for (int32 Index = 0; Index < Group.Num(); ++Index)
+				{
+					const FSolidMonster* Monster = Group.Get(Index);
+					if (Monster && Monster->Detects(Here))
+					{
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	/** The placed member closest to Iglin. That is the one the walk from town meets. */
+	const FSolidMonster* ClosestIglinBridgeMonster(const ASolidGameMode& Mode, const FVector2D& IglinXY)
+	{
+		const FSolidMonster* Found = nullptr;
+		float Best = TNumericLimits<float>::Max();
+		for (const FSolidEncounter& Encounter : Mode.GetEncounters())
+		{
+			if (!IsIglinBridge(Encounter))
+			{
+				continue;
+			}
+			for (const FSolidMonsterGroup& Group : Encounter.Groups)
+			{
+				for (int32 Index = 0; Index < Group.Num(); ++Index)
+				{
+					const FSolidMonster* Monster = Group.Get(Index);
+					if (!Monster || Monster->PointIndex == INDEX_NONE)
+					{
+						continue;
+					}
+					const float Dist = FVector2D::DistSquared(Monster->XY, IglinXY);
+					if (Dist < Best)
+					{
+						Best = Dist;
+						Found = Monster;
+					}
+				}
+			}
+		}
+		return Found;
+	}
+
+	/**
+	 * A point inside that monster's detection, toward Iglin, and off the ramps.
+	 * Standing there starts the fight. Standing on a ramp would show the message instead.
+	 */
+	bool EncounterApproach(
+		const ASolidGameMode& Mode,
+		const FSolidMonster& Monster,
+		const FVector2D& IglinXY,
+		FVector2D& OutPoint)
+	{
+		const FVector2D TowardIglin = IglinXY - Monster.XY;
+		const float Length = TowardIglin.Size();
+		if (Length < 1.f || Monster.DetectionRange <= 1.f)
+		{
+			return false;
+		}
+
+		const FVector2D Direction = TowardIglin / Length;
+		const FVector2D Perp(-Direction.Y, Direction.X);
+		const float Limit = Monster.DetectionRange - 1.f;
+		auto Consider = [&Mode, &Monster, Limit, &OutPoint](const FVector2D& Point)
+		{
+			if (FVector2D::Distance(Point, Monster.XY) > Limit || OnIglinRamp(Mode, Point))
+			{
+				return false;
+			}
+			OutPoint = Point;
+			return true;
+		};
+
+		const float Preferred = FMath::Min(Monster.DetectionRange * 0.5f, Limit);
+		if (Consider(Monster.XY + Direction * Preferred))
+		{
+			return true;
+		}
+		for (float Distance = Preferred; Distance <= Limit; Distance += SegmentStepCm)
+		{
+			if (Consider(Monster.XY + Direction * Distance))
+			{
+				return true;
+			}
+		}
+		const float Sides[] = {1.f, -1.f};
+		for (float Distance = Preferred; Distance <= Limit; Distance += SegmentStepCm)
+		{
+			for (const float Side : Sides)
+			{
+				for (float Across = SegmentStepCm; Across <= Limit; Across += SegmentStepCm)
+				{
+					if (Consider(Monster.XY + Direction * Distance + Perp * Side * Across))
+					{
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	/** Slide the approach sideways until the straight line from the road stays off the ramps. */
+	bool ClearOfRamp(
+		const ASolidGameMode& Mode,
+		const FSolidMonster& Monster,
+		const FVector2D& From,
+		const FVector2D& Approach,
+		FVector2D& OutPoint)
+	{
+		if (!SegmentOnIglinRamp(Mode, From, Approach))
+		{
+			OutPoint = Approach;
+			return true;
+		}
+
+		const FVector2D Delta = Approach - From;
+		const float DeltaLength = Delta.Size();
+		const FVector2D Perp = DeltaLength > 1.f
+			? FVector2D(-Delta.Y, Delta.X) / DeltaLength
+			: FVector2D(1.f, 0.f);
+		const float Limit = Monster.DetectionRange - 1.f;
+		const float Sides[] = {1.f, -1.f};
+		for (const float Side : Sides)
+		{
+			for (float Across = 100.f; Across <= 2000.f; Across += 100.f)
+			{
+				const FVector2D Candidate = Approach + Perp * Side * Across;
+				if (FVector2D::Distance(Candidate, Monster.XY) > Limit || OnIglinRamp(Mode, Candidate))
+				{
+					continue;
+				}
+				if (SegmentOnIglinRamp(Mode, From, Candidate))
+				{
+					continue;
+				}
+				OutPoint = Candidate;
+				return true;
+			}
+		}
+		return false;
 	}
 }
 
 void FSolidAutoPlaythrough::CollectSteps(TArray<EStep>& OutSteps)
 {
 	OutSteps.Reset();
-	OutSteps.Add(EStep::WalkToIglinRamp);
-	OutSteps.Add(EStep::CloseMonsterMessage);
+	OutSteps.Add(EStep::WalkToMonsterEncounter);
 	OutSteps.Add(EStep::WakeInCave);
 }
 
@@ -110,10 +248,8 @@ const TCHAR* FSolidAutoPlaythrough::NameOf(const EStep Step)
 {
 	switch (Step)
 	{
-	case EStep::WalkToIglinRamp:
-		return TEXT("Walk to the Iglin ramp");
-	case EStep::CloseMonsterMessage:
-		return TEXT("Close the monster message");
+	case EStep::WalkToMonsterEncounter:
+		return TEXT("Walk to the monster encounter");
 	case EStep::WakeInCave:
 		return TEXT("Wake in the cave");
 	default:
@@ -149,11 +285,8 @@ void FSolidAutoPlaythrough::Tick(const float DeltaSeconds, ASolidGameMode& Mode,
 
 	switch (CurrentStep())
 	{
-	case EStep::WalkToIglinRamp:
+	case EStep::WalkToMonsterEncounter:
 		TickWalk(DeltaSeconds, Mode, Captain);
-		break;
-	case EStep::CloseMonsterMessage:
-		TickMessage(Captain);
 		break;
 	case EStep::WakeInCave:
 		TickWake(Mode);
@@ -234,22 +367,9 @@ bool FSolidAutoPlaythrough::BuildWalk(const ASolidGameMode& Mode, const FVector&
 		return false;
 	}
 
-	FVector2D RampPoint = FVector2D::ZeroVector;
-	bool bRamp = false;
-	for (const TObjectPtr<ASolidBridge>& Actor : Mode.GetBridges())
-	{
-		const ASolidBridge* Bridge = Actor.Get();
-		if (!Bridge || !Bridge->HasBridge() || !Bridge->GetBridge().bIglinRelion)
-		{
-			continue;
-		}
-		if (IglinRampPoint(Bridge->GetBridge(), IglinXY, RampPoint))
-		{
-			bRamp = true;
-			break;
-		}
-	}
-	if (!bRamp)
+	const FSolidMonster* Monster = ClosestIglinBridgeMonster(Mode, IglinXY);
+	FVector2D Approach = FVector2D::ZeroVector;
+	if (!Monster || !EncounterApproach(Mode, *Monster, IglinXY, Approach))
 	{
 		return false;
 	}
@@ -276,38 +396,62 @@ bool FSolidAutoPlaythrough::BuildWalk(const ASolidGameMode& Mode, const FVector&
 		return false;
 	}
 
-	int32 Closest = 0;
-	float BestRamp = TNumericLimits<float>::Max();
+	int32 LastSafe = INDEX_NONE;
 	for (int32 Index = 0; Index < Centers.Num(); ++Index)
 	{
-		const float Dist = FVector2D::DistSquared(Centers[Index], RampPoint);
-		if (Dist < BestRamp)
+		if (OnIglinRamp(Mode, Centers[Index]))
 		{
-			BestRamp = Dist;
-			Closest = Index;
+			break;
 		}
+		if (LastSafe != INDEX_NONE && SegmentOnIglinRamp(Mode, Centers[LastSafe], Centers[Index]))
+		{
+			break;
+		}
+		LastSafe = Index;
 	}
 
 	const FVector2D Here(CaptainLocation.X, CaptainLocation.Y);
+	int32 Closest = 0;
 	int32 Start = 0;
-	float Nearest = TNumericLimits<float>::Max();
-	for (int32 Index = 0; Index <= Closest; ++Index)
+	if (LastSafe != INDEX_NONE)
 	{
-		const float Dist = FVector2D::DistSquared(Centers[Index], Here);
-		if (Dist < Nearest)
+		float BestApproach = TNumericLimits<float>::Max();
+		for (int32 Index = 0; Index <= LastSafe; ++Index)
 		{
-			Nearest = Dist;
-			Start = Index;
+			const float Dist = FVector2D::DistSquared(Centers[Index], Approach);
+			if (Dist < BestApproach)
+			{
+				BestApproach = Dist;
+				Closest = Index;
+			}
+		}
+
+		float Nearest = TNumericLimits<float>::Max();
+		for (int32 Index = 0; Index <= Closest; ++Index)
+		{
+			const float Dist = FVector2D::DistSquared(Centers[Index], Here);
+			if (Dist < Nearest)
+			{
+				Nearest = Dist;
+				Start = Index;
+			}
 		}
 	}
 
 	Points.Reset();
-	Points.Reserve(Closest - Start + 2);
-	for (int32 Index = Start; Index <= Closest; ++Index)
+	if (LastSafe != INDEX_NONE)
 	{
-		Points.Add(Centers[Index]);
+		Points.Reserve(Closest - Start + 2);
+		for (int32 Index = Start; Index <= Closest; ++Index)
+		{
+			Points.Add(Centers[Index]);
+		}
 	}
-	Points.Add(RampPoint);
+
+	const FVector2D From = Points.Num() > 0 ? Points.Last() : Here;
+	FVector2D Final = Approach;
+	ClearOfRamp(Mode, *Monster, From, Approach, Final);
+	Points.Add(Final);
 	PointIndex = 0;
 	bWalkReady = true;
 	bHasBestDistance = false;
@@ -321,7 +465,8 @@ void FSolidAutoPlaythrough::TickWalk(
 	ASolidCharacter& Captain)
 {
 	const FVector Location = Captain.GetActorLocation();
-	if (OnIglinRamp(Mode, Location))
+	const FVector2D Here(Location.X, Location.Y);
+	if (IglinBridgeDetects(Mode, Here))
 	{
 		Advance();
 		return;
@@ -336,7 +481,6 @@ void FSolidAutoPlaythrough::TickWalk(
 		return;
 	}
 
-	const FVector2D Here(Location.X, Location.Y);
 	const FVector2D Target = Points[PointIndex];
 	const bool bLast = PointIndex + 1 >= Points.Num();
 	if (!bLast && SolidClickMove::HasArrived(Here, Target, ArriveCm))
@@ -355,29 +499,22 @@ void FSolidAutoPlaythrough::TickWalk(
 
 	if (Captain.IsTrueSight())
 	{
-		// The last point sits on the ramp. Keep steering until the ramp check ends the step.
+		// The last point sits inside detection. Keep steering until a raptor sees him.
 		const float SteerCm = bLast ? 1.f : ArriveCm;
 		const FVector2D Direction = SolidClickMove::PlanarDirection(Here, Target, SteerCm);
-		if (!Direction.IsNearlyZero())
+		if (Direction.IsNearlyZero() || OnIglinRamp(Mode, Here + Direction * RampProbeCm))
 		{
-			Captain.AddMovementInput(FVector(Direction.X, Direction.Y, 0.f), 1.f);
+			return;
 		}
+		Captain.AddMovementInput(FVector(Direction.X, Direction.Y, 0.f), 1.f);
 		return;
 	}
 
-	Captain.SetClickMoveDestination(FVector(Target.X, Target.Y, Location.Z));
-}
-
-void FSolidAutoPlaythrough::TickMessage(ASolidCharacter& Captain)
-{
-	ASolidHUD* HUD = HudFor(Captain);
-	if (!HUD || !HUD->IsMessageVisible() || HUD->GetMessageId() != SolidMessages::IdKilledByMonsters)
+	if (SegmentOnIglinRamp(Mode, Here, Target))
 	{
 		return;
 	}
-
-	Advance();
-	HUD->CloseMessage();
+	Captain.SetClickMoveDestination(FVector(Target.X, Target.Y, Location.Z));
 }
 
 void FSolidAutoPlaythrough::TickWake(const ASolidGameMode& Mode)

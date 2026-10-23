@@ -12,20 +12,22 @@ The game already performs the work these symbols wrap or inspect. Removing them 
 
 - Each symbol below is gone from `Source/`, including tests. A whole-word search for the name finds nothing under `Source/`. `Holds` stays in comments that are not this function.
 - `override` methods stay. `UFUNCTION` methods the engine can call stay. Types that `Config/` names for the engine to instantiate stay. `GetTypeHash` for a hex edge stays. `ASolidCharacter::StartSquadFormationDrill` stays.
-- These product calls stay, and still behave as they do now: `FSolidBattle::Advance`, `FSolidBattle::SquadWeapon`, `FSolidBattle::MonsterWeapon`, `FSolidBattlePlan::Attacks`, `FSolidBattlePlan::Retreats`, `ASolidHUD::ToggleDebugPanel`, `ASolidDungeonExterior::GroundDropCm`, `ASolidTowerExterior::GetDoorMesh`, `SolidDungeonLevel::EnterLabel`, `SolidDungeonLevel::LeaveLabel`, `USolidWorldChart::PaintRun`, `USolidWorldChart::PaintRectangle`, `USolidWorldChart::MarkAtCell`, `USolidWorldMap::LoadFromString`, `USolidWorldMap::LoadFromChart`, `FSolidTower::OutsideDoorXY`, and `SolidStronghold::BiomeFor`.
+- These product calls stay, and still behave as they do now: `FSolidBattle::Advance`, `FSolidBattle::AdvanceToNextEvent`, `FSolidBattle::SquadWeapon`, `FSolidBattle::MonsterWeapon`, `FSolidBattlePlan::Attacks`, `FSolidBattlePlan::Retreats`, `ASolidHUD::ToggleDebugPanel`, `ASolidDungeonExterior::GroundDropCm`, `ASolidTowerExterior::GetDoorMesh`, `SolidDungeonLevel::EnterLabel`, `SolidDungeonLevel::LeaveLabel`, `USolidWorldChart::PaintRun`, `USolidWorldChart::PaintRectangle`, `USolidWorldChart::MarkAtCell`, `USolidWorldMap::LoadFromString`, `USolidWorldMap::LoadFromChart`, `FSolidTower::OutsideDoorXY`, and `SolidStronghold::BiomeFor`. `FSolidBattle::TimeUntilNextEvent` stays. It is private, and `AdvanceToNextEvent` is its caller.
 - Shelves, visit views, finger bones on a hand, the chart cells, and the fight log stay. Only the unused readers, counters, and wrappers go.
 - Existing tests keep passing. The test edit is its own commit, and it passes on the code before the deletion. The deletion commit does not edit those tests. The deletion commit says that the tests changed because these symbols went away.
 - The deletion commit bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`.
 
 ## Implementation notes
 
-The list is the result of applying the `AGENTS.md` definition on `main` at the commit this story was added. A use is a whole-word name in product C++ outside `Tests/`, in `Config/` for a type the engine loads, or in a `.Build.cs` / `.Target.cs` file. A name in `Source/SolidCore1Editor/` is a use as well. That module is the World chart mode, and it calls the chart. A test file belongs to a symbol when the longest product header stem that prefixes the test file name is the header that declares the symbol, compared without regard to case. References in that test file do not keep the symbol. `override` methods were left in place.
+The list is the result of applying the `AGENTS.md` definition on `main` at the commit this story was added. A use is a whole-word name in product C++ outside `Tests/`, in `Config/` for a type the engine loads, or in a `.Build.cs` / `.Target.cs` file. A name in `Source/SolidCore1Editor/` is a use as well. That module is the World chart mode, and it calls the chart. A test file belongs to a symbol when the longest product header stem that prefixes the test file name is the header that declares the symbol, compared without regard to case. A reference that only checks that symbol does not keep it. A reference the test needs in order to reach other behavior of that type does keep it. `override` methods were left in place.
 
 `SolidStrongholdGrid::GetTypeHash` stays. `CollectSegments` puts `FEdgeKey` in a `TSet`, and that set calls `GetTypeHash` through argument-dependent lookup. No other C++ writes the name.
 
 `ASolidCharacter::StartSquadFormationDrill` has no caller. Test Drill is off the menu. [Drill battle plan](drill-battle-plan.md) is Ready and says this function starts the square. It stays.
 
-Nothing in the list below is called from product C++ outside its own declaration, its own definition, or a test of its type. Two names are used only by other symbols in this list: `FSolidWorldChartRead` (only `ReadCell`) and `SolidForage::FPileHit` (only `NearestHitIndex`). `FSolidBattle::TimeUntilNextEvent` is only called from `AdvanceToNextEvent`. They go with those functions.
+Nothing in the list below is called from product C++ outside its own declaration, its own definition, or a test of its type. Two names are used only by other symbols in this list: `FSolidWorldChartRead` (only `ReadCell`) and `SolidForage::FPileHit` (only `NearestHitIndex`). They go with those functions.
+
+`FSolidBattle::AdvanceToNextEvent` stays. `SolidCore1.Battle.Simulation`, the battle panel, and the fielded check call it to reach the log, a blow, armour, a kill, a retreat, and which companions are in the fight. Those tests already name the moment they expect: the opening prepare at time 0, then each weapon `Speed`. A kill loop steps until a log line or until defence reaches 0, and the captain's `Speed` and a monster's `Speed` can differ, so the test cannot pass one weapon `Speed` to `Advance` and hit the same moment. `TimeUntilNextEvent` is the private wait that `AdvanceToNextEvent` uses. The game mode calls `Advance`.
 
 The World chart mode keeps `PaintRun`, `PaintRectangle`, `PlaceTown`, `PlaceStronghold`, `PlaceSite`, `PlaceLairMouth`, `PlaceCustom`, `DeleteMark`, `AddRoad`, `RouteForRoad`, `Undo`, `Disagreement`, `MarkAtCell`, `BuildChartView`, `RebuildChartView`, and `ClearChartView`. `SolidStronghold::TypeCount` stays. The mode clamps a type index with it.
 
@@ -48,11 +50,9 @@ No product caller:
 - `SolidDungeonLevel::MenuLabel`. The cave tip uses `EnterLabel` and `LeaveLabel`.
 - `FSolidTower::OutsideDoorYawDeg`. It returns the grass yaw unchanged. `OutsideDoorXY` stays.
 - `FSolidMonster::MeshFootOffsetCm`. A raptor places its mesh from the standing span. `UniformScale` and `StandingSpan` stay.
-- `FSolidBattlePlan::Holds`. The fight reads `Attacks` and `Retreats`. This is the aggression value `ESolidAggression::Hold`, including Parade. It is not the Hold formation in [Hold battle plan](hold-battle-plan.md).
-- `FSolidBattle::GetSquadPower`. A blow reads `SquadWeapon`.
-- `FSolidBattle::GetGroupPower`. A blow reads `MonsterWeapon`.
-- `FSolidBattle::AdvanceToNextEvent`. The fight calls `Advance` from the game mode.
-- `FSolidBattle::TimeUntilNextEvent`.
+- `FSolidBattlePlan::Holds`. The plan tests assert `Holds` itself. Parade stores `AttackOrRetreat`. The fight reads `Attacks` and `Retreats`. This is the aggression value `ESolidAggression::Hold`. It is not the Hold formation in [Hold battle plan](hold-battle-plan.md).
+- `FSolidBattle::GetSquadPower`. The encounter, weapons, and fielded tests assert this total. Those tests already read `SquadWeapon`. A blow reads `SquadWeapon`.
+- `FSolidBattle::GetGroupPower`. The encounter and weapons tests assert this total. Those tests already read `MonsterWeapon`. A blow reads `MonsterWeapon`.
 
 Counters only the matching tests call, or that nothing calls:
 
@@ -76,8 +76,7 @@ Test commit, before the deletion:
 - `SolidCore1.Body.HandFingers` keeps the finger names in the test. It stops reading `LeftFingerBones` and `RightFingerBones`.
 - `SolidCore1.Monster.*` drops the `MeshFootOffsetCm` check. `UniformScale` and `StandingSpan` checks stay.
 - `SolidCore1.BattlePlan.*` checks Parade and a hold aggression through `AttackOrRetreat`, `Attacks`, and `Retreats`. The `Holds` checks go away.
-- `SolidCore1.Battle.*` power checks move onto `SquadWeapon` and `MonsterWeapon`.
-- `SolidCore1.Battle.*` and `SolidCore1.Battle.Simulation` step with `Advance`. Where the test already names the wait, that wait is the argument: `0` for the opening prepare, and the weapon `Speed` the test already reads for a later blow. A loop that waits for a log line or for defence to change calls `Advance` with that weapon `Speed`. The loop guard stays. The test commit does not call `AdvanceToNextEvent` or `TimeUntilNextEvent`.
+- `SolidCore1.Battle.*` power checks move onto `SquadWeapon` and `MonsterWeapon`. The battle tests keep calling `AdvanceToNextEvent`.
 - That commit does not delete the product symbols. It passes against the current build.
 
 Deletion commit:

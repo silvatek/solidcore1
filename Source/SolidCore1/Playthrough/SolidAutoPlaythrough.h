@@ -35,6 +35,7 @@ public:
 		CloseMessage,
 		CraftItem,
 		ExitStronghold,
+		WakeInStronghold,
 		Custom,
 	};
 
@@ -48,7 +49,7 @@ public:
 
 	/**
 	 * One row of the opening script.
-	 * WalkTo, CloseMessage, CraftItem, ExitStronghold, and Custom build one.
+	 * WalkTo, CloseMessage, CraftItem, ExitStronghold, WakeInStronghold, and Custom build one.
 	 * A later helper fills the one field that row also reads.
 	 */
 	struct FStep
@@ -112,6 +113,14 @@ public:
 		{
 			FStep Step;
 			Step.Type = EStepType::ExitStronghold;
+			Step.Name = InName;
+			return Step;
+		}
+
+		static constexpr FStep WakeInStronghold(const TCHAR* InName)
+		{
+			FStep Step;
+			Step.Type = EStepType::WakeInStronghold;
 			Step.Name = InName;
 			return Step;
 		}
@@ -203,8 +212,8 @@ private:
 	bool TickWalk(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
 	bool TickHexWalk(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickWalkToIglin(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
-	void TickCustom(const FStep& Step, const ASolidGameMode& Mode);
-	void TickWake(const ASolidGameMode& Mode);
+	void TickCustom(const FStep& Step);
+	void TickWakeInStronghold(const ASolidGameMode& Mode);
 	bool TickCraftItem(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickPutTorch(ASolidGameMode& Mode, ASolidCharacter& Captain, bool bClosePage);
 	bool TickExit(ASolidGameMode& Mode, ASolidCharacter& Captain);

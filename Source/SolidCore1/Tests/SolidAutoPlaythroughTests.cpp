@@ -32,7 +32,7 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 	};
 	const FSolidAutoPlaythrough::EStepType Types[] = {
 		FSolidAutoPlaythrough::EStepType::WalkTo,
-		FSolidAutoPlaythrough::EStepType::Custom,
+		FSolidAutoPlaythrough::EStepType::WakeInStronghold,
 		FSolidAutoPlaythrough::EStepType::WalkTo,
 		FSolidAutoPlaythrough::EStepType::CraftItem,
 		FSolidAutoPlaythrough::EStepType::CraftItem,

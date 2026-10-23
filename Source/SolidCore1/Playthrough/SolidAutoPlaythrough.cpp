@@ -27,9 +27,6 @@
 
 namespace
 {
-	/** The custom switch matches this. Wake is the row that waits for the cave. */
-	constexpr int32 WakeInCave = 1;
-
 	const SolidStrongholdGrid::FCell StandCells[] = {
 		{ -1, 0 }, { 0, 0 }, { 1, 0 }, { 1, 1 },
 	};
@@ -44,7 +41,7 @@ using EWalk = FSolidAutoPlaythrough::EWalk;
 
 const FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = {
 	FStep::WalkTo(TEXT("Walk to the monster encounter"), EWalk::MonsterEncounter),
-	FStep::Custom(TEXT("Wake in the cave"), WakeInCave),
+	FStep::WakeInStronghold(TEXT("Wake in the cave")),
 	FStep::WalkTo(TEXT("Walk to the stand"), StandCells, UE_ARRAY_COUNT(StandCells)),
 	FStep::CraftItem(TEXT("Craft the torch"), SolidItemType::IdTorch),
 	FStep::CraftItem(TEXT("Put the torch in the main hand"), SolidItemType::IdTorch).EquipMainHand().ClosePage(),
@@ -498,8 +495,11 @@ bool FSolidAutoPlaythrough::TickCurrent(
 		return TickCraftItem(Mode, Captain, Step);
 	case EStepType::ExitStronghold:
 		return TickExit(Mode, Captain);
+	case EStepType::WakeInStronghold:
+		TickWakeInStronghold(Mode);
+		return false;
 	case EStepType::Custom:
-		TickCustom(Step, Mode);
+		TickCustom(Step);
 		return false;
 	default:
 		Stop();
@@ -926,20 +926,14 @@ bool FSolidAutoPlaythrough::TickHexWalk(
 	return false;
 }
 
-void FSolidAutoPlaythrough::TickCustom(const FStep& Step, const ASolidGameMode& Mode)
+void FSolidAutoPlaythrough::TickCustom(const FStep& Step)
 {
-	switch (Step.CustomId)
-	{
-	case WakeInCave:
-		TickWake(Mode);
-		break;
-	default:
-		Stop();
-		break;
-	}
+	// A later custom row switches on Step.CustomId.
+	(void)Step;
+	Stop();
 }
 
-void FSolidAutoPlaythrough::TickWake(const ASolidGameMode& Mode)
+void FSolidAutoPlaythrough::TickWakeInStronghold(const ASolidGameMode& Mode)
 {
 	if (Mode.HasPlacedCaptainInStronghold())
 	{

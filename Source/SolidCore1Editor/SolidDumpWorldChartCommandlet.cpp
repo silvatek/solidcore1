@@ -6,6 +6,7 @@
 #include "Serialization/JsonSerializer.h"
 #include "Serialization/JsonWriter.h"
 #include "Strongholds/SolidStronghold.h"
+#include "Terrain/SolidBiome.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidWorldChart.h"
 #include "Terrain/SolidWorldMap.h"
@@ -27,25 +28,6 @@ namespace
 		case ESolidWorldChartMarkKind::Town:
 		default:
 			return TEXT("Town");
-		}
-	}
-
-	/** Same letters as Content/WorldMap.txt. Swamp and road are not marker letters there. */
-	TCHAR BiomeLetter(const ESolidBiome Biome)
-	{
-		switch (Biome)
-		{
-		case ESolidBiome::Forest: return USolidWorldMap::ForestMarker;
-		case ESolidBiome::Mountain: return TEXT('M');
-		case ESolidBiome::Town: return USolidWorldMap::TownMarker;
-		case ESolidBiome::Desert: return USolidWorldMap::DesertMarker;
-		case ESolidBiome::Sea: return USolidWorldMap::SeaMarker;
-		case ESolidBiome::River: return USolidWorldMap::RiverMarker;
-		case ESolidBiome::Swamp: return TEXT('S');
-		case ESolidBiome::Road: return TEXT('R');
-		case ESolidBiome::Grassland:
-		default:
-			return USolidWorldMap::GrassMarker;
 		}
 	}
 
@@ -184,7 +166,7 @@ int32 USolidDumpWorldChartCommandlet::Main(const FString& Params)
 			Line.Reserve(USolidWorldMap::MapWidth);
 			for (int32 Column = 0; Column < USolidWorldMap::MapWidth; ++Column)
 			{
-				Line.AppendChar(BiomeLetter(Chart->Cells[Row * USolidWorldMap::MapWidth + Column]));
+				Line.AppendChar(SolidBiome::Of(Chart->Cells[Row * USolidWorldMap::MapWidth + Column]).Marker());
 			}
 			Rows.Add(MakeShared<FJsonValueString>(Line));
 		}

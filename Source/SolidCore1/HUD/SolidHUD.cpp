@@ -27,7 +27,7 @@
 #include "Company/SolidSquadDrill.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
-#include "Terrain/SolidTerrainTypes.h"
+#include "Terrain/SolidBiome.h"
 #include "GameFramework/GameModeBase.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
@@ -1617,7 +1617,7 @@ void ASolidHUD::DrawHUD()
 			const FSolidTerrainPoint Point = Streamer->GetTerrainPointAt(Loc);
 			Lines.Add(FString::Printf(
 				TEXT("Biome %s  threat=%.2f  fog=%.2f  mist=%.2f"),
-				SolidTerrainTypes::BiomeToString(Point.Biome),
+				SolidBiome::Of(Point.Biome).Name(),
 				Point.Threat, Point.Fog, Streamer->GetRenderedFogAmount()));
 			if (const USolidTerrainMap* Map = Streamer->GetTerrainMap())
 			{

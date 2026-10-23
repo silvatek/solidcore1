@@ -39,7 +39,7 @@ struct FSolidTerrainPoint
 	UPROPERTY(BlueprintReadOnly, Category = "Terrain")
 	ESolidBiome Biome = ESolidBiome::Grassland;
 
-	/** Relative danger in [0, 1]. */
+	/** Constant. Play ignores it. */
 	UPROPERTY(BlueprintReadOnly, Category = "Terrain")
 	float Threat = 0.f;
 
@@ -50,70 +50,10 @@ struct FSolidTerrainPoint
 
 namespace SolidTerrainTypes
 {
-	FORCEINLINE const TCHAR* BiomeToString(ESolidBiome Biome)
-	{
-		switch (Biome)
-		{
-		case ESolidBiome::Grassland: return TEXT("Grassland");
-		case ESolidBiome::Forest: return TEXT("Forest");
-		case ESolidBiome::Mountain: return TEXT("Mountain");
-		case ESolidBiome::Town: return TEXT("Town");
-		case ESolidBiome::Desert: return TEXT("Desert");
-		case ESolidBiome::Swamp: return TEXT("Swamp");
-		case ESolidBiome::Sea: return TEXT("Sea");
-		case ESolidBiome::River: return TEXT("River");
-		case ESolidBiome::Road: return TEXT("Road");
-		default: return TEXT("Unknown");
-		}
-	}
-
-	/**
-	 * Vertical shelf added to TerrainPoint.Height after biome assignment (cm).
-	 * Sea/River stay at the noise surface; Mountain rises 10m; other biomes +1m.
-	 * Road shares that land shelf, so a strip does not cut a trench.
-	 */
-	FORCEINLINE float BiomeHeightOffsetCm(ESolidBiome Biome)
-	{
-		switch (Biome)
-		{
-		case ESolidBiome::Sea:
-		case ESolidBiome::River:
-			return 0.f;
-		case ESolidBiome::Mountain:
-			return 1000.f;
-		case ESolidBiome::Road:
-			return 100.f;
-		default:
-			return 100.f;
-		}
-	}
-
 	/**
 	 * Texture for one terrain triangle. Preferred is the quad's current biome.
 	 * A corner on a higher shelf replaces it, so the cliff between a mountain and a
 	 * river uses the mountain. Equal shelves stay on Preferred.
 	 */
-	FORCEINLINE ESolidBiome BorderBiome(ESolidBiome Preferred, ESolidBiome A, ESolidBiome B, ESolidBiome C)
-	{
-		const ESolidBiome Corners[3] = { A, B, C };
-		float BestOffset = BiomeHeightOffsetCm(A);
-		for (int32 Index = 1; Index < 3; ++Index)
-		{
-			BestOffset = FMath::Max(BestOffset, BiomeHeightOffsetCm(Corners[Index]));
-		}
-
-		if (BiomeHeightOffsetCm(Preferred) == BestOffset)
-		{
-			return Preferred;
-		}
-
-		for (const ESolidBiome Corner : Corners)
-		{
-			if (BiomeHeightOffsetCm(Corner) == BestOffset)
-			{
-				return Corner;
-			}
-		}
-		return A;
-	}
+	ESolidBiome BorderBiome(ESolidBiome Preferred, ESolidBiome A, ESolidBiome B, ESolidBiome C);
 }

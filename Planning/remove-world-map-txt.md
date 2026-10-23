@@ -22,7 +22,7 @@ Stage 1 is the biome's colour. Stage 2 deletes `Content/WorldMap.txt`, the shipp
 
 ### Stage 1 — a biome names its colour
 
-`FSolidBiome` answers for an `ESolidBiome` token. `Color()` is the tint play uses, and the river uses the sea blue. `GetBiomeColor` and `DefaultColorForBiome` ask the biome. A colour line in a text map is ignored. `Content/WorldMap.txt` stays until stage 2. `LoadFromString` stays.
+`FSolidBiome` answers for an `ESolidBiome` token. `Color()` is the tint play uses, and the river uses the sea blue. `GetBiomeColor` and `DefaultColorForBiome` ask the biome. A colour line in a text map is ignored. `Content/WorldMap.txt` stays until stage 2. `LoadFromString` stays. The biome also names that ground, its shelf, and its chart letter, and it says whether the ground is open or paintable. Threat stays on the terrain point, a constant play ignores. Fog follows where the captain has been.
 
 - The world-map section of `AGENTS.md` is the review rule for the text file. Replace it with the chart at `/Game/World/WorldChart`, the 128×64 cell grid, and the mark kinds. A change to that asset is what a later agent reviews.
 - `README.md` still documents the marker characters and the `!` lines, and the `SolidCore1.WorldMap.*` filter blurb follows them. Point those at the chart and the mode, and at the tests that remain.

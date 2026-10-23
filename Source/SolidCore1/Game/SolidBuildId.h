@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0582")
+#define SOLID_BUILD_ID TEXT("SC1-0583")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A biome names its colour.")
+#define SOLID_BUILD_NOTE TEXT("A biome answers for its ground. Threat stays constant.")
 #endif

@@ -1,5 +1,6 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
+#include "SolidBiome.h"
 #include "SolidTerrainMap.h"
 #include "SolidTerrainNoise.h"
 #include "SolidTerrainTestHelpers.h"
@@ -87,7 +88,7 @@ bool FSolidMapBiomeHeightOffsetTest::RunTest(const FString& Parameters)
 			Point.X, Point.Y, /*Seed=*/1337, /*FrequencyScale=*/0.00012f,
 			/*Amplitude=*/3000.f, /*BaseHeight=*/0.f);
 		const float Expected =
-			RawHeight + SolidTerrainTypes::BiomeHeightOffsetCm(Point.Biome);
+			RawHeight + SolidBiome::Of(Point.Biome).HeightOffsetCm();
 		TestTrue(TEXT("height includes biome shelf"),
 			FMath::IsNearlyEqual(Point.Height, Expected, 0.01f));
 
@@ -114,6 +115,26 @@ bool FSolidMapBiomeHeightOffsetTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("map has water cells"), bSawSeaOrRiver);
 	TestTrue(TEXT("map has mountain cells"), bSawMountain);
 	TestTrue(TEXT("map has +1m shelf biomes"), bSawShelfBiome);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidMapThreatConstantTest,
+	"SolidCore1.Map.ThreatConstant",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidMapThreatConstantTest::RunTest(const FString& Parameters)
+{
+	USolidTerrainMap* Map = SolidTerrainTestHelpers::MakeSmallMap();
+	if (!TestNotNull(TEXT("map"), Map))
+	{
+		return false;
+	}
+
+	for (const FSolidTerrainPoint& Point : Map->GetPoints())
+	{
+		TestTrue(TEXT("threat stays zero"), FMath::IsNearlyEqual(Point.Threat, 0.f));
+	}
 	return true;
 }
 

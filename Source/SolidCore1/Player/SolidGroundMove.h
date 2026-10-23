@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SolidTerrainTypes.h"
+#include "Terrain/SolidBiome.h"
 
 class ACharacter;
 class USolidWorldMap;
@@ -21,9 +21,7 @@ namespace SolidGroundMove
 {
 	inline bool IsImpassable(const ESolidBiome Biome)
 	{
-		return Biome == ESolidBiome::Sea
-			|| Biome == ESolidBiome::Mountain
-			|| Biome == ESolidBiome::River;
+		return SolidBiome::Of(Biome).Impassable();
 	}
 
 	/** SampleBiome already limits a river to its channel. */

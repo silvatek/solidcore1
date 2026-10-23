@@ -1,4 +1,5 @@
 #include "SolidTerrainMap.h"
+#include "SolidBiome.h"
 #include "SolidTerrainFog.h"
 #include "SolidTerrainNoise.h"
 #include "SolidWorldMap.h"
@@ -72,9 +73,8 @@ void USolidTerrainMap::Build(
 			{
 				Point.Biome = ChooseBiome(Point.X, Point.Y, HeightNorm, Seed);
 			}
-			FillThreatAndFog(Point, HeightNorm, Seed);
-			// Shelf after threat/fog so HeightNorm stays noise-based.
-			Point.Height += SolidTerrainTypes::BiomeHeightOffsetCm(Point.Biome);
+			FillThreatAndFog(Point);
+			Point.Height += SolidBiome::Of(Point.Biome).HeightOffsetCm();
 		}
 	}
 
@@ -214,54 +214,9 @@ ESolidBiome USolidTerrainMap::ChooseBiome(
 	return ESolidBiome::Grassland;
 }
 
-void USolidTerrainMap::FillThreatAndFog(
-	FSolidTerrainPoint& Point,
-	float HeightNorm,
-	int32 InSeed) const
+void USolidTerrainMap::FillThreatAndFog(FSolidTerrainPoint& Point) const
 {
-	float ThreatBase = 0.2f;
-
-	switch (Point.Biome)
-	{
-	case ESolidBiome::Town:
-		ThreatBase = 0.05f;
-		break;
-	case ESolidBiome::Grassland:
-		ThreatBase = 0.20f;
-		break;
-	case ESolidBiome::Forest:
-		ThreatBase = 0.45f;
-		break;
-	case ESolidBiome::Mountain:
-		ThreatBase = 0.65f;
-		break;
-	case ESolidBiome::Desert:
-		ThreatBase = 0.40f;
-		break;
-	case ESolidBiome::Swamp:
-		ThreatBase = 0.55f;
-		break;
-	case ESolidBiome::Sea:
-		ThreatBase = 0.15f;
-		break;
-	case ESolidBiome::River:
-		ThreatBase = 0.25f;
-		break;
-	default:
-		break;
-	}
-
-	const float Jitter = SolidTerrainNoise::HashToFloat(
-		FMath::FloorToInt(Point.X * 0.01f),
-		FMath::FloorToInt(Point.Y * 0.01f),
-		InSeed + 3037);
-
-	Point.Threat = FMath::Clamp(ThreatBase + (Jitter - 0.5f) * 0.15f + HeightNorm * 0.1f, 0.f, 1.f);
-	if (Point.Biome == ESolidBiome::Town)
-	{
-		Point.Threat = FMath::Min(Point.Threat, 0.08f);
-	}
-
+	Point.Threat = 0.f;
 	// Shroud the map. CenterExplorationFogOn opens the bands around the player.
 	Point.Fog = 1.f;
 }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SolidTerrainTypes.h"
+#include "SolidBiome.h"
 
 class USolidWorldMap;
 
@@ -108,30 +108,6 @@ namespace SolidRoad
 		return Type == EType::Road || Type == EType::Highway;
 	}
 
-	/** Lower is better. Never as large as a whole extra step. */
-	inline int32 SurfacePreference(const ESolidBiome Biome)
-	{
-		switch (Biome)
-		{
-		case ESolidBiome::Grassland:
-		case ESolidBiome::Town:
-		case ESolidBiome::Road:
-		case ESolidBiome::Swamp:
-			return 0;
-		case ESolidBiome::Forest:
-		case ESolidBiome::Desert:
-			return 2;
-		case ESolidBiome::Mountain:
-			return 4;
-		case ESolidBiome::River:
-			return 6;
-		case ESolidBiome::Sea:
-			return 8;
-		default:
-			return 1;
-		}
-	}
-
 	inline int32 EnterCost(const EType Type, const ESolidBiome Biome)
 	{
 		int32 Cost = StepCost;
@@ -150,7 +126,7 @@ namespace SolidRoad
 				Cost = RiverCost;
 			}
 		}
-		return Cost + SurfacePreference(Biome);
+		return Cost + SolidBiome::Of(Biome).SurfacePreference();
 	}
 
 	/**

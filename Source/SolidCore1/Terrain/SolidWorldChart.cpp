@@ -1,4 +1,5 @@
 #include "SolidWorldChart.h"
+#include "SolidBiome.h"
 #include "SolidCore1.h"
 #include "SolidLair.h"
 #include "Monster/SolidEncounters.h"
@@ -158,23 +159,6 @@ void USolidWorldChart::ImportShippedWorldMap()
 
 namespace
 {
-	bool IsPaintBiome(const ESolidBiome Biome)
-	{
-		switch (Biome)
-		{
-		case ESolidBiome::Grassland:
-		case ESolidBiome::Forest:
-		case ESolidBiome::Mountain:
-		case ESolidBiome::Town:
-		case ESolidBiome::Desert:
-		case ESolidBiome::Sea:
-		case ESolidBiome::River:
-			return true;
-		default:
-			return false;
-		}
-	}
-
 	FString CompactName(FString Name)
 	{
 		Name.ReplaceInline(TEXT(" "), TEXT(""));
@@ -305,7 +289,7 @@ bool USolidWorldChart::CellIndex(const FIntPoint Cell, int32& OutIndex) const
 bool USolidWorldChart::PaintRun(const TArray<FIntPoint>& CellsToPaint, const ESolidBiome Biome, FString& OutError)
 {
 	OutError.Reset();
-	if (!IsPaintBiome(Biome))
+	if (!SolidBiome::Of(Biome).Paintable())
 	{
 		OutError = TEXT("Swamp and road are not paint biomes.");
 		return false;

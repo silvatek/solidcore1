@@ -545,26 +545,8 @@ namespace
 	/** Swamp and road are not marker biomes, so a chart cell of either loads as grassland. */
 	TCHAR MarkerForChartBiome(const ESolidBiome Biome)
 	{
-		switch (Biome)
-		{
-		case ESolidBiome::Sea:
-			return USolidWorldMap::SeaMarker;
-		case ESolidBiome::Forest:
-			return USolidWorldMap::ForestMarker;
-		case ESolidBiome::Town:
-			return USolidWorldMap::TownMarker;
-		case ESolidBiome::Mountain:
-			return TEXT('M');
-		case ESolidBiome::Desert:
-			return USolidWorldMap::DesertMarker;
-		case ESolidBiome::River:
-			return USolidWorldMap::RiverMarker;
-		case ESolidBiome::Grassland:
-		case ESolidBiome::Swamp:
-		case ESolidBiome::Road:
-		default:
-			return USolidWorldMap::GrassMarker;
-		}
+		const FSolidBiome& Ground = SolidBiome::Of(Biome);
+		return Ground.Paintable() ? Ground.Marker() : USolidWorldMap::GrassMarker;
 	}
 }
 
@@ -1083,8 +1065,8 @@ ESolidBiome USolidWorldMap::SampleBiome(
 	if (!bNamedShelf
 		&& Ground != ESolidBiome::River
 		&& IsOnRoad(WorldX, WorldY, WorldMinXY, WorldMaxXY)
-		&& SolidTerrainTypes::BiomeHeightOffsetCm(Ground)
-			== SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Road))
+		&& SolidBiome::Of(Ground).HeightOffsetCm()
+			== SolidBiome::Of(ESolidBiome::Road).HeightOffsetCm())
 	{
 		return ESolidBiome::Road;
 	}

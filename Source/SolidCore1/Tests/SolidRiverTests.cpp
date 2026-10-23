@@ -1,5 +1,6 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
+#include "SolidBiome.h"
 #include "SolidRiver.h"
 #include "SolidWorldMap.h"
 
@@ -304,8 +305,8 @@ bool FSolidRiverShippedMapTest::RunTest(const FString& Parameters)
 				const FVector2D BankPoint = Center + Offsets[Side];
 				const ESolidBiome NeighborBiome = Map->GetBiomeAtCell(NextX, NextY);
 				const bool bRoadBank = Map->IsOnRoad(BankPoint.X, BankPoint.Y, RiverTestMin, RiverTestMax)
-					&& SolidTerrainTypes::BiomeHeightOffsetCm(NeighborBiome)
-						== SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Road);
+					&& SolidBiome::Of(NeighborBiome).HeightOffsetCm()
+						== SolidBiome::Of(ESolidBiome::Road).HeightOffsetCm();
 				RiverTestBiome(
 					*this,
 					*FString::Printf(TEXT("bank of (%d,%d) side %d"), Col, Row, Side),

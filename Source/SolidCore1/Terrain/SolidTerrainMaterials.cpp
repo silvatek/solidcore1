@@ -1,4 +1,5 @@
 #include "SolidTerrainMaterials.h"
+#include "SolidBiome.h"
 #include "SolidCore1.h"
 #include "SolidFabManifest.h"
 #include "SolidMaterials.h"
@@ -297,7 +298,7 @@ UMaterialInterface* SolidTerrainMaterials::ResolveForBiome(
 	UMaterialInterface* Solid = SolidMaterials::CreateSolidColor(
 		Params.Outer,
 		Color,
-		SolidTerrainTypes::BiomeToString(Biome),
+		SolidBiome::Of(Biome).Name(),
 		Params.GrassRoughness);
 	InOutBiomeMaterials.Add(Biome, Solid);
 	return Solid;

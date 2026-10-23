@@ -3,6 +3,7 @@
 #include "Lairs/SolidLair.h"
 #include "Monster/SolidEncounters.h"
 #include "Strongholds/SolidStronghold.h"
+#include "Terrain/SolidBiome.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Terrain/SolidWorldMap.h"
@@ -39,23 +40,6 @@ const TCHAR* FSolidWorldChartEdMode::OpenWorldLevel = TEXT("/Game/ThirdPerson/Lv
 
 namespace
 {
-	const TCHAR* BiomeName(const ESolidBiome Biome)
-	{
-		switch (Biome)
-		{
-		case ESolidBiome::Forest: return TEXT("Forest");
-		case ESolidBiome::Mountain: return TEXT("Mountain");
-		case ESolidBiome::Town: return TEXT("Town");
-		case ESolidBiome::Desert: return TEXT("Desert");
-		case ESolidBiome::Sea: return TEXT("Sea");
-		case ESolidBiome::River: return TEXT("River");
-		case ESolidBiome::Swamp: return TEXT("Swamp");
-		case ESolidBiome::Road: return TEXT("Road");
-		case ESolidBiome::Grassland:
-		default: return TEXT("Grassland");
-		}
-	}
-
 	const TCHAR* MarkKindName(const ESolidWorldChartMarkKind Kind)
 	{
 		switch (Kind)
@@ -232,7 +216,7 @@ public:
 			.Padding(2.f)
 			[
 				SNew(SButton)
-				.Text(FText::FromString(BiomeName(Biome)))
+				.Text(FText::FromString(SolidBiome::Of(Biome).Name()))
 				.ButtonColorAndOpacity_Lambda([this, Biome]()
 				{
 					return Mode && Mode->BrushBiome == Biome
@@ -1363,12 +1347,12 @@ void FSolidWorldChartEdMode::SampleBrush(const FIntPoint& Cell)
 		return;
 	}
 	const ESolidBiome Painted = Chart->Cells[Index];
-	if (Painted == ESolidBiome::Swamp || Painted == ESolidBiome::Road)
+	if (!SolidBiome::Of(Painted).Paintable())
 	{
 		return;
 	}
 	SetBrush(Painted);
-	Note(FString::Printf(TEXT("Brush is %s."), BiomeName(Painted)));
+	Note(FString::Printf(TEXT("Brush is %s."), SolidBiome::Of(Painted).Name()));
 }
 
 void FSolidWorldChartEdMode::ShowChart()
@@ -1747,10 +1731,10 @@ FString FSolidWorldChartEdMode::DescribeCell(const FIntPoint& Cell) const
 		Resolved = WorldMap->GetBiomeAtCell(Cell.X, Cell.Y);
 	}
 
-	FString Line = FString::Printf(TEXT("%s."), BiomeName(Resolved));
+	FString Line = FString::Printf(TEXT("%s."), SolidBiome::Of(Resolved).Name());
 	if (Resolved != Painted)
 	{
-		Line += FString::Printf(TEXT(" Painted %s."), BiomeName(Painted));
+		Line += FString::Printf(TEXT(" Painted %s."), SolidBiome::Of(Painted).Name());
 	}
 
 	const int32 MarkIndex = Chart->MarkAtCell(Cell);

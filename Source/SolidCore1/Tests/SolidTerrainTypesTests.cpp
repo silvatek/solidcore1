@@ -13,15 +13,15 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidBiomeToStringTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("Grassland"), FString(SolidTerrainTypes::BiomeToString(ESolidBiome::Grassland)), FString(TEXT("Grassland")));
-	TestEqual(TEXT("Forest"), FString(SolidTerrainTypes::BiomeToString(ESolidBiome::Forest)), FString(TEXT("Forest")));
-	TestEqual(TEXT("Mountain"), FString(SolidTerrainTypes::BiomeToString(ESolidBiome::Mountain)), FString(TEXT("Mountain")));
-	TestEqual(TEXT("Town"), FString(SolidTerrainTypes::BiomeToString(ESolidBiome::Town)), FString(TEXT("Town")));
-	TestEqual(TEXT("Desert"), FString(SolidTerrainTypes::BiomeToString(ESolidBiome::Desert)), FString(TEXT("Desert")));
-	TestEqual(TEXT("Swamp"), FString(SolidTerrainTypes::BiomeToString(ESolidBiome::Swamp)), FString(TEXT("Swamp")));
-	TestEqual(TEXT("Sea"), FString(SolidTerrainTypes::BiomeToString(ESolidBiome::Sea)), FString(TEXT("Sea")));
-	TestEqual(TEXT("River"), FString(SolidTerrainTypes::BiomeToString(ESolidBiome::River)), FString(TEXT("River")));
-	TestEqual(TEXT("Road"), FString(SolidTerrainTypes::BiomeToString(ESolidBiome::Road)), FString(TEXT("Road")));
+	TestEqual(TEXT("Grassland"), FString(SolidBiome::Of(ESolidBiome::Grassland).Name()), FString(TEXT("Grassland")));
+	TestEqual(TEXT("Forest"), FString(SolidBiome::Of(ESolidBiome::Forest).Name()), FString(TEXT("Forest")));
+	TestEqual(TEXT("Mountain"), FString(SolidBiome::Of(ESolidBiome::Mountain).Name()), FString(TEXT("Mountain")));
+	TestEqual(TEXT("Town"), FString(SolidBiome::Of(ESolidBiome::Town).Name()), FString(TEXT("Town")));
+	TestEqual(TEXT("Desert"), FString(SolidBiome::Of(ESolidBiome::Desert).Name()), FString(TEXT("Desert")));
+	TestEqual(TEXT("Swamp"), FString(SolidBiome::Of(ESolidBiome::Swamp).Name()), FString(TEXT("Swamp")));
+	TestEqual(TEXT("Sea"), FString(SolidBiome::Of(ESolidBiome::Sea).Name()), FString(TEXT("Sea")));
+	TestEqual(TEXT("River"), FString(SolidBiome::Of(ESolidBiome::River).Name()), FString(TEXT("River")));
+	TestEqual(TEXT("Road"), FString(SolidBiome::Of(ESolidBiome::Road).Name()), FString(TEXT("Road")));
 	return true;
 }
 
@@ -47,23 +47,23 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidBiomeHeightOffsetTest::RunTest(const FString& Parameters)
 {
 	TestTrue(TEXT("Sea offset 0"),
-		FMath::IsNearlyEqual(SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Sea), 0.f));
+		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::Sea).HeightOffsetCm(), 0.f));
 	TestTrue(TEXT("River offset 0"),
-		FMath::IsNearlyEqual(SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::River), 0.f));
+		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::River).HeightOffsetCm(), 0.f));
 	TestTrue(TEXT("Mountain offset 10m"),
-		FMath::IsNearlyEqual(SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Mountain), 1000.f));
+		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::Mountain).HeightOffsetCm(), 1000.f));
 	TestTrue(TEXT("Grassland offset 1m"),
-		FMath::IsNearlyEqual(SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Grassland), 100.f));
+		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::Grassland).HeightOffsetCm(), 100.f));
 	TestTrue(TEXT("Forest offset 1m"),
-		FMath::IsNearlyEqual(SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Forest), 100.f));
+		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::Forest).HeightOffsetCm(), 100.f));
 	TestTrue(TEXT("Town offset 1m"),
-		FMath::IsNearlyEqual(SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Town), 100.f));
+		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::Town).HeightOffsetCm(), 100.f));
 	TestTrue(TEXT("Desert offset 1m"),
-		FMath::IsNearlyEqual(SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Desert), 100.f));
+		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::Desert).HeightOffsetCm(), 100.f));
 	TestTrue(TEXT("Swamp offset 1m"),
-		FMath::IsNearlyEqual(SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Swamp), 100.f));
+		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::Swamp).HeightOffsetCm(), 100.f));
 	TestTrue(TEXT("road shares the land shelf"),
-		FMath::IsNearlyEqual(SolidTerrainTypes::BiomeHeightOffsetCm(ESolidBiome::Road), 100.f));
+		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::Road).HeightOffsetCm(), 100.f));
 	return true;
 }
 
@@ -149,6 +149,63 @@ bool FSolidBiomeColorTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestTrue(TEXT("a colour line leaves the river blue"), Map->GetBiomeColor(ESolidBiome::River).Equals(River));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBiomeGroundTest,
+	"SolidCore1.Types.BiomeGround",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBiomeGroundTest::RunTest(const FString& Parameters)
+{
+	TestTrue(TEXT("grass letter"), SolidBiome::Of(ESolidBiome::Grassland).Marker() == USolidWorldMap::GrassMarker);
+	TestTrue(TEXT("forest letter"), SolidBiome::Of(ESolidBiome::Forest).Marker() == USolidWorldMap::ForestMarker);
+	TestTrue(TEXT("mountain letter"), SolidBiome::Of(ESolidBiome::Mountain).Marker() == TEXT('M'));
+	TestTrue(TEXT("town letter"), SolidBiome::Of(ESolidBiome::Town).Marker() == USolidWorldMap::TownMarker);
+	TestTrue(TEXT("desert letter"), SolidBiome::Of(ESolidBiome::Desert).Marker() == USolidWorldMap::DesertMarker);
+	TestTrue(TEXT("sea letter"), SolidBiome::Of(ESolidBiome::Sea).Marker() == USolidWorldMap::SeaMarker);
+	TestTrue(TEXT("river letter"), SolidBiome::Of(ESolidBiome::River).Marker() == USolidWorldMap::RiverMarker);
+	TestTrue(TEXT("swamp letter"), SolidBiome::Of(ESolidBiome::Swamp).Marker() == TEXT('S'));
+	TestTrue(TEXT("road letter"), SolidBiome::Of(ESolidBiome::Road).Marker() == TEXT('R'));
+
+	TestTrue(TEXT("grass is paintable"), SolidBiome::Of(ESolidBiome::Grassland).Paintable());
+	TestTrue(TEXT("forest is paintable"), SolidBiome::Of(ESolidBiome::Forest).Paintable());
+	TestTrue(TEXT("mountain is paintable"), SolidBiome::Of(ESolidBiome::Mountain).Paintable());
+	TestTrue(TEXT("town is paintable"), SolidBiome::Of(ESolidBiome::Town).Paintable());
+	TestTrue(TEXT("desert is paintable"), SolidBiome::Of(ESolidBiome::Desert).Paintable());
+	TestTrue(TEXT("sea is paintable"), SolidBiome::Of(ESolidBiome::Sea).Paintable());
+	TestTrue(TEXT("river is paintable"), SolidBiome::Of(ESolidBiome::River).Paintable());
+	TestFalse(TEXT("swamp is not a paint biome"), SolidBiome::Of(ESolidBiome::Swamp).Paintable());
+	TestFalse(TEXT("road is not a paint biome"), SolidBiome::Of(ESolidBiome::Road).Paintable());
+
+	TestFalse(TEXT("grass is open"), SolidBiome::Of(ESolidBiome::Grassland).Impassable());
+	TestFalse(TEXT("forest is open"), SolidBiome::Of(ESolidBiome::Forest).Impassable());
+	TestFalse(TEXT("town is open"), SolidBiome::Of(ESolidBiome::Town).Impassable());
+	TestFalse(TEXT("desert is open"), SolidBiome::Of(ESolidBiome::Desert).Impassable());
+	TestFalse(TEXT("swamp is open"), SolidBiome::Of(ESolidBiome::Swamp).Impassable());
+	TestFalse(TEXT("road is open"), SolidBiome::Of(ESolidBiome::Road).Impassable());
+	TestTrue(TEXT("sea is closed"), SolidBiome::Of(ESolidBiome::Sea).Impassable());
+	TestTrue(TEXT("mountain is closed"), SolidBiome::Of(ESolidBiome::Mountain).Impassable());
+	TestTrue(TEXT("river is closed"), SolidBiome::Of(ESolidBiome::River).Impassable());
+
+	TestEqual(TEXT("grass is the easiest ground"), SolidBiome::Of(ESolidBiome::Grassland).SurfacePreference(), 0);
+	TestEqual(TEXT("town is the easiest ground"), SolidBiome::Of(ESolidBiome::Town).SurfacePreference(), 0);
+	TestEqual(TEXT("road is the easiest ground"), SolidBiome::Of(ESolidBiome::Road).SurfacePreference(), 0);
+	TestEqual(TEXT("swamp is the easiest ground"), SolidBiome::Of(ESolidBiome::Swamp).SurfacePreference(), 0);
+	TestEqual(TEXT("forest is a little harder"), SolidBiome::Of(ESolidBiome::Forest).SurfacePreference(), 2);
+	TestEqual(TEXT("desert is a little harder"), SolidBiome::Of(ESolidBiome::Desert).SurfacePreference(), 2);
+	TestEqual(TEXT("mountain is harder still"), SolidBiome::Of(ESolidBiome::Mountain).SurfacePreference(), 4);
+	TestEqual(TEXT("river is harder still"), SolidBiome::Of(ESolidBiome::River).SurfacePreference(), 6);
+	TestEqual(TEXT("sea is the hardest ground"), SolidBiome::Of(ESolidBiome::Sea).SurfacePreference(), 8);
+
+	const FSolidBiome& Unknown = SolidBiome::Of(static_cast<ESolidBiome>(255));
+	TestEqual(TEXT("an unknown token has no name"), FString(Unknown.Name()), FString(TEXT("Unknown")));
+	TestTrue(TEXT("an unknown token shares the land shelf"), FMath::IsNearlyEqual(Unknown.HeightOffsetCm(), 100.f));
+	TestEqual(TEXT("an unknown token is a weak preference"), Unknown.SurfacePreference(), 1);
+	TestTrue(TEXT("an unknown token uses the grass letter"), Unknown.Marker() == USolidWorldMap::GrassMarker);
+	TestFalse(TEXT("an unknown token stays open"), Unknown.Impassable());
+	TestFalse(TEXT("an unknown token is not a paint biome"), Unknown.Paintable());
 	return true;
 }
 

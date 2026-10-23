@@ -133,5 +133,6 @@ protected:
 
 	void WorldToIndex(float WorldX, float WorldY, int32& OutX, int32& OutY) const;
 	ESolidBiome ChooseBiome(float WorldX, float WorldY, float HeightNorm, int32 InSeed) const;
-	void FillThreatAndFog(FSolidTerrainPoint& Point, float HeightNorm, int32 InSeed) const;
+	/** Threat stays zero. Fog starts fully shrouded. */
+	void FillThreatAndFog(FSolidTerrainPoint& Point) const;
 };

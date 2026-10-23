@@ -1,0 +1,87 @@
+# Remove unused code
+
+Status: New
+
+## Story
+
+A developer removes C++ symbols that product code never calls. A symbol that only its own tests call is unused, under the definition in `AGENTS.md`. Symbols the Unreal Engine calls stay. Symbols the World chart mode calls stay.
+
+The game already performs the work these symbols wrap or inspect. Removing them leaves that work in place.
+
+## Acceptance
+
+- Each symbol below is gone from `Source/`, including tests. A whole-word search for the name finds nothing under `Source/`. `Holds` stays in comments that are not this function.
+- `override` methods stay. `UFUNCTION` methods the engine can call stay. Types that `Config/` names for the engine to instantiate stay. `GetTypeHash` for a hex edge stays. `ASolidCharacter::StartSquadFormationDrill` stays.
+- These product calls stay, and still behave as they do now: `FSolidBattle::Advance`, `FSolidBattle::SquadWeapon`, `FSolidBattle::MonsterWeapon`, `FSolidBattlePlan::Attacks`, `FSolidBattlePlan::Retreats`, `ASolidHUD::ToggleDebugPanel`, `ASolidDungeonExterior::GroundDropCm`, `ASolidTowerExterior::GetDoorMesh`, `SolidDungeonLevel::EnterLabel`, `SolidDungeonLevel::LeaveLabel`, `USolidWorldChart::PaintRun`, `USolidWorldChart::PaintRectangle`, `USolidWorldChart::MarkAtCell`, `USolidWorldMap::LoadFromString`, `USolidWorldMap::LoadFromChart`, `FSolidTower::OutsideDoorXY`, and `SolidStronghold::BiomeFor`.
+- Shelves, visit views, finger bones on a hand, the chart cells, and the fight log stay. Only the unused readers, counters, and wrappers go.
+- Existing tests keep passing. The test edit is its own commit, and it passes on the code before the deletion. The deletion commit does not edit those tests. The deletion commit says that the tests changed because these symbols went away.
+- The deletion commit bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`.
+
+## Implementation notes
+
+The list is the result of applying the `AGENTS.md` definition on `main` at the commit this story was added. A use is a whole-word name in product C++ outside `Tests/`, in `Config/` for a type the engine loads, or in a `.Build.cs` / `.Target.cs` file. A name in `Source/SolidCore1Editor/` is a use as well. That module is the World chart mode, and it calls the chart. A test file belongs to a symbol when the longest product header stem that prefixes the test file name is the header that declares the symbol, compared without regard to case. References in that test file do not keep the symbol. `override` methods were left in place.
+
+`SolidStrongholdGrid::GetTypeHash` stays. `CollectSegments` puts `FEdgeKey` in a `TSet`, and that set calls `GetTypeHash` through argument-dependent lookup. No other C++ writes the name.
+
+`ASolidCharacter::StartSquadFormationDrill` has no caller. Test Drill is off the menu. [Drill battle plan](drill-battle-plan.md) is Ready and says this function starts the square. It stays.
+
+Nothing in the list below is called from product C++ outside its own declaration, its own definition, or a test of its type. Two names are used only by other symbols in this list: `FSolidWorldChartRead` (only `ReadCell`) and `SolidForage::FPileHit` (only `NearestHitIndex`). `FSolidBattle::TimeUntilNextEvent` is only called from `AdvanceToNextEvent`. They go with those functions.
+
+The World chart mode keeps `PaintRun`, `PaintRectangle`, `PlaceTown`, `PlaceStronghold`, `PlaceSite`, `PlaceLairMouth`, `PlaceCustom`, `DeleteMark`, `AddRoad`, `RouteForRoad`, `Undo`, `Disagreement`, `MarkAtCell`, `BuildChartView`, `RebuildChartView`, and `ClearChartView`. `SolidStronghold::TypeCount` stays. The mode clamps a type index with it.
+
+No product caller:
+
+- `ASolidHUD::CloseExitConfirm`. Closing the exit page already assigns `bShowExitConfirm`.
+- `ASolidHUD::IsDebugPanelVisible`. The HUD reads `bShowDebugPanel` itself.
+- `ASolidHUD::SetDebugPanelVisible`. F12 calls `ToggleDebugPanel`.
+- `ASolidStrongholdSite::GetSize`. `SetSite` stores the size. Nothing reads it back.
+- `ASolidTerrainStreamer::IsChartView`. Tick reads `bChartView`.
+- `ASolidTowerExterior::GetPlan`. The exterior builds from the tower it was given. `GetDoorMesh` stays.
+- `ASolidDungeonExterior::GetRockMesh`. The exterior builds the rock. `GroundDropCm` measures the drop.
+- `ASolidDungeonExterior::SetGroundDrop`. The exterior calls `GroundDropCm`.
+- `USolidWorldMap::LoadFromFile`. The game loads the chart through `LoadFromChart`. A text map still loads through `LoadFromString`. [Remove WorldMap.txt](remove-world-map-txt.md) keeps `LoadFromString`.
+- `USolidWorldChart::PaintCell`. It calls `PaintRun` with one cell. The mode paints with `PaintRun` and `PaintRectangle`.
+- `USolidWorldChart::ReadCell`. The mode describes a cell from `Cells`, `MarkAtCell`, and the loaded world map.
+- `SolidLair::MouthMidpoint`. Tunnel placement uses `CellCenter` and `SpawnLocal`.
+- `SolidInventory::CountAt`. Slot checks use `ItemAt`.
+- `SolidForage::NearestHitIndex`. A click takes a pile through `TakePile`.
+- `SolidDungeonLevel::MenuLabel`. The cave tip uses `EnterLabel` and `LeaveLabel`.
+- `FSolidTower::OutsideDoorYawDeg`. It returns the grass yaw unchanged. `OutsideDoorXY` stays.
+- `FSolidMonster::MeshFootOffsetCm`. A raptor places its mesh from the standing span. `UniformScale` and `StandingSpan` stay.
+- `FSolidBattlePlan::Holds`. The fight reads `Attacks` and `Retreats`. This is the aggression value `ESolidAggression::Hold`, including Parade. It is not the Hold formation in [Hold battle plan](hold-battle-plan.md).
+- `FSolidBattle::GetSquadPower`. A blow reads `SquadWeapon`.
+- `FSolidBattle::GetGroupPower`. A blow reads `MonsterWeapon`.
+- `FSolidBattle::AdvanceToNextEvent`. The fight calls `Advance` from the game mode.
+- `FSolidBattle::TimeUntilNextEvent`.
+
+Counters only the matching tests call, or that nothing calls:
+
+- `SolidStronghold::ShelfCount`. `BiomeFor` walks `Shelves`.
+- `SolidStronghold::VisitViewCount`. `VisitViewFor` walks `VisitViews`.
+- `SolidBodyMesh::LeftFingerBones`.
+- `SolidBodyMesh::RightFingerBones`. A hand lists the finger bones it was given. It does not read these arrays.
+
+Types only the unused readers use:
+
+- `FSolidWorldChartRead`.
+- `SolidForage::FPileHit`.
+
+Test commit, before the deletion:
+
+- `SolidCore1.HUD.DebugToggle` keeps calling `ToggleDebugPanel`. The visibility checks that call `IsDebugPanelVisible` and `SetDebugPanelVisible` go away.
+- `SolidCore1.TowerExterior.*` stops calling `GetPlan`. The door check keeps `GetDoorMesh`. The floor-count check that can only be stated through `GetPlan` goes away.
+- `SolidCore1.DungeonExterior.*` stops calling `GetRockMesh` and `SetGroundDrop`. A drop the test can state through `GroundDropCm` moves onto that call. An inspection that needs the rock mesh or the forced drop goes away.
+- `SolidCore1.DungeonLevel.*` checks the cave words through `EnterLabel` and `LeaveLabel`. `MenuLabel` goes away.
+- `SolidCore1.WorldChart.Paint` calls `PaintRun` with the one cell where it now calls `PaintCell`. Cell facts move onto `MarkAtCell`, `Cells`, and the loaded world map. Checks that can only be stated through `ReadCell` or `FSolidWorldChartRead` go away.
+- `SolidCore1.Body.HandFingers` keeps the finger names in the test. It stops reading `LeftFingerBones` and `RightFingerBones`.
+- `SolidCore1.Monster.*` drops the `MeshFootOffsetCm` check. `UniformScale` and `StandingSpan` checks stay.
+- `SolidCore1.BattlePlan.*` checks Parade and a hold aggression through `AttackOrRetreat`, `Attacks`, and `Retreats`. The `Holds` checks go away.
+- `SolidCore1.Battle.*` power checks move onto `SquadWeapon` and `MonsterWeapon`.
+- `SolidCore1.Battle.*` and `SolidCore1.Battle.Simulation` step with `Advance`. Where the test already names the wait, that wait is the argument: `0` for the opening prepare, and the weapon `Speed` the test already reads for a later blow. A loop that waits for a log line or for defence to change calls `Advance` with that weapon `Speed`. The loop guard stays. The test commit does not call `AdvanceToNextEvent` or `TimeUntilNextEvent`.
+- That commit does not delete the product symbols. It passes against the current build.
+
+Deletion commit:
+
+- Delete the symbols listed above and any comment that exists only to describe them.
+- Do not edit the tests. Do not delete includes, unused parameters, or code inside a function that still has a product caller.
+- Bump `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`.

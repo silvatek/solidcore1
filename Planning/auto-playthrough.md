@@ -20,7 +20,7 @@ Agree this order before a stage is planned in detail. A stage is played before t
 
 1. **The runner and the death.** The menu row, including the dim row once the playthrough has started or the captain has left Iglin, AutoPlaythrough, and a script that can walk, close a message, and stop. The steps are the walk from Iglin to the bridge, the monster message, and the wake in the cave.
 2. **The torch and the village.** Craft the torch, put it in the main hand, leave the cave, close Build squad, walk to Iglin, and close the driven-out message.
-3. **The tunnels and the company.** Through the tunnels, then Relion, Kanfold, and Dragongate. This stage waits until [Events add a companion](events-add-a-companion.md) is Done. Relion already adds Sam. Kanfold's Alex and Dragongate's Max, Morgan, and Quinn are that story.
+3. **The tunnels and the company.** Through the tunnels, then Relion, Kanfold, and Dragongate. This stage waits until [Events add a companion](Done/events-add-a-companion.md) is Done. Relion already adds Sam. Kanfold's Alex and Dragongate's Max, Morgan, and Quinn are that story.
 4. **The tower and the squad.** The Imperious site, the climb to the top floor, the leave, and selecting the squad.
 
 ## Acceptance

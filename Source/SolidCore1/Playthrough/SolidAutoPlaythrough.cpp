@@ -27,6 +27,35 @@
 
 namespace
 {
+	/** The custom switch matches this. Wake is the row that waits for the cave. */
+	constexpr int32 WakeInCave = 1;
+
+	const SolidStrongholdGrid::FCell StandCells[] = {
+		{ -1, 0 }, { 0, 0 }, { 1, 0 }, { 1, 1 },
+	};
+
+	const SolidStrongholdGrid::FCell EntranceCells[] = {
+		{ 1, 1 }, { 0, 1 }, { -1, 1 }, { -1, 0 }, { -2, 0 },
+	};
+}
+
+using FStep = FSolidAutoPlaythrough::FStep;
+using EWalk = FSolidAutoPlaythrough::EWalk;
+
+const FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = {
+	FStep::WalkTo(TEXT("Walk to the monster encounter"), EWalk::MonsterEncounter),
+	FStep::Custom(TEXT("Wake in the cave"), WakeInCave),
+	FStep::WalkTo(TEXT("Walk to the stand"), StandCells, UE_ARRAY_COUNT(StandCells)),
+	FStep::CraftItem(TEXT("Craft the torch"), SolidItemType::IdTorch),
+	FStep::CraftItem(TEXT("Put the torch in the main hand"), SolidItemType::IdTorch).EquipMainHand().ClosePage(),
+	FStep::WalkTo(TEXT("Walk to the entrance"), EntranceCells, UE_ARRAY_COUNT(EntranceCells)),
+	FStep::ExitStronghold(TEXT("Leave the cave")),
+	FStep::WalkTo(TEXT("Walk to Iglin"), EWalk::TrailToIglin),
+	FStep::CloseMessage(TEXT("Close the driven-out message"), SolidMessages::IdDrivenFromVillage),
+};
+
+namespace
+{
 	constexpr float ProgressCm = 1.f;
 	/** A step this far onto a ramp is refused. The walk stays on the grass. */
 	constexpr float RampProbeCm = 80.f;
@@ -365,70 +394,7 @@ namespace
 		return false;
 	}
 
-	/** The custom switch matches this. Wake is the row that waits for the cave. */
-	constexpr int32 WakeInCave = 1;
-
-	const SolidStrongholdGrid::FCell StandCells[] = {
-		{ -1, 0 }, { 0, 0 }, { 1, 0 }, { 1, 1 },
-	};
-
-	const SolidStrongholdGrid::FCell EntranceCells[] = {
-		{ 1, 1 }, { 0, 1 }, { -1, 1 }, { -1, 0 }, { -2, 0 },
-	};
 }
-
-const FSolidAutoPlaythrough::FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = {
-	{
-		.Type = EStepType::WalkTo,
-		.Name = TEXT("Walk to the monster encounter"),
-		.Walk = EWalk::MonsterEncounter,
-	},
-	{
-		.Type = EStepType::Custom,
-		.Name = TEXT("Wake in the cave"),
-		.CustomId = WakeInCave,
-	},
-	{
-		.Type = EStepType::WalkTo,
-		.Name = TEXT("Walk to the stand"),
-		.Walk = EWalk::Hexes,
-		.Cells = StandCells,
-		.CellCount = UE_ARRAY_COUNT(StandCells),
-	},
-	{
-		.Type = EStepType::CraftItem,
-		.Name = TEXT("Craft the torch"),
-		.ItemId = SolidItemType::IdTorch,
-	},
-	{
-		.Type = EStepType::CraftItem,
-		.Name = TEXT("Put the torch in the main hand"),
-		.ItemId = SolidItemType::IdTorch,
-		.bEquipMainHand = true,
-		.bClosePage = true,
-	},
-	{
-		.Type = EStepType::WalkTo,
-		.Name = TEXT("Walk to the entrance"),
-		.Walk = EWalk::Hexes,
-		.Cells = EntranceCells,
-		.CellCount = UE_ARRAY_COUNT(EntranceCells),
-	},
-	{
-		.Type = EStepType::ExitStronghold,
-		.Name = TEXT("Leave the cave"),
-	},
-	{
-		.Type = EStepType::WalkTo,
-		.Name = TEXT("Walk to Iglin"),
-		.Walk = EWalk::TrailToIglin,
-	},
-	{
-		.Type = EStepType::CloseMessage,
-		.Name = TEXT("Close the driven-out message"),
-		.MessageId = SolidMessages::IdDrivenFromVillage,
-	},
-};
 
 bool FSolidAutoPlaythrough::CraftTorch(SolidInventory::FLoadout& Loadout, SolidStorage::FContainer& Chest)
 {

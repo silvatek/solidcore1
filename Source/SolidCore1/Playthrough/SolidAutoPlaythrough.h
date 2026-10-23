@@ -46,7 +46,11 @@ public:
 		TrailToIglin,
 	};
 
-	/** One row of the opening script. */
+	/**
+	 * One row of the opening script.
+	 * WalkTo, CloseMessage, CraftItem, ExitStronghold, and Custom build one.
+	 * A later helper fills the one field that row also reads.
+	 */
 	struct FStep
 	{
 		EStepType Type = EStepType::Custom;
@@ -62,6 +66,78 @@ public:
 		const TCHAR* MessageId = nullptr;
 		/** Which custom row this is. The custom switch matches it. */
 		int32 CustomId = INDEX_NONE;
+
+		static constexpr FStep WalkTo(const TCHAR* InName, const EWalk InWalk)
+		{
+			FStep Step;
+			Step.Type = EStepType::WalkTo;
+			Step.Name = InName;
+			Step.Walk = InWalk;
+			return Step;
+		}
+
+		static constexpr FStep WalkTo(
+			const TCHAR* InName,
+			const SolidStrongholdGrid::FCell* InCells,
+			const int32 InCount)
+		{
+			FStep Step;
+			Step.Type = EStepType::WalkTo;
+			Step.Name = InName;
+			Step.Walk = EWalk::Hexes;
+			Step.Cells = InCells;
+			Step.CellCount = InCount;
+			return Step;
+		}
+
+		static constexpr FStep CloseMessage(const TCHAR* InName, const TCHAR* InMessageId)
+		{
+			FStep Step;
+			Step.Type = EStepType::CloseMessage;
+			Step.Name = InName;
+			Step.MessageId = InMessageId;
+			return Step;
+		}
+
+		static constexpr FStep CraftItem(const TCHAR* InName, const TCHAR* InItemId)
+		{
+			FStep Step;
+			Step.Type = EStepType::CraftItem;
+			Step.Name = InName;
+			Step.ItemId = InItemId;
+			return Step;
+		}
+
+		static constexpr FStep ExitStronghold(const TCHAR* InName)
+		{
+			FStep Step;
+			Step.Type = EStepType::ExitStronghold;
+			Step.Name = InName;
+			return Step;
+		}
+
+		static constexpr FStep Custom(const TCHAR* InName, const int32 InCustomId)
+		{
+			FStep Step;
+			Step.Type = EStepType::Custom;
+			Step.Name = InName;
+			Step.CustomId = InCustomId;
+			return Step;
+		}
+
+		constexpr FStep EquipMainHand() const
+		{
+			FStep Step = *this;
+			Step.bEquipMainHand = true;
+			return Step;
+		}
+
+		constexpr FStep ClosePage() const
+		{
+			FStep Step = *this;
+			Step.bClosePage = true;
+			return Step;
+		}
 	};
 
 	/** The opening script, in order. A later story edits this list. */

@@ -126,7 +126,7 @@ A symbol is a function or method (the header declaration and the `.cpp` body are
 
 A use is the symbol's name, as a whole word, in other product C++ under `Source/SolidCore1/` outside `Tests/`, in `Config/` when the engine loads that class, struct, enum, or property, or in `SolidCore1.Build.cs` or a `.Target.cs` file.
 
-A symbol can be removed when every reference is a test of that functionality. A symbol stays when a test of other functionality uses it. `ASolidDungeonExterior::GetRockMesh` can be removed when the only references are tests of `GetRockMesh`. It stays when a test of other rock mesh code uses it.
+A symbol can be removed when every reference is a test of that functionality. A symbol stays when a test of other functionality uses it. `ASolidDungeonExterior::GetRockMesh` can be removed when the only references are tests of `GetRockMesh`. It stays when a test of other rock mesh code uses it. Check for a mutually supporting pair. If A is only used by tests of B, and B is only used by tests of A, both can be removed.
 
 These names are engine calls, so they stay:
 

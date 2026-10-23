@@ -4,7 +4,7 @@ Status: New
 
 ## Story
 
-A developer removes C++ symbols that product code never calls. A symbol that only tests of that functionality call is unused, under the definition in `AGENTS.md`. A symbol stays when a test of other functionality uses it. Symbols the Unreal Engine calls stay. Symbols the World chart mode calls stay.
+A developer removes C++ symbols that product code never calls. A symbol that only tests of that functionality call is unused, under the definition in `AGENTS.md`. A symbol stays when a test of other functionality uses it. A mutually supporting pair can still go: if A is only used by tests of B, and B is only used by tests of A, both can be removed. Symbols the Unreal Engine calls stay. Symbols the World chart mode calls stay.
 
 The game already performs the work these symbols wrap or inspect. Removing them leaves that work in place.
 
@@ -19,7 +19,7 @@ The game already performs the work these symbols wrap or inspect. Removing them 
 
 ## Implementation notes
 
-The list follows the unused-code definition in `AGENTS.md`. A use is a whole-word name in product C++ outside `Tests/`, in `Config/` for a type the engine loads, or in a `.Build.cs` / `.Target.cs` file. A name in `Source/SolidCore1Editor/` is a use as well. That module is the World chart mode, and it calls the chart. A symbol can go when every reference is a test of that symbol. A symbol stays when a test of other functionality uses it. `override` methods were left in place.
+The list follows the unused-code definition in `AGENTS.md`. A use is a whole-word name in product C++ outside `Tests/`, in `Config/` for a type the engine loads, or in a `.Build.cs` / `.Target.cs` file. A name in `Source/SolidCore1Editor/` is a use as well. That module is the World chart mode, and it calls the chart. A symbol can go when every reference is a test of that symbol. A symbol stays when a test of other functionality uses it. Check for a mutually supporting pair. If A is only used by tests of B, and B is only used by tests of A, both can be removed. `override` methods were left in place.
 
 `SolidStrongholdGrid::GetTypeHash` stays. `CollectSegments` puts `FEdgeKey` in a `TSet`, and that set calls `GetTypeHash` through argument-dependent lookup. No other C++ writes the name.
 

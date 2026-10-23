@@ -6,8 +6,6 @@
 #include "SolidStronghold.h"
 #include "SolidTerrainMap.h"
 #include "SolidTowns.h"
-#include "Misc/FileHelper.h"
-#include "Misc/Paths.h"
 
 namespace
 {
@@ -144,42 +142,12 @@ bool USolidWorldChart::ImportFromString(const FString& Text)
 	return true;
 }
 
-void USolidWorldChart::ImportShippedWorldMap()
-{
-	const FString Path = FPaths::ProjectContentDir() / TEXT("WorldMap.txt");
-	FString Text;
-	if (!FFileHelper::LoadFileToString(Text, *Path) || !ImportFromString(Text))
-	{
-		UE_LOG(LogSolid, Error, TEXT("WorldChart: failed to import Content/WorldMap.txt."));
-		return;
-	}
-	Modify();
-	UE_LOG(LogSolid, Warning, TEXT("WorldChart imported from Content/WorldMap.txt. Save this asset as %s."), ShippedPath());
-}
-
 namespace
 {
 	FString CompactName(FString Name)
 	{
 		Name.ReplaceInline(TEXT(" "), TEXT(""));
 		return Name;
-	}
-
-	bool SameMark(const FSolidWorldChartMark& A, const FSolidWorldChartMark& B)
-	{
-		return A.Kind == B.Kind
-			&& A.Name.Equals(B.Name, ESearchCase::IgnoreCase)
-			&& FVector2D::Distance(A.PositionCm, B.PositionCm) <= 1.f
-			&& A.StrongholdType == B.StrongholdType
-			&& A.StrongholdSize == B.StrongholdSize
-			&& A.LairId.Equals(B.LairId, ESearchCase::IgnoreCase);
-	}
-
-	bool SameRoad(const FSolidWorldChartRoad& A, const FSolidWorldChartRoad& B)
-	{
-		return A.Type == B.Type
-			&& CompactName(A.FromName).Equals(CompactName(B.FromName), ESearchCase::IgnoreCase)
-			&& CompactName(A.ToName).Equals(CompactName(B.ToName), ESearchCase::IgnoreCase);
 	}
 
 	/** Town, stronghold, site, or neither. A site is reported and is not an end. */
@@ -665,69 +633,4 @@ bool USolidWorldChart::Undo()
 	Marks = Snapshot.Marks;
 	Roads = Snapshot.Roads;
 	return true;
-}
-
-FString USolidWorldChart::Disagreement(const FString& WorldMapText) const
-{
-	USolidWorldChart* Other = NewObject<USolidWorldChart>();
-	if (!Other->ImportFromString(WorldMapText))
-	{
-		return TEXT("Content/WorldMap.txt did not load.");
-	}
-	if (Cells.Num() != Other->Cells.Num())
-	{
-		return TEXT("The chart and Content/WorldMap.txt disagree.");
-	}
-	for (int32 Index = 0; Index < Cells.Num(); ++Index)
-	{
-		if (Cells[Index] != Other->Cells[Index])
-		{
-			return TEXT("The chart and Content/WorldMap.txt disagree.");
-		}
-	}
-	if (Marks.Num() != Other->Marks.Num() || Roads.Num() != Other->Roads.Num())
-	{
-		return TEXT("The chart and Content/WorldMap.txt disagree.");
-	}
-
-	TArray<int32> UsedMarks;
-	for (const FSolidWorldChartMark& Mark : Marks)
-	{
-		int32 Found = INDEX_NONE;
-		for (int32 Index = 0; Index < Other->Marks.Num(); ++Index)
-		{
-			if (UsedMarks.Contains(Index) || !SameMark(Mark, Other->Marks[Index]))
-			{
-				continue;
-			}
-			Found = Index;
-			break;
-		}
-		if (Found == INDEX_NONE)
-		{
-			return TEXT("The chart and Content/WorldMap.txt disagree.");
-		}
-		UsedMarks.Add(Found);
-	}
-
-	TArray<int32> UsedRoads;
-	for (const FSolidWorldChartRoad& Road : Roads)
-	{
-		int32 Found = INDEX_NONE;
-		for (int32 Index = 0; Index < Other->Roads.Num(); ++Index)
-		{
-			if (UsedRoads.Contains(Index) || !SameRoad(Road, Other->Roads[Index]))
-			{
-				continue;
-			}
-			Found = Index;
-			break;
-		}
-		if (Found == INDEX_NONE)
-		{
-			return TEXT("The chart and Content/WorldMap.txt disagree.");
-		}
-		UsedRoads.Add(Found);
-	}
-	return FString();
 }

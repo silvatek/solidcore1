@@ -48,7 +48,7 @@ public:
 
 	/**
 	 * Editor ground for the world chart. Every chunk of the centred world, and no
-	 * exploration fog, so the chart stays visible. Play still builds from WorldMap.txt.
+	 * exploration fog, so the chart stays visible. Play builds from the chart.
 	 */
 	void BuildChartView(const USolidWorldChart* Chart);
 
@@ -156,7 +156,7 @@ public:
 	/**
 	 * TerrainPoint cells along each map axis (built once at BeginPlay).
 	 * 513 doubles the original 257-point span at the same spacing: world side
-	 * goes from 512 m to 1024 m, and the world stays square. WorldMap.txt is
+	 * goes from 512 m to 1024 m, and the world stays square. The chart is
 	 * 128 columns by 64 rows across that square, so a cell is 8 m east–west
 	 * and 16 m north–south.
 	 */

@@ -36,13 +36,12 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 {
-	const FString Grid = PaintGrid();
 	USolidWorldChart* Chart = GrassChart();
-	if (!TestNotNull(TEXT("grass chart"), Chart) || !TestTrue(TEXT("the chart covers the map"), Chart->Cells.Num() == USolidWorldMap::MapWidth * USolidWorldMap::MapHeight))
+	if (!TestNotNull(TEXT("grass chart"), Chart)
+		|| !TestTrue(TEXT("the chart covers the map"), Chart->Cells.Num() == USolidWorldMap::MapWidth * USolidWorldMap::MapHeight))
 	{
 		return false;
 	}
-	TestTrue(TEXT("a fresh import matches its text"), Chart->Disagreement(Grid).IsEmpty());
 
 	FString Error;
 	const FIntPoint Cell(4, 6);
@@ -59,13 +58,11 @@ bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 		TEXT("the cell is forest"),
 		static_cast<uint8>(Chart->Cells[Cell.Y * USolidWorldMap::MapWidth + Cell.X]),
 		static_cast<uint8>(ESolidBiome::Forest));
-	TestFalse(TEXT("a paint disagrees with the text"), Chart->Disagreement(Grid).IsEmpty());
 	TestTrue(TEXT("undo restores the cell"), Chart->Undo());
 	TestEqual(
 		TEXT("the cell is grassland again"),
 		static_cast<uint8>(Chart->Cells[Cell.Y * USolidWorldMap::MapWidth + Cell.X]),
 		static_cast<uint8>(ESolidBiome::Grassland));
-	TestTrue(TEXT("undo restored the text"), Chart->Disagreement(Grid).IsEmpty());
 	TestFalse(TEXT("a second undo has nothing to put back"), Chart->Undo());
 
 	const TArray<FIntPoint> Run = { FIntPoint(1, 2), FIntPoint(3, 2), FIntPoint(8, 2) };

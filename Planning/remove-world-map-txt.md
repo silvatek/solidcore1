@@ -22,9 +22,15 @@ Stage 1 is the biome's colour. Stage 2 deletes `Content/WorldMap.txt`, the shipp
 
 ### Stage 1 — a biome names its colour
 
-`FSolidBiome` answers for an `ESolidBiome` token. `Color()` is the tint play uses, and the river uses the sea blue. `GetBiomeColor` and `DefaultColorForBiome` ask the biome. A colour line in a text map is ignored. `Content/WorldMap.txt` stays until stage 2. `LoadFromString` stays. The biome also names that ground, its shelf, and its chart letter, and it says whether the ground is open or paintable. Threat stays on the terrain point, a constant play ignores. Fog follows where the captain has been.
+`FSolidBiome` answers for an `ESolidBiome` token. `Color()` is the tint play uses, and the river uses the sea blue. `GetBiomeColor` and `DefaultColorForBiome` ask the biome. A colour line in a text map is ignored. `LoadFromString` stays. The biome also names that ground, its shelf, and its chart letter, and it says whether the ground is open or paintable. Threat stays on the terrain point, a constant play ignores. Fog follows where the captain has been.
+
+### Stage 2 — the text file is gone
+
+`Content/WorldMap.txt` is deleted. `ImportShippedWorldMap` and `Disagreement` are gone. `LoadFromString` and `ImportFromString` stay. `SolidCore1.WorldMap.ShippedChartMatchesText` loads the chart and checks the Meagre Dungeon mark. `tools/cloud_agent_check.py` no longer requires the file. `AGENTS.md` and `README.md` wait for stage 3.
+
+### Stage 3 — the docs
 
 - The world-map section of `AGENTS.md` is the review rule for the text file. Replace it with the chart at `/Game/World/WorldChart`, the 128×64 cell grid, and the mark kinds. A change to that asset is what a later agent reviews.
 - `README.md` still documents the marker characters and the `!` lines, and the `SolidCore1.WorldMap.*` filter blurb follows them. Point those at the chart and the mode, and at the tests that remain.
-- `tools/cloud_agent_check.py` errors when `Content/WorldMap.txt` is missing. That check leaves in the same change as the file.
+- `tools/cloud_agent_check.py` passes without `Content/WorldMap.txt`. Stage 2 removed the check that required the file. Stage 3 points the script at the chart.
 - If [Package the game](package-the-game.md) is still open, its acceptance follows the chart. The loose text file is not staged.

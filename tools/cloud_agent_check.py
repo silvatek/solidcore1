@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """SolidCore1 cloud-agent checks — no Unreal required.
 
-Mirrors USolidWorldMap grid loading and a few agent workflow guards.
-Exit 1 on errors; warnings print but do not fail.
+Agent workflow guards. Exit 1 on errors; warnings print but do not fail.
 """
 
 from __future__ import annotations
@@ -13,70 +12,6 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-MAP_WIDTH = 128
-MAP_HEIGHT = 64
-
-# Matches USolidWorldMap::IsGridMarker (letters, digits, biome/punctuation markers).
-SPECIAL_MARKERS = set("~.o#*^!")
-
-
-def is_grid_marker(ch: str) -> bool:
-    if len(ch) != 1:
-        return False
-    if ch.isalpha() or ch.isdigit():
-        return True
-    return ch in SPECIAL_MARKERS
-
-
-def load_world_map_grid(text: str) -> list[str]:
-    grid: list[str] = []
-    for raw in text.splitlines():
-        line = raw.strip()
-        if len(line) != MAP_WIDTH:
-            continue
-        if all(is_grid_marker(ch) for ch in line):
-            grid.append(line)
-            if len(grid) == MAP_HEIGHT:
-                break
-    return grid
-
-
-def check_world_map(errors: list[str], warnings: list[str]) -> None:
-    path = ROOT / "Content" / "WorldMap.txt"
-    if not path.is_file():
-        errors.append(f"missing {path.relative_to(ROOT)}")
-        return
-
-    text = path.read_text(encoding="utf-8")
-    grid = load_world_map_grid(text)
-    if len(grid) != MAP_HEIGHT:
-        errors.append(
-            f"WorldMap grid is {len(grid)}x{MAP_WIDTH if grid else 0}, "
-            f"expected {MAP_HEIGHT}x{MAP_WIDTH}"
-        )
-        return
-
-    bang_cells: set[tuple[int, int]] = set()
-    for row_i, row in enumerate(grid, start=1):
-        for col_i, ch in enumerate(row, start=1):
-            if ch == "!":
-                bang_cells.add((row_i, col_i))
-
-    described: set[tuple[int, int]] = set()
-    for raw in text.splitlines():
-        line = raw.split("#", 1)[0].strip()
-        if not line.startswith("!"):
-            continue
-        match = re.match(r"!\s*(\d+)\s*,\s*(\d+)\s*=", line)
-        if match:
-            described.add((int(match.group(1)), int(match.group(2))))
-
-    missing = sorted(bang_cells - described)
-    if missing:
-        cells = ", ".join(f"{r},{c}" for r, c in missing)
-        warnings.append(
-            f"WorldMap ! cells missing description lines (row,column from 1,1): {cells}"
-        )
 
 
 def check_build_id(errors: list[str]) -> None:
@@ -364,7 +299,6 @@ def main() -> int:
     errors: list[str] = []
     warnings: list[str] = []
 
-    check_world_map(errors, warnings)
     check_build_id(errors)
     check_planning(errors, warnings)
     check_ship_on_main(errors)

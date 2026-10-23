@@ -33,7 +33,7 @@ Nothing in the list below is called from product C++ outside its own declaration
 
 `FSolidTower` owns the plan, in `StoredPlan`. `FloorCount()` returns that floor count, beside `HeightCm()`. The Imperious exterior check calls it on the tower from `Make`, instead of `GetPlan().FloorCount`. `GetPlan` goes. `Plan()` stays. This story does not remove the plan.
 
-The World chart mode keeps `PaintRun`, `PaintRectangle`, `PlaceTown`, `PlaceStronghold`, `PlaceSite`, `PlaceLairMouth`, `PlaceCustom`, `DeleteMark`, `AddRoad`, `RouteForRoad`, `Undo`, `Disagreement`, `MarkAtCell`, `BuildChartView`, `RebuildChartView`, and `ClearChartView`. `SolidStronghold::TypeCount` stays. The mode clamps a type index with it.
+The World chart mode keeps `PaintRun`, `PaintRectangle`, `PlaceTown`, `PlaceStronghold`, `PlaceSite`, `PlaceLairMouth`, `PlaceCustom`, `DeleteMark`, `AddRoad`, `RouteForRoad`, `Undo`, `MarkAtCell`, `BuildChartView`, `RebuildChartView`, and `ClearChartView`. `SolidStronghold::TypeCount` stays. The mode clamps a type index with it.
 
 No product caller:
 

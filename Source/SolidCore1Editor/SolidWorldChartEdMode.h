@@ -75,7 +75,6 @@ public:
 	FString BannerText() const { return Banner; }
 	FString HoverLine() const { return Hover; }
 	FString RoadLine() const { return RoadMessage; }
-	FString DifferenceText() const { return Difference; }
 	FString ToolLine() const { return ToolMessage; }
 	void RefreshPanel();
 
@@ -102,7 +101,6 @@ private:
 	FString Banner;
 	FString Hover;
 	FString RoadMessage;
-	FString Difference;
 	FString ToolMessage;
 
 	bool IsOpenWorld(const UWorld* World) const;
@@ -119,7 +117,6 @@ private:
 	void RebuildSigns();
 	void FaceSigns(const FVector& Camera);
 	bool MarkLocation(const FSolidWorldChartMark& Mark, FVector& OutLocation) const;
-	void RefreshDisagreement();
 	void RefreshRoadMessage();
 	void Note(const FString& Message);
 	TArray<FIntPoint> PreviewCells() const;

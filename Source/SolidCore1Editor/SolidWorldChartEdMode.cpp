@@ -18,9 +18,7 @@
 #include "Engine/Engine.h"
 #include "Engine/TextRenderActor.h"
 #include "Engine/World.h"
-#include "Misc/FileHelper.h"
 #include "Misc/PackageName.h"
-#include "Misc/Paths.h"
 #include "SceneView.h"
 #include "UObject/SavePackage.h"
 
@@ -601,15 +599,6 @@ public:
 					.AutoWrapText(true)
 					.Text_Lambda([this]()
 					{
-						return FText::FromString(Mode ? Mode->DifferenceText() : FString());
-					})
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f)
-				[
-					SNew(STextBlock)
-					.AutoWrapText(true)
-					.Text_Lambda([this]()
-					{
 						return FText::FromString(Mode ? Mode->ToolLine() : FString());
 					})
 				]
@@ -702,7 +691,6 @@ void FSolidWorldChartEdMode::Enter()
 	FEdMode::Enter();
 	Chart = LoadObject<USolidWorldChart>(nullptr, USolidWorldChart::ShippedPath());
 	ShowChart();
-	RefreshDisagreement();
 	RefreshRoadMessage();
 	Hover = TEXT("Hover a cell.");
 	ToolMessage = TEXT("View. Left click does not edit.");
@@ -1023,7 +1011,6 @@ void FSolidWorldChartEdMode::PlaceCurrentMark()
 	}
 	RebuildOverlay();
 	RebuildSigns();
-	RefreshDisagreement();
 	RefreshPanel();
 }
 
@@ -1047,7 +1034,6 @@ void FSolidWorldChartEdMode::DeleteCurrentMark()
 	}
 	RebuildOverlay();
 	RebuildSigns();
-	RefreshDisagreement();
 	Hover = DescribeCell(CurrentCell);
 	RefreshPanel();
 }
@@ -1081,7 +1067,6 @@ void FSolidWorldChartEdMode::AddCurrentRoad()
 	Note(Error.IsEmpty()
 		? FString::Printf(TEXT("Added %s."), USolidWorldChart::RoadTypeName(RoadType))
 		: Error);
-	RefreshDisagreement();
 	RefreshPanel();
 }
 
@@ -1099,7 +1084,6 @@ void FSolidWorldChartEdMode::UndoChart()
 	}
 	RebuildOverlay();
 	RebuildSigns();
-	RefreshDisagreement();
 	RefreshRoadMessage();
 	if (bHasCell)
 	{
@@ -1326,7 +1310,6 @@ void FSolidWorldChartEdMode::EndStroke()
 		Streamer->RebuildChartView(Chart, Painted);
 	}
 	RebuildOverlay();
-	RefreshDisagreement();
 	if (bHasCell)
 	{
 		Hover = DescribeCell(CurrentCell);
@@ -1360,7 +1343,7 @@ void FSolidWorldChartEdMode::ShowChart()
 	UWorld* World = GetWorld();
 	if (!Chart)
 	{
-		Banner = TEXT("Missing /Game/World/WorldChart. Import WorldMap.txt into that asset first.");
+		Banner = TEXT("Missing /Game/World/WorldChart.");
 		return;
 	}
 	if (!IsOpenWorld(World))
@@ -1659,23 +1642,6 @@ void FSolidWorldChartEdMode::DrawHUD(
 	Label.OutlineColor = FLinearColor::Black;
 	Label.Scale = FVector2D(1.8f);
 	Canvas->DrawItem(Label);
-}
-
-void FSolidWorldChartEdMode::RefreshDisagreement()
-{
-	if (!Chart)
-	{
-		Difference.Reset();
-		return;
-	}
-	const FString Path = FPaths::ProjectContentDir() / TEXT("WorldMap.txt");
-	FString Text;
-	if (!FFileHelper::LoadFileToString(Text, *Path))
-	{
-		Difference = TEXT("Content/WorldMap.txt did not load.");
-		return;
-	}
-	Difference = Chart->Disagreement(Text);
 }
 
 void FSolidWorldChartEdMode::RefreshRoadMessage()

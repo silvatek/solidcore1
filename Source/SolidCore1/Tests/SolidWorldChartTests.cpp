@@ -1,7 +1,5 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "Misc/FileHelper.h"
-#include "Misc/Paths.h"
 #include "SolidStronghold.h"
 #include "SolidTowns.h"
 #include "SolidWorldChart.h"
@@ -172,132 +170,6 @@ namespace
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidWorldChartParityTest,
-	"SolidCore1.WorldMap.ChartMatchesText",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
-
-bool FSolidWorldChartParityTest::RunTest(const FString& Parameters)
-{
-	const FString Path = FPaths::ProjectContentDir() / TEXT("WorldMap.txt");
-	FString Text;
-	if (!TestTrue(TEXT("WorldMap.txt reads"), FFileHelper::LoadFileToString(Text, *Path)))
-	{
-		return false;
-	}
-
-	USolidWorldMap* TextMap = NewObject<USolidWorldMap>();
-	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
-	USolidWorldMap* ChartMap = NewObject<USolidWorldMap>();
-	if (!TestTrue(TEXT("text loads"), TextMap->LoadFromString(Text))
-		|| !TestTrue(TEXT("chart imports"), Chart->ImportFromString(Text))
-		|| !TestTrue(TEXT("chart loads"), ChartMap->LoadFromChart(Chart)))
-	{
-		return false;
-	}
-
-	TestTrue(TEXT("chart matches the text file"), MapsMatch(*this, *TextMap, *ChartMap));
-
-	for (const ESolidBiome Biome : Chart->Cells)
-	{
-		if (Biome == ESolidBiome::Swamp || Biome == ESolidBiome::Road)
-		{
-			AddError(TEXT("swamp and road are not marker biomes"));
-			break;
-		}
-	}
-
-	FSolidWorldLocation Iglin;
-	if (!TestTrue(TEXT("Iglin is on the chart"), ChartMap->FindLocation(SolidTowns::Iglin, Iglin)))
-	{
-		return false;
-	}
-	TestEqual(TEXT("Iglin is location 0"), Iglin.Id, 0);
-	TestTrue(TEXT("Iglin has a cell"), Iglin.Cells.Num() > 0);
-	if (Iglin.Cells.Num() > 0)
-	{
-		const FIntPoint Cell = Iglin.Cells[0];
-		const int32 Index = Cell.Y * USolidWorldMap::MapWidth + Cell.X;
-		TestEqual(
-			TEXT("Iglin's ! imports as grassland"),
-			static_cast<uint8>(Chart->Cells[Index]),
-			static_cast<uint8>(ESolidBiome::Grassland));
-		TestEqual(
-			TEXT("Iglin plays as a town"),
-			static_cast<uint8>(ChartMap->GetBiomeAtCell(Cell.X, Cell.Y)),
-			static_cast<uint8>(ESolidBiome::Town));
-	}
-
-	FSolidWorldLocation Gate;
-	TestTrue(TEXT("Dragongate is one town"), ChartMap->FindLocation(SolidTowns::Dragongate, Gate));
-	TestEqual(TEXT("Dragongate stays on two cells"), Gate.Cells.Num(), 2);
-	int32 GateMarks = 0;
-	for (const FSolidWorldChartMark& Mark : Chart->Marks)
-	{
-		if (Mark.Kind == ESolidWorldChartMarkKind::Town && Mark.Name == TEXT("Dragongate"))
-		{
-			++GateMarks;
-		}
-	}
-	TestEqual(TEXT("Dragongate is two town marks"), GateMarks, 2);
-
-	const FIntPoint Cave = SolidStronghold::StartingCell();
-	FSolidWorldBang CaveBang;
-	TestTrue(TEXT("the cave mark is on the chart"), ChartMap->FindBang(Cave.X, Cave.Y, CaveBang));
-	TestEqual(
-		TEXT("the cave is a stronghold"),
-		static_cast<uint8>(CaveBang.Kind),
-		static_cast<uint8>(ESolidWorldBang::Stronghold));
-	TestEqual(
-		TEXT("the cave is Meagre"),
-		static_cast<uint8>(CaveBang.StrongholdSize),
-		static_cast<uint8>(ESolidStrongholdSize::Meagre));
-	TestEqual(
-		TEXT("the cave is a Dungeon"),
-		static_cast<uint8>(CaveBang.StrongholdType),
-		static_cast<uint8>(ESolidStrongholdType::Dungeon));
-	TestEqual(TEXT("the cave row is 9"), CaveBang.Cell.Y + 1, SolidStronghold::StartingRow);
-	TestEqual(TEXT("the cave column is 17"), CaveBang.Cell.X + 1, SolidStronghold::StartingColumn);
-
-	FVector2D WorldMin = FVector2D::ZeroVector;
-	FVector2D WorldMax = FVector2D::ZeroVector;
-	USolidWorldChart::DefaultWorldBounds(WorldMin, WorldMax);
-	FVector2D CaveCentre = FVector2D::ZeroVector;
-	TestTrue(TEXT("the cave cell has a centre"), TextMap->CellToWorldXY(Cave, WorldMin, WorldMax, CaveCentre));
-	bool bCaveMark = false;
-	bool bLairGrass = false;
-	for (const FSolidWorldChartMark& Mark : Chart->Marks)
-	{
-		if (Mark.Kind == ESolidWorldChartMarkKind::Stronghold
-			&& Mark.StrongholdSize == ESolidStrongholdSize::Meagre
-			&& Mark.StrongholdType == ESolidStrongholdType::Dungeon)
-		{
-			bCaveMark = true;
-			TestTrue(TEXT("the cave mark sits on the cell centre"), Mark.PositionCm.Equals(CaveCentre, 1.f));
-		}
-		if (Mark.Kind == ESolidWorldChartMarkKind::LairEntrance && !bLairGrass)
-		{
-			FIntPoint Mouth = FIntPoint::ZeroValue;
-			if (ChartMap->CellAtWorld(Mark.PositionCm.X, Mark.PositionCm.Y, WorldMin, WorldMax, Mouth))
-			{
-				const int32 Index = Mouth.Y * USolidWorldMap::MapWidth + Mouth.X;
-				TestEqual(
-					TEXT("a lair ! imports as grassland"),
-					static_cast<uint8>(Chart->Cells[Index]),
-					static_cast<uint8>(ESolidBiome::Grassland));
-				TestEqual(
-					TEXT("a lair mouth plays as mountain"),
-					static_cast<uint8>(ChartMap->GetBiomeAtCell(Mouth.X, Mouth.Y)),
-					static_cast<uint8>(ESolidBiome::Mountain));
-				bLairGrass = true;
-			}
-		}
-	}
-	TestTrue(TEXT("the chart has the Meagre Dungeon mark"), bCaveMark);
-	TestTrue(TEXT("the chart has a lair entrance"), bLairGrass);
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidWorldChartRulesTest,
 	"SolidCore1.WorldMap.ChartRules",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
@@ -396,35 +268,17 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidShippedWorldChartTest::RunTest(const FString& Parameters)
 {
-	const FString Path = FPaths::ProjectContentDir() / TEXT("WorldMap.txt");
-	FString Text;
-	if (!TestTrue(TEXT("WorldMap.txt reads"), FFileHelper::LoadFileToString(Text, *Path)))
-	{
-		return false;
-	}
-
-	USolidWorldMap* TextMap = NewObject<USolidWorldMap>();
-	if (!TestTrue(TEXT("text loads"), TextMap->LoadFromString(Text)))
-	{
-		return false;
-	}
-
 	USolidWorldChart* Chart = LoadObject<USolidWorldChart>(nullptr, USolidWorldChart::ShippedPath());
 	if (!TestNotNull(TEXT("/Game/World/WorldChart"), Chart))
 	{
 		return false;
 	}
 
-	USolidWorldMap* ChartMap = NewObject<USolidWorldMap>();
 	USolidWorldMap* DefaultMap = NewObject<USolidWorldMap>();
-	if (!TestTrue(TEXT("shipped chart loads"), ChartMap->LoadFromChart(Chart))
-		|| !TestTrue(TEXT("LoadDefault loads the chart"), DefaultMap->LoadDefault()))
+	if (!TestTrue(TEXT("LoadDefault loads the chart"), DefaultMap->LoadDefault()))
 	{
 		return false;
 	}
-
-	TestTrue(TEXT("the shipped chart matches the text file"), MapsMatch(*this, *TextMap, *ChartMap));
-	TestTrue(TEXT("LoadDefault matches the text file"), MapsMatch(*this, *TextMap, *DefaultMap));
 
 	const FIntPoint Cave = SolidStronghold::StartingCell();
 	FSolidWorldBang CaveBang;

@@ -102,8 +102,8 @@ struct FSolidWorldChartRead
 
 /**
  * The shipped world as a data asset. Cells hold marker biomes. Marks and roads
- * hold the same facts as Content/WorldMap.txt. The game builds the world from
- * /Game/World/WorldChart. The editor saves the import at that path.
+ * hold the towns, strongholds, and roads. The game builds the world from
+ * /Game/World/WorldChart.
  */
 UCLASS(BlueprintType)
 class SOLIDCORE1_API USolidWorldChart : public UDataAsset
@@ -121,15 +121,11 @@ public:
 	static void DefaultWorldBounds(FVector2D& OutMin, FVector2D& OutMax);
 
 	/**
-	 * Fill this chart from WorldMap.txt text. A ! is stored as grassland.
+	 * Fill this chart from map text. A ! is stored as grassland.
 	 * Named towns, strongholds, sites, and lair mouths become marks.
 	 * A road is stored as two end names and a type. The route is not solved here.
 	 */
 	bool ImportFromString(const FString& Text);
-
-	/** Fill this asset from Content/WorldMap.txt so the editor can save it. */
-	UFUNCTION(CallInEditor, Category = "WorldChart", meta = (DisplayName = "Import WorldMap.txt"))
-	void ImportShippedWorldMap();
 
 	/** Word the road line uses for this type: trail, track, road, or highway. */
 	static const TCHAR* RoadTypeName(ESolidWorldChartRoadType Type);
@@ -205,12 +201,6 @@ public:
 
 	/** Put back the chart from before the last paint, mark, or road. */
 	bool Undo();
-
-	/**
-	 * Empty when this chart matches WorldMap.txt text.
-	 * Otherwise a sentence the World chart mode can show.
-	 */
-	FString Disagreement(const FString& WorldMapText) const;
 
 	/** Marker biome of each cell. Row-major. Row 0 is north, column 0 is east. A ! is grassland. */
 	UPROPERTY(EditAnywhere, Category = "WorldChart")

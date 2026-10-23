@@ -108,17 +108,15 @@ void ASolidCharacter::SimulateKey(FKey Key)
 	}
 }
 
-void ASolidCharacter::SimulateMouseLook(const float DeltaX, const float DeltaY)
+void ASolidCharacter::FaceTrueSight(const float YawDegrees)
 {
-	if (FMath::IsNearlyZero(DeltaX) && FMath::IsNearlyZero(DeltaY))
+	const FRotator View(0.f, YawDegrees, 0.f);
+	SetActorRotation(View);
+	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
 	{
-		return;
+		PlayerController->SetControlRotation(View);
+		PlayerController->RotationInput = FRotator::ZeroRotator;
 	}
-
-	bScriptInput = true;
-	Look(FInputActionValue(FVector2D(DeltaX, DeltaY)));
-	bScriptInput = false;
-	FlushScriptLook();
 }
 
 void ASolidCharacter::SimulateLeftClick(const float ScreenX, const float ScreenY)

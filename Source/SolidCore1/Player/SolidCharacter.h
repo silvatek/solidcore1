@@ -78,8 +78,11 @@ public:
 	 * The mapping's modifiers run, then the bound handler. Hardware input stays ignored while the script runs.
 	 */
 	void SimulateKey(FKey Key);
-	/** The look axis the mouse and the right stick already produce. The view updates before this returns. */
-	void SimulateMouseLook(float DeltaX, float DeltaY);
+	/**
+	 * Aim true sight along this yaw, level. One assignment, so the view does not spin.
+	 * The body follows the controller. The script holds W after this.
+	 */
+	void FaceTrueSight(float YawDegrees);
 	/** Move the pointer and press the left button. The click handler runs. */
 	void SimulateLeftClick(float ScreenX, float ScreenY);
 	/** The stick a move key produces after its mapping modifiers. W is (0, 1), forward. */

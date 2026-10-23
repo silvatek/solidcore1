@@ -194,6 +194,11 @@ bool FSolidAutoPlaythroughKeysTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("A is mapped"), Character->StickForKey(EKeys::A, Stick));
 	TestTrue(TEXT("A is left"), Stick.Equals(FVector2D(-1.f, 0.f)));
 	TestFalse(TEXT("a click is not a move key"), Character->StickForKey(EKeys::LeftMouseButton, Stick));
+
+	Character->FaceTrueSight(90.f);
+	TestTrue(
+		TEXT("true sight faces the walk"),
+		FMath::IsNearlyEqual(Character->GetActorRotation().Yaw, 90.f, 0.1f));
 	return true;
 }
 

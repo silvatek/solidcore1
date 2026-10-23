@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0590")
+#define SOLID_BUILD_ID TEXT("SC1-0591")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Auto playthrough holds W and looks along the walk.")
+#define SOLID_BUILD_NOTE TEXT("Auto playthrough aims along the walk, then holds W.")
 #endif

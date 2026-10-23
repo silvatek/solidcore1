@@ -507,11 +507,7 @@ void FSolidAutoPlaythrough::TickWalk(
 		{
 			return;
 		}
-		const FRotator View = Captain.GetControlRotation();
-		const float DesiredYaw = FVector(Direction.X, Direction.Y, 0.f).Rotation().Yaw;
-		Captain.SimulateMouseLook(
-			FMath::FindDeltaAngleDegrees(View.Yaw, DesiredYaw),
-			FMath::FindDeltaAngleDegrees(View.Pitch, 0.f));
+		Captain.FaceTrueSight(FVector(Direction.X, Direction.Y, 0.f).Rotation().Yaw);
 		Captain.SimulateKey(EKeys::W);
 		return;
 	}

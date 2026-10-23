@@ -204,6 +204,7 @@ tools/
   agent.bat                    # Start the solidcore1-ue worker; write agent.ok on success
   build.bat                    # SolidCore1Editor Win64 Development
   cloud_agent_check.py         # Branch and repo checks before a push
+  dump-chart.bat               # Write /Game/World/WorldChart as JSON
   editor.bat                   # Open the editor on Lvl_ThirdPerson
   fab-assets.json              # Fab listing IDs and recorded paths
   fab_doctor.bat               # Recorded path first, then search; write back a find

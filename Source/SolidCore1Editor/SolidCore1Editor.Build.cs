@@ -21,6 +21,7 @@ public class SolidCore1Editor : ModuleRules
 		PrivateDependencyModuleNames.AddRange(new string[]
 		{
 			"EditorFramework",
+			"Json",
 			"LevelEditor"
 		});
 

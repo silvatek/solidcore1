@@ -96,7 +96,9 @@ Cloud agents are a **code + git workshop** on the Cursor-hosted Linux VM. They d
 
 ### Complex stories
 
-A complex story starts with a high-level staged plan. Agree that plan with the user before any stage is planned in detail.
+An agent defining a story writes the whole story. The phasing below, and a detailed plan for one stage, are for the agent implementing that story.
+
+A complex story starts with a high-level staged plan. The implementing agent agrees that plan with the user before any stage is planned in detail.
 
 After that agreement, produce and deliver a detailed plan for the first stage only. Deliver that stage before the next stage. Each later stage gets its own detailed plan when its turn comes.
 

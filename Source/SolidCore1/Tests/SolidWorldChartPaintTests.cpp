@@ -4,7 +4,6 @@
 #include "SolidStronghold.h"
 #include "SolidTowns.h"
 #include "SolidWorldChart.h"
-#include "SolidWorldMap.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -13,9 +12,9 @@ namespace
 	FString PaintGrid()
 	{
 		FString Text;
-		for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 		{
-			Text += FString::ChrN(USolidWorldMap::MapWidth, USolidWorldMap::GrassMarker);
+			Text += FString::ChrN(USolidWorldChart::MapWidth, USolidWorldChart::GrassMarker);
 			Text += TEXT("\n");
 		}
 		return Text;
@@ -38,7 +37,7 @@ bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 {
 	USolidWorldChart* Chart = GrassChart();
 	if (!TestNotNull(TEXT("grass chart"), Chart)
-		|| !TestTrue(TEXT("the chart covers the map"), Chart->Cells.Num() == USolidWorldMap::MapWidth * USolidWorldMap::MapHeight))
+		|| !TestTrue(TEXT("the chart covers the map"), Chart->Cells.Num() == USolidWorldChart::MapWidth * USolidWorldChart::MapHeight))
 	{
 		return false;
 	}
@@ -50,38 +49,38 @@ bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("road is not a paint"), Chart->PaintCell(Cell, ESolidBiome::Road, Error));
 	TestEqual(
 		TEXT("a rejected paint leaves grassland"),
-		static_cast<uint8>(Chart->Cells[Cell.Y * USolidWorldMap::MapWidth + Cell.X]),
+		static_cast<uint8>(Chart->Cells[Cell.Y * USolidWorldChart::MapWidth + Cell.X]),
 		static_cast<uint8>(ESolidBiome::Grassland));
 
 	TestTrue(TEXT("one cell paints"), Chart->PaintCell(Cell, ESolidBiome::Forest, Error));
 	TestEqual(
 		TEXT("the cell is forest"),
-		static_cast<uint8>(Chart->Cells[Cell.Y * USolidWorldMap::MapWidth + Cell.X]),
+		static_cast<uint8>(Chart->Cells[Cell.Y * USolidWorldChart::MapWidth + Cell.X]),
 		static_cast<uint8>(ESolidBiome::Forest));
 	TestTrue(TEXT("undo restores the cell"), Chart->Undo());
 	TestEqual(
 		TEXT("the cell is grassland again"),
-		static_cast<uint8>(Chart->Cells[Cell.Y * USolidWorldMap::MapWidth + Cell.X]),
+		static_cast<uint8>(Chart->Cells[Cell.Y * USolidWorldChart::MapWidth + Cell.X]),
 		static_cast<uint8>(ESolidBiome::Grassland));
 	TestFalse(TEXT("a second undo has nothing to put back"), Chart->Undo());
 
 	const TArray<FIntPoint> Run = { FIntPoint(1, 2), FIntPoint(3, 2), FIntPoint(8, 2) };
 	TestTrue(TEXT("a drag is one paint"), Chart->PaintRun(Run, ESolidBiome::Desert, Error));
-	TestEqual(TEXT("the run's first cell"), static_cast<uint8>(Chart->Cells[2 * USolidWorldMap::MapWidth + 1]), static_cast<uint8>(ESolidBiome::Desert));
-	TestEqual(TEXT("a gap in the run stays grassland"), static_cast<uint8>(Chart->Cells[2 * USolidWorldMap::MapWidth + 2]), static_cast<uint8>(ESolidBiome::Grassland));
-	TestEqual(TEXT("the run's last cell"), static_cast<uint8>(Chart->Cells[2 * USolidWorldMap::MapWidth + 8]), static_cast<uint8>(ESolidBiome::Desert));
+	TestEqual(TEXT("the run's first cell"), static_cast<uint8>(Chart->Cells[2 * USolidWorldChart::MapWidth + 1]), static_cast<uint8>(ESolidBiome::Desert));
+	TestEqual(TEXT("a gap in the run stays grassland"), static_cast<uint8>(Chart->Cells[2 * USolidWorldChart::MapWidth + 2]), static_cast<uint8>(ESolidBiome::Grassland));
+	TestEqual(TEXT("the run's last cell"), static_cast<uint8>(Chart->Cells[2 * USolidWorldChart::MapWidth + 8]), static_cast<uint8>(ESolidBiome::Desert));
 	TestTrue(TEXT("one undo clears the whole run"), Chart->Undo());
-	TestEqual(TEXT("the run is grassland"), static_cast<uint8>(Chart->Cells[2 * USolidWorldMap::MapWidth + 1]), static_cast<uint8>(ESolidBiome::Grassland));
+	TestEqual(TEXT("the run is grassland"), static_cast<uint8>(Chart->Cells[2 * USolidWorldChart::MapWidth + 1]), static_cast<uint8>(ESolidBiome::Grassland));
 
 	TestTrue(TEXT("a rectangle paints"), Chart->PaintRectangle(FIntPoint(0, 0), FIntPoint(2, 1), ESolidBiome::Sea, Error));
-	TestEqual(TEXT("the rectangle's far corner"), static_cast<uint8>(Chart->Cells[1 * USolidWorldMap::MapWidth + 2]), static_cast<uint8>(ESolidBiome::Sea));
-	TestEqual(TEXT("outside the rectangle stays grassland"), static_cast<uint8>(Chart->Cells[2 * USolidWorldMap::MapWidth + 2]), static_cast<uint8>(ESolidBiome::Grassland));
+	TestEqual(TEXT("the rectangle's far corner"), static_cast<uint8>(Chart->Cells[1 * USolidWorldChart::MapWidth + 2]), static_cast<uint8>(ESolidBiome::Sea));
+	TestEqual(TEXT("outside the rectangle stays grassland"), static_cast<uint8>(Chart->Cells[2 * USolidWorldChart::MapWidth + 2]), static_cast<uint8>(ESolidBiome::Grassland));
 	int32 SeaCells = 0;
 	for (int32 Row = 0; Row <= 1; ++Row)
 	{
 		for (int32 Col = 0; Col <= 2; ++Col)
 		{
-			if (Chart->Cells[Row * USolidWorldMap::MapWidth + Col] == ESolidBiome::Sea)
+			if (Chart->Cells[Row * USolidWorldChart::MapWidth + Col] == ESolidBiome::Sea)
 			{
 				++SeaCells;
 			}
@@ -177,7 +176,7 @@ bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("undo removes the site road"), Chart->Undo());
 
 	const FIntPoint NoteCell(90, 50);
-	const int32 NoteIndexOnMap = NoteCell.Y * USolidWorldMap::MapWidth + NoteCell.X;
+	const int32 NoteIndexOnMap = NoteCell.Y * USolidWorldChart::MapWidth + NoteCell.X;
 	const uint8 PaintBefore = static_cast<uint8>(Chart->Cells[NoteIndexOnMap]);
 	TestFalse(TEXT("an empty note is rejected"), Chart->PlaceCustom(NoteCell, TEXT("   "), Error));
 	TestTrue(TEXT("the empty note says it needs text"), Error.Contains(TEXT("note")));
@@ -195,7 +194,7 @@ bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 	}
 	TestEqual(TEXT("a note leaves the paint"), static_cast<uint8>(Chart->Cells[NoteIndexOnMap]), PaintBefore);
 
-	USolidWorldMap* Noted = NewObject<USolidWorldMap>();
+	USolidWorldChart* Noted = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("a chart with a note still loads"), Noted->LoadFromChart(Chart));
 	TestEqual(
 		TEXT("a note does not change the biome"),
@@ -226,7 +225,7 @@ bool FSolidWorldChartEncounterTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	USolidWorldMap* FromText = NewObject<USolidWorldMap>();
+	USolidWorldChart* FromText = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("the text has no encounters"), FromText && FromText->LoadFromString(Grid));
 	if (FromText)
 	{
@@ -239,7 +238,7 @@ bool FSolidWorldChartEncounterTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the error names Nope"), Error.Contains(TEXT("Nope")));
 	TestEqual(TEXT("the unknown name left no mark"), Chart->MarkAtCell(Cell), static_cast<int32>(INDEX_NONE));
 
-	const int32 CellIndex = Cell.Y * USolidWorldMap::MapWidth + Cell.X;
+	const int32 CellIndex = Cell.Y * USolidWorldChart::MapWidth + Cell.X;
 	const uint8 PaintBefore = static_cast<uint8>(Chart->Cells[CellIndex]);
 	TestTrue(TEXT("Iglin places first"), Chart->PlaceTown(Cell, TEXT("Iglin"), Error));
 	TestTrue(TEXT("the encounter replaces the town"), Chart->PlaceEncounter(Cell, TEXT("Iglin Bridge"), Error));
@@ -270,7 +269,7 @@ bool FSolidWorldChartEncounterTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the read has the mark"), Read.bHasMark);
 	TestEqual(TEXT("the read names the encounter"), Read.Mark.Name, FString(TEXT("Iglin Bridge")));
 
-	USolidWorldMap* Loaded = NewObject<USolidWorldMap>();
+	USolidWorldChart* Loaded = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("the chart loads"), Loaded && Loaded->LoadFromChart(Chart));
 	if (Loaded)
 	{

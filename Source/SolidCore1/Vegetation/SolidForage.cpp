@@ -1,7 +1,7 @@
 #include "SolidForage.h"
 #include "Inventory/SolidInventory.h"
 #include "SolidGameState.h"
-#include "Terrain/SolidWorldMap.h"
+#include "Terrain/SolidWorldChart.h"
 
 int32 SolidForage::CollectChoices(
 	const TArray<FSolidTerrainPoint>& Points,
@@ -73,7 +73,7 @@ int32 SolidForage::CollectChoices(
 
 int32 SolidForage::GuaranteeForestCells(
 	const TArray<FSolidTerrainPoint>& Points,
-	const USolidWorldMap* WorldMap,
+	const USolidWorldChart* WorldMap,
 	const FVector2D& WorldMinXY,
 	const FVector2D& WorldMaxXY,
 	const FVector2D& TownXY,
@@ -98,7 +98,7 @@ int32 SolidForage::GuaranteeForestCells(
 	TArray<uint8> PointUsed;
 	PointUsed.Init(0, Points.Num());
 
-	const int32 CellCount = USolidWorldMap::MapWidth * USolidWorldMap::MapHeight;
+	const int32 CellCount = USolidWorldChart::MapWidth * USolidWorldChart::MapHeight;
 	TArray<uint8> HasStick;
 	TArray<uint8> HasPitch;
 	HasStick.Init(0, CellCount);
@@ -117,7 +117,7 @@ int32 SolidForage::GuaranteeForestCells(
 		{
 			continue;
 		}
-		const int32 Key = Cell.Y * USolidWorldMap::MapWidth + Cell.X;
+		const int32 Key = Cell.Y * USolidWorldChart::MapWidth + Cell.X;
 		if (!HasStick.IsValidIndex(Key))
 		{
 			continue;
@@ -155,7 +155,7 @@ int32 SolidForage::GuaranteeForestCells(
 		{
 			continue;
 		}
-		if (WorldMap->GetMarkerAtCell(Cell.X, Cell.Y) != USolidWorldMap::ForestMarker)
+		if (WorldMap->GetMarkerAtCell(Cell.X, Cell.Y) != USolidWorldChart::ForestMarker)
 		{
 			continue;
 		}
@@ -170,7 +170,7 @@ int32 SolidForage::GuaranteeForestCells(
 			continue;
 		}
 
-		const int32 Key = Cell.Y * USolidWorldMap::MapWidth + Cell.X;
+		const int32 Key = Cell.Y * USolidWorldChart::MapWidth + Cell.X;
 		OpenByCell.FindOrAdd(Key).Indexes.Add(PointIndex);
 	}
 
@@ -194,11 +194,11 @@ int32 SolidForage::GuaranteeForestCells(
 		return INDEX_NONE;
 	};
 
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
-			if (WorldMap->GetMarkerAtCell(Col, Row) != USolidWorldMap::ForestMarker)
+			if (WorldMap->GetMarkerAtCell(Col, Row) != USolidWorldChart::ForestMarker)
 			{
 				continue;
 			}
@@ -213,7 +213,7 @@ int32 SolidForage::GuaranteeForestCells(
 				continue;
 			}
 
-			const int32 Key = Row * USolidWorldMap::MapWidth + Col;
+			const int32 Key = Row * USolidWorldChart::MapWidth + Col;
 			if (!HasStick.IsValidIndex(Key))
 			{
 				continue;

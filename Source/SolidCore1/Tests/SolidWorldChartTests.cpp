@@ -3,7 +3,6 @@
 #include "SolidStronghold.h"
 #include "SolidTowns.h"
 #include "SolidWorldChart.h"
-#include "SolidWorldMap.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -12,13 +11,13 @@ namespace
 	FString ChartTestGrid(const TArray<TPair<FIntPoint, TCHAR>>& Painted, const FString& Lines)
 	{
 		FString Text;
-		for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 		{
 			FString Line;
-			Line.Reserve(USolidWorldMap::MapWidth);
-			for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+			Line.Reserve(USolidWorldChart::MapWidth);
+			for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 			{
-				TCHAR Marker = USolidWorldMap::GrassMarker;
+				TCHAR Marker = USolidWorldChart::GrassMarker;
 				for (const TPair<FIntPoint, TCHAR>& Cell : Painted)
 				{
 					if (Cell.Key.X == Col && Cell.Key.Y == Row)
@@ -55,15 +54,15 @@ namespace
 			&& A.StrongholdName == B.StrongholdName;
 	}
 
-	bool MapsMatch(FAutomationTestBase& Test, const USolidWorldMap& TextMap, const USolidWorldMap& ChartMap)
+	bool MapsMatch(FAutomationTestBase& Test, const USolidWorldChart& TextMap, const USolidWorldChart& ChartMap)
 	{
 		int32 BiomeMiss = 0;
 		FIntPoint FirstBiome = FIntPoint::ZeroValue;
 		int32 MarkMiss = 0;
 		FIntPoint FirstMark = FIntPoint::ZeroValue;
-		for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 		{
-			for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+			for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 			{
 				if (TextMap.GetBiomeAtCell(Col, Row) != ChartMap.GetBiomeAtCell(Col, Row))
 				{
@@ -183,12 +182,12 @@ bool FSolidWorldChartRulesTest::RunTest(const FString& Parameters)
 	const FIntPoint BareCell(6, 10);
 	const FIntPoint DigitCell(3, 12);
 	TArray<TPair<FIntPoint, TCHAR>> Painted;
-	Painted.Add(TPair<FIntPoint, TCHAR>(IglinCell, USolidWorldMap::LocationMarker));
-	Painted.Add(TPair<FIntPoint, TCHAR>(CaveCell, USolidWorldMap::LocationMarker));
-	Painted.Add(TPair<FIntPoint, TCHAR>(GateCell, USolidWorldMap::LocationMarker));
-	Painted.Add(TPair<FIntPoint, TCHAR>(FIntPoint(GateCell.X + 1, GateCell.Y), USolidWorldMap::LocationMarker));
-	Painted.Add(TPair<FIntPoint, TCHAR>(UnknownCell, USolidWorldMap::LocationMarker));
-	Painted.Add(TPair<FIntPoint, TCHAR>(BareCell, USolidWorldMap::LocationMarker));
+	Painted.Add(TPair<FIntPoint, TCHAR>(IglinCell, USolidWorldChart::LocationMarker));
+	Painted.Add(TPair<FIntPoint, TCHAR>(CaveCell, USolidWorldChart::LocationMarker));
+	Painted.Add(TPair<FIntPoint, TCHAR>(GateCell, USolidWorldChart::LocationMarker));
+	Painted.Add(TPair<FIntPoint, TCHAR>(FIntPoint(GateCell.X + 1, GateCell.Y), USolidWorldChart::LocationMarker));
+	Painted.Add(TPair<FIntPoint, TCHAR>(UnknownCell, USolidWorldChart::LocationMarker));
+	Painted.Add(TPair<FIntPoint, TCHAR>(BareCell, USolidWorldChart::LocationMarker));
 	Painted.Add(TPair<FIntPoint, TCHAR>(DigitCell, TEXT('7')));
 	const FString Text = ChartTestGrid(
 		Painted,
@@ -205,9 +204,9 @@ bool FSolidWorldChartRulesTest::RunTest(const FString& Parameters)
 			GateCell.Y + 1, GateCell.X + 2,
 			UnknownCell.Y + 1, UnknownCell.X + 1));
 
-	USolidWorldMap* TextMap = NewObject<USolidWorldMap>();
+	USolidWorldChart* TextMap = NewObject<USolidWorldChart>();
 	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
-	USolidWorldMap* ChartMap = NewObject<USolidWorldMap>();
+	USolidWorldChart* ChartMap = NewObject<USolidWorldChart>();
 	if (!TestTrue(TEXT("rules text loads"), TextMap->LoadFromString(Text))
 		|| !TestTrue(TEXT("rules chart imports"), Chart->ImportFromString(Text))
 		|| !TestTrue(TEXT("rules chart loads"), ChartMap->LoadFromChart(Chart)))
@@ -220,7 +219,7 @@ bool FSolidWorldChartRulesTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("an unknown town is not a location"), ChartMap->GetLocationIdAtCell(UnknownCell.X, UnknownCell.Y), INDEX_NONE);
 	FSolidWorldBang UnknownBang;
 	TestFalse(TEXT("Nowhere is not a mark"), ChartMap->FindBang(UnknownCell.X, UnknownCell.Y, UnknownBang));
-	const int32 UnknownIndex = UnknownCell.Y * USolidWorldMap::MapWidth + UnknownCell.X;
+	const int32 UnknownIndex = UnknownCell.Y * USolidWorldChart::MapWidth + UnknownCell.X;
 	TestEqual(
 		TEXT("an unknown town imports as grassland"),
 		static_cast<uint8>(Chart->Cells[UnknownIndex]),
@@ -228,14 +227,14 @@ bool FSolidWorldChartRulesTest::RunTest(const FString& Parameters)
 
 	FSolidWorldBang BareBang;
 	TestFalse(TEXT("a bare ! is not a mark"), ChartMap->FindBang(BareCell.X, BareCell.Y, BareBang));
-	const int32 BareIndex = BareCell.Y * USolidWorldMap::MapWidth + BareCell.X;
+	const int32 BareIndex = BareCell.Y * USolidWorldChart::MapWidth + BareCell.X;
 	TestEqual(
 		TEXT("a bare ! imports as grassland"),
 		static_cast<uint8>(Chart->Cells[BareIndex]),
 		static_cast<uint8>(ESolidBiome::Grassland));
 	TestEqual(
 		TEXT("a digit imports as grassland"),
-		static_cast<uint8>(Chart->Cells[DigitCell.Y * USolidWorldMap::MapWidth + DigitCell.X]),
+		static_cast<uint8>(Chart->Cells[DigitCell.Y * USolidWorldChart::MapWidth + DigitCell.X]),
 		static_cast<uint8>(ESolidBiome::Grassland));
 
 	FSolidWorldLocation Gate;
@@ -274,7 +273,7 @@ bool FSolidShippedWorldChartTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	USolidWorldMap* DefaultMap = NewObject<USolidWorldMap>();
+	USolidWorldChart* DefaultMap = NewObject<USolidWorldChart>();
 	if (!TestTrue(TEXT("LoadDefault loads the chart"), DefaultMap->LoadDefault()))
 	{
 		return false;

@@ -5,7 +5,7 @@
 #include "GameFramework/Actor.h"
 #include "SolidBridge.generated.h"
 
-class USolidWorldMap;
+class USolidWorldChart;
 class UStaticMeshComponent;
 
 /**
@@ -66,7 +66,7 @@ namespace SolidBridge
 	 * @return Number of bridges written.
 	 */
 	int32 Collect(
-		const USolidWorldMap& Map,
+		const USolidWorldChart& Map,
 		FVector2D WorldMinXY,
 		FVector2D WorldMaxXY,
 		const TFunction<float(float X, float Y)>& HeightAt,

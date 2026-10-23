@@ -5,7 +5,7 @@
 #include "Terrain/SolidRoad.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
-#include "Terrain/SolidWorldMap.h"
+#include "Terrain/SolidWorldChart.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/Character.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -35,7 +35,7 @@ namespace
 
 	struct FOpenWorld
 	{
-		const USolidWorldMap* Map = nullptr;
+		const USolidWorldChart* Map = nullptr;
 		FVector2D Min = FVector2D::ZeroVector;
 		FVector2D Max = FVector2D::ZeroVector;
 		TArray<SolidBridge::FBridge> Bridges;
@@ -66,7 +66,7 @@ namespace
 
 		ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World);
 		const USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
-		const USolidWorldMap* Map = Terrain ? Terrain->GetWorldMap() : nullptr;
+		const USolidWorldChart* Map = Terrain ? Terrain->GetWorldMap() : nullptr;
 		if (!Terrain || !Terrain->IsBuilt() || !Map || !Map->IsLoaded())
 		{
 			return false;
@@ -138,7 +138,7 @@ namespace
 }
 
 bool SolidGroundMove::IsImpassableGround(
-	const USolidWorldMap& Map,
+	const USolidWorldChart& Map,
 	const float X,
 	const float Y,
 	const FVector2D WorldMinXY,
@@ -174,7 +174,7 @@ bool SolidGroundMove::OnRamp(const SolidBridge::FBridge& Bridge, const float X, 
 }
 
 bool SolidGroundMove::AllowsFooting(
-	const USolidWorldMap& Map,
+	const USolidWorldChart& Map,
 	const float X,
 	const float Y,
 	const FVector2D WorldMinXY,
@@ -267,7 +267,7 @@ bool SolidGroundMove::AllowsStep(const ACharacter* Character, const FVector2D& D
 		return true;
 	}
 
-	const USolidWorldMap& Map = *Ground.Map;
+	const USolidWorldChart& Map = *Ground.Map;
 	const FVector Location = Character->GetActorLocation();
 	const float Probe = Character->GetCapsuleComponent()
 		? Character->GetCapsuleComponent()->GetScaledCapsuleRadius()
@@ -306,7 +306,7 @@ void SolidGroundMove::Hold(ACharacter* Character)
 		return;
 	}
 
-	const USolidWorldMap& Map = *Ground.Map;
+	const USolidWorldChart& Map = *Ground.Map;
 	FVector Location = Character->GetActorLocation();
 	const float Probe = Character->GetCapsuleComponent()
 		? Character->GetCapsuleComponent()->GetScaledCapsuleRadius()

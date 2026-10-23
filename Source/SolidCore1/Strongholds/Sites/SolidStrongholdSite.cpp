@@ -5,7 +5,7 @@
 #include "Strongholds/SolidStronghold.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
-#include "Terrain/SolidWorldMap.h"
+#include "Terrain/SolidWorldChart.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -92,7 +92,7 @@ void ASolidStrongholdSite::Spawn(
 	});
 
 	USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
-	USolidWorldMap* Map = Terrain->GetWorldMap();
+	USolidWorldChart* Map = Terrain->GetWorldMap();
 	if (bSitesSpawned || !Map || !Map->IsLoaded())
 	{
 		return;
@@ -102,9 +102,9 @@ void ASolidStrongholdSite::Spawn(
 	const FVector2D WorldMax = Terrain->GetWorldMaxXY();
 	bSitesSpawned = true;
 	int32 SpawnedSites = 0;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
 			ESolidStrongholdSize SiteSize = ESolidStrongholdSize::Meagre;
 			if (!Map->StrongholdSiteAtCell(Col, Row, SiteSize))

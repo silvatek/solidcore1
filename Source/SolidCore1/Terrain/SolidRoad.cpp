@@ -1,7 +1,7 @@
 #include "SolidRoad.h"
 #include "SolidStronghold.h"
 #include "SolidTowns.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 
 namespace SolidRoad
 {
@@ -62,7 +62,7 @@ namespace SolidRoad
 			return true;
 		}
 
-		bool CellBesideRiver(const USolidWorldMap& Map, const int32 X, const int32 Y)
+		bool CellBesideRiver(const USolidWorldChart& Map, const int32 X, const int32 Y)
 		{
 			for (int32 OffsetY = -RiverBendReach; OffsetY <= RiverBendReach; ++OffsetY)
 			{
@@ -70,11 +70,11 @@ namespace SolidRoad
 				{
 					const int32 NextX = X + OffsetX;
 					const int32 NextY = Y + OffsetY;
-					if (NextX < 0 || NextY < 0 || NextX >= USolidWorldMap::MapWidth || NextY >= USolidWorldMap::MapHeight)
+					if (NextX < 0 || NextY < 0 || NextX >= USolidWorldChart::MapWidth || NextY >= USolidWorldChart::MapHeight)
 					{
 						continue;
 					}
-					if (Map.GetMarkerAtCell(NextX, NextY) == USolidWorldMap::RiverMarker)
+					if (Map.GetMarkerAtCell(NextX, NextY) == USolidWorldChart::RiverMarker)
 					{
 						return true;
 					}
@@ -101,12 +101,12 @@ namespace SolidRoad
 		 * On the far side of a crossing, tie-breaks leave a one-cell spur past the bend.
 		 * Slide that bend back toward the river when the ground beside it is open.
 		 */
-		void SlideSpursAfterRiver(const USolidWorldMap& Map, const EType Type, TArray<FIntPoint>& Cells)
+		void SlideSpursAfterRiver(const USolidWorldChart& Map, const EType Type, TArray<FIntPoint>& Cells)
 		{
 			TArray<int32> Rivers;
 			for (int32 Index = 0; Index < Cells.Num(); ++Index)
 			{
-				if (Map.GetMarkerAtCell(Cells[Index].X, Cells[Index].Y) == USolidWorldMap::RiverMarker)
+				if (Map.GetMarkerAtCell(Cells[Index].X, Cells[Index].Y) == USolidWorldChart::RiverMarker)
 				{
 					Rivers.Add(Index);
 				}
@@ -153,11 +153,11 @@ namespace SolidRoad
 					{
 						continue;
 					}
-					if (Side.X < 0 || Side.Y < 0 || Side.X >= USolidWorldMap::MapWidth || Side.Y >= USolidWorldMap::MapHeight)
+					if (Side.X < 0 || Side.Y < 0 || Side.X >= USolidWorldChart::MapWidth || Side.Y >= USolidWorldChart::MapHeight)
 					{
 						continue;
 					}
-					if (Map.GetMarkerAtCell(Side.X, Side.Y) == USolidWorldMap::RiverMarker)
+					if (Map.GetMarkerAtCell(Side.X, Side.Y) == USolidWorldChart::RiverMarker)
 					{
 						continue;
 					}
@@ -181,7 +181,7 @@ namespace SolidRoad
 			}
 		}
 
-		void RoadCollectEndpoint(const USolidWorldMap& Map, const FEndpoint& End, TArray<FIntPoint>& OutCells)
+		void RoadCollectEndpoint(const USolidWorldChart& Map, const FEndpoint& End, TArray<FIntPoint>& OutCells)
 		{
 			OutCells.Reset();
 			if (End.bStronghold)
@@ -231,7 +231,7 @@ namespace SolidRoad
 		return RoadParseType(TypeName, Out.Type);
 	}
 
-	bool Solve(const USolidWorldMap& Map, const FDefinition& Definition, TArray<FIntPoint>& OutCells)
+	bool Solve(const USolidWorldChart& Map, const FDefinition& Definition, TArray<FIntPoint>& OutCells)
 	{
 		OutCells.Reset();
 
@@ -244,8 +244,8 @@ namespace SolidRoad
 			return false;
 		}
 
-		const int32 Width = USolidWorldMap::MapWidth;
-		const int32 Height = USolidWorldMap::MapHeight;
+		const int32 Width = USolidWorldChart::MapWidth;
+		const int32 Height = USolidWorldChart::MapHeight;
 		const int32 Count = Width * Height;
 		const int32 Infinite = MAX_int32 / 4;
 

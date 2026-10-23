@@ -140,7 +140,7 @@ namespace SolidStronghold
 		 */
 		float ExteriorYawDeg(const float GrassFacingYawDeg) const;
 
-		virtual float ExteriorYawDeg(const USolidWorldMap* Map) const override;
+		virtual float ExteriorYawDeg(const USolidWorldChart* Map) const override;
 
 		/**
 		 * Grass side of the door, just past the stone.
@@ -152,7 +152,7 @@ namespace SolidStronghold
 		float OutsideDoorYawDeg(const float GrassFacingYawDeg) const;
 
 		virtual float ExitReachCm() const override;
-		virtual void RememberExit(const USolidWorldMap* Map) override;
+		virtual void RememberExit(const USolidWorldChart* Map) override;
 		virtual void CollectGroundHexes(
 			ESolidStrongholdSize Size,
 			TArray<SolidStrongholdGrid::FHex>& OutHexes) const override;

@@ -1,13 +1,13 @@
 #include "SolidWallgate.h"
 #include "SolidTerrainTypes.h"
 #include "SolidTowns.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 
 namespace
 {
-	bool WallgateNeighborIsMountain(const USolidWorldMap& Map, const int32 X, const int32 Y)
+	bool WallgateNeighborIsMountain(const USolidWorldChart& Map, const int32 X, const int32 Y)
 	{
-		if (X < 0 || Y < 0 || X >= USolidWorldMap::MapWidth || Y >= USolidWorldMap::MapHeight)
+		if (X < 0 || Y < 0 || X >= USolidWorldChart::MapWidth || Y >= USolidWorldChart::MapHeight)
 		{
 			return false;
 		}
@@ -15,7 +15,7 @@ namespace
 	}
 
 	void WallgateAppendLocation(
-		const USolidWorldMap& WorldMap,
+		const USolidWorldChart& WorldMap,
 		const FVector2D WorldMinXY,
 		const FVector2D WorldMaxXY,
 		const TArray<FIntPoint>& Cells,
@@ -58,8 +58,8 @@ namespace
 
 		const float ExtentX = FMath::Max(WorldMaxXY.X - WorldMinXY.X, 1.f);
 		const float ExtentY = FMath::Max(WorldMaxXY.Y - WorldMinXY.Y, 1.f);
-		const float CellW = ExtentX / static_cast<float>(USolidWorldMap::MapWidth);
-		const float CellH = ExtentY / static_cast<float>(USolidWorldMap::MapHeight);
+		const float CellW = ExtentX / static_cast<float>(USolidWorldChart::MapWidth);
+		const float CellH = ExtentY / static_cast<float>(USolidWorldChart::MapHeight);
 		const float HalfAlong = bEastWest ? CellW * 0.5f : CellH * 0.5f;
 
 		float SpanMin = TNumericLimits<float>::Max();
@@ -131,7 +131,7 @@ namespace
 }
 
 int32 SolidWallgate::CollectPieces(
-	const USolidWorldMap* WorldMap,
+	const USolidWorldChart* WorldMap,
 	const FVector2D WorldMinXY,
 	const FVector2D WorldMaxXY,
 	TArray<FPiece>& OutPieces)

@@ -11,7 +11,7 @@
 #include "Lairs/SolidLair.h"
 #include "SolidSight.h"
 #include "Terrain/SolidTerrainStreamer.h"
-#include "Terrain/SolidWorldMap.h"
+#include "Terrain/SolidWorldChart.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -336,19 +336,19 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidEventsNumberedCellTest::RunTest(const FString& Parameters)
 {
 	FString Text;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
 		FString Line;
-		Line.Reserve(USolidWorldMap::MapWidth);
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		Line.Reserve(USolidWorldChart::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
 			if (Row == 2 && Col == 4)
 			{
-				Line.AppendChar(USolidWorldMap::LocationMarker);
+				Line.AppendChar(USolidWorldChart::LocationMarker);
 			}
 			else if (Row == 4 && Col == 6)
 			{
-				Line.AppendChar(USolidWorldMap::LocationMarker);
+				Line.AppendChar(USolidWorldChart::LocationMarker);
 			}
 			else if (Row == 2 && Col == 8)
 			{
@@ -356,7 +356,7 @@ bool FSolidEventsNumberedCellTest::RunTest(const FString& Parameters)
 			}
 			else
 			{
-				Line.AppendChar(USolidWorldMap::GrassMarker);
+				Line.AppendChar(USolidWorldChart::GrassMarker);
 			}
 		}
 		Text += Line;
@@ -368,7 +368,7 @@ bool FSolidEventsNumberedCellTest::RunTest(const FString& Parameters)
 	Text += TEXT("0 = Starting village, biome=Town\n");
 	Text += TEXT("Z = Starting town (brown)\n");
 
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("synthetic map loads"), Map->LoadFromString(Text));
 
 	const FVector2D WorldMin(0.f, 0.f);
@@ -389,7 +389,7 @@ bool FSolidEventsNumberedCellTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Z is not a numbered town"), Map->SampleLocationId(Legacy.X, Legacy.Y, WorldMin, WorldMax), INDEX_NONE);
 	TestEqual(TEXT("cell query matches"), Map->GetLocationIdAtCell(4, 2), 0);
 
-	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
+	USolidWorldChart* Shipped = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("shipped map loads"), Shipped->LoadDefault());
 	const float Half = 0.5f * 512.f * 200.f;
 	const FVector2D GameMin(-Half, -Half);

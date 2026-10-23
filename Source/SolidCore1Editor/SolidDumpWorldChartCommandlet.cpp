@@ -9,7 +9,6 @@
 #include "Terrain/SolidBiome.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidWorldChart.h"
-#include "Terrain/SolidWorldMap.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogSolidChartDump, Log, All);
 
@@ -42,14 +41,14 @@ namespace
 		USolidWorldChart::DefaultWorldBounds(WorldMin, WorldMax);
 		const float ExtentX = FMath::Max(WorldMax.X - WorldMin.X, 1.f);
 		const float ExtentY = FMath::Max(WorldMax.Y - WorldMin.Y, 1.f);
-		const float CellW = ExtentX / static_cast<float>(USolidWorldMap::MapWidth);
-		const float CellH = ExtentY / static_cast<float>(USolidWorldMap::MapHeight);
+		const float CellW = ExtentX / static_cast<float>(USolidWorldChart::MapWidth);
+		const float CellH = ExtentY / static_cast<float>(USolidWorldChart::MapHeight);
 		const float ColumnIndex = (WorldMax.X - PositionCm.X) / CellW - 0.5f;
 		const float RowIndex = (WorldMax.Y - PositionCm.Y) / CellH - 0.5f;
 		const int32 Column = FMath::RoundToInt(ColumnIndex);
 		const int32 Row = FMath::RoundToInt(RowIndex);
 		if (Column < 0 || Row < 0
-			|| Column >= USolidWorldMap::MapWidth || Row >= USolidWorldMap::MapHeight
+			|| Column >= USolidWorldChart::MapWidth || Row >= USolidWorldChart::MapHeight
 			|| FMath::Abs(ColumnIndex - static_cast<float>(Column)) > 0.01f
 			|| FMath::Abs(RowIndex - static_cast<float>(Row)) > 0.01f)
 		{
@@ -138,8 +137,8 @@ int32 USolidDumpWorldChartCommandlet::Main(const FString& Params)
 
 	TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
 	Root->SetStringField(TEXT("asset"), Chart->GetPathName());
-	Root->SetNumberField(TEXT("width"), USolidWorldMap::MapWidth);
-	Root->SetNumberField(TEXT("height"), USolidWorldMap::MapHeight);
+	Root->SetNumberField(TEXT("width"), USolidWorldChart::MapWidth);
+	Root->SetNumberField(TEXT("height"), USolidWorldChart::MapHeight);
 	Root->SetStringField(
 		TEXT("origin"),
 		TEXT("row 1, column 1 is the top-left, as in Content/WorldMap.txt. Column 0 of a row is east."));
@@ -157,16 +156,16 @@ int32 USolidDumpWorldChartCommandlet::Main(const FString& Params)
 	Root->SetObjectField(TEXT("key"), Key);
 
 	TArray<TSharedPtr<FJsonValue>> Rows;
-	Rows.Reserve(USolidWorldMap::MapHeight);
-	if (Chart->Cells.Num() == USolidWorldMap::MapWidth * USolidWorldMap::MapHeight)
+	Rows.Reserve(USolidWorldChart::MapHeight);
+	if (Chart->Cells.Num() == USolidWorldChart::MapWidth * USolidWorldChart::MapHeight)
 	{
-		for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 		{
 			FString Line;
-			Line.Reserve(USolidWorldMap::MapWidth);
-			for (int32 Column = 0; Column < USolidWorldMap::MapWidth; ++Column)
+			Line.Reserve(USolidWorldChart::MapWidth);
+			for (int32 Column = 0; Column < USolidWorldChart::MapWidth; ++Column)
 			{
-				Line.AppendChar(SolidBiome::Of(Chart->Cells[Row * USolidWorldMap::MapWidth + Column]).Marker());
+				Line.AppendChar(SolidBiome::Of(Chart->Cells[Row * USolidWorldChart::MapWidth + Column]).Marker());
 			}
 			Rows.Add(MakeShared<FJsonValueString>(Line));
 		}
@@ -176,7 +175,7 @@ int32 USolidDumpWorldChartCommandlet::Main(const FString& Params)
 		UE_LOG(LogSolidChartDump, Warning,
 			TEXT("World chart dump: the chart has %d cells, not %d."),
 			Chart->Cells.Num(),
-			USolidWorldMap::MapWidth * USolidWorldMap::MapHeight);
+			USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
 	}
 	Root->SetArrayField(TEXT("rows"), Rows);
 

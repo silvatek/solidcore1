@@ -8,7 +8,7 @@
 #include "Strongholds/Tower/SolidTower.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
-#include "Terrain/SolidWorldMap.h"
+#include "Terrain/SolidWorldChart.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 
@@ -30,7 +30,7 @@ TUniquePtr<FSolidStronghold> FSolidStronghold::Clone() const
 	return MakeUnique<FSolidStronghold>(*this);
 }
 
-float FSolidStronghold::ExteriorYawDeg(const USolidWorldMap*) const
+float FSolidStronghold::ExteriorYawDeg(const USolidWorldChart*) const
 {
 	return SolidStronghold::OrientationYawDeg(Orientation);
 }
@@ -43,7 +43,7 @@ FVector2D FSolidStronghold::ExitStandXY() const
 	return Location + Forward * ExitReachCm() + Left * ExitLateralCm();
 }
 
-void FSolidStronghold::RememberExit(const USolidWorldMap*)
+void FSolidStronghold::RememberExit(const USolidWorldChart*)
 {
 }
 
@@ -55,8 +55,8 @@ namespace SolidStronghold
 		constexpr int32 Grid = 513;
 		const float Extent = static_cast<float>(Grid - 1) * PointSpacing;
 		const float Half = Extent * 0.5f;
-		const float CellW = Extent / static_cast<float>(USolidWorldMap::MapWidth);
-		const float CellH = Extent / static_cast<float>(USolidWorldMap::MapHeight);
+		const float CellW = Extent / static_cast<float>(USolidWorldChart::MapWidth);
+		const float CellH = Extent / static_cast<float>(USolidWorldChart::MapHeight);
 		return FVector2D(
 			Half - (static_cast<float>(Cell.X) + 0.5f) * CellW,
 			Half - (static_cast<float>(Cell.Y) + 0.5f) * CellH);
@@ -67,8 +67,8 @@ namespace SolidStronghold
 		constexpr float PointSpacing = 200.f;
 		constexpr int32 Grid = 513;
 		const float Extent = static_cast<float>(Grid - 1) * PointSpacing;
-		const float EastCm = Extent / static_cast<float>(USolidWorldMap::MapWidth);
-		const float NorthCm = Extent / static_cast<float>(USolidWorldMap::MapHeight);
+		const float EastCm = Extent / static_cast<float>(USolidWorldChart::MapWidth);
+		const float NorthCm = Extent / static_cast<float>(USolidWorldChart::MapHeight);
 		switch (Orientation)
 		{
 		case ESolidStrongholdOrientation::East:
@@ -139,7 +139,7 @@ namespace SolidStronghold
 		}
 
 		USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
-		USolidWorldMap* Map = Terrain->GetWorldMap();
+		USolidWorldChart* Map = Terrain->GetWorldMap();
 		if (Exteriors.Num() == 0 && Map && Map->IsLoaded())
 		{
 			int32 Spawned = 0;
@@ -191,7 +191,7 @@ namespace
 
 	bool InBounds(const int32 X, const int32 Y)
 	{
-		return X >= 0 && X < USolidWorldMap::MapWidth && Y >= 0 && Y < USolidWorldMap::MapHeight;
+		return X >= 0 && X < USolidWorldChart::MapWidth && Y >= 0 && Y < USolidWorldChart::MapHeight;
 	}
 
 	float YawFacingGrass(const FIntPoint& Step)
@@ -204,7 +204,7 @@ namespace
 }
 
 bool SolidStrongholds::MakeEntrance(
-	const USolidWorldMap* WorldMap,
+	const USolidWorldChart* WorldMap,
 	const FVector2D WorldMinXY,
 	const FVector2D WorldMaxXY,
 	const FIntPoint Cell,
@@ -257,7 +257,7 @@ bool SolidStrongholds::MakeEntrance(
 }
 
 bool SolidStrongholds::FindGrassFace(
-	const USolidWorldMap* WorldMap,
+	const USolidWorldChart* WorldMap,
 	const FIntPoint Cell,
 	FGrassFace& Out)
 {

@@ -5,7 +5,7 @@
 #include "SolidTravel.h"
 #include "SolidGameState.h"
 #include "SolidLairId.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 
 /**
  * Closed visits, apart from the open world. Monsters come later.
@@ -139,7 +139,7 @@ namespace SolidLair
 	inline bool IsEndMarker(const TCHAR Marker)
 	{
 		const TCHAR Upper = FChar::ToUpper(Marker);
-		return Upper == USolidWorldMap::XMarker || Upper == USolidWorldMap::YMarker;
+		return Upper == USolidWorldChart::XMarker || Upper == USolidWorldChart::YMarker;
 	}
 
 	inline TCHAR MazeAt(const int32 Col, const int32 Row)
@@ -183,7 +183,7 @@ namespace SolidLair
 	{
 		const FIntPoint Cell = CellOf(End);
 		const FVector2D Center = CellCenter(Cell.X, Cell.Y);
-		const float Side = FChar::ToUpper(End) == USolidWorldMap::XMarker ? -0.5f : 0.5f;
+		const float Side = FChar::ToUpper(End) == USolidWorldChart::XMarker ? -0.5f : 0.5f;
 		return Center + FVector2D(Side * CellCm, 0.f);
 	}
 
@@ -197,7 +197,7 @@ namespace SolidLair
 	/** Yaw that looks from this mouth into the maze. */
 	inline float SpawnYawDeg(const TCHAR End)
 	{
-		return FChar::ToUpper(End) == USolidWorldMap::XMarker ? 0.f : 180.f;
+		return FChar::ToUpper(End) == USolidWorldChart::XMarker ? 0.f : 180.f;
 	}
 
 	inline bool ContainsLocal(const FVector& Point)
@@ -280,7 +280,7 @@ namespace SolidLair
 	};
 
 	int32 CollectEntrances(
-		const USolidWorldMap* WorldMap,
+		const USolidWorldChart* WorldMap,
 		FVector2D WorldMinXY,
 		FVector2D WorldMaxXY,
 		TArray<FEntrance>& OutEntrances);

@@ -12,7 +12,7 @@ The game already performs the work these symbols wrap or inspect. Removing them 
 
 - Each symbol below is gone from `Source/`, including tests. A whole-word search for the name finds nothing under `Source/`. `Holds` stays in comments that are not this function.
 - `override` methods stay. `UFUNCTION` methods the engine can call stay. Types that `Config/` names for the engine to instantiate stay. `GetTypeHash` for a hex edge stays. `ASolidCharacter::StartSquadFormationDrill` stays.
-- These product calls stay, and still behave as they do now: `FSolidBattle::Advance`, `FSolidBattle::AdvanceToNextEvent`, `FSolidBattle::SquadWeapon`, `FSolidBattle::MonsterWeapon`, `FSolidBattlePlan::Attacks`, `FSolidBattlePlan::Retreats`, `ASolidHUD::ToggleDebugPanel`, `ASolidDungeonExterior::GroundDropCm`, `ASolidDungeonExterior::GetRockMesh`, `ASolidDungeonExterior::SetGroundDrop`, `ASolidTowerExterior::GetDoorMesh`, `FSolidTower::FloorCount`, `SolidDungeonLevel::EnterLabel`, `SolidDungeonLevel::LeaveLabel`, `USolidWorldChart::PaintRun`, `USolidWorldChart::PaintRectangle`, `USolidWorldChart::MarkAtCell`, `USolidWorldMap::LoadFromString`, `USolidWorldMap::LoadFromChart`, `FSolidTower::OutsideDoorXY`, and `SolidStronghold::BiomeFor`. `FSolidBattle::TimeUntilNextEvent` stays. It is private, and `AdvanceToNextEvent` is its caller.
+- These product calls stay, and still behave as they do now: `FSolidBattle::Advance`, `FSolidBattle::AdvanceToNextEvent`, `FSolidBattle::SquadWeapon`, `FSolidBattle::MonsterWeapon`, `FSolidBattlePlan::Attacks`, `FSolidBattlePlan::Retreats`, `ASolidHUD::ToggleDebugPanel`, `ASolidDungeonExterior::GroundDropCm`, `ASolidDungeonExterior::GetRockMesh`, `ASolidDungeonExterior::SetGroundDrop`, `ASolidTowerExterior::GetDoorMesh`, `FSolidTower::FloorCount`, `SolidDungeonLevel::EnterLabel`, `SolidDungeonLevel::LeaveLabel`, `USolidWorldChart::PaintRun`, `USolidWorldChart::PaintRectangle`, `USolidWorldChart::MarkAtCell`, `USolidWorldChart::LoadFromString`, `USolidWorldChart::LoadFromChart`, `FSolidTower::OutsideDoorXY`, and `SolidStronghold::BiomeFor`. `FSolidBattle::TimeUntilNextEvent` stays. It is private, and `AdvanceToNextEvent` is its caller.
 - Shelves, visit views, finger bones on a hand, the chart cells, and the fight log stay. Only the unused readers, counters, and wrappers go.
 - Existing tests keep passing. The test edit is its own commit, and it passes on the code before the deletion. The deletion commit does not edit those tests. The deletion commit says that the tests changed because these symbols went away.
 - The deletion commit bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`. The commit that adds `FSolidTower::FloorCount` bumps them too.
@@ -43,9 +43,8 @@ No product caller:
 - `ASolidStrongholdSite::GetSize`. `SetSite` stores the size. Nothing reads it back.
 - `ASolidTerrainStreamer::IsChartView`. Tick reads `bChartView`.
 - `ASolidTowerExterior::GetPlan`. The exterior builds from the tower it was given. `GetDoorMesh` stays. The floor count is `FSolidTower::FloorCount`.
-- `USolidWorldMap::LoadFromFile`. The game loads the chart through `LoadFromChart`. A text map still loads through `LoadFromString`. [Remove WorldMap.txt](remove-world-map-txt.md) keeps `LoadFromString`.
 - `USolidWorldChart::PaintCell`. It calls `PaintRun` with one cell. The mode paints with `PaintRun` and `PaintRectangle`.
-- `USolidWorldChart::ReadCell`. The mode describes a cell from `Cells`, `MarkAtCell`, and the loaded world map.
+- `USolidWorldChart::ReadCell`. The mode describes a cell from `Cells`, `MarkAtCell`, and the solved chart.
 - `SolidLair::MouthMidpoint`. Tunnel placement uses `CellCenter` and `SpawnLocal`.
 - `SolidInventory::CountAt`. Slot checks use `ItemAt`.
 - `SolidForage::NearestHitIndex`. A click takes a pile through `TakePile`.
@@ -74,7 +73,7 @@ Test commit, before the deletion:
 - `SolidCore1.TowerExterior.*` keeps `GetDoorMesh`. The Imperious floor-count check calls `FSolidTower::FloorCount()` on the tower from `Make`. That retarget is the commit that adds `FloorCount()`. That commit bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`. `GetPlan` is still in the code then. The deletion commit removes `GetPlan` and does not edit this test.
 - `SolidCore1.Stronghold.DungeonExterior` and `SolidCore1.Stronghold.DungeonExteriorMouth` keep calling `GetRockMesh` and `SetGroundDrop`. `GroundDropCm` stays.
 - `SolidCore1.DungeonLevel.*` checks the cave words through `EnterLabel` and `LeaveLabel`. `MenuLabel` goes away.
-- `SolidCore1.WorldChart.Paint` calls `PaintRun` with the one cell where it now calls `PaintCell`. A painted biome is read from `Cells`. A mark is `Marks` at `MarkAtCell`. A resolved biome, and which roads cross the cell, are read from a world map filled with `LoadFromChart`, through `GetBiomeAtCell` and `GetRoads`. The town resolving as town and the lair mouth resolving as mountain stay. `ReadCell` and `FSolidWorldChartRead` go away.
+- `SolidCore1.WorldChart.Paint` calls `PaintRun` with the one cell where it now calls `PaintCell`. A painted biome is read from `Cells`. A mark is `Marks` at `MarkAtCell`. A resolved biome, and which roads cross the cell, are read from the chart after `LoadFromChart`, through `GetBiomeAtCell` and `GetRoads`. The town resolving as town and the lair mouth resolving as mountain stay. `ReadCell` and `FSolidWorldChartRead` go away.
 - `SolidCore1.Body.HandFingers` keeps the finger names in the test. It stops reading `LeftFingerBones` and `RightFingerBones`.
 - `SolidCore1.Monster.*` drops the `MeshFootOffsetCm` check. `UniformScale` and `StandingSpan` checks stay.
 - `SolidCore1.BattlePlan.*` checks Parade and a hold aggression through `AttackOrRetreat`, `Attacks`, and `Retreats`. The `Holds` checks go away.

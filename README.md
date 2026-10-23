@@ -126,8 +126,8 @@ Or right-click `SolidCore1.uproject` → **Generate Visual Studio project files*
 C++ generates walkable terrain around the player at runtime:
 
 - `FSolidTerrainPoint` / `ESolidBiome` — simulation cell (X, Y, Height, Biome, Threat, Fog)
-- `USolidWorldMap` — 128×64 ASCII biome overlay (`Content/WorldMap.txt`) scaled across the TerrainMap world bounds. Cells are 8 m east–west and 16 m north–south.
-- `USolidTerrainMap` — 2D TerrainPoint grid built once at streamer startup (default 513×513 @ 200 cm); biomes from WorldMap when loaded. The ASCII map is stretched across that rectangle, so doubling the point count doubles each WorldMap cell.
+- `USolidWorldChart` — 128×64 world at `/Game/World/WorldChart`, scaled across the TerrainMap world bounds. Cells are 8 m east–west and 16 m north–south.
+- `USolidTerrainMap` — 2D TerrainPoint grid built once at streamer startup (default 513×513 @ 200 cm); biomes from the chart when loaded. The chart is stretched across that rectangle, so doubling the point count doubles each chart cell.
 - `ASolidTerrainChunk` — runtime `UStaticMesh`; vertex heights from the TerrainMap; per-triangle biome materials, and a border uses the higher shelf
 - `ASolidTerrainStreamer` — builds the map, relocates the pawn to location 0, then loads/unloads chunks
 - Debug HUD shows biome / threat / fog at the pawn plus map size
@@ -248,9 +248,9 @@ ASolidGameMode                      # World root. OpenLevel replaces it
   ASolidTerrainStreamer
     USolidTerrainMap
       FSolidTerrainPoint[]          # Height, biome, threat, and fog
-      USolidWorldMap                # The chart, loaded for play
+      USolidWorldChart              # Solved copy of the chart
         uint8[]                     # 128×64 markers
-        FSolidWorldBang[]           # Named ! cells
+        FSolidWorldBang[]           # Named cells
         FRoute[]                    # Solved roads
     ASolidTerrainChunk[]
   ASolidCompanionCharacter[]        # Fielded squad

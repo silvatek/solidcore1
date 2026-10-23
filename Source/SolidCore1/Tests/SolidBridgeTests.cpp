@@ -3,7 +3,7 @@
 #include "SolidBridge.h"
 #include "SolidRiver.h"
 #include "SolidRoad.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -16,18 +16,18 @@ namespace
 	{
 		int32 Col = 0;
 		int32 Row = 0;
-		TCHAR Marker = USolidWorldMap::GrassMarker;
+		TCHAR Marker = USolidWorldChart::GrassMarker;
 	};
 
 	FString BridgeTestGrid(const TArray<FBridgeTestMark>& Marks, const FString& Roads)
 	{
 		FString Text;
-		Text.Reserve((USolidWorldMap::MapWidth + 1) * USolidWorldMap::MapHeight + Roads.Len());
-		for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+		Text.Reserve((USolidWorldChart::MapWidth + 1) * USolidWorldChart::MapHeight + Roads.Len());
+		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 		{
-			for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+			for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 			{
-				TCHAR Marker = USolidWorldMap::GrassMarker;
+				TCHAR Marker = USolidWorldChart::GrassMarker;
 				for (const FBridgeTestMark& Mark : Marks)
 				{
 					if (Mark.Col == Col && Mark.Row == Row)
@@ -110,11 +110,11 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidBridgeStraightTest::RunTest(const FString& Parameters)
 {
 	TArray<FBridgeTestMark> Marks;
-	Marks.Add({ 4, 16, USolidWorldMap::LocationMarker });
-	Marks.Add({ 12, 16, USolidWorldMap::RiverMarker });
-	Marks.Add({ 20, 16, USolidWorldMap::LocationMarker });
+	Marks.Add({ 4, 16, USolidWorldChart::LocationMarker });
+	Marks.Add({ 12, 16, USolidWorldChart::RiverMarker });
+	Marks.Add({ 20, 16, USolidWorldChart::LocationMarker });
 
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("map"), Map);
 	if (!TestTrue(TEXT("map loads"), Map->LoadFromString(BridgeTestGrid(Marks, BridgeTestNamed(4, 16, TEXT("Iglin"), 20, 16, TEXT("Relion"), TEXT("track"))))))
 	{
@@ -150,11 +150,11 @@ bool FSolidBridgeStraightTest::RunTest(const FString& Parameters)
 		FMath::Abs(BridgePlanLength(Bridge.RampFrom) - BridgePlanLength(Bridge.RampTo)) < SolidBridge::SampleStepCm * 2.f);
 
 	TArray<SolidBridge::FBridge> None;
-	USolidWorldMap* Dry = NewObject<USolidWorldMap>();
+	USolidWorldChart* Dry = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("dry map"), Dry);
 	if (TestTrue(TEXT("dry map loads"), Dry->LoadFromString(BridgeTestGrid({
-		{ 4, 16, USolidWorldMap::LocationMarker },
-		{ 20, 16, USolidWorldMap::LocationMarker },
+		{ 4, 16, USolidWorldChart::LocationMarker },
+		{ 20, 16, USolidWorldChart::LocationMarker },
 	}, BridgeTestNamed(4, 16, TEXT("Iglin"), 20, 16, TEXT("Relion"), TEXT("track"))))))
 	{
 		TestEqual(TEXT("no river means no bridge"), SolidBridge::Collect(*Dry, BridgeTestMin, BridgeTestMax, Height, None), 0);
@@ -170,11 +170,11 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidBridgeBanksTest::RunTest(const FString& Parameters)
 {
 	TArray<FBridgeTestMark> Marks;
-	Marks.Add({ 4, 16, USolidWorldMap::LocationMarker });
-	Marks.Add({ 12, 16, USolidWorldMap::RiverMarker });
-	Marks.Add({ 20, 16, USolidWorldMap::LocationMarker });
+	Marks.Add({ 4, 16, USolidWorldChart::LocationMarker });
+	Marks.Add({ 12, 16, USolidWorldChart::RiverMarker });
+	Marks.Add({ 20, 16, USolidWorldChart::LocationMarker });
 
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("map"), Map);
 	if (!TestTrue(TEXT("map loads"), Map->LoadFromString(BridgeTestGrid(Marks, BridgeTestNamed(4, 16, TEXT("Iglin"), 20, 16, TEXT("Relion"), TEXT("track"))))))
 	{
@@ -213,13 +213,13 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidBridgeSpanTest::RunTest(const FString& Parameters)
 {
 	const auto Height = [](float, float) { return 100.f; };
-	const float CellW = (BridgeTestMax.X - BridgeTestMin.X) / static_cast<float>(USolidWorldMap::MapWidth);
+	const float CellW = (BridgeTestMax.X - BridgeTestMin.X) / static_cast<float>(USolidWorldChart::MapWidth);
 
 	TArray<FBridgeTestMark> ShortMarks;
-	ShortMarks.Add({ 2, 20, USolidWorldMap::LocationMarker });
-	ShortMarks.Add({ 10, 20, USolidWorldMap::RiverMarker });
-	ShortMarks.Add({ 18, 20, USolidWorldMap::LocationMarker });
-	USolidWorldMap* ShortMap = NewObject<USolidWorldMap>();
+	ShortMarks.Add({ 2, 20, USolidWorldChart::LocationMarker });
+	ShortMarks.Add({ 10, 20, USolidWorldChart::RiverMarker });
+	ShortMarks.Add({ 18, 20, USolidWorldChart::LocationMarker });
+	USolidWorldChart* ShortMap = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("short map"), ShortMap);
 	if (!TestTrue(TEXT("short map loads"), ShortMap->LoadFromString(BridgeTestGrid(ShortMarks, BridgeTestNamed(2, 20, TEXT("Iglin"), 18, 20, TEXT("Relion"), TEXT("trail"))))))
 	{
@@ -233,14 +233,14 @@ bool FSolidBridgeSpanTest::RunTest(const FString& Parameters)
 	}
 
 	TArray<FBridgeTestMark> LongMarks;
-	LongMarks.Add({ 2, 20, USolidWorldMap::LocationMarker });
-	LongMarks.Add({ 18, 20, USolidWorldMap::LocationMarker });
+	LongMarks.Add({ 2, 20, USolidWorldChart::LocationMarker });
+	LongMarks.Add({ 18, 20, USolidWorldChart::LocationMarker });
 	constexpr int32 RiverCells = 5;
 	for (int32 Col = 8; Col < 8 + RiverCells; ++Col)
 	{
-		LongMarks.Add({ Col, 20, USolidWorldMap::RiverMarker });
+		LongMarks.Add({ Col, 20, USolidWorldChart::RiverMarker });
 	}
-	USolidWorldMap* LongMap = NewObject<USolidWorldMap>();
+	USolidWorldChart* LongMap = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("long map"), LongMap);
 	if (!TestTrue(TEXT("long map loads"), LongMap->LoadFromString(BridgeTestGrid(LongMarks, BridgeTestNamed(2, 20, TEXT("Iglin"), 18, 20, TEXT("Relion"), TEXT("trail"))))))
 	{
@@ -263,13 +263,13 @@ bool FSolidBridgeSpanTest::RunTest(const FString& Parameters)
 		BridgePlanLength(LongBridges[0].Deck) > BridgePlanLength(ShortBridges[0].Deck) + CellW);
 
 	TArray<FBridgeTestMark> Blocked;
-	Blocked.Add({ 4, 20, USolidWorldMap::LocationMarker });
-	Blocked.Add({ 20, 20, USolidWorldMap::LocationMarker });
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	Blocked.Add({ 4, 20, USolidWorldChart::LocationMarker });
+	Blocked.Add({ 20, 20, USolidWorldChart::LocationMarker });
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
-		Blocked.Add({ 12, Row, USolidWorldMap::RiverMarker });
+		Blocked.Add({ 12, Row, USolidWorldChart::RiverMarker });
 	}
-	USolidWorldMap* Wide = NewObject<USolidWorldMap>();
+	USolidWorldChart* Wide = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("wide map"), Wide);
 	if (!TestTrue(TEXT("wide map loads"), Wide->LoadFromString(BridgeTestGrid(Blocked, BridgeTestNamed(4, 20, TEXT("Iglin"), 20, 20, TEXT("Relion"), TEXT("road"))))))
 	{
@@ -286,16 +286,16 @@ bool FSolidBridgeSpanTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("a wider road widens the center"), WideBridges[0].WidthCm > ShortBridges[0].WidthCm + 100.f);
 
 	TArray<FBridgeTestMark> Gap;
-	Gap.Add({ 4, 10, USolidWorldMap::LocationMarker });
-	Gap.Add({ 22, 10, USolidWorldMap::LocationMarker });
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	Gap.Add({ 4, 10, USolidWorldChart::LocationMarker });
+	Gap.Add({ 22, 10, USolidWorldChart::LocationMarker });
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
 		if (Row != 22)
 		{
-			Gap.Add({ 12, Row, USolidWorldMap::RiverMarker });
+			Gap.Add({ 12, Row, USolidWorldChart::RiverMarker });
 		}
 	}
-	USolidWorldMap* Around = NewObject<USolidWorldMap>();
+	USolidWorldChart* Around = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("around map"), Around);
 	if (TestTrue(TEXT("around map loads"), Around->LoadFromString(BridgeTestGrid(Gap, BridgeTestNamed(4, 10, TEXT("Iglin"), 22, 10, TEXT("Relion"), TEXT("road"))))))
 	{
@@ -313,7 +313,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidBridgeShippedTest::RunTest(const FString& Parameters)
 {
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("shipped map"), Map);
 	if (!TestTrue(TEXT("shipped map loads"), Map && Map->LoadDefault()))
 	{
@@ -349,7 +349,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidBridgeAlignedTest::RunTest(const FString& Parameters)
 {
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("map"), Map);
 	if (!TestTrue(TEXT("default map loads"), Map && Map->LoadDefault()))
 	{
@@ -395,7 +395,7 @@ bool FSolidBridgeAlignedTest::RunTest(const FString& Parameters)
 	bool bFound = false;
 	for (const FIntPoint& Cell : Track->Cells)
 	{
-		if (Map->GetMarkerAtCell(Cell.X, Cell.Y) == USolidWorldMap::RiverMarker)
+		if (Map->GetMarkerAtCell(Cell.X, Cell.Y) == USolidWorldChart::RiverMarker)
 		{
 			bFound = Map->CellToWorldXY(Cell, BridgeTestMin, BridgeTestMax, River);
 			break;
@@ -441,13 +441,13 @@ bool FSolidBridgeBrokenTest::RunTest(const FString& Parameters)
 	auto LoadCrossing = [this, Height](const TCHAR* FromKind, const TCHAR* FromName, const TCHAR* ToKind, const TCHAR* ToName, const TCHAR* Type, TArray<SolidBridge::FBridge>& Out) -> bool
 	{
 		TArray<FBridgeTestMark> Marks;
-		Marks.Add({ 4, 16, USolidWorldMap::LocationMarker });
-		Marks.Add({ 12, 16, USolidWorldMap::RiverMarker });
-		Marks.Add({ 20, 16, USolidWorldMap::LocationMarker });
+		Marks.Add({ 4, 16, USolidWorldChart::LocationMarker });
+		Marks.Add({ 12, 16, USolidWorldChart::RiverMarker });
+		Marks.Add({ 20, 16, USolidWorldChart::LocationMarker });
 		const FString Lines = FString::Printf(
 			TEXT("! 17,5 = %s (%s)\n! 17,21 = %s (%s)\nRoad: %s -> %s, %s\n"),
 			FromKind, FromName, ToKind, ToName, FromName, ToName, Type);
-		USolidWorldMap* Map = NewObject<USolidWorldMap>();
+		USolidWorldChart* Map = NewObject<USolidWorldChart>();
 		TestNotNull(TEXT("map"), Map);
 		if (!TestTrue(TEXT("map loads"), Map && Map->LoadFromString(BridgeTestGrid(Marks, Lines))))
 		{
@@ -486,7 +486,7 @@ bool FSolidBridgeBrokenTest::RunTest(const FString& Parameters)
 		TestFalse(TEXT("the cave road is not marked as the Iglin bridge"), Cave[0].bIglinRelion);
 	}
 
-	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
+	USolidWorldChart* Shipped = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("shipped map"), Shipped);
 	if (TestTrue(TEXT("shipped map loads"), Shipped && Shipped->LoadDefault()))
 	{

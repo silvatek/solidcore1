@@ -6,7 +6,7 @@
 #include "Terrain/SolidBiome.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
-#include "Terrain/SolidWorldMap.h"
+#include "Terrain/SolidWorldChart.h"
 #include "Towns/SolidTowns.h"
 
 #include "CanvasItem.h"
@@ -107,8 +107,8 @@ namespace
 	{
 		const float ExtentX = FMath::Max(WorldMax.X - WorldMin.X, 1.f);
 		const float ExtentY = FMath::Max(WorldMax.Y - WorldMin.Y, 1.f);
-		const float CellW = ExtentX / static_cast<float>(USolidWorldMap::MapWidth);
-		const float CellH = ExtentY / static_cast<float>(USolidWorldMap::MapHeight);
+		const float CellW = ExtentX / static_cast<float>(USolidWorldChart::MapWidth);
+		const float CellH = ExtentY / static_cast<float>(USolidWorldChart::MapHeight);
 		const float East = WorldMax.X - static_cast<float>(Cell.X) * CellW;
 		const float North = WorldMax.Y - static_cast<float>(Cell.Y) * CellH;
 		OutWestSouth = FVector2D(East - CellW, North - CellH);
@@ -742,7 +742,7 @@ void FSolidWorldChartEdMode::Render(const FSceneView* View, FViewport* Viewport,
 		const FLinearColor Color = Tool == ESolidWorldChartTool::Place
 			? MarkColor(MarkKind)
 			: Tool == ESolidWorldChartTool::Paint
-				? USolidWorldMap::DefaultColorForBiome(BrushBiome)
+				? USolidWorldChart::DefaultColorForBiome(BrushBiome)
 				: FLinearColor::White;
 		DrawCellOutline(PDI, *Terrain, CurrentCell, Color, Tool == ESolidWorldChartTool::Place ? 5.f : 3.f);
 	}
@@ -751,7 +751,7 @@ void FSolidWorldChartEdMode::Render(const FSceneView* View, FViewport* Viewport,
 		return;
 	}
 
-	const FLinearColor Color = USolidWorldMap::DefaultColorForBiome(BrushBiome);
+	const FLinearColor Color = USolidWorldChart::DefaultColorForBiome(BrushBiome);
 	const FVector2D WorldMin = Terrain->GetWorldMinXY();
 	const FVector2D WorldMax = Terrain->GetWorldMaxXY();
 	for (const FIntPoint& Cell : PreviewCells())
@@ -1139,7 +1139,7 @@ bool FSolidWorldChartEdMode::CursorCell(
 	FIntPoint& OutCell) const
 {
 	const USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
-	const USolidWorldMap* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
+	const USolidWorldChart* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
 	if (!ViewportClient || !Viewport || !Terrain || !Terrain->IsBuilt() || !WorldMap)
 	{
 		return false;
@@ -1324,7 +1324,7 @@ void FSolidWorldChartEdMode::SampleBrush(const FIntPoint& Cell)
 	{
 		return;
 	}
-	const int32 Index = Cell.Y * USolidWorldMap::MapWidth + Cell.X;
+	const int32 Index = Cell.Y * USolidWorldChart::MapWidth + Cell.X;
 	if (!Chart->Cells.IsValidIndex(Index))
 	{
 		return;
@@ -1412,7 +1412,7 @@ void FSolidWorldChartEdMode::RebuildOverlay()
 		return;
 	}
 	const USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
-	const USolidWorldMap* WorldMap = Terrain->GetWorldMap();
+	const USolidWorldChart* WorldMap = Terrain->GetWorldMap();
 	if (!Terrain->IsBuilt() || !WorldMap)
 	{
 		return;
@@ -1422,11 +1422,11 @@ void FSolidWorldChartEdMode::RebuildOverlay()
 	const FVector2D WorldMin = Terrain->GetWorldMinXY();
 	const FVector2D WorldMax = Terrain->GetWorldMaxXY();
 	TArray<FBatchedLine> Batch;
-	Batch.Reserve(USolidWorldMap::MapWidth * USolidWorldMap::MapHeight * 4);
+	Batch.Reserve(USolidWorldChart::MapWidth * USolidWorldChart::MapHeight * 4);
 	const float Lift = 80.f;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
 			const FIntPoint Cell(Col, Row);
 			FVector2D WestSouth = FVector2D::ZeroVector;
@@ -1681,7 +1681,7 @@ FString FSolidWorldChartEdMode::DescribeCell(const FIntPoint& Cell) const
 	{
 		return FString();
 	}
-	const int32 Index = Cell.Y * USolidWorldMap::MapWidth + Cell.X;
+	const int32 Index = Cell.Y * USolidWorldChart::MapWidth + Cell.X;
 	if (!Chart->Cells.IsValidIndex(Index))
 	{
 		return FString();
@@ -1689,7 +1689,7 @@ FString FSolidWorldChartEdMode::DescribeCell(const FIntPoint& Cell) const
 
 	const ESolidBiome Painted = Chart->Cells[Index];
 	ESolidBiome Resolved = Painted;
-	const USolidWorldMap* WorldMap = Streamer && Streamer->GetTerrainMap()
+	const USolidWorldChart* WorldMap = Streamer && Streamer->GetTerrainMap()
 		? Streamer->GetTerrainMap()->GetWorldMap()
 		: nullptr;
 	if (WorldMap && WorldMap->IsLoaded())

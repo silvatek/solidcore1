@@ -2,7 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "SolidBiome.h"
 #include "SolidRiver.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 
 #include <initializer_list>
 
@@ -17,18 +17,18 @@ namespace
 	{
 		int32 Col = 0;
 		int32 Row = 0;
-		TCHAR Marker = USolidWorldMap::GrassMarker;
+		TCHAR Marker = USolidWorldChart::GrassMarker;
 	};
 
 	FString RiverTestGrid(std::initializer_list<FRiverTestMark> Marks)
 	{
 		FString Text;
-		Text.Reserve((USolidWorldMap::MapWidth + 1) * USolidWorldMap::MapHeight);
-		for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+		Text.Reserve((USolidWorldChart::MapWidth + 1) * USolidWorldChart::MapHeight);
+		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 		{
-			for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+			for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 			{
-				TCHAR Marker = USolidWorldMap::GrassMarker;
+				TCHAR Marker = USolidWorldChart::GrassMarker;
 				for (const FRiverTestMark& Mark : Marks)
 				{
 					if (Mark.Col == Col && Mark.Row == Row)
@@ -53,12 +53,12 @@ namespace
 		return Test.TestEqual(What, static_cast<uint8>(Actual), static_cast<uint8>(Expected));
 	}
 
-	ESolidBiome RiverTestSample(const USolidWorldMap& Map, const FVector2D& World)
+	ESolidBiome RiverTestSample(const USolidWorldChart& Map, const FVector2D& World)
 	{
 		return Map.SampleBiome(World.X, World.Y, RiverTestMin, RiverTestMax);
 	}
 
-	FVector2D RiverTestCenter(const USolidWorldMap& Map, const int32 Col, const int32 Row)
+	FVector2D RiverTestCenter(const USolidWorldChart& Map, const int32 Col, const int32 Row)
 	{
 		FVector2D Center = FVector2D::ZeroVector;
 		Map.CellToWorldXY(FIntPoint(Col, Row), RiverTestMin, RiverTestMax, Center);
@@ -73,9 +73,9 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidRiverChannelTest::RunTest(const FString& Parameters)
 {
-	TestTrue(TEXT("river joins"), SolidRiver::Joins(USolidWorldMap::RiverMarker));
-	TestTrue(TEXT("sea joins"), SolidRiver::Joins(USolidWorldMap::SeaMarker));
-	TestFalse(TEXT("grass does not join"), SolidRiver::Joins(USolidWorldMap::GrassMarker));
+	TestTrue(TEXT("river joins"), SolidRiver::Joins(USolidWorldChart::RiverMarker));
+	TestTrue(TEXT("sea joins"), SolidRiver::Joins(USolidWorldChart::SeaMarker));
+	TestFalse(TEXT("grass does not join"), SolidRiver::Joins(USolidWorldChart::GrassMarker));
 	TestTrue(TEXT("width is 4 m"), FMath::IsNearlyEqual(SolidRiver::WidthCm, 400.f));
 
 	const float Cell = 1600.f;
@@ -139,44 +139,44 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidRiverBanksTest::RunTest(const FString& Parameters)
 {
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("map"), Map);
 	const bool bLoaded = Map->LoadFromString(RiverTestGrid({
 		// Isolated pond. East is mountain, west grass, north forest, south desert.
-		{ 10, 10, USolidWorldMap::RiverMarker },
+		{ 10, 10, USolidWorldChart::RiverMarker },
 		{ 9, 10, TEXT('M') },
-		{ 11, 10, USolidWorldMap::GrassMarker },
-		{ 10, 9, USolidWorldMap::ForestMarker },
-		{ 10, 11, USolidWorldMap::DesertMarker },
+		{ 11, 10, USolidWorldChart::GrassMarker },
+		{ 10, 9, USolidWorldChart::ForestMarker },
+		{ 10, 11, USolidWorldChart::DesertMarker },
 		// North-south channel. Forest to the east, desert to the west.
-		{ 20, 18, USolidWorldMap::RiverMarker },
-		{ 20, 19, USolidWorldMap::RiverMarker },
-		{ 20, 20, USolidWorldMap::RiverMarker },
-		{ 19, 18, USolidWorldMap::ForestMarker },
-		{ 19, 19, USolidWorldMap::ForestMarker },
-		{ 19, 20, USolidWorldMap::ForestMarker },
-		{ 21, 18, USolidWorldMap::DesertMarker },
-		{ 21, 19, USolidWorldMap::DesertMarker },
-		{ 21, 20, USolidWorldMap::DesertMarker },
+		{ 20, 18, USolidWorldChart::RiverMarker },
+		{ 20, 19, USolidWorldChart::RiverMarker },
+		{ 20, 20, USolidWorldChart::RiverMarker },
+		{ 19, 18, USolidWorldChart::ForestMarker },
+		{ 19, 19, USolidWorldChart::ForestMarker },
+		{ 19, 20, USolidWorldChart::ForestMarker },
+		{ 21, 18, USolidWorldChart::DesertMarker },
+		{ 21, 19, USolidWorldChart::DesertMarker },
+		{ 21, 20, USolidWorldChart::DesertMarker },
 		// East into the sea. Grass north, desert south, grass west.
-		{ 5, 30, USolidWorldMap::RiverMarker },
-		{ 4, 30, USolidWorldMap::SeaMarker },
-		{ 5, 31, USolidWorldMap::DesertMarker },
+		{ 5, 30, USolidWorldChart::RiverMarker },
+		{ 4, 30, USolidWorldChart::SeaMarker },
+		{ 5, 31, USolidWorldChart::DesertMarker },
 		// Sea along the north bank of an east-west channel. Desert to the south.
-		{ 9, 40, USolidWorldMap::RiverMarker },
-		{ 10, 40, USolidWorldMap::RiverMarker },
-		{ 11, 40, USolidWorldMap::RiverMarker },
-		{ 10, 39, USolidWorldMap::SeaMarker },
-		{ 10, 41, USolidWorldMap::DesertMarker },
+		{ 9, 40, USolidWorldChart::RiverMarker },
+		{ 10, 40, USolidWorldChart::RiverMarker },
+		{ 11, 40, USolidWorldChart::RiverMarker },
+		{ 10, 39, USolidWorldChart::SeaMarker },
+		{ 10, 41, USolidWorldChart::DesertMarker },
 		// Bend. The dry corner must not become more river.
-		{ 20, 50, USolidWorldMap::RiverMarker },
-		{ 19, 50, USolidWorldMap::RiverMarker },
-		{ 20, 51, USolidWorldMap::RiverMarker },
-		{ 20, 49, USolidWorldMap::ForestMarker },
-		{ 21, 50, USolidWorldMap::DesertMarker },
+		{ 20, 50, USolidWorldChart::RiverMarker },
+		{ 19, 50, USolidWorldChart::RiverMarker },
+		{ 20, 51, USolidWorldChart::RiverMarker },
+		{ 20, 49, USolidWorldChart::ForestMarker },
+		{ 21, 50, USolidWorldChart::DesertMarker },
 		// Diagonal neighbor does not join.
-		{ 50, 50, USolidWorldMap::RiverMarker },
-		{ 49, 49, USolidWorldMap::RiverMarker },
+		{ 50, 50, USolidWorldChart::RiverMarker },
+		{ 49, 49, USolidWorldChart::RiverMarker },
 	}));
 	TestTrue(TEXT("synthetic map loads"), bLoaded);
 	if (!bLoaded)
@@ -187,8 +187,8 @@ bool FSolidRiverBanksTest::RunTest(const FString& Parameters)
 	RiverTestBiome(*this, TEXT("grass stays grass"), RiverTestSample(*Map, RiverTestCenter(*Map, 0, 0)), ESolidBiome::Grassland);
 
 	// East-west cells are 8 m. A step copied from the old 16 m square walks into the next cell.
-	const float CellW = (RiverTestMax.X - RiverTestMin.X) / static_cast<float>(USolidWorldMap::MapWidth);
-	const float CellH = (RiverTestMax.Y - RiverTestMin.Y) / static_cast<float>(USolidWorldMap::MapHeight);
+	const float CellW = (RiverTestMax.X - RiverTestMin.X) / static_cast<float>(USolidWorldChart::MapWidth);
+	const float CellH = (RiverTestMax.Y - RiverTestMin.Y) / static_cast<float>(USolidWorldChart::MapHeight);
 	const float HalfW = CellW * 0.5f;
 	const float HalfH = CellH * 0.5f;
 	const float Bank = FMath::Min(SolidRiver::RadiusCm() + 100.f, HalfW - 50.f);
@@ -248,7 +248,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidRiverShippedMapTest::RunTest(const FString& Parameters)
 {
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("map"), Map);
 	TestTrue(TEXT("default map loads"), Map->LoadDefault());
 
@@ -267,11 +267,11 @@ bool FSolidRiverShippedMapTest::RunTest(const FString& Parameters)
 		FVector2D(-350.f, 0.f),
 	};
 
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
-			if (Map->GetMarkerAtCell(Col, Row) != USolidWorldMap::RiverMarker)
+			if (Map->GetMarkerAtCell(Col, Row) != USolidWorldChart::RiverMarker)
 			{
 				continue;
 			}
@@ -292,7 +292,7 @@ bool FSolidRiverShippedMapTest::RunTest(const FString& Parameters)
 			{
 				const int32 NextX = Col + Steps[Side].X;
 				const int32 NextY = Row + Steps[Side].Y;
-				if (NextX < 0 || NextY < 0 || NextX >= USolidWorldMap::MapWidth || NextY >= USolidWorldMap::MapHeight)
+				if (NextX < 0 || NextY < 0 || NextX >= USolidWorldChart::MapWidth || NextY >= USolidWorldChart::MapHeight)
 				{
 					continue;
 				}

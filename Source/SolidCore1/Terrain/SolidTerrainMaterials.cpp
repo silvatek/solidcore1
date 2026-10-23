@@ -3,7 +3,7 @@
 #include "SolidCore1.h"
 #include "SolidFabManifest.h"
 #include "SolidMaterials.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 #include "AssetRegistry/AssetData.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "Materials/Material.h"
@@ -269,7 +269,7 @@ UMaterialInterface* SolidTerrainMaterials::Resolve(
 UMaterialInterface* SolidTerrainMaterials::ResolveForBiome(
 	const ESolidBiome Biome,
 	const FResolveParams& Params,
-	const USolidWorldMap* WorldMap,
+	const USolidWorldChart* WorldMap,
 	TObjectPtr<UMaterialInterface>& InOutGrassCached,
 	TMap<ESolidBiome, TObjectPtr<UMaterialInterface>>& InOutBiomeMaterials)
 {
@@ -293,7 +293,7 @@ UMaterialInterface* SolidTerrainMaterials::ResolveForBiome(
 
 	const FLinearColor Color = WorldMap
 		? WorldMap->GetBiomeColor(Biome)
-		: USolidWorldMap::DefaultColorForBiome(Biome);
+		: USolidWorldChart::DefaultColorForBiome(Biome);
 
 	UMaterialInterface* Solid = SolidMaterials::CreateSolidColor(
 		Params.Outer,

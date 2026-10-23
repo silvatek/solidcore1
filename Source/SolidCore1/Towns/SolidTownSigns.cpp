@@ -1,6 +1,6 @@
 #include "SolidTownSigns.h"
 #include "SolidTowns.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 
 static_assert(
 	SolidTowns::SignFacesSouthYawDeg == SolidTownSigns::FacingYawDeg,
@@ -24,7 +24,7 @@ float SolidTownSigns::BoardWidthCm(const FString& Label)
 }
 
 int32 SolidTownSigns::CollectPlacements(
-	const USolidWorldMap* WorldMap,
+	const USolidWorldChart* WorldMap,
 	const FVector2D WorldMinXY,
 	const FVector2D WorldMaxXY,
 	TArray<FPlacement>& OutPlacements)

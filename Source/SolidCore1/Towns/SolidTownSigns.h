@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-class USolidWorldMap;
+class USolidWorldChart;
 
 /**
  * Welcome signs for numbered WorldMap locations.
@@ -57,7 +57,7 @@ namespace SolidTownSigns
 	 * @return Number of placements written.
 	 */
 	int32 CollectPlacements(
-		const USolidWorldMap* WorldMap,
+		const USolidWorldChart* WorldMap,
 		FVector2D WorldMinXY,
 		FVector2D WorldMaxXY,
 		TArray<FPlacement>& OutPlacements);

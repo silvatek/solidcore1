@@ -4,7 +4,7 @@
 #include "Terrain/SolidBiome.h"
 
 class ACharacter;
-class USolidWorldMap;
+class USolidWorldChart;
 
 namespace SolidBridge
 {
@@ -26,7 +26,7 @@ namespace SolidGroundMove
 
 	/** SampleBiome already limits a river to its channel. */
 	bool IsImpassableGround(
-		const USolidWorldMap& Map,
+		const USolidWorldChart& Map,
 		float X,
 		float Y,
 		FVector2D WorldMinXY,
@@ -50,7 +50,7 @@ namespace SolidGroundMove
 	 * A broken span also closes the bank in front of each ramp, so a step off that lip is refused.
 	 */
 	bool AllowsFooting(
-		const USolidWorldMap& Map,
+		const USolidWorldChart& Map,
 		float X,
 		float Y,
 		FVector2D WorldMinXY,

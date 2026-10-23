@@ -2,7 +2,7 @@
 #include "SolidBiome.h"
 #include "SolidTerrainFog.h"
 #include "SolidTerrainNoise.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 #include "SolidCore1.h"
 
 void USolidTerrainMap::Build(
@@ -14,7 +14,7 @@ void USolidTerrainMap::Build(
 	int32 InGridHeight,
 	float InPointSpacing,
 	bool bForceRebuild,
-	USolidWorldMap* InWorldMap)
+	USolidWorldChart* InWorldMap)
 {
 	if (bIsBuilt && !bForceRebuild && Points.Num() == GridWidth * GridHeight)
 	{
@@ -39,7 +39,7 @@ void USolidTerrainMap::Build(
 	{
 		if (!WorldMap)
 		{
-			WorldMap = NewObject<USolidWorldMap>(this, TEXT("WorldMap"));
+			WorldMap = NewObject<USolidWorldChart>(this, TEXT("WorldMap"));
 		}
 		WorldMap->LoadDefault();
 	}

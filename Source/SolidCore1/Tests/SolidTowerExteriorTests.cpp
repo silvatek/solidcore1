@@ -3,7 +3,7 @@
 #include "Strongholds/Tower/Actors/SolidTowerExterior.h"
 #include "SolidStronghold.h"
 #include "Strongholds/Tower/SolidTower.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "MeshDescription.h"
@@ -202,7 +202,7 @@ bool FSolidTowerExteriorTest::RunTest(const FString& Parameters)
 	UStaticMeshComponent* Door = Shell->GetDoorMesh();
 	TestNotNull(TEXT("the tower stronghold builds the door"), Door);
 
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("shipped map loads"), Map && Map->LoadDefault());
 	SolidStrongholds::FGrassFace Face;
 	const bool bGrass = Map && SolidStrongholds::FindGrassFace(Map, ImperiousCell, Face);

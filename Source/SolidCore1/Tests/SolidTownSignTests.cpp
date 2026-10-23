@@ -6,7 +6,7 @@
 #include "SolidTownSign.h"
 #include "SolidTownSigns.h"
 #include "SolidTowns.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -17,7 +17,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidTownSignPlacementsTest::RunTest(const FString& Parameters)
 {
-	USolidWorldMap* WorldMap = NewObject<USolidWorldMap>();
+	USolidWorldChart* WorldMap = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("world map"), WorldMap);
 	TestTrue(TEXT("LoadDefault"), WorldMap->LoadDefault());
 
@@ -124,15 +124,15 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidTownSignSkipsEmptyNameTest::RunTest(const FString& Parameters)
 {
 	FString Text;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
 		FString Line;
-		Line.Reserve(USolidWorldMap::MapWidth);
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		Line.Reserve(USolidWorldChart::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
 			if (Row == 1 && Col == 2)
 			{
-				Line.AppendChar(USolidWorldMap::LocationMarker);
+				Line.AppendChar(USolidWorldChart::LocationMarker);
 			}
 			else if (Row == 3 && Col == 5)
 			{
@@ -140,11 +140,11 @@ bool FSolidTownSignSkipsEmptyNameTest::RunTest(const FString& Parameters)
 			}
 			else if ((Row == 3 && Col == 9) || (Row == 8 && Col == 9))
 			{
-				Line.AppendChar(USolidWorldMap::LocationMarker);
+				Line.AppendChar(USolidWorldChart::LocationMarker);
 			}
 			else
 			{
-				Line.AppendChar(USolidWorldMap::GrassMarker);
+				Line.AppendChar(USolidWorldChart::GrassMarker);
 			}
 		}
 		Text += Line;
@@ -154,7 +154,7 @@ bool FSolidTownSignSkipsEmptyNameTest::RunTest(const FString& Parameters)
 	Text += TEXT("! 4,10 = Town Kanfold\n");
 	Text += TEXT("! 9,10 = Town Kanfold\n");
 
-	USolidWorldMap* WorldMap = NewObject<USolidWorldMap>();
+	USolidWorldChart* WorldMap = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("synthetic loads"), WorldMap->LoadFromString(Text));
 
 	const FVector2D WorldMin(0.f, 0.f);
@@ -212,7 +212,7 @@ bool FSolidTownSignWallgateTest::RunTest(const FString& Parameters)
 	const float TowerNorthCm = SolidWallgate::WallThicknessCm * 0.5f
 		+ SolidWallgate::TowerFootprintYCm
 		- SolidWallgate::ConnectCm;
-	const float HalfCellCm = 102400.f / static_cast<float>(USolidWorldMap::MapHeight) * 0.5f;
+	const float HalfCellCm = 102400.f / static_cast<float>(USolidWorldChart::MapHeight) * 0.5f;
 	TestTrue(TEXT("the sign clears the towers"), SolidTowns::DragongateSignNorthCm > TowerNorthCm);
 	TestTrue(TEXT("the sign sits on the north edge of the cell"),
 		FMath::IsNearlyEqual(SolidTowns::DragongateSignNorthCm, HalfCellCm, 0.1f));
@@ -249,20 +249,20 @@ bool FSolidTownSignWallgateTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("one wall gate"), WallGateCount, 1);
 
 	FString Text;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
 		FString Line;
-		Line.Reserve(USolidWorldMap::MapWidth);
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		Line.Reserve(USolidWorldChart::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
-			Line.AppendChar((Row == 9 && Col == 16) ? USolidWorldMap::LocationMarker : USolidWorldMap::GrassMarker);
+			Line.AppendChar((Row == 9 && Col == 16) ? USolidWorldChart::LocationMarker : USolidWorldChart::GrassMarker);
 		}
 		Text += Line;
 		Text += TEXT("\n");
 	}
 	Text += TEXT("! 10,17 = Town Dragongate\n");
 
-	USolidWorldMap* WorldMap = NewObject<USolidWorldMap>();
+	USolidWorldChart* WorldMap = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("synthetic loads"), WorldMap->LoadFromString(Text));
 	const FVector2D WorldMin(-51200.f, -51200.f);
 	const FVector2D WorldMax(51200.f, 51200.f);
@@ -276,7 +276,7 @@ bool FSolidTownSignWallgateTest::RunTest(const FString& Parameters)
 
 	FVector2D CellXY = FVector2D::ZeroVector;
 	TestTrue(TEXT("cell projects"), WorldMap->CellToWorldXY(FIntPoint(16, 9), WorldMin, WorldMax, CellXY));
-	const float CellNorth = (WorldMax.Y - WorldMin.Y) / static_cast<float>(USolidWorldMap::MapHeight) * 0.5f;
+	const float CellNorth = (WorldMax.Y - WorldMin.Y) / static_cast<float>(USolidWorldChart::MapHeight) * 0.5f;
 	const FVector2D Expected = CellXY + FVector2D(SolidTowns::DragongateSignEastCm, CellNorth);
 	TestTrue(TEXT("sign stands east of the gate on the north edge"), Placements[0].WorldXY.Equals(Expected, 0.1f));
 	TestTrue(TEXT("sign is north of the cell center"), Placements[0].WorldXY.Y > CellXY.Y + TowerNorthCm);

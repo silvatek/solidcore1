@@ -3,7 +3,7 @@
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
 #include "SolidRiver.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -68,7 +68,7 @@ namespace
 		return Poly.Points.Last();
 	}
 
-	bool RoutePoly(const USolidWorldMap& Map, const SolidRoad::FRoute& Route, const FVector2D WorldMin, const FVector2D WorldMax, FRouteLine& Out)
+	bool RoutePoly(const USolidWorldChart& Map, const SolidRoad::FRoute& Route, const FVector2D WorldMin, const FVector2D WorldMax, FRouteLine& Out)
 	{
 		Out.Points.Reset();
 		for (const FIntPoint& Cell : Route.Cells)
@@ -340,7 +340,7 @@ namespace
 			Mesh->SetMaterial(0, Timber);
 		}
 		if (UMaterialInterface* Road = SolidMaterials::CreateSolidColor(
-			Outer, USolidWorldMap::DefaultColorForBiome(ESolidBiome::Road), RoadName, 0.95f))
+			Outer, USolidWorldChart::DefaultColorForBiome(ESolidBiome::Road), RoadName, 0.95f))
 		{
 			Mesh->SetMaterial(1, Road);
 		}
@@ -375,7 +375,7 @@ namespace
 }
 
 int32 SolidBridge::Collect(
-	const USolidWorldMap& Map,
+	const USolidWorldChart& Map,
 	const FVector2D WorldMinXY,
 	const FVector2D WorldMaxXY,
 	const TFunction<float(float X, float Y)>& HeightAt,

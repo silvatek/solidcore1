@@ -13,7 +13,7 @@ namespace SolidLairMouth
 
 	bool InBounds(const int32 X, const int32 Y)
 	{
-		return X >= 0 && X < USolidWorldMap::MapWidth && Y >= 0 && Y < USolidWorldMap::MapHeight;
+		return X >= 0 && X < USolidWorldChart::MapWidth && Y >= 0 && Y < USolidWorldChart::MapHeight;
 	}
 
 	float YawFacingGrass(const FIntPoint& Step)
@@ -45,17 +45,17 @@ namespace SolidLairMouth
 		}
 		if (Bang.Kind == ESolidWorldBang::LairEntrance)
 		{
-			return USolidWorldMap::XMarker;
+			return USolidWorldChart::XMarker;
 		}
 		if (Bang.Kind == ESolidWorldBang::LairExit)
 		{
-			return USolidWorldMap::YMarker;
+			return USolidWorldChart::YMarker;
 		}
 		return 0;
 	}
 
 	bool TryAdd(
-		const USolidWorldMap& WorldMap,
+		const USolidWorldChart& WorldMap,
 		const FVector2D WorldMinXY,
 		const FVector2D WorldMaxXY,
 		const int32 Col,
@@ -113,7 +113,7 @@ namespace SolidLairMouth
 }
 
 int32 SolidLair::CollectEntrances(
-	const USolidWorldMap* WorldMap,
+	const USolidWorldChart* WorldMap,
 	const FVector2D WorldMinXY,
 	const FVector2D WorldMaxXY,
 	TArray<FEntrance>& OutEntrances)
@@ -124,9 +124,9 @@ int32 SolidLair::CollectEntrances(
 		return 0;
 	}
 
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
 			FSolidWorldBang Bang;
 			if (!WorldMap->FindBang(Col, Row, Bang))

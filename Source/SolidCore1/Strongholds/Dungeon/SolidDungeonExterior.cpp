@@ -4,7 +4,7 @@
 #include "Strongholds/SolidStronghold.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
-#include "Terrain/SolidWorldMap.h"
+#include "Terrain/SolidWorldChart.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -485,7 +485,7 @@ float ASolidDungeonExterior::GroundDropCm(
 	{
 		return 0.f;
 	}
-	const USolidWorldMap* Map = Terrain->GetWorldMap();
+	const USolidWorldChart* Map = Terrain->GetWorldMap();
 	if (!Map || !Map->IsLoaded())
 	{
 		return 0.f;
@@ -501,8 +501,8 @@ float ASolidDungeonExterior::GroundDropCm(
 
 	const float ExtentX = FMath::Max(WorldMax.X - WorldMin.X, 1.f);
 	const float ExtentY = FMath::Max(WorldMax.Y - WorldMin.Y, 1.f);
-	const float CellW = ExtentX / static_cast<float>(USolidWorldMap::MapWidth);
-	const float CellH = ExtentY / static_cast<float>(USolidWorldMap::MapHeight);
+	const float CellW = ExtentX / static_cast<float>(USolidWorldChart::MapWidth);
+	const float CellH = ExtentY / static_cast<float>(USolidWorldChart::MapHeight);
 	const float XMax = WorldMax.X - static_cast<float>(Cell.X) * CellW;
 	const float XMin = XMax - CellW;
 	const float YMax = WorldMax.Y - static_cast<float>(Cell.Y) * CellH;

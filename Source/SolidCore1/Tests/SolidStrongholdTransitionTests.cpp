@@ -7,7 +7,7 @@
 #include "SolidStronghold.h"
 #include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
 #include "Strongholds/Tower/SolidTower.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -301,7 +301,7 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 		TEXT("Imperious tower is still a row"),
 		SolidStrongholdTransition::Offers(Choices, ESolidStrongholdSize::Imperious, ESolidStrongholdType::Tower));
 
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("world map"), Map);
 	TestTrue(TEXT("shipped map loads"), Map && Map->LoadDefault());
 	if (!Map)
@@ -310,9 +310,9 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 	}
 
 	int32 Sites = 0;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
 			ESolidStrongholdSize SiteSize = ESolidStrongholdSize::Meagre;
 			if (!Map->StrongholdSiteAtCell(Col, Row, SiteSize))

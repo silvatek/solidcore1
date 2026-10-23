@@ -17,7 +17,6 @@
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Terrain/SolidWorldChart.h"
-#include "Terrain/SolidWorldMap.h"
 #include "Towns/SolidTowns.h"
 #include "Menus/SolidPortal.h"
 #include "Towns/SolidBuilding.h"
@@ -556,7 +555,7 @@ void ASolidGameMode::PlaceCaptainInLair()
 	}
 	if (!SolidLair::IsEndMarker(End))
 	{
-		End = USolidWorldMap::XMarker;
+		End = USolidWorldChart::XMarker;
 	}
 
 	float HalfHeight = 96.f;
@@ -638,7 +637,7 @@ void ASolidGameMode::TravelFromLair(const TCHAR EndMarker)
 	{
 		return;
 	}
-	const TCHAR End = SolidLair::IsEndMarker(EndMarker) ? FChar::ToUpper(EndMarker) : USolidWorldMap::XMarker;
+	const TCHAR End = SolidLair::IsEndMarker(EndMarker) ? FChar::ToUpper(EndMarker) : USolidWorldChart::XMarker;
 	const SolidWorldTime::FStamp When = WorldStamp();
 	GetConfiguration()->GetJournal()->RememberLair(When, /*bEnter=*/false);
 	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Exit Iglin tunnels"), *SolidWorldTime::Format(When));
@@ -739,7 +738,7 @@ void ASolidGameMode::RefreshEvents()
 	}
 
 	USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
-	USolidWorldMap* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
+	USolidWorldChart* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
 	APlayerController* PC = World->GetFirstPlayerController();
 	APawn* PlayerPawn = PC ? PC->GetPawn() : nullptr;
 	if (!Terrain || !WorldMap || !WorldMap->IsLoaded() || !PlayerPawn)
@@ -995,7 +994,7 @@ bool ASolidGameMode::TeleportSquadToTown(const int32 TownId)
 
 	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World);
 	USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
-	USolidWorldMap* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
+	USolidWorldChart* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
 	APlayerController* PC = World->GetFirstPlayerController();
 	ASolidCharacter* Captain = PC ? Cast<ASolidCharacter>(PC->GetPawn()) : nullptr;
 	if (!Streamer || !Terrain || !Terrain->IsBuilt() || !WorldMap || !WorldMap->IsLoaded() || !Captain)
@@ -1063,7 +1062,7 @@ bool ASolidGameMode::TeleportSquadToTunnelMouth(const TCHAR EndMarker)
 
 	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World);
 	USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
-	USolidWorldMap* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
+	USolidWorldChart* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
 	APlayerController* PC = World->GetFirstPlayerController();
 	ASolidCharacter* Captain = PC ? Cast<ASolidCharacter>(PC->GetPawn()) : nullptr;
 	if (!Streamer || !Terrain || !Terrain->IsBuilt() || !WorldMap || !WorldMap->IsLoaded() || !Captain)
@@ -1425,7 +1424,7 @@ void ASolidGameMode::ChooseForagePiles(const USolidTerrainMap* Map)
 
 	int32 NearIglin = 0;
 	FVector2D IglinXY = FVector2D::ZeroVector;
-	const USolidWorldMap* WorldMap = Map->GetWorldMap();
+	const USolidWorldChart* WorldMap = Map->GetWorldMap();
 	if (WorldMap && WorldMap->GetLocationWorldXY(
 		SolidTowns::Iglin, Map->GetWorldMinXY(), Map->GetWorldMaxXY(), IglinXY))
 	{
@@ -1539,7 +1538,7 @@ void ASolidGameMode::ChooseMonsters(const USolidTerrainMap* Map)
 		ForagePoints.Add(Choice.PointIndex);
 	}
 
-	const USolidWorldMap* WorldMap = Map->GetWorldMap();
+	const USolidWorldChart* WorldMap = Map->GetWorldMap();
 	Encounters.Reset();
 	int32 Chosen = 0;
 	if (WorldMap)
@@ -1771,7 +1770,7 @@ void ASolidGameMode::EnsureVegetation()
 	TArray<SolidTownSigns::FPlacement> SignPlacements;
 	TArray<SolidLair::FEntrance> TunnelEntrances;
 	TArray<FVector2D> SignClearCenters;
-	if (const USolidWorldMap* WorldMap = Streamer->GetTerrainMap()->GetWorldMap())
+	if (const USolidWorldChart* WorldMap = Streamer->GetTerrainMap()->GetWorldMap())
 	{
 		const FVector2D WorldMin = Streamer->GetTerrainMap()->GetWorldMinXY();
 		const FVector2D WorldMax = Streamer->GetTerrainMap()->GetWorldMaxXY();
@@ -1822,7 +1821,7 @@ void ASolidGameMode::EnsureVegetation()
 			++Spawned;
 		}
 
-		if (const USolidWorldMap* GateMap = Streamer->GetTerrainMap()->GetWorldMap())
+		if (const USolidWorldChart* GateMap = Streamer->GetTerrainMap()->GetWorldMap())
 		{
 			TArray<SolidWallgate::FPiece> GatePieces;
 			SolidWallgate::CollectPieces(
@@ -1959,7 +1958,7 @@ void ASolidGameMode::EnsureVegetation()
 	if (SpawnedBridges.Num() == 0)
 	{
 		USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
-		USolidWorldMap* BridgeMap = Terrain ? Terrain->GetWorldMap() : nullptr;
+		USolidWorldChart* BridgeMap = Terrain ? Terrain->GetWorldMap() : nullptr;
 		if (BridgeMap && BridgeMap->IsLoaded())
 		{
 			TArray<SolidBridge::FBridge> Bridges;

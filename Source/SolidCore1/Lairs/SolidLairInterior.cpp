@@ -170,11 +170,11 @@ void ASolidLairInterior::Tick(const float DeltaSeconds)
 
 UPointLightComponent* ASolidLairInterior::GetMouthLight(const TCHAR End) const
 {
-	if (FChar::ToUpper(End) == USolidWorldMap::XMarker)
+	if (FChar::ToUpper(End) == USolidWorldChart::XMarker)
 	{
 		return LightNearX.Get();
 	}
-	if (FChar::ToUpper(End) == USolidWorldMap::YMarker)
+	if (FChar::ToUpper(End) == USolidWorldChart::YMarker)
 	{
 		return LightNearY.Get();
 	}
@@ -213,11 +213,11 @@ FRotator ASolidLairInterior::GetCaptainView(const TCHAR End) const
 
 UStaticMeshComponent* ASolidLairInterior::GetEndMouth(const TCHAR End) const
 {
-	if (FChar::ToUpper(End) == USolidWorldMap::XMarker)
+	if (FChar::ToUpper(End) == USolidWorldChart::XMarker)
 	{
 		return MouthX;
 	}
-	if (FChar::ToUpper(End) == USolidWorldMap::YMarker)
+	if (FChar::ToUpper(End) == USolidWorldChart::YMarker)
 	{
 		return MouthY;
 	}
@@ -308,8 +308,8 @@ void ASolidLairInterior::BuildVisuals()
 					continue;
 				}
 
-				const bool bWestDoor = Marker == USolidWorldMap::XMarker && Side == 0;
-				const bool bEastDoor = Marker == USolidWorldMap::YMarker && Side == 1;
+				const bool bWestDoor = Marker == USolidWorldChart::XMarker && Side == 0;
+				const bool bEastDoor = Marker == USolidWorldChart::YMarker && Side == 1;
 				const FVector2D A = Corners[Side][0];
 				const FVector2D B = Corners[Side][1];
 				const FVector2D Delta = B - A;
@@ -361,6 +361,6 @@ void ASolidLairInterior::BuildVisuals()
 		Light->SetAttenuationRadius(SolidLair::MouthLightRadiusCm);
 		Light->SetLightColor(SolidLair::MouthLightColor());
 	};
-	PlaceMouthLight(LightNearX, USolidWorldMap::XMarker);
-	PlaceMouthLight(LightNearY, USolidWorldMap::YMarker);
+	PlaceMouthLight(LightNearX, USolidWorldChart::XMarker);
+	PlaceMouthLight(LightNearY, USolidWorldChart::YMarker);
 }

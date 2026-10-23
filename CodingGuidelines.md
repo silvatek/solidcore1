@@ -90,7 +90,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 2. When a change has to update an existing test (an API rename, or an intentional behavior change), the commit names those tests and says why.
 3. New product code ships with tests in the same commit. Prefer a pure-logic test or a `NewObject` unit test. Add a PIE test only when the behavior needs a running world.
 4. Never pass `TObjectPtr<T>` (or a ternary that yields one) to `TestNotNull` / `TestNull`. UE 5.8 cannot deduce `const ValueType*` from it. `GetStaticMesh()` is the usual case. Bind a raw `T*` first, or call `.Get()`.
-5. When a product change would invalidate an assumption in an existing test, remove that assumption before the product change. The test has to pass on the current code and on the code that is about to be written. Read a constant the product already defines, such as `USolidWorldMap::MapWidth`, instead of copying a number.
+5. When a product change would invalidate an assumption in an existing test, remove that assumption before the product change. The test has to pass on the current code and on the code that is about to be written. Read a constant the product already defines, such as `USolidWorldChart::MapWidth`, instead of copying a number.
    1. Name the tests that assume the old behavior.
    2. Update those tests only. Leave the product code unchanged in that commit.
    3. Push that commit on its own, so the tests can run against the current build.

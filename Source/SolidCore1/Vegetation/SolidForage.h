@@ -5,7 +5,7 @@
 #include "SolidTerrainTypes.h"
 
 class USolidGameState;
-class USolidWorldMap;
+class USolidWorldChart;
 
 /**
  * Sticks and pitch lying on forest ground.
@@ -97,7 +97,7 @@ namespace SolidForage
 	 */
 	int32 GuaranteeForestCells(
 		const TArray<FSolidTerrainPoint>& Points,
-		const USolidWorldMap* WorldMap,
+		const USolidWorldChart* WorldMap,
 		const FVector2D& WorldMinXY,
 		const FVector2D& WorldMaxXY,
 		const FVector2D& TownXY,

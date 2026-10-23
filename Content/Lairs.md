@@ -35,7 +35,7 @@ Journal lines are `Enter Iglin tunnels` and `Exit Iglin tunnels`.
 ## Do not break these while extending lairs
 
 - Tests in `SolidCore1.Lair.*` read the plan through `SolidLair` (`CellOf`, `ShortestPathSteps`, `EndSeparation`, `DeadEndCount`, `OpenCellCount`). They do not pin cell numbers, and they allow a path that is only as long as a straight walk. A new layout that still has both mouths, a joining path, dead ends, and floor off that path can ship without rewriting those tests. If a change would break an assumption, loosen the tests in their own push first, using a product function rather than a copied number. The layout change comes after and does not edit those tests.
-- `USolidWorldMap::WorldXYToCell` is protected. Project a cell with `CellToWorldXY`.
+- `USolidWorldChart::WorldXYToCell` is protected. Project a cell with `CellToWorldXY`.
 - Never pass a `TObjectPtr` to `TestNotNull` / `TestNull`. Bind a raw `T*` or call `.Get()`. `GetStaticMesh()` returns a `TObjectPtr`.
 - Unity builds merge anonymous namespaces across cpp files. Lair helpers stay in named namespaces: `SolidLairMouth`, `SolidLairInteriorPrivate`, `SolidLairTestPrivate`. Do not add `NeighborSteps`, `InBounds`, `YawFacingGrass`, `MountainGrid`, `SetCell`, `PlaceMouth`, or `AddRock` in an anonymous namespace.
 - Comments in `SolidLair.h` describe a lair visit, not only this first maze.

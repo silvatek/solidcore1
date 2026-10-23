@@ -7,7 +7,7 @@
 #include "Company/SolidCaptain.h"
 #include "SolidHUD.h"
 #include "SolidPortal.h"
-#include "Terrain/SolidWorldMap.h"
+#include "Terrain/SolidWorldChart.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -86,13 +86,13 @@ bool FSolidPortalLandingTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("delta is planar"), FMath::IsNearlyZero(Delta.Z));
 	TestTrue(TEXT("delta reaches the landing"), FVector2D(Captain.X + Delta.X, Captain.Y + Delta.Y).Equals(Landing, 0.1f));
 
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("shipped map loads"), Map->LoadDefault());
 	const float Half = 0.5f * 512.f * 200.f;
 	const FVector2D GameMin(-Half, -Half);
 	const FVector2D GameMax(Half, Half);
-	const float CellEastCm = (GameMax.X - GameMin.X) / static_cast<float>(USolidWorldMap::MapWidth);
-	const float CellNorthCm = (GameMax.Y - GameMin.Y) / static_cast<float>(USolidWorldMap::MapHeight);
+	const float CellEastCm = (GameMax.X - GameMin.X) / static_cast<float>(USolidWorldChart::MapWidth);
+	const float CellNorthCm = (GameMax.Y - GameMin.Y) / static_cast<float>(USolidWorldChart::MapHeight);
 	TestTrue(TEXT("plaza offset stays inside the cell"),
 		FMath::Abs(Plaza.X) < CellEastCm * 0.5f && FMath::Abs(Plaza.Y) < CellNorthCm * 0.5f);
 
@@ -194,14 +194,14 @@ bool FSolidPortalTunnelMouthTest::RunTest(const FString& Parameters)
 		TEXT("tunnels place"),
 		static_cast<uint8>(Tunnels.Place),
 		static_cast<uint8>(SolidPortal::EPlace::TunnelMouth));
-	TestEqual(TEXT("tunnels end is X"), static_cast<int32>(Tunnels.TunnelEnd), static_cast<int32>(USolidWorldMap::XMarker));
+	TestEqual(TEXT("tunnels end is X"), static_cast<int32>(Tunnels.TunnelEnd), static_cast<int32>(USolidWorldChart::XMarker));
 	TestEqual(TEXT("tunnels are not a town"), Tunnels.TownId, INDEX_NONE);
 
 	SolidPortal::FChoice Found;
 	TestTrue(TEXT("find the tunnels"), SolidPortal::FindChoice(TunnelIndex, Found));
 	TestEqual(TEXT("found tunnels"), Found.Name, FString(SolidLair::IglinTunnels.Name));
 
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("shipped map loads"), Map->LoadDefault());
 	const float Half = 0.5f * 512.f * 200.f;
 	const FVector2D GameMin(-Half, -Half);
@@ -211,7 +211,7 @@ bool FSolidPortalTunnelMouthTest::RunTest(const FString& Parameters)
 	const SolidLair::FEntrance* Mouth = nullptr;
 	for (const SolidLair::FEntrance& Entrance : Mouths)
 	{
-		if (Entrance.EndMarker == USolidWorldMap::XMarker)
+		if (Entrance.EndMarker == USolidWorldChart::XMarker)
 		{
 			Mouth = &Entrance;
 			break;
@@ -236,8 +236,8 @@ bool FSolidPortalTunnelMouthTest::RunTest(const FString& Parameters)
 	FVector2D CliffXY = FVector2D::ZeroVector;
 	TestTrue(TEXT("grass cell projects"), Map->CellToWorldXY(Mouth->GrassCell, GameMin, GameMax, GrassXY));
 	TestTrue(TEXT("cliff cell projects"), Map->CellToWorldXY(Mouth->Cell, GameMin, GameMax, CliffXY));
-	const float CellEastCm = (GameMax.X - GameMin.X) / static_cast<float>(USolidWorldMap::MapWidth);
-	const float CellNorthCm = (GameMax.Y - GameMin.Y) / static_cast<float>(USolidWorldMap::MapHeight);
+	const float CellEastCm = (GameMax.X - GameMin.X) / static_cast<float>(USolidWorldChart::MapWidth);
+	const float CellNorthCm = (GameMax.Y - GameMin.Y) / static_cast<float>(USolidWorldChart::MapHeight);
 	TestTrue(
 		TEXT("landing stays on the grass cell"),
 		FMath::Abs(Landing.X - GrassXY.X) < CellEastCm * 0.5f

@@ -4,7 +4,7 @@
 #include "SolidStronghold.h"
 #include "SolidTerrainTypes.h"
 #include "SolidTowns.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -17,18 +17,18 @@ namespace
 	{
 		int32 Col = 0;
 		int32 Row = 0;
-		TCHAR Marker = USolidWorldMap::GrassMarker;
+		TCHAR Marker = USolidWorldChart::GrassMarker;
 	};
 
 	FString RoadTestGrid(const TArray<FRoadTestMark>& Marks, const FString& Roads)
 	{
 		FString Text;
-		Text.Reserve((USolidWorldMap::MapWidth + 1) * USolidWorldMap::MapHeight + Roads.Len());
-		for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+		Text.Reserve((USolidWorldChart::MapWidth + 1) * USolidWorldChart::MapHeight + Roads.Len());
+		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 		{
-			for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+			for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 			{
-				TCHAR Marker = USolidWorldMap::GrassMarker;
+				TCHAR Marker = USolidWorldChart::GrassMarker;
 				for (const FRoadTestMark& Mark : Marks)
 				{
 					if (Mark.Col == Col && Mark.Row == Row)
@@ -45,12 +45,12 @@ namespace
 		return Text;
 	}
 
-	bool RoadTestLoad(FAutomationTestBase& Test, USolidWorldMap& Map, const FString& Text)
+	bool RoadTestLoad(FAutomationTestBase& Test, USolidWorldChart& Map, const FString& Text)
 	{
 		return Test.TestTrue(TEXT("map loads"), Map.LoadFromString(Text));
 	}
 
-	const SolidRoad::FRoute* RoadTestRoute(const USolidWorldMap& Map, const int32 Index)
+	const SolidRoad::FRoute* RoadTestRoute(const USolidWorldChart& Map, const int32 Index)
 	{
 		const TArray<SolidRoad::FRoute>& Roads = Map.GetRoads();
 		return Roads.IsValidIndex(Index) ? &Roads[Index] : nullptr;
@@ -70,7 +70,7 @@ namespace
 		return true;
 	}
 
-	int32 RoadTestCountBiome(const USolidWorldMap& Map, const TArray<FIntPoint>& Cells, const ESolidBiome Biome)
+	int32 RoadTestCountBiome(const USolidWorldChart& Map, const TArray<FIntPoint>& Cells, const ESolidBiome Biome)
 	{
 		int32 Count = 0;
 		for (const FIntPoint& Cell : Cells)
@@ -83,7 +83,7 @@ namespace
 		return Count;
 	}
 
-	FVector2D RoadTestCenter(const USolidWorldMap& Map, const int32 Col, const int32 Row)
+	FVector2D RoadTestCenter(const USolidWorldChart& Map, const int32 Col, const int32 Row)
 	{
 		FVector2D Center = FVector2D::ZeroVector;
 		Map.CellToWorldXY(FIntPoint(Col, Row), RoadTestMin, RoadTestMax, Center);
@@ -198,11 +198,11 @@ bool FSolidRoadNamedEndTest::RunTest(const FString& Parameters)
 		CaveCol + 1,
 		TownRow + 1,
 		TownCol + 1);
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("named map"), Map);
 	if (!Map || !RoadTestLoad(*this, *Map, RoadTestGrid({
-		{ CaveCol, CaveRow, USolidWorldMap::LocationMarker },
-		{ TownCol, TownRow, USolidWorldMap::LocationMarker },
+		{ CaveCol, CaveRow, USolidWorldChart::LocationMarker },
+		{ TownCol, TownRow, USolidWorldChart::LocationMarker },
 	}, Lines)))
 	{
 		return false;
@@ -238,17 +238,17 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidRoadAvoidTest::RunTest(const FString& Parameters)
 {
 	TArray<FRoadTestMark> ForestWall;
-	ForestWall.Add({ 2, 8, USolidWorldMap::LocationMarker });
-	ForestWall.Add({ 20, 8, USolidWorldMap::LocationMarker });
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	ForestWall.Add({ 2, 8, USolidWorldChart::LocationMarker });
+	ForestWall.Add({ 20, 8, USolidWorldChart::LocationMarker });
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
 		if (Row != 2)
 		{
-			ForestWall.Add({ 10, Row, USolidWorldMap::ForestMarker });
+			ForestWall.Add({ 10, Row, USolidWorldChart::ForestMarker });
 		}
 	}
 
-	USolidWorldMap* Highway = NewObject<USolidWorldMap>();
+	USolidWorldChart* Highway = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("highway map"), Highway);
 	if (!RoadTestLoad(*this, *Highway, RoadTestGrid(ForestWall, RoadTestNamed(2, 8, TEXT("Iglin"), 20, 8, TEXT("Relion"), TEXT("highway")))))
 	{
@@ -264,7 +264,7 @@ bool FSolidRoadAvoidTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("highway stays off the forest"), RoadTestCountBiome(*Highway, HighwayRoute->Cells, ESolidBiome::Forest), 0);
 	RoadTestOrthogonal(*this, HighwayRoute->Cells);
 
-	USolidWorldMap* Trail = NewObject<USolidWorldMap>();
+	USolidWorldChart* Trail = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("trail map"), Trail);
 	if (!RoadTestLoad(*this, *Trail, RoadTestGrid(ForestWall, RoadTestNamed(2, 8, TEXT("Iglin"), 20, 8, TEXT("Relion"), TEXT("trail")))))
 	{
@@ -279,13 +279,13 @@ bool FSolidRoadAvoidTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("trail takes the forest"), RoadTestCountBiome(*Trail, TrailRoute->Cells, ESolidBiome::Forest) > 0);
 
 	TArray<FRoadTestMark> MountainTie;
-	MountainTie.Add({ 5, 5, USolidWorldMap::LocationMarker });
-	MountainTie.Add({ 10, 10, USolidWorldMap::LocationMarker });
+	MountainTie.Add({ 5, 5, USolidWorldChart::LocationMarker });
+	MountainTie.Add({ 10, 10, USolidWorldChart::LocationMarker });
 	for (int32 Col = 6; Col <= 10; ++Col)
 	{
 		MountainTie.Add({ Col, 5, TEXT('M') });
 	}
-	USolidWorldMap* Track = NewObject<USolidWorldMap>();
+	USolidWorldChart* Track = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("track map"), Track);
 	if (!RoadTestLoad(*this, *Track, RoadTestGrid(MountainTie, RoadTestNamed(5, 5, TEXT("Iglin"), 10, 10, TEXT("Relion"), TEXT("track")))))
 	{
@@ -301,16 +301,16 @@ bool FSolidRoadAvoidTest::RunTest(const FString& Parameters)
 		RoadTestCountBiome(*Track, TrackRoute->Cells, ESolidBiome::Mountain), 0);
 
 	TArray<FRoadTestMark> SeaBay;
-	SeaBay.Add({ 2, 10, USolidWorldMap::LocationMarker });
-	SeaBay.Add({ 14, 10, USolidWorldMap::LocationMarker });
+	SeaBay.Add({ 2, 10, USolidWorldChart::LocationMarker });
+	SeaBay.Add({ 14, 10, USolidWorldChart::LocationMarker });
 	for (int32 Col = 6; Col <= 10; ++Col)
 	{
 		for (int32 Row = 0; Row <= 20; ++Row)
 		{
-			SeaBay.Add({ Col, Row, USolidWorldMap::SeaMarker });
+			SeaBay.Add({ Col, Row, USolidWorldChart::SeaMarker });
 		}
 	}
-	USolidWorldMap* SeaTrail = NewObject<USolidWorldMap>();
+	USolidWorldChart* SeaTrail = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("sea map"), SeaTrail);
 	if (!RoadTestLoad(*this, *SeaTrail, RoadTestGrid(SeaBay, RoadTestNamed(2, 10, TEXT("Iglin"), 14, 10, TEXT("Relion"), TEXT("trail")))))
 	{
@@ -325,16 +325,16 @@ bool FSolidRoadAvoidTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("trail stays off the sea"), RoadTestCountBiome(*SeaTrail, SeaRoute->Cells, ESolidBiome::Sea), 0);
 
 	TArray<FRoadTestMark> MountainWall;
-	MountainWall.Add({ 2, 8, USolidWorldMap::LocationMarker });
-	MountainWall.Add({ 20, 8, USolidWorldMap::LocationMarker });
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	MountainWall.Add({ 2, 8, USolidWorldChart::LocationMarker });
+	MountainWall.Add({ 20, 8, USolidWorldChart::LocationMarker });
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
 		if (Row != 2)
 		{
 			MountainWall.Add({ 10, Row, TEXT('M') });
 		}
 	}
-	USolidWorldMap* MountainTrail = NewObject<USolidWorldMap>();
+	USolidWorldChart* MountainTrail = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("mountain map"), MountainTrail);
 	if (!RoadTestLoad(*this, *MountainTrail, RoadTestGrid(MountainWall, RoadTestNamed(2, 8, TEXT("Iglin"), 20, 8, TEXT("Relion"), TEXT("trail")))))
 	{
@@ -360,17 +360,17 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidRoadRiverTest::RunTest(const FString& Parameters)
 {
 	TArray<FRoadTestMark> Marks;
-	Marks.Add({ 4, 10, USolidWorldMap::LocationMarker });
-	Marks.Add({ 22, 10, USolidWorldMap::LocationMarker });
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	Marks.Add({ 4, 10, USolidWorldChart::LocationMarker });
+	Marks.Add({ 22, 10, USolidWorldChart::LocationMarker });
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
 		if (Row != 22)
 		{
-			Marks.Add({ 12, Row, USolidWorldMap::RiverMarker });
+			Marks.Add({ 12, Row, USolidWorldChart::RiverMarker });
 		}
 	}
 
-	USolidWorldMap* Road = NewObject<USolidWorldMap>();
+	USolidWorldChart* Road = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("road map"), Road);
 	if (!RoadTestLoad(*this, *Road, RoadTestGrid(Marks, RoadTestNamed(4, 10, TEXT("Iglin"), 22, 10, TEXT("Relion"), TEXT("road")))))
 	{
@@ -384,7 +384,7 @@ bool FSolidRoadRiverTest::RunTest(const FString& Parameters)
 	}
 	TestEqual(TEXT("road uses the ford"), RoadTestCountBiome(*Road, RoadRoute->Cells, ESolidBiome::River), 0);
 
-	USolidWorldMap* Track = NewObject<USolidWorldMap>();
+	USolidWorldChart* Track = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("track map"), Track);
 	if (!RoadTestLoad(*this, *Track, RoadTestGrid(Marks, RoadTestNamed(4, 10, TEXT("Iglin"), 22, 10, TEXT("Relion"), TEXT("track")))))
 	{
@@ -399,13 +399,13 @@ bool FSolidRoadRiverTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("track crosses the river"), RoadTestCountBiome(*Track, TrackRoute->Cells, ESolidBiome::River) >= 1);
 
 	TArray<FRoadTestMark> Blocked;
-	Blocked.Add({ 4, 20, USolidWorldMap::LocationMarker });
-	Blocked.Add({ 20, 20, USolidWorldMap::LocationMarker });
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	Blocked.Add({ 4, 20, USolidWorldChart::LocationMarker });
+	Blocked.Add({ 20, 20, USolidWorldChart::LocationMarker });
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
-		Blocked.Add({ 12, Row, USolidWorldMap::RiverMarker });
+		Blocked.Add({ 12, Row, USolidWorldChart::RiverMarker });
 	}
-	USolidWorldMap* Forced = NewObject<USolidWorldMap>();
+	USolidWorldChart* Forced = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("forced map"), Forced);
 	if (!RoadTestLoad(*this, *Forced, RoadTestGrid(Blocked, RoadTestNamed(4, 20, TEXT("Iglin"), 20, 20, TEXT("Relion"), TEXT("road")))))
 	{
@@ -431,14 +431,14 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 {
-	USolidWorldMap* Trail = NewObject<USolidWorldMap>();
+	USolidWorldChart* Trail = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("trail map"), Trail);
 	if (!RoadTestLoad(*this, *Trail, RoadTestGrid({
-		{ 4, 12, USolidWorldMap::LocationMarker },
-		{ 4, 14, USolidWorldMap::TownMarker },
+		{ 4, 12, USolidWorldChart::LocationMarker },
+		{ 4, 14, USolidWorldChart::TownMarker },
 		{ 4, 16, TEXT('Z') },
-		{ 7, 12, USolidWorldMap::ForestMarker },
-		{ 12, 12, USolidWorldMap::LocationMarker },
+		{ 7, 12, USolidWorldChart::ForestMarker },
+		{ 12, 12, USolidWorldChart::LocationMarker },
 	}, RoadTestNamed(4, 12, TEXT("Iglin"), 12, 12, TEXT("Relion"), TEXT("trail")))))
 	{
 		return false;
@@ -472,18 +472,18 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 		Trail->IsMarkedTown(TownLetter.X, TownLetter.Y, RoadTestMin, RoadTestMax));
 	TestFalse(TEXT("Z is not a town"),
 		Trail->IsMarkedTown(LegacyTown.X, LegacyTown.Y, RoadTestMin, RoadTestMax));
-	const FLinearColor RoadBrown = USolidWorldMap::DefaultColorForBiome(ESolidBiome::Road);
-	const FLinearColor TownBrown = USolidWorldMap::DefaultColorForBiome(ESolidBiome::Town);
+	const FLinearColor RoadBrown = USolidWorldChart::DefaultColorForBiome(ESolidBiome::Road);
+	const FLinearColor TownBrown = USolidWorldChart::DefaultColorForBiome(ESolidBiome::Town);
 	TestTrue(TEXT("road brown sits near the town brown"),
 		RoadBrown.R > RoadBrown.G && RoadBrown.G > RoadBrown.B
 		&& TownBrown.R > TownBrown.G && TownBrown.G > TownBrown.B
 		&& FMath::Abs(RoadBrown.R - TownBrown.R) < 0.2f);
 
-	USolidWorldMap* Cave = NewObject<USolidWorldMap>();
+	USolidWorldChart* Cave = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("cave map"), Cave);
 	if (!RoadTestLoad(*this, *Cave, RoadTestGrid({
-		{ 4, 8, USolidWorldMap::LocationMarker },
-		{ 8, 8, USolidWorldMap::LocationMarker },
+		{ 4, 8, USolidWorldChart::LocationMarker },
+		{ 8, 8, USolidWorldChart::LocationMarker },
 	}, TEXT("! 9,5 = Stronghold (MeagreDungeon)\n! 9,9 = Town Iglin\nRoad: MeagreDungeon -> Iglin, trail\n"))))
 	{
 		return false;
@@ -498,14 +498,14 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("the cave is not a town"),
 		Cave->IsMarkedTown(CaveCell.X, CaveCell.Y, RoadTestMin, RoadTestMax));
 
-	USolidWorldMap* Crossing = NewObject<USolidWorldMap>();
+	USolidWorldChart* Crossing = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("crossing map"), Crossing);
 	if (!RoadTestLoad(*this, *Crossing, RoadTestGrid({
-		{ 4, 16, USolidWorldMap::LocationMarker },
-		{ 10, 15, USolidWorldMap::RiverMarker },
-		{ 10, 16, USolidWorldMap::RiverMarker },
-		{ 10, 17, USolidWorldMap::RiverMarker },
-		{ 16, 16, USolidWorldMap::LocationMarker },
+		{ 4, 16, USolidWorldChart::LocationMarker },
+		{ 10, 15, USolidWorldChart::RiverMarker },
+		{ 10, 16, USolidWorldChart::RiverMarker },
+		{ 10, 17, USolidWorldChart::RiverMarker },
+		{ 16, 16, USolidWorldChart::LocationMarker },
 	}, RoadTestNamed(4, 16, TEXT("Iglin"), 16, 16, TEXT("Relion"), TEXT("track")))))
 	{
 		return false;
@@ -518,11 +518,11 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Crossing->SampleBiome(River.X + 250.f, River.Y, RoadTestMin, RoadTestMax)),
 		static_cast<uint8>(ESolidBiome::Road));
 
-	USolidWorldMap* Highway = NewObject<USolidWorldMap>();
+	USolidWorldChart* Highway = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("highway map"), Highway);
 	if (!RoadTestLoad(*this, *Highway, RoadTestGrid({
-		{ 8, 20, USolidWorldMap::LocationMarker },
-		{ 12, 20, USolidWorldMap::LocationMarker },
+		{ 8, 20, USolidWorldChart::LocationMarker },
+		{ 12, 20, USolidWorldChart::LocationMarker },
 	}, RoadTestNamed(8, 20, TEXT("Iglin"), 12, 20, TEXT("Relion"), TEXT("highway")))))
 	{
 		return false;
@@ -535,10 +535,10 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Highway->SampleBiome(Wide.X, Wide.Y + 220.f, RoadTestMin, RoadTestMax)),
 		static_cast<uint8>(ESolidBiome::Grassland));
 
-	USolidWorldMap* Missing = NewObject<USolidWorldMap>();
+	USolidWorldChart* Missing = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("missing map"), Missing);
 	if (!RoadTestLoad(*this, *Missing, RoadTestGrid({
-		{ 4, 4, USolidWorldMap::LocationMarker },
+		{ 4, 4, USolidWorldChart::LocationMarker },
 	}, TEXT("! 5,5 = Town Iglin\nRoad: Iglin -> Nowhere, trail\n"))))
 	{
 		return false;
@@ -554,7 +554,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidRoadShippedTest::RunTest(const FString& Parameters)
 {
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("map"), Map);
 	TestTrue(TEXT("default map loads"), Map->LoadDefault());
 
@@ -589,7 +589,7 @@ bool FSolidRoadShippedTest::RunTest(const FString& Parameters)
 	TestEqual(
 		TEXT("the trail starts on the cave"),
 		Map->GetMarkerAtCell(Roads[0].Cells[0].X, Roads[0].Cells[0].Y),
-		USolidWorldMap::LocationMarker);
+		USolidWorldChart::LocationMarker);
 	TestEqual(TEXT("trail ends at Iglin"), Map->GetLocationIdAtCell(Roads[0].Cells.Last().X, Roads[0].Cells.Last().Y), 0);
 	for (const SolidRoad::FRoute& Road : Roads)
 	{
@@ -633,7 +633,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidRoadCrossingTest::RunTest(const FString& Parameters)
 {
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("map"), Map);
 	if (!TestTrue(TEXT("default map loads"), Map && Map->LoadDefault()))
 	{
@@ -650,7 +650,7 @@ bool FSolidRoadCrossingTest::RunTest(const FString& Parameters)
 	int32 River = INDEX_NONE;
 	for (int32 Index = 0; Index < Cells.Num(); ++Index)
 	{
-		if (Map->GetMarkerAtCell(Cells[Index].X, Cells[Index].Y) == USolidWorldMap::RiverMarker)
+		if (Map->GetMarkerAtCell(Cells[Index].X, Cells[Index].Y) == USolidWorldChart::RiverMarker)
 		{
 			River = Index;
 			break;

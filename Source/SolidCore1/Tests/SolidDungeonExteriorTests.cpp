@@ -5,7 +5,7 @@
 #include "SolidStronghold.h"
 #include "Strongholds/Dungeon/SolidDungeon.h"
 #include "Terrain/SolidTerrainMap.h"
-#include "Terrain/SolidWorldMap.h"
+#include "Terrain/SolidWorldChart.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "MeshDescription.h"
@@ -492,7 +492,7 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 		const float Bias = 3.f;
 		const FVector ActorLocation(CaveXY.X, CaveXY.Y, Terrain->SampleHeight(CaveXY.X, CaveXY.Y) + Bias + 4.f);
 		const float Drop = ASolidDungeonExterior::GroundDropCm(Terrain, Bias, ActorLocation);
-		const USolidWorldMap* Map = Terrain->GetWorldMap();
+		const USolidWorldChart* Map = Terrain->GetWorldMap();
 		FIntPoint Cell = FIntPoint::ZeroValue;
 		float Lowest = TNumericLimits<float>::Max();
 		TestTrue(

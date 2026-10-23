@@ -11,7 +11,6 @@
 #include "Inventory/SolidItem.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidWorldChart.h"
-#include "Terrain/SolidWorldMap.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -475,14 +474,14 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 {
 	FString Grid;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
-		Grid += FString::ChrN(USolidWorldMap::MapWidth, USolidWorldMap::GrassMarker);
+		Grid += FString::ChrN(USolidWorldChart::MapWidth, USolidWorldChart::GrassMarker);
 		Grid += TEXT("\n");
 	}
 
 	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
-	USolidWorldMap* Empty = NewObject<USolidWorldMap>();
+	USolidWorldChart* Empty = NewObject<USolidWorldChart>();
 	if (!TestNotNull(TEXT("chart"), Chart)
 		|| !TestNotNull(TEXT("map"), Empty)
 		|| !TestTrue(TEXT("grass imports"), Chart->ImportFromString(Grid))
@@ -517,7 +516,7 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 
 	FString Error;
 	TestTrue(TEXT("the mark places"), Chart->PlaceEncounter(FIntPoint(10, 4), TEXT("Iglin Bridge"), Error));
-	USolidWorldMap* Marked = NewObject<USolidWorldMap>();
+	USolidWorldChart* Marked = NewObject<USolidWorldChart>();
 	if (!TestTrue(TEXT("the marked chart loads"), Marked && Marked->LoadFromChart(Chart)))
 	{
 		return false;
@@ -529,7 +528,7 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 	}
 
 	TestTrue(TEXT("a second mark places"), Chart->PlaceEncounter(FIntPoint(22, 9), TEXT("iglin bridge"), Error));
-	USolidWorldMap* Two = NewObject<USolidWorldMap>();
+	USolidWorldChart* Two = NewObject<USolidWorldChart>();
 	if (!TestTrue(TEXT("both marks load"), Two && Two->LoadFromChart(Chart)))
 	{
 		return false;
@@ -552,15 +551,15 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidMonsterMarkGroundTest::RunTest(const FString& Parameters)
 {
 	FString Grid;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
-		Grid += FString::ChrN(USolidWorldMap::MapWidth, USolidWorldMap::GrassMarker);
+		Grid += FString::ChrN(USolidWorldChart::MapWidth, USolidWorldChart::GrassMarker);
 		Grid += TEXT("\n");
 	}
 
 	const FIntPoint Cell(10, 4);
 	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
-	USolidWorldMap* WorldMap = NewObject<USolidWorldMap>();
+	USolidWorldChart* WorldMap = NewObject<USolidWorldChart>();
 	FString Error;
 	if (!TestNotNull(TEXT("chart"), Chart)
 		|| !TestNotNull(TEXT("map"), WorldMap)

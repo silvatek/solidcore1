@@ -3,7 +3,7 @@
 #include "SolidGroundMove.h"
 #include "SolidBridge.h"
 #include "SolidStronghold.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 
 #include <initializer_list>
 
@@ -18,18 +18,18 @@ namespace
 	{
 		int32 Col = 0;
 		int32 Row = 0;
-		TCHAR Marker = USolidWorldMap::GrassMarker;
+		TCHAR Marker = USolidWorldChart::GrassMarker;
 	};
 
 	FString GroundMoveGrid(std::initializer_list<FGroundMoveMark> Marks, const FString& Extra = FString())
 	{
 		FString Text;
-		Text.Reserve((USolidWorldMap::MapWidth + 1) * USolidWorldMap::MapHeight + Extra.Len());
-		for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+		Text.Reserve((USolidWorldChart::MapWidth + 1) * USolidWorldChart::MapHeight + Extra.Len());
+		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 		{
-			for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+			for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 			{
-				TCHAR Marker = USolidWorldMap::GrassMarker;
+				TCHAR Marker = USolidWorldChart::GrassMarker;
 				for (const FGroundMoveMark& Mark : Marks)
 				{
 					if (Mark.Col == Col && Mark.Row == Row)
@@ -46,7 +46,7 @@ namespace
 		return Text;
 	}
 
-	FVector2D GroundMoveCenter(const USolidWorldMap& Map, const int32 Col, const int32 Row)
+	FVector2D GroundMoveCenter(const USolidWorldChart& Map, const int32 Col, const int32 Row)
 	{
 		FVector2D Center = FVector2D::ZeroVector;
 		Map.CellToWorldXY(FIntPoint(Col, Row), GroundMoveMin, GroundMoveMax, Center);
@@ -54,7 +54,7 @@ namespace
 	}
 
 	bool GroundMoveAllows(
-		const USolidWorldMap& Map,
+		const USolidWorldChart& Map,
 		const FVector2D& Point,
 		const TArray<SolidBridge::FBridge>& Bridges)
 	{
@@ -70,20 +70,20 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidGroundMoveFootingTest::RunTest(const FString& Parameters)
 {
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	if (!TestNotNull(TEXT("map"), Map))
 	{
 		return false;
 	}
 	const FString Grid = GroundMoveGrid({
-		{ 10, 9, USolidWorldMap::RiverMarker },
-		{ 10, 10, USolidWorldMap::RiverMarker },
-		{ 10, 11, USolidWorldMap::RiverMarker },
-		{ 12, 10, USolidWorldMap::RiverMarker },
-		{ 20, 10, USolidWorldMap::SeaMarker },
+		{ 10, 9, USolidWorldChart::RiverMarker },
+		{ 10, 10, USolidWorldChart::RiverMarker },
+		{ 10, 11, USolidWorldChart::RiverMarker },
+		{ 12, 10, USolidWorldChart::RiverMarker },
+		{ 20, 10, USolidWorldChart::SeaMarker },
 		{ 22, 10, TEXT('M') },
-		{ 24, 10, USolidWorldMap::ForestMarker },
-		{ 26, 10, USolidWorldMap::LocationMarker },
+		{ 24, 10, USolidWorldChart::ForestMarker },
+		{ 26, 10, USolidWorldChart::LocationMarker },
 	}, TEXT("! 11,27 = Stronghold (MeagreDungeon)\n"));
 	if (!TestTrue(TEXT("grid loads"), Map->LoadFromString(Grid)))
 	{
@@ -206,15 +206,15 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidGroundMoveBrokenTest::RunTest(const FString& Parameters)
 {
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	if (!TestNotNull(TEXT("map"), Map))
 	{
 		return false;
 	}
 	const FString Grid = GroundMoveGrid({
-		{ 10, 9, USolidWorldMap::RiverMarker },
-		{ 10, 10, USolidWorldMap::RiverMarker },
-		{ 10, 11, USolidWorldMap::RiverMarker },
+		{ 10, 9, USolidWorldChart::RiverMarker },
+		{ 10, 10, USolidWorldChart::RiverMarker },
+		{ 10, 11, USolidWorldChart::RiverMarker },
 	});
 	if (!TestTrue(TEXT("grid loads"), Map->LoadFromString(Grid)))
 	{

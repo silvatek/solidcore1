@@ -2,7 +2,7 @@
 #include "SolidTerrainMap.h"
 #include "SolidTerrainTypes.h"
 #include "SolidTowns.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 
 int32 SolidTownBuildings::CollectPlacements(
 	const USolidTerrainMap* TerrainMap,
@@ -24,7 +24,7 @@ int32 SolidTownBuildings::CollectPlacements(
 		return 0;
 	}
 
-	const USolidWorldMap* WorldMap = TerrainMap->GetWorldMap();
+	const USolidWorldChart* WorldMap = TerrainMap->GetWorldMap();
 	const FVector2D WorldMin = TerrainMap->GetWorldMinXY();
 	const FVector2D WorldMax = TerrainMap->GetWorldMaxXY();
 	const bool bMapLoaded = WorldMap && WorldMap->IsLoaded();

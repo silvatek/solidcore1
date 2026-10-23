@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 
-class USolidWorldMap;
+class USolidWorldChart;
 
 /**
  * A WallGate town is a stone wall across its cells, not a pack of houses.
@@ -51,7 +51,7 @@ namespace SolidWallgate
 	 * @return Number of pieces written.
 	 */
 	int32 CollectPieces(
-		const USolidWorldMap* WorldMap,
+		const USolidWorldChart* WorldMap,
 		FVector2D WorldMinXY,
 		FVector2D WorldMaxXY,
 		TArray<FPiece>& OutPieces);

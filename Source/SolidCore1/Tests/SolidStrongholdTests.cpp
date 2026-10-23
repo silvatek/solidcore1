@@ -5,7 +5,7 @@
 #include "Company/SolidCompany.h"
 #include "SolidStronghold.h"
 #include "SolidTerrainMap.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -14,10 +14,10 @@ namespace
 	FString MountainGrid()
 	{
 		FString Text;
-		Text.Reserve((USolidWorldMap::MapWidth + 1) * USolidWorldMap::MapHeight);
-		for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+		Text.Reserve((USolidWorldChart::MapWidth + 1) * USolidWorldChart::MapHeight);
+		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 		{
-			for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+			for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 			{
 				Text.AppendChar(TEXT('M'));
 			}
@@ -28,7 +28,7 @@ namespace
 
 	void SetCell(FString& Grid, const int32 Col, const int32 Row, const TCHAR Marker)
 	{
-		Grid[Row * (USolidWorldMap::MapWidth + 1) + Col] = Marker;
+		Grid[Row * (USolidWorldChart::MapWidth + 1) + Col] = Marker;
 	}
 }
 
@@ -140,14 +140,14 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 {
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("world map"), Map);
 	TestTrue(TEXT("LoadDefault"), Map->LoadDefault());
 
 	TArray<FIntPoint> CaveCells;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
 			ESolidStrongholdType NamedType = ESolidStrongholdType::Fortress;
 			ESolidStrongholdSize NamedSize = ESolidStrongholdSize::Imperious;
@@ -178,7 +178,7 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 			TestEqual(
 				TEXT("grass marker north of the cave"),
 				static_cast<int32>(Map->GetMarkerAtCell(North.X, North.Y)),
-				static_cast<int32>(USolidWorldMap::GrassMarker));
+				static_cast<int32>(USolidWorldChart::GrassMarker));
 			TestEqual(
 				TEXT("north neighbor is grassland"),
 				static_cast<uint8>(Map->GetBiomeAtCell(North.X, North.Y)),
@@ -238,10 +238,10 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 
 	{
 		FString Grid = MountainGrid();
-		SetCell(Grid, 10, 10, USolidWorldMap::LocationMarker);
-		SetCell(Grid, 9, 10, USolidWorldMap::GrassMarker);
+		SetCell(Grid, 10, 10, USolidWorldChart::LocationMarker);
+		SetCell(Grid, 9, 10, USolidWorldChart::GrassMarker);
 		Grid += TEXT("! 11,11 = Stronghold (MeagreDungeon)\n");
-		USolidWorldMap* Map = NewObject<USolidWorldMap>();
+		USolidWorldChart* Map = NewObject<USolidWorldChart>();
 		TestTrue(TEXT("east grass loads"), Map->LoadFromString(Grid));
 		const FSolidStronghold Cave(ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre);
 		ESolidBiome Shelf = ESolidBiome::Grassland;
@@ -265,7 +265,7 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 	{
 		FString Grid = MountainGrid();
 		SetCell(Grid, 10, 10, TEXT('Q'));
-		USolidWorldMap* Map = NewObject<USolidWorldMap>();
+		USolidWorldChart* Map = NewObject<USolidWorldChart>();
 		TestTrue(TEXT("unknown letter loads"), Map->LoadFromString(Grid));
 		TestEqual(
 			TEXT("Q is still grassland"),
@@ -275,9 +275,9 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 
 	{
 		FString Grid = MountainGrid();
-		SetCell(Grid, 10, 10, USolidWorldMap::LocationMarker);
+		SetCell(Grid, 10, 10, USolidWorldChart::LocationMarker);
 		Grid += TEXT("! 11,11 = Stronghold (MeagreDungeon)\n");
-		USolidWorldMap* Map = NewObject<USolidWorldMap>();
+		USolidWorldChart* Map = NewObject<USolidWorldChart>();
 		TestTrue(TEXT("sealed cave loads"), Map->LoadFromString(Grid));
 		if (Map->GetBiomeAtCell(10, 10) == ESolidBiome::Mountain)
 		{
@@ -288,11 +288,11 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 
 	{
 		FString Grid = MountainGrid();
-		SetCell(Grid, 10, 10, USolidWorldMap::LocationMarker);
-		SetCell(Grid, 10, 9, USolidWorldMap::GrassMarker);
-		SetCell(Grid, 9, 10, USolidWorldMap::GrassMarker);
+		SetCell(Grid, 10, 10, USolidWorldChart::LocationMarker);
+		SetCell(Grid, 10, 9, USolidWorldChart::GrassMarker);
+		SetCell(Grid, 9, 10, USolidWorldChart::GrassMarker);
 		Grid += TEXT("! 11,11 = Stronghold (MeagreDungeon)\n");
-		USolidWorldMap* Map = NewObject<USolidWorldMap>();
+		USolidWorldChart* Map = NewObject<USolidWorldChart>();
 		TestTrue(TEXT("two grass faces load"), Map->LoadFromString(Grid));
 		if (Map->GetBiomeAtCell(10, 10) == ESolidBiome::Mountain)
 		{
@@ -381,7 +381,7 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 	if (Terrain)
 	{
 		Terrain->Build(1337, 0.00012f, 3000.f, 0.f, 513, 513, 200.f);
-		USolidWorldMap* Map = NewObject<USolidWorldMap>();
+		USolidWorldChart* Map = NewObject<USolidWorldChart>();
 		FVector2D Projected = FVector2D::ZeroVector;
 		TestTrue(
 			TEXT("the starting cell projects"),
@@ -408,7 +408,7 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 			SolidEvents::IsStrongholdSizeUnlocked(Fresh, Size));
 	}
 
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("world map"), Map);
 	TestTrue(TEXT("shipped map loads"), Map && Map->LoadDefault());
 	if (Map)
@@ -423,9 +423,9 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 		TestFalse(TEXT("the starting cell is not a site"), Map->StrongholdSiteAtCell(Cell.X, Cell.Y, SiteSize));
 
 		int32 ImperiousTowers = 0;
-		for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 		{
-			for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+			for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 			{
 				ESolidStrongholdType NamedType = ESolidStrongholdType::Dungeon;
 				ESolidStrongholdSize NamedSize = ESolidStrongholdSize::Meagre;

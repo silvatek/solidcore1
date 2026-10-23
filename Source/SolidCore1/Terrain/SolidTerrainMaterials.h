@@ -6,7 +6,7 @@
 
 class UMaterialInterface;
 class UObject;
-class USolidWorldMap;
+class USolidWorldChart;
 
 /**
  * Terrain material resolution: grassland (Fab/FlatCol) + solid-color biomes from WorldMap.
@@ -50,7 +50,7 @@ namespace SolidTerrainMaterials
 	UMaterialInterface* ResolveForBiome(
 		ESolidBiome Biome,
 		const FResolveParams& Params,
-		const USolidWorldMap* WorldMap,
+		const USolidWorldChart* WorldMap,
 		TObjectPtr<UMaterialInterface>& InOutGrassCached,
 		TMap<ESolidBiome, TObjectPtr<UMaterialInterface>>& InOutBiomeMaterials);
 }

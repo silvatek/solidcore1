@@ -18,7 +18,7 @@
 #include "SolidTerrainMap.h"
 #include "SolidTerrainTestHelpers.h"
 #include "SolidTowns.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -359,7 +359,7 @@ bool FSolidForageIglinTest::RunTest(const FString& Parameters)
 		0);
 	TestEqual(TEXT("a missing map leaves the list empty"), EmptyChoices.Num(), 0);
 
-	USolidWorldMap* Unloaded = NewObject<USolidWorldMap>();
+	USolidWorldChart* Unloaded = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("unloaded map"), Unloaded);
 	if (Unloaded)
 	{
@@ -378,7 +378,7 @@ bool FSolidForageIglinTest::RunTest(const FString& Parameters)
 	Map->Build(1337, 0.00012f, 3000.f, 0.f, 513, 513, 200.f, true);
 	TestTrue(TEXT("the world is built"), Map->IsBuilt());
 
-	const USolidWorldMap* WorldMap = Map->GetWorldMap();
+	const USolidWorldChart* WorldMap = Map->GetWorldMap();
 	TestNotNull(TEXT("world map"), WorldMap);
 	if (!WorldMap || !WorldMap->IsLoaded())
 	{
@@ -407,15 +407,15 @@ bool FSolidForageIglinTest::RunTest(const FString& Parameters)
 
 	auto CellKey = [](const FIntPoint& Cell) -> int32
 	{
-		return Cell.Y * USolidWorldMap::MapWidth + Cell.X;
+		return Cell.Y * USolidWorldChart::MapWidth + Cell.X;
 	};
 
 	TArray<int32> NearCells;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
-			if (WorldMap->GetMarkerAtCell(Col, Row) != USolidWorldMap::ForestMarker)
+			if (WorldMap->GetMarkerAtCell(Col, Row) != USolidWorldChart::ForestMarker)
 			{
 				continue;
 			}
@@ -464,7 +464,7 @@ bool FSolidForageIglinTest::RunTest(const FString& Parameters)
 			WorldMap->CellAtWorld(Point.X, Point.Y, WorldMin, WorldMax, Cell));
 		TestEqual(TEXT("the cell is forest on the world map"),
 			FString::Chr(WorldMap->GetMarkerAtCell(Cell.X, Cell.Y)),
-			FString::Chr(USolidWorldMap::ForestMarker));
+			FString::Chr(USolidWorldChart::ForestMarker));
 		FVector2D Center = FVector2D::ZeroVector;
 		TestTrue(TEXT("the cell has a center"),
 			WorldMap->CellToWorldXY(Cell, WorldMin, WorldMax, Center));

@@ -9,7 +9,7 @@
 #include "SolidGameState.h"
 #include "Company/SolidCaptain.h"
 #include "SolidStronghold.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 #include "Towns/SolidTowns.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
@@ -24,10 +24,10 @@ namespace SolidLairTestPrivate
 	FString MountainGrid()
 	{
 		FString Text;
-		Text.Reserve((USolidWorldMap::MapWidth + 1) * USolidWorldMap::MapHeight);
-		for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+		Text.Reserve((USolidWorldChart::MapWidth + 1) * USolidWorldChart::MapHeight);
+		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 		{
-			for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+			for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 			{
 				Text.AppendChar(TEXT('M'));
 			}
@@ -38,7 +38,7 @@ namespace SolidLairTestPrivate
 
 	void SetCell(FString& Grid, const int32 Col, const int32 Row, const TCHAR Marker)
 	{
-		Grid[Row * (USolidWorldMap::MapWidth + 1) + Col] = Marker;
+		Grid[Row * (USolidWorldChart::MapWidth + 1) + Col] = Marker;
 	}
 }
 
@@ -68,15 +68,15 @@ bool FSolidLairMazeTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("exit journal"), SolidLair::VisitJournalText(false), FString(TEXT("Exit Iglin tunnels")));
 	TestTrue(TEXT("the doorway is wider than the captain"), SolidLair::DoorwayWidthCm > 110.f);
 
-	const FIntPoint X = SolidLair::CellOf(USolidWorldMap::XMarker);
-	const FIntPoint Y = SolidLair::CellOf(USolidWorldMap::YMarker);
+	const FIntPoint X = SolidLair::CellOf(USolidWorldChart::XMarker);
+	const FIntPoint Y = SolidLair::CellOf(USolidWorldChart::YMarker);
 	TestTrue(TEXT("X is on the plan"),
 		X.X >= 0 && X.Y >= 0 && X.X < SolidLair::MazeCols && X.Y < SolidLair::MazeRows);
 	TestTrue(TEXT("Y is on the plan"),
 		Y.X >= 0 && Y.Y >= 0 && Y.X < SolidLair::MazeCols && Y.Y < SolidLair::MazeRows);
 	TestTrue(TEXT("the mouths are different cells"), X != Y);
-	TestEqual(TEXT("X marker"), static_cast<int32>(SolidLair::MazeAt(X.X, X.Y)), static_cast<int32>(USolidWorldMap::XMarker));
-	TestEqual(TEXT("Y marker"), static_cast<int32>(SolidLair::MazeAt(Y.X, Y.Y)), static_cast<int32>(USolidWorldMap::YMarker));
+	TestEqual(TEXT("X marker"), static_cast<int32>(SolidLair::MazeAt(X.X, X.Y)), static_cast<int32>(USolidWorldChart::XMarker));
+	TestEqual(TEXT("Y marker"), static_cast<int32>(SolidLair::MazeAt(Y.X, Y.Y)), static_cast<int32>(USolidWorldChart::YMarker));
 	TestEqual(TEXT("west of X is rock"), static_cast<int32>(SolidLair::MazeAt(X.X - 1, X.Y)), static_cast<int32>(TEXT('#')));
 	TestEqual(TEXT("east of Y is rock"), static_cast<int32>(SolidLair::MazeAt(Y.X + 1, Y.Y)), static_cast<int32>(TEXT('#')));
 	for (int32 Row = 0; Row < SolidLair::MazeRows; ++Row)
@@ -87,8 +87,8 @@ bool FSolidLairMazeTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("X is open"), SolidLair::IsOpenCell(X.X, X.Y));
 	TestTrue(TEXT("Y is open"), SolidLair::IsOpenCell(Y.X, Y.Y));
 
-	TestTrue(TEXT("the X spawn is inside"), SolidLair::ContainsLocal(SolidLair::SpawnLocal(USolidWorldMap::XMarker)));
-	TestTrue(TEXT("the Y spawn is inside"), SolidLair::ContainsLocal(SolidLair::SpawnLocal(USolidWorldMap::YMarker)));
+	TestTrue(TEXT("the X spawn is inside"), SolidLair::ContainsLocal(SolidLair::SpawnLocal(USolidWorldChart::XMarker)));
+	TestTrue(TEXT("the Y spawn is inside"), SolidLair::ContainsLocal(SolidLair::SpawnLocal(USolidWorldChart::YMarker)));
 	bool bFoundRock = false;
 	for (int32 Row = 0; Row < SolidLair::MazeRows && !bFoundRock; ++Row)
 	{
@@ -110,9 +110,9 @@ bool FSolidLairMazeTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the plan has rock"), bFoundRock);
 	TestFalse(
 		TEXT("above the ceiling is outside"),
-		SolidLair::ContainsLocal(SolidLair::SpawnLocal(USolidWorldMap::XMarker) + FVector(0.f, 0.f, SolidLair::RoomHeightCm)));
-	TestTrue(TEXT("X looks into the maze"), FMath::IsNearlyZero(SolidLair::SpawnYawDeg(USolidWorldMap::XMarker), 0.1f));
-	TestTrue(TEXT("Y looks into the maze"), FMath::IsNearlyEqual(SolidLair::SpawnYawDeg(USolidWorldMap::YMarker), 180.f, 0.1f));
+		SolidLair::ContainsLocal(SolidLair::SpawnLocal(USolidWorldChart::XMarker) + FVector(0.f, 0.f, SolidLair::RoomHeightCm)));
+	TestTrue(TEXT("X looks into the maze"), FMath::IsNearlyZero(SolidLair::SpawnYawDeg(USolidWorldChart::XMarker), 0.1f));
+	TestTrue(TEXT("Y looks into the maze"), FMath::IsNearlyEqual(SolidLair::SpawnYawDeg(USolidWorldChart::YMarker), 180.f, 0.1f));
 	return true;
 }
 
@@ -139,8 +139,8 @@ bool FSolidLairGateTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Driven from the village opens the tunnels"), SolidLair::TunnelsOpen(State));
 
 	const SolidLair::FPassageHit CaveEnter = SolidLair::HitOnStronghold(SolidStronghold::StartingCell(), false);
-	const SolidLair::FPassageHit TunnelEnter = SolidLair::HitOnMouth(true, USolidWorldMap::XMarker, false);
-	const SolidLair::FPassageHit TunnelLeave = SolidLair::HitOnMouth(true, USolidWorldMap::YMarker, true);
+	const SolidLair::FPassageHit TunnelEnter = SolidLair::HitOnMouth(true, USolidWorldChart::XMarker, false);
+	const SolidLair::FPassageHit TunnelLeave = SolidLair::HitOnMouth(true, USolidWorldChart::YMarker, true);
 	TestEqual(TEXT("a shut tunnel click is ignored"), static_cast<uint8>(SolidLair::AllowPassage(TunnelEnter, false).Action), static_cast<uint8>(SolidLair::EHit::None));
 	TestEqual(
 		TEXT("an open tunnel click enters"),
@@ -150,7 +150,7 @@ bool FSolidLairGateTest::RunTest(const FString& Parameters)
 	TestEqual(
 		TEXT("the X end is kept"),
 		static_cast<int32>(SolidLair::AllowPassage(TunnelEnter, true).EndMarker),
-		static_cast<int32>(USolidWorldMap::XMarker));
+		static_cast<int32>(USolidWorldChart::XMarker));
 	TestEqual(
 		TEXT("leaving stays available while the tunnels are shut"),
 		static_cast<uint8>(SolidLair::AllowPassage(TunnelLeave, false).Action),
@@ -179,15 +179,15 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidLairTravelTest::RunTest(const FString& Parameters)
 {
-	const FString EnterX = SolidLair::EnterOptions(USolidWorldMap::XMarker);
+	const FString EnterX = SolidLair::EnterOptions(USolidWorldChart::XMarker);
 	const FString EnterY = SolidLair::EnterOptions(TEXT('y'));
 	TestTrue(TEXT("X options request the tunnels"), SolidLair::RequestsVisit(EnterX));
 	TestTrue(TEXT("Y options request the tunnels"), SolidLair::RequestsVisit(EnterY));
 	TestFalse(TEXT("tunnel options are not the stronghold"), SolidTravel::RequestsStronghold(EnterX));
 	TestFalse(TEXT("stronghold options are not the tunnels"), SolidLair::RequestsVisit(SolidTravel::EnterStrongholdOptions()));
 	TestFalse(TEXT("the open world is not the tunnels"), SolidLair::RequestsVisit(FString()));
-	TestEqual(TEXT("X end"), static_cast<int32>(SolidLair::RequestedEnd(EnterX)), static_cast<int32>(USolidWorldMap::XMarker));
-	TestEqual(TEXT("Y end"), static_cast<int32>(SolidLair::RequestedEnd(EnterY)), static_cast<int32>(USolidWorldMap::YMarker));
+	TestEqual(TEXT("X end"), static_cast<int32>(SolidLair::RequestedEnd(EnterX)), static_cast<int32>(USolidWorldChart::XMarker));
+	TestEqual(TEXT("Y end"), static_cast<int32>(SolidLair::RequestedEnd(EnterY)), static_cast<int32>(USolidWorldChart::YMarker));
 	TestEqual(TEXT("a stronghold url has no tunnel end"), static_cast<int32>(SolidLair::RequestedEnd(SolidTravel::EnterStrongholdOptions())), 0);
 	return true;
 }
@@ -204,14 +204,14 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 
 	{
 		FString Grid = SolidLairTestPrivate::MountainGrid();
-		SolidLairTestPrivate::SetCell(Grid, 10, 10, USolidWorldMap::XMarker);
-		SolidLairTestPrivate::SetCell(Grid, 10, 9, USolidWorldMap::GrassMarker);
-		SolidLairTestPrivate::SetCell(Grid, 12, 10, USolidWorldMap::YMarker);
-		SolidLairTestPrivate::SetCell(Grid, 11, 10, USolidWorldMap::GrassMarker);
-		SolidLairTestPrivate::SetCell(Grid, 14, 10, USolidWorldMap::LocationMarker);
-		SolidLairTestPrivate::SetCell(Grid, 14, 9, USolidWorldMap::GrassMarker);
+		SolidLairTestPrivate::SetCell(Grid, 10, 10, USolidWorldChart::XMarker);
+		SolidLairTestPrivate::SetCell(Grid, 10, 9, USolidWorldChart::GrassMarker);
+		SolidLairTestPrivate::SetCell(Grid, 12, 10, USolidWorldChart::YMarker);
+		SolidLairTestPrivate::SetCell(Grid, 11, 10, USolidWorldChart::GrassMarker);
+		SolidLairTestPrivate::SetCell(Grid, 14, 10, USolidWorldChart::LocationMarker);
+		SolidLairTestPrivate::SetCell(Grid, 14, 9, USolidWorldChart::GrassMarker);
 		Grid += TEXT("! 11,15 = Stronghold (MeagreDungeon)\n");
-		USolidWorldMap* Map = NewObject<USolidWorldMap>();
+		USolidWorldChart* Map = NewObject<USolidWorldChart>();
 		TestTrue(TEXT("mouths load"), Map->LoadFromString(Grid));
 
 		TArray<SolidLair::FEntrance> Entrances;
@@ -228,8 +228,8 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 
 	{
 		FString Grid = SolidLairTestPrivate::MountainGrid();
-		SolidLairTestPrivate::SetCell(Grid, 4, 4, USolidWorldMap::XMarker);
-		USolidWorldMap* Map = NewObject<USolidWorldMap>();
+		SolidLairTestPrivate::SetCell(Grid, 4, 4, USolidWorldChart::XMarker);
+		USolidWorldChart* Map = NewObject<USolidWorldChart>();
 		TestTrue(TEXT("a letter loads"), Map->LoadFromString(Grid));
 		TArray<SolidLair::FEntrance> Entrances;
 		TestEqual(TEXT("a sealed letter is not a mouth"), SolidLair::CollectEntrances(Map, WorldMin, WorldMax, Entrances), 0);
@@ -244,9 +244,9 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestFalse(TEXT("a fresh frame is unmarked"), Unmarked->IsLairMouth());
-	Tunnel->SetLairEnd(USolidWorldMap::YMarker);
+	Tunnel->SetLairEnd(USolidWorldChart::YMarker);
 	TestTrue(TEXT("a tunnel frame is marked"), Tunnel->IsLairMouth());
-	TestEqual(TEXT("the end is Y"), static_cast<int32>(Tunnel->GetEndMarker()), static_cast<int32>(USolidWorldMap::YMarker));
+	TestEqual(TEXT("the end is Y"), static_cast<int32>(Tunnel->GetEndMarker()), static_cast<int32>(USolidWorldChart::YMarker));
 	Unmarked->BuildVisuals();
 	Tunnel->BuildVisuals();
 	UStaticMeshComponent* UnmarkedMouth = Unmarked->GetMouthMesh();
@@ -258,7 +258,7 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the openings are the same size"), UnmarkedMouth->GetRelativeScale3D().Equals(TunnelMouth->GetRelativeScale3D(), 0.01f));
 	}
 
-	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
+	USolidWorldChart* Shipped = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("shipped map loads"), Shipped->LoadDefault());
 	if (!Shipped->IsLoaded())
 	{
@@ -288,12 +288,12 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 			static_cast<uint8>(ESolidBiome::Grassland));
 		FVector2D World = FVector2D::ZeroVector;
 		TestTrue(TEXT("mouth cell projects"), Shipped->CellToWorldXY(Entrance.Cell, ShippedMin, ShippedMax, World));
-		if (Entrance.EndMarker == USolidWorldMap::XMarker)
+		if (Entrance.EndMarker == USolidWorldChart::XMarker)
 		{
 			bSawX = true;
 			TestTrue(TEXT("X is south of Iglin"), World.Y < IglinXY.Y);
 		}
-		if (Entrance.EndMarker == USolidWorldMap::YMarker)
+		if (Entrance.EndMarker == USolidWorldChart::YMarker)
 		{
 			bSawY = true;
 			TestTrue(TEXT("Y is east of Relion"), World.X > RelionXY.X);
@@ -314,16 +314,16 @@ bool FSolidLairBangMouthTest::RunTest(const FString& Parameters)
 	const FVector2D WorldMin(0.f, 0.f);
 	const FVector2D WorldMax(6400.f, 6400.f);
 	FString Grid = SolidLairTestPrivate::MountainGrid();
-	SolidLairTestPrivate::SetCell(Grid, 10, 10, USolidWorldMap::LocationMarker);
-	SolidLairTestPrivate::SetCell(Grid, 10, 9, USolidWorldMap::GrassMarker);
-	SolidLairTestPrivate::SetCell(Grid, 12, 10, USolidWorldMap::LocationMarker);
-	SolidLairTestPrivate::SetCell(Grid, 11, 10, USolidWorldMap::GrassMarker);
-	SolidLairTestPrivate::SetCell(Grid, 4, 4, USolidWorldMap::LocationMarker);
+	SolidLairTestPrivate::SetCell(Grid, 10, 10, USolidWorldChart::LocationMarker);
+	SolidLairTestPrivate::SetCell(Grid, 10, 9, USolidWorldChart::GrassMarker);
+	SolidLairTestPrivate::SetCell(Grid, 12, 10, USolidWorldChart::LocationMarker);
+	SolidLairTestPrivate::SetCell(Grid, 11, 10, USolidWorldChart::GrassMarker);
+	SolidLairTestPrivate::SetCell(Grid, 4, 4, USolidWorldChart::LocationMarker);
 	Grid += TEXT("! 11,11 = LairEntrance (Iglin tunnels)\n");
 	Grid += TEXT("! 11,13 = LairExit (Iglin tunnels)\n");
 	Grid += TEXT("! 5,5 = LairEntrance (Iglin tunnels)\n");
 
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("bang map"), Map);
 	if (!Map || !TestTrue(TEXT("bang mouths load"), Map->LoadFromString(Grid)))
 	{
@@ -334,9 +334,9 @@ bool FSolidLairBangMouthTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("a sealed mouth is left out"), SolidLair::CollectEntrances(Map, WorldMin, WorldMax, Entrances), 2);
 	if (Entrances.Num() == 2)
 	{
-		TestEqual(TEXT("entrance is the X end"), static_cast<int32>(Entrances[0].EndMarker), static_cast<int32>(USolidWorldMap::XMarker));
+		TestEqual(TEXT("entrance is the X end"), static_cast<int32>(Entrances[0].EndMarker), static_cast<int32>(USolidWorldChart::XMarker));
 		TestEqual(TEXT("entrance faces north"), Entrances[0].GrassCell.Y, 9);
-		TestEqual(TEXT("exit is the Y end"), static_cast<int32>(Entrances[1].EndMarker), static_cast<int32>(USolidWorldMap::YMarker));
+		TestEqual(TEXT("exit is the Y end"), static_cast<int32>(Entrances[1].EndMarker), static_cast<int32>(USolidWorldChart::YMarker));
 		TestEqual(TEXT("exit faces east"), Entrances[1].GrassCell.X, 11);
 	}
 	return true;
@@ -359,8 +359,8 @@ bool FSolidLairInteriorVisualTest::RunTest(const FString& Parameters)
 
 	UInstancedStaticMeshComponent* Floor = Interior->GetFloorTiles();
 	UInstancedStaticMeshComponent* Walls = Interior->GetWallShell();
-	UStaticMeshComponent* MouthX = Interior->GetEndMouth(USolidWorldMap::XMarker);
-	UStaticMeshComponent* MouthY = Interior->GetEndMouth(USolidWorldMap::YMarker);
+	UStaticMeshComponent* MouthX = Interior->GetEndMouth(USolidWorldChart::XMarker);
+	UStaticMeshComponent* MouthY = Interior->GetEndMouth(USolidWorldChart::YMarker);
 	TestNotNull(TEXT("floor"), Floor);
 	TestNotNull(TEXT("walls"), Walls);
 	TestNotNull(TEXT("X mouth"), MouthX);
@@ -386,11 +386,11 @@ bool FSolidLairInteriorVisualTest::RunTest(const FString& Parameters)
 	UStaticMesh* YMesh = MouthY->GetStaticMesh().Get();
 	TestNotNull(TEXT("X mouth mesh"), XMesh);
 	TestNotNull(TEXT("Y mouth mesh"), YMesh);
-	TestTrue(TEXT("spawn at X is inside the actor"), SolidLair::ContainsLocal(Interior->GetCaptainSpawnWorld(USolidWorldMap::XMarker)));
-	TestTrue(TEXT("the X view looks into the maze"), FMath::IsNearlyZero(Interior->GetCaptainView(USolidWorldMap::XMarker).Pitch, 0.1f));
+	TestTrue(TEXT("spawn at X is inside the actor"), SolidLair::ContainsLocal(Interior->GetCaptainSpawnWorld(USolidWorldChart::XMarker)));
+	TestTrue(TEXT("the X view looks into the maze"), FMath::IsNearlyZero(Interior->GetCaptainView(USolidWorldChart::XMarker).Pitch, 0.1f));
 
-	UPointLightComponent* LightX = Interior->GetMouthLight(USolidWorldMap::XMarker);
-	UPointLightComponent* LightY = Interior->GetMouthLight(USolidWorldMap::YMarker);
+	UPointLightComponent* LightX = Interior->GetMouthLight(USolidWorldChart::XMarker);
+	UPointLightComponent* LightY = Interior->GetMouthLight(USolidWorldChart::YMarker);
 	TestNotNull(TEXT("X mouth light"), LightX);
 	TestNotNull(TEXT("Y mouth light"), LightY);
 	if (LightX && LightY)
@@ -398,7 +398,7 @@ bool FSolidLairInteriorVisualTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the X mouth is dim"), FMath::IsNearlyEqual(LightX->Intensity, SolidLair::MouthLightIntensity));
 		TestTrue(TEXT("the Y mouth is dim"), FMath::IsNearlyEqual(LightY->Intensity, SolidLair::MouthLightIntensity));
 		TestTrue(TEXT("a mouth is dimmer than a torch"), SolidLair::MouthLightIntensity < SolidLair::TorchLightIntensity);
-		const FIntPoint XCell = SolidLair::CellOf(USolidWorldMap::XMarker);
+		const FIntPoint XCell = SolidLair::CellOf(USolidWorldChart::XMarker);
 		const FVector2D XPlan = SolidLair::CellCenter(XCell.X, XCell.Y);
 		TestTrue(TEXT("the X light sits in the X cell"), LightX->GetRelativeLocation().Equals(FVector(XPlan.X, XPlan.Y, SolidLair::RoomHeightCm * 0.62f), 1.f));
 	}

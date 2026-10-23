@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0584")
+#define SOLID_BUILD_ID TEXT("SC1-0585")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The text map is gone.")
+#define SOLID_BUILD_NOTE TEXT("The world chart is the map.")
 #endif

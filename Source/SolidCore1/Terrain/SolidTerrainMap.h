@@ -5,7 +5,7 @@
 #include "SolidTerrainTypes.h"
 #include "SolidTerrainMap.generated.h"
 
-class USolidWorldMap;
+class USolidWorldChart;
 
 /**
  * Fixed 2D TerrainPoint grid built once at startup. Chunk meshes sample Height from this map
@@ -53,7 +53,7 @@ public:
 		int32 InGridHeight = 513,
 		float InPointSpacing = 200.f,
 		bool bForceRebuild = false,
-		USolidWorldMap* InWorldMap = nullptr);
+		USolidWorldChart* InWorldMap = nullptr);
 
 	bool IsBuilt() const { return bIsBuilt && Points.Num() == GridWidth * GridHeight; }
 
@@ -109,7 +109,7 @@ public:
 			static_cast<float>(FMath::Max(GridHeight - 1, 0)) * PointSpacing);
 	}
 
-	USolidWorldMap* GetWorldMap() const { return WorldMap; }
+	USolidWorldChart* GetWorldMap() const { return WorldMap; }
 
 	/** World XY of the WorldMap starting-town (Z) centroid, if available. */
 	bool GetStartTownWorldXY(FVector2D& OutWorldXY) const;
@@ -125,7 +125,7 @@ protected:
 	TArray<FSolidTerrainPoint> Points;
 
 	UPROPERTY()
-	TObjectPtr<USolidWorldMap> WorldMap;
+	TObjectPtr<USolidWorldChart> WorldMap;
 
 	/** Last player position passed to CenterExplorationFogOn. */
 	UPROPERTY()

@@ -71,7 +71,7 @@ class ASolidStrongholdExterior;
 class USolidGameState;
 class ASolidTerrainStreamer;
 class USolidCompany;
-class USolidWorldMap;
+class USolidWorldChart;
 class UWorld;
 struct FActorSpawnParameters;
 
@@ -147,7 +147,7 @@ public:
 	 * World yaw of that exterior.
 	 * A dungeon points local +X along its exit. A tower turns its door toward the grass.
 	 */
-	virtual float ExteriorYawDeg(const USolidWorldMap* Map) const;
+	virtual float ExteriorYawDeg(const USolidWorldChart* Map) const;
 
 	/**
 	 * Ground-floor hexes this type keeps at Size.
@@ -173,7 +173,7 @@ public:
 	FVector2D ExitStandXY() const;
 
 	/** Records the direction the exit faces when this type takes it from the map. */
-	virtual void RememberExit(const USolidWorldMap* Map);
+	virtual void RememberExit(const USolidWorldChart* Map);
 
 	/** After Make sets the size. A tower copies that size's measurements into its plan. */
 	virtual void BindPlan() {}
@@ -604,7 +604,7 @@ namespace SolidStrongholds
 	 * False when the cell has no grassland neighbor or the world points fail.
 	 */
 	bool MakeEntrance(
-		const USolidWorldMap* WorldMap,
+		const USolidWorldChart* WorldMap,
 		FVector2D WorldMinXY,
 		FVector2D WorldMaxXY,
 		FIntPoint Cell,
@@ -617,7 +617,7 @@ namespace SolidStrongholds
 		float FacingYawDeg = 0.f;
 	};
 
-	bool FindGrassFace(const USolidWorldMap* WorldMap, FIntPoint Cell, FGrassFace& Out);
+	bool FindGrassFace(const USolidWorldChart* WorldMap, FIntPoint Cell, FGrassFace& Out);
 }
 
 /**

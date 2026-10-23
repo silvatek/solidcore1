@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "SolidBiome.h"
 
-class USolidWorldMap;
+class USolidWorldChart;
 
 /**
  * A road line in WorldMap.txt names a start, an end, and a type.
@@ -142,7 +142,7 @@ namespace SolidRoad
 	 * Orthogonal route from any cell of From to any cell of To.
 	 * @return False when an end has no cells, or no path exists.
 	 */
-	bool Solve(const USolidWorldMap& Map, const FDefinition& Definition, TArray<FIntPoint>& OutCells);
+	bool Solve(const USolidWorldChart& Map, const FDefinition& Definition, TArray<FIntPoint>& OutCells);
 
 	float DistanceToSegmentCm(const FVector2D& Point, const FVector2D& A, const FVector2D& B);
 }

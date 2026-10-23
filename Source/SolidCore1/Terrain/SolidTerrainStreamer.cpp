@@ -13,7 +13,6 @@
 #include "SolidTerrainMaterials.h"
 #include "SolidTerrainNoise.h"
 #include "SolidWorldChart.h"
-#include "SolidWorldMap.h"
 #include "SolidCore1.h"
 #include "Companion/SolidCompanionCharacter.h"
 #include "Engine/World.h"
@@ -456,7 +455,7 @@ UMaterialInterface* ASolidTerrainStreamer::ResolveBiomeMaterial(const ESolidBiom
 	Params.GrassRoughness = GrassRoughness;
 	Params.GrassSpecular = GrassSpecular;
 
-	const USolidWorldMap* WorldMap = TerrainMap ? TerrainMap->GetWorldMap() : nullptr;
+	const USolidWorldChart* WorldMap = TerrainMap ? TerrainMap->GetWorldMap() : nullptr;
 	return SolidTerrainMaterials::ResolveForBiome(
 		Biome,
 		Params,
@@ -1030,7 +1029,7 @@ void ASolidTerrainStreamer::BuildChartView(const USolidWorldChart* Chart)
 		return;
 	}
 
-	USolidWorldMap* Map = NewObject<USolidWorldMap>(this);
+	USolidWorldChart* Map = NewObject<USolidWorldChart>(this);
 	if (!Map->LoadFromChart(Chart))
 	{
 		KeepLevelClean(LevelPackage, bWasDirty);
@@ -1159,7 +1158,7 @@ void ASolidTerrainStreamer::RebuildChartView(const USolidWorldChart* Chart, cons
 	}
 #endif
 
-	USolidWorldMap* Map = NewObject<USolidWorldMap>(this);
+	USolidWorldChart* Map = NewObject<USolidWorldChart>(this);
 	if (!Map->LoadFromChart(Chart))
 	{
 		KeepLevelClean(LevelPackage, bWasDirty);
@@ -1184,7 +1183,7 @@ void ASolidTerrainStreamer::RebuildChartView(const USolidWorldChart* Chart, cons
 		Map);
 
 	UWorld* World = GetWorld();
-	const USolidWorldMap* WorldMap = TerrainMap->GetWorldMap();
+	const USolidWorldChart* WorldMap = TerrainMap->GetWorldMap();
 	TSet<FIntPoint> Chunks;
 	if (WorldMap)
 	{

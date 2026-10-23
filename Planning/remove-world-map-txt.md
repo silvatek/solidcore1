@@ -28,6 +28,8 @@ Stage 1 is the biome's colour. Stage 2 deletes `Content/WorldMap.txt`, the shipp
 
 `Content/WorldMap.txt` is deleted. `ImportShippedWorldMap` and `Disagreement` are gone. `LoadFromString` and `ImportFromString` stay. `SolidCore1.WorldMap.ShippedChartMatchesText` loads the chart and checks the Meagre Dungeon mark. `tools/cloud_agent_check.py` no longer requires the file. `AGENTS.md` and `README.md` wait for stage 3.
 
+`USolidWorldMap` is gone. The chart keeps the saved cells, marks, and roads, and it answers the queries the map answered. `LoadFromString` and `LoadFromChart` are on the chart. `LoadFromFile` is gone. Paint, a mark, and undo clear the solved routes, and the next query solves them again.
+
 ### Stage 3 — the docs
 
 - The world-map section of `AGENTS.md` is the review rule for the text file. Replace it with the chart at `/Game/World/WorldChart`, the 128×64 cell grid, and the mark kinds. A change to that asset is what a later agent reviews.

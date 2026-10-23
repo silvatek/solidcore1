@@ -8,7 +8,7 @@
 #include "SolidLair.h"
 #include "SolidStronghold.h"
 #include "SolidTowns.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -19,7 +19,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidWorldMapLoadDefaultTest::RunTest(const FString& Parameters)
 {
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("LoadDefault succeeds"), Map->LoadDefault());
 	TestTrue(TEXT("reports loaded"), Map->IsLoaded());
 	FVector2D StartXY = FVector2D::ZeroVector;
@@ -35,9 +35,9 @@ bool FSolidWorldMapLoadDefaultTest::RunTest(const FString& Parameters)
 
 	// Find a Z cell and confirm it maps to Town.
 	bool bFoundZTown = false;
-	for (int32 Y = 0; Y < USolidWorldMap::MapHeight && !bFoundZTown; ++Y)
+	for (int32 Y = 0; Y < USolidWorldChart::MapHeight && !bFoundZTown; ++Y)
 	{
-		for (int32 X = 0; X < USolidWorldMap::MapWidth; ++X)
+		for (int32 X = 0; X < USolidWorldChart::MapWidth; ++X)
 		{
 			if (Map->GetBiomeAtCell(X, Y) == ESolidBiome::Town)
 			{
@@ -71,35 +71,35 @@ bool FSolidWorldMapParseKeyAndSampleTest::RunTest(const FString& Parameters)
 {
 	// Synthetic map: grass, with one named town in the middle of row 0.
 	FString Text;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
 		FString Line;
-		Line.Reserve(USolidWorldMap::MapWidth);
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		Line.Reserve(USolidWorldChart::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
-			if (Row == 0 && Col == USolidWorldMap::MapWidth / 2)
+			if (Row == 0 && Col == USolidWorldChart::MapWidth / 2)
 			{
-				Line.AppendChar(USolidWorldMap::LocationMarker);
+				Line.AppendChar(USolidWorldChart::LocationMarker);
 			}
 			else if (Row == 10 && Col == 10)
 			{
-				Line.AppendChar(USolidWorldMap::DesertMarker);
+				Line.AppendChar(USolidWorldChart::DesertMarker);
 			}
 			else
 			{
-				Line.AppendChar(USolidWorldMap::GrassMarker);
+				Line.AppendChar(USolidWorldChart::GrassMarker);
 			}
 		}
 		Text += Line;
 		Text += TEXT("\n");
 	}
 	Text += TEXT("\nG = Grassland (light green)\n");
-	Text.AppendChar(USolidWorldMap::DesertMarker);
+	Text.AppendChar(USolidWorldChart::DesertMarker);
 	Text += TEXT(" = Desert (yellow)\n");
 	Text += TEXT("Z = Starting town (brown)\n");
-	Text += FString::Printf(TEXT("! 1,%d = Town Iglin\n"), USolidWorldMap::MapWidth / 2 + 1);
+	Text += FString::Printf(TEXT("! 1,%d = Town Iglin\n"), USolidWorldChart::MapWidth / 2 + 1);
 
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("LoadFromString"), Map->LoadFromString(Text));
 	FVector2D StartXY = FVector2D::ZeroVector;
 	TestTrue(
@@ -107,7 +107,7 @@ bool FSolidWorldMapParseKeyAndSampleTest::RunTest(const FString& Parameters)
 		Map->GetStartTownWorldXY(FVector2D(-6400.f, -6400.f), FVector2D(6400.f, 6400.f), StartXY));
 	TestEqual(
 		TEXT("the named town is Town"),
-		static_cast<uint8>(Map->GetBiomeAtCell(USolidWorldMap::MapWidth / 2, 0)),
+		static_cast<uint8>(Map->GetBiomeAtCell(USolidWorldChart::MapWidth / 2, 0)),
 		static_cast<uint8>(ESolidBiome::Town));
 	TestEqual(
 		TEXT("desert marker"),
@@ -125,8 +125,8 @@ bool FSolidWorldMapParseKeyAndSampleTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(ESolidBiome::Town));
 
 	// File column 0 is east (max X): desert at col 10 → positive X.
-	const float DesertWorldX = WorldMax.X - (10.5f) * ((WorldMax.X - WorldMin.X) / static_cast<float>(USolidWorldMap::MapWidth));
-	const float DesertWorldY = WorldMax.Y - (10.5f) * ((WorldMax.Y - WorldMin.Y) / static_cast<float>(USolidWorldMap::MapHeight));
+	const float DesertWorldX = WorldMax.X - (10.5f) * ((WorldMax.X - WorldMin.X) / static_cast<float>(USolidWorldChart::MapWidth));
+	const float DesertWorldY = WorldMax.Y - (10.5f) * ((WorldMax.Y - WorldMin.Y) / static_cast<float>(USolidWorldChart::MapHeight));
 	TestTrue(TEXT("desert cell is on the east side"), DesertWorldX > 0.f);
 	TestEqual(
 		TEXT("east-side sample is Desert"),
@@ -229,9 +229,9 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidWorldMapDefaultColorPublicTest::RunTest(const FString& Parameters)
 {
-	const FLinearColor Sea = USolidWorldMap::DefaultColorForBiome(ESolidBiome::Sea);
-	const FLinearColor River = USolidWorldMap::DefaultColorForBiome(ESolidBiome::River);
-	const FLinearColor Mountain = USolidWorldMap::DefaultColorForBiome(ESolidBiome::Mountain);
+	const FLinearColor Sea = USolidWorldChart::DefaultColorForBiome(ESolidBiome::Sea);
+	const FLinearColor River = USolidWorldChart::DefaultColorForBiome(ESolidBiome::River);
+	const FLinearColor Mountain = USolidWorldChart::DefaultColorForBiome(ESolidBiome::Mountain);
 	TestTrue(TEXT("default sea is blue"), Sea.B > 0.5f);
 	TestTrue(TEXT("default river is blue"), River.B > 0.5f);
 	TestTrue(TEXT("default mountain is dark"),
@@ -249,7 +249,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 {
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("LoadDefault"), Map->LoadDefault());
 
 	FSolidWorldLocation Iglin;
@@ -266,7 +266,7 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Relion is one cell"), Relion.Cells.Num(), 1);
 	if (Relion.Cells.Num() == 1)
 	{
-		TestEqual(TEXT("Relion is !"), Map->GetMarkerAtCell(Relion.Cells[0].X, Relion.Cells[0].Y), USolidWorldMap::LocationMarker);
+		TestEqual(TEXT("Relion is !"), Map->GetMarkerAtCell(Relion.Cells[0].X, Relion.Cells[0].Y), USolidWorldChart::LocationMarker);
 	}
 
 	FSolidWorldLocation Kanfold;
@@ -276,7 +276,7 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Kanfold is one cell"), Kanfold.Cells.Num(), 1);
 	if (Kanfold.Cells.Num() == 1)
 	{
-		TestEqual(TEXT("Kanfold is !"), Map->GetMarkerAtCell(Kanfold.Cells[0].X, Kanfold.Cells[0].Y), USolidWorldMap::LocationMarker);
+		TestEqual(TEXT("Kanfold is !"), Map->GetMarkerAtCell(Kanfold.Cells[0].X, Kanfold.Cells[0].Y), USolidWorldChart::LocationMarker);
 	}
 
 	FSolidWorldLocation Visolar;
@@ -286,7 +286,7 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Visolar is one cell"), Visolar.Cells.Num(), 1);
 	if (Visolar.Cells.Num() == 1)
 	{
-		TestEqual(TEXT("Visolar is !"), Map->GetMarkerAtCell(Visolar.Cells[0].X, Visolar.Cells[0].Y), USolidWorldMap::LocationMarker);
+		TestEqual(TEXT("Visolar is !"), Map->GetMarkerAtCell(Visolar.Cells[0].X, Visolar.Cells[0].Y), USolidWorldChart::LocationMarker);
 	}
 
 	FSolidWorldLocation Jethan;
@@ -297,7 +297,7 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Jethan is one cell"), Jethan.Cells.Num(), 1);
 	if (Jethan.Cells.Num() == 1)
 	{
-		TestEqual(TEXT("Jethan is !"), Map->GetMarkerAtCell(Jethan.Cells[0].X, Jethan.Cells[0].Y), USolidWorldMap::LocationMarker);
+		TestEqual(TEXT("Jethan is !"), Map->GetMarkerAtCell(Jethan.Cells[0].X, Jethan.Cells[0].Y), USolidWorldChart::LocationMarker);
 	}
 
 	FSolidWorldLocation Rathen;
@@ -308,7 +308,7 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Rathen is one cell"), Rathen.Cells.Num(), 1);
 	if (Rathen.Cells.Num() == 1)
 	{
-		TestEqual(TEXT("Rathen is !"), Map->GetMarkerAtCell(Rathen.Cells[0].X, Rathen.Cells[0].Y), USolidWorldMap::LocationMarker);
+		TestEqual(TEXT("Rathen is !"), Map->GetMarkerAtCell(Rathen.Cells[0].X, Rathen.Cells[0].Y), USolidWorldChart::LocationMarker);
 	}
 	bool bRathenBesideRiver = false;
 	for (const FIntPoint& Cell : Rathen.Cells)
@@ -318,11 +318,11 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 		{
 			const int32 NextX = Cell.X + Step.X;
 			const int32 NextY = Cell.Y + Step.Y;
-			if (NextX < 0 || NextY < 0 || NextX >= USolidWorldMap::MapWidth || NextY >= USolidWorldMap::MapHeight)
+			if (NextX < 0 || NextY < 0 || NextX >= USolidWorldChart::MapWidth || NextY >= USolidWorldChart::MapHeight)
 			{
 				continue;
 			}
-			if (Map->GetMarkerAtCell(NextX, NextY) == USolidWorldMap::RiverMarker)
+			if (Map->GetMarkerAtCell(NextX, NextY) == USolidWorldChart::RiverMarker)
 			{
 				bRathenBesideRiver = true;
 			}
@@ -352,8 +352,8 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 			const int32 EastCol = FMath::Min(Dragongate.Cells[0].X, Dragongate.Cells[1].X);
 			const int32 WestCol = FMath::Max(Dragongate.Cells[0].X, Dragongate.Cells[1].X);
 			TestEqual(TEXT("Dragongate cells are adjacent"), WestCol - EastCol, 1);
-			TestEqual(TEXT("Dragongate east cell is !"), Map->GetMarkerAtCell(EastCol, Dragongate.Cells[0].Y), USolidWorldMap::LocationMarker);
-			TestEqual(TEXT("Dragongate west cell is !"), Map->GetMarkerAtCell(WestCol, Dragongate.Cells[0].Y), USolidWorldMap::LocationMarker);
+			TestEqual(TEXT("Dragongate east cell is !"), Map->GetMarkerAtCell(EastCol, Dragongate.Cells[0].Y), USolidWorldChart::LocationMarker);
+			TestEqual(TEXT("Dragongate west cell is !"), Map->GetMarkerAtCell(WestCol, Dragongate.Cells[0].Y), USolidWorldChart::LocationMarker);
 		}
 	}
 
@@ -383,15 +383,15 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 
 	// A named ! is a town. A digit, Z, and an old key line are not.
 	FString Text;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
 		FString Line;
-		Line.Reserve(USolidWorldMap::MapWidth);
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		Line.Reserve(USolidWorldChart::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
 			if (Row == 2 && Col == 4)
 			{
-				Line.AppendChar(USolidWorldMap::LocationMarker);
+				Line.AppendChar(USolidWorldChart::LocationMarker);
 			}
 			else if (Row == 2 && Col == 8)
 			{
@@ -399,7 +399,7 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 			}
 			else if (Row == 4 && Col == 6)
 			{
-				Line.AppendChar(USolidWorldMap::LocationMarker);
+				Line.AppendChar(USolidWorldChart::LocationMarker);
 			}
 			else if (Row == 6 && Col == 6)
 			{
@@ -407,7 +407,7 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 			}
 			else
 			{
-				Line.AppendChar(USolidWorldMap::GrassMarker);
+				Line.AppendChar(USolidWorldChart::GrassMarker);
 			}
 		}
 		Text += Line;
@@ -420,7 +420,7 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	Text += TEXT("1 = Watch, biome=Forest, name=Pine\n");
 	Text += TEXT("Z = Starting town (brown)\n");
 
-	USolidWorldMap* Synthetic = NewObject<USolidWorldMap>();
+	USolidWorldChart* Synthetic = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("synthetic loads named towns"), Synthetic->LoadFromString(Text));
 	TestEqual(
 		TEXT("Iglin cell is Town"),
@@ -462,8 +462,8 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	const FVector2D SynMax(6400.f, 6400.f);
 	TestTrue(TEXT("synthetic start"), Synthetic->GetStartTownWorldXY(SynMin, SynMax, SyntheticStart));
 	// Column 0 is east. Cell (4, 2) is one column and one row in from that corner.
-	const float CellW = (SynMax.X - SynMin.X) / static_cast<float>(USolidWorldMap::MapWidth);
-	const float CellH = (SynMax.Y - SynMin.Y) / static_cast<float>(USolidWorldMap::MapHeight);
+	const float CellW = (SynMax.X - SynMin.X) / static_cast<float>(USolidWorldChart::MapWidth);
+	const float CellH = (SynMax.Y - SynMin.Y) / static_cast<float>(USolidWorldChart::MapHeight);
 	TestTrue(TEXT("start is the Iglin cell, not Z"),
 		FMath::IsNearlyEqual(SyntheticStart.X, SynMax.X - 4.5f * CellW, 1.f));
 	TestTrue(TEXT("start row is the Iglin cell"),
@@ -485,12 +485,12 @@ bool FSolidWorldMapDoubledScaleTest::RunTest(const FString& Parameters)
 
 	const float Extent = static_cast<float>(Defaults->TerrainMapSize - 1) * Defaults->TerrainPointSpacing;
 	TestTrue(TEXT("world side is 1024 m"), FMath::IsNearlyEqual(Extent, 102400.f, 1.f));
-	const float CellEastCm = Extent / static_cast<float>(USolidWorldMap::MapWidth);
-	const float CellNorthCm = Extent / static_cast<float>(USolidWorldMap::MapHeight);
+	const float CellEastCm = Extent / static_cast<float>(USolidWorldChart::MapWidth);
+	const float CellNorthCm = Extent / static_cast<float>(USolidWorldChart::MapHeight);
 	const FVector2D WorldMin(-Extent * 0.5f, -Extent * 0.5f);
 	const FVector2D WorldMax(Extent * 0.5f, Extent * 0.5f);
 
-	USolidWorldMap* WorldMap = NewObject<USolidWorldMap>();
+	USolidWorldChart* WorldMap = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("LoadDefault"), WorldMap->LoadDefault());
 
 	FVector2D EastCell = FVector2D::ZeroVector;
@@ -535,14 +535,14 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 {
 	TArray<FString> Rows;
-	Rows.SetNum(USolidWorldMap::MapHeight);
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	Rows.SetNum(USolidWorldChart::MapHeight);
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
 		FString Line;
-		Line.Reserve(USolidWorldMap::MapWidth);
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		Line.Reserve(USolidWorldChart::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
-			Line.AppendChar(USolidWorldMap::GrassMarker);
+			Line.AppendChar(USolidWorldChart::GrassMarker);
 		}
 		Rows[Row] = Line;
 	}
@@ -571,7 +571,7 @@ bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 	Text += TEXT("15 = Numbered key, biome=Forest\n");
 	Text += TEXT("0 = Starting village, biome=Town\n");
 
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("synthetic digit map loads"), Map->LoadFromString(Text));
 
 	const int32 DigitCells[][2] = {
@@ -598,7 +598,7 @@ bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 	const FLinearColor Grass = Map->GetBiomeColor(ESolidBiome::Grassland);
 	TestTrue(TEXT("an old key line leaves grass green"), Grass.G > Grass.R && Grass.G > Grass.B);
 
-	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
+	USolidWorldChart* Shipped = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("shipped map loads"), Shipped->LoadDefault());
 	if (!Shipped->IsLoaded())
 	{
@@ -611,7 +611,7 @@ bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 	if (ShippedIglin.Cells.Num() == 1)
 	{
 		const FIntPoint Cell = ShippedIglin.Cells[0];
-		TestEqual(TEXT("Iglin is !"), Shipped->GetMarkerAtCell(Cell.X, Cell.Y), USolidWorldMap::LocationMarker);
+		TestEqual(TEXT("Iglin is !"), Shipped->GetMarkerAtCell(Cell.X, Cell.Y), USolidWorldChart::LocationMarker);
 		TestEqual(TEXT("Iglin cell id"), Shipped->GetLocationIdAtCell(Cell.X, Cell.Y), 0);
 		TestEqual(TEXT("Iglin row"), Cell.Y + 1, 8);
 		TestEqual(TEXT("Iglin column"), Cell.X + 1, 21);
@@ -623,7 +623,7 @@ bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 	if (ShippedKanfold.Cells.Num() == 1)
 	{
 		const FIntPoint Cell = ShippedKanfold.Cells[0];
-		TestEqual(TEXT("Kanfold is !"), Shipped->GetMarkerAtCell(Cell.X, Cell.Y), USolidWorldMap::LocationMarker);
+		TestEqual(TEXT("Kanfold is !"), Shipped->GetMarkerAtCell(Cell.X, Cell.Y), USolidWorldChart::LocationMarker);
 		TestEqual(TEXT("Kanfold cell id"), Shipped->GetLocationIdAtCell(Cell.X, Cell.Y), 2);
 	}
 
@@ -640,8 +640,8 @@ bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 			? ShippedGate.Cells[1]
 			: ShippedGate.Cells[0];
 		TestEqual(TEXT("Dragongate cells are adjacent"), West.X - East.X, 1);
-		TestEqual(TEXT("Dragongate east cell is !"), Shipped->GetMarkerAtCell(East.X, East.Y), USolidWorldMap::LocationMarker);
-		TestEqual(TEXT("Dragongate west cell is !"), Shipped->GetMarkerAtCell(West.X, West.Y), USolidWorldMap::LocationMarker);
+		TestEqual(TEXT("Dragongate east cell is !"), Shipped->GetMarkerAtCell(East.X, East.Y), USolidWorldChart::LocationMarker);
+		TestEqual(TEXT("Dragongate west cell is !"), Shipped->GetMarkerAtCell(West.X, West.Y), USolidWorldChart::LocationMarker);
 		TestEqual(TEXT("Dragongate east cell id"), Shipped->GetLocationIdAtCell(East.X, East.Y), 5);
 		TestEqual(TEXT("Dragongate west cell id"), Shipped->GetLocationIdAtCell(West.X, West.Y), 5);
 	}
@@ -655,21 +655,21 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidWorldMapSeaMarkerTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("the sea marker is a wave"), USolidWorldMap::SeaMarker, TEXT('~'));
-	TestTrue(TEXT("a wave joins the sea"), SolidRiver::Joins(USolidWorldMap::SeaMarker));
+	TestEqual(TEXT("the sea marker is a wave"), USolidWorldChart::SeaMarker, TEXT('~'));
+	TestTrue(TEXT("a wave joins the sea"), SolidRiver::Joins(USolidWorldChart::SeaMarker));
 	TestFalse(TEXT("the letter S does not join the sea"), SolidRiver::Joins(TEXT('S')));
 	TestFalse(TEXT("a lower-case s does not join the sea"), SolidRiver::Joins(TEXT('s')));
 
 	FString Text;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
 		FString Line;
-		Line.Reserve(USolidWorldMap::MapWidth);
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		Line.Reserve(USolidWorldChart::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
 			if (Row == 0 && Col == 1)
 			{
-				Line.AppendChar(USolidWorldMap::SeaMarker);
+				Line.AppendChar(USolidWorldChart::SeaMarker);
 			}
 			else if (Row == 0 && Col == 2)
 			{
@@ -677,7 +677,7 @@ bool FSolidWorldMapSeaMarkerTest::RunTest(const FString& Parameters)
 			}
 			else
 			{
-				Line.AppendChar(USolidWorldMap::GrassMarker);
+				Line.AppendChar(USolidWorldChart::GrassMarker);
 			}
 		}
 		Text += Line;
@@ -685,9 +685,9 @@ bool FSolidWorldMapSeaMarkerTest::RunTest(const FString& Parameters)
 	}
 	Text += TEXT("~ = Sea (blue)\n");
 
-	USolidWorldMap* Synthetic = NewObject<USolidWorldMap>();
+	USolidWorldChart* Synthetic = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("wave map loads"), Synthetic->LoadFromString(Text));
-	TestEqual(TEXT("a wave is sea"), Synthetic->GetMarkerAtCell(1, 0), USolidWorldMap::SeaMarker);
+	TestEqual(TEXT("a wave is sea"), Synthetic->GetMarkerAtCell(1, 0), USolidWorldChart::SeaMarker);
 	TestEqual(
 		TEXT("a wave cell is the sea biome"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(1, 0)),
@@ -698,19 +698,19 @@ bool FSolidWorldMapSeaMarkerTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(2, 0)),
 		static_cast<uint8>(ESolidBiome::Grassland));
 
-	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
+	USolidWorldChart* Shipped = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("shipped map loads"), Shipped->LoadDefault());
 	if (!Shipped->IsLoaded())
 	{
 		return true;
 	}
-	TestEqual(TEXT("the north-east cell is a wave"), Shipped->GetMarkerAtCell(0, 0), USolidWorldMap::SeaMarker);
+	TestEqual(TEXT("the north-east cell is a wave"), Shipped->GetMarkerAtCell(0, 0), USolidWorldChart::SeaMarker);
 	bool bSawSea = false;
 	int32 LetterS = 0;
 	int32 SeaNotWave = 0;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
 			const TCHAR Marker = Shipped->GetMarkerAtCell(Col, Row);
 			if (Marker == TEXT('S') || Marker == TEXT('s'))
@@ -720,7 +720,7 @@ bool FSolidWorldMapSeaMarkerTest::RunTest(const FString& Parameters)
 			if (Shipped->GetBiomeAtCell(Col, Row) == ESolidBiome::Sea)
 			{
 				bSawSea = true;
-				if (Marker != USolidWorldMap::SeaMarker)
+				if (Marker != USolidWorldChart::SeaMarker)
 				{
 					++SeaNotWave;
 				}
@@ -740,31 +740,31 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("grass is a dot"), USolidWorldMap::GrassMarker, TEXT('.'));
-	TestEqual(TEXT("a town cell is a small circle"), USolidWorldMap::TownMarker, TEXT('o'));
-	TestEqual(TEXT("forest is a hatch"), USolidWorldMap::ForestMarker, TEXT('#'));
-	TestEqual(TEXT("a river is a star"), USolidWorldMap::RiverMarker, TEXT('*'));
-	TestTrue(TEXT("a star joins a river"), SolidRiver::Joins(USolidWorldMap::RiverMarker));
+	TestEqual(TEXT("grass is a dot"), USolidWorldChart::GrassMarker, TEXT('.'));
+	TestEqual(TEXT("a town cell is a small circle"), USolidWorldChart::TownMarker, TEXT('o'));
+	TestEqual(TEXT("forest is a hatch"), USolidWorldChart::ForestMarker, TEXT('#'));
+	TestEqual(TEXT("a river is a star"), USolidWorldChart::RiverMarker, TEXT('*'));
+	TestTrue(TEXT("a star joins a river"), SolidRiver::Joins(USolidWorldChart::RiverMarker));
 	TestFalse(TEXT("the letter R does not join a river"), SolidRiver::Joins(TEXT('R')));
 	TestFalse(TEXT("a lower-case r does not join a river"), SolidRiver::Joins(TEXT('r')));
-	TestFalse(TEXT("grass does not join a river"), SolidRiver::Joins(USolidWorldMap::GrassMarker));
+	TestFalse(TEXT("grass does not join a river"), SolidRiver::Joins(USolidWorldChart::GrassMarker));
 
 	FString Text;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
 		FString Line;
-		Line.Reserve(USolidWorldMap::MapWidth);
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		Line.Reserve(USolidWorldChart::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
-			TCHAR Marker = USolidWorldMap::GrassMarker;
+			TCHAR Marker = USolidWorldChart::GrassMarker;
 			if (Row == 0)
 			{
 				if (Col == 1) Marker = TEXT('G');
-				else if (Col == 2) Marker = USolidWorldMap::TownMarker;
+				else if (Col == 2) Marker = USolidWorldChart::TownMarker;
 				else if (Col == 3) Marker = TEXT('T');
-				else if (Col == 4) Marker = USolidWorldMap::ForestMarker;
+				else if (Col == 4) Marker = USolidWorldChart::ForestMarker;
 				else if (Col == 5) Marker = TEXT('F');
-				else if (Col == 6) Marker = USolidWorldMap::RiverMarker;
+				else if (Col == 6) Marker = USolidWorldChart::RiverMarker;
 				else if (Col == 7) Marker = TEXT('R');
 			}
 			Line.AppendChar(Marker);
@@ -774,9 +774,9 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 	}
 	Text += TEXT(". = Grassland (yellow)\n");
 
-	USolidWorldMap* Synthetic = NewObject<USolidWorldMap>();
+	USolidWorldChart* Synthetic = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("symbol map loads"), Synthetic->LoadFromString(Text));
-	TestEqual(TEXT("a dot stays a dot"), Synthetic->GetMarkerAtCell(0, 0), USolidWorldMap::GrassMarker);
+	TestEqual(TEXT("a dot stays a dot"), Synthetic->GetMarkerAtCell(0, 0), USolidWorldChart::GrassMarker);
 	TestEqual(
 		TEXT("a dot is grassland"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(0, 0)),
@@ -786,7 +786,7 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 		TEXT("the letter G is still grassland"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(1, 0)),
 		static_cast<uint8>(ESolidBiome::Grassland));
-	TestEqual(TEXT("a circle is the town marker"), Synthetic->GetMarkerAtCell(2, 0), USolidWorldMap::TownMarker);
+	TestEqual(TEXT("a circle is the town marker"), Synthetic->GetMarkerAtCell(2, 0), USolidWorldChart::TownMarker);
 	TestEqual(
 		TEXT("a circle is town"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(2, 0)),
@@ -796,7 +796,7 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 		TEXT("the letter T is not town"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(3, 0)),
 		static_cast<uint8>(ESolidBiome::Grassland));
-	TestEqual(TEXT("a hatch is the forest marker"), Synthetic->GetMarkerAtCell(4, 0), USolidWorldMap::ForestMarker);
+	TestEqual(TEXT("a hatch is the forest marker"), Synthetic->GetMarkerAtCell(4, 0), USolidWorldChart::ForestMarker);
 	TestEqual(
 		TEXT("a hatch is forest"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(4, 0)),
@@ -806,7 +806,7 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 		TEXT("the letter F is not forest"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(5, 0)),
 		static_cast<uint8>(ESolidBiome::Grassland));
-	TestEqual(TEXT("a star is the river marker"), Synthetic->GetMarkerAtCell(6, 0), USolidWorldMap::RiverMarker);
+	TestEqual(TEXT("a star is the river marker"), Synthetic->GetMarkerAtCell(6, 0), USolidWorldChart::RiverMarker);
 	TestEqual(
 		TEXT("a star is river"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(6, 0)),
@@ -826,7 +826,7 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("a circle is a marked town"), Synthetic->IsMarkedTown(TownXY.X, TownXY.Y, WorldMin, WorldMax));
 	TestFalse(TEXT("the letter T is not a marked town"), Synthetic->IsMarkedTown(LetterT.X, LetterT.Y, WorldMin, WorldMax));
 
-	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
+	USolidWorldChart* Shipped = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("shipped map loads"), Shipped->LoadDefault());
 	if (!Shipped->IsLoaded())
 	{
@@ -840,9 +840,9 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 	bool bSawGrass = false;
 	bool bSawForest = false;
 	bool bSawRiver = false;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
 			const TCHAR Marker = Shipped->GetMarkerAtCell(Col, Row);
 			if (Marker == TEXT('G') || Marker == TEXT('g')
@@ -852,7 +852,7 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 			{
 				++OldLetters;
 			}
-			if (Marker == USolidWorldMap::TownMarker)
+			if (Marker == USolidWorldChart::TownMarker)
 			{
 				++TownCircles;
 			}
@@ -861,7 +861,7 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 			{
 				bSawGrass = true;
 				// A stronghold on the grass shelf is grassland, and its cell is !.
-				if (Marker != USolidWorldMap::GrassMarker && Marker != USolidWorldMap::LocationMarker)
+				if (Marker != USolidWorldChart::GrassMarker && Marker != USolidWorldChart::LocationMarker)
 				{
 					++GrassNotDot;
 				}
@@ -869,7 +869,7 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 			else if (Biome == ESolidBiome::Forest)
 			{
 				bSawForest = true;
-				if (Marker != USolidWorldMap::ForestMarker)
+				if (Marker != USolidWorldChart::ForestMarker)
 				{
 					++ForestNotHatch;
 				}
@@ -877,7 +877,7 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 			else if (Biome == ESolidBiome::River)
 			{
 				bSawRiver = true;
-				if (Marker != USolidWorldMap::RiverMarker)
+				if (Marker != USolidWorldChart::RiverMarker)
 				{
 					++RiverNotStar;
 				}
@@ -902,19 +902,19 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidWorldMapDesertMarkerTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("desert is a peak"), USolidWorldMap::DesertMarker, TEXT('^'));
+	TestEqual(TEXT("desert is a peak"), USolidWorldChart::DesertMarker, TEXT('^'));
 
 	FString Text;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
 		FString Line;
-		Line.Reserve(USolidWorldMap::MapWidth);
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		Line.Reserve(USolidWorldChart::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
-			TCHAR Marker = USolidWorldMap::GrassMarker;
+			TCHAR Marker = USolidWorldChart::GrassMarker;
 			if (Row == 0 && Col == 1)
 			{
-				Marker = USolidWorldMap::DesertMarker;
+				Marker = USolidWorldChart::DesertMarker;
 			}
 			else if (Row == 0 && Col == 2)
 			{
@@ -925,12 +925,12 @@ bool FSolidWorldMapDesertMarkerTest::RunTest(const FString& Parameters)
 		Text += Line;
 		Text += TEXT("\n");
 	}
-	Text.AppendChar(USolidWorldMap::DesertMarker);
+	Text.AppendChar(USolidWorldChart::DesertMarker);
 	Text += TEXT(" = Desert (blue)\n");
 
-	USolidWorldMap* Synthetic = NewObject<USolidWorldMap>();
+	USolidWorldChart* Synthetic = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("peak map loads"), Synthetic->LoadFromString(Text));
-	TestEqual(TEXT("a peak stays a peak"), Synthetic->GetMarkerAtCell(1, 0), USolidWorldMap::DesertMarker);
+	TestEqual(TEXT("a peak stays a peak"), Synthetic->GetMarkerAtCell(1, 0), USolidWorldChart::DesertMarker);
 	TestEqual(
 		TEXT("a peak is desert"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(1, 0)),
@@ -941,7 +941,7 @@ bool FSolidWorldMapDesertMarkerTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(2, 0)),
 		static_cast<uint8>(ESolidBiome::Grassland));
 
-	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
+	USolidWorldChart* Shipped = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("shipped map loads"), Shipped->LoadDefault());
 	if (!Shipped->IsLoaded())
 	{
@@ -952,9 +952,9 @@ bool FSolidWorldMapDesertMarkerTest::RunTest(const FString& Parameters)
 	int32 Mountains = 0;
 	int32 Caves = 0;
 	bool bSawDesert = false;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
 			const TCHAR Marker = Shipped->GetMarkerAtCell(Col, Row);
 			if (Marker == TEXT('D') || Marker == TEXT('d'))
@@ -974,7 +974,7 @@ bool FSolidWorldMapDesertMarkerTest::RunTest(const FString& Parameters)
 			if (Shipped->GetBiomeAtCell(Col, Row) == ESolidBiome::Desert)
 			{
 				bSawDesert = true;
-				if (Marker != USolidWorldMap::DesertMarker)
+				if (Marker != USolidWorldChart::DesertMarker)
 				{
 					++DesertNotPeak;
 				}
@@ -1002,11 +1002,11 @@ bool FSolidWorldMapXYMarkerTest::RunTest(const FString& Parameters)
 	const int32 MarkerRow = 3;
 
 	FString Text;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
 		FString Line;
-		Line.Reserve(USolidWorldMap::MapWidth);
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		Line.Reserve(USolidWorldChart::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
 			if (Row == MarkerRow && Col == XCol)
 			{
@@ -1014,7 +1014,7 @@ bool FSolidWorldMapXYMarkerTest::RunTest(const FString& Parameters)
 			}
 			else if (Row == MarkerRow && Col == YCol)
 			{
-				Line.AppendChar(USolidWorldMap::YMarker);
+				Line.AppendChar(USolidWorldChart::YMarker);
 			}
 			else if (Row == MarkerRow && Col == DigitCol)
 			{
@@ -1022,7 +1022,7 @@ bool FSolidWorldMapXYMarkerTest::RunTest(const FString& Parameters)
 			}
 			else
 			{
-				Line.AppendChar(USolidWorldMap::GrassMarker);
+				Line.AppendChar(USolidWorldChart::GrassMarker);
 			}
 		}
 		Text += Line;
@@ -1032,10 +1032,10 @@ bool FSolidWorldMapXYMarkerTest::RunTest(const FString& Parameters)
 	Text += TEXT("X = Later (red)\n");
 	Text += TEXT("Y = Later (blue)\n");
 
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("a map with X and Y loads"), Map->LoadFromString(Text));
-	TestEqual(TEXT("a lower-case x is kept as X"), Map->GetMarkerAtCell(XCol, MarkerRow), USolidWorldMap::XMarker);
-	TestEqual(TEXT("Y is kept"), Map->GetMarkerAtCell(YCol, MarkerRow), USolidWorldMap::YMarker);
+	TestEqual(TEXT("a lower-case x is kept as X"), Map->GetMarkerAtCell(XCol, MarkerRow), USolidWorldChart::XMarker);
+	TestEqual(TEXT("Y is kept"), Map->GetMarkerAtCell(YCol, MarkerRow), USolidWorldChart::YMarker);
 	TestEqual(
 		TEXT("X is grassland"),
 		static_cast<uint8>(Map->GetBiomeAtCell(XCol, MarkerRow)),
@@ -1087,24 +1087,24 @@ bool FSolidWorldMapXYMountainTest::RunTest(const FString& Parameters)
 	const int32 MarkerRow = 2;
 
 	FString Text;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
 		FString Line;
-		Line.Reserve(USolidWorldMap::MapWidth);
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		Line.Reserve(USolidWorldChart::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
-			TCHAR Marker = USolidWorldMap::GrassMarker;
+			TCHAR Marker = USolidWorldChart::GrassMarker;
 			if (Row == MarkerRow && Col == MountainCol)
 			{
 				Marker = TEXT('M');
 			}
 			else if (Row == MarkerRow && Col == XCol)
 			{
-				Marker = USolidWorldMap::XMarker;
+				Marker = USolidWorldChart::XMarker;
 			}
 			else if (Row == MarkerRow && Col == YCol)
 			{
-				Marker = USolidWorldMap::YMarker;
+				Marker = USolidWorldChart::YMarker;
 			}
 			Line.AppendChar(Marker);
 		}
@@ -1115,7 +1115,7 @@ bool FSolidWorldMapXYMountainTest::RunTest(const FString& Parameters)
 	Text += TEXT("X = Later (blue)\n");
 	Text += TEXT("Y = Later (blue)\n");
 
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("a map with tunnel letters loads"), Map->LoadFromString(Text));
 	TestEqual(
 		TEXT("X is grassland"),
@@ -1130,7 +1130,7 @@ bool FSolidWorldMapXYMountainTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Map->GetBiomeAtCell(MountainCol, MarkerRow)),
 		static_cast<uint8>(ESolidBiome::Mountain));
 
-	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
+	USolidWorldChart* Shipped = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("shipped map loads"), Shipped->LoadDefault());
 	if (!Shipped->IsLoaded())
 	{
@@ -1139,9 +1139,9 @@ bool FSolidWorldMapXYMountainTest::RunTest(const FString& Parameters)
 	int32 NotMountain = 0;
 	int32 LairEntrances = 0;
 	int32 LairExits = 0;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
 			FSolidWorldBang Bang;
 			if (!Shipped->FindBang(Col, Row, Bang))
@@ -1193,24 +1193,24 @@ bool FSolidWorldMapBangLocationTest::RunTest(const FString& Parameters)
 	const int32 SplitRow = 6;
 
 	FString Text;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
 		FString Line;
-		Line.Reserve(USolidWorldMap::MapWidth);
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		Line.Reserve(USolidWorldChart::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
-			TCHAR Marker = USolidWorldMap::GrassMarker;
+			TCHAR Marker = USolidWorldChart::GrassMarker;
 			if (Row == IglinRow && Col == IglinCol)
 			{
-				Marker = USolidWorldMap::LocationMarker;
+				Marker = USolidWorldChart::LocationMarker;
 			}
 			else if (Row == GateRow && (Col == GateCol || Col == GateCol + 1))
 			{
-				Marker = USolidWorldMap::LocationMarker;
+				Marker = USolidWorldChart::LocationMarker;
 			}
 			else if (Row == BareRow && Col == BareCol)
 			{
-				Marker = USolidWorldMap::LocationMarker;
+				Marker = USolidWorldChart::LocationMarker;
 			}
 			else if (Row == DigitRow && Col == DigitCol)
 			{
@@ -1230,7 +1230,7 @@ bool FSolidWorldMapBangLocationTest::RunTest(const FString& Parameters)
 			}
 			else if (Row == SplitRow && Col == SplitCol + 1)
 			{
-				Marker = USolidWorldMap::LocationMarker;
+				Marker = USolidWorldChart::LocationMarker;
 			}
 			else if (Row == SplitRow && Col == SplitCol + 2)
 			{
@@ -1250,17 +1250,17 @@ bool FSolidWorldMapBangLocationTest::RunTest(const FString& Parameters)
 	Text += TEXT("! 3,5=Town Dragongate\n");
 	Text += TEXT("! 1,2 = Town Visolar\n");
 	Text += TEXT("! 0,1 = Town Kanfold\n");
-	Text += FString::Printf(TEXT("! 1,%d = Town Jethan\n"), USolidWorldMap::MapWidth + 1);
-	Text += FString::Printf(TEXT("! %d,1 = Town Rathen\n"), USolidWorldMap::MapHeight + 1);
+	Text += FString::Printf(TEXT("! 1,%d = Town Jethan\n"), USolidWorldChart::MapWidth + 1);
+	Text += FString::Printf(TEXT("! %d,1 = Town Rathen\n"), USolidWorldChart::MapHeight + 1);
 	Text += FString::Printf(TEXT("! %d,%d = 8\n"), SplitRow + 1, SplitCol + 2);
 	Text += TEXT("0 = Starting village, biome=Town\n");
 
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("a map with ! loads"), Map->LoadFromString(Text));
 	TestEqual(
 		TEXT("top-left marker is !"),
 		Map->GetMarkerAtCell(IglinCol, IglinRow),
-		USolidWorldMap::LocationMarker);
+		USolidWorldChart::LocationMarker);
 	TestEqual(TEXT("top-left is location 0"), Map->GetLocationIdAtCell(IglinCol, IglinRow), 0);
 	FVector2D StartXY = FVector2D::ZeroVector;
 	TestTrue(
@@ -1290,7 +1290,7 @@ bool FSolidWorldMapBangLocationTest::RunTest(const FString& Parameters)
 	TestEqual(
 		TEXT("a bare ! is kept"),
 		Map->GetMarkerAtCell(BareCol, BareRow),
-		USolidWorldMap::LocationMarker);
+		USolidWorldChart::LocationMarker);
 	TestEqual(TEXT("a bare ! is not a location"), Map->GetLocationIdAtCell(BareCol, BareRow), INDEX_NONE);
 	TestEqual(
 		TEXT("a bare ! is grassland"),
@@ -1306,14 +1306,14 @@ bool FSolidWorldMapBangLocationTest::RunTest(const FString& Parameters)
 
 	FSolidWorldLocation Missed;
 	TestFalse(TEXT("a line on grass is not a location"), Map->FindLocation(SolidTowns::Visolar, Missed));
-	TestEqual(TEXT("that grass cell stays grass"), Map->GetMarkerAtCell(1, 0), USolidWorldMap::GrassMarker);
+	TestEqual(TEXT("that grass cell stays grass"), Map->GetMarkerAtCell(1, 0), USolidWorldChart::GrassMarker);
 	TestFalse(TEXT("row 0 is ignored"), Map->FindLocation(SolidTowns::Kanfold, Missed));
 	TestFalse(TEXT("a column past the grid is ignored"), Map->FindLocation(SolidTowns::Jethan, Missed));
 	TestFalse(TEXT("a row past the grid is ignored"), Map->FindLocation(SolidTowns::Rathen, Missed));
 
 	const FLinearColor Grass = Map->GetBiomeColor(ESolidBiome::Grassland);
 	TestTrue(TEXT("the ! key leaves grass green"), Grass.G > Grass.R && Grass.G > Grass.B);
-	TestFalse(TEXT("! does not join a river"), SolidRiver::Joins(USolidWorldMap::LocationMarker));
+	TestFalse(TEXT("! does not join a river"), SolidRiver::Joins(USolidWorldChart::LocationMarker));
 
 	const FVector2D WorldMin(-6400.f, -6400.f);
 	const FVector2D WorldMax(6400.f, 6400.f);
@@ -1363,17 +1363,17 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 	const int32 MissingLairRow = 11;
 
 	FString Text;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
 		FString Line;
-		Line.Reserve(USolidWorldMap::MapWidth);
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		Line.Reserve(USolidWorldChart::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
 			const bool bBang = (Row == IglinRow && Col == IglinCol)
 				|| (Row == RelionRow && (Col == RelionCol || Col == UnknownTownCol || Col == UnknownTypeCol))
 				|| (Row == CaveRow && (Col == CaveCol || Col == TowerCol || Col == ImperiousCol || Col == BadHoldCol))
 				|| (Col == EnterCol && (Row == EnterRow || Row == ExitRow || Row == MissingLairRow));
-			Line.AppendChar(bBang ? USolidWorldMap::LocationMarker : USolidWorldMap::GrassMarker);
+			Line.AppendChar(bBang ? USolidWorldChart::LocationMarker : USolidWorldChart::GrassMarker);
 		}
 		Text += Line;
 		Text += TEXT("\n");
@@ -1391,7 +1391,7 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 	Text += TEXT("! 11,4 = LairExit (Iglin tunnels)\n");
 	Text += TEXT("! 12,4 = LairEntrance Missing Lair\n");
 
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("described map loads"), Map->LoadFromString(Text));
 
 	FSolidWorldBang Iglin;
@@ -1500,7 +1500,7 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 	CheckFace(TowerCol, TowerRow, ESolidStrongholdType::Tower, ESolidStrongholdSize::Humble, TEXT("the humble tower cell"));
 	CheckFace(ImperiousCol, ImperiousRow, ESolidStrongholdType::Tower, ESolidStrongholdSize::Imperious, TEXT("the imperious tower cell"));
 
-	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
+	USolidWorldChart* Shipped = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("shipped map loads"), Shipped->LoadDefault());
 	FSolidWorldBang ShippedIglin;
 	TestTrue(TEXT("shipped Iglin !"), Shipped->FindBang(20, 7, ShippedIglin));
@@ -1530,11 +1530,11 @@ bool FSolidWorldMapStrongholdSiteTest::RunTest(const FString& Parameters)
 	const int32 CaveRow = 5;
 
 	FString Text;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
 		FString Line;
-		Line.Reserve(USolidWorldMap::MapWidth);
-		for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+		Line.Reserve(USolidWorldChart::MapWidth);
+		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 		{
 			const bool bBang = (Row == HumbleRow && Col == HumbleCol)
 				|| (Row == AverageRow && Col == AverageCol)
@@ -1542,7 +1542,7 @@ bool FSolidWorldMapStrongholdSiteTest::RunTest(const FString& Parameters)
 				|| (Row == VastRow && Col == VastCol)
 				|| (Row == JoinedRow && Col == JoinedCol)
 				|| (Row == CaveRow && Col == CaveCol);
-			Line.AppendChar(bBang ? USolidWorldMap::LocationMarker : USolidWorldMap::GrassMarker);
+			Line.AppendChar(bBang ? USolidWorldChart::LocationMarker : USolidWorldChart::GrassMarker);
 		}
 		Text += Line;
 		Text += TEXT("\n");
@@ -1555,7 +1555,7 @@ bool FSolidWorldMapStrongholdSiteTest::RunTest(const FString& Parameters)
 	Text += TEXT("! 5,8 = StrongholdSite (Humble Tower)\n");
 	Text += TEXT("! 6,4 = Stronghold (MeagreDungeon)\n");
 
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("a map with sites loads"), Map->LoadFromString(Text));
 
 	FSolidWorldBang Humble;

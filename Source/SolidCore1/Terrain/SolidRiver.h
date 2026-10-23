@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 
 /**
  * The river marker marks a river through that square, not a square of water.
@@ -43,8 +43,8 @@ namespace SolidRiver
 		{
 			return Raw == Expected || FChar::ToUpper(Raw) == Expected;
 		};
-		return Matches(Marker, USolidWorldMap::RiverMarker)
-			|| Matches(Marker, USolidWorldMap::SeaMarker);
+		return Matches(Marker, USolidWorldChart::RiverMarker)
+			|| Matches(Marker, USolidWorldChart::SeaMarker);
 	}
 
 	inline float RadiusCm()

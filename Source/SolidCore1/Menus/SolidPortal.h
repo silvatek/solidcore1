@@ -53,7 +53,7 @@ namespace SolidPortal
 
 		FChoice Tunnels;
 		Tunnels.Place = EPlace::TunnelMouth;
-		Tunnels.TunnelEnd = USolidWorldMap::XMarker;
+		Tunnels.TunnelEnd = USolidWorldChart::XMarker;
 		Tunnels.Name = SolidLair::IglinTunnels.Name;
 		OutChoices.Add(Tunnels);
 	}

@@ -2,7 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "SolidBiome.h"
 #include "SolidTerrainTypes.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -134,16 +134,16 @@ bool FSolidBiomeColorTest::RunTest(const FString& Parameters)
 		SolidBiome::Of(ESolidBiome::Road).Color().Equals(FLinearColor(0.52f, 0.38f, 0.20f)));
 
 	TestTrue(TEXT("the map asks the biome"),
-		USolidWorldMap::DefaultColorForBiome(ESolidBiome::River).Equals(River));
+		USolidWorldChart::DefaultColorForBiome(ESolidBiome::River).Equals(River));
 
 	FString Text;
-	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
-		Text += FString::ChrN(USolidWorldMap::MapWidth, USolidWorldMap::GrassMarker);
+		Text += FString::ChrN(USolidWorldChart::MapWidth, USolidWorldChart::GrassMarker);
 		Text += TEXT("\n");
 	}
 	Text += TEXT("* = River (red)\n");
-	USolidWorldMap* Map = NewObject<USolidWorldMap>();
+	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	if (!TestTrue(TEXT("a map with a colour line loads"), Map && Map->LoadFromString(Text)))
 	{
 		return false;
@@ -159,13 +159,13 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidBiomeGroundTest::RunTest(const FString& Parameters)
 {
-	TestTrue(TEXT("grass letter"), SolidBiome::Of(ESolidBiome::Grassland).Marker() == USolidWorldMap::GrassMarker);
-	TestTrue(TEXT("forest letter"), SolidBiome::Of(ESolidBiome::Forest).Marker() == USolidWorldMap::ForestMarker);
+	TestTrue(TEXT("grass letter"), SolidBiome::Of(ESolidBiome::Grassland).Marker() == USolidWorldChart::GrassMarker);
+	TestTrue(TEXT("forest letter"), SolidBiome::Of(ESolidBiome::Forest).Marker() == USolidWorldChart::ForestMarker);
 	TestTrue(TEXT("mountain letter"), SolidBiome::Of(ESolidBiome::Mountain).Marker() == TEXT('M'));
-	TestTrue(TEXT("town letter"), SolidBiome::Of(ESolidBiome::Town).Marker() == USolidWorldMap::TownMarker);
-	TestTrue(TEXT("desert letter"), SolidBiome::Of(ESolidBiome::Desert).Marker() == USolidWorldMap::DesertMarker);
-	TestTrue(TEXT("sea letter"), SolidBiome::Of(ESolidBiome::Sea).Marker() == USolidWorldMap::SeaMarker);
-	TestTrue(TEXT("river letter"), SolidBiome::Of(ESolidBiome::River).Marker() == USolidWorldMap::RiverMarker);
+	TestTrue(TEXT("town letter"), SolidBiome::Of(ESolidBiome::Town).Marker() == USolidWorldChart::TownMarker);
+	TestTrue(TEXT("desert letter"), SolidBiome::Of(ESolidBiome::Desert).Marker() == USolidWorldChart::DesertMarker);
+	TestTrue(TEXT("sea letter"), SolidBiome::Of(ESolidBiome::Sea).Marker() == USolidWorldChart::SeaMarker);
+	TestTrue(TEXT("river letter"), SolidBiome::Of(ESolidBiome::River).Marker() == USolidWorldChart::RiverMarker);
 	TestTrue(TEXT("swamp letter"), SolidBiome::Of(ESolidBiome::Swamp).Marker() == TEXT('S'));
 	TestTrue(TEXT("road letter"), SolidBiome::Of(ESolidBiome::Road).Marker() == TEXT('R'));
 
@@ -203,7 +203,7 @@ bool FSolidBiomeGroundTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("an unknown token has no name"), FString(Unknown.Name()), FString(TEXT("Unknown")));
 	TestTrue(TEXT("an unknown token shares the land shelf"), FMath::IsNearlyEqual(Unknown.HeightOffsetCm(), 100.f));
 	TestEqual(TEXT("an unknown token is a weak preference"), Unknown.SurfacePreference(), 1);
-	TestTrue(TEXT("an unknown token uses the grass letter"), Unknown.Marker() == USolidWorldMap::GrassMarker);
+	TestTrue(TEXT("an unknown token uses the grass letter"), Unknown.Marker() == USolidWorldChart::GrassMarker);
 	TestFalse(TEXT("an unknown token stays open"), Unknown.Impassable());
 	TestFalse(TEXT("an unknown token is not a paint biome"), Unknown.Paintable());
 	return true;

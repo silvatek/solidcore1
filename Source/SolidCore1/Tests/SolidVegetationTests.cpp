@@ -6,7 +6,7 @@
 #include "SolidTerrainTestHelpers.h"
 #include "SolidTownBuildings.h"
 #include "SolidTree.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 
@@ -137,7 +137,7 @@ bool FSolidTownBuildingPackTest::RunTest(const FString& Parameters)
 	}
 	TestTrue(TEXT("map has some town cells"), TownPoints > 0);
 
-	USolidWorldMap* WorldMap = Map->GetWorldMap();
+	USolidWorldChart* WorldMap = Map->GetWorldMap();
 	TestNotNull(TEXT("world map"), WorldMap);
 	const FVector2D WorldMin = Map->GetWorldMinXY();
 	const FVector2D WorldMax = Map->GetWorldMaxXY();

@@ -2,7 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "SolidWallgate.h"
 #include "SolidTowns.h"
-#include "SolidWorldMap.h"
+#include "SolidWorldChart.h"
 
 #include <initializer_list>
 
@@ -17,18 +17,18 @@ namespace
 	{
 		int32 Col = 0;
 		int32 Row = 0;
-		TCHAR Marker = USolidWorldMap::GrassMarker;
+		TCHAR Marker = USolidWorldChart::GrassMarker;
 	};
 
 	FString WallgateTestGrid(std::initializer_list<FWallgateTestMark> Marks, const FString& Extra = FString())
 	{
 		FString Text;
-		Text.Reserve((USolidWorldMap::MapWidth + 1) * USolidWorldMap::MapHeight + Extra.Len());
-		for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+		Text.Reserve((USolidWorldChart::MapWidth + 1) * USolidWorldChart::MapHeight + Extra.Len());
+		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 		{
-			for (int32 Col = 0; Col < USolidWorldMap::MapWidth; ++Col)
+			for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
 			{
-				TCHAR Marker = USolidWorldMap::GrassMarker;
+				TCHAR Marker = USolidWorldChart::GrassMarker;
 				for (const FWallgateTestMark& Mark : Marks)
 				{
 					if (Mark.Col == Col && Mark.Row == Row)
@@ -45,13 +45,13 @@ namespace
 		return Text;
 	}
 
-	USolidWorldMap* WallgateTestLoad(
+	USolidWorldChart* WallgateTestLoad(
 		FAutomationTestBase& Test,
 		const TCHAR* What,
 		std::initializer_list<FWallgateTestMark> Marks,
 		const FString& Extra = FString())
 	{
-		USolidWorldMap* Map = NewObject<USolidWorldMap>();
+		USolidWorldChart* Map = NewObject<USolidWorldChart>();
 		const bool bLoaded = Map && Map->LoadFromString(WallgateTestGrid(Marks, Extra));
 		Test.TestTrue(What, bLoaded);
 		return bLoaded ? Map : nullptr;
@@ -179,7 +179,7 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("null map builds nothing"),
 		SolidWallgate::CollectPieces(nullptr, WallgateTestMin, WallgateTestMax, Missing), 0);
 
-	USolidWorldMap* Grass = WallgateTestLoad(*this, TEXT("grass map loads"), {});
+	USolidWorldChart* Grass = WallgateTestLoad(*this, TEXT("grass map loads"), {});
 	if (Grass)
 	{
 		TArray<SolidWallgate::FPiece> None;
@@ -187,9 +187,9 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 			SolidWallgate::CollectPieces(Grass, WallgateTestMin, WallgateTestMax, None), 0);
 	}
 
-	USolidWorldMap* EastWest = WallgateTestLoad(*this, TEXT("east-west pass loads"), {
+	USolidWorldChart* EastWest = WallgateTestLoad(*this, TEXT("east-west pass loads"), {
 		{ 11, 21, TEXT('M') },
-		{ 12, 21, USolidWorldMap::LocationMarker },
+		{ 12, 21, USolidWorldChart::LocationMarker },
 		{ 13, 21, TEXT('M') },
 	}, TEXT("! 22,13 = Town Dragongate\n"));
 	if (EastWest)
@@ -199,7 +199,7 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 		if (WallgateTestExpectPass(*this, Pieces, true))
 		{
 			const float HalfCell = (WallgateTestMax.X - WallgateTestMin.X)
-				/ static_cast<float>(USolidWorldMap::MapWidth) * 0.5f;
+				/ static_cast<float>(USolidWorldChart::MapWidth) * 0.5f;
 			FVector2D Center = FVector2D::ZeroVector;
 			TestTrue(TEXT("pass cell projects"),
 				EastWest->CellToWorldXY(FIntPoint(12, 21), WallgateTestMin, WallgateTestMax, Center));
@@ -224,11 +224,11 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 	}
 
 	// A vertical stack of named cells is one north-south gate.
-	USolidWorldMap* NorthSouth = WallgateTestLoad(*this, TEXT("north-south pass loads"), {
+	USolidWorldChart* NorthSouth = WallgateTestLoad(*this, TEXT("north-south pass loads"), {
 		{ 12, 19, TEXT('M') },
-		{ 12, 20, USolidWorldMap::LocationMarker },
-		{ 12, 21, USolidWorldMap::LocationMarker },
-		{ 12, 22, USolidWorldMap::LocationMarker },
+		{ 12, 20, USolidWorldChart::LocationMarker },
+		{ 12, 21, USolidWorldChart::LocationMarker },
+		{ 12, 22, USolidWorldChart::LocationMarker },
 		{ 12, 23, TEXT('M') },
 	}, TEXT("! 21,13 = Town Dragongate\n! 22,13 = Town Dragongate\n! 23,13 = Town Dragongate\n"));
 	if (NorthSouth)
@@ -238,8 +238,8 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 		WallgateTestExpectPass(*this, Pieces, false);
 	}
 
-	USolidWorldMap* Lone = WallgateTestLoad(*this, TEXT("lone town loads"), {
-		{ 12, 21, USolidWorldMap::LocationMarker },
+	USolidWorldChart* Lone = WallgateTestLoad(*this, TEXT("lone town loads"), {
+		{ 12, 21, USolidWorldChart::LocationMarker },
 	}, TEXT("! 22,13 = Town Dragongate\n"));
 	if (Lone)
 	{
@@ -248,7 +248,7 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 		WallgateTestExpectPass(*this, Pieces, true);
 	}
 
-	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
+	USolidWorldChart* Shipped = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("shipped map loads"), Shipped && Shipped->LoadDefault());
 	if (Shipped && Shipped->IsLoaded())
 	{
@@ -287,12 +287,12 @@ bool FSolidWallgateDigitPairTest::RunTest(const FString& Parameters)
 	// Mountains stand north of both cells, south of the west cell, and on the
 	// outer sides. Both cells are the same town. One cell in this pattern
 	// would run north-south; the pair is one east-west gate.
-	USolidWorldMap* Map = WallgateTestLoad(*this, TEXT("two-cell pass loads"), {
+	USolidWorldChart* Map = WallgateTestLoad(*this, TEXT("two-cell pass loads"), {
 		{ 11, 20, TEXT('M') },
 		{ 12, 20, TEXT('M') },
 		{ 10, 21, TEXT('M') },
-		{ 11, 21, USolidWorldMap::LocationMarker },
-		{ 12, 21, USolidWorldMap::LocationMarker },
+		{ 11, 21, USolidWorldChart::LocationMarker },
+		{ 12, 21, USolidWorldChart::LocationMarker },
 		{ 13, 21, TEXT('M') },
 		{ 12, 22, TEXT('M') },
 	}, TEXT("! 22,12 = Town Dragongate\n! 22,13 = Town Dragongate\n"));
@@ -315,7 +315,7 @@ bool FSolidWallgateDigitPairTest::RunTest(const FString& Parameters)
 	}
 
 	const float HalfCell = (WallgateTestMax.X - WallgateTestMin.X)
-		/ static_cast<float>(USolidWorldMap::MapWidth) * 0.5f;
+		/ static_cast<float>(USolidWorldChart::MapWidth) * 0.5f;
 	FVector2D East = FVector2D::ZeroVector;
 	FVector2D West = FVector2D::ZeroVector;
 	TestTrue(TEXT("east cell projects"),

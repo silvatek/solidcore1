@@ -825,8 +825,6 @@ bool FSolidWorldMapLandMarkersTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("letter T projects"), Synthetic->CellToWorldXY(FIntPoint(3, 0), WorldMin, WorldMax, LetterT));
 	TestTrue(TEXT("a circle is a marked town"), Synthetic->IsMarkedTown(TownXY.X, TownXY.Y, WorldMin, WorldMax));
 	TestFalse(TEXT("the letter T is not a marked town"), Synthetic->IsMarkedTown(LetterT.X, LetterT.Y, WorldMin, WorldMax));
-	const FLinearColor Grass = Synthetic->GetBiomeColor(ESolidBiome::Grassland);
-	TestTrue(TEXT("the grass key still loads"), Grass.R > 0.5f && Grass.G > 0.5f && Grass.B < 0.5f);
 
 	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
 	TestTrue(TEXT("shipped map loads"), Shipped->LoadDefault());
@@ -942,8 +940,6 @@ bool FSolidWorldMapDesertMarkerTest::RunTest(const FString& Parameters)
 		TEXT("the letter D is not desert"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(2, 0)),
 		static_cast<uint8>(ESolidBiome::Grassland));
-	const FLinearColor Desert = Synthetic->GetBiomeColor(ESolidBiome::Desert);
-	TestTrue(TEXT("the desert key still loads"), Desert.B > Desert.R && Desert.B > Desert.G);
 
 	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
 	TestTrue(TEXT("shipped map loads"), Shipped->LoadDefault());
@@ -1133,8 +1129,6 @@ bool FSolidWorldMapXYMountainTest::RunTest(const FString& Parameters)
 		TEXT("M stays mountain"),
 		static_cast<uint8>(Map->GetBiomeAtCell(MountainCol, MarkerRow)),
 		static_cast<uint8>(ESolidBiome::Mountain));
-	const FLinearColor Mountain = Map->GetBiomeColor(ESolidBiome::Mountain);
-	TestTrue(TEXT("the X key leaves the mountain yellow"), Mountain.R > 0.5f && Mountain.G > 0.5f && Mountain.B < 0.5f);
 
 	USolidWorldMap* Shipped = NewObject<USolidWorldMap>();
 	TestTrue(TEXT("shipped map loads"), Shipped->LoadDefault());

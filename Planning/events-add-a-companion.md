@@ -1,6 +1,6 @@
 # Events add a companion
 
-Status: Ready
+Status: In Progress
 
 ## Story
 

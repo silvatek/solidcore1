@@ -1,6 +1,6 @@
 # Auto playthrough
 
-Status: New
+Status: Ready
 
 ## Story
 

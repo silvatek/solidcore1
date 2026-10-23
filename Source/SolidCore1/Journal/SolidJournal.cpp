@@ -92,6 +92,12 @@ FString USolidJournal::Describe(const SolidEvents::FEvent& Event)
 				Part = MessageText;
 			}
 			break;
+		case SolidEvents::EChange::AddCompanion:
+			if (Change.CompanionName && Change.CompanionName[0])
+			{
+				Part = FString::Printf(TEXT("%s joins"), Change.CompanionName);
+			}
+			break;
 		case SolidEvents::EChange::MaxSquadSize:
 		{
 			const int32 Count = FMath::Clamp(Change.SquadSize, 0, SolidEvents::RosterCount);

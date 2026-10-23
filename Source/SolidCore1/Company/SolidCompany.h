@@ -152,6 +152,15 @@ struct FSolidCompanion
 };
 
 /**
+ * Every companion an event can add: Sam, Alex, Max, Morgan, and Quinn.
+ * The company's own list is USolidCompany::AllCompanions, and it starts empty.
+ */
+namespace SolidCompanions
+{
+	const TArray<FSolidCompanion>& AllCompanions();
+}
+
+/**
  * Company — catalog of battle plans and every companion the squad may field.
  * Owns the captain and the active stronghold. The game instance holds one company for the play session.
  */
@@ -176,7 +185,7 @@ public:
 	/** Seed Viking. The captain stays on Viking (idempotent). */
 	void InitializeDefaultCharacterMeshes();
 
-	/** Seed Sam, Alex, Max, Morgan, and Quinn, each with a mesh and a vocation (idempotent). */
+	/** Ensure the global companion list and this company's Viking mesh. The company's list stays empty. */
 	void InitializeDefaultCompanions();
 
 	/**

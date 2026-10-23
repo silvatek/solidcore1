@@ -123,6 +123,42 @@ int32 USolidCompany::AddCompanion(const FSolidCompanion& Companion)
 	return AllCompanions.Add(Companion);
 }
 
+namespace SolidCompanions
+{
+	void AddCatalogCompanion(TArray<FSolidCompanion>& Catalog, const TCHAR* Name, const ESolidVocation Vocation)
+	{
+		FSolidCompanion Companion;
+		Companion.Name = Name;
+		Companion.Vocation = Vocation;
+		SolidCompanionColors::ColorsForName(
+			Companion.Name, Companion.TorsoColor, Companion.LegColor, Companion.SkinColor);
+		const FSolidBodyParams Seed = FSolidBodyParams::FromSeed(SolidBodyMesh::SeedForName(Companion.Name));
+		const FSolidBodyControls Controls = SolidBodyControls::FromSeed(Seed);
+		Companion.BodyHeight = Controls.Height;
+		Companion.BodyBuild = Controls.Build;
+		Companion.BodyGender = Controls.Gender;
+		Companion.WeaponId = SolidItemType::IdCrudeSpear;
+		Companion.ArmourId = SolidItemType::IdRags;
+		Catalog.Add(Companion);
+	}
+
+	const TArray<FSolidCompanion>& AllCompanions()
+	{
+		static TArray<FSolidCompanion> Catalog;
+		if (Catalog.Num() > 0)
+		{
+			return Catalog;
+		}
+
+		AddCatalogCompanion(Catalog, TEXT("Sam"), ESolidVocation::Rogue);
+		AddCatalogCompanion(Catalog, TEXT("Alex"), ESolidVocation::Warrior);
+		AddCatalogCompanion(Catalog, TEXT("Max"), ESolidVocation::Cleric);
+		AddCatalogCompanion(Catalog, TEXT("Morgan"), ESolidVocation::Mage);
+		AddCatalogCompanion(Catalog, TEXT("Quinn"), ESolidVocation::Warrior);
+		return Catalog;
+	}
+}
+
 void USolidCompany::InitializeDefaultCharacterMeshes()
 {
 	if (AllCharacterMeshes.Num() > 0)
@@ -138,36 +174,8 @@ void USolidCompany::InitializeDefaultCharacterMeshes()
 
 void USolidCompany::InitializeDefaultCompanions()
 {
-	if (AllCompanions.Num() > 0)
-	{
-		return;
-	}
-
+	SolidCompanions::AllCompanions();
 	InitializeDefaultCharacterMeshes();
-	const int32 Viking = FindCharacterMeshIndexByName(TEXT("Viking"));
-
-	auto Add = [this](const TCHAR* Name, const int32 MeshIndex, const ESolidVocation Vocation)
-	{
-		FSolidCompanion Companion;
-		Companion.Name = Name;
-		Companion.CharacterMeshIndex = MeshIndex;
-		Companion.Vocation = Vocation;
-		SolidCompanionColors::ColorsForName(
-			Companion.Name, Companion.TorsoColor, Companion.LegColor, Companion.SkinColor);
-		const FSolidBodyParams Seed = FSolidBodyParams::FromSeed(SolidBodyMesh::SeedForName(Companion.Name));
-		const FSolidBodyControls Controls = SolidBodyControls::FromSeed(Seed);
-		Companion.BodyHeight = Controls.Height;
-		Companion.BodyBuild = Controls.Build;
-		Companion.BodyGender = Controls.Gender;
-		Companion.WeaponId = SolidItemType::IdCrudeSpear;
-		Companion.ArmourId = SolidItemType::IdRags;
-		AllCompanions.Add(Companion);
-	};
-	Add(TEXT("Sam"), Viking, ESolidVocation::Rogue);
-	Add(TEXT("Alex"), Viking, ESolidVocation::Warrior);
-	Add(TEXT("Max"), Viking, ESolidVocation::Cleric);
-	Add(TEXT("Morgan"), Viking, ESolidVocation::Mage);
-	Add(TEXT("Quinn"), Viking, ESolidVocation::Warrior);
 }
 
 void USolidCompany::InitializeStartingStronghold()

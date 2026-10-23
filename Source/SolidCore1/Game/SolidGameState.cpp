@@ -1,7 +1,9 @@
 #include "SolidGameState.h"
+#include "SolidGameMode.h"
 #include "BattlePlans/SolidBattlePlan.h"
 #include "Company/SolidCompany.h"
 #include "Company/SolidSquad.h"
+#include "UObject/UObjectIterator.h"
 
 namespace
 {
@@ -50,6 +52,31 @@ namespace
 			SolidEvents::ApplyChange(State, Captain, Event.Changes[ChangeIndex], Result);
 		}
 		return true;
+	}
+
+	/** The squad on the game mode that holds this captain's company. */
+	USolidSquad* SquadFor(const USolidCaptain& Captain)
+	{
+		USolidCompany* Company = Cast<USolidCompany>(Captain.GetOuter());
+		if (!Company)
+		{
+			return nullptr;
+		}
+		UObject* const Owner = Company->GetOuter();
+		for (TObjectIterator<ASolidGameMode> It; It; ++It)
+		{
+			ASolidGameMode* Mode = *It;
+			if (Mode->GetOuter() != Owner && Mode->GetGameInstance() != Owner)
+			{
+				continue;
+			}
+			USolidSquad* Squad = Mode->GetSquad();
+			if (Squad && Squad->GetCompany() == Company)
+			{
+				return Squad;
+			}
+		}
+		return nullptr;
 	}
 }
 
@@ -153,6 +180,48 @@ void ApplyChange(
 		{
 			State.EnabledBattlePlans.RemoveAt(Found);
 		}
+		break;
+	}
+	case EChange::AddCompanion:
+	{
+		if (!Change.CompanionName || !Change.CompanionName[0])
+		{
+			break;
+		}
+		USolidCompany* Company = Cast<USolidCompany>(Captain.GetOuter());
+		if (!Company)
+		{
+			break;
+		}
+		const FSolidCompanion* Source = nullptr;
+		for (const FSolidCompanion& Candidate : SolidCompanions::AllCompanions())
+		{
+			if (Candidate.Name.Equals(Change.CompanionName, ESearchCase::IgnoreCase))
+			{
+				Source = &Candidate;
+				break;
+			}
+		}
+		if (!Source || Company->FindCompanionIndexByName(Source->Name) != INDEX_NONE)
+		{
+			break;
+		}
+		Company->InitializeDefaultCharacterMeshes();
+		FSolidCompanion Copy = *Source;
+		Copy.CharacterMeshIndex = Company->FindCharacterMeshIndexByName(TEXT("Viking"));
+		const int32 Index = Company->AddCompanion(Copy);
+		USolidSquad* Squad = SquadFor(Captain);
+		if (!Squad || Squad->GetSelectedCompanionCount() >= State.MaxSquadSize)
+		{
+			break;
+		}
+		if (Squad->GetSelectedCompanionIndices().Contains(Index))
+		{
+			break;
+		}
+		TArray<int32> Next = Squad->GetSelectedCompanionIndices();
+		Next.Add(Index);
+		Squad->SetSelectedCompanions(Next);
 		break;
 	}
 	default:

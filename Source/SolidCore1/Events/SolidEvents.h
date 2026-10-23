@@ -38,6 +38,7 @@ namespace SolidEvents
 			.Require(IdEnterIglin)
 			.EnableSight(ESolidSight::Raven)
 			.SetMaxSquadSize(1)
+			.AddCompanion(TEXT("Sam"))
 			.SetPlayerTitle(ESolidCaptainTitle::Vagrant)
 			.RepairBridge()
 			.EnableStrongholdSize(ESolidStrongholdSize::Humble)

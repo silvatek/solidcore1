@@ -199,8 +199,8 @@ void ASolidGameMode::EnsureCompanyAndSquad()
 	{
 		return;
 	}
-	// Defaults are seeded when the game instance creates the company.
-	// Idempotent calls leave a catalog that already has entries.
+	// Battle plans and the Viking mesh are seeded with the company.
+	// Companions stay empty until an event adds one.
 	Company->InitializeDefaultBattlePlans();
 	Company->InitializeDefaultCharacterMeshes();
 	Company->InitializeDefaultCompanions();

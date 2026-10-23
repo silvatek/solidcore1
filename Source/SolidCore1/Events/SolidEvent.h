@@ -74,6 +74,8 @@ namespace SolidEvents
 		EnableBattlePlan,
 		/** Turn one catalog plan off. The name is BattlePlanName. */
 		DisableBattlePlan,
+		/** Copy the named companion from the global list onto the company. */
+		AddCompanion,
 	};
 
 	struct FChange
@@ -90,6 +92,8 @@ namespace SolidEvents
 		const TCHAR* LairId = nullptr;
 		/** Plan name for an EnableBattlePlan or DisableBattlePlan change. */
 		const TCHAR* BattlePlanName = nullptr;
+		/** Companion name for an AddCompanion change. */
+		const TCHAR* CompanionName = nullptr;
 	};
 
 	/**
@@ -182,6 +186,14 @@ namespace SolidEvents
 			Change.BattlePlanName = Name;
 			return Change;
 		}
+
+		inline constexpr FChange AddCompanion(const TCHAR* Name)
+		{
+			FChange Change;
+			Change.Kind = EChange::AddCompanion;
+			Change.CompanionName = Name;
+			return Change;
+		}
 	}
 
 	struct FEvent
@@ -254,6 +266,11 @@ namespace SolidEvents
 		constexpr FEvent DisableBattlePlan(const TCHAR* PlanName) const
 		{
 			return With(Change::DisableBattlePlan(PlanName));
+		}
+
+		constexpr FEvent AddCompanion(const TCHAR* CompanionName) const
+		{
+			return With(Change::AddCompanion(CompanionName));
 		}
 
 		constexpr FEvent Require(const TCHAR* EventId) const

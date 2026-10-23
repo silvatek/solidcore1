@@ -12,10 +12,10 @@ The game already performs the work these symbols wrap or inspect. Removing them 
 
 - Each symbol below is gone from `Source/`, including tests. A whole-word search for the name finds nothing under `Source/`. `Holds` stays in comments that are not this function.
 - `override` methods stay. `UFUNCTION` methods the engine can call stay. Types that `Config/` names for the engine to instantiate stay. `GetTypeHash` for a hex edge stays. `ASolidCharacter::StartSquadFormationDrill` stays.
-- These product calls stay, and still behave as they do now: `FSolidBattle::Advance`, `FSolidBattle::AdvanceToNextEvent`, `FSolidBattle::SquadWeapon`, `FSolidBattle::MonsterWeapon`, `FSolidBattlePlan::Attacks`, `FSolidBattlePlan::Retreats`, `ASolidHUD::ToggleDebugPanel`, `ASolidDungeonExterior::GroundDropCm`, `ASolidDungeonExterior::GetRockMesh`, `ASolidDungeonExterior::SetGroundDrop`, `ASolidTowerExterior::GetDoorMesh`, `SolidDungeonLevel::EnterLabel`, `SolidDungeonLevel::LeaveLabel`, `USolidWorldChart::PaintRun`, `USolidWorldChart::PaintRectangle`, `USolidWorldChart::MarkAtCell`, `USolidWorldMap::LoadFromString`, `USolidWorldMap::LoadFromChart`, `FSolidTower::OutsideDoorXY`, and `SolidStronghold::BiomeFor`. `FSolidBattle::TimeUntilNextEvent` stays. It is private, and `AdvanceToNextEvent` is its caller.
+- These product calls stay, and still behave as they do now: `FSolidBattle::Advance`, `FSolidBattle::AdvanceToNextEvent`, `FSolidBattle::SquadWeapon`, `FSolidBattle::MonsterWeapon`, `FSolidBattlePlan::Attacks`, `FSolidBattlePlan::Retreats`, `ASolidHUD::ToggleDebugPanel`, `ASolidDungeonExterior::GroundDropCm`, `ASolidDungeonExterior::GetRockMesh`, `ASolidDungeonExterior::SetGroundDrop`, `ASolidTowerExterior::GetDoorMesh`, `FSolidTower::FloorCount`, `SolidDungeonLevel::EnterLabel`, `SolidDungeonLevel::LeaveLabel`, `USolidWorldChart::PaintRun`, `USolidWorldChart::PaintRectangle`, `USolidWorldChart::MarkAtCell`, `USolidWorldMap::LoadFromString`, `USolidWorldMap::LoadFromChart`, `FSolidTower::OutsideDoorXY`, and `SolidStronghold::BiomeFor`. `FSolidBattle::TimeUntilNextEvent` stays. It is private, and `AdvanceToNextEvent` is its caller.
 - Shelves, visit views, finger bones on a hand, the chart cells, and the fight log stay. Only the unused readers, counters, and wrappers go.
 - Existing tests keep passing. The test edit is its own commit, and it passes on the code before the deletion. The deletion commit does not edit those tests. The deletion commit says that the tests changed because these symbols went away.
-- The deletion commit bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`.
+- The deletion commit bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`. The commit that adds `FSolidTower::FloorCount` bumps them too.
 
 ## Implementation notes
 
@@ -31,6 +31,8 @@ Nothing in the list below is called from product C++ outside its own declaration
 
 `ASolidDungeonExterior::GetRockMesh` stays. `SolidCore1.Stronghold.DungeonExterior` and `SolidCore1.Stronghold.DungeonExteriorMouth` are tests of the rock and the mouth. They read the stone through `GetRockMesh`: the mouth is a different mesh, the buried ground edge follows the drop, and the mouth front meets the rock. `RockMesh` is protected. `SetGroundDrop` stays with it. The burial measurement sets that drop, then reads the rock mesh. `GroundDropCm` stays.
 
+`FSolidTower` owns the plan, in `StoredPlan`. `FloorCount()` returns that floor count, beside `HeightCm()`. The Imperious exterior check calls it on the tower from `Make`, instead of `GetPlan().FloorCount`. `GetPlan` goes. `Plan()` stays. This story does not remove the plan.
+
 The World chart mode keeps `PaintRun`, `PaintRectangle`, `PlaceTown`, `PlaceStronghold`, `PlaceSite`, `PlaceLairMouth`, `PlaceCustom`, `DeleteMark`, `AddRoad`, `RouteForRoad`, `Undo`, `Disagreement`, `MarkAtCell`, `BuildChartView`, `RebuildChartView`, and `ClearChartView`. `SolidStronghold::TypeCount` stays. The mode clamps a type index with it.
 
 No product caller:
@@ -40,7 +42,7 @@ No product caller:
 - `ASolidHUD::SetDebugPanelVisible`. F12 calls `ToggleDebugPanel`. The debug test is the only caller of the setter.
 - `ASolidStrongholdSite::GetSize`. `SetSite` stores the size. Nothing reads it back.
 - `ASolidTerrainStreamer::IsChartView`. Tick reads `bChartView`.
-- `ASolidTowerExterior::GetPlan`. The exterior builds from the tower it was given. `GetDoorMesh` stays.
+- `ASolidTowerExterior::GetPlan`. The exterior builds from the tower it was given. `GetDoorMesh` stays. The floor count is `FSolidTower::FloorCount`.
 - `USolidWorldMap::LoadFromFile`. The game loads the chart through `LoadFromChart`. A text map still loads through `LoadFromString`. [Remove WorldMap.txt](remove-world-map-txt.md) keeps `LoadFromString`.
 - `USolidWorldChart::PaintCell`. It calls `PaintRun` with one cell. The mode paints with `PaintRun` and `PaintRectangle`.
 - `USolidWorldChart::ReadCell`. The mode describes a cell from `Cells`, `MarkAtCell`, and the loaded world map.
@@ -69,7 +71,7 @@ Types only the unused readers use:
 Test commit, before the deletion:
 
 - `SolidCore1.HUD.DebugToggle` keeps calling `ToggleDebugPanel`. The visibility checks that call `IsDebugPanelVisible` and `SetDebugPanelVisible` go away. The HUD still reads `bShowDebugPanel`.
-- `SolidCore1.TowerExterior.*` stops calling `GetPlan`. The door check keeps `GetDoorMesh`. The floor-count check that can only be stated through `GetPlan` goes away.
+- `SolidCore1.TowerExterior.*` keeps `GetDoorMesh`. The Imperious floor-count check calls `FSolidTower::FloorCount()` on the tower from `Make`. That retarget is the commit that adds `FloorCount()`. That commit bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`. `GetPlan` is still in the code then. The deletion commit removes `GetPlan` and does not edit this test.
 - `SolidCore1.Stronghold.DungeonExterior` and `SolidCore1.Stronghold.DungeonExteriorMouth` keep calling `GetRockMesh` and `SetGroundDrop`. `GroundDropCm` stays.
 - `SolidCore1.DungeonLevel.*` checks the cave words through `EnterLabel` and `LeaveLabel`. `MenuLabel` goes away.
 - `SolidCore1.WorldChart.Paint` calls `PaintRun` with the one cell where it now calls `PaintCell`. A painted biome is read from `Cells`. A mark is `Marks` at `MarkAtCell`. A resolved biome, and which roads cross the cell, are read from a world map filled with `LoadFromChart`, through `GetBiomeAtCell` and `GetRoads`. The town resolving as town and the lair mouth resolving as mountain stay. `ReadCell` and `FSolidWorldChartRead` go away.

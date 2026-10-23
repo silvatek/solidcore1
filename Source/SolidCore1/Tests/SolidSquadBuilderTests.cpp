@@ -6,6 +6,7 @@
 #include "BattlePlans/SolidBattlePlan.h"
 #include "Company/SolidCompany.h"
 #include "Company/SolidSquad.h"
+#include "SolidCompanionTestSeed.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -81,6 +82,7 @@ bool FSolidSquadBuilderDragTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("company"), Company);
 	TestNotNull(TEXT("squad"), Squad);
 	Squad->InitializeFromCompany(Company);
+	SolidCompanionTest::SeedCompanyCompanions(Company);
 	const int32 Sam = Company->FindCompanionIndexByName(TEXT("Sam"));
 	const int32 Alex = Company->FindCompanionIndexByName(TEXT("Alex"));
 	TestTrue(TEXT("the company has Sam and Alex"), Sam != INDEX_NONE && Alex != INDEX_NONE);
@@ -486,6 +488,7 @@ bool FSolidSquadBuilderStrongholdLeaveTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("company"), Company);
 	TestNotNull(TEXT("squad"), Squad);
 	Squad->InitializeFromCompany(Company);
+	SolidCompanionTest::SeedCompanyCompanions(Company);
 	TestTrue(TEXT("the company starts with the five plans"), Company->HasOnlyDefaultBattlePlans());
 	TestEqual(TEXT("the squad starts empty"), Squad->GetSelectedCompanionCount(), 0);
 	TestFalse(TEXT("the menu stays locked below two"), SolidSquadBuilder::CanOpen(1));

@@ -7,6 +7,7 @@
 #include "Menus/SolidMainMenu.h"
 #include "Company/SolidCompany.h"
 #include "SolidBodyMesh.h"
+#include "SolidCompanionTestSeed.h"
 #include "SolidBodyParams.h"
 #include "SolidHUD.h"
 
@@ -250,7 +251,7 @@ bool FSolidCharacterEditorRosterTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	Company->InitializeDefaultCompanions();
+	SolidCompanionTest::SeedCompanyCompanions(Company);
 
 	const FSolidCompanion* Sam = Company->GetCompanion(Company->FindCompanionIndexByName(TEXT("Sam")));
 	const FSolidCompanion* Alex = Company->GetCompanion(Company->FindCompanionIndexByName(TEXT("Alex")));
@@ -419,7 +420,7 @@ bool FSolidCharacterEditorSliderTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	Company->InitializeDefaultCompanions();
+	SolidCompanionTest::SeedCompanyCompanions(Company);
 	const int32 SamIndex = Company->FindCompanionIndexByName(TEXT("Sam"));
 	const FSolidCompanion* Sam = Company->GetCompanion(SamIndex);
 	TestNotNull(TEXT("sam"), Sam);

@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Company/SolidSquad.h"
 #include "Inventory/SolidItem.h"
+#include "SolidCompanionTestSeed.h"
 #include "Monster/SolidEncounters.h"
 #include "Monster/SolidRaptor.h"
 
@@ -38,6 +39,7 @@ namespace SolidBattleTestPrivate
 		USolidCompany* Company = NewObject<USolidCompany>();
 		USolidSquad* Squad = NewObject<USolidSquad>(Company);
 		Squad->InitializeFromCompany(Company);
+		SolidCompanionTest::SeedCompanyCompanions(Company);
 		Squad->SetSelectedCompanions({});
 		SelectSquadPlan(Squad, PlanName);
 		return Squad;

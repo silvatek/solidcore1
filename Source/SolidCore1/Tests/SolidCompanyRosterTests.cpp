@@ -7,6 +7,7 @@
 #include "Inventory/SolidInventory.h"
 #include "Inventory/SolidItemType.h"
 #include "SolidClipLocomotion.h"
+#include "SolidCompanionTestSeed.h"
 #include "SolidGameInstance.h"
 #include "SolidGameMode.h"
 #include "UObject/SoftObjectPath.h"
@@ -73,11 +74,14 @@ bool FSolidCompanyRosterTest::RunTest(const FString& Parameters)
 	TestNull(TEXT("no fourth mesh"), Company->GetCharacterMesh(3));
 
 	Company->InitializeDefaultCompanions();
-	TestEqual(TEXT("five companions"), Company->GetCompanionCount(), 5);
+	const int32 AfterInit = Company->GetCompanionCount();
 	Company->InitializeDefaultCompanions();
-	TestEqual(TEXT("idempotent init"), Company->GetCompanionCount(), 5);
+	TestEqual(TEXT("idempotent init"), Company->GetCompanionCount(), AfterInit);
 	TestEqual(TEXT("companion init does not reseed meshes"), Company->FindCharacterMeshIndexByName(TEXT("Viking")), 0);
 	TestNull(TEXT("companion init does not append a mesh"), Company->GetCharacterMesh(3));
+
+	SolidCompanionTest::SeedCompanyCompanions(Company);
+	TestEqual(TEXT("the company holds the five"), Company->GetCompanionCount(), 5);
 
 	const TCHAR* Names[] = {
 		TEXT("Sam"),
@@ -208,6 +212,7 @@ bool FSolidSquadCompanionSelectionTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("unbound squad fields nobody"), FieldedNamesAre(*this, Bare, 2, {}));
 
 	Squad->InitializeFromCompany(Company);
+	SolidCompanionTest::SeedCompanyCompanions(Company);
 	TestEqual(TEXT("the squad starts empty"), Squad->GetSelectedCompanionCount(), 0);
 	const int32 Sam = Company->FindCompanionIndexByName(TEXT("Sam"));
 	const int32 Alex = Company->FindCompanionIndexByName(TEXT("Alex"));
@@ -262,11 +267,16 @@ bool FSolidSquadSelectionSurvivesEnsureTest::RunTest(const FString& Parameters)
 	USolidSquad* Squad = GameMode->GetSquad();
 	TestNotNull(TEXT("company"), Company);
 	TestNotNull(TEXT("squad"), Squad);
-	TestEqual(TEXT("catalog seeded"), Company->GetCompanionCount(), 5);
 	TestEqual(TEXT("the squad boxes start empty"), Squad->GetSelectedCompanionCount(), 0);
 	TestTrue(TEXT("game starts with nobody selected"),
 		FieldedNamesAre(*this, Squad, 2, {}));
 
+	const int32 Before = Company->GetCompanionCount();
+	GameMode->EnsureCompanyAndSquad();
+	TestEqual(TEXT("ensure leaves the company"), Company->GetCompanionCount(), Before);
+
+	SolidCompanionTest::SeedCompanyCompanions(Company);
+	const int32 Held = Company->GetCompanionCount();
 	const int32 Morgan = Company->FindCompanionIndexByName(TEXT("Morgan"));
 	const int32 Quinn = Company->FindCompanionIndexByName(TEXT("Quinn"));
 	TArray<int32> MorganAndQuinn;
@@ -279,7 +289,7 @@ bool FSolidSquadSelectionSurvivesEnsureTest::RunTest(const FString& Parameters)
 	GameMode->EnsureCompanyAndSquad();
 	TestTrue(TEXT("selection stays Morgan and Quinn"),
 		FieldedNamesAre(*this, Squad, 2, { TEXT("Morgan"), TEXT("Quinn") }));
-	TestEqual(TEXT("catalog stays five"), Company->GetCompanionCount(), 5);
+	TestEqual(TEXT("ensure leaves the catalog"), Company->GetCompanionCount(), Held);
 	return true;
 }
 

@@ -273,6 +273,14 @@ bool USolidWorldChart::CellCentre(const FIntPoint Cell, FVector2D& OutCm)
 	return true;
 }
 
+FVector2D USolidWorldChart::TerrainPosition(const FVector2D& PositionCm, const FVector2D& TerrainMin)
+{
+	FVector2D ChartMin = FVector2D::ZeroVector;
+	FVector2D ChartMax = FVector2D::ZeroVector;
+	DefaultWorldBounds(ChartMin, ChartMax);
+	return PositionCm + (TerrainMin - ChartMin);
+}
+
 void USolidWorldChart::PushUndo()
 {
 	FSnapshot Snapshot;

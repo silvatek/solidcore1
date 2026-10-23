@@ -143,6 +143,13 @@ public:
 	static bool CellCentre(FIntPoint Cell, FVector2D& OutCm);
 
 	/**
+	 * A stored mark position in a terrain map's centimetres.
+	 * The chart rectangle starts at the origin. A built map is centred on the origin.
+	 * Play and the chart mode both use this shift.
+	 */
+	static FVector2D TerrainPosition(const FVector2D& PositionCm, const FVector2D& TerrainMin);
+
+	/**
 	 * Paint marker biomes. Swamp and road are rejected. Marks stay where they are.
 	 * One call is one undo step. A run is the cells of one drag. A rectangle is inclusive.
 	 */

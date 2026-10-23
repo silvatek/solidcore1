@@ -85,16 +85,13 @@ namespace
 	FVector2D GroundCm(const FVector2D& PositionCm)
 	{
 		const USolidTerrainMap* Terrain = GetDefault<USolidTerrainMap>();
-		FVector2D ChartMin = FVector2D::ZeroVector;
-		FVector2D ChartMax = FVector2D::ZeroVector;
-		USolidWorldChart::DefaultWorldBounds(ChartMin, ChartMax);
 		const float Spacing = Terrain ? Terrain->PointSpacing : 200.f;
 		const int32 Width = Terrain ? Terrain->GridWidth : 513;
 		const int32 Height = Terrain ? Terrain->GridHeight : 513;
 		const FVector2D BuiltMin(
 			-0.5f * static_cast<float>(FMath::Max(Width - 1, 0)) * Spacing,
 			-0.5f * static_cast<float>(FMath::Max(Height - 1, 0)) * Spacing);
-		return PositionCm + (BuiltMin - ChartMin);
+		return USolidWorldChart::TerrainPosition(PositionCm, BuiltMin);
 	}
 
 	TSharedRef<FJsonObject> MarkJson(const FSolidWorldChartMark& Mark)

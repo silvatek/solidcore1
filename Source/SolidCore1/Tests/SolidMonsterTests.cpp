@@ -9,6 +9,7 @@
 #include "Monster/SolidRaptorActor.h"
 #include "Monster/SolidRaptor.h"
 #include "Inventory/SolidItem.h"
+#include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidWorldChart.h"
 #include "Terrain/SolidWorldMap.h"
 
@@ -540,6 +541,79 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 		Total += StandAt(Mark);
 	}
 	TestEqual(TEXT("two marks place two encounters"), Total, 6);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidMonsterMarkGroundTest,
+	"SolidCore1.Monster.MarkGround",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidMonsterMarkGroundTest::RunTest(const FString& Parameters)
+{
+	FString Grid;
+	for (int32 Row = 0; Row < USolidWorldMap::MapHeight; ++Row)
+	{
+		Grid += FString::ChrN(USolidWorldMap::MapWidth, USolidWorldMap::GrassMarker);
+		Grid += TEXT("\n");
+	}
+
+	const FIntPoint Cell(10, 4);
+	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
+	USolidWorldMap* WorldMap = NewObject<USolidWorldMap>();
+	FString Error;
+	if (!TestNotNull(TEXT("chart"), Chart)
+		|| !TestNotNull(TEXT("map"), WorldMap)
+		|| !TestTrue(TEXT("grass imports"), Chart->ImportFromString(Grid))
+		|| !TestTrue(TEXT("the mark places"), Chart->PlaceEncounter(Cell, TEXT("Iglin Bridge"), Error))
+		|| !TestTrue(TEXT("the chart loads"), WorldMap->LoadFromChart(Chart))
+		|| !TestEqual(TEXT("one mark"), WorldMap->GetEncounterMarks().Num(), 1))
+	{
+		return false;
+	}
+
+	USolidTerrainMap* Terrain = NewObject<USolidTerrainMap>();
+	Terrain->Build(1337, 0.00012f, 3000.f, 0.f, 513, 513, 200.f, true, WorldMap);
+	if (!TestTrue(TEXT("the terrain is built"), Terrain->IsBuilt()))
+	{
+		return false;
+	}
+
+	const FVector2D Stored = WorldMap->GetEncounterMarks()[0].PositionCm;
+	const FVector2D Ground = USolidWorldChart::TerrainPosition(Stored, Terrain->GetWorldMinXY());
+	FVector2D CellGround = FVector2D::ZeroVector;
+	TestTrue(TEXT("the cell has a ground centre"),
+		WorldMap->CellToWorldXY(Cell, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), CellGround));
+	TestTrue(TEXT("play uses the centred terrain"), Ground.Equals(CellGround, 1.f));
+	TestFalse(TEXT("the stored chart position is not that ground point"), Stored.Equals(Ground, 1.f));
+
+	const SolidEncounter::FDefinition* Def = SolidEncounter::FindByName(TEXT("Iglin Bridge"));
+	if (!TestNotNull(TEXT("Iglin Bridge"), Def))
+	{
+		return false;
+	}
+	const TArray<int32> None;
+	FSolidEncounter OnChart(*Def);
+	TestEqual(TEXT("the stored position places nobody on the terrain"),
+		OnChart.Place(Terrain->GetPoints(), None, None, Stored, Terrain->PointSpacing), 0);
+
+	FSolidEncounter OnGround(*Def);
+	TestEqual(TEXT("the ground position places three"),
+		OnGround.Place(Terrain->GetPoints(), None, None, Ground, Terrain->PointSpacing), 3);
+	if (OnGround.Groups.Num() == 1)
+	{
+		for (int32 Index = 0; Index < OnGround.Groups[0].Num(); ++Index)
+		{
+			const FSolidMonster* Member = OnGround.Groups[0].Get(Index);
+			if (!TestNotNull(TEXT("a member"), Member))
+			{
+				continue;
+			}
+			const float Distance = FVector2D::Distance(Member->XY, Ground);
+			TestTrue(TEXT("the member stands in the band around the mark"),
+				Distance >= Def->NearLimitCm && Distance <= Def->FarLimitCm);
+		}
+	}
 	return true;
 }
 

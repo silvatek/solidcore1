@@ -16,6 +16,7 @@
 #include "SolidGroundMove.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
+#include "Terrain/SolidWorldChart.h"
 #include "Terrain/SolidWorldMap.h"
 #include "Towns/SolidTowns.h"
 #include "Menus/SolidPortal.h"
@@ -1553,8 +1554,9 @@ void ASolidGameMode::ChooseMonsters(const USolidTerrainMap* Map)
 				continue;
 			}
 			FSolidEncounter Encounter(*Def);
+			const FVector2D Focus = USolidWorldChart::TerrainPosition(Mark.PositionCm, Map->GetWorldMinXY());
 			Chosen += Encounter.Place(
-				Map->GetPoints(), TreePoints, ForagePoints, Mark.PositionCm, Map->PointSpacing);
+				Map->GetPoints(), TreePoints, ForagePoints, Focus, Map->PointSpacing);
 			Encounters.Add(MoveTemp(Encounter));
 		}
 	}

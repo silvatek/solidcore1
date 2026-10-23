@@ -1570,10 +1570,7 @@ bool FSolidWorldChartEdMode::MarkLocation(const FSolidWorldChartMark& Mark, FVec
 	{
 		return false;
 	}
-	FVector2D ChartMin = FVector2D::ZeroVector;
-	FVector2D ChartMax = FVector2D::ZeroVector;
-	USolidWorldChart::DefaultWorldBounds(ChartMin, ChartMax);
-	const FVector2D XY = Mark.PositionCm + (Terrain->GetWorldMinXY() - ChartMin);
+	const FVector2D XY = USolidWorldChart::TerrainPosition(Mark.PositionCm, Terrain->GetWorldMinXY());
 	OutLocation = FVector(XY.X, XY.Y, Terrain->SampleHeight(XY.X, XY.Y) + 800.f);
 	return true;
 }

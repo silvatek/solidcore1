@@ -13,6 +13,7 @@
 #include "Events/SolidMessages.h"
 #include "HUD/SolidHUD.h"
 #include "Inventory/SolidInventory.h"
+#include "Lairs/SolidLair.h"
 #include "Monster/SolidEncounter.h"
 #include "Strongholds/Actors/SolidStrongholdInterior.h"
 #include "Strongholds/Dungeon/SolidDungeonLevel.h"
@@ -49,6 +50,7 @@ const FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = 
 	FStep::ExitStronghold(TEXT("Leave the cave")),
 	FStep::WalkTo(TEXT("Walk to Iglin"), EWalk::TrailToIglin),
 	FStep::CloseMessage(TEXT("Close the driven-out message"), SolidMessages::IdDrivenFromVillage).Pause(1.f),
+	FStep::WalkTo(TEXT("Walk to the Iglin tunnels"), EWalk::LairEntrance),
 };
 
 namespace
@@ -142,6 +144,103 @@ namespace
 			}
 		}
 		return nullptr;
+	}
+
+	bool WalkableCell(const USolidWorldChart& Chart, const FIntPoint Cell)
+	{
+		if (Cell.X < 0 || Cell.X >= USolidWorldChart::MapWidth
+			|| Cell.Y < 0 || Cell.Y >= USolidWorldChart::MapHeight)
+		{
+			return false;
+		}
+		const ESolidBiome Biome = Chart.GetBiomeAtCell(Cell.X, Cell.Y);
+		return Biome == ESolidBiome::Grassland || Biome == ESolidBiome::Town;
+	}
+
+	const SolidLair::FEntrance* FindLairEntrance(
+		const TArray<SolidLair::FEntrance>& Entrances,
+		const TCHAR EndMarker)
+	{
+		for (const SolidLair::FEntrance& Entrance : Entrances)
+		{
+			if (Entrance.EndMarker == EndMarker)
+			{
+				return &Entrance;
+			}
+		}
+		return nullptr;
+	}
+
+	bool GrassPath(
+		const USolidWorldChart& Chart,
+		const FIntPoint From,
+		const FIntPoint To,
+		TArray<FIntPoint>& OutCells)
+	{
+		OutCells.Reset();
+		if (!WalkableCell(Chart, From) || !WalkableCell(Chart, To))
+		{
+			return false;
+		}
+		if (From == To)
+		{
+			OutCells.Add(To);
+			return true;
+		}
+
+		const int32 CellCount = USolidWorldChart::MapWidth * USolidWorldChart::MapHeight;
+		TArray<int32> CameFrom;
+		CameFrom.Init(INDEX_NONE, CellCount);
+		TArray<FIntPoint> Queue;
+		Queue.Reserve(CellCount);
+		const auto IndexOf = [](const FIntPoint Cell)
+		{
+			return Cell.X + Cell.Y * USolidWorldChart::MapWidth;
+		};
+		CameFrom[IndexOf(From)] = IndexOf(From);
+		Queue.Add(From);
+		int32 Head = 0;
+		const FIntPoint Steps[] = {
+			{ 0, -1 }, { -1, 0 }, { 0, 1 }, { 1, 0 },
+		};
+		while (Head < Queue.Num())
+		{
+			const FIntPoint Here = Queue[Head++];
+			if (Here == To)
+			{
+				break;
+			}
+			for (const FIntPoint& Step : Steps)
+			{
+				const FIntPoint Next(Here.X + Step.X, Here.Y + Step.Y);
+				if (!WalkableCell(Chart, Next))
+				{
+					continue;
+				}
+				const int32 NextIndex = IndexOf(Next);
+				if (CameFrom[NextIndex] != INDEX_NONE)
+				{
+					continue;
+				}
+				CameFrom[NextIndex] = IndexOf(Here);
+				Queue.Add(Next);
+			}
+		}
+		if (CameFrom[IndexOf(To)] == INDEX_NONE)
+		{
+			return false;
+		}
+
+		FIntPoint Walk = To;
+		while (Walk != From)
+		{
+			OutCells.Add(Walk);
+			const int32 Previous = CameFrom[IndexOf(Walk)];
+			Walk = FIntPoint(Previous % USolidWorldChart::MapWidth, Previous / USolidWorldChart::MapWidth);
+		}
+		OutCells.Add(From);
+		Algo::Reverse(OutCells);
+		return OutCells.Num() > 0;
 	}
 
 	ASolidHUD* HudOf(const ASolidCharacter& Captain)
@@ -882,6 +981,60 @@ bool FSolidAutoPlaythrough::BuildIglinTrail(const ASolidGameMode& Mode, const FV
 	return bWalkReady;
 }
 
+bool FSolidAutoPlaythrough::BuildLairEntranceWalk(
+	const ASolidGameMode& Mode,
+	const FVector& CaptainLocation)
+{
+	UWorld* World = Mode.GetWorld();
+	ASolidTerrainStreamer* Streamer = World ? ASolidTerrainStreamer::FindExisting(World) : nullptr;
+	USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
+	USolidWorldChart* Chart = Terrain ? Terrain->GetWorldMap() : nullptr;
+	if (!Chart || !Chart->IsLoaded())
+	{
+		return false;
+	}
+
+	const FVector2D WorldMin = Terrain->GetWorldMinXY();
+	const FVector2D WorldMax = Terrain->GetWorldMaxXY();
+	TArray<SolidLair::FEntrance> Entrances;
+	SolidLair::CollectEntrances(Chart, WorldMin, WorldMax, Entrances);
+	const SolidLair::FEntrance* Mouth = FindLairEntrance(Entrances, USolidWorldChart::XMarker);
+	if (!Mouth)
+	{
+		return false;
+	}
+
+	FIntPoint Start = FIntPoint::ZeroValue;
+	if (!Chart->CellAtWorld(CaptainLocation.X, CaptainLocation.Y, WorldMin, WorldMax, Start))
+	{
+		return false;
+	}
+
+	TArray<FIntPoint> Cells;
+	if (!GrassPath(*Chart, Start, Mouth->GrassCell, Cells))
+	{
+		Stop();
+		return false;
+	}
+
+	Points.Reset();
+	Points.Reserve(Cells.Num() + 1);
+	for (const FIntPoint& Cell : Cells)
+	{
+		FVector2D Center = FVector2D::ZeroVector;
+		if (Chart->CellToWorldXY(Cell, WorldMin, WorldMax, Center))
+		{
+			Points.Add(Center);
+		}
+	}
+	Points.Add(Mouth->WorldXY);
+	PointIndex = 0;
+	bWalkReady = Points.Num() > 0;
+	bHasBestDistance = false;
+	StallAccumulated = 0.f;
+	return bWalkReady;
+}
+
 bool FSolidAutoPlaythrough::TickWalkTo(
 	const float DeltaSeconds,
 	ASolidGameMode& Mode,
@@ -896,6 +1049,8 @@ bool FSolidAutoPlaythrough::TickWalkTo(
 		return TickHexWalk(DeltaSeconds, Mode, Captain, Step);
 	case EWalk::TrailToIglin:
 		return TickWalkToIglin(DeltaSeconds, Mode, Captain);
+	case EWalk::LairEntrance:
+		return TickWalkToLairEntrance(DeltaSeconds, Mode, Captain);
 	default:
 		Stop();
 		return false;
@@ -1073,6 +1228,31 @@ bool FSolidAutoPlaythrough::TickWalkToIglin(
 	if (FollowPoints(DeltaSeconds, Here, Target, bFinished))
 	{
 		return Steer(DeltaSeconds, Mode, Captain, Target, false, false);
+	}
+	return false;
+}
+
+bool FSolidAutoPlaythrough::TickWalkToLairEntrance(
+	const float DeltaSeconds,
+	ASolidGameMode& Mode,
+	ASolidCharacter& Captain)
+{
+	const FVector Location = Captain.GetActorLocation();
+	if (!bWalkReady && !BuildLairEntranceWalk(Mode, Location))
+	{
+		return false;
+	}
+
+	const FVector2D Here(Location.X, Location.Y);
+	FVector2D Target = FVector2D::ZeroVector;
+	bool bFinished = false;
+	if (FollowPoints(DeltaSeconds, Here, Target, bFinished))
+	{
+		return Steer(DeltaSeconds, Mode, Captain, Target, false, false);
+	}
+	if (bRunning && bFinished)
+	{
+		Advance();
 	}
 	return false;
 }

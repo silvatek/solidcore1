@@ -45,6 +45,7 @@ public:
 		MonsterEncounter,
 		Hexes,
 		TrailToIglin,
+		LairEntrance,
 	};
 
 	/** A CloseMessage row waits this long after the message is showing. */
@@ -164,7 +165,7 @@ public:
 
 	/** The opening script, in order. A later story edits this list. */
 	static const FStep Script[];
-	static constexpr int32 ScriptCount = 9;
+	static constexpr int32 ScriptCount = 10;
 
 	/** The F10 row and the HUD line. */
 	static const TCHAR* Label() { return TEXT("Auto playthrough"); }
@@ -206,6 +207,7 @@ private:
 	bool BuildWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation);
 	bool BuildHexWalk(const ASolidGameMode& Mode, const SolidStrongholdGrid::FCell* Cells, int32 Count);
 	bool BuildIglinTrail(const ASolidGameMode& Mode, const FVector& CaptainLocation);
+	bool BuildLairEntranceWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation);
 	/**
 	 * Steps along Points. True when OutTarget is the point to steer toward.
 	 * bOutFinished is set once the last point is within arrival and the stall clock is clear.
@@ -225,6 +227,7 @@ private:
 	bool TickWalk(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
 	bool TickHexWalk(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickWalkToIglin(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
+	bool TickWalkToLairEntrance(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
 	void TickCustom(const FStep& Step);
 	void TickWakeInStronghold(const ASolidGameMode& Mode);
 	bool TickCraftItem(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);

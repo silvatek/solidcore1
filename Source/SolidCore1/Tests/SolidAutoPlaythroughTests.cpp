@@ -29,6 +29,7 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 		TEXT("Leave the cave"),
 		TEXT("Walk to Iglin"),
 		TEXT("Close the driven-out message"),
+		TEXT("Walk to the Iglin tunnels"),
 	};
 	const FSolidAutoPlaythrough::EStepType Types[] = {
 		FSolidAutoPlaythrough::EStepType::WalkTo,
@@ -40,6 +41,7 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 		FSolidAutoPlaythrough::EStepType::ExitStronghold,
 		FSolidAutoPlaythrough::EStepType::WalkTo,
 		FSolidAutoPlaythrough::EStepType::CloseMessage,
+		FSolidAutoPlaythrough::EStepType::WalkTo,
 	};
 	TestEqual(
 		TEXT("the script is the static list"),
@@ -70,10 +72,19 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("a message stays up for one second"),
 		FMath::IsNearlyEqual(FSolidAutoPlaythrough::MessagePauseSeconds, 1.f));
-	const FSolidAutoPlaythrough::FStep& Close = FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount - 1];
+	const FSolidAutoPlaythrough::FStep* Close = nullptr;
+	for (int32 Index = 0; Index < FSolidAutoPlaythrough::ScriptCount; ++Index)
+	{
+		if (FSolidAutoPlaythrough::Script[Index].Type == FSolidAutoPlaythrough::EStepType::CloseMessage)
+		{
+			Close = &FSolidAutoPlaythrough::Script[Index];
+			break;
+		}
+	}
+	TestTrue(TEXT("the script closes a message"), Close != nullptr);
 	TestTrue(
 		TEXT("the driven-out close uses that pause"),
-		FMath::IsNearlyEqual(Close.PauseSeconds, 1.f));
+		Close && FMath::IsNearlyEqual(Close->PauseSeconds, 1.f));
 	return true;
 }
 

@@ -89,20 +89,24 @@ Cloud agents are a **code + git workshop** on the Cursor-hosted Linux VM. They d
 
 - One file in `Planning/` is one open story. The file is the story.
 - A commit that changes a story starts with `Plan: `, as the Git section says. A product commit does not.
-- When an agent starts work on a `Ready` story, set that story's status to `In Progress`.
+- When an agent starts work on a `Ready` story, set that story's status to `In Progress`. For a complex story, that change waits until the staged plan is agreed and the first stage starts.
 - If asked to start coding for a story that is not marked `Ready`, request confirmation before proceeding.
 - Leave the story `In Progress` when the product commit lands on `main`. Properly tested means the checks in Collaborative workflow and Cursor Cloud have happened. The user has pulled, rebuilt, run the tests, and run PIE when the story changes play. The agent has reviewed that report, and any screenshot. A solidcore1-ue agent's `tools\test.bat` pass is part of the work and leaves the story `In Progress`.
 - Set `Done` only after that testing, and only after the user and the agent agree the story is done. The agreement is a discussion. The user says whether they are happy with the implementation. The agent confirms that every acceptance criterion is met. Then set the status to `Done` and move the file to `Planning/Done/`, in one commit. That commit message starts with `Plan: `.
 
 ### Complex stories
 
-An agent defining a story writes the whole story. The phasing below, and a detailed plan for one stage, are for the agent implementing that story.
+An agent defining a story writes the whole story. The phasing below is for the agent implementing that story.
 
-A complex story starts with a high-level staged plan. The implementing agent agrees that plan with the user before any stage is planned in detail.
+A story is complex when later acceptance needs a core that can be implemented and tested on its own. The first thing the implementing agent delivers is a high-level staged plan: the stages, in order, and what is true when each one ends. Reading the story and the code to find those stages is part of writing the plan. How a stage works is planned when that stage's turn comes.
 
-After that agreement, produce and deliver a detailed plan for the first stage only. Deliver that stage before the next stage. Each later stage gets its own detailed plan when its turn comes.
+Agree that plan with the user before planning any stage in detail. A request to plan the implementation, or to start it, still begins with the staged plan. The implementation notes stay in the story. The agreement opens the first stage only. The story stays `Ready` until that stage starts.
+
+After that agreement, deliver a detailed plan for the first stage only, then deliver that stage. Each later stage gets its own detailed plan when its turn comes.
 
 The early stages keep edge cases to a minimum, so the core code can be implemented and tested first. Later stages build the complex scenarios, and their edge cases, on that core.
+
+Place encounter markers was the miss. The agent designed the marks, the road ends, the import, and the disagreement before a staged plan was agreed.
 
 ## Names
 

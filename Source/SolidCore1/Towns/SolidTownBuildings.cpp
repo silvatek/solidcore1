@@ -1,8 +1,61 @@
 #include "SolidTownBuildings.h"
+#include "SolidRoad.h"
 #include "SolidTerrainMap.h"
 #include "SolidTerrainTypes.h"
 #include "SolidTowns.h"
 #include "SolidWorldChart.h"
+
+namespace
+{
+	/** A little grass between the wall and the strip, in centimetres. */
+	constexpr float RoadVergeCm = 40.f;
+	constexpr float RoadSlideStepCm = 50.f;
+
+	template<typename Func>
+	void ForEachFootprintPoint(const SolidTownBuildings::FPlacement& Placement, Func&& Visitor)
+	{
+		const FRotator Yaw(0.f, Placement.YawDeg, 0.f);
+		const float HalfX = Placement.FootprintXCm * 0.5f + RoadVergeCm;
+		const float HalfY = Placement.FootprintYCm * 0.5f + RoadVergeCm;
+		constexpr int32 Steps = 4;
+		for (int32 IndexY = 0; IndexY <= Steps; ++IndexY)
+		{
+			for (int32 IndexX = 0; IndexX <= Steps; ++IndexX)
+			{
+				const float LocalX = FMath::Lerp(-HalfX, HalfX, static_cast<float>(IndexX) / static_cast<float>(Steps));
+				const float LocalY = FMath::Lerp(-HalfY, HalfY, static_cast<float>(IndexY) / static_cast<float>(Steps));
+				const FVector Local = Yaw.RotateVector(FVector(LocalX, LocalY, 0.f));
+				Visitor(Placement.CenterXY + FVector2D(Local.X, Local.Y));
+			}
+		}
+	}
+}
+
+bool SolidTownBuildings::CoversRoad(
+	const USolidWorldChart& Chart,
+	const FPlacement& Placement,
+	const FVector2D WorldMin,
+	const FVector2D WorldMax,
+	FVector2D* OutOnRoad)
+{
+	const FVector2D Shift = SolidRoad::StripPaintOffset();
+	FVector2D Sum = FVector2D::ZeroVector;
+	int32 Count = 0;
+	ForEachFootprintPoint(Placement, [&](const FVector2D& Point)
+	{
+		const FVector2D Sample = Point - Shift;
+		if (Chart.IsOnRoad(Sample.X, Sample.Y, WorldMin, WorldMax))
+		{
+			Sum += Point;
+			++Count;
+		}
+	});
+	if (OutOnRoad && Count > 0)
+	{
+		*OutOnRoad = Sum / static_cast<float>(Count);
+	}
+	return Count > 0;
+}
 
 int32 SolidTownBuildings::CollectPlacements(
 	const USolidTerrainMap* TerrainMap,
@@ -110,18 +163,90 @@ int32 SolidTownBuildings::CollectPlacements(
 		Placement.RoofHeightCm = Rng.FRandRange(Params.MinRoofHeightCm, Params.MaxRoofHeightCm);
 		Placement.YawDeg = Rng.FRandRange(0.f, 360.f);
 
-		const float Radius = Placement.PackingRadiusCm() + Separation * 0.5f;
-		bool bOverlaps = false;
-		for (const FPlacement& Existing : OutPlacements)
+		auto Blocked = [&](const FVector2D& At) -> bool
 		{
-			const float MinDist = Radius + Existing.PackingRadiusCm() + Separation * 0.5f;
-			if (FVector2D::DistSquared(Center, Existing.CenterXY) < MinDist * MinDist)
+			if (bHasTownCenter && FVector2D::DistSquared(At, TownCenter) < ClearRadiusSq)
 			{
-				bOverlaps = true;
-				break;
+				return true;
 			}
+			for (const FVector2D& ClearCenter : ExtraClearCenters)
+			{
+				if (FVector2D::DistSquared(At, ClearCenter) < ClearRadiusSq)
+				{
+					return true;
+				}
+			}
+			if (!bMapLoaded)
+			{
+				return false;
+			}
+			if (!WorldMap->IsMarkedTown(At.X, At.Y, WorldMin, WorldMax)
+				|| WorldMap->IsOnRoad(At.X, At.Y, WorldMin, WorldMax))
+			{
+				return true;
+			}
+			const ESolidBiome Ground = WorldMap->SampleBiome(At.X, At.Y, WorldMin, WorldMax);
+			if (Ground == ESolidBiome::Sea || Ground == ESolidBiome::Mountain || Ground == ESolidBiome::River)
+			{
+				return true;
+			}
+			FPlacement Trial = Placement;
+			Trial.CenterXY = At;
+			if (CoversRoad(*WorldMap, Trial, WorldMin, WorldMax))
+			{
+				return true;
+			}
+			const float Radius = Trial.PackingRadiusCm() + Separation * 0.5f;
+			for (const FPlacement& Existing : OutPlacements)
+			{
+				const float MinDist = Radius + Existing.PackingRadiusCm() + Separation * 0.5f;
+				if (FVector2D::DistSquared(At, Existing.CenterXY) < MinDist * MinDist)
+				{
+					return true;
+				}
+			}
+			return false;
+		};
+
+		if (bMapLoaded && CoversRoad(*WorldMap, Placement, WorldMin, WorldMax))
+		{
+			FVector2D OnRoad = Center;
+			CoversRoad(*WorldMap, Placement, WorldMin, WorldMax, &OnRoad);
+			FVector2D Away = Center - OnRoad;
+			if (!Away.Normalize())
+			{
+				Away = FVector2D(1.f, 0.f);
+			}
+			const FVector2D Perp(-Away.Y, Away.X);
+			const FVector2D Directions[] = { Away, -Away, Perp, -Perp };
+			float BestDistance = RoadSlideCm + RoadSlideStepCm;
+			FVector2D BestCenter = Center;
+			bool bFound = false;
+			for (const FVector2D& Direction : Directions)
+			{
+				for (float Distance = RoadSlideStepCm; Distance <= RoadSlideCm; Distance += RoadSlideStepCm)
+				{
+					const FVector2D Candidate = Center + Direction * Distance;
+					if (Blocked(Candidate))
+					{
+						continue;
+					}
+					if (Distance < BestDistance)
+					{
+						BestDistance = Distance;
+						BestCenter = Candidate;
+						bFound = true;
+					}
+					break;
+				}
+			}
+			if (!bFound)
+			{
+				continue;
+			}
+			Placement.CenterXY = BestCenter;
 		}
-		if (bOverlaps)
+		else if (Blocked(Center))
 		{
 			continue;
 		}

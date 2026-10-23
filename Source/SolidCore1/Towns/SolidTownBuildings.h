@@ -3,13 +3,17 @@
 #include "CoreMinimal.h"
 
 class USolidTerrainMap;
+class USolidWorldChart;
 
 /**
  * Pack random non-overlapping building footprints onto marked town cells.
+ * A footprint that would cover a road is slid off that road, still in the town.
  * Pure logic — no actor spawning (safe for automation).
  */
 namespace SolidTownBuildings
 {
+	/** How far a building may move to leave the road, in centimetres. */
+	inline constexpr float RoadSlideCm = 800.f;
 	struct FPlacement
 	{
 		FVector2D CenterXY = FVector2D::ZeroVector;
@@ -42,6 +46,18 @@ namespace SolidTownBuildings
 		float MinRoofHeightCm = 90.f;
 		float MaxRoofHeightCm = 220.f;
 	};
+
+	/**
+	 * True when the footprint meets the painted road, including a small verge.
+	 * The strip sits half a terrain step southwest of the road line.
+	 * OutOnRoad, when set, is the middle of the part that meets the road.
+	 */
+	bool CoversRoad(
+		const USolidWorldChart& Chart,
+		const FPlacement& Placement,
+		FVector2D WorldMin,
+		FVector2D WorldMax,
+		FVector2D* OutOnRoad = nullptr);
 
 	/**
 	 * Fill OutPlacements with non-overlapping buildings on WorldMap town markers.

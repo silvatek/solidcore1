@@ -2,9 +2,11 @@
 #include "Misc/AutomationTest.h"
 #include "SolidBuilding.h"
 #include "SolidForestTrees.h"
+#include "SolidGameMode.h"
 #include "SolidTerrainMap.h"
 #include "SolidTerrainTestHelpers.h"
 #include "SolidTownBuildings.h"
+#include "SolidTownSigns.h"
 #include "SolidTree.h"
 #include "SolidWorldChart.h"
 #include "Components/StaticMeshComponent.h"
@@ -170,24 +172,28 @@ bool FSolidTownBuildingPackTest::RunTest(const FString& Parameters)
 			FMath::IsNearlyEqual(A.FootprintXCm, B.FootprintXCm));
 		TestTrue(TEXT("deterministic yaw"), FMath::IsNearlyEqual(A.YawDeg, B.YawDeg));
 
-		bool bMatchesTownNode = false;
+		float NearestTownCm = TNumericLimits<float>::Max();
 		for (const FSolidTerrainPoint& Point : Map->GetPoints())
 		{
-			if (Point.Biome == ESolidBiome::Town
-				&& FMath::IsNearlyEqual(Point.X, A.CenterXY.X, 0.5f)
-				&& FMath::IsNearlyEqual(Point.Y, A.CenterXY.Y, 0.5f))
+			if (Point.Biome != ESolidBiome::Town)
 			{
-				bMatchesTownNode = true;
-				break;
+				continue;
 			}
+			NearestTownCm = FMath::Min(
+				NearestTownCm,
+				FVector2D::Distance(A.CenterXY, FVector2D(Point.X, Point.Y)));
 		}
-		TestTrue(TEXT("placement matches a Town grid point"), bMatchesTownNode);
+		TestTrue(
+			TEXT("placement stays by a town point"),
+			NearestTownCm <= SolidTownBuildings::RoadSlideCm + 0.5f);
 		if (WorldMap)
 		{
 			TestTrue(TEXT("placement sits on a marked town"),
 				WorldMap->IsMarkedTown(A.CenterXY.X, A.CenterXY.Y, WorldMin, WorldMax));
 			TestFalse(TEXT("placement stays off the road strip"),
 				WorldMap->IsOnRoad(A.CenterXY.X, A.CenterXY.Y, WorldMin, WorldMax));
+			TestFalse(TEXT("the building stays off the road"),
+				SolidTownBuildings::CoversRoad(*WorldMap, A, WorldMin, WorldMax));
 		}
 
 		if (bHasTownCenter)
@@ -273,6 +279,63 @@ bool FSolidBuildingDefaultsTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("eaves nested below cube top (no coplanar z-fight)"),
 			RoofComp->GetRelativeLocation().Z < Building->BodyHeightCm - 1.f);
 	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidTownBuildingRoadTest,
+	"SolidCore1.Vegetation.TownBuildingRoad",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidTownBuildingRoadTest::RunTest(const FString& Parameters)
+{
+	USolidTerrainMap* Map = NewObject<USolidTerrainMap>();
+	Map->Build(1337, 0.00012f, 3000.f, 0.f, 513, 513, 200.f, true);
+	TestTrue(TEXT("shipped terrain"), Map->IsBuilt());
+
+	const USolidWorldChart* WorldMap = Map->GetWorldMap();
+	TestNotNull(TEXT("world map"), WorldMap);
+	if (!WorldMap)
+	{
+		return false;
+	}
+	const FVector2D WorldMin = Map->GetWorldMinXY();
+	const FVector2D WorldMax = Map->GetWorldMaxXY();
+
+	const ASolidGameMode* Defaults = GetDefault<ASolidGameMode>();
+	SolidTownBuildings::FScatterParams Params;
+	Params.Density = Defaults->TownBuildingDensity;
+	Params.MaxBuildings = Defaults->MaxTownBuildings;
+	Params.MinSeparationCm = Defaults->TownBuildingMinSeparationCm;
+	Params.ClearRadiusAroundTownCenterCm = Defaults->TownBuildingClearRadiusCm;
+
+	TArray<SolidTownSigns::FPlacement> Signs;
+	SolidTownSigns::CollectPlacements(WorldMap, WorldMin, WorldMax, Signs);
+	TArray<FVector2D> SignCenters;
+	SignCenters.Reserve(Signs.Num());
+	for (const SolidTownSigns::FPlacement& Sign : Signs)
+	{
+		SignCenters.Add(Sign.WorldXY);
+	}
+
+	TArray<SolidTownBuildings::FPlacement> Placements;
+	const int32 Count = SolidTownBuildings::CollectPlacements(
+		Map, Defaults->TownBuildingSeed, Params, Placements, SignCenters);
+	TestTrue(TEXT("the towns have buildings"), Count > 0);
+
+	FVector2D Iglin = FVector2D::ZeroVector;
+	TestTrue(TEXT("Iglin"), Map->GetStartTownWorldXY(Iglin));
+	bool bNearIglin = false;
+	for (const SolidTownBuildings::FPlacement& Placement : Placements)
+	{
+		TestFalse(TEXT("a building stays off the road"),
+			SolidTownBuildings::CoversRoad(*WorldMap, Placement, WorldMin, WorldMax));
+		if (FVector2D::Distance(Placement.CenterXY, Iglin) <= 2400.f)
+		{
+			bNearIglin = true;
+		}
+	}
+	TestTrue(TEXT("Iglin keeps a building off the road"), bNearIglin);
 	return true;
 }
 

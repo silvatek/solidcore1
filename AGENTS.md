@@ -120,13 +120,13 @@ After a significant product change, a solidcore1-ue agent runs the full suite, f
 
 A later pass searches for unused code and, when it finds some, writes a story to remove it. This section is the definition that pass uses.
 
-Unused code is a C++ symbol under `Source/SolidCore1/`, outside `Tests/`, that product code never uses. A symbol that only its own tests call is unused. A symbol the Unreal Engine calls is used, including when no other C++ names it.
+Unused code is a C++ symbol under `Source/SolidCore1/`, outside `Tests/`, that product code never uses. A symbol that only tests of that functionality call is unused. A symbol the Unreal Engine calls is used, including when no other C++ names it.
 
 A symbol is a function or method (the header declaration and the `.cpp` body are one symbol), a class, struct, or enum, or a file-scope variable or constant. A `.h` / `.cpp` pair is unused when every symbol in it is unused.
 
 A use is the symbol's name, as a whole word, in other product C++ under `Source/SolidCore1/` outside `Tests/`, in `Config/` when the engine loads that class, struct, enum, or property, or in `SolidCore1.Build.cs` or a `.Target.cs` file.
 
-A reference that appears only in a test of that symbol, or only in a test of the type that owns it, is the symbol's own test. That reference does not keep the symbol. A reference from a test of other product code does keep it, because that other behavior depends on it.
+A symbol can be removed when every reference is a test of that functionality. A symbol stays when a test of other functionality uses it. `ASolidDungeonExterior::GetRockMesh` can be removed when the only references are tests of `GetRockMesh`. It stays when a test of other rock mesh code uses it.
 
 These names are engine calls, so they stay:
 

@@ -4,7 +4,7 @@ Status: New
 
 ## Story
 
-A developer removes C++ symbols that product code never calls. A symbol that only its own tests call is unused, under the definition in `AGENTS.md`. Symbols the Unreal Engine calls stay. Symbols the World chart mode calls stay.
+A developer removes C++ symbols that product code never calls. A symbol that only tests of that functionality call is unused, under the definition in `AGENTS.md`. A symbol stays when a test of other functionality uses it. Symbols the Unreal Engine calls stay. Symbols the World chart mode calls stay.
 
 The game already performs the work these symbols wrap or inspect. Removing them leaves that work in place.
 
@@ -19,17 +19,17 @@ The game already performs the work these symbols wrap or inspect. Removing them 
 
 ## Implementation notes
 
-The list is the result of applying the `AGENTS.md` definition on `main` at the commit this story was added. A use is a whole-word name in product C++ outside `Tests/`, in `Config/` for a type the engine loads, or in a `.Build.cs` / `.Target.cs` file. A name in `Source/SolidCore1Editor/` is a use as well. That module is the World chart mode, and it calls the chart. A test file belongs to a symbol when the longest product header stem that prefixes the test file name is the header that declares the symbol, compared without regard to case. A reference that only checks that symbol does not keep it. A reference the test needs in order to reach other behavior of that type does keep it. `override` methods were left in place.
+The list follows the unused-code definition in `AGENTS.md`. A use is a whole-word name in product C++ outside `Tests/`, in `Config/` for a type the engine loads, or in a `.Build.cs` / `.Target.cs` file. A name in `Source/SolidCore1Editor/` is a use as well. That module is the World chart mode, and it calls the chart. A symbol can go when every reference is a test of that symbol. A symbol stays when a test of other functionality uses it. `override` methods were left in place.
 
 `SolidStrongholdGrid::GetTypeHash` stays. `CollectSegments` puts `FEdgeKey` in a `TSet`, and that set calls `GetTypeHash` through argument-dependent lookup. No other C++ writes the name.
 
 `ASolidCharacter::StartSquadFormationDrill` has no caller. Test Drill is off the menu. [Drill battle plan](drill-battle-plan.md) is Ready and says this function starts the square. It stays.
 
-Nothing in the list below is called from product C++ outside its own declaration, its own definition, or a test of its type. Two names are used only by other symbols in this list: `FSolidWorldChartRead` (only `ReadCell`) and `SolidForage::FPileHit` (only `NearestHitIndex`). They go with those functions.
+Nothing in the list below is called from product C++ outside its own declaration, its own definition, or a test of that same functionality. Two names are used only by other symbols in this list: `FSolidWorldChartRead` (only `ReadCell`) and `SolidForage::FPileHit` (only `NearestHitIndex`). They go with those functions.
 
 `FSolidBattle::AdvanceToNextEvent` stays. `SolidCore1.Battle.Simulation`, the battle panel, and the fielded check call it to reach the log, a blow, armour, a kill, a retreat, and which companions are in the fight. Those tests already name the moment they expect: the opening prepare at time 0, then each weapon `Speed`. A kill loop steps until a log line or until defence reaches 0, and the captain's `Speed` and a monster's `Speed` can differ, so the test cannot pass one weapon `Speed` to `Advance` and hit the same moment. `TimeUntilNextEvent` is the private wait that `AdvanceToNextEvent` uses. The game mode calls `Advance`.
 
-`ASolidDungeonExterior::GetRockMesh` stays. `SolidCore1.Stronghold.DungeonExterior` and `SolidCore1.Stronghold.DungeonExteriorMouth` read the stone through it. `RockMesh` is protected. `SetGroundDrop` stays with it. The burial measurement sets that drop, then reads the rock mesh. `GroundDropCm` stays.
+`ASolidDungeonExterior::GetRockMesh` stays. `SolidCore1.Stronghold.DungeonExterior` and `SolidCore1.Stronghold.DungeonExteriorMouth` are tests of the rock and the mouth. They read the stone through `GetRockMesh`: the mouth is a different mesh, the buried ground edge follows the drop, and the mouth front meets the rock. `RockMesh` is protected. `SetGroundDrop` stays with it. The burial measurement sets that drop, then reads the rock mesh. `GroundDropCm` stays.
 
 The World chart mode keeps `PaintRun`, `PaintRectangle`, `PlaceTown`, `PlaceStronghold`, `PlaceSite`, `PlaceLairMouth`, `PlaceCustom`, `DeleteMark`, `AddRoad`, `RouteForRoad`, `Undo`, `Disagreement`, `MarkAtCell`, `BuildChartView`, `RebuildChartView`, and `ClearChartView`. `SolidStronghold::TypeCount` stays. The mode clamps a type index with it.
 

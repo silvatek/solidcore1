@@ -153,11 +153,16 @@ bool FSolidBattleSidesTest::RunTest(const FString& Parameters)
 	FSolidRaptor One;
 	One.Size = ESolidMonsterSize::Small;
 	One.Arm(FSolidRaptor::Claws, FSolidRaptor::Hide, FSolidItem::StartingDraw);
-	TestEqual(TEXT("the squad's power is the crude spear"), Battle.GetSquadPower(), SpearPower);
+	TestEqual(TEXT("the squad's power is the crude spear"), Battle.SquadWeapon(0).Power, SpearPower);
 	TestEqual(TEXT("the squad's defence is the rags"), Battle.GetSquadDefence(), RagsStrength);
+	int32 GroupPower = 0;
+	for (int32 Index = 0; Index < Battle.Group->Num(); ++Index)
+	{
+		GroupPower += Battle.MonsterWeapon(Index).Power;
+	}
 	TestEqual(
 		TEXT("the group's power is its claws"),
-		Battle.GetGroupPower(),
+		GroupPower,
 		Spec.Count * One.Weapon.Power);
 	TestEqual(
 		TEXT("the group's defence is its hides"),
@@ -222,8 +227,11 @@ bool FSolidBattleWeaponsTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the captain's weapon is the crude spear"), FString(Spear.Name), TEXT("Crude spear"));
 	TestEqual(TEXT("the companion's weapon is the crude spear"), FString(CompanionSpear.Name), TEXT("Crude spear"));
 	TestEqual(TEXT("the raptor's weapon is claws"), FString(Claws.Name), TEXT("Claws"));
-	TestEqual(TEXT("the squad's power is both spears"), Battle.GetSquadPower(), Spear.Power + CompanionSpear.Power);
-	TestEqual(TEXT("the group's power is the claws"), Battle.GetGroupPower(), Claws.Power);
+	TestEqual(
+		TEXT("the squad's power is both spears"),
+		Battle.SquadWeapon(0).Power + Battle.SquadWeapon(1).Power,
+		Spear.Power + CompanionSpear.Power);
+	TestEqual(TEXT("the group's power is the claws"), Battle.MonsterWeapon(0).Power, Claws.Power);
 	TestEqual(TEXT("a missing squad member has no weapon"), Battle.SquadWeapon(2).Power, 0);
 	TestEqual(TEXT("a missing monster has no weapon"), Battle.MonsterWeapon(1).Power, 0);
 
@@ -291,7 +299,10 @@ bool FSolidBattleFieldedTest::RunTest(const FString& Parameters)
 
 	const int32 Spear = Battle.SquadWeapon(0).Power;
 	TestEqual(TEXT("a cap of none leaves the next weapon empty"), Battle.SquadWeapon(1).Power, 0);
-	TestEqual(TEXT("a cap of none is the captain's spear"), Battle.GetSquadPower(), Spear);
+	TestEqual(
+		TEXT("a cap of none is the captain's spear"),
+		Battle.SquadWeapon(0).Power + Battle.SquadWeapon(1).Power,
+		Spear);
 
 	Battle.AdvanceToNextEvent();
 	bool bCompanion = false;

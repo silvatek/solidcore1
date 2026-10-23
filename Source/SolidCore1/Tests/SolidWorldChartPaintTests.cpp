@@ -44,15 +44,15 @@ bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 
 	FString Error;
 	const FIntPoint Cell(4, 6);
-	TestFalse(TEXT("swamp is not a paint"), Chart->PaintCell(Cell, ESolidBiome::Swamp, Error));
+	TestFalse(TEXT("swamp is not a paint"), Chart->PaintRun({ Cell }, ESolidBiome::Swamp, Error));
 	TestFalse(TEXT("the swamp error names the palette"), Error.IsEmpty());
-	TestFalse(TEXT("road is not a paint"), Chart->PaintCell(Cell, ESolidBiome::Road, Error));
+	TestFalse(TEXT("road is not a paint"), Chart->PaintRun({ Cell }, ESolidBiome::Road, Error));
 	TestEqual(
 		TEXT("a rejected paint leaves grassland"),
 		static_cast<uint8>(Chart->Cells[Cell.Y * USolidWorldChart::MapWidth + Cell.X]),
 		static_cast<uint8>(ESolidBiome::Grassland));
 
-	TestTrue(TEXT("one cell paints"), Chart->PaintCell(Cell, ESolidBiome::Forest, Error));
+	TestTrue(TEXT("one cell paints"), Chart->PaintRun({ Cell }, ESolidBiome::Forest, Error));
 	TestEqual(
 		TEXT("the cell is forest"),
 		static_cast<uint8>(Chart->Cells[Cell.Y * USolidWorldChart::MapWidth + Cell.X]),
@@ -106,15 +106,26 @@ bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the cave sits on the cell centre"), FVector2D::Distance(Chart->Marks[HoldIndex].PositionCm, Centre) <= 1.f);
 	}
 
-	TestTrue(TEXT("forest paint leaves the town"), Chart->PaintCell(TownCell, ESolidBiome::Forest, Error));
-	TestTrue(TEXT("Iglin is still on the cell"), Chart->MarkAtCell(TownCell) != INDEX_NONE);
-
-	FSolidWorldChartRead TownRead;
-	TestTrue(TEXT("the town cell reads"), Chart->ReadCell(TownCell, TownRead));
-	TestEqual(TEXT("the town was painted forest"), static_cast<uint8>(TownRead.Painted), static_cast<uint8>(ESolidBiome::Forest));
-	TestEqual(TEXT("a named town resolves as town"), static_cast<uint8>(TownRead.Resolved), static_cast<uint8>(ESolidBiome::Town));
-	TestTrue(TEXT("the town mark overrides the paint"), TownRead.bMarkOverrides);
-	TestTrue(TEXT("the read names the mark"), TownRead.bHasMark);
+	TestTrue(TEXT("forest paint leaves the town"), Chart->PaintRun({ TownCell }, ESolidBiome::Forest, Error));
+	const int32 TownMark = Chart->MarkAtCell(TownCell);
+	TestTrue(TEXT("Iglin is still on the cell"), TownMark != INDEX_NONE);
+	TestTrue(TEXT("the read names the mark"), TownMark != INDEX_NONE);
+	const int32 TownCellIndex = TownCell.Y * USolidWorldChart::MapWidth + TownCell.X;
+	TestEqual(
+		TEXT("the town was painted forest"),
+		static_cast<uint8>(Chart->Cells[TownCellIndex]),
+		static_cast<uint8>(ESolidBiome::Forest));
+	USolidWorldChart* TownSolved = NewObject<USolidWorldChart>();
+	TestTrue(TEXT("the town cell loads"), TownSolved && TownSolved->LoadFromChart(Chart));
+	if (TownSolved)
+	{
+		const ESolidBiome TownResolved = TownSolved->GetBiomeAtCell(TownCell.X, TownCell.Y);
+		TestEqual(
+			TEXT("a named town resolves as town"),
+			static_cast<uint8>(TownResolved),
+			static_cast<uint8>(ESolidBiome::Town));
+		TestTrue(TEXT("the town mark overrides the paint"), TownResolved != Chart->Cells[TownCellIndex]);
+	}
 
 	const FIntPoint SiteCell(2, 8);
 	TestTrue(TEXT("a site places"), Chart->PlaceSite(SiteCell, ESolidStrongholdSize::Humble, Error));
@@ -130,18 +141,34 @@ bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 
 	const FIntPoint MouthCell(3, 3);
 	TestTrue(TEXT("the lair mouth places"), Chart->PlaceLairMouth(MouthCell, SolidLair::IglinTunnels.Name, true, Error));
-	FSolidWorldChartRead MouthRead;
-	TestTrue(TEXT("the mouth reads"), Chart->ReadCell(MouthCell, MouthRead));
-	TestEqual(TEXT("the mouth was painted grassland"), static_cast<uint8>(MouthRead.Painted), static_cast<uint8>(ESolidBiome::Grassland));
-	TestEqual(TEXT("a lair mouth resolves as mountain"), static_cast<uint8>(MouthRead.Resolved), static_cast<uint8>(ESolidBiome::Mountain));
-	TestTrue(TEXT("the mouth overrides the paint"), MouthRead.bMarkOverrides);
+	const int32 MouthMark = Chart->MarkAtCell(MouthCell);
+	TestTrue(TEXT("the mouth reads"), MouthMark != INDEX_NONE);
+	const int32 MouthCellIndex = MouthCell.Y * USolidWorldChart::MapWidth + MouthCell.X;
 	TestEqual(
-		TEXT("the mouth is an entrance"),
-		static_cast<uint8>(MouthRead.Mark.Kind),
-		static_cast<uint8>(ESolidWorldChartMarkKind::LairEntrance));
-	TestEqual(TEXT("the mouth keeps the lair id"), MouthRead.Mark.LairId, FString(SolidLair::IglinTunnels.Id));
+		TEXT("the mouth was painted grassland"),
+		static_cast<uint8>(Chart->Cells[MouthCellIndex]),
+		static_cast<uint8>(ESolidBiome::Grassland));
+	USolidWorldChart* MouthSolved = NewObject<USolidWorldChart>();
+	TestTrue(TEXT("the mouth loads"), MouthSolved && MouthSolved->LoadFromChart(Chart));
+	if (MouthSolved)
+	{
+		const ESolidBiome MouthResolved = MouthSolved->GetBiomeAtCell(MouthCell.X, MouthCell.Y);
+		TestEqual(
+			TEXT("a lair mouth resolves as mountain"),
+			static_cast<uint8>(MouthResolved),
+			static_cast<uint8>(ESolidBiome::Mountain));
+		TestTrue(TEXT("the mouth overrides the paint"), MouthResolved != Chart->Cells[MouthCellIndex]);
+	}
+	if (MouthMark != INDEX_NONE)
+	{
+		TestEqual(
+			TEXT("the mouth is an entrance"),
+			static_cast<uint8>(Chart->Marks[MouthMark].Kind),
+			static_cast<uint8>(ESolidWorldChartMarkKind::LairEntrance));
+		TestEqual(TEXT("the mouth keeps the lair id"), Chart->Marks[MouthMark].LairId, FString(SolidLair::IglinTunnels.Id));
+	}
 
-	TestTrue(TEXT("the mouth paint changes"), Chart->PaintCell(MouthCell, ESolidBiome::Sea, Error));
+	TestTrue(TEXT("the mouth paint changes"), Chart->PaintRun({ MouthCell }, ESolidBiome::Sea, Error));
 	TestTrue(TEXT("the mouth mark stays"), Chart->MarkAtCell(MouthCell) != INDEX_NONE);
 	TestTrue(TEXT("delete clears the mouth"), Chart->DeleteMark(MouthCell, Error));
 	TestEqual(TEXT("the mouth cell has no mark"), Chart->MarkAtCell(MouthCell), INDEX_NONE);
@@ -155,9 +182,21 @@ bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the strip starts at a town or the cave"), Route.Contains(TownCell) || Route.Contains(HoldCell));
 	TestTrue(TEXT("the strip reaches the other end"), Route.Contains(TownCell) && Route.Contains(HoldCell));
 
-	FSolidWorldChartRead RoadRead;
-	TestTrue(TEXT("a route cell reads"), Chart->ReadCell(TownCell, RoadRead));
-	TestTrue(TEXT("the road is named on the town cell"), RoadRead.RoadIndexes.Num() > 0);
+	USolidWorldChart* RoadSolved = NewObject<USolidWorldChart>();
+	TestTrue(TEXT("a route cell reads"), RoadSolved && RoadSolved->LoadFromChart(Chart));
+	bool bTownOnARoad = false;
+	if (RoadSolved)
+	{
+		for (const SolidRoad::FRoute& Solved : RoadSolved->GetRoads())
+		{
+			if (Solved.Cells.Contains(TownCell))
+			{
+				bTownOnARoad = true;
+				break;
+			}
+		}
+	}
+	TestTrue(TEXT("the road is named on the town cell"), bTownOnARoad);
 
 	const int32 RoadsBefore = Chart->Roads.Num();
 	TestTrue(TEXT("a missing end is still stored"), Chart->AddRoad(TEXT("Iglin"), TEXT("Nowhere"), ESolidWorldChartRoadType::Trail, Error));
@@ -259,24 +298,33 @@ bool FSolidWorldChartEncounterTest::RunTest(const FString& Parameters)
 		FVector2D::Distance(Chart->Marks[MarkIndex].PositionCm, Centre) <= 1.f);
 	TestEqual(TEXT("the encounter leaves the paint"), static_cast<uint8>(Chart->Cells[CellIndex]), PaintBefore);
 
-	TestTrue(TEXT("paint leaves the mark"), Chart->PaintCell(Cell, ESolidBiome::Forest, Error));
-	TestTrue(TEXT("the encounter is still on the cell"), Chart->MarkAtCell(Cell) != INDEX_NONE);
-	FSolidWorldChartRead Read;
-	TestTrue(TEXT("the cell reads"), Chart->ReadCell(Cell, Read));
-	TestEqual(TEXT("the paint is forest"), static_cast<uint8>(Read.Painted), static_cast<uint8>(ESolidBiome::Forest));
-	TestEqual(TEXT("the world map leaves the cell as painted"), static_cast<uint8>(Read.Resolved), static_cast<uint8>(ESolidBiome::Forest));
-	TestFalse(TEXT("an encounter does not override the paint"), Read.bMarkOverrides);
-	TestTrue(TEXT("the read has the mark"), Read.bHasMark);
-	TestEqual(TEXT("the read names the encounter"), Read.Mark.Name, FString(TEXT("Iglin Bridge")));
+	TestTrue(TEXT("paint leaves the mark"), Chart->PaintRun({ Cell }, ESolidBiome::Forest, Error));
+	const int32 EncounterMark = Chart->MarkAtCell(Cell);
+	TestTrue(TEXT("the encounter is still on the cell"), EncounterMark != INDEX_NONE);
+	TestTrue(TEXT("the read has the mark"), EncounterMark != INDEX_NONE);
+	TestEqual(
+		TEXT("the paint is forest"),
+		static_cast<uint8>(Chart->Cells[CellIndex]),
+		static_cast<uint8>(ESolidBiome::Forest));
+	if (EncounterMark != INDEX_NONE)
+	{
+		TestEqual(TEXT("the read names the encounter"), Chart->Marks[EncounterMark].Name, FString(TEXT("Iglin Bridge")));
+	}
 
 	USolidWorldChart* Loaded = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("the chart loads"), Loaded && Loaded->LoadFromChart(Chart));
 	if (Loaded)
 	{
+		const ESolidBiome Resolved = Loaded->GetBiomeAtCell(Cell.X, Cell.Y);
 		TestEqual(
 			TEXT("the loaded cell stays forest"),
-			static_cast<uint8>(Loaded->GetBiomeAtCell(Cell.X, Cell.Y)),
+			static_cast<uint8>(Resolved),
 			static_cast<uint8>(ESolidBiome::Forest));
+		TestEqual(
+			TEXT("the world map leaves the cell as painted"),
+			static_cast<uint8>(Resolved),
+			static_cast<uint8>(ESolidBiome::Forest));
+		TestFalse(TEXT("an encounter does not override the paint"), Resolved != Chart->Cells[CellIndex]);
 		FSolidWorldBang Bang;
 		TestFalse(TEXT("an encounter is not a world place"), Loaded->FindBang(Cell.X, Cell.Y, Bang));
 		TestEqual(TEXT("the load keeps the encounter"), Loaded->GetEncounterMarks().Num(), 1);

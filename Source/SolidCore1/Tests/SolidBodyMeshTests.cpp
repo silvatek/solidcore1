@@ -1500,14 +1500,28 @@ bool FSolidBodyHandFingersTest::RunTest(const FString& Parameters)
 		Bone.ParentIndex = Parent;
 		Bones.Add(Bone);
 	};
+	const TCHAR* LeftNames[] = {
+		TEXT("thumb_01_l"), TEXT("thumb_02_l"), TEXT("thumb_03_l"),
+		TEXT("index_01_l"), TEXT("index_02_l"), TEXT("index_03_l"),
+		TEXT("middle_01_l"), TEXT("middle_02_l"), TEXT("middle_03_l"),
+		TEXT("ring_01_l"), TEXT("ring_02_l"), TEXT("ring_03_l"),
+		TEXT("pinky_01_l"), TEXT("pinky_02_l"), TEXT("pinky_03_l"),
+	};
+	const TCHAR* RightNames[] = {
+		TEXT("thumb_01_r"), TEXT("thumb_02_r"), TEXT("thumb_03_r"),
+		TEXT("index_01_r"), TEXT("index_02_r"), TEXT("index_03_r"),
+		TEXT("middle_01_r"), TEXT("middle_02_r"), TEXT("middle_03_r"),
+		TEXT("ring_01_r"), TEXT("ring_02_r"), TEXT("ring_03_r"),
+		TEXT("pinky_01_r"), TEXT("pinky_02_r"), TEXT("pinky_03_r"),
+	};
 	AddBone(LeftHandBone, INDEX_NONE);
-	for (const TCHAR* BoneName : LeftFingerBones)
+	for (const TCHAR* BoneName : LeftNames)
 	{
 		AddBone(BoneName, 0);
 	}
 	const int32 RightHand = Bones.Num();
 	AddBone(RightHandBone, INDEX_NONE);
-	for (const TCHAR* BoneName : RightFingerBones)
+	for (const TCHAR* BoneName : RightNames)
 	{
 		AddBone(BoneName, RightHand);
 	}
@@ -1522,15 +1536,15 @@ bool FSolidBodyHandFingersTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	TestEqual(TEXT("the left hand lists every finger joint"), Left->Bones.Num(), static_cast<int32>(UE_ARRAY_COUNT(LeftFingerBones)));
-	TestEqual(TEXT("the right hand lists every finger joint"), Right->Bones.Num(), static_cast<int32>(UE_ARRAY_COUNT(RightFingerBones)));
+	TestEqual(TEXT("the left hand lists every finger joint"), Left->Bones.Num(), static_cast<int32>(UE_ARRAY_COUNT(LeftNames)));
+	TestEqual(TEXT("the right hand lists every finger joint"), Right->Bones.Num(), static_cast<int32>(UE_ARRAY_COUNT(RightNames)));
 	TestFalse(TEXT("the left hand leaves the hand bone on the lower arm"), Left->Bones.Contains(FName(LeftHandBone)));
 	TestFalse(TEXT("the right hand leaves the hand bone on the lower arm"), Right->Bones.Contains(FName(RightHandBone)));
-	for (const TCHAR* BoneName : LeftFingerBones)
+	for (const TCHAR* BoneName : LeftNames)
 	{
 		TestTrue(BoneName, Left->Bones.Contains(FName(BoneName)));
 	}
-	for (const TCHAR* BoneName : RightFingerBones)
+	for (const TCHAR* BoneName : RightNames)
 	{
 		TestTrue(BoneName, Right->Bones.Contains(FName(BoneName)));
 	}

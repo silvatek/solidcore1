@@ -205,7 +205,10 @@ bool FSolidBattlePlanIdentityTest::RunTest(const FString& Parameters)
 
 	FSolidBattlePlan Holding = Starter;
 	Holding.AttackOrRetreat = ESolidAggression::Hold;
-	TestTrue(TEXT("the other plan holds"), Holding.Holds());
+	TestEqual(
+		TEXT("the other plan holds"),
+		static_cast<uint8>(Holding.AttackOrRetreat),
+		static_cast<uint8>(ESolidAggression::Hold));
 	TestFalse(TEXT("hold attacks"), Holding.Attacks());
 	TestFalse(TEXT("hold retreats"), Holding.Retreats());
 	TestFalse(TEXT("a hold stays the same plan"), Holding.SameAs(Starter));
@@ -683,7 +686,9 @@ bool FSolidBattlePlanNewGameTest::RunTest(const FString& Parameters)
 		}
 		else if (FCString::Strcmp(Name, TEXT("Parade")) == 0)
 		{
-			TestTrue(*FString::Printf(TEXT("%s holds"), Name), Plan && Plan->Holds());
+			TestTrue(
+				*FString::Printf(TEXT("%s holds"), Name),
+				Plan && Plan->AttackOrRetreat == ESolidAggression::Hold);
 		}
 		else
 		{

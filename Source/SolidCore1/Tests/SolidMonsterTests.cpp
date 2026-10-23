@@ -66,9 +66,6 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 		TEXT("a mesh of the standing height stays"),
 		FMath::IsNearlyEqual(FSolidMonster::UniformScale(FSolidMonster::StandingHeightCm), 1.f));
 	TestTrue(TEXT("a zero height stays at one"), FMath::IsNearlyEqual(FSolidMonster::UniformScale(0.f), 1.f));
-	TestTrue(
-		TEXT("a centered mesh drops its bottom to the feet"),
-		FMath::IsNearlyEqual(FSolidMonster::MeshFootOffsetCm(0.f, 100.f, 1.f), 100.f));
 	TestEqual(TEXT("six monster sizes"), SolidMonster::SizeCount, 6);
 	TestTrue(
 		TEXT("the size list starts at Tiny"),

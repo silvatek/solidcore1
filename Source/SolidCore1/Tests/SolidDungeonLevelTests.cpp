@@ -18,8 +18,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidDungeonLevelTravelTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("enter label"), FString(SolidDungeonLevel::MenuLabel(false)), FString(SolidDungeonLevel::EnterLabel));
-	TestEqual(TEXT("leave label"), FString(SolidDungeonLevel::MenuLabel(true)), FString(SolidDungeonLevel::LeaveLabel));
+	TestEqual(TEXT("enter label"), FString(SolidDungeonLevel::EnterLabel), FString(TEXT("Enter cave")));
+	TestEqual(TEXT("leave label"), FString(SolidDungeonLevel::LeaveLabel), FString(TEXT("Leave cave")));
 
 	TestTrue(TEXT("enter options request the stronghold"), SolidTravel::RequestsStronghold(SolidTravel::EnterStrongholdOptions()));
 	TestFalse(TEXT("leave options stay in the world"), SolidTravel::RequestsStronghold(SolidTravel::LeaveOptions()));

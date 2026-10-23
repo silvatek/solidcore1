@@ -1,27 +1,27 @@
 # Insect monsters
 
-Status: New
+Status: Ready
 
 ## Story
 
-The player meets three Small ants where the chart marks them. An ant is an insect monster. The body is the Stylized Ant from Fab, one downloaded mesh used three times. They stand and idle. Walking into one stops the captain. Coming into range starts a fight, and that fight is the battle a monster group already fights.
+The player meets two Tiny ants where the chart marks the Giant ants encounter. An ant is an insect monster. The body is the Stylized Ant from Fab, one downloaded mesh used for both. They stand and idle. Walking into one stops the captain. Coming into range starts a fight, and that fight is the battle a monster group already fights.
 
 This story introduces the ant. Ant is `FSolidAnt`. The actor that shows one is `ASolidAnt`.
 
-The cell is still open. Agree the cell, and the encounter name if Ants is the wrong word, before this story is Ready. Until then the shipped chart stays as it is.
+The catalog holds Giant ants. The World chart editor places the mark. Until that mark is saved on the chart, the world has no ants.
 
 ## Acceptance
 
 - Ant is a monster kind. `EMonsterKind` includes Ant. A group member of that kind is an ant, and `Kind` is `Ant`.
-- The catalog gains one encounter named Ants. It is one group of three Small ants. The plan is Attack. The near limit, the far limit, and the separation stay the definition defaults, 8 m, 40 m, and 4 m.
+- The catalog gains one encounter named Giant ants. It is one group of two Tiny ants. The plan is Attack. The near limit, the far limit, and the separation stay the definition defaults, 8 m, 40 m, and 4 m.
 - Iglin Bridge stays three Small raptors on Attack. Its mark still places those raptors.
-- A mark named Ants places the three ants. The focus is the mark. The points are the ones an encounter mark already uses: grassland, walkable, clear of a mountain quad, inside the band, 4 m apart, clear of a tree and of a foraging pile, facing the mark, yaw only. Fewer than three eligible points places as many as there are. A missing mark places none.
-- The shipped chart gains that mark on the agreed cell. The cell is grassland the captain can walk to, and it is a different cell from Iglin Bridge. Until the cell is agreed, the chart stays as it is and this story stays New.
-- Each ant uses the Stylized Ant skeletal mesh. The same mesh is used three times. The listing's other two colour variations stay unused. The variation this encounter uses is recorded once the pack is added.
-- The standing height is 100 cm. The feet sit on the ground. The scale is uniform. That drawn body is the Small size. A later size scales up or down from Small.
+- A mark named Giant ants places the two ants. The focus is the mark. The points are the ones an encounter mark already uses: grassland, walkable, clear of a mountain quad, inside the band, 4 m apart, clear of a tree and of a foraging pile, facing the mark, yaw only. Fewer than two eligible points places as many as there are. A missing mark places none.
+- The shipped chart stays as it is. The World chart editor lists Giant ants with the other encounter names, and a placed mark stores that name. Saving the chart is what puts the ants in the world. This story does not write the mark.
+- Each ant uses the Stylized Ant skeletal mesh. The same mesh is used twice. The listing's other two colour variations stay unused. The variation this encounter uses is recorded once the pack is added.
+- The standing height is 100 cm. The feet sit on the ground. The scale is uniform. That height is the Small body. These ants are Tiny, so Power is the Tiny size roll, the first step. A drawn height below or above 100 cm waits on a later size scale. This story does not add that factor.
 - Each one loops one in-place idle clip from that mesh. The other clips in the pack stay unused.
 - The capsule, the click, the fog seeding, the empty nameplate, and the camera stay as they are for a raptor. Detection range starts at 5 m.
-- The ant's weapon is Mandibles. The ant's armour is Carapace. Power is the Small size roll. Speed is the monster weapon's starting figure. Carapace Strength starts at the Hide figure, 20, until play-testing changes it.
+- The ant's weapon is Mandibles. The ant's armour is Carapace. Speed is the monster weapon's starting figure. Carapace Strength starts at the Hide figure, 20, until play-testing changes it.
 - Coming into DetectionRange starts the battle. The log uses Ant and Mandibles, so a blow reads as an ant attacking with Mandibles. Walking into the body still stops the captain.
 - Any Blueprint or AnimBP in the download stays unused. The captain stays on the Viking mesh.
 - The 100 cm height is a uniform scale of the downloaded mesh. A later body builds an insect the way a human mesh is built. [`Content/Fauna.md`](../Content/Fauna.md) records this pack in the insect section, and it records that the downloaded mesh is the body for now. Segments, wings, and the other colours stay that later body.
@@ -30,15 +30,15 @@ The cell is still open. Agree the cell, and the encounter name if Ants is the wr
 
 ## Implementation notes
 
-This story is one phase. The ant, the pack, the catalog row, and the mark land together. The mark waits until the cell is agreed. Spiders, centipedes, and the segmented body are later stories.
+This story is one phase. The ant, the pack, and the catalog row land together. The chart mark is placed in the World chart editor after that, and the ants spawn from the saved mark. Spiders, centipedes, and the segmented body are later stories. So is a drawn height for Tiny.
 
 - The listing is Stylized Ant by Anna Vorobeva, [https://www.fab.com/listings/da2e1374-ca5d-4f13-9245-72cebfb3bac6](https://www.fab.com/listings/da2e1374-ca5d-4f13-9245-72cebfb3bac6). The seller page is [https://www.fab.com/sellers/Anna%20Vorobeva](https://www.fab.com/sellers/Anna%20Vorobeva). It is a game-ready stylized insect, three colour variations, animated. The listing lists Attack, Death, Evasion, Idle, Jump, Run, Walk, Step aside, Stun, Damaged, and Enemy spotted, and calls the set 21 clips. Restore it with Launcher **Add to Project**. There is no download API. `tools/fab-assets.json` gains an `ant` entry with `required` true. `resolvedFolder` and `resolvedPaths` are written when the mesh and the idle are found. Look in the recorded folder first. A miss searches under Content for a skeletal mesh whose name contains `Ant` as its own word, and contains none of `Skeleton`, `Physics`, and `Morph`. `Plant` and `Phantom` do not match. A name that starts with `SK_` wins, and otherwise the shortest such name wins. The idle is the AnimSequence in that mesh's folder whose name contains `Idle` and contains none of `Attack`, `Death`, `Evasion`, `Jump`, `Run`, `Walk`, `Step`, `Stun`, `Damaged`, and `Enemy`. The shortest such name wins. One colour variation is applied to every slot. A find is written back. Do not move the folder.
 - The Credits page names Anna Vorobeva after the Velociraptor listing, with the line Fab Standard (Personal / Professional) and the listing URL. The listing's license group is standard. Personal and Professional are both offered, each at no charge. The credit line is `Stylized Ant by Anna Vorobeva, used from Fab as an element of this project.` The `SolidCore1.Credits.*` line in the tests README names the ant.
 - The README Fab table gains this listing, required, after the Velociraptor row.
-- `FSolidAnt` is the kind, in its own header and cpp, the way `FSolidRaptor` is. `ASolidAnt` is the engine shell, the way `ASolidRaptor` is. `MakeMember` returns an ant for `EMonsterKind::Ant`, armed with Mandibles and Carapace. Append Ant on the enum. Raptor stays the first value.
-- Scale the mesh so the body is 100 cm tall. The height is the LOD0 vertex Z span, the same measure a raptor uses. The scale is uniform. The feet sit on the actor origin. The factor that reaches 100 cm is measured from this mesh and stored on the ant. `FSolidRaptor::SmallDrawnBodyFactor` stays 6. The capsule stays the monster capsule: radius 27 cm, half-height 50 cm.
+- `FSolidAnt` is the kind, in its own header and cpp, the way `FSolidRaptor` is. `ASolidAnt` is the engine shell, the way `ASolidRaptor` is. `MakeMember` returns an ant for `EMonsterKind::Ant`, armed with Mandibles and Carapace. Append Ant on the enum. Raptor stays the first value. `DrawnBodyFactor` for a Tiny ant is the factor that makes this mesh 100 cm tall. The raptor's Small factor stays on the raptor.
+- Scale the mesh so the body is 100 cm tall. The height is the LOD0 vertex Z span, the same measure a raptor uses. The scale is uniform. The feet sit on the actor origin. `FSolidRaptor::SmallDrawnBodyFactor` stays 6. The capsule stays the monster capsule: radius 27 cm, half-height 50 cm.
 - Play the idle with `SolidClipLocomotion` on an `AnimSingleNodeInstance`, looping. Leave any AnimBP in the download unassigned.
-- The encounter is the second `FDefinition` in `SolidEncounter::Definitions`. The name is `Ants`. The group is `EMonsterKind::Ant`, `ESolidMonsterSize::Small`, count 3, plan `Attack`. The limits stay the defaults on `FDefinition`.
-- Place uses the mark the way Iglin Bridge does. A test chart with a mark named Ants returns three ants. A chart with no Ants mark returns none. The Iglin Bridge cases stay as they are.
+- The encounter is the second `FDefinition` in `SolidEncounter::Definitions`. The name is `Giant ants`. The group is `EMonsterKind::Ant`, `ESolidMonsterSize::Tiny`, count 2, plan `Attack`. The limits stay the defaults on `FDefinition`. The test that says the catalog has one encounter becomes two. Iglin Bridge stays the first row.
+- Place uses the mark the way Iglin Bridge does. A test chart with a mark named Giant ants returns two Tiny ants. A chart with no Giant ants mark returns none. The Iglin Bridge cases stay as they are. The shipped `/Game/World/WorldChart` asset stays as it is.
 - The content test that loads the Velociraptor also loads this body and this idle once the pack is added. Until Add to Project, that load fails the same way a missing Velociraptor mesh fails. A cloud agent does not run the editor and does not run the suite. The Windows machine adds the pack, then builds and tests.
 - The product commit updates the `SolidCore1.Monster.*`, `SolidCore1.Credits.*`, and `SolidCore1.Content.*` lines in `Source/SolidCore1/Tests/README.md`.

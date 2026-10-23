@@ -98,6 +98,8 @@ Cloud agents are a **code + git workshop** on the Cursor-hosted Linux VM. They d
 
 An agent defining a story writes the whole story. The phasing below is for the agent implementing that story.
 
+When a story is so simple that it makes no sense to phase the delivery, the agent states that it will be implemented as a single phase story, then plans and delivers that phase.
+
 A story is complex when later acceptance needs a core that can be implemented and tested on its own. The first thing the implementing agent delivers is a high-level staged plan: the stages, in order, and what is true when each one ends. Reading the story and the code to find those stages is part of writing the plan. How a stage works is planned when that stage's turn comes.
 
 Agree that plan with the user before planning any stage in detail. A request to plan the implementation, or to start it, still begins with the staged plan. The implementation notes stay in the story. The agreement opens the first stage only. The story stays `Ready` until that stage starts.

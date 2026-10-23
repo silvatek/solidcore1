@@ -49,7 +49,7 @@ After a push, the user verifies on their Windows machine:
 
 Wait for that report before treating the change as verified. When a screenshot arrives, review it. The story stays `In Progress` through that wait. `Done` waits for the testing and the agreement in the Planning section.
 
-Screenshots are taken with the Windows snipping tool. That switch puts Unreal in the background, so the HUD frame rate drops. Ignore FPS in a screenshot unless the user says they are worried about it. Foreground PIE is about 120 FPS.
+Screenshots are taken with the Windows snipping tool. That switch puts Unreal in the background, so the HUD frame rate drops. Ignore FPS in a screenshot unless the user says they are worried about it. Foreground PIE is about 120 FPS. The mouse has to move to take the screenshot. Ignore the pointer position, and ignore a hover line that follows it, unless the user says that position is the subject.
 
 ### solidcore1-ue agents
 
@@ -73,7 +73,7 @@ Look for `agent.ok` in the repo root before running build or test.
 
 The developer runs `tools\editor.bat` to open the editor without play, and `tools\pie.bat` when play is needed. They send a screenshot when they do. Wait for that report before treating the editor or play as verified. When a screenshot arrives, review it. A `tools\test.bat` pass keeps the story `In Progress`. `Done` waits for the user's report and the agreement in the Planning section.
 
-Screenshots are taken with the Windows snipping tool. That switch puts Unreal in the background, so the HUD frame rate drops. Ignore FPS in a screenshot unless the user says they are worried about it. Foreground PIE is about 120 FPS.
+Screenshots are taken with the Windows snipping tool. That switch puts Unreal in the background, so the HUD frame rate drops. Ignore FPS in a screenshot unless the user says they are worried about it. Foreground PIE is about 120 FPS. The mouse has to move to take the screenshot. Ignore the pointer position, and ignore a hover line that follows it, unless the user says that position is the subject.
 
 ## Cursor Cloud
 

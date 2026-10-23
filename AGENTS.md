@@ -94,6 +94,14 @@ Cloud agents are a **code + git workshop** on the Cursor-hosted Linux VM. They d
 - Leave the story `In Progress` when the product commit lands on `main`. Properly tested means the checks in Collaborative workflow and Cursor Cloud have happened. The user has pulled, rebuilt, run the tests, and run PIE when the story changes play. The agent has reviewed that report, and any screenshot. A solidcore1-ue agent's `tools\test.bat` pass is part of the work and leaves the story `In Progress`.
 - Set `Done` only after that testing, and only after the user and the agent agree the story is done. The agreement is a discussion. The user says whether they are happy with the implementation. The agent confirms that every acceptance criterion is met. Then set the status to `Done` and move the file to `Planning/Done/`, in one commit. That commit message starts with `Plan: `.
 
+### Complex stories
+
+A complex story starts with a high-level staged plan. Agree that plan with the user before any stage is planned in detail.
+
+After that agreement, produce and deliver a detailed plan for the first stage only. Deliver that stage before the next stage. Each later stage gets its own detailed plan when its turn comes.
+
+The early stages keep edge cases to a minimum, so the core code can be implemented and tested first. Later stages build the complex scenarios, and their edge cases, on that core.
+
 ## Names
 
 Name a new function or type with a word the design already uses. Captain, Company, Squad, Companion, and Stronghold are those words. `CodingGuidelines.md` says the same.

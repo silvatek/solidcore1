@@ -6,6 +6,8 @@ Status: New
 
 The player opens the F10 menu and chooses Auto playthrough. That starts AutoPlaythrough, which plays the opening of the game from a script. The player watches. The script is a list of steps, and a later story can change the list. This story ships the first list.
 
+The row can be chosen at the very start of a new game, while the captain is still in Iglin. Once he moves away from Iglin, the row stays dim for the rest of that game. A playthrough that has already started keeps running when the script walks him out.
+
 AutoPlaythrough is the game concept this story introduces. It is the class `FSolidAutoPlaythrough`.
 
 The first script starts from a new game, with the captain in Iglin.
@@ -16,7 +18,7 @@ He walks from Iglin onto a ramp of the Iglin bridge. The monsters kill him: "You
 
 Agree this order before a stage is planned in detail. A stage is played before the next stage is planned. The story stays In Progress until the whole script has been played and agreed.
 
-1. **The runner and the death.** The menu row, AutoPlaythrough, and a script that can walk, close a message, and stop. The steps are the walk from Iglin to the bridge, the monster message, and the wake in the cave.
+1. **The runner and the death.** The menu row, including the dim row after the captain leaves Iglin, AutoPlaythrough, and a script that can walk, close a message, and stop. The steps are the walk from Iglin to the bridge, the monster message, and the wake in the cave.
 2. **The torch and the village.** Craft the torch, put it in the main hand, leave the cave, close Build squad, walk to Iglin, and close the driven-out message.
 3. **The tunnels and the company.** Through the tunnels, then Relion, Kanfold, and Dragongate. This stage waits until [Events add a companion](events-add-a-companion.md) is Done. Relion already adds Sam. Kanfold's Alex and Dragongate's Max, Morgan, and Quinn are that story.
 4. **The tower and the squad.** The Imperious site, the climb to the top floor, the leave, and selecting the squad.
@@ -25,7 +27,10 @@ Agree this order before a stage is planned in detail. A stage is played before t
 
 Choosing Auto playthrough on a new game runs the script to the end.
 
-- The F10 rows, from the top, are Use portal, Journal, Build squad, Character editor, Auto playthrough, Credits, and Exit Game. Credits stays the row before Exit Game. The new row reads **Auto playthrough**. Choosing it closes the menu and starts the script.
+- The F10 rows, from the top, are Use portal, Journal, Build squad, Character editor, Auto playthrough, Credits, and Exit Game. Credits stays the row before Exit Game. The new row reads **Auto playthrough**.
+- At the start of a new game, while the captain is still in Iglin, the row can be chosen. Choosing it closes the menu and starts the script.
+- Once the captain moves away from Iglin, the row stays dim for the rest of that game. Confirming the dim row does nothing, and the menu stays open. Walking back into Iglin leaves the row dim.
+- A playthrough that has already started keeps running when the script walks him out of Iglin. Leaving Iglin is a step, and it is not a stop.
 - The HUD shows `Auto playthrough` while the script runs. The line goes when the script finishes, and when the player stops it.
 - The player's Esc stops the playthrough. The captain stays where he is, and the menu stays closed. The player's F10 stops it and does not open the menu. After the playthrough has stopped, F10 opens the menu as before.
 - While the script runs, the player's move, look, and clicks leave the captain on the script. The script walks in true sight, and clicks the ground in raven sight.
@@ -46,6 +51,7 @@ Choosing Auto playthrough on a new game runs the script to the end.
 
 - `FSolidAutoPlaythrough` is a plain C++ class in `Playthrough/SolidAutoPlaythrough.h`. The game mode owns it and steps it on tick. A step is a value on that class. The first script is the list in the story. A later story edits that list and leaves the class.
 - The row goes before Credits, as [Reorder the game menu](Done/reorder-game-menu.md) requires. Key 5 confirms Auto playthrough, key 6 confirms Credits, and key 7 confirms Exit Game. Key 8 has no row. `SolidCore1.MainMenu.Order` already allows a row before Credits and already checks key 8. `SolidCore1.Exit` already requires Credits immediately before Exit Game. Those tests stay. The product commit adds the new label and its action.
+- Away from Iglin means `OccupiedTown` is no longer Iglin. Remember that he has left, so a later return leaves the row dim. The same dimming as Build squad: the row is drawn dim, and confirm does nothing. The running script does not treat that departure as a stop.
 - The player's Esc and F10 are the stop. The script closes a message with Enter, and closes Build squad with its own Esc, so those closes are the script and not the stop.
 - The death step is the shipped message. Standing on the ramp shows it, and closing it sends him into the cave. [Iglin Bridge Fight Enhancements](iglin-bridge-fight-enhancements.md) replaces that message with the raptor fight. When that story is Done, this script's death step changes to walking into that fight and waiting until he wakes in the cave. This story leaves that step on the message.
 - The Kanfold walk back to Dragongate follows the highway to Relion and the road on to Dragongate. Stepping onto Relion again leaves Enter Relion fired once.

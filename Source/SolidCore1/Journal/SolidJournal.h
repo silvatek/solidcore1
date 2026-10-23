@@ -126,6 +126,17 @@ public:
 	/** One line describing an event's configuration changes. Does not read Entries. */
 	static FString Describe(const SolidEvents::FEvent& Event);
 
+	/**
+	 * Break one journal line into lines that fit MaxWidth.
+	 * A break is at a space. A word wider than the column breaks on a character.
+	 * Measure returns a width in the same units as MaxWidth.
+	 */
+	static void WrapText(
+		const FString& Text,
+		float MaxWidth,
+		TFunctionRef<float(const FString&)> Measure,
+		TArray<FString>& OutLines);
+
 	/** Title, Time and Summary, the lines, detail under an event, and F10 to close. */
 	void CollectRows(TArray<FRow>& OutRows) const;
 

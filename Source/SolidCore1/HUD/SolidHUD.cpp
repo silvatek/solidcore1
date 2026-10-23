@@ -604,12 +604,25 @@ namespace SolidHUDPrivate
 		}
 
 		float StampWidth = 0.f;
-		float TextWidth = 0.f;
 		float LineHeight = 18.f;
 		float TitleW = 0.f;
 		float TitleH = 18.f;
 		FString TitleText(USolidJournal::Title);
-		int32 FlowRows = 0;
+		auto Measure = [Canvas, Font](const FString& Sample) -> float
+		{
+			if (Sample.IsEmpty())
+			{
+				return 0.f;
+			}
+			if (!Font)
+			{
+				return static_cast<float>(Sample.Len() * 8);
+			}
+			float W = 0.f;
+			float H = 0.f;
+			Canvas->StrLen(Font, Sample, W, H);
+			return W;
+		};
 		for (const USolidJournal::FRow& Row : Rows)
 		{
 			if (Row.Kind == USolidJournal::ERowKind::Title)
@@ -620,33 +633,27 @@ namespace SolidHUDPrivate
 				}
 				continue;
 			}
-			if (Row.Kind != USolidJournal::ERowKind::Hint)
-			{
-				++FlowRows;
-			}
 
 			float StampW = 0.f;
 			float StampH = 0.f;
-			float TextW = 0.f;
-			float TextH = 0.f;
 			if (Font)
 			{
 				if (!Row.Stamp.IsEmpty())
 				{
 					Canvas->StrLen(Font, Row.Stamp, StampW, StampH);
 				}
-				Canvas->StrLen(Font, Row.Text.IsEmpty() ? TEXT(" ") : Row.Text, TextW, TextH);
+				float TextW = 0.f;
+				float TextH = 0.f;
+				Canvas->StrLen(Font, TEXT(" "), TextW, TextH);
+				LineHeight = FMath::Max(LineHeight, TextH);
 			}
 			else
 			{
 				StampW = static_cast<float>(Row.Stamp.Len() * 8);
-				TextW = static_cast<float>(FMath::Max(Row.Text.Len(), 1) * 8);
 				StampH = 18.f;
-				TextH = 18.f;
 			}
 			StampWidth = FMath::Max(StampWidth, StampW);
-			TextWidth = FMath::Max(TextWidth, TextW);
-			LineHeight = FMath::Max(LineHeight, FMath::Max(StampH, TextH));
+			LineHeight = FMath::Max(LineHeight, StampH);
 		}
 		if (Font)
 		{
@@ -658,18 +665,35 @@ namespace SolidHUDPrivate
 			TitleH = 18.f;
 		}
 
+		const float ViewW = static_cast<float>(Canvas->SizeX);
+		const float ViewH = static_cast<float>(Canvas->SizeY);
 		const float ColumnSpan = StampWidth > 0.f ? StampWidth + USolidJournal::ColumnGap : 0.f;
-		const float ContentW = ColumnSpan + TextWidth;
-		const float ContentH = static_cast<float>(FlowRows) * (LineHeight + USolidJournal::LineGap) + LineHeight;
 		float BoardW = 0.f;
 		float BoardH = 0.f;
-		USolidJournal::BoardSize(
-			static_cast<float>(Canvas->SizeX),
-			static_cast<float>(Canvas->SizeY),
-			ContentW,
-			ContentH,
-			BoardW,
-			BoardH);
+		USolidJournal::BoardSize(ViewW, ViewH, 0.f, 0.f, BoardW, BoardH);
+		const float TextMax = FMath::Max(1.f, BoardW - USolidJournal::BoardPad * 2.f - ColumnSpan);
+
+		struct FPaintRow
+		{
+			const USolidJournal::FRow* Source = nullptr;
+			TArray<FString> Lines;
+		};
+		TArray<FPaintRow> Painted;
+		int32 FlowLines = 0;
+		for (const USolidJournal::FRow& Row : Rows)
+		{
+			if (Row.Kind == USolidJournal::ERowKind::Title || Row.Kind == USolidJournal::ERowKind::Hint)
+			{
+				continue;
+			}
+			FPaintRow Paint;
+			Paint.Source = &Row;
+			USolidJournal::WrapText(Row.Text, TextMax, Measure, Paint.Lines);
+			FlowLines += FMath::Max(Paint.Lines.Num(), 1);
+			Painted.Add(MoveTemp(Paint));
+		}
+		const float ContentH = static_cast<float>(FlowLines) * (LineHeight + USolidJournal::LineGap) + LineHeight;
+		USolidJournal::BoardSize(ViewW, ViewH, 0.f, ContentH, BoardW, BoardH);
 
 		const float BoxX = (static_cast<float>(Canvas->SizeX) - BoardW) * 0.5f;
 		const float BoxY = (static_cast<float>(Canvas->SizeY) - BoardH) * 0.5f;
@@ -702,49 +726,52 @@ namespace SolidHUDPrivate
 		const float HintY = BoxY + BoardH - USolidJournal::BoardPad - LineHeight;
 		float Y = BoxY + USolidJournal::BoardPad;
 
-		for (const USolidJournal::FRow& Row : Rows)
+		for (const FPaintRow& Paint : Painted)
 		{
-			if (Row.Kind == USolidJournal::ERowKind::Title || Row.Kind == USolidJournal::ERowKind::Hint)
-			{
-				continue;
-			}
-			// Leave the close hint. A scrollbar will cover lines that do not fit.
-			if (Y + LineHeight > HintY)
-			{
-				break;
-			}
-
+			const USolidJournal::FRow& Row = *Paint.Source;
 			const bool bHeading = Row.Kind == USolidJournal::ERowKind::Heading;
 			const FLinearColor Color = bHeading ? Palette.Title : Palette.Ink;
-
-			if (!Row.Stamp.IsEmpty())
+			const int32 LineCount = FMath::Max(Paint.Lines.Num(), 1);
+			for (int32 LineIndex = 0; LineIndex < LineCount; ++LineIndex)
 			{
-				FCanvasTextItem StampItem(
-					FVector2D(Columns.StampX, Y), FText::FromString(Row.Stamp), Font, Color);
-				StampItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
-				Canvas->DrawItem(StampItem);
-			}
-			if (!Row.Text.IsEmpty())
-			{
-				FCanvasTextItem TextItem(
-					FVector2D(Columns.TextX, Y), FText::FromString(Row.Text), Font, Color);
-				TextItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
-				Canvas->DrawItem(TextItem);
-			}
+				// Leave the close hint. A scrollbar will cover lines that do not fit.
+				if (Y + LineHeight > HintY)
+				{
+					break;
+				}
 
-			if (bHeading)
-			{
-				const float RuleInset = Band + 18.f;
-				FillRect(
-					Canvas,
-					BoxX + RuleInset,
-					Y + LineHeight + USolidJournal::LineGap * 0.35f,
-					FMath::Max(0.f, BoardW - RuleInset * 2.f),
-					2.f,
-					Palette.Bronze);
-			}
+				if (LineIndex == 0 && !Row.Stamp.IsEmpty())
+				{
+					FCanvasTextItem StampItem(
+						FVector2D(Columns.StampX, Y), FText::FromString(Row.Stamp), Font, Color);
+					StampItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+					Canvas->DrawItem(StampItem);
+				}
+				if (Paint.Lines.IsValidIndex(LineIndex) && !Paint.Lines[LineIndex].IsEmpty())
+				{
+					FCanvasTextItem TextItem(
+						FVector2D(Columns.TextX, Y),
+						FText::FromString(Paint.Lines[LineIndex]),
+						Font,
+						Color);
+					TextItem.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+					Canvas->DrawItem(TextItem);
+				}
 
-			Y += LineHeight + USolidJournal::LineGap;
+				if (bHeading && LineIndex + 1 == LineCount)
+				{
+					const float RuleInset = Band + 18.f;
+					FillRect(
+						Canvas,
+						BoxX + RuleInset,
+						Y + LineHeight + USolidJournal::LineGap * 0.35f,
+						FMath::Max(0.f, BoardW - RuleInset * 2.f),
+						2.f,
+						Palette.Bronze);
+				}
+
+				Y += LineHeight + USolidJournal::LineGap;
+			}
 		}
 
 		for (const USolidJournal::FRow& Row : Rows)

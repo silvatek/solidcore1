@@ -335,4 +335,57 @@ bool FSolidJournalPageTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidJournalWrapTest,
+	"SolidCore1.Journal.Wrap",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidJournalWrapTest::RunTest(const FString& Parameters)
+{
+	auto Width = [](const FString& Sample)
+	{
+		return static_cast<float>(Sample.Len());
+	};
+
+	TArray<FString> Lines;
+	USolidJournal::WrapText(FString(), 20.f, Width, Lines);
+	TestEqual(TEXT("an empty line stays empty"), Lines.Num(), 0);
+
+	USolidJournal::WrapText(TEXT("Sam joins"), 40.f, Width, Lines);
+	TestEqual(TEXT("a short line stays one line"), Lines.Num(), 1);
+	TestEqual(TEXT("a short line keeps its words"), Lines.Num() == 1 ? Lines[0] : FString(), FString(TEXT("Sam joins")));
+
+	const FString Detail = TEXT("Max joins. Morgan joins. Quinn joins.");
+	const float Room = Width(TEXT("Max joins."));
+	USolidJournal::WrapText(Detail, Room, Width, Lines);
+	TestTrue(TEXT("a long line wraps"), Lines.Num() > 1);
+	FString Joined;
+	for (int32 Index = 0; Index < Lines.Num(); ++Index)
+	{
+		TestTrue(*FString::Printf(TEXT("wrapped line %d fits"), Index), Width(Lines[Index]) <= Room);
+		if (Index > 0)
+		{
+			Joined += TEXT(" ");
+		}
+		Joined += Lines[Index];
+	}
+	TestEqual(TEXT("wrapping keeps every word"), Joined, Detail);
+
+	const FString Word = TEXT("Imperious");
+	USolidJournal::WrapText(Word, 4.f, Width, Lines);
+	TestTrue(TEXT("a wide word breaks"), Lines.Num() > 1);
+	FString Pieces;
+	for (const FString& Line : Lines)
+	{
+		TestTrue(TEXT("a broken word fits the column"), Width(Line) <= 4.f);
+		Pieces += Line;
+	}
+	TestEqual(TEXT("a broken word keeps its letters"), Pieces, Word);
+
+	USolidJournal::WrapText(Detail, 0.f, Width, Lines);
+	TestEqual(TEXT("no column keeps the line whole"), Lines.Num(), 1);
+	TestEqual(TEXT("no column keeps the words"), Lines.Num() == 1 ? Lines[0] : FString(), Detail);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

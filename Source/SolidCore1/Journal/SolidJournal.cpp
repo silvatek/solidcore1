@@ -137,6 +137,79 @@ FString USolidJournal::Describe(const SolidEvents::FEvent& Event)
 	return Text;
 }
 
+void USolidJournal::WrapText(
+	const FString& Text,
+	const float MaxWidth,
+	TFunctionRef<float(const FString&)> Measure,
+	TArray<FString>& OutLines)
+{
+	OutLines.Reset();
+	if (Text.IsEmpty())
+	{
+		return;
+	}
+	if (MaxWidth <= 0.f)
+	{
+		OutLines.Add(Text);
+		return;
+	}
+
+	TArray<FString> Words;
+	Text.ParseIntoArray(Words, TEXT(" "), true);
+
+	FString Line;
+	auto Commit = [&OutLines, &Line]()
+	{
+		if (!Line.IsEmpty())
+		{
+			OutLines.Add(Line);
+			Line.Reset();
+		}
+	};
+
+	for (const FString& Word : Words)
+	{
+		if (Word.IsEmpty())
+		{
+			continue;
+		}
+
+		if (!Line.IsEmpty() && Measure(Line + TEXT(" ") + Word) <= MaxWidth)
+		{
+			Line += TEXT(" ");
+			Line += Word;
+			continue;
+		}
+
+		Commit();
+		if (Measure(Word) <= MaxWidth)
+		{
+			Line = Word;
+			continue;
+		}
+
+		FString Piece;
+		for (int32 CharIndex = 0; CharIndex < Word.Len(); ++CharIndex)
+		{
+			FString Trial = Piece;
+			Trial.AppendChar(Word[CharIndex]);
+			if (!Piece.IsEmpty() && Measure(Trial) > MaxWidth)
+			{
+				OutLines.Add(Piece);
+				Piece.Reset();
+				Piece.AppendChar(Word[CharIndex]);
+			}
+			else
+			{
+				Piece = MoveTemp(Trial);
+			}
+		}
+		Line = MoveTemp(Piece);
+	}
+
+	Commit();
+}
+
 void USolidJournal::CollectRows(TArray<FRow>& OutRows) const
 {
 	OutRows.Reset();

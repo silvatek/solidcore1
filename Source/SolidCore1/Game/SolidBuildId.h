@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0613")
+#define SOLID_BUILD_ID TEXT("SC1-0614")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Leaving Dragongate walks the gate opening, not a tower.")
+#define SOLID_BUILD_NOTE TEXT("The playthrough leaves the tower without climbing the stairs.")
 #endif

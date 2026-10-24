@@ -132,10 +132,11 @@ bool FSolidBridgeStraightTest::RunTest(const FString& Parameters)
 	const SolidBridge::FBridge& Bridge = Bridges[0];
 	TestTrue(TEXT("center is as wide as the track"), FMath::IsNearlyEqual(Bridge.WidthCm, SolidRoad::WidthCm(SolidRoad::EType::Track)));
 	TestTrue(TEXT("center is flat"), BridgeFlat(Bridge.Deck));
+	// The points on the 4 m rim are river. A sample stays river until the next point.
 	TestTrue(TEXT("center covers the river and rests on both banks"),
 		FMath::IsNearlyEqual(
 			BridgePlanLength(Bridge.Deck),
-			SolidRiver::WidthCm + 2.f * SolidBridge::BankRestCm,
+			SolidRiver::WidthCm + 2.f * SolidBridge::BankRestCm + SolidRoad::TerrainQuadCm,
 			2.f));
 	TestTrue(TEXT("three pieces"), Bridge.Deck.Num() >= 2 && Bridge.RampFrom.Num() >= 2 && Bridge.RampTo.Num() >= 2);
 	TestTrue(TEXT("the near ramp leaves the center"), Bridge.RampFrom[0].Equals(Bridge.Deck[0], 1.f));
@@ -254,10 +255,11 @@ bool FSolidBridgeSpanTest::RunTest(const FString& Parameters)
 	}
 
 	TestTrue(TEXT("a trail center is 1 m"), FMath::IsNearlyEqual(ShortBridges[0].WidthCm, SolidRoad::WidthCm(SolidRoad::EType::Trail)));
+	// Each end gains the same step. The cells between them are already river from edge to edge.
 	TestTrue(TEXT("a longer river lengthens the center"),
 		FMath::IsNearlyEqual(
 			BridgePlanLength(LongBridges[0].Deck),
-			SolidRiver::WidthCm + static_cast<float>(RiverCells - 1) * CellW + 2.f * SolidBridge::BankRestCm,
+			SolidRiver::WidthCm + static_cast<float>(RiverCells - 1) * CellW + 2.f * SolidBridge::BankRestCm + SolidRoad::TerrainQuadCm,
 			5.f));
 	TestTrue(TEXT("the long center is longer than one channel"),
 		BridgePlanLength(LongBridges[0].Deck) > BridgePlanLength(ShortBridges[0].Deck) + CellW);

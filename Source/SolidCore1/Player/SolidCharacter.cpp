@@ -1820,14 +1820,14 @@ ASolidNameSign* ASolidCharacter::NameSignUnderPointer() const
 
 	for (TActorIterator<ASolidNameSign> Sign(World); Sign; ++Sign)
 	{
-		const UStaticMeshComponent* Meshes[] = { Sign->GetPoleMesh(), Sign->GetBoardMesh() };
-		for (const UStaticMeshComponent* Mesh : Meshes)
+		const UStaticMeshComponent* Parts[] = { Sign->GetPoleMesh(), Sign->GetBoardMesh() };
+		for (const UStaticMeshComponent* Part : Parts)
 		{
-			if (!Mesh)
+			if (!Part)
 			{
 				continue;
 			}
-			const FBox Box = Mesh->CalcBounds(Mesh->GetComponentTransform()).GetBox();
+			const FBox Box = Part->CalcBounds(Part->GetComponentTransform()).GetBox();
 			if (SolidPointer::RayHitsBox(Origin, Direction, Box, SolidClickMove::MaxRayCm))
 			{
 				return *Sign;

@@ -12,7 +12,7 @@
 
 namespace
 {
-	void SetupSignText(UTextRenderComponent* Text, const FString& Label, const FColor& Color)
+	void SetupNameSignText(UTextRenderComponent* Text, const FString& Label, const FColor& Color)
 	{
 		if (!Text)
 		{
@@ -146,7 +146,7 @@ void ASolidNameSign::BuildVisuals()
 		}
 	}
 
-	SetupSignText(LabelText, Label, FColor::White);
+	SetupNameSignText(LabelText, Label, FColor::White);
 	if (LabelText)
 	{
 		LabelText->SetRelativeLocation(FVector(LabelX, 0.f, BoardCenterZ));
@@ -162,7 +162,7 @@ void ASolidNameSign::BuildVisuals()
 	};
 	for (int32 Index = 0; Index < OutlineCount; ++Index)
 	{
-		SetupSignText(Outlines[Index], Label, FColor::Black);
+		SetupNameSignText(Outlines[Index], Label, FColor::Black);
 		if (Outlines[Index])
 		{
 			Outlines[Index]->SetRelativeLocation(OutlineOffsets[Index]);

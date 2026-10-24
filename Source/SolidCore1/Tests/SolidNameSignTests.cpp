@@ -16,9 +16,9 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
-namespace
+namespace SolidNameSignTest
 {
-	void Unlock(USolidGameState& State, const ESolidStrongholdSize Size)
+	void RaiseMaxSize(USolidGameState& State, const ESolidStrongholdSize Size)
 	{
 		if (static_cast<int32>(Size) > static_cast<int32>(State.MaxStrongholdSize))
 		{
@@ -146,7 +146,7 @@ bool FSolidNameSignMoveTest::RunTest(const FString& Parameters)
 	Company->InitializeStartingStronghold();
 	USolidGameState& State = *NewObject<USolidGameState>();
 	State.bStrongholdSiteRestrictions = true;
-	Unlock(State, ESolidStrongholdSize::Imperious);
+	SolidNameSignTest::RaiseMaxSize(State, ESolidStrongholdSize::Imperious);
 	State.Furnishings.Reset();
 	TestTrue(
 		TEXT("leaving The Cave names the tower from its size and type"),
@@ -163,7 +163,7 @@ bool FSolidNameSignMoveTest::RunTest(const FString& Parameters)
 	Named->GetStronghold()->Name = TEXT("High Keep");
 	USolidGameState& NamedState = *NewObject<USolidGameState>();
 	NamedState.bStrongholdSiteRestrictions = true;
-	Unlock(NamedState, ESolidStrongholdSize::Imperious);
+	SolidNameSignTest::RaiseMaxSize(NamedState, ESolidStrongholdSize::Imperious);
 	NamedState.Furnishings.Reset();
 	TestTrue(
 		TEXT("a chosen name moves with the company"),

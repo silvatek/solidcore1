@@ -16,7 +16,7 @@
 #include "Lairs/SolidLair.h"
 #include "Lairs/SolidLairEntrance.h"
 #include "Lairs/SolidLairInterior.h"
-#include "Monster/SolidEncounter.h"
+#include "Events/SolidEncounter.h"
 #include "Strongholds/Actors/SolidStrongholdInterior.h"
 #include "Strongholds/Dungeon/SolidDungeonLevel.h"
 #include "Strongholds/Furnishings/SolidStrongholdGrid.h"

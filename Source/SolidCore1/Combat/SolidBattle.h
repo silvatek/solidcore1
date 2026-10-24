@@ -2,7 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Templates/Function.h"
-#include "Combat/SolidWeapon.h"
+#include "SolidWeapon.h"
 #include "Company/SolidSquad.h"
 #include "Monster/SolidMonsterGroup.h"
 

@@ -4,8 +4,10 @@
 #include "Components/SkeletalMeshComponent.h"
 #include "Monster/SolidMonster.h"
 #include "Monster/SolidMonsterGroup.h"
-#include "Monster/SolidEncounter.h"
-#include "Monster/SolidEncounters.h"
+#include "Events/SolidEncounter.h"
+#include "Events/SolidEncounters.h"
+#include "Events/SolidEvents.h"
+#include "SolidGameState.h"
 #include "Monster/SolidRaptorActor.h"
 #include "Monster/SolidRaptor.h"
 #include "Inventory/SolidItem.h"
@@ -43,21 +45,21 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 	{
 		TestTrue(
 			TEXT("that encounter is Iglin Bridge"),
-			FCString::Strcmp(SolidEncounter::Definitions[0].Name, TEXT("Iglin Bridge")) == 0);
-		TestEqual(TEXT("Iglin Bridge has one group"), SolidEncounter::Definitions[0].GroupCount, 1);
+			FCString::Strcmp(SolidEncounter::StaticEncounters[0].Name, TEXT("Iglin Bridge")) == 0);
+		TestEqual(TEXT("Iglin Bridge has one group"), SolidEncounter::StaticEncounters[0].GroupCount, 1);
 		TestEqual(
 			TEXT("Iglin Bridge places three raptors"),
-			SolidEncounter::Definitions[0].Groups[0].Count,
+			SolidEncounter::StaticEncounters[0].Groups[0].Count,
 			3);
 		TestTrue(
 			TEXT("the near limit stays 8 m"),
-			FMath::IsNearlyEqual(SolidEncounter::Definitions[0].NearLimitCm, 800.f));
+			FMath::IsNearlyEqual(SolidEncounter::StaticEncounters[0].NearLimitCm, 800.f));
 		TestTrue(
 			TEXT("the far limit stays 40 m"),
-			FMath::IsNearlyEqual(SolidEncounter::Definitions[0].FarLimitCm, 4000.f));
+			FMath::IsNearlyEqual(SolidEncounter::StaticEncounters[0].FarLimitCm, 4000.f));
 		TestTrue(
 			TEXT("the separation stays 4 m"),
-			FMath::IsNearlyEqual(SolidEncounter::Definitions[0].SeparationCm, 400.f));
+			FMath::IsNearlyEqual(SolidEncounter::StaticEncounters[0].SeparationCm, 400.f));
 	}
 	TestTrue(
 		TEXT("a mesh of half the standing height doubles"),
@@ -132,7 +134,7 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 	const TArray<int32> Forage = { 5 };
 	const FVector2D Focus = FVector2D::ZeroVector;
 
-	const SolidEncounter::FDefinition IglinDef = SolidEncounter::Definitions[0];
+	const SolidEncounter::FStaticEncounter IglinDef = SolidEncounter::StaticEncounters[0];
 	FSolidEncounter Encounter(IglinDef);
 	TestEqual(
 		TEXT("three reptiles"),
@@ -296,7 +298,7 @@ bool FSolidMonsterSpawnTest::RunTest(const FString& Parameters)
 	Points.Add(PointAt(900.f, ESolidBiome::Grassland, 0.f));
 	TArray<int32> NoSkip;
 
-	FSolidEncounter Encounter(SolidEncounter::Definitions[0]);
+	FSolidEncounter Encounter(SolidEncounter::StaticEncounters[0]);
 	TestEqual(
 		TEXT("the encounter places one raptor"),
 		Encounter.Place(Points, NoSkip, NoSkip, FVector2D::ZeroVector),
@@ -338,7 +340,7 @@ bool FSolidMonsterMountainTest::RunTest(const FString& Parameters)
 	TArray<int32> NoSkip;
 	const float Spacing = 200.f;
 
-	FSolidEncounter Beside(SolidEncounter::Definitions[0]);
+	FSolidEncounter Beside(SolidEncounter::StaticEncounters[0]);
 	TestEqual(
 		TEXT("three reptiles stand off the cliff"),
 		Beside.Place(Points, NoSkip, NoSkip, FVector2D::ZeroVector, Spacing),
@@ -365,7 +367,7 @@ bool FSolidMonsterMountainTest::RunTest(const FString& Parameters)
 	DiagonalPoints.Add(PointAt(2300.f, ESolidBiome::Grassland));
 	DiagonalPoints.Add(PointAt(3000.f, ESolidBiome::Grassland));
 
-	FSolidEncounter Diagonal(SolidEncounter::Definitions[0]);
+	FSolidEncounter Diagonal(SolidEncounter::StaticEncounters[0]);
 	TestEqual(
 		TEXT("three reptiles stand off a diagonal cliff"),
 		Diagonal.Place(DiagonalPoints, NoSkip, NoSkip, FVector2D::ZeroVector, Spacing),
@@ -382,7 +384,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidMonsterBattlePlanTest::RunTest(const FString& Parameters)
 {
-	FSolidEncounter Iglin(SolidEncounter::Definitions[0]);
+	FSolidEncounter Iglin(SolidEncounter::StaticEncounters[0]);
 	TestEqual(TEXT("Iglin Bridge has one group"), Iglin.Groups.Num(), 1);
 	if (Iglin.Groups.Num() != 1)
 	{
@@ -420,7 +422,7 @@ bool FSolidMonsterBattlePlanTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("Attack stays the active plan"), Kept->SameAs(Attack));
 	}
 
-	SolidEncounter::FDefinition Bare{ TEXT("Bare") };
+	SolidEncounter::FStaticEncounter Bare{ TEXT("Bare") };
 	Bare = Bare.WithGroup(SolidEncounter::EMonsterKind::Raptor, ESolidMonsterSize::Small, 1);
 	const FSolidEncounter NoPlan(Bare);
 	TestEqual(TEXT("one group"), NoPlan.Groups.Num(), 1);
@@ -430,7 +432,7 @@ bool FSolidMonsterBattlePlanTest::RunTest(const FString& Parameters)
 		TestNull(TEXT("that group has no active plan"), NoPlan.Groups[0].GetActivePlan());
 	}
 
-	SolidEncounter::FDefinition Missing{ TEXT("Missing") };
+	SolidEncounter::FStaticEncounter Missing{ TEXT("Missing") };
 	Missing = Missing.WithGroup(SolidEncounter::EMonsterKind::Raptor, ESolidMonsterSize::Small, 1, TEXT("Defend"));
 	const FSolidEncounter NotInArray(Missing);
 	TestEqual(TEXT("one group for a missing name"), NotInArray.Groups.Num(), 1);
@@ -490,7 +492,7 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 
 	auto StandAt = [](const FSolidWorldEncounterMark& Mark) -> int32
 	{
-		const SolidEncounter::FDefinition* Def = SolidEncounter::FindByName(Mark.Name);
+		const SolidEncounter::FStaticEncounter* Def = SolidEncounter::FindByName(Mark.Name);
 		if (!Def)
 		{
 			return 0;
@@ -583,7 +585,7 @@ bool FSolidMonsterMarkGroundTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("play uses the centred terrain"), Ground.Equals(CellGround, 1.f));
 	TestFalse(TEXT("the stored chart position is not that ground point"), Stored.Equals(Ground, 1.f));
 
-	const SolidEncounter::FDefinition* Def = SolidEncounter::FindByName(TEXT("Iglin Bridge"));
+	const SolidEncounter::FStaticEncounter* Def = SolidEncounter::FindByName(TEXT("Iglin Bridge"));
 	if (!TestNotNull(TEXT("Iglin Bridge"), Def))
 	{
 		return false;
@@ -609,6 +611,161 @@ bool FSolidMonsterMarkGroundTest::RunTest(const FString& Parameters)
 			TestTrue(TEXT("the member stands in the band around the mark"),
 				Distance >= Def->NearLimitCm && Distance <= Def->FarLimitCm);
 		}
+	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidMonsterEventTest,
+	"SolidCore1.Monster.Event",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidMonsterEventTest::RunTest(const FString& Parameters)
+{
+	USolidGameState* State = NewObject<USolidGameState>();
+	if (!TestNotNull(TEXT("state"), State))
+	{
+		return false;
+	}
+
+	const SolidEncounter::FStaticEncounter* Iglin = SolidEncounter::FindByName(TEXT("Iglin Bridge"));
+	if (!TestNotNull(TEXT("Iglin Bridge"), Iglin))
+	{
+		return false;
+	}
+	TestTrue(TEXT("Iglin Bridge waits on no event"), !Iglin->EventId || !Iglin->EventId[0]);
+	TestTrue(TEXT("Iglin Bridge is placed before any event"), Iglin->HasFired(nullptr));
+	TestTrue(TEXT("Iglin Bridge is placed on a new game"), Iglin->HasFired(State));
+
+	TArray<FSolidTerrainPoint> Points;
+	const float Offsets[] = { 900.f, 1400.f, 1800.f, 2300.f };
+	for (const float Offset : Offsets)
+	{
+		FSolidTerrainPoint Point;
+		Point.X = Offset;
+		Point.Y = 0.f;
+		Point.Biome = ESolidBiome::Grassland;
+		Points.Add(Point);
+	}
+	const TArray<int32> None;
+	const FVector2D Focus = FVector2D::ZeroVector;
+
+	TArray<FSolidEncounter> Startup;
+	TestEqual(
+		TEXT("Iglin Bridge places three at startup"),
+		SolidEncounter::PlaceMark(Startup, *Iglin, false, false, State, Points, None, None, Focus, 200.f),
+		3);
+	TestEqual(TEXT("Iglin Bridge is one encounter"), Startup.Num(), 1);
+	TestEqual(
+		TEXT("a second pass leaves Iglin Bridge where it stands"),
+		SolidEncounter::PlaceMark(Startup, *Iglin, false, false, State, Points, None, None, Focus, 200.f),
+		0);
+	TestEqual(TEXT("Iglin Bridge is not added twice"), Startup.Num(), 1);
+
+	const SolidEncounter::FStaticEncounter Twice = SolidEncounter::FStaticEncounter{ TEXT("Twice") }
+		.WithGroup(SolidEncounter::EMonsterKind::Raptor, ESolidMonsterSize::Small, 3, TEXT("Attack"))
+		.Require(SolidEvents::IdEnterIglin)
+		.Require(SolidEvents::IdEnterRelion);
+	TestTrue(
+		TEXT("a second event id replaces the first"),
+		Twice.EventId && FCString::Strcmp(Twice.EventId, SolidEvents::IdEnterRelion) == 0);
+	TestFalse(TEXT("the later event id starts unfired"), Twice.HasFired(State));
+
+	const SolidEncounter::FStaticEncounter Waiting = SolidEncounter::FStaticEncounter{ TEXT("Waiting") }
+		.WithGroup(SolidEncounter::EMonsterKind::Raptor, ESolidMonsterSize::Small, 3, TEXT("Attack"))
+		.Require(SolidEvents::IdEnterIglin);
+	const SolidEncounter::FStaticEncounter Unknown = SolidEncounter::FStaticEncounter{ TEXT("Unknown") }
+		.WithGroup(SolidEncounter::EMonsterKind::Raptor, ESolidMonsterSize::Small, 1, TEXT("Attack"))
+		.Require(TEXT("missing"));
+
+	TestFalse(TEXT("an unfired event holds the row"), Waiting.HasFired(State));
+	TestFalse(TEXT("a missing state holds a waiting row"), Waiting.HasFired(nullptr));
+	TestFalse(TEXT("an unknown event id is unfired"), Unknown.HasFired(State));
+
+	TArray<FSolidEncounter> Held;
+	TestEqual(
+		TEXT("an unfired event places nobody"),
+		SolidEncounter::PlaceMark(Held, Waiting, false, false, State, Points, None, None, Focus, 200.f),
+		0);
+	TestEqual(TEXT("the waiting mark stays out"), Held.Num(), 0);
+	TestEqual(
+		TEXT("an unknown event id places nobody"),
+		SolidEncounter::PlaceMark(Held, Unknown, false, false, State, Points, None, None, Focus, 200.f),
+		0);
+	TestEqual(TEXT("an unknown event stays out"), Held.Num(), 0);
+
+	const int32 RelionIndex = SolidEvents::FindIndexById(SolidEvents::IdEnterRelion);
+	const int32 IglinIndex = SolidEvents::FindIndexById(SolidEvents::IdEnterIglin);
+	if (!TestTrue(TEXT("Enter Relion is an event"), RelionIndex != INDEX_NONE)
+		|| !TestTrue(TEXT("Enter Iglin is an event"), IglinIndex != INDEX_NONE))
+	{
+		return false;
+	}
+	State->bFired[RelionIndex] = true;
+	TestTrue(TEXT("the later event id is the one that fires"), Twice.HasFired(State));
+	TestFalse(TEXT("another event does not release the wait"), Waiting.HasFired(State));
+	TestEqual(
+		TEXT("another event still places nobody"),
+		SolidEncounter::PlaceMark(Held, Waiting, false, false, State, Points, None, None, Focus, 200.f),
+		0);
+
+	State->bFired[IglinIndex] = true;
+	TestTrue(TEXT("the event firing releases the wait"), Waiting.HasFired(State));
+	TestEqual(
+		TEXT("the fired event places the members"),
+		SolidEncounter::PlaceMark(Held, Waiting, false, false, State, Points, None, None, Focus, 200.f),
+		3);
+	TestEqual(TEXT("the mark is one encounter"), Held.Num(), 1);
+	TestEqual(
+		TEXT("the placed mark is not added again"),
+		SolidEncounter::PlaceMark(Held, Waiting, false, false, State, Points, None, None, Focus, 200.f),
+		0);
+	TestEqual(TEXT("one mark stays one encounter"), Held.Num(), 1);
+
+	TArray<FSolidTerrainPoint> SecondPoints;
+	for (const float Offset : Offsets)
+	{
+		FSolidTerrainPoint Point;
+		Point.X = 20000.f + Offset;
+		Point.Y = 0.f;
+		Point.Biome = ESolidBiome::Grassland;
+		SecondPoints.Add(Point);
+	}
+	const FVector2D SecondFocus(20000.f, 0.f);
+	TestEqual(
+		TEXT("a second mark places its own members"),
+		SolidEncounter::PlaceMark(
+			Held, Waiting, false, false, State, SecondPoints, None, None, SecondFocus, 200.f),
+		3);
+	TestEqual(TEXT("two marks of one name are two encounters"), Held.Num(), 2);
+
+	TArray<FSolidEncounter> Closed;
+	TestEqual(
+		TEXT("a closed visit places none"),
+		SolidEncounter::PlaceMark(Closed, Waiting, false, true, State, Points, None, None, Focus, 200.f),
+		0);
+	TestEqual(TEXT("a closed visit adds no encounter"), Closed.Num(), 0);
+	TestEqual(
+		TEXT("a disabled name places none"),
+		SolidEncounter::PlaceMark(Closed, Waiting, true, false, State, Points, None, None, Focus, 200.f),
+		0);
+	TestEqual(TEXT("a disabled name adds no encounter"), Closed.Num(), 0);
+
+	if (const SolidEncounter::FStaticEncounter* Ants = SolidEncounter::FindByName(TEXT("Giant ants")))
+	{
+		TestTrue(TEXT("Giant ants waits on no event"), !Ants->EventId || !Ants->EventId[0]);
+		int32 Expected = 0;
+		for (int32 Group = 0; Group < Ants->GroupCount; ++Group)
+		{
+			Expected += Ants->Groups[Group].Count;
+		}
+		TArray<FSolidEncounter> AntEncounters;
+		TestEqual(
+			TEXT("Giant ants stands at startup"),
+			SolidEncounter::PlaceMark(
+				AntEncounters, *Ants, false, false, State, Points, None, None, Focus, 200.f),
+			Expected);
+		TestEqual(TEXT("Giant ants is one encounter"), AntEncounters.Num(), 1);
 	}
 	return true;
 }

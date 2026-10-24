@@ -4,7 +4,7 @@
 #include "Company/SolidSquad.h"
 #include "Inventory/SolidItem.h"
 #include "SolidCompanionTestSeed.h"
-#include "Monster/SolidEncounters.h"
+#include "Events/SolidEncounters.h"
 #include "Monster/SolidRaptor.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -67,7 +67,7 @@ namespace SolidBattleTestPrivate
 		{
 			return FSolidEncounter();
 		}
-		for (const SolidEncounter::FDefinition& Candidate : SolidEncounter::Definitions)
+		for (const SolidEncounter::FStaticEncounter& Candidate : SolidEncounter::StaticEncounters)
 		{
 			if (Candidate.Name && FCString::Strcmp(Candidate.Name, Name) == 0)
 			{

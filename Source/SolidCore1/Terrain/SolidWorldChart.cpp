@@ -2,7 +2,7 @@
 #include "SolidBiome.h"
 #include "SolidCore1.h"
 #include "SolidLair.h"
-#include "Monster/SolidEncounters.h"
+#include "Events/SolidEncounters.h"
 #include "SolidStronghold.h"
 #include "SolidTerrainMap.h"
 #include "SolidTowns.h"
@@ -457,7 +457,7 @@ bool USolidWorldChart::PlaceCustom(const FIntPoint Cell, const FString& Note, FS
 
 bool USolidWorldChart::PlaceEncounter(const FIntPoint Cell, const FString& Name, FString& OutError)
 {
-	const SolidEncounter::FDefinition* Found = SolidEncounter::FindByName(Name);
+	const SolidEncounter::FStaticEncounter* Found = SolidEncounter::FindByName(Name);
 	if (!Found || !Found->Name)
 	{
 		OutError = FString::Printf(TEXT("%s is not an encounter."), *Name.TrimStartAndEnd());

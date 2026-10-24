@@ -353,7 +353,7 @@ public:
 
 	/**
 	 * Put a catalog encounter on this cell, replacing any mark already there.
-	 * The name is the one in SolidEncounter::Definitions. The paint stays.
+	 * The name is the one in SolidEncounter::StaticEncounters. The paint stays.
 	 */
 	bool PlaceEncounter(FIntPoint Cell, const FString& Name, FString& OutError);
 

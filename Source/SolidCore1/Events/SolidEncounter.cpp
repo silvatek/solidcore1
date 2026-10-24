@@ -1,8 +1,9 @@
 #include "SolidEncounter.h"
 #include "SolidEncounters.h"
-#include "SolidRaptor.h"
-#include "SolidGroundMove.h"
+#include "Monster/SolidRaptor.h"
+#include "Player/SolidGroundMove.h"
 #include "Inventory/SolidItem.h"
+#include "Events/SolidEvents.h"
 #include "SolidGameState.h"
 
 namespace SolidEncounterPrivate
@@ -36,7 +37,7 @@ namespace SolidEncounterPrivate
 		}
 	}
 
-	/** The members the definition names. Where they stand waits for Place. */
+	/** The members the catalog row names. Where they stand waits for Place. */
 	void Recruit(FSolidMonsterGroup& Group, const SolidEncounter::FGroup& Spec)
 	{
 		Group.Members.Reset();
@@ -83,7 +84,7 @@ namespace SolidEncounterPrivate
 	int32 PlaceGroup(
 		FSolidMonsterGroup& Group,
 		const SolidEncounter::FGroup& Spec,
-		const SolidEncounter::FDefinition& Definition,
+		const SolidEncounter::FStaticEncounter& Definition,
 		const TArray<FSolidTerrainPoint>& Points,
 		TSet<int32>& Taken,
 		const FVector2D& Outer,
@@ -212,7 +213,7 @@ void SolidEncounter::Disable(USolidGameState& State, const TCHAR* Name)
 	{
 		return;
 	}
-	if (const FDefinition* Def = FindByName(Name))
+	if (const FStaticEncounter* Def = FindByName(Name))
 	{
 		State.DisabledEncounters.Add(Def->Name);
 		return;
@@ -220,7 +221,57 @@ void SolidEncounter::Disable(USolidGameState& State, const TCHAR* Name)
 	State.DisabledEncounters.Add(Name);
 }
 
-FSolidEncounter::FSolidEncounter(const SolidEncounter::FDefinition& InDefinition)
+bool SolidEncounter::FStaticEncounter::HasFired(const USolidGameState* State) const
+{
+	if (!EventId || !EventId[0])
+	{
+		return true;
+	}
+	const int32 Index = SolidEvents::FindIndexById(EventId);
+	if (!State || Index == INDEX_NONE || Index >= SolidEvents::MaxEvents)
+	{
+		return false;
+	}
+	return State->bFired[Index];
+}
+
+int32 SolidEncounter::PlaceMark(
+	TArray<FSolidEncounter>& Encounters,
+	const FStaticEncounter& Definition,
+	const bool bDisabled,
+	const bool bClosedVisit,
+	const USolidGameState* State,
+	const TArray<FSolidTerrainPoint>& Points,
+	const TArray<int32>& TreePointIndices,
+	const TArray<int32>& ForagePointIndices,
+	const FVector2D& Focus,
+	const float PointSpacingCm)
+{
+	if (bClosedVisit || bDisabled || !Definition.HasFired(State))
+	{
+		return 0;
+	}
+	if (Definition.Name && Definition.Name[0])
+	{
+		for (const FSolidEncounter& Have : Encounters)
+		{
+			if (Have.Definition.Name
+				&& FCString::Stricmp(Have.Definition.Name, Definition.Name) == 0
+				&& Have.Location.Equals(Focus))
+			{
+				return 0;
+			}
+		}
+	}
+
+	FSolidEncounter Encounter(Definition);
+	const int32 Placed = Encounter.Place(
+		Points, TreePointIndices, ForagePointIndices, Focus, PointSpacingCm);
+	Encounters.Add(MoveTemp(Encounter));
+	return Placed;
+}
+
+FSolidEncounter::FSolidEncounter(const SolidEncounter::FStaticEncounter& InDefinition)
 	: Definition(InDefinition)
 {
 	Groups.SetNum(FMath::Max(0, Definition.GroupCount));

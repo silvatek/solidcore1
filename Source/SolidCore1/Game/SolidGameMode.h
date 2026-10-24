@@ -6,8 +6,8 @@
 #include "GameFramework/GameModeBase.h"
 #include "Terrain/SolidWorldChart.h"
 #include "Vegetation/SolidForage.h"
-#include "Monster/SolidEncounter.h"
-#include "Battle/SolidBattle.h"
+#include "Events/SolidEncounter.h"
+#include "Combat/SolidBattle.h"
 #include "Company/SolidCompany.h"
 #include "SolidSight.h"
 #include "SolidGameMode.generated.h"
@@ -246,7 +246,7 @@ protected:
 	void NoteTownEntry(int32 TownId);
 	/** Record Reach broken bridge when the captain stands on an Iglin ramp. */
 	void NoteBrokenBridgeRamp(const FVector& Location);
-	/** Show a message, or send the captain into the cave, when a result asks for it. */
+	/** Show a message, send the captain into the cave, or place encounters waiting on a fired event. */
 	void PresentEventResult(const SolidEvents::FResult& Result);
 	/**
 	 * The fight's copy of the captain has died.
@@ -263,6 +263,10 @@ protected:
 	void EnsureVegetation();
 	void ChooseForagePiles(const USolidTerrainMap* Map);
 	void ChooseMonsters(const USolidTerrainMap* Map);
+	/** Place catalog marks whose event has fired and that are not already in Encounters. */
+	int32 PlaceEncounterMarks(const USolidTerrainMap* Map);
+	/** After an event fires, place and seed the encounters that were waiting. */
+	void PlaceFiredEncounters();
 	void SaveTravelSession(
 		bool bInStronghold,
 		bool bInLair = false,

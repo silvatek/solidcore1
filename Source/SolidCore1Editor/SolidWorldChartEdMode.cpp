@@ -1,7 +1,7 @@
 #include "SolidWorldChartEdMode.h"
 
 #include "Lairs/SolidLair.h"
-#include "Monster/SolidEncounters.h"
+#include "Events/SolidEncounters.h"
 #include "Strongholds/SolidStronghold.h"
 #include "Terrain/SolidBiome.h"
 #include "Terrain/SolidTerrainMap.h"
@@ -191,7 +191,7 @@ public:
 		{
 			Lairs.Add(MakeShared<FString>(Lair.Name));
 		}
-		for (const SolidEncounter::FDefinition& Encounter : SolidEncounter::Definitions)
+		for (const SolidEncounter::FStaticEncounter& Encounter : SolidEncounter::StaticEncounters)
 		{
 			Encounters.Add(MakeShared<FString>(Encounter.Name));
 		}
@@ -991,7 +991,7 @@ void FSolidWorldChartEdMode::PlaceCurrentMark()
 		if (SolidEncounter::DefinitionCount > 0)
 		{
 			const int32 Index = FMath::Clamp(EncounterIndex, 0, SolidEncounter::DefinitionCount - 1);
-			bPlaced = Chart->PlaceEncounter(CurrentCell, SolidEncounter::Definitions[Index].Name, Error);
+			bPlaced = Chart->PlaceEncounter(CurrentCell, SolidEncounter::StaticEncounters[Index].Name, Error);
 		}
 		break;
 	default:

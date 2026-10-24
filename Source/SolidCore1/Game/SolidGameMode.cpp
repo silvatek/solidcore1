@@ -37,8 +37,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Vegetation/SolidForage.h"
 #include "Vegetation/SolidForagePile.h"
-#include "Monster/SolidEncounter.h"
-#include "Monster/SolidEncounters.h"
+#include "Events/SolidEncounter.h"
+#include "Events/SolidEncounters.h"
 #include "Inventory/SolidItem.h"
 #include "Vegetation/SolidForestTrees.h"
 #include "Vegetation/SolidTree.h"
@@ -802,6 +802,10 @@ void ASolidGameMode::NoteTownEntry(const int32 TownId)
 
 void ASolidGameMode::PresentEventResult(const SolidEvents::FResult& Result)
 {
+	if (Result.bFired)
+	{
+		PlaceFiredEncounters();
+	}
 	if (Result.bShowMessage && Result.MessageId && Result.MessageId[0])
 	{
 		if (UWorld* World = GetWorld())
@@ -1510,15 +1514,15 @@ void ASolidGameMode::SeedForagePiles()
 	}
 }
 
-void ASolidGameMode::ChooseMonsters(const USolidTerrainMap* Map)
+int32 ASolidGameMode::PlaceEncounterMarks(const USolidTerrainMap* Map)
 {
-	if (bMonstersChosen || !Map || !Map->IsBuilt())
+	if (!Map || !Map->IsBuilt())
 	{
-		return;
+		return 0;
 	}
 	if (!SolidEncounter::WorldHasEncounters(IsInClosedVisit()))
 	{
-		return;
+		return 0;
 	}
 	if (!bForageChosen)
 	{
@@ -1541,33 +1545,79 @@ void ASolidGameMode::ChooseMonsters(const USolidTerrainMap* Map)
 	}
 
 	const USolidWorldChart* WorldMap = Map->GetWorldMap();
-	Encounters.Reset();
-	int32 Chosen = 0;
-	if (WorldMap)
+	if (!WorldMap)
 	{
-		const TArray<FSolidWorldEncounterMark>& Marks = WorldMap->GetEncounterMarks();
-		Encounters.Reserve(Marks.Num());
-		for (const FSolidWorldEncounterMark& Mark : Marks)
-		{
-			const SolidEncounter::FDefinition* Def = SolidEncounter::FindByName(Mark.Name);
-			if (!Def)
-			{
-				continue;
-			}
-			if (const USolidGameState* State = GetConfiguration())
-			{
-				if (SolidEncounter::IsDisabled(*State, Def->Name))
-				{
-					continue;
-				}
-			}
-			FSolidEncounter Encounter(*Def);
-			const FVector2D Focus = USolidWorldChart::TerrainPosition(Mark.PositionCm, Map->GetWorldMinXY());
-			Chosen += Encounter.Place(
-				Map->GetPoints(), TreePoints, ForagePoints, Focus, Map->PointSpacing);
-			Encounters.Add(MoveTemp(Encounter));
-		}
+		return 0;
 	}
+
+	const USolidGameState* State = GetConfiguration();
+	int32 Chosen = 0;
+	for (const FSolidWorldEncounterMark& Mark : WorldMap->GetEncounterMarks())
+	{
+		const SolidEncounter::FStaticEncounter* Def = SolidEncounter::FindByName(Mark.Name);
+		if (!Def)
+		{
+			continue;
+		}
+		const bool bDisabled = State && SolidEncounter::IsDisabled(*State, Def->Name);
+		const FVector2D Focus = USolidWorldChart::TerrainPosition(Mark.PositionCm, Map->GetWorldMinXY());
+		Chosen += SolidEncounter::PlaceMark(
+			Encounters,
+			*Def,
+			bDisabled,
+			IsInClosedVisit(),
+			State,
+			Map->GetPoints(),
+			TreePoints,
+			ForagePoints,
+			Focus,
+			Map->PointSpacing);
+	}
+	return Chosen;
+}
+
+void ASolidGameMode::PlaceFiredEncounters()
+{
+	if (!bMonstersChosen)
+	{
+		return;
+	}
+	if (!SolidEncounter::WorldHasEncounters(IsInClosedVisit()))
+	{
+		return;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World || World->bIsTearingDown)
+	{
+		return;
+	}
+
+	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World);
+	const USolidTerrainMap* Map = Streamer ? Streamer->GetTerrainMap() : nullptr;
+	const int32 Before = Encounters.Num();
+	const int32 Chosen = PlaceEncounterMarks(Map);
+	if (Encounters.Num() > Before)
+	{
+		UE_LOG(LogSolid, Warning, TEXT("Placed %d monsters across %d encounters after an event"),
+			Chosen, Encounters.Num() - Before);
+		SeedMonsters();
+	}
+}
+
+void ASolidGameMode::ChooseMonsters(const USolidTerrainMap* Map)
+{
+	if (bMonstersChosen || !Map || !Map->IsBuilt())
+	{
+		return;
+	}
+	if (!SolidEncounter::WorldHasEncounters(IsInClosedVisit()))
+	{
+		return;
+	}
+
+	Encounters.Reset();
+	const int32 Chosen = PlaceEncounterMarks(Map);
 	bMonstersChosen = true;
 	UE_LOG(LogSolid, Warning, TEXT("Chose %d monsters across %d encounters"), Chosen, Encounters.Num());
 }

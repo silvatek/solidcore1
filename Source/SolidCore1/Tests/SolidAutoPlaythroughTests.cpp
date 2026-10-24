@@ -5,6 +5,8 @@
 #include "Inventory/SolidItemType.h"
 #include "Inventory/SolidStorage.h"
 #include "Menus/SolidMainMenu.h"
+#include "Monster/SolidEncounter.h"
+#include "Monster/SolidEncounters.h"
 #include "Playthrough/SolidAutoPlaythrough.h"
 #include "SolidCharacter.h"
 #include "SolidGameState.h"
@@ -22,9 +24,11 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 	const TCHAR* Names[] = {
 		TEXT("Walk to the monster encounter"),
 		TEXT("Wake in the cave"),
+		TEXT("Disable the Iglin Bridge encounter"),
 		TEXT("Walk to the stand"),
 		TEXT("Craft the torch"),
-		TEXT("Put the torch in the main hand"),
+		TEXT("Equip the torch"),
+		TEXT("Equip the sword"),
 		TEXT("Walk to the entrance"),
 		TEXT("Leave the cave"),
 		TEXT("Walk to Iglin"),
@@ -34,9 +38,11 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 	const FSolidAutoPlaythrough::EStepType Types[] = {
 		FSolidAutoPlaythrough::EStepType::WalkTo,
 		FSolidAutoPlaythrough::EStepType::WakeInStronghold,
+		FSolidAutoPlaythrough::EStepType::DisableEncounter,
 		FSolidAutoPlaythrough::EStepType::WalkTo,
 		FSolidAutoPlaythrough::EStepType::CraftItem,
-		FSolidAutoPlaythrough::EStepType::CraftItem,
+		FSolidAutoPlaythrough::EStepType::EquipItem,
+		FSolidAutoPlaythrough::EStepType::EquipItem,
 		FSolidAutoPlaythrough::EStepType::WalkTo,
 		FSolidAutoPlaythrough::EStepType::ExitStronghold,
 		FSolidAutoPlaythrough::EStepType::WalkTo,
@@ -85,6 +91,20 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("the driven-out close uses that pause"),
 		Close && FMath::IsNearlyEqual(Close->PauseSeconds, 1.f));
+	const FSolidAutoPlaythrough::FStep* Disable = nullptr;
+	for (int32 Index = 0; Index < FSolidAutoPlaythrough::ScriptCount; ++Index)
+	{
+		if (FSolidAutoPlaythrough::Script[Index].Type == FSolidAutoPlaythrough::EStepType::DisableEncounter)
+		{
+			Disable = &FSolidAutoPlaythrough::Script[Index];
+			break;
+		}
+	}
+	TestTrue(TEXT("the script disables an encounter"), Disable != nullptr);
+	TestEqual(
+		TEXT("that encounter is Iglin Bridge"),
+		Disable ? FString(Disable->EncounterName) : FString(),
+		FString(TEXT("Iglin Bridge")));
 	return true;
 }
 
@@ -249,32 +269,49 @@ bool FSolidAutoPlaythroughTorchTest::RunTest(const FString& Parameters)
 	SolidInventory::Clear(Loadout);
 	SolidStorage::FContainer Chest = SolidStorage::StartingCaveChest();
 	const int32 Body = SolidInventory::WornIndex(SolidInventory::ESlot::Body);
-	const int32 Hand = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
+	const int32 Main = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
+	const int32 Off = SolidInventory::WornIndex(SolidInventory::ESlot::OffHand);
 	const int32 Stick = SolidStorage::Index(1, 1);
 	const int32 Pitch = SolidStorage::Index(0, 2);
 	const int32 Sword = SolidStorage::Index(0, 0);
 	const int32 Boots = SolidStorage::Index(1, 0);
 	const int32 Coins = SolidStorage::Index(0, 1);
 	const int32 Empty = SolidStorage::Index(1, 2);
-	if (Body == INDEX_NONE || Hand == INDEX_NONE || Stick == INDEX_NONE || Pitch == INDEX_NONE
-		|| Sword == INDEX_NONE || Boots == INDEX_NONE || Coins == INDEX_NONE || Empty == INDEX_NONE)
+	if (Body == INDEX_NONE || Main == INDEX_NONE || Off == INDEX_NONE || Stick == INDEX_NONE
+		|| Pitch == INDEX_NONE || Sword == INDEX_NONE || Boots == INDEX_NONE || Coins == INDEX_NONE
+		|| Empty == INDEX_NONE)
 	{
 		AddError(TEXT("a slot index is missing"));
 		return false;
 	}
 
 	TestTrue(TEXT("the body starts in rags"), Loadout.Worn[Body].Is(SolidItemType::IdRags));
-	TestTrue(TEXT("the hands start empty"), Loadout.Worn[Hand].IsEmpty());
+	TestTrue(TEXT("the hands start empty"), Loadout.Worn[Main].IsEmpty());
 	TestTrue(TEXT("one stick and one pitch make a torch"), FSolidAutoPlaythrough::CraftTorch(Loadout, Chest));
-	TestTrue(TEXT("the torch goes to the main hand"), FSolidAutoPlaythrough::PutTorchInMainHand(Loadout));
+	TestTrue(
+		TEXT("the torch goes to the off-hand"),
+		FSolidAutoPlaythrough::EquipItem(
+			Loadout,
+			&Chest,
+			SolidItemType::IdTorch,
+			SolidInventory::ESlot::OffHand));
+	TestTrue(
+		TEXT("the rusty sword goes to the main hand"),
+		FSolidAutoPlaythrough::EquipItem(
+			Loadout,
+			&Chest,
+			SolidItemType::IdRustySword,
+			SolidInventory::ESlot::MainHand));
 
 	TestTrue(TEXT("rags stay on the body"), Loadout.Worn[Body].Is(SolidItemType::IdRags));
 	TestEqual(TEXT("one set of rags"), Loadout.Worn[Body].Count, 1);
-	TestTrue(TEXT("the main hand holds the torch"), Loadout.Worn[Hand].Is(SolidItemType::IdTorch));
-	TestEqual(TEXT("one torch"), Loadout.Worn[Hand].Count, 1);
+	TestTrue(TEXT("the off-hand holds the torch"), Loadout.Worn[Off].Is(SolidItemType::IdTorch));
+	TestEqual(TEXT("one torch"), Loadout.Worn[Off].Count, 1);
+	TestTrue(TEXT("the main hand holds the rusty sword"), Loadout.Worn[Main].Is(SolidItemType::IdRustySword));
+	TestEqual(TEXT("one rusty sword"), Loadout.Worn[Main].Count, 1);
 	for (int32 Index = 0; Index < SolidInventory::WornCount; ++Index)
 	{
-		if (Index == Body || Index == Hand)
+		if (Index == Body || Index == Main || Index == Off)
 		{
 			continue;
 		}
@@ -289,8 +326,7 @@ bool FSolidAutoPlaythroughTorchTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the craft slots are empty"), Loadout.Craft[Index].IsEmpty());
 	}
 
-	TestTrue(TEXT("the sword stays"), Chest.Slots[Sword].Is(SolidItemType::IdRustySword));
-	TestEqual(TEXT("one sword"), Chest.Slots[Sword].Count, 1);
+	TestTrue(TEXT("the sword left the chest"), Chest.Slots[Sword].IsEmpty());
 	TestTrue(TEXT("the boots stay"), Chest.Slots[Boots].Is(SolidItemType::IdOldBoots));
 	TestEqual(TEXT("one pair of boots"), Chest.Slots[Boots].Count, 1);
 	TestTrue(TEXT("the coins stay"), Chest.Slots[Coins].Is(SolidItemType::IdCoins));
@@ -300,6 +336,36 @@ bool FSolidAutoPlaythroughTorchTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the pitch is back"), Chest.Slots[Pitch].Is(SolidItemType::IdPitch));
 	TestEqual(TEXT("two pitch remain"), Chest.Slots[Pitch].Count, SolidStorage::StartingPitchCount - 1);
 	TestTrue(TEXT("the last chest cell stays empty"), Chest.Slots[Empty].IsEmpty());
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidAutoPlaythroughDisableEncounterTest,
+	"SolidCore1.AutoPlaythrough.DisableEncounter",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidAutoPlaythroughDisableEncounterTest::RunTest(const FString& Parameters)
+{
+	USolidGameState* State = NewObject<USolidGameState>();
+	TestNotNull(TEXT("play state"), State);
+	if (!State)
+	{
+		return false;
+	}
+
+	TestFalse(
+		TEXT("a new game places Iglin Bridge"),
+		SolidEncounter::IsDisabled(*State, TEXT("Iglin Bridge")));
+	SolidEncounter::Disable(*State, TEXT("Iglin Bridge"));
+	TestTrue(
+		TEXT("Disable records Iglin Bridge"),
+		SolidEncounter::IsDisabled(*State, TEXT("Iglin Bridge")));
+	TestTrue(
+		TEXT("the catalog name matches without case"),
+		SolidEncounter::IsDisabled(*State, TEXT("iglin bridge")));
+	SolidEncounter::Disable(*State, TEXT("Iglin Bridge"));
+	TestEqual(TEXT("a second disable is ignored"), State->DisabledEncounters.Num(), 1);
+	TestFalse(TEXT("an empty name is not disabled"), SolidEncounter::IsDisabled(*State, TEXT("")));
 	return true;
 }
 

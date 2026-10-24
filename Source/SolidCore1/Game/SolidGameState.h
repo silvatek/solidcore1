@@ -48,6 +48,11 @@ public:
 	 * A new game has none. The change carries the lair id. The event id does not.
 	 */
 	TArray<const TCHAR*, TInlineAllocator<SolidEvents::MaxEnabledLairs>> EnabledLairs;
+	/**
+	 * Encounter names ChooseMonsters skips. A new game has none.
+	 * The Auto playthrough can disable Iglin Bridge after the cave wake.
+	 */
+	TArray<const TCHAR*, TInlineAllocator<8>> DisabledEncounters;
 	bool bFired[SolidEvents::MaxEvents] = {};
 	/** Definition indexes, in the order the events fired. */
 	TArray<int32, TInlineAllocator<SolidEvents::MaxEvents>> FiredOrder;

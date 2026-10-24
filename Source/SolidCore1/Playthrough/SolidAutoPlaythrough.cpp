@@ -43,9 +43,11 @@ using EWalk = FSolidAutoPlaythrough::EWalk;
 const FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = {
 	FStep::WalkTo(TEXT("Walk to the monster encounter"), EWalk::MonsterEncounter),
 	FStep::WakeInStronghold(TEXT("Wake in the cave")),
+	FStep::DisableEncounter(TEXT("Disable the Iglin Bridge encounter"), TEXT("Iglin Bridge")),
 	FStep::WalkTo(TEXT("Walk to the stand"), StandCells, UE_ARRAY_COUNT(StandCells)),
 	FStep::CraftItem(TEXT("Craft the torch"), SolidItemType::IdTorch),
-	FStep::CraftItem(TEXT("Put the torch in the main hand"), SolidItemType::IdTorch).EquipMainHand().ClosePage(),
+	FStep::EquipItem(TEXT("Equip the torch"), SolidItemType::IdTorch, SolidInventory::ESlot::OffHand),
+	FStep::EquipItem(TEXT("Equip the sword"), SolidItemType::IdRustySword, SolidInventory::ESlot::MainHand).ClosePage(),
 	FStep::WalkTo(TEXT("Walk to the entrance"), EntranceCells, UE_ARRAY_COUNT(EntranceCells)),
 	FStep::ExitStronghold(TEXT("Leave the cave")),
 	FStep::WalkTo(TEXT("Walk to Iglin"), EWalk::TrailToIglin),
@@ -157,8 +159,6 @@ namespace
 		return Biome == ESolidBiome::Grassland || Biome == ESolidBiome::Town;
 	}
 
-	bool OnIglinRamp(const ASolidGameMode& Mode, const FVector2D& Point);
-
 	const SolidLair::FEntrance* FindLairEntrance(
 		const TArray<SolidLair::FEntrance>& Entrances,
 		const TCHAR EndMarker)
@@ -173,79 +173,14 @@ namespace
 		return nullptr;
 	}
 
-	bool CellCenter(
+	bool GrassPath(
 		const USolidWorldChart& Chart,
-		const FIntPoint Cell,
-		const FVector2D WorldMin,
-		const FVector2D WorldMax,
-		FVector2D& OutCenter)
-	{
-		return Chart.CellToWorldXY(Cell, WorldMin, WorldMax, OutCenter);
-	}
-
-	bool TouchesMountain(const USolidWorldChart& Chart, const FIntPoint Cell)
-	{
-		const FIntPoint Steps[] = {
-			{ 0, -1 }, { -1, 0 }, { 0, 1 }, { 1, 0 },
-			{ -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 },
-		};
-		for (const FIntPoint& Step : Steps)
-		{
-			const FIntPoint Next(Cell.X + Step.X, Cell.Y + Step.Y);
-			if (Next.X < 0 || Next.X >= USolidWorldChart::MapWidth
-				|| Next.Y < 0 || Next.Y >= USolidWorldChart::MapHeight)
-			{
-				continue;
-			}
-			if (Chart.GetBiomeAtCell(Next.X, Next.Y) == ESolidBiome::Mountain)
-			{
-				return true;
-			}
-		}
-		return false;
-	}
-
-	bool WalkableLairCell(
-		const ASolidGameMode& Mode,
-		const USolidWorldChart& Chart,
-		const FIntPoint Cell,
-		const FVector2D WorldMin,
-		const FVector2D WorldMax)
-	{
-		if (!WalkableCell(Chart, Cell))
-		{
-			return false;
-		}
-		FVector2D Center = FVector2D::ZeroVector;
-		if (!CellCenter(Chart, Cell, WorldMin, WorldMax, Center))
-		{
-			return false;
-		}
-		return !OnIglinRamp(Mode, Center);
-	}
-
-	/** Grass beside mountain is cheap. Open grass is dear, so the walk stays on the cliff. */
-	constexpr int32 HugCost = 1;
-	constexpr int32 OpenCost = 50;
-	constexpr float HugCliffCm = 280.f;
-
-	int32 LairStepCost(const USolidWorldChart& Chart, const FIntPoint Cell)
-	{
-		return TouchesMountain(Chart, Cell) ? HugCost : OpenCost;
-	}
-
-	bool HugMountainPath(
-		const ASolidGameMode& Mode,
-		const USolidWorldChart& Chart,
-		const FVector2D WorldMin,
-		const FVector2D WorldMax,
 		const FIntPoint From,
 		const FIntPoint To,
 		TArray<FIntPoint>& OutCells)
 	{
 		OutCells.Reset();
-		if (!WalkableLairCell(Mode, Chart, From, WorldMin, WorldMax)
-			|| !WalkableLairCell(Mode, Chart, To, WorldMin, WorldMax))
+		if (!WalkableCell(Chart, From) || !WalkableCell(Chart, To))
 		{
 			return false;
 		}
@@ -256,33 +191,23 @@ namespace
 		}
 
 		const int32 CellCount = USolidWorldChart::MapWidth * USolidWorldChart::MapHeight;
+		TArray<int32> CameFrom;
+		CameFrom.Init(INDEX_NONE, CellCount);
+		TArray<FIntPoint> Queue;
+		Queue.Reserve(CellCount);
 		const auto IndexOf = [](const FIntPoint Cell)
 		{
 			return Cell.X + Cell.Y * USolidWorldChart::MapWidth;
 		};
-		TArray<int32> Dist;
-		Dist.Init(MAX_int32, CellCount);
-		TArray<int32> CameFrom;
-		CameFrom.Init(INDEX_NONE, CellCount);
-		TArray<TPair<int32, int32>> Heap;
-		const int32 StartIndex = IndexOf(From);
-		Dist[StartIndex] = 0;
-		CameFrom[StartIndex] = StartIndex;
-		Heap.HeapPush(TPair<int32, int32>(0, StartIndex));
+		CameFrom[IndexOf(From)] = IndexOf(From);
+		Queue.Add(From);
+		int32 Head = 0;
 		const FIntPoint Steps[] = {
 			{ 0, -1 }, { -1, 0 }, { 0, 1 }, { 1, 0 },
 		};
-		while (Heap.Num() > 0)
+		while (Head < Queue.Num())
 		{
-			TPair<int32, int32> Top;
-			Heap.HeapPop(Top);
-			const int32 Cost = Top.Key;
-			const int32 HereIndex = Top.Value;
-			if (Cost != Dist[HereIndex])
-			{
-				continue;
-			}
-			const FIntPoint Here(HereIndex % USolidWorldChart::MapWidth, HereIndex / USolidWorldChart::MapWidth);
+			const FIntPoint Here = Queue[Head++];
 			if (Here == To)
 			{
 				break;
@@ -290,19 +215,17 @@ namespace
 			for (const FIntPoint& Step : Steps)
 			{
 				const FIntPoint Next(Here.X + Step.X, Here.Y + Step.Y);
-				if (!WalkableLairCell(Mode, Chart, Next, WorldMin, WorldMax))
+				if (!WalkableCell(Chart, Next))
 				{
 					continue;
 				}
 				const int32 NextIndex = IndexOf(Next);
-				const int32 NextCost = Cost + LairStepCost(Chart, Next);
-				if (NextCost >= Dist[NextIndex])
+				if (CameFrom[NextIndex] != INDEX_NONE)
 				{
 					continue;
 				}
-				Dist[NextIndex] = NextCost;
-				CameFrom[NextIndex] = HereIndex;
-				Heap.HeapPush(TPair<int32, int32>(NextCost, NextIndex));
+				CameFrom[NextIndex] = IndexOf(Here);
+				Queue.Add(Next);
 			}
 		}
 		if (CameFrom[IndexOf(To)] == INDEX_NONE)
@@ -320,47 +243,6 @@ namespace
 		OutCells.Add(From);
 		Algo::Reverse(OutCells);
 		return OutCells.Num() > 0;
-	}
-
-	FVector2D CliffWalkPoint(
-		const USolidWorldChart& Chart,
-		const FIntPoint Cell,
-		const FVector2D WorldMin,
-		const FVector2D WorldMax)
-	{
-		FVector2D Center = FVector2D::ZeroVector;
-		if (!CellCenter(Chart, Cell, WorldMin, WorldMax, Center))
-		{
-			return FVector2D::ZeroVector;
-		}
-		FVector2D Toward = FVector2D::ZeroVector;
-		const FIntPoint Steps[] = {
-			{ 0, -1 }, { -1, 0 }, { 0, 1 }, { 1, 0 },
-			{ -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 },
-		};
-		for (const FIntPoint& Step : Steps)
-		{
-			const FIntPoint Next(Cell.X + Step.X, Cell.Y + Step.Y);
-			if (Next.X < 0 || Next.X >= USolidWorldChart::MapWidth
-				|| Next.Y < 0 || Next.Y >= USolidWorldChart::MapHeight)
-			{
-				continue;
-			}
-			if (Chart.GetBiomeAtCell(Next.X, Next.Y) != ESolidBiome::Mountain)
-			{
-				continue;
-			}
-			FVector2D Neighbor = FVector2D::ZeroVector;
-			if (CellCenter(Chart, Next, WorldMin, WorldMax, Neighbor))
-			{
-				Toward += (Neighbor - Center).GetSafeNormal();
-			}
-		}
-		if (Toward.IsNearlyZero())
-		{
-			return Center;
-		}
-		return Center + Toward.GetSafeNormal() * HugCliffCm;
 	}
 
 	ASolidHUD* HudOf(const ASolidCharacter& Captain)
@@ -639,22 +521,58 @@ bool FSolidAutoPlaythrough::CraftTorch(SolidInventory::FLoadout& Loadout, SolidS
 	return SolidInventory::Move(&Chest, Loadout, CraftSlot(1), ChestCell(Pitch));
 }
 
-bool FSolidAutoPlaythrough::PutTorchInMainHand(SolidInventory::FLoadout& Loadout)
+bool FSolidAutoPlaythrough::EquipItem(
+	SolidInventory::FLoadout& Loadout,
+	SolidStorage::FContainer* Chest,
+	const TCHAR* ItemId,
+	const SolidInventory::ESlot Slot)
 {
-	const int32 Hand = SolidInventory::WornIndex(SolidInventory::ESlot::MainHand);
-	if (Hand == INDEX_NONE)
+	const int32 Worn = SolidInventory::WornIndex(Slot);
+	if (Worn == INDEX_NONE || !ItemId)
 	{
 		return false;
 	}
-	if (SameItem(Loadout.Worn[Hand], SolidItemType::IdTorch))
+	if (SameItem(Loadout.Worn[Worn], ItemId))
 	{
 		return true;
 	}
-	return SolidInventory::Move(
-		nullptr,
-		Loadout,
-		PackCell(0, 0),
-		WornSlot(SolidInventory::ESlot::MainHand));
+
+	SolidInventory::FSlotHit From;
+	for (int32 Index = 0; Index < SolidInventory::WornCount; ++Index)
+	{
+		if (SameItem(Loadout.Worn[Index], ItemId))
+		{
+			From = WornSlot(static_cast<SolidInventory::ESlot>(Index));
+			return From.Index != INDEX_NONE
+				&& SolidInventory::Move(Chest, Loadout, From, WornSlot(Slot));
+		}
+	}
+	for (int32 Row = 0; Row < SolidInventory::PackRows; ++Row)
+	{
+		for (int32 Column = 0; Column < SolidInventory::PackColumns; ++Column)
+		{
+			const int32 Index = SolidInventory::PackIndex(Column, Row);
+			if (Index != INDEX_NONE && SameItem(Loadout.Pack[Index], ItemId))
+			{
+				return SolidInventory::Move(Chest, Loadout, PackCell(Column, Row), WornSlot(Slot));
+			}
+		}
+	}
+	if (Chest)
+	{
+		for (int32 Row = 0; Row < SolidStorage::Rows; ++Row)
+		{
+			for (int32 Column = 0; Column < SolidStorage::Columns; ++Column)
+			{
+				const int32 Index = SolidStorage::Index(Column, Row);
+				if (Index != INDEX_NONE && SameItem(Chest->Slots[Index], ItemId))
+				{
+					return SolidInventory::Move(Chest, Loadout, ChestCell(Index), WornSlot(Slot));
+				}
+			}
+		}
+	}
+	return false;
 }
 
 bool FSolidAutoPlaythrough::CanStart(const USolidGameState& State)
@@ -712,6 +630,11 @@ bool FSolidAutoPlaythrough::TickCurrent(
 		return TickCloseMessage(DeltaSeconds, Captain, Step);
 	case EStepType::CraftItem:
 		return TickCraftItem(Mode, Captain, Step);
+	case EStepType::EquipItem:
+		return TickEquipItem(Mode, Captain, Step);
+	case EStepType::DisableEncounter:
+		TickDisableEncounter(Mode, Step);
+		return false;
 	case EStepType::ExitStronghold:
 		return TickExit(Mode, Captain);
 	case EStepType::WakeInStronghold:
@@ -1131,7 +1054,7 @@ bool FSolidAutoPlaythrough::BuildLairEntranceWalk(
 	}
 
 	TArray<FIntPoint> Cells;
-	if (!HugMountainPath(Mode, *Chart, WorldMin, WorldMax, Start, Mouth->GrassCell, Cells))
+	if (!GrassPath(*Chart, Start, Mouth->GrassCell, Cells))
 	{
 		Stop();
 		return false;
@@ -1141,7 +1064,11 @@ bool FSolidAutoPlaythrough::BuildLairEntranceWalk(
 	Points.Reserve(Cells.Num() + 1);
 	for (const FIntPoint& Cell : Cells)
 	{
-		Points.Add(CliffWalkPoint(*Chart, Cell, WorldMin, WorldMax));
+		FVector2D Center = FVector2D::ZeroVector;
+		if (Chart->CellToWorldXY(Cell, WorldMin, WorldMax, Center))
+		{
+			Points.Add(Center);
+		}
 	}
 	Points.Add(Mouth->WorldXY);
 	PointIndex = 0;
@@ -1223,10 +1150,6 @@ bool FSolidAutoPlaythrough::TickCraftItem(
 		Stop();
 		return false;
 	}
-	if (Step.bEquipMainHand)
-	{
-		return TickPutTorch(Mode, Captain, Step.bClosePage);
-	}
 
 	if (bPageOpen)
 	{
@@ -1259,22 +1182,23 @@ bool FSolidAutoPlaythrough::TickCraftItem(
 	return false;
 }
 
-bool FSolidAutoPlaythrough::TickPutTorch(
+bool FSolidAutoPlaythrough::TickEquipItem(
 	ASolidGameMode& Mode,
 	ASolidCharacter& Captain,
-	const bool bClosePage)
+	const FStep& Step)
 {
 	USolidGameState* State = Mode.GetConfiguration();
-	if (!State)
-	{
-		return false;
-	}
-	if (!PutTorchInMainHand(State->Inventory))
+	if (!State || !Step.ItemId)
 	{
 		Stop();
 		return false;
 	}
-	if (bClosePage)
+	if (!EquipItem(State->Inventory, &State->CaveChest, Step.ItemId, Step.Slot))
+	{
+		Stop();
+		return false;
+	}
+	if (Step.bClosePage)
 	{
 		if (ASolidHUD* HUD = HudOf(Captain))
 		{
@@ -1286,6 +1210,17 @@ bool FSolidAutoPlaythrough::TickPutTorch(
 	}
 	Advance();
 	return false;
+}
+
+void FSolidAutoPlaythrough::TickDisableEncounter(ASolidGameMode& Mode, const FStep& Step)
+{
+	if (!Step.EncounterName)
+	{
+		Stop();
+		return;
+	}
+	Mode.DisableEncounter(Step.EncounterName);
+	Advance();
 }
 
 bool FSolidAutoPlaythrough::ClickMouth(ASolidGameMode& Mode, ASolidCharacter& Captain)

@@ -118,6 +118,9 @@ public:
 	/** Open-world encounters after Place. Empty before the monsters are chosen. */
 	const TArray<FSolidEncounter>& GetEncounters() const { return Encounters; }
 
+	/** Record the name so later Place skips it, and drop a live encounter of that name. */
+	void DisableEncounter(const TCHAR* Name);
+
 	/**
 	 * Start a fight when a monster detects the captain, then move that fight forward.
 	 * The log reads a copy of the kit. When that copy's captain dies, Killed by monsters fires.

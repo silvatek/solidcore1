@@ -1,15 +1,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Inventory/SolidInventory.h"
 
 class USolidGameState;
 class ASolidGameMode;
 class ASolidCharacter;
-
-namespace SolidInventory
-{
-	struct FLoadout;
-}
 
 namespace SolidStorage
 {
@@ -34,6 +30,8 @@ public:
 		WalkTo,
 		CloseMessage,
 		CraftItem,
+		EquipItem,
+		DisableEncounter,
 		ExitStronghold,
 		WakeInStronghold,
 		Custom,
@@ -53,7 +51,8 @@ public:
 
 	/**
 	 * One row of the opening script.
-	 * WalkTo, CloseMessage, CraftItem, ExitStronghold, WakeInStronghold, and Custom build one.
+	 * WalkTo, CloseMessage, CraftItem, EquipItem, DisableEncounter, ExitStronghold,
+	 * WakeInStronghold, and Custom build one.
 	 * A later helper fills the one field that row also reads.
 	 */
 	struct FStep
@@ -64,8 +63,8 @@ public:
 		const SolidStrongholdGrid::FCell* Cells = nullptr;
 		int32 CellCount = 0;
 		const TCHAR* ItemId = nullptr;
-		/** True when this row moves the crafted item into the main hand. */
-		bool bEquipMainHand = false;
+		SolidInventory::ESlot Slot = SolidInventory::ESlot::MainHand;
+		const TCHAR* EncounterName = nullptr;
 		/** True when this row closes the inventory page. */
 		bool bClosePage = false;
 		const TCHAR* MessageId = nullptr;
@@ -116,6 +115,28 @@ public:
 			return Step;
 		}
 
+		static constexpr FStep EquipItem(
+			const TCHAR* InName,
+			const TCHAR* InItemId,
+			const SolidInventory::ESlot InSlot)
+		{
+			FStep Step;
+			Step.Type = EStepType::EquipItem;
+			Step.Name = InName;
+			Step.ItemId = InItemId;
+			Step.Slot = InSlot;
+			return Step;
+		}
+
+		static constexpr FStep DisableEncounter(const TCHAR* InName, const TCHAR* InEncounterName)
+		{
+			FStep Step;
+			Step.Type = EStepType::DisableEncounter;
+			Step.Name = InName;
+			Step.EncounterName = InEncounterName;
+			return Step;
+		}
+
 		static constexpr FStep ExitStronghold(const TCHAR* InName)
 		{
 			FStep Step;
@@ -141,13 +162,6 @@ public:
 			return Step;
 		}
 
-		constexpr FStep EquipMainHand() const
-		{
-			FStep Step = *this;
-			Step.bEquipMainHand = true;
-			return Step;
-		}
-
 		constexpr FStep ClosePage() const
 		{
 			FStep Step = *this;
@@ -165,7 +179,7 @@ public:
 
 	/** The opening script, in order. A later story edits this list. */
 	static const FStep Script[];
-	static constexpr int32 ScriptCount = 10;
+	static constexpr int32 ScriptCount = 12;
 
 	/** The F10 row and the HUD line. */
 	static const TCHAR* Label() { return TEXT("Auto playthrough"); }
@@ -181,8 +195,12 @@ public:
 	 * The sword, the boots, the coins, and the body are left alone.
 	 */
 	static bool CraftTorch(SolidInventory::FLoadout& Loadout, SolidStorage::FContainer& Chest);
-	/** The torch in pack cell (0, 0) moves to the main hand. */
-	static bool PutTorchInMainHand(SolidInventory::FLoadout& Loadout);
+	/** Move that item from a worn box, the pack, or the chest into the worn slot. */
+	static bool EquipItem(
+		SolidInventory::FLoadout& Loadout,
+		SolidStorage::FContainer* Chest,
+		const TCHAR* ItemId,
+		SolidInventory::ESlot Slot);
 
 	/** True while the row can be chosen. The dim flag on the play state clears it. */
 	static bool CanStart(const USolidGameState& State);
@@ -231,7 +249,8 @@ private:
 	void TickCustom(const FStep& Step);
 	void TickWakeInStronghold(const ASolidGameMode& Mode);
 	bool TickCraftItem(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
-	bool TickPutTorch(ASolidGameMode& Mode, ASolidCharacter& Captain, bool bClosePage);
+	bool TickEquipItem(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
+	void TickDisableEncounter(ASolidGameMode& Mode, const FStep& Step);
 	bool TickExit(ASolidGameMode& Mode, ASolidCharacter& Captain);
 	bool TickCloseMessage(float DeltaSeconds, ASolidCharacter& Captain, const FStep& Step);
 	bool ClickMouth(ASolidGameMode& Mode, ASolidCharacter& Captain);

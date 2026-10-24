@@ -5,6 +5,8 @@
 #include "SolidMonsterGroup.h"
 #include "Terrain/SolidTerrainTypes.h"
 
+class USolidGameState;
+
 /**
  * Encounter definitions and a runtime encounter built from one.
  * Definitions are a static list, the way SolidEvents::Definitions are.
@@ -69,6 +71,11 @@ namespace SolidEncounter
 
 	/** A closed visit has no encounters. The tunnels stay empty. */
 	bool WorldHasEncounters(bool bClosedVisit);
+
+	/** True when Disable has recorded this encounter name. */
+	bool IsDisabled(const USolidGameState& State, const TCHAR* Name);
+	/** ChooseMonsters skips this name for the rest of the game. */
+	void Disable(USolidGameState& State, const TCHAR* Name);
 }
 
 /**

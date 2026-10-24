@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0601")
+#define SOLID_BUILD_ID TEXT("SC1-0602")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Auto playthrough hugs the mountain on the way to the tunnels.")
+#define SOLID_BUILD_NOTE TEXT("Auto playthrough disables Iglin Bridge, then walks the grass to the tunnels.")
 #endif

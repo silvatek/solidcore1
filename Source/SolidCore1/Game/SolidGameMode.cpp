@@ -1552,6 +1552,13 @@ void ASolidGameMode::ChooseMonsters(const USolidTerrainMap* Map)
 			{
 				continue;
 			}
+			if (const USolidGameState* State = GetConfiguration())
+			{
+				if (SolidEncounter::IsDisabled(*State, Def->Name))
+				{
+					continue;
+				}
+			}
 			FSolidEncounter Encounter(*Def);
 			const FVector2D Focus = USolidWorldChart::TerrainPosition(Mark.PositionCm, Map->GetWorldMinXY());
 			Chosen += Encounter.Place(
@@ -1561,6 +1568,23 @@ void ASolidGameMode::ChooseMonsters(const USolidTerrainMap* Map)
 	}
 	bMonstersChosen = true;
 	UE_LOG(LogSolid, Warning, TEXT("Chose %d monsters across %d encounters"), Chosen, Encounters.Num());
+}
+
+void ASolidGameMode::DisableEncounter(const TCHAR* Name)
+{
+	if (USolidGameState* State = GetConfiguration())
+	{
+		SolidEncounter::Disable(*State, Name);
+	}
+	if (!Name || !Name[0])
+	{
+		return;
+	}
+	Encounters.RemoveAll([Name](const FSolidEncounter& Encounter)
+	{
+		return Encounter.Definition.Name
+			&& FCString::Stricmp(Encounter.Definition.Name, Name) == 0;
+	});
 }
 
 void ASolidGameMode::SeedMonsters()

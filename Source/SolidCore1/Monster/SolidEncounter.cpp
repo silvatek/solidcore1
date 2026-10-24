@@ -1,7 +1,9 @@
 #include "SolidEncounter.h"
+#include "SolidEncounters.h"
 #include "SolidRaptor.h"
 #include "SolidGroundMove.h"
 #include "Inventory/SolidItem.h"
+#include "SolidGameState.h"
 
 namespace SolidEncounterPrivate
 {
@@ -186,6 +188,36 @@ namespace SolidEncounterPrivate
 bool SolidEncounter::WorldHasEncounters(const bool bClosedVisit)
 {
 	return !bClosedVisit;
+}
+
+bool SolidEncounter::IsDisabled(const USolidGameState& State, const TCHAR* Name)
+{
+	if (!Name || !Name[0])
+	{
+		return false;
+	}
+	for (const TCHAR* Listed : State.DisabledEncounters)
+	{
+		if (Listed && FCString::Stricmp(Listed, Name) == 0)
+		{
+			return true;
+		}
+	}
+	return false;
+}
+
+void SolidEncounter::Disable(USolidGameState& State, const TCHAR* Name)
+{
+	if (!Name || !Name[0] || IsDisabled(State, Name))
+	{
+		return;
+	}
+	if (const FDefinition* Def = FindByName(Name))
+	{
+		State.DisabledEncounters.Add(Def->Name);
+		return;
+	}
+	State.DisabledEncounters.Add(Name);
 }
 
 FSolidEncounter::FSolidEncounter(const SolidEncounter::FDefinition& InDefinition)

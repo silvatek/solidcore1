@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0618")
+#define SOLID_BUILD_ID TEXT("SC1-0619")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The company names its stronghold from the sign.")
+#define SOLID_BUILD_NOTE TEXT("An encounter can wait until an event has fired.")
 #endif

@@ -18,6 +18,16 @@ A town stays what it is now. The town biome is painted with that brush, the same
 
 A road keeps its route-finding. The solver keeps its steps and its costs: off mountains and the sea, extra for forest and desert on a road or a highway, and extra for a river. A step reads the biome of the terrain point under it. The search stays on those steps. The strip stays 1 m, 2 m, 3 m, or 4 m.
 
+## Stages
+
+This story is complex. The point grid can be loaded and read before a town is a region, and that region can be named before the brush paints it. Agree this order before a stage is planned in detail. A stage ships before the next stage is planned. The story stays Ready until the first stage starts.
+
+1. **The chart stores a biome on each terrain point.** The grid stays 513 by 513 points at 200 cm. Loading the shipped chart copies the biome each old cell shows in play onto the points inside it. The road strip is not copied. The point under a marker is then town, or grassland for every other marker. Play reads that point, and the shelf between two points is that point's shelf. The road solver keeps its cell steps, its costs, and the strip. A step reads the terrain point under that step. Marks, towns, and the cell searches stay on the cells they use now. A town is still the marker's cell. The World chart still paints a whole cell, and that paint fills the points of the cell. What is true: the shipped world matches that copy, one point can differ from the point beside it, and the chart asset on disk still loads.
+2. **A town is the painted ground connected to its marker.** The marker links that region to one town `SolidTowns` already defines. Dragongate's two marks stay one town while they stand in the same painted town ground. If two different towns fall in one region, the region keeps the first marker. A single town point is that town. What is true: standing on the connected town paint is that town, and standing on town paint that does not meet the marker is not.
+3. **The World chart paints points.** The palette is grassland, forest, mountain, town, desert, sea, and river. The developer chooses a round brush. The smallest brush is one point, 2 m. A click stamps it. A drag lays it along the path. Shift-drag fills the axis-aligned rectangle. Alt copies the biome of the point under the cursor. Painting river sets those points to river. A stronghold, a site, a lair entrance, a lair exit, and a custom note stay one point. What is true: the chart mode reads and changes the point grid, and a diagonal or a curve is one stroke at the chosen width.
+
+Hills is not part of this story. If that biome is already in the game when stage 3 starts, it stays on the palette.
+
 ## Acceptance
 
 - The terrain grid stays 513 by 513 points at 200 cm.

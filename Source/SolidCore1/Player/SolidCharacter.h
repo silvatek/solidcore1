@@ -92,6 +92,10 @@ public:
 	bool IsScriptRightMouseHeld() const { return bScriptRightMouse; }
 	/** Move the pointer and press the left button. The click handler runs. */
 	void SimulateLeftClick(float ScreenX, float ScreenY);
+	/** Open the site stone with the unlocked choices. */
+	void OfferStrongholdSite(const ASolidStrongholdSite* Site);
+	/** Build the selected size and type, then travel into that stronghold. */
+	void ConfirmStrongholdChoice();
 	/** The stick a move key produces after its mapping modifiers. W is (0, 1), forward. */
 	bool StickForKey(FKey Key, FVector2D& OutStick);
 	/** Move the captain onto a landing. Pitch 0 is a level camera. Clears a click-walk and a formation drill. */
@@ -142,8 +146,6 @@ protected:
 	ASolidStrongholdSite* SiteUnderPointer() const;
 	/** Nearest forage pile along the pointer ray. Ground distance is the captain's, in cm. */
 	ASolidForagePile* NearestForagePile(float& OutGroundDistanceCm) const;
-	void OfferStrongholdSite(const ASolidStrongholdSite* Site);
-	void ConfirmStrongholdChoice();
 	void TickClickMove();
 	void ClearClickMove();
 	bool ResolveClickMoveDestination(const FVector& RayOrigin, const FVector& RayDirection, FVector& OutDestination) const;

@@ -28,7 +28,11 @@
 #include "Towns/SolidTowns.h"
 #include "Towns/SolidWallgate.h"
 #include "Company/SolidSquad.h"
+#include "Company/SolidCompany.h"
 #include "BattlePlans/SolidBattlePlan.h"
+#include "Menus/SolidSquadBuilder.h"
+#include "Strongholds/Sites/SolidStrongholdSite.h"
+#include "Strongholds/Tower/SolidTower.h"
 #include "Algo/Reverse.h"
 
 namespace
@@ -69,6 +73,15 @@ const FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = 
 	FStep::SelectBattlePlan(TEXT("Form Loose mob"), TEXT("Loose mob")),
 	FStep::SelectBattlePlan(TEXT("Form Tight mob"), TEXT("Tight mob")),
 	FStep::WalkTo(TEXT("Walk to Dragongate"), EWalk::Town, SolidTowns::Dragongate),
+	FStep::WalkTo(TEXT("Walk to the Imperious site"), EWalk::StrongholdSite, ESolidStrongholdSize::Imperious),
+	FStep::ChooseStronghold(TEXT("Choose Imperious Tower"), ESolidStrongholdSize::Imperious, ESolidStrongholdType::Tower),
+	FStep::WakeInStronghold(TEXT("Wake in the tower")),
+	FStep::WalkTo(TEXT("Climb to the top floor"), EWalk::Tower).AtFloor(10),
+	FStep::WalkTo(TEXT("Walk to the door"), EWalk::Tower).AtFloor(1),
+	FStep::ExitStronghold(TEXT("Leave the tower")),
+	FStep::BuildSquad(TEXT("Build squad Max"), TEXT("Max")),
+	FStep::BuildSquad(TEXT("Build squad Morgan"), TEXT("Morgan")),
+	FStep::BuildSquad(TEXT("Build squad Quinn"), TEXT("Quinn")).ClosePage(),
 };
 
 namespace
@@ -730,6 +743,10 @@ bool FSolidAutoPlaythrough::TickCurrent(
 		return TickSelectBattlePlan(DeltaSeconds, Mode, Step);
 	case EStepType::AimRaven:
 		return TickAimRaven(DeltaSeconds, Step);
+	case EStepType::ChooseStronghold:
+		return TickChooseStronghold(DeltaSeconds, Mode, Captain, Step);
+	case EStepType::BuildSquad:
+		return TickBuildSquad(DeltaSeconds, Mode, Captain, Step);
 	case EStepType::Custom:
 		TickCustom(Step);
 		return false;
@@ -1396,6 +1413,87 @@ int32 FSolidAutoPlaythrough::BattlePlanSlot(const USolidSquad& Squad, const TCHA
 	return INDEX_NONE;
 }
 
+bool FSolidAutoPlaythrough::StrongholdSiteCell(
+	const USolidWorldChart& Chart,
+	const ESolidStrongholdSize Size,
+	FIntPoint& OutCell)
+{
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
+	{
+		for (int32 Column = 0; Column < USolidWorldChart::MapWidth; ++Column)
+		{
+			ESolidStrongholdSize Found = ESolidStrongholdSize::Meagre;
+			if (Chart.StrongholdSiteAtCell(Column, Row, Found) && Found == Size)
+			{
+				OutCell = FIntPoint(Column, Row);
+				return true;
+			}
+		}
+	}
+	return false;
+}
+
+bool FSolidAutoPlaythrough::TowerWalkPoints(
+	const SolidStronghold::FSolidTower& Tower,
+	const int32 FromFloor,
+	const int32 ToFloor,
+	TArray<FVector2D>& OutPoints)
+{
+	OutPoints.Reset();
+	const int32 Floors = Tower.FloorCount();
+	if (FromFloor < 1 || ToFloor < 1 || FromFloor > Floors || ToFloor > Floors)
+	{
+		return false;
+	}
+
+	TArray<FVector2D> Up;
+	Up.Add(Tower.DoorHexCenter());
+	const SolidStronghold::FPlan& Plan = Tower.Plan();
+	for (int32 Code = 0; Code < Floors - 1; ++Code)
+	{
+		const SolidStronghold::FWedge Flight = SolidStronghold::FlightWedge(Plan, Code);
+		if (!Flight.bOpen)
+		{
+			continue;
+		}
+		const float Radius = Tower.InteriorRadiusCm(Tower.FloorZCm(Code)) - Plan.StairWidthCm * 0.5f;
+		if (Radius <= 0.f)
+		{
+			continue;
+		}
+		for (int32 Tread = 0; Tread < Plan.StairTreadCount; ++Tread)
+		{
+			const float Along =
+				(static_cast<float>(Tread) + 0.5f) / static_cast<float>(Plan.StairTreadCount);
+			const float Angle = Flight.StartRad + Along * Flight.SweepRad;
+			Up.Add(FVector2D(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius));
+		}
+		const SolidStronghold::FWedge Landing = SolidStronghold::LandingWedge(Plan, Code + 1);
+		if (Landing.bOpen)
+		{
+			const float LandingRadius =
+				Tower.InteriorRadiusCm(Tower.FloorZCm(Code + 1)) - Plan.StairWidthCm * 0.5f;
+			const float Angle = Landing.StartRad + Landing.SweepRad * 0.5f;
+			Up.Add(FVector2D(FMath::Cos(Angle) * LandingRadius, FMath::Sin(Angle) * LandingRadius));
+		}
+	}
+
+	if (Up.Num() == 0)
+	{
+		return false;
+	}
+	if (ToFloor >= FromFloor)
+	{
+		OutPoints = MoveTemp(Up);
+	}
+	else
+	{
+		Algo::Reverse(Up);
+		OutPoints = MoveTemp(Up);
+	}
+	return OutPoints.Num() > 0;
+}
+
 bool FSolidAutoPlaythrough::BuildLairWalk(
 	const ASolidGameMode& Mode,
 	const FVector& CaptainLocation,
@@ -1592,6 +1690,10 @@ bool FSolidAutoPlaythrough::TickWalkTo(
 		return TickWalkLair(DeltaSeconds, Mode, Captain, Step);
 	case EWalk::Town:
 		return TickWalkTown(DeltaSeconds, Mode, Captain, Step);
+	case EWalk::StrongholdSite:
+		return TickWalkSite(DeltaSeconds, Mode, Captain, Step);
+	case EWalk::Tower:
+		return TickWalkTower(DeltaSeconds, Mode, Captain, Step);
 	default:
 		Stop();
 		return false;
@@ -1634,6 +1736,7 @@ void FSolidAutoPlaythrough::TickWakeInStronghold(const ASolidGameMode& Mode)
 {
 	if (Mode.HasPlacedCaptainInStronghold())
 	{
+		bAimRavenHeld = false;
 		Advance();
 	}
 }
@@ -2011,4 +2114,336 @@ void FSolidAutoPlaythrough::ApplyAimRaven(const float DeltaSeconds, ASolidCharac
 		YawDeg = FMath::FixedTurn(Captain.GetControlRotation().Yaw, DesiredYaw, MaxDegrees);
 	}
 	Captain.AimRaven(RavenPitchDeg, YawDeg, RavenArmCm);
+}
+
+bool FSolidAutoPlaythrough::BuildSiteWalk(
+	const ASolidGameMode& Mode,
+	const FVector& CaptainLocation,
+	const FStep& Step)
+{
+	UWorld* World = Mode.GetWorld();
+	ASolidTerrainStreamer* Streamer = World ? ASolidTerrainStreamer::FindExisting(World) : nullptr;
+	USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
+	USolidWorldChart* Chart = Terrain ? Terrain->GetWorldMap() : nullptr;
+	if (!Chart || !Chart->IsLoaded())
+	{
+		return false;
+	}
+
+	FIntPoint Site = FIntPoint::ZeroValue;
+	if (!StrongholdSiteCell(*Chart, Step.StrongholdSize, Site))
+	{
+		Stop();
+		return false;
+	}
+
+	const FVector2D WorldMin = Terrain->GetWorldMinXY();
+	const FVector2D WorldMax = Terrain->GetWorldMaxXY();
+	FIntPoint HereCell = FIntPoint::ZeroValue;
+	if (!Chart->CellAtWorld(CaptainLocation.X, CaptainLocation.Y, WorldMin, WorldMax, HereCell))
+	{
+		return false;
+	}
+
+	TArray<FIntPoint> Cells;
+	if (!GrassPath(*Chart, HereCell, Site, Cells))
+	{
+		Stop();
+		return false;
+	}
+
+	Points.Reset();
+	Points.Reserve(Cells.Num());
+	for (const FIntPoint& Cell : Cells)
+	{
+		FVector2D Center = FVector2D::ZeroVector;
+		if (Chart->CellToWorldXY(Cell, WorldMin, WorldMax, Center))
+		{
+			Points.Add(Center);
+		}
+	}
+	PointIndex = 0;
+	bWalkReady = Points.Num() > 0;
+	bHasBestDistance = false;
+	StallAccumulated = 0.f;
+	return bWalkReady;
+}
+
+bool FSolidAutoPlaythrough::BuildTowerWalk(
+	const ASolidGameMode& Mode,
+	const FVector& CaptainLocation,
+	const FStep& Step)
+{
+	if (Step.Floor < 1)
+	{
+		Stop();
+		return false;
+	}
+	if (!Mode.IsInStronghold() || !Mode.HasPlacedCaptainInStronghold())
+	{
+		return false;
+	}
+
+	USolidCompany* Company = Mode.GetCompany();
+	const FSolidStronghold* Hold = Company ? Company->GetStronghold() : nullptr;
+	if (!Hold || Hold->Type != ESolidStrongholdType::Tower)
+	{
+		return false;
+	}
+	const SolidStronghold::FSolidTower& Tower = static_cast<const SolidStronghold::FSolidTower&>(*Hold);
+	ASolidStrongholdInterior* Interior = FindInterior(Mode.GetWorld());
+	if (!Interior)
+	{
+		return false;
+	}
+
+	TArray<FVector2D> Local;
+	const int32 FromFloor = Step.Floor > 1 ? 1 : Tower.FloorCount();
+	if (!TowerWalkPoints(Tower, FromFloor, Step.Floor, Local))
+	{
+		Stop();
+		return false;
+	}
+
+	Points.Reset();
+	Points.Reserve(Local.Num());
+	const FTransform& ActorXf = Interior->GetActorTransform();
+	for (const FVector2D& Point : Local)
+	{
+		const FVector World = ActorXf.TransformPosition(FVector(Point.X, Point.Y, 0.f));
+		Points.Add(FVector2D(World.X, World.Y));
+	}
+
+	const FVector2D Here(CaptainLocation.X, CaptainLocation.Y);
+	int32 Start = 0;
+	float Nearest = TNumericLimits<float>::Max();
+	for (int32 Index = 0; Index < Points.Num(); ++Index)
+	{
+		const float Dist = FVector2D::DistSquared(Points[Index], Here);
+		if (Dist < Nearest)
+		{
+			Nearest = Dist;
+			Start = Index;
+		}
+	}
+	if (Start > 0)
+	{
+		Points.RemoveAt(0, Start);
+	}
+
+	PointIndex = 0;
+	bWalkReady = Points.Num() > 0;
+	bHasBestDistance = false;
+	StallAccumulated = 0.f;
+	return bWalkReady;
+}
+
+bool FSolidAutoPlaythrough::TickWalkSite(
+	const float DeltaSeconds,
+	ASolidGameMode& Mode,
+	ASolidCharacter& Captain,
+	const FStep& Step)
+{
+	const FVector Location = Captain.GetActorLocation();
+	if (!bWalkReady && !BuildSiteWalk(Mode, Location, Step))
+	{
+		return false;
+	}
+
+	const FVector2D Here(Location.X, Location.Y);
+	FVector2D Target = FVector2D::ZeroVector;
+	bool bFinished = false;
+	if (FollowPoints(DeltaSeconds, Here, Target, bFinished))
+	{
+		return Steer(DeltaSeconds, Mode, Captain, Target, false, false);
+	}
+	if (bRunning && bFinished)
+	{
+		Advance();
+	}
+	return false;
+}
+
+bool FSolidAutoPlaythrough::TickWalkTower(
+	const float DeltaSeconds,
+	ASolidGameMode& Mode,
+	ASolidCharacter& Captain,
+	const FStep& Step)
+{
+	const FVector Location = Captain.GetActorLocation();
+	if (!bWalkReady && !BuildTowerWalk(Mode, Location, Step))
+	{
+		return false;
+	}
+
+	const FVector2D Here(Location.X, Location.Y);
+	FVector2D Target = FVector2D::ZeroVector;
+	bool bFinished = false;
+	if (FollowPoints(DeltaSeconds, Here, Target, bFinished, TowerArriveCm))
+	{
+		return Steer(DeltaSeconds, Mode, Captain, Target, false, false, TowerArriveCm);
+	}
+	if (bRunning && bFinished)
+	{
+		Advance();
+	}
+	return false;
+}
+
+bool FSolidAutoPlaythrough::TickChooseStronghold(
+	const float DeltaSeconds,
+	ASolidGameMode& Mode,
+	ASolidCharacter& Captain,
+	const FStep& Step)
+{
+	ASolidHUD* HUD = HudOf(Captain);
+	if (!HUD)
+	{
+		return false;
+	}
+
+	if (!HUD->IsStrongholdChoiceOpen())
+	{
+		UWorld* World = Mode.GetWorld();
+		ASolidTerrainStreamer* Streamer = World ? ASolidTerrainStreamer::FindExisting(World) : nullptr;
+		USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
+		USolidWorldChart* Chart = Terrain ? Terrain->GetWorldMap() : nullptr;
+		FIntPoint SiteCell = FIntPoint::ZeroValue;
+		if (!Chart || !StrongholdSiteCell(*Chart, Step.StrongholdSize, SiteCell))
+		{
+			Stop();
+			return false;
+		}
+
+		ASolidStrongholdSite* Site = nullptr;
+		for (TActorIterator<ASolidStrongholdSite> It(World); It; ++It)
+		{
+			if (It->GetCell() == SiteCell)
+			{
+				Site = *It;
+				break;
+			}
+		}
+		if (!Site)
+		{
+			return false;
+		}
+		Captain.OfferStrongholdSite(Site);
+		return false;
+	}
+
+	WaitAccumulated += DeltaSeconds;
+	if (WaitAccumulated < Step.PauseSeconds)
+	{
+		return false;
+	}
+
+	int32 Choice = INDEX_NONE;
+	for (int32 Index = 0; Index < HUD->GetStrongholdChoiceCount(); ++Index)
+	{
+		HUD->SetStrongholdChoiceIndex(Index);
+		if (HUD->GetStrongholdChoiceSize() == Step.StrongholdSize
+			&& HUD->GetStrongholdChoiceType() == Step.StrongholdType)
+		{
+			Choice = Index;
+			break;
+		}
+	}
+	if (Choice == INDEX_NONE)
+	{
+		Stop();
+		return false;
+	}
+	HUD->SetStrongholdChoiceIndex(Choice);
+	Captain.ConfirmStrongholdChoice();
+	Advance();
+	return false;
+}
+
+bool FSolidAutoPlaythrough::TickBuildSquad(
+	const float DeltaSeconds,
+	ASolidGameMode& Mode,
+	ASolidCharacter& Captain,
+	const FStep& Step)
+{
+	if (!Step.CompanionName)
+	{
+		Stop();
+		return false;
+	}
+
+	ASolidHUD* HUD = HudOf(Captain);
+	USolidSquad* Squad = Mode.GetSquad();
+	USolidCompany* Company = Mode.GetCompany();
+	if (!HUD || !Squad || !Company)
+	{
+		return false;
+	}
+
+	if (!HUD->IsSquadBuilderOpen())
+	{
+		if (SolidSquadBuilder::CanOpen(Mode.GetMaxSquadSize())
+			&& SolidSquadBuilder::HasAnythingToArrange(Squad, Mode.GetMaxSquadSize()))
+		{
+			HUD->OpenSquadBuilder();
+		}
+		return false;
+	}
+
+	const int32 Companion = Company->FindCompanionIndexByName(Step.CompanionName);
+	if (Companion == INDEX_NONE)
+	{
+		Stop();
+		return false;
+	}
+
+	const TArray<int32>& Slots = Squad->GetSelectedCompanionIndices();
+	bool bAlready = false;
+	int32 Empty = INDEX_NONE;
+	const int32 MaxSquad = Mode.GetMaxSquadSize();
+	for (int32 Slot = 0; Slot < MaxSquad; ++Slot)
+	{
+		const int32 Chosen = Slots.IsValidIndex(Slot) ? Slots[Slot] : INDEX_NONE;
+		if (Chosen == Companion)
+		{
+			bAlready = true;
+			break;
+		}
+		if (Empty == INDEX_NONE && Chosen == INDEX_NONE)
+		{
+			Empty = Slot;
+		}
+	}
+	if (!bAlready)
+	{
+		if (Empty == INDEX_NONE)
+		{
+			Stop();
+			return false;
+		}
+		SolidSquadBuilder::FDrag Drag;
+		Drag.Kind = SolidSquadBuilder::EDrag::Companion;
+		Drag.Index = Companion;
+		Drag.Slot = INDEX_NONE;
+		SolidSquadBuilder::FHit Hit;
+		Hit.Kind = SolidSquadBuilder::EHit::SquadBox;
+		Hit.Index = Empty;
+		if (!SolidSquadBuilder::Drop(Squad, MaxSquad, Drag, Hit))
+		{
+			Stop();
+			return false;
+		}
+	}
+
+	WaitAccumulated += DeltaSeconds;
+	if (WaitAccumulated < Step.PauseSeconds)
+	{
+		return false;
+	}
+	if (Step.bClosePage)
+	{
+		HUD->ConfirmSquadBuilder();
+	}
+	Advance();
+	return false;
 }

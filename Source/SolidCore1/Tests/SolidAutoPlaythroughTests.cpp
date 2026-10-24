@@ -13,6 +13,8 @@
 #include "SolidCharacter.h"
 #include "SolidGameState.h"
 #include "Towns/SolidTowns.h"
+#include "Strongholds/SolidStronghold.h"
+#include "Strongholds/Tower/SolidTower.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -779,6 +781,182 @@ bool FSolidAutoPlaythroughTrailYawTest::RunTest(const FString& Parameters)
 		TEXT("an offset turns from the walk"),
 		FSolidAutoPlaythrough::TrailYawDeg(FVector2D(1.f, 0.f), 10.f, Yaw));
 	TestTrue(TEXT("offset yaw"), FMath::IsNearlyEqual(Yaw, 10.f));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidAutoPlaythroughStage4Test,
+	"SolidCore1.AutoPlaythrough.Stage4",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidAutoPlaythroughStage4Test::RunTest(const FString& Parameters)
+{
+	const TCHAR* Names[] = {
+		TEXT("Walk to Dragongate"),
+		TEXT("Walk to the Imperious site"),
+		TEXT("Choose Imperious Tower"),
+		TEXT("Wake in the tower"),
+		TEXT("Climb to the top floor"),
+		TEXT("Walk to the door"),
+		TEXT("Leave the tower"),
+		TEXT("Build squad Max"),
+		TEXT("Build squad Morgan"),
+		TEXT("Build squad Quinn"),
+	};
+	const FSolidAutoPlaythrough::EStepType Types[] = {
+		FSolidAutoPlaythrough::EStepType::WalkTo,
+		FSolidAutoPlaythrough::EStepType::WalkTo,
+		FSolidAutoPlaythrough::EStepType::ChooseStronghold,
+		FSolidAutoPlaythrough::EStepType::WakeInStronghold,
+		FSolidAutoPlaythrough::EStepType::WalkTo,
+		FSolidAutoPlaythrough::EStepType::WalkTo,
+		FSolidAutoPlaythrough::EStepType::ExitStronghold,
+		FSolidAutoPlaythrough::EStepType::BuildSquad,
+		FSolidAutoPlaythrough::EStepType::BuildSquad,
+		FSolidAutoPlaythrough::EStepType::BuildSquad,
+	};
+	TestTrue(
+		TEXT("each named row has a type"),
+		UE_ARRAY_COUNT(Types) == UE_ARRAY_COUNT(Names));
+
+	int32 Search = 0;
+	const FSolidAutoPlaythrough::FStep* FoundSteps[UE_ARRAY_COUNT(Names)] = {};
+	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Names); ++Index)
+	{
+		int32 Found = INDEX_NONE;
+		for (int32 StepIndex = Search; StepIndex < FSolidAutoPlaythrough::ScriptCount; ++StepIndex)
+		{
+			if (FCString::Strcmp(FSolidAutoPlaythrough::Script[StepIndex].Name, Names[Index]) == 0)
+			{
+				Found = StepIndex;
+				break;
+			}
+		}
+		TestTrue(TEXT("stage 4 step name"), Found != INDEX_NONE);
+		if (Found == INDEX_NONE)
+		{
+			return false;
+		}
+		FoundSteps[Index] = &FSolidAutoPlaythrough::Script[Found];
+		TestEqual(
+			TEXT("stage 4 step type"),
+			static_cast<uint8>(FoundSteps[Index]->Type),
+			static_cast<uint8>(Types[Index]));
+		Search = Found + 1;
+	}
+
+	const FSolidAutoPlaythrough::FStep* Site = FoundSteps[1];
+	TestEqual(
+		TEXT("the site walk is a StrongholdSite"),
+		static_cast<uint8>(Site->Walk),
+		static_cast<uint8>(FSolidAutoPlaythrough::EWalk::StrongholdSite));
+	TestEqual(
+		TEXT("that site is Imperious"),
+		static_cast<uint8>(Site->StrongholdSize),
+		static_cast<uint8>(ESolidStrongholdSize::Imperious));
+
+	const FSolidAutoPlaythrough::FStep* Choice = FoundSteps[2];
+	TestEqual(
+		TEXT("the choice is Imperious"),
+		static_cast<uint8>(Choice->StrongholdSize),
+		static_cast<uint8>(ESolidStrongholdSize::Imperious));
+	TestEqual(
+		TEXT("the choice is a Tower"),
+		static_cast<uint8>(Choice->StrongholdType),
+		static_cast<uint8>(ESolidStrongholdType::Tower));
+
+	const FSolidAutoPlaythrough::FStep* Climb = FoundSteps[4];
+	TestEqual(
+		TEXT("the climb is a Tower walk"),
+		static_cast<uint8>(Climb->Walk),
+		static_cast<uint8>(FSolidAutoPlaythrough::EWalk::Tower));
+	TestEqual(TEXT("the climb is floor 10"), Climb->Floor, 10);
+
+	const FSolidAutoPlaythrough::FStep* Door = FoundSteps[5];
+	TestEqual(
+		TEXT("the door walk is a Tower walk"),
+		static_cast<uint8>(Door->Walk),
+		static_cast<uint8>(FSolidAutoPlaythrough::EWalk::Tower));
+	TestEqual(TEXT("the door is floor 1"), Door->Floor, 1);
+
+	const TCHAR* Companions[] = { TEXT("Max"), TEXT("Morgan"), TEXT("Quinn") };
+	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Companions); ++Index)
+	{
+		const FSolidAutoPlaythrough::FStep* Place = FoundSteps[7 + Index];
+		TestEqual(
+			TEXT("squad companion"),
+			FString(Place->CompanionName),
+			FString(Companions[Index]));
+		TestTrue(
+			TEXT("Quinn is the last page close"),
+			Index < 2 ? !Place->bClosePage : Place->bClosePage);
+	}
+	TestEqual(TEXT("Quinn is the last row"), Search, FSolidAutoPlaythrough::ScriptCount);
+
+	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
+	TestNotNull(TEXT("world chart"), Chart);
+	TestTrue(TEXT("the shipped chart loads"), Chart && Chart->LoadDefault());
+	if (Chart && Chart->IsLoaded())
+	{
+		FIntPoint Cell = FIntPoint::ZeroValue;
+		TestTrue(
+			TEXT("the chart has an Imperious site"),
+			FSolidAutoPlaythrough::StrongholdSiteCell(
+				*Chart,
+				ESolidStrongholdSize::Imperious,
+				Cell));
+		ESolidStrongholdSize SiteSize = ESolidStrongholdSize::Meagre;
+		TestTrue(TEXT("that cell is a site"), Chart->StrongholdSiteAtCell(Cell.X, Cell.Y, SiteSize));
+		TestEqual(
+			TEXT("that site is Imperious"),
+			static_cast<uint8>(SiteSize),
+			static_cast<uint8>(ESolidStrongholdSize::Imperious));
+		FIntPoint Missing = FIntPoint::ZeroValue;
+		TestFalse(
+			TEXT("Meagre is not a site"),
+			FSolidAutoPlaythrough::StrongholdSiteCell(
+				*Chart,
+				ESolidStrongholdSize::Meagre,
+				Missing));
+	}
+
+	SolidStronghold::FSolidTower Tower;
+	Tower.Size = ESolidStrongholdSize::Imperious;
+	Tower.BindPlan();
+	TestEqual(TEXT("Imperious has ten floors"), Tower.FloorCount(), 10);
+
+	TArray<FVector2D> Up;
+	TArray<FVector2D> Down;
+	TestTrue(
+		TEXT("the climb walks floor 1 to 10"),
+		FSolidAutoPlaythrough::TowerWalkPoints(Tower, 1, 10, Up));
+	TestTrue(
+		TEXT("the descent walks floor 10 to 1"),
+		FSolidAutoPlaythrough::TowerWalkPoints(Tower, 10, 1, Down));
+	TestTrue(TEXT("the climb has more than one flight"), Up.Num() > Tower.Plan().StairTreadCount);
+	TestEqual(TEXT("the way down is the same length"), Down.Num(), Up.Num());
+	if (Up.Num() > 0)
+	{
+		TestTrue(
+			TEXT("the climb starts at the door"),
+			Up[0].Equals(Tower.DoorHexCenter(), 0.1f));
+	}
+	if (Up.Num() == Down.Num())
+	{
+		for (int32 Index = 0; Index < Up.Num(); ++Index)
+		{
+			TestTrue(
+				TEXT("the descent is the climb reversed"),
+				Down[Index].Equals(Up[Up.Num() - 1 - Index], 0.1f));
+		}
+	}
+
+	TArray<FVector2D> Bad;
+	TestFalse(TEXT("floor 0 is not a story floor"), FSolidAutoPlaythrough::TowerWalkPoints(Tower, 0, 10, Bad));
+	TestFalse(TEXT("floor 11 is past the cap"), FSolidAutoPlaythrough::TowerWalkPoints(Tower, 1, 11, Bad));
+	TestTrue(
+		TEXT("a stair point is closer than a road cell"),
+		FSolidAutoPlaythrough::TowerArriveCm < FSolidAutoPlaythrough::ArriveCm);
 	return true;
 }
 

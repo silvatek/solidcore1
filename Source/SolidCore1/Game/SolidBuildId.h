@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0611")
+#define SOLID_BUILD_ID TEXT("SC1-0612")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The raven high trail stays behind the squad as they turn.")
+#define SOLID_BUILD_NOTE TEXT("The playthrough builds Imperious Tower, climbs it, and fills the squad.")
 #endif

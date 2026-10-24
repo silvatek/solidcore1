@@ -2,12 +2,19 @@
 
 #include "CoreMinimal.h"
 #include "Inventory/SolidInventory.h"
+#include "Strongholds/SolidStronghold.h"
 #include "Terrain/SolidRoad.h"
 
 class USolidGameState;
 class USolidSquad;
 class ASolidGameMode;
 class ASolidCharacter;
+class USolidWorldChart;
+
+namespace SolidStronghold
+{
+	class FSolidTower;
+}
 
 namespace SolidStorage
 {
@@ -40,6 +47,8 @@ public:
 		WakeInStronghold,
 		SelectBattlePlan,
 		AimRaven,
+		ChooseStronghold,
+		BuildSquad,
 		Custom,
 	};
 
@@ -52,6 +61,8 @@ public:
 		LairEntrance,
 		Lair,
 		Town,
+		StrongholdSite,
+		Tower,
 	};
 
 	/** A hold on a message, the inventory page, a camera aim, or a battle plan. */
@@ -62,7 +73,8 @@ public:
 	/**
 	 * One row of the opening script.
 	 * WalkTo, CloseMessage, CraftItem, EquipItem, DisableEncounter, ExitStronghold,
-	 * EnterLair, ExitLair, WakeInStronghold, SelectBattlePlan, AimRaven, and Custom build one.
+	 * EnterLair, ExitLair, WakeInStronghold, SelectBattlePlan, AimRaven,
+	 * ChooseStronghold, BuildSquad, and Custom build one.
 	 * A later helper fills the one field that row also reads.
 	 */
 	struct FStep
@@ -96,6 +108,14 @@ public:
 		float YawOffsetDeg = 0.f;
 		/** Which custom row this is. The custom switch matches it. */
 		int32 CustomId = INDEX_NONE;
+		/** Site size. StrongholdSite and ChooseStronghold read this. */
+		ESolidStrongholdSize StrongholdSize = ESolidStrongholdSize::Meagre;
+		/** Built type. ChooseStronghold reads this. */
+		ESolidStrongholdType StrongholdType = ESolidStrongholdType::Dungeon;
+		/** Company companion name. BuildSquad reads this. */
+		const TCHAR* CompanionName = nullptr;
+		/** Story floor. 1 is the ground. Tower walks read this. */
+		int32 Floor = INDEX_NONE;
 
 		static constexpr FStep WalkTo(const TCHAR* InName, const EWalk InWalk)
 		{
@@ -114,6 +134,20 @@ public:
 			Step.Name = InName;
 			Step.Walk = InWalk;
 			Step.TownId = InTown;
+			return Step;
+		}
+
+		/** A site walk. InSize is the site on the chart. */
+		static constexpr FStep WalkTo(
+			const TCHAR* InName,
+			const EWalk InWalk,
+			const ESolidStrongholdSize InSize)
+		{
+			FStep Step;
+			Step.Type = EStepType::WalkTo;
+			Step.Name = InName;
+			Step.Walk = InWalk;
+			Step.StrongholdSize = InSize;
 			return Step;
 		}
 
@@ -248,6 +282,30 @@ public:
 			return Step;
 		}
 
+		static constexpr FStep ChooseStronghold(
+			const TCHAR* InName,
+			const ESolidStrongholdSize InSize,
+			const ESolidStrongholdType InType)
+		{
+			FStep Step;
+			Step.Type = EStepType::ChooseStronghold;
+			Step.Name = InName;
+			Step.StrongholdSize = InSize;
+			Step.StrongholdType = InType;
+			Step.PauseSeconds = DefaultPauseSeconds;
+			return Step;
+		}
+
+		static constexpr FStep BuildSquad(const TCHAR* InName, const TCHAR* InCompanionName)
+		{
+			FStep Step;
+			Step.Type = EStepType::BuildSquad;
+			Step.Name = InName;
+			Step.CompanionName = InCompanionName;
+			Step.PauseSeconds = DefaultPauseSeconds;
+			return Step;
+		}
+
 		static constexpr FStep Custom(const TCHAR* InName, const int32 InCustomId)
 		{
 			FStep Step;
@@ -274,11 +332,18 @@ public:
 			Step.PauseSeconds = Seconds;
 			return Step;
 		}
+
+		constexpr FStep AtFloor(const int32 InFloor) const
+		{
+			FStep Step = *this;
+			Step.Floor = InFloor;
+			return Step;
+		}
 	};
 
 	/** The opening script, in order. A later story edits this list. */
 	static const FStep Script[];
-	static constexpr int32 ScriptCount = 23;
+	static constexpr int32 ScriptCount = 32;
 
 	/** High behind the squad. AimRaven at Kanfold uses these. */
 	static constexpr float HighTrailPitchDeg = -48.f;
@@ -292,6 +357,9 @@ public:
 
 	/** Close enough to a road point to take the next one, in centimetres. */
 	static constexpr float ArriveCm = 200.f;
+
+	/** Close enough to a stair point. Treads are closer than a road cell. */
+	static constexpr float TowerArriveCm = 80.f;
 
 	/**
 	 * One stick and one pitch become a torch in the pack. The leftovers go back to the chest.
@@ -330,6 +398,22 @@ public:
 	/** The assigned key for that plan name. INDEX_NONE when it is not on a key. */
 	static int32 BattlePlanSlot(const USolidSquad& Squad, const TCHAR* PlanName);
 
+	/** Chart cell of that site size. False when the chart has none. */
+	static bool StrongholdSiteCell(
+		const USolidWorldChart& Chart,
+		ESolidStrongholdSize Size,
+		FIntPoint& OutCell);
+
+	/**
+	 * Local stair points from one story floor to another, including both ends.
+	 * Floor 1 is the door. Floor 10 is the top landing on an Imperious tower.
+	 */
+	static bool TowerWalkPoints(
+		const SolidStronghold::FSolidTower& Tower,
+		int32 FromFloor,
+		int32 ToFloor,
+		TArray<FVector2D>& OutPoints);
+
 	/** Move that item from a worn box, the pack, or the chest into the worn slot. */
 	static bool EquipItem(
 		SolidInventory::FLoadout& Loadout,
@@ -363,6 +447,8 @@ private:
 	bool BuildLairEntranceWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation);
 	bool BuildLairWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation, const FStep& Step);
 	bool BuildTownWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation, const FStep& Step);
+	bool BuildSiteWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation, const FStep& Step);
+	bool BuildTowerWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation, const FStep& Step);
 	/**
 	 * Steps along Points. True when OutTarget is the point to steer toward.
 	 * bOutFinished is set once the last point is within arrival and the stall clock is clear.
@@ -391,6 +477,8 @@ private:
 	bool TickWalkToLairEntrance(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
 	bool TickWalkLair(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickWalkTown(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
+	bool TickWalkSite(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
+	bool TickWalkTower(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickEnterLair(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickExitLair(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	void TickCustom(const FStep& Step);
@@ -403,6 +491,8 @@ private:
 	bool TickSelectBattlePlan(float DeltaSeconds, ASolidGameMode& Mode, const FStep& Step);
 	bool TickAimRaven(float DeltaSeconds, const FStep& Step);
 	void ApplyAimRaven(float DeltaSeconds, ASolidCharacter& Captain);
+	bool TickChooseStronghold(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
+	bool TickBuildSquad(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool ClickMouth(ASolidGameMode& Mode, ASolidCharacter& Captain);
 
 	bool bRunning = false;

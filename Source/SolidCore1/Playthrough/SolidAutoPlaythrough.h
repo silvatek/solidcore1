@@ -349,6 +349,9 @@ public:
 	static constexpr float HighTrailPitchDeg = -48.f;
 	static constexpr float HighTrailArmCm = 2200.f;
 
+	/** Squad boom before that trail. Wake in the tower puts this back so the door click is inside the room. */
+	static constexpr float InteriorArmCm = 450.f;
+
 	/** The F10 row and the HUD line. */
 	static const TCHAR* Label() { return TEXT("Auto playthrough"); }
 
@@ -493,7 +496,7 @@ private:
 	bool TickEnterLair(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickExitLair(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	void TickCustom(const FStep& Step);
-	void TickWakeInStronghold(const ASolidGameMode& Mode);
+	void TickWakeInStronghold(ASolidGameMode& Mode, ASolidCharacter& Captain);
 	bool TickCraftItem(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickEquipItem(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	void TickDisableEncounter(ASolidGameMode& Mode, const FStep& Step);

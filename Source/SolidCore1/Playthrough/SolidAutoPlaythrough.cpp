@@ -735,7 +735,7 @@ bool FSolidAutoPlaythrough::TickCurrent(
 	case EStepType::ExitLair:
 		return TickExitLair(Mode, Captain, Step);
 	case EStepType::WakeInStronghold:
-		TickWakeInStronghold(Mode);
+		TickWakeInStronghold(Mode, Captain);
 		return false;
 	case EStepType::SelectBattlePlan:
 		return TickSelectBattlePlan(DeltaSeconds, Mode, Step);
@@ -1746,13 +1746,36 @@ void FSolidAutoPlaythrough::TickCustom(const FStep& Step)
 	Stop();
 }
 
-void FSolidAutoPlaythrough::TickWakeInStronghold(const ASolidGameMode& Mode)
+void FSolidAutoPlaythrough::TickWakeInStronghold(ASolidGameMode& Mode, ASolidCharacter& Captain)
 {
-	if (Mode.HasPlacedCaptainInStronghold())
+	if (!Mode.HasPlacedCaptainInStronghold())
 	{
-		bAimRavenHeld = false;
-		Advance();
+		return;
 	}
+
+	bAimRavenHeld = false;
+
+	// The door is on local -X. Spawn yaw 0 looks into the room, and the high trail left a 22 m boom.
+	// The leave click projects that door, so the camera has to be inside the room looking at it.
+	const USolidCompany* Company = Mode.GetCompany();
+	const FSolidStronghold* Hold = Company ? Company->GetStronghold() : nullptr;
+	if (Hold && Hold->Type == ESolidStrongholdType::Tower)
+	{
+		const ASolidStrongholdInterior* Interior = FindInterior(Mode.GetWorld());
+		const UStaticMeshComponent* Door = Interior ? Interior->GetPassageMesh() : nullptr;
+		if (Door)
+		{
+			const FVector Here = Captain.GetActorLocation();
+			const FVector At = Door->GetComponentLocation();
+			float Yaw = 0.f;
+			if (TrailYawDeg(FVector2D(At.X - Here.X, At.Y - Here.Y), 0.f, Yaw))
+			{
+				Captain.AimRaven(0.f, Yaw, InteriorArmCm);
+			}
+		}
+	}
+
+	Advance();
 }
 
 bool FSolidAutoPlaythrough::TickCraftItem(

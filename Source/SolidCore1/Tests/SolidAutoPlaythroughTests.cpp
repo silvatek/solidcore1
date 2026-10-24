@@ -867,6 +867,15 @@ bool FSolidAutoPlaythroughStage4Test::RunTest(const FString& Parameters)
 		TEXT("wake goes straight to the leave"),
 		static_cast<uint8>(LeaveTower->Type),
 		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::ExitStronghold));
+	TestTrue(
+		TEXT("the tower leave boom is inside the room"),
+		FSolidAutoPlaythrough::InteriorArmCm < FSolidAutoPlaythrough::HighTrailArmCm
+			&& FMath::IsNearlyEqual(FSolidAutoPlaythrough::InteriorArmCm, 450.f));
+	float DoorYaw = 0.f;
+	TestTrue(
+		TEXT("a door on -X has a look"),
+		FSolidAutoPlaythrough::TrailYawDeg(FVector2D(-1.f, 0.f), 0.f, DoorYaw));
+	TestTrue(TEXT("that look is behind the spawn yaw"), FMath::IsNearlyEqual(FMath::Abs(DoorYaw), 180.f, 0.1f));
 
 	const TCHAR* Companions[] = { TEXT("Max"), TEXT("Morgan"), TEXT("Quinn") };
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Companions); ++Index)

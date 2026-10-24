@@ -14,6 +14,8 @@
 #include "HUD/SolidHUD.h"
 #include "Inventory/SolidInventory.h"
 #include "Lairs/SolidLair.h"
+#include "Lairs/SolidLairEntrance.h"
+#include "Lairs/SolidLairInterior.h"
 #include "Monster/SolidEncounter.h"
 #include "Strongholds/Actors/SolidStrongholdInterior.h"
 #include "Strongholds/Dungeon/SolidDungeonLevel.h"
@@ -53,6 +55,19 @@ const FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = 
 	FStep::WalkTo(TEXT("Walk to Iglin"), EWalk::TrailToIglin),
 	FStep::CloseMessage(TEXT("Close the driven-out message"), SolidMessages::IdDrivenFromVillage).Pause(1.f),
 	FStep::WalkTo(TEXT("Walk to the Iglin tunnels"), EWalk::LairEntrance),
+	FStep::EnterLair(
+		TEXT("Enter the Iglin tunnels"),
+		SolidLair::IdIglinTunnels,
+		USolidWorldChart::XMarker),
+	FStep::WalkTo(
+		TEXT("Walk the Iglin tunnels"),
+		EWalk::Lair,
+		SolidLair::IdIglinTunnels,
+		USolidWorldChart::YMarker),
+	FStep::ExitLair(
+		TEXT("Leave the Iglin tunnels"),
+		SolidLair::IdIglinTunnels,
+		USolidWorldChart::YMarker),
 };
 
 namespace
@@ -65,6 +80,8 @@ namespace
 	constexpr float MaxTurnSliceSeconds = 0.05f;
 	constexpr float SegmentStepCm = 50.f;
 	constexpr TCHAR EncounterName[] = TEXT("Iglin Bridge");
+	/** Inside one tunnel cell. The next center, a full cell away, stays ahead. */
+	constexpr float LairArriveCm = SolidLair::CellCm * 0.45f;
 
 	bool SameItem(const FSolidItem& Item, const TCHAR* Id)
 	{
@@ -492,6 +509,65 @@ namespace
 		return false;
 	}
 
+	bool IsIglinTunnels(const TCHAR* LairId)
+	{
+		return SolidLair::FindById(LairId) == &SolidLair::IglinTunnels;
+	}
+
+	bool LairSessionEnd(const USolidGameInstance& Instance, const TCHAR End)
+	{
+		return Instance.HasSession() && Instance.GetSession().LairEnd == FChar::ToUpper(End);
+	}
+
+	/** Aim the pointer at this mesh and press the left button. The click handler runs. */
+	bool ClickMesh(ASolidCharacter& Captain, const UStaticMeshComponent* Target)
+	{
+		Captain.ReleaseRightMouse();
+		APlayerController* PlayerController = Cast<APlayerController>(Captain.GetController());
+		if (!Target || !PlayerController)
+		{
+			return false;
+		}
+
+		FVector2D Screen = FVector2D::ZeroVector;
+		if (!PlayerController->ProjectWorldLocationToScreen(Target->GetComponentLocation(), Screen))
+		{
+			return false;
+		}
+		Captain.SimulateLeftClick(Screen.X, Screen.Y);
+		return true;
+	}
+
+	ASolidLairInterior* FindLairInterior(UWorld* World)
+	{
+		if (!World)
+		{
+			return nullptr;
+		}
+		for (TActorIterator<ASolidLairInterior> It(World); It; ++It)
+		{
+			return *It;
+		}
+		return nullptr;
+	}
+
+	ASolidLairEntrance* FindMouthActor(UWorld* World, const TCHAR End)
+	{
+		if (!World || !SolidLair::IsEndMarker(End))
+		{
+			return nullptr;
+		}
+		const TCHAR Marker = FChar::ToUpper(End);
+		for (TActorIterator<ASolidLairEntrance> It(World); It; ++It)
+		{
+			if (It->IsLairMouth() && It->GetEndMarker() == Marker)
+			{
+				return *It;
+			}
+		}
+		return nullptr;
+	}
+
 }
 
 bool FSolidAutoPlaythrough::CraftTorch(SolidInventory::FLoadout& Loadout, SolidStorage::FContainer& Chest)
@@ -637,6 +713,10 @@ bool FSolidAutoPlaythrough::TickCurrent(
 		return false;
 	case EStepType::ExitStronghold:
 		return TickExit(Mode, Captain);
+	case EStepType::EnterLair:
+		return TickEnterLair(Mode, Captain, Step);
+	case EStepType::ExitLair:
+		return TickExitLair(Mode, Captain, Step);
 	case EStepType::WakeInStronghold:
 		TickWakeInStronghold(Mode);
 		return false;
@@ -853,13 +933,14 @@ bool FSolidAutoPlaythrough::Steer(
 	ASolidCharacter& Captain,
 	const FVector2D& Target,
 	const bool bLast,
-	const bool bAvoidRamps)
+	const bool bAvoidRamps,
+	const float ArriveRadiusCm)
 {
 	const FVector Location = Captain.GetActorLocation();
 	const FVector2D Here(Location.X, Location.Y);
 	if (Captain.IsTrueSight())
 	{
-		const float SteerCm = bLast ? 1.f : ArriveCm;
+		const float SteerCm = bLast ? 1.f : ArriveRadiusCm;
 		const FVector2D Direction = SolidClickMove::PlanarDirection(Here, Target, SteerCm);
 		if (Direction.IsNearlyZero() || (bAvoidRamps && OnIglinRamp(Mode, Here + Direction * RampProbeCm)))
 		{
@@ -891,7 +972,8 @@ bool FSolidAutoPlaythrough::FollowPoints(
 	const float DeltaSeconds,
 	const FVector2D& Here,
 	FVector2D& OutTarget,
-	bool& bOutFinished)
+	bool& bOutFinished,
+	const float ArriveRadiusCm)
 {
 	bOutFinished = false;
 	if (!Points.IsValidIndex(PointIndex))
@@ -902,7 +984,7 @@ bool FSolidAutoPlaythrough::FollowPoints(
 
 	const FVector2D Target = Points[PointIndex];
 	const bool bLast = PointIndex + 1 >= Points.Num();
-	if (SolidClickMove::HasArrived(Here, Target, ArriveCm))
+	if (SolidClickMove::HasArrived(Here, Target, ArriveRadiusCm))
 	{
 		bHasBestDistance = false;
 		StallAccumulated = 0.f;
@@ -1078,6 +1160,144 @@ bool FSolidAutoPlaythrough::BuildLairEntranceWalk(
 	return bWalkReady;
 }
 
+bool FSolidAutoPlaythrough::LairCells(
+	const TCHAR* LairId,
+	const FIntPoint From,
+	const FIntPoint To,
+	TArray<FIntPoint>& OutCells)
+{
+	OutCells.Reset();
+	if (!IsIglinTunnels(LairId))
+	{
+		return false;
+	}
+	if (!SolidLair::IsOpenCell(From.X, From.Y) || !SolidLair::IsOpenCell(To.X, To.Y))
+	{
+		return false;
+	}
+	if (From == To)
+	{
+		OutCells.Add(From);
+		return true;
+	}
+
+	const int32 Count = SolidLair::MazeCols * SolidLair::MazeRows;
+	TArray<int32> CameFrom;
+	CameFrom.Init(INDEX_NONE, Count);
+	const auto IndexOf = [](const FIntPoint Cell)
+	{
+		return Cell.X + Cell.Y * SolidLair::MazeCols;
+	};
+	TArray<FIntPoint> Queue;
+	Queue.Reserve(Count);
+	CameFrom[IndexOf(From)] = IndexOf(From);
+	Queue.Add(From);
+	const FIntPoint Steps[] = {
+		{ 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 },
+	};
+	int32 Head = 0;
+	while (Head < Queue.Num())
+	{
+		const FIntPoint Here = Queue[Head++];
+		if (Here == To)
+		{
+			break;
+		}
+		for (const FIntPoint& Step : Steps)
+		{
+			const FIntPoint Next(Here.X + Step.X, Here.Y + Step.Y);
+			if (!SolidLair::IsOpenCell(Next.X, Next.Y))
+			{
+				continue;
+			}
+			const int32 NextIndex = IndexOf(Next);
+			if (CameFrom[NextIndex] != INDEX_NONE)
+			{
+				continue;
+			}
+			CameFrom[NextIndex] = IndexOf(Here);
+			Queue.Add(Next);
+		}
+	}
+	if (CameFrom[IndexOf(To)] == INDEX_NONE)
+	{
+		return false;
+	}
+
+	FIntPoint Walk = To;
+	while (Walk != From)
+	{
+		OutCells.Add(Walk);
+		const int32 Previous = CameFrom[IndexOf(Walk)];
+		Walk = FIntPoint(Previous % SolidLair::MazeCols, Previous / SolidLair::MazeCols);
+	}
+	OutCells.Add(From);
+	Algo::Reverse(OutCells);
+	return OutCells.Num() > 0;
+}
+
+bool FSolidAutoPlaythrough::LairCells(
+	const TCHAR* LairId,
+	const TCHAR FromEnd,
+	const TCHAR ToEnd,
+	TArray<FIntPoint>& OutCells)
+{
+	OutCells.Reset();
+	if (!SolidLair::IsEndMarker(FromEnd) || !SolidLair::IsEndMarker(ToEnd))
+	{
+		return false;
+	}
+	return LairCells(LairId, SolidLair::CellOf(FromEnd), SolidLair::CellOf(ToEnd), OutCells);
+}
+
+bool FSolidAutoPlaythrough::BuildLairWalk(
+	const ASolidGameMode& Mode,
+	const FVector& CaptainLocation,
+	const FStep& Step)
+{
+	if (!IsIglinTunnels(Step.LairId) || !SolidLair::IsEndMarker(Step.EndMarker))
+	{
+		Stop();
+		return false;
+	}
+	if (!Mode.IsInLair() || !Mode.HasPlacedCaptainInLair())
+	{
+		return false;
+	}
+
+	ASolidLairInterior* Interior = FindLairInterior(Mode.GetWorld());
+	if (!Interior)
+	{
+		return false;
+	}
+
+	const FVector Local = Interior->GetActorTransform().InverseTransformPosition(CaptainLocation);
+	const FIntPoint Here(
+		FMath::FloorToInt(Local.X / SolidLair::CellCm),
+		FMath::FloorToInt(Local.Y / SolidLair::CellCm));
+	TArray<FIntPoint> Cells;
+	if (!LairCells(Step.LairId, Here, SolidLair::CellOf(Step.EndMarker), Cells))
+	{
+		Stop();
+		return false;
+	}
+
+	Points.Reset();
+	Points.Reserve(Cells.Num());
+	const FTransform& ActorXf = Interior->GetActorTransform();
+	for (const FIntPoint& Cell : Cells)
+	{
+		const FVector2D Center = SolidLair::CellCenter(Cell.X, Cell.Y);
+		const FVector World = ActorXf.TransformPosition(FVector(Center.X, Center.Y, 0.f));
+		Points.Add(FVector2D(World.X, World.Y));
+	}
+	PointIndex = 0;
+	bWalkReady = Points.Num() > 0;
+	bHasBestDistance = false;
+	StallAccumulated = 0.f;
+	return bWalkReady;
+}
+
 bool FSolidAutoPlaythrough::TickWalkTo(
 	const float DeltaSeconds,
 	ASolidGameMode& Mode,
@@ -1094,6 +1314,8 @@ bool FSolidAutoPlaythrough::TickWalkTo(
 		return TickWalkToIglin(DeltaSeconds, Mode, Captain);
 	case EWalk::LairEntrance:
 		return TickWalkToLairEntrance(DeltaSeconds, Mode, Captain);
+	case EWalk::Lair:
+		return TickWalkLair(DeltaSeconds, Mode, Captain, Step);
 	default:
 		Stop();
 		return false;
@@ -1225,22 +1447,12 @@ void FSolidAutoPlaythrough::TickDisableEncounter(ASolidGameMode& Mode, const FSt
 
 bool FSolidAutoPlaythrough::ClickMouth(ASolidGameMode& Mode, ASolidCharacter& Captain)
 {
-	Captain.ReleaseRightMouse();
 	UWorld* World = Mode.GetWorld();
 	ASolidStrongholdInterior* Interior = FindInterior(World);
-	UStaticMeshComponent* Mouth = Interior ? Interior->GetPassageMesh() : nullptr;
-	APlayerController* PlayerController = Cast<APlayerController>(Captain.GetController());
-	if (!Mouth || !PlayerController)
+	if (!ClickMesh(Captain, Interior ? Interior->GetPassageMesh() : nullptr))
 	{
 		return false;
 	}
-
-	FVector2D Screen = FVector2D::ZeroVector;
-	if (!PlayerController->ProjectWorldLocationToScreen(Mouth->GetComponentLocation(), Screen))
-	{
-		return false;
-	}
-	Captain.SimulateLeftClick(Screen.X, Screen.Y);
 	const USolidGameInstance* Instance = World ? World->GetGameInstance<USolidGameInstance>() : nullptr;
 	return Instance && Instance->WantsStrongholdExit();
 }
@@ -1302,6 +1514,90 @@ bool FSolidAutoPlaythrough::TickWalkToLairEntrance(
 		return Steer(DeltaSeconds, Mode, Captain, Target, false, false);
 	}
 	if (bRunning && bFinished)
+	{
+		Advance();
+	}
+	return false;
+}
+
+bool FSolidAutoPlaythrough::TickWalkLair(
+	const float DeltaSeconds,
+	ASolidGameMode& Mode,
+	ASolidCharacter& Captain,
+	const FStep& Step)
+{
+	const FVector Location = Captain.GetActorLocation();
+	if (!bWalkReady && !BuildLairWalk(Mode, Location, Step))
+	{
+		return false;
+	}
+
+	const FVector2D Here(Location.X, Location.Y);
+	FVector2D Target = FVector2D::ZeroVector;
+	bool bFinished = false;
+	if (FollowPoints(DeltaSeconds, Here, Target, bFinished, LairArriveCm))
+	{
+		return Steer(DeltaSeconds, Mode, Captain, Target, false, false, LairArriveCm);
+	}
+	if (bRunning && bFinished)
+	{
+		Advance();
+	}
+	return false;
+}
+
+bool FSolidAutoPlaythrough::TickEnterLair(
+	ASolidGameMode& Mode,
+	ASolidCharacter& Captain,
+	const FStep& Step)
+{
+	if (!IsIglinTunnels(Step.LairId) || !SolidLair::IsEndMarker(Step.EndMarker))
+	{
+		Stop();
+		return false;
+	}
+
+	UWorld* World = Mode.GetWorld();
+	const ASolidLairEntrance* Entrance = FindMouthActor(World, Step.EndMarker);
+	const UStaticMeshComponent* Mouth = Entrance ? Entrance->GetMouthMesh() : nullptr;
+	if (!ClickMesh(Captain, Mouth))
+	{
+		return false;
+	}
+
+	const USolidGameInstance* Instance = World ? World->GetGameInstance<USolidGameInstance>() : nullptr;
+	if (Instance && Instance->IsInLair() && LairSessionEnd(*Instance, Step.EndMarker))
+	{
+		Advance();
+	}
+	return false;
+}
+
+bool FSolidAutoPlaythrough::TickExitLair(
+	ASolidGameMode& Mode,
+	ASolidCharacter& Captain,
+	const FStep& Step)
+{
+	if (!IsIglinTunnels(Step.LairId) || !SolidLair::IsEndMarker(Step.EndMarker))
+	{
+		Stop();
+		return false;
+	}
+	if (!Mode.IsInLair() || !Mode.HasPlacedCaptainInLair())
+	{
+		return false;
+	}
+
+	UWorld* World = Mode.GetWorld();
+	const ASolidLairInterior* Interior = FindLairInterior(World);
+	const UStaticMeshComponent* Mouth = Interior ? Interior->GetEndMouth(Step.EndMarker) : nullptr;
+	if (!ClickMesh(Captain, Mouth))
+	{
+		return false;
+	}
+
+	const USolidGameInstance* Instance = World ? World->GetGameInstance<USolidGameInstance>() : nullptr;
+	if (Instance && Instance->WantsLairMouthSpawn() && LairSessionEnd(*Instance, Step.EndMarker))
 	{
 		Advance();
 	}

@@ -7,7 +7,9 @@
 #include "Menus/SolidMainMenu.h"
 #include "Monster/SolidEncounter.h"
 #include "Monster/SolidEncounters.h"
+#include "Lairs/SolidLair.h"
 #include "Playthrough/SolidAutoPlaythrough.h"
+#include "SolidWorldChart.h"
 #include "SolidCharacter.h"
 #include "SolidGameState.h"
 #include "Towns/SolidTowns.h"
@@ -34,6 +36,9 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 		TEXT("Walk to Iglin"),
 		TEXT("Close the driven-out message"),
 		TEXT("Walk to the Iglin tunnels"),
+		TEXT("Enter the Iglin tunnels"),
+		TEXT("Walk the Iglin tunnels"),
+		TEXT("Leave the Iglin tunnels"),
 	};
 	const FSolidAutoPlaythrough::EStepType Types[] = {
 		FSolidAutoPlaythrough::EStepType::WalkTo,
@@ -48,6 +53,9 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 		FSolidAutoPlaythrough::EStepType::WalkTo,
 		FSolidAutoPlaythrough::EStepType::CloseMessage,
 		FSolidAutoPlaythrough::EStepType::WalkTo,
+		FSolidAutoPlaythrough::EStepType::EnterLair,
+		FSolidAutoPlaythrough::EStepType::WalkTo,
+		FSolidAutoPlaythrough::EStepType::ExitLair,
 	};
 	TestEqual(
 		TEXT("the script is the static list"),
@@ -105,6 +113,117 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 		TEXT("that encounter is Iglin Bridge"),
 		Disable ? FString(Disable->EncounterName) : FString(),
 		FString(TEXT("Iglin Bridge")));
+
+	const FSolidAutoPlaythrough::FStep* Enter = nullptr;
+	const FSolidAutoPlaythrough::FStep* Run = nullptr;
+	const FSolidAutoPlaythrough::FStep* Leave = nullptr;
+	for (int32 Index = 0; Index < FSolidAutoPlaythrough::ScriptCount; ++Index)
+	{
+		const FSolidAutoPlaythrough::FStep& Step = FSolidAutoPlaythrough::Script[Index];
+		if (Step.Type == FSolidAutoPlaythrough::EStepType::EnterLair)
+		{
+			Enter = &Step;
+		}
+		else if (Step.Type == FSolidAutoPlaythrough::EStepType::ExitLair)
+		{
+			Leave = &Step;
+		}
+		else if (Step.Type == FSolidAutoPlaythrough::EStepType::WalkTo
+			&& Step.Walk == FSolidAutoPlaythrough::EWalk::Lair)
+		{
+			Run = &Step;
+		}
+	}
+	TestTrue(TEXT("the script enters a lair"), Enter != nullptr);
+	TestTrue(TEXT("the script walks a lair"), Run != nullptr);
+	TestTrue(TEXT("the script leaves a lair"), Leave != nullptr);
+	TestEqual(
+		TEXT("enter uses the Iglin tunnels id"),
+		Enter ? FString(Enter->LairId) : FString(),
+		FString(SolidLair::IdIglinTunnels));
+	TestEqual(
+		TEXT("the run uses the Iglin tunnels id"),
+		Run ? FString(Run->LairId) : FString(),
+		FString(SolidLair::IdIglinTunnels));
+	TestEqual(
+		TEXT("leave uses the Iglin tunnels id"),
+		Leave ? FString(Leave->LairId) : FString(),
+		FString(SolidLair::IdIglinTunnels));
+	TestEqual(
+		TEXT("enter is the X mouth"),
+		static_cast<int32>(Enter ? Enter->EndMarker : 0),
+		static_cast<int32>(USolidWorldChart::XMarker));
+	TestEqual(
+		TEXT("the run walks to the Y mouth"),
+		static_cast<int32>(Run ? Run->EndMarker : 0),
+		static_cast<int32>(USolidWorldChart::YMarker));
+	TestEqual(
+		TEXT("leave is the Y mouth"),
+		static_cast<int32>(Leave ? Leave->EndMarker : 0),
+		static_cast<int32>(USolidWorldChart::YMarker));
+
+	const FIntPoint MouthX = SolidLair::CellOf(USolidWorldChart::XMarker);
+	const FIntPoint MouthY = SolidLair::CellOf(USolidWorldChart::YMarker);
+	TArray<FIntPoint> RunCells;
+	TestTrue(
+		TEXT("the straight run joins the mouths"),
+		FSolidAutoPlaythrough::LairCells(
+			SolidLair::IdIglinTunnels,
+			USolidWorldChart::XMarker,
+			USolidWorldChart::YMarker,
+			RunCells));
+	TestTrue(TEXT("the mouths share a row"), MouthX.Y == MouthY.Y && MouthX.X < MouthY.X);
+	TestEqual(TEXT("the run is the straight line"), RunCells.Num(), MouthY.X - MouthX.X + 1);
+	for (int32 Index = 0; Index < RunCells.Num(); ++Index)
+	{
+		TestEqual(TEXT("run column"), RunCells[Index].X, MouthX.X + Index);
+		TestEqual(TEXT("run row"), RunCells[Index].Y, MouthX.Y);
+	}
+
+	TArray<FIntPoint> Back;
+	TestTrue(
+		TEXT("the run walks back to the X mouth"),
+		FSolidAutoPlaythrough::LairCells(
+			SolidLair::IdIglinTunnels,
+			USolidWorldChart::YMarker,
+			USolidWorldChart::XMarker,
+			Back));
+	TestEqual(TEXT("the way back is the same length"), Back.Num(), RunCells.Num());
+	if (Back.Num() == RunCells.Num())
+	{
+		for (int32 Index = 0; Index < RunCells.Num(); ++Index)
+		{
+			TestEqual(TEXT("way back column"), Back[Index].X, RunCells[RunCells.Num() - 1 - Index].X);
+			TestEqual(TEXT("way back row"), Back[Index].Y, RunCells[RunCells.Num() - 1 - Index].Y);
+		}
+	}
+
+	TArray<FIntPoint> Same;
+	TestTrue(
+		TEXT("a mouth path can stay on that mouth"),
+		FSolidAutoPlaythrough::LairCells(
+			SolidLair::IdIglinTunnels,
+			USolidWorldChart::XMarker,
+			USolidWorldChart::XMarker,
+			Same));
+	TestEqual(TEXT("one cell"), Same.Num(), 1);
+
+	TArray<FIntPoint> Missing;
+	TestFalse(
+		TEXT("an unknown lair has no path"),
+		FSolidAutoPlaythrough::LairCells(
+			TEXT("00000000"),
+			USolidWorldChart::XMarker,
+			USolidWorldChart::YMarker,
+			Missing));
+	TArray<FIntPoint> Rock;
+	TestFalse(
+		TEXT("rock is not a path"),
+		FSolidAutoPlaythrough::LairCells(
+			SolidLair::IdIglinTunnels,
+			FIntPoint(MouthX.X - 1, MouthX.Y),
+			MouthY,
+			Rock));
 	return true;
 }
 

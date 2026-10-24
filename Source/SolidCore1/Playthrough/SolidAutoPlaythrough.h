@@ -33,6 +33,8 @@ public:
 		EquipItem,
 		DisableEncounter,
 		ExitStronghold,
+		EnterLair,
+		ExitLair,
 		WakeInStronghold,
 		Custom,
 	};
@@ -44,6 +46,7 @@ public:
 		Hexes,
 		TrailToIglin,
 		LairEntrance,
+		Lair,
 	};
 
 	/** A CloseMessage row waits this long after the message is showing. */
@@ -52,7 +55,7 @@ public:
 	/**
 	 * One row of the opening script.
 	 * WalkTo, CloseMessage, CraftItem, EquipItem, DisableEncounter, ExitStronghold,
-	 * WakeInStronghold, and Custom build one.
+	 * EnterLair, ExitLair, WakeInStronghold, and Custom build one.
 	 * A later helper fills the one field that row also reads.
 	 */
 	struct FStep
@@ -65,6 +68,10 @@ public:
 		const TCHAR* ItemId = nullptr;
 		SolidInventory::ESlot Slot = SolidInventory::ESlot::MainHand;
 		const TCHAR* EncounterName = nullptr;
+		/** Eight hex digits. EnterLair, ExitLair, and a lair walk read this. */
+		const TCHAR* LairId = nullptr;
+		/** X or Y. The mouth those rows enter, leave, or walk to. */
+		TCHAR EndMarker = 0;
 		/** True when this row closes the inventory page. */
 		bool bClosePage = false;
 		const TCHAR* MessageId = nullptr;
@@ -79,6 +86,22 @@ public:
 			Step.Type = EStepType::WalkTo;
 			Step.Name = InName;
 			Step.Walk = InWalk;
+			return Step;
+		}
+
+		/** A lair walk. InEnd is the mouth the path walks to. */
+		static constexpr FStep WalkTo(
+			const TCHAR* InName,
+			const EWalk InWalk,
+			const TCHAR* InLairId,
+			const TCHAR InEnd)
+		{
+			FStep Step;
+			Step.Type = EStepType::WalkTo;
+			Step.Name = InName;
+			Step.Walk = InWalk;
+			Step.LairId = InLairId;
+			Step.EndMarker = InEnd;
 			return Step;
 		}
 
@@ -145,6 +168,28 @@ public:
 			return Step;
 		}
 
+		/** Click that lair's mouth on the grass. InEnd is X or Y. */
+		static constexpr FStep EnterLair(const TCHAR* InName, const TCHAR* InLairId, const TCHAR InEnd)
+		{
+			FStep Step;
+			Step.Type = EStepType::EnterLair;
+			Step.Name = InName;
+			Step.LairId = InLairId;
+			Step.EndMarker = InEnd;
+			return Step;
+		}
+
+		/** Click that mouth inside the lair. InEnd is the mouth he leaves by. */
+		static constexpr FStep ExitLair(const TCHAR* InName, const TCHAR* InLairId, const TCHAR InEnd)
+		{
+			FStep Step;
+			Step.Type = EStepType::ExitLair;
+			Step.Name = InName;
+			Step.LairId = InLairId;
+			Step.EndMarker = InEnd;
+			return Step;
+		}
+
 		static constexpr FStep WakeInStronghold(const TCHAR* InName)
 		{
 			FStep Step;
@@ -179,7 +224,7 @@ public:
 
 	/** The opening script, in order. A later story edits this list. */
 	static const FStep Script[];
-	static constexpr int32 ScriptCount = 12;
+	static constexpr int32 ScriptCount = 15;
 
 	/** The F10 row and the HUD line. */
 	static const TCHAR* Label() { return TEXT("Auto playthrough"); }
@@ -195,6 +240,14 @@ public:
 	 * The sword, the boots, the coins, and the body are left alone.
 	 */
 	static bool CraftTorch(SolidInventory::FLoadout& Loadout, SolidStorage::FContainer& Chest);
+	/**
+	 * Open cells from one cell to another on this lair's plan, including both.
+	 * The shipped plan is the Iglin tunnels. An unknown id has no path.
+	 */
+	static bool LairCells(const TCHAR* LairId, FIntPoint From, FIntPoint To, TArray<FIntPoint>& OutCells);
+	/** The same path between two mouths. X and Y are the end markers. */
+	static bool LairCells(const TCHAR* LairId, TCHAR FromEnd, TCHAR ToEnd, TArray<FIntPoint>& OutCells);
+
 	/** Move that item from a worn box, the pack, or the chest into the worn slot. */
 	static bool EquipItem(
 		SolidInventory::FLoadout& Loadout,
@@ -226,11 +279,17 @@ private:
 	bool BuildHexWalk(const ASolidGameMode& Mode, const SolidStrongholdGrid::FCell* Cells, int32 Count);
 	bool BuildIglinTrail(const ASolidGameMode& Mode, const FVector& CaptainLocation);
 	bool BuildLairEntranceWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation);
+	bool BuildLairWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation, const FStep& Step);
 	/**
 	 * Steps along Points. True when OutTarget is the point to steer toward.
 	 * bOutFinished is set once the last point is within arrival and the stall clock is clear.
 	 */
-	bool FollowPoints(float DeltaSeconds, const FVector2D& Here, FVector2D& OutTarget, bool& bOutFinished);
+	bool FollowPoints(
+		float DeltaSeconds,
+		const FVector2D& Here,
+		FVector2D& OutTarget,
+		bool& bOutFinished,
+		float ArriveRadiusCm = ArriveCm);
 	/** True while true sight is dragging the view and holding W. Raven sight clicks the point. */
 	bool Steer(
 		float DeltaSeconds,
@@ -238,7 +297,8 @@ private:
 		ASolidCharacter& Captain,
 		const FVector2D& Target,
 		bool bLast,
-		bool bAvoidRamps);
+		bool bAvoidRamps,
+		float ArriveRadiusCm = ArriveCm);
 	bool TickCurrent(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickWalkTo(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	/** True while true sight is dragging the view and holding W. */
@@ -246,6 +306,9 @@ private:
 	bool TickHexWalk(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickWalkToIglin(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
 	bool TickWalkToLairEntrance(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
+	bool TickWalkLair(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
+	bool TickEnterLair(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
+	bool TickExitLair(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	void TickCustom(const FStep& Step);
 	void TickWakeInStronghold(const ASolidGameMode& Mode);
 	bool TickCraftItem(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);

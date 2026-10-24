@@ -105,6 +105,9 @@ public:
 	/** True once this visit has stood the captain inside the stronghold. */
 	bool HasPlacedCaptainInStronghold() const { return bCaptainPlacedInStronghold; }
 
+	/** True once this visit has stood the captain inside the lair. */
+	bool HasPlacedCaptainInLair() const { return bCaptainPlacedInLair; }
+
 	/** The game instance's company. Null when the instance is missing. */
 	USolidCompany* GetCompany() const;
 	USolidSquad* GetSquad() const { return Squad; }

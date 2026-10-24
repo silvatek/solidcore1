@@ -8,6 +8,8 @@ The player meets one Immense raptor where the chart marks the Dracorex encounter
 
 The developer places that mark in the World chart mode, the mode the World Editor opens. The Place list offers Dracorex with the other encounter names. Until that mark is saved on the chart, the world has no Dracorex.
 
+Later stories add the events this encounter waits on. There may be many. This story adds none, so a saved mark places the raptor when the open world chooses its monsters.
+
 This story introduces no game concept. Raptor is already `FSolidRaptor`. Encounter is already `FSolidEncounter`. The marker is a mark on the chart.
 
 This is a single phase. The catalog row and the Immense body land together. The chart mark is placed in the World chart mode after that.
@@ -17,7 +19,7 @@ This is a single phase. The catalog row and the Immense body land together. The 
 - The catalog gains one encounter named Dracorex. It is one group of one Immense raptor. The plan is Attack. The near limit, the far limit, and the separation stay the definition defaults, 8 m, 40 m, and 4 m.
 - Iglin Bridge stays three Small raptors on Attack. Its mark still places those raptors. A catalog row another story has already added stays.
 - A mark named Dracorex is the focus. The point is the one an encounter mark already uses: grassland, walkable, clear of a mountain quad, inside the band, clear of a tree and of a foraging pile, facing the mark, yaw only. One member needs one point. A missing mark places none. Two marks named Dracorex are two of that encounter.
-- Dracorex names no event. The raptor is spawned at startup, when the open world chooses its monsters, with the other encounters that are ready then. Saving the chart is what puts it in the world.
+- This story gives Dracorex no event dependency. A saved mark places the raptor at startup, with the other encounters that are ready then. Later stories add the dependencies, and there may be many. Those stories name the events. The mark stays on the chart, and the Place list still offers the name.
 - The shipped chart stays as it is. The World chart mode lists Dracorex with the other encounter names. A placed mark stores that name. This story does not write the mark.
 - The Immense raptor uses the same green Velociraptor mesh and the same idle as a Small raptor. The feet sit on the ground. The scale is uniform.
 - Small stays 100 cm, at `FSolidRaptor::SmallDrawnBodyFactor` of 6. An Immense raptor stands about 8 m, eight times that body. The factor that makes the downloaded mesh that tall is chosen in play, the way the Small factor was chosen beside the captain and the 1 m post. The sizes between Small and Immense still draw as Small.
@@ -33,8 +35,9 @@ This is a single phase. The catalog row and the Immense body land together. The 
 This story is one phase. The catalog row and the Immense drawn body land together. The developer places the mark afterwards in the World chart mode. `tools\editor.bat` opens that mode. [Encounter enhancements](encounter-enhancements.md) may ship before or after this story. [Insect monsters](insect-monsters.md) may too. Neither is a dependency.
 
 - The encounter name is `Dracorex`. `FindByName` ignores case, so `dracorex` is that same row. Append it. Iglin Bridge stays the first row.
-- Encounter enhancements has not shipped. The row is an `FDefinition` in `SolidEncounter::Definitions`. The group is `EMonsterKind::Raptor`, `ESolidMonsterSize::Immense`, count 1, plan `Attack`. The limits stay the defaults on `FDefinition`. It names no event.
-- Encounter enhancements has shipped. The row is an `FStaticEncounter` appended to `SolidEncounter::StaticEncounters`. It does not call `Require`. Startup places it with Iglin Bridge. The Place list still reads the catalog, under whichever type name that story left.
+- Encounter enhancements has not shipped. The row is an `FDefinition` in `SolidEncounter::Definitions`. The group is `EMonsterKind::Raptor`, `ESolidMonsterSize::Immense`, count 1, plan `Attack`. The limits stay the defaults on `FDefinition`. The row carries no event id.
+- Encounter enhancements has shipped. The row is an `FStaticEncounter` appended to `SolidEncounter::StaticEncounters`. It does not call `Require`. That story stores one event id, and a second call keeps the later id, so this story leaves the id empty rather than spending the slot. Startup places Dracorex with Iglin Bridge. The Place list still reads the catalog, under whichever type name that story left.
+- Later stories add Dracorex's event dependencies. There may be many, and those stories name them. An event already stores up to four ids (`MaxRequiresPerEvent`) and waits until every one has fired. Encounter enhancements stores one id. The story that first gives Dracorex more than one dependency is the story that widens the encounter's list. This story leaves the list empty.
 - Insect monsters may already have appended Giant ants. Leave that row. Dracorex follows whatever rows are already there. Iglin Bridge stays first.
 - `MakeMonster` already sets `Size` from the group and arms Claws and Hide. `PowerFor` of Immense is the power. `FSolidRaptor::Arm` still sets Hide Strength to 20. The member's kind stays Raptor. The actor stays `ASolidRaptor`.
 - The death the captain cannot avoid belongs to Iglin Bridge: the movement block, the Large that spawns when a Small dies or the captain runs, and that Large's huge Hide. Dracorex copies none of those. Its battle is the one [Basic combat](Done/basic-combat.md) already runs. The side that reaches Strength 0 loses.

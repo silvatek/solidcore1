@@ -5,7 +5,13 @@ from __future__ import annotations
 
 import unittest
 
-from tools.buildable import MARKER, buildable_names, is_build_branch, tip_is_buildable
+from tools.buildable import (
+    MARKER,
+    buildable_names,
+    is_build_branch,
+    parse_tip_text,
+    tip_is_buildable,
+)
 from tools.cloud_agent_check import ship_branch_error
 
 
@@ -24,6 +30,22 @@ class BuildableTests(unittest.TestCase):
         self.assertFalse(tip_is_buildable("Subject\n\nBuildable: no\n"))
         self.assertFalse(tip_is_buildable("Subject mentions Buildable: yes inline\n"))
         self.assertFalse(tip_is_buildable("Subject\n"))
+
+    def test_two_tips_stay_separate_when_their_messages_have_newlines(self) -> None:
+        raw = (
+            "build/auto-playthrough\0aaa\0SC1-0616: already landed.\n"
+            "@@SOLIDCORE1-TIP@@\n"
+            "build/name-the-stronghold\0bbb\0The company names its stronghold.\n\n"
+            "Buildable: yes\n"
+            "@@SOLIDCORE1-TIP@@\n"
+        )
+        records = parse_tip_text(raw, 3)
+        self.assertEqual(
+            [name for name, _sha, _message in records],
+            ["build/auto-playthrough", "build/name-the-stronghold"],
+        )
+        self.assertTrue(tip_is_buildable(records[1][2]))
+        self.assertFalse(tip_is_buildable(records[0][2]))
 
     def test_only_a_marked_tip_is_buildable(self) -> None:
         tips = [

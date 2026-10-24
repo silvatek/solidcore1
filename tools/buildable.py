@@ -31,6 +31,23 @@ def tip_is_buildable(message: str) -> bool:
     return any(line.strip() == MARKER for line in message.splitlines())
 
 
+TIP_END = "@@SOLIDCORE1-TIP@@"
+
+
+def parse_tip_text(raw: str, fields: int) -> list[tuple[str, ...]]:
+    """Split for-each-ref output. This git prints %00 and ignores %x1e."""
+    found: list[tuple[str, ...]] = []
+    for record in raw.split(TIP_END):
+        record = record.strip("\n")
+        if not record.strip():
+            continue
+        parts = record.split("\0", fields - 1)
+        if len(parts) < fields:
+            continue
+        found.append(tuple(parts))
+    return found
+
+
 def buildable_names(tips: list[tuple[str, str]]) -> list[str]:
     return [
         name
@@ -61,7 +78,7 @@ def remote_tips(root: Path) -> tuple[int, list[tuple[str, str]], str]:
         [
             "git",
             "for-each-ref",
-            "--format=%(refname:strip=3)%00%(contents)%x1e",
+            "--format=%(refname:strip=3)%00%(contents)\n" + TIP_END,
             "refs/remotes/origin/build",
         ],
         cwd=root,
@@ -73,14 +90,10 @@ def remote_tips(root: Path) -> tuple[int, list[tuple[str, str]], str]:
         detail = (listed.stderr or listed.stdout).strip()
         return listed.returncode, [], detail
 
-    tips: list[tuple[str, str]] = []
-    for record in listed.stdout.split("\x1e"):
-        record = record.strip("\n")
-        if not record.strip():
-            continue
-        name, sep, message = record.partition("\0")
-        if sep:
-            tips.append((name.strip(), message))
+    tips = [
+        (name.strip(), message)
+        for name, message in parse_tip_text(listed.stdout, 2)
+    ]
     return 0, tips, ""
 
 

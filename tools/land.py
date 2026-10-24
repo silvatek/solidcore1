@@ -24,7 +24,7 @@ _ROOT = Path(__file__).resolve().parents[1]
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
-from tools.buildable import MARKER, is_build_branch, tip_is_buildable
+from tools.buildable import MARKER, TIP_END, is_build_branch, parse_tip_text, tip_is_buildable
 from tools.ue_lock import YIELD_NAME, acquire, read_word, release
 
 STATUS_CONTEXT = "solidcore1/land"
@@ -263,19 +263,13 @@ class GitLanding:
         listed = _git(
             self.root,
             "for-each-ref",
-            "--format=%(refname:strip=3)%00%(objectname)%00%(contents)%x1e",
+            "--format=%(refname:strip=3)%00%(objectname)%00%(contents)\n" + TIP_END,
             "refs/remotes/origin/build",
         )
-        found: list[tuple[str, str, str]] = []
-        for record in listed.stdout.split("\x1e"):
-            record = record.strip("\n")
-            if not record.strip():
-                continue
-            name, sep, rest = record.partition("\0")
-            sha, sep2, message = rest.partition("\0")
-            if sep and sep2:
-                found.append((name.strip(), sha.strip(), message))
-        return found
+        return [
+            (name.strip(), sha.strip(), message)
+            for name, sha, message in parse_tip_text(listed.stdout, 3)
+        ]
 
     def on_main(self, sha: str) -> bool:
         completed = _git(self.root, "merge-base", "--is-ancestor", sha, "origin/main")

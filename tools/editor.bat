@@ -25,8 +25,7 @@ set "SCRIPT_DIR=%~dp0"
 if not defined PROJECT set "PROJECT=%SCRIPT_DIR%..\SolidCore1.uproject"
 for %%I in ("%PROJECT%") do set "PROJECT=%%~fI"
 
-set "LOCK=%SCRIPT_DIR%..\ue.lock"
-for %%I in ("%LOCK%") do set "LOCK=%%~fI"
+set "LOCKPY=%SCRIPT_DIR%ue_lock.py"
 
 set "EDITOR=%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor.exe"
 if not exist "%EDITOR%" (
@@ -42,12 +41,9 @@ if not exist "%PROJECT%" (
   exit /b 1
 )
 
-call :LockIsFree
+python "%LOCKPY%" acquire Editor --session
 if errorlevel 1 exit /b 1
 
-> "%LOCK%" echo Editor
-echo Lock: %LOCK%
-echo Word: Editor
 echo Launching the Unreal Editor
 echo Project: %PROJECT%
 echo Engine:  %UE_ROOT%
@@ -65,25 +61,6 @@ ping -n 3 127.0.0.1 >nul
 goto WaitForEditor
 
 :EditorClosed
-> "%LOCK%" echo Free
-echo Word: Free
+python "%LOCKPY%" release Editor
+if errorlevel 1 if "%ERR%"=="0" set "ERR=1"
 exit /b %ERR%
-
-:LockIsFree
-setlocal EnableExtensions EnableDelayedExpansion
-if not exist "%LOCK%" exit /b 0
-set "LOCKWORD="
-for /f "usebackq tokens=*" %%W in ("%LOCK%") do (
-  if not defined LOCKWORD set "LOCKWORD=%%W"
-)
-if not defined LOCKWORD goto LockBusy
-:LockTrim
-if "!LOCKWORD:~-1!"==" " set "LOCKWORD=!LOCKWORD:~0,-1!" & goto LockTrim
-if "!LOCKWORD:~-1!"=="	" set "LOCKWORD=!LOCKWORD:~0,-1!" & goto LockTrim
-if not defined LOCKWORD goto LockBusy
-if "!LOCKWORD!"=="Free" exit /b 0
-:LockBusy
-echo ERROR: ue.lock is not Free. Not launching the editor.
-echo Lock: %LOCK%
-echo Word: "!LOCKWORD!"
-exit /b 1

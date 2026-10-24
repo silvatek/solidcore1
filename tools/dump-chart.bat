@@ -25,8 +25,7 @@ set "SCRIPT_DIR=%~dp0"
 if not defined PROJECT set "PROJECT=%SCRIPT_DIR%..\SolidCore1.uproject"
 for %%I in ("%PROJECT%") do set "PROJECT=%%~fI"
 
-set "LOCK=%SCRIPT_DIR%..\ue.lock"
-for %%I in ("%LOCK%") do set "LOCK=%%~fI"
+set "LOCKPY=%SCRIPT_DIR%ue_lock.py"
 
 set "OUT=%~1"
 if "%OUT%"=="" set "OUT=%SCRIPT_DIR%..\Saved\WorldChart.json"
@@ -46,12 +45,9 @@ if not exist "%PROJECT%" (
   exit /b 1
 )
 
-call :LockIsFree
+python "%LOCKPY%" acquire Dump --session
 if errorlevel 1 exit /b 1
 
-> "%LOCK%" echo Dump
-echo Lock: %LOCK%
-echo Word: Dump
 echo Dumping the world chart
 echo Project: %PROJECT%
 echo Engine:  %UE_ROOT%
@@ -63,32 +59,14 @@ if exist "%OUT%" del /f /q "%OUT%"
 "%EDITOR%" "%PROJECT%" -run=SolidDumpWorldChart -unattended -nop4 -nosplash -nosound -NullRHI -out="%OUT%"
 set "ERR=%ERRORLEVEL%"
 
-> "%LOCK%" echo Free
-echo Word: Free
+python "%LOCKPY%" release Dump
+set "REL=%ERRORLEVEL%"
 rem The editor process exits 1 when an unrelated startup line is logged as an error.
 rem The dump itself succeeded when it wrote the file.
 if exist "%OUT%" (
   echo Wrote %OUT%
+  if not "%REL%"=="0" exit /b %REL%
   exit /b 0
 )
 echo Dump failed ^(%ERR%^).
-exit /b 1
-
-:LockIsFree
-setlocal EnableExtensions EnableDelayedExpansion
-if not exist "%LOCK%" exit /b 0
-set "LOCKWORD="
-for /f "usebackq tokens=*" %%W in ("%LOCK%") do (
-  if not defined LOCKWORD set "LOCKWORD=%%W"
-)
-if not defined LOCKWORD goto LockBusy
-:LockTrim
-if "!LOCKWORD:~-1!"==" " set "LOCKWORD=!LOCKWORD:~0,-1!" & goto LockTrim
-if "!LOCKWORD:~-1!"=="	" set "LOCKWORD=!LOCKWORD:~0,-1!" & goto LockTrim
-if not defined LOCKWORD goto LockBusy
-if "!LOCKWORD!"=="Free" exit /b 0
-:LockBusy
-echo ERROR: ue.lock is not Free. Not dumping the chart.
-echo Lock: %LOCK%
-echo Word: "!LOCKWORD!"
 exit /b 1

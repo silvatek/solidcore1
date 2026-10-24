@@ -59,7 +59,7 @@ These agents run on the Windows worker. They have access to C++ and Unreal Engin
 
 `tools\editor.bat` uses that same lock. A missing file, or the word `Free`, lets it start. It writes `Editor`, launches the Unreal Editor without Play In Editor, waits until that process has closed, then writes `Free`. Any other word leaves the file unchanged and does not start the editor. It opens `/Game/ThirdPerson/Lvl_ThirdPerson` and switches to the World chart mode.
 
-Before building or testing, read `ue.lock`. A missing file means the machine is free. If the word in the file is not `Free`, say that word in chat and wait until the file says `Free`. Ignore surrounding whitespace. Do not build or test while waiting.
+`tools\build.bat` and `tools\test.bat` take `ue.lock` before they run. Set `SOLID_AGENT_ID` to this agent's run id. `tools\build.bat` also accepts that id as its first argument. `tools\test.bat` keeps its first argument as the test filter. Do not write `ue.lock`. A missing file counts as `Free`. If the script prints `Word:` and that word is not `Free`, say that word and wait until the file says `Free`. Ignore surrounding whitespace. Do not build or test while waiting. If the script fails and the word is `Free`, the lock is busy: say that and wait the same way. If the script says the next slot is reserved, say that, run `tools\free-ue.bat` with this agent's id when `ue.lock` still contains that id, and wait the same way. Do not delete `ue.yield`.
 
 A wait for `ue.lock` that times out is not a reason to read the file again at once. Say in chat that the wait timed out and which word is in the file, then wait 2 minutes for a reply. If no reply arrives, read the file and wait again.
 
@@ -68,8 +68,10 @@ Look for `agent.ok` in the repo root before running build or test.
 `tools\agent.bat` starts the solidcore1-ue worker (`agent worker start --name "solidcore1-ue"`). When that command exits 0 it writes `agent.ok`. The line in the file is `Passed`. The file is gitignored and stays on this machine.
 
 - `agent.ok` is missing. Skip `tools\build.bat` and `tools\test.bat`.
-- `agent.ok` is present, and the change is under `Source/` or `Config/`, or it touches a `*.uproject`, `*.Build.cs`, or `*.Target.cs` file. This machine has finished a successful worker run, so build and test. When `ue.lock` is free, write this agent's own id into it as the only word (the cloud agent run id when this session has one). Then build with `tools\build.bat` and run the tests with `tools\test.bat`. After that session has finished, write `Free` if `ue.lock` still contains this agent's id.
+- `agent.ok` is present, and the change is under `Source/` or `Config/`, or it touches a `*.uproject`, `*.Build.cs`, or `*.Target.cs` file. This machine has finished a successful worker run, so build and test. Set `SOLID_AGENT_ID` to this agent's run id. Then build with `tools\build.bat` and run the tests with `tools\test.bat`. After that session has finished, including when the build or the tests fail, run `tools\free-ue.bat` with that id. It writes `Free` only if `ue.lock` still contains that id.
 - `agent.ok` is present, and the change is markdown, including `Planning/` and this file. Skip `tools\build.bat` and `tools\test.bat`.
+
+The developer runs `tools\yield-ue.bat` to reserve the next build and test, and `tools\yield-ue.bat clear` when that reservation is over. `tools\free-ue.bat` with no id clears a dead agent id when `UnrealEditor.exe`, `UnrealEditor-Cmd.exe`, and `UnrealBuildTool.exe` are not running. It does not clear `PIE`, `Editor`, or `Dump`.
 
 The developer runs `tools\editor.bat` to open the editor without play, and `tools\pie.bat` when play is needed. They send a screenshot when they do. Wait for that report before treating the editor or play as verified. When a screenshot arrives, review it. A `tools\test.bat` pass keeps the story `In Progress`. `Done` waits for the user's report and the agreement in the Planning section.
 

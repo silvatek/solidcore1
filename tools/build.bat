@@ -4,10 +4,17 @@ rem Build SolidCore1Editor Win64 Development with Unreal Build Tool.
 rem
 rem Usage:
 rem   tools\build.bat
+rem   tools\build.bat <agent-id>
+rem
+rem The agent id is the first argument, otherwise SOLID_AGENT_ID.
+rem When both are unset the holder word is Build.
+rem The lock is not released. tools\free-ue.bat does that.
+rem A ue.yield file reserves the next slot and this script exits.
 rem
 rem Optional env:
-rem   UE_ROOT   Engine root (default: C:\Program Files\Epic Games\UE_5.8)
-rem   PROJECT   Path to .uproject (default: this repo's SolidCore1.uproject)
+rem   UE_ROOT          Engine root (default: C:\Program Files\Epic Games\UE_5.8)
+rem   PROJECT          Path to .uproject (default: this repo's SolidCore1.uproject)
+rem   SOLID_AGENT_ID   Holder word when no argument is passed
 
 if not defined UE_ROOT set "UE_ROOT=C:\Program Files\Epic Games\UE_5.8"
 
@@ -28,6 +35,16 @@ if not exist "%PROJECT%" (
   echo Set PROJECT to your SolidCore1.uproject and retry.
   exit /b 1
 )
+
+set "HOLDER=%~1"
+if "%HOLDER%"=="" set "HOLDER=%SOLID_AGENT_ID%"
+set "LOCKPY=%SCRIPT_DIR%ue_lock.py"
+if "%HOLDER%"=="" (
+  python "%LOCKPY%" acquire Build --build --default
+) else (
+  python "%LOCKPY%" acquire "%HOLDER%" --build
+)
+if errorlevel 1 exit /b 1
 
 echo Building SolidCore1Editor Win64 Development
 echo Project: %PROJECT%

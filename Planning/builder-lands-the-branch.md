@@ -1,6 +1,6 @@
 # The builder lands the branch
 
-Status: Ready
+Status: In Progress
 
 ## Story
 
@@ -59,13 +59,13 @@ New product work reaches `main` through the builder. The developer plays that ch
 
 ### Stage 1 — the lock gates the build
 
-Planned before it is implemented. The story stays Ready until this stage starts. No branch. Agents still push `main`. `SOLID_BUILD_ID` does not change. Coding agents are stopped before this stage is implemented, after the agent already at work finishes the build and test that follows `SC1-0612`. New agents start after the stage is on `main`, and they continue the open stories. Play In Editor, the World Editor, and the chart dump still write `PIE`, `Editor`, and `Dump`, and they still start only from a missing `ue.lock` or the word `Free`.
+Stage 1 is in progress. Coding agents were stopped after `SC1-0612`, before another product commit. No branch. Agents still push `main`. `SOLID_BUILD_ID` does not change. New agents start after this stage is on `main`, and they continue the open stories. Play In Editor, the World Editor, and the chart dump still write `PIE`, `Editor`, and `Dump`, and they still start only from a missing `ue.lock` or the word `Free`.
 
 `tools/ue_lock.py` is the only writer of the lock word. The bats call it. A direct echo into `ue.lock` is gone, including the copies in `tools\pie.bat`, `tools\editor.bat`, and `tools\dump-chart.bat`. `tools/cloud_agent_check.py` is updated in the same change so it requires that call before the editor launches, and before Unreal Build Tool or `UnrealEditor-Cmd` starts. It still requires the words `PIE`, `Editor`, and `Free`, a missing lock counting as free, and no pull request.
 
 The helper takes the lock with a gate directory, `ue.lock.gate`, created by `mkdir`. That create succeeds for one waiter. The winner reads `ue.lock`. A missing file is free. An empty file is busy. Surrounding whitespace is ignored. When the word is `Free`, the winner writes its own word and removes the gate. Any other word removes the gate and fails, and the file is unchanged. A second waiter then sees the first word. The write replaces the file in one step. If the gate is left behind, a waiter may remove it once it is 30 seconds old and try once more. Younger than that, the waiter fails and prints the current word.
 
-`tools\build.bat` and `tools\test.bat` take the lock before they run, and they do not write `Free` when they finish. The holder word is the first argument, otherwise `SOLID_AGENT_ID`. An agent passes its run id to both. The same id is a re-entry, so the test runs under the hold the build already took. If the argument and the variable are both unset, build uses the word `Build` and test uses the word `Test`. Those two words, and `Free`, `PIE`, `Editor`, and `Dump`, are refused as an agent id. A failed build leaves the id in the lock. The agent releases it after the session, including when the build or the tests fail.
+`tools\build.bat` and `tools\test.bat` take the lock before they run, and they do not write `Free` when they finish. The holder word is `SOLID_AGENT_ID`. `tools\build.bat` also accepts that id as its first argument. `tools\test.bat` keeps its first argument as the automation filter, so `tools\test.bat SolidCore1.Fog` still runs that filter. An agent sets the same id for both. The same id is a re-entry, so the test runs under the hold the build already took. If the argument and the variable are both unset, build uses the word `Build` and test uses the word `Test`. Those two words, and `Free`, `PIE`, `Editor`, and `Dump`, are refused as an agent id. A failed build leaves the id in the lock. The agent releases it after the session, including when the build or the tests fail.
 
 `tools\free-ue.bat <id>` writes `Free` only when the word is that id. `tools\free-ue.bat` with no id is the dead holder. It refuses a missing file, an empty file, and the words `Free`, `PIE`, `Editor`, and `Dump`. For any other word it refuses while `UnrealEditor.exe`, `UnrealEditor-Cmd.exe`, or `UnrealBuildTool.exe` is running. When none of those is running, it writes `Free`. A `PIE` or `Editor` word left by a killed bat is still cleared by hand, as it is today.
 

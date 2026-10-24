@@ -126,53 +126,89 @@ def check_editor_lock(errors: list[str]) -> None:
             raw.split("#", 1)[0].strip()
             for raw in gitignore.read_text(encoding="utf-8").splitlines()
         ]
-        if "/ue.lock" not in patterns:
-            errors.append(".gitignore must ignore /ue.lock")
+        for pattern in ("/ue.lock", "/ue.yield", "/ue.lock.gate"):
+            if pattern not in patterns:
+                errors.append(f".gitignore must ignore {pattern}")
 
+    lock_py = ROOT / "tools" / "ue_lock.py"
+    if not lock_py.is_file():
+        errors.append("missing tools/ue_lock.py")
+    else:
+        helper = lock_py.read_text(encoding="utf-8")
+        if "A missing ue.lock counts as Free." not in helper:
+            errors.append("tools/ue_lock.py must treat a missing ue.lock as Free")
+        for word in ("PIE", "Editor", "Free"):
+            if word not in helper:
+                errors.append(f"tools/ue_lock.py must name the word {word}")
+
+    def require_acquire_before(name: str, launch: str, acquire: str, release: str | None) -> None:
+        path = ROOT / "tools" / name
+        if not path.is_file():
+            errors.append(f"missing tools/{name}")
+            return
+        script = path.read_text(encoding="utf-8")
+        if '> "%LOCK%" echo' in script:
+            errors.append(f"tools/{name} must not echo a word into ue.lock")
+        acquire_at = script.find(acquire)
+        launch_at = script.find(launch)
+        if acquire_at < 0 or launch_at < 0 or acquire_at > launch_at:
+            errors.append(f"tools/{name} must take ue.lock before it starts")
+        if release is not None:
+            release_at = script.find(release)
+            if release_at < 0 or launch_at < 0 or release_at < launch_at:
+                errors.append(f"tools/{name} must release ue.lock after it finishes")
+
+    require_acquire_before(
+        "pie.bat",
+        '"%EDITOR%" "%PROJECT%" -immersive',
+        'acquire PIE --session',
+        "release PIE",
+    )
     pie = ROOT / "tools" / "pie.bat"
-    if not pie.is_file():
-        errors.append("missing tools/pie.bat")
-    else:
-        script = pie.read_text(encoding="utf-8")
-        if "echo PIE" not in script or "echo Free" not in script:
-            errors.append("tools/pie.bat must write the words PIE and Free into ue.lock")
-        if "-immersive" not in script:
-            errors.append("tools/pie.bat must launch Unreal Editor with -immersive")
-        launch_at = script.find('"%EDITOR%" "%PROJECT%" -immersive')
-        gate_at = script.find("call :LockIsFree")
-        if gate_at < 0 or launch_at < 0 or gate_at > launch_at:
-            errors.append(
-                "tools/pie.bat must check ue.lock before launching the editor"
-            )
-        if 'if not exist "%LOCK%"' not in script:
-            errors.append("tools/pie.bat must launch when ue.lock does not exist")
-        if 'if "!LOCKWORD!"=="Free"' not in script:
-            errors.append("tools/pie.bat must treat the word Free as the free lock")
+    if pie.is_file() and "-immersive" not in pie.read_text(encoding="utf-8"):
+        errors.append("tools/pie.bat must launch Unreal Editor with -immersive")
 
+    require_acquire_before(
+        "editor.bat",
+        '"%EDITOR%" "%PROJECT%"',
+        "acquire Editor --session",
+        "release Editor",
+    )
     editor = ROOT / "tools" / "editor.bat"
-    if not editor.is_file():
-        errors.append("missing tools/editor.bat")
-    else:
-        script = editor.read_text(encoding="utf-8")
-        if "echo Editor" not in script or "echo Free" not in script:
-            errors.append("tools/editor.bat must write the words Editor and Free into ue.lock")
+    if editor.is_file():
         launch_lines = [
             line
-            for line in script.splitlines()
+            for line in editor.read_text(encoding="utf-8").splitlines()
             if '"%EDITOR%"' in line and '"%PROJECT%"' in line
         ]
         if not launch_lines or "-immersive" in launch_lines[0]:
             errors.append("tools/editor.bat must launch the editor without starting PIE")
-        launch_at = script.find('"%EDITOR%" "%PROJECT%"')
-        gate_at = script.find("call :LockIsFree")
-        if gate_at < 0 or launch_at < 0 or gate_at > launch_at:
-            errors.append(
-                "tools/editor.bat must check ue.lock before launching the editor"
-            )
-        if 'if not exist "%LOCK%"' not in script:
-            errors.append("tools/editor.bat must launch when ue.lock does not exist")
-        if 'if "!LOCKWORD!"=="Free"' not in script:
-            errors.append("tools/editor.bat must treat the word Free as the free lock")
+
+    require_acquire_before(
+        "dump-chart.bat",
+        "-run=SolidDumpWorldChart",
+        "acquire Dump --session",
+        "release Dump",
+    )
+    require_acquire_before(
+        "build.bat",
+        'call "%UBT%"',
+        "ue_lock.py",
+        None,
+    )
+    build = ROOT / "tools" / "build.bat"
+    if build.is_file():
+        script = build.read_text(encoding="utf-8")
+        acquire_at = script.find("acquire")
+        launch_at = script.find('call "%UBT%"')
+        if acquire_at < 0 or launch_at < 0 or acquire_at > launch_at:
+            errors.append("tools/build.bat must acquire ue.lock before Unreal Build Tool")
+    require_acquire_before(
+        "test.bat",
+        '"%EDITOR%" "%PROJECT%"',
+        "acquire",
+        None,
+    )
 
     agents = ROOT / "AGENTS.md"
     if not agents.is_file():

@@ -54,8 +54,10 @@ Content/Elf_Blacksmith
 
 temp.md
 
-# Play In Editor / agent build lock (tools/pie.bat, solidcore1-ue agents)
+# Play In Editor / agent build lock (tools/ue_lock.py)
 /ue.lock
+/ue.yield
+/ue.lock.gate
 
 # Successful tools/agent.bat run. Stays on this machine.
 /agent.ok

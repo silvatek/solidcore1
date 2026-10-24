@@ -3,12 +3,18 @@ setlocal EnableExtensions EnableDelayedExpansion
 rem Run SolidCore1 automation tests headlessly (UE 5.8) and print pass/fail counts.
 rem
 rem Usage:
-rem   tools\run_automation_tests.bat
-rem   tools\run_automation_tests.bat SolidCore1.Fog
+rem   tools\test.bat
+rem   tools\test.bat SolidCore1.Fog
+rem
+rem The first argument is the automation filter. The holder word is
+rem SOLID_AGENT_ID. When that is unset the holder word is Test.
+rem The lock is not released. tools\free-ue.bat does that.
+rem A ue.yield file reserves the next slot and this script exits.
 rem
 rem Optional env:
-rem   UE_ROOT   Engine root (default: C:\Program Files\Epic Games\UE_5.8)
-rem   PROJECT   Path to .uproject (default: repo SolidCore1.uproject)
+rem   UE_ROOT          Engine root (default: C:\Program Files\Epic Games\UE_5.8)
+rem   PROJECT          Path to .uproject (default: repo SolidCore1.uproject)
+rem   SOLID_AGENT_ID   Holder word
 
 if not defined UE_ROOT set "UE_ROOT=C:\Program Files\Epic Games\UE_5.8"
 
@@ -32,6 +38,15 @@ set "LOGFILE=%LOGDIR%\automation.log"
 set "FAILLIST=%LOGDIR%\failed-tests.txt"
 if exist "%LOGFILE%" del /f /q "%LOGFILE%"
 if exist "%FAILLIST%" del /f /q "%FAILLIST%"
+
+set "HOLDER=%SOLID_AGENT_ID%"
+set "LOCKPY=%SCRIPT_DIR%ue_lock.py"
+if "%HOLDER%"=="" (
+  python "%LOCKPY%" acquire Test --build --default
+) else (
+  python "%LOCKPY%" acquire "%HOLDER%" --build
+)
+if errorlevel 1 exit /b 1
 
 echo Running automation filter: %FILTER%
 echo Project: %PROJECT%

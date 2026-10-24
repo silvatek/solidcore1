@@ -4,7 +4,7 @@ Status: New
 
 ## Story
 
-The player meets one Immense raptor where the chart marks the Dracorex encounter. It is the same green Velociraptor as the three Small raptors at Iglin Bridge, drawn at the Immense size. It stands and idles. Walking into it stops the captain. Coming into range starts a fight, and that fight is the battle a monster group already fights.
+The player meets one Immense raptor where the chart marks the Dracorex encounter. It is the same green Velociraptor as the three Small raptors at Iglin Bridge, drawn at the Immense size. It stands and idles. Walking into it stops the captain. Coming into range starts a fight, and that fight is the battle a monster group already fights. The captain can kill the raptor and walk away. The raptor can kill the captain, and that death is the landing any captain death already uses. The fight the captain cannot survive is Iglin Bridge.
 
 The developer places that mark in the World chart mode, the mode the World Editor opens. The Place list offers Dracorex with the other encounter names. Until that mark is saved on the chart, the world has no Dracorex.
 
@@ -24,6 +24,8 @@ This is a single phase. The catalog row and the Immense body land together. The 
 - The capsule fits the scaled body. Its radius and half-height keep the Small proportions, multiplied by that same eight. The Small capsule stays 27 cm by a 50 cm half-height. The click, the fog seeding, the empty nameplate, and the camera stay as they are for a Small raptor. Detection range starts at 5 m.
 - The weapon is Claws. The armour is Hide. Power is the Immense size roll. Hide Strength stays 20. Speed is the monster weapon's starting figure.
 - Coming into DetectionRange starts the battle. The log uses Raptor and Claws. Walking into the body still stops the captain.
+- A blow that reduces Hide to 0 kills the raptor and ends the fight with the captain alive. A blow that kills the captain ends the fight through the landing any captain death already uses. Dracorex adds no movement block, no further raptor, and no change to Hide, Power, or Speed that exists to force that death. Hide stays 20.
+- The fight that kills the captain once it has started stays on Iglin Bridge, as [Iglin Bridge Fight Enhancements](iglin-bridge-fight-enhancements.md) specifies. This story leaves that encounter's fight there.
 - The product commit bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`.
 
 ## Implementation notes
@@ -35,6 +37,8 @@ This story is one phase. The catalog row and the Immense drawn body land togethe
 - Encounter enhancements has shipped. The row is an `FStaticEncounter` appended to `SolidEncounter::StaticEncounters`. It does not call `Require`. Startup places it with Iglin Bridge. The Place list still reads the catalog, under whichever type name that story left.
 - Insect monsters may already have appended Giant ants. Leave that row. Dracorex follows whatever rows are already there. Iglin Bridge stays first.
 - `MakeMonster` already sets `Size` from the group and arms Claws and Hide. `PowerFor` of Immense is the power. `FSolidRaptor::Arm` still sets Hide Strength to 20. The member's kind stays Raptor. The actor stays `ASolidRaptor`.
+- The death the captain cannot avoid belongs to Iglin Bridge: the movement block, the Large that spawns when a Small dies or the captain runs, and that Large's huge Hide. Dracorex copies none of those. Its battle is the one [Basic combat](Done/basic-combat.md) already runs. The side that reaches Strength 0 loses.
+- At `FSolidItem::StartingDraw`, Immense power is the median 12 raised five times by 1.6, about 126. Rags Strength is 70, so one claw blow drops the starting captain. The crude spear is Inferior, median 12, and Hide is 20, so the spear needs two blows. Both weapons have Speed 1, and the spear is the first blow, so the claw lands before the second spear blow. The starting kit loses that exchange. That result is the ordinary roll. This story leaves Power, Hide, Speed, and Rags as they are. A later change retunes them if the starting captain should survive.
 - `FSolidRaptor::DrawnBodyFactor` returns `SmallDrawnBodyFactor` for Small and `ImmenseDrawnBodyFactor` for Immense. The other sizes stay on the Small factor, which is what the default branch does today. `ImmenseDrawnBodyFactor` starts at 48, eight times 6, so the drawn body is about 8 m. Play beside a Small raptor and the 1 m post can change that constant. `SmallDrawnBodyFactor` stays 6.
 - `ASolidRaptor` builds the capsule at the Small size. `SetRaptor` resizes it when the raptor is Immense: radius and half-height times `ImmenseDrawnBodyFactor / SmallDrawnBodyFactor`, and the capsule centre stays at the half-height so the bottom is the actor origin. A Small raptor keeps 27 cm and a 50 cm half-height. The default actor, before `SetRaptor`, keeps those Small figures. The body mesh scales through `BodyScale` as it does now.
 - The World chart mode already fills the Encounter combo from the catalog in `FSolidWorldChartEdMode`. A new row appears there. `PlaceEncounter` already stores a catalog name and refuses a name the catalog lacks. The shipped `/Game/World/WorldChart` asset stays as it is.

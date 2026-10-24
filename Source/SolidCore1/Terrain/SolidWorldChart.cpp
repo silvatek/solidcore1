@@ -1021,6 +1021,11 @@ bool USolidWorldChart::LoadFromString(const FString& Text)
 			Mark.LocationId = Town->Id;
 			Mark.Name = Town->Name;
 			BangLocationIds[Index] = Town->Id;
+			FTownSeed Seed;
+			Seed.LocationId = Town->Id;
+			Seed.Column = Ref.MapX;
+			Seed.Row = Ref.MapY;
+			TownSeeds.Add(Seed);
 			break;
 		}
 		case FWorldMapBangRef::EKind::Stronghold:
@@ -1083,6 +1088,7 @@ bool USolidWorldChart::LoadFromString(const FString& Text)
 
 	bIsLoaded = true;
 	CopyPlayOntoPoints(true, false);
+	AssignTownPoints();
 	for (SolidRoad::FDefinition& RoadDef : RoadDefs)
 	{
 		LocateStrongholdEnd(BangMarks, RoadDef.From);
@@ -1127,6 +1133,8 @@ void USolidWorldChart::ResetLoad() const
 	BangMarks.Reset();
 	BangLocationIds.Init(INDEX_NONE, MapWidth * MapHeight);
 	EncounterMarks.Reset();
+	TownSeeds.Reset();
+	PointTowns.Reset();
 	bIsLoaded = false;
 }
 
@@ -1199,6 +1207,11 @@ bool USolidWorldChart::RememberChartMark(const FSolidWorldChartMark& Mark, const
 		Bang.LocationId = Town->Id;
 		Bang.Name = Town->Name;
 		BangLocationIds[Index] = Town->Id;
+		FTownSeed Seed;
+		Seed.LocationId = Town->Id;
+		Seed.Column = Cell.X;
+		Seed.Row = Cell.Y;
+		TownSeeds.Add(Seed);
 		break;
 	}
 	case ESolidWorldChartMarkKind::Stronghold:
@@ -1307,6 +1320,7 @@ bool USolidWorldChart::BuildQuery() const
 
 	CollectNamedTowns();
 	CopyPlayOntoPoints(false, true);
+	AssignTownPoints();
 
 	TArray<SolidRoad::FDefinition> RoadDefs;
 	for (const FSolidWorldChartRoad& Road : Roads)
@@ -1790,6 +1804,61 @@ void USolidWorldChart::CopyPlayOntoPoints(const bool bForce, const bool bUseStor
 	}
 }
 
+void USolidWorldChart::AssignTownPoints() const
+{
+	PointTowns.Reset();
+	if (Points.Num() != PointCount)
+	{
+		return;
+	}
+
+	PointTowns.Init(INDEX_NONE, PointCount);
+	TArray<int32> Queue;
+	for (const FTownSeed& Seed : TownSeeds)
+	{
+		int32 IX = 0;
+		int32 IY = 0;
+		PointUnderCell(Seed.Column, Seed.Row, IX, IY);
+		const int32 Start = PointSlot(IX, IY);
+		if (Points[Start] != ESolidBiome::Town || PointTowns[Start] != INDEX_NONE)
+		{
+			continue;
+		}
+
+		PointTowns[Start] = Seed.LocationId;
+		Queue.Reset();
+		Queue.Add(Start);
+		for (int32 Index = 0; Index < Queue.Num(); ++Index)
+		{
+			const int32 Slot = Queue[Index];
+			const int32 X = Slot % PointAxis;
+			const int32 Y = Slot / PointAxis;
+			const FIntPoint Steps[] = {
+				FIntPoint(1, 0),
+				FIntPoint(-1, 0),
+				FIntPoint(0, 1),
+				FIntPoint(0, -1),
+			};
+			for (const FIntPoint& Step : Steps)
+			{
+				const int32 NextX = X + Step.X;
+				const int32 NextY = Y + Step.Y;
+				if (NextX < 0 || NextY < 0 || NextX >= PointAxis || NextY >= PointAxis)
+				{
+					continue;
+				}
+				const int32 Next = PointSlot(NextX, NextY);
+				if (Points[Next] != ESolidBiome::Town || PointTowns[Next] != INDEX_NONE)
+				{
+					continue;
+				}
+				PointTowns[Next] = Seed.LocationId;
+				Queue.Add(Next);
+			}
+		}
+	}
+}
+
 bool USolidWorldChart::EnsurePoints() const
 {
 	if (Points.Num() == PointCount)
@@ -1939,13 +2008,20 @@ int32 USolidWorldChart::SampleLocationId(
 	const FVector2D WorldMinXY,
 	const FVector2D WorldMaxXY) const
 {
-	int32 MapX = 0;
-	int32 MapY = 0;
-	if (!WorldXYToCell(WorldX, WorldY, WorldMinXY, WorldMaxXY, MapX, MapY))
+	if (!EnsureQuery() || PointTowns.Num() != PointCount || Points.Num() != PointCount)
 	{
 		return INDEX_NONE;
 	}
-	return GetLocationIdAtCell(MapX, MapY);
+
+	int32 IX = 0;
+	int32 IY = 0;
+	PointAtWorld(WorldX, WorldY, WorldMinXY, WorldMaxXY, IX, IY);
+	const int32 Slot = PointSlot(IX, IY);
+	if (Points[Slot] != ESolidBiome::Town)
+	{
+		return INDEX_NONE;
+	}
+	return PointTowns[Slot];
 }
 
 FLinearColor USolidWorldChart::GetBiomeColor(const ESolidBiome Biome) const

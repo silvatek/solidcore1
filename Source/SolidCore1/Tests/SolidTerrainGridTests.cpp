@@ -234,4 +234,78 @@ bool FSolidTerrainGridShippedChartTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidTerrainGridTownRegionTest,
+	"SolidCore1.TerrainGrid.TownRegion",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidTerrainGridTownRegionTest::RunTest(const FString& Parameters)
+{
+	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
+	if (!TestNotNull(TEXT("grass chart"), Chart) || !TestTrue(TEXT("grass imports"), Chart->ImportFromString(GrassGrid())))
+	{
+		return false;
+	}
+
+	FString Error;
+	const FIntPoint Iglin(4, 4);
+	TestTrue(TEXT("Iglin places"), Chart->PlaceTown(Iglin, TEXT("Iglin"), Error));
+	const FVector2D IglinCentre = CellCentre(*Chart, Iglin.X, Iglin.Y);
+	TestEqual(TEXT("the marker point is Iglin"), Chart->SampleLocationId(IglinCentre.X, IglinCentre.Y, GridMin, GridMax), SolidTowns::Iglin);
+	TestEqual(
+		TEXT("grass beside the marker is not Iglin"),
+		Chart->SampleLocationId(IglinCentre.X + 400.f, IglinCentre.Y, GridMin, GridMax),
+		INDEX_NONE);
+	TestEqual(TEXT("the cell is still Iglin"), Chart->GetLocationIdAtCell(Iglin.X, Iglin.Y), SolidTowns::Iglin);
+
+	const FIntPoint Far(20, 20);
+	TestTrue(TEXT("a far cell paints town"), Chart->PaintRun({ Far }, ESolidBiome::Town, Error));
+	TestEqual(
+		TEXT("town paint without a marker is not a town"),
+		Chart->SampleLocationId(CellCentre(*Chart, Far.X, Far.Y).X, CellCentre(*Chart, Far.X, Far.Y).Y, GridMin, GridMax),
+		INDEX_NONE);
+
+	const FIntPoint Relion(8, 8);
+	const FIntPoint Second(9, 8);
+	TestTrue(TEXT("Relion places first"), Chart->PlaceTown(Relion, TEXT("Relion"), Error));
+	TestTrue(TEXT("Iglin places second"), Chart->PlaceTown(Second, TEXT("Iglin"), Error));
+	TestTrue(TEXT("the two cells paint town"), Chart->PaintRectangle(Relion, Second, ESolidBiome::Town, Error));
+	const FVector2D RelionCentre = CellCentre(*Chart, Relion.X, Relion.Y);
+	const FVector2D SecondCentre = CellCentre(*Chart, Second.X, Second.Y);
+	TestEqual(TEXT("the first marker keeps the region"), Chart->SampleLocationId(RelionCentre.X, RelionCentre.Y, GridMin, GridMax), SolidTowns::Relion);
+	TestEqual(TEXT("the second marker stands in that region"), Chart->SampleLocationId(SecondCentre.X, SecondCentre.Y, GridMin, GridMax), SolidTowns::Relion);
+	TestEqual(TEXT("the second cell still names Iglin"), Chart->GetLocationIdAtCell(Second.X, Second.Y), SolidTowns::Iglin);
+
+	const FIntPoint GateEast(10, 12);
+	const FIntPoint GateWest(11, 12);
+	TestTrue(TEXT("Dragongate's east mark places"), Chart->PlaceTown(GateEast, TEXT("Dragongate"), Error));
+	TestTrue(TEXT("Dragongate's west mark places"), Chart->PlaceTown(GateWest, TEXT("Dragongate"), Error));
+	TestTrue(TEXT("Dragongate paints one region"), Chart->PaintRectangle(GateEast, GateWest, ESolidBiome::Town, Error));
+	TestEqual(
+		TEXT("the east mark is Dragongate"),
+		Chart->SampleLocationId(CellCentre(*Chart, GateEast.X, GateEast.Y).X, CellCentre(*Chart, GateEast.X, GateEast.Y).Y, GridMin, GridMax),
+		SolidTowns::Dragongate);
+	TestEqual(
+		TEXT("the west mark is Dragongate"),
+		Chart->SampleLocationId(CellCentre(*Chart, GateWest.X, GateWest.Y).X, CellCentre(*Chart, GateWest.X, GateWest.Y).Y, GridMin, GridMax),
+		SolidTowns::Dragongate);
+
+	USolidWorldChart* Shipped = NewObject<USolidWorldChart>();
+	if (TestTrue(TEXT("the shipped chart loads"), Shipped && Shipped->LoadDefault()))
+	{
+		const FIntPoint East(11, 21);
+		const FIntPoint West(12, 21);
+		TestEqual(TEXT("shipped east cell is Dragongate"), Shipped->GetLocationIdAtCell(East.X, East.Y), SolidTowns::Dragongate);
+		TestEqual(
+			TEXT("standing on the east mark is Dragongate"),
+			Shipped->SampleLocationId(CellCentre(*Shipped, East.X, East.Y).X, CellCentre(*Shipped, East.X, East.Y).Y, GridMin, GridMax),
+			SolidTowns::Dragongate);
+		TestEqual(
+			TEXT("standing on the west mark is Dragongate"),
+			Shipped->SampleLocationId(CellCentre(*Shipped, West.X, West.Y).X, CellCentre(*Shipped, West.X, West.Y).Y, GridMin, GridMax),
+			SolidTowns::Dragongate);
+	}
+	return true;
+}
+
 #endif

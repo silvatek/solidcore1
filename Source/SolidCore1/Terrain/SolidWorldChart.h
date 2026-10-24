@@ -252,7 +252,11 @@ public:
 	/** Location id on this cell, or INDEX_NONE when it is not a named town. */
 	int32 GetLocationIdAtCell(int32 MapX, int32 MapY) const;
 
-	/** Numbered location under a world XY, or INDEX_NONE. Same rectangle as SampleBiome. */
+	/**
+	 * Town under a world XY, or INDEX_NONE. The town is the painted town ground
+	 * connected to its marker. Town paint that does not meet a marker is not a town.
+	 * Same rectangle as SampleBiome.
+	 */
 	int32 SampleLocationId(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 
 	/**
@@ -423,6 +427,8 @@ private:
 	ESolidBiome SampleCellPlay(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 	void SetPointsInCells(const TArray<int32>& CellIndexes, ESolidBiome Biome) const;
 	void ApplyMarkerPoint(const FVector2D& PositionCm, ESolidWorldChartMarkKind Kind) const;
+	/** Claim each run of town points for the first marker that touches it. */
+	void AssignTownPoints() const;
 	bool EnsurePoints() const;
 	bool CellIndex(FIntPoint Cell, int32& OutIndex) const;
 	bool PlaceMark(FIntPoint Cell, const FSolidWorldChartMark& Mark, FString& OutError);
@@ -443,6 +449,18 @@ private:
 	mutable TArray<FIntPoint> StartTownCells;
 	mutable TMap<int32, FSolidWorldLocation> Locations;
 	mutable TArray<FSolidWorldEncounterMark> EncounterMarks;
+
+	/** A town marker, in the order the chart stored it. The first seed claims a shared region. */
+	struct FTownSeed
+	{
+		int32 LocationId = INDEX_NONE;
+		int32 Column = 0;
+		int32 Row = 0;
+	};
+
+	mutable TArray<FTownSeed> TownSeeds;
+	/** Location id of each terrain point, or INDEX_NONE. Same order as Points. */
+	mutable TArray<int32> PointTowns;
 	mutable TArray<SolidRoad::FRoute> SolvedRoads;
 	mutable TArray<SolidRoad::FSpan> RoadSpans;
 	mutable TArray<TArray<int32>> RoadSpansByCell;

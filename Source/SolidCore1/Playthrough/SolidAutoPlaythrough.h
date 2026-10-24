@@ -72,7 +72,7 @@ public:
 		const TCHAR* EncounterName = nullptr;
 		/** Eight hex digits. EnterLair, ExitLair, and a lair walk read this. */
 		const TCHAR* LairId = nullptr;
-		/** X or Y. The mouth those rows enter, leave, or walk to. */
+		/** The Iglin Tunnels Entrance or Exit. */
 		TCHAR EndMarker = 0;
 		/** Location id. A Town walk ends when OccupiedTown is this id. */
 		int32 TownId = INDEX_NONE;
@@ -104,7 +104,7 @@ public:
 			return Step;
 		}
 
-		/** A lair walk. InEnd is the mouth the path walks to. */
+		/** A lair walk. InEnd is the Iglin Tunnels Entrance or Exit. */
 		static constexpr FStep WalkTo(
 			const TCHAR* InName,
 			const EWalk InWalk,
@@ -183,7 +183,7 @@ public:
 			return Step;
 		}
 
-		/** Click that lair's mouth on the grass. InEnd is X or Y. */
+		/** Click that lair's mouth on the grass. InEnd is the Iglin Tunnels Entrance or Exit. */
 		static constexpr FStep EnterLair(const TCHAR* InName, const TCHAR* InLairId, const TCHAR InEnd)
 		{
 			FStep Step;
@@ -194,7 +194,7 @@ public:
 			return Step;
 		}
 
-		/** Click that mouth inside the lair. InEnd is the mouth he leaves by. */
+		/** Click that mouth inside the lair. InEnd is the Iglin Tunnels Entrance or Exit. */
 		static constexpr FStep ExitLair(const TCHAR* InName, const TCHAR* InLairId, const TCHAR InEnd)
 		{
 			FStep Step;
@@ -260,7 +260,7 @@ public:
 	 * The shipped plan is the Iglin tunnels. An unknown id has no path.
 	 */
 	static bool LairCells(const TCHAR* LairId, FIntPoint From, FIntPoint To, TArray<FIntPoint>& OutCells);
-	/** The same path between two mouths. X and Y are the end markers. */
+	/** The same path between the Iglin Tunnels Entrance and Exit. */
 	static bool LairCells(const TCHAR* LairId, TCHAR FromEnd, TCHAR ToEnd, TArray<FIntPoint>& OutCells);
 
 	/**

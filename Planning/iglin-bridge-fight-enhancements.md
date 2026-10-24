@@ -34,7 +34,7 @@ This story introduces no game concept. Raptor, the encounter, the captain's deat
 - Reach broken bridge is removed. Standing on either ramp of the Iglin bridge records nothing and shows nothing. Reaching the bridge does not show "You are killed by monsters".
 - FirstDeath fires when the captain dies. It is ACT_0. The journal names it `First death`. It fires once. A second death leaves it unfired and leaves its changes as they are.
 - FirstDeath disables Starter and enables Attack and Defend. The squad's selection becomes Attack, then Defend. The active plan becomes Attack. The battle-plan list shows F1 Attack and F2 Defend. The journal records `Starter disabled`, `Attack enabled`, and `Defend enabled`.
-- Driven from the village requires FirstDeath. It does not require Killed by monsters. The portal to the grass north of the X mouth still records Driven from the village when FirstDeath has not fired.
+- Driven from the village requires FirstDeath. It does not require Killed by monsters. The portal to the grass north of the Iglin Tunnels Entrance still records Driven from the village when FirstDeath has not fired.
 - Killed by monsters no longer disables Starter and no longer enables Attack or Defend. The gear they lose, and the wake in the current stronghold, stay on every captain death. FirstDeath does not take that landing. [Basic combat](Done/basic-combat.md) still enables Meagre on a death.
 - Enter Relion still repairs the bridge. The center is drawn. The road stays `Iglin -> Relion, track`.
 - The product commit bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`.

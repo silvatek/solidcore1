@@ -27,7 +27,7 @@ namespace SolidEvents
 			.EnableBattlePlan(TEXT("Attack"))
 			.EnableBattlePlan(TEXT("Defend")),
 		// It does not send the captain inside.
-		// The portal to the grass north of the X mouth records this event without waiting for the close.
+		// The portal to the grass north of the Iglin Tunnels Entrance records this event without waiting for the close.
 		EnterTown(IdDrivenFromVillage, TEXT("Driven from the village"), SolidTowns::Iglin, ACT_1)
 			.Require(IdKilledByMonsters)
 			.DisplayMessage(SolidMessages::IdDrivenFromVillage)

@@ -1585,7 +1585,7 @@ namespace
 		}
 		for (TActorIterator<ASolidLairInterior> Interior(World); Interior; ++Interior)
 		{
-			const TCHAR Ends[] = { USolidWorldChart::XMarker, USolidWorldChart::YMarker };
+			const TCHAR Ends[] = { SolidLair::Entrance, SolidLair::Exit };
 			for (const TCHAR End : Ends)
 			{
 				const UStaticMeshComponent* Mouth = Interior->GetEndMouth(End);

@@ -119,8 +119,13 @@ namespace SolidLair
 		return Lair ? Lair->Name : nullptr;
 	}
 
+	/** The Iglin Tunnels Entrance. */
+	inline constexpr TCHAR Entrance = TEXT('X');
+	/** The Iglin Tunnels Exit. */
+	inline constexpr TCHAR Exit = TEXT('Y');
+
 	/**
-	 * Floor plan. '#' is rock. '.' is open floor. An end marker is a mouth.
+	 * Floor plan. '#' is rock. '.' is open floor. The Entrance and Exit cells are mouths.
 	 * Every open cell can be reached from a mouth.
 	 * The straight run is there for early testing.
 	 */
@@ -139,7 +144,7 @@ namespace SolidLair
 	inline bool IsEndMarker(const TCHAR Marker)
 	{
 		const TCHAR Upper = FChar::ToUpper(Marker);
-		return Upper == USolidWorldChart::XMarker || Upper == USolidWorldChart::YMarker;
+		return Upper == Entrance || Upper == Exit;
 	}
 
 	inline TCHAR MazeAt(const int32 Col, const int32 Row)
@@ -188,7 +193,7 @@ namespace SolidLair
 	/** Yaw that looks from this mouth into the maze. */
 	inline float SpawnYawDeg(const TCHAR End)
 	{
-		return FChar::ToUpper(End) == USolidWorldChart::XMarker ? 0.f : 180.f;
+		return FChar::ToUpper(End) == Entrance ? 0.f : 180.f;
 	}
 
 	inline bool ContainsLocal(const FVector& Point)
@@ -257,8 +262,8 @@ namespace SolidLair
 	/**
 	 * One stone mouth where a lair cell meets grassland.
 	 * Neighbors are tried north, east, south, then west. The first grassland wins.
-	 * A LairEntrance ! for these tunnels is the interior X end, and a LairExit !
-	 * is the interior Y end. The interior grid still uses those two letters.
+	 * A LairEntrance ! for these tunnels is the Iglin Tunnels Entrance, and a
+	 * LairExit ! is the Iglin Tunnels Exit.
 	 */
 	struct FEntrance
 	{

@@ -186,9 +186,9 @@ public:
 	static constexpr TCHAR LocationMarker = TEXT('!');
 
 	/**
-	 * Interior Iglin tunnel ends. A LairEntrance ! is the X end, and a LairExit !
-	 * is the Y end. Those ! cells use the mountain shelf. The letters themselves
-	 * are not mouths, towns, or the cave.
+	 * Paint letters that are not locations. A LairEntrance ! and a LairExit !
+	 * use the mountain shelf. These letters themselves are not mouths, towns,
+	 * or the cave.
 	 */
 	static constexpr TCHAR XMarker = TEXT('X');
 	static constexpr TCHAR YMarker = TEXT('Y');

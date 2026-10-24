@@ -194,7 +194,7 @@ bool FSolidPortalTunnelMouthTest::RunTest(const FString& Parameters)
 		TEXT("tunnels place"),
 		static_cast<uint8>(Tunnels.Place),
 		static_cast<uint8>(SolidPortal::EPlace::TunnelMouth));
-	TestEqual(TEXT("tunnels end is X"), static_cast<int32>(Tunnels.TunnelEnd), static_cast<int32>(USolidWorldChart::XMarker));
+	TestEqual(TEXT("tunnels end is the Iglin Tunnels Entrance"), static_cast<int32>(Tunnels.TunnelEnd), static_cast<int32>(SolidLair::Entrance));
 	TestEqual(TEXT("tunnels are not a town"), Tunnels.TownId, INDEX_NONE);
 
 	SolidPortal::FChoice Found;
@@ -207,11 +207,11 @@ bool FSolidPortalTunnelMouthTest::RunTest(const FString& Parameters)
 	const FVector2D GameMin(-Half, -Half);
 	const FVector2D GameMax(Half, Half);
 	TArray<SolidLair::FEntrance> Mouths;
-	TestTrue(TEXT("X mouth is on the map"), SolidLair::CollectEntrances(Map, GameMin, GameMax, Mouths) >= 1);
+	TestTrue(TEXT("the Iglin Tunnels Entrance is on the map"), SolidLair::CollectEntrances(Map, GameMin, GameMax, Mouths) >= 1);
 	const SolidLair::FEntrance* Mouth = nullptr;
 	for (const SolidLair::FEntrance& Entrance : Mouths)
 	{
-		if (Entrance.EndMarker == USolidWorldChart::XMarker)
+		if (Entrance.EndMarker == SolidLair::Entrance)
 		{
 			Mouth = &Entrance;
 			break;

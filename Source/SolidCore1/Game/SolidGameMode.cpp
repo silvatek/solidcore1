@@ -555,7 +555,7 @@ void ASolidGameMode::PlaceCaptainInLair()
 	}
 	if (!SolidLair::IsEndMarker(End))
 	{
-		End = USolidWorldChart::XMarker;
+		End = SolidLair::Entrance;
 	}
 
 	float HalfHeight = 96.f;
@@ -637,7 +637,7 @@ void ASolidGameMode::TravelFromLair(const TCHAR EndMarker)
 	{
 		return;
 	}
-	const TCHAR End = SolidLair::IsEndMarker(EndMarker) ? FChar::ToUpper(EndMarker) : USolidWorldChart::XMarker;
+	const TCHAR End = SolidLair::IsEndMarker(EndMarker) ? FChar::ToUpper(EndMarker) : SolidLair::Entrance;
 	const SolidWorldTime::FStamp When = WorldStamp();
 	GetConfiguration()->GetJournal()->RememberLair(When, /*bEnter=*/false);
 	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Exit Iglin tunnels"), *SolidWorldTime::Format(When));

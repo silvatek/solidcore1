@@ -155,27 +155,27 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 		Leave ? FString(Leave->LairId) : FString(),
 		FString(SolidLair::IdIglinTunnels));
 	TestEqual(
-		TEXT("enter is the X mouth"),
+		TEXT("enter is the Iglin Tunnels Entrance"),
 		static_cast<int32>(Enter ? Enter->EndMarker : 0),
-		static_cast<int32>(USolidWorldChart::XMarker));
+		static_cast<int32>(SolidLair::Entrance));
 	TestEqual(
-		TEXT("the run walks to the Y mouth"),
+		TEXT("the run walks to the Iglin Tunnels Exit"),
 		static_cast<int32>(Run ? Run->EndMarker : 0),
-		static_cast<int32>(USolidWorldChart::YMarker));
+		static_cast<int32>(SolidLair::Exit));
 	TestEqual(
-		TEXT("leave is the Y mouth"),
+		TEXT("leave is the Iglin Tunnels Exit"),
 		static_cast<int32>(Leave ? Leave->EndMarker : 0),
-		static_cast<int32>(USolidWorldChart::YMarker));
+		static_cast<int32>(SolidLair::Exit));
 
-	const FIntPoint MouthX = SolidLair::CellOf(USolidWorldChart::XMarker);
-	const FIntPoint MouthY = SolidLair::CellOf(USolidWorldChart::YMarker);
+	const FIntPoint MouthX = SolidLair::CellOf(SolidLair::Entrance);
+	const FIntPoint MouthY = SolidLair::CellOf(SolidLair::Exit);
 	TArray<FIntPoint> RunCells;
 	TestTrue(
 		TEXT("the straight run joins the mouths"),
 		FSolidAutoPlaythrough::LairCells(
 			SolidLair::IdIglinTunnels,
-			USolidWorldChart::XMarker,
-			USolidWorldChart::YMarker,
+			SolidLair::Entrance,
+			SolidLair::Exit,
 			RunCells));
 	TestTrue(TEXT("the mouths share a row"), MouthX.Y == MouthY.Y && MouthX.X < MouthY.X);
 	TestEqual(TEXT("the run is the straight line"), RunCells.Num(), MouthY.X - MouthX.X + 1);
@@ -187,11 +187,11 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 
 	TArray<FIntPoint> Back;
 	TestTrue(
-		TEXT("the run walks back to the X mouth"),
+		TEXT("the run walks back to the Iglin Tunnels Entrance"),
 		FSolidAutoPlaythrough::LairCells(
 			SolidLair::IdIglinTunnels,
-			USolidWorldChart::YMarker,
-			USolidWorldChart::XMarker,
+			SolidLair::Exit,
+			SolidLair::Entrance,
 			Back));
 	TestEqual(TEXT("the way back is the same length"), Back.Num(), RunCells.Num());
 	if (Back.Num() == RunCells.Num())
@@ -208,8 +208,8 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 		TEXT("a mouth path can stay on that mouth"),
 		FSolidAutoPlaythrough::LairCells(
 			SolidLair::IdIglinTunnels,
-			USolidWorldChart::XMarker,
-			USolidWorldChart::XMarker,
+			SolidLair::Entrance,
+			SolidLair::Entrance,
 			Same));
 	TestEqual(TEXT("one cell"), Same.Num(), 1);
 
@@ -218,8 +218,8 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 		TEXT("an unknown lair has no path"),
 		FSolidAutoPlaythrough::LairCells(
 			TEXT("00000000"),
-			USolidWorldChart::XMarker,
-			USolidWorldChart::YMarker,
+			SolidLair::Entrance,
+			SolidLair::Exit,
 			Missing));
 	TArray<FIntPoint> Rock;
 	TestFalse(

@@ -10,7 +10,7 @@
  * A town lands on one cell of that town, south of that cell's center
  * by the same plaza offset as the start-town spawn. A spread of cells can put
  * the centroid outside the town, so the landing uses a cell.
- * The tunnels row stands on the grass just north of the X mouth.
+ * The tunnels row stands on the grass just north of the Iglin Tunnels Entrance.
  */
 namespace SolidPortal
 {
@@ -53,7 +53,7 @@ namespace SolidPortal
 
 		FChoice Tunnels;
 		Tunnels.Place = EPlace::TunnelMouth;
-		Tunnels.TunnelEnd = USolidWorldChart::XMarker;
+		Tunnels.TunnelEnd = SolidLair::Entrance;
 		Tunnels.Name = SolidLair::IglinTunnels.Name;
 		OutChoices.Add(Tunnels);
 	}

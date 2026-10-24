@@ -36,7 +36,7 @@ namespace SolidLairMouth
 		return false;
 	}
 
-	/** LairEntrance is the interior X end. LairExit is the interior Y end. */
+	/** LairEntrance is the Iglin Tunnels Entrance. LairExit is the Iglin Tunnels Exit. */
 	TCHAR EndForBang(const FSolidWorldBang& Bang)
 	{
 		if (!Bang.LairId.Equals(SolidLair::IdIglinTunnels, ESearchCase::CaseSensitive))
@@ -45,11 +45,11 @@ namespace SolidLairMouth
 		}
 		if (Bang.Kind == ESolidWorldBang::LairEntrance)
 		{
-			return USolidWorldChart::XMarker;
+			return SolidLair::Entrance;
 		}
 		if (Bang.Kind == ESolidWorldBang::LairExit)
 		{
-			return USolidWorldChart::YMarker;
+			return SolidLair::Exit;
 		}
 		return 0;
 	}

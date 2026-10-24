@@ -55,9 +55,9 @@ const FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = 
 	FStep::WalkTo(TEXT("Walk to Iglin"), EWalk::TrailToIglin),
 	FStep::CloseMessage(TEXT("Close the driven-out message"), SolidMessages::IdDrivenFromVillage).Pause(1.f),
 	FStep::WalkTo(TEXT("Walk to the Iglin tunnels"), EWalk::LairEntrance),
-	FStep::EnterLair(TEXT("Enter the Iglin tunnels"), SolidLair::IdIglinTunnels, USolidWorldChart::XMarker),
-	FStep::WalkTo(TEXT("Walk the Iglin tunnels"), EWalk::Lair, SolidLair::IdIglinTunnels, USolidWorldChart::YMarker),
-	FStep::ExitLair(TEXT("Leave the Iglin tunnels"), SolidLair::IdIglinTunnels, USolidWorldChart::YMarker),
+	FStep::EnterLair(TEXT("Enter the Iglin tunnels"), SolidLair::IdIglinTunnels, SolidLair::Entrance),
+	FStep::WalkTo(TEXT("Walk the Iglin tunnels"), EWalk::Lair, SolidLair::IdIglinTunnels, SolidLair::Exit),
+	FStep::ExitLair(TEXT("Leave the Iglin tunnels"), SolidLair::IdIglinTunnels, SolidLair::Exit),
 	FStep::WalkTo(TEXT("Walk to Relion"), EWalk::Town, SolidTowns::Relion),
 	FStep::WalkTo(TEXT("Walk to Kanfold"), EWalk::Town, SolidTowns::Kanfold),
 	FStep::WalkTo(TEXT("Walk to Dragongate"), EWalk::Town, SolidTowns::Dragongate),
@@ -1118,7 +1118,7 @@ bool FSolidAutoPlaythrough::BuildLairEntranceWalk(
 	const FVector2D WorldMax = Terrain->GetWorldMaxXY();
 	TArray<SolidLair::FEntrance> Entrances;
 	SolidLair::CollectEntrances(Chart, WorldMin, WorldMax, Entrances);
-	const SolidLair::FEntrance* Mouth = FindLairEntrance(Entrances, USolidWorldChart::XMarker);
+	const SolidLair::FEntrance* Mouth = FindLairEntrance(Entrances, SolidLair::Entrance);
 	if (!Mouth)
 	{
 		return false;

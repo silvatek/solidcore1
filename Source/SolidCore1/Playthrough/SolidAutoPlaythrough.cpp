@@ -58,6 +58,9 @@ const FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = 
 	FStep::EnterLair(TEXT("Enter the Iglin tunnels"), SolidLair::IdIglinTunnels, USolidWorldChart::XMarker),
 	FStep::WalkTo(TEXT("Walk the Iglin tunnels"), EWalk::Lair, SolidLair::IdIglinTunnels, USolidWorldChart::YMarker),
 	FStep::ExitLair(TEXT("Leave the Iglin tunnels"), SolidLair::IdIglinTunnels, USolidWorldChart::YMarker),
+	FStep::WalkTo(TEXT("Walk to Relion"), EWalk::Town, SolidTowns::Relion),
+	FStep::WalkTo(TEXT("Walk to Kanfold"), EWalk::Town, SolidTowns::Kanfold),
+	FStep::WalkTo(TEXT("Walk to Dragongate"), EWalk::Town, SolidTowns::Dragongate),
 };
 
 namespace
@@ -1240,6 +1243,117 @@ bool FSolidAutoPlaythrough::LairCells(
 	return LairCells(LairId, SolidLair::CellOf(FromEnd), SolidLair::CellOf(ToEnd), OutCells);
 }
 
+bool FSolidAutoPlaythrough::TownRoads(
+	const TArray<SolidRoad::FRoute>& Routes,
+	const int32 FromTown,
+	const int32 ToTown,
+	TArray<FIntPoint>& OutCells)
+{
+	OutCells.Reset();
+	if (FromTown == INDEX_NONE || ToTown == INDEX_NONE || FromTown == ToTown)
+	{
+		return false;
+	}
+
+	const auto TownEnd = [](const SolidRoad::FEndpoint& End)
+	{
+		return End.bStronghold || End.LocationId == INDEX_NONE ? INDEX_NONE : End.LocationId;
+	};
+
+	struct FLink
+	{
+		int32 Town = INDEX_NONE;
+		int32 Route = INDEX_NONE;
+	};
+	TMap<int32, TArray<FLink>> Links;
+	for (int32 Index = 0; Index < Routes.Num(); ++Index)
+	{
+		const SolidRoad::FRoute& Route = Routes[Index];
+		const int32 From = TownEnd(Route.Definition.From);
+		const int32 To = TownEnd(Route.Definition.To);
+		if (Route.Cells.Num() == 0 || From == INDEX_NONE || To == INDEX_NONE || From == To)
+		{
+			continue;
+		}
+		FLink Forward;
+		Forward.Town = To;
+		Forward.Route = Index;
+		Links.FindOrAdd(From).Add(Forward);
+		FLink Back;
+		Back.Town = From;
+		Back.Route = Index;
+		Links.FindOrAdd(To).Add(Back);
+	}
+
+	TMap<int32, int32> CameTown;
+	TMap<int32, int32> CameRoute;
+	TArray<int32> Queue;
+	CameTown.Add(FromTown, FromTown);
+	Queue.Add(FromTown);
+	int32 Head = 0;
+	while (Head < Queue.Num() && !CameTown.Contains(ToTown))
+	{
+		const int32 Here = Queue[Head++];
+		const TArray<FLink>* Neighbors = Links.Find(Here);
+		if (!Neighbors)
+		{
+			continue;
+		}
+		for (const FLink& Link : *Neighbors)
+		{
+			if (CameTown.Contains(Link.Town))
+			{
+				continue;
+			}
+			CameTown.Add(Link.Town, Here);
+			CameRoute.Add(Link.Town, Link.Route);
+			Queue.Add(Link.Town);
+		}
+	}
+	if (!CameRoute.Contains(ToTown))
+	{
+		return false;
+	}
+
+	TArray<int32> Chain;
+	for (int32 Town = ToTown; Town != FromTown;)
+	{
+		const int32* Route = CameRoute.Find(Town);
+		const int32* Previous = CameTown.Find(Town);
+		if (!Route || !Previous || *Previous == Town)
+		{
+			return false;
+		}
+		Chain.Add(*Route);
+		Town = *Previous;
+	}
+	Algo::Reverse(Chain);
+
+	int32 Leave = FromTown;
+	for (const int32 RouteIndex : Chain)
+	{
+		const SolidRoad::FRoute& Route = Routes[RouteIndex];
+		TArray<FIntPoint> Cells = Route.Cells;
+		const int32 From = TownEnd(Route.Definition.From);
+		const int32 To = TownEnd(Route.Definition.To);
+		if (From != Leave)
+		{
+			Algo::Reverse(Cells);
+		}
+		int32 Start = 0;
+		if (OutCells.Num() > 0 && Cells.Num() > 0 && Cells[0] == OutCells.Last())
+		{
+			Start = 1;
+		}
+		for (int32 Index = Start; Index < Cells.Num(); ++Index)
+		{
+			OutCells.Add(Cells[Index]);
+		}
+		Leave = From == Leave ? To : From;
+	}
+	return OutCells.Num() > 0;
+}
+
 bool FSolidAutoPlaythrough::BuildLairWalk(
 	const ASolidGameMode& Mode,
 	const FVector& CaptainLocation,
@@ -1288,6 +1402,112 @@ bool FSolidAutoPlaythrough::BuildLairWalk(
 	return bWalkReady;
 }
 
+bool FSolidAutoPlaythrough::BuildTownWalk(
+	const ASolidGameMode& Mode,
+	const FVector& CaptainLocation,
+	const FStep& Step)
+{
+	if (!SolidTowns::Find(Step.TownId))
+	{
+		Stop();
+		return false;
+	}
+
+	UWorld* World = Mode.GetWorld();
+	const USolidGameInstance* Instance = World ? World->GetGameInstance<USolidGameInstance>() : nullptr;
+	if (Instance && Instance->WantsLairMouthSpawn())
+	{
+		return false;
+	}
+
+	ASolidTerrainStreamer* Streamer = World ? ASolidTerrainStreamer::FindExisting(World) : nullptr;
+	USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
+	USolidWorldChart* Chart = Terrain ? Terrain->GetWorldMap() : nullptr;
+	if (!Chart || !Chart->IsLoaded())
+	{
+		return false;
+	}
+
+	const FVector2D WorldMin = Terrain->GetWorldMinXY();
+	const FVector2D WorldMax = Terrain->GetWorldMaxXY();
+	FIntPoint HereCell = FIntPoint::ZeroValue;
+	if (!Chart->CellAtWorld(CaptainLocation.X, CaptainLocation.Y, WorldMin, WorldMax, HereCell))
+	{
+		return false;
+	}
+
+	TArray<FIntPoint> Cells;
+	bool bPaint = false;
+	const int32 HereTown = Chart->GetLocationIdAtCell(HereCell.X, HereCell.Y);
+	if (HereTown != INDEX_NONE && HereTown != Step.TownId)
+	{
+		if (!TownRoads(Chart->GetRoads(), HereTown, Step.TownId, Cells))
+		{
+			Stop();
+			return false;
+		}
+		bPaint = true;
+		int32 Start = 0;
+		int32 Nearest = TNumericLimits<int32>::Max();
+		for (int32 Index = 0; Index < Cells.Num(); ++Index)
+		{
+			const int32 Dist = FMath::Abs(Cells[Index].X - HereCell.X) + FMath::Abs(Cells[Index].Y - HereCell.Y);
+			if (Dist < Nearest)
+			{
+				Nearest = Dist;
+				Start = Index;
+			}
+		}
+		if (Start > 0)
+		{
+			Cells.RemoveAt(0, Start);
+		}
+	}
+	else
+	{
+		FSolidWorldLocation Location;
+		if (!Chart->FindLocation(Step.TownId, Location) || Location.Cells.Num() == 0)
+		{
+			Stop();
+			return false;
+		}
+		int32 Best = 0;
+		int32 Nearest = TNumericLimits<int32>::Max();
+		for (int32 Index = 0; Index < Location.Cells.Num(); ++Index)
+		{
+			const FIntPoint& Cell = Location.Cells[Index];
+			const int32 Dist = FMath::Abs(Cell.X - HereCell.X) + FMath::Abs(Cell.Y - HereCell.Y);
+			if (Dist < Nearest)
+			{
+				Nearest = Dist;
+				Best = Index;
+			}
+		}
+		if (!GrassPath(*Chart, HereCell, Location.Cells[Best], Cells))
+		{
+			Stop();
+			return false;
+		}
+	}
+
+	const FVector2D Paint = bPaint ? SolidRoad::StripPaintOffset() : FVector2D::ZeroVector;
+	Points.Reset();
+	Points.Reserve(Cells.Num());
+	for (const FIntPoint& Cell : Cells)
+	{
+		FVector2D Center = FVector2D::ZeroVector;
+		if (Chart->CellToWorldXY(Cell, WorldMin, WorldMax, Center))
+		{
+			Points.Add(Center + Paint);
+		}
+	}
+	PointIndex = 0;
+	bWalkReady = Points.Num() > 0;
+	bHasBestDistance = false;
+	StallAccumulated = 0.f;
+	return bWalkReady;
+}
+
 bool FSolidAutoPlaythrough::TickWalkTo(
 	const float DeltaSeconds,
 	ASolidGameMode& Mode,
@@ -1306,6 +1526,8 @@ bool FSolidAutoPlaythrough::TickWalkTo(
 		return TickWalkToLairEntrance(DeltaSeconds, Mode, Captain);
 	case EWalk::Lair:
 		return TickWalkLair(DeltaSeconds, Mode, Captain, Step);
+	case EWalk::Town:
+		return TickWalkTown(DeltaSeconds, Mode, Captain, Step);
 	default:
 		Stop();
 		return false;
@@ -1532,6 +1754,36 @@ bool FSolidAutoPlaythrough::TickWalkLair(
 	if (bRunning && bFinished)
 	{
 		Advance();
+	}
+	return false;
+}
+
+bool FSolidAutoPlaythrough::TickWalkTown(
+	const float DeltaSeconds,
+	ASolidGameMode& Mode,
+	ASolidCharacter& Captain,
+	const FStep& Step)
+{
+	USolidCompany* Company = Mode.GetCompany();
+	const USolidCaptain* Record = Company ? Company->GetCaptain() : nullptr;
+	if (Step.TownId != INDEX_NONE && Record && Record->OccupiedTown == Step.TownId)
+	{
+		Advance();
+		return false;
+	}
+
+	const FVector Location = Captain.GetActorLocation();
+	if (!bWalkReady && !BuildTownWalk(Mode, Location, Step))
+	{
+		return false;
+	}
+
+	const FVector2D Here(Location.X, Location.Y);
+	FVector2D Target = FVector2D::ZeroVector;
+	bool bFinished = false;
+	if (FollowPoints(DeltaSeconds, Here, Target, bFinished))
+	{
+		return Steer(DeltaSeconds, Mode, Captain, Target, false, false);
 	}
 	return false;
 }

@@ -39,6 +39,9 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 		TEXT("Enter the Iglin tunnels"),
 		TEXT("Walk the Iglin tunnels"),
 		TEXT("Leave the Iglin tunnels"),
+		TEXT("Walk to Relion"),
+		TEXT("Walk to Kanfold"),
+		TEXT("Walk to Dragongate"),
 	};
 	const FSolidAutoPlaythrough::EStepType Types[] = {
 		FSolidAutoPlaythrough::EStepType::WalkTo,
@@ -56,6 +59,9 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 		FSolidAutoPlaythrough::EStepType::EnterLair,
 		FSolidAutoPlaythrough::EStepType::WalkTo,
 		FSolidAutoPlaythrough::EStepType::ExitLair,
+		FSolidAutoPlaythrough::EStepType::WalkTo,
+		FSolidAutoPlaythrough::EStepType::WalkTo,
+		FSolidAutoPlaythrough::EStepType::WalkTo,
 	};
 	TestEqual(
 		TEXT("the script is the static list"),
@@ -224,6 +230,106 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 			FIntPoint(MouthX.X - 1, MouthX.Y),
 			MouthY,
 			Rock));
+
+	const int32 TownIds[] = {
+		SolidTowns::Relion,
+		SolidTowns::Kanfold,
+		SolidTowns::Dragongate,
+	};
+	int32 TownSteps = 0;
+	for (int32 Index = 0; Index < FSolidAutoPlaythrough::ScriptCount; ++Index)
+	{
+		const FSolidAutoPlaythrough::FStep& Step = FSolidAutoPlaythrough::Script[Index];
+		if (Step.Type != FSolidAutoPlaythrough::EStepType::WalkTo
+			|| Step.Walk != FSolidAutoPlaythrough::EWalk::Town)
+		{
+			continue;
+		}
+		TestEqual(
+			TEXT("the town walks are the last rows"),
+			Index,
+			FSolidAutoPlaythrough::ScriptCount - static_cast<int32>(UE_ARRAY_COUNT(TownIds)) + TownSteps);
+		if (TownSteps < UE_ARRAY_COUNT(TownIds))
+		{
+			TestEqual(TEXT("town id"), Step.TownId, TownIds[TownSteps]);
+		}
+		++TownSteps;
+	}
+	TestEqual(TEXT("three town walks"), TownSteps, static_cast<int32>(UE_ARRAY_COUNT(TownIds)));
+
+	TArray<SolidRoad::FRoute> Routes;
+	{
+		SolidRoad::FRoute Highway;
+		Highway.Definition.From.LocationId = SolidTowns::Relion;
+		Highway.Definition.To.LocationId = SolidTowns::Kanfold;
+		Highway.Cells = { FIntPoint(1, 1), FIntPoint(1, 2), FIntPoint(1, 3) };
+		Routes.Add(Highway);
+
+		SolidRoad::FRoute Road;
+		Road.Definition.From.LocationId = SolidTowns::Relion;
+		Road.Definition.To.LocationId = SolidTowns::Dragongate;
+		Road.Cells = { FIntPoint(1, 1), FIntPoint(2, 1), FIntPoint(3, 1) };
+		Routes.Add(Road);
+
+		SolidRoad::FRoute Track;
+		Track.Definition.From.LocationId = SolidTowns::Iglin;
+		Track.Definition.To.LocationId = SolidTowns::Relion;
+		Track.Cells = { FIntPoint(0, 0), FIntPoint(1, 1) };
+		Routes.Add(Track);
+
+		SolidRoad::FRoute Hold;
+		Hold.Definition.From.bStronghold = true;
+		Hold.Definition.To.LocationId = SolidTowns::Dragongate;
+		Hold.Cells = { FIntPoint(9, 9), FIntPoint(3, 1) };
+		Routes.Add(Hold);
+
+		SolidRoad::FRoute Empty;
+		Empty.Definition.From.LocationId = SolidTowns::Visolar;
+		Empty.Definition.To.LocationId = SolidTowns::Dragongate;
+		Routes.Add(Empty);
+	}
+
+	const auto ExpectCells = [this](const TArray<FIntPoint>& Cells, const FIntPoint* Expected, const int32 Count)
+	{
+		TestEqual(TEXT("chain length"), Cells.Num(), Count);
+		if (Cells.Num() != Count)
+		{
+			return;
+		}
+		for (int32 Index = 0; Index < Count; ++Index)
+		{
+			TestEqual(TEXT("chain column"), Cells[Index].X, Expected[Index].X);
+			TestEqual(TEXT("chain row"), Cells[Index].Y, Expected[Index].Y);
+		}
+	};
+
+	TArray<FIntPoint> ToKanfold;
+	const FIntPoint KanfoldCells[] = { FIntPoint(1, 1), FIntPoint(1, 2), FIntPoint(1, 3) };
+	TestTrue(
+		TEXT("Relion reaches Kanfold"),
+		FSolidAutoPlaythrough::TownRoads(Routes, SolidTowns::Relion, SolidTowns::Kanfold, ToKanfold));
+	ExpectCells(ToKanfold, KanfoldCells, UE_ARRAY_COUNT(KanfoldCells));
+
+	TArray<FIntPoint> ToGate;
+	const FIntPoint GateCells[] = {
+		FIntPoint(1, 3), FIntPoint(1, 2), FIntPoint(1, 1), FIntPoint(2, 1), FIntPoint(3, 1),
+	};
+	TestTrue(
+		TEXT("Kanfold reaches Dragongate through Relion"),
+		FSolidAutoPlaythrough::TownRoads(Routes, SolidTowns::Kanfold, SolidTowns::Dragongate, ToGate));
+	ExpectCells(ToGate, GateCells, UE_ARRAY_COUNT(GateCells));
+
+	TArray<FIntPoint> SameTown;
+	TestFalse(
+		TEXT("a town does not road to itself"),
+		FSolidAutoPlaythrough::TownRoads(Routes, SolidTowns::Relion, SolidTowns::Relion, SameTown));
+	TestEqual(TEXT("that path is empty"), SameTown.Num(), 0);
+
+	TArray<FIntPoint> MissingTown;
+	TestFalse(
+		TEXT("Visolar has no chain to Dragongate"),
+		FSolidAutoPlaythrough::TownRoads(Routes, SolidTowns::Visolar, SolidTowns::Dragongate, MissingTown));
+	TestEqual(TEXT("the missing chain is empty"), MissingTown.Num(), 0);
 	return true;
 }
 

@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Inventory/SolidInventory.h"
+#include "Terrain/SolidRoad.h"
 
 class USolidGameState;
 class ASolidGameMode;
@@ -47,6 +48,7 @@ public:
 		TrailToIglin,
 		LairEntrance,
 		Lair,
+		Town,
 	};
 
 	/** A CloseMessage row waits this long after the message is showing. */
@@ -72,6 +74,8 @@ public:
 		const TCHAR* LairId = nullptr;
 		/** X or Y. The mouth those rows enter, leave, or walk to. */
 		TCHAR EndMarker = 0;
+		/** Location id. A Town walk ends when OccupiedTown is this id. */
+		int32 TownId = INDEX_NONE;
 		/** True when this row closes the inventory page. */
 		bool bClosePage = false;
 		const TCHAR* MessageId = nullptr;
@@ -86,6 +90,17 @@ public:
 			Step.Type = EStepType::WalkTo;
 			Step.Name = InName;
 			Step.Walk = InWalk;
+			return Step;
+		}
+
+		/** A town walk. InTown is the location id. */
+		static constexpr FStep WalkTo(const TCHAR* InName, const EWalk InWalk, const int32 InTown)
+		{
+			FStep Step;
+			Step.Type = EStepType::WalkTo;
+			Step.Name = InName;
+			Step.Walk = InWalk;
+			Step.TownId = InTown;
 			return Step;
 		}
 
@@ -224,7 +239,7 @@ public:
 
 	/** The opening script, in order. A later story edits this list. */
 	static const FStep Script[];
-	static constexpr int32 ScriptCount = 15;
+	static constexpr int32 ScriptCount = 18;
 
 	/** The F10 row and the HUD line. */
 	static const TCHAR* Label() { return TEXT("Auto playthrough"); }
@@ -247,6 +262,16 @@ public:
 	static bool LairCells(const TCHAR* LairId, FIntPoint From, FIntPoint To, TArray<FIntPoint>& OutCells);
 	/** The same path between two mouths. X and Y are the end markers. */
 	static bool LairCells(const TCHAR* LairId, TCHAR FromEnd, TCHAR ToEnd, TArray<FIntPoint>& OutCells);
+
+	/**
+	 * Map cells along the chart routes from one town to another, including both ends.
+	 * The chain is the fewest routes. A stronghold end is left out. False when no chain exists.
+	 */
+	static bool TownRoads(
+		const TArray<SolidRoad::FRoute>& Routes,
+		int32 FromTown,
+		int32 ToTown,
+		TArray<FIntPoint>& OutCells);
 
 	/** Move that item from a worn box, the pack, or the chest into the worn slot. */
 	static bool EquipItem(
@@ -280,6 +305,7 @@ private:
 	bool BuildIglinTrail(const ASolidGameMode& Mode, const FVector& CaptainLocation);
 	bool BuildLairEntranceWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation);
 	bool BuildLairWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation, const FStep& Step);
+	bool BuildTownWalk(const ASolidGameMode& Mode, const FVector& CaptainLocation, const FStep& Step);
 	/**
 	 * Steps along Points. True when OutTarget is the point to steer toward.
 	 * bOutFinished is set once the last point is within arrival and the stall clock is clear.
@@ -307,6 +333,7 @@ private:
 	bool TickWalkToIglin(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
 	bool TickWalkToLairEntrance(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain);
 	bool TickWalkLair(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
+	bool TickWalkTown(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickEnterLair(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickExitLair(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	void TickCustom(const FStep& Step);

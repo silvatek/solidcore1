@@ -1142,6 +1142,19 @@ void ASolidTerrainStreamer::RestoreChartLandscapes()
 
 void ASolidTerrainStreamer::RebuildChartView(const USolidWorldChart* Chart, const TArray<FIntPoint>& Cells)
 {
+	RebuildChartGround(Chart, Cells, TArray<FVector2D>());
+}
+
+void ASolidTerrainStreamer::RebuildChartView(const USolidWorldChart* Chart, const TArray<FVector2D>& Positions)
+{
+	RebuildChartGround(Chart, TArray<FIntPoint>(), Positions);
+}
+
+void ASolidTerrainStreamer::RebuildChartGround(
+	const USolidWorldChart* Chart,
+	const TArray<FIntPoint>& Cells,
+	const TArray<FVector2D>& Positions)
+{
 	if (!bChartView || !TerrainMap || !Chart)
 	{
 		BuildChartView(Chart);
@@ -1196,6 +1209,10 @@ void ASolidTerrainStreamer::RebuildChartView(const USolidWorldChart* Chart, cons
 			}
 			Chunks.Add(WorldToChunkCoord(FVector(Centre.X, Centre.Y, 0.f)));
 		}
+	}
+	for (const FVector2D& Position : Positions)
+	{
+		Chunks.Add(WorldToChunkCoord(FVector(Position.X, Position.Y, 0.f)));
 	}
 
 	for (const FIntPoint& Coord : Chunks)

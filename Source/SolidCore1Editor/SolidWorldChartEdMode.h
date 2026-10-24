@@ -52,6 +52,8 @@ public:
 
 	ESolidWorldChartTool Tool = ESolidWorldChartTool::View;
 	ESolidBiome BrushBiome = ESolidBiome::Grassland;
+	/** Extra point steps around the cursor. 0 is one point, 2 m across. */
+	int32 BrushRadius = 0;
 	ESolidWorldChartMarkKind MarkKind = ESolidWorldChartMarkKind::Town;
 	int32 TownIndex = 0;
 	int32 SizeIndex = 0;
@@ -65,6 +67,7 @@ public:
 
 	void SetTool(ESolidWorldChartTool InTool);
 	void SetBrush(ESolidBiome Biome);
+	void SetBrushRadius(int32 Radius);
 	void RoadNamesChanged();
 	void PlaceCurrentMark();
 	void DeleteCurrentMark();
@@ -95,8 +98,10 @@ private:
 	bool bPlacedClick = false;
 	FIntPoint Anchor = FIntPoint::ZeroValue;
 	FIntPoint CurrentCell = FIntPoint::ZeroValue;
+	FIntPoint CurrentPoint = FIntPoint::ZeroValue;
 	bool bHasCell = false;
-	TArray<FIntPoint> StrokeCells;
+	bool bHasPoint = false;
+	TArray<FIntPoint> StrokePoints;
 
 	FString Banner;
 	FString Hover;
@@ -104,13 +109,15 @@ private:
 	FString ToolMessage;
 
 	bool IsOpenWorld(const UWorld* World) const;
+	bool CursorHit(FEditorViewportClient* ViewportClient, FViewport* Viewport, int32 X, int32 Y, FVector& OutHit) const;
 	bool CursorCell(FEditorViewportClient* ViewportClient, FViewport* Viewport, int32 X, int32 Y, FIntPoint& OutCell) const;
+	bool CursorPoint(FEditorViewportClient* ViewportClient, FViewport* Viewport, int32 X, int32 Y, FIntPoint& OutPoint) const;
 	void HoverAt(FEditorViewportClient* ViewportClient, FViewport* Viewport, int32 X, int32 Y);
 	void PlaceUnderCursor(FEditorViewportClient* ViewportClient, FViewport* Viewport);
 	void BeginStroke(FEditorViewportClient* ViewportClient, FViewport* Viewport);
 	void ExtendStroke(FEditorViewportClient* ViewportClient, FViewport* Viewport, int32 X, int32 Y);
 	void EndStroke();
-	void SampleBrush(const FIntPoint& Cell);
+	void SampleBrush(const FIntPoint& Point);
 	void ShowChart();
 	void ClearChartActors();
 	void RebuildOverlay();
@@ -119,6 +126,6 @@ private:
 	bool MarkLocation(const FSolidWorldChartMark& Mark, FVector& OutLocation) const;
 	void RefreshRoadMessage();
 	void Note(const FString& Message);
-	TArray<FIntPoint> PreviewCells() const;
 	FString DescribeCell(const FIntPoint& Cell) const;
+	FString DescribePoint(const FIntPoint& Point) const;
 };

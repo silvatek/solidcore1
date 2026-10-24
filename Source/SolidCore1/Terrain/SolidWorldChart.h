@@ -325,7 +325,7 @@ public:
 
 	/**
 	 * Centre of one map cell, in the chart's centimetre rectangle.
-	 * Column 0 is east, row 0 is north. The brush is this one cell.
+	 * Column 0 is east, row 0 is north.
 	 */
 	static bool CellCentre(FIntPoint Cell, FVector2D& OutCm);
 
@@ -342,6 +342,42 @@ public:
 	 */
 	bool PaintRun(const TArray<FIntPoint>& CellsToPaint, ESolidBiome Biome, FString& OutError);
 	bool PaintRectangle(FIntPoint From, FIntPoint To, ESolidBiome Biome, FString& OutError);
+
+	/**
+	 * Terrain point nearest this position. X increases east from the west edge.
+	 * Y increases north from the south edge. The same rectangle as SampleBiome.
+	 */
+	bool TerrainPointAt(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, FIntPoint& OutPoint) const;
+
+	/** World position of one terrain point. The same rectangle as TerrainPointAt. */
+	bool TerrainPointToWorld(FIntPoint Point, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
+
+	/** Biome stored on that terrain point. The road strip is not part of it. */
+	ESolidBiome GetPointBiome(FIntPoint Point) const;
+
+	/**
+	 * Points a round brush covers. Radius 0 is the one point, 2 m across.
+	 * A larger radius reaches that many points further. A point is inside when
+	 * its distance in point steps is at most Radius. Centres join in a straight
+	 * run, so a jump still lays one stroke.
+	 */
+	static void BrushPoints(const TArray<FIntPoint>& Centres, int32 Radius, TArray<FIntPoint>& OutPoints);
+
+	/** Inclusive axis-aligned rectangle of terrain points. Edges run north–south and east–west. */
+	static void PointRectangle(FIntPoint From, FIntPoint To, TArray<FIntPoint>& OutPoints);
+
+	/**
+	 * Paint the points under a round brush. One call is one undo step.
+	 * The cell array stays. A marker point the brush covers stays town or grassland.
+	 * Swamp and road are rejected.
+	 */
+	bool PaintBrush(const TArray<FIntPoint>& Centres, int32 Radius, ESolidBiome Biome, FString& OutError);
+
+	/**
+	 * Fill the inclusive rectangle of terrain points. One call is one undo step.
+	 * The cell array stays. A marker point inside stays town or grassland.
+	 */
+	bool PaintPointRectangle(FIntPoint From, FIntPoint To, ESolidBiome Biome, FString& OutError);
 
 	/** Put a SolidTowns town on this cell, replacing any mark already there. */
 	bool PlaceTown(FIntPoint Cell, const FString& Name, FString& OutError);
@@ -427,6 +463,8 @@ private:
 	ESolidBiome SampleCellPlay(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 	void SetPointsInCells(const TArray<int32>& CellIndexes, ESolidBiome Biome) const;
 	void ApplyMarkerPoint(const FVector2D& PositionCm, ESolidWorldChartMarkKind Kind) const;
+	/** Write these terrain points, then put each covered marker point back. One undo step. */
+	bool PaintPoints(const TArray<FIntPoint>& Covered, ESolidBiome Biome, FString& OutError);
 	/** Claim each run of town points for the first marker that touches it. */
 	void AssignTownPoints() const;
 	bool EnsurePoints() const;

@@ -1700,6 +1700,77 @@ namespace
 			OutX,
 			OutY);
 	}
+
+	bool OnPoint(const FIntPoint& Point)
+	{
+		return Point.X >= 0 && Point.Y >= 0
+			&& Point.X < USolidWorldChart::PointAxis
+			&& Point.Y < USolidWorldChart::PointAxis;
+	}
+
+	void AppendPoint(TArray<FIntPoint>& Points, TSet<int32>& Seen, const int32 X, const int32 Y)
+	{
+		if (X < 0 || Y < 0 || X >= USolidWorldChart::PointAxis || Y >= USolidWorldChart::PointAxis)
+		{
+			return;
+		}
+		const int32 Slot = PointSlot(X, Y);
+		if (Seen.Contains(Slot))
+		{
+			return;
+		}
+		Seen.Add(Slot);
+		Points.Add(FIntPoint(X, Y));
+	}
+
+	void AppendDisc(TArray<FIntPoint>& Points, TSet<int32>& Seen, const int32 CentreX, const int32 CentreY, const int32 Radius)
+	{
+		const int32 Reach = FMath::Clamp(Radius, 0, USolidWorldChart::PointAxis);
+		const int32 ReachSq = Reach * Reach;
+		for (int32 Y = CentreY - Reach; Y <= CentreY + Reach; ++Y)
+		{
+			for (int32 X = CentreX - Reach; X <= CentreX + Reach; ++X)
+			{
+				const int32 DX = X - CentreX;
+				const int32 DY = Y - CentreY;
+				if (DX * DX + DY * DY <= ReachSq)
+				{
+					AppendPoint(Points, Seen, X, Y);
+				}
+			}
+		}
+	}
+
+	/** Straight run of brush stamps from one cursor point to the next. */
+	void AppendRun(TArray<FIntPoint>& Points, TSet<int32>& Seen, const FIntPoint& From, const FIntPoint& To, const int32 Radius)
+	{
+		int32 X = From.X;
+		int32 Y = From.Y;
+		const int32 DX = FMath::Abs(To.X - X);
+		const int32 DY = FMath::Abs(To.Y - Y);
+		const int32 StepX = X < To.X ? 1 : -1;
+		const int32 StepY = Y < To.Y ? 1 : -1;
+		int32 Error = DX - DY;
+		while (true)
+		{
+			AppendDisc(Points, Seen, X, Y, Radius);
+			if (X == To.X && Y == To.Y)
+			{
+				break;
+			}
+			const int32 Twice = Error * 2;
+			if (Twice > -DY)
+			{
+				Error -= DY;
+				X += StepX;
+			}
+			if (Twice < DX)
+			{
+				Error += DX;
+				Y += StepY;
+			}
+		}
+	}
 }
 
 ESolidBiome USolidWorldChart::SampleCellPlay(
@@ -1912,6 +1983,189 @@ void USolidWorldChart::SetPointsInCells(const TArray<int32>& CellIndexes, const 
 			Points[PointSlot(IX, IY)] = Biome;
 		}
 	}
+}
+
+bool USolidWorldChart::TerrainPointAt(
+	const float WorldX,
+	const float WorldY,
+	const FVector2D WorldMinXY,
+	const FVector2D WorldMaxXY,
+	FIntPoint& OutPoint) const
+{
+	int32 IX = 0;
+	int32 IY = 0;
+	PointAtWorld(WorldX, WorldY, WorldMinXY, WorldMaxXY, IX, IY);
+	OutPoint = FIntPoint(IX, IY);
+	return true;
+}
+
+bool USolidWorldChart::TerrainPointToWorld(
+	const FIntPoint Point,
+	const FVector2D WorldMinXY,
+	const FVector2D WorldMaxXY,
+	FVector2D& OutWorldXY) const
+{
+	if (!OnPoint(Point))
+	{
+		return false;
+	}
+	OutWorldXY = WorldAtPoint(Point.X, Point.Y, WorldMinXY, WorldMaxXY);
+	return true;
+}
+
+ESolidBiome USolidWorldChart::GetPointBiome(const FIntPoint Point) const
+{
+	if (!EnsurePoints() || !OnPoint(Point))
+	{
+		return ESolidBiome::Grassland;
+	}
+	return Points[PointSlot(Point.X, Point.Y)];
+}
+
+void USolidWorldChart::BrushPoints(const TArray<FIntPoint>& Centres, const int32 Radius, TArray<FIntPoint>& OutPoints)
+{
+	OutPoints.Reset();
+	if (Centres.Num() == 0)
+	{
+		return;
+	}
+
+	TSet<int32> Seen;
+	FIntPoint Previous = Centres[0];
+	for (const FIntPoint& Centre : Centres)
+	{
+		if (!OnPoint(Previous) || !OnPoint(Centre))
+		{
+			Previous = Centre;
+			continue;
+		}
+		AppendRun(OutPoints, Seen, Previous, Centre, Radius);
+		Previous = Centre;
+	}
+}
+
+void USolidWorldChart::PointRectangle(const FIntPoint From, const FIntPoint To, TArray<FIntPoint>& OutPoints)
+{
+	OutPoints.Reset();
+	const int32 X0 = FMath::Min(From.X, To.X);
+	const int32 X1 = FMath::Max(From.X, To.X);
+	const int32 Y0 = FMath::Min(From.Y, To.Y);
+	const int32 Y1 = FMath::Max(From.Y, To.Y);
+	if (X0 < 0 || Y0 < 0 || X1 >= PointAxis || Y1 >= PointAxis)
+	{
+		return;
+	}
+
+	OutPoints.Reserve((X1 - X0 + 1) * (Y1 - Y0 + 1));
+	for (int32 Y = Y0; Y <= Y1; ++Y)
+	{
+		for (int32 X = X0; X <= X1; ++X)
+		{
+			OutPoints.Add(FIntPoint(X, Y));
+		}
+	}
+}
+
+bool USolidWorldChart::PaintPoints(const TArray<FIntPoint>& Covered, const ESolidBiome Biome, FString& OutError)
+{
+	OutError.Reset();
+	if (!SolidBiome::Of(Biome).Paintable())
+	{
+		OutError = TEXT("Swamp and road are not paint biomes.");
+		return false;
+	}
+	if (Cells.Num() != MapWidth * MapHeight)
+	{
+		OutError = TEXT("The chart does not cover the map.");
+		return false;
+	}
+	if (Covered.Num() == 0)
+	{
+		OutError = TEXT("Paint needs a point.");
+		return false;
+	}
+	for (const FIntPoint& Point : Covered)
+	{
+		if (!OnPoint(Point))
+		{
+			OutError = TEXT("That point is off the map.");
+			return false;
+		}
+	}
+	if (!EnsurePoints())
+	{
+		OutError = TEXT("The chart does not cover the map.");
+		return false;
+	}
+
+	PushUndo();
+	TSet<int32> Painted;
+	Painted.Reserve(Covered.Num());
+	for (const FIntPoint& Point : Covered)
+	{
+		const int32 Slot = PointSlot(Point.X, Point.Y);
+		Points[Slot] = Biome;
+		Painted.Add(Slot);
+	}
+
+	FVector2D Min = FVector2D::ZeroVector;
+	FVector2D Max = FVector2D::ZeroVector;
+	DefaultWorldBounds(Min, Max);
+	for (const FSolidWorldChartMark& Mark : Marks)
+	{
+		int32 IX = 0;
+		int32 IY = 0;
+		PointAtWorld(Mark.PositionCm.X, Mark.PositionCm.Y, Min, Max, IX, IY);
+		if (Painted.Contains(PointSlot(IX, IY)))
+		{
+			ApplyMarkerPoint(Mark.PositionCm, Mark.Kind);
+		}
+	}
+	InvalidateQuery();
+	return true;
+}
+
+bool USolidWorldChart::PaintBrush(
+	const TArray<FIntPoint>& Centres,
+	const int32 Radius,
+	const ESolidBiome Biome,
+	FString& OutError)
+{
+	OutError.Reset();
+	if (Centres.Num() == 0)
+	{
+		OutError = TEXT("Paint needs a point.");
+		return false;
+	}
+	for (const FIntPoint& Centre : Centres)
+	{
+		if (!OnPoint(Centre))
+		{
+			OutError = TEXT("That point is off the map.");
+			return false;
+		}
+	}
+
+	TArray<FIntPoint> Covered;
+	BrushPoints(Centres, Radius, Covered);
+	return PaintPoints(Covered, Biome, OutError);
+}
+
+bool USolidWorldChart::PaintPointRectangle(
+	const FIntPoint From,
+	const FIntPoint To,
+	const ESolidBiome Biome,
+	FString& OutError)
+{
+	if (!OnPoint(From) || !OnPoint(To))
+	{
+		OutError = TEXT("That point is off the map.");
+		return false;
+	}
+
+	TArray<FIntPoint> Covered;
+	PointRectangle(From, To, Covered);
+	return PaintPoints(Covered, Biome, OutError);
 }
 
 ESolidBiome USolidWorldChart::GetPointBiomeAtCell(const int32 MapX, const int32 MapY) const

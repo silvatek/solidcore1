@@ -135,6 +135,82 @@ namespace
 		PDI->DrawLine(C, D, Color, SDPG_Foreground, Thickness);
 		PDI->DrawLine(D, A, Color, SDPG_Foreground, Thickness);
 	}
+
+	void DrawPointBrush(
+		FPrimitiveDrawInterface* PDI,
+		const USolidTerrainMap& Terrain,
+		const USolidWorldChart& Chart,
+		const FIntPoint& Point,
+		const int32 Radius,
+		const FLinearColor& Color)
+	{
+		FVector2D World = FVector2D::ZeroVector;
+		if (!Chart.TerrainPointToWorld(Point, Terrain.GetWorldMinXY(), Terrain.GetWorldMaxXY(), World))
+		{
+			return;
+		}
+
+		const float Reach = static_cast<float>(FMath::Max(Radius, 0)) * Terrain.PointSpacing;
+		const float DrawRadius = Reach > 1.f ? Reach : Terrain.PointSpacing * 0.45f;
+		constexpr int32 Steps = 16;
+		constexpr float Lift = 140.f;
+		FVector Previous = FVector::ZeroVector;
+		for (int32 Step = 0; Step <= Steps; ++Step)
+		{
+			const float Angle = 2.f * PI * static_cast<float>(Step) / static_cast<float>(Steps);
+			const float X = World.X + FMath::Cos(Angle) * DrawRadius;
+			const float Y = World.Y + FMath::Sin(Angle) * DrawRadius;
+			const FVector Next(X, Y, Terrain.SampleHeight(X, Y) + Lift);
+			if (Step > 0)
+			{
+				PDI->DrawLine(Previous, Next, Color, SDPG_Foreground, 3.f);
+			}
+			Previous = Next;
+		}
+	}
+
+	void DrawPointRectangle(
+		FPrimitiveDrawInterface* PDI,
+		const USolidTerrainMap& Terrain,
+		const USolidWorldChart& Chart,
+		const FIntPoint& From,
+		const FIntPoint& To,
+		const FLinearColor& Color)
+	{
+		const FIntPoint SouthWest(FMath::Min(From.X, To.X), FMath::Min(From.Y, To.Y));
+		const FIntPoint NorthEast(FMath::Max(From.X, To.X), FMath::Max(From.Y, To.Y));
+		FVector2D WestSouth = FVector2D::ZeroVector;
+		FVector2D EastNorth = FVector2D::ZeroVector;
+		const FVector2D WorldMin = Terrain.GetWorldMinXY();
+		const FVector2D WorldMax = Terrain.GetWorldMaxXY();
+		if (!Chart.TerrainPointToWorld(SouthWest, WorldMin, WorldMax, WestSouth)
+			|| !Chart.TerrainPointToWorld(NorthEast, WorldMin, WorldMax, EastNorth))
+		{
+			return;
+		}
+
+		const float Half = Terrain.PointSpacing * 0.5f;
+		WestSouth -= FVector2D(Half, Half);
+		EastNorth += FVector2D(Half, Half);
+		constexpr float Lift = 140.f;
+		const FVector A(WestSouth.X, WestSouth.Y, Terrain.SampleHeight(WestSouth.X, WestSouth.Y) + Lift);
+		const FVector B(EastNorth.X, WestSouth.Y, Terrain.SampleHeight(EastNorth.X, WestSouth.Y) + Lift);
+		const FVector C(EastNorth.X, EastNorth.Y, Terrain.SampleHeight(EastNorth.X, EastNorth.Y) + Lift);
+		const FVector D(WestSouth.X, EastNorth.Y, Terrain.SampleHeight(WestSouth.X, EastNorth.Y) + Lift);
+		PDI->DrawLine(A, B, Color, SDPG_Foreground, 3.f);
+		PDI->DrawLine(B, C, Color, SDPG_Foreground, 3.f);
+		PDI->DrawLine(C, D, Color, SDPG_Foreground, 3.f);
+		PDI->DrawLine(D, A, Color, SDPG_Foreground, 3.f);
+	}
+
+	/** Positions whose chunks own the quads around this point, including a point on a chunk edge. */
+	void ChunkProbes(const FVector2D& World, TArray<FVector2D>& OutPositions)
+	{
+		OutPositions.Add(World);
+		OutPositions.Add(World - FVector2D(1.f, 0.f));
+		OutPositions.Add(World - FVector2D(0.f, 1.f));
+		OutPositions.Add(World - FVector2D(1.f, 1.f));
+	}
 }
 
 class FSolidWorldChartToolkit : public FModeToolkit
@@ -226,6 +302,44 @@ public:
 					if (Mode)
 					{
 						Mode->SetBrush(Biome);
+					}
+					return FReply::Handled();
+				})
+			];
+		}
+
+		TSharedRef<SWrapBox> WidthRow = SNew(SWrapBox).UseAllottedSize(true);
+		struct FBrushWidth
+		{
+			int32 Radius;
+			const TCHAR* Label;
+		};
+		const FBrushWidth Widths[] = {
+			{ 0, TEXT("2 m") },
+			{ 1, TEXT("6 m") },
+			{ 2, TEXT("10 m") },
+			{ 4, TEXT("18 m") },
+			{ 8, TEXT("34 m") },
+		};
+		for (const FBrushWidth& Width : Widths)
+		{
+			const int32 Radius = Width.Radius;
+			WidthRow->AddSlot()
+			.Padding(2.f)
+			[
+				SNew(SButton)
+				.Text(FText::FromString(FString(Width.Label)))
+				.ButtonColorAndOpacity_Lambda([this, Radius]()
+				{
+					return Mode && Mode->BrushRadius == Radius
+						? FLinearColor(0.25f, 0.55f, 0.25f)
+						: FLinearColor::White;
+				})
+				.OnClicked_Lambda([this, Radius]()
+				{
+					if (Mode)
+					{
+						Mode->SetBrushRadius(Radius);
 					}
 					return FReply::Handled();
 				})
@@ -324,6 +438,14 @@ public:
 						+ SVerticalBox::Slot().AutoHeight()
 						[
 							BrushRow
+						]
+						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 6.f, 0.f, 2.f)
+						[
+							SNew(STextBlock).Text(NSLOCTEXT("SolidWorldChart", "Width", "Width"))
+						]
+						+ SVerticalBox::Slot().AutoHeight()
+						[
+							WidthRow
 						]
 					]
 				]
@@ -692,7 +814,7 @@ void FSolidWorldChartEdMode::Enter()
 	Chart = LoadObject<USolidWorldChart>(nullptr, USolidWorldChart::ShippedPath());
 	ShowChart();
 	RefreshRoadMessage();
-	Hover = TEXT("Hover a cell.");
+	Hover = TEXT("Hover the chart.");
 	ToolMessage = TEXT("View. Left click does not edit.");
 
 	ChartToolkit = MakeShared<FSolidWorldChartToolkit>(this);
@@ -737,37 +859,35 @@ void FSolidWorldChartEdMode::Render(const FSceneView* View, FViewport* Viewport,
 	{
 		return;
 	}
-	if (bHasCell && !bStroke)
+	if (bHasCell && !bStroke && Tool != ESolidWorldChartTool::Paint)
 	{
 		const FLinearColor Color = Tool == ESolidWorldChartTool::Place
 			? MarkColor(MarkKind)
-			: Tool == ESolidWorldChartTool::Paint
-				? USolidWorldChart::DefaultColorForBiome(BrushBiome)
-				: FLinearColor::White;
+			: FLinearColor::White;
 		DrawCellOutline(PDI, *Terrain, CurrentCell, Color, Tool == ESolidWorldChartTool::Place ? 5.f : 3.f);
 	}
-	if (!bStroke)
+	if (!Chart)
 	{
 		return;
 	}
 
 	const FLinearColor Color = USolidWorldChart::DefaultColorForBiome(BrushBiome);
-	const FVector2D WorldMin = Terrain->GetWorldMinXY();
-	const FVector2D WorldMax = Terrain->GetWorldMaxXY();
-	for (const FIntPoint& Cell : PreviewCells())
+	if (!bStroke)
 	{
-		FVector2D WestSouth = FVector2D::ZeroVector;
-		FVector2D EastNorth = FVector2D::ZeroVector;
-		CellCorners(Cell, WorldMin, WorldMax, WestSouth, EastNorth);
-		const float Lift = 140.f;
-		const FVector A(WestSouth.X, WestSouth.Y, Terrain->SampleHeight(WestSouth.X, WestSouth.Y) + Lift);
-		const FVector B(EastNorth.X, WestSouth.Y, Terrain->SampleHeight(EastNorth.X, WestSouth.Y) + Lift);
-		const FVector C(EastNorth.X, EastNorth.Y, Terrain->SampleHeight(EastNorth.X, EastNorth.Y) + Lift);
-		const FVector D(WestSouth.X, EastNorth.Y, Terrain->SampleHeight(WestSouth.X, EastNorth.Y) + Lift);
-		PDI->DrawLine(A, B, Color, SDPG_Foreground, 3.f);
-		PDI->DrawLine(B, C, Color, SDPG_Foreground, 3.f);
-		PDI->DrawLine(C, D, Color, SDPG_Foreground, 3.f);
-		PDI->DrawLine(D, A, Color, SDPG_Foreground, 3.f);
+		if (Tool == ESolidWorldChartTool::Paint && bHasPoint)
+		{
+			DrawPointBrush(PDI, *Terrain, *Chart, CurrentPoint, BrushRadius, Color);
+		}
+		return;
+	}
+	if (bRectangle)
+	{
+		DrawPointRectangle(PDI, *Terrain, *Chart, Anchor, CurrentPoint, Color);
+		return;
+	}
+	for (const FIntPoint& Point : StrokePoints)
+	{
+		DrawPointBrush(PDI, *Terrain, *Chart, Point, BrushRadius, Color);
 	}
 }
 
@@ -902,14 +1022,14 @@ void FSolidWorldChartEdMode::SetTool(const ESolidWorldChartTool InTool)
 	if (bStroke)
 	{
 		bStroke = false;
-		StrokeCells.Reset();
+		StrokePoints.Reset();
 	}
 	bPlacedClick = false;
 	Tool = InTool;
 	switch (Tool)
 	{
 	case ESolidWorldChartTool::Paint:
-		Note(TEXT("Paint. Left click paints. Shift is a rectangle. Alt copies the biome."));
+		Note(TEXT("Paint. Left click stamps the brush. A drag lays it along the path. Shift fills a rectangle. Alt copies the point."));
 		break;
 	case ESolidWorldChartTool::Place:
 		Note(TEXT("Place. Left click puts the mark on that cell. Delete removes the mark under the cursor."));
@@ -925,6 +1045,12 @@ void FSolidWorldChartEdMode::SetTool(const ESolidWorldChartTool InTool)
 void FSolidWorldChartEdMode::SetBrush(const ESolidBiome Biome)
 {
 	BrushBiome = Biome;
+	RefreshPanel();
+}
+
+void FSolidWorldChartEdMode::SetBrushRadius(const int32 Radius)
+{
+	BrushRadius = FMath::Max(Radius, 0);
 	RefreshPanel();
 }
 
@@ -1085,7 +1211,11 @@ void FSolidWorldChartEdMode::UndoChart()
 	RebuildOverlay();
 	RebuildSigns();
 	RefreshRoadMessage();
-	if (bHasCell)
+	if (Tool == ESolidWorldChartTool::Paint && bHasPoint)
+	{
+		Hover = DescribePoint(CurrentPoint);
+	}
+	else if (bHasCell)
 	{
 		Hover = DescribeCell(CurrentCell);
 	}
@@ -1131,16 +1261,15 @@ bool FSolidWorldChartEdMode::IsOpenWorld(const UWorld* World) const
 	return World && World->GetOutermost()->GetName() == OpenWorldLevel;
 }
 
-bool FSolidWorldChartEdMode::CursorCell(
+bool FSolidWorldChartEdMode::CursorHit(
 	FEditorViewportClient* ViewportClient,
 	FViewport* Viewport,
 	int32 X,
 	int32 Y,
-	FIntPoint& OutCell) const
+	FVector& OutHit) const
 {
 	const USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
-	const USolidWorldChart* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
-	if (!ViewportClient || !Viewport || !Terrain || !Terrain->IsBuilt() || !WorldMap)
+	if (!ViewportClient || !Viewport || !Terrain || !Terrain->IsBuilt())
 	{
 		return false;
 	}
@@ -1159,8 +1288,20 @@ bool FSolidWorldChartEdMode::CursorCell(
 	FVector Origin = FVector::ZeroVector;
 	FVector Direction = FVector::ZeroVector;
 	View->DeprojectFVector2D(FVector2D(static_cast<float>(X), static_cast<float>(Y)), Origin, Direction);
+	return HitGround(*Terrain, Origin, Direction, OutHit);
+}
+
+bool FSolidWorldChartEdMode::CursorCell(
+	FEditorViewportClient* ViewportClient,
+	FViewport* Viewport,
+	int32 X,
+	int32 Y,
+	FIntPoint& OutCell) const
+{
+	const USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
+	const USolidWorldChart* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
 	FVector Hit = FVector::ZeroVector;
-	if (!HitGround(*Terrain, Origin, Direction, Hit))
+	if (!WorldMap || !CursorHit(ViewportClient, Viewport, X, Y, Hit))
 	{
 		return false;
 	}
@@ -1172,24 +1313,67 @@ bool FSolidWorldChartEdMode::CursorCell(
 		OutCell);
 }
 
+bool FSolidWorldChartEdMode::CursorPoint(
+	FEditorViewportClient* ViewportClient,
+	FViewport* Viewport,
+	int32 X,
+	int32 Y,
+	FIntPoint& OutPoint) const
+{
+	const USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
+	FVector Hit = FVector::ZeroVector;
+	if (!Chart || !Terrain || !CursorHit(ViewportClient, Viewport, X, Y, Hit))
+	{
+		return false;
+	}
+	return Chart->TerrainPointAt(
+		Hit.X,
+		Hit.Y,
+		Terrain->GetWorldMinXY(),
+		Terrain->GetWorldMaxXY(),
+		OutPoint);
+}
+
 void FSolidWorldChartEdMode::HoverAt(
 	FEditorViewportClient* ViewportClient,
 	FViewport* Viewport,
 	int32 X,
 	int32 Y)
 {
-	FIntPoint Cell = FIntPoint::ZeroValue;
-	if (!CursorCell(ViewportClient, Viewport, X, Y, Cell))
+	FVector Hit = FVector::ZeroVector;
+	if (!CursorHit(ViewportClient, Viewport, X, Y, Hit))
 	{
 		return;
 	}
-	bHasCell = true;
-	CurrentCell = Cell;
-	if (Tool == ESolidWorldChartTool::Paint && ViewportClient && ViewportClient->IsAltPressed())
+
+	const USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
+	const USolidWorldChart* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
+	if (WorldMap)
 	{
-		SampleBrush(Cell);
+		FIntPoint Cell = FIntPoint::ZeroValue;
+		if (WorldMap->CellAtWorld(Hit.X, Hit.Y, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), Cell))
+		{
+			bHasCell = true;
+			CurrentCell = Cell;
+		}
 	}
-	const FString Next = DescribeCell(Cell);
+	if (Chart && Terrain)
+	{
+		FIntPoint Point = FIntPoint::ZeroValue;
+		if (Chart->TerrainPointAt(Hit.X, Hit.Y, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), Point))
+		{
+			bHasPoint = true;
+			CurrentPoint = Point;
+		}
+	}
+
+	if (Tool == ESolidWorldChartTool::Paint && bHasPoint && ViewportClient && ViewportClient->IsAltPressed())
+	{
+		SampleBrush(CurrentPoint);
+	}
+	const FString Next = Tool == ESolidWorldChartTool::Paint && bHasPoint
+		? DescribePoint(CurrentPoint)
+		: DescribeCell(CurrentCell);
 	if (Next != Hover)
 	{
 		Hover = Next;
@@ -1225,23 +1409,23 @@ void FSolidWorldChartEdMode::BeginStroke(FEditorViewportClient* ViewportClient, 
 	}
 	const int32 X = Viewport->GetMouseX();
 	const int32 Y = Viewport->GetMouseY();
-	FIntPoint Cell = FIntPoint::ZeroValue;
-	if (!CursorCell(ViewportClient, Viewport, X, Y, Cell))
+	FIntPoint Point = FIntPoint::ZeroValue;
+	if (!CursorPoint(ViewportClient, Viewport, X, Y, Point))
 	{
 		return;
 	}
-	bHasCell = true;
-	CurrentCell = Cell;
+	bHasPoint = true;
+	CurrentPoint = Point;
 	if (ViewportClient->IsAltPressed())
 	{
-		SampleBrush(Cell);
+		SampleBrush(Point);
 		return;
 	}
 	bStroke = true;
 	bRectangle = ViewportClient->IsShiftPressed();
-	Anchor = Cell;
-	StrokeCells.Reset();
-	StrokeCells.Add(Cell);
+	Anchor = Point;
+	StrokePoints.Reset();
+	StrokePoints.Add(Point);
 }
 
 void FSolidWorldChartEdMode::ExtendStroke(
@@ -1257,25 +1441,25 @@ void FSolidWorldChartEdMode::ExtendStroke(
 	if (ViewportClient->IsAltPressed())
 	{
 		bStroke = false;
-		StrokeCells.Reset();
-		FIntPoint Cell = FIntPoint::ZeroValue;
-		if (CursorCell(ViewportClient, Viewport, X, Y, Cell))
+		StrokePoints.Reset();
+		FIntPoint Point = FIntPoint::ZeroValue;
+		if (CursorPoint(ViewportClient, Viewport, X, Y, Point))
 		{
-			SampleBrush(Cell);
+			SampleBrush(Point);
 		}
 		return;
 	}
 
-	FIntPoint Cell = FIntPoint::ZeroValue;
-	if (!CursorCell(ViewportClient, Viewport, X, Y, Cell))
+	FIntPoint Point = FIntPoint::ZeroValue;
+	if (!CursorPoint(ViewportClient, Viewport, X, Y, Point))
 	{
 		return;
 	}
-	CurrentCell = Cell;
+	CurrentPoint = Point;
 	bRectangle = ViewportClient->IsShiftPressed();
-	if (!StrokeCells.Contains(Cell))
+	if (StrokePoints.Num() == 0 || StrokePoints.Last() != Point)
 	{
-		StrokeCells.Add(Cell);
+		StrokePoints.Add(Point);
 	}
 }
 
@@ -1288,16 +1472,25 @@ void FSolidWorldChartEdMode::EndStroke()
 	bStroke = false;
 	if (!Chart)
 	{
-		StrokeCells.Reset();
+		StrokePoints.Reset();
 		return;
+	}
+
+	TArray<FIntPoint> Covered;
+	if (bRectangle)
+	{
+		USolidWorldChart::PointRectangle(Anchor, CurrentPoint, Covered);
+	}
+	else
+	{
+		USolidWorldChart::BrushPoints(StrokePoints, BrushRadius, Covered);
 	}
 
 	FString Error;
 	const bool bPainted = bRectangle
-		? Chart->PaintRectangle(Anchor, CurrentCell, BrushBiome, Error)
-		: Chart->PaintRun(StrokeCells, BrushBiome, Error);
-	const TArray<FIntPoint> Painted = bRectangle ? PreviewCells() : StrokeCells;
-	StrokeCells.Reset();
+		? Chart->PaintPointRectangle(Anchor, CurrentPoint, BrushBiome, Error)
+		: Chart->PaintBrush(StrokePoints, BrushRadius, BrushBiome, Error);
+	StrokePoints.Reset();
 	if (!bPainted)
 	{
 		Note(Error);
@@ -1307,29 +1500,41 @@ void FSolidWorldChartEdMode::EndStroke()
 
 	if (Streamer)
 	{
-		Streamer->RebuildChartView(Chart, Painted);
+		const USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
+		TArray<FVector2D> Positions;
+		if (Terrain)
+		{
+			const FVector2D WorldMin = Terrain->GetWorldMinXY();
+			const FVector2D WorldMax = Terrain->GetWorldMaxXY();
+			for (const FIntPoint& Point : Covered)
+			{
+				FVector2D World = FVector2D::ZeroVector;
+				if (Chart->TerrainPointToWorld(Point, WorldMin, WorldMax, World))
+				{
+					ChunkProbes(World, Positions);
+				}
+			}
+		}
+		Streamer->RebuildChartView(Chart, Positions);
 	}
 	RebuildOverlay();
-	if (bHasCell)
+	if (bHasPoint)
 	{
-		Hover = DescribeCell(CurrentCell);
+		Hover = DescribePoint(CurrentPoint);
 	}
 	Note(TEXT("Painted."));
 	RefreshPanel();
 }
 
-void FSolidWorldChartEdMode::SampleBrush(const FIntPoint& Cell)
+void FSolidWorldChartEdMode::SampleBrush(const FIntPoint& Point)
 {
-	if (!Chart)
+	const USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
+	const USolidWorldChart* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
+	if (!WorldMap)
 	{
 		return;
 	}
-	const int32 Index = Cell.Y * USolidWorldChart::MapWidth + Cell.X;
-	if (!Chart->Cells.IsValidIndex(Index))
-	{
-		return;
-	}
-	const ESolidBiome Painted = Chart->Cells[Index];
+	const ESolidBiome Painted = WorldMap->GetPointBiome(Point);
 	if (!SolidBiome::Of(Painted).Paintable())
 	{
 		return;
@@ -1654,27 +1859,6 @@ void FSolidWorldChartEdMode::Note(const FString& Message)
 	ToolMessage = Message;
 }
 
-TArray<FIntPoint> FSolidWorldChartEdMode::PreviewCells() const
-{
-	if (!bRectangle)
-	{
-		return StrokeCells;
-	}
-	TArray<FIntPoint> Cells;
-	const int32 X0 = FMath::Min(Anchor.X, CurrentCell.X);
-	const int32 X1 = FMath::Max(Anchor.X, CurrentCell.X);
-	const int32 Y0 = FMath::Min(Anchor.Y, CurrentCell.Y);
-	const int32 Y1 = FMath::Max(Anchor.Y, CurrentCell.Y);
-	for (int32 Y = Y0; Y <= Y1; ++Y)
-	{
-		for (int32 X = X0; X <= X1; ++X)
-		{
-			Cells.Add(FIntPoint(X, Y));
-		}
-	}
-	return Cells;
-}
-
 FString FSolidWorldChartEdMode::DescribeCell(const FIntPoint& Cell) const
 {
 	if (!Chart)
@@ -1726,6 +1910,50 @@ FString FSolidWorldChartEdMode::DescribeCell(const FIntPoint& Cell) const
 				*Road.ToName,
 				USolidWorldChart::RoadTypeName(Road.Type));
 		}
+	}
+	return Line;
+}
+
+FString FSolidWorldChartEdMode::DescribePoint(const FIntPoint& Point) const
+{
+	const USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
+	const USolidWorldChart* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
+	if (!WorldMap || !Terrain)
+	{
+		return FString();
+	}
+
+	const ESolidBiome Stored = WorldMap->GetPointBiome(Point);
+	FVector2D World = FVector2D::ZeroVector;
+	if (!WorldMap->TerrainPointToWorld(Point, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), World))
+	{
+		return FString();
+	}
+	const ESolidBiome Seen = WorldMap->SampleBiome(World.X, World.Y, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY());
+	FString Line = FString::Printf(TEXT("%s."), SolidBiome::Of(Seen).Name());
+	if (Seen != Stored)
+	{
+		Line += FString::Printf(TEXT(" Point is %s."), SolidBiome::Of(Stored).Name());
+	}
+	if (!Chart)
+	{
+		return Line;
+	}
+
+	for (const FSolidWorldChartMark& Mark : Chart->Marks)
+	{
+		FIntPoint MarkPoint = FIntPoint::ZeroValue;
+		const FVector2D Shifted = USolidWorldChart::TerrainPosition(Mark.PositionCm, Terrain->GetWorldMinXY());
+		if (!WorldMap->TerrainPointAt(Shifted.X, Shifted.Y, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), MarkPoint))
+		{
+			continue;
+		}
+		if (MarkPoint != Point)
+		{
+			continue;
+		}
+		Line += FString::Printf(TEXT(" %s, %s."), MarkKindName(Mark.Kind), *Mark.Name);
+		break;
 	}
 	return Line;
 }

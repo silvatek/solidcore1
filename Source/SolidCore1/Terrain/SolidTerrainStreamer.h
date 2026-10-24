@@ -55,6 +55,9 @@ public:
 	/** Rebuild the chart ground, and only the chunks that contain these cells. */
 	void RebuildChartView(const USolidWorldChart* Chart, const TArray<FIntPoint>& Cells);
 
+	/** Rebuild the chart ground, and only the chunks that contain these positions. */
+	void RebuildChartView(const USolidWorldChart* Chart, const TArray<FVector2D>& Positions);
+
 	/** Destroy the chart chunks. */
 	void ClearChartView();
 
@@ -236,6 +239,8 @@ protected:
 	void QueueExplorationFogMeshRefresh(float WorldX, float WorldY, float RadiusCm);
 	void ProcessExplorationFogMeshRebuilds();
 	void BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint Coord);
+	/** Rebuild the chart ground. Cells and positions name the chunks to build again. */
+	void RebuildChartGround(const USolidWorldChart* Chart, const TArray<FIntPoint>& Cells, const TArray<FVector2D>& Positions);
 	void UpdateTerrainFog(float DeltaSeconds);
 	float SampleViewFogAmount() const;
 	void UpdateStreaming();

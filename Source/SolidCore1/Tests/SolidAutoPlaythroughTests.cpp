@@ -688,4 +688,68 @@ bool FSolidAutoPlaythroughKanfoldShowTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidAutoPlaythroughPausesTest,
+	"SolidCore1.AutoPlaythrough.Pauses",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidAutoPlaythroughPausesTest::RunTest(const FString& Parameters)
+{
+	TestTrue(
+		TEXT("the default hold is one second"),
+		FMath::IsNearlyEqual(FSolidAutoPlaythrough::DefaultPauseSeconds, 1.f));
+	TestTrue(
+		TEXT("a message uses that hold"),
+		FMath::IsNearlyEqual(
+			FSolidAutoPlaythrough::MessagePauseSeconds,
+			FSolidAutoPlaythrough::DefaultPauseSeconds));
+
+	const FSolidAutoPlaythrough::FStep Sword = FSolidAutoPlaythrough::FStep::EquipItem(
+		TEXT("Equip the sword"),
+		SolidItemType::IdRustySword,
+		SolidInventory::ESlot::MainHand)
+		.ClosePage();
+	TestTrue(TEXT("ClosePage marks the close"), Sword.bClosePage);
+	TestTrue(
+		TEXT("ClosePage holds one second"),
+		FMath::IsNearlyEqual(Sword.PauseSeconds, FSolidAutoPlaythrough::DefaultPauseSeconds));
+
+	const FSolidAutoPlaythrough::FStep Aim = FSolidAutoPlaythrough::FStep::AimRaven(
+		TEXT("Aim raven high behind the squad"),
+		FSolidAutoPlaythrough::HighTrailPitchDeg,
+		FSolidAutoPlaythrough::HighTrailArmCm);
+	TestTrue(
+		TEXT("AimRaven holds one second"),
+		FMath::IsNearlyEqual(Aim.PauseSeconds, FSolidAutoPlaythrough::DefaultPauseSeconds));
+
+	const FSolidAutoPlaythrough::FStep Form = FSolidAutoPlaythrough::FStep::SelectBattlePlan(
+		TEXT("Form Tight mob"),
+		TEXT("Tight mob"));
+	TestTrue(
+		TEXT("SelectBattlePlan holds one second"),
+		FMath::IsNearlyEqual(Form.PauseSeconds, FSolidAutoPlaythrough::DefaultPauseSeconds));
+
+	bool bFoundSword = false;
+	for (int32 Index = 0; Index < FSolidAutoPlaythrough::ScriptCount; ++Index)
+	{
+		const FSolidAutoPlaythrough::FStep& Step = FSolidAutoPlaythrough::Script[Index];
+		if (Step.PauseSeconds > 0.f)
+		{
+			TestTrue(
+				TEXT("a hold is one second"),
+				FMath::IsNearlyEqual(Step.PauseSeconds, FSolidAutoPlaythrough::DefaultPauseSeconds));
+		}
+		if (FCString::Strcmp(Step.Name, TEXT("Equip the sword")) == 0)
+		{
+			bFoundSword = true;
+			TestTrue(TEXT("the cave sword closes the page"), Step.bClosePage);
+			TestTrue(
+				TEXT("the cave sword waits before that close"),
+				FMath::IsNearlyEqual(Step.PauseSeconds, FSolidAutoPlaythrough::DefaultPauseSeconds));
+		}
+	}
+	TestTrue(TEXT("the cave sword is in the script"), bFoundSword);
+	return true;
+}
+
 #endif

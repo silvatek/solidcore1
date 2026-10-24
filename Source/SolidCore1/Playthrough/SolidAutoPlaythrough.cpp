@@ -56,18 +56,18 @@ const FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = 
 	FStep::WalkTo(TEXT("Walk to the entrance"), EntranceCells, UE_ARRAY_COUNT(EntranceCells)),
 	FStep::ExitStronghold(TEXT("Leave the cave")),
 	FStep::WalkTo(TEXT("Walk to Iglin"), EWalk::TrailToIglin),
-	FStep::CloseMessage(TEXT("Close the driven-out message"), SolidMessages::IdDrivenFromVillage).Pause(1.f),
+	FStep::CloseMessage(TEXT("Close the driven-out message"), SolidMessages::IdDrivenFromVillage),
 	FStep::WalkTo(TEXT("Walk to the Iglin tunnels"), EWalk::LairEntrance),
 	FStep::EnterLair(TEXT("Enter the Iglin tunnels"), SolidLair::IdIglinTunnels, SolidLair::Entrance),
 	FStep::WalkTo(TEXT("Walk the Iglin tunnels"), EWalk::Lair, SolidLair::IdIglinTunnels, SolidLair::Exit),
 	FStep::ExitLair(TEXT("Leave the Iglin tunnels"), SolidLair::IdIglinTunnels, SolidLair::Exit),
 	FStep::WalkTo(TEXT("Walk to Relion"), EWalk::Town, SolidTowns::Relion),
 	FStep::WalkTo(TEXT("Walk to Kanfold"), EWalk::Town, SolidTowns::Kanfold),
-	FStep::AimRaven(TEXT("Aim raven high behind the squad"), HighTrailPitchDeg, HighTrailArmCm).Pause(1.5f),
-	FStep::SelectBattlePlan(TEXT("Form Line"), TEXT("Line")).Pause(2.5f),
-	FStep::SelectBattlePlan(TEXT("Form Column"), TEXT("Column")).Pause(2.5f),
-	FStep::SelectBattlePlan(TEXT("Form Loose mob"), TEXT("Loose mob")).Pause(2.5f),
-	FStep::SelectBattlePlan(TEXT("Form Tight mob"), TEXT("Tight mob")).Pause(2.5f),
+	FStep::AimRaven(TEXT("Aim raven high behind the squad"), HighTrailPitchDeg, HighTrailArmCm),
+	FStep::SelectBattlePlan(TEXT("Form Line"), TEXT("Line")),
+	FStep::SelectBattlePlan(TEXT("Form Column"), TEXT("Column")),
+	FStep::SelectBattlePlan(TEXT("Form Loose mob"), TEXT("Loose mob")),
+	FStep::SelectBattlePlan(TEXT("Form Tight mob"), TEXT("Tight mob")),
 	FStep::WalkTo(TEXT("Walk to Dragongate"), EWalk::Town, SolidTowns::Dragongate),
 };
 
@@ -710,7 +710,7 @@ bool FSolidAutoPlaythrough::TickCurrent(
 	case EStepType::CraftItem:
 		return TickCraftItem(Mode, Captain, Step);
 	case EStepType::EquipItem:
-		return TickEquipItem(Mode, Captain, Step);
+		return TickEquipItem(DeltaSeconds, Mode, Captain, Step);
 	case EStepType::DisableEncounter:
 		TickDisableEncounter(Mode, Step);
 		return false;
@@ -1665,6 +1665,7 @@ bool FSolidAutoPlaythrough::TickCraftItem(
 }
 
 bool FSolidAutoPlaythrough::TickEquipItem(
+	const float DeltaSeconds,
 	ASolidGameMode& Mode,
 	ASolidCharacter& Captain,
 	const FStep& Step)
@@ -1680,14 +1681,21 @@ bool FSolidAutoPlaythrough::TickEquipItem(
 		Stop();
 		return false;
 	}
-	if (Step.bClosePage)
+	if (!Step.bClosePage)
 	{
-		if (ASolidHUD* HUD = HudOf(Captain))
+		Advance();
+		return false;
+	}
+	WaitAccumulated += DeltaSeconds;
+	if (WaitAccumulated < Step.PauseSeconds)
+	{
+		return false;
+	}
+	if (ASolidHUD* HUD = HudOf(Captain))
+	{
+		if (HUD->IsInventoryVisible())
 		{
-			if (HUD->IsInventoryVisible())
-			{
-				HUD->ToggleInventory();
-			}
+			HUD->ToggleInventory();
 		}
 	}
 	Advance();

@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0609")
+#define SOLID_BUILD_ID TEXT("SC1-0610")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("At Kanfold the raven camera goes high behind the squad, then Tight mob walks to Dragongate.")
+#define SOLID_BUILD_NOTE TEXT("The cave inventory stays open one second. Script holds are one second.")
 #endif

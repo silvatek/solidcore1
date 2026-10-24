@@ -54,8 +54,10 @@ public:
 		Town,
 	};
 
+	/** A hold on a message, the inventory page, a camera aim, or a battle plan. */
+	static constexpr float DefaultPauseSeconds = 1.f;
 	/** A CloseMessage row waits this long after the message is showing. */
-	static constexpr float MessagePauseSeconds = 1.f;
+	static constexpr float MessagePauseSeconds = DefaultPauseSeconds;
 
 	/**
 	 * One row of the opening script.
@@ -82,7 +84,7 @@ public:
 		/** True when this row closes the inventory page. */
 		bool bClosePage = false;
 		const TCHAR* MessageId = nullptr;
-		/** Seconds to wait after the matching message is showing, then close. */
+		/** Seconds to wait before this row advances. ClosePage waits, then closes. */
 		float PauseSeconds = 0.f;
 		/** Assigned battle plan name. SelectBattlePlan reads this. */
 		const TCHAR* PlanName = nullptr;
@@ -230,6 +232,7 @@ public:
 			Step.Type = EStepType::SelectBattlePlan;
 			Step.Name = InName;
 			Step.PlanName = InPlanName;
+			Step.PauseSeconds = DefaultPauseSeconds;
 			return Step;
 		}
 
@@ -241,6 +244,7 @@ public:
 			Step.Name = InName;
 			Step.PitchDeg = InPitchDeg;
 			Step.ArmCm = InArmCm;
+			Step.PauseSeconds = DefaultPauseSeconds;
 			return Step;
 		}
 
@@ -257,6 +261,10 @@ public:
 		{
 			FStep Step = *this;
 			Step.bClosePage = true;
+			if (Step.PauseSeconds <= 0.f)
+			{
+				Step.PauseSeconds = DefaultPauseSeconds;
+			}
 			return Step;
 		}
 
@@ -382,7 +390,7 @@ private:
 	void TickCustom(const FStep& Step);
 	void TickWakeInStronghold(const ASolidGameMode& Mode);
 	bool TickCraftItem(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
-	bool TickEquipItem(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
+	bool TickEquipItem(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	void TickDisableEncounter(ASolidGameMode& Mode, const FStep& Step);
 	bool TickExit(ASolidGameMode& Mode, ASolidCharacter& Captain);
 	bool TickCloseMessage(float DeltaSeconds, ASolidCharacter& Captain, const FStep& Step);

@@ -729,13 +729,13 @@ bool FSolidAutoPlaythrough::TickCurrent(
 		TickDisableEncounter(Mode, Step);
 		return false;
 	case EStepType::ExitStronghold:
-		return TickExit(Mode, Captain);
+		return TickExit(DeltaSeconds, Mode, Captain);
 	case EStepType::EnterLair:
 		return TickEnterLair(Mode, Captain, Step);
 	case EStepType::ExitLair:
 		return TickExitLair(Mode, Captain, Step);
 	case EStepType::WakeInStronghold:
-		TickWakeInStronghold(Mode, Captain);
+		TickWakeInStronghold(Mode);
 		return false;
 	case EStepType::SelectBattlePlan:
 		return TickSelectBattlePlan(DeltaSeconds, Mode, Step);
@@ -1746,36 +1746,13 @@ void FSolidAutoPlaythrough::TickCustom(const FStep& Step)
 	Stop();
 }
 
-void FSolidAutoPlaythrough::TickWakeInStronghold(ASolidGameMode& Mode, ASolidCharacter& Captain)
+void FSolidAutoPlaythrough::TickWakeInStronghold(const ASolidGameMode& Mode)
 {
-	if (!Mode.HasPlacedCaptainInStronghold())
+	if (Mode.HasPlacedCaptainInStronghold())
 	{
-		return;
+		bAimRavenHeld = false;
+		Advance();
 	}
-
-	bAimRavenHeld = false;
-
-	// The door is on local -X. Spawn yaw 0 looks into the room, and the high trail left a 22 m boom.
-	// The leave click projects that door, so the camera has to be inside the room looking at it.
-	const USolidCompany* Company = Mode.GetCompany();
-	const FSolidStronghold* Hold = Company ? Company->GetStronghold() : nullptr;
-	if (Hold && Hold->Type == ESolidStrongholdType::Tower)
-	{
-		const ASolidStrongholdInterior* Interior = FindInterior(Mode.GetWorld());
-		const UStaticMeshComponent* Door = Interior ? Interior->GetPassageMesh() : nullptr;
-		if (Door)
-		{
-			const FVector Here = Captain.GetActorLocation();
-			const FVector At = Door->GetComponentLocation();
-			float Yaw = 0.f;
-			if (TrailYawDeg(FVector2D(At.X - Here.X, At.Y - Here.Y), 0.f, Yaw))
-			{
-				Captain.AimRaven(0.f, Yaw, InteriorArmCm);
-			}
-		}
-	}
-
-	Advance();
 }
 
 bool FSolidAutoPlaythrough::TickCraftItem(
@@ -1881,8 +1858,42 @@ bool FSolidAutoPlaythrough::ClickMouth(ASolidGameMode& Mode, ASolidCharacter& Ca
 	return Instance && Instance->WantsStrongholdExit();
 }
 
-bool FSolidAutoPlaythrough::TickExit(ASolidGameMode& Mode, ASolidCharacter& Captain)
+bool FSolidAutoPlaythrough::TickExit(
+	const float DeltaSeconds,
+	ASolidGameMode& Mode,
+	ASolidCharacter& Captain)
 {
+	// Raven sight aims the squad boom. The passage click needs true sight looking at the opening.
+	bAimRavenHeld = false;
+	if (!Captain.IsTrueSight())
+	{
+		Captain.SetSight(ESolidSight::True);
+	}
+
+	UWorld* World = Mode.GetWorld();
+	const ASolidStrongholdInterior* Interior = FindInterior(World);
+	const UStaticMeshComponent* Passage = Interior ? Interior->GetPassageMesh() : nullptr;
+	if (!Passage)
+	{
+		return false;
+	}
+
+	const FVector Here = Captain.GetActorLocation();
+	const FVector At = Passage->GetComponentLocation();
+	float Yaw = 0.f;
+	if (!TrailYawDeg(FVector2D(At.X - Here.X, At.Y - Here.Y), 0.f, Yaw))
+	{
+		return false;
+	}
+
+	const float YawError = FMath::FindDeltaAngleDegrees(Captain.GetControlRotation().Yaw, Yaw);
+	if (FMath::Abs(YawError) >= 0.05f)
+	{
+		const float MaxDegrees = TurnDegreesPerSecond * FMath::Min(DeltaSeconds, MaxTurnSliceSeconds);
+		Captain.DragRightMouse(Yaw, MaxDegrees);
+		return true;
+	}
+
 	if (ClickMouth(Mode, Captain))
 	{
 		Advance();

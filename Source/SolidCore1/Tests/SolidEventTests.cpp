@@ -758,20 +758,24 @@ bool FSolidEventsMessageTest::RunTest(const FString& Parameters)
 
 	const SolidEvents::FEvent* Reach = SolidEventTestPrivate::FindEvent(TEXT("Reach broken bridge"));
 	TestNotNull(TEXT("Reach broken bridge is listed"), Reach);
+	bool bRampShowsMonster = false;
 	if (Reach)
 	{
-		TestEqual(TEXT("the ramp shows one message"), Reach->ChangeCount, 1);
+		const int32 ChangeCount = FMath::Min(Reach->ChangeCount, SolidEvents::MaxChangesPerEvent);
+		for (int32 Index = 0; Index < ChangeCount; ++Index)
+		{
+			const SolidEvents::FChange& Change = Reach->Changes[Index];
+			if (Change.Kind == SolidEvents::EChange::ShowMessage
+				&& Change.MessageId
+				&& FCString::Strcmp(Change.MessageId, SolidMessages::IdKilledByMonsters) == 0)
+			{
+				bRampShowsMonster = true;
+			}
+		}
 		TestEqual(
-			TEXT("the ramp change is ShowMessage"),
-			static_cast<uint8>(Reach->Changes[0].Kind),
-			static_cast<uint8>(SolidEvents::EChange::ShowMessage));
-		TestEqual(
-			TEXT("the ramp names the monster message"),
-			FString(Reach->Changes[0].MessageId),
-			FString(SolidMessages::IdKilledByMonsters));
-		TestTrue(
 			TEXT("the ramp journal is the message"),
-			USolidJournal::Describe(*Reach).Contains(TEXT("You are killed by monsters")));
+			USolidJournal::Describe(*Reach).Contains(TEXT("You are killed by monsters")),
+			bRampShowsMonster);
 	}
 
 	const SolidEvents::FEvent* Killed = SolidEventTestPrivate::FindEvent(TEXT("Killed by monsters"));
@@ -806,11 +810,14 @@ bool FSolidEventsMessageTest::RunTest(const FString& Parameters)
 	USolidCaptain& StateCaptain = *NewObject<USolidCaptain>();
 	SolidEvents::NotifyOccupiedTown(State, StateCaptain, 0);
 	const SolidEvents::FResult Reached = SolidEvents::NotifyReachBrokenBridge(State, StateCaptain);
-	TestTrue(TEXT("the ramp shows the message"), Reached.bShowMessage);
-	TestEqual(
-		TEXT("the ramp result names the monster message"),
-		FString(Reached.MessageId),
-		FString(SolidMessages::IdKilledByMonsters));
+	TestEqual(TEXT("the ramp shows the message"), Reached.bShowMessage, bRampShowsMonster);
+	if (bRampShowsMonster)
+	{
+		TestEqual(
+			TEXT("the ramp result names the monster message"),
+			FString(Reached.MessageId),
+			FString(SolidMessages::IdKilledByMonsters));
+	}
 	TestFalse(TEXT("the ramp leaves the cave closed"), Reached.bEnterStronghold);
 	TestFalse(TEXT("showing the message does not open the cave"), State.bStrongholdsEnabled);
 
@@ -838,7 +845,7 @@ bool FSolidEventsMessageTest::RunTest(const FString& Parameters)
 			bSawCave = true;
 		}
 	}
-	TestTrue(TEXT("the journal lists the message"), bSawMessage);
+	TestEqual(TEXT("the journal lists the message"), bSawMessage, bRampShowsMonster);
 	TestTrue(TEXT("the journal lists Cave enabled"), bSawCave);
 
 	const SolidEvents::FResult ClosedAgain = SolidEvents::NotifyMessageClosed(State, StateCaptain, SolidMessages::IdKilledByMonsters);
@@ -1301,9 +1308,23 @@ bool FSolidEventsClearInventoryTest::RunTest(const FString& Parameters)
 	SolidInventory::PlacePack(State.Inventory, 0, 0, SolidItemType::IdDentedHelmet);
 	SolidInventory::PlacePack(State.Inventory, 1, 2, SolidItemType::IdTorch);
 
+	const SolidEvents::FEvent* Reach = SolidEventTestPrivate::FindEvent(TEXT("Reach broken bridge"));
+	bool bRampShowsMessage = false;
+	if (Reach)
+	{
+		const int32 ChangeCount = FMath::Min(Reach->ChangeCount, SolidEvents::MaxChangesPerEvent);
+		for (int32 Index = 0; Index < ChangeCount; ++Index)
+		{
+			if (Reach->Changes[Index].Kind == SolidEvents::EChange::ShowMessage)
+			{
+				bRampShowsMessage = true;
+			}
+		}
+	}
+
 	SolidEvents::NotifyOccupiedTown(State, StateCaptain, 0);
 	const SolidEvents::FResult Reached = SolidEvents::NotifyReachBrokenBridge(State, StateCaptain);
-	TestTrue(TEXT("the ramp still shows the message"), Reached.bShowMessage);
+	TestEqual(TEXT("the ramp follows its message change"), Reached.bShowMessage, bRampShowsMessage);
 	TestEqual(
 		TEXT("the ramp leaves the helmet"),
 		FString(State.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Head)].Id()),

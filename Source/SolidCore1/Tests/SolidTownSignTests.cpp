@@ -199,6 +199,24 @@ bool FSolidTownSignVisualsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("a longer name widens the board"),
 		SolidTownSigns::BoardWidthCm(LongName) > SolidTownSigns::BoardWidthCm(IglinLabel));
 	TestTrue(TEXT("sign faces south"), FMath::IsNearlyEqual(SolidTownSigns::FacingYawDeg, -90.f));
+	UStaticMeshComponent* Pole = Sign->GetPoleMesh();
+	UStaticMeshComponent* Board = Sign->GetBoardMesh();
+	TestNotNull(TEXT("pole"), Pole);
+	TestNotNull(TEXT("board"), Board);
+	if (Pole)
+	{
+		TestEqual(
+			TEXT("the pole does not block a pawn"),
+			static_cast<int32>(Pole->GetCollisionResponseToChannel(ECC_Pawn)),
+			static_cast<int32>(ECR_Ignore));
+	}
+	if (Board)
+	{
+		TestEqual(
+			TEXT("the board does not block a pawn"),
+			static_cast<int32>(Board->GetCollisionResponseToChannel(ECC_Pawn)),
+			static_cast<int32>(ECR_Ignore));
+	}
 	return true;
 }
 

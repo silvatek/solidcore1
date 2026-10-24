@@ -21,6 +21,8 @@ public:
 
 	void SetTownName(const FString& InName);
 	FString GetLabel() const;
+	UStaticMeshComponent* GetPoleMesh() const { return PoleMesh; }
+	UStaticMeshComponent* GetBoardMesh() const { return BoardMesh; }
 
 	void BuildVisuals();
 

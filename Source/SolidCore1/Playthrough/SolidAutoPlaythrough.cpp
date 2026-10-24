@@ -26,6 +26,7 @@
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Terrain/SolidWorldChart.h"
 #include "Towns/SolidTowns.h"
+#include "Towns/SolidWallgate.h"
 #include "Algo/Reverse.h"
 
 namespace
@@ -1498,10 +1499,22 @@ bool FSolidAutoPlaythrough::BuildTownWalk(
 	}
 
 	const FVector2D Paint = bPaint ? SolidRoad::StripPaintOffset() : FVector2D::ZeroVector;
+	FVector2D Gate = FVector2D::ZeroVector;
+	const bool bGate = SolidWallgate::GateCenterXY(Chart, Step.TownId, WorldMin, WorldMax, Gate);
 	Points.Reset();
 	Points.Reserve(Cells.Num());
+	bool bAddedGate = false;
 	for (const FIntPoint& Cell : Cells)
 	{
+		if (bGate && Chart->GetLocationIdAtCell(Cell.X, Cell.Y) == Step.TownId)
+		{
+			if (!bAddedGate)
+			{
+				Points.Add(Gate);
+				bAddedGate = true;
+			}
+			continue;
+		}
 		FVector2D Center = FVector2D::ZeroVector;
 		if (Chart->CellToWorldXY(Cell, WorldMin, WorldMax, Center))
 		{

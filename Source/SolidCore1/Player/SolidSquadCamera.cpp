@@ -81,6 +81,11 @@ void ASolidCharacter::UpdateSquadCameraFraming(float DeltaTime)
 			{
 				continue;
 			}
+			if (FVector::DistSquared2D(GetActorLocation(), It->GetActorLocation())
+				> FramingMaxMemberCm * FramingMaxMemberCm)
+			{
+				continue;
+			}
 			float HalfHeight = 96.f;
 			if (const UCapsuleComponent* Capsule = It->GetCapsuleComponent())
 			{

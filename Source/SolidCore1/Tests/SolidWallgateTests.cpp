@@ -339,6 +339,35 @@ bool FSolidWallgateDigitPairTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("wall meets the outer edges of both cells"),
 		WallgateTestNear(OuterMin, SpanMin) && WallgateTestNear(OuterMax, SpanMax));
 	TestTrue(TEXT("two cells of wall"), WallgateTestNear(OuterMax - OuterMin, HalfCell * 4.f));
+
+	FVector2D Opening = FVector2D::ZeroVector;
+	TestTrue(
+		TEXT("the gate has a centre"),
+		SolidWallgate::GateCenterXY(Map, SolidTowns::Dragongate, WallgateTestMin, WallgateTestMax, Opening));
+	TestTrue(TEXT("the opening is between the cells"), Opening.Equals((East + West) * 0.5f, 0.1f));
+	TArray<SolidWallgate::FPiece> Walls;
+	for (const SolidWallgate::FPiece& Piece : Pieces)
+	{
+		if (Piece.bStoneWall)
+		{
+			Walls.Add(Piece);
+		}
+	}
+	if (Walls.Num() == 2)
+	{
+		Walls.Sort([](const SolidWallgate::FPiece& A, const SolidWallgate::FPiece& B)
+		{
+			return A.CenterXY.X < B.CenterXY.X;
+		});
+		const float GapLow = Walls[0].CenterXY.X + Walls[0].FootprintXCm * 0.5f;
+		const float GapHigh = Walls[1].CenterXY.X - Walls[1].FootprintXCm * 0.5f;
+		TestTrue(TEXT("the opening sits in the gap"), Opening.X > GapLow && Opening.X < GapHigh);
+	}
+
+	FVector2D Missing = FVector2D::ZeroVector;
+	TestFalse(
+		TEXT("Relion is not a gate"),
+		SolidWallgate::GateCenterXY(Map, SolidTowns::Relion, WallgateTestMin, WallgateTestMax, Missing));
 	return true;
 }
 

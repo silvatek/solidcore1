@@ -41,12 +41,16 @@ ASolidTownSign::ASolidTownSign()
 	PoleMesh->SetupAttachment(SceneRoot);
 	PoleMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	PoleMesh->SetCollisionResponseToAllChannels(ECR_Block);
+	PoleMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	PoleMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	PoleMesh->SetCastShadow(true);
 
 	BoardMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BoardMesh"));
 	BoardMesh->SetupAttachment(SceneRoot);
 	BoardMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	BoardMesh->SetCollisionResponseToAllChannels(ECR_Block);
+	BoardMesh->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+	BoardMesh->SetCollisionResponseToChannel(ECC_Camera, ECR_Ignore);
 	BoardMesh->SetCastShadow(true);
 
 	LabelText = CreateDefaultSubobject<UTextRenderComponent>(TEXT("LabelText"));

@@ -158,3 +158,43 @@ int32 SolidWallgate::CollectPieces(
 	}
 	return OutPieces.Num();
 }
+
+bool SolidWallgate::GateCenterXY(
+	const USolidWorldChart* WorldMap,
+	const int32 TownId,
+	const FVector2D WorldMinXY,
+	const FVector2D WorldMaxXY,
+	FVector2D& OutCenter)
+{
+	OutCenter = FVector2D::ZeroVector;
+	if (!WorldMap || !SolidTowns::IsWallGate(TownId))
+	{
+		return false;
+	}
+
+	FSolidWorldLocation Town;
+	if (!WorldMap->FindLocation(TownId, Town) || Town.Cells.Num() == 0)
+	{
+		return false;
+	}
+
+	FVector2D Sum = FVector2D::ZeroVector;
+	int32 Found = 0;
+	for (const FIntPoint& Cell : Town.Cells)
+	{
+		FVector2D Center = FVector2D::ZeroVector;
+		if (!WorldMap->CellToWorldXY(Cell, WorldMinXY, WorldMaxXY, Center))
+		{
+			continue;
+		}
+		Sum += Center;
+		++Found;
+	}
+	if (Found == 0)
+	{
+		return false;
+	}
+
+	OutCenter = Sum / static_cast<float>(Found);
+	return true;
+}

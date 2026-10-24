@@ -271,6 +271,10 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "0.0"))
 	float FramingPadding = 280.f;
 
+	/** A companion farther than this is left out of the frame. */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "200.0"))
+	float FramingMaxMemberCm = 2500.f;
+
 	/** Zoom-out speed when the Squad needs a wider shot. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Framing", meta = (ClampMin = "0.1"))
 	float FramingZoomOutSpeed = 8.f;

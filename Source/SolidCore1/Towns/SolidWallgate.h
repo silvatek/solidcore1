@@ -55,4 +55,12 @@ namespace SolidWallgate
 		FVector2D WorldMinXY,
 		FVector2D WorldMaxXY,
 		TArray<FPiece>& OutPieces);
+
+	/** The 4 m gap. False when that id is not a wall gate, or it has no cells. */
+	bool GateCenterXY(
+		const USolidWorldChart* WorldMap,
+		int32 TownId,
+		FVector2D WorldMinXY,
+		FVector2D WorldMaxXY,
+		FVector2D& OutCenter);
 }

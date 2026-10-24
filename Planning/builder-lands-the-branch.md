@@ -57,7 +57,7 @@ New product work reaches `main` through the builder. The developer plays that ch
 
 ### Stage 1 — the lock gates the build
 
-Planned before it is implemented. The story stays Ready until this stage starts. No branch. Agents still push `main`. `SOLID_BUILD_ID` does not change. Play In Editor, the World Editor, and the chart dump still write `PIE`, `Editor`, and `Dump`, and they still start only from a missing `ue.lock` or the word `Free`.
+Planned before it is implemented. The story stays Ready until this stage starts. No branch. Agents still push `main`. `SOLID_BUILD_ID` does not change. Coding agents are stopped before this stage is implemented, after the agent already at work finishes the build and test that follows `SC1-0612`. New agents start after the stage is on `main`, and they continue the open stories. Play In Editor, the World Editor, and the chart dump still write `PIE`, `Editor`, and `Dump`, and they still start only from a missing `ue.lock` or the word `Free`.
 
 `tools/ue_lock.py` is the only writer of the lock word. The bats call it. A direct echo into `ue.lock` is gone, including the copies in `tools\pie.bat`, `tools\editor.bat`, and `tools\dump-chart.bat`. `tools/cloud_agent_check.py` is updated in the same change so it requires that call before the editor launches, and before Unreal Build Tool or `UnrealEditor-Cmd` starts. It still requires the words `PIE`, `Editor`, and `Free`, a missing lock counting as free, and no pull request.
 

@@ -4,7 +4,7 @@ Status: Done
 
 ## Story
 
-The player opens the game menu and finds six rows. They are Use portal, Journal, Build squad, Character editor, Credits, and Exit Game. The last two rows are always Credits, then Exit Game. A later row goes before Credits. Test Drill is not a row. [Drill](../drill-battle-plan.md) is that battle plan. The stronghold name is not a row. [Name the company's stronghold](../name-the-stronghold.md) is the sign beside the entrance. [Exit the game](exit-the-game.md) is the last row.
+The player opens the game menu and finds six rows. They are Use portal, Journal, Build squad, Character editor, Credits, and Exit Game. The last two rows are always Credits, then Exit Game. A later row goes before Credits. Test Drill is not a row. [Drill](../drill-battle-plan.md) is that battle plan. The stronghold name is not a row. [Name the company's stronghold](name-the-stronghold.md) is the sign beside the entrance. [Exit the game](exit-the-game.md) is the last row.
 
 Inventory is not on the menu. / still opens the inventory, and View on Xbox and Create on PlayStation still open it.
 

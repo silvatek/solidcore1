@@ -1,10 +1,10 @@
 # Name the company's stronghold
 
-Status: In Progress
+Status: Done
 
 ## Story
 
-Do not start this story until [Stronghold type classes](Done/stronghold-type-classes.md) is Done.
+Do not start this story until [Stronghold type classes](stronghold-type-classes.md) is Done.
 
 The player gives the company's stronghold a name. Until they choose one, the name is the size and the type, as in Average Tower. The stronghold the company starts with is size Meagre and type Dungeon, and its name is The Cave.
 
@@ -40,5 +40,5 @@ The sign's place is an attribute of the stronghold type. A size moves that place
 - The sign uses the town sign's pole and board: a thin dark-brown pole, a flat light-brown board, white letters with a black border. One line, the name. Not "Welcome to".
 - `NameSign()` is where that type puts the sign, in the exterior actor's centimetres. A dungeon stands beside the mouth frame. A tower stands beside the door. The pole is a step past that edge, then half the board, so the board clears the opening. The board faces the grass. A click on the pole or the board opens the page. The mouth and the tower door keep their own hits.
 - The sign is spawned for the company stronghold only. A move loads the world again, and the sign stands at the new entrance. Renaming refreshes the board in place.
-- This story does not add an F10 row. [Reorder the game menu](Done/reorder-game-menu.md) does not gain one from here.
+- This story does not add an F10 row. [Reorder the game menu](reorder-game-menu.md) does not gain one from here.
 - The product commit adds the name and sign tests. It does not edit the menu order tests.

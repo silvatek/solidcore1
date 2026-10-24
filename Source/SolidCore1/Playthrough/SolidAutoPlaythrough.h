@@ -405,6 +405,17 @@ public:
 		FIntPoint& OutCell);
 
 	/**
+	 * Ground point the script walks for that cell.
+	 * A wall-gate cell uses the 4 m opening, not the cell centre in the curtain.
+	 */
+	static bool WalkPointForCell(
+		const USolidWorldChart& Chart,
+		const FIntPoint& Cell,
+		const FVector2D& WorldMinXY,
+		const FVector2D& WorldMaxXY,
+		FVector2D& OutPoint);
+
+	/**
 	 * Local stair points from one story floor to another, including both ends.
 	 * Floor 1 is the door. Floor 10 is the top landing on an Imperious tower.
 	 */

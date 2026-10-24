@@ -12,10 +12,8 @@ namespace SolidBridge
 }
 
 /**
- * Open-world footing. Sea and mountain take the whole map cell.
- * A river blocks only its channel, the width defined for that water,
- * so the rest of the cell can still be walked.
- * A bridge is the only way across the channel. Sea and mountain stay closed.
+ * Open-world footing. The ground is the terrain point under the foot.
+ * Sea, mountain, and a river point are closed. A bridge is the only way across a river point.
  */
 namespace SolidGroundMove
 {
@@ -24,7 +22,7 @@ namespace SolidGroundMove
 		return SolidBiome::Of(Biome).Impassable();
 	}
 
-	/** SampleBiome already limits a river to its channel. */
+	/** SampleBiome reads the terrain point. A river point is closed. */
 	bool IsImpassableGround(
 		const USolidWorldChart& Map,
 		float X,

@@ -161,7 +161,7 @@ namespace SolidRoad
 					{
 						continue;
 					}
-					if (EnterCost(Type, Map.GetBiomeAtCell(Side.X, Side.Y)) >= AvoidCost)
+					if (EnterCost(Type, Map.GetPointBiomeAtCell(Side.X, Side.Y)) >= AvoidCost)
 					{
 						continue;
 					}
@@ -327,7 +327,7 @@ namespace SolidRoad
 				{
 					Bend = RiverBendCost;
 				}
-				const int32 NextCost = BestCost + EnterCost(Definition.Type, Map.GetBiomeAtCell(Next.X, Next.Y)) + Bend;
+				const int32 NextCost = BestCost + EnterCost(Definition.Type, Map.GetPointBiomeAtCell(Next.X, Next.Y)) + Bend;
 				if (NextCost < Cost[NextIndex])
 				{
 					Cost[NextIndex] = NextCost;

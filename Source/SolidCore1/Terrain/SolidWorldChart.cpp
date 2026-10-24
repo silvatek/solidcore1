@@ -238,6 +238,7 @@ void USolidWorldChart::PushUndo()
 {
 	FSnapshot Snapshot;
 	Snapshot.Cells = Cells;
+	Snapshot.Points = Points;
 	Snapshot.Marks = Marks;
 	Snapshot.Roads = Roads;
 	UndoStack.Add(MoveTemp(Snapshot));
@@ -286,11 +287,25 @@ bool USolidWorldChart::PaintRun(const TArray<FIntPoint>& CellsToPaint, const ESo
 		OutError = TEXT("Paint needs a cell.");
 		return false;
 	}
+	if (!EnsurePoints())
+	{
+		OutError = TEXT("The chart does not cover the map.");
+		return false;
+	}
 
 	PushUndo();
 	for (const int32 Index : Indexes)
 	{
 		Cells[Index] = Biome;
+	}
+	SetPointsInCells(Indexes, Biome);
+	for (const int32 Index : Indexes)
+	{
+		const int32 MarkIndex = MarkAtCell(FIntPoint(Index % MapWidth, Index / MapWidth));
+		if (MarkIndex != INDEX_NONE)
+		{
+			ApplyMarkerPoint(Marks[MarkIndex].PositionCm, Marks[MarkIndex].Kind);
+		}
 	}
 	InvalidateQuery();
 	return true;
@@ -325,6 +340,11 @@ bool USolidWorldChart::PlaceMark(const FIntPoint Cell, const FSolidWorldChartMar
 			: TEXT("The chart does not cover the map.");
 		return false;
 	}
+	if (!EnsurePoints())
+	{
+		OutError = TEXT("The chart does not cover the map.");
+		return false;
+	}
 
 	PushUndo();
 	const int32 Existing = MarkAtCell(Cell);
@@ -338,6 +358,7 @@ bool USolidWorldChart::PlaceMark(const FIntPoint Cell, const FSolidWorldChartMar
 	{
 		Marks[Existing] = Stored;
 	}
+	ApplyMarkerPoint(Stored.PositionCm, Stored.Kind);
 	InvalidateQuery();
 	return true;
 }
@@ -594,6 +615,7 @@ bool USolidWorldChart::Undo()
 	}
 	const FSnapshot Snapshot = UndoStack.Pop();
 	Cells = Snapshot.Cells;
+	Points = Snapshot.Points;
 	Marks = Snapshot.Marks;
 	Roads = Snapshot.Roads;
 	InvalidateQuery();
@@ -1060,6 +1082,7 @@ bool USolidWorldChart::LoadFromString(const FString& Text)
 	CollectNamedTowns();
 
 	bIsLoaded = true;
+	CopyPlayOntoPoints(true, false);
 	for (SolidRoad::FDefinition& RoadDef : RoadDefs)
 	{
 		LocateStrongholdEnd(BangMarks, RoadDef.From);
@@ -1238,6 +1261,8 @@ bool USolidWorldChart::LoadFromChart(const USolidWorldChart* Chart)
 		Cells = Chart->Cells;
 		Marks = Chart->Marks;
 		Roads = Chart->Roads;
+		const int32 PointCount = PointAxis * PointAxis;
+		Points = Chart->Points.Num() == PointCount ? Chart->Points : TArray<ESolidBiome>();
 		UndoStack.Reset();
 	}
 	return BuildQuery();
@@ -1281,6 +1306,7 @@ bool USolidWorldChart::BuildQuery() const
 	}
 
 	CollectNamedTowns();
+	CopyPlayOntoPoints(false, true);
 
 	TArray<SolidRoad::FDefinition> RoadDefs;
 	for (const FSolidWorldChartRoad& Road : Roads)
@@ -1614,7 +1640,55 @@ bool USolidWorldChart::IsMarkedTown(
 	return Marker == TownMarker;
 }
 
-ESolidBiome USolidWorldChart::SampleBiome(
+namespace
+{
+	constexpr int32 PointCount = USolidWorldChart::PointAxis * USolidWorldChart::PointAxis;
+
+	int32 PointSlot(const int32 IX, const int32 IY)
+	{
+		return IY * USolidWorldChart::PointAxis + IX;
+	}
+
+	void PointAtFraction(const float EastFromWest, const float NorthFromSouth, int32& OutX, int32& OutY)
+	{
+		const float Span = static_cast<float>(USolidWorldChart::PointAxis - 1);
+		OutX = FMath::Clamp(FMath::RoundToInt(EastFromWest * Span), 0, USolidWorldChart::PointAxis - 1);
+		OutY = FMath::Clamp(FMath::RoundToInt(NorthFromSouth * Span), 0, USolidWorldChart::PointAxis - 1);
+	}
+
+	void PointAtWorld(
+		const float WorldX,
+		const float WorldY,
+		const FVector2D& Min,
+		const FVector2D& Max,
+		int32& OutX,
+		int32& OutY)
+	{
+		const float ExtentX = FMath::Max(Max.X - Min.X, 1.f);
+		const float ExtentY = FMath::Max(Max.Y - Min.Y, 1.f);
+		PointAtFraction((WorldX - Min.X) / ExtentX, (WorldY - Min.Y) / ExtentY, OutX, OutY);
+	}
+
+	FVector2D WorldAtPoint(const int32 IX, const int32 IY, const FVector2D& Min, const FVector2D& Max)
+	{
+		const float Span = static_cast<float>(USolidWorldChart::PointAxis - 1);
+		return FVector2D(
+			Min.X + static_cast<float>(IX) * (Max.X - Min.X) / Span,
+			Min.Y + static_cast<float>(IY) * (Max.Y - Min.Y) / Span);
+	}
+
+	/** The terrain point at a cell centre. Column 0 is east, row 0 is north. */
+	void PointUnderCell(const int32 Col, const int32 Row, int32& OutX, int32& OutY)
+	{
+		PointAtFraction(
+			1.f - (static_cast<float>(Col) + 0.5f) / static_cast<float>(USolidWorldChart::MapWidth),
+			1.f - (static_cast<float>(Row) + 0.5f) / static_cast<float>(USolidWorldChart::MapHeight),
+			OutX,
+			OutY);
+	}
+}
+
+ESolidBiome USolidWorldChart::SampleCellPlay(
 	const float WorldX,
 	const float WorldY,
 	const FVector2D WorldMinXY,
@@ -1627,44 +1701,186 @@ ESolidBiome USolidWorldChart::SampleBiome(
 		return ESolidBiome::Grassland;
 	}
 
-	ESolidBiome Ground = ESolidBiome::Grassland;
 	TCHAR Marker = 0;
 	if (!WorldMapMarkerInCell(*this, MapX, MapY, Marker) || Marker != RiverMarker)
 	{
-		Ground = GetBiomeAtCell(MapX, MapY);
+		return GetBiomeAtCell(MapX, MapY);
 	}
-	else
+
+	const float ExtentX = FMath::Max(WorldMaxXY.X - WorldMinXY.X, 1.f);
+	const float ExtentY = FMath::Max(WorldMaxXY.Y - WorldMinXY.Y, 1.f);
+	const float CellW = ExtentX / static_cast<float>(MapWidth);
+	const float CellH = ExtentY / static_cast<float>(MapHeight);
+
+	FVector2D Center = FVector2D::ZeroVector;
+	if (!CellToWorldXY(FIntPoint(MapX, MapY), WorldMinXY, WorldMaxXY, Center))
 	{
-		const float ExtentX = FMath::Max(WorldMaxXY.X - WorldMinXY.X, 1.f);
-		const float ExtentY = FMath::Max(WorldMaxXY.Y - WorldMinXY.Y, 1.f);
-		const float CellW = ExtentX / static_cast<float>(MapWidth);
-		const float CellH = ExtentY / static_cast<float>(MapHeight);
+		return ESolidBiome::River;
+	}
 
-		FVector2D Center = FVector2D::ZeroVector;
-		if (!CellToWorldXY(FIntPoint(MapX, MapY), WorldMinXY, WorldMaxXY, Center))
+	const FVector2D Local(WorldX - Center.X, WorldY - Center.Y);
+	SolidRiver::FLinks Links;
+	TCHAR Neighbor = 0;
+	Links.bNorth = WorldMapMarkerInCell(*this, MapX, MapY - 1, Neighbor) && SolidRiver::Joins(Neighbor);
+	Links.bEast = WorldMapMarkerInCell(*this, MapX - 1, MapY, Neighbor) && SolidRiver::Joins(Neighbor);
+	Links.bSouth = WorldMapMarkerInCell(*this, MapX, MapY + 1, Neighbor) && SolidRiver::Joins(Neighbor);
+	Links.bWest = WorldMapMarkerInCell(*this, MapX + 1, MapY, Neighbor) && SolidRiver::Joins(Neighbor);
+	if (SolidRiver::IsWater(Local, CellW, CellH, Links))
+	{
+		return ESolidBiome::River;
+	}
+	return WorldMapRiverBank(*this, MapX, MapY, SolidRiver::Side(Local, CellW, CellH, Links));
+}
+
+void USolidWorldChart::ApplyMarkerPoint(const FVector2D& PositionCm, const ESolidWorldChartMarkKind Kind) const
+{
+	if (Points.Num() != PointCount)
+	{
+		return;
+	}
+
+	FVector2D Min = FVector2D::ZeroVector;
+	FVector2D Max = FVector2D::ZeroVector;
+	DefaultWorldBounds(Min, Max);
+	int32 IX = 0;
+	int32 IY = 0;
+	PointAtWorld(PositionCm.X, PositionCm.Y, Min, Max, IX, IY);
+	Points[PointSlot(IX, IY)] = Kind == ESolidWorldChartMarkKind::Town
+		? ESolidBiome::Town
+		: ESolidBiome::Grassland;
+}
+
+void USolidWorldChart::CopyPlayOntoPoints(const bool bForce, const bool bUseStoredMarks) const
+{
+	if (!bForce && Points.Num() == PointCount)
+	{
+		return;
+	}
+
+	FVector2D Min = FVector2D::ZeroVector;
+	FVector2D Max = FVector2D::ZeroVector;
+	DefaultWorldBounds(Min, Max);
+	Points.SetNum(PointCount);
+	for (int32 IY = 0; IY < PointAxis; ++IY)
+	{
+		for (int32 IX = 0; IX < PointAxis; ++IX)
 		{
-			Ground = ESolidBiome::River;
+			const FVector2D World = WorldAtPoint(IX, IY, Min, Max);
+			Points[PointSlot(IX, IY)] = SampleCellPlay(World.X, World.Y, Min, Max);
 		}
-		else
+	}
+
+	if (bUseStoredMarks)
+	{
+		for (const FSolidWorldChartMark& Mark : Marks)
 		{
-			const FVector2D Local(WorldX - Center.X, WorldY - Center.Y);
-
-			SolidRiver::FLinks Links;
-			TCHAR Neighbor = 0;
-			Links.bNorth = WorldMapMarkerInCell(*this, MapX, MapY - 1, Neighbor) && SolidRiver::Joins(Neighbor);
-			Links.bEast = WorldMapMarkerInCell(*this, MapX - 1, MapY, Neighbor) && SolidRiver::Joins(Neighbor);
-			Links.bSouth = WorldMapMarkerInCell(*this, MapX, MapY + 1, Neighbor) && SolidRiver::Joins(Neighbor);
-			Links.bWest = WorldMapMarkerInCell(*this, MapX + 1, MapY, Neighbor) && SolidRiver::Joins(Neighbor);
-
-			if (SolidRiver::IsWater(Local, CellW, CellH, Links))
-			{
-				Ground = ESolidBiome::River;
-			}
-			else
-			{
-				Ground = WorldMapRiverBank(*this, MapX, MapY, SolidRiver::Side(Local, CellW, CellH, Links));
-			}
+			ApplyMarkerPoint(Mark.PositionCm, Mark.Kind);
 		}
+		return;
+	}
+
+	for (const TPair<int32, FSolidWorldBang>& Pair : BangMarks)
+	{
+		int32 IX = 0;
+		int32 IY = 0;
+		PointUnderCell(Pair.Value.Cell.X, Pair.Value.Cell.Y, IX, IY);
+		Points[PointSlot(IX, IY)] = Pair.Value.Kind == ESolidWorldBang::Town
+			? ESolidBiome::Town
+			: ESolidBiome::Grassland;
+	}
+}
+
+bool USolidWorldChart::EnsurePoints() const
+{
+	if (Points.Num() == PointCount)
+	{
+		return true;
+	}
+	if (!EnsureQuery())
+	{
+		return false;
+	}
+	if (Points.Num() == PointCount)
+	{
+		return true;
+	}
+	CopyPlayOntoPoints(true, Marks.Num() > 0);
+	return Points.Num() == PointCount;
+}
+
+void USolidWorldChart::SetPointsInCells(const TArray<int32>& CellIndexes, const ESolidBiome Biome) const
+{
+	if (Points.Num() != PointCount || CellIndexes.Num() == 0)
+	{
+		return;
+	}
+
+	TSet<int32> Want;
+	Want.Reserve(CellIndexes.Num());
+	for (const int32 Index : CellIndexes)
+	{
+		Want.Add(Index);
+	}
+
+	FVector2D Min = FVector2D::ZeroVector;
+	FVector2D Max = FVector2D::ZeroVector;
+	DefaultWorldBounds(Min, Max);
+	for (int32 IY = 0; IY < PointAxis; ++IY)
+	{
+		for (int32 IX = 0; IX < PointAxis; ++IX)
+		{
+			const FVector2D World = WorldAtPoint(IX, IY, Min, Max);
+			int32 Col = 0;
+			int32 Row = 0;
+			if (!WorldXYToCell(World.X, World.Y, Min, Max, Col, Row))
+			{
+				continue;
+			}
+			if (!Want.Contains(Row * MapWidth + Col))
+			{
+				continue;
+			}
+			Points[PointSlot(IX, IY)] = Biome;
+		}
+	}
+}
+
+ESolidBiome USolidWorldChart::GetPointBiomeAtCell(const int32 MapX, const int32 MapY) const
+{
+	if (!EnsurePoints())
+	{
+		return GetBiomeAtCell(MapX, MapY);
+	}
+
+	const int32 X = FMath::Clamp(MapX, 0, MapWidth - 1);
+	const int32 Y = FMath::Clamp(MapY, 0, MapHeight - 1);
+	int32 IX = 0;
+	int32 IY = 0;
+	PointUnderCell(X, Y, IX, IY);
+	return Points[PointSlot(IX, IY)];
+}
+
+ESolidBiome USolidWorldChart::SampleBiome(
+	const float WorldX,
+	const float WorldY,
+	const FVector2D WorldMinXY,
+	const FVector2D WorldMaxXY) const
+{
+	if (!EnsurePoints())
+	{
+		return ESolidBiome::Grassland;
+	}
+
+	int32 IX = 0;
+	int32 IY = 0;
+	PointAtWorld(WorldX, WorldY, WorldMinXY, WorldMaxXY, IX, IY);
+	const ESolidBiome Ground = Points[PointSlot(IX, IY)];
+
+	int32 MapX = 0;
+	int32 MapY = 0;
+	if (!WorldXYToCell(WorldX, WorldY, WorldMinXY, WorldMaxXY, MapX, MapY))
+	{
+		return Ground;
 	}
 
 	// The road shares the grassland shelf, so this is a texture change there.

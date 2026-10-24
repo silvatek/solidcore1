@@ -146,9 +146,10 @@ struct FSolidWorldEncounterMark
 };
 
 /**
- * The shipped world. Cells hold marker biomes. Marks and roads hold the towns,
- * strongholds, and roads. The same object answers the map queries: biomes,
- * towns, and solved routes. Those solved facts are not saved with the asset.
+ * The shipped world. Cells hold the old squares. Points hold the biome of each
+ * terrain point. Marks and roads hold the towns, strongholds, and roads.
+ * The same object answers the map queries: biomes, towns, and solved routes.
+ * Those solved routes are not saved with the asset.
  * The game builds the world from /Game/World/WorldChart.
  */
 UCLASS(BlueprintType)
@@ -219,7 +220,8 @@ public:
 	bool LoadFromString(const FString& Text);
 
 	/**
-	 * Copy that chart's cells, marks, and roads onto this one, then solve the routes.
+	 * Copy that chart's cells, marks, roads, and terrain points onto this one, then solve the routes.
+	 * A chart saved as cells has no points yet. Solving copies the play biomes onto them.
 	 * Copying this chart only solves.
 	 */
 	bool LoadFromChart(const USolidWorldChart* Chart);
@@ -254,14 +256,18 @@ public:
 	int32 SampleLocationId(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 
 	/**
-	 * Sample biome for a world XY given the TerrainMap world rectangle.
-	 * File row 0 → north (max Y). File column 0 → east (max X) so the text
-	 * matches the in-world layout when viewed with north up.
-	 * A river-marker cell is a 4 m river. The dry part of that square uses the neighboring biome.
-	 * A solved road paints its strip as Road, a brown close to the town colour.
-	 * River water stays river, and a mountain or the sea keeps its own shelf.
+	 * Sample biome for a world XY given the terrain world rectangle.
+	 * The ground is the terrain point under that position. A solved road paints
+	 * its strip as Road where that point shares the road's shelf. River water
+	 * stays river. A stronghold that names a shelf keeps the point's biome.
 	 */
 	ESolidBiome SampleBiome(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
+
+	/**
+	 * Biome of the terrain point under this cell, the point at the cell centre.
+	 * A road step reads this. The cell's own biome is GetBiomeAtCell.
+	 */
+	ESolidBiome GetPointBiomeAtCell(int32 MapX, int32 MapY) const;
 
 	/** Solved routes, in file order. A route with no cells had a missing end. */
 	const TArray<SolidRoad::FRoute>& GetRoads() const { return SolvedRoads; }
@@ -379,9 +385,20 @@ public:
 	/** Put back the chart from before the last paint, mark, or road. */
 	bool Undo();
 
+	/** Terrain points on one side. The same count as the terrain map's default grid. */
+	static constexpr int32 PointAxis = 513;
+
 	/** Marker biome of each cell. Row-major. Row 0 is north, column 0 is east. A ! is grassland. */
 	UPROPERTY(EditAnywhere, Category = "WorldChart")
 	TArray<ESolidBiome> Cells;
+
+	/**
+	 * Biome of each terrain point. Row-major. Index 0 is the south-west corner.
+	 * Empty on a chart saved as cells; loading copies those cells onto the points.
+	 * Mutable because solving a const chart fills it.
+	 */
+	UPROPERTY(EditAnywhere, Category = "WorldChart")
+	mutable TArray<ESolidBiome> Points;
 
 	UPROPERTY(EditAnywhere, Category = "WorldChart")
 	TArray<FSolidWorldChartMark> Marks;
@@ -394,11 +411,19 @@ private:
 	struct FSnapshot
 	{
 		TArray<ESolidBiome> Cells;
+		TArray<ESolidBiome> Points;
 		TArray<FSolidWorldChartMark> Marks;
 		TArray<FSolidWorldChartRoad> Roads;
 	};
 
 	void PushUndo();
+	/** Copy each cell's play biome onto the points, then set each marker point. The road strip is not copied. */
+	void CopyPlayOntoPoints(bool bForce, bool bUseStoredMarks) const;
+	/** The biome a cell shows in play at this position, without the road strip. */
+	ESolidBiome SampleCellPlay(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
+	void SetPointsInCells(const TArray<int32>& CellIndexes, ESolidBiome Biome) const;
+	void ApplyMarkerPoint(const FVector2D& PositionCm, ESolidWorldChartMarkKind Kind) const;
+	bool EnsurePoints() const;
 	bool CellIndex(FIntPoint Cell, int32& OutIndex) const;
 	bool PlaceMark(FIntPoint Cell, const FSolidWorldChartMark& Mark, FString& OutError);
 	/** Solve from Cells, Marks, and Roads when a query finds the chart unsolved. */

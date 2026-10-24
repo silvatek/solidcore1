@@ -140,6 +140,7 @@ namespace SolidRoad
 
 	/**
 	 * Orthogonal route from any cell of From to any cell of To.
+	 * A step's cost is the terrain point under that cell.
 	 * @return False when an end has no cells, or no path exists.
 	 */
 	bool Solve(const USolidWorldChart& Map, const FDefinition& Definition, TArray<FIntPoint>& OutCells);

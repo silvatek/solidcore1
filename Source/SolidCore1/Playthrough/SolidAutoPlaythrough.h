@@ -5,6 +5,7 @@
 #include "Terrain/SolidRoad.h"
 
 class USolidGameState;
+class USolidSquad;
 class ASolidGameMode;
 class ASolidCharacter;
 
@@ -37,6 +38,8 @@ public:
 		EnterLair,
 		ExitLair,
 		WakeInStronghold,
+		SelectBattlePlan,
+		AimRaven,
 		Custom,
 	};
 
@@ -57,7 +60,7 @@ public:
 	/**
 	 * One row of the opening script.
 	 * WalkTo, CloseMessage, CraftItem, EquipItem, DisableEncounter, ExitStronghold,
-	 * EnterLair, ExitLair, WakeInStronghold, and Custom build one.
+	 * EnterLair, ExitLair, WakeInStronghold, SelectBattlePlan, AimRaven, and Custom build one.
 	 * A later helper fills the one field that row also reads.
 	 */
 	struct FStep
@@ -81,6 +84,14 @@ public:
 		const TCHAR* MessageId = nullptr;
 		/** Seconds to wait after the matching message is showing, then close. */
 		float PauseSeconds = 0.f;
+		/** Assigned battle plan name. SelectBattlePlan reads this. */
+		const TCHAR* PlanName = nullptr;
+		/** Raven look, degrees. Negative looks down. */
+		float PitchDeg = 0.f;
+		/** Raven boom length, centimetres. */
+		float ArmCm = 0.f;
+		/** Added to the captain's yaw. Zero is behind him. */
+		float YawOffsetDeg = 0.f;
 		/** Which custom row this is. The custom switch matches it. */
 		int32 CustomId = INDEX_NONE;
 
@@ -213,6 +224,26 @@ public:
 			return Step;
 		}
 
+		static constexpr FStep SelectBattlePlan(const TCHAR* InName, const TCHAR* InPlanName)
+		{
+			FStep Step;
+			Step.Type = EStepType::SelectBattlePlan;
+			Step.Name = InName;
+			Step.PlanName = InPlanName;
+			return Step;
+		}
+
+		/** Pitch and boom for raven sight. Yaw stays behind the captain. */
+		static constexpr FStep AimRaven(const TCHAR* InName, const float InPitchDeg, const float InArmCm)
+		{
+			FStep Step;
+			Step.Type = EStepType::AimRaven;
+			Step.Name = InName;
+			Step.PitchDeg = InPitchDeg;
+			Step.ArmCm = InArmCm;
+			return Step;
+		}
+
 		static constexpr FStep Custom(const TCHAR* InName, const int32 InCustomId)
 		{
 			FStep Step;
@@ -239,7 +270,11 @@ public:
 
 	/** The opening script, in order. A later story edits this list. */
 	static const FStep Script[];
-	static constexpr int32 ScriptCount = 18;
+	static constexpr int32 ScriptCount = 23;
+
+	/** High behind the squad. AimRaven at Kanfold uses these. */
+	static constexpr float HighTrailPitchDeg = -48.f;
+	static constexpr float HighTrailArmCm = 2200.f;
 
 	/** The F10 row and the HUD line. */
 	static const TCHAR* Label() { return TEXT("Auto playthrough"); }
@@ -277,6 +312,9 @@ public:
 	{
 		return CellTown != INDEX_NONE ? CellTown : OccupiedTown;
 	}
+
+	/** The assigned key for that plan name. INDEX_NONE when it is not on a key. */
+	static int32 BattlePlanSlot(const USolidSquad& Squad, const TCHAR* PlanName);
 
 	/** Move that item from a worn box, the pack, or the chest into the worn slot. */
 	static bool EquipItem(
@@ -348,6 +386,8 @@ private:
 	void TickDisableEncounter(ASolidGameMode& Mode, const FStep& Step);
 	bool TickExit(ASolidGameMode& Mode, ASolidCharacter& Captain);
 	bool TickCloseMessage(float DeltaSeconds, ASolidCharacter& Captain, const FStep& Step);
+	bool TickSelectBattlePlan(float DeltaSeconds, ASolidGameMode& Mode, const FStep& Step);
+	bool TickAimRaven(float DeltaSeconds, ASolidCharacter& Captain, const FStep& Step);
 	bool ClickMouth(ASolidGameMode& Mode, ASolidCharacter& Captain);
 
 	bool bRunning = false;

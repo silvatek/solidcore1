@@ -605,4 +605,87 @@ bool FSolidAutoPlaythroughDisableEncounterTest::RunTest(const FString& Parameter
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidAutoPlaythroughKanfoldShowTest,
+	"SolidCore1.AutoPlaythrough.KanfoldShow",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidAutoPlaythroughKanfoldShowTest::RunTest(const FString& Parameters)
+{
+	const FSolidAutoPlaythrough::FStep Aim = FSolidAutoPlaythrough::FStep::AimRaven(
+		TEXT("Aim raven high behind the squad"),
+		FSolidAutoPlaythrough::HighTrailPitchDeg,
+		FSolidAutoPlaythrough::HighTrailArmCm);
+	TestEqual(
+		TEXT("AimRaven type"),
+		static_cast<uint8>(Aim.Type),
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::AimRaven));
+	TestTrue(
+		TEXT("high trail looks down"),
+		Aim.PitchDeg < 0.f
+		&& FMath::IsNearlyEqual(Aim.PitchDeg, FSolidAutoPlaythrough::HighTrailPitchDeg));
+	TestTrue(
+		TEXT("high trail pulls the boom out"),
+		Aim.ArmCm > 450.f
+		&& FMath::IsNearlyEqual(Aim.ArmCm, FSolidAutoPlaythrough::HighTrailArmCm));
+	TestTrue(TEXT("high trail stays behind the captain"), FMath::IsNearlyZero(Aim.YawOffsetDeg));
+
+	const FSolidAutoPlaythrough::FStep Form = FSolidAutoPlaythrough::FStep::SelectBattlePlan(
+		TEXT("Form Tight mob"),
+		TEXT("Tight mob"));
+	TestEqual(
+		TEXT("SelectBattlePlan type"),
+		static_cast<uint8>(Form.Type),
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::SelectBattlePlan));
+	TestEqual(TEXT("plan name"), FString(Form.PlanName), FString(TEXT("Tight mob")));
+
+	const TCHAR* Plans[] = {
+		TEXT("Line"),
+		TEXT("Column"),
+		TEXT("Loose mob"),
+		TEXT("Tight mob"),
+	};
+	int32 Kanfold = INDEX_NONE;
+	int32 Dragongate = INDEX_NONE;
+	int32 AimIndex = INDEX_NONE;
+	int32 PlanIndex = 0;
+	int32 LastPlan = INDEX_NONE;
+	for (int32 Index = 0; Index < FSolidAutoPlaythrough::ScriptCount; ++Index)
+	{
+		const FSolidAutoPlaythrough::FStep& Step = FSolidAutoPlaythrough::Script[Index];
+		if (FCString::Strcmp(Step.Name, TEXT("Walk to Kanfold")) == 0)
+		{
+			Kanfold = Index;
+		}
+		else if (Step.Type == FSolidAutoPlaythrough::EStepType::AimRaven && AimIndex == INDEX_NONE)
+		{
+			AimIndex = Index;
+			TestTrue(
+				TEXT("Kanfold aims the high trail"),
+				FMath::IsNearlyEqual(Step.PitchDeg, FSolidAutoPlaythrough::HighTrailPitchDeg)
+				&& FMath::IsNearlyEqual(Step.ArmCm, FSolidAutoPlaythrough::HighTrailArmCm));
+		}
+		else if (Step.Type == FSolidAutoPlaythrough::EStepType::SelectBattlePlan)
+		{
+			TestTrue(TEXT("those plans follow Kanfold"), Kanfold != INDEX_NONE && Index > Kanfold);
+			if (PlanIndex < UE_ARRAY_COUNT(Plans))
+			{
+				TestEqual(TEXT("plan order"), FString(Step.PlanName), FString(Plans[PlanIndex]));
+			}
+			++PlanIndex;
+			LastPlan = Index;
+		}
+		else if (FCString::Strcmp(Step.Name, TEXT("Walk to Dragongate")) == 0)
+		{
+			Dragongate = Index;
+		}
+	}
+	TestTrue(TEXT("Kanfold is in the script"), Kanfold != INDEX_NONE);
+	TestTrue(TEXT("the high trail is after Kanfold"), AimIndex != INDEX_NONE && AimIndex > Kanfold);
+	TestEqual(TEXT("four plans"), PlanIndex, static_cast<int32>(UE_ARRAY_COUNT(Plans)));
+	TestTrue(TEXT("Tight mob is last"), LastPlan != INDEX_NONE && LastPlan < Dragongate);
+	TestTrue(TEXT("Dragongate follows Tight mob"), Dragongate == LastPlan + 1);
+	return true;
+}
+
 #endif

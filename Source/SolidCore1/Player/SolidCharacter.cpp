@@ -542,6 +542,20 @@ void ASolidCharacter::SetSight(const ESolidSight NewSight)
 	UE_LOG(LogSolid, Warning, TEXT("Sight: %s"), SolidSight::Label(Sight));
 }
 
+void ASolidCharacter::AimRaven(const float PitchDeg, const float YawDeg, const float ArmCm)
+{
+	if (IsTrueSight())
+	{
+		SetSight(ESolidSight::Raven);
+	}
+	UserZoomArmLength = FMath::Clamp(ArmCm, CameraZoomMin, CameraZoomMax);
+	ApplyRavenSightCamera();
+	if (Controller)
+	{
+		Controller->SetControlRotation(FRotator(PitchDeg, YawDeg, 0.f));
+	}
+}
+
 void ASolidCharacter::ToggleSight()
 {
 	SetSight(SolidSight::Toggle(Sight));

@@ -27,6 +27,8 @@
 #include "Terrain/SolidWorldChart.h"
 #include "Towns/SolidTowns.h"
 #include "Towns/SolidWallgate.h"
+#include "Company/SolidSquad.h"
+#include "BattlePlans/SolidBattlePlan.h"
 #include "Algo/Reverse.h"
 
 namespace
@@ -61,6 +63,11 @@ const FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = 
 	FStep::ExitLair(TEXT("Leave the Iglin tunnels"), SolidLair::IdIglinTunnels, SolidLair::Exit),
 	FStep::WalkTo(TEXT("Walk to Relion"), EWalk::Town, SolidTowns::Relion),
 	FStep::WalkTo(TEXT("Walk to Kanfold"), EWalk::Town, SolidTowns::Kanfold),
+	FStep::AimRaven(TEXT("Aim raven high behind the squad"), HighTrailPitchDeg, HighTrailArmCm).Pause(1.5f),
+	FStep::SelectBattlePlan(TEXT("Form Line"), TEXT("Line")).Pause(2.5f),
+	FStep::SelectBattlePlan(TEXT("Form Column"), TEXT("Column")).Pause(2.5f),
+	FStep::SelectBattlePlan(TEXT("Form Loose mob"), TEXT("Loose mob")).Pause(2.5f),
+	FStep::SelectBattlePlan(TEXT("Form Tight mob"), TEXT("Tight mob")).Pause(2.5f),
 	FStep::WalkTo(TEXT("Walk to Dragongate"), EWalk::Town, SolidTowns::Dragongate),
 };
 
@@ -716,6 +723,10 @@ bool FSolidAutoPlaythrough::TickCurrent(
 	case EStepType::WakeInStronghold:
 		TickWakeInStronghold(Mode);
 		return false;
+	case EStepType::SelectBattlePlan:
+		return TickSelectBattlePlan(DeltaSeconds, Mode, Step);
+	case EStepType::AimRaven:
+		return TickAimRaven(DeltaSeconds, Captain, Step);
 	case EStepType::Custom:
 		TickCustom(Step);
 		return false;
@@ -1352,6 +1363,23 @@ bool FSolidAutoPlaythrough::TownRoads(
 	return OutCells.Num() > 0;
 }
 
+int32 FSolidAutoPlaythrough::BattlePlanSlot(const USolidSquad& Squad, const TCHAR* PlanName)
+{
+	if (!PlanName || !PlanName[0])
+	{
+		return INDEX_NONE;
+	}
+	for (int32 Slot = 0; Slot < SolidBattleFormationSlots::MaxAssignedBattlePlans; ++Slot)
+	{
+		const FSolidBattlePlan* Plan = Squad.GetAssignedBattlePlan(Slot);
+		if (Plan && Plan->Is(PlanName))
+		{
+			return Slot;
+		}
+	}
+	return INDEX_NONE;
+}
+
 bool FSolidAutoPlaythrough::BuildLairWalk(
 	const ASolidGameMode& Mode,
 	const FVector& CaptainLocation,
@@ -1883,6 +1911,54 @@ bool FSolidAutoPlaythrough::TickCloseMessage(
 		return false;
 	}
 	HUD->CloseMessage();
+	Advance();
+	return false;
+}
+
+bool FSolidAutoPlaythrough::TickSelectBattlePlan(
+	const float DeltaSeconds,
+	ASolidGameMode& Mode,
+	const FStep& Step)
+{
+	USolidSquad* Squad = Mode.GetSquad();
+	if (!Squad || !Step.PlanName)
+	{
+		Stop();
+		return false;
+	}
+
+	const FSolidBattlePlan* Active = Squad->GetActiveBattlePlan();
+	if (!Active || !Active->Is(Step.PlanName))
+	{
+		const int32 Slot = BattlePlanSlot(*Squad, Step.PlanName);
+		if (Slot == INDEX_NONE || !Mode.SelectBattlePlanSlot(Slot))
+		{
+			Stop();
+			return false;
+		}
+	}
+
+	WaitAccumulated += DeltaSeconds;
+	if (WaitAccumulated < Step.PauseSeconds)
+	{
+		return false;
+	}
+	Advance();
+	return false;
+}
+
+bool FSolidAutoPlaythrough::TickAimRaven(
+	const float DeltaSeconds,
+	ASolidCharacter& Captain,
+	const FStep& Step)
+{
+	const float YawDeg = Captain.GetActorRotation().Yaw + Step.YawOffsetDeg;
+	Captain.AimRaven(Step.PitchDeg, YawDeg, Step.ArmCm);
+	WaitAccumulated += DeltaSeconds;
+	if (WaitAccumulated < Step.PauseSeconds)
+	{
+		return false;
+	}
 	Advance();
 	return false;
 }

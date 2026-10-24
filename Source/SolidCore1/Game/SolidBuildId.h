@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0608")
+#define SOLID_BUILD_ID TEXT("SC1-0609")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Town signs do not block the squad. Walk to Dragongate ends in the gate.")
+#define SOLID_BUILD_NOTE TEXT("At Kanfold the raven camera goes high behind the squad, then Tight mob walks to Dragongate.")
 #endif

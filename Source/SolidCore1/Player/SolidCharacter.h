@@ -69,6 +69,8 @@ public:
 	bool IsTrueSight() const { return SolidSight::IsTrueSight(Sight); }
 	/** Entering true sight levels the camera. Yaw stays. */
 	void SetSight(ESolidSight NewSight);
+	/** Raven sight, this look, and this boom length. */
+	void AimRaven(float PitchDeg, float YawDeg, float ArmCm);
 	/** Raven-sight left click. Cleared on arrival, WASD, or true sight. */
 	bool HasClickMoveDestination() const { return bHasClickMoveDestination; }
 	/** Raven-sight walk toward a ground point. True sight ignores it. */

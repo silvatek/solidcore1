@@ -102,15 +102,15 @@ An agent defining a story writes the whole story. The phasing below is for the a
 
 When a story is so simple that it makes no sense to phase the delivery, the agent states that it will be implemented as a single phase story, then plans and delivers that phase.
 
-A story is complex when later acceptance needs a core that can be implemented and tested on its own. The first thing the implementing agent delivers is a high-level staged plan: the stages, in order, and what is true when each one ends. Reading the story and the code to find those stages is part of writing the plan. How a stage works is planned when that stage's turn comes.
+A story is complex when later acceptance needs a core that can be implemented and tested on its own. The coding agent starts with a high-level plan: the stages, in order, and what is true when each one ends. Reading the story and the code to find those stages is part of writing that plan. That plan is the Stages section of the story.
 
-Agree that plan with the user before planning any stage in detail. A request to plan the implementation, or to start it, still begins with the staged plan. The implementation notes stay in the story. The agreement opens the first stage only. The story stays `Ready` until that stage starts.
+Agree that plan with the user before planning any stage in detail. A request to plan the implementation, or to start it, still begins with the high-level plan. The agreement opens the first stage only. The story stays `Ready` until that stage starts.
 
-After that agreement, deliver a detailed plan for the first stage only, then deliver that stage. Each later stage gets its own detailed plan when its turn comes.
+After that agreement, plan only the current stage in detail, then deliver it. Do not write that detailed plan into the story. The next stage is not planned in detail until this one has shipped.
 
 The early stages keep edge cases to a minimum, so the core code can be implemented and tested first. Later stages build the complex scenarios, and their edge cases, on that core.
 
-Place encounter markers was the miss. The agent designed the marks, the road ends, the import, and the disagreement before a staged plan was agreed.
+Place encounter markers was the miss. The agent designed the marks, the road ends, the import, and the disagreement before a high-level plan was agreed.
 
 ## Names
 

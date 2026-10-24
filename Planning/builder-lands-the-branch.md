@@ -59,7 +59,7 @@ New product work reaches `main` through the builder. The developer plays that ch
 
 ### Stage 1 — the lock gates the build
 
-Stage 1 is in progress. Coding agents were stopped after `SC1-0612`, before another product commit. No branch. Agents still push `main`. `SOLID_BUILD_ID` does not change. New agents start after this stage is on `main`, and they continue the open stories. Play In Editor, the World Editor, and the chart dump still write `PIE`, `Editor`, and `Dump`, and they still start only from a missing `ue.lock` or the word `Free`.
+Stage 1 is complete. The Windows checkout ran the helper tests: 18 passed. With the next slot reserved, `tools\build.bat` printed `The next slot is reserved.` and did not compile. The lock was left `Free`. Coding agents were stopped after `SC1-0612`. No branch was part of this stage. Agents still push `main`. `SOLID_BUILD_ID` did not change. Play In Editor, the World Editor, and the chart dump still write `PIE`, `Editor`, and `Dump`, and they still start only from a missing `ue.lock` or the word `Free`.
 
 `tools/ue_lock.py` is the only writer of the lock word. The bats call it. A direct echo into `ue.lock` is gone, including the copies in `tools\pie.bat`, `tools\editor.bat`, and `tools\dump-chart.bat`. `tools/cloud_agent_check.py` is updated in the same change so it requires that call before the editor launches, and before Unreal Build Tool or `UnrealEditor-Cmd` starts. It still requires the words `PIE`, `Editor`, and `Free`, a missing lock counting as free, and no pull request.
 

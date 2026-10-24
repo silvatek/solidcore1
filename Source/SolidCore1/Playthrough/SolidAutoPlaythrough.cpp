@@ -157,6 +157,8 @@ namespace
 		return Biome == ESolidBiome::Grassland || Biome == ESolidBiome::Town;
 	}
 
+	bool OnIglinRamp(const ASolidGameMode& Mode, const FVector2D& Point);
+
 	const SolidLair::FEntrance* FindLairEntrance(
 		const TArray<SolidLair::FEntrance>& Entrances,
 		const TCHAR EndMarker)
@@ -171,14 +173,88 @@ namespace
 		return nullptr;
 	}
 
-	bool GrassPath(
+	void CollectPlacedMonsters(const ASolidGameMode& Mode, TArray<FVector2D>& OutXY)
+	{
+		OutXY.Reset();
+		for (const FSolidEncounter& Encounter : Mode.GetEncounters())
+		{
+			for (const FSolidMonsterGroup& Group : Encounter.Groups)
+			{
+				for (int32 Index = 0; Index < Group.Num(); ++Index)
+				{
+					const FSolidMonster* Monster = Group.Get(Index);
+					if (Monster && Monster->PointIndex != INDEX_NONE)
+					{
+						OutXY.Add(Monster->XY);
+					}
+				}
+			}
+		}
+	}
+
+	bool CellCenter(
 		const USolidWorldChart& Chart,
+		const FIntPoint Cell,
+		const FVector2D WorldMin,
+		const FVector2D WorldMax,
+		FVector2D& OutCenter)
+	{
+		return Chart.CellToWorldXY(Cell, WorldMin, WorldMax, OutCenter);
+	}
+
+	float MonsterClearanceCm(const FVector2D& Point, const TArray<FVector2D>& Monsters)
+	{
+		if (Monsters.Num() == 0)
+		{
+			return TNumericLimits<float>::Max();
+		}
+		float Best = TNumericLimits<float>::Max();
+		for (const FVector2D& Monster : Monsters)
+		{
+			Best = FMath::Min(Best, FVector2D::Distance(Point, Monster));
+		}
+		return Best;
+	}
+
+	bool WalkableLairCell(
+		const ASolidGameMode& Mode,
+		const USolidWorldChart& Chart,
+		const FIntPoint Cell,
+		const FVector2D WorldMin,
+		const FVector2D WorldMax,
+		const TArray<FVector2D>& Monsters,
+		const float MinClearanceCm)
+	{
+		if (!WalkableCell(Chart, Cell))
+		{
+			return false;
+		}
+		FVector2D Center = FVector2D::ZeroVector;
+		if (!CellCenter(Chart, Cell, WorldMin, WorldMax, Center))
+		{
+			return false;
+		}
+		if (OnIglinRamp(Mode, Center))
+		{
+			return false;
+		}
+		return MonsterClearanceCm(Center, Monsters) + KINDA_SMALL_NUMBER >= MinClearanceCm;
+	}
+
+	bool GrassPath(
+		const ASolidGameMode& Mode,
+		const USolidWorldChart& Chart,
+		const FVector2D WorldMin,
+		const FVector2D WorldMax,
 		const FIntPoint From,
 		const FIntPoint To,
+		const TArray<FVector2D>& Monsters,
+		const float MinClearanceCm,
 		TArray<FIntPoint>& OutCells)
 	{
 		OutCells.Reset();
-		if (!WalkableCell(Chart, From) || !WalkableCell(Chart, To))
+		if (!WalkableLairCell(Mode, Chart, From, WorldMin, WorldMax, Monsters, 0.f)
+			|| !WalkableLairCell(Mode, Chart, To, WorldMin, WorldMax, Monsters, 0.f))
 		{
 			return false;
 		}
@@ -213,7 +289,7 @@ namespace
 			for (const FIntPoint& Step : Steps)
 			{
 				const FIntPoint Next(Here.X + Step.X, Here.Y + Step.Y);
-				if (!WalkableCell(Chart, Next))
+				if (!WalkableLairCell(Mode, Chart, Next, WorldMin, WorldMax, Monsters, MinClearanceCm))
 				{
 					continue;
 				}
@@ -240,6 +316,52 @@ namespace
 		}
 		OutCells.Add(From);
 		Algo::Reverse(OutCells);
+		return OutCells.Num() > 0;
+	}
+
+	bool FarthestGrassPath(
+		const ASolidGameMode& Mode,
+		const USolidWorldChart& Chart,
+		const FVector2D WorldMin,
+		const FVector2D WorldMax,
+		const FIntPoint From,
+		const FIntPoint To,
+		const TArray<FVector2D>& Monsters,
+		TArray<FIntPoint>& OutCells)
+	{
+		FVector2D FromCenter = FVector2D::ZeroVector;
+		FVector2D ToCenter = FVector2D::ZeroVector;
+		if (!CellCenter(Chart, From, WorldMin, WorldMax, FromCenter)
+			|| !CellCenter(Chart, To, WorldMin, WorldMax, ToCenter))
+		{
+			return false;
+		}
+
+		int32 Lo = 0;
+		int32 Hi = FMath::FloorToInt(FMath::Min(
+			MonsterClearanceCm(FromCenter, Monsters),
+			MonsterClearanceCm(ToCenter, Monsters)));
+		int32 Best = 0;
+		TArray<FIntPoint> Candidate;
+		if (!GrassPath(Mode, Chart, WorldMin, WorldMax, From, To, Monsters, 0.f, OutCells))
+		{
+			return false;
+		}
+		while (Lo <= Hi)
+		{
+			const int32 Mid = Lo + (Hi - Lo) / 2;
+			if (GrassPath(Mode, Chart, WorldMin, WorldMax, From, To, Monsters, static_cast<float>(Mid), Candidate))
+			{
+				Best = Mid;
+				OutCells = Candidate;
+				Lo = Mid + 1;
+			}
+			else
+			{
+				Hi = Mid - 1;
+			}
+		}
+		(void)Best;
 		return OutCells.Num() > 0;
 	}
 
@@ -1010,8 +1132,15 @@ bool FSolidAutoPlaythrough::BuildLairEntranceWalk(
 		return false;
 	}
 
+	TArray<FVector2D> Monsters;
+	CollectPlacedMonsters(Mode, Monsters);
+	if (Monsters.Num() == 0)
+	{
+		return false;
+	}
+
 	TArray<FIntPoint> Cells;
-	if (!GrassPath(*Chart, Start, Mouth->GrassCell, Cells))
+	if (!FarthestGrassPath(Mode, *Chart, WorldMin, WorldMax, Start, Mouth->GrassCell, Monsters, Cells))
 	{
 		Stop();
 		return false;

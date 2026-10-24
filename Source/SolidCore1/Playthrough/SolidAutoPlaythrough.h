@@ -92,7 +92,7 @@ public:
 		float PitchDeg = 0.f;
 		/** Raven boom length, centimetres. */
 		float ArmCm = 0.f;
-		/** Added to the captain's yaw. Zero is behind him. */
+		/** Added to the walk yaw. Zero looks along the movement. */
 		float YawOffsetDeg = 0.f;
 		/** Which custom row this is. The custom switch matches it. */
 		int32 CustomId = INDEX_NONE;
@@ -236,7 +236,7 @@ public:
 			return Step;
 		}
 
-		/** Pitch and boom for raven sight. Yaw stays behind the captain. */
+		/** Pitch and boom for raven sight. Yaw stays behind the walk. */
 		static constexpr FStep AimRaven(const TCHAR* InName, const float InPitchDeg, const float InArmCm)
 		{
 			FStep Step;
@@ -321,6 +321,12 @@ public:
 		return CellTown != INDEX_NONE ? CellTown : OccupiedTown;
 	}
 
+	/**
+	 * Yaw that looks along Movement, then adds the AimRaven offset.
+	 * False when Movement is zero; OutYaw stays.
+	 */
+	static bool TrailYawDeg(const FVector2D& Movement, float YawOffsetDeg, float& OutYaw);
+
 	/** The assigned key for that plan name. INDEX_NONE when it is not on a key. */
 	static int32 BattlePlanSlot(const USolidSquad& Squad, const TCHAR* PlanName);
 
@@ -395,7 +401,8 @@ private:
 	bool TickExit(ASolidGameMode& Mode, ASolidCharacter& Captain);
 	bool TickCloseMessage(float DeltaSeconds, ASolidCharacter& Captain, const FStep& Step);
 	bool TickSelectBattlePlan(float DeltaSeconds, ASolidGameMode& Mode, const FStep& Step);
-	bool TickAimRaven(float DeltaSeconds, ASolidCharacter& Captain, const FStep& Step);
+	bool TickAimRaven(float DeltaSeconds, const FStep& Step);
+	void ApplyAimRaven(float DeltaSeconds, ASolidCharacter& Captain);
 	bool ClickMouth(ASolidGameMode& Mode, ASolidCharacter& Captain);
 
 	bool bRunning = false;
@@ -410,4 +417,9 @@ private:
 	float StallAccumulated = 0.f;
 	/** Time the matching message has been showing on a CloseMessage row. */
 	float WaitAccumulated = 0.f;
+	/** AimRaven set these. Later ticks keep that look behind the walk. */
+	bool bAimRavenHeld = false;
+	float RavenPitchDeg = 0.f;
+	float RavenArmCm = 0.f;
+	float RavenYawOffsetDeg = 0.f;
 };

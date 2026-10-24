@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0610")
+#define SOLID_BUILD_ID TEXT("SC1-0611")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The cave inventory stays open one second. Script holds are one second.")
+#define SOLID_BUILD_NOTE TEXT("The raven high trail stays behind the squad as they turn.")
 #endif

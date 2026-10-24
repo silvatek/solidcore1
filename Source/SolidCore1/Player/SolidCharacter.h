@@ -73,6 +73,7 @@ public:
 	void AimRaven(float PitchDeg, float YawDeg, float ArmCm);
 	/** Raven-sight left click. Cleared on arrival, WASD, or true sight. */
 	bool HasClickMoveDestination() const { return bHasClickMoveDestination; }
+	FVector GetClickMoveDestination() const { return ClickMoveDestination; }
 	/** Raven-sight walk toward a ground point. True sight ignores it. */
 	void SetClickMoveDestination(const FVector& Destination);
 	/**

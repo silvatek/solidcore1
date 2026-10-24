@@ -664,12 +664,14 @@ void FSolidAutoPlaythrough::Start(USolidGameState& State)
 	State.bAutoPlaythroughDim = true;
 	bRunning = true;
 	StepIndex = 0;
+	bAimRavenHeld = false;
 	ResetWalk();
 }
 
 void FSolidAutoPlaythrough::Stop()
 {
 	bRunning = false;
+	bAimRavenHeld = false;
 	ResetWalk();
 }
 
@@ -693,6 +695,7 @@ void FSolidAutoPlaythrough::Tick(const float DeltaSeconds, ASolidGameMode& Mode,
 	{
 		Captain.ReleaseRightMouse();
 	}
+	ApplyAimRaven(DeltaSeconds, Captain);
 }
 
 bool FSolidAutoPlaythrough::TickCurrent(
@@ -726,7 +729,7 @@ bool FSolidAutoPlaythrough::TickCurrent(
 	case EStepType::SelectBattlePlan:
 		return TickSelectBattlePlan(DeltaSeconds, Mode, Step);
 	case EStepType::AimRaven:
-		return TickAimRaven(DeltaSeconds, Captain, Step);
+		return TickAimRaven(DeltaSeconds, Step);
 	case EStepType::Custom:
 		TickCustom(Step);
 		return false;
@@ -1363,6 +1366,19 @@ bool FSolidAutoPlaythrough::TownRoads(
 	return OutCells.Num() > 0;
 }
 
+bool FSolidAutoPlaythrough::TrailYawDeg(
+	const FVector2D& Movement,
+	const float YawOffsetDeg,
+	float& OutYaw)
+{
+	if (Movement.IsNearlyZero())
+	{
+		return false;
+	}
+	OutYaw = FVector(Movement.X, Movement.Y, 0.f).Rotation().Yaw + YawOffsetDeg;
+	return true;
+}
+
 int32 FSolidAutoPlaythrough::BattlePlanSlot(const USolidSquad& Squad, const TCHAR* PlanName)
 {
 	if (!PlanName || !PlanName[0])
@@ -1955,13 +1971,12 @@ bool FSolidAutoPlaythrough::TickSelectBattlePlan(
 	return false;
 }
 
-bool FSolidAutoPlaythrough::TickAimRaven(
-	const float DeltaSeconds,
-	ASolidCharacter& Captain,
-	const FStep& Step)
+bool FSolidAutoPlaythrough::TickAimRaven(const float DeltaSeconds, const FStep& Step)
 {
-	const float YawDeg = Captain.GetActorRotation().Yaw + Step.YawOffsetDeg;
-	Captain.AimRaven(Step.PitchDeg, YawDeg, Step.ArmCm);
+	bAimRavenHeld = true;
+	RavenPitchDeg = Step.PitchDeg;
+	RavenArmCm = Step.ArmCm;
+	RavenYawOffsetDeg = Step.YawOffsetDeg;
 	WaitAccumulated += DeltaSeconds;
 	if (WaitAccumulated < Step.PauseSeconds)
 	{
@@ -1969,4 +1984,31 @@ bool FSolidAutoPlaythrough::TickAimRaven(
 	}
 	Advance();
 	return false;
+}
+
+void FSolidAutoPlaythrough::ApplyAimRaven(const float DeltaSeconds, ASolidCharacter& Captain)
+{
+	if (!bAimRavenHeld)
+	{
+		return;
+	}
+
+	float DesiredYaw = Captain.GetActorRotation().Yaw + RavenYawOffsetDeg;
+	if (Captain.HasClickMoveDestination())
+	{
+		const FVector Here = Captain.GetActorLocation();
+		const FVector Dest = Captain.GetClickMoveDestination();
+		const FVector2D Movement = SolidClickMove::PlanarDirection(
+			FVector2D(Here.X, Here.Y),
+			FVector2D(Dest.X, Dest.Y));
+		TrailYawDeg(Movement, RavenYawOffsetDeg, DesiredYaw);
+	}
+
+	float YawDeg = DesiredYaw;
+	const float MaxDegrees = TurnDegreesPerSecond * DeltaSeconds;
+	if (MaxDegrees > 0.f)
+	{
+		YawDeg = FMath::FixedTurn(Captain.GetControlRotation().Yaw, DesiredYaw, MaxDegrees);
+	}
+	Captain.AimRaven(RavenPitchDeg, YawDeg, RavenArmCm);
 }

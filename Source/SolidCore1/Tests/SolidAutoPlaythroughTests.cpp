@@ -752,4 +752,34 @@ bool FSolidAutoPlaythroughPausesTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidAutoPlaythroughTrailYawTest,
+	"SolidCore1.AutoPlaythrough.TrailYaw",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidAutoPlaythroughTrailYawTest::RunTest(const FString& Parameters)
+{
+	float Yaw = 45.f;
+	TestFalse(
+		TEXT("a stand leaves the yaw"),
+		FSolidAutoPlaythrough::TrailYawDeg(FVector2D::ZeroVector, 0.f, Yaw));
+	TestTrue(TEXT("that stand yaw stays"), FMath::IsNearlyEqual(Yaw, 45.f));
+
+	TestTrue(
+		TEXT("east looks east"),
+		FSolidAutoPlaythrough::TrailYawDeg(FVector2D(1.f, 0.f), 0.f, Yaw));
+	TestTrue(TEXT("east yaw"), FMath::IsNearlyEqual(Yaw, 0.f));
+
+	TestTrue(
+		TEXT("north looks north"),
+		FSolidAutoPlaythrough::TrailYawDeg(FVector2D(0.f, 1.f), 0.f, Yaw));
+	TestTrue(TEXT("north yaw"), FMath::IsNearlyEqual(Yaw, 90.f));
+
+	TestTrue(
+		TEXT("an offset turns from the walk"),
+		FSolidAutoPlaythrough::TrailYawDeg(FVector2D(1.f, 0.f), 10.f, Yaw));
+	TestTrue(TEXT("offset yaw"), FMath::IsNearlyEqual(Yaw, 10.f));
+	return true;
+}
+
 #endif

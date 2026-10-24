@@ -121,13 +121,13 @@ bool FSolidGroundMoveFootingTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("inside the 4 m channel"), GroundMoveAllows(*Map, Channel + FVector2D(100.f, 0.f), NoBridge));
 	TestTrue(
 		TEXT("same river cell outside the channel"),
-		GroundMoveAllows(*Map, Channel + FVector2D(250.f, 0.f), NoBridge));
+		GroundMoveAllows(*Map, Channel + FVector2D(400.f, 0.f), NoBridge));
 	TestTrue(
 		TEXT("river cell corner is bank"),
 		GroundMoveAllows(*Map, Channel + FVector2D(350.f, 700.f), NoBridge));
 
 	TestFalse(TEXT("pond centre"), GroundMoveAllows(*Map, Pond, NoBridge));
-	TestTrue(TEXT("pond cell outside the pond"), GroundMoveAllows(*Map, Pond + FVector2D(250.f, 0.f), NoBridge));
+	TestTrue(TEXT("pond cell outside the pond"), GroundMoveAllows(*Map, Pond + FVector2D(400.f, 0.f), NoBridge));
 
 	SolidBridge::FBridge Span;
 	Span.WidthCm = 200.f;

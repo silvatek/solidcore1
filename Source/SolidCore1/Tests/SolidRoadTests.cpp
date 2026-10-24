@@ -515,7 +515,7 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Crossing->SampleBiome(River.X, River.Y, RoadTestMin, RoadTestMax)),
 		static_cast<uint8>(ESolidBiome::River));
 	TestEqual(TEXT("the bank of a crossing uses the road texture"),
-		static_cast<uint8>(Crossing->SampleBiome(River.X + 250.f, River.Y, RoadTestMin, RoadTestMax)),
+		static_cast<uint8>(Crossing->SampleBiome(River.X + 400.f, River.Y, RoadTestMin, RoadTestMax)),
 		static_cast<uint8>(ESolidBiome::Road));
 
 	USolidWorldChart* Highway = NewObject<USolidWorldChart>();

@@ -6,10 +6,13 @@
 #include "Lairs/SolidLairInterior.h"
 #include "Lairs/SolidLairEntrance.h"
 #include "Strongholds/Sites/SolidStrongholdSite.h"
+#include "Strongholds/SolidNameSign.h"
+#include "Strongholds/SolidNameSigns.h"
 #include "Strongholds/Actors/SolidStrongholdExterior.h"
 #include "Strongholds/Actors/SolidStrongholdInterior.h"
 #include "SolidStronghold.h"
 #include "Terrain/SolidTerrainStreamer.h"
+#include "Terrain/SolidTerrainMap.h"
 #include "Animation/AnimSequence.h"
 #include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
@@ -21,6 +24,7 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "Engine/GameViewportClient.h"
+#include "Framework/Application/SlateApplication.h"
 #include "Engine/SkeletalMesh.h"
 #include "Components/InputComponent.h"
 #include "EnhancedInputComponent.h"
@@ -405,6 +409,21 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::NumPadSix, IE_Pressed, this, &ASolidCharacter::MainMenuChoose6);
 	PlayerInputComponent->BindKey(EKeys::NumPadSeven, IE_Pressed, this, &ASolidCharacter::MainMenuChoose7);
 	PlayerInputComponent->BindKey(EKeys::NumPadEight, IE_Pressed, this, &ASolidCharacter::MainMenuChoose8);
+
+	// The name page. Shift is its own chord, so a capital still arrives as the letter.
+	// The binding does not consume the key. Enter, Esc, and F10 keep their own handlers.
+	const EInputEvent Events[] = { IE_Pressed, IE_Repeat };
+	const bool Shifts[] = { false, true };
+	for (const EInputEvent Event : Events)
+	{
+		for (const bool bShift : Shifts)
+		{
+			FInputKeyBinding Binding(FInputChord(EKeys::AnyKey, bShift, false, false, false), Event);
+			Binding.bConsumeInput = false;
+			Binding.KeyDelegate.BindDelegate(this, &ASolidCharacter::NameSignKey);
+			PlayerInputComponent->KeyBindings.Add(MoveTemp(Binding));
+		}
+	}
 }
 
 ASolidHUD* ASolidCharacter::GetSolidHUD() const
@@ -428,7 +447,8 @@ bool ASolidCharacter::IsMenuOverlayOpen() const
 			|| HUD->IsInventoryVisible()
 			|| HUD->IsCharacterEditorOpen()
 			|| HUD->IsMessageVisible()
-			|| HUD->IsStrongholdChoiceOpen();
+			|| HUD->IsStrongholdChoiceOpen()
+			|| HUD->IsStrongholdNameOpen();
 	}
 	return false;
 }
@@ -1148,6 +1168,89 @@ void ASolidCharacter::ArriveByPortal(const FVector& NewLocation, const float Yaw
 	}
 }
 
+void ASolidCharacter::NameSignKey(FKey Key)
+{
+	ASolidHUD* HUD = GetSolidHUD();
+	if (!HUD || !HUD->IsStrongholdNameOpen())
+	{
+		return;
+	}
+	if (Key == NameSignKeySeen && GFrameCounter == NameSignKeyFrame)
+	{
+		return;
+	}
+	NameSignKeySeen = Key;
+	NameSignKeyFrame = GFrameCounter;
+
+	bool bShift = false;
+	bool bCaps = false;
+	if (const APlayerController* PC = Cast<APlayerController>(GetController()))
+	{
+		bShift = PC->IsInputKeyDown(EKeys::LeftShift) || PC->IsInputKeyDown(EKeys::RightShift);
+	}
+	if (FSlateApplication::IsInitialized())
+	{
+		const FModifierKeysState Mods = FSlateApplication::Get().GetModifierKeys();
+		bShift = bShift || Mods.IsShiftDown();
+		bCaps = Mods.AreCapsLocked();
+	}
+	HUD->TypeStrongholdName(Key, bShift != bCaps);
+}
+
+void ASolidCharacter::OpenStrongholdName()
+{
+	ASolidHUD* HUD = GetSolidHUD();
+	UWorld* World = GetWorld();
+	const ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+	const USolidCompany* Company = GameMode ? GameMode->GetCompany() : nullptr;
+	const FSolidStronghold* Stronghold = Company ? Company->GetStronghold() : nullptr;
+	if (!HUD || !Stronghold)
+	{
+		return;
+	}
+	HUD->OpenStrongholdName(Stronghold->Name);
+}
+
+void ASolidCharacter::RefreshStrongholdNameSign()
+{
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return;
+	}
+	const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>();
+	const USolidCompany* Company = GameMode ? GameMode->GetCompany() : nullptr;
+	const FSolidStronghold* Stronghold = Company ? Company->GetStronghold() : nullptr;
+	if (!Stronghold)
+	{
+		return;
+	}
+
+	ASolidTerrainStreamer* Streamer = nullptr;
+	for (TActorIterator<ASolidTerrainStreamer> It(World); It; ++It)
+	{
+		Streamer = *It;
+		break;
+	}
+	const USolidWorldChart* Map = (Streamer && Streamer->GetTerrainMap())
+		? Streamer->GetTerrainMap()->GetWorldMap()
+		: nullptr;
+	const SolidNameSigns::FWorldPlace Place = SolidNameSigns::WorldPlace(*Stronghold, Map);
+	for (TActorIterator<ASolidNameSign> Sign(World); Sign; ++Sign)
+	{
+		FVector Location(Place.XY.X, Place.XY.Y, Sign->GetActorLocation().Z);
+		if (Streamer)
+		{
+			const float LandZ = Streamer->GetHeightAt(Location) + Streamer->CollisionHeightBias;
+			Location.Z = LandZ + Streamer->SnapHeightPadding;
+		}
+		Sign->SetActorLocation(Location);
+		Sign->SetActorRotation(FRotator(0.f, Place.YawDeg, 0.f));
+		Sign->SetStrongholdName(Stronghold->Name);
+		Sign->BuildVisuals();
+	}
+}
+
 void ASolidCharacter::MainMenuConfirm()
 {
 	if (IsAutoPlaythroughRunning())
@@ -1157,6 +1260,28 @@ void ASolidCharacter::MainMenuConfirm()
 	ASolidHUD* HUD = GetSolidHUD();
 	if (!HUD)
 	{
+		return;
+	}
+	if (HUD->IsStrongholdNameOpen())
+	{
+		FString Kept;
+		if (HUD->AcceptStrongholdName(Kept))
+		{
+			if (UWorld* World = GetWorld())
+			{
+				if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+				{
+					if (USolidCompany* Company = GameMode->GetCompany())
+					{
+						if (FSolidStronghold* Stronghold = Company->GetStronghold())
+						{
+							Stronghold->Name = Kept;
+						}
+					}
+				}
+			}
+			RefreshStrongholdNameSign();
+		}
 		return;
 	}
 	if (HUD->IsMessageVisible())
@@ -1673,6 +1798,45 @@ ASolidStrongholdSite* ASolidCharacter::SiteUnderPointer() const
 	return nullptr;
 }
 
+ASolidNameSign* ASolidCharacter::NameSignUnderPointer() const
+{
+	if (!SolidPointer::AcceptsPointer(IsPointerShown(), IsMenuOverlayOpen() || IsSquadFormationDrillActive()))
+	{
+		return nullptr;
+	}
+
+	FVector Origin = FVector::ZeroVector;
+	FVector Direction = FVector::ZeroVector;
+	if (!ReadPointerRay(Origin, Direction))
+	{
+		return nullptr;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return nullptr;
+	}
+
+	for (TActorIterator<ASolidNameSign> Sign(World); Sign; ++Sign)
+	{
+		const UStaticMeshComponent* Meshes[] = { Sign->GetPoleMesh(), Sign->GetBoardMesh() };
+		for (const UStaticMeshComponent* Mesh : Meshes)
+		{
+			if (!Mesh)
+			{
+				continue;
+			}
+			const FBox Box = Mesh->CalcBounds(Mesh->GetComponentTransform()).GetBox();
+			if (SolidPointer::RayHitsBox(Origin, Direction, Box, SolidClickMove::MaxRayCm))
+			{
+				return *Sign;
+			}
+		}
+	}
+	return nullptr;
+}
+
 ASolidForagePile* ASolidCharacter::NearestForagePile(float& OutGroundDistanceCm) const
 {
 	OutGroundDistanceCm = 0.f;
@@ -1986,6 +2150,19 @@ void ASolidCharacter::PollClickMovePress()
 			MainMenuConfirm();
 			return;
 		}
+	}
+
+	if (ASolidHUD* NamePage = GetSolidHUD())
+	{
+		if (NamePage->IsStrongholdNameOpen())
+		{
+			return;
+		}
+	}
+	if (NameSignUnderPointer())
+	{
+		OpenStrongholdName();
+		return;
 	}
 
 	const SolidLair::FPassageHit Passage = PassageUnderPointer();

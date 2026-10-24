@@ -62,5 +62,8 @@ namespace SolidStronghold
 			TArray<SolidStrongholdGrid::FHex>& OutHexes) const override;
 
 		virtual TUniquePtr<FSolidStronghold> Clone() const override;
+
+		/** Beside the mouth frame, on the actor's right. The board faces the grass. */
+		virtual FSolidNameSignPlace NameSign() const override;
 	};
 }

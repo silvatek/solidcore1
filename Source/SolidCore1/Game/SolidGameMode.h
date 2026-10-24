@@ -19,6 +19,7 @@ class ASolidLairEntrance;
 class ASolidLairInterior;
 class ASolidCompanionCharacter;
 class ASolidTownSign;
+class ASolidNameSign;
 class ASolidStrongholdExterior;
 class ASolidStrongholdInterior;
 class ASolidStrongholdSite;
@@ -55,7 +56,7 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Companion")
 	TSubclassOf<ASolidCompanionCharacter> CompanionClass;
 
-	/** Spawn Forest trees, Town buildings, welcome signs, dungeon exteriors, tunnel mouths, and tower exteriors. */
+	/** Spawn Forest trees, Town buildings, welcome signs, the stronghold name sign, dungeon exteriors, tunnel mouths, and tower exteriors. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation")
 	bool bAutoSpawnVegetation = true;
 
@@ -324,6 +325,10 @@ protected:
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidTownSign>> SpawnedTownSigns;
+
+	/** The company stronghold's name. A stronghold the company has left has none. */
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<ASolidNameSign>> SpawnedNameSigns;
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ASolidLairEntrance>> SpawnedLairEntrances;

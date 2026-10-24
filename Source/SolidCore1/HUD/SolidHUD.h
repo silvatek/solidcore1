@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "InputCoreTypes.h"
 #include "Menus/SolidCharacterEditor.h"
 #include "Menus/SolidMenuPointer.h"
 #include "Inventory/SolidInventory.h"
@@ -75,6 +76,23 @@ public:
 	ESolidStrongholdSize GetStrongholdChoiceSize() const;
 	ESolidStrongholdType GetStrongholdChoiceType() const;
 
+	/**
+	 * The oak page for the company stronghold's name.
+	 * The title is the name when the page opened. Letters, digits, space, and Backspace edit the draft.
+	 */
+	void OpenStrongholdName(const FString& Current);
+	void DismissStrongholdName();
+	bool IsStrongholdNameOpen() const { return bShowStrongholdName; }
+	const FString& GetStrongholdNameTitle() const { return StrongholdNameTitle; }
+	const FString& GetStrongholdNameDraft() const { return StrongholdNameDraft; }
+	/**
+	 * Trim the draft and close the page.
+	 * OutKept is the name to write when this returns true. An empty trim is not a name.
+	 */
+	bool AcceptStrongholdName(FString& OutKept);
+	/** One edit key. Shift and caps choose a letter's case. Digits ignore that. */
+	void TypeStrongholdName(const FKey& Key, bool bUpper);
+
 	/** F12. The tech readout in the corner. Battle plans stay up either way. */
 	void ToggleDebugPanel();
 
@@ -107,9 +125,9 @@ public:
 	void SetSkeletonBoneTip(const FString& Tip);
 	const FString& GetSkeletonBoneTip() const { return SkeletonBoneTip; }
 
-	/** F10. Closes an open page, including the character editor, or toggles the main menu. */
+	/** F10. Closes an open page, including the name page and the character editor, or toggles the main menu. */
 	void HandleMenuKey();
-	/** Esc. Closes the menu, the exit confirmation, the portal, the squad builder, the journal, the inventory, the credits page, the character editor, and a stronghold choice. */
+	/** Esc. Closes the menu, the exit confirmation, the portal, the squad builder, the journal, the inventory, the credits page, the character editor, a stronghold choice, and the name page. */
 	void CloseMenuOverlay();
 	/** Hide the menu list. Leaves the credits page as it is. */
 	void CloseMainMenu();
@@ -153,6 +171,7 @@ protected:
 	void DrawPortalPopup();
 	void DrawExitConfirm();
 	void DrawStrongholdChoice();
+	void DrawStrongholdName() const;
 	void DrawSquadBuilderPopup();
 	/** Wall-clock timestamps (seconds) for frames in the rolling FPS window. */
 	TArray<double> RecentFrameTimes;
@@ -205,6 +224,11 @@ protected:
 	/** Highlighted row while the exit confirmation is open. Yes is 0. */
 	UPROPERTY(VisibleAnywhere, Category = "HUD")
 	int32 ExitConfirmIndex = 0;
+
+	/** The company stronghold's name. Enter keeps the draft. Esc and F10 leave the previous name. */
+	bool bShowStrongholdName = false;
+	FString StrongholdNameTitle;
+	FString StrongholdNameDraft;
 
 	/** Size and type rows for a stronghold site. Choosing a row commits the move. */
 	bool bShowStrongholdChoice = false;

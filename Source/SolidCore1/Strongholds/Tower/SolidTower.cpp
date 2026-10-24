@@ -406,6 +406,16 @@ namespace SolidStronghold
 		return MakeUnique<FSolidTower>(*this);
 	}
 
+	FSolidNameSignPlace FSolidTower::NameSign() const
+	{
+		const FVector Door = DoorSlabCenterCm();
+		FSolidNameSignPlace Place;
+		Place.FrameEdgeCm = FVector(Door.X, Plan().DoorWidthCm * 0.5f, 0.f);
+		Place.Outward = FVector2D(0.f, 1.f);
+		Place.YawDeg = 180.f;
+		return Place;
+	}
+
 	float SizeAlong(const ESolidStrongholdSize Size)
 	{
 		const float From = static_cast<float>(ESolidStrongholdSize::Average);

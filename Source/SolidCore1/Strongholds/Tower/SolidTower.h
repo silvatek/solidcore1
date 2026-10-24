@@ -151,6 +151,9 @@ namespace SolidStronghold
 
 		virtual float ExitReachCm() const override;
 		virtual void RememberExit(const USolidWorldChart* Map) override;
+
+		/** Beside the door, on the actor's right. The board faces the grass. */
+		virtual FSolidNameSignPlace NameSign() const override;
 		virtual void CollectGroundHexes(
 			ESolidStrongholdSize Size,
 			TArray<SolidStrongholdGrid::FHex>& OutHexes) const override;

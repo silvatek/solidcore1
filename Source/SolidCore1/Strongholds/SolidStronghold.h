@@ -76,6 +76,18 @@ class UWorld;
 struct FActorSpawnParameters;
 
 /**
+ * Where this type's name sign stands, in the exterior actor's centimetres.
+ * The pole is a step past the frame edge, along Outward, so the board clears the opening.
+ * YawDeg is added to the exterior yaw. 0 faces the actor's local +X.
+ */
+struct FSolidNameSignPlace
+{
+	FVector FrameEdgeCm = FVector::ZeroVector;
+	FVector2D Outward = FVector2D(0.f, 1.f);
+	float YawDeg = 0.f;
+};
+
+/**
  * A company base: one type, one size, a name, the map cell it stands on, and the way its exit faces.
  * Dungeon, Fortress, and Tower are the subclasses.
  * These are plain C++ classes, not Unreal objects and not Blueprints.
@@ -98,8 +110,8 @@ public:
 	ESolidStrongholdSize Size = ESolidStrongholdSize::Meagre;
 	/**
 	 * What the company calls this stronghold.
-	 * A new one is "{size} {type}", such as "Average Fortress".
-	 * The starting cave is "The Cave". A later story lets the player change it.
+	 * A new one is "{size} {type}", such as "Average Tower".
+	 * The starting cave is "The Cave" until the player renames it.
 	 */
 	FString Name;
 	/** Map cell. X is the column and Y is the row, counting from 0. Prefer Location. */
@@ -177,6 +189,12 @@ public:
 
 	/** After Make sets the size. A tower copies that size's measurements into its plan. */
 	virtual void BindPlan() {}
+
+	/**
+	 * The frame edge the name sign stands beside.
+	 * A dungeon uses the mouth. A tower uses the door. The size moves that edge when the measurements do.
+	 */
+	virtual FSolidNameSignPlace NameSign() const;
 };
 
 namespace SolidStronghold
@@ -439,6 +457,21 @@ namespace SolidStronghold
 	inline FString Label(const FSolidStronghold& Stronghold)
 	{
 		return Label(Stronghold.Size, Stronghold.Type);
+	}
+
+	/**
+	 * The name before the player chooses one.
+	 * "The Cave" for the starting Meagre Dungeon. Every other stronghold uses Label.
+	 */
+	inline FString DefaultName(const FSolidStronghold& Stronghold)
+	{
+		if (Stronghold.Type == ESolidStrongholdType::Dungeon
+			&& Stronghold.Size == ESolidStrongholdSize::Meagre
+			&& Stronghold.Cell == StartingCell())
+		{
+			return FString(StartingStrongholdName);
+		}
+		return Label(Stronghold);
 	}
 
 	/** Second line of the entrance hover. */

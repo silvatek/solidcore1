@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "InputCoreTypes.h"
 #include "GameFramework/Character.h"
 #include "InputActionValue.h"
 #include "Company/SolidSquadDrill.h"
@@ -21,6 +22,7 @@ class ASolidCharacterStage;
 class ASolidHUD;
 class ASolidForagePile;
 class ASolidStrongholdSite;
+class ASolidNameSign;
 
 /**
  * Captain — the single player-controlled character.
@@ -144,6 +146,8 @@ protected:
 	void ActivatePassage(const SolidLair::FPassageHit& Hit);
 	/** A stronghold site under the pointer, when a click may ask it for a type. */
 	ASolidStrongholdSite* SiteUnderPointer() const;
+	/** The company stronghold's name sign. A click opens the name and does not enter. */
+	ASolidNameSign* NameSignUnderPointer() const;
 	/** Nearest forage pile along the pointer ray. Ground distance is the captain's, in cm. */
 	ASolidForagePile* NearestForagePile(float& OutGroundDistanceCm) const;
 	void TickClickMove();
@@ -189,6 +193,11 @@ protected:
 	void ToggleInventoryFromController();
 	void ToggleDebugPanelFromInput();
 	void CloseMenuOverlayFromInput();
+	/** A letter, digit, space, or Backspace while the name page is open. */
+	void NameSignKey(FKey Key);
+	void OpenStrongholdName();
+	/** The board shows the stronghold's name, and the pole stays clear of the opening. */
+	void RefreshStrongholdNameSign();
 	void MainMenuMoveUp();
 	void MainMenuMoveDown();
 	void MainMenuConfirm();
@@ -413,6 +422,9 @@ protected:
 	bool bScriptRightMouse = false;
 	/** Previous frame's left button, so one click is a single press. */
 	bool bLeftMouseWasDown = false;
+	/** The name page hears a key once per frame. Shift and the plain chord can both match. */
+	FKey NameSignKeySeen;
+	uint64 NameSignKeyFrame = 0;
 	/** False until the left button has been up on this pawn. A carried hold does not click. */
 	bool bClickSawRelease = false;
 	/** Previous frame's left button while the inventory page is open. */

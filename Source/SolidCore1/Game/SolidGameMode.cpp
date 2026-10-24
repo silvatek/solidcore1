@@ -23,6 +23,8 @@
 #include "Towns/SolidWallgate.h"
 #include "Towns/SolidTownBuildings.h"
 #include "Towns/SolidTownSign.h"
+#include "Strongholds/SolidNameSign.h"
+#include "Strongholds/SolidNameSigns.h"
 #include "Towns/SolidTownSigns.h"
 #include "Lairs/SolidLair.h"
 #include "Lairs/SolidLairEntrance.h"
@@ -1692,6 +1694,10 @@ void ASolidGameMode::EnsureVegetation()
 	{
 		return !IsValid(Sign);
 	});
+	SpawnedNameSigns.RemoveAll([](const TObjectPtr<ASolidNameSign>& Sign)
+	{
+		return !IsValid(Sign);
+	});
 	SpawnedLairEntrances.RemoveAll([](const TObjectPtr<ASolidLairEntrance>& Entrance)
 	{
 		return !IsValid(Entrance);
@@ -1722,6 +1728,14 @@ void ASolidGameMode::EnsureVegetation()
 		for (TActorIterator<ASolidTownSign> It(World); It; ++It)
 		{
 			SpawnedTownSigns.Add(*It);
+		}
+	}
+
+	if (SpawnedNameSigns.Num() == 0)
+	{
+		for (TActorIterator<ASolidNameSign> It(World); It; ++It)
+		{
+			SpawnedNameSigns.Add(*It);
 		}
 	}
 
@@ -1965,6 +1979,34 @@ void ASolidGameMode::EnsureVegetation()
 		Owned,
 		SpawnParams,
 		SpawnedStrongholdExteriors);
+
+	if (SpawnedNameSigns.Num() == 0)
+	{
+		const USolidCompany* Company = GetCompany();
+		const FSolidStronghold* Active = Company ? Company->GetStronghold() : nullptr;
+		USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
+		const USolidWorldChart* Map = Terrain ? Terrain->GetWorldMap() : nullptr;
+		if (SolidNameSigns::StandsFor(Active, Active))
+		{
+			const SolidNameSigns::FWorldPlace Place = SolidNameSigns::WorldPlace(*Active, Map);
+			FVector SpawnLoc(Place.XY.X, Place.XY.Y, 0.f);
+			const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
+			SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
+
+			ASolidNameSign* Sign = World->SpawnActor<ASolidNameSign>(
+				ASolidNameSign::StaticClass(),
+				SpawnLoc,
+				FRotator(0.f, Place.YawDeg, 0.f),
+				SpawnParams);
+			if (Sign)
+			{
+				Sign->SetStrongholdName(Active->Name);
+				Sign->BuildVisuals();
+				SpawnedNameSigns.Add(Sign);
+				UE_LOG(LogSolid, Warning, TEXT("Spawned the stronghold name sign"));
+			}
+		}
+	}
 	TArray<const FSolidStronghold*> SiteCompany;
 	SiteCompany.Reserve(Owned.Num());
 	for (FSolidStronghold* Stronghold : Owned)

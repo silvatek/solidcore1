@@ -161,4 +161,16 @@ namespace SolidStronghold
 	{
 		return MakeUnique<FSolidDungeon>(*this);
 	}
+
+	FSolidNameSignPlace FSolidDungeon::NameSign() const
+	{
+		FSolidNameSignPlace Place;
+		Place.FrameEdgeCm = FVector(
+			FaceForwardCm(Orientation),
+			ShelfLateralCm(Orientation) + FaceWidthCm() * 0.5f,
+			0.f);
+		Place.Outward = FVector2D(0.f, 1.f);
+		Place.YawDeg = 0.f;
+		return Place;
+	}
 }

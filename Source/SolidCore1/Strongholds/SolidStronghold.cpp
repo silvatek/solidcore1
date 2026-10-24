@@ -47,6 +47,15 @@ void FSolidStronghold::RememberExit(const USolidWorldChart*)
 {
 }
 
+FSolidNameSignPlace FSolidStronghold::NameSign() const
+{
+	FSolidNameSignPlace Place;
+	Place.FrameEdgeCm = FVector(ExitReachCm(), 0.f, 0.f);
+	Place.Outward = FVector2D(0.f, 1.f);
+	Place.YawDeg = 0.f;
+	return Place;
+}
+
 namespace SolidStronghold
 {
 	FVector2D WorldXY(const FIntPoint Cell)
@@ -469,12 +478,23 @@ bool SolidStrongholdTransition::Commit(
 		return false;
 	}
 
+	const FSolidStronghold* Leaving = Company.GetStronghold();
+	const FString Chosen = (Leaving && Leaving->Name != SolidStronghold::DefaultName(*Leaving))
+		? Leaving->Name
+		: FString();
 	State.PreviousStrongholds.Add(Company.TakeStronghold());
 	Company.SetStronghold(SolidStronghold::Make(
 		Type,
 		Size,
 		SiteCell,
 		SolidStronghold::WorldXY(SiteCell)));
+	if (!Chosen.IsEmpty())
+	{
+		if (FSolidStronghold* Next = Company.GetStronghold())
+		{
+			Next->Name = Chosen;
+		}
+	}
 	State.Furnishings = Moved;
 	return true;
 }

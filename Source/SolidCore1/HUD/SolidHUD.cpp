@@ -1,4 +1,5 @@
 #include "SolidHUD.h"
+#include "Strongholds/SolidNameSigns.h"
 #include "HUD/SolidHudTheme.h"
 #include "HUD/SolidPointer.h"
 #include "SolidBuildId.h"
@@ -1793,6 +1794,10 @@ void ASolidHUD::DrawHUD()
 	{
 		DrawStrongholdChoice();
 	}
+	else if (bShowStrongholdName)
+	{
+		DrawStrongholdName();
+	}
 	else if (bShowSquadBuilder)
 	{
 		DrawSquadBuilderPopup();
@@ -2001,6 +2006,12 @@ void ASolidHUD::DrawMessagePopup() const
 
 void ASolidHUD::HandleMenuKey()
 {
+	if (bShowStrongholdName)
+	{
+		DismissStrongholdName();
+		return;
+	}
+
 	if (bShowMessage)
 	{
 		CloseMessage();
@@ -2069,6 +2080,8 @@ void ASolidHUD::HandleMenuKey()
 
 void ASolidHUD::CloseMenuOverlay()
 {
+	DismissStrongholdName();
+
 	if (bShowMessage)
 	{
 		CloseMessage();
@@ -3004,6 +3017,54 @@ ESolidStrongholdType ASolidHUD::GetStrongholdChoiceType() const
 		return ESolidStrongholdType::Tower;
 	}
 	return StrongholdChoices[StrongholdChoiceIndex].Type;
+}
+
+void ASolidHUD::OpenStrongholdName(const FString& Current)
+{
+	StrongholdNameTitle = Current;
+	StrongholdNameDraft = Current;
+	bShowStrongholdName = true;
+}
+
+void ASolidHUD::DismissStrongholdName()
+{
+	bShowStrongholdName = false;
+	StrongholdNameDraft.Reset();
+}
+
+bool ASolidHUD::AcceptStrongholdName(FString& OutKept)
+{
+	if (!bShowStrongholdName)
+	{
+		return false;
+	}
+	const FString Kept = SolidNameSigns::Keep(StrongholdNameDraft);
+	DismissStrongholdName();
+	if (Kept.IsEmpty())
+	{
+		return false;
+	}
+	OutKept = Kept;
+	return true;
+}
+
+void ASolidHUD::TypeStrongholdName(const FKey& Key, const bool bUpper)
+{
+	if (!bShowStrongholdName)
+	{
+		return;
+	}
+	SolidNameSigns::ApplyKey(StrongholdNameDraft, Key, bUpper);
+}
+
+void ASolidHUD::DrawStrongholdName() const
+{
+	TArray<FString> Lines;
+	Lines.Add(StrongholdNameTitle);
+	Lines.Add(StrongholdNameDraft.IsEmpty() ? FString(TEXT(" ")) : StrongholdNameDraft);
+	Lines.Add(TEXT("Enter  keep"));
+	Lines.Add(TEXT("Esc  leave"));
+	SolidHUDPrivate::DrawCenteredPopup(Canvas, Lines, 8.f);
 }
 
 void ASolidHUD::DrawStrongholdChoice()

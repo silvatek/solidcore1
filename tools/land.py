@@ -133,6 +133,8 @@ def land(agent_id: str, actions) -> Outcome:
     for branch, sha, message in actions.tips():
         if not is_build_branch(branch) or not tip_is_buildable(message):
             continue
+        if actions.on_main(sha):
+            continue
         landed = actions.landed(sha)
         if landed is None:
             _say(lines, "Could not read the GitHub status.")
@@ -274,6 +276,10 @@ class GitLanding:
             if sep and sep2:
                 found.append((name.strip(), sha.strip(), message))
         return found
+
+    def on_main(self, sha: str) -> bool:
+        completed = _git(self.root, "merge-base", "--is-ancestor", sha, "origin/main")
+        return completed.returncode == 0
 
     def landed(self, sha: str) -> bool | None:
         completed = self._gh(

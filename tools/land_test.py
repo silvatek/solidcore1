@@ -36,6 +36,7 @@ class Fake:
             ("build/auto-playthrough", "abc", MARKED),
         ]
         self.landed_result: bool | None = False
+        self.on_main_result = False
         self.rebase_code = 0
         self.rebase_detail = ""
         self.in_rebase = False
@@ -64,6 +65,10 @@ class Fake:
 
     def tips(self) -> list[tuple[str, str, str]]:
         return list(self.rows)
+
+    def on_main(self, sha: str) -> bool:
+        self.calls.append(f"on-main:{sha}")
+        return self.on_main_result
 
     def landed(self, sha: str) -> bool | None:
         self.calls.append(f"landed:{sha}")
@@ -228,6 +233,15 @@ class LandTests(unittest.TestCase):
         self.assertFalse(outcome.ok)
         self.assertEqual(fake.posts, [("abc", False, "Failed tests:\nSolidCore1.Fog")])
         self.assertNotIn("publish:build/auto-playthrough", fake.calls)
+
+    def test_a_tip_already_on_main_is_not_waiting(self) -> None:
+        fake = Fake()
+        fake.on_main_result = True
+        outcome = land("builder-1", fake)
+        self.assertTrue(outcome.ok)
+        self.assertIn("No buildable branch.", outcome.lines)
+        self.assertNotIn("acquire:builder-1", fake.calls)
+        self.assertNotIn("landed:abc", fake.calls)
 
     def test_a_landed_tip_is_not_waiting(self) -> None:
         fake = Fake()

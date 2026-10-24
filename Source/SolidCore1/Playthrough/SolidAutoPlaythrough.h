@@ -490,8 +490,8 @@ private:
 	bool TickWalkTown(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickWalkSite(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	bool TickWalkTower(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
-	bool TickEnterLair(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
-	bool TickExitLair(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
+	bool TickEnterLair(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
+	bool TickExitLair(float DeltaSeconds, ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);
 	void TickCustom(const FStep& Step);
 	void TickWakeInStronghold(const ASolidGameMode& Mode);
 	bool TickCraftItem(ASolidGameMode& Mode, ASolidCharacter& Captain, const FStep& Step);

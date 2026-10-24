@@ -533,6 +533,40 @@ namespace
 		return Instance.HasSession() && Instance.GetSession().LairEnd == FChar::ToUpper(End);
 	}
 
+	/**
+	 * True sight, then the right-button drag, until the view is on this mesh.
+	 * True while that turn is still running.
+	 */
+	bool StillTurningToward(const float DeltaSeconds, ASolidCharacter& Captain, const UStaticMeshComponent* Mesh)
+	{
+		if (!Mesh)
+		{
+			return false;
+		}
+		if (!Captain.IsTrueSight())
+		{
+			Captain.SetSight(ESolidSight::True);
+		}
+
+		const FVector Here = Captain.GetActorLocation();
+		const FVector At = Mesh->GetComponentLocation();
+		float Yaw = 0.f;
+		if (!FSolidAutoPlaythrough::TrailYawDeg(FVector2D(At.X - Here.X, At.Y - Here.Y), 0.f, Yaw))
+		{
+			return false;
+		}
+
+		const float YawError = FMath::FindDeltaAngleDegrees(Captain.GetControlRotation().Yaw, Yaw);
+		if (FMath::Abs(YawError) < 0.05f)
+		{
+			return false;
+		}
+
+		const float MaxDegrees = TurnDegreesPerSecond * FMath::Min(DeltaSeconds, MaxTurnSliceSeconds);
+		Captain.DragRightMouse(Yaw, MaxDegrees);
+		return true;
+	}
+
 	/** Aim the pointer at this mesh and press the left button. The click handler runs. */
 	bool ClickMesh(ASolidCharacter& Captain, const UStaticMeshComponent* Target)
 	{
@@ -731,9 +765,9 @@ bool FSolidAutoPlaythrough::TickCurrent(
 	case EStepType::ExitStronghold:
 		return TickExit(DeltaSeconds, Mode, Captain);
 	case EStepType::EnterLair:
-		return TickEnterLair(Mode, Captain, Step);
+		return TickEnterLair(DeltaSeconds, Mode, Captain, Step);
 	case EStepType::ExitLair:
-		return TickExitLair(Mode, Captain, Step);
+		return TickExitLair(DeltaSeconds, Mode, Captain, Step);
 	case EStepType::WakeInStronghold:
 		TickWakeInStronghold(Mode);
 		return false;
@@ -1865,32 +1899,11 @@ bool FSolidAutoPlaythrough::TickExit(
 {
 	// Raven sight aims the squad boom. The passage click needs true sight looking at the opening.
 	bAimRavenHeld = false;
-	if (!Captain.IsTrueSight())
-	{
-		Captain.SetSight(ESolidSight::True);
-	}
-
 	UWorld* World = Mode.GetWorld();
 	const ASolidStrongholdInterior* Interior = FindInterior(World);
 	const UStaticMeshComponent* Passage = Interior ? Interior->GetPassageMesh() : nullptr;
-	if (!Passage)
+	if (StillTurningToward(DeltaSeconds, Captain, Passage))
 	{
-		return false;
-	}
-
-	const FVector Here = Captain.GetActorLocation();
-	const FVector At = Passage->GetComponentLocation();
-	float Yaw = 0.f;
-	if (!TrailYawDeg(FVector2D(At.X - Here.X, At.Y - Here.Y), 0.f, Yaw))
-	{
-		return false;
-	}
-
-	const float YawError = FMath::FindDeltaAngleDegrees(Captain.GetControlRotation().Yaw, Yaw);
-	if (FMath::Abs(YawError) >= 0.05f)
-	{
-		const float MaxDegrees = TurnDegreesPerSecond * FMath::Min(DeltaSeconds, MaxTurnSliceSeconds);
-		Captain.DragRightMouse(Yaw, MaxDegrees);
 		return true;
 	}
 
@@ -2012,6 +2025,7 @@ bool FSolidAutoPlaythrough::TickWalkTown(
 }
 
 bool FSolidAutoPlaythrough::TickEnterLair(
+	const float DeltaSeconds,
 	ASolidGameMode& Mode,
 	ASolidCharacter& Captain,
 	const FStep& Step)
@@ -2022,9 +2036,14 @@ bool FSolidAutoPlaythrough::TickEnterLair(
 		return false;
 	}
 
+	bAimRavenHeld = false;
 	UWorld* World = Mode.GetWorld();
 	const ASolidLairEntrance* Entrance = FindMouthActor(World, Step.EndMarker);
 	const UStaticMeshComponent* Mouth = Entrance ? Entrance->GetMouthMesh() : nullptr;
+	if (StillTurningToward(DeltaSeconds, Captain, Mouth))
+	{
+		return true;
+	}
 	if (!ClickMesh(Captain, Mouth))
 	{
 		return false;
@@ -2039,6 +2058,7 @@ bool FSolidAutoPlaythrough::TickEnterLair(
 }
 
 bool FSolidAutoPlaythrough::TickExitLair(
+	const float DeltaSeconds,
 	ASolidGameMode& Mode,
 	ASolidCharacter& Captain,
 	const FStep& Step)
@@ -2053,9 +2073,14 @@ bool FSolidAutoPlaythrough::TickExitLair(
 		return false;
 	}
 
+	bAimRavenHeld = false;
 	UWorld* World = Mode.GetWorld();
 	const ASolidLairInterior* Interior = FindLairInterior(World);
 	const UStaticMeshComponent* Mouth = Interior ? Interior->GetEndMouth(Step.EndMarker) : nullptr;
+	if (StillTurningToward(DeltaSeconds, Captain, Mouth))
+	{
+		return true;
+	}
 	if (!ClickMesh(Captain, Mouth))
 	{
 		return false;

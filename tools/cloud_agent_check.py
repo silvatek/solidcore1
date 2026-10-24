@@ -12,6 +12,10 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from tools.buildable import is_build_branch  # noqa: E402
 
 
 def check_world_chart(errors: list[str]) -> None:
@@ -66,10 +70,10 @@ def check_planning(errors: list[str], warnings: list[str]) -> None:
 
 
 def ship_branch_error(branch: str) -> str | None:
-    """AGENTS.md ships on main. Detached HEAD is not a branch, so install can run there."""
+    """main and build/<name> may be pushed. Detached HEAD is not a branch."""
     if branch in {"", "HEAD"}:
         return None
-    if branch == "main":
+    if branch == "main" or is_build_branch(branch):
         return None
     return (
         f"Ship on main. Current branch is {branch}. "
@@ -94,7 +98,7 @@ def check_ship_on_main(errors: list[str]) -> None:
             for needle in (
                 "cursor/<words>-<digits>",
                 "does not apply to branches or pull requests",
-                "fails when the current branch is not `main`",
+                "accepts `main` and a `build/` branch",
             ):
                 if needle not in body:
                     errors.append(

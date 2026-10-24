@@ -953,13 +953,8 @@ bool FSolidAutoPlaythrough::Steer(
 	{
 		return false;
 	}
-	APlayerController* PlayerController = Cast<APlayerController>(Captain.GetController());
-	FVector2D Screen = FVector2D::ZeroVector;
-	if (PlayerController
-		&& PlayerController->ProjectWorldLocationToScreen(FVector(Target.X, Target.Y, Location.Z), Screen))
-	{
-		Captain.SimulateLeftClick(Screen.X, Screen.Y);
-	}
+	// A screen click can hit a tree in front of the point. Walk to the point.
+	Captain.SetClickMoveDestination(FVector(Target.X, Target.Y, Location.Z));
 	return false;
 }
 

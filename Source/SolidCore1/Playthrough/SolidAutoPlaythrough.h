@@ -321,7 +321,7 @@ private:
 		FVector2D& OutTarget,
 		bool& bOutFinished,
 		float ArriveRadiusCm = ArriveCm);
-	/** True while true sight is dragging the view and holding W. Raven sight clicks the point. */
+	/** True while true sight is dragging the view and holding W. Raven sight walks toward the point. */
 	bool Steer(
 		float DeltaSeconds,
 		const ASolidGameMode& Mode,

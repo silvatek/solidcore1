@@ -13,5 +13,6 @@ if "%SOLID_AGENT_ID%"=="" (
   echo SOLID_AGENT_ID is not set.
   exit /b 1
 )
+set "PYTHONDONTWRITEBYTECODE=1"
 python "%~dp0land.py"
 exit /b %ERRORLEVEL%

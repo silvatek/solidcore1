@@ -11,6 +11,7 @@ from tools.land import (
     github_repo,
     land,
     note_from_message,
+    porcelain_is_dirt,
     read_build_id,
 )
 
@@ -120,6 +121,10 @@ class Fake:
 
 
 class LandTests(unittest.TestCase):
+    def test_bytecode_is_not_a_dirty_checkout(self) -> None:
+        self.assertFalse(porcelain_is_dirt("?? tools/__pycache__/land.cpython-312.pyc"))
+        self.assertTrue(porcelain_is_dirt(" M tools/land.bat"))
+
     def test_header_bump_and_note(self) -> None:
         updated, ident = bumped_header(HEADER, "Leaving Dragongate walks the gate opening.")
         self.assertEqual(ident, "SC1-0613")

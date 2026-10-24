@@ -44,6 +44,13 @@ def repo_root() -> Path:
     return Path(__file__).resolve().parents[1]
 
 
+def porcelain_is_dirt(line: str) -> bool:
+    path = line[3:].strip().strip('"').replace("\\", "/")
+    if " -> " in path:
+        path = path.split(" -> ", 1)[1].strip()
+    return "__pycache__/" not in path and not path.endswith(".pyc")
+
+
 def note_from_message(message: str) -> str:
     for line in message.splitlines():
         text = line.strip()
@@ -248,7 +255,7 @@ class GitLanding:
 
     def dirty(self) -> bool:
         status = _git(self.root, "status", "--porcelain")
-        return bool(status.stdout.strip())
+        return any(porcelain_is_dirt(line) for line in status.stdout.splitlines() if line.strip())
 
     def tips(self) -> list[tuple[str, str, str]]:
         listed = _git(

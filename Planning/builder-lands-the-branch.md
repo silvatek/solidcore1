@@ -19,7 +19,7 @@ No game concept. This is the developer's build, not a player action.
 Agree this order before a stage is planned in detail. A stage ships before the next stage is planned. Through every stage, Play In Editor and the World Editor keep their present words, an In Progress story on `main` can still push `main`, and `tools/cloud_agent_check.py` still accepts `main`.
 
 1. **The lock gates the build.** `tools\build.bat` and `tools\test.bat` take `ue.lock` before they run, and they refuse it while the word is `PIE`, `Editor`, or `Dump`. Two agents cannot both pass a Free lock. The developer can reserve the next slot, and can clear a dead agent id without clearing a live `PIE` or `Editor` session. Agents still push `main`. No branch is introduced.
-2. **One branch can be landed.** The builder can land one named branch when asked. It fetches during `PIE` or `Editor`. It rebases, builds, and tests only when the word is Free, then leaves `main` checked out and the lock Free. The landing bumps `SOLID_BUILD_ID` once and reports pass or fail to that coding agent. No story is required to use the branch. The check accepts that branch pattern and still rejects a `cursor/` branch and a pull request.
+2. **One branch can be landed.** The builder can land one named branch when asked. It fetches during `PIE` or `Editor`. It rebases, builds, and tests only when the word is Free, then leaves `main` checked out and the lock Free. The landing bumps `SOLID_BUILD_ID` once. The builder posts the build and test result to GitHub on the commit that coding agent pushed. The coding agent reads that. The developer does not relay it. No story is required to use the branch. The check accepts that branch pattern and still rejects a `cursor/` branch and a pull request.
 3. **One new story uses it.** One story that is not already In Progress goes through a coding agent and the builder for every product landing. The coding agent does not push `main` and does not edit `SolidBuildId.h`. Each pass continues that story. Each fail returns to the same branch. Every other open story still ships on `main`.
 4. **The queue.** More than one coding agent can have a branch waiting. The builder lands the oldest ready branch, one at a time. A `PIE` or `Editor` session holds the checkout. The coding agents keep writing. The Windows checkout has one agent in it at a time, and it is on `main` whenever the lock is Free.
 5. **New product work uses the builder.** A coding agent that starts a story which is not already In Progress on `main` uses the branch. Stories that were already In Progress may finish on `main`. The lines that tell the developer to pull after a cloud push are replaced for this machine: the builder has already updated the checkout.
@@ -31,8 +31,9 @@ New product work reaches `main` through the builder. The developer plays that ch
 - A coding agent on a new story pushes one branch named for that story. It does not push `main`. It does not change `SOLID_BUILD_ID` or `SOLID_BUILD_NOTE`.
 - The builder lands that branch on the Windows checkout only while `ue.lock` is Free. It builds, runs the `SolidCore1` tests, bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE` once for that landing, pushes `main`, and leaves the checkout on `main` with the lock Free.
 - While the word is `PIE`, `Editor`, or `Dump`, the builder does not rebase, build, or test. It may fetch.
-- A pass report names the build id that landed. The coding agent continues the story from that `main`, pushes the same branch, and stops for the builder again.
-- A fail report names the rebase conflict or the failed tests. The coding agent updates the same branch and stops for the builder again.
+- A pass report is a short comment on the commit the coding agent pushed. It names the build id that landed. The coding agent continues the story from that `main`, pushes the same branch, and stops for the builder again.
+- A fail report is a short comment on that same commit. It names the rebase conflict or the failed tests. The coding agent updates the same branch and stops for the builder again.
+- The developer does not copy those results into chat. Play notes are the developer's own message.
 - The coding agent stops for a decision when the story's acceptance criteria are implemented, or when it needs one. The story stays `In Progress` across landings. `Done` still waits for the developer's play and an agreement.
 - More than one coding agent can have a branch waiting. The builder lands one branch at a time.
 - The developer starts Play In Editor with `tools\pie.bat` and the World Editor with `tools\editor.bat` on that checkout. Neither session pulls.
@@ -53,7 +54,8 @@ New product work reaches `main` through the builder. The developer plays that ch
 - A chart change rides in on a branch and reaches the checkout only while the lock is Free. An open World Editor session is not the tree the builder writes.
 - One story uses one path. A story still shipping on `main` bumps `SOLID_BUILD_ID` itself, as today. The builder bumps it for a branch it lands. The two do not edit that header in the same landing.
 - The Windows worker runs one assignment in this checkout at a time. A second build does not share the tree.
-- The branch prefix, and the way a pass or fail report reaches the coding conversation, are planned with the stage that introduces them.
+- The builder posts one pass or fail mark on the commit the coding agent pushed, and a short comment on that commit. The mark ends the coding agent's wait. The comment is the report it reads: the build id when `main` moved, or the rebase conflict, or the failed test names. The automation log stays on the Windows machine. The comment does not include play. Two coding agents do not share one report file.
+- The branch prefix, and the GitHub call that posts the mark and the comment, are planned with stage 2.
 
 ### Stage 1 — the lock gates the build
 

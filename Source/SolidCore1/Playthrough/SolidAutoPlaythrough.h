@@ -343,7 +343,7 @@ public:
 
 	/** The opening script, in order. A later story edits this list. */
 	static const FStep Script[];
-	static constexpr int32 ScriptCount = 32;
+	static constexpr int32 ScriptCount = 30;
 
 	/** High behind the squad. AimRaven at Kanfold uses these. */
 	static constexpr float HighTrailPitchDeg = -48.f;

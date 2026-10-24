@@ -797,8 +797,6 @@ bool FSolidAutoPlaythroughStage4Test::RunTest(const FString& Parameters)
 		TEXT("Walk to the Imperious site"),
 		TEXT("Choose Imperious Tower"),
 		TEXT("Wake in the tower"),
-		TEXT("Climb to the top floor"),
-		TEXT("Walk to the door"),
 		TEXT("Leave the tower"),
 		TEXT("Build squad Max"),
 		TEXT("Build squad Morgan"),
@@ -809,8 +807,6 @@ bool FSolidAutoPlaythroughStage4Test::RunTest(const FString& Parameters)
 		FSolidAutoPlaythrough::EStepType::WalkTo,
 		FSolidAutoPlaythrough::EStepType::ChooseStronghold,
 		FSolidAutoPlaythrough::EStepType::WakeInStronghold,
-		FSolidAutoPlaythrough::EStepType::WalkTo,
-		FSolidAutoPlaythrough::EStepType::WalkTo,
 		FSolidAutoPlaythrough::EStepType::ExitStronghold,
 		FSolidAutoPlaythrough::EStepType::BuildSquad,
 		FSolidAutoPlaythrough::EStepType::BuildSquad,
@@ -866,24 +862,16 @@ bool FSolidAutoPlaythroughStage4Test::RunTest(const FString& Parameters)
 		static_cast<uint8>(Choice->StrongholdType),
 		static_cast<uint8>(ESolidStrongholdType::Tower));
 
-	const FSolidAutoPlaythrough::FStep* Climb = FoundSteps[4];
+	const FSolidAutoPlaythrough::FStep* LeaveTower = FoundSteps[4];
 	TestEqual(
-		TEXT("the climb is a Tower walk"),
-		static_cast<uint8>(Climb->Walk),
-		static_cast<uint8>(FSolidAutoPlaythrough::EWalk::Tower));
-	TestEqual(TEXT("the climb is floor 10"), Climb->Floor, 10);
-
-	const FSolidAutoPlaythrough::FStep* Door = FoundSteps[5];
-	TestEqual(
-		TEXT("the door walk is a Tower walk"),
-		static_cast<uint8>(Door->Walk),
-		static_cast<uint8>(FSolidAutoPlaythrough::EWalk::Tower));
-	TestEqual(TEXT("the door is floor 1"), Door->Floor, 1);
+		TEXT("wake goes straight to the leave"),
+		static_cast<uint8>(LeaveTower->Type),
+		static_cast<uint8>(FSolidAutoPlaythrough::EStepType::ExitStronghold));
 
 	const TCHAR* Companions[] = { TEXT("Max"), TEXT("Morgan"), TEXT("Quinn") };
 	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Companions); ++Index)
 	{
-		const FSolidAutoPlaythrough::FStep* Place = FoundSteps[7 + Index];
+		const FSolidAutoPlaythrough::FStep* Place = FoundSteps[5 + Index];
 		TestEqual(
 			TEXT("squad companion"),
 			FString(Place->CompanionName),

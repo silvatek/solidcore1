@@ -76,8 +76,6 @@ const FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = 
 	FStep::WalkTo(TEXT("Walk to the Imperious site"), EWalk::StrongholdSite, ESolidStrongholdSize::Imperious),
 	FStep::ChooseStronghold(TEXT("Choose Imperious Tower"), ESolidStrongholdSize::Imperious, ESolidStrongholdType::Tower),
 	FStep::WakeInStronghold(TEXT("Wake in the tower")),
-	FStep::WalkTo(TEXT("Climb to the top floor"), EWalk::Tower).AtFloor(10),
-	FStep::WalkTo(TEXT("Walk to the door"), EWalk::Tower).AtFloor(1),
 	FStep::ExitStronghold(TEXT("Leave the tower")),
 	FStep::BuildSquad(TEXT("Build squad Max"), TEXT("Max")),
 	FStep::BuildSquad(TEXT("Build squad Morgan"), TEXT("Morgan")),

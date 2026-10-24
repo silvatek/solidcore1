@@ -1,6 +1,6 @@
 # Auto playthrough
 
-Status: In Progress
+Status: Done
 
 ## Story
 
@@ -12,15 +12,15 @@ AutoPlaythrough is the game concept this story introduces. It is the class `FSol
 
 The first script starts from a new game, with the captain in Iglin.
 
-He walks from Iglin up to the monster encounter beside the Iglin bridge, and he stays off the ramp. The battle kills him, and he wakes in the cave. He disables the Iglin Bridge encounter, builds a torch from the chest, puts the torch in the off-hand and the rusty sword in the main hand. He leaves the cave and walks back to Iglin. Iglin casts him out. He closes "You are driven from the village" and walks to the Iglin tunnels. He passes through them and leaves by the far mouth. He walks to Relion, where Sam joins and he is in raven sight. He walks to Kanfold, where Alex joins. He walks to Dragongate, where the company gains Max, Morgan, and Quinn and the squad cap becomes the whole company. He walks to the Imperious stronghold site and constructs an Imperious Tower. He leaves from the ground floor. Build squad is open, and he selects Sam, Alex, Max, Morgan, and Quinn.
+He walks from Iglin up to the monster encounter beside the Iglin bridge, and he stays off the ramp. The battle kills him, and he wakes in the cave. He disables the Iglin Bridge encounter, builds a torch from the chest, puts the torch in the off-hand and the rusty sword in the main hand. He leaves the cave and walks back to Iglin. Iglin casts him out. He closes "You are driven from the village" and walks to the Iglin tunnels. He passes through them and leaves by the far mouth. He walks to Relion, where Sam joins and he is in raven sight. He walks to Kanfold, where Alex joins. He walks to Dragongate, where the company gains Max, Morgan, and Quinn and the squad cap becomes the whole company. He stays in raven sight until he leaves the tower. He walks to the Imperious stronghold site and constructs an Imperious Tower. He leaves from the ground floor. That leave switches to true sight, and he stays in true sight. Build squad is open, and he selects Sam, Alex, Max, Morgan, and Quinn.
 
 ## Stages
 
-Agree this order before a stage is planned in detail. A stage is played before the next stage is planned. The story stays In Progress until the whole script has been played and agreed.
+Agree this order before a stage is planned in detail. A stage is played before the next stage is planned. The whole script has been played and agreed.
 
 1. **The runner and the death.** The menu row, including the dim row once the playthrough has started or the captain has left Iglin, AutoPlaythrough, and a script that can walk and stop. The steps are the walk from Iglin to the monster encounter, and the wake in the cave.
 2. **The torch and the village.** Disable Iglin Bridge, craft the torch, put it in the off-hand and the rusty sword in the main hand, leave the cave, walk to Iglin, and close the driven-out message. Build squad stays closed on that leave.
-3. **The tunnels and the company.** Through the tunnels, then Relion, Kanfold, and Dragongate. This stage waits until [Events add a companion](Done/events-add-a-companion.md) is Done. Relion already adds Sam. Kanfold's Alex and Dragongate's Max, Morgan, and Quinn are that story.
+3. **The tunnels and the company.** Through the tunnels, then Relion, Kanfold, and Dragongate. This stage waits until [Events add a companion](events-add-a-companion.md) is Done. Relion already adds Sam. Kanfold's Alex and Dragongate's Max, Morgan, and Quinn are that story.
 4. **The tower and the squad.** The Imperious site, the leave from the ground floor, and selecting the squad.
 
 ## Acceptance
@@ -41,11 +41,11 @@ Choosing Auto playthrough on a new game runs the script to the end.
 - In the cave he disables the Iglin Bridge encounter. He takes one stick and one pitch from the chest, crafts one torch, puts that torch in the off-hand, and puts the rusty sword in the main hand. The old boots and the coins stay in the chest. Rags stay on the body.
 - He leaves by the dark opening. Build squad stays closed. There are no companions, and the squad cap is still 0. He walks to Iglin.
 - Entering Iglin shows "You are driven from the village". He closes it. The Iglin tunnels are open. He enters at the Iglin Tunnels Entrance, follows the straight run, and leaves at the Iglin Tunnels Exit.
-- He walks to Relion. Sam is in the company and in the squad. The captain is in raven sight, and he stays in raven sight.
+- He walks to Relion. Sam is in the company and in the squad. The captain is in raven sight. He stays in raven sight until the tower leave.
 - He walks to Kanfold. Alex is in the company and in the squad, beside Sam.
 - He walks from Kanfold to Dragongate by way of Relion. Enter Relion stays as it was. At Dragongate, Max, Morgan, and Quinn are in the company. The squad is still Sam and Alex. The squad cap is the company.
 - He walks to the stronghold site at row 16, column 36, clicks the stone, and chooses Imperious Tower. He arrives inside, on the ground floor.
-- He leaves from the ground floor onto the grass outside that door.
+- He leaves from the ground floor onto the grass outside that door. That leave switches to true sight, and he stays in true sight.
 - Build squad is open on that grass. He places Max, then Morgan, then Quinn into the empty squad boxes. Sam and Alex stay in their boxes. He closes the page. The squad is Sam, Alex, Max, Morgan, and Quinn. The playthrough has stopped, and the HUD line is gone.
 - The product commit bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`. This plan commit does not.
 
@@ -54,7 +54,7 @@ Choosing Auto playthrough on a new game runs the script to the end.
 - `FSolidAutoPlaythrough` is a plain C++ class in `Playthrough/SolidAutoPlaythrough.h`. The script is the static list `Script` at the top of the cpp. Each row is an `FStep` built by a header helper: WalkTo, CloseMessage, CraftItem, EquipItem, DisableEncounter, ExitStronghold, EnterLair, ExitLair, WakeInStronghold, SelectBattlePlan, AimRaven, ChooseStronghold, BuildSquad, or Custom. That helper fills the type and the fields that type reads. `Advance` walks the list. A later story edits the list and leaves the class. A death waits on `WakeInStronghold` until `HasPlacedCaptainInStronghold` is set. A `DisableEncounter` row records that name on the play state so `ChooseMonsters` skips it after the cave trip. A `CloseMessage` row waits one second after the matching message is showing, then closes it. A custom row carries a constant, and the custom switch matches that constant.
 - The game instance holds the object. `OpenLevel` destroys the game mode on the cave trip, the tunnel trip, and the tower trip. The company and the play state survive on the instance. The new mode steps the same object. A script kept only on the mode would vanish when he wakes in the cave.
 - One flag on the play state dims the row. Choosing the row sets it, and so does `OccupiedTown` leaving Iglin, including a portal. Spawn sets `OccupiedTown` from none to Iglin and does not set the flag. The flag stays set. The running script does not treat the departure as a stop. The row uses the same dim drawing as Build squad, and confirm does nothing.
-- The row goes before Credits, as [Reorder the game menu](Done/reorder-game-menu.md) requires. Key 5 confirms Auto playthrough, key 6 confirms Credits, and key 7 confirms Exit Game. Key 8 has no row. `SolidCore1.MainMenu.Order` already allows a row before Credits and already checks key 8. `SolidCore1.Exit` already requires Credits immediately before Exit Game. Those tests stay. The product commit adds the new label and its action.
+- The row goes before Credits, as [Reorder the game menu](reorder-game-menu.md) requires. Key 5 confirms Auto playthrough, key 6 confirms Credits, and key 7 confirms Exit Game. Key 8 has no row. `SolidCore1.MainMenu.Order` already allows a row before Credits and already checks key 8. `SolidCore1.Exit` already requires Credits immediately before Exit Game. Those tests stay. The product commit adds the new label and its action.
 - The player's Esc and F10 are the stop. Stage 2 calls `CloseMessage` and the inventory close. Stage 1 does not. The squad page stays closed on the cave leave, because there are no companions. Later stages call `CloseMessage`, the inventory close, and the squad-page close. The script does not send Esc or F10. After a start, the dim row does not start the script again.
 - He walks at his normal speed, 500 cm/s. True sight holds the right mouse button and drags the view level along the walk, then holds W through that key's mapping. The drag is a small step each frame, 180 degrees a second, converted to mouse pixels so the 2.5 look scale and the inverted pitch apply that step once. A hitch cannot turn more than a twentieth of a second of that rate. Raven sight moves the pointer onto the ground point and left-clicks. There is no navigation mesh. Follow a road one cell at a time, from `SolidRoad`. A straight line across the map stops on a tree or a building. If the distance to the current point does not fall for 4 seconds, stop where he is and clear the HUD line. A cell is 8 m, so 4 seconds is more than twice a clear step.
 - Iglin to the encounter is town and grass. Stop inside a raptor's detection, off the ramps. The broken deck stays closed, and this script does not cross it. The cave trail, the grass in front of each tunnel mouth, Relion, the Kanfold highway, the Dragongate road, and the grass south of Dragongate to the site are the other walks.
@@ -102,7 +102,7 @@ Stage 1 has been played. This stage crafts the torch, leaves the cave, walks bac
 
 ### Stage 3 — the tunnels and the company
 
-Stage 2 has been played. [Events add a companion](Done/events-add-a-companion.md) is Done. This stage walks to the Iglin tunnels, through them, then to Relion, Kanfold, and Dragongate.
+Stage 2 has been played. [Events add a companion](events-add-a-companion.md) is Done. This stage walks to the Iglin tunnels, through them, then to Relion, Kanfold, and Dragongate.
 
 This slice enters at the Iglin Tunnels Entrance, walks the straight run, leaves at the Iglin Tunnels Exit, then walks to Relion, Kanfold, and Dragongate. After Kanfold the raven camera goes high behind the squad, then the script forms Line, Column, Loose mob, and Tight mob. Tight mob stays for the walk to Dragongate. The list ends on Dragongate, so `Advance` calls `Stop`. He stands in Dragongate. The tower waits.
 

@@ -13,6 +13,7 @@
 #include "SolidCharacter.h"
 #include "SolidGameState.h"
 #include "Towns/SolidTowns.h"
+#include "Towns/SolidWallgate.h"
 #include "Strongholds/SolidStronghold.h"
 #include "Strongholds/Tower/SolidTower.h"
 
@@ -918,6 +919,51 @@ bool FSolidAutoPlaythroughStage4Test::RunTest(const FString& Parameters)
 				*Chart,
 				ESolidStrongholdSize::Meagre,
 				Missing));
+
+		FSolidWorldLocation Gate;
+		TestTrue(TEXT("Dragongate is on the chart"), Chart->FindLocation(SolidTowns::Dragongate, Gate));
+		TestTrue(TEXT("Dragongate has cells"), Gate.Cells.Num() > 0);
+		if (Gate.Cells.Num() > 0)
+		{
+			const FVector2D WorldMin(0.f, 0.f);
+			const FVector2D WorldMax(102400.f, 102400.f);
+			FVector2D Opening = FVector2D::ZeroVector;
+			FVector2D Walk = FVector2D::ZeroVector;
+			FVector2D Center = FVector2D::ZeroVector;
+			TestTrue(
+				TEXT("the gate has an opening"),
+				SolidWallgate::GateCenterXY(
+					Chart,
+					SolidTowns::Dragongate,
+					WorldMin,
+					WorldMax,
+					Opening));
+			TestTrue(
+				TEXT("a Dragongate cell walks the opening"),
+				FSolidAutoPlaythrough::WalkPointForCell(
+					*Chart,
+					Gate.Cells[0],
+					WorldMin,
+					WorldMax,
+					Walk));
+			TestTrue(TEXT("that walk is the opening"), Walk.Equals(Opening, 0.1f));
+			TestTrue(
+				TEXT("that cell also has a centre"),
+				Chart->CellToWorldXY(Gate.Cells[0], WorldMin, WorldMax, Center));
+			if (Gate.Cells.Num() > 1)
+			{
+				TestFalse(
+					TEXT("the opening is not a cell centre"),
+					Opening.Equals(Center, 1.f));
+			}
+			TestTrue(
+				TEXT("grass at the site keeps its centre"),
+				FSolidAutoPlaythrough::WalkPointForCell(*Chart, Cell, WorldMin, WorldMax, Walk));
+			TestTrue(
+				TEXT("the site centre is not the gate"),
+				Chart->CellToWorldXY(Cell, WorldMin, WorldMax, Center)
+				&& Walk.Equals(Center, 0.1f));
+		}
 	}
 
 	SolidStronghold::FSolidTower Tower;

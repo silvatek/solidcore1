@@ -1433,6 +1433,22 @@ bool FSolidAutoPlaythrough::StrongholdSiteCell(
 	return false;
 }
 
+bool FSolidAutoPlaythrough::WalkPointForCell(
+	const USolidWorldChart& Chart,
+	const FIntPoint& Cell,
+	const FVector2D& WorldMinXY,
+	const FVector2D& WorldMaxXY,
+	FVector2D& OutPoint)
+{
+	const int32 TownId = Chart.GetLocationIdAtCell(Cell.X, Cell.Y);
+	if (TownId != INDEX_NONE
+		&& SolidWallgate::GateCenterXY(&Chart, TownId, WorldMinXY, WorldMaxXY, OutPoint))
+	{
+		return true;
+	}
+	return Chart.CellToWorldXY(Cell, WorldMinXY, WorldMaxXY, OutPoint);
+}
+
 bool FSolidAutoPlaythrough::TowerWalkPoints(
 	const SolidStronghold::FSolidTower& Tower,
 	const int32 FromFloor,
@@ -2156,12 +2172,35 @@ bool FSolidAutoPlaythrough::BuildSiteWalk(
 	Points.Reserve(Cells.Num());
 	for (const FIntPoint& Cell : Cells)
 	{
-		FVector2D Center = FVector2D::ZeroVector;
-		if (Chart->CellToWorldXY(Cell, WorldMin, WorldMax, Center))
+		FVector2D Point = FVector2D::ZeroVector;
+		if (!WalkPointForCell(*Chart, Cell, WorldMin, WorldMax, Point))
 		{
-			Points.Add(Center);
+			continue;
+		}
+		if (Points.Num() > 0 && Points.Last().Equals(Point, 1.f))
+		{
+			continue;
+		}
+		Points.Add(Point);
+	}
+
+	const FVector2D Here(CaptainLocation.X, CaptainLocation.Y);
+	int32 Start = 0;
+	float Nearest = TNumericLimits<float>::Max();
+	for (int32 Index = 0; Index < Points.Num(); ++Index)
+	{
+		const float Dist = FVector2D::DistSquared(Points[Index], Here);
+		if (Dist < Nearest)
+		{
+			Nearest = Dist;
+			Start = Index;
 		}
 	}
+	if (Start > 0)
+	{
+		Points.RemoveAt(0, Start);
+	}
+
 	PointIndex = 0;
 	bWalkReady = Points.Num() > 0;
 	bHasBestDistance = false;

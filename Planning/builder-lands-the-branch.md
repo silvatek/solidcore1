@@ -1,6 +1,6 @@
 # The builder lands the branch
 
-Status: New
+Status: Ready
 
 ## Story
 

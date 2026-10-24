@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0604")
+#define SOLID_BUILD_ID TEXT("SC1-0605")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Auto playthrough walks to Relion, Kanfold, and Dragongate.")
+#define SOLID_BUILD_NOTE TEXT("The Iglin ramp no longer shows You are killed by monsters.")
 #endif

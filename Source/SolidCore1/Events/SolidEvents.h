@@ -18,8 +18,7 @@ namespace SolidEvents
 			.SetPlayerTitle(ESolidCaptainTitle::Orphan),
 		// Either ramp of the Iglin bridge. The deck and the gap past the lip do not count.
 		ReachBrokenBridge(IdReachBrokenBridge, TEXT("Reach broken bridge"), ACT_0)
-			.Require(IdEnterIglin)
-			.DisplayMessage(SolidMessages::IdKilledByMonsters),
+			.Require(IdEnterIglin),
 		OnMessageClosed(IdKilledByMonsters, TEXT("Killed by monsters"), SolidMessages::IdKilledByMonsters, ACT_0)
 			.EnableCave()
 			.ClearInventory()

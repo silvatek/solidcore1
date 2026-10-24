@@ -329,6 +329,14 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 		TEXT("Visolar has no chain to Dragongate"),
 		FSolidAutoPlaythrough::TownRoads(Routes, SolidTowns::Visolar, SolidTowns::Dragongate, MissingTown));
 	TestEqual(TEXT("the missing chain is empty"), MissingTown.Num(), 0);
+	TestEqual(
+		TEXT("a Relion cell starts from Relion"),
+		FSolidAutoPlaythrough::TownWalkFrom(SolidTowns::Relion, SolidTowns::Relion),
+		SolidTowns::Relion);
+	TestEqual(
+		TEXT("grass west of Relion still starts from Relion"),
+		FSolidAutoPlaythrough::TownWalkFrom(INDEX_NONE, SolidTowns::Relion),
+		SolidTowns::Relion);
 	return true;
 }
 

@@ -183,8 +183,38 @@ namespace
 		return nullptr;
 	}
 
-	bool GrassPath(
+	bool OnIglinRamp(const ASolidGameMode& Mode, const FVector2D& Point);
+
+	/** Grass and town, except an Iglin ramp. To stays walkable so a town cell can be the end. */
+	bool WalkableGrassCell(
+		const ASolidGameMode& Mode,
 		const USolidWorldChart& Chart,
+		const FIntPoint Cell,
+		const FVector2D WorldMin,
+		const FVector2D WorldMax,
+		const FIntPoint Allowed)
+	{
+		if (!WalkableCell(Chart, Cell))
+		{
+			return false;
+		}
+		if (Cell == Allowed)
+		{
+			return true;
+		}
+		FVector2D Center = FVector2D::ZeroVector;
+		if (!Chart.CellToWorldXY(Cell, WorldMin, WorldMax, Center))
+		{
+			return false;
+		}
+		return !OnIglinRamp(Mode, Center);
+	}
+
+	bool GrassPath(
+		const ASolidGameMode& Mode,
+		const USolidWorldChart& Chart,
+		const FVector2D WorldMin,
+		const FVector2D WorldMax,
 		const FIntPoint From,
 		const FIntPoint To,
 		TArray<FIntPoint>& OutCells)
@@ -225,7 +255,7 @@ namespace
 			for (const FIntPoint& Step : Steps)
 			{
 				const FIntPoint Next(Here.X + Step.X, Here.Y + Step.Y);
-				if (!WalkableCell(Chart, Next))
+				if (!WalkableGrassCell(Mode, Chart, Next, WorldMin, WorldMax, To))
 				{
 					continue;
 				}
@@ -1129,7 +1159,7 @@ bool FSolidAutoPlaythrough::BuildLairEntranceWalk(
 	}
 
 	TArray<FIntPoint> Cells;
-	if (!GrassPath(*Chart, Start, Mouth->GrassCell, Cells))
+	if (!GrassPath(Mode, *Chart, WorldMin, WorldMax, Start, Mouth->GrassCell, Cells))
 	{
 		Stop();
 		return false;
@@ -1438,7 +1468,17 @@ bool FSolidAutoPlaythrough::BuildTownWalk(
 
 	TArray<FIntPoint> Cells;
 	bool bPaint = false;
-	const int32 HereTown = Chart->GetLocationIdAtCell(HereCell.X, HereCell.Y);
+	int32 OccupiedTown = INDEX_NONE;
+	if (USolidCompany* Company = Mode.GetCompany())
+	{
+		if (const USolidCaptain* Record = Company->GetCaptain())
+		{
+			OccupiedTown = Record->OccupiedTown;
+		}
+	}
+	const int32 HereTown = TownWalkFrom(
+		Chart->GetLocationIdAtCell(HereCell.X, HereCell.Y),
+		OccupiedTown);
 	if (HereTown != INDEX_NONE && HereTown != Step.TownId)
 	{
 		if (!TownRoads(Chart->GetRoads(), HereTown, Step.TownId, Cells))
@@ -1483,7 +1523,7 @@ bool FSolidAutoPlaythrough::BuildTownWalk(
 				Best = Index;
 			}
 		}
-		if (!GrassPath(*Chart, HereCell, Location.Cells[Best], Cells))
+		if (!GrassPath(Mode, *Chart, WorldMin, WorldMax, HereCell, Location.Cells[Best], Cells))
 		{
 			Stop();
 			return false;
@@ -1783,7 +1823,7 @@ bool FSolidAutoPlaythrough::TickWalkTown(
 	bool bFinished = false;
 	if (FollowPoints(DeltaSeconds, Here, Target, bFinished))
 	{
-		return Steer(DeltaSeconds, Mode, Captain, Target, false, false);
+		return Steer(DeltaSeconds, Mode, Captain, Target, false, true);
 	}
 	return false;
 }

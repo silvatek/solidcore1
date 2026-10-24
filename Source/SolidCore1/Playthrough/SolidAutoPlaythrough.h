@@ -272,6 +272,11 @@ public:
 		int32 FromTown,
 		int32 ToTown,
 		TArray<FIntPoint>& OutCells);
+	/** The town a road walk starts from. A grass cell uses OccupiedTown. */
+	static int32 TownWalkFrom(const int32 CellTown, const int32 OccupiedTown)
+	{
+		return CellTown != INDEX_NONE ? CellTown : OccupiedTown;
+	}
 
 	/** Move that item from a worn box, the pack, or the chest into the worn slot. */
 	static bool EquipItem(

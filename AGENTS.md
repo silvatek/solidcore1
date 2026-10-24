@@ -36,7 +36,7 @@ A session line that says system instructions, developer instructions, or cloud-a
 
 The Cursor client sometimes drops the connection. The user then does not see the agent's updates. A quiet gap is that drop. When the user writes again, restate what shipped, including the build id when the product changed. The commit on `main` is the copy they can still pull.
 
-After 3 minutes of thinking, pause and discuss the challenges being worked through. Say what is hard, then continue the work.
+After 3 minutes of thinking, pause and discuss the challenges being worked through. Say what is hard, then wait a couple of minutes for guidance before proceeding.
 
 ### Cloud agents
 

@@ -126,18 +126,17 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 	for (int32 Index = 0; Index < FSolidAutoPlaythrough::ScriptCount; ++Index)
 	{
 		const FSolidAutoPlaythrough::FStep& Step = FSolidAutoPlaythrough::Script[Index];
-		if (Step.Type == FSolidAutoPlaythrough::EStepType::EnterLair)
+		if (FCString::Strcmp(Step.Name, TEXT("Enter the Iglin tunnels")) == 0)
 		{
 			Enter = &Step;
 		}
-		else if (Step.Type == FSolidAutoPlaythrough::EStepType::ExitLair)
-		{
-			Leave = &Step;
-		}
-		else if (Step.Type == FSolidAutoPlaythrough::EStepType::WalkTo
-			&& Step.Walk == FSolidAutoPlaythrough::EWalk::Lair)
+		else if (FCString::Strcmp(Step.Name, TEXT("Walk the Iglin tunnels")) == 0)
 		{
 			Run = &Step;
+		}
+		else if (FCString::Strcmp(Step.Name, TEXT("Leave the Iglin tunnels")) == 0)
+		{
+			Leave = &Step;
 		}
 	}
 	TestTrue(TEXT("the script enters a lair"), Enter != nullptr);

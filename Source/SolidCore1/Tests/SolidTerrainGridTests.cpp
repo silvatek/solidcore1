@@ -291,18 +291,22 @@ bool FSolidTerrainGridTownRegionTest::RunTest(const FString& Parameters)
 		SolidTowns::Dragongate);
 
 	USolidWorldChart* Shipped = NewObject<USolidWorldChart>();
-	if (TestTrue(TEXT("the shipped chart loads"), Shipped && Shipped->LoadDefault()))
+	if (!TestTrue(TEXT("the shipped chart loads"), Shipped && Shipped->LoadDefault()))
 	{
-		const FIntPoint East(11, 21);
-		const FIntPoint West(12, 21);
-		TestEqual(TEXT("shipped east cell is Dragongate"), Shipped->GetLocationIdAtCell(East.X, East.Y), SolidTowns::Dragongate);
+		return false;
+	}
+	FSolidWorldLocation Gate;
+	if (!TestTrue(TEXT("shipped Dragongate"), Shipped->FindLocation(SolidTowns::Dragongate, Gate))
+		|| !TestEqual(TEXT("shipped Dragongate is two cells"), Gate.Cells.Num(), 2))
+	{
+		return false;
+	}
+	for (const FIntPoint& Cell : Gate.Cells)
+	{
+		const FVector2D Centre = CellCentre(*Shipped, Cell.X, Cell.Y);
 		TestEqual(
-			TEXT("standing on the east mark is Dragongate"),
-			Shipped->SampleLocationId(CellCentre(*Shipped, East.X, East.Y).X, CellCentre(*Shipped, East.X, East.Y).Y, GridMin, GridMax),
-			SolidTowns::Dragongate);
-		TestEqual(
-			TEXT("standing on the west mark is Dragongate"),
-			Shipped->SampleLocationId(CellCentre(*Shipped, West.X, West.Y).X, CellCentre(*Shipped, West.X, West.Y).Y, GridMin, GridMax),
+			TEXT("standing on a Dragongate mark is Dragongate"),
+			Shipped->SampleLocationId(Centre.X, Centre.Y, GridMin, GridMax),
 			SolidTowns::Dragongate);
 	}
 	return true;

@@ -173,25 +173,6 @@ namespace
 		return nullptr;
 	}
 
-	void CollectPlacedMonsters(const ASolidGameMode& Mode, TArray<FVector2D>& OutXY)
-	{
-		OutXY.Reset();
-		for (const FSolidEncounter& Encounter : Mode.GetEncounters())
-		{
-			for (const FSolidMonsterGroup& Group : Encounter.Groups)
-			{
-				for (int32 Index = 0; Index < Group.Num(); ++Index)
-				{
-					const FSolidMonster* Monster = Group.Get(Index);
-					if (Monster && Monster->PointIndex != INDEX_NONE)
-					{
-						OutXY.Add(Monster->XY);
-					}
-				}
-			}
-		}
-	}
-
 	bool CellCenter(
 		const USolidWorldChart& Chart,
 		const FIntPoint Cell,
@@ -202,18 +183,26 @@ namespace
 		return Chart.CellToWorldXY(Cell, WorldMin, WorldMax, OutCenter);
 	}
 
-	float MonsterClearanceCm(const FVector2D& Point, const TArray<FVector2D>& Monsters)
+	bool TouchesMountain(const USolidWorldChart& Chart, const FIntPoint Cell)
 	{
-		if (Monsters.Num() == 0)
+		const FIntPoint Steps[] = {
+			{ 0, -1 }, { -1, 0 }, { 0, 1 }, { 1, 0 },
+			{ -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 },
+		};
+		for (const FIntPoint& Step : Steps)
 		{
-			return TNumericLimits<float>::Max();
+			const FIntPoint Next(Cell.X + Step.X, Cell.Y + Step.Y);
+			if (Next.X < 0 || Next.X >= USolidWorldChart::MapWidth
+				|| Next.Y < 0 || Next.Y >= USolidWorldChart::MapHeight)
+			{
+				continue;
+			}
+			if (Chart.GetBiomeAtCell(Next.X, Next.Y) == ESolidBiome::Mountain)
+			{
+				return true;
+			}
 		}
-		float Best = TNumericLimits<float>::Max();
-		for (const FVector2D& Monster : Monsters)
-		{
-			Best = FMath::Min(Best, FVector2D::Distance(Point, Monster));
-		}
-		return Best;
+		return false;
 	}
 
 	bool WalkableLairCell(
@@ -221,9 +210,7 @@ namespace
 		const USolidWorldChart& Chart,
 		const FIntPoint Cell,
 		const FVector2D WorldMin,
-		const FVector2D WorldMax,
-		const TArray<FVector2D>& Monsters,
-		const float MinClearanceCm)
+		const FVector2D WorldMax)
 	{
 		if (!WalkableCell(Chart, Cell))
 		{
@@ -234,27 +221,31 @@ namespace
 		{
 			return false;
 		}
-		if (OnIglinRamp(Mode, Center))
-		{
-			return false;
-		}
-		return MonsterClearanceCm(Center, Monsters) + KINDA_SMALL_NUMBER >= MinClearanceCm;
+		return !OnIglinRamp(Mode, Center);
 	}
 
-	bool GrassPath(
+	/** Grass beside mountain is cheap. Open grass is dear, so the walk stays on the cliff. */
+	constexpr int32 HugCost = 1;
+	constexpr int32 OpenCost = 50;
+	constexpr float HugCliffCm = 280.f;
+
+	int32 LairStepCost(const USolidWorldChart& Chart, const FIntPoint Cell)
+	{
+		return TouchesMountain(Chart, Cell) ? HugCost : OpenCost;
+	}
+
+	bool HugMountainPath(
 		const ASolidGameMode& Mode,
 		const USolidWorldChart& Chart,
 		const FVector2D WorldMin,
 		const FVector2D WorldMax,
 		const FIntPoint From,
 		const FIntPoint To,
-		const TArray<FVector2D>& Monsters,
-		const float MinClearanceCm,
 		TArray<FIntPoint>& OutCells)
 	{
 		OutCells.Reset();
-		if (!WalkableLairCell(Mode, Chart, From, WorldMin, WorldMax, Monsters, 0.f)
-			|| !WalkableLairCell(Mode, Chart, To, WorldMin, WorldMax, Monsters, 0.f))
+		if (!WalkableLairCell(Mode, Chart, From, WorldMin, WorldMax)
+			|| !WalkableLairCell(Mode, Chart, To, WorldMin, WorldMax))
 		{
 			return false;
 		}
@@ -265,23 +256,33 @@ namespace
 		}
 
 		const int32 CellCount = USolidWorldChart::MapWidth * USolidWorldChart::MapHeight;
-		TArray<int32> CameFrom;
-		CameFrom.Init(INDEX_NONE, CellCount);
-		TArray<FIntPoint> Queue;
-		Queue.Reserve(CellCount);
 		const auto IndexOf = [](const FIntPoint Cell)
 		{
 			return Cell.X + Cell.Y * USolidWorldChart::MapWidth;
 		};
-		CameFrom[IndexOf(From)] = IndexOf(From);
-		Queue.Add(From);
-		int32 Head = 0;
+		TArray<int32> Dist;
+		Dist.Init(MAX_int32, CellCount);
+		TArray<int32> CameFrom;
+		CameFrom.Init(INDEX_NONE, CellCount);
+		TArray<TPair<int32, int32>> Heap;
+		const int32 StartIndex = IndexOf(From);
+		Dist[StartIndex] = 0;
+		CameFrom[StartIndex] = StartIndex;
+		Heap.HeapPush(TPair<int32, int32>(0, StartIndex));
 		const FIntPoint Steps[] = {
 			{ 0, -1 }, { -1, 0 }, { 0, 1 }, { 1, 0 },
 		};
-		while (Head < Queue.Num())
+		while (Heap.Num() > 0)
 		{
-			const FIntPoint Here = Queue[Head++];
+			TPair<int32, int32> Top;
+			Heap.HeapPop(Top);
+			const int32 Cost = Top.Key;
+			const int32 HereIndex = Top.Value;
+			if (Cost != Dist[HereIndex])
+			{
+				continue;
+			}
+			const FIntPoint Here(HereIndex % USolidWorldChart::MapWidth, HereIndex / USolidWorldChart::MapWidth);
 			if (Here == To)
 			{
 				break;
@@ -289,17 +290,19 @@ namespace
 			for (const FIntPoint& Step : Steps)
 			{
 				const FIntPoint Next(Here.X + Step.X, Here.Y + Step.Y);
-				if (!WalkableLairCell(Mode, Chart, Next, WorldMin, WorldMax, Monsters, MinClearanceCm))
+				if (!WalkableLairCell(Mode, Chart, Next, WorldMin, WorldMax))
 				{
 					continue;
 				}
 				const int32 NextIndex = IndexOf(Next);
-				if (CameFrom[NextIndex] != INDEX_NONE)
+				const int32 NextCost = Cost + LairStepCost(Chart, Next);
+				if (NextCost >= Dist[NextIndex])
 				{
 					continue;
 				}
-				CameFrom[NextIndex] = IndexOf(Here);
-				Queue.Add(Next);
+				Dist[NextIndex] = NextCost;
+				CameFrom[NextIndex] = HereIndex;
+				Heap.HeapPush(TPair<int32, int32>(NextCost, NextIndex));
 			}
 		}
 		if (CameFrom[IndexOf(To)] == INDEX_NONE)
@@ -319,50 +322,45 @@ namespace
 		return OutCells.Num() > 0;
 	}
 
-	bool FarthestGrassPath(
-		const ASolidGameMode& Mode,
+	FVector2D CliffWalkPoint(
 		const USolidWorldChart& Chart,
+		const FIntPoint Cell,
 		const FVector2D WorldMin,
-		const FVector2D WorldMax,
-		const FIntPoint From,
-		const FIntPoint To,
-		const TArray<FVector2D>& Monsters,
-		TArray<FIntPoint>& OutCells)
+		const FVector2D WorldMax)
 	{
-		FVector2D FromCenter = FVector2D::ZeroVector;
-		FVector2D ToCenter = FVector2D::ZeroVector;
-		if (!CellCenter(Chart, From, WorldMin, WorldMax, FromCenter)
-			|| !CellCenter(Chart, To, WorldMin, WorldMax, ToCenter))
+		FVector2D Center = FVector2D::ZeroVector;
+		if (!CellCenter(Chart, Cell, WorldMin, WorldMax, Center))
 		{
-			return false;
+			return FVector2D::ZeroVector;
 		}
-
-		int32 Lo = 0;
-		int32 Hi = FMath::FloorToInt(FMath::Min(
-			MonsterClearanceCm(FromCenter, Monsters),
-			MonsterClearanceCm(ToCenter, Monsters)));
-		int32 Best = 0;
-		TArray<FIntPoint> Candidate;
-		if (!GrassPath(Mode, Chart, WorldMin, WorldMax, From, To, Monsters, 0.f, OutCells))
+		FVector2D Toward = FVector2D::ZeroVector;
+		const FIntPoint Steps[] = {
+			{ 0, -1 }, { -1, 0 }, { 0, 1 }, { 1, 0 },
+			{ -1, -1 }, { 1, -1 }, { -1, 1 }, { 1, 1 },
+		};
+		for (const FIntPoint& Step : Steps)
 		{
-			return false;
-		}
-		while (Lo <= Hi)
-		{
-			const int32 Mid = Lo + (Hi - Lo) / 2;
-			if (GrassPath(Mode, Chart, WorldMin, WorldMax, From, To, Monsters, static_cast<float>(Mid), Candidate))
+			const FIntPoint Next(Cell.X + Step.X, Cell.Y + Step.Y);
+			if (Next.X < 0 || Next.X >= USolidWorldChart::MapWidth
+				|| Next.Y < 0 || Next.Y >= USolidWorldChart::MapHeight)
 			{
-				Best = Mid;
-				OutCells = Candidate;
-				Lo = Mid + 1;
+				continue;
 			}
-			else
+			if (Chart.GetBiomeAtCell(Next.X, Next.Y) != ESolidBiome::Mountain)
 			{
-				Hi = Mid - 1;
+				continue;
+			}
+			FVector2D Neighbor = FVector2D::ZeroVector;
+			if (CellCenter(Chart, Next, WorldMin, WorldMax, Neighbor))
+			{
+				Toward += (Neighbor - Center).GetSafeNormal();
 			}
 		}
-		(void)Best;
-		return OutCells.Num() > 0;
+		if (Toward.IsNearlyZero())
+		{
+			return Center;
+		}
+		return Center + Toward.GetSafeNormal() * HugCliffCm;
 	}
 
 	ASolidHUD* HudOf(const ASolidCharacter& Captain)
@@ -1132,15 +1130,8 @@ bool FSolidAutoPlaythrough::BuildLairEntranceWalk(
 		return false;
 	}
 
-	TArray<FVector2D> Monsters;
-	CollectPlacedMonsters(Mode, Monsters);
-	if (Monsters.Num() == 0)
-	{
-		return false;
-	}
-
 	TArray<FIntPoint> Cells;
-	if (!FarthestGrassPath(Mode, *Chart, WorldMin, WorldMax, Start, Mouth->GrassCell, Monsters, Cells))
+	if (!HugMountainPath(Mode, *Chart, WorldMin, WorldMax, Start, Mouth->GrassCell, Cells))
 	{
 		Stop();
 		return false;
@@ -1150,11 +1141,7 @@ bool FSolidAutoPlaythrough::BuildLairEntranceWalk(
 	Points.Reserve(Cells.Num() + 1);
 	for (const FIntPoint& Cell : Cells)
 	{
-		FVector2D Center = FVector2D::ZeroVector;
-		if (Chart->CellToWorldXY(Cell, WorldMin, WorldMax, Center))
-		{
-			Points.Add(Center);
-		}
+		Points.Add(CliffWalkPoint(*Chart, Cell, WorldMin, WorldMax));
 	}
 	Points.Add(Mouth->WorldXY);
 	PointIndex = 0;

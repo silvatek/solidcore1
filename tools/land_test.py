@@ -37,6 +37,7 @@ class Fake:
         ]
         self.landed_result: bool | None = False
         self.on_main_result = False
+        self.ready: dict[str, int] = {}
         self.rebase_code = 0
         self.rebase_detail = ""
         self.in_rebase = False
@@ -69,6 +70,10 @@ class Fake:
     def on_main(self, sha: str) -> bool:
         self.calls.append(f"on-main:{sha}")
         return self.on_main_result
+
+    def ready_at(self, sha: str) -> int:
+        self.calls.append(f"ready:{sha}")
+        return self.ready.get(sha, 0)
 
     def landed(self, sha: str) -> bool | None:
         self.calls.append(f"landed:{sha}")
@@ -173,14 +178,28 @@ class LandTests(unittest.TestCase):
         self.assertIn("The next slot is reserved.", outcome.lines)
         self.assertNotIn("rebase:build/auto-playthrough", fake.calls)
 
-    def test_two_tips_are_listed(self) -> None:
+    def test_the_oldest_tip_is_landed(self) -> None:
+        fake = Fake()
+        fake.rows.append(("build/other", "def", MARKED))
+        fake.ready["abc"] = 200
+        fake.ready["def"] = 100
+        outcome = land("builder-1", fake)
+        self.assertTrue(outcome.ok)
+        self.assertIn("Landing build/other.", outcome.lines)
+        self.assertIn("build/auto-playthrough", outcome.lines)
+        self.assertIn("rebase:build/other", fake.calls)
+        self.assertNotIn("rebase:build/auto-playthrough", fake.calls)
+        self.assertEqual(fake.posts, [("def", True, "Landed SC1-0614.")])
+
+    def test_equal_ages_use_the_branch_name(self) -> None:
         fake = Fake()
         fake.rows.append(("build/other", "def", MARKED))
         outcome = land("builder-1", fake)
         self.assertTrue(outcome.ok)
-        self.assertIn("build/auto-playthrough", outcome.lines)
+        self.assertIn("Landing build/auto-playthrough.", outcome.lines)
         self.assertIn("build/other", outcome.lines)
-        self.assertNotIn("rebase:build/auto-playthrough", fake.calls)
+        self.assertIn("rebase:build/auto-playthrough", fake.calls)
+        self.assertNotIn("rebase:build/other", fake.calls)
 
     def test_missing_agent_ok_skips_the_build(self) -> None:
         fake = Fake()

@@ -3,8 +3,9 @@
 
 Run from tools\\land.bat. SOLID_AGENT_ID is the lock holder.
 No timer: this runs when it is started. One marked tip is landed.
-Two marked tips are listed and left. A tip already marked success
-for solidcore1/land is not waiting.
+When more than one tip is waiting, the older committer time is landed.
+An equal time uses the branch name. The others stay until the next run.
+A tip already marked success for solidcore1/land is not waiting.
 
 The mark is a GitHub commit status on the commit that was pushed.
 The comment on that commit is the report.
@@ -129,7 +130,7 @@ def land(agent_id: str, actions) -> Outcome:
         _say(lines, "The checkout is dirty.")
         return Outcome(False, lines)
 
-    waiting: list[tuple[str, str, str]] = []
+    waiting: list[tuple[int, str, str, str]] = []
     for branch, sha, message in actions.tips():
         if not is_build_branch(branch) or not tip_is_buildable(message):
             continue
@@ -140,18 +141,17 @@ def land(agent_id: str, actions) -> Outcome:
             _say(lines, "Could not read the GitHub status.")
             return Outcome(False, lines)
         if not landed:
-            waiting.append((branch, sha, message))
+            waiting.append((actions.ready_at(sha), branch, sha, message))
 
     if not waiting:
         _say(lines, "No buildable branch.")
         return Outcome(True, lines)
+    waiting.sort(key=lambda item: (item[0], item[1]))
+    _ready, branch, sha, message = waiting[0]
     if len(waiting) > 1:
-        _say(lines, "More than one buildable branch.")
-        for branch, _sha, _message in waiting:
-            _say(lines, branch)
-        return Outcome(True, lines)
-
-    branch, sha, message = waiting[0]
+        _say(lines, f"Landing {branch}.")
+        for _other_ready, other, _other_sha, _other_message in waiting[1:]:
+            _say(lines, other)
     if not actions.agent_ok():
         _say(lines, "agent.ok is missing. The build and the tests were skipped.")
         return Outcome(False, lines)
@@ -280,6 +280,13 @@ class GitLanding:
     def on_main(self, sha: str) -> bool:
         completed = _git(self.root, "merge-base", "--is-ancestor", sha, "origin/main")
         return completed.returncode == 0
+
+    def ready_at(self, sha: str) -> int:
+        completed = _git(self.root, "log", "-1", "--format=%ct", sha)
+        try:
+            return int(completed.stdout.strip())
+        except ValueError:
+            return 2**62
 
     def landed(self, sha: str) -> bool | None:
         completed = self._gh(

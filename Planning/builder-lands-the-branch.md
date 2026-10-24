@@ -55,7 +55,7 @@ New product work reaches `main` through the builder. The developer plays that ch
 - One story uses one path. A story still shipping on `main` bumps `SOLID_BUILD_ID` itself, as today. The builder bumps it for a branch it lands. The two do not edit that header in the same landing.
 - The Windows worker runs one assignment in this checkout at a time. A second build does not share the tree.
 - The builder posts one pass or fail mark on the commit the coding agent pushed, and a short comment on that commit. The mark ends the coding agent's wait. The comment is the report it reads: the build id when `main` moved, or the rebase conflict, or the failed test names. The automation log stays on the Windows machine. The comment does not include play. Two coding agents do not share one report file.
-- The branch is `build/<name>`. The buildable marker is a line `Buildable: yes` on the tip commit. The mark is a GitHub commit status, context `solidcore1/land`, on the commit that was pushed. The comment on that commit is the report. A tip already contained in `main` is not waiting. The landing leaves the rebased tip on the branch, and that tip is already on `main`.
+- The branch is `build/<name>`. The buildable marker is a line `Buildable: yes` on the tip commit. The mark is a GitHub commit status, context `solidcore1/land`, on the commit that was pushed. The comment on that commit is the report. A tip already contained in `main` is not waiting. The landing leaves the rebased tip on the branch, and that tip is already on `main`. When more than one tip is waiting, the older committer time is landed. An equal time uses the branch name. The others stay until the next landing.
 
 ### Stage 1 — the lock gates the build
 

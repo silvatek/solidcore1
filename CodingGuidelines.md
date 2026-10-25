@@ -52,7 +52,7 @@ An owning pointer means this object owns that one. The owner creates it and dest
 
 A reference means this object is related to that one, and someone else owns it. Use a raw pointer for a plain object. Use `TWeakObjectPtr` for a `UObject` that may go away. `ASolidCompanionCharacter::FollowTarget` is the captain that companion follows. The companion does not own the captain.
 
-A `TObjectPtr` member with `UPROPERTY` is an engine subobject the actor owns, such as `ASolidBuilding::BodyMesh`. That is ownership the engine tracks. A `TObjectPtr` used only to find an object is a reference, and the declaration says so.
+A `TObjectPtr` does not say who owns the object. One with `UPROPERTY` can be a subobject the actor owns, such as `ASolidBuilding::BodyMesh`, and the engine tracks that. A `TObjectPtr` used only to find an object has a comment on the declaration that says so.
 
 A raw `new` is not an owning pointer. Ownership is a `TUniquePtr` or an engine subobject.
 

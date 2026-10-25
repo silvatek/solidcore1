@@ -44,6 +44,11 @@ public:
 	virtual UStaticMeshComponent* GetPassageMesh() const override { return DoorMesh; }
 	UInstancedStaticMeshComponent* GetFloorGrid() const { return FloorGrid; }
 	UInstancedStaticMeshComponent* GetArrangeLetters() const { return ArrangeLetters; }
+	virtual int32 ArrangeFloorCount() const override;
+	virtual bool CollectArrangeFloor(int32 Floor, TArray<SolidStrongholdGrid::FHex>& OutCells) const override;
+	virtual bool ArrangeFloorZ(int32 Floor, float& OutZ) const override;
+	virtual bool ArrangeEntrance(int32 Floor, int32& OutX, int32& OutY) const override;
+
 	virtual int32 ArrangeSignCount() const override { return ArrangePlates.Num(); }
 	virtual UStaticMeshComponent* GetArrangeSignPlate(int32 Index) const override
 	{

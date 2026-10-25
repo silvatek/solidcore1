@@ -465,8 +465,52 @@ void ASolidDungeonInterior::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
+int32 ASolidDungeonInterior::ArrangeFloorCount() const
+{
+	return 1;
+}
+
+bool ASolidDungeonInterior::CollectArrangeFloor(
+	const int32 Floor,
+	TArray<SolidStrongholdGrid::FHex>& OutCells) const
+{
+	if (Floor != 0)
+	{
+		OutCells.Reset();
+		return false;
+	}
+	SolidDungeonLevel::CollectMeagreHexes(OutCells);
+	return true;
+}
+
+bool ASolidDungeonInterior::ArrangeFloorZ(const int32 Floor, float& OutZ) const
+{
+	if (Floor != 0)
+	{
+		OutZ = 0.f;
+		return false;
+	}
+	OutZ = 0.f;
+	return true;
+}
+
+bool ASolidDungeonInterior::ArrangeEntrance(const int32 Floor, int32& OutX, int32& OutY) const
+{
+	if (Floor != 0)
+	{
+		OutX = 0;
+		OutY = 0;
+		return false;
+	}
+	const SolidStrongholdGrid::FCell Entrance = SolidDungeonLevel::MeagreEntranceCell();
+	OutX = Entrance.Col;
+	OutY = Entrance.Row;
+	return true;
+}
+
 void ASolidDungeonInterior::BuildVisuals()
 {
+	HideArrangeHighlight();
 	UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
 	if (!Cube)
 	{
@@ -793,6 +837,7 @@ void ASolidDungeonInterior::PlaceStarterFurnishings()
 
 		Piece->SetKind(Item->Kind);
 		Piece->FinishSpawning(SpawnXf);
+		Piece->SetPlacement(UsedPiece);
 		Piece->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 		++Placed;
 	}

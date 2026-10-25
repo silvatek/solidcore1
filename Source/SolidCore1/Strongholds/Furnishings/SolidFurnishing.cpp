@@ -195,6 +195,65 @@ void ASolidFurnishing::SetKind(const SolidStrongholdFurniture::EKind InKind)
 	Kind = InKind;
 }
 
+void ASolidFurnishing::SetPlacement(const SolidStrongholdFurniture::FUsed& InPlacement)
+{
+	Placement = InPlacement;
+	bHasPlacement = true;
+}
+
+void ASolidFurnishing::SetGhost(const bool bInGhost)
+{
+	if (bInGhost == bGhostLook)
+	{
+		return;
+	}
+	bGhostLook = bInGhost;
+	if (!bGhostLook)
+	{
+		BuildVisuals();
+		return;
+	}
+
+	auto Wash = [](const FLinearColor& Color)
+	{
+		return FMath::Lerp(Color, FLinearColor::White, 0.62f);
+	};
+	FLinearColor Body = SolidStrongholdFurniture::BeigeColor();
+	FLinearColor Top = Body;
+	switch (Kind)
+	{
+	case SolidStrongholdFurniture::EKind::Fireplace:
+		Body = SolidStrongholdFurniture::StoneColor();
+		Top = SolidStrongholdFurniture::EmberColor();
+		break;
+	case SolidStrongholdFurniture::EKind::Bed:
+		Body = SolidStrongholdFurniture::BeigeColor();
+		Top = SolidStrongholdFurniture::PillowColor();
+		break;
+	case SolidStrongholdFurniture::EKind::Chest:
+	default:
+		Body = SolidStrongholdFurniture::BeigeColor();
+		Top = SolidStrongholdFurniture::BeigeColor();
+		break;
+	}
+	if (BodyMesh)
+	{
+		if (UMaterialInterface* Material = SolidMaterials::CreateSolidColor(
+			this, Wash(Body), TEXT("ArrangeGhost"), 0.85f))
+		{
+			BodyMesh->SetMaterial(0, Material);
+		}
+	}
+	if (TopMesh)
+	{
+		if (UMaterialInterface* Material = SolidMaterials::CreateSolidColor(
+			this, Wash(Top), TEXT("ArrangeGhostTop"), 0.85f))
+		{
+			TopMesh->SetMaterial(0, Material);
+		}
+	}
+}
+
 void ASolidFurnishing::OnConstruction(const FTransform& Transform)
 {
 	Super::OnConstruction(Transform);

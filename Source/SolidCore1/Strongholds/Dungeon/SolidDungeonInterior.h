@@ -45,6 +45,11 @@ public:
 	/** The Arrange furniture plate on the east wall. Not a furnishing. */
 	UStaticMeshComponent* GetArrangePlate() const { return ArrangePlate; }
 	UInstancedStaticMeshComponent* GetArrangeLetters() const { return ArrangeLetters; }
+	virtual int32 ArrangeFloorCount() const override;
+	virtual bool CollectArrangeFloor(int32 Floor, TArray<SolidStrongholdGrid::FHex>& OutCells) const override;
+	virtual bool ArrangeFloorZ(int32 Floor, float& OutZ) const override;
+	virtual bool ArrangeEntrance(int32 Floor, int32& OutX, int32& OutY) const override;
+
 	virtual int32 ArrangeSignCount() const override { return ArrangePlate ? 1 : 0; }
 	virtual UStaticMeshComponent* GetArrangeSignPlate(int32 Index) const override
 	{

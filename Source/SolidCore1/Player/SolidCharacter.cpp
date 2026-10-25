@@ -375,6 +375,8 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::F12, IE_Pressed, this, &ASolidCharacter::ToggleDebugPanelFromInput);
 	PlayerInputComponent->BindKey(EKeys::Slash, IE_Pressed, this, &ASolidCharacter::ToggleInventoryFromSlash);
 	PlayerInputComponent->BindKey(EKeys::Backslash, IE_Pressed, this, &ASolidCharacter::ToggleArrangeFromInput);
+	PlayerInputComponent->BindKey(EKeys::Q, IE_Pressed, this, &ASolidCharacter::TurnArrangeClockwise);
+	PlayerInputComponent->BindKey(EKeys::E, IE_Pressed, this, &ASolidCharacter::TurnArrangeAnticlockwise);
 	PlayerInputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ASolidCharacter::CloseMenuOverlayFromInput);
 	PlayerInputComponent->BindKey(EKeys::Up, IE_Pressed, this, &ASolidCharacter::MainMenuMoveUp);
 	PlayerInputComponent->BindKey(EKeys::Up, IE_Repeat, this, &ASolidCharacter::MainMenuMoveUp);
@@ -695,7 +697,10 @@ void ASolidCharacter::CloseMenuOverlayFromInput()
 		{
 			if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 			{
-				GameMode->LeaveArrangeFurniture();
+				if (!GameMode->PutBackArrangeFurniture())
+				{
+					GameMode->LeaveArrangeFurniture();
+				}
 			}
 		}
 		return;
@@ -714,6 +719,36 @@ void ASolidCharacter::ToggleArrangeFromInput()
 		if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 		{
 			GameMode->ToggleArrangeFurniture(IsMenuOverlayOpen());
+		}
+	}
+}
+
+void ASolidCharacter::TurnArrangeClockwise()
+{
+	if (!IsArrangingFurniture() || IsMenuOverlayOpen())
+	{
+		return;
+	}
+	if (UWorld* World = GetWorld())
+	{
+		if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+		{
+			GameMode->TurnArrangeFurniture(1);
+		}
+	}
+}
+
+void ASolidCharacter::TurnArrangeAnticlockwise()
+{
+	if (!IsArrangingFurniture() || IsMenuOverlayOpen())
+	{
+		return;
+	}
+	if (UWorld* World = GetWorld())
+	{
+		if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+		{
+			GameMode->TurnArrangeFurniture(-1);
 		}
 	}
 }
@@ -1383,6 +1418,18 @@ void ASolidCharacter::MainMenuConfirm()
 {
 	if (IsAutoPlaythroughRunning())
 	{
+		return;
+	}
+	if (IsArrangingFurniture() && !IsMenuOverlayOpen() && IsPointerShown())
+	{
+		UpdateCavePassageHover();
+		if (UWorld* World = GetWorld())
+		{
+			if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+			{
+				GameMode->ConfirmArrangeFurniture();
+			}
+		}
 		return;
 	}
 	ASolidHUD* HUD = GetSolidHUD();
@@ -2138,7 +2185,27 @@ void ASolidCharacter::UpdateCavePassageHover()
 	if (IsArrangingFurniture())
 	{
 		HUD->SetCavePassageTip(FString());
-		HUD->SetForageTip(FString());
+		ASolidGameMode* GameMode = GetWorld() ? GetWorld()->GetAuthGameMode<ASolidGameMode>() : nullptr;
+		const bool bPointer = SolidPointer::AcceptsPointer(
+			IsPointerShown(), IsMenuOverlayOpen() || IsSquadFormationDrillActive());
+		if (GameMode)
+		{
+			FVector Origin = FVector::ZeroVector;
+			FVector Direction = FVector::ZeroVector;
+			if (bPointer && ReadPointerRay(Origin, Direction))
+			{
+				GameMode->UpdateArrangePointer(Origin, Direction, true);
+			}
+			else
+			{
+				GameMode->UpdateArrangePointer(Origin, Direction, false);
+			}
+			HUD->SetForageTip(bPointer ? FString(GameMode->ArrangeHoverName()) : FString());
+		}
+		else
+		{
+			HUD->SetForageTip(FString());
+		}
 		return;
 	}
 	const SolidLair::FPassageHit Hit = PassageUnderPointer();
@@ -2323,6 +2390,17 @@ void ASolidCharacter::PollClickMovePress()
 	}
 	if (IsArrangingFurniture())
 	{
+		if (SolidPointer::AcceptsPointer(IsPointerShown(), IsMenuOverlayOpen() || IsSquadFormationDrillActive()))
+		{
+			UpdateCavePassageHover();
+			if (UWorld* World = GetWorld())
+			{
+				if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+				{
+					GameMode->ConfirmArrangeFurniture();
+				}
+			}
+		}
 		return;
 	}
 
@@ -2615,7 +2693,25 @@ void ASolidCharacter::Zoom(const FInputActionValue& Value)
 			return;
 		}
 	}
-	if (IsArrangingFurniture() || IsMenuOverlayOpen() || IsTrueSight())
+	if (IsArrangingFurniture())
+	{
+		if (!IsMenuOverlayOpen())
+		{
+			const int32 Steps = FSolidArrange::WheelSteps(Value.Get<float>());
+			if (Steps != 0)
+			{
+				if (UWorld* World = GetWorld())
+				{
+					if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+					{
+						GameMode->TurnArrangeFurniture(Steps);
+					}
+				}
+			}
+		}
+		return;
+	}
+	if (IsMenuOverlayOpen() || IsTrueSight())
 	{
 		return;
 	}

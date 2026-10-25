@@ -22,6 +22,17 @@ public:
 	void SetKind(SolidStrongholdFurniture::EKind Kind);
 	SolidStrongholdFurniture::EKind GetKind() const { return Kind; }
 
+	/** The cell and facing this piece was put down on. */
+	void SetPlacement(const SolidStrongholdFurniture::FUsed& InPlacement);
+	const SolidStrongholdFurniture::FUsed& GetPlacement() const { return Placement; }
+	bool HasPlacement() const { return bHasPlacement; }
+
+	/**
+	 * A washed-out copy while the piece is held.
+	 * The materials have no opacity, so the ghost is a lighter colour of the same meshes.
+	 */
+	void SetGhost(bool bInGhost);
+
 	void BuildVisuals();
 
 	UStaticMeshComponent* GetBodyMesh() const { return BodyMesh; }
@@ -29,6 +40,9 @@ public:
 
 private:
 	SolidStrongholdFurniture::EKind Kind = SolidStrongholdFurniture::EKind::Fireplace;
+	SolidStrongholdFurniture::FUsed Placement;
+	bool bHasPlacement = false;
+	bool bGhostLook = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USceneComponent> SceneRoot;

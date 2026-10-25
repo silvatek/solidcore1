@@ -42,10 +42,14 @@ Input Actions and the mapping context can be replaced with Content assets on the
 | Leave | Left click the opening or the door | — | — |
 | Cave chest | Drag | — | — |
 | Arrange furniture | `\` or left click the Arrange furniture plate | — | — |
-| Leave arrange mode | `\`, Esc, or left click the plate | — | — |
-| Wheel while arranging | Does not zoom | — | — |
+| Leave arrange mode | `\`, Esc with nothing held, or left click the plate | — | — |
+| Lift a piece | Left click or Enter on the piece | — | — |
+| Turn a held piece | Q, E, or the wheel | — | — |
+| Put a held piece down | Left click or Enter on a free hex | — | — |
+| Put a held piece back | Esc | — | — |
+| Wheel while arranging | Turns a held piece. Does not zoom | — | — |
 
-While arrange mode is on, WASD, the left stick, and a click do not move the captain or use the door. F10 and / do nothing. The wheel does not zoom.
+While arrange mode is on, WASD, the left stick, and a click do not move the captain or use the door. F10 and / do nothing. The wheel does not zoom. Q, E, and the wheel turn a piece that is held. Esc puts that piece back. Esc with nothing held leaves the mode.
 
 ## Lair
 

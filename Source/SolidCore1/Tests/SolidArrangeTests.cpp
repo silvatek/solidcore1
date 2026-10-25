@@ -249,4 +249,284 @@ bool FSolidArrangePlateTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidArrangePlaceTest,
+	"SolidCore1.Stronghold.ArrangePlace",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidArrangePlaceTest::RunTest(const FString& Parameters)
+{
+	const TArray<SolidStrongholdFurniture::FUsed> Starters = SolidStrongholdFurniture::StartingFurnishings();
+	TestEqual(TEXT("a new game still has three pieces"), Starters.Num(), 3);
+	if (Starters.Num() == 3)
+	{
+		TestEqual(TEXT("the fireplace starts on (2, 0)"), Starters[0].X, 2);
+		TestEqual(TEXT("the fireplace starts on row 0"), Starters[0].Y, 0);
+		TestEqual(TEXT("the bed starts on (0, -1)"), Starters[1].X, 0);
+		TestEqual(TEXT("the bed starts on row -1"), Starters[1].Y, -1);
+		TestEqual(TEXT("the chest starts on (2, 1)"), Starters[2].X, 2);
+		TestEqual(TEXT("the chest starts on row 1"), Starters[2].Y, 1);
+		TestTrue(TEXT("the starters face the first way"), Starters[0].RotationDeg == 0.f
+			&& Starters[1].RotationDeg == 0.f && Starters[2].RotationDeg == 0.f);
+	}
+
+	TArray<SolidStrongholdGrid::FHex> Hexes;
+	SolidDungeonLevel::CollectMeagreHexes(Hexes);
+	const SolidStrongholdGrid::FCell Entrance = SolidDungeonLevel::MeagreEntranceCell();
+	const SolidStrongholdGrid::FCell Captain = SolidDungeonLevel::MeagreCaptainCell();
+
+	auto OpenCave = [&](FSolidArrange& Arrange)
+	{
+		FSolidArrange::FContext Context;
+		Context.bInStronghold = true;
+		Arrange.Toggle(Context);
+		Arrange.Open(Starters, Hexes, Entrance, true, Captain, true, 0.f);
+	};
+
+	FSolidArrange Arrange;
+	OpenCave(Arrange);
+	TestTrue(TEXT("the mode is on for the floor"), Arrange.IsOn());
+	TestEqual(TEXT("wheel up is one facing, the same way as Q"), FSolidArrange::WheelSteps(1.f), 1);
+	TestEqual(TEXT("wheel down is the other way, the same as E"), FSolidArrange::WheelSteps(-1.f), -1);
+	TestEqual(TEXT("a quiet wheel does not turn"), FSolidArrange::WheelSteps(0.f), 0);
+	TestEqual(TEXT("a wheel spike stays within three facings"), FSolidArrange::WheelSteps(4.f), 3);
+
+	Arrange.SetHover(2, 0);
+	TestEqual(TEXT("the fireplace hex names the fireplace"), FString(Arrange.HoverName()), FString(TEXT("Fireplace")));
+	const SolidStrongholdGrid::FHex* BedSpan = SolidStrongholdFurniture::SpanCell(Hexes, Arrange.PieceAt(1));
+	TestNotNull(TEXT("the bed has a second hex"), BedSpan);
+	if (BedSpan)
+	{
+		Arrange.SetHover(BedSpan->Col, BedSpan->Row);
+		TestEqual(TEXT("the bed's second hex names the bed"), FString(Arrange.HoverName()), FString(TEXT("Bed")));
+		TArray<SolidStrongholdGrid::FHex> Marked;
+		Arrange.HighlightHexes(Marked);
+		TestEqual(TEXT("a bed highlights both hexes"), Marked.Num(), 2);
+	}
+	Arrange.SetHover(1, 0);
+	TestTrue(TEXT("an empty hex has no name"), FString(Arrange.HoverName()).IsEmpty());
+	TArray<SolidStrongholdGrid::FHex> OneHex;
+	Arrange.HighlightHexes(OneHex);
+	TestEqual(TEXT("an empty hex highlights that hex"), OneHex.Num(), 1);
+	Arrange.ClearHover();
+	Arrange.HighlightHexes(OneHex);
+	TestEqual(TEXT("no hover leaves the floor unmarked"), OneHex.Num(), 0);
+	Arrange.SetHover(9, 9);
+	TestTrue(TEXT("a cell off the floor has no name"), FString(Arrange.HoverName()).IsEmpty());
+	Arrange.HighlightHexes(OneHex);
+	TestEqual(TEXT("a cell off the floor is not marked"), OneHex.Num(), 0);
+
+	Arrange.SetHover(1, 0);
+	TestEqual(
+		TEXT("an empty hex does not open a browser"),
+		static_cast<int32>(Arrange.Confirm()),
+		static_cast<int32>(FSolidArrange::EConfirm::None));
+	TestFalse(TEXT("nothing was lifted"), Arrange.IsHolding());
+	Arrange.Turn(1);
+	TestTrue(TEXT("Q does nothing until a piece is held"), Arrange.PieceAt(0).RotationDeg == 0.f);
+
+	SolidStrongholdFurniture::FUsed FireplaceOnBed = Starters[0];
+	FireplaceOnBed.X = 0;
+	FireplaceOnBed.Y = -1;
+	TestFalse(TEXT("the bed's hex is taken"), Arrange.CanPlace(FireplaceOnBed));
+
+	Arrange.SetHover(0, -1);
+	TestEqual(
+		TEXT("confirm lifts the bed"),
+		static_cast<int32>(Arrange.Confirm()),
+		static_cast<int32>(FSolidArrange::EConfirm::Lifted));
+	TestTrue(TEXT("one piece is held"), Arrange.IsHolding());
+	TestEqual(TEXT("the held bed keeps its name"), FString(Arrange.HoverName()), FString(TEXT("Bed")));
+	TestTrue(TEXT("the bed's old hex is empty while it is held"), Arrange.CanPlace(FireplaceOnBed));
+
+	FSolidArrange::FDraw Drawn;
+	for (int32 Step = 0; Step < 6; ++Step)
+	{
+		Arrange.Turn(1);
+	}
+	TestTrue(TEXT("six facings restore the bed"), Arrange.DrawOf(1, Drawn));
+	TestTrue(TEXT("six steps land on the starting facing"), FMath::IsNearlyEqual(Drawn.Yaw, 0.f, 0.01f));
+	Arrange.Turn(FSolidArrange::WheelSteps(1.f));
+	TestTrue(TEXT("the ghost turned"), Arrange.DrawOf(1, Drawn));
+	TestTrue(TEXT("wheel up matches Q"), FMath::IsNearlyEqual(Drawn.Yaw, FSolidArrange::FacingDeg, 0.01f));
+	Arrange.Turn(FSolidArrange::WheelSteps(-1.f));
+	TestTrue(TEXT("the ghost turned back"), Arrange.DrawOf(1, Drawn));
+	TestTrue(TEXT("wheel down matches E"), FMath::IsNearlyEqual(Drawn.Yaw, 0.f, 0.01f));
+
+	Arrange.SetHover(0, 0);
+	Arrange.Turn(3);
+	SolidStrongholdFurniture::FUsed Ghost;
+	TestTrue(TEXT("the turned bed is the ghost"), Arrange.DrawOf(1, Drawn));
+	Ghost = Arrange.PieceAt(1);
+	Ghost.X = 0;
+	Ghost.Y = 0;
+	Ghost.RotationDeg = Drawn.Yaw;
+	TestFalse(TEXT("a bed on the captain's hex is refused"), Arrange.CanPlace(Ghost));
+	TestEqual(
+		TEXT("confirm does not put the bed on the captain"),
+		static_cast<int32>(Arrange.Confirm()),
+		static_cast<int32>(FSolidArrange::EConfirm::Refused));
+	TestTrue(TEXT("the bed stays held"), Arrange.IsHolding());
+
+	Arrange.SetHover(Entrance.Col, Entrance.Row);
+	TestEqual(
+		TEXT("the entrance does not take the bed"),
+		static_cast<int32>(Arrange.Confirm()),
+		static_cast<int32>(FSolidArrange::EConfirm::Refused));
+	Arrange.SetHover(2, 1);
+	TestEqual(
+		TEXT("the chest's hex does not take the bed"),
+		static_cast<int32>(Arrange.Confirm()),
+		static_cast<int32>(FSolidArrange::EConfirm::Refused));
+
+	Arrange.ClearHover();
+	TestEqual(
+		TEXT("off the floor does not put the bed down"),
+		static_cast<int32>(Arrange.Confirm()),
+		static_cast<int32>(FSolidArrange::EConfirm::None));
+	TestTrue(TEXT("the bed is still held off the floor"), Arrange.IsHolding());
+
+	Arrange.SetHover(0, 0);
+	Arrange.Turn(-3);
+	TestEqual(
+		TEXT("a legal confirm puts the bed down"),
+		static_cast<int32>(Arrange.Confirm()),
+		static_cast<int32>(FSolidArrange::EConfirm::Placed));
+	TestFalse(TEXT("the bed is down"), Arrange.IsHolding());
+	TestEqual(TEXT("the bed's anchor is (0, 0)"), Arrange.PieceAt(1).X, 0);
+	TestEqual(TEXT("the bed's row is 0"), Arrange.PieceAt(1).Y, 0);
+	TestTrue(TEXT("the bed kept its facing"), FMath::IsNearlyEqual(Arrange.PieceAt(1).RotationDeg, 0.f, 0.01f));
+
+	int32 LegalFacings = 0;
+	int32 IllegalFacings = 0;
+	for (int32 Step = 0; Step < 6; ++Step)
+	{
+		SolidStrongholdFurniture::FUsed Candidate = Starters[1];
+		Candidate.X = 0;
+		Candidate.Y = -2;
+		Candidate.RotationDeg = static_cast<float>(Step) * FSolidArrange::FacingDeg;
+		if (Arrange.CanPlace(Candidate))
+		{
+			++LegalFacings;
+		}
+		else
+		{
+			++IllegalFacings;
+		}
+	}
+	TestTrue(TEXT("a bed can sit on the south edge"), LegalFacings > 0);
+	TestTrue(TEXT("a bed facing off that edge is refused"), IllegalFacings > 0);
+
+	FSolidArrange Restored;
+	OpenCave(Restored);
+	Restored.SetHover(2, 0);
+	Restored.Confirm();
+	Restored.Turn(2);
+	Restored.SetHover(1, -2);
+	TestTrue(TEXT("esc puts the fireplace back"), Restored.PutBack());
+	TestTrue(TEXT("esc leaves the mode on"), Restored.IsOn());
+	TestFalse(TEXT("esc is no longer holding"), Restored.IsHolding());
+	TestEqual(TEXT("the fireplace is back on (2, 0)"), Restored.PieceAt(0).X, 2);
+	TestEqual(TEXT("the fireplace is back on row 0"), Restored.PieceAt(0).Y, 0);
+	TestTrue(TEXT("the fireplace faces the way it started"), Restored.PieceAt(0).RotationDeg == 0.f);
+
+	Restored.SetHover(2, 0);
+	Restored.Confirm();
+	Restored.Turn(2);
+	Restored.SetHover(1, -2);
+	FSolidArrange::FContext Stronghold;
+	Stronghold.bInStronghold = true;
+	TestTrue(TEXT("the plate turns the mode off"), Restored.Toggle(Stronghold));
+	TestFalse(TEXT("the mode is off"), Restored.IsOn());
+	TestFalse(TEXT("leaving the mode is not holding"), Restored.IsHolding());
+	TestEqual(TEXT("the fireplace was put back"), Restored.PieceAt(0).X, 2);
+	TestTrue(TEXT("the facing was put back"), Restored.PieceAt(0).RotationDeg == 0.f);
+
+	FSolidArrange Left;
+	OpenCave(Left);
+	Left.SetHover(2, 1);
+	Left.Confirm();
+	Left.Turn(1);
+	Left.Leave();
+	TestFalse(TEXT("leaving the stronghold ends the mode"), Left.IsOn());
+	TestFalse(TEXT("the chest was not left held"), Left.IsHolding());
+	TestEqual(TEXT("the chest is on (2, 1)"), Left.PieceAt(2).X, 2);
+	TestEqual(TEXT("the chest is on row 1"), Left.PieceAt(2).Y, 1);
+	TestTrue(TEXT("the chest faces the way it started"), Left.PieceAt(2).RotationDeg == 0.f);
+
+	FSolidArrange Floor;
+	OpenCave(Floor);
+	const SolidStrongholdGrid::FHex* East = SolidStrongholdFurniture::FindCell(Hexes, 2, 0);
+	TestNotNull(TEXT("hex (2, 0)"), East);
+	if (East)
+	{
+		FSolidArrange::FTrace Hit;
+		TestTrue(TEXT("a ray onto the fireplace hex hits the floor"),
+			Floor.Trace(FVector(East->Center.X, East->Center.Y, 400.f), FVector(0.f, 0.f, -1.f), 80000.f, Hit));
+		TestTrue(TEXT("that ray is the fireplace hex"), Hit.bCell && Hit.X == 2 && Hit.Y == 0);
+		TestTrue(TEXT("a ray off the cave still meets the plane"),
+			Floor.Trace(FVector(8000.f, 8000.f, 400.f), FVector(0.f, 0.f, -1.f), 80000.f, Hit));
+		TestTrue(TEXT("that ray is off every cell"), Hit.bPlane && !Hit.bCell);
+		TestFalse(TEXT("a ray away from the floor misses"),
+			Floor.Trace(FVector(East->Center.X, East->Center.Y, 400.f), FVector(0.f, 0.f, 1.f), 80000.f, Hit));
+	}
+
+	const FIntPoint OriginCell = FIntPoint::ZeroValue;
+	const TUniquePtr<FSolidStronghold> Owned = SolidStronghold::Make(
+		ESolidStrongholdType::Tower,
+		ESolidStrongholdSize::Average,
+		OriginCell,
+		SolidStronghold::WorldXY(OriginCell));
+	const SolidStronghold::FSolidTower* Tower = static_cast<const SolidStronghold::FSolidTower*>(Owned.Get());
+	TestNotNull(TEXT("average tower"), Tower);
+	if (!Tower)
+	{
+		return false;
+	}
+	ASolidTowerInterior* Interior = NewObject<ASolidTowerInterior>();
+	TestNotNull(TEXT("tower interior"), Interior);
+	if (!Interior)
+	{
+		return false;
+	}
+	Interior->SetTower(*Tower);
+	TestEqual(TEXT("every tower floor can be named"), Interior->ArrangeFloorCount(), Tower->FloorCount());
+	TestTrue(TEXT("the tower has an upper floor"), Tower->FloorCount() >= 2);
+	float GroundZ = 0.f;
+	float UpperZ = 0.f;
+	TestTrue(TEXT("the ground floor has a height"), Interior->ArrangeFloorZ(0, GroundZ));
+	TestTrue(TEXT("the next floor has a height"), Interior->ArrangeFloorZ(1, UpperZ));
+	TestEqual(TEXT("feet on the ground use that floor"), Interior->ArrangeFloorUnderFeet(FVector(0.f, 0.f, GroundZ + 10.f)), 0);
+	TestEqual(
+		TEXT("feet on the next floor use that floor"),
+		Interior->ArrangeFloorUnderFeet(FVector(0.f, 0.f, UpperZ + 10.f)),
+		1);
+
+	TArray<SolidStrongholdGrid::FHex> Ground;
+	TestTrue(TEXT("the ground floor has hexes"), Interior->CollectArrangeFloor(0, Ground));
+	int32 DoorX = 0;
+	int32 DoorY = 0;
+	const bool bDoorKept = Interior->ArrangeEntrance(0, DoorX, DoorY);
+	bool bDoorInRoom = false;
+	for (const SolidStrongholdGrid::FHex& Hex : Ground)
+	{
+		if (FVector2D::DistSquared(Hex.Center, Tower->DoorHexCenter()) < 1.f)
+		{
+			bDoorInRoom = true;
+			if (bDoorKept)
+			{
+				TestEqual(TEXT("the entrance column is the door hex"), DoorX, Hex.Col);
+				TestEqual(TEXT("the entrance row is the door hex"), DoorY, Hex.Row);
+			}
+		}
+	}
+	TestTrue(TEXT("a dropped door hex is not a furniture cell"), bDoorKept == bDoorInRoom);
+
+	TArray<SolidStrongholdGrid::FHex> Upper;
+	TestTrue(TEXT("the upper floor has its own hexes"), Interior->CollectArrangeFloor(1, Upper));
+	TestTrue(TEXT("another floor is a different list"), Upper.Num() > 0);
+
+	return true;
+}
+
 #endif

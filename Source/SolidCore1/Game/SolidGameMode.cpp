@@ -32,6 +32,9 @@
 #include "Strongholds/Sites/SolidStrongholdSite.h"
 #include "SolidTravel.h"
 #include "Strongholds/Actors/SolidStrongholdInterior.h"
+#include "Strongholds/Furnishings/SolidFurnishing.h"
+#include "Components/CapsuleComponent.h"
+#include "Strongholds/Furnishings/SolidStrongholdGrid.h"
 #include "Strongholds/SolidStronghold.h"
 #include "SolidGameInstance.h"
 #include "Kismet/GameplayStatics.h"
@@ -701,6 +704,133 @@ void ASolidGameMode::ApplyArrangeBody()
 	}
 }
 
+void ASolidGameMode::BindArrangeFloor()
+{
+	ArrangeActors.Reset();
+	bArrangeOffFloor = false;
+	ArrangeRoom = StrongholdInterior;
+	ASolidStrongholdInterior* Interior = StrongholdInterior;
+	ASolidCharacter* Captain = FindCaptain(GetWorld());
+	UWorld* World = GetWorld();
+	if (!Interior || !Captain || !World)
+	{
+		ArrangeMode.Open(
+			TArray<SolidStrongholdFurniture::FUsed>(),
+			TArray<SolidStrongholdGrid::FHex>(),
+			SolidStrongholdGrid::FCell(),
+			false,
+			SolidStrongholdGrid::FCell(),
+			false,
+			0.f);
+		return;
+	}
+
+	const UCapsuleComponent* Capsule = Captain->GetCapsuleComponent();
+	const float HalfHeight = Capsule ? Capsule->GetScaledCapsuleHalfHeight() : 0.f;
+	const FVector Feet = Captain->GetActorLocation() - FVector(0.f, 0.f, HalfHeight);
+	const int32 Floor = Interior->ArrangeFloorUnderFeet(Feet);
+	TArray<SolidStrongholdGrid::FHex> Cells;
+	float FloorZ = 0.f;
+	if (Floor == INDEX_NONE || !Interior->CollectArrangeFloor(Floor, Cells) || !Interior->ArrangeFloorZ(Floor, FloorZ))
+	{
+		ArrangeMode.Open(
+			TArray<SolidStrongholdFurniture::FUsed>(),
+			TArray<SolidStrongholdGrid::FHex>(),
+			SolidStrongholdGrid::FCell(),
+			false,
+			SolidStrongholdGrid::FCell(),
+			false,
+			0.f);
+		return;
+	}
+
+	int32 EntranceX = 0;
+	int32 EntranceY = 0;
+	const bool bEntrance = Interior->ArrangeEntrance(Floor, EntranceX, EntranceY);
+	const SolidStrongholdGrid::FCell Entrance{ EntranceX, EntranceY };
+
+	bool bCaptainCell = false;
+	SolidStrongholdGrid::FCell CaptainCell;
+	const FVector LocalFeet = Interior->GetActorTransform().InverseTransformPosition(Feet);
+	const FVector2D Plan(LocalFeet.X, LocalFeet.Y);
+	for (const SolidStrongholdGrid::FHex& Hex : Cells)
+	{
+		if (SolidStrongholdGrid::PointInHex(Plan, Hex.Center))
+		{
+			bCaptainCell = true;
+			CaptainCell.Col = Hex.Col;
+			CaptainCell.Row = Hex.Row;
+			break;
+		}
+	}
+
+	TArray<SolidStrongholdFurniture::FUsed> Pieces;
+	for (TActorIterator<ASolidFurnishing> It(World); It; ++It)
+	{
+		ASolidFurnishing* Piece = *It;
+		if (!Piece || Piece->GetOwner() != Interior || Piece->IsActorBeingDestroyed() || !Piece->HasPlacement())
+		{
+			continue;
+		}
+		if (Piece->GetPlacement().Level != Floor)
+		{
+			continue;
+		}
+		Pieces.Add(Piece->GetPlacement());
+		ArrangeActors.Add(Piece);
+	}
+	ArrangeMode.Open(Pieces, Cells, Entrance, bEntrance, CaptainCell, bCaptainCell, FloorZ);
+	ApplyArrangeActors();
+}
+
+void ASolidGameMode::ApplyArrangeActors()
+{
+	ASolidStrongholdInterior* Interior = ArrangeRoom.Get();
+	if (!Interior)
+	{
+		return;
+	}
+	const int32 Held = ArrangeMode.HeldIndex();
+	for (int32 Index = 0; Index < ArrangeActors.Num(); ++Index)
+	{
+		ASolidFurnishing* Piece = ArrangeActors[Index].Get();
+		if (!Piece)
+		{
+			continue;
+		}
+		FSolidArrange::FDraw Draw;
+		if (!ArrangeMode.DrawOf(Index, Draw))
+		{
+			continue;
+		}
+		const bool bHeld = Index == Held;
+		Piece->SetGhost(bHeld);
+		if (bHeld && bArrangeOffFloor)
+		{
+			Interior->MoveFurnishingTo(Piece, ArrangeOffFloorLocal, Draw.Yaw);
+		}
+		else
+		{
+			Interior->MoveFurnishingTo(Piece, Draw.Local, Draw.Yaw);
+		}
+		if (!bHeld)
+		{
+			Piece->SetPlacement(ArrangeMode.PieceAt(Index));
+		}
+	}
+
+	TArray<SolidStrongholdGrid::FHex> Highlight;
+	ArrangeMode.HighlightHexes(Highlight);
+	if (Highlight.Num() == 0)
+	{
+		Interior->HideArrangeHighlight();
+	}
+	else
+	{
+		Interior->ShowArrangeHighlight(Highlight, ArrangeMode.FloorZ());
+	}
+}
+
 void ASolidGameMode::ToggleArrangeFurniture(const bool bOverlay)
 {
 	FSolidArrange::FContext Context;
@@ -709,6 +839,21 @@ void ASolidGameMode::ToggleArrangeFurniture(const bool bOverlay)
 	if (!ArrangeMode.Toggle(Context))
 	{
 		return;
+	}
+	if (ArrangeMode.IsOn())
+	{
+		BindArrangeFloor();
+	}
+	else
+	{
+		bArrangeOffFloor = false;
+		ApplyArrangeActors();
+		if (ASolidStrongholdInterior* Interior = ArrangeRoom.Get())
+		{
+			Interior->HideArrangeHighlight();
+		}
+		ArrangeActors.Reset();
+		ArrangeRoom = nullptr;
 	}
 	ApplyArrangeBody();
 }
@@ -720,7 +865,92 @@ void ASolidGameMode::LeaveArrangeFurniture()
 		return;
 	}
 	ArrangeMode.Leave();
+	bArrangeOffFloor = false;
+	ApplyArrangeActors();
+	if (ASolidStrongholdInterior* Interior = ArrangeRoom.Get())
+	{
+		Interior->HideArrangeHighlight();
+	}
+	ArrangeActors.Reset();
+	ArrangeRoom = nullptr;
 	ApplyArrangeBody();
+}
+
+void ASolidGameMode::ConfirmArrangeFurniture()
+{
+	if (!ArrangeMode.IsOn())
+	{
+		return;
+	}
+	ArrangeMode.Confirm();
+	ApplyArrangeActors();
+}
+
+void ASolidGameMode::TurnArrangeFurniture(const int32 Steps)
+{
+	if (!ArrangeMode.IsOn() || !ArrangeMode.IsHolding() || Steps == 0)
+	{
+		return;
+	}
+	ArrangeMode.Turn(Steps);
+	ApplyArrangeActors();
+}
+
+bool ASolidGameMode::PutBackArrangeFurniture()
+{
+	if (!ArrangeMode.PutBack())
+	{
+		return false;
+	}
+	bArrangeOffFloor = false;
+	ApplyArrangeActors();
+	return true;
+}
+
+void ASolidGameMode::UpdateArrangePointer(
+	const FVector& Origin,
+	const FVector& Direction,
+	const bool bPointer)
+{
+	if (!ArrangeMode.IsOn())
+	{
+		return;
+	}
+	ASolidStrongholdInterior* Interior = ArrangeRoom.Get();
+	if (!bPointer || !Interior)
+	{
+		bArrangeOffFloor = false;
+		ArrangeMode.ClearHover();
+		ApplyArrangeActors();
+		return;
+	}
+
+	const FVector LocalOrigin = Interior->GetActorTransform().InverseTransformPosition(Origin);
+	const FVector LocalDirection = Interior->GetActorTransform().InverseTransformVector(Direction);
+	FSolidArrange::FTrace Hit;
+	constexpr float MaxRayCm = 80000.f;
+	if (!ArrangeMode.Trace(LocalOrigin, LocalDirection, MaxRayCm, Hit))
+	{
+		bArrangeOffFloor = false;
+		ArrangeMode.ClearHover();
+	}
+	else if (Hit.bCell)
+	{
+		bArrangeOffFloor = false;
+		ArrangeMode.SetHover(Hit.X, Hit.Y);
+	}
+	else
+	{
+		ArrangeMode.ClearHover();
+		bArrangeOffFloor = ArrangeMode.IsHolding();
+		ArrangeOffFloorLocal = Hit.Point;
+	}
+	ApplyArrangeActors();
+}
+
+const TCHAR* ASolidGameMode::ArrangeHoverName() const
+{
+	return ArrangeMode.HoverName();
 }
 
 void ASolidGameMode::ExitStronghold()

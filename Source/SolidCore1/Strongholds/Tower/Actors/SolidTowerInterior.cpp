@@ -539,6 +539,7 @@ void ASolidTowerInterior::DiscardParts()
 	{
 		ArrangeLetters->ClearInstances();
 	}
+	HideArrangeHighlight();
 }
 
 void ASolidTowerInterior::BuildVisuals()
@@ -880,6 +881,61 @@ void ASolidTowerInterior::BuildVisuals()
 	}
 }
 
+int32 ASolidTowerInterior::ArrangeFloorCount() const
+{
+	return Tower ? Tower->FloorCount() : 0;
+}
+
+bool ASolidTowerInterior::CollectArrangeFloor(
+	const int32 Floor,
+	TArray<SolidStrongholdGrid::FHex>& OutCells) const
+{
+	if (!Tower || Floor < 0 || Floor >= Tower->FloorCount())
+	{
+		OutCells.Reset();
+		return false;
+	}
+	Tower->CollectFloorHexes(Floor, OutCells);
+	return OutCells.Num() > 0;
+}
+
+bool ASolidTowerInterior::ArrangeFloorZ(const int32 Floor, float& OutZ) const
+{
+	if (!Tower || Floor < 0 || Floor >= Tower->FloorCount())
+	{
+		OutZ = 0.f;
+		return false;
+	}
+	OutZ = Tower->FloorZCm(Floor);
+	return true;
+}
+
+bool ASolidTowerInterior::ArrangeEntrance(const int32 Floor, int32& OutX, int32& OutY) const
+{
+	OutX = 0;
+	OutY = 0;
+	if (!Tower || Floor != 0)
+	{
+		return false;
+	}
+	TArray<SolidStrongholdGrid::FHex> Hexes;
+	if (!CollectArrangeFloor(0, Hexes))
+	{
+		return false;
+	}
+	const FVector2D Door = Tower->DoorHexCenter();
+	for (const SolidStrongholdGrid::FHex& Hex : Hexes)
+	{
+		if (FVector2D::DistSquared(Hex.Center, Door) < 1.f)
+		{
+			OutX = Hex.Col;
+			OutY = Hex.Row;
+			return true;
+		}
+	}
+	return false;
+}
+
 void ASolidTowerInterior::PlaceFurnishings(const TArray<SolidStrongholdFurniture::FUsed>& Used)
 {
 	UWorld* World = GetWorld();
@@ -945,6 +1001,7 @@ void ASolidTowerInterior::PlaceFurnishings(const TArray<SolidStrongholdFurniture
 
 		Piece->SetKind(Item->Kind);
 		Piece->FinishSpawning(SpawnXf);
+		Piece->SetPlacement(UsedPiece);
 		Piece->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
 		++Placed;
 	}

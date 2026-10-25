@@ -2,8 +2,11 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "Strongholds/Furnishings/SolidStrongholdGrid.h"
 #include "SolidStrongholdInterior.generated.h"
 
+class ASolidFurnishing;
+class UInstancedStaticMeshComponent;
 class UStaticMeshComponent;
 
 /**
@@ -38,6 +41,27 @@ public:
 	void SetStrongholdCell(FIntPoint Cell) { StrongholdCell = Cell; }
 	FIntPoint GetStrongholdCell() const { return StrongholdCell; }
 
+	/** Floors this interior can arrange. The captain's floor is the one under his feet. */
+	virtual int32 ArrangeFloorCount() const;
+	virtual bool CollectArrangeFloor(int32 Floor, TArray<SolidStrongholdGrid::FHex>& OutCells) const;
+	virtual bool ArrangeFloorZ(int32 Floor, float& OutZ) const;
+	/** Ground-floor entrance, when that hex is still a furniture cell. */
+	virtual bool ArrangeEntrance(int32 Floor, int32& OutX, int32& OutY) const;
+
+	/** INDEX_NONE when the feet are below every floor. */
+	int32 ArrangeFloorUnderFeet(const FVector& WorldFeet) const;
+
+	/** Bright edges on the hexes under the pointer. An empty list clears them. */
+	void ShowArrangeHighlight(const TArray<SolidStrongholdGrid::FHex>& Hexes, float FloorZ);
+	void HideArrangeHighlight();
+
+	/** Move an owned piece. LocalPoint is in this interior's space, including the floor height. */
+	void MoveFurnishingTo(ASolidFurnishing* Piece, const FVector& LocalPoint, float LocalYaw) const;
+
 private:
 	FIntPoint StrongholdCell = FIntPoint::ZeroValue;
+
+	/** Hex edges drawn while arrange mode is on. This interior owns the component. */
+	UPROPERTY()
+	TObjectPtr<UInstancedStaticMeshComponent> ArrangeHighlight;
 };

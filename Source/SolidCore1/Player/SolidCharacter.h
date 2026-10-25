@@ -199,6 +199,8 @@ protected:
 	void ToggleDebugPanelFromInput();
 	void CloseMenuOverlayFromInput();
 	void ToggleArrangeFromInput();
+	void TurnArrangeClockwise();
+	void TurnArrangeAnticlockwise();
 	bool IsArrangingFurniture() const;
 	/** The Arrange furniture plate under the pointer, including while the right button looks. */
 	bool ArrangeSignUnderPointer() const;

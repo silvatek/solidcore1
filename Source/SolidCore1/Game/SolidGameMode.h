@@ -16,6 +16,7 @@
 class ASolidBridge;
 class ASolidBuilding;
 class ASolidForagePile;
+class ASolidFurnishing;
 class ASolidLairEntrance;
 class ASolidLairInterior;
 class ASolidCompanionCharacter;
@@ -239,11 +240,30 @@ public:
 	 * `\` or the Arrange furniture plate.
 	 * bOverlay is a menu, the inventory, the journal, a message, or the squad builder.
 	 * An overlay or the open world leaves the mode as it is.
+	 * Turning the mode off puts a held piece back.
 	 */
 	void ToggleArrangeFurniture(bool bOverlay);
 
-	/** Esc, or the start of leaving the stronghold. The captain is drawn again. */
+	/** Esc with nothing held, or the start of leaving the stronghold. A held piece goes back first. */
 	void LeaveArrangeFurniture();
+
+	/** Left click or Enter on the captain's floor. */
+	void ConfirmArrangeFurniture();
+
+	/** Q and wheel up are positive. E and wheel down are negative. */
+	void TurnArrangeFurniture(int32 Steps);
+
+	/** Esc while a piece is held. The mode stays on. False when nothing is held. */
+	bool PutBackArrangeFurniture();
+
+	/**
+	 * The hex under the pointer, when the pointer is showing.
+	 * bPointer is false while the right button looks, so nothing is highlighted.
+	 */
+	void UpdateArrangePointer(const FVector& Origin, const FVector& Direction, bool bPointer);
+
+	/** Catalog name beside the pointer. Empty when the hex is bare. */
+	const TCHAR* ArrangeHoverName() const;
 
 	/**
 	 * Bind the game instance's company and create the squad on the first call.
@@ -370,10 +390,20 @@ protected:
 	/** Interior spawned for this stronghold visit. The world keeps the actor alive. */
 	ASolidStrongholdInterior* StrongholdInterior = nullptr;
 
-	/** On or off. A later stage lifts a piece. */
+	/** The mode, the held piece, and the captain's floor. */
 	FSolidArrange ArrangeMode;
 
+	/** Pieces on the floor that was open when the mode turned on. The interior owns them. */
+	TArray<TWeakObjectPtr<ASolidFurnishing>> ArrangeActors;
+	/** The visit interior. The world owns it. */
+	TWeakObjectPtr<ASolidStrongholdInterior> ArrangeRoom;
+	/** The pointer is on the floor plane, off every furniture cell, while a piece is held. */
+	bool bArrangeOffFloor = false;
+	FVector ArrangeOffFloorLocal = FVector::ZeroVector;
+
 	void ApplyArrangeBody();
+	void BindArrangeFloor();
+	void ApplyArrangeActors();
 	/** Interior spawned for this tunnel visit. The world keeps the actor alive. */
 	ASolidLairInterior* LairInterior = nullptr;
 	bool bCaptainTravelApplied = false;

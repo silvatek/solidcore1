@@ -1515,7 +1515,7 @@ void FSolidWorldChartEdMode::EndStroke()
 				}
 			}
 		}
-		Streamer->RebuildChartView(Chart, Positions);
+		Streamer->RebuildChartPoints(Chart, Positions);
 	}
 	RebuildOverlay();
 	if (bHasPoint)

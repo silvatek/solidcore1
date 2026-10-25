@@ -55,8 +55,8 @@ public:
 	/** Rebuild the chart ground, and only the chunks that contain these cells. */
 	void RebuildChartView(const USolidWorldChart* Chart, const TArray<FIntPoint>& Cells);
 
-	/** Rebuild the chart ground, and only the chunks that contain these positions. */
-	void RebuildChartView(const USolidWorldChart* Chart, const TArray<FVector2D>& Positions);
+	/** Rebuild the chart ground, and only the chunks that contain these world positions. */
+	void RebuildChartPoints(const USolidWorldChart* Chart, const TArray<FVector2D>& Positions);
 
 	/** Destroy the chart chunks. */
 	void ClearChartView();

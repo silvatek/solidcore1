@@ -1145,7 +1145,7 @@ void ASolidTerrainStreamer::RebuildChartView(const USolidWorldChart* Chart, cons
 	RebuildChartGround(Chart, Cells, TArray<FVector2D>());
 }
 
-void ASolidTerrainStreamer::RebuildChartView(const USolidWorldChart* Chart, const TArray<FVector2D>& Positions)
+void ASolidTerrainStreamer::RebuildChartPoints(const USolidWorldChart* Chart, const TArray<FVector2D>& Positions)
 {
 	RebuildChartGround(Chart, TArray<FIntPoint>(), Positions);
 }

@@ -190,7 +190,7 @@ FSolidArrangeSign FSolidArrangeSign::ForCave()
 	return Sign;
 }
 
-FSolidArrangeSign FSolidArrangeSign::ForTowerFloor(const FSolidTower& Tower, const int32 Floor)
+FSolidArrangeSign FSolidArrangeSign::ForTowerFloor(const SolidStronghold::FSolidTower& Tower, const int32 Floor)
 {
 	FSolidArrangeSign Sign;
 	if (Floor < 0 || Floor >= Tower.FloorCount())
@@ -250,9 +250,9 @@ void FSolidArrangeSign::ApplyPlate(
 	}
 }
 
-void FSolidArrangeSign::AppendLetters(UInstancedStaticMeshComponent* Letters, const float CubeSizeCm) const
+void FSolidArrangeSign::AppendLetters(UInstancedStaticMeshComponent* Instances, const float CubeSizeCm) const
 {
-	if (!Letters || !bPresent || CubeSizeCm <= KINDA_SMALL_NUMBER)
+	if (!Instances || !bPresent || CubeSizeCm <= KINDA_SMALL_NUMBER)
 	{
 		return;
 	}
@@ -262,7 +262,7 @@ void FSolidArrangeSign::AppendLetters(UInstancedStaticMeshComponent* Letters, co
 	CollectStrokes(Strokes);
 	for (const FStroke& Stroke : Strokes)
 	{
-		Letters->AddInstance(FTransform(
+		Instances->AddInstance(FTransform(
 			Facing,
 			StandLocation + Facing.RotateVector(Stroke.CenterCm),
 			Stroke.SizeCm / CubeSizeCm));

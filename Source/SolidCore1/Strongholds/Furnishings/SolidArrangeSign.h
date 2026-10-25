@@ -2,7 +2,11 @@
 
 #include "CoreMinimal.h"
 
-class FSolidTower;
+namespace SolidStronghold
+{
+	class FSolidTower;
+}
+
 class UInstancedStaticMeshComponent;
 class UStaticMesh;
 class UStaticMeshComponent;
@@ -44,10 +48,10 @@ public:
 	static FSolidArrangeSign ForCave();
 
 	/** On this floor's curved wall, inset like a floor number, clear of that number and of the door. */
-	static FSolidArrangeSign ForTowerFloor(const FSolidTower& Tower, int32 Floor);
+	static FSolidArrangeSign ForTowerFloor(const SolidStronghold::FSolidTower& Tower, int32 Floor);
 
 	void ApplyPlate(UStaticMeshComponent* Plate, UStaticMesh* Cube, float CubeSizeCm) const;
-	void AppendLetters(UInstancedStaticMeshComponent* Letters, float CubeSizeCm) const;
+	void AppendLetters(UInstancedStaticMeshComponent* Instances, float CubeSizeCm) const;
 
 private:
 	FVector StandLocation = FVector::ZeroVector;

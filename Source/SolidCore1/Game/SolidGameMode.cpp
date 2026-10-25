@@ -701,12 +701,11 @@ void ASolidGameMode::ApplyArrangeBody()
 	}
 }
 
-void ASolidGameMode::ToggleArrangeFurniture()
+void ASolidGameMode::ToggleArrangeFurniture(const bool bOverlay)
 {
-	ASolidCharacter* Captain = FindCaptain(GetWorld());
 	FSolidArrange::FContext Context;
 	Context.bInStronghold = IsInStronghold();
-	Context.bOverlay = Captain && Captain->IsMenuOverlayOpen();
+	Context.bOverlay = bOverlay;
 	if (!ArrangeMode.Toggle(Context))
 	{
 		return;

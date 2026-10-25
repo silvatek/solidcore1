@@ -169,20 +169,20 @@ bool FSolidArrangePlateTest::RunTest(const FString& Parameters)
 	Cave->BuildVisuals();
 
 	UStaticMeshComponent* Plate = Cave->GetArrangePlate();
-	UInstancedStaticMeshComponent* Letters = Cave->GetArrangeLetters();
+	UInstancedStaticMeshComponent* CaveLetters = Cave->GetArrangeLetters();
 	TestNotNull(TEXT("cave plate"), Plate);
-	TestNotNull(TEXT("cave letters"), Letters);
-	if (!Plate || !Letters)
+	TestNotNull(TEXT("cave letters"), CaveLetters);
+	if (!Plate || !CaveLetters)
 	{
 		return false;
 	}
 
 	UStaticMesh* PlateMesh = Plate->GetStaticMesh();
 	TestNotNull(TEXT("cave plate mesh"), PlateMesh);
-	TestTrue(TEXT("the words are instanced"), Letters->GetInstanceCount() > 80);
-	const int32 LetterCount = Letters->GetInstanceCount();
+	TestTrue(TEXT("the words are instanced"), CaveLetters->GetInstanceCount() > 80);
+	const int32 LetterCount = CaveLetters->GetInstanceCount();
 	Cave->BuildVisuals();
-	TestEqual(TEXT("a second build does not stack the letters"), Letters->GetInstanceCount(), LetterCount);
+	TestEqual(TEXT("a second build does not stack the letters"), CaveLetters->GetInstanceCount(), LetterCount);
 	TestTrue(TEXT("the plate is a pointer query"), Plate->GetCollisionEnabled() == ECollisionEnabled::QueryOnly);
 	TestTrue(TEXT("the plate ignores the captain"), Plate->GetCollisionResponseToChannel(ECC_Pawn) == ECR_Ignore);
 	TestTrue(TEXT("the plate takes the pointer"), Plate->GetCollisionResponseToChannel(ECC_Visibility) == ECR_Block);

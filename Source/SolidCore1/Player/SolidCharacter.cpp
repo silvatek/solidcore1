@@ -713,7 +713,7 @@ void ASolidCharacter::ToggleArrangeFromInput()
 	{
 		if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 		{
-			GameMode->ToggleArrangeFurniture();
+			GameMode->ToggleArrangeFurniture(IsMenuOverlayOpen());
 		}
 	}
 }
@@ -2315,7 +2315,7 @@ void ASolidCharacter::PollClickMovePress()
 			{
 				if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 				{
-					GameMode->ToggleArrangeFurniture();
+					GameMode->ToggleArrangeFurniture(IsMenuOverlayOpen());
 				}
 			}
 		}

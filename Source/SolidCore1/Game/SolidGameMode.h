@@ -235,8 +235,12 @@ public:
 	/** Arrange mode is on inside the company stronghold. */
 	bool IsArrangingFurniture() const { return ArrangeMode.IsOn(); }
 
-	/** `\` or the Arrange furniture plate. An overlay or the open world leaves the mode as it is. */
-	void ToggleArrangeFurniture();
+	/**
+	 * `\` or the Arrange furniture plate.
+	 * bOverlay is a menu, the inventory, the journal, a message, or the squad builder.
+	 * An overlay or the open world leaves the mode as it is.
+	 */
+	void ToggleArrangeFurniture(bool bOverlay);
 
 	/** Esc, or the start of leaving the stronghold. The captain is drawn again. */
 	void LeaveArrangeFurniture();

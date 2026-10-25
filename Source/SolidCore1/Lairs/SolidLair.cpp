@@ -3,14 +3,6 @@
 
 namespace SolidLairMouth
 {
-	/** Map step (column, row) toward grass. Row +1 is south; column +1 is west. Same order as the cave. */
-	const FIntPoint NeighborSteps[] = {
-		FIntPoint(0, -1),
-		FIntPoint(-1, 0),
-		FIntPoint(0, 1),
-		FIntPoint(1, 0),
-	};
-
 	bool InBounds(const int32 X, const int32 Y)
 	{
 		return X >= 0 && X < USolidWorldChart::MapWidth && Y >= 0 && Y < USolidWorldChart::MapHeight;
@@ -68,9 +60,18 @@ namespace SolidLairMouth
 			return false;
 		}
 
-		const FIntPoint* ChosenStep = nullptr;
+		// Column +1 is west. Row +1 is south. The exit tries west first.
+		const bool bExit = FChar::ToUpper(EndMarker) == SolidLair::Exit;
+		const FIntPoint Steps[] = {
+			bExit ? FIntPoint(1, 0) : FIntPoint(0, -1),
+			bExit ? FIntPoint(0, -1) : FIntPoint(-1, 0),
+			bExit ? FIntPoint(-1, 0) : FIntPoint(0, 1),
+			bExit ? FIntPoint(0, 1) : FIntPoint(1, 0),
+		};
+		bool bChosen = false;
+		FIntPoint ChosenStep = FIntPoint::ZeroValue;
 		FIntPoint GrassCell = FIntPoint::ZeroValue;
-		for (const FIntPoint& Step : NeighborSteps)
+		for (const FIntPoint& Step : Steps)
 		{
 			const int32 NextX = Col + Step.X;
 			const int32 NextY = Row + Step.Y;
@@ -82,11 +83,12 @@ namespace SolidLairMouth
 			{
 				continue;
 			}
-			ChosenStep = &Step;
+			bChosen = true;
+			ChosenStep = Step;
 			GrassCell = FIntPoint(NextX, NextY);
 			break;
 		}
-		if (!ChosenStep)
+		if (!bChosen)
 		{
 			return false;
 		}
@@ -106,7 +108,7 @@ namespace SolidLairMouth
 		Entrance.EdgeXY = (MouthXY + GrassXY) * 0.5f;
 		const FVector2D TowardGrass = (GrassXY - MouthXY).GetSafeNormal();
 		Entrance.WorldXY = Entrance.EdgeXY + TowardGrass * SolidStrongholds::FaceInsetCm;
-		Entrance.FacingYawDeg = YawFacingGrass(*ChosenStep);
+		Entrance.FacingYawDeg = YawFacingGrass(ChosenStep);
 		OutEntrances.Add(Entrance);
 		return true;
 	}

@@ -379,26 +379,26 @@ public:
 	 */
 	bool PaintPointRectangle(FIntPoint From, FIntPoint To, ESolidBiome Biome, FString& OutError);
 
-	/** Put a SolidTowns town on this cell, replacing any mark already there. */
+	/** Put a SolidTowns town on this cell. The same town name moves here. */
 	bool PlaceTown(FIntPoint Cell, const FString& Name, FString& OutError);
 
-	/** Put a stronghold the game already has. The name is its size and type. */
+	/** Put a stronghold the game already has. The same size moves here. */
 	bool PlaceStronghold(FIntPoint Cell, ESolidStrongholdSize Size, ESolidStrongholdType Type, FString& OutError);
 
-	/** Put a stronghold site. A site has a size and no type, and it is not a road end. */
+	/** Put a stronghold site. The same size moves here. A site is not a road end. */
 	bool PlaceSite(FIntPoint Cell, ESolidStrongholdSize Size, FString& OutError);
 
-	/** Put one end of a lair the game already has. The mouth resolves as mountain. */
+	/** Put one end of a lair the game already has. The same lair and end move here. */
 	bool PlaceLairMouth(FIntPoint Cell, const FString& LairName, bool bEntrance, FString& OutError);
 
 	/**
-	 * Put a custom note on this cell, replacing any mark already there.
+	 * Put a custom note on this cell. The same text moves here.
 	 * The note is one line, at most 48 characters. It does not change the paint.
 	 */
 	bool PlaceCustom(FIntPoint Cell, const FString& Note, FString& OutError);
 
 	/**
-	 * Put a catalog encounter on this cell, replacing any mark already there.
+	 * Put a catalog encounter on this cell. The same name moves here.
 	 * The name is the one in SolidEncounter::StaticEncounters. The paint stays.
 	 */
 	bool PlaceEncounter(FIntPoint Cell, const FString& Name, FString& OutError);
@@ -463,6 +463,8 @@ private:
 	ESolidBiome SampleCellPlay(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 	void SetPointsInCells(const TArray<int32>& CellIndexes, ESolidBiome Biome) const;
 	void ApplyMarkerPoint(const FVector2D& PositionCm, ESolidWorldChartMarkKind Kind) const;
+	/** Put a marker point back to the biome of another point in its cell. */
+	void ReleaseMarkerPoint(const FVector2D& PositionCm) const;
 	/** Write these terrain points, then put each covered marker point back. One undo step. */
 	bool PaintPoints(const TArray<FIntPoint>& Covered, ESolidBiome Biome, FString& OutError);
 	/** Claim each run of town points for the first marker that touches it. */

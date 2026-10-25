@@ -345,4 +345,150 @@ bool FSolidWorldChartEncounterTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidWorldChartPlaceMovesTest,
+	"SolidCore1.WorldChart.PlaceMoves",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FSolidWorldChartPlaceMovesTest::RunTest(const FString& Parameters)
+{
+	USolidWorldChart* Chart = GrassChart();
+	if (!TestNotNull(TEXT("grass chart"), Chart))
+	{
+		return false;
+	}
+
+	auto CountKind = [](const USolidWorldChart& World, const ESolidWorldChartMarkKind Kind)
+	{
+		int32 Count = 0;
+		for (const FSolidWorldChartMark& Mark : World.Marks)
+		{
+			if (Mark.Kind == Kind)
+			{
+				++Count;
+			}
+		}
+		return Count;
+	};
+
+	FString Error;
+	const FIntPoint Mouth(3, 3);
+	const FIntPoint MouthMoved(20, 20);
+	TestTrue(TEXT("the entrance places"), Chart->PlaceLairMouth(Mouth, SolidLair::IglinTunnels.Name, true, Error));
+	FVector2D BoundsMin = FVector2D::ZeroVector;
+	FVector2D BoundsMax = FVector2D::ZeroVector;
+	USolidWorldChart::DefaultWorldBounds(BoundsMin, BoundsMax);
+	FVector2D MouthCentre = FVector2D::ZeroVector;
+	TestTrue(TEXT("the entrance cell has a centre"), USolidWorldChart::CellCentre(Mouth, MouthCentre));
+	FIntPoint MouthPoint = FIntPoint::ZeroValue;
+	TestTrue(TEXT("the entrance point"), Chart->TerrainPointAt(MouthCentre.X, MouthCentre.Y, BoundsMin, BoundsMax, MouthPoint));
+	TestTrue(TEXT("forest covers the entrance"), Chart->PaintBrush({ MouthPoint }, 1, ESolidBiome::Forest, Error));
+	TestEqual(
+		TEXT("the entrance point stays grassland"),
+		static_cast<uint8>(Chart->GetPointBiome(MouthPoint)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+	TestEqual(
+		TEXT("the point beside the entrance is forest"),
+		static_cast<uint8>(Chart->GetPointBiome(MouthPoint + FIntPoint(1, 0))),
+		static_cast<uint8>(ESolidBiome::Forest));
+
+	TestTrue(TEXT("the entrance moves"), Chart->PlaceLairMouth(MouthMoved, SolidLair::IglinTunnels.Name, true, Error));
+	TestEqual(TEXT("one entrance"), CountKind(*Chart, ESolidWorldChartMarkKind::LairEntrance), 1);
+	TestEqual(TEXT("the old entrance cell is empty"), Chart->MarkAtCell(Mouth), static_cast<int32>(INDEX_NONE));
+	TestTrue(TEXT("the entrance is on the new cell"), Chart->MarkAtCell(MouthMoved) != INDEX_NONE);
+	TestEqual(
+		TEXT("the old entrance point takes the forest beside it"),
+		static_cast<uint8>(Chart->GetPointBiome(MouthPoint)),
+		static_cast<uint8>(ESolidBiome::Forest));
+	FVector2D MovedCentre = FVector2D::ZeroVector;
+	TestTrue(TEXT("the new cell has a centre"), USolidWorldChart::CellCentre(MouthMoved, MovedCentre));
+	FIntPoint MovedPoint = FIntPoint::ZeroValue;
+	TestTrue(TEXT("the new entrance point"), Chart->TerrainPointAt(MovedCentre.X, MovedCentre.Y, BoundsMin, BoundsMax, MovedPoint));
+	TestEqual(
+		TEXT("the new entrance point is grassland"),
+		static_cast<uint8>(Chart->GetPointBiome(MovedPoint)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+	TestTrue(TEXT("undo puts the entrance back"), Chart->Undo());
+	TestTrue(TEXT("the entrance is on the old cell"), Chart->MarkAtCell(Mouth) != INDEX_NONE);
+	TestEqual(TEXT("the new cell is empty again"), Chart->MarkAtCell(MouthMoved), static_cast<int32>(INDEX_NONE));
+
+	const FIntPoint Exit(4, 4);
+	const FIntPoint ExitMoved(9, 9);
+	TestTrue(TEXT("the exit places"), Chart->PlaceLairMouth(Exit, SolidLair::IglinTunnels.Name, false, Error));
+	TestTrue(TEXT("the exit moves"), Chart->PlaceLairMouth(ExitMoved, SolidLair::IglinTunnels.Name, false, Error));
+	TestEqual(TEXT("one exit"), CountKind(*Chart, ESolidWorldChartMarkKind::LairExit), 1);
+	TestEqual(TEXT("the old exit cell is empty"), Chart->MarkAtCell(Exit), static_cast<int32>(INDEX_NONE));
+	TestTrue(TEXT("the entrance stayed"), Chart->MarkAtCell(Mouth) != INDEX_NONE);
+	TestTrue(TEXT("the exit is on the new cell"), Chart->MarkAtCell(ExitMoved) != INDEX_NONE);
+
+	const FIntPoint Town(10, 4);
+	const FIntPoint TownMoved(12, 6);
+	TestTrue(TEXT("Iglin places"), Chart->PlaceTown(Town, TEXT("Iglin"), Error));
+	TestTrue(TEXT("Iglin moves"), Chart->PlaceTown(TownMoved, TEXT("iglin"), Error));
+	TestEqual(TEXT("one Iglin"), CountKind(*Chart, ESolidWorldChartMarkKind::Town), 1);
+	TestEqual(TEXT("the old Iglin cell is empty"), Chart->MarkAtCell(Town), static_cast<int32>(INDEX_NONE));
+	TestTrue(TEXT("Iglin is on the new cell"), Chart->MarkAtCell(TownMoved) != INDEX_NONE);
+
+	const FIntPoint Cave(14, 4);
+	const FIntPoint CaveMoved(16, 4);
+	TestTrue(
+		TEXT("the cave places"),
+		Chart->PlaceStronghold(Cave, ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon, Error));
+	TestTrue(
+		TEXT("a Meagre fortress moves the cave"),
+		Chart->PlaceStronghold(CaveMoved, ESolidStrongholdSize::Meagre, ESolidStrongholdType::Fortress, Error));
+	TestEqual(TEXT("one Meagre stronghold"), CountKind(*Chart, ESolidWorldChartMarkKind::Stronghold), 1);
+	TestEqual(TEXT("the cave cell is empty"), Chart->MarkAtCell(Cave), static_cast<int32>(INDEX_NONE));
+	const int32 Fortress = Chart->MarkAtCell(CaveMoved);
+	if (TestTrue(TEXT("the fortress is on the new cell"), Fortress != INDEX_NONE))
+	{
+		TestEqual(
+			TEXT("the moved stronghold is a fortress"),
+			static_cast<uint8>(Chart->Marks[Fortress].StrongholdType),
+			static_cast<uint8>(ESolidStrongholdType::Fortress));
+	}
+	const FIntPoint HumbleHold(18, 4);
+	TestTrue(
+		TEXT("a Humble stronghold stays"),
+		Chart->PlaceStronghold(HumbleHold, ESolidStrongholdSize::Humble, ESolidStrongholdType::Dungeon, Error));
+	TestEqual(TEXT("two stronghold sizes"), CountKind(*Chart, ESolidWorldChartMarkKind::Stronghold), 2);
+
+	const FIntPoint Site(2, 8);
+	const FIntPoint SiteMoved(5, 8);
+	TestTrue(TEXT("a Humble site places"), Chart->PlaceSite(Site, ESolidStrongholdSize::Humble, Error));
+	TestTrue(TEXT("the Humble site moves"), Chart->PlaceSite(SiteMoved, ESolidStrongholdSize::Humble, Error));
+	TestEqual(TEXT("one Humble site"), CountKind(*Chart, ESolidWorldChartMarkKind::StrongholdSite), 1);
+	TestEqual(TEXT("the old site cell is empty"), Chart->MarkAtCell(Site), static_cast<int32>(INDEX_NONE));
+	TestTrue(TEXT("the site is on the new cell"), Chart->MarkAtCell(SiteMoved) != INDEX_NONE);
+	TestEqual(TEXT("both strongholds stayed"), CountKind(*Chart, ESolidWorldChartMarkKind::Stronghold), 2);
+	const FIntPoint ImperiousSite(6, 8);
+	TestTrue(TEXT("an Imperious site stays"), Chart->PlaceSite(ImperiousSite, ESolidStrongholdSize::Imperious, Error));
+	TestEqual(TEXT("two site sizes"), CountKind(*Chart, ESolidWorldChartMarkKind::StrongholdSite), 2);
+
+	const FIntPoint Bridge(10, 10);
+	const FIntPoint BridgeMoved(11, 11);
+	TestTrue(TEXT("Iglin Bridge places"), Chart->PlaceEncounter(Bridge, TEXT("Iglin Bridge"), Error));
+	TestTrue(TEXT("Iglin Bridge moves"), Chart->PlaceEncounter(BridgeMoved, TEXT("iglin bridge"), Error));
+	TestEqual(TEXT("one Iglin Bridge"), CountKind(*Chart, ESolidWorldChartMarkKind::Encounter), 1);
+	TestEqual(TEXT("the old bridge cell is empty"), Chart->MarkAtCell(Bridge), static_cast<int32>(INDEX_NONE));
+	TestTrue(TEXT("Iglin Bridge is on the new cell"), Chart->MarkAtCell(BridgeMoved) != INDEX_NONE);
+
+	const FIntPoint Note(6, 6);
+	const FIntPoint NoteMoved(7, 7);
+	TestTrue(TEXT("the note places"), Chart->PlaceCustom(Note, TEXT("Lookout"), Error));
+	TestTrue(TEXT("the same note moves"), Chart->PlaceCustom(NoteMoved, TEXT("Lookout"), Error));
+	TestEqual(TEXT("one Lookout"), CountKind(*Chart, ESolidWorldChartMarkKind::Custom), 1);
+	TestEqual(TEXT("the old note cell is empty"), Chart->MarkAtCell(Note), static_cast<int32>(INDEX_NONE));
+	TestTrue(TEXT("a different note stays"), Chart->PlaceCustom(FIntPoint(8, 8), TEXT("Ridge"), Error));
+	TestEqual(TEXT("two notes"), CountKind(*Chart, ESolidWorldChartMarkKind::Custom), 2);
+
+	const FIntPoint Occupied(22, 12);
+	TestTrue(TEXT("a town occupies a cell"), Chart->PlaceTown(Occupied, TEXT("Relion"), Error));
+	TestTrue(TEXT("Iglin replaces Relion and leaves its old cell"), Chart->PlaceTown(Occupied, TEXT("Iglin"), Error));
+	TestEqual(TEXT("Iglin is still one town"), CountKind(*Chart, ESolidWorldChartMarkKind::Town), 1);
+	TestEqual(TEXT("the earlier Iglin cell is empty"), Chart->MarkAtCell(TownMoved), static_cast<int32>(INDEX_NONE));
+	TestTrue(TEXT("Iglin is on Relion's cell"), Chart->MarkAtCell(Occupied) != INDEX_NONE);
+	return true;
+}
+
 #endif

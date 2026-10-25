@@ -261,7 +261,8 @@ namespace SolidLair
 
 	/**
 	 * One stone mouth where a lair cell meets grassland.
-	 * Neighbors are tried north, east, south, then west. The first grassland wins.
+	 * The entrance tries north, east, south, then west. The exit tries west first,
+	 * then north, east, and south. The first grassland wins.
 	 * A LairEntrance ! for these tunnels is the Iglin Tunnels Entrance, and a
 	 * LairExit ! is the Iglin Tunnels Exit.
 	 */

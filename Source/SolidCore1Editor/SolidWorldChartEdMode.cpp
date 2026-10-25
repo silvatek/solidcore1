@@ -1032,7 +1032,7 @@ void FSolidWorldChartEdMode::SetTool(const ESolidWorldChartTool InTool)
 		Note(TEXT("Paint. Left click stamps the brush. A drag lays it along the path. Shift fills a rectangle. Alt copies the point."));
 		break;
 	case ESolidWorldChartTool::Place:
-		Note(TEXT("Place. Left click puts the mark on that cell. Delete removes the mark under the cursor."));
+		Note(TEXT("Place. Left click moves a mark with the same values onto that cell. Delete removes the mark under the cursor."));
 		break;
 	case ESolidWorldChartTool::View:
 	default:
@@ -1071,6 +1071,12 @@ void FSolidWorldChartEdMode::PlaceCurrentMark()
 	{
 		Note(TEXT("Click a cell on the map."));
 		return;
+	}
+
+	TArray<FVector2D> Before;
+	for (const FSolidWorldChartMark& Mark : Chart->Marks)
+	{
+		Before.Add(Mark.PositionCm);
 	}
 
 	FString Error;
@@ -1133,7 +1139,21 @@ void FSolidWorldChartEdMode::PlaceCurrentMark()
 	Note(FString::Printf(TEXT("Placed %s."), MarkKindName(MarkKind)));
 	if (Streamer)
 	{
-		Streamer->RebuildChartView(Chart, { CurrentCell });
+		TArray<FIntPoint> Cells;
+		Cells.Add(CurrentCell);
+		FVector2D Min = FVector2D::ZeroVector;
+		FVector2D Max = FVector2D::ZeroVector;
+		USolidWorldChart::DefaultWorldBounds(Min, Max);
+		for (const FVector2D& Position : Before)
+		{
+			FIntPoint Cell = FIntPoint::ZeroValue;
+			if (Chart->CellAtWorld(Position.X, Position.Y, Min, Max, Cell)
+				&& Chart->MarkAtCell(Cell) == INDEX_NONE)
+			{
+				Cells.AddUnique(Cell);
+			}
+		}
+		Streamer->RebuildChartView(Chart, Cells);
 	}
 	RebuildOverlay();
 	RebuildSigns();

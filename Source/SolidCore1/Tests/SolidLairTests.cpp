@@ -521,4 +521,57 @@ bool FSolidLairEntranceVisualsTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidLairExitFacesWestTest,
+	"SolidCore1.Lair.ExitFacesWest",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidLairExitFacesWestTest::RunTest(const FString& Parameters)
+{
+	FString Grid;
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
+	{
+		Grid += FString::ChrN(USolidWorldChart::MapWidth, USolidWorldChart::GrassMarker);
+		Grid += TEXT("\n");
+	}
+
+	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
+	FString Error;
+	const FIntPoint Exit(12, 10);
+	const FIntPoint Entrance(4, 4);
+	if (!TestNotNull(TEXT("grass chart"), Chart)
+		|| !TestTrue(TEXT("grass imports"), Chart->ImportFromString(Grid))
+		|| !TestTrue(TEXT("the exit places"), Chart->PlaceLairMouth(Exit, SolidLair::IglinTunnels.Name, false, Error))
+		|| !TestTrue(TEXT("the entrance places"), Chart->PlaceLairMouth(Entrance, SolidLair::IglinTunnels.Name, true, Error)))
+	{
+		return false;
+	}
+
+	FVector2D WorldMin = FVector2D::ZeroVector;
+	FVector2D WorldMax = FVector2D::ZeroVector;
+	USolidWorldChart::DefaultWorldBounds(WorldMin, WorldMax);
+	TArray<SolidLair::FEntrance> Mouths;
+	TestEqual(TEXT("both mouths stand"), SolidLair::CollectEntrances(Chart, WorldMin, WorldMax, Mouths), 2);
+	bool bSawExit = false;
+	bool bSawEntrance = false;
+	for (const SolidLair::FEntrance& Mouth : Mouths)
+	{
+		if (Mouth.EndMarker == SolidLair::Exit)
+		{
+			bSawExit = true;
+			TestEqual(TEXT("the exit faces west"), Mouth.GrassCell, Exit + FIntPoint(1, 0));
+			TestTrue(TEXT("west yaw"), FMath::IsNearlyEqual(Mouth.FacingYawDeg, 180.f, 0.1f));
+		}
+		if (Mouth.EndMarker == SolidLair::Entrance)
+		{
+			bSawEntrance = true;
+			TestEqual(TEXT("the entrance faces north"), Mouth.GrassCell, Entrance + FIntPoint(0, -1));
+			TestTrue(TEXT("north yaw"), FMath::IsNearlyEqual(Mouth.FacingYawDeg, 90.f, 0.1f));
+		}
+	}
+	TestTrue(TEXT("the exit was collected"), bSawExit);
+	TestTrue(TEXT("the entrance was collected"), bSawEntrance);
+	return true;
+}
+
 #endif

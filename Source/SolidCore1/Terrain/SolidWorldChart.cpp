@@ -204,6 +204,41 @@ namespace
 		}
 		return FString();
 	}
+
+	/**
+	 * The values the place tool selected. Position is not one of them.
+	 * A town matches its name. A stronghold and a site match their size.
+	 * A lair mouth matches its lair and its end. A note matches its text.
+	 * An encounter matches its name.
+	 */
+	bool SamePlacedMark(const FSolidWorldChartMark& Existing, const FSolidWorldChartMark& Incoming)
+	{
+		if (Existing.Kind != Incoming.Kind)
+		{
+			return false;
+		}
+		switch (Incoming.Kind)
+		{
+		case ESolidWorldChartMarkKind::Town:
+			return Existing.Name.Equals(Incoming.Name, ESearchCase::IgnoreCase);
+		case ESolidWorldChartMarkKind::Stronghold:
+		case ESolidWorldChartMarkKind::StrongholdSite:
+			return Existing.StrongholdSize == Incoming.StrongholdSize;
+		case ESolidWorldChartMarkKind::LairEntrance:
+		case ESolidWorldChartMarkKind::LairExit:
+			if (!Existing.LairId.IsEmpty() && !Incoming.LairId.IsEmpty())
+			{
+				return Existing.LairId.Equals(Incoming.LairId, ESearchCase::IgnoreCase);
+			}
+			return Existing.Name.Equals(Incoming.Name, ESearchCase::IgnoreCase);
+		case ESolidWorldChartMarkKind::Custom:
+			return Existing.Name.Equals(Incoming.Name, ESearchCase::CaseSensitive);
+		case ESolidWorldChartMarkKind::Encounter:
+			return Existing.Name.Equals(Incoming.Name, ESearchCase::IgnoreCase);
+		default:
+			return false;
+		}
+	}
 }
 
 bool USolidWorldChart::CellCentre(const FIntPoint Cell, FVector2D& OutCm)
@@ -347,16 +382,23 @@ bool USolidWorldChart::PlaceMark(const FIntPoint Cell, const FSolidWorldChartMar
 	}
 
 	PushUndo();
-	const int32 Existing = MarkAtCell(Cell);
 	FSolidWorldChartMark Stored = Mark;
 	Stored.PositionCm = Centre;
-	if (Existing == INDEX_NONE)
+	TArray<FVector2D> Released;
+	for (int32 Index = Marks.Num() - 1; Index >= 0; --Index)
 	{
-		Marks.Add(Stored);
+		const bool bHere = FVector2D::Distance(Marks[Index].PositionCm, Centre) <= 1.f;
+		if (!bHere && !SamePlacedMark(Marks[Index], Stored))
+		{
+			continue;
+		}
+		Released.Add(Marks[Index].PositionCm);
+		Marks.RemoveAt(Index);
 	}
-	else
+	Marks.Add(Stored);
+	for (const FVector2D& Position : Released)
 	{
-		Marks[Existing] = Stored;
+		ReleaseMarkerPoint(Position);
 	}
 	ApplyMarkerPoint(Stored.PositionCm, Stored.Kind);
 	InvalidateQuery();
@@ -1833,6 +1875,61 @@ void USolidWorldChart::ApplyMarkerPoint(const FVector2D& PositionCm, const ESoli
 	Points[PointSlot(IX, IY)] = Kind == ESolidWorldChartMarkKind::Town
 		? ESolidBiome::Town
 		: ESolidBiome::Grassland;
+}
+
+void USolidWorldChart::ReleaseMarkerPoint(const FVector2D& PositionCm) const
+{
+	if (Points.Num() != PointCount)
+	{
+		return;
+	}
+
+	FVector2D Min = FVector2D::ZeroVector;
+	FVector2D Max = FVector2D::ZeroVector;
+	DefaultWorldBounds(Min, Max);
+	int32 IX = 0;
+	int32 IY = 0;
+	PointAtWorld(PositionCm.X, PositionCm.Y, Min, Max, IX, IY);
+	const FVector2D Here = WorldAtPoint(IX, IY, Min, Max);
+	int32 Col = 0;
+	int32 Row = 0;
+	if (!WorldXYToCell(Here.X, Here.Y, Min, Max, Col, Row))
+	{
+		return;
+	}
+
+	const FIntPoint Steps[] = {
+		FIntPoint(1, 0),
+		FIntPoint(-1, 0),
+		FIntPoint(0, 1),
+		FIntPoint(0, -1),
+		FIntPoint(2, 0),
+		FIntPoint(-2, 0),
+		FIntPoint(0, 2),
+		FIntPoint(0, -2),
+	};
+	for (const FIntPoint& Step : Steps)
+	{
+		const int32 NextX = IX + Step.X;
+		const int32 NextY = IY + Step.Y;
+		if (!OnPoint(FIntPoint(NextX, NextY)))
+		{
+			continue;
+		}
+		const FVector2D World = WorldAtPoint(NextX, NextY, Min, Max);
+		int32 NextCol = 0;
+		int32 NextRow = 0;
+		if (!WorldXYToCell(World.X, World.Y, Min, Max, NextCol, NextRow))
+		{
+			continue;
+		}
+		if (NextCol != Col || NextRow != Row)
+		{
+			continue;
+		}
+		Points[PointSlot(IX, IY)] = Points[PointSlot(NextX, NextY)];
+		return;
+	}
 }
 
 void USolidWorldChart::CopyPlayOntoPoints(const bool bForce, const bool bUseStoredMarks) const

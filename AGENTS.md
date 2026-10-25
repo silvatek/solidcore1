@@ -151,7 +151,7 @@ The search leaves unused includes, unused parameters, comments, commented-out bl
 
 ## World chart
 
-Whenever `Content/World/WorldChart.uasset` changes — a pull, a commit, a diff, or an edit in the conversation — review that asset before doing anything else with it. The review runs on the Windows checkout. `tools\dump-chart.bat` writes the chart as JSON. A cloud agent does not run that script. The game builds the world from `/Game/World/WorldChart`. `tools\editor.bat` opens the World chart mode on `/Game/ThirdPerson/Lvl_ThirdPerson`.
+The game builds the world from `/Game/World/WorldChart`. Code comes first. The chart asset is not edited until the game code understands that edit. An earlier instruction told a coding agent, working on the Windows machine, to review `WorldMap.txt` before other work and match the code to that file. The chart asset replaced that file. `tools\editor.bat` opens the World chart mode on `/Game/ThirdPerson/Lvl_ThirdPerson`.
 
 The grid is 128 columns by 64 rows. Stored row 0 is north and stored column 0 is east. The dump counts from 1 at the top-left. A cell holds a marker biome. Swamp and road are not painted.
 

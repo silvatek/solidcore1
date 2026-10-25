@@ -93,11 +93,16 @@ namespace
 	}
 }
 
-FVector FSolidArrangeSign::PlateSizeCm()
+float FSolidArrangeSign::NaturalPlateWidthCm()
 {
-	const float Width = LineWidthCm(9) + PlatePadCm * 2.f;
+	return LineWidthCm(9) + PlatePadCm * 2.f;
+}
+
+FVector FSolidArrangeSign::PlateSizeCm() const
+{
+	const float Width = NaturalPlateWidthCm();
 	const float Height = (7.f * CellCm) * 2.f + LineGapCm + PlatePadCm * 2.f;
-	return FVector(PlateDepthCm, Width, Height);
+	return FVector(PlateDepthCm, Width, Height) * MetricScale;
 }
 
 FLinearColor FSolidArrangeSign::PlateColor()
@@ -156,8 +161,8 @@ void FSolidArrangeSign::CollectStrokes(TArray<FStroke>& Out) const
 						FStroke Stroke;
 						const float LocalY = LetterCenterY + (2.f - static_cast<float>(Col)) * CellCm;
 						const float LocalZ = LineZ + (3.f - static_cast<float>(Row)) * CellCm;
-						Stroke.CenterCm = FVector(StrokeDepthCm * 0.5f, LocalY, LocalZ);
-						Stroke.SizeCm = FVector(StrokeDepthCm, CellCm, CellCm);
+						Stroke.CenterCm = FVector(StrokeDepthCm * 0.5f, LocalY, LocalZ) * MetricScale;
+						Stroke.SizeCm = FVector(StrokeDepthCm, CellCm, CellCm) * MetricScale;
 						Out.Add(Stroke);
 					}
 				}
@@ -170,7 +175,7 @@ void FSolidArrangeSign::CollectStrokes(TArray<FStroke>& Out) const
 FVector FSolidArrangeSign::PlateLocation() const
 {
 	const FVector Inward = FRotator(0.f, FacingYawDeg, 0.f).Vector();
-	const float TowardWall = StrokeDepthCm + PlateGapCm + PlateDepthCm * 0.5f;
+	const float TowardWall = (StrokeDepthCm + PlateGapCm + PlateDepthCm * 0.5f) * MetricScale;
 	return StandLocation - Inward * TowardWall;
 }
 
@@ -182,10 +187,13 @@ FSolidArrangeSign FSolidArrangeSign::ForCave()
 		EastCell.Row,
 		SolidDungeonLevel::MeagreOrigin());
 	const float WallX = Center.X + SolidStrongholdGrid::FlatToFlatCm * 0.5f;
-	const float TowardWall = StrokeDepthCm + PlateGapCm + PlateDepthCm * 0.5f;
 	FSolidArrangeSign Sign;
+	const float FaceCm = SolidStrongholdGrid::SideCm() - 8.f;
+	Sign.MetricScale = FaceCm / NaturalPlateWidthCm();
+	const float Depth = PlateDepthCm * Sign.MetricScale;
+	const float TowardWall = (StrokeDepthCm + PlateGapCm + PlateDepthCm * 0.5f) * Sign.MetricScale;
 	Sign.Place(
-		FVector(WallX - PlateDepthCm * 0.5f - TowardWall, Center.Y, 150.f),
+		FVector(WallX - Depth * 0.5f - TowardWall, Center.Y, 150.f),
 		180.f);
 	return Sign;
 }

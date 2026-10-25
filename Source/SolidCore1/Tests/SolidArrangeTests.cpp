@@ -79,7 +79,10 @@ bool FSolidArrangeModeTest::RunTest(const FString& Parameters)
 	TArray<FSolidArrangeSign::FStroke> Strokes;
 	Cave.CollectStrokes(Strokes);
 	TestTrue(TEXT("the words are stroked"), Strokes.Num() > 80);
-	const FVector Plate = FSolidArrangeSign::PlateSizeCm();
+	const FVector Plate = Cave.PlateSizeCm();
+	TestTrue(
+		TEXT("the cave plate stays on one wall face"),
+		Plate.Y < SolidStrongholdGrid::SideCm());
 	bool bInside = true;
 	bool bProud = true;
 	float MinZ = TNumericLimits<float>::Max();
@@ -112,6 +115,10 @@ bool FSolidArrangeModeTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
+	const FSolidArrangeSign TowerPlate = FSolidArrangeSign::ForTowerFloor(*Tower, 0);
+	TestTrue(
+		TEXT("a tower plate keeps the full letter size"),
+		TowerPlate.PlateSizeCm().Y > Cave.PlateSizeCm().Y);
 	TestFalse(TEXT("a floor below the tower has no plate"), FSolidArrangeSign::ForTowerFloor(*Tower, -1).IsPresent());
 	TestFalse(
 		TEXT("a floor above the tower has no plate"),

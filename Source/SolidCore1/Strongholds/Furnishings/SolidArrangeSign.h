@@ -28,7 +28,7 @@ public:
 	static const TCHAR* Label() { return TEXT("Arrange furniture"); }
 
 	/** Depth toward the room, width across the view, height up. */
-	static FVector PlateSizeCm();
+	FVector PlateSizeCm() const;
 
 	static FLinearColor PlateColor();
 	static FLinearColor TextColor();
@@ -44,7 +44,10 @@ public:
 	/** The light plate, toward the wall from the strokes. */
 	FVector PlateLocation() const;
 
-	/** On the east wall of the cave, facing into the room, clear of the mouth. */
+	/**
+	 * On the east wall of the cave, facing into the room, clear of the mouth.
+	 * The plate is narrowed to that one hex side. A wider board runs through the corner rock.
+	 */
 	static FSolidArrangeSign ForCave();
 
 	/** On this floor's curved wall, inset like a floor number, clear of that number and of the door. */
@@ -57,6 +60,10 @@ private:
 	FVector StandLocation = FVector::ZeroVector;
 	float FacingYawDeg = 0.f;
 	bool bPresent = false;
+	/** 1 on a tower floor. The cave shrinks the whole sign onto one wall face. */
+	float MetricScale = 1.f;
+
+	static float NaturalPlateWidthCm();
 
 	static constexpr float CellCm = 2.4f;
 	static constexpr float LetterGapCm = 1.4f;

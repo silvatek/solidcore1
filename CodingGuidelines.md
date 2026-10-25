@@ -32,9 +32,9 @@ Blueprint classes stay `BP_SolidCharacter` and `BP_SolidGameMode`. A new game co
 
 ## Shape of a class
 
-A function is declared in a header only when there is a compelling reason to do so. Another file calling it is that reason. So is a method the engine calls, such as an override or a `UFUNCTION`. A helper that only its `.cpp` uses stays in that `.cpp`.
+A function another file calls is declared in the header. That is C++. A method the engine calls is declared there too, such as an override or a `UFUNCTION`. A helper that only its `.cpp` uses stays in that `.cpp`.
 
-The definition stays in the `.cpp`. Define the function in the header when the caller has to see the body. A template is that case. `SolidClickMove::IntersectHeight` is one.
+The definition stays in the `.cpp`. Defining a function in the header is discouraged. A template is the case where the caller has to see the body. `SolidClickMove::IntersectHeight` is one.
 
 A simple field can be public, as the encapsulation section says.
 

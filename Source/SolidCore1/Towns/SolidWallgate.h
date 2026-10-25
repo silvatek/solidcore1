@@ -37,6 +37,8 @@ namespace SolidWallgate
 	struct FPiece
 	{
 		FVector2D CenterXY = FVector2D::ZeroVector;
+		/** The marker the gate uses. The top of the piece is measured from the ground there. */
+		FVector2D MarkerXY = FVector2D::ZeroVector;
 		float FootprintXCm = 0.f;
 		float FootprintYCm = 0.f;
 		float BodyHeightCm = 0.f;

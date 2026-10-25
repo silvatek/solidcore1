@@ -105,6 +105,7 @@ namespace
 			}
 			SolidWallgate::FPiece Piece;
 			Piece.CenterXY = FVector2D((From + To) * 0.5f, SidePos);
+			Piece.MarkerXY = Marker;
 			Piece.FootprintXCm = Length;
 			Piece.FootprintYCm = SolidWallgate::WallThicknessCm;
 			Piece.BodyHeightCm = SolidWallgate::WallHeightCm;
@@ -123,6 +124,7 @@ namespace
 				+ SolidWallgate::TowerFootprintYCm * 0.5f
 				- SolidWallgate::ConnectCm;
 			Piece.CenterXY = FVector2D(AlongPos, SidePos + SideOffset);
+			Piece.MarkerXY = Marker;
 			Piece.FootprintXCm = SolidWallgate::TowerFootprintXCm;
 			Piece.FootprintYCm = SolidWallgate::TowerFootprintYCm;
 			Piece.BodyHeightCm = SolidWallgate::TowerBodyCm;

@@ -1951,7 +1951,10 @@ void ASolidGameMode::EnsureVegetation()
 			for (const SolidWallgate::FPiece& Piece : GatePieces)
 			{
 				FVector SpawnLoc(Piece.CenterXY.X, Piece.CenterXY.Y, 0.f);
-				const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
+				// The centre of a long curtain can sit on the slope. The top is measured
+				// from the marker, so both sides of the gate share one level.
+				const FVector Ground(Piece.MarkerXY.X, Piece.MarkerXY.Y, 0.f);
+				const float LandZ = Streamer->GetHeightAt(Ground) + Streamer->CollisionHeightBias;
 				SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
 
 				ASolidBuilding* Building = World->SpawnActor<ASolidBuilding>(

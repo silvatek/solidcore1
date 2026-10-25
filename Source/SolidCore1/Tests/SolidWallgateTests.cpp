@@ -166,6 +166,11 @@ namespace
 		const float GapLow = WallgateTestAlong(Walls[0].CenterXY, bEastWest) + Walls[0].FootprintXCm * 0.5f;
 		const float GapHigh = WallgateTestAlong(Walls[1].CenterXY, bEastWest) - Walls[1].FootprintXCm * 0.5f;
 		Test.TestTrue(TEXT("the gate is 4 m"), WallgateTestNear(GapHigh - GapLow, SolidWallgate::GapCm));
+		for (const SolidWallgate::FPiece& Piece : Pieces)
+		{
+			Test.TestTrue(TEXT("the top is measured from one marker"),
+				Piece.MarkerXY.Equals(Pieces[0].MarkerXY, 0.5f));
+		}
 
 		const float TowerLowInner = WallgateTestAlong(Towers[0].CenterXY, bEastWest) + Towers[0].FootprintXCm * 0.5f;
 		const float TowerHighInner = WallgateTestAlong(Towers[1].CenterXY, bEastWest) - Towers[1].FootprintXCm * 0.5f;
@@ -240,6 +245,8 @@ namespace
 		const float OuterMax = Walls[1].CenterXY.X + Walls[1].FootprintXCm * 0.5f;
 		Test.TestTrue(TEXT("the gate stands on the marker"),
 			WallgateTestNear((GapLow + GapHigh) * 0.5f, Marker.X));
+		Test.TestTrue(TEXT("that marker is where the top is measured"),
+			Pieces[0].MarkerXY.Equals(Marker, 0.5f));
 		Test.TestTrue(TEXT("the curtain finishes inside the east mountain"),
 			WallgateTestNear(OuterMax, Marker.X + static_cast<float>(EastSteps + 1) * Spacing));
 		Test.TestTrue(TEXT("the curtain finishes inside the west mountain"),
@@ -436,6 +443,8 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 				GapHigh = Walls[1].CenterXY.X - Walls[1].FootprintXCm * 0.5f;
 				TestTrue(TEXT("the shipped gate stands on the eastern marker"),
 					WallgateTestNear((GapLow + GapHigh) * 0.5f, EastXY.X));
+				TestTrue(TEXT("the shipped top is measured from the eastern marker"),
+					Pieces[0].MarkerXY.Equals(EastXY, 0.5f));
 				if (Town.Cells.Num() > 1)
 				{
 					TestTrue(TEXT("the curtain passes the ignored marker"), OuterMin < WestXY.X);

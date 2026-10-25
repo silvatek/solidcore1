@@ -165,7 +165,7 @@ World Partition and Large Worlds are enabled in project config for open-world sc
 .cursor/
   environment.json             # Cloud agent environment
 AGENTS.md                      # Agent workflow
-AgentBuild.md                  # Self-hosted Windows build
+AgentBuild.md                  # The builder's Windows worker
 CodingGuidelines.md
 Config/
   DefaultEditor.ini

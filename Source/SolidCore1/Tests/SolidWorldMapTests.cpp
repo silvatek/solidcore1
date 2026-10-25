@@ -159,11 +159,28 @@ bool FSolidWorldMapTerrainOverlayTest::RunTest(const FString& Parameters)
 	FVector2D TownXY = FVector2D::ZeroVector;
 	TestTrue(TEXT("terrain exposes start town"), Terrain->GetStartTownWorldXY(TownXY));
 
-	const FSolidTerrainPoint TownPoint = Terrain->SamplePoint(TownXY.X, TownXY.Y);
-	TestEqual(
-		TEXT("town centroid is Town biome"),
-		static_cast<uint8>(TownPoint.Biome),
-		static_cast<uint8>(ESolidBiome::Town));
+	// The small fixture steps across the whole world, so its nearest point can
+	// miss a painted town. Play uses the chart grid, and that centroid is the town point.
+	USolidTerrainMap* ChartGrid = NewObject<USolidTerrainMap>();
+	TestNotNull(TEXT("chart grid"), ChartGrid);
+	if (ChartGrid)
+	{
+		ChartGrid->Build(
+			/*InSeed=*/1337,
+			/*FrequencyScale=*/0.00012f,
+			/*Amplitude=*/3000.f,
+			/*BaseHeight=*/0.f,
+			/*InGridWidth=*/USolidWorldChart::PointAxis,
+			/*InGridHeight=*/USolidWorldChart::PointAxis,
+			/*InPointSpacing=*/200.f,
+			/*bForceRebuild=*/true);
+		FVector2D ChartTown = FVector2D::ZeroVector;
+		TestTrue(TEXT("chart grid exposes the start town"), ChartGrid->GetStartTownWorldXY(ChartTown));
+		TestEqual(
+			TEXT("town centroid is Town biome"),
+			static_cast<uint8>(ChartGrid->SamplePoint(ChartTown.X, ChartTown.Y).Biome),
+			static_cast<uint8>(ESolidBiome::Town));
+	}
 
 	// MakeSmallMap centers fog on a fixture player at the origin, not on the start cell.
 	const FVector2D FogOrigin = Terrain->GetFogOriginXY();

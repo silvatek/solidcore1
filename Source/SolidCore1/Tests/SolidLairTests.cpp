@@ -542,7 +542,8 @@ bool FSolidLairExitFacesWestTest::RunTest(const FString& Parameters)
 	if (!TestNotNull(TEXT("grass chart"), Chart)
 		|| !TestTrue(TEXT("grass imports"), Chart->ImportFromString(Grid))
 		|| !TestTrue(TEXT("the exit places"), Chart->PlaceLairMouth(Exit, SolidLair::IglinTunnels.Name, false, Error))
-		|| !TestTrue(TEXT("the entrance places"), Chart->PlaceLairMouth(Entrance, SolidLair::IglinTunnels.Name, true, Error)))
+		|| !TestTrue(TEXT("the entrance places"), Chart->PlaceLairMouth(Entrance, SolidLair::IglinTunnels.Name, true, Error))
+		|| !TestTrue(TEXT("the chart loads"), Chart->LoadFromChart(Chart)))
 	{
 		return false;
 	}

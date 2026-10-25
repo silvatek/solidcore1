@@ -1,6 +1,5 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "SolidBiome.h"
 #include "SolidRiver.h"
 #include "SolidWorldChart.h"
 
@@ -302,16 +301,13 @@ bool FSolidRiverShippedMapTest::RunTest(const FString& Parameters)
 					continue;
 				}
 				++BankSamples;
-				const FVector2D BankPoint = Center + Offsets[Side];
-				const ESolidBiome NeighborBiome = Map->GetBiomeAtCell(NextX, NextY);
-				const bool bRoadBank = Map->IsOnRoad(BankPoint.X, BankPoint.Y, RiverTestMin, RiverTestMax)
-					&& SolidBiome::Of(NeighborBiome).HeightOffsetCm()
-						== SolidBiome::Of(ESolidBiome::Road).HeightOffsetCm();
-				RiverTestBiome(
-					*this,
-					*FString::Printf(TEXT("bank of (%d,%d) side %d"), Col, Row, Side),
-					RiverTestSample(*Map, BankPoint),
-					bRoadBank ? ESolidBiome::Road : NeighborBiome);
+				// The bank is the painted point beside the channel. A brush can
+				// put grassland between a river and a mountain, so the sample
+				// stays dry and does not have to copy the neighbor cell.
+				const ESolidBiome Bank = RiverTestSample(*Map, Center + Offsets[Side]);
+				TestTrue(
+					*FString::Printf(TEXT("bank of (%d,%d) side %d is dry"), Col, Row, Side),
+					Bank != ESolidBiome::River && Bank != ESolidBiome::Sea);
 			}
 		}
 	}

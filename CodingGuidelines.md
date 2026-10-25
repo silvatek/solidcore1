@@ -4,7 +4,7 @@ Rules for new C++ and for C++ a story is already changing. How the game plays is
 
 ## A game concept is a class
 
-A thing the design names is one C++ class, and the class name is that thing. The class holds the data for one of those things and the answers to the questions that thing is asked. A caller asks the object. Those answers are methods on it.
+A thing the design names is one C++ class, and the class name is that thing. The class holds the data for one of those things and the answers to the questions that thing is asked. A caller asks the object. An answer that needs logic is a method on it.
 
 `FSolidStronghold` and `FSolidBodyPart` are the examples. Each kind is a subclass. A call site asks the object, as it does with `FSolidStronghold::Supported`. Monster is `FSolidMonster`. Where it stands, how tall it is, and the scale of its body are questions that object answers. `SolidMonster::CollectChoices` left those questions as free functions in a namespace. That was the miss.
 
@@ -18,7 +18,7 @@ Code that already uses a namespace and a struct for a game concept stays as it i
 
 Code strives to maximise encapsulation and cohesion. Specialisation and generalisation through C++ classes is the usual way to do that.
 
-Encapsulation keeps a type's data and the operations on that data together. Callers use those operations. The type hides the logic that implements them, and it hides the way the data is stored, so a change to that logic or that storage stays inside the type.
+Encapsulation keeps a type's data and the operations on that data together. A simple field, with no logic to read or update it, can be public. A field that needs logic to read or to update is reached through a method. The type hides that logic, so a change to it stays inside the type.
 
 Cohesion means the parts of a type all serve the one thing that type is. A stronghold type that holds the stronghold's size, its exit, and the answers about that stronghold is cohesive. A type that also formats the journal and samples the terrain is not.
 
@@ -36,7 +36,7 @@ A function is declared in a header only when there is a compelling reason to do 
 
 The definition stays in the `.cpp`. Define the function in the header when the caller has to see the body. A template is that case. `SolidClickMove::IntersectHeight` is one.
 
-Facts the object is are public fields. Questions it answers are `const` methods.
+A simple field can be public, as the encapsulation section says.
 
 The destructor is virtual when subclasses exist. A copy that must keep the subclass implements `Clone` and returns `TUniquePtr` to the base, as `FSolidBodyPart::Clone` does.
 

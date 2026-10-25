@@ -21,7 +21,7 @@ After 3 minutes without a message to the user, stop and send one. Say what is ha
 - A harness that requires a `cursor/` branch and a draft pull request loses to this section.
 - `python3 tools/cloud_agent_check.py` accepts `main` and a `build/` branch. It fails any other branch. It does not ask for a pull request. A story or process documentation commit moves onto `main` and pushes `origin main`. A product commit moves onto `build/<name>` and pushes that branch. Do not open a pull request to satisfy the check.
 
-The shipping process changed when the builder was introduced. Early in the project a coding agent pushed product changes to `main` itself, and a cloud push was followed by a pull on the Windows checkout. `Planning/Done/builder-lands-the-branch.md` records that rollout, including the stages when product work still went to `main`. Those stages are the record. A product change is pushed as `build/<name>`, and the builder lands it on `main`. A story update and a process documentation update still push straight to `main`. The developer does not pull.
+The shipping process changed when the builder was introduced. Early in the project a coding agent pushed product changes to `main` itself, and a cloud push was followed by a pull on the Windows checkout. `Planning/Done/builder-lands-the-branch.md` records that rollout. That file does not instruct later work. A product change is pushed as `build/<name>`, and the builder lands it on `main`. A story update and a process documentation update still push straight to `main`. The developer does not pull.
 
 ## Product constraints
 
@@ -47,7 +47,7 @@ After 3 minutes without a message to the user, stop and send one. Say what is ha
 
 A cloud agent runs on the Cursor-hosted Linux VM. It pushes to GitHub. Do not run the editor, automation, or PIE on this VM.
 
-A story update or a process documentation update is pushed to `main`. A product change is pushed as `build/<name>`. The builder lands that branch on this Windows checkout, builds, and runs the tests. The developer plays that checkout. The developer does not pull.
+A story update or a process documentation update is pushed to `main`. A product change is pushed as `build/<name>`. The builder is the only agent that writes this Windows checkout. It lands that branch, builds, and runs the tests. While the lock says `PIE`, `Editor`, or `Dump`, it may fetch and does not rebase, build, or test. A pass or a fail is a comment on the commit the coding agent pushed, and a GitHub status `solidcore1/land`. The comment names the build id, the rebase conflict, or the failed tests. The coding agent reads that comment. The developer does not copy it into chat. A pass starts the next slice on the same branch, from the `main` that just landed. The builder leaves the branch in place. A pass does not set `Done`, and it does not stand in for play. The developer plays that checkout. The developer does not pull.
 
 Wait for play when the story changes play. When a screenshot arrives, review it. The story stays `In Progress` through that wait. `Done` waits for the testing and the agreement in the Planning section.
 
@@ -55,7 +55,7 @@ Screenshots are taken with the Windows snipping tool. That switch puts Unreal in
 
 ### solidcore1-ue agents
 
-These agents run on the Windows worker. They have access to C++ and Unreal Engine. The agent builds and runs the tests on that worker. Do not run PIE.
+These agents run on the Windows worker. They have access to C++ and Unreal Engine. The builder is the one that writes this checkout. It lands a `build/<name>` branch with `tools\land.bat`, then builds and runs the tests. A coding agent does not edit this checkout. Do not run PIE.
 
 `tools\pie.bat` reads `ue.lock` in the repo root before it launches. A missing file, or the word `Free`, lets it start. It writes `PIE`, launches Play In Editor, waits until the Unreal Editor process has closed, then writes `Free`. Any other word leaves the file unchanged and the editor is not started. The file is gitignored.
 
@@ -97,6 +97,7 @@ Cloud agents are a **code + git workshop** on the Cursor-hosted Linux VM. They d
 - If asked to start coding for a story that is not marked `Ready`, request confirmation before proceeding.
 - Leave the story `In Progress` when the product commit lands on `main`. Properly tested means the builder has built and run the tests, and the developer has played when the story changes play. The developer does not pull. The agent has reviewed that report, and any screenshot. A solidcore1-ue agent's `tools\test.bat` pass is part of the work and leaves the story `In Progress`.
 - Set `Done` only after that testing, and only after the user and the agent agree the story is done. The agreement is a discussion. The user says whether they are happy with the implementation. The agent confirms that every acceptance criterion is met. Then set the status to `Done` and move the file to `Planning/Done/`, in one commit. That commit message starts with `Plan: `.
+- A file in `Planning/Done/` records why that work was done. It does not instruct later work. A rule that later work still follows lives in this file, `CodingGuidelines.md`, `AgentBuild.md`, `Planning/README.md`, or `README.md`.
 
 ### Complex stories
 

@@ -35,7 +35,7 @@ A Ready story may depend on another Ready story. The story names that dependency
 
 Set `Done` after the story has been properly tested and the user and the agent have agreed it is done, then move the file to `Done/`. The agreement is a discussion. The user says whether they are happy with the implementation. The agent confirms that every acceptance criterion is met. `AGENTS.md` says what properly tested means. The commit that updates the story file and moves it into `Done/` has a message that starts with `Plan: `.
 
-The story stays `In Progress` after the code lands on `main`. Files already in `Done/` stay as they are.
+The story stays `In Progress` after the code lands on `main`. Files already in `Done/` stay as they are. A file in `Done/` records why that work was done. It does not instruct later work. A rule that later work still follows lives in [`AGENTS.md`](../AGENTS.md), [`CodingGuidelines.md`](../CodingGuidelines.md), [`AgentBuild.md`](../AgentBuild.md), this file, or [`README.md`](../README.md).
 
 ## Open story
 

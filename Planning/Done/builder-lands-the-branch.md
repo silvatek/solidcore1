@@ -2,6 +2,8 @@
 
 Status: Done
 
+This file records why the builder was introduced. It does not instruct later work. Later work follows `AGENTS.md` and `AgentBuild.md`.
+
 ## Story
 
 A coding agent writes one story on a branch and pushes that branch. It stops. The builder on the Windows machine lands that branch on `main` when `ue.lock` is Free, builds, and runs the tests. A pass names the build id, and the coding agent continues the story. A fail names the failure, and the coding agent updates the same branch.

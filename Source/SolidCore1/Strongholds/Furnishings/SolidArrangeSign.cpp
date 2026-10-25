@@ -188,7 +188,9 @@ FSolidArrangeSign FSolidArrangeSign::ForCave()
 		SolidDungeonLevel::MeagreOrigin());
 	const float WallX = Center.X + SolidStrongholdGrid::FlatToFlatCm * 0.5f;
 	FSolidArrangeSign Sign;
-	const float FaceCm = SolidStrongholdGrid::SideCm() - 8.f;
+	// Each wall cube runs past its vertex by half of this overlap, and that rock covers the face.
+	const float CornerCm = SolidDungeonLevel::ShellCm * 0.35f * 0.5f;
+	const float FaceCm = SolidStrongholdGrid::SideCm() - CornerCm * 2.f;
 	Sign.MetricScale = FaceCm / NaturalPlateWidthCm();
 	const float Depth = PlateDepthCm * Sign.MetricScale;
 	const float TowardWall = (StrokeDepthCm + PlateGapCm + PlateDepthCm * 0.5f) * Sign.MetricScale;

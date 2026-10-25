@@ -80,13 +80,14 @@ bool FSolidArrangeModeTest::RunTest(const FString& Parameters)
 	Cave.CollectStrokes(Strokes);
 	TestTrue(TEXT("the words are stroked"), Strokes.Num() > 80);
 	const FVector Plate = Cave.PlateSizeCm();
-	TestTrue(
-		TEXT("the cave plate stays on one wall face"),
-		Plate.Y < SolidStrongholdGrid::SideCm());
+	const float CornerCm = SolidDungeonLevel::ShellCm * 0.35f * 0.5f;
+	const float OpenFaceCm = SolidStrongholdGrid::SideCm() - CornerCm * 2.f;
+	TestTrue(TEXT("the cave plate clears the corner rocks"), Plate.Y <= OpenFaceCm + 0.05f);
 	bool bInside = true;
 	bool bProud = true;
 	float MinZ = TNumericLimits<float>::Max();
 	float MaxZ = TNumericLimits<float>::Lowest();
+	float MaxAbsY = 0.f;
 	for (const FSolidArrangeSign::FStroke& Stroke : Strokes)
 	{
 		const float HalfY = Stroke.SizeCm.Y * 0.5f;
@@ -97,8 +98,12 @@ bool FSolidArrangeModeTest::RunTest(const FString& Parameters)
 		bProud = bProud && Stroke.CenterCm.X > 0.f;
 		MinZ = FMath::Min(MinZ, Stroke.CenterCm.Z);
 		MaxZ = FMath::Max(MaxZ, Stroke.CenterCm.Z);
+		MaxAbsY = FMath::Max(MaxAbsY, FMath::Abs(Stroke.CenterCm.Y) + HalfY);
 	}
 	TestTrue(TEXT("the strokes stay inside the plate"), bInside);
+	TestTrue(
+		TEXT("the words clear the corner rocks"),
+		MaxAbsY < SolidStrongholdGrid::SideCm() * 0.5f - CornerCm);
 	TestTrue(TEXT("the strokes stand proud of the plate, into the room"), bProud);
 	TestTrue(TEXT("the two lines sit one above the other"), MinZ < 0.f && MaxZ > 0.f);
 

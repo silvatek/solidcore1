@@ -46,7 +46,7 @@ public:
 
 	/**
 	 * On the east wall of the cave, facing into the room, clear of the mouth.
-	 * The plate is narrowed to that one hex side. A wider board runs through the corner rock.
+	 * The plate sits on the open face between the corner rocks. A wider board runs into those rocks.
 	 */
 	static FSolidArrangeSign ForCave();
 

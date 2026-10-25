@@ -87,13 +87,9 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 ### Policy
 
 1. Existing tests keep passing when product code changes. The product change does not edit those tests to make itself pass.
-2. When a change has to update an existing test (an API rename, or an intentional behavior change), the commit names those tests and says why.
+2. When a change has to update an existing test (an API rename, or an intentional behavior change), the commit names those tests and says why. Read a constant the product already defines, such as `USolidWorldChart::MapWidth`, instead of copying a number.
 3. New product code ships with tests in the same commit. Prefer a pure-logic test or a `NewObject` unit test. Add a PIE test only when the behavior needs a running world.
 4. Never pass `TObjectPtr<T>` (or a ternary that yields one) to `TestNotNull` / `TestNull`. UE 5.8 cannot deduce `const ValueType*` from it. `GetStaticMesh()` is the usual case. Bind a raw `T*` first, or call `.Get()`.
-5. When a product change would invalidate an assumption in an existing test, remove that assumption before the product change. The test has to pass on the current code and on the code that is about to be written. Read a constant the product already defines, such as `USolidWorldChart::MapWidth`, instead of copying a number.
-   1. Name the tests that assume the old behavior.
-   2. Update those tests only. Leave the product code unchanged in that commit.
-   3. That commit is its own buildable tip. The builder lands it and runs the tests against the current build.
-   4. The product change comes next and does not edit the tests.
-   5. The builder runs the same tests again when it lands the product change.
-6. The builder runs the full suite, filter `SolidCore1`, when it lands a buildable tip. A change in one area can break a test elsewhere. A cloud agent does not run that suite, as `AGENTS.md` says.
+5. The builder runs the full suite, filter `SolidCore1`, when it lands a buildable tip. A change in one area can break a test elsewhere. A cloud agent does not run that suite, as `AGENTS.md` says.
+
+An earlier rule shipped a test change as its own buildable tip before the product change, so the tests could run against the current build. That extra landing is too slow with the builder. The test change and the product change ship together.

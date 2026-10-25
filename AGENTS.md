@@ -98,7 +98,9 @@ An agent defining a story writes the whole story. The phasing below is for the a
 
 When a story is so simple that it makes no sense to phase the delivery, the agent states that it will be implemented as a single phase story, then plans and delivers that phase.
 
-A story is complex when later acceptance needs a core that can be implemented and tested on its own. The coding agent starts with a high-level plan: the stages, in order, and what is true when each one ends. Reading the story and the code to find those stages is part of writing that plan. That plan is the Stages section of the story.
+A story is complex when later acceptance needs a core that can be implemented and tested on its own. The coding agent starts with a high-level plan: the stages, in order, and what is true when each one ends. Reading the story and the code to find those stages is part of writing that plan. That plan is agreed in the conversation. It is not added to the story.
+
+Some stories already have a Stages section. Those were written before this was clear: the stages are a delivery rule, not a planning rule. Leave those sections where they are. Do not add a high-level plan to any more stories. The rule is there so a coding agent does not spend the work of the whole story figuring out how to do all of it in one go.
 
 Agree that plan with the user before planning any stage in detail. A request to plan the implementation, or to start it, still begins with the high-level plan. The agreement opens the first stage only. The story stays `Ready` until that stage starts.
 
@@ -149,7 +151,7 @@ The search leaves unused includes, unused parameters, comments, commented-out bl
 
 ## World chart
 
-Whenever `Content/World/WorldChart.uasset` changes — a pull, a commit, a diff, or an edit in the conversation — review that asset before doing anything else with it. The review runs on the Windows checkout. `tools\dump-chart.bat` writes the chart as JSON. A cloud agent does not run that script. The game builds the world from `/Game/World/WorldChart`. `tools\editor.bat` opens the World chart mode on `/Game/ThirdPerson/Lvl_ThirdPerson`.
+The game builds the world from `/Game/World/WorldChart`. Code comes first. The chart asset is not edited until the game code understands that edit. An earlier instruction told a coding agent, working on the Windows machine, to review `WorldMap.txt` before other work and match the code to that file. The chart asset replaced that file. `tools\editor.bat` opens the World chart mode on `/Game/ThirdPerson/Lvl_ThirdPerson`.
 
 The grid is 128 columns by 64 rows. Stored row 0 is north and stored column 0 is east. The dump counts from 1 at the top-left. A cell holds a marker biome. Swamp and road are not painted.
 

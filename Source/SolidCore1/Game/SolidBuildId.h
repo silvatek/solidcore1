@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0621")
+#define SOLID_BUILD_ID TEXT("SC1-0622")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The shipped Dragongate check reads the chart.")
+#define SOLID_BUILD_NOTE TEXT("The chart view rebuild for a cell is one function.")
 #endif

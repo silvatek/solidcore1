@@ -1,5 +1,6 @@
 #include "SolidTownSigns.h"
 #include "SolidTowns.h"
+#include "SolidWallgate.h"
 #include "SolidWorldChart.h"
 
 static_assert(
@@ -64,6 +65,7 @@ int32 SolidTownSigns::CollectPlacements(
 		}
 
 		// One board for the town, at the middle of its cells. A town offset is added from there.
+		// A wall gate stands on its marker, so the board is measured from that point.
 		FVector2D Sum = FVector2D::ZeroVector;
 		int32 Found = 0;
 		FIntPoint AnchorCell = Cells.Num() > 0 ? Cells[0] : FIntPoint::ZeroValue;
@@ -78,13 +80,26 @@ int32 SolidTownSigns::CollectPlacements(
 			++Found;
 			AnchorCell = Cell;
 		}
+		FVector2D Anchor = Found > 0 ? Sum / static_cast<float>(Found) : FVector2D::ZeroVector;
+		if (SolidTowns::IsWallGate(Location.Id))
+		{
+			FVector2D Gate = FVector2D::ZeroVector;
+			FIntPoint Marker = FIntPoint::ZeroValue;
+			if (SolidWallgate::GateCenterXY(WorldMap, Location.Id, WorldMinXY, WorldMaxXY, Gate)
+				&& SolidWallgate::MarkerCell(WorldMap, Location.Id, Marker))
+			{
+				Anchor = Gate;
+				AnchorCell = Marker;
+				Found = 1;
+			}
+		}
 		if (Found > 0)
 		{
 			FPlacement Placement;
 			Placement.LocationId = Location.Id;
 			Placement.Name = Location.Name;
 			Placement.Cell = AnchorCell;
-			Placement.WorldXY = (Sum / static_cast<float>(Found)) + Offset;
+			Placement.WorldXY = Anchor + Offset;
 			Placement.YawDeg = YawDeg;
 			OutPlacements.Add(Placement);
 		}

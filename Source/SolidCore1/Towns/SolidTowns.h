@@ -14,8 +14,8 @@ namespace SolidTowns
 	/** Actor yaw. The board's front faces north, so it can be read while facing south. */
 	inline constexpr float SignFacesNorthYawDeg = 90.f;
 	/**
-	 * Dragongate's pole, on the north edge of its 16 m cell and one gate-width east of
-	 * center. The board then sits off the opening, so the path through the wall stays clear.
+	 * Dragongate's pole, measured from the marker the gate uses. One gate-width east of
+	 * that point, and north of the towers. The board then sits off the opening.
 	 */
 	inline constexpr float DragongateSignNorthCm = 800.f;
 	inline constexpr float DragongateSignEastCm = 400.f;

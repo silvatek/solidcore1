@@ -940,14 +940,20 @@ bool FSolidAutoPlaythroughStage4Test::RunTest(const FString& Parameters)
 					WorldMax,
 					Walk));
 			TestTrue(TEXT("that walk is the opening"), Walk.Equals(Opening, 0.1f));
-			TestTrue(
-				TEXT("that cell also has a centre"),
-				Chart->CellToWorldXY(Gate.Cells[0], WorldMin, WorldMax, Center));
 			if (Gate.Cells.Num() > 1)
 			{
-				TestFalse(
-					TEXT("the opening is not a cell centre"),
-					Opening.Equals(Center, 1.f));
+				FIntPoint Eastern = Gate.Cells[0];
+				for (const FIntPoint& GateCell : Gate.Cells)
+				{
+					if (GateCell.X < Eastern.X)
+					{
+						Eastern = GateCell;
+					}
+				}
+				FVector2D EasternXY = FVector2D::ZeroVector;
+				TestTrue(TEXT("the eastern marker projects"),
+					Chart->CellToWorldXY(Eastern, WorldMin, WorldMax, EasternXY));
+				TestTrue(TEXT("the opening is the eastern marker"), Opening.Equals(EasternXY, 1.f));
 			}
 			TestTrue(
 				TEXT("grass at the site keeps its centre"),

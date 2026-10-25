@@ -2,9 +2,8 @@
 #include "Misc/AutomationTest.h"
 #include "SolidWallgate.h"
 #include "SolidTowns.h"
+#include "SolidTownSigns.h"
 #include "SolidWorldChart.h"
-
-#include <initializer_list>
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -13,48 +12,72 @@ namespace
 	const FVector2D WallgateTestMin(-51200.f, -51200.f);
 	const FVector2D WallgateTestMax(51200.f, 51200.f);
 
-	struct FWallgateTestMark
-	{
-		int32 Col = 0;
-		int32 Row = 0;
-		TCHAR Marker = USolidWorldChart::GrassMarker;
-	};
+	const FIntPoint WallgateMarkerCell(40, 30);
 
-	FString WallgateTestGrid(std::initializer_list<FWallgateTestMark> Marks, const FString& Extra = FString())
+	FString WallgateGrassText(const TArray<FIntPoint>& Markers, const FString& Extra)
 	{
 		FString Text;
 		Text.Reserve((USolidWorldChart::MapWidth + 1) * USolidWorldChart::MapHeight + Extra.Len());
 		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 		{
-			for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
+			FString Line = FString::ChrN(USolidWorldChart::MapWidth, USolidWorldChart::GrassMarker);
+			for (const FIntPoint& Cell : Markers)
 			{
-				TCHAR Marker = USolidWorldChart::GrassMarker;
-				for (const FWallgateTestMark& Mark : Marks)
+				if (Cell.Y == Row && Cell.X >= 0 && Cell.X < USolidWorldChart::MapWidth)
 				{
-					if (Mark.Col == Col && Mark.Row == Row)
-					{
-						Marker = Mark.Marker;
-						break;
-					}
+					Line[Cell.X] = USolidWorldChart::LocationMarker;
 				}
-				Text.AppendChar(Marker);
 			}
+			Text += Line;
 			Text.AppendChar(TEXT('\n'));
 		}
 		Text += Extra;
 		return Text;
 	}
 
-	USolidWorldChart* WallgateTestLoad(
+	FString WallgateBang(const FIntPoint& Cell)
+	{
+		return FString::Printf(
+			TEXT("! %d,%d = Town Dragongate\n"),
+			Cell.Y + 1,
+			Cell.X + 1);
+	}
+
+	USolidWorldChart* WallgateImport(
 		FAutomationTestBase& Test,
 		const TCHAR* What,
-		std::initializer_list<FWallgateTestMark> Marks,
-		const FString& Extra = FString())
+		const TArray<FIntPoint>& Markers,
+		const FString& Extra)
 	{
 		USolidWorldChart* Map = NewObject<USolidWorldChart>();
-		const bool bLoaded = Map && Map->LoadFromString(WallgateTestGrid(Marks, Extra));
+		const bool bLoaded = Map && Map->ImportFromString(WallgateGrassText(Markers, Extra));
 		Test.TestTrue(What, bLoaded);
 		return bLoaded ? Map : nullptr;
+	}
+
+	float WallgateSpacing()
+	{
+		return (WallgateTestMax.X - WallgateTestMin.X) / static_cast<float>(USolidWorldChart::PointAxis - 1);
+	}
+
+	FIntPoint WallgatePoint(const USolidWorldChart& Map, const FVector2D& World)
+	{
+		FIntPoint Point = FIntPoint::ZeroValue;
+		Map.TerrainPointAt(World.X, World.Y, WallgateTestMin, WallgateTestMax, Point);
+		return Point;
+	}
+
+	bool WallgatePaint(
+		FAutomationTestBase& Test,
+		USolidWorldChart& Map,
+		const FIntPoint& Origin,
+		const int32 StepEast,
+		const ESolidBiome Biome)
+	{
+		FString Error;
+		const bool bPainted = Map.PaintBrush({ FIntPoint(Origin.X + StepEast, Origin.Y) }, 0, Biome, Error);
+		Test.TestTrue(TEXT("point paints"), bPainted);
+		return bPainted;
 	}
 
 	bool WallgateTestNear(const float A, const float B)
@@ -162,6 +185,78 @@ namespace
 		}
 		return true;
 	}
+
+	bool WallgateCovers(const TArray<SolidWallgate::FPiece>& Walls, const float X)
+	{
+		for (const SolidWallgate::FPiece& Wall : Walls)
+		{
+			const float Low = Wall.CenterXY.X - Wall.FootprintXCm * 0.5f;
+			const float High = Wall.CenterXY.X + Wall.FootprintXCm * 0.5f;
+			if (X >= Low - 0.5f && X <= High + 0.5f)
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * EastSteps and WestSteps are the mountain, counted in points from the marker.
+	 * The curtain ends one point further into each mountain. Open points between sit on a wall.
+	 */
+	bool WallgateExpectRun(
+		FAutomationTestBase& Test,
+		const TArray<SolidWallgate::FPiece>& Pieces,
+		const FVector2D& Marker,
+		const int32 EastSteps,
+		const int32 WestSteps)
+	{
+		if (!WallgateTestExpectPass(Test, Pieces, true))
+		{
+			return false;
+		}
+
+		TArray<SolidWallgate::FPiece> Walls;
+		for (const SolidWallgate::FPiece& Piece : Pieces)
+		{
+			if (Piece.bStoneWall)
+			{
+				Walls.Add(Piece);
+			}
+		}
+		Walls.Sort([](const SolidWallgate::FPiece& A, const SolidWallgate::FPiece& B)
+		{
+			return A.CenterXY.X < B.CenterXY.X;
+		});
+		if (!Test.TestEqual(TEXT("two curtains"), Walls.Num(), 2))
+		{
+			return false;
+		}
+
+		const float Spacing = WallgateSpacing();
+		const float GapLow = Walls[0].CenterXY.X + Walls[0].FootprintXCm * 0.5f;
+		const float GapHigh = Walls[1].CenterXY.X - Walls[1].FootprintXCm * 0.5f;
+		const float OuterMin = Walls[0].CenterXY.X - Walls[0].FootprintXCm * 0.5f;
+		const float OuterMax = Walls[1].CenterXY.X + Walls[1].FootprintXCm * 0.5f;
+		Test.TestTrue(TEXT("the gate stands on the marker"),
+			WallgateTestNear((GapLow + GapHigh) * 0.5f, Marker.X));
+		Test.TestTrue(TEXT("the curtain finishes inside the east mountain"),
+			WallgateTestNear(OuterMax, Marker.X + static_cast<float>(EastSteps + 1) * Spacing));
+		Test.TestTrue(TEXT("the curtain finishes inside the west mountain"),
+			WallgateTestNear(OuterMin, Marker.X - static_cast<float>(WestSteps + 1) * Spacing));
+
+		for (int32 Step = 1; Step < EastSteps; ++Step)
+		{
+			Test.TestTrue(TEXT("the east curtain covers the open point"),
+				WallgateCovers(Walls, Marker.X + static_cast<float>(Step) * Spacing));
+		}
+		for (int32 Step = 1; Step < WestSteps; ++Step)
+		{
+			Test.TestTrue(TEXT("the west curtain covers the open point"),
+				WallgateCovers(Walls, Marker.X - static_cast<float>(Step) * Spacing));
+		}
+		return true;
+	}
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -179,7 +274,7 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("null map builds nothing"),
 		SolidWallgate::CollectPieces(nullptr, WallgateTestMin, WallgateTestMax, Missing), 0);
 
-	USolidWorldChart* Grass = WallgateTestLoad(*this, TEXT("grass map loads"), {});
+	USolidWorldChart* Grass = WallgateImport(*this, TEXT("grass map loads"), {}, FString());
 	if (Grass)
 	{
 		TArray<SolidWallgate::FPiece> None;
@@ -187,91 +282,165 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 			SolidWallgate::CollectPieces(Grass, WallgateTestMin, WallgateTestMax, None), 0);
 	}
 
-	USolidWorldChart* EastWest = WallgateTestLoad(*this, TEXT("east-west pass loads"), {
-		{ 11, 21, TEXT('M') },
-		{ 12, 21, USolidWorldChart::LocationMarker },
-		{ 13, 21, TEXT('M') },
-	}, TEXT("! 22,13 = Town Dragongate\n"));
-	if (EastWest)
+	USolidWorldChart* GrassRun = WallgateImport(
+		*this, TEXT("grass run loads"), { WallgateMarkerCell }, WallgateBang(WallgateMarkerCell));
+	if (GrassRun)
 	{
-		TArray<SolidWallgate::FPiece> Pieces;
-		SolidWallgate::CollectPieces(EastWest, WallgateTestMin, WallgateTestMax, Pieces);
-		if (WallgateTestExpectPass(*this, Pieces, true))
+		FVector2D Marker = FVector2D::ZeroVector;
+		TestTrue(TEXT("marker projects"),
+			GrassRun->CellToWorldXY(WallgateMarkerCell, WallgateTestMin, WallgateTestMax, Marker));
+		const FIntPoint Origin = WallgatePoint(*GrassRun, Marker);
+		// The town cell copies as town. Paint the open points back to grassland: M..!..M.
+		const int32 GrassSteps[] = { 1, 2, -1, -2 };
+		for (const int32 Step : GrassSteps)
 		{
-			const float HalfCell = (WallgateTestMax.X - WallgateTestMin.X)
-				/ static_cast<float>(USolidWorldChart::MapWidth) * 0.5f;
-			FVector2D Center = FVector2D::ZeroVector;
-			TestTrue(TEXT("pass cell projects"),
-				EastWest->CellToWorldXY(FIntPoint(12, 21), WallgateTestMin, WallgateTestMax, Center));
-			const float SpanMin = Center.X - HalfCell;
-			const float SpanMax = Center.X + HalfCell;
-
-			float OuterMin = TNumericLimits<float>::Max();
-			float OuterMax = TNumericLimits<float>::Lowest();
-			for (const SolidWallgate::FPiece& Piece : Pieces)
-			{
-				if (!Piece.bStoneWall)
-				{
-					continue;
-				}
-				OuterMin = FMath::Min(OuterMin, Piece.CenterXY.X - Piece.FootprintXCm * 0.5f);
-				OuterMax = FMath::Max(OuterMax, Piece.CenterXY.X + Piece.FootprintXCm * 0.5f);
-			}
-			TestTrue(TEXT("wall meets the outer edges of the town cell"),
-				WallgateTestNear(OuterMin, SpanMin) && WallgateTestNear(OuterMax, SpanMax));
-			TestTrue(TEXT("one cell of wall"), WallgateTestNear(SpanMax - SpanMin, HalfCell * 2.f));
+			WallgatePaint(*this, *GrassRun, Origin, Step, ESolidBiome::Grassland);
 		}
+		WallgatePaint(*this, *GrassRun, Origin, 3, ESolidBiome::Mountain);
+		WallgatePaint(*this, *GrassRun, Origin, -3, ESolidBiome::Mountain);
+		TArray<SolidWallgate::FPiece> Pieces;
+		SolidWallgate::CollectPieces(GrassRun, WallgateTestMin, WallgateTestMax, Pieces);
+		WallgateExpectRun(*this, Pieces, Marker, 3, 3);
 	}
 
-	// A vertical stack of named cells is one north-south gate.
-	USolidWorldChart* NorthSouth = WallgateTestLoad(*this, TEXT("north-south pass loads"), {
-		{ 12, 19, TEXT('M') },
-		{ 12, 20, USolidWorldChart::LocationMarker },
-		{ 12, 21, USolidWorldChart::LocationMarker },
-		{ 12, 22, USolidWorldChart::LocationMarker },
-		{ 12, 23, TEXT('M') },
-	}, TEXT("! 21,13 = Town Dragongate\n! 22,13 = Town Dragongate\n! 23,13 = Town Dragongate\n"));
-	if (NorthSouth)
+	USolidWorldChart* TownRun = WallgateImport(
+		*this, TEXT("town run loads"), { WallgateMarkerCell }, WallgateBang(WallgateMarkerCell));
+	if (TownRun)
 	{
+		FVector2D Marker = FVector2D::ZeroVector;
+		TestTrue(TEXT("town marker projects"),
+			TownRun->CellToWorldXY(WallgateMarkerCell, WallgateTestMin, WallgateTestMax, Marker));
+		const FIntPoint Origin = WallgatePoint(*TownRun, Marker);
+		const int32 TownSteps[] = { 1, 2, -1, -2 };
+		for (const int32 Step : TownSteps)
+		{
+			WallgatePaint(*this, *TownRun, Origin, Step, ESolidBiome::Town);
+		}
+		WallgatePaint(*this, *TownRun, Origin, 3, ESolidBiome::Mountain);
+		WallgatePaint(*this, *TownRun, Origin, -3, ESolidBiome::Mountain);
 		TArray<SolidWallgate::FPiece> Pieces;
-		SolidWallgate::CollectPieces(NorthSouth, WallgateTestMin, WallgateTestMax, Pieces);
-		WallgateTestExpectPass(*this, Pieces, false);
+		SolidWallgate::CollectPieces(TownRun, WallgateTestMin, WallgateTestMax, Pieces);
+		WallgateExpectRun(*this, Pieces, Marker, 3, 3);
 	}
 
-	USolidWorldChart* Lone = WallgateTestLoad(*this, TEXT("lone town loads"), {
-		{ 12, 21, USolidWorldChart::LocationMarker },
-	}, TEXT("! 22,13 = Town Dragongate\n"));
-	if (Lone)
+	USolidWorldChart* Mixed = WallgateImport(
+		*this, TEXT("mixed run loads"), { WallgateMarkerCell }, WallgateBang(WallgateMarkerCell));
+	if (Mixed)
 	{
+		FVector2D Marker = FVector2D::ZeroVector;
+		TestTrue(TEXT("mixed marker projects"),
+			Mixed->CellToWorldXY(WallgateMarkerCell, WallgateTestMin, WallgateTestMax, Marker));
+		const FIntPoint Origin = WallgatePoint(*Mixed, Marker);
+		// M.o!o..M. The town cell would otherwise leave the point 4 m east as town.
+		WallgatePaint(*this, *Mixed, Origin, 1, ESolidBiome::Town);
+		WallgatePaint(*this, *Mixed, Origin, 2, ESolidBiome::Grassland);
+		WallgatePaint(*this, *Mixed, Origin, 3, ESolidBiome::Mountain);
+		WallgatePaint(*this, *Mixed, Origin, -1, ESolidBiome::Town);
+		WallgatePaint(*this, *Mixed, Origin, -4, ESolidBiome::Mountain);
 		TArray<SolidWallgate::FPiece> Pieces;
-		SolidWallgate::CollectPieces(Lone, WallgateTestMin, WallgateTestMax, Pieces);
-		WallgateTestExpectPass(*this, Pieces, true);
+		SolidWallgate::CollectPieces(Mixed, WallgateTestMin, WallgateTestMax, Pieces);
+		WallgateExpectRun(*this, Pieces, Marker, 3, 4);
+	}
+
+	USolidWorldChart* Narrow = WallgateImport(
+		*this, TEXT("narrow run loads"), { WallgateMarkerCell }, WallgateBang(WallgateMarkerCell));
+	if (Narrow)
+	{
+		FVector2D Marker = FVector2D::ZeroVector;
+		TestTrue(TEXT("narrow marker projects"),
+			Narrow->CellToWorldXY(WallgateMarkerCell, WallgateTestMin, WallgateTestMax, Marker));
+		const FIntPoint Origin = WallgatePoint(*Narrow, Marker);
+		// M.!.M. One open point on a side is narrower than the gate.
+		WallgatePaint(*this, *Narrow, Origin, 1, ESolidBiome::Grassland);
+		WallgatePaint(*this, *Narrow, Origin, -1, ESolidBiome::Grassland);
+		WallgatePaint(*this, *Narrow, Origin, 2, ESolidBiome::Mountain);
+		WallgatePaint(*this, *Narrow, Origin, -2, ESolidBiome::Mountain);
+		TArray<SolidWallgate::FPiece> Pieces;
+		SolidWallgate::CollectPieces(Narrow, WallgateTestMin, WallgateTestMax, Pieces);
+		TestEqual(TEXT("a one-point gap builds nothing"), Pieces.Num(), 0);
+	}
+
+	USolidWorldChart* OneSide = WallgateImport(
+		*this, TEXT("one-sided run loads"), { WallgateMarkerCell }, WallgateBang(WallgateMarkerCell));
+	if (OneSide)
+	{
+		FVector2D Marker = FVector2D::ZeroVector;
+		TestTrue(TEXT("one-sided marker projects"),
+			OneSide->CellToWorldXY(WallgateMarkerCell, WallgateTestMin, WallgateTestMax, Marker));
+		const FIntPoint Origin = WallgatePoint(*OneSide, Marker);
+		WallgatePaint(*this, *OneSide, Origin, 3, ESolidBiome::Mountain);
+		WallgatePaint(*this, *OneSide, Origin, -3, ESolidBiome::Forest);
+		TArray<SolidWallgate::FPiece> Pieces;
+		SolidWallgate::CollectPieces(OneSide, WallgateTestMin, WallgateTestMax, Pieces);
+		TestEqual(TEXT("a mountain on one side builds nothing"), Pieces.Num(), 0);
+		FVector2D Opening = FVector2D::ZeroVector;
+		TestTrue(TEXT("the marker stays a gate"),
+			SolidWallgate::GateCenterXY(OneSide, SolidTowns::Dragongate, WallgateTestMin, WallgateTestMax, Opening));
+		TestTrue(TEXT("the opening stays on the marker"), Opening.Equals(Marker, 0.5f));
 	}
 
 	USolidWorldChart* Shipped = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("shipped map loads"), Shipped && Shipped->LoadDefault());
 	if (Shipped && Shipped->IsLoaded())
 	{
-		TArray<SolidWallgate::FPiece> Pieces;
-		SolidWallgate::CollectPieces(Shipped, WallgateTestMin, WallgateTestMax, Pieces);
-		int32 WallGateId = INDEX_NONE;
-		for (const SolidTowns::FTownInfo& Info : SolidTowns::Definitions)
+		FSolidWorldLocation Town;
+		TestTrue(TEXT("shipped Dragongate"), Shipped->FindLocation(SolidTowns::Dragongate, Town));
+		TestTrue(TEXT("shipped Dragongate has a marker"), Town.Cells.Num() > 0);
+		FIntPoint Eastern = Town.Cells.Num() > 0 ? Town.Cells[0] : FIntPoint::ZeroValue;
+		FIntPoint Western = Eastern;
+		for (const FIntPoint& Cell : Town.Cells)
 		{
-			if (Info.Type == SolidTowns::ETownType::WallGate)
+			if (Cell.X < Eastern.X)
 			{
-				WallGateId = Info.Id;
-				break;
+				Eastern = Cell;
+			}
+			if (Cell.X > Western.X)
+			{
+				Western = Cell;
 			}
 		}
-		FSolidWorldLocation Town;
-		if (WallGateId == INDEX_NONE || !Shipped->FindLocation(WallGateId, Town))
+		FVector2D EastXY = FVector2D::ZeroVector;
+		FVector2D WestXY = FVector2D::ZeroVector;
+		FVector2D Opening = FVector2D::ZeroVector;
+		TestTrue(TEXT("eastern marker projects"),
+			Shipped->CellToWorldXY(Eastern, WallgateTestMin, WallgateTestMax, EastXY));
+		TestTrue(TEXT("western marker projects"),
+			Shipped->CellToWorldXY(Western, WallgateTestMin, WallgateTestMax, WestXY));
+		TestTrue(TEXT("the shipped gate has an opening"),
+			SolidWallgate::GateCenterXY(Shipped, SolidTowns::Dragongate, WallgateTestMin, WallgateTestMax, Opening));
+		TestTrue(TEXT("the shipped opening is the eastern marker"), Opening.Equals(EastXY, 0.5f));
+
+		TArray<SolidWallgate::FPiece> Pieces;
+		SolidWallgate::CollectPieces(Shipped, WallgateTestMin, WallgateTestMax, Pieces);
+		if (WallgateTestExpectPass(*this, Pieces, true))
 		{
-			TestEqual(TEXT("a wall gate is absent until it is named"), Pieces.Num(), 0);
-		}
-		else
-		{
-			const bool bEastWest = Pieces.Num() > 0 && FMath::Abs(Pieces[0].YawDeg) < 1.f;
-			WallgateTestExpectPass(*this, Pieces, bEastWest);
+			float OuterMin = TNumericLimits<float>::Max();
+			float GapLow = 0.f;
+			float GapHigh = 0.f;
+			TArray<SolidWallgate::FPiece> Walls;
+			for (const SolidWallgate::FPiece& Piece : Pieces)
+			{
+				if (Piece.bStoneWall)
+				{
+					Walls.Add(Piece);
+				}
+			}
+			Walls.Sort([](const SolidWallgate::FPiece& A, const SolidWallgate::FPiece& B)
+			{
+				return A.CenterXY.X < B.CenterXY.X;
+			});
+			if (Walls.Num() == 2)
+			{
+				OuterMin = Walls[0].CenterXY.X - Walls[0].FootprintXCm * 0.5f;
+				GapLow = Walls[0].CenterXY.X + Walls[0].FootprintXCm * 0.5f;
+				GapHigh = Walls[1].CenterXY.X - Walls[1].FootprintXCm * 0.5f;
+				TestTrue(TEXT("the shipped gate stands on the eastern marker"),
+					WallgateTestNear((GapLow + GapHigh) * 0.5f, EastXY.X));
+				if (Town.Cells.Num() > 1)
+				{
+					TestTrue(TEXT("the curtain passes the ignored marker"), OuterMin < WestXY.X);
+				}
+			}
 		}
 	}
 	return true;
@@ -284,85 +453,53 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidWallgateDigitPairTest::RunTest(const FString& Parameters)
 {
-	// Mountains stand north of both cells, south of the west cell, and on the
-	// outer sides. Both cells are the same town. One cell in this pattern
-	// would run north-south; the pair is one east-west gate.
-	USolidWorldChart* Map = WallgateTestLoad(*this, TEXT("two-cell pass loads"), {
-		{ 11, 20, TEXT('M') },
-		{ 12, 20, TEXT('M') },
-		{ 10, 21, TEXT('M') },
-		{ 11, 21, USolidWorldChart::LocationMarker },
-		{ 12, 21, USolidWorldChart::LocationMarker },
-		{ 13, 21, TEXT('M') },
-		{ 12, 22, TEXT('M') },
-	}, TEXT("! 22,12 = Town Dragongate\n! 22,13 = Town Dragongate\n"));
+	const FIntPoint EastCell = WallgateMarkerCell;
+	const FIntPoint WestCell(WallgateMarkerCell.X + 1, WallgateMarkerCell.Y);
+	USolidWorldChart* Map = WallgateImport(
+		*this,
+		TEXT("two markers load"),
+		{ EastCell, WestCell },
+		WallgateBang(EastCell) + WallgateBang(WestCell));
 	if (!Map)
 	{
 		return true;
 	}
 
-	TestEqual(TEXT("east cell is Dragongate"), Map->GetLocationIdAtCell(11, 21), SolidTowns::Dragongate);
-	TestEqual(TEXT("west cell is Dragongate"), Map->GetLocationIdAtCell(12, 21), SolidTowns::Dragongate);
 	FSolidWorldLocation Gate;
-	TestTrue(TEXT("location 5"), Map->FindLocation(SolidTowns::Dragongate, Gate));
+	TestTrue(TEXT("both markers are one town"), Map->FindLocation(SolidTowns::Dragongate, Gate));
 	TestEqual(TEXT("the pair is two cells"), Gate.Cells.Num(), 2);
+	FIntPoint Used = FIntPoint::ZeroValue;
+	TestTrue(TEXT("the gate uses one marker"), SolidWallgate::MarkerCell(Map, SolidTowns::Dragongate, Used));
+	TestEqual(TEXT("the used marker is the eastern cell"), Used, EastCell);
+
+	FVector2D East = FVector2D::ZeroVector;
+	FVector2D West = FVector2D::ZeroVector;
+	TestTrue(TEXT("east marker projects"), Map->CellToWorldXY(EastCell, WallgateTestMin, WallgateTestMax, East));
+	TestTrue(TEXT("west marker projects"), Map->CellToWorldXY(WestCell, WallgateTestMin, WallgateTestMax, West));
+
+	TArray<SolidTownSigns::FPlacement> Signs;
+	TestEqual(TEXT("one Dragongate sign"),
+		SolidTownSigns::CollectPlacements(Map, WallgateTestMin, WallgateTestMax, Signs), 1);
+	if (Signs.Num() == 1)
+	{
+		const FVector2D Expected = East + FVector2D(SolidTowns::DragongateSignEastCm, SolidTowns::DragongateSignNorthCm);
+		TestTrue(TEXT("the sign stands by the eastern marker"), Signs[0].WorldXY.Equals(Expected, 0.5f));
+	}
+
+	const FIntPoint Origin = WallgatePoint(*Map, East);
+	WallgatePaint(*this, *Map, Origin, 3, ESolidBiome::Mountain);
+	WallgatePaint(*this, *Map, Origin, -3, ESolidBiome::Mountain);
 
 	TArray<SolidWallgate::FPiece> Pieces;
 	SolidWallgate::CollectPieces(Map, WallgateTestMin, WallgateTestMax, Pieces);
-	if (!WallgateTestExpectPass(*this, Pieces, true))
-	{
-		return true;
-	}
-
-	const float HalfCell = (WallgateTestMax.X - WallgateTestMin.X)
-		/ static_cast<float>(USolidWorldChart::MapWidth) * 0.5f;
-	FVector2D East = FVector2D::ZeroVector;
-	FVector2D West = FVector2D::ZeroVector;
-	TestTrue(TEXT("east cell projects"),
-		Map->CellToWorldXY(FIntPoint(11, 21), WallgateTestMin, WallgateTestMax, East));
-	TestTrue(TEXT("west cell projects"),
-		Map->CellToWorldXY(FIntPoint(12, 21), WallgateTestMin, WallgateTestMax, West));
-	const float SpanMax = East.X + HalfCell;
-	const float SpanMin = West.X - HalfCell;
-
-	float OuterMin = TNumericLimits<float>::Max();
-	float OuterMax = TNumericLimits<float>::Lowest();
-	for (const SolidWallgate::FPiece& Piece : Pieces)
-	{
-		if (!Piece.bStoneWall)
-		{
-			continue;
-		}
-		OuterMin = FMath::Min(OuterMin, Piece.CenterXY.X - Piece.FootprintXCm * 0.5f);
-		OuterMax = FMath::Max(OuterMax, Piece.CenterXY.X + Piece.FootprintXCm * 0.5f);
-	}
-	TestTrue(TEXT("wall meets the outer edges of both cells"),
-		WallgateTestNear(OuterMin, SpanMin) && WallgateTestNear(OuterMax, SpanMax));
-	TestTrue(TEXT("two cells of wall"), WallgateTestNear(OuterMax - OuterMin, HalfCell * 4.f));
+	WallgateExpectRun(*this, Pieces, East, 3, 3);
 
 	FVector2D Opening = FVector2D::ZeroVector;
 	TestTrue(
 		TEXT("the gate has a centre"),
 		SolidWallgate::GateCenterXY(Map, SolidTowns::Dragongate, WallgateTestMin, WallgateTestMax, Opening));
-	TestTrue(TEXT("the opening is between the cells"), Opening.Equals((East + West) * 0.5f, 0.1f));
-	TArray<SolidWallgate::FPiece> Walls;
-	for (const SolidWallgate::FPiece& Piece : Pieces)
-	{
-		if (Piece.bStoneWall)
-		{
-			Walls.Add(Piece);
-		}
-	}
-	if (Walls.Num() == 2)
-	{
-		Walls.Sort([](const SolidWallgate::FPiece& A, const SolidWallgate::FPiece& B)
-		{
-			return A.CenterXY.X < B.CenterXY.X;
-		});
-		const float GapLow = Walls[0].CenterXY.X + Walls[0].FootprintXCm * 0.5f;
-		const float GapHigh = Walls[1].CenterXY.X - Walls[1].FootprintXCm * 0.5f;
-		TestTrue(TEXT("the opening sits in the gap"), Opening.X > GapLow && Opening.X < GapHigh);
-	}
+	TestTrue(TEXT("the opening is the eastern marker"), Opening.Equals(East, 0.5f));
+	TestFalse(TEXT("the opening is not the middle of the pair"), Opening.Equals((East + West) * 0.5f, 1.f));
 
 	FVector2D Missing = FVector2D::ZeroVector;
 	TestFalse(

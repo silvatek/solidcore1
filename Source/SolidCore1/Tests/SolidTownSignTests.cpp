@@ -86,8 +86,17 @@ bool FSolidTownSignPlacementsTest::RunTest(const FString& Parameters)
 					Middle = Sum / static_cast<float>(Found);
 				}
 			}
-			TestTrue(TEXT("placement is the middle of the town plus the town offset"),
-				Placement.WorldXY.Equals(Middle + Town->SignOffsetCm, 0.1f));
+			FVector2D Anchor = Middle;
+			if (SolidTowns::IsWallGate(Town->Id))
+			{
+				FVector2D Gate = FVector2D::ZeroVector;
+				TestTrue(
+					TEXT("the wall gate sign uses its marker"),
+					SolidWallgate::GateCenterXY(WorldMap, Town->Id, WorldMin, WorldMax, Gate));
+				Anchor = Gate;
+			}
+			TestTrue(TEXT("placement is the town anchor plus the town offset"),
+				Placement.WorldXY.Equals(Anchor + Town->SignOffsetCm, 0.1f));
 			TestTrue(TEXT("placement uses the town yaw"),
 				FMath::IsNearlyEqual(Placement.YawDeg, Town->SignYawDeg, 0.1f));
 		}

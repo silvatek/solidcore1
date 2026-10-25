@@ -5,91 +5,97 @@
 
 namespace
 {
-	bool WallgateNeighborIsMountain(const USolidWorldChart& Map, const int32 X, const int32 Y)
+	/** Points at 2 m and 4 m have to be open, because the gate reaches 4.8 m from the marker. */
+	constexpr int32 WallgateOpenSteps = 2;
+
+	bool WallgateOpen(const ESolidBiome Biome)
 	{
-		if (X < 0 || Y < 0 || X >= USolidWorldChart::MapWidth || Y >= USolidWorldChart::MapHeight)
-		{
-			return false;
-		}
-		return Map.GetBiomeAtCell(X, Y) == ESolidBiome::Mountain;
+		return Biome == ESolidBiome::Grassland || Biome == ESolidBiome::Town;
 	}
 
-	void WallgateAppendLocation(
+	float WallgateSpacingCm(const FVector2D WorldMinXY, const FVector2D WorldMaxXY)
+	{
+		const float Extent = FMath::Max(WorldMaxXY.X - WorldMinXY.X, 1.f);
+		return Extent / static_cast<float>(USolidWorldChart::PointAxis - 1);
+	}
+
+	/**
+	 * Walk one point at a time until a mountain. The first two steps are the ground the gate needs.
+	 * Anything else, or the edge of the grid, leaves this side without a mountain.
+	 */
+	bool WallgateMountain(
 		const USolidWorldChart& WorldMap,
+		const FIntPoint& Marker,
+		const int32 StepX,
 		const FVector2D WorldMinXY,
 		const FVector2D WorldMaxXY,
-		const TArray<FIntPoint>& Cells,
-		TArray<SolidWallgate::FPiece>& OutPieces)
+		FVector2D& OutMountain)
 	{
-		int32 ColMin = MAX_int32;
-		int32 ColMax = MIN_int32;
-		int32 RowMin = MAX_int32;
-		int32 RowMax = MIN_int32;
-		for (const FIntPoint& Cell : Cells)
+		for (int32 Step = 1; Step < USolidWorldChart::PointAxis; ++Step)
 		{
-			ColMin = FMath::Min(ColMin, Cell.X);
-			ColMax = FMath::Max(ColMax, Cell.X);
-			RowMin = FMath::Min(RowMin, Cell.Y);
-			RowMax = FMath::Max(RowMax, Cell.Y);
-		}
-		const int32 ColSpan = ColMax - ColMin;
-		const int32 RowSpan = RowMax - RowMin;
+			const FIntPoint Point(Marker.X + Step * StepX, Marker.Y);
+			if (Point.X < 0 || Point.Y < 0
+				|| Point.X >= USolidWorldChart::PointAxis
+				|| Point.Y >= USolidWorldChart::PointAxis)
+			{
+				return false;
+			}
 
-		int32 MountainEast = 0;
-		int32 MountainWest = 0;
-		int32 MountainNorth = 0;
-		int32 MountainSouth = 0;
-		for (const FIntPoint& Cell : Cells)
-		{
-			MountainNorth += WallgateNeighborIsMountain(WorldMap, Cell.X, Cell.Y - 1) ? 1 : 0;
-			MountainEast += WallgateNeighborIsMountain(WorldMap, Cell.X - 1, Cell.Y) ? 1 : 0;
-			MountainSouth += WallgateNeighborIsMountain(WorldMap, Cell.X, Cell.Y + 1) ? 1 : 0;
-			MountainWest += WallgateNeighborIsMountain(WorldMap, Cell.X + 1, Cell.Y) ? 1 : 0;
-		}
-
-		// Several cells in a row are one gate. The other cell of the pair is not a mountain,
-		// so the long axis of the town decides the wall. A single cell still uses its neighbours.
-		// East-west: the wall crosses the pass and the towers stand north of it.
-		const bool bEastWest = (ColSpan != RowSpan)
-			? (ColSpan > RowSpan)
-			: ((MountainEast + MountainWest) >= (MountainNorth + MountainSouth));
-		const FVector2D Along = bEastWest ? FVector2D(1.f, 0.f) : FVector2D(0.f, 1.f);
-		const FVector2D Side = bEastWest ? FVector2D(0.f, 1.f) : FVector2D(1.f, 0.f);
-
-		const float ExtentX = FMath::Max(WorldMaxXY.X - WorldMinXY.X, 1.f);
-		const float ExtentY = FMath::Max(WorldMaxXY.Y - WorldMinXY.Y, 1.f);
-		const float CellW = ExtentX / static_cast<float>(USolidWorldChart::MapWidth);
-		const float CellH = ExtentY / static_cast<float>(USolidWorldChart::MapHeight);
-		const float HalfAlong = bEastWest ? CellW * 0.5f : CellH * 0.5f;
-
-		float SpanMin = TNumericLimits<float>::Max();
-		float SpanMax = TNumericLimits<float>::Lowest();
-		float SidePos = 0.f;
-		int32 Count = 0;
-		for (const FIntPoint& Cell : Cells)
-		{
-			FVector2D Center = FVector2D::ZeroVector;
-			if (!WorldMap.CellToWorldXY(Cell, WorldMinXY, WorldMaxXY, Center))
+			const ESolidBiome Ground = WorldMap.GetPointBiome(Point);
+			if (Step <= WallgateOpenSteps)
+			{
+				if (!WallgateOpen(Ground))
+				{
+					return false;
+				}
+				continue;
+			}
+			if (WallgateOpen(Ground))
 			{
 				continue;
 			}
-			const float AlongPos = FVector2D::DotProduct(Center, Along);
-			SpanMin = FMath::Min(SpanMin, AlongPos - HalfAlong);
-			SpanMax = FMath::Max(SpanMax, AlongPos + HalfAlong);
-			SidePos += FVector2D::DotProduct(Center, Side);
-			++Count;
+			if (Ground != ESolidBiome::Mountain)
+			{
+				return false;
+			}
+			return WorldMap.TerrainPointToWorld(Point, WorldMinXY, WorldMaxXY, OutMountain);
 		}
-		if (Count == 0 || SpanMax <= SpanMin)
+		return false;
+	}
+
+	void WallgateAppendRun(
+		const USolidWorldChart& WorldMap,
+		const FVector2D WorldMinXY,
+		const FVector2D WorldMaxXY,
+		const FVector2D& Marker,
+		TArray<SolidWallgate::FPiece>& OutPieces)
+	{
+		FIntPoint MarkerPoint = FIntPoint::ZeroValue;
+		if (!WorldMap.TerrainPointAt(Marker.X, Marker.Y, WorldMinXY, WorldMaxXY, MarkerPoint))
 		{
 			return;
 		}
-		SidePos /= static_cast<float>(Count);
 
-		const float YawDeg = FMath::RadiansToDegrees(FMath::Atan2(Along.Y, Along.X));
-		const float Mid = (SpanMin + SpanMax) * 0.5f;
-		const float Gap0 = Mid - SolidWallgate::GapCm * 0.5f;
-		const float Gap1 = Mid + SolidWallgate::GapCm * 0.5f;
+		FVector2D MountainEast = FVector2D::ZeroVector;
+		FVector2D MountainWest = FVector2D::ZeroVector;
+		if (!WallgateMountain(WorldMap, MarkerPoint, 1, WorldMinXY, WorldMaxXY, MountainEast)
+			|| !WallgateMountain(WorldMap, MarkerPoint, -1, WorldMinXY, WorldMaxXY, MountainWest))
+		{
+			return;
+		}
 
+		// One point past the mountain, so the curtain crosses the slope and ends inside it.
+		const float Spacing = WallgateSpacingCm(WorldMinXY, WorldMaxXY);
+		const float SpanMax = MountainEast.X + Spacing;
+		const float SpanMin = MountainWest.X - Spacing;
+		const float Gap0 = Marker.X - SolidWallgate::GapCm * 0.5f;
+		const float Gap1 = Marker.X + SolidWallgate::GapCm * 0.5f;
+		if (SpanMin + 1.f >= Gap0 || SpanMax - 1.f <= Gap1)
+		{
+			return;
+		}
+
+		const float SidePos = Marker.Y;
 		auto AddWall = [&](const float From, const float To)
 		{
 			const float Length = To - From;
@@ -98,12 +104,12 @@ namespace
 				return;
 			}
 			SolidWallgate::FPiece Piece;
-			Piece.CenterXY = Along * ((From + To) * 0.5f) + Side * SidePos;
+			Piece.CenterXY = FVector2D((From + To) * 0.5f, SidePos);
 			Piece.FootprintXCm = Length;
 			Piece.FootprintYCm = SolidWallgate::WallThicknessCm;
 			Piece.BodyHeightCm = SolidWallgate::WallHeightCm;
 			Piece.RoofHeightCm = 0.f;
-			Piece.YawDeg = YawDeg;
+			Piece.YawDeg = 0.f;
 			Piece.bStoneWall = true;
 			OutPieces.Add(Piece);
 		};
@@ -116,18 +122,47 @@ namespace
 			const float SideOffset = SolidWallgate::WallThicknessCm * 0.5f
 				+ SolidWallgate::TowerFootprintYCm * 0.5f
 				- SolidWallgate::ConnectCm;
-			Piece.CenterXY = Along * AlongPos + Side * (SidePos + SideOffset);
+			Piece.CenterXY = FVector2D(AlongPos, SidePos + SideOffset);
 			Piece.FootprintXCm = SolidWallgate::TowerFootprintXCm;
 			Piece.FootprintYCm = SolidWallgate::TowerFootprintYCm;
 			Piece.BodyHeightCm = SolidWallgate::TowerBodyCm;
 			Piece.RoofHeightCm = SolidWallgate::TowerRoofCm;
-			Piece.YawDeg = YawDeg;
+			Piece.YawDeg = 0.f;
 			Piece.bStoneWall = false;
 			OutPieces.Add(Piece);
 		};
 		AddTower(Gap0 - SolidWallgate::TowerFootprintXCm * 0.5f);
 		AddTower(Gap1 + SolidWallgate::TowerFootprintXCm * 0.5f);
 	}
+}
+
+bool SolidWallgate::MarkerCell(
+	const USolidWorldChart* WorldMap,
+	const int32 TownId,
+	FIntPoint& OutCell)
+{
+	OutCell = FIntPoint::ZeroValue;
+	if (!WorldMap || !SolidTowns::IsWallGate(TownId))
+	{
+		return false;
+	}
+
+	FSolidWorldLocation Town;
+	if (!WorldMap->FindLocation(TownId, Town) || Town.Cells.Num() == 0)
+	{
+		return false;
+	}
+
+	// Column 0 is east, so the smaller column is the eastern marker.
+	OutCell = Town.Cells[0];
+	for (const FIntPoint& Cell : Town.Cells)
+	{
+		if (Cell.X < OutCell.X || (Cell.X == OutCell.X && Cell.Y < OutCell.Y))
+		{
+			OutCell = Cell;
+		}
+	}
+	return true;
 }
 
 int32 SolidWallgate::CollectPieces(
@@ -137,7 +172,7 @@ int32 SolidWallgate::CollectPieces(
 	TArray<FPiece>& OutPieces)
 {
 	OutPieces.Reset();
-	if (!WorldMap || !WorldMap->IsLoaded())
+	if (!WorldMap)
 	{
 		return 0;
 	}
@@ -149,12 +184,14 @@ int32 SolidWallgate::CollectPieces(
 			continue;
 		}
 
-		FSolidWorldLocation Town;
-		if (!WorldMap->FindLocation(Info.Id, Town) || Town.Cells.Num() == 0)
+		FIntPoint Cell = FIntPoint::ZeroValue;
+		FVector2D Marker = FVector2D::ZeroVector;
+		if (!MarkerCell(WorldMap, Info.Id, Cell)
+			|| !WorldMap->CellToWorldXY(Cell, WorldMinXY, WorldMaxXY, Marker))
 		{
 			continue;
 		}
-		WallgateAppendLocation(*WorldMap, WorldMinXY, WorldMaxXY, Town.Cells, OutPieces);
+		WallgateAppendRun(*WorldMap, WorldMinXY, WorldMaxXY, Marker, OutPieces);
 	}
 	return OutPieces.Num();
 }
@@ -167,34 +204,10 @@ bool SolidWallgate::GateCenterXY(
 	FVector2D& OutCenter)
 {
 	OutCenter = FVector2D::ZeroVector;
-	if (!WorldMap || !SolidTowns::IsWallGate(TownId))
+	FIntPoint Cell = FIntPoint::ZeroValue;
+	if (!MarkerCell(WorldMap, TownId, Cell))
 	{
 		return false;
 	}
-
-	FSolidWorldLocation Town;
-	if (!WorldMap->FindLocation(TownId, Town) || Town.Cells.Num() == 0)
-	{
-		return false;
-	}
-
-	FVector2D Sum = FVector2D::ZeroVector;
-	int32 Found = 0;
-	for (const FIntPoint& Cell : Town.Cells)
-	{
-		FVector2D Center = FVector2D::ZeroVector;
-		if (!WorldMap->CellToWorldXY(Cell, WorldMinXY, WorldMaxXY, Center))
-		{
-			continue;
-		}
-		Sum += Center;
-		++Found;
-	}
-	if (Found == 0)
-	{
-		return false;
-	}
-
-	OutCenter = Sum / static_cast<float>(Found);
-	return true;
+	return WorldMap->CellToWorldXY(Cell, WorldMinXY, WorldMaxXY, OutCenter);
 }

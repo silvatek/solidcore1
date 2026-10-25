@@ -42,6 +42,15 @@ public:
 	UPointLightComponent* GetRoomLight() const { return RoomLight; }
 	UInstancedStaticMeshComponent* GetFloorGrid() const { return FloorGrid; }
 
+	/** The Arrange furniture plate on the east wall. Not a furnishing. */
+	UStaticMeshComponent* GetArrangePlate() const { return ArrangePlate; }
+	UInstancedStaticMeshComponent* GetArrangeLetters() const { return ArrangeLetters; }
+	virtual int32 ArrangeSignCount() const override { return ArrangePlate ? 1 : 0; }
+	virtual UStaticMeshComponent* GetArrangeSignPlate(int32 Index) const override
+	{
+		return Index == 0 ? ArrangePlate.Get() : nullptr;
+	}
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<USceneComponent> SceneRoot;
@@ -69,4 +78,12 @@ protected:
 	/** Yellow hex edges. No collision; the starter pieces sit on these cells. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<UInstancedStaticMeshComponent> FloorGrid;
+
+	/** Light plate on the east wall. A click toggles arrange mode. It occupies no hex. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
+	TObjectPtr<UStaticMeshComponent> ArrangePlate;
+
+	/** Dark strokes of Arrange furniture. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
+	TObjectPtr<UInstancedStaticMeshComponent> ArrangeLetters;
 };

@@ -374,6 +374,7 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(SolidInventory::ControllerToggleKey(), IE_Pressed, this, &ASolidCharacter::ToggleInventoryFromController);
 	PlayerInputComponent->BindKey(EKeys::F12, IE_Pressed, this, &ASolidCharacter::ToggleDebugPanelFromInput);
 	PlayerInputComponent->BindKey(EKeys::Slash, IE_Pressed, this, &ASolidCharacter::ToggleInventoryFromSlash);
+	PlayerInputComponent->BindKey(EKeys::Backslash, IE_Pressed, this, &ASolidCharacter::ToggleArrangeFromInput);
 	PlayerInputComponent->BindKey(EKeys::Escape, IE_Pressed, this, &ASolidCharacter::CloseMenuOverlayFromInput);
 	PlayerInputComponent->BindKey(EKeys::Up, IE_Pressed, this, &ASolidCharacter::MainMenuMoveUp);
 	PlayerInputComponent->BindKey(EKeys::Up, IE_Repeat, this, &ASolidCharacter::MainMenuMoveUp);
@@ -605,6 +606,10 @@ void ASolidCharacter::ToggleSightFromInput()
 
 void ASolidCharacter::ToggleInventoryFromController()
 {
+	if (IsArrangingFurniture())
+	{
+		return;
+	}
 	if (ASolidHUD* HUD = GetSolidHUD())
 	{
 		HUD->ToggleInventory();
@@ -639,6 +644,10 @@ void ASolidCharacter::ToggleMainMenuFromInput()
 	{
 		return;
 	}
+	if (IsArrangingFurniture())
+	{
+		return;
+	}
 	if (ASolidHUD* HUD = GetSolidHUD())
 	{
 		HUD->HandleMenuKey();
@@ -648,6 +657,10 @@ void ASolidCharacter::ToggleMainMenuFromInput()
 
 void ASolidCharacter::ToggleInventoryFromSlash()
 {
+	if (IsArrangingFurniture())
+	{
+		return;
+	}
 	const APlayerController* PC = Cast<APlayerController>(GetController());
 	const bool bShift = PC
 		&& (PC->IsInputKeyDown(EKeys::LeftShift) || PC->IsInputKeyDown(EKeys::RightShift));
@@ -676,11 +689,126 @@ void ASolidCharacter::CloseMenuOverlayFromInput()
 	{
 		return;
 	}
+	if (!IsMenuOverlayOpen() && IsArrangingFurniture())
+	{
+		if (UWorld* World = GetWorld())
+		{
+			if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+			{
+				GameMode->LeaveArrangeFurniture();
+			}
+		}
+		return;
+	}
 	if (ASolidHUD* HUD = GetSolidHUD())
 	{
 		HUD->CloseMenuOverlay();
 		SyncCharacterStage();
 	}
+}
+
+void ASolidCharacter::ToggleArrangeFromInput()
+{
+	if (UWorld* World = GetWorld())
+	{
+		if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+		{
+			GameMode->ToggleArrangeFurniture();
+		}
+	}
+}
+
+bool ASolidCharacter::IsArrangingFurniture() const
+{
+	const UWorld* World = GetWorld();
+	const ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+	return GameMode && GameMode->IsArrangingFurniture();
+}
+
+void ASolidCharacter::SetArrangeHidden(const bool bHide)
+{
+	if (bHide == bArrangeHidden)
+	{
+		return;
+	}
+	bArrangeHidden = bHide;
+	SetActorHiddenInGame(bHide);
+
+	UCapsuleComponent* Capsule = GetCapsuleComponent();
+	USkeletalMeshComponent* Body = GetMesh();
+	if (bHide)
+	{
+		ClearClickMove();
+		bIsSprinting = false;
+		ApplyWalkSpeed();
+		if (UCharacterMovementComponent* Movement = GetCharacterMovement())
+		{
+			Movement->StopMovementImmediately();
+		}
+		if (Capsule)
+		{
+			SavedCapsuleVisibility = Capsule->GetCollisionResponseToChannel(ECC_Visibility);
+			Capsule->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+		}
+		if (Body)
+		{
+			SavedMeshVisibility = Body->GetCollisionResponseToChannel(ECC_Visibility);
+			Body->SetCollisionResponseToChannel(ECC_Visibility, ECR_Ignore);
+		}
+		bArrangeCollisionSaved = true;
+	}
+	else if (bArrangeCollisionSaved)
+	{
+		if (Capsule)
+		{
+			Capsule->SetCollisionResponseToChannel(ECC_Visibility, SavedCapsuleVisibility);
+		}
+		if (Body)
+		{
+			Body->SetCollisionResponseToChannel(ECC_Visibility, SavedMeshVisibility);
+		}
+		bArrangeCollisionSaved = false;
+	}
+}
+
+bool ASolidCharacter::ArrangeSignUnderPointer() const
+{
+	if (IsMenuOverlayOpen() || IsSquadFormationDrillActive())
+	{
+		return false;
+	}
+
+	FVector Origin = FVector::ZeroVector;
+	FVector Direction = FVector::ZeroVector;
+	if (!ReadPointerRay(Origin, Direction))
+	{
+		return false;
+	}
+
+	UWorld* World = GetWorld();
+	if (!World)
+	{
+		return false;
+	}
+
+	for (TActorIterator<ASolidStrongholdInterior> Interior(World); Interior; ++Interior)
+	{
+		const int32 Count = Interior->ArrangeSignCount();
+		for (int32 Index = 0; Index < Count; ++Index)
+		{
+			const UStaticMeshComponent* Plate = Interior->GetArrangeSignPlate(Index);
+			if (!Plate)
+			{
+				continue;
+			}
+			const FBox Box = Plate->CalcBounds(Plate->GetComponentTransform()).GetBox();
+			if (SolidPointer::RayHitsBox(Origin, Direction, Box, SolidClickMove::MaxRayCm))
+			{
+				return true;
+			}
+		}
+	}
+	return false;
 }
 
 void ASolidCharacter::CharacterEditorPrevious()
@@ -1485,6 +1613,10 @@ void ASolidCharacter::SelectBattlePlanFaceTop()
 
 void ASolidCharacter::Move(const FInputActionValue& Value)
 {
+	if (IsArrangingFurniture())
+	{
+		return;
+	}
 	if (!bScriptInput && (IsSquadFormationDrillActive() || IsMenuOverlayOpen() || IsAutoPlaythroughRunning()))
 	{
 		return;
@@ -1619,6 +1751,10 @@ bool ASolidCharacter::ResolveClickMoveDestination(
 
 void ASolidCharacter::ClickMoveFromInput()
 {
+	if (IsArrangingFurniture())
+	{
+		return;
+	}
 	if (!SolidClickMove::AllowsClick(!IsTrueSight(), IsMenuOverlayOpen() || IsSquadFormationDrillActive()))
 	{
 		return;
@@ -1999,6 +2135,12 @@ void ASolidCharacter::UpdateCavePassageHover()
 	{
 		return;
 	}
+	if (IsArrangingFurniture())
+	{
+		HUD->SetCavePassageTip(FString());
+		HUD->SetForageTip(FString());
+		return;
+	}
 	const SolidLair::FPassageHit Hit = PassageUnderPointer();
 	const UWorld* World = GetWorld();
 	const ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
@@ -2162,6 +2304,25 @@ void ASolidCharacter::PollClickMovePress()
 	if (NameSignUnderPointer())
 	{
 		OpenStrongholdName();
+		return;
+	}
+
+	if (ArrangeSignUnderPointer())
+	{
+		if (SolidPointer::AcceptsPointer(IsPointerShown(), IsMenuOverlayOpen() || IsSquadFormationDrillActive()))
+		{
+			if (UWorld* World = GetWorld())
+			{
+				if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+				{
+					GameMode->ToggleArrangeFurniture();
+				}
+			}
+		}
+		return;
+	}
+	if (IsArrangingFurniture())
+	{
 		return;
 	}
 
@@ -2347,6 +2508,12 @@ void ASolidCharacter::TickClickMove()
 	// sees that press. A second click is what used to get through as a double-click.
 	PollClickMovePress();
 
+	if (IsArrangingFurniture())
+	{
+		ClearClickMove();
+		return;
+	}
+
 	if (!bHasClickMoveDestination)
 	{
 		return;
@@ -2412,7 +2579,7 @@ void ASolidCharacter::UpdatePointerMouseLook()
 
 void ASolidCharacter::StartJump()
 {
-	if (IsMenuOverlayOpen() || IsAutoPlaythroughRunning())
+	if (IsArrangingFurniture() || IsMenuOverlayOpen() || IsAutoPlaythroughRunning())
 	{
 		return;
 	}
@@ -2448,7 +2615,7 @@ void ASolidCharacter::Zoom(const FInputActionValue& Value)
 			return;
 		}
 	}
-	if (IsMenuOverlayOpen() || IsTrueSight())
+	if (IsArrangingFurniture() || IsMenuOverlayOpen() || IsTrueSight())
 	{
 		return;
 	}
@@ -2469,7 +2636,7 @@ void ASolidCharacter::Zoom(const FInputActionValue& Value)
 
 void ASolidCharacter::StartSprint()
 {
-	if (IsSquadFormationDrillActive() || IsMenuOverlayOpen() || IsAutoPlaythroughRunning())
+	if (IsArrangingFurniture() || IsSquadFormationDrillActive() || IsMenuOverlayOpen() || IsAutoPlaythroughRunning())
 	{
 		return;
 	}

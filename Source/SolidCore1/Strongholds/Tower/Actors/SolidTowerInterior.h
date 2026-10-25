@@ -43,6 +43,12 @@ public:
 	UStaticMeshComponent* GetDoorMesh() const { return DoorMesh; }
 	virtual UStaticMeshComponent* GetPassageMesh() const override { return DoorMesh; }
 	UInstancedStaticMeshComponent* GetFloorGrid() const { return FloorGrid; }
+	UInstancedStaticMeshComponent* GetArrangeLetters() const { return ArrangeLetters; }
+	virtual int32 ArrangeSignCount() const override { return ArrangePlates.Num(); }
+	virtual UStaticMeshComponent* GetArrangeSignPlate(int32 Index) const override
+	{
+		return ArrangePlates.IsValidIndex(Index) ? ArrangePlates[Index].Get() : nullptr;
+	}
 
 	/** Feet on the cell nearest the door. */
 	virtual FVector GetCaptainSpawnWorld() const override;
@@ -85,6 +91,14 @@ protected:
 	/** Dark strokes of those numbers. The same cube the floors use, so the digit draws. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<UInstancedStaticMeshComponent> FloorSignDigits;
+
+	/** Arrange furniture plate on each floor, clear of the door and of the floor number. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
+	TArray<TObjectPtr<UStaticMeshComponent>> ArrangePlates;
+
+	/** Dark strokes of those plates. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
+	TObjectPtr<UInstancedStaticMeshComponent> ArrangeLetters;
 
 private:
 	/** The game state owns this tower. Null until Configure sets it, so the first construction draws nothing. */

@@ -1,5 +1,6 @@
 #include "SolidTowerInterior.h"
 #include "SolidCore1.h"
+#include "Strongholds/Furnishings/SolidArrangeSign.h"
 #include "Strongholds/Furnishings/SolidFurnishing.h"
 #include "SolidMaterials.h"
 #include "Strongholds/SolidStronghold.h"
@@ -434,6 +435,12 @@ ASolidTowerInterior::ASolidTowerInterior()
 	FloorSignDigits->SetMobility(EComponentMobility::Movable);
 	FloorSignDigits->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	FloorSignDigits->SetCastShadow(false);
+
+	ArrangeLetters = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("ArrangeLetters"));
+	ArrangeLetters->SetupAttachment(SceneRoot);
+	ArrangeLetters->SetMobility(EComponentMobility::Movable);
+	ArrangeLetters->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ArrangeLetters->SetCastShadow(false);
 }
 
 void ASolidTowerInterior::OnConstruction(const FTransform& Transform)
@@ -518,6 +525,19 @@ void ASolidTowerInterior::DiscardParts()
 	if (FloorSignDigits)
 	{
 		FloorSignDigits->ClearInstances();
+	}
+	for (TObjectPtr<UStaticMeshComponent>& Plate : ArrangePlates)
+	{
+		if (UStaticMeshComponent* Mesh = Plate.Get())
+		{
+			Mesh->DestroyComponent();
+			Plate = nullptr;
+		}
+	}
+	ArrangePlates.Reset();
+	if (ArrangeLetters)
+	{
+		ArrangeLetters->ClearInstances();
 	}
 }
 
@@ -821,6 +841,41 @@ void ASolidTowerInterior::BuildVisuals()
 				Facing,
 				Sign.Location() + Facing.RotateVector(Stroke.CenterCm),
 				Stroke.SizeCm / SolidTowerInteriorPrivate::CubeSizeCm));
+		}
+	}
+
+	if (ArrangeLetters)
+	{
+		ArrangeLetters->SetStaticMesh(Cube);
+		ArrangeLetters->ClearInstances();
+		if (UMaterialInterface* Ink = SolidMaterials::CreateSolidColor(
+			this, FSolidArrangeSign::TextColor(), TEXT("ArrangeLetters"), 0.9f))
+		{
+			ArrangeLetters->SetMaterial(0, Ink);
+		}
+	}
+	for (int32 Floor = 0; Floor < Plan.FloorCount; ++Floor)
+	{
+		const FSolidArrangeSign Arrange = FSolidArrangeSign::ForTowerFloor(*Tower, Floor);
+		if (!Arrange.IsPresent())
+		{
+			continue;
+		}
+		UStaticMeshComponent* Plate = NewObject<UStaticMeshComponent>(this, NAME_None, RF_Transient);
+		if (Plate)
+		{
+			Plate->SetupAttachment(SceneRoot);
+			Plate->SetMobility(EComponentMobility::Movable);
+			Arrange.ApplyPlate(Plate, Cube, SolidTowerInteriorPrivate::CubeSizeCm);
+			if (GetWorld())
+			{
+				Plate->RegisterComponent();
+			}
+			ArrangePlates.Add(Plate);
+		}
+		if (ArrangeLetters)
+		{
+			Arrange.AppendLetters(ArrangeLetters, SolidTowerInteriorPrivate::CubeSizeCm);
 		}
 	}
 }

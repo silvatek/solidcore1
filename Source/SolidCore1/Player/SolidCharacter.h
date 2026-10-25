@@ -105,6 +105,11 @@ public:
 	void ToggleSight();
 	/** Hide the nameplate in true sight, in a stronghold or lair, and while no companions are out. */
 	void UpdateNameLabelVisibility();
+	/**
+	 * Hide the captain while arrange mode is on.
+	 * The pawn stays, so the camera does not jump. His mesh and capsule miss the pointer ray.
+	 */
+	void SetArrangeHidden(bool bHide);
 
 protected:
 	void ApplyNameLabel();
@@ -193,6 +198,10 @@ protected:
 	void ToggleInventoryFromController();
 	void ToggleDebugPanelFromInput();
 	void CloseMenuOverlayFromInput();
+	void ToggleArrangeFromInput();
+	bool IsArrangingFurniture() const;
+	/** The Arrange furniture plate under the pointer, including while the right button looks. */
+	bool ArrangeSignUnderPointer() const;
 	/** A letter, digit, space, or Backspace while the name page is open. */
 	void NameSignKey(FKey Key);
 	void OpenStrongholdName();
@@ -462,4 +471,10 @@ protected:
 	bool bEditorCameraLocked = false;
 	bool bEditorSavedBoomCollision = true;
 	FRotator EditorSavedControlRotation = FRotator::ZeroRotator;
+
+	/** Arrange mode has hidden this pawn. The cell under him does not change. */
+	bool bArrangeHidden = false;
+	bool bArrangeCollisionSaved = false;
+	ECollisionResponse SavedCapsuleVisibility = ECR_Block;
+	ECollisionResponse SavedMeshVisibility = ECR_Block;
 };

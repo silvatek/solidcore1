@@ -27,6 +27,14 @@ public:
 	/** Dark opening a click uses to leave. Null when this interior has none. */
 	virtual UStaticMeshComponent* GetPassageMesh() const { return nullptr; }
 
+	/** Arrange furniture plates on the interior wall. None until a kind builds them. */
+	virtual int32 ArrangeSignCount() const { return 0; }
+	virtual UStaticMeshComponent* GetArrangeSignPlate(int32 Index) const
+	{
+		(void)Index;
+		return nullptr;
+	}
+
 	void SetStrongholdCell(FIntPoint Cell) { StrongholdCell = Cell; }
 	FIntPoint GetStrongholdCell() const { return StrongholdCell; }
 

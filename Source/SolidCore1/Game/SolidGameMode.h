@@ -10,6 +10,7 @@
 #include "Combat/SolidBattle.h"
 #include "Company/SolidCompany.h"
 #include "SolidSight.h"
+#include "Strongholds/Furnishings/SolidArrange.h"
 #include "SolidGameMode.generated.h"
 
 class ASolidBridge;
@@ -231,6 +232,15 @@ public:
 	 */
 	void ExitStronghold();
 
+	/** Arrange mode is on inside the company stronghold. */
+	bool IsArrangingFurniture() const { return ArrangeMode.IsOn(); }
+
+	/** `\` or the Arrange furniture plate. An overlay or the open world leaves the mode as it is. */
+	void ToggleArrangeFurniture();
+
+	/** Esc, or the start of leaving the stronghold. The captain is drawn again. */
+	void LeaveArrangeFurniture();
+
 	/**
 	 * Bind the game instance's company and create the squad on the first call.
 	 * Later calls (event refresh, companion spawn) keep the active battle plan
@@ -355,6 +365,11 @@ protected:
 
 	/** Interior spawned for this stronghold visit. The world keeps the actor alive. */
 	ASolidStrongholdInterior* StrongholdInterior = nullptr;
+
+	/** On or off. A later stage lifts a piece. */
+	FSolidArrange ArrangeMode;
+
+	void ApplyArrangeBody();
 	/** Interior spawned for this tunnel visit. The world keeps the actor alive. */
 	ASolidLairInterior* LairInterior = nullptr;
 	bool bCaptainTravelApplied = false;

@@ -693,8 +693,40 @@ bool ASolidGameMode::EnterChosenStronghold(
 	return true;
 }
 
+void ASolidGameMode::ApplyArrangeBody()
+{
+	if (ASolidCharacter* Captain = FindCaptain(GetWorld()))
+	{
+		Captain->SetArrangeHidden(ArrangeMode.IsOn());
+	}
+}
+
+void ASolidGameMode::ToggleArrangeFurniture()
+{
+	ASolidCharacter* Captain = FindCaptain(GetWorld());
+	FSolidArrange::FContext Context;
+	Context.bInStronghold = IsInStronghold();
+	Context.bOverlay = Captain && Captain->IsMenuOverlayOpen();
+	if (!ArrangeMode.Toggle(Context))
+	{
+		return;
+	}
+	ApplyArrangeBody();
+}
+
+void ASolidGameMode::LeaveArrangeFurniture()
+{
+	if (!ArrangeMode.IsOn())
+	{
+		return;
+	}
+	ArrangeMode.Leave();
+	ApplyArrangeBody();
+}
+
 void ASolidGameMode::ExitStronghold()
 {
+	LeaveArrangeFurniture();
 	UWorld* World = GetWorld();
 	if (!World || !IsInStronghold())
 	{

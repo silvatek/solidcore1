@@ -41,6 +41,11 @@ Input Actions and the mapping context can be replaced with Content assets on the
 | Enter | Left click the dark opening or the tower door | — | — |
 | Leave | Left click the opening or the door | — | — |
 | Cave chest | Drag | — | — |
+| Arrange furniture | `\` or left click the Arrange furniture plate | — | — |
+| Leave arrange mode | `\`, Esc, or left click the plate | — | — |
+| Wheel while arranging | Does not zoom | — | — |
+
+While arrange mode is on, WASD, the left stick, and a click do not move the captain or use the door. F10 and / do nothing. The wheel does not zoom.
 
 ## Lair
 

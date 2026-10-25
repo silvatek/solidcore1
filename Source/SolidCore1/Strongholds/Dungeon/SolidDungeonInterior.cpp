@@ -1,4 +1,5 @@
 #include "SolidDungeonInterior.h"
+#include "Strongholds/Furnishings/SolidArrangeSign.h"
 #include "Strongholds/Furnishings/SolidFurnishing.h"
 #include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
 #include "Strongholds/Furnishings/SolidStrongholdGrid.h"
@@ -392,6 +393,8 @@ ASolidDungeonInterior::ASolidDungeonInterior()
 	MouthMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MouthMesh"));
 	RoomLight = CreateDefaultSubobject<UPointLightComponent>(TEXT("RoomLight"));
 	FloorGrid = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("FloorGrid"));
+	ArrangePlate = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ArrangePlate"));
+	ArrangeLetters = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("ArrangeLetters"));
 
 	FloorMesh->SetupAttachment(SceneRoot);
 	CeilingMesh->SetupAttachment(SceneRoot);
@@ -423,6 +426,18 @@ ASolidDungeonInterior::ASolidDungeonInterior()
 	FloorGrid->SetMobility(EComponentMobility::Movable);
 	FloorGrid->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	FloorGrid->SetCastShadow(false);
+
+	ArrangePlate->SetupAttachment(SceneRoot);
+	ArrangePlate->SetMobility(EComponentMobility::Movable);
+	ArrangePlate->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	ArrangePlate->SetCollisionResponseToAllChannels(ECR_Ignore);
+	ArrangePlate->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	ArrangePlate->SetCastShadow(false);
+
+	ArrangeLetters->SetupAttachment(SceneRoot);
+	ArrangeLetters->SetMobility(EComponentMobility::Movable);
+	ArrangeLetters->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ArrangeLetters->SetCastShadow(false);
 
 	RoomLight->SetupAttachment(SceneRoot);
 	RoomLight->SetMobility(EComponentMobility::Movable);
@@ -685,6 +700,23 @@ void ASolidDungeonInterior::BuildVisuals()
 	}
 
 	PlaceStarterFurnishings();
+
+	const FSolidArrangeSign Sign = FSolidArrangeSign::ForCave();
+	if (ArrangeLetters)
+	{
+		ArrangeLetters->SetStaticMesh(Cube);
+		ArrangeLetters->ClearInstances();
+		if (UMaterialInterface* Ink = SolidMaterials::CreateSolidColor(
+			this, FSolidArrangeSign::TextColor(), TEXT("ArrangeLetters"), 0.9f))
+		{
+			ArrangeLetters->SetMaterial(0, Ink);
+		}
+		Sign.AppendLetters(ArrangeLetters, 100.f);
+	}
+	if (ArrangePlate)
+	{
+		Sign.ApplyPlate(ArrangePlate, Cube, 100.f);
+	}
 }
 
 void ASolidDungeonInterior::PlaceStarterFurnishings()

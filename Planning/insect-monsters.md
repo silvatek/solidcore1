@@ -30,7 +30,6 @@ This story ships before or after [Encounter enhancements](encounter-enhancements
 - Any Blueprint or AnimBP in the download stays unused. The captain stays on the Viking mesh.
 - The 40 cm length is a uniform scale of the downloaded mesh. A later body builds an insect the way a human mesh is built. [`Content/Fauna.md`](../Content/Fauna.md) records this pack in the insect section, and it records that a Tiny ant is about 40 cm long and that the downloaded mesh is the body for now. Segments, wings, and the other colours stay that later body.
 - The Credits page credits Anna Vorobeva for the Stylized Ant. The Fab listing is the Standard license, with a Personal tier and a Professional tier. The page names that creator, the line Fab Standard (Personal / Professional), and the listing URL, after the Velociraptor listing.
-- The product commit bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`.
 
 ## Implementation notes
 

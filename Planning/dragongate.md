@@ -31,4 +31,3 @@ The curtain fills the town cells and the grassland cells in that run. It then co
 - The marker cell is the town. The `o` cells are not more Dragongate markers. Enter Dragongate, the roads, and the sign use the marker cell.
 - The sign offsets were measured from the middle of the two old cells: 400 cm east and 800 cm north, facing north, off the opening. Place the sign from the marker, near the gate and off the opening.
 - Tests cover `M.!.M`, `Mo!oM`, and `M.o!o..M`: the gate on the `!`, the curtain across every `o` and `.` in the run, and the curtain inside both mountains. They also cover a gap that is too narrow and a run with a mountain on only one side, both of which write no pieces. `SolidCore1.Towns.WallGateDigitPair` is the old two-cell workaround.
-- The product commit bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`. This plan commit does not.

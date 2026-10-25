@@ -25,7 +25,6 @@ This story introduces no new class. Hills are another biome. The height variance
 - Hills are open ground. Sea, mountain, and the river channel stay closed.
 - A road or a highway may cross hills, as it crosses grassland. The strip keeps the hills ground. The hills shelf and the road shelf differ, so the strip does not cut a trench and does not replace the grass.
 - A slope still uses the higher shelf. Hills sit above the 1 m land and the water. A mountain beside hills still takes that slope.
-- The product commit bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`.
 
 ## Implementation notes
 

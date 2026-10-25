@@ -29,7 +29,6 @@ This is a single phase. The catalog row and the Immense body land together. The 
 - A blow that reduces Hide to 0 kills the raptor and ends the fight with the captain alive. Starting gear does not land that blow. Immense Hide is 500 and the crude spear's Power is about 12, so the hide stands. One claw, about 126, drops Rags at 70. The captain dies on that blow, through the landing any captain death already uses. Dracorex stays that one raptor.
 - `SolidCore1.Battle.Dracorex` simulates that fight. The captain wears the starting loadout, which is the basic gear: the dented helmet, Rags, and the crude spear. No companion is out. The squad plan is Starter. The group is the Dracorex encounter's one Immense raptor. The first blows are the crude spear, then the claws. The spear leaves the hide standing. The claws kill the captain. The battle is finished, the squad defence is 0, and the hide is still above 0.
 - The fight that kills the captain once it has started stays on Iglin Bridge, as [Iglin Bridge Fight Enhancements](iglin-bridge-fight-enhancements.md) specifies. This story leaves that encounter's fight there.
-- The product commit bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`.
 
 ## Implementation notes
 

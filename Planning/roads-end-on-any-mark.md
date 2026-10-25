@@ -10,7 +10,6 @@ This story follows [Place encounter markers](Done/place-encounter-markers.md), w
 
 - A road joins any two marks. A town end is the town name, and a stronghold end is the stronghold name. A stronghold site, a lair entrance, a lair exit, a custom note, and an encounter use the kind and the name, in the form of a `!` line: `StrongholdSite (Humble)`, `LairEntrance (Iglin tunnels)`, `LairExit (Iglin tunnels)`, `Custom (note)`, `Encounter (Iglin Bridge)`. `LairEntrance (Iglin tunnels)` and `LairExit (Iglin tunnels)` are different ends. The route finishes on a cell of that kind and name. Several marks of the same kind and name are one end, and the route finishes on one of those cells, as Dragongate's two town cells are one town. A road whose end matches no mark is stored, and its route is empty. The tool names that missing end.
 - Tests solve a road to `LairEntrance (Iglin tunnels)` that finishes on the entrance cell, and a road to `LairExit (Iglin tunnels)` that finishes on the exit cell. They also solve a road to a site, a custom note, and an encounter. A road whose end matches no mark has an empty route. The tests run without a viewport. The editor session on the Windows machine is the check that the mode matches. A cloud agent does not run the editor.
-- The product commit bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`.
 
 ## Implementation notes
 

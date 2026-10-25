@@ -33,7 +33,6 @@ This story introduces no game concept. Raptor, the encounter, the captain's deat
 - Killed by monsters disables Starter and enables Attack and Defend. The squad's selection becomes Attack, then Defend. The active plan becomes Attack. The battle-plan list shows F1 Attack and F2 Defend. The journal records `Starter disabled`, `Attack enabled`, and `Defend enabled`. It still enables Meagre. It does not clear the inventory, and it does not travel.
 - Driven from the village still requires Killed by monsters. The portal to the grass north of the Iglin Tunnels Entrance still records Driven from the village when that event has not fired.
 - Enter Relion still repairs the bridge. The center is drawn. The road stays `Iglin -> Relion, track`.
-- The product commit bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`.
 
 ## Implementation notes
 

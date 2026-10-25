@@ -160,7 +160,8 @@ bool FSolidWorldMapTerrainOverlayTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("terrain exposes start town"), Terrain->GetStartTownWorldXY(TownXY));
 
 	// The small fixture steps across the whole world, so its nearest point can
-	// miss a painted town. Play uses the chart grid, and that centroid is the town point.
+	// miss a painted town. Play uses the chart grid. A road ends on the town
+	// point, and that sample is the road because town and road share a shelf.
 	USolidTerrainMap* ChartGrid = NewObject<USolidTerrainMap>();
 	TestNotNull(TEXT("chart grid"), ChartGrid);
 	if (ChartGrid)
@@ -174,12 +175,29 @@ bool FSolidWorldMapTerrainOverlayTest::RunTest(const FString& Parameters)
 			/*InGridHeight=*/USolidWorldChart::PointAxis,
 			/*InPointSpacing=*/200.f,
 			/*bForceRebuild=*/true);
+		USolidWorldChart* Chart = ChartGrid->GetWorldMap();
 		FVector2D ChartTown = FVector2D::ZeroVector;
-		TestTrue(TEXT("chart grid exposes the start town"), ChartGrid->GetStartTownWorldXY(ChartTown));
-		TestEqual(
-			TEXT("town centroid is Town biome"),
-			static_cast<uint8>(ChartGrid->SamplePoint(ChartTown.X, ChartTown.Y).Biome),
-			static_cast<uint8>(ESolidBiome::Town));
+		FIntPoint TownCell = FIntPoint::ZeroValue;
+		if (TestNotNull(TEXT("chart grid map"), Chart)
+			&& TestTrue(TEXT("chart grid exposes the start town"), ChartGrid->GetStartTownWorldXY(ChartTown))
+			&& TestTrue(
+				TEXT("the start town is a cell"),
+				Chart->CellAtWorld(
+					ChartTown.X,
+					ChartTown.Y,
+					ChartGrid->GetWorldMinXY(),
+					ChartGrid->GetWorldMaxXY(),
+					TownCell)))
+		{
+			TestEqual(
+				TEXT("the start town point is Town"),
+				static_cast<uint8>(Chart->GetPointBiomeAtCell(TownCell.X, TownCell.Y)),
+				static_cast<uint8>(ESolidBiome::Town));
+			const ESolidBiome AtTown = ChartGrid->SamplePoint(ChartTown.X, ChartTown.Y).Biome;
+			TestTrue(
+				TEXT("the terrain at the town is the town or the road through it"),
+				AtTown == ESolidBiome::Town || AtTown == ESolidBiome::Road);
+		}
 	}
 
 	// MakeSmallMap centers fog on a fixture player at the origin, not on the start cell.

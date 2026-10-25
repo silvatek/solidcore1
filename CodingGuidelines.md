@@ -18,7 +18,7 @@ Code that already uses a namespace and a struct for a game concept stays as it i
 
 Code strives to maximise encapsulation and cohesion. Specialisation and generalisation through C++ classes is the usual way to do that.
 
-Encapsulation keeps a type's data and the operations on that data together. A simple field, with no logic to read or update it, can be public. A field that needs logic to read or to update is reached through a method. The type hides that logic, so a change to it stays inside the type.
+Encapsulation keeps a type's data and the operations on that data together. A simple field, with no logic to read or update it, can be public or reached through a method. Either is fine. A field that needs logic to read or to update is reached through a method. The type hides that logic, so a change to it stays inside the type.
 
 Cohesion means the parts of a type all serve the one thing that type is. A stronghold type that holds the stronghold's size, its exit, and the answers about that stronghold is cohesive. A type that also formats the journal and samples the terrain is not.
 
@@ -36,7 +36,7 @@ A function another file calls is declared in the header. That is C++. A method t
 
 The definition stays in the `.cpp`. Defining a function in the header is discouraged. A template is the case where the caller has to see the body. `SolidClickMove::IntersectHeight` is one.
 
-A simple field can be public, as the encapsulation section says.
+A simple field can be public or reached through a method, as the encapsulation section says.
 
 The destructor is virtual when subclasses exist. A copy that must keep the subclass implements `Clone` and returns `TUniquePtr` to the base, as `FSolidBodyPart::Clone` does.
 

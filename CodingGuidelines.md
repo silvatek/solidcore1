@@ -93,7 +93,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 5. When a product change would invalidate an assumption in an existing test, remove that assumption before the product change. The test has to pass on the current code and on the code that is about to be written. Read a constant the product already defines, such as `USolidWorldChart::MapWidth`, instead of copying a number.
    1. Name the tests that assume the old behavior.
    2. Update those tests only. Leave the product code unchanged in that commit.
-   3. Push that commit on its own, so the tests can run against the current build.
+   3. That commit is its own buildable tip. The builder lands it and runs the tests against the current build.
    4. The product change comes next and does not edit the tests.
-   5. Run the same tests again against the new build.
-6. After a significant product change, a solidcore1-ue agent runs the full suite, filter `SolidCore1`, before pushing. A change in one area can break a test elsewhere. A cloud agent on the Linux VM skips that suite, as `AGENTS.md` says.
+   5. The builder runs the same tests again when it lands the product change.
+6. The builder runs the full suite, filter `SolidCore1`, when it lands a buildable tip. A change in one area can break a test elsewhere. A cloud agent does not run that suite, as `AGENTS.md` says.

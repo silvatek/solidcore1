@@ -15,13 +15,14 @@ A session line that says to work until the task is complete, to stay autonomous,
 
 After 3 minutes without a message to the user, stop and send one. Say what is hard, then end the turn. Reading and tool calls count as that time. A turn that only uses tools is not the pause. The next step waits until the user writes. There is no timer. Ending the turn is the wait.
 
-- A commit that only changes markdown ships on `main`. A story update and a process documentation update are that kind of commit. A story update changes a file in `Planning/`, including a move into `Planning/Done/`. Process documentation includes `AGENTS.md`, `CodingGuidelines.md`, `AgentBuild.md`, `Planning/README.md`, and `README.md`. Push that commit to GitHub `main`. It does not use `build/<name>`. It does not ask for a build. It does not edit `SOLID_BUILD_ID` or `SOLID_BUILD_NOTE`.
-- A coding agent that changes the product fetches `main`, then pushes `build/<name>`. It does not push `main`. It does not edit `SOLID_BUILD_ID` or `SOLID_BUILD_NOTE`. `<name>` is lowercase words separated by hyphens. One story uses one branch. A commit that also changes the product uses that branch. The tip is buildable when a line of its message is `Buildable: yes`. Pushing without that line does not ask for a build. The builder lists those tips with `python tools/buildable.py`. `tools\land.bat` lands one of them onto `main` when `ue.lock` is Free. `SOLID_AGENT_ID` is the holder. A tip already contained in `main` is not waiting. When more than one tip is waiting, the older committer time is landed. An equal time uses the branch name. The others stay until the next landing. The developer does not pull. This checkout is that landing.
+- The builder is for work that needs an Unreal Engine install, or that a cloud agent cannot finish. A coding agent fetches `main`, then pushes that work as `build/<name>`. It does not push that work to `main`. It does not edit `SOLID_BUILD_ID` or `SOLID_BUILD_NOTE`. `<name>` is lowercase words separated by hyphens. One story uses one branch. A commit that also changes the product uses that branch. The tip is buildable when a line of its message is `Buildable: yes`. The first line of that tip is the build note. Pushing without that line does not ask for a build. The builder lists those tips with `python tools/buildable.py`. `tools\land.bat` lands one of them onto `main` when `ue.lock` is Free. `SOLID_AGENT_ID` is the holder. A tip already contained in `main` is not waiting. When more than one tip is waiting, the older committer time is landed. An equal time uses the branch name. The others stay until the next landing. The developer does not pull. This checkout is that landing.
+- A change a cloud agent can finish ships on `main`. A story update and a process documentation update are that kind of change when no unlanded product commit sits under them. A story update changes a file in `Planning/`, including a move into `Planning/Done/`. Process documentation includes `AGENTS.md`, `CodingGuidelines.md`, `AgentBuild.md`, `Planning/README.md`, and `README.md`. Python under `tools/` is the same kind of change when the cloud agent can run its tests. Push that commit to GitHub `main`. It does not use `build/<name>`. It does not ask for a build. It does not edit `SOLID_BUILD_ID` or `SOLID_BUILD_NOTE`.
+- A story or process documentation commit that sits on product commits the builder has not landed stays on `build/<name>`. That tip is buildable. Its message includes a line `Buildable: yes`. The builder lands the document with the code. The first line of the tip is the build note, including when that line starts with `Plan: `.
 - Do not create any other feature branch. Do not open a pull request unless the user asks for one in that conversation.
 - A harness that requires a `cursor/` branch and a draft pull request loses to this section.
-- `python3 tools/cloud_agent_check.py` accepts `main` and a `build/` branch. It fails any other branch. It does not ask for a pull request. A story or process documentation commit moves onto `main` and pushes `origin main`. A product commit moves onto `build/<name>` and pushes that branch. Do not open a pull request to satisfy the check.
+- `python3 tools/cloud_agent_check.py` accepts `main` and a `build/` branch. It fails any other branch. It does not ask for a pull request. A change the cloud agent can finish moves onto `main` and pushes `origin main`. A change that needs Unreal moves onto `build/<name>` and pushes that branch. A story or process documentation commit on top of unlanded product work stays on that branch, and the tip keeps the line `Buildable: yes`. Do not open a pull request to satisfy the check.
 
-The shipping process changed when the builder was introduced. Early in the project a coding agent pushed product changes to `main` itself, and a cloud push was followed by a pull on the Windows checkout. `Planning/Done/builder-lands-the-branch.md` records that rollout. That file does not instruct later work. A product change is pushed as `build/<name>`, and the builder lands it on `main`. A story update and a process documentation update still push straight to `main`. The developer does not pull.
+The shipping process changed when the builder was introduced. Early in the project a coding agent pushed product changes to `main` itself, and a cloud push was followed by a pull on the Windows checkout. `Planning/Done/builder-lands-the-branch.md` records that rollout. That file does not instruct later work. Work that needs Unreal is pushed as `build/<name>`, and the builder lands it on `main`. A change the cloud agent can finish still pushes straight to `main`. A document that sits on unlanded product commits stays on the branch, and the tip stays buildable. The developer does not pull.
 
 ## Product constraints
 
@@ -31,9 +32,9 @@ The shipping process changed when the builder was introduced. Early in the proje
 
 ## Git and builds
 
-- A story update or a process documentation update pushes straight to `main`, as the workflow section requires. A product change is pushed as `build/<name>`. The builder lands that branch on `main`.
-- A commit that changes a story starts with `Plan: `. That is a file in `Planning/` other than `Planning/README.md`, including a move into `Planning/Done/`. A commit that also changes the product does not use that prefix. The final commit updates the story file, sets it to `Done`, and moves it into `Planning/Done/`. That commit message starts with `Plan: `. Push that story commit to `main`. It does not use `build/<name>`, and its message does not ask for a build.
-- The builder bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE` in `Source/SolidCore1/Game/SolidBuildId.h` (`SC1-NNNN`) when it lands a product change. A coding agent does not edit them. Documentation and test changes do not bump them. The product is the game itself.
+- A change the cloud agent can finish pushes straight to `main`, as the workflow section requires. Work that needs Unreal is pushed as `build/<name>`. The builder lands that branch on `main`.
+- A commit that changes a story starts with `Plan: `. That is a file in `Planning/` other than `Planning/README.md`, including a move into `Planning/Done/`. A commit that also changes the product does not use that prefix. The final commit updates the story file, sets it to `Done`, and moves it into `Planning/Done/`. That commit message starts with `Plan: `. It ships on `main` when the product commits are already on `main`, and it does not ask for a build. When product commits on `build/<name>` are still unlanded, that story commit stays on the branch and the tip keeps the line `Buildable: yes`.
+- The builder bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE` in `Source/SolidCore1/Game/SolidBuildId.h` (`SC1-NNNN`) when it lands a buildable tip. The build note is the first line of that tip. A coding agent does not edit them. A commit that ships on `main` does not bump them. The product is the game itself.
 
 ## Collaborative workflow
 
@@ -47,7 +48,7 @@ After 3 minutes without a message to the user, stop and send one. Say what is ha
 
 A cloud agent runs on the Cursor-hosted Linux VM. It pushes to GitHub. Do not run the editor, automation, or PIE on this VM.
 
-A story update or a process documentation update is pushed to `main`. A product change is pushed as `build/<name>`. The builder is the only agent that writes this Windows checkout. It lands that branch, builds, and runs the tests. While the lock says `PIE`, `Editor`, or `Dump`, it may fetch and does not rebase, build, or test. A pass or a fail is a comment on the commit the coding agent pushed, and a GitHub status `solidcore1/land`. The comment names the build id, the rebase conflict, or the failed tests. The coding agent reads that comment. The developer does not copy it into chat. A pass starts the next slice on the same branch, from the `main` that just landed. The builder leaves the branch in place. A pass does not set `Done`, and it does not stand in for play. The developer plays that checkout. The developer does not pull.
+A change the cloud agent can finish is pushed to `main`. Work that needs Unreal is pushed as `build/<name>`. A story or process document on top of unlanded product commits stays on that branch, and the tip keeps `Buildable: yes`. The builder is the only agent that writes this Windows checkout. It lands that branch, builds, and runs the tests. While the lock says `PIE`, `Editor`, or `Dump`, it may fetch and does not rebase, build, or test. A pass or a fail is a comment on the commit the coding agent pushed, and a GitHub status `solidcore1/land`. The comment names the build id, the rebase conflict, or the failed tests. The coding agent reads that comment. The developer does not copy it into chat. A pass starts the next slice on the same branch, from the `main` that just landed. The builder leaves the branch in place. A pass does not set `Done`, and it does not stand in for play. The developer plays that checkout. The developer does not pull.
 
 Wait for play when the story changes play. When a screenshot arrives, review it. The story stays `In Progress` through that wait. `Done` waits for the testing and the agreement in the Planning section.
 
@@ -61,21 +62,13 @@ These agents run on the Windows worker. They have access to C++ and Unreal Engin
 
 `tools\editor.bat` uses that same lock. A missing file, or the word `Free`, lets it start. It writes `Editor`, launches the Unreal Editor without Play In Editor, waits until that process has closed, then writes `Free`. Any other word leaves the file unchanged and does not start the editor. It opens `/Game/ThirdPerson/Lvl_ThirdPerson` and switches to the World chart mode.
 
-`tools\build.bat` and `tools\test.bat` take `ue.lock` before they run. Set `SOLID_AGENT_ID` to this agent's run id. `tools\build.bat` also accepts that id as its first argument. `tools\test.bat` keeps its first argument as the test filter. Do not write `ue.lock`. A missing file counts as `Free`. If the script prints `Word:` and that word is not `Free`, say that word and wait until the file says `Free`. Ignore surrounding whitespace. Do not build or test while waiting. If the script fails and the word is `Free`, the lock is busy: say that and wait the same way. If the script says the next slot is reserved, say that, run `tools\free-ue.bat` with this agent's id when `ue.lock` still contains that id, and wait the same way. Do not delete `ue.yield`.
+`tools\build.bat` and `tools\test.bat` take `ue.lock` before they run. `SOLID_AGENT_ID` is the holder. `tools\build.bat` also accepts that id as its first argument. `tools\test.bat` keeps its first argument as the test filter. Do not write `ue.lock`. A missing file counts as `Free`. The builder runs these two from `tools\land.bat`. A coding agent does not run them.
 
-A wait for `ue.lock` that times out is not a reason to read the file again at once. Say in chat that the wait timed out and which word is in the file, then wait 2 minutes for a reply. If no reply arrives, read the file and wait again.
-
-Look for `agent.ok` in the repo root before running build or test.
-
-`tools\agent.bat` starts the solidcore1-ue worker (`agent worker start --name "solidcore1-ue"`). When that command exits 0 it writes `agent.ok`. The line in the file is `Passed`. The file is gitignored and stays on this machine.
-
-- `agent.ok` is missing. Skip `tools\build.bat` and `tools\test.bat`.
-- `agent.ok` is present, and the change is under `Source/` or `Config/`, or it touches a `*.uproject`, `*.Build.cs`, or `*.Target.cs` file. This machine has finished a successful worker run, so build and test. Set `SOLID_AGENT_ID` to this agent's run id. Then build with `tools\build.bat` and run the tests with `tools\test.bat`. After that session has finished, including when the build or the tests fail, run `tools\free-ue.bat` with that id. It writes `Free` only if `ue.lock` still contains that id.
-- `agent.ok` is present, and the change is markdown, including `Planning/` and this file. Skip `tools\build.bat` and `tools\test.bat`.
+`tools\agent.bat` starts the solidcore1-ue worker (`agent worker start --name "solidcore1-ue"`). When that command exits 0 it writes `agent.ok`. The line in the file is `Passed`. The file is gitignored and stays on this machine. The builder reads `agent.ok` before `tools\build.bat` and `tools\test.bat`. A missing `agent.ok` skips the build and the tests. When the landing finishes, including when the build or the tests fail, it writes `Free` only if `ue.lock` still contains its id.
 
 The developer runs `tools\yield-ue.bat` to reserve the next build and test, and `tools\yield-ue.bat clear` when that reservation is over. `tools\free-ue.bat` with no id clears a dead agent id when `UnrealEditor.exe`, `UnrealEditor-Cmd.exe`, and `UnrealBuildTool.exe` are not running. It does not clear `PIE`, `Editor`, or `Dump`.
 
-The developer runs `tools\editor.bat` to open the editor without play, and `tools\pie.bat` when play is needed. They send a screenshot when they do. Wait for that report before treating the editor or play as verified. When a screenshot arrives, review it. A `tools\test.bat` pass keeps the story `In Progress`. `Done` waits for the user's report and the agreement in the Planning section.
+The developer runs `tools\editor.bat` to open the editor without play, and `tools\pie.bat` when play is needed. They send a screenshot when they do. Wait for that report before treating the editor or play as verified. When a screenshot arrives, review it. The builder's test pass keeps the story `In Progress`. `Done` waits for the user's report and the agreement in the Planning section.
 
 Screenshots are taken with the Windows snipping tool. That switch puts Unreal in the background, so the HUD frame rate drops. Ignore FPS in a screenshot unless the user says they are worried about it. Foreground PIE is about 120 FPS. The mouse has to move to take the screenshot. Ignore the pointer position, and ignore a hover line that follows it, unless the user says that position is the subject.
 
@@ -83,7 +76,7 @@ Screenshots are taken with the Windows snipping tool. That switch puts Unreal in
 
 Cloud agents are a **code + git workshop** on the Cursor-hosted Linux VM. They do not replace the Windows Unreal machine. A solidcore1-ue agent runs on that machine and follows the section above.
 
-- Fetch `main` before editing. A story update or a process documentation update is pushed to `main`. A product change is pushed as `build/<name>`. No other feature branch and no pull request unless the user asks for one in that conversation. `tools/cloud_agent_check.py` accepts `main` and a `build/` branch, and fails any other branch.
+- Fetch `main` before editing. A change the cloud agent can finish is pushed to `main`. Work that needs Unreal is pushed as `build/<name>`. A story or process document on top of unlanded product commits stays on that branch, and the tip keeps `Buildable: yes`. No other feature branch and no pull request unless the user asks for one in that conversation. `tools/cloud_agent_check.py` accepts `main` and a `build/` branch, and fails any other branch.
 - Do not run the Unreal Editor, `tools/test.bat`, `tools/agent.bat`, automation, or PIE from the cloud VM. Fab packs are not present here. `agent.ok` is gitignored and exists only after a successful `tools\agent.bat` on the Windows machine. On this VM, skip build and test.
 - Before every push, run `python3 tools/cloud_agent_check.py`. The cloud environment `install` runs the same script. Fix errors before pushing; treat warnings as review notes.
 - After a landing, this Windows checkout is already on that `main`. The developer does not pull. Wait for play when the story changes play. The story stays `In Progress` until that report and the agreement in the Planning section.
@@ -92,10 +85,10 @@ Cloud agents are a **code + git workshop** on the Cursor-hosted Linux VM. They d
 ## Planning
 
 - One file in `Planning/` is one open story. The file is the story.
-- A commit that changes a story starts with `Plan: `, as the Git section says. A product commit does not. Push that story commit to `main`. It does not use `build/<name>`, and it does not ask for a build.
+- A commit that changes a story starts with `Plan: `, as the Git section says. A product commit does not. The workflow section says where that commit is pushed.
 - When an agent starts work on a `Ready` story, set that story's status to `In Progress`. For a complex story, that change waits until the staged plan is agreed and the first stage starts.
 - If asked to start coding for a story that is not marked `Ready`, request confirmation before proceeding.
-- Leave the story `In Progress` when the product commit lands on `main`. Properly tested means the builder has built and run the tests, and the developer has played when the story changes play. The developer does not pull. The agent has reviewed that report, and any screenshot. A solidcore1-ue agent's `tools\test.bat` pass is part of the work and leaves the story `In Progress`.
+- Leave the story `In Progress` when the product commit lands on `main`. Properly tested means the builder has built and run the tests, and the developer has played when the story changes play. The developer does not pull. The agent has reviewed that report, and any screenshot. The builder's test pass leaves the story `In Progress`.
 - Set `Done` only after that testing, and only after the user and the agent agree the story is done. The agreement is a discussion. The user says whether they are happy with the implementation. The agent confirms that every acceptance criterion is met. Then set the status to `Done` and move the file to `Planning/Done/`, in one commit. That commit message starts with `Plan: `.
 - A file in `Planning/Done/` records why that work was done. It does not instruct later work. A rule that later work still follows lives in this file, `CodingGuidelines.md`, `AgentBuild.md`, `Planning/README.md`, or `README.md`.
 
@@ -125,7 +118,7 @@ Read the request and the names next to the new code before choosing. When those 
 
 Follow the Automated tests policy in `CodingGuidelines.md`.
 
-After a significant product change, a solidcore1-ue agent runs the full suite, filter `SolidCore1`, before pushing. Read `agent.ok` first. Run `tools\build.bat` and `tools\test.bat` when that file is present, as the solidcore1-ue agents section says. A cloud agent on the Linux VM skips that suite.
+The builder runs the full suite, filter `SolidCore1`, when it lands a buildable tip. A cloud agent does not run that suite.
 
 ## Unused code
 
@@ -156,7 +149,7 @@ The search leaves unused includes, unused parameters, comments, commented-out bl
 
 ## World chart
 
-Whenever `Content/World/WorldChart.uasset` changes — a pull, a commit, a diff, or an edit in the conversation — review that asset before doing anything else with it. `tools\dump-chart.bat` writes it as JSON. The game builds the world from `/Game/World/WorldChart`. `tools\editor.bat` opens the World chart mode on `/Game/ThirdPerson/Lvl_ThirdPerson`.
+Whenever `Content/World/WorldChart.uasset` changes — a pull, a commit, a diff, or an edit in the conversation — review that asset before doing anything else with it. The review runs on the Windows checkout. `tools\dump-chart.bat` writes the chart as JSON. A cloud agent does not run that script. The game builds the world from `/Game/World/WorldChart`. `tools\editor.bat` opens the World chart mode on `/Game/ThirdPerson/Lvl_ThirdPerson`.
 
 The grid is 128 columns by 64 rows. Stored row 0 is north and stored column 0 is east. The dump counts from 1 at the top-left. A cell holds a marker biome. Swamp and road are not painted.
 

@@ -75,15 +75,15 @@ Not yet covered (need PIE): character movement, companion steering on terrain, s
 **Command line** (prints ran / passed / failed from the automation log):
 
 ```bat
-tools\run_automation_tests.bat
-tools\run_automation_tests.bat SolidCore1.Fog
+tools\test.bat
+tools\test.bat SolidCore1.Fog
 ```
 
 The summary prints ran/passed/failed counts and, on failure, lists each failed test path (parsed from `Result={Fail}` lines in the automation log).
 
 ## Build ID (HUD)
 
-PIE shows a top-left debug HUD (`Build SC1-NNNN`, a one-line `Change:` note, pawn/terrain Z, chunk load, material, camera pitch). Both strings live in `Source/SolidCore1/Game/SolidBuildId.h` (`SOLID_BUILD_ID` / `SOLID_BUILD_NOTE`) and are bumped when the product changes, so screenshots identify which binary you ran. A documentation change or a test change does not bump them.
+PIE shows a top-left debug HUD (`Build SC1-NNNN`, a one-line `Change:` note, pawn/terrain Z, chunk load, material, camera pitch). Both strings live in `Source/SolidCore1/Game/SolidBuildId.h` (`SOLID_BUILD_ID` / `SOLID_BUILD_NOTE`). The builder writes them when it lands a buildable branch, so screenshots identify which binary you ran. A change that ships on `main` does not bump them.
 
 ## Character visuals (clip locomotion)
 

@@ -41,6 +41,6 @@ Keep that window open. The worker stays connected until you stop it. Its git rem
 
 `tools\land.bat` lands one buildable tip. Set `SOLID_AGENT_ID` to the builder's id. A line of that tip's message is `Buildable: yes`. While `ue.lock` says `PIE`, `Editor`, or `Dump`, the landing may fetch and does not rebase, build, or test. `tools\yield-ue.bat` reserves the next slot.
 
-A coding agent runs on the cloud VM. It pushes `build/<name>` for a product change and `main` for a story or a process documentation update. It does not edit `SOLID_BUILD_ID`. It does not run `tools\land.bat`, `tools\build.bat`, `tools\test.bat`, the editor, or PIE.
+A coding agent runs on the cloud VM. It pushes `build/<name>` for work that needs Unreal, with `Buildable: yes` on the tip. It pushes `main` for a change it can finish, including a story or a process document that does not sit on unlanded product commits. A document on top of that unlanded work stays on the branch, and the tip stays buildable. It does not edit `SOLID_BUILD_ID`. It does not run `tools\land.bat`, `tools\build.bat`, `tools\test.bat`, the editor, or PIE.
 
 Do not install Unreal Engine on the Cursor-hosted Linux VM. Fab packs are not there.

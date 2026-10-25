@@ -65,6 +65,7 @@ class BuildableTests(unittest.TestCase):
             message = ship_branch_error(name)
             self.assertIsNotNone(message)
             self.assertIn("do not open a pull request", message or "")
+            self.assertIn("Buildable: yes", message or "")
 
 
 if __name__ == "__main__":

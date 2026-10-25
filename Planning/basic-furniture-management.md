@@ -1,6 +1,6 @@
 # Basic furniture management
 
-Status: Ready
+Status: In Progress
 
 ## Story
 

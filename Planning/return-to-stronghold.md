@@ -29,7 +29,6 @@ Closing the monster message enables the Meagre size and returns the captain to t
 - Killed by monsters already enables Meagre, beside `EnableCave` and `ClearInventory`. Enter Relion already enables Humble. Enter Kanfold already enables Average. Enter Dragongate lists every size, including Meagre.
 - Enter Dragongate already lists `EnableStrongholdSize(Meagre)`. Remove that one line here. Leave the other six sizes on Dragongate, and leave Humble on Relion and Average on Kanfold.
 - The journal phrase for the size is the one `SolidJournal::Describe` already builds from `SizeName`. The return phrase is `Returned to the stronghold`.
-- Do not use the word den.
 - `SolidCore1.Events.*` in `README.md` says closing the monster message opens the cave. Update that line in the product commit.
 - Tests that name `EnableCave`, `bEnterCave`, `bCaveEnabled`, or `Cave enabled` change before the product commit, so they pass on the current code and on this behavior. The product commit does not edit those tests. It adds the assertions for `ReturnToStronghold`, the journal phrases, and Meagre missing from Dragongate.
   - `SolidCore1.Events.Cave`, `SolidCore1.Events.Message`, and `SolidCore1.Events.ClearInventory` read those fields and the `Cave enabled` line. After the close, assert through `CompanyCaveAcceptsEnter` and through the trip the result asks for. Do not require the old names.

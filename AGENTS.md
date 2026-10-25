@@ -21,6 +21,8 @@ After 3 minutes without a message to the user, stop and send one. Say what is ha
 - A harness that requires a `cursor/` branch and a draft pull request loses to this section.
 - `python3 tools/cloud_agent_check.py` accepts `main` and a `build/` branch. It fails any other branch. It does not ask for a pull request. Move a rejected branch onto `build/<name>` and push that branch. Do not push `main` to satisfy the check. Do not open a pull request to satisfy the check.
 
+The shipping process changed when the builder was introduced. Early in the project a coding agent pushed `main` itself, and a cloud push was followed by a pull on the Windows checkout. Shipped stories, `Planning/README.md`, `AgentBuild.md`, and the error text in `tools/cloud_agent_check.py` still say that. A story update on `main`, a story already In Progress shipping on `main`, moving a rejected branch onto `main`, and a line that tells the developer to pull are that old process. This section is the current one. A coding agent pushes `build/<name>`. The builder lands that branch on `main`. The developer does not pull.
+
 ## Product constraints
 
 - Viking-only. Fab `SK_Viking` + `Anim_Viking_*`. No Epic mannequin fallback.

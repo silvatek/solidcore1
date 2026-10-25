@@ -161,8 +161,8 @@ void FSolidArrangeSign::CollectStrokes(TArray<FStroke>& Out) const
 						FStroke Stroke;
 						const float LocalY = LetterCenterY + (2.f - static_cast<float>(Col)) * CellCm;
 						const float LocalZ = LineZ + (3.f - static_cast<float>(Row)) * CellCm;
-						Stroke.CenterCm = FVector(StrokeDepthCm * 0.5f, LocalY, LocalZ) * MetricScale;
-						Stroke.SizeCm = FVector(StrokeDepthCm, CellCm, CellCm) * MetricScale;
+						Stroke.CenterCm = FVector(StrokeDepthCm * 0.5f, LocalY, LocalZ) * LetterScale;
+						Stroke.SizeCm = FVector(StrokeDepthCm, CellCm, CellCm) * LetterScale;
 						Out.Add(Stroke);
 					}
 				}
@@ -192,6 +192,9 @@ FSolidArrangeSign FSolidArrangeSign::ForCave()
 	const float CornerCm = SolidDungeonLevel::ShellCm * 0.35f * 0.5f;
 	const float FaceCm = SolidStrongholdGrid::SideCm() - CornerCm * 2.f;
 	Sign.MetricScale = FaceCm / NaturalPlateWidthCm();
+	const float TextCm = NaturalPlateWidthCm() - PlatePadCm * 2.f;
+	const float CreamCm = 8.f;
+	Sign.LetterScale = (FaceCm - CreamCm * 2.f) / TextCm;
 	const float Depth = PlateDepthCm * Sign.MetricScale;
 	const float TowardWall = (StrokeDepthCm + PlateGapCm + PlateDepthCm * 0.5f) * Sign.MetricScale;
 	Sign.Place(

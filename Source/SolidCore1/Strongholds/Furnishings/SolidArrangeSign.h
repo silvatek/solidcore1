@@ -46,7 +46,7 @@ public:
 
 	/**
 	 * On the east wall of the cave, facing into the room, clear of the mouth.
-	 * The plate sits on the open face between the corner rocks. A wider board runs into those rocks.
+	 * The plate sits on the open face between the corner rocks, and the words keep cream on that plate.
 	 */
 	static FSolidArrangeSign ForCave();
 
@@ -60,8 +60,10 @@ private:
 	FVector StandLocation = FVector::ZeroVector;
 	float FacingYawDeg = 0.f;
 	bool bPresent = false;
-	/** 1 on a tower floor. The cave shrinks the whole sign onto one wall face. */
+	/** Plate size. 1 on a tower floor. The cave fits the plate to the open face. */
 	float MetricScale = 1.f;
+	/** Letter size. 1 on a tower floor. The cave leaves cream around the words. */
+	float LetterScale = 1.f;
 
 	static float NaturalPlateWidthCm();
 

@@ -101,6 +101,7 @@ bool FSolidArrangeModeTest::RunTest(const FString& Parameters)
 		MaxAbsY = FMath::Max(MaxAbsY, FMath::Abs(Stroke.CenterCm.Y) + HalfY);
 	}
 	TestTrue(TEXT("the strokes stay inside the plate"), bInside);
+	TestTrue(TEXT("the words keep cream on both sides"), MaxAbsY <= Plate.Y * 0.5f - 6.f);
 	TestTrue(
 		TEXT("the words clear the corner rocks"),
 		MaxAbsY < SolidStrongholdGrid::SideCm() * 0.5f - CornerCm);

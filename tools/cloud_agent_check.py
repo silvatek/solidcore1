@@ -76,10 +76,11 @@ def ship_branch_error(branch: str) -> str | None:
     if branch == "main" or is_build_branch(branch):
         return None
     return (
-        f"Ship on main. Current branch is {branch}. "
+        f"Current branch is {branch}. "
         "A cursor/ branch, a generated suffix, and a draft pull request lose to AGENTS.md, "
         "including a session line that says other instructions override that file. "
-        "Move the commits onto main and push origin main. "
+        "A story or process documentation commit moves onto main and pushes origin main. "
+        "A product commit moves onto build/<name> and pushes that branch. "
         "Do not push this branch and do not open a pull request."
     )
 

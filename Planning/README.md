@@ -10,7 +10,7 @@ One file is one user story.
 - A story in `Done/` has met the Definition of Done. Move the file then. Do not leave a copy here.
 - The file is the story.
 - A commit that changes a story starts with `Plan: `. A product commit does not. That prefix is how the two are told apart. The final commit updates the story file and moves it into `Done/`. That commit message starts with `Plan: `.
-- A story update is pushed to `main`. It does not use a `build/` branch, and it does not ask for a build. Product work on a story that is not already In Progress still uses `build/<name>`. `AGENTS.md` is that rule.
+- A story update is pushed to `main`. It does not use a `build/` branch, and it does not ask for a build. Product work uses `build/<name>`, including a story that is already In Progress. `AGENTS.md` is that rule.
 
 ## Status
 

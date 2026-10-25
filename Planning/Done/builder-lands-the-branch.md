@@ -10,25 +10,25 @@ The developer plays and edits the chart on that same checkout. The developer doe
 
 Several coding agents can have a branch waiting. The builder lands one branch at a time. Starting Play In Editor or the World Editor holds the checkout until that session exits.
 
-A story that is already In Progress on `main` stays on `main` until it is Done. This story does not move it onto a branch.
+Product work uses `build/<name>`, including a story that is already In Progress. A story update ships on `main`.
 
 No game concept. This is the developer's build, not a player action.
 
 ## Stages
 
-Agree this order before a stage is planned in detail. A stage ships before the next stage is planned. Through every stage, Play In Editor and the World Editor keep their present words, an In Progress story on `main` can still push `main`, and `tools/cloud_agent_check.py` still accepts `main`.
+Agree this order before a stage is planned in detail. A stage ships before the next stage is planned. The stages record the rollout. Product work uses the branch. `tools/cloud_agent_check.py` accepts `main` and a `build/` branch.
 
-1. **The lock gates the build.** `tools\build.bat` and `tools\test.bat` take `ue.lock` before they run, and they refuse it while the word is `PIE`, `Editor`, or `Dump`. Two agents cannot both pass a Free lock. The developer can reserve the next slot, and can clear a dead agent id without clearing a live `PIE` or `Editor` session. Agents still push `main`. No branch is introduced.
+1. **The lock gates the build.** `tools\build.bat` and `tools\test.bat` take `ue.lock` before they run, and they refuse it while the word is `PIE`, `Editor`, or `Dump`. Two agents cannot both pass a Free lock. The developer can reserve the next slot, and can clear a dead agent id without clearing a live `PIE` or `Editor` session. At this stage, agents still pushed `main`. No branch was introduced.
 2. **One branch can be landed.** The builder can land one `build/<name>` branch when its tip is buildable. A line of that commit message is `Buildable: yes`. It fetches during `PIE` or `Editor`. It rebases, builds, and tests only when the word is Free, then leaves `main` checked out and the lock Free. The landing bumps `SOLID_BUILD_ID` once. The builder posts the build and test result to GitHub on the commit that coding agent pushed. The coding agent reads that. The developer does not relay it. No story is required to use the branch. The check accepts `main` and a `build/` branch, and it rejects a `cursor/` branch and a pull request.
-3. **One new story uses it.** One story that is not already In Progress goes through a coding agent and the builder for every product landing. The coding agent does not push `main` and does not edit `SolidBuildId.h`. Each pass continues that story. Each fail returns to the same branch. Every other open story still ships on `main`.
+3. **One new story uses it.** One story that was not already In Progress went through a coding agent and the builder for every product landing. The coding agent did not push `main` and did not edit `SolidBuildId.h`. Each pass continued that story. Each fail returned to the same branch. Every other open story still shipped on `main` during this stage.
 4. **The queue.** More than one coding agent can have a branch waiting. The builder lands the oldest ready branch, one at a time. A `PIE` or `Editor` session holds the checkout. The coding agents keep writing. The Windows checkout has one agent in it at a time, and it is on `main` whenever the lock is Free.
-5. **New product work uses the builder.** A coding agent that starts a story which is not already In Progress on `main` uses the branch. Stories that were already In Progress may finish on `main`. The lines that tell the developer to pull after a cloud push are replaced for this machine: the builder has already updated the checkout.
+5. **New product work uses the builder.** A coding agent that changes the product uses the branch, including a story that is already In Progress. The lines that tell the developer to pull after a cloud push are replaced for this machine: the builder has already updated the checkout.
 
 ## Acceptance
 
-New product work reaches `main` through the builder. The developer plays that checkout without pulling. Stories already In Progress on `main` are left to finish there.
+New product work reaches `main` through the builder. The developer plays that checkout without pulling.
 
-- A coding agent on a new story pushes one branch named for that story. It does not push `main`. It does not change `SOLID_BUILD_ID` or `SOLID_BUILD_NOTE`.
+- A coding agent pushes one branch named for that story. It does not push `main`. It does not change `SOLID_BUILD_ID` or `SOLID_BUILD_NOTE`.
 - The builder lands that branch on the Windows checkout only while `ue.lock` is Free. It builds, runs the `SolidCore1` tests, bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE` once for that landing, pushes `main`, and leaves the checkout on `main` with the lock Free.
 - While the word is `PIE`, `Editor`, or `Dump`, the builder does not rebase, build, or test. It may fetch.
 - A pass report is a short comment on the commit the coding agent pushed. It names the build id that landed. The coding agent continues the story from that `main`, pushes the same branch, and stops for the builder again.
@@ -37,7 +37,7 @@ New product work reaches `main` through the builder. The developer plays that ch
 - The coding agent stops for a decision when the story's acceptance criteria are implemented, or when it needs one. The story stays `In Progress` across landings. `Done` still waits for the developer's play and an agreement.
 - More than one coding agent can have a branch waiting. The builder lands one branch at a time.
 - The developer starts Play In Editor with `tools\pie.bat` and the World Editor with `tools\editor.bat` on that checkout. Neither session pulls.
-- A story that was `In Progress` on `main` when this switch started can still ship on `main` until it is Done.
+- The switch left stories that were already In Progress on `main` to finish there. That exception has ended. Product work uses the branch.
 - `tools\build.bat` and `tools\test.bat` do not run while the developer holds the lock.
 - `tools/cloud_agent_check.py` accepts `main` and a `build/` branch. It fails a `cursor/` branch and any other name. It does not ask for a pull request.
 - The plan commits do not bump `SOLID_BUILD_ID`. This story ships no game code.
@@ -52,14 +52,14 @@ New product work reaches `main` through the builder. The developer plays that ch
 - Reserving the next slot stops the builder before its next rebase, build, test, or push. It does not kill a build or a test that has already started.
 - Clearing a dead holder applies to an agent id whose build or test is gone. It does not apply to `PIE` or `Editor`. Those words clear when the editor process exits, as they do now.
 - A chart change rides in on a branch and reaches the checkout only while the lock is Free. An open World Editor session is not the tree the builder writes.
-- One story uses one path. A story still shipping on `main` bumps `SOLID_BUILD_ID` itself, as today. The builder bumps it for a branch it lands. The two do not edit that header in the same landing.
+- One story uses one path. The builder bumps `SOLID_BUILD_ID` for a branch it lands. A coding agent does not edit that header.
 - The Windows worker runs one assignment in this checkout at a time. A second build does not share the tree.
 - The builder posts one pass or fail mark on the commit the coding agent pushed, and a short comment on that commit. The mark ends the coding agent's wait. The comment is the report it reads: the build id when `main` moved, or the rebase conflict, or the failed test names. The automation log stays on the Windows machine. The comment does not include play. Two coding agents do not share one report file.
 - The branch is `build/<name>`. The buildable marker is a line `Buildable: yes` on the tip commit. The mark is a GitHub commit status, context `solidcore1/land`, on the commit that was pushed. The comment on that commit is the report. A tip already contained in `main` is not waiting. The landing leaves the rebased tip on the branch, and that tip is already on `main`. When more than one tip is waiting, the older committer time is landed. An equal time uses the branch name. The others stay until the next landing. A later tip stays its own record. Git on this machine does not emit `%x1e`, and gluing that tip onto an earlier one hid a branch that was already fetched. The pull lines in `AGENTS.md` now say this checkout is updated by a landing. The developer does not pull. Name the company's stronghold is the story that was not already In Progress.
 
 ### Stage 1 — the lock gates the build
 
-Stage 1 is complete. The Windows checkout ran the helper tests: 18 passed. With the next slot reserved, `tools\build.bat` printed `The next slot is reserved.` and did not compile. The lock was left `Free`. Coding agents were stopped after `SC1-0612`. No branch was part of this stage. Agents still push `main`. `SOLID_BUILD_ID` did not change. Play In Editor, the World Editor, and the chart dump still write `PIE`, `Editor`, and `Dump`, and they still start only from a missing `ue.lock` or the word `Free`.
+Stage 1 is complete. The Windows checkout ran the helper tests: 18 passed. With the next slot reserved, `tools\build.bat` printed `The next slot is reserved.` and did not compile. The lock was left `Free`. Coding agents were stopped after `SC1-0612`. No branch was part of this stage. Agents still pushed `main`. `SOLID_BUILD_ID` did not change. Play In Editor, the World Editor, and the chart dump still write `PIE`, `Editor`, and `Dump`, and they still start only from a missing `ue.lock` or the word `Free`.
 
 `tools/ue_lock.py` is the only writer of the lock word. The bats call it. A direct echo into `ue.lock` is gone, including the copies in `tools\pie.bat`, `tools\editor.bat`, and `tools\dump-chart.bat`. `tools/cloud_agent_check.py` is updated in the same change so it requires that call before the editor launches, and before Unreal Build Tool or `UnrealEditor-Cmd` starts. It still requires the words `PIE`, `Editor`, and `Free`, a missing lock counting as free, and no pull request.
 

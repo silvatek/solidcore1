@@ -42,11 +42,11 @@ Read this before the first session.
 Before starting a self-hosted agent session:
 
 1. Commit or stash local work you care about.
-2. Prefer a clean `main` that matches GitHub (`git status`, `git pull`).
+2. Prefer a clean `main`. The builder updates this checkout. The developer does not pull.
 3. Close or avoid a long PIE session that holds editor locks if the agent will rebuild (UBT `-WaitMutex` waits, but a busy editor still slows or blocks builds).
 4. Keep the worker process running for the whole session.
 
-Ship rules in `AGENTS.md` still apply (checkout `main`, push to `main`, bump `SOLID_BUILD_ID` on product pushes). Documentation and test changes do not bump it. The “do not run Unreal on the cloud VM” rule applies only to **Cursor-hosted** Linux agents, not to this Windows worker.
+Ship rules in `AGENTS.md` still apply. A story update or a process documentation update pushes to `main`. A product change is pushed as `build/<name>`. The coding agent does not bump `SOLID_BUILD_ID`. The builder bumps it when that branch lands. Documentation and test changes do not bump it. The “do not run Unreal on the cloud VM” rule applies only to **Cursor-hosted** Linux agents, not to this Windows worker.
 
 ## 1. Install the Cursor CLI
 
@@ -103,7 +103,7 @@ The worker registers the git remote of `--worker-dir` (or the current directory)
 1. Open [cursor.com/agents](https://cursor.com/agents).
 2. In the environment / machine picker, choose **My Machines** → `solidcore1-ue` (or the name you passed).
 3. Send a task that needs a build or tests, for example:
-   - “Pull `main`, implement X, bump the build id if the product changed, run `tools\build.bat` then `tools\test.bat`, fix failures, push to `main`.”
+   - “Fetch `main`, implement X on `build/<name>`, run `tools\build.bat` then `tools\test.bat` when `agent.ok` is present, fix failures, and push that branch with a tip line `Buildable: yes`. Do not push the product to `main`, and do not edit the build id.”
 
 From Slack / GitHub / Linear triggers, target the named machine with `worker=solidcore1-ue` or `machine=solidcore1-ue` (see [My Machines](https://cursor.com/docs/cloud-agent/self-hosted/my-machines)). The machine must belong to your Cursor user and be registered for this repo.
 

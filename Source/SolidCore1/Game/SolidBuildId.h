@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0625")
+#define SOLID_BUILD_ID TEXT("SC1-0626")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The Iglin Tunnels mouths use the dungeon rock.")
+#define SOLID_BUILD_NOTE TEXT("The cave plate stays on one wall face.")
 #endif

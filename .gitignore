@@ -19,6 +19,8 @@ Build/
 *.code-workspace
 
 # Compiled objects
+__pycache__/
+*.pyc
 *.obj
 *.o
 *.pdb

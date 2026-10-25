@@ -1,6 +1,6 @@
 # Dragongate is one map marker
 
-Status: Ready
+Status: In Progress
 
 ## Story
 

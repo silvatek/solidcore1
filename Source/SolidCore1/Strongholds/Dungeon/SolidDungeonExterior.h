@@ -6,6 +6,7 @@
 #include "SolidDungeonExterior.generated.h"
 
 class USolidTerrainMap;
+class UStaticMesh;
 class UStaticMeshComponent;
 
 /**
@@ -83,3 +84,27 @@ private:
 		const FLinearColor& Color,
 		const TCHAR* DebugName);
 };
+
+/**
+ * The rock and the rounded mouth a dungeon exterior builds.
+ * The opening is at local X = 0 and faces +X. The rock runs back to -SlopeRun.
+ * The mouth front is at local X = 0 and the plug runs back by Depth.
+ */
+namespace SolidDungeonExteriorPrivate
+{
+	UStaticMesh* BuildRock(
+		UObject* Outer,
+		float FaceWidth,
+		float FaceHeight,
+		float SlopeRun,
+		float OpeningWidth,
+		float OpeningHeight,
+		float BurialCm);
+
+	UStaticMesh* BuildMouth(
+		UObject* Outer,
+		float OpeningWidth,
+		float OpeningHeight,
+		float Depth,
+		float BurialCm);
+}

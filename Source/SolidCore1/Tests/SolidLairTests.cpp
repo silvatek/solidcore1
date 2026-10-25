@@ -5,6 +5,7 @@
 #include "Lairs/SolidLair.h"
 #include "Lairs/SolidLairInterior.h"
 #include "Lairs/SolidLairEntrance.h"
+#include "Strongholds/Dungeon/SolidDungeon.h"
 #include "Strongholds/Dungeon/SolidDungeonLevel.h"
 #include "SolidGameState.h"
 #include "Company/SolidCaptain.h"
@@ -15,6 +16,8 @@
 #include "Components/PointLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "MeshDescription.h"
+#include "StaticMeshAttributes.h"
 #include "UObject/UObjectIterator.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -39,6 +42,37 @@ namespace SolidLairTestPrivate
 	void SetCell(FString& Grid, const int32 Col, const int32 Row, const TCHAR Marker)
 	{
 		Grid[Row * (USolidWorldChart::MapWidth + 1) + Col] = Marker;
+	}
+
+	/** Bounds of a mesh built in its own space, then shifted by the component. */
+	bool PlacedBox(const UStaticMeshComponent* Part, FBox& OutBox, int32& OutVertices)
+	{
+		OutVertices = 0;
+		if (!Part)
+		{
+			return false;
+		}
+		UStaticMesh* Mesh = Part->GetStaticMesh();
+		FMeshDescription* Description = Mesh ? Mesh->GetMeshDescription(0) : nullptr;
+		if (!Description)
+		{
+			return false;
+		}
+
+		OutVertices = Description->Vertices().Num();
+		FStaticMeshAttributes Attributes(*Description);
+		TVertexAttributesRef<FVector3f> Positions = Attributes.GetVertexPositions();
+		FVector Min(TNumericLimits<float>::Max());
+		FVector Max(-TNumericLimits<float>::Max());
+		for (const FVertexID VertexID : Description->Vertices().GetElementIDs())
+		{
+			const FVector Position(Positions[VertexID]);
+			Min = Min.ComponentMin(Position);
+			Max = Max.ComponentMax(Position);
+		}
+		const FVector Origin = Part->GetRelativeLocation();
+		OutBox = FBox(Min + Origin, Max + Origin);
+		return OutVertices > 0;
 	}
 }
 
@@ -482,41 +516,55 @@ bool FSolidLairEntranceVisualsTest::RunTest(const FString& Parameters)
 {
 	ASolidLairEntrance* Entrance = NewObject<ASolidLairEntrance>();
 	TestNotNull(TEXT("entrance"), Entrance);
+	if (!Entrance)
+	{
+		return false;
+	}
 	Entrance->BuildVisuals();
 
+	UStaticMeshComponent* Rock = Entrance->GetRockMesh();
 	UStaticMeshComponent* Mouth = Entrance->GetMouthMesh();
-	UStaticMeshComponent* Left = Entrance->GetLeftJamb();
-	UStaticMeshComponent* Right = Entrance->GetRightJamb();
-	UStaticMeshComponent* Lintel = Entrance->GetLintel();
+	TestNotNull(TEXT("rock"), Rock);
 	TestNotNull(TEXT("mouth"), Mouth);
-	TestNotNull(TEXT("left jamb"), Left);
-	TestNotNull(TEXT("right jamb"), Right);
-	TestNotNull(TEXT("lintel"), Lintel);
-	if (!Mouth || !Left || !Right || !Lintel)
+	if (!Rock || !Mouth || Rock == Mouth)
 	{
 		return false;
 	}
 
+	UStaticMesh* RockMesh = Rock->GetStaticMesh();
 	UStaticMesh* MouthMesh = Mouth->GetStaticMesh();
-	UStaticMesh* LeftMesh = Left->GetStaticMesh();
-	UStaticMesh* LintelMesh = Lintel->GetStaticMesh();
-	TestNotNull(TEXT("mouth cube"), MouthMesh);
-	TestNotNull(TEXT("jamb cube"), LeftMesh);
-	TestNotNull(TEXT("lintel cube"), LintelMesh);
+	TestNotNull(TEXT("rock mesh"), RockMesh);
+	TestNotNull(TEXT("mouth mesh"), MouthMesh);
+	TestTrue(TEXT("the rock and the mouth are different stones"), RockMesh && MouthMesh && RockMesh != MouthMesh);
+	TestTrue(TEXT("the rock is unscaled"), Rock->GetRelativeScale3D().Equals(FVector::OneVector));
+	TestTrue(TEXT("the mouth is unscaled"), Mouth->GetRelativeScale3D().Equals(FVector::OneVector));
 
-	TestTrue(TEXT("mouth is wider than it is deep"), Mouth->GetRelativeScale3D().Y > Mouth->GetRelativeScale3D().X);
-	TestTrue(TEXT("jambs are thinner than the mouth"), Left->GetRelativeScale3D().Y < Mouth->GetRelativeScale3D().Y);
-	TestTrue(TEXT("left jamb is on -Y"), Left->GetRelativeLocation().Y < 0.f);
-	TestTrue(TEXT("right jamb is on +Y"), Right->GetRelativeLocation().Y > 0.f);
-	TestTrue(TEXT("lintel sits above the mouth"), Lintel->GetRelativeLocation().Z > Mouth->GetRelativeLocation().Z);
-	TestTrue(TEXT("mouth meets the ground"), FMath::IsNearlyEqual(
-		Mouth->GetRelativeLocation().Z - Mouth->GetRelativeScale3D().Z * 50.f, 0.f, 1.f));
-	const float MouthFront = Mouth->GetRelativeLocation().X + Mouth->GetRelativeScale3D().X * 50.f;
-	const float LintelFront = Lintel->GetRelativeLocation().X + Lintel->GetRelativeScale3D().X * 50.f;
-	TestTrue(TEXT("mouth is recessed behind the lintel front"), MouthFront < LintelFront - 1.f);
-	TestTrue(TEXT("the grass face of the frame sits toward the cliff"),
-		FMath::IsNearlyEqual(LintelFront, SolidStrongholds::FrameFrontLocalX, 1.f));
-	TestTrue(TEXT("the grass spawn stands in front of the mouth"), MouthFront < -40.f);
+	const SolidStronghold::FSolidDungeon& Dungeon = SolidStronghold::FSolidDungeon::Instance();
+	FBox RockBox(ForceInit);
+	FBox MouthBox(ForceInit);
+	int32 RockVertices = 0;
+	int32 MouthVertices = 0;
+	TestTrue(TEXT("the rock has a shape"), SolidLairTestPrivate::PlacedBox(Rock, RockBox, RockVertices));
+	TestTrue(TEXT("the mouth has a shape"), SolidLairTestPrivate::PlacedBox(Mouth, MouthBox, MouthVertices));
+	TestTrue(TEXT("the rock is a modelled stone"), RockVertices > 100);
+	TestTrue(TEXT("the mouth is a modelled opening"), MouthVertices > 30);
+
+	const float Stand = Dungeon.LeaveStandCm();
+	TestTrue(TEXT("the mouth front is the leave stand toward the cliff"),
+		FMath::IsNearlyEqual(MouthBox.Max.X, -Stand, 1.f));
+	TestTrue(TEXT("the rock front meets the mouth"),
+		FMath::IsNearlyEqual(RockBox.Max.X, MouthBox.Max.X, 1.f));
+	TestTrue(TEXT("the rock runs back by the slope"),
+		FMath::IsNearlyEqual(RockBox.Min.X, -Stand - Dungeon.SlopeRunCm(), 1.f));
+	TestTrue(TEXT("the rock is the face height"),
+		FMath::IsNearlyEqual(RockBox.Max.Z, Dungeon.FaceHeightCm(), 1.f));
+	TestTrue(TEXT("the mouth meets the ground"), FMath::IsNearlyEqual(MouthBox.Min.Z, 0.f, 1.f));
+	TestTrue(TEXT("the mouth is the opening height"),
+		FMath::IsNearlyEqual(MouthBox.Max.Z - MouthBox.Min.Z, SolidStrongholds::OpeningHeightCm, 30.f));
+	TestTrue(TEXT("the mouth is most of the opening width"),
+		MouthBox.Max.Y - MouthBox.Min.Y > SolidStrongholds::OpeningWidthCm * 0.7f);
+	TestTrue(TEXT("the mouth blocks a click"), Mouth->GetCollisionResponseToChannel(ECC_Visibility) == ECR_Block);
+	TestTrue(TEXT("the rock blocks the captain"), Rock->GetCollisionResponseToChannel(ECC_Pawn) == ECR_Block);
 
 	return true;
 }

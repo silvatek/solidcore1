@@ -6,6 +6,7 @@
 #include "HUD/SolidPointer.h"
 #include "HUD/SolidHUD.h"
 #include "Components/StaticMeshComponent.h"
+#include "Engine/StaticMesh.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -39,15 +40,13 @@ bool FSolidDungeonPassageHitTest::RunTest(const FString& Parameters)
 	}
 	Entrance->BuildVisuals();
 	UStaticMeshComponent* Mouth = Entrance->GetMouthMesh();
-	UStaticMeshComponent* Jamb = Entrance->GetLeftJamb();
-	UStaticMeshComponent* Lintel = Entrance->GetLintel();
 	TestNotNull(TEXT("outside mouth"), Mouth);
-	TestNotNull(TEXT("jamb"), Jamb);
-	TestNotNull(TEXT("lintel"), Lintel);
-	if (!Mouth || !Jamb || !Lintel)
+	if (!Mouth)
 	{
 		return false;
 	}
+	UStaticMesh* MouthMesh = Mouth->GetStaticMesh();
+	TestNotNull(TEXT("outside mouth mesh"), MouthMesh);
 	ASolidDungeonInterior* Interior = NewObject<ASolidDungeonInterior>();
 	TestNotNull(TEXT("interior"), Interior);
 	if (!Interior)

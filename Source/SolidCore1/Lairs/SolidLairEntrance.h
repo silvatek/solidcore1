@@ -7,10 +7,11 @@
 class UStaticMeshComponent;
 
 /**
- * Stone frame in a cliff, between a mountain cell and the adjacent grassland.
+ * The dungeon rock and rounded cave mouth, on the grass beside a lair.
  * Each Iglin tunnel end uses one.
- * The opening is solid. A left click on the dark mouth enters that place.
- * Local +X faces the grass. The stone sits toward the cliff of the actor origin.
+ * The actor origin is the grass stand. Local +X faces that grass.
+ * The opening sits toward the cliff. A click on the dark mouth enters.
+ * A click on the rock does not.
  */
 UCLASS()
 class SOLIDCORE1_API ASolidLairEntrance : public AActor
@@ -25,12 +26,10 @@ public:
 
 	void BuildVisuals();
 
+	UStaticMeshComponent* GetRockMesh() const { return RockMesh; }
 	UStaticMeshComponent* GetMouthMesh() const { return MouthMesh; }
-	UStaticMeshComponent* GetLeftJamb() const { return LeftJamb; }
-	UStaticMeshComponent* GetRightJamb() const { return RightJamb; }
-	UStaticMeshComponent* GetLintel() const { return Lintel; }
 
-	/** Marks this frame as one end of the Iglin tunnels. */
+	/** Marks this mouth as one end of the Iglin tunnels. */
 	void SetLairEnd(TCHAR Marker)
 	{
 		bLairMouth = true;
@@ -45,20 +44,14 @@ protected:
 	TObjectPtr<USceneComponent> SceneRoot;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lair")
+	TObjectPtr<UStaticMeshComponent> RockMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lair")
 	TObjectPtr<UStaticMeshComponent> MouthMesh;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lair")
-	TObjectPtr<UStaticMeshComponent> LeftJamb;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lair")
-	TObjectPtr<UStaticMeshComponent> RightJamb;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Lair")
-	TObjectPtr<UStaticMeshComponent> Lintel;
 
 private:
 	/** False until SetLairEnd. True on a tunnel end. */
 	bool bLairMouth = false;
-	/** X or Y when this frame is a tunnel end. */
+	/** X or Y when this mouth is a tunnel end. */
 	uint8 EndMarker = 0;
 };

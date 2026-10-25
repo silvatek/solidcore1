@@ -1,34 +1,38 @@
 #include "SolidLairEntrance.h"
+#include "Strongholds/Dungeon/SolidDungeon.h"
+#include "Strongholds/Dungeon/SolidDungeonExterior.h"
 #include "Strongholds/SolidStronghold.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
-#include "Terrain/SolidTerrainSeat.h"
+#include "Terrain/SolidTerrainStreamer.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
+#include "EngineUtils.h"
 #include "Materials/MaterialInterface.h"
 
-namespace
+namespace SolidLairEntrancePrivate
 {
-	void PlacePart(
+	void SetPart(
 		UStaticMeshComponent* Part,
-		UStaticMesh* Cube,
+		UStaticMesh* Mesh,
 		AActor* Outer,
 		const FVector& Location,
-		const FVector& SizeCm,
 		const FLinearColor& Color,
 		const TCHAR* DebugName)
 	{
-		if (!Part || !Cube)
+		if (!Part || !Mesh)
 		{
 			return;
 		}
 
-		constexpr float ShapeSize = 100.f;
-		Part->SetStaticMesh(Cube);
+		Part->SetStaticMesh(Mesh);
 		Part->SetRelativeLocation(Location);
 		Part->SetRelativeRotation(FRotator::ZeroRotator);
-		Part->SetRelativeScale3D(SizeCm / ShapeSize);
+		Part->SetRelativeScale3D(FVector::OneVector);
+		Part->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
+		Part->SetCollisionResponseToAllChannels(ECR_Block);
+		Part->SetCastShadow(true);
 		if (UMaterialInterface* Material = SolidMaterials::CreateSolidColor(Outer, Color, DebugName, 0.94f))
 		{
 			Part->SetMaterial(0, Material);
@@ -43,12 +47,10 @@ ASolidLairEntrance::ASolidLairEntrance()
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);
 
+	RockMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RockMesh"));
 	MouthMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("MouthMesh"));
-	LeftJamb = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("LeftJamb"));
-	RightJamb = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("RightJamb"));
-	Lintel = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Lintel"));
 
-	UStaticMeshComponent* Parts[] = { MouthMesh.Get(), LeftJamb.Get(), RightJamb.Get(), Lintel.Get() };
+	UStaticMeshComponent* Parts[] = { RockMesh.Get(), MouthMesh.Get() };
 	for (UStaticMeshComponent* Part : Parts)
 	{
 		Part->SetupAttachment(SceneRoot);
@@ -72,70 +74,60 @@ void ASolidLairEntrance::BeginPlay()
 
 void ASolidLairEntrance::BuildVisuals()
 {
-	UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
-	if (!Cube)
+	const SolidStronghold::FSolidDungeon& Dungeon = SolidStronghold::FSolidDungeon::Instance();
+	float Drop = 0.f;
+	if (UWorld* World = GetWorld())
 	{
-		UE_LOG(LogSolid, Error, TEXT("SolidLairEntrance: missing Engine BasicShapes Cube."));
+		const USolidTerrainMap* Terrain = nullptr;
+		float SurfaceBias = 0.f;
+		for (TActorIterator<ASolidTerrainStreamer> It(World); It; ++It)
+		{
+			Terrain = It->GetTerrainMap();
+			SurfaceBias = It->CollisionHeightBias;
+			break;
+		}
+		Drop = ASolidDungeonExterior::GroundDropCm(Terrain, SurfaceBias, GetActorLocation());
+	}
+
+	UStaticMesh* Rock = SolidDungeonExteriorPrivate::BuildRock(
+		this,
+		Dungeon.FaceWidthCm(),
+		Dungeon.FaceHeightCm(),
+		Dungeon.SlopeRunCm(),
+		SolidStrongholds::OpeningWidthCm,
+		SolidStrongholds::OpeningHeightCm,
+		Drop);
+	UStaticMesh* Mouth = SolidDungeonExteriorPrivate::BuildMouth(
+		this,
+		SolidStrongholds::OpeningWidthCm,
+		SolidStrongholds::OpeningHeightCm,
+		SolidStrongholds::FrameThicknessCm,
+		Drop);
+	if (!Rock || !Mouth)
+	{
+		UE_LOG(LogSolid, Error, TEXT("SolidLairEntrance: the dungeon rock did not build."));
 		return;
 	}
 
-	const float Width = SolidStrongholds::OpeningWidthCm;
-	const float Height = SolidStrongholds::OpeningHeightCm;
-	const float Depth = SolidStrongholds::OpeningDepthCm;
-	const float Frame = SolidStrongholds::FrameThicknessCm;
-	const float Recess = SolidStrongholds::MouthRecessCm;
-	const float Gap = SolidStrongholds::MouthGapCm;
-	// The actor origin is the grass where the captain stands. Shift the whole
-	// frame toward the cliff so that spot is in front of the stone.
-	const float ShiftX = SolidStrongholds::FrameFrontLocalX - Depth * 0.5f;
-
-	PlacePart(
-		MouthMesh,
-		Cube,
+	// The actor origin is the grass where the captain stands. The opening sits
+	// toward the cliff, so that spot is in front of the stone.
+	const FVector Face(-Dungeon.LeaveStandCm(), 0.f, 0.f);
+	SolidLairEntrancePrivate::SetPart(
+		RockMesh,
+		Rock,
 		this,
-		FVector(-Recess * 0.5f + ShiftX, 0.f, Height * 0.5f),
-		FVector(Depth - Recess, Width - Gap, Height),
+		Face,
+		SolidStrongholds::RockColor(),
+		TEXT("LairRock"));
+	SolidLairEntrancePrivate::SetPart(
+		MouthMesh,
+		Mouth,
+		this,
+		Face,
 		SolidStrongholds::MouthColor(),
 		TEXT("LairMouth"));
 	if (MouthMesh)
 	{
-		MouthMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		MouthMesh->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
 	}
-
-	const float JambY = (Width + Frame) * 0.5f;
-	PlacePart(
-		LeftJamb,
-		Cube,
-		this,
-		FVector(ShiftX, -JambY, Height * 0.5f),
-		FVector(Depth, Frame, Height),
-		SolidStrongholds::RockColor(),
-		TEXT("LairLeftJamb"));
-	PlacePart(
-		RightJamb,
-		Cube,
-		this,
-		FVector(ShiftX, JambY, Height * 0.5f),
-		FVector(Depth, Frame, Height),
-		SolidStrongholds::RockColor(),
-		TEXT("LairRightJamb"));
-	PlacePart(
-		Lintel,
-		Cube,
-		this,
-		FVector(ShiftX, 0.f, Height + Frame * 0.5f),
-		FVector(Depth, Width + Frame * 2.f, Frame),
-		SolidStrongholds::RockColor(),
-		TEXT("LairLintel"));
-
-	SolidTerrainSeat::FFootprint Seat;
-	Seat.LocalCenter = FVector2D(ShiftX, 0.f);
-	Seat.HalfXCm = Depth * 0.5f;
-	Seat.HalfYCm = Width * 0.5f + Frame;
-	const float Drop = SolidTerrainSeat::DropCm(this, Seat);
-	constexpr float ShapeHeight = 100.f;
-	SolidTerrainSeat::BuryCentered(MouthMesh, 0.f, Height, Drop, ShapeHeight);
-	SolidTerrainSeat::BuryCentered(LeftJamb, 0.f, Height, Drop, ShapeHeight);
-	SolidTerrainSeat::BuryCentered(RightJamb, 0.f, Height, Drop, ShapeHeight);
 }

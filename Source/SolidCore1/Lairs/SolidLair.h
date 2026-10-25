@@ -9,9 +9,10 @@
 
 /**
  * Closed visits, apart from the open world. Monsters come later.
- * A lair has a floor plan and mouths on the world map. Each mouth uses
- * the cave's stone frame on its own cliff. A click on the dark opening
- * enters. A click inside leaves by that end. A mouth stays shut until
+ * A lair has a floor plan and mouths on the world map. Each mouth is the
+ * dungeon rock and rounded cave mouth, with the grass stand in front of
+ * the opening. A click on the dark opening enters. A click on the rock
+ * does not. A click inside leaves by that end. A mouth stays shut until
  * its lair is open.
  */
 namespace SolidLair

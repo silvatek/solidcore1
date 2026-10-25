@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0623")
+#define SOLID_BUILD_ID TEXT("SC1-0624")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("SolidCore1.WorldMap.TerrainOverlay reads the town point under the road.")
+#define SOLID_BUILD_NOTE TEXT("The arrange plate compiles against the tower type.")
 #endif

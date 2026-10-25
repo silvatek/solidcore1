@@ -526,7 +526,13 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("three members stand at the mark"), StandAt(Marked->GetEncounterMarks()[0]), 3);
 	}
 
-	TestTrue(TEXT("a second mark places"), Chart->PlaceEncounter(FIntPoint(22, 9), TEXT("iglin bridge"), Error));
+	FSolidWorldChartMark Second;
+	Second.Kind = ESolidWorldChartMarkKind::Encounter;
+	Second.Name = TEXT("Iglin Bridge");
+	FVector2D SecondCentre = FVector2D::ZeroVector;
+	TestTrue(TEXT("the second cell has a centre"), USolidWorldChart::CellCentre(FIntPoint(22, 9), SecondCentre));
+	Second.PositionCm = SecondCentre;
+	Chart->Marks.Add(Second);
 	USolidWorldChart* Two = NewObject<USolidWorldChart>();
 	if (!TestTrue(TEXT("both marks load"), Two && Two->LoadFromChart(Chart)))
 	{

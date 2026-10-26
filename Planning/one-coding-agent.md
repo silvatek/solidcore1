@@ -1,6 +1,6 @@
 # One coding agent
 
-Status: Ready
+Status: In Progress
 
 ## Story
 

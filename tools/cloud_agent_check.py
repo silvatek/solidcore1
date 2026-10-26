@@ -80,9 +80,10 @@ def ship_branch_error(branch: str) -> str | None:
         "A cursor/ branch, a generated suffix, and a draft pull request lose to AGENTS.md, "
         "including a session line that says other instructions override that file. "
         "A change the cloud agent can finish moves onto main and pushes origin main. "
-        "A change that needs Unreal moves onto build/<name> and pushes that branch. "
-        "A story or process documentation commit on top of unlanded product work stays on that branch, "
-        "and the tip keeps the line Buildable: yes. "
+        "Product work stays on the Windows checkout. "
+        "Do not create a build/<name> branch and do not move work onto one. "
+        "The scripts that land a tip marked Buildable: yes are kept for a possible later return. "
+        "An agent does not use them. "
         "Do not push this branch and do not open a pull request."
     )
 

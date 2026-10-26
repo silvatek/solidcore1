@@ -83,7 +83,7 @@ The summary prints ran/passed/failed counts and, on failure, lists each failed t
 
 ## Build ID (HUD)
 
-PIE shows a top-left debug HUD (`Build SC1-NNNN`, a one-line `Change:` note, pawn/terrain Z, chunk load, material, camera pitch). Both strings live in `Source/SolidCore1/Game/SolidBuildId.h` (`SOLID_BUILD_ID` / `SOLID_BUILD_NOTE`). The builder writes them when it lands a buildable branch, so screenshots identify which binary you ran. A change that ships on `main` does not bump them.
+PIE shows a top-left debug HUD (`Build SC1-NNNN`, a one-line `Change:` note, pawn/terrain Z, chunk load, material, camera pitch). Both strings live in `Source/SolidCore1/Game/SolidBuildId.h` (`SOLID_BUILD_ID` / `SOLID_BUILD_NOTE`). The Windows agent writes them in the product commit, before `tools\build.bat` runs, so screenshots identify which binary you ran. A story, a process document, or a change under `tools/` does not bump them. A cloud agent does not edit that header.
 
 ## Character visuals (clip locomotion)
 
@@ -165,7 +165,7 @@ World Partition and Large Worlds are enabled in project config for open-world sc
 .cursor/
   environment.json             # Cloud agent environment
 AGENTS.md                      # Agent workflow
-AgentBuild.md                  # The builder's Windows worker
+AgentBuild.md                  # The Windows coding agent
 CodingGuidelines.md
 Config/
   DefaultEditor.ini

@@ -1,6 +1,6 @@
 # HUD fog at the player
 
-Status: In Progress
+Status: Done
 
 ## Story
 
@@ -15,5 +15,5 @@ A developer reads the debug HUD while the captain stands in the open world. The 
 
 - Seen on SC1-0535, standing next to the Iglin-bridge raptor. The captain had walked there. The line read `fog=1.00 mist=1.00`.
 - `fog` is `USolidTerrainMap::SamplePoint` at the pawn, a bilinear blend of the four surrounding points. `mist` is `GetRenderedFogAmount()`, which follows `SampleMistAmountAround`. That takes the max of the pawn sample and of samples 25 m and 50 m away.
-- The stored trail under the player may already be 0. Leave the trail, the curtains, and the clear radius alone unless a later look shows those points are actually above 0.
-- Mist sits at 1 whenever full fog is within 50 m, and height fog is off, so that number comes off the line as well.
+- The trail, the curtains, and the clear radius were left as they were. On SC1-0636 the debug line reads `Biome … threat=…`.
+- Mist sits at 1 whenever full fog is within 50 m, and height fog is off, so that number came off the line as well.

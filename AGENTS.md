@@ -49,7 +49,7 @@ A coding agent is in one of three activities. Anyone reading the chat can tell w
 
 The three-minute limit applies to the first activity as a whole. The clock starts when that activity starts. It is clock time. Read the timestamps. Switching between reading, thinking, planning, and editing does not reset the clock. A message during that activity does not start it again. Building, testing, and waiting for the user are the other two activities, so time there does not count. When the agent returns to reading, thinking, planning, or editing, the clock starts again. When the user allows more time, that return starts the clock again.
 
-The limit stops the agent going round in circles trying to guess how to interpret something, or trying to do too much in one go. The work in hand is one small change toward the story, as Planning describes. The rest of the story is not that change.
+The limit stops the agent going round in circles trying to guess how to interpret something, or trying to do too much in one go. The work in hand is one small change toward the story, as Planning describes. Small means the reading, thinking, planning, and editing for that change fit in this three-minute window. The rest of the story is not that change. After a ship, the agent may start the next small change. That return starts the clock again.
 
 Read those timestamps before each further tool call. If three minutes have already passed, do not make that call. Stop at once. Do not finish the step first. Send one message and end the turn. That message is the third activity. It says what is already done and what the step in hand is. It asks for help with what the agent is struggling with, or for approval of a smaller scope for this step. When the step is about to be ready to build and test, the message asks for a bit more time. It does not keep calling tools to reach that point.
 
@@ -110,9 +110,9 @@ Cloud agents are a **code + git workshop** on the Cursor-hosted Linux VM. They d
 
 ### Small changes
 
-A story is completed by many small changes. Each change is one step toward the acceptance criteria, and the tree builds at that step. The step's tests go with it. The rest of the story waits.
+A story is completed by many small changes. Small means the reading, thinking, planning, and editing for that change fit in the three-minute window. A change that will not fit is too large: shrink it, or ask. Each change is one step toward the acceptance criteria, and the tree builds at that step. The step's tests go with it. The rest of the story waits.
 
-One product step is one shipping commit. It bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`, then the build and the tests run, and a pass pushes `main`. A later step is a later commit. Saving several steps for one commit is the miss.
+One product step is one shipping commit. It bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`, then the build and the tests run, and a pass pushes `main`. A later step is a later commit. Saving several steps for one commit is the miss. After that commit is on `main` and the chat has said so, the agent may start the next small change. The developer can play the shipped checkout while that next change is in hand.
 
 The message that stops at the three minutes names that step: what it does, and which step comes next. It is sent when the clock runs out, not after the step is finished. It asks for help, for a smaller scope, or for a bit more time when the step is about to be ready to build and test. It does not treat the rest of the story as the work in hand.
 

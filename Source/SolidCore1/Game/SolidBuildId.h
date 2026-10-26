@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0631")
+#define SOLID_BUILD_ID TEXT("SC1-0632")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A held piece turns and sits on a hex.")
+#define SOLID_BUILD_NOTE TEXT("Shipped tests stop naming the painted biomes.")
 #endif

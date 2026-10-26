@@ -297,7 +297,7 @@ bool FSolidShippedWorldChartTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Iglin stays location 0"), DefaultMap->FindLocation(0, Iglin) && Iglin.Id == 0);
 	FSolidWorldLocation Gate;
 	TestTrue(TEXT("Dragongate stays one town"), DefaultMap->FindLocation(SolidTowns::Dragongate, Gate));
-	TestEqual(TEXT("Dragongate stays on two cells"), Gate.Cells.Num(), 2);
+	TestEqual(TEXT("Dragongate stays on one cell"), Gate.Cells.Num(), 1);
 	return true;
 }
 

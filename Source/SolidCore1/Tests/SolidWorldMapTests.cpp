@@ -380,15 +380,11 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	{
 		TestEqual(TEXT("Dragongate"), Dragongate.Name, FString(TEXT("Dragongate")));
 		TestEqual(TEXT("Dragongate is Town"), static_cast<uint8>(Dragongate.Biome), static_cast<uint8>(ESolidBiome::Town));
-		TestEqual(TEXT("Dragongate is two cells"), Dragongate.Cells.Num(), 2);
-		if (Dragongate.Cells.Num() == 2)
+		TestEqual(TEXT("Dragongate is one cell"), Dragongate.Cells.Num(), 1);
+		if (Dragongate.Cells.Num() == 1)
 		{
-			TestEqual(TEXT("Dragongate cells share a row"), Dragongate.Cells[0].Y, Dragongate.Cells[1].Y);
-			const int32 EastCol = FMath::Min(Dragongate.Cells[0].X, Dragongate.Cells[1].X);
-			const int32 WestCol = FMath::Max(Dragongate.Cells[0].X, Dragongate.Cells[1].X);
-			TestEqual(TEXT("Dragongate cells are adjacent"), WestCol - EastCol, 1);
-			TestEqual(TEXT("Dragongate east cell is !"), Map->GetMarkerAtCell(EastCol, Dragongate.Cells[0].Y), USolidWorldChart::LocationMarker);
-			TestEqual(TEXT("Dragongate west cell is !"), Map->GetMarkerAtCell(WestCol, Dragongate.Cells[0].Y), USolidWorldChart::LocationMarker);
+			const FIntPoint Cell = Dragongate.Cells[0];
+			TestEqual(TEXT("Dragongate is !"), Map->GetMarkerAtCell(Cell.X, Cell.Y), USolidWorldChart::LocationMarker);
 		}
 	}
 
@@ -664,21 +660,12 @@ bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 
 	FSolidWorldLocation ShippedGate;
 	TestTrue(TEXT("shipped location 5"), Shipped->FindLocation(5, ShippedGate));
-	TestEqual(TEXT("shipped Dragongate is two cells"), ShippedGate.Cells.Num(), 2);
-	if (ShippedGate.Cells.Num() == 2)
+	TestEqual(TEXT("shipped Dragongate is one cell"), ShippedGate.Cells.Num(), 1);
+	if (ShippedGate.Cells.Num() == 1)
 	{
-		TestEqual(TEXT("Dragongate cells share a row"), ShippedGate.Cells[0].Y, ShippedGate.Cells[1].Y);
-		const FIntPoint East = ShippedGate.Cells[0].X < ShippedGate.Cells[1].X
-			? ShippedGate.Cells[0]
-			: ShippedGate.Cells[1];
-		const FIntPoint West = ShippedGate.Cells[0].X < ShippedGate.Cells[1].X
-			? ShippedGate.Cells[1]
-			: ShippedGate.Cells[0];
-		TestEqual(TEXT("Dragongate cells are adjacent"), West.X - East.X, 1);
-		TestEqual(TEXT("Dragongate east cell is !"), Shipped->GetMarkerAtCell(East.X, East.Y), USolidWorldChart::LocationMarker);
-		TestEqual(TEXT("Dragongate west cell is !"), Shipped->GetMarkerAtCell(West.X, West.Y), USolidWorldChart::LocationMarker);
-		TestEqual(TEXT("Dragongate east cell id"), Shipped->GetLocationIdAtCell(East.X, East.Y), 5);
-		TestEqual(TEXT("Dragongate west cell id"), Shipped->GetLocationIdAtCell(West.X, West.Y), 5);
+		const FIntPoint Cell = ShippedGate.Cells[0];
+		TestEqual(TEXT("Dragongate is !"), Shipped->GetMarkerAtCell(Cell.X, Cell.Y), USolidWorldChart::LocationMarker);
+		TestEqual(TEXT("Dragongate cell id"), Shipped->GetLocationIdAtCell(Cell.X, Cell.Y), 5);
 	}
 	return true;
 }

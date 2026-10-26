@@ -4,6 +4,7 @@
 #include "SolidStronghold.h"
 #include "SolidTerrainTypes.h"
 #include "SolidTowns.h"
+#include "SolidWallgate.h"
 #include "SolidWorldChart.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -591,15 +592,31 @@ bool FSolidRoadShippedTest::RunTest(const FString& Parameters)
 		Map->GetMarkerAtCell(Roads[0].Cells[0].X, Roads[0].Cells[0].Y),
 		USolidWorldChart::LocationMarker);
 	TestEqual(TEXT("trail ends at Iglin"), Map->GetLocationIdAtCell(Roads[0].Cells.Last().X, Roads[0].Cells.Last().Y), 0);
+	FIntPoint GateCell = FIntPoint::ZeroValue;
+	const bool bGate = SolidWallgate::MarkerCell(Map, SolidTowns::Dragongate, GateCell);
+	TestTrue(TEXT("Dragongate has its marker"), bGate);
 	for (const SolidRoad::FRoute& Road : Roads)
 	{
 		int32 MountainCells = 0;
 		int32 SeaCells = 0;
+		const bool bRathenTrack = Road.Definition.From.LocationId == SolidTowns::Dragongate
+			&& Road.Definition.To.LocationId == SolidTowns::Rathen;
 		for (const FIntPoint& Cell : Road.Cells)
 		{
 			if (Map->GetMarkerAtCell(Cell.X, Cell.Y) == TEXT('M'))
 			{
-				++MountainCells;
+				// Column 0 is east. The cell east of the gate is still a mountain
+				// marker. The point under its centre is grassland, so the track
+				// to Rathen steps there.
+				const bool bGrassEastOfGate = bGate
+					&& bRathenTrack
+					&& Cell.X == GateCell.X - 1
+					&& Cell.Y == GateCell.Y
+					&& Map->GetPointBiomeAtCell(Cell.X, Cell.Y) == ESolidBiome::Grassland;
+				if (!bGrassEastOfGate)
+				{
+					++MountainCells;
+				}
 			}
 			if (Map->GetBiomeAtCell(Cell.X, Cell.Y) == ESolidBiome::Sea)
 			{

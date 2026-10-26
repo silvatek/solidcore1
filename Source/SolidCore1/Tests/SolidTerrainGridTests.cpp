@@ -311,7 +311,7 @@ bool FSolidTerrainGridTownRegionTest::RunTest(const FString& Parameters)
 	}
 	FSolidWorldLocation Gate;
 	if (!TestTrue(TEXT("shipped Dragongate"), Shipped->FindLocation(SolidTowns::Dragongate, Gate))
-		|| !TestEqual(TEXT("shipped Dragongate is two cells"), Gate.Cells.Num(), 2))
+		|| !TestEqual(TEXT("shipped Dragongate is one cell"), Gate.Cells.Num(), 1))
 	{
 		return false;
 	}

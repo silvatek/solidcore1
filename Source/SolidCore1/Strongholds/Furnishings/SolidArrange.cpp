@@ -105,6 +105,22 @@ bool FSolidArrange::HoverIsPlaced() const
 	return bOn && bHover && PieceOnCell(HoverX, HoverY) != INDEX_NONE;
 }
 
+bool FSolidArrange::FurnishingIsInFront(
+	const float MeshDistance,
+	const bool bHasFloor,
+	const float FloorDistance)
+{
+	if (MeshDistance < 0.f)
+	{
+		return false;
+	}
+	if (!bHasFloor)
+	{
+		return true;
+	}
+	return MeshDistance < FloorDistance;
+}
+
 void FSolidArrange::HighlightHexes(TArray<SolidStrongholdGrid::FHex>& Out) const
 {
 	Out.Reset();

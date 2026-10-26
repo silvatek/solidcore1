@@ -332,6 +332,18 @@ bool FSolidArrangePlaceTest::RunTest(const FString& Parameters)
 	FSolidArrange Arrange;
 	OpenCave(Arrange);
 	TestTrue(TEXT("the mode is on for the floor"), Arrange.IsOn());
+	TestTrue(
+		TEXT("a closer furnishing is the one under the pointer"),
+		FSolidArrange::FurnishingIsInFront(80.f, true, 140.f));
+	TestFalse(
+		TEXT("the floor hex behind is not named"),
+		FSolidArrange::FurnishingIsInFront(140.f, true, 80.f));
+	TestFalse(
+		TEXT("a mesh on the floor point leaves that hex"),
+		FSolidArrange::FurnishingIsInFront(80.f, true, 80.f));
+	TestTrue(
+		TEXT("a furnishing with no floor behind it is named"),
+		FSolidArrange::FurnishingIsInFront(40.f, false, 0.f));
 	TestEqual(TEXT("wheel up is one facing, the same way as Q"), FSolidArrange::WheelSteps(1.f), 1);
 	TestEqual(TEXT("wheel down is the other way, the same as E"), FSolidArrange::WheelSteps(-1.f), -1);
 	TestEqual(TEXT("a quiet wheel does not turn"), FSolidArrange::WheelSteps(0.f), 0);

@@ -59,6 +59,12 @@ public:
 	int32 CatalogHighlight() const { return Highlight; }
 	/** The pointer is on a piece that is already down. */
 	bool HoverIsPlaced() const;
+
+	/**
+	 * A furnishing mesh closer than the floor point is the piece under the pointer.
+	 * The floor hex behind that mesh is not.
+	 */
+	static bool FurnishingIsInFront(float MeshDistance, bool bHasFloor, float FloorDistance);
 	int32 HeldIndex() const { return Held; }
 	float FloorZ() const { return FloorHeight; }
 	int32 PieceCount() const { return Pieces.Num(); }

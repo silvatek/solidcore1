@@ -425,6 +425,14 @@ protected:
 	void RefreshArrangeSign();
 	void SpawnHeldFurnishing();
 	void DiscardSpareArrangeActors();
+	/** The furnishing mesh in front of the floor point, if the ray hits one. */
+	bool FurnishingInFront(
+		const FVector& Origin,
+		const FVector& Direction,
+		float FloorDistance,
+		bool bHasFloor,
+		int32& OutX,
+		int32& OutY) const;
 	/** Interior spawned for this tunnel visit. The world keeps the actor alive. */
 	ASolidLairInterior* LairInterior = nullptr;
 	bool bCaptainTravelApplied = false;

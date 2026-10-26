@@ -1045,7 +1045,21 @@ void ASolidGameMode::UpdateArrangePointer(
 	const FVector LocalDirection = Interior->GetActorTransform().InverseTransformVector(Direction);
 	FSolidArrange::FTrace Hit;
 	constexpr float MaxRayCm = 80000.f;
-	if (!ArrangeMode.Trace(LocalOrigin, LocalDirection, MaxRayCm, Hit))
+	const bool bFloor = ArrangeMode.Trace(LocalOrigin, LocalDirection, MaxRayCm, Hit);
+	float FloorDistance = 0.f;
+	if (bFloor)
+	{
+		const FVector WorldFloor = Interior->GetActorTransform().TransformPosition(Hit.Point);
+		FloorDistance = FVector::Dist(Origin, WorldFloor);
+	}
+	int32 PieceX = 0;
+	int32 PieceY = 0;
+	if (FurnishingInFront(Origin, Direction, FloorDistance, bFloor, PieceX, PieceY))
+	{
+		bArrangeOffFloor = false;
+		ArrangeMode.SetHover(PieceX, PieceY);
+	}
+	else if (!bFloor)
 	{
 		bArrangeOffFloor = false;
 		ArrangeMode.ClearHover();
@@ -1062,6 +1076,59 @@ void ASolidGameMode::UpdateArrangePointer(
 		ArrangeOffFloorLocal = Hit.Point;
 	}
 	ApplyArrangeActors();
+}
+
+bool ASolidGameMode::FurnishingInFront(
+	const FVector& Origin,
+	const FVector& Direction,
+	const float FloorDistance,
+	const bool bHasFloor,
+	int32& OutX,
+	int32& OutY) const
+{
+	UWorld* World = GetWorld();
+	ASolidStrongholdInterior* Interior = ArrangeRoom.Get();
+	if (!World || !Interior || Direction.IsNearlyZero())
+	{
+		return false;
+	}
+
+	const FVector Dir = Direction.GetSafeNormal();
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(ArrangePointer), false);
+	const int32 Held = ArrangeMode.HeldIndex();
+	if (ArrangeActors.IsValidIndex(Held))
+	{
+		if (AActor* Ghost = ArrangeActors[Held].Get())
+		{
+			Params.AddIgnoredActor(Ghost);
+		}
+	}
+
+	FHitResult Hit;
+	constexpr float MaxRayCm = 80000.f;
+	if (!World->LineTraceSingleByChannel(
+		Hit,
+		Origin,
+		Origin + Dir * MaxRayCm,
+		ECC_Visibility,
+		Params))
+	{
+		return false;
+	}
+
+	const ASolidFurnishing* Piece = Cast<ASolidFurnishing>(Hit.GetActor());
+	if (!Piece || Piece->GetOwner() != Interior || !Piece->HasPlacement())
+	{
+		return false;
+	}
+	if (!FSolidArrange::FurnishingIsInFront(Hit.Distance, bHasFloor, FloorDistance))
+	{
+		return false;
+	}
+
+	OutX = Piece->GetPlacement().X;
+	OutY = Piece->GetPlacement().Y;
+	return true;
 }
 
 const TCHAR* ASolidGameMode::ArrangeHoverName() const

@@ -647,6 +647,32 @@ bool FSolidArrangePlaceTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("a full row leaves the column open"), Column.IsBrowserOpen());
 	TestEqual(TEXT("a refused row adds nothing"), Column.PieceCount(), 3);
 
+	TestEqual(
+		TEXT("a second chest lifts"),
+		static_cast<int32>(Column.LiftCatalog(2, Starters)),
+		static_cast<int32>(FSolidArrange::EConfirm::Lifted));
+	TestEqual(TEXT("the new chest has the grid"), Column.PieceAt(3).Slots.Num(), SolidStorage::Count);
+	bool bEmptyChest = true;
+	for (const FSolidItem& Slot : Column.PieceAt(3).Slots)
+	{
+		bEmptyChest = bEmptyChest && Slot.IsEmpty();
+	}
+	TestTrue(TEXT("the new chest starts empty"), bEmptyChest);
+	TestTrue(TEXT("the new chest is discarded"), Column.PutBack());
+	TestEqual(TEXT("the starters are unchanged"), Column.PieceCount(), 3);
+
+	TArray<SolidStrongholdFurniture::FPlacedFurnishing> ThreeChests = Starters;
+	SolidStrongholdFurniture::FPlacedFurnishing ExtraChest;
+	ExtraChest.ItemIndex = 2;
+	ThreeChests.Add(ExtraChest);
+	ThreeChests.Add(ExtraChest);
+	Column.SetHover(1, -2);
+	Column.Confirm();
+	TestEqual(
+		TEXT("three chests stop a fourth"),
+		static_cast<int32>(Column.LiftCatalog(2, ThreeChests)),
+		static_cast<int32>(FSolidArrange::EConfirm::Refused));
+
 	TArray<SolidStrongholdFurniture::FPlacedFurnishing> TenTables = Starters;
 	SolidStrongholdFurniture::FPlacedFurnishing ExtraTable;
 	ExtraTable.ItemIndex = Table;

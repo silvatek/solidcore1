@@ -142,7 +142,7 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("the small table is not storage"), Catalogue[3].IsStorage());
 	TestEqual(TEXT("fireplace stops at one"), Catalogue[0].Limit, 1);
 	TestEqual(TEXT("bed stops at three"), Catalogue[1].Limit, 3);
-	TestEqual(TEXT("chest stops at one"), Catalogue[2].Limit, 1);
+	TestEqual(TEXT("chest stops at three"), Catalogue[2].Limit, 3);
 	TestEqual(TEXT("small table stops at ten"), Catalogue[3].Limit, 10);
 	TestTrue(TEXT("a new game enables the four kinds"), Catalogue[0].bEnabled && Catalogue[1].bEnabled && Catalogue[2].bEnabled && Catalogue[3].bEnabled);
 	const SolidStrongholdFurniture::FItem EmptyRow;

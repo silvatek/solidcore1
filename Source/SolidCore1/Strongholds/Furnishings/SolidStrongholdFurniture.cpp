@@ -61,7 +61,7 @@ const TArray<SolidStrongholdFurniture::FItem>& SolidStrongholdFurniture::Furnitu
 	static const TArray<FItem> Catalogue = {
 		MakeItem(TEXT("Fireplace"), ASolidFireplace::StaticClass(), 1, 1, true),
 		MakeItem(TEXT("Bed"), ASolidBed::StaticClass(), 2, 3, true),
-		MakeStorage(TEXT("Chest"), ASolidChest::StaticClass(), 1, 1, true, SolidStorage::Count),
+		MakeStorage(TEXT("Chest"), ASolidChest::StaticClass(), 1, 3, true, SolidStorage::Count),
 		MakeItem(TEXT("Small Table"), ASolidSmallTable::StaticClass(), 1, 10, true),
 	};
 	return Catalogue;

@@ -10,11 +10,12 @@ The player has more than one storage container in a stronghold. Each container k
 
 The chest the company already has still starts with the rusty sword, the old boots, 20 coins, five sticks, and three pitch. Its last cell is empty. A new game still places that one chest, with the fireplace and the bed. A second storage piece on the stronghold's list is another container, and it starts empty.
 
-[Basic furniture management](Done/basic-furniture-management.md) places at most one chest. This story raises that limit. It does not add a furnishing kind.
+[Basic furniture management](Done/basic-furniture-management.md) places at most one chest. This story raises that limit to three. A later change sets the limit from the stronghold's size. It does not add a furnishing kind.
 
 ## Acceptance
 
 - A new game's stronghold still has one chest. That piece owns the slots, filled from `SolidStorage::StartingCaveChest` when the furnishings are created. The cells are the rusty sword, the old boots, 20 coins, five sticks, three pitch, and one empty cell. The fireplace and the bed own no slots.
+- A stronghold holds three chests. A fourth is refused. A chest added from the browser starts empty. Limits that follow the stronghold's size come later.
 - Every container is `SolidStorage::Columns` by `SolidStorage::Rows`.
 - The inventory page shows at most one container, to the right of the pack. It never shows two grids.
 - While the captain is inside the company stronghold and that stronghold has one or more storage pieces, `/` shows the first of those pieces. The first is the first storage piece on the furnishings list. View and Create do the same. With one piece, that is the starting chest.

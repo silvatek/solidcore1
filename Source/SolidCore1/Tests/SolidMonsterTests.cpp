@@ -40,26 +40,43 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 
 	TestFalse(TEXT("a closed visit has no encounters"), SolidEncounter::WorldHasEncounters(true));
 	TestTrue(TEXT("the open world can hold encounters"), SolidEncounter::WorldHasEncounters(false));
-	TestEqual(TEXT("the definitions list has one encounter"), SolidEncounter::DefinitionCount, 1);
-	if (SolidEncounter::DefinitionCount == 1)
+	TestEqual(TEXT("the catalog has the rows that have shipped"), SolidEncounter::DefinitionCount, 2);
+	TestTrue(
+		TEXT("Iglin Bridge stays first"),
+		SolidEncounter::DefinitionCount > 0
+			&& FCString::Strcmp(SolidEncounter::StaticEncounters[0].Name, TEXT("Iglin Bridge")) == 0);
+	if (SolidEncounter::DefinitionCount > 0)
 	{
+		const SolidEncounter::FStaticEncounter& Iglin = SolidEncounter::StaticEncounters[0];
+		TestEqual(TEXT("Iglin Bridge has one group"), Iglin.GroupCount, 1);
+		TestEqual(TEXT("Iglin Bridge places three raptors"), Iglin.Groups[0].Count, 3);
+		TestTrue(TEXT("Iglin Bridge raptors are Small"), Iglin.Groups[0].Size == ESolidMonsterSize::Small);
 		TestTrue(
-			TEXT("that encounter is Iglin Bridge"),
-			FCString::Strcmp(SolidEncounter::StaticEncounters[0].Name, TEXT("Iglin Bridge")) == 0);
-		TestEqual(TEXT("Iglin Bridge has one group"), SolidEncounter::StaticEncounters[0].GroupCount, 1);
-		TestEqual(
-			TEXT("Iglin Bridge places three raptors"),
-			SolidEncounter::StaticEncounters[0].Groups[0].Count,
-			3);
+			TEXT("Iglin Bridge is Attack"),
+			FCString::Strcmp(Iglin.Groups[0].Plan, TEXT("Attack")) == 0);
+		TestTrue(TEXT("the near limit stays 8 m"), FMath::IsNearlyEqual(Iglin.NearLimitCm, 800.f));
+		TestTrue(TEXT("the far limit stays 40 m"), FMath::IsNearlyEqual(Iglin.FarLimitCm, 4000.f));
+		TestTrue(TEXT("the separation stays 4 m"), FMath::IsNearlyEqual(Iglin.SeparationCm, 400.f));
+		TestTrue(TEXT("Iglin Bridge waits on no event"), !Iglin.EventId || !Iglin.EventId[0]);
+	}
+	const SolidEncounter::FStaticEncounter* Dracorex = SolidEncounter::FindByName(TEXT("Dracorex"));
+	const SolidEncounter::FStaticEncounter* Folded = SolidEncounter::FindByName(TEXT("dracorex"));
+	if (TestNotNull(TEXT("Dracorex is in the catalog"), Dracorex))
+	{
+		TestTrue(TEXT("dracorex is that same row"), Folded == Dracorex);
+		TestEqual(TEXT("Dracorex has one group"), Dracorex->GroupCount, 1);
+		TestEqual(TEXT("Dracorex places one raptor"), Dracorex->Groups[0].Count, 1);
 		TestTrue(
-			TEXT("the near limit stays 8 m"),
-			FMath::IsNearlyEqual(SolidEncounter::StaticEncounters[0].NearLimitCm, 800.f));
+			TEXT("that raptor is a raptor"),
+			Dracorex->Groups[0].Kind == SolidEncounter::EMonsterKind::Raptor);
+		TestTrue(TEXT("that raptor is Immense"), Dracorex->Groups[0].Size == ESolidMonsterSize::Immense);
 		TestTrue(
-			TEXT("the far limit stays 40 m"),
-			FMath::IsNearlyEqual(SolidEncounter::StaticEncounters[0].FarLimitCm, 4000.f));
-		TestTrue(
-			TEXT("the separation stays 4 m"),
-			FMath::IsNearlyEqual(SolidEncounter::StaticEncounters[0].SeparationCm, 400.f));
+			TEXT("Dracorex is Attack"),
+			FCString::Strcmp(Dracorex->Groups[0].Plan, TEXT("Attack")) == 0);
+		TestTrue(TEXT("Dracorex near limit stays 8 m"), FMath::IsNearlyEqual(Dracorex->NearLimitCm, 800.f));
+		TestTrue(TEXT("Dracorex far limit stays 40 m"), FMath::IsNearlyEqual(Dracorex->FarLimitCm, 4000.f));
+		TestTrue(TEXT("Dracorex separation stays 4 m"), FMath::IsNearlyEqual(Dracorex->SeparationCm, 400.f));
+		TestTrue(TEXT("Dracorex waits on no event"), !Dracorex->EventId || !Dracorex->EventId[0]);
 	}
 	TestTrue(
 		TEXT("a mesh of half the standing height doubles"),
@@ -81,6 +98,28 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("a Small raptor draws six times the span scale"),
 		FMath::IsNearlyEqual(FSolidRaptor().DrawnBodyFactor(), FSolidRaptor::SmallDrawnBodyFactor));
+	FSolidRaptor ImmenseBody;
+	ImmenseBody.Size = ESolidMonsterSize::Immense;
+	TestTrue(
+		TEXT("an Immense raptor draws the Immense factor"),
+		FMath::IsNearlyEqual(ImmenseBody.DrawnBodyFactor(), FSolidRaptor::ImmenseDrawnBodyFactor));
+	TestTrue(
+		TEXT("the Immense factor is eight times Small"),
+		FMath::IsNearlyEqual(
+			FSolidRaptor::ImmenseDrawnBodyFactor,
+			FSolidRaptor::SmallDrawnBodyFactor * 8.f));
+	FSolidRaptor MediumBody;
+	MediumBody.Size = ESolidMonsterSize::Medium;
+	TestTrue(
+		TEXT("a size between Small and Immense draws as Small"),
+		FMath::IsNearlyEqual(MediumBody.DrawnBodyFactor(), FSolidRaptor::SmallDrawnBodyFactor));
+	FSolidRaptor SmallArmed;
+	SmallArmed.Arm(FSolidRaptor::Claws, FSolidRaptor::Hide, FSolidItem::StartingDraw);
+	TestEqual(TEXT("Small hide stays 20"), SmallArmed.Armour.Strength, FSolidRaptor::HideStrength);
+	FSolidRaptor ImmenseArmed;
+	ImmenseArmed.Size = ESolidMonsterSize::Immense;
+	ImmenseArmed.Arm(FSolidRaptor::Claws, FSolidRaptor::Hide, FSolidItem::StartingDraw);
+	TestEqual(TEXT("Immense hide is 500"), ImmenseArmed.Armour.Strength, FSolidRaptor::ImmenseHideStrength);
 
 	TArray<float> BodyZ;
 	for (int32 Sample = 0; Sample < 20; ++Sample)
@@ -183,9 +222,10 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 		TestTrue(
 			TEXT("claws have Speed"),
 			Member->Weapon.Speed > 0.f && FMath::IsFinite(Member->Weapon.Speed));
-		TestTrue(
-			TEXT("hide has Strength"),
-			Member->Armour.Strength > 0.f && FMath::IsFinite(Member->Armour.Strength));
+		TestEqual(
+			TEXT("Small hide stays 20"),
+			Member->Armour.Strength,
+			FSolidRaptor::HideStrength);
 	}
 	const int32 SharedPower = Group.Get(0)->Weapon.Power;
 	Group.Get(1)->Weapon.Power = SharedPower + 1;
@@ -282,6 +322,32 @@ bool FSolidMonsterBodyTest::RunTest(const FString& Parameters)
 	{
 		TestTrue(TEXT("the mesh does not block"), Body->GetCollisionEnabled() == ECollisionEnabled::NoCollision);
 	}
+
+	FSolidRaptor Immense;
+	Immense.Size = ESolidMonsterSize::Immense;
+	Raptor->SetRaptor(Immense);
+	const float Scale = FSolidRaptor::ImmenseDrawnBodyFactor / FSolidRaptor::SmallDrawnBodyFactor;
+	TestTrue(
+		TEXT("an Immense capsule keeps the Small radius, times eight"),
+		FMath::IsNearlyEqual(Capsule->GetUnscaledCapsuleRadius(), FSolidMonster::CapsuleRadiusCm * Scale));
+	TestTrue(
+		TEXT("an Immense capsule keeps the Small half height, times eight"),
+		FMath::IsNearlyEqual(Capsule->GetUnscaledCapsuleHalfHeight(), FSolidMonster::CapsuleHalfHeightCm * Scale));
+	TestTrue(
+		TEXT("the Immense capsule bottom is the actor origin"),
+		FMath::IsNearlyEqual(Capsule->GetRelativeLocation().Z, FSolidMonster::CapsuleHalfHeightCm * Scale));
+
+	FSolidRaptor Small;
+	Raptor->SetRaptor(Small);
+	TestTrue(
+		TEXT("a Small raptor keeps the 27 cm radius"),
+		FMath::IsNearlyEqual(Capsule->GetUnscaledCapsuleRadius(), FSolidMonster::CapsuleRadiusCm));
+	TestTrue(
+		TEXT("a Small raptor keeps the 50 cm half height"),
+		FMath::IsNearlyEqual(Capsule->GetUnscaledCapsuleHalfHeight(), FSolidMonster::CapsuleHalfHeightCm));
+	TestTrue(
+		TEXT("the Small capsule bottom is the actor origin"),
+		FMath::IsNearlyEqual(Capsule->GetRelativeLocation().Z, FSolidMonster::CapsuleHalfHeightCm));
 	return true;
 }
 
@@ -489,6 +555,15 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestEqual(TEXT("a definition with no mark places nobody"), Empty->GetEncounterMarks().Num(), 0);
+	int32 DracorexOnEmpty = 0;
+	for (const FSolidWorldEncounterMark& Mark : Empty->GetEncounterMarks())
+	{
+		if (Mark.Name.Equals(TEXT("Dracorex"), ESearchCase::IgnoreCase))
+		{
+			++DracorexOnEmpty;
+		}
+	}
+	TestEqual(TEXT("a chart with no Dracorex mark places none of that encounter"), DracorexOnEmpty, 0);
 
 	auto StandAt = [](const FSolidWorldEncounterMark& Mark) -> int32
 	{
@@ -545,6 +620,77 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 		Total += StandAt(Mark);
 	}
 	TestEqual(TEXT("two marks place two encounters"), Total, 6);
+
+	USolidWorldChart* Rex = NewObject<USolidWorldChart>();
+	FString RexError;
+	const FIntPoint RexCell(30, 8);
+	const FIntPoint RexCellTwo(40, 12);
+	if (!TestTrue(TEXT("a Dracorex chart imports"), Rex && Rex->ImportFromString(Grid))
+		|| !TestFalse(TEXT("an unknown encounter is rejected"), Rex->PlaceEncounter(RexCell, TEXT("Nope"), RexError))
+		|| !TestTrue(TEXT("Dracorex places"), Rex->PlaceEncounter(RexCell, TEXT("dracorex"), RexError)))
+	{
+		return false;
+	}
+	const int32 RexMark = Rex->MarkAtCell(RexCell);
+	if (!TestTrue(TEXT("Dracorex is on the cell"), RexMark != INDEX_NONE))
+	{
+		return false;
+	}
+	TestEqual(TEXT("the stored name is Dracorex"), Rex->Marks[RexMark].Name, FString(TEXT("Dracorex")));
+
+	USolidWorldChart* RexLoaded = NewObject<USolidWorldChart>();
+	if (!TestTrue(TEXT("the Dracorex chart loads"), RexLoaded && RexLoaded->LoadFromChart(Rex)))
+	{
+		return false;
+	}
+	TestEqual(TEXT("one Dracorex mark"), RexLoaded->GetEncounterMarks().Num(), 1);
+	if (RexLoaded->GetEncounterMarks().Num() == 1)
+	{
+		const FSolidWorldEncounterMark& Mark = RexLoaded->GetEncounterMarks()[0];
+		TestEqual(TEXT("one Immense raptor stands at the mark"), StandAt(Mark), 1);
+		const SolidEncounter::FStaticEncounter* Def = SolidEncounter::FindByName(Mark.Name);
+		if (TestNotNull(TEXT("the mark names Dracorex"), Def))
+		{
+			TArray<FSolidTerrainPoint> OnePoint;
+			FSolidTerrainPoint Point;
+			Point.X = Mark.PositionCm.X + 900.f;
+			Point.Y = Mark.PositionCm.Y;
+			Point.Biome = ESolidBiome::Grassland;
+			OnePoint.Add(Point);
+			FSolidEncounter Encounter(*Def);
+			const TArray<int32> None;
+			TestEqual(
+				TEXT("one point places the one member"),
+				Encounter.Place(OnePoint, None, None, Mark.PositionCm),
+				1);
+			const FSolidMonster* Member = Encounter.Groups.Num() == 1 ? Encounter.Groups[0].Get(0) : nullptr;
+			TestTrue(TEXT("that member is Immense"), Member && Member->Size == ESolidMonsterSize::Immense);
+			TestEqual(
+				TEXT("that hide is Immense"),
+				Member ? Member->Armour.Strength : 0.f,
+				FSolidRaptor::ImmenseHideStrength);
+		}
+	}
+
+	FSolidWorldChartMark SecondRex;
+	SecondRex.Kind = ESolidWorldChartMarkKind::Encounter;
+	SecondRex.Name = TEXT("Dracorex");
+	FVector2D SecondRexCentre = FVector2D::ZeroVector;
+	TestTrue(TEXT("the second Dracorex cell has a centre"), USolidWorldChart::CellCentre(RexCellTwo, SecondRexCentre));
+	SecondRex.PositionCm = SecondRexCentre;
+	Rex->Marks.Add(SecondRex);
+	USolidWorldChart* TwoRex = NewObject<USolidWorldChart>();
+	if (!TestTrue(TEXT("both Dracorex marks load"), TwoRex && TwoRex->LoadFromChart(Rex)))
+	{
+		return false;
+	}
+	TestEqual(TEXT("two marks named Dracorex"), TwoRex->GetEncounterMarks().Num(), 2);
+	int32 RexTotal = 0;
+	for (const FSolidWorldEncounterMark& Mark : TwoRex->GetEncounterMarks())
+	{
+		RexTotal += StandAt(Mark);
+	}
+	TestEqual(TEXT("two marks are two of that encounter"), RexTotal, 2);
 	return true;
 }
 
@@ -667,6 +813,25 @@ bool FSolidMonsterEventTest::RunTest(const FString& Parameters)
 		SolidEncounter::PlaceMark(Startup, *Iglin, false, false, State, Points, None, None, Focus, 200.f),
 		0);
 	TestEqual(TEXT("Iglin Bridge is not added twice"), Startup.Num(), 1);
+
+	const SolidEncounter::FStaticEncounter* Dracorex = SolidEncounter::FindByName(TEXT("Dracorex"));
+	if (!TestNotNull(TEXT("Dracorex"), Dracorex))
+	{
+		return false;
+	}
+	TestTrue(TEXT("Dracorex waits on no event"), !Dracorex->EventId || !Dracorex->EventId[0]);
+	TestTrue(TEXT("Dracorex is placed on a new game"), Dracorex->HasFired(State));
+	TArray<FSolidEncounter> RexStartup;
+	TestEqual(
+		TEXT("Dracorex places one raptor at startup"),
+		SolidEncounter::PlaceMark(RexStartup, *Dracorex, false, false, State, Points, None, None, Focus, 200.f),
+		1);
+	TestEqual(TEXT("Dracorex is one encounter"), RexStartup.Num(), 1);
+	if (RexStartup.Num() == 1 && RexStartup[0].Groups.Num() == 1)
+	{
+		const FSolidMonster* Member = RexStartup[0].Groups[0].Get(0);
+		TestTrue(TEXT("the startup raptor is Immense"), Member && Member->Size == ESolidMonsterSize::Immense);
+	}
 
 	const SolidEncounter::FStaticEncounter Twice = SolidEncounter::FStaticEncounter{ TEXT("Twice") }
 		.WithGroup(SolidEncounter::EMonsterKind::Raptor, ESolidMonsterSize::Small, 3, TEXT("Attack"))

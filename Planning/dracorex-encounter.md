@@ -1,6 +1,6 @@
 # Dracorex Encounter
 
-Status: Ready
+Status: In Progress
 
 ## Story
 

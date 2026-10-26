@@ -79,8 +79,10 @@ float FSolidRaptor::DrawnBodyFactor() const
 	{
 	case ESolidMonsterSize::Small:
 		return SmallDrawnBodyFactor;
+	case ESolidMonsterSize::Immense:
+		return ImmenseDrawnBodyFactor;
 	default:
-		// Later sizes scale from Small. Until those factors exist, draw as Small.
+		// Every size other than Immense still draws as Small.
 		return SmallDrawnBodyFactor;
 	}
 }
@@ -193,7 +195,7 @@ void FSolidRaptor::ApplyVisuals(USkeletalMeshComponent* Body, TObjectPtr<UAnimSe
 void FSolidRaptor::Arm(const TCHAR* WeaponName, const TCHAR* ArmourName, const double StandardNormal)
 {
 	FSolidMonster::Arm(WeaponName, ArmourName, StandardNormal);
-	Armour.Strength = HideStrength;
+	Armour.Strength = Size == ESolidMonsterSize::Immense ? ImmenseHideStrength : HideStrength;
 }
 
 TUniquePtr<FSolidMonster> FSolidRaptor::Clone() const

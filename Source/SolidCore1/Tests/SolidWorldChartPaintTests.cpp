@@ -342,6 +342,16 @@ bool FSolidWorldChartEncounterTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("delete again fails"), Chart->DeleteMark(Cell, Error));
 	TestTrue(TEXT("undo restores the encounter"), Chart->Undo());
 	TestTrue(TEXT("the encounter is back"), Chart->MarkAtCell(Cell) != INDEX_NONE);
+
+	const FIntPoint DracorexCell(20, 8);
+	TestFalse(TEXT("an unknown encounter is still rejected"), Chart->PlaceEncounter(DracorexCell, TEXT("Nope"), Error));
+	TestTrue(TEXT("Dracorex places"), Chart->PlaceEncounter(DracorexCell, TEXT("dracorex"), Error));
+	const int32 DracorexIndex = Chart->MarkAtCell(DracorexCell);
+	TestTrue(TEXT("Dracorex is on the cell"), DracorexIndex != INDEX_NONE);
+	if (DracorexIndex != INDEX_NONE)
+	{
+		TestEqual(TEXT("the stored name is Dracorex"), Chart->Marks[DracorexIndex].Name, FString(TEXT("Dracorex")));
+	}
 	return true;
 }
 

@@ -12,6 +12,9 @@ namespace SolidEncounter
 		// Three Small raptors. A chart mark supplies the focus. No event, so startup places them.
 		FStaticEncounter{ TEXT("Iglin Bridge") }
 			.WithGroup(EMonsterKind::Raptor, ESolidMonsterSize::Small, 3, TEXT("Attack")),
+		// One Immense raptor. A chart mark supplies the focus. No event, so startup places it.
+		FStaticEncounter{ TEXT("Dracorex") }
+			.WithGroup(EMonsterKind::Raptor, ESolidMonsterSize::Immense, 1, TEXT("Attack")),
 	};
 
 	/** The catalog row of this name, ignoring case. Null when the catalog has none. */

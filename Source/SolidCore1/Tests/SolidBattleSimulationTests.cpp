@@ -285,6 +285,73 @@ bool FSolidBattleIglinBridgeTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBattleDracorexTest,
+	"SolidCore1.Battle.Dracorex",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBattleDracorexTest::RunTest(const FString& Parameters)
+{
+	USolidSquad* Squad = SolidBattleTestPrivate::BuildSquad(TEXT("Starter"));
+	if (!TestNotNull(TEXT("the squad"), Squad))
+	{
+		return false;
+	}
+	TestEqual(TEXT("no companion is out"), Squad->GetSelectedCompanionCount(), 0);
+	const FSolidBattlePlan* SquadPlan = Squad->GetActiveBattlePlan();
+	TestTrue(TEXT("the squad plan is Starter"), SquadPlan && SquadPlan->Is(TEXT("Starter")));
+
+	FSolidEncounter Encounter = SolidBattleTestPrivate::BuildEncounter(TEXT("Dracorex"));
+	if (Encounter.Groups.Num() != 1 || Encounter.Groups[0].Num() != 1)
+	{
+		AddError(TEXT("Dracorex gave the battle no single raptor"));
+		return false;
+	}
+	const FSolidMonster* Raptor = Encounter.Groups[0].Get(0);
+	if (!TestNotNull(TEXT("the Immense raptor"), Raptor))
+	{
+		return false;
+	}
+	TestTrue(TEXT("the group is one Immense raptor"), Raptor->Size == ESolidMonsterSize::Immense);
+	const FSolidBattlePlan* GroupPlan = Encounter.Groups[0].GetActivePlan();
+	TestTrue(TEXT("the group plan is Attack"), GroupPlan && GroupPlan->Is(TEXT("Attack")));
+
+	SolidInventory::FLoadout Inventory = SolidInventory::StartingLoadout();
+	const int32 Head = SolidInventory::WornIndex(SolidInventory::ESlot::Head);
+	TestTrue(
+		TEXT("the dented helmet is worn"),
+		Head != INDEX_NONE && Inventory.Worn[Head].Is(SolidItemType::IdDentedHelmet));
+	FSolidBattle Battle(Squad, &Encounter.Groups[0]);
+	Battle.Inventory = &Inventory;
+
+	const float Spear = static_cast<float>(Battle.SquadWeapon(0).Power);
+	const float Rags = FSolidItem::FromId(SolidItemType::IdRags, 1).Armour.Strength;
+	TestEqual(TEXT("the defence is the rags"), Battle.GetSquadDefence(), Rags);
+	TestEqual(TEXT("the hide starts Immense"), Battle.GetGroupDefence(), FSolidRaptor::ImmenseHideStrength);
+
+	Battle.AdvanceToNextEvent();
+	TestEqual(TEXT("the captain prepares"), LogSummary(*this, Battle, 0), TEXT("Captain prepares."));
+	TestEqual(TEXT("the raptor prepares"), LogSummary(*this, Battle, 1), TEXT("Raptor prepares."));
+	TestEqual(TEXT("the rags stay"), Battle.GetSquadDefence(), Rags);
+	TestEqual(TEXT("the hide stays"), Battle.GetGroupDefence(), FSolidRaptor::ImmenseHideStrength);
+
+	Battle.AdvanceToNextEvent();
+	TestEqual(TEXT("the spear"), LogSummary(*this, Battle, 2), TEXT("Captain attacks Raptor with Crude spear."));
+	TestEqual(TEXT("the claws kill"), LogSummary(*this, Battle, 3), TEXT("Raptor kills Captain with Claws."));
+	TestEqual(TEXT("the rags are gone"), Battle.GetSquadDefence(), 0.f);
+	TestEqual(
+		TEXT("the spear leaves the hide standing"),
+		Battle.GetGroupDefence(),
+		FSolidRaptor::ImmenseHideStrength - Spear);
+	TestTrue(TEXT("the hide is still above 0"), Battle.GetGroupDefence() > 0.f);
+	TestTrue(TEXT("the battle is finished"), Battle.Finished());
+	const int32 Lines = Battle.Log.Num();
+
+	TestFalse(TEXT("a further advance adds no blow"), Battle.AdvanceToNextEvent());
+	TestEqual(TEXT("the log stays"), Battle.Log.Num(), Lines);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidBattleArmourFloorTest,
 	"SolidCore1.Battle.ArmourFloor",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)

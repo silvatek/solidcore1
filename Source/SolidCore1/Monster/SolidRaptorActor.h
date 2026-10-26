@@ -25,7 +25,7 @@ public:
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
 
-	/** Copy the encounter member this actor stands for, then draw it. */
+	/** Copy the encounter member this actor stands for, size the capsule to that body, then draw it. */
 	void SetRaptor(const FSolidRaptor& InRaptor);
 	void BuildVisuals();
 

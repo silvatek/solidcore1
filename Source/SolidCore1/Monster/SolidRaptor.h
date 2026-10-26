@@ -10,8 +10,9 @@ class USkeletalMeshComponent;
 class UWorld;
 
 /**
- * A raptor: the green Velociraptor body beside the Iglin bridge for now.
- * Later sizes scale from Small. A later body builds on this skeleton the way a human mesh is built.
+ * A raptor: the green Velociraptor.
+ * Small stands beside the Iglin bridge. Immense is that same body at eight times the height.
+ * The sizes between still draw as Small. A later body builds on this skeleton the way a human mesh is built.
  */
 class FSolidRaptor : public FSolidMonster
 {
@@ -22,17 +23,21 @@ public:
 	 * The drawn body is smaller than the vertex span.
 	 * The span scale is about 0.10. Three times that scale is knee-high on the captain, about half a metre.
 	 * Six times that scale is the Small reptile, the body agreed beside the captain and the 1 m post.
-	 * A later size scales up or down from Small.
+	 * Immense is eight times that body, so the drawn height is 8 m. The sizes between still draw as Small.
 	 */
 	static constexpr float SmallDrawnBodyFactor = 6.f;
+	/** Eight times SmallDrawnBodyFactor. The drawn Immense body is 8 m. */
+	static constexpr float ImmenseDrawnBodyFactor = 48.f;
 	/** This raptor's weapon. */
 	static constexpr const TCHAR* Claws = TEXT("Claws");
 	/** This raptor's armour. */
 	static constexpr const TCHAR* Hide = TEXT("Hide");
-	/** Hide Strength. Play-testing chose 20. */
+	/** Hide Strength for Small and every size that still draws as Small. Play-testing chose 20. */
 	static constexpr float HideStrength = 20.f;
+	/** Hide Strength for an Immense raptor. */
+	static constexpr float ImmenseHideStrength = 500.f;
 
-	/** Stores claws and hide. Strength is HideStrength. */
+	/** Stores claws and hide. Immense uses ImmenseHideStrength. Every other size uses HideStrength. */
 	virtual void Arm(const TCHAR* WeaponName, const TCHAR* ArmourName, double StandardNormal) override;
 
 	virtual float DrawnBodyFactor() const override;

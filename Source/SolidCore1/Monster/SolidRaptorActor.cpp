@@ -43,6 +43,15 @@ void ASolidRaptor::BeginPlay()
 void ASolidRaptor::SetRaptor(const FSolidRaptor& InRaptor)
 {
 	Raptor = InRaptor;
+	if (Capsule)
+	{
+		const float Scale = Raptor.DrawnBodyFactor() / FSolidRaptor::SmallDrawnBodyFactor;
+		const float Radius = FSolidMonster::CapsuleRadiusCm * Scale;
+		const float HalfHeight = FSolidMonster::CapsuleHalfHeightCm * Scale;
+		Capsule->SetCapsuleSize(Radius, HalfHeight, false);
+		// The centre stays at the half height so the bottom is the actor origin.
+		Capsule->SetRelativeLocation(FVector(0.f, 0.f, HalfHeight));
+	}
 	BuildVisuals();
 }
 

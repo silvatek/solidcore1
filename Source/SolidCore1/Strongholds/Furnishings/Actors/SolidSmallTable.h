@@ -16,7 +16,6 @@ public:
 
 	static constexpr int32 LegCount = 4;
 
-	virtual SolidStrongholdFurniture::EKind GetKind() const override;
 	virtual void BuildVisuals() override;
 
 	float TopCm() const;

@@ -5,6 +5,7 @@
 #include "SolidHUD.h"
 #include "SolidInventory.h"
 #include "SolidStronghold.h"
+#include "Strongholds/Furnishings/Actors/SolidBed.h"
 #include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
 #include "Strongholds/Tower/SolidTower.h"
 #include "SolidWorldChart.h"
@@ -456,7 +457,7 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("piece in the new stronghold"), Item != nullptr);
 		TestEqual(TEXT("pieces sit on the ground floor"), Piece.Level, 0);
 		TestTrue(TEXT("new cell is a ground hex tile"), SolidStrongholdFurniture::FindCell(ImperiousHexes, Piece.X, Piece.Y) != nullptr);
-		if (Item && Item->Kind == SolidStrongholdFurniture::EKind::Bed)
+		if (Item && Item->ActorClass == ASolidBed::StaticClass())
 		{
 			++Beds;
 			const SolidStrongholdGrid::FHex* Anchor = SolidStrongholdFurniture::FindCell(ImperiousHexes, Piece.X, Piece.Y);

@@ -1,5 +1,6 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
+#include "Game/SolidGameState.h"
 #include "Strongholds/Dungeon/SolidDungeonInterior.h"
 #include "Strongholds/Dungeon/SolidDungeonLevel.h"
 #include "Strongholds/Furnishings/Actors/SolidBed.h"
@@ -112,34 +113,52 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("wood is beige"), Beige.R > Beige.G && Beige.G > Beige.B && Beige.B > 0.3f);
 	TestTrue(TEXT("pillow is white"), Pillow.R > 0.9f && Pillow.G > 0.9f && Pillow.B > 0.85f);
 
-	TestEqual(TEXT("catalog has the four pieces"), SolidStrongholdFurniture::CatalogCount, 4);
-	TestEqual(TEXT("fireplace name"), FString(SolidStrongholdFurniture::Catalog[0].Name), FString(TEXT("Fireplace")));
-	TestEqual(TEXT("bed name"), FString(SolidStrongholdFurniture::Catalog[1].Name), FString(TEXT("Bed")));
-	TestEqual(TEXT("chest name"), FString(SolidStrongholdFurniture::Catalog[2].Name), FString(TEXT("Chest")));
-	TestEqual(TEXT("small table name"), FString(SolidStrongholdFurniture::Catalog[3].Name), FString(TEXT("Small Table")));
-	TestTrue(TEXT("fireplace kind"), SolidStrongholdFurniture::Catalog[0].Kind == SolidStrongholdFurniture::EKind::Fireplace);
-	TestTrue(TEXT("bed kind"), SolidStrongholdFurniture::Catalog[1].Kind == SolidStrongholdFurniture::EKind::Bed);
-	TestTrue(TEXT("chest kind"), SolidStrongholdFurniture::Catalog[2].Kind == SolidStrongholdFurniture::EKind::Chest);
-	TestTrue(TEXT("small table kind"), SolidStrongholdFurniture::Catalog[3].Kind == SolidStrongholdFurniture::EKind::SmallTable);
-	TestFalse(TEXT("the fireplace is not storage"), SolidStrongholdFurniture::IsStorage(&SolidStrongholdFurniture::Catalog[0]));
-	TestFalse(TEXT("the bed is not storage"), SolidStrongholdFurniture::IsStorage(&SolidStrongholdFurniture::Catalog[1]));
-	TestTrue(TEXT("the chest is storage"), SolidStrongholdFurniture::IsStorage(&SolidStrongholdFurniture::Catalog[2]));
-	TestFalse(TEXT("the small table is not storage"), SolidStrongholdFurniture::IsStorage(&SolidStrongholdFurniture::Catalog[3]));
-	TestEqual(TEXT("fireplace stops at one"), SolidStrongholdFurniture::Catalog[0].Limit, 1);
-	TestEqual(TEXT("bed stops at three"), SolidStrongholdFurniture::Catalog[1].Limit, 3);
-	TestEqual(TEXT("chest stops at one"), SolidStrongholdFurniture::Catalog[2].Limit, 1);
-	TestEqual(TEXT("small table stops at ten"), SolidStrongholdFurniture::Catalog[3].Limit, 10);
+	const TArray<SolidStrongholdFurniture::FItem> Recipe = SolidStrongholdFurniture::StartingCatalog();
+	TestEqual(TEXT("catalog has the four pieces"), Recipe.Num(), 4);
+	if (Recipe.Num() != 4)
+	{
+		return false;
+	}
+	TestEqual(TEXT("fireplace name"), FString(Recipe[0].Name), FString(TEXT("Fireplace")));
+	TestEqual(TEXT("bed name"), FString(Recipe[1].Name), FString(TEXT("Bed")));
+	TestEqual(TEXT("chest name"), FString(Recipe[2].Name), FString(TEXT("Chest")));
+	TestEqual(TEXT("small table name"), FString(Recipe[3].Name), FString(TEXT("Small Table")));
+	TestTrue(TEXT("fireplace actor"), Recipe[0].ActorClass == ASolidFireplace::StaticClass());
+	TestTrue(TEXT("bed actor"), Recipe[1].ActorClass == ASolidBed::StaticClass());
+	TestTrue(TEXT("chest actor"), Recipe[2].ActorClass == ASolidChest::StaticClass());
+	TestTrue(TEXT("small table actor"), Recipe[3].ActorClass == ASolidSmallTable::StaticClass());
+	TestFalse(TEXT("the fireplace is not storage"), SolidStrongholdFurniture::IsStorage(&Recipe[0]));
+	TestFalse(TEXT("the bed is not storage"), SolidStrongholdFurniture::IsStorage(&Recipe[1]));
+	TestTrue(TEXT("the chest is storage"), SolidStrongholdFurniture::IsStorage(&Recipe[2]));
+	TestFalse(TEXT("the small table is not storage"), SolidStrongholdFurniture::IsStorage(&Recipe[3]));
+	TestEqual(TEXT("fireplace stops at one"), Recipe[0].Limit, 1);
+	TestEqual(TEXT("bed stops at three"), Recipe[1].Limit, 3);
+	TestEqual(TEXT("chest stops at one"), Recipe[2].Limit, 1);
+	TestEqual(TEXT("small table stops at ten"), Recipe[3].Limit, 10);
+	TestTrue(TEXT("a new game enables the four kinds"), Recipe[0].bEnabled && Recipe[1].bEnabled && Recipe[2].bEnabled && Recipe[3].bEnabled);
 	TestFalse(TEXT("a missing piece is not storage"), SolidStrongholdFurniture::IsStorage(nullptr));
-	for (int32 Index = 0; Index < SolidStrongholdFurniture::CatalogCount; ++Index)
+	for (int32 Index = 0; Index < Recipe.Num(); ++Index)
 	{
 		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(Index);
-		TestTrue(TEXT("catalog link is the item itself"), Item == &SolidStrongholdFurniture::Catalog[Index]);
+		TestTrue(TEXT("recipe row is stable"), Item == SolidStrongholdFurniture::ItemAt(Index));
 		TestEqual(
-			TEXT("kind finds its catalog index"),
-			SolidStrongholdFurniture::IndexOfKind(SolidStrongholdFurniture::Catalog[Index].Kind),
+			TEXT("actor finds its catalog index"),
+			SolidStrongholdFurniture::IndexOfActor(Recipe[Index].ActorClass),
 			Index);
 	}
 	TestTrue(TEXT("a missing index has no item"), SolidStrongholdFurniture::ItemAt(-1) == nullptr);
+
+	USolidGameState* State = NewObject<USolidGameState>();
+	TestNotNull(TEXT("play state"), State);
+	if (!State)
+	{
+		return false;
+	}
+	TestEqual(TEXT("the session copies the recipe"), State->FurnishingCatalog.Num(), Recipe.Num());
+	State->FurnishingCatalog[3].bEnabled = false;
+	const TArray<SolidStrongholdFurniture::FItem> Fresh = SolidStrongholdFurniture::StartingCatalog();
+	TestTrue(TEXT("the recipe stays enabled"), Fresh.Num() == 4 && Fresh[3].bEnabled);
+	TestFalse(TEXT("the session can disable a kind"), State->FurnishingCatalog[3].bEnabled);
 
 	FSolidStronghold MeagreFortress;
 	MeagreFortress.Type = ESolidStrongholdType::Fortress;
@@ -166,9 +185,9 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 	const SolidStrongholdFurniture::FItem* First = SolidStrongholdFurniture::ItemAt(Placements[0].ItemIndex);
 	const SolidStrongholdFurniture::FItem* Second = SolidStrongholdFurniture::ItemAt(Placements[1].ItemIndex);
 	const SolidStrongholdFurniture::FItem* Third = SolidStrongholdFurniture::ItemAt(Placements[2].ItemIndex);
-	TestTrue(TEXT("first links to the fireplace"), First && First->Kind == SolidStrongholdFurniture::EKind::Fireplace);
-	TestTrue(TEXT("second links to the bed"), Second && Second->Kind == SolidStrongholdFurniture::EKind::Bed);
-	TestTrue(TEXT("third links to the chest"), Third && Third->Kind == SolidStrongholdFurniture::EKind::Chest);
+	TestTrue(TEXT("first links to the fireplace"), First && First->ActorClass == ASolidFireplace::StaticClass());
+	TestTrue(TEXT("second links to the bed"), Second && Second->ActorClass == ASolidBed::StaticClass());
+	TestTrue(TEXT("third links to the chest"), Third && Third->ActorClass == ASolidChest::StaticClass());
 	TestTrue(TEXT("the cave chest is the storage piece"), SolidStrongholdFurniture::IsStorage(Third));
 
 	TArray<SolidStrongholdGrid::FHex> Hexes;
@@ -259,10 +278,6 @@ bool FSolidStrongholdFurnitureVisualTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	TestTrue(TEXT("fireplace kind"), Fireplace->GetKind() == SolidStrongholdFurniture::EKind::Fireplace);
-	TestTrue(TEXT("bed kind"), Bed->GetKind() == SolidStrongholdFurniture::EKind::Bed);
-	TestTrue(TEXT("chest kind"), Chest->GetKind() == SolidStrongholdFurniture::EKind::Chest);
-	TestTrue(TEXT("small table kind"), Table->GetKind() == SolidStrongholdFurniture::EKind::SmallTable);
 	Fireplace->BuildVisuals();
 	Bed->BuildVisuals();
 	Chest->BuildVisuals();

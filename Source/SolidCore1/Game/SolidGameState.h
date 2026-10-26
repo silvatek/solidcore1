@@ -26,6 +26,7 @@ class SOLIDCORE1_API USolidGameState : public UObject
 	GENERATED_BODY()
 
 public:
+	USolidGameState();
 	/**
 	 * The play state's one journal. Created on first ask. OpenLevel keeps this object.
 	 * Lines live on the journal. Callers ask here, then call the journal method.
@@ -79,6 +80,11 @@ public:
 	TArray<TUniquePtr<FSolidStronghold>> PreviousStrongholds;
 	/** Furnishings in the active stronghold. A new game carries the Meagre stronghold's pieces. */
 	TArray<SolidStrongholdFurniture::FUsed> Furnishings = SolidStrongholdFurniture::StartingFurnishings();
+	/**
+	 * This session's furnishing catalog. A new game copies the recipe.
+	 * bEnabled on a row is the unlock for this session.
+	 */
+	TArray<SolidStrongholdFurniture::FItem> FurnishingCatalog;
 	/**
 	 * Catalog plans that are on, by name.
 	 * A new game lists Starter once the catalog has been seeded. Every other plan is off.

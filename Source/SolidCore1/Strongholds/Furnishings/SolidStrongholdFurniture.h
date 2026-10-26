@@ -12,64 +12,41 @@ class UClass;
  */
 namespace SolidStrongholdFurniture
 {
-	enum class EKind : uint8
-	{
-		Fireplace,
-		Bed,
-		Chest,
-		SmallTable,
-	};
-
-	/** Cells the piece covers. The actor for that kind answers. */
-	int32 HexCount(EKind Kind);
-
-	/** The actor spawned for a catalog kind. */
-	UClass* ActorClass(EKind Kind);
-
-	/** One kind of furnishing. The actor is built from Kind. A storage piece holds items. */
+	/**
+	 * One kind of furnishing. The actor class is the kind.
+	 * A storage piece holds items.
+	 * bEnabled on the session's copy is the unlock. The recipe holds the new-game value.
+	 */
 	struct FItem
 	{
 		const TCHAR* Name = TEXT("");
-		EKind Kind = EKind::Fireplace;
+		UClass* ActorClass = nullptr;
 		/** True when the piece holds items. The chest does. The fireplace, the bed, and the small table do not. */
 		bool bStorage = false;
 		/** How many of this kind one stronghold holds, on every floor, including a piece that is held. */
 		int32 Limit = 1;
+		/** A new game starts from the recipe. The session copy is the flag that changes. */
+		bool bEnabled = false;
 	};
 
-	/** Every furnishing the game knows. Strongholds point back into this list. */
-	inline const FItem Catalog[] = {
-		{ TEXT("Fireplace"), EKind::Fireplace, false, 1 },
-		{ TEXT("Bed"), EKind::Bed, false, 3 },
-		{ TEXT("Chest"), EKind::Chest, true, 1 },
-		{ TEXT("Small Table"), EKind::SmallTable, false, 10 },
-	};
+	/** Cells the piece covers. The actor for that row answers. */
+	int32 HexCount(const FItem& Item);
 
-	inline constexpr int32 CatalogCount = UE_ARRAY_COUNT(Catalog);
+	/** The new-game catalog. Each call returns a fresh copy of the recipe. */
+	TArray<FItem> StartingCatalog();
 
-	inline const FItem* ItemAt(const int32 Index)
-	{
-		return Index >= 0 && Index < CatalogCount ? &Catalog[Index] : nullptr;
-	}
+	/** The recipe row. This is not the session copy, so its bEnabled is the new-game value. */
+	const FItem* ItemAt(int32 Index);
+
+	/** Index of the recipe row whose actor class is Class. */
+	int32 IndexOfActor(const UClass* ActorClass);
 
 	inline bool IsStorage(const FItem* Item)
 	{
 		return Item && Item->bStorage;
 	}
 
-	inline int32 IndexOfKind(const EKind Kind)
-	{
-		for (int32 Index = 0; Index < CatalogCount; ++Index)
-		{
-			if (Catalog[Index].Kind == Kind)
-			{
-				return Index;
-			}
-		}
-		return INDEX_NONE;
-	}
-
-	/** A piece placed in a stronghold. ItemIndex refers to Catalog. */
+	/** A piece placed in a stronghold. ItemIndex is the catalog row. */
 	struct FUsed
 	{
 		int32 ItemIndex = 0;
@@ -108,7 +85,7 @@ namespace SolidStrongholdFurniture
 		{
 			return nullptr;
 		}
-		if (HexCount(Item->Kind) < 2)
+		if (HexCount(*Item) < 2)
 		{
 			return Anchor;
 		}

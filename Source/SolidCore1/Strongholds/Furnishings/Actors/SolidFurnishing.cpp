@@ -26,11 +26,6 @@ void ASolidFurnishing::BeginPlay()
 	BuildVisuals();
 }
 
-SolidStrongholdFurniture::EKind ASolidFurnishing::GetKind() const
-{
-	return SolidStrongholdFurniture::EKind::Fireplace;
-}
-
 int32 ASolidFurnishing::HexCount() const
 {
 	return 1;

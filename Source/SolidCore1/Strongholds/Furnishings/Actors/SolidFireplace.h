@@ -14,7 +14,6 @@ class SOLIDCORE1_API ASolidFireplace : public ASolidFurnishing
 public:
 	ASolidFireplace();
 
-	virtual SolidStrongholdFurniture::EKind GetKind() const override;
 	virtual void BuildVisuals() override;
 
 	float AcrossCm() const;

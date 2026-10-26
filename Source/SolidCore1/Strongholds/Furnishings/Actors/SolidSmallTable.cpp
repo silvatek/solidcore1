@@ -15,11 +15,6 @@ ASolidSmallTable::ASolidSmallTable()
 	}
 }
 
-SolidStrongholdFurniture::EKind ASolidSmallTable::GetKind() const
-{
-	return SolidStrongholdFurniture::EKind::SmallTable;
-}
-
 float ASolidSmallTable::TopCm() const
 {
 	return 80.f;

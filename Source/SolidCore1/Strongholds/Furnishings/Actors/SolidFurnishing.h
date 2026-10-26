@@ -22,7 +22,6 @@ public:
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
 
-	virtual SolidStrongholdFurniture::EKind GetKind() const;
 	virtual int32 HexCount() const;
 
 	/** The cell and facing this piece was put down on. */

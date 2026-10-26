@@ -14,7 +14,6 @@ class SOLIDCORE1_API ASolidBed : public ASolidFurnishing
 public:
 	ASolidBed();
 
-	virtual SolidStrongholdFurniture::EKind GetKind() const override;
 	virtual int32 HexCount() const override;
 	virtual void BuildVisuals() override;
 

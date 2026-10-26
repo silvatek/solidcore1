@@ -146,11 +146,6 @@ ASolidFireplace::ASolidFireplace()
 	Embers = MakePart(TEXT("Embers"));
 }
 
-SolidStrongholdFurniture::EKind ASolidFireplace::GetKind() const
-{
-	return SolidStrongholdFurniture::EKind::Fireplace;
-}
-
 float ASolidFireplace::AcrossCm() const
 {
 	return SolidStrongholdGrid::FlatToFlatCm * 0.90f;

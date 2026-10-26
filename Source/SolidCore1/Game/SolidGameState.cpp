@@ -6,6 +6,11 @@
 #include "Company/SolidSquad.h"
 #include "UObject/UObjectIterator.h"
 
+USolidGameState::USolidGameState()
+{
+	FurnishingCatalog = SolidStrongholdFurniture::StartingCatalog();
+}
+
 namespace
 {
 	bool RequirementsMet(const USolidGameState& State, const SolidEvents::FEvent& Event)

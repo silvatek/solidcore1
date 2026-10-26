@@ -8,11 +8,6 @@ ASolidBed::ASolidBed()
 	Pillow = MakePart(TEXT("Pillow"));
 }
 
-SolidStrongholdFurniture::EKind ASolidBed::GetKind() const
-{
-	return SolidStrongholdFurniture::EKind::Bed;
-}
-
 int32 ASolidBed::HexCount() const
 {
 	return 2;

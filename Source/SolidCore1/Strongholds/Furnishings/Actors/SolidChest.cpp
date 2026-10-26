@@ -8,11 +8,6 @@ ASolidChest::ASolidChest()
 	Lid = MakePart(TEXT("Lid"));
 }
 
-SolidStrongholdFurniture::EKind ASolidChest::GetKind() const
-{
-	return SolidStrongholdFurniture::EKind::Chest;
-}
-
 float ASolidChest::LengthCm() const
 {
 	return 76.f;

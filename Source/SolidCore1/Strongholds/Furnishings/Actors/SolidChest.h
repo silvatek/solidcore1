@@ -14,7 +14,6 @@ class SOLIDCORE1_API ASolidChest : public ASolidFurnishing
 public:
 	ASolidChest();
 
-	virtual SolidStrongholdFurniture::EKind GetKind() const override;
 	virtual void BuildVisuals() override;
 
 	float LengthCm() const;

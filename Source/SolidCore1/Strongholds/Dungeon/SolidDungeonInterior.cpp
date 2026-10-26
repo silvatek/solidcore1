@@ -880,7 +880,7 @@ void ASolidDungeonInterior::PlaceStarterFurnishings()
 		const FTransform SpawnXf(WorldRot, WorldPos);
 
 		ASolidFurnishing* Piece = World->SpawnActorDeferred<ASolidFurnishing>(
-			SolidStrongholdFurniture::ActorClass(Item->Kind),
+			Item->ActorClass,
 			SpawnXf,
 			this,
 			nullptr,

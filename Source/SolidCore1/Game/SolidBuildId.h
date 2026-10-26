@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0641")
+#define SOLID_BUILD_ID TEXT("SC1-0642")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Fireplace hearth shows its outside.")
+#define SOLID_BUILD_NOTE TEXT("Furnishing catalog is the session list.")
 #endif

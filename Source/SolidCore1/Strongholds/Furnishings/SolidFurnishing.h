@@ -42,7 +42,7 @@ public:
 	static constexpr int32 LegCount = 4;
 	UStaticMeshComponent* GetLegMesh(int32 Index) const
 	{
-		return Index >= 0 && Index < LegCount ? LegMeshes[Index].Get() : nullptr;
+		return LegMeshes.IsValidIndex(Index) ? LegMeshes[Index].Get() : nullptr;
 	}
 
 private:
@@ -61,5 +61,5 @@ private:
 	TObjectPtr<UStaticMeshComponent> TopMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold", meta = (AllowPrivateAccess = "true"))
-	TObjectPtr<UStaticMeshComponent> LegMeshes[LegCount];
+	TArray<TObjectPtr<UStaticMeshComponent>> LegMeshes;
 };

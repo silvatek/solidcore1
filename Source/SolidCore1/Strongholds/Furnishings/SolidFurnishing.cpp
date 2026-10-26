@@ -195,10 +195,12 @@ ASolidFurnishing::ASolidFurnishing()
 		TEXT("Leg0"), TEXT("Leg1"), TEXT("Leg2"), TEXT("Leg3"),
 	};
 	UStaticMeshComponent* Parts[2 + LegCount] = { BodyMesh.Get(), TopMesh.Get() };
+	LegMeshes.Reserve(LegCount);
 	for (int32 Index = 0; Index < LegCount; ++Index)
 	{
-		LegMeshes[Index] = CreateDefaultSubobject<UStaticMeshComponent>(LegNames[Index]);
-		Parts[2 + Index] = LegMeshes[Index].Get();
+		UStaticMeshComponent* Leg = CreateDefaultSubobject<UStaticMeshComponent>(LegNames[Index]);
+		LegMeshes.Add(Leg);
+		Parts[2 + Index] = Leg;
 	}
 	for (UStaticMeshComponent* Part : Parts)
 	{

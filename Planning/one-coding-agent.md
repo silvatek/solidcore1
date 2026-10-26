@@ -4,13 +4,11 @@ Status: New
 
 ## Story
 
-Several coding agents write on `build/<name>` and stop. The builder on the Windows checkout lands one branch, builds, and runs the tests. One agent on that checkout, writing the change and running the build and the tests itself, is the path from here.
+One coding agent runs on the Windows checkout. It writes the product change, builds it, and runs the tests. A pass pushes `main`. The agent is the solidcore1-ue worker. It edits the tree the developer plays. The developer plays that checkout. The developer does not pull.
 
-That agent is the solidcore1-ue worker. It edits the tree the developer plays. A pass pushes `main`. The developer plays that checkout. The developer does not pull.
+`tools\land.bat` and `tools/buildable.py` stay, with their tests. New product work does not use that queue. The scripts stay so several coding agents can be used again.
 
-`tools\land.bat` and `tools/buildable.py` stay, with their tests. They are the queue for several coding agents. New product work leaves that queue unused. The scripts stay so the queue can be started again.
-
-`ue.lock` stays in daily use. Play In Editor, the World Editor, and the chart dump still hold the checkout. The one agent waits for `Free` before it builds or tests.
+`ue.lock` stays in daily use. Play In Editor, the World Editor, and the chart dump still hold the checkout. The agent waits for `Free` before it builds or tests.
 
 No game concept. This is the developer's build, not a player action.
 

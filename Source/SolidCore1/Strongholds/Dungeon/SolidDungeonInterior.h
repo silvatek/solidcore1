@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "Strongholds/Actors/SolidStrongholdInterior.h"
+#include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
 #include "SolidDungeonInterior.generated.h"
 
 class UInstancedStaticMeshComponent;
@@ -33,7 +34,13 @@ public:
 	virtual FRotator GetCaptainView() const override;
 	float GetCaptainYaw() const;
 
-	/** Cave pieces from the furnishing catalog, on the single Meagre floor. No-op without a world. */
+	/**
+	 * The company's list for this visit.
+	 * PlaceStarterFurnishings uses it. With none set, the starter three are placed.
+	 */
+	void SetFurnishings(const TArray<SolidStrongholdFurniture::FUsed>& Used);
+
+	/** The company's pieces on the Meagre floor. No-op without a world. */
 	void PlaceStarterFurnishings();
 
 	UStaticMeshComponent* GetFloorMesh() const { return FloorMesh; }
@@ -91,4 +98,9 @@ protected:
 	/** Dark strokes of Arrange furniture. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<UInstancedStaticMeshComponent> ArrangeLetters;
+
+private:
+	/** Set by SetFurnishings. BeginPlay can place the starters before that call. */
+	bool bUseFurnishings = false;
+	TArray<SolidStrongholdFurniture::FUsed> FurnishingsToPlace;
 };

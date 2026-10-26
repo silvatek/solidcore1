@@ -7,7 +7,7 @@
 /**
  * Arrange mode inside a company stronghold.
  * The mode lifts one piece on the captain's floor, turns it, and puts it down.
- * The browser and the saved list are a later stage.
+ * A legal put-down writes that piece's cell and facing onto the stronghold's list.
  */
 class FSolidArrange
 {
@@ -94,9 +94,15 @@ public:
 	/**
 	 * Left click or Enter.
 	 * A piece lifts. A legal ghost cell puts it down. An illegal cell keeps it held.
-	 * An empty cell with nothing held does nothing. The browser is a later stage.
+	 * An empty cell with nothing held does nothing.
 	 */
 	EConfirm Confirm();
+
+	/**
+	 * After a legal put-down, write that piece's cell and facing onto the stronghold list.
+	 * The entry it lifted is the one that changes. A put-back is not written.
+	 */
+	bool WritePlaced(TArray<SolidStrongholdFurniture::FUsed>& Furnishings) const;
 
 	/** Q and wheel up are positive. E and wheel down are negative. Nothing held does nothing. */
 	void Turn(int32 Steps);
@@ -138,6 +144,8 @@ private:
 	int32 HoverX = 0;
 	int32 HoverY = 0;
 	int32 Held = INDEX_NONE;
+	/** The piece Confirm last put down. INDEX_NONE after a lift, a refusal, or a put-back. */
+	int32 LastPlaced = INDEX_NONE;
 	SolidStrongholdFurniture::FUsed Home;
 	SolidStrongholdFurniture::FUsed GhostUsed;
 };

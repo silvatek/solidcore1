@@ -529,4 +529,99 @@ bool FSolidArrangePlaceTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidArrangeRememberTest,
+	"SolidCore1.Stronghold.ArrangeRemember",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidArrangeRememberTest::RunTest(const FString& Parameters)
+{
+	TArray<SolidStrongholdFurniture::FUsed> List = SolidStrongholdFurniture::StartingFurnishings();
+	const TArray<SolidStrongholdFurniture::FUsed> Started = List;
+	TestEqual(TEXT("a new game list is the starter three"), List.Num(), 3);
+	if (List.Num() != 3)
+	{
+		return false;
+	}
+
+	TArray<SolidStrongholdGrid::FHex> Hexes;
+	SolidDungeonLevel::CollectMeagreHexes(Hexes);
+	const SolidStrongholdGrid::FCell Entrance = SolidDungeonLevel::MeagreEntranceCell();
+	const SolidStrongholdGrid::FCell Captain = SolidDungeonLevel::MeagreCaptainCell();
+
+	FSolidArrange Arrange;
+	FSolidArrange::FContext Context;
+	Context.bInStronghold = true;
+	Arrange.Toggle(Context);
+	Arrange.Open(List, Hexes, Entrance, true, Captain, true, 0.f);
+
+	Arrange.SetHover(2, 0);
+	TestEqual(
+		TEXT("confirm lifts the fireplace"),
+		static_cast<int32>(Arrange.Confirm()),
+		static_cast<int32>(FSolidArrange::EConfirm::Lifted));
+	Arrange.Turn(1);
+	Arrange.SetHover(1, -2);
+	TestTrue(TEXT("esc puts the fireplace back"), Arrange.PutBack());
+	TestFalse(TEXT("a put-back is not written"), Arrange.WritePlaced(List));
+	TestEqual(TEXT("the fireplace stays on (2, 0)"), List[0].X, Started[0].X);
+	TestEqual(TEXT("the fireplace stays on row 0"), List[0].Y, Started[0].Y);
+	TestTrue(TEXT("the fireplace facing stays"), List[0].RotationDeg == Started[0].RotationDeg);
+
+	Arrange.SetHover(0, -1);
+	TestEqual(
+		TEXT("confirm lifts the bed"),
+		static_cast<int32>(Arrange.Confirm()),
+		static_cast<int32>(FSolidArrange::EConfirm::Lifted));
+	Arrange.SetHover(0, 0);
+	Arrange.Turn(1);
+	FSolidArrange::FDraw Drawn;
+	TestTrue(TEXT("the held bed draws"), Arrange.DrawOf(1, Drawn));
+	SolidStrongholdFurniture::FUsed Candidate = Arrange.PieceAt(1);
+	Candidate.X = 0;
+	Candidate.Y = 0;
+	Candidate.RotationDeg = Drawn.Yaw;
+	if (!Arrange.CanPlace(Candidate))
+	{
+		Arrange.Turn(-1);
+		TestTrue(TEXT("the held bed draws on the first facing"), Arrange.DrawOf(1, Drawn));
+	}
+	TestEqual(
+		TEXT("a legal confirm puts the bed down"),
+		static_cast<int32>(Arrange.Confirm()),
+		static_cast<int32>(FSolidArrange::EConfirm::Placed));
+	TestTrue(TEXT("the put-down is written"), Arrange.WritePlaced(List));
+	TestEqual(TEXT("the bed anchor is remembered"), List[1].X, 0);
+	TestEqual(TEXT("the bed row is remembered"), List[1].Y, 0);
+	TestTrue(
+		TEXT("the bed facing is remembered"),
+		FMath::IsNearlyEqual(List[1].RotationDeg, Drawn.Yaw, 0.01f));
+	TestEqual(TEXT("the fireplace column stays"), List[0].X, Started[0].X);
+	TestEqual(TEXT("the fireplace row stays"), List[0].Y, Started[0].Y);
+	TestEqual(TEXT("the chest column stays"), List[2].X, Started[2].X);
+	TestEqual(TEXT("the chest row stays"), List[2].Y, Started[2].Y);
+	TestTrue(TEXT("the chest facing stays"), List[2].RotationDeg == Started[2].RotationDeg);
+
+	Arrange.SetHover(2, 1);
+	TestEqual(
+		TEXT("confirm lifts the chest"),
+		static_cast<int32>(Arrange.Confirm()),
+		static_cast<int32>(FSolidArrange::EConfirm::Lifted));
+	Arrange.SetHover(Entrance.Col, Entrance.Row);
+	TestEqual(
+		TEXT("the entrance does not take the chest"),
+		static_cast<int32>(Arrange.Confirm()),
+		static_cast<int32>(FSolidArrange::EConfirm::Refused));
+	TestFalse(TEXT("a refused hex is not written"), Arrange.WritePlaced(List));
+	TestEqual(TEXT("the chest column is unchanged"), List[2].X, Started[2].X);
+	TestEqual(TEXT("the chest row is unchanged"), List[2].Y, Started[2].Y);
+
+	Arrange.Leave();
+	TestFalse(TEXT("leaving does not write the held chest"), Arrange.WritePlaced(List));
+	TestEqual(TEXT("the chest is still on (2, 1)"), List[2].X, 2);
+	TestEqual(TEXT("the chest is still on row 1"), List[2].Y, 1);
+
+	return true;
+}
+
 #endif

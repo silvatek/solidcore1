@@ -49,7 +49,7 @@ Input Actions and the mapping context can be replaced with Content assets on the
 | Put a held piece back | Esc | — | — |
 | Wheel while arranging | Turns a held piece. Does not zoom | — | — |
 
-While arrange mode is on, WASD, the left stick, and a click do not move the captain or use the door. F10 and / do nothing. The wheel does not zoom. Q, E, and the wheel turn a piece that is held. Esc puts that piece back. Esc with nothing held leaves the mode.
+While arrange mode is on, WASD, the left stick, and a click do not move the captain or use the door. F10 and / do nothing. The wheel does not zoom. Q, E, and the wheel turn a piece that is held. Esc puts that piece back. Esc with nothing held leaves the mode. Putting a piece down keeps that hex and facing after the captain leaves and comes back.
 
 ## Lair
 

@@ -882,7 +882,17 @@ void ASolidGameMode::ConfirmArrangeFurniture()
 	{
 		return;
 	}
-	ArrangeMode.Confirm();
+	const FSolidArrange::EConfirm Result = ArrangeMode.Confirm();
+	if (Result == FSolidArrange::EConfirm::Placed)
+	{
+		if (USolidGameState* State = GetConfiguration())
+		{
+			if (!ArrangeMode.WritePlaced(State->Furnishings))
+			{
+				UE_LOG(LogSolid, Warning, TEXT("Arrange put a piece down that is not on the stronghold list."));
+			}
+		}
+	}
 	ApplyArrangeActors();
 }
 

@@ -43,6 +43,7 @@ void FSolidArrange::Open(
 	const float InFloorZ)
 {
 	PutBack();
+	LastPlaced = INDEX_NONE;
 	Pieces = InPieces;
 	Cells = InCells;
 	Entrance = InEntrance;
@@ -146,6 +147,7 @@ void FSolidArrange::HighlightHexes(TArray<SolidStrongholdGrid::FHex>& Out) const
 
 FSolidArrange::EConfirm FSolidArrange::Confirm()
 {
+	LastPlaced = INDEX_NONE;
 	if (!bOn || !bHover)
 	{
 		return EConfirm::None;
@@ -157,6 +159,7 @@ FSolidArrange::EConfirm FSolidArrange::Confirm()
 			return EConfirm::Refused;
 		}
 		Pieces[Held] = GhostUsed;
+		LastPlaced = Held;
 		Held = INDEX_NONE;
 		return EConfirm::Placed;
 	}
@@ -198,7 +201,32 @@ bool FSolidArrange::PutBack()
 	}
 	Pieces[Held] = Home;
 	Held = INDEX_NONE;
+	LastPlaced = INDEX_NONE;
 	return true;
+}
+
+bool FSolidArrange::WritePlaced(TArray<SolidStrongholdFurniture::FUsed>& Furnishings) const
+{
+	if (!Pieces.IsValidIndex(LastPlaced))
+	{
+		return false;
+	}
+
+	const SolidStrongholdFurniture::FUsed& Next = Pieces[LastPlaced];
+	for (SolidStrongholdFurniture::FUsed& Have : Furnishings)
+	{
+		if (Have.ItemIndex != Home.ItemIndex
+			|| Have.Level != Home.Level
+			|| Have.X != Home.X
+			|| Have.Y != Home.Y
+			|| !FMath::IsNearlyEqual(Have.RotationDeg, Home.RotationDeg, 0.01f))
+		{
+			continue;
+		}
+		Have = Next;
+		return true;
+	}
+	return false;
 }
 
 const SolidStrongholdFurniture::FUsed& FSolidArrange::PieceAt(const int32 Index) const

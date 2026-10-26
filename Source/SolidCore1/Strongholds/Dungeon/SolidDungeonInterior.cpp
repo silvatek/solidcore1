@@ -67,6 +67,48 @@ namespace
 		}
 	}
 
+	bool SameFurnishing(const SolidStrongholdFurniture::FUsed& A, const SolidStrongholdFurniture::FUsed& B)
+	{
+		return A.ItemIndex == B.ItemIndex
+			&& A.Level == B.Level
+			&& A.X == B.X
+			&& A.Y == B.Y
+			&& FMath::IsNearlyEqual(A.RotationDeg, B.RotationDeg, 0.01f);
+	}
+
+	bool FurnishingsMatch(
+		const TArray<ASolidFurnishing*>& Owned,
+		const TArray<SolidStrongholdFurniture::FUsed>& Used)
+	{
+		if (Owned.Num() != Used.Num())
+		{
+			return false;
+		}
+		TArray<int32> Taken;
+		for (const SolidStrongholdFurniture::FUsed& Want : Used)
+		{
+			int32 Found = INDEX_NONE;
+			for (int32 Index = 0; Index < Owned.Num(); ++Index)
+			{
+				if (Taken.Contains(Index) || !Owned[Index] || !Owned[Index]->HasPlacement())
+				{
+					continue;
+				}
+				if (SameFurnishing(Owned[Index]->GetPlacement(), Want))
+				{
+					Found = Index;
+					break;
+				}
+			}
+			if (Found == INDEX_NONE)
+			{
+				return false;
+			}
+			Taken.Add(Found);
+		}
+		return true;
+	}
+
 	struct FEdgeCut
 	{
 		float T = 0.f;
@@ -763,6 +805,12 @@ void ASolidDungeonInterior::BuildVisuals()
 	}
 }
 
+void ASolidDungeonInterior::SetFurnishings(const TArray<SolidStrongholdFurniture::FUsed>& Used)
+{
+	FurnishingsToPlace = Used;
+	bUseFurnishings = true;
+}
+
 void ASolidDungeonInterior::PlaceStarterFurnishings()
 {
 	UWorld* World = GetWorld();
@@ -773,7 +821,15 @@ void ASolidDungeonInterior::PlaceStarterFurnishings()
 		return;
 	}
 
-	TArray<SolidStrongholdFurniture::FUsed> Used = SolidStrongholdFurniture::StartingFurnishings();
+	TArray<SolidStrongholdFurniture::FUsed> Used;
+	if (bUseFurnishings)
+	{
+		Used = FurnishingsToPlace;
+	}
+	else
+	{
+		Used = SolidStrongholdFurniture::StartingFurnishings();
+	}
 
 	TArray<ASolidFurnishing*> Owned;
 	for (TActorIterator<ASolidFurnishing> It(World); It; ++It)
@@ -784,7 +840,7 @@ void ASolidDungeonInterior::PlaceStarterFurnishings()
 			Owned.Add(Piece);
 		}
 	}
-	if (Owned.Num() >= Used.Num())
+	if (FurnishingsMatch(Owned, Used))
 	{
 		return;
 	}
@@ -842,7 +898,7 @@ void ASolidDungeonInterior::PlaceStarterFurnishings()
 		++Placed;
 	}
 
-	UE_LOG(LogSolid, Warning, TEXT("Starter furnishings placed: %d."), Placed);
+	UE_LOG(LogSolid, Warning, TEXT("Dungeon furnishings placed: %d."), Placed);
 }
 
 FVector ASolidDungeonInterior::GetCaptainSpawnWorld() const

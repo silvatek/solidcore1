@@ -71,7 +71,7 @@ namespace SolidStronghold
 
 	void FSolidDungeon::ConfigureInterior(
 		AActor* Interior,
-		const TArray<SolidStrongholdFurniture::FUsed>&) const
+		const TArray<SolidStrongholdFurniture::FUsed>& Furnishings) const
 	{
 		ASolidDungeonInterior* Cave = Cast<ASolidDungeonInterior>(Interior);
 		if (!Cave)
@@ -79,6 +79,7 @@ namespace SolidStronghold
 			return;
 		}
 		Cave->SetStrongholdCell(Cell);
+		Cave->SetFurnishings(Furnishings);
 		Cave->BuildVisuals();
 	}
 

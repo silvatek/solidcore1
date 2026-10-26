@@ -318,10 +318,36 @@ bool FSolidArrangePlaceTest::RunTest(const FString& Parameters)
 
 	Arrange.SetHover(1, 0);
 	TestEqual(
-		TEXT("an empty hex does not open a browser"),
+		TEXT("an empty hex opens the browser"),
+		static_cast<int32>(Arrange.Confirm()),
+		static_cast<int32>(FSolidArrange::EConfirm::Opened));
+	TestTrue(TEXT("the browser is open"), Arrange.IsBrowserOpen());
+	TestEqual(TEXT("the browser remembers the column"), Arrange.BrowserColumn(), 1);
+	TestEqual(TEXT("the browser remembers the row"), Arrange.BrowserRow(), 0);
+	TestFalse(TEXT("nothing was lifted"), Arrange.IsHolding());
+	Arrange.SetHover(Entrance.Col, Entrance.Row);
+	TestEqual(
+		TEXT("the entrance does not open the browser"),
 		static_cast<int32>(Arrange.Confirm()),
 		static_cast<int32>(FSolidArrange::EConfirm::None));
-	TestFalse(TEXT("nothing was lifted"), Arrange.IsHolding());
+	TestEqual(TEXT("the entrance leaves the remembered column"), Arrange.BrowserColumn(), 1);
+	TestEqual(TEXT("the entrance leaves the remembered row"), Arrange.BrowserRow(), 0);
+	Arrange.SetHover(Captain.Col, Captain.Row);
+	TestEqual(
+		TEXT("the captain's hex does not open the browser"),
+		static_cast<int32>(Arrange.Confirm()),
+		static_cast<int32>(FSolidArrange::EConfirm::None));
+	TestEqual(TEXT("the captain's hex leaves the remembered column"), Arrange.BrowserColumn(), 1);
+	Arrange.SetHover(1, -2);
+	TestEqual(
+		TEXT("another empty hex keeps the browser open"),
+		static_cast<int32>(Arrange.Confirm()),
+		static_cast<int32>(FSolidArrange::EConfirm::Opened));
+	TestEqual(TEXT("the browser uses the new column"), Arrange.BrowserColumn(), 1);
+	TestEqual(TEXT("the browser uses the new row"), Arrange.BrowserRow(), -2);
+	TestTrue(TEXT("esc closes the browser"), Arrange.PutBack());
+	TestTrue(TEXT("esc leaves the mode on"), Arrange.IsOn());
+	TestFalse(TEXT("the browser is closed"), Arrange.IsBrowserOpen());
 	Arrange.Turn(1);
 	TestTrue(TEXT("Q does nothing until a piece is held"), Arrange.PieceAt(0).RotationDeg == 0.f);
 
@@ -336,6 +362,7 @@ bool FSolidArrangePlaceTest::RunTest(const FString& Parameters)
 		static_cast<int32>(Arrange.Confirm()),
 		static_cast<int32>(FSolidArrange::EConfirm::Lifted));
 	TestTrue(TEXT("one piece is held"), Arrange.IsHolding());
+	TestFalse(TEXT("lifting closes the browser"), Arrange.IsBrowserOpen());
 	TestEqual(TEXT("the held bed keeps its name"), FString(Arrange.HoverName()), FString(TEXT("Bed")));
 	TestTrue(TEXT("the bed's old hex is empty while it is held"), Arrange.CanPlace(FireplaceOnBed));
 
@@ -393,6 +420,7 @@ bool FSolidArrangePlaceTest::RunTest(const FString& Parameters)
 		static_cast<int32>(Arrange.Confirm()),
 		static_cast<int32>(FSolidArrange::EConfirm::Placed));
 	TestFalse(TEXT("the bed is down"), Arrange.IsHolding());
+	TestFalse(TEXT("putting the piece down leaves the browser closed"), Arrange.IsBrowserOpen());
 	TestEqual(TEXT("the bed's anchor is (0, 0)"), Arrange.PieceAt(1).X, 0);
 	TestEqual(TEXT("the bed's row is 0"), Arrange.PieceAt(1).Y, 0);
 	TestTrue(TEXT("the bed kept its facing"), FMath::IsNearlyEqual(Arrange.PieceAt(1).RotationDeg, 0.f, 0.01f));

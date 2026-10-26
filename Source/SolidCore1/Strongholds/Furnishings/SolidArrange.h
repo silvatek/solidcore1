@@ -47,10 +47,14 @@ public:
 		Lifted,
 		Placed,
 		Refused,
+		Opened,
 	};
 
 	bool IsOn() const { return bOn; }
 	bool IsHolding() const { return Held != INDEX_NONE; }
+	bool IsBrowserOpen() const { return bBrowser; }
+	int32 BrowserColumn() const { return BrowserX; }
+	int32 BrowserRow() const { return BrowserY; }
 	int32 HeldIndex() const { return Held; }
 	float FloorZ() const { return FloorHeight; }
 	int32 PieceCount() const { return Pieces.Num(); }
@@ -94,7 +98,8 @@ public:
 	/**
 	 * Left click or Enter.
 	 * A piece lifts. A legal ghost cell puts it down. An illegal cell keeps it held.
-	 * An empty cell with nothing held does nothing.
+	 * An empty cell that can hold a piece, while nothing is held, opens the browser there.
+	 * A blocked cell leaves the browser as it is.
 	 */
 	EConfirm Confirm();
 
@@ -110,7 +115,7 @@ public:
 	/** One facing per wheel notch. Wheel up is positive, the same way as Q. */
 	static int32 WheelSteps(float Axis);
 
-	/** Esc while a piece is held. The mode stays on. */
+	/** Esc while a piece is held, or while the browser is open. The mode stays on. */
 	bool PutBack();
 
 	const SolidStrongholdFurniture::FPlacedFurnishing& PieceAt(int32 Index) const;
@@ -130,6 +135,7 @@ public:
 private:
 	bool Blocked(int32 X, int32 Y) const;
 	int32 PieceOnCell(int32 X, int32 Y) const;
+	void CloseBrowser();
 
 	bool bOn = false;
 	TArray<SolidStrongholdFurniture::FPlacedFurnishing> Pieces;
@@ -145,6 +151,9 @@ private:
 	int32 Held = INDEX_NONE;
 	/** The piece Confirm last put down. INDEX_NONE after a lift, a refusal, or a put-back. */
 	int32 LastPlaced = INDEX_NONE;
+	bool bBrowser = false;
+	int32 BrowserX = 0;
+	int32 BrowserY = 0;
 	SolidStrongholdFurniture::FPlacedFurnishing Home;
 	SolidStrongholdFurniture::FPlacedFurnishing GhostUsed;
 };

@@ -161,20 +161,31 @@ FSolidArrange::EConfirm FSolidArrange::Confirm()
 		Pieces[Held] = GhostUsed;
 		LastPlaced = Held;
 		Held = INDEX_NONE;
+		CloseBrowser();
 		return EConfirm::Placed;
 	}
 
 	const int32 Index = PieceOnCell(HoverX, HoverY);
-	if (Index == INDEX_NONE)
+	if (Index != INDEX_NONE)
+	{
+		Held = Index;
+		Home = Pieces[Index];
+		GhostUsed = Home;
+		GhostUsed.X = HoverX;
+		GhostUsed.Y = HoverY;
+		CloseBrowser();
+		return EConfirm::Lifted;
+	}
+
+	if (Blocked(HoverX, HoverY))
 	{
 		return EConfirm::None;
 	}
-	Held = Index;
-	Home = Pieces[Index];
-	GhostUsed = Home;
-	GhostUsed.X = HoverX;
-	GhostUsed.Y = HoverY;
-	return EConfirm::Lifted;
+
+	bBrowser = true;
+	BrowserX = HoverX;
+	BrowserY = HoverY;
+	return EConfirm::Opened;
 }
 
 void FSolidArrange::Turn(const int32 Steps)
@@ -195,14 +206,25 @@ int32 FSolidArrange::WheelSteps(const float Axis)
 
 bool FSolidArrange::PutBack()
 {
-	if (Held == INDEX_NONE)
+	if (Held != INDEX_NONE)
 	{
-		return false;
+		Pieces[Held] = Home;
+		Held = INDEX_NONE;
+		LastPlaced = INDEX_NONE;
+		CloseBrowser();
+		return true;
 	}
-	Pieces[Held] = Home;
-	Held = INDEX_NONE;
-	LastPlaced = INDEX_NONE;
-	return true;
+	if (bBrowser)
+	{
+		CloseBrowser();
+		return true;
+	}
+	return false;
+}
+
+void FSolidArrange::CloseBrowser()
+{
+	bBrowser = false;
 }
 
 bool FSolidArrange::WritePlaced(TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Furnishings) const

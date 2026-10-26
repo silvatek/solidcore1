@@ -132,16 +132,22 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the bed holds nothing"), Catalogue[1].StorageSlots, 0);
 	TestEqual(TEXT("the chest has six slots"), Catalogue[2].StorageSlots, SolidStorage::Count);
 	TestEqual(TEXT("the small table holds nothing"), Catalogue[3].StorageSlots, 0);
-	TestFalse(TEXT("the fireplace is not storage"), SolidStrongholdFurniture::IsStorage(&Catalogue[0]));
-	TestFalse(TEXT("the bed is not storage"), SolidStrongholdFurniture::IsStorage(&Catalogue[1]));
-	TestTrue(TEXT("the chest is storage"), SolidStrongholdFurniture::IsStorage(&Catalogue[2]));
-	TestFalse(TEXT("the small table is not storage"), SolidStrongholdFurniture::IsStorage(&Catalogue[3]));
+	TestEqual(TEXT("fireplace covers one hex"), Catalogue[0].HexCount(), 1);
+	TestEqual(TEXT("bed covers two hexes"), Catalogue[1].HexCount(), 2);
+	TestEqual(TEXT("chest covers one hex"), Catalogue[2].HexCount(), 1);
+	TestEqual(TEXT("small table covers one hex"), Catalogue[3].HexCount(), 1);
+	TestFalse(TEXT("the fireplace is not storage"), Catalogue[0].IsStorage());
+	TestFalse(TEXT("the bed is not storage"), Catalogue[1].IsStorage());
+	TestTrue(TEXT("the chest is storage"), Catalogue[2].IsStorage());
+	TestFalse(TEXT("the small table is not storage"), Catalogue[3].IsStorage());
 	TestEqual(TEXT("fireplace stops at one"), Catalogue[0].Limit, 1);
 	TestEqual(TEXT("bed stops at three"), Catalogue[1].Limit, 3);
 	TestEqual(TEXT("chest stops at one"), Catalogue[2].Limit, 1);
 	TestEqual(TEXT("small table stops at ten"), Catalogue[3].Limit, 10);
 	TestTrue(TEXT("a new game enables the four kinds"), Catalogue[0].bEnabled && Catalogue[1].bEnabled && Catalogue[2].bEnabled && Catalogue[3].bEnabled);
-	TestFalse(TEXT("a missing piece is not storage"), SolidStrongholdFurniture::IsStorage(nullptr));
+	const SolidStrongholdFurniture::FItem Empty;
+	TestFalse(TEXT("an empty row is not storage"), Empty.IsStorage());
+	TestEqual(TEXT("an empty row covers one hex"), Empty.HexCount(), 1);
 	for (int32 Index = 0; Index < Catalogue.Num(); ++Index)
 	{
 		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(Index);
@@ -193,7 +199,7 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("first links to the fireplace"), First && First->ActorClass == ASolidFireplace::StaticClass());
 	TestTrue(TEXT("second links to the bed"), Second && Second->ActorClass == ASolidBed::StaticClass());
 	TestTrue(TEXT("third links to the chest"), Third && Third->ActorClass == ASolidChest::StaticClass());
-	TestTrue(TEXT("the cave chest is the storage piece"), SolidStrongholdFurniture::IsStorage(Third));
+	TestTrue(TEXT("the cave chest is the storage piece"), Third && Third->IsStorage());
 
 	TArray<SolidStrongholdGrid::FHex> Hexes;
 	SolidDungeonLevel::CollectMeagreHexes(Hexes);
@@ -229,7 +235,7 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 		TestFalse(TEXT("pieces stay off the captain's cell"), bOnCaptain);
 		TestFalse(TEXT("pieces stay off the entrance cell"), bOnEntrance);
 
-		const int32 Cells = SolidStrongholdFurniture::HexCount(*Item);
+		const int32 Cells = Item->HexCount();
 		if (Cells == 1)
 		{
 			TestEqual(TEXT("one-hex piece uses one cell"), Anchor->Col, Span->Col);

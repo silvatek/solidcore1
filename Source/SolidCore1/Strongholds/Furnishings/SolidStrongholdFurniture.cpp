@@ -11,48 +11,60 @@ namespace
 	SolidStrongholdFurniture::FItem MakeItem(
 		const TCHAR* Name,
 		UClass* ActorClass,
+		const int32 Hexes,
 		const int32 Limit,
 		const bool bEnabled)
 	{
-		SolidStrongholdFurniture::FItem Item;
-		Item.Name = Name;
-		Item.ActorClass = ActorClass;
-		Item.StorageSlots = 0;
-		Item.Limit = Limit;
-		Item.bEnabled = bEnabled;
-		return Item;
+		return SolidStrongholdFurniture::FItem(Name, ActorClass, Hexes, Limit, bEnabled, 0);
 	}
 
 	SolidStrongholdFurniture::FItem MakeStorage(
 		const TCHAR* Name,
 		UClass* ActorClass,
+		const int32 Hexes,
 		const int32 Limit,
 		const bool bEnabled,
 		const int32 StorageSlots)
 	{
-		SolidStrongholdFurniture::FItem Item = MakeItem(Name, ActorClass, Limit, bEnabled);
-		Item.StorageSlots = StorageSlots;
-		return Item;
+		return SolidStrongholdFurniture::FItem(Name, ActorClass, Hexes, Limit, bEnabled, StorageSlots);
 	}
+}
+
+SolidStrongholdFurniture::FItem::FItem(
+	const TCHAR* InName,
+	UClass* InActorClass,
+	const int32 InHexes,
+	const int32 InLimit,
+	const bool bInEnabled,
+	const int32 InStorageSlots)
+	: Name(InName)
+	, ActorClass(InActorClass)
+	, StorageSlots(InStorageSlots)
+	, Limit(InLimit)
+	, bEnabled(bInEnabled)
+	, Hexes(InHexes)
+{
+}
+
+int32 SolidStrongholdFurniture::FItem::HexCount() const
+{
+	return Hexes;
+}
+
+bool SolidStrongholdFurniture::FItem::IsStorage() const
+{
+	return StorageSlots > 0;
 }
 
 const TArray<SolidStrongholdFurniture::FItem>& SolidStrongholdFurniture::FurnitureCatalogue()
 {
 	static const TArray<FItem> Catalogue = {
-		MakeItem(TEXT("Fireplace"), ASolidFireplace::StaticClass(), 1, true),
-		MakeItem(TEXT("Bed"), ASolidBed::StaticClass(), 3, true),
-		MakeStorage(TEXT("Chest"), ASolidChest::StaticClass(), 1, true, SolidStorage::Count),
-		MakeItem(TEXT("Small Table"), ASolidSmallTable::StaticClass(), 10, true),
+		MakeItem(TEXT("Fireplace"), ASolidFireplace::StaticClass(), 1, 1, true),
+		MakeItem(TEXT("Bed"), ASolidBed::StaticClass(), 2, 3, true),
+		MakeStorage(TEXT("Chest"), ASolidChest::StaticClass(), 1, 1, true, SolidStorage::Count),
+		MakeItem(TEXT("Small Table"), ASolidSmallTable::StaticClass(), 1, 10, true),
 	};
 	return Catalogue;
-}
-
-int32 SolidStrongholdFurniture::HexCount(const FItem& Item)
-{
-	const ASolidFurnishing* Piece = Item.ActorClass
-		? Cast<ASolidFurnishing>(Item.ActorClass->GetDefaultObject())
-		: nullptr;
-	return Piece ? Piece->HexCount() : 1;
 }
 
 TArray<SolidStrongholdFurniture::FItem> SolidStrongholdFurniture::StartingCatalog()

@@ -389,7 +389,7 @@ bool SolidStrongholdTransition::PlaceOnFloor(
 			return false;
 		}
 
-		if (SolidStrongholdFurniture::HexCount(*Item) >= 2)
+		if (Item->HexCount() >= 2)
 		{
 			int32 Anchor = INDEX_NONE;
 			int32 Span = INDEX_NONE;
@@ -511,7 +511,8 @@ bool SolidStrongholdTransition::CompanyChestOpen(
 	bool bHasChest = false;
 	for (const SolidStrongholdFurniture::FUsed& Piece : State.Furnishings)
 	{
-		if (SolidStrongholdFurniture::IsStorage(SolidStrongholdFurniture::ItemAt(Piece.ItemIndex)))
+		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(Piece.ItemIndex);
+		if (Item && Item->IsStorage())
 		{
 			bHasChest = true;
 			break;

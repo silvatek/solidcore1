@@ -14,11 +14,21 @@ namespace SolidStrongholdFurniture
 {
 	/**
 	 * One kind of furnishing. The actor class is the kind.
-	 * A storage piece holds items.
+	 * The row stores how many floor cells it covers, and how many slots it holds.
 	 * bEnabled on the session's copy is the unlock. The catalogue holds the new-game value.
 	 */
-	struct FItem
+	class FItem
 	{
+	public:
+		FItem() = default;
+		FItem(
+			const TCHAR* InName,
+			UClass* InActorClass,
+			int32 InHexes,
+			int32 InLimit,
+			bool bInEnabled,
+			int32 InStorageSlots = 0);
+
 		const TCHAR* Name = TEXT("");
 		UClass* ActorClass = nullptr;
 		/** How many slots the piece holds. Zero holds nothing. The chest has six. */
@@ -27,10 +37,16 @@ namespace SolidStrongholdFurniture
 		int32 Limit = 1;
 		/** A new game starts from the recipe. The session copy is the flag that changes. */
 		bool bEnabled = false;
-	};
 
-	/** Cells the piece covers. The actor for that row answers. */
-	int32 HexCount(const FItem& Item);
+		/** Cells this kind covers on the floor. */
+		int32 HexCount() const;
+		/** True when this kind holds items. */
+		bool IsStorage() const;
+
+	private:
+		/** Floor cells. One for a fireplace, a chest, and a small table. Two for a bed. */
+		int32 Hexes = 1;
+	};
 
 	/** The catalogue. The session copies this for a new game. */
 	const TArray<FItem>& FurnitureCatalogue();
@@ -43,11 +59,6 @@ namespace SolidStrongholdFurniture
 
 	/** Index of the recipe row whose actor class is Class. */
 	int32 IndexOfActor(const UClass* ActorClass);
-
-	inline bool IsStorage(const FItem* Item)
-	{
-		return Item && Item->StorageSlots > 0;
-	}
 
 	/** A piece placed in a stronghold. ItemIndex is the catalog row. */
 	struct FUsed
@@ -88,7 +99,7 @@ namespace SolidStrongholdFurniture
 		{
 			return nullptr;
 		}
-		if (HexCount(*Item) < 2)
+		if (Item->HexCount() < 2)
 		{
 			return Anchor;
 		}

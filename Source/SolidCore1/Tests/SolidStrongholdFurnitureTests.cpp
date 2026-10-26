@@ -107,7 +107,7 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 	const FLinearColor Ember = Fire->EmberColor();
 	const FLinearColor Beige = BedKind->BeigeColor();
 	const FLinearColor Pillow = BedKind->PillowColor();
-	TestTrue(TEXT("hearth is grey"), FMath::Abs(Stone.R - Stone.G) < 0.05f && Stone.R > 0.3f && Stone.R < 0.6f);
+	TestTrue(TEXT("hearth is light grey"), FMath::Abs(Stone.R - Stone.G) < 0.05f && Stone.R > 0.65f && Stone.R < 0.9f);
 	TestTrue(TEXT("embers are red"), Ember.R > 0.5f && Ember.R > Ember.G * 2.f && Ember.R > Ember.B * 2.f);
 	TestTrue(TEXT("wood is beige"), Beige.R > Beige.G && Beige.G > Beige.B && Beige.B > 0.3f);
 	TestTrue(TEXT("pillow is white"), Pillow.R > 0.9f && Pillow.G > 0.9f && Pillow.B > 0.85f);

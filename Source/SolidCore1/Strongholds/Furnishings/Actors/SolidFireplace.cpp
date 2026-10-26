@@ -172,7 +172,7 @@ float ASolidFireplace::EmberHeightCm() const
 
 FLinearColor ASolidFireplace::StoneColor() const
 {
-	return FLinearColor(0.45f, 0.45f, 0.47f);
+	return FLinearColor(0.78f, 0.78f, 0.80f);
 }
 
 FLinearColor ASolidFireplace::EmberColor() const

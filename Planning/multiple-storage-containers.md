@@ -10,7 +10,7 @@ The player has more than one storage container in a stronghold. Each container k
 
 The chest the company already has still starts with the rusty sword, the old boots, 20 coins, five sticks, and three pitch. Its last cell is empty. A new game still places that one chest, with the fireplace and the bed. A second storage piece on the stronghold's list is another container, and it starts empty.
 
-[Basic furniture management](Done/basic-furniture-management.md) places at most one chest. This story does not raise that limit, and it does not add a furnishing kind.
+[Basic furniture management](Done/basic-furniture-management.md) places at most one chest. This story raises that limit. It does not add a furnishing kind.
 
 ## Acceptance
 
@@ -43,5 +43,5 @@ The chest the company already has still starts with the rusty sword, the old boo
 - The marks are pointer hits on the heading row. They are drawn only when the cycle has two or more containers. The product commit adds the Page Up, Page Down, LB, RB, L1, and R1 rows to the Inventory table in `Content/Controls.md`.
 - `Layout` still takes one `FContainer*`. A null pointer is the page with no container grid. The page copies the open piece's slots into that container, and a drag writes them back onto the piece.
 - The placed list is `FSolidStronghold::Furnishings`. A move carries the pieces, slots included, and leaves the old list empty. `OpenLevel` keeps the company, so the active stronghold's list survives a trip. `PlaceOnFloor` edits cells and does not swap pieces, so the slots stay on the piece.
-- [Basic furniture management](Done/basic-furniture-management.md) still stops at one chest. A chest it adds gets empty slots of that kind's length. A click while arrange mode is on does not open one.
+- A chest added from the browser gets empty slots of that kind's length. A click while arrange mode is on does not open one.
 - Later steps add the second-piece tests: empty start, `/` opening the first, a click opening that piece, the cycle wrapping across every floor, the heading place, a drag that leaves the other container, a cycle that cancels a held drag, one container with no marks, and the containers surviving `Move`.

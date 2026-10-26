@@ -6,7 +6,7 @@ Status: New
 
 One coding agent runs on the Windows checkout. It writes the product change, builds it, and runs the tests. A pass pushes `main`. The agent is the solidcore1-ue worker. It edits the tree the developer plays. The developer plays that checkout. The developer does not pull.
 
-`tools\land.bat` and `tools/buildable.py` stay, with their tests. New product work does not use that queue. The scripts stay so several coding agents can be used again.
+`tools\land.bat` and `tools/buildable.py` stay, with their tests, in case several coding agents are wanted later. That is a future possibility. An agent does not use that queue. It does not push `build/<name>`, and it does not run `tools\land.bat`.
 
 `ue.lock` stays in daily use. Play In Editor, the World Editor, and the chart dump still hold the checkout. The agent waits for `Free` before it builds or tests.
 
@@ -24,8 +24,8 @@ New product work reaches `main` from the one coding agent on the Windows checkou
 - `AGENTS.md`, `AgentBuild.md`, `Planning/README.md`, `CodingGuidelines.md`, and `README.md` say this path. `AgentBuild.md` is the Windows agent's guide. A cloud agent is told to leave product work on this checkout. A cloud agent may still push a story or a process document that stands on `main` and needs no Unreal. That push does not ask for a build.
 - The passages under Invalidated instructions are updated. The passages under Still in force are left.
 - The queue scripts are not edited: `tools/land.bat`, `tools/land.py`, `tools/land_test.py`, `tools/buildable.py`, `tools/buildable_test.py`. The lock scripts are not edited: `tools/ue_lock.py`, `tools/ue_lock_test.py`, `tools/yield-ue.bat`, `tools/free-ue.bat`, `tools/build.bat`, `tools/test.bat`, `tools/pie.bat`, `tools/editor.bat`, `tools/dump-chart.bat`, `tools/agent.bat`. `python -m unittest tools/land_test.py tools/buildable_test.py tools/ue_lock_test.py` still passes.
-- `tools/cloud_agent_check.py` accepts `main` and a `build/` branch. It fails any other branch. It does not ask for a pull request. The failure text leaves product work to the Windows checkout. It does not send that work to `build/<name>`.
-- The docs name the queue as the way back: `Buildable: yes` on the tip, `python tools/buildable.py` to list, `tools\land.bat` to land the oldest waiting tip, the `solidcore1/land` status, and the comment on the pushed commit. When a poll finds nothing waiting, the chat still repeats the latest build. A `build/<name>` tip that is already waiting stays waiting. This story does not land it and does not delete the branch.
+- `tools/cloud_agent_check.py` accepts `main` and a `build/` branch. It fails any other branch. It does not ask for a pull request. Accepting a `build/` branch keeps the scripts usable after a later decision to use them. The failure text leaves product work to the Windows checkout. It tells an agent not to create a `build/<name>` branch.
+- The docs record how the queue scripts work: `Buildable: yes` on the tip, `python tools/buildable.py` to list, `tools\land.bat` to land the oldest waiting tip, the `solidcore1/land` status, and the comment on the pushed commit. When a poll finds nothing waiting, the chat still repeats the latest build. That record says the scripts are kept for a possible later return. It does not permit an agent to use them. A `build/<name>` tip that is already waiting stays waiting. This story does not land it and does not delete the branch.
 - This story adds no game code. The commit that adds this file does not bump `SOLID_BUILD_ID`.
 
 ## Implementation notes
@@ -37,7 +37,7 @@ These passages tell an agent that product work is a `build/<name>` branch, that 
 `AGENTS.md`:
 
 - Workflow. "The builder has already updated it."
-- Workflow. The bullet that a coding agent fetches `main`, pushes `build/<name>`, and does not push that work to `main` or edit `SOLID_BUILD_ID` or `SOLID_BUILD_NOTE`. The queue mechanics in that bullet move to the way-back description: `python tools/buildable.py`, `tools\land.bat`, `Buildable: yes`, the oldest committer time, an equal time using the branch name.
+- Workflow. The bullet that a coding agent fetches `main`, pushes `build/<name>`, and does not push that work to `main` or edit `SOLID_BUILD_ID` or `SOLID_BUILD_NOTE`. The queue mechanics in that bullet move into a record of how the scripts work: `python tools/buildable.py`, `tools\land.bat`, `Buildable: yes`, the oldest committer time, an equal time using the branch name. That record says an agent does not use them. A later return is a separate decision.
 - Workflow. The bullet that a story or process document on product commits the builder has not landed stays on `build/<name>`, with `Buildable: yes`, and the builder lands the document with the code.
 - Workflow. The check bullet that a change needing Unreal moves onto `build/<name>`, and that a document on unlanded product work stays there with `Buildable: yes`.
 - Workflow. The paragraph that work needing Unreal is pushed as `build/<name>` and the builder lands it. `Planning/Done/builder-lands-the-branch.md` stays named as the record of that rollout.
@@ -62,7 +62,7 @@ These passages tell an agent that product work is a `build/<name>` branch, that 
 - The sentence that the builder reads `agent.ok` before `tools\build.bat` and `tools\test.bat`.
 - The Landing section as the worker's own job, including `tools\land.bat` and `SOLID_AGENT_ID` as the builder's id.
 - The paragraph that a coding agent on the cloud VM pushes `build/<name>` for work that needs Unreal, merges `main` before `Buildable: yes`, and does not run `tools\land.bat`, `tools\build.bat`, `tools\test.bat`, the editor, or PIE.
-- The empty-poll sentence stays, inside the way-back description: when a poll finds no buildable branch, the chat repeats the latest build.
+- The empty-poll sentence stays in that record: when a poll finds no buildable branch, the chat repeats the latest build. The record says an agent does not run the poll.
 
 `Planning/README.md`:
 
@@ -81,7 +81,7 @@ These passages tell an agent that product work is a `build/<name>` branch, that 
 `tools/cloud_agent_check.py`:
 
 - `ship_branch_error`. "A change that needs Unreal moves onto build/<name> and pushes that branch." "A story or process documentation commit on top of unlanded product work stays on that branch, and the tip keeps the line Buildable: yes."
-- The docstring on `ship_branch_error` that says `main` and `build/<name>` may be pushed stays true, because a `build/` branch stays legal. The failure text is what changes.
+- The docstring on `ship_branch_error` still says `main` and `build/<name>` may be pushed, so the check does not reject the scripts. The failure text tells an agent not to move work onto `build/<name>`. A later decision is what would allow that branch.
 
 Open stories that hand the build to a second actor:
 
@@ -96,8 +96,8 @@ These mention a cloud agent, the queue, or the build id. They stay.
 - `Source/SolidCore1/Game/SolidBuildId.h` already says to bump `SOLID_BUILD_ID` when the product changes, and that a documentation change or a test change does not. That comment matches this path.
 - `.cursor/environment.json` runs `python3 tools/cloud_agent_check.py` on install. It does not name the builder.
 - `Planning/package-the-game.md` and `Planning/roads-end-on-any-mark.md` say a cloud agent does not cook and does not run the editor. The Windows machine still cooks, and the editor session is still the chart check. Those sentences stay.
-- The queue scripts are not edited, so their own comments stay the queue's description: the opening of `tools/buildable.py` ("Which branch tips the builder should land"), the opening of `tools/land.py`, and the remark at the top of `tools/land.bat`. Living docs point at them as the way back.
-- `tools/cloud_agent_check.py` still requires the workflow section to contain `cursor/<words>-<digits>`, `does not apply to branches or pull requests`, and the phrase that accepts `main` and a `build/` branch. The accept list stays `main` and a `build/` branch.
+- The queue scripts are not edited, so their own comments stay the queue's description: the opening of `tools/buildable.py` ("Which branch tips the builder should land"), the opening of `tools/land.py`, and the remark at the top of `tools/land.bat`. Living docs say those scripts remain for a possible later return, and they tell an agent not to use them.
+- `tools/cloud_agent_check.py` still requires the workflow section to contain `cursor/<words>-<digits>`, `does not apply to branches or pull requests`, and the phrase that accepts `main` and a `build/` branch. The accept list stays `main` and a `build/` branch. The sentence that contains that phrase says the branch is kept for a possible later return, and that an agent does not push one.
 - In `AGENTS.md`, these stay: the harness override, the 3-minute pause, no pull request unless the user asks, a `Plan:` commit, `Done` by agreement, the play wait and the screenshot rules, the lock words, `tools\yield-ue.bat` and `tools\free-ue.bat`, and the rule that this agent does not run PIE. A cloud agent still does not run the editor, automation, or PIE, and Unreal is still not installed on that VM.
 - The Windows agent passes its id to `tools\build.bat`. The same id is the re-entry `tools\test.bat` already allows. The agent releases that id with `tools\free-ue.bat` when the session ends, including when the build or the tests fail. It does not delete `ue.yield`. It does not write `ue.lock` itself.
 - The build note is the first line of the product commit, at most the length `tools/land.py` already keeps. The id is the next `SC1-NNNN`.

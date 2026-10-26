@@ -134,6 +134,9 @@ public:
 	SolidStrongholdFurniture::FPlacedFurnishing* StorageAt(int32 Index);
 	const SolidStrongholdFurniture::FPlacedFurnishing* StorageAt(int32 Index) const;
 
+	/** How many storage pieces this stronghold has. A fireplace and a bed do not count. */
+	int32 StorageCount() const;
+
 	/** True when the current code can build this type at Size. */
 	virtual bool Supported(ESolidStrongholdSize) const { return false; }
 

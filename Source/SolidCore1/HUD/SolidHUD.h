@@ -34,6 +34,12 @@ public:
 	void ReleaseInventory(float X, float Y);
 	void CancelInventoryDrag();
 
+	/**
+	 * Page Up and Page Down while the inventory is open.
+	 * One container stays. A step that lands on another container cancels a held drag.
+	 */
+	void CycleInventoryContainer(int32 Delta);
+
 	/** Company, squad boxes, and battle-plan keys. Drag a name onto a box. */
 	void OpenSquadBuilder();
 	bool IsSquadBuilderOpen() const { return bShowSquadBuilder; }
@@ -289,6 +295,8 @@ protected:
 	/** Inventory boxes drawn last frame, in content pixels, plus where that page sits. */
 	bool bInventoryHitReady = false;
 	bool bInventoryChestOpen = false;
+	/** Which storage container is open. Zero is the first. Closing, and leaving, return to zero. */
+	int32 InventoryContainer = 0;
 	SolidInventory::FPage InventoryPage;
 	float InventoryOriginX = 0.f;
 	float InventoryOriginY = 0.f;

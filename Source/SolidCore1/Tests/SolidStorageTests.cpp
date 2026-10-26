@@ -484,4 +484,114 @@ bool FSolidStorageChestMaterialsTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidStorageContainerCycleTest,
+	"SolidCore1.Inventory.ContainerCycle",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidStorageContainerCycleTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("one container stays"), SolidStorage::StepContainer(0, 1, 1), 0);
+	TestEqual(TEXT("page up on one container stays"), SolidStorage::StepContainer(0, -1, 1), 0);
+	TestEqual(TEXT("no container stays at zero"), SolidStorage::StepContainer(2, 1, 0), 0);
+	TestEqual(TEXT("page down wraps to the first"), SolidStorage::StepContainer(2, 1, 3), 0);
+	TestEqual(TEXT("page up wraps to the last"), SolidStorage::StepContainer(0, -1, 3), 2);
+	TestEqual(
+		TEXT("a repeat takes another step"),
+		SolidStorage::StepContainer(SolidStorage::StepContainer(0, 1, 3), 1, 3),
+		2);
+	TestEqual(
+		TEXT("one container is titled Chest"),
+		SolidStorage::ContainerHeading(1, 1),
+		FString(SolidStorage::ChestTitle));
+	TestEqual(
+		TEXT("the first of two is Chest 1"),
+		SolidStorage::ContainerHeading(1, 2),
+		FString(TEXT("Chest 1")));
+	TestEqual(
+		TEXT("the second of two is Chest 2"),
+		SolidStorage::ContainerHeading(2, 2),
+		FString(TEXT("Chest 2")));
+
+	USolidCompany* Company = NewObject<USolidCompany>();
+	Company->InitializeStartingStronghold();
+	FSolidStronghold* Stronghold = Company->GetStronghold();
+	TestNotNull(TEXT("a new company has a stronghold"), Stronghold);
+	if (!Stronghold)
+	{
+		return false;
+	}
+	TestEqual(TEXT("the cave starts with one chest"), Stronghold->StorageCount(), 1);
+
+	int32 ChestIndex = INDEX_NONE;
+	const TArray<SolidStrongholdFurniture::FItem>& Catalogue = SolidStrongholdFurniture::FurnitureCatalogue();
+	for (int32 Index = 0; Index < Catalogue.Num(); ++Index)
+	{
+		if (Catalogue[Index].IsStorage())
+		{
+			ChestIndex = Index;
+			break;
+		}
+	}
+	TestTrue(TEXT("the catalogue has a chest"), ChestIndex != INDEX_NONE);
+	if (ChestIndex == INDEX_NONE)
+	{
+		return false;
+	}
+
+	SolidStrongholdFurniture::FPlacedFurnishing Extra;
+	Extra.ItemIndex = ChestIndex;
+	Extra.GiveSlots();
+	Stronghold->Furnishings.Add(Extra);
+	TestEqual(TEXT("the stronghold has two chests"), Stronghold->StorageCount(), 2);
+
+	SolidStrongholdFurniture::FPlacedFurnishing* First = Stronghold->StorageAt(0);
+	const int32 SecondIndex = SolidStorage::StepContainer(0, 1, Stronghold->StorageCount());
+	SolidStrongholdFurniture::FPlacedFurnishing* Second = Stronghold->StorageAt(SecondIndex);
+	TestNotNull(TEXT("the first chest is there"), First);
+	TestNotNull(TEXT("page down lands on the second chest"), Second);
+	if (!First || !Second || Second->Slots.Num() == 0)
+	{
+		return false;
+	}
+	TestTrue(TEXT("the second chest starts empty"), Second->Slots[0].IsEmpty());
+
+	const int32 SwordIndex = SolidStorage::Index(0, 0);
+	const int32 BootIndex = SolidStorage::Index(1, 0);
+	SolidStorage::FContainer FirstHeld = First->Container();
+	SolidInventory::FLoadout Loadout = SolidInventory::StartingLoadout();
+	TestTrue(
+		TEXT("the sword leaves the first chest"),
+		SolidInventory::Move(
+			&FirstHeld,
+			Loadout,
+			SolidStorageTestPrivate::ChestCell(SwordIndex),
+			SolidStorageTestPrivate::Pack(0, 0)));
+	First->SetContainer(FirstHeld);
+
+	SolidStorage::FContainer SecondHeld = Second->Container();
+	TestTrue(
+		TEXT("the sword enters the chest page down landed on"),
+		SolidInventory::Move(
+			&SecondHeld,
+			Loadout,
+			SolidStorageTestPrivate::Pack(0, 0),
+			SolidStorageTestPrivate::ChestCell(SwordIndex)));
+	Second->SetContainer(SecondHeld);
+
+	TestTrue(TEXT("the first chest no longer holds the sword"), First->Container().Slots[SwordIndex].IsEmpty());
+	TestEqual(
+		TEXT("the boots stay in the first chest"),
+		FString(First->Container().Slots[BootIndex].Id()),
+		FString(SolidItemType::IdOldBoots));
+	TestEqual(
+		TEXT("the second chest holds the sword"),
+		FString(Second->Container().Slots[SwordIndex].Id()),
+		FString(SolidItemType::IdRustySword));
+	TestTrue(
+		TEXT("the pack no longer holds the sword"),
+		Loadout.Pack[SolidInventory::PackIndex(0, 0)].IsEmpty());
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

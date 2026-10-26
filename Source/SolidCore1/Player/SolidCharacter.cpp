@@ -848,11 +848,27 @@ bool ASolidCharacter::ArrangeSignUnderPointer() const
 
 void ASolidCharacter::CharacterEditorPrevious()
 {
+	if (ASolidHUD* HUD = GetSolidHUD())
+	{
+		if (HUD->IsInventoryVisible())
+		{
+			HUD->CycleInventoryContainer(-1);
+			return;
+		}
+	}
 	MoveCharacterEditor(-1);
 }
 
 void ASolidCharacter::CharacterEditorNext()
 {
+	if (ASolidHUD* HUD = GetSolidHUD())
+	{
+		if (HUD->IsInventoryVisible())
+		{
+			HUD->CycleInventoryContainer(1);
+			return;
+		}
+	}
 	MoveCharacterEditor(1);
 }
 

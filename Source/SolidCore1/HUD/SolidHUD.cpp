@@ -1033,7 +1033,7 @@ namespace SolidHUDPrivate
 	}
 
 	/** Same oak board as the journal. Worn boxes follow a person. The pack is a grid on the right. */
-	static void DrawInventoryBoard(UCanvas* Canvas, const SolidInventory::FPage& Page)
+	static void DrawInventoryBoard(UCanvas* Canvas, const SolidInventory::FPage& Page, const FString& ChestHeading)
 	{
 		if (!Canvas)
 		{
@@ -1121,7 +1121,7 @@ namespace SolidHUDPrivate
 			DrawInventoryHeading(
 				Canvas,
 				Font,
-				SolidStorage::ChestTitle,
+				ChestHeading,
 				OriginX + Page.ChestX,
 				Page.ChestGridW,
 				OriginY + Page.ChestLabelY,
@@ -2157,6 +2157,7 @@ void ASolidHUD::HandleMenuKey()
 	if (bShowInventory)
 	{
 		bShowInventory = false;
+		InventoryContainer = 0;
 		CancelInventoryDrag();
 		return;
 	}
@@ -2193,6 +2194,7 @@ void ASolidHUD::CloseMenuOverlay()
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowInventory = false;
+	InventoryContainer = 0;
 	CancelInventoryDrag();
 	bShowCharacterEditor = false;
 	bCharacterEditorSkeleton = false;
@@ -2231,6 +2233,7 @@ void ASolidHUD::OpenCharacterEditor()
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowInventory = false;
+	InventoryContainer = 0;
 	bShowCharacterEditor = true;
 	CharacterEditorIndex = 0;
 	CharacterEditorSlider = 0;
@@ -2522,6 +2525,7 @@ void ASolidHUD::OpenSquadBuilder()
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowInventory = false;
+	InventoryContainer = 0;
 	CancelInventoryDrag();
 	bShowCharacterEditor = false;
 	bCharacterEditorSkeleton = false;
@@ -2618,6 +2622,7 @@ void ASolidHUD::OpenPortal()
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowInventory = false;
+	InventoryContainer = 0;
 	ForgetSquadBuilderPage();
 	bShowCharacterEditor = false;
 	bCharacterEditorSkeleton = false;
@@ -2690,6 +2695,7 @@ void ASolidHUD::ToggleInventory()
 	if (bShowInventory)
 	{
 		bShowInventory = false;
+		InventoryContainer = 0;
 		CancelInventoryDrag();
 		return;
 	}
@@ -2705,7 +2711,38 @@ void ASolidHUD::ToggleInventory()
 	SkeletonBoneTip.Reset();
 	EndCharacterEditorSliderDrag();
 	SolidHUDPrivate::ForgetChoicePointerRows(this);
+	InventoryContainer = 0;
 	bShowInventory = true;
+}
+
+void ASolidHUD::CycleInventoryContainer(const int32 Delta)
+{
+	if (!bShowInventory || Delta == 0)
+	{
+		return;
+	}
+	UWorld* World = GetWorld();
+	const ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+	const USolidGameState* State = GameMode ? GameMode->GetConfiguration() : nullptr;
+	const USolidCompany* Company = GameMode ? GameMode->GetCompany() : nullptr;
+	const FSolidStronghold* Stronghold = Company ? Company->GetStronghold() : nullptr;
+	const bool bShowChest = GameMode && State
+		&& SolidStrongholdTransition::CompanyChestOpen(
+			*State,
+			Stronghold,
+			GameMode->IsInStronghold());
+	const int32 Count = bShowChest && Stronghold ? Stronghold->StorageCount() : 0;
+	if (Count <= 1)
+	{
+		return;
+	}
+	const int32 Next = SolidStorage::StepContainer(InventoryContainer, Delta, Count);
+	if (Next == InventoryContainer)
+	{
+		return;
+	}
+	CancelInventoryDrag();
+	InventoryContainer = Next;
 }
 
 void ASolidHUD::CancelInventoryDrag()
@@ -2755,7 +2792,7 @@ void ASolidHUD::PressInventory(const float X, const float Y)
 		{
 			if (const FSolidStronghold* Stronghold = Company->GetStronghold())
 			{
-				if (const SolidStrongholdFurniture::FPlacedFurnishing* Piece = Stronghold->StorageAt(0))
+				if (const SolidStrongholdFurniture::FPlacedFurnishing* Piece = Stronghold->StorageAt(InventoryContainer))
 				{
 					Chest = Piece->Container();
 					ChestPtr = &Chest;
@@ -2816,7 +2853,7 @@ void ASolidHUD::ReleaseInventory(const float X, const float Y)
 	{
 		return;
 	}
-	GameMode->MoveCarriedItem(From, Hit, bChestOpen);
+	GameMode->MoveCarriedItem(From, Hit, bChestOpen, InventoryContainer);
 }
 
 void ASolidHUD::DrawInventoryPopup()
@@ -2841,10 +2878,22 @@ void ASolidHUD::DrawInventoryPopup()
 			*State,
 			Stronghold,
 			GameMode->IsInStronghold());
-	const SolidStrongholdFurniture::FPlacedFurnishing* Piece = bShowChest && Stronghold ? Stronghold->StorageAt(0) : nullptr;
+	const int32 StorageCount = bShowChest && Stronghold ? Stronghold->StorageCount() : 0;
+	if (!bShowChest || StorageCount <= 0)
+	{
+		InventoryContainer = 0;
+	}
+	else if (InventoryContainer < 0 || InventoryContainer >= StorageCount)
+	{
+		InventoryContainer = 0;
+	}
+	const SolidStrongholdFurniture::FPlacedFurnishing* Piece = StorageCount > 0 && Stronghold
+		? Stronghold->StorageAt(InventoryContainer)
+		: nullptr;
 	const SolidStorage::FContainer Chest = Piece ? Piece->Container() : SolidStorage::FContainer();
 	SolidInventory::FPage Page;
 	SolidInventory::Layout(State->Inventory, Page, Piece ? &Chest : nullptr);
+	const FString ChestHeading = SolidStorage::ContainerHeading(InventoryContainer + 1, StorageCount);
 
 	float LineHeight = 16.f;
 	if (Canvas)
@@ -2866,7 +2915,7 @@ void ASolidHUD::DrawInventoryPopup()
 		bInventoryHitReady = true;
 	}
 
-	SolidHUDPrivate::DrawInventoryBoard(Canvas, Page);
+	SolidHUDPrivate::DrawInventoryBoard(Canvas, Page, ChestHeading);
 }
 
 void ASolidHUD::DrawJournalPopup() const
@@ -2930,6 +2979,7 @@ void ASolidHUD::OpenExitConfirm()
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowInventory = false;
+	InventoryContainer = 0;
 	CancelInventoryDrag();
 	ForgetSquadBuilderPage();
 	bShowCharacterEditor = false;
@@ -3072,6 +3122,7 @@ void ASolidHUD::OpenStrongholdChoice(
 	bShowCredits = false;
 	bShowJournal = false;
 	bShowInventory = false;
+	InventoryContainer = 0;
 	ForgetSquadBuilderPage();
 	bShowCharacterEditor = false;
 	bCharacterEditorSkeleton = false;

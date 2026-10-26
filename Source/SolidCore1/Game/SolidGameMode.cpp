@@ -177,7 +177,8 @@ int32 ASolidGameMode::GetMaxSquadSize() const
 bool ASolidGameMode::MoveCarriedItem(
 	const SolidInventory::FSlotHit& From,
 	const SolidInventory::FSlotHit& To,
-	const bool bChestOpen)
+	const bool bChestOpen,
+	const int32 ContainerIndex)
 {
 	USolidGameState* State = GetConfiguration();
 	if (!State)
@@ -191,7 +192,7 @@ bool ASolidGameMode::MoveCarriedItem(
 		{
 			if (FSolidStronghold* Stronghold = Company->GetStronghold())
 			{
-				Piece = Stronghold->StorageAt(0);
+				Piece = Stronghold->StorageAt(ContainerIndex);
 			}
 		}
 	}

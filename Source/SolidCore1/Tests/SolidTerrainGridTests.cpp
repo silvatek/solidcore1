@@ -23,7 +23,7 @@ namespace
 		return Text;
 	}
 
-	void SetCell(FString& Grid, const int32 Col, const int32 Row, const TCHAR Marker)
+	void SetTerrainCell(FString& Grid, const int32 Col, const int32 Row, const TCHAR Marker)
 	{
 		Grid[Row * (USolidWorldChart::MapWidth + 1) + Col] = Marker;
 	}
@@ -72,8 +72,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidTerrainGridPointsDifferTest::RunTest(const FString& Parameters)
 {
 	FString Pond = GrassGrid();
-	SetCell(Pond, 10, 10, USolidWorldChart::RiverMarker);
-	SetCell(Pond, 9, 10, TEXT('M'));
+	SetTerrainCell(Pond, 10, 10, USolidWorldChart::RiverMarker);
+	SetTerrainCell(Pond, 9, 10, TEXT('M'));
 	USolidWorldChart* River = NewObject<USolidWorldChart>();
 	if (!TestNotNull(TEXT("pond chart"), River) || !TestTrue(TEXT("pond loads"), River->LoadFromString(Pond)))
 	{
@@ -89,7 +89,7 @@ bool FSolidTerrainGridPointsDifferTest::RunTest(const FString& Parameters)
 	FString Mouth = GrassGrid();
 	const int32 MouthCol = 10;
 	const int32 MouthRow = 10;
-	SetCell(Mouth, MouthCol, MouthRow, USolidWorldChart::LocationMarker);
+	SetTerrainCell(Mouth, MouthCol, MouthRow, USolidWorldChart::LocationMarker);
 	Mouth += TEXT("! 11,11 = LairEntrance (Iglin tunnels)\n");
 	USolidWorldChart* Lair = NewObject<USolidWorldChart>();
 	if (!TestNotNull(TEXT("mouth chart"), Lair) || !TestTrue(TEXT("mouth loads"), Lair->LoadFromString(Mouth)))
@@ -186,8 +186,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidTerrainGridRoadStripTest::RunTest(const FString& Parameters)
 {
 	FString Grid = GrassGrid();
-	SetCell(Grid, 4, 12, USolidWorldChart::LocationMarker);
-	SetCell(Grid, 12, 12, USolidWorldChart::LocationMarker);
+	SetTerrainCell(Grid, 4, 12, USolidWorldChart::LocationMarker);
+	SetTerrainCell(Grid, 12, 12, USolidWorldChart::LocationMarker);
 	Grid += TEXT("! 13,5 = Town Iglin\n! 13,13 = Town Relion\nRoad: Iglin -> Relion, trail\n");
 	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
 	if (!TestNotNull(TEXT("trail chart"), Chart) || !TestTrue(TEXT("trail loads"), Chart->LoadFromString(Grid)))
@@ -479,8 +479,8 @@ bool FSolidTerrainGridPointBrushTest::RunTest(const FString& Parameters)
 	BiomeIs(*this, TEXT("the note point stays grassland"), Chart->GetPointBiome(NotePoint), ESolidBiome::Grassland);
 
 	FString Road = GrassGrid();
-	SetCell(Road, 4, 12, USolidWorldChart::LocationMarker);
-	SetCell(Road, 12, 12, USolidWorldChart::LocationMarker);
+	SetTerrainCell(Road, 4, 12, USolidWorldChart::LocationMarker);
+	SetTerrainCell(Road, 12, 12, USolidWorldChart::LocationMarker);
 	Road += TEXT("! 13,5 = Town Iglin\n! 13,13 = Town Relion\nRoad: Iglin -> Relion, trail\n");
 	USolidWorldChart* Trail = NewObject<USolidWorldChart>();
 	if (!TestNotNull(TEXT("trail chart"), Trail) || !TestTrue(TEXT("trail loads"), Trail->LoadFromString(Road)))

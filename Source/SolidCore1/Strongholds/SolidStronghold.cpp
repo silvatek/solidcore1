@@ -529,6 +529,20 @@ const SolidStrongholdFurniture::FPlacedFurnishing* FSolidStronghold::StorageAt(c
 	return nullptr;
 }
 
+int32 FSolidStronghold::StorageCount() const
+{
+	int32 Seen = 0;
+	for (const SolidStrongholdFurniture::FPlacedFurnishing& Piece : Furnishings)
+	{
+		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(Piece.ItemIndex);
+		if (Item && Item->IsStorage())
+		{
+			++Seen;
+		}
+	}
+	return Seen;
+}
+
 bool SolidStrongholdTransition::CompanyChestOpen(
 	const USolidGameState& State,
 	const FSolidStronghold* Active,

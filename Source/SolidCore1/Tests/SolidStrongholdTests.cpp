@@ -26,7 +26,7 @@ namespace
 		return Text;
 	}
 
-	void SetCell(FString& Grid, const int32 Col, const int32 Row, const TCHAR Marker)
+	void SetStrongholdCell(FString& Grid, const int32 Col, const int32 Row, const TCHAR Marker)
 	{
 		Grid[Row * (USolidWorldChart::MapWidth + 1) + Col] = Marker;
 	}
@@ -229,8 +229,8 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 
 	{
 		FString Grid = MountainGrid();
-		SetCell(Grid, 10, 10, USolidWorldChart::LocationMarker);
-		SetCell(Grid, 9, 10, USolidWorldChart::GrassMarker);
+		SetStrongholdCell(Grid, 10, 10, USolidWorldChart::LocationMarker);
+		SetStrongholdCell(Grid, 9, 10, USolidWorldChart::GrassMarker);
 		Grid += TEXT("! 11,11 = Stronghold (MeagreDungeon)\n");
 		USolidWorldChart* Map = NewObject<USolidWorldChart>();
 		TestTrue(TEXT("east grass loads"), Map->LoadFromString(Grid));
@@ -255,7 +255,7 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 
 	{
 		FString Grid = MountainGrid();
-		SetCell(Grid, 10, 10, TEXT('Q'));
+		SetStrongholdCell(Grid, 10, 10, TEXT('Q'));
 		USolidWorldChart* Map = NewObject<USolidWorldChart>();
 		TestTrue(TEXT("unknown letter loads"), Map->LoadFromString(Grid));
 		TestEqual(
@@ -266,7 +266,7 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 
 	{
 		FString Grid = MountainGrid();
-		SetCell(Grid, 10, 10, USolidWorldChart::LocationMarker);
+		SetStrongholdCell(Grid, 10, 10, USolidWorldChart::LocationMarker);
 		Grid += TEXT("! 11,11 = Stronghold (MeagreDungeon)\n");
 		USolidWorldChart* Map = NewObject<USolidWorldChart>();
 		TestTrue(TEXT("sealed cave loads"), Map->LoadFromString(Grid));
@@ -279,9 +279,9 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 
 	{
 		FString Grid = MountainGrid();
-		SetCell(Grid, 10, 10, USolidWorldChart::LocationMarker);
-		SetCell(Grid, 10, 9, USolidWorldChart::GrassMarker);
-		SetCell(Grid, 9, 10, USolidWorldChart::GrassMarker);
+		SetStrongholdCell(Grid, 10, 10, USolidWorldChart::LocationMarker);
+		SetStrongholdCell(Grid, 10, 9, USolidWorldChart::GrassMarker);
+		SetStrongholdCell(Grid, 9, 10, USolidWorldChart::GrassMarker);
 		Grid += TEXT("! 11,11 = Stronghold (MeagreDungeon)\n");
 		USolidWorldChart* Map = NewObject<USolidWorldChart>();
 		TestTrue(TEXT("two grass faces load"), Map->LoadFromString(Grid));

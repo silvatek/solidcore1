@@ -152,12 +152,13 @@ public:
 
 	/**
 	 * Drag between worn boxes, pack cells, and, when the chest is open, its cells.
-	 * An occupied destination swaps. The same slot does nothing.
+	 * ContainerIndex is that storage container. Zero is the first. An occupied destination swaps.
 	 */
 	bool MoveCarriedItem(
 		const SolidInventory::FSlotHit& From,
 		const SolidInventory::FSlotHit& To,
-		bool bChestOpen);
+		bool bChestOpen,
+		int32 ContainerIndex);
 
 	/** Press the Craft button. Spends the recipe and puts one result in the pack. */
 	bool CraftFromInventory();

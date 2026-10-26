@@ -236,15 +236,6 @@ bool FSolidTerrainGridShippedChartTest::RunTest(const FString& Parameters)
 		}
 	}
 	TestEqual(TEXT("the shipped copy has no road points"), RoadPoints, 0);
-
-	FSolidWorldLocation Start;
-	if (!TestTrue(TEXT("Iglin is on the chart"), Chart->FindLocation(SolidTowns::Iglin, Start)) || Start.Cells.Num() == 0)
-	{
-		return false;
-	}
-	const FIntPoint Town = Start.Cells[0];
-	BiomeIs(*this, TEXT("the start town point is town"), Chart->GetPointBiomeAtCell(Town.X, Town.Y), ESolidBiome::Town);
-	BiomeIs(*this, TEXT("the north-east sea point is sea"), Chart->GetPointBiomeAtCell(0, 0), ESolidBiome::Sea);
 	return true;
 }
 

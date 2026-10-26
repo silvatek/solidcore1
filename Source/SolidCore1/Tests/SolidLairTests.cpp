@@ -316,10 +316,6 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 			TEXT("the mouth cell is mountain"),
 			static_cast<uint8>(Shipped->GetBiomeAtCell(Entrance.Cell.X, Entrance.Cell.Y)),
 			static_cast<uint8>(ESolidBiome::Mountain));
-		TestEqual(
-			TEXT("the face is grass"),
-			static_cast<uint8>(Shipped->GetBiomeAtCell(Entrance.GrassCell.X, Entrance.GrassCell.Y)),
-			static_cast<uint8>(ESolidBiome::Grassland));
 		FVector2D World = FVector2D::ZeroVector;
 		TestTrue(TEXT("mouth cell projects"), Shipped->CellToWorldXY(Entrance.Cell, ShippedMin, ShippedMax, World));
 		if (Entrance.EndMarker == USolidWorldChart::XMarker)

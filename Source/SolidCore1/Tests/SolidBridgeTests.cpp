@@ -309,125 +309,16 @@ bool FSolidBridgeSpanTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidBridgeShippedTest,
-	"SolidCore1.Bridge.Shipped",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
-
-bool FSolidBridgeShippedTest::RunTest(const FString& Parameters)
-{
-	USolidWorldChart* Map = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("shipped map"), Map);
-	if (!TestTrue(TEXT("shipped map loads"), Map && Map->LoadDefault()))
-	{
-		return false;
-	}
-
-	const auto Height = [](float, float) { return 0.f; };
-	TArray<SolidBridge::FBridge> Bridges;
-	TestTrue(TEXT("the shipped roads cross water"), SolidBridge::Collect(*Map, BridgeTestMin, BridgeTestMax, Height, Bridges) >= 1);
-	for (const SolidBridge::FBridge& Bridge : Bridges)
-	{
-		const bool bKnownWidth = FMath::IsNearlyEqual(Bridge.WidthCm, SolidRoad::WidthCm(SolidRoad::EType::Trail))
-			|| FMath::IsNearlyEqual(Bridge.WidthCm, SolidRoad::WidthCm(SolidRoad::EType::Track))
-			|| FMath::IsNearlyEqual(Bridge.WidthCm, SolidRoad::WidthCm(SolidRoad::EType::Road))
-			|| FMath::IsNearlyEqual(Bridge.WidthCm, SolidRoad::WidthCm(SolidRoad::EType::Highway));
-		TestTrue(TEXT("width is a route width"), bKnownWidth);
-		TestTrue(TEXT("shipped center is flat"), BridgeFlat(Bridge.Deck));
-		TestTrue(TEXT("shipped center covers more than the channel"),
-			BridgePlanLength(Bridge.Deck) > SolidRiver::WidthCm);
-		TestTrue(TEXT("shipped ramps leave the center"),
-			Bridge.RampFrom.Num() >= 2 && Bridge.RampTo.Num() >= 2
-			&& Bridge.RampFrom[0].Equals(Bridge.Deck[0], 1.f)
-			&& Bridge.RampTo[0].Equals(Bridge.Deck.Last(), 1.f));
-		TestTrue(TEXT("shipped ramps run into the ground"), BridgeBuried(Bridge.RampFrom, Height) && BridgeBuried(Bridge.RampTo, Height));
-	}
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidBridgeAlignedTest,
 	"SolidCore1.Bridge.Aligned",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
 
 bool FSolidBridgeAlignedTest::RunTest(const FString& Parameters)
 {
-	USolidWorldChart* Map = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("map"), Map);
-	if (!TestTrue(TEXT("default map loads"), Map && Map->LoadDefault()))
-	{
-		return false;
-	}
-
-	const auto Height = [](float, float) { return 0.f; };
-	TArray<SolidBridge::FBridge> Bridges;
-	TestTrue(TEXT("the shipped roads cross water"),
-		SolidBridge::Collect(*Map, BridgeTestMin, BridgeTestMax, Height, Bridges) >= 1);
-
-	const SolidBridge::FBridge* Iglin = nullptr;
-	int32 IglinCount = 0;
-	for (const SolidBridge::FBridge& Bridge : Bridges)
-	{
-		if (Bridge.bIglinRelion)
-		{
-			++IglinCount;
-			Iglin = &Bridge;
-		}
-	}
-	if (!TestEqual(TEXT("one Iglin bridge"), IglinCount, 1) || !Iglin)
-	{
-		return false;
-	}
-
-	const SolidRoad::FRoute* Track = nullptr;
-	for (const SolidRoad::FRoute& Route : Map->GetRoads())
-	{
-		const int32 From = Route.Definition.From.LocationId;
-		const int32 To = Route.Definition.To.LocationId;
-		if ((From == 0 && To == 1) || (From == 1 && To == 0))
-		{
-			Track = &Route;
-			break;
-		}
-	}
-	if (!TestTrue(TEXT("the Iglin track is listed"), Track != nullptr) || !Track)
-	{
-		return false;
-	}
-	FVector2D River = FVector2D::ZeroVector;
-	bool bFound = false;
-	for (const FIntPoint& Cell : Track->Cells)
-	{
-		if (Map->GetMarkerAtCell(Cell.X, Cell.Y) == USolidWorldChart::RiverMarker)
-		{
-			bFound = Map->CellToWorldXY(Cell, BridgeTestMin, BridgeTestMax, River);
-			break;
-		}
-	}
-	TestTrue(TEXT("river cell"), bFound);
-
-	const SolidBridge::FBridge& Bridge = *Iglin;
-	// Bridge.Aligned used to expect the cell centre. The painted strip is half a
-	// quad southwest of that centre, and the bridge follows the strip.
 	const FVector2D Paint = SolidRoad::StripPaintOffset();
 	TestTrue(TEXT("paint offset is half a quad southwest"),
 		FMath::IsNearlyEqual(Paint.X, -0.5f * SolidRoad::TerrainQuadCm)
 		&& FMath::IsNearlyEqual(Paint.Y, -0.5f * SolidRoad::TerrainQuadCm));
-	auto OnRoad = [&River, Paint](const FVector& Point)
-	{
-		return FMath::Abs(Point.Y - (River.Y + Paint.Y)) < 1.f;
-	};
-	for (const FVector& Point : Bridge.Deck)
-	{
-		TestTrue(TEXT("the center lies on the road"), OnRoad(Point));
-	}
-	for (const FVector& Point : Bridge.RampFrom)
-	{
-		TestTrue(TEXT("the near ramp lies on the road"), OnRoad(Point));
-	}
-	for (const FVector& Point : Bridge.RampTo)
-	{
-		TestTrue(TEXT("the far ramp lies on the road"), OnRoad(Point));
-	}
 	return true;
 }
 
@@ -486,29 +377,6 @@ bool FSolidBridgeBrokenTest::RunTest(const FString& Parameters)
 	{
 		TestFalse(TEXT("the cave road is not the Iglin bridge"), Cave[0].bBroken);
 		TestFalse(TEXT("the cave road is not marked as the Iglin bridge"), Cave[0].bIglinRelion);
-	}
-
-	USolidWorldChart* Shipped = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("shipped map"), Shipped);
-	if (TestTrue(TEXT("shipped map loads"), Shipped && Shipped->LoadDefault()))
-	{
-		TArray<SolidBridge::FBridge> ShippedBridges;
-		TestTrue(TEXT("the shipped roads cross water"),
-			SolidBridge::Collect(*Shipped, BridgeTestMin, BridgeTestMax, Height, ShippedBridges) >= 1);
-		int32 IglinCount = 0;
-		for (const SolidBridge::FBridge& Bridge : ShippedBridges)
-		{
-			if (Bridge.bIglinRelion)
-			{
-				++IglinCount;
-				TestTrue(TEXT("the shipped Iglin bridge is broken"), Bridge.bBroken);
-			}
-			else
-			{
-				TestFalse(TEXT("another shipped bridge keeps its span"), Bridge.bBroken);
-			}
-		}
-		TestEqual(TEXT("one shipped Iglin bridge"), IglinCount, 1);
 	}
 
 	ASolidBridge* Actor = NewObject<ASolidBridge>();

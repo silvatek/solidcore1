@@ -174,15 +174,6 @@ bool FSolidStrongholdShippedEntranceTest::RunTest(const FString& Parameters)
 				static_cast<uint8>(Map->GetBiomeAtCell(Col, Row)),
 				static_cast<uint8>(CaveShelf));
 			TestEqual(TEXT("cave is not a town"), Map->GetLocationIdAtCell(Col, Row), INDEX_NONE);
-			const FIntPoint North(Col, Row - 1);
-			TestEqual(
-				TEXT("grass marker north of the cave"),
-				static_cast<int32>(Map->GetMarkerAtCell(North.X, North.Y)),
-				static_cast<int32>(USolidWorldChart::GrassMarker));
-			TestEqual(
-				TEXT("north neighbor is grassland"),
-				static_cast<uint8>(Map->GetBiomeAtCell(North.X, North.Y)),
-				static_cast<uint8>(ESolidBiome::Grassland));
 		}
 	}
 	TestTrue(TEXT("the shipped map has a cave"), CaveCells.Num() > 0);

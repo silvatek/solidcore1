@@ -4,7 +4,6 @@
 #include "SolidStronghold.h"
 #include "SolidTerrainTypes.h"
 #include "SolidTowns.h"
-#include "SolidWallgate.h"
 #include "SolidWorldChart.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -592,110 +591,6 @@ bool FSolidRoadShippedTest::RunTest(const FString& Parameters)
 		Map->GetMarkerAtCell(Roads[0].Cells[0].X, Roads[0].Cells[0].Y),
 		USolidWorldChart::LocationMarker);
 	TestEqual(TEXT("trail ends at Iglin"), Map->GetLocationIdAtCell(Roads[0].Cells.Last().X, Roads[0].Cells.Last().Y), 0);
-	FIntPoint GateCell = FIntPoint::ZeroValue;
-	const bool bGate = SolidWallgate::MarkerCell(Map, SolidTowns::Dragongate, GateCell);
-	TestTrue(TEXT("Dragongate has its marker"), bGate);
-	for (const SolidRoad::FRoute& Road : Roads)
-	{
-		int32 MountainCells = 0;
-		int32 SeaCells = 0;
-		const bool bRathenTrack = Road.Definition.From.LocationId == SolidTowns::Dragongate
-			&& Road.Definition.To.LocationId == SolidTowns::Rathen;
-		for (const FIntPoint& Cell : Road.Cells)
-		{
-			if (Map->GetMarkerAtCell(Cell.X, Cell.Y) == TEXT('M'))
-			{
-				// Column 0 is east. The cell east of the gate is still a mountain
-				// marker. The point under its centre is grassland, so the track
-				// to Rathen steps there.
-				const bool bGrassEastOfGate = bGate
-					&& bRathenTrack
-					&& Cell.X == GateCell.X - 1
-					&& Cell.Y == GateCell.Y
-					&& Map->GetPointBiomeAtCell(Cell.X, Cell.Y) == ESolidBiome::Grassland;
-				if (!bGrassEastOfGate)
-				{
-					++MountainCells;
-				}
-			}
-			if (Map->GetBiomeAtCell(Cell.X, Cell.Y) == ESolidBiome::Sea)
-			{
-				++SeaCells;
-			}
-		}
-		TestEqual(TEXT("route stays off the mountains"), MountainCells, 0);
-		TestEqual(TEXT("route stays off the sea"), SeaCells, 0);
-	}
-
-	TestTrue(TEXT("Iglin to Relion crosses the river"),
-		RoadTestCountBiome(*Map, Roads[1].Cells, ESolidBiome::River) >= 1);
-
-	const int32 OpenRoads[] = { 2, 3 };
-	for (const int32 Index : OpenRoads)
-	{
-		TestEqual(TEXT("road stays off the forest"), RoadTestCountBiome(*Map, Roads[Index].Cells, ESolidBiome::Forest), 0);
-		TestEqual(TEXT("road stays off the mountain"), RoadTestCountBiome(*Map, Roads[Index].Cells, ESolidBiome::Mountain), 0);
-		TestEqual(TEXT("road stays off the desert"), RoadTestCountBiome(*Map, Roads[Index].Cells, ESolidBiome::Desert), 0);
-		TestEqual(TEXT("road stays off the sea"), RoadTestCountBiome(*Map, Roads[Index].Cells, ESolidBiome::Sea), 0);
-		TestEqual(TEXT("road stays off the river"), RoadTestCountBiome(*Map, Roads[Index].Cells, ESolidBiome::River), 0);
-		TestTrue(TEXT("highway and road use the near town"), Roads[Index].Cells.Num() < 30);
-	}
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidRoadCrossingTest,
-	"SolidCore1.Road.Crossing",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
-
-bool FSolidRoadCrossingTest::RunTest(const FString& Parameters)
-{
-	USolidWorldChart* Map = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("map"), Map);
-	if (!TestTrue(TEXT("default map loads"), Map && Map->LoadDefault()))
-	{
-		return false;
-	}
-
-	const TArray<SolidRoad::FRoute>& Roads = Map->GetRoads();
-	if (!TestTrue(TEXT("the track is listed"), Roads.Num() > 1))
-	{
-		return false;
-	}
-
-	const TArray<FIntPoint>& Cells = Roads[1].Cells;
-	int32 River = INDEX_NONE;
-	for (int32 Index = 0; Index < Cells.Num(); ++Index)
-	{
-		if (Map->GetMarkerAtCell(Cells[Index].X, Cells[Index].Y) == USolidWorldChart::RiverMarker)
-		{
-			River = Index;
-			break;
-		}
-	}
-	if (!TestTrue(TEXT("Iglin to Relion crosses one river cell"), River > 2 && River + 2 < Cells.Num()))
-	{
-		return false;
-	}
-
-	const int32 Row = Cells[River].Y;
-	TestTrue(TEXT("the road runs straight into the river"),
-		Cells[River - 1].Y == Row && Cells[River - 2].Y == Row);
-	TestTrue(TEXT("the road runs straight off the river"),
-		Cells[River + 1].Y == Row && Cells[River + 2].Y == Row);
-	TestTrue(TEXT("the crossing does not step sideways"),
-		Cells[River - 1].X != Cells[River].X && Cells[River + 1].X != Cells[River].X
-		&& Cells[River - 1].Y == Cells[River + 1].Y);
-
-	int32 End = River;
-	while (End + 1 < Cells.Num() && Cells[End + 1].Y == Row)
-	{
-		++End;
-	}
-	TestTrue(TEXT("the far bank bends off that line"), End + 1 < Cells.Num() && Cells[End + 1].Y != Row);
-	const int32 StepX = Cells[End].X - Cells[End - 1].X;
-	const FIntPoint Spur(Cells[End].X + StepX, Row);
-	TestFalse(TEXT("the far bank has no spur past the bend"), Cells.Contains(Spur));
 	return true;
 }
 

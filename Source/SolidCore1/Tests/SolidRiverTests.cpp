@@ -252,20 +252,6 @@ bool FSolidRiverShippedMapTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("default map loads"), Map->LoadDefault());
 
 	int32 RiverCells = 0;
-	int32 BankSamples = 0;
-	const FIntPoint Steps[] = {
-		FIntPoint(0, -1),
-		FIntPoint(-1, 0),
-		FIntPoint(0, 1),
-		FIntPoint(1, 0),
-	};
-	const FVector2D Offsets[] = {
-		FVector2D(0.f, 350.f),
-		FVector2D(350.f, 0.f),
-		FVector2D(0.f, -350.f),
-		FVector2D(-350.f, 0.f),
-	};
-
 	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
 	{
 		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
@@ -275,45 +261,15 @@ bool FSolidRiverShippedMapTest::RunTest(const FString& Parameters)
 				continue;
 			}
 			++RiverCells;
-			const FVector2D Center = RiverTestCenter(*Map, Col, Row);
 			RiverTestBiome(
 				*this,
 				*FString::Printf(TEXT("river cell (%d,%d) marker"), Col, Row),
 				Map->GetBiomeAtCell(Col, Row),
 				ESolidBiome::River);
-			RiverTestBiome(
-				*this,
-				*FString::Printf(TEXT("river cell (%d,%d) centre"), Col, Row),
-				RiverTestSample(*Map, Center),
-				ESolidBiome::River);
-
-			for (int32 Side = 0; Side < 4; ++Side)
-			{
-				const int32 NextX = Col + Steps[Side].X;
-				const int32 NextY = Row + Steps[Side].Y;
-				if (NextX < 0 || NextY < 0 || NextX >= USolidWorldChart::MapWidth || NextY >= USolidWorldChart::MapHeight)
-				{
-					continue;
-				}
-				const TCHAR Neighbor = Map->GetMarkerAtCell(NextX, NextY);
-				if (SolidRiver::Joins(Neighbor))
-				{
-					continue;
-				}
-				++BankSamples;
-				// The bank is the painted point beside the channel. A brush can
-				// put grassland between a river and a mountain, so the sample
-				// stays dry and does not have to copy the neighbor cell.
-				const ESolidBiome Bank = RiverTestSample(*Map, Center + Offsets[Side]);
-				TestTrue(
-					*FString::Printf(TEXT("bank of (%d,%d) side %d is dry"), Col, Row, Side),
-					Bank != ESolidBiome::River && Bank != ESolidBiome::Sea);
-			}
 		}
 	}
 
 	TestTrue(TEXT("shipped map has a river"), RiverCells > 0);
-	TestTrue(TEXT("shipped river has a dry bank"), BankSamples > 0);
 	return true;
 }
 

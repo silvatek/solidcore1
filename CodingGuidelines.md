@@ -91,5 +91,6 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 3. New product code ships with tests in the same commit. Prefer a pure-logic test or a `NewObject` unit test. Add a PIE test only when the behavior needs a running world.
 4. Never pass `TObjectPtr<T>` (or a ternary that yields one) to `TestNotNull` / `TestNull`. UE 5.8 cannot deduce `const ValueType*` from it. `GetStaticMesh()` is the usual case. Bind a raw `T*` first, or call `.Get()`.
 5. The builder runs the full suite, filter `SolidCore1`, when it lands a buildable tip. A change in one area can break a test elsewhere. A cloud agent does not run that suite, as `AGENTS.md` says.
+6. A test does not assert the biomes of the shipped world. The chart is painted by hand, and a test that names those cells fails when the paint changes. A behavior that reads biomes uses a chart the test builds. A shipped chart test may check that the asset loads, and where a mark or a road end sits.
 
 An earlier rule shipped a test change as its own buildable tip before the product change, so the tests could run against the current build. That extra landing is too slow with the builder. The test change and the product change ship together.

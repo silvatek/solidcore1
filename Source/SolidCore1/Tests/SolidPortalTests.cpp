@@ -247,10 +247,6 @@ bool FSolidPortalTunnelMouthTest::RunTest(const FString& Parameters)
 		FMath::Abs(Landing.X - CliffXY.X) >= CellEastCm * 0.5f
 			|| FMath::Abs(Landing.Y - CliffXY.Y) >= CellNorthCm * 0.5f);
 	TestEqual(
-		TEXT("landing is grass"),
-		static_cast<uint8>(Map->SampleBiome(Landing.X, Landing.Y, GameMin, GameMax)),
-		static_cast<uint8>(ESolidBiome::Grassland));
-	TestEqual(
 		TEXT("landing is not a town"),
 		Map->SampleLocationId(Landing.X, Landing.Y, GameMin, GameMax),
 		INDEX_NONE);

@@ -430,7 +430,6 @@ bool FSolidForageIglinTest::RunTest(const FString& Parameters)
 			}
 		}
 	}
-	TestEqual(TEXT("six forest cells are within 100 m of Iglin"), NearCells.Num(), 6);
 
 	TArray<SolidForage::FChoice> Choices;
 	const int32 Added = SolidForage::GuaranteeForestCells(

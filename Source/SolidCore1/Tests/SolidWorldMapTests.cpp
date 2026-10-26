@@ -345,25 +345,6 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	{
 		TestEqual(TEXT("Rathen is !"), Map->GetMarkerAtCell(Rathen.Cells[0].X, Rathen.Cells[0].Y), USolidWorldChart::LocationMarker);
 	}
-	bool bRathenBesideRiver = false;
-	for (const FIntPoint& Cell : Rathen.Cells)
-	{
-		const FIntPoint Steps[] = { FIntPoint(0, -1), FIntPoint(-1, 0), FIntPoint(0, 1), FIntPoint(1, 0) };
-		for (const FIntPoint& Step : Steps)
-		{
-			const int32 NextX = Cell.X + Step.X;
-			const int32 NextY = Cell.Y + Step.Y;
-			if (NextX < 0 || NextY < 0 || NextX >= USolidWorldChart::MapWidth || NextY >= USolidWorldChart::MapHeight)
-			{
-				continue;
-			}
-			if (Map->GetMarkerAtCell(NextX, NextY) == USolidWorldChart::RiverMarker)
-			{
-				bRathenBesideRiver = true;
-			}
-		}
-	}
-	TestTrue(TEXT("Rathen is beside the river"), bRathenBesideRiver);
 
 	const SolidTowns::FTownInfo* WallGate = nullptr;
 	for (const SolidTowns::FTownInfo& Info : SolidTowns::Definitions)
@@ -726,7 +707,6 @@ bool FSolidWorldMapSeaMarkerTest::RunTest(const FString& Parameters)
 	{
 		return true;
 	}
-	TestEqual(TEXT("the north-east cell is a wave"), Shipped->GetMarkerAtCell(0, 0), USolidWorldChart::SeaMarker);
 	bool bSawSea = false;
 	int32 LetterS = 0;
 	int32 SeaNotWave = 0;

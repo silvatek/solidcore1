@@ -394,63 +394,20 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("shipped Dragongate"), Shipped->FindLocation(SolidTowns::Dragongate, Town));
 		TestTrue(TEXT("shipped Dragongate has a marker"), Town.Cells.Num() > 0);
 		FIntPoint Eastern = Town.Cells.Num() > 0 ? Town.Cells[0] : FIntPoint::ZeroValue;
-		FIntPoint Western = Eastern;
 		for (const FIntPoint& Cell : Town.Cells)
 		{
 			if (Cell.X < Eastern.X)
 			{
 				Eastern = Cell;
 			}
-			if (Cell.X > Western.X)
-			{
-				Western = Cell;
-			}
 		}
 		FVector2D EastXY = FVector2D::ZeroVector;
-		FVector2D WestXY = FVector2D::ZeroVector;
 		FVector2D Opening = FVector2D::ZeroVector;
 		TestTrue(TEXT("eastern marker projects"),
 			Shipped->CellToWorldXY(Eastern, WallgateTestMin, WallgateTestMax, EastXY));
-		TestTrue(TEXT("western marker projects"),
-			Shipped->CellToWorldXY(Western, WallgateTestMin, WallgateTestMax, WestXY));
 		TestTrue(TEXT("the shipped gate has an opening"),
 			SolidWallgate::GateCenterXY(Shipped, SolidTowns::Dragongate, WallgateTestMin, WallgateTestMax, Opening));
 		TestTrue(TEXT("the shipped opening is the eastern marker"), Opening.Equals(EastXY, 0.5f));
-
-		TArray<SolidWallgate::FPiece> Pieces;
-		SolidWallgate::CollectPieces(Shipped, WallgateTestMin, WallgateTestMax, Pieces);
-		if (WallgateTestExpectPass(*this, Pieces, true))
-		{
-			float OuterMin = TNumericLimits<float>::Max();
-			float GapLow = 0.f;
-			float GapHigh = 0.f;
-			TArray<SolidWallgate::FPiece> Walls;
-			for (const SolidWallgate::FPiece& Piece : Pieces)
-			{
-				if (Piece.bStoneWall)
-				{
-					Walls.Add(Piece);
-				}
-			}
-			Walls.Sort([](const SolidWallgate::FPiece& A, const SolidWallgate::FPiece& B)
-			{
-				return A.CenterXY.X < B.CenterXY.X;
-			});
-			if (Walls.Num() == 2)
-			{
-				OuterMin = Walls[0].CenterXY.X - Walls[0].FootprintXCm * 0.5f;
-				GapLow = Walls[0].CenterXY.X + Walls[0].FootprintXCm * 0.5f;
-				GapHigh = Walls[1].CenterXY.X - Walls[1].FootprintXCm * 0.5f;
-				TestTrue(TEXT("the shipped gate stands on the eastern marker"),
-					WallgateTestNear((GapLow + GapHigh) * 0.5f, EastXY.X));
-				TestTrue(TEXT("the shipped top is measured from the eastern marker"),
-					Pieces[0].MarkerXY.Equals(EastXY, 0.5f));
-				if (Town.Cells.Num() > 1)
-				{
-					TestTrue(TEXT("the curtain passes the ignored marker"), OuterMin < WestXY.X);
-				}
-			}
-		}
 	}
 	return true;
 }

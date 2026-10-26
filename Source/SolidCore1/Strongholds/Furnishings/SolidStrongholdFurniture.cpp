@@ -3,6 +3,7 @@
 #include "Actors/SolidChest.h"
 #include "Actors/SolidFireplace.h"
 #include "Actors/SolidSmallTable.h"
+#include "Inventory/SolidStorage.h"
 #include "Strongholds/SolidStronghold.h"
 
 namespace
@@ -10,49 +11,40 @@ namespace
 	SolidStrongholdFurniture::FItem MakeItem(
 		const TCHAR* Name,
 		UClass* ActorClass,
-		const bool bStorage,
 		const int32 Limit,
 		const bool bEnabled)
 	{
 		SolidStrongholdFurniture::FItem Item;
 		Item.Name = Name;
 		Item.ActorClass = ActorClass;
-		Item.bStorage = bStorage;
+		Item.StorageSlots = 0;
 		Item.Limit = Limit;
 		Item.bEnabled = bEnabled;
 		return Item;
 	}
 
-	SolidStrongholdFurniture::FItem Fireplace()
+	SolidStrongholdFurniture::FItem MakeStorage(
+		const TCHAR* Name,
+		UClass* ActorClass,
+		const int32 Limit,
+		const bool bEnabled,
+		const int32 StorageSlots)
 	{
-		return MakeItem(TEXT("Fireplace"), ASolidFireplace::StaticClass(), false, 1, true);
+		SolidStrongholdFurniture::FItem Item = MakeItem(Name, ActorClass, Limit, bEnabled);
+		Item.StorageSlots = StorageSlots;
+		return Item;
 	}
+}
 
-	SolidStrongholdFurniture::FItem Bed()
-	{
-		return MakeItem(TEXT("Bed"), ASolidBed::StaticClass(), false, 3, true);
-	}
-
-	SolidStrongholdFurniture::FItem Chest()
-	{
-		return MakeItem(TEXT("Chest"), ASolidChest::StaticClass(), true, 1, true);
-	}
-
-	SolidStrongholdFurniture::FItem SmallTable()
-	{
-		return MakeItem(TEXT("Small Table"), ASolidSmallTable::StaticClass(), false, 10, true);
-	}
-
-	const TArray<SolidStrongholdFurniture::FItem>& Recipe()
-	{
-		static const TArray<SolidStrongholdFurniture::FItem> Catalog = {
-			Fireplace(),
-			Bed(),
-			Chest(),
-			SmallTable(),
-		};
-		return Catalog;
-	}
+const TArray<SolidStrongholdFurniture::FItem>& SolidStrongholdFurniture::FurnitureCatalogue()
+{
+	static const TArray<FItem> Catalogue = {
+		MakeItem(TEXT("Fireplace"), ASolidFireplace::StaticClass(), 1, true),
+		MakeItem(TEXT("Bed"), ASolidBed::StaticClass(), 3, true),
+		MakeStorage(TEXT("Chest"), ASolidChest::StaticClass(), 1, true, SolidStorage::Count),
+		MakeItem(TEXT("Small Table"), ASolidSmallTable::StaticClass(), 10, true),
+	};
+	return Catalogue;
 }
 
 int32 SolidStrongholdFurniture::HexCount(const FItem& Item)
@@ -65,21 +57,21 @@ int32 SolidStrongholdFurniture::HexCount(const FItem& Item)
 
 TArray<SolidStrongholdFurniture::FItem> SolidStrongholdFurniture::StartingCatalog()
 {
-	return Recipe();
+	return FurnitureCatalogue();
 }
 
 const SolidStrongholdFurniture::FItem* SolidStrongholdFurniture::ItemAt(const int32 Index)
 {
-	const TArray<FItem>& Catalog = Recipe();
-	return Catalog.IsValidIndex(Index) ? &Catalog[Index] : nullptr;
+	const TArray<FItem>& Catalogue = FurnitureCatalogue();
+	return Catalogue.IsValidIndex(Index) ? &Catalogue[Index] : nullptr;
 }
 
 int32 SolidStrongholdFurniture::IndexOfActor(const UClass* ActorClass)
 {
-	const TArray<FItem>& Catalog = Recipe();
-	for (int32 Index = 0; Index < Catalog.Num(); ++Index)
+	const TArray<FItem>& Catalogue = FurnitureCatalogue();
+	for (int32 Index = 0; Index < Catalogue.Num(); ++Index)
 	{
-		if (Catalog[Index].ActorClass == ActorClass)
+		if (Catalogue[Index].ActorClass == ActorClass)
 		{
 			return Index;
 		}

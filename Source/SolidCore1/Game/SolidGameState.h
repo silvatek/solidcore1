@@ -81,7 +81,7 @@ public:
 	/** Furnishings in the active stronghold. A new game carries the Meagre stronghold's pieces. */
 	TArray<SolidStrongholdFurniture::FUsed> Furnishings = SolidStrongholdFurniture::StartingFurnishings();
 	/**
-	 * This session's furnishing catalog. A new game copies the recipe.
+	 * This session's furnishing catalogue. A new game copies FurnitureCatalogue.
 	 * bEnabled on a row is the unlock for this session.
 	 */
 	TArray<SolidStrongholdFurniture::FItem> FurnishingCatalog;

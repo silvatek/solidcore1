@@ -1,16 +1,16 @@
 # Basic furniture management
 
-Status: In Progress
+Status: Done
 
 ## Story
 
-Do not start this story until [Stronghold type classes](Done/stronghold-type-classes.md) is Done.
+Do not start this story until [Stronghold type classes](stronghold-type-classes.md) is Done.
 
 The player is inside a stronghold. The interior wall carries a sign that reads Arrange furniture. A click on that sign, or `\`, starts arrange mode, and the captain is hidden so the floor is clear to see. The same click, or `\` again, leaves the mode. The pointer highlights the hex under it. A piece on that hex shows its name.
 
 A click or Enter on a piece lifts it. The piece follows the pointer and snaps to the hex under the tip. A click or Enter on cells that can hold it puts it down. While a piece is held, Q, E, and the mouse wheel each turn it by one facing. The wheel does not zoom the camera at all while arrange mode is on. Esc puts a held piece back. Esc with nothing held leaves the mode, and the captain is visible again. While the mode is on, F10 and `/` do nothing, so the main menu and the inventory stay closed. A click in this mode does not walk the captain and does not use the door.
 
-Putting a piece down writes its hex and facing onto the stronghold's list. Leaving and coming back shows that floor. A new game still starts with the fireplace, the bed, and the chest where they already are. Adding a piece is [Add furniture](add-furniture.md). This story does not add one.
+Putting a piece down writes its hex and facing onto the stronghold's list. Leaving and coming back shows that floor. A new game still starts with the fireplace, the bed, and the chest where they already are. Adding a piece is [Add furniture](../add-furniture.md). This story does not add one.
 
 ## Stages
 
@@ -47,9 +47,9 @@ This story is complex. The mode and the sign can be entered and left before a pi
 - Moving a chest keeps the items in its slots. The pack and the worn boxes stay as they were.
 - A placed piece is moved or left where it is. This story does not delete one that is already down.
 - A legal put-down writes that piece's hex and facing onto the stronghold's list. The other pieces on the list stay. Another floor's pieces stay.
-- While the mode is on, a click does not start a walk, and it does not enter or leave through the door. A click on the Arrange furniture sign still leaves the mode. A click does not open a storage container. [Multiple storage containers](multiple-storage-containers.md) opens one only while this mode is off.
+- While the mode is on, a click does not start a walk, and it does not enter or leave through the door. A click on the Arrange furniture sign still leaves the mode. A click does not open a storage container. [Multiple storage containers](../multiple-storage-containers.md) opens one only while this mode is off.
 - Leaving the stronghold ends the mode first. A held piece goes back, and the captain is drawn for the leave. The leave then proceeds as it does now, including Build squad when that page opens on a leave.
-- After the player leaves and comes back, each piece is still on the floor and hex where they put it, with the same facing. A new game has none of those moves. A move to another stronghold still seats the list on that stronghold's ground floor, as [Stronghold transition](Done/stronghold-transition.md) does.
+- After the player leaves and comes back, each piece is still on the floor and hex where they put it, with the same facing. A new game has none of those moves. A move to another stronghold still seats the list on that stronghold's ground floor, as [Stronghold transition](stronghold-transition.md) does.
 - The whole floor the captain is on can be arranged. Another floor of the stronghold is not.
 - This story binds the mouse, `\`, Enter, Esc, Q, E, and the wheel. No number key lifts a kind. Gamepad buttons stay as they are. Focus, confirm, cancel, and rotate are the actions.
 
@@ -62,4 +62,4 @@ This story is complex. The mode and the sign can be entered and left before a pi
 - Hide the captain with `SetActorHiddenInGame`. The pawn stays, so the camera does not jump. His mesh and his capsule do not answer the pointer ray.
 - The placed list is `USolidGameState::Furnishings`. The game instance owns that state, and `OpenLevel` keeps it, the same way it keeps the pack. The starter three from `UsedFurnishings` are the new-game list. A legal put-down writes that one entry: its hex and its facing. Esc and leaving the mode put a held piece back and do not write. The cave and the tower both place this list when the interior is built. BeginPlay may place the starters first; the list passed into the interior replaces them when it differs.
 - The company's stronghold starts at size Meagre and type Dungeon. Its entrance is `SolidStrongholdGrid::MeagreEntranceCell`, and its floor is the fourteen hexes, minus that entrance and the captain's cell. A tower's ground-floor entrance is `SolidTowerStronghold::DoorHexCenter`. The captain's hex is the cell under his pawn when the mode is on. Stairs, landings, and hexes the tower plan already rejects stay unavailable.
-- The chest the company already has keeps `FGameState::CaveChest`. This story does not give a stronghold a second chest. [Stronghold transition](Done/stronghold-transition.md) still seats the list on the new ground floor. [Add furniture](add-furniture.md) is the browser and the limits.
+- The chest the company already has keeps `FGameState::CaveChest`. This story does not give a stronghold a second chest. [Stronghold transition](stronghold-transition.md) still seats the list on the new ground floor. [Add furniture](../add-furniture.md) is the browser and the small table.

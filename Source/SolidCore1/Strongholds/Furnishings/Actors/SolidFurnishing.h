@@ -39,9 +39,10 @@ public:
 
 	virtual void BuildVisuals();
 
-protected:
 	float FloorLiftCm() const;
 	FLinearColor BeigeColor() const;
+
+protected:
 	FLinearColor Shown(const FLinearColor& Color) const;
 
 	UStaticMeshComponent* MakePart(const TCHAR* Name);

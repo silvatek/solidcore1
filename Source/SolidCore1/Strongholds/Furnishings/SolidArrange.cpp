@@ -40,7 +40,8 @@ void FSolidArrange::Open(
 	const bool bInHasEntrance,
 	const SolidStrongholdGrid::FCell& InCaptain,
 	const bool bInHasCaptain,
-	const float InFloorZ)
+	const float InFloorZ,
+	const int32 InLevel)
 {
 	PutBack();
 	LastPlaced = INDEX_NONE;
@@ -51,6 +52,8 @@ void FSolidArrange::Open(
 	Captain = InCaptain;
 	bHasCaptain = bInHasCaptain;
 	FloorHeight = InFloorZ;
+	FloorLevel = InLevel;
+	bNewPiece = false;
 	Held = INDEX_NONE;
 	ClearHover();
 }
@@ -95,6 +98,11 @@ const TCHAR* FSolidArrange::HoverName() const
 		return Item ? Item->Name : TEXT("");
 	}
 	return TEXT("");
+}
+
+bool FSolidArrange::HoverIsPlaced() const
+{
+	return bOn && bHover && PieceOnCell(HoverX, HoverY) != INDEX_NONE;
 }
 
 void FSolidArrange::HighlightHexes(TArray<SolidStrongholdGrid::FHex>& Out) const
@@ -188,6 +196,64 @@ FSolidArrange::EConfirm FSolidArrange::Confirm()
 	return EConfirm::Opened;
 }
 
+bool FSolidArrange::MoveCatalog(const int32 Steps, const int32 RowCount)
+{
+	if (!bOn || !bBrowser || Steps == 0 || RowCount <= 0)
+	{
+		return false;
+	}
+	int32 Next = Highlight + Steps;
+	Next %= RowCount;
+	if (Next < 0)
+	{
+		Next += RowCount;
+	}
+	Highlight = Next;
+	return true;
+}
+
+FSolidArrange::EConfirm FSolidArrange::LiftCatalog(
+	const int32 Row,
+	const TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Counted)
+{
+	if (!bOn || !bBrowser || Held != INDEX_NONE)
+	{
+		return EConfirm::None;
+	}
+	const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(Row);
+	if (!Item)
+	{
+		return EConfirm::None;
+	}
+	int32 Count = 0;
+	for (const SolidStrongholdFurniture::FPlacedFurnishing& Piece : Counted)
+	{
+		if (Piece.ItemIndex == Row)
+		{
+			++Count;
+		}
+	}
+	if (Count >= Item->Limit)
+	{
+		return EConfirm::Refused;
+	}
+
+	SolidStrongholdFurniture::FPlacedFurnishing Added;
+	Added.ItemIndex = Row;
+	Added.Level = FloorLevel;
+	Added.X = BrowserX;
+	Added.Y = BrowserY;
+	Added.RotationDeg = 0.f;
+	Pieces.Add(Added);
+	Held = Pieces.Num() - 1;
+	Home = Added;
+	GhostUsed = Added;
+	bNewPiece = true;
+	LastPlaced = INDEX_NONE;
+	CloseBrowser();
+	return EConfirm::Lifted;
+}
+
 void FSolidArrange::Turn(const int32 Steps)
 {
 	if (!bOn || Held == INDEX_NONE || Steps == 0)
@@ -208,7 +274,15 @@ bool FSolidArrange::PutBack()
 {
 	if (Held != INDEX_NONE)
 	{
-		Pieces[Held] = Home;
+		if (bNewPiece)
+		{
+			Pieces.RemoveAt(Held);
+			bNewPiece = false;
+		}
+		else
+		{
+			Pieces[Held] = Home;
+		}
 		Held = INDEX_NONE;
 		LastPlaced = INDEX_NONE;
 		CloseBrowser();
@@ -225,13 +299,20 @@ bool FSolidArrange::PutBack()
 void FSolidArrange::CloseBrowser()
 {
 	bBrowser = false;
+	Highlight = 0;
 }
 
-bool FSolidArrange::WritePlaced(TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Furnishings) const
+bool FSolidArrange::WritePlaced(TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Furnishings)
 {
 	if (!Pieces.IsValidIndex(LastPlaced))
 	{
 		return false;
+	}
+	if (bNewPiece)
+	{
+		Furnishings.Add(Pieces[LastPlaced]);
+		bNewPiece = false;
+		return true;
 	}
 
 	const SolidStrongholdFurniture::FPlacedFurnishing& Next = Pieces[LastPlaced];

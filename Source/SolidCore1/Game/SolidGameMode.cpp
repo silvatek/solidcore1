@@ -779,7 +779,7 @@ void ASolidGameMode::BindArrangeFloor()
 		Pieces.Add(Piece->GetPlacement());
 		ArrangeActors.Add(Piece);
 	}
-	ArrangeMode.Open(Pieces, Cells, Entrance, bEntrance, CaptainCell, bCaptainCell, FloorZ);
+	ArrangeMode.Open(Pieces, Cells, Entrance, bEntrance, CaptainCell, bCaptainCell, FloorZ, Floor);
 	ApplyArrangeActors();
 }
 
@@ -854,6 +854,7 @@ void ASolidGameMode::ToggleArrangeFurniture(const bool bOverlay)
 			Interior->HideArrangeHighlight();
 		}
 		RefreshArrangeSign();
+		DiscardSpareArrangeActors();
 		ArrangeActors.Reset();
 		ArrangeRoom = nullptr;
 	}
@@ -874,6 +875,7 @@ void ASolidGameMode::LeaveArrangeFurniture()
 		Interior->HideArrangeHighlight();
 	}
 	RefreshArrangeSign();
+	DiscardSpareArrangeActors();
 	ArrangeActors.Reset();
 	ArrangeRoom = nullptr;
 	ApplyArrangeBody();
@@ -906,6 +908,99 @@ void ASolidGameMode::ConfirmArrangeFurniture()
 	ApplyArrangeActors();
 }
 
+void ASolidGameMode::ConfirmArrangeBrowser()
+{
+	if (ArrangeMode.IsBrowserOpen() && !ArrangeMode.HoverIsPlaced())
+	{
+		LiftFurnishingCatalog(ArrangeMode.CatalogHighlight());
+		return;
+	}
+	ConfirmArrangeFurniture();
+}
+
+bool ASolidGameMode::MoveFurnishingBrowser(const int32 Steps)
+{
+	if (!ArrangeMode.IsOn())
+	{
+		return false;
+	}
+	const USolidGameState* State = GetConfiguration();
+	const int32 Rows = (State && State->FurnishingCatalog.Num() > 0)
+		? State->FurnishingCatalog.Num()
+		: SolidStrongholdFurniture::FurnitureCatalogue().Num();
+	return ArrangeMode.MoveCatalog(Steps, Rows);
+}
+
+bool ASolidGameMode::LiftFurnishingCatalog(const int32 Row)
+{
+	if (!ArrangeMode.IsOn())
+	{
+		return false;
+	}
+	USolidCompany* Company = GetCompany();
+	FSolidStronghold* Stronghold = Company ? Company->GetStronghold() : nullptr;
+	const TArray<SolidStrongholdFurniture::FPlacedFurnishing> None;
+	const TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Counted = Stronghold ? Stronghold->Furnishings : None;
+	if (ArrangeMode.LiftCatalog(Row, Counted) != FSolidArrange::EConfirm::Lifted)
+	{
+		return false;
+	}
+	SpawnHeldFurnishing();
+	ApplyArrangeActors();
+	return true;
+}
+
+void ASolidGameMode::SpawnHeldFurnishing()
+{
+	ASolidStrongholdInterior* Interior = ArrangeRoom.Get();
+	UWorld* World = GetWorld();
+	const int32 Held = ArrangeMode.HeldIndex();
+	if (!Interior || !World || Held == INDEX_NONE)
+	{
+		return;
+	}
+	const SolidStrongholdFurniture::FPlacedFurnishing& Used = ArrangeMode.PieceAt(Held);
+	const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(Used.ItemIndex);
+	if (!Item || !Item->ActorClass)
+	{
+		return;
+	}
+	FSolidArrange::FDraw Draw;
+	const bool bDrawn = ArrangeMode.DrawOf(Held, Draw);
+	const FVector Local = bDrawn ? Draw.Local : FVector::ZeroVector;
+	const float Yaw = bDrawn ? Draw.Yaw : Used.RotationDeg;
+	const FTransform ActorXf = Interior->GetActorTransform();
+	const FVector WorldPos = ActorXf.TransformPosition(Local);
+	const FRotator WorldRot = ActorXf.TransformRotation(
+		FRotator(0.f, Yaw, 0.f).Quaternion()).Rotator();
+	const FTransform SpawnXf(WorldRot, WorldPos);
+	ASolidFurnishing* Piece = World->SpawnActorDeferred<ASolidFurnishing>(
+		Item->ActorClass,
+		SpawnXf,
+		Interior,
+		nullptr,
+		ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+	if (!Piece)
+	{
+		return;
+	}
+	Piece->FinishSpawning(SpawnXf);
+	Piece->AttachToActor(Interior, FAttachmentTransformRules::KeepWorldTransform);
+	ArrangeActors.Add(Piece);
+}
+
+void ASolidGameMode::DiscardSpareArrangeActors()
+{
+	while (ArrangeActors.Num() > ArrangeMode.PieceCount())
+	{
+		if (ASolidFurnishing* Piece = ArrangeActors.Last().Get())
+		{
+			Piece->Destroy();
+		}
+		ArrangeActors.Pop(EAllowShrinking::No);
+	}
+}
+
 void ASolidGameMode::TurnArrangeFurniture(const int32 Steps)
 {
 	if (!ArrangeMode.IsOn() || !ArrangeMode.IsHolding() || Steps == 0)
@@ -923,6 +1018,7 @@ bool ASolidGameMode::PutBackArrangeFurniture()
 		return false;
 	}
 	bArrangeOffFloor = false;
+	DiscardSpareArrangeActors();
 	ApplyArrangeActors();
 	return true;
 }

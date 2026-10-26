@@ -42,14 +42,19 @@ Input Actions and the mapping context can be replaced with Content assets on the
 | Leave | Left click the opening or the door | — | — |
 | Cave chest | Drag | — | — |
 | Arrange furniture | `\` or left click the Arrange furniture plate | — | — |
-| Leave arrange mode | `\`, Esc with nothing held, or left click the plate | — | — |
+| Leave arrange mode | `\`, Esc with nothing held and the column closed, or left click the plate | — | — |
+| Open the furnishing column | Left click or Enter on an empty hex | — | — |
+| Move through the column | Up / Down | — | — |
+| Lift a row | Left click the row | — | — |
+| Lift the highlighted kind | Enter, unless the pointer is on a placed piece | — | — |
+| Close the column | Esc | — | — |
 | Lift a piece | Left click or Enter on the piece | — | — |
 | Turn a held piece | Q, E, or the wheel | — | — |
 | Put a held piece down | Left click or Enter on a free hex | — | — |
 | Put a held piece back | Esc | — | — |
 | Wheel while arranging | Turns a held piece. Does not zoom | — | — |
 
-While arrange mode is on, WASD, the left stick, and a click do not move the captain or use the door. F10 and / do nothing. The wheel does not zoom. Q, E, and the wheel turn a piece that is held. Esc puts that piece back. Esc with nothing held leaves the mode. Putting a piece down keeps that hex and facing after the captain leaves and comes back.
+While arrange mode is on, WASD, the left stick, and a click do not move the captain or use the door. F10 and / do nothing. The wheel does not zoom. Q, E, and the wheel turn a piece that is held. Esc puts a piece that was already down back where it was, and discards a piece lifted from the column that was never put down. Esc with the column open closes it and leaves the mode on. Esc with nothing held and the column closed leaves the mode. Putting a piece down keeps that hex and facing after the captain leaves and comes back.
 
 ## Lair
 

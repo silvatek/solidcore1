@@ -144,6 +144,9 @@ public:
 	 */
 	bool SelectChoiceAt(float X, float Y);
 
+	/** The furnishing column row under this point. INDEX_NONE when the column is closed or the point misses. */
+	int32 FurnishingRowAt(float X, float Y) const;
+
 	/** Empty clears the label. Shown beside the pointer while it rests on the cave opening. */
 	void SetCavePassageTip(const FString& Tip);
 	const FString& GetCavePassageTip() const { return CavePassageTip; }
@@ -297,4 +300,7 @@ protected:
 
 	/** The pointer went down on the lit Craft button. */
 	bool bCraftButtonPressed = false;
+
+	/** Furnishing column rows drawn last frame, as X, Y, width, height. */
+	TArray<FVector4> FurnishingRowRects;
 };

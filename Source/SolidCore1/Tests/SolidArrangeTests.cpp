@@ -600,6 +600,98 @@ bool FSolidArrangePlaceTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the upper floor has its own hexes"), Interior->CollectArrangeFloor(1, Upper));
 	TestTrue(TEXT("another floor is a different list"), Upper.Num() > 0);
 
+	const int32 Table = 3;
+	const SolidStrongholdFurniture::FItem* TableItem = SolidStrongholdFurniture::ItemAt(Table);
+	TestNotNull(TEXT("small table is the fourth row"), TableItem);
+	if (!TableItem)
+	{
+		return false;
+	}
+	TestEqual(TEXT("the fourth row is Small Table"), FString(TableItem->Name), FString(TEXT("Small Table")));
+
+	FSolidArrange Column;
+	OpenCave(Column);
+	TestFalse(TEXT("a closed column ignores Up and Down"), Column.MoveCatalog(1, 4));
+	Column.SetHover(1, 0);
+	Column.Confirm();
+	TestEqual(TEXT("the column starts on Fireplace"), Column.CatalogHighlight(), 0);
+	TestTrue(TEXT("Down leaves Fireplace"), Column.MoveCatalog(1, 4));
+	TestEqual(TEXT("Down lands on Bed"), Column.CatalogHighlight(), 1);
+	TestTrue(TEXT("Up returns to Fireplace"), Column.MoveCatalog(-1, 4));
+	TestEqual(TEXT("Up lands on Fireplace"), Column.CatalogHighlight(), 0);
+	TestTrue(TEXT("Up wraps to Small Table"), Column.MoveCatalog(-1, 4));
+	TestEqual(TEXT("the highlight is Small Table"), Column.CatalogHighlight(), 3);
+	Column.SetHover(1, -2);
+	Column.Confirm();
+	TestEqual(TEXT("another empty hex keeps the highlight"), Column.CatalogHighlight(), 3);
+	TestTrue(TEXT("the pointer on an empty hex is not a placed piece"), !Column.HoverIsPlaced());
+	Column.SetHover(2, 0);
+	TestTrue(TEXT("the pointer on the fireplace is a placed piece"), Column.HoverIsPlaced());
+
+	TestEqual(
+		TEXT("the fireplace is already at its limit"),
+		static_cast<int32>(Column.LiftCatalog(0, Starters)),
+		static_cast<int32>(FSolidArrange::EConfirm::Refused));
+	TestTrue(TEXT("a full row leaves the column open"), Column.IsBrowserOpen());
+	TestEqual(TEXT("a refused row adds nothing"), Column.PieceCount(), 3);
+
+	TArray<SolidStrongholdFurniture::FPlacedFurnishing> TenTables = Starters;
+	SolidStrongholdFurniture::FPlacedFurnishing ExtraTable;
+	ExtraTable.ItemIndex = Table;
+	for (int32 Added = 0; Added < 10; ++Added)
+	{
+		TenTables.Add(ExtraTable);
+	}
+	TestEqual(
+		TEXT("ten small tables stop an eleventh"),
+		static_cast<int32>(Column.LiftCatalog(Table, TenTables)),
+		static_cast<int32>(FSolidArrange::EConfirm::Refused));
+
+	TestEqual(
+		TEXT("a small table lifts onto the remembered hex"),
+		static_cast<int32>(Column.LiftCatalog(Table, Starters)),
+		static_cast<int32>(FSolidArrange::EConfirm::Lifted));
+	TestTrue(TEXT("the small table is held"), Column.IsHolding());
+	TestFalse(TEXT("lifting closes the column"), Column.IsBrowserOpen());
+	TestEqual(TEXT("the new piece is the fourth"), Column.PieceCount(), 4);
+	TestEqual(TEXT("the small table uses the remembered column"), Column.PieceAt(3).X, 1);
+	TestEqual(TEXT("the small table uses the remembered row"), Column.PieceAt(3).Y, -2);
+	TestTrue(TEXT("esc discards the small table"), Column.PutBack());
+	TestEqual(TEXT("the discarded table is gone"), Column.PieceCount(), 3);
+	TestFalse(TEXT("nothing is held after the discard"), Column.IsHolding());
+	TestFalse(TEXT("a discarded table is not written"), Column.WritePlaced(TenTables));
+
+	Column.SetHover(1, 0);
+	Column.Confirm();
+	TestEqual(
+		TEXT("the small table lifts again"),
+		static_cast<int32>(Column.LiftCatalog(Table, Starters)),
+		static_cast<int32>(FSolidArrange::EConfirm::Lifted));
+	Column.SetHover(1, 0);
+	TestEqual(
+		TEXT("the small table goes down on the empty hex"),
+		static_cast<int32>(Column.Confirm()),
+		static_cast<int32>(FSolidArrange::EConfirm::Placed));
+	TArray<SolidStrongholdFurniture::FPlacedFurnishing> Written = Starters;
+	TestTrue(TEXT("putting the new piece down writes it"), Column.WritePlaced(Written));
+	TestEqual(TEXT("the list gains the small table"), Written.Num(), 4);
+	TestEqual(TEXT("the added row is the small table"), Written[3].ItemIndex, Table);
+	TestEqual(TEXT("the added table is on column 1"), Written[3].X, 1);
+	TestEqual(TEXT("the added table is on row 0"), Written[3].Y, 0);
+
+	TestEqual(
+		TEXT("a closed column does not lift"),
+		static_cast<int32>(Column.LiftCatalog(1, Starters)),
+		static_cast<int32>(FSolidArrange::EConfirm::None));
+	Column.SetHover(1, -2);
+	Column.Confirm();
+	TestEqual(
+		TEXT("the second bed lifts"),
+		static_cast<int32>(Column.LiftCatalog(1, Starters)),
+		static_cast<int32>(FSolidArrange::EConfirm::Lifted));
+	TestTrue(TEXT("the second bed is held"), Column.IsHolding());
+	Column.PutBack();
+
 	return true;
 }
 

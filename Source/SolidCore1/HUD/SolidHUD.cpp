@@ -1403,12 +1403,15 @@ namespace SolidHUDPrivate
 			Palette.Fill);
 	}
 
-	/** Catalogue names beside the floor. The first row stays highlighted until Up and Down move it. */
+	/** Catalogue names beside the floor. Highlight is the lit row. OutRows receives each row rectangle. */
 	static void DrawFurnishingBrowser(
 		UCanvas* Canvas,
 		UFont* Font,
-		const TArray<SolidStrongholdFurniture::FItem>& Catalog)
+		const TArray<SolidStrongholdFurniture::FItem>& Catalog,
+		const int32 Highlight,
+		TArray<FVector4>& OutRows)
 	{
+		OutRows.Reset();
 		if (!Canvas || Catalog.Num() == 0)
 		{
 			return;
@@ -1449,7 +1452,8 @@ namespace SolidHUDPrivate
 		const float RowX = BoxX + Band;
 		for (int32 Index = 0; Index < Catalog.Num(); ++Index)
 		{
-			const bool bHighlight = Index == 0;
+			const bool bHighlight = Index == Highlight;
+			OutRows.Add(FVector4(RowX, RowY, InnerW, RowH));
 			if (bHighlight)
 			{
 				FillRect(Canvas, RowX, RowY, InnerW, RowH, Palette.Bronze);
@@ -1603,9 +1607,23 @@ bool ASolidHUD::SelectChoiceAt(const float X, const float Y)
 	return false;
 }
 
+int32 ASolidHUD::FurnishingRowAt(const float X, const float Y) const
+{
+	for (int32 Index = 0; Index < FurnishingRowRects.Num(); ++Index)
+	{
+		const FVector4& Row = FurnishingRowRects[Index];
+		if (X >= Row.X && Y >= Row.Y && X < Row.X + Row.Z && Y < Row.Y + Row.W)
+		{
+			return Index;
+		}
+	}
+	return INDEX_NONE;
+}
+
 void ASolidHUD::DrawHUD()
 {
 	Super::DrawHUD();
+	FurnishingRowRects.Reset();
 	bool bRavenSightEnabled = false;
 	if (const UWorld* World = GetWorld())
 	{
@@ -1899,7 +1917,12 @@ void ASolidHUD::DrawHUD()
 						(State && State->FurnishingCatalog.Num() > 0)
 						? State->FurnishingCatalog
 						: SolidStrongholdFurniture::FurnitureCatalogue();
-					SolidHUDPrivate::DrawFurnishingBrowser(Canvas, Font, Rows);
+					SolidHUDPrivate::DrawFurnishingBrowser(
+						Canvas,
+						Font,
+						Rows,
+						GameMode->FurnishingBrowserHighlight(),
+						FurnishingRowRects);
 				}
 			}
 		}

@@ -55,6 +55,10 @@ public:
 	bool IsBrowserOpen() const { return bBrowser; }
 	int32 BrowserColumn() const { return BrowserX; }
 	int32 BrowserRow() const { return BrowserY; }
+	/** Catalogue row lit in the column. The first row is 0. */
+	int32 CatalogHighlight() const { return Highlight; }
+	/** The pointer is on a piece that is already down. */
+	bool HoverIsPlaced() const;
 	int32 HeldIndex() const { return Held; }
 	float FloorZ() const { return FloorHeight; }
 	int32 PieceCount() const { return Pieces.Num(); }
@@ -82,7 +86,8 @@ public:
 		bool bInHasEntrance,
 		const SolidStrongholdGrid::FCell& InCaptain,
 		bool bInHasCaptain,
-		float InFloorZ);
+		float InFloorZ,
+		int32 InLevel = 0);
 
 	void ClearHover();
 
@@ -104,10 +109,24 @@ public:
 	EConfirm Confirm();
 
 	/**
-	 * After a legal put-down, write that piece's cell and facing onto the stronghold list.
-	 * The entry it lifted is the one that changes. A put-back is not written.
+	 * Up and Down while the column is open. Steps wrap through the catalogue.
+	 * A closed column does nothing.
 	 */
-	bool WritePlaced(TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Furnishings) const;
+	bool MoveCatalog(int32 Steps, int32 RowCount);
+
+	/**
+	 * A catalogue row, lifted onto the hex that opened the column.
+	 * Counted is every piece the stronghold holds, on every floor.
+	 * A row at its limit stays in the column and lifts nothing.
+	 */
+	EConfirm LiftCatalog(int32 Row, const TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Counted);
+
+	/**
+	 * After a legal put-down, write that piece's cell and facing onto the stronghold list.
+	 * A piece lifted from the column is added. A piece that was already down is the entry that changes.
+	 * A put-back is not written.
+	 */
+	bool WritePlaced(TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Furnishings);
 
 	/** Q and wheel up are positive. E and wheel down are negative. Nothing held does nothing. */
 	void Turn(int32 Steps);
@@ -154,6 +173,10 @@ private:
 	bool bBrowser = false;
 	int32 BrowserX = 0;
 	int32 BrowserY = 0;
+	int32 Highlight = 0;
+	int32 FloorLevel = 0;
+	/** The held piece was lifted from the column and is not on the stronghold list yet. */
+	bool bNewPiece = false;
 	SolidStrongholdFurniture::FPlacedFurnishing Home;
 	SolidStrongholdFurniture::FPlacedFurnishing GhostUsed;
 };

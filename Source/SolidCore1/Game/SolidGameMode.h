@@ -239,6 +239,21 @@ public:
 	/** An empty hex opened the furnishing column. */
 	bool IsFurnishingBrowserOpen() const { return ArrangeMode.IsBrowserOpen(); }
 
+	/** Catalogue row lit in the column. */
+	int32 FurnishingBrowserHighlight() const { return ArrangeMode.CatalogHighlight(); }
+
+	/** Up and Down. False when the column is closed. */
+	bool MoveFurnishingBrowser(int32 Steps);
+
+	/** A click on a column row. False when that kind is at its limit, or the column is closed. */
+	bool LiftFurnishingCatalog(int32 Row);
+
+	/**
+	 * Enter. Lifts the lit row, unless the pointer is on a piece that is already down.
+	 * Otherwise it is a floor confirm.
+	 */
+	void ConfirmArrangeBrowser();
+
 	/**
 	 * `\` or the Arrange furniture plate.
 	 * bOverlay is a menu, the inventory, the journal, a message, or the squad builder.
@@ -408,6 +423,8 @@ protected:
 	void BindArrangeFloor();
 	void ApplyArrangeActors();
 	void RefreshArrangeSign();
+	void SpawnHeldFurnishing();
+	void DiscardSpareArrangeActors();
 	/** Interior spawned for this tunnel visit. The world keeps the actor alive. */
 	ASolidLairInterior* LairInterior = nullptr;
 	bool bCaptainTravelApplied = false;

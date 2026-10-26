@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0648")
+#define SOLID_BUILD_ID TEXT("SC1-0649")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The furnishing column opens on an empty hex, and the sign reads Done arranging.")
+#define SOLID_BUILD_NOTE TEXT("Up and Down move the furnishing highlight, and a row lifts that piece.")
 #endif

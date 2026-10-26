@@ -1130,6 +1130,19 @@ void ASolidCharacter::TurnCharacterEditorAnticlockwise()
 
 void ASolidCharacter::MainMenuMoveUp()
 {
+	if (IsArrangingFurniture() && !IsMenuOverlayOpen())
+	{
+		if (UWorld* World = GetWorld())
+		{
+			if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+			{
+				if (GameMode->MoveFurnishingBrowser(-1))
+				{
+					return;
+				}
+			}
+		}
+	}
 	if (ASolidHUD* HUD = GetSolidHUD())
 	{
 		if (HUD->IsCharacterEditorOpen())
@@ -1159,6 +1172,19 @@ void ASolidCharacter::MainMenuMoveUp()
 
 void ASolidCharacter::MainMenuMoveDown()
 {
+	if (IsArrangingFurniture() && !IsMenuOverlayOpen())
+	{
+		if (UWorld* World = GetWorld())
+		{
+			if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
+			{
+				if (GameMode->MoveFurnishingBrowser(1))
+				{
+					return;
+				}
+			}
+		}
+	}
 	if (ASolidHUD* HUD = GetSolidHUD())
 	{
 		if (HUD->IsCharacterEditorOpen())
@@ -1427,7 +1453,7 @@ void ASolidCharacter::MainMenuConfirm()
 		{
 			if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 			{
-				GameMode->ConfirmArrangeFurniture();
+				GameMode->ConfirmArrangeBrowser();
 			}
 		}
 		return;
@@ -2397,7 +2423,24 @@ void ASolidCharacter::PollClickMovePress()
 			{
 				if (ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 				{
-					GameMode->ConfirmArrangeFurniture();
+					float RowX = 0.f;
+					float RowY = 0.f;
+					int32 Row = INDEX_NONE;
+					if (ASolidHUD* ArrangeHUD = GetSolidHUD())
+					{
+						if (ReadPointerPosition(RowX, RowY))
+						{
+							Row = ArrangeHUD->FurnishingRowAt(RowX, RowY);
+						}
+					}
+					if (Row != INDEX_NONE)
+					{
+						GameMode->LiftFurnishingCatalog(Row);
+					}
+					else
+					{
+						GameMode->ConfirmArrangeFurniture();
+					}
 				}
 			}
 		}

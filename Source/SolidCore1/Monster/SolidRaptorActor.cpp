@@ -57,5 +57,10 @@ void ASolidRaptor::SetRaptor(const FSolidRaptor& InRaptor)
 
 void ASolidRaptor::BuildVisuals()
 {
+	// The mesh cannot play on a bare object. The capsule is already sized.
+	if (!GetWorld())
+	{
+		return;
+	}
 	Raptor.ApplyVisuals(Body, ActiveIdle);
 }

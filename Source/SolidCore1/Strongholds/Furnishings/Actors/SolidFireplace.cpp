@@ -31,7 +31,8 @@ namespace
 
 		auto AddTri = [&](const FVector& A, const FVector& B, const FVector& C)
 		{
-			FVector Normal = FVector::CrossProduct(B - A, C - A).GetSafeNormal();
+			// Unreal shows this winding from the outside. The cross product points inward.
+			FVector Normal = -FVector::CrossProduct(B - A, C - A).GetSafeNormal();
 			if (Normal.IsNearlyZero())
 			{
 				Normal = FVector::UpVector;
@@ -64,10 +65,10 @@ namespace
 		{
 			const int32 Next = (Index + 1) % 6;
 			const int32 Prev = (Index + 5) % 6;
-			// Outward winding. The opposite order leaves the stone dark and hides the top.
-			AddTri(Bottom[Index], Top[Next], Top[Index]);
-			AddTri(Bottom[Index], Bottom[Next], Top[Next]);
-			AddTri(CenterTop, Top[Prev], Top[Index]);
+			// Clockwise from the outside, the face Unreal shows.
+			AddTri(Bottom[Index], Top[Index], Top[Next]);
+			AddTri(Bottom[Index], Top[Next], Bottom[Next]);
+			AddTri(CenterTop, Top[Index], Top[Prev]);
 		}
 
 		FMeshDescription MeshDescription;

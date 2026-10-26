@@ -5,6 +5,11 @@
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"
 
+ASolidStrongholdInterior::ASolidStrongholdInterior()
+{
+	PrimaryActorTick.bCanEverTick = false;
+}
+
 int32 ASolidStrongholdInterior::ArrangeFloorCount() const
 {
 	return 0;

@@ -2747,8 +2747,23 @@ void ASolidHUD::PressInventory(const float X, const float Y)
 		return;
 	}
 	const USolidGameState& State = *StatePtr;
-	const SolidStorage::FContainer* Chest = bInventoryChestOpen ? &State.CaveChest : nullptr;
-	const FSolidItem* Item = SolidInventory::ItemAt(State.Inventory, Chest, Hit);
+	SolidStorage::FContainer Chest;
+	const SolidStorage::FContainer* ChestPtr = nullptr;
+	if (bInventoryChestOpen)
+	{
+		if (const USolidCompany* Company = GameMode->GetCompany())
+		{
+			if (const FSolidStronghold* Stronghold = Company->GetStronghold())
+			{
+				if (const SolidStrongholdFurniture::FPlacedFurnishing* Piece = Stronghold->StorageAt(0))
+				{
+					Chest = Piece->Container();
+					ChestPtr = &Chest;
+				}
+			}
+		}
+	}
+	const FSolidItem* Item = SolidInventory::ItemAt(State.Inventory, ChestPtr, Hit);
 	if (!Item)
 	{
 		return;
@@ -2820,13 +2835,16 @@ void ASolidHUD::DrawInventoryPopup()
 	}
 
 	const USolidCompany* Company = GameMode ? GameMode->GetCompany() : nullptr;
+	const FSolidStronghold* Stronghold = Company ? Company->GetStronghold() : nullptr;
 	const bool bShowChest = GameMode
 		&& SolidStrongholdTransition::CompanyChestOpen(
 			*State,
-			Company ? Company->GetStronghold() : nullptr,
+			Stronghold,
 			GameMode->IsInStronghold());
+	const SolidStrongholdFurniture::FPlacedFurnishing* Piece = bShowChest && Stronghold ? Stronghold->StorageAt(0) : nullptr;
+	const SolidStorage::FContainer Chest = Piece ? Piece->Container() : SolidStorage::FContainer();
 	SolidInventory::FPage Page;
-	SolidInventory::Layout(State->Inventory, Page, bShowChest ? &State->CaveChest : nullptr);
+	SolidInventory::Layout(State->Inventory, Page, Piece ? &Chest : nullptr);
 
 	float LineHeight = 16.f;
 	if (Canvas)

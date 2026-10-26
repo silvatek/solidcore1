@@ -4,7 +4,6 @@
 #include "UObject/Object.h"
 #include "Events/SolidEvents.h"
 #include "Inventory/SolidInventory.h"
-#include "Inventory/SolidStorage.h"
 #include "Journal/SolidJournal.h"
 #include "SolidStronghold.h"
 #include "Company/SolidCaptain.h"
@@ -64,8 +63,6 @@ public:
 	 * A new game has none. Closing the monster message does not put those piles back.
 	 */
 	TArray<int32> TakenForagePiles;
-	/** The cave chest. It starts with a rusty sword, old boots, coins, sticks, and pitch. Taking an item keeps it out. */
-	SolidStorage::FContainer CaveChest = SolidStorage::StartingCaveChest();
 	/**
 	 * Highest size an event has unlocked. A new game is Meagre, the company base.
 	 * A larger size unlocks every size up to it. Sizes are not skipped.

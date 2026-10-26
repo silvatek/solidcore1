@@ -260,6 +260,7 @@ FSolidArrange::EConfirm FSolidArrange::LiftCatalog(
 	Added.X = BrowserX;
 	Added.Y = BrowserY;
 	Added.RotationDeg = 0.f;
+	Added.GiveSlots();
 	Pieces.Add(Added);
 	Held = Pieces.Num() - 1;
 	Home = Added;

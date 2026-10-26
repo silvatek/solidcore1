@@ -28,7 +28,7 @@ public:
 
 	/**
 	 * The play session's one play state. Created on first ask. OpenLevel keeps this object.
-	 * Inventory, journal, chest, events, previous strongholds, and furnishings live here.
+	 * Inventory, journal, events, and previous strongholds live here.
 	 */
 	USolidGameState* GetConfiguration();
 

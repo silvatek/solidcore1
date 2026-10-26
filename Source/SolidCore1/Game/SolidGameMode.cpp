@@ -184,11 +184,25 @@ bool ASolidGameMode::MoveCarriedItem(
 	{
 		return false;
 	}
-	return SolidInventory::Move(
-		bChestOpen ? &State->CaveChest : nullptr,
-		State->Inventory,
-		From,
-		To);
+	SolidStrongholdFurniture::FPlacedFurnishing* Piece = nullptr;
+	if (bChestOpen)
+	{
+		if (USolidCompany* Company = GetCompany())
+		{
+			if (FSolidStronghold* Stronghold = Company->GetStronghold())
+			{
+				Piece = Stronghold->StorageAt(0);
+			}
+		}
+	}
+	if (!Piece)
+	{
+		return SolidInventory::Move(nullptr, State->Inventory, From, To);
+	}
+	SolidStorage::FContainer Chest = Piece->Container();
+	const bool bMoved = SolidInventory::Move(&Chest, State->Inventory, From, To);
+	Piece->SetContainer(Chest);
+	return bMoved;
 }
 
 bool ASolidGameMode::CraftFromInventory()

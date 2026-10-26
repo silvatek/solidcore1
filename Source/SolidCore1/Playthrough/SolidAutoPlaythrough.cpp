@@ -616,6 +616,13 @@ namespace
 		return nullptr;
 	}
 
+	SolidStrongholdFurniture::FPlacedFurnishing* CompanyChest(ASolidGameMode& Mode)
+	{
+		USolidCompany* Company = Mode.GetCompany();
+		FSolidStronghold* Stronghold = Company ? Company->GetStronghold() : nullptr;
+		return Stronghold ? Stronghold->StorageAt(0) : nullptr;
+	}
+
 }
 
 bool FSolidAutoPlaythrough::CraftTorch(SolidInventory::FLoadout& Loadout, SolidStorage::FContainer& Chest)
@@ -1807,11 +1814,20 @@ bool FSolidAutoPlaythrough::TickCraftItem(
 		{
 			return false;
 		}
-		if (!CraftTorch(State->Inventory, State->CaveChest))
+		SolidStrongholdFurniture::FPlacedFurnishing* Piece = CompanyChest(Mode);
+		if (!Piece)
 		{
 			Stop();
 			return false;
 		}
+		SolidStorage::FContainer Chest = Piece->Container();
+		if (!CraftTorch(State->Inventory, Chest))
+		{
+			Piece->SetContainer(Chest);
+			Stop();
+			return false;
+		}
+		Piece->SetContainer(Chest);
 		Advance();
 		return false;
 	}
@@ -1843,11 +1859,20 @@ bool FSolidAutoPlaythrough::TickEquipItem(
 		Stop();
 		return false;
 	}
-	if (!EquipItem(State->Inventory, &State->CaveChest, Step.ItemId, Step.Slot))
+	SolidStrongholdFurniture::FPlacedFurnishing* Piece = CompanyChest(Mode);
+	if (!Piece)
 	{
 		Stop();
 		return false;
 	}
+	SolidStorage::FContainer Chest = Piece->Container();
+	if (!EquipItem(State->Inventory, &Chest, Step.ItemId, Step.Slot))
+	{
+		Piece->SetContainer(Chest);
+		Stop();
+		return false;
+	}
+	Piece->SetContainer(Chest);
 	if (!Step.bClosePage)
 	{
 		Advance();

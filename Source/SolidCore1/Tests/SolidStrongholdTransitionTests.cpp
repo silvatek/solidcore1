@@ -376,9 +376,17 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 	USolidGameState& State = *NewObject<USolidGameState>();
 	State.bStrongholdSiteRestrictions = true;
 	State.bStrongholdsEnabled = false;
-	SolidStorage::WriteSlot(State.CaveChest, SolidStorage::Index(1, 2), SolidItemType::IdStick, 4);
+	SolidStrongholdFurniture::FPlacedFurnishing* ChestPiece = Company->GetStronghold()->StorageAt(0);
+	TestNotNull(TEXT("the cave has a chest"), ChestPiece);
+	if (!ChestPiece)
+	{
+		return false;
+	}
+	SolidStorage::FContainer Edited = ChestPiece->Container();
+	SolidStorage::WriteSlot(Edited, SolidStorage::Index(1, 2), SolidItemType::IdStick, 4);
+	ChestPiece->SetContainer(Edited);
 	SolidInventory::WritePack(State.Inventory, 0, SolidItemType::IdStick, 2);
-	const SolidStorage::FContainer Chest = State.CaveChest;
+	const SolidStorage::FContainer Chest = ChestPiece->Container();
 	const SolidInventory::FLoadout Pack = State.Inventory;
 	const TArray<SolidStrongholdFurniture::FPlacedFurnishing> Started = Company->GetStronghold()->Furnishings;
 
@@ -394,7 +402,8 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("a refused type leaves the cell"), Company->GetStronghold()->Cell, SolidStronghold::StartingCell());
 	TestEqual(TEXT("a refused type leaves no history"), State.PreviousStrongholds.Num(), 0);
 	TestTrue(TEXT("a refused type leaves the pieces"), SamePieces(Company->GetStronghold()->Furnishings, Started));
-	TestTrue(TEXT("a refused type leaves the chest"), SameChest(State.CaveChest, Chest));
+	const SolidStrongholdFurniture::FPlacedFurnishing* KeptChest = Company->GetStronghold()->StorageAt(0);
+	TestTrue(TEXT("a refused type leaves the chest"), KeptChest && SameChest(KeptChest->Container(), Chest));
 	TestTrue(TEXT("a refused type leaves the pack"), SameLoadout(State.Inventory, Pack));
 
 	TestFalse(
@@ -442,7 +451,8 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 	TestFalse(
 		TEXT("a map tower door is not a passage"),
 		Company->GetStronghold()->AcceptsEnter(State, Company->GetStronghold(), MapTowerCell));
-	TestTrue(TEXT("the chest moved with the company"), SameChest(State.CaveChest, Chest));
+	const SolidStrongholdFurniture::FPlacedFurnishing* MovedChest = Company->GetStronghold()->StorageAt(0);
+	TestTrue(TEXT("the chest moved with the company"), MovedChest && SameChest(MovedChest->Container(), Chest));
 	TestTrue(TEXT("the pack stayed with the captain"), SameLoadout(State.Inventory, Pack));
 	TestEqual(TEXT("the stronghold left behind is empty"), State.PreviousStrongholds[0]->Furnishings.Num(), 0);
 	TestEqual(TEXT("the starting pieces moved"), Company->GetStronghold()->Furnishings.Num(), Started.Num());

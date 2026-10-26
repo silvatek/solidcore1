@@ -26,6 +26,9 @@ namespace SolidStorage
 		FSolidItem Slots[Count];
 	};
 
+	/** Slots a placed piece owns. Empty when the kind holds nothing. A chest has Count cells. */
+	using FSlots = TArray<FSolidItem, TInlineAllocator<Count>>;
+
 	inline void WriteSlot(FContainer& Container, const int32 Index, const FSolidItem& Item)
 	{
 		if (Index < 0 || Index >= Count)

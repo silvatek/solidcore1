@@ -1,6 +1,6 @@
 # Multiple storage containers
 
-Status: Ready
+Status: In Progress
 
 ## Story
 
@@ -14,7 +14,7 @@ The chest the company already has still starts with the rusty sword, the old boo
 
 ## Acceptance
 
-- A new game's stronghold still has one chest. Its container is `FGameState::CaveChest`, filled by `SolidStorage::StartingCaveChest`. The cells are the rusty sword, the old boots, 20 coins, five sticks, three pitch, and one empty cell. The fireplace and the bed are not containers.
+- A new game's stronghold still has one chest. That piece owns the slots, filled from `SolidStorage::StartingCaveChest` when the furnishings are created. The cells are the rusty sword, the old boots, 20 coins, five sticks, three pitch, and one empty cell. The fireplace and the bed own no slots.
 - Every container is `SolidStorage::Columns` by `SolidStorage::Rows`.
 - The inventory page shows at most one container, to the right of the pack. It never shows two grids.
 - While the captain is inside the company stronghold and that stronghold has one or more storage pieces, `/` shows the first of those pieces. The first is the first storage piece on the furnishings list. View and Create do the same. With one piece, that is the starting chest.
@@ -36,14 +36,12 @@ The chest the company already has still starts with the rusty sword, the old boo
 
 ## Implementation notes
 
-- `FGameState::CaveChest` stays the starting chest. `SolidCore1.Inventory.CaveChest`, `SolidCore1.Stronghold.Move`, and the forage check that the cave chest is unchanged keep reading it. The product commit does not edit those tests.
-- `SolidStrongholdFurniture::FPlacedFurnishing` gains `StorageId`. `INDEX_NONE` is not storage. `0` is `CaveChest`. `StartingFurnishings` sets the chest to `0` and leaves the fireplace and the bed at `INDEX_NONE`. `SamePieces` compares item, level, cell, and facing, so the new field does not change that test.
-- Further containers live in `FGameState::MoreContainers`. `StorageId` 1 is `MoreContainers[0]`, and the next id is the next entry. A second chest appended to `Furnishings` gets the next id and an empty `FContainer`. Resolving an id past that list, or `INDEX_NONE`, yields no container.
-- The spawned furnishing remembers its `StorageId`. The click ray that hits the mouth and the forage piles hits a storage mesh first. A hit with a real id opens the inventory on that container. A miss falls through to the walk.
+- `FPlacedFurnishing::Slots` is the container. The length is the catalogue kind's `StorageSlots`. The fireplace and the bed have none. The chest has `SolidStorage::Count`. `StartingFurnishings` gives each piece its slots and fills the one chest from `SolidStorage::StartingCaveChest`. `USolidGameState` does not own a container. `SolidCore1.Inventory.CaveChest` reads the chest on the starting stronghold. `SolidCore1.Stronghold.Move` compares that piece's slots. `SolidCore1.Stronghold.Furniture` checks the starter slot counts. `SolidCore1.Forage.Pickup` does not read a session chest.
+- The spawned furnishing keeps its placement so a click can find that entry on the stronghold. The slots are that entry's `Slots`. A hit on a storage piece opens the inventory on it. A miss falls through to the walk.
 - `CompanyChestOpen` stays the inside check: the company cave, or the company tower the captain is in. The grid is that check, and a container is selected. `/` selects the first storage piece on the furnishings list. A click selects the piece that was hit. Page Up and Page Down step that selection through every storage piece in the stronghold and wrap. The selection clears when the inventory closes or the captain leaves.
 - Page Up and Page Down already call `MoveCharacterEditor`, which returns while the character editor is closed. While the inventory is open, those keys cycle containers and do not move the editor. LB and RB are not bound on their own. Battle-plan chords stay blocked while the inventory is open, because the inventory counts as a menu overlay.
 - The marks are pointer hits on the heading row. They are drawn only when the cycle has two or more containers. The product commit adds the Page Up, Page Down, LB, RB, L1, and R1 rows to the Inventory table in `Content/Controls.md`.
-- `Layout` still takes one `FContainer*`. A null pointer is the page with no container grid. `MoveCarriedItem` writes that same pointer.
-- The placed list is `FSolidStronghold::Furnishings`. A move carries the pieces and leaves the old list empty. `CaveChest` stays on the session until this story hangs storage on the piece. `OpenLevel` keeps the company, so the active stronghold's list survives a trip with it. `Move` does not clear `CaveChest`. `PlaceOnFloor` edits cells and does not swap pieces, so an id stays on its piece.
-- [Basic furniture management](Done/basic-furniture-management.md) still stops at one chest. A chest it adds where the stronghold had none uses the next empty container from this store. A click while arrange mode is on does not open one.
-- The product commit adds the second-piece tests: empty start, `/` opening the first, a click opening that piece, the cycle wrapping across every floor, the heading place, a drag that leaves the other container, a cycle that cancels a held drag, one container with no marks, and the containers surviving `Move`. It does not edit the tests named above.
+- `Layout` still takes one `FContainer*`. A null pointer is the page with no container grid. The page copies the open piece's slots into that container, and a drag writes them back onto the piece.
+- The placed list is `FSolidStronghold::Furnishings`. A move carries the pieces, slots included, and leaves the old list empty. `OpenLevel` keeps the company, so the active stronghold's list survives a trip. `PlaceOnFloor` edits cells and does not swap pieces, so the slots stay on the piece.
+- [Basic furniture management](Done/basic-furniture-management.md) still stops at one chest. A chest it adds gets empty slots of that kind's length. A click while arrange mode is on does not open one.
+- Later steps add the second-piece tests: empty start, `/` opening the first, a click opening that piece, the cycle wrapping across every floor, the heading place, a drag that leaves the other container, a cycle that cancels a held drag, one container with no marks, and the containers surviving `Move`.

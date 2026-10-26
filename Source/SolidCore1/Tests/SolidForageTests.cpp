@@ -5,7 +5,6 @@
 #include "HUD/SolidHUD.h"
 #include "Inventory/SolidInventory.h"
 #include "Inventory/SolidItemType.h"
-#include "Inventory/SolidStorage.h"
 #include "SolidClickMove.h"
 #include "Strongholds/Dungeon/SolidDungeonLevel.h"
 #include "SolidForestTrees.h"
@@ -241,7 +240,6 @@ bool FSolidForagePickupTest::RunTest(const FString& Parameters)
 	USolidGameState& State = *NewObject<USolidGameState>();
 	USolidCaptain& StateCaptain = *NewObject<USolidCaptain>();
 	const int32 Journal = State.GetJournal()->Entries.Num();
-	const SolidStorage::FContainer Chest = State.CaveChest;
 	const FString Body = State.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)].Id();
 	TestEqual(TEXT("a new game has taken no piles"), State.TakenForagePiles.Num(), 0);
 	TestTrue(TEXT("one stick is enough to fill the pack"), SolidForage::TakePile(State, 0, SolidItemType::IdStick));
@@ -255,11 +253,6 @@ bool FSolidForagePickupTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the stack is two"), State.Inventory.Pack[0].Count, 2);
 	TestEqual(TEXT("the body is untouched"), FString(State.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Body)].Id()), FString(Body));
 	TestTrue(TEXT("the craft slots stay empty"), State.Inventory.Craft[0].IsEmpty());
-	for (int32 Index = 0; Index < SolidStorage::Count; ++Index)
-	{
-		TestEqual(TEXT("the cave chest keeps its item"), FString(State.CaveChest.Slots[Index].Id()), FString(Chest.Slots[Index].Id()));
-		TestEqual(TEXT("the cave chest keeps its count"), State.CaveChest.Slots[Index].Count, Chest.Slots[Index].Count);
-	}
 
 	USolidGameState& Full = *NewObject<USolidGameState>();
 	USolidCaptain& FullCaptain = *NewObject<USolidCaptain>();

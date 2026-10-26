@@ -500,6 +500,35 @@ bool SolidStrongholdTransition::Move(
 	return true;
 }
 
+SolidStrongholdFurniture::FPlacedFurnishing* FSolidStronghold::StorageAt(const int32 Index)
+{
+	return const_cast<SolidStrongholdFurniture::FPlacedFurnishing*>(
+		static_cast<const FSolidStronghold*>(this)->StorageAt(Index));
+}
+
+const SolidStrongholdFurniture::FPlacedFurnishing* FSolidStronghold::StorageAt(const int32 Index) const
+{
+	if (Index < 0)
+	{
+		return nullptr;
+	}
+	int32 Seen = 0;
+	for (const SolidStrongholdFurniture::FPlacedFurnishing& Piece : Furnishings)
+	{
+		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(Piece.ItemIndex);
+		if (!Item || !Item->IsStorage())
+		{
+			continue;
+		}
+		if (Seen == Index)
+		{
+			return &Piece;
+		}
+		++Seen;
+	}
+	return nullptr;
+}
+
 bool SolidStrongholdTransition::CompanyChestOpen(
 	const USolidGameState& State,
 	const FSolidStronghold* Active,

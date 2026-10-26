@@ -127,6 +127,13 @@ public:
 	 */
 	TArray<SolidStrongholdFurniture::FPlacedFurnishing> Furnishings;
 
+	/**
+	 * The storage piece at Index, in furnishings order.
+	 * Zero is the first chest. A fireplace and a bed are skipped. Null when Index is past those pieces.
+	 */
+	SolidStrongholdFurniture::FPlacedFurnishing* StorageAt(int32 Index);
+	const SolidStrongholdFurniture::FPlacedFurnishing* StorageAt(int32 Index) const;
+
 	/** True when the current code can build this type at Size. */
 	virtual bool Supported(ESolidStrongholdSize) const { return false; }
 
@@ -704,8 +711,7 @@ namespace SolidStrongholdTransition
 	 * The site becomes the company base.
 	 * Pieces move off the stronghold the company leaves onto the new ground floor.
 	 * That stronghold keeps an empty list and moves into PreviousStrongholds.
-	 * Chest contents stay on the session. Multiple storage containers changes storage.
-	 * The captain's pack stays with him.
+	 * Each piece carries its slots. The captain's pack stays with him.
 	 * Returns false when the click would not have offered that size and type.
 	 */
 	bool Move(

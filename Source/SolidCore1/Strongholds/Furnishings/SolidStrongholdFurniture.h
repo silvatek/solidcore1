@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "Inventory/SolidStorage.h"
 #include "SolidStrongholdGrid.h"
 
 class FSolidStronghold;
@@ -63,6 +64,7 @@ namespace SolidStrongholdFurniture
 	/**
 	 * One piece placed on a stronghold floor.
 	 * ItemIndex is the catalogue row. The cell and the facing belong to this floor.
+	 * Slots are the items this piece holds.
 	 */
 	class FPlacedFurnishing
 	{
@@ -75,12 +77,29 @@ namespace SolidStrongholdFurniture
 		/** Hex row. */
 		int32 Y = 0;
 		float RotationDeg = 0.f;
+		/**
+		 * Items in this piece. The length is the kind's StorageSlots.
+		 * An empty item is an empty cell. A fireplace and a bed have none.
+		 */
+		SolidStorage::FSlots Slots;
 
 		/** Second cell in the direction this piece is rotated. The anchor when it occupies one. */
 		const SolidStrongholdGrid::FHex* SpanCell(const TArray<SolidStrongholdGrid::FHex>& Hexes) const;
 
 		/** True when the anchor or the second cell is this column and row. */
 		bool Covers(const TArray<SolidStrongholdGrid::FHex>& Hexes, int32 Col, int32 Row) const;
+
+		/** Empty slots for this kind. A fireplace and a bed get none. A chest gets Count. */
+		void GiveSlots();
+
+		/** A copy of these slots as the chest grid. Cells past Slots stay empty. */
+		SolidStorage::FContainer Container() const;
+
+		/**
+		 * Write the chest grid onto Slots.
+		 * A kind that holds nothing keeps an empty list.
+		 */
+		void SetContainer(const SolidStorage::FContainer& Container);
 	};
 
 	inline const SolidStrongholdGrid::FHex* FindCell(

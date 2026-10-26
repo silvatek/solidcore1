@@ -200,6 +200,19 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("second links to the bed"), Second && Second->ActorClass == ASolidBed::StaticClass());
 	TestTrue(TEXT("third links to the chest"), Third && Third->ActorClass == ASolidChest::StaticClass());
 	TestTrue(TEXT("the cave chest is the storage piece"), Third && Third->IsStorage());
+	TestEqual(TEXT("the fireplace owns no slots"), Placements[0].Slots.Num(), 0);
+	TestEqual(TEXT("the bed owns no slots"), Placements[1].Slots.Num(), 0);
+	TestEqual(TEXT("the chest owns the grid"), Placements[2].Slots.Num(), SolidStorage::Count);
+	const SolidStorage::FContainer Starting = SolidStorage::StartingCaveChest();
+	const SolidStorage::FContainer Owned = Placements[2].Container();
+	for (int32 Index = 0; Index < SolidStorage::Count; ++Index)
+	{
+		TestEqual(
+			TEXT("the chest starts with the cave item"),
+			FString(Owned.Slots[Index].Id()),
+			FString(Starting.Slots[Index].Id()));
+		TestEqual(TEXT("the chest starts with the cave count"), Owned.Slots[Index].Count, Starting.Slots[Index].Count);
+	}
 
 	TArray<SolidStrongholdGrid::FHex> Hexes;
 	SolidDungeonLevel::CollectMeagreHexes(Hexes);

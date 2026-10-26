@@ -135,6 +135,39 @@ bool SolidStrongholdFurniture::FPlacedFurnishing::Covers(
 	return Span && Span->Col == Col && Span->Row == Row;
 }
 
+void SolidStrongholdFurniture::FPlacedFurnishing::GiveSlots()
+{
+	const FItem* Kind = ItemAt(ItemIndex);
+	Slots.SetNum(Kind ? Kind->StorageSlots : 0);
+}
+
+SolidStorage::FContainer SolidStrongholdFurniture::FPlacedFurnishing::Container() const
+{
+	SolidStorage::FContainer Out;
+	const int32 N = FMath::Min(SolidStorage::Count, Slots.Num());
+	for (int32 Index = 0; Index < N; ++Index)
+	{
+		Out.Slots[Index] = Slots[Index];
+	}
+	return Out;
+}
+
+void SolidStrongholdFurniture::FPlacedFurnishing::SetContainer(const SolidStorage::FContainer& Container)
+{
+	const FItem* Kind = ItemAt(ItemIndex);
+	if (!Kind || !Kind->IsStorage())
+	{
+		Slots.Reset();
+		return;
+	}
+	Slots.SetNum(Kind->StorageSlots);
+	const int32 N = FMath::Min(Kind->StorageSlots, SolidStorage::Count);
+	for (int32 Index = 0; Index < N; ++Index)
+	{
+		Slots[Index] = Container.Slots[Index];
+	}
+}
+
 void SolidStrongholdFurniture::UsedFurnishings(const FSolidStronghold& Stronghold, TArray<FPlacedFurnishing>& OutUsed)
 {
 	OutUsed.Reset();
@@ -147,6 +180,17 @@ void SolidStrongholdFurniture::UsedFurnishings(const FSolidStronghold& Stronghol
 	OutUsed.Add({ IndexOfActor(ASolidFireplace::StaticClass()), 0, 2, 0, 0.f });
 	OutUsed.Add({ IndexOfActor(ASolidBed::StaticClass()), 0, 0, -1, 0.f });
 	OutUsed.Add({ IndexOfActor(ASolidChest::StaticClass()), 0, 2, 1, 0.f });
+	bool bFilledChest = false;
+	for (FPlacedFurnishing& Piece : OutUsed)
+	{
+		Piece.GiveSlots();
+		const FItem* Kind = ItemAt(Piece.ItemIndex);
+		if (!bFilledChest && Kind && Kind->IsStorage())
+		{
+			Piece.SetContainer(SolidStorage::StartingCaveChest());
+			bFilledChest = true;
+		}
+	}
 }
 
 TArray<SolidStrongholdFurniture::FPlacedFurnishing> SolidStrongholdFurniture::StartingFurnishings()

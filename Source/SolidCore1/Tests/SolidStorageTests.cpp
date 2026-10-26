@@ -3,7 +3,8 @@
 #include "Inventory/SolidInventory.h"
 #include "Inventory/SolidItemType.h"
 #include "Inventory/SolidStorage.h"
-#include "SolidGameState.h"
+#include "Company/SolidCompany.h"
+#include "Strongholds/SolidStronghold.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -93,9 +94,22 @@ bool FSolidStorageCaveChestTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(ESolidItemKind::Weapon));
 	TestEqual(TEXT("the page names the sword"), FString(SolidItemType::NameFor(Sword->Id)), FString(Sword->Name));
 
-	const USolidGameState& State = *NewObject<USolidGameState>();
-	const SolidStorage::FContainer& Chest = State.CaveChest;
-	TestEqual(TEXT("the chest cell count is the grid"), SolidStorage::Count, SolidStorage::Columns * SolidStorage::Rows);
+	USolidCompany* Company = NewObject<USolidCompany>();
+	Company->InitializeStartingStronghold();
+	const FSolidStronghold* Stronghold = Company->GetStronghold();
+	TestNotNull(TEXT("a new company has a stronghold"), Stronghold);
+	if (!Stronghold)
+	{
+		return false;
+	}
+	const SolidStrongholdFurniture::FPlacedFurnishing* ChestPiece = Stronghold->StorageAt(0);
+	TestNotNull(TEXT("the starting stronghold has a chest"), ChestPiece);
+	if (!ChestPiece)
+	{
+		return false;
+	}
+	TestEqual(TEXT("the chest cell count is the grid"), ChestPiece->Slots.Num(), SolidStorage::Count);
+	const SolidStorage::FContainer Chest = ChestPiece->Container();
 	TestEqual(
 		TEXT("the first cell holds the sword"),
 		FString(Chest.Slots[SolidStorage::Index(0, 0)].Id()),

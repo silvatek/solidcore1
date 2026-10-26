@@ -89,7 +89,7 @@ const TCHAR* FSolidArrange::HoverName() const
 		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(Pieces[Placed].ItemIndex);
 		return Item ? Item->Name : TEXT("");
 	}
-	if (Held != INDEX_NONE && Covers(GhostUsed, HoverX, HoverY))
+	if (Held != INDEX_NONE && GhostUsed.Covers(Cells, HoverX, HoverY))
 	{
 		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(GhostUsed.ItemIndex);
 		return Item ? Item->Name : TEXT("");

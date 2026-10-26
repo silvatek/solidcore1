@@ -4,7 +4,7 @@ Status: New
 
 ## Story
 
-The cost of coordinating several coding agents through one build agent outweighs the benefit of those agents working at the same time. One coding agent runs on the Windows checkout. It writes the product change, builds it, and runs the tests. A pass pushes `main`. The agent is the solidcore1-ue worker. It edits the tree the developer plays. The developer plays that checkout. The developer does not pull.
+The cost of coordinating several coding agents through one build agent outweighs the benefit of those agents working at the same time. One coding agent runs on the Windows checkout. It writes the product change, bumps the build id, builds that commit, and runs the tests. A pass pushes `main`. The agent is the solidcore1-ue worker. It edits the tree the developer plays. The developer plays that checkout. The developer does not pull.
 
 `tools\land.bat` and `tools/buildable.py` stay, with their tests, in case several coding agents are wanted later. That is a future possibility. An agent does not use that queue. It does not push `build/<name>`, and it does not run `tools\land.bat`.
 
@@ -18,7 +18,7 @@ New product work reaches `main` from the one coding agent on the Windows checkou
 
 - The agent runs on this checkout. `tools\agent.bat` still starts the worker and still writes `agent.ok`. The agent reads that marker before `tools\build.bat` and `tools\test.bat`. A missing marker skips both.
 - A product change is built with `tools\build.bat` and tested with `tools\test.bat SolidCore1`. The push to `main` follows a pass. A failure is fixed on this checkout before the push. The command output is the result. The agent does not post a `solidcore1/land` status for its own work.
-- The shipping commit bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE` once. The note is the first line of that commit. A story or a process document with no product change does not bump them. A cloud agent does not edit `Source/SolidCore1/Game/SolidBuildId.h`.
+- The shipping commit bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE` once, before `tools\build.bat` runs. The note is the first line of that commit. The build and the tests run on that commit. A pass pushes it. A story or a process document with no product change does not bump them. A cloud agent does not edit `Source/SolidCore1/Game/SolidBuildId.h`.
 - While `ue.lock` says `PIE`, `Editor`, or `Dump`, the agent does not build or test. `tools\yield-ue.bat` still reserves the next build and test. `tools\free-ue.bat` still clears a dead agent id, and it still leaves `PIE`, `Editor`, and `Dump` in place. The developer starts play with `tools\pie.bat` and the World Editor with `tools\editor.bat`. The developer does not pull.
 - The story stays `In Progress` across the push. `Done` waits for the developer's play, when the story changes play, and for agreement. A test pass does not set `Done`.
 - `AGENTS.md`, `AgentBuild.md`, `Planning/README.md`, `CodingGuidelines.md`, and `README.md` say this path. `AgentBuild.md` is the Windows agent's guide. A cloud agent is told to leave product work on this checkout. A cloud agent may still push a story or a process document that stands on `main` and needs no Unreal. That push does not ask for a build.
@@ -100,6 +100,6 @@ These mention a cloud agent, the queue, or the build id. They stay.
 - `tools/cloud_agent_check.py` still requires the workflow section to contain `cursor/<words>-<digits>`, `does not apply to branches or pull requests`, and the phrase that accepts `main` and a `build/` branch. The accept list stays `main` and a `build/` branch. The sentence that contains that phrase says the branch is kept for a possible later return, and that an agent does not push one.
 - In `AGENTS.md`, these stay: the harness override, the 3-minute pause, no pull request unless the user asks, a `Plan:` commit, `Done` by agreement, the play wait and the screenshot rules, the lock words, `tools\yield-ue.bat` and `tools\free-ue.bat`, and the rule that this agent does not run PIE. A cloud agent still does not run the editor, automation, or PIE, and Unreal is still not installed on that VM.
 - The Windows agent passes its id to `tools\build.bat`. The same id is the re-entry `tools\test.bat` already allows. The agent releases that id with `tools\free-ue.bat` when the session ends, including when the build or the tests fail. It does not delete `ue.yield`. It does not write `ue.lock` itself.
-- The build note is the first line of the product commit, at most the length `tools/land.py` already keeps. The id is the next `SC1-NNNN`.
+- The agent writes the bump into the product commit, then runs `tools\build.bat` on that commit. The build note is the first line of the commit, at most the length `tools/land.py` already keeps. The id is the next `SC1-NNNN`.
 - The early process, a cloud push followed by a pull on this machine, stays retired. The agent is already on the checkout the developer plays.
 - The 3-minute pause stays. Play notes stay a separate message from the test result.

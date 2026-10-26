@@ -63,10 +63,11 @@ namespace
 		for (int32 Index = 0; Index < 6; ++Index)
 		{
 			const int32 Next = (Index + 1) % 6;
-			// Clockwise from the outside, matching the town roof (UE shows that winding).
-			AddTri(Bottom[Index], Top[Index], Top[Next]);
-			AddTri(Bottom[Index], Top[Next], Bottom[Next]);
-			AddTri(CenterTop, Top[Index], Top[(Index + 5) % 6]);
+			const int32 Prev = (Index + 5) % 6;
+			// Outward winding. The opposite order leaves the stone dark and hides the top.
+			AddTri(Bottom[Index], Top[Next], Top[Index]);
+			AddTri(Bottom[Index], Bottom[Next], Top[Next]);
+			AddTri(CenterTop, Top[Prev], Top[Index]);
 		}
 
 		FMeshDescription MeshDescription;

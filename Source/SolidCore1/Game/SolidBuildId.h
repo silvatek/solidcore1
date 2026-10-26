@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0645")
+#define SOLID_BUILD_ID TEXT("SC1-0646")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Each stronghold keeps its own placed furniture.")
+#define SOLID_BUILD_NOTE TEXT("A placed furnishing is a class.")
 #endif

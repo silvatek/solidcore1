@@ -174,7 +174,7 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 	FSolidStronghold MeagreFortress;
 	MeagreFortress.Type = ESolidStrongholdType::Fortress;
 	MeagreFortress.Size = ESolidStrongholdSize::Meagre;
-	TArray<SolidStrongholdFurniture::FUsed> Empty;
+	TArray<SolidStrongholdFurniture::FPlacedFurnishing> Empty;
 	SolidStrongholdFurniture::UsedFurnishings(MeagreFortress, Empty);
 	TestEqual(TEXT("a meagre fortress has no pieces yet"), Empty.Num(), 0);
 
@@ -184,7 +184,7 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 	SolidStrongholdFurniture::UsedFurnishings(HumbleDungeon, Empty);
 	TestEqual(TEXT("a humble dungeon has no pieces yet"), Empty.Num(), 0);
 
-	TArray<SolidStrongholdFurniture::FUsed> Placements;
+	TArray<SolidStrongholdFurniture::FPlacedFurnishing> Placements;
 	SolidStrongholdFurniture::UsedFurnishings(
 		FSolidStronghold(ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre),
 		Placements);
@@ -211,7 +211,7 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 	TSet<int64> UsedCells;
 	const SolidStrongholdGrid::FCell Captain = SolidDungeonLevel::MeagreCaptainCell();
 	const SolidStrongholdGrid::FCell Entrance = SolidDungeonLevel::MeagreEntranceCell();
-	for (const SolidStrongholdFurniture::FUsed& Placement : Placements)
+	for (const SolidStrongholdFurniture::FPlacedFurnishing& Placement : Placements)
 	{
 		TestEqual(TEXT("cave pieces sit on the single floor"), Placement.Level, 0);
 		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(Placement.ItemIndex);
@@ -221,7 +221,7 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 			return false;
 		}
 		const SolidStrongholdGrid::FHex* Anchor = SolidStrongholdFurniture::FindCell(Hexes, Placement.X, Placement.Y);
-		const SolidStrongholdGrid::FHex* Span = SolidStrongholdFurniture::SpanCell(Hexes, Placement);
+		const SolidStrongholdGrid::FHex* Span = Placement.SpanCell(Hexes);
 		TestTrue(TEXT("anchor cell is on the floor"), Anchor != nullptr);
 		TestTrue(TEXT("span cell is on the floor"), Span != nullptr);
 		if (!Anchor || !Span)

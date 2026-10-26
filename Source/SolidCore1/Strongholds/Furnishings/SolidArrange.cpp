@@ -2,9 +2,9 @@
 
 namespace
 {
-	const SolidStrongholdFurniture::FUsed& EmptyPiece()
+	const SolidStrongholdFurniture::FPlacedFurnishing& EmptyPiece()
 	{
-		static const SolidStrongholdFurniture::FUsed Empty;
+		static const SolidStrongholdFurniture::FPlacedFurnishing Empty;
 		return Empty;
 	}
 }
@@ -34,7 +34,7 @@ void FSolidArrange::Leave()
 }
 
 void FSolidArrange::Open(
-	const TArray<SolidStrongholdFurniture::FUsed>& InPieces,
+	const TArray<SolidStrongholdFurniture::FPlacedFurnishing>& InPieces,
 	const TArray<SolidStrongholdGrid::FHex>& InCells,
 	const SolidStrongholdGrid::FCell& InEntrance,
 	const bool bInHasEntrance,
@@ -125,7 +125,7 @@ void FSolidArrange::HighlightHexes(TArray<SolidStrongholdGrid::FHex>& Out) const
 	if (Held != INDEX_NONE)
 	{
 		Add(GhostUsed.X, GhostUsed.Y);
-		if (const SolidStrongholdGrid::FHex* Span = SolidStrongholdFurniture::SpanCell(Cells, GhostUsed))
+		if (const SolidStrongholdGrid::FHex* Span = GhostUsed.SpanCell(Cells))
 		{
 			Add(Span->Col, Span->Row);
 		}
@@ -136,7 +136,7 @@ void FSolidArrange::HighlightHexes(TArray<SolidStrongholdGrid::FHex>& Out) const
 	if (Placed != INDEX_NONE)
 	{
 		Add(Pieces[Placed].X, Pieces[Placed].Y);
-		if (const SolidStrongholdGrid::FHex* Span = SolidStrongholdFurniture::SpanCell(Cells, Pieces[Placed]))
+		if (const SolidStrongholdGrid::FHex* Span = Pieces[Placed].SpanCell(Cells))
 		{
 			Add(Span->Col, Span->Row);
 		}
@@ -205,15 +205,15 @@ bool FSolidArrange::PutBack()
 	return true;
 }
 
-bool FSolidArrange::WritePlaced(TArray<SolidStrongholdFurniture::FUsed>& Furnishings) const
+bool FSolidArrange::WritePlaced(TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Furnishings) const
 {
 	if (!Pieces.IsValidIndex(LastPlaced))
 	{
 		return false;
 	}
 
-	const SolidStrongholdFurniture::FUsed& Next = Pieces[LastPlaced];
-	for (SolidStrongholdFurniture::FUsed& Have : Furnishings)
+	const SolidStrongholdFurniture::FPlacedFurnishing& Next = Pieces[LastPlaced];
+	for (SolidStrongholdFurniture::FPlacedFurnishing& Have : Furnishings)
 	{
 		if (Have.ItemIndex != Home.ItemIndex
 			|| Have.Level != Home.Level
@@ -229,7 +229,7 @@ bool FSolidArrange::WritePlaced(TArray<SolidStrongholdFurniture::FUsed>& Furnish
 	return false;
 }
 
-const SolidStrongholdFurniture::FUsed& FSolidArrange::PieceAt(const int32 Index) const
+const SolidStrongholdFurniture::FPlacedFurnishing& FSolidArrange::PieceAt(const int32 Index) const
 {
 	return Pieces.IsValidIndex(Index) ? Pieces[Index] : EmptyPiece();
 }
@@ -240,13 +240,13 @@ bool FSolidArrange::DrawOf(const int32 Index, FDraw& Out) const
 	{
 		return false;
 	}
-	const SolidStrongholdFurniture::FUsed& Used = Index == Held ? GhostUsed : Pieces[Index];
+	const SolidStrongholdFurniture::FPlacedFurnishing& Used = Index == Held ? GhostUsed : Pieces[Index];
 	const SolidStrongholdGrid::FHex* Anchor = SolidStrongholdFurniture::FindCell(Cells, Used.X, Used.Y);
 	if (!Anchor)
 	{
 		return false;
 	}
-	const SolidStrongholdGrid::FHex* Span = SolidStrongholdFurniture::SpanCell(Cells, Used);
+	const SolidStrongholdGrid::FHex* Span = Used.SpanCell(Cells);
 	const FVector2D Mid = Span ? (Anchor->Center + Span->Center) * 0.5f : Anchor->Center;
 	Out.Local = FVector(Mid.X, Mid.Y, FloorHeight);
 	Out.Yaw = Used.RotationDeg;
@@ -254,7 +254,7 @@ bool FSolidArrange::DrawOf(const int32 Index, FDraw& Out) const
 	return true;
 }
 
-bool FSolidArrange::CanPlace(const SolidStrongholdFurniture::FUsed& Candidate) const
+bool FSolidArrange::CanPlace(const SolidStrongholdFurniture::FPlacedFurnishing& Candidate) const
 {
 	const SolidStrongholdGrid::FHex* Anchor = SolidStrongholdFurniture::FindCell(Cells, Candidate.X, Candidate.Y);
 	const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(Candidate.ItemIndex);
@@ -262,7 +262,7 @@ bool FSolidArrange::CanPlace(const SolidStrongholdFurniture::FUsed& Candidate) c
 	{
 		return false;
 	}
-	const SolidStrongholdGrid::FHex* Span = SolidStrongholdFurniture::SpanCell(Cells, Candidate);
+	const SolidStrongholdGrid::FHex* Span = Candidate.SpanCell(Cells);
 	if (!Span)
 	{
 		return false;
@@ -330,16 +330,6 @@ bool FSolidArrange::Blocked(const int32 X, const int32 Y) const
 	return bHasCaptain && Captain.Col == X && Captain.Row == Y;
 }
 
-bool FSolidArrange::Covers(const SolidStrongholdFurniture::FUsed& Used, const int32 X, const int32 Y) const
-{
-	if (Used.X == X && Used.Y == Y)
-	{
-		return true;
-	}
-	const SolidStrongholdGrid::FHex* Span = SolidStrongholdFurniture::SpanCell(Cells, Used);
-	return Span && Span->Col == X && Span->Row == Y;
-}
-
 int32 FSolidArrange::PieceOnCell(const int32 X, const int32 Y) const
 {
 	for (int32 Index = 0; Index < Pieces.Num(); ++Index)
@@ -348,7 +338,7 @@ int32 FSolidArrange::PieceOnCell(const int32 X, const int32 Y) const
 		{
 			continue;
 		}
-		if (Covers(Pieces[Index], X, Y))
+		if (Pieces[Index].Covers(Cells, X, Y))
 		{
 			return Index;
 		}

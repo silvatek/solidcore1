@@ -67,7 +67,7 @@ namespace
 		}
 	}
 
-	bool SameFurnishing(const SolidStrongholdFurniture::FUsed& A, const SolidStrongholdFurniture::FUsed& B)
+	bool SameFurnishing(const SolidStrongholdFurniture::FPlacedFurnishing& A, const SolidStrongholdFurniture::FPlacedFurnishing& B)
 	{
 		return A.ItemIndex == B.ItemIndex
 			&& A.Level == B.Level
@@ -78,14 +78,14 @@ namespace
 
 	bool FurnishingsMatch(
 		const TArray<ASolidFurnishing*>& Owned,
-		const TArray<SolidStrongholdFurniture::FUsed>& Used)
+		const TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Used)
 	{
 		if (Owned.Num() != Used.Num())
 		{
 			return false;
 		}
 		TArray<int32> Taken;
-		for (const SolidStrongholdFurniture::FUsed& Want : Used)
+		for (const SolidStrongholdFurniture::FPlacedFurnishing& Want : Used)
 		{
 			int32 Found = INDEX_NONE;
 			for (int32 Index = 0; Index < Owned.Num(); ++Index)
@@ -805,7 +805,7 @@ void ASolidDungeonInterior::BuildVisuals()
 	}
 }
 
-void ASolidDungeonInterior::SetFurnishings(const TArray<SolidStrongholdFurniture::FUsed>& Used)
+void ASolidDungeonInterior::SetFurnishings(const TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Used)
 {
 	FurnishingsToPlace = Used;
 	bUseFurnishings = true;
@@ -821,7 +821,7 @@ void ASolidDungeonInterior::PlaceStarterFurnishings()
 		return;
 	}
 
-	TArray<SolidStrongholdFurniture::FUsed> Used;
+	TArray<SolidStrongholdFurniture::FPlacedFurnishing> Used;
 	if (bUseFurnishings)
 	{
 		Used = FurnishingsToPlace;
@@ -853,7 +853,7 @@ void ASolidDungeonInterior::PlaceStarterFurnishings()
 	SolidDungeonLevel::CollectMeagreHexes(Hexes);
 
 	int32 Placed = 0;
-	for (const SolidStrongholdFurniture::FUsed& UsedPiece : Used)
+	for (const SolidStrongholdFurniture::FPlacedFurnishing& UsedPiece : Used)
 	{
 		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(UsedPiece.ItemIndex);
 		if (!Item || UsedPiece.Level != 0)
@@ -864,7 +864,7 @@ void ASolidDungeonInterior::PlaceStarterFurnishings()
 		}
 
 		const SolidStrongholdGrid::FHex* Anchor = SolidStrongholdFurniture::FindCell(Hexes, UsedPiece.X, UsedPiece.Y);
-		const SolidStrongholdGrid::FHex* Span = SolidStrongholdFurniture::SpanCell(Hexes, UsedPiece);
+		const SolidStrongholdGrid::FHex* Span = UsedPiece.SpanCell(Hexes);
 		if (!Anchor || !Span)
 		{
 			UE_LOG(LogSolid, Error, TEXT("SolidDungeonInterior: furnishing hex (%d,%d) is not on the floor."),

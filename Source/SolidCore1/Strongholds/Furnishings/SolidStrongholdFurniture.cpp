@@ -91,7 +91,51 @@ int32 SolidStrongholdFurniture::IndexOfActor(const UClass* ActorClass)
 	return INDEX_NONE;
 }
 
-void SolidStrongholdFurniture::UsedFurnishings(const FSolidStronghold& Stronghold, TArray<FUsed>& OutUsed)
+const SolidStrongholdGrid::FHex* SolidStrongholdFurniture::FPlacedFurnishing::SpanCell(
+	const TArray<SolidStrongholdGrid::FHex>& Hexes) const
+{
+	const FItem* Item = ItemAt(ItemIndex);
+	const SolidStrongholdGrid::FHex* Anchor = FindCell(Hexes, X, Y);
+	if (!Item || !Anchor)
+	{
+		return nullptr;
+	}
+	if (Item->HexCount() < 2)
+	{
+		return Anchor;
+	}
+
+	const FVector Forward = FRotator(0.f, RotationDeg, 0.f).Vector();
+	const FVector2D Target = Anchor->Center
+		+ FVector2D(Forward.X, Forward.Y) * SolidStrongholdGrid::FlatToFlatCm;
+	const SolidStrongholdGrid::FHex* Best = nullptr;
+	float BestDist = SolidStrongholdGrid::FlatToFlatCm * 0.45f;
+	for (const SolidStrongholdGrid::FHex& Hex : Hexes)
+	{
+		const float Dist = FVector2D::Distance(Hex.Center, Target);
+		if (Dist < BestDist)
+		{
+			BestDist = Dist;
+			Best = &Hex;
+		}
+	}
+	return Best;
+}
+
+bool SolidStrongholdFurniture::FPlacedFurnishing::Covers(
+	const TArray<SolidStrongholdGrid::FHex>& Hexes,
+	const int32 Col,
+	const int32 Row) const
+{
+	if (X == Col && Y == Row)
+	{
+		return true;
+	}
+	const SolidStrongholdGrid::FHex* Span = SpanCell(Hexes);
+	return Span && Span->Col == Col && Span->Row == Row;
+}
+
+void SolidStrongholdFurniture::UsedFurnishings(const FSolidStronghold& Stronghold, TArray<FPlacedFurnishing>& OutUsed)
 {
 	OutUsed.Reset();
 	if (Stronghold.Type != ESolidStrongholdType::Dungeon
@@ -105,9 +149,9 @@ void SolidStrongholdFurniture::UsedFurnishings(const FSolidStronghold& Stronghol
 	OutUsed.Add({ IndexOfActor(ASolidChest::StaticClass()), 0, 2, 1, 0.f });
 }
 
-TArray<SolidStrongholdFurniture::FUsed> SolidStrongholdFurniture::StartingFurnishings()
+TArray<SolidStrongholdFurniture::FPlacedFurnishing> SolidStrongholdFurniture::StartingFurnishings()
 {
-	TArray<FUsed> Used;
+	TArray<FPlacedFurnishing> Used;
 	UsedFurnishings(
 		FSolidStronghold(ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre),
 		Used);

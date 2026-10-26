@@ -936,7 +936,7 @@ bool ASolidTowerInterior::ArrangeEntrance(const int32 Floor, int32& OutX, int32&
 	return false;
 }
 
-void ASolidTowerInterior::PlaceFurnishings(const TArray<SolidStrongholdFurniture::FUsed>& Used)
+void ASolidTowerInterior::PlaceFurnishings(const TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Used)
 {
 	UWorld* World = GetWorld();
 	if (!Tower || !World || !World->IsGameWorld() || World->bIsTearingDown || !IsActorInitialized() || Used.Num() == 0)
@@ -966,7 +966,7 @@ void ASolidTowerInterior::PlaceFurnishings(const TArray<SolidStrongholdFurniture
 	Tower->CollectFloorHexes(0, Hexes);
 
 	int32 Placed = 0;
-	for (const SolidStrongholdFurniture::FUsed& UsedPiece : Used)
+	for (const SolidStrongholdFurniture::FPlacedFurnishing& UsedPiece : Used)
 	{
 		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(UsedPiece.ItemIndex);
 		if (!Item || UsedPiece.Level != 0)
@@ -975,7 +975,7 @@ void ASolidTowerInterior::PlaceFurnishings(const TArray<SolidStrongholdFurniture
 		}
 
 		const SolidStrongholdGrid::FHex* Anchor = SolidStrongholdFurniture::FindCell(Hexes, UsedPiece.X, UsedPiece.Y);
-		const SolidStrongholdGrid::FHex* Span = SolidStrongholdFurniture::SpanCell(Hexes, UsedPiece);
+		const SolidStrongholdGrid::FHex* Span = UsedPiece.SpanCell(Hexes);
 		if (!Anchor || !Span)
 		{
 			continue;

@@ -79,8 +79,8 @@ namespace
 	}
 
 	bool SamePieces(
-		const TArray<SolidStrongholdFurniture::FUsed>& A,
-		const TArray<SolidStrongholdFurniture::FUsed>& B)
+		const TArray<SolidStrongholdFurniture::FPlacedFurnishing>& A,
+		const TArray<SolidStrongholdFurniture::FPlacedFurnishing>& B)
 	{
 		if (A.Num() != B.Num())
 		{
@@ -380,7 +380,7 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 	SolidInventory::WritePack(State.Inventory, 0, SolidItemType::IdStick, 2);
 	const SolidStorage::FContainer Chest = State.CaveChest;
 	const SolidInventory::FLoadout Pack = State.Inventory;
-	const TArray<SolidStrongholdFurniture::FUsed> Started = Company->GetStronghold()->Furnishings;
+	const TArray<SolidStrongholdFurniture::FPlacedFurnishing> Started = Company->GetStronghold()->Furnishings;
 
 	TestFalse(
 		TEXT("a locked size does not move"),
@@ -451,7 +451,7 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 	TArray<SolidStrongholdGrid::FHex> ImperiousHexes;
 	ImperiousTower->CollectFloorHexes(0, ImperiousHexes);
 	int32 Beds = 0;
-	for (const SolidStrongholdFurniture::FUsed& Piece : Company->GetStronghold()->Furnishings)
+	for (const SolidStrongholdFurniture::FPlacedFurnishing& Piece : Company->GetStronghold()->Furnishings)
 	{
 		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(Piece.ItemIndex);
 		TestTrue(TEXT("piece in the new stronghold"), Item != nullptr);
@@ -461,7 +461,7 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 		{
 			++Beds;
 			const SolidStrongholdGrid::FHex* Anchor = SolidStrongholdFurniture::FindCell(ImperiousHexes, Piece.X, Piece.Y);
-			const SolidStrongholdGrid::FHex* Span = SolidStrongholdFurniture::SpanCell(ImperiousHexes, Piece);
+			const SolidStrongholdGrid::FHex* Span = Piece.SpanCell(ImperiousHexes);
 			TestTrue(TEXT("the bed spans neighbors"), Anchor && Span && SolidStrongholdTransition::AreNeighbors(*Anchor, *Span));
 		}
 	}
@@ -480,7 +480,7 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 		TEXT("the chest opens in the company tower"),
 		SolidStrongholdTransition::CompanyChestOpen(State, Company->GetStronghold(), true));
 
-	TArray<SolidStrongholdFurniture::FUsed> Stuck = Started;
+	TArray<SolidStrongholdFurniture::FPlacedFurnishing> Stuck = Started;
 	TestFalse(TEXT("pieces do not sit on an empty floor"), SolidStrongholdTransition::PlaceOnFloor(Stuck, TArray<SolidStrongholdGrid::FHex>()));
 	TestTrue(TEXT("a failed placement leaves the pieces"), SamePieces(Stuck, Started));
 	return true;

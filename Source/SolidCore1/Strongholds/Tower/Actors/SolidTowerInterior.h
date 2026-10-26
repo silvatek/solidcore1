@@ -37,7 +37,7 @@ public:
 	void BuildVisuals();
 
 	/** Pieces the company carried in. Cells that are not on this floor are skipped. */
-	void PlaceFurnishings(const TArray<SolidStrongholdFurniture::FUsed>& Used);
+	void PlaceFurnishings(const TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Used);
 
 	UStaticMeshComponent* GetCapMesh() const { return CapMesh; }
 	UStaticMeshComponent* GetDoorMesh() const { return DoorMesh; }

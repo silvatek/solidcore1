@@ -72,7 +72,7 @@ public:
 	 * The entrance and the captain's cell are blocked when the flags say so.
 	 */
 	void Open(
-		const TArray<SolidStrongholdFurniture::FUsed>& InPieces,
+		const TArray<SolidStrongholdFurniture::FPlacedFurnishing>& InPieces,
 		const TArray<SolidStrongholdGrid::FHex>& InCells,
 		const SolidStrongholdGrid::FCell& InEntrance,
 		bool bInHasEntrance,
@@ -102,7 +102,7 @@ public:
 	 * After a legal put-down, write that piece's cell and facing onto the stronghold list.
 	 * The entry it lifted is the one that changes. A put-back is not written.
 	 */
-	bool WritePlaced(TArray<SolidStrongholdFurniture::FUsed>& Furnishings) const;
+	bool WritePlaced(TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Furnishings) const;
 
 	/** Q and wheel up are positive. E and wheel down are negative. Nothing held does nothing. */
 	void Turn(int32 Steps);
@@ -113,7 +113,7 @@ public:
 	/** Esc while a piece is held. The mode stays on. */
 	bool PutBack();
 
-	const SolidStrongholdFurniture::FUsed& PieceAt(int32 Index) const;
+	const SolidStrongholdFurniture::FPlacedFurnishing& PieceAt(int32 Index) const;
 
 	/** Local pose of one piece. A held piece uses the ghost, so its old cells stay empty. */
 	bool DrawOf(int32 Index, FDraw& Out) const;
@@ -122,18 +122,17 @@ public:
 	 * True when both cells are on this floor, clear of the entrance, the captain, and other pieces.
 	 * A bed fails when either cell fails. The ghost still exists when this is false.
 	 */
-	bool CanPlace(const SolidStrongholdFurniture::FUsed& Candidate) const;
+	bool CanPlace(const SolidStrongholdFurniture::FPlacedFurnishing& Candidate) const;
 
 	/** Intersect the floor plane. A miss of every cell is off the floor, a stair, or a landing. */
 	bool Trace(const FVector& LocalOrigin, const FVector& LocalDirection, float MaxDistanceCm, FTrace& Out) const;
 
 private:
 	bool Blocked(int32 X, int32 Y) const;
-	bool Covers(const SolidStrongholdFurniture::FUsed& Used, int32 X, int32 Y) const;
 	int32 PieceOnCell(int32 X, int32 Y) const;
 
 	bool bOn = false;
-	TArray<SolidStrongholdFurniture::FUsed> Pieces;
+	TArray<SolidStrongholdFurniture::FPlacedFurnishing> Pieces;
 	TArray<SolidStrongholdGrid::FHex> Cells;
 	SolidStrongholdGrid::FCell Entrance;
 	bool bHasEntrance = false;
@@ -146,6 +145,6 @@ private:
 	int32 Held = INDEX_NONE;
 	/** The piece Confirm last put down. INDEX_NONE after a lift, a refusal, or a put-back. */
 	int32 LastPlaced = INDEX_NONE;
-	SolidStrongholdFurniture::FUsed Home;
-	SolidStrongholdFurniture::FUsed GhostUsed;
+	SolidStrongholdFurniture::FPlacedFurnishing Home;
+	SolidStrongholdFurniture::FPlacedFurnishing GhostUsed;
 };

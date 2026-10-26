@@ -125,7 +125,7 @@ public:
 	 * The cave starts with the fireplace, the bed, and the chest.
 	 * A move carries the list onto the new stronghold and leaves this one empty.
 	 */
-	TArray<SolidStrongholdFurniture::FUsed> Furnishings;
+	TArray<SolidStrongholdFurniture::FPlacedFurnishing> Furnishings;
 
 	/** True when the current code can build this type at Size. */
 	virtual bool Supported(ESolidStrongholdSize) const { return false; }
@@ -697,7 +697,7 @@ namespace SolidStrongholdTransition
 	 * A bed takes two neighbors. The fireplace and the chest take one cell each.
 	 */
 	bool PlaceOnFloor(
-		TArray<SolidStrongholdFurniture::FUsed>& Pieces,
+		TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Pieces,
 		const TArray<SolidStrongholdGrid::FHex>& Hexes);
 
 	/**

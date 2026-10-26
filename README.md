@@ -227,7 +227,7 @@ USolidGameInstance                  # Session root
     FSolidCharacterMesh[]           # Viking
     FSolidCompanion[]               # Sam, Alex, Max, Morgan, Quinn
     FSolidStronghold                # Active base: Dungeon, Fortress, or Tower
-      FUsed[]                       # Pieces placed on this stronghold
+      FPlacedFurnishing[]           # Pieces placed on this stronghold
   USolidGameState                   # Events, squad cap, enabled battle plans, lairs, and the unlocked stronghold size
     USolidJournal                   # Event, stronghold, and lair lines
     FLoadout                        # Worn boxes, pack, and crafting slots

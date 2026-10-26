@@ -376,12 +376,12 @@ bool SolidStrongholdTransition::AreNeighbors(const SolidStrongholdGrid::FHex& A,
 }
 
 bool SolidStrongholdTransition::PlaceOnFloor(
-	TArray<SolidStrongholdFurniture::FUsed>& Pieces,
+	TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Pieces,
 	const TArray<SolidStrongholdGrid::FHex>& Hexes)
 {
-	TArray<SolidStrongholdFurniture::FUsed> Next = Pieces;
+	TArray<SolidStrongholdFurniture::FPlacedFurnishing> Next = Pieces;
 	TArray<int32> Taken;
-	for (SolidStrongholdFurniture::FUsed& Piece : Next)
+	for (SolidStrongholdFurniture::FPlacedFurnishing& Piece : Next)
 	{
 		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(Piece.ItemIndex);
 		if (!Item)
@@ -470,7 +470,7 @@ bool SolidStrongholdTransition::Move(
 	}
 
 	FSolidStronghold* Leaving = Company.GetStronghold();
-	TArray<SolidStrongholdFurniture::FUsed> Moved = Leaving ? Leaving->Furnishings : TArray<SolidStrongholdFurniture::FUsed>();
+	TArray<SolidStrongholdFurniture::FPlacedFurnishing> Moved = Leaving ? Leaving->Furnishings : TArray<SolidStrongholdFurniture::FPlacedFurnishing>();
 	if (!PlaceOnFloor(Moved, Hexes))
 	{
 		return false;
@@ -510,7 +510,7 @@ bool SolidStrongholdTransition::CompanyChestOpen(
 		return false;
 	}
 	bool bHasChest = false;
-	for (const SolidStrongholdFurniture::FUsed& Piece : Active->Furnishings)
+	for (const SolidStrongholdFurniture::FPlacedFurnishing& Piece : Active->Furnishings)
 	{
 		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(Piece.ItemIndex);
 		if (Item && Item->IsStorage())

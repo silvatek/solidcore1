@@ -38,7 +38,7 @@ public:
 	 * The company's list for this visit.
 	 * PlaceStarterFurnishings uses it. With none set, the starter three are placed.
 	 */
-	void SetFurnishings(const TArray<SolidStrongholdFurniture::FUsed>& Used);
+	void SetFurnishings(const TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Used);
 
 	/** The company's pieces on the Meagre floor. No-op without a world. */
 	void PlaceStarterFurnishings();
@@ -102,5 +102,5 @@ protected:
 private:
 	/** Set by SetFurnishings. BeginPlay can place the starters before that call. */
 	bool bUseFurnishings = false;
-	TArray<SolidStrongholdFurniture::FUsed> FurnishingsToPlace;
+	TArray<SolidStrongholdFurniture::FPlacedFurnishing> FurnishingsToPlace;
 };

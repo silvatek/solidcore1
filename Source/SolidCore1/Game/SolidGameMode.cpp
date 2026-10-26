@@ -715,7 +715,7 @@ void ASolidGameMode::BindArrangeFloor()
 	if (!Interior || !Captain || !World)
 	{
 		ArrangeMode.Open(
-			TArray<SolidStrongholdFurniture::FUsed>(),
+			TArray<SolidStrongholdFurniture::FPlacedFurnishing>(),
 			TArray<SolidStrongholdGrid::FHex>(),
 			SolidStrongholdGrid::FCell(),
 			false,
@@ -734,7 +734,7 @@ void ASolidGameMode::BindArrangeFloor()
 	if (Floor == INDEX_NONE || !Interior->CollectArrangeFloor(Floor, Cells) || !Interior->ArrangeFloorZ(Floor, FloorZ))
 	{
 		ArrangeMode.Open(
-			TArray<SolidStrongholdFurniture::FUsed>(),
+			TArray<SolidStrongholdFurniture::FPlacedFurnishing>(),
 			TArray<SolidStrongholdGrid::FHex>(),
 			SolidStrongholdGrid::FCell(),
 			false,
@@ -764,7 +764,7 @@ void ASolidGameMode::BindArrangeFloor()
 		}
 	}
 
-	TArray<SolidStrongholdFurniture::FUsed> Pieces;
+	TArray<SolidStrongholdFurniture::FPlacedFurnishing> Pieces;
 	for (TActorIterator<ASolidFurnishing> It(World); It; ++It)
 	{
 		ASolidFurnishing* Piece = *It;

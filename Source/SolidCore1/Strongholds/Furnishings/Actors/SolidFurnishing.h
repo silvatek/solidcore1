@@ -25,8 +25,8 @@ public:
 	virtual int32 HexCount() const;
 
 	/** The cell and facing this piece was put down on. */
-	void SetPlacement(const SolidStrongholdFurniture::FUsed& InPlacement);
-	const SolidStrongholdFurniture::FUsed& GetPlacement() const { return Placement; }
+	void SetPlacement(const SolidStrongholdFurniture::FPlacedFurnishing& InPlacement);
+	const SolidStrongholdFurniture::FPlacedFurnishing& GetPlacement() const { return Placement; }
 	bool HasPlacement() const { return bHasPlacement; }
 
 	/**
@@ -59,7 +59,7 @@ protected:
 		const TCHAR* DebugName);
 
 private:
-	SolidStrongholdFurniture::FUsed Placement;
+	SolidStrongholdFurniture::FPlacedFurnishing Placement;
 	bool bHasPlacement = false;
 	bool bGhostLook = false;
 

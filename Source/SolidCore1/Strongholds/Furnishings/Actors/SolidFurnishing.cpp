@@ -31,7 +31,7 @@ int32 ASolidFurnishing::HexCount() const
 	return 1;
 }
 
-void ASolidFurnishing::SetPlacement(const SolidStrongholdFurniture::FUsed& InPlacement)
+void ASolidFurnishing::SetPlacement(const SolidStrongholdFurniture::FPlacedFurnishing& InPlacement)
 {
 	Placement = InPlacement;
 	bHasPlacement = true;

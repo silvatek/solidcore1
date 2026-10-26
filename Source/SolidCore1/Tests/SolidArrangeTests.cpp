@@ -256,7 +256,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidArrangePlaceTest::RunTest(const FString& Parameters)
 {
-	const TArray<SolidStrongholdFurniture::FUsed> Starters = SolidStrongholdFurniture::StartingFurnishings();
+	const TArray<SolidStrongholdFurniture::FPlacedFurnishing> Starters = SolidStrongholdFurniture::StartingFurnishings();
 	TestEqual(TEXT("a new game still has three pieces"), Starters.Num(), 3);
 	if (Starters.Num() == 3)
 	{
@@ -293,7 +293,7 @@ bool FSolidArrangePlaceTest::RunTest(const FString& Parameters)
 
 	Arrange.SetHover(2, 0);
 	TestEqual(TEXT("the fireplace hex names the fireplace"), FString(Arrange.HoverName()), FString(TEXT("Fireplace")));
-	const SolidStrongholdGrid::FHex* BedSpan = SolidStrongholdFurniture::SpanCell(Hexes, Arrange.PieceAt(1));
+	const SolidStrongholdGrid::FHex* BedSpan = Arrange.PieceAt(1).SpanCell(Hexes);
 	TestNotNull(TEXT("the bed has a second hex"), BedSpan);
 	if (BedSpan)
 	{
@@ -325,7 +325,7 @@ bool FSolidArrangePlaceTest::RunTest(const FString& Parameters)
 	Arrange.Turn(1);
 	TestTrue(TEXT("Q does nothing until a piece is held"), Arrange.PieceAt(0).RotationDeg == 0.f);
 
-	SolidStrongholdFurniture::FUsed FireplaceOnBed = Starters[0];
+	SolidStrongholdFurniture::FPlacedFurnishing FireplaceOnBed = Starters[0];
 	FireplaceOnBed.X = 0;
 	FireplaceOnBed.Y = -1;
 	TestFalse(TEXT("the bed's hex is taken"), Arrange.CanPlace(FireplaceOnBed));
@@ -355,7 +355,7 @@ bool FSolidArrangePlaceTest::RunTest(const FString& Parameters)
 
 	Arrange.SetHover(0, 0);
 	Arrange.Turn(3);
-	SolidStrongholdFurniture::FUsed Ghost;
+	SolidStrongholdFurniture::FPlacedFurnishing Ghost;
 	TestTrue(TEXT("the turned bed is the ghost"), Arrange.DrawOf(1, Drawn));
 	Ghost = Arrange.PieceAt(1);
 	Ghost.X = 0;
@@ -401,7 +401,7 @@ bool FSolidArrangePlaceTest::RunTest(const FString& Parameters)
 	int32 IllegalFacings = 0;
 	for (int32 Step = 0; Step < 6; ++Step)
 	{
-		SolidStrongholdFurniture::FUsed Candidate = Starters[1];
+		SolidStrongholdFurniture::FPlacedFurnishing Candidate = Starters[1];
 		Candidate.X = 0;
 		Candidate.Y = -2;
 		Candidate.RotationDeg = static_cast<float>(Step) * FSolidArrange::FacingDeg;
@@ -536,8 +536,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidArrangeRememberTest::RunTest(const FString& Parameters)
 {
-	TArray<SolidStrongholdFurniture::FUsed> List = SolidStrongholdFurniture::StartingFurnishings();
-	const TArray<SolidStrongholdFurniture::FUsed> Started = List;
+	TArray<SolidStrongholdFurniture::FPlacedFurnishing> List = SolidStrongholdFurniture::StartingFurnishings();
+	const TArray<SolidStrongholdFurniture::FPlacedFurnishing> Started = List;
 	TestEqual(TEXT("a new game list is the starter three"), List.Num(), 3);
 	if (List.Num() != 3)
 	{
@@ -577,7 +577,7 @@ bool FSolidArrangeRememberTest::RunTest(const FString& Parameters)
 	Arrange.Turn(1);
 	FSolidArrange::FDraw Drawn;
 	TestTrue(TEXT("the held bed draws"), Arrange.DrawOf(1, Drawn));
-	SolidStrongholdFurniture::FUsed Candidate = Arrange.PieceAt(1);
+	SolidStrongholdFurniture::FPlacedFurnishing Candidate = Arrange.PieceAt(1);
 	Candidate.X = 0;
 	Candidate.Y = 0;
 	Candidate.RotationDeg = Drawn.Yaw;

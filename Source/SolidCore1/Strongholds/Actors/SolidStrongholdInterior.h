@@ -32,6 +32,8 @@ public:
 
 	/** Arrange furniture plates on the interior wall. None until a kind builds them. */
 	virtual int32 ArrangeSignCount() const { return 0; }
+	/** Done arranging while the mode is on. The resting words are Arrange furniture. */
+	virtual void SetArrangeSignDone(bool bDone);
 	virtual UStaticMeshComponent* GetArrangeSignPlate(int32 Index) const
 	{
 		(void)Index;

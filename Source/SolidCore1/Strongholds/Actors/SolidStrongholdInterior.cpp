@@ -10,6 +10,11 @@ ASolidStrongholdInterior::ASolidStrongholdInterior()
 	PrimaryActorTick.bCanEverTick = false;
 }
 
+void ASolidStrongholdInterior::SetArrangeSignDone(const bool bDone)
+{
+	(void)bDone;
+}
+
 int32 ASolidStrongholdInterior::ArrangeFloorCount() const
 {
 	return 0;

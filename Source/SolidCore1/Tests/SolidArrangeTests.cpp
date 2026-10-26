@@ -57,6 +57,10 @@ bool FSolidArrangeModeTest::RunTest(const FString& Parameters)
 		TEXT("the plate reads Arrange furniture"),
 		FString(FSolidArrangeSign::Label()),
 		FString(TEXT("Arrange furniture")));
+	TestEqual(
+		TEXT("arrange mode reads Done arranging"),
+		FString(FSolidArrangeSign::DoneLabel()),
+		FString(TEXT("Done arranging")));
 
 	const FSolidArrangeSign Cave = FSolidArrangeSign::ForCave();
 	TestTrue(TEXT("the cave has a plate"), Cave.IsPresent());
@@ -107,6 +111,29 @@ bool FSolidArrangeModeTest::RunTest(const FString& Parameters)
 		MaxAbsY < SolidStrongholdGrid::SideCm() * 0.5f - CornerCm);
 	TestTrue(TEXT("the strokes stand proud of the plate, into the room"), bProud);
 	TestTrue(TEXT("the two lines sit one above the other"), MinZ < 0.f && MaxZ > 0.f);
+
+	TArray<FSolidArrangeSign::FStroke> DoneStrokes;
+	Cave.CollectStrokes(DoneStrokes, true);
+	TestTrue(TEXT("Done arranging is stroked"), DoneStrokes.Num() > 80);
+	TestNotEqual(TEXT("Done arranging is not the resting words"), DoneStrokes.Num(), Strokes.Num());
+	bool bDoneInside = true;
+	float DoneMinZ = TNumericLimits<float>::Max();
+	float DoneMaxZ = TNumericLimits<float>::Lowest();
+	float DoneMaxAbsY = 0.f;
+	for (const FSolidArrangeSign::FStroke& Stroke : DoneStrokes)
+	{
+		const float HalfY = Stroke.SizeCm.Y * 0.5f;
+		const float HalfZ = Stroke.SizeCm.Z * 0.5f;
+		bDoneInside = bDoneInside
+			&& FMath::Abs(Stroke.CenterCm.Y) + HalfY <= Plate.Y * 0.5f + 0.05f
+			&& FMath::Abs(Stroke.CenterCm.Z) + HalfZ <= Plate.Z * 0.5f + 0.05f;
+		DoneMinZ = FMath::Min(DoneMinZ, Stroke.CenterCm.Z);
+		DoneMaxZ = FMath::Max(DoneMaxZ, Stroke.CenterCm.Z);
+		DoneMaxAbsY = FMath::Max(DoneMaxAbsY, FMath::Abs(Stroke.CenterCm.Y) + HalfY);
+	}
+	TestTrue(TEXT("Done arranging stays inside the plate"), bDoneInside);
+	TestTrue(TEXT("Done arranging keeps cream on both sides"), DoneMaxAbsY <= Plate.Y * 0.5f - 6.f);
+	TestTrue(TEXT("Done arranging is two lines"), DoneMinZ < 0.f && DoneMaxZ > 0.f);
 
 	const FIntPoint OriginCell = FIntPoint::ZeroValue;
 	const TUniquePtr<FSolidStronghold> Owned = SolidStronghold::Make(
@@ -194,6 +221,11 @@ bool FSolidArrangePlateTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("cave plate mesh"), PlateMesh);
 	TestTrue(TEXT("the words are instanced"), CaveLetters->GetInstanceCount() > 80);
 	const int32 LetterCount = CaveLetters->GetInstanceCount();
+	Cave->SetArrangeSignDone(true);
+	TestTrue(TEXT("Done arranging is instanced"), CaveLetters->GetInstanceCount() > 80);
+	TestNotEqual(TEXT("Done arranging replaces the resting words"), CaveLetters->GetInstanceCount(), LetterCount);
+	Cave->SetArrangeSignDone(false);
+	TestEqual(TEXT("leaving the mode restores Arrange furniture"), CaveLetters->GetInstanceCount(), LetterCount);
 	Cave->BuildVisuals();
 	TestEqual(TEXT("a second build does not stack the letters"), CaveLetters->GetInstanceCount(), LetterCount);
 	TestTrue(TEXT("the plate is a pointer query"), Plate->GetCollisionEnabled() == ECollisionEnabled::QueryOnly);
@@ -243,7 +275,21 @@ bool FSolidArrangePlateTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("tower letters"), TowerLetters);
 	if (TowerLetters)
 	{
-		TestTrue(TEXT("each floor's words are instanced"), TowerLetters->GetInstanceCount() > 80 * Tower->FloorCount());
+		const int32 TowerLetterCount = TowerLetters->GetInstanceCount();
+		TestTrue(TEXT("each floor's words are instanced"), TowerLetterCount > 80 * Tower->FloorCount());
+		Interior->SetArrangeSignDone(true);
+		TestTrue(
+			TEXT("each floor reads Done arranging"),
+			TowerLetters->GetInstanceCount() > 80 * Tower->FloorCount());
+		TestNotEqual(
+			TEXT("Done arranging replaces each floor"),
+			TowerLetters->GetInstanceCount(),
+			TowerLetterCount);
+		Interior->SetArrangeSignDone(false);
+		TestEqual(
+			TEXT("leaving the mode restores each floor"),
+			TowerLetters->GetInstanceCount(),
+			TowerLetterCount);
 	}
 
 	return true;

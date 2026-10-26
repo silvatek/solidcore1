@@ -881,6 +881,20 @@ void ASolidTowerInterior::BuildVisuals()
 	}
 }
 
+void ASolidTowerInterior::SetArrangeSignDone(const bool bDone)
+{
+	if (!ArrangeLetters || !Tower)
+	{
+		return;
+	}
+	ArrangeLetters->ClearInstances();
+	for (int32 Floor = 0; Floor < Tower->FloorCount(); ++Floor)
+	{
+		const FSolidArrangeSign Arrange = FSolidArrangeSign::ForTowerFloor(*Tower, Floor);
+		Arrange.AppendLetters(ArrangeLetters, SolidTowerInteriorPrivate::CubeSizeCm, bDone);
+	}
+}
+
 int32 ASolidTowerInterior::ArrangeFloorCount() const
 {
 	return Tower ? Tower->FloorCount() : 0;

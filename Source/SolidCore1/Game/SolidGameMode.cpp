@@ -843,6 +843,7 @@ void ASolidGameMode::ToggleArrangeFurniture(const bool bOverlay)
 	if (ArrangeMode.IsOn())
 	{
 		BindArrangeFloor();
+		RefreshArrangeSign();
 	}
 	else
 	{
@@ -852,6 +853,7 @@ void ASolidGameMode::ToggleArrangeFurniture(const bool bOverlay)
 		{
 			Interior->HideArrangeHighlight();
 		}
+		RefreshArrangeSign();
 		ArrangeActors.Reset();
 		ArrangeRoom = nullptr;
 	}
@@ -871,9 +873,18 @@ void ASolidGameMode::LeaveArrangeFurniture()
 	{
 		Interior->HideArrangeHighlight();
 	}
+	RefreshArrangeSign();
 	ArrangeActors.Reset();
 	ArrangeRoom = nullptr;
 	ApplyArrangeBody();
+}
+
+void ASolidGameMode::RefreshArrangeSign()
+{
+	if (ASolidStrongholdInterior* Interior = ArrangeRoom.Get())
+	{
+		Interior->SetArrangeSignDone(ArrangeMode.IsOn());
+	}
 }
 
 void ASolidGameMode::ConfirmArrangeFurniture()

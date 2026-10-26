@@ -26,6 +26,8 @@ public:
 	};
 
 	static const TCHAR* Label() { return TEXT("Arrange furniture"); }
+	/** The plate while arrange mode is on. */
+	static const TCHAR* DoneLabel() { return TEXT("Done arranging"); }
 
 	/** Depth toward the room, width across the view, height up. */
 	FVector PlateSizeCm() const;
@@ -38,8 +40,8 @@ public:
 	const FVector& Location() const { return StandLocation; }
 	float YawDeg() const { return FacingYawDeg; }
 
-	/** Dark strokes for the two lines, centered on the sign. */
-	void CollectStrokes(TArray<FStroke>& Out) const;
+	/** Dark strokes for the two lines, centered on the sign. bArranging uses Done arranging. */
+	void CollectStrokes(TArray<FStroke>& Out, bool bArranging = false) const;
 
 	/** The light plate, toward the wall from the strokes. */
 	FVector PlateLocation() const;
@@ -54,7 +56,7 @@ public:
 	static FSolidArrangeSign ForTowerFloor(const SolidStronghold::FSolidTower& Tower, int32 Floor);
 
 	void ApplyPlate(UStaticMeshComponent* Plate, UStaticMesh* Cube, float CubeSizeCm) const;
-	void AppendLetters(UInstancedStaticMeshComponent* Instances, float CubeSizeCm) const;
+	void AppendLetters(UInstancedStaticMeshComponent* Instances, float CubeSizeCm, bool bArranging = false) const;
 
 private:
 	FVector StandLocation = FVector::ZeroVector;

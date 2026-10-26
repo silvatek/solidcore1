@@ -50,6 +50,7 @@ public:
 	virtual bool ArrangeEntrance(int32 Floor, int32& OutX, int32& OutY) const override;
 
 	virtual int32 ArrangeSignCount() const override { return ArrangePlates.Num(); }
+	virtual void SetArrangeSignDone(bool bDone) override;
 	virtual UStaticMeshComponent* GetArrangeSignPlate(int32 Index) const override
 	{
 		return ArrangePlates.IsValidIndex(Index) ? ArrangePlates[Index].Get() : nullptr;

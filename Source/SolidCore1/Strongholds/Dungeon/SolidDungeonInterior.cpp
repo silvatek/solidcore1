@@ -805,6 +805,17 @@ void ASolidDungeonInterior::BuildVisuals()
 	}
 }
 
+void ASolidDungeonInterior::SetArrangeSignDone(const bool bDone)
+{
+	if (!ArrangeLetters)
+	{
+		return;
+	}
+	ArrangeLetters->ClearInstances();
+	const FSolidArrangeSign Sign = FSolidArrangeSign::ForCave();
+	Sign.AppendLetters(ArrangeLetters, 100.f, bDone);
+}
+
 void ASolidDungeonInterior::SetFurnishings(const TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Used)
 {
 	FurnishingsToPlace = Used;

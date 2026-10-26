@@ -22,6 +22,12 @@ namespace
 			Rows = Bits;
 			break;
 		}
+		case TEXT('D'):
+		{
+			static const uint8 Bits[] = { 30, 17, 17, 17, 17, 17, 30 };
+			Rows = Bits;
+			break;
+		}
 		case TEXT('a'):
 		{
 			static const uint8 Bits[] = { 0, 0, 14, 1, 15, 17, 15 };
@@ -55,6 +61,12 @@ namespace
 		case TEXT('n'):
 		{
 			static const uint8 Bits[] = { 0, 0, 28, 18, 17, 17, 17 };
+			Rows = Bits;
+			break;
+		}
+		case TEXT('o'):
+		{
+			static const uint8 Bits[] = { 0, 0, 14, 17, 17, 17, 14 };
 			Rows = Bits;
 			break;
 		}
@@ -123,7 +135,7 @@ void FSolidArrangeSign::Place(const FVector& InLocation, const float InYawDeg)
 	bPresent = true;
 }
 
-void FSolidArrangeSign::CollectStrokes(TArray<FStroke>& Out) const
+void FSolidArrangeSign::CollectStrokes(TArray<FStroke>& Out, const bool bArranging) const
 {
 	Out.Reset();
 	if (!bPresent)
@@ -131,7 +143,10 @@ void FSolidArrangeSign::CollectStrokes(TArray<FStroke>& Out) const
 		return;
 	}
 
-	const TCHAR* Lines[] = { TEXT("Arrange"), TEXT("furniture") };
+	const TCHAR* Lines[] = {
+		bArranging ? TEXT("Done") : TEXT("Arrange"),
+		bArranging ? TEXT("arranging") : TEXT("furniture"),
+	};
 	const float Pitch = 5.f * CellCm + LetterGapCm;
 	const float LineHeight = 7.f * CellCm;
 	const float BlockHeight = LineHeight * 2.f + LineGapCm;
@@ -263,7 +278,10 @@ void FSolidArrangeSign::ApplyPlate(
 	}
 }
 
-void FSolidArrangeSign::AppendLetters(UInstancedStaticMeshComponent* Instances, const float CubeSizeCm) const
+void FSolidArrangeSign::AppendLetters(
+	UInstancedStaticMeshComponent* Instances,
+	const float CubeSizeCm,
+	const bool bArranging) const
 {
 	if (!Instances || !bPresent || CubeSizeCm <= KINDA_SMALL_NUMBER)
 	{
@@ -272,7 +290,7 @@ void FSolidArrangeSign::AppendLetters(UInstancedStaticMeshComponent* Instances, 
 
 	const FRotator Facing(0.f, FacingYawDeg, 0.f);
 	TArray<FStroke> Strokes;
-	CollectStrokes(Strokes);
+	CollectStrokes(Strokes, bArranging);
 	for (const FStroke& Stroke : Strokes)
 	{
 		Instances->AddInstance(FTransform(

@@ -58,6 +58,7 @@ public:
 	virtual bool ArrangeEntrance(int32 Floor, int32& OutX, int32& OutY) const override;
 
 	virtual int32 ArrangeSignCount() const override { return ArrangePlate ? 1 : 0; }
+	virtual void SetArrangeSignDone(bool bDone) override;
 	virtual UStaticMeshComponent* GetArrangeSignPlate(int32 Index) const override
 	{
 		return Index == 0 ? ArrangePlate.Get() : nullptr;
@@ -95,7 +96,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<UStaticMeshComponent> ArrangePlate;
 
-	/** Dark strokes of Arrange furniture. */
+	/** Dark strokes of the arrange sign. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<UInstancedStaticMeshComponent> ArrangeLetters;
 

@@ -236,6 +236,9 @@ public:
 	/** Arrange mode is on inside the company stronghold. */
 	bool IsArrangingFurniture() const { return ArrangeMode.IsOn(); }
 
+	/** An empty hex opened the furnishing column. */
+	bool IsFurnishingBrowserOpen() const { return ArrangeMode.IsBrowserOpen(); }
+
 	/**
 	 * `\` or the Arrange furniture plate.
 	 * bOverlay is a menu, the inventory, the journal, a message, or the squad builder.
@@ -404,6 +407,7 @@ protected:
 	void ApplyArrangeBody();
 	void BindArrangeFloor();
 	void ApplyArrangeActors();
+	void RefreshArrangeSign();
 	/** Interior spawned for this tunnel visit. The world keeps the actor alive. */
 	ASolidLairInterior* LairInterior = nullptr;
 	bool bCaptainTravelApplied = false;

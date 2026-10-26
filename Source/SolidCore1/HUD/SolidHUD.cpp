@@ -1402,6 +1402,70 @@ namespace SolidHUDPrivate
 			Page.Confirm.H,
 			Palette.Fill);
 	}
+
+	/** Catalogue names beside the floor. The first row stays highlighted until Up and Down move it. */
+	static void DrawFurnishingBrowser(
+		UCanvas* Canvas,
+		UFont* Font,
+		const TArray<SolidStrongholdFurniture::FItem>& Catalog)
+	{
+		if (!Canvas || Catalog.Num() == 0)
+		{
+			return;
+		}
+
+		const SolidHudTheme::FFrame Frame = SolidHudTheme::HudFrame();
+		const SolidHudTheme::FPalette Palette = SolidHudTheme::OakAndBronze();
+		const float Margin = 28.f;
+		const float RowPadX = 16.f;
+		const float RowPadY = 8.f;
+		const float RowGap = 4.f;
+		float LineH = 16.f;
+		float MaxTextW = 0.f;
+		for (const SolidStrongholdFurniture::FItem& Item : Catalog)
+		{
+			float TextW = static_cast<float>(FCString::Strlen(Item.Name) * 8);
+			float TextH = 16.f;
+			if (Font)
+			{
+				Canvas->StrLen(Font, Item.Name, TextW, TextH);
+			}
+			MaxTextW = FMath::Max(MaxTextW, TextW);
+			LineH = FMath::Max(LineH, TextH);
+		}
+
+		const float RowH = LineH + RowPadY * 2.f;
+		const float InnerW = MaxTextW + RowPadX * 2.f;
+		const float InnerH = static_cast<float>(Catalog.Num()) * RowH
+			+ static_cast<float>(Catalog.Num() - 1) * RowGap;
+		const float Band = SolidHudTheme::BandThickness(Frame);
+		const float BoxW = InnerW + Band * 2.f;
+		const float BoxH = InnerH + Band * 2.f;
+		const float BoxX = static_cast<float>(Canvas->SizeX) - BoxW - Margin;
+		const float BoxY = (static_cast<float>(Canvas->SizeY) - BoxH) * 0.5f;
+		DrawOakFrame(Canvas, BoxX, BoxY, BoxW, BoxH, Frame);
+
+		float RowY = BoxY + Band;
+		const float RowX = BoxX + Band;
+		for (int32 Index = 0; Index < Catalog.Num(); ++Index)
+		{
+			const bool bHighlight = Index == 0;
+			if (bHighlight)
+			{
+				FillRect(Canvas, RowX, RowY, InnerW, RowH, Palette.Bronze);
+			}
+			if (Font)
+			{
+				FCanvasTextItem Text(
+					FVector2D(RowX + RowPadX, RowY + RowPadY),
+					FText::FromString(Catalog[Index].Name),
+					Font,
+					bHighlight ? Palette.Title : Palette.Ink);
+				Canvas->DrawItem(Text);
+			}
+			RowY += RowH + RowGap;
+		}
+	}
 }
 
 void ASolidHUD::EnsureSightIndicator()
@@ -1827,6 +1891,15 @@ void ASolidHUD::DrawHUD()
 				if (const FSolidBattle* Battle = GameMode->GetBattle())
 				{
 					SolidHUDPrivate::DrawBattleBoard(Canvas, *Battle);
+				}
+				if (GameMode->IsFurnishingBrowserOpen())
+				{
+					const USolidGameState* State = BattleWorld->GetGameState<USolidGameState>();
+					const TArray<SolidStrongholdFurniture::FItem>& Rows =
+						(State && State->FurnishingCatalog.Num() > 0)
+						? State->FurnishingCatalog
+						: SolidStrongholdFurniture::FurnitureCatalogue();
+					SolidHUDPrivate::DrawFurnishingBrowser(Canvas, Font, Rows);
 				}
 			}
 		}

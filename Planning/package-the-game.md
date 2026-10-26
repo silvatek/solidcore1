@@ -16,7 +16,7 @@ This story depends on [Generate the character mesh outside the editor](character
 - Half, full, and outer fog curtains are translucent unlit two-sided materials in the cooked game, at the same colors and opacities Play In Editor uses now: half `(0.55, 0.62, 0.68)` at `0.40`, full `(0.48, 0.54, 0.60)` at `0.70`, outer `(0.92, 0.94, 0.96)` at `0.82`. The parent is a cooked content material. The curtain is that material.
 - Companions in the cooked game wear the generated low-poly body from that shipped story: the same seed, shirt, trousers, skin, and clips as Play In Editor. This story does not build that mesh. The Game target stays `TargetType.Game`.
 - The cook stays Development with distribution off.
-- Tests cover the cook list, the staged world map, and the fog parent. They run in the editor. The Windows machine runs `tools/package.bat`, and play of that executable is the check that the cooked game matches Play In Editor.
+- Tests cover the cook list, the staged world map, and the fog parent. Play of the packaged executable is the check that the cooked game matches Play In Editor.
 
 ## Implementation notes
 
@@ -27,5 +27,5 @@ This story depends on [Generate the character mesh outside the editor](character
 - `SolidTerrainFog::CreateProgrammaticTranslucentMist` is `WITH_EDITOR` and uses `GetEditorOnlyData` plus `PostEditChange`. A game build takes the opaque FlatCol fallback. Ship a project material, translucent, unlit, two-sided, with `MistColor` and `Opacity`, and instance it at runtime in every build. The cook has to include that asset. Leave `MaterialEditingLibrary` unused (SC1-0042). Curtain sizes and the trail rules stay as in [Source/SolidCore1/Fog/README.md](../Source/SolidCore1/Fog/README.md).
 - The generated body is already in the Game target when this story starts. Leave that build in the shipped character-mesh story.
 - Quit already leaves a game outside the editor (`SolidExit`). Input actions are created in code. Neither needs cook work.
-- Add `tools/package.bat` to the tools list in `README.md` when the script lands. A cloud agent does not cook, and does not run the editor.
+- Add `tools/package.bat` to the tools list in `README.md` when the script lands.
 - [Load the world from the chart](Done/load-the-world-from-the-chart.md) is Done. The cook follows `/Game/World/WorldChart`. The text file is gone.

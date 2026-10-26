@@ -11,6 +11,7 @@ One file is one user story.
 - The file is the story.
 - A commit that changes a story starts with `Plan: `. A product commit does not. That prefix is how the two are told apart. The final commit updates the story file and moves it into `Done/`. That commit message starts with `Plan: `.
 - A story update that stands on its own is pushed to `main`. It does not ask for a build. A story, a process document, or a change under `tools/` ships straight to `main`. A cloud agent may push that commit. Product work is written by the one coding agent on the Windows checkout. That agent builds and tests, then pushes `main`. It does not use `build/<name>`. `AGENTS.md` is that rule.
+- A story leaves development, build, and test process to [`AGENTS.md`](../AGENTS.md) and [`CodingGuidelines.md`](../CodingGuidelines.md). The successful build and the automated tests are that policy. A story may say what a test checks. It names a play-test in Play In Editor, or a change in the World Editor, when the story needs that.
 
 ## Status
 

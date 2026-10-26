@@ -389,7 +389,7 @@ bool SolidStrongholdTransition::PlaceOnFloor(
 			return false;
 		}
 
-		if (SolidStrongholdFurniture::HexCount(Item->Kind) >= 2)
+		if (SolidStrongholdFurniture::HexCount(*Item) >= 2)
 		{
 			int32 Anchor = INDEX_NONE;
 			int32 Span = INDEX_NONE;

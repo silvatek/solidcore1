@@ -224,7 +224,7 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 		TestFalse(TEXT("pieces stay off the captain's cell"), bOnCaptain);
 		TestFalse(TEXT("pieces stay off the entrance cell"), bOnEntrance);
 
-		const int32 Cells = SolidStrongholdFurniture::HexCount(Item->Kind);
+		const int32 Cells = SolidStrongholdFurniture::HexCount(*Item);
 		if (Cells == 1)
 		{
 			TestEqual(TEXT("one-hex piece uses one cell"), Anchor->Col, Span->Col);

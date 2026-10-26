@@ -147,10 +147,9 @@ bool FSolidNameSignMoveTest::RunTest(const FString& Parameters)
 	USolidGameState& State = *NewObject<USolidGameState>();
 	State.bStrongholdSiteRestrictions = true;
 	SolidNameSignTest::RaiseMaxSize(State, ESolidStrongholdSize::Imperious);
-	State.Furnishings.Reset();
 	TestTrue(
 		TEXT("leaving The Cave names the tower from its size and type"),
-		SolidStrongholdTransition::Commit(
+		SolidStrongholdTransition::Move(
 			*Company, State, ImperiousCell, ESolidStrongholdSize::Imperious, ESolidStrongholdType::Tower));
 	TestEqual(TEXT("the new stronghold is Imperious Tower"), Company->GetStronghold()->Name, FString(TEXT("Imperious Tower")));
 	TestEqual(
@@ -164,10 +163,9 @@ bool FSolidNameSignMoveTest::RunTest(const FString& Parameters)
 	USolidGameState& NamedState = *NewObject<USolidGameState>();
 	NamedState.bStrongholdSiteRestrictions = true;
 	SolidNameSignTest::RaiseMaxSize(NamedState, ESolidStrongholdSize::Imperious);
-	NamedState.Furnishings.Reset();
 	TestTrue(
 		TEXT("a chosen name moves with the company"),
-		SolidStrongholdTransition::Commit(
+		SolidStrongholdTransition::Move(
 			*Named, NamedState, ImperiousCell, ESolidStrongholdSize::Imperious, ESolidStrongholdType::Tower));
 	TestEqual(TEXT("the tower is High Keep"), Named->GetStronghold()->Name, FString(TEXT("High Keep")));
 	TestEqual(TEXT("the cave that was left is High Keep"), NamedState.PreviousStrongholds[0]->Name, FString(TEXT("High Keep")));

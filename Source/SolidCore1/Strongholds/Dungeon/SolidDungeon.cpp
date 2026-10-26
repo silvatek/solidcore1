@@ -69,9 +69,7 @@ namespace SolidStronghold
 		return ASolidDungeonInterior::StaticClass();
 	}
 
-	void FSolidDungeon::ConfigureInterior(
-		AActor* Interior,
-		const TArray<SolidStrongholdFurniture::FUsed>& Furnishings) const
+	void FSolidDungeon::ConfigureInterior(AActor* Interior) const
 	{
 		ASolidDungeonInterior* Cave = Cast<ASolidDungeonInterior>(Interior);
 		if (!Cave)

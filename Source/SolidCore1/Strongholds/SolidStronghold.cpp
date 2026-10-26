@@ -449,7 +449,7 @@ bool SolidStrongholdTransition::PlaceOnFloor(
 	return true;
 }
 
-bool SolidStrongholdTransition::Commit(
+bool SolidStrongholdTransition::Move(
 	USolidCompany& Company,
 	USolidGameState& State,
 	const FIntPoint SiteCell,
@@ -468,34 +468,35 @@ bool SolidStrongholdTransition::Commit(
 	{
 		return false;
 	}
-	TArray<SolidStrongholdFurniture::FUsed> Moved = State.Furnishings;
-	if (Moved.Num() == 0)
-	{
-		Moved = SolidStrongholdFurniture::StartingFurnishings();
-	}
+
+	FSolidStronghold* Leaving = Company.GetStronghold();
+	TArray<SolidStrongholdFurniture::FUsed> Moved = Leaving ? Leaving->Furnishings : TArray<SolidStrongholdFurniture::FUsed>();
 	if (!PlaceOnFloor(Moved, Hexes))
 	{
 		return false;
 	}
 
-	const FSolidStronghold* Leaving = Company.GetStronghold();
 	const FString Chosen = (Leaving && Leaving->Name != SolidStronghold::DefaultName(*Leaving))
 		? Leaving->Name
 		: FString();
+	if (Leaving)
+	{
+		Leaving->Furnishings.Reset();
+	}
 	State.PreviousStrongholds.Add(Company.TakeStronghold());
 	Company.SetStronghold(SolidStronghold::Make(
 		Type,
 		Size,
 		SiteCell,
 		SolidStronghold::WorldXY(SiteCell)));
-	if (!Chosen.IsEmpty())
+	if (FSolidStronghold* Next = Company.GetStronghold())
 	{
-		if (FSolidStronghold* Next = Company.GetStronghold())
+		Next->Furnishings = MoveTemp(Moved);
+		if (!Chosen.IsEmpty())
 		{
 			Next->Name = Chosen;
 		}
 	}
-	State.Furnishings = Moved;
 	return true;
 }
 
@@ -509,7 +510,7 @@ bool SolidStrongholdTransition::CompanyChestOpen(
 		return false;
 	}
 	bool bHasChest = false;
-	for (const SolidStrongholdFurniture::FUsed& Piece : State.Furnishings)
+	for (const SolidStrongholdFurniture::FUsed& Piece : Active->Furnishings)
 	{
 		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(Piece.ItemIndex);
 		if (Item && Item->IsStorage())

@@ -25,9 +25,7 @@ namespace SolidStronghold
 		virtual UClass* ExteriorClass() const override;
 		virtual void ConfigureExterior(AActor* Exterior) const override;
 		virtual UClass* InteriorClass() const override;
-		virtual void ConfigureInterior(
-			AActor* Interior,
-			const TArray<SolidStrongholdFurniture::FUsed>& Furnishings) const override;
+		virtual void ConfigureInterior(AActor* Interior) const override;
 
 		/** Front face width. The opening plus the stone on each side. */
 		float FaceWidthCm() const;

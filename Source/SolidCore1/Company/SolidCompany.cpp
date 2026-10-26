@@ -197,6 +197,7 @@ void USolidCompany::InitializeStartingStronghold()
 	{
 		ActiveStronghold->Orientation = ESolidStrongholdOrientation::North;
 		ActiveStronghold->Name = SolidStronghold::StartingStrongholdName;
+		ActiveStronghold->Furnishings = SolidStrongholdFurniture::StartingFurnishings();
 	}
 }
 

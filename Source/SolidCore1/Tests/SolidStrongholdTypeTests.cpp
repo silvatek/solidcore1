@@ -200,9 +200,8 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("tower interior"), Room);
 	if (Cave && Room)
 	{
-		const TArray<SolidStrongholdFurniture::FUsed> Carried;
-		DungeonOwned->ConfigureInterior(Cave, Carried);
-		ImperiousOwned->ConfigureInterior(Room, Carried);
+		DungeonOwned->ConfigureInterior(Cave);
+		ImperiousOwned->ConfigureInterior(Room);
 		TestNotNull(TEXT("the dungeon fill builds the mouth"), Cave->GetMouthMesh());
 		TestEqual(TEXT("the dungeon opening is the mouth"), Cave->GetPassageMesh(), Cave->GetMouthMesh());
 		TestEqual(TEXT("the dungeon fill keeps the cell"), Cave->GetStrongholdCell(), OriginCell);

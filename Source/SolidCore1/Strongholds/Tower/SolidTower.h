@@ -131,9 +131,7 @@ namespace SolidStronghold
 		virtual UClass* ExteriorClass() const override;
 		virtual void ConfigureExterior(AActor* Exterior) const override;
 		virtual UClass* InteriorClass() const override;
-		virtual void ConfigureInterior(
-			AActor* Interior,
-			const TArray<SolidStrongholdFurniture::FUsed>& Furnishings) const override;
+		virtual void ConfigureInterior(AActor* Interior) const override;
 		/**
 		 * Grass-facing yaw points local +X at the grass, the cave-mouth convention.
 		 * The tower door is local -X, so the exterior turns half a turn from that yaw.

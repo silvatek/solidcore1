@@ -496,7 +496,7 @@ void ASolidGameMode::BeginStrongholdInterior()
 		StrongholdInterior = Cast<ASolidStrongholdInterior>(Spawned);
 		if (StrongholdInterior)
 		{
-			Stronghold->ConfigureInterior(StrongholdInterior, GetConfiguration()->Furnishings);
+			Stronghold->ConfigureInterior(StrongholdInterior);
 		}
 	}
 
@@ -687,7 +687,7 @@ bool ASolidGameMode::EnterChosenStronghold(
 		return false;
 	}
 	USolidCompany* Company = GetCompany();
-	if (!Company || !SolidStrongholdTransition::Commit(*Company, *GetConfiguration(), Cell, Size, Type))
+	if (!Company || !SolidStrongholdTransition::Move(*Company, *GetConfiguration(), Cell, Size, Type))
 	{
 		return false;
 	}
@@ -885,12 +885,11 @@ void ASolidGameMode::ConfirmArrangeFurniture()
 	const FSolidArrange::EConfirm Result = ArrangeMode.Confirm();
 	if (Result == FSolidArrange::EConfirm::Placed)
 	{
-		if (USolidGameState* State = GetConfiguration())
+		USolidCompany* Company = GetCompany();
+		FSolidStronghold* Stronghold = Company ? Company->GetStronghold() : nullptr;
+		if (!Stronghold || !ArrangeMode.WritePlaced(Stronghold->Furnishings))
 		{
-			if (!ArrangeMode.WritePlaced(State->Furnishings))
-			{
-				UE_LOG(LogSolid, Warning, TEXT("Arrange put a piece down that is not on the stronghold list."));
-			}
+			UE_LOG(LogSolid, Warning, TEXT("Arrange put a piece down that is not on the stronghold list."));
 		}
 	}
 	ApplyArrangeActors();

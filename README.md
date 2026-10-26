@@ -227,12 +227,12 @@ USolidGameInstance                  # Session root
     FSolidCharacterMesh[]           # Viking
     FSolidCompanion[]               # Sam, Alex, Max, Morgan, Quinn
     FSolidStronghold                # Active base: Dungeon, Fortress, or Tower
+      FUsed[]                       # Pieces placed on this stronghold
   USolidGameState                   # Events, squad cap, enabled battle plans, lairs, and the unlocked stronghold size
     USolidJournal                   # Event, stronghold, and lair lines
     FLoadout                        # Worn boxes, pack, and crafting slots
     FContainer                      # Cave chest
-    FSolidStronghold[]              # Bases the company moved on from
-    FUsed[]                         # Furnishings in the active stronghold
+    FSolidStronghold[]              # Bases the company moved on from. Each list of pieces is empty
   FSolidTravelSession               # Squad choices carried across a closed visit
   float[]                           # Fog trail, copied off the terrain map before a visit
 ASolidGameMode                      # World root. OpenLevel replaces it

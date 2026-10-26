@@ -329,9 +329,7 @@ namespace SolidStronghold
 		return ASolidTowerInterior::StaticClass();
 	}
 
-	void FSolidTower::ConfigureInterior(
-		AActor* Interior,
-		const TArray<SolidStrongholdFurniture::FUsed>& Furnishings) const
+	void FSolidTower::ConfigureInterior(AActor* Interior) const
 	{
 		ASolidTowerInterior* Room = Cast<ASolidTowerInterior>(Interior);
 		if (!Room)

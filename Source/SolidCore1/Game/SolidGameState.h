@@ -78,8 +78,6 @@ public:
 	bool bStrongholdSiteRestrictions = false;
 	/** Strongholds the company moved on from, oldest first. The exterior stays. It is no longer a passage. */
 	TArray<TUniquePtr<FSolidStronghold>> PreviousStrongholds;
-	/** Furnishings in the active stronghold. A new game carries the Meagre stronghold's pieces. */
-	TArray<SolidStrongholdFurniture::FUsed> Furnishings = SolidStrongholdFurniture::StartingFurnishings();
 	/**
 	 * This session's furnishing catalogue. A new game copies FurnitureCatalogue.
 	 * bEnabled on a row is the unlock for this session.

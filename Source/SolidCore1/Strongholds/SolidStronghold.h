@@ -120,6 +120,12 @@ public:
 	FVector2D Location = FVector2D::ZeroVector;
 	/** Direction the exit faces. The starting cave faces north. */
 	ESolidStrongholdOrientation Orientation = ESolidStrongholdOrientation::North;
+	/**
+	 * Pieces placed on this stronghold.
+	 * The cave starts with the fireplace, the bed, and the chest.
+	 * A move carries the list onto the new stronghold and leaves this one empty.
+	 */
+	TArray<SolidStrongholdFurniture::FUsed> Furnishings;
 
 	/** True when the current code can build this type at Size. */
 	virtual bool Supported(ESolidStrongholdSize) const { return false; }
@@ -147,11 +153,9 @@ public:
 
 	/**
 	 * Fill an actor of InteriorClass() from this stronghold.
-	 * Furnishings are the pieces the company carried in.
+	 * The interior places this stronghold's Furnishings.
 	 */
-	virtual void ConfigureInterior(
-		AActor*,
-		const TArray<SolidStrongholdFurniture::FUsed>&) const
+	virtual void ConfigureInterior(AActor*) const
 	{
 	}
 
@@ -697,12 +701,14 @@ namespace SolidStrongholdTransition
 		const TArray<SolidStrongholdGrid::FHex>& Hexes);
 
 	/**
-	 * The site becomes the company base. Furnishings move onto its ground floor.
-	 * The stronghold the company leaves moves into PreviousStrongholds.
-	 * The chest keeps its slots. The captain's pack stays with him.
+	 * The site becomes the company base.
+	 * Pieces move off the stronghold the company leaves onto the new ground floor.
+	 * That stronghold keeps an empty list and moves into PreviousStrongholds.
+	 * Chest contents stay on the session. Multiple storage containers changes storage.
+	 * The captain's pack stays with him.
 	 * Returns false when the click would not have offered that size and type.
 	 */
-	bool Commit(
+	bool Move(
 		USolidCompany& Company,
 		USolidGameState& State,
 		FIntPoint SiteCell,

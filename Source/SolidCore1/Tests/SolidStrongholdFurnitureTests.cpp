@@ -145,9 +145,9 @@ bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("chest stops at one"), Catalogue[2].Limit, 1);
 	TestEqual(TEXT("small table stops at ten"), Catalogue[3].Limit, 10);
 	TestTrue(TEXT("a new game enables the four kinds"), Catalogue[0].bEnabled && Catalogue[1].bEnabled && Catalogue[2].bEnabled && Catalogue[3].bEnabled);
-	const SolidStrongholdFurniture::FItem Empty;
-	TestFalse(TEXT("an empty row is not storage"), Empty.IsStorage());
-	TestEqual(TEXT("an empty row covers one hex"), Empty.HexCount(), 1);
+	const SolidStrongholdFurniture::FItem EmptyRow;
+	TestFalse(TEXT("an empty row is not storage"), EmptyRow.IsStorage());
+	TestEqual(TEXT("an empty row covers one hex"), EmptyRow.HexCount(), 1);
 	for (int32 Index = 0; Index < Catalogue.Num(); ++Index)
 	{
 		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(Index);

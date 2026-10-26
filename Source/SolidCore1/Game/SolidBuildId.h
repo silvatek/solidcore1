@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0636")
+#define SOLID_BUILD_ID TEXT("SC1-0637")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Debug HUD drops fog and mist.")
+#define SOLID_BUILD_NOTE TEXT("Small table joins the furnishing catalog.")
 #endif

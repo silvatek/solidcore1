@@ -6,8 +6,8 @@
 class FSolidStronghold;
 
 /**
- * The first stronghold furnishings. Sizes are in hex cells of the floor grid.
- * A fireplace and a chest take one cell. A bed takes two neighboring cells.
+ * Stronghold furnishings. Sizes are in hex cells of the floor grid.
+ * A fireplace, a chest, and a small table take one cell. A bed takes two neighboring cells.
  */
 namespace SolidStrongholdFurniture
 {
@@ -16,6 +16,7 @@ namespace SolidStrongholdFurniture
 		Fireplace,
 		Bed,
 		Chest,
+		SmallTable,
 	};
 
 	inline int32 HexCount(const EKind Kind)
@@ -118,20 +119,56 @@ namespace SolidStrongholdFurniture
 		return ChestWidthCm() * 0.5f;
 	}
 
+	/** Square slab. Its diagonal stays inside one hex at every facing. */
+	inline float SmallTableTopCm()
+	{
+		return 80.f;
+	}
+
+	inline float SmallTableTopThicknessCm()
+	{
+		return 8.f;
+	}
+
+	/** Square post under one corner of the top. */
+	inline float SmallTableLegCm()
+	{
+		return 8.f;
+	}
+
+	inline float SmallTableLegHeightCm()
+	{
+		return 62.f;
+	}
+
+	/** The leg centre is this far in from each edge of the top. */
+	inline float SmallTableLegInsetCm()
+	{
+		return 12.f;
+	}
+
+	inline float SmallTableLegOffsetCm()
+	{
+		return SmallTableTopCm() * 0.5f - SmallTableLegInsetCm();
+	}
+
 	/** One kind of furnishing. The mesh is built from Kind. A storage piece holds items. */
 	struct FItem
 	{
 		const TCHAR* Name = TEXT("");
 		EKind Kind = EKind::Fireplace;
-		/** True when the piece holds items. The chest does. The fireplace and the bed do not. */
+		/** True when the piece holds items. The chest does. The fireplace, the bed, and the small table do not. */
 		bool bStorage = false;
+		/** How many of this kind one stronghold holds, on every floor, including a piece that is held. */
+		int32 Limit = 1;
 	};
 
 	/** Every furnishing the game knows. Strongholds point back into this list. */
 	inline const FItem Catalog[] = {
-		{ TEXT("Fireplace"), EKind::Fireplace, false },
-		{ TEXT("Bed"), EKind::Bed, false },
-		{ TEXT("Chest"), EKind::Chest, true },
+		{ TEXT("Fireplace"), EKind::Fireplace, false, 1 },
+		{ TEXT("Bed"), EKind::Bed, false, 3 },
+		{ TEXT("Chest"), EKind::Chest, true, 1 },
+		{ TEXT("Small Table"), EKind::SmallTable, false, 10 },
 	};
 
 	inline constexpr int32 CatalogCount = UE_ARRAY_COUNT(Catalog);

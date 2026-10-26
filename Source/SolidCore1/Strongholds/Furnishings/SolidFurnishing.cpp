@@ -35,6 +35,7 @@ namespace
 			SizeCm.Y / MeshSizeCm.Y,
 			SizeCm.Z / MeshSizeCm.Z));
 		Part->SetVisibility(true);
+		Part->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 		if (UMaterialInterface* Material = SolidMaterials::CreateSolidColor(Outer, Color, DebugName, 0.85f))
 		{
 			Part->SetMaterial(0, Material);
@@ -169,6 +170,16 @@ namespace
 		}
 		return Mesh;
 	}
+
+	void SetFurnishingPartShown(UStaticMeshComponent* Part, const bool bShown)
+	{
+		if (!Part)
+		{
+			return;
+		}
+		Part->SetVisibility(bShown);
+		Part->SetCollisionEnabled(bShown ? ECollisionEnabled::QueryAndPhysics : ECollisionEnabled::NoCollision);
+	}
 }
 
 ASolidFurnishing::ASolidFurnishing()
@@ -180,7 +191,15 @@ ASolidFurnishing::ASolidFurnishing()
 
 	BodyMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("BodyMesh"));
 	TopMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("TopMesh"));
-	UStaticMeshComponent* Parts[] = { BodyMesh.Get(), TopMesh.Get() };
+	static const TCHAR* LegNames[LegCount] = {
+		TEXT("Leg0"), TEXT("Leg1"), TEXT("Leg2"), TEXT("Leg3"),
+	};
+	UStaticMeshComponent* Parts[2 + LegCount] = { BodyMesh.Get(), TopMesh.Get() };
+	for (int32 Index = 0; Index < LegCount; ++Index)
+	{
+		LegMeshes[Index] = CreateDefaultSubobject<UStaticMeshComponent>(LegNames[Index]);
+		Parts[2 + Index] = LegMeshes[Index].Get();
+	}
 	for (UStaticMeshComponent* Part : Parts)
 	{
 		Part->SetupAttachment(SceneRoot);
@@ -230,26 +249,37 @@ void ASolidFurnishing::SetGhost(const bool bInGhost)
 		Body = SolidStrongholdFurniture::BeigeColor();
 		Top = SolidStrongholdFurniture::PillowColor();
 		break;
+	case SolidStrongholdFurniture::EKind::SmallTable:
+		Body = SolidStrongholdFurniture::BeigeColor();
+		Top = SolidStrongholdFurniture::BeigeColor();
+		break;
 	case SolidStrongholdFurniture::EKind::Chest:
 	default:
 		Body = SolidStrongholdFurniture::BeigeColor();
 		Top = SolidStrongholdFurniture::BeigeColor();
 		break;
 	}
-	if (BodyMesh)
+	auto WashPart = [this, &Wash](UStaticMeshComponent* Part, const FLinearColor& Color, const TCHAR* Name)
 	{
-		if (UMaterialInterface* Material = SolidMaterials::CreateSolidColor(
-			this, Wash(Body), TEXT("ArrangeGhost"), 0.85f))
+		if (!Part || !Part->IsVisible())
 		{
-			BodyMesh->SetMaterial(0, Material);
+			return;
 		}
-	}
-	if (TopMesh)
-	{
-		if (UMaterialInterface* Material = SolidMaterials::CreateSolidColor(
-			this, Wash(Top), TEXT("ArrangeGhostTop"), 0.85f))
+		if (UMaterialInterface* Material = SolidMaterials::CreateSolidColor(this, Wash(Color), Name, 0.85f))
 		{
-			TopMesh->SetMaterial(0, Material);
+			Part->SetMaterial(0, Material);
+		}
+	};
+	if (Kind != SolidStrongholdFurniture::EKind::SmallTable)
+	{
+		WashPart(BodyMesh, Body, TEXT("ArrangeGhost"));
+	}
+	WashPart(TopMesh, Top, TEXT("ArrangeGhostTop"));
+	if (Kind == SolidStrongholdFurniture::EKind::SmallTable)
+	{
+		for (int32 Index = 0; Index < LegCount; ++Index)
+		{
+			WashPart(LegMeshes[Index], Top, TEXT("ArrangeGhostLeg"));
 		}
 	}
 }
@@ -277,6 +307,10 @@ void ASolidFurnishing::BuildVisuals()
 	}
 
 	const float Lift = SolidStrongholdGrid::LineLiftCm + SolidStrongholdGrid::LineHeightCm;
+	for (int32 Index = 0; Index < LegCount; ++Index)
+	{
+		SetFurnishingPartShown(LegMeshes[Index], false);
+	}
 
 	switch (Kind)
 	{
@@ -340,6 +374,45 @@ void ASolidFurnishing::BuildVisuals()
 			FVector(100.f, 100.f, 100.f),
 			SolidStrongholdFurniture::PillowColor(),
 			TEXT("BedPillow"));
+		break;
+	}
+	case SolidStrongholdFurniture::EKind::SmallTable:
+	{
+		SetFurnishingPartShown(BodyMesh, false);
+		const float Top = SolidStrongholdFurniture::SmallTableTopCm();
+		const float Thick = SolidStrongholdFurniture::SmallTableTopThicknessCm();
+		const float Leg = SolidStrongholdFurniture::SmallTableLegCm();
+		const float LegHeight = SolidStrongholdFurniture::SmallTableLegHeightCm();
+		const float Offset = SolidStrongholdFurniture::SmallTableLegOffsetCm();
+		const FVector2D Corners[LegCount] = {
+			FVector2D(Offset, Offset),
+			FVector2D(Offset, -Offset),
+			FVector2D(-Offset, Offset),
+			FVector2D(-Offset, -Offset),
+		};
+		for (int32 Index = 0; Index < LegCount; ++Index)
+		{
+			PlaceFurnishingPart(
+				LegMeshes[Index],
+				Cube,
+				this,
+				FVector(Corners[Index].X, Corners[Index].Y, Lift + LegHeight * 0.5f),
+				FRotator::ZeroRotator,
+				FVector(Leg, Leg, LegHeight),
+				FVector(100.f, 100.f, 100.f),
+				SolidStrongholdFurniture::BeigeColor(),
+				TEXT("SmallTableLeg"));
+		}
+		PlaceFurnishingPart(
+			TopMesh,
+			Cube,
+			this,
+			FVector(0.f, 0.f, Lift + LegHeight + Thick * 0.5f),
+			FRotator::ZeroRotator,
+			FVector(Top, Top, Thick),
+			FVector(100.f, 100.f, 100.f),
+			SolidStrongholdFurniture::BeigeColor(),
+			TEXT("SmallTableTop"));
 		break;
 	}
 	case SolidStrongholdFurniture::EKind::Chest:

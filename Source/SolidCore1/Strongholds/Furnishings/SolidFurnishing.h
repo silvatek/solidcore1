@@ -7,7 +7,7 @@
 
 class UStaticMeshComponent;
 
-/** One stronghold piece: fireplace, bed, or chest. BuildVisuals after SetKind. */
+/** One stronghold piece: fireplace, bed, chest, or small table. BuildVisuals after SetKind. */
 UCLASS()
 class SOLIDCORE1_API ASolidFurnishing : public AActor
 {
@@ -38,6 +38,13 @@ public:
 	UStaticMeshComponent* GetBodyMesh() const { return BodyMesh; }
 	UStaticMeshComponent* GetTopMesh() const { return TopMesh; }
 
+	/** Posts under the small table. The other kinds hide these. */
+	static constexpr int32 LegCount = 4;
+	UStaticMeshComponent* GetLegMesh(int32 Index) const
+	{
+		return Index >= 0 && Index < LegCount ? LegMeshes[Index].Get() : nullptr;
+	}
+
 private:
 	SolidStrongholdFurniture::EKind Kind = SolidStrongholdFurniture::EKind::Fireplace;
 	SolidStrongholdFurniture::FUsed Placement;
@@ -52,4 +59,7 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UStaticMeshComponent> TopMesh;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> LegMeshes[LegCount];
 };

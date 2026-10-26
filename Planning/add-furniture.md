@@ -1,6 +1,6 @@
 # Add furniture
 
-Status: Ready
+Status: In Progress
 
 ## Story
 

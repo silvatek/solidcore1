@@ -1894,7 +1894,7 @@ void ASolidHUD::DrawHUD()
 				}
 				if (GameMode->IsFurnishingBrowserOpen())
 				{
-					const USolidGameState* State = BattleWorld->GetGameState<USolidGameState>();
+					const USolidGameState* State = GameMode->GetConfiguration();
 					const TArray<SolidStrongholdFurniture::FItem>& Rows =
 						(State && State->FurnishingCatalog.Num() > 0)
 						? State->FurnishingCatalog

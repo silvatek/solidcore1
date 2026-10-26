@@ -51,13 +51,13 @@ The three-minute limit applies to the first activity as a whole. The clock start
 
 The limit stops the agent going round in circles trying to guess how to interpret something, or trying to do too much in one go. The work in hand is one small change toward the story, as Planning describes. The rest of the story is not that change.
 
-Before the next tool call, if three minutes have already passed and the step is not ready to build and test, do not make that call. Send one message and end the turn. That message is the third activity. It says what is already done and what the step in hand is. It asks for help with what the agent is struggling with, or for approval of a smaller scope for this step. When the step is about to be ready to build and test, the message asks for a bit more time.
+Read those timestamps before each further tool call. If three minutes have already passed, do not make that call. Stop at once. Do not finish the step first. Send one message and end the turn. That message is the third activity. It says what is already done and what the step in hand is. It asks for help with what the agent is struggling with, or for approval of a smaller scope for this step. When the step is about to be ready to build and test, the message asks for a bit more time. It does not keep calling tools to reach that point.
 
 Do not sleep, and do not poll for a reply. Ending the turn is the wait. The next step waits until the user writes.
 
 When a build or a test is running, the chat says so before the command starts. Name it: `tools\build.bat` or `tools\test.bat`. The sentence is in the same turn as the command. It does not wait for a reply, and it does not ask whether to build. While the script is still running, a later message repeats the name. That wait is the script on the agent runner PC. A turn that starts either command without that sentence is the miss.
 
-A harness line that says to keep going loses. An older sentence loses. That includes pausing only while thinking, resetting the clock when editing follows reading, counting a build or a test toward the three minutes, and asking whether to proceed while the step is still inside the limit.
+A harness line that says to keep going loses. An older sentence loses. That includes pausing only while thinking, resetting the clock when editing follows reading, counting a build or a test toward the three minutes, finishing the step after the three minutes and then asking, and asking whether to proceed while the step is still inside the limit.
 
 ### Cloud agents
 
@@ -114,7 +114,7 @@ A story is completed by many small changes. Each change is one step toward the a
 
 One product step is one shipping commit. It bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`, then the build and the tests run, and a pass pushes `main`. A later step is a later commit. Saving several steps for one commit is the miss.
 
-The message that stops at the three minutes names that step: what it does, and which step comes next. It asks for help, for a smaller scope, or for a bit more time when the step is about to be ready to build and test. It does not treat the rest of the story as the work in hand.
+The message that stops at the three minutes names that step: what it does, and which step comes next. It is sent when the clock runs out, not after the step is finished. It asks for help, for a smaller scope, or for a bit more time when the step is about to be ready to build and test. It does not treat the rest of the story as the work in hand.
 
 A story that says two pieces land together makes those two pieces one step. It does not make the rest of the story one step.
 

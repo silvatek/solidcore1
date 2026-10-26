@@ -1619,9 +1619,9 @@ void ASolidHUD::DrawHUD()
 
 			const FSolidTerrainPoint Point = Streamer->GetTerrainPointAt(Loc);
 			Lines.Add(FString::Printf(
-				TEXT("Biome %s  threat=%.2f  fog=%.2f  mist=%.2f"),
+				TEXT("Biome %s  threat=%.2f"),
 				SolidBiome::Of(Point.Biome).Name(),
-				Point.Threat, Point.Fog, Streamer->GetRenderedFogAmount()));
+				Point.Threat));
 			if (const USolidTerrainMap* Map = Streamer->GetTerrainMap())
 			{
 				Lines.Add(FString::Printf(

@@ -63,9 +63,6 @@ public:
 
 	FSolidTerrainPoint GetTerrainPointAt(const FVector& WorldLocation) const;
 
-	/** Smoothed fog amount currently applied to height fog [0, 1]. */
-	float GetRenderedFogAmount() const { return RenderedFogAmount; }
-
 	/**
 	 * True after the one-shot start-town relocate has run (or been skipped because
 	 * WorldMap has no location 0 cells). Companions should wait on this before first spawn.

@@ -80,7 +80,7 @@ namespace SolidTerrainFog
 		UMaterialInterface* FullMaterial,
 		UMaterialInterface* OuterMaterial = nullptr);
 
-	/** HUD / legacy mist amount: max TerrainPoint.Fog on a pawn-centered ring (no camera). */
+	/** Legacy height-fog amount: max TerrainPoint.Fog on a pawn-centered ring (no camera). */
 	float SampleMistAmountAround(const USolidTerrainMap* Map, const FVector& WorldLocation);
 
 	void SilenceHeightFog(UWorld* World);

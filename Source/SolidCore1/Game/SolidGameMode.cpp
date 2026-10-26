@@ -32,7 +32,7 @@
 #include "Strongholds/Sites/SolidStrongholdSite.h"
 #include "SolidTravel.h"
 #include "Strongholds/Actors/SolidStrongholdInterior.h"
-#include "Strongholds/Furnishings/SolidFurnishing.h"
+#include "Strongholds/Furnishings/Actors/SolidFurnishing.h"
 #include "Components/CapsuleComponent.h"
 #include "Strongholds/Furnishings/SolidStrongholdGrid.h"
 #include "Strongholds/SolidStronghold.h"

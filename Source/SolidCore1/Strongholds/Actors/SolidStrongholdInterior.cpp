@@ -1,6 +1,6 @@
 #include "SolidStrongholdInterior.h"
 #include "SolidMaterials.h"
-#include "Strongholds/Furnishings/SolidFurnishing.h"
+#include "Strongholds/Furnishings/Actors/SolidFurnishing.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "Materials/MaterialInterface.h"

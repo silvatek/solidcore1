@@ -4,6 +4,7 @@
 #include "SolidStrongholdGrid.h"
 
 class FSolidStronghold;
+class UClass;
 
 /**
  * Stronghold furnishings. Sizes are in hex cells of the floor grid.
@@ -19,140 +20,13 @@ namespace SolidStrongholdFurniture
 		SmallTable,
 	};
 
-	inline int32 HexCount(const EKind Kind)
-	{
-		return Kind == EKind::Bed ? 2 : 1;
-	}
+	/** Cells the piece covers. The actor for that kind answers. */
+	int32 HexCount(EKind Kind);
 
-	inline FLinearColor StoneColor()
-	{
-		return FLinearColor(0.45f, 0.45f, 0.47f);
-	}
+	/** The actor spawned for a catalog kind. */
+	UClass* ActorClass(EKind Kind);
 
-	inline FLinearColor EmberColor()
-	{
-		return FLinearColor(0.72f, 0.12f, 0.06f);
-	}
-
-	inline FLinearColor BeigeColor()
-	{
-		return FLinearColor(0.78f, 0.66f, 0.45f);
-	}
-
-	inline FLinearColor PillowColor()
-	{
-		return FLinearColor(0.94f, 0.93f, 0.90f);
-	}
-
-	/** Grey hearth, slightly inside one cell so the yellow outline still shows. */
-	inline float FireplaceAcrossCm()
-	{
-		return SolidStrongholdGrid::FlatToFlatCm * 0.90f;
-	}
-
-	inline float FireplaceHearthCm()
-	{
-		return 30.f;
-	}
-
-	inline float FireplaceEmberRadiusCm()
-	{
-		return FireplaceAcrossCm() * 0.40f;
-	}
-
-	inline float FireplaceEmberHeightCm()
-	{
-		// Was 20 cm. About 60 percent of that height is gone.
-		return 8.f;
-	}
-
-	/** Long axis covers two cells. */
-	inline float BedLengthCm()
-	{
-		return SolidStrongholdGrid::FlatToFlatCm * 2.f - 20.f;
-	}
-
-	/** Narrow enough to pass through the flat the two cells share. */
-	inline float BedWidthCm()
-	{
-		return SolidStrongholdGrid::SideCm() - SolidStrongholdGrid::LineThicknessCm * 1.5f;
-	}
-
-	inline float BedHeightCm()
-	{
-		return 42.f;
-	}
-
-	inline float PillowLengthCm()
-	{
-		return 52.f;
-	}
-
-	inline float PillowWidthCm()
-	{
-		return BedWidthCm() * 0.70f;
-	}
-
-	inline float PillowHeightCm()
-	{
-		return 14.f;
-	}
-
-	inline float ChestLengthCm()
-	{
-		return 76.f;
-	}
-
-	inline float ChestWidthCm()
-	{
-		return 48.f;
-	}
-
-	inline float ChestBodyHeightCm()
-	{
-		return 36.f;
-	}
-
-	/** Lid radius matches half the chest width, so the dome is a half cylinder. */
-	inline float ChestLidRadiusCm()
-	{
-		return ChestWidthCm() * 0.5f;
-	}
-
-	/** Square slab. Its diagonal stays inside one hex at every facing. */
-	inline float SmallTableTopCm()
-	{
-		return 80.f;
-	}
-
-	inline float SmallTableTopThicknessCm()
-	{
-		return 8.f;
-	}
-
-	/** Square post under one corner of the top. */
-	inline float SmallTableLegCm()
-	{
-		return 8.f;
-	}
-
-	inline float SmallTableLegHeightCm()
-	{
-		return 62.f;
-	}
-
-	/** The leg centre is this far in from each edge of the top. */
-	inline float SmallTableLegInsetCm()
-	{
-		return 12.f;
-	}
-
-	inline float SmallTableLegOffsetCm()
-	{
-		return SmallTableTopCm() * 0.5f - SmallTableLegInsetCm();
-	}
-
-	/** One kind of furnishing. The mesh is built from Kind. A storage piece holds items. */
+	/** One kind of furnishing. The actor is built from Kind. A storage piece holds items. */
 	struct FItem
 	{
 		const TCHAR* Name = TEXT("");

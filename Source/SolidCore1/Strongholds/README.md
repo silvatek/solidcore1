@@ -2,7 +2,7 @@
 
 The stronghold type is a class that owns its measurements. A type would preferably not use a separate plan structure. The exterior actor (shell) and the interior actor (visit) hold a pointer to that stronghold.
 
-`Strongholds/<Type>/` holds the stronghold class. `Strongholds/<Type>/Actors/` holds the exterior actor (shell) and the interior actor (visit). Shared stronghold bases stay in `Strongholds/Actors/`. Furnishings stay in `Strongholds/Furnishings/`.
+`Strongholds/<Type>/` holds the stronghold class. `Strongholds/<Type>/Actors/` holds the exterior actor (shell) and the interior actor (visit). Shared stronghold bases stay in `Strongholds/Actors/`. The furnishing catalog stays in `Strongholds/Furnishings/`. Furniture actors stay in `Strongholds/Furnishings/Actors/`.
 
 The class is the placed stronghold. Its fields are the measurements. Values derived from those fields are methods. Public methods cover what that stronghold does. Details only the placed instance needs stay private. Configure points the exterior actor (shell) and the interior actor (visit) at this instance.
 

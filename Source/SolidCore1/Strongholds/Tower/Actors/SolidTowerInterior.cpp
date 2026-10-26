@@ -1,7 +1,7 @@
 #include "SolidTowerInterior.h"
 #include "SolidCore1.h"
 #include "Strongholds/Furnishings/SolidArrangeSign.h"
-#include "Strongholds/Furnishings/SolidFurnishing.h"
+#include "Strongholds/Furnishings/Actors/SolidFurnishing.h"
 #include "SolidMaterials.h"
 #include "Strongholds/SolidStronghold.h"
 #include "EngineUtils.h"
@@ -989,7 +989,7 @@ void ASolidTowerInterior::PlaceFurnishings(const TArray<SolidStrongholdFurniture
 		const FTransform SpawnXf(WorldRot, WorldPos);
 
 		ASolidFurnishing* Piece = World->SpawnActorDeferred<ASolidFurnishing>(
-			ASolidFurnishing::StaticClass(),
+			SolidStrongholdFurniture::ActorClass(Item->Kind),
 			SpawnXf,
 			this,
 			nullptr,
@@ -999,7 +999,6 @@ void ASolidTowerInterior::PlaceFurnishings(const TArray<SolidStrongholdFurniture
 			continue;
 		}
 
-		Piece->SetKind(Item->Kind);
 		Piece->FinishSpawning(SpawnXf);
 		Piece->SetPlacement(UsedPiece);
 		Piece->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);

@@ -1,5 +1,33 @@
 #include "SolidStrongholdFurniture.h"
+#include "Actors/SolidBed.h"
+#include "Actors/SolidChest.h"
+#include "Actors/SolidFireplace.h"
+#include "Actors/SolidSmallTable.h"
 #include "Strongholds/SolidStronghold.h"
+
+int32 SolidStrongholdFurniture::HexCount(const EKind Kind)
+{
+	const ASolidFurnishing* Piece = Cast<ASolidFurnishing>(ActorClass(Kind)->GetDefaultObject());
+	return Piece ? Piece->HexCount() : 1;
+}
+
+UClass* SolidStrongholdFurniture::ActorClass(const EKind Kind)
+{
+	switch (Kind)
+	{
+	case EKind::Fireplace:
+		return ASolidFireplace::StaticClass();
+	case EKind::Bed:
+		return ASolidBed::StaticClass();
+	case EKind::Chest:
+		return ASolidChest::StaticClass();
+	case EKind::SmallTable:
+		return ASolidSmallTable::StaticClass();
+	default:
+		checkNoEntry();
+		return ASolidFireplace::StaticClass();
+	}
+}
 
 void SolidStrongholdFurniture::UsedFurnishings(const FSolidStronghold& Stronghold, TArray<FUsed>& OutUsed)
 {

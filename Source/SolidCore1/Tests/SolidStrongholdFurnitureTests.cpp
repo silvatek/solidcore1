@@ -2,7 +2,11 @@
 #include "Misc/AutomationTest.h"
 #include "Strongholds/Dungeon/SolidDungeonInterior.h"
 #include "Strongholds/Dungeon/SolidDungeonLevel.h"
-#include "Strongholds/Furnishings/SolidFurnishing.h"
+#include "Strongholds/Furnishings/Actors/SolidBed.h"
+#include "Strongholds/Furnishings/Actors/SolidChest.h"
+#include "Strongholds/Furnishings/Actors/SolidFireplace.h"
+#include "Strongholds/Furnishings/Actors/SolidFurnishing.h"
+#include "Strongholds/Furnishings/Actors/SolidSmallTable.h"
 #include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
 #include "Strongholds/Furnishings/SolidStrongholdGrid.h"
 #include "Components/StaticMeshComponent.h"
@@ -30,66 +34,79 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidStrongholdFurnitureMeasureTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("fireplace is one hex"), SolidStrongholdFurniture::HexCount(SolidStrongholdFurniture::EKind::Fireplace), 1);
-	TestEqual(TEXT("bed is two hexes"), SolidStrongholdFurniture::HexCount(SolidStrongholdFurniture::EKind::Bed), 2);
-	TestEqual(TEXT("chest is one hex"), SolidStrongholdFurniture::HexCount(SolidStrongholdFurniture::EKind::Chest), 1);
-	TestEqual(TEXT("small table is one hex"), SolidStrongholdFurniture::HexCount(SolidStrongholdFurniture::EKind::SmallTable), 1);
+	const ASolidFireplace* Fire = NewObject<ASolidFireplace>();
+	const ASolidBed* BedKind = NewObject<ASolidBed>();
+	const ASolidChest* ChestKind = NewObject<ASolidChest>();
+	const ASolidSmallTable* TableKind = NewObject<ASolidSmallTable>();
+	TestNotNull(TEXT("fireplace actor"), Fire);
+	TestNotNull(TEXT("bed actor"), BedKind);
+	TestNotNull(TEXT("chest actor"), ChestKind);
+	TestNotNull(TEXT("small table actor"), TableKind);
+	if (!Fire || !BedKind || !ChestKind || !TableKind)
+	{
+		return false;
+	}
+
+	TestEqual(TEXT("fireplace is one hex"), Fire->HexCount(), 1);
+	TestEqual(TEXT("bed is two hexes"), BedKind->HexCount(), 2);
+	TestEqual(TEXT("chest is one hex"), ChestKind->HexCount(), 1);
+	TestEqual(TEXT("small table is one hex"), TableKind->HexCount(), 1);
 
 	const float Flat = SolidStrongholdGrid::FlatToFlatCm;
 	const float Across = SolidStrongholdGrid::VertexToVertexCm();
-	TestTrue(TEXT("fireplace sits inside one hex"), SolidStrongholdFurniture::FireplaceAcrossCm() < Flat);
-	TestTrue(TEXT("fireplace still fills most of the hex"), SolidStrongholdFurniture::FireplaceAcrossCm() > Flat * 0.7f);
+	TestTrue(TEXT("fireplace sits inside one hex"), Fire->AcrossCm() < Flat);
+	TestTrue(TEXT("fireplace still fills most of the hex"), Fire->AcrossCm() > Flat * 0.7f);
 	TestTrue(
 		TEXT("embers are a low disc"),
-		SolidStrongholdFurniture::FireplaceEmberHeightCm() < SolidStrongholdFurniture::FireplaceHearthCm());
+		Fire->EmberHeightCm() < Fire->HearthCm());
 	TestTrue(
 		TEXT("embers lost about 60 percent of their height"),
-		FMath::IsNearlyEqual(SolidStrongholdFurniture::FireplaceEmberHeightCm(), 8.f, 0.01f));
+		FMath::IsNearlyEqual(Fire->EmberHeightCm(), 8.f, 0.01f));
 	TestTrue(
 		TEXT("embers sit inside the hearth"),
-		SolidStrongholdFurniture::FireplaceEmberRadiusCm() * 2.f < SolidStrongholdFurniture::FireplaceAcrossCm());
+		Fire->EmberRadiusCm() * 2.f < Fire->AcrossCm());
 	TestTrue(
 		TEXT("embers cover most of the hearth"),
-		SolidStrongholdFurniture::FireplaceEmberRadiusCm() * 2.f > SolidStrongholdFurniture::FireplaceAcrossCm() * 0.7f);
+		Fire->EmberRadiusCm() * 2.f > Fire->AcrossCm() * 0.7f);
 
-	TestTrue(TEXT("bed is longer than one hex"), SolidStrongholdFurniture::BedLengthCm() > Flat);
-	TestTrue(TEXT("bed fits in two hexes"), SolidStrongholdFurniture::BedLengthCm() <= Flat * 2.f);
-	TestTrue(TEXT("bed is narrower than a hex"), SolidStrongholdFurniture::BedWidthCm() < Across);
+	TestTrue(TEXT("bed is longer than one hex"), BedKind->LengthCm() > Flat);
+	TestTrue(TEXT("bed fits in two hexes"), BedKind->LengthCm() <= Flat * 2.f);
+	TestTrue(TEXT("bed is narrower than a hex"), BedKind->WidthCm() < Across);
 	TestTrue(
 		TEXT("bed passes through the shared flat"),
-		SolidStrongholdFurniture::BedWidthCm() < SolidStrongholdGrid::SideCm());
-	TestTrue(TEXT("pillow is shorter than the bed"), SolidStrongholdFurniture::PillowLengthCm() < SolidStrongholdFurniture::BedLengthCm());
-	TestTrue(TEXT("pillow is narrower than the bed"), SolidStrongholdFurniture::PillowWidthCm() < SolidStrongholdFurniture::BedWidthCm());
+		BedKind->WidthCm() < SolidStrongholdGrid::SideCm());
+	TestTrue(TEXT("pillow is shorter than the bed"), BedKind->PillowLengthCm() < BedKind->LengthCm());
+	TestTrue(TEXT("pillow is narrower than the bed"), BedKind->PillowWidthCm() < BedKind->WidthCm());
 
-	TestTrue(TEXT("chest length fits in one hex"), SolidStrongholdFurniture::ChestLengthCm() < Flat);
-	TestTrue(TEXT("chest width fits in one hex"), SolidStrongholdFurniture::ChestWidthCm() < Flat);
+	TestTrue(TEXT("chest length fits in one hex"), ChestKind->LengthCm() < Flat);
+	TestTrue(TEXT("chest width fits in one hex"), ChestKind->WidthCm() < Flat);
 	TestTrue(
 		TEXT("lid matches the chest width"),
-		FMath::IsNearlyEqual(SolidStrongholdFurniture::ChestLidRadiusCm() * 2.f, SolidStrongholdFurniture::ChestWidthCm(), 0.01f));
+		FMath::IsNearlyEqual(ChestKind->LidRadiusCm() * 2.f, ChestKind->WidthCm(), 0.01f));
 
 	TestTrue(
 		TEXT("small table top is 80 cm square"),
-		FMath::IsNearlyEqual(SolidStrongholdFurniture::SmallTableTopCm(), 80.f, 0.01f));
+		FMath::IsNearlyEqual(TableKind->TopCm(), 80.f, 0.01f));
 	TestTrue(
 		TEXT("small table top is 8 cm thick"),
-		FMath::IsNearlyEqual(SolidStrongholdFurniture::SmallTableTopThicknessCm(), 8.f, 0.01f));
+		FMath::IsNearlyEqual(TableKind->TopThicknessCm(), 8.f, 0.01f));
 	TestTrue(
 		TEXT("small table leg is an 8 cm post"),
-		FMath::IsNearlyEqual(SolidStrongholdFurniture::SmallTableLegCm(), 8.f, 0.01f));
+		FMath::IsNearlyEqual(TableKind->LegCm(), 8.f, 0.01f));
 	TestTrue(
 		TEXT("small table leg is 62 cm tall"),
-		FMath::IsNearlyEqual(SolidStrongholdFurniture::SmallTableLegHeightCm(), 62.f, 0.01f));
+		FMath::IsNearlyEqual(TableKind->LegHeightCm(), 62.f, 0.01f));
 	TestTrue(
 		TEXT("small table leg is 12 cm in from the edge"),
-		FMath::IsNearlyEqual(SolidStrongholdFurniture::SmallTableLegInsetCm(), 12.f, 0.01f));
+		FMath::IsNearlyEqual(TableKind->LegInsetCm(), 12.f, 0.01f));
 	TestTrue(
 		TEXT("small table top stays inside one hex"),
-		SolidStrongholdFurniture::SmallTableTopCm() * FMath::Sqrt(2.f) < SolidStrongholdGrid::FlatToFlatCm);
+		TableKind->TopCm() * FMath::Sqrt(2.f) < SolidStrongholdGrid::FlatToFlatCm);
 
-	const FLinearColor Stone = SolidStrongholdFurniture::StoneColor();
-	const FLinearColor Ember = SolidStrongholdFurniture::EmberColor();
-	const FLinearColor Beige = SolidStrongholdFurniture::BeigeColor();
-	const FLinearColor Pillow = SolidStrongholdFurniture::PillowColor();
+	const FLinearColor Stone = Fire->StoneColor();
+	const FLinearColor Ember = Fire->EmberColor();
+	const FLinearColor Beige = BedKind->BeigeColor();
+	const FLinearColor Pillow = BedKind->PillowColor();
 	TestTrue(TEXT("hearth is grey"), FMath::Abs(Stone.R - Stone.G) < 0.05f && Stone.R > 0.3f && Stone.R < 0.6f);
 	TestTrue(TEXT("embers are red"), Ember.R > 0.5f && Ember.R > Ember.G * 2.f && Ember.R > Ember.B * 2.f);
 	TestTrue(TEXT("wood is beige"), Beige.R > Beige.G && Beige.G > Beige.B && Beige.B > 0.3f);
@@ -230,34 +247,33 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidStrongholdFurnitureVisualTest::RunTest(const FString& Parameters)
 {
-	auto BuildPiece = [this](const SolidStrongholdFurniture::EKind Kind) -> ASolidFurnishing*
-	{
-		ASolidFurnishing* Piece = NewObject<ASolidFurnishing>();
-		TestNotNull(TEXT("furnishing"), Piece);
-		if (!Piece)
-		{
-			return nullptr;
-		}
-		Piece->SetKind(Kind);
-		TestTrue(TEXT("kind sticks"), Piece->GetKind() == Kind);
-		Piece->BuildVisuals();
-		return Piece;
-	};
-
-	ASolidFurnishing* Fireplace = BuildPiece(SolidStrongholdFurniture::EKind::Fireplace);
-	ASolidFurnishing* Bed = BuildPiece(SolidStrongholdFurniture::EKind::Bed);
-	ASolidFurnishing* Chest = BuildPiece(SolidStrongholdFurniture::EKind::Chest);
-	if (!Fireplace || !Bed || !Chest)
+	ASolidFireplace* Fireplace = NewObject<ASolidFireplace>();
+	ASolidBed* Bed = NewObject<ASolidBed>();
+	ASolidChest* Chest = NewObject<ASolidChest>();
+	ASolidSmallTable* Table = NewObject<ASolidSmallTable>();
+	TestNotNull(TEXT("fireplace"), Fireplace);
+	TestNotNull(TEXT("bed"), Bed);
+	TestNotNull(TEXT("chest"), Chest);
+	TestNotNull(TEXT("small table"), Table);
+	if (!Fireplace || !Bed || !Chest || !Table)
 	{
 		return false;
 	}
+	TestTrue(TEXT("fireplace kind"), Fireplace->GetKind() == SolidStrongholdFurniture::EKind::Fireplace);
+	TestTrue(TEXT("bed kind"), Bed->GetKind() == SolidStrongholdFurniture::EKind::Bed);
+	TestTrue(TEXT("chest kind"), Chest->GetKind() == SolidStrongholdFurniture::EKind::Chest);
+	TestTrue(TEXT("small table kind"), Table->GetKind() == SolidStrongholdFurniture::EKind::SmallTable);
+	Fireplace->BuildVisuals();
+	Bed->BuildVisuals();
+	Chest->BuildVisuals();
+	Table->BuildVisuals();
 
-	UStaticMeshComponent* Hearth = Fireplace->GetBodyMesh();
-	UStaticMeshComponent* Embers = Fireplace->GetTopMesh();
-	UStaticMeshComponent* BedBody = Bed->GetBodyMesh();
-	UStaticMeshComponent* Pillow = Bed->GetTopMesh();
-	UStaticMeshComponent* ChestBody = Chest->GetBodyMesh();
-	UStaticMeshComponent* Lid = Chest->GetTopMesh();
+	UStaticMeshComponent* Hearth = Fireplace->GetHearth();
+	UStaticMeshComponent* Embers = Fireplace->GetEmbers();
+	UStaticMeshComponent* BedBody = Bed->GetBedMesh();
+	UStaticMeshComponent* Pillow = Bed->GetPillow();
+	UStaticMeshComponent* ChestBody = Chest->GetChestMesh();
+	UStaticMeshComponent* Lid = Chest->GetLid();
 	TestNotNull(TEXT("hearth"), Hearth);
 	TestNotNull(TEXT("embers"), Embers);
 	TestNotNull(TEXT("bed"), BedBody);
@@ -287,43 +303,43 @@ bool FSolidStrongholdFurnitureVisualTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("hearth scale is one hex across"),
 		ScaleMatches(Hearth, FVector(
-			SolidStrongholdFurniture::FireplaceAcrossCm(),
-			SolidStrongholdFurniture::FireplaceAcrossCm(),
-			SolidStrongholdFurniture::FireplaceHearthCm())));
+			Fireplace->AcrossCm(),
+			Fireplace->AcrossCm(),
+			Fireplace->HearthCm())));
 	TestTrue(
 		TEXT("embers are a short cylinder"),
 		ScaleMatches(Embers, FVector(
-			SolidStrongholdFurniture::FireplaceEmberRadiusCm() * 2.f,
-			SolidStrongholdFurniture::FireplaceEmberRadiusCm() * 2.f,
-			SolidStrongholdFurniture::FireplaceEmberHeightCm())));
+			Fireplace->EmberRadiusCm() * 2.f,
+			Fireplace->EmberRadiusCm() * 2.f,
+			Fireplace->EmberHeightCm())));
 	TestTrue(TEXT("embers sit on the hearth"), Embers->GetRelativeLocation().Z > Hearth->GetRelativeLocation().Z);
 
 	TestTrue(
 		TEXT("bed scale covers two hexes"),
 		ScaleMatches(BedBody, FVector(
-			SolidStrongholdFurniture::BedLengthCm(),
-			SolidStrongholdFurniture::BedWidthCm(),
-			SolidStrongholdFurniture::BedHeightCm())));
+			Bed->LengthCm(),
+			Bed->WidthCm(),
+			Bed->HeightCm())));
 	TestTrue(
 		TEXT("pillow scale"),
 		ScaleMatches(Pillow, FVector(
-			SolidStrongholdFurniture::PillowLengthCm(),
-			SolidStrongholdFurniture::PillowWidthCm(),
-			SolidStrongholdFurniture::PillowHeightCm())));
+			Bed->PillowLengthCm(),
+			Bed->PillowWidthCm(),
+			Bed->PillowHeightCm())));
 	TestTrue(TEXT("pillow sits on the bed"), Pillow->GetRelativeLocation().Z > BedBody->GetRelativeLocation().Z);
 
 	TestTrue(
 		TEXT("chest body scale"),
 		ScaleMatches(ChestBody, FVector(
-			SolidStrongholdFurniture::ChestLengthCm(),
-			SolidStrongholdFurniture::ChestWidthCm(),
-			SolidStrongholdFurniture::ChestBodyHeightCm())));
+			Chest->LengthCm(),
+			Chest->WidthCm(),
+			Chest->BodyHeightCm())));
 	TestTrue(
 		TEXT("lid scale is a cylinder along the chest"),
 		ScaleMatches(Lid, FVector(
-			SolidStrongholdFurniture::ChestLidRadiusCm() * 2.f,
-			SolidStrongholdFurniture::ChestLidRadiusCm() * 2.f,
-			SolidStrongholdFurniture::ChestLengthCm())));
+			Chest->LidRadiusCm() * 2.f,
+			Chest->LidRadiusCm() * 2.f,
+			Chest->LengthCm())));
 	TestTrue(
 		TEXT("lid axis runs along the chest"),
 		Lid->GetRelativeRotation().Quaternion().GetAxisZ().Equals(FVector::ForwardVector, 0.02f));
@@ -331,50 +347,26 @@ bool FSolidStrongholdFurnitureVisualTest::RunTest(const FString& Parameters)
 		TEXT("lid is centered on the top of the chest"),
 		FMath::IsNearlyEqual(
 			Lid->GetRelativeLocation().Z,
-			ChestBody->GetRelativeLocation().Z + SolidStrongholdFurniture::ChestBodyHeightCm() * 0.5f,
+			ChestBody->GetRelativeLocation().Z + Chest->BodyHeightCm() * 0.5f,
 			0.05f));
 
-	auto LegsHidden = [this](const ASolidFurnishing* Piece, const TCHAR* Label)
-	{
-		for (int32 Index = 0; Index < ASolidFurnishing::LegCount; ++Index)
-		{
-			const UStaticMeshComponent* Leg = Piece->GetLegMesh(Index);
-			TestNotNull(Label, Leg);
-			if (Leg)
-			{
-				TestFalse(Label, Leg->IsVisible());
-			}
-		}
-	};
-	LegsHidden(Fireplace, TEXT("fireplace hides its legs"));
-	LegsHidden(Bed, TEXT("bed hides its legs"));
-	LegsHidden(Chest, TEXT("chest hides its legs"));
-
-	ASolidFurnishing* Table = BuildPiece(SolidStrongholdFurniture::EKind::SmallTable);
-	if (!Table)
-	{
-		return false;
-	}
-	UStaticMeshComponent* Slab = Table->GetTopMesh();
-	UStaticMeshComponent* TableBody = Table->GetBodyMesh();
+	UStaticMeshComponent* Slab = Table->GetTop();
 	TestNotNull(TEXT("small table top"), Slab);
-	TestNotNull(TEXT("small table body"), TableBody);
-	if (!Slab || !TableBody)
+	if (!Slab)
 	{
 		return false;
 	}
-	TestFalse(TEXT("small table hides the body"), TableBody->IsVisible());
 	TestTrue(TEXT("small table shows the top"), Slab->IsVisible());
 	TestTrue(
 		TEXT("small table top scale"),
 		ScaleMatches(Slab, FVector(
-			SolidStrongholdFurniture::SmallTableTopCm(),
-			SolidStrongholdFurniture::SmallTableTopCm(),
-			SolidStrongholdFurniture::SmallTableTopThicknessCm())));
+			Table->TopCm(),
+			Table->TopCm(),
+			Table->TopThicknessCm())));
 	const float Lift = SolidStrongholdGrid::LineLiftCm + SolidStrongholdGrid::LineHeightCm;
-	const float Offset = SolidStrongholdFurniture::SmallTableLegOffsetCm();
-	const float LegZ = Lift + SolidStrongholdFurniture::SmallTableLegHeightCm() * 0.5f;
-	const FVector2D Corners[ASolidFurnishing::LegCount] = {
+	const float Offset = Table->LegOffsetCm();
+	const float LegZ = Lift + Table->LegHeightCm() * 0.5f;
+	const FVector2D Corners[ASolidSmallTable::LegCount] = {
 		FVector2D(Offset, Offset),
 		FVector2D(Offset, -Offset),
 		FVector2D(-Offset, Offset),
@@ -384,13 +376,12 @@ bool FSolidStrongholdFurnitureVisualTest::RunTest(const FString& Parameters)
 		TEXT("small table top sits on the legs"),
 		FMath::IsNearlyEqual(
 			Slab->GetRelativeLocation().Z,
-			Lift + SolidStrongholdFurniture::SmallTableLegHeightCm()
-				+ SolidStrongholdFurniture::SmallTableTopThicknessCm() * 0.5f,
+			Lift + Table->LegHeightCm() + Table->TopThicknessCm() * 0.5f,
 			0.05f));
 	TestTrue(TEXT("small table top is centered on the hex"), Slab->GetRelativeLocation().X == 0.f && Slab->GetRelativeLocation().Y == 0.f);
-	for (int32 Index = 0; Index < ASolidFurnishing::LegCount; ++Index)
+	for (int32 Index = 0; Index < ASolidSmallTable::LegCount; ++Index)
 	{
-		UStaticMeshComponent* Leg = Table->GetLegMesh(Index);
+		UStaticMeshComponent* Leg = Table->GetLeg(Index);
 		TestNotNull(TEXT("small table leg"), Leg);
 		if (!Leg)
 		{
@@ -402,9 +393,9 @@ bool FSolidStrongholdFurnitureVisualTest::RunTest(const FString& Parameters)
 		TestTrue(
 			TEXT("small table leg scale"),
 			ScaleMatches(Leg, FVector(
-				SolidStrongholdFurniture::SmallTableLegCm(),
-				SolidStrongholdFurniture::SmallTableLegCm(),
-				SolidStrongholdFurniture::SmallTableLegHeightCm())));
+				Table->LegCm(),
+				Table->LegCm(),
+				Table->LegHeightCm())));
 		TestTrue(
 			TEXT("small table leg stands on the floor"),
 			Leg->GetRelativeLocation().Equals(FVector(Corners[Index].X, Corners[Index].Y, LegZ), 0.05f));

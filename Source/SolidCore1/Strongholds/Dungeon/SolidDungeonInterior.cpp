@@ -1,6 +1,6 @@
 #include "SolidDungeonInterior.h"
 #include "Strongholds/Furnishings/SolidArrangeSign.h"
-#include "Strongholds/Furnishings/SolidFurnishing.h"
+#include "Strongholds/Furnishings/Actors/SolidFurnishing.h"
 #include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
 #include "Strongholds/Furnishings/SolidStrongholdGrid.h"
 #include "SolidDungeonLevel.h"
@@ -880,7 +880,7 @@ void ASolidDungeonInterior::PlaceStarterFurnishings()
 		const FTransform SpawnXf(WorldRot, WorldPos);
 
 		ASolidFurnishing* Piece = World->SpawnActorDeferred<ASolidFurnishing>(
-			ASolidFurnishing::StaticClass(),
+			SolidStrongholdFurniture::ActorClass(Item->Kind),
 			SpawnXf,
 			this,
 			nullptr,
@@ -891,7 +891,6 @@ void ASolidDungeonInterior::PlaceStarterFurnishings()
 			continue;
 		}
 
-		Piece->SetKind(Item->Kind);
 		Piece->FinishSpawning(SpawnXf);
 		Piece->SetPlacement(UsedPiece);
 		Piece->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);

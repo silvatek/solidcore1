@@ -15,7 +15,7 @@ A session line that says to work until the task is complete, to stay autonomous,
 
 The pause clock starts at the user's message, or at the last message the agent sent the user, whichever is later. It is clock time. Read those timestamps. Before each further tool call, if three minutes have already passed, do not make that call. Send one message and end the turn.
 
-The message says what is already done, what is in hand, and what comes next. When something is stuck, it says what is stuck and what has been tried. The user can then tell progress from going round in circles. A straightforward task sends the same message. Reading, tool calls, a build, and a test all count toward the three minutes.
+The message says what is already done, what is in hand, and what comes next. What is in hand is one small change toward the story, as Planning describes. The rest of the story is not that change. When something is stuck, it says what is stuck and what has been tried. The user can then tell progress from going round in circles. A straightforward task sends the same message. Reading, tool calls, a build, and a test all count toward the three minutes.
 
 A turn that only uses tools is not that message. Do not sleep, and do not poll for a reply. Ending the turn is the wait. The next step waits until the user writes.
 
@@ -51,7 +51,7 @@ The Cursor client sometimes drops the connection. The user then does not see the
 
 The pause clock starts at the user's message, or at the last message the agent sent the user, whichever is later. It is clock time. Read those timestamps. Before each further tool call, if three minutes have already passed, do not make that call. Send one message and end the turn.
 
-The message says what is already done, what is in hand, and what comes next. When something is stuck, it says what is stuck and what has been tried. The user can then tell progress from going round in circles. A straightforward task sends the same message. Reading, tool calls, a build, and a test all count toward the three minutes.
+The message says what is already done, what is in hand, and what comes next. What is in hand is one small change toward the story, as Planning describes. The rest of the story is not that change. When something is stuck, it says what is stuck and what has been tried. The user can then tell progress from going round in circles. A straightforward task sends the same message. Reading, tool calls, a build, and a test all count toward the three minutes.
 
 A turn that only uses tools is not that message. Do not sleep, and do not poll for a reply. Ending the turn is the wait. The next step waits until the user writes.
 
@@ -106,11 +106,23 @@ Cloud agents are a **code + git workshop** on the Cursor-hosted Linux VM. They d
 - Set `Done` only after that testing, and only after the user and the agent agree the story is done. The agreement is a discussion. The user says whether they are happy with the implementation. The agent confirms that every acceptance criterion is met. Then set the status to `Done` and move the file to `Planning/Done/`, in one commit. That commit message starts with `Plan: `.
 - A file in `Planning/Done/` records why that work was done. It does not instruct later work. A rule that later work still follows lives in this file, `CodingGuidelines.md`, `AgentBuild.md`, `Planning/README.md`, or `README.md`.
 
+### Small changes
+
+A story is completed by many small changes. Each change is one step toward the acceptance criteria, and the tree builds at that step. The step's tests go with it. The rest of the story waits.
+
+One product step is one shipping commit. It bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`, then the build and the tests run, and a pass pushes `main`. A later step is a later commit. Saving several steps for one commit is the miss.
+
+The pause message names that step: what it does, and which step comes next. It does not treat the rest of the story as the work in hand.
+
+A story that says two pieces land together makes those two pieces one step. It does not make the rest of the story one step.
+
+A single phase means there is no stage plan to agree. The story still arrives as these steps. A stage of a complex story arrives as these steps too.
+
 ### Complex stories
 
 An agent defining a story writes the whole story. The phasing below is for the agent implementing that story.
 
-When a story is so simple that it makes no sense to phase the delivery, the agent states that it will be implemented as a single phase story, then plans and delivers that phase.
+When a story is so simple that it makes no sense to phase the delivery, the agent states that it will be implemented as a single phase story. There is no stage plan to agree. The phase still arrives as the small changes above.
 
 A story is complex when later acceptance needs a core that can be implemented and tested on its own. The coding agent starts with a high-level plan: the stages, in order, and what is true when each one ends. Reading the story and the code to find those stages is part of writing that plan. That plan is agreed in the conversation. It is not added to the story.
 
@@ -118,7 +130,7 @@ Some stories already have a Stages section. Those were written before this was c
 
 Agree that plan with the user before planning any stage in detail. A request to plan the implementation, or to start it, still begins with the high-level plan. The agreement opens the first stage only. The story stays `Ready` until that stage starts.
 
-After that agreement, plan only the current stage in detail, then deliver it. Do not write that detailed plan into the story. The next stage is not planned in detail until this one has shipped.
+After that agreement, plan only the current stage in detail. Deliver that stage as the small changes above. Do not write that detailed plan into the story. The next stage is not planned in detail until this one has shipped.
 
 The early stages keep edge cases to a minimum, so the core code can be implemented and tested first. Later stages build the complex scenarios, and their edge cases, on that core.
 

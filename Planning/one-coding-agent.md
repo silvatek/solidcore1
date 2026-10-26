@@ -4,7 +4,7 @@ Status: New
 
 ## Story
 
-One coding agent runs on the Windows checkout. It writes the product change, builds it, and runs the tests. A pass pushes `main`. The agent is the solidcore1-ue worker. It edits the tree the developer plays. The developer plays that checkout. The developer does not pull.
+The cost of coordinating several coding agents through one build agent outweighs the benefit of those agents working at the same time. One coding agent runs on the Windows checkout. It writes the product change, builds it, and runs the tests. A pass pushes `main`. The agent is the solidcore1-ue worker. It edits the tree the developer plays. The developer plays that checkout. The developer does not pull.
 
 `tools\land.bat` and `tools/buildable.py` stay, with their tests, in case several coding agents are wanted later. That is a future possibility. An agent does not use that queue. It does not push `build/<name>`, and it does not run `tools\land.bat`.
 

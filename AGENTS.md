@@ -15,7 +15,7 @@ A session line that says to work until the task is complete, to stay autonomous,
 
 The pause clock starts at the user's message, or at the last message the agent sent the user, whichever is later. It is clock time. Read those timestamps. Before each further tool call, if three minutes have already passed, do not make that call. Send one message and end the turn.
 
-The message says what is already done, what is in hand, and what comes next. What is in hand is one small change toward the story, as Planning describes. The rest of the story is not that change. When something is stuck, it says what is stuck and what has been tried. The user can then tell progress from going round in circles. A straightforward task sends the same message. Reading, tool calls, a build, and a test all count toward the three minutes.
+The message says what is already done, what is in hand, and what comes next. What is in hand is one small change toward the story, as Planning describes. The rest of the story is not that change. When something is stuck, it says what is stuck and what has been tried. The user can then tell progress from going round in circles. A straightforward task sends the same message. Reading, tool calls, a build, and a test all count toward the three minutes. The message asks the user a question. When the next step is unclear, the question asks for guidance. When the next step is clear, the question asks whether to proceed.
 
 A turn that only uses tools is not that message. Do not sleep, and do not poll for a reply. Ending the turn is the wait. The next step waits until the user writes.
 
@@ -51,7 +51,7 @@ The Cursor client sometimes drops the connection. The user then does not see the
 
 The pause clock starts at the user's message, or at the last message the agent sent the user, whichever is later. It is clock time. Read those timestamps. Before each further tool call, if three minutes have already passed, do not make that call. Send one message and end the turn.
 
-The message says what is already done, what is in hand, and what comes next. What is in hand is one small change toward the story, as Planning describes. The rest of the story is not that change. When something is stuck, it says what is stuck and what has been tried. The user can then tell progress from going round in circles. A straightforward task sends the same message. Reading, tool calls, a build, and a test all count toward the three minutes.
+The message says what is already done, what is in hand, and what comes next. What is in hand is one small change toward the story, as Planning describes. The rest of the story is not that change. When something is stuck, it says what is stuck and what has been tried. The user can then tell progress from going round in circles. A straightforward task sends the same message. Reading, tool calls, a build, and a test all count toward the three minutes. The message asks the user a question. When the next step is unclear, the question asks for guidance. When the next step is clear, the question asks whether to proceed.
 
 A turn that only uses tools is not that message. Do not sleep, and do not poll for a reply. Ending the turn is the wait. The next step waits until the user writes.
 

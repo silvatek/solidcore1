@@ -87,6 +87,8 @@ Humble is the only supported fortress size. Its shell is in the game. Choosing H
 
 Humble names an interior actor. The visit draws the outer wall and a dark gate on the grass side. The captain arrives one hex inside that gate, looking into the yard. A click on the shell gate enters. A click on the interior gate leaves, and he stands one hex outside it, facing away. Companions stay outside, the way a tower visit does. Choosing Humble still raises the shell, because that choice does not open the visit. `Trip` is `None`. The visit draws the Keep and the Annex on the far side of the yard. Each yard face has an open doorway. You walk through the gap. The inside is the floor within those walls. Those floors draw the hex grid. The yard has none. A ceiling closes each room at one storey, and the wall above it is the parapet. Each room has a light under that ceiling. The visit draws the pieces the company carried onto those hexes. The name sign stands beside the gate, on the grass. The east wall of the yard carries an Arrange furniture plate. Arrange mode uses those same hexes.
 
+Play on SC1-0674 moved those pieces onto other hexes in the rooms. The owner is happy with Humble. Average and the larger sizes are still undrawn, so this story stays In Progress.
+
 Do not redraw the shell unless the owner asks. Do not draw Average, or any larger size, until that mockup is accepted. The constructor lists Humble only. The next size, when it is drawn, chooses its own building list. Draw the pieces the company carried. Do not add a piece of the fortress's own. Do not add a world-map `!`. The owner's chart save is already on main. The small room is not named in code. Only the keep is marked, with `bKeep`. Wall thickness, storey, and opening width live on `FSolidStronghold` (`WallCm`, `StoreyCm`, `OpeningCm`). The parapet, the gap, and the yard depth stay on the fortress.
 
 ## Implementation notes
@@ -107,6 +109,6 @@ Do not redraw the shell unless the owner asks. Do not draw Average, or any large
 - Do not add a world-map `!`. The owner places the marker. A fortress line is `Stronghold`, size then type, as in `Stronghold (Average Fortress)`. A site stays `StrongholdSite` and a size, with no type. The Imperious site already on the map is `! 16, 36 = StrongholdSite (Imperious)`.
 - There is no shelf row for a fortress. A size and type with no row keeps the marker's own biome. Do not assume Mountain or Grassland.
 - The fortress does not use the tower exterior.
-- Furnishings stay the Meagre Dungeon catalog. This story does not place the fireplace, the bed, or the chest, and it does not decide what a fortress contains.
+- The visit draws the pieces the company carried. It does not add a piece of the fortress's own, and it does not decide a new catalog.
 - Floors use the shared 1.2 m pointy-top grid.
 - The product commit adds tests for the roster, the Keep floors, the kit totals, the stair and landing exclusion, and a Gatehouse passage floor with no usable hex when that plan is drawn. The tests compare against the kit, not the tower kept-hex sum.

@@ -5,9 +5,36 @@
 
 namespace SolidStronghold
 {
+	/** Which building this is. Humble has an Annex and a Keep. */
+	enum class ESolidFortressBuilding : uint8
+	{
+		Annex,
+		Keep,
+	};
+
+	/**
+	 * One building in the yard.
+	 * Its outer face may be the curtain. InnerMinCm is the south-west corner of the inner face.
+	 */
+	class FSolidFortressBuilding
+	{
+	public:
+		ESolidFortressBuilding Kind = ESolidFortressBuilding::Annex;
+		int32 Columns = 0;
+		int32 Rows = 0;
+		FVector2D InnerMinCm = FVector2D::ZeroVector;
+
+		/** Vertex span of these columns. */
+		float WidthCm() const;
+		/** Vertex span of these rows. */
+		float DepthCm() const;
+		void CollectHexes(TArray<SolidStrongholdGrid::FHex>& OutHexes) const;
+	};
+
 	/**
 	 * A rectangular fortress.
-	 * Humble is the plan these fields describe. A later size stays unsupported until its mockup is drawn.
+	 * Buildings run west to east along the south curtain. Humble is that list.
+	 * A later size stays unsupported until its mockup is drawn.
 	 * The gate side of the plan is local north. Placement turns that side toward the grass.
 	 */
 	class FSolidFortress : public FSolidStronghold
@@ -17,14 +44,9 @@ namespace SolidStronghold
 
 		static const FSolidFortress& Instance();
 
-		/** Columns in the Keep. Humble is four, three rows, the medium room. */
-		int32 KeepColumns = 4;
-		/** Columns in the Annex. Humble is two, three rows, the small room. */
-		int32 AnnexColumns = 2;
-		int32 RoomRows = 3;
 		/** Tower wall thickness. */
 		float WallCm = 50.f;
-		/** Open ground between the Annex's east outer face and the Keep's west outer face. */
+		/** Open ground between one building's east outer face and the next building's west outer face. */
 		float GapCm = 200.f;
 		/** Tower storey, walking surface to walking surface. */
 		float StoreyCm = 300.f;
@@ -34,6 +56,8 @@ namespace SolidStronghold
 		float OpeningCm = 140.f;
 		/** Open ground from the buildings' north outer faces to the inner face of the gate wall. */
 		float YardDepthCm = 300.f;
+		/** West to east. Humble is the Annex, then the Keep. */
+		TArray<FSolidFortressBuilding> Buildings;
 
 		virtual bool Supported(ESolidStrongholdSize InSize) const override;
 		virtual ESolidStrongholdTrip Trip() const override;
@@ -41,19 +65,7 @@ namespace SolidStronghold
 			ESolidStrongholdSize InSize,
 			TArray<SolidStrongholdGrid::FHex>& OutHexes) const override;
 
-		void CollectKeepHexes(
-			ESolidStrongholdSize InSize,
-			TArray<SolidStrongholdGrid::FHex>& OutHexes) const;
-		void CollectAnnexHexes(
-			ESolidStrongholdSize InSize,
-			TArray<SolidStrongholdGrid::FHex>& OutHexes) const;
-
-		/** Vertex span of Columns pointy-top columns. */
-		float RoomWidthCm(int32 Columns) const;
-		/** Vertex span of RoomRows pointy-top rows. */
-		float RoomDepthCm() const;
-		FVector2D AnnexInnerMinCm() const;
-		FVector2D KeepInnerMinCm() const;
+		const FSolidFortressBuilding* Building(ESolidFortressBuilding Kind) const;
 		float OuterWidthCm() const;
 		float OuterDepthCm() const;
 		/** Storey plus the parapet. */

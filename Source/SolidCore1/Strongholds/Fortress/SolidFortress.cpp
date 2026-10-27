@@ -33,31 +33,38 @@ namespace SolidStronghold
 			}
 			return true;
 		}
+	}
 
-		void CollectRoom(
-			const FVector2D& InnerMin,
-			const FVector2D& InnerSize,
-			const int32 Columns,
-			const int32 Rows,
-			TArray<SolidStrongholdGrid::FHex>& OutHexes)
+	float FSolidFortressBuilding::WidthCm() const
+	{
+		return (static_cast<float>(Columns) + 0.5f) * SolidStrongholdGrid::FlatToFlatCm;
+	}
+
+	float FSolidFortressBuilding::DepthCm() const
+	{
+		const float Side = SolidStrongholdGrid::SideCm();
+		return static_cast<float>(Rows - 1) * SolidStrongholdGrid::RowStepCm() + 2.f * Side;
+	}
+
+	void FSolidFortressBuilding::CollectHexes(TArray<SolidStrongholdGrid::FHex>& OutHexes) const
+	{
+		OutHexes.Reset();
+		const FVector2D InnerSize(WidthCm(), DepthCm());
+		const FVector2D Origin = SolidFortressPrivate::RoomOriginCm(InnerMinCm);
+		for (int32 Row = -2; Row <= Rows + 2; ++Row)
 		{
-			OutHexes.Reset();
-			const FVector2D Origin = RoomOriginCm(InnerMin);
-			for (int32 Row = -2; Row <= Rows + 2; ++Row)
+			for (int32 Col = -2; Col <= Columns + 2; ++Col)
 			{
-				for (int32 Col = -2; Col <= Columns + 2; ++Col)
+				const FVector2D Center = SolidStrongholdGrid::HexCenter(Col, Row, Origin);
+				if (!SolidFortressPrivate::VerticesInside(Center, InnerMinCm, InnerSize))
 				{
-					const FVector2D Center = SolidStrongholdGrid::HexCenter(Col, Row, Origin);
-					if (!VerticesInside(Center, InnerMin, InnerSize))
-					{
-						continue;
-					}
-					SolidStrongholdGrid::FHex Hex;
-					Hex.Center = Center;
-					Hex.Col = Col;
-					Hex.Row = Row;
-					OutHexes.Add(Hex);
+					continue;
 				}
+				SolidStrongholdGrid::FHex Hex;
+				Hex.Center = Center;
+				Hex.Col = Col;
+				Hex.Row = Row;
+				OutHexes.Add(Hex);
 			}
 		}
 	}
@@ -71,6 +78,29 @@ namespace SolidStronghold
 		OpeningCm = Tower.DoorWidthCm;
 		ParapetCm = SolidStrongholdGrid::FlatToFlatCm;
 		YardDepthCm = StoreyCm;
+
+		FSolidFortressBuilding Annex;
+		Annex.Kind = ESolidFortressBuilding::Annex;
+		Annex.Columns = 2;
+		Annex.Rows = 3;
+		FSolidFortressBuilding Keep;
+		Keep.Kind = ESolidFortressBuilding::Keep;
+		Keep.Columns = 4;
+		Keep.Rows = 3;
+		Buildings.Add(Annex);
+		Buildings.Add(Keep);
+
+		float X = WallCm;
+		for (int32 Index = 0; Index < Buildings.Num(); ++Index)
+		{
+			FSolidFortressBuilding& One = Buildings[Index];
+			One.InnerMinCm = FVector2D(X, WallCm);
+			X += One.WidthCm() + WallCm;
+			if (Index + 1 < Buildings.Num())
+			{
+				X += GapCm + WallCm;
+			}
+		}
 	}
 
 	const FSolidFortress& FSolidFortress::Instance()
@@ -89,36 +119,40 @@ namespace SolidStronghold
 		return ESolidStrongholdTrip::None;
 	}
 
-	float FSolidFortress::RoomWidthCm(const int32 Columns) const
+	const FSolidFortressBuilding* FSolidFortress::Building(const ESolidFortressBuilding Kind) const
 	{
-		return (static_cast<float>(Columns) + 0.5f) * SolidStrongholdGrid::FlatToFlatCm;
-	}
-
-	float FSolidFortress::RoomDepthCm() const
-	{
-		const float Side = SolidStrongholdGrid::SideCm();
-		return static_cast<float>(RoomRows - 1) * SolidStrongholdGrid::RowStepCm() + 2.f * Side;
-	}
-
-	FVector2D FSolidFortress::AnnexInnerMinCm() const
-	{
-		return FVector2D(WallCm, WallCm);
-	}
-
-	FVector2D FSolidFortress::KeepInnerMinCm() const
-	{
-		const float AnnexOuterEast = AnnexInnerMinCm().X + RoomWidthCm(AnnexColumns) + WallCm;
-		return FVector2D(AnnexOuterEast + GapCm + WallCm, WallCm);
+		for (const FSolidFortressBuilding& One : Buildings)
+		{
+			if (One.Kind == Kind)
+			{
+				return &One;
+			}
+		}
+		return nullptr;
 	}
 
 	float FSolidFortress::OuterWidthCm() const
 	{
-		return KeepInnerMinCm().X + RoomWidthCm(KeepColumns) + WallCm;
+		float Width = WallCm;
+		for (int32 Index = 0; Index < Buildings.Num(); ++Index)
+		{
+			Width += Buildings[Index].WidthCm() + WallCm;
+			if (Index + 1 < Buildings.Num())
+			{
+				Width += GapCm + WallCm;
+			}
+		}
+		return Width;
 	}
 
 	float FSolidFortress::OuterDepthCm() const
 	{
-		return WallCm + RoomDepthCm() + WallCm + YardDepthCm + WallCm;
+		float Depth = 0.f;
+		for (const FSolidFortressBuilding& One : Buildings)
+		{
+			Depth = FMath::Max(Depth, One.DepthCm());
+		}
+		return WallCm + Depth + WallCm + YardDepthCm + WallCm;
 	}
 
 	float FSolidFortress::CurtainHeightCm() const
@@ -126,51 +160,21 @@ namespace SolidStronghold
 		return StoreyCm + ParapetCm;
 	}
 
-	void FSolidFortress::CollectKeepHexes(
-		const ESolidStrongholdSize InSize,
-		TArray<SolidStrongholdGrid::FHex>& OutHexes) const
-	{
-		OutHexes.Reset();
-		if (!Supported(InSize))
-		{
-			return;
-		}
-		SolidFortressPrivate::CollectRoom(
-			KeepInnerMinCm(),
-			FVector2D(RoomWidthCm(KeepColumns), RoomDepthCm()),
-			KeepColumns,
-			RoomRows,
-			OutHexes);
-	}
-
-	void FSolidFortress::CollectAnnexHexes(
-		const ESolidStrongholdSize InSize,
-		TArray<SolidStrongholdGrid::FHex>& OutHexes) const
-	{
-		OutHexes.Reset();
-		if (!Supported(InSize))
-		{
-			return;
-		}
-		SolidFortressPrivate::CollectRoom(
-			AnnexInnerMinCm(),
-			FVector2D(RoomWidthCm(AnnexColumns), RoomDepthCm()),
-			AnnexColumns,
-			RoomRows,
-			OutHexes);
-	}
-
 	void FSolidFortress::CollectGroundHexes(
 		const ESolidStrongholdSize InSize,
 		TArray<SolidStrongholdGrid::FHex>& OutHexes) const
 	{
 		OutHexes.Reset();
-		TArray<SolidStrongholdGrid::FHex> Keep;
-		TArray<SolidStrongholdGrid::FHex> Annex;
-		CollectKeepHexes(InSize, Keep);
-		CollectAnnexHexes(InSize, Annex);
-		OutHexes.Append(Keep);
-		OutHexes.Append(Annex);
+		if (!Supported(InSize))
+		{
+			return;
+		}
+		for (const FSolidFortressBuilding& One : Buildings)
+		{
+			TArray<SolidStrongholdGrid::FHex> Room;
+			One.CollectHexes(Room);
+			OutHexes.Append(Room);
+		}
 	}
 
 	TUniquePtr<FSolidStronghold> FSolidFortress::Clone() const

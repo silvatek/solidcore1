@@ -137,34 +137,34 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 	float EastGapY = -WestGapY;
 	for (const SolidStronghold::FSolidFortressBuilding& One : Fortress->Buildings)
 	{
-		float MinX = One.InnerMinCm.X - Wall;
-		float MaxX = One.InnerMinCm.X + One.WidthCm() + Wall;
-		float MinY = One.InnerMinCm.Y - Wall;
-		float MaxY = One.InnerMinCm.Y + One.DepthCm() + Wall;
-		if (FMath::IsNearlyEqual(MinX, 0.f, 0.1f))
+		float FaceMinX = One.InnerMinCm.X - Wall;
+		float FaceMaxX = One.InnerMinCm.X + One.WidthCm() + Wall;
+		float FaceMinY = One.InnerMinCm.Y - Wall;
+		float FaceMaxY = One.InnerMinCm.Y + One.DepthCm() + Wall;
+		if (FMath::IsNearlyEqual(FaceMinX, 0.f, 0.1f))
 		{
-			MinX += Wall;
+			FaceMinX += Wall;
 		}
-		if (FMath::IsNearlyEqual(MaxX, Width, 0.1f))
+		if (FMath::IsNearlyEqual(FaceMaxX, Width, 0.1f))
 		{
-			MaxX -= Wall;
+			FaceMaxX -= Wall;
 		}
-		if (FMath::IsNearlyEqual(MinY, 0.f, 0.1f))
+		if (FMath::IsNearlyEqual(FaceMinY, 0.f, 0.1f))
 		{
-			MinY += Wall;
+			FaceMinY += Wall;
 		}
-		if (FMath::IsNearlyEqual(MaxY, Depth, 0.1f))
+		if (FMath::IsNearlyEqual(FaceMaxY, Depth, 0.1f))
 		{
-			MaxY -= Wall;
+			FaceMaxY -= Wall;
 		}
 
-		const float DoorX = (MinX + MaxX) * 0.5f;
+		const float DoorX = (FaceMinX + FaceMaxX) * 0.5f;
 		const FVector Opening(
-			Depth * 0.5f - (MaxY - Wall * 0.5f),
+			Depth * 0.5f - (FaceMaxY - Wall * 0.5f),
 			DoorX - Width * 0.5f,
 			FSolidStronghold::StoreyCm * 0.5f);
 		const FVector Inside(
-			Depth * 0.5f - (MaxY - Wall - 30.f),
+			Depth * 0.5f - (FaceMaxY - Wall - 30.f),
 			DoorX - Width * 0.5f,
 			100.f);
 		bool bOpeningBlocked = false;

@@ -56,14 +56,6 @@ void ASolidFortressInterior::DiscardParts()
 		}
 	}
 	Buildings.Reset();
-	for (TObjectPtr<UStaticMeshComponent>& Part : Doors)
-	{
-		if (UStaticMeshComponent* Mesh = Part.Get())
-		{
-			Mesh->DestroyComponent();
-		}
-	}
-	Doors.Reset();
 	auto Drop = [](TObjectPtr<UStaticMeshComponent>& Part)
 	{
 		if (UStaticMeshComponent* Mesh = Part.Get())
@@ -229,31 +221,43 @@ void ASolidFortressInterior::BuildVisuals()
 		float MaxX = One.InnerMinCm.X + One.WidthCm() + Wall;
 		float MinY = One.InnerMinCm.Y - Wall;
 		float MaxY = One.InnerMinCm.Y + One.DepthCm() + Wall;
-		if (FMath::IsNearlyEqual(MinX, 0.f, 0.1f))
+		const bool bWestCurtain = FMath::IsNearlyEqual(MinX, 0.f, 0.1f);
+		const bool bEastCurtain = FMath::IsNearlyEqual(MaxX, Width, 0.1f);
+		const bool bSouthCurtain = FMath::IsNearlyEqual(MinY, 0.f, 0.1f);
+		const bool bNorthCurtain = FMath::IsNearlyEqual(MaxY, Depth, 0.1f);
+		if (bWestCurtain)
 		{
 			MinX += Wall;
 		}
-		if (FMath::IsNearlyEqual(MaxX, Width, 0.1f))
+		if (bEastCurtain)
 		{
 			MaxX -= Wall;
 		}
-		if (FMath::IsNearlyEqual(MinY, 0.f, 0.1f))
+		if (bSouthCurtain)
 		{
 			MinY += Wall;
 		}
-		if (FMath::IsNearlyEqual(MaxY, Depth, 0.1f))
+		if (bNorthCurtain)
 		{
 			MaxY -= Wall;
 		}
 
-		const float BodyNorth = MaxY - Wall;
-		AddBuilding(
-			(MinX + MaxX) * 0.5f,
-			(MinY + BodyNorth) * 0.5f,
-			Height * 0.5f,
-			MaxX - MinX,
-			BodyNorth - MinY,
-			Height);
+		if (!bWestCurtain)
+		{
+			AddBuilding(MinX + Wall * 0.5f, (MinY + MaxY) * 0.5f, Height * 0.5f, Wall, MaxY - MinY, Height);
+		}
+		if (!bEastCurtain)
+		{
+			AddBuilding(MaxX - Wall * 0.5f, (MinY + MaxY) * 0.5f, Height * 0.5f, Wall, MaxY - MinY, Height);
+		}
+		if (!bSouthCurtain)
+		{
+			AddBuilding((MinX + MaxX) * 0.5f, MinY + Wall * 0.5f, Height * 0.5f, MaxX - MinX, Wall, Height);
+		}
+		if (bNorthCurtain)
+		{
+			continue;
+		}
 
 		const float DoorX = (MinX + MaxX) * 0.5f;
 		const float DoorMin = DoorX - Opening * 0.5f;
@@ -262,18 +266,6 @@ void ASolidFortressInterior::BuildVisuals()
 		AddBuilding((MinX + DoorMin) * 0.5f, WallY, Height * 0.5f, DoorMin - MinX, Wall, Height);
 		AddBuilding((DoorMax + MaxX) * 0.5f, WallY, Height * 0.5f, MaxX - DoorMax, Wall, Height);
 		AddBuilding(DoorX, WallY, (Storey + Height) * 0.5f, Opening, Wall, Height - Storey);
-		if (UStaticMeshComponent* Door = AddPart(
-			Cube,
-			SolidFortressInteriorPrivate::ActorCenter(Width, Depth, DoorX, WallY, Storey * 0.5f),
-			FVector(
-				Wall / SolidFortressInteriorPrivate::CubeSizeCm,
-				Opening / SolidFortressInteriorPrivate::CubeSizeCm,
-				Storey / SolidFortressInteriorPrivate::CubeSizeCm),
-			SolidStrongholds::MouthColor(),
-			TEXT("FortressInteriorDoor")))
-		{
-			Doors.Add(Door);
-		}
 	}
 }
 

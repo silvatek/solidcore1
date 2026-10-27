@@ -10,8 +10,8 @@ class UStaticMeshComponent;
 /**
  * One fortress visit, at the origin.
  * The outer wall is a closed rectangle. The dark gate is on local -X.
- * The Keep and the Annex stand on the far side, each with a dark doorway on the yard face.
- * That doorway does not leave. The captain arrives in the yard, inside the gate.
+ * The Keep and the Annex stand on the far side. Each yard face has an open doorway.
+ * You walk through that gap. It does not leave. The captain arrives in the yard, inside the gate.
  * A click on the gate leaves. Companions stay outside.
  */
 UCLASS()
@@ -33,7 +33,6 @@ public:
 	virtual UStaticMeshComponent* GetPassageMesh() const override { return GateMesh; }
 	const TArray<TObjectPtr<UStaticMeshComponent>>& GetCurtainMeshes() const { return Curtain; }
 	const TArray<TObjectPtr<UStaticMeshComponent>>& GetBuildingMeshes() const { return Buildings; }
-	const TArray<TObjectPtr<UStaticMeshComponent>>& GetDoorMeshes() const { return Doors; }
 
 	/** Feet in the yard, one hex inside the gate. */
 	virtual FVector GetCaptainSpawnWorld() const override;
@@ -49,10 +48,6 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TArray<TObjectPtr<UStaticMeshComponent>> Buildings;
-
-	/** Dark doorway on each building's yard face. Not a way out. */
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
-	TArray<TObjectPtr<UStaticMeshComponent>> Doors;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<UStaticMeshComponent> GateMesh;

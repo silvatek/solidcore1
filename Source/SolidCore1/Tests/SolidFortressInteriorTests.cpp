@@ -114,35 +114,78 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 		Leave.XY.Equals(Fortress->OutsideGateXY(nullptr), 0.5f));
 	TestTrue(TEXT("leaving faces away along the grass"), FMath::IsNearlyEqual(Leave.YawDeg, 0.f, 0.1f));
 
-	TestEqual(TEXT("Humble draws two doorways"), Room->GetDoorMeshes().Num(), 2);
 	TestTrue(TEXT("the buildings are drawn"), Room->GetBuildingMeshes().Num() >= 2);
-	TestEqual(TEXT("a doorway is not the way out"), Room->GetPassageMesh(), Room->GetGateMesh());
-	const UStaticMeshComponent* WestDoor = nullptr;
-	const UStaticMeshComponent* EastDoor = nullptr;
-	for (const TObjectPtr<UStaticMeshComponent>& Door : Room->GetDoorMeshes())
+	TestEqual(TEXT("the gate is still the way out"), Room->GetPassageMesh(), Room->GetGateMesh());
+
+	auto Covers = [](const UStaticMeshComponent* Part, const FVector& Point)
 	{
-		if (!Door)
+		const FVector Location = Part->GetRelativeLocation();
+		const FVector Half = Part->GetRelativeScale3D() * 50.f;
+		return Point.X >= Location.X - Half.X - 0.5f
+			&& Point.X <= Location.X + Half.X + 0.5f
+			&& Point.Y >= Location.Y - Half.Y - 0.5f
+			&& Point.Y <= Location.Y + Half.Y + 0.5f
+			&& Point.Z >= Location.Z - Half.Z - 0.5f
+			&& Point.Z <= Location.Z + Half.Z + 0.5f;
+	};
+
+	const float Width = Fortress->OuterWidthCm();
+	const float Depth = Fortress->OuterDepthCm();
+	const float Wall = FSolidStronghold::WallCm;
+	int32 Gaps = 0;
+	float WestGapY = TNumericLimits<float>::Max();
+	float EastGapY = -WestGapY;
+	for (const SolidStronghold::FSolidFortressBuilding& One : Fortress->Buildings)
+	{
+		float MinX = One.InnerMinCm.X - Wall;
+		float MaxX = One.InnerMinCm.X + One.WidthCm() + Wall;
+		float MinY = One.InnerMinCm.Y - Wall;
+		float MaxY = One.InnerMinCm.Y + One.DepthCm() + Wall;
+		if (FMath::IsNearlyEqual(MinX, 0.f, 0.1f))
 		{
-			continue;
+			MinX += Wall;
 		}
-		const FVector Scale = Door->GetRelativeScale3D();
-		TestTrue(
-			TEXT("each doorway is the storey opening"),
-			FMath::IsNearlyEqual(Scale.Y * 100.f, FSolidStronghold::OpeningCm, 0.5f)
-				&& FMath::IsNearlyEqual(Scale.Z * 100.f, FSolidStronghold::StoreyCm, 0.5f));
-		TestTrue(TEXT("each doorway is south of the gate"), Door->GetRelativeLocation().X > Gate->GetRelativeLocation().X);
-		if (!WestDoor || Door->GetRelativeLocation().Y < WestDoor->GetRelativeLocation().Y)
+		if (FMath::IsNearlyEqual(MaxX, Width, 0.1f))
 		{
-			WestDoor = Door;
+			MaxX -= Wall;
 		}
-		if (!EastDoor || Door->GetRelativeLocation().Y > EastDoor->GetRelativeLocation().Y)
+		if (FMath::IsNearlyEqual(MinY, 0.f, 0.1f))
 		{
-			EastDoor = Door;
+			MinY += Wall;
 		}
+		if (FMath::IsNearlyEqual(MaxY, Depth, 0.1f))
+		{
+			MaxY -= Wall;
+		}
+
+		const float DoorX = (MinX + MaxX) * 0.5f;
+		const FVector Opening(
+			Depth * 0.5f - (MaxY - Wall * 0.5f),
+			DoorX - Width * 0.5f,
+			FSolidStronghold::StoreyCm * 0.5f);
+		const FVector Inside(
+			Depth * 0.5f - (MaxY - Wall - 30.f),
+			DoorX - Width * 0.5f,
+			100.f);
+		bool bOpeningBlocked = false;
+		bool bInsideBlocked = false;
+		for (const TObjectPtr<UStaticMeshComponent>& Part : Room->GetBuildingMeshes())
+		{
+			if (!Part)
+			{
+				continue;
+			}
+			bOpeningBlocked = bOpeningBlocked || Covers(Part, Opening);
+			bInsideBlocked = bInsideBlocked || Covers(Part, Inside);
+		}
+		TestFalse(TEXT("the doorway is a gap"), bOpeningBlocked);
+		TestFalse(TEXT("the building inside is open"), bInsideBlocked);
+		WestGapY = FMath::Min(WestGapY, Opening.Y);
+		EastGapY = FMath::Max(EastGapY, Opening.Y);
+		++Gaps;
 	}
-	TestTrue(
-		TEXT("the Keep doorway is east of the Annex"),
-		WestDoor && EastDoor && WestDoor != EastDoor);
+	TestEqual(TEXT("Humble has two doorways"), Gaps, 2);
+	TestTrue(TEXT("the Keep doorway is east of the Annex"), EastGapY > WestGapY + 1.f);
 	return true;
 }
 

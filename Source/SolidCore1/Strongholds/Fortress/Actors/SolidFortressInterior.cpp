@@ -4,6 +4,7 @@
 #include "Strongholds/SolidStronghold.h"
 #include "Strongholds/Furnishings/SolidStrongholdGrid.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -74,6 +75,14 @@ void ASolidFortressInterior::DiscardParts()
 	};
 	Drop(GateMesh);
 	Drop(FloorMesh);
+	for (TObjectPtr<UPointLightComponent>& Light : RoomLights)
+	{
+		if (UPointLightComponent* Point = Light.Get())
+		{
+			Point->DestroyComponent();
+		}
+	}
+	RoomLights.Reset();
 	if (FloorGrid)
 	{
 		FloorGrid->ClearInstances();
@@ -288,6 +297,29 @@ void ASolidFortressInterior::BuildVisuals()
 			InnerMaxX - InnerMinX,
 			InnerMaxY - InnerMinY,
 			Wall);
+
+		UPointLightComponent* Light = NewObject<UPointLightComponent>(this, NAME_None, RF_Transient);
+		if (!Light)
+		{
+			continue;
+		}
+		Light->SetupAttachment(SceneRoot);
+		Light->SetMobility(EComponentMobility::Movable);
+		Light->SetCastShadows(true);
+		Light->SetIntensity(4500.f);
+		Light->SetAttenuationRadius(FMath::Max(InnerMaxX - InnerMinX, InnerMaxY - InnerMinY) * 1.4f);
+		Light->SetLightColor(FLinearColor(1.f, 0.82f, 0.55f));
+		Light->SetRelativeLocation(SolidFortressInteriorPrivate::ActorCenter(
+			Width,
+			Depth,
+			(InnerMinX + InnerMaxX) * 0.5f,
+			(InnerMinY + InnerMaxY) * 0.5f,
+			Storey * 0.62f));
+		if (GetWorld())
+		{
+			Light->RegisterComponent();
+		}
+		RoomLights.Add(Light);
 	}
 
 	if (!FloorGrid)

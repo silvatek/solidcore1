@@ -6,6 +6,7 @@
 #include "SolidGameState.h"
 #include "Strongholds/Furnishings/SolidStrongholdGrid.h"
 #include "Components/InstancedStaticMeshComponent.h"
+#include "Components/PointLightComponent.h"
 #include "Components/StaticMeshComponent.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -260,6 +261,47 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 	}
 	TestTrue(TEXT("the hex lines sit on the floor"), bLinesOnTheFloor);
 	TestTrue(TEXT("the hex lines stay inside the rooms"), bLinesInTheRooms);
+
+	TestEqual(TEXT("each room has a light"), Room->GetRoomLights().Num(), Fortress->Buildings.Num());
+	TArray<int32> LitRooms;
+	for (const TObjectPtr<UPointLightComponent>& Light : Room->GetRoomLights())
+	{
+		if (!Light)
+		{
+			continue;
+		}
+		const FVector Location = Light->GetRelativeLocation();
+		TestTrue(
+			TEXT("the light hangs in the room"),
+			Location.Z > 50.f && Location.Z < FSolidStronghold::StoreyCm - 10.f);
+		const FLinearColor Color = Light->GetLightColor();
+		TestTrue(
+			TEXT("the light is the room color"),
+			FMath::IsNearlyEqual(Color.R, 1.f, 0.01f)
+				&& FMath::IsNearlyEqual(Color.G, 0.82f, 0.01f)
+				&& FMath::IsNearlyEqual(Color.B, 0.55f, 0.01f));
+		const float PlanX = Location.Y + Width * 0.5f;
+		const float PlanY = Depth * 0.5f - Location.X;
+		int32 RoomIndex = INDEX_NONE;
+		for (int32 Index = 0; Index < Fortress->Buildings.Num(); ++Index)
+		{
+			const SolidStronghold::FSolidFortressBuilding& One = Fortress->Buildings[Index];
+			if (PlanX >= One.InnerMinCm.X
+				&& PlanX <= One.InnerMinCm.X + One.WidthCm()
+				&& PlanY >= One.InnerMinCm.Y
+				&& PlanY <= One.InnerMinCm.Y + One.DepthCm())
+			{
+				RoomIndex = Index;
+				TestTrue(
+					TEXT("the light reaches the far wall"),
+					Light->AttenuationRadius >= FMath::Max(One.WidthCm(), One.DepthCm()));
+				break;
+			}
+		}
+		TestTrue(TEXT("the light stands in its room"), RoomIndex != INDEX_NONE);
+		LitRooms.AddUnique(RoomIndex);
+	}
+	TestEqual(TEXT("the two rooms are both lit"), LitRooms.Num(), 2);
 	return true;
 }
 

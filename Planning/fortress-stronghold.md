@@ -31,9 +31,21 @@ The outer wall and the building walls are straight. They do not follow the hex e
 
 The captain enters and leaves through one gate in the outer wall. The gate is on the grass side of the cell, the same way the cave mouth and the tower door face the grass. The visit starts in the yard, inside the gate. The gate opening is one storey high, so a floor above it can stand over the passage. A fortress without a Gatehouse still has that gate, cut through the curtain. Where there is a Gatehouse, the building stands on the gate. Its ground floor is the passage: the outer opening is the gate, the inner opening faces the yard, and the stair sits beside the passage. A floor above that passage is a room. A building doorway has no door. It faces the yard. It is not a second way onto the grass.
 
-The outer wall is one storey high, with a parapet. A building of more than one floor stands above the wall.
+The outer wall is one storey high, with a parapet of 120 cm. The curtain is 420 cm. The same parapet sits above a building's top floor. A building of more than one floor stands above the wall.
 
-Humble, Impressive, and Imperious had earlier drawn plans with different per-building hex counts. Those counts are superseded by Strongholds by size and type. New fortress mockups follow that table; do not ship the old 13 / 18 / 27-style splits. Yard plans past the roster and the Keep column are not chosen until a mockup.
+Humble, Impressive, and Imperious had earlier drawn plans with different per-building hex counts. Those counts are superseded by Strongholds by size and type. New fortress mockups follow that table; do not ship the old 13 / 18 / 27-style splits. Humble is drawn. Average and the larger sizes stay undrawn until a mockup.
+
+### Humble
+
+The plan's gate side is north. In the game that side faces the grass, and the plan turns with it.
+
+The outer face is 1240 cm along the gate wall and 796.4 cm deep. The wall is 50 cm thick. The Keep and the Annex each have one floor, so neither has a stair or a landing.
+
+The Keep is 4 columns by 3 rows, 12 hexes. Its inner face is 540 cm by 346.4 cm. The south face and the east face are the curtain. The Annex is the leftover small room, 2 columns by 3 rows, 6 hexes. Its inner face is 300 cm by 346.4 cm. The south face and the west face are the curtain. 346.4 cm is the vertex span of those three rows, five times the pointy-top side.
+
+200 cm of yard lies between the Annex's east outer face and the Keep's west outer face. 300 cm of yard lies between the buildings' north outer faces and the inner face of the north curtain. The yard holds no usable hex. The rooms together are the Humble kit, 18.
+
+The gate is centered in the north curtain. It is 140 cm wide and 300 cm high. Each building doorway is 140 cm wide, has no door, and is centered on that building's north face. The visit starts in the yard, inside the gate.
 
 ## Acceptance
 
@@ -45,7 +57,7 @@ Humble, Impressive, and Imperious had earlier drawn plans with different per-bui
 - The yard is not part of the hex total.
 - A building's outer face may form part of the outer wall. A stretch of wall with no building on it is curtain.
 - The Keep is the main building. Where another building exists, the Keep has more usable hexes on a floor than that building, and more floors when the Keep has more than one floor.
-- Humble has the Keep. Average has the Keep. Impressive has the Keep and Barracks. Grand has the Keep, Barracks, and a Gatehouse. Stately has the Keep, Barracks, a Gatehouse, and Workshops. Imperious has the Keep, Barracks, a Gatehouse, one Workshop, and a Stores.
+- Humble has the Keep and an Annex. The Keep is the medium room, 12 hexes. The Annex is the small room, 6 hexes. Average has the Keep. Impressive has the Keep and Barracks. Grand has the Keep, Barracks, and a Gatehouse. Stately has the Keep, Barracks, a Gatehouse, and Workshops. Imperious has the Keep, Barracks, a Gatehouse, one Workshop, and a Stores.
 - Imperious Barracks have two floors. Stately Barracks have more than one floor. Other Barracks have one floor.
 - A Gatehouse has at least two floors.
 - A Workshop has one floor. Stores has one floor.
@@ -61,11 +73,11 @@ Humble, Impressive, and Imperious had earlier drawn plans with different per-bui
 - Where more than one type supports a size, those types have the same hex total (the room kit).
 - The stronghold entrance and the stronghold exit are one gate in the outer wall, on the grass side of the cell. The captain uses that gate to enter and to leave.
 - The visit starts in the yard, inside the gate.
-- The gate opening is one storey high.
+- The gate opening is 140 cm wide and one storey high.
 - A fortress without a Gatehouse has the gate in the curtain.
 - A Gatehouse stands on the gate. Its ground-floor openings face the grass and the yard. A floor above that passage is a room.
-- A doorway in a building has no door. It faces the yard. That doorway is not a second way onto the grass.
-- The outer wall is one storey high and has a parapet. A building of more than one floor stands above the wall.
+- A doorway in a building is 140 cm wide and has no door. It faces the yard. That doorway is not a second way onto the grass.
+- The outer wall is one storey plus a parapet of 120 cm, so the curtain is 420 cm. The same parapet sits above a building's top floor. A building of more than one floor stands above the wall.
 - The cave mouth, the cave interior, the tower exterior, the tower door, and the tower interior stay as they are until [Tower stronghold by size](Done/tower-stronghold-by-size.md) changes the tower.
 - This story adds no world-map `!` line.
 
@@ -81,7 +93,7 @@ Humble, Impressive, and Imperious had earlier drawn plans with different per-bui
 - Buildings are added in this order: Barracks, then a Gatehouse, then Workshops. Imperious then has a Stores in place of a second Workshop. There is no Hall, no Chapel, and no Kitchen. Each building keeps the same outer walls on every floor. A higher floor may repeat the hexes below it. An interior wall may close off part of a floor, so a medium room can sit above a large room, or a small room and a medium room can sit side by side above a large room. A Gatehouse ground floor that is only a passage holds no usable hex. Do not shrink an upper floor the way the tower's radius steps inward.
 - A fortress without a Gatehouse still has the gate in the curtain. The Gatehouse is the building on that gate. Its ground floor is the passage, open to the grass and to the yard, and the stair is inside the building beside that passage.
 - The walls are straight. They do not follow the hex edges. A usable hex is one whose six vertices lie inside the inner face. A hex whose center lies on the stair or the landing is not usable, the same exclusion `HexOnStair` and `HexOnLanding` already apply in a tower. The stair width is the tower's `StairWidthCm`. The landing run is the tower's `LandingRunCm`. The wall thickness in the mockup is the tower's `WallCm`.
-- The mockup elevations use the tower's `FloorPitchCm` for a storey and add a parapet above the top floor and above the curtain. The outer wall is one storey plus that parapet, and the gate opening is one storey. This story does not choose a different pitch or a parapet height. The gate's width is not chosen past an opening a person can walk through.
+- The storey is the tower's `FloorPitchCm`, 300 cm. The parapet is 120 cm, one hex across, above the curtain and above a building's top floor. The curtain is 420 cm. The gate and a building doorway are 140 cm wide, the tower's `DoorWidthCm`. The gate opening is one storey. Humble's outer face, rooms, gap, and yard are in the Humble section. Average and the larger sizes are still undrawn.
 - The ground inside the outer wall, outside the buildings, is the yard. It is not part of the hex total. The visit starts there, inside the gate, and leaving returns through that gate to the grass beside the cell. The visit remembers that cell, the way a tower visit remembers its cell.
 - The type-picker already lists a type when that subclass returns `Supported` for the site size, the size is unlocked, and the size is larger than the active stronghold. This story does not change that rule. After it, a qualifying site lists Fortress for Humble through Imperious.
 - Do not add a world-map `!`. The owner places the marker. A fortress line is `Stronghold`, size then type, as in `Stronghold (Average Fortress)`. A site stays `StrongholdSite` and a size, with no type. The Imperious site already on the map is `! 16, 36 = StrongholdSite (Imperious)`.

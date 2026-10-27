@@ -384,7 +384,7 @@ namespace SolidStronghold
 	 * How far this floor's hex grid sits from the tower center.
 	 * At most 30 cm, and only when the shift keeps another whole cell.
 	 * A plan that is not one of the five tower sizes stays centered.
-	 * The cells stay pointy-top. A rotation would pull the yellow lines apart.
+	 * The cells stay pointy-top. A rotation would pull the lines apart.
 	 */
 	FVector2D GridNudgeCm(const FPlan& Plan, const int32 Floor);
 	FVector2D CellCenter(const int32 Col, const int32 Row, const FVector2D& Origin);

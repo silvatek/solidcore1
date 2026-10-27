@@ -88,7 +88,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<UPointLightComponent> RoomLight;
 
-	/** Yellow hex edges. No collision; the starter pieces sit on these cells. */
+	/** Hex edges. No collision; the starter pieces sit on these cells. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<UInstancedStaticMeshComponent> FloorGrid;
 

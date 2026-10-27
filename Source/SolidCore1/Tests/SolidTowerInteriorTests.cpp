@@ -229,7 +229,7 @@ bool FSolidTowerInteriorVisualsTest::RunTest(const FString& Parameters)
 		}
 
 		TestEqual(
-			*FString::Printf(TEXT("%s yellow grid"), Label),
+			*FString::Printf(TEXT("%s hex grid"), Label),
 			Grid->GetInstanceCount(),
 			SolidTowerInteriorTestPrivate::ExpectedGridCount(Tower));
 

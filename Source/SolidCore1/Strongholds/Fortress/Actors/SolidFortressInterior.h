@@ -59,7 +59,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<UStaticMeshComponent> FloorMesh;
 
-	/** Yellow hex edges on the Keep and the Annex. The yard has none. */
+	/** Hex edges on the Keep and the Annex. The yard has none. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<UInstancedStaticMeshComponent> FloorGrid;
 

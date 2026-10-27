@@ -17,7 +17,7 @@ class UStaticMeshComponent;
  * The wall beside each landing shows that floor's number on a light plate. Ground is 1.
  * A rail follows the inner edge of each flight and the inner edge of each arrival hole.
  * Both stop at the landing, so the landing stays open onto the floor.
- * Stair treads sit on the flight. The yellow grid is the furniture cells.
+ * Stair treads sit on the flight. The grid is the furniture cells.
  * The curved wall follows the interior taper, with the dark door on local -X.
  * A click on that door leaves. Companions stay outside.
  */

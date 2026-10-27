@@ -24,8 +24,12 @@ bool FSolidStrongholdGridMeasureTest::RunTest(const FString& Parameters)
 		TEXT("a side matches the point radius"),
 		FMath::IsNearlyEqual(SolidStrongholdGrid::SideCm(), SolidStrongholdGrid::VertexToVertexCm() * 0.5f, 0.01f));
 
-	const FLinearColor Yellow = SolidStrongholdGrid::LineColor();
-	TestTrue(TEXT("lines are yellow"), Yellow.R > 0.9f && Yellow.G > 0.7f && Yellow.B < 0.2f);
+	const FLinearColor Color = SolidStrongholdGrid::LineColor();
+	TestTrue(
+		TEXT("the line color stays"),
+		FMath::IsNearlyEqual(Color.R, 1.f, 0.001f)
+			&& FMath::IsNearlyEqual(Color.G, 0.86f, 0.001f)
+			&& FMath::IsNearlyEqual(Color.B, 0.08f, 0.001f));
 	TestTrue(TEXT("lines are thin"), SolidStrongholdGrid::LineThicknessCm < 15.f);
 
 	const FVector2D Origin = FVector2D::ZeroVector;
@@ -94,7 +98,7 @@ bool FSolidStrongholdGridVisualTest::RunTest(const FString& Parameters)
 	}
 
 	TestEqual(TEXT("one line per edge"), Grid->GetInstanceCount(), Segments.Num());
-	TestNotNull(TEXT("yellow material"), Grid->GetMaterial(0));
+	TestNotNull(TEXT("grid material"), Grid->GetMaterial(0));
 
 	FTransform Line;
 	TestTrue(TEXT("first line transform"), Grid->GetInstanceTransform(0, Line, /*bWorldSpace=*/false));

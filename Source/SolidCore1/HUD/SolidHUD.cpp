@@ -2759,6 +2759,22 @@ void ASolidHUD::ToggleInventory()
 	bShowInventory = true;
 }
 
+void ASolidHUD::OpenInventoryOn(const int32 Index)
+{
+	if (bShowMessage || Index < 0)
+	{
+		return;
+	}
+	if (!bShowInventory)
+	{
+		ToggleInventory();
+	}
+	if (bShowInventory)
+	{
+		InventoryContainer = Index;
+	}
+}
+
 void ASolidHUD::CycleInventoryContainer(const int32 Delta)
 {
 	if (!bShowInventory || Delta == 0)

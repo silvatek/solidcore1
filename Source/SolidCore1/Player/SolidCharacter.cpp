@@ -10,6 +10,8 @@
 #include "Strongholds/SolidNameSigns.h"
 #include "Strongholds/Actors/SolidStrongholdExterior.h"
 #include "Strongholds/Actors/SolidStrongholdInterior.h"
+#include "Strongholds/Furnishings/Actors/SolidFurnishing.h"
+#include "Vegetation/SolidForage.h"
 #include "SolidStronghold.h"
 #include "Terrain/SolidTerrainStreamer.h"
 #include "Terrain/SolidTerrainMap.h"
@@ -2043,6 +2045,72 @@ ASolidStrongholdSite* ASolidCharacter::SiteUnderPointer() const
 	return nullptr;
 }
 
+int32 ASolidCharacter::StorageContainerUnderPointer() const
+{
+	if (!SolidPointer::AcceptsPointer(IsPointerShown(), IsMenuOverlayOpen() || IsSquadFormationDrillActive()))
+	{
+		return INDEX_NONE;
+	}
+	if (IsArrangingFurniture())
+	{
+		return INDEX_NONE;
+	}
+
+	UWorld* World = GetWorld();
+	const ASolidGameMode* GameMode = World ? World->GetAuthGameMode<ASolidGameMode>() : nullptr;
+	const USolidGameState* State = GameMode ? GameMode->GetConfiguration() : nullptr;
+	const USolidCompany* Company = GameMode ? GameMode->GetCompany() : nullptr;
+	const FSolidStronghold* Stronghold = Company ? Company->GetStronghold() : nullptr;
+	if (!GameMode || !State || !Stronghold
+		|| !SolidStrongholdTransition::CompanyChestOpen(*State, Stronghold, GameMode->IsInStronghold()))
+	{
+		return INDEX_NONE;
+	}
+
+	FVector Origin = FVector::ZeroVector;
+	FVector Direction = FVector::ZeroVector;
+	if (!ReadPointerRay(Origin, Direction))
+	{
+		return INDEX_NONE;
+	}
+
+	float BestCm = TNumericLimits<float>::Max();
+	int32 BestIndex = INDEX_NONE;
+	for (TActorIterator<ASolidFurnishing> Piece(World); Piece; ++Piece)
+	{
+		if (!Piece->HasPlacement() || Piece->IsGhost())
+		{
+			continue;
+		}
+		const int32 Index = Stronghold->StorageIndex(Piece->GetPlacement());
+		if (Index == INDEX_NONE)
+		{
+			continue;
+		}
+		TArray<UStaticMeshComponent*> Parts;
+		Piece->GetComponents(Parts);
+		for (const UStaticMeshComponent* Part : Parts)
+		{
+			if (!Part)
+			{
+				continue;
+			}
+			const FBox Box = Part->CalcBounds(Part->GetComponentTransform()).GetBox();
+			float DistanceCm = 0.f;
+			if (!SolidForage::RayBoxDistance(Origin, Direction, Box, SolidClickMove::MaxRayCm, DistanceCm))
+			{
+				continue;
+			}
+			if (DistanceCm < BestCm)
+			{
+				BestCm = DistanceCm;
+				BestIndex = Index;
+			}
+		}
+	}
+	return BestIndex;
+}
+
 ASolidNameSign* ASolidCharacter::NameSignUnderPointer() const
 {
 	if (!SolidPointer::AcceptsPointer(IsPointerShown(), IsMenuOverlayOpen() || IsSquadFormationDrillActive()))
@@ -2507,6 +2575,16 @@ void ASolidCharacter::PollClickMovePress()
 	{
 		OfferStrongholdSite(Site);
 		return;
+	}
+	const int32 StorageIndex = StorageContainerUnderPointer();
+	if (StorageIndex != INDEX_NONE)
+	{
+		if (ASolidHUD* StorageHUD = GetSolidHUD())
+		{
+			StorageHUD->OpenInventoryOn(StorageIndex);
+			ClearClickMove();
+			return;
+		}
 	}
 	ClickMoveFromInput();
 }

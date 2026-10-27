@@ -137,6 +137,12 @@ public:
 	/** How many storage pieces this stronghold has. A fireplace and a bed do not count. */
 	int32 StorageCount() const;
 
+	/**
+	 * Where Piece sits in the storage cycle, or INDEX_NONE when it holds nothing.
+	 * The match is the catalogue row and the cell. Zero is the first chest.
+	 */
+	int32 StorageIndex(const SolidStrongholdFurniture::FPlacedFurnishing& Piece) const;
+
 	/** True when the current code can build this type at Size. */
 	virtual bool Supported(ESolidStrongholdSize) const { return false; }
 

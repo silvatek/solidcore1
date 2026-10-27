@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0655")
+#define SOLID_BUILD_ID TEXT("SC1-0656")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The chest heading has previous and next marks.")
+#define SOLID_BUILD_NOTE TEXT("A click opens that storage container.")
 #endif

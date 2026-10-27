@@ -151,6 +151,8 @@ protected:
 	void ActivatePassage(const SolidLair::FPassageHit& Hit);
 	/** A stronghold site under the pointer, when a click may ask it for a type. */
 	ASolidStrongholdSite* SiteUnderPointer() const;
+	/** The storage container under the pointer, or INDEX_NONE. A fireplace and a bed are none. */
+	int32 StorageContainerUnderPointer() const;
 	/** The company stronghold's name sign. A click opens the name and does not enter. */
 	ASolidNameSign* NameSignUnderPointer() const;
 	/** Nearest forage pile along the pointer ray. Ground distance is the captain's, in cm. */

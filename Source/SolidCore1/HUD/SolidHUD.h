@@ -27,6 +27,8 @@ public:
 
 	/** # shows the worn boxes and the pack. # again, Esc, or F10 closes it. */
 	void ToggleInventory();
+	/** Opens the inventory on that storage container. Zero is the first. */
+	void OpenInventoryOn(int32 Index);
 	bool IsInventoryVisible() const { return bShowInventory; }
 
 	/** Press a slot that holds an item, or the Craft button. Release on another slot, or on the button. */

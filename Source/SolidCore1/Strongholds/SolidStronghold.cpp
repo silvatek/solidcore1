@@ -543,6 +543,33 @@ int32 FSolidStronghold::StorageCount() const
 	return Seen;
 }
 
+int32 FSolidStronghold::StorageIndex(const SolidStrongholdFurniture::FPlacedFurnishing& Piece) const
+{
+	const SolidStrongholdFurniture::FItem* Kind = SolidStrongholdFurniture::ItemAt(Piece.ItemIndex);
+	if (!Kind || !Kind->IsStorage())
+	{
+		return INDEX_NONE;
+	}
+	int32 Seen = 0;
+	for (const SolidStrongholdFurniture::FPlacedFurnishing& Placed : Furnishings)
+	{
+		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(Placed.ItemIndex);
+		if (!Item || !Item->IsStorage())
+		{
+			continue;
+		}
+		if (Placed.ItemIndex == Piece.ItemIndex
+			&& Placed.Level == Piece.Level
+			&& Placed.X == Piece.X
+			&& Placed.Y == Piece.Y)
+		{
+			return Seen;
+		}
+		++Seen;
+	}
+	return INDEX_NONE;
+}
+
 bool SolidStrongholdTransition::CompanyChestOpen(
 	const USolidGameState& State,
 	const FSolidStronghold* Active,

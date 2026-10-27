@@ -597,6 +597,15 @@ bool FSolidStorageContainerCycleTest::RunTest(const FString& Parameters)
 	SolidStrongholdFurniture::FPlacedFurnishing* Second = Stronghold->StorageAt(SecondIndex);
 	TestNotNull(TEXT("the first chest is there"), First);
 	TestNotNull(TEXT("page down lands on the second chest"), Second);
+	if (First && Second)
+	{
+		TestEqual(TEXT("the first chest is storage zero"), Stronghold->StorageIndex(*First), 0);
+		TestEqual(TEXT("the added chest is storage one"), Stronghold->StorageIndex(*Second), 1);
+	}
+	TestEqual(
+		TEXT("the fireplace is not a storage container"),
+		Stronghold->StorageIndex(Stronghold->Furnishings[0]),
+		INDEX_NONE);
 	if (!First || !Second || Second->Slots.Num() == 0)
 	{
 		return false;

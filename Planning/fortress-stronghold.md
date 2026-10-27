@@ -1,6 +1,6 @@
 # Fortress stronghold
 
-Status: Ready
+Status: In Progress
 
 ## Story
 
@@ -25,7 +25,7 @@ Humble and Average are the Keep alone, aside from leftover small rooms a mockup 
 
 Where another building exists, the Keep has more usable hexes on a floor than that building, and more floors when the Keep has more than one floor.
 
-A building may have more than one floor. A higher floor uses the same walls and the same hexes as the floor below. The floors do not step inward the way a tower's floors do. A Gatehouse ground floor that is only the gate passage holds no usable hex.
+A building may have more than one floor. Every floor of that building has the same outer walls. The floors do not step inward the way a tower's floors do. A higher floor may use the same hexes as the floor below. An interior wall may close off part of a floor, and the closed part holds no usable hex. A medium room can sit above a large room. A small room and a medium room can sit side by side above a large room. A Gatehouse ground floor that is only the gate passage holds no usable hex.
 
 The outer wall and the building walls are straight. They do not follow the hex edges. A usable hex lies entirely inside the building: all six vertices are inside the inner face. A building with more than one floor has a stair and a landing inside it. You reach a higher floor only by that stair. The landing holds no usable hex, and neither does the stair. A building with one floor has no stair and no landing. On a floor that repeats the one below, the stair and the landing occupy the same places, so the usable hexes match.
 
@@ -51,7 +51,7 @@ Humble, Impressive, and Imperious had earlier drawn plans with different per-bui
 - A Workshop has one floor. Stores has one floor.
 - A fortress has no Hall, no Chapel, and no Kitchen.
 - A building may have more than one floor.
-- A higher floor of a building has the same walls and the same hexes as the floor below it. A Gatehouse ground floor that is only a gate passage is the exception and holds no usable hex.
+- A higher floor of a building has the same outer walls as the floor below. The usable hexes may match the floor below. An interior wall may close off part of the floor: a medium room can sit above a large room, and a small room and a medium room can sit side by side above a large room. The closed part holds no usable hex. A Gatehouse ground floor that is only a gate passage holds no usable hex.
 - The outer wall and the building walls are straight.
 - A usable hex has all six vertices inside the inner face.
 - A building with more than one floor has a stair and a landing inside it. A higher floor is reached only by that stair.
@@ -78,7 +78,7 @@ Humble, Impressive, and Imperious had earlier drawn plans with different per-bui
 - [Tower stronghold by size](Done/tower-stronghold-by-size.md) puts Average through Imperious on Imperious floor bands with one kit room per floor. [Imperious dungeon](imperious-dungeon.md) uses the Imperious kit (126) with passages and stairs. This story does not implement those.
 - Split the Keep remainder across the other buildings in a mockup before coding; do not invent a split in a later pass unless the owner draws one.
 - Older mockups (Humble 13+13, Impressive 18×3+9, Imperious 27×4 + 14×2 + 15 + 10 + 4) are obsolete. Redraw against the kit before implementing.
-- Buildings are added in this order: Barracks, then a Gatehouse, then Workshops. Imperious then has a Stores in place of a second Workshop. There is no Hall, no Chapel, and no Kitchen. Each floor of a building repeats that building's ground hexes, except a Gatehouse ground floor that is only a passage. Do not shrink an upper floor the way the tower's radius steps inward.
+- Buildings are added in this order: Barracks, then a Gatehouse, then Workshops. Imperious then has a Stores in place of a second Workshop. There is no Hall, no Chapel, and no Kitchen. Each building keeps the same outer walls on every floor. A higher floor may repeat the hexes below it. An interior wall may close off part of a floor, so a medium room can sit above a large room, or a small room and a medium room can sit side by side above a large room. A Gatehouse ground floor that is only a passage holds no usable hex. Do not shrink an upper floor the way the tower's radius steps inward.
 - A fortress without a Gatehouse still has the gate in the curtain. The Gatehouse is the building on that gate. Its ground floor is the passage, open to the grass and to the yard, and the stair is inside the building beside that passage.
 - The walls are straight. They do not follow the hex edges. A usable hex is one whose six vertices lie inside the inner face. A hex whose center lies on the stair or the landing is not usable, the same exclusion `HexOnStair` and `HexOnLanding` already apply in a tower. The stair width is the tower's `StairWidthCm`. The landing run is the tower's `LandingRunCm`. The wall thickness in the mockup is the tower's `WallCm`.
 - The mockup elevations use the tower's `FloorPitchCm` for a storey and add a parapet above the top floor and above the curtain. The outer wall is one storey plus that parapet, and the gate opening is one storey. This story does not choose a different pitch or a parapet height. The gate's width is not chosen past an opening a person can walk through.

@@ -4,6 +4,7 @@
 
 namespace SolidStronghold
 {
+	class FSolidFortress;
 	class FSolidTower;
 }
 
@@ -54,6 +55,9 @@ public:
 
 	/** On this floor's curved wall, inset like a floor number, clear of that number and of the door. */
 	static FSolidArrangeSign ForTowerFloor(const SolidStronghold::FSolidTower& Tower, int32 Floor);
+
+	/** On the east wall of the yard, facing into the yard, clear of the gate and the doorways. */
+	static FSolidArrangeSign ForFortress(const SolidStronghold::FSolidFortress& Fortress);
 
 	void ApplyPlate(UStaticMeshComponent* Plate, UStaticMesh* Cube, float CubeSizeCm) const;
 	void AppendLetters(UInstancedStaticMeshComponent* Instances, float CubeSizeCm, bool bArranging = false) const;

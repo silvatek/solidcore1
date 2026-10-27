@@ -1,6 +1,7 @@
 #include "SolidArrangeSign.h"
 
 #include "Strongholds/Dungeon/SolidDungeonLevel.h"
+#include "Strongholds/Fortress/SolidFortress.h"
 #include "Strongholds/Furnishings/SolidFloorSign.h"
 #include "Strongholds/Furnishings/SolidStrongholdGrid.h"
 #include "Strongholds/Tower/SolidTower.h"
@@ -245,6 +246,26 @@ FSolidArrangeSign FSolidArrangeSign::ForTowerFloor(const SolidStronghold::FSolid
 	Sign.Place(
 		FVector(FMath::Cos(Angle) * Radius, FMath::Sin(Angle) * Radius, SignZ),
 		Yaw);
+	return Sign;
+}
+
+FSolidArrangeSign FSolidArrangeSign::ForFortress(const SolidStronghold::FSolidFortress& Fortress)
+{
+	FSolidArrangeSign Sign;
+	if (!Fortress.Supported(Fortress.Size))
+	{
+		return Sign;
+	}
+
+	const float Width = Fortress.OuterWidthCm();
+	const float Depth = Fortress.OuterDepthCm();
+	const float Wall = FSolidStronghold::WallCm;
+	const float PlanX = Width - Wall;
+	const float PlanY = Depth - Wall - Fortress.YardDepthCm * 0.5f;
+	const FVector WallFace(Depth * 0.5f - PlanY, PlanX - Width * 0.5f, 150.f);
+	const float TowardWall = StrokeDepthCm + PlateGapCm + PlateDepthCm * 0.5f;
+	const FVector Inward(0.f, -1.f, 0.f);
+	Sign.Place(WallFace + Inward * (PlateDepthCm * 0.5f + TowardWall), -90.f);
 	return Sign;
 }
 

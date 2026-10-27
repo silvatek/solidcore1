@@ -2,6 +2,8 @@
 #include "Misc/AutomationTest.h"
 #include "Strongholds/Dungeon/SolidDungeonInterior.h"
 #include "Strongholds/Dungeon/SolidDungeonLevel.h"
+#include "Strongholds/Fortress/Actors/SolidFortressInterior.h"
+#include "Strongholds/Fortress/SolidFortress.h"
 #include "Strongholds/Furnishings/SolidArrange.h"
 #include "Strongholds/Furnishings/SolidArrangeSign.h"
 #include "Strongholds/Furnishings/SolidStrongholdGrid.h"
@@ -290,6 +292,74 @@ bool FSolidArrangePlateTest::RunTest(const FString& Parameters)
 			TEXT("leaving the mode restores each floor"),
 			TowerLetters->GetInstanceCount(),
 			TowerLetterCount);
+	}
+
+	const FIntPoint FortCell(4, 5);
+	TUniquePtr<FSolidStronghold> Humble = SolidStronghold::Make(
+		ESolidStrongholdType::Fortress,
+		ESolidStrongholdSize::Humble,
+		FortCell,
+		SolidStronghold::WorldXY(FortCell));
+	const SolidStronghold::FSolidFortress& Fort = static_cast<const SolidStronghold::FSolidFortress&>(*Humble);
+	const FSolidArrangeSign Yard = FSolidArrangeSign::ForFortress(Fort);
+	TestTrue(TEXT("the fortress yard has a plate"), Yard.IsPresent());
+	const FVector Forward = FRotator(0.f, Yard.YawDeg(), 0.f).Vector();
+	TestTrue(
+		TEXT("the fortress plate faces into the yard"),
+		FVector2D::DotProduct(FVector2D(Forward.X, Forward.Y), FVector2D(0.f, -1.f)) > 0.9f);
+	const float Width = Fort.OuterWidthCm();
+	const float Depth = Fort.OuterDepthCm();
+	const float Wall = FSolidStronghold::WallCm;
+	const float EastFace = Width * 0.5f - Wall;
+	const FVector PlateCenter = Yard.PlateLocation();
+	TestTrue(
+		TEXT("the fortress plate sits on the east wall"),
+		FMath::IsNearlyEqual(PlateCenter.Y + Yard.PlateSizeCm().X * 0.5f, EastFace, 0.1f));
+	const float PlanY = Depth * 0.5f - PlateCenter.X;
+	const float YardNorth = Depth - Wall;
+	const float YardSouth = YardNorth - Fort.YardDepthCm;
+	TestTrue(TEXT("the fortress plate is in the yard"), PlanY > YardSouth + 1.f && PlanY < YardNorth - 1.f);
+	TestTrue(
+		TEXT("the fortress plate is clear of the gate"),
+		FMath::Abs(PlateCenter.Y) > FSolidStronghold::OpeningCm);
+
+	ASolidFortressInterior* FortInterior = NewObject<ASolidFortressInterior>();
+	TestNotNull(TEXT("fortress interior"), FortInterior);
+	if (FortInterior)
+	{
+		FortInterior->SetFortress(Fort);
+		FortInterior->BuildVisuals();
+		TestEqual(TEXT("the fortress has one plate"), FortInterior->ArrangeSignCount(), 1);
+		UStaticMeshComponent* FortPlate = FortInterior->GetArrangeSignPlate(0);
+		UInstancedStaticMeshComponent* FortLetters = FortInterior->GetArrangeLetters();
+		TestNotNull(TEXT("fortress plate"), FortPlate);
+		TestNotNull(TEXT("fortress letters"), FortLetters);
+		if (FortPlate && FortLetters)
+		{
+			TestTrue(
+				TEXT("the fortress plate is a pointer query"),
+				FortPlate->GetCollisionEnabled() == ECollisionEnabled::QueryOnly);
+			TestTrue(
+				TEXT("the fortress plate ignores the captain"),
+				FortPlate->GetCollisionResponseToChannel(ECC_Pawn) == ECR_Ignore);
+			const int32 FortLetterCount = FortLetters->GetInstanceCount();
+			TestTrue(TEXT("the fortress words are instanced"), FortLetterCount > 80);
+			FortInterior->SetArrangeSignDone(true);
+			TestNotEqual(
+				TEXT("Done arranging replaces the fortress words"),
+				FortLetters->GetInstanceCount(),
+				FortLetterCount);
+			FortInterior->SetArrangeSignDone(false);
+			TestEqual(
+				TEXT("leaving the mode restores the fortress words"),
+				FortLetters->GetInstanceCount(),
+				FortLetterCount);
+			FortInterior->BuildVisuals();
+			TestEqual(
+				TEXT("a second fortress build does not stack the letters"),
+				FortLetters->GetInstanceCount(),
+				FortLetterCount);
+		}
 	}
 
 	return true;

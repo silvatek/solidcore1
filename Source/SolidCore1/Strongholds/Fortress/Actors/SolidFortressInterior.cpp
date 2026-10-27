@@ -2,6 +2,7 @@
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
 #include "Strongholds/SolidStronghold.h"
+#include "Strongholds/Furnishings/SolidArrangeSign.h"
 #include "Strongholds/Furnishings/SolidStrongholdGrid.h"
 #include "Components/InstancedStaticMeshComponent.h"
 #include "Components/PointLightComponent.h"
@@ -33,6 +34,20 @@ ASolidFortressInterior::ASolidFortressInterior()
 	FloorGrid->SetMobility(EComponentMobility::Movable);
 	FloorGrid->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	FloorGrid->SetCastShadow(false);
+
+	ArrangePlate = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("ArrangePlate"));
+	ArrangePlate->SetupAttachment(SceneRoot);
+	ArrangePlate->SetMobility(EComponentMobility::Movable);
+	ArrangePlate->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	ArrangePlate->SetCollisionResponseToAllChannels(ECR_Ignore);
+	ArrangePlate->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	ArrangePlate->SetCastShadow(false);
+
+	ArrangeLetters = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("ArrangeLetters"));
+	ArrangeLetters->SetupAttachment(SceneRoot);
+	ArrangeLetters->SetMobility(EComponentMobility::Movable);
+	ArrangeLetters->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ArrangeLetters->SetCastShadow(false);
 }
 
 void ASolidFortressInterior::OnConstruction(const FTransform& Transform)
@@ -361,6 +376,34 @@ void ASolidFortressInterior::BuildVisuals()
 		}
 	}
 	PlaceFurnishings();
+
+	const FSolidArrangeSign Sign = FSolidArrangeSign::ForFortress(*Fortress);
+	if (ArrangeLetters)
+	{
+		ArrangeLetters->SetStaticMesh(Cube);
+		ArrangeLetters->ClearInstances();
+		if (UMaterialInterface* Ink = SolidMaterials::CreateSolidColor(
+			this, FSolidArrangeSign::TextColor(), TEXT("ArrangeLetters"), 0.9f))
+		{
+			ArrangeLetters->SetMaterial(0, Ink);
+		}
+		Sign.AppendLetters(ArrangeLetters, SolidFortressInteriorPrivate::CubeSizeCm);
+	}
+	if (ArrangePlate)
+	{
+		Sign.ApplyPlate(ArrangePlate, Cube, SolidFortressInteriorPrivate::CubeSizeCm);
+	}
+}
+
+void ASolidFortressInterior::SetArrangeSignDone(const bool bDone)
+{
+	if (!ArrangeLetters || !Fortress)
+	{
+		return;
+	}
+	ArrangeLetters->ClearInstances();
+	const FSolidArrangeSign Sign = FSolidArrangeSign::ForFortress(*Fortress);
+	Sign.AppendLetters(ArrangeLetters, SolidFortressInteriorPrivate::CubeSizeCm, bDone);
 }
 
 void ASolidFortressInterior::SetFurnishings(const TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Used)

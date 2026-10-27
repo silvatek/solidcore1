@@ -16,6 +16,7 @@ class UStaticMeshComponent;
  * The Keep and the Annex stand on the far side. A ceiling closes each room at one storey.
  * Each room has a light under that ceiling. Their floors draw the hex grid.
  * Each yard face has an open doorway.
+ * The east wall of the yard carries an Arrange furniture plate.
  * You walk through that gap. It does not leave. The captain arrives in the yard, inside the gate.
  * A click on the gate leaves. Companions stay outside.
  */
@@ -47,6 +48,16 @@ public:
 	/** Yaw 0 looks into the yard. */
 	virtual FRotator GetCaptainView() const override;
 
+	/** The Arrange furniture plate on the east wall of the yard. Not a furnishing. */
+	UStaticMeshComponent* GetArrangePlate() const { return ArrangePlate; }
+	UInstancedStaticMeshComponent* GetArrangeLetters() const { return ArrangeLetters; }
+	virtual int32 ArrangeSignCount() const override { return ArrangePlate ? 1 : 0; }
+	virtual void SetArrangeSignDone(bool bDone) override;
+	virtual UStaticMeshComponent* GetArrangeSignPlate(int32 Index) const override
+	{
+		return Index == 0 ? ArrangePlate.Get() : nullptr;
+	}
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<USceneComponent> SceneRoot;
@@ -71,6 +82,14 @@ protected:
 	/** One warm light under each room's ceiling. */
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TArray<TObjectPtr<UPointLightComponent>> RoomLights;
+
+	/** Light plate on the east wall of the yard. A click toggles arrange mode. It occupies no hex. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
+	TObjectPtr<UStaticMeshComponent> ArrangePlate;
+
+	/** Dark strokes of the arrange sign. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
+	TObjectPtr<UInstancedStaticMeshComponent> ArrangeLetters;
 
 private:
 	/** The game state owns this fortress. Null until Configure sets it, so the first construction draws nothing. */

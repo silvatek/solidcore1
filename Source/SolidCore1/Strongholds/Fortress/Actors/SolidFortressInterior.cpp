@@ -324,6 +324,7 @@ void ASolidFortressInterior::BuildVisuals()
 
 	if (!FloorGrid)
 	{
+		PlaceFurnishings();
 		return;
 	}
 	FloorGrid->SetStaticMesh(Cube);
@@ -359,6 +360,36 @@ void ASolidFortressInterior::BuildVisuals()
 					SolidStrongholdGrid::LineHeightCm / SolidFortressInteriorPrivate::CubeSizeCm)));
 		}
 	}
+	PlaceFurnishings();
+}
+
+void ASolidFortressInterior::SetFurnishings(const TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Used)
+{
+	FurnishingsToPlace = Used;
+	bUseFurnishings = true;
+}
+
+void ASolidFortressInterior::PlaceFurnishings()
+{
+	if (!Fortress || !bUseFurnishings)
+	{
+		return;
+	}
+	TArray<SolidStrongholdGrid::FHex> Hexes;
+	Fortress->CollectGroundHexes(Fortress->Size, Hexes);
+	const float Width = Fortress->OuterWidthCm();
+	const float Depth = Fortress->OuterDepthCm();
+	SolidStrongholdFurniture::PlaceFurnishings(
+		this,
+		FurnishingsToPlace,
+		Hexes,
+		[Width, Depth](const FVector2D& Mid, const float YawDeg)
+		{
+			// Plan +X is actor +Y, so a facing in the hex grid turns a right angle.
+			return FTransform(
+				FRotator(0.f, YawDeg + 90.f, 0.f),
+				SolidFortressInteriorPrivate::ActorCenter(Width, Depth, Mid.X, Mid.Y, 0.f));
+		});
 }
 
 FVector ASolidFortressInterior::GetCaptainSpawnWorld() const

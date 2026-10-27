@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Strongholds/Actors/SolidStrongholdInterior.h"
 #include "Strongholds/Fortress/SolidFortress.h"
+#include "Strongholds/Furnishings/SolidStrongholdFurniture.h"
 #include "SolidFortressInterior.generated.h"
 
 class UInstancedStaticMeshComponent;
@@ -31,6 +32,7 @@ public:
 
 	/** The caller keeps this fortress alive. The game state owns the ones the company places. */
 	void SetFortress(const SolidStronghold::FSolidFortress& InFortress) { Fortress = &InFortress; }
+	void SetFurnishings(const TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Used);
 	void BuildVisuals();
 
 	UStaticMeshComponent* GetGateMesh() const { return GateMesh; }
@@ -73,8 +75,11 @@ protected:
 private:
 	/** The game state owns this fortress. Null until Configure sets it, so the first construction draws nothing. */
 	const SolidStronghold::FSolidFortress* Fortress = nullptr;
+	TArray<SolidStrongholdFurniture::FPlacedFurnishing> FurnishingsToPlace;
+	bool bUseFurnishings = false;
 
 	void DiscardParts();
+	void PlaceFurnishings();
 	UStaticMeshComponent* AddPart(
 		UStaticMesh* Mesh,
 		const FVector& Location,

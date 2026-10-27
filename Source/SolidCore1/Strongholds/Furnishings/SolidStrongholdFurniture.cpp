@@ -2,9 +2,14 @@
 #include "Actors/SolidBed.h"
 #include "Actors/SolidChest.h"
 #include "Actors/SolidFireplace.h"
+#include "Actors/SolidFurnishing.h"
 #include "Actors/SolidSmallTable.h"
 #include "Inventory/SolidStorage.h"
+#include "SolidCore1.h"
 #include "Strongholds/SolidStronghold.h"
+#include "Engine/World.h"
+#include "EngineUtils.h"
+#include "GameFramework/Actor.h"
 
 namespace
 {
@@ -200,4 +205,137 @@ TArray<SolidStrongholdFurniture::FPlacedFurnishing> SolidStrongholdFurniture::St
 		FSolidStronghold(ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre),
 		Used);
 	return Used;
+}
+
+namespace
+{
+	bool SameFurnishing(
+		const SolidStrongholdFurniture::FPlacedFurnishing& A,
+		const SolidStrongholdFurniture::FPlacedFurnishing& B)
+	{
+		return A.ItemIndex == B.ItemIndex
+			&& A.Level == B.Level
+			&& A.X == B.X
+			&& A.Y == B.Y
+			&& FMath::IsNearlyEqual(A.RotationDeg, B.RotationDeg, 0.01f);
+	}
+
+	bool FurnishingsMatch(
+		const TArray<ASolidFurnishing*>& Owned,
+		const TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Used)
+	{
+		if (Owned.Num() != Used.Num())
+		{
+			return false;
+		}
+		TArray<int32> Taken;
+		for (const SolidStrongholdFurniture::FPlacedFurnishing& Want : Used)
+		{
+			int32 Found = INDEX_NONE;
+			for (int32 Index = 0; Index < Owned.Num(); ++Index)
+			{
+				if (Taken.Contains(Index) || !Owned[Index] || !Owned[Index]->HasPlacement())
+				{
+					continue;
+				}
+				if (SameFurnishing(Owned[Index]->GetPlacement(), Want))
+				{
+					Found = Index;
+					break;
+				}
+			}
+			if (Found == INDEX_NONE)
+			{
+				return false;
+			}
+			Taken.Add(Found);
+		}
+		return true;
+	}
+}
+
+FTransform SolidStrongholdFurniture::FloorLocal(const FVector2D& Mid, const float YawDeg)
+{
+	return FTransform(FRotator(0.f, YawDeg, 0.f), FVector(Mid.X, Mid.Y, 0.f));
+}
+
+int32 SolidStrongholdFurniture::PlaceFurnishings(
+	AActor* Owner,
+	const TArray<FPlacedFurnishing>& Used,
+	const TArray<SolidStrongholdGrid::FHex>& Hexes,
+	TFunctionRef<FTransform(const FVector2D& Mid, float YawDeg)> ToLocal)
+{
+	if (!Owner)
+	{
+		return 0;
+	}
+	UWorld* World = Owner->GetWorld();
+	if (!World || !World->IsGameWorld() || World->bIsTearingDown || !Owner->IsActorInitialized())
+	{
+		return 0;
+	}
+
+	TArray<ASolidFurnishing*> Owned;
+	for (TActorIterator<ASolidFurnishing> It(World); It; ++It)
+	{
+		ASolidFurnishing* Piece = *It;
+		if (Piece && Piece->GetOwner() == Owner && !Piece->IsActorBeingDestroyed())
+		{
+			Owned.Add(Piece);
+		}
+	}
+	if (FurnishingsMatch(Owned, Used))
+	{
+		return Owned.Num();
+	}
+	for (ASolidFurnishing* Piece : Owned)
+	{
+		Piece->Destroy();
+	}
+
+	int32 Placed = 0;
+	for (const FPlacedFurnishing& UsedPiece : Used)
+	{
+		const FItem* Item = ItemAt(UsedPiece.ItemIndex);
+		if (!Item || UsedPiece.Level != 0)
+		{
+			continue;
+		}
+
+		const SolidStrongholdGrid::FHex* Anchor = FindCell(Hexes, UsedPiece.X, UsedPiece.Y);
+		const SolidStrongholdGrid::FHex* Span = UsedPiece.SpanCell(Hexes);
+		if (!Anchor || !Span)
+		{
+			UE_LOG(LogSolid, Error, TEXT("%s: furnishing hex (%d,%d) is not on the floor."),
+				*Owner->GetName(), UsedPiece.X, UsedPiece.Y);
+			continue;
+		}
+
+		const FVector2D Mid = (Anchor->Center + Span->Center) * 0.5f;
+		const FTransform Local = ToLocal(Mid, UsedPiece.RotationDeg);
+		const FTransform ActorXf = Owner->GetActorTransform();
+		const FVector WorldPos = ActorXf.TransformPosition(Local.GetLocation());
+		const FRotator WorldRot = ActorXf.TransformRotation(Local.GetRotation()).Rotator();
+		const FTransform SpawnXf(WorldRot, WorldPos);
+
+		ASolidFurnishing* Piece = World->SpawnActorDeferred<ASolidFurnishing>(
+			Item->ActorClass,
+			SpawnXf,
+			Owner,
+			nullptr,
+			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+		if (!Piece)
+		{
+			UE_LOG(LogSolid, Error, TEXT("%s: failed to spawn %s."), *Owner->GetName(), Item->Name);
+			continue;
+		}
+
+		Piece->FinishSpawning(SpawnXf);
+		Piece->SetPlacement(UsedPiece);
+		Piece->AttachToActor(Owner, FAttachmentTransformRules::KeepWorldTransform);
+		++Placed;
+	}
+
+	UE_LOG(LogSolid, Warning, TEXT("%s furnishings placed: %d."), *Owner->GetName(), Placed);
+	return Placed;
 }

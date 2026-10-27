@@ -67,48 +67,6 @@ namespace
 		}
 	}
 
-	bool SameFurnishing(const SolidStrongholdFurniture::FPlacedFurnishing& A, const SolidStrongholdFurniture::FPlacedFurnishing& B)
-	{
-		return A.ItemIndex == B.ItemIndex
-			&& A.Level == B.Level
-			&& A.X == B.X
-			&& A.Y == B.Y
-			&& FMath::IsNearlyEqual(A.RotationDeg, B.RotationDeg, 0.01f);
-	}
-
-	bool FurnishingsMatch(
-		const TArray<ASolidFurnishing*>& Owned,
-		const TArray<SolidStrongholdFurniture::FPlacedFurnishing>& Used)
-	{
-		if (Owned.Num() != Used.Num())
-		{
-			return false;
-		}
-		TArray<int32> Taken;
-		for (const SolidStrongholdFurniture::FPlacedFurnishing& Want : Used)
-		{
-			int32 Found = INDEX_NONE;
-			for (int32 Index = 0; Index < Owned.Num(); ++Index)
-			{
-				if (Taken.Contains(Index) || !Owned[Index] || !Owned[Index]->HasPlacement())
-				{
-					continue;
-				}
-				if (SameFurnishing(Owned[Index]->GetPlacement(), Want))
-				{
-					Found = Index;
-					break;
-				}
-			}
-			if (Found == INDEX_NONE)
-			{
-				return false;
-			}
-			Taken.Add(Found);
-		}
-		return true;
-	}
-
 	struct FEdgeCut
 	{
 		float T = 0.f;
@@ -824,14 +782,8 @@ void ASolidDungeonInterior::SetFurnishings(const TArray<SolidStrongholdFurniture
 
 void ASolidDungeonInterior::PlaceStarterFurnishings()
 {
-	UWorld* World = GetWorld();
 	// OnConstruction runs before the actor is initialized. Spawning then re-enters
 	// construction, so the pieces are placed from the post-spawn BuildVisuals and BeginPlay.
-	if (!World || !World->IsGameWorld() || World->bIsTearingDown || !IsActorInitialized())
-	{
-		return;
-	}
-
 	TArray<SolidStrongholdFurniture::FPlacedFurnishing> Used;
 	if (bUseFurnishings)
 	{
@@ -842,73 +794,13 @@ void ASolidDungeonInterior::PlaceStarterFurnishings()
 		Used = SolidStrongholdFurniture::StartingFurnishings();
 	}
 
-	TArray<ASolidFurnishing*> Owned;
-	for (TActorIterator<ASolidFurnishing> It(World); It; ++It)
-	{
-		ASolidFurnishing* Piece = *It;
-		if (Piece && Piece->GetOwner() == this && !Piece->IsActorBeingDestroyed())
-		{
-			Owned.Add(Piece);
-		}
-	}
-	if (FurnishingsMatch(Owned, Used))
-	{
-		return;
-	}
-	for (ASolidFurnishing* Piece : Owned)
-	{
-		Piece->Destroy();
-	}
-
 	TArray<SolidStrongholdGrid::FHex> Hexes;
 	SolidDungeonLevel::CollectMeagreHexes(Hexes);
-
-	int32 Placed = 0;
-	for (const SolidStrongholdFurniture::FPlacedFurnishing& UsedPiece : Used)
-	{
-		const SolidStrongholdFurniture::FItem* Item = SolidStrongholdFurniture::ItemAt(UsedPiece.ItemIndex);
-		if (!Item || UsedPiece.Level != 0)
-		{
-			UE_LOG(LogSolid, Error, TEXT("SolidDungeonInterior: furnishing %d is not a level-0 catalog piece."),
-				UsedPiece.ItemIndex);
-			continue;
-		}
-
-		const SolidStrongholdGrid::FHex* Anchor = SolidStrongholdFurniture::FindCell(Hexes, UsedPiece.X, UsedPiece.Y);
-		const SolidStrongholdGrid::FHex* Span = UsedPiece.SpanCell(Hexes);
-		if (!Anchor || !Span)
-		{
-			UE_LOG(LogSolid, Error, TEXT("SolidDungeonInterior: furnishing hex (%d,%d) is not on the floor."),
-				UsedPiece.X, UsedPiece.Y);
-			continue;
-		}
-
-		const FVector2D Mid = (Anchor->Center + Span->Center) * 0.5f;
-		const FTransform ActorXf = GetActorTransform();
-		const FVector WorldPos = ActorXf.TransformPosition(FVector(Mid.X, Mid.Y, 0.f));
-		const FRotator WorldRot = ActorXf.TransformRotation(
-			FRotator(0.f, UsedPiece.RotationDeg, 0.f).Quaternion()).Rotator();
-		const FTransform SpawnXf(WorldRot, WorldPos);
-
-		ASolidFurnishing* Piece = World->SpawnActorDeferred<ASolidFurnishing>(
-			Item->ActorClass,
-			SpawnXf,
-			this,
-			nullptr,
-			ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
-		if (!Piece)
-		{
-			UE_LOG(LogSolid, Error, TEXT("SolidDungeonInterior: failed to spawn %s."), Item->Name);
-			continue;
-		}
-
-		Piece->FinishSpawning(SpawnXf);
-		Piece->SetPlacement(UsedPiece);
-		Piece->AttachToActor(this, FAttachmentTransformRules::KeepWorldTransform);
-		++Placed;
-	}
-
-	UE_LOG(LogSolid, Warning, TEXT("Dungeon furnishings placed: %d."), Placed);
+	SolidStrongholdFurniture::PlaceFurnishings(
+		this,
+		Used,
+		Hexes,
+		SolidStrongholdFurniture::FloorLocal);
 }
 
 FVector ASolidDungeonInterior::GetCaptainSpawnWorld() const

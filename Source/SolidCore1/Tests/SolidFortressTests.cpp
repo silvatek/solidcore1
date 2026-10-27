@@ -129,6 +129,19 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 		TEXT("the ground floor is the Humble kit"),
 		Ground.Num(),
 		SolidStronghold::Hexes(SolidStronghold::RoomsFor(ESolidStrongholdSize::Humble)));
+	TSet<uint64> Cells;
+	bool bDistinct = true;
+	for (const SolidStrongholdGrid::FHex& Hex : Ground)
+	{
+		const uint64 Key = (static_cast<uint64>(static_cast<uint32>(Hex.Col)) << 32)
+			| static_cast<uint32>(Hex.Row);
+		if (Cells.Contains(Key))
+		{
+			bDistinct = false;
+		}
+		Cells.Add(Key);
+	}
+	TestTrue(TEXT("each ground hex has its own cell"), bDistinct);
 
 	TArray<SolidStrongholdGrid::FHex> Listed;
 	for (const SolidStronghold::FSolidFortressBuilding& One : Fortress.Buildings)

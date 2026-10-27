@@ -184,6 +184,7 @@ namespace SolidStronghold
 		}
 		Room->SetFortress(*this);
 		Room->SetStrongholdCell(Cell);
+		Room->SetFurnishings(Furnishings);
 		Room->BuildVisuals();
 	}
 
@@ -253,11 +254,17 @@ namespace SolidStronghold
 		{
 			return;
 		}
+		int32 Shift = 0;
 		for (const FSolidFortressBuilding& One : Buildings)
 		{
 			TArray<SolidStrongholdGrid::FHex> Room;
 			One.CollectHexes(Room);
+			for (SolidStrongholdGrid::FHex& Hex : Room)
+			{
+				Hex.Col += Shift;
+			}
 			OutHexes.Append(Room);
+			Shift += 100;
 		}
 	}
 

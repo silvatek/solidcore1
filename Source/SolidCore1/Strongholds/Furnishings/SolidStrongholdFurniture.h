@@ -125,4 +125,18 @@ namespace SolidStrongholdFurniture
 
 	/** The pieces a new game carries. The Meagre stronghold is where they start. */
 	TArray<FPlacedFurnishing> StartingFurnishings();
+
+	/**
+	 * Spawn Used on Hexes and attach each piece to Owner.
+	 * ToLocal maps a hex-space midpoint and facing into the owner's local space.
+	 * A second call leaves pieces that already match.
+	 */
+	int32 PlaceFurnishings(
+		AActor* Owner,
+		const TArray<FPlacedFurnishing>& Used,
+		const TArray<SolidStrongholdGrid::FHex>& Hexes,
+		TFunctionRef<FTransform(const FVector2D& Mid, float YawDeg)> ToLocal);
+
+	/** Hex space is the owner's local space. */
+	FTransform FloorLocal(const FVector2D& Mid, float YawDeg);
 }

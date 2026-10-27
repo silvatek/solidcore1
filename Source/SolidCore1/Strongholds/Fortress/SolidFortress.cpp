@@ -1,4 +1,5 @@
 #include "SolidFortress.h"
+#include "Strongholds/Fortress/Actors/SolidFortressExterior.h"
 
 namespace SolidStronghold
 {
@@ -110,6 +111,36 @@ namespace SolidStronghold
 	ESolidStrongholdTrip FSolidFortress::Trip() const
 	{
 		return ESolidStrongholdTrip::None;
+	}
+
+	UClass* FSolidFortress::ExteriorClass() const
+	{
+		if (!Supported(Size))
+		{
+			return nullptr;
+		}
+		return ASolidFortressExterior::StaticClass();
+	}
+
+	void FSolidFortress::ConfigureExterior(AActor* Exterior) const
+	{
+		ASolidFortressExterior* Shell = Cast<ASolidFortressExterior>(Exterior);
+		if (!Shell || !Supported(Size))
+		{
+			return;
+		}
+		Shell->SetFortress(*this);
+		Shell->SetStrongholdCell(Cell);
+		Shell->BuildVisuals();
+	}
+
+	float FSolidFortress::ExteriorYawDeg(const USolidWorldChart* Map) const
+	{
+		SolidStrongholds::FGrassFace Face;
+		const float GrassYaw = (Map && SolidStrongholds::FindGrassFace(Map, Cell, Face))
+			? Face.FacingYawDeg
+			: 0.f;
+		return FMath::UnwindDegrees(GrassYaw + 180.f);
 	}
 
 	const FSolidFortressBuilding* FSolidFortress::Keep() const

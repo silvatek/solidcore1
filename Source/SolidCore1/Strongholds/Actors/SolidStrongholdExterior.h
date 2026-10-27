@@ -7,7 +7,7 @@
 class UStaticMeshComponent;
 
 /**
- * An actor drawn for one stronghold. Dungeon and tower exteriors are the kinds.
+ * An actor drawn for one stronghold. Dungeon, fortress, and tower exteriors are the kinds.
  * The stronghold names which kind, and fills it.
  */
 UCLASS()

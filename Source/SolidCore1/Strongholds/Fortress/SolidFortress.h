@@ -49,6 +49,9 @@ namespace SolidStronghold
 
 		virtual bool Supported(ESolidStrongholdSize InSize) const override;
 		virtual ESolidStrongholdTrip Trip() const override;
+		virtual UClass* ExteriorClass() const override;
+		virtual void ConfigureExterior(AActor* Exterior) const override;
+		virtual float ExteriorYawDeg(const USolidWorldChart* Map) const override;
 		virtual void CollectGroundHexes(
 			ESolidStrongholdSize InSize,
 			TArray<SolidStrongholdGrid::FHex>& OutHexes) const override;

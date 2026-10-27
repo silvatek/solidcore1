@@ -106,6 +106,7 @@ Cloud agents are a **code + git workshop** on the Cursor-hosted Linux VM. They d
 ## Planning
 
 - One file in `Planning/` is one open story. The file is the story.
+- An agent writing a story takes each requirement and each acceptance criterion from something discussed in the chat. It does not invent one. When an idea seems sensible and the chat has not discussed it, the agent raises it in the chat. The idea stays out of the story until that discussion. `Planning/README.md` states this with the Definition of Ready.
 - A story leaves development, build, and test process to this file and `CodingGuidelines.md`. The successful build and the automated tests are that policy. A story may say what a test checks. It names a play-test in Play In Editor, or a change in the World Editor, when the story needs that.
 - A commit that changes a story starts with `Plan: `, as the Git section says. A product commit does not. The workflow section says where that commit is pushed.
 - When an agent starts work on a `Ready` story, set that story's status to `In Progress`. For a complex story, that change waits until the staged plan is agreed and the first stage starts.

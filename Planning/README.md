@@ -28,6 +28,8 @@ The agent and the human developer must agree that the story is ready. Set `Ready
 
 The story must have Acceptance Criteria. Those are the `Acceptance` section: what is true when the story is done.
 
+Each requirement and each acceptance criterion is directly based on something discussed in the chat. An agent writing the story does not invent one. When an idea seems sensible and the chat has not discussed it, the agent raises it in the chat. The idea stays out of the story until that discussion. A criterion the chat did not cover sends a coding agent to spend its time on something that was not wanted.
+
 The story should call out any game concept it introduces, so the implementing agent knows to write a class for each one, following [`CodingGuidelines.md`](../CodingGuidelines.md). A game concept is a C++ class.
 
 A Ready story may depend on another Ready story. The story names that dependency. The named story ships first.

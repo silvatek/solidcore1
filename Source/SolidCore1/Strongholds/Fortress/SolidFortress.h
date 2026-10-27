@@ -59,6 +59,8 @@ namespace SolidStronghold
 		const FSolidFortressBuilding* Keep() const;
 		float OuterWidthCm() const;
 		float OuterDepthCm() const;
+		/** One hex outside the gate, on the grass side. */
+		FVector2D OutsideGateXY(const USolidWorldChart* Map) const;
 		/** Storey plus the parapet. */
 		float CurtainHeightCm() const;
 

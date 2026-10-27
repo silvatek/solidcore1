@@ -503,6 +503,33 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 	TArray<SolidStrongholdFurniture::FPlacedFurnishing> Stuck = Started;
 	TestFalse(TEXT("pieces do not sit on an empty floor"), SolidStrongholdTransition::PlaceOnFloor(Stuck, TArray<SolidStrongholdGrid::FHex>()));
 	TestTrue(TEXT("a failed placement leaves the pieces"), SamePieces(Stuck, Started));
+
+	USolidCompany* FortressCompany = NewObject<USolidCompany>();
+	FortressCompany->InitializeStartingStronghold();
+	USolidGameState& FortressState = *NewObject<USolidGameState>();
+	FortressState.bStrongholdSiteRestrictions = true;
+	Unlock(FortressState, ESolidStrongholdSize::Humble);
+	const FIntPoint HumbleCell(12, 20);
+	const TArray<SolidStrongholdFurniture::FPlacedFurnishing> CavePieces = FortressCompany->GetStronghold()->Furnishings;
+	TestTrue(
+		TEXT("Humble fortress can be chosen"),
+		SolidStrongholdTransition::Move(
+			*FortressCompany,
+			FortressState,
+			HumbleCell,
+			ESolidStrongholdSize::Humble,
+			ESolidStrongholdType::Fortress));
+	TestEqual(
+		TEXT("the company is in a fortress"),
+		static_cast<uint8>(FortressCompany->GetStronghold()->Type),
+		static_cast<uint8>(ESolidStrongholdType::Fortress));
+	TestEqual(
+		TEXT("the stronghold size is Humble"),
+		static_cast<uint8>(FortressCompany->GetStronghold()->Size),
+		static_cast<uint8>(ESolidStrongholdSize::Humble));
+	TestEqual(TEXT("the company is on the fortress site"), FortressCompany->GetStronghold()->Cell, HumbleCell);
+	TestEqual(TEXT("the cave is the fortress history"), FortressState.PreviousStrongholds.Num(), 1);
+	TestEqual(TEXT("the starting pieces moved onto the fortress"), FortressCompany->GetStronghold()->Furnishings.Num(), CavePieces.Num());
 	return true;
 }
 

@@ -128,6 +128,13 @@ bool FSolidFortressExteriorTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("the fortress exterior turns toward the site grass"),
 		Map && FMath::IsNearlyEqual(Keep->ExteriorYawDeg(Map), FMath::UnwindDegrees(GrassYaw + 180.f), 0.01f));
+
+	const FVector2D Stand = Fortress->OutsideGateXY(nullptr);
+	const FVector2D FromCenter = Stand - Fortress->Location;
+	TestTrue(
+		TEXT("the stand is one hex outside the gate"),
+		FMath::IsNearlyEqual(FromCenter.X, Fortress->OuterDepthCm() * 0.5f + SolidStrongholdGrid::FlatToFlatCm, 0.5f)
+			&& FMath::IsNearlyZero(FromCenter.Y, 0.5f));
 	return true;
 }
 

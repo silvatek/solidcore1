@@ -223,7 +223,7 @@ public:
 
 	/**
 	 * A click on a stronghold site chose this type.
-	 * The company moves, then the interior opens before the new exterior is on screen.
+	 * The company moves. A visit opens that interior. A stronghold with no visit stays outside and draws its shell.
 	 */
 	bool EnterChosenStronghold(FIntPoint Cell, ESolidStrongholdSize Size, ESolidStrongholdType Type);
 
@@ -294,6 +294,8 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	void EnsureTerrainStreamer();
+	/** The company stronghold has no visit. Draw its shell and stand outside the gate. */
+	void ShowOpenStronghold();
 	void RefreshEvents();
 	/** Record one enter-town event and apply its sight, title, and bridge repair. */
 	void NoteTownEntry(int32 TownId);

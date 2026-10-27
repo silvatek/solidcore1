@@ -184,6 +184,13 @@ namespace SolidStronghold
 		return FSolidStronghold::StoreyCm + ParapetCm;
 	}
 
+	FVector2D FSolidFortress::OutsideGateXY(const USolidWorldChart* Map) const
+	{
+		const float Reach = OuterDepthCm() * 0.5f + SolidStrongholdGrid::FlatToFlatCm;
+		const FVector World = FRotator(0.f, ExteriorYawDeg(Map), 0.f).RotateVector(FVector(-Reach, 0.f, 0.f));
+		return Location + FVector2D(World.X, World.Y);
+	}
+
 	void FSolidFortress::CollectGroundHexes(
 		const ESolidStrongholdSize InSize,
 		TArray<SolidStrongholdGrid::FHex>& OutHexes) const

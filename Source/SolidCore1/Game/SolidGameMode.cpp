@@ -36,6 +36,8 @@
 #include "Components/CapsuleComponent.h"
 #include "Strongholds/Furnishings/SolidStrongholdGrid.h"
 #include "Strongholds/SolidStronghold.h"
+#include "Strongholds/Actors/SolidStrongholdExterior.h"
+#include "Strongholds/Fortress/SolidFortress.h"
 #include "SolidGameInstance.h"
 #include "Kismet/GameplayStatics.h"
 #include "Vegetation/SolidForage.h"
@@ -707,8 +709,98 @@ bool ASolidGameMode::EnterChosenStronghold(
 		return false;
 	}
 
-	EnterStronghold();
+	const FSolidStronghold* Next = Company->GetStronghold();
+	if (Next && Next->InteriorClass())
+	{
+		EnterStronghold();
+		return true;
+	}
+
+	ShowOpenStronghold();
 	return true;
+}
+
+void ASolidGameMode::ShowOpenStronghold()
+{
+	UWorld* World = GetWorld();
+	USolidCompany* Company = GetCompany();
+	FSolidStronghold* Stronghold = Company ? Company->GetStronghold() : nullptr;
+	if (!World || !Stronghold || Stronghold->InteriorClass())
+	{
+		return;
+	}
+
+	ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World);
+	if (!Streamer || !Streamer->GetTerrainMap() || !Streamer->GetTerrainMap()->IsBuilt())
+	{
+		return;
+	}
+
+	for (int32 Index = SpawnedStrongholdSites.Num() - 1; Index >= 0; --Index)
+	{
+		ASolidStrongholdSite* Site = SpawnedStrongholdSites[Index];
+		if (!IsValid(Site))
+		{
+			SpawnedStrongholdSites.RemoveAt(Index);
+			continue;
+		}
+		if (Site->GetCell() != Stronghold->Cell)
+		{
+			continue;
+		}
+		Site->Destroy();
+		SpawnedStrongholdSites.RemoveAt(Index);
+	}
+
+	bool bDrawn = false;
+	for (const TObjectPtr<ASolidStrongholdExterior>& Exterior : SpawnedStrongholdExteriors)
+	{
+		if (IsValid(Exterior) && Exterior->GetStrongholdCell() == Stronghold->Cell)
+		{
+			bDrawn = true;
+			break;
+		}
+	}
+
+	USolidTerrainMap* Terrain = Streamer->GetTerrainMap();
+	USolidWorldChart* Map = Terrain ? Terrain->GetWorldMap() : nullptr;
+	if (!bDrawn && Stronghold->ExteriorClass())
+	{
+		Stronghold->RememberExit(Map);
+		FActorSpawnParameters SpawnParams;
+		SpawnParams.Owner = this;
+		SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+		FVector SpawnLoc(Stronghold->Location.X, Stronghold->Location.Y, 0.f);
+		const float LandZ = Streamer->GetHeightAt(SpawnLoc) + Streamer->CollisionHeightBias;
+		SpawnLoc.Z = LandZ + Streamer->SnapHeightPadding;
+		const FRotator Rotation(0.f, Stronghold->ExteriorYawDeg(Map), 0.f);
+		AActor* SpawnedActor = World->SpawnActor(Stronghold->ExteriorClass(), &SpawnLoc, &Rotation, SpawnParams);
+		if (ASolidStrongholdExterior* Exterior = Cast<ASolidStrongholdExterior>(SpawnedActor))
+		{
+			Stronghold->ConfigureExterior(Exterior);
+			SpawnedStrongholdExteriors.Add(Exterior);
+		}
+	}
+
+	ASolidCharacter* Captain = FindCaptain(World);
+	if (!Captain || Stronghold->Type != ESolidStrongholdType::Fortress)
+	{
+		return;
+	}
+
+	const FVector2D Stand = static_cast<SolidStronghold::FSolidFortress*>(Stronghold)->OutsideGateXY(Map);
+	const FVector Delta = SolidPortal::SquadDelta(Captain->GetActorLocation(), Stand);
+	const float StandZ = Streamer->GetHeightAt(FVector(Stand.X, Stand.Y, 0.f)) + Streamer->CollisionHeightBias;
+	float CapsuleHalf = 96.f;
+	if (const UCapsuleComponent* Capsule = Captain->GetCapsuleComponent())
+	{
+		CapsuleHalf = Capsule->GetScaledCapsuleHalfHeight();
+	}
+	const FVector NewLoc(Stand.X, Stand.Y, StandZ + CapsuleHalf + Streamer->SnapHeightPadding);
+	const FVector2D Toward = Stronghold->Location - Stand;
+	const float Yaw = FMath::RadiansToDegrees(FMath::Atan2(Toward.Y, Toward.X));
+	Captain->ArriveByPortal(NewLoc, Yaw);
+	Streamer->RelocateCompanionsByDelta(Delta);
 }
 
 void ASolidGameMode::ApplyArrangeBody()

@@ -1032,9 +1032,43 @@ namespace SolidHUDPrivate
 		Canvas->DrawItem(Item);
 	}
 
-	/** Same oak board as the journal. Worn boxes follow a person. The pack is a grid on the right. */
-	static void DrawInventoryBoard(UCanvas* Canvas, const SolidInventory::FPage& Page, const FString& ChestHeading)
+	/** A previous or next mark, centered in its heading-row box. */
+	static void DrawInventoryMark(
+		UCanvas* Canvas,
+		UFont* Font,
+		const FString& Text,
+		const float OriginX,
+		const float OriginY,
+		const SolidInventory::FHeadingMark& Mark,
+		const FLinearColor& Color)
 	{
+		if (!Canvas || !Font || !Mark.bShow || Text.IsEmpty())
+		{
+			return;
+		}
+		float TextW = 0.f;
+		float TextH = 0.f;
+		Canvas->StrLen(Font, Text, TextW, TextH);
+		FCanvasTextItem Item(
+			FVector2D(
+				OriginX + Mark.X + (Mark.W - TextW) * 0.5f,
+				OriginY + Mark.Y + (Mark.H - TextH) * 0.5f),
+			FText::FromString(Text),
+			Font,
+			Color);
+		Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+		Canvas->DrawItem(Item);
+	}
+
+	/** Same oak board as the journal. Worn boxes follow a person. The pack is a grid on the right. */
+	static void DrawInventoryBoard(
+		UCanvas* Canvas,
+		const SolidInventory::FPage& Page,
+		const FString& ChestHeading,
+		const int32 StorageCount,
+		SolidInventory::FHeadingMarks& OutMarks)
+	{
+		OutMarks = SolidInventory::FHeadingMarks();
 		if (!Canvas)
 		{
 			return;
@@ -1126,6 +1160,16 @@ namespace SolidHUDPrivate
 				Page.ChestGridW,
 				OriginY + Page.ChestLabelY,
 				Palette.Title);
+			/** The heading row is 22px. The slots start a gap below it, so the marks stay off the cells. */
+			OutMarks = SolidInventory::HeadingMarks(
+				Page.ChestX,
+				Page.ChestLabelY,
+				Page.ChestGridW,
+				22.f,
+				22.f,
+				StorageCount);
+			DrawInventoryMark(Canvas, Font, TEXT("<"), OriginX, OriginY, OutMarks.Previous, Palette.Title);
+			DrawInventoryMark(Canvas, Font, TEXT(">"), OriginX, OriginY, OutMarks.Next, Palette.Title);
 		}
 
 		for (const SolidInventory::FBox& Slot : Page.Boxes)
@@ -2762,6 +2806,16 @@ void ASolidHUD::PressInventory(const float X, const float Y)
 	}
 	const float LocalX = X - InventoryOriginX;
 	const float LocalY = Y - InventoryOriginY;
+	if (SolidInventory::HitHeadingMark(InventoryMarks.Previous, LocalX, LocalY))
+	{
+		CycleInventoryContainer(-1);
+		return;
+	}
+	if (SolidInventory::HitHeadingMark(InventoryMarks.Next, LocalX, LocalY))
+	{
+		CycleInventoryContainer(1);
+		return;
+	}
 	if (SolidInventory::HitCraftButton(InventoryPage, LocalX, LocalY))
 	{
 		bCraftButtonPressed = InventoryPage.bCraftEnabled;
@@ -2915,7 +2969,7 @@ void ASolidHUD::DrawInventoryPopup()
 		bInventoryHitReady = true;
 	}
 
-	SolidHUDPrivate::DrawInventoryBoard(Canvas, Page, ChestHeading);
+	SolidHUDPrivate::DrawInventoryBoard(Canvas, Page, ChestHeading, StorageCount, InventoryMarks);
 }
 
 void ASolidHUD::DrawJournalPopup() const

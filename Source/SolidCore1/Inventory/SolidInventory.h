@@ -335,6 +335,62 @@ namespace SolidInventory
 		TArray<FBox> Boxes;
 	};
 
+	/** One previous or next mark on the chest heading row, in content pixels. */
+	struct FHeadingMark
+	{
+		bool bShow = false;
+		float X = 0.f;
+		float Y = 0.f;
+		float W = 0.f;
+		float H = 0.f;
+	};
+
+	/** Previous and next marks. Both stay hidden when the stronghold has one container. */
+	struct FHeadingMarks
+	{
+		FHeadingMark Previous;
+		FHeadingMark Next;
+	};
+
+	inline bool HitHeadingMark(const FHeadingMark& Mark, const float X, const float Y)
+	{
+		return Mark.bShow
+			&& X >= Mark.X
+			&& Y >= Mark.Y
+			&& X < Mark.X + Mark.W
+			&& Y < Mark.Y + Mark.H;
+	}
+
+	/**
+	 * Marks on the chest heading row. Absent when the stronghold has one container.
+	 * The boxes sit at the ends of that row, above the slots.
+	 */
+	inline FHeadingMarks HeadingMarks(
+		const float Left,
+		const float LabelY,
+		const float GridW,
+		const float MarkW,
+		const float MarkH,
+		const int32 ContainerCount)
+	{
+		FHeadingMarks Marks;
+		if (ContainerCount < 2 || MarkW <= 0.f || MarkH <= 0.f || GridW < MarkW * 2.f)
+		{
+			return Marks;
+		}
+		Marks.Previous.bShow = true;
+		Marks.Previous.X = Left;
+		Marks.Previous.Y = LabelY;
+		Marks.Previous.W = MarkW;
+		Marks.Previous.H = MarkH;
+		Marks.Next.bShow = true;
+		Marks.Next.X = Left + GridW - MarkW;
+		Marks.Next.Y = LabelY;
+		Marks.Next.W = MarkW;
+		Marks.Next.H = MarkH;
+		return Marks;
+	}
+
 	/** Where a pointer landed on the page, in content pixels. */
 	struct FSlotHit
 	{

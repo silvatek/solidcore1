@@ -513,6 +513,53 @@ bool FSolidStorageContainerCycleTest::RunTest(const FString& Parameters)
 		SolidStorage::ContainerHeading(2, 2),
 		FString(TEXT("Chest 2")));
 
+	const SolidInventory::FHeadingMarks One = SolidInventory::HeadingMarks(10.f, 0.f, 234.f, 22.f, 22.f, 1);
+	TestFalse(TEXT("one container has no previous mark"), One.Previous.bShow);
+	TestFalse(TEXT("one container has no next mark"), One.Next.bShow);
+
+	SolidInventory::FPage MarkPage;
+	const SolidStorage::FContainer MarkChest = SolidStorage::StartingCaveChest();
+	SolidInventory::Layout(SolidInventory::StartingLoadout(), MarkPage, &MarkChest);
+	const SolidInventory::FHeadingMarks Marks = SolidInventory::HeadingMarks(
+		MarkPage.ChestX,
+		MarkPage.ChestLabelY,
+		MarkPage.ChestGridW,
+		22.f,
+		22.f,
+		2);
+	TestTrue(TEXT("two containers have a previous mark"), Marks.Previous.bShow);
+	TestTrue(TEXT("two containers have a next mark"), Marks.Next.bShow);
+	TestTrue(TEXT("the previous mark is the left one"), Marks.Previous.X < Marks.Next.X);
+	TestTrue(
+		TEXT("a click on the previous mark matches that mark"),
+		SolidInventory::HitHeadingMark(Marks.Previous, Marks.Previous.X + 1.f, Marks.Previous.Y + 1.f));
+	TestFalse(
+		TEXT("that click is not the next mark"),
+		SolidInventory::HitHeadingMark(Marks.Next, Marks.Previous.X + 1.f, Marks.Previous.Y + 1.f));
+	for (const SolidInventory::FBox& Box : MarkPage.Boxes)
+	{
+		if (!Box.bChest)
+		{
+			continue;
+		}
+		SolidInventory::FBox Previous;
+		Previous.X = Marks.Previous.X;
+		Previous.Y = Marks.Previous.Y;
+		Previous.W = Marks.Previous.W;
+		Previous.H = Marks.Previous.H;
+		SolidInventory::FBox Next;
+		Next.X = Marks.Next.X;
+		Next.Y = Marks.Next.Y;
+		Next.W = Marks.Next.W;
+		Next.H = Marks.Next.H;
+		TestFalse(
+			TEXT("the previous mark does not cover a slot"),
+			SolidStorageTestPrivate::Overlaps(Previous, Box));
+		TestFalse(
+			TEXT("the next mark does not cover a slot"),
+			SolidStorageTestPrivate::Overlaps(Next, Box));
+	}
+
 	USolidCompany* Company = NewObject<USolidCompany>();
 	Company->InitializeStartingStronghold();
 	FSolidStronghold* Stronghold = Company->GetStronghold();

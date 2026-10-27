@@ -297,6 +297,8 @@ protected:
 	bool bInventoryChestOpen = false;
 	/** Which storage container is open. Zero is the first. Closing, and leaving, return to zero. */
 	int32 InventoryContainer = 0;
+	/** Previous and next on the chest heading. Hidden when one container is open. */
+	SolidInventory::FHeadingMarks InventoryMarks;
 	SolidInventory::FPage InventoryPage;
 	float InventoryOriginX = 0.f;
 	float InventoryOriginY = 0.f;

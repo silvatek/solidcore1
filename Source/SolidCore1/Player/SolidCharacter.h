@@ -214,6 +214,10 @@ protected:
 	void MainMenuConfirm();
 	void CharacterEditorPrevious();
 	void CharacterEditorNext();
+	/** LB and L1. While the inventory is open, the previous storage container. */
+	void InventoryContainerPrevious();
+	/** RB and R1. While the inventory is open, the next storage container. */
+	void InventoryContainerNext();
 	void CharacterEditorNudgeLeft();
 	void CharacterEditorNudgeRight();
 	void ToggleCharacterEditorSkeleton();

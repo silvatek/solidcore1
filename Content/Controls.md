@@ -80,5 +80,7 @@ While arrange mode is on, WASD, the left stick, and a click do not move the capt
 |--------|----------|------|-------------|
 | Open | / | View | Create |
 | Close | /, Esc, or F10 | View or Menu | Create or Options |
+| Previous container | Page Up | LB | L1 |
+| Next container | Page Down | RB | R1 |
 | Move an item | Drag between worn boxes, the pack, and craft slots | — | — |
 | Craft | Click Craft | — | — |

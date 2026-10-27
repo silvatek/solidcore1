@@ -390,6 +390,10 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::PageUp, IE_Repeat, this, &ASolidCharacter::CharacterEditorPrevious);
 	PlayerInputComponent->BindKey(EKeys::PageDown, IE_Pressed, this, &ASolidCharacter::CharacterEditorNext);
 	PlayerInputComponent->BindKey(EKeys::PageDown, IE_Repeat, this, &ASolidCharacter::CharacterEditorNext);
+	PlayerInputComponent->BindKey(EKeys::Gamepad_LeftShoulder, IE_Pressed, this, &ASolidCharacter::InventoryContainerPrevious);
+	PlayerInputComponent->BindKey(EKeys::Gamepad_LeftShoulder, IE_Repeat, this, &ASolidCharacter::InventoryContainerPrevious);
+	PlayerInputComponent->BindKey(EKeys::Gamepad_RightShoulder, IE_Pressed, this, &ASolidCharacter::InventoryContainerNext);
+	PlayerInputComponent->BindKey(EKeys::Gamepad_RightShoulder, IE_Repeat, this, &ASolidCharacter::InventoryContainerNext);
 	PlayerInputComponent->BindKey(EKeys::SpaceBar, IE_Pressed, this, &ASolidCharacter::ToggleCharacterEditorSkeleton);
 	PlayerInputComponent->BindKey(EKeys::Home, IE_Pressed, this, &ASolidCharacter::TurnCharacterEditorClockwise);
 	PlayerInputComponent->BindKey(EKeys::Home, IE_Repeat, this, &ASolidCharacter::TurnCharacterEditorClockwise);
@@ -870,6 +874,22 @@ void ASolidCharacter::CharacterEditorNext()
 		}
 	}
 	MoveCharacterEditor(1);
+}
+
+void ASolidCharacter::InventoryContainerPrevious()
+{
+	if (ASolidHUD* HUD = GetSolidHUD())
+	{
+		HUD->CycleInventoryContainer(-1);
+	}
+}
+
+void ASolidCharacter::InventoryContainerNext()
+{
+	if (ASolidHUD* HUD = GetSolidHUD())
+	{
+		HUD->CycleInventoryContainer(1);
+	}
 }
 
 void ASolidCharacter::CharacterEditorNudgeLeft()

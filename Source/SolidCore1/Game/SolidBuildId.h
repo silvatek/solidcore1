@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0653")
+#define SOLID_BUILD_ID TEXT("SC1-0654")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Page Up and Page Down cycle storage containers.")
+#define SOLID_BUILD_NOTE TEXT("Shoulder buttons cycle storage containers.")
 #endif

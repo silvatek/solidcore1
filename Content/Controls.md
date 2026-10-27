@@ -18,6 +18,7 @@ Input Actions and the mapping context can be replaced with Content assets on the
 | Close the menu | Esc or F10 | Menu | Options |
 | Inventory | / | View | Create |
 | Debug readout | F12 | — | — |
+| Play In Editor screenshot | Alt-P | — | — |
 | Close an event message | Click, Enter, Esc, or F10 | Menu | Options |
 
 ## Open World

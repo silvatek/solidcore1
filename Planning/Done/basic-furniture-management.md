@@ -47,7 +47,7 @@ This story is complex. The mode and the sign can be entered and left before a pi
 - Moving a chest keeps the items in its slots. The pack and the worn boxes stay as they were.
 - A placed piece is moved or left where it is. This story does not delete one that is already down.
 - A legal put-down writes that piece's hex and facing onto the stronghold's list. The other pieces on the list stay. Another floor's pieces stay.
-- While the mode is on, a click does not start a walk, and it does not enter or leave through the door. A click on the Arrange furniture sign still leaves the mode. A click does not open a storage container. [Multiple storage containers](../multiple-storage-containers.md) opens one only while this mode is off.
+- While the mode is on, a click does not start a walk, and it does not enter or leave through the door. A click on the Arrange furniture sign still leaves the mode. A click does not open a storage container. [Multiple storage containers](multiple-storage-containers.md) opens one only while this mode is off.
 - Leaving the stronghold ends the mode first. A held piece goes back, and the captain is drawn for the leave. The leave then proceeds as it does now, including Build squad when that page opens on a leave.
 - After the player leaves and comes back, each piece is still on the floor and hex where they put it, with the same facing. A new game has none of those moves. A move to another stronghold still seats the list on that stronghold's ground floor, as [Stronghold transition](stronghold-transition.md) does.
 - The whole floor the captain is on can be arranged. Another floor of the stronghold is not.

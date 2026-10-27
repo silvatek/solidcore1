@@ -35,17 +35,17 @@ namespace SolidStronghold
 		/** Open ground from the buildings' north outer faces to the inner face of the gate wall. */
 		float YardDepthCm = 300.f;
 
-		virtual bool Supported(ESolidStrongholdSize Size) const override;
+		virtual bool Supported(ESolidStrongholdSize InSize) const override;
 		virtual ESolidStrongholdTrip Trip() const override;
 		virtual void CollectGroundHexes(
-			ESolidStrongholdSize Size,
+			ESolidStrongholdSize InSize,
 			TArray<SolidStrongholdGrid::FHex>& OutHexes) const override;
 
 		void CollectKeepHexes(
-			ESolidStrongholdSize Size,
+			ESolidStrongholdSize InSize,
 			TArray<SolidStrongholdGrid::FHex>& OutHexes) const;
 		void CollectAnnexHexes(
-			ESolidStrongholdSize Size,
+			ESolidStrongholdSize InSize,
 			TArray<SolidStrongholdGrid::FHex>& OutHexes) const;
 
 		/** Vertex span of Columns pointy-top columns. */

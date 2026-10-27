@@ -79,9 +79,9 @@ namespace SolidStronghold
 		return Fortress;
 	}
 
-	bool FSolidFortress::Supported(const ESolidStrongholdSize Size) const
+	bool FSolidFortress::Supported(const ESolidStrongholdSize InSize) const
 	{
-		return Size == ESolidStrongholdSize::Humble;
+		return InSize == ESolidStrongholdSize::Humble;
 	}
 
 	ESolidStrongholdTrip FSolidFortress::Trip() const
@@ -127,11 +127,11 @@ namespace SolidStronghold
 	}
 
 	void FSolidFortress::CollectKeepHexes(
-		const ESolidStrongholdSize Size,
+		const ESolidStrongholdSize InSize,
 		TArray<SolidStrongholdGrid::FHex>& OutHexes) const
 	{
 		OutHexes.Reset();
-		if (!Supported(Size))
+		if (!Supported(InSize))
 		{
 			return;
 		}
@@ -144,11 +144,11 @@ namespace SolidStronghold
 	}
 
 	void FSolidFortress::CollectAnnexHexes(
-		const ESolidStrongholdSize Size,
+		const ESolidStrongholdSize InSize,
 		TArray<SolidStrongholdGrid::FHex>& OutHexes) const
 	{
 		OutHexes.Reset();
-		if (!Supported(Size))
+		if (!Supported(InSize))
 		{
 			return;
 		}
@@ -161,14 +161,14 @@ namespace SolidStronghold
 	}
 
 	void FSolidFortress::CollectGroundHexes(
-		const ESolidStrongholdSize Size,
+		const ESolidStrongholdSize InSize,
 		TArray<SolidStrongholdGrid::FHex>& OutHexes) const
 	{
 		OutHexes.Reset();
 		TArray<SolidStrongholdGrid::FHex> Keep;
 		TArray<SolidStrongholdGrid::FHex> Annex;
-		CollectKeepHexes(Size, Keep);
-		CollectAnnexHexes(Size, Annex);
+		CollectKeepHexes(InSize, Keep);
+		CollectAnnexHexes(InSize, Annex);
 		OutHexes.Append(Keep);
 		OutHexes.Append(Annex);
 	}

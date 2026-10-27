@@ -29,16 +29,16 @@ namespace SolidStronghold
 		 */
 		int32 SourceFloor = 0;
 		/** Walking surface to the walking surface above. */
-		float FloorPitchCm = 300.f;
+		float FloorPitchCm = FSolidStronghold::StoreyCm;
 		float SlabCm = 20.f;
 		/** Exterior radius minus interior radius, at every height. */
-		float WallCm = 50.f;
+		float WallCm = FSolidStronghold::WallCm;
 
 		float GroundExteriorRadiusCm = 500.f;
 		float TopExteriorRadiusCm = 300.f;
 
 		/** Same clear opening as the cave door. */
-		float DoorWidthCm = 140.f;
+		float DoorWidthCm = FSolidStronghold::OpeningCm;
 		float DoorHeightCm = 240.f;
 
 		/** The flight occupies this band inside the wall. */

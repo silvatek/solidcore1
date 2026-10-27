@@ -127,6 +127,13 @@ public:
 	 */
 	TArray<SolidStrongholdFurniture::FPlacedFurnishing> Furnishings;
 
+	/** Wall thickness. The tower and the fortress use this. */
+	static constexpr float WallCm = 50.f;
+	/** Walking surface to the walking surface above. */
+	static constexpr float StoreyCm = 300.f;
+	/** Clear width of a door, a gate, and the cave doorway. */
+	static constexpr float OpeningCm = 140.f;
+
 	/**
 	 * The storage piece at Index, in furnishings order.
 	 * Zero is the first chest. A fireplace and a bed are skipped. Null when Index is past those pieces.

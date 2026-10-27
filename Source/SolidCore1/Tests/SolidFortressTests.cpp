@@ -2,7 +2,6 @@
 #include "Misc/AutomationTest.h"
 #include "Strongholds/Fortress/SolidFortress.h"
 #include "Strongholds/Furnishings/SolidStrongholdGrid.h"
-#include "Strongholds/Tower/SolidTower.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -37,13 +36,13 @@ namespace
 
 	float LaidWidthCm(const SolidStronghold::FSolidFortress& Fortress)
 	{
-		float Width = Fortress.WallCm;
+		float Width = FSolidStronghold::WallCm;
 		for (int32 Index = 0; Index < Fortress.Buildings.Num(); ++Index)
 		{
-			Width += Fortress.Buildings[Index].WidthCm() + Fortress.WallCm;
+			Width += Fortress.Buildings[Index].WidthCm() + FSolidStronghold::WallCm;
 			if (Index + 1 < Fortress.Buildings.Num())
 			{
-				Width += Fortress.GapCm + Fortress.WallCm;
+				Width += Fortress.GapCm + FSolidStronghold::WallCm;
 			}
 		}
 		return Width;
@@ -58,16 +57,14 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 {
 	const SolidStronghold::FSolidFortress& Fortress = SolidStronghold::FSolidFortress::Instance();
-	const SolidStronghold::FPlan Tower;
-
 	TestTrue(TEXT("Humble is supported"), Fortress.Supported(ESolidStrongholdSize::Humble));
 	TestFalse(TEXT("Meagre stays unsupported"), Fortress.Supported(ESolidStrongholdSize::Meagre));
 	TestFalse(TEXT("Average stays unsupported"), Fortress.Supported(ESolidStrongholdSize::Average));
-	TestEqual(TEXT("the wall is the tower wall"), Fortress.WallCm, Tower.WallCm);
-	TestEqual(TEXT("the storey is the tower pitch"), Fortress.StoreyCm, Tower.FloorPitchCm);
-	TestEqual(TEXT("the opening is the tower door"), Fortress.OpeningCm, Tower.DoorWidthCm);
 	TestEqual(TEXT("the parapet is one hex across"), Fortress.ParapetCm, SolidStrongholdGrid::FlatToFlatCm);
-	TestEqual(TEXT("the curtain is the storey plus the parapet"), Fortress.CurtainHeightCm(), Fortress.StoreyCm + Fortress.ParapetCm);
+	TestEqual(
+		TEXT("the curtain is the storey plus the parapet"),
+		Fortress.CurtainHeightCm(),
+		FSolidStronghold::StoreyCm + Fortress.ParapetCm);
 	TestEqual(TEXT("Humble has two buildings"), Fortress.Buildings.Num(), 2);
 	TestTrue(
 		TEXT("the outer width is the buildings, the gap, and the walls"),
@@ -76,7 +73,7 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 		TEXT("the outer depth is the rooms, the yard, and the walls"),
 		FMath::IsNearlyEqual(
 			Fortress.OuterDepthCm(),
-			Fortress.WallCm + Fortress.Buildings[0].DepthCm() + Fortress.WallCm + Fortress.YardDepthCm + Fortress.WallCm,
+			FSolidStronghold::WallCm + Fortress.Buildings[0].DepthCm() + FSolidStronghold::WallCm + Fortress.YardDepthCm + FSolidStronghold::WallCm,
 			0.05f));
 
 	const SolidStronghold::FSolidFortressBuilding* Keep = Fortress.Keep();

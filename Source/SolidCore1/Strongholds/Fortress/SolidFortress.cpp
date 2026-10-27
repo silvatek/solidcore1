@@ -1,7 +1,5 @@
 #include "SolidFortress.h"
 
-#include "Strongholds/Tower/SolidTower.h"
-
 namespace SolidStronghold
 {
 	namespace SolidFortressPrivate
@@ -72,12 +70,8 @@ namespace SolidStronghold
 	FSolidFortress::FSolidFortress()
 	{
 		Type = ESolidStrongholdType::Fortress;
-		const FPlan Tower;
-		WallCm = Tower.WallCm;
-		StoreyCm = Tower.FloorPitchCm;
-		OpeningCm = Tower.DoorWidthCm;
 		ParapetCm = SolidStrongholdGrid::FlatToFlatCm;
-		YardDepthCm = StoreyCm;
+		YardDepthCm = FSolidStronghold::StoreyCm;
 
 		FSolidFortressBuilding Room;
 		Room.Columns = 2;
@@ -89,15 +83,15 @@ namespace SolidStronghold
 		Buildings.Add(Room);
 		Buildings.Add(Keep);
 
-		float X = WallCm;
+		float X = FSolidStronghold::WallCm;
 		for (int32 Index = 0; Index < Buildings.Num(); ++Index)
 		{
 			FSolidFortressBuilding& One = Buildings[Index];
-			One.InnerMinCm = FVector2D(X, WallCm);
-			X += One.WidthCm() + WallCm;
+			One.InnerMinCm = FVector2D(X, FSolidStronghold::WallCm);
+			X += One.WidthCm() + FSolidStronghold::WallCm;
 			if (Index + 1 < Buildings.Num())
 			{
-				X += GapCm + WallCm;
+				X += GapCm + FSolidStronghold::WallCm;
 			}
 		}
 	}
@@ -132,13 +126,13 @@ namespace SolidStronghold
 
 	float FSolidFortress::OuterWidthCm() const
 	{
-		float Width = WallCm;
+		float Width = FSolidStronghold::WallCm;
 		for (int32 Index = 0; Index < Buildings.Num(); ++Index)
 		{
-			Width += Buildings[Index].WidthCm() + WallCm;
+			Width += Buildings[Index].WidthCm() + FSolidStronghold::WallCm;
 			if (Index + 1 < Buildings.Num())
 			{
-				Width += GapCm + WallCm;
+				Width += GapCm + FSolidStronghold::WallCm;
 			}
 		}
 		return Width;
@@ -151,12 +145,12 @@ namespace SolidStronghold
 		{
 			Depth = FMath::Max(Depth, One.DepthCm());
 		}
-		return WallCm + Depth + WallCm + YardDepthCm + WallCm;
+		return FSolidStronghold::WallCm + Depth + FSolidStronghold::WallCm + YardDepthCm + FSolidStronghold::WallCm;
 	}
 
 	float FSolidFortress::CurtainHeightCm() const
 	{
-		return StoreyCm + ParapetCm;
+		return FSolidStronghold::StoreyCm + ParapetCm;
 	}
 
 	void FSolidFortress::CollectGroundHexes(

@@ -38,18 +38,12 @@ namespace SolidStronghold
 
 		static const FSolidFortress& Instance();
 
-		/** Tower wall thickness. */
-		float WallCm = 50.f;
 		/** Open ground between one building's east outer face and the next building's west outer face. */
 		float GapCm = 200.f;
-		/** Tower storey, walking surface to walking surface. */
-		float StoreyCm = 300.f;
 		/** One hex across, above the storey. */
 		float ParapetCm = 120.f;
-		/** Tower door width. The gate and each building doorway. */
-		float OpeningCm = 140.f;
-		/** Open ground from the buildings' north outer faces to the inner face of the gate wall. */
-		float YardDepthCm = 300.f;
+		/** Open ground from the buildings' north outer faces to the inner face of the gate wall. One storey. */
+		float YardDepthCm = FSolidStronghold::StoreyCm;
 		/** West to east. One of them is the keep. */
 		TArray<FSolidFortressBuilding> Buildings;
 

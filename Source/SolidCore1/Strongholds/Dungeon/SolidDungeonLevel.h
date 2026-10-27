@@ -25,7 +25,7 @@ namespace SolidDungeonLevel
 	 * Clear width of the cave door. Wider than the captain, and wider than one hex edge,
 	 * so the vestibule is not pinched shut by the wall ends.
 	 */
-	inline constexpr float DoorwayWidthCm = 140.f;
+	inline constexpr float DoorwayWidthCm = FSolidStronghold::OpeningCm;
 
 	/**
 	 * Meagre floor, mouth to the west. Fourteen cells, with a vestibule on the entrance.

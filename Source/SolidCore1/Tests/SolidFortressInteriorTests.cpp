@@ -302,6 +302,32 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 		LitRooms.AddUnique(RoomIndex);
 	}
 	TestEqual(TEXT("the two rooms are both lit"), LitRooms.Num(), 2);
+
+	TestEqual(TEXT("the fortress has one floor to arrange"), Room->ArrangeFloorCount(), 1);
+	TArray<SolidStrongholdGrid::FHex> ArrangeCells;
+	TestTrue(TEXT("arrange uses the ground hexes"), Room->CollectArrangeFloor(0, ArrangeCells));
+	TArray<SolidStrongholdGrid::FHex> Ground;
+	Fortress->CollectGroundHexes(Fortress->Size, Ground);
+	TestEqual(TEXT("every ground hex can take a piece"), ArrangeCells.Num(), Ground.Num());
+	if (ArrangeCells.Num() > 0)
+	{
+		const FVector HexPoint(ArrangeCells[0].Center.X, ArrangeCells[0].Center.Y, 0.f);
+		const FVector InRoom = Room->HexPointInRoom(HexPoint);
+		const FVector Back = Room->RoomPointOnHexGrid(InRoom);
+		TestTrue(TEXT("a hex turns into the room and back"), Back.Equals(HexPoint, 0.1f));
+		const FVector OnTheLine(
+			HalfDepth - ArrangeCells[0].Center.Y,
+			ArrangeCells[0].Center.X - HalfWidth,
+			0.f);
+		TestTrue(TEXT("the hex sits where the floor line sits"), InRoom.Equals(OnTheLine, 0.1f));
+		TestTrue(
+			TEXT("the pointer hits that hex"),
+			SolidStrongholdGrid::PointInHex(FVector2D(Back.X, Back.Y), ArrangeCells[0].Center));
+	}
+	TestTrue(
+		TEXT("looking into the yard looks across the hex grid"),
+		Room->RoomDirectionOnHexGrid(FVector(1.f, 0.f, 0.f)).Equals(FVector(0.f, -1.f, 0.f), 0.1f));
+	TestTrue(TEXT("a hex facing turns with the room"), FMath::IsNearlyEqual(Room->HexFacingInRoom(0.f), 90.f));
 	return true;
 }
 

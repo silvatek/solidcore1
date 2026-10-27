@@ -58,6 +58,15 @@ public:
 		return Index == 0 ? ArrangePlate.Get() : nullptr;
 	}
 
+	virtual int32 ArrangeFloorCount() const override;
+	virtual bool CollectArrangeFloor(int32 Floor, TArray<SolidStrongholdGrid::FHex>& OutCells) const override;
+	virtual bool ArrangeFloorZ(int32 Floor, float& OutZ) const override;
+	virtual FVector HexPointInRoom(const FVector& HexPoint) const override;
+	virtual FVector RoomPointOnHexGrid(const FVector& RoomPoint) const override;
+	virtual FVector HexDirectionInRoom(const FVector& HexDirection) const override;
+	virtual FVector RoomDirectionOnHexGrid(const FVector& RoomDirection) const override;
+	virtual float HexFacingInRoom(float HexFacingDeg) const override;
+
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TObjectPtr<USceneComponent> SceneRoot;

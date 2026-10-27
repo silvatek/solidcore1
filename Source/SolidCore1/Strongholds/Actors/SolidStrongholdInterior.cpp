@@ -115,14 +115,16 @@ void ASolidStrongholdInterior::ShowArrangeHighlight(
 		{
 			const FVector2D& A = Vertices[Index];
 			const FVector2D& B = Vertices[(Index + 1) % 6];
-			const FVector2D Delta = B - A;
+			const FVector RoomA = HexPointInRoom(FVector(A.X, A.Y, 0.f));
+			const FVector RoomB = HexPointInRoom(FVector(B.X, B.Y, 0.f));
+			const FVector2D Delta(RoomB.X - RoomA.X, RoomB.Y - RoomA.Y);
 			const float Length = Delta.Size();
 			if (Length < 1.f)
 			{
 				continue;
 			}
 			const float Yaw = FMath::RadiansToDegrees(FMath::Atan2(Delta.Y, Delta.X));
-			const FVector Mid((A.X + B.X) * 0.5f, (A.Y + B.Y) * 0.5f, Z);
+			const FVector Mid((RoomA.X + RoomB.X) * 0.5f, (RoomA.Y + RoomB.Y) * 0.5f, Z);
 			ArrangeHighlight->AddInstance(FTransform(
 				FRotator(0.f, Yaw, 0.f),
 				Mid,
@@ -143,16 +145,16 @@ void ASolidStrongholdInterior::HideArrangeHighlight()
 
 void ASolidStrongholdInterior::MoveFurnishingTo(
 	ASolidFurnishing* Piece,
-	const FVector& LocalPoint,
-	const float LocalYaw) const
+	const FVector& HexPoint,
+	const float HexFacingDeg) const
 {
 	if (!Piece)
 	{
 		return;
 	}
 	const FTransform ActorXf = GetActorTransform();
-	const FVector WorldPos = ActorXf.TransformPosition(LocalPoint);
+	const FVector WorldPos = ActorXf.TransformPosition(HexPointInRoom(HexPoint));
 	const FRotator WorldRot = ActorXf.TransformRotation(
-		FRotator(0.f, LocalYaw, 0.f).Quaternion()).Rotator();
+		FRotator(0.f, HexFacingInRoom(HexFacingDeg), 0.f).Quaternion()).Rotator();
 	Piece->SetActorLocationAndRotation(WorldPos, WorldRot, false, nullptr, ETeleportType::TeleportPhysics);
 }

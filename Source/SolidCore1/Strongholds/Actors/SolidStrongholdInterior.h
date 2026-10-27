@@ -50,6 +50,17 @@ public:
 	/** Ground-floor entrance, when that hex is still a furniture cell. */
 	virtual bool ArrangeEntrance(int32 Floor, int32& OutX, int32& OutY) const;
 
+	/** A hex-grid point, placed in this room. The cave and the tower already store hexes that way. */
+	virtual FVector HexPointInRoom(const FVector& HexPoint) const { return HexPoint; }
+	/** A point in the room, back on the hex grid. */
+	virtual FVector RoomPointOnHexGrid(const FVector& RoomPoint) const { return RoomPoint; }
+	/** A hex-grid direction, turned into the room. */
+	virtual FVector HexDirectionInRoom(const FVector& HexDirection) const { return HexDirection; }
+	/** A direction in the room, turned back onto the hex grid. */
+	virtual FVector RoomDirectionOnHexGrid(const FVector& RoomDirection) const { return RoomDirection; }
+	/** A hex-grid facing, turned to face the same way in the room. */
+	virtual float HexFacingInRoom(float HexFacingDeg) const { return HexFacingDeg; }
+
 	/** INDEX_NONE when the feet are below every floor. */
 	int32 ArrangeFloorUnderFeet(const FVector& WorldFeet) const;
 
@@ -57,8 +68,8 @@ public:
 	void ShowArrangeHighlight(const TArray<SolidStrongholdGrid::FHex>& Hexes, float FloorZ);
 	void HideArrangeHighlight();
 
-	/** Move an owned piece. LocalPoint is in this interior's space, including the floor height. */
-	void MoveFurnishingTo(ASolidFurnishing* Piece, const FVector& LocalPoint, float LocalYaw) const;
+	/** Move an owned piece. The point and facing are on the hex grid. */
+	void MoveFurnishingTo(ASolidFurnishing* Piece, const FVector& HexPoint, float HexFacingDeg) const;
 
 private:
 	FIntPoint StrongholdCell = FIntPoint::ZeroValue;

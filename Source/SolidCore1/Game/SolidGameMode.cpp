@@ -863,7 +863,8 @@ void ASolidGameMode::BindArrangeFloor()
 	bool bCaptainCell = false;
 	SolidStrongholdGrid::FCell CaptainCell;
 	const FVector LocalFeet = Interior->GetActorTransform().InverseTransformPosition(Feet);
-	const FVector2D Plan(LocalFeet.X, LocalFeet.Y);
+	const FVector HexFeet = Interior->RoomPointOnHexGrid(LocalFeet);
+	const FVector2D Plan(HexFeet.X, HexFeet.Y);
 	for (const SolidStrongholdGrid::FHex& Hex : Cells)
 	{
 		if (SolidStrongholdGrid::PointInHex(Plan, Hex.Center))
@@ -1081,9 +1082,9 @@ void ASolidGameMode::SpawnHeldFurnishing()
 	const FVector Local = bDrawn ? Draw.Local : FVector::ZeroVector;
 	const float Yaw = bDrawn ? Draw.Yaw : Used.RotationDeg;
 	const FTransform ActorXf = Interior->GetActorTransform();
-	const FVector WorldPos = ActorXf.TransformPosition(Local);
+	const FVector WorldPos = ActorXf.TransformPosition(Interior->HexPointInRoom(Local));
 	const FRotator WorldRot = ActorXf.TransformRotation(
-		FRotator(0.f, Yaw, 0.f).Quaternion()).Rotator();
+		FRotator(0.f, Interior->HexFacingInRoom(Yaw), 0.f).Quaternion()).Rotator();
 	const FTransform SpawnXf(WorldRot, WorldPos);
 	ASolidFurnishing* Piece = World->SpawnActorDeferred<ASolidFurnishing>(
 		Item->ActorClass,
@@ -1156,11 +1157,15 @@ void ASolidGameMode::UpdateArrangePointer(
 	const FVector LocalDirection = Interior->GetActorTransform().InverseTransformVector(Direction);
 	FSolidArrange::FTrace Hit;
 	constexpr float MaxRayCm = 80000.f;
-	const bool bFloor = ArrangeMode.Trace(LocalOrigin, LocalDirection, MaxRayCm, Hit);
+	const bool bFloor = ArrangeMode.Trace(
+		Interior->RoomPointOnHexGrid(LocalOrigin),
+		Interior->RoomDirectionOnHexGrid(LocalDirection),
+		MaxRayCm,
+		Hit);
 	float FloorDistance = 0.f;
 	if (bFloor)
 	{
-		const FVector WorldFloor = Interior->GetActorTransform().TransformPosition(Hit.Point);
+		const FVector WorldFloor = Interior->GetActorTransform().TransformPosition(Interior->HexPointInRoom(Hit.Point));
 		FloorDistance = FVector::Dist(Origin, WorldFloor);
 	}
 	int32 PieceX = 0;

@@ -420,18 +420,15 @@ void ASolidFortressInterior::PlaceFurnishings()
 	}
 	TArray<SolidStrongholdGrid::FHex> Hexes;
 	Fortress->CollectGroundHexes(Fortress->Size, Hexes);
-	const float Width = Fortress->OuterWidthCm();
-	const float Depth = Fortress->OuterDepthCm();
 	SolidStrongholdFurniture::PlaceFurnishings(
 		this,
 		FurnishingsToPlace,
 		Hexes,
-		[Width, Depth](const FVector2D& Mid, const float YawDeg)
+		[this](const FVector2D& Mid, const float YawDeg)
 		{
-			// Plan +X is actor +Y, so a facing in the hex grid turns a right angle.
 			return FTransform(
-				FRotator(0.f, YawDeg + 90.f, 0.f),
-				SolidFortressInteriorPrivate::ActorCenter(Width, Depth, Mid.X, Mid.Y, 0.f));
+				FRotator(0.f, HexFacingInRoom(YawDeg), 0.f),
+				HexPointInRoom(FVector(Mid.X, Mid.Y, 0.f)));
 		});
 }
 
@@ -450,4 +447,73 @@ FVector ASolidFortressInterior::GetCaptainSpawnWorld() const
 FRotator ASolidFortressInterior::GetCaptainView() const
 {
 	return FRotator::ZeroRotator;
+}
+
+int32 ASolidFortressInterior::ArrangeFloorCount() const
+{
+	return Fortress && Fortress->Supported(Fortress->Size) ? 1 : 0;
+}
+
+bool ASolidFortressInterior::CollectArrangeFloor(
+	const int32 Floor,
+	TArray<SolidStrongholdGrid::FHex>& OutCells) const
+{
+	if (!Fortress || Floor != 0)
+	{
+		OutCells.Reset();
+		return false;
+	}
+	Fortress->CollectGroundHexes(Fortress->Size, OutCells);
+	return OutCells.Num() > 0;
+}
+
+bool ASolidFortressInterior::ArrangeFloorZ(const int32 Floor, float& OutZ) const
+{
+	if (!Fortress || Floor != 0)
+	{
+		OutZ = 0.f;
+		return false;
+	}
+	OutZ = 0.f;
+	return true;
+}
+
+FVector ASolidFortressInterior::HexPointInRoom(const FVector& HexPoint) const
+{
+	if (!Fortress)
+	{
+		return HexPoint;
+	}
+	return SolidFortressInteriorPrivate::ActorCenter(
+		Fortress->OuterWidthCm(),
+		Fortress->OuterDepthCm(),
+		HexPoint.X,
+		HexPoint.Y,
+		HexPoint.Z);
+}
+
+FVector ASolidFortressInterior::RoomPointOnHexGrid(const FVector& RoomPoint) const
+{
+	if (!Fortress)
+	{
+		return RoomPoint;
+	}
+	const float Width = Fortress->OuterWidthCm();
+	const float Depth = Fortress->OuterDepthCm();
+	return FVector(RoomPoint.Y + Width * 0.5f, Depth * 0.5f - RoomPoint.X, RoomPoint.Z);
+}
+
+FVector ASolidFortressInterior::HexDirectionInRoom(const FVector& HexDirection) const
+{
+	return FVector(-HexDirection.Y, HexDirection.X, HexDirection.Z);
+}
+
+FVector ASolidFortressInterior::RoomDirectionOnHexGrid(const FVector& RoomDirection) const
+{
+	return FVector(RoomDirection.Y, -RoomDirection.X, RoomDirection.Z);
+}
+
+float ASolidFortressInterior::HexFacingInRoom(const float HexFacingDeg) const
+{
+	return HexFacingDeg + 90.f;
 }

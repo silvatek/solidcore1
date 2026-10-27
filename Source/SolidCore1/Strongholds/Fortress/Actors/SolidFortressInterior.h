@@ -11,8 +11,8 @@ class UStaticMeshComponent;
 /**
  * One fortress visit, at the origin.
  * The outer wall is a closed rectangle. The dark gate is on local -X.
- * The Keep and the Annex stand on the far side. Their floors draw the hex grid.
- * Each yard face has an open doorway.
+ * The Keep and the Annex stand on the far side. A ceiling closes each room at one storey.
+ * Their floors draw the hex grid. Each yard face has an open doorway.
  * You walk through that gap. It does not leave. The captain arrives in the yard, inside the gate.
  * A click on the gate leaves. Companions stay outside.
  */

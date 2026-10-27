@@ -266,18 +266,28 @@ void ASolidFortressInterior::BuildVisuals()
 		{
 			AddBuilding((MinX + MaxX) * 0.5f, MinY + Wall * 0.5f, Height * 0.5f, MaxX - MinX, Wall, Height);
 		}
-		if (bNorthCurtain)
+		if (!bNorthCurtain)
 		{
-			continue;
+			const float DoorX = (MinX + MaxX) * 0.5f;
+			const float DoorMin = DoorX - Opening * 0.5f;
+			const float DoorMax = DoorX + Opening * 0.5f;
+			const float WallY = MaxY - Wall * 0.5f;
+			AddBuilding((MinX + DoorMin) * 0.5f, WallY, Height * 0.5f, DoorMin - MinX, Wall, Height);
+			AddBuilding((DoorMax + MaxX) * 0.5f, WallY, Height * 0.5f, MaxX - DoorMax, Wall, Height);
+			AddBuilding(DoorX, WallY, (Storey + Height) * 0.5f, Opening, Wall, Height - Storey);
 		}
 
-		const float DoorX = (MinX + MaxX) * 0.5f;
-		const float DoorMin = DoorX - Opening * 0.5f;
-		const float DoorMax = DoorX + Opening * 0.5f;
-		const float WallY = MaxY - Wall * 0.5f;
-		AddBuilding((MinX + DoorMin) * 0.5f, WallY, Height * 0.5f, DoorMin - MinX, Wall, Height);
-		AddBuilding((DoorMax + MaxX) * 0.5f, WallY, Height * 0.5f, MaxX - DoorMax, Wall, Height);
-		AddBuilding(DoorX, WallY, (Storey + Height) * 0.5f, Opening, Wall, Height - Storey);
+		const float InnerMinX = bWestCurtain ? MinX : MinX + Wall;
+		const float InnerMaxX = bEastCurtain ? MaxX : MaxX - Wall;
+		const float InnerMinY = bSouthCurtain ? MinY : MinY + Wall;
+		const float InnerMaxY = bNorthCurtain ? MaxY : MaxY - Wall;
+		AddBuilding(
+			(InnerMinX + InnerMaxX) * 0.5f,
+			(InnerMinY + InnerMaxY) * 0.5f,
+			Storey + Wall * 0.5f,
+			InnerMaxX - InnerMinX,
+			InnerMaxY - InnerMinY,
+			Wall);
 	}
 
 	if (!FloorGrid)

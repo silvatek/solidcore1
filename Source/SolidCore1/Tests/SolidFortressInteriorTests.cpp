@@ -182,6 +182,29 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 		}
 		TestFalse(TEXT("the doorway is a gap"), bOpeningBlocked);
 		TestFalse(TEXT("the building inside is open"), bInsideBlocked);
+		const float RoomX = One.InnerMinCm.X + One.WidthCm() * 0.5f;
+		const float RoomY = One.InnerMinCm.Y + One.DepthCm() * 0.5f;
+		const FVector Headroom(
+			Depth * 0.5f - RoomY,
+			RoomX - Width * 0.5f,
+			FSolidStronghold::StoreyCm - 30.f);
+		const FVector Ceiling(
+			Depth * 0.5f - RoomY,
+			RoomX - Width * 0.5f,
+			FSolidStronghold::StoreyCm + 10.f);
+		bool bHeadroomBlocked = false;
+		bool bCeilingPresent = false;
+		for (const TObjectPtr<UStaticMeshComponent>& Part : Room->GetBuildingMeshes())
+		{
+			if (!Part)
+			{
+				continue;
+			}
+			bHeadroomBlocked = bHeadroomBlocked || Covers(Part, Headroom);
+			bCeilingPresent = bCeilingPresent || Covers(Part, Ceiling);
+		}
+		TestFalse(TEXT("the room stays open under the ceiling"), bHeadroomBlocked);
+		TestTrue(TEXT("a ceiling closes the room at one storey"), bCeilingPresent);
 		WestGapY = FMath::Min(WestGapY, Opening.Y);
 		EastGapY = FMath::Max(EastGapY, Opening.Y);
 		++Gaps;

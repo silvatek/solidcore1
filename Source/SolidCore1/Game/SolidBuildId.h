@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0667")
+#define SOLID_BUILD_ID TEXT("SC1-0668")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The fortress rooms draw their hex grid.")
+#define SOLID_BUILD_NOTE TEXT("Each fortress room has a ceiling under the parapet.")
 #endif

@@ -1,6 +1,6 @@
 # Smooth biome boundaries
 
-Status: New
+Status: Ready
 
 ## Story
 

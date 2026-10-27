@@ -49,6 +49,12 @@ namespace SolidStronghold
 
 		virtual bool Supported(ESolidStrongholdSize InSize) const override;
 		virtual ESolidStrongholdTrip Trip() const override;
+		virtual bool AcceptsEnter(
+			const USolidGameState& State,
+			const FSolidStronghold* Active,
+			FIntPoint OpeningCell) const override;
+		virtual float ExitReachCm() const override;
+		virtual void RememberExit(const USolidWorldChart* Map) override;
 		virtual UClass* ExteriorClass() const override;
 		virtual void ConfigureExterior(AActor* Exterior) const override;
 		virtual UClass* InteriorClass() const override;

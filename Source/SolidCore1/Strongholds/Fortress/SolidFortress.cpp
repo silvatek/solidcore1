@@ -1,4 +1,5 @@
 #include "SolidFortress.h"
+#include "SolidGameState.h"
 #include "Strongholds/Fortress/Actors/SolidFortressExterior.h"
 #include "Strongholds/Fortress/Actors/SolidFortressInterior.h"
 
@@ -112,6 +113,36 @@ namespace SolidStronghold
 	ESolidStrongholdTrip FSolidFortress::Trip() const
 	{
 		return ESolidStrongholdTrip::None;
+	}
+
+	bool FSolidFortress::AcceptsEnter(
+		const USolidGameState& State,
+		const FSolidStronghold* Active,
+		const FIntPoint OpeningCell) const
+	{
+		return Supported(Size)
+			&& State.bStrongholdsEnabled
+			&& Active
+			&& Active->Type == ESolidStrongholdType::Fortress
+			&& Active->Cell == OpeningCell;
+	}
+
+	float FSolidFortress::ExitReachCm() const
+	{
+		if (!Supported(Size))
+		{
+			return FSolidStronghold::ExitReachCm();
+		}
+		return OuterDepthCm() * 0.5f + SolidStrongholdGrid::FlatToFlatCm;
+	}
+
+	void FSolidFortress::RememberExit(const USolidWorldChart* Map)
+	{
+		SolidStrongholds::FGrassFace Face;
+		const float GrassYaw = (Map && SolidStrongholds::FindGrassFace(Map, Cell, Face))
+			? Face.FacingYawDeg
+			: 0.f;
+		Orientation = OrientationFromYaw(GrassYaw);
 	}
 
 	UClass* FSolidFortress::ExteriorClass() const

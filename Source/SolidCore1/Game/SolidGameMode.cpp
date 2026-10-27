@@ -710,7 +710,9 @@ bool ASolidGameMode::EnterChosenStronghold(
 	}
 
 	const FSolidStronghold* Next = Company->GetStronghold();
+	// Choosing a fortress raises the shell. The gate click starts the visit.
 	if (Next
+		&& Next->Type != ESolidStrongholdType::Fortress
 		&& Next->InteriorClass()
 		&& Next->AcceptsEnter(*GetConfiguration(), Next, Next->Cell))
 	{

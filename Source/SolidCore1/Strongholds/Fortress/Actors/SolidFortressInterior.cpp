@@ -48,6 +48,16 @@ void ASolidFortressInterior::DiscardParts()
 		}
 	}
 	Curtain.Reset();
+	auto Drop = [](TObjectPtr<UStaticMeshComponent>& Part)
+	{
+		if (UStaticMeshComponent* Mesh = Part.Get())
+		{
+			Mesh->DestroyComponent();
+			Part = nullptr;
+		}
+	};
+	Drop(GateMesh);
+	Drop(FloorMesh);
 }
 
 UStaticMeshComponent* ASolidFortressInterior::AddPart(
@@ -99,6 +109,8 @@ void ASolidFortressInterior::BuildVisuals()
 	const float Depth = Fortress->OuterDepthCm();
 	const float Height = Fortress->CurtainHeightCm();
 	const float Wall = FSolidStronghold::WallCm;
+	const float Opening = FSolidStronghold::OpeningCm;
+	const float Storey = FSolidStronghold::StoreyCm;
 	if (Width <= Wall || Depth <= Wall || Height <= KINDA_SMALL_NUMBER)
 	{
 		return;
@@ -117,15 +129,17 @@ void ASolidFortressInterior::BuildVisuals()
 		const float PlanCenterX,
 		const float PlanCenterY,
 		const float PlanSizeX,
-		const float PlanSizeY)
+		const float PlanSizeY,
+		const float CenterZ,
+		const float SizeZ)
 	{
 		if (UStaticMeshComponent* Part = AddPart(
 			Cube,
-			SolidFortressInteriorPrivate::ActorCenter(Width, Depth, PlanCenterX, PlanCenterY, Height * 0.5f),
+			SolidFortressInteriorPrivate::ActorCenter(Width, Depth, PlanCenterX, PlanCenterY, CenterZ),
 			FVector(
 				PlanSizeY / SolidFortressInteriorPrivate::CubeSizeCm,
 				PlanSizeX / SolidFortressInteriorPrivate::CubeSizeCm,
-				Height / SolidFortressInteriorPrivate::CubeSizeCm),
+				SizeZ / SolidFortressInteriorPrivate::CubeSizeCm),
 			Rock,
 			TEXT("FortressInteriorCurtain")))
 		{
@@ -133,8 +147,54 @@ void ASolidFortressInterior::BuildVisuals()
 		}
 	};
 
-	AddWall(Width * 0.5f, Wall * 0.5f, Width, Wall);
-	AddWall(Wall * 0.5f, Depth * 0.5f, Wall, Depth - 2.f * Wall);
-	AddWall(Width - Wall * 0.5f, Depth * 0.5f, Wall, Depth - 2.f * Wall);
-	AddWall(Width * 0.5f, Depth - Wall * 0.5f, Width, Wall);
+	const float GateMinX = (Width - Opening) * 0.5f;
+	const float GateMaxX = GateMinX + Opening;
+	const float NorthY = Depth - Wall * 0.5f;
+	AddWall(Width * 0.5f, Wall * 0.5f, Width, Wall, Height * 0.5f, Height);
+	AddWall(Wall * 0.5f, Depth * 0.5f, Wall, Depth - 2.f * Wall, Height * 0.5f, Height);
+	AddWall(Width - Wall * 0.5f, Depth * 0.5f, Wall, Depth - 2.f * Wall, Height * 0.5f, Height);
+	AddWall(GateMinX * 0.5f, NorthY, GateMinX, Wall, Height * 0.5f, Height);
+	AddWall((GateMaxX + Width) * 0.5f, NorthY, Width - GateMaxX, Wall, Height * 0.5f, Height);
+	AddWall(Width * 0.5f, NorthY, Opening, Wall, (Storey + Height) * 0.5f, Height - Storey);
+	GateMesh = AddPart(
+		Cube,
+		SolidFortressInteriorPrivate::ActorCenter(Width, Depth, Width * 0.5f, NorthY, Storey * 0.5f),
+		FVector(
+			Wall / SolidFortressInteriorPrivate::CubeSizeCm,
+			Opening / SolidFortressInteriorPrivate::CubeSizeCm,
+			Storey / SolidFortressInteriorPrivate::CubeSizeCm),
+		SolidStrongholds::MouthColor(),
+		TEXT("FortressInteriorGate"));
+	const float FloorThickness = 20.f;
+	FloorMesh = AddPart(
+		Cube,
+		SolidFortressInteriorPrivate::ActorCenter(
+			Width,
+			Depth,
+			Width * 0.5f,
+			Depth * 0.5f,
+			-FloorThickness * 0.5f),
+		FVector(
+			(Depth - 2.f * Wall) / SolidFortressInteriorPrivate::CubeSizeCm,
+			(Width - 2.f * Wall) / SolidFortressInteriorPrivate::CubeSizeCm,
+			FloorThickness / SolidFortressInteriorPrivate::CubeSizeCm),
+		Rock,
+		TEXT("FortressInteriorFloor"));
+}
+
+FVector ASolidFortressInterior::GetCaptainSpawnWorld() const
+{
+	if (!Fortress)
+	{
+		return FVector::ZeroVector;
+	}
+	const float Width = Fortress->OuterWidthCm();
+	const float Depth = Fortress->OuterDepthCm();
+	const float InsideY = Depth - FSolidStronghold::WallCm - SolidStrongholdGrid::FlatToFlatCm;
+	return SolidFortressInteriorPrivate::ActorCenter(Width, Depth, Width * 0.5f, InsideY, 0.f);
+}
+
+FRotator ASolidFortressInterior::GetCaptainView() const
+{
+	return FRotator::ZeroRotator;
 }

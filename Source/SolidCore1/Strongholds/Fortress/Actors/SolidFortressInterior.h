@@ -9,8 +9,9 @@ class UStaticMeshComponent;
 
 /**
  * One fortress visit, at the origin.
- * The outer wall is a closed rectangle. No gate and no buildings yet.
- * Plan north is local -X, the gate side of the shell.
+ * The outer wall is a closed rectangle. The dark gate is on local -X.
+ * No buildings yet. The captain arrives in the yard, inside the gate.
+ * A click on that gate leaves. Companions stay outside.
  */
 UCLASS()
 class SOLIDCORE1_API ASolidFortressInterior : public ASolidStrongholdInterior
@@ -27,7 +28,14 @@ public:
 	void SetFortress(const SolidStronghold::FSolidFortress& InFortress) { Fortress = &InFortress; }
 	void BuildVisuals();
 
+	UStaticMeshComponent* GetGateMesh() const { return GateMesh; }
+	virtual UStaticMeshComponent* GetPassageMesh() const override { return GateMesh; }
 	const TArray<TObjectPtr<UStaticMeshComponent>>& GetCurtainMeshes() const { return Curtain; }
+
+	/** Feet in the yard, one hex inside the gate. */
+	virtual FVector GetCaptainSpawnWorld() const override;
+	/** Yaw 0 looks into the yard. */
+	virtual FRotator GetCaptainView() const override;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
@@ -35,6 +43,13 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
 	TArray<TObjectPtr<UStaticMeshComponent>> Curtain;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
+	TObjectPtr<UStaticMeshComponent> GateMesh;
+
+	/** Yard ground. The top is at the captain's feet. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Stronghold")
+	TObjectPtr<UStaticMeshComponent> FloorMesh;
 
 private:
 	/** The game state owns this fortress. Null until Configure sets it, so the first construction draws nothing. */

@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0663")
+#define SOLID_BUILD_ID TEXT("SC1-0664")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Humble fortress interior draws the outer walls.")
+#define SOLID_BUILD_NOTE TEXT("A click on the fortress gate enters the yard and leaves.")
 #endif

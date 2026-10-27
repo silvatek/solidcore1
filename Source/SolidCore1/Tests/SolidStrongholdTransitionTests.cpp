@@ -160,8 +160,8 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 	TestFalse(
 		TEXT("a Humble dungeon is not built"),
 		SolidStrongholdTransition::IsBuilt(FSolidStronghold{ ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Humble }));
-	TestFalse(
-		TEXT("a Humble fortress is not built"),
+	TestTrue(
+		TEXT("a Humble fortress is built"),
 		SolidStrongholdTransition::IsBuilt(FSolidStronghold{ ESolidStrongholdType::Fortress, ESolidStrongholdSize::Humble }));
 
 	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)

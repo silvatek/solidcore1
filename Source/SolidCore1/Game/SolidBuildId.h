@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0656")
+#define SOLID_BUILD_ID TEXT("SC1-0657")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A click opens that storage container.")
+#define SOLID_BUILD_NOTE TEXT("Humble fortress keeps twelve hexes and an annex of six.")
 #endif

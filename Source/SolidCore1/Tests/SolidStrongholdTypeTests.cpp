@@ -255,9 +255,10 @@ bool FSolidStrongholdTypeSupportedTest::RunTest(const FString& Parameters)
 			*FString::Printf(TEXT("%s dungeon supported"), SolidStronghold::SizeName(Size)),
 			Dungeon.Supported(Size),
 			bMeagre);
-		TestFalse(
-			*FString::Printf(TEXT("%s fortress is not supported"), SolidStronghold::SizeName(Size)),
-			Fortress.Supported(Size));
+		TestEqual(
+			*FString::Printf(TEXT("%s fortress supported"), SolidStronghold::SizeName(Size)),
+			Fortress.Supported(Size),
+			Size == ESolidStrongholdSize::Humble);
 		TestEqual(
 			*FString::Printf(TEXT("%s tower supported"), SolidStronghold::SizeName(Size)),
 			Tower.Supported(Size),
@@ -278,10 +279,13 @@ bool FSolidStrongholdTypeSupportedTest::RunTest(const FString& Parameters)
 		TestTrue(
 			*FString::Printf(TEXT("%s dungeon ground floor"), SolidStronghold::SizeName(Size)),
 			SameHexes(DungeonHexes, CaveFloor));
+		const int32 FortressFloor = Size == ESolidStrongholdSize::Humble
+			? SolidStronghold::Hexes(SolidStronghold::RoomsFor(Size))
+			: 0;
 		TestEqual(
-			*FString::Printf(TEXT("%s fortress has no ground floor"), SolidStronghold::SizeName(Size)),
+			*FString::Printf(TEXT("%s fortress ground floor"), SolidStronghold::SizeName(Size)),
 			FortressHexes.Num(),
-			0);
+			FortressFloor);
 
 		TArray<SolidStrongholdGrid::FHex> Room;
 		if (Spire.Supported(Size))

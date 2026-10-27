@@ -79,7 +79,7 @@ tools\test.bat
 tools\test.bat SolidCore1.Fog
 ```
 
-A change whose C++ stays in one source folder can pass that folder's filter. Closing a story runs filter `SolidCore1`. [`AGENTS.md`](AGENTS.md) is that rule.
+A change whose product C++ stays in one source folder can pass that folder's filter. A change to a test runs that test. Closing a story runs filter `SolidCore1`. [`AGENTS.md`](AGENTS.md) is that rule.
 
 The summary prints ran/passed/failed counts and, on failure, lists each failed test path (parsed from `Result={Fail}` lines in the automation log).
 

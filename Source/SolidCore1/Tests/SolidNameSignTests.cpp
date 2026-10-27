@@ -9,6 +9,7 @@
 #include "SolidTravelSession.h"
 #include "Strongholds/Dungeon/SolidDungeon.h"
 #include "Strongholds/Dungeon/SolidDungeonLevel.h"
+#include "Strongholds/Fortress/SolidFortress.h"
 #include "Strongholds/SolidNameSign.h"
 #include "Strongholds/SolidNameSigns.h"
 #include "Strongholds/Tower/SolidTower.h"
@@ -269,6 +270,32 @@ bool FSolidNameSignPlaceTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("the tower sign is clear of the captain's stand"),
 		FVector::Dist(TowerStand, TowerPole) > SolidStronghold::DoorStandClearCm);
+
+	const FIntPoint FortCell(4, 5);
+	TUniquePtr<FSolidStronghold> Humble = SolidStronghold::Make(
+		ESolidStrongholdType::Fortress,
+		ESolidStrongholdSize::Humble,
+		FortCell,
+		SolidStronghold::WorldXY(FortCell));
+	const SolidStronghold::FSolidFortress& Fort = static_cast<const SolidStronghold::FSolidFortress&>(*Humble);
+	TestTrue(TEXT("the fortress board faces the grass"), FMath::IsNearlyEqual(Fort.NameSign().YawDeg, 180.f));
+	const FVector FortPole = SolidNameSigns::PoleLocalCm(Fort.NameSign(), Fort.Name);
+	const float GateEdge = FSolidStronghold::OpeningCm * 0.5f;
+	const float FortNear = FortPole.Y - SolidNameSigns::BoardWidthCm(Fort.Name) * 0.5f;
+	TestTrue(
+		TEXT("the fortress board clears the gate by a step"),
+		FortNear >= GateEdge + SolidNameSigns::StepCm - 0.1f);
+	TestTrue(
+		TEXT("the fortress pole stands on the grass face of the gate wall"),
+		FMath::IsNearlyEqual(FortPole.X, -Fort.OuterDepthCm() * 0.5f, 0.1f));
+	const FVector FortStand(-Fort.ExitReachCm(), 0.f, 0.f);
+	TestTrue(
+		TEXT("the fortress sign is clear of the captain's stand"),
+		FVector::Dist(FortStand, FortPole) > SolidStronghold::DoorStandClearCm);
+	const SolidNameSigns::FWorldPlace FortWorld = SolidNameSigns::WorldPlace(*Humble, nullptr);
+	TestTrue(
+		TEXT("a fortress sign faces the grass"),
+		FMath::IsNearlyEqual(FRotator::NormalizeAxis(FortWorld.YawDeg), 0.f, 0.1f));
 
 	const FSolidStronghold* Active = Cave.Get();
 	TestTrue(TEXT("the sign stands for the company stronghold"), SolidNameSigns::StandsFor(Active, Active));

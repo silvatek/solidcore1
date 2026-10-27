@@ -219,7 +219,8 @@ public:
 
 	/**
 	 * The frame edge the name sign stands beside.
-	 * A dungeon uses the mouth. A tower uses the door. The size moves that edge when the measurements do.
+	 * A dungeon uses the mouth. A tower uses the door. A fortress uses the gate.
+	 * The size moves that edge when the measurements do.
 	 */
 	virtual FSolidNameSignPlace NameSign() const;
 };

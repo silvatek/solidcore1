@@ -188,6 +188,15 @@ namespace SolidStronghold
 		Room->BuildVisuals();
 	}
 
+	FSolidNameSignPlace FSolidFortress::NameSign() const
+	{
+		FSolidNameSignPlace Place;
+		Place.FrameEdgeCm = FVector(-OuterDepthCm() * 0.5f, OpeningCm * 0.5f, 0.f);
+		Place.Outward = FVector2D(0.f, 1.f);
+		Place.YawDeg = 180.f;
+		return Place;
+	}
+
 	float FSolidFortress::ExteriorYawDeg(const USolidWorldChart* Map) const
 	{
 		SolidStrongholds::FGrassFace Face;

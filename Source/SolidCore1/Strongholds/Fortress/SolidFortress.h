@@ -60,6 +60,8 @@ namespace SolidStronghold
 		virtual UClass* InteriorClass() const override;
 		virtual void ConfigureInterior(AActor* Interior) const override;
 		virtual float ExteriorYawDeg(const USolidWorldChart* Map) const override;
+		/** Beside the gate, on the grass side of the curtain. */
+		virtual FSolidNameSignPlace NameSign() const override;
 		virtual void CollectGroundHexes(
 			ESolidStrongholdSize InSize,
 			TArray<SolidStrongholdGrid::FHex>& OutHexes) const override;

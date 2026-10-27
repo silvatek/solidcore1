@@ -39,7 +39,7 @@ namespace SolidStronghold
 		static const FSolidFortress& Instance();
 
 		/** Open ground between one building's east outer face and the next building's west outer face. */
-		float GapCm = 200.f;
+		float GapCm = 0.f;
 		/** One hex across, above the storey. */
 		float ParapetCm = 120.f;
 		/** Open ground from the buildings' north outer faces to the inner face of the gate wall. One storey. */

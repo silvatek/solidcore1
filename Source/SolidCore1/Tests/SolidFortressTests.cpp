@@ -67,7 +67,7 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 		FSolidStronghold::StoreyCm + Fortress.ParapetCm);
 	TestEqual(TEXT("Humble has two buildings"), Fortress.Buildings.Num(), 2);
 	TestTrue(
-		TEXT("the outer width is the buildings, the gap, and the walls"),
+		TEXT("the outer width is the buildings and the walls"),
 		FMath::IsNearlyEqual(Fortress.OuterWidthCm(), LaidWidthCm(Fortress), 0.05f));
 	TestTrue(
 		TEXT("the outer depth is the rooms, the yard, and the walls"),
@@ -116,6 +116,12 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("every other hex sits inside that building"),
 		VerticesInside(OtherHexes, Other->InnerMinCm, FVector2D(Other->WidthCm(), Other->DepthCm())));
+	TestTrue(
+		TEXT("the Annex meets the Keep"),
+		FMath::IsNearlyEqual(
+			Other->InnerMinCm.X + Other->WidthCm() + 2.f * FSolidStronghold::WallCm,
+			Keep->InnerMinCm.X,
+			0.05f));
 
 	TArray<SolidStrongholdGrid::FHex> Ground;
 	Fortress.CollectGroundHexes(ESolidStrongholdSize::Humble, Ground);

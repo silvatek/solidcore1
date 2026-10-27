@@ -39,11 +39,11 @@ Humble, Impressive, and Imperious had earlier drawn plans with different per-bui
 
 The plan's gate side is north. In the game that side faces the grass, and the plan turns with it.
 
-The outer face is 1240 cm along the gate wall and 796.4 cm deep. The wall is 50 cm thick. The Keep and the Annex each have one floor, so neither has a stair or a landing.
+The outer face is 1040 cm along the gate wall and 796.4 cm deep. The wall is 50 cm thick. The Keep and the Annex each have one floor, so neither has a stair or a landing.
 
 The Keep is 4 columns by 3 rows, 12 hexes. Its inner face is 540 cm by 346.4 cm. The south face and the east face are the curtain. The Annex is the leftover small room, 2 columns by 3 rows, 6 hexes. Its inner face is 300 cm by 346.4 cm. The south face and the west face are the curtain. 346.4 cm is the vertex span of those three rows, five times the pointy-top side.
 
-200 cm of yard lies between the Annex's east outer face and the Keep's west outer face. 300 cm of yard lies between the buildings' north outer faces and the inner face of the north curtain. The yard holds no usable hex. The rooms together are the Humble kit, 18.
+The Annex's east wall meets the Keep's west wall. 300 cm of yard lies between the buildings' north outer faces and the inner face of the north curtain. The yard holds no usable hex. The rooms together are the Humble kit, 18.
 
 The gate is centered in the north curtain. It is 140 cm wide and 300 cm high. Each building doorway is 140 cm wide, has no door, and is centered on that building's north face. The visit starts in the yard, inside the gate.
 
@@ -83,7 +83,7 @@ The gate is centered in the north curtain. It is 140 cm wide and 300 cm high. Ea
 
 ## Where this stands
 
-Humble is the only supported fortress size. Its shell is in the game. Choosing Humble Fortress on a site stone moves the company, removes that site stone, draws the shell, and stands the captain one hex outside the gate, facing it. Play in Relion on SC1-0662 showed that shell. The dark slot in the grass-side wall is the gate. It stops under the parapet. The two buildings sit on the far side, with the gap between them. The yard is the open ground between those buildings and the gate.
+Humble is the only supported fortress size. Its shell is in the game. Choosing Humble Fortress on a site stone moves the company, removes that site stone, draws the shell, and stands the captain one hex outside the gate, facing it. Play in Relion on SC1-0662 showed that shell. The dark slot in the grass-side wall is the gate. It stops under the parapet. The two buildings sit against each other on the far side. The yard is the open ground between those buildings and the gate.
 
 Humble names an interior actor. The visit draws the outer wall and a dark gate on the grass side. The captain arrives one hex inside that gate, looking into the yard. A click on the shell gate enters. A click on the interior gate leaves, and he stands one hex outside it, facing away. Companions stay outside, the way a tower visit does. Choosing Humble still raises the shell, because that choice does not open the visit. `Trip` is `None`. The visit draws the Keep and the Annex on the far side of the yard. Each yard face has an open doorway. You walk through the gap. The inside is the floor within those walls. Those floors draw the hex grid. The yard has none. A ceiling closes each room at one storey, and the wall above it is the parapet. Each room has a light under that ceiling. Furnishings are not placed.
 

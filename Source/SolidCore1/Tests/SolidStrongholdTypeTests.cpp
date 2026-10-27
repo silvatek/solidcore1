@@ -7,6 +7,7 @@
 #include "Strongholds/Dungeon/SolidDungeon.h"
 #include "Strongholds/Fortress/SolidFortress.h"
 #include "Strongholds/Fortress/Actors/SolidFortressExterior.h"
+#include "Strongholds/Fortress/Actors/SolidFortressInterior.h"
 #include "Strongholds/Tower/SolidTower.h"
 #include "Strongholds/Dungeon/SolidDungeonExterior.h"
 #include "Strongholds/Dungeon/SolidDungeonInterior.h"
@@ -151,6 +152,13 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 			ESolidStrongholdSize::Humble,
 			OriginCell,
 			SolidStronghold::WorldXY(OriginCell))->ExteriorClass() == ASolidFortressExterior::StaticClass());
+	TestTrue(
+		TEXT("a humble fortress names the fortress interior"),
+		SolidStronghold::Make(
+			ESolidStrongholdType::Fortress,
+			ESolidStrongholdSize::Humble,
+			OriginCell,
+			SolidStronghold::WorldXY(OriginCell))->InteriorClass() == ASolidFortressInterior::StaticClass());
 	TestNull(
 		TEXT("a meagre fortress has no exterior"),
 		SolidStronghold::Make(
@@ -166,7 +174,7 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 			OriginCell,
 			SolidStronghold::WorldXY(OriginCell))->ExteriorClass());
 	TestNull(
-		TEXT("a fortress has no interior"),
+		TEXT("an Imperious fortress has no interior"),
 		SolidStronghold::Make(
 			ESolidStrongholdType::Fortress,
 			ESolidStrongholdSize::Imperious,

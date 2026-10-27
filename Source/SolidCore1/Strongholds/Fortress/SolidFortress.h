@@ -51,6 +51,8 @@ namespace SolidStronghold
 		virtual ESolidStrongholdTrip Trip() const override;
 		virtual UClass* ExteriorClass() const override;
 		virtual void ConfigureExterior(AActor* Exterior) const override;
+		virtual UClass* InteriorClass() const override;
+		virtual void ConfigureInterior(AActor* Interior) const override;
 		virtual float ExteriorYawDeg(const USolidWorldChart* Map) const override;
 		virtual void CollectGroundHexes(
 			ESolidStrongholdSize InSize,

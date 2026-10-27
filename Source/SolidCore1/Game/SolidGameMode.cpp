@@ -710,7 +710,9 @@ bool ASolidGameMode::EnterChosenStronghold(
 	}
 
 	const FSolidStronghold* Next = Company->GetStronghold();
-	if (Next && Next->InteriorClass())
+	if (Next
+		&& Next->InteriorClass()
+		&& Next->AcceptsEnter(*GetConfiguration(), Next, Next->Cell))
 	{
 		EnterStronghold();
 		return true;
@@ -725,7 +727,7 @@ void ASolidGameMode::ShowOpenStronghold()
 	UWorld* World = GetWorld();
 	USolidCompany* Company = GetCompany();
 	FSolidStronghold* Stronghold = Company ? Company->GetStronghold() : nullptr;
-	if (!World || !Stronghold || Stronghold->InteriorClass())
+	if (!World || !Stronghold)
 	{
 		return;
 	}

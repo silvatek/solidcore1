@@ -1,5 +1,6 @@
 #include "SolidFortress.h"
 #include "Strongholds/Fortress/Actors/SolidFortressExterior.h"
+#include "Strongholds/Fortress/Actors/SolidFortressInterior.h"
 
 namespace SolidStronghold
 {
@@ -132,6 +133,27 @@ namespace SolidStronghold
 		Shell->SetFortress(*this);
 		Shell->SetStrongholdCell(Cell);
 		Shell->BuildVisuals();
+	}
+
+	UClass* FSolidFortress::InteriorClass() const
+	{
+		if (!Supported(Size))
+		{
+			return nullptr;
+		}
+		return ASolidFortressInterior::StaticClass();
+	}
+
+	void FSolidFortress::ConfigureInterior(AActor* Interior) const
+	{
+		ASolidFortressInterior* Room = Cast<ASolidFortressInterior>(Interior);
+		if (!Room || !Supported(Size))
+		{
+			return;
+		}
+		Room->SetFortress(*this);
+		Room->SetStrongholdCell(Cell);
+		Room->BuildVisuals();
 	}
 
 	float FSolidFortress::ExteriorYawDeg(const USolidWorldChart* Map) const

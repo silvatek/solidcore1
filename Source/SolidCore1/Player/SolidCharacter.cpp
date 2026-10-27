@@ -1,4 +1,9 @@
 #include "SolidCharacter.h"
+#include "SolidPlayshot.h"
+#include "SolidBuildId.h"
+#include "UnrealClient.h"
+#include "HAL/FileManager.h"
+#include "Misc/Paths.h"
 #include "Companion/SolidCompanionCharacter.h"
 #include "HUD/SolidPointer.h"
 #include "SolidClickMove.h"
@@ -375,6 +380,12 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(SolidMainMenu::ControllerKey(), IE_Pressed, this, &ASolidCharacter::ToggleMainMenuFromInput);
 	PlayerInputComponent->BindKey(SolidInventory::ControllerToggleKey(), IE_Pressed, this, &ASolidCharacter::ToggleInventoryFromController);
 	PlayerInputComponent->BindKey(EKeys::F12, IE_Pressed, this, &ASolidCharacter::ToggleDebugPanelFromInput);
+	{
+		FInputKeyBinding Playshot(FInputChord(EKeys::P, false, false, true, false), IE_Pressed);
+		Playshot.bConsumeInput = true;
+		Playshot.KeyDelegate.BindDelegate(this, &ASolidCharacter::TakePlayshot);
+		PlayerInputComponent->KeyBindings.Add(MoveTemp(Playshot));
+	}
 	PlayerInputComponent->BindKey(EKeys::Slash, IE_Pressed, this, &ASolidCharacter::ToggleInventoryFromSlash);
 	PlayerInputComponent->BindKey(EKeys::Backslash, IE_Pressed, this, &ASolidCharacter::ToggleArrangeFromInput);
 	PlayerInputComponent->BindKey(EKeys::Q, IE_Pressed, this, &ASolidCharacter::TurnArrangeClockwise);
@@ -420,6 +431,7 @@ void ASolidCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComp
 	PlayerInputComponent->BindKey(EKeys::NumPadEight, IE_Pressed, this, &ASolidCharacter::MainMenuChoose8);
 
 	// The name page. Shift is its own chord, so a capital still arrives as the letter.
+	// Alt stays up. Alt-P is the playshot chord beside F12, and NameSignKey drops it.
 	// The binding does not consume the key. Enter, Esc, and F10 keep their own handlers.
 	const EInputEvent Events[] = { IE_Pressed, IE_Repeat };
 	const bool Shifts[] = { false, true };
@@ -689,6 +701,20 @@ void ASolidCharacter::ToggleDebugPanelFromInput()
 	{
 		HUD->ToggleDebugPanel();
 	}
+}
+
+void ASolidCharacter::TakePlayshot()
+{
+	const FString Directory = FPaths::ProjectSavedDir() / TEXT("Playshots");
+	IFileManager::Get().MakeDirectory(*Directory, true);
+
+	TArray<FString> Existing;
+	IFileManager::Get().FindFiles(Existing, *(Directory / TEXT("*.png")), true, false);
+
+	TArray<FString> ForBuild;
+	const FString FileName = SolidPlayshot::FileName(FString(SOLID_BUILD_ID), FDateTime::Now(), Existing, ForBuild);
+	const FString Path = FPaths::ConvertRelativePathToFull(Directory / FileName);
+	FScreenshotRequest::RequestScreenshot(Path, true, false, false, FIntRect(), true);
 }
 
 void ASolidCharacter::CloseMenuOverlayFromInput()
@@ -1411,15 +1437,22 @@ void ASolidCharacter::NameSignKey(FKey Key)
 
 	bool bShift = false;
 	bool bCaps = false;
+	bool bAlt = false;
 	if (const APlayerController* PC = Cast<APlayerController>(GetController()))
 	{
 		bShift = PC->IsInputKeyDown(EKeys::LeftShift) || PC->IsInputKeyDown(EKeys::RightShift);
+		bAlt = PC->IsInputKeyDown(EKeys::LeftAlt) || PC->IsInputKeyDown(EKeys::RightAlt);
 	}
 	if (FSlateApplication::IsInitialized())
 	{
 		const FModifierKeysState Mods = FSlateApplication::Get().GetModifierKeys();
 		bShift = bShift || Mods.IsShiftDown();
+		bAlt = bAlt || Mods.IsAltDown();
 		bCaps = Mods.AreCapsLocked();
+	}
+	if (bAlt)
+	{
+		return;
 	}
 	HUD->TypeStrongholdName(Key, bShift != bCaps);
 }

@@ -199,6 +199,8 @@ protected:
 	void ToggleInventoryFromSlash();
 	void ToggleInventoryFromController();
 	void ToggleDebugPanelFromInput();
+	/** Alt-P. One picture of the Play In Editor view, in Saved/Playshots. */
+	void TakePlayshot();
 	void CloseMenuOverlayFromInput();
 	void ToggleArrangeFromInput();
 	void TurnArrangeClockwise();

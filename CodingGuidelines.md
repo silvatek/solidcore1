@@ -94,3 +94,7 @@ UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_
 6. A test does not assert the biomes of the shipped world. The chart is painted by hand, and a test that names those cells fails when the paint changes. A behavior that reads biomes uses a chart the test builds. A shipped chart test may check that the asset loads, and where a mark or a road end sits.
 
 An earlier rule shipped a test change as its own buildable tip before the product change, so the tests could run against the current build. That extra landing is too slow. The test change and the product change ship together.
+
+## Commits
+
+A commit that changes `SOLID_BUILD_ID` names that new id in the commit message. The first line starts with the id, as `SC1-0633: A move stays where it was put.` `SOLID_BUILD_NOTE` is the summary after the colon. The HUD already shows the id on its own line.

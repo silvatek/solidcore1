@@ -5,21 +5,15 @@
 
 namespace SolidStronghold
 {
-	/** Which building this is. Humble has an Annex and a Keep. */
-	enum class ESolidFortressBuilding : uint8
-	{
-		Annex,
-		Keep,
-	};
-
 	/**
 	 * One building in the yard.
 	 * Its outer face may be the curtain. InnerMinCm is the south-west corner of the inner face.
+	 * One building in the list is the keep. The others are places for furniture.
 	 */
 	class FSolidFortressBuilding
 	{
 	public:
-		ESolidFortressBuilding Kind = ESolidFortressBuilding::Annex;
+		bool bKeep = false;
 		int32 Columns = 0;
 		int32 Rows = 0;
 		FVector2D InnerMinCm = FVector2D::ZeroVector;
@@ -56,7 +50,7 @@ namespace SolidStronghold
 		float OpeningCm = 140.f;
 		/** Open ground from the buildings' north outer faces to the inner face of the gate wall. */
 		float YardDepthCm = 300.f;
-		/** West to east. Humble is the Annex, then the Keep. */
+		/** West to east. One of them is the keep. */
 		TArray<FSolidFortressBuilding> Buildings;
 
 		virtual bool Supported(ESolidStrongholdSize InSize) const override;
@@ -65,7 +59,7 @@ namespace SolidStronghold
 			ESolidStrongholdSize InSize,
 			TArray<SolidStrongholdGrid::FHex>& OutHexes) const override;
 
-		const FSolidFortressBuilding* Building(ESolidFortressBuilding Kind) const;
+		const FSolidFortressBuilding* Keep() const;
 		float OuterWidthCm() const;
 		float OuterDepthCm() const;
 		/** Storey plus the parapet. */

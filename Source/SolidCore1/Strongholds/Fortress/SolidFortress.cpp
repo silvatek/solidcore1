@@ -79,15 +79,14 @@ namespace SolidStronghold
 		ParapetCm = SolidStrongholdGrid::FlatToFlatCm;
 		YardDepthCm = StoreyCm;
 
-		FSolidFortressBuilding Annex;
-		Annex.Kind = ESolidFortressBuilding::Annex;
-		Annex.Columns = 2;
-		Annex.Rows = 3;
+		FSolidFortressBuilding Room;
+		Room.Columns = 2;
+		Room.Rows = 3;
 		FSolidFortressBuilding Keep;
-		Keep.Kind = ESolidFortressBuilding::Keep;
+		Keep.bKeep = true;
 		Keep.Columns = 4;
 		Keep.Rows = 3;
-		Buildings.Add(Annex);
+		Buildings.Add(Room);
 		Buildings.Add(Keep);
 
 		float X = WallCm;
@@ -119,11 +118,11 @@ namespace SolidStronghold
 		return ESolidStrongholdTrip::None;
 	}
 
-	const FSolidFortressBuilding* FSolidFortress::Building(const ESolidFortressBuilding Kind) const
+	const FSolidFortressBuilding* FSolidFortress::Keep() const
 	{
 		for (const FSolidFortressBuilding& One : Buildings)
 		{
-			if (One.Kind == Kind)
+			if (One.bKeep)
 			{
 				return &One;
 			}

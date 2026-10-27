@@ -79,33 +79,46 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 			Fortress.WallCm + Fortress.Buildings[0].DepthCm() + Fortress.WallCm + Fortress.YardDepthCm + Fortress.WallCm,
 			0.05f));
 
-	const SolidStronghold::FSolidFortressBuilding* Keep = Fortress.Building(SolidStronghold::ESolidFortressBuilding::Keep);
-	const SolidStronghold::FSolidFortressBuilding* Annex = Fortress.Building(SolidStronghold::ESolidFortressBuilding::Annex);
+	const SolidStronghold::FSolidFortressBuilding* Keep = Fortress.Keep();
+	const SolidStronghold::FSolidFortressBuilding* Other = nullptr;
+	int32 Keeps = 0;
+	for (const SolidStronghold::FSolidFortressBuilding& One : Fortress.Buildings)
+	{
+		if (One.bKeep)
+		{
+			++Keeps;
+		}
+		else
+		{
+			Other = &One;
+		}
+	}
+	TestEqual(TEXT("one building is the keep"), Keeps, 1);
 	TestNotNull(TEXT("the Keep"), Keep);
-	TestNotNull(TEXT("the Annex"), Annex);
-	if (!Keep || !Annex)
+	TestNotNull(TEXT("the other building"), Other);
+	if (!Keep || !Other)
 	{
 		return false;
 	}
 
 	TArray<SolidStrongholdGrid::FHex> KeepHexes;
-	TArray<SolidStrongholdGrid::FHex> AnnexHexes;
+	TArray<SolidStrongholdGrid::FHex> OtherHexes;
 	Keep->CollectHexes(KeepHexes);
-	Annex->CollectHexes(AnnexHexes);
+	Other->CollectHexes(OtherHexes);
 	TestEqual(
 		TEXT("the Keep is the medium room"),
 		KeepHexes.Num(),
 		SolidStronghold::RoomHexes(ESolidStrongholdRoom::Medium));
 	TestEqual(
-		TEXT("the Annex is the small room"),
-		AnnexHexes.Num(),
+		TEXT("the other building is the small room"),
+		OtherHexes.Num(),
 		SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small));
 	TestTrue(
 		TEXT("every Keep hex sits inside the Keep"),
 		VerticesInside(KeepHexes, Keep->InnerMinCm, FVector2D(Keep->WidthCm(), Keep->DepthCm())));
 	TestTrue(
-		TEXT("every Annex hex sits inside the Annex"),
-		VerticesInside(AnnexHexes, Annex->InnerMinCm, FVector2D(Annex->WidthCm(), Annex->DepthCm())));
+		TEXT("every other hex sits inside that building"),
+		VerticesInside(OtherHexes, Other->InnerMinCm, FVector2D(Other->WidthCm(), Other->DepthCm())));
 
 	TArray<SolidStrongholdGrid::FHex> Ground;
 	Fortress.CollectGroundHexes(ESolidStrongholdSize::Humble, Ground);

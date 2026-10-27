@@ -4,6 +4,8 @@
 #include "Strongholds/Fortress/SolidFortress.h"
 #include "Strongholds/SolidStronghold.h"
 #include "SolidGameState.h"
+#include "Strongholds/Furnishings/SolidStrongholdGrid.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -186,6 +188,55 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 	}
 	TestEqual(TEXT("Humble has two doorways"), Gaps, 2);
 	TestTrue(TEXT("the Keep doorway is east of the Annex"), EastGapY > WestGapY + 1.f);
+
+	int32 ExpectedLines = 0;
+	for (const SolidStronghold::FSolidFortressBuilding& One : Fortress->Buildings)
+	{
+		TArray<SolidStrongholdGrid::FHex> Hexes;
+		TArray<SolidStrongholdGrid::FSegment> Segments;
+		One.CollectHexes(Hexes);
+		SolidStrongholdGrid::CollectSegments(Hexes, Segments);
+		ExpectedLines += Segments.Num();
+	}
+	UInstancedStaticMeshComponent* Grid = Room->GetFloorGrid();
+	TestNotNull(TEXT("the floor grid"), Grid);
+	if (!Grid)
+	{
+		return false;
+	}
+	TestEqual(TEXT("the rooms draw their hex edges"), Grid->GetInstanceCount(), ExpectedLines);
+	const float LineZ = SolidStrongholdGrid::LineLiftCm + SolidStrongholdGrid::LineHeightCm * 0.5f;
+	bool bLinesOnTheFloor = ExpectedLines > 0;
+	bool bLinesInTheRooms = ExpectedLines > 0;
+	for (int32 Index = 0; Index < Grid->GetInstanceCount(); ++Index)
+	{
+		FTransform Line;
+		if (!Grid->GetInstanceTransform(Index, Line, false))
+		{
+			bLinesOnTheFloor = false;
+			bLinesInTheRooms = false;
+			continue;
+		}
+		const FVector Location = Line.GetLocation();
+		bLinesOnTheFloor = bLinesOnTheFloor && FMath::IsNearlyEqual(Location.Z, LineZ, 0.1f);
+		const float PlanX = Location.Y + Width * 0.5f;
+		const float PlanY = Depth * 0.5f - Location.X;
+		bool bInRoom = false;
+		for (const SolidStronghold::FSolidFortressBuilding& One : Fortress->Buildings)
+		{
+			if (PlanX >= One.InnerMinCm.X - 1.f
+				&& PlanX <= One.InnerMinCm.X + One.WidthCm() + 1.f
+				&& PlanY >= One.InnerMinCm.Y - 1.f
+				&& PlanY <= One.InnerMinCm.Y + One.DepthCm() + 1.f)
+			{
+				bInRoom = true;
+				break;
+			}
+		}
+		bLinesInTheRooms = bLinesInTheRooms && bInRoom;
+	}
+	TestTrue(TEXT("the hex lines sit on the floor"), bLinesOnTheFloor);
+	TestTrue(TEXT("the hex lines stay inside the rooms"), bLinesInTheRooms);
 	return true;
 }
 

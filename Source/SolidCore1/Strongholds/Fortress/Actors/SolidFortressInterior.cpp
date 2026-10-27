@@ -2,6 +2,8 @@
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
 #include "Strongholds/SolidStronghold.h"
+#include "Strongholds/Furnishings/SolidStrongholdGrid.h"
+#include "Components/InstancedStaticMeshComponent.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
@@ -24,6 +26,12 @@ ASolidFortressInterior::ASolidFortressInterior()
 
 	SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("SceneRoot"));
 	SetRootComponent(SceneRoot);
+
+	FloorGrid = CreateDefaultSubobject<UInstancedStaticMeshComponent>(TEXT("FloorGrid"));
+	FloorGrid->SetupAttachment(SceneRoot);
+	FloorGrid->SetMobility(EComponentMobility::Movable);
+	FloorGrid->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	FloorGrid->SetCastShadow(false);
 }
 
 void ASolidFortressInterior::OnConstruction(const FTransform& Transform)
@@ -66,6 +74,10 @@ void ASolidFortressInterior::DiscardParts()
 	};
 	Drop(GateMesh);
 	Drop(FloorMesh);
+	if (FloorGrid)
+	{
+		FloorGrid->ClearInstances();
+	}
 }
 
 UStaticMeshComponent* ASolidFortressInterior::AddPart(
@@ -266,6 +278,44 @@ void ASolidFortressInterior::BuildVisuals()
 		AddBuilding((MinX + DoorMin) * 0.5f, WallY, Height * 0.5f, DoorMin - MinX, Wall, Height);
 		AddBuilding((DoorMax + MaxX) * 0.5f, WallY, Height * 0.5f, MaxX - DoorMax, Wall, Height);
 		AddBuilding(DoorX, WallY, (Storey + Height) * 0.5f, Opening, Wall, Height - Storey);
+	}
+
+	if (!FloorGrid)
+	{
+		return;
+	}
+	FloorGrid->SetStaticMesh(Cube);
+	FloorGrid->ClearInstances();
+	if (UMaterialInterface* Material = SolidMaterials::CreateSolidColor(
+		this, SolidStrongholdGrid::LineColor(), TEXT("FortressHexGrid"), 0.45f))
+	{
+		FloorGrid->SetMaterial(0, Material);
+	}
+	const float LineZ = SolidStrongholdGrid::LineLiftCm + SolidStrongholdGrid::LineHeightCm * 0.5f;
+	for (const SolidStronghold::FSolidFortressBuilding& One : Fortress->Buildings)
+	{
+		TArray<SolidStrongholdGrid::FHex> Hexes;
+		TArray<SolidStrongholdGrid::FSegment> Segments;
+		One.CollectHexes(Hexes);
+		SolidStrongholdGrid::CollectSegments(Hexes, Segments);
+		for (const SolidStrongholdGrid::FSegment& Segment : Segments)
+		{
+			const FVector Start = SolidFortressInteriorPrivate::ActorCenter(Width, Depth, Segment.A.X, Segment.A.Y, LineZ);
+			const FVector End = SolidFortressInteriorPrivate::ActorCenter(Width, Depth, Segment.B.X, Segment.B.Y, LineZ);
+			const FVector Delta = End - Start;
+			const float Length = Delta.Size2D();
+			if (Length < 1.f)
+			{
+				continue;
+			}
+			FloorGrid->AddInstance(FTransform(
+				FRotator(0.f, FMath::RadiansToDegrees(FMath::Atan2(Delta.Y, Delta.X)), 0.f),
+				(Start + End) * 0.5f,
+				FVector(
+					Length / SolidFortressInteriorPrivate::CubeSizeCm,
+					SolidStrongholdGrid::LineThicknessCm / SolidFortressInteriorPrivate::CubeSizeCm,
+					SolidStrongholdGrid::LineHeightCm / SolidFortressInteriorPrivate::CubeSizeCm)));
+		}
 	}
 }
 

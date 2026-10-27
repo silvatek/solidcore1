@@ -36,28 +36,42 @@ namespace SolidStronghold
 		}
 	}
 
-	float FSolidFortressBuilding::WidthCm() const
+	float FSolidFortressBuilding::SpanWidthCm() const
 	{
 		return (static_cast<float>(Columns) + 0.5f) * SolidStrongholdGrid::FlatToFlatCm;
 	}
 
-	float FSolidFortressBuilding::DepthCm() const
+	float FSolidFortressBuilding::SpanDepthCm() const
 	{
 		const float Side = SolidStrongholdGrid::SideCm();
 		return static_cast<float>(Rows - 1) * SolidStrongholdGrid::RowStepCm() + 2.f * Side;
 	}
 
+	float FSolidFortressBuilding::WidthCm() const
+	{
+		return FMath::Max(InnerWidthCm, SpanWidthCm());
+	}
+
+	float FSolidFortressBuilding::DepthCm() const
+	{
+		return FMath::Max(InnerDepthCm, SpanDepthCm());
+	}
+
 	void FSolidFortressBuilding::CollectHexes(TArray<SolidStrongholdGrid::FHex>& OutHexes) const
 	{
 		OutHexes.Reset();
-		const FVector2D InnerSize(WidthCm(), DepthCm());
-		const FVector2D Origin = SolidFortressPrivate::RoomOriginCm(InnerMinCm);
+		const float SpanWidth = SpanWidthCm();
+		const float SpanDepth = SpanDepthCm();
+		const FVector2D GridMin(
+			InnerMinCm.X + (WidthCm() - SpanWidth) * 0.5f,
+			InnerMinCm.Y + (DepthCm() - SpanDepth) * 0.5f);
+		const FVector2D Origin = SolidFortressPrivate::RoomOriginCm(GridMin);
 		for (int32 Row = -2; Row <= Rows + 2; ++Row)
 		{
 			for (int32 Col = -2; Col <= Columns + 2; ++Col)
 			{
 				const FVector2D Center = SolidStrongholdGrid::HexCenter(Col, Row, Origin);
-				if (!SolidFortressPrivate::VerticesInside(Center, InnerMinCm, InnerSize))
+				if (!SolidFortressPrivate::VerticesInside(Center, GridMin, FVector2D(SpanWidth, SpanDepth)))
 				{
 					continue;
 				}

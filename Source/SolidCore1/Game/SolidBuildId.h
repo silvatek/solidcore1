@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0676")
+#define SOLID_BUILD_ID TEXT("SC1-0677")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Alt-P writes a Play In Editor picture to Saved/Playshots.")
+#define SOLID_BUILD_NOTE TEXT("A fortress room can be wider than its hex grid.")
 #endif

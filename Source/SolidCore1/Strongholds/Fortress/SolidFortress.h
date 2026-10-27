@@ -17,11 +17,19 @@ namespace SolidStronghold
 		int32 Columns = 0;
 		int32 Rows = 0;
 		FVector2D InnerMinCm = FVector2D::ZeroVector;
+		/** Zero means the vertex span. A larger value is spare floor around the grid. */
+		float InnerWidthCm = 0.f;
+		/** Zero means the vertex span. A larger value is spare floor around the grid. */
+		float InnerDepthCm = 0.f;
 
-		/** Vertex span of these columns. */
+		/** Inner face across. The vertex span, or wider when there is spare floor. */
 		float WidthCm() const;
-		/** Vertex span of these rows. */
+		/** Inner face deep. The vertex span, or deeper when there is spare floor. */
 		float DepthCm() const;
+		/** Vertex span of these columns. */
+		float SpanWidthCm() const;
+		/** Vertex span of these rows. */
+		float SpanDepthCm() const;
 		void CollectHexes(TArray<SolidStrongholdGrid::FHex>& OutHexes) const;
 	};
 

@@ -165,4 +165,49 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidFortressRoomFaceTest,
+	"SolidCore1.Stronghold.FortressRoomFace",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidFortressRoomFaceTest::RunTest(const FString& Parameters)
+{
+	SolidStronghold::FSolidFortressBuilding Room;
+	Room.Columns = 4;
+	Room.Rows = 3;
+	Room.InnerMinCm = FVector2D(50.f, 50.f);
+
+	TArray<SolidStrongholdGrid::FHex> Filled;
+	Room.CollectHexes(Filled);
+	TestEqual(
+		TEXT("the grid fills a tight room"),
+		Filled.Num(),
+		SolidStronghold::RoomHexes(ESolidStrongholdRoom::Medium));
+	TestTrue(
+		TEXT("a tight room's width is the vertex span"),
+		FMath::IsNearlyEqual(Room.WidthCm(), Room.SpanWidthCm(), 0.05f));
+	TestTrue(
+		TEXT("a tight room's depth is the vertex span"),
+		FMath::IsNearlyEqual(Room.DepthCm(), Room.SpanDepthCm(), 0.05f));
+
+	const float Spare = 100.f;
+	Room.InnerWidthCm = Room.SpanWidthCm() + Spare;
+	Room.InnerDepthCm = Room.SpanDepthCm() + Spare;
+	TArray<SolidStrongholdGrid::FHex> Wide;
+	Room.CollectHexes(Wide);
+	TestEqual(TEXT("spare floor adds no hex"), Wide.Num(), Filled.Num());
+	TestTrue(
+		TEXT("every hex sits inside the wider face"),
+		VerticesInside(Wide, Room.InnerMinCm, FVector2D(Room.WidthCm(), Room.DepthCm())));
+
+	const FVector2D Shift(Spare * 0.5f, Spare * 0.5f);
+	bool bCentered = Wide.Num() == Filled.Num();
+	for (int32 Index = 0; bCentered && Index < Filled.Num(); ++Index)
+	{
+		bCentered = Wide[Index].Center.Equals(Filled[Index].Center + Shift, 0.05f);
+	}
+	TestTrue(TEXT("the grid sits in the middle of the spare floor"), bCentered);
+	return true;
+}
+
 #endif

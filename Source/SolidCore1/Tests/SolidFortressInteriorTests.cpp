@@ -113,6 +113,36 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 		TEXT("leaving stands one hex outside the gate"),
 		Leave.XY.Equals(Fortress->OutsideGateXY(nullptr), 0.5f));
 	TestTrue(TEXT("leaving faces away along the grass"), FMath::IsNearlyEqual(Leave.YawDeg, 0.f, 0.1f));
+
+	TestEqual(TEXT("Humble draws two doorways"), Room->GetDoorMeshes().Num(), 2);
+	TestTrue(TEXT("the buildings are drawn"), Room->GetBuildingMeshes().Num() >= 2);
+	TestEqual(TEXT("a doorway is not the way out"), Room->GetPassageMesh(), Room->GetGateMesh());
+	const UStaticMeshComponent* WestDoor = nullptr;
+	const UStaticMeshComponent* EastDoor = nullptr;
+	for (const TObjectPtr<UStaticMeshComponent>& Door : Room->GetDoorMeshes())
+	{
+		if (!Door)
+		{
+			continue;
+		}
+		const FVector Scale = Door->GetRelativeScale3D();
+		TestTrue(
+			TEXT("each doorway is the storey opening"),
+			FMath::IsNearlyEqual(Scale.Y * 100.f, FSolidStronghold::OpeningCm, 0.5f)
+				&& FMath::IsNearlyEqual(Scale.Z * 100.f, FSolidStronghold::StoreyCm, 0.5f));
+		TestTrue(TEXT("each doorway is south of the gate"), Door->GetRelativeLocation().X > Gate->GetRelativeLocation().X);
+		if (!WestDoor || Door->GetRelativeLocation().Y < WestDoor->GetRelativeLocation().Y)
+		{
+			WestDoor = Door;
+		}
+		if (!EastDoor || Door->GetRelativeLocation().Y > EastDoor->GetRelativeLocation().Y)
+		{
+			EastDoor = Door;
+		}
+	}
+	TestTrue(
+		TEXT("the Keep doorway is east of the Annex"),
+		WestDoor && EastDoor && WestDoor != EastDoor);
 	return true;
 }
 

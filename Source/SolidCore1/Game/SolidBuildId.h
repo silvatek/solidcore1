@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0714")
+#define SOLID_BUILD_ID TEXT("SC1-0715")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("North and east courtyard gaps are placed separately.")
+#define SOLID_BUILD_NOTE TEXT("The north courtyard gap sits north of the keep.")
 #endif

@@ -285,13 +285,13 @@ bool FSolidFortressAveragePlanTest::RunTest(const FString& Parameters)
 	const SolidStronghold::FSolidFortressBuilding& NorthGap = Fortress.Buildings[2];
 	const SolidStronghold::FSolidFortressBuilding& EastGap = Fortress.Buildings[3];
 	TestTrue(
-		TEXT("the north gap is the medium size, north of the small building"),
+		TEXT("the north gap is the medium size, north of the keep"),
 		NorthGap.Floors.Num() == 0
 			&& FMath::IsNearlyEqual(NorthGap.InnerWidthCm, MediumWidth, 0.05f)
-			&& FMath::IsNearlyEqual(NorthGap.InnerMinCm.X, Small.InnerMinCm.X, 0.05f)
+			&& FMath::IsNearlyEqual(NorthGap.InnerMinCm.X, Building.InnerMinCm.X, 0.05f)
 			&& FMath::IsNearlyEqual(
 				NorthGap.InnerMinCm.Y,
-				Small.InnerMinCm.Y + Small.DepthCm() + 2.f * FSolidStronghold::WallCm + Fortress.GapCm,
+				Building.InnerMinCm.Y + Building.DepthCm() + 2.f * FSolidStronghold::WallCm + Fortress.GapCm,
 				0.05f));
 	TestTrue(
 		TEXT("the east gap is the medium size, east of the small building"),

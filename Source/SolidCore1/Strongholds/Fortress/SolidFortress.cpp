@@ -345,13 +345,13 @@ namespace SolidStronghold
 			break;
 		case ESolidStrongholdSize::Imperious:
 			AddLargeHigh(Position(Wall, Wall), NorthFace, { Large, Large, Large });
-			AddMediumHigh(EastOf(0), NorthFace, { Medium, Medium });
+			AddSmallLow(EastOf(0), NorthFace);
 			AddMediumHigh(EastOf(1), NorthFace, { Medium, Medium });
-			AddSmallLow(EastOf(2), NorthFace);
-			AddSmallLow(EastOf(3), NorthFace);
-			AddSmallLow(EastOf(4), NorthFace);
-			AddCourtyard(NorthOf(0), Size(MediumWidth, MediumWidth));
-			AddCourtyard(EastOf(5), Size(MediumWidth, MediumWidth));
+			AddCourtyard(EastOf(2), Size(MediumWidth, MediumWidth));
+			AddMediumHigh(EastOf(3), NorthFace, { Medium, Medium });
+			AddSmallLow(NorthOf(4), NorthFace);
+			AddCourtyard(NorthOf(5), Size(MediumWidth, MediumWidth));
+			AddSmallLow(NorthOf(6), NorthFace);
 			break;
 		}
 	}

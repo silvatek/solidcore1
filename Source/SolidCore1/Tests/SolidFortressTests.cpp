@@ -442,4 +442,87 @@ bool FSolidFortressImpressivePlanTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidFortressImperiousPlanTest,
+	"SolidCore1.Stronghold.FortressImperiousPlan",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidFortressImperiousPlanTest::RunTest(const FString& Parameters)
+{
+	SolidStronghold::FSolidFortress Fortress;
+	Fortress.AddBuildings(ESolidStrongholdSize::Imperious);
+	TestEqual(TEXT("Imperious has eight places"), Fortress.Buildings.Num(), 8);
+	if (Fortress.Buildings.Num() != 8)
+	{
+		return false;
+	}
+
+	const auto East = [&Fortress](const int32 Index)
+	{
+		const SolidStronghold::FSolidFortressBuilding& One = Fortress.Buildings[Index - 1];
+		const SolidStronghold::FSolidFortressBuilding& Next = Fortress.Buildings[Index];
+		return FMath::IsNearlyEqual(Next.InnerMinCm.Y, One.InnerMinCm.Y, 0.05f)
+			&& FMath::IsNearlyEqual(
+				Next.InnerMinCm.X,
+				One.InnerMinCm.X + One.WidthCm() + 2.f * FSolidStronghold::WallCm + Fortress.GapCm,
+				0.05f);
+	};
+	const auto North = [&Fortress](const int32 Index)
+	{
+		const SolidStronghold::FSolidFortressBuilding& One = Fortress.Buildings[Index - 1];
+		const SolidStronghold::FSolidFortressBuilding& Next = Fortress.Buildings[Index];
+		return FMath::IsNearlyEqual(Next.InnerMinCm.X, One.InnerMinCm.X, 0.05f)
+			&& FMath::IsNearlyEqual(
+				Next.InnerMinCm.Y,
+				One.InnerMinCm.Y + One.DepthCm() + 2.f * FSolidStronghold::WallCm + Fortress.GapCm,
+				0.05f);
+	};
+	const float MediumWidth = 5.f * SolidStrongholdGrid::SideCm();
+	const SolidStronghold::FSolidFortressBuilding& Keep = Fortress.Buildings[0];
+	TestEqual(TEXT("the keep has three large floors"), Keep.Floors.Num(), 3);
+	TestTrue(
+		TEXT("every keep floor is large"),
+		Keep.Floors.Num() == 3
+			&& Keep.Floors[0] == ESolidStrongholdRoom::Large
+			&& Keep.Floors[1] == ESolidStrongholdRoom::Large
+			&& Keep.Floors[2] == ESolidStrongholdRoom::Large);
+
+	TestTrue(TEXT("the first small building is east of the keep"), East(1));
+	TestEqual(TEXT("the first small building has one floor"), Fortress.Buildings[1].Floors.Num(), 1);
+	TestTrue(
+		TEXT("the first medium building is east of that small building"),
+		East(2) && Fortress.Buildings[2].Floors.Num() == 2);
+
+	const SolidStronghold::FSolidFortressBuilding& EastGap = Fortress.Buildings[3];
+	TestTrue(
+		TEXT("the east gap is medium and east of the first medium building"),
+		EastGap.Floors.Num() == 0
+			&& FMath::IsNearlyEqual(EastGap.InnerWidthCm, MediumWidth, 0.05f)
+			&& East(3));
+	TestTrue(
+		TEXT("the second medium building is east of that gap"),
+		East(4) && Fortress.Buildings[4].Floors.Num() == 2);
+
+	TestTrue(TEXT("a small building is north of the second medium building"), North(5));
+	const SolidStronghold::FSolidFortressBuilding& NorthGap = Fortress.Buildings[6];
+	TestTrue(
+		TEXT("the north gap is medium and north of that small building"),
+		NorthGap.Floors.Num() == 0
+			&& FMath::IsNearlyEqual(NorthGap.InnerDepthCm, MediumWidth, 0.05f)
+			&& North(6));
+	TestTrue(TEXT("the last small building is north of that gap"), North(7));
+	TestTrue(
+		TEXT("the last small building's north wall meets the outer wall"),
+		FMath::IsNearlyEqual(
+			Fortress.Buildings[7].InnerMinCm.Y + Fortress.Buildings[7].DepthCm() + FSolidStronghold::WallCm,
+			Fortress.OuterDepthCm(),
+			0.05f));
+
+	TestEqual(
+		TEXT("Imperious usable hexes are the kit"),
+		UsableHexes(ESolidStrongholdSize::Imperious),
+		SolidStronghold::Hexes(SolidStronghold::RoomsFor(ESolidStrongholdSize::Imperious)));
+	return true;
+}
+
 #endif

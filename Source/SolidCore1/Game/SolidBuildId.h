@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0700")
+#define SOLID_BUILD_ID TEXT("SC1-0701")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("MediumHigh draws its medium room on the upper floor.")
+#define SOLID_BUILD_NOTE TEXT("The stair lands by the door and climbs to the upper floor.")
 #endif

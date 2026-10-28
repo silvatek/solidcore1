@@ -238,6 +238,30 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 		if (One.HasStair())
 		{
 			TestTrue(TEXT("the upper room stays open above the deck"), bUpperOpen);
+			const float LandingX = One.InnerMinCm.X + 100.f;
+			const float StairY = One.InnerMinCm.Y + One.DepthCm() - 70.f;
+			const FVector Landing(
+				Depth * 0.5f - StairY,
+				LandingX - Width * 0.5f,
+				15.f);
+			const float FlightX = One.InnerMinCm.X + One.WidthCm() - 20.f;
+			const FVector FlightTop(
+				Depth * 0.5f - StairY,
+				FlightX - Width * 0.5f,
+				FSolidStronghold::StoreyCm - 15.f);
+			bool bLanding = false;
+			bool bFlight = false;
+			for (const TObjectPtr<UStaticMeshComponent>& Part : Room->GetBuildingMeshes())
+			{
+				if (!Part)
+				{
+					continue;
+				}
+				bLanding = bLanding || Covers(Part, Landing);
+				bFlight = bFlight || Covers(Part, FlightTop);
+			}
+			TestTrue(TEXT("the landing is inside the door"), bLanding);
+			TestTrue(TEXT("the flight climbs to the upper floor"), bFlight);
 		}
 		TestTrue(TEXT("a ceiling closes the top room"), bCeilingPresent);
 		++Gaps;

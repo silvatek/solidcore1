@@ -380,6 +380,49 @@ void ASolidFortressInterior::BuildVisuals()
 				RoomWidth,
 				RoomDepth,
 				Deck);
+
+			const bool bAlongX = One.Facing == ESolidStrongholdOrientation::NorthFace
+				|| One.Facing == ESolidStrongholdOrientation::SouthFace;
+			const float AlongOrigin = bAlongX ? One.InnerMinCm.X : One.InnerMinCm.Y;
+			const float AlongLength = bAlongX ? One.InnerWidthCm : One.InnerDepthCm;
+			float CrossCenter = 0.f;
+			if (One.Facing == ESolidStrongholdOrientation::NorthFace)
+			{
+				CrossCenter = RoomMin.Y + RoomDepth + StairCm * 0.5f;
+			}
+			else if (One.Facing == ESolidStrongholdOrientation::SouthFace)
+			{
+				CrossCenter = RoomMin.Y - StairCm * 0.5f;
+			}
+			else if (One.Facing == ESolidStrongholdOrientation::EastFace)
+			{
+				CrossCenter = RoomMin.X + RoomWidth + StairCm * 0.5f;
+			}
+			else
+			{
+				CrossCenter = RoomMin.X - StairCm * 0.5f;
+			}
+			const float LandingRun = SolidStronghold::LandingRunCm;
+			const float FlightRun = FMath::Max(AlongLength - LandingRun, SolidStronghold::FPlan{}.StairTreadCm);
+			const int32 Steps = FMath::Max(1, FMath::RoundToInt(FlightRun / SolidStronghold::FPlan{}.StairTreadCm));
+			const float Tread = FlightRun / static_cast<float>(Steps);
+			const float Rise = Storey / static_cast<float>(Steps + 1);
+			auto AddStep = [&](const float AlongCenter, const float AlongSize, const float Height)
+			{
+				const float PlanX = bAlongX ? AlongCenter : CrossCenter;
+				const float PlanY = bAlongX ? CrossCenter : AlongCenter;
+				const float SizeX = bAlongX ? AlongSize : StairCm;
+				const float SizeY = bAlongX ? StairCm : AlongSize;
+				AddBuilding(PlanX, PlanY, Height * 0.5f, SizeX, SizeY, Height);
+			};
+			AddStep(AlongOrigin + LandingRun * 0.5f, LandingRun, Rise);
+			for (int32 Step = 0; Step < Steps; ++Step)
+			{
+				AddStep(
+					AlongOrigin + LandingRun + Tread * (static_cast<float>(Step) + 0.5f),
+					Tread,
+					Rise * static_cast<float>(Step + 2));
+			}
 		}
 
 		UPointLightComponent* Light = NewObject<UPointLightComponent>(this, NAME_None, RF_Transient);

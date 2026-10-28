@@ -302,9 +302,11 @@ bool FSolidStrongholdTypeSupportedTest::RunTest(const FString& Parameters)
 		TestTrue(
 			*FString::Printf(TEXT("%s dungeon ground floor"), SolidStronghold::SizeName(Size)),
 			SameHexes(DungeonHexes, CaveFloor));
-		const int32 FortressFloor = (Size == ESolidStrongholdSize::Humble || Size == ESolidStrongholdSize::Average)
-			? SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small)
-			: 0;
+		const int32 FortressFloor = Size == ESolidStrongholdSize::Meagre
+			? 0
+			: Size == ESolidStrongholdSize::Average
+				? 2 * SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small)
+				: SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small);
 		TestEqual(
 			*FString::Printf(TEXT("%s fortress ground floor"), SolidStronghold::SizeName(Size)),
 			FortressHexes.Num(),

@@ -213,6 +213,16 @@ namespace SolidStronghold
 		AddBuilding(PositionCm, FVector2D(MediumLength, MediumWidth), InFacing, InFloors);
 	}
 
+	void FSolidFortress::SmallLow(
+		const FVector2D PositionCm,
+		const ESolidStrongholdOrientation InFacing,
+		const std::initializer_list<ESolidStrongholdRoom> InFloors)
+	{
+		const float SmallWidth = 2.5f * SolidStrongholdGrid::FlatToFlatCm;
+		const float SmallDepth = 5.f * SolidStrongholdGrid::SideCm();
+		AddBuilding(PositionCm, FVector2D(SmallWidth, SmallDepth), InFacing, InFloors);
+	}
+
 	void FSolidFortress::AddBuildings(const ESolidStrongholdSize InSize)
 	{
 		using enum ESolidStrongholdRoom;
@@ -226,13 +236,27 @@ namespace SolidStronghold
 		switch (InSize)
 		{
 		case ESolidStrongholdSize::Humble:
-		case ESolidStrongholdSize::Average:
 			MediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
 			// The east yard plus the east curtain equals the building's run, so the outer wall is twice as wide.
 			AdditionalCourtyard(FSolidStronghold::StoreyCm, Buildings[0].InnerWidthCm + Wall);
 			break;
+		case ESolidStrongholdSize::Average:
+		{
+			MediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
+			const float EastYard = Buildings[0].InnerWidthCm + Wall;
+			const float KeepEast = Buildings[0].InnerMinCm.X + Buildings[0].WidthCm() + Wall;
+			SmallLow(Position(KeepEast + GapCm + Wall, Wall), NorthFace, { Small });
+			const float SmallEast = Buildings[1].InnerMinCm.X + Buildings[1].WidthCm() + Wall;
+			// The small building sits in the Humble east yard, so the outer wall stays put.
+			AdditionalCourtyard(FSolidStronghold::StoreyCm, KeepEast + EastYard - SmallEast);
+			break;
+		}
 		default:
-			// A size with no building still has a courtyard.
+			// A fortress with no plan of its own still has the Humble keep. Meagre is not a fortress size.
+			if (InSize != ESolidStrongholdSize::Meagre)
+			{
+				MediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
+			}
 			AdditionalCourtyard(FSolidStronghold::StoreyCm, MediumWidth);
 			break;
 		}

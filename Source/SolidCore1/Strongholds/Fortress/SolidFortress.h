@@ -131,5 +131,14 @@ namespace SolidStronghold
 			FVector2D PositionCm,
 			ESolidStrongholdOrientation Facing,
 			std::initializer_list<ESolidStrongholdRoom> Floors);
+		/**
+		 * A small room block with one floor.
+		 * The footprint fits a small room. There is no stair.
+		 * Floors start at the ground, and each entry is that floor's room.
+		 */
+		void SmallLow(
+			FVector2D PositionCm,
+			ESolidStrongholdOrientation Facing,
+			std::initializer_list<ESolidStrongholdRoom> Floors);
 	};
 }

@@ -149,9 +149,9 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 	TArray<SolidStrongholdGrid::FHex> AverageGround;
 	Fortress.CollectGroundHexes(ESolidStrongholdSize::Average, AverageGround);
 	TestEqual(
-		TEXT("Average keeps the Humble ground floor"),
+		TEXT("Average adds the small building's ground floor"),
 		AverageGround.Num(),
-		SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small));
+		2 * SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small));
 	TArray<SolidStrongholdGrid::FHex> Empty;
 	Fortress.CollectGroundHexes(ESolidStrongholdSize::Meagre, Empty);
 	TestEqual(TEXT("Meagre has no ground hexes"), Empty.Num(), 0);
@@ -224,14 +224,15 @@ bool FSolidFortressAveragePlanTest::RunTest(const FString& Parameters)
 	SolidStronghold::FSolidFortress Fortress;
 	Fortress.AddBuildings(ESolidStrongholdSize::Average);
 	TestTrue(TEXT("Average is supported"), Fortress.Supported(ESolidStrongholdSize::Average));
-	TestEqual(TEXT("Average has one building"), Fortress.Buildings.Num(), 1);
-	if (Fortress.Buildings.Num() != 1)
+	TestEqual(TEXT("Average has two buildings"), Fortress.Buildings.Num(), 2);
+	if (Fortress.Buildings.Num() != 2)
 	{
 		return false;
 	}
 
+	const SolidStronghold::FSolidFortress& HumbleFortress = SolidStronghold::FSolidFortress::Instance();
 	const SolidStronghold::FSolidFortressBuilding& Building = Fortress.Buildings[0];
-	const SolidStronghold::FSolidFortressBuilding& Humble = SolidStronghold::FSolidFortress::Instance().Buildings[0];
+	const SolidStronghold::FSolidFortressBuilding& Humble = HumbleFortress.Buildings[0];
 	TestEqual(TEXT("the building has two floors"), Building.Floors.Num(), 2);
 	if (Building.Floors.Num() != 2)
 	{
@@ -248,12 +249,30 @@ bool FSolidFortressAveragePlanTest::RunTest(const FString& Parameters)
 			&& FMath::IsNearlyEqual(Building.DoorFromInnerCm(), Humble.DoorFromInnerCm(), 0.05f)
 			&& Building.HasStair() == Humble.HasStair());
 
+	const SolidStronghold::FSolidFortressBuilding& Small = Fortress.Buildings[1];
+	TestEqual(TEXT("the small building has one floor"), Small.Floors.Num(), 1);
+	TestTrue(TEXT("the small floor is a small room"), Small.Floors[0] == ESolidStrongholdRoom::Small);
+	TestFalse(TEXT("a one-floor building has no stair"), Small.HasStair());
+	TestTrue(TEXT("the small doorway faces north"), Small.Facing == ESolidStrongholdOrientation::NorthFace);
+	TestTrue(
+		TEXT("the small building is the small span"),
+		FMath::IsNearlyEqual(Small.InnerWidthCm, 2.5f * SolidStrongholdGrid::FlatToFlatCm, 0.05f)
+			&& FMath::IsNearlyEqual(Small.InnerDepthCm, Small.SpanDepthCm(), 0.05f));
+	TestTrue(
+		TEXT("the small building sits against the keep in the east yard"),
+		FMath::IsNearlyEqual(Small.InnerMinCm.Y, Building.InnerMinCm.Y, 0.05f)
+			&& FMath::IsNearlyEqual(
+				Small.InnerMinCm.X,
+				Building.InnerMinCm.X + Building.WidthCm() + 2.f * FSolidStronghold::WallCm + Fortress.GapCm,
+				0.05f)
+			&& FMath::IsNearlyEqual(Fortress.OuterWidthCm(), HumbleFortress.OuterWidthCm(), 0.05f));
+
 	TArray<SolidStrongholdGrid::FHex> Ground;
 	Fortress.CollectGroundHexes(ESolidStrongholdSize::Average, Ground);
 	TestEqual(
-		TEXT("Average keeps the Humble ground floor"),
+		TEXT("Average ground floor is both small rooms"),
 		Ground.Num(),
-		SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small));
+		2 * SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small));
 	return true;
 }
 

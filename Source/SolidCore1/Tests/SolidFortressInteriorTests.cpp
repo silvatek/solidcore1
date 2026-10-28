@@ -3,6 +3,7 @@
 #include "Strongholds/Fortress/Actors/SolidFortressInterior.h"
 #include "Strongholds/Fortress/SolidFortress.h"
 #include "Strongholds/SolidStronghold.h"
+#include "Strongholds/Tower/SolidTower.h"
 #include "SolidGameState.h"
 #include "Strongholds/Furnishings/SolidStrongholdGrid.h"
 #include "Components/InstancedStaticMeshComponent.h"

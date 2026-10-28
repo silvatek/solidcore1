@@ -1340,7 +1340,18 @@ void ASolidCharacter::ChooseMainMenuIndex(const int32 Index)
 			return;
 		}
 		HUD->SetStrongholdChoiceIndex(Index);
-		ConfirmStrongholdChoice();
+		if (HUD->GetStrongholdChoiceIndex() != Index)
+		{
+			return;
+		}
+		if (HUD->IsStrongholdCancelRow())
+		{
+			HUD->CloseStrongholdChoice();
+		}
+		else if (HUD->IsStrongholdConfirmRow())
+		{
+			ConfirmStrongholdChoice();
+		}
 		return;
 	}
 	if (HUD->IsPortalOpen())
@@ -1568,7 +1579,14 @@ void ASolidCharacter::MainMenuConfirm()
 	}
 	if (HUD->IsStrongholdChoiceOpen())
 	{
-		ConfirmStrongholdChoice();
+		if (HUD->IsStrongholdCancelRow())
+		{
+			HUD->CloseStrongholdChoice();
+		}
+		else if (HUD->IsStrongholdConfirmRow())
+		{
+			ConfirmStrongholdChoice();
+		}
 		return;
 	}
 	if (HUD->IsPortalOpen())
@@ -2515,7 +2533,22 @@ void ASolidCharacter::PollClickMovePress()
 		{
 			return;
 		}
-		if ((HUD->IsMainMenuOpen() || HUD->IsExitConfirmOpen() || HUD->IsPortalOpen() || HUD->IsStrongholdChoiceOpen())
+		if (HUD->IsStrongholdChoiceOpen())
+		{
+			if (ReadPointerPosition(X, Y) && HUD->SelectChoiceAt(X, Y))
+			{
+				if (HUD->IsStrongholdCancelRow())
+				{
+					HUD->CloseStrongholdChoice();
+				}
+				else if (HUD->IsStrongholdConfirmRow())
+				{
+					ConfirmStrongholdChoice();
+				}
+			}
+			return;
+		}
+		if ((HUD->IsMainMenuOpen() || HUD->IsExitConfirmOpen() || HUD->IsPortalOpen())
 			&& ReadPointerPosition(X, Y)
 			&& HUD->SelectChoiceAt(X, Y))
 		{

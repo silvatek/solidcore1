@@ -333,23 +333,46 @@ SolidStrongholdTransition::EOffer SolidStrongholdTransition::Consider(
 		{
 			continue;
 		}
-		if (State.bStrongholdSiteRestrictions && static_cast<int32>(Size) <= ActiveIndex)
+		FSolidStrongholdChoice Choice;
+		Choice.Kind = ESolidStrongholdChoiceKind::Size;
+		Choice.Size = Size;
+		Choice.bEnabled = !State.bStrongholdSiteRestrictions || static_cast<int32>(Size) >= ActiveIndex;
+		OutChoices.Add(Choice);
+	}
+	if (OutChoices.Num() == 0)
+	{
+		return EOffer::None;
+	}
+
+	for (const ESolidStrongholdType Type : SolidStronghold::Types)
+	{
+		bool bSupports = false;
+		for (const FSolidStrongholdChoice& SizeRow : OutChoices)
+		{
+			if (SizeRow.Kind == ESolidStrongholdChoiceKind::Size
+				&& SolidStronghold::TypeOf(Type).Supported(SizeRow.Size))
+			{
+				bSupports = true;
+				break;
+			}
+		}
+		if (!bSupports)
 		{
 			continue;
 		}
-		for (const ESolidStrongholdType Type : SolidStronghold::Types)
-		{
-			if (!SolidStronghold::TypeOf(Type).Supported(Size))
-			{
-				continue;
-			}
-			FSolidStrongholdChoice Choice;
-			Choice.Size = Size;
-			Choice.Type = Type;
-			OutChoices.Add(Choice);
-		}
+		FSolidStrongholdChoice Choice;
+		Choice.Kind = ESolidStrongholdChoiceKind::Type;
+		Choice.Type = Type;
+		OutChoices.Add(Choice);
 	}
-	return OutChoices.Num() > 0 ? EOffer::Choose : EOffer::None;
+
+	FSolidStrongholdChoice Confirm;
+	Confirm.Kind = ESolidStrongholdChoiceKind::Confirm;
+	OutChoices.Add(Confirm);
+	FSolidStrongholdChoice Cancel;
+	Cancel.Kind = ESolidStrongholdChoiceKind::Cancel;
+	OutChoices.Add(Cancel);
+	return EOffer::Choose;
 }
 
 bool SolidStrongholdTransition::Offers(
@@ -357,14 +380,16 @@ bool SolidStrongholdTransition::Offers(
 	const ESolidStrongholdSize Size,
 	const ESolidStrongholdType Type)
 {
+	bool bSize = false;
 	for (const FSolidStrongholdChoice& Choice : Choices)
 	{
-		if (Choice.Size == Size && Choice.Type == Type)
+		if (Choice.Kind == ESolidStrongholdChoiceKind::Size && Choice.Size == Size && Choice.bEnabled)
 		{
-			return true;
+			bSize = true;
+			break;
 		}
 	}
-	return false;
+	return bSize && SolidStronghold::TypeOf(Type).Supported(Size);
 }
 
 bool SolidStrongholdTransition::AreNeighbors(const SolidStrongholdGrid::FHex& A, const SolidStrongholdGrid::FHex& B)

@@ -83,6 +83,9 @@ public:
 	FIntPoint GetStrongholdChoiceCell() const { return StrongholdChoiceCell; }
 	ESolidStrongholdSize GetStrongholdChoiceSize() const;
 	ESolidStrongholdType GetStrongholdChoiceType() const;
+	bool IsStrongholdConfirmRow() const;
+	bool IsStrongholdCancelRow() const;
+	ESolidStrongholdChoiceKind GetStrongholdChoiceKind() const;
 
 	/**
 	 * The oak page for the company stronghold's name.
@@ -241,11 +244,17 @@ protected:
 	FString StrongholdNameTitle;
 	FString StrongholdNameDraft;
 
-	/** Size and type rows for a stronghold site. Choosing a row commits the move. */
+	/** Size rows, type rows, Confirm, and Cancel. Confirm commits the picked size and type. */
 	bool bShowStrongholdChoice = false;
 	int32 StrongholdChoiceIndex = 0;
 	FIntPoint StrongholdChoiceCell = FIntPoint::ZeroValue;
 	TArray<FSolidStrongholdChoice> StrongholdChoices;
+	ESolidStrongholdSize StrongholdPickedSize = ESolidStrongholdSize::Meagre;
+	ESolidStrongholdType StrongholdPickedType = ESolidStrongholdType::Dungeon;
+
+	bool IsStrongholdRowEnabled(const FSolidStrongholdChoice& Choice) const;
+	void ApplyStrongholdCursor();
+	void KeepStrongholdType();
 
 	/** Tech readout (build, FPS, pawn, terrain). On until F12. */
 	UPROPERTY(VisibleAnywhere, Category = "HUD")

@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0723")
+#define SOLID_BUILD_ID TEXT("SC1-0724")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The visit draws merlons on a taller building.")
+#define SOLID_BUILD_NOTE TEXT("The site menu chooses a size and a type.")
 #endif

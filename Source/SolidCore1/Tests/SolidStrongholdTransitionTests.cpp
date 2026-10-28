@@ -199,7 +199,7 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("Meagre Dungeon is a row"),
 		SolidStrongholdTransition::Offers(OpenChoices, ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon));
-	TestEqual(TEXT("the open list is that one row"), OpenChoices.Num(), 1);
+	TestEqual(TEXT("the open list is the size, the type, Confirm, and Cancel"), OpenChoices.Num(), 4);
 	TestFalse(TEXT("site restrictions stay off on the same object"), Open.bStrongholdSiteRestrictions);
 	const FIntPoint MeagreSite(12, 12);
 	TestTrue(
@@ -222,23 +222,27 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 
 	TArray<FSolidStrongholdChoice> Choices;
 	TestEqual(
-		TEXT("a locked size does nothing"),
+		TEXT("the current size still asks"),
 		static_cast<uint8>(SolidStrongholdTransition::Consider(State, Company->GetStronghold(), Choices)),
-		static_cast<uint8>(SolidStrongholdTransition::EOffer::None));
-	TestEqual(TEXT("a locked size lists nothing"), Choices.Num(), 0);
+		static_cast<uint8>(SolidStrongholdTransition::EOffer::Choose));
+	TestTrue(
+		TEXT("Meagre Dungeon is that choice"),
+		SolidStrongholdTransition::Offers(Choices, ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon));
 
 	Unlock(State, ESolidStrongholdSize::Meagre);
 	TestEqual(
-		TEXT("Meagre is not a site choice"),
+		TEXT("Meagre asks for the dungeon"),
 		static_cast<uint8>(SolidStrongholdTransition::Consider(State, Company->GetStronghold(), Choices)),
-		static_cast<uint8>(SolidStrongholdTransition::EOffer::None));
+		static_cast<uint8>(SolidStrongholdTransition::EOffer::Choose));
+	TestTrue(
+		TEXT("the current size stays"),
+		SolidStrongholdTransition::Offers(Choices, ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon));
 
 	Unlock(State, ESolidStrongholdSize::Humble);
 	TestEqual(
 		TEXT("Humble asks for the fortress"),
 		static_cast<uint8>(SolidStrongholdTransition::Consider(State, Company->GetStronghold(), Choices)),
 		static_cast<uint8>(SolidStrongholdTransition::EOffer::Choose));
-	TestEqual(TEXT("Humble lists the fortress"), Choices.Num(), 1);
 	TestTrue(
 		TEXT("Humble fortress is a row"),
 		SolidStrongholdTransition::Offers(Choices, ESolidStrongholdSize::Humble, ESolidStrongholdType::Fortress));
@@ -248,39 +252,24 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 		TEXT("an unlocked larger size asks"),
 		static_cast<uint8>(SolidStrongholdTransition::Consider(State, Company->GetStronghold(), Choices)),
 		static_cast<uint8>(SolidStrongholdTransition::EOffer::Choose));
-	TestEqual(TEXT("the list pairs each larger size with a fortress and a tower"), Choices.Num(), 11);
-	const ESolidStrongholdSize ListedSize[] = {
-		ESolidStrongholdSize::Humble,
-		ESolidStrongholdSize::Average,
-		ESolidStrongholdSize::Average,
-		ESolidStrongholdSize::Impressive,
-		ESolidStrongholdSize::Impressive,
-		ESolidStrongholdSize::Grand,
-		ESolidStrongholdSize::Grand,
-		ESolidStrongholdSize::Stately,
-		ESolidStrongholdSize::Stately,
-		ESolidStrongholdSize::Imperious,
-		ESolidStrongholdSize::Imperious,
-	};
-	const ESolidStrongholdType ListedType[] = {
-		ESolidStrongholdType::Fortress,
-		ESolidStrongholdType::Fortress,
-		ESolidStrongholdType::Tower,
-		ESolidStrongholdType::Fortress,
-		ESolidStrongholdType::Tower,
-		ESolidStrongholdType::Fortress,
-		ESolidStrongholdType::Tower,
-		ESolidStrongholdType::Fortress,
-		ESolidStrongholdType::Tower,
-		ESolidStrongholdType::Fortress,
-		ESolidStrongholdType::Tower,
-	};
-	bool bRows = Choices.Num() == UE_ARRAY_COUNT(ListedSize);
-	for (int32 Index = 0; bRows && Index < UE_ARRAY_COUNT(ListedSize); ++Index)
+	TestEqual(TEXT("sizes, three types, Confirm, and Cancel"), Choices.Num(), 12);
+	bool bSizesFirst = true;
+	for (int32 Index = 0; Index < SolidStronghold::SizeCount; ++Index)
 	{
-		bRows = Choices[Index].Size == ListedSize[Index] && Choices[Index].Type == ListedType[Index];
+		bSizesFirst = bSizesFirst
+			&& Choices[Index].Kind == ESolidStrongholdChoiceKind::Size
+			&& Choices[Index].Size == SolidStronghold::Sizes[Index]
+			&& Choices[Index].bEnabled;
 	}
-	TestTrue(TEXT("Humble fortress comes first, then each size's fortress and tower"), bRows);
+	TestTrue(TEXT("the sizes come first and none is smaller than Meagre"), bSizesFirst);
+	TestEqual(
+		TEXT("Confirm is the penultimate row"),
+		static_cast<uint8>(Choices[Choices.Num() - 2].Kind),
+		static_cast<uint8>(ESolidStrongholdChoiceKind::Confirm));
+	TestEqual(
+		TEXT("Cancel is the last row"),
+		static_cast<uint8>(Choices.Last().Kind),
+		static_cast<uint8>(ESolidStrongholdChoiceKind::Cancel));
 	TestTrue(
 		TEXT("Average tower is a row"),
 		SolidStrongholdTransition::Offers(Choices, ESolidStrongholdSize::Average, ESolidStrongholdType::Tower));
@@ -294,14 +283,20 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 		TEXT("a larger size still asks"),
 		static_cast<uint8>(SolidStrongholdTransition::Consider(State, Company->GetStronghold(), Choices)),
 		static_cast<uint8>(SolidStrongholdTransition::EOffer::Choose));
-	TestFalse(
-		TEXT("the same size is not a row"),
+	TestTrue(
+		TEXT("the same size stays"),
 		SolidStrongholdTransition::Offers(Choices, ESolidStrongholdSize::Average, ESolidStrongholdType::Tower));
+	bool bHumbleDisabled = false;
+	for (const FSolidStrongholdChoice& Choice : Choices)
+	{
+		if (Choice.Kind == ESolidStrongholdChoiceKind::Size && Choice.Size == ESolidStrongholdSize::Humble)
+		{
+			bHumbleDisabled = !Choice.bEnabled;
+		}
+	}
+	TestTrue(TEXT("a smaller size is listed and disabled"), bHumbleDisabled);
 	TestFalse(
-		TEXT("a smaller size is not a row"),
-		SolidStrongholdTransition::Offers(Choices, ESolidStrongholdSize::Humble, ESolidStrongholdType::Dungeon));
-	TestFalse(
-		TEXT("a smaller fortress is not a row"),
+		TEXT("a smaller fortress cannot be chosen"),
 		SolidStrongholdTransition::Offers(Choices, ESolidStrongholdSize::Humble, ESolidStrongholdType::Fortress));
 	TestTrue(
 		TEXT("Impressive tower is a row"),
@@ -577,47 +572,64 @@ bool FSolidStrongholdChoiceTest::RunTest(const FString& Parameters)
 	HUD->HandleMenuKey();
 	TestTrue(TEXT("the menu is open"), HUD->IsMainMenuOpen());
 	TArray<FSolidStrongholdChoice> Choices;
-	FSolidStrongholdChoice HumbleDungeon;
-	HumbleDungeon.Size = ESolidStrongholdSize::Humble;
-	HumbleDungeon.Type = ESolidStrongholdType::Dungeon;
-	FSolidStrongholdChoice ImperiousTower;
-	ImperiousTower.Size = ESolidStrongholdSize::Imperious;
-	ImperiousTower.Type = ESolidStrongholdType::Tower;
-	Choices.Add(HumbleDungeon);
-	Choices.Add(ImperiousTower);
+	FSolidStrongholdChoice Humble;
+	Humble.Kind = ESolidStrongholdChoiceKind::Size;
+	Humble.Size = ESolidStrongholdSize::Humble;
+	FSolidStrongholdChoice Imperious;
+	Imperious.Kind = ESolidStrongholdChoiceKind::Size;
+	Imperious.Size = ESolidStrongholdSize::Imperious;
+	FSolidStrongholdChoice Fortress;
+	Fortress.Kind = ESolidStrongholdChoiceKind::Type;
+	Fortress.Type = ESolidStrongholdType::Fortress;
+	FSolidStrongholdChoice Tower;
+	Tower.Kind = ESolidStrongholdChoiceKind::Type;
+	Tower.Type = ESolidStrongholdType::Tower;
+	FSolidStrongholdChoice Confirm;
+	Confirm.Kind = ESolidStrongholdChoiceKind::Confirm;
+	FSolidStrongholdChoice Cancel;
+	Cancel.Kind = ESolidStrongholdChoiceKind::Cancel;
+	Choices.Add(Humble);
+	Choices.Add(Imperious);
+	Choices.Add(Fortress);
+	Choices.Add(Tower);
+	Choices.Add(Confirm);
+	Choices.Add(Cancel);
 	const FIntPoint Cell(35, 15);
 	HUD->OpenStrongholdChoice(Cell, Choices);
 	TestTrue(TEXT("the choice asks"), HUD->IsStrongholdChoiceOpen());
 	TestFalse(TEXT("the choice closes the menu"), HUD->IsMainMenuOpen());
-	TestEqual(TEXT("the first row is selected"), HUD->GetStrongholdChoiceIndex(), 0);
-	TestEqual(TEXT("both rows are listed"), HUD->GetStrongholdChoiceCount(), 2);
+	TestEqual(TEXT("the first size is selected"), HUD->GetStrongholdChoiceIndex(), 0);
+	TestEqual(TEXT("sizes, types, Confirm, and Cancel are listed"), HUD->GetStrongholdChoiceCount(), 6);
 	TestEqual(TEXT("the choice keeps the site column"), HUD->GetStrongholdChoiceCell().X, Cell.X);
 	TestEqual(TEXT("the choice keeps the site row"), HUD->GetStrongholdChoiceCell().Y, Cell.Y);
 	TestEqual(
-		TEXT("the first row is Humble"),
+		TEXT("the picked size is Humble"),
 		static_cast<uint8>(HUD->GetStrongholdChoiceSize()),
 		static_cast<uint8>(ESolidStrongholdSize::Humble));
 	TestEqual(
-		TEXT("the first row is a dungeon"),
+		TEXT("the picked type is a fortress"),
 		static_cast<uint8>(HUD->GetStrongholdChoiceType()),
-		static_cast<uint8>(ESolidStrongholdType::Dungeon));
+		static_cast<uint8>(ESolidStrongholdType::Fortress));
 
 	HUD->MoveStrongholdChoice(1);
-	TestEqual(TEXT("down selects the tower"), HUD->GetStrongholdChoiceIndex(), 1);
+	TestEqual(TEXT("down selects Imperious"), HUD->GetStrongholdChoiceIndex(), 1);
 	TestEqual(
-		TEXT("the selected row is Imperious"),
+		TEXT("the picked size is Imperious"),
 		static_cast<uint8>(HUD->GetStrongholdChoiceSize()),
 		static_cast<uint8>(ESolidStrongholdSize::Imperious));
+	HUD->MoveStrongholdChoice(2);
+	TestEqual(TEXT("down reaches the tower"), HUD->GetStrongholdChoiceIndex(), 3);
 	TestEqual(
-		TEXT("the selected row is a tower"),
+		TEXT("the picked type is a tower"),
 		static_cast<uint8>(HUD->GetStrongholdChoiceType()),
 		static_cast<uint8>(ESolidStrongholdType::Tower));
-	HUD->MoveStrongholdChoice(1);
-	TestEqual(TEXT("down wraps"), HUD->GetStrongholdChoiceIndex(), 0);
-	HUD->SetStrongholdChoiceIndex(1);
-	TestEqual(TEXT("a number key selects the tower"), HUD->GetStrongholdChoiceIndex(), 1);
+	TestTrue(TEXT("Confirm is a row"), HUD->IsStrongholdConfirmRow() == false);
+	HUD->SetStrongholdChoiceIndex(4);
+	TestTrue(TEXT("a number key selects Confirm"), HUD->IsStrongholdConfirmRow());
+	HUD->SetStrongholdChoiceIndex(5);
+	TestTrue(TEXT("a number key selects Cancel"), HUD->IsStrongholdCancelRow());
 	HUD->SetStrongholdChoiceIndex(9);
-	TestEqual(TEXT("a missing row does not change the selection"), HUD->GetStrongholdChoiceIndex(), 1);
+	TestTrue(TEXT("a missing row does not change the selection"), HUD->IsStrongholdCancelRow());
 
 	HUD->HandleMenuKey();
 	TestFalse(TEXT("F10 leaves the site"), HUD->IsStrongholdChoiceOpen());

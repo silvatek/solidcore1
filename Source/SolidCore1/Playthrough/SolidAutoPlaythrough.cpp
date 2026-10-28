@@ -2459,23 +2459,39 @@ bool FSolidAutoPlaythrough::TickChooseStronghold(
 		return false;
 	}
 
-	int32 Choice = INDEX_NONE;
+	int32 SizeIndex = INDEX_NONE;
+	int32 TypeIndex = INDEX_NONE;
 	for (int32 Index = 0; Index < HUD->GetStrongholdChoiceCount(); ++Index)
 	{
 		HUD->SetStrongholdChoiceIndex(Index);
-		if (HUD->GetStrongholdChoiceSize() == Step.StrongholdSize
+		if (HUD->GetStrongholdChoiceIndex() != Index)
+		{
+			continue;
+		}
+		if (HUD->GetStrongholdChoiceKind() == ESolidStrongholdChoiceKind::Size
+			&& HUD->GetStrongholdChoiceSize() == Step.StrongholdSize)
+		{
+			SizeIndex = Index;
+		}
+		if (HUD->GetStrongholdChoiceKind() == ESolidStrongholdChoiceKind::Type
 			&& HUD->GetStrongholdChoiceType() == Step.StrongholdType)
 		{
-			Choice = Index;
-			break;
+			TypeIndex = Index;
 		}
 	}
-	if (Choice == INDEX_NONE)
+	if (SizeIndex == INDEX_NONE || TypeIndex == INDEX_NONE)
 	{
 		Stop();
 		return false;
 	}
-	HUD->SetStrongholdChoiceIndex(Choice);
+	HUD->SetStrongholdChoiceIndex(SizeIndex);
+	HUD->SetStrongholdChoiceIndex(TypeIndex);
+	if (HUD->GetStrongholdChoiceSize() != Step.StrongholdSize
+		|| HUD->GetStrongholdChoiceType() != Step.StrongholdType)
+	{
+		Stop();
+		return false;
+	}
 	Captain.ConfirmStrongholdChoice();
 	Advance();
 	return false;

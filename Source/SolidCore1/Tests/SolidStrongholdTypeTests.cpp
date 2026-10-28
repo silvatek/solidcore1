@@ -387,10 +387,12 @@ bool FSolidStrongholdTypeChoiceTest::RunTest(const FString& Parameters)
 	Locked.bStrongholdSiteRestrictions = true;
 	TArray<FSolidStrongholdChoice> Listed;
 	TestEqual(
-		TEXT("a locked size lists nothing"),
+		TEXT("the current size still asks"),
 		static_cast<uint8>(SolidStrongholdTransition::Consider(Locked, LockedCompany->GetStronghold(), Listed)),
-		static_cast<uint8>(SolidStrongholdTransition::EOffer::None));
-	TestEqual(TEXT("a locked company lists nothing"), Listed.Num(), 0);
+		static_cast<uint8>(SolidStrongholdTransition::EOffer::Choose));
+	TestTrue(
+		TEXT("Meagre Dungeon is that choice"),
+		SolidStrongholdTransition::Offers(Listed, ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon));
 	TestTrue(
 		TEXT("Imperious tower can be built"),
 		SolidStronghold::TypeOf(ESolidStrongholdType::Tower).Supported(ESolidStrongholdSize::Imperious));
@@ -416,14 +418,14 @@ bool FSolidStrongholdTypeChoiceTest::RunTest(const FString& Parameters)
 
 	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
 	{
-		const bool bLarger = static_cast<int32>(Size) > static_cast<int32>(Company->GetStronghold()->Size);
+		const bool bNotSmaller = static_cast<int32>(Size) >= static_cast<int32>(Company->GetStronghold()->Size);
 		const bool bUnlocked = SolidEvents::IsStrongholdSizeUnlocked(State, Size);
 		for (const ESolidStrongholdType Type : SolidStronghold::Types)
 		{
 			const bool bSupported = SolidStronghold::TypeOf(Type).Supported(Size);
 			const bool bListed = SolidStrongholdTransition::Offers(Listed, Size, Type);
 			const FString Label = SolidStronghold::Label(Size, Type);
-			if (bLarger && bUnlocked && bSupported)
+			if (bNotSmaller && bUnlocked && bSupported)
 			{
 				TestTrue(*FString::Printf(TEXT("%s is listed"), *Label), bListed);
 			}

@@ -1636,11 +1636,11 @@ bool ASolidHUD::SelectChoiceAt(const float X, const float Y)
 	}
 	if (bShowStrongholdChoice)
 	{
-		const int32 Count = StrongholdChoices.Num();
-		if (Count > 0)
+		if (!StrongholdChoices.IsValidIndex(Hit) || !IsStrongholdRowEnabled(StrongholdChoices[Hit]))
 		{
-			StrongholdChoiceIndex = FMath::Clamp(Hit, 0, Count - 1);
+			return false;
 		}
+		SetStrongholdChoiceIndex(Hit);
 		return true;
 	}
 	if (bShowMainMenu)
@@ -3199,9 +3199,22 @@ void ASolidHUD::OpenStrongholdChoice(
 	SkeletonBoneTip.Reset();
 	bShowPortal = false;
 	bShowStrongholdChoice = true;
-	StrongholdChoiceIndex = 0;
 	StrongholdChoiceCell = Cell;
 	StrongholdChoices = Choices;
+	StrongholdPickedSize = ESolidStrongholdSize::Meagre;
+	StrongholdPickedType = ESolidStrongholdType::Dungeon;
+	StrongholdChoiceIndex = 0;
+	for (int32 Index = 0; Index < StrongholdChoices.Num(); ++Index)
+	{
+		const FSolidStrongholdChoice& Choice = StrongholdChoices[Index];
+		if (Choice.Kind == ESolidStrongholdChoiceKind::Size && Choice.bEnabled)
+		{
+			StrongholdPickedSize = Choice.Size;
+			StrongholdChoiceIndex = Index;
+			break;
+		}
+	}
+	KeepStrongholdType();
 	SolidHUDPrivate::ForgetChoicePointerRows(this);
 }
 
@@ -3213,45 +3226,132 @@ void ASolidHUD::CloseStrongholdChoice()
 
 void ASolidHUD::SetStrongholdChoiceIndex(const int32 Index)
 {
-	if (StrongholdChoices.IsValidIndex(Index))
+	if (!StrongholdChoices.IsValidIndex(Index) || !IsStrongholdRowEnabled(StrongholdChoices[Index]))
 	{
-		StrongholdChoiceIndex = Index;
+		return;
 	}
+	StrongholdChoiceIndex = Index;
+	ApplyStrongholdCursor();
 }
 
 void ASolidHUD::MoveStrongholdChoice(const int32 Delta)
 {
 	const int32 Count = StrongholdChoices.Num();
-	if (Count <= 0)
+	if (Count <= 0 || Delta == 0)
 	{
 		StrongholdChoiceIndex = 0;
 		return;
 	}
-	int32 Next = StrongholdChoiceIndex + Delta;
-	Next %= Count;
-	if (Next < 0)
+	int32 Next = StrongholdChoiceIndex;
+	for (int32 Step = 0; Step < Count; ++Step)
 	{
-		Next += Count;
+		Next += Delta;
+		Next %= Count;
+		if (Next < 0)
+		{
+			Next += Count;
+		}
+		if (IsStrongholdRowEnabled(StrongholdChoices[Next]))
+		{
+			StrongholdChoiceIndex = Next;
+			ApplyStrongholdCursor();
+			return;
+		}
 	}
-	StrongholdChoiceIndex = Next;
 }
 
 ESolidStrongholdSize ASolidHUD::GetStrongholdChoiceSize() const
 {
-	if (!StrongholdChoices.IsValidIndex(StrongholdChoiceIndex))
-	{
-		return ESolidStrongholdSize::Meagre;
-	}
-	return StrongholdChoices[StrongholdChoiceIndex].Size;
+	return StrongholdPickedSize;
 }
 
 ESolidStrongholdType ASolidHUD::GetStrongholdChoiceType() const
 {
+	return StrongholdPickedType;
+}
+
+ESolidStrongholdChoiceKind ASolidHUD::GetStrongholdChoiceKind() const
+{
 	if (!StrongholdChoices.IsValidIndex(StrongholdChoiceIndex))
 	{
-		return ESolidStrongholdType::Tower;
+		return ESolidStrongholdChoiceKind::Cancel;
 	}
-	return StrongholdChoices[StrongholdChoiceIndex].Type;
+	return StrongholdChoices[StrongholdChoiceIndex].Kind;
+}
+
+bool ASolidHUD::IsStrongholdConfirmRow() const
+{
+	return StrongholdChoices.IsValidIndex(StrongholdChoiceIndex)
+		&& StrongholdChoices[StrongholdChoiceIndex].Kind == ESolidStrongholdChoiceKind::Confirm
+		&& IsStrongholdRowEnabled(StrongholdChoices[StrongholdChoiceIndex]);
+}
+
+bool ASolidHUD::IsStrongholdCancelRow() const
+{
+	return StrongholdChoices.IsValidIndex(StrongholdChoiceIndex)
+		&& StrongholdChoices[StrongholdChoiceIndex].Kind == ESolidStrongholdChoiceKind::Cancel;
+}
+
+bool ASolidHUD::IsStrongholdRowEnabled(const FSolidStrongholdChoice& Choice) const
+{
+	if (Choice.Kind == ESolidStrongholdChoiceKind::Size)
+	{
+		return Choice.bEnabled;
+	}
+	if (Choice.Kind == ESolidStrongholdChoiceKind::Type)
+	{
+		return SolidStronghold::TypeOf(Choice.Type).Supported(StrongholdPickedSize);
+	}
+	if (Choice.Kind == ESolidStrongholdChoiceKind::Confirm)
+	{
+		for (const FSolidStrongholdChoice& SizeRow : StrongholdChoices)
+		{
+			if (SizeRow.Kind == ESolidStrongholdChoiceKind::Size
+				&& SizeRow.Size == StrongholdPickedSize
+				&& SizeRow.bEnabled
+				&& SolidStronghold::TypeOf(StrongholdPickedType).Supported(StrongholdPickedSize))
+			{
+				return true;
+			}
+		}
+		return false;
+	}
+	return true;
+}
+
+void ASolidHUD::ApplyStrongholdCursor()
+{
+	if (!StrongholdChoices.IsValidIndex(StrongholdChoiceIndex))
+	{
+		return;
+	}
+	const FSolidStrongholdChoice& Choice = StrongholdChoices[StrongholdChoiceIndex];
+	if (Choice.Kind == ESolidStrongholdChoiceKind::Size)
+	{
+		StrongholdPickedSize = Choice.Size;
+		KeepStrongholdType();
+	}
+	else if (Choice.Kind == ESolidStrongholdChoiceKind::Type)
+	{
+		StrongholdPickedType = Choice.Type;
+	}
+}
+
+void ASolidHUD::KeepStrongholdType()
+{
+	if (SolidStronghold::TypeOf(StrongholdPickedType).Supported(StrongholdPickedSize))
+	{
+		return;
+	}
+	for (const FSolidStrongholdChoice& Choice : StrongholdChoices)
+	{
+		if (Choice.Kind == ESolidStrongholdChoiceKind::Type
+			&& SolidStronghold::TypeOf(Choice.Type).Supported(StrongholdPickedSize))
+		{
+			StrongholdPickedType = Choice.Type;
+			return;
+		}
+	}
 }
 
 void ASolidHUD::OpenStrongholdName(const FString& Current)
@@ -3305,12 +3405,45 @@ void ASolidHUD::DrawStrongholdName() const
 void ASolidHUD::DrawStrongholdChoice()
 {
 	TArray<FString> Labels;
+	TArray<bool> Enabled;
 	for (const FSolidStrongholdChoice& Choice : StrongholdChoices)
 	{
-		Labels.Add(SolidStronghold::Label(Choice.Size, Choice.Type));
+		FString Label;
+		if (Choice.Kind == ESolidStrongholdChoiceKind::Size)
+		{
+			Label = SolidStronghold::SizeName(Choice.Size);
+			if (Choice.Size == StrongholdPickedSize)
+			{
+				Label = FString(TEXT("* ")) + Label;
+			}
+		}
+		else if (Choice.Kind == ESolidStrongholdChoiceKind::Type)
+		{
+			Label = SolidStronghold::TypeName(Choice.Type);
+			if (Choice.Type == StrongholdPickedType)
+			{
+				Label = FString(TEXT("* ")) + Label;
+			}
+		}
+		else if (Choice.Kind == ESolidStrongholdChoiceKind::Confirm)
+		{
+			Label = TEXT("Confirm");
+		}
+		else
+		{
+			Label = TEXT("Cancel");
+		}
+		Labels.Add(Label);
+		Enabled.Add(IsStrongholdRowEnabled(Choice));
 	}
 	TArray<SolidMenuPointer::FRow> Rows;
-	SolidHUDPrivate::DrawChoicePopup(Canvas, TEXT("Choose a stronghold"), Labels, StrongholdChoiceIndex, Rows);
+	SolidHUDPrivate::DrawChoicePopup(
+		Canvas,
+		TEXT("Choose a stronghold"),
+		Labels,
+		StrongholdChoiceIndex,
+		Rows,
+		&Enabled);
 	SetChoicePointerRows(Rows);
 }
 

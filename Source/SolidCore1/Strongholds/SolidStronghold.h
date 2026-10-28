@@ -42,11 +42,22 @@ enum class ESolidStrongholdRoom : uint8
 	Small,
 };
 
-/** One row on the site stone: a size and a type the player can take. */
+/** One row on the site stone. Size and type are separate rows. Confirm commits. Cancel leaves. */
+enum class ESolidStrongholdChoiceKind : uint8
+{
+	Size,
+	Type,
+	Confirm,
+	Cancel,
+};
+
+/** One row on the site stone. A size row can be shown and disabled. */
 struct FSolidStrongholdChoice
 {
+	ESolidStrongholdChoiceKind Kind = ESolidStrongholdChoiceKind::Size;
 	ESolidStrongholdSize Size = ESolidStrongholdSize::Meagre;
 	ESolidStrongholdType Type = ESolidStrongholdType::Dungeon;
+	bool bEnabled = true;
 };
 
 /** The closed visit. Cave is the dungeon trip. Tower is the tower trip. None does not travel. */
@@ -679,9 +690,9 @@ namespace SolidStrongholds
 
 /**
  * Moving the company from the stronghold it has to a site.
- * A click lists a size and a type when that size is unlocked and the subclass can build it.
- * While site restrictions apply, that size is also larger than the company stronghold.
- * The site marker does not pick the size. Choosing a row commits. Esc never reaches this.
+ * A click lists sizes and types. A size is listed when it is unlocked.
+ * While site restrictions apply, a size smaller than the company stronghold is listed and disabled.
+ * The site marker does not pick the size. Confirm commits the selected size and type. Cancel and Esc leave.
  * The swap itself is immediate, so it does not show a progress bar.
  */
 namespace SolidStrongholdTransition
@@ -700,8 +711,8 @@ namespace SolidStrongholdTransition
 
 	/**
 	 * Rows a click on a site stone may list.
-	 * Each row is an unlocked size the subclass can build.
-	 * While bStrongholdSiteRestrictions is set, that size is also larger than the company stronghold.
+	 * Sizes come first, then the types those sizes can build, then Confirm and Cancel.
+	 * While bStrongholdSiteRestrictions is set, a size smaller than the company stronghold stays and is disabled.
 	 * None leaves the site as it is and does not ask.
 	 */
 	EOffer Consider(

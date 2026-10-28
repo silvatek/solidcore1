@@ -98,6 +98,15 @@ public:
 	void OfferStrongholdSite(const ASolidStrongholdSite* Site);
 	/** Build the selected size and type, then travel into that stronghold. */
 	void ConfirmStrongholdChoice();
+	/**
+	 * The main menu, the exit confirmation, and the portal follow the pointer.
+	 * The site page keeps its pick until a click.
+	 */
+	static bool MenuSelectsOnHover(
+		bool bMainMenu,
+		bool bExitConfirm,
+		bool bPortal,
+		bool bStrongholdChoice);
 	/** The stick a move key produces after its mapping modifiers. W is (0, 1), forward. */
 	bool StickForKey(FKey Key, FVector2D& OutStick);
 	/** Move the captain onto a landing. Pitch 0 is a level camera. Clears a click-walk and a formation drill. */
@@ -140,15 +149,6 @@ protected:
 	void UpdateInventoryPointer();
 	void UpdateSquadBuilderPointer();
 	void UpdateMenuPointerHover();
-	/**
-	 * The main menu, the exit confirmation, and the portal follow the pointer.
-	 * The site page keeps its pick until a click.
-	 */
-	static bool MenuSelectsOnHover(
-		bool bMainMenu,
-		bool bExitConfirm,
-		bool bPortal,
-		bool bStrongholdChoice);
 	void UpdateCavePassageHover();
 	bool ReadPointerPosition(float& OutX, float& OutY) const;
 	bool ReadPointerRay(FVector& OutOrigin, FVector& OutDirection) const;

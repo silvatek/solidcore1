@@ -355,11 +355,11 @@ void ASolidFortressInterior::BuildVisuals()
 			float RoomWidth = One.InnerWidthCm;
 			float RoomDepth = One.InnerDepthCm;
 			const float StairCm = SolidStronghold::FPlan{}.StairWidthCm;
-			if (One.Facing == SolidStronghold::ESolidStrongholdOrientation::NorthFace
-				|| One.Facing == SolidStronghold::ESolidStrongholdOrientation::SouthFace)
+			if (One.Facing == ESolidStrongholdOrientation::NorthFace
+				|| One.Facing == ESolidStrongholdOrientation::SouthFace)
 			{
 				RoomDepth -= StairCm;
-				if (One.Facing == SolidStronghold::ESolidStrongholdOrientation::SouthFace)
+				if (One.Facing == ESolidStrongholdOrientation::SouthFace)
 				{
 					RoomMin.Y += StairCm;
 				}
@@ -367,7 +367,7 @@ void ASolidFortressInterior::BuildVisuals()
 			else
 			{
 				RoomWidth -= StairCm;
-				if (One.Facing == SolidStronghold::ESolidStrongholdOrientation::WestFace)
+				if (One.Facing == ESolidStrongholdOrientation::WestFace)
 				{
 					RoomMin.X += StairCm;
 				}

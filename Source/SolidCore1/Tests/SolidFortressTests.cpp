@@ -76,55 +76,46 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 			FSolidStronghold::WallCm + Fortress.Buildings[0].DepthCm() + FSolidStronghold::WallCm + Fortress.YardDepthCm + FSolidStronghold::WallCm,
 			0.05f));
 
-	const SolidStronghold::FSolidFortressBuilding* Keep = Fortress.Keep();
-	const SolidStronghold::FSolidFortressBuilding* Other = nullptr;
-	int32 Keeps = 0;
-	for (const SolidStronghold::FSolidFortressBuilding& One : Fortress.Buildings)
-	{
-		if (One.bKeep)
-		{
-			++Keeps;
-		}
-		else
-		{
-			Other = &One;
-		}
-	}
-	TestEqual(TEXT("one building is the keep"), Keeps, 1);
-	TestNotNull(TEXT("the Keep"), Keep);
-	TestNotNull(TEXT("the other building"), Other);
-	if (!Keep || !Other)
+	if (Fortress.Buildings.Num() != 2)
 	{
 		return false;
 	}
+	const SolidStronghold::FSolidFortressBuilding& West = Fortress.Buildings[0];
+	const SolidStronghold::FSolidFortressBuilding& East = Fortress.Buildings[1];
+	TestEqual(TEXT("the west building has one floor"), West.Floors.Num(), 1);
+	TestEqual(TEXT("the east building has one floor"), East.Floors.Num(), 1);
+	if (West.Floors.Num() != 1 || East.Floors.Num() != 1)
+	{
+		return false;
+	}
+	TestTrue(TEXT("the west floor is small"), West.Floors[0] == ESolidStrongholdRoom::Small);
+	TestTrue(TEXT("the east floor is medium"), East.Floors[0] == ESolidStrongholdRoom::Medium);
+	TestTrue(TEXT("the west doorway faces north"), West.Facing == ESolidStrongholdOrientation::North);
+	TestTrue(TEXT("the east doorway faces north"), East.Facing == ESolidStrongholdOrientation::North);
 
-	TArray<SolidStrongholdGrid::FHex> KeepHexes;
-	TArray<SolidStrongholdGrid::FHex> OtherHexes;
-	Keep->CollectHexes(KeepHexes);
-	Other->CollectHexes(OtherHexes);
+	TArray<SolidStrongholdGrid::FHex> WestHexes;
+	TArray<SolidStrongholdGrid::FHex> EastHexes;
+	West.CollectHexes(WestHexes);
+	East.CollectHexes(EastHexes);
 	TestEqual(
-		TEXT("the Keep is the medium room"),
-		KeepHexes.Num(),
-		SolidStronghold::RoomHexes(ESolidStrongholdRoom::Medium));
-	TestTrue(TEXT("the Keep's size is medium"), Keep->Room == ESolidStrongholdRoom::Medium);
-	TestEqual(
-		TEXT("the other building is the small room"),
-		OtherHexes.Num(),
+		TEXT("the west building is the small room"),
+		WestHexes.Num(),
 		SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small));
-	TestTrue(TEXT("the other building's size is small"), Other->Room == ESolidStrongholdRoom::Small);
-	TestTrue(TEXT("the Keep's doorway faces north"), Keep->Facing == ESolidStrongholdOrientation::North);
-	TestTrue(TEXT("the other doorway faces north"), Other->Facing == ESolidStrongholdOrientation::North);
+	TestEqual(
+		TEXT("the east building is the medium room"),
+		EastHexes.Num(),
+		SolidStronghold::RoomHexes(ESolidStrongholdRoom::Medium));
 	TestTrue(
-		TEXT("every Keep hex sits inside the Keep"),
-		VerticesInside(KeepHexes, Keep->InnerMinCm, FVector2D(Keep->WidthCm(), Keep->DepthCm())));
+		TEXT("every west hex sits inside that building"),
+		VerticesInside(WestHexes, West.InnerMinCm, FVector2D(West.WidthCm(), West.DepthCm())));
 	TestTrue(
-		TEXT("every other hex sits inside that building"),
-		VerticesInside(OtherHexes, Other->InnerMinCm, FVector2D(Other->WidthCm(), Other->DepthCm())));
+		TEXT("every east hex sits inside that building"),
+		VerticesInside(EastHexes, East.InnerMinCm, FVector2D(East.WidthCm(), East.DepthCm())));
 	TestTrue(
-		TEXT("the Annex meets the Keep"),
+		TEXT("the west building meets the east building"),
 		FMath::IsNearlyEqual(
-			Other->InnerMinCm.X + Other->WidthCm() + 2.f * FSolidStronghold::WallCm,
-			Keep->InnerMinCm.X,
+			West.InnerMinCm.X + West.WidthCm() + 2.f * FSolidStronghold::WallCm,
+			East.InnerMinCm.X,
 			0.05f));
 
 	TArray<SolidStrongholdGrid::FHex> Ground;
@@ -177,8 +168,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidFortressRoomFaceTest::RunTest(const FString& Parameters)
 {
 	SolidStronghold::FSolidFortressBuilding Room;
-	Room.Columns = 4;
-	Room.Rows = 3;
+	Room.Floors = { ESolidStrongholdRoom::Medium };
 	Room.InnerMinCm = FVector2D(50.f, 50.f);
 
 	TArray<SolidStrongholdGrid::FHex> Filled;
@@ -224,48 +214,50 @@ bool FSolidFortressAveragePlanTest::RunTest(const FString& Parameters)
 	SolidStronghold::FSolidFortress Fortress;
 	Fortress.Place(ESolidStrongholdSize::Average);
 	TestFalse(TEXT("Average stays unsupported"), Fortress.Supported(ESolidStrongholdSize::Average));
-	TestEqual(TEXT("Average has three rooms"), Fortress.Buildings.Num(), 3);
-
-	const SolidStronghold::FSolidFortressBuilding* Keep = Fortress.Keep();
-	TestNotNull(TEXT("the keep"), Keep);
-	if (!Keep || Fortress.Buildings.Num() != 3)
+	TestEqual(TEXT("Average has three buildings"), Fortress.Buildings.Num(), 3);
+	if (Fortress.Buildings.Num() != 3)
 	{
 		return false;
 	}
 
 	const SolidStronghold::FSolidFortressBuilding& West = Fortress.Buildings[0];
+	const SolidStronghold::FSolidFortressBuilding& Middle = Fortress.Buildings[1];
 	const SolidStronghold::FSolidFortressBuilding& East = Fortress.Buildings[2];
-	TestTrue(TEXT("the middle room is the keep"), Keep == &Fortress.Buildings[1]);
-	TestFalse(TEXT("the west room is not the keep"), West.bKeep);
-	TestFalse(TEXT("the east room is not the keep"), East.bKeep);
-	TestTrue(TEXT("the west room's size is small"), West.Room == ESolidStrongholdRoom::Small);
-	TestTrue(TEXT("the keep's size is medium"), Keep->Room == ESolidStrongholdRoom::Medium);
-	TestTrue(TEXT("the east room's size is small"), East.Room == ESolidStrongholdRoom::Small);
+	TestEqual(TEXT("the west building has one floor"), West.Floors.Num(), 1);
+	TestEqual(TEXT("the middle building has one floor"), Middle.Floors.Num(), 1);
+	TestEqual(TEXT("the east building has one floor"), East.Floors.Num(), 1);
+	if (West.Floors.Num() != 1 || Middle.Floors.Num() != 1 || East.Floors.Num() != 1)
+	{
+		return false;
+	}
+	TestTrue(TEXT("the west floor is small"), West.Floors[0] == ESolidStrongholdRoom::Small);
+	TestTrue(TEXT("the middle floor is medium"), Middle.Floors[0] == ESolidStrongholdRoom::Medium);
+	TestTrue(TEXT("the east floor is small"), East.Floors[0] == ESolidStrongholdRoom::Small);
 	TestTrue(TEXT("the west doorway faces east"), West.Facing == ESolidStrongholdOrientation::East);
-	TestTrue(TEXT("the keep's doorway faces north"), Keep->Facing == ESolidStrongholdOrientation::North);
+	TestTrue(TEXT("the middle doorway faces north"), Middle.Facing == ESolidStrongholdOrientation::North);
 	TestTrue(TEXT("the east doorway faces north"), East.Facing == ESolidStrongholdOrientation::North);
 
 	TArray<SolidStrongholdGrid::FHex> WestHexes;
-	TArray<SolidStrongholdGrid::FHex> KeepHexes;
+	TArray<SolidStrongholdGrid::FHex> MiddleHexes;
 	TArray<SolidStrongholdGrid::FHex> EastHexes;
 	West.CollectHexes(WestHexes);
-	Keep->CollectHexes(KeepHexes);
+	Middle.CollectHexes(MiddleHexes);
 	East.CollectHexes(EastHexes);
-	TestEqual(TEXT("the west room is small"), WestHexes.Num(), SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small));
-	TestEqual(TEXT("the keep is medium"), KeepHexes.Num(), SolidStronghold::RoomHexes(ESolidStrongholdRoom::Medium));
-	TestEqual(TEXT("the east room is small"), EastHexes.Num(), SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small));
+	TestEqual(TEXT("the west building is small"), WestHexes.Num(), SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small));
+	TestEqual(TEXT("the middle building is medium"), MiddleHexes.Num(), SolidStronghold::RoomHexes(ESolidStrongholdRoom::Medium));
+	TestEqual(TEXT("the east building is small"), EastHexes.Num(), SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small));
 
 	const float Wall = FSolidStronghold::WallCm;
 	TestTrue(
-		TEXT("the keep is in the south-west corner"),
-		Keep->InnerMinCm.Equals(FVector2D(Wall, Wall), 0.05f));
+		TEXT("the middle building is in the south-west corner"),
+		Middle.InnerMinCm.Equals(FVector2D(Wall, Wall), 0.05f));
 	TestTrue(
-		TEXT("the west room meets the keep's north wall"),
-		FMath::IsNearlyEqual(West.InnerMinCm.Y, Keep->InnerMinCm.Y + Keep->DepthCm() + 2.f * Wall, 0.05f));
+		TEXT("the west building meets the middle building's north wall"),
+		FMath::IsNearlyEqual(West.InnerMinCm.Y, Middle.InnerMinCm.Y + Middle.DepthCm() + 2.f * Wall, 0.05f));
 	TestTrue(
-		TEXT("the east room meets the keep's east wall"),
-		FMath::IsNearlyEqual(East.InnerMinCm.X, Keep->InnerMinCm.X + Keep->WidthCm() + 2.f * Wall, 0.05f)
-		&& FMath::IsNearlyEqual(East.InnerMinCm.Y, Keep->InnerMinCm.Y, 0.05f));
+		TEXT("the east building meets the middle building's east wall"),
+		FMath::IsNearlyEqual(East.InnerMinCm.X, Middle.InnerMinCm.X + Middle.WidthCm() + 2.f * Wall, 0.05f)
+		&& FMath::IsNearlyEqual(East.InnerMinCm.Y, Middle.InnerMinCm.Y, 0.05f));
 	TestTrue(
 		TEXT("the outer wall is square"),
 		FMath::IsNearlyEqual(Fortress.OuterWidthCm(), Fortress.OuterDepthCm(), 0.05f));

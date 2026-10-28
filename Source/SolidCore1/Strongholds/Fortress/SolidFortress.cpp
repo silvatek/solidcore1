@@ -35,73 +35,50 @@ namespace SolidStronghold
 			return true;
 		}
 
-		/**
-		 * One building in a size's list.
-		 * X and Y are the inner south-west corner, in centimetres. Facing is the doorway.
-		 * Inner width and depth stay 0 when that face is the hex grid.
-		 */
-		struct FRoomPlan
-		{
-			ESolidStrongholdRoom Size = ESolidStrongholdRoom::Small;
-			ESolidStrongholdOrientation Facing = ESolidStrongholdOrientation::North;
-			float X = 0.f;
-			float Y = 0.f;
-			int32 Columns = 0;
-			int32 Rows = 0;
-			bool bKeep = false;
-			float InnerWidthCm = 0.f;
-			float InnerDepthCm = 0.f;
-		};
+	}
 
-		using enum ESolidStrongholdRoom;
-		using enum ESolidStrongholdOrientation;
-
-		// Size, doorway, X, Y, columns, rows. Keep and a wider face are written when they apply.
-		static const FRoomPlan HumbleRooms[] =
+	int32 FSolidFortressBuilding::Columns() const
+	{
+		if (Floors.Num() == 0)
 		{
-			{ .Size = Small,  .Facing = North, .X = 50.f,  .Y = 50.f, .Columns = 2, .Rows = 3 },
-			{ .Size = Medium, .Facing = North, .X = 450.f, .Y = 50.f, .Columns = 4, .Rows = 3, .bKeep = true },
-		};
-
-		static const FRoomPlan AverageRooms[] =
-		{
-			{ .Size = Small,  .Facing = East,  .X = 50.f,  .Y = 496.4f, .Columns = 2, .Rows = 3 },
-			{ .Size = Medium, .Facing = North, .X = 50.f,  .Y = 50.f,   .Columns = 4, .Rows = 3, .bKeep = true, .InnerWidthCm = 640.f },
-			{ .Size = Small,  .Facing = North, .X = 790.f, .Y = 50.f,   .Columns = 2, .Rows = 3, .InnerWidthCm = 402.8f },
-		};
-
-		FSolidFortressBuilding Building(const FRoomPlan& Plan)
-		{
-			FSolidFortressBuilding Room;
-			Room.Room = Plan.Size;
-			Room.Facing = Plan.Facing;
-			Room.bKeep = Plan.bKeep;
-			Room.Columns = Plan.Columns;
-			Room.Rows = Plan.Rows;
-			Room.InnerMinCm = FVector2D(Plan.X, Plan.Y);
-			Room.InnerWidthCm = Plan.InnerWidthCm;
-			Room.InnerDepthCm = Plan.InnerDepthCm;
-			return Room;
+			return 0;
 		}
-
-		void AddRooms(FSolidFortress& Fortress, const FRoomPlan* Rooms, const int32 Count)
+		switch (Floors[0])
 		{
-			for (int32 Index = 0; Index < Count; ++Index)
-			{
-				Fortress.Buildings.Add(Building(Rooms[Index]));
-			}
+		case ESolidStrongholdRoom::Medium:
+			return 4;
+		case ESolidStrongholdRoom::Small:
+			return 2;
+		default:
+			return 0;
+		}
+	}
+
+	int32 FSolidFortressBuilding::Rows() const
+	{
+		if (Floors.Num() == 0)
+		{
+			return 0;
+		}
+		switch (Floors[0])
+		{
+		case ESolidStrongholdRoom::Medium:
+		case ESolidStrongholdRoom::Small:
+			return 3;
+		default:
+			return 0;
 		}
 	}
 
 	float FSolidFortressBuilding::SpanWidthCm() const
 	{
-		return (static_cast<float>(Columns) + 0.5f) * SolidStrongholdGrid::FlatToFlatCm;
+		return (static_cast<float>(Columns()) + 0.5f) * SolidStrongholdGrid::FlatToFlatCm;
 	}
 
 	float FSolidFortressBuilding::SpanDepthCm() const
 	{
 		const float Side = SolidStrongholdGrid::SideCm();
-		return static_cast<float>(Rows - 1) * SolidStrongholdGrid::RowStepCm() + 2.f * Side;
+		return static_cast<float>(Rows() - 1) * SolidStrongholdGrid::RowStepCm() + 2.f * Side;
 	}
 
 	float FSolidFortressBuilding::WidthCm() const
@@ -123,9 +100,11 @@ namespace SolidStronghold
 			InnerMinCm.X + (WidthCm() - SpanWidth) * 0.5f,
 			InnerMinCm.Y + (DepthCm() - SpanDepth) * 0.5f);
 		const FVector2D Origin = SolidFortressPrivate::RoomOriginCm(GridMin);
-		for (int32 Row = -2; Row <= Rows + 2; ++Row)
+		const int32 RowCount = Rows();
+		const int32 ColumnCount = Columns();
+		for (int32 Row = -2; Row <= RowCount + 2; ++Row)
 		{
-			for (int32 Col = -2; Col <= Columns + 2; ++Col)
+			for (int32 Col = -2; Col <= ColumnCount + 2; ++Col)
 			{
 				const FVector2D Center = SolidStrongholdGrid::HexCenter(Col, Row, Origin);
 				if (!SolidFortressPrivate::VerticesInside(Center, GridMin, FVector2D(SpanWidth, SpanDepth)))
@@ -146,32 +125,50 @@ namespace SolidStronghold
 		Type = ESolidStrongholdType::Fortress;
 		ParapetCm = SolidStrongholdGrid::FlatToFlatCm;
 		YardDepthCm = FSolidStronghold::StoreyCm;
-		Place(Size);
+		Place(ESolidStrongholdSize::Humble);
+	}
+
+	void FSolidFortress::AddBuilding(
+		const FVector2D PositionCm,
+		const ESolidStrongholdOrientation InFacing,
+		const FVector2D FootprintCm,
+		const std::initializer_list<ESolidStrongholdRoom> InFloors)
+	{
+		FSolidFortressBuilding Building;
+		Building.Floors = InFloors;
+		Building.Facing = InFacing;
+		Building.InnerMinCm = PositionCm;
+		Building.InnerWidthCm = FootprintCm.X;
+		Building.InnerDepthCm = FootprintCm.Y;
+		Buildings.Add(Building);
 	}
 
 	void FSolidFortress::Place(const ESolidStrongholdSize InSize)
 	{
+		using enum ESolidStrongholdRoom;
+		using enum ESolidStrongholdOrientation;
+
 		Size = InSize;
 		Buildings.Reset();
+		const float Wall = FSolidStronghold::WallCm;
+		const float DepthCm = 5.f * SolidStrongholdGrid::SideCm();
 		switch (InSize)
 		{
-		case ESolidStrongholdSize::Average:
-			SolidFortressPrivate::AddRooms(
-				*this,
-				SolidFortressPrivate::AverageRooms,
-				UE_ARRAY_COUNT(SolidFortressPrivate::AverageRooms));
-			break;
 		case ESolidStrongholdSize::Humble:
+			AddBuilding(FVector2D(Wall, Wall), North, FVector2D(300.f, DepthCm), { Small });
+			AddBuilding(FVector2D(Wall + 300.f + 2.f * Wall, Wall), North, FVector2D(540.f, DepthCm), { Medium });
+			break;
+		case ESolidStrongholdSize::Average:
+			AddBuilding(FVector2D(Wall, Wall + DepthCm + 2.f * Wall), East, FVector2D(300.f, DepthCm), { Small });
+			AddBuilding(FVector2D(Wall, Wall), North, FVector2D(640.f, DepthCm), { Medium });
+			AddBuilding(FVector2D(Wall + 640.f + 2.f * Wall, Wall), North, FVector2D(402.8f, DepthCm), { Small });
+			break;
 		case ESolidStrongholdSize::Meagre:
 		case ESolidStrongholdSize::Impressive:
 		case ESolidStrongholdSize::Grand:
 		case ESolidStrongholdSize::Stately:
 		case ESolidStrongholdSize::Imperious:
 		default:
-			SolidFortressPrivate::AddRooms(
-				*this,
-				SolidFortressPrivate::HumbleRooms,
-				UE_ARRAY_COUNT(SolidFortressPrivate::HumbleRooms));
 			break;
 		}
 	}
@@ -281,18 +278,6 @@ namespace SolidStronghold
 			? Face.FacingYawDeg
 			: 0.f;
 		return FMath::UnwindDegrees(GrassYaw + 180.f);
-	}
-
-	const FSolidFortressBuilding* FSolidFortress::Keep() const
-	{
-		for (const FSolidFortressBuilding& One : Buildings)
-		{
-			if (One.bKeep)
-			{
-				return &One;
-			}
-		}
-		return nullptr;
 	}
 
 	float FSolidFortress::OuterWidthCm() const

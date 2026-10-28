@@ -3,43 +3,46 @@
 #include "CoreMinimal.h"
 #include "Strongholds/SolidStronghold.h"
 
+#include <initializer_list>
+
 namespace SolidStronghold
 {
 	/**
 	 * One building in the yard.
 	 * Its outer face may be the curtain. InnerMinCm is the south-west corner of the inner face.
-	 * One building in the list is the keep. The others are places for furniture.
+	 * Floors start at the ground. Each floor is one room: small, medium, or large.
 	 */
 	class FSolidFortressBuilding
 	{
 	public:
-		bool bKeep = false;
-		ESolidStrongholdRoom Room = ESolidStrongholdRoom::Small;
+		/** Ground floor first. Each entry is that floor's room. */
+		TArray<ESolidStrongholdRoom> Floors;
 		/** The doorway faces this way. */
 		ESolidStrongholdOrientation Facing = ESolidStrongholdOrientation::North;
-		int32 Columns = 0;
-		int32 Rows = 0;
 		FVector2D InnerMinCm = FVector2D::ZeroVector;
-		/** Zero means the vertex span. A larger value is spare floor around the grid. */
+		/** Inner face across, in centimetres. */
 		float InnerWidthCm = 0.f;
-		/** Zero means the vertex span. A larger value is spare floor around the grid. */
+		/** Inner face deep, in centimetres. */
 		float InnerDepthCm = 0.f;
 
-		/** Inner face across. The vertex span, or wider when there is spare floor. */
+		/** Inner face across. The footprint, or the hex grid when that is wider. */
 		float WidthCm() const;
-		/** Inner face deep. The vertex span, or deeper when there is spare floor. */
+		/** Inner face deep. The footprint, or the hex grid when that is deeper. */
 		float DepthCm() const;
-		/** Vertex span of these columns. */
+		/** Vertex span of the ground floor's columns. */
 		float SpanWidthCm() const;
-		/** Vertex span of these rows. */
+		/** Vertex span of the ground floor's rows. */
 		float SpanDepthCm() const;
+		/** Ground-floor columns. A small room is 2. A medium room is 4. */
+		int32 Columns() const;
+		/** Ground-floor rows. A small or medium room is 3. */
+		int32 Rows() const;
 		void CollectHexes(TArray<SolidStrongholdGrid::FHex>& OutHexes) const;
 	};
 
 	/**
 	 * A rectangular fortress.
-	 * Humble's rooms run west to east along the south curtain.
-	 * Average's rooms form an L. Average stays unsupported.
+	 * Place lists the buildings for one size. Average stays unsupported.
 	 * The gate side of the plan is local north. Placement turns that side toward the grass.
 	 */
 	class FSolidFortress : public FSolidStronghold
@@ -49,8 +52,19 @@ namespace SolidStronghold
 
 		static const FSolidFortress& Instance();
 
-		/** Fills the rooms for this size from that size's list. */
+		/** Fills the buildings for this size. A size with no calls has none. */
 		void Place(ESolidStrongholdSize InSize);
+
+		/**
+		 * One building.
+		 * PositionCm is the inner south-west corner. FootprintCm is the inner face.
+		 * Floors start at the ground, and each entry is that floor's room.
+		 */
+		void AddBuilding(
+			FVector2D PositionCm,
+			ESolidStrongholdOrientation Facing,
+			FVector2D FootprintCm,
+			std::initializer_list<ESolidStrongholdRoom> Floors);
 
 		/** Open ground between one building's east outer face and the next building's west outer face. */
 		float GapCm = 0.f;
@@ -58,7 +72,7 @@ namespace SolidStronghold
 		float ParapetCm = 120.f;
 		/** Open ground from the buildings' north outer faces to the inner face of the gate wall. One storey. */
 		float YardDepthCm = FSolidStronghold::StoreyCm;
-		/** One of them is the keep. */
+		/** The buildings for this size. */
 		TArray<FSolidFortressBuilding> Buildings;
 
 		virtual bool Supported(ESolidStrongholdSize InSize) const override;
@@ -80,7 +94,6 @@ namespace SolidStronghold
 			ESolidStrongholdSize InSize,
 			TArray<SolidStrongholdGrid::FHex>& OutHexes) const override;
 
-		const FSolidFortressBuilding* Keep() const;
 		float OuterWidthCm() const;
 		float OuterDepthCm() const;
 		/** One hex outside the gate, on the grass side. */

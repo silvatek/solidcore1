@@ -867,7 +867,7 @@ void ASolidGameMode::BindArrangeFloor()
 	const FVector2D Plan(HexFeet.X, HexFeet.Y);
 	for (const SolidStrongholdGrid::FHex& Hex : Cells)
 	{
-		if (SolidStrongholdGrid::PointInHex(Plan, Hex.Center))
+		if (SolidStrongholdGrid::PointInHex(Plan, Hex.Center, Hex.YawDeg, Hex.bReflect))
 		{
 			bCaptainCell = true;
 			CaptainCell.Col = Hex.Col;

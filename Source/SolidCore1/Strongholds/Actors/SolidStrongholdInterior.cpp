@@ -110,7 +110,7 @@ void ASolidStrongholdInterior::ShowArrangeHighlight(
 	for (const SolidStrongholdGrid::FHex& Hex : Hexes)
 	{
 		FVector2D Vertices[6];
-		SolidStrongholdGrid::HexVertices(Hex.Center, Vertices);
+		SolidStrongholdGrid::HexVertices(Hex.Center, Vertices, Hex.YawDeg, Hex.bReflect);
 		for (int32 Index = 0; Index < 6; ++Index)
 		{
 			const FVector2D& A = Vertices[Index];

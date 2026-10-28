@@ -53,6 +53,10 @@ namespace SolidStrongholdGrid
 		FVector2D Center = FVector2D::ZeroVector;
 		int32 Col = 0;
 		int32 Row = 0;
+		/** Added to the pointy-top hex. A turned room block uses 90 degrees. */
+		float YawDeg = 0.f;
+		/** Swaps the hex's axes. An east-facing room block mirrors instead of yawing. */
+		bool bReflect = false;
 	};
 
 	struct FSegment
@@ -67,21 +71,35 @@ namespace SolidStrongholdGrid
 		return Origin + FVector2D(Col * FlatToFlatCm + OddShift, Row * RowStepCm());
 	}
 
-	inline void HexVertices(const FVector2D& Center, FVector2D OutVertices[6])
+	inline void HexVertices(
+		const FVector2D& Center,
+		FVector2D OutVertices[6],
+		const float YawDeg = 0.f,
+		const bool bReflect = false)
 	{
 		const float Radius = SideCm();
+		const float Yaw = FMath::DegreesToRadians(YawDeg);
 		for (int32 Index = 0; Index < 6; ++Index)
 		{
-			const float Angle = FMath::DegreesToRadians(60.f * static_cast<float>(Index) + 30.f);
-			OutVertices[Index] = Center + FVector2D(FMath::Cos(Angle), FMath::Sin(Angle)) * Radius;
+			const float Angle = FMath::DegreesToRadians(60.f * static_cast<float>(Index) + 30.f) + Yaw;
+			FVector2D Offset(FMath::Cos(Angle), FMath::Sin(Angle));
+			if (bReflect)
+			{
+				Offset = FVector2D(Offset.Y, Offset.X);
+			}
+			OutVertices[Index] = Center + Offset * Radius;
 		}
 	}
 
 	/** True when Point is inside the hex, including the boundary. */
-	inline bool PointInHex(const FVector2D& Point, const FVector2D& Center)
+	inline bool PointInHex(
+		const FVector2D& Point,
+		const FVector2D& Center,
+		const float YawDeg = 0.f,
+		const bool bReflect = false)
 	{
 		FVector2D Vertices[6];
-		HexVertices(Center, Vertices);
+		HexVertices(Center, Vertices, YawDeg, bReflect);
 		constexpr float Slack = 0.05f;
 		for (int32 Index = 0; Index < 6; ++Index)
 		{
@@ -123,7 +141,7 @@ namespace SolidStrongholdGrid
 		for (const FHex& Hex : Hexes)
 		{
 			FVector2D Vertices[6];
-			HexVertices(Hex.Center, Vertices);
+			HexVertices(Hex.Center, Vertices, Hex.YawDeg, Hex.bReflect);
 			for (int32 Index = 0; Index < 6; ++Index)
 			{
 				const FVector2D& P = Vertices[Index];
@@ -164,7 +182,7 @@ namespace SolidStrongholdGrid
 		for (const FHex& Hex : Hexes)
 		{
 			FVector2D Vertices[6];
-			HexVertices(Hex.Center, Vertices);
+			HexVertices(Hex.Center, Vertices, Hex.YawDeg, Hex.bReflect);
 			for (int32 Index = 0; Index < 6; ++Index)
 			{
 				const FVector2D& P = Vertices[Index];

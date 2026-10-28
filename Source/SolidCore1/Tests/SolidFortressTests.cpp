@@ -19,7 +19,7 @@ namespace
 		for (const SolidStrongholdGrid::FHex& Hex : Hexes)
 		{
 			FVector2D Vertices[6];
-			SolidStrongholdGrid::HexVertices(Hex.Center, Vertices);
+			SolidStrongholdGrid::HexVertices(Hex.Center, Vertices, Hex.YawDeg, Hex.bReflect);
 			for (int32 Index = 0; Index < 6; ++Index)
 			{
 				const FVector2D& Point = Vertices[Index];
@@ -509,6 +509,26 @@ bool FSolidFortressImperiousPlanTest::RunTest(const FString& Parameters)
 		Fortress.Buildings[4].Facing == ESolidStrongholdOrientation::WestFace
 			&& Fortress.Buildings[5].Facing == ESolidStrongholdOrientation::WestFace
 			&& Fortress.Buildings[7].Facing == ESolidStrongholdOrientation::WestFace);
+	auto HexesInside = [](const SolidStronghold::FSolidFortressBuilding& One)
+	{
+		const float Stair = One.HasStair() ? SolidStronghold::FPlan{}.StairWidthCm : 0.f;
+		FVector2D RoomMin = One.InnerMinCm;
+		if (One.Facing == ESolidStrongholdOrientation::WestFace)
+		{
+			RoomMin.X += Stair;
+		}
+		TArray<SolidStrongholdGrid::FHex> Hexes;
+		bool bInside = true;
+		for (int32 Floor = 0; Floor < One.Floors.Num(); ++Floor)
+		{
+			One.CollectFloorHexes(Floor, Hexes);
+			bInside = bInside && VerticesInside(Hexes, RoomMin, FVector2D(One.SpanWidthCm(), One.SpanDepthCm()));
+		}
+		return bInside;
+	};
+	TestTrue(
+		TEXT("turned floors stay inside the room and out of the stair"),
+		HexesInside(Fortress.Buildings[4]) && HexesInside(Fortress.Buildings[5]));
 	TestTrue(
 		TEXT("a west door turns the room block"),
 		FMath::IsNearlyEqual(

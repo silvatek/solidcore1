@@ -430,7 +430,7 @@ bool FSolidArrange::Trace(
 	const FVector2D Plan(Out.Point.X, Out.Point.Y);
 	for (const SolidStrongholdGrid::FHex& Hex : Cells)
 	{
-		if (SolidStrongholdGrid::PointInHex(Plan, Hex.Center))
+		if (SolidStrongholdGrid::PointInHex(Plan, Hex.Center, Hex.YawDeg, Hex.bReflect))
 		{
 			Out.bCell = true;
 			Out.X = Hex.Col;

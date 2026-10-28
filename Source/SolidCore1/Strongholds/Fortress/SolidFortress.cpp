@@ -218,6 +218,14 @@ namespace SolidStronghold
 				Hex.Center = Center;
 				Hex.Col = Col;
 				Hex.Row = Row;
+				if (Facing == ESolidStrongholdOrientation::WestFace)
+				{
+					Hex.YawDeg = 90.f;
+				}
+				else if (Facing == ESolidStrongholdOrientation::EastFace)
+				{
+					Hex.bReflect = true;
+				}
 				OutHexes.Add(Hex);
 			}
 		}

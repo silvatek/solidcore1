@@ -228,6 +228,15 @@ namespace SolidStronghold
 		YardWidthCm = WidthCm;
 	}
 
+	FVector2D FSolidFortress::WestOf(const int32 BuildingIndex) const
+	{
+		const FSolidFortressBuilding& One = Buildings[BuildingIndex];
+		const float Wall = FSolidStronghold::WallCm;
+		return FVector2D(
+			One.InnerMinCm.X + One.WidthCm() + Wall + GapCm + Wall,
+			One.InnerMinCm.Y);
+	}
+
 	void FSolidFortress::MediumHigh(
 		const FVector2D PositionCm,
 		const ESolidStrongholdOrientation InFacing,
@@ -262,29 +271,21 @@ namespace SolidStronghold
 		switch (InSize)
 		{
 		case ESolidStrongholdSize::Humble:
-		{
 			MediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
-			// The east yard is the medium span plus one wall. The top landing lengthens the building past that span.
-			const float MediumSpan = 4.5f * SolidStrongholdGrid::FlatToFlatCm;
-			AdditionalCourtyard(FSolidStronghold::StoreyCm, MediumSpan + Wall);
+			AdditionalCourtyard(MediumWidth, MediumWidth);
 			break;
-		}
 		case ESolidStrongholdSize::Average:
-		{
 			MediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
-			const float KeepEast = Buildings[0].InnerMinCm.X + Buildings[0].WidthCm() + Wall;
-			SmallLow(Position(KeepEast + GapCm + Wall, Wall), NorthFace, { Small });
-			// A storey of open ground stands east of the small building, the same as the north yard.
-			AdditionalCourtyard(FSolidStronghold::StoreyCm, FSolidStronghold::StoreyCm);
+			SmallLow(WestOf(0), NorthFace, { Small });
+			AdditionalCourtyard(MediumWidth, MediumWidth);
 			break;
-		}
 		default:
 			// A fortress with no plan of its own still has the Humble keep. Meagre is not a fortress size.
 			if (InSize != ESolidStrongholdSize::Meagre)
 			{
 				MediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
 			}
-			AdditionalCourtyard(FSolidStronghold::StoreyCm, MediumWidth);
+			AdditionalCourtyard(MediumWidth, MediumWidth);
 			break;
 		}
 	}

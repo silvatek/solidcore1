@@ -67,13 +67,11 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 		Fortress.CurtainHeightCm(),
 		FSolidStronghold::StoreyCm + Fortress.ParapetCm);
 	TestEqual(TEXT("Humble has one building"), Fortress.Buildings.Num(), 1);
+	const float MediumWidth = 5.f * SolidStrongholdGrid::SideCm();
 	TestTrue(
-		TEXT("the east yard is the medium span plus one wall"),
-		FMath::IsNearlyEqual(Fortress.YardDepthCm, FSolidStronghold::StoreyCm, 0.05f)
-			&& FMath::IsNearlyEqual(
-				Fortress.YardWidthCm,
-				4.5f * SolidStrongholdGrid::FlatToFlatCm + FSolidStronghold::WallCm,
-				0.05f)
+		TEXT("the extra yard is the medium width"),
+		FMath::IsNearlyEqual(Fortress.YardDepthCm, MediumWidth, 0.05f)
+			&& FMath::IsNearlyEqual(Fortress.YardWidthCm, MediumWidth, 0.05f)
 			&& FMath::IsNearlyEqual(
 				Fortress.OuterWidthCm(),
 				LaidWidthCm(Fortress) + Fortress.YardWidthCm + FSolidStronghold::WallCm,
@@ -171,10 +169,10 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 
 	SolidStronghold::FSolidFortress EmptyYard;
 	EmptyYard.AddBuildings(ESolidStrongholdSize::Meagre);
-	const float MediumWidth = 5.f * SolidStrongholdGrid::SideCm();
 	TestTrue(
 		TEXT("a size with no building still has a medium east yard"),
 		EmptyYard.Buildings.Num() == 0
+			&& FMath::IsNearlyEqual(EmptyYard.YardDepthCm, MediumWidth, 0.05f)
 			&& FMath::IsNearlyEqual(EmptyYard.YardWidthCm, MediumWidth, 0.05f)
 			&& FMath::IsNearlyEqual(
 				EmptyYard.OuterWidthCm(),
@@ -272,13 +270,14 @@ bool FSolidFortressAveragePlanTest::RunTest(const FString& Parameters)
 		FMath::IsNearlyEqual(Small.InnerWidthCm, 2.5f * SolidStrongholdGrid::FlatToFlatCm, 0.05f)
 			&& FMath::IsNearlyEqual(Small.InnerDepthCm, Small.SpanDepthCm(), 0.05f));
 	TestTrue(
-		TEXT("a storey of yard stands east of the small building"),
+		TEXT("the small building sits beside the keep"),
 		FMath::IsNearlyEqual(Small.InnerMinCm.Y, Building.InnerMinCm.Y, 0.05f)
 			&& FMath::IsNearlyEqual(
 				Small.InnerMinCm.X,
 				Building.InnerMinCm.X + Building.WidthCm() + 2.f * FSolidStronghold::WallCm + Fortress.GapCm,
 				0.05f)
-			&& FMath::IsNearlyEqual(Fortress.YardWidthCm, FSolidStronghold::StoreyCm, 0.05f)
+			&& FMath::IsNearlyEqual(Fortress.YardDepthCm, 5.f * SolidStrongholdGrid::SideCm(), 0.05f)
+			&& FMath::IsNearlyEqual(Fortress.YardWidthCm, 5.f * SolidStrongholdGrid::SideCm(), 0.05f)
 			&& Fortress.OuterWidthCm() > HumbleFortress.OuterWidthCm() + 1.f);
 
 	TArray<SolidStrongholdGrid::FHex> Ground;

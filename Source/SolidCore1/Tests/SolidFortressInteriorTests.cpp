@@ -139,6 +139,10 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 	int32 Gaps = 0;
 	for (const SolidStronghold::FSolidFortressBuilding& One : Fortress->Buildings)
 	{
+		if (One.Floors.Num() == 0)
+		{
+			continue;
+		}
 		float FaceMinX = One.InnerMinCm.X - Wall;
 		float FaceMaxX = One.InnerMinCm.X + One.WidthCm() + Wall;
 		float FaceMinY = One.InnerMinCm.Y - Wall;
@@ -434,6 +438,11 @@ bool FSolidFortressDoorFacingTest::RunTest(const FString& Parameters)
 		FVector2D(300.f, RoomDepth),
 		ESolidStrongholdOrientation::NorthFace,
 		{ ESolidStrongholdRoom::Small });
+	Fort.AddBuilding(
+		FVector2D(Wall + 300.f + 2.f * Wall, Wall + RoomDepth + 2.f * Wall),
+		FVector2D(300.f, RoomDepth),
+		ESolidStrongholdOrientation::NorthFace,
+		{});
 
 	ASolidFortressInterior* Room = NewObject<ASolidFortressInterior>();
 	TestNotNull(TEXT("fortress interior"), Room);
@@ -477,6 +486,10 @@ bool FSolidFortressDoorFacingTest::RunTest(const FString& Parameters)
 
 	for (const SolidStronghold::FSolidFortressBuilding& One : Fort.Buildings)
 	{
+		if (One.Floors.Num() == 0)
+		{
+			continue;
+		}
 		float MinX = One.InnerMinCm.X - Wall;
 		float MaxX = One.InnerMinCm.X + One.WidthCm() + Wall;
 		float MinY = One.InnerMinCm.Y - Wall;

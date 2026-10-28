@@ -210,4 +210,60 @@ bool FSolidFortressRoomFaceTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidFortressAveragePlanTest,
+	"SolidCore1.Stronghold.FortressAveragePlan",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidFortressAveragePlanTest::RunTest(const FString& Parameters)
+{
+	SolidStronghold::FSolidFortress Fortress;
+	Fortress.Place(ESolidStrongholdSize::Average);
+	TestFalse(TEXT("Average stays unsupported"), Fortress.Supported(ESolidStrongholdSize::Average));
+	TestEqual(TEXT("Average has three rooms"), Fortress.Buildings.Num(), 3);
+
+	const SolidStronghold::FSolidFortressBuilding* Keep = Fortress.Keep();
+	TestNotNull(TEXT("the keep"), Keep);
+	if (!Keep || Fortress.Buildings.Num() != 3)
+	{
+		return false;
+	}
+
+	const SolidStronghold::FSolidFortressBuilding& West = Fortress.Buildings[0];
+	const SolidStronghold::FSolidFortressBuilding& East = Fortress.Buildings[2];
+	TestTrue(TEXT("the middle room is the keep"), Keep == &Fortress.Buildings[1]);
+	TestFalse(TEXT("the west room is not the keep"), West.bKeep);
+	TestFalse(TEXT("the east room is not the keep"), East.bKeep);
+
+	TArray<SolidStrongholdGrid::FHex> WestHexes;
+	TArray<SolidStrongholdGrid::FHex> KeepHexes;
+	TArray<SolidStrongholdGrid::FHex> EastHexes;
+	West.CollectHexes(WestHexes);
+	Keep->CollectHexes(KeepHexes);
+	East.CollectHexes(EastHexes);
+	TestEqual(TEXT("the west room is small"), WestHexes.Num(), SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small));
+	TestEqual(TEXT("the keep is medium"), KeepHexes.Num(), SolidStronghold::RoomHexes(ESolidStrongholdRoom::Medium));
+	TestEqual(TEXT("the east room is small"), EastHexes.Num(), SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small));
+
+	const float Wall = FSolidStronghold::WallCm;
+	TestTrue(
+		TEXT("the keep is in the south-west corner"),
+		Keep->InnerMinCm.Equals(FVector2D(Wall, Wall), 0.05f));
+	TestTrue(
+		TEXT("the west room meets the keep's north wall"),
+		FMath::IsNearlyEqual(West.InnerMinCm.Y, Keep->InnerMinCm.Y + Keep->DepthCm() + 2.f * Wall, 0.05f));
+	TestTrue(
+		TEXT("the east room meets the keep's east wall"),
+		FMath::IsNearlyEqual(East.InnerMinCm.X, Keep->InnerMinCm.X + Keep->WidthCm() + 2.f * Wall, 0.05f)
+		&& FMath::IsNearlyEqual(East.InnerMinCm.Y, Keep->InnerMinCm.Y, 0.05f));
+	TestTrue(
+		TEXT("the outer wall is square"),
+		FMath::IsNearlyEqual(Fortress.OuterWidthCm(), Fortress.OuterDepthCm(), 0.05f));
+
+	TArray<SolidStrongholdGrid::FHex> Empty;
+	Fortress.CollectGroundHexes(ESolidStrongholdSize::Average, Empty);
+	TestEqual(TEXT("Average has no ground hexes yet"), Empty.Num(), 0);
+	return true;
+}
+
 #endif

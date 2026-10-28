@@ -89,6 +89,45 @@ namespace SolidStronghold
 		Type = ESolidStrongholdType::Fortress;
 		ParapetCm = SolidStrongholdGrid::FlatToFlatCm;
 		YardDepthCm = FSolidStronghold::StoreyCm;
+		Place(Size);
+	}
+
+	void FSolidFortress::Place(const ESolidStrongholdSize InSize)
+	{
+		Size = InSize;
+		Buildings.Reset();
+
+		if (InSize == ESolidStrongholdSize::Average)
+		{
+			FSolidFortressBuilding Keep;
+			Keep.bKeep = true;
+			Keep.Columns = 4;
+			Keep.Rows = 3;
+			Keep.InnerWidthCm = Keep.SpanWidthCm() + 100.f;
+			Keep.InnerMinCm = FVector2D(FSolidStronghold::WallCm, FSolidStronghold::WallCm);
+
+			FSolidFortressBuilding West;
+			West.Columns = 2;
+			West.Rows = 3;
+			West.InnerMinCm = FVector2D(
+				FSolidStronghold::WallCm,
+				Keep.InnerMinCm.Y + Keep.DepthCm() + 2.f * FSolidStronghold::WallCm);
+
+			const float NorthOuter = West.InnerMinCm.Y + West.DepthCm() + FSolidStronghold::WallCm;
+			const float Outer = NorthOuter + YardDepthCm + FSolidStronghold::WallCm;
+
+			FSolidFortressBuilding East;
+			East.Columns = 2;
+			East.Rows = 3;
+			const float EastX = Keep.InnerMinCm.X + Keep.WidthCm() + 2.f * FSolidStronghold::WallCm;
+			East.InnerMinCm = FVector2D(EastX, FSolidStronghold::WallCm);
+			East.InnerWidthCm = Outer - FSolidStronghold::WallCm - EastX;
+
+			Buildings.Add(West);
+			Buildings.Add(Keep);
+			Buildings.Add(East);
+			return;
+		}
 
 		FSolidFortressBuilding Room;
 		Room.Columns = 2;
@@ -234,26 +273,22 @@ namespace SolidStronghold
 
 	float FSolidFortress::OuterWidthCm() const
 	{
-		float Width = FSolidStronghold::WallCm;
-		for (int32 Index = 0; Index < Buildings.Num(); ++Index)
+		float East = FSolidStronghold::WallCm;
+		for (const FSolidFortressBuilding& One : Buildings)
 		{
-			Width += Buildings[Index].WidthCm() + FSolidStronghold::WallCm;
-			if (Index + 1 < Buildings.Num())
-			{
-				Width += GapCm + FSolidStronghold::WallCm;
-			}
+			East = FMath::Max(East, One.InnerMinCm.X + One.WidthCm() + FSolidStronghold::WallCm);
 		}
-		return Width;
+		return East;
 	}
 
 	float FSolidFortress::OuterDepthCm() const
 	{
-		float Depth = 0.f;
+		float North = FSolidStronghold::WallCm;
 		for (const FSolidFortressBuilding& One : Buildings)
 		{
-			Depth = FMath::Max(Depth, One.DepthCm());
+			North = FMath::Max(North, One.InnerMinCm.Y + One.DepthCm() + FSolidStronghold::WallCm);
 		}
-		return FSolidStronghold::WallCm + Depth + FSolidStronghold::WallCm + YardDepthCm + FSolidStronghold::WallCm;
+		return North + YardDepthCm + FSolidStronghold::WallCm;
 	}
 
 	float FSolidFortress::CurtainHeightCm() const

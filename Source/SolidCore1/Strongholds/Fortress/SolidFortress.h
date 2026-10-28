@@ -35,8 +35,8 @@ namespace SolidStronghold
 
 	/**
 	 * A rectangular fortress.
-	 * Buildings run west to east along the south curtain. Humble is that list.
-	 * A later size stays unsupported until its mockup is drawn.
+	 * Humble's rooms run west to east along the south curtain.
+	 * Average's rooms form an L. Average stays unsupported.
 	 * The gate side of the plan is local north. Placement turns that side toward the grass.
 	 */
 	class FSolidFortress : public FSolidStronghold
@@ -46,13 +46,16 @@ namespace SolidStronghold
 
 		static const FSolidFortress& Instance();
 
+		/** Fills the rooms for this size. Humble is the row. Average is the L. */
+		void Place(ESolidStrongholdSize InSize);
+
 		/** Open ground between one building's east outer face and the next building's west outer face. */
 		float GapCm = 0.f;
 		/** One hex across, above the storey. */
 		float ParapetCm = 120.f;
 		/** Open ground from the buildings' north outer faces to the inner face of the gate wall. One storey. */
 		float YardDepthCm = FSolidStronghold::StoreyCm;
-		/** West to east. One of them is the keep. */
+		/** One of them is the keep. */
 		TArray<FSolidFortressBuilding> Buildings;
 
 		virtual bool Supported(ESolidStrongholdSize InSize) const override;

@@ -229,7 +229,7 @@ namespace SolidStronghold
 		YardWidthCm = WidthCm;
 	}
 
-	FVector2D FSolidFortress::WestOf(const int32 BuildingIndex) const
+	FVector2D FSolidFortress::EastOf(const int32 BuildingIndex) const
 	{
 		const FSolidFortressBuilding& One = Buildings[BuildingIndex];
 		const float Wall = FSolidStronghold::WallCm;
@@ -281,7 +281,13 @@ namespace SolidStronghold
 			break;
 		case ESolidStrongholdSize::Average:
 			AddMediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
-			AddSmallLow(WestOf(0), NorthFace);
+			AddSmallLow(EastOf(0), NorthFace);
+			AdditionalCourtyard(MediumWidth, MediumWidth);
+			break;
+		case ESolidStrongholdSize::Impressive:
+			AddMediumHigh(Position(Wall, Wall), NorthFace, { Medium, Medium, Medium });
+			AddSmallLow(EastOf(0), NorthFace);
+			AddSmallLow(EastOf(1), NorthFace);
 			AdditionalCourtyard(MediumWidth, MediumWidth);
 			break;
 		default:

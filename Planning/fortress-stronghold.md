@@ -14,7 +14,7 @@ Rooms, hex totals, and keep floors follow **Strongholds by size and type** in `S
 |------|--:|--:|--:|------:|------|
 | Humble | 0 | 1 | 1 | 18 | S, then M |
 | Average | 0 | 1 | 2 | 24 | S, then M |
-| Impressive | 0 | 3 | 2 | 48 | 2× M |
+| Impressive | 0 | 3 | 2 | 48 | 3× M |
 | Grand | 1 | 4 | 2 | 80 | 1× L, 2× M |
 | Stately | 2 | 4 | 2 | 100 | 2× L, 1× M |
 | Imperious | 3 | 4 | 3 | 126 | 3× L |
@@ -63,14 +63,18 @@ The rooms together are the Humble kit, 18. The visit draws the ground floor: six
 
 Average reuses the Humble building and adds `AddSmallLow` in the east yard, against the south curtain, with its doorway facing north. That building is one small floor, 6 hexes, and it has no stair. The medium width, 346.4 cm, of open ground stands east of that small building, so the outer wall is wider than Humble. The rooms together are the Average kit, 24. The L plan is retired. Those floors sum to 24, so Average is complete.
 
-Impressive, Grand, Stately, and Imperious are in progress. Each uses the same `AddMediumHigh` until it has its own plan, so each has the Humble ground floor. Their east yard stays the medium width.
+### Impressive
+
+Impressive is one `AddMediumHigh` with three medium floors, then two `AddSmallLow` buildings. Each small building is `EastOf` the building before it, and its doorway faces north. The rooms are three medium and two small, the Impressive kit, 48. The north yard and the east yard stay the medium width. Those floors sum to 48, so Impressive is complete.
+
+Grand, Stately, and Imperious are in progress. Each uses the same Humble `AddMediumHigh` until it has its own plan. Their east yard stays the medium width.
 
 ## Acceptance
 
 - Meagre Fortress is not supported. Fortress `Supported` stays false for Meagre.
 - Fortress `Supported` is true for Humble, Average, Impressive, Grand, Stately, and Imperious, including while a size is in progress.
 - A size is complete when the usable hexes on all floors of all of its buildings equal the kit for that size (Humble 18, Average 24, Impressive 48, Grand 80, Stately 100, Imperious 126). Until then the size can be chosen in the game, and it is in progress.
-- Keep floors match the Keep column in that plan (Humble and Average: small on the ground, medium above; Impressive: two medium; Grand: one large and two medium; Stately: two large and one medium; Imperious: three large).
+- Keep floors match the Keep column in that plan (Humble and Average: small on the ground, medium above; Impressive: three medium; Grand: one large and two medium; Stately: two large and one medium; Imperious: three large).
 - The keep is the largest building, and it has at least two floors.
 - Plans try to reuse a small number of building types. The number of floors in a type can change, and so can the rooms inside it.
 - The outer wall is one rectangle. It is a closed ring. The yard is the open ground inside it and outside the buildings.
@@ -96,15 +100,15 @@ Impressive, Grand, Stately, and Imperious are in progress. Each uses the same `A
 
 ## Where this stands
 
-Humble through Imperious are supported. Meagre stays unsupported. Humble and Average are complete: every floor of every building sums to the kit, 18 and 24. Impressive, Grand, Stately, and Imperious are in progress. Choosing one still moves the company.
+Humble through Imperious are supported. Meagre stays unsupported. Humble, Average, and Impressive are complete: every floor of every building sums to the kit, 18, 24, and 48. Grand, Stately, and Imperious are in progress. Choosing one still moves the company.
 
 Humble's shell is in the game. Choosing Humble Fortress on a site stone moves the company, removes that site stone, draws the shell, and stands the captain one hex outside the gate, facing it. Play in Relion on SC1-0662 showed the first shell. The dark slot in the grass-side wall is the gate. It stops under the parapet. The two-floor building stands above that wall. Its parapet band is 48 cm thick. The corners are high, and each low section is half the parapet height and half as wide as the high sections beside it. The visit still draws that parapet solid. The yard is an L around that building: the medium width, 346.4 cm, to the north and to the east.
 
 Humble names an interior actor. The visit draws the outer wall and a dark gate on the grass side. The captain arrives one hex inside that gate, looking into the yard. A click on the shell gate enters. A click on the interior gate leaves, and he stands one hex outside it, facing away. Companions stay outside, the way a tower visit does. Choosing Humble still raises the shell, because that choice does not open the visit. `Trip` is `None`. The visit draws one building in the south-west of the yard. Its ground floor is the small room, against the south-west, and the doorway faces the yard from the landing. You walk through the gap. The inside is the floor within those walls. That floor draws the hex grid. The yard has none. A ceiling closes the room at one storey. The outer wall is one storey plus the parapet, and the two-floor building stands above it. The room has a light under that ceiling. The visit draws the pieces the company carried onto those hexes. The name sign stands beside the gate, on the grass. The east wall of the yard carries an Arrange furniture plate. Arrange mode uses those same hexes.
 
-Play on SC1-0674 moved those pieces onto other hexes. The owner was happy with that shell, then replaced the layout. The old two-building row and the Average L are retired. The face is in `AddBuildings`. Humble and Average call `AddMediumHigh`, a medium room block with more than one floor, so the stair is included. The visit draws one building, six ground hexes, and the doorway on the landing. The visit draws the ground floor and the medium room on a deck at one storey. The ground landing is the floor by the door, the flight climbs from it, and the top landing meets that deck. Average keeps that building and adds `AddSmallLow` in the east yard, so the floors sum to 24. Impressive and the larger sizes use the same `AddMediumHigh`, so each sums to the Humble kit, 18, and their own buildings are still undrawn. Choosing one raises that shell, and the carried pieces stay with the company.
+Play on SC1-0674 moved those pieces onto other hexes. The owner was happy with that shell, then replaced the layout. The old two-building row and the Average L are retired. The face is in `AddBuildings`. Humble and Average call `AddMediumHigh`, a medium room block with more than one floor, so the stair is included. The visit draws one building, six ground hexes, and the doorway on the landing. The visit draws the ground floor and the medium room on a deck at one storey. The ground landing is the floor by the door, the flight climbs from it, and the top landing meets that deck. Average keeps that building and adds `AddSmallLow` in the east yard, so the floors sum to 24. Impressive is three medium floors and two small buildings, so the floors sum to 48. Grand, Stately, and Imperious still use the Humble keep, so each sums to 18, and their own buildings are still undrawn. Choosing one raises that shell, and the carried pieces stay with the company.
 
-Impressive is the next size, and it still needs its own plan. The constructor lists this Humble face. Draw the pieces the company carried. Do not add a piece of the fortress's own. Do not add a world-map `!`. The owner's chart save is already on main. Buildings are not named. Floors are the list on the building, ground floor first. Wall thickness, storey, and opening width live on `FSolidStronghold` (`WallCm`, `StoreyCm`, `OpeningCm`). The parapet stays on the fortress. `AddBuildings` calls `AdditionalCourtyard` once for the size, and both spans are the medium width. Average places `AddSmallLow` with `WestOf` on the keep. A second floor keeps the stair in the Stairs section.
+Grand is the next size, and it still needs its own plan. The constructor lists this Humble face. Draw the pieces the company carried. Do not add a piece of the fortress's own. Do not add a world-map `!`. The owner's chart save is already on main. Buildings are not named. Floors are the list on the building, ground floor first. Wall thickness, storey, and opening width live on `FSolidStronghold` (`WallCm`, `StoreyCm`, `OpeningCm`). The parapet stays on the fortress. `AddBuildings` calls `AdditionalCourtyard` once for the size, and both spans are the medium width. Average places `AddSmallLow` with `EastOf` on the keep. A second floor keeps the stair in the Stairs section.
 
 ## Implementation notes
 

@@ -125,8 +125,8 @@ namespace SolidStronghold
 	private:
 		/** Open ground north of the buildings, and east of them. A zero width keeps the east wall as curtain. */
 		void AdditionalCourtyard(float DepthCm, float WidthCm);
-		/** Inner south-west corner immediately beside this building. */
-		FVector2D WestOf(int32 BuildingIndex) const;
+		/** Inner south-west corner of the building immediately east of this one. */
+		FVector2D EastOf(int32 BuildingIndex) const;
 		/**
 		 * A medium room block with more than one floor.
 		 * The footprint fits a medium room. The stair is added along the door wall.

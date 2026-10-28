@@ -320,7 +320,9 @@ bool FSolidFortressKitTest::RunTest(const FString& Parameters)
 		}
 		const int32 Got = UsableHexes(Size);
 		const int32 Kit = SolidStronghold::Hexes(SolidStronghold::RoomsFor(Size));
-		const bool bComplete = Size == ESolidStrongholdSize::Humble || Size == ESolidStrongholdSize::Average;
+		const bool bComplete = Size == ESolidStrongholdSize::Humble
+			|| Size == ESolidStrongholdSize::Average
+			|| Size == ESolidStrongholdSize::Impressive;
 		TestEqual(
 			*FString::Printf(TEXT("%s usable hexes"), SolidStronghold::SizeName(Size)),
 			Got,
@@ -332,6 +334,80 @@ bool FSolidFortressKitTest::RunTest(const FString& Parameters)
 				Got < Kit);
 		}
 	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidFortressImpressivePlanTest,
+	"SolidCore1.Stronghold.FortressImpressivePlan",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidFortressImpressivePlanTest::RunTest(const FString& Parameters)
+{
+	SolidStronghold::FSolidFortress Fortress;
+	Fortress.AddBuildings(ESolidStrongholdSize::Impressive);
+	TestEqual(TEXT("Impressive has three buildings"), Fortress.Buildings.Num(), 3);
+	if (Fortress.Buildings.Num() != 3)
+	{
+		return false;
+	}
+
+	const SolidStronghold::FSolidFortressBuilding& Keep = Fortress.Buildings[0];
+	TestEqual(TEXT("the keep has three floors"), Keep.Floors.Num(), 3);
+	if (Keep.Floors.Num() != 3)
+	{
+		return false;
+	}
+	TestTrue(
+		TEXT("every keep floor is medium"),
+		Keep.Floors[0] == ESolidStrongholdRoom::Medium
+			&& Keep.Floors[1] == ESolidStrongholdRoom::Medium
+			&& Keep.Floors[2] == ESolidStrongholdRoom::Medium);
+	TestTrue(TEXT("the keep has a stair"), Keep.HasStair());
+	TestTrue(TEXT("the keep doorway faces north"), Keep.Facing == ESolidStrongholdOrientation::NorthFace);
+
+	const auto Beside = [&Fortress](const SolidStronghold::FSolidFortressBuilding& One, const SolidStronghold::FSolidFortressBuilding& Next)
+	{
+		return FMath::IsNearlyEqual(Next.InnerMinCm.Y, One.InnerMinCm.Y, 0.05f)
+			&& FMath::IsNearlyEqual(
+				Next.InnerMinCm.X,
+				One.InnerMinCm.X + One.WidthCm() + 2.f * FSolidStronghold::WallCm + Fortress.GapCm,
+				0.05f);
+	};
+	for (int32 Index = 1; Index < Fortress.Buildings.Num(); ++Index)
+	{
+		const SolidStronghold::FSolidFortressBuilding& Small = Fortress.Buildings[Index];
+		TestEqual(
+			*FString::Printf(TEXT("small building %d has one floor"), Index),
+			Small.Floors.Num(),
+			1);
+		TestTrue(
+			*FString::Printf(TEXT("small building %d is a small room"), Index),
+			Small.Floors.Num() == 1 && Small.Floors[0] == ESolidStrongholdRoom::Small);
+		TestFalse(
+			*FString::Printf(TEXT("small building %d has no stair"), Index),
+			Small.HasStair());
+		TestTrue(
+			*FString::Printf(TEXT("small building %d faces north"), Index),
+			Small.Facing == ESolidStrongholdOrientation::NorthFace);
+		TestTrue(
+			*FString::Printf(TEXT("small building %d sits beside the one before it"), Index),
+			Beside(Fortress.Buildings[Index - 1], Small));
+	}
+
+	const float MediumWidth = 5.f * SolidStrongholdGrid::SideCm();
+	TestTrue(
+		TEXT("the extra yard is the medium width"),
+		FMath::IsNearlyEqual(Fortress.YardDepthCm, MediumWidth, 0.05f)
+			&& FMath::IsNearlyEqual(Fortress.YardWidthCm, MediumWidth, 0.05f));
+	SolidStronghold::FSolidFortress Average;
+	Average.AddBuildings(ESolidStrongholdSize::Average);
+	TestTrue(TEXT("Impressive is wider than Average"), Fortress.OuterWidthCm() > Average.OuterWidthCm() + 1.f);
+
+	TestEqual(
+		TEXT("Impressive usable hexes are the kit"),
+		UsableHexes(ESolidStrongholdSize::Impressive),
+		SolidStronghold::Hexes(SolidStronghold::RoomsFor(ESolidStrongholdSize::Impressive)));
 	return true;
 }
 

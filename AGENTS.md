@@ -57,6 +57,8 @@ When the first activity ends, the next activity is building and testing what was
 
 The limit stops the agent going round in circles trying to guess how to interpret something, or trying to do too much in one go. Thinking longer so the piece can be larger loses. The story is guidance for the next increment. It is not a reason to finish the story in one activity. The work in hand is one small change toward the story, as Planning describes. Small means the reading, thinking, planning, and editing for that change fit in this three-minute window. The rest of the story is not that change.
 
+If an agent thinks the user has made a mistake, it stops and says so. That is waiting for guidance. It does not quietly replace the user's word, and it does not change the code to match a word it doubts.
+
 Read those timestamps before each further tool call. If three minutes have already passed, do not make that call. Stop at once. Do not finish the step first. Send one message and end the turn. That message is the third activity. It says what is already done and what the step in hand is. It asks for help with what the agent is struggling with, or for approval of a smaller scope for this step. The ask is because the step did not finish in the three minutes. When the step is about to be ready to build and test, the message asks for a bit more time. It does not keep calling tools to reach that point.
 
 Do not sleep, and do not poll for a reply. Ending the turn is the wait. The next step waits until the user writes.

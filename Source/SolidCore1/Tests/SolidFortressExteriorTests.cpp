@@ -67,8 +67,8 @@ bool FSolidFortressExteriorTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("the gate"), Gate);
 	TestEqual(TEXT("the opening is the gate"), Shell->GetPassageMesh(), Gate);
 	TestEqual(TEXT("the outer wall is six stretches"), Shell->GetCurtainMeshes().Num(), 6);
-	TestEqual(TEXT("Humble draws one building"), Shell->GetBuildingMeshes().Num(), 1);
-	if (!Gate || Shell->GetCurtainMeshes().Num() != 6 || Shell->GetBuildingMeshes().Num() != 1)
+	TestTrue(TEXT("Humble draws the building and its merlons"), Shell->GetBuildingMeshes().Num() > 1);
+	if (!Gate || Shell->GetCurtainMeshes().Num() != 6 || Shell->GetBuildingMeshes().Num() <= 1)
 	{
 		return false;
 	}
@@ -107,12 +107,36 @@ bool FSolidFortressExteriorTest::RunTest(const FString& Parameters)
 			FSolidStronghold::StoreyCm,
 			0.5f));
 
-	const UStaticMeshComponent* Building = Shell->GetBuildingMeshes()[0];
 	const float BuildingTop = Fortress->Buildings[0].HeightCm(Fortress->ParapetCm);
+	const UStaticMeshComponent* Building = nullptr;
+	int32 Merlons = 0;
+	for (const TObjectPtr<UStaticMeshComponent>& Part : Shell->GetBuildingMeshes())
+	{
+		if (!Part)
+		{
+			continue;
+		}
+		const float PartHeight = Part->GetRelativeScale3D().Z * 100.f;
+		if (FMath::IsNearlyEqual(PartHeight, BuildingTop - Fortress->ParapetCm, 0.5f))
+		{
+			Building = Part.Get();
+		}
+		else if (FMath::IsNearlyEqual(PartHeight, Fortress->ParapetCm, 0.5f)
+			&& FMath::IsNearlyEqual(SolidFortressExteriorTestPrivate::TopZ(Part.Get()), BuildingTop, 0.5f))
+		{
+			++Merlons;
+		}
+	}
+	TestNotNull(TEXT("the building body"), Building);
+	if (!Building)
+	{
+		return false;
+	}
 	TestTrue(
 		TEXT("the building stands above the wall"),
-		FMath::IsNearlyEqual(SolidFortressExteriorTestPrivate::TopZ(Building), BuildingTop, 0.5f)
+		FMath::IsNearlyEqual(SolidFortressExteriorTestPrivate::TopZ(Building), BuildingTop - Fortress->ParapetCm, 0.5f)
 			&& BuildingTop > CurtainTop + 1.f);
+	TestTrue(TEXT("the merlons finish the parapet"), Merlons > 0);
 	TestTrue(
 		TEXT("the building meets the inner south curtain"),
 		FMath::IsNearlyEqual(SolidFortressExteriorTestPrivate::FaceMaxX(Building), HalfDepth - FSolidStronghold::WallCm, 0.5f));

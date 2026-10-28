@@ -232,19 +232,46 @@ void ASolidFortressExterior::BuildVisuals()
 		const float SizeX = MaxX - MinX;
 		const float SizeY = MaxY - MinY;
 		const float BuildingHeight = One.HeightCm(Fortress->ParapetCm);
+		const float Parapet = Fortress->ParapetCm;
+		const bool bMerlons = One.Floors.Num() >= 2 && Parapet > KINDA_SMALL_NUMBER;
+		const float BodyHeight = bMerlons ? BuildingHeight - Parapet : BuildingHeight;
 		if (UStaticMeshComponent* Part = Place(
 			(MinX + MaxX) * 0.5f,
 			(MinY + MaxY) * 0.5f,
-			BuildingHeight * 0.5f,
+			BodyHeight * 0.5f,
 			SizeX,
 			SizeY,
-			BuildingHeight,
+			BodyHeight,
 			Rock,
 			TEXT("FortressBuilding"),
 			true))
 		{
 			Buildings.Add(Part);
 		}
+		if (!bMerlons)
+		{
+			continue;
+		}
+
+		const float MerlonZ = BodyHeight + Parapet * 0.5f;
+		auto AddMerlons = [&](const float Start, const float End, const bool bAlongX, const float Fixed)
+		{
+			for (float Cursor = Start; Cursor + Parapet <= End + 0.5f; Cursor += Parapet * 2.f)
+			{
+				const float Center = Cursor + Parapet * 0.5f;
+				UStaticMeshComponent* Merlon = bAlongX
+					? Place(Center, Fixed, MerlonZ, Parapet, Parapet, Parapet, Rock, TEXT("FortressMerlon"), false)
+					: Place(Fixed, Center, MerlonZ, Parapet, Parapet, Parapet, Rock, TEXT("FortressMerlon"), false);
+				if (Merlon)
+				{
+					Buildings.Add(Merlon);
+				}
+			}
+		};
+		AddMerlons(MinX, MaxX, true, MinY + Wall * 0.5f);
+		AddMerlons(MinX, MaxX, true, MaxY - Wall * 0.5f);
+		AddMerlons(MinY + Parapet, MaxY - Parapet, false, MinX + Wall * 0.5f);
+		AddMerlons(MinY + Parapet, MaxY - Parapet, false, MaxX - Wall * 0.5f);
 	}
 
 	GateMesh = Place(

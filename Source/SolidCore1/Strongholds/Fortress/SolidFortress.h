@@ -106,7 +106,7 @@ namespace SolidStronghold
 		float OuterDepthCm() const;
 		/** One hex outside the gate, on the grass side. */
 		FVector2D OutsideGateXY(const USolidWorldChart* Map) const;
-		/** Storey plus the parapet. */
+		/** One storey. The parapet is not part of this wall. */
 		float CurtainHeightCm() const;
 
 		virtual TUniquePtr<FSolidStronghold> Clone() const override;

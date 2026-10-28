@@ -61,10 +61,7 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("Meagre stays unsupported"), Fortress.Supported(ESolidStrongholdSize::Meagre));
 	TestFalse(TEXT("Average stays unsupported"), Fortress.Supported(ESolidStrongholdSize::Average));
 	TestEqual(TEXT("the parapet is one hex across"), Fortress.ParapetCm, SolidStrongholdGrid::FlatToFlatCm);
-	TestEqual(
-		TEXT("the curtain is the storey plus the parapet"),
-		Fortress.CurtainHeightCm(),
-		FSolidStronghold::StoreyCm + Fortress.ParapetCm);
+	TestEqual(TEXT("the outer wall is one storey"), Fortress.CurtainHeightCm(), FSolidStronghold::StoreyCm);
 	TestEqual(TEXT("Humble has one building"), Fortress.Buildings.Num(), 1);
 	TestTrue(
 		TEXT("the outer width is the building and the walls"),

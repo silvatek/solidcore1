@@ -347,7 +347,7 @@ namespace SolidStronghold
 
 	float FSolidFortress::CurtainHeightCm() const
 	{
-		return FSolidStronghold::StoreyCm + ParapetCm;
+		return FSolidStronghold::StoreyCm;
 	}
 
 	FVector2D FSolidFortress::OutsideGateXY(const USolidWorldChart* Map) const

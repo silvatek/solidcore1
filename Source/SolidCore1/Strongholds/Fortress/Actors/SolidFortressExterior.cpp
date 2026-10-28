@@ -194,14 +194,17 @@ void ASolidFortressExterior::BuildVisuals()
 	AddCurtain(Width - Wall * 0.5f, Depth * 0.5f, Height * 0.5f, Wall, Depth - 2.f * Wall, Height, true);
 	AddCurtain(GateMinX * 0.5f, NorthY, Height * 0.5f, GateMinX, Wall, Height, true);
 	AddCurtain((GateMaxX + Width) * 0.5f, NorthY, Height * 0.5f, Width - GateMaxX, Wall, Height, true);
-	AddCurtain(
-		Width * 0.5f,
-		NorthY,
-		(Storey + Height) * 0.5f,
-		Opening,
-		Wall,
-		Height - Storey,
-		false);
+	if (Height > Storey + KINDA_SMALL_NUMBER)
+	{
+		AddCurtain(
+			Width * 0.5f,
+			NorthY,
+			(Storey + Height) * 0.5f,
+			Opening,
+			Wall,
+			Height - Storey,
+			false);
+	}
 
 	for (const SolidStronghold::FSolidFortressBuilding& One : Fortress->Buildings)
 	{

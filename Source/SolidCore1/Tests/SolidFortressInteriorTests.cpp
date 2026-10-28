@@ -46,8 +46,8 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the visit stands on the fortress row"), Room->GetStrongholdCell().Y, HumbleCell.Y);
 	TestEqual(TEXT("the opening is the gate"), Room->GetPassageMesh(), Room->GetGateMesh());
 	TestNotNull(TEXT("the gate"), Room->GetGateMesh());
-	TestEqual(TEXT("the outer wall is six stretches"), Room->GetCurtainMeshes().Num(), 6);
-	if (!Room->GetGateMesh() || Room->GetCurtainMeshes().Num() != 6)
+	TestEqual(TEXT("the outer wall is five stretches"), Room->GetCurtainMeshes().Num(), 5);
+	if (!Room->GetGateMesh() || Room->GetCurtainMeshes().Num() != 5)
 	{
 		return false;
 	}

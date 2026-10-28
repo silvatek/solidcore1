@@ -170,14 +170,8 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 	SolidStronghold::FSolidFortress EmptyYard;
 	EmptyYard.AddBuildings(ESolidStrongholdSize::Meagre);
 	TestTrue(
-		TEXT("a size with no building still has a medium east yard"),
-		EmptyYard.Buildings.Num() == 0
-			&& FMath::IsNearlyEqual(EmptyYard.YardDepthCm, MediumWidth, 0.05f)
-			&& FMath::IsNearlyEqual(EmptyYard.YardWidthCm, MediumWidth, 0.05f)
-			&& FMath::IsNearlyEqual(
-				EmptyYard.OuterWidthCm(),
-				FSolidStronghold::WallCm + MediumWidth + FSolidStronghold::WallCm,
-				0.05f));
+		TEXT("Meagre adds no building"),
+		EmptyYard.Buildings.Num() == 0 && EmptyYard.YardWidthCm == 0.f);
 	return true;
 }
 

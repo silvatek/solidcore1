@@ -1,4 +1,5 @@
 #include "SolidFortress.h"
+#include "SolidCore1.h"
 #include "SolidGameState.h"
 #include "Strongholds/Fortress/Actors/SolidFortressExterior.h"
 #include "Strongholds/Fortress/Actors/SolidFortressInterior.h"
@@ -237,7 +238,7 @@ namespace SolidStronghold
 			One.InnerMinCm.Y);
 	}
 
-	void FSolidFortress::MediumHigh(
+	void FSolidFortress::AddMediumHigh(
 		const FVector2D PositionCm,
 		const ESolidStrongholdOrientation InFacing,
 		const std::initializer_list<ESolidStrongholdRoom> InFloors)
@@ -248,14 +249,13 @@ namespace SolidStronghold
 		AddBuilding(PositionCm, FVector2D(MediumLength, MediumWidth), InFacing, InFloors);
 	}
 
-	void FSolidFortress::SmallLow(
+	void FSolidFortress::AddSmallLow(
 		const FVector2D PositionCm,
-		const ESolidStrongholdOrientation InFacing,
-		const std::initializer_list<ESolidStrongholdRoom> InFloors)
+		const ESolidStrongholdOrientation InFacing)
 	{
 		const float SmallWidth = 2.5f * SolidStrongholdGrid::FlatToFlatCm;
 		const float SmallDepth = 5.f * SolidStrongholdGrid::SideCm();
-		AddBuilding(PositionCm, FVector2D(SmallWidth, SmallDepth), InFacing, InFloors);
+		AddBuilding(PositionCm, FVector2D(SmallWidth, SmallDepth), InFacing, { ESolidStrongholdRoom::Small });
 	}
 
 	void FSolidFortress::AddBuildings(const ESolidStrongholdSize InSize)
@@ -270,21 +270,20 @@ namespace SolidStronghold
 		const float MediumWidth = 5.f * SolidStrongholdGrid::SideCm();
 		switch (InSize)
 		{
+		case ESolidStrongholdSize::Meagre:
+			UE_LOG(LogSolid, Error, TEXT("Meagre is not a fortress size."));
+			break;
 		case ESolidStrongholdSize::Humble:
-			MediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
+			AddMediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
 			AdditionalCourtyard(MediumWidth, MediumWidth);
 			break;
 		case ESolidStrongholdSize::Average:
-			MediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
-			SmallLow(WestOf(0), NorthFace, { Small });
+			AddMediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
+			AddSmallLow(WestOf(0), NorthFace);
 			AdditionalCourtyard(MediumWidth, MediumWidth);
 			break;
 		default:
-			// A fortress with no plan of its own still has the Humble keep. Meagre is not a fortress size.
-			if (InSize != ESolidStrongholdSize::Meagre)
-			{
-				MediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
-			}
+			AddMediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
 			AdditionalCourtyard(MediumWidth, MediumWidth);
 			break;
 		}

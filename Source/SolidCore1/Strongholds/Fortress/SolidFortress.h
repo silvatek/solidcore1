@@ -46,7 +46,10 @@ namespace SolidStronghold
 		 * Zero centres the doorway on that face. A stair centres it on the landing.
 		 */
 		float DoorFromInnerCm() const;
+		/** The ground floor. */
 		void CollectHexes(TArray<SolidStrongholdGrid::FHex>& OutHexes) const;
+		/** One floor of this building. Floor 0 is the ground. */
+		void CollectFloorHexes(int32 FloorIndex, TArray<SolidStrongholdGrid::FHex>& OutHexes) const;
 	};
 
 	/**

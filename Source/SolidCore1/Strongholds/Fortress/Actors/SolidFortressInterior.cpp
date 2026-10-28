@@ -2,6 +2,7 @@
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
 #include "Strongholds/SolidStronghold.h"
+#include "Strongholds/Tower/SolidTower.h"
 #include "Strongholds/Furnishings/SolidArrangeSign.h"
 #include "Strongholds/Furnishings/SolidStrongholdGrid.h"
 #include "Components/InstancedStaticMeshComponent.h"
@@ -339,13 +340,47 @@ void ASolidFortressInterior::BuildVisuals()
 		const float InnerMaxX = bEastCurtain ? MaxX : MaxX - Wall;
 		const float InnerMinY = bSouthCurtain ? MinY : MinY + Wall;
 		const float InnerMaxY = bNorthCurtain ? MaxY : MaxY - Wall;
+		const int32 Storeys = FMath::Max(One.Floors.Num(), 1);
+		const float RoomTop = Storey * static_cast<float>(Storeys);
 		AddBuilding(
 			(InnerMinX + InnerMaxX) * 0.5f,
 			(InnerMinY + InnerMaxY) * 0.5f,
-			Storey + Wall * 0.5f,
+			RoomTop + Wall * 0.5f,
 			InnerMaxX - InnerMinX,
 			InnerMaxY - InnerMinY,
 			Wall);
+		if (Storeys >= 2)
+		{
+			FVector2D RoomMin = One.InnerMinCm;
+			float RoomWidth = One.InnerWidthCm;
+			float RoomDepth = One.InnerDepthCm;
+			const float StairCm = SolidStronghold::FPlan{}.StairWidthCm;
+			if (One.Facing == SolidStronghold::ESolidStrongholdOrientation::NorthFace
+				|| One.Facing == SolidStronghold::ESolidStrongholdOrientation::SouthFace)
+			{
+				RoomDepth -= StairCm;
+				if (One.Facing == SolidStronghold::ESolidStrongholdOrientation::SouthFace)
+				{
+					RoomMin.Y += StairCm;
+				}
+			}
+			else
+			{
+				RoomWidth -= StairCm;
+				if (One.Facing == SolidStronghold::ESolidStrongholdOrientation::WestFace)
+				{
+					RoomMin.X += StairCm;
+				}
+			}
+			const float Deck = 20.f;
+			AddBuilding(
+				RoomMin.X + RoomWidth * 0.5f,
+				RoomMin.Y + RoomDepth * 0.5f,
+				Storey - Deck * 0.5f,
+				RoomWidth,
+				RoomDepth,
+				Deck);
+		}
 
 		UPointLightComponent* Light = NewObject<UPointLightComponent>(this, NAME_None, RF_Transient);
 		if (!Light)
@@ -384,16 +419,14 @@ void ASolidFortressInterior::BuildVisuals()
 		FloorGrid->SetMaterial(0, Material);
 	}
 	const float LineZ = SolidStrongholdGrid::LineLiftCm + SolidStrongholdGrid::LineHeightCm * 0.5f;
-	for (const SolidStronghold::FSolidFortressBuilding& One : Fortress->Buildings)
+	auto AddFloorLines = [&](const TArray<SolidStrongholdGrid::FHex>& Hexes, const float FloorZ)
 	{
-		TArray<SolidStrongholdGrid::FHex> Hexes;
 		TArray<SolidStrongholdGrid::FSegment> Segments;
-		One.CollectHexes(Hexes);
 		SolidStrongholdGrid::CollectSegments(Hexes, Segments);
 		for (const SolidStrongholdGrid::FSegment& Segment : Segments)
 		{
-			const FVector Start = SolidFortressInteriorPrivate::ActorCenter(Width, Depth, Segment.A.X, Segment.A.Y, LineZ);
-			const FVector End = SolidFortressInteriorPrivate::ActorCenter(Width, Depth, Segment.B.X, Segment.B.Y, LineZ);
+			const FVector Start = SolidFortressInteriorPrivate::ActorCenter(Width, Depth, Segment.A.X, Segment.A.Y, FloorZ);
+			const FVector End = SolidFortressInteriorPrivate::ActorCenter(Width, Depth, Segment.B.X, Segment.B.Y, FloorZ);
 			const FVector Delta = End - Start;
 			const float Length = Delta.Size2D();
 			if (Length < 1.f)
@@ -407,6 +440,15 @@ void ASolidFortressInterior::BuildVisuals()
 					Length / SolidFortressInteriorPrivate::CubeSizeCm,
 					SolidStrongholdGrid::LineThicknessCm / SolidFortressInteriorPrivate::CubeSizeCm,
 					SolidStrongholdGrid::LineHeightCm / SolidFortressInteriorPrivate::CubeSizeCm)));
+		}
+	};
+	for (const SolidStronghold::FSolidFortressBuilding& One : Fortress->Buildings)
+	{
+		for (int32 FloorIndex = 0; FloorIndex < One.Floors.Num(); ++FloorIndex)
+		{
+			TArray<SolidStrongholdGrid::FHex> Hexes;
+			One.CollectFloorHexes(FloorIndex, Hexes);
+			AddFloorLines(Hexes, LineZ + Storey * static_cast<float>(FloorIndex));
 		}
 	}
 	PlaceFurnishings();

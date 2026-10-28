@@ -206,11 +206,21 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 			Depth * 0.5f - RoomY,
 			RoomX - Width * 0.5f,
 			FSolidStronghold::StoreyCm - 30.f);
+		const FVector Deck(
+			Depth * 0.5f - RoomY,
+			RoomX - Width * 0.5f,
+			FSolidStronghold::StoreyCm - 5.f);
+		const FVector UpperHeadroom(
+			Depth * 0.5f - RoomY,
+			RoomX - Width * 0.5f,
+			FSolidStronghold::StoreyCm + 40.f);
 		const FVector Ceiling(
 			Depth * 0.5f - RoomY,
 			RoomX - Width * 0.5f,
-			FSolidStronghold::StoreyCm + 10.f);
+			(One.HasStair() ? 2.f : 1.f) * FSolidStronghold::StoreyCm + 10.f);
 		bool bHeadroomBlocked = false;
+		bool bDeckPresent = false;
+		bool bUpperOpen = true;
 		bool bCeilingPresent = false;
 		for (const TObjectPtr<UStaticMeshComponent>& Part : Room->GetBuildingMeshes())
 		{
@@ -219,10 +229,17 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 				continue;
 			}
 			bHeadroomBlocked = bHeadroomBlocked || Covers(Part, Headroom);
+			bDeckPresent = bDeckPresent || Covers(Part, Deck);
+			bUpperOpen = bUpperOpen && !Covers(Part, UpperHeadroom);
 			bCeilingPresent = bCeilingPresent || Covers(Part, Ceiling);
 		}
 		TestFalse(TEXT("the room stays open under the ceiling"), bHeadroomBlocked);
-		TestTrue(TEXT("a ceiling closes the room at one storey"), bCeilingPresent);
+		TestTrue(TEXT("a deck closes the ground room at one storey"), bDeckPresent);
+		if (One.HasStair())
+		{
+			TestTrue(TEXT("the upper room stays open above the deck"), bUpperOpen);
+		}
+		TestTrue(TEXT("a ceiling closes the top room"), bCeilingPresent);
 		++Gaps;
 	}
 	TestEqual(TEXT("Humble has one doorway"), Gaps, 1);
@@ -235,6 +252,14 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 		One.CollectHexes(Hexes);
 		SolidStrongholdGrid::CollectSegments(Hexes, Segments);
 		ExpectedLines += Segments.Num();
+		if (One.Floors.Num() >= 2)
+		{
+			TArray<SolidStrongholdGrid::FHex> Upper;
+			TArray<SolidStrongholdGrid::FSegment> UpperSegments;
+			One.CollectFloorHexes(1, Upper);
+			SolidStrongholdGrid::CollectSegments(Upper, UpperSegments);
+			ExpectedLines += UpperSegments.Num();
+		}
 	}
 	UInstancedStaticMeshComponent* Grid = Room->GetFloorGrid();
 	TestNotNull(TEXT("the floor grid"), Grid);
@@ -256,7 +281,9 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 			continue;
 		}
 		const FVector Location = Line.GetLocation();
-		bLinesOnTheFloor = bLinesOnTheFloor && FMath::IsNearlyEqual(Location.Z, LineZ, 0.1f);
+		bLinesOnTheFloor = bLinesOnTheFloor
+			&& (FMath::IsNearlyEqual(Location.Z, LineZ, 0.1f)
+				|| FMath::IsNearlyEqual(Location.Z, LineZ + FSolidStronghold::StoreyCm, 0.1f));
 		const float PlanX = Location.Y + Width * 0.5f;
 		const float PlanY = Depth * 0.5f - Location.X;
 		bool bInRoom = false;

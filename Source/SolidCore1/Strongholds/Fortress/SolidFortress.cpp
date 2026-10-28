@@ -47,6 +47,31 @@ namespace SolidStronghold
 		{
 			return FVector2D(Width, Depth);
 		}
+
+		int32 RoomColumns(const ESolidStrongholdRoom Room)
+		{
+			switch (Room)
+			{
+			case ESolidStrongholdRoom::Medium:
+				return 4;
+			case ESolidStrongholdRoom::Small:
+				return 2;
+			default:
+				return 0;
+			}
+		}
+
+		int32 RoomRows(const ESolidStrongholdRoom Room)
+		{
+			switch (Room)
+			{
+			case ESolidStrongholdRoom::Medium:
+			case ESolidStrongholdRoom::Small:
+				return 3;
+			default:
+				return 0;
+			}
+		}
 	}
 
 	int32 FSolidFortressBuilding::Columns() const
@@ -55,15 +80,7 @@ namespace SolidStronghold
 		{
 			return 0;
 		}
-		switch (Floors[0])
-		{
-		case ESolidStrongholdRoom::Medium:
-			return 4;
-		case ESolidStrongholdRoom::Small:
-			return 2;
-		default:
-			return 0;
-		}
+		return SolidFortressPrivate::RoomColumns(Floors[0]);
 	}
 
 	int32 FSolidFortressBuilding::Rows() const
@@ -72,14 +89,7 @@ namespace SolidStronghold
 		{
 			return 0;
 		}
-		switch (Floors[0])
-		{
-		case ESolidStrongholdRoom::Medium:
-		case ESolidStrongholdRoom::Small:
-			return 3;
-		default:
-			return 0;
-		}
+		return SolidFortressPrivate::RoomRows(Floors[0]);
 	}
 
 	float FSolidFortressBuilding::SpanWidthCm() const
@@ -121,9 +131,26 @@ namespace SolidStronghold
 
 	void FSolidFortressBuilding::CollectHexes(TArray<SolidStrongholdGrid::FHex>& OutHexes) const
 	{
+		CollectFloorHexes(0, OutHexes);
+	}
+
+	void FSolidFortressBuilding::CollectFloorHexes(
+		const int32 FloorIndex,
+		TArray<SolidStrongholdGrid::FHex>& OutHexes) const
+	{
 		OutHexes.Reset();
-		const float SpanWidth = SpanWidthCm();
-		const float SpanDepth = SpanDepthCm();
+		if (!Floors.IsValidIndex(FloorIndex))
+		{
+			return;
+		}
+		const int32 ColumnCount = SolidFortressPrivate::RoomColumns(Floors[FloorIndex]);
+		const int32 RowCount = SolidFortressPrivate::RoomRows(Floors[FloorIndex]);
+		if (ColumnCount <= 0 || RowCount <= 0)
+		{
+			return;
+		}
+		const float SpanWidth = (static_cast<float>(ColumnCount) + 0.5f) * SolidStrongholdGrid::FlatToFlatCm;
+		const float SpanDepth = static_cast<float>(RowCount - 1) * SolidStrongholdGrid::RowStepCm() + 2.f * SolidStrongholdGrid::SideCm();
 		// One floor sits in the middle. A stair keeps the hexes at the landing end of the room block.
 		FVector2D GridMin(
 			InnerMinCm.X + (WidthCm() - SpanWidth) * 0.5f,
@@ -142,8 +169,6 @@ namespace SolidStronghold
 			}
 		}
 		const FVector2D Origin = SolidFortressPrivate::RoomOriginCm(GridMin);
-		const int32 RowCount = Rows();
-		const int32 ColumnCount = Columns();
 		for (int32 Row = -2; Row <= RowCount + 2; ++Row)
 		{
 			for (int32 Col = -2; Col <= ColumnCount + 2; ++Col)

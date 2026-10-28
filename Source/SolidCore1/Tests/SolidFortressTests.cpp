@@ -108,6 +108,12 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 		TEXT("the ground floor is the small room"),
 		Hexes.Num(),
 		SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small));
+	TArray<SolidStrongholdGrid::FHex> Upper;
+	Building.CollectFloorHexes(1, Upper);
+	TestEqual(
+		TEXT("the upper floor is the medium room"),
+		Upper.Num(),
+		SolidStronghold::RoomHexes(ESolidStrongholdRoom::Medium));
 	TestTrue(
 		TEXT("the ground hexes stay out of the stair and the spare floor"),
 		VerticesInside(Hexes, Building.InnerMinCm, FVector2D(Building.SpanWidthCm(), Building.SpanDepthCm())));

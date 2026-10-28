@@ -35,20 +35,6 @@ namespace
 		return true;
 	}
 
-	float LaidWidthCm(const SolidStronghold::FSolidFortress& Fortress)
-	{
-		float Width = FSolidStronghold::WallCm;
-		for (int32 Index = 0; Index < Fortress.Buildings.Num(); ++Index)
-		{
-			Width += Fortress.Buildings[Index].WidthCm() + FSolidStronghold::WallCm;
-			if (Index + 1 < Fortress.Buildings.Num())
-			{
-				Width += Fortress.GapCm + FSolidStronghold::WallCm;
-			}
-		}
-		return Width;
-	}
-
 	int32 UsableHexes(const ESolidStrongholdSize Size)
 	{
 		SolidStronghold::FSolidFortress Fort;
@@ -83,28 +69,35 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 		TEXT("the outer wall is the storey plus the parapet"),
 		Fortress.CurtainHeightCm(),
 		FSolidStronghold::StoreyCm + Fortress.ParapetCm);
-	TestEqual(TEXT("Humble has one building"), Fortress.Buildings.Num(), 1);
-	const float MediumWidth = 5.f * SolidStrongholdGrid::SideCm();
-	TestTrue(
-		TEXT("the extra yard is the medium width"),
-		FMath::IsNearlyEqual(Fortress.YardDepthCm, MediumWidth, 0.05f)
-			&& FMath::IsNearlyEqual(Fortress.YardWidthCm, MediumWidth, 0.05f)
-			&& FMath::IsNearlyEqual(
-				Fortress.OuterWidthCm(),
-				LaidWidthCm(Fortress) + Fortress.YardWidthCm + FSolidStronghold::WallCm,
-				0.05f));
-	TestTrue(
-		TEXT("the outer depth is the room, the yard, and the walls"),
-		Fortress.Buildings.Num() == 1
-			&& FMath::IsNearlyEqual(
-				Fortress.OuterDepthCm(),
-				FSolidStronghold::WallCm + Fortress.Buildings[0].DepthCm() + FSolidStronghold::WallCm + Fortress.YardDepthCm + FSolidStronghold::WallCm,
-				0.05f));
-
-	if (Fortress.Buildings.Num() != 1)
+	TestEqual(TEXT("Humble has three places"), Fortress.Buildings.Num(), 3);
+	if (Fortress.Buildings.Num() != 3)
 	{
 		return false;
 	}
+	const float MediumWidth = 5.f * SolidStrongholdGrid::SideCm();
+	const SolidStronghold::FSolidFortressBuilding& NorthGap = Fortress.Buildings[1];
+	const SolidStronghold::FSolidFortressBuilding& EastGap = Fortress.Buildings[2];
+	TestEqual(TEXT("the north gap has no floors"), NorthGap.Floors.Num(), 0);
+	TestEqual(TEXT("the east gap has no floors"), EastGap.Floors.Num(), 0);
+	TestTrue(
+		TEXT("both gaps are the medium size"),
+		FMath::IsNearlyEqual(NorthGap.InnerWidthCm, MediumWidth, 0.05f)
+			&& FMath::IsNearlyEqual(NorthGap.InnerDepthCm, MediumWidth, 0.05f)
+			&& FMath::IsNearlyEqual(EastGap.InnerWidthCm, MediumWidth, 0.05f)
+			&& FMath::IsNearlyEqual(EastGap.InnerDepthCm, MediumWidth, 0.05f));
+	TestTrue(
+		TEXT("the north gap's north wall meets the outer wall"),
+		FMath::IsNearlyEqual(
+			NorthGap.InnerMinCm.Y + NorthGap.DepthCm() + FSolidStronghold::WallCm,
+			Fortress.OuterDepthCm(),
+			0.05f));
+	TestTrue(
+		TEXT("the east gap's east wall meets the outer wall"),
+		FMath::IsNearlyEqual(
+			EastGap.InnerMinCm.X + EastGap.WidthCm() + FSolidStronghold::WallCm,
+			Fortress.OuterWidthCm(),
+			0.05f));
+
 	const SolidStronghold::FSolidFortressBuilding& Building = Fortress.Buildings[0];
 	TestEqual(TEXT("the building has two floors"), Building.Floors.Num(), 2);
 	if (Building.Floors.Num() != 2)
@@ -189,7 +182,7 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 	EmptyYard.AddBuildings(ESolidStrongholdSize::Meagre);
 	TestTrue(
 		TEXT("Meagre adds no building"),
-		EmptyYard.Buildings.Num() == 0 && EmptyYard.YardWidthCm == 0.f);
+		EmptyYard.Buildings.Num() == 0);
 	return true;
 }
 
@@ -247,8 +240,8 @@ bool FSolidFortressAveragePlanTest::RunTest(const FString& Parameters)
 	SolidStronghold::FSolidFortress Fortress;
 	Fortress.AddBuildings(ESolidStrongholdSize::Average);
 	TestTrue(TEXT("Average is supported"), Fortress.Supported(ESolidStrongholdSize::Average));
-	TestEqual(TEXT("Average has two buildings"), Fortress.Buildings.Num(), 2);
-	if (Fortress.Buildings.Num() != 2)
+	TestEqual(TEXT("Average has four places"), Fortress.Buildings.Num(), 4);
+	if (Fortress.Buildings.Num() != 4)
 	{
 		return false;
 	}
@@ -287,9 +280,28 @@ bool FSolidFortressAveragePlanTest::RunTest(const FString& Parameters)
 			&& FMath::IsNearlyEqual(
 				Small.InnerMinCm.X,
 				Building.InnerMinCm.X + Building.WidthCm() + 2.f * FSolidStronghold::WallCm + Fortress.GapCm,
+				0.05f));
+	const float MediumWidth = 5.f * SolidStrongholdGrid::SideCm();
+	const SolidStronghold::FSolidFortressBuilding& NorthGap = Fortress.Buildings[2];
+	const SolidStronghold::FSolidFortressBuilding& EastGap = Fortress.Buildings[3];
+	TestTrue(
+		TEXT("the north gap is the medium size, north of the small building"),
+		NorthGap.Floors.Num() == 0
+			&& FMath::IsNearlyEqual(NorthGap.InnerWidthCm, MediumWidth, 0.05f)
+			&& FMath::IsNearlyEqual(NorthGap.InnerMinCm.X, Small.InnerMinCm.X, 0.05f)
+			&& FMath::IsNearlyEqual(
+				NorthGap.InnerMinCm.Y,
+				Small.InnerMinCm.Y + Small.DepthCm() + 2.f * FSolidStronghold::WallCm + Fortress.GapCm,
+				0.05f));
+	TestTrue(
+		TEXT("the east gap is the medium size, east of the small building"),
+		EastGap.Floors.Num() == 0
+			&& FMath::IsNearlyEqual(EastGap.InnerWidthCm, MediumWidth, 0.05f)
+			&& FMath::IsNearlyEqual(EastGap.InnerMinCm.Y, Small.InnerMinCm.Y, 0.05f)
+			&& FMath::IsNearlyEqual(
+				EastGap.InnerMinCm.X,
+				Small.InnerMinCm.X + Small.WidthCm() + 2.f * FSolidStronghold::WallCm + Fortress.GapCm,
 				0.05f)
-			&& FMath::IsNearlyEqual(Fortress.YardDepthCm, 5.f * SolidStrongholdGrid::SideCm(), 0.05f)
-			&& FMath::IsNearlyEqual(Fortress.YardWidthCm, 5.f * SolidStrongholdGrid::SideCm(), 0.05f)
 			&& Fortress.OuterWidthCm() > HumbleFortress.OuterWidthCm() + 1.f);
 
 	TArray<SolidStrongholdGrid::FHex> Ground;
@@ -409,7 +421,6 @@ bool FSolidFortressImpressivePlanTest::RunTest(const FString& Parameters)
 				NorthGap.InnerMinCm.Y,
 				Keep.InnerMinCm.Y + Keep.DepthCm() + 2.f * FSolidStronghold::WallCm + Fortress.GapCm,
 				0.05f));
-	TestTrue(TEXT("Impressive adds no further north yard"), FMath::IsNearlyEqual(Fortress.YardDepthCm, 0.f, 0.05f));
 	TestTrue(
 		TEXT("the north gap's north wall meets the outer wall"),
 		FMath::IsNearlyEqual(

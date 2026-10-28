@@ -83,17 +83,7 @@ namespace SolidStronghold
 		float GapCm = 0.f;
 		/** One hex across, above the storey. */
 		float ParapetCm = 120.f;
-		/**
-		 * Open ground from the named building's north outer face to the inner face of the gate wall.
-		 * Zero means the furthest piece's north wall is that curtain.
-		 */
-		float YardDepthCm = FSolidStronghold::StoreyCm;
-		/**
-		 * Open ground from the named building's east outer face to the inner face of the east wall.
-		 * Zero means the furthest building's east wall is that curtain.
-		 */
-		float YardWidthCm = 0.f;
-		/** The buildings for this size. */
+		/** The buildings and courtyard gaps for this size. A gap has no floors. */
 		TArray<FSolidFortressBuilding> Buildings;
 
 		virtual void BindPlan() override;
@@ -126,15 +116,6 @@ namespace SolidStronghold
 		virtual TUniquePtr<FSolidStronghold> Clone() const override;
 
 	private:
-		/** AfterLast places that open ground after the last building. */
-		static constexpr int32 AfterLast = -1;
-		int32 YardNorthAfter = AfterLast;
-		int32 YardEastAfter = AfterLast;
-		/**
-		 * Open ground after one building to the north, then after one building to the east.
-		 * Each pair is the open distance, then the building it follows. AfterLast means the last building.
-		 */
-		void AdditionalCourtyard(float DepthCm, int32 NorthAfter, float WidthCm, int32 EastAfter);
 		/** Inner south-west corner of the piece immediately east of this one. */
 		FVector2D EastOf(int32 BuildingIndex) const;
 		/** Inner south-west corner of the piece immediately north of this one. */
@@ -170,5 +151,7 @@ namespace SolidStronghold
 		 * It is listed with the buildings so a later piece can sit EastOf it. It is not drawn.
 		 */
 		void AddCourtyard(FVector2D PositionCm, FVector2D SizeCm);
+		/** A medium courtyard north of this piece, then a medium courtyard east of it. */
+		void AddMediumGaps(int32 After);
 	};
 }

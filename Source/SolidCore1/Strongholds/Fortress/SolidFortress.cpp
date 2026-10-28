@@ -226,18 +226,6 @@ namespace SolidStronghold
 		Buildings.Add(Building);
 	}
 
-	void FSolidFortress::AdditionalCourtyard(
-		const float DepthCm,
-		const int32 NorthAfter,
-		const float WidthCm,
-		const int32 EastAfter)
-	{
-		YardDepthCm = DepthCm;
-		YardWidthCm = WidthCm;
-		YardNorthAfter = NorthAfter;
-		YardEastAfter = EastAfter;
-	}
-
 	FVector2D FSolidFortress::EastOf(const int32 BuildingIndex) const
 	{
 		const FSolidFortressBuilding& One = Buildings[BuildingIndex];
@@ -304,6 +292,14 @@ namespace SolidStronghold
 		Buildings.Add(Gap);
 	}
 
+	void FSolidFortress::AddMediumGaps(const int32 After)
+	{
+		const float MediumWidth = 5.f * SolidStrongholdGrid::SideCm();
+		const FVector2D Medium = SolidFortressPrivate::Size(MediumWidth, MediumWidth);
+		AddCourtyard(NorthOf(After), Medium);
+		AddCourtyard(EastOf(After), Medium);
+	}
+
 	void FSolidFortress::AddBuildings(const ESolidStrongholdSize InSize)
 	{
 		using enum ESolidStrongholdRoom;
@@ -311,10 +307,6 @@ namespace SolidStronghold
 
 		Size = InSize;
 		Buildings.Reset();
-		YardDepthCm = FSolidStronghold::StoreyCm;
-		YardWidthCm = 0.f;
-		YardNorthAfter = AfterLast;
-		YardEastAfter = AfterLast;
 		using SolidFortressPrivate::Position;
 		using SolidFortressPrivate::Size;
 		const float Wall = FSolidStronghold::WallCm;
@@ -326,12 +318,12 @@ namespace SolidStronghold
 			break;
 		case ESolidStrongholdSize::Humble:
 			AddMediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
-			AdditionalCourtyard(MediumWidth, AfterLast, MediumWidth, AfterLast);
+			AddMediumGaps(0);
 			break;
 		case ESolidStrongholdSize::Average:
 			AddMediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
 			AddSmallLow(EastOf(0), NorthFace);
-			AdditionalCourtyard(MediumWidth, AfterLast, MediumWidth, AfterLast);
+			AddMediumGaps(1);
 			break;
 		case ESolidStrongholdSize::Impressive:
 			AddMediumHigh(Position(Wall, Wall), NorthFace, { Medium, Medium, Medium });
@@ -339,14 +331,13 @@ namespace SolidStronghold
 			AddCourtyard(EastOf(1), Size(MediumWidth, MediumWidth));
 			AddSmallLow(EastOf(2), NorthFace);
 			AddCourtyard(NorthOf(0), Size(MediumWidth, MediumWidth));
-			YardDepthCm = 0.f;
 			break;
 		case ESolidStrongholdSize::Grand:
 			AddLargeHigh(Position(Wall, Wall), NorthFace, { Large, Medium, Medium });
 			AddMediumHigh(EastOf(0), NorthFace, { Medium, Medium });
 			AddSmallLow(EastOf(1), NorthFace);
 			AddSmallLow(EastOf(2), NorthFace);
-			AdditionalCourtyard(MediumWidth, AfterLast, MediumWidth, AfterLast);
+			AddMediumGaps(3);
 			break;
 		case ESolidStrongholdSize::Stately:
 			AddLargeHigh(Position(Wall, Wall), NorthFace, { Large, Large, Medium });
@@ -354,7 +345,7 @@ namespace SolidStronghold
 			AddMediumLow(EastOf(1), NorthFace);
 			AddSmallLow(EastOf(2), NorthFace);
 			AddSmallLow(EastOf(3), NorthFace);
-			AdditionalCourtyard(MediumWidth, AfterLast, MediumWidth, AfterLast);
+			AddMediumGaps(4);
 			break;
 		case ESolidStrongholdSize::Imperious:
 			AddLargeHigh(Position(Wall, Wall), NorthFace, { Large, Large, Large });
@@ -363,11 +354,11 @@ namespace SolidStronghold
 			AddSmallLow(EastOf(2), NorthFace);
 			AddSmallLow(EastOf(3), NorthFace);
 			AddSmallLow(EastOf(4), NorthFace);
-			AdditionalCourtyard(MediumWidth, AfterLast, MediumWidth, AfterLast);
+			AddMediumGaps(5);
 			break;
 		default:
 			AddMediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
-			AdditionalCourtyard(MediumWidth, AfterLast, MediumWidth, AfterLast);
+			AddMediumGaps(0);
 			break;
 		}
 	}
@@ -487,37 +478,21 @@ namespace SolidStronghold
 	float FSolidFortress::OuterWidthCm() const
 	{
 		float East = FSolidStronghold::WallCm;
-		if (YardWidthCm <= 0.f || Buildings.Num() == 0)
+		for (const FSolidFortressBuilding& One : Buildings)
 		{
-			for (const FSolidFortressBuilding& One : Buildings)
-			{
-				East = FMath::Max(East, One.InnerMinCm.X + One.WidthCm() + FSolidStronghold::WallCm);
-			}
-			return East;
+			East = FMath::Max(East, One.InnerMinCm.X + One.WidthCm() + FSolidStronghold::WallCm);
 		}
-		const int32 Index = YardEastAfter == AfterLast ? Buildings.Num() - 1 : YardEastAfter;
-		const FSolidFortressBuilding& One = Buildings[Index];
-		return One.InnerMinCm.X + One.WidthCm() + FSolidStronghold::WallCm + YardWidthCm + FSolidStronghold::WallCm;
+		return East;
 	}
 
 	float FSolidFortress::OuterDepthCm() const
 	{
 		float North = FSolidStronghold::WallCm;
-		if (YardDepthCm <= 0.f || Buildings.Num() == 0)
+		for (const FSolidFortressBuilding& One : Buildings)
 		{
-			if (Buildings.Num() == 0)
-			{
-				return FSolidStronghold::WallCm + YardDepthCm + FSolidStronghold::WallCm;
-			}
-			for (const FSolidFortressBuilding& One : Buildings)
-			{
-				North = FMath::Max(North, One.InnerMinCm.Y + One.DepthCm() + FSolidStronghold::WallCm);
-			}
-			return North;
+			North = FMath::Max(North, One.InnerMinCm.Y + One.DepthCm() + FSolidStronghold::WallCm);
 		}
-		const int32 Index = YardNorthAfter == AfterLast ? Buildings.Num() - 1 : YardNorthAfter;
-		const FSolidFortressBuilding& One = Buildings[Index];
-		return One.InnerMinCm.Y + One.DepthCm() + FSolidStronghold::WallCm + YardDepthCm + FSolidStronghold::WallCm;
+		return North;
 	}
 
 	float FSolidFortress::CurtainHeightCm() const

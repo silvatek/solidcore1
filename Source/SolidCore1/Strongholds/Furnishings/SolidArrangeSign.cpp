@@ -261,7 +261,21 @@ FSolidArrangeSign FSolidArrangeSign::ForFortress(const SolidStronghold::FSolidFo
 	const float Depth = Fortress.OuterDepthCm();
 	const float Wall = FSolidStronghold::WallCm;
 	const float PlanX = Width - Wall;
-	const float PlanY = Depth - Wall - Fortress.YardDepthCm * 0.5f;
+	const SolidStronghold::FSolidFortressBuilding* NorthGap = nullptr;
+	for (const SolidStronghold::FSolidFortressBuilding& One : Fortress.Buildings)
+	{
+		if (One.Floors.Num() != 0)
+		{
+			continue;
+		}
+		if (NorthGap == nullptr || One.InnerMinCm.Y > NorthGap->InnerMinCm.Y)
+		{
+			NorthGap = &One;
+		}
+	}
+	const float PlanY = NorthGap
+		? NorthGap->InnerMinCm.Y + NorthGap->DepthCm() * 0.5f
+		: Depth - Wall;
 	const FVector WallFace(Depth * 0.5f - PlanY, PlanX - Width * 0.5f, 150.f);
 	const float TowardWall = StrokeDepthCm + PlateGapCm + PlateDepthCm * 0.5f;
 	const FVector Inward(0.f, -1.f, 0.f);

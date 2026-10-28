@@ -316,9 +316,18 @@ bool FSolidArrangePlateTest::RunTest(const FString& Parameters)
 		TEXT("the fortress plate sits on the east wall"),
 		FMath::IsNearlyEqual(PlateCenter.Y + Yard.PlateSizeCm().X * 0.5f, EastFace, 0.1f));
 	const float PlanY = Depth * 0.5f - PlateCenter.X;
-	const float YardNorth = Depth - Wall;
-	const float YardSouth = YardNorth - Fort.YardDepthCm;
-	TestTrue(TEXT("the fortress plate is in the yard"), PlanY > YardSouth + 1.f && PlanY < YardNorth - 1.f);
+	const SolidStronghold::FSolidFortressBuilding* NorthGap = nullptr;
+	for (const SolidStronghold::FSolidFortressBuilding& One : Fort.Buildings)
+	{
+		if (One.Floors.Num() == 0 && (NorthGap == nullptr || One.InnerMinCm.Y > NorthGap->InnerMinCm.Y))
+		{
+			NorthGap = &One;
+		}
+	}
+	TestNotNull(TEXT("Humble has a north gap"), NorthGap);
+	const float YardSouth = NorthGap ? NorthGap->InnerMinCm.Y : 0.f;
+	const float YardNorth = NorthGap ? NorthGap->InnerMinCm.Y + NorthGap->DepthCm() : Depth - Wall;
+	TestTrue(TEXT("the fortress plate is in the yard"), NorthGap && PlanY > YardSouth + 1.f && PlanY < YardNorth - 1.f);
 	TestTrue(
 		TEXT("the fortress plate is clear of the gate"),
 		FMath::Abs(PlateCenter.Y) > FSolidStronghold::OpeningCm);

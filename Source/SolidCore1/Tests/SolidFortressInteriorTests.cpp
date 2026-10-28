@@ -339,7 +339,7 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 	int32 FloorCount = 0;
 	for (const SolidStronghold::FSolidFortressBuilding& One : Fortress->Buildings)
 	{
-		FloorCount += FMath::Max(One.Floors.Num(), 1);
+		FloorCount += One.Floors.Num();
 	}
 	TestEqual(TEXT("each floor has a light"), Room->GetRoomLights().Num(), FloorCount);
 	TArray<int32> LitRooms;

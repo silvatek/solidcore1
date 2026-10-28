@@ -60,10 +60,10 @@ enum class ESolidStrongholdTrip : uint8
 /** Which way a stronghold exit faces. */
 enum class ESolidStrongholdOrientation : uint8
 {
-	North,
-	East,
-	South,
-	West,
+	NorthFace,
+	EastFace,
+	SouthFace,
+	WestFace,
 };
 
 class AActor;
@@ -119,7 +119,7 @@ public:
 	/** World centimetres of the cell center. Height is the ground under this point. */
 	FVector2D Location = FVector2D::ZeroVector;
 	/** Direction the exit faces. The starting cave faces north. */
-	ESolidStrongholdOrientation Orientation = ESolidStrongholdOrientation::North;
+	ESolidStrongholdOrientation Orientation = ESolidStrongholdOrientation::NorthFace;
 	/**
 	 * Pieces placed on this stronghold.
 	 * The cave starts with the fireplace, the bed, and the chest.
@@ -405,10 +405,10 @@ namespace SolidStronghold
 	{
 		switch (Orientation)
 		{
-		case ESolidStrongholdOrientation::North: return 90.f;
-		case ESolidStrongholdOrientation::East: return 0.f;
-		case ESolidStrongholdOrientation::South: return -90.f;
-		case ESolidStrongholdOrientation::West: return 180.f;
+		case ESolidStrongholdOrientation::NorthFace: return 90.f;
+		case ESolidStrongholdOrientation::EastFace: return 0.f;
+		case ESolidStrongholdOrientation::SouthFace: return -90.f;
+		case ESolidStrongholdOrientation::WestFace: return 180.f;
 		default: return 90.f;
 		}
 	}
@@ -419,17 +419,17 @@ namespace SolidStronghold
 		const float Yaw = FRotator::NormalizeAxis(YawDeg);
 		if (FMath::IsNearlyEqual(Yaw, 90.f, 1.f))
 		{
-			return ESolidStrongholdOrientation::North;
+			return ESolidStrongholdOrientation::NorthFace;
 		}
 		if (FMath::IsNearlyEqual(Yaw, 0.f, 1.f))
 		{
-			return ESolidStrongholdOrientation::East;
+			return ESolidStrongholdOrientation::EastFace;
 		}
 		if (FMath::IsNearlyEqual(Yaw, -90.f, 1.f))
 		{
-			return ESolidStrongholdOrientation::South;
+			return ESolidStrongholdOrientation::SouthFace;
 		}
-		return ESolidStrongholdOrientation::West;
+		return ESolidStrongholdOrientation::WestFace;
 	}
 
 	/** Where ExitStronghold stands the captain: just outside the entrance, facing away. */

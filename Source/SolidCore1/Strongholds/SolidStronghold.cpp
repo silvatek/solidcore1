@@ -80,11 +80,11 @@ namespace SolidStronghold
 		const float NorthCm = Extent / static_cast<float>(USolidWorldChart::MapHeight);
 		switch (Orientation)
 		{
-		case ESolidStrongholdOrientation::East:
-		case ESolidStrongholdOrientation::West:
+		case ESolidStrongholdOrientation::EastFace:
+		case ESolidStrongholdOrientation::WestFace:
 			return EastCm;
-		case ESolidStrongholdOrientation::North:
-		case ESolidStrongholdOrientation::South:
+		case ESolidStrongholdOrientation::NorthFace:
+		case ESolidStrongholdOrientation::SouthFace:
 		default:
 			return NorthCm;
 		}

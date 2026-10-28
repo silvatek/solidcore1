@@ -18,7 +18,7 @@ namespace SolidStronghold
 		/** Ground floor first. Each entry is that floor's room. */
 		TArray<ESolidStrongholdRoom> Floors;
 		/** The doorway faces this way. */
-		ESolidStrongholdOrientation Facing = ESolidStrongholdOrientation::North;
+		ESolidStrongholdOrientation Facing = ESolidStrongholdOrientation::NorthFace;
 		FVector2D InnerMinCm = FVector2D::ZeroVector;
 		/** Inner face across, in centimetres. */
 		float InnerWidthCm = 0.f;
@@ -49,7 +49,7 @@ namespace SolidStronghold
 
 	/**
 	 * A rectangular fortress.
-	 * Place lists the buildings for one size. Average stays unsupported.
+	 * AddBuildings lists the buildings for one size. Average stays unsupported.
 	 * The gate side of the plan is local north. Placement turns that side toward the grass.
 	 */
 	class FSolidFortress : public FSolidStronghold
@@ -60,18 +60,18 @@ namespace SolidStronghold
 		static const FSolidFortress& Instance();
 
 		/** Fills the buildings for this size. A size with no calls has none. */
-		void Place(ESolidStrongholdSize InSize);
+		void AddBuildings(ESolidStrongholdSize InSize);
 
 		/**
 		 * One building.
 		 * PositionCm is the inner south-west corner. FootprintCm is the room block.
-		 * Floors start at the ground, and each entry is that floor's room.
+		 * Facing is the door wall. Floors start at the ground, and each entry is that floor's room.
 		 * A second floor adds the stair along the door wall.
 		 */
 		void AddBuilding(
 			FVector2D PositionCm,
-			ESolidStrongholdOrientation Facing,
 			FVector2D FootprintCm,
+			ESolidStrongholdOrientation Facing,
 			std::initializer_list<ESolidStrongholdRoom> Floors);
 
 		/** Open ground between one building's east outer face and the next building's west outer face. */

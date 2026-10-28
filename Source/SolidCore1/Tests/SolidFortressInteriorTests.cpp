@@ -353,20 +353,20 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidFortressDoorFacingTest::RunTest(const FString& Parameters)
 {
 	SolidStronghold::FSolidFortress Fort;
-	Fort.Place(ESolidStrongholdSize::Meagre);
+	Fort.AddBuildings(ESolidStrongholdSize::Meagre);
 	TestFalse(TEXT("Average stays unsupported"), Fort.Supported(ESolidStrongholdSize::Average));
-	// Place does not build this row. It witnesses a centered doorway on the face a building faces.
+	// AddBuildings does not build this row. It witnesses a centered doorway on the face a building faces.
 	const float Wall = FSolidStronghold::WallCm;
 	const float RoomDepth = 5.f * SolidStrongholdGrid::SideCm();
 	Fort.AddBuilding(
 		FVector2D(Wall, Wall),
-		ESolidStrongholdOrientation::East,
 		FVector2D(300.f, RoomDepth),
+		ESolidStrongholdOrientation::EastFace,
 		{ ESolidStrongholdRoom::Small });
 	Fort.AddBuilding(
 		FVector2D(Wall + 300.f + 2.f * Wall, Wall),
-		ESolidStrongholdOrientation::North,
 		FVector2D(300.f, RoomDepth),
+		ESolidStrongholdOrientation::NorthFace,
 		{ ESolidStrongholdRoom::Small });
 
 	ASolidFortressInterior* Room = NewObject<ASolidFortressInterior>();
@@ -444,10 +444,10 @@ bool FSolidFortressDoorFacingTest::RunTest(const FString& Parameters)
 			float PlanY;
 		};
 		const FFace Faces[] = {
-			{ ESolidStrongholdOrientation::West, bWest, MinX + Wall * 0.5f, (MinY + MaxY) * 0.5f },
-			{ ESolidStrongholdOrientation::East, bEast, MaxX - Wall * 0.5f, (MinY + MaxY) * 0.5f },
-			{ ESolidStrongholdOrientation::South, bSouth, (MinX + MaxX) * 0.5f, MinY + Wall * 0.5f },
-			{ ESolidStrongholdOrientation::North, bNorth, (MinX + MaxX) * 0.5f, MaxY - Wall * 0.5f },
+			{ ESolidStrongholdOrientation::WestFace, bWest, MinX + Wall * 0.5f, (MinY + MaxY) * 0.5f },
+			{ ESolidStrongholdOrientation::EastFace, bEast, MaxX - Wall * 0.5f, (MinY + MaxY) * 0.5f },
+			{ ESolidStrongholdOrientation::SouthFace, bSouth, (MinX + MaxX) * 0.5f, MinY + Wall * 0.5f },
+			{ ESolidStrongholdOrientation::NorthFace, bNorth, (MinX + MaxX) * 0.5f, MaxY - Wall * 0.5f },
 		};
 		for (const FFace& Face : Faces)
 		{
@@ -461,11 +461,11 @@ bool FSolidFortressDoorFacingTest::RunTest(const FString& Parameters)
 				bGap == (Face.Facing == One.Facing));
 			if (Face.Facing == One.Facing && bGap)
 			{
-				if (One.Facing == ESolidStrongholdOrientation::East)
+				if (One.Facing == ESolidStrongholdOrientation::EastFace)
 				{
 					++EastDoors;
 				}
-				if (One.Facing == ESolidStrongholdOrientation::North)
+				if (One.Facing == ESolidStrongholdOrientation::NorthFace)
 				{
 					++NorthDoors;
 				}

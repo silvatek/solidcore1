@@ -108,11 +108,11 @@ namespace SolidStronghold
 		const float HalfStep = PointSpacing * 0.5f;
 		switch (InOrientation)
 		{
-		case ESolidStrongholdOrientation::North:
-		case ESolidStrongholdOrientation::West:
+		case ESolidStrongholdOrientation::NorthFace:
+		case ESolidStrongholdOrientation::WestFace:
 			return -HalfStep;
-		case ESolidStrongholdOrientation::South:
-		case ESolidStrongholdOrientation::East:
+		case ESolidStrongholdOrientation::SouthFace:
+		case ESolidStrongholdOrientation::EastFace:
 		default:
 			return HalfStep;
 		}

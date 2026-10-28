@@ -86,7 +86,7 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 	}
 	TestTrue(TEXT("the ground floor is small"), Building.Floors[0] == ESolidStrongholdRoom::Small);
 	TestTrue(TEXT("the upper floor is medium"), Building.Floors[1] == ESolidStrongholdRoom::Medium);
-	TestTrue(TEXT("the doorway faces north"), Building.Facing == ESolidStrongholdOrientation::North);
+	TestTrue(TEXT("the doorway faces north"), Building.Facing == ESolidStrongholdOrientation::NorthFace);
 	TestTrue(TEXT("the doorway is centered on the landing"), FMath::IsNearlyEqual(Building.DoorFromInnerCm(), 100.f, 0.05f));
 	TestTrue(TEXT("a second floor keeps a stair"), Building.HasStair());
 	TestTrue(
@@ -198,7 +198,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidFortressAveragePlanTest::RunTest(const FString& Parameters)
 {
 	SolidStronghold::FSolidFortress Fortress;
-	Fortress.Place(ESolidStrongholdSize::Average);
+	Fortress.AddBuildings(ESolidStrongholdSize::Average);
 	TestFalse(TEXT("Average stays unsupported"), Fortress.Supported(ESolidStrongholdSize::Average));
 	TestEqual(TEXT("Average has one building"), Fortress.Buildings.Num(), 1);
 	if (Fortress.Buildings.Num() != 1)
@@ -215,7 +215,7 @@ bool FSolidFortressAveragePlanTest::RunTest(const FString& Parameters)
 	}
 	TestTrue(TEXT("the ground floor is small"), Building.Floors[0] == ESolidStrongholdRoom::Small);
 	TestTrue(TEXT("the upper floor is medium"), Building.Floors[1] == ESolidStrongholdRoom::Medium);
-	TestTrue(TEXT("the doorway faces north"), Building.Facing == ESolidStrongholdOrientation::North);
+	TestTrue(TEXT("the doorway faces north"), Building.Facing == ESolidStrongholdOrientation::NorthFace);
 	TestTrue(
 		TEXT("Average keeps the Humble building"),
 		Building.InnerMinCm.Equals(Humble.InnerMinCm, 0.05f)

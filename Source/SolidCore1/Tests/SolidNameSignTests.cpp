@@ -211,12 +211,12 @@ bool FSolidNameSignPlaceTest::RunTest(const FString& Parameters)
 		ESolidStrongholdSize::Meagre,
 		SolidStronghold::StartingCell(),
 		FVector2D(1000.f, 2000.f));
-	Cave->Orientation = ESolidStrongholdOrientation::North;
+	Cave->Orientation = ESolidStrongholdOrientation::NorthFace;
 	Cave->Name = SolidStronghold::StartingStrongholdName;
 	const SolidStronghold::FSolidDungeon& Dungeon = static_cast<const SolidStronghold::FSolidDungeon&>(*Cave);
 	const FSolidNameSignPlace North = Dungeon.NameSign();
 	const FVector NorthPole = SolidNameSigns::PoleLocalCm(North, Dungeon.Name);
-	const float NorthOpening = Dungeon.ShelfLateralCm(ESolidStrongholdOrientation::North)
+	const float NorthOpening = Dungeon.ShelfLateralCm(ESolidStrongholdOrientation::NorthFace)
 		+ SolidStrongholds::OpeningWidthCm * 0.5f;
 	const float NorthNear = NorthPole.Y - SolidNameSigns::BoardWidthCm(Dungeon.Name) * 0.5f;
 	TestTrue(
@@ -227,13 +227,13 @@ bool FSolidNameSignPlaceTest::RunTest(const FString& Parameters)
 		TEXT("the cave sign is clear of the captain's stand"),
 		FVector::Dist2D(NorthStand, NorthPole) > Dungeon.LeaveStandCm());
 
-	Cave->Orientation = ESolidStrongholdOrientation::East;
+	Cave->Orientation = ESolidStrongholdOrientation::EastFace;
 	const FSolidNameSignPlace East = Dungeon.NameSign();
 	TestFalse(TEXT("east and north use different frame edges"), North.FrameEdgeCm.Equals(East.FrameEdgeCm, 1.f));
 	TestTrue(TEXT("the cave board faces the grass"), FMath::IsNearlyEqual(North.YawDeg, 0.f));
 
 	const SolidNameSigns::FWorldPlace World = SolidNameSigns::WorldPlace(*Cave, nullptr);
-	Cave->Orientation = ESolidStrongholdOrientation::North;
+	Cave->Orientation = ESolidStrongholdOrientation::NorthFace;
 	const FVector Local = SolidNameSigns::PoleLocalCm(Cave->NameSign(), Cave->Name);
 	const FVector Expected = FTransform(
 		FRotator(0.f, 90.f, 0.f),

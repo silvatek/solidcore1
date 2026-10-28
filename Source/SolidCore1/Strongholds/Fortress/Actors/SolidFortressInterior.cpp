@@ -329,10 +329,10 @@ void ASolidFortressInterior::BuildVisuals()
 				AddBuilding(Fixed, Door, LintelZ, Wall, Opening, Lintel);
 			}
 		};
-		AddFace(bWestCurtain, ESolidStrongholdOrientation::West, MinX + Wall * 0.5f, MinY, MaxY, false);
-		AddFace(bEastCurtain, ESolidStrongholdOrientation::East, MaxX - Wall * 0.5f, MinY, MaxY, false);
-		AddFace(bSouthCurtain, ESolidStrongholdOrientation::South, MinY + Wall * 0.5f, MinX, MaxX, true);
-		AddFace(bNorthCurtain, ESolidStrongholdOrientation::North, MaxY - Wall * 0.5f, MinX, MaxX, true);
+		AddFace(bWestCurtain, ESolidStrongholdOrientation::WestFace, MinX + Wall * 0.5f, MinY, MaxY, false);
+		AddFace(bEastCurtain, ESolidStrongholdOrientation::EastFace, MaxX - Wall * 0.5f, MinY, MaxY, false);
+		AddFace(bSouthCurtain, ESolidStrongholdOrientation::SouthFace, MinY + Wall * 0.5f, MinX, MaxX, true);
+		AddFace(bNorthCurtain, ESolidStrongholdOrientation::NorthFace, MaxY - Wall * 0.5f, MinX, MaxX, true);
 
 		const float InnerMinX = bWestCurtain ? MinX : MinX + Wall;
 		const float InnerMaxX = bEastCurtain ? MaxX : MaxX - Wall;

@@ -126,11 +126,11 @@ namespace SolidStronghold
 		{
 			GridMin = InnerMinCm;
 			const float StairCm = FPlan{}.StairWidthCm;
-			if (Facing == ESolidStrongholdOrientation::South)
+			if (Facing == ESolidStrongholdOrientation::SouthFace)
 			{
 				GridMin.Y += StairCm;
 			}
-			else if (Facing == ESolidStrongholdOrientation::West)
+			else if (Facing == ESolidStrongholdOrientation::WestFace)
 			{
 				GridMin.X += StairCm;
 			}
@@ -161,13 +161,13 @@ namespace SolidStronghold
 		Type = ESolidStrongholdType::Fortress;
 		ParapetCm = SolidStrongholdGrid::FlatToFlatCm;
 		YardDepthCm = FSolidStronghold::StoreyCm;
-		Place(ESolidStrongholdSize::Humble);
+		AddBuildings(ESolidStrongholdSize::Humble);
 	}
 
 	void FSolidFortress::AddBuilding(
 		const FVector2D PositionCm,
-		const ESolidStrongholdOrientation InFacing,
 		const FVector2D FootprintCm,
+		const ESolidStrongholdOrientation InFacing,
 		const std::initializer_list<ESolidStrongholdRoom> InFloors)
 	{
 		FSolidFortressBuilding Building;
@@ -179,7 +179,7 @@ namespace SolidStronghold
 		if (Building.HasStair())
 		{
 			const float StairCm = FPlan{}.StairWidthCm;
-			if (InFacing == ESolidStrongholdOrientation::North || InFacing == ESolidStrongholdOrientation::South)
+			if (InFacing == ESolidStrongholdOrientation::NorthFace || InFacing == ESolidStrongholdOrientation::SouthFace)
 			{
 				Building.InnerDepthCm += StairCm;
 			}
@@ -191,7 +191,7 @@ namespace SolidStronghold
 		Buildings.Add(Building);
 	}
 
-	void FSolidFortress::Place(const ESolidStrongholdSize InSize)
+	void FSolidFortress::AddBuildings(const ESolidStrongholdSize InSize)
 	{
 		using enum ESolidStrongholdRoom;
 		using enum ESolidStrongholdOrientation;
@@ -201,12 +201,13 @@ namespace SolidStronghold
 		using SolidFortressPrivate::Position;
 		using SolidFortressPrivate::Size;
 		const float Wall = FSolidStronghold::WallCm;
-		const float Depth = 5.f * SolidStrongholdGrid::SideCm();
+		const float MediumWidth = 5.f * SolidStrongholdGrid::SideCm();
+		const float MediumLength = 4.5f * SolidStrongholdGrid::FlatToFlatCm;
 		switch (InSize)
 		{
 		case ESolidStrongholdSize::Humble:
 		case ESolidStrongholdSize::Average:
-			AddBuilding(Position(Wall, Wall), North, Size(540.f, Depth), { Small, Medium });
+			AddBuilding(Position(Wall, Wall), Size(MediumLength, MediumWidth), NorthFace, { Small, Medium });
 			break;
 		case ESolidStrongholdSize::Meagre:
 		case ESolidStrongholdSize::Impressive:

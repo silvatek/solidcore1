@@ -121,6 +121,44 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the building is drawn"), Room->GetBuildingMeshes().Num() >= 1);
 	TestEqual(TEXT("the gate is still the way out"), Room->GetPassageMesh(), Room->GetGateMesh());
 
+	const float BuildingTop = Fortress->Buildings[0].HeightCm(Fortress->ParapetCm);
+	const float Parapet = Fortress->ParapetCm;
+	const float Thickness = Parapet * 0.4f;
+	int32 Merlons = 0;
+	int32 Lows = 0;
+	for (const TObjectPtr<UStaticMeshComponent>& Part : Room->GetBuildingMeshes())
+	{
+		if (!Part)
+		{
+			continue;
+		}
+		const float PartHeight = Part->GetRelativeScale3D().Z * 100.f;
+		const float PartTop = Part->GetRelativeLocation().Z + PartHeight * 0.5f;
+		const bool bHigh = FMath::IsNearlyEqual(PartHeight, Parapet, 0.5f)
+			&& FMath::IsNearlyEqual(PartTop, BuildingTop, 0.5f);
+		const bool bLow = FMath::IsNearlyEqual(PartHeight, Parapet * 0.5f, 0.5f)
+			&& FMath::IsNearlyEqual(PartTop, BuildingTop - Parapet * 0.5f, 0.5f);
+		if (!bHigh && !bLow)
+		{
+			continue;
+		}
+		if (bHigh)
+		{
+			++Merlons;
+		}
+		else
+		{
+			++Lows;
+		}
+		const float PlanX = Part->GetRelativeScale3D().Y * 100.f;
+		const float PlanY = Part->GetRelativeScale3D().X * 100.f;
+		TestTrue(
+			TEXT("a merlon is forty percent of the parapet height thick"),
+			FMath::IsNearlyEqual(PlanX, Thickness, 0.5f) || FMath::IsNearlyEqual(PlanY, Thickness, 0.5f));
+	}
+	TestTrue(TEXT("the corners are high"), Merlons >= 4);
+	TestTrue(TEXT("low sections sit between the corners"), Lows > 0);
+
 	auto Covers = [](const UStaticMeshComponent* Part, const FVector& Point)
 	{
 		const FVector Location = Part->GetRelativeLocation();

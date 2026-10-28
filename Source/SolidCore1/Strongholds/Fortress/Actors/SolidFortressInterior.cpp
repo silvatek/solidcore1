@@ -287,6 +287,9 @@ void ASolidFortressInterior::BuildVisuals()
 		}
 
 		const float BuildingHeight = One.HeightCm(Fortress->ParapetCm);
+		const float Parapet = Fortress->ParapetCm;
+		const bool bMerlons = One.Floors.Num() >= 2 && Parapet > KINDA_SMALL_NUMBER;
+		const float WallTop = bMerlons ? BuildingHeight - Parapet : BuildingHeight;
 		// A yard face is solid. The doorway is on the face the building faces.
 		auto AddFace = [&](
 			const bool bCurtain,
@@ -300,16 +303,16 @@ void ASolidFortressInterior::BuildVisuals()
 			{
 				return;
 			}
-			const float MidZ = BuildingHeight * 0.5f;
+			const float MidZ = WallTop * 0.5f;
 			if (One.Facing != Face)
 			{
 				if (bSpanIsX)
 				{
-					AddBuilding((SpanMin + SpanMax) * 0.5f, Fixed, MidZ, SpanMax - SpanMin, Wall, BuildingHeight);
+					AddBuilding((SpanMin + SpanMax) * 0.5f, Fixed, MidZ, SpanMax - SpanMin, Wall, WallTop);
 				}
 				else
 				{
-					AddBuilding(Fixed, (SpanMin + SpanMax) * 0.5f, MidZ, Wall, SpanMax - SpanMin, BuildingHeight);
+					AddBuilding(Fixed, (SpanMin + SpanMax) * 0.5f, MidZ, Wall, SpanMax - SpanMin, WallTop);
 				}
 				return;
 			}
@@ -320,18 +323,18 @@ void ASolidFortressInterior::BuildVisuals()
 				: (SpanMin + SpanMax) * 0.5f;
 			const float DoorMin = Door - Opening * 0.5f;
 			const float DoorMax = Door + Opening * 0.5f;
-			const float LintelZ = (Storey + BuildingHeight) * 0.5f;
-			const float Lintel = BuildingHeight - Storey;
+			const float LintelZ = (Storey + WallTop) * 0.5f;
+			const float Lintel = WallTop - Storey;
 			if (bSpanIsX)
 			{
-				AddBuilding((SpanMin + DoorMin) * 0.5f, Fixed, MidZ, DoorMin - SpanMin, Wall, BuildingHeight);
-				AddBuilding((DoorMax + SpanMax) * 0.5f, Fixed, MidZ, SpanMax - DoorMax, Wall, BuildingHeight);
+				AddBuilding((SpanMin + DoorMin) * 0.5f, Fixed, MidZ, DoorMin - SpanMin, Wall, WallTop);
+				AddBuilding((DoorMax + SpanMax) * 0.5f, Fixed, MidZ, SpanMax - DoorMax, Wall, WallTop);
 				AddBuilding(Door, Fixed, LintelZ, Opening, Wall, Lintel);
 			}
 			else
 			{
-				AddBuilding(Fixed, (SpanMin + DoorMin) * 0.5f, MidZ, Wall, DoorMin - SpanMin, BuildingHeight);
-				AddBuilding(Fixed, (DoorMax + SpanMax) * 0.5f, MidZ, Wall, SpanMax - DoorMax, BuildingHeight);
+				AddBuilding(Fixed, (SpanMin + DoorMin) * 0.5f, MidZ, Wall, DoorMin - SpanMin, Wall, WallTop);
+				AddBuilding(Fixed, (DoorMax + SpanMax) * 0.5f, MidZ, Wall, SpanMax - DoorMax, Wall, WallTop);
 				AddBuilding(Fixed, Door, LintelZ, Wall, Opening, Lintel);
 			}
 		};
@@ -347,11 +350,11 @@ void ASolidFortressInterior::BuildVisuals()
 			const float SpanMax,
 			const bool bSpanIsX)
 		{
-			if (!bCurtain || BuildingHeight <= Height + KINDA_SMALL_NUMBER)
+			if (!bCurtain || WallTop <= Height + KINDA_SMALL_NUMBER)
 			{
 				return;
 			}
-			const float Upper = BuildingHeight - Height;
+			const float Upper = WallTop - Height;
 			const float UpperZ = Height + Upper * 0.5f;
 			if (bSpanIsX)
 			{
@@ -366,6 +369,67 @@ void ASolidFortressInterior::BuildVisuals()
 		AddAboveCurtain(bEastCurtain, Width - Wall * 0.5f, MinY, MaxY, false);
 		AddAboveCurtain(bSouthCurtain, Wall * 0.5f, MinX, MaxX, true);
 		AddAboveCurtain(bNorthCurtain, Depth - Wall * 0.5f, MinX, MaxX, true);
+		if (bMerlons)
+		{
+			const float Thickness = Parapet * 0.4f;
+			const float MerlonZ = WallTop + Parapet * 0.5f;
+			const float LowHeight = Parapet * 0.5f;
+			const float LowZ = WallTop + LowHeight * 0.5f;
+			auto AddPiece = [&](
+				const float CenterAlong,
+				const float SizeAlong,
+				const bool bAlongX,
+				const float Fixed,
+				const float PieceHeight,
+				const float CenterZ)
+			{
+				if (bAlongX)
+				{
+					AddBuilding(CenterAlong, Fixed, CenterZ, SizeAlong, Thickness, PieceHeight);
+				}
+				else
+				{
+					AddBuilding(Fixed, CenterAlong, CenterZ, Thickness, SizeAlong, PieceHeight);
+				}
+			};
+			auto AddCorner = [&](const float PlanX, const float PlanY)
+			{
+				AddBuilding(PlanX, PlanY, MerlonZ, Thickness, Thickness, Parapet);
+			};
+			AddCorner(MinX + Thickness * 0.5f, MinY + Thickness * 0.5f);
+			AddCorner(MaxX - Thickness * 0.5f, MinY + Thickness * 0.5f);
+			AddCorner(MinX + Thickness * 0.5f, MaxY - Thickness * 0.5f);
+			AddCorner(MaxX - Thickness * 0.5f, MaxY - Thickness * 0.5f);
+			auto FillBetween = [&](const float Start, const float End, const bool bAlongX, const float Fixed)
+			{
+				const float Span = End - Start;
+				if (Span <= KINDA_SMALL_NUMBER)
+				{
+					return;
+				}
+				const int32 LowCount = FMath::FloorToInt(Span / Parapet);
+				if (LowCount <= 0)
+				{
+					AddPiece((Start + End) * 0.5f, Span, bAlongX, Fixed, Parapet, MerlonZ);
+					return;
+				}
+				const float HighEach = Span / (1.5f * static_cast<float>(LowCount) + 1.f);
+				const float LowWidth = HighEach * 0.5f;
+				float Cursor = Start;
+				for (int32 Index = 0; Index < LowCount; ++Index)
+				{
+					AddPiece(Cursor + HighEach * 0.5f, HighEach, bAlongX, Fixed, Parapet, MerlonZ);
+					Cursor += HighEach;
+					AddPiece(Cursor + LowWidth * 0.5f, LowWidth, bAlongX, Fixed, LowHeight, LowZ);
+					Cursor += LowWidth;
+				}
+				AddPiece(Cursor + HighEach * 0.5f, HighEach, bAlongX, Fixed, Parapet, MerlonZ);
+			};
+			FillBetween(MinX + Thickness, MaxX - Thickness, true, MinY + Thickness * 0.5f);
+			FillBetween(MinX + Thickness, MaxX - Thickness, true, MaxY - Thickness * 0.5f);
+			FillBetween(MinY + Thickness, MaxY - Thickness, false, MinX + Thickness * 0.5f);
+			FillBetween(MinY + Thickness, MaxY - Thickness, false, MaxX - Thickness * 0.5f);
+		}
 
 		const float InnerMinX = bWestCurtain ? MinX : MinX + Wall;
 		const float InnerMaxX = bEastCurtain ? MaxX : MaxX - Wall;

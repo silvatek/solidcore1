@@ -13,7 +13,8 @@ class UStaticMeshComponent;
 /**
  * One fortress visit, at the origin.
  * The outer wall is a closed rectangle. The dark gate is on local -X.
- * The building stands on the far side. A ceiling closes it at one storey.
+ * The building stands on the far side. A taller building tops its wall with merlons. The outer wall stays plain.
+ * A ceiling closes the room at one storey.
  * It has a light under that ceiling. The ground floor draws the hex grid.
  * The doorway is on the face the building faces.
  * The east wall of the yard carries an Arrange furniture plate.

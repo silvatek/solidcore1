@@ -208,6 +208,10 @@ void ASolidFortressExterior::BuildVisuals()
 
 	for (const SolidStronghold::FSolidFortressBuilding& One : Fortress->Buildings)
 	{
+		if (One.Floors.Num() == 0)
+		{
+			continue;
+		}
 		float MinX = One.InnerMinCm.X - Wall;
 		float MaxX = One.InnerMinCm.X + One.WidthCm() + Wall;
 		float MinY = One.InnerMinCm.Y - Wall;

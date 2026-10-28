@@ -336,8 +336,8 @@ bool FSolidFortressImpressivePlanTest::RunTest(const FString& Parameters)
 {
 	SolidStronghold::FSolidFortress Fortress;
 	Fortress.AddBuildings(ESolidStrongholdSize::Impressive);
-	TestEqual(TEXT("Impressive has three buildings"), Fortress.Buildings.Num(), 3);
-	if (Fortress.Buildings.Num() != 3)
+	TestEqual(TEXT("Impressive has four places"), Fortress.Buildings.Num(), 4);
+	if (Fortress.Buildings.Num() != 4)
 	{
 		return false;
 	}
@@ -364,7 +364,7 @@ bool FSolidFortressImpressivePlanTest::RunTest(const FString& Parameters)
 				One.InnerMinCm.X + One.WidthCm() + 2.f * FSolidStronghold::WallCm + Fortress.GapCm,
 				0.05f);
 	};
-	for (int32 Index = 1; Index < Fortress.Buildings.Num(); ++Index)
+	const auto SmallRoom = [this, &Fortress, &Beside](const int32 Index)
 	{
 		const SolidStronghold::FSolidFortressBuilding& Small = Fortress.Buildings[Index];
 		TestEqual(
@@ -383,25 +383,29 @@ bool FSolidFortressImpressivePlanTest::RunTest(const FString& Parameters)
 		TestTrue(
 			*FString::Printf(TEXT("small building %d sits beside the one before it"), Index),
 			Beside(Fortress.Buildings[Index - 1], Small));
-	}
-
+	};
+	SmallRoom(1);
 	const float MediumWidth = 5.f * SolidStrongholdGrid::SideCm();
+	const SolidStronghold::FSolidFortressBuilding& Courtyard = Fortress.Buildings[2];
+	TestEqual(TEXT("the courtyard has no floors"), Courtyard.Floors.Num(), 0);
+	TestTrue(
+		TEXT("the courtyard is the medium size"),
+		FMath::IsNearlyEqual(Courtyard.InnerWidthCm, MediumWidth, 0.05f)
+			&& FMath::IsNearlyEqual(Courtyard.InnerDepthCm, MediumWidth, 0.05f));
+	TestTrue(
+		TEXT("the courtyard sits east of the first small building"),
+		Beside(Fortress.Buildings[1], Courtyard));
+	SmallRoom(3);
 	TestTrue(
 		TEXT("the north yard is the medium width"),
 		FMath::IsNearlyEqual(Fortress.YardDepthCm, MediumWidth, 0.05f));
-	const SolidStronghold::FSolidFortressBuilding& FirstSmall = Fortress.Buildings[1];
-	const SolidStronghold::FSolidFortressBuilding& SecondSmall = Fortress.Buildings[2];
-	const float EastWall = SecondSmall.InnerMinCm.X + SecondSmall.WidthCm() + FSolidStronghold::WallCm;
-	TestTrue(
-		TEXT("the east yard is after the first small building"),
-		FMath::IsNearlyEqual(
-			Fortress.OuterWidthCm(),
-			FirstSmall.InnerMinCm.X + FirstSmall.WidthCm() + FSolidStronghold::WallCm
-				+ Fortress.YardWidthCm + FSolidStronghold::WallCm,
-			0.05f));
+	const SolidStronghold::FSolidFortressBuilding& SecondSmall = Fortress.Buildings[3];
 	TestTrue(
 		TEXT("the second small building's east wall meets the outer wall"),
-		FMath::IsNearlyEqual(EastWall, Fortress.OuterWidthCm(), 0.05f));
+		FMath::IsNearlyEqual(
+			SecondSmall.InnerMinCm.X + SecondSmall.WidthCm() + FSolidStronghold::WallCm,
+			Fortress.OuterWidthCm(),
+			0.05f));
 
 	TestEqual(
 		TEXT("Impressive usable hexes are the kit"),

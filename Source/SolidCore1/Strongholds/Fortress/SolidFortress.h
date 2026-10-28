@@ -160,5 +160,10 @@ namespace SolidStronghold
 		 * A small room on one floor. The size is the room, so there is no room list, and no stair.
 		 */
 		void AddSmallLow(FVector2D PositionCm, ESolidStrongholdOrientation Facing);
+		/**
+		 * Open ground. PositionCm is the inner south-west corner, and SizeCm is that open face.
+		 * It is listed with the buildings so a later piece can sit EastOf it. It is not drawn.
+		 */
+		void AddCourtyard(FVector2D PositionCm, FVector2D SizeCm);
 	};
 }

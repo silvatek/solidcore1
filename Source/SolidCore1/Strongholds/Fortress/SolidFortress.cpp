@@ -286,6 +286,15 @@ namespace SolidStronghold
 		AddBuilding(PositionCm, FVector2D(SmallWidth, SmallDepth), InFacing, { ESolidStrongholdRoom::Small });
 	}
 
+	void FSolidFortress::AddCourtyard(const FVector2D PositionCm, const FVector2D SizeCm)
+	{
+		FSolidFortressBuilding Gap;
+		Gap.InnerMinCm = PositionCm;
+		Gap.InnerWidthCm = SizeCm.X;
+		Gap.InnerDepthCm = SizeCm.Y;
+		Buildings.Add(Gap);
+	}
+
 	void FSolidFortress::AddBuildings(const ESolidStrongholdSize InSize)
 	{
 		using enum ESolidStrongholdRoom;
@@ -298,6 +307,7 @@ namespace SolidStronghold
 		YardNorthAfter = AfterLast;
 		YardEastAfter = AfterLast;
 		using SolidFortressPrivate::Position;
+		using SolidFortressPrivate::Size;
 		const float Wall = FSolidStronghold::WallCm;
 		const float MediumWidth = 5.f * SolidStrongholdGrid::SideCm();
 		switch (InSize)
@@ -315,17 +325,12 @@ namespace SolidStronghold
 			AdditionalCourtyard(MediumWidth, AfterLast, MediumWidth, AfterLast);
 			break;
 		case ESolidStrongholdSize::Impressive:
-		{
 			AddMediumHigh(Position(Wall, Wall), NorthFace, { Medium, Medium, Medium });
 			AddSmallLow(EastOf(0), NorthFace);
-			AddSmallLow(EastOf(1), NorthFace);
-			const FSolidFortressBuilding& FirstSmall = Buildings[1];
-			const FSolidFortressBuilding& SecondSmall = Buildings[2];
-			const float EastSpan = (SecondSmall.InnerMinCm.X + SecondSmall.WidthCm())
-				- (FirstSmall.InnerMinCm.X + FirstSmall.WidthCm() + Wall);
-			AdditionalCourtyard(MediumWidth, AfterLast, EastSpan, 1);
+			AddCourtyard(EastOf(1), Size(MediumWidth, MediumWidth));
+			AddSmallLow(EastOf(2), NorthFace);
+			AdditionalCourtyard(MediumWidth, AfterLast, 0.f, AfterLast);
 			break;
-		}
 		case ESolidStrongholdSize::Grand:
 			AddLargeHigh(Position(Wall, Wall), NorthFace, { Large, Medium, Medium });
 			AddMediumHigh(EastOf(0), NorthFace, { Medium, Medium });

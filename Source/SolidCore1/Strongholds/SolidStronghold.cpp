@@ -464,14 +464,10 @@ bool SolidStrongholdTransition::Move(
 
 	TArray<SolidStrongholdGrid::FHex> Hexes;
 	SolidStronghold::TypeOf(Type).CollectGroundHexes(Size, Hexes);
-	if (Hexes.Num() == 0)
-	{
-		return false;
-	}
 
 	FSolidStronghold* Leaving = Company.GetStronghold();
 	TArray<SolidStrongholdFurniture::FPlacedFurnishing> Moved = Leaving ? Leaving->Furnishings : TArray<SolidStrongholdFurniture::FPlacedFurnishing>();
-	if (!PlaceOnFloor(Moved, Hexes))
+	if (Hexes.Num() > 0 && !PlaceOnFloor(Moved, Hexes))
 	{
 		return false;
 	}

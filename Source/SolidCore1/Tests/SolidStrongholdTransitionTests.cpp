@@ -534,6 +534,25 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the company is on the fortress site"), FortressCompany->GetStronghold()->Cell, HumbleCell);
 	TestEqual(TEXT("the cave is the fortress history"), FortressState.PreviousStrongholds.Num(), 1);
 	TestEqual(TEXT("the starting pieces moved onto the fortress"), FortressCompany->GetStronghold()->Furnishings.Num(), CavePieces.Num());
+	Unlock(FortressState, ESolidStrongholdSize::Imperious);
+	const FIntPoint ImpressiveCell(12, 21);
+	TestTrue(
+		TEXT("an empty fortress can be chosen"),
+		SolidStrongholdTransition::Move(
+			*FortressCompany,
+			FortressState,
+			ImpressiveCell,
+			ESolidStrongholdSize::Impressive,
+			ESolidStrongholdType::Fortress));
+	TestEqual(
+		TEXT("the stronghold size is Impressive"),
+		static_cast<uint8>(FortressCompany->GetStronghold()->Size),
+		static_cast<uint8>(ESolidStrongholdSize::Impressive));
+	TestEqual(TEXT("the company is on the empty fortress site"), FortressCompany->GetStronghold()->Cell, ImpressiveCell);
+	TestEqual(
+		TEXT("the pieces stay with the empty fortress"),
+		FortressCompany->GetStronghold()->Furnishings.Num(),
+		CavePieces.Num());
 	return true;
 }
 

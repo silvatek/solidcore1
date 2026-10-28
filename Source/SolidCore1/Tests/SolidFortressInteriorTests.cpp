@@ -354,7 +354,7 @@ bool FSolidFortressDoorFacingTest::RunTest(const FString& Parameters)
 {
 	SolidStronghold::FSolidFortress Fort;
 	Fort.AddBuildings(ESolidStrongholdSize::Meagre);
-	TestFalse(TEXT("Average stays unsupported"), Fort.Supported(ESolidStrongholdSize::Average));
+	TestTrue(TEXT("Average is supported"), Fort.Supported(ESolidStrongholdSize::Average));
 	// AddBuildings does not build this row. It witnesses a centered doorway on the face a building faces.
 	const float Wall = FSolidStronghold::WallCm;
 	const float RoomDepth = 5.f * SolidStrongholdGrid::SideCm();

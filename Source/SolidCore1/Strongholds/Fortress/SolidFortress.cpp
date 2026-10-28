@@ -166,7 +166,8 @@ namespace SolidStronghold
 	{
 		Type = ESolidStrongholdType::Fortress;
 		ParapetCm = SolidStrongholdGrid::FlatToFlatCm;
-		AddBuildings(ESolidStrongholdSize::Humble);
+		Size = ESolidStrongholdSize::Humble;
+		BindPlan();
 	}
 
 	void FSolidFortress::AddBuilding(
@@ -214,8 +215,6 @@ namespace SolidStronghold
 		const float Wall = FSolidStronghold::WallCm;
 		const float MediumWidth = 5.f * SolidStrongholdGrid::SideCm();
 		const float MediumLength = 4.5f * SolidStrongholdGrid::FlatToFlatCm;
-		// Every size starts with a medium east yard, so a size with no building still has a courtyard.
-		AdditionalCourtyard(FSolidStronghold::StoreyCm, MediumWidth);
 		switch (InSize)
 		{
 		case ESolidStrongholdSize::Humble:
@@ -225,6 +224,8 @@ namespace SolidStronghold
 			AddBuilding(Position(Wall, Wall), Size(MediumLength, MediumWidth), NorthFace, { Small, Medium });
 			break;
 		default:
+			// A size with no building still has a courtyard.
+			AdditionalCourtyard(FSolidStronghold::StoreyCm, MediumWidth);
 			break;
 		}
 	}
@@ -235,9 +236,14 @@ namespace SolidStronghold
 		return Fortress;
 	}
 
+	void FSolidFortress::BindPlan()
+	{
+		AddBuildings(Size);
+	}
+
 	bool FSolidFortress::Supported(const ESolidStrongholdSize InSize) const
 	{
-		return InSize == ESolidStrongholdSize::Humble;
+		return InSize != ESolidStrongholdSize::Meagre;
 	}
 
 	ESolidStrongholdTrip FSolidFortress::Trip() const
@@ -381,8 +387,10 @@ namespace SolidStronghold
 		{
 			return;
 		}
+		FSolidFortress Sized;
+		Sized.AddBuildings(InSize);
 		int32 Shift = 0;
-		for (const FSolidFortressBuilding& One : Buildings)
+		for (const FSolidFortressBuilding& One : Sized.Buildings)
 		{
 			TArray<SolidStrongholdGrid::FHex> Room;
 			One.CollectHexes(Room);

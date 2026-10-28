@@ -51,7 +51,7 @@ namespace SolidStronghold
 
 	/**
 	 * A rectangular fortress.
-	 * AddBuildings lists the buildings for one size. Average stays unsupported.
+	 * AddBuildings lists the buildings for one size. Meagre stays unsupported.
 	 * The gate side of the plan is local north. Placement turns that side toward the grass.
 	 */
 	class FSolidFortress : public FSolidStronghold
@@ -90,6 +90,7 @@ namespace SolidStronghold
 		/** The buildings for this size. */
 		TArray<FSolidFortressBuilding> Buildings;
 
+		virtual void BindPlan() override;
 		virtual bool Supported(ESolidStrongholdSize InSize) const override;
 		virtual ESolidStrongholdTrip Trip() const override;
 		virtual bool AcceptsEnter(

@@ -59,7 +59,7 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 	const SolidStronghold::FSolidFortress& Fortress = SolidStronghold::FSolidFortress::Instance();
 	TestTrue(TEXT("Humble is supported"), Fortress.Supported(ESolidStrongholdSize::Humble));
 	TestFalse(TEXT("Meagre stays unsupported"), Fortress.Supported(ESolidStrongholdSize::Meagre));
-	TestFalse(TEXT("Average stays unsupported"), Fortress.Supported(ESolidStrongholdSize::Average));
+	TestTrue(TEXT("Average is supported"), Fortress.Supported(ESolidStrongholdSize::Average));
 	TestEqual(TEXT("the parapet is one hex across"), Fortress.ParapetCm, SolidStrongholdGrid::FlatToFlatCm);
 	TestEqual(
 		TEXT("the outer wall is the storey plus the parapet"),
@@ -146,9 +146,13 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 	}
 	TestTrue(TEXT("the ground floor lists each building in order"), bGroundOrder);
 
+	TArray<SolidStrongholdGrid::FHex> AverageGround;
+	Fortress.CollectGroundHexes(ESolidStrongholdSize::Average, AverageGround);
+	TestEqual(
+		TEXT("Average keeps the Humble ground floor"),
+		AverageGround.Num(),
+		SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small));
 	TArray<SolidStrongholdGrid::FHex> Empty;
-	Fortress.CollectGroundHexes(ESolidStrongholdSize::Average, Empty);
-	TestEqual(TEXT("Average has no ground hexes"), Empty.Num(), 0);
 	Fortress.CollectGroundHexes(ESolidStrongholdSize::Meagre, Empty);
 	TestEqual(TEXT("Meagre has no ground hexes"), Empty.Num(), 0);
 
@@ -219,7 +223,7 @@ bool FSolidFortressAveragePlanTest::RunTest(const FString& Parameters)
 {
 	SolidStronghold::FSolidFortress Fortress;
 	Fortress.AddBuildings(ESolidStrongholdSize::Average);
-	TestFalse(TEXT("Average stays unsupported"), Fortress.Supported(ESolidStrongholdSize::Average));
+	TestTrue(TEXT("Average is supported"), Fortress.Supported(ESolidStrongholdSize::Average));
 	TestEqual(TEXT("Average has one building"), Fortress.Buildings.Num(), 1);
 	if (Fortress.Buildings.Num() != 1)
 	{

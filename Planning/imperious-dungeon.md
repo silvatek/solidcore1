@@ -44,7 +44,7 @@ AddSmall(EastOf(17));
 
 Meagre ends on the first call. Humble ends on `AddSmall(EastOf(1))`. Average ends on `AddSmall(NorthOf(3))`. Impressive ends on `AddMedium(EastOf(7))`. Grand ends on `AddMedium(NorthOf(11))`. Stately ends on `AddLarge(EastOf(13))`. Imperious is the whole list.
 
-`AddSmall` fits 2 columns by 3 rows inside its walls. `AddMedium` fits 4 by 3. `AddLarge` fits 4 by 5. The twelve hexes inside `AddMediumIrregular` are the same wherever it is called. The mouth hex is column 0, row 0. Columns 1 through 4 sit on row 0. Columns 1 through 3 sit on row 1. Columns 2 through 4 sit on row −1. Column 2 sits on row −2. Odd rows shift east, the same as the shared grid. The walls stand outside those hexes.
+`AddSmall` fits 2 columns by 3 rows inside its walls. `AddMedium` fits 4 by 3. `AddLarge` fits 4 by 5. The twelve hexes inside `AddMediumIrregular` are the same wherever it is called. The mouth hex is column 0, row 0. Columns 1 through 4 sit on row 0. Columns 1 through 3 sit on row 1. Columns 2 through 4 sit on row −1. Column 2 sits on row −2. Odd rows shift east, the same as the shared grid. The walls stand clear of those hexes, with floor between the hex points and the wall.
 
 ## Acceptance
 
@@ -57,7 +57,7 @@ Meagre ends on the first call. Humble ends on `AddSmall(EastOf(1))`. Average end
 - Each size is the `AddLevels` calls in the Story down to that size's name.
 - Every size from Meagre through Imperious is a dungeon visit. Usable hexes match that size's kit row: Meagre 12, Humble 18, Average 24, Impressive 48, Grand 80, Stately 100, Imperious 126.
 - The Imperious Dungeon matches the Imperious kit in Strongholds by size and type: three large (20), four medium (12), and three small (6). Usable hexes total 126.
-- Passages, stairs, and rectangular rooms have straight walls. The irregular room's walls are straight, the outline is not a rectangle, and the walls do not follow the hex edges. A usable hex is one whose six vertices lie inside the room.
+- Passages, stairs, and rectangular rooms have straight walls. The irregular room's walls are straight, the outline is not a rectangle, and the walls do not follow the hex edges. A usable hex is one whose six vertices lie inside the room, and floor lies between those hexes and the wall.
 - Passages and stairs hold no usable hexes. Level 1 is the mouth level; level numbers increase as the captain goes deeper.
 - The journal lines stay "Enter Stronghold" and "Exit Stronghold".
 

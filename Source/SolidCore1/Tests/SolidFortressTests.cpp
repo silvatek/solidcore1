@@ -68,13 +68,16 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 		FSolidStronghold::StoreyCm + Fortress.ParapetCm);
 	TestEqual(TEXT("Humble has one building"), Fortress.Buildings.Num(), 1);
 	TestTrue(
-		TEXT("the east yard makes the outer wall twice as wide"),
+		TEXT("the east yard is the medium span plus one wall"),
 		FMath::IsNearlyEqual(Fortress.YardDepthCm, FSolidStronghold::StoreyCm, 0.05f)
 			&& FMath::IsNearlyEqual(
 				Fortress.YardWidthCm,
-				4.5f * SolidStrongholdGrid::FlatToFlatCm + SolidStronghold::LandingRunCm + FSolidStronghold::WallCm,
+				4.5f * SolidStrongholdGrid::FlatToFlatCm + FSolidStronghold::WallCm,
 				0.05f)
-			&& FMath::IsNearlyEqual(Fortress.OuterWidthCm(), LaidWidthCm(Fortress) * 2.f, 0.05f));
+			&& FMath::IsNearlyEqual(
+				Fortress.OuterWidthCm(),
+				LaidWidthCm(Fortress) + Fortress.YardWidthCm + FSolidStronghold::WallCm,
+				0.05f));
 	TestTrue(
 		TEXT("the outer depth is the room, the yard, and the walls"),
 		Fortress.Buildings.Num() == 1

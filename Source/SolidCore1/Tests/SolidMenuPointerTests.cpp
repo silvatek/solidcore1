@@ -1,6 +1,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "SolidHUD.h"
+#include "SolidCharacter.h"
 #include "SolidMenuPointer.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -88,6 +89,31 @@ bool FSolidMenuPointerHudTest::RunTest(const FString& Parameters)
 	HUD->CloseMenuOverlay();
 	HUD->SetChoicePointerRows(Rows);
 	TestFalse(TEXT("a closed menu ignores the pointer"), HUD->SelectChoiceAt(X, Y));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidMenuPointerSiteHoverTest,
+	"SolidCore1.MenuPointer.SiteHover",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidMenuPointerSiteHoverTest::RunTest(const FString& Parameters)
+{
+	TestFalse(
+		TEXT("the site page keeps its pick until a click"),
+		ASolidCharacter::MenuSelectsOnHover(false, false, false, true));
+	TestTrue(
+		TEXT("the main menu follows the pointer"),
+		ASolidCharacter::MenuSelectsOnHover(true, false, false, false));
+	TestTrue(
+		TEXT("the exit confirmation follows the pointer"),
+		ASolidCharacter::MenuSelectsOnHover(false, true, false, false));
+	TestTrue(
+		TEXT("the portal follows the pointer"),
+		ASolidCharacter::MenuSelectsOnHover(false, false, true, false));
+	TestFalse(
+		TEXT("a closed page does not follow the pointer"),
+		ASolidCharacter::MenuSelectsOnHover(false, false, false, false));
 	return true;
 }
 

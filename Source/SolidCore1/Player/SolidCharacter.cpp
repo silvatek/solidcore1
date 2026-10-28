@@ -2442,10 +2442,23 @@ bool ASolidCharacter::ReadPointerPosition(float& OutX, float& OutY) const
 	return false;
 }
 
+bool ASolidCharacter::MenuSelectsOnHover(
+	const bool bMainMenu,
+	const bool bExitConfirm,
+	const bool bPortal,
+	const bool bStrongholdChoice)
+{
+	return !bStrongholdChoice && (bMainMenu || bExitConfirm || bPortal);
+}
+
 void ASolidCharacter::UpdateMenuPointerHover()
 {
 	ASolidHUD* HUD = GetSolidHUD();
-	const bool bChoiceList = HUD && (HUD->IsMainMenuOpen() || HUD->IsExitConfirmOpen() || HUD->IsPortalOpen() || HUD->IsStrongholdChoiceOpen());
+	const bool bChoiceList = HUD && MenuSelectsOnHover(
+		HUD->IsMainMenuOpen(),
+		HUD->IsExitConfirmOpen(),
+		HUD->IsPortalOpen(),
+		HUD->IsStrongholdChoiceOpen());
 	if (!bChoiceList)
 	{
 		bMenuPointerSampled = false;
@@ -2453,7 +2466,7 @@ void ASolidCharacter::UpdateMenuPointerHover()
 		return;
 	}
 
-	const int32 Page = HUD->IsExitConfirmOpen() ? 5 : (HUD->IsStrongholdChoiceOpen() ? 4 : (HUD->IsPortalOpen() ? 2 : 1));
+	const int32 Page = HUD->IsExitConfirmOpen() ? 5 : (HUD->IsPortalOpen() ? 2 : 1);
 	if (Page != MenuPointerPage)
 	{
 		MenuPointerPage = Page;

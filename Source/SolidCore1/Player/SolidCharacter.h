@@ -140,6 +140,15 @@ protected:
 	void UpdateInventoryPointer();
 	void UpdateSquadBuilderPointer();
 	void UpdateMenuPointerHover();
+	/**
+	 * The main menu, the exit confirmation, and the portal follow the pointer.
+	 * The site page keeps its pick until a click.
+	 */
+	static bool MenuSelectsOnHover(
+		bool bMainMenu,
+		bool bExitConfirm,
+		bool bPortal,
+		bool bStrongholdChoice);
 	void UpdateCavePassageHover();
 	bool ReadPointerPosition(float& OutX, float& OutY) const;
 	bool ReadPointerRay(FVector& OutOrigin, FVector& OutDirection) const;

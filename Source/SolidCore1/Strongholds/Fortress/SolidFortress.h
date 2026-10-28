@@ -29,6 +29,8 @@ namespace SolidStronghold
 		float WidthCm() const;
 		/** Inner face deep. The footprint, or the hex grid when that is deeper. */
 		float DepthCm() const;
+		/** Storeys, plus the parapet on the top floor. */
+		float HeightCm(float ParapetCm) const;
 		/** Vertex span of the ground floor's columns. */
 		float SpanWidthCm() const;
 		/** Vertex span of the ground floor's rows. */
@@ -106,7 +108,7 @@ namespace SolidStronghold
 		float OuterDepthCm() const;
 		/** One hex outside the gate, on the grass side. */
 		FVector2D OutsideGateXY(const USolidWorldChart* Map) const;
-		/** One storey. The parapet is not part of this wall. */
+		/** One storey plus the parapet. The gate stops under the parapet. */
 		float CurtainHeightCm() const;
 
 		virtual TUniquePtr<FSolidStronghold> Clone() const override;

@@ -66,9 +66,9 @@ bool FSolidFortressExteriorTest::RunTest(const FString& Parameters)
 	UStaticMeshComponent* Gate = Shell->GetGateMesh();
 	TestNotNull(TEXT("the gate"), Gate);
 	TestEqual(TEXT("the opening is the gate"), Shell->GetPassageMesh(), Gate);
-	TestEqual(TEXT("the outer wall is five stretches"), Shell->GetCurtainMeshes().Num(), 5);
+	TestEqual(TEXT("the outer wall is six stretches"), Shell->GetCurtainMeshes().Num(), 6);
 	TestEqual(TEXT("Humble draws one building"), Shell->GetBuildingMeshes().Num(), 1);
-	if (!Gate || Shell->GetCurtainMeshes().Num() != 5 || Shell->GetBuildingMeshes().Num() != 1)
+	if (!Gate || Shell->GetCurtainMeshes().Num() != 6 || Shell->GetBuildingMeshes().Num() != 1)
 	{
 		return false;
 	}
@@ -95,18 +95,24 @@ bool FSolidFortressExteriorTest::RunTest(const FString& Parameters)
 			return false;
 		}
 		TestTrue(
-			TEXT("the outer wall is one storey"),
+			TEXT("the outer wall is the storey plus the parapet"),
 			FMath::IsNearlyEqual(SolidFortressExteriorTestPrivate::TopZ(Part.Get()), CurtainTop, 0.5f));
 	}
 
+	const UStaticMeshComponent* Lintel = Shell->GetCurtainMeshes().Last();
 	TestTrue(
-		TEXT("the gate fills the outer wall"),
+		TEXT("the gate stops under the parapet"),
 		FMath::IsNearlyEqual(
-			Gate->GetRelativeLocation().Z + Gate->GetRelativeScale3D().Z * 50.f,
+			Lintel->GetRelativeLocation().Z - Lintel->GetRelativeScale3D().Z * 50.f,
 			FSolidStronghold::StoreyCm,
 			0.5f));
 
 	const UStaticMeshComponent* Building = Shell->GetBuildingMeshes()[0];
+	const float BuildingTop = Fortress->Buildings[0].HeightCm(Fortress->ParapetCm);
+	TestTrue(
+		TEXT("the building stands above the wall"),
+		FMath::IsNearlyEqual(SolidFortressExteriorTestPrivate::TopZ(Building), BuildingTop, 0.5f)
+			&& BuildingTop > CurtainTop + 1.f);
 	TestTrue(
 		TEXT("the building meets the inner south curtain"),
 		FMath::IsNearlyEqual(SolidFortressExteriorTestPrivate::FaceMaxX(Building), HalfDepth - FSolidStronghold::WallCm, 0.5f));

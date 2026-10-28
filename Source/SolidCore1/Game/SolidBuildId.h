@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0688")
+#define SOLID_BUILD_ID TEXT("SC1-0689")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("AddBuildings names a room by length, width, and face.")
+#define SOLID_BUILD_NOTE TEXT("The two-floor building stands above the wall.")
 #endif

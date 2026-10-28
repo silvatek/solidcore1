@@ -231,13 +231,14 @@ void ASolidFortressExterior::BuildVisuals()
 
 		const float SizeX = MaxX - MinX;
 		const float SizeY = MaxY - MinY;
+		const float BuildingHeight = One.HeightCm(Fortress->ParapetCm);
 		if (UStaticMeshComponent* Part = Place(
 			(MinX + MaxX) * 0.5f,
 			(MinY + MaxY) * 0.5f,
-			Height * 0.5f,
+			BuildingHeight * 0.5f,
 			SizeX,
 			SizeY,
-			Height,
+			BuildingHeight,
 			Rock,
 			TEXT("FortressBuilding"),
 			true))

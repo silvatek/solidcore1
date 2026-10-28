@@ -103,6 +103,12 @@ namespace SolidStronghold
 		return FMath::Max(InnerDepthCm, SpanDepthCm());
 	}
 
+	float FSolidFortressBuilding::HeightCm(const float InParapetCm) const
+	{
+		const int32 Storeys = FMath::Max(Floors.Num(), 1);
+		return static_cast<float>(Storeys) * FSolidStronghold::StoreyCm + InParapetCm;
+	}
+
 	bool FSolidFortressBuilding::HasStair() const
 	{
 		return Floors.Num() >= 2;
@@ -348,7 +354,7 @@ namespace SolidStronghold
 
 	float FSolidFortress::CurtainHeightCm() const
 	{
-		return FSolidStronghold::StoreyCm;
+		return FSolidStronghold::StoreyCm + ParapetCm;
 	}
 
 	FVector2D FSolidFortress::OutsideGateXY(const USolidWorldChart* Map) const

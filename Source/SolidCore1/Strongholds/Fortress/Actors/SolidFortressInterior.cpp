@@ -281,6 +281,7 @@ void ASolidFortressInterior::BuildVisuals()
 			MaxY -= Wall;
 		}
 
+		const float BuildingHeight = One.HeightCm(Fortress->ParapetCm);
 		// A yard face is solid. The doorway is on the face the building faces.
 		auto AddFace = [&](
 			const bool bCurtain,
@@ -294,16 +295,16 @@ void ASolidFortressInterior::BuildVisuals()
 			{
 				return;
 			}
-			const float MidZ = Height * 0.5f;
+			const float MidZ = BuildingHeight * 0.5f;
 			if (One.Facing != Face)
 			{
 				if (bSpanIsX)
 				{
-					AddBuilding((SpanMin + SpanMax) * 0.5f, Fixed, MidZ, SpanMax - SpanMin, Wall, Height);
+					AddBuilding((SpanMin + SpanMax) * 0.5f, Fixed, MidZ, SpanMax - SpanMin, Wall, BuildingHeight);
 				}
 				else
 				{
-					AddBuilding(Fixed, (SpanMin + SpanMax) * 0.5f, MidZ, Wall, SpanMax - SpanMin, Height);
+					AddBuilding(Fixed, (SpanMin + SpanMax) * 0.5f, MidZ, Wall, SpanMax - SpanMin, BuildingHeight);
 				}
 				return;
 			}
@@ -314,18 +315,18 @@ void ASolidFortressInterior::BuildVisuals()
 				: (SpanMin + SpanMax) * 0.5f;
 			const float DoorMin = Door - Opening * 0.5f;
 			const float DoorMax = Door + Opening * 0.5f;
-			const float LintelZ = (Storey + Height) * 0.5f;
-			const float Lintel = Height - Storey;
+			const float LintelZ = (Storey + BuildingHeight) * 0.5f;
+			const float Lintel = BuildingHeight - Storey;
 			if (bSpanIsX)
 			{
-				AddBuilding((SpanMin + DoorMin) * 0.5f, Fixed, MidZ, DoorMin - SpanMin, Wall, Height);
-				AddBuilding((DoorMax + SpanMax) * 0.5f, Fixed, MidZ, SpanMax - DoorMax, Wall, Height);
+				AddBuilding((SpanMin + DoorMin) * 0.5f, Fixed, MidZ, DoorMin - SpanMin, Wall, BuildingHeight);
+				AddBuilding((DoorMax + SpanMax) * 0.5f, Fixed, MidZ, SpanMax - DoorMax, Wall, BuildingHeight);
 				AddBuilding(Door, Fixed, LintelZ, Opening, Wall, Lintel);
 			}
 			else
 			{
-				AddBuilding(Fixed, (SpanMin + DoorMin) * 0.5f, MidZ, Wall, DoorMin - SpanMin, Height);
-				AddBuilding(Fixed, (DoorMax + SpanMax) * 0.5f, MidZ, Wall, SpanMax - DoorMax, Height);
+				AddBuilding(Fixed, (SpanMin + DoorMin) * 0.5f, MidZ, Wall, DoorMin - SpanMin, BuildingHeight);
+				AddBuilding(Fixed, (DoorMax + SpanMax) * 0.5f, MidZ, Wall, SpanMax - DoorMax, BuildingHeight);
 				AddBuilding(Fixed, Door, LintelZ, Wall, Opening, Lintel);
 			}
 		};

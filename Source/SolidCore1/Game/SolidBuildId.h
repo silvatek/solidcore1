@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0694")
+#define SOLID_BUILD_ID TEXT("SC1-0695")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Choosing an empty fortress raises its shell.")
+#define SOLID_BUILD_NOTE TEXT("Merlon corners are high, and the lows are spread between them.")
 #endif

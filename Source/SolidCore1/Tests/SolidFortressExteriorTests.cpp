@@ -110,6 +110,7 @@ bool FSolidFortressExteriorTest::RunTest(const FString& Parameters)
 	const float BuildingTop = Fortress->Buildings[0].HeightCm(Fortress->ParapetCm);
 	const UStaticMeshComponent* Building = nullptr;
 	int32 Merlons = 0;
+	int32 Lows = 0;
 	for (const TObjectPtr<UStaticMeshComponent>& Part : Shell->GetBuildingMeshes())
 	{
 		if (!Part)
@@ -126,6 +127,10 @@ bool FSolidFortressExteriorTest::RunTest(const FString& Parameters)
 		{
 			++Merlons;
 		}
+		else if (FMath::IsNearlyEqual(PartHeight, Fortress->ParapetCm * 0.5f, 0.5f))
+		{
+			++Lows;
+		}
 	}
 	TestNotNull(TEXT("the building body"), Building);
 	if (!Building)
@@ -136,7 +141,8 @@ bool FSolidFortressExteriorTest::RunTest(const FString& Parameters)
 		TEXT("the building stands above the wall"),
 		FMath::IsNearlyEqual(SolidFortressExteriorTestPrivate::TopZ(Building), BuildingTop - Fortress->ParapetCm, 0.5f)
 			&& BuildingTop > CurtainTop + 1.f);
-	TestTrue(TEXT("the merlons finish the parapet"), Merlons > 0);
+	TestTrue(TEXT("the corners are high"), Merlons >= 4);
+	TestTrue(TEXT("low sections sit between the corners"), Lows > 0);
 	TestTrue(
 		TEXT("the building meets the inner south curtain"),
 		FMath::IsNearlyEqual(SolidFortressExteriorTestPrivate::FaceMaxX(Building), HalfDepth - FSolidStronghold::WallCm, 0.5f));

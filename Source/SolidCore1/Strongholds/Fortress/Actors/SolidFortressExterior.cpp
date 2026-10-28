@@ -254,24 +254,71 @@ void ASolidFortressExterior::BuildVisuals()
 		}
 
 		const float MerlonZ = BodyHeight + Parapet * 0.5f;
-		auto AddMerlons = [&](const float Start, const float End, const bool bAlongX, const float Fixed)
+		const float LowHeight = Parapet * 0.5f;
+		const float LowZ = BodyHeight + LowHeight * 0.5f;
+		auto AddPiece = [&](
+			const float CenterAlong,
+			const float SizeAlong,
+			const bool bAlongX,
+			const float Fixed,
+			const float PieceHeight,
+			const float CenterZ)
 		{
-			for (float Cursor = Start; Cursor + Parapet <= End + 0.5f; Cursor += Parapet * 2.f)
+			UStaticMeshComponent* Part = bAlongX
+				? Place(CenterAlong, Fixed, CenterZ, SizeAlong, Parapet, PieceHeight, Rock, TEXT("FortressMerlon"), false)
+				: Place(Fixed, CenterAlong, CenterZ, Parapet, SizeAlong, PieceHeight, Rock, TEXT("FortressMerlon"), false);
+			if (Part)
 			{
-				const float Center = Cursor + Parapet * 0.5f;
-				UStaticMeshComponent* Merlon = bAlongX
-					? Place(Center, Fixed, MerlonZ, Parapet, Parapet, Parapet, Rock, TEXT("FortressMerlon"), false)
-					: Place(Fixed, Center, MerlonZ, Parapet, Parapet, Parapet, Rock, TEXT("FortressMerlon"), false);
-				if (Merlon)
-				{
-					Buildings.Add(Merlon);
-				}
+				Buildings.Add(Part);
 			}
 		};
-		AddMerlons(MinX, MaxX, true, MinY + Wall * 0.5f);
-		AddMerlons(MinX, MaxX, true, MaxY - Wall * 0.5f);
-		AddMerlons(MinY + Parapet, MaxY - Parapet, false, MinX + Wall * 0.5f);
-		AddMerlons(MinY + Parapet, MaxY - Parapet, false, MaxX - Wall * 0.5f);
+		auto AddCorner = [&](const float PlanX, const float PlanY)
+		{
+			if (UStaticMeshComponent* Part = Place(
+				PlanX, PlanY, MerlonZ, Parapet, Parapet, Parapet, Rock, TEXT("FortressMerlon"), false))
+			{
+				Buildings.Add(Part);
+			}
+		};
+		AddCorner(MinX + Parapet * 0.5f, MinY + Parapet * 0.5f);
+		AddCorner(MaxX - Parapet * 0.5f, MinY + Parapet * 0.5f);
+		AddCorner(MinX + Parapet * 0.5f, MaxY - Parapet * 0.5f);
+		AddCorner(MaxX - Parapet * 0.5f, MaxY - Parapet * 0.5f);
+
+		auto FillBetween = [&](const float Start, const float End, const bool bAlongX, const float Fixed)
+		{
+			const float Span = End - Start;
+			if (Span <= KINDA_SMALL_NUMBER)
+			{
+				return;
+			}
+			const int32 LowCount = FMath::FloorToInt(Span / Parapet);
+			if (LowCount <= 0)
+			{
+				AddPiece((Start + End) * 0.5f, Span, bAlongX, Fixed, Parapet, MerlonZ);
+				return;
+			}
+			const float HighEach = (Span - static_cast<float>(LowCount) * Parapet) / static_cast<float>(LowCount + 1);
+			float Cursor = Start;
+			for (int32 Index = 0; Index < LowCount; ++Index)
+			{
+				if (HighEach > KINDA_SMALL_NUMBER)
+				{
+					AddPiece(Cursor + HighEach * 0.5f, HighEach, bAlongX, Fixed, Parapet, MerlonZ);
+					Cursor += HighEach;
+				}
+				AddPiece(Cursor + Parapet * 0.5f, Parapet, bAlongX, Fixed, LowHeight, LowZ);
+				Cursor += Parapet;
+			}
+			if (HighEach > KINDA_SMALL_NUMBER)
+			{
+				AddPiece(Cursor + HighEach * 0.5f, HighEach, bAlongX, Fixed, Parapet, MerlonZ);
+			}
+		};
+		FillBetween(MinX + Parapet, MaxX - Parapet, true, MinY + Parapet * 0.5f);
+		FillBetween(MinX + Parapet, MaxX - Parapet, true, MaxY - Parapet * 0.5f);
+		FillBetween(MinY + Parapet, MaxY - Parapet, false, MinX + Parapet * 0.5f);
+		FillBetween(MinY + Parapet, MaxY - Parapet, false, MaxX - Parapet * 0.5f);
 	}
 
 	GateMesh = Place(

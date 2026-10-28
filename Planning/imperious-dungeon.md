@@ -18,7 +18,33 @@ A dungeon size is an `AddLevels` list, in the same shape as `FSolidFortress::Add
 
 Meagre is `AddMediumIrregular(AtMouth())`. The piece number in a later call counts rooms, passages, and stairs from that start. `EastOf`, `NorthOf`, `WestOf`, and `SouthOf` stay on the same level. The mouth is local west, and east runs into the dungeon. The visit turns that mouth toward the grass. `Below` places the next piece on the far side of that stair, one level down, and each `Below` adds one to the level number. A piece has an opening on every face another piece touches. The mouth is the west face of the `AtMouth` piece. A passage is two cells long and one cell wide, and a stair is the same length. A size does not pass those lengths.
 
-Every size from Meagre through Imperious is this story. Each larger size keeps the smaller size's list and adds the next pieces. Those lists are the mockup. They are written here when the plan is agreed.
+Every size from Meagre through Imperious is this story. Each larger size keeps the smaller size's list and adds the next pieces. A size is the calls down to its name. This is the starting list.
+
+```
+AddMediumIrregular(AtMouth());
+AddPassage(EastOf(0));
+AddSmall(EastOf(1));
+AddPassage(NorthOf(0));
+AddSmall(NorthOf(3));
+AddStair(SouthOf(0));
+AddMedium(Below(5));
+AddPassage(EastOf(6));
+AddMedium(EastOf(7));
+AddStair(EastOf(8));
+AddLarge(Below(9));
+AddPassage(NorthOf(10));
+AddMedium(NorthOf(11));
+AddPassage(EastOf(10));
+AddLarge(EastOf(13));
+AddStair(SouthOf(14));
+AddLarge(Below(15));
+AddPassage(EastOf(16));
+AddSmall(EastOf(17));
+```
+
+Meagre ends on the first call. Humble ends on `AddSmall(EastOf(1))`. Average ends on `AddSmall(NorthOf(3))`. Impressive ends on `AddMedium(EastOf(7))`. Grand ends on `AddMedium(NorthOf(11))`. Stately ends on `AddLarge(EastOf(13))`. Imperious is the whole list.
+
+`AddSmall` is 2 columns by 3 rows. `AddMedium` is 4 by 3. `AddLarge` is 4 by 5. `AddMediumIrregular` is the same twelve cells wherever it is called. The mouth cell is column 0, row 0. Columns 1 through 4 sit on row 0. Columns 1 through 3 sit on row 1. Columns 2 through 4 sit on row −1. Column 2 sits on row −2. Odd rows shift east, the same as the shared grid.
 
 ## Acceptance
 
@@ -28,6 +54,7 @@ Every size from Meagre through Imperious is this story. Each larger size keeps t
 - The interior uses the shared 1.2 m pointy-top grid.
 - Meagre is `AddMediumIrregular(AtMouth())`: twelve usable hexes on the mouth level, with its mouth, its closed-until-the-message rule, and its fireplace, bed, and chest.
 - A size that calls `AddMediumIrregular` uses that same outline.
+- Each size is the `AddLevels` calls in the Story down to that size's name.
 - Every size from Meagre through Imperious is a dungeon visit. Usable hexes match that size's kit row: Meagre 12, Humble 18, Average 24, Impressive 48, Grand 80, Stately 100, Imperious 126.
 - The Imperious Dungeon matches the Imperious kit in Strongholds by size and type: three large (20), four medium (12), and three small (6). Usable hexes total 126.
 - Passages and stairs hold no usable hexes. Level 1 is the mouth level; level numbers increase as the captain goes deeper.
@@ -37,7 +64,7 @@ Every size from Meagre through Imperious is this story. Each larger size keeps t
 
 - The plan of record is **Strongholds by size and type** in `Source/SolidCore1/Strongholds/README.md`. Imperious is 3×20 + 4×12 + 3×6. Do not invent a second kit. The player does not pick a type because it holds more hexes.
 - How the type, the exterior actor, and the interior actor are written follows **Code structure** in `Source/SolidCore1/Strongholds/README.md`.
-- Do not copy the tower: ten floors in one shaft, a 30 m taper, round rooms, or the stair spiral. A dungeon is not a tower. Join the kit with the `AddLevels` list in the Story. The mockup is the proposal. A size whose list is not written there is not built.
+- Do not copy the tower: ten floors in one shaft, a 30 m taper, round rooms, or the stair spiral. A dungeon is not a tower. Join the kit with the `AddLevels` list in the Story. A size whose list is not written there is not built.
 - Do not add a world-map `!` in this story. The owner places the marker. The line is `Stronghold (Imperious Dungeon)`, size then type.
 - There is no shelf row for an Imperious Dungeon. Meagre Dungeon is Grassland. Imperious Tower is Grassland. A size and type with no row keeps the marker's own biome. Do not assume Mountain or Grassland until a shelf is chosen.
 - `SolidDungeonLevel` is the dungeon trip, and the comment there says every dungeon size uses it. `ASolidDungeonInterior` still builds only the Meagre floor. `?SolidLevel=Dungeon` is that floor. The menu has no cave row.
@@ -45,4 +72,4 @@ Every size from Meagre through Imperious is this story. Each larger size keeps t
 - Leave stands the captain in front of that dungeon's rock, from `LeaveStandXY`. There is no cliff mouth. A second dungeon has to remember its own exterior, the way the tower remembers its cell.
 - The tower trip is `?SolidLevel=Tower`. Its door click does not call the cave travel. This dungeon must not either. The Meagre cave is the click on its own mouth.
 - Furnishings are catalogued for the Meagre Dungeon only. This story does not place the cave's fireplace, bed, and chest on the larger floors, and it does not decide what an Imperious Dungeon contains.
-- Meagre through Imperious are this story. Their kits stay the rows in Strongholds by size and type. Each size is built from the `AddLevels` list written for it here, after the mockup is agreed.
+- Meagre through Imperious are this story. Their kits stay the rows in Strongholds by size and type. Each size is built from the starting list in the Story.

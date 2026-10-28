@@ -69,7 +69,7 @@ Impressive is one `AddMediumHigh` with three medium floors, then `AddSmallLow`, 
 
 Grand is `AddLargeHigh` with a large floor under two medium floors, then `AddMediumHigh` with two medium floors, then two `AddSmallLow` buildings. Stately is `AddLargeHigh` with two large floors under a medium floor, then `AddMediumHigh` with two medium floors, then `AddMediumLow`, then two `AddSmallLow` buildings. Each building is `EastOf` the one before it, and its doorway faces north. A large room is 4 columns by 5 rows, 20 hexes. Each of those sizes places a medium courtyard `NorthOf` the keep, because that building is the largest, and `EastOf` its last building. Those floors sum to 80 and 100, so Grand and Stately are complete.
 
-Imperious is `AddLargeHigh` with three large floors, then `AddSmallLow`, `AddMediumHigh` with two medium floors, a medium courtyard, and `AddMediumHigh` with two medium floors. Each of those is `EastOf` the piece before it. Then `AddSmallLow`, a medium courtyard, and `AddSmallLow`, each `NorthOf` the piece before it. Doorways face north. The rooms are three large, four medium, and three small, the Imperious kit, 126. Those floors sum to 126, so Imperious is complete.
+Imperious is `AddLargeHigh` with three large floors, then `AddSmallLow`, `AddMediumHigh` with two medium floors, a medium courtyard, and `AddMediumHigh` with two medium floors. Each of those is `EastOf` the piece before it. Then `AddSmallLow`, a medium courtyard, and `AddSmallLow`, each `NorthOf` the piece before it. Doorways before the east gap face north. The three buildings after that gap have their doors on the west face. The rooms are three large, four medium, and three small, the Imperious kit, 126. Those floors sum to 126, so Imperious is complete.
 
 ## Acceptance
 

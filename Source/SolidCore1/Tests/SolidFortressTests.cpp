@@ -502,6 +502,11 @@ bool FSolidFortressImperiousPlanTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("the second medium building is east of that gap"),
 		East(4) && Fortress.Buildings[4].Floors.Num() == 2);
+	TestTrue(
+		TEXT("doors after the east gap face west"),
+		Fortress.Buildings[4].Facing == ESolidStrongholdOrientation::WestFace
+			&& Fortress.Buildings[5].Facing == ESolidStrongholdOrientation::WestFace
+			&& Fortress.Buildings[7].Facing == ESolidStrongholdOrientation::WestFace);
 
 	TestTrue(TEXT("a small building is north of the second medium building"), North(5));
 	const SolidStronghold::FSolidFortressBuilding& NorthGap = Fortress.Buildings[6];

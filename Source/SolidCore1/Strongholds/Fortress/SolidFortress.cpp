@@ -348,10 +348,10 @@ namespace SolidStronghold
 			AddSmallLow(EastOf(0), NorthFace);
 			AddMediumHigh(EastOf(1), NorthFace, { Medium, Medium });
 			AddCourtyard(EastOf(2), Size(MediumWidth, MediumWidth));
-			AddMediumHigh(EastOf(3), NorthFace, { Medium, Medium });
-			AddSmallLow(NorthOf(4), NorthFace);
+			AddMediumHigh(EastOf(3), WestFace, { Medium, Medium });
+			AddSmallLow(NorthOf(4), WestFace);
 			AddCourtyard(NorthOf(5), Size(MediumWidth, MediumWidth));
-			AddSmallLow(NorthOf(6), NorthFace);
+			AddSmallLow(NorthOf(6), WestFace);
 			break;
 		}
 	}

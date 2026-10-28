@@ -151,7 +151,5 @@ namespace SolidStronghold
 		 * It is listed with the buildings so a later piece can sit EastOf it. It is not drawn.
 		 */
 		void AddCourtyard(FVector2D PositionCm, FVector2D SizeCm);
-		/** A medium courtyard north of this piece, then a medium courtyard east of it. */
-		void AddMediumGaps(int32 After);
 	};
 }

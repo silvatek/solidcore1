@@ -122,5 +122,14 @@ namespace SolidStronghold
 	private:
 		/** Open ground north of the buildings, and east of them. A zero width keeps the east wall as curtain. */
 		void AdditionalCourtyard(float DepthCm, float WidthCm);
+		/**
+		 * A medium room block with more than one floor.
+		 * The footprint fits a medium room. The stair is added along the door wall.
+		 * Floors start at the ground, and each entry is that floor's room.
+		 */
+		void MediumHigh(
+			FVector2D PositionCm,
+			ESolidStrongholdOrientation Facing,
+			std::initializer_list<ESolidStrongholdRoom> Floors);
 	};
 }

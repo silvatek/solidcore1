@@ -203,6 +203,16 @@ namespace SolidStronghold
 		YardWidthCm = WidthCm;
 	}
 
+	void FSolidFortress::MediumHigh(
+		const FVector2D PositionCm,
+		const ESolidStrongholdOrientation InFacing,
+		const std::initializer_list<ESolidStrongholdRoom> InFloors)
+	{
+		const float MediumWidth = 5.f * SolidStrongholdGrid::SideCm();
+		const float MediumLength = 4.5f * SolidStrongholdGrid::FlatToFlatCm;
+		AddBuilding(PositionCm, FVector2D(MediumLength, MediumWidth), InFacing, InFloors);
+	}
+
 	void FSolidFortress::AddBuildings(const ESolidStrongholdSize InSize)
 	{
 		using enum ESolidStrongholdRoom;
@@ -211,17 +221,15 @@ namespace SolidStronghold
 		Size = InSize;
 		Buildings.Reset();
 		using SolidFortressPrivate::Position;
-		using SolidFortressPrivate::Size;
 		const float Wall = FSolidStronghold::WallCm;
 		const float MediumWidth = 5.f * SolidStrongholdGrid::SideCm();
-		const float MediumLength = 4.5f * SolidStrongholdGrid::FlatToFlatCm;
 		switch (InSize)
 		{
 		case ESolidStrongholdSize::Humble:
 		case ESolidStrongholdSize::Average:
+			MediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
 			// The east yard plus the east curtain equals the building's run, so the outer wall is twice as wide.
-			AdditionalCourtyard(FSolidStronghold::StoreyCm, MediumLength + Wall);
-			AddBuilding(Position(Wall, Wall), Size(MediumLength, MediumWidth), NorthFace, { Small, Medium });
+			AdditionalCourtyard(FSolidStronghold::StoreyCm, Buildings[0].InnerWidthCm + Wall);
 			break;
 		default:
 			// A size with no building still has a courtyard.

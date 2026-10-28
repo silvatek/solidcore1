@@ -19,6 +19,13 @@ namespace SolidStronghold
 		TArray<ESolidStrongholdRoom> Floors;
 		/** The doorway faces this way. */
 		ESolidStrongholdOrientation Facing = ESolidStrongholdOrientation::North;
+		/**
+		 * Along the facing edge, from its inner start to the doorway centre.
+		 * Zero centres the doorway on that face.
+		 */
+		float DoorFromInnerCm = 0.f;
+		/** The ground hexes sit in the south-west of the inner face. Otherwise they sit in the middle. */
+		bool bGridAtSouthWest = false;
 		FVector2D InnerMinCm = FVector2D::ZeroVector;
 		/** Inner face across, in centimetres. */
 		float InnerWidthCm = 0.f;
@@ -59,12 +66,16 @@ namespace SolidStronghold
 		 * One building.
 		 * PositionCm is the inner south-west corner. FootprintCm is the inner face.
 		 * Floors start at the ground, and each entry is that floor's room.
+		 * DoorFromInnerCm is the doorway centre along that face. Zero centres it.
+		 * bGridAtSouthWest seats the ground hexes in the south-west.
 		 */
 		void AddBuilding(
 			FVector2D PositionCm,
 			ESolidStrongholdOrientation Facing,
 			FVector2D FootprintCm,
-			std::initializer_list<ESolidStrongholdRoom> Floors);
+			std::initializer_list<ESolidStrongholdRoom> Floors,
+			float DoorFromInnerCm = 0.f,
+			bool bGridAtSouthWest = false);
 
 		/** Open ground between one building's east outer face and the next building's west outer face. */
 		float GapCm = 0.f;

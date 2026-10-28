@@ -67,8 +67,8 @@ bool FSolidFortressExteriorTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("the gate"), Gate);
 	TestEqual(TEXT("the opening is the gate"), Shell->GetPassageMesh(), Gate);
 	TestEqual(TEXT("the curtain is six stretches"), Shell->GetCurtainMeshes().Num(), 6);
-	TestEqual(TEXT("Humble draws two buildings"), Shell->GetBuildingMeshes().Num(), 2);
-	if (!Gate || Shell->GetCurtainMeshes().Num() != 6 || Shell->GetBuildingMeshes().Num() != 2)
+	TestEqual(TEXT("Humble draws one building"), Shell->GetBuildingMeshes().Num(), 1);
+	if (!Gate || Shell->GetCurtainMeshes().Num() != 6 || Shell->GetBuildingMeshes().Num() != 1)
 	{
 		return false;
 	}
@@ -107,18 +107,10 @@ bool FSolidFortressExteriorTest::RunTest(const FString& Parameters)
 			FSolidStronghold::StoreyCm,
 			0.5f));
 
-	const UStaticMeshComponent* Room = Shell->GetBuildingMeshes()[0];
-	const UStaticMeshComponent* KeepMesh = Shell->GetBuildingMeshes()[1];
+	const UStaticMeshComponent* Building = Shell->GetBuildingMeshes()[0];
 	TestTrue(
-		TEXT("the Keep is the wider building"),
-		KeepMesh->GetRelativeScale3D().Y > Room->GetRelativeScale3D().Y);
-	TestTrue(
-		TEXT("each building meets the inner south curtain"),
-		FMath::IsNearlyEqual(SolidFortressExteriorTestPrivate::FaceMaxX(Room), HalfDepth - FSolidStronghold::WallCm, 0.5f)
-			&& FMath::IsNearlyEqual(
-				SolidFortressExteriorTestPrivate::FaceMaxX(KeepMesh),
-				HalfDepth - FSolidStronghold::WallCm,
-				0.5f));
+		TEXT("the building meets the inner south curtain"),
+		FMath::IsNearlyEqual(SolidFortressExteriorTestPrivate::FaceMaxX(Building), HalfDepth - FSolidStronghold::WallCm, 0.5f));
 
 	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("shipped map loads"), Map && Map->LoadDefault());

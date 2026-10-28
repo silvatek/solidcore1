@@ -117,7 +117,7 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 		Leave.XY.Equals(Fortress->OutsideGateXY(nullptr), 0.5f));
 	TestTrue(TEXT("leaving faces away along the grass"), FMath::IsNearlyEqual(Leave.YawDeg, 0.f, 0.1f));
 
-	TestTrue(TEXT("the buildings are drawn"), Room->GetBuildingMeshes().Num() >= 2);
+	TestTrue(TEXT("the building is drawn"), Room->GetBuildingMeshes().Num() >= 1);
 	TestEqual(TEXT("the gate is still the way out"), Room->GetPassageMesh(), Room->GetGateMesh());
 
 	auto Covers = [](const UStaticMeshComponent* Part, const FVector& Point)
@@ -136,8 +136,6 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 	const float Depth = Fortress->OuterDepthCm();
 	const float Wall = FSolidStronghold::WallCm;
 	int32 Gaps = 0;
-	float WestGapY = TNumericLimits<float>::Max();
-	float EastGapY = -WestGapY;
 	for (const SolidStronghold::FSolidFortressBuilding& One : Fortress->Buildings)
 	{
 		float FaceMinX = One.InnerMinCm.X - Wall;
@@ -161,7 +159,9 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 			FaceMaxY -= Wall;
 		}
 
-		const float DoorX = (FaceMinX + FaceMaxX) * 0.5f;
+		const float DoorX = One.DoorFromInnerCm > 0.f
+			? One.InnerMinCm.X + One.DoorFromInnerCm
+			: (FaceMinX + FaceMaxX) * 0.5f;
 		const FVector Opening(
 			Depth * 0.5f - (FaceMaxY - Wall * 0.5f),
 			DoorX - Width * 0.5f,
@@ -183,6 +183,23 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 		}
 		TestFalse(TEXT("the doorway is a gap"), bOpeningBlocked);
 		TestFalse(TEXT("the building inside is open"), bInsideBlocked);
+		if (One.DoorFromInnerCm > 0.f)
+		{
+			const FVector Flight(
+				Depth * 0.5f - (FaceMaxY - Wall * 0.5f),
+				(FaceMinX + FaceMaxX) * 0.5f - Width * 0.5f,
+				FSolidStronghold::StoreyCm * 0.5f);
+			bool bFlightBlocked = false;
+			for (const TObjectPtr<UStaticMeshComponent>& Part : Room->GetBuildingMeshes())
+			{
+				if (!Part)
+				{
+					continue;
+				}
+				bFlightBlocked = bFlightBlocked || Covers(Part, Flight);
+			}
+			TestTrue(TEXT("the flight stays walled"), bFlightBlocked);
+		}
 		const float RoomX = One.InnerMinCm.X + One.WidthCm() * 0.5f;
 		const float RoomY = One.InnerMinCm.Y + One.DepthCm() * 0.5f;
 		const FVector Headroom(
@@ -206,12 +223,9 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 		}
 		TestFalse(TEXT("the room stays open under the ceiling"), bHeadroomBlocked);
 		TestTrue(TEXT("a ceiling closes the room at one storey"), bCeilingPresent);
-		WestGapY = FMath::Min(WestGapY, Opening.Y);
-		EastGapY = FMath::Max(EastGapY, Opening.Y);
 		++Gaps;
 	}
-	TestEqual(TEXT("Humble has two doorways"), Gaps, 2);
-	TestTrue(TEXT("the Keep doorway is east of the Annex"), EastGapY > WestGapY + 1.f);
+	TestEqual(TEXT("Humble has one doorway"), Gaps, 1);
 
 	int32 ExpectedLines = 0;
 	for (const SolidStronghold::FSolidFortressBuilding& One : Fortress->Buildings)
@@ -301,7 +315,7 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the light stands in its room"), RoomIndex != INDEX_NONE);
 		LitRooms.AddUnique(RoomIndex);
 	}
-	TestEqual(TEXT("the two rooms are both lit"), LitRooms.Num(), 2);
+	TestEqual(TEXT("the building is lit"), LitRooms.Num(), 1);
 
 	TestEqual(TEXT("the fortress has one floor to arrange"), Room->ArrangeFloorCount(), 1);
 	TArray<SolidStrongholdGrid::FHex> ArrangeCells;
@@ -339,8 +353,21 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidFortressDoorFacingTest::RunTest(const FString& Parameters)
 {
 	SolidStronghold::FSolidFortress Fort;
-	Fort.Place(ESolidStrongholdSize::Average);
+	Fort.Place(ESolidStrongholdSize::Meagre);
 	TestFalse(TEXT("Average stays unsupported"), Fort.Supported(ESolidStrongholdSize::Average));
+	// Place does not build this row. It witnesses a centered doorway on the face a building faces.
+	const float Wall = FSolidStronghold::WallCm;
+	const float RoomDepth = 5.f * SolidStrongholdGrid::SideCm();
+	Fort.AddBuilding(
+		FVector2D(Wall, Wall),
+		ESolidStrongholdOrientation::East,
+		FVector2D(300.f, RoomDepth),
+		{ ESolidStrongholdRoom::Small });
+	Fort.AddBuilding(
+		FVector2D(Wall + 300.f + 2.f * Wall, Wall),
+		ESolidStrongholdOrientation::North,
+		FVector2D(300.f, RoomDepth),
+		{ ESolidStrongholdRoom::Small });
 
 	ASolidFortressInterior* Room = NewObject<ASolidFortressInterior>();
 	TestNotNull(TEXT("fortress interior"), Room);
@@ -353,7 +380,6 @@ bool FSolidFortressDoorFacingTest::RunTest(const FString& Parameters)
 
 	const float Width = Fort.OuterWidthCm();
 	const float Depth = Fort.OuterDepthCm();
-	const float Wall = FSolidStronghold::WallCm;
 	int32 EastDoors = 0;
 	int32 NorthDoors = 0;
 	auto Covers = [](const UStaticMeshComponent* Part, const FVector& Point)
@@ -447,7 +473,7 @@ bool FSolidFortressDoorFacingTest::RunTest(const FString& Parameters)
 		}
 	}
 	TestEqual(TEXT("one doorway faces east"), EastDoors, 1);
-	TestEqual(TEXT("two doorways face north"), NorthDoors, 2);
+	TestEqual(TEXT("one doorway faces north"), NorthDoors, 1);
 	return true;
 }
 

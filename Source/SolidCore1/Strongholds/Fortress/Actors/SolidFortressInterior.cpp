@@ -278,7 +278,7 @@ void ASolidFortressInterior::BuildVisuals()
 			MaxY -= Wall;
 		}
 
-		// A yard face is solid. The doorway is the open middle of the face the building faces.
+		// A yard face is solid. The doorway is on the face the building faces.
 		auto AddFace = [&](
 			const bool bCurtain,
 			const ESolidStrongholdOrientation Face,
@@ -304,7 +304,11 @@ void ASolidFortressInterior::BuildVisuals()
 				}
 				return;
 			}
-			const float Door = (SpanMin + SpanMax) * 0.5f;
+			// Zero centres the opening. A distance is from the inner start of this edge.
+			const float InnerStart = bSpanIsX ? One.InnerMinCm.X : One.InnerMinCm.Y;
+			const float Door = One.DoorFromInnerCm > 0.f
+				? InnerStart + One.DoorFromInnerCm
+				: (SpanMin + SpanMax) * 0.5f;
 			const float DoorMin = Door - Opening * 0.5f;
 			const float DoorMax = Door + Opening * 0.5f;
 			const float LintelZ = (Storey + Height) * 0.5f;

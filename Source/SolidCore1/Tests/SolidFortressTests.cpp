@@ -112,6 +112,8 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 		OtherHexes.Num(),
 		SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small));
 	TestTrue(TEXT("the other building's size is small"), Other->Room == ESolidStrongholdRoom::Small);
+	TestTrue(TEXT("the Keep's doorway faces north"), Keep->Facing == ESolidStrongholdOrientation::North);
+	TestTrue(TEXT("the other doorway faces north"), Other->Facing == ESolidStrongholdOrientation::North);
 	TestTrue(
 		TEXT("every Keep hex sits inside the Keep"),
 		VerticesInside(KeepHexes, Keep->InnerMinCm, FVector2D(Keep->WidthCm(), Keep->DepthCm())));
@@ -239,6 +241,9 @@ bool FSolidFortressAveragePlanTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the west room's size is small"), West.Room == ESolidStrongholdRoom::Small);
 	TestTrue(TEXT("the keep's size is medium"), Keep->Room == ESolidStrongholdRoom::Medium);
 	TestTrue(TEXT("the east room's size is small"), East.Room == ESolidStrongholdRoom::Small);
+	TestTrue(TEXT("the west doorway faces east"), West.Facing == ESolidStrongholdOrientation::East);
+	TestTrue(TEXT("the keep's doorway faces north"), Keep->Facing == ESolidStrongholdOrientation::North);
+	TestTrue(TEXT("the east doorway faces north"), East.Facing == ESolidStrongholdOrientation::North);
 
 	TArray<SolidStrongholdGrid::FHex> WestHexes;
 	TArray<SolidStrongholdGrid::FHex> KeepHexes;

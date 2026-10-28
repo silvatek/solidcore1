@@ -15,6 +15,8 @@ namespace SolidStronghold
 	public:
 		bool bKeep = false;
 		ESolidStrongholdRoom Room = ESolidStrongholdRoom::Small;
+		/** The doorway faces this way. */
+		ESolidStrongholdOrientation Facing = ESolidStrongholdOrientation::North;
 		int32 Columns = 0;
 		int32 Rows = 0;
 		FVector2D InnerMinCm = FVector2D::ZeroVector;
@@ -47,7 +49,7 @@ namespace SolidStronghold
 
 		static const FSolidFortress& Instance();
 
-		/** Fills the rooms for this size. Each size is a list of rooms. */
+		/** Fills the rooms for this size from that size's list. */
 		void Place(ESolidStrongholdSize InSize);
 
 		/** Open ground between one building's east outer face and the next building's west outer face. */

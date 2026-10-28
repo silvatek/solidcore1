@@ -278,28 +278,54 @@ void ASolidFortressInterior::BuildVisuals()
 			MaxY -= Wall;
 		}
 
-		if (!bWestCurtain)
+		// A yard face is solid. The doorway is the open middle of the face the building faces.
+		auto AddFace = [&](
+			const bool bCurtain,
+			const ESolidStrongholdOrientation Face,
+			const float Fixed,
+			const float SpanMin,
+			const float SpanMax,
+			const bool bSpanIsX)
 		{
-			AddBuilding(MinX + Wall * 0.5f, (MinY + MaxY) * 0.5f, Height * 0.5f, Wall, MaxY - MinY, Height);
-		}
-		if (!bEastCurtain)
-		{
-			AddBuilding(MaxX - Wall * 0.5f, (MinY + MaxY) * 0.5f, Height * 0.5f, Wall, MaxY - MinY, Height);
-		}
-		if (!bSouthCurtain)
-		{
-			AddBuilding((MinX + MaxX) * 0.5f, MinY + Wall * 0.5f, Height * 0.5f, MaxX - MinX, Wall, Height);
-		}
-		if (!bNorthCurtain)
-		{
-			const float DoorX = (MinX + MaxX) * 0.5f;
-			const float DoorMin = DoorX - Opening * 0.5f;
-			const float DoorMax = DoorX + Opening * 0.5f;
-			const float WallY = MaxY - Wall * 0.5f;
-			AddBuilding((MinX + DoorMin) * 0.5f, WallY, Height * 0.5f, DoorMin - MinX, Wall, Height);
-			AddBuilding((DoorMax + MaxX) * 0.5f, WallY, Height * 0.5f, MaxX - DoorMax, Wall, Height);
-			AddBuilding(DoorX, WallY, (Storey + Height) * 0.5f, Opening, Wall, Height - Storey);
-		}
+			if (bCurtain)
+			{
+				return;
+			}
+			const float MidZ = Height * 0.5f;
+			if (One.Facing != Face)
+			{
+				if (bSpanIsX)
+				{
+					AddBuilding((SpanMin + SpanMax) * 0.5f, Fixed, MidZ, SpanMax - SpanMin, Wall, Height);
+				}
+				else
+				{
+					AddBuilding(Fixed, (SpanMin + SpanMax) * 0.5f, MidZ, Wall, SpanMax - SpanMin, Height);
+				}
+				return;
+			}
+			const float Door = (SpanMin + SpanMax) * 0.5f;
+			const float DoorMin = Door - Opening * 0.5f;
+			const float DoorMax = Door + Opening * 0.5f;
+			const float LintelZ = (Storey + Height) * 0.5f;
+			const float Lintel = Height - Storey;
+			if (bSpanIsX)
+			{
+				AddBuilding((SpanMin + DoorMin) * 0.5f, Fixed, MidZ, DoorMin - SpanMin, Wall, Height);
+				AddBuilding((DoorMax + SpanMax) * 0.5f, Fixed, MidZ, SpanMax - DoorMax, Wall, Height);
+				AddBuilding(Door, Fixed, LintelZ, Opening, Wall, Lintel);
+			}
+			else
+			{
+				AddBuilding(Fixed, (SpanMin + DoorMin) * 0.5f, MidZ, Wall, DoorMin - SpanMin, Height);
+				AddBuilding(Fixed, (DoorMax + SpanMax) * 0.5f, MidZ, Wall, SpanMax - DoorMax, Height);
+				AddBuilding(Fixed, Door, LintelZ, Wall, Opening, Lintel);
+			}
+		};
+		AddFace(bWestCurtain, ESolidStrongholdOrientation::West, MinX + Wall * 0.5f, MinY, MaxY, false);
+		AddFace(bEastCurtain, ESolidStrongholdOrientation::East, MaxX - Wall * 0.5f, MinY, MaxY, false);
+		AddFace(bSouthCurtain, ESolidStrongholdOrientation::South, MinY + Wall * 0.5f, MinX, MaxX, true);
+		AddFace(bNorthCurtain, ESolidStrongholdOrientation::North, MaxY - Wall * 0.5f, MinX, MaxX, true);
 
 		const float InnerMinX = bWestCurtain ? MinX : MinX + Wall;
 		const float InnerMaxX = bEastCurtain ? MaxX : MaxX - Wall;

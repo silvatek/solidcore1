@@ -331,4 +331,124 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidFortressDoorFacingTest,
+	"SolidCore1.Stronghold.FortressDoorFacing",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidFortressDoorFacingTest::RunTest(const FString& Parameters)
+{
+	SolidStronghold::FSolidFortress Fort;
+	Fort.Place(ESolidStrongholdSize::Average);
+	TestFalse(TEXT("Average stays unsupported"), Fort.Supported(ESolidStrongholdSize::Average));
+
+	ASolidFortressInterior* Room = NewObject<ASolidFortressInterior>();
+	TestNotNull(TEXT("fortress interior"), Room);
+	if (!Room)
+	{
+		return false;
+	}
+	Room->SetFortress(Fort);
+	Room->BuildVisuals();
+
+	const float Width = Fort.OuterWidthCm();
+	const float Depth = Fort.OuterDepthCm();
+	const float Wall = FSolidStronghold::WallCm;
+	int32 EastDoors = 0;
+	int32 NorthDoors = 0;
+	auto Covers = [](const UStaticMeshComponent* Part, const FVector& Point)
+	{
+		const FVector Location = Part->GetRelativeLocation();
+		const FVector Half = Part->GetRelativeScale3D() * 50.f;
+		return Point.X >= Location.X - Half.X - 0.5f
+			&& Point.X <= Location.X + Half.X + 0.5f
+			&& Point.Y >= Location.Y - Half.Y - 0.5f
+			&& Point.Y <= Location.Y + Half.Y + 0.5f
+			&& Point.Z >= Location.Z - Half.Z - 0.5f
+			&& Point.Z <= Location.Z + Half.Z + 0.5f;
+	};
+	auto ActorPoint = [&](const float PlanX, const float PlanY)
+	{
+		return FVector(Depth * 0.5f - PlanY, PlanX - Width * 0.5f, FSolidStronghold::StoreyCm * 0.5f);
+	};
+	auto Blocked = [&](const FVector& Point)
+	{
+		for (const TObjectPtr<UStaticMeshComponent>& Part : Room->GetBuildingMeshes())
+		{
+			if (Part && Covers(Part, Point))
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+
+	for (const SolidStronghold::FSolidFortressBuilding& One : Fort.Buildings)
+	{
+		float MinX = One.InnerMinCm.X - Wall;
+		float MaxX = One.InnerMinCm.X + One.WidthCm() + Wall;
+		float MinY = One.InnerMinCm.Y - Wall;
+		float MaxY = One.InnerMinCm.Y + One.DepthCm() + Wall;
+		const bool bWest = FMath::IsNearlyEqual(MinX, 0.f, 0.1f);
+		const bool bEast = FMath::IsNearlyEqual(MaxX, Width, 0.1f);
+		const bool bSouth = FMath::IsNearlyEqual(MinY, 0.f, 0.1f);
+		const bool bNorth = FMath::IsNearlyEqual(MaxY, Depth, 0.1f);
+		if (bWest)
+		{
+			MinX += Wall;
+		}
+		if (bEast)
+		{
+			MaxX -= Wall;
+		}
+		if (bSouth)
+		{
+			MinY += Wall;
+		}
+		if (bNorth)
+		{
+			MaxY -= Wall;
+		}
+
+		struct FFace
+		{
+			ESolidStrongholdOrientation Facing;
+			bool bCurtain;
+			float PlanX;
+			float PlanY;
+		};
+		const FFace Faces[] = {
+			{ ESolidStrongholdOrientation::West, bWest, MinX + Wall * 0.5f, (MinY + MaxY) * 0.5f },
+			{ ESolidStrongholdOrientation::East, bEast, MaxX - Wall * 0.5f, (MinY + MaxY) * 0.5f },
+			{ ESolidStrongholdOrientation::South, bSouth, (MinX + MaxX) * 0.5f, MinY + Wall * 0.5f },
+			{ ESolidStrongholdOrientation::North, bNorth, (MinX + MaxX) * 0.5f, MaxY - Wall * 0.5f },
+		};
+		for (const FFace& Face : Faces)
+		{
+			if (Face.bCurtain)
+			{
+				continue;
+			}
+			const bool bGap = !Blocked(ActorPoint(Face.PlanX, Face.PlanY));
+			TestTrue(
+				TEXT("the doorway is the open middle of the faced wall"),
+				bGap == (Face.Facing == One.Facing));
+			if (Face.Facing == One.Facing && bGap)
+			{
+				if (One.Facing == ESolidStrongholdOrientation::East)
+				{
+					++EastDoors;
+				}
+				if (One.Facing == ESolidStrongholdOrientation::North)
+				{
+					++NorthDoors;
+				}
+			}
+		}
+	}
+	TestEqual(TEXT("one doorway faces east"), EastDoors, 1);
+	TestEqual(TEXT("two doorways face north"), NorthDoors, 2);
+	return true;
+}
+
 #endif

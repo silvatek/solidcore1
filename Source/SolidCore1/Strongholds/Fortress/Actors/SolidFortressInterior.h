@@ -15,7 +15,7 @@ class UStaticMeshComponent;
  * The outer wall is a closed rectangle. The dark gate is on local -X.
  * The Keep and the Annex stand on the far side. A ceiling closes each room at one storey.
  * Each room has a light under that ceiling. Their floors draw the hex grid.
- * Each yard face has an open doorway.
+ * The doorway is centered on the face the building faces.
  * The east wall of the yard carries an Arrange furniture plate.
  * You walk through that gap. It does not leave. The captain arrives in the yard, inside the gate.
  * A click on the gate leaves. Companions stay outside.

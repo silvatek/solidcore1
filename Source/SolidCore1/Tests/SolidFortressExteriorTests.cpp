@@ -108,9 +108,12 @@ bool FSolidFortressExteriorTest::RunTest(const FString& Parameters)
 			0.5f));
 
 	const float BuildingTop = Fortress->Buildings[0].HeightCm(Fortress->ParapetCm);
+	const float Thickness = Fortress->ParapetCm * 0.4f;
 	const UStaticMeshComponent* Building = nullptr;
 	int32 Merlons = 0;
 	int32 Lows = 0;
+	float WidestLow = 0.f;
+	float NarrowestHigh = TNumericLimits<float>::Max();
 	for (const TObjectPtr<UStaticMeshComponent>& Part : Shell->GetBuildingMeshes())
 	{
 		if (!Part)
@@ -131,6 +134,34 @@ bool FSolidFortressExteriorTest::RunTest(const FString& Parameters)
 		{
 			++Lows;
 		}
+		else
+		{
+			continue;
+		}
+
+		if (!FMath::IsNearlyEqual(PartHeight, Fortress->ParapetCm, 0.5f)
+			&& !FMath::IsNearlyEqual(PartHeight, Fortress->ParapetCm * 0.5f, 0.5f))
+		{
+			continue;
+		}
+		const float PlanX = Part->GetRelativeScale3D().Y * 100.f;
+		const float PlanY = Part->GetRelativeScale3D().X * 100.f;
+		const bool bThickX = FMath::IsNearlyEqual(PlanX, Thickness, 0.5f);
+		const bool bThickY = FMath::IsNearlyEqual(PlanY, Thickness, 0.5f);
+		TestTrue(TEXT("a merlon is forty percent of the parapet height thick"), bThickX || bThickY);
+		if (bThickX && bThickY)
+		{
+			continue;
+		}
+		const float Along = bThickX ? PlanY : PlanX;
+		if (FMath::IsNearlyEqual(PartHeight, Fortress->ParapetCm * 0.5f, 0.5f))
+		{
+			WidestLow = FMath::Max(WidestLow, Along);
+		}
+		else
+		{
+			NarrowestHigh = FMath::Min(NarrowestHigh, Along);
+		}
 	}
 	TestNotNull(TEXT("the building body"), Building);
 	if (!Building)
@@ -143,6 +174,9 @@ bool FSolidFortressExteriorTest::RunTest(const FString& Parameters)
 			&& BuildingTop > CurtainTop + 1.f);
 	TestTrue(TEXT("the corners are high"), Merlons >= 4);
 	TestTrue(TEXT("low sections sit between the corners"), Lows > 0);
+	TestTrue(
+		TEXT("a low section is narrower than a high section"),
+		WidestLow > 0.f && WidestLow < NarrowestHigh);
 	TestTrue(
 		TEXT("the building meets the inner south curtain"),
 		FMath::IsNearlyEqual(SolidFortressExteriorTestPrivate::FaceMaxX(Building), HalfDepth - FSolidStronghold::WallCm, 0.5f));

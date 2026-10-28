@@ -253,6 +253,8 @@ void ASolidFortressExterior::BuildVisuals()
 			continue;
 		}
 
+		// Forty percent of the parapet height: a sixty percent thinner band. A low section is half as wide as a high one.
+		const float Thickness = Parapet * 0.4f;
 		const float MerlonZ = BodyHeight + Parapet * 0.5f;
 		const float LowHeight = Parapet * 0.5f;
 		const float LowZ = BodyHeight + LowHeight * 0.5f;
@@ -265,8 +267,8 @@ void ASolidFortressExterior::BuildVisuals()
 			const float CenterZ)
 		{
 			UStaticMeshComponent* Part = bAlongX
-				? Place(CenterAlong, Fixed, CenterZ, SizeAlong, Parapet, PieceHeight, Rock, TEXT("FortressMerlon"), false)
-				: Place(Fixed, CenterAlong, CenterZ, Parapet, SizeAlong, PieceHeight, Rock, TEXT("FortressMerlon"), false);
+				? Place(CenterAlong, Fixed, CenterZ, SizeAlong, Thickness, PieceHeight, Rock, TEXT("FortressMerlon"), false)
+				: Place(Fixed, CenterAlong, CenterZ, Thickness, SizeAlong, PieceHeight, Rock, TEXT("FortressMerlon"), false);
 			if (Part)
 			{
 				Buildings.Add(Part);
@@ -275,15 +277,15 @@ void ASolidFortressExterior::BuildVisuals()
 		auto AddCorner = [&](const float PlanX, const float PlanY)
 		{
 			if (UStaticMeshComponent* Part = Place(
-				PlanX, PlanY, MerlonZ, Parapet, Parapet, Parapet, Rock, TEXT("FortressMerlon"), false))
+				PlanX, PlanY, MerlonZ, Thickness, Thickness, Parapet, Rock, TEXT("FortressMerlon"), false))
 			{
 				Buildings.Add(Part);
 			}
 		};
-		AddCorner(MinX + Parapet * 0.5f, MinY + Parapet * 0.5f);
-		AddCorner(MaxX - Parapet * 0.5f, MinY + Parapet * 0.5f);
-		AddCorner(MinX + Parapet * 0.5f, MaxY - Parapet * 0.5f);
-		AddCorner(MaxX - Parapet * 0.5f, MaxY - Parapet * 0.5f);
+		AddCorner(MinX + Thickness * 0.5f, MinY + Thickness * 0.5f);
+		AddCorner(MaxX - Thickness * 0.5f, MinY + Thickness * 0.5f);
+		AddCorner(MinX + Thickness * 0.5f, MaxY - Thickness * 0.5f);
+		AddCorner(MaxX - Thickness * 0.5f, MaxY - Thickness * 0.5f);
 
 		auto FillBetween = [&](const float Start, const float End, const bool bAlongX, const float Fixed)
 		{
@@ -298,27 +300,23 @@ void ASolidFortressExterior::BuildVisuals()
 				AddPiece((Start + End) * 0.5f, Span, bAlongX, Fixed, Parapet, MerlonZ);
 				return;
 			}
-			const float HighEach = (Span - static_cast<float>(LowCount) * Parapet) / static_cast<float>(LowCount + 1);
+			// Span is (LowCount + 1) high sections and LowCount lows, and each low is half a high section.
+			const float HighEach = Span / (1.5f * static_cast<float>(LowCount) + 1.f);
+			const float LowWidth = HighEach * 0.5f;
 			float Cursor = Start;
 			for (int32 Index = 0; Index < LowCount; ++Index)
 			{
-				if (HighEach > KINDA_SMALL_NUMBER)
-				{
-					AddPiece(Cursor + HighEach * 0.5f, HighEach, bAlongX, Fixed, Parapet, MerlonZ);
-					Cursor += HighEach;
-				}
-				AddPiece(Cursor + Parapet * 0.5f, Parapet, bAlongX, Fixed, LowHeight, LowZ);
-				Cursor += Parapet;
-			}
-			if (HighEach > KINDA_SMALL_NUMBER)
-			{
 				AddPiece(Cursor + HighEach * 0.5f, HighEach, bAlongX, Fixed, Parapet, MerlonZ);
+				Cursor += HighEach;
+				AddPiece(Cursor + LowWidth * 0.5f, LowWidth, bAlongX, Fixed, LowHeight, LowZ);
+				Cursor += LowWidth;
 			}
+			AddPiece(Cursor + HighEach * 0.5f, HighEach, bAlongX, Fixed, Parapet, MerlonZ);
 		};
-		FillBetween(MinX + Parapet, MaxX - Parapet, true, MinY + Parapet * 0.5f);
-		FillBetween(MinX + Parapet, MaxX - Parapet, true, MaxY - Parapet * 0.5f);
-		FillBetween(MinY + Parapet, MaxY - Parapet, false, MinX + Parapet * 0.5f);
-		FillBetween(MinY + Parapet, MaxY - Parapet, false, MaxX - Parapet * 0.5f);
+		FillBetween(MinX + Thickness, MaxX - Thickness, true, MinY + Thickness * 0.5f);
+		FillBetween(MinX + Thickness, MaxX - Thickness, true, MaxY - Thickness * 0.5f);
+		FillBetween(MinY + Thickness, MaxY - Thickness, false, MinX + Thickness * 0.5f);
+		FillBetween(MinY + Thickness, MaxY - Thickness, false, MaxX - Thickness * 0.5f);
 	}
 
 	GateMesh = Place(

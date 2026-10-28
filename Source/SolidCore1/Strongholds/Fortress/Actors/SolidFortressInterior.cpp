@@ -333,8 +333,8 @@ void ASolidFortressInterior::BuildVisuals()
 			}
 			else
 			{
-				AddBuilding(Fixed, (SpanMin + DoorMin) * 0.5f, MidZ, Wall, DoorMin - SpanMin, Wall, WallTop);
-				AddBuilding(Fixed, (DoorMax + SpanMax) * 0.5f, MidZ, Wall, SpanMax - DoorMax, Wall, WallTop);
+				AddBuilding(Fixed, (SpanMin + DoorMin) * 0.5f, MidZ, Wall, DoorMin - SpanMin, WallTop);
+				AddBuilding(Fixed, (DoorMax + SpanMax) * 0.5f, MidZ, Wall, SpanMax - DoorMax, WallTop);
 				AddBuilding(Fixed, Door, LintelZ, Wall, Opening, Lintel);
 			}
 		};

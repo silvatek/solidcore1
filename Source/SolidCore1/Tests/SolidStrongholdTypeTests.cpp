@@ -159,6 +159,7 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 			ESolidStrongholdSize::Humble,
 			OriginCell,
 			SolidStronghold::WorldXY(OriginCell))->InteriorClass() == ASolidFortressInterior::StaticClass());
+	AddExpectedError(TEXT("Meagre is not a fortress size"), EAutomationExpectedErrorFlags::Contains, 1);
 	TestNull(
 		TEXT("a meagre fortress has no exterior"),
 		SolidStronghold::Make(

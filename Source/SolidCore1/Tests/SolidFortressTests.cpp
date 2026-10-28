@@ -168,6 +168,7 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Meagre has no ground hexes"), Empty.Num(), 0);
 
 	SolidStronghold::FSolidFortress EmptyYard;
+	AddExpectedError(TEXT("Meagre is not a fortress size"), EAutomationExpectedErrorFlags::Contains, 1);
 	EmptyYard.AddBuildings(ESolidStrongholdSize::Meagre);
 	TestTrue(
 		TEXT("Meagre adds no building"),

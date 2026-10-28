@@ -265,6 +265,8 @@ namespace SolidStronghold
 
 		Size = InSize;
 		Buildings.Reset();
+		YardDepthCm = FSolidStronghold::StoreyCm;
+		YardWidthCm = 0.f;
 		using SolidFortressPrivate::Position;
 		const float Wall = FSolidStronghold::WallCm;
 		const float MediumWidth = 5.f * SolidStrongholdGrid::SideCm();

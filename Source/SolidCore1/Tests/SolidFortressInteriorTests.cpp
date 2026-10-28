@@ -418,6 +418,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidFortressDoorFacingTest::RunTest(const FString& Parameters)
 {
 	SolidStronghold::FSolidFortress Fort;
+	AddExpectedError(TEXT("Meagre is not a fortress size"), EAutomationExpectedErrorFlags::Contains, 1);
 	Fort.AddBuildings(ESolidStrongholdSize::Meagre);
 	TestTrue(TEXT("Average is supported"), Fort.Supported(ESolidStrongholdSize::Average));
 	// AddBuildings does not build this row. It witnesses a centered doorway on the face a building faces.

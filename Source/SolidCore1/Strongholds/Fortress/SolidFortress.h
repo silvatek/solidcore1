@@ -80,8 +80,13 @@ namespace SolidStronghold
 		float GapCm = 0.f;
 		/** One hex across, above the storey. */
 		float ParapetCm = 120.f;
-		/** Open ground from the buildings' north outer faces to the inner face of the gate wall. One storey. */
+		/** Open ground from the buildings' north outer faces to the inner face of the gate wall. */
 		float YardDepthCm = FSolidStronghold::StoreyCm;
+		/**
+		 * Open ground from the buildings' east outer faces to the inner face of the east wall.
+		 * Zero means the building's east wall is that curtain.
+		 */
+		float YardWidthCm = 0.f;
 		/** The buildings for this size. */
 		TArray<FSolidFortressBuilding> Buildings;
 

@@ -166,7 +166,6 @@ namespace SolidStronghold
 	{
 		Type = ESolidStrongholdType::Fortress;
 		ParapetCm = SolidStrongholdGrid::FlatToFlatCm;
-		YardDepthCm = FSolidStronghold::StoreyCm;
 		AddBuildings(ESolidStrongholdSize::Humble);
 	}
 
@@ -213,6 +212,9 @@ namespace SolidStronghold
 		{
 		case ESolidStrongholdSize::Humble:
 		case ESolidStrongholdSize::Average:
+			// The east yard plus the east curtain equals the building's run, so the outer wall is twice as wide.
+			YardDepthCm = FSolidStronghold::StoreyCm;
+			YardWidthCm = MediumLength + Wall;
 			AddBuilding(Position(Wall, Wall), Size(MediumLength, MediumWidth), NorthFace, { Small, Medium });
 			break;
 		case ESolidStrongholdSize::Meagre:
@@ -221,6 +223,8 @@ namespace SolidStronghold
 		case ESolidStrongholdSize::Stately:
 		case ESolidStrongholdSize::Imperious:
 		default:
+			YardDepthCm = FSolidStronghold::StoreyCm;
+			YardWidthCm = 0.f;
 			break;
 		}
 	}
@@ -339,7 +343,11 @@ namespace SolidStronghold
 		{
 			East = FMath::Max(East, One.InnerMinCm.X + One.WidthCm() + FSolidStronghold::WallCm);
 		}
-		return East;
+		if (YardWidthCm <= 0.f)
+		{
+			return East;
+		}
+		return East + YardWidthCm + FSolidStronghold::WallCm;
 	}
 
 	float FSolidFortress::OuterDepthCm() const

@@ -34,6 +34,101 @@ namespace SolidStronghold
 			}
 			return true;
 		}
+
+		struct FRoomPlan
+		{
+			ESolidStrongholdRoom Size = ESolidStrongholdRoom::Small;
+			int32 Columns = 0;
+			int32 Rows = 0;
+			bool bKeep = false;
+			FVector2D InnerMinCm = FVector2D::ZeroVector;
+			float InnerWidthCm = 0.f;
+			float InnerDepthCm = 0.f;
+		};
+
+		FRoomPlan PlanRoom(const ESolidStrongholdRoom Size, const int32 Columns, const int32 Rows)
+		{
+			FRoomPlan Plan;
+			Plan.Size = Size;
+			Plan.Columns = Columns;
+			Plan.Rows = Rows;
+			return Plan;
+		}
+
+		FSolidFortressBuilding Building(const FRoomPlan& Plan)
+		{
+			FSolidFortressBuilding Room;
+			Room.Room = Plan.Size;
+			Room.bKeep = Plan.bKeep;
+			Room.Columns = Plan.Columns;
+			Room.Rows = Plan.Rows;
+			Room.InnerMinCm = Plan.InnerMinCm;
+			Room.InnerWidthCm = Plan.InnerWidthCm;
+			Room.InnerDepthCm = Plan.InnerDepthCm;
+			return Room;
+		}
+
+		void AddRoom(FSolidFortress& Fortress, const FRoomPlan& Plan)
+		{
+			Fortress.Buildings.Add(Building(Plan));
+		}
+
+		/** South-west corner of the next room, whose wall meets this room's north wall. */
+		FVector2D NorthOf(const FRoomPlan& Room)
+		{
+			const FSolidFortressBuilding Built = Building(Room);
+			return FVector2D(
+				Room.InnerMinCm.X,
+				Room.InnerMinCm.Y + Built.DepthCm() + 2.f * FSolidStronghold::WallCm);
+		}
+
+		/** South-west corner of the next room, whose wall meets this room's east wall. */
+		FVector2D EastOf(const FRoomPlan& Room)
+		{
+			const FSolidFortressBuilding Built = Building(Room);
+			return FVector2D(
+				Room.InnerMinCm.X + Built.WidthCm() + 2.f * FSolidStronghold::WallCm,
+				Room.InnerMinCm.Y);
+		}
+
+		void PlaceHumble(FSolidFortress& Fortress)
+		{
+			FRoomPlan Small = PlanRoom(ESolidStrongholdRoom::Small, 2, 3);
+			FRoomPlan Keep = PlanRoom(ESolidStrongholdRoom::Medium, 4, 3);
+			Keep.bKeep = true;
+			const FRoomPlan Row[] = { Small, Keep };
+			float X = FSolidStronghold::WallCm;
+			for (int32 Index = 0; Index < UE_ARRAY_COUNT(Row); ++Index)
+			{
+				FRoomPlan Room = Row[Index];
+				Room.InnerMinCm = FVector2D(X, FSolidStronghold::WallCm);
+				AddRoom(Fortress, Room);
+				X += Building(Room).WidthCm() + FSolidStronghold::WallCm;
+				if (Index + 1 < UE_ARRAY_COUNT(Row))
+				{
+					X += Fortress.GapCm + FSolidStronghold::WallCm;
+				}
+			}
+		}
+
+		void PlaceAverage(FSolidFortress& Fortress)
+		{
+			FRoomPlan Keep = PlanRoom(ESolidStrongholdRoom::Medium, 4, 3);
+			Keep.bKeep = true;
+			Keep.InnerMinCm = FVector2D(FSolidStronghold::WallCm, FSolidStronghold::WallCm);
+			Keep.InnerWidthCm = Building(Keep).SpanWidthCm() + 100.f;
+
+			FRoomPlan West = PlanRoom(ESolidStrongholdRoom::Small, 2, 3);
+			West.InnerMinCm = NorthOf(Keep);
+
+			AddRoom(Fortress, West);
+			AddRoom(Fortress, Keep);
+
+			FRoomPlan East = PlanRoom(ESolidStrongholdRoom::Small, 2, 3);
+			East.InnerMinCm = EastOf(Keep);
+			East.InnerWidthCm = Fortress.OuterDepthCm() - FSolidStronghold::WallCm - East.InnerMinCm.X;
+			AddRoom(Fortress, East);
+		}
 	}
 
 	float FSolidFortressBuilding::SpanWidthCm() const
@@ -96,59 +191,20 @@ namespace SolidStronghold
 	{
 		Size = InSize;
 		Buildings.Reset();
-
-		if (InSize == ESolidStrongholdSize::Average)
+		switch (InSize)
 		{
-			FSolidFortressBuilding Keep;
-			Keep.bKeep = true;
-			Keep.Columns = 4;
-			Keep.Rows = 3;
-			Keep.InnerWidthCm = Keep.SpanWidthCm() + 100.f;
-			Keep.InnerMinCm = FVector2D(FSolidStronghold::WallCm, FSolidStronghold::WallCm);
-
-			FSolidFortressBuilding West;
-			West.Columns = 2;
-			West.Rows = 3;
-			West.InnerMinCm = FVector2D(
-				FSolidStronghold::WallCm,
-				Keep.InnerMinCm.Y + Keep.DepthCm() + 2.f * FSolidStronghold::WallCm);
-
-			const float NorthOuter = West.InnerMinCm.Y + West.DepthCm() + FSolidStronghold::WallCm;
-			const float Outer = NorthOuter + YardDepthCm + FSolidStronghold::WallCm;
-
-			FSolidFortressBuilding East;
-			East.Columns = 2;
-			East.Rows = 3;
-			const float EastX = Keep.InnerMinCm.X + Keep.WidthCm() + 2.f * FSolidStronghold::WallCm;
-			East.InnerMinCm = FVector2D(EastX, FSolidStronghold::WallCm);
-			East.InnerWidthCm = Outer - FSolidStronghold::WallCm - EastX;
-
-			Buildings.Add(West);
-			Buildings.Add(Keep);
-			Buildings.Add(East);
-			return;
-		}
-
-		FSolidFortressBuilding Room;
-		Room.Columns = 2;
-		Room.Rows = 3;
-		FSolidFortressBuilding Keep;
-		Keep.bKeep = true;
-		Keep.Columns = 4;
-		Keep.Rows = 3;
-		Buildings.Add(Room);
-		Buildings.Add(Keep);
-
-		float X = FSolidStronghold::WallCm;
-		for (int32 Index = 0; Index < Buildings.Num(); ++Index)
-		{
-			FSolidFortressBuilding& One = Buildings[Index];
-			One.InnerMinCm = FVector2D(X, FSolidStronghold::WallCm);
-			X += One.WidthCm() + FSolidStronghold::WallCm;
-			if (Index + 1 < Buildings.Num())
-			{
-				X += GapCm + FSolidStronghold::WallCm;
-			}
+		case ESolidStrongholdSize::Average:
+			SolidFortressPrivate::PlaceAverage(*this);
+			break;
+		case ESolidStrongholdSize::Humble:
+		case ESolidStrongholdSize::Meagre:
+		case ESolidStrongholdSize::Impressive:
+		case ESolidStrongholdSize::Grand:
+		case ESolidStrongholdSize::Stately:
+		case ESolidStrongholdSize::Imperious:
+		default:
+			SolidFortressPrivate::PlaceHumble(*this);
+			break;
 		}
 	}
 

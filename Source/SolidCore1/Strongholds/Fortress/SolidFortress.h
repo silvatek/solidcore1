@@ -14,6 +14,7 @@ namespace SolidStronghold
 	{
 	public:
 		bool bKeep = false;
+		ESolidStrongholdRoom Room = ESolidStrongholdRoom::Small;
 		int32 Columns = 0;
 		int32 Rows = 0;
 		FVector2D InnerMinCm = FVector2D::ZeroVector;
@@ -46,7 +47,7 @@ namespace SolidStronghold
 
 		static const FSolidFortress& Instance();
 
-		/** Fills the rooms for this size. Humble is the row. Average is the L. */
+		/** Fills the rooms for this size. Each size is a list of rooms. */
 		void Place(ESolidStrongholdSize InSize);
 
 		/** Open ground between one building's east outer face and the next building's west outer face. */

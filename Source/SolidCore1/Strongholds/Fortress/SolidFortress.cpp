@@ -262,11 +262,13 @@ namespace SolidStronghold
 		switch (InSize)
 		{
 		case ESolidStrongholdSize::Humble:
+		{
 			MediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
 			// The east yard is the medium span plus one wall. The top landing lengthens the building past that span.
 			const float MediumSpan = 4.5f * SolidStrongholdGrid::FlatToFlatCm;
 			AdditionalCourtyard(FSolidStronghold::StoreyCm, MediumSpan + Wall);
 			break;
+		}
 		case ESolidStrongholdSize::Average:
 		{
 			MediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });

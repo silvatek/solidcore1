@@ -223,7 +223,31 @@ namespace SolidStronghold
 				Building.InnerWidthCm += StairCm;
 			}
 		}
+		ApplyNorthAnchor(Building);
 		Buildings.Add(Building);
+	}
+
+	void FSolidFortress::ApplyNorthAnchor(FSolidFortressBuilding& Building)
+	{
+		if (PendingNorthOf == INDEX_NONE)
+		{
+			return;
+		}
+		const FSolidFortressBuilding& One = Buildings[PendingNorthOf];
+		PendingNorthOf = INDEX_NONE;
+		const float East = One.InnerMinCm.X + One.WidthCm();
+		float MaxEast = East;
+		float MinWest = One.InnerMinCm.X;
+		for (const FSolidFortressBuilding& Each : Buildings)
+		{
+			MinWest = FMath::Min(MinWest, Each.InnerMinCm.X);
+			MaxEast = FMath::Max(MaxEast, Each.InnerMinCm.X + Each.WidthCm());
+		}
+		const bool bEastWall = FMath::IsNearlyEqual(East, MaxEast, 0.05f)
+			&& !FMath::IsNearlyEqual(One.InnerMinCm.X, MinWest, 0.05f);
+		Building.InnerMinCm.X = bEastWall
+			? East - Building.WidthCm()
+			: One.InnerMinCm.X;
 	}
 
 	FVector2D FSolidFortress::EastOf(const int32 BuildingIndex) const
@@ -235,8 +259,9 @@ namespace SolidStronghold
 			One.InnerMinCm.Y);
 	}
 
-	FVector2D FSolidFortress::NorthOf(const int32 BuildingIndex) const
+	FVector2D FSolidFortress::NorthOf(const int32 BuildingIndex)
 	{
+		PendingNorthOf = BuildingIndex;
 		const FSolidFortressBuilding& One = Buildings[BuildingIndex];
 		const float Wall = FSolidStronghold::WallCm;
 		return FVector2D(
@@ -289,6 +314,7 @@ namespace SolidStronghold
 		Gap.InnerMinCm = PositionCm;
 		Gap.InnerWidthCm = SizeCm.X;
 		Gap.InnerDepthCm = SizeCm.Y;
+		ApplyNorthAnchor(Gap);
 		Buildings.Add(Gap);
 	}
 
@@ -299,6 +325,7 @@ namespace SolidStronghold
 
 		Size = InSize;
 		Buildings.Reset();
+		PendingNorthOf = INDEX_NONE;
 		using SolidFortressPrivate::Position;
 		using SolidFortressPrivate::Size;
 		const float Wall = FSolidStronghold::WallCm;

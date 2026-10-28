@@ -118,8 +118,15 @@ namespace SolidStronghold
 	private:
 		/** Inner south-west corner of the piece immediately east of this one. */
 		FVector2D EastOf(int32 BuildingIndex) const;
-		/** Inner south-west corner of the piece immediately north of this one. */
-		FVector2D NorthOf(int32 BuildingIndex) const;
+		/**
+		 * Inner south-west corner of the piece immediately north of this one.
+		 * The new piece shares the outer east wall or the outer west wall of the piece it leaves.
+		 */
+		FVector2D NorthOf(int32 BuildingIndex);
+		/** Moves the piece just placed by NorthOf onto that shared wall. */
+		void ApplyNorthAnchor(FSolidFortressBuilding& Building);
+		/** Set by NorthOf and consumed by the next piece. INDEX_NONE when no piece is waiting. */
+		int32 PendingNorthOf = INDEX_NONE;
 		/**
 		 * A medium room block with more than one floor.
 		 * The footprint fits a medium room. The stair is added along the door wall.

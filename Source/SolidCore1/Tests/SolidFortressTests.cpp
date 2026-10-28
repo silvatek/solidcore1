@@ -471,7 +471,9 @@ bool FSolidFortressImperiousPlanTest::RunTest(const FString& Parameters)
 	{
 		const SolidStronghold::FSolidFortressBuilding& One = Fortress.Buildings[Index - 1];
 		const SolidStronghold::FSolidFortressBuilding& Next = Fortress.Buildings[Index];
-		return FMath::IsNearlyEqual(Next.InnerMinCm.X, One.InnerMinCm.X, 0.05f)
+		const float OneEast = One.InnerMinCm.X + One.WidthCm();
+		const float NextEast = Next.InnerMinCm.X + Next.WidthCm();
+		return FMath::IsNearlyEqual(NextEast, OneEast, 0.05f)
 			&& FMath::IsNearlyEqual(
 				Next.InnerMinCm.Y,
 				One.InnerMinCm.Y + One.DepthCm() + 2.f * FSolidStronghold::WallCm + Fortress.GapCm,

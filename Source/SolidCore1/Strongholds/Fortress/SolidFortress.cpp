@@ -315,11 +315,17 @@ namespace SolidStronghold
 			AdditionalCourtyard(MediumWidth, AfterLast, MediumWidth, AfterLast);
 			break;
 		case ESolidStrongholdSize::Impressive:
+		{
 			AddMediumHigh(Position(Wall, Wall), NorthFace, { Medium, Medium, Medium });
 			AddSmallLow(EastOf(0), NorthFace);
 			AddSmallLow(EastOf(1), NorthFace);
-			AdditionalCourtyard(MediumWidth, AfterLast, MediumWidth, 1);
+			const FSolidFortressBuilding& FirstSmall = Buildings[1];
+			const FSolidFortressBuilding& SecondSmall = Buildings[2];
+			const float EastSpan = (SecondSmall.InnerMinCm.X + SecondSmall.WidthCm())
+				- (FirstSmall.InnerMinCm.X + FirstSmall.WidthCm() + Wall);
+			AdditionalCourtyard(MediumWidth, AfterLast, EastSpan, 1);
 			break;
+		}
 		case ESolidStrongholdSize::Grand:
 			AddLargeHigh(Position(Wall, Wall), NorthFace, { Large, Medium, Medium });
 			AddMediumHigh(EastOf(0), NorthFace, { Medium, Medium });

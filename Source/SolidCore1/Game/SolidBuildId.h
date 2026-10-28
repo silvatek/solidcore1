@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0709")
+#define SOLID_BUILD_ID TEXT("SC1-0710")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Impressive's east yard follows the first small building.")
+#define SOLID_BUILD_NOTE TEXT("The second small building's east wall meets the outer wall.")
 #endif

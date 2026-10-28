@@ -159,8 +159,8 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 			FaceMaxY -= Wall;
 		}
 
-		const float DoorX = One.DoorFromInnerCm > 0.f
-			? One.InnerMinCm.X + One.DoorFromInnerCm
+		const float DoorX = One.DoorFromInnerCm() > 0.f
+			? One.InnerMinCm.X + One.DoorFromInnerCm()
 			: (FaceMinX + FaceMaxX) * 0.5f;
 		const FVector Opening(
 			Depth * 0.5f - (FaceMaxY - Wall * 0.5f),
@@ -183,7 +183,7 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 		}
 		TestFalse(TEXT("the doorway is a gap"), bOpeningBlocked);
 		TestFalse(TEXT("the building inside is open"), bInsideBlocked);
-		if (One.DoorFromInnerCm > 0.f)
+		if (One.DoorFromInnerCm() > 0.f)
 		{
 			const FVector Flight(
 				Depth * 0.5f - (FaceMaxY - Wall * 0.5f),

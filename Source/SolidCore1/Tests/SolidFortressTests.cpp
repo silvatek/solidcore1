@@ -90,8 +90,8 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the ground floor is small"), Building.Floors[0] == ESolidStrongholdRoom::Small);
 	TestTrue(TEXT("the upper floor is medium"), Building.Floors[1] == ESolidStrongholdRoom::Medium);
 	TestTrue(TEXT("the doorway faces north"), Building.Facing == ESolidStrongholdOrientation::North);
-	TestTrue(TEXT("the doorway is centered on the landing"), FMath::IsNearlyEqual(Building.DoorFromInnerCm, 100.f, 0.05f));
-	TestTrue(TEXT("the ground hexes sit in the south-west"), Building.bGridAtSouthWest);
+	TestTrue(TEXT("the doorway is centered on the landing"), FMath::IsNearlyEqual(Building.DoorFromInnerCm(), 100.f, 0.05f));
+	TestTrue(TEXT("a second floor keeps a stair"), Building.HasStair());
 	TestTrue(
 		TEXT("the inner face is the medium span plus the stair"),
 		FMath::IsNearlyEqual(Building.InnerWidthCm, 540.f, 0.05f)
@@ -224,8 +224,8 @@ bool FSolidFortressAveragePlanTest::RunTest(const FString& Parameters)
 		Building.InnerMinCm.Equals(Humble.InnerMinCm, 0.05f)
 			&& FMath::IsNearlyEqual(Building.InnerWidthCm, Humble.InnerWidthCm, 0.05f)
 			&& FMath::IsNearlyEqual(Building.InnerDepthCm, Humble.InnerDepthCm, 0.05f)
-			&& FMath::IsNearlyEqual(Building.DoorFromInnerCm, Humble.DoorFromInnerCm, 0.05f)
-			&& Building.bGridAtSouthWest == Humble.bGridAtSouthWest);
+			&& FMath::IsNearlyEqual(Building.DoorFromInnerCm(), Humble.DoorFromInnerCm(), 0.05f)
+			&& Building.HasStair() == Humble.HasStair());
 
 	TArray<SolidStrongholdGrid::FHex> Empty;
 	Fortress.CollectGroundHexes(ESolidStrongholdSize::Average, Empty);

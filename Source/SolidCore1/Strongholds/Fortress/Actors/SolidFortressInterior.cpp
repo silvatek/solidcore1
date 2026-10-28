@@ -304,10 +304,10 @@ void ASolidFortressInterior::BuildVisuals()
 				}
 				return;
 			}
-			// Zero centres the opening. A distance is from the inner start of this edge.
+			// One floor centres the opening. A stair centres it on the landing.
 			const float InnerStart = bSpanIsX ? One.InnerMinCm.X : One.InnerMinCm.Y;
-			const float Door = One.DoorFromInnerCm > 0.f
-				? InnerStart + One.DoorFromInnerCm
+			const float Door = One.DoorFromInnerCm() > 0.f
+				? InnerStart + One.DoorFromInnerCm()
 				: (SpanMin + SpanMax) * 0.5f;
 			const float DoorMin = Door - Opening * 0.5f;
 			const float DoorMax = Door + Opening * 0.5f;

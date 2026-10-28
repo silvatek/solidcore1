@@ -103,16 +103,38 @@ namespace SolidStronghold
 		return FMath::Max(InnerDepthCm, SpanDepthCm());
 	}
 
+	bool FSolidFortressBuilding::HasStair() const
+	{
+		return Floors.Num() >= 2;
+	}
+
+	float FSolidFortressBuilding::DoorFromInnerCm() const
+	{
+		return HasStair() ? LandingRunCm * 0.5f : 0.f;
+	}
+
 	void FSolidFortressBuilding::CollectHexes(TArray<SolidStrongholdGrid::FHex>& OutHexes) const
 	{
 		OutHexes.Reset();
 		const float SpanWidth = SpanWidthCm();
 		const float SpanDepth = SpanDepthCm();
-		const FVector2D GridMin = bGridAtSouthWest
-			? InnerMinCm
-			: FVector2D(
-				InnerMinCm.X + (WidthCm() - SpanWidth) * 0.5f,
-				InnerMinCm.Y + (DepthCm() - SpanDepth) * 0.5f);
+		// One floor sits in the middle. A stair keeps the hexes at the landing end of the room block.
+		FVector2D GridMin(
+			InnerMinCm.X + (WidthCm() - SpanWidth) * 0.5f,
+			InnerMinCm.Y + (DepthCm() - SpanDepth) * 0.5f);
+		if (HasStair())
+		{
+			GridMin = InnerMinCm;
+			const float StairCm = FPlan{}.StairWidthCm;
+			if (Facing == ESolidStrongholdOrientation::South)
+			{
+				GridMin.Y += StairCm;
+			}
+			else if (Facing == ESolidStrongholdOrientation::West)
+			{
+				GridMin.X += StairCm;
+			}
+		}
 		const FVector2D Origin = SolidFortressPrivate::RoomOriginCm(GridMin);
 		const int32 RowCount = Rows();
 		const int32 ColumnCount = Columns();
@@ -146,18 +168,26 @@ namespace SolidStronghold
 		const FVector2D PositionCm,
 		const ESolidStrongholdOrientation InFacing,
 		const FVector2D FootprintCm,
-		const std::initializer_list<ESolidStrongholdRoom> InFloors,
-		const float InDoorFromInnerCm,
-		const bool bInGridAtSouthWest)
+		const std::initializer_list<ESolidStrongholdRoom> InFloors)
 	{
 		FSolidFortressBuilding Building;
 		Building.Floors = InFloors;
 		Building.Facing = InFacing;
-		Building.DoorFromInnerCm = InDoorFromInnerCm;
-		Building.bGridAtSouthWest = bInGridAtSouthWest;
 		Building.InnerMinCm = PositionCm;
 		Building.InnerWidthCm = FootprintCm.X;
 		Building.InnerDepthCm = FootprintCm.Y;
+		if (Building.HasStair())
+		{
+			const float StairCm = FPlan{}.StairWidthCm;
+			if (InFacing == ESolidStrongholdOrientation::North || InFacing == ESolidStrongholdOrientation::South)
+			{
+				Building.InnerDepthCm += StairCm;
+			}
+			else
+			{
+				Building.InnerWidthCm += StairCm;
+			}
+		}
 		Buildings.Add(Building);
 	}
 
@@ -172,20 +202,11 @@ namespace SolidStronghold
 		using SolidFortressPrivate::Size;
 		const float Wall = FSolidStronghold::WallCm;
 		const float Depth = 5.f * SolidStrongholdGrid::SideCm();
-		// The stair band is the tower plan's stair width. The landing run is LandingRunCm.
-		const float StairCm = FPlan{}.StairWidthCm;
-		const float LandingCm = LandingRunCm;
 		switch (InSize)
 		{
 		case ESolidStrongholdSize::Humble:
 		case ESolidStrongholdSize::Average:
-			AddBuilding(
-				Position(Wall, Wall),
-				North,
-				Size(540.f, Depth + StairCm),
-				{ Small, Medium },
-				LandingCm * 0.5f,
-				true);
+			AddBuilding(Position(Wall, Wall), North, Size(540.f, Depth), { Small, Medium });
 			break;
 		case ESolidStrongholdSize::Meagre:
 		case ESolidStrongholdSize::Impressive:

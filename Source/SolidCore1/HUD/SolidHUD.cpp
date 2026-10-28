@@ -1006,6 +1006,262 @@ namespace SolidHUDPrivate
 		Canvas->DrawItem(Item);
 	}
 
+	/**
+	 * Size on the left, type on the right, Confirm and Cancel as buttons underneath.
+	 * OutRows matches Choices, so a click lands on that choice.
+	 */
+	static void DrawStrongholdBoard(
+		UCanvas* Canvas,
+		const TArray<FSolidStrongholdChoice>& Choices,
+		const int32 SelectedIndex,
+		const ESolidStrongholdSize PickedSize,
+		const ESolidStrongholdType PickedType,
+		const TArray<bool>& Enabled,
+		TArray<SolidMenuPointer::FRow>& OutRows)
+	{
+		OutRows.Reset();
+		OutRows.SetNum(Choices.Num());
+		if (!Canvas)
+		{
+			return;
+		}
+
+		UFont* Font = GEngine ? GEngine->GetMediumFont() : nullptr;
+		if (!Font && GEngine)
+		{
+			Font = GEngine->GetSmallFont();
+		}
+
+		auto Measure = [Canvas, Font](const FString& Sample, float& OutW, float& OutH)
+		{
+			OutW = 0.f;
+			OutH = SolidMenuPointer::FallbackLineHeight;
+			if (Sample.IsEmpty())
+			{
+				return;
+			}
+			if (!Font)
+			{
+				OutW = static_cast<float>(Sample.Len() * 8);
+				return;
+			}
+			Canvas->StrLen(Font, Sample, OutW, OutH);
+		};
+
+		TArray<int32> SizeRows;
+		TArray<int32> TypeRows;
+		int32 ConfirmIndex = INDEX_NONE;
+		int32 CancelIndex = INDEX_NONE;
+		for (int32 Index = 0; Index < Choices.Num(); ++Index)
+		{
+			const ESolidStrongholdChoiceKind Kind = Choices[Index].Kind;
+			if (Kind == ESolidStrongholdChoiceKind::Size)
+			{
+				SizeRows.Add(Index);
+			}
+			else if (Kind == ESolidStrongholdChoiceKind::Type)
+			{
+				TypeRows.Add(Index);
+			}
+			else if (Kind == ESolidStrongholdChoiceKind::Confirm)
+			{
+				ConfirmIndex = Index;
+			}
+			else if (Kind == ESolidStrongholdChoiceKind::Cancel)
+			{
+				CancelIndex = Index;
+			}
+		}
+
+		auto RowLabel = [&Choices, PickedSize, PickedType](const int32 Index) -> FString
+		{
+			const FSolidStrongholdChoice& Choice = Choices[Index];
+			if (Choice.Kind == ESolidStrongholdChoiceKind::Size)
+			{
+				const FString Name = SolidStronghold::SizeName(Choice.Size);
+				return Choice.Size == PickedSize ? FString(TEXT("* ")) + Name : Name;
+			}
+			if (Choice.Kind == ESolidStrongholdChoiceKind::Type)
+			{
+				const FString Name = SolidStronghold::TypeName(Choice.Type);
+				return Choice.Type == PickedType ? FString(TEXT("* ")) + Name : Name;
+			}
+			return FString();
+		};
+
+		const FString Title(TEXT("Choose a stronghold"));
+		const FString SizeHeading(TEXT("Size"));
+		const FString TypeHeading(TEXT("Type"));
+		float TitleW = 0.f;
+		float TitleH = 0.f;
+		Measure(Title, TitleW, TitleH);
+		float LineH = TitleH;
+		float SizeCol = 0.f;
+		float TypeCol = 0.f;
+		float TextW = 0.f;
+		float TextH = 0.f;
+		Measure(SizeHeading, TextW, TextH);
+		SizeCol = TextW;
+		LineH = FMath::Max(LineH, TextH);
+		Measure(TypeHeading, TextW, TextH);
+		TypeCol = TextW;
+		LineH = FMath::Max(LineH, TextH);
+		for (const int32 Index : SizeRows)
+		{
+			Measure(RowLabel(Index), TextW, TextH);
+			SizeCol = FMath::Max(SizeCol, TextW);
+			LineH = FMath::Max(LineH, TextH);
+		}
+		for (const int32 Index : TypeRows)
+		{
+			Measure(RowLabel(Index), TextW, TextH);
+			TypeCol = FMath::Max(TypeCol, TextW);
+			LineH = FMath::Max(LineH, TextH);
+		}
+
+		const float ColGap = 48.f;
+		const float RowGap = SolidMenuPointer::LineGap;
+		const float Pad = SolidMenuPointer::BoxPad;
+		const float ButtonGap = 20.f;
+		const float ButtonPadX = 28.f;
+		const float ButtonPadY = 10.f;
+		const float SectionGap = 18.f;
+		const float MinButtonW = 148.f;
+
+		Measure(TEXT("Confirm"), TextW, TextH);
+		const float ConfirmW = FMath::Max(MinButtonW, TextW + ButtonPadX * 2.f);
+		const float ButtonH = TextH + ButtonPadY * 2.f;
+		Measure(TEXT("Cancel"), TextW, TextH);
+		const float CancelW = FMath::Max(MinButtonW, TextW + ButtonPadX * 2.f);
+
+		const float ColW = FMath::Max(SizeCol, TypeCol);
+		const float ListsW = ColW * 2.f + ColGap;
+		const float ButtonsW = ConfirmW + ButtonGap + CancelW;
+		const float ContentW = FMath::Max3(TitleW, ListsW, ButtonsW);
+		const int32 ListCount = FMath::Max(SizeRows.Num(), TypeRows.Num());
+		const float ListH = ListCount > 0
+			? static_cast<float>(ListCount) * LineH + static_cast<float>(ListCount - 1) * RowGap
+			: 0.f;
+		const float ContentH = TitleH + SectionGap + LineH + SectionGap * 0.5f + ListH + SectionGap + ButtonH;
+		const float BoxW = ContentW + Pad * 2.f;
+		const float BoxH = ContentH + Pad * 2.f;
+		const float BoxX = (static_cast<float>(Canvas->SizeX) - BoxW) * 0.5f;
+		const float BoxY = (static_cast<float>(Canvas->SizeY) - BoxH) * 0.5f;
+
+		FCanvasTileItem Dim(
+			FVector2D(0.f, 0.f),
+			FVector2D(static_cast<float>(Canvas->SizeX), static_cast<float>(Canvas->SizeY)),
+			FLinearColor(0.f, 0.f, 0.f, 0.72f));
+		Dim.BlendMode = SE_BLEND_Translucent;
+		Canvas->DrawItem(Dim);
+		DrawOakFrame(Canvas, BoxX, BoxY, BoxW, BoxH, SolidHudTheme::MenuFrame());
+
+		const SolidHudTheme::FPalette Palette = SolidHudTheme::OakAndBronze();
+		const float Left = BoxX + Pad;
+		const float ListsLeft = Left + (ContentW - ListsW) * 0.5f;
+		const float SizeX = ListsLeft;
+		const float TypeX = ListsLeft + ColW + ColGap;
+		float Y = BoxY + Pad;
+
+		auto DrawLine = [&](const FString& Text, const float X, const float TextY, const FLinearColor& Color)
+		{
+			if (!Font || Text.IsEmpty())
+			{
+				return;
+			}
+			FCanvasTextItem Item(FVector2D(X, TextY), FText::FromString(Text), Font, Color);
+			Item.EnableShadow(FLinearColor(0.f, 0.f, 0.f, 0.85f));
+			Canvas->DrawItem(Item);
+		};
+
+		DrawLine(Title, Left, Y, Palette.Title);
+		const float RuleInset = SolidHudTheme::BandThickness(SolidHudTheme::MenuFrame()) + 18.f;
+		FillRect(
+			Canvas,
+			BoxX + RuleInset,
+			Y + TitleH + 6.f,
+			FMath::Max(0.f, BoxW - RuleInset * 2.f),
+			2.f,
+			Palette.Bronze);
+		Y += TitleH + SectionGap;
+		DrawLine(SizeHeading, SizeX, Y, Palette.Title);
+		DrawLine(TypeHeading, TypeX, Y, Palette.Title);
+		Y += LineH + SectionGap * 0.5f;
+
+		const float Pitch = LineH + RowGap;
+		auto PaintList = [&](const TArray<int32>& Rows, const float X)
+		{
+			for (int32 Ordinal = 0; Ordinal < Rows.Num(); ++Ordinal)
+			{
+				const int32 Index = Rows[Ordinal];
+				const float RowY = Y + static_cast<float>(Ordinal) * Pitch;
+				SolidMenuPointer::FRow& Hit = OutRows[Index];
+				Hit.X = X;
+				Hit.Y = RowY;
+				Hit.W = ColW;
+				Hit.H = Pitch;
+				const bool bEnabled = !Enabled.IsValidIndex(Index) || Enabled[Index];
+				const bool bPicked = Choices[Index].Kind == ESolidStrongholdChoiceKind::Size
+					? Choices[Index].Size == PickedSize
+					: Choices[Index].Type == PickedType;
+				const bool bMarked = bEnabled && (bPicked || Index == SelectedIndex);
+				if (bMarked)
+				{
+					FillRect(Canvas, X - 12.f, RowY, 4.f, LineH, Palette.BronzeBright);
+				}
+				FLinearColor Color = Palette.Ink;
+				if (!bEnabled)
+				{
+					Color = FLinearColor(Palette.Ink.R, Palette.Ink.G, Palette.Ink.B, 0.4f);
+				}
+				else if (bMarked)
+				{
+					Color = Palette.Title;
+				}
+				DrawLine(RowLabel(Index), X, RowY, Color);
+			}
+		};
+		PaintList(SizeRows, SizeX);
+		PaintList(TypeRows, TypeX);
+
+		Y += ListH + SectionGap;
+		const float ButtonsLeft = Left + (ContentW - ButtonsW) * 0.5f;
+		auto PaintButton = [&](const int32 Index, const float X, const float W, const FString& Label)
+		{
+			if (!Choices.IsValidIndex(Index))
+			{
+				return;
+			}
+			SolidMenuPointer::FRow& Hit = OutRows[Index];
+			Hit.X = X;
+			Hit.Y = Y;
+			Hit.W = W;
+			Hit.H = ButtonH;
+			const bool bEnabled = !Enabled.IsValidIndex(Index) || Enabled[Index];
+			const bool bFocused = Index == SelectedIndex;
+			const FLinearColor Rim = bEnabled ? Palette.BronzeBright : Palette.Bronze;
+			FLinearColor Fill = bFocused ? Palette.BronzeBright : Palette.Bronze;
+			FLinearColor Ink = Palette.Fill;
+			if (!bEnabled)
+			{
+				Fill = Palette.Recess;
+				Ink = FLinearColor(Palette.Ink.R, Palette.Ink.G, Palette.Ink.B, 0.4f);
+			}
+			const float RimPx = 3.f;
+			FillRect(Canvas, X, Y, W, ButtonH, Rim);
+			FillRect(
+				Canvas,
+				X + RimPx,
+				Y + RimPx,
+				FMath::Max(0.f, W - RimPx * 2.f),
+				FMath::Max(0.f, ButtonH - RimPx * 2.f),
+				Fill);
+			DrawCenteredLine(Canvas, Font, Label, X, Y, W, ButtonH, Ink);
+		};
+		PaintButton(ConfirmIndex, ButtonsLeft, ConfirmW, TEXT("Confirm"));
+		PaintButton(CancelIndex, ButtonsLeft + ConfirmW + ButtonGap, CancelW, TEXT("Cancel"));
+	}
+
 	/** Pack, Chest, and a worn-slot name. Centered on the width, sitting on LabelY. */
 	static void DrawInventoryHeading(
 		UCanvas* Canvas,
@@ -3404,46 +3660,21 @@ void ASolidHUD::DrawStrongholdName() const
 
 void ASolidHUD::DrawStrongholdChoice()
 {
-	TArray<FString> Labels;
 	TArray<bool> Enabled;
+	Enabled.Reserve(StrongholdChoices.Num());
 	for (const FSolidStrongholdChoice& Choice : StrongholdChoices)
 	{
-		FString Label;
-		if (Choice.Kind == ESolidStrongholdChoiceKind::Size)
-		{
-			Label = SolidStronghold::SizeName(Choice.Size);
-			if (Choice.Size == StrongholdPickedSize)
-			{
-				Label = FString(TEXT("* ")) + Label;
-			}
-		}
-		else if (Choice.Kind == ESolidStrongholdChoiceKind::Type)
-		{
-			Label = SolidStronghold::TypeName(Choice.Type);
-			if (Choice.Type == StrongholdPickedType)
-			{
-				Label = FString(TEXT("* ")) + Label;
-			}
-		}
-		else if (Choice.Kind == ESolidStrongholdChoiceKind::Confirm)
-		{
-			Label = TEXT("Confirm");
-		}
-		else
-		{
-			Label = TEXT("Cancel");
-		}
-		Labels.Add(Label);
 		Enabled.Add(IsStrongholdRowEnabled(Choice));
 	}
 	TArray<SolidMenuPointer::FRow> Rows;
-	SolidHUDPrivate::DrawChoicePopup(
+	SolidHUDPrivate::DrawStrongholdBoard(
 		Canvas,
-		TEXT("Choose a stronghold"),
-		Labels,
+		StrongholdChoices,
 		StrongholdChoiceIndex,
-		Rows,
-		&Enabled);
+		StrongholdPickedSize,
+		StrongholdPickedType,
+		Enabled,
+		Rows);
 	SetChoicePointerRows(Rows);
 }
 

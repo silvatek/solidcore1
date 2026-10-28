@@ -214,6 +214,8 @@ namespace SolidStronghold
 		const float Wall = FSolidStronghold::WallCm;
 		const float MediumWidth = 5.f * SolidStrongholdGrid::SideCm();
 		const float MediumLength = 4.5f * SolidStrongholdGrid::FlatToFlatCm;
+		// Every size starts with a medium east yard, so a size with no building still has a courtyard.
+		AdditionalCourtyard(FSolidStronghold::StoreyCm, MediumWidth);
 		switch (InSize)
 		{
 		case ESolidStrongholdSize::Humble:
@@ -222,13 +224,7 @@ namespace SolidStronghold
 			AdditionalCourtyard(FSolidStronghold::StoreyCm, MediumLength + Wall);
 			AddBuilding(Position(Wall, Wall), Size(MediumLength, MediumWidth), NorthFace, { Small, Medium });
 			break;
-		case ESolidStrongholdSize::Meagre:
-		case ESolidStrongholdSize::Impressive:
-		case ESolidStrongholdSize::Grand:
-		case ESolidStrongholdSize::Stately:
-		case ESolidStrongholdSize::Imperious:
 		default:
-			AdditionalCourtyard(FSolidStronghold::StoreyCm, 0.f);
 			break;
 		}
 	}

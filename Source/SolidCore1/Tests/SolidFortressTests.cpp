@@ -151,6 +151,18 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Average has no ground hexes"), Empty.Num(), 0);
 	Fortress.CollectGroundHexes(ESolidStrongholdSize::Meagre, Empty);
 	TestEqual(TEXT("Meagre has no ground hexes"), Empty.Num(), 0);
+
+	SolidStronghold::FSolidFortress EmptyYard;
+	EmptyYard.AddBuildings(ESolidStrongholdSize::Meagre);
+	const float MediumWidth = 5.f * SolidStrongholdGrid::SideCm();
+	TestTrue(
+		TEXT("a size with no building still has a medium east yard"),
+		EmptyYard.Buildings.Num() == 0
+			&& FMath::IsNearlyEqual(EmptyYard.YardWidthCm, MediumWidth, 0.05f)
+			&& FMath::IsNearlyEqual(
+				EmptyYard.OuterWidthCm(),
+				FSolidStronghold::WallCm + MediumWidth + FSolidStronghold::WallCm,
+				0.05f));
 	return true;
 }
 

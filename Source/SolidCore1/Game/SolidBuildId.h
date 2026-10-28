@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0690")
+#define SOLID_BUILD_ID TEXT("SC1-0691")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The courtyard is an L around the building.")
+#define SOLID_BUILD_NOTE TEXT("Every fortress size starts with an east yard.")
 #endif

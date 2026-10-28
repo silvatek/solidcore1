@@ -128,10 +128,10 @@ namespace SolidStronghold
 		int32 YardNorthAfter = AfterLast;
 		int32 YardEastAfter = AfterLast;
 		/**
-		 * Open ground after one building to the north, and after one building to the east.
-		 * NorthAfter and EastAfter are building indices. AfterLast means the last building.
+		 * Open ground after one building to the north, then after one building to the east.
+		 * Each pair is the open distance, then the building it follows. AfterLast means the last building.
 		 */
-		void AdditionalCourtyard(float DepthCm, float WidthCm, int32 NorthAfter, int32 EastAfter);
+		void AdditionalCourtyard(float DepthCm, int32 NorthAfter, float WidthCm, int32 EastAfter);
 		/** Inner south-west corner of the building immediately east of this one. */
 		FVector2D EastOf(int32 BuildingIndex) const;
 		/**

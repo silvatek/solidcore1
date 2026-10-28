@@ -228,8 +228,8 @@ namespace SolidStronghold
 
 	void FSolidFortress::AdditionalCourtyard(
 		const float DepthCm,
-		const float WidthCm,
 		const int32 NorthAfter,
+		const float WidthCm,
 		const int32 EastAfter)
 	{
 		YardDepthCm = DepthCm;
@@ -307,25 +307,25 @@ namespace SolidStronghold
 			break;
 		case ESolidStrongholdSize::Humble:
 			AddMediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
-			AdditionalCourtyard(MediumWidth, MediumWidth, AfterLast, AfterLast);
+			AdditionalCourtyard(MediumWidth, AfterLast, MediumWidth, AfterLast);
 			break;
 		case ESolidStrongholdSize::Average:
 			AddMediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
 			AddSmallLow(EastOf(0), NorthFace);
-			AdditionalCourtyard(MediumWidth, MediumWidth, AfterLast, AfterLast);
+			AdditionalCourtyard(MediumWidth, AfterLast, MediumWidth, AfterLast);
 			break;
 		case ESolidStrongholdSize::Impressive:
 			AddMediumHigh(Position(Wall, Wall), NorthFace, { Medium, Medium, Medium });
 			AddSmallLow(EastOf(0), NorthFace);
 			AddSmallLow(EastOf(1), NorthFace);
-			AdditionalCourtyard(MediumWidth, MediumWidth, AfterLast, 1);
+			AdditionalCourtyard(MediumWidth, AfterLast, MediumWidth, 1);
 			break;
 		case ESolidStrongholdSize::Grand:
 			AddLargeHigh(Position(Wall, Wall), NorthFace, { Large, Medium, Medium });
 			AddMediumHigh(EastOf(0), NorthFace, { Medium, Medium });
 			AddSmallLow(EastOf(1), NorthFace);
 			AddSmallLow(EastOf(2), NorthFace);
-			AdditionalCourtyard(MediumWidth, MediumWidth, AfterLast, AfterLast);
+			AdditionalCourtyard(MediumWidth, AfterLast, MediumWidth, AfterLast);
 			break;
 		case ESolidStrongholdSize::Stately:
 			AddLargeHigh(Position(Wall, Wall), NorthFace, { Large, Large, Medium });
@@ -333,7 +333,7 @@ namespace SolidStronghold
 			AddMediumLow(EastOf(1), NorthFace);
 			AddSmallLow(EastOf(2), NorthFace);
 			AddSmallLow(EastOf(3), NorthFace);
-			AdditionalCourtyard(MediumWidth, MediumWidth, AfterLast, AfterLast);
+			AdditionalCourtyard(MediumWidth, AfterLast, MediumWidth, AfterLast);
 			break;
 		case ESolidStrongholdSize::Imperious:
 			AddLargeHigh(Position(Wall, Wall), NorthFace, { Large, Large, Large });
@@ -342,11 +342,11 @@ namespace SolidStronghold
 			AddSmallLow(EastOf(2), NorthFace);
 			AddSmallLow(EastOf(3), NorthFace);
 			AddSmallLow(EastOf(4), NorthFace);
-			AdditionalCourtyard(MediumWidth, MediumWidth, AfterLast, AfterLast);
+			AdditionalCourtyard(MediumWidth, AfterLast, MediumWidth, AfterLast);
 			break;
 		default:
 			AddMediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
-			AdditionalCourtyard(MediumWidth, MediumWidth, AfterLast, AfterLast);
+			AdditionalCourtyard(MediumWidth, AfterLast, MediumWidth, AfterLast);
 			break;
 		}
 	}

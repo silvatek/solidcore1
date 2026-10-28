@@ -47,7 +47,7 @@ The shipped Meagre dungeon is still the fourteen-cell cave. The Meagre kit row (
 
 Tower rooms fit in a **constant tower geometry**: a contiguous band of floors taken from the Imperious tower (floors numbered **1 at the ground** through **10 at the top**). Each floor is one room. The Imperious kept-hex counts per floor (`35, 28, 22, 19, 16, 12, 12, 8, 6, 7` on floors 1–10) are larger than the room sizes; the room is the usable kit cell count that fits that floor. Floor 1–3 are large, 4–7 medium, 8–10 small. Meagre and Humble have no tower.
 
-Every fortress has a **Keep** as its main building, and at least one building with at least two floors. Keep floors are kit rooms stacked in that building, ground floor first (column above). Humble and Average keep a small room on the ground and a medium room above it. Meagre is not a fortress size. The remainder of the kit (kit rooms minus Keep) goes to other buildings; how that split lands across Barracks, Gatehouse, Workshops, and Stores is a fortress layout choice.
+Every fortress has a **Keep**, the largest building, and that building has at least two floors. Keep floors are kit rooms stacked in that building, ground floor first (column above). Humble and Average keep a small room on the ground and a medium room above it. Meagre is not a fortress size. The remainder of the kit goes to other buildings. Plans try to reuse a small number of building types. The number of floors in a type can change, and so can the rooms inside it. A fortress size is in progress until its usable hexes equal the kit total, the same total a tower of that size uses. It can still be chosen in the game while it is in progress.
 
 A dungeon joins the same kit with **passages** and **stairs**. Layout is flexible. **Level 1 is the top** (the mouth); deeper levels have higher numbers — the opposite of tower and fortress floor numbers.
 
@@ -60,7 +60,7 @@ Exclude a hex whose **center** lies on a stair flight or on a landing. Same idea
 ## Type cues
 
 - **Tower** — one round shaft, taper, spiral stair band. Usable rooms are the kit sizes on the Imperious floor band for that size (table above). Average through Imperious only.
-- **Fortress** — rectangular outer wall, yard (yard hexes are **not** in the total), buildings with straight walls. Keep is the main building and uses the keep floors above. Stairs and landings live inside multi-floor buildings.
+- **Fortress** — rectangular outer wall, yard (yard hexes are **not** in the total), buildings with straight walls. The keep is the largest building and uses the keep floors above. It has at least two floors. Stairs and landings live inside multi-floor buildings.
 - **Dungeon** — the shared rooms joined by **passages** and **stairs**. Passages have no usable hexes and are at least as long as they are wide. No hard limit on the overall footprint. Rooms may be rectangular or irregular so long as the hex counts match the kit. **Level 1 is the top** (the mouth); deeper levels have higher numbers.
 
 # Stronghold Mockups

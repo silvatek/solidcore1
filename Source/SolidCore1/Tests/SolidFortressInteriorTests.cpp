@@ -591,6 +591,13 @@ bool FSolidFortressUpperFloorsTest::RunTest(const FString& Parameters)
 	bool bSecondLanding = false;
 	bool bSecondTop = false;
 	bool bLandingHeadroom = true;
+	bool bFlightHeadroom = true;
+	const float FlightRun = FMath::Max(
+		Keep.InnerWidthCm - 2.f * SolidStronghold::LandingRunCm,
+		SolidStronghold::FPlan{}.StairTreadCm);
+	const int32 Steps = FMath::Max(1, FMath::RoundToInt(FlightRun / SolidStronghold::FPlan{}.StairTreadCm));
+	const float Tread = FlightRun / static_cast<float>(Steps);
+	const float LastStepX = Keep.InnerMinCm.X + SolidStronghold::LandingRunCm + Tread * (static_cast<float>(Steps) - 0.5f);
 	for (const TObjectPtr<UStaticMeshComponent>& Part : Room->GetBuildingMeshes())
 	{
 		if (!Part)
@@ -602,12 +609,14 @@ bool FSolidFortressUpperFloorsTest::RunTest(const FString& Parameters)
 		bSecondLanding = bSecondLanding || Covers(Part, ActorPoint(LandingX, StairY, Storey - 15.f));
 		bSecondTop = bSecondTop || Covers(Part, ActorPoint(TopX, StairY, 2.f * Storey - 15.f));
 		bLandingHeadroom = bLandingHeadroom && !Covers(Part, ActorPoint(TopX, StairY, Storey + 40.f));
+		bFlightHeadroom = bFlightHeadroom && !Covers(Part, ActorPoint(LastStepX, StairY, Storey + 40.f));
 	}
 	TestTrue(TEXT("the second upper floor has a deck"), bSecondDeck);
 	TestTrue(TEXT("the second flight climbs from that floor"), bSecondFlight);
 	TestTrue(TEXT("the second flight starts on a landing"), bSecondLanding);
 	TestTrue(TEXT("the second flight ends on the top floor"), bSecondTop);
 	TestTrue(TEXT("the first landing keeps its headroom"), bLandingHeadroom);
+	TestTrue(TEXT("the second flight leaves the first flight open"), bFlightHeadroom);
 	return true;
 }
 

@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0707")
+#define SOLID_BUILD_ID TEXT("SC1-0708")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Grand, Stately, and Imperious list every room in the kit.")
+#define SOLID_BUILD_NOTE TEXT("An upper flight leaves the flight below open.")
 #endif

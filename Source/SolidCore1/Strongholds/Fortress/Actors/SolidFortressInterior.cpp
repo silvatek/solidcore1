@@ -454,11 +454,15 @@ void ASolidFortressInterior::BuildVisuals()
 				}
 				for (int32 Step = 0; Step < Steps; ++Step)
 				{
+					const float StepTop = BaseZ + Rise * static_cast<float>(Step + 1);
+					// The ground flight is solid from the floor. A higher flight is one rise,
+					// so it leaves the flight below open.
+					const float StepBottom = FloorIndex == 0 ? 0.f : StepTop - Rise;
 					AddStep(
 						AlongOrigin + LandingRun + Tread * (static_cast<float>(Step) + 0.5f),
 						Tread,
-						BaseZ + Rise * static_cast<float>(Step + 1),
-						BaseZ);
+						StepTop,
+						StepBottom);
 				}
 				AddStep(
 					AlongOrigin + LandingRun + FlightRun + LandingRun * 0.5f,

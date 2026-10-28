@@ -164,17 +164,19 @@ namespace SolidStronghold
 		using SolidFortressPrivate::Position;
 		using SolidFortressPrivate::Size;
 		const float Wall = FSolidStronghold::WallCm;
+		// One outer wall, plus the two walls where inner faces meet.
+		const float ThreeWalls = 3.f * Wall;
 		const float Depth = 5.f * SolidStrongholdGrid::SideCm();
 		switch (InSize)
 		{
 		case ESolidStrongholdSize::Humble:
 			AddBuilding(Position(Wall, Wall), North, Size(300.f, Depth), { Small });
-			AddBuilding(Position(Wall + 300.f + 2.f * Wall, Wall), North, Size(540.f, Depth), { Medium });
+			AddBuilding(Position(ThreeWalls + 300.f, Wall), North, Size(540.f, Depth), { Medium });
 			break;
 		case ESolidStrongholdSize::Average:
-			AddBuilding(Position(Wall, Wall + Depth + 2.f * Wall), East, Size(300.f, Depth), { Small });
+			AddBuilding(Position(Wall, ThreeWalls + Depth), East, Size(300.f, Depth), { Small });
 			AddBuilding(Position(Wall, Wall), North, Size(640.f, Depth), { Medium });
-			AddBuilding(Position(Wall + 640.f + 2.f * Wall, Wall), North, Size(402.8f, Depth), { Small });
+			AddBuilding(Position(ThreeWalls + 640.f, Wall), North, Size(402.8f, Depth), { Small });
 			break;
 		case ESolidStrongholdSize::Meagre:
 		case ESolidStrongholdSize::Impressive:

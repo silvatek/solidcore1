@@ -33,7 +33,7 @@ The outer wall and the building walls are straight. They do not follow the hex e
 
 A building with two or more floors has a stair and two landings inside it. A higher floor is reached only by that stair. The stair holds no usable hex, and neither does a landing. A building with one floor has no stair and no landing, and its doorway is centered on the face. On a floor that repeats the one below, the stair and the landings occupy the same places, so the usable hexes match.
 
-The stair is a strip along the door wall. Its clear width is `StairWidthCm`, 140 cm, and that strip is added on the door side of the room block. Each landing is `LandingRunCm`, 200 cm. The ground landing is the first 200 cm from the inner start of that wall, and its walking surface is the floor. The top landing is the last 200 cm, and its walking surface is the upper floor. The flight is the run between them. The doorway is centered on the ground landing.
+The stair is a strip along the door wall. Its clear width is `StairWidthCm`, 140 cm, and that strip is added on the door side of the room block. Each landing is `LandingRunCm`, 200 cm. The ground landing is the first 200 cm from the inner start of that wall, and its walking surface is the floor. The top landing is the last 200 cm, and its walking surface is the upper floor. The flight is the run between them. The doorway is centered on the ground landing. Each floor that has another above it draws that next floor as a deck over the room, and another flight in the same strip, from this floor's landing to the next floor's landing.
 
 ### The gate
 
@@ -85,7 +85,7 @@ Grand, Stately, and Imperious are in progress. Each uses the same Humble `AddMed
 - A higher floor of a building has the same outer walls as the floor below. The usable hexes may match the floor below. An interior wall may close off part of the floor: a medium room can sit above a large room, and a small room and a medium room can sit side by side above a large room. The closed part holds no usable hex.
 - The outer wall and the building walls are straight.
 - A usable hex has all six vertices inside the inner face.
-- A building with more than one floor has a stair and two landings inside it. A higher floor is reached only by that stair. The stair is a 140 cm strip along the door wall. The ground landing is the first 200 cm of that strip, at the floor. The top landing is the last 200 cm, at the upper floor. The doorway is centered on the ground landing.
+- A building with more than one floor has a stair and two landings inside it. A higher floor is reached only by that stair. Each floor that has another above it draws that next floor as a deck, and a flight in the same strip from this floor's landing to the next floor's landing. The stair is a 140 cm strip along the door wall. The ground landing is the first 200 cm of that strip, at the floor. The top landing is the last 200 cm, at the next floor. The doorway is centered on the ground landing.
 - A landing holds no usable hex. The stair holds no usable hex.
 - A building with one floor has no stair and no landing, and its doorway is centered on the face.
 - On a repeated floor, the stair and the landings occupy the same places.

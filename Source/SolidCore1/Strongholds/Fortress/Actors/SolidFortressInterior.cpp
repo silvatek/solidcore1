@@ -400,14 +400,6 @@ void ASolidFortressInterior::BuildVisuals()
 				}
 			}
 			const float Deck = 20.f;
-			AddBuilding(
-				RoomMin.X + RoomWidth * 0.5f,
-				RoomMin.Y + RoomDepth * 0.5f,
-				Storey - Deck * 0.5f,
-				RoomWidth,
-				RoomDepth,
-				Deck);
-
 			const bool bAlongX = One.Facing == ESolidStrongholdOrientation::NorthFace
 				|| One.Facing == ESolidStrongholdOrientation::SouthFace;
 			const float AlongOrigin = bAlongX ? One.InnerMinCm.X : One.InnerMinCm.Y;
@@ -434,23 +426,46 @@ void ASolidFortressInterior::BuildVisuals()
 			const int32 Steps = FMath::Max(1, FMath::RoundToInt(FlightRun / SolidStronghold::FPlan{}.StairTreadCm));
 			const float Tread = FlightRun / static_cast<float>(Steps);
 			const float Rise = Storey / static_cast<float>(Steps);
-			auto AddStep = [&](const float AlongCenter, const float AlongSize, const float StepHeight)
+			auto AddStep = [&](const float AlongCenter, const float AlongSize, const float TopZ, const float BottomZ)
 			{
 				const float PlanX = bAlongX ? AlongCenter : CrossCenter;
 				const float PlanY = bAlongX ? CrossCenter : AlongCenter;
 				const float SizeX = bAlongX ? AlongSize : StairCm;
 				const float SizeY = bAlongX ? StairCm : AlongSize;
-				AddBuilding(PlanX, PlanY, StepHeight * 0.5f, SizeX, SizeY, StepHeight);
+				const float Height = TopZ - BottomZ;
+				AddBuilding(PlanX, PlanY, BottomZ + Height * 0.5f, SizeX, SizeY, Height);
 			};
-			// The ground landing is the floor. The flight climbs from it. The top landing is the upper floor.
-			for (int32 Step = 0; Step < Steps; ++Step)
+			// Each floor that has another above it gets that floor's deck, and a flight up to it.
+			// The ground landing is the floor. A higher flight starts on a landing at that floor.
+			for (int32 FloorIndex = 0; FloorIndex + 1 < Storeys; ++FloorIndex)
 			{
+				const float BaseZ = Storey * static_cast<float>(FloorIndex);
+				const float NextZ = BaseZ + Storey;
+				AddBuilding(
+					RoomMin.X + RoomWidth * 0.5f,
+					RoomMin.Y + RoomDepth * 0.5f,
+					NextZ - Deck * 0.5f,
+					RoomWidth,
+					RoomDepth,
+					Deck);
+				if (FloorIndex > 0)
+				{
+					AddStep(AlongOrigin + LandingRun * 0.5f, LandingRun, BaseZ, BaseZ - Deck);
+				}
+				for (int32 Step = 0; Step < Steps; ++Step)
+				{
+					AddStep(
+						AlongOrigin + LandingRun + Tread * (static_cast<float>(Step) + 0.5f),
+						Tread,
+						BaseZ + Rise * static_cast<float>(Step + 1),
+						BaseZ);
+				}
 				AddStep(
-					AlongOrigin + LandingRun + Tread * (static_cast<float>(Step) + 0.5f),
-					Tread,
-					Rise * static_cast<float>(Step + 1));
+					AlongOrigin + LandingRun + FlightRun + LandingRun * 0.5f,
+					LandingRun,
+					NextZ,
+					FloorIndex == 0 ? 0.f : NextZ - Deck);
 			}
-			AddStep(AlongOrigin + LandingRun + FlightRun + LandingRun * 0.5f, LandingRun, Storey);
 		}
 
 		for (int32 FloorIndex = 0; FloorIndex < Storeys; ++FloorIndex)

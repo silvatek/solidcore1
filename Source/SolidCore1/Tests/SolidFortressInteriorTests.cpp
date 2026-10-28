@@ -543,4 +543,72 @@ bool FSolidFortressDoorFacingTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidFortressUpperFloorsTest,
+	"SolidCore1.Stronghold.FortressUpperFloors",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidFortressUpperFloorsTest::RunTest(const FString& Parameters)
+{
+	SolidStronghold::FSolidFortress Fort;
+	Fort.AddBuildings(ESolidStrongholdSize::Impressive);
+	ASolidFortressInterior* Room = NewObject<ASolidFortressInterior>();
+	TestNotNull(TEXT("fortress interior"), Room);
+	if (!Room || Fort.Buildings.Num() < 1)
+	{
+		return false;
+	}
+	Fort.ConfigureInterior(Room);
+
+	const SolidStronghold::FSolidFortressBuilding& Keep = Fort.Buildings[0];
+	TestEqual(TEXT("the keep has three floors"), Keep.Floors.Num(), 3);
+	const float Width = Fort.OuterWidthCm();
+	const float Depth = Fort.OuterDepthCm();
+	const float Storey = FSolidStronghold::StoreyCm;
+	const float RoomX = Keep.InnerMinCm.X + Keep.WidthCm() * 0.5f;
+	const float RoomY = Keep.InnerMinCm.Y + Keep.DepthCm() * 0.5f;
+	const float StairY = Keep.InnerMinCm.Y + Keep.DepthCm() - 70.f;
+	const float FlightX = Keep.InnerMinCm.X + SolidStronghold::LandingRunCm + 13.f;
+	const float TopX = Keep.InnerMinCm.X + Keep.WidthCm() - SolidStronghold::LandingRunCm * 0.5f;
+	const float LandingX = Keep.InnerMinCm.X + 100.f;
+	auto ActorPoint = [&](const float PlanX, const float PlanY, const float Z)
+	{
+		return FVector(Depth * 0.5f - PlanY, PlanX - Width * 0.5f, Z);
+	};
+	auto Covers = [](const UStaticMeshComponent* Part, const FVector& Point)
+	{
+		const FVector Location = Part->GetRelativeLocation();
+		const FVector Half = Part->GetRelativeScale3D() * 50.f;
+		return Point.X >= Location.X - Half.X - 0.5f
+			&& Point.X <= Location.X + Half.X + 0.5f
+			&& Point.Y >= Location.Y - Half.Y - 0.5f
+			&& Point.Y <= Location.Y + Half.Y + 0.5f
+			&& Point.Z >= Location.Z - Half.Z - 0.5f
+			&& Point.Z <= Location.Z + Half.Z + 0.5f;
+	};
+	bool bSecondDeck = false;
+	bool bSecondFlight = false;
+	bool bSecondLanding = false;
+	bool bSecondTop = false;
+	bool bLandingHeadroom = true;
+	for (const TObjectPtr<UStaticMeshComponent>& Part : Room->GetBuildingMeshes())
+	{
+		if (!Part)
+		{
+			continue;
+		}
+		bSecondDeck = bSecondDeck || Covers(Part, ActorPoint(RoomX, RoomY, 2.f * Storey - 5.f));
+		bSecondFlight = bSecondFlight || Covers(Part, ActorPoint(FlightX, StairY, Storey + 10.f));
+		bSecondLanding = bSecondLanding || Covers(Part, ActorPoint(LandingX, StairY, Storey - 15.f));
+		bSecondTop = bSecondTop || Covers(Part, ActorPoint(TopX, StairY, 2.f * Storey - 15.f));
+		bLandingHeadroom = bLandingHeadroom && !Covers(Part, ActorPoint(TopX, StairY, Storey + 40.f));
+	}
+	TestTrue(TEXT("the second upper floor has a deck"), bSecondDeck);
+	TestTrue(TEXT("the second flight climbs from that floor"), bSecondFlight);
+	TestTrue(TEXT("the second flight starts on a landing"), bSecondLanding);
+	TestTrue(TEXT("the second flight ends on the top floor"), bSecondTop);
+	TestTrue(TEXT("the first landing keeps its headroom"), bLandingHeadroom);
+	return true;
+}
+
 #endif

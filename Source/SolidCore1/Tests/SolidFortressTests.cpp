@@ -259,13 +259,14 @@ bool FSolidFortressAveragePlanTest::RunTest(const FString& Parameters)
 		FMath::IsNearlyEqual(Small.InnerWidthCm, 2.5f * SolidStrongholdGrid::FlatToFlatCm, 0.05f)
 			&& FMath::IsNearlyEqual(Small.InnerDepthCm, Small.SpanDepthCm(), 0.05f));
 	TestTrue(
-		TEXT("the small building sits against the keep in the east yard"),
+		TEXT("a storey of yard stands east of the small building"),
 		FMath::IsNearlyEqual(Small.InnerMinCm.Y, Building.InnerMinCm.Y, 0.05f)
 			&& FMath::IsNearlyEqual(
 				Small.InnerMinCm.X,
 				Building.InnerMinCm.X + Building.WidthCm() + 2.f * FSolidStronghold::WallCm + Fortress.GapCm,
 				0.05f)
-			&& FMath::IsNearlyEqual(Fortress.OuterWidthCm(), HumbleFortress.OuterWidthCm(), 0.05f));
+			&& FMath::IsNearlyEqual(Fortress.YardWidthCm, FSolidStronghold::StoreyCm, 0.05f)
+			&& Fortress.OuterWidthCm() > HumbleFortress.OuterWidthCm() + 1.f));
 
 	TArray<SolidStrongholdGrid::FHex> Ground;
 	Fortress.CollectGroundHexes(ESolidStrongholdSize::Average, Ground);

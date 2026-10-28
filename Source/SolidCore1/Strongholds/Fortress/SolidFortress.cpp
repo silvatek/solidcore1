@@ -243,12 +243,10 @@ namespace SolidStronghold
 		case ESolidStrongholdSize::Average:
 		{
 			MediumHigh(Position(Wall, Wall), NorthFace, { Small, Medium });
-			const float EastYard = Buildings[0].InnerWidthCm + Wall;
 			const float KeepEast = Buildings[0].InnerMinCm.X + Buildings[0].WidthCm() + Wall;
 			SmallLow(Position(KeepEast + GapCm + Wall, Wall), NorthFace, { Small });
-			const float SmallEast = Buildings[1].InnerMinCm.X + Buildings[1].WidthCm() + Wall;
-			// The small building sits in the Humble east yard, so the outer wall stays put.
-			AdditionalCourtyard(FSolidStronghold::StoreyCm, KeepEast + EastYard - SmallEast);
+			// A storey of open ground stands east of the small building, the same as the north yard.
+			AdditionalCourtyard(FSolidStronghold::StoreyCm, FSolidStronghold::StoreyCm);
 			break;
 		}
 		default:

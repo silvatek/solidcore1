@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0698")
+#define SOLID_BUILD_ID TEXT("SC1-0699")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Average adds SmallLow, and every other fortress keeps MediumHigh.")
+#define SOLID_BUILD_NOTE TEXT("Average keeps a storey of yard east of the small building.")
 #endif

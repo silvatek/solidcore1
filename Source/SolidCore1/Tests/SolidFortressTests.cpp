@@ -2,6 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "Strongholds/Fortress/SolidFortress.h"
 #include "Strongholds/Furnishings/SolidStrongholdGrid.h"
+#include "Strongholds/Tower/SolidTower.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -71,7 +72,7 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 		FMath::IsNearlyEqual(Fortress.YardDepthCm, FSolidStronghold::StoreyCm, 0.05f)
 			&& FMath::IsNearlyEqual(
 				Fortress.YardWidthCm,
-				4.5f * SolidStrongholdGrid::FlatToFlatCm + FSolidStronghold::WallCm,
+				4.5f * SolidStrongholdGrid::FlatToFlatCm + SolidStronghold::LandingRunCm + FSolidStronghold::WallCm,
 				0.05f)
 			&& FMath::IsNearlyEqual(Fortress.OuterWidthCm(), LaidWidthCm(Fortress) * 2.f, 0.05f));
 	TestTrue(
@@ -99,7 +100,10 @@ bool FSolidFortressHumbleTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("a second floor keeps a stair"), Building.HasStair());
 	TestTrue(
 		TEXT("the inner face is the medium span plus the stair"),
-		FMath::IsNearlyEqual(Building.InnerWidthCm, 540.f, 0.05f)
+		FMath::IsNearlyEqual(
+			Building.InnerWidthCm,
+			4.5f * SolidStrongholdGrid::FlatToFlatCm + SolidStronghold::LandingRunCm,
+			0.05f)
 			&& FMath::IsNearlyEqual(Building.InnerDepthCm, Building.SpanDepthCm() + FSolidStronghold::OpeningCm, 0.05f));
 
 	TArray<SolidStrongholdGrid::FHex> Hexes;

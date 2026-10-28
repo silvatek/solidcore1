@@ -335,6 +335,33 @@ void ASolidFortressInterior::BuildVisuals()
 		AddFace(bEastCurtain, ESolidStrongholdOrientation::EastFace, MaxX - Wall * 0.5f, MinY, MaxY, false);
 		AddFace(bSouthCurtain, ESolidStrongholdOrientation::SouthFace, MinY + Wall * 0.5f, MinX, MaxX, true);
 		AddFace(bNorthCurtain, ESolidStrongholdOrientation::NorthFace, MaxY - Wall * 0.5f, MinX, MaxX, true);
+		// The curtain is one storey. A taller building keeps a wall above it, on the same line, facing the room.
+		auto AddAboveCurtain = [&](
+			const bool bCurtain,
+			const float OuterFixed,
+			const float SpanMin,
+			const float SpanMax,
+			const bool bSpanIsX)
+		{
+			if (!bCurtain || BuildingHeight <= Height + KINDA_SMALL_NUMBER)
+			{
+				return;
+			}
+			const float Upper = BuildingHeight - Height;
+			const float UpperZ = Height + Upper * 0.5f;
+			if (bSpanIsX)
+			{
+				AddBuilding((SpanMin + SpanMax) * 0.5f, OuterFixed, UpperZ, SpanMax - SpanMin, Wall, Upper);
+			}
+			else
+			{
+				AddBuilding(OuterFixed, (SpanMin + SpanMax) * 0.5f, UpperZ, Wall, SpanMax - SpanMin, Upper);
+			}
+		};
+		AddAboveCurtain(bWestCurtain, Wall * 0.5f, MinY, MaxY, false);
+		AddAboveCurtain(bEastCurtain, Width - Wall * 0.5f, MinY, MaxY, false);
+		AddAboveCurtain(bSouthCurtain, Wall * 0.5f, MinX, MaxX, true);
+		AddAboveCurtain(bNorthCurtain, Depth - Wall * 0.5f, MinX, MaxX, true);
 
 		const float InnerMinX = bWestCurtain ? MinX : MinX + Wall;
 		const float InnerMaxX = bEastCurtain ? MaxX : MaxX - Wall;
@@ -403,50 +430,54 @@ void ASolidFortressInterior::BuildVisuals()
 				CrossCenter = RoomMin.X - StairCm * 0.5f;
 			}
 			const float LandingRun = SolidStronghold::LandingRunCm;
-			const float FlightRun = FMath::Max(AlongLength - LandingRun, SolidStronghold::FPlan{}.StairTreadCm);
+			const float FlightRun = FMath::Max(AlongLength - 2.f * LandingRun, SolidStronghold::FPlan{}.StairTreadCm);
 			const int32 Steps = FMath::Max(1, FMath::RoundToInt(FlightRun / SolidStronghold::FPlan{}.StairTreadCm));
 			const float Tread = FlightRun / static_cast<float>(Steps);
-			const float Rise = Storey / static_cast<float>(Steps + 1);
-			auto AddStep = [&](const float AlongCenter, const float AlongSize, const float Height)
+			const float Rise = Storey / static_cast<float>(Steps);
+			auto AddStep = [&](const float AlongCenter, const float AlongSize, const float StepHeight)
 			{
 				const float PlanX = bAlongX ? AlongCenter : CrossCenter;
 				const float PlanY = bAlongX ? CrossCenter : AlongCenter;
 				const float SizeX = bAlongX ? AlongSize : StairCm;
 				const float SizeY = bAlongX ? StairCm : AlongSize;
-				AddBuilding(PlanX, PlanY, Height * 0.5f, SizeX, SizeY, Height);
+				AddBuilding(PlanX, PlanY, StepHeight * 0.5f, SizeX, SizeY, StepHeight);
 			};
-			AddStep(AlongOrigin + LandingRun * 0.5f, LandingRun, Rise);
+			// The ground landing is the floor. The flight climbs from it. The top landing is the upper floor.
 			for (int32 Step = 0; Step < Steps; ++Step)
 			{
 				AddStep(
 					AlongOrigin + LandingRun + Tread * (static_cast<float>(Step) + 0.5f),
 					Tread,
-					Rise * static_cast<float>(Step + 2));
+					Rise * static_cast<float>(Step + 1));
 			}
+			AddStep(AlongOrigin + LandingRun + FlightRun + LandingRun * 0.5f, LandingRun, Storey);
 		}
 
-		UPointLightComponent* Light = NewObject<UPointLightComponent>(this, NAME_None, RF_Transient);
-		if (!Light)
+		for (int32 FloorIndex = 0; FloorIndex < Storeys; ++FloorIndex)
 		{
-			continue;
+			UPointLightComponent* Light = NewObject<UPointLightComponent>(this, NAME_None, RF_Transient);
+			if (!Light)
+			{
+				continue;
+			}
+			Light->SetupAttachment(SceneRoot);
+			Light->SetMobility(EComponentMobility::Movable);
+			Light->SetCastShadows(true);
+			Light->SetIntensity(4500.f);
+			Light->SetAttenuationRadius(FMath::Max(InnerMaxX - InnerMinX, InnerMaxY - InnerMinY) * 1.4f);
+			Light->SetLightColor(FLinearColor(1.f, 0.82f, 0.55f));
+			Light->SetRelativeLocation(SolidFortressInteriorPrivate::ActorCenter(
+				Width,
+				Depth,
+				(InnerMinX + InnerMaxX) * 0.5f,
+				(InnerMinY + InnerMaxY) * 0.5f,
+				Storey * (static_cast<float>(FloorIndex) + 0.62f)));
+			if (GetWorld())
+			{
+				Light->RegisterComponent();
+			}
+			RoomLights.Add(Light);
 		}
-		Light->SetupAttachment(SceneRoot);
-		Light->SetMobility(EComponentMobility::Movable);
-		Light->SetCastShadows(true);
-		Light->SetIntensity(4500.f);
-		Light->SetAttenuationRadius(FMath::Max(InnerMaxX - InnerMinX, InnerMaxY - InnerMinY) * 1.4f);
-		Light->SetLightColor(FLinearColor(1.f, 0.82f, 0.55f));
-		Light->SetRelativeLocation(SolidFortressInteriorPrivate::ActorCenter(
-			Width,
-			Depth,
-			(InnerMinX + InnerMaxX) * 0.5f,
-			(InnerMinY + InnerMaxY) * 0.5f,
-			Storey * 0.62f));
-		if (GetWorld())
-		{
-			Light->RegisterComponent();
-		}
-		RoomLights.Add(Light);
 	}
 
 	if (!FloorGrid)

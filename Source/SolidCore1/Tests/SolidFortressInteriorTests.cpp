@@ -238,30 +238,38 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 		if (One.HasStair())
 		{
 			TestTrue(TEXT("the upper room stays open above the deck"), bUpperOpen);
-			const float LandingX = One.InnerMinCm.X + 100.f;
 			const float StairY = One.InnerMinCm.Y + One.DepthCm() - 70.f;
+			const float LandingX = One.InnerMinCm.X + 100.f;
 			const FVector Landing(
 				Depth * 0.5f - StairY,
 				LandingX - Width * 0.5f,
 				15.f);
-			const float FlightX = One.InnerMinCm.X + One.WidthCm() - 20.f;
-			const FVector FlightTop(
+			const float FlightX = One.InnerMinCm.X + SolidStronghold::LandingRunCm + 13.f;
+			const FVector FlightStep(
 				Depth * 0.5f - StairY,
 				FlightX - Width * 0.5f,
+				10.f);
+			const float TopX = One.InnerMinCm.X + One.WidthCm() - SolidStronghold::LandingRunCm * 0.5f;
+			const FVector TopLanding(
+				Depth * 0.5f - StairY,
+				TopX - Width * 0.5f,
 				FSolidStronghold::StoreyCm - 15.f);
-			bool bLanding = false;
+			bool bLandingRaised = false;
 			bool bFlight = false;
+			bool bTopLanding = false;
 			for (const TObjectPtr<UStaticMeshComponent>& Part : Room->GetBuildingMeshes())
 			{
 				if (!Part)
 				{
 					continue;
 				}
-				bLanding = bLanding || Covers(Part, Landing);
-				bFlight = bFlight || Covers(Part, FlightTop);
+				bLandingRaised = bLandingRaised || Covers(Part, Landing);
+				bFlight = bFlight || Covers(Part, FlightStep);
+				bTopLanding = bTopLanding || Covers(Part, TopLanding);
 			}
-			TestTrue(TEXT("the landing is inside the door"), bLanding);
-			TestTrue(TEXT("the flight climbs to the upper floor"), bFlight);
+			TestFalse(TEXT("the ground landing is at the floor"), bLandingRaised);
+			TestTrue(TEXT("the flight climbs from the landing"), bFlight);
+			TestTrue(TEXT("the top landing is at the upper floor"), bTopLanding);
 		}
 		TestTrue(TEXT("a ceiling closes the top room"), bCeilingPresent);
 		++Gaps;
@@ -327,7 +335,12 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the hex lines sit on the floor"), bLinesOnTheFloor);
 	TestTrue(TEXT("the hex lines stay inside the rooms"), bLinesInTheRooms);
 
-	TestEqual(TEXT("each room has a light"), Room->GetRoomLights().Num(), Fortress->Buildings.Num());
+	int32 FloorCount = 0;
+	for (const SolidStronghold::FSolidFortressBuilding& One : Fortress->Buildings)
+	{
+		FloorCount += FMath::Max(One.Floors.Num(), 1);
+	}
+	TestEqual(TEXT("each floor has a light"), Room->GetRoomLights().Num(), FloorCount);
 	TArray<int32> LitRooms;
 	for (const TObjectPtr<UPointLightComponent>& Light : Room->GetRoomLights())
 	{
@@ -338,7 +351,7 @@ bool FSolidFortressInteriorTest::RunTest(const FString& Parameters)
 		const FVector Location = Light->GetRelativeLocation();
 		TestTrue(
 			TEXT("the light hangs in the room"),
-			Location.Z > 50.f && Location.Z < FSolidStronghold::StoreyCm - 10.f);
+			Location.Z > 50.f && Location.Z < 2.f * FSolidStronghold::StoreyCm - 10.f);
 		const FLinearColor Color = Light->GetLightColor();
 		TestTrue(
 			TEXT("the light is the room color"),

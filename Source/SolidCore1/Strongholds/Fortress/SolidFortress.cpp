@@ -234,7 +234,8 @@ namespace SolidStronghold
 		const std::initializer_list<ESolidStrongholdRoom> InFloors)
 	{
 		const float MediumWidth = 5.f * SolidStrongholdGrid::SideCm();
-		const float MediumLength = 4.5f * SolidStrongholdGrid::FlatToFlatCm;
+		// The medium span, plus the top landing. The ground landing is the first run of that span.
+		const float MediumLength = 4.5f * SolidStrongholdGrid::FlatToFlatCm + LandingRunCm;
 		AddBuilding(PositionCm, FVector2D(MediumLength, MediumWidth), InFacing, InFloors);
 	}
 

@@ -166,20 +166,20 @@ bool FSolidStrongholdTypeOfTest::RunTest(const FString& Parameters)
 			ESolidStrongholdSize::Meagre,
 			OriginCell,
 			SolidStronghold::WorldXY(OriginCell))->ExteriorClass());
-	TestNull(
-		TEXT("an Imperious fortress has no exterior"),
+	TestTrue(
+		TEXT("an Imperious fortress names the fortress exterior"),
 		SolidStronghold::Make(
 			ESolidStrongholdType::Fortress,
 			ESolidStrongholdSize::Imperious,
 			OriginCell,
-			SolidStronghold::WorldXY(OriginCell))->ExteriorClass());
-	TestNull(
-		TEXT("an Imperious fortress has no interior"),
+			SolidStronghold::WorldXY(OriginCell))->ExteriorClass() == ASolidFortressExterior::StaticClass());
+	TestTrue(
+		TEXT("an Imperious fortress names the fortress interior"),
 		SolidStronghold::Make(
 			ESolidStrongholdType::Fortress,
 			ESolidStrongholdSize::Imperious,
 			OriginCell,
-			SolidStronghold::WorldXY(OriginCell))->InteriorClass());
+			SolidStronghold::WorldXY(OriginCell))->InteriorClass() == ASolidFortressInterior::StaticClass());
 	TestTrue(
 		TEXT("an average tower names the tower exterior"),
 		TowerOwned->ExteriorClass() == ASolidTowerExterior::StaticClass());

@@ -248,9 +248,12 @@ bool FSolidFortressAveragePlanTest::RunTest(const FString& Parameters)
 			&& FMath::IsNearlyEqual(Building.DoorFromInnerCm(), Humble.DoorFromInnerCm(), 0.05f)
 			&& Building.HasStair() == Humble.HasStair());
 
-	TArray<SolidStrongholdGrid::FHex> Empty;
-	Fortress.CollectGroundHexes(ESolidStrongholdSize::Average, Empty);
-	TestEqual(TEXT("Average has no ground hexes yet"), Empty.Num(), 0);
+	TArray<SolidStrongholdGrid::FHex> Ground;
+	Fortress.CollectGroundHexes(ESolidStrongholdSize::Average, Ground);
+	TestEqual(
+		TEXT("Average keeps the Humble ground floor"),
+		Ground.Num(),
+		SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small));
 	return true;
 }
 

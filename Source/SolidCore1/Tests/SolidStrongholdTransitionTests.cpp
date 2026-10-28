@@ -182,8 +182,8 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 		TestFalse(
 			*FString::Printf(TEXT("%s dungeon is not built"), SolidStronghold::SizeName(Size)),
 			SolidStrongholdTransition::IsBuilt(FSolidStronghold{ ESolidStrongholdType::Dungeon, Size }));
-		TestFalse(
-			*FString::Printf(TEXT("%s fortress is not built"), SolidStronghold::SizeName(Size)),
+		TestTrue(
+			*FString::Printf(TEXT("%s fortress is built"), SolidStronghold::SizeName(Size)),
 			SolidStrongholdTransition::IsBuilt(FSolidStronghold{ ESolidStrongholdType::Fortress, Size }));
 	}
 
@@ -248,35 +248,39 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 		TEXT("an unlocked larger size asks"),
 		static_cast<uint8>(SolidStrongholdTransition::Consider(State, Company->GetStronghold(), Choices)),
 		static_cast<uint8>(SolidStrongholdTransition::EOffer::Choose));
-	TestEqual(TEXT("the list is Humble fortress and Average through Imperious towers"), Choices.Num(), 6);
-	TestEqual(
-		TEXT("the first row is Humble"),
-		static_cast<uint8>(Choices[0].Size),
-		static_cast<uint8>(ESolidStrongholdSize::Humble));
-	TestEqual(
-		TEXT("the first row is a fortress"),
-		static_cast<uint8>(Choices[0].Type),
-		static_cast<uint8>(ESolidStrongholdType::Fortress));
-	TestEqual(
-		TEXT("the second row is Average"),
-		static_cast<uint8>(Choices[1].Size),
-		static_cast<uint8>(ESolidStrongholdSize::Average));
-	TestEqual(
-		TEXT("the third row is Impressive"),
-		static_cast<uint8>(Choices[2].Size),
-		static_cast<uint8>(ESolidStrongholdSize::Impressive));
-	TestEqual(
-		TEXT("the fourth row is Grand"),
-		static_cast<uint8>(Choices[3].Size),
-		static_cast<uint8>(ESolidStrongholdSize::Grand));
-	TestEqual(
-		TEXT("the fifth row is Stately"),
-		static_cast<uint8>(Choices[4].Size),
-		static_cast<uint8>(ESolidStrongholdSize::Stately));
-	TestEqual(
-		TEXT("the sixth row is Imperious"),
-		static_cast<uint8>(Choices[5].Size),
-		static_cast<uint8>(ESolidStrongholdSize::Imperious));
+	TestEqual(TEXT("the list pairs each larger size with a fortress and a tower"), Choices.Num(), 11);
+	const ESolidStrongholdSize ListedSize[] = {
+		ESolidStrongholdSize::Humble,
+		ESolidStrongholdSize::Average,
+		ESolidStrongholdSize::Average,
+		ESolidStrongholdSize::Impressive,
+		ESolidStrongholdSize::Impressive,
+		ESolidStrongholdSize::Grand,
+		ESolidStrongholdSize::Grand,
+		ESolidStrongholdSize::Stately,
+		ESolidStrongholdSize::Stately,
+		ESolidStrongholdSize::Imperious,
+		ESolidStrongholdSize::Imperious,
+	};
+	const ESolidStrongholdType ListedType[] = {
+		ESolidStrongholdType::Fortress,
+		ESolidStrongholdType::Fortress,
+		ESolidStrongholdType::Tower,
+		ESolidStrongholdType::Fortress,
+		ESolidStrongholdType::Tower,
+		ESolidStrongholdType::Fortress,
+		ESolidStrongholdType::Tower,
+		ESolidStrongholdType::Fortress,
+		ESolidStrongholdType::Tower,
+		ESolidStrongholdType::Fortress,
+		ESolidStrongholdType::Tower,
+	};
+	bool bRows = Choices.Num() == UE_ARRAY_COUNT(ListedSize);
+	for (int32 Index = 0; bRows && Index < UE_ARRAY_COUNT(ListedSize); ++Index)
+	{
+		bRows = Choices[Index].Size == ListedSize[Index] && Choices[Index].Type == ListedType[Index];
+	}
+	TestTrue(TEXT("Humble fortress comes first, then each size's fortress and tower"), bRows);
 	TestTrue(
 		TEXT("Average tower is a row"),
 		SolidStrongholdTransition::Offers(Choices, ESolidStrongholdSize::Average, ESolidStrongholdType::Tower));

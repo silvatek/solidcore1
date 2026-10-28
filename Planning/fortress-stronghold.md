@@ -12,8 +12,8 @@ Rooms, hex totals, and Keep floors follow **Strongholds by size and type** in `S
 
 | Size | L | M | S | Hexes | Keep |
 |------|--:|--:|--:|------:|------|
-| Humble | 0 | 1 | 1 | 18 | 1× M |
-| Average | 0 | 1 | 2 | 24 | 1× M |
+| Humble | 0 | 1 | 1 | 18 | S, then M |
+| Average | 0 | 1 | 2 | 24 | S, then M |
 | Impressive | 0 | 3 | 2 | 48 | 2× M |
 | Grand | 1 | 4 | 2 | 80 | 1× L, 2× M |
 | Stately | 2 | 4 | 2 | 100 | 2× L, 1× M |
@@ -21,7 +21,7 @@ Rooms, hex totals, and Keep floors follow **Strongholds by size and type** in `S
 
 Every fortress has a Keep as its main building. Keep floors are the kit rooms in the Keep column. The remainder of the kit (kit minus Keep) goes to other buildings. [Tower stronghold by size](Done/tower-stronghold-by-size.md) is the tower side of the same plan. [Imperious dungeon](imperious-dungeon.md) is the Imperious dungeon side.
 
-Humble is the keep and one small room. Average is the keep and two small rooms. A larger fortress adds buildings in this order. Impressive adds Barracks. Grand adds a Gatehouse. Stately adds Workshops. Imperious has one Workshop and a Stores. Barracks have one floor, except in Stately and Imperious. Imperious Barracks have two floors. Stately Barracks have more than one floor. A Gatehouse has at least two floors, and it may have few hexes on a floor. Each Workshop has one floor. Stores has one floor. A fortress has no Hall, no Chapel, and no Kitchen.
+A fortress always has at least one building with at least two floors. Humble is one building: the small room on the ground, the medium room above it. Average keeps that building and adds a second building with one small floor. A larger fortress adds buildings in this order. Impressive adds Barracks. Grand adds a Gatehouse. Stately adds Workshops. Imperious has one Workshop and a Stores. Barracks have one floor, except in Stately and Imperious. Imperious Barracks have two floors. Stately Barracks have more than one floor. A Gatehouse has at least two floors, and it may have few hexes on a floor. Each Workshop has one floor. Stores has one floor. A fortress has no Hall, no Chapel, and no Kitchen.
 
 Where another building exists, the Keep has more usable hexes on a floor than that building, and more floors when the Keep has more than one floor.
 
@@ -33,49 +33,30 @@ The captain enters and leaves through one gate in the outer wall. The gate is on
 
 The outer wall is one storey high, with a parapet of 120 cm. The curtain is 420 cm. The same parapet sits above a building's top floor. A building of more than one floor stands above the wall.
 
-Humble, Impressive, and Imperious had earlier drawn plans with different per-building hex counts. Those counts are superseded by Strongholds by size and type. New fortress mockups follow that table; do not ship the old 13 / 18 / 27-style splits. Humble is drawn. Average is drawn. The larger sizes stay undrawn until a mockup.
+Humble, Impressive, and Imperious had earlier drawn plans with different per-building hex counts. Those counts are superseded by Strongholds by size and type. New fortress mockups follow that table; do not ship the old 13 / 18 / 27-style splits. The two-building Humble row and the Average L are retired. The two-floor face is not drawn yet. The larger sizes stay undrawn until a mockup.
 
 ### Humble
 
 The plan's gate side is north. In the game that side faces the grass, and the plan turns with it.
 
-The outer face is 1040 cm along the gate wall and 796.4 cm deep. The wall is 50 cm thick. The Keep and the Annex each have one floor, so neither has a stair or a landing.
-
-The Keep is 4 columns by 3 rows, 12 hexes. Its inner face is 540 cm by 346.4 cm. The south face and the east face are the curtain. The Annex is the leftover small room, 2 columns by 3 rows, 6 hexes. Its inner face is 300 cm by 346.4 cm. The south face and the west face are the curtain. 346.4 cm is the vertex span of those three rows, five times the pointy-top side.
-
-The Annex's east wall meets the Keep's west wall. 300 cm of yard lies between the buildings' north outer faces and the inner face of the north curtain. The yard holds no usable hex. The rooms together are the Humble kit, 18.
-
-The gate is centered in the north curtain. It is 140 cm wide and 300 cm high. Each building doorway is 140 cm wide, has no door, and is centered on that building's north face. The visit starts in the yard, inside the gate.
+Humble is one building. The ground floor is the small room, 2 columns by 3 rows, 6 hexes. The floor above is the medium room, 4 columns by 3 rows, 12 hexes. Both floors share the outer walls. The stair and the landing sit in the same place on both floors and hold no hex. The medium grid fills a face 540 cm by 346.4 cm, so that face has to grow to leave room for the stair. The grown face is not drawn yet. The rooms together are the Humble kit, 18.
 
 ### Average
 
-The owner accepted this plan. The plan's gate side is north. In the game that side faces the grass, and the plan turns with it.
-
-The outer face is 1242.8 cm square. The wall is 50 cm thick. All three rooms have one floor, so none has a stair or a landing. A room may be larger than its hex grid. The spare floor holds no usable hex. The rooms have no names besides the keep.
-
-The keep is the medium room, in the south-west corner. Its inner face is 640 cm by 346.4 cm. The hex grid is 4 columns by 3 rows, 12 hexes, a block 540 cm by 346.4 cm centered in that face, with 50 cm of floor on the west and the east. The south face and the west face are the curtain.
-
-One small room stands north of the keep, on the west. Its inner face is 300 cm by 346.4 cm, and the 2 by 3 grid of 6 hexes fills that face. Its west face is the curtain. Its south wall meets the keep's north wall.
-
-The other small room stands east of the keep, on the south. Its inner face is 402.8 cm by 346.4 cm. The hex grid is 2 columns by 3 rows, 6 hexes, a block 300 cm by 346.4 cm centered in that face, with 51.4 cm of floor on the west and the east. Its south face and its east face are the curtain. Its west wall meets the keep's east wall.
-
-Where two rooms meet, the inner faces are 100 cm apart. 346.4 cm is the vertex span of three rows, five times the pointy-top side.
-
-The yard is the open ground inside the wall and outside the rooms: the notch of the L, and 300 cm between the west small room's north outer face and the inner face of the north curtain. The yard holds no usable hex. The rooms together are the Average kit, 24.
-
-The gate is centered in the north curtain. It is 140 cm wide and 300 cm high. Each doorway is 140 cm wide, has no door, and faces the yard. The west small room's doorway is centered on its east face. The keep's doorway is centered on the part of its north face that faces the yard. The other small room's doorway is centered on its north face. The visit starts in the yard, inside the gate.
+Average keeps the Humble building and adds a second building with one floor, the other small room, 6 hexes. That building's place in the yard is not drawn. The rooms together are the Average kit, 24. The L plan is retired.
 
 ## Acceptance
 
 - Meagre Fortress is not supported. Fortress `Supported` stays false for Meagre.
 - Fortress `Supported` is true for Humble, Average, Impressive, Grand, Stately, and Imperious.
 - Usable hexes on all floors of all buildings equal the Strongholds by size and type kit for that size (Humble 18, Average 24, Impressive 48, Grand 80, Stately 100, Imperious 126).
-- Keep floors match the Keep column in that plan (Humble and Average: one medium; Impressive: two medium; Grand: one large and two medium; Stately: two large and one medium; Imperious: three large).
+- Keep floors match the Keep column in that plan (Humble and Average: small on the ground, medium above; Impressive: two medium; Grand: one large and two medium; Stately: two large and one medium; Imperious: three large).
+- A fortress has at least one building with at least two floors.
 - The outer wall is one rectangle. It is a closed ring. The yard is the open ground inside it and outside the buildings.
 - The yard is not part of the hex total.
 - A building's outer face may form part of the outer wall. A stretch of wall with no building on it is curtain.
 - The Keep is the main building. Where another building exists, the Keep has more usable hexes on a floor than that building, and more floors when the Keep has more than one floor.
-- Humble has the Keep and an Annex. The Keep is the medium room, 12 hexes. The Annex is the small room, 6 hexes. Average has the keep and two small rooms, as the Average section draws them. Impressive has the Keep and Barracks. Grand has the Keep, Barracks, and a Gatehouse. Stately has the Keep, Barracks, a Gatehouse, and Workshops. Imperious has the Keep, Barracks, a Gatehouse, one Workshop, and a Stores.
+- Humble is one building, small on the ground and medium above, as the Humble section draws it once that face exists. Average keeps that building and adds one small one-floor building. Impressive has the Keep and Barracks. Grand has the Keep, Barracks, and a Gatehouse. Stately has the Keep, Barracks, a Gatehouse, and Workshops. Imperious has the Keep, Barracks, a Gatehouse, one Workshop, and a Stores.
 - Imperious Barracks have two floors. Stately Barracks have more than one floor. Other Barracks have one floor.
 - A Gatehouse has at least two floors.
 - A Workshop has one floor. Stores has one floor.
@@ -105,9 +86,9 @@ Humble is the only supported fortress size. Its shell is in the game. Choosing H
 
 Humble names an interior actor. The visit draws the outer wall and a dark gate on the grass side. The captain arrives one hex inside that gate, looking into the yard. A click on the shell gate enters. A click on the interior gate leaves, and he stands one hex outside it, facing away. Companions stay outside, the way a tower visit does. Choosing Humble still raises the shell, because that choice does not open the visit. `Trip` is `None`. The visit draws the Keep and the Annex on the far side of the yard. Each yard face has an open doorway. You walk through the gap. The inside is the floor within those walls. Those floors draw the hex grid. The yard has none. A ceiling closes each room at one storey, and the wall above it is the parapet. Each room has a light under that ceiling. The visit draws the pieces the company carried onto those hexes. The name sign stands beside the gate, on the grass. The east wall of the yard carries an Arrange furniture plate. Arrange mode uses those same hexes.
 
-Play on SC1-0674 moved those pieces onto other hexes in the rooms. The owner is happy with Humble. The owner accepted the Average plan. Impressive and the larger sizes are still undrawn, so this story stays In Progress.
+Play on SC1-0674 moved those pieces onto other hexes in the rooms. The owner was happy with that Humble shell, then replaced the layout. Humble is one two-floor building, small on the ground and medium above. Average keeps it and adds one small one-floor building. A fortress always has at least one building with at least two floors. The old two-building row and the Average L are retired. The new face is not drawn, so the game still draws the old shell. Impressive and the larger sizes are still undrawn, so this story stays In Progress.
 
-Do not redraw Humble or Average unless the owner asks. Do not draw a larger size until that mockup is accepted. The constructor lists Humble only. Average is the next size to build, from the Average section. Draw the pieces the company carried. Do not add a piece of the fortress's own. Do not add a world-map `!`. The owner's chart save is already on main. The small room is not named in code. Only the keep is marked, with `bKeep`. Wall thickness, storey, and opening width live on `FSolidStronghold` (`WallCm`, `StoreyCm`, `OpeningCm`). The parapet, the gap, and the yard depth stay on the fortress.
+Do not extend the old shell. Draw the two-floor face before changing `Place`. Do not draw a larger size until that mockup is accepted. The constructor still lists the old Humble row. Draw the pieces the company carried. Do not add a piece of the fortress's own. Do not add a world-map `!`. The owner's chart save is already on main. Buildings are not named. Floors are the list on the building, ground floor first. Wall thickness, storey, and opening width live on `FSolidStronghold` (`WallCm`, `StoreyCm`, `OpeningCm`). The parapet, the gap, and the yard depth stay on the fortress.
 
 ## Implementation notes
 

@@ -36,8 +36,8 @@ A size has one kit. Dungeon, Fortress, and Tower at that size use the **same num
 | Size | L | M | S | Hexes | Tower floors | Keep |
 |------|--:|--:|--:|------:|--------------|------|
 | Meagre | 0 | 1 | 0 | 12 | — | — |
-| Humble | 0 | 1 | 1 | 18 | — | 1× M |
-| Average | 0 | 1 | 2 | 24 | 7–9 | 1× M |
+| Humble | 0 | 1 | 1 | 18 | — | S, then M |
+| Average | 0 | 1 | 2 | 24 | 7–9 | S, then M |
 | Impressive | 0 | 3 | 2 | 48 | 5–9 | 2× M |
 | Grand | 1 | 4 | 2 | 80 | 3–9 | 1× L, 2× M |
 | Stately | 2 | 4 | 2 | 100 | 2–9 | 2× L, 1× M |
@@ -47,7 +47,7 @@ The shipped Meagre dungeon is still the fourteen-cell cave. The Meagre kit row (
 
 Tower rooms fit in a **constant tower geometry**: a contiguous band of floors taken from the Imperious tower (floors numbered **1 at the ground** through **10 at the top**). Each floor is one room. The Imperious kept-hex counts per floor (`35, 28, 22, 19, 16, 12, 12, 8, 6, 7` on floors 1–10) are larger than the room sizes; the room is the usable kit cell count that fits that floor. Floor 1–3 are large, 4–7 medium, 8–10 small. Meagre and Humble have no tower.
 
-Every fortress has a large **Keep** as its main building. Keep floors are kit rooms stacked in that building (column above). Meagre is not a fortress size. The remainder of the kit (kit rooms minus Keep) goes to other buildings; how that split lands across Barracks, Gatehouse, Workshops, and Stores is a fortress layout choice.
+Every fortress has a **Keep** as its main building, and at least one building with at least two floors. Keep floors are kit rooms stacked in that building, ground floor first (column above). Humble and Average keep a small room on the ground and a medium room above it. Meagre is not a fortress size. The remainder of the kit (kit rooms minus Keep) goes to other buildings; how that split lands across Barracks, Gatehouse, Workshops, and Stores is a fortress layout choice.
 
 A dungeon joins the same kit with **passages** and **stairs**. Layout is flexible. **Level 1 is the top** (the mouth); deeper levels have higher numbers — the opposite of tower and fortress floor numbers.
 

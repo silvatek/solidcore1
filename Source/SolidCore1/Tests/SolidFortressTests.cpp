@@ -266,7 +266,7 @@ bool FSolidFortressAveragePlanTest::RunTest(const FString& Parameters)
 				Building.InnerMinCm.X + Building.WidthCm() + 2.f * FSolidStronghold::WallCm + Fortress.GapCm,
 				0.05f)
 			&& FMath::IsNearlyEqual(Fortress.YardWidthCm, FSolidStronghold::StoreyCm, 0.05f)
-			&& Fortress.OuterWidthCm() > HumbleFortress.OuterWidthCm() + 1.f));
+			&& Fortress.OuterWidthCm() > HumbleFortress.OuterWidthCm() + 1.f);
 
 	TArray<SolidStrongholdGrid::FHex> Ground;
 	Fortress.CollectGroundHexes(ESolidStrongholdSize::Average, Ground);

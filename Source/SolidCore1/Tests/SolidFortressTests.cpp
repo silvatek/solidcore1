@@ -336,8 +336,8 @@ bool FSolidFortressImpressivePlanTest::RunTest(const FString& Parameters)
 {
 	SolidStronghold::FSolidFortress Fortress;
 	Fortress.AddBuildings(ESolidStrongholdSize::Impressive);
-	TestEqual(TEXT("Impressive has four places"), Fortress.Buildings.Num(), 4);
-	if (Fortress.Buildings.Num() != 4)
+	TestEqual(TEXT("Impressive has five places"), Fortress.Buildings.Num(), 5);
+	if (Fortress.Buildings.Num() != 5)
 	{
 		return false;
 	}
@@ -396,9 +396,26 @@ bool FSolidFortressImpressivePlanTest::RunTest(const FString& Parameters)
 		TEXT("the courtyard sits east of the first small building"),
 		Beside(Fortress.Buildings[1], Courtyard));
 	SmallRoom(3);
+	const SolidStronghold::FSolidFortressBuilding& NorthGap = Fortress.Buildings[4];
+	TestEqual(TEXT("the north gap has no floors"), NorthGap.Floors.Num(), 0);
 	TestTrue(
-		TEXT("the north yard is the medium width"),
-		FMath::IsNearlyEqual(Fortress.YardDepthCm, MediumWidth, 0.05f));
+		TEXT("the north gap is the medium size"),
+		FMath::IsNearlyEqual(NorthGap.InnerWidthCm, MediumWidth, 0.05f)
+			&& FMath::IsNearlyEqual(NorthGap.InnerDepthCm, MediumWidth, 0.05f));
+	TestTrue(
+		TEXT("the north gap sits north of the keep"),
+		FMath::IsNearlyEqual(NorthGap.InnerMinCm.X, Keep.InnerMinCm.X, 0.05f)
+			&& FMath::IsNearlyEqual(
+				NorthGap.InnerMinCm.Y,
+				Keep.InnerMinCm.Y + Keep.DepthCm() + 2.f * FSolidStronghold::WallCm + Fortress.GapCm,
+				0.05f));
+	TestTrue(TEXT("Impressive adds no further north yard"), FMath::IsNearlyEqual(Fortress.YardDepthCm, 0.f, 0.05f));
+	TestTrue(
+		TEXT("the north gap's north wall meets the outer wall"),
+		FMath::IsNearlyEqual(
+			NorthGap.InnerMinCm.Y + NorthGap.DepthCm() + FSolidStronghold::WallCm,
+			Fortress.OuterDepthCm(),
+			0.05f));
 	const SolidStronghold::FSolidFortressBuilding& SecondSmall = Fortress.Buildings[3];
 	TestTrue(
 		TEXT("the second small building's east wall meets the outer wall"),

@@ -83,7 +83,10 @@ namespace SolidStronghold
 		float GapCm = 0.f;
 		/** One hex across, above the storey. */
 		float ParapetCm = 120.f;
-		/** Open ground from the named building's north outer face to the inner face of the gate wall. */
+		/**
+		 * Open ground from the named building's north outer face to the inner face of the gate wall.
+		 * Zero means the furthest piece's north wall is that curtain.
+		 */
 		float YardDepthCm = FSolidStronghold::StoreyCm;
 		/**
 		 * Open ground from the named building's east outer face to the inner face of the east wall.
@@ -132,8 +135,10 @@ namespace SolidStronghold
 		 * Each pair is the open distance, then the building it follows. AfterLast means the last building.
 		 */
 		void AdditionalCourtyard(float DepthCm, int32 NorthAfter, float WidthCm, int32 EastAfter);
-		/** Inner south-west corner of the building immediately east of this one. */
+		/** Inner south-west corner of the piece immediately east of this one. */
 		FVector2D EastOf(int32 BuildingIndex) const;
+		/** Inner south-west corner of the piece immediately north of this one. */
+		FVector2D NorthOf(int32 BuildingIndex) const;
 		/**
 		 * A medium room block with more than one floor.
 		 * The footprint fits a medium room. The stair is added along the door wall.

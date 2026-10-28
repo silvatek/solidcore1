@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0711")
+#define SOLID_BUILD_ID TEXT("SC1-0712")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Impressive's courtyard is a gap east of the first small building.")
+#define SOLID_BUILD_NOTE TEXT("Impressive places a medium gap north of the keep.")
 #endif

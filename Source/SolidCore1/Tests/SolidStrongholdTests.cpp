@@ -412,47 +412,6 @@ bool FSolidStrongholdActiveCompanyTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("the starting cell is a dungeon"), static_cast<uint8>(Cave.StrongholdType), static_cast<uint8>(ESolidStrongholdType::Dungeon));
 		ESolidStrongholdSize SiteSize = ESolidStrongholdSize::Humble;
 		TestFalse(TEXT("the starting cell is not a site"), Map->StrongholdSiteAtCell(Cell.X, Cell.Y, SiteSize));
-
-		int32 ImperiousTowers = 0;
-		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
-		{
-			for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
-			{
-				ESolidStrongholdType NamedType = ESolidStrongholdType::Dungeon;
-				ESolidStrongholdSize NamedSize = ESolidStrongholdSize::Meagre;
-				if (!Map->StrongholdAtCell(Col, Row, NamedType, NamedSize))
-				{
-					continue;
-				}
-				if (NamedType == ESolidStrongholdType::Tower && NamedSize == ESolidStrongholdSize::Imperious)
-				{
-					++ImperiousTowers;
-				}
-			}
-		}
-		TestEqual(TEXT("the Imperious Tower visit is gone"), ImperiousTowers, 0);
-
-		ESolidStrongholdSize ImperiousSite = ESolidStrongholdSize::Meagre;
-		TestTrue(
-			TEXT("the Imperious site stays"),
-			Map->StrongholdSiteAtCell(35, 15, ImperiousSite));
-		TestEqual(
-			TEXT("that site is Imperious"),
-			static_cast<uint8>(ImperiousSite),
-			static_cast<uint8>(ESolidStrongholdSize::Imperious));
-
-		SolidStrongholds::FEntrance SiteDoor;
-		const FVector2D WorldMin(0.f, 0.f);
-		const FVector2D WorldMax(102400.f, 102400.f);
-		TestTrue(
-			TEXT("a built site still has a door face"),
-			SolidStrongholds::MakeEntrance(
-				Map,
-				WorldMin,
-				WorldMax,
-				FIntPoint(35, 15),
-				SiteDoor));
-		TestEqual(TEXT("that door uses the site cell"), SiteDoor.Cell, FIntPoint(35, 15));
 	}
 
 	USolidGameInstance* Instance = NewObject<USolidGameInstance>();

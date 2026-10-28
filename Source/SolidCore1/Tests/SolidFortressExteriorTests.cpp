@@ -181,6 +181,39 @@ bool FSolidFortressExteriorTest::RunTest(const FString& Parameters)
 		TEXT("the building meets the inner south curtain"),
 		FMath::IsNearlyEqual(SolidFortressExteriorTestPrivate::FaceMaxX(Building), HalfDepth - FSolidStronghold::WallCm, 0.5f));
 
+	const UStaticMeshComponent* Door = nullptr;
+	int32 Doors = 0;
+	for (const TObjectPtr<UStaticMeshComponent>& Part : Shell->GetBuildingMeshes())
+	{
+		if (!Part)
+		{
+			continue;
+		}
+		const float PlanX = Part->GetRelativeScale3D().Y * 100.f;
+		const float PlanY = Part->GetRelativeScale3D().X * 100.f;
+		const float SizeZ = Part->GetRelativeScale3D().Z * 100.f;
+		if (FMath::IsNearlyEqual(SizeZ, FSolidStronghold::StoreyCm, 0.5f)
+			&& FMath::IsNearlyEqual(PlanX, FSolidStronghold::OpeningCm, 0.5f)
+			&& PlanY < FSolidStronghold::WallCm)
+		{
+			++Doors;
+			Door = Part.Get();
+		}
+	}
+	TestEqual(TEXT("Humble draws one doorway"), Doors, 1);
+	TestNotNull(TEXT("the doorway"), Door);
+	if (Door)
+	{
+		const SolidStronghold::FSolidFortressBuilding& KeepBuilding = Fortress->Buildings[0];
+		const float DoorPlanX = KeepBuilding.InnerMinCm.X + KeepBuilding.DoorFromInnerCm();
+		TestTrue(
+			TEXT("the doorway is centered on the landing"),
+			FMath::IsNearlyEqual(Door->GetRelativeLocation().Y, DoorPlanX - Fortress->OuterWidthCm() * 0.5f, 0.5f));
+		TestTrue(
+			TEXT("the doorway stands on the north face"),
+			SolidFortressExteriorTestPrivate::FaceMinX(Door) < SolidFortressExteriorTestPrivate::FaceMinX(Building));
+	}
+
 	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("shipped map loads"), Map && Map->LoadDefault());
 	SolidStrongholds::FGrassFace Face;

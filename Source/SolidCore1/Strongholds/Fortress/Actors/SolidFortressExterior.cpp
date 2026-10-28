@@ -12,6 +12,9 @@ namespace SolidFortressExteriorPrivate
 {
 	constexpr float CubeSizeCm = 100.f;
 
+	/** Sits just outside the yard face so the solid building does not hide it. */
+	constexpr float DoorProudCm = 8.f;
+
 	/** Plan +X is east and plan +Y is north. Actor -X is that north, so the gate faces the grass. */
 	FVector ActorCenter(const float Width, const float Depth, const float PlanX, const float PlanY, const float Z)
 	{
@@ -216,19 +219,23 @@ void ASolidFortressExterior::BuildVisuals()
 		float MaxX = One.InnerMinCm.X + One.WidthCm() + Wall;
 		float MinY = One.InnerMinCm.Y - Wall;
 		float MaxY = One.InnerMinCm.Y + One.DepthCm() + Wall;
-		if (FMath::IsNearlyEqual(MinX, 0.f, 0.1f))
+		const bool bWestCurtain = FMath::IsNearlyEqual(MinX, 0.f, 0.1f);
+		const bool bEastCurtain = FMath::IsNearlyEqual(MaxX, Width, 0.1f);
+		const bool bSouthCurtain = FMath::IsNearlyEqual(MinY, 0.f, 0.1f);
+		const bool bNorthCurtain = FMath::IsNearlyEqual(MaxY, Depth, 0.1f);
+		if (bWestCurtain)
 		{
 			MinX += Wall;
 		}
-		if (FMath::IsNearlyEqual(MaxX, Width, 0.1f))
+		if (bEastCurtain)
 		{
 			MaxX -= Wall;
 		}
-		if (FMath::IsNearlyEqual(MinY, 0.f, 0.1f))
+		if (bSouthCurtain)
 		{
 			MinY += Wall;
 		}
-		if (FMath::IsNearlyEqual(MaxY, Depth, 0.1f))
+		if (bNorthCurtain)
 		{
 			MaxY -= Wall;
 		}
@@ -251,6 +258,65 @@ void ASolidFortressExterior::BuildVisuals()
 			true))
 		{
 			Buildings.Add(Part);
+		}
+
+		const bool bAlongX = One.Facing == ESolidStrongholdOrientation::NorthFace
+			|| One.Facing == ESolidStrongholdOrientation::SouthFace;
+		const float InnerStart = bAlongX ? One.InnerMinCm.X : One.InnerMinCm.Y;
+		const float SpanMin = bAlongX ? MinX : MinY;
+		const float SpanMax = bAlongX ? MaxX : MaxY;
+		const float Door = One.DoorFromInnerCm() > 0.f
+			? InnerStart + One.DoorFromInnerCm()
+			: (SpanMin + SpanMax) * 0.5f;
+		const float Proud = SolidFortressExteriorPrivate::DoorProudCm;
+		float DoorX = 0.f;
+		float DoorY = 0.f;
+		float DoorSizeX = Opening;
+		float DoorSizeY = Proud;
+		bool bDoor = false;
+		if (One.Facing == ESolidStrongholdOrientation::NorthFace && !bNorthCurtain)
+		{
+			bDoor = true;
+			DoorX = Door;
+			DoorY = MaxY + Proud * 0.5f;
+		}
+		else if (One.Facing == ESolidStrongholdOrientation::SouthFace && !bSouthCurtain)
+		{
+			bDoor = true;
+			DoorX = Door;
+			DoorY = MinY - Proud * 0.5f;
+		}
+		else if (One.Facing == ESolidStrongholdOrientation::EastFace && !bEastCurtain)
+		{
+			bDoor = true;
+			DoorX = MaxX + Proud * 0.5f;
+			DoorY = Door;
+			DoorSizeX = Proud;
+			DoorSizeY = Opening;
+		}
+		else if (One.Facing == ESolidStrongholdOrientation::WestFace && !bWestCurtain)
+		{
+			bDoor = true;
+			DoorX = MinX - Proud * 0.5f;
+			DoorY = Door;
+			DoorSizeX = Proud;
+			DoorSizeY = Opening;
+		}
+		if (bDoor)
+		{
+			if (UStaticMeshComponent* DoorPart = Place(
+				DoorX,
+				DoorY,
+				Storey * 0.5f,
+				DoorSizeX,
+				DoorSizeY,
+				Storey,
+				FLinearColor::Black,
+				TEXT("FortressDoor"),
+				true))
+			{
+				Buildings.Add(DoorPart);
+			}
 		}
 		if (!bMerlons)
 		{

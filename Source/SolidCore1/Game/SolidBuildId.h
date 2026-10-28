@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0721")
+#define SOLID_BUILD_ID TEXT("SC1-0722")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A turned floor keeps its hexes inside the room.")
+#define SOLID_BUILD_NOTE TEXT("The shell shows a black doorway on each building.")
 #endif

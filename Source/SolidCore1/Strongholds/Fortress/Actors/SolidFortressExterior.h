@@ -11,6 +11,7 @@ class UStaticMeshComponent;
  * Exterior of a fortress stronghold, standing on its own map cell.
  * The curtain is a closed rectangle. The gate is a dark slab on local -X, cut through the north wall.
  * Each building fills its rooms up to the curtain, and keeps the walls that face the yard.
+ * A black rectangle marks that building's doorway on the yard face.
  * Placement turns local -X toward the grass. A click on the gate does not enter yet.
  */
 UCLASS()

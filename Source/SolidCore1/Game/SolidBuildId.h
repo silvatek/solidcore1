@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0719")
+#define SOLID_BUILD_ID TEXT("SC1-0720")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A piece north of a building keeps that building's outer side.")
+#define SOLID_BUILD_NOTE TEXT("A west or east door turns the whole room block.")
 #endif

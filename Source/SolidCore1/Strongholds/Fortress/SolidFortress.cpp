@@ -98,13 +98,28 @@ namespace SolidStronghold
 
 	float FSolidFortressBuilding::SpanWidthCm() const
 	{
-		return (static_cast<float>(Columns()) + 0.5f) * SolidStrongholdGrid::FlatToFlatCm;
+		const float ColumnSpan = (static_cast<float>(Columns()) + 0.5f) * SolidStrongholdGrid::FlatToFlatCm;
+		const float Side = SolidStrongholdGrid::SideCm();
+		const float RowSpan = static_cast<float>(Rows() - 1) * SolidStrongholdGrid::RowStepCm() + 2.f * Side;
+		if (Facing == ESolidStrongholdOrientation::EastFace
+			|| Facing == ESolidStrongholdOrientation::WestFace)
+		{
+			return RowSpan;
+		}
+		return ColumnSpan;
 	}
 
 	float FSolidFortressBuilding::SpanDepthCm() const
 	{
+		const float ColumnSpan = (static_cast<float>(Columns()) + 0.5f) * SolidStrongholdGrid::FlatToFlatCm;
 		const float Side = SolidStrongholdGrid::SideCm();
-		return static_cast<float>(Rows() - 1) * SolidStrongholdGrid::RowStepCm() + 2.f * Side;
+		const float RowSpan = static_cast<float>(Rows() - 1) * SolidStrongholdGrid::RowStepCm() + 2.f * Side;
+		if (Facing == ESolidStrongholdOrientation::EastFace
+			|| Facing == ESolidStrongholdOrientation::WestFace)
+		{
+			return ColumnSpan;
+		}
+		return RowSpan;
 	}
 
 	float FSolidFortressBuilding::WidthCm() const
@@ -153,8 +168,12 @@ namespace SolidStronghold
 		{
 			return;
 		}
-		const float SpanWidth = (static_cast<float>(ColumnCount) + 0.5f) * SolidStrongholdGrid::FlatToFlatCm;
-		const float SpanDepth = static_cast<float>(RowCount - 1) * SolidStrongholdGrid::RowStepCm() + 2.f * SolidStrongholdGrid::SideCm();
+		const float ColumnSpan = (static_cast<float>(ColumnCount) + 0.5f) * SolidStrongholdGrid::FlatToFlatCm;
+		const float RowSpan = static_cast<float>(RowCount - 1) * SolidStrongholdGrid::RowStepCm() + 2.f * SolidStrongholdGrid::SideCm();
+		const bool bTurned = Facing == ESolidStrongholdOrientation::EastFace
+			|| Facing == ESolidStrongholdOrientation::WestFace;
+		const float SpanWidth = bTurned ? RowSpan : ColumnSpan;
+		const float SpanDepth = bTurned ? ColumnSpan : RowSpan;
 		// One floor sits in the middle. A stair keeps the hexes at the landing end of the room block.
 		FVector2D GridMin(
 			InnerMinCm.X + (WidthCm() - SpanWidth) * 0.5f,
@@ -172,15 +191,28 @@ namespace SolidStronghold
 				GridMin.X += StairCm;
 			}
 		}
-		const FVector2D Origin = SolidFortressPrivate::RoomOriginCm(GridMin);
+		const FVector2D Origin = bTurned
+			? SolidFortressPrivate::RoomOriginCm(FVector2D::ZeroVector)
+			: SolidFortressPrivate::RoomOriginCm(GridMin);
 		for (int32 Row = -2; Row <= RowCount + 2; ++Row)
 		{
 			for (int32 Col = -2; Col <= ColumnCount + 2; ++Col)
 			{
-				const FVector2D Center = SolidStrongholdGrid::HexCenter(Col, Row, Origin);
-				if (!SolidFortressPrivate::VerticesInside(Center, GridMin, FVector2D(SpanWidth, SpanDepth)))
+				const FVector2D Local = SolidStrongholdGrid::HexCenter(Col, Row, Origin);
+				if (bTurned
+					? !SolidFortressPrivate::VerticesInside(Local, FVector2D::ZeroVector, FVector2D(ColumnSpan, RowSpan))
+					: !SolidFortressPrivate::VerticesInside(Local, GridMin, FVector2D(SpanWidth, SpanDepth)))
 				{
 					continue;
+				}
+				FVector2D Center = Local;
+				if (Facing == ESolidStrongholdOrientation::WestFace)
+				{
+					Center = GridMin + FVector2D(RowSpan - Local.Y, Local.X);
+				}
+				else if (Facing == ESolidStrongholdOrientation::EastFace)
+				{
+					Center = GridMin + FVector2D(Local.Y, Local.X);
 				}
 				SolidStrongholdGrid::FHex Hex;
 				Hex.Center = Center;
@@ -211,6 +243,13 @@ namespace SolidStronghold
 		Building.InnerMinCm = PositionCm;
 		Building.InnerWidthCm = FootprintCm.X;
 		Building.InnerDepthCm = FootprintCm.Y;
+		if (InFacing == ESolidStrongholdOrientation::EastFace
+			|| InFacing == ESolidStrongholdOrientation::WestFace)
+		{
+			const float AlongDoor = Building.InnerWidthCm;
+			Building.InnerWidthCm = Building.InnerDepthCm;
+			Building.InnerDepthCm = AlongDoor;
+		}
 		if (Building.HasStair())
 		{
 			const float StairCm = FPlan{}.StairWidthCm;

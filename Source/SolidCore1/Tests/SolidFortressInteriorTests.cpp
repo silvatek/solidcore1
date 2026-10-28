@@ -434,12 +434,12 @@ bool FSolidFortressDoorFacingTest::RunTest(const FString& Parameters)
 		ESolidStrongholdOrientation::EastFace,
 		{ ESolidStrongholdRoom::Small });
 	Fort.AddBuilding(
-		FVector2D(Wall + 300.f + 2.f * Wall, Wall),
+		FVector2D(Wall + RoomDepth + 2.f * Wall, Wall),
 		FVector2D(300.f, RoomDepth),
 		ESolidStrongholdOrientation::NorthFace,
 		{ ESolidStrongholdRoom::Small });
 	Fort.AddBuilding(
-		FVector2D(Wall + 300.f + 2.f * Wall, Wall + RoomDepth + 2.f * Wall),
+		FVector2D(Wall + RoomDepth + 2.f * Wall, Wall + RoomDepth + 2.f * Wall),
 		FVector2D(300.f, RoomDepth),
 		ESolidStrongholdOrientation::NorthFace,
 		{});

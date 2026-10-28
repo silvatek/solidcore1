@@ -69,7 +69,8 @@ namespace SolidStronghold
 
 		/**
 		 * One building.
-		 * PositionCm is the inner south-west corner. FootprintCm is the room block.
+		 * PositionCm is the inner south-west corner. FootprintCm is the room block facing north.
+		 * East or west turns that block so its north wall is the door wall.
 		 * Facing is the door wall. Floors start at the ground, and each entry is that floor's room.
 		 * A second floor adds the stair along the door wall.
 		 */

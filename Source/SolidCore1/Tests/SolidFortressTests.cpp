@@ -509,6 +509,16 @@ bool FSolidFortressImperiousPlanTest::RunTest(const FString& Parameters)
 		Fortress.Buildings[4].Facing == ESolidStrongholdOrientation::WestFace
 			&& Fortress.Buildings[5].Facing == ESolidStrongholdOrientation::WestFace
 			&& Fortress.Buildings[7].Facing == ESolidStrongholdOrientation::WestFace);
+	TestTrue(
+		TEXT("a west door turns the room block"),
+		FMath::IsNearlyEqual(
+			Fortress.Buildings[4].InnerDepthCm,
+			4.5f * SolidStrongholdGrid::FlatToFlatCm + SolidStronghold::LandingRunCm,
+			0.05f)
+			&& FMath::IsNearlyEqual(
+				Fortress.Buildings[5].InnerDepthCm,
+				2.5f * SolidStrongholdGrid::FlatToFlatCm,
+				0.05f));
 
 	TestTrue(TEXT("a small building is north of the second medium building"), North(5));
 	const SolidStronghold::FSolidFortressBuilding& NorthGap = Fortress.Buildings[6];

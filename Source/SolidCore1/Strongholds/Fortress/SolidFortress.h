@@ -117,5 +117,9 @@ namespace SolidStronghold
 		float CurtainHeightCm() const;
 
 		virtual TUniquePtr<FSolidStronghold> Clone() const override;
+
+	private:
+		/** Open ground north of the buildings, and east of them. A zero width keeps the east wall as curtain. */
+		void AdditionalCourtyard(float DepthCm, float WidthCm);
 	};
 }

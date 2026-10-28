@@ -196,6 +196,12 @@ namespace SolidStronghold
 		Buildings.Add(Building);
 	}
 
+	void FSolidFortress::AdditionalCourtyard(const float DepthCm, const float WidthCm)
+	{
+		YardDepthCm = DepthCm;
+		YardWidthCm = WidthCm;
+	}
+
 	void FSolidFortress::AddBuildings(const ESolidStrongholdSize InSize)
 	{
 		using enum ESolidStrongholdRoom;
@@ -213,8 +219,7 @@ namespace SolidStronghold
 		case ESolidStrongholdSize::Humble:
 		case ESolidStrongholdSize::Average:
 			// The east yard plus the east curtain equals the building's run, so the outer wall is twice as wide.
-			YardDepthCm = FSolidStronghold::StoreyCm;
-			YardWidthCm = MediumLength + Wall;
+			AdditionalCourtyard(FSolidStronghold::StoreyCm, MediumLength + Wall);
 			AddBuilding(Position(Wall, Wall), Size(MediumLength, MediumWidth), NorthFace, { Small, Medium });
 			break;
 		case ESolidStrongholdSize::Meagre:
@@ -223,8 +228,7 @@ namespace SolidStronghold
 		case ESolidStrongholdSize::Stately:
 		case ESolidStrongholdSize::Imperious:
 		default:
-			YardDepthCm = FSolidStronghold::StoreyCm;
-			YardWidthCm = 0.f;
+			AdditionalCourtyard(FSolidStronghold::StoreyCm, 0.f);
 			break;
 		}
 	}

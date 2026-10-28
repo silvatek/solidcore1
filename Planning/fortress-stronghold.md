@@ -65,7 +65,7 @@ Average reuses the Humble building and adds `AddSmallLow` in the east yard, agai
 
 ### Impressive
 
-Impressive is one `AddMediumHigh` with three medium floors, then two `AddSmallLow` buildings. Each small building is `EastOf` the building before it, and its doorway faces north. The rooms are three medium and two small, the Impressive kit, 48. The north yard and the east yard stay the medium width. Those floors sum to 48, so Impressive is complete.
+Impressive is one `AddMediumHigh` with three medium floors, then two `AddSmallLow` buildings. Each small building is `EastOf` the building before it, and its doorway faces north. The east yard is after the first small building, so the second small building stands in that yard. The rooms are three medium and two small, the Impressive kit, 48. The north yard and the east yard stay the medium width. Those floors sum to 48, so Impressive is complete.
 
 Grand is `AddLargeHigh` with a large floor under two medium floors, then `AddMediumHigh` with two medium floors, then two `AddSmallLow` buildings. Stately is `AddLargeHigh` with two large floors under a medium floor, then `AddMediumHigh` with two medium floors, then `AddMediumLow`, then two `AddSmallLow` buildings. Imperious is `AddLargeHigh` with three large floors, then two `AddMediumHigh` buildings of two medium floors, then three `AddSmallLow` buildings. Each building is `EastOf` the one before it, and its doorway faces north. A large room is 4 columns by 5 rows, 20 hexes. The north yard and the east yard stay the medium width. Those floors sum to 80, 100, and 126, so Grand, Stately, and Imperious are complete.
 

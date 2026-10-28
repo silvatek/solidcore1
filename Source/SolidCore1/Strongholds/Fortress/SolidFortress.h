@@ -83,11 +83,11 @@ namespace SolidStronghold
 		float GapCm = 0.f;
 		/** One hex across, above the storey. */
 		float ParapetCm = 120.f;
-		/** Open ground from the buildings' north outer faces to the inner face of the gate wall. */
+		/** Open ground from the named building's north outer face to the inner face of the gate wall. */
 		float YardDepthCm = FSolidStronghold::StoreyCm;
 		/**
-		 * Open ground from the buildings' east outer faces to the inner face of the east wall.
-		 * Zero means the building's east wall is that curtain.
+		 * Open ground from the named building's east outer face to the inner face of the east wall.
+		 * Zero means the furthest building's east wall is that curtain.
 		 */
 		float YardWidthCm = 0.f;
 		/** The buildings for this size. */
@@ -123,8 +123,15 @@ namespace SolidStronghold
 		virtual TUniquePtr<FSolidStronghold> Clone() const override;
 
 	private:
-		/** Open ground north of the buildings, and east of them. A zero width keeps the east wall as curtain. */
-		void AdditionalCourtyard(float DepthCm, float WidthCm);
+		/** AfterLast places that open ground after the last building. */
+		static constexpr int32 AfterLast = -1;
+		int32 YardNorthAfter = AfterLast;
+		int32 YardEastAfter = AfterLast;
+		/**
+		 * Open ground after one building to the north, and after one building to the east.
+		 * NorthAfter and EastAfter are building indices. AfterLast means the last building.
+		 */
+		void AdditionalCourtyard(float DepthCm, float WidthCm, int32 NorthAfter, int32 EastAfter);
 		/** Inner south-west corner of the building immediately east of this one. */
 		FVector2D EastOf(int32 BuildingIndex) const;
 		/**

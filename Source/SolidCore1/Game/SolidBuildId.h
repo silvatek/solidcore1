@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0706")
+#define SOLID_BUILD_ID TEXT("SC1-0707")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Each floor with another above it has a deck and a stair.")
+#define SOLID_BUILD_NOTE TEXT("Grand, Stately, and Imperious list every room in the kit.")
 #endif

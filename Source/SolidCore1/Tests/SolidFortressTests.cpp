@@ -311,7 +311,6 @@ bool FSolidFortressKitTest::RunTest(const FString& Parameters)
 	AddExpectedError(TEXT("Meagre is not a fortress size"), EAutomationExpectedErrorFlags::Contains, 1);
 	TestEqual(TEXT("Meagre adds no hex"), UsableHexes(ESolidStrongholdSize::Meagre), 0);
 
-	const int32 HumbleKit = SolidStronghold::Hexes(SolidStronghold::RoomsFor(ESolidStrongholdSize::Humble));
 	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
 	{
 		if (Size == ESolidStrongholdSize::Meagre)
@@ -320,19 +319,10 @@ bool FSolidFortressKitTest::RunTest(const FString& Parameters)
 		}
 		const int32 Got = UsableHexes(Size);
 		const int32 Kit = SolidStronghold::Hexes(SolidStronghold::RoomsFor(Size));
-		const bool bComplete = Size == ESolidStrongholdSize::Humble
-			|| Size == ESolidStrongholdSize::Average
-			|| Size == ESolidStrongholdSize::Impressive;
 		TestEqual(
 			*FString::Printf(TEXT("%s usable hexes"), SolidStronghold::SizeName(Size)),
 			Got,
-			bComplete ? Kit : HumbleKit);
-		if (!bComplete)
-		{
-			TestTrue(
-				*FString::Printf(TEXT("%s is still short of its kit"), SolidStronghold::SizeName(Size)),
-				Got < Kit);
-		}
+			Kit);
 	}
 	return true;
 }

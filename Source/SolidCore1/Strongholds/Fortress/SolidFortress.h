@@ -137,6 +137,19 @@ namespace SolidStronghold
 			ESolidStrongholdOrientation Facing,
 			std::initializer_list<ESolidStrongholdRoom> Floors);
 		/**
+		 * A large room block with more than one floor.
+		 * The footprint fits a large room. The stair is added along the door wall.
+		 * Floors start at the ground, and each entry is that floor's room.
+		 */
+		void AddLargeHigh(
+			FVector2D PositionCm,
+			ESolidStrongholdOrientation Facing,
+			std::initializer_list<ESolidStrongholdRoom> Floors);
+		/**
+		 * A medium room on one floor. The size is the room, so there is no room list, and no stair.
+		 */
+		void AddMediumLow(FVector2D PositionCm, ESolidStrongholdOrientation Facing);
+		/**
 		 * A small room on one floor. The size is the room, so there is no room list, and no stair.
 		 */
 		void AddSmallLow(FVector2D PositionCm, ESolidStrongholdOrientation Facing);

@@ -304,13 +304,35 @@ bool FSolidStrongholdTypeSupportedTest::RunTest(const FString& Parameters)
 			*FString::Printf(TEXT("%s dungeon ground floor"), SolidStronghold::SizeName(Size)),
 			SameHexes(DungeonHexes, CaveFloor));
 		const int32 SmallHexes = SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small);
-		const int32 FortressFloor = Size == ESolidStrongholdSize::Meagre
-			? 0
-			: Size == ESolidStrongholdSize::Average
-				? 2 * SmallHexes
-				: Size == ESolidStrongholdSize::Impressive
-					? SolidStronghold::RoomHexes(ESolidStrongholdRoom::Medium) + 2 * SmallHexes
-					: SmallHexes;
+		const int32 MediumHexes = SolidStronghold::RoomHexes(ESolidStrongholdRoom::Medium);
+		const int32 LargeHexes = SolidStronghold::RoomHexes(ESolidStrongholdRoom::Large);
+		int32 FortressFloor = SmallHexes;
+		switch (Size)
+		{
+		case ESolidStrongholdSize::Meagre:
+			FortressFloor = 0;
+			break;
+		case ESolidStrongholdSize::Humble:
+			FortressFloor = SmallHexes;
+			break;
+		case ESolidStrongholdSize::Average:
+			FortressFloor = 2 * SmallHexes;
+			break;
+		case ESolidStrongholdSize::Impressive:
+			FortressFloor = MediumHexes + 2 * SmallHexes;
+			break;
+		case ESolidStrongholdSize::Grand:
+			FortressFloor = LargeHexes + MediumHexes + 2 * SmallHexes;
+			break;
+		case ESolidStrongholdSize::Stately:
+			FortressFloor = LargeHexes + 2 * MediumHexes + 2 * SmallHexes;
+			break;
+		case ESolidStrongholdSize::Imperious:
+			FortressFloor = LargeHexes + 2 * MediumHexes + 3 * SmallHexes;
+			break;
+		default:
+			break;
+		}
 		TestEqual(
 			*FString::Printf(TEXT("%s fortress ground floor"), SolidStronghold::SizeName(Size)),
 			FortressHexes.Num(),

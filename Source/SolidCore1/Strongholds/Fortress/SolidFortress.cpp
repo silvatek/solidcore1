@@ -35,6 +35,17 @@ namespace SolidStronghold
 			return true;
 		}
 
+		/** Inner south-west corner, in centimetres. */
+		FVector2D Position(const float X, const float Y)
+		{
+			return FVector2D(X, Y);
+		}
+
+		/** Inner face, in centimetres. */
+		FVector2D Size(const float Width, const float Depth)
+		{
+			return FVector2D(Width, Depth);
+		}
 	}
 
 	int32 FSolidFortressBuilding::Columns() const
@@ -150,18 +161,20 @@ namespace SolidStronghold
 
 		Size = InSize;
 		Buildings.Reset();
+		using SolidFortressPrivate::Position;
+		using SolidFortressPrivate::Size;
 		const float Wall = FSolidStronghold::WallCm;
-		const float DepthCm = 5.f * SolidStrongholdGrid::SideCm();
+		const float Depth = 5.f * SolidStrongholdGrid::SideCm();
 		switch (InSize)
 		{
 		case ESolidStrongholdSize::Humble:
-			AddBuilding(FVector2D(Wall, Wall), North, FVector2D(300.f, DepthCm), { Small });
-			AddBuilding(FVector2D(Wall + 300.f + 2.f * Wall, Wall), North, FVector2D(540.f, DepthCm), { Medium });
+			AddBuilding(Position(Wall, Wall), North, Size(300.f, Depth), { Small });
+			AddBuilding(Position(Wall + 300.f + 2.f * Wall, Wall), North, Size(540.f, Depth), { Medium });
 			break;
 		case ESolidStrongholdSize::Average:
-			AddBuilding(FVector2D(Wall, Wall + DepthCm + 2.f * Wall), East, FVector2D(300.f, DepthCm), { Small });
-			AddBuilding(FVector2D(Wall, Wall), North, FVector2D(640.f, DepthCm), { Medium });
-			AddBuilding(FVector2D(Wall + 640.f + 2.f * Wall, Wall), North, FVector2D(402.8f, DepthCm), { Small });
+			AddBuilding(Position(Wall, Wall + Depth + 2.f * Wall), East, Size(300.f, Depth), { Small });
+			AddBuilding(Position(Wall, Wall), North, Size(640.f, Depth), { Medium });
+			AddBuilding(Position(Wall + 640.f + 2.f * Wall, Wall), North, Size(402.8f, Depth), { Small });
 			break;
 		case ESolidStrongholdSize::Meagre:
 		case ESolidStrongholdSize::Impressive:

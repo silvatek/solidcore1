@@ -48,6 +48,23 @@ namespace
 		}
 		return Width;
 	}
+
+	int32 UsableHexes(const ESolidStrongholdSize Size)
+	{
+		SolidStronghold::FSolidFortress Fort;
+		Fort.AddBuildings(Size);
+		int32 Count = 0;
+		for (const SolidStronghold::FSolidFortressBuilding& Building : Fort.Buildings)
+		{
+			for (int32 Floor = 0; Floor < Building.Floors.Num(); ++Floor)
+			{
+				TArray<SolidStrongholdGrid::FHex> Hexes;
+				Building.CollectFloorHexes(Floor, Hexes);
+				Count += Hexes.Num();
+			}
+		}
+		return Count;
+	}
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -281,6 +298,40 @@ bool FSolidFortressAveragePlanTest::RunTest(const FString& Parameters)
 		TEXT("Average ground floor is both small rooms"),
 		Ground.Num(),
 		2 * SolidStronghold::RoomHexes(ESolidStrongholdRoom::Small));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidFortressKitTest,
+	"SolidCore1.Stronghold.FortressKit",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidFortressKitTest::RunTest(const FString& Parameters)
+{
+	AddExpectedError(TEXT("Meagre is not a fortress size"), EAutomationExpectedErrorFlags::Contains, 1);
+	TestEqual(TEXT("Meagre adds no hex"), UsableHexes(ESolidStrongholdSize::Meagre), 0);
+
+	const int32 HumbleKit = SolidStronghold::Hexes(SolidStronghold::RoomsFor(ESolidStrongholdSize::Humble));
+	for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
+	{
+		if (Size == ESolidStrongholdSize::Meagre)
+		{
+			continue;
+		}
+		const int32 Got = UsableHexes(Size);
+		const int32 Kit = SolidStronghold::Hexes(SolidStronghold::RoomsFor(Size));
+		const bool bComplete = Size == ESolidStrongholdSize::Humble || Size == ESolidStrongholdSize::Average;
+		TestEqual(
+			*FString::Printf(TEXT("%s usable hexes"), SolidStronghold::SizeName(Size)),
+			Got,
+			bComplete ? Kit : HumbleKit);
+		if (!bComplete)
+		{
+			TestTrue(
+				*FString::Printf(TEXT("%s is still short of its kit"), SolidStronghold::SizeName(Size)),
+				Got < Kit);
+		}
+	}
 	return true;
 }
 

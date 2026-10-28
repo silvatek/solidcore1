@@ -157,6 +157,8 @@ Read the request and the names next to the new code before choosing. When those 
 
 Follow the Automated tests policy in `CodingGuidelines.md`.
 
+A failure caused by an edit to `/Game/World/WorldChart` follows the World chart section.
+
 A source folder is the first directory under `Source/SolidCore1/` (`Fog`, `Strongholds`, and the rest) or the `Source/SolidCore1Editor` module. `Source/SolidCore1/Tests/` is not a source folder for this rule. When the product C++ in a commit is in one source folder, the Windows agent can run the tests for that folder and push on that pass. `Source/SolidCore1/Game/SolidBuildId.h` is the build id, and it does not add a folder. A markdown file does not add a folder. A file under `Source/SolidCore1/Tests/` does not add a folder. The tests for a folder are the automation tests whose file includes a header that lives in that folder. The `#include` line may name only the file. `tools\test.bat` takes one filter. Each distinct prefix through the second dot is one run, as `tools\test.bat SolidCore1.Fog`. A change under `Source/SolidCore1/Tests/` runs the tests that file registers. A header there that registers none runs the tests that include it. The filter is the test's name, as `tools\test.bat SolidCore1.Fog.DistanceBands`. Changed tests that share a prefix through the second dot can use that prefix. A test change does not run the full suite. A commit that changes product C++ in two source folders runs the full suite, filter `SolidCore1`. A C++ or `.Build.cs` file beside those folders (`SolidCore1.cpp`, `SolidCore1.h`, `SolidCore1.Build.cs`, a `.Target.cs`) runs the full suite. When the product folder has no test that includes a header from it, the run is the full suite. Before a story is set to `Done`, the Windows agent runs the full suite on this checkout, after the last product change. A folder filter, and a single test, do not replace that run. A cloud agent does not run the suite.
 
 ## Unused code
@@ -189,6 +191,8 @@ The search leaves unused includes, unused parameters, comments, commented-out bl
 ## World chart
 
 The game builds the world from `/Game/World/WorldChart`. Code comes first. The chart asset is not edited until the game code understands that edit. An earlier instruction told a coding agent, working on the Windows machine, to review `WorldMap.txt` before other work and match the code to that file. The chart asset replaced that file. `tools\editor.bat` opens the World chart mode on `/Game/ThirdPerson/Lvl_ThirdPerson`.
+
+When a test fails because `/Game/World/WorldChart` has changed, the agent may investigate. The chart stays as the product owner saved it. The investigation does not restore that asset from git or revert it any other way. Checking `Content/World/WorldChart.uasset` back out was the miss. A test that assumes particular chart content is valid only when the product code needs that content to keep working. Otherwise the test is not valid. When the agent thinks the chart edit was a mistake, it asks the product owner before changing the chart.
 
 The grid is 128 columns by 64 rows. Stored row 0 is north and stored column 0 is east. The dump counts from 1 at the top-left. A cell holds a marker biome. Swamp and road are not painted.
 

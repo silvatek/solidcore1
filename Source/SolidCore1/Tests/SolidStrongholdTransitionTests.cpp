@@ -102,31 +102,37 @@ namespace
 
 	int32 OfferedCount(const USolidGameState& State, const FSolidStronghold* Active)
 	{
-		int32 Count = 0;
 		if (!Active)
 		{
 			return 0;
 		}
-		const int32 ActiveIndex = static_cast<int32>(Active->Size);
+		int32 SizesListed = 0;
+		bool bType[UE_ARRAY_COUNT(SolidStronghold::Types)] = {};
 		for (const ESolidStrongholdSize Size : SolidStronghold::Sizes)
 		{
-		if (!SolidEvents::IsStrongholdSizeUnlocked(State, Size))
-		{
-			continue;
-		}
-		if (State.bStrongholdSiteRestrictions && static_cast<int32>(Size) <= ActiveIndex)
-		{
-			continue;
-		}
+			if (!SolidEvents::IsStrongholdSizeUnlocked(State, Size))
+			{
+				continue;
+			}
+			++SizesListed;
 			for (const ESolidStrongholdType Type : SolidStronghold::Types)
 			{
 				if (SolidStronghold::TypeOf(Type).Supported(Size))
 				{
-					++Count;
+					bType[static_cast<int32>(Type)] = true;
 				}
 			}
 		}
-		return Count;
+		if (SizesListed == 0)
+		{
+			return 0;
+		}
+		int32 TypesListed = 0;
+		for (const bool bListed : bType)
+		{
+			TypesListed += bListed ? 1 : 0;
+		}
+		return SizesListed + TypesListed + 2;
 	}
 }
 
@@ -335,10 +341,6 @@ bool FSolidStrongholdSiteOfferTest::RunTest(const FString& Parameters)
 			FreshCompany->InitializeStartingStronghold();
 			Fresh.bStrongholdSiteRestrictions = true;
 			TArray<FSolidStrongholdChoice> Offered;
-			TestEqual(
-				*FString::Printf(TEXT("site %d,%d does nothing until unlocked"), Row + 1, Col + 1),
-				static_cast<uint8>(SolidStrongholdTransition::Consider(Fresh, FreshCompany->GetStronghold(), Offered)),
-				static_cast<uint8>(SolidStrongholdTransition::EOffer::None));
 			Unlock(Fresh, SiteSize);
 			const SolidStrongholdTransition::EOffer Offer = SolidStrongholdTransition::Consider(
 				Fresh,
@@ -486,11 +488,16 @@ bool FSolidStrongholdMoveTest::RunTest(const FString& Parameters)
 	}
 	TestEqual(TEXT("the bed moved"), Beds, 1);
 
-	TestFalse(
-		TEXT("the same size does not move again"),
+	TestTrue(
+		TEXT("the same size can be chosen again"),
 		SolidStrongholdTransition::Move(*Company, State, AverageCell, ESolidStrongholdSize::Imperious, ESolidStrongholdType::Tower));
-	TestEqual(TEXT("a refused move leaves the cell"), Company->GetStronghold()->Cell, ImperiousCell);
-	TestEqual(TEXT("a refused move leaves one previous stronghold"), State.PreviousStrongholds.Num(), 1);
+	TestEqual(TEXT("the same size stands on the new cell"), Company->GetStronghold()->Cell, AverageCell);
+	TestEqual(TEXT("the same size records another stronghold"), State.PreviousStrongholds.Num(), 2);
+	TestFalse(
+		TEXT("a smaller size does not move"),
+		SolidStrongholdTransition::Move(*Company, State, ImperiousCell, ESolidStrongholdSize::Humble, ESolidStrongholdType::Fortress));
+	TestEqual(TEXT("a refused smaller size leaves the cell"), Company->GetStronghold()->Cell, AverageCell);
+	TestEqual(TEXT("a refused smaller size leaves the history"), State.PreviousStrongholds.Num(), 2);
 
 	TestFalse(
 		TEXT("outside, the chest stays shut"),

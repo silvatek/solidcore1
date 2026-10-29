@@ -309,6 +309,77 @@ bool FSolidBiomeFadeWeightTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBiomeDiagonalCutTest,
+	"SolidCore1.Types.DiagonalCut",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBiomeDiagonalCutTest::RunTest(const FString& Parameters)
+{
+	const ESolidBiome Forest = ESolidBiome::Forest;
+	const ESolidBiome Desert = ESolidBiome::Desert;
+	const ESolidBiome Patch[3][4] = {
+		{ Forest, Forest, Forest, Forest },
+		{ Forest, Forest, Desert, Desert },
+		{ Desert, Desert, Desert, Desert },
+	};
+	int32 Corner = -1;
+
+	TestFalse(
+		TEXT("one biome keeps its material"),
+		SolidTerrainTypes::DiagonalCut(Patch[0][0], Patch[0][1], Patch[1][0], Patch[1][1], Corner));
+
+	TestTrue(
+		TEXT("the odd desert corner is cut off"),
+		SolidTerrainTypes::DiagonalCut(Patch[0][1], Patch[0][2], Patch[1][1], Patch[1][2], Corner));
+	TestEqual(TEXT("that corner is 11"), Corner, 3);
+
+	TestFalse(
+		TEXT("a straight run keeps the grid edge"),
+		SolidTerrainTypes::DiagonalCut(Patch[0][2], Patch[0][3], Patch[1][2], Patch[1][3], Corner));
+
+	TestTrue(
+		TEXT("the odd forest corner is cut off"),
+		SolidTerrainTypes::DiagonalCut(Patch[1][1], Patch[1][2], Patch[2][1], Patch[2][2], Corner));
+	TestEqual(TEXT("that corner is 00"), Corner, 0);
+
+	TestTrue(
+		TEXT("an odd 10 corner is cut off"),
+		SolidTerrainTypes::DiagonalCut(Forest, Desert, Forest, Forest, Corner));
+	TestEqual(TEXT("that corner is 10"), Corner, 1);
+
+	TestTrue(
+		TEXT("an odd 01 corner is cut off"),
+		SolidTerrainTypes::DiagonalCut(Forest, Forest, Desert, Forest, Corner));
+	TestEqual(TEXT("that corner is 01"), Corner, 2);
+
+	TestFalse(
+		TEXT("desert alone keeps its material"),
+		SolidTerrainTypes::DiagonalCut(Desert, Desert, Desert, Desert, Corner));
+	TestFalse(
+		TEXT("a checker keeps one material"),
+		SolidTerrainTypes::DiagonalCut(Forest, Desert, Desert, Forest, Corner));
+	TestFalse(
+		TEXT("a road corner keeps the hard material"),
+		SolidTerrainTypes::DiagonalCut(Forest, Forest, Desert, ESolidBiome::Road, Corner));
+	TestFalse(
+		TEXT("a higher shelf keeps the whole quad"),
+		SolidTerrainTypes::DiagonalCut(ESolidBiome::Sea, ESolidBiome::Sea, ESolidBiome::Sea, Forest, Corner));
+	TestFalse(
+		TEXT("three biomes keep one material"),
+		SolidTerrainTypes::DiagonalCut(Forest, Desert, ESolidBiome::Town, Forest, Corner));
+	TestFalse(
+		TEXT("grassland keeps its material"),
+		SolidTerrainTypes::DiagonalCut(ESolidBiome::Grassland, ESolidBiome::Grassland, ESolidBiome::Grassland, Forest, Corner));
+
+	TestTrue(
+		TEXT("sea against river is cut"),
+		SolidTerrainTypes::DiagonalCut(
+			ESolidBiome::Sea, ESolidBiome::Sea, ESolidBiome::Sea, ESolidBiome::River, Corner));
+	TestEqual(TEXT("the river corner is 11"), Corner, 3);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidBiomeFadeMaterialTest,
 	"SolidCore1.Types.FadeMaterial",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)

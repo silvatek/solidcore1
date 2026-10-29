@@ -173,3 +173,55 @@ bool SolidTerrainTypes::FadeWeight(
 	}
 	return true;
 }
+
+bool SolidTerrainTypes::DiagonalCut(
+	const ESolidBiome B00,
+	const ESolidBiome B10,
+	const ESolidBiome B01,
+	const ESolidBiome B11,
+	int32& OutCorner)
+{
+	const ESolidBiome Corners[4] = { B00, B10, B01, B11 };
+	for (int32 Odd = 0; Odd < 4; ++Odd)
+	{
+		const FSolidBiome& Single = SolidBiome::Of(Corners[Odd]);
+		if (!Single.FlatColour())
+		{
+			continue;
+		}
+
+		const float Shelf = Single.HeightOffsetCm();
+		ESolidBiome Majority = Corners[Odd];
+		bool bMajority = false;
+		bool bMatch = true;
+		for (int32 Index = 0; Index < 4; ++Index)
+		{
+			if (Index == Odd)
+			{
+				continue;
+			}
+			const FSolidBiome& Ground = SolidBiome::Of(Corners[Index]);
+			if (!Ground.FlatColour() || Ground.HeightOffsetCm() != Shelf)
+			{
+				bMatch = false;
+				break;
+			}
+			if (!bMajority)
+			{
+				Majority = Corners[Index];
+				bMajority = true;
+			}
+			else if (Corners[Index] != Majority)
+			{
+				bMatch = false;
+				break;
+			}
+		}
+		if (bMatch && bMajority && Majority != Corners[Odd])
+		{
+			OutCorner = Odd;
+			return true;
+		}
+	}
+	return false;
+}

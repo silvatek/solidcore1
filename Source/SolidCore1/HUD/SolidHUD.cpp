@@ -2009,6 +2009,45 @@ void ASolidHUD::DrawHUD()
 				Lines.Add(FString::Printf(
 					TEXT("Map %dx%d  spacing=%.0f  points=%d"),
 					Map->GridWidth, Map->GridHeight, Map->PointSpacing, Map->GetPointCount()));
+				if (Map->bIsBuilt && Map->PointSpacing > KINDA_SMALL_NUMBER)
+				{
+					const float FX = (Loc.X - Map->OriginXY.X) / Map->PointSpacing;
+					const float FY = (Loc.Y - Map->OriginXY.Y) / Map->PointSpacing;
+					const int32 X0 = FMath::Clamp(FMath::FloorToInt(FX), 0, Map->GridWidth - 1);
+					const int32 Y0 = FMath::Clamp(FMath::FloorToInt(FY), 0, Map->GridHeight - 1);
+					const int32 X1 = FMath::Min(X0 + 1, Map->GridWidth - 1);
+					const int32 Y1 = FMath::Min(Y0 + 1, Map->GridHeight - 1);
+					const ESolidBiome Corners[4] = {
+						Map->GetPoint(X0, Y0).Biome,
+						Map->GetPoint(X1, Y0).Biome,
+						Map->GetPoint(X0, Y1).Biome,
+						Map->GetPoint(X1, Y1).Biome,
+					};
+					int32 CutCorner = 0;
+					const bool bCut = SolidTerrainTypes::DiagonalCut(
+						Corners[0], Corners[1], Corners[2], Corners[3], CutCorner);
+					const TCHAR* const CornerLabel[] = { TEXT("00"), TEXT("10"), TEXT("01"), TEXT("11") };
+					if (bCut && CutCorner >= 0 && CutCorner < 4)
+					{
+						Lines.Add(FString::Printf(
+							TEXT("Quad %s %s / %s %s  cuts off %s %s"),
+							SolidBiome::Of(Corners[0]).Name(),
+							SolidBiome::Of(Corners[1]).Name(),
+							SolidBiome::Of(Corners[2]).Name(),
+							SolidBiome::Of(Corners[3]).Name(),
+							CornerLabel[CutCorner],
+							SolidBiome::Of(Corners[CutCorner]).Name()));
+					}
+					else
+					{
+						Lines.Add(FString::Printf(
+							TEXT("Quad %s %s / %s %s  keeps one material"),
+							SolidBiome::Of(Corners[0]).Name(),
+							SolidBiome::Of(Corners[1]).Name(),
+							SolidBiome::Of(Corners[2]).Name(),
+							SolidBiome::Of(Corners[3]).Name()));
+					}
+				}
 			}
 
 			if (const UMaterialInterface* Mat = Streamer->GetActiveMaterial())

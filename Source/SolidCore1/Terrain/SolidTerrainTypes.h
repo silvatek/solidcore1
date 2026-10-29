@@ -70,4 +70,17 @@ namespace SolidTerrainTypes
 		ESolidBiome B01,
 		ESolidBiome B11,
 		float OutWeights[4]);
+
+	/**
+	 * True when the quad is cut on the diagonal that isolates one corner.
+	 * OutCorner is that corner in mesh order 00, 10, 01, 11.
+	 * False when the quad keeps one material: one biome, a straight pair,
+	 * a checker, three biomes, a road, grassland, or a higher shelf.
+	 */
+	bool DiagonalCut(
+		ESolidBiome B00,
+		ESolidBiome B10,
+		ESolidBiome B01,
+		ESolidBiome B11,
+		int32& OutCorner);
 }

@@ -94,7 +94,7 @@ namespace SolidTerrainTypes
 	};
 
 	/** Change this and rebuild. The mesh and the debug line both use it. */
-	inline constexpr ESolidQuadMaterial QuadMaterial = ESolidQuadMaterial::OddCorner;
+	inline constexpr ESolidQuadMaterial QuadMaterial = ESolidQuadMaterial::Centre;
 
 	/** Materials for the quad's two triangles, and whether the mesh diagonal is flipped. */
 	struct FSolidQuadTriangles

@@ -418,9 +418,9 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 	const ESolidBiome Desert = ESolidBiome::Desert;
 
 	TestEqual(
-		TEXT("this build cuts off the odd corner"),
+		TEXT("this build uses the quad centre"),
 		static_cast<uint8>(SolidTerrainTypes::QuadMaterial),
-		static_cast<uint8>(SolidTerrainTypes::ESolidQuadMaterial::OddCorner));
+		static_cast<uint8>(SolidTerrainTypes::ESolidQuadMaterial::Centre));
 
 	auto Expect = [this](const TCHAR* What, const SolidTerrainTypes::FSolidQuadTriangles& Tri, const bool bFlip, const ESolidBiome First, const ESolidBiome Second)
 	{

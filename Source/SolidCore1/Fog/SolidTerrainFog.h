@@ -28,6 +28,13 @@ namespace SolidTerrainFog
 	constexpr float FullFogStartMeters = 50.f;
 	/** Samples at or below this count as clear (fog=0 side of a boundary). */
 	constexpr float ClearFogEpsilon = 0.05f;
+	/**
+	 * Inner clear|fogged curtain (cm). Twice Falcon's 200 m, so that camera cannot look over it.
+	 * The sheet is the same quads at any height.
+	 */
+	constexpr float InnerCurtainHeightCm = 40000.f;
+	/** Outer half|full curtain (cm). Taller than the inner curtain. */
+	constexpr float OuterCurtainHeightCm = 50000.f;
 	/** Isocontour between half fog (0.5) and full fog (1.0). */
 	constexpr float HalfFullFogThreshold = 0.75f;
 
@@ -41,8 +48,8 @@ namespace SolidTerrainFog
 		FIntPoint ChunkCoord = FIntPoint::ZeroValue;
 		float ChunkWorldSize = 6400.f;
 		int32 FogQuadsPerSide = 16;
-		float VolumeHeightCm = 16000.f;
-		float VolumeHeightHalfCm = 11000.f;
+		float VolumeHeightCm = OuterCurtainHeightCm;
+		float VolumeHeightHalfCm = InnerCurtainHeightCm;
 		float CollisionHeightBias = 0.f;
 	};
 

@@ -180,14 +180,17 @@ public:
 
 	/**
 	 * Vertical extent of the outer (full) fog curtain (cm).
-	 * Taller than CameraZoomMax so a fully zoomed-out camera still sits below the top.
+	 * Taller than the inner curtain. Matches SolidTerrainFog::OuterCurtainHeightCm.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "200.0"))
-	float FogVolumeHeightCm = 16000.f;
+	float FogVolumeHeightCm = 50000.f;
 
-	/** Vertical extent of the inner (half) fog curtain (cm). Also above max camera zoom. */
+	/**
+	 * Inner clear|fogged curtain (cm). Twice Falcon's 200 m.
+	 * Matches SolidTerrainFog::InnerCurtainHeightCm.
+	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "200.0"))
-	float FogVolumeHeightHalfCm = 11000.f;
+	float FogVolumeHeightHalfCm = 40000.f;
 
 	/** Min focus travel (cm) before re-applying trail fog / queuing mesh refreshes. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "50.0"))

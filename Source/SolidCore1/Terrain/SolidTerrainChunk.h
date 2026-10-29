@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "SolidTerrainFog.h"
 #include "SolidTerrainTypes.h"
 #include "SolidTerrainChunk.generated.h"
 
@@ -39,8 +40,8 @@ public:
 		const USolidTerrainMap* TerrainMap,
 		const TMap<ESolidBiome, UMaterialInterface*>* BiomeMaterials = nullptr,
 		int32 InFogQuadsPerSide = 6,
-		float InFogVolumeHeightCm = 16000.f,
-		float InFogVolumeHeightHalfCm = 11000.f);
+		float InFogVolumeHeightCm = SolidTerrainFog::OuterCurtainHeightCm,
+		float InFogVolumeHeightHalfCm = SolidTerrainFog::InnerCurtainHeightCm);
 
 	/** Cheap fog-of-war refresh: rebuilds only the volume mesh (no collision terrain rebuild). */
 	void RebuildExplorationFog(
@@ -49,8 +50,8 @@ public:
 		UMaterialInterface* FogOuterMaterial,
 		const USolidTerrainMap* TerrainMap,
 		int32 InFogQuadsPerSide = 6,
-		float InFogVolumeHeightCm = 16000.f,
-		float InFogVolumeHeightHalfCm = 11000.f);
+		float InFogVolumeHeightCm = SolidTerrainFog::OuterCurtainHeightCm,
+		float InFogVolumeHeightHalfCm = SolidTerrainFog::InnerCurtainHeightCm);
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terrain")
@@ -73,6 +74,6 @@ protected:
 	float CachedChunkWorldSize = 6400.f;
 	float CachedCollisionHeightBias = 0.f;
 	int32 CachedFogQuadsPerSide = 6;
-	float CachedFogVolumeHeightCm = 16000.f;
-	float CachedFogVolumeHeightHalfCm = 11000.f;
+	float CachedFogVolumeHeightCm = SolidTerrainFog::OuterCurtainHeightCm;
+	float CachedFogVolumeHeightHalfCm = SolidTerrainFog::InnerCurtainHeightCm;
 };

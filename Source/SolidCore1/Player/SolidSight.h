@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "InputCoreTypes.h"
+#include "SolidTerrainFog.h"
 
 /** Raven sight is the third-person squad camera. True sight is first person. */
 enum class ESolidSight : uint8
@@ -22,8 +23,12 @@ namespace SolidSight
 	inline constexpr float FalconMinHeightCm = 2000.f;
 	inline constexpr float FalconMaxHeightCm = 20000.f;
 
-	/** Falcon camera stays this close to the captain on the ground (cm). */
-	inline constexpr float FalconMaxOffsetCm = 2000.f;
+	/** Share of the inner clear radius Falcon may stand back from the captain. */
+	inline constexpr float FalconClearFraction = 0.8f;
+
+	/** 80% of the clear band. A 25 m clear radius is 20 m. */
+	inline constexpr float FalconMaxOffsetCm =
+		SolidTerrainFog::ClearRadiusMeters * FalconClearFraction * 100.f;
 
 	/** Camera sits this far along the look direction so it clears the near clip (cm). */
 	inline constexpr float TrueSightForwardCm = 12.f;

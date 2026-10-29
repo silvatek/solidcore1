@@ -2,6 +2,8 @@
 #include "Misc/AutomationTest.h"
 #include "SolidCameraFog.h"
 #include "SolidCharacter.h"
+#include "SolidSight.h"
+#include "SolidTerrainFog.h"
 #include "Terrain/SolidTerrainStreamer.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -39,12 +41,13 @@ bool FSolidFogCurtainAboveCameraTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("character defaults"), Character);
 	TestNotNull(TEXT("streamer defaults"), Streamer);
 
-	const float MaxZoom = Character->GetCameraZoomMax();
-	TestTrue(TEXT("full curtain is well above max zoom"),
-		Streamer->FogVolumeHeightCm > MaxZoom + 5000.f);
-	TestTrue(TEXT("half curtain is above max zoom"),
-		Streamer->FogVolumeHeightHalfCm > MaxZoom);
-	TestTrue(TEXT("full curtain is taller than half"),
+	TestTrue(TEXT("inner curtain clears the falcon camera"),
+		Streamer->FogVolumeHeightHalfCm > SolidSight::FalconMaxHeightCm);
+	TestTrue(TEXT("inner curtain is the fog height"),
+		FMath::IsNearlyEqual(Streamer->FogVolumeHeightHalfCm, SolidTerrainFog::InnerCurtainHeightCm));
+	TestTrue(TEXT("outer curtain is the fog height"),
+		FMath::IsNearlyEqual(Streamer->FogVolumeHeightCm, SolidTerrainFog::OuterCurtainHeightCm));
+	TestTrue(TEXT("outer curtain is taller than the inner"),
 		Streamer->FogVolumeHeightCm > Streamer->FogVolumeHeightHalfCm);
 	return true;
 }

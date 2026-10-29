@@ -2,6 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "SolidCharacter.h"
 #include "SolidSight.h"
+#include "SolidTerrainFog.h"
 #include "Components/SceneComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -198,16 +199,20 @@ bool FSolidSightCycleTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("falcon label"), FString(SolidSight::Label(ESolidSight::Falcon)), FString(TEXT("Falcon sight")));
 	TestTrue(TEXT("low zoom is 20 m"), FMath::IsNearlyEqual(SolidSight::FalconHeightCm(0.f), 2000.f));
 	TestTrue(TEXT("high zoom is 200 m"), FMath::IsNearlyEqual(SolidSight::FalconHeightCm(1.f), 20000.f));
+	TestTrue(TEXT("falcon stands at 80% of the clear radius"),
+		FMath::IsNearlyEqual(
+			SolidSight::FalconMaxOffsetCm,
+			SolidTerrainFog::MetersToCm(SolidTerrainFog::ClearRadiusMeters) * SolidSight::FalconClearFraction));
 	const FVector2D West = SolidSight::FalconHorizontalOffset(FRotator(0.f, 0.f, 0.f));
-	TestTrue(TEXT("looking east keeps the camera west"), FMath::IsNearlyEqual(West.X, -2000.f, 1.f));
+	TestTrue(TEXT("looking east keeps the camera west"), FMath::IsNearlyEqual(West.X, -SolidSight::FalconMaxOffsetCm, 1.f));
 	TestTrue(TEXT("looking east stays on the captain's Y"), FMath::IsNearlyZero(West.Y, 1.f));
-	TestTrue(TEXT("the west offset is 20 m"), FMath::IsNearlyEqual(West.Size(), 2000.f, 1.f));
+	TestTrue(TEXT("the west offset is the falcon cap"), FMath::IsNearlyEqual(West.Size(), SolidSight::FalconMaxOffsetCm, 1.f));
 	const FVector2D Overhead = SolidSight::FalconHorizontalOffset(FRotator(-90.f, 0.f, 0.f));
 	TestTrue(TEXT("a straight-down look stays over the captain"), Overhead.IsNearlyZero(1.f));
 	const FVector2D Diagonal = SolidSight::FalconHorizontalOffset(FRotator(-30.f, 45.f, 0.f));
-	TestTrue(TEXT("a diagonal stay is 20 m"), FMath::IsNearlyEqual(Diagonal.Size(), 2000.f, 1.f));
+	TestTrue(TEXT("a diagonal stay is the falcon cap"), FMath::IsNearlyEqual(Diagonal.Size(), SolidSight::FalconMaxOffsetCm, 1.f));
 	const FRotator AtCaptain = SolidSight::FalconLookAtCaptain(
-		FVector(0.f, -2000.f, 2000.f), FVector::ZeroVector);
+		FVector(0.f, -SolidSight::FalconMaxOffsetCm, SolidSight::FalconMaxOffsetCm), FVector::ZeroVector);
 	TestTrue(TEXT("the entry look faces the captain"), FMath::IsNearlyEqual(AtCaptain.Yaw, 90.f, 1.f));
 	TestTrue(TEXT("the entry look pitches down"), FMath::IsNearlyEqual(AtCaptain.Pitch, -45.f, 1.f));
 	TestTrue(TEXT("the entry look is level in roll"), FMath::IsNearlyZero(AtCaptain.Roll, 1.f));

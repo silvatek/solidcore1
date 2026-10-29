@@ -194,9 +194,9 @@ The game builds the world from `/Game/World/WorldChart`. Code comes first. The c
 
 When a test fails because `/Game/World/WorldChart` has changed, the agent may investigate. The chart stays as the product owner saved it. The investigation does not restore that asset from git or revert it any other way. Checking `Content/World/WorldChart.uasset` back out was the miss. A test that assumes particular chart content is valid only when the product code needs that content to keep working. Otherwise the test is not valid. When the agent thinks the chart edit was a mistake, it asks the product owner before changing the chart.
 
-The grid is 128 columns by 64 rows. Stored row 0 is north and stored column 0 is east. The dump counts from 1 at the top-left. A cell holds a marker biome. Swamp and road are not painted.
+The grid is 128 columns by 64 rows. Stored row 0 is north and stored column 0 is west. The dump counts from 1 at the top-left. A cell holds a marker biome. Swamp and road are not painted.
 
-A mark is a town, a stronghold, a stronghold site, a lair entrance, a lair exit, a custom note, or an encounter. A named town resolves as town. A lair mouth resolves as mountain. A stronghold uses the shelf that stronghold names. A site, a note, and an encounter leave the paint. A road is two end names and a type: trail, track, road, or highway. An end is a town or a stronghold. A site is not an end. The Iglin Tunnels Entrance is the LairEntrance south of Iglin. The Iglin Tunnels Exit is the LairExit east of Relion.
+A mark is a town, a stronghold, a stronghold site, a lair entrance, a lair exit, a custom note, or an encounter. A named town resolves as town. A lair mouth resolves as mountain. A stronghold uses the shelf that stronghold names. A site, a note, and an encounter leave the paint. A road is two end names and a type: trail, track, road, or highway. An end is a town or a stronghold. A site is not an end. The Iglin Tunnels Entrance is the LairEntrance south of Iglin. The Iglin Tunnels Exit is the LairExit west of Relion.
 
 ## Lairs
 

@@ -7,7 +7,7 @@
  * The river marker marks a river through that square, not a square of water.
  * The channel is 4 m wide. A river marker with no river or sea beside it is a 4 m pond.
  * Orthogonal neighbors that are the river marker or the sea marker are joined at that width, however long the gap is.
- * Local coordinates are centimetres from the cell centre: +X east, +Y north.
+ * Local coordinates are centimetres from the cell centre: +X is west, +Y is north.
  */
 namespace SolidRiver
 {
@@ -85,11 +85,13 @@ namespace SolidRiver
 				Best = Closest;
 			}
 		};
+		// An equal distance keeps the first arm. The order is +Y, +X, -Y, -X,
+		// so the dry corner of a bend stays on the same bank.
 		if (Links.bNorth)
 		{
 			Consider(FVector2D(0.f, HalfH));
 		}
-		if (Links.bEast)
+		if (Links.bWest)
 		{
 			Consider(FVector2D(HalfW, 0.f));
 		}
@@ -97,7 +99,7 @@ namespace SolidRiver
 		{
 			Consider(FVector2D(0.f, -HalfH));
 		}
-		if (Links.bWest)
+		if (Links.bEast)
 		{
 			Consider(FVector2D(-HalfW, 0.f));
 		}
@@ -128,7 +130,7 @@ namespace SolidRiver
 		}
 		if (FMath::Abs(Dir.X) > FMath::Abs(Dir.Y))
 		{
-			return Dir.X > 0.f ? ESide::East : ESide::West;
+			return Dir.X > 0.f ? ESide::West : ESide::East;
 		}
 		return Dir.Y > 0.f ? ESide::North : ESide::South;
 	}

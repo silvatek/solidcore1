@@ -109,10 +109,10 @@ namespace SolidStronghold
 		switch (InOrientation)
 		{
 		case ESolidStrongholdOrientation::NorthFace:
-		case ESolidStrongholdOrientation::WestFace:
+		case ESolidStrongholdOrientation::EastFace:
 			return -HalfStep;
 		case ESolidStrongholdOrientation::SouthFace:
-		case ESolidStrongholdOrientation::EastFace:
+		case ESolidStrongholdOrientation::WestFace:
 		default:
 			return HalfStep;
 		}

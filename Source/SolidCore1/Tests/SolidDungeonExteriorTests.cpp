@@ -271,19 +271,19 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 		TEXT("north is world +Y"),
 		FMath::IsNearlyEqual(SolidStronghold::OrientationYawDeg(ESolidStrongholdOrientation::NorthFace), 90.f, 0.01f));
 	TestTrue(
-		TEXT("east is world +X"),
-		FMath::IsNearlyEqual(SolidStronghold::OrientationYawDeg(ESolidStrongholdOrientation::EastFace), 0.f, 0.01f));
+		TEXT("east is world -X"),
+		FMath::IsNearlyEqual(SolidStronghold::OrientationYawDeg(ESolidStrongholdOrientation::EastFace), 180.f, 0.01f));
 	TestTrue(
 		TEXT("south is world -Y"),
 		FMath::IsNearlyEqual(SolidStronghold::OrientationYawDeg(ESolidStrongholdOrientation::SouthFace), -90.f, 0.01f));
 	TestTrue(
-		TEXT("west is world -X"),
-		FMath::IsNearlyEqual(SolidStronghold::OrientationYawDeg(ESolidStrongholdOrientation::WestFace), 180.f, 0.01f));
+		TEXT("west is world +X"),
+		FMath::IsNearlyEqual(SolidStronghold::OrientationYawDeg(ESolidStrongholdOrientation::WestFace), 0.f, 0.01f));
 
 	Cave->Orientation = ESolidStrongholdOrientation::EastFace;
 	TestTrue(
 		TEXT("the cave exterior follows the exit"),
-		FMath::IsNearlyEqual(Cave->ExteriorYawDeg(nullptr), 0.f, 0.01f));
+		FMath::IsNearlyEqual(Cave->ExteriorYawDeg(nullptr), 180.f, 0.01f));
 	TUniquePtr<FSolidStronghold> Copy = Cave->Clone();
 	FSolidStronghold* Cloned = Copy.Get();
 	TestNotNull(TEXT("the cave clones"), Cloned);
@@ -334,11 +334,11 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 	const float NorthLateral = Dungeon.ShelfLateralCm(ESolidStrongholdOrientation::NorthFace);
 	const float EastLateral = Dungeon.ShelfLateralCm(ESolidStrongholdOrientation::EastFace);
 	TestTrue(
-		TEXT("the north shelf center is east of the cell center"),
+		TEXT("the north shelf center is west of the cell center"),
 		FMath::IsNearlyEqual(NorthLateral, -100.f, 0.1f));
 	TestTrue(
 		TEXT("the east shelf center is north of the cell center"),
-		FMath::IsNearlyEqual(EastLateral, 100.f, 0.1f));
+		FMath::IsNearlyEqual(EastLateral, -100.f, 0.1f));
 	const FVector2D CellCenter(1000.f, 2000.f);
 	const FVector2D NorthStand = Dungeon.LeaveStandXY(CellCenter, ESolidStrongholdOrientation::NorthFace);
 	const float NorthYaw = FMath::DegreesToRadians(
@@ -354,7 +354,7 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 	const FVector2D EastLeft(-FMath::Sin(EastYaw), FMath::Cos(EastYaw));
 	TestTrue(
 		TEXT("leaving stands in front of the east face"),
-		FMath::IsNearlyEqual(EastStand.X, CellCenter.X + EastForward + Dungeon.LeaveStandCm(), 0.1f)
+		FMath::IsNearlyEqual(EastStand.X, CellCenter.X - (EastForward + Dungeon.LeaveStandCm()), 0.1f)
 			&& FMath::IsNearlyEqual(EastStand.Y, CellCenter.Y + EastLeft.Y * EastLateral, 0.1f));
 
 	TUniquePtr<FSolidStronghold> Leaving = Cave->Clone();
@@ -369,7 +369,7 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 		Leaving->Orientation = ESolidStrongholdOrientation::EastFace;
 		const SolidStronghold::FExitStand EastExit = SolidStronghold::ExitStand(*Leaving);
 		TestTrue(TEXT("exit stands in front of the east mouth"), EastExit.XY.Equals(EastStand, 0.1f));
-		TestTrue(TEXT("exit faces away to the east"), FMath::IsNearlyEqual(EastExit.YawDeg, 0.f, 0.1f));
+		TestTrue(TEXT("exit faces away to the east"), FMath::IsNearlyEqual(EastExit.YawDeg, 180.f, 0.1f));
 	}
 
 	Cave->Orientation = ESolidStrongholdOrientation::NorthFace;

@@ -252,7 +252,7 @@ bool FSolidTownSignWallgateTest::RunTest(const FString& Parameters)
 			++WallGateCount;
 			TestEqual(TEXT("the wall gate is Dragongate"), FString(Town.Name), FString(TEXT("Dragongate")));
 			const float HalfBoardCm = SolidTownSigns::BoardWidthCm(SolidTownSigns::MakeLabel(Town.Name)) * 0.5f;
-			TestTrue(TEXT("wall-gate sign is east of the gate"),
+			TestTrue(TEXT("wall-gate sign is west of the gate"),
 				Town.SignOffsetCm.X - HalfBoardCm > SolidWallgate::GapCm * 0.5f);
 			TestTrue(TEXT("wall-gate sign stays on the north edge"),
 				FMath::IsNearlyEqual(Town.SignOffsetCm.Y, SolidTowns::DragongateSignNorthCm, 0.1f)
@@ -304,10 +304,10 @@ bool FSolidTownSignWallgateTest::RunTest(const FString& Parameters)
 	FVector2D CellXY = FVector2D::ZeroVector;
 	TestTrue(TEXT("cell projects"), WorldMap->CellToWorldXY(FIntPoint(16, 9), WorldMin, WorldMax, CellXY));
 	const float CellNorth = (WorldMax.Y - WorldMin.Y) / static_cast<float>(USolidWorldChart::MapHeight) * 0.5f;
-	const FVector2D Expected = CellXY + FVector2D(SolidTowns::DragongateSignEastCm, CellNorth);
-	TestTrue(TEXT("sign stands east of the gate on the north edge"), Placements[0].WorldXY.Equals(Expected, 0.1f));
+	const FVector2D Expected = CellXY + FVector2D(SolidTowns::DragongateSignWestCm, CellNorth);
+	TestTrue(TEXT("sign stands west of the gate on the north edge"), Placements[0].WorldXY.Equals(Expected, 0.1f));
 	TestTrue(TEXT("sign is north of the cell center"), Placements[0].WorldXY.Y > CellXY.Y + TowerNorthCm);
-	TestTrue(TEXT("sign is east of the cell center"), Placements[0].WorldXY.X > CellXY.X);
+	TestTrue(TEXT("sign is west of the cell center"), Placements[0].WorldXY.X > CellXY.X);
 	TestTrue(TEXT("spawn yaw faces north"),
 		FMath::IsNearlyEqual(Placements[0].YawDeg, SolidTowns::SignFacesNorthYawDeg, 0.1f));
 	return true;

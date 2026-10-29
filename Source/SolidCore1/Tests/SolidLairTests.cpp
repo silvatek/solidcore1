@@ -326,7 +326,7 @@ bool FSolidLairEntranceTest::RunTest(const FString& Parameters)
 		if (Entrance.EndMarker == USolidWorldChart::YMarker)
 		{
 			bSawY = true;
-			TestTrue(TEXT("Y is east of Relion"), World.X > RelionXY.X);
+			TestTrue(TEXT("Y is west of Relion"), World.X > RelionXY.X);
 		}
 	}
 	TestTrue(TEXT("X is on the shipped map"), bSawX);
@@ -604,8 +604,8 @@ bool FSolidLairExitFacesWestTest::RunTest(const FString& Parameters)
 		if (Mouth.EndMarker == SolidLair::Exit)
 		{
 			bSawExit = true;
-			TestEqual(TEXT("the exit faces west"), Mouth.GrassCell, Exit + FIntPoint(1, 0));
-			TestTrue(TEXT("west yaw"), FMath::IsNearlyEqual(Mouth.FacingYawDeg, 180.f, 0.1f));
+			TestEqual(TEXT("the exit faces east"), Mouth.GrassCell, Exit + FIntPoint(1, 0));
+			TestTrue(TEXT("east yaw"), FMath::IsNearlyEqual(Mouth.FacingYawDeg, 180.f, 0.1f));
 		}
 		if (Mouth.EndMarker == SolidLair::Entrance)
 		{

@@ -417,14 +417,14 @@ namespace SolidStronghold
 		switch (Orientation)
 		{
 		case ESolidStrongholdOrientation::NorthFace: return 90.f;
-		case ESolidStrongholdOrientation::EastFace: return 0.f;
+		case ESolidStrongholdOrientation::EastFace: return 180.f;
 		case ESolidStrongholdOrientation::SouthFace: return -90.f;
-		case ESolidStrongholdOrientation::WestFace: return 180.f;
+		case ESolidStrongholdOrientation::WestFace: return 0.f;
 		default: return 90.f;
 		}
 	}
 
-	/** The cardinal an exit yaw names. 90 is north, 0 is east, -90 is south, 180 is west. */
+	/** The cardinal an exit yaw names. 90 is north, 0 is west, -90 is south, 180 is east. */
 	inline ESolidStrongholdOrientation OrientationFromYaw(const float YawDeg)
 	{
 		const float Yaw = FRotator::NormalizeAxis(YawDeg);
@@ -434,13 +434,13 @@ namespace SolidStronghold
 		}
 		if (FMath::IsNearlyEqual(Yaw, 0.f, 1.f))
 		{
-			return ESolidStrongholdOrientation::EastFace;
+			return ESolidStrongholdOrientation::WestFace;
 		}
 		if (FMath::IsNearlyEqual(Yaw, -90.f, 1.f))
 		{
 			return ESolidStrongholdOrientation::SouthFace;
 		}
-		return ESolidStrongholdOrientation::WestFace;
+		return ESolidStrongholdOrientation::EastFace;
 	}
 
 	/** Where ExitStronghold stands the captain: just outside the entrance, facing away. */

@@ -190,7 +190,7 @@ namespace SolidStronghold
 
 namespace
 {
-	/** Map step (column, row) toward grass. Row +1 is south; column +1 is west. */
+	/** Map step (column, row) toward grass. Row +1 is south; column +1 is east. */
 	const FIntPoint NeighborSteps[] = {
 		FIntPoint(0, -1),
 		FIntPoint(-1, 0),
@@ -205,7 +205,7 @@ namespace
 
 	float YawFacingGrass(const FIntPoint& Step)
 	{
-		// Column +1 is world -X. Row +1 is world -Y.
+		// Column +1 is world -X, which is east. Row +1 is world -Y, which is south.
 		const float WorldX = -static_cast<float>(Step.X);
 		const float WorldY = -static_cast<float>(Step.Y);
 		return FMath::RadiansToDegrees(FMath::Atan2(WorldY, WorldX));

@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0732")
+#define SOLID_BUILD_ID TEXT("SC1-0733")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A three-and-one quad is cut on its diagonal.")
+#define SOLID_BUILD_NOTE TEXT("Greater X is west and lesser X is east.")
 #endif

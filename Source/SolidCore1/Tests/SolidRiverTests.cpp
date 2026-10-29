@@ -107,26 +107,26 @@ bool FSolidRiverChannelTest::RunTest(const FString& Parameters)
 	NorthSouth.bNorth = true;
 	NorthSouth.bSouth = true;
 	TestEqual(
-		TEXT("east bank faces east"),
-		static_cast<uint8>(SolidRiver::Side(FVector2D(300.f, 0.f), Cell, Cell, NorthSouth)),
-		static_cast<uint8>(SolidRiver::ESide::East));
-	TestEqual(
 		TEXT("west bank faces west"),
-		static_cast<uint8>(SolidRiver::Side(FVector2D(-300.f, 0.f), Cell, Cell, NorthSouth)),
+		static_cast<uint8>(SolidRiver::Side(FVector2D(300.f, 0.f), Cell, Cell, NorthSouth)),
 		static_cast<uint8>(SolidRiver::ESide::West));
+	TestEqual(
+		TEXT("east bank faces east"),
+		static_cast<uint8>(SolidRiver::Side(FVector2D(-300.f, 0.f), Cell, Cell, NorthSouth)),
+		static_cast<uint8>(SolidRiver::ESide::East));
 	TestTrue(TEXT("north join reaches the edge"), SolidRiver::IsWater(FVector2D(0.f, 700.f), Cell, Cell, NorthSouth));
 
 	SolidRiver::FLinks EastOnly;
 	EastOnly.bEast = true;
-	TestTrue(TEXT("sea mouth is water"), SolidRiver::IsWater(FVector2D(790.f, 0.f), Cell, Cell, EastOnly));
-	TestFalse(TEXT("mouth does not widen"), SolidRiver::IsWater(FVector2D(790.f, 300.f), Cell, Cell, EastOnly));
+	TestTrue(TEXT("sea mouth is water"), SolidRiver::IsWater(FVector2D(-790.f, 0.f), Cell, Cell, EastOnly));
+	TestFalse(TEXT("mouth does not widen"), SolidRiver::IsWater(FVector2D(-790.f, 300.f), Cell, Cell, EastOnly));
 	TestEqual(
 		TEXT("land beside a mouth faces the bank"),
 		static_cast<uint8>(SolidRiver::Side(FVector2D(0.f, 300.f), Cell, Cell, EastOnly)),
 		static_cast<uint8>(SolidRiver::ESide::North));
-	TestTrue(TEXT("shared edge is water"), SolidRiver::IsWater(FVector2D(800.f, 0.f), Cell, Cell, EastOnly));
-	TestFalse(TEXT("shared edge stays 4 m"), SolidRiver::IsWater(FVector2D(800.f, 250.f), Cell, Cell, EastOnly));
-	TestFalse(TEXT("a corner off the channel is dry"), SolidRiver::IsWater(FVector2D(700.f, 700.f), Cell, Cell, EastOnly));
+	TestTrue(TEXT("shared edge is water"), SolidRiver::IsWater(FVector2D(-800.f, 0.f), Cell, Cell, EastOnly));
+	TestFalse(TEXT("shared edge stays 4 m"), SolidRiver::IsWater(FVector2D(-800.f, 250.f), Cell, Cell, EastOnly));
+	TestFalse(TEXT("a corner off the channel is dry"), SolidRiver::IsWater(FVector2D(-700.f, 700.f), Cell, Cell, EastOnly));
 
 	return true;
 }
@@ -141,13 +141,13 @@ bool FSolidRiverBanksTest::RunTest(const FString& Parameters)
 	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("map"), Map);
 	const bool bLoaded = Map->LoadFromString(RiverTestGrid({
-		// Isolated pond. East is mountain, west grass, north forest, south desert.
+		// Isolated pond. West is mountain, east grass, north forest, south desert.
 		{ 10, 10, USolidWorldChart::RiverMarker },
 		{ 9, 10, TEXT('M') },
 		{ 11, 10, USolidWorldChart::GrassMarker },
 		{ 10, 9, USolidWorldChart::ForestMarker },
 		{ 10, 11, USolidWorldChart::DesertMarker },
-		// North-south channel. Forest to the east, desert to the west.
+		// North-south channel. Forest to the west, desert to the east.
 		{ 20, 18, USolidWorldChart::RiverMarker },
 		{ 20, 19, USolidWorldChart::RiverMarker },
 		{ 20, 20, USolidWorldChart::RiverMarker },
@@ -157,7 +157,7 @@ bool FSolidRiverBanksTest::RunTest(const FString& Parameters)
 		{ 21, 18, USolidWorldChart::DesertMarker },
 		{ 21, 19, USolidWorldChart::DesertMarker },
 		{ 21, 20, USolidWorldChart::DesertMarker },
-		// East into the sea. Grass north, desert south, grass west.
+		// West into the sea. Grass north, desert south, grass east.
 		{ 5, 30, USolidWorldChart::RiverMarker },
 		{ 4, 30, USolidWorldChart::SeaMarker },
 		{ 5, 31, USolidWorldChart::DesertMarker },
@@ -201,16 +201,16 @@ bool FSolidRiverBanksTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Map->GetBiomeAtCell(10, 10)),
 		static_cast<uint8>(ESolidBiome::River));
 	RiverTestBiome(*this, TEXT("pond centre"), RiverTestSample(*Map, Pond), ESolidBiome::River);
-	RiverTestBiome(*this, TEXT("east of the pond is mountain"), RiverTestSample(*Map, Pond + FVector2D(Bank, 0.f)), ESolidBiome::Mountain);
-	// 400 cm is two terrain steps. The sample west and south of the pond is that point.
-	RiverTestBiome(*this, TEXT("west of the pond is grass"), RiverTestSample(*Map, Pond + FVector2D(-400.f, 0.f)), ESolidBiome::Grassland);
+	RiverTestBiome(*this, TEXT("west of the pond is mountain"), RiverTestSample(*Map, Pond + FVector2D(Bank, 0.f)), ESolidBiome::Mountain);
+	// 400 cm is two terrain steps. The sample east and south of the pond is that point.
+	RiverTestBiome(*this, TEXT("east of the pond is grass"), RiverTestSample(*Map, Pond + FVector2D(-400.f, 0.f)), ESolidBiome::Grassland);
 	RiverTestBiome(*this, TEXT("north of the pond is forest"), RiverTestSample(*Map, Pond + FVector2D(0.f, Bank)), ESolidBiome::Forest);
 	RiverTestBiome(*this, TEXT("south of the pond is desert"), RiverTestSample(*Map, Pond + FVector2D(0.f, -400.f)), ESolidBiome::Desert);
 
 	const FVector2D Channel = RiverTestCenter(*Map, 20, 19);
 	RiverTestBiome(*this, TEXT("channel centre"), RiverTestSample(*Map, Channel), ESolidBiome::River);
-	RiverTestBiome(*this, TEXT("east bank is forest"), RiverTestSample(*Map, Channel + FVector2D(Bank, 0.f)), ESolidBiome::Forest);
-	RiverTestBiome(*this, TEXT("west bank is desert"), RiverTestSample(*Map, Channel + FVector2D(-400.f, 0.f)), ESolidBiome::Desert);
+	RiverTestBiome(*this, TEXT("west bank is forest"), RiverTestSample(*Map, Channel + FVector2D(Bank, 0.f)), ESolidBiome::Forest);
+	RiverTestBiome(*this, TEXT("east bank is desert"), RiverTestSample(*Map, Channel + FVector2D(-400.f, 0.f)), ESolidBiome::Desert);
 	RiverTestBiome(*this, TEXT("along the channel stays river"), RiverTestSample(*Map, Channel + FVector2D(0.f, HalfH * 0.25f)), ESolidBiome::River);
 
 	const FVector2D NorthCell = RiverTestCenter(*Map, 20, 18);
@@ -221,7 +221,7 @@ bool FSolidRiverBanksTest::RunTest(const FString& Parameters)
 	RiverTestBiome(*this, TEXT("mouth channel"), RiverTestSample(*Map, Mouth + FVector2D(Along, 0.f)), ESolidBiome::River);
 	RiverTestBiome(*this, TEXT("north of the mouth is grass"), RiverTestSample(*Map, Mouth + FVector2D(0.f, Bank)), ESolidBiome::Grassland);
 	RiverTestBiome(*this, TEXT("south of the mouth is desert"), RiverTestSample(*Map, Mouth + FVector2D(0.f, -400.f)), ESolidBiome::Desert);
-	RiverTestBiome(*this, TEXT("west of the mouth is grass"), RiverTestSample(*Map, Mouth + FVector2D(-400.f, 0.f)), ESolidBiome::Grassland);
+	RiverTestBiome(*this, TEXT("east of the mouth is grass"), RiverTestSample(*Map, Mouth + FVector2D(-400.f, 0.f)), ESolidBiome::Grassland);
 
 	const FVector2D SeaBank = RiverTestCenter(*Map, 10, 40);
 	RiverTestBiome(*this, TEXT("sea bank"), RiverTestSample(*Map, SeaBank + FVector2D(0.f, CellH)), ESolidBiome::Sea);

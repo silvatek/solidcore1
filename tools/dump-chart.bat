@@ -8,7 +8,7 @@ rem   tools\dump-chart.bat C:\temp\WorldChart.json
 rem
 rem The file lists the painted cells, the terrain points, then each mark and each road.
 rem Cell row and column count from 1 at the top-left.
-rem Point rows run north to south. The first character of a point row is the west edge.
+rem Point rows run north to south. The first character of a point row is the east edge.
 rem positionCm is the cell centre stored on the asset. groundCm is where the
 rem World chart mode draws that mark, on the terrain centred at the origin.
 rem

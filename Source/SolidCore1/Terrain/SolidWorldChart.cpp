@@ -255,7 +255,7 @@ bool USolidWorldChart::CellCentre(const FIntPoint Cell, FVector2D& OutCm)
 	const float ExtentY = FMath::Max(WorldMax.Y - WorldMin.Y, 1.f);
 	const float CellW = ExtentX / static_cast<float>(USolidWorldChart::MapWidth);
 	const float CellH = ExtentY / static_cast<float>(USolidWorldChart::MapHeight);
-	// Column 0 is east. Row 0 is north. The centre matches USolidWorldChart::CellToWorldXY.
+	// Column 0 is west. Row 0 is north. The centre matches USolidWorldChart::CellToWorldXY.
 	OutCm.X = WorldMax.X - (static_cast<float>(Cell.X) + 0.5f) * CellW;
 	OutCm.Y = WorldMax.Y - (static_cast<float>(Cell.Y) + 0.5f) * CellH;
 	return true;
@@ -1512,13 +1512,13 @@ bool USolidWorldChart::WorldXYToCell(
 
 	const float ExtentX = FMath::Max(WorldMaxXY.X - WorldMinXY.X, 1.f);
 	const float ExtentY = FMath::Max(WorldMaxXY.Y - WorldMinXY.Y, 1.f);
-	// File column 0 is the left side of the text → world east (max X).
-	const float UFromEast = FMath::Clamp((WorldMaxXY.X - WorldX) / ExtentX, 0.f, 1.f);
+	// File column 0 is the left side of the text → world west (max X).
+	const float UFromWest = FMath::Clamp((WorldMaxXY.X - WorldX) / ExtentX, 0.f, 1.f);
 	// File row 0 is north (max Y).
 	const float VFromSouth = FMath::Clamp((WorldY - WorldMinXY.Y) / ExtentY, 0.f, 1.f);
 	const float VFromNorth = 1.f - VFromSouth;
 
-	OutMapX = FMath::Clamp(FMath::FloorToInt(UFromEast * MapWidth), 0, MapWidth - 1);
+	OutMapX = FMath::Clamp(FMath::FloorToInt(UFromWest * MapWidth), 0, MapWidth - 1);
 	OutMapY = FMath::Clamp(FMath::FloorToInt(VFromNorth * MapHeight), 0, MapHeight - 1);
 	return true;
 }
@@ -1535,15 +1535,15 @@ namespace
 		return OutMarker != 0;
 	}
 
-	/** File column 0 is east, file row 0 is north. */
+	/** File column 0 is west, file row 0 is north. */
 	FIntPoint WorldMapRiverSideStep(const SolidRiver::ESide Side)
 	{
 		switch (Side)
 		{
 		case SolidRiver::ESide::North: return FIntPoint(0, -1);
-		case SolidRiver::ESide::East: return FIntPoint(-1, 0);
+		case SolidRiver::ESide::East: return FIntPoint(1, 0);
 		case SolidRiver::ESide::South: return FIntPoint(0, 1);
-		case SolidRiver::ESide::West: return FIntPoint(1, 0);
+		case SolidRiver::ESide::West: return FIntPoint(-1, 0);
 		default: return FIntPoint(0, -1);
 		}
 	}
@@ -1733,7 +1733,7 @@ namespace
 			Min.Y + static_cast<float>(IY) * (Max.Y - Min.Y) / Span);
 	}
 
-	/** The terrain point at a cell centre. Column 0 is east, row 0 is north. */
+	/** The terrain point at a cell centre. Column 0 is west, row 0 is north. */
 	void PointUnderCell(const int32 Col, const int32 Row, int32& OutX, int32& OutY)
 	{
 		PointAtFraction(
@@ -1849,9 +1849,9 @@ ESolidBiome USolidWorldChart::SampleCellPlay(
 	SolidRiver::FLinks Links;
 	TCHAR Neighbor = 0;
 	Links.bNorth = WorldMapMarkerInCell(*this, MapX, MapY - 1, Neighbor) && SolidRiver::Joins(Neighbor);
-	Links.bEast = WorldMapMarkerInCell(*this, MapX - 1, MapY, Neighbor) && SolidRiver::Joins(Neighbor);
+	Links.bEast = WorldMapMarkerInCell(*this, MapX + 1, MapY, Neighbor) && SolidRiver::Joins(Neighbor);
 	Links.bSouth = WorldMapMarkerInCell(*this, MapX, MapY + 1, Neighbor) && SolidRiver::Joins(Neighbor);
-	Links.bWest = WorldMapMarkerInCell(*this, MapX + 1, MapY, Neighbor) && SolidRiver::Joins(Neighbor);
+	Links.bWest = WorldMapMarkerInCell(*this, MapX - 1, MapY, Neighbor) && SolidRiver::Joins(Neighbor);
 	if (SolidRiver::IsWater(Local, CellW, CellH, Links))
 	{
 		return ESolidBiome::River;
@@ -2399,7 +2399,7 @@ bool USolidWorldChart::CellsToWorldXY(
 	FVector2D Sum = FVector2D::ZeroVector;
 	for (const FIntPoint& Cell : InCells)
 	{
-		// Column 0 = east = max X (matches SampleBiome).
+		// Column 0 = west = max X (matches SampleBiome).
 		const float X = WorldMaxXY.X - (static_cast<float>(Cell.X) + 0.5f) * CellW;
 		// Row 0 = north = max Y.
 		const float Y = WorldMaxXY.Y - (static_cast<float>(Cell.Y) + 0.5f) * CellH;

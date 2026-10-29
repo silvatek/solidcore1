@@ -190,10 +190,10 @@ bool FSolidTowerTravelTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("north exit faces away"), FMath::IsNearlyEqual(NorthExit.YawDeg, 90.f, 0.1f));
 
 		ExitTower->Orientation = ESolidStrongholdOrientation::EastFace;
-		const FVector2D EastDoor = ImperiousTower.OutsideDoorXY(Cell, 0.f);
+		const FVector2D EastDoor = ImperiousTower.OutsideDoorXY(Cell, 180.f);
 		const SolidStronghold::FExitStand EastExit = SolidStronghold::ExitStand(*ExitTower);
 		TestTrue(TEXT("east exit stands on the east grass"), EastExit.XY.Equals(EastDoor, 0.1f));
-		TestTrue(TEXT("east exit faces away"), FMath::IsNearlyEqual(EastExit.YawDeg, 0.f, 0.1f));
+		TestTrue(TEXT("east exit faces away"), FMath::IsNearlyEqual(EastExit.YawDeg, 180.f, 0.1f));
 	}
 
 	return true;

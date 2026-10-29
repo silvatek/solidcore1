@@ -51,7 +51,7 @@ struct FSolidWorldChartMark
 	UPROPERTY(EditAnywhere, Category = "WorldChart")
 	FString Name;
 
-	/** World position in centimetres, snapped to the cell centre. +X is east, +Y is north. */
+	/** World position in centimetres, snapped to the cell centre. +X is west, +Y is north. */
 	UPROPERTY(EditAnywhere, Category = "WorldChart")
 	FVector2D PositionCm = FVector2D::ZeroVector;
 
@@ -312,7 +312,7 @@ public:
 	/** World XY of one map cell center. Same rectangle as SampleBiome. */
 	bool CellToWorldXY(FIntPoint Cell, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 
-	/** Map cell under a world XY. Column 0 is east, row 0 is north. */
+	/** Map cell under a world XY. Column 0 is west, row 0 is north. */
 	bool CellAtWorld(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, FIntPoint& OutCell) const;
 
 	/** The biome's colour. The same answer as GetBiomeColor. */
@@ -325,7 +325,7 @@ public:
 
 	/**
 	 * Centre of one map cell, in the chart's centimetre rectangle.
-	 * Column 0 is east, row 0 is north.
+	 * Column 0 is west, row 0 is north.
 	 */
 	static bool CellCentre(FIntPoint Cell, FVector2D& OutCm);
 
@@ -344,7 +344,7 @@ public:
 	bool PaintRectangle(FIntPoint From, FIntPoint To, ESolidBiome Biome, FString& OutError);
 
 	/**
-	 * Terrain point nearest this position. X increases east from the west edge.
+	 * Terrain point nearest this position. X increases west from the east edge.
 	 * Y increases north from the south edge. The same rectangle as SampleBiome.
 	 */
 	bool TerrainPointAt(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, FIntPoint& OutPoint) const;
@@ -428,12 +428,12 @@ public:
 	/** Terrain points on one side. The same count as the terrain map's default grid. */
 	static constexpr int32 PointAxis = 513;
 
-	/** Marker biome of each cell. Row-major. Row 0 is north, column 0 is east. A ! is grassland. */
+	/** Marker biome of each cell. Row-major. Row 0 is north, column 0 is west. A ! is grassland. */
 	UPROPERTY(EditAnywhere, Category = "WorldChart")
 	TArray<ESolidBiome> Cells;
 
 	/**
-	 * Biome of each terrain point. Row-major. Index 0 is the south-west corner.
+	 * Biome of each terrain point. Row-major. Index 0 is the south-east corner.
 	 * Empty on a chart saved as cells; loading copies those cells onto the points.
 	 * Mutable because solving a const chart fills it.
 	 */

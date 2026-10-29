@@ -233,7 +233,7 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 		SetStrongholdCell(Grid, 9, 10, USolidWorldChart::GrassMarker);
 		Grid += TEXT("! 11,11 = Stronghold (MeagreDungeon)\n");
 		USolidWorldChart* Map = NewObject<USolidWorldChart>();
-		TestTrue(TEXT("east grass loads"), Map->LoadFromString(Grid));
+		TestTrue(TEXT("west grass loads"), Map->LoadFromString(Grid));
 		const FSolidStronghold Cave(ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre);
 		ESolidBiome Shelf = ESolidBiome::Grassland;
 		TestTrue(TEXT("the cave names a shelf"), SolidStronghold::BiomeFor(Cave, Shelf));
@@ -245,11 +245,11 @@ bool FSolidStrongholdFaceChoiceTest::RunTest(const FString& Parameters)
 		if (Map->GetBiomeAtCell(10, 10) == ESolidBiome::Mountain)
 		{
 			SolidStrongholds::FEntrance Entrance;
-			TestTrue(TEXT("east face"), SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, FIntPoint(10, 10), Entrance));
-			TestEqual(TEXT("grass column is east"), Entrance.GrassCell.X, 9);
+			TestTrue(TEXT("west face"), SolidStrongholds::MakeEntrance(Map, WorldMin, WorldMax, FIntPoint(10, 10), Entrance));
+			TestEqual(TEXT("grass column is west"), Entrance.GrassCell.X, 9);
 			TestEqual(TEXT("grass row"), Entrance.GrassCell.Y, 10);
-			TestTrue(TEXT("yaw faces east"), FMath::IsNearlyEqual(Entrance.FacingYawDeg, 0.f, 0.1f));
-			TestTrue(TEXT("spawn is east of the edge"), Entrance.WorldXY.X > Entrance.EdgeXY.X);
+			TestTrue(TEXT("yaw faces west"), FMath::IsNearlyEqual(Entrance.FacingYawDeg, 0.f, 0.1f));
+			TestTrue(TEXT("spawn is west of the edge"), Entrance.WorldXY.X > Entrance.EdgeXY.X);
 		}
 	}
 

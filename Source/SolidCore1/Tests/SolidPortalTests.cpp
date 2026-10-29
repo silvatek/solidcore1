@@ -71,7 +71,7 @@ bool FSolidPortalLandingTest::RunTest(const FString& Parameters)
 	FIntPoint Chosen = FIntPoint::ZeroValue;
 	TestTrue(TEXT("picks a cell"), SolidPortal::ChooseLandingCell(Cells, Chosen));
 	TestEqual(TEXT("northernmost row"), Chosen.Y, 5);
-	TestEqual(TEXT("easternmost on that row"), Chosen.X, 1);
+	TestEqual(TEXT("easternmost on that row"), Chosen.X, 10);
 
 	TArray<FIntPoint> Empty;
 	TestFalse(TEXT("no cells"), SolidPortal::ChooseLandingCell(Empty, Chosen));

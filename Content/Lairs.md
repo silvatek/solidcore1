@@ -20,7 +20,7 @@ Do not build that generator, those locked exits, extra floors, or monsters until
 
 One closed visit, apart from the open world. The captain goes alone. Companions wait on the grass in front of the mouth he used. His nameplate stays hidden inside. The same level as the open world loads again, with `SolidLevel=Lair` and `LairEnd` set to the Iglin Tunnels Entrance or the Iglin Tunnels Exit. There is no separate map.
 
-The Iglin Tunnels Entrance is the `LairEntrance` south of Iglin. The Iglin Tunnels Exit is the `LairExit` east of Relion. Both sit on grassland. They are not towns or locations. They let him pass the broken bridge. Do not move the interior cells of those mouths when editing the interior grid.
+The Iglin Tunnels Entrance is the `LairEntrance` south of Iglin. The Iglin Tunnels Exit is the `LairExit` west of Relion. Both sit on grassland. They are not towns or locations. They let him pass the broken bridge. Do not move the interior cells of those mouths when editing the interior grid.
 
 Each mouth is the dungeon stronghold's rock and rounded cave mouth (`ASolidLairEntrance`), with `SetLairEnd`. The actor origin is the grass stand. Local +X faces that grass, and the opening sits `FSolidDungeon::LeaveStandCm` toward the cliff. The entrance faces the first grassland neighbor, tried north, east, south, then west. The exit tries west first, then north, east, and south, so it faces west when that neighbor is grassland. The standing spot is `SolidStrongholds::FaceInsetCm` onto that grass. A click on the dark opening enters. A click on the rock does not. A click on an opening inside leaves by that end. Enter does nothing until the lair is open. Leave stays available.
 

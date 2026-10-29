@@ -88,7 +88,7 @@ namespace SolidPortal
 
 	/**
 	 * Northernmost cell (smallest row; row 0 is north). Ties take the easternmost
-	 * (smallest column; column 0 is east).
+	 * (largest column; column 0 is west).
 	 */
 	inline bool ChooseLandingCell(const TArray<FIntPoint>& Cells, FIntPoint& OutCell)
 	{
@@ -100,7 +100,7 @@ namespace SolidPortal
 		OutCell = Cells[0];
 		for (const FIntPoint& Cell : Cells)
 		{
-			if (Cell.Y < OutCell.Y || (Cell.Y == OutCell.Y && Cell.X < OutCell.X))
+			if (Cell.Y < OutCell.Y || (Cell.Y == OutCell.Y && Cell.X > OutCell.X))
 			{
 				OutCell = Cell;
 			}

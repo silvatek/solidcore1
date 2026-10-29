@@ -396,7 +396,7 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 		FIntPoint Eastern = Town.Cells.Num() > 0 ? Town.Cells[0] : FIntPoint::ZeroValue;
 		for (const FIntPoint& Cell : Town.Cells)
 		{
-			if (Cell.X < Eastern.X)
+			if (Cell.X > Eastern.X)
 			{
 				Eastern = Cell;
 			}
@@ -419,8 +419,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidWallgateDigitPairTest::RunTest(const FString& Parameters)
 {
-	const FIntPoint EastCell = WallgateMarkerCell;
-	const FIntPoint WestCell(WallgateMarkerCell.X + 1, WallgateMarkerCell.Y);
+	const FIntPoint WestCell = WallgateMarkerCell;
+	const FIntPoint EastCell(WallgateMarkerCell.X + 1, WallgateMarkerCell.Y);
 	USolidWorldChart* Map = WallgateImport(
 		*this,
 		TEXT("two markers load"),
@@ -448,7 +448,7 @@ bool FSolidWallgateDigitPairTest::RunTest(const FString& Parameters)
 		SolidTownSigns::CollectPlacements(Map, WallgateTestMin, WallgateTestMax, Signs), 1);
 	if (Signs.Num() == 1)
 	{
-		const FVector2D Expected = East + FVector2D(SolidTowns::DragongateSignEastCm, SolidTowns::DragongateSignNorthCm);
+		const FVector2D Expected = East + FVector2D(SolidTowns::DragongateSignWestCm, SolidTowns::DragongateSignNorthCm);
 		TestTrue(TEXT("the sign stands by the eastern marker"), Signs[0].WorldXY.Equals(Expected, 0.5f));
 	}
 

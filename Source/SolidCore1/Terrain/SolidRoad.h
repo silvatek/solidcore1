@@ -16,7 +16,7 @@ class USolidWorldChart;
  * back, so the road runs straight across the water.
  * The strip uses a road texture, a brown close to the town colour.
  * River water keeps the river texture.
- * Local offsets are centimetres. +X is east, +Y is north.
+ * Local offsets are centimetres. +X is west, +Y is north.
  */
 namespace SolidRoad
 {

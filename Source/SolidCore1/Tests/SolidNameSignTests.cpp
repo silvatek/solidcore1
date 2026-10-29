@@ -241,7 +241,7 @@ bool FSolidNameSignPlaceTest::RunTest(const FString& Parameters)
 	const SolidNameSigns::FWorldPlace NorthWorld = SolidNameSigns::WorldPlace(*Cave, nullptr);
 	TestTrue(TEXT("the pole stands in the exterior's world frame"), NorthWorld.XY.Equals(FVector2D(Expected.X, Expected.Y), 0.1f));
 	TestTrue(TEXT("a north cave sign faces north"), FMath::IsNearlyEqual(FRotator::NormalizeAxis(NorthWorld.YawDeg), 90.f, 0.1f));
-	TestTrue(TEXT("an east cave sign faces east"), FMath::IsNearlyEqual(FRotator::NormalizeAxis(World.YawDeg), 0.f, 0.1f));
+	TestTrue(TEXT("an east cave sign faces east"), FMath::IsNearlyEqual(FRotator::NormalizeAxis(World.YawDeg), 180.f, 0.1f));
 
 	const FIntPoint TowerCell(8, 9);
 	TUniquePtr<FSolidStronghold> Average = SolidStronghold::Make(

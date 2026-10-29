@@ -141,7 +141,7 @@ int32 USolidDumpWorldChartCommandlet::Main(const FString& Params)
 	Root->SetNumberField(TEXT("height"), USolidWorldChart::MapHeight);
 	Root->SetStringField(
 		TEXT("origin"),
-		TEXT("row 1, column 1 is the top-left, as in Content/WorldMap.txt. Column 0 of a row is east."));
+		TEXT("row 1, column 1 is the top-left, as in Content/WorldMap.txt. Column 0 of a row is west."));
 
 	TSharedRef<FJsonObject> Key = MakeShared<FJsonObject>();
 	Key->SetStringField(TEXT("."), TEXT("Grassland"));
@@ -180,16 +180,16 @@ int32 USolidDumpWorldChartCommandlet::Main(const FString& Params)
 	Root->SetArrayField(TEXT("rows"), Rows);
 
 	// Terrain points. The first row is the north edge. The first character of a
-	// row is the west edge. The letters are the same key as the cells.
+	// row is the east edge. The letters are the same key as the cells.
 	TArray<TSharedPtr<FJsonValue>> PointRows;
 	PointRows.Reserve(USolidWorldChart::PointAxis);
 	for (int32 North = USolidWorldChart::PointAxis - 1; North >= 0; --North)
 	{
 		FString Line;
 		Line.Reserve(USolidWorldChart::PointAxis);
-		for (int32 East = 0; East < USolidWorldChart::PointAxis; ++East)
+		for (int32 PointX = 0; PointX < USolidWorldChart::PointAxis; ++PointX)
 		{
-			const ESolidBiome Biome = Chart->GetPointBiome(FIntPoint(East, North));
+			const ESolidBiome Biome = Chart->GetPointBiome(FIntPoint(PointX, North));
 			Line.AppendChar(SolidBiome::Of(Biome).Marker());
 		}
 		PointRows.Add(MakeShared<FJsonValueString>(Line));
@@ -197,7 +197,7 @@ int32 USolidDumpWorldChartCommandlet::Main(const FString& Params)
 	Root->SetNumberField(TEXT("pointAxis"), USolidWorldChart::PointAxis);
 	Root->SetStringField(
 		TEXT("pointsOrigin"),
-		TEXT("The first row is the north edge. The first character of a row is the west edge."));
+		TEXT("The first row is the north edge. The first character of a row is the east edge."));
 	Root->SetArrayField(TEXT("points"), PointRows);
 
 	TArray<TSharedPtr<FJsonValue>> Marks;

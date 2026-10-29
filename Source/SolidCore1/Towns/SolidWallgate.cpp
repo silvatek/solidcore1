@@ -155,11 +155,11 @@ bool SolidWallgate::MarkerCell(
 		return false;
 	}
 
-	// Column 0 is east, so the smaller column is the eastern marker.
+	// Column 0 is west, so the larger column is the eastern marker.
 	OutCell = Town.Cells[0];
 	for (const FIntPoint& Cell : Town.Cells)
 	{
-		if (Cell.X < OutCell.X || (Cell.X == OutCell.X && Cell.Y < OutCell.Y))
+		if (Cell.X > OutCell.X || (Cell.X == OutCell.X && Cell.Y < OutCell.Y))
 		{
 			OutCell = Cell;
 		}

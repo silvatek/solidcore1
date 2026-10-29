@@ -124,12 +124,12 @@ bool FSolidWorldMapParseKeyAndSampleTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(NorthCenter),
 		static_cast<uint8>(ESolidBiome::Town));
 
-	// File column 0 is east (max X): desert at col 10 → positive X.
+	// File column 0 is west (max X): desert at col 10 → positive X.
 	const float DesertWorldX = WorldMax.X - (10.5f) * ((WorldMax.X - WorldMin.X) / static_cast<float>(USolidWorldChart::MapWidth));
 	const float DesertWorldY = WorldMax.Y - (10.5f) * ((WorldMax.Y - WorldMin.Y) / static_cast<float>(USolidWorldChart::MapHeight));
-	TestTrue(TEXT("desert cell is on the east side"), DesertWorldX > 0.f);
+	TestTrue(TEXT("desert cell is on the west side"), DesertWorldX > 0.f);
 	TestEqual(
-		TEXT("east-side sample is Desert"),
+		TEXT("west-side sample is Desert"),
 		static_cast<uint8>(Map->SampleBiome(DesertWorldX, DesertWorldY, WorldMin, WorldMax)),
 		static_cast<uint8>(ESolidBiome::Desert));
 
@@ -473,7 +473,7 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	const FVector2D SynMin(0.f, 0.f);
 	const FVector2D SynMax(6400.f, 6400.f);
 	TestTrue(TEXT("synthetic start"), Synthetic->GetStartTownWorldXY(SynMin, SynMax, SyntheticStart));
-	// Column 0 is east. Cell (4, 2) is one column and one row in from that corner.
+	// Column 0 is west. Cell (4, 2) is one column and one row in from that corner.
 	const float CellW = (SynMax.X - SynMin.X) / static_cast<float>(USolidWorldChart::MapWidth);
 	const float CellH = (SynMax.Y - SynMin.Y) / static_cast<float>(USolidWorldChart::MapHeight);
 	TestTrue(TEXT("start is the Iglin cell, not Z"),

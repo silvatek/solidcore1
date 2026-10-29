@@ -114,10 +114,39 @@ namespace SolidSight
 		}
 	}
 
-	/** Top-right marker. Eye for true sight, eagle for raven sight. */
+	/** Top-right bird or eye. Falcon and eagle use the same eagle as raven. */
 	inline const TCHAR* Marker(ESolidSight Sight)
 	{
 		return IsTrueSight(Sight) ? TEXT("\U0001F441") : TEXT("\U0001F985");
+	}
+
+	/** Glyph behind the bird. Empty for true sight and raven sight. */
+	inline const TCHAR* Mark(ESolidSight Sight)
+	{
+		switch (Sight)
+		{
+		case ESolidSight::Falcon: return TEXT("+");
+		case ESolidSight::Eagle: return TEXT("\U0001F310");
+		default: return TEXT("");
+		}
+	}
+
+	inline bool HasMark(const ESolidSight Sight)
+	{
+		const TCHAR* Glyph = Mark(Sight);
+		return Glyph != nullptr && Glyph[0] != 0;
+	}
+
+	/** Oval width in pixels. Wider when a mark sits behind the bird. 72 matches the raven chip. */
+	inline float ChipWidth(const ESolidSight Sight)
+	{
+		return HasMark(Sight) ? 112.f : 72.f;
+	}
+
+	/** The globe is larger than the plus. The bird stays at 28. */
+	inline float MarkFontSize(const ESolidSight Sight)
+	{
+		return Sight == ESolidSight::Eagle ? 28.f : 20.f;
 	}
 
 	/**

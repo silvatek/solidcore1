@@ -51,6 +51,7 @@
 #include "Styling/StyleDefaults.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
+#include "Widgets/SBoxPanel.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Misc/Paths.h"
@@ -1787,7 +1788,19 @@ void ASolidHUD::EnsureSightIndicator()
 	}
 
 	const TWeakObjectPtr<ASolidHUD> WeakHUD(this);
+	const auto SightOf = [WeakHUD]()
+	{
+		if (ASolidHUD* HUD = WeakHUD.Get())
+		{
+			if (const ASolidCharacter* Captain = Cast<ASolidCharacter>(HUD->GetOwningPawn()))
+			{
+				return Captain->GetSight();
+			}
+		}
+		return ESolidSight::True;
+	};
 	const SolidHudTheme::FSightMarkerChip Chip = SolidHudTheme::SightMarkerChip();
+	const FLinearColor Ink(0.12f, 0.08f, 0.05f, 1.f);
 	const TSharedRef<SWidget> Widget =
 		SNew(SOverlay)
 		.Visibility(EVisibility::HitTestInvisible)
@@ -1798,34 +1811,62 @@ void ASolidHUD::EnsureSightIndicator()
 		[
 			SNew(SBox)
 			.Visibility(EVisibility::HitTestInvisible)
-			.WidthOverride(Chip.Width)
+			.WidthOverride_Lambda([SightOf]()
+			{
+				return FOptionalSize(SolidSight::ChipWidth(SightOf()));
+			})
 			.HeightOverride(Chip.Height)
 			[
 				SNew(SBorder)
 				.Visibility(EVisibility::HitTestInvisible)
 				.BorderImage(SolidHUDPrivate::SightMarkerBrush())
 				.BorderBackgroundColor(FLinearColor::White)
-				.HAlign(HAlign_Center)
+				.HAlign(HAlign_Fill)
 				.VAlign(VAlign_Center)
-				.Padding(0.f)
+				.Padding(FMargin(6.f, 0.f))
 				[
-					SNew(STextBlock)
-					.Visibility(EVisibility::HitTestInvisible)
-					.Font(SolidHUDPrivate::SightMarkerFont())
-					.ColorAndOpacity(FLinearColor(0.12f, 0.08f, 0.05f, 1.f))
-					.Justification(ETextJustify::Center)
-					.Text_Lambda([WeakHUD]()
-					{
-						ESolidSight Sight = ESolidSight::True;
-						if (ASolidHUD* HUD = WeakHUD.Get())
+					SNew(SHorizontalBox)
+					+ SHorizontalBox::Slot()
+					.FillWidth(1.f)
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Center)
+					[
+						SNew(STextBlock)
+						.Visibility(EVisibility::HitTestInvisible)
+						.Font(SolidHUDPrivate::SightMarkerFont())
+						.ColorAndOpacity(Ink)
+						.Justification(ETextJustify::Center)
+						.Text_Lambda([SightOf]()
 						{
-							if (const ASolidCharacter* Captain = Cast<ASolidCharacter>(HUD->GetOwningPawn()))
-							{
-								Sight = Captain->GetSight();
-							}
-						}
-						return FText::FromString(SolidSight::Marker(Sight));
-					})
+							return FText::FromString(SolidSight::Marker(SightOf()));
+						})
+					]
+					+ SHorizontalBox::Slot()
+					.AutoWidth()
+					.HAlign(HAlign_Center)
+					.VAlign(VAlign_Center)
+					.Padding(FMargin(2.f, 0.f, 2.f, 0.f))
+					[
+						SNew(STextBlock)
+						.Visibility_Lambda([SightOf]()
+						{
+							return SolidSight::HasMark(SightOf())
+								? EVisibility::HitTestInvisible
+								: EVisibility::Collapsed;
+						})
+						.Font_Lambda([SightOf]()
+						{
+							FSlateFontInfo Font = SolidHUDPrivate::SightMarkerFont();
+							Font.Size = SolidSight::MarkFontSize(SightOf());
+							return Font;
+						})
+						.ColorAndOpacity(Ink)
+						.Justification(ETextJustify::Center)
+						.Text_Lambda([SightOf]()
+						{
+							return FText::FromString(SolidSight::Mark(SightOf()));
+						})
+					]
 				]
 			]
 		];

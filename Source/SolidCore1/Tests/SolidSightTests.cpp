@@ -95,6 +95,18 @@ bool FSolidSightMarkerTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("true sight is an eye"), Eye, FString(TEXT("\U0001F441")));
 	TestEqual(TEXT("raven sight is an eagle"), Eagle, FString(TEXT("\U0001F985")));
 	TestFalse(TEXT("the two markers differ"), Eye.Equals(Eagle));
+	TestEqual(TEXT("falcon uses the eagle"), FString(SolidSight::Marker(ESolidSight::Falcon)), Eagle);
+	TestEqual(TEXT("eagle sight uses the eagle"), FString(SolidSight::Marker(ESolidSight::Eagle)), Eagle);
+	TestEqual(TEXT("raven has no mark behind the bird"), FString(SolidSight::Mark(ESolidSight::Raven)), FString());
+	TestEqual(TEXT("true sight has no mark behind the eye"), FString(SolidSight::Mark(ESolidSight::True)), FString());
+	TestEqual(TEXT("falcon mark is a plus"), FString(SolidSight::Mark(ESolidSight::Falcon)), FString(TEXT("+")));
+	TestEqual(TEXT("eagle mark is the globe"), FString(SolidSight::Mark(ESolidSight::Eagle)), FString(TEXT("\U0001F310")));
+	TestTrue(TEXT("the globe is larger than the plus"),
+		SolidSight::MarkFontSize(ESolidSight::Eagle) > SolidSight::MarkFontSize(ESolidSight::Falcon));
+	TestTrue(TEXT("falcon widens the oval"),
+		SolidSight::ChipWidth(ESolidSight::Falcon) > SolidSight::ChipWidth(ESolidSight::Raven));
+	TestTrue(TEXT("eagle widens the oval"),
+		SolidSight::ChipWidth(ESolidSight::Eagle) > SolidSight::ChipWidth(ESolidSight::True));
 	return true;
 }
 

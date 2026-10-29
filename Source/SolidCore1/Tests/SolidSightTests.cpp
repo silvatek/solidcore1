@@ -227,6 +227,10 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidSightEagleCameraTest::RunTest(const FString& Parameters)
 {
+	const FRotationMatrix Axes(SolidSight::EagleLook());
+	TestTrue(TEXT("north is at the top"), Axes.GetUnitAxis(EAxis::Z).Equals(FVector(0.f, 1.f, 0.f), 0.01f));
+	TestTrue(TEXT("east is to the right"), Axes.GetUnitAxis(EAxis::Y).Equals(FVector(-1.f, 0.f, 0.f), 0.01f));
+
 	const FVector2D Min(-51200.f, -51200.f);
 	const FVector2D Max(51200.f, 51200.f);
 	const FVector2D Centre = SolidSight::WorldCentre(Min, Max);

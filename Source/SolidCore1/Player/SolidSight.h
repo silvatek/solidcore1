@@ -55,10 +55,10 @@ namespace SolidSight
 		return Sight == ESolidSight::Eagle;
 	}
 
-	/** Straight down, yaw 0, so the view stays aligned with the world axes. */
+	/** Straight down, with north (+Y) at the top of the view and east at the right. */
 	inline FRotator EagleLook()
 	{
-		return FRotator(-90.f, 0.f, 0.f);
+		return FRotator(-90.f, 90.f, 0.f);
 	}
 
 	inline FVector2D WorldCentre(const FVector2D& WorldMin, const FVector2D& WorldMax)

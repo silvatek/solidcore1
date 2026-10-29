@@ -67,8 +67,8 @@ namespace SolidSight
 	}
 
 	/**
-	 * The point on the segment from the captain to the world centre that is closest
-	 * to that centre and still has fog 0. StepCm is how far apart the samples sit.
+	 * Walk from the captain toward the centre. Stop at the last point that still has fog 0.
+	 * StepCm is how far apart the samples sit.
 	 */
 	template<typename FogAtFn>
 	inline FVector2D EagleGroundXY(
@@ -77,26 +77,32 @@ namespace SolidSight
 		const float StepCm,
 		FogAtFn FogAt)
 	{
-		const FVector2D Delta = Captain - Centre;
+		const FVector2D Delta = Centre - Captain;
 		const float Length = Delta.Size();
-		if (Length <= KINDA_SMALL_NUMBER || FogAt(Centre) <= KINDA_SMALL_NUMBER)
+		if (Length <= KINDA_SMALL_NUMBER)
 		{
 			return Centre;
+		}
+		if (FogAt(Captain) > KINDA_SMALL_NUMBER)
+		{
+			return Captain;
 		}
 
 		const float Step = FMath::Max(StepCm, 1.f);
 		const int32 Steps = FMath::CeilToInt(Length / Step);
 		const FVector2D Dir = Delta / Length;
+		FVector2D Clear = Captain;
 		for (int32 Index = 1; Index <= Steps; ++Index)
 		{
 			const float Dist = FMath::Min(static_cast<float>(Index) * Step, Length);
-			const FVector2D At = Centre + Dir * Dist;
-			if (FogAt(At) <= KINDA_SMALL_NUMBER)
+			const FVector2D At = Captain + Dir * Dist;
+			if (FogAt(At) > KINDA_SMALL_NUMBER)
 			{
-				return At;
+				return Clear;
 			}
+			Clear = At;
 		}
-		return Captain;
+		return Clear;
 	}
 
 	/**

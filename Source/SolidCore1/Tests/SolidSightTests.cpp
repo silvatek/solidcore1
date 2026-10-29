@@ -258,6 +258,23 @@ bool FSolidSightEagleCameraTest::RunTest(const FString& Parameters)
 		FVector2D::Distance(Edge, Centre) < FVector2D::Distance(Captain, Centre) - 1.f);
 	TestTrue(TEXT("the edge stays on the line"), FMath::IsNearlyZero(Edge.Y, 1.f));
 
+	const FVector2D AcrossFog = SolidSight::EagleGroundXY(
+		Captain,
+		Centre,
+		200.f,
+		[Captain, ClearReach](const FVector2D& At)
+		{
+			const bool NearCaptain = FVector2D::Distance(At, Captain) <= ClearReach;
+			const bool NearCentre = At.Size() <= ClearReach;
+			return (NearCaptain || NearCentre) ? 0.f : 1.f;
+		});
+	TestTrue(
+		TEXT("a fog gap keeps the camera by the captain"),
+		FMath::IsNearlyEqual(FVector2D::Distance(AcrossFog, Captain), ClearReach, 200.f));
+	TestTrue(
+		TEXT("that stop does not reach the clear centre"),
+		FVector2D::Distance(AcrossFog, Centre) > ClearReach);
+
 	const float Height = SolidSight::EagleHeightCm(Centre, Min, Max, 90.f, 16.f / 9.f);
 	const float Expected = 51200.f * (16.f / 9.f);
 	TestTrue(TEXT("the centre height fits the square"), FMath::IsNearlyEqual(Height, Expected, 1.f));

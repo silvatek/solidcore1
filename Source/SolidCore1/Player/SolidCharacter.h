@@ -66,9 +66,10 @@ public:
 	/** Mouse-wheel boom limit (cm). Fog curtains are taller than this. */
 	float GetCameraZoomMax() const { return CameraZoomMax; }
 
-	/** Raven sight (third person) or true sight (first person). F9 toggles once both are enabled. */
+	/** F9 cycles the sights that are unlocked. */
 	ESolidSight GetSight() const { return Sight; }
 	bool IsTrueSight() const { return SolidSight::IsTrueSight(Sight); }
+	bool IsFalconSight() const { return SolidSight::IsFalconSight(Sight); }
 	/** Entering true sight levels the camera. Yaw stays. */
 	void SetSight(ESolidSight NewSight);
 	/** Raven sight, this look, and this boom length. */
@@ -201,6 +202,7 @@ protected:
 	void UpdateBodyShadow();
 	void ApplyTrueSightCamera();
 	void ApplyRavenSightCamera();
+	void ApplyFalconSightCamera();
 	void ToggleMainMenuFromInput();
 	bool IsAutoPlaythroughRunning() const;
 	/** Player Esc and F10. True when a running script was stopped. */

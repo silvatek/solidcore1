@@ -499,6 +499,10 @@ void ASolidCharacter::ApplySightPresentation()
 	{
 		ApplyTrueSightCamera();
 	}
+	else if (IsFalconSight())
+	{
+		ApplyFalconSightCamera();
+	}
 	else
 	{
 		ApplyRavenSightCamera();

@@ -37,11 +37,49 @@ void ASolidCharacter::ApplyRavenSightCamera()
 	CameraBoom->bDoCollisionTest = true;
 }
 
+void ASolidCharacter::ApplyFalconSightCamera()
+{
+	if (!CameraBoom)
+	{
+		return;
+	}
+
+	const FRotator ArmRot = CameraBoom->GetTargetRotation();
+	const FVector Horizontal(SolidSight::FalconHorizontalOffset(ArmRot), 0.f);
+	const FVector Origin = CameraBoom->GetComponentLocation();
+	float GroundZ = Origin.Z;
+	if (UWorld* World = GetWorld())
+	{
+		if (const ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World))
+		{
+			GroundZ = Streamer->GetHeightAt(Origin + Horizontal) + Streamer->CollisionHeightBias;
+		}
+	}
+
+	const float Alpha = SolidSight::FalconZoomAlpha(UserZoomArmLength, CameraZoomMin, CameraZoomMax);
+	const FVector WorldOffset(
+		Horizontal.X,
+		Horizontal.Y,
+		GroundZ + SolidSight::FalconHeightCm(Alpha) - Origin.Z);
+
+	CameraBoom->TargetArmLength = 0.f;
+	CameraBoom->TargetOffset = FVector::ZeroVector;
+	CameraBoom->SocketOffset = FRotationMatrix(ArmRot).InverseTransformVector(WorldOffset);
+	CameraBoom->bEnableCameraLag = false;
+	CameraBoom->bDoCollisionTest = false;
+}
+
 void ASolidCharacter::UpdateSquadCameraFraming(float DeltaTime)
 {
 	if (IsTrueSight())
 	{
 		ApplyTrueSightCamera();
+		return;
+	}
+
+	if (IsFalconSight())
+	{
+		ApplyFalconSightCamera();
 		return;
 	}
 
@@ -176,7 +214,7 @@ void ASolidCharacter::UpdateSquadCameraFraming(float DeltaTime)
 
 void ASolidCharacter::ClampCameraAboveTerrain(float DeltaTime)
 {
-	if (IsTrueSight() || !CameraBoom || !IsLocallyControlled())
+	if (IsTrueSight() || IsFalconSight() || !CameraBoom || !IsLocallyControlled())
 	{
 		return;
 	}

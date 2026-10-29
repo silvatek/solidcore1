@@ -18,6 +18,13 @@ namespace SolidSight
 	/** Eye height above the capsule center (cm). */
 	inline constexpr float TrueSightEyeHeightCm = 64.f;
 
+	/** Falcon camera height above the ground under the camera (cm). */
+	inline constexpr float FalconMinHeightCm = 2000.f;
+	inline constexpr float FalconMaxHeightCm = 20000.f;
+
+	/** Falcon camera stays this close to the captain on X, and again on Y (cm). */
+	inline constexpr float FalconMaxOffsetCm = 5000.f;
+
 	/** Camera sits this far along the look direction so it clears the near clip (cm). */
 	inline constexpr float TrueSightForwardCm = 12.f;
 
@@ -30,6 +37,53 @@ namespace SolidSight
 	inline bool IsTrueSight(ESolidSight Sight)
 	{
 		return Sight == ESolidSight::True;
+	}
+
+	inline bool IsFalconSight(ESolidSight Sight)
+	{
+		return Sight == ESolidSight::Falcon;
+	}
+
+	/** Wheel position in the raven zoom range, as 0 at the near end and 1 at the far end. */
+	inline float FalconZoomAlpha(const float ArmCm, const float ZoomMin, const float ZoomMax)
+	{
+		const float Span = ZoomMax - ZoomMin;
+		if (Span <= KINDA_SMALL_NUMBER)
+		{
+			return 0.f;
+		}
+		return FMath::Clamp((ArmCm - ZoomMin) / Span, 0.f, 1.f);
+	}
+
+	/** 20 m at alpha 0, 200 m at alpha 1, above the ground under the camera. */
+	inline float FalconHeightCm(const float ZoomAlpha)
+	{
+		return FMath::Lerp(FalconMinHeightCm, FalconMaxHeightCm, FMath::Clamp(ZoomAlpha, 0.f, 1.f));
+	}
+
+	/**
+	 * Horizontal offset from the captain, opposite the look, inside the 50 m square.
+	 * A straight-down look has no horizontal direction, so the offset is zero.
+	 */
+	inline FVector2D FalconHorizontalOffset(const FRotator& Look)
+	{
+		FVector Back = -Look.Vector();
+		Back.Z = 0.f;
+		if (Back.SizeSquared() <= KINDA_SMALL_NUMBER)
+		{
+			return FVector2D::ZeroVector;
+		}
+		Back.Normalize();
+		float Distance = TNumericLimits<float>::Max();
+		if (FMath::Abs(Back.X) > KINDA_SMALL_NUMBER)
+		{
+			Distance = FMath::Min(Distance, FalconMaxOffsetCm / FMath::Abs(Back.X));
+		}
+		if (FMath::Abs(Back.Y) > KINDA_SMALL_NUMBER)
+		{
+			Distance = FMath::Min(Distance, FalconMaxOffsetCm / FMath::Abs(Back.Y));
+		}
+		return FVector2D(Back.X * Distance, Back.Y * Distance);
 	}
 
 	inline ESolidSight Toggle(ESolidSight Sight)

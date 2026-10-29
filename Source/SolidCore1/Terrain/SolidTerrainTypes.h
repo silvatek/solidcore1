@@ -56,4 +56,18 @@ namespace SolidTerrainTypes
 	 * river uses the mountain. Equal shelves stay on Preferred.
 	 */
 	ESolidBiome BorderBiome(ESolidBiome Preferred, ESolidBiome A, ESolidBiome B, ESolidBiome C);
+
+	/**
+	 * Corner weights for a flat-colour fade, in mesh order 00, 10, 01, 11.
+	 * Weight 0 is corner 00's biome. Weight 1 is the other flat colour on that shelf.
+	 * The halfway line between those rows is the middle of the fade.
+	 * False when the quad keeps the single material it uses now: one biome, three
+	 * biomes, a road, grassland, or a higher shelf.
+	 */
+	bool FadeWeight(
+		ESolidBiome B00,
+		ESolidBiome B10,
+		ESolidBiome B01,
+		ESolidBiome B11,
+		float OutWeights[4]);
 }

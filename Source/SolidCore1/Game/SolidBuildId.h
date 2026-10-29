@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0727")
+#define SOLID_BUILD_ID TEXT("SC1-0728")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Flat colours are forest, town, desert, swamp, sea, and river.")
+#define SOLID_BUILD_NOTE TEXT("Two flat colours on one shelf get a corner fade weight.")
 #endif

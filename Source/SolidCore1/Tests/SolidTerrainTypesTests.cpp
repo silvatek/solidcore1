@@ -230,4 +230,80 @@ bool FSolidBiomeFlatColourTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBiomeFadeWeightTest,
+	"SolidCore1.Types.FadeWeight",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBiomeFadeWeightTest::RunTest(const FString& Parameters)
+{
+	const ESolidBiome Forest = ESolidBiome::Forest;
+	const ESolidBiome Desert = ESolidBiome::Desert;
+	const ESolidBiome Patch[3][4] = {
+		{ Forest, Forest, Forest, Forest },
+		{ Forest, Forest, Desert, Desert },
+		{ Desert, Desert, Desert, Desert },
+	};
+	float Weights[4] = { -1.f, -1.f, -1.f, -1.f };
+
+	auto Matches = [this](const TCHAR* What, const float* Got, const float A, const float B, const float C, const float D)
+	{
+		return TestTrue(
+			What,
+			FMath::IsNearlyEqual(Got[0], A)
+				&& FMath::IsNearlyEqual(Got[1], B)
+				&& FMath::IsNearlyEqual(Got[2], C)
+				&& FMath::IsNearlyEqual(Got[3], D));
+	};
+
+	TestFalse(
+		TEXT("one biome keeps its material"),
+		SolidTerrainTypes::FadeWeight(Patch[0][0], Patch[0][1], Patch[1][0], Patch[1][1], Weights));
+
+	TestTrue(
+		TEXT("the odd desert corner fades"),
+		SolidTerrainTypes::FadeWeight(Patch[0][1], Patch[0][2], Patch[1][1], Patch[1][2], Weights));
+	Matches(TEXT("that odd corner is fully desert"), Weights, 0.f, 0.f, 0.f, 1.f);
+
+	TestTrue(
+		TEXT("a straight run fades"),
+		SolidTerrainTypes::FadeWeight(Patch[0][2], Patch[0][3], Patch[1][2], Patch[1][3], Weights));
+	Matches(TEXT("one row is forest and the next is desert"), Weights, 0.f, 0.f, 1.f, 1.f);
+	TestTrue(
+		TEXT("the halfway line is the middle of that fade"),
+		FMath::IsNearlyEqual((Weights[0] + Weights[2]) * 0.5f, 0.5f)
+			&& FMath::IsNearlyEqual((Weights[1] + Weights[3]) * 0.5f, 0.5f));
+
+	TestTrue(
+		TEXT("the odd forest corner fades"),
+		SolidTerrainTypes::FadeWeight(Patch[1][1], Patch[1][2], Patch[2][1], Patch[2][2], Weights));
+	Matches(TEXT("that odd corner is fully forest"), Weights, 0.f, 1.f, 1.f, 1.f);
+
+	TestFalse(
+		TEXT("desert alone keeps its material"),
+		SolidTerrainTypes::FadeWeight(Patch[2][2], Patch[2][3], Patch[2][2], Patch[2][3], Weights));
+	TestFalse(
+		TEXT("a road corner keeps the hard material"),
+		SolidTerrainTypes::FadeWeight(Forest, Forest, Desert, ESolidBiome::Road, Weights));
+	TestFalse(
+		TEXT("a higher shelf keeps the hard material"),
+		SolidTerrainTypes::FadeWeight(Forest, Forest, Desert, ESolidBiome::Mountain, Weights));
+	TestFalse(
+		TEXT("three biomes keep the hard material"),
+		SolidTerrainTypes::FadeWeight(Forest, Desert, ESolidBiome::Town, Forest, Weights));
+	TestFalse(
+		TEXT("grassland keeps the hard material"),
+		SolidTerrainTypes::FadeWeight(ESolidBiome::Grassland, ESolidBiome::Grassland, Forest, Forest, Weights));
+	TestFalse(
+		TEXT("sea against forest keeps the higher land shelf"),
+		SolidTerrainTypes::FadeWeight(ESolidBiome::Sea, ESolidBiome::Sea, Forest, Forest, Weights));
+
+	TestTrue(
+		TEXT("sea against river fades"),
+		SolidTerrainTypes::FadeWeight(
+			ESolidBiome::Sea, ESolidBiome::Sea, ESolidBiome::River, ESolidBiome::River, Weights));
+	Matches(TEXT("sea and river share one shelf"), Weights, 0.f, 0.f, 1.f, 1.f);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

@@ -125,3 +125,51 @@ ESolidBiome SolidTerrainTypes::BorderBiome(
 	}
 	return A;
 }
+
+bool SolidTerrainTypes::FadeWeight(
+	const ESolidBiome B00,
+	const ESolidBiome B10,
+	const ESolidBiome B01,
+	const ESolidBiome B11,
+	float OutWeights[4])
+{
+	const ESolidBiome Corners[4] = { B00, B10, B01, B11 };
+	const FSolidBiome& First = SolidBiome::Of(B00);
+	if (!First.FlatColour())
+	{
+		return false;
+	}
+
+	const float Shelf = First.HeightOffsetCm();
+	ESolidBiome Other = B00;
+	for (const ESolidBiome Corner : Corners)
+	{
+		const FSolidBiome& Ground = SolidBiome::Of(Corner);
+		if (!Ground.FlatColour() || Ground.HeightOffsetCm() != Shelf)
+		{
+			return false;
+		}
+		if (Corner == B00)
+		{
+			continue;
+		}
+		if (Other == B00)
+		{
+			Other = Corner;
+		}
+		else if (Corner != Other)
+		{
+			return false;
+		}
+	}
+	if (Other == B00)
+	{
+		return false;
+	}
+
+	for (int32 Index = 0; Index < 4; ++Index)
+	{
+		OutWeights[Index] = Corners[Index] == B00 ? 0.f : 1.f;
+	}
+	return true;
+}

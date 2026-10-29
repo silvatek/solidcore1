@@ -47,7 +47,8 @@ namespace SolidTerrainFog
 	{
 		FIntPoint ChunkCoord = FIntPoint::ZeroValue;
 		float ChunkWorldSize = 6400.f;
-		int32 FogQuadsPerSide = 16;
+		/** Cells along one chunk edge. 32 on the default 64 m chunk is the 2 m terrain grid. */
+		int32 FogQuadsPerSide = 32;
 		float VolumeHeightCm = OuterCurtainHeightCm;
 		float VolumeHeightHalfCm = InnerCurtainHeightCm;
 		float CollisionHeightBias = 0.f;

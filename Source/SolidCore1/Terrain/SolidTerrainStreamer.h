@@ -207,9 +207,9 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog")
 	bool bRenderExplorationFogMeshes = true;
 
-	/** Low-res fog-of-war cells per chunk edge (only if bRenderExplorationFogMeshes). */
+	/** Fog curtain cells per chunk edge. Matches the 2 m terrain points. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "2", ClampMax = "32"))
-	int32 FogQuadsPerSide = 16;
+	int32 FogQuadsPerSide = 32;
 
 	/**
 	 * Vertical extent of the outer (full) fog curtain (cm).

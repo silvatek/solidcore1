@@ -165,6 +165,9 @@ bool FSolidStreamerEagleChunkSpanTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("south chunk"), MaxChunk.Y, 7);
 	TestEqual(TEXT("eagle terrain quads"), ASolidTerrainStreamer::EagleQuadsPerSide, 4);
 	TestEqual(TEXT("eagle fog quads"), ASolidTerrainStreamer::EagleFogQuadsPerSide, 2);
+	const ASolidTerrainStreamer* Defaults = GetDefault<ASolidTerrainStreamer>();
+	TestNotNull(TEXT("streamer defaults"), Defaults);
+	TestEqual(TEXT("fog curtain matches the terrain grid"), Defaults->FogQuadsPerSide, Defaults->QuadsPerSide);
 	TestTrue(TEXT("eagle mesh is coarser than the nearby mesh"), ASolidTerrainStreamer::EagleQuadsPerSide < 32);
 
 	TestEqual(TEXT("on the ground the radius stays nearby"), ASolidTerrainStreamer::EagleStreamRadius(0.f, 6400.f, 2, 8), 2);

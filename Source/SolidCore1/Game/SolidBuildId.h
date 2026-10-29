@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0770")
+#define SOLID_BUILD_ID TEXT("SC1-0771")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Both fog curtains rise to 6000 m.")
+#define SOLID_BUILD_NOTE TEXT("Fog curtains follow the 2 m terrain grid.")
 #endif

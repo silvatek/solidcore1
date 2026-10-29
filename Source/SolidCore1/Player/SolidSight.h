@@ -191,10 +191,14 @@ namespace SolidSight
 	/** How fast Eagle Sight rises or drops while it matches the window to the square (cm/s). */
 	inline constexpr float EagleRiseCmPerSecond = 40000.f;
 
+	/** One frame never spends more than this, so a hitch cannot jump the flight. */
+	inline constexpr float EagleRiseMaxSeconds = 1.f / 30.f;
+
 	/** Step the current height toward the measured height. The next look can correct the step. */
 	inline float EagleRiseCm(const float CurrentHeightCm, const float TargetHeightCm, const float DeltaSeconds)
 	{
-		const float MaxStep = EagleRiseCmPerSecond * FMath::Max(DeltaSeconds, 0.f);
+		const float StepSeconds = FMath::Clamp(DeltaSeconds, 0.f, EagleRiseMaxSeconds);
+		const float MaxStep = EagleRiseCmPerSecond * StepSeconds;
 		return CurrentHeightCm + FMath::Clamp(TargetHeightCm - CurrentHeightCm, -MaxStep, MaxStep);
 	}
 

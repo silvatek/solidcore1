@@ -282,9 +282,13 @@ bool FSolidSightEagleCameraTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("a matching view holds its height"),
 		FMath::IsNearlyEqual(SolidSight::EagleSpanHeightCm(91022.f, 102400.f, 102400.f), 91022.f, 1.f));
+	const float OneFrame = 50000.f + SolidSight::EagleRiseCmPerSecond * (1.f / 30.f);
 	TestTrue(
-		TEXT("the rise covers 400 m in one second"),
-		FMath::IsNearlyEqual(SolidSight::EagleRiseCm(50000.f, 102400.f, 1.f), 90000.f, 1.f));
+		TEXT("one frame rises at 400 m/s"),
+		FMath::IsNearlyEqual(SolidSight::EagleRiseCm(50000.f, 102400.f, 1.f / 30.f), OneFrame, 1.f));
+	TestTrue(
+		TEXT("a hitch does not jump the flight"),
+		FMath::IsNearlyEqual(SolidSight::EagleRiseCm(50000.f, 102400.f, 1.f), OneFrame, 1.f));
 	TestTrue(
 		TEXT("a zero step stays put"),
 		FMath::IsNearlyEqual(SolidSight::EagleRiseCm(50000.f, 102400.f, 0.f), 50000.f, 1.f));

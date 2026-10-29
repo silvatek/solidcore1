@@ -119,15 +119,24 @@ void ASolidCharacter::ApplyEagleSightCamera(float DeltaSeconds)
 		}
 	}
 	const SolidSight::FEagleFill Fill = SolidSight::EagleFill(WorldMin, WorldMax, Fov, ViewportW, ViewportH);
-	if (EagleSightHeightCm <= 1.f)
-	{
-		EagleSightHeightCm = FMath::Max(Fill.HeightCm, 1.f);
-	}
-
 	float GroundZ = 0.f;
 	if (Streamer)
 	{
 		GroundZ = Streamer->GetHeightAt(FVector(Fill.Ground.X, Fill.Ground.Y, 0.f)) + Streamer->CollisionHeightBias;
+	}
+
+	if (EagleSightHeightCm <= 1.f)
+	{
+		float StartHeight = 200.f;
+		if (PC && PC->PlayerCameraManager)
+		{
+			const float CamHeight = PC->PlayerCameraManager->GetCameraLocation().Z - GroundZ;
+			if (CamHeight > StartHeight)
+			{
+				StartHeight = CamHeight;
+			}
+		}
+		EagleSightHeightCm = StartHeight;
 	}
 
 	if (PC && PC->PlayerCameraManager && SizeX > 1 && SizeY > 1)

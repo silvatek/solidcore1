@@ -420,8 +420,20 @@ namespace SolidTerrainFog
 			float Z = 0.f;
 		};
 
-		auto CrossingOnEdge = [&](int32 IX0, int32 IY0, int32 IX1, int32 IY1, float Iso) -> FContourPoint
+		/** A fog-grid edge. Axis 0 runs +X from (X, Y). Axis 1 runs +Y. */
+		struct FGridEdge
 		{
+			int32 X = 0;
+			int32 Y = 0;
+			int32 Axis = 0;
+		};
+
+		auto PointOnEdge = [&](const FGridEdge& Edge, float Iso) -> FContourPoint
+		{
+			const int32 IX0 = Edge.X;
+			const int32 IY0 = Edge.Y;
+			const int32 IX1 = Edge.X + (Edge.Axis == 0 ? 1 : 0);
+			const int32 IY1 = Edge.Y + (Edge.Axis == 1 ? 1 : 0);
 			const int32 I0 = IY0 * FogVerts + IX0;
 			const int32 I1 = IY1 * FogVerts + IX1;
 			const float F0 = FogAmounts[I0];
@@ -438,30 +450,15 @@ namespace SolidTerrainFog
 			return P;
 		};
 
-		auto AppendContourWall = [&](
-			const FContourPoint& A, const FContourPoint& B, int32 Slot, float VolumeHeight)
+		auto EdgeOf = [](int32 CellX, int32 CellY, int32 Which) -> FGridEdge
 		{
-			FVector2D Dir2(B.X - A.X, B.Y - A.Y);
-			const float Len = Dir2.Size();
-			if (Len < 1.f || Slot < 0)
+			switch (Which)
 			{
-				return;
+			case 0: return {CellX, CellY, 0};
+			case 1: return {CellX + 1, CellY, 1};
+			case 2: return {CellX, CellY + 1, 0};
+			default: return {CellX, CellY, 1};
 			}
-			Dir2 /= Len;
-
-			const float Pad = FMath::Min(Step * CurtainEndPadOfStep, Len * CurtainEndPadOfLength);
-			const float AX = A.X - Dir2.X * Pad;
-			const float AY = A.Y - Dir2.Y * Pad;
-			const float BX = B.X + Dir2.X * Pad;
-			const float BY = B.Y + Dir2.Y * Pad;
-			constexpr float SkirtCm = 20.f;
-			const FVector Normal(-Dir2.Y, Dir2.X, 0.f);
-
-			const int32 V0 = AppendVert(FVector(AX, AY, A.Z + SkirtCm), Normal);
-			const int32 V1 = AppendVert(FVector(BX, BY, B.Z + SkirtCm), Normal);
-			const int32 V2 = AppendVert(FVector(BX, BY, B.Z + VolumeHeight), Normal);
-			const int32 V3 = AppendVert(FVector(AX, AY, A.Z + VolumeHeight), Normal);
-			AppendQuad(V0, V1, V2, V3, Slot);
 		};
 
 		static const int8 MSSegments[16][4] = {
@@ -485,6 +482,25 @@ namespace SolidTerrainFog
 
 		auto EmitIsocontour = [&](float Iso, auto&& InsidePred, auto&& SlotForCell, float VolumeHeight)
 		{
+			TMap<uint32, int32> SharedVert;
+			auto VertOnEdge = [&](const FGridEdge& Edge, int32 Band, const FContourPoint& P, const FVector& Normal) -> int32
+			{
+				const uint32 Key =
+					(static_cast<uint32>(Edge.X) & 0xffu)
+					| ((static_cast<uint32>(Edge.Y) & 0xffu) << 8)
+					| ((static_cast<uint32>(Edge.Axis) & 1u) << 16)
+					| ((static_cast<uint32>(Band) & 1u) << 17);
+				if (const int32* Found = SharedVert.Find(Key))
+				{
+					return *Found;
+				}
+				constexpr float SkirtCm = 20.f;
+				const float Z = (Band == 0) ? P.Z + SkirtCm : P.Z + VolumeHeight;
+				const int32 Index = AppendVert(FVector(P.X, P.Y, Z), Normal);
+				SharedVert.Add(Key, Index);
+				return Index;
+			};
+
 			for (int32 Y = 0; Y < FogQuads; ++Y)
 			{
 				for (int32 X = 0; X < FogQuads; ++X)
@@ -510,23 +526,32 @@ namespace SolidTerrainFog
 						continue;
 					}
 
-					FContourPoint EdgePt[4];
-					EdgePt[0] = CrossingOnEdge(X, Y, X + 1, Y, Iso);
-					EdgePt[1] = CrossingOnEdge(X + 1, Y, X + 1, Y + 1, Iso);
-					EdgePt[2] = CrossingOnEdge(X + 1, Y + 1, X, Y + 1, Iso);
-					EdgePt[3] = CrossingOnEdge(X, Y + 1, X, Y, Iso);
-
 					const int32 Slot = SlotForCell(F00, F10, F01, F11);
 					const int8* Seg = MSSegments[Case];
 					for (int32 S = 0; S < 4 && Seg[S] >= 0; S += 2)
 					{
 						const int32 E0 = Seg[S];
 						const int32 E1 = Seg[S + 1];
-						if (E0 < 0 || E1 < 0)
+						if (E0 < 0 || E1 < 0 || Slot < 0)
 						{
 							break;
 						}
-						AppendContourWall(EdgePt[E0], EdgePt[E1], Slot, VolumeHeight);
+						const FGridEdge EdgeA = EdgeOf(X, Y, E0);
+						const FGridEdge EdgeB = EdgeOf(X, Y, E1);
+						const FContourPoint A = PointOnEdge(EdgeA, Iso);
+						const FContourPoint B = PointOnEdge(EdgeB, Iso);
+						FVector2D Dir2(B.X - A.X, B.Y - A.Y);
+						if (Dir2.Size() < 1.f)
+						{
+							continue;
+						}
+						Dir2.Normalize();
+						const FVector Normal(-Dir2.Y, Dir2.X, 0.f);
+						const int32 V0 = VertOnEdge(EdgeA, 0, A, Normal);
+						const int32 V1 = VertOnEdge(EdgeB, 0, B, Normal);
+						const int32 V2 = VertOnEdge(EdgeB, 1, B, Normal);
+						const int32 V3 = VertOnEdge(EdgeA, 1, A, Normal);
+						AppendQuad(V0, V1, V2, V3, Slot);
 					}
 				}
 			}

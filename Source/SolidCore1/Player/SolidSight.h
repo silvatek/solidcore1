@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "InputCoreTypes.h"
+#include "Math/RotationMatrix.h"
 #include "SolidTerrainFog.h"
 
 /** Raven sight is the third-person squad camera. True sight is first person. */
@@ -47,6 +48,89 @@ namespace SolidSight
 	inline bool IsFalconSight(ESolidSight Sight)
 	{
 		return Sight == ESolidSight::Falcon;
+	}
+
+	inline bool IsEagleSight(ESolidSight Sight)
+	{
+		return Sight == ESolidSight::Eagle;
+	}
+
+	/** Straight down, yaw 0, so the view stays aligned with the world axes. */
+	inline FRotator EagleLook()
+	{
+		return FRotator(-90.f, 0.f, 0.f);
+	}
+
+	inline FVector2D WorldCentre(const FVector2D& WorldMin, const FVector2D& WorldMax)
+	{
+		return (WorldMin + WorldMax) * 0.5f;
+	}
+
+	/**
+	 * The point on the segment from the captain to the world centre that is closest
+	 * to that centre and still has fog 0. StepCm is how far apart the samples sit.
+	 */
+	template<typename FogAtFn>
+	inline FVector2D EagleGroundXY(
+		const FVector2D& Captain,
+		const FVector2D& Centre,
+		const float StepCm,
+		FogAtFn FogAt)
+	{
+		const FVector2D Delta = Captain - Centre;
+		const float Length = Delta.Size();
+		if (Length <= KINDA_SMALL_NUMBER || FogAt(Centre) <= KINDA_SMALL_NUMBER)
+		{
+			return Centre;
+		}
+
+		const float Step = FMath::Max(StepCm, 1.f);
+		const int32 Steps = FMath::CeilToInt(Length / Step);
+		const FVector2D Dir = Delta / Length;
+		for (int32 Index = 1; Index <= Steps; ++Index)
+		{
+			const float Dist = FMath::Min(static_cast<float>(Index) * Step, Length);
+			const FVector2D At = Centre + Dir * Dist;
+			if (FogAt(At) <= KINDA_SMALL_NUMBER)
+			{
+				return At;
+			}
+		}
+		return Captain;
+	}
+
+	/**
+	 * Height above the ground so the world square fits in view, looking straight down.
+	 * HorizontalFovDeg is the camera's horizontal field of view. Aspect is width / height.
+	 */
+	inline float EagleHeightCm(
+		const FVector2D& Ground,
+		const FVector2D& WorldMin,
+		const FVector2D& WorldMax,
+		const float HorizontalFovDeg,
+		const float Aspect)
+	{
+		const float HalfH = FMath::DegreesToRadians(FMath::Clamp(HorizontalFovDeg, 1.f, 179.f) * 0.5f);
+		const float TanH = FMath::Max(FMath::Tan(HalfH), 0.01f);
+		const float TanV = FMath::Max(TanH / FMath::Max(Aspect, 0.1f), 0.01f);
+		const FRotationMatrix Axes(EagleLook());
+		const FVector Right = Axes.GetUnitAxis(EAxis::Y);
+		const FVector Up = Axes.GetUnitAxis(EAxis::Z);
+		const FVector2D Corners[4] = {
+			WorldMin,
+			FVector2D(WorldMax.X, WorldMin.Y),
+			WorldMax,
+			FVector2D(WorldMin.X, WorldMax.Y),
+		};
+		float MaxRight = 0.f;
+		float MaxUp = 0.f;
+		for (const FVector2D& Corner : Corners)
+		{
+			const FVector Delta(Corner.X - Ground.X, Corner.Y - Ground.Y, 0.f);
+			MaxRight = FMath::Max(MaxRight, FMath::Abs(FVector::DotProduct(Delta, Right)));
+			MaxUp = FMath::Max(MaxUp, FMath::Abs(FVector::DotProduct(Delta, Up)));
+		}
+		return FMath::Max(MaxRight / TanH, MaxUp / TanV);
 	}
 
 	/** Wheel position in the raven zoom range, as 0 at the near end and 1 at the far end. */

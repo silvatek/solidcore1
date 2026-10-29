@@ -70,6 +70,7 @@ public:
 	ESolidSight GetSight() const { return Sight; }
 	bool IsTrueSight() const { return SolidSight::IsTrueSight(Sight); }
 	bool IsFalconSight() const { return SolidSight::IsFalconSight(Sight); }
+	bool IsEagleSight() const { return SolidSight::IsEagleSight(Sight); }
 	/** Entering true sight levels the camera. Yaw stays. */
 	void SetSight(ESolidSight NewSight);
 	/** Raven sight, this look, and this boom length. */
@@ -203,6 +204,7 @@ protected:
 	void ApplyTrueSightCamera();
 	void ApplyRavenSightCamera();
 	void ApplyFalconSightCamera();
+	void ApplyEagleSightCamera();
 	/** Falcon Sight. The view stays on the captain. */
 	void AimFalconAtCaptain();
 	void ToggleMainMenuFromInput();

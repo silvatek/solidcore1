@@ -69,6 +69,64 @@ void ASolidCharacter::ApplyFalconSightCamera()
 	CameraBoom->bDoCollisionTest = false;
 }
 
+void ASolidCharacter::ApplyEagleSightCamera()
+{
+	if (!CameraBoom)
+	{
+		return;
+	}
+
+	const FRotator Look = SolidSight::EagleLook();
+	if (Controller)
+	{
+		Controller->SetControlRotation(Look);
+	}
+
+	FVector2D WorldMin(-51200.f, -51200.f);
+	FVector2D WorldMax(51200.f, 51200.f);
+	float StepCm = 200.f;
+	const FVector Captain = GetActorLocation();
+	FVector2D Ground(Captain.X, Captain.Y);
+	float GroundZ = Captain.Z;
+	if (UWorld* World = GetWorld())
+	{
+		if (ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World))
+		{
+			if (const USolidTerrainMap* Map = Streamer->GetTerrainMap())
+			{
+				if (Map->IsBuilt())
+				{
+					WorldMin = Map->GetWorldMinXY();
+					WorldMax = Map->GetWorldMaxXY();
+					StepCm = Map->PointSpacing;
+					const FVector2D Centre = SolidSight::WorldCentre(WorldMin, WorldMax);
+					Ground = SolidSight::EagleGroundXY(
+						FVector2D(Captain.X, Captain.Y),
+						Centre,
+						StepCm,
+						[Map](const FVector2D& At)
+						{
+							return Map->GetNearestPoint(At.X, At.Y).Fog;
+						});
+				}
+			}
+			GroundZ = Streamer->GetHeightAt(FVector(Ground.X, Ground.Y, 0.f)) + Streamer->CollisionHeightBias;
+		}
+	}
+
+	const float Fov = FollowCamera ? FollowCamera->FieldOfView : 90.f;
+	const float Height = SolidSight::EagleHeightCm(Ground, WorldMin, WorldMax, Fov, FramingAspectRatio);
+	const FVector Origin = CameraBoom->GetComponentLocation();
+	const FVector WorldOffset(Ground.X - Origin.X, Ground.Y - Origin.Y, GroundZ + Height - Origin.Z);
+
+	CameraBoom->TargetArmLength = 0.f;
+	CameraBoom->TargetOffset = FVector::ZeroVector;
+	CameraBoom->SocketOffset = FRotationMatrix(Look).InverseTransformVector(WorldOffset);
+	CameraBoom->bEnableCameraLag = false;
+	CameraBoom->bDoCollisionTest = false;
+	CameraTerrainLiftCm = 0.f;
+}
+
 void ASolidCharacter::AimFalconAtCaptain()
 {
 	if (!CameraBoom)
@@ -100,6 +158,12 @@ void ASolidCharacter::UpdateSquadCameraFraming(float DeltaTime)
 	if (IsFalconSight())
 	{
 		AimFalconAtCaptain();
+		return;
+	}
+
+	if (IsEagleSight())
+	{
+		ApplyEagleSightCamera();
 		return;
 	}
 
@@ -234,7 +298,7 @@ void ASolidCharacter::UpdateSquadCameraFraming(float DeltaTime)
 
 void ASolidCharacter::ClampCameraAboveTerrain(float DeltaTime)
 {
-	if (IsTrueSight() || IsFalconSight() || !CameraBoom || !IsLocallyControlled())
+	if (IsTrueSight() || IsFalconSight() || IsEagleSight() || !CameraBoom || !IsLocallyControlled())
 	{
 		return;
 	}

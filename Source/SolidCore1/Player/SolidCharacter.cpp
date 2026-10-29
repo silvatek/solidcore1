@@ -503,6 +503,10 @@ void ASolidCharacter::ApplySightPresentation()
 	{
 		ApplyFalconSightCamera();
 	}
+	else if (IsEagleSight())
+	{
+		ApplyEagleSightCamera();
+	}
 	else
 	{
 		ApplyRavenSightCamera();

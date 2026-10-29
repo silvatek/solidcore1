@@ -220,4 +220,47 @@ bool FSolidSightCycleTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidSightEagleCameraTest,
+	"SolidCore1.Sight.EagleCamera",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidSightEagleCameraTest::RunTest(const FString& Parameters)
+{
+	const FVector2D Min(-51200.f, -51200.f);
+	const FVector2D Max(51200.f, 51200.f);
+	const FVector2D Centre = SolidSight::WorldCentre(Min, Max);
+	TestTrue(TEXT("the world centre is the origin"), Centre.IsNearlyZero(1.f));
+
+	const FVector2D Captain(20000.f, 0.f);
+	const FVector2D OnCentre = SolidSight::EagleGroundXY(
+		Captain, Centre, 200.f, [](const FVector2D&) { return 0.f; });
+	TestTrue(TEXT("clear fog stands on the centre"), OnCentre.Equals(Centre, 1.f));
+
+	const float ClearReach = 2500.f;
+	const FVector2D Edge = SolidSight::EagleGroundXY(
+		Captain,
+		Centre,
+		200.f,
+		[Captain, ClearReach](const FVector2D& At)
+		{
+			return FVector2D::Distance(At, Captain) <= ClearReach ? 0.f : 1.f;
+		});
+	TestTrue(
+		TEXT("fog stops the camera near the clear edge"),
+		FMath::IsNearlyEqual(FVector2D::Distance(Edge, Captain), ClearReach, 200.f));
+	TestTrue(
+		TEXT("that edge is nearer the centre than the captain"),
+		FVector2D::Distance(Edge, Centre) < FVector2D::Distance(Captain, Centre) - 1.f);
+	TestTrue(TEXT("the edge stays on the line"), FMath::IsNearlyZero(Edge.Y, 1.f));
+
+	const float Height = SolidSight::EagleHeightCm(Centre, Min, Max, 90.f, 16.f / 9.f);
+	const float Expected = 51200.f * (16.f / 9.f);
+	TestTrue(TEXT("the centre height fits the square"), FMath::IsNearlyEqual(Height, Expected, 1.f));
+
+	const float CornerHeight = SolidSight::EagleHeightCm(Min, Min, Max, 90.f, 16.f / 9.f);
+	TestTrue(TEXT("a corner needs more height"), CornerHeight > Height);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

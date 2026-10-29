@@ -133,47 +133,46 @@ namespace SolidSight
 		return FMath::Max(MaxRight / TanH, MaxUp / TanV);
 	}
 
-	/** Y of the southern-most sample whose fog is 0. North is +Y, so south is the smaller Y. */
-	template<typename PointAtFn>
-	inline bool SouthernUnfoggedY(const int32 Count, PointAtFn PointAt, float& OutY)
+	/** Where Eagle Sight stands, and how high, so the world square fills the shorter side of the window. */
+	struct FEagleFill
 	{
-		bool bFound = false;
-		float South = 0.f;
-		for (int32 Index = 0; Index < Count; ++Index)
-		{
-			float Y = 0.f;
-			float Fog = 1.f;
-			PointAt(Index, Y, Fog);
-			if (Fog > KINDA_SMALL_NUMBER)
-			{
-				continue;
-			}
-			if (!bFound || Y < South)
-			{
-				South = Y;
-				bFound = true;
-			}
-		}
-		if (bFound)
-		{
-			OutY = South;
-		}
-		return bFound;
-	}
+		FVector2D Ground = FVector2D::ZeroVector;
+		float HeightCm = 0.f;
+	};
 
 	/**
-	 * Camera ground Y so SouthernY lies on the bottom of the view.
-	 * HeightCm and Aspect are the same ones EagleHeightCm uses. North is +Y.
+	 * The square fills the shorter side of the viewport.
+	 * A wider window meets the top and the bottom, with the camera at the centre.
+	 * A taller window meets the left and the right, and the south edge stays on the bottom.
 	 */
-	inline float EagleSouthEdgeCameraY(
-		const float SouthernY,
-		const float HeightCm,
+	inline FEagleFill EagleFill(
+		const FVector2D& WorldMin,
+		const FVector2D& WorldMax,
 		const float HorizontalFovDeg,
-		const float Aspect)
+		const float ViewportWidth,
+		const float ViewportHeight)
 	{
 		const float HalfH = FMath::DegreesToRadians(FMath::Clamp(HorizontalFovDeg, 1.f, 179.f) * 0.5f);
-		const float TanV = FMath::Max(FMath::Tan(HalfH) / FMath::Max(Aspect, 0.1f), 0.01f);
-		return SouthernY + HeightCm * TanV;
+		const float TanH = FMath::Max(FMath::Tan(HalfH), 0.01f);
+		const float ViewW = FMath::Max(ViewportWidth, 1.f);
+		const float ViewH = FMath::Max(ViewportHeight, 1.f);
+		const float TanV = FMath::Max(TanH / (ViewW / ViewH), 0.01f);
+		const float MapW = FMath::Max(WorldMax.X - WorldMin.X, 1.f);
+		const float MapH = FMath::Max(WorldMax.Y - WorldMin.Y, 1.f);
+		const FVector2D Centre = WorldCentre(WorldMin, WorldMax);
+
+		FEagleFill Fill;
+		if (ViewW >= ViewH)
+		{
+			Fill.HeightCm = (MapH * 0.5f) / TanV;
+			Fill.Ground = Centre;
+		}
+		else
+		{
+			Fill.HeightCm = (MapW * 0.5f) / TanH;
+			Fill.Ground = FVector2D(Centre.X, WorldMin.Y + Fill.HeightCm * TanV);
+		}
+		return Fill;
 	}
 
 	/** Wheel position in the raven zoom range, as 0 at the near end and 1 at the far end. */

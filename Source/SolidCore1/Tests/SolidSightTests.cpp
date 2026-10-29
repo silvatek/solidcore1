@@ -265,26 +265,16 @@ bool FSolidSightEagleCameraTest::RunTest(const FString& Parameters)
 	const float CornerHeight = SolidSight::EagleHeightCm(Min, Min, Max, 90.f, 16.f / 9.f);
 	TestTrue(TEXT("a corner needs more height"), CornerHeight > Height);
 
-	const float SampleY[] = { 100.f, -400.f, -50.f, -800.f };
-	const float SampleFog[] = { 0.f, 0.f, 1.f, 1.f };
-	float SouthY = 0.f;
-	TestTrue(TEXT("the southern clear point is the smallest clear Y"),
-		SolidSight::SouthernUnfoggedY(
-			4,
-			[&SampleY, &SampleFog](const int32 Index, float& Y, float& Fog)
-			{
-				Y = SampleY[Index];
-				Fog = SampleFog[Index];
-			},
-			SouthY));
-	TestTrue(TEXT("fogged ground further south stays out"), FMath::IsNearlyEqual(SouthY, -400.f, 0.1f));
+	const SolidSight::FEagleFill Wide = SolidSight::EagleFill(Min, Max, 90.f, 1707.f, 1392.f);
+	TestTrue(TEXT("a wider window stands at the centre"), Wide.Ground.IsNearlyZero(1.f));
+	const float WideTanV = 1.f / (1707.f / 1392.f);
+	TestTrue(TEXT("a wider window fills the height"),
+		FMath::IsNearlyEqual(Wide.HeightCm, 51200.f / WideTanV, 1.f));
 
-	const float FitHeight = 51200.f * (16.f / 9.f);
-	const float CentredY = SolidSight::EagleSouthEdgeCameraY(-51200.f, FitHeight, 90.f, 16.f / 9.f);
-	TestTrue(TEXT("a 16:9 view keeps the south edge on the bottom at the centre"),
-		FMath::IsNearlyZero(CentredY, 1.f));
-	const float TallerY = SolidSight::EagleSouthEdgeCameraY(-51200.f, FitHeight, 90.f, 1.f);
-	TestTrue(TEXT("a taller view shifts north so the south edge stays on the bottom"), TallerY > 1.f);
+	const SolidSight::FEagleFill Tall = SolidSight::EagleFill(Min, Max, 90.f, 900.f, 1600.f);
+	TestTrue(TEXT("a taller window fills the width"), FMath::IsNearlyEqual(Tall.HeightCm, 51200.f, 1.f));
+	TestTrue(TEXT("a taller window keeps the south edge on the bottom"), Tall.Ground.Y > 1.f);
+	TestTrue(TEXT("a taller window stays on the centre east to west"), FMath::IsNearlyZero(Tall.Ground.X, 1.f));
 	return true;
 }
 

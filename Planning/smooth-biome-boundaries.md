@@ -41,3 +41,13 @@ Today both triangles take one material from `BorderBiome`. The cut replaces that
 A road point is baked by `SampleBiome` where the strip shares the ground's shelf. A trail is 1 m wide. The cut covers a 2 m quad, so a road corner stays on the hard material.
 
 A test builds this patch from two flat colours of one shelf. The quad with a single odd corner is cut off that corner. A straight pair of rows is not cut. A checker, a road corner, a higher shelf, and three biomes are not cut.
+
+## Next step
+
+Play on SC1-0732 showed a straight row of town points drawn as forest. There was no diagonal.
+
+A straight run is two corners of one flat colour sharing a side and two of the other. `DiagonalCut` returns false, so both triangles take `BorderBiome` of the quad centre. The centre is halfway between the points. `SamplePoint` takes the nearest point, and a halfway sample rounds to corner 11, the +X +Y corner. When that corner is forest, the whole quad is forest, including the two town corners. Every quad along that row does the same.
+
+The next slice splits that quad on the line halfway between the two rows. Add two mesh vertices, one on each edge the boundary crosses, and give each half that half's material. Town stays town on its half and forest stays forest on its half. The edge stays straight. Chart points stay unchanged. The straight-run acceptance changes with that slice: the run is split on that halfway line, and it is still not a diagonal.
+
+Leave the 3+1 diagonal, a checker, three biomes, a road, and a shelf step as they are. Grassland stays one material for this slice. It was left out because the old fade had to blend its texture with a flat colour. This join does not blend, so grassland can use the same split in a later slice.

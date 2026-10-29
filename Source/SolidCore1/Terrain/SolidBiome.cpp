@@ -232,7 +232,8 @@ SolidTerrainTypes::FSolidQuadTriangles SolidTerrainTypes::QuadTriangles(
 	const ESolidBiome B00,
 	const ESolidBiome B10,
 	const ESolidBiome B01,
-	const ESolidBiome B11)
+	const ESolidBiome B11,
+	const ESolidBiome WestOfNorthWest)
 {
 	FSolidQuadTriangles Out;
 	Out.First = BorderBiome(Preferred, B00, B11, B10);
@@ -241,6 +242,27 @@ SolidTerrainTypes::FSolidQuadTriangles SolidTerrainTypes::QuadTriangles(
 	{
 	case ESolidQuadMaterial::NorthWest:
 		break;
+	case ESolidQuadMaterial::NorthWestCut:
+	{
+		// Mesh order is southeast, southwest, northeast, northwest.
+		const bool bNorthWestAlone = B01 == B10 && B10 == B00 && B00 != B11;
+		if (bNorthWestAlone)
+		{
+			Out.bFlip = true;
+			Out.First = B00;
+			Out.Second = B11;
+			break;
+		}
+
+		const bool bSouthContinuesWest = B10 != B11 && B01 == B11 && B00 == B11 && WestOfNorthWest == B10;
+		if (bSouthContinuesWest)
+		{
+			Out.First = B10;
+			Out.Second = B11;
+			break;
+		}
+		break;
+	}
 	case ESolidQuadMaterial::OddCorner:
 	{
 		int32 CutCorner = 0;

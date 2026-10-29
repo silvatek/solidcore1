@@ -418,9 +418,9 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 	const ESolidBiome Desert = ESolidBiome::Desert;
 
 	TestEqual(
-		TEXT("this build uses the northwest corner"),
+		TEXT("this build uses NorthWestCut"),
 		static_cast<uint8>(SolidTerrainTypes::QuadMaterial),
-		static_cast<uint8>(SolidTerrainTypes::ESolidQuadMaterial::NorthWest));
+		static_cast<uint8>(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut));
 
 	auto Expect = [this](const TCHAR* What, const SolidTerrainTypes::FSolidQuadTriangles& Tri, const bool bFlip, const ESolidBiome First, const ESolidBiome Second)
 	{
@@ -435,29 +435,48 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 			static_cast<uint8>(Second));
 	};
 
+	const ESolidBiome Grass = ESolidBiome::Grassland;
+	const ESolidBiome Town = ESolidBiome::Town;
+
 	Expect(
 		TEXT("odd 11"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Forest, Forest, Forest, Desert),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Forest, Forest, Forest, Desert, Forest),
 		true, Forest, Desert);
 	Expect(
 		TEXT("odd 00"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Desert, Forest, Forest, Forest),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Desert, Forest, Forest, Forest, Forest),
 		true, Desert, Forest);
 	Expect(
 		TEXT("odd 10"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Forest, Desert, Forest, Forest),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Forest, Desert, Forest, Forest, Forest),
 		false, Desert, Forest);
 	Expect(
 		TEXT("odd 01"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Forest, Forest, Desert, Forest),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Forest, Forest, Desert, Forest, Forest),
 		false, Forest, Desert);
 	Expect(
 		TEXT("a straight run stays on the northwest corner"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Desert, Forest, Forest, Desert, Desert),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Desert, Forest, Forest, Desert, Desert, Desert),
 		false, Desert, Desert);
 	Expect(
 		TEXT("the northwest method leaves the odd corner"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWest, Forest, Forest, Forest, Forest, Desert),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWest, Forest, Forest, Forest, Forest, Desert, Forest),
+		false, Forest, Forest);
+	Expect(
+		TEXT("a lone northwest corner is cut"),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Desert, Forest, Forest, Forest, Desert, Forest),
+		true, Forest, Desert);
+	Expect(
+		TEXT("a south corner that continues west is cut"),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Grass, Grass, Town, Grass, Grass, Town),
+		false, Town, Grass);
+	Expect(
+		TEXT("a south corner whose west point matches the northwest stays"),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Forest, Forest, Town, Forest, Forest, Forest),
+		false, Forest, Forest);
+	Expect(
+		TEXT("a straight run stays whole under NorthWestCut"),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Forest, Town, Town, Forest, Forest, Forest),
 		false, Forest, Forest);
 
 	return true;

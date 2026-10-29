@@ -408,8 +408,23 @@ void ASolidTerrainChunk::BuildChunk(
 				B01 = VertexBiomes[I01];
 				B11 = VertexBiomes[I11];
 			}
+			ESolidBiome WestOfNorthWest = B11;
+			if (bUseBiomeMaterials && TerrainMap && TerrainMap->IsBuilt())
+			{
+				const int32 WestX = X + 2;
+				if (WestX < VertsPerSide)
+				{
+					WestOfNorthWest = VertexBiomes[(Y + 1) * VertsPerSide + WestX];
+				}
+				else
+				{
+					const float WestWorldX = OriginX + static_cast<float>(WestX) * Step;
+					const float WestWorldY = OriginY + static_cast<float>(Y + 1) * Step;
+					WestOfNorthWest = TerrainMap->SamplePoint(WestWorldX, WestWorldY).Biome;
+				}
+			}
 			const SolidTerrainTypes::FSolidQuadTriangles Picked = SolidTerrainTypes::QuadTriangles(
-				SolidTerrainTypes::QuadMaterial, Preferred, B00, B10, B01, B11);
+				SolidTerrainTypes::QuadMaterial, Preferred, B00, B10, B01, B11, WestOfNorthWest);
 			// 00 and 11 sit on the mesh diagonal, so cutting one of them uses the other diagonal.
 			if (Picked.bFlip)
 			{

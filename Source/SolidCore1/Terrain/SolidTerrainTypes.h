@@ -91,10 +91,19 @@ namespace SolidTerrainTypes
 		NorthWest,
 		/** The single odd corner is cut off. Any other quad takes that northwest corner. */
 		OddCorner,
+		/**
+		 * Two cuts, and otherwise the northwest corner.
+		 * The other three match and differ from the northwest: the northwest triangle
+		 * keeps that corner, and the southeast triangle takes the other biome.
+		 * The south corner differs, the east and southeast match the northwest, and the
+		 * point west of the northwest matches the south corner: the southwest triangle
+		 * takes the south corner, and the northeast triangle takes the northwest corner.
+		 */
+		NorthWestCut,
 	};
 
 	/** Change this and rebuild. The mesh and the debug line both use it. */
-	inline constexpr ESolidQuadMaterial QuadMaterial = ESolidQuadMaterial::NorthWest;
+	inline constexpr ESolidQuadMaterial QuadMaterial = ESolidQuadMaterial::NorthWestCut;
 
 	/** Materials for the quad's two triangles, and whether the mesh diagonal is flipped. */
 	struct FSolidQuadTriangles
@@ -104,11 +113,16 @@ namespace SolidTerrainTypes
 		bool bFlip = false;
 	};
 
+	/**
+	 * WestOfNorthWest is the point directly west of corner 11. NorthWest and OddCorner
+	 * ignore it. NorthWestCut uses it for the south-corner cut.
+	 */
 	FSolidQuadTriangles QuadTriangles(
 		ESolidQuadMaterial Method,
 		ESolidBiome Preferred,
 		ESolidBiome B00,
 		ESolidBiome B10,
 		ESolidBiome B01,
-		ESolidBiome B11);
+		ESolidBiome B11,
+		ESolidBiome WestOfNorthWest);
 }

@@ -2053,9 +2053,10 @@ void ASolidHUD::DrawHUD()
 						const float CentreX = Map->OriginXY.X + (static_cast<float>(X0) + 0.5f) * Map->PointSpacing;
 						const float CentreY = Map->OriginXY.Y + (static_cast<float>(Y0) + 0.5f) * Map->PointSpacing;
 						const ESolidBiome Preferred = Map->SamplePoint(CentreX, CentreY).Biome;
+						const ESolidBiome WestOfNorthWest = Map->GetPoint(X1 + 1, Y1).Biome;
 						const SolidTerrainTypes::FSolidQuadTriangles Picked = SolidTerrainTypes::QuadTriangles(
 							SolidTerrainTypes::QuadMaterial, Preferred,
-							Corners[0], Corners[1], Corners[2], Corners[3]);
+							Corners[0], Corners[1], Corners[2], Corners[3], WestOfNorthWest);
 						Lines.Add(FString::Printf(
 							TEXT("Quad %s %s / %s %s  %s / %s"),
 							SolidBiome::Of(Corners[0]).Name(),

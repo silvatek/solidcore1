@@ -22,6 +22,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/Pawn.h"
 #include "GameFramework/PlayerController.h"
+#include "Camera/PlayerCameraManager.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/ExponentialHeightFog.h"
 #include "Materials/MaterialInterface.h"
@@ -170,23 +171,29 @@ void ASolidTerrainStreamer::Tick(float DeltaSeconds)
 
 	UpdateTerrainFog(DeltaSeconds);
 
-	if (FocusWantsEagleMap(ResolveFocusActor()) != bEagleMapStream)
+	const bool bEagleNow = FocusWantsEagleMap(ResolveFocusActor());
+	if (bEagleNow != bEagleMapStream)
 	{
 		TimeSinceUpdate = UpdateIntervalSeconds;
 	}
 
 	TimeSinceUpdate += DeltaSeconds;
-	if (TimeSinceUpdate < UpdateIntervalSeconds)
+	const bool bInterval = TimeSinceUpdate >= UpdateIntervalSeconds;
+	if (!bInterval && !bEagleNow && !bStreamWorkLeft)
 	{
 		return;
 	}
 
-	TimeSinceUpdate = 0.f;
-	TryRelocateFocusToStartTown();
-	CenterExplorationFogOnFocus();
-	ClearExplorationFogAtFocus();
+	if (bInterval)
+	{
+		TimeSinceUpdate = 0.f;
+		TryRelocateFocusToStartTown();
+		CenterExplorationFogOnFocus();
+		ClearExplorationFogAtFocus();
+	}
+
 	UpdateStreaming();
-	if (bRenderExplorationFogMeshes)
+	if (bInterval && bRenderExplorationFogMeshes)
 	{
 		ProcessExplorationFogMeshRebuilds();
 	}
@@ -292,6 +299,18 @@ void ASolidTerrainStreamer::ChunkSpan(
 	OutMax = FIntPoint(
 		FMath::FloorToInt((WorldMax.X - 1.f) / Size),
 		FMath::FloorToInt((WorldMax.Y - 1.f) / Size));
+}
+
+int32 ASolidTerrainStreamer::EagleStreamRadius(
+	float HeightAboveGroundCm,
+	float ChunkSizeCm,
+	int32 NearbyRadius,
+	int32 MapRadius)
+{
+	const float Size = FMath::Max(ChunkSizeCm, 1.f);
+	const int32 FromHeight = FMath::CeilToInt(FMath::Max(HeightAboveGroundCm, 0.f) / Size);
+	const int32 Upper = FMath::Max(MapRadius, NearbyRadius);
+	return FMath::Clamp(FMath::Max(FromHeight, NearbyRadius), 0, Upper);
 }
 
 void ASolidTerrainStreamer::BuildChunkActor(
@@ -954,44 +973,52 @@ void ASolidTerrainStreamer::UpdateStreaming()
 	}
 
 	const bool bEagle = FocusWantsEagleMap(Focus);
-	if (bEagle != bEagleMapStream)
+	bEagleMapStream = bEagle;
+
+	FVector ViewLocation = Focus->GetActorLocation();
+	if (const APawn* Pawn = Cast<APawn>(Focus))
 	{
-		for (const TPair<FIntPoint, TObjectPtr<ASolidTerrainChunk>>& Pair : LoadedChunks)
+		if (const APlayerController* PC = Cast<APlayerController>(Pawn->GetController()))
 		{
-			if (Pair.Value)
+			if (PC->PlayerCameraManager)
 			{
-				Pair.Value->Destroy();
+				ViewLocation = PC->PlayerCameraManager->GetCameraLocation();
 			}
 		}
-		LoadedChunks.Empty();
-		DirtyFogChunkCoords.Empty();
-		bEagleMapStream = bEagle;
 	}
 
 	TSet<FIntPoint> Desired;
+	FIntPoint StreamCenter = WorldToChunkCoord(bEagle ? ViewLocation : Focus->GetActorLocation());
 	if (bEagleMapStream && TerrainMap && TerrainMap->IsBuilt())
 	{
 		FIntPoint MinChunk;
 		FIntPoint MaxChunk;
 		ChunkSpan(TerrainMap->GetWorldMinXY(), TerrainMap->GetWorldMaxXY(), ChunkWorldSize, MinChunk, MaxChunk);
-		Desired.Reserve((MaxChunk.X - MinChunk.X + 1) * (MaxChunk.Y - MinChunk.Y + 1));
+		const int32 MapRadius = FMath::Max(
+			FMath::Max(FMath::Abs(StreamCenter.X - MinChunk.X), FMath::Abs(StreamCenter.X - MaxChunk.X)),
+			FMath::Max(FMath::Abs(StreamCenter.Y - MinChunk.Y), FMath::Abs(StreamCenter.Y - MaxChunk.Y)));
+		const float Height = ViewLocation.Z - GetHeightAt(ViewLocation);
+		const int32 Radius = EagleStreamRadius(Height, ChunkWorldSize, ViewRadiusChunks, MapRadius);
 		for (int32 Y = MinChunk.Y; Y <= MaxChunk.Y; ++Y)
 		{
 			for (int32 X = MinChunk.X; X <= MaxChunk.X; ++X)
 			{
-				Desired.Add(FIntPoint(X, Y));
+				const int32 Chebyshev = FMath::Max(FMath::Abs(X - StreamCenter.X), FMath::Abs(Y - StreamCenter.Y));
+				if (Chebyshev <= Radius)
+				{
+					Desired.Add(FIntPoint(X, Y));
+				}
 			}
 		}
 	}
 	else
 	{
-		const FIntPoint Center = WorldToChunkCoord(Focus->GetActorLocation());
 		Desired.Reserve((ViewRadiusChunks * 2 + 1) * (ViewRadiusChunks * 2 + 1));
 		for (int32 DY = -ViewRadiusChunks; DY <= ViewRadiusChunks; ++DY)
 		{
 			for (int32 DX = -ViewRadiusChunks; DX <= ViewRadiusChunks; ++DX)
 			{
-				Desired.Add(FIntPoint(Center.X + DX, Center.Y + DY));
+				Desired.Add(FIntPoint(StreamCenter.X + DX, StreamCenter.Y + DY));
 			}
 		}
 	}
@@ -1005,28 +1032,62 @@ void ASolidTerrainStreamer::UpdateStreaming()
 		}
 	}
 
+	int32 Removed = 0;
 	for (const FIntPoint& Key : ToRemove)
 	{
+		if (bEagleMapStream || Removed >= EagleChunksPerUpdate)
+		{
+			break;
+		}
 		if (ASolidTerrainChunk* Chunk = LoadedChunks.FindRef(Key))
 		{
 			Chunk->Destroy();
 		}
 		LoadedChunks.Remove(Key);
+		++Removed;
 	}
 
 	UWorld* World = GetWorld();
 	if (!World)
 	{
+		bStreamWorkLeft = Removed < ToRemove.Num();
 		return;
 	}
 
 	EnsureExplorationFogMaterials();
 
+	TArray<FIntPoint> ToBuild;
 	for (const FIntPoint& Coord : Desired)
 	{
-		if (LoadedChunks.Contains(Coord))
+		if (!LoadedChunks.Contains(Coord))
 		{
-			continue;
+			ToBuild.Add(Coord);
+		}
+	}
+	if (bEagleMapStream)
+	{
+		ToBuild.Sort([StreamCenter](const FIntPoint& A, const FIntPoint& B)
+		{
+			const int32 DA = FMath::Max(FMath::Abs(A.X - StreamCenter.X), FMath::Abs(A.Y - StreamCenter.Y));
+			const int32 DB = FMath::Max(FMath::Abs(B.X - StreamCenter.X), FMath::Abs(B.Y - StreamCenter.Y));
+			if (DA != DB)
+			{
+				return DA < DB;
+			}
+			if (A.Y != B.Y)
+			{
+				return A.Y < B.Y;
+			}
+			return A.X < B.X;
+		});
+	}
+
+	int32 Built = 0;
+	for (const FIntPoint& Coord : ToBuild)
+	{
+		if (bEagleMapStream && Built >= EagleChunksPerUpdate)
+		{
+			break;
 		}
 
 		FActorSpawnParameters SpawnParams;
@@ -1056,6 +1117,7 @@ void ASolidTerrainStreamer::UpdateStreaming()
 		}
 
 		LoadedChunks.Add(Coord, Chunk);
+		++Built;
 		UE_LOG(LogSolid, Warning, TEXT("Built terrain chunk (%d, %d) at origin (%.0f, %.0f). Loaded=%d"),
 			Coord.X, Coord.Y,
 			static_cast<float>(Coord.X) * ChunkWorldSize,
@@ -1063,6 +1125,7 @@ void ASolidTerrainStreamer::UpdateStreaming()
 			LoadedChunks.Num());
 	}
 
+	bStreamWorkLeft = Removed < ToRemove.Num() || Built < ToBuild.Num();
 	TrySnapFocusToTerrain(Focus);
 }
 

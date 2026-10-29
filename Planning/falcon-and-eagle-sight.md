@@ -39,6 +39,6 @@ The player looks at the sight marker. On Falcon Sight and Eagle Sight the bird s
 - On Falcon Sight and Eagle Sight the bird is shifted left so the mark behind it can be larger. The globe is U+1F310 (globe with meridians). [falcon-eagle-markers.png](falcon-eagle-markers.png) shows the current raven indicator beside those two.
 - Camera height, including Falcon's 20 m to 200 m, is measured from the ground under the camera.
 - To start with, both sights are enabled by `SolidEvents::IdEnterDragongate` (`e6a4f093`), the Enter Dragongate event. That event already enables raven sight. `SolidEvents::IdEnterJethan` (`7c3a9e14`) enables Raven Sight, then Falcon Sight, then Eagle Sight, so the view switches to Eagle. Its ClearAllFog change sets every terrain point's Fog to 0.
-- Eagle Sight draws every terrain chunk at the coarsest mesh, four quads on a side.
+- Eagle Sight keeps the nearby terrain and streams the rest of the map at four quads a side as the camera climbs.
 - Eagle Sight looks straight down with north at the top. North is world +Y. East is to the right.
 - Eagle Sight frames the world square in the real window. The camera moves to the centre and flies up from its current height until the shorter side of the window shows the whole square. On a wider window the south edge meets the bottom and the north edge meets the top. The gaps beside the square are the sea colour.

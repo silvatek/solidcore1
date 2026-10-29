@@ -67,6 +67,19 @@ public:
 		FIntPoint& OutMax);
 
 	/**
+	 * Chunk radius around the camera while Eagle Sight climbs.
+	 * Low down it stays the nearby radius. It reaches the map radius at the top of the climb.
+	 */
+	static int32 EagleStreamRadius(
+		float HeightAboveGroundCm,
+		float ChunkSizeCm,
+		int32 NearbyRadius,
+		int32 MapRadius);
+
+	/** New coarse chunks built on one streaming pass while the camera is climbing. */
+	static constexpr int32 EagleChunksPerUpdate = 12;
+
+	/**
 	 * Editor ground for the world chart. Every chunk of the centred world, and no
 	 * exploration fog, so the chart stays visible. Play builds from the chart.
 	 */
@@ -324,8 +337,10 @@ protected:
 	bool bHasFogApplyLocation = false;
 	bool bDidRelocateToStartTown = false;
 	bool bDidCenterFogOnPlayer = false;
-	/** True when the loaded chunks were built for Eagle Sight's whole-map mesh. */
+	/** True while Eagle Sight is on. New chunks then use the coarse mesh. */
 	bool bEagleMapStream = false;
+	/** Chunks still to build or drop. Streaming runs every tick until this clears. */
+	bool bStreamWorkLeft = false;
 	FVector LastFogApplyLocation = FVector::ZeroVector;
 	TSet<FIntPoint> DirtyFogChunkCoords;
 };

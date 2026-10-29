@@ -166,6 +166,11 @@ bool FSolidStreamerEagleChunkSpanTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("eagle terrain quads"), ASolidTerrainStreamer::EagleQuadsPerSide, 4);
 	TestEqual(TEXT("eagle fog quads"), ASolidTerrainStreamer::EagleFogQuadsPerSide, 2);
 	TestTrue(TEXT("eagle mesh is coarser than the nearby mesh"), ASolidTerrainStreamer::EagleQuadsPerSide < 32);
+
+	TestEqual(TEXT("on the ground the radius stays nearby"), ASolidTerrainStreamer::EagleStreamRadius(0.f, 6400.f, 2, 8), 2);
+	TestEqual(TEXT("one chunk of height stays nearby"), ASolidTerrainStreamer::EagleStreamRadius(6400.f, 6400.f, 2, 8), 2);
+	TestEqual(TEXT("higher up the radius grows"), ASolidTerrainStreamer::EagleStreamRadius(20000.f, 6400.f, 2, 8), 4);
+	TestEqual(TEXT("the top of the climb is the whole map"), ASolidTerrainStreamer::EagleStreamRadius(90000.f, 6400.f, 2, 8), 8);
 	return true;
 }
 

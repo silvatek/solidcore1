@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0739")
+#define SOLID_BUILD_ID TEXT("SC1-0740")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("NorthWestCut cuts the west end of a two-and-two edge.")
+#define SOLID_BUILD_NOTE TEXT("F9 cycles sight and skips a locked mode.")
 #endif

@@ -145,4 +145,47 @@ bool FSolidSightHorizontalViewTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidSightCycleTest,
+	"SolidCore1.Sight.Cycle",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidSightCycleTest::RunTest(const FString& Parameters)
+{
+	auto Sight = [](const ESolidSight Mode)
+	{
+		return static_cast<uint8>(Mode);
+	};
+
+	SolidSight::FAvailable Pair;
+	Pair.bRaven = true;
+	TestEqual(TEXT("true sight steps to raven"), Sight(SolidSight::Cycle(ESolidSight::True, Pair)), Sight(ESolidSight::Raven));
+	TestEqual(TEXT("raven sight steps to true"), Sight(SolidSight::Cycle(ESolidSight::Raven, Pair)), Sight(ESolidSight::True));
+
+	const SolidSight::FAvailable TrueOnly;
+	TestEqual(
+		TEXT("a locked raven sight is skipped"),
+		Sight(SolidSight::Cycle(ESolidSight::True, TrueOnly)),
+		Sight(ESolidSight::True));
+
+	SolidSight::FAvailable All;
+	All.bRaven = true;
+	All.bFalcon = true;
+	All.bEagle = true;
+	TestEqual(TEXT("falcon follows raven"), Sight(SolidSight::Cycle(ESolidSight::Raven, All)), Sight(ESolidSight::Falcon));
+	TestEqual(TEXT("eagle follows falcon"), Sight(SolidSight::Cycle(ESolidSight::Falcon, All)), Sight(ESolidSight::Eagle));
+	TestEqual(TEXT("true sight follows eagle"), Sight(SolidSight::Cycle(ESolidSight::Eagle, All)), Sight(ESolidSight::True));
+
+	SolidSight::FAvailable SkipFalcon = All;
+	SkipFalcon.bFalcon = false;
+	TestEqual(
+		TEXT("a locked falcon sight is skipped"),
+		Sight(SolidSight::Cycle(ESolidSight::Raven, SkipFalcon)),
+		Sight(ESolidSight::Eagle));
+
+	TestEqual(TEXT("falcon label"), FString(SolidSight::Label(ESolidSight::Falcon)), FString(TEXT("Falcon sight")));
+	TestEqual(TEXT("eagle label"), FString(SolidSight::Label(ESolidSight::Eagle)), FString(TEXT("Eagle sight")));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

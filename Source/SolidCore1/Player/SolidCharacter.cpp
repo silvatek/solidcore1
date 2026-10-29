@@ -609,19 +609,28 @@ void ASolidCharacter::ToggleSightFromInput()
 		return;
 	}
 
-	const ESolidSight Next = SolidSight::Toggle(Sight);
+	SolidSight::FAvailable Available;
+	Available.bRaven = true;
+	Available.bFalcon = true;
+	Available.bEagle = true;
 	if (UWorld* World = GetWorld())
 	{
 		if (const ASolidGameMode* GameMode = World->GetAuthGameMode<ASolidGameMode>())
 		{
-			if (!GameMode->IsSightEnabled(Next))
-			{
-				UE_LOG(LogSolid, Warning, TEXT("Sight locked: %s"), SolidSight::Label(Next));
-				return;
-			}
+			Available.bTrue = GameMode->IsSightEnabled(ESolidSight::True);
+			Available.bRaven = GameMode->IsSightEnabled(ESolidSight::Raven);
+			Available.bFalcon = GameMode->IsSightEnabled(ESolidSight::Falcon);
+			Available.bEagle = GameMode->IsSightEnabled(ESolidSight::Eagle);
 		}
 	}
-	ToggleSight();
+
+	const ESolidSight Next = SolidSight::Cycle(Sight, Available);
+	if (Next == Sight)
+	{
+		UE_LOG(LogSolid, Warning, TEXT("Sight locked: %s"), SolidSight::Label(Sight));
+		return;
+	}
+	SetSight(Next);
 }
 
 void ASolidCharacter::ToggleInventoryFromController()

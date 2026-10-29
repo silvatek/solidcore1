@@ -8,6 +8,8 @@ enum class ESolidSight : uint8
 {
 	Raven,
 	True,
+	Falcon,
+	Eagle,
 };
 
 /** F9 view toggle. Pure helpers — no actor spawning (safe for automation). */
@@ -35,6 +37,58 @@ namespace SolidSight
 		return IsTrueSight(Sight) ? ESolidSight::Raven : ESolidSight::True;
 	}
 
+	/** Which sights F9 may land on. True sight starts available. */
+	struct FAvailable
+	{
+		bool bTrue = true;
+		bool bRaven = false;
+		bool bFalcon = false;
+		bool bEagle = false;
+	};
+
+	inline bool IsAvailable(const ESolidSight Sight, const FAvailable& Available)
+	{
+		switch (Sight)
+		{
+		case ESolidSight::True: return Available.bTrue;
+		case ESolidSight::Raven: return Available.bRaven;
+		case ESolidSight::Falcon: return Available.bFalcon;
+		case ESolidSight::Eagle: return Available.bEagle;
+		default: return false;
+		}
+	}
+
+	/** The next mode in F9 order: true, raven, falcon, eagle. */
+	inline ESolidSight Next(const ESolidSight Sight)
+	{
+		switch (Sight)
+		{
+		case ESolidSight::True: return ESolidSight::Raven;
+		case ESolidSight::Raven: return ESolidSight::Falcon;
+		case ESolidSight::Falcon: return ESolidSight::Eagle;
+		case ESolidSight::Eagle: return ESolidSight::True;
+		default: return ESolidSight::True;
+		}
+	}
+
+	/**
+	 * F9. Walks that order and skips a mode that is locked.
+	 * Stays on the current mode when no other mode is available.
+	 */
+	inline ESolidSight Cycle(const ESolidSight Sight, const FAvailable& Available)
+	{
+		ESolidSight Candidate = Sight;
+		for (int32 Step = 0; Step < 4; ++Step)
+		{
+			Candidate = Next(Candidate);
+			if (IsAvailable(Candidate, Available))
+			{
+				return Candidate;
+			}
+		}
+		return Sight;
+	}
+
 	/**
 	 * Look used after a sight change. True sight is horizontal: pitch and roll are 0.
 	 * Yaw stays, so the captain still faces the same way. Raven sight keeps the tilt.
@@ -50,7 +104,14 @@ namespace SolidSight
 
 	inline const TCHAR* Label(ESolidSight Sight)
 	{
-		return IsTrueSight(Sight) ? TEXT("True sight") : TEXT("Raven sight");
+		switch (Sight)
+		{
+		case ESolidSight::True: return TEXT("True sight");
+		case ESolidSight::Falcon: return TEXT("Falcon sight");
+		case ESolidSight::Eagle: return TEXT("Eagle sight");
+		case ESolidSight::Raven:
+		default: return TEXT("Raven sight");
+		}
 	}
 
 	/** Top-right marker. Eye for true sight, eagle for raven sight. */

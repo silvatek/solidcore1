@@ -175,6 +175,49 @@ namespace SolidSight
 		return Fill;
 	}
 
+	/**
+	 * Height above the ground that puts the map across the span the window sees now.
+	 * The view is straight down, so that span grows in proportion to the height.
+	 */
+	inline float EagleSpanHeightCm(const float ViewHeightCm, const float SeenSpanCm, const float MapSpanCm)
+	{
+		if (ViewHeightCm <= 1.f || SeenSpanCm <= 1.f || MapSpanCm <= 1.f)
+		{
+			return ViewHeightCm;
+		}
+		return ViewHeightCm * (MapSpanCm / SeenSpanCm);
+	}
+
+	/** How fast Eagle Sight rises or drops while it matches the window to the square (cm/s). */
+	inline constexpr float EagleRiseCmPerSecond = 40000.f;
+
+	/** Step the current height toward the measured height. The next look can correct the step. */
+	inline float EagleRiseCm(const float CurrentHeightCm, const float TargetHeightCm, const float DeltaSeconds)
+	{
+		const float MaxStep = EagleRiseCmPerSecond * FMath::Max(DeltaSeconds, 0.f);
+		return CurrentHeightCm + FMath::Clamp(TargetHeightCm - CurrentHeightCm, -MaxStep, MaxStep);
+	}
+
+	/** Where a straight-down ray meets the ground plane. A level ray does not meet it. */
+	inline bool EagleGroundHit(
+		const FVector& RayOrigin,
+		const FVector& RayDirection,
+		const float GroundZ,
+		FVector& OutHit)
+	{
+		if (FMath::Abs(RayDirection.Z) <= 0.001f)
+		{
+			return false;
+		}
+		const float T = (GroundZ - RayOrigin.Z) / RayDirection.Z;
+		if (T <= 0.f)
+		{
+			return false;
+		}
+		OutHit = RayOrigin + RayDirection * T;
+		return true;
+	}
+
 	/** Wheel position in the raven zoom range, as 0 at the near end and 1 at the far end. */
 	inline float FalconZoomAlpha(const float ArmCm, const float ZoomMin, const float ZoomMax)
 	{

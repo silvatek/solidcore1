@@ -505,7 +505,7 @@ void ASolidCharacter::ApplySightPresentation()
 	}
 	else if (IsEagleSight())
 	{
-		ApplyEagleSightCamera();
+		ApplyEagleSightCamera(0.f);
 	}
 	else
 	{

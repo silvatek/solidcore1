@@ -275,6 +275,29 @@ bool FSolidSightEagleCameraTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("a taller window fills the width"), FMath::IsNearlyEqual(Tall.HeightCm, 51200.f, 1.f));
 	TestTrue(TEXT("a taller window keeps the south edge on the bottom"), Tall.Ground.Y > 1.f);
 	TestTrue(TEXT("a taller window stays on the centre east to west"), FMath::IsNearlyZero(Tall.Ground.X, 1.f));
+
+	TestTrue(
+		TEXT("a short view rises to the square"),
+		FMath::IsNearlyEqual(SolidSight::EagleSpanHeightCm(50000.f, 50000.f, 102400.f), 102400.f, 1.f));
+	TestTrue(
+		TEXT("a matching view holds its height"),
+		FMath::IsNearlyEqual(SolidSight::EagleSpanHeightCm(91022.f, 102400.f, 102400.f), 91022.f, 1.f));
+	TestTrue(
+		TEXT("the rise covers 400 m in one second"),
+		FMath::IsNearlyEqual(SolidSight::EagleRiseCm(50000.f, 102400.f, 1.f), 90000.f, 1.f));
+	TestTrue(
+		TEXT("a zero step stays put"),
+		FMath::IsNearlyEqual(SolidSight::EagleRiseCm(50000.f, 102400.f, 0.f), 50000.f, 1.f));
+
+	FVector Hit = FVector::ZeroVector;
+	const FVector DownNorth = FVector(0.f, 1.f, -1.f).GetSafeNormal();
+	TestTrue(
+		TEXT("a downward ray meets the ground"),
+		SolidSight::EagleGroundHit(FVector(0.f, 0.f, 1000.f), DownNorth, 0.f, Hit));
+	TestTrue(TEXT("that hit is north of the camera"), Hit.Y > 1.f);
+	TestFalse(
+		TEXT("a level ray misses the ground"),
+		SolidSight::EagleGroundHit(FVector::ZeroVector, FVector(1.f, 0.f, 0.f), 0.f, Hit));
 	return true;
 }
 

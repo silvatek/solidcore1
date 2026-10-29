@@ -4,6 +4,7 @@
 #include "Companion/SolidCompanionCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "EngineUtils.h"
+#include "GameFramework/PlayerCameraManager.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Terrain/SolidTerrainMap.h"
@@ -70,7 +71,7 @@ void ASolidCharacter::ApplyFalconSightCamera()
 	CameraBoom->bDoCollisionTest = false;
 }
 
-void ASolidCharacter::ApplyEagleSightCamera()
+void ASolidCharacter::ApplyEagleSightCamera(float DeltaSeconds)
 {
 	if (!CameraBoom)
 	{
@@ -105,10 +106,11 @@ void ASolidCharacter::ApplyEagleSightCamera()
 	const float Fov = FollowCamera ? FollowCamera->FieldOfView : 90.f;
 	float ViewportW = 16.f;
 	float ViewportH = 9.f;
-	if (const APlayerController* PC = Cast<APlayerController>(Controller))
+	int32 SizeX = 0;
+	int32 SizeY = 0;
+	APlayerController* PC = Cast<APlayerController>(Controller);
+	if (PC)
 	{
-		int32 SizeX = 0;
-		int32 SizeY = 0;
 		PC->GetViewportSize(SizeX, SizeY);
 		if (SizeX > 0 && SizeY > 0)
 		{
@@ -117,14 +119,61 @@ void ASolidCharacter::ApplyEagleSightCamera()
 		}
 	}
 	const SolidSight::FEagleFill Fill = SolidSight::EagleFill(WorldMin, WorldMax, Fov, ViewportW, ViewportH);
+	if (EagleSightHeightCm <= 1.f)
+	{
+		EagleSightHeightCm = FMath::Max(Fill.HeightCm, 1.f);
+	}
+
 	float GroundZ = 0.f;
 	if (Streamer)
 	{
 		GroundZ = Streamer->GetHeightAt(FVector(Fill.Ground.X, Fill.Ground.Y, 0.f)) + Streamer->CollisionHeightBias;
 	}
+
+	if (PC && PC->PlayerCameraManager && SizeX > 1 && SizeY > 1)
+	{
+		const FVector Cam = PC->PlayerCameraManager->GetCameraLocation();
+		const FRotator CamRot = PC->PlayerCameraManager->GetCameraRotation();
+		const bool bEagleView = FMath::Abs(CamRot.Pitch + 90.f) < 2.f
+			&& FMath::IsNearlyEqual(Cam.X, Fill.Ground.X, 500.f)
+			&& FMath::IsNearlyEqual(Cam.Y, Fill.Ground.Y, 500.f);
+		const bool bFillHeight = ViewportW >= ViewportH;
+		FVector OriginA;
+		FVector DirA;
+		FVector OriginB;
+		FVector DirB;
+		const bool bRays = bEagleView
+			&& PC->DeprojectScreenPositionToWorld(
+				bFillHeight ? SizeX * 0.5f : 0.f,
+				bFillHeight ? 0.f : SizeY * 0.5f,
+				OriginA,
+				DirA)
+			&& PC->DeprojectScreenPositionToWorld(
+				bFillHeight ? SizeX * 0.5f : static_cast<float>(SizeX),
+				bFillHeight ? static_cast<float>(SizeY) : SizeY * 0.5f,
+				OriginB,
+				DirB);
+		FVector HitA;
+		FVector HitB;
+		if (bRays
+			&& SolidSight::EagleGroundHit(OriginA, DirA, GroundZ, HitA)
+			&& SolidSight::EagleGroundHit(OriginB, DirB, GroundZ, HitB))
+		{
+			const float SeenA = bFillHeight ? HitA.Y : HitA.X;
+			const float SeenB = bFillHeight ? HitB.Y : HitB.X;
+			const float MapA = bFillHeight ? WorldMin.Y : WorldMin.X;
+			const float MapB = bFillHeight ? WorldMax.Y : WorldMax.X;
+			const float Target = FMath::Clamp(
+				SolidSight::EagleSpanHeightCm(Cam.Z - GroundZ, FMath::Abs(SeenB - SeenA), FMath::Abs(MapB - MapA)),
+				1000.f,
+				500000.f);
+			EagleSightHeightCm = SolidSight::EagleRiseCm(EagleSightHeightCm, Target, DeltaSeconds);
+		}
+	}
+
 	const FVector Origin = CameraBoom->GetComponentLocation();
 	const FVector WorldOffset(
-		Fill.Ground.X - Origin.X, Fill.Ground.Y - Origin.Y, GroundZ + Fill.HeightCm - Origin.Z);
+		Fill.Ground.X - Origin.X, Fill.Ground.Y - Origin.Y, GroundZ + EagleSightHeightCm - Origin.Z);
 
 	CameraBoom->TargetArmLength = 0.f;
 	CameraBoom->TargetOffset = FVector::ZeroVector;
@@ -156,6 +205,11 @@ void ASolidCharacter::AimFalconAtCaptain()
 
 void ASolidCharacter::UpdateSquadCameraFraming(float DeltaTime)
 {
+	if (!IsEagleSight())
+	{
+		EagleSightHeightCm = 0.f;
+	}
+
 	if (IsTrueSight())
 	{
 		ApplyTrueSightCamera();
@@ -170,7 +224,7 @@ void ASolidCharacter::UpdateSquadCameraFraming(float DeltaTime)
 
 	if (IsEagleSight())
 	{
-		ApplyEagleSightCamera();
+		ApplyEagleSightCamera(DeltaTime);
 		return;
 	}
 

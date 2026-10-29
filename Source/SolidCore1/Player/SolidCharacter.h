@@ -204,7 +204,7 @@ protected:
 	void ApplyTrueSightCamera();
 	void ApplyRavenSightCamera();
 	void ApplyFalconSightCamera();
-	void ApplyEagleSightCamera();
+	void ApplyEagleSightCamera(float DeltaSeconds);
 	/** Falcon Sight. The view stays on the captain. */
 	void AimFalconAtCaptain();
 	void ToggleMainMenuFromInput();
@@ -441,6 +441,9 @@ protected:
 
 	/** Smoothed world-Z lift applied via spring-arm SocketOffset (keeps camera above terrain). */
 	float CameraTerrainLiftCm = 0.f;
+
+	/** Eagle Sight height above the ground. It rises until the shorter side of the window shows the square. */
+	float EagleSightHeightCm = 0.f;
 
 	/** True sight until an event enables raven sight. */
 	ESolidSight Sight = ESolidSight::True;

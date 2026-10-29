@@ -36,6 +36,13 @@ namespace SolidTerrainFog
 	constexpr float InnerCurtainHeightCm = 520000.f;
 	/** Outer half|full curtain (cm). Taller than the inner curtain, and above the camera. */
 	constexpr float OuterCurtainHeightCm = 530000.f;
+	/**
+	 * Each curtain segment extends this fraction of a fog cell past each end.
+	 * The next segment does the same, so the joint overlap is twice this.
+	 */
+	constexpr float CurtainEndPadOfStep = 0.04f;
+	/** That extension never passes this fraction of the segment's own length. */
+	constexpr float CurtainEndPadOfLength = 0.125f;
 	/** Isocontour between half fog (0.5) and full fog (1.0). */
 	constexpr float HalfFullFogThreshold = 0.75f;
 

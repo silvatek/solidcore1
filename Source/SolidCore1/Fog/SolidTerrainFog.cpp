@@ -449,7 +449,7 @@ namespace SolidTerrainFog
 			}
 			Dir2 /= Len;
 
-			const float Pad = FMath::Min(Step * 0.08f, Len * 0.25f);
+			const float Pad = FMath::Min(Step * CurtainEndPadOfStep, Len * CurtainEndPadOfLength);
 			const float AX = A.X - Dir2.X * Pad;
 			const float AY = A.Y - Dir2.Y * Pad;
 			const float BX = B.X + Dir2.X * Pad;

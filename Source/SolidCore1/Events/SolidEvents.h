@@ -82,7 +82,8 @@ namespace SolidEvents
 		// Eagle is last, so the view switches to Eagle.
 		EnterTown(IdEnterJethan, TEXT("Enter Jethan"), SolidTowns::Jethan, ACT_4)
 			.EnableSight(ESolidSight::Falcon)
-			.EnableSight(ESolidSight::Eagle),
+			.EnableSight(ESolidSight::Eagle)
+			.ClearAllFog(),
 	};
 
 	static_assert(UE_ARRAY_COUNT(Definitions) <= MaxEvents, "Raise SolidEvents::MaxEvents");

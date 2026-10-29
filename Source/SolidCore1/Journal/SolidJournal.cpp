@@ -65,6 +65,9 @@ FString USolidJournal::Describe(const SolidEvents::FEvent& Event)
 		case SolidEvents::EChange::ClearInventory:
 			Part = TEXT("Inventory cleared");
 			break;
+		case SolidEvents::EChange::ClearAllFog:
+			Part = TEXT("Fog cleared");
+			break;
 		case SolidEvents::EChange::EnableStrongholdSize:
 			Part = FString::Printf(TEXT("%s size unlocked"), SolidStronghold::SizeName(Change.StrongholdSize));
 			break;

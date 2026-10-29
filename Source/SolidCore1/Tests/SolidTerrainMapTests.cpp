@@ -178,4 +178,41 @@ bool FSolidMapTrailNeverIncreasesFogTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidMapClearAllExplorationFogTest,
+	"SolidCore1.Map.ClearAllExplorationFog",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidMapClearAllExplorationFogTest::RunTest(const FString& Parameters)
+{
+	USolidTerrainMap* Map = SolidTerrainTestHelpers::MakeSmallMap();
+	TestNotNull(TEXT("map object"), Map);
+	if (!Map)
+	{
+		return false;
+	}
+
+	bool bSawFog = false;
+	for (const FSolidTerrainPoint& Point : Map->GetPoints())
+	{
+		if (Point.Fog > KINDA_SMALL_NUMBER)
+		{
+			bSawFog = true;
+			break;
+		}
+	}
+	TestTrue(TEXT("the map starts with fog"), bSawFog);
+
+	Map->ClearAllExplorationFog();
+	for (const FSolidTerrainPoint& Point : Map->GetPoints())
+	{
+		if (Point.Fog > KINDA_SMALL_NUMBER)
+		{
+			AddError(FString::Printf(TEXT("Fog remains %.3f at (%.0f, %.0f)"), Point.Fog, Point.X, Point.Y));
+			return false;
+		}
+	}
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

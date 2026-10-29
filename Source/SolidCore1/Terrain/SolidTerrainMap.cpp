@@ -259,6 +259,14 @@ bool USolidTerrainMap::ApplyExplorationFog(const TArray<float>& InFog)
 	return true;
 }
 
+void USolidTerrainMap::ClearAllExplorationFog()
+{
+	for (FSolidTerrainPoint& Point : Points)
+	{
+		Point.Fog = 0.f;
+	}
+}
+
 int32 USolidTerrainMap::ApplyExplorationFogAround(float WorldX, float WorldY)
 {
 	if (!IsBuilt())

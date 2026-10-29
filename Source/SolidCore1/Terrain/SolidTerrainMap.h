@@ -85,6 +85,9 @@ public:
 	 */
 	int32 ApplyExplorationFogAround(float WorldX, float WorldY);
 
+	/** Set Fog to 0 on every terrain point. */
+	void ClearAllExplorationFog();
+
 	/**
 	 * Initial fog bands around a player position. Replaces every point's Fog from
 	 * distance to (WorldX, WorldY). Call once when the player is placed; trail

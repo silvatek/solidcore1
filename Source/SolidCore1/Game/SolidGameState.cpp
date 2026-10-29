@@ -1,5 +1,7 @@
 #include "SolidGameState.h"
 #include "SolidGameMode.h"
+#include "SolidGameInstance.h"
+#include "Terrain/SolidTerrainStreamer.h"
 #include "Towns/SolidTowns.h"
 #include "BattlePlans/SolidBattlePlan.h"
 #include "Company/SolidCompany.h"
@@ -150,6 +152,16 @@ void ApplyChange(
 		break;
 	case EChange::ClearInventory:
 		SolidInventory::Clear(State.Inventory);
+		break;
+	case EChange::ClearAllFog:
+		Result.bClearAllFog = true;
+		if (UWorld* World = State.GetWorld())
+		{
+			if (ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World))
+			{
+				Streamer->ClearAllExplorationFog();
+			}
+		}
 		break;
 	case EChange::EnableStrongholdSize:
 	{

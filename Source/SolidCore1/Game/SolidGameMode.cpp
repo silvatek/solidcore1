@@ -1346,6 +1346,17 @@ void ASolidGameMode::NoteTownEntry(const int32 TownId)
 		RepairBrokenBridges();
 	}
 
+	if (Result.bClearAllFog)
+	{
+		if (UWorld* World = GetWorld())
+		{
+			if (ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World))
+			{
+				Streamer->ClearAllExplorationFog();
+			}
+		}
+	}
+
 	if (ASolidCharacter* Captain = FindCaptain(GetWorld()))
 	{
 		if (Result.bSetSight)

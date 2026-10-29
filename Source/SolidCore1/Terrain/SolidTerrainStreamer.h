@@ -46,6 +46,9 @@ public:
 	}
 	USolidTerrainMap* GetTerrainMap() const { return TerrainMap; }
 
+	/** Set Fog to 0 on every terrain point, keep that clear, and rebuild the loaded fog sheets. */
+	void ClearAllExplorationFog();
+
 	/**
 	 * Editor ground for the world chart. Every chunk of the centred world, and no
 	 * exploration fog, so the chart stays visible. Play builds from the chart.

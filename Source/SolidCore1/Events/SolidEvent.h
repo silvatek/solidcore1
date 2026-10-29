@@ -77,6 +77,8 @@ namespace SolidEvents
 		DisableBattlePlan,
 		/** Copy the named companion from the global list onto the company. */
 		AddCompanion,
+		/** Set Fog to 0 on every terrain point. */
+		ClearAllFog,
 	};
 
 	struct FChange
@@ -195,6 +197,13 @@ namespace SolidEvents
 			Change.CompanionName = Name;
 			return Change;
 		}
+
+		inline constexpr FChange ClearAllFog()
+		{
+			FChange Change;
+			Change.Kind = EChange::ClearAllFog;
+			return Change;
+		}
 	}
 
 	struct FEvent
@@ -272,6 +281,11 @@ namespace SolidEvents
 		constexpr FEvent AddCompanion(const TCHAR* CompanionName) const
 		{
 			return With(Change::AddCompanion(CompanionName));
+		}
+
+		constexpr FEvent ClearAllFog() const
+		{
+			return With(Change::ClearAllFog());
 		}
 
 		constexpr FEvent Require(const TCHAR* EventId) const

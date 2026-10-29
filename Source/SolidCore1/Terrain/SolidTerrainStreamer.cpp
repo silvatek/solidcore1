@@ -177,6 +177,33 @@ void ASolidTerrainStreamer::Tick(float DeltaSeconds)
 	}
 }
 
+void ASolidTerrainStreamer::ClearAllExplorationFog()
+{
+	if (!TerrainMap)
+	{
+		return;
+	}
+
+	TerrainMap->ClearAllExplorationFog();
+	if (UWorld* World = GetWorld())
+	{
+		if (USolidGameInstance* Instance = World->GetGameInstance<USolidGameInstance>())
+		{
+			TArray<float> Fog;
+			TerrainMap->CopyExplorationFog(Fog);
+			Instance->StoreExplorationFog(Fog);
+		}
+	}
+
+	for (const TPair<FIntPoint, TObjectPtr<ASolidTerrainChunk>>& Pair : LoadedChunks)
+	{
+		if (Pair.Value)
+		{
+			DirtyFogChunkCoords.Add(Pair.Key);
+		}
+	}
+}
+
 int32 ASolidTerrainStreamer::ClearExplorationFogAtFocus()
 {
 	if (!TerrainMap || !TerrainMap->IsBuilt())

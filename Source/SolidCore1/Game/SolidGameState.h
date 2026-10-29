@@ -111,6 +111,8 @@ namespace SolidEvents
 		/** A Show message change ran. MessageId names the line to show. */
 		bool bShowMessage = false;
 		const TCHAR* MessageId = nullptr;
+		/** A ClearAllFog change ran. Every terrain point's Fog is 0. */
+		bool bClearAllFog = false;
 	};
 
 	int32 SquadCount(const USolidGameState& State);

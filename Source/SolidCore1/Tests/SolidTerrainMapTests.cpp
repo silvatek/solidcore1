@@ -32,6 +32,19 @@ bool FSolidMapBuildSmokeTest::RunTest(const FString& Parameters)
 	const FSolidTerrainPoint Mid = Map->SamplePoint(MidXY.X, MidXY.Y);
 	TestTrue(TEXT("35m starts at half fog"), FMath::IsNearlyEqual(Mid.Fog, 0.5f));
 
+	FVector2D ClearMin = FVector2D::ZeroVector;
+	FVector2D ClearMax = FVector2D::ZeroVector;
+	TestTrue(TEXT("clear fog has bounds"), Map->GetClearFogBounds(ClearMin, ClearMax));
+	TestTrue(TEXT("the fog origin is inside the clear bounds"),
+		FogOrigin.X >= ClearMin.X && FogOrigin.X <= ClearMax.X
+		&& FogOrigin.Y >= ClearMin.Y && FogOrigin.Y <= ClearMax.Y);
+	const float ClearReach = SolidTerrainFog::MetersToCm(SolidTerrainFog::ClearRadiusMeters) + Map->PointSpacing;
+	TestTrue(TEXT("clear bounds stay inside the clear radius"),
+		FVector2D::Distance(FogOrigin, ClearMin) <= ClearReach
+		&& FVector2D::Distance(FogOrigin, ClearMax) <= ClearReach);
+	TestTrue(TEXT("a full-fog point is outside the clear bounds"),
+		FarXY.X < ClearMin.X || FarXY.X > ClearMax.X || FarXY.Y < ClearMin.Y || FarXY.Y > ClearMax.Y);
+
 	return true;
 }
 
@@ -69,8 +82,24 @@ bool FSolidMapTrailClearTest::RunTest(const FString& Parameters)
 		FVector2D::Distance(TrailXY, UntouchedXY)
 			> SolidTerrainFog::FullFogStartMeters * 100.f);
 
+	FVector2D BeforeMin = FVector2D::ZeroVector;
+	FVector2D BeforeMax = FVector2D::ZeroVector;
+	TestTrue(TEXT("clear bounds exist before the trail"), Map->GetClearFogBounds(BeforeMin, BeforeMax));
+	TestTrue(TEXT("a fogged trail point starts outside the clear bounds"),
+		TrailXY.X < BeforeMin.X || TrailXY.X > BeforeMax.X || TrailXY.Y < BeforeMin.Y || TrailXY.Y > BeforeMax.Y);
+
 	const int32 Changed = Map->ApplyExplorationFogAround(TrailXY.X, TrailXY.Y);
 	TestTrue(TEXT("trail clear changed some points"), Changed > 0);
+
+	FVector2D AfterMin = FVector2D::ZeroVector;
+	FVector2D AfterMax = FVector2D::ZeroVector;
+	TestTrue(TEXT("clear bounds follow the trail"), Map->GetClearFogBounds(AfterMin, AfterMax));
+	TestTrue(TEXT("the cleared trail is inside the bounds"),
+		TrailXY.X >= AfterMin.X && TrailXY.X <= AfterMax.X
+		&& TrailXY.Y >= AfterMin.Y && TrailXY.Y <= AfterMax.Y);
+	TestTrue(TEXT("the old clear ground stays inside the bounds"),
+		FogOrigin.X >= AfterMin.X && FogOrigin.X <= AfterMax.X
+		&& FogOrigin.Y >= AfterMin.Y && FogOrigin.Y <= AfterMax.Y);
 
 	TestTrue(TEXT("trail center cleared"),
 		FMath::IsNearlyEqual(Map->SamplePoint(TrailXY.X, TrailXY.Y).Fog, 0.f));
@@ -204,6 +233,11 @@ bool FSolidMapClearAllExplorationFogTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the map starts with fog"), bSawFog);
 
 	Map->ClearAllExplorationFog();
+	FVector2D ClearMin = FVector2D::ZeroVector;
+	FVector2D ClearMax = FVector2D::ZeroVector;
+	TestTrue(TEXT("clearing all fog covers the grid"), Map->GetClearFogBounds(ClearMin, ClearMax));
+	TestTrue(TEXT("clear bounds reach the world corners"),
+		ClearMin.Equals(Map->GetWorldMinXY(), 1.f) && ClearMax.Equals(Map->GetWorldMaxXY(), 1.f));
 	for (const FSolidTerrainPoint& Point : Map->GetPoints())
 	{
 		if (Point.Fog > KINDA_SMALL_NUMBER)

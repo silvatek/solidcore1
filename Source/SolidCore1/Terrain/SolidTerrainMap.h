@@ -123,6 +123,9 @@ public:
 	 */
 	FVector2D GetFogOriginXY() const { return FogOriginXY; }
 
+	/** World bounds of terrain points whose Fog is 0. False when every point is fogged. */
+	bool GetClearFogBounds(FVector2D& OutMin, FVector2D& OutMax) const;
+
 protected:
 	UPROPERTY()
 	TArray<FSolidTerrainPoint> Points;
@@ -134,6 +137,16 @@ protected:
 	UPROPERTY()
 	FVector2D FogOriginXY = FVector2D::ZeroVector;
 
+	UPROPERTY()
+	bool bHasClearFog = false;
+
+	UPROPERTY()
+	FVector2D ClearFogMinXY = FVector2D::ZeroVector;
+
+	UPROPERTY()
+	FVector2D ClearFogMaxXY = FVector2D::ZeroVector;
+
+	void TrackClearFogBounds();
 	void WorldToIndex(float WorldX, float WorldY, int32& OutX, int32& OutY) const;
 	ESolidBiome ChooseBiome(float WorldX, float WorldY, float HeightNorm, int32 InSeed) const;
 	/** Threat stays zero. Fog starts fully shrouded. */

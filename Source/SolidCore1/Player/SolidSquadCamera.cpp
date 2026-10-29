@@ -175,11 +175,35 @@ void ASolidCharacter::ApplyEagleSightCamera(float DeltaSeconds)
 			&& FMath::IsNearlyEqual(Cam.X, Ground.X, 500.f)
 			&& FMath::IsNearlyEqual(Cam.Y, Ground.Y, 500.f);
 		const bool bFillHeight = ViewportW >= ViewportH;
+		FVector2D ClearMin = WorldMin;
+		FVector2D ClearMax = WorldMax;
+		const bool bClear = BuiltMap && BuiltMap->GetClearFogBounds(ClearMin, ClearMax);
+		FVector TopOrigin;
+		FVector TopDir;
+		FVector BottomOrigin;
+		FVector BottomDir;
+		FVector LeftOrigin;
+		FVector LeftDir;
+		FVector RightOrigin;
+		FVector RightDir;
+		FVector TopHit;
+		FVector BottomHit;
+		FVector LeftHit;
+		FVector RightHit;
+		const bool bClearRays = bEagleView && bClear
+			&& PC->DeprojectScreenPositionToWorld(SizeX * 0.5f, 0.f, TopOrigin, TopDir)
+			&& PC->DeprojectScreenPositionToWorld(SizeX * 0.5f, static_cast<float>(SizeY), BottomOrigin, BottomDir)
+			&& PC->DeprojectScreenPositionToWorld(0.f, SizeY * 0.5f, LeftOrigin, LeftDir)
+			&& PC->DeprojectScreenPositionToWorld(static_cast<float>(SizeX), SizeY * 0.5f, RightOrigin, RightDir)
+			&& SolidSight::EagleGroundHit(TopOrigin, TopDir, GroundZ, TopHit)
+			&& SolidSight::EagleGroundHit(BottomOrigin, BottomDir, GroundZ, BottomHit)
+			&& SolidSight::EagleGroundHit(LeftOrigin, LeftDir, GroundZ, LeftHit)
+			&& SolidSight::EagleGroundHit(RightOrigin, RightDir, GroundZ, RightHit);
 		FVector OriginA;
 		FVector DirA;
 		FVector OriginB;
 		FVector DirB;
-		const bool bRays = bEagleView
+		const bool bMapRays = bEagleView && !bClear
 			&& PC->DeprojectScreenPositionToWorld(
 				bFillHeight ? SizeX * 0.5f : 0.f,
 				bFillHeight ? 0.f : SizeY * 0.5f,
@@ -192,7 +216,20 @@ void ASolidCharacter::ApplyEagleSightCamera(float DeltaSeconds)
 				DirB);
 		FVector HitA;
 		FVector HitB;
-		if (bRays
+		float Target = EagleSightHeightCm;
+		bool bHaveTarget = false;
+		if (bClearRays)
+		{
+			Target = SolidSight::EagleClearHeightCm(
+				Cam.Z - GroundZ,
+				FMath::Abs(RightHit.X - LeftHit.X),
+				FMath::Abs(TopHit.Y - BottomHit.Y),
+				FVector2D(Cam.X, Cam.Y),
+				ClearMin,
+				ClearMax);
+			bHaveTarget = true;
+		}
+		else if (bMapRays
 			&& SolidSight::EagleGroundHit(OriginA, DirA, GroundZ, HitA)
 			&& SolidSight::EagleGroundHit(OriginB, DirB, GroundZ, HitB))
 		{
@@ -200,10 +237,13 @@ void ASolidCharacter::ApplyEagleSightCamera(float DeltaSeconds)
 			const float SeenB = bFillHeight ? HitB.Y : HitB.X;
 			const float MapA = bFillHeight ? WorldMin.Y : WorldMin.X;
 			const float MapB = bFillHeight ? WorldMax.Y : WorldMax.X;
-			const float Target = FMath::Clamp(
-				SolidSight::EagleSpanHeightCm(Cam.Z - GroundZ, FMath::Abs(SeenB - SeenA), FMath::Abs(MapB - MapA)),
-				1000.f,
-				SolidSight::EagleMaxHeightCm);
+			Target = SolidSight::EagleSpanHeightCm(
+				Cam.Z - GroundZ, FMath::Abs(SeenB - SeenA), FMath::Abs(MapB - MapA));
+			bHaveTarget = true;
+		}
+		if (bHaveTarget)
+		{
+			Target = FMath::Clamp(Target, 1000.f, SolidSight::EagleMaxHeightCm);
 			EagleSightHeightCm = SolidSight::EagleRiseCm(EagleSightHeightCm, Target, DeltaSeconds);
 		}
 	}

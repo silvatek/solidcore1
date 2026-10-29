@@ -79,6 +79,7 @@ void USolidTerrainMap::Build(
 	}
 
 	bIsBuilt = true;
+	TrackClearFogBounds();
 	UE_LOG(LogSolid, Warning,
 		TEXT("TerrainMap built: %dx%d spacing=%.0f cm seed=%d origin=(%.0f,%.0f) extent=(%.0f,%.0f) worldMap=%s fogOrigin=(%.0f,%.0f)"),
 		GridWidth, GridHeight, PointSpacing, Seed,
@@ -234,6 +235,7 @@ void USolidTerrainMap::CenterExplorationFogOn(const float WorldX, const float Wo
 		const float DistM = (FVector2D(Point.X, Point.Y) - FogOriginXY).Size() * 0.01f;
 		Point.Fog = SolidTerrainFog::FogFromDistanceMeters(DistM);
 	}
+	TrackClearFogBounds();
 }
 
 void USolidTerrainMap::CopyExplorationFog(TArray<float>& OutFog) const
@@ -256,6 +258,7 @@ bool USolidTerrainMap::ApplyExplorationFog(const TArray<float>& InFog)
 	{
 		Points[Index].Fog = InFog[Index];
 	}
+	TrackClearFogBounds();
 	return true;
 }
 
@@ -265,6 +268,7 @@ void USolidTerrainMap::ClearAllExplorationFog()
 	{
 		Point.Fog = 0.f;
 	}
+	TrackClearFogBounds();
 }
 
 int32 USolidTerrainMap::ApplyExplorationFogAround(float WorldX, float WorldY)
@@ -319,5 +323,42 @@ int32 USolidTerrainMap::ApplyExplorationFogAround(float WorldX, float WorldY)
 			}
 		}
 	}
+	TrackClearFogBounds();
 	return Changed;
+}
+
+bool USolidTerrainMap::GetClearFogBounds(FVector2D& OutMin, FVector2D& OutMax) const
+{
+	OutMin = ClearFogMinXY;
+	OutMax = ClearFogMaxXY;
+	return bHasClearFog;
+}
+
+void USolidTerrainMap::TrackClearFogBounds()
+{
+	bHasClearFog = false;
+	float MinX = 0.f;
+	float MaxX = 0.f;
+	float MinY = 0.f;
+	float MaxY = 0.f;
+	for (const FSolidTerrainPoint& Point : Points)
+	{
+		if (Point.Fog != 0.f)
+		{
+			continue;
+		}
+		if (!bHasClearFog)
+		{
+			MinX = MaxX = Point.X;
+			MinY = MaxY = Point.Y;
+			bHasClearFog = true;
+			continue;
+		}
+		MinX = FMath::Min(MinX, Point.X);
+		MaxX = FMath::Max(MaxX, Point.X);
+		MinY = FMath::Min(MinY, Point.Y);
+		MaxY = FMath::Max(MaxY, Point.Y);
+	}
+	ClearFogMinXY = FVector2D(MinX, MinY);
+	ClearFogMaxXY = FVector2D(MaxX, MaxY);
 }

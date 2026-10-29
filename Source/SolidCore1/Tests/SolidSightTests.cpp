@@ -327,6 +327,16 @@ bool FSolidSightEagleCameraTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("a matching view holds its height"),
 		FMath::IsNearlyEqual(SolidSight::EagleSpanHeightCm(91022.f, 102400.f, 102400.f), 91022.f, 1.f));
+	const FVector2D ClearCamera(0.f, 0.f);
+	const float ClearHeight = SolidSight::EagleClearHeightCm(
+		10000.f, 20000.f, 20000.f, ClearCamera, FVector2D(-5000.f, -5000.f), FVector2D(5000.f, 5000.f));
+	TestTrue(TEXT("a view that already holds the clear ground stays"), FMath::IsNearlyEqual(ClearHeight, 10000.f, 1.f));
+	const float Taller = SolidSight::EagleClearHeightCm(
+		10000.f, 20000.f, 10000.f, ClearCamera, FVector2D(-5000.f, -5000.f), FVector2D(5000.f, 5000.f));
+	TestTrue(TEXT("the short axis makes the climb higher"), FMath::IsNearlyEqual(Taller, 20000.f, 1.f));
+	const float OffCentre = SolidSight::EagleClearHeightCm(
+		10000.f, 20000.f, 20000.f, FVector2D(-5000.f, 0.f), FVector2D(-5000.f, -5000.f), FVector2D(5000.f, 5000.f));
+	TestTrue(TEXT("a camera on the edge needs the far side in view"), OffCentre > ClearHeight);
 	const float OneFrame = 50000.f + SolidSight::EagleRiseCmPerSecond * (1.f / 30.f);
 	TestTrue(
 		TEXT("one frame rises at 400 m/s"),

@@ -199,6 +199,25 @@ namespace SolidSight
 		return ViewHeightCm * (MapSpanCm / SeenSpanCm);
 	}
 
+	/**
+	 * Height that puts every fog-0 point in view. The spans are the ground the window
+	 * covers now, and the reach from the camera to the far side of the clear bounds.
+	 */
+	inline float EagleClearHeightCm(
+		const float ViewHeightCm,
+		const float SeenSpanX,
+		const float SeenSpanY,
+		const FVector2D& Camera,
+		const FVector2D& ClearMin,
+		const FVector2D& ClearMax)
+	{
+		const float NeedX = 2.f * FMath::Max(Camera.X - ClearMin.X, ClearMax.X - Camera.X);
+		const float NeedY = 2.f * FMath::Max(Camera.Y - ClearMin.Y, ClearMax.Y - Camera.Y);
+		return FMath::Max(
+			EagleSpanHeightCm(ViewHeightCm, SeenSpanX, NeedX),
+			EagleSpanHeightCm(ViewHeightCm, SeenSpanY, NeedY));
+	}
+
 	/** Eagle Sight will not rise above this (cm). It is the tallest camera any sight reaches. */
 	inline constexpr float EagleMaxHeightCm = 500000.f;
 

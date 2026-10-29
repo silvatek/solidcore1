@@ -203,7 +203,7 @@ protected:
 	void ApplyTrueSightCamera();
 	void ApplyRavenSightCamera();
 	void ApplyFalconSightCamera();
-	/** First frame of Falcon Sight. The view points at the captain. */
+	/** Falcon Sight. The view stays on the captain. */
 	void AimFalconAtCaptain();
 	void ToggleMainMenuFromInput();
 	bool IsAutoPlaythroughRunning() const;

@@ -71,12 +71,17 @@ void ASolidCharacter::ApplyFalconSightCamera()
 
 void ASolidCharacter::AimFalconAtCaptain()
 {
-	if (!Controller || !CameraBoom)
+	if (!CameraBoom)
 	{
 		return;
 	}
 
 	ApplyFalconSightCamera();
+	if (!Controller)
+	{
+		return;
+	}
+
 	const FRotator ArmRot = CameraBoom->GetTargetRotation();
 	const FVector Camera = CameraBoom->GetComponentLocation()
 		+ FRotationMatrix(ArmRot).TransformVector(CameraBoom->SocketOffset);
@@ -94,7 +99,7 @@ void ASolidCharacter::UpdateSquadCameraFraming(float DeltaTime)
 
 	if (IsFalconSight())
 	{
-		ApplyFalconSightCamera();
+		AimFalconAtCaptain();
 		return;
 	}
 

@@ -80,8 +80,8 @@ bool FSolidFogCurtainAboveCameraTest::RunTest(const FString& Parameters)
 		FMath::IsNearlyEqual(Streamer->FogVolumeHeightHalfCm, SolidTerrainFog::InnerCurtainHeightCm));
 	TestTrue(TEXT("outer curtain is the fog height"),
 		FMath::IsNearlyEqual(Streamer->FogVolumeHeightCm, SolidTerrainFog::OuterCurtainHeightCm));
-	TestTrue(TEXT("outer curtain is taller than the inner"),
-		Streamer->FogVolumeHeightCm > Streamer->FogVolumeHeightHalfCm);
+	TestTrue(TEXT("both curtains are the same height"),
+		FMath::IsNearlyEqual(Streamer->FogVolumeHeightCm, Streamer->FogVolumeHeightHalfCm));
 	return true;
 }
 

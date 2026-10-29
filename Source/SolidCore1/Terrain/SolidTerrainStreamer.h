@@ -213,17 +213,17 @@ public:
 
 	/**
 	 * Vertical extent of the outer (full) fog curtain (cm).
-	 * Taller than the inner curtain, and above every sight. Matches SolidTerrainFog::OuterCurtainHeightCm.
+	 * Same height as the inner curtain, and above every sight. Matches SolidTerrainFog::OuterCurtainHeightCm.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "200.0"))
-	float FogVolumeHeightCm = 530000.f;
+	float FogVolumeHeightCm = 600000.f;
 
 	/**
-	 * Inner clear|fogged curtain (cm). Above the tallest camera any sight reaches.
+	 * Inner clear|fogged curtain (cm). Same height as the outer curtain.
 	 * Matches SolidTerrainFog::InnerCurtainHeightCm.
 	 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "200.0"))
-	float FogVolumeHeightHalfCm = 520000.f;
+	float FogVolumeHeightHalfCm = 600000.f;
 
 	/** Min focus travel (cm) before re-applying trail fog / queuing mesh refreshes. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "50.0"))

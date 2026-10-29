@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0765")
+#define SOLID_BUILD_ID TEXT("SC1-0766")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Raven stays within 20 m, and falcon stays over clear ground.")
+#define SOLID_BUILD_NOTE TEXT("Every camera stays off fog and off a fogged neighbour.")
 #endif

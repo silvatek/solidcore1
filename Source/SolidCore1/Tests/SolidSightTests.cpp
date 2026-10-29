@@ -280,6 +280,9 @@ bool FSolidSightEagleCameraTest::RunTest(const FString& Parameters)
 	const SolidSight::FEagleCameraGround Foggy = SolidSight::EagleCameraGround(
 		FVector2D(17000.f, 0.f), FVector2D(18000.f, 0.f), Centre, 200.f, 1.f);
 	TestTrue(TEXT("fog settles the move"), Foggy.bSettled);
+	const SolidSight::FEagleCameraGround ThinFog = SolidSight::EagleCameraGround(
+		FVector2D(17000.f, 0.f), FVector2D(18000.f, 0.f), Centre, 200.f, 0.04f);
+	TestTrue(TEXT("a little fog settles the move"), ThinFog.bSettled);
 	TestTrue(TEXT("fog returns to the last clear point"), Foggy.Next.Equals(FVector2D(18000.f, 0.f), 1.f));
 
 	const float ClearReach = 2500.f;

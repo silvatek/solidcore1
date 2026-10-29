@@ -70,7 +70,7 @@ void ASolidCharacter::ApplyFalconSightCamera()
 						MaxCm,
 						[Map](const FVector2D& At)
 						{
-							return Map->SamplePoint(At.X, At.Y).Fog;
+							return SolidCameraFog::CameraGroundFog(*Map, At.X, At.Y);
 						});
 					Horizontal = Stand - Captain;
 				}
@@ -157,7 +157,7 @@ void ASolidCharacter::ApplyEagleSightCamera(float DeltaSeconds)
 		const FVector2D Camera(CamLoc.X, CamLoc.Y);
 		if (FVector2D::Distance(Camera, EagleCommandXY) <= 100.f)
 		{
-			const float Fog = BuiltMap->SamplePoint(Camera.X, Camera.Y).Fog;
+			const float Fog = SolidCameraFog::CameraGroundFog(*BuiltMap, Camera.X, Camera.Y);
 			const SolidSight::FEagleCameraGround Move = SolidSight::EagleCameraGround(
 				Camera, EagleKeptXY, Centre, 200.f, Fog);
 			EagleKeptXY = Move.Kept;
@@ -527,7 +527,7 @@ void ASolidCharacter::ClampCameraAboveTerrain(float DeltaTime)
 			const float ClearScale = SolidCameraFog::MaxClearScale([&](float Scale)
 			{
 				const FVector At = CameraAtScale(Scale);
-				return Map->GetNearestPoint(At.X, At.Y).Fog;
+				return SolidCameraFog::CameraGroundFog(*Map, At.X, At.Y);
 			});
 			if (ClearScale < 1.f - KINDA_SMALL_NUMBER)
 			{

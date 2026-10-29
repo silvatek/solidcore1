@@ -4,6 +4,7 @@
 #include "SolidCharacter.h"
 #include "SolidSight.h"
 #include "SolidTerrainFog.h"
+#include "SolidTerrainTestHelpers.h"
 #include "Terrain/SolidTerrainStreamer.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -26,6 +27,33 @@ bool FSolidCameraFogClearScaleTest::RunTest(const FString& Parameters)
 	const float Scale = SolidCameraFog::MaxClearScale(Boundary);
 	TestTrue(TEXT("stops before fog"), Scale <= 0.25f);
 	TestTrue(TEXT("reaches the clear side"), Scale > 0.24f);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidCameraGroundNeighbourTest,
+	"SolidCore1.Fog.CameraGroundNeighbours",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidCameraGroundNeighbourTest::RunTest(const FString& Parameters)
+{
+	const USolidTerrainMap* Map = SolidTerrainTestHelpers::MakeSmallMap();
+	TestNotNull(TEXT("map"), Map);
+	if (!Map)
+	{
+		return false;
+	}
+
+	const FVector2D Origin = Map->GetFogOriginXY();
+	TestTrue(TEXT("the captain's point is clear"),
+		FMath::IsNearlyEqual(SolidCameraFog::CameraGroundFog(*Map, Origin.X, Origin.Y), 0.f));
+
+	const float Edge = SolidTerrainFog::MetersToCm(SolidTerrainFog::ClearRadiusMeters) - Map->PointSpacing;
+	const FVector2D Rim(Origin.X + Edge, Origin.Y);
+	TestTrue(TEXT("the rim point itself is clear"),
+		FMath::IsNearlyEqual(Map->GetNearestPoint(Rim.X, Rim.Y).Fog, 0.f));
+	TestTrue(TEXT("a fogged neighbour blocks the camera"),
+		SolidCameraFog::CameraGroundFog(*Map, Rim.X, Rim.Y) > 0.f);
 	return true;
 }
 

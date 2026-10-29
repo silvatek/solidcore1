@@ -81,7 +81,7 @@ namespace SolidSight
 		FEagleCameraGround Ground;
 		Ground.Kept = Kept;
 		Ground.Next = Kept;
-		if (FogAtCamera > SolidTerrainFog::ClearFogEpsilon)
+		if (FogAtCamera > 0.f)
 		{
 			Ground.bSettled = true;
 			return Ground;

@@ -124,14 +124,29 @@ void ASolidCharacter::ApplyEagleSightCamera(float DeltaSeconds)
 	}
 	const FVector2D Centre = SolidSight::WorldCentre(WorldMin, WorldMax);
 	const FVector2D Captain(GetActorLocation().X, GetActorLocation().Y);
-	const FVector2D Ground = SolidSight::EagleGroundXY(
-		Captain,
-		Centre,
-		200.f,
-		[BuiltMap](const FVector2D& At)
+	if (!bEagleGroundBegun)
+	{
+		EagleKeptXY = Captain;
+		EagleCommandXY = Captain;
+		bEagleGroundBegun = true;
+		bEagleGroundSettled = false;
+	}
+
+	if (!bEagleGroundSettled && BuiltMap && PC && PC->PlayerCameraManager)
+	{
+		const FVector CamLoc = PC->PlayerCameraManager->GetCameraLocation();
+		const FVector2D Camera(CamLoc.X, CamLoc.Y);
+		if (FVector2D::Distance(Camera, EagleCommandXY) <= 100.f)
 		{
-			return BuiltMap ? BuiltMap->SamplePoint(At.X, At.Y).Fog : 0.f;
-		});
+			const float Fog = BuiltMap->SamplePoint(Camera.X, Camera.Y).Fog;
+			const SolidSight::FEagleCameraGround Move = SolidSight::EagleCameraGround(
+				Camera, EagleKeptXY, Centre, 200.f, Fog);
+			EagleKeptXY = Move.Kept;
+			EagleCommandXY = Move.Next;
+			bEagleGroundSettled = Move.bSettled;
+		}
+	}
+	const FVector2D Ground = EagleCommandXY;
 	float GroundZ = 0.f;
 	if (Streamer)
 	{
@@ -258,6 +273,8 @@ void ASolidCharacter::UpdateSquadCameraFraming(float DeltaTime)
 	if (!IsEagleSight())
 	{
 		EagleSightHeightCm = 0.f;
+		bEagleGroundBegun = false;
+		bEagleGroundSettled = false;
 		if (EagleSea)
 		{
 			EagleSea->SetVisibility(false);

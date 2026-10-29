@@ -237,15 +237,44 @@ bool FSolidSightEagleCameraTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the world centre is the origin"), Centre.IsNearlyZero(1.f));
 
 	const FVector2D Captain(20000.f, 0.f);
-	const FVector2D OnCentre = SolidSight::EagleGroundXY(
-		Captain, Centre, 200.f, [](const FVector2D&) { return 0.f; });
+	const auto Follow = [](const FVector2D& Start, const FVector2D& Goal, auto FogAt) -> FVector2D
+	{
+		FVector2D Kept = Start;
+		FVector2D Command = Start;
+		for (int32 Step = 0; Step < 1000; ++Step)
+		{
+			const SolidSight::FEagleCameraGround Move = SolidSight::EagleCameraGround(
+				Command, Kept, Goal, 200.f, FogAt(Command));
+			Kept = Move.Kept;
+			if (Move.bSettled)
+			{
+				return Move.Next;
+			}
+			Command = Move.Next;
+		}
+		return Command;
+	};
+
+	const FVector2D OnCentre = Follow(Captain, Centre, [](const FVector2D&) { return 0.f; });
 	TestTrue(TEXT("clear fog stands on the centre"), OnCentre.Equals(Centre, 1.f));
 
+	const SolidSight::FEagleCameraGround One = SolidSight::EagleCameraGround(
+		Captain, Captain, Centre, 200.f, 0.f);
+	TestFalse(TEXT("a clear point does not settle short of the centre"), One.bSettled);
+	TestTrue(TEXT("a clear point is kept"), One.Kept.Equals(Captain, 1.f));
+	TestTrue(
+		TEXT("the next point steps toward the centre"),
+		FMath::IsNearlyEqual(FVector2D::Distance(One.Next, Captain), 200.f, 1.f));
+
+	const SolidSight::FEagleCameraGround Foggy = SolidSight::EagleCameraGround(
+		FVector2D(17000.f, 0.f), FVector2D(18000.f, 0.f), Centre, 200.f, 1.f);
+	TestTrue(TEXT("fog settles the move"), Foggy.bSettled);
+	TestTrue(TEXT("fog returns to the last clear point"), Foggy.Next.Equals(FVector2D(18000.f, 0.f), 1.f));
+
 	const float ClearReach = 2500.f;
-	const FVector2D Edge = SolidSight::EagleGroundXY(
+	const FVector2D Edge = Follow(
 		Captain,
 		Centre,
-		200.f,
 		[Captain, ClearReach](const FVector2D& At)
 		{
 			return FVector2D::Distance(At, Captain) <= ClearReach ? 0.f : 1.f;
@@ -258,10 +287,9 @@ bool FSolidSightEagleCameraTest::RunTest(const FString& Parameters)
 		FVector2D::Distance(Edge, Centre) < FVector2D::Distance(Captain, Centre) - 1.f);
 	TestTrue(TEXT("the edge stays on the line"), FMath::IsNearlyZero(Edge.Y, 1.f));
 
-	const FVector2D AcrossFog = SolidSight::EagleGroundXY(
+	const FVector2D AcrossFog = Follow(
 		Captain,
 		Centre,
-		200.f,
 		[Captain, ClearReach](const FVector2D& At)
 		{
 			const bool NearCaptain = FVector2D::Distance(At, Captain) <= ClearReach;

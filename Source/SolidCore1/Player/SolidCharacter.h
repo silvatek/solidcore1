@@ -450,6 +450,12 @@ protected:
 	/** Eagle Sight height above the ground. It rises until the shorter side of the window shows the square. */
 	float EagleSightHeightCm = 0.f;
 
+	/** Last Eagle Sight point whose terrain was clear, and the point the camera was sent to. */
+	FVector2D EagleKeptXY = FVector2D::ZeroVector;
+	FVector2D EagleCommandXY = FVector2D::ZeroVector;
+	bool bEagleGroundBegun = false;
+	bool bEagleGroundSettled = false;
+
 	/** True sight until an event enables raven sight. */
 	ESolidSight Sight = ESolidSight::True;
 

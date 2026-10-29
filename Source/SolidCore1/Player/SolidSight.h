@@ -67,42 +67,47 @@ namespace SolidSight
 	}
 
 	/**
-	 * Walk from the captain toward the centre. Stop at the last point that still has fog 0.
-	 * StepCm is how far apart the samples sit.
+	 * The camera is over Camera, and FogAtCamera is that terrain point.
+	 * Clear fog keeps the point and steps Next toward Centre.
+	 * Fog sends Next back to the last kept point and stops the move.
 	 */
-	template<typename FogAtFn>
-	inline FVector2D EagleGroundXY(
-		const FVector2D& Captain,
+	struct FEagleCameraGround
+	{
+		FVector2D Kept = FVector2D::ZeroVector;
+		FVector2D Next = FVector2D::ZeroVector;
+		bool bSettled = false;
+	};
+
+	inline FEagleCameraGround EagleCameraGround(
+		const FVector2D& Camera,
+		const FVector2D& Kept,
 		const FVector2D& Centre,
 		const float StepCm,
-		FogAtFn FogAt)
+		const float FogAtCamera)
 	{
-		const FVector2D Delta = Centre - Captain;
+		FEagleCameraGround Ground;
+		Ground.Kept = Kept;
+		Ground.Next = Kept;
+		if (FogAtCamera > SolidTerrainFog::ClearFogEpsilon)
+		{
+			Ground.bSettled = true;
+			return Ground;
+		}
+
+		Ground.Kept = Camera;
+		const FVector2D Delta = Centre - Camera;
 		const float Length = Delta.Size();
 		if (Length <= KINDA_SMALL_NUMBER)
 		{
-			return Centre;
-		}
-		if (FogAt(Captain) > KINDA_SMALL_NUMBER)
-		{
-			return Captain;
+			Ground.Next = Camera;
+			Ground.bSettled = true;
+			return Ground;
 		}
 
 		const float Step = FMath::Max(StepCm, 1.f);
-		const int32 Steps = FMath::CeilToInt(Length / Step);
-		const FVector2D Dir = Delta / Length;
-		FVector2D Clear = Captain;
-		for (int32 Index = 1; Index <= Steps; ++Index)
-		{
-			const float Dist = FMath::Min(static_cast<float>(Index) * Step, Length);
-			const FVector2D At = Captain + Dir * Dist;
-			if (FogAt(At) > KINDA_SMALL_NUMBER)
-			{
-				return Clear;
-			}
-			Clear = At;
-		}
-		return Clear;
+		const float Move = FMath::Min(Step, Length);
+		Ground.Next = Camera + Delta / Length * Move;
+		return Ground;
 	}
 
 	/**

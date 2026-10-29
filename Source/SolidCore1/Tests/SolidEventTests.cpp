@@ -144,6 +144,8 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(ESolidSight::Raven));
 	TestTrue(TEXT("raven sight unlocked"), SolidEvents::IsSightEnabled(StateCaptain, ESolidSight::Raven));
 	TestTrue(TEXT("true sight stays available"), SolidEvents::IsSightEnabled(StateCaptain, ESolidSight::True));
+	TestFalse(TEXT("Relion leaves falcon sight locked"), StateCaptain.bFalconSightEnabled);
+	TestFalse(TEXT("Relion leaves eagle sight locked"), StateCaptain.bEagleSightEnabled);
 	TestTrue(TEXT("Relion repairs the bridge"), Relion.bRepairBridge);
 	TestTrue(TEXT("the Iglin bridge is repaired"), State.bIglinBridgeRepaired);
 	TestEqual(TEXT("town 1 squad size"), State.MaxSquadSize, 1);
@@ -196,6 +198,8 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 		Dragongate.bSetSight,
 		SolidEventTestPrivate::EventEnablesRavenSight(TEXT("Enter Dragongate")));
 	TestTrue(TEXT("raven sight stays unlocked"), SolidEvents::IsSightEnabled(StateCaptain, ESolidSight::Raven));
+	TestTrue(TEXT("Dragongate unlocks falcon sight"), StateCaptain.bFalconSightEnabled);
+	TestTrue(TEXT("Dragongate unlocks eagle sight"), StateCaptain.bEagleSightEnabled);
 	TestEqual(TEXT("Dragongate squad size"), State.MaxSquadSize, SolidEvents::RosterCount);
 	TestEqual(TEXT("the whole company"), SolidEvents::SquadCount(State), 5);
 
@@ -213,6 +217,8 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 		GateFirstCaptain.bRavenSightEnabled,
 		SolidEventTestPrivate::EventEnablesRavenSight(TEXT("Enter Dragongate")));
 	TestEqual(TEXT("Dragongate fields the company"), SolidEvents::SquadCount(GateFirst), 5);
+	TestTrue(TEXT("Dragongate on its own unlocks falcon sight"), GateFirstCaptain.bFalconSightEnabled);
+	TestTrue(TEXT("Dragongate on its own unlocks eagle sight"), GateFirstCaptain.bEagleSightEnabled);
 	SolidEvents::NotifyOccupiedTown(GateFirst, GateFirstCaptain, INDEX_NONE);
 	const SolidEvents::FResult GateReturn = SolidEvents::NotifyOccupiedTown(GateFirst, GateFirstCaptain, 5);
 	TestFalse(TEXT("Dragongate event already fired"), GateReturn.bFired);
@@ -431,6 +437,8 @@ bool FSolidEventsLaterTownsEnableRavenTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Kanfold.Sight),
 		static_cast<uint8>(ESolidSight::Raven));
 	TestTrue(TEXT("Kanfold unlocks raven sight"), KanfoldStateCaptain.bRavenSightEnabled);
+	TestFalse(TEXT("Kanfold leaves falcon sight locked"), KanfoldStateCaptain.bFalconSightEnabled);
+	TestFalse(TEXT("Kanfold leaves eagle sight locked"), KanfoldStateCaptain.bEagleSightEnabled);
 	TestEqual(TEXT("Kanfold still fields Sam and Alex"), KanfoldState.MaxSquadSize, 2);
 	TestEqual(
 		TEXT("Kanfold still titles Ranger"),
@@ -447,6 +455,8 @@ bool FSolidEventsLaterTownsEnableRavenTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Dragongate.Sight),
 		static_cast<uint8>(ESolidSight::Raven));
 	TestTrue(TEXT("Dragongate unlocks raven sight"), GateStateCaptain.bRavenSightEnabled);
+	TestTrue(TEXT("Dragongate unlocks falcon sight"), GateStateCaptain.bFalconSightEnabled);
+	TestTrue(TEXT("Dragongate unlocks eagle sight"), GateStateCaptain.bEagleSightEnabled);
 	TestEqual(TEXT("Dragongate still fields the company"), GateState.MaxSquadSize, SolidEvents::RosterCount);
 	TestEqual(
 		TEXT("Dragongate still titles Captain"),
@@ -1181,6 +1191,8 @@ bool FSolidEventsRavenSightWaitsForRelionTest::RunTest(const FString& Parameters
 		static_cast<uint8>(Relion.Sight),
 		static_cast<uint8>(ESolidSight::Raven));
 	TestTrue(TEXT("Relion unlocks raven sight"), StateCaptain.bRavenSightEnabled);
+	TestFalse(TEXT("Relion leaves falcon sight locked"), StateCaptain.bFalconSightEnabled);
+	TestFalse(TEXT("Relion leaves eagle sight locked"), StateCaptain.bEagleSightEnabled);
 	return true;
 }
 

@@ -15,11 +15,11 @@
 namespace SolidEvents
 {
 	/**
-	 * Sight, the three companions Enter Dragongate adds, squad size, and title,
+	 * Three sights, the three companions Enter Dragongate adds, squad size, and title,
 	 * one unlock for every stronghold size, and the seven battle-plan edits on Enter Dragongate.
 	 */
-	inline constexpr int32 MaxChangesPerEvent = 3 + 3 + SolidStronghold::SizeCount + 7;
-	static_assert(MaxChangesPerEvent == 20, "Enter Dragongate needs one slot per change");
+	inline constexpr int32 MaxChangesPerEvent = 5 + 3 + SolidStronghold::SizeCount + 7;
+	static_assert(MaxChangesPerEvent == 22, "Enter Dragongate needs one slot per change");
 	/** Lair ids an EnableLair change can record. One lair ships. */
 	inline constexpr int32 MaxEnabledLairs = 4;
 	inline constexpr int32 MaxRequiresPerEvent = 4;

@@ -56,6 +56,8 @@ namespace SolidEvents
 			.EnableBattlePlan(TEXT("Tight mob"))
 			.EnableBattlePlan(TEXT("Loose mob")),
 		EnterTown(IdEnterDragongate, TEXT("Enter Dragongate"), SolidTowns::Dragongate, ACT_4)
+			.EnableSight(ESolidSight::Falcon)
+			.EnableSight(ESolidSight::Eagle)
 			.EnableSight(ESolidSight::Raven)
 			.AddCompanion(TEXT("Max"))
 			.AddCompanion(TEXT("Morgan"))

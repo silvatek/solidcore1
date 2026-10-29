@@ -107,13 +107,22 @@ void ApplyChange(
 	switch (Change.Kind)
 	{
 	case EChange::EnableSight:
-		if (Change.Sight == ESolidSight::Raven)
+		switch (Change.Sight)
 		{
+		case ESolidSight::Raven:
 			Captain.bRavenSightEnabled = true;
-		}
-		else
-		{
+			break;
+		case ESolidSight::Falcon:
+			Captain.bFalconSightEnabled = true;
+			break;
+		case ESolidSight::Eagle:
+			Captain.bEagleSightEnabled = true;
+			break;
+		case ESolidSight::True:
 			Captain.bTrueSightEnabled = true;
+			break;
+		default:
+			break;
 		}
 		Result.bSetSight = true;
 		Result.Sight = Change.Sight;
@@ -362,6 +371,10 @@ bool IsSightEnabled(const USolidCaptain& Captain, const ESolidSight Sight)
 		return Captain.bTrueSightEnabled;
 	case ESolidSight::Raven:
 		return Captain.bRavenSightEnabled;
+	case ESolidSight::Falcon:
+		return Captain.bFalconSightEnabled;
+	case ESolidSight::Eagle:
+		return Captain.bEagleSightEnabled;
 	default:
 		return false;
 	}

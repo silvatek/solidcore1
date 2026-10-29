@@ -297,7 +297,7 @@ bool FSolidCompanionJoinTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Kanfold's battle plans stay one run"), OccurrenceCount(KanfoldDetail, PlanSentence), 1);
 
 	const SolidEvents::FEvent& Dragongate = SolidEvents::Definitions[SolidEvents::FindIndexById(SolidEvents::IdEnterDragongate)];
-	TestEqual(TEXT("Dragongate has twenty changes"), Dragongate.ChangeCount, 20);
+	TestEqual(TEXT("Dragongate has twenty-two changes"), Dragongate.ChangeCount, 22);
 	int32 GateSizeAt = INDEX_NONE;
 	for (int32 Index = 0; Index < Dragongate.ChangeCount; ++Index)
 	{

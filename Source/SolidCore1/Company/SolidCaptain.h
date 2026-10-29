@@ -47,6 +47,8 @@ public:
 	int32 OccupiedTown = INDEX_NONE;
 	bool bTrueSightEnabled = true;
 	bool bRavenSightEnabled = false;
+	bool bFalconSightEnabled = false;
+	bool bEagleSightEnabled = false;
 
 	/** Live body in this world. Cleared when that pawn ends. Not a UPROPERTY. */
 	ASolidCharacter* GetActor() const { return Actor.Get(); }

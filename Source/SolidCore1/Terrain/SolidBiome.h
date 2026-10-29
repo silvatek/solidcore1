@@ -6,7 +6,8 @@
 /**
  * One kind of ground. A terrain point and the world chart store ESolidBiome.
  * This object answers for that token: its colour, its name, its shelf, its
- * chart letter, and whether that ground is open or paintable.
+ * chart letter, whether that ground is open or paintable, and whether it is
+ * a flat colour.
  */
 class SOLIDCORE1_API FSolidBiome
 {
@@ -18,7 +19,8 @@ public:
 		int32 InSurfacePreference,
 		TCHAR InMarker,
 		bool bInImpassable,
-		bool bInPaintable);
+		bool bInPaintable,
+		bool bInFlatColour);
 
 	/** Tint for this ground. Grassland's mesh stays the Fab grass. */
 	FLinearColor Color() const;
@@ -48,6 +50,12 @@ public:
 	/** The chart brush paints this ground. Swamp and road are not paint biomes. */
 	bool Paintable() const;
 
+	/**
+	 * Forest, town, desert, swamp, sea, and river.
+	 * The flat-colour fade blends two of these on one shelf.
+	 */
+	bool FlatColour() const;
+
 private:
 	FLinearColor Tint;
 	const TCHAR* Label;
@@ -56,6 +64,7 @@ private:
 	TCHAR Letter;
 	bool bImpassable;
 	bool bPaintable;
+	bool bFlatColour;
 };
 
 namespace SolidBiome

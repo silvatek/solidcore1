@@ -209,4 +209,25 @@ bool FSolidBiomeGroundTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBiomeFlatColourTest,
+	"SolidCore1.Types.FlatColour",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBiomeFlatColourTest::RunTest(const FString& Parameters)
+{
+	TestTrue(TEXT("forest is a flat colour"), SolidBiome::Of(ESolidBiome::Forest).FlatColour());
+	TestTrue(TEXT("town is a flat colour"), SolidBiome::Of(ESolidBiome::Town).FlatColour());
+	TestTrue(TEXT("desert is a flat colour"), SolidBiome::Of(ESolidBiome::Desert).FlatColour());
+	TestTrue(TEXT("swamp is a flat colour"), SolidBiome::Of(ESolidBiome::Swamp).FlatColour());
+	TestTrue(TEXT("sea is a flat colour"), SolidBiome::Of(ESolidBiome::Sea).FlatColour());
+	TestTrue(TEXT("river is a flat colour"), SolidBiome::Of(ESolidBiome::River).FlatColour());
+	TestFalse(TEXT("grassland keeps its material"), SolidBiome::Of(ESolidBiome::Grassland).FlatColour());
+	TestFalse(TEXT("a road keeps a hard edge"), SolidBiome::Of(ESolidBiome::Road).FlatColour());
+	TestFalse(TEXT("a mountain keeps a hard edge"), SolidBiome::Of(ESolidBiome::Mountain).FlatColour());
+	TestFalse(TEXT("an unknown token is not a flat colour"),
+		SolidBiome::Of(static_cast<ESolidBiome>(255)).FlatColour());
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

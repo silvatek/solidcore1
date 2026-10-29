@@ -10,6 +10,11 @@
 #include "Materials/MaterialInstance.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
+#include "UObject/StrongObjectPtr.h"
+#if WITH_EDITOR
+#include "Materials/MaterialExpressionConstant.h"
+#include "Materials/MaterialExpressionVertexColor.h"
+#endif
 
 namespace
 {
@@ -302,4 +307,55 @@ UMaterialInterface* SolidTerrainMaterials::ResolveForBiome(
 		Params.GrassRoughness);
 	InOutBiomeMaterials.Add(Biome, Solid);
 	return Solid;
+}
+
+UMaterialInterface* SolidTerrainMaterials::FadeMaterial()
+{
+	static TStrongObjectPtr<UMaterial> Cached;
+	if (Cached.IsValid())
+	{
+		return Cached.Get();
+	}
+
+#if WITH_EDITOR
+	UMaterial* Material = NewObject<UMaterial>(GetTransientPackage(), NAME_None, RF_Transient);
+	if (!Material)
+	{
+		return nullptr;
+	}
+
+	Material->MaterialDomain = MD_Surface;
+	Material->BlendMode = BLEND_Opaque;
+	Material->SetShadingModel(MSM_DefaultLit);
+
+	UMaterialEditorOnlyData* EditorData = Material->GetEditorOnlyData();
+	if (!EditorData)
+	{
+		UE_LOG(LogSolid, Error, TEXT("Biome fade: GetEditorOnlyData() null."));
+		return nullptr;
+	}
+
+	UMaterialExpressionVertexColor* VertexColor = NewObject<UMaterialExpressionVertexColor>(Material);
+	VertexColor->MaterialExpressionEditorX = -280;
+	VertexColor->MaterialExpressionEditorY = 0;
+
+	UMaterialExpressionConstant* Roughness = NewObject<UMaterialExpressionConstant>(Material);
+	Roughness->R = 0.97f;
+	Roughness->MaterialExpressionEditorX = -280;
+	Roughness->MaterialExpressionEditorY = 180;
+
+	EditorData->ExpressionCollection.Expressions.Add(VertexColor);
+	EditorData->ExpressionCollection.Expressions.Add(Roughness);
+	EditorData->BaseColor.Expression = VertexColor;
+	EditorData->Roughness.Expression = Roughness;
+
+	Material->SetMaterialUsage(MATUSAGE_StaticMesh);
+	Material->PreEditChange(nullptr);
+	Material->PostEditChange();
+
+	Cached.Reset(Material);
+	return Material;
+#else
+	return nullptr;
+#endif
 }

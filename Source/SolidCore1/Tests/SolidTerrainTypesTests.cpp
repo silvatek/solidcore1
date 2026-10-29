@@ -1,8 +1,10 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "SolidBiome.h"
+#include "SolidTerrainMaterials.h"
 #include "SolidTerrainTypes.h"
 #include "SolidWorldChart.h"
+#include "Materials/Material.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 
@@ -303,6 +305,34 @@ bool FSolidBiomeFadeWeightTest::RunTest(const FString& Parameters)
 		SolidTerrainTypes::FadeWeight(
 			ESolidBiome::Sea, ESolidBiome::Sea, ESolidBiome::River, ESolidBiome::River, Weights));
 	Matches(TEXT("sea and river share one shelf"), Weights, 0.f, 0.f, 1.f, 1.f);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBiomeFadeMaterialTest,
+	"SolidCore1.Types.FadeMaterial",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBiomeFadeMaterialTest::RunTest(const FString& Parameters)
+{
+	UMaterialInterface* Fade = SolidTerrainMaterials::FadeMaterial();
+	if (!TestNotNull(TEXT("the fade material"), Fade))
+	{
+		return false;
+	}
+	const UMaterial* Material = Cast<UMaterial>(Fade);
+	if (!TestNotNull(TEXT("the fade parent"), Material))
+	{
+		return false;
+	}
+	TestEqual(
+		TEXT("the fade is opaque"),
+		static_cast<int32>(Material->GetBlendMode()),
+		static_cast<int32>(BLEND_Opaque));
+	TestTrue(
+		TEXT("the fade is lit"),
+		Material->GetShadingModels().HasShadingModel(MSM_DefaultLit));
+	TestTrue(TEXT("the same parent is reused"), SolidTerrainMaterials::FadeMaterial() == Fade);
 	return true;
 }
 

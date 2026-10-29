@@ -1,7 +1,10 @@
 #include "SolidTerrainChunk.h"
+#include "SolidBiome.h"
 #include "SolidTerrainFog.h"
 #include "SolidTerrainMap.h"
+#include "SolidTerrainMaterials.h"
 #include "SolidTerrainNoise.h"
+#include "SolidWorldChart.h"
 #include "SolidCore1.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
@@ -31,6 +34,7 @@ namespace SolidTerrainChunkPrivate
 		const TArray<FVector>& Tangents,
 		const TArray<FVector2D>& UVs,
 		const TArray<FLinearColor>& Colors,
+		const TArray<FLinearColor>& CornerColors,
 		const TArray<int32>& Triangles,
 		const TArray<UMaterialInterface*>& Materials,
 		const TArray<int32>& TriMaterialIndices,
@@ -93,8 +97,11 @@ namespace SolidTerrainChunkPrivate
 				InstanceTangents[InstanceID] = FVector3f(Tangents[VertIndex]);
 				InstanceBinormalSigns[InstanceID] = 1.f;
 				InstanceUVs.Set(InstanceID, 0, FVector2f(UVs.IsValidIndex(VertIndex) ? UVs[VertIndex] : FVector2D::ZeroVector));
-				InstanceColors[InstanceID] = FVector4f(
-					Colors.IsValidIndex(VertIndex) ? Colors[VertIndex] : FLinearColor::White);
+				const int32 CornerColorIndex = TriIndex * 3 + Corner;
+				const FLinearColor InstanceColor = CornerColors.IsValidIndex(CornerColorIndex)
+					? CornerColors[CornerColorIndex]
+					: (Colors.IsValidIndex(VertIndex) ? Colors[VertIndex] : FLinearColor::White);
+				InstanceColors[InstanceID] = FVector4f(InstanceColor);
 				InstanceIDs.Add(InstanceID);
 			}
 
@@ -312,7 +319,32 @@ void ASolidTerrainChunk::BuildChunk(
 	TMap<ESolidBiome, int32> BiomeToSlot;
 	TArray<UMaterialInterface*> Materials;
 	TArray<int32> TriMatIndices;
+	TArray<FLinearColor> CornerColors;
 	TriMatIndices.Reserve(InQuadsPerSide * InQuadsPerSide * 2);
+	CornerColors.Reserve(InQuadsPerSide * InQuadsPerSide * 6);
+
+	const USolidWorldChart* Chart = TerrainMap ? TerrainMap->GetWorldMap() : nullptr;
+	auto BiomeColor = [Chart](const ESolidBiome Biome) -> FLinearColor
+	{
+		return Chart ? Chart->GetBiomeColor(Biome) : SolidBiome::Of(Biome).Color();
+	};
+
+	int32 FadeSlot = INDEX_NONE;
+	auto EnsureFadeSlot = [&]() -> int32
+	{
+		if (FadeSlot != INDEX_NONE)
+		{
+			return FadeSlot;
+		}
+		UMaterialInterface* Fade = SolidTerrainMaterials::FadeMaterial();
+		if (!Fade)
+		{
+			Fade = FallbackMaterial;
+		}
+		FadeSlot = Materials.Num();
+		Materials.Add(Fade);
+		return FadeSlot;
+	};
 
 	auto EnsureMaterialSlot = [&](const ESolidBiome Biome) -> int32
 	{
@@ -371,10 +403,39 @@ void ASolidTerrainChunk::BuildChunk(
 				B01 = VertexBiomes[I01];
 				B11 = VertexBiomes[I11];
 			}
-			const ESolidBiome FirstTri = SolidTerrainTypes::BorderBiome(Preferred, B00, B11, B10);
-			const ESolidBiome SecondTri = SolidTerrainTypes::BorderBiome(Preferred, B00, B01, B11);
-			TriMatIndices.Add(EnsureMaterialSlot(FirstTri));
-			TriMatIndices.Add(EnsureMaterialSlot(SecondTri));
+			float Weights[4] = {};
+			const bool bWantFade = bUseBiomeMaterials
+				&& SolidTerrainTypes::FadeWeight(B00, B10, B01, B11, Weights);
+			const bool bFade = bWantFade && SolidTerrainMaterials::FadeMaterial() != nullptr;
+			if (bFade)
+			{
+				const int32 Slot = EnsureFadeSlot();
+				TriMatIndices.Add(Slot);
+				TriMatIndices.Add(Slot);
+				const FLinearColor C00 = BiomeColor(B00);
+				const FLinearColor C10 = BiomeColor(B10);
+				const FLinearColor C01 = BiomeColor(B01);
+				const FLinearColor C11 = BiomeColor(B11);
+				CornerColors.Add(C00);
+				CornerColors.Add(C11);
+				CornerColors.Add(C10);
+				CornerColors.Add(C00);
+				CornerColors.Add(C01);
+				CornerColors.Add(C11);
+			}
+			else
+			{
+				const ESolidBiome FirstTri = SolidTerrainTypes::BorderBiome(Preferred, B00, B11, B10);
+				const ESolidBiome SecondTri = SolidTerrainTypes::BorderBiome(Preferred, B00, B01, B11);
+				TriMatIndices.Add(EnsureMaterialSlot(FirstTri));
+				TriMatIndices.Add(EnsureMaterialSlot(SecondTri));
+				CornerColors.Add(Colors[I00]);
+				CornerColors.Add(Colors[I11]);
+				CornerColors.Add(Colors[I10]);
+				CornerColors.Add(Colors[I00]);
+				CornerColors.Add(Colors[I01]);
+				CornerColors.Add(Colors[I11]);
+			}
 		}
 	}
 
@@ -384,7 +445,7 @@ void ASolidTerrainChunk::BuildChunk(
 	}
 
 	RuntimeStaticMesh = SolidTerrainChunkPrivate::BuildRuntimeMesh(
-		this, Positions, Normals, Tangents, UVs, Colors, Triangles, Materials, TriMatIndices,
+		this, Positions, Normals, Tangents, UVs, Colors, CornerColors, Triangles, Materials, TriMatIndices,
 		/*bBuildCollision=*/true);
 
 	MeshComponent->SetStaticMesh(nullptr);

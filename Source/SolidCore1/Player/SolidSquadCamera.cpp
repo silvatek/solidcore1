@@ -203,7 +203,7 @@ void ASolidCharacter::ApplyEagleSightCamera(float DeltaSeconds)
 			const float Target = FMath::Clamp(
 				SolidSight::EagleSpanHeightCm(Cam.Z - GroundZ, FMath::Abs(SeenB - SeenA), FMath::Abs(MapB - MapA)),
 				1000.f,
-				500000.f);
+				SolidSight::EagleMaxHeightCm);
 			EagleSightHeightCm = SolidSight::EagleRiseCm(EagleSightHeightCm, Target, DeltaSeconds);
 		}
 	}

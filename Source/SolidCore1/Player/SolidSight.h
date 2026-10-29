@@ -199,6 +199,9 @@ namespace SolidSight
 		return ViewHeightCm * (MapSpanCm / SeenSpanCm);
 	}
 
+	/** Eagle Sight will not rise above this (cm). It is the tallest camera any sight reaches. */
+	inline constexpr float EagleMaxHeightCm = 500000.f;
+
 	/** How fast Eagle Sight rises or drops while it matches the window to the square (cm/s). */
 	inline constexpr float EagleRiseCmPerSecond = 40000.f;
 

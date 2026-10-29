@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0761")
+#define SOLID_BUILD_ID TEXT("SC1-0762")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Eagle sight keeps the last clear point under the camera.")
+#define SOLID_BUILD_NOTE TEXT("Fog curtains reach above the camera in every sight.")
 #endif

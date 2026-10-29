@@ -41,8 +41,14 @@ bool FSolidFogCurtainAboveCameraTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("character defaults"), Character);
 	TestNotNull(TEXT("streamer defaults"), Streamer);
 
+	TestTrue(TEXT("inner curtain clears the raven boom"),
+		Streamer->FogVolumeHeightHalfCm > Character->GetCameraZoomMax());
 	TestTrue(TEXT("inner curtain clears the falcon camera"),
 		Streamer->FogVolumeHeightHalfCm > SolidSight::FalconMaxHeightCm);
+	TestTrue(TEXT("inner curtain clears eagle sight"),
+		Streamer->FogVolumeHeightHalfCm > SolidSight::EagleMaxHeightCm);
+	TestTrue(TEXT("outer curtain clears eagle sight"),
+		Streamer->FogVolumeHeightCm > SolidSight::EagleMaxHeightCm);
 	TestTrue(TEXT("inner curtain is the fog height"),
 		FMath::IsNearlyEqual(Streamer->FogVolumeHeightHalfCm, SolidTerrainFog::InnerCurtainHeightCm));
 	TestTrue(TEXT("outer curtain is the fog height"),

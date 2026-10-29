@@ -29,12 +29,13 @@ namespace SolidTerrainFog
 	/** Samples at or below this count as clear (fog=0 side of a boundary). */
 	constexpr float ClearFogEpsilon = 0.05f;
 	/**
-	 * Inner clear|fogged curtain (cm). Twice Falcon's 200 m, so that camera cannot look over it.
-	 * The sheet is the same quads at any height.
+	 * Inner clear|fogged curtain (cm). Above SolidSight::EagleMaxHeightCm, the tallest
+	 * camera any sight reaches, with room for the ground under the camera to sit higher
+	 * than the ground under the sheet. The sheet is the same quads at any height.
 	 */
-	constexpr float InnerCurtainHeightCm = 40000.f;
-	/** Outer half|full curtain (cm). Taller than the inner curtain. */
-	constexpr float OuterCurtainHeightCm = 50000.f;
+	constexpr float InnerCurtainHeightCm = 520000.f;
+	/** Outer half|full curtain (cm). Taller than the inner curtain, and above the camera. */
+	constexpr float OuterCurtainHeightCm = 530000.f;
 	/** Isocontour between half fog (0.5) and full fog (1.0). */
 	constexpr float HalfFullFogThreshold = 0.75f;
 

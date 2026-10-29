@@ -233,7 +233,8 @@ SolidTerrainTypes::FSolidQuadTriangles SolidTerrainTypes::QuadTriangles(
 	const ESolidBiome B10,
 	const ESolidBiome B01,
 	const ESolidBiome B11,
-	const ESolidBiome WestOfNorthWest)
+	const ESolidBiome WestOfNorthWest,
+	const ESolidBiome SouthWestOfNorthWest)
 {
 	FSolidQuadTriangles Out;
 	Out.First = BorderBiome(Preferred, B00, B11, B10);
@@ -256,6 +257,19 @@ SolidTerrainTypes::FSolidQuadTriangles SolidTerrainTypes::QuadTriangles(
 
 		const bool bSouthContinuesWest = B10 != B11 && B01 == B11 && B00 == B11 && WestOfNorthWest == B10;
 		if (bSouthContinuesWest)
+		{
+			Out.First = B10;
+			Out.Second = B11;
+			break;
+		}
+
+		// The control point is the west end of a two-and-two edge.
+		const bool bWestEnd = WestOfNorthWest != B11
+			&& B01 == B11
+			&& B10 == WestOfNorthWest
+			&& B00 == WestOfNorthWest
+			&& SouthWestOfNorthWest == WestOfNorthWest;
+		if (bWestEnd)
 		{
 			Out.First = B10;
 			Out.Second = B11;

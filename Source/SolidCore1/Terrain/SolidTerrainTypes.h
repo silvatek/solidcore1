@@ -92,12 +92,16 @@ namespace SolidTerrainTypes
 		/** The single odd corner is cut off. Any other quad takes that northwest corner. */
 		OddCorner,
 		/**
-		 * Two cuts, and otherwise the northwest corner.
+		 * Three cuts, and otherwise the northwest corner.
 		 * The other three match and differ from the northwest: the northwest triangle
 		 * keeps that corner, and the southeast triangle takes the other biome.
 		 * The south corner differs, the east and southeast match the northwest, and the
 		 * point west of the northwest matches the south corner: the southwest triangle
 		 * takes the south corner, and the northeast triangle takes the northwest corner.
+		 * The point west of the northwest differs, the east matches it, and the
+		 * south-west, south, and south-east match that west point: the northeast
+		 * triangle takes the northwest corner, and the southwest triangle takes the
+		 * other biome.
 		 */
 		NorthWestCut,
 	};
@@ -114,8 +118,9 @@ namespace SolidTerrainTypes
 	};
 
 	/**
-	 * WestOfNorthWest is the point directly west of corner 11. NorthWest and OddCorner
-	 * ignore it. NorthWestCut uses it for the south-corner cut.
+	 * WestOfNorthWest is the point directly west of corner 11.
+	 * SouthWestOfNorthWest is the point south-west of that corner.
+	 * NorthWest and OddCorner ignore both. NorthWestCut uses them for two of its cuts.
 	 */
 	FSolidQuadTriangles QuadTriangles(
 		ESolidQuadMaterial Method,
@@ -124,5 +129,6 @@ namespace SolidTerrainTypes
 		ESolidBiome B10,
 		ESolidBiome B01,
 		ESolidBiome B11,
-		ESolidBiome WestOfNorthWest);
+		ESolidBiome WestOfNorthWest,
+		ESolidBiome SouthWestOfNorthWest);
 }

@@ -440,44 +440,56 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 
 	Expect(
 		TEXT("odd 11"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Forest, Forest, Forest, Desert, Forest),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Forest, Forest, Forest, Desert, Forest, Forest),
 		true, Forest, Desert);
 	Expect(
 		TEXT("odd 00"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Desert, Forest, Forest, Forest, Forest),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Desert, Forest, Forest, Forest, Forest, Forest),
 		true, Desert, Forest);
 	Expect(
 		TEXT("odd 10"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Forest, Desert, Forest, Forest, Forest),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Forest, Desert, Forest, Forest, Forest, Forest),
 		false, Desert, Forest);
 	Expect(
 		TEXT("odd 01"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Forest, Forest, Desert, Forest, Forest),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Forest, Forest, Desert, Forest, Forest, Forest),
 		false, Forest, Desert);
 	Expect(
 		TEXT("a straight run stays on the northwest corner"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Desert, Forest, Forest, Desert, Desert, Desert),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Desert, Forest, Forest, Desert, Desert, Desert, Desert),
 		false, Desert, Desert);
 	Expect(
 		TEXT("the northwest method leaves the odd corner"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWest, Forest, Forest, Forest, Forest, Desert, Forest),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWest, Forest, Forest, Forest, Forest, Desert, Forest, Forest),
 		false, Forest, Forest);
 	Expect(
 		TEXT("a lone northwest corner is cut"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Desert, Forest, Forest, Forest, Desert, Forest),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Desert, Forest, Forest, Forest, Desert, Forest, Forest),
 		true, Forest, Desert);
 	Expect(
 		TEXT("a south corner that continues west is cut"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Grass, Grass, Town, Grass, Grass, Town),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Grass, Grass, Town, Grass, Grass, Town, Town),
 		false, Town, Grass);
 	Expect(
 		TEXT("a south corner whose west point matches the northwest stays"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Forest, Forest, Town, Forest, Forest, Forest),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Forest, Forest, Town, Forest, Forest, Forest, Forest),
 		false, Forest, Forest);
 	Expect(
 		TEXT("a straight run stays whole under NorthWestCut"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Forest, Town, Town, Forest, Forest, Forest),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Forest, Town, Town, Forest, Forest, Forest, Town),
 		false, Forest, Forest);
+	Expect(
+		TEXT("a two-and-two edge cuts at its west end"),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Town, Grass, Grass, Town, Town, Grass, Grass),
+		false, Grass, Town);
+	Expect(
+		TEXT("a two-and-two edge stays whole where the west point matches"),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Town, Grass, Grass, Town, Town, Town, Grass),
+		false, Town, Town);
+	Expect(
+		TEXT("a two-and-two edge stays whole when the south-west point differs"),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Town, Grass, Grass, Town, Town, Grass, Town),
+		false, Town, Town);
 
 	return true;
 }

@@ -8,7 +8,18 @@ The player uses raven sight as a tactical view of the squad. The camera stays wi
 
 The player chooses Falcon Sight. The camera sits higher than raven sight and lower than eagle sight, between 20 m and 200 m above the ground, and within 80% of the inner fog clear distance on the ground. That distance is 25 m, so the cap is 20 m. Falcon Sight keeps the camera aimed at the captain, standing 20 m to the side. A steep look does not put it overhead.
 
-The player chooses Eagle Sight to see the whole map. The camera rises until the entire map is in view. On the ground it moves from the captain toward the centre of the world, along the line between them, and it stops at the closest point on that line that is still over ground with no fog.
+The player chooses Eagle Sight to see the whole map. The camera rises until the clear ground is in view. On the ground it moves from the captain toward the centre of the world, along the line between them, and it stops at the closest point on that line that is still over ground with no fog.
+
+## Sight modes
+
+| Sight | Perspective | Max distance from captain | Min height | Max height | Movable camera | Look at |
+| --- | --- | --- | --- | --- | --- | --- |
+| True | 1st | On the captain | — | — | No | Flexible |
+| Raven | 3rd | 50 m | — | — | Yes | Flexible |
+| Falcon | 3rd | 20 m | 20 m | 200 m | Yes | Captain |
+| Eagle | 3rd | Toward the map centre, over fog 0 | — | Clear ground in view | No | Point on ground |
+
+Raven has no separate height range. Its boom is 2.5 m to 50 m along the look. Falcon's height is above the ground under the camera. A dash means that limit is not set.
 
 The player enters Dragongate. Enter Dragongate fires, and from then on Falcon Sight and Eagle Sight are available. Enter Jethan enables Raven Sight, Falcon Sight, and Eagle Sight, and it does not wait for an earlier event. Entering Jethan switches the view to Eagle Sight and sets Fog to 0 on every terrain point. Before either event, the player does not have Falcon Sight or Eagle Sight.
 

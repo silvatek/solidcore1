@@ -33,6 +33,7 @@ namespace SolidEvents
 	inline constexpr const TCHAR* IdEnterRelion = TEXT("9f30d86a");
 	inline constexpr const TCHAR* IdEnterKanfold = TEXT("2b8e15c7");
 	inline constexpr const TCHAR* IdEnterDragongate = TEXT("e6a4f093");
+	inline constexpr const TCHAR* IdEnterJethan = TEXT("7c3a9e14");
 
 	/** Story acts. Event definitions name these. */
 	inline constexpr int32 ACT_0 = 0;

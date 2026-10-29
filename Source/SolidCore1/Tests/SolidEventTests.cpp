@@ -179,9 +179,16 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 	USolidGameState& Skipped = *NewObject<USolidGameState>();
 	USolidCaptain& SkippedCaptain = *NewObject<USolidCaptain>();
 	const SolidEvents::FResult OtherTown = SolidEvents::NotifyOccupiedTown(Skipped, SkippedCaptain, 4);
-	TestFalse(TEXT("Jethan has no event"), OtherTown.bFired);
-	TestEqual(TEXT("Jethan leaves the squad empty"), Skipped.MaxSquadSize, 0);
+	TestTrue(TEXT("entering Jethan fires"), OtherTown.bFired);
+	TestTrue(TEXT("Jethan switches sight"), OtherTown.bSetSight);
+	TestEqual(
+		TEXT("Jethan switches to eagle sight"),
+		static_cast<uint8>(OtherTown.Sight),
+		static_cast<uint8>(ESolidSight::Eagle));
+	TestTrue(TEXT("Jethan unlocks falcon sight"), SkippedCaptain.bFalconSightEnabled);
+	TestTrue(TEXT("Jethan unlocks eagle sight"), SkippedCaptain.bEagleSightEnabled);
 	TestFalse(TEXT("Jethan does not unlock raven sight"), SkippedCaptain.bRavenSightEnabled);
+	TestEqual(TEXT("Jethan leaves the squad empty"), Skipped.MaxSquadSize, 0);
 
 	const SolidEvents::FResult KanfoldFirst = SolidEvents::NotifyOccupiedTown(Skipped, SkippedCaptain, 2);
 	TestTrue(TEXT("town 2 still fires if Relion was skipped"), KanfoldFirst.bFired);
@@ -660,6 +667,7 @@ bool FSolidEventsActTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Relion is ACT_2"), ActOf(SolidEvents::IdEnterRelion), SolidEvents::ACT_2);
 	TestEqual(TEXT("Kanfold is ACT_3"), ActOf(SolidEvents::IdEnterKanfold), SolidEvents::ACT_3);
 	TestEqual(TEXT("Dragongate is ACT_4"), ActOf(SolidEvents::IdEnterDragongate), SolidEvents::ACT_4);
+	TestEqual(TEXT("Jethan is ACT_4"), ActOf(SolidEvents::IdEnterJethan), SolidEvents::ACT_4);
 	return true;
 }
 
@@ -890,7 +898,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidEventsDrivenFromVillageTest::RunTest(const FString& Parameters)
 {
 	TestEqual(TEXT("two messages"), SolidMessages::DefinitionCount, 2);
-	TestEqual(TEXT("seven events"), SolidEvents::DefinitionCount, 7);
+	TestEqual(TEXT("eight events"), SolidEvents::DefinitionCount, 8);
 	int32 EnterTownCount = 0;
 	for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
 	{
@@ -899,7 +907,7 @@ bool FSolidEventsDrivenFromVillageTest::RunTest(const FString& Parameters)
 			++EnterTownCount;
 		}
 	}
-	TestEqual(TEXT("five enter-town events"), EnterTownCount, 5);
+	TestEqual(TEXT("six enter-town events"), EnterTownCount, 6);
 
 	const TCHAR* DrivenText = SolidMessages::TextFor(SolidMessages::IdDrivenFromVillage);
 	TestNotNull(TEXT("the village message is listed"), DrivenText);

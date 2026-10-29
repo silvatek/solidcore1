@@ -407,4 +407,60 @@ bool FSolidBiomeFadeMaterialTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidQuadTrianglesTest,
+	"SolidCore1.Types.QuadTriangles",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
+{
+	const ESolidBiome Forest = ESolidBiome::Forest;
+	const ESolidBiome Desert = ESolidBiome::Desert;
+
+	TestEqual(
+		TEXT("this build cuts off the odd corner"),
+		static_cast<uint8>(SolidTerrainTypes::QuadMaterial),
+		static_cast<uint8>(SolidTerrainTypes::ESolidQuadMaterial::OddCorner));
+
+	auto Expect = [this](const TCHAR* What, const SolidTerrainTypes::FSolidQuadTriangles& Tri, const bool bFlip, const ESolidBiome First, const ESolidBiome Second)
+	{
+		TestEqual(What, Tri.bFlip, bFlip);
+		TestEqual(
+			*FString::Printf(TEXT("%s first"), What),
+			static_cast<uint8>(Tri.First),
+			static_cast<uint8>(First));
+		TestEqual(
+			*FString::Printf(TEXT("%s second"), What),
+			static_cast<uint8>(Tri.Second),
+			static_cast<uint8>(Second));
+	};
+
+	Expect(
+		TEXT("odd 11"),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Forest, Forest, Forest, Desert),
+		true, Forest, Desert);
+	Expect(
+		TEXT("odd 00"),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Desert, Forest, Forest, Forest),
+		true, Desert, Forest);
+	Expect(
+		TEXT("odd 10"),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Forest, Desert, Forest, Forest),
+		false, Desert, Forest);
+	Expect(
+		TEXT("odd 01"),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Forest, Forest, Desert, Forest),
+		false, Forest, Desert);
+	Expect(
+		TEXT("a straight run stays on the centre"),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Desert, Forest, Forest, Desert, Desert),
+		false, Desert, Desert);
+	Expect(
+		TEXT("the centre method leaves the odd corner"),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::Centre, Forest, Forest, Forest, Forest, Desert),
+		false, Forest, Forest);
+
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

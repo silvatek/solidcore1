@@ -2024,7 +2024,8 @@ void ASolidHUD::DrawHUD()
 						Map->GetPoint(X1, Y1).Biome,
 					};
 					int32 CutCorner = 0;
-					const bool bCut = SolidTerrainTypes::DiagonalCut(
+					const bool bCut = SolidTerrainTypes::QuadMaterial == SolidTerrainTypes::ESolidQuadMaterial::OddCorner
+						&& SolidTerrainTypes::DiagonalCut(
 						Corners[0], Corners[1], Corners[2], Corners[3], CutCorner);
 					const TCHAR* const CornerLabel[] = { TEXT("00"), TEXT("10"), TEXT("01"), TEXT("11") };
 					if (bCut && CutCorner >= 0 && CutCorner < 4)
@@ -2038,7 +2039,7 @@ void ASolidHUD::DrawHUD()
 							CornerLabel[CutCorner],
 							SolidBiome::Of(Corners[CutCorner]).Name()));
 					}
-					else
+					else if (SolidTerrainTypes::QuadMaterial == SolidTerrainTypes::ESolidQuadMaterial::OddCorner)
 					{
 						Lines.Add(FString::Printf(
 							TEXT("Quad %s %s / %s %s  keeps one material"),
@@ -2046,6 +2047,23 @@ void ASolidHUD::DrawHUD()
 							SolidBiome::Of(Corners[1]).Name(),
 							SolidBiome::Of(Corners[2]).Name(),
 							SolidBiome::Of(Corners[3]).Name()));
+					}
+					else
+					{
+						const float CentreX = Map->OriginXY.X + (static_cast<float>(X0) + 0.5f) * Map->PointSpacing;
+						const float CentreY = Map->OriginXY.Y + (static_cast<float>(Y0) + 0.5f) * Map->PointSpacing;
+						const ESolidBiome Preferred = Map->SamplePoint(CentreX, CentreY).Biome;
+						const SolidTerrainTypes::FSolidQuadTriangles Picked = SolidTerrainTypes::QuadTriangles(
+							SolidTerrainTypes::QuadMaterial, Preferred,
+							Corners[0], Corners[1], Corners[2], Corners[3]);
+						Lines.Add(FString::Printf(
+							TEXT("Quad %s %s / %s %s  %s / %s"),
+							SolidBiome::Of(Corners[0]).Name(),
+							SolidBiome::Of(Corners[1]).Name(),
+							SolidBiome::Of(Corners[2]).Name(),
+							SolidBiome::Of(Corners[3]).Name(),
+							SolidBiome::Of(Picked.First).Name(),
+							SolidBiome::Of(Picked.Second).Name()));
 					}
 				}
 			}

@@ -225,3 +225,39 @@ bool SolidTerrainTypes::DiagonalCut(
 	}
 	return false;
 }
+
+SolidTerrainTypes::FSolidQuadTriangles SolidTerrainTypes::QuadTriangles(
+	const ESolidQuadMaterial Method,
+	const ESolidBiome Preferred,
+	const ESolidBiome B00,
+	const ESolidBiome B10,
+	const ESolidBiome B01,
+	const ESolidBiome B11)
+{
+	FSolidQuadTriangles Out;
+	Out.First = BorderBiome(Preferred, B00, B11, B10);
+	Out.Second = BorderBiome(Preferred, B00, B01, B11);
+	switch (Method)
+	{
+	case ESolidQuadMaterial::Centre:
+		break;
+	case ESolidQuadMaterial::OddCorner:
+	{
+		int32 CutCorner = 0;
+		if (!DiagonalCut(B00, B10, B01, B11, CutCorner))
+		{
+			break;
+		}
+
+		const ESolidBiome Corners[4] = { B00, B10, B01, B11 };
+		const ESolidBiome Odd = Corners[CutCorner];
+		const ESolidBiome Majority = Corners[(CutCorner + 1) % 4];
+		Out.bFlip = CutCorner == 0 || CutCorner == 3;
+		const bool bOddOnFirst = Out.bFlip ? (CutCorner == 0) : (CutCorner == 1);
+		Out.First = bOddOnFirst ? Odd : Majority;
+		Out.Second = bOddOnFirst ? Majority : Odd;
+		break;
+	}
+	}
+	return Out;
+}

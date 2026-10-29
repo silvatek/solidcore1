@@ -408,50 +408,26 @@ void ASolidTerrainChunk::BuildChunk(
 				B01 = VertexBiomes[I01];
 				B11 = VertexBiomes[I11];
 			}
-			int32 CutCorner = 0;
-			const bool bCut = bUseBiomeMaterials
-				&& SolidTerrainTypes::DiagonalCut(B00, B10, B01, B11, CutCorner);
-			if (bCut)
+			const SolidTerrainTypes::FSolidQuadTriangles Picked = SolidTerrainTypes::QuadTriangles(
+				SolidTerrainTypes::QuadMaterial, Preferred, B00, B10, B01, B11);
+			// 00 and 11 sit on the mesh diagonal, so cutting one of them uses the other diagonal.
+			if (Picked.bFlip)
 			{
-				const ESolidBiome Corners[4] = { B00, B10, B01, B11 };
-				const ESolidBiome Odd = Corners[CutCorner];
-				const ESolidBiome Majority = Corners[(CutCorner + 1) % 4];
-				// 00 and 11 sit on the mesh diagonal, so cutting one of them uses the other diagonal.
-				const bool bFlip = CutCorner == 0 || CutCorner == 3;
-				if (bFlip)
-				{
-					Triangles[Triangles.Num() - 6] = I10;
-					Triangles[Triangles.Num() - 5] = I00;
-					Triangles[Triangles.Num() - 4] = I01;
-					Triangles[Triangles.Num() - 3] = I10;
-					Triangles[Triangles.Num() - 2] = I01;
-					Triangles[Triangles.Num() - 1] = I11;
-					CornerColors.Add(Colors[I10]);
-					CornerColors.Add(Colors[I00]);
-					CornerColors.Add(Colors[I01]);
-					CornerColors.Add(Colors[I10]);
-					CornerColors.Add(Colors[I01]);
-					CornerColors.Add(Colors[I11]);
-				}
-				else
-				{
-					CornerColors.Add(Colors[I00]);
-					CornerColors.Add(Colors[I11]);
-					CornerColors.Add(Colors[I10]);
-					CornerColors.Add(Colors[I00]);
-					CornerColors.Add(Colors[I01]);
-					CornerColors.Add(Colors[I11]);
-				}
-				const bool bOddOnFirst = bFlip ? (CutCorner == 0) : (CutCorner == 1);
-				TriMatIndices.Add(EnsureMaterialSlot(bOddOnFirst ? Odd : Majority));
-				TriMatIndices.Add(EnsureMaterialSlot(bOddOnFirst ? Majority : Odd));
+				Triangles[Triangles.Num() - 6] = I10;
+				Triangles[Triangles.Num() - 5] = I00;
+				Triangles[Triangles.Num() - 4] = I01;
+				Triangles[Triangles.Num() - 3] = I10;
+				Triangles[Triangles.Num() - 2] = I01;
+				Triangles[Triangles.Num() - 1] = I11;
+				CornerColors.Add(Colors[I10]);
+				CornerColors.Add(Colors[I00]);
+				CornerColors.Add(Colors[I01]);
+				CornerColors.Add(Colors[I10]);
+				CornerColors.Add(Colors[I01]);
+				CornerColors.Add(Colors[I11]);
 			}
 			else
 			{
-				const ESolidBiome FirstTri = SolidTerrainTypes::BorderBiome(Preferred, B00, B11, B10);
-				const ESolidBiome SecondTri = SolidTerrainTypes::BorderBiome(Preferred, B00, B01, B11);
-				TriMatIndices.Add(EnsureMaterialSlot(FirstTri));
-				TriMatIndices.Add(EnsureMaterialSlot(SecondTri));
 				CornerColors.Add(Colors[I00]);
 				CornerColors.Add(Colors[I11]);
 				CornerColors.Add(Colors[I10]);
@@ -459,6 +435,8 @@ void ASolidTerrainChunk::BuildChunk(
 				CornerColors.Add(Colors[I01]);
 				CornerColors.Add(Colors[I11]);
 			}
+			TriMatIndices.Add(EnsureMaterialSlot(Picked.First));
+			TriMatIndices.Add(EnsureMaterialSlot(Picked.Second));
 		}
 	}
 

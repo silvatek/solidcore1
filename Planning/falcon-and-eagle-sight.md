@@ -10,7 +10,7 @@ The player chooses Falcon Sight. The camera sits higher than raven sight and low
 
 The player chooses Eagle Sight to see the whole map. The camera rises until the entire map is in view. On the ground it moves from the captain toward the centre of the world, along the line between them, and it stops at the closest point on that line that is still over ground with no fog.
 
-The player enters Dragongate. Enter Dragongate fires, and from then on Falcon Sight and Eagle Sight are available. Enter Jethan does the same, and it does not wait for an earlier event. Entering Jethan switches the view to Eagle Sight and sets Fog to 0 on every terrain point. Before either event, the player does not have those sights.
+The player enters Dragongate. Enter Dragongate fires, and from then on Falcon Sight and Eagle Sight are available. Enter Jethan enables Raven Sight, Falcon Sight, and Eagle Sight, and it does not wait for an earlier event. Entering Jethan switches the view to Eagle Sight and sets Fog to 0 on every terrain point. Before either event, the player does not have Falcon Sight or Eagle Sight.
 
 The player presses F9. The view moves from true sight to raven sight, then to Falcon Sight, then to Eagle Sight, and then back to true sight. A mode the player does not have yet is skipped.
 
@@ -25,7 +25,7 @@ The player looks at the sight marker. On Falcon Sight and Eagle Sight the bird s
 - True sight behaves as it does now.
 - When every sight mode is available, F9 cycles true sight, raven sight, Falcon Sight, Eagle Sight, and then true sight again.
 - F9 skips a mode that is not available and uses the next available mode in that order.
-- Falcon Sight and Eagle Sight become available when Enter Dragongate or Enter Jethan fires, and not before either. Entering Jethan switches the view to Eagle Sight and sets Fog to 0 on every terrain point.
+- Falcon Sight and Eagle Sight become available when Enter Dragongate or Enter Jethan fires, and not before either. Enter Jethan also enables Raven Sight. Entering Jethan switches the view to Eagle Sight and sets Fog to 0 on every terrain point.
 - Falcon Sight shows the raven eagle shifted left, with a + in the space behind the bird.
 - Eagle Sight shows the raven eagle shifted left, with a larger globe, Unicode U+1F310, in the space behind the bird.
 
@@ -38,4 +38,4 @@ The player looks at the sight marker. On Falcon Sight and Eagle Sight the bird s
 - The raven marker is the eagle returned by `SolidSight::Marker` for raven sight, drawn in the translucent oval at the top right. True sight keeps the eye. The bird faces left, so the empty part of the oval is behind it.
 - On Falcon Sight and Eagle Sight the bird is shifted left so the mark behind it can be larger. The globe is U+1F310 (globe with meridians). [falcon-eagle-markers.png](falcon-eagle-markers.png) shows the current raven indicator beside those two.
 - Camera height, including Falcon's 20 m to 200 m, is measured from the ground under the camera.
-- To start with, both sights are enabled by `SolidEvents::IdEnterDragongate` (`e6a4f093`), the Enter Dragongate event. That event already enables raven sight. `SolidEvents::IdEnterJethan` (`7c3a9e14`) enables Falcon Sight and then Eagle Sight, so the view switches to Eagle. Its ClearAllFog change sets every terrain point's Fog to 0.
+- To start with, both sights are enabled by `SolidEvents::IdEnterDragongate` (`e6a4f093`), the Enter Dragongate event. That event already enables raven sight. `SolidEvents::IdEnterJethan` (`7c3a9e14`) enables Raven Sight, then Falcon Sight, then Eagle Sight, so the view switches to Eagle. Its ClearAllFog change sets every terrain point's Fog to 0.

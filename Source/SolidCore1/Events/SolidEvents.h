@@ -78,9 +78,10 @@ namespace SolidEvents
 			.EnableBattlePlan(TEXT("Column"))
 			.EnableBattlePlan(TEXT("Tight mob"))
 			.EnableBattlePlan(TEXT("Loose mob")),
-		// No earlier event is required, so a portal here can try Falcon and Eagle.
+		// No earlier event is required, so a portal here can try the sights.
 		// Eagle is last, so the view switches to Eagle.
 		EnterTown(IdEnterJethan, TEXT("Enter Jethan"), SolidTowns::Jethan, ACT_4)
+			.EnableSight(ESolidSight::Raven)
 			.EnableSight(ESolidSight::Falcon)
 			.EnableSight(ESolidSight::Eagle)
 			.ClearAllFog(),

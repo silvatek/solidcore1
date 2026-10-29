@@ -187,16 +187,16 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(ESolidSight::Eagle));
 	TestTrue(TEXT("Jethan unlocks falcon sight"), SkippedCaptain.bFalconSightEnabled);
 	TestTrue(TEXT("Jethan unlocks eagle sight"), SkippedCaptain.bEagleSightEnabled);
-	TestFalse(TEXT("Jethan does not unlock raven sight"), SkippedCaptain.bRavenSightEnabled);
+	TestTrue(TEXT("Jethan unlocks raven sight"), SkippedCaptain.bRavenSightEnabled);
 	TestTrue(TEXT("Jethan clears all fog"), OtherTown.bClearAllFog);
 	TestEqual(TEXT("Jethan leaves the squad empty"), Skipped.MaxSquadSize, 0);
 	const SolidEvents::FEvent* JethanEvent = SolidEventTestPrivate::FindEvent(TEXT("Enter Jethan"));
 	TestNotNull(TEXT("Enter Jethan is listed"), JethanEvent);
 	if (JethanEvent)
 	{
-		TestTrue(
-			TEXT("Enter Jethan journal clears fog"),
-			USolidJournal::Describe(*JethanEvent).Contains(TEXT("Fog cleared")));
+		const FString JethanDetail = USolidJournal::Describe(*JethanEvent);
+		TestTrue(TEXT("Enter Jethan journal enables raven sight"), JethanDetail.Contains(TEXT("Raven sight enabled")));
+		TestTrue(TEXT("Enter Jethan journal clears fog"), JethanDetail.Contains(TEXT("Fog cleared")));
 	}
 
 	const SolidEvents::FResult KanfoldFirst = SolidEvents::NotifyOccupiedTown(Skipped, SkippedCaptain, 2);

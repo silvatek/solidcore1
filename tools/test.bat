@@ -8,7 +8,8 @@ rem   tools\test.bat SolidCore1.Fog
 rem
 rem The first argument is the automation filter. The holder word is
 rem SOLID_AGENT_ID. When that is unset the holder word is Test.
-rem The lock is not released. tools\free-ue.bat does that.
+rem When this script finishes it writes Free.
+rem A killed script leaves the word. tools\free-ue.bat clears that.
 rem A ue.yield file reserves the next slot and this script exits.
 rem
 rem Optional env:
@@ -40,6 +41,8 @@ if exist "%LOGFILE%" del /f /q "%LOGFILE%"
 if exist "%FAILLIST%" del /f /q "%FAILLIST%"
 
 set "HOLDER=%SOLID_AGENT_ID%"
+set "LOCKWORD=%HOLDER%"
+if "%LOCKWORD%"=="" set "LOCKWORD=Test"
 set "LOCKPY=%SCRIPT_DIR%ue_lock.py"
 if "%HOLDER%"=="" (
   python "%LOCKPY%" acquire Test --build --default
@@ -97,6 +100,8 @@ if exist "%FAILLIST%" (
 )
 echo =========================================
 
-if not "!FAILED!"=="0" if "%ERR%"=="0" set "ERR=1"
+if not "!FAILED!"=="0" if "!ERR!"=="0" set "ERR=1"
 
-exit /b %ERR%
+python "%LOCKPY%" release "%LOCKWORD%"
+if errorlevel 1 if "!ERR!"=="0" set "ERR=1"
+exit /b !ERR!

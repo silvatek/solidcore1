@@ -202,7 +202,7 @@ def check_editor_lock(errors: list[str]) -> None:
         "build.bat",
         'call "%UBT%"',
         "ue_lock.py",
-        None,
+        "release",
     )
     build = ROOT / "tools" / "build.bat"
     if build.is_file():
@@ -215,7 +215,7 @@ def check_editor_lock(errors: list[str]) -> None:
         "test.bat",
         '"%EDITOR%" "%PROJECT%"',
         "acquire",
-        None,
+        "release",
     )
 
     agents = ROOT / "AGENTS.md"

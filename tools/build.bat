@@ -8,7 +8,8 @@ rem   tools\build.bat <agent-id>
 rem
 rem The agent id is the first argument, otherwise SOLID_AGENT_ID.
 rem When both are unset the holder word is Build.
-rem The lock is not released. tools\free-ue.bat does that.
+rem When this script finishes it writes Free.
+rem A killed script leaves the word. tools\free-ue.bat clears that.
 rem A ue.yield file reserves the next slot and this script exits.
 rem
 rem Optional env:
@@ -38,6 +39,8 @@ if not exist "%PROJECT%" (
 
 set "HOLDER=%~1"
 if "%HOLDER%"=="" set "HOLDER=%SOLID_AGENT_ID%"
+set "LOCKWORD=%HOLDER%"
+if "%LOCKWORD%"=="" set "LOCKWORD=Build"
 set "LOCKPY=%SCRIPT_DIR%ue_lock.py"
 if "%HOLDER%"=="" (
   python "%LOCKPY%" acquire Build --build --default
@@ -52,4 +55,7 @@ echo Engine:  %UE_ROOT%
 echo.
 
 call "%UBT%" SolidCore1Editor Win64 Development "-Project=%PROJECT%" -WaitMutex
-exit /b %ERRORLEVEL%
+set "ERR=%ERRORLEVEL%"
+python "%LOCKPY%" release "%LOCKWORD%"
+if errorlevel 1 if "%ERR%"=="0" set "ERR=1"
+exit /b %ERR%

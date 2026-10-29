@@ -50,14 +50,33 @@ void ASolidCharacter::ApplyFalconSightCamera()
 	}
 
 	const FRotator ArmRot = CameraBoom->GetTargetRotation();
-	const FVector Horizontal(SolidSight::FalconHorizontalOffset(ArmRot), 0.f);
 	const FVector Origin = CameraBoom->GetComponentLocation();
+	const FVector2D Captain(Origin.X, Origin.Y);
+	FVector2D Horizontal = FVector2D::ZeroVector;
 	float GroundZ = Origin.Z;
 	if (UWorld* World = GetWorld())
 	{
 		if (const ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World))
 		{
-			GroundZ = Streamer->GetHeightAt(Origin + Horizontal) + Streamer->CollisionHeightBias;
+			if (const USolidTerrainMap* Map = Streamer->GetTerrainMap())
+			{
+				if (Map->IsBuilt())
+				{
+					const float MaxCm = FVector2D::Distance(Map->GetWorldMinXY(), Map->GetWorldMaxXY());
+					const FVector2D Stand = SolidSight::FalconClearXY(
+						Captain,
+						ArmRot,
+						200.f,
+						MaxCm,
+						[Map](const FVector2D& At)
+						{
+							return Map->SamplePoint(At.X, At.Y).Fog;
+						});
+					Horizontal = Stand - Captain;
+				}
+			}
+			GroundZ = Streamer->GetHeightAt(Origin + FVector(Horizontal.X, Horizontal.Y, 0.f))
+				+ Streamer->CollisionHeightBias;
 		}
 	}
 

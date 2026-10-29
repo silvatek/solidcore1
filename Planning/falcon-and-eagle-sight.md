@@ -4,9 +4,9 @@ Status: In Progress
 
 ## Story
 
-The player uses raven sight as a tactical view of the squad. The camera stays within 50 m of the captain, and it does not move above ground that still has fog.
+The player uses raven sight as a tactical view of the squad. The camera stays within 20 m of the captain, and it does not move above ground that still has fog.
 
-The player chooses Falcon Sight. The camera sits higher than raven sight and lower than eagle sight, between 20 m and 200 m above the ground, and within 80% of the inner fog clear distance on the ground. That distance is 25 m, so the cap is 20 m. Falcon Sight keeps the camera aimed at the captain, standing 20 m to the side. A steep look does not put it overhead.
+The player chooses Falcon Sight. The camera sits higher than raven sight and lower than eagle sight, between 20 m and 200 m above the ground. It stands over terrain whose fog is 0, with no separate lateral cap. Falcon Sight keeps the camera aimed at the captain. A steep look does not put it overhead.
 
 The player chooses Eagle Sight to see the whole map. The camera rises until the clear ground is in view. On the ground it moves from the captain toward the centre of the world, along the line between them, and it stops at the closest point on that line that is still over ground with no fog.
 
@@ -14,12 +14,12 @@ The player chooses Eagle Sight to see the whole map. The camera rises until the 
 
 | Sight | Perspective | Max distance from captain | Min height | Max height | Movable camera | Look at |
 | --- | --- | --- | --- | --- | --- | --- |
-| True | 1st | On the captain | — | — | No | Flexible |
-| Raven | 3rd | 50 m | — | — | Yes | Flexible |
-| Falcon | 3rd | 20 m | 20 m | 200 m | Yes | Captain |
-| Eagle | 3rd | Toward the map centre, over fog 0 | — | Clear ground in view | No | Point on ground |
+| True | 1st | 0 m | — | — | No | Flexible |
+| Raven | 3rd | 20 m | — | — | Yes | Flexible |
+| Falcon | 3rd | Over fog 0 | 20 m | 200 m | Yes | Captain |
+| Eagle | 3rd | N/A | — | Clear ground in view | No | Point on ground |
 
-Raven has no separate height range. Its boom is 2.5 m to 50 m along the look. Falcon's height is above the ground under the camera. A dash means that limit is not set.
+Raven has no separate height range. Its boom is 2.5 m to 20 m along the look. Falcon's height is above the ground under the camera. A dash means that limit is not set.
 
 The player enters Dragongate. Enter Dragongate fires, and from then on Falcon Sight and Eagle Sight are available. Enter Jethan enables Raven Sight, Falcon Sight, and Eagle Sight, and it does not wait for an earlier event. Entering Jethan switches the view to Eagle Sight and sets Fog to 0 on every terrain point. Before either event, the player does not have Falcon Sight or Eagle Sight.
 
@@ -29,8 +29,8 @@ The player looks at the sight marker. On Falcon Sight and Eagle Sight the bird s
 
 ## Acceptance
 
-- In raven sight the camera stays within 50 m of the captain, and it does not move above a terrain point whose `FSolidTerrainPoint.Fog` is greater than `0.0f`.
-- In Falcon Sight the camera is between 20 m and 200 m above the ground, and its horizontal distance from the captain is at most 80% of the inner fog clear distance. The camera keeps aiming at the captain.
+- In raven sight the camera stays within 20 m of the captain, and it does not move above a terrain point whose `FSolidTerrainPoint.Fog` is greater than `0.0f`.
+- In Falcon Sight the camera is between 20 m and 200 m above the ground, and the terrain under it has `Fog` of `0.0f`. The camera keeps aiming at the captain.
 - In Eagle Sight the camera is high enough that the entire map is visible.
 - In Eagle Sight the camera's ground position lies on the line from the captain to the centre of the world, as close to that centre as possible while the terrain under the camera has `Fog` of `0.0f`.
 - True sight behaves as it does now.
@@ -43,7 +43,7 @@ The player looks at the sight marker. On Falcon Sight and Eagle Sight the bird s
 ## Implementation notes
 
 - Add the sights in `Source/SolidCore1/Player/SolidSight.h`. `ESolidSight` is `Raven` and `True` today. `Toggle` swaps those two, and F9 calls that. F9 should cycle the available modes instead of swapping a pair.
-- Raven zoom is the spring-arm length, `CameraZoomMin` 250 cm to `CameraZoomMax` 5000 cm (50 m). That length runs along the look. Falcon's horizontal cap is 80% of `SolidTerrainFog::ClearRadiusMeters`. The wheel still picks Falcon's height. The fog curtains reach above the tallest camera, Eagle Sight.
+- Raven zoom is the spring-arm length, `CameraZoomMin` 250 cm to `CameraZoomMax` 2000 cm (20 m). That length runs along the look. Falcon stands on fog 0, with no lateral cap. The wheel still picks Falcon's height. The fog curtains reach above the tallest camera, Eagle Sight.
 - The world is a 1024 m square. Its centre is the middle of that square.
 - Fog on a terrain point is `FSolidTerrainPoint.Fog`. The bands and the rule that the camera stays over clear ground are in [Source/SolidCore1/Fog/README.md](../Source/SolidCore1/Fog/README.md).
 - The raven marker is the eagle returned by `SolidSight::Marker` for raven sight, drawn in the translucent oval at the top right. True sight keeps the eye. The bird faces left, so the empty part of the oval is behind it.

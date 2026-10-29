@@ -376,7 +376,7 @@ protected:
 	float CameraZoomMin = 250.f;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Zoom", meta = (ClampMin = "300.0"))
-	float CameraZoomMax = 5000.f;
+	float CameraZoomMax = 2000.f;
 
 	/** Arm cm change per mouse-wheel notch (MouseWheelAxis is typically ±1). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Camera|Zoom", meta = (ClampMin = "1.0"))

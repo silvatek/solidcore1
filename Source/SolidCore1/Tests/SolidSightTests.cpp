@@ -199,23 +199,31 @@ bool FSolidSightCycleTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("falcon label"), FString(SolidSight::Label(ESolidSight::Falcon)), FString(TEXT("Falcon sight")));
 	TestTrue(TEXT("low zoom is 20 m"), FMath::IsNearlyEqual(SolidSight::FalconHeightCm(0.f), 2000.f));
 	TestTrue(TEXT("high zoom is 200 m"), FMath::IsNearlyEqual(SolidSight::FalconHeightCm(1.f), 20000.f));
-	TestTrue(TEXT("falcon stands at 80% of the clear radius"),
-		FMath::IsNearlyEqual(
-			SolidSight::FalconMaxOffsetCm,
-			SolidTerrainFog::MetersToCm(SolidTerrainFog::ClearRadiusMeters) * SolidSight::FalconClearFraction));
-	const FVector2D West = SolidSight::FalconHorizontalOffset(FRotator(0.f, 0.f, 0.f));
-	TestTrue(TEXT("looking east keeps the camera west"), FMath::IsNearlyEqual(West.X, -SolidSight::FalconMaxOffsetCm, 1.f));
+	const FVector2D West = SolidSight::FalconClearXY(
+		FVector2D::ZeroVector, FRotator(0.f, 0.f, 0.f), 200.f, 2000.f, [](const FVector2D&) { return 0.f; });
+	TestTrue(TEXT("looking east keeps the camera west"), FMath::IsNearlyEqual(West.X, -2000.f, 1.f));
 	TestTrue(TEXT("looking east stays on the captain's Y"), FMath::IsNearlyZero(West.Y, 1.f));
-	TestTrue(TEXT("the west offset is the falcon cap"), FMath::IsNearlyEqual(West.Size(), SolidSight::FalconMaxOffsetCm, 1.f));
-	const FVector2D Overhead = SolidSight::FalconHorizontalOffset(FRotator(-90.f, 0.f, 0.f));
-	TestTrue(TEXT("a straight-down look stays off the captain"),
-		FMath::IsNearlyEqual(Overhead.Size(), SolidSight::FalconMaxOffsetCm, 1.f));
-	TestTrue(TEXT("a straight-down look keeps its yaw"),
-		FMath::IsNearlyEqual(Overhead.X, -SolidSight::FalconMaxOffsetCm, 1.f));
-	const FVector2D Diagonal = SolidSight::FalconHorizontalOffset(FRotator(-30.f, 45.f, 0.f));
-	TestTrue(TEXT("a diagonal stay is the falcon cap"), FMath::IsNearlyEqual(Diagonal.Size(), SolidSight::FalconMaxOffsetCm, 1.f));
+	const FVector2D Overhead = SolidSight::FalconClearXY(
+		FVector2D::ZeroVector, FRotator(-90.f, 0.f, 0.f), 200.f, 2000.f, [](const FVector2D&) { return 0.f; });
+	TestTrue(TEXT("a straight-down look keeps its yaw"), FMath::IsNearlyEqual(Overhead.X, -2000.f, 1.f));
+	const float ClearReach = 2500.f;
+	const FVector2D Edge = SolidSight::FalconClearXY(
+		FVector2D::ZeroVector,
+		FRotator(0.f, 0.f, 0.f),
+		200.f,
+		20000.f,
+		[ClearReach](const FVector2D& At)
+		{
+			return At.Size() <= ClearReach ? 0.f : 1.f;
+		});
+	TestTrue(TEXT("fog stops falcon near the clear edge"),
+		FMath::IsNearlyEqual(Edge.Size(), ClearReach, 200.f));
+	TestTrue(TEXT("that stop stays west"), Edge.X < -1.f);
+	const FVector2D Fogged = SolidSight::FalconClearXY(
+		FVector2D::ZeroVector, FRotator(0.f, 0.f, 0.f), 200.f, 2000.f, [](const FVector2D&) { return 1.f; });
+	TestTrue(TEXT("fog at the captain stays there"), Fogged.IsNearlyZero(1.f));
 	const FRotator AtCaptain = SolidSight::FalconLookAtCaptain(
-		FVector(0.f, -SolidSight::FalconMaxOffsetCm, SolidSight::FalconMaxOffsetCm), FVector::ZeroVector);
+		FVector(0.f, -2000.f, 2000.f), FVector::ZeroVector);
 	TestTrue(TEXT("the entry look faces the captain"), FMath::IsNearlyEqual(AtCaptain.Yaw, 90.f, 1.f));
 	TestTrue(TEXT("the entry look pitches down"), FMath::IsNearlyEqual(AtCaptain.Pitch, -45.f, 1.f));
 	TestTrue(TEXT("the entry look is level in roll"), FMath::IsNearlyZero(AtCaptain.Roll, 1.f));

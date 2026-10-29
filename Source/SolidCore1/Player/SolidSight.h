@@ -24,13 +24,6 @@ namespace SolidSight
 	inline constexpr float FalconMinHeightCm = 2000.f;
 	inline constexpr float FalconMaxHeightCm = 20000.f;
 
-	/** Share of the inner clear radius Falcon may stand back from the captain. */
-	inline constexpr float FalconClearFraction = 0.8f;
-
-	/** 80% of the clear band. A 25 m clear radius is 20 m. */
-	inline constexpr float FalconMaxOffsetCm =
-		SolidTerrainFog::ClearRadiusMeters * FalconClearFraction * 100.f;
-
 	/** Camera sits this far along the look direction so it clears the near clip (cm). */
 	inline constexpr float TrueSightForwardCm = 12.f;
 
@@ -299,13 +292,38 @@ namespace SolidSight
 	}
 
 	/**
-	 * Horizontal offset from the captain, opposite the look's yaw, 20 m away.
-	 * Pitch is ignored, so a steep look still stands off to the side.
+	 * Walk from the captain opposite the look's yaw. Pitch is ignored.
+	 * Stop at the last point whose fog is 0, and do not pass MaxCm.
 	 */
-	inline FVector2D FalconHorizontalOffset(const FRotator& Look)
+	template<typename FogAtFn>
+	inline FVector2D FalconClearXY(
+		const FVector2D& Captain,
+		const FRotator& Look,
+		const float StepCm,
+		const float MaxCm,
+		FogAtFn FogAt)
 	{
 		const FVector Back = -FRotator(0.f, Look.Yaw, 0.f).Vector();
-		return FVector2D(Back.X * FalconMaxOffsetCm, Back.Y * FalconMaxOffsetCm);
+		const FVector2D Dir(Back.X, Back.Y);
+		if (Dir.SizeSquared() <= KINDA_SMALL_NUMBER || MaxCm <= 0.f || FogAt(Captain) > 0.f)
+		{
+			return Captain;
+		}
+
+		const float Step = FMath::Max(StepCm, 1.f);
+		const int32 Steps = FMath::Max(FMath::CeilToInt(MaxCm / Step), 1);
+		FVector2D Clear = Captain;
+		for (int32 Index = 1; Index <= Steps; ++Index)
+		{
+			const float Dist = FMath::Min(static_cast<float>(Index) * Step, MaxCm);
+			const FVector2D At = Captain + Dir * Dist;
+			if (FogAt(At) > 0.f)
+			{
+				return Clear;
+			}
+			Clear = At;
+		}
+		return Clear;
 	}
 
 	/** Look from the falcon camera toward the captain. Level roll. */

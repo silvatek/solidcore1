@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0737")
+#define SOLID_BUILD_ID TEXT("SC1-0738")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("NorthWestCut cuts a lone northwest corner, and a south corner that continues west.")
+#define SOLID_BUILD_NOTE TEXT("Chart dump point rows start at the west edge, matching the painted cells.")
 #endif

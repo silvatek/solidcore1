@@ -180,14 +180,15 @@ int32 USolidDumpWorldChartCommandlet::Main(const FString& Params)
 	Root->SetArrayField(TEXT("rows"), Rows);
 
 	// Terrain points. The first row is the north edge. The first character of a
-	// row is the east edge. The letters are the same key as the cells.
+	// row is the west edge, the same as a painted cell row. Point index 0 stays
+	// the east edge, so a row is written from the last index down to 0.
 	TArray<TSharedPtr<FJsonValue>> PointRows;
 	PointRows.Reserve(USolidWorldChart::PointAxis);
 	for (int32 North = USolidWorldChart::PointAxis - 1; North >= 0; --North)
 	{
 		FString Line;
 		Line.Reserve(USolidWorldChart::PointAxis);
-		for (int32 PointX = 0; PointX < USolidWorldChart::PointAxis; ++PointX)
+		for (int32 PointX = USolidWorldChart::PointAxis - 1; PointX >= 0; --PointX)
 		{
 			const ESolidBiome Biome = Chart->GetPointBiome(FIntPoint(PointX, North));
 			Line.AppendChar(SolidBiome::Of(Biome).Marker());
@@ -197,7 +198,7 @@ int32 USolidDumpWorldChartCommandlet::Main(const FString& Params)
 	Root->SetNumberField(TEXT("pointAxis"), USolidWorldChart::PointAxis);
 	Root->SetStringField(
 		TEXT("pointsOrigin"),
-		TEXT("The first row is the north edge. The first character of a row is the east edge."));
+		TEXT("The first row is the north edge. The first character of a row is the west edge."));
 	Root->SetArrayField(TEXT("points"), PointRows);
 
 	TArray<TSharedPtr<FJsonValue>> Marks;

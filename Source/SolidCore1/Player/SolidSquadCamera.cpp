@@ -69,6 +69,21 @@ void ASolidCharacter::ApplyFalconSightCamera()
 	CameraBoom->bDoCollisionTest = false;
 }
 
+void ASolidCharacter::AimFalconAtCaptain()
+{
+	if (!Controller || !CameraBoom)
+	{
+		return;
+	}
+
+	ApplyFalconSightCamera();
+	const FRotator ArmRot = CameraBoom->GetTargetRotation();
+	const FVector Camera = CameraBoom->GetComponentLocation()
+		+ FRotationMatrix(ArmRot).TransformVector(CameraBoom->SocketOffset);
+	Controller->SetControlRotation(SolidSight::FalconLookAtCaptain(Camera, GetActorLocation()));
+	ApplyFalconSightCamera();
+}
+
 void ASolidCharacter::UpdateSquadCameraFraming(float DeltaTime)
 {
 	if (IsTrueSight())

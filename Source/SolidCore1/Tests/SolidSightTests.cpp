@@ -199,13 +199,18 @@ bool FSolidSightCycleTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("low zoom is 20 m"), FMath::IsNearlyEqual(SolidSight::FalconHeightCm(0.f), 2000.f));
 	TestTrue(TEXT("high zoom is 200 m"), FMath::IsNearlyEqual(SolidSight::FalconHeightCm(1.f), 20000.f));
 	const FVector2D West = SolidSight::FalconHorizontalOffset(FRotator(0.f, 0.f, 0.f));
-	TestTrue(TEXT("looking east keeps the camera west"), FMath::IsNearlyEqual(West.X, -5000.f, 1.f));
+	TestTrue(TEXT("looking east keeps the camera west"), FMath::IsNearlyEqual(West.X, -2000.f, 1.f));
 	TestTrue(TEXT("looking east stays on the captain's Y"), FMath::IsNearlyZero(West.Y, 1.f));
+	TestTrue(TEXT("the west offset is 20 m"), FMath::IsNearlyEqual(West.Size(), 2000.f, 1.f));
 	const FVector2D Overhead = SolidSight::FalconHorizontalOffset(FRotator(-90.f, 0.f, 0.f));
 	TestTrue(TEXT("a straight-down look stays over the captain"), Overhead.IsNearlyZero(1.f));
 	const FVector2D Diagonal = SolidSight::FalconHorizontalOffset(FRotator(-30.f, 45.f, 0.f));
-	TestTrue(TEXT("diagonal X stays within 50 m"), FMath::Abs(Diagonal.X) <= 5000.f + 1.f);
-	TestTrue(TEXT("diagonal Y stays within 50 m"), FMath::Abs(Diagonal.Y) <= 5000.f + 1.f);
+	TestTrue(TEXT("a diagonal stay is 20 m"), FMath::IsNearlyEqual(Diagonal.Size(), 2000.f, 1.f));
+	const FRotator AtCaptain = SolidSight::FalconLookAtCaptain(
+		FVector(0.f, -2000.f, 2000.f), FVector::ZeroVector);
+	TestTrue(TEXT("the entry look faces the captain"), FMath::IsNearlyEqual(AtCaptain.Yaw, 90.f, 1.f));
+	TestTrue(TEXT("the entry look pitches down"), FMath::IsNearlyEqual(AtCaptain.Pitch, -45.f, 1.f));
+	TestTrue(TEXT("the entry look is level in roll"), FMath::IsNearlyZero(AtCaptain.Roll, 1.f));
 	TestEqual(TEXT("eagle label"), FString(SolidSight::Label(ESolidSight::Eagle)), FString(TEXT("Eagle sight")));
 	return true;
 }

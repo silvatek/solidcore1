@@ -584,6 +584,10 @@ void ASolidCharacter::SetSight(const ESolidSight NewSight)
 		}
 	}
 	ApplySightPresentation();
+	if (SolidSight::IsFalconSight(NewSight))
+	{
+		AimFalconAtCaptain();
+	}
 	UE_LOG(LogSolid, Warning, TEXT("Sight: %s"), SolidSight::Label(Sight));
 }
 

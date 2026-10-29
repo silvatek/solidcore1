@@ -22,8 +22,8 @@ namespace SolidSight
 	inline constexpr float FalconMinHeightCm = 2000.f;
 	inline constexpr float FalconMaxHeightCm = 20000.f;
 
-	/** Falcon camera stays this close to the captain on X, and again on Y (cm). */
-	inline constexpr float FalconMaxOffsetCm = 5000.f;
+	/** Falcon camera stays this close to the captain on the ground (cm). */
+	inline constexpr float FalconMaxOffsetCm = 2000.f;
 
 	/** Camera sits this far along the look direction so it clears the near clip (cm). */
 	inline constexpr float TrueSightForwardCm = 12.f;
@@ -62,7 +62,7 @@ namespace SolidSight
 	}
 
 	/**
-	 * Horizontal offset from the captain, opposite the look, inside the 50 m square.
+	 * Horizontal offset from the captain, opposite the look, at most 20 m away.
 	 * A straight-down look has no horizontal direction, so the offset is zero.
 	 */
 	inline FVector2D FalconHorizontalOffset(const FRotator& Look)
@@ -74,16 +74,19 @@ namespace SolidSight
 			return FVector2D::ZeroVector;
 		}
 		Back.Normalize();
-		float Distance = TNumericLimits<float>::Max();
-		if (FMath::Abs(Back.X) > KINDA_SMALL_NUMBER)
+		return FVector2D(Back.X * FalconMaxOffsetCm, Back.Y * FalconMaxOffsetCm);
+	}
+
+	/** Look from the falcon camera toward the captain. Level roll. */
+	inline FRotator FalconLookAtCaptain(const FVector& Camera, const FVector& Captain)
+	{
+		const FVector ToCaptain = Captain - Camera;
+		if (ToCaptain.IsNearlyZero())
 		{
-			Distance = FMath::Min(Distance, FalconMaxOffsetCm / FMath::Abs(Back.X));
+			return FRotator::ZeroRotator;
 		}
-		if (FMath::Abs(Back.Y) > KINDA_SMALL_NUMBER)
-		{
-			Distance = FMath::Min(Distance, FalconMaxOffsetCm / FMath::Abs(Back.Y));
-		}
-		return FVector2D(Back.X * Distance, Back.Y * Distance);
+		const FRotator Look = ToCaptain.Rotation();
+		return FRotator(Look.Pitch, Look.Yaw, 0.f);
 	}
 
 	inline ESolidSight Toggle(ESolidSight Sight)

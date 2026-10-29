@@ -222,6 +222,32 @@ namespace SolidSight
 		return true;
 	}
 
+	/** The engine plane mesh is 100 cm on a side. */
+	inline constexpr float EagleSeaPlaneCm = 100.f;
+
+	/** The sea sheet sits this far under the noise base, below the land. */
+	inline constexpr float EagleSeaDepthCm = 20000.f;
+
+	/** The sheet is this many world squares across, so the side gaps stay on the sea. */
+	inline constexpr float EagleSeaSpans = 4.f;
+
+	/** A flat sheet of sea under the square. The side gaps of the eagle view land on it. */
+	struct FEagleSea
+	{
+		FVector Location = FVector::ZeroVector;
+		float Scale = 1.f;
+	};
+
+	inline FEagleSea EagleSeaSheet(const FVector2D& WorldMin, const FVector2D& WorldMax)
+	{
+		const FVector2D Centre = WorldCentre(WorldMin, WorldMax);
+		const float Span = FMath::Max(WorldMax.X - WorldMin.X, WorldMax.Y - WorldMin.Y);
+		FEagleSea Sea;
+		Sea.Location = FVector(Centre.X, Centre.Y, -EagleSeaDepthCm);
+		Sea.Scale = FMath::Max(Span, 1.f) * EagleSeaSpans / EagleSeaPlaneCm;
+		return Sea;
+	}
+
 	/** Wheel position in the raven zoom range, as 0 at the near end and 1 at the far end. */
 	inline float FalconZoomAlpha(const float ArmCm, const float ZoomMin, const float ZoomMax)
 	{

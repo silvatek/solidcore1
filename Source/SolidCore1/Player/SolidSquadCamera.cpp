@@ -7,6 +7,9 @@
 #include "Camera/PlayerCameraManager.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Content/SolidMaterials.h"
+#include "Engine/StaticMesh.h"
+#include "Terrain/SolidBiome.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
 
@@ -190,6 +193,34 @@ void ASolidCharacter::ApplyEagleSightCamera(float DeltaSeconds)
 	CameraBoom->bEnableCameraLag = false;
 	CameraBoom->bDoCollisionTest = false;
 	CameraTerrainLiftCm = 0.f;
+	ShowEagleSea(WorldMin, WorldMax);
+}
+
+void ASolidCharacter::ShowEagleSea(const FVector2D& WorldMin, const FVector2D& WorldMax)
+{
+	if (!EagleSea)
+	{
+		return;
+	}
+
+	if (!EagleSea->GetStaticMesh())
+	{
+		if (UStaticMesh* Plane = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Plane.Plane")))
+		{
+			EagleSea->SetStaticMesh(Plane);
+		}
+		const FLinearColor Sea = SolidBiome::Of(ESolidBiome::Sea).Color();
+		if (UMaterialInterface* Material = SolidMaterials::CreateSolidColor(this, Sea, TEXT("EagleSea")))
+		{
+			EagleSea->SetMaterial(0, Material);
+		}
+	}
+
+	const SolidSight::FEagleSea Sheet = SolidSight::EagleSeaSheet(WorldMin, WorldMax);
+	EagleSea->SetWorldLocation(Sheet.Location);
+	EagleSea->SetWorldRotation(FRotator::ZeroRotator);
+	EagleSea->SetWorldScale3D(FVector(Sheet.Scale, Sheet.Scale, 1.f));
+	EagleSea->SetVisibility(true);
 }
 
 void ASolidCharacter::AimFalconAtCaptain()
@@ -217,6 +248,10 @@ void ASolidCharacter::UpdateSquadCameraFraming(float DeltaTime)
 	if (!IsEagleSight())
 	{
 		EagleSightHeightCm = 0.f;
+		if (EagleSea)
+		{
+			EagleSea->SetVisibility(false);
+		}
 	}
 
 	if (IsTrueSight())

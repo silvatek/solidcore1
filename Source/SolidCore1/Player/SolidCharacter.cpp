@@ -128,6 +128,15 @@ ASolidCharacter::ASolidCharacter()
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 
+	EagleSea = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("EagleSea"));
+	EagleSea->SetupAttachment(RootComponent);
+	EagleSea->SetUsingAbsoluteLocation(true);
+	EagleSea->SetUsingAbsoluteRotation(true);
+	EagleSea->SetUsingAbsoluteScale(true);
+	EagleSea->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	EagleSea->SetCastShadow(false);
+	EagleSea->SetVisibility(false);
+
 	NameLabelRoot = CreateDefaultSubobject<USceneComponent>(TEXT("NameLabelRoot"));
 	NameLabelRoot->SetupAttachment(RootComponent);
 	NameLabelBorder = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("NameLabelBorder"));

@@ -302,6 +302,13 @@ bool FSolidSightEagleCameraTest::RunTest(const FString& Parameters)
 	TestFalse(
 		TEXT("a level ray misses the ground"),
 		SolidSight::EagleGroundHit(FVector::ZeroVector, FVector(1.f, 0.f, 0.f), 0.f, Hit));
+
+	const SolidSight::FEagleSea Sea = SolidSight::EagleSeaSheet(Min, Max);
+	TestTrue(TEXT("the sea sheet is centred"), FVector2D(Sea.Location.X, Sea.Location.Y).IsNearlyZero(1.f));
+	TestTrue(TEXT("the sea sheet is under the land"), Sea.Location.Z < -1000.f);
+	TestTrue(
+		TEXT("the sea sheet is wider than the square"),
+		Sea.Scale * SolidSight::EagleSeaPlaneCm > 102400.f);
 	return true;
 }
 

@@ -205,6 +205,7 @@ protected:
 	void ApplyRavenSightCamera();
 	void ApplyFalconSightCamera();
 	void ApplyEagleSightCamera(float DeltaSeconds);
+	void ShowEagleSea(const FVector2D& WorldMin, const FVector2D& WorldMax);
 	/** Falcon Sight. The view stays on the captain. */
 	void AimFalconAtCaptain();
 	void ToggleMainMenuFromInput();
@@ -292,6 +293,10 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<UCameraComponent> FollowCamera;
+
+	/** Sea sheet under the square. Shown while Eagle Sight is on, so the side gaps are sea. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Camera", meta = (AllowPrivateAccess = "true"))
+	TObjectPtr<UStaticMeshComponent> EagleSea;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character|Name", meta = (AllowPrivateAccess = "true"))
 	TObjectPtr<USceneComponent> NameLabelRoot;

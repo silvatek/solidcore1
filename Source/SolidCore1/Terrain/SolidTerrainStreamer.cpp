@@ -15,6 +15,7 @@
 #include "SolidWorldChart.h"
 #include "SolidCore1.h"
 #include "Companion/SolidCompanionCharacter.h"
+#include "Player/SolidCharacter.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "GameFramework/Character.h"
@@ -24,6 +25,15 @@
 #include "Components/CapsuleComponent.h"
 #include "Engine/ExponentialHeightFog.h"
 #include "Materials/MaterialInterface.h"
+
+namespace
+{
+	bool FocusWantsEagleMap(const AActor* Focus)
+	{
+		const ASolidCharacter* Character = Cast<ASolidCharacter>(Focus);
+		return Character && Character->IsEagleSight();
+	}
+}
 
 ASolidTerrainStreamer::ASolidTerrainStreamer()
 {
@@ -160,6 +170,11 @@ void ASolidTerrainStreamer::Tick(float DeltaSeconds)
 
 	UpdateTerrainFog(DeltaSeconds);
 
+	if (FocusWantsEagleMap(ResolveFocusActor()) != bEagleMapStream)
+	{
+		TimeSinceUpdate = UpdateIntervalSeconds;
+	}
+
 	TimeSinceUpdate += DeltaSeconds;
 	if (TimeSinceUpdate < UpdateIntervalSeconds)
 	{
@@ -263,12 +278,32 @@ void ASolidTerrainStreamer::EnsureExplorationFogMaterials()
 	}
 }
 
-void ASolidTerrainStreamer::BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint Coord)
+void ASolidTerrainStreamer::ChunkSpan(
+	const FVector2D& WorldMin,
+	const FVector2D& WorldMax,
+	float ChunkSize,
+	FIntPoint& OutMin,
+	FIntPoint& OutMax)
+{
+	const float Size = FMath::Max(ChunkSize, 100.f);
+	OutMin = FIntPoint(
+		FMath::FloorToInt(WorldMin.X / Size),
+		FMath::FloorToInt(WorldMin.Y / Size));
+	OutMax = FIntPoint(
+		FMath::FloorToInt((WorldMax.X - 1.f) / Size),
+		FMath::FloorToInt((WorldMax.Y - 1.f) / Size));
+}
+
+void ASolidTerrainStreamer::BuildChunkActor(
+	ASolidTerrainChunk* Chunk, FIntPoint Coord, int32 Quads, int32 FogQuads)
 {
 	if (!Chunk)
 	{
 		return;
 	}
+
+	const int32 TerrainQuads = Quads > 0 ? Quads : QuadsPerSide;
+	const int32 FogCells = FogQuads > 0 ? FogQuads : FogQuadsPerSide;
 
 	UMaterialInterface* FogHalf = nullptr;
 	UMaterialInterface* FogFull = nullptr;
@@ -287,7 +322,7 @@ void ASolidTerrainStreamer::BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint
 	Chunk->BuildChunk(
 		Coord,
 		ChunkWorldSize,
-		QuadsPerSide,
+		TerrainQuads,
 		Seed,
 		FrequencyScale,
 		Amplitude,
@@ -299,7 +334,7 @@ void ASolidTerrainStreamer::BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint
 		FogOuter,
 		TerrainMap,
 		&BiomeMaterials,
-		FogQuadsPerSide,
+		FogCells,
 		FogVolumeHeightCm,
 		FogVolumeHeightHalfCm);
 }
@@ -918,15 +953,46 @@ void ASolidTerrainStreamer::UpdateStreaming()
 		return;
 	}
 
-	const FIntPoint Center = WorldToChunkCoord(Focus->GetActorLocation());
+	const bool bEagle = FocusWantsEagleMap(Focus);
+	if (bEagle != bEagleMapStream)
+	{
+		for (const TPair<FIntPoint, TObjectPtr<ASolidTerrainChunk>>& Pair : LoadedChunks)
+		{
+			if (Pair.Value)
+			{
+				Pair.Value->Destroy();
+			}
+		}
+		LoadedChunks.Empty();
+		DirtyFogChunkCoords.Empty();
+		bEagleMapStream = bEagle;
+	}
 
 	TSet<FIntPoint> Desired;
-	Desired.Reserve((ViewRadiusChunks * 2 + 1) * (ViewRadiusChunks * 2 + 1));
-	for (int32 DY = -ViewRadiusChunks; DY <= ViewRadiusChunks; ++DY)
+	if (bEagleMapStream && TerrainMap && TerrainMap->IsBuilt())
 	{
-		for (int32 DX = -ViewRadiusChunks; DX <= ViewRadiusChunks; ++DX)
+		FIntPoint MinChunk;
+		FIntPoint MaxChunk;
+		ChunkSpan(TerrainMap->GetWorldMinXY(), TerrainMap->GetWorldMaxXY(), ChunkWorldSize, MinChunk, MaxChunk);
+		Desired.Reserve((MaxChunk.X - MinChunk.X + 1) * (MaxChunk.Y - MinChunk.Y + 1));
+		for (int32 Y = MinChunk.Y; Y <= MaxChunk.Y; ++Y)
 		{
-			Desired.Add(FIntPoint(Center.X + DX, Center.Y + DY));
+			for (int32 X = MinChunk.X; X <= MaxChunk.X; ++X)
+			{
+				Desired.Add(FIntPoint(X, Y));
+			}
+		}
+	}
+	else
+	{
+		const FIntPoint Center = WorldToChunkCoord(Focus->GetActorLocation());
+		Desired.Reserve((ViewRadiusChunks * 2 + 1) * (ViewRadiusChunks * 2 + 1));
+		for (int32 DY = -ViewRadiusChunks; DY <= ViewRadiusChunks; ++DY)
+		{
+			for (int32 DX = -ViewRadiusChunks; DX <= ViewRadiusChunks; ++DX)
+			{
+				Desired.Add(FIntPoint(Center.X + DX, Center.Y + DY));
+			}
 		}
 	}
 
@@ -980,7 +1046,14 @@ void ASolidTerrainStreamer::UpdateStreaming()
 			continue;
 		}
 
-		BuildChunkActor(Chunk, Coord);
+		if (bEagleMapStream)
+		{
+			BuildChunkActor(Chunk, Coord, EagleQuadsPerSide, EagleFogQuadsPerSide);
+		}
+		else
+		{
+			BuildChunkActor(Chunk, Coord);
+		}
 
 		LoadedChunks.Add(Coord, Chunk);
 		UE_LOG(LogSolid, Warning, TEXT("Built terrain chunk (%d, %d) at origin (%.0f, %.0f). Loaded=%d"),

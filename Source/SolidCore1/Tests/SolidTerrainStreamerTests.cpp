@@ -144,4 +144,29 @@ bool FSolidStreamerRelocateCompanionsWithFocusTest::RunTest(const FString& Param
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidStreamerEagleChunkSpanTest,
+	"SolidCore1.Streamer.EagleChunkSpan",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidStreamerEagleChunkSpanTest::RunTest(const FString& Parameters)
+{
+	FIntPoint MinChunk;
+	FIntPoint MaxChunk;
+	ASolidTerrainStreamer::ChunkSpan(
+		FVector2D(-51200.f, -51200.f),
+		FVector2D(51200.f, 51200.f),
+		6400.f,
+		MinChunk,
+		MaxChunk);
+	TestEqual(TEXT("west chunk"), MinChunk.X, -8);
+	TestEqual(TEXT("north chunk"), MinChunk.Y, -8);
+	TestEqual(TEXT("east chunk"), MaxChunk.X, 7);
+	TestEqual(TEXT("south chunk"), MaxChunk.Y, 7);
+	TestEqual(TEXT("eagle terrain quads"), ASolidTerrainStreamer::EagleQuadsPerSide, 4);
+	TestEqual(TEXT("eagle fog quads"), ASolidTerrainStreamer::EagleFogQuadsPerSide, 2);
+	TestTrue(TEXT("eagle mesh is coarser than the nearby mesh"), ASolidTerrainStreamer::EagleQuadsPerSide < 32);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

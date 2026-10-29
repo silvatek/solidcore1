@@ -49,6 +49,23 @@ public:
 	/** Set Fog to 0 on every terrain point, keep that clear, and rebuild the loaded fog sheets. */
 	void ClearAllExplorationFog();
 
+	/** Coarsest terrain mesh the chunk builder allows. Eagle Sight streams the map at this. */
+	static constexpr int32 EagleQuadsPerSide = 4;
+
+	/** Coarsest fog mesh the chunk builder allows. Eagle Sight uses this with the terrain quads. */
+	static constexpr int32 EagleFogQuadsPerSide = 2;
+
+	/**
+	 * Inclusive chunk coordinates covering WorldMin through the point just inside WorldMax.
+	 * The same edges the chart view uses, so the span is the whole map and nothing past it.
+	 */
+	static void ChunkSpan(
+		const FVector2D& WorldMin,
+		const FVector2D& WorldMax,
+		float ChunkSize,
+		FIntPoint& OutMin,
+		FIntPoint& OutMax);
+
 	/**
 	 * Editor ground for the world chart. Every chunk of the centred world, and no
 	 * exploration fog, so the chart stays visible. Play builds from the chart.
@@ -241,7 +258,8 @@ protected:
 	int32 ClearExplorationFogAtFocus();
 	void QueueExplorationFogMeshRefresh(float WorldX, float WorldY, float RadiusCm);
 	void ProcessExplorationFogMeshRebuilds();
-	void BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint Coord);
+	/** Quads and FogQuads below 1 use QuadsPerSide and FogQuadsPerSide. */
+	void BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint Coord, int32 Quads = -1, int32 FogQuads = -1);
 	/** Rebuild the chart ground. Cells and positions name the chunks to build again. */
 	void RebuildChartGround(const USolidWorldChart* Chart, const TArray<FIntPoint>& Cells, const TArray<FVector2D>& Positions);
 	void UpdateTerrainFog(float DeltaSeconds);
@@ -306,6 +324,8 @@ protected:
 	bool bHasFogApplyLocation = false;
 	bool bDidRelocateToStartTown = false;
 	bool bDidCenterFogOnPlayer = false;
+	/** True when the loaded chunks were built for Eagle Sight's whole-map mesh. */
+	bool bEagleMapStream = false;
 	FVector LastFogApplyLocation = FVector::ZeroVector;
 	TSet<FIntPoint> DirtyFogChunkCoords;
 };

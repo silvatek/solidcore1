@@ -1,3 +1,4 @@
+#include "SolidSight.h"
 #include "SolidCharacter.h"
 #include "Terrain/SolidTerrainMap.h"
 

@@ -1,3 +1,4 @@
+#include "SolidFalconSight.h"
 #include "SolidCharacter.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Math/RotationMatrix.h"

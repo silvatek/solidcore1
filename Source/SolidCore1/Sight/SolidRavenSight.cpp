@@ -1,4 +1,5 @@
 #include "SolidCharacter.h"
+#include "Camera/CameraComponent.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Companion/SolidCompanionCharacter.h"
 #include "Components/CapsuleComponent.h"

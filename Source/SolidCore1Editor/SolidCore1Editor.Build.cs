@@ -31,7 +31,7 @@ public class SolidCore1Editor : ModuleRules
 		foreach (string Folder in new string[]
 		{
 			"Character", "Companion", "Content", "Crafting", "Events", "Fog", "Game",
-			"HUD", "Inventory", "Journal", "Lairs", "Menus", "Player", "Squad",
+			"HUD", "Inventory", "Journal", "Lairs", "Menus", "Player", "Sight", "Squad",
 			"Strongholds", "Terrain", "Towns", "Vegetation"
 		})
 		{

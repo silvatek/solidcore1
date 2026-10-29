@@ -1,3 +1,4 @@
+#include "SolidTrueSight.h"
 #include "SolidCharacter.h"
 #include "GameFramework/SpringArmComponent.h"
 

@@ -1,3 +1,4 @@
+#include "SolidEagleSight.h"
 #include "SolidCharacter.h"
 #include "Camera/PlayerCameraManager.h"
 #include "Content/SolidMaterials.h"

@@ -418,9 +418,9 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 	const ESolidBiome Desert = ESolidBiome::Desert;
 
 	TestEqual(
-		TEXT("this build uses the quad centre"),
+		TEXT("this build uses the northwest corner"),
 		static_cast<uint8>(SolidTerrainTypes::QuadMaterial),
-		static_cast<uint8>(SolidTerrainTypes::ESolidQuadMaterial::Centre));
+		static_cast<uint8>(SolidTerrainTypes::ESolidQuadMaterial::NorthWest));
 
 	auto Expect = [this](const TCHAR* What, const SolidTerrainTypes::FSolidQuadTriangles& Tri, const bool bFlip, const ESolidBiome First, const ESolidBiome Second)
 	{
@@ -452,12 +452,12 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Forest, Forest, Forest, Desert, Forest),
 		false, Forest, Desert);
 	Expect(
-		TEXT("a straight run stays on the centre"),
+		TEXT("a straight run stays on the northwest corner"),
 		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::OddCorner, Desert, Forest, Forest, Desert, Desert),
 		false, Desert, Desert);
 	Expect(
-		TEXT("the centre method leaves the odd corner"),
-		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::Centre, Forest, Forest, Forest, Forest, Desert),
+		TEXT("the northwest method leaves the odd corner"),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWest, Forest, Forest, Forest, Forest, Desert),
 		false, Forest, Forest);
 
 	return true;

@@ -239,7 +239,7 @@ SolidTerrainTypes::FSolidQuadTriangles SolidTerrainTypes::QuadTriangles(
 	Out.Second = BorderBiome(Preferred, B00, B01, B11);
 	switch (Method)
 	{
-	case ESolidQuadMaterial::Centre:
+	case ESolidQuadMaterial::NorthWest:
 		break;
 	case ESolidQuadMaterial::OddCorner:
 	{

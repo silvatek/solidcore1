@@ -87,14 +87,14 @@ namespace SolidTerrainTypes
 	/** How a quad's two triangles choose a material. The chunk is built with one of these. */
 	enum class ESolidQuadMaterial : uint8
 	{
-		/** Both triangles take the quad centre. A higher shelf still replaces it. */
-		Centre,
-		/** The single odd corner is cut off. Any other quad takes the centre. */
+		/** Both triangles take corner 11, northwest. A higher shelf still replaces it. */
+		NorthWest,
+		/** The single odd corner is cut off. Any other quad takes that northwest corner. */
 		OddCorner,
 	};
 
 	/** Change this and rebuild. The mesh and the debug line both use it. */
-	inline constexpr ESolidQuadMaterial QuadMaterial = ESolidQuadMaterial::Centre;
+	inline constexpr ESolidQuadMaterial QuadMaterial = ESolidQuadMaterial::NorthWest;
 
 	/** Materials for the quad's two triangles, and whether the mesh diagonal is flipped. */
 	struct FSolidQuadTriangles

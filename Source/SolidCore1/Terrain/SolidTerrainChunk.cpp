@@ -1,10 +1,7 @@
 #include "SolidTerrainChunk.h"
-#include "SolidBiome.h"
 #include "SolidTerrainFog.h"
 #include "SolidTerrainMap.h"
-#include "SolidTerrainMaterials.h"
 #include "SolidTerrainNoise.h"
-#include "SolidWorldChart.h"
 #include "SolidCore1.h"
 #include "Engine/CollisionProfile.h"
 #include "Engine/StaticMesh.h"
@@ -354,29 +351,6 @@ void ASolidTerrainChunk::BuildChunk(
 	TriMatIndices.Reserve(InQuadsPerSide * InQuadsPerSide * 2);
 	CornerColors.Reserve(InQuadsPerSide * InQuadsPerSide * 6);
 
-	const USolidWorldChart* Chart = TerrainMap ? TerrainMap->GetWorldMap() : nullptr;
-	auto BiomeColor = [Chart](const ESolidBiome Biome) -> FLinearColor
-	{
-		return Chart ? Chart->GetBiomeColor(Biome) : SolidBiome::Of(Biome).Color();
-	};
-
-	int32 FadeSlot = INDEX_NONE;
-	auto EnsureFadeSlot = [&]() -> int32
-	{
-		if (FadeSlot != INDEX_NONE)
-		{
-			return FadeSlot;
-		}
-		UMaterialInterface* Fade = SolidTerrainMaterials::FadeMaterial();
-		if (!Fade)
-		{
-			Fade = FallbackMaterial;
-		}
-		FadeSlot = Materials.Num();
-		Materials.Add(Fade);
-		return FadeSlot;
-	};
-
 	auto EnsureMaterialSlot = [&](const ESolidBiome Biome) -> int32
 	{
 		if (const int32* Existing = BiomeToSlot.Find(Biome))
@@ -434,25 +408,43 @@ void ASolidTerrainChunk::BuildChunk(
 				B01 = VertexBiomes[I01];
 				B11 = VertexBiomes[I11];
 			}
-			float Weights[4] = {};
-			const bool bWantFade = bUseBiomeMaterials
-				&& SolidTerrainTypes::FadeWeight(B00, B10, B01, B11, Weights);
-			const bool bFade = bWantFade && SolidTerrainMaterials::FadeMaterial() != nullptr;
-			if (bFade)
+			int32 CutCorner = 0;
+			const bool bCut = bUseBiomeMaterials
+				&& SolidTerrainTypes::DiagonalCut(B00, B10, B01, B11, CutCorner);
+			if (bCut)
 			{
-				const int32 Slot = EnsureFadeSlot();
-				TriMatIndices.Add(Slot);
-				TriMatIndices.Add(Slot);
-				const FLinearColor C00 = BiomeColor(B00);
-				const FLinearColor C10 = BiomeColor(B10);
-				const FLinearColor C01 = BiomeColor(B01);
-				const FLinearColor C11 = BiomeColor(B11);
-				CornerColors.Add(C00);
-				CornerColors.Add(C11);
-				CornerColors.Add(C10);
-				CornerColors.Add(C00);
-				CornerColors.Add(C01);
-				CornerColors.Add(C11);
+				const ESolidBiome Corners[4] = { B00, B10, B01, B11 };
+				const ESolidBiome Odd = Corners[CutCorner];
+				const ESolidBiome Majority = Corners[(CutCorner + 1) % 4];
+				// 00 and 11 sit on the mesh diagonal, so cutting one of them uses the other diagonal.
+				const bool bFlip = CutCorner == 0 || CutCorner == 3;
+				if (bFlip)
+				{
+					Triangles[Triangles.Num() - 6] = I10;
+					Triangles[Triangles.Num() - 5] = I00;
+					Triangles[Triangles.Num() - 4] = I01;
+					Triangles[Triangles.Num() - 3] = I10;
+					Triangles[Triangles.Num() - 2] = I01;
+					Triangles[Triangles.Num() - 1] = I11;
+					CornerColors.Add(Colors[I10]);
+					CornerColors.Add(Colors[I00]);
+					CornerColors.Add(Colors[I01]);
+					CornerColors.Add(Colors[I10]);
+					CornerColors.Add(Colors[I01]);
+					CornerColors.Add(Colors[I11]);
+				}
+				else
+				{
+					CornerColors.Add(Colors[I00]);
+					CornerColors.Add(Colors[I11]);
+					CornerColors.Add(Colors[I10]);
+					CornerColors.Add(Colors[I00]);
+					CornerColors.Add(Colors[I01]);
+					CornerColors.Add(Colors[I11]);
+				}
+				const bool bOddOnFirst = bFlip ? (CutCorner == 0) : (CutCorner == 1);
+				TriMatIndices.Add(EnsureMaterialSlot(bOddOnFirst ? Odd : Majority));
+				TriMatIndices.Add(EnsureMaterialSlot(bOddOnFirst ? Majority : Odd));
 			}
 			else
 			{

@@ -4,7 +4,7 @@
 #include "Companion/SolidCompanionCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "EngineUtils.h"
-#include "GameFramework/PlayerCameraManager.h"
+#include "Camera/PlayerCameraManager.h"
 #include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Terrain/SolidTerrainMap.h"

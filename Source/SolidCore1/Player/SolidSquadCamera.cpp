@@ -4,6 +4,7 @@
 #include "Companion/SolidCompanionCharacter.h"
 #include "Components/CapsuleComponent.h"
 #include "EngineUtils.h"
+#include "GameFramework/PlayerController.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
@@ -88,27 +89,28 @@ void ASolidCharacter::ApplyEagleSightCamera()
 	const FVector Captain = GetActorLocation();
 	FVector2D Ground(Captain.X, Captain.Y);
 	float GroundZ = Captain.Z;
+	ASolidTerrainStreamer* Streamer = nullptr;
+	const USolidTerrainMap* Map = nullptr;
 	if (UWorld* World = GetWorld())
 	{
-		if (ASolidTerrainStreamer* Streamer = ASolidTerrainStreamer::FindExisting(World))
+		Streamer = ASolidTerrainStreamer::FindExisting(World);
+		if (Streamer)
 		{
-			if (const USolidTerrainMap* Map = Streamer->GetTerrainMap())
+			Map = Streamer->GetTerrainMap();
+			if (Map && Map->IsBuilt())
 			{
-				if (Map->IsBuilt())
-				{
-					WorldMin = Map->GetWorldMinXY();
-					WorldMax = Map->GetWorldMaxXY();
-					StepCm = Map->PointSpacing;
-					const FVector2D Centre = SolidSight::WorldCentre(WorldMin, WorldMax);
-					Ground = SolidSight::EagleGroundXY(
-						FVector2D(Captain.X, Captain.Y),
-						Centre,
-						StepCm,
-						[Map](const FVector2D& At)
-						{
-							return Map->GetNearestPoint(At.X, At.Y).Fog;
-						});
-				}
+				WorldMin = Map->GetWorldMinXY();
+				WorldMax = Map->GetWorldMaxXY();
+				StepCm = Map->PointSpacing;
+				const FVector2D Centre = SolidSight::WorldCentre(WorldMin, WorldMax);
+				Ground = SolidSight::EagleGroundXY(
+					FVector2D(Captain.X, Captain.Y),
+					Centre,
+					StepCm,
+					[Map](const FVector2D& At)
+					{
+						return Map->GetNearestPoint(At.X, At.Y).Fog;
+					});
 			}
 			GroundZ = Streamer->GetHeightAt(FVector(Ground.X, Ground.Y, 0.f)) + Streamer->CollisionHeightBias;
 		}
@@ -116,6 +118,38 @@ void ASolidCharacter::ApplyEagleSightCamera()
 
 	const float Fov = FollowCamera ? FollowCamera->FieldOfView : 90.f;
 	const float Height = SolidSight::EagleHeightCm(Ground, WorldMin, WorldMax, Fov, FramingAspectRatio);
+
+	float SouthY = 0.f;
+	if (Map && Map->IsBuilt())
+	{
+		const TArray<FSolidTerrainPoint>& Points = Map->GetPoints();
+		if (SolidSight::SouthernUnfoggedY(
+			Points.Num(),
+			[&Points](const int32 Index, float& Y, float& Fog)
+			{
+				Y = Points[Index].Y;
+				Fog = Points[Index].Fog;
+			},
+			SouthY))
+		{
+			float Aspect = FramingAspectRatio;
+			if (const APlayerController* PC = Cast<APlayerController>(Controller))
+			{
+				int32 SizeX = 0;
+				int32 SizeY = 0;
+				PC->GetViewportSize(SizeX, SizeY);
+				if (SizeX > 0 && SizeY > 0)
+				{
+					Aspect = static_cast<float>(SizeX) / static_cast<float>(SizeY);
+				}
+			}
+			Ground.Y = SolidSight::EagleSouthEdgeCameraY(SouthY, Height, Fov, Aspect);
+			if (Streamer)
+			{
+				GroundZ = Streamer->GetHeightAt(FVector(Ground.X, Ground.Y, 0.f)) + Streamer->CollisionHeightBias;
+			}
+		}
+	}
 	const FVector Origin = CameraBoom->GetComponentLocation();
 	const FVector WorldOffset(Ground.X - Origin.X, Ground.Y - Origin.Y, GroundZ + Height - Origin.Z);
 

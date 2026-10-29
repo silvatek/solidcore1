@@ -41,3 +41,4 @@ The player looks at the sight marker. On Falcon Sight and Eagle Sight the bird s
 - To start with, both sights are enabled by `SolidEvents::IdEnterDragongate` (`e6a4f093`), the Enter Dragongate event. That event already enables raven sight. `SolidEvents::IdEnterJethan` (`7c3a9e14`) enables Raven Sight, then Falcon Sight, then Eagle Sight, so the view switches to Eagle. Its ClearAllFog change sets every terrain point's Fog to 0.
 - Eagle Sight draws every terrain chunk at the coarsest mesh, four quads on a side.
 - Eagle Sight looks straight down with north at the top. North is world +Y. East is to the right.
+- The southern-most terrain point with fog 0 sits on the bottom of the window. The camera's ground Y is that far north of it.

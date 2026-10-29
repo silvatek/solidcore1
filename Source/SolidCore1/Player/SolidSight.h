@@ -133,6 +133,49 @@ namespace SolidSight
 		return FMath::Max(MaxRight / TanH, MaxUp / TanV);
 	}
 
+	/** Y of the southern-most sample whose fog is 0. North is +Y, so south is the smaller Y. */
+	template<typename PointAtFn>
+	inline bool SouthernUnfoggedY(const int32 Count, PointAtFn PointAt, float& OutY)
+	{
+		bool bFound = false;
+		float South = 0.f;
+		for (int32 Index = 0; Index < Count; ++Index)
+		{
+			float Y = 0.f;
+			float Fog = 1.f;
+			PointAt(Index, Y, Fog);
+			if (Fog > KINDA_SMALL_NUMBER)
+			{
+				continue;
+			}
+			if (!bFound || Y < South)
+			{
+				South = Y;
+				bFound = true;
+			}
+		}
+		if (bFound)
+		{
+			OutY = South;
+		}
+		return bFound;
+	}
+
+	/**
+	 * Camera ground Y so SouthernY lies on the bottom of the view.
+	 * HeightCm and Aspect are the same ones EagleHeightCm uses. North is +Y.
+	 */
+	inline float EagleSouthEdgeCameraY(
+		const float SouthernY,
+		const float HeightCm,
+		const float HorizontalFovDeg,
+		const float Aspect)
+	{
+		const float HalfH = FMath::DegreesToRadians(FMath::Clamp(HorizontalFovDeg, 1.f, 179.f) * 0.5f);
+		const float TanV = FMath::Max(FMath::Tan(HalfH) / FMath::Max(Aspect, 0.1f), 0.01f);
+		return SouthernY + HeightCm * TanV;
+	}
+
 	/** Wheel position in the raven zoom range, as 0 at the near end and 1 at the far end. */
 	inline float FalconZoomAlpha(const float ArmCm, const float ZoomMin, const float ZoomMax)
 	{

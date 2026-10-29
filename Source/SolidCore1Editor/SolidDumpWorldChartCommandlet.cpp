@@ -179,6 +179,27 @@ int32 USolidDumpWorldChartCommandlet::Main(const FString& Params)
 	}
 	Root->SetArrayField(TEXT("rows"), Rows);
 
+	// Terrain points. The first row is the north edge. The first character of a
+	// row is the west edge. The letters are the same key as the cells.
+	TArray<TSharedPtr<FJsonValue>> PointRows;
+	PointRows.Reserve(USolidWorldChart::PointAxis);
+	for (int32 North = USolidWorldChart::PointAxis - 1; North >= 0; --North)
+	{
+		FString Line;
+		Line.Reserve(USolidWorldChart::PointAxis);
+		for (int32 East = 0; East < USolidWorldChart::PointAxis; ++East)
+		{
+			const ESolidBiome Biome = Chart->GetPointBiome(FIntPoint(East, North));
+			Line.AppendChar(SolidBiome::Of(Biome).Marker());
+		}
+		PointRows.Add(MakeShared<FJsonValueString>(Line));
+	}
+	Root->SetNumberField(TEXT("pointAxis"), USolidWorldChart::PointAxis);
+	Root->SetStringField(
+		TEXT("pointsOrigin"),
+		TEXT("The first row is the north edge. The first character of a row is the west edge."));
+	Root->SetArrayField(TEXT("points"), PointRows);
+
 	TArray<TSharedPtr<FJsonValue>> Marks;
 	Marks.Reserve(Chart->Marks.Num());
 	for (const FSolidWorldChartMark& Mark : Chart->Marks)
@@ -229,9 +250,10 @@ int32 USolidDumpWorldChartCommandlet::Main(const FString& Params)
 	}
 
 	UE_LOG(LogSolidChartDump, Warning,
-		TEXT("World chart dump: %d marks, %d roads, %s"),
+		TEXT("World chart dump: %d marks, %d roads, %d point rows, %s"),
 		Chart->Marks.Num(),
 		Chart->Roads.Num(),
+		PointRows.Num(),
 		*OutPath);
 	return 0;
 }

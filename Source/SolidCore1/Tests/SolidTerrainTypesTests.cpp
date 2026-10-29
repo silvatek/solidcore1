@@ -320,7 +320,7 @@ bool FSolidBiomeFadeMaterialTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	const UMaterial* Material = Cast<UMaterial>(Fade);
+	const UMaterial* Material = Fade->GetMaterial();
 	if (!TestNotNull(TEXT("the fade parent"), Material))
 	{
 		return false;
@@ -332,7 +332,7 @@ bool FSolidBiomeFadeMaterialTest::RunTest(const FString& Parameters)
 	TestTrue(
 		TEXT("the fade is lit"),
 		Material->GetShadingModels().HasShadingModel(MSM_DefaultLit));
-	TestTrue(TEXT("the same parent is reused"), SolidTerrainMaterials::FadeMaterial() == Fade);
+	TestTrue(TEXT("the same material is reused"), SolidTerrainMaterials::FadeMaterial() == Fade);
 	return true;
 }
 

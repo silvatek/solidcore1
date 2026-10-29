@@ -55,7 +55,7 @@ namespace SolidTerrainMaterials
 		TMap<ESolidBiome, TObjectPtr<UMaterialInterface>>& InOutBiomeMaterials);
 
 	/**
-	 * Lit parent for a flat-colour fade. Its base colour is the vertex colour,
+	 * Lit material for a flat-colour fade. Its base colour is the vertex colour,
 	 * and its roughness matches the flat biome colours. Every fading quad shares
 	 * this one material. It is built once. Each corner carries that corner's colour,
 	 * and the hardware blend across the quad is the fade.

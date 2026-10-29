@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0729")
+#define SOLID_BUILD_ID TEXT("SC1-0730")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Flat-colour quads fade across their corner colours.")
+#define SOLID_BUILD_NOTE TEXT("Flat-colour fades show the two corner colours.")
 #endif

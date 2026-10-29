@@ -311,7 +311,7 @@ UMaterialInterface* SolidTerrainMaterials::ResolveForBiome(
 
 UMaterialInterface* SolidTerrainMaterials::FadeMaterial()
 {
-	static TStrongObjectPtr<UMaterial> Cached;
+	static TStrongObjectPtr<UMaterialInterface> Cached;
 	if (Cached.IsValid())
 	{
 		return Cached.Get();
@@ -352,6 +352,13 @@ UMaterialInterface* SolidTerrainMaterials::FadeMaterial()
 	Material->SetMaterialUsage(MATUSAGE_StaticMesh);
 	Material->PreEditChange(nullptr);
 	Material->PostEditChange();
+
+	UMaterialInstanceDynamic* Instance = UMaterialInstanceDynamic::Create(Material, GetTransientPackage());
+	if (Instance)
+	{
+		Cached.Reset(Instance);
+		return Instance;
+	}
 
 	Cached.Reset(Material);
 	return Material;

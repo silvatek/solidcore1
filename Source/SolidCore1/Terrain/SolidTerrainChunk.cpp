@@ -13,6 +13,9 @@
 #include "PhysicsEngine/BodySetup.h"
 #include "StaticMeshAttributes.h"
 #include "Components/StaticMeshComponent.h"
+#if WITH_EDITOR
+#include "StaticMeshCompiler.h"
+#endif
 
 namespace SolidTerrainChunkPrivate
 {
@@ -139,6 +142,34 @@ namespace SolidTerrainChunkPrivate
 		{
 			return nullptr;
 		}
+
+#if WITH_EDITOR
+		// The full build fills the corner-colour buffer and leaves it unmarked,
+		// so the GPU keeps the default white. Mark that buffer and upload it.
+		if (Mesh->IsCompiling())
+		{
+			UStaticMesh* const Compiling[] = { Mesh };
+			FStaticMeshCompilingManager::Get().FinishCompilation(Compiling);
+		}
+		if (FStaticMeshRenderData* RenderData = Mesh->GetRenderData())
+		{
+			bool bUploadColors = false;
+			for (FStaticMeshLODResources& LOD : RenderData->LODResources)
+			{
+				if (LOD.VertexBuffers.ColorVertexBuffer.GetNumVertices() > 0 && !LOD.bHasColorVertexData)
+				{
+					LOD.bHasColorVertexData = true;
+					bUploadColors = true;
+				}
+			}
+			if (bUploadColors)
+			{
+				Mesh->ReleaseResources();
+				Mesh->ReleaseResourcesFence.Wait();
+				Mesh->InitResources();
+			}
+		}
+#endif
 
 		{
 			FMeshNaniteSettings NaniteSettings = Mesh->GetNaniteSettings();

@@ -1,6 +1,20 @@
 # Smooth biome boundaries
 
-Status: In Progress
+Status: Done
+
+## What shipped
+
+The original story overspecified the solution and has been ignored. The text below is that story. It does not describe the game.
+
+The mesh uses NorthWestCut. Any square the three cuts do not match takes its northwest corner. A higher shelf still replaces that corner.
+
+Three cuts:
+
+- The other three corners match and differ from the northwest. The diagonal runs from the north-east corner to the south-west. The north-west triangle keeps the northwest corner. The south-east triangle takes the other biome.
+- The south corner differs, the east and south-east corners match the northwest, and the point directly west of the northwest matches the south corner. The diagonal runs from the north-west corner to the south-east. The south-west triangle takes the south corner. The north-east triangle takes the northwest corner.
+- The point west of the northwest differs, the point east matches it, and the points south-west, south, and south-east match that west point. The diagonal is the same one. The north-east triangle takes the northwest corner. The south-west triangle takes the other biome.
+
+OddCorner, which cuts off whichever corner is the single one, is still in the enum. The mesh does not use it. The cuts add no points. Grassland is cut by the same rules. A road corner is cut when it matches one of them. Painted chart points at Relion were committed separately.
 
 ## Story
 

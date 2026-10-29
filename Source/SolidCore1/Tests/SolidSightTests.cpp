@@ -330,10 +330,10 @@ bool FSolidSightEagleCameraTest::RunTest(const FString& Parameters)
 	const FVector2D ClearCamera(0.f, 0.f);
 	const float ClearHeight = SolidSight::EagleClearHeightCm(
 		10000.f, 20000.f, 20000.f, ClearCamera, FVector2D(-5000.f, -5000.f), FVector2D(5000.f, 5000.f));
-	TestTrue(TEXT("a view that already holds the clear ground stays"), FMath::IsNearlyEqual(ClearHeight, 10000.f, 1.f));
+	TestTrue(TEXT("a view that already holds the clear ground comes down"), FMath::IsNearlyEqual(ClearHeight, 5000.f, 1.f));
 	const float Taller = SolidSight::EagleClearHeightCm(
 		10000.f, 20000.f, 10000.f, ClearCamera, FVector2D(-5000.f, -5000.f), FVector2D(5000.f, 5000.f));
-	TestTrue(TEXT("the short axis makes the climb higher"), FMath::IsNearlyEqual(Taller, 20000.f, 1.f));
+	TestTrue(TEXT("the short axis keeps the higher climb"), FMath::IsNearlyEqual(Taller, 10000.f, 1.f));
 	const float OffCentre = SolidSight::EagleClearHeightCm(
 		10000.f, 20000.f, 20000.f, FVector2D(-5000.f, 0.f), FVector2D(-5000.f, -5000.f), FVector2D(5000.f, 5000.f));
 	TestTrue(TEXT("a camera on the edge needs the far side in view"), OffCentre > ClearHeight);

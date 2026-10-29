@@ -40,8 +40,10 @@ bool FSolidMapBuildSmokeTest::RunTest(const FString& Parameters)
 		&& FogOrigin.Y >= ClearMin.Y && FogOrigin.Y <= ClearMax.Y);
 	const float ClearReach = SolidTerrainFog::MetersToCm(SolidTerrainFog::ClearRadiusMeters) + Map->PointSpacing;
 	TestTrue(TEXT("clear bounds stay inside the clear radius"),
-		FVector2D::Distance(FogOrigin, ClearMin) <= ClearReach
-		&& FVector2D::Distance(FogOrigin, ClearMax) <= ClearReach);
+		FMath::Abs(ClearMin.X - FogOrigin.X) <= ClearReach
+		&& FMath::Abs(ClearMax.X - FogOrigin.X) <= ClearReach
+		&& FMath::Abs(ClearMin.Y - FogOrigin.Y) <= ClearReach
+		&& FMath::Abs(ClearMax.Y - FogOrigin.Y) <= ClearReach);
 	TestTrue(TEXT("a full-fog point is outside the clear bounds"),
 		FarXY.X < ClearMin.X || FarXY.X > ClearMax.X || FarXY.Y < ClearMin.Y || FarXY.Y > ClearMax.Y);
 

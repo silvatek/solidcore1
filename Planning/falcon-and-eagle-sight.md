@@ -6,7 +6,7 @@ Status: In Progress
 
 The player uses raven sight as a tactical view of the squad. The camera stays within 50 m of the captain, and it does not move above ground that still has fog.
 
-The player chooses Falcon Sight. The camera sits higher than raven sight and lower than eagle sight, between 20 m and 200 m above the ground, and within 80% of the inner fog clear distance on the ground. That distance is 25 m, so the cap is 20 m. Falcon Sight keeps the camera aimed at the captain.
+The player chooses Falcon Sight. The camera sits higher than raven sight and lower than eagle sight, between 20 m and 200 m above the ground, and within 80% of the inner fog clear distance on the ground. That distance is 25 m, so the cap is 20 m. Falcon Sight keeps the camera aimed at the captain, standing 20 m to the side. A steep look does not put it overhead.
 
 The player chooses Eagle Sight to see the whole map. The camera rises until the entire map is in view. On the ground it moves from the captain toward the centre of the world, along the line between them, and it stops at the closest point on that line that is still over ground with no fog.
 

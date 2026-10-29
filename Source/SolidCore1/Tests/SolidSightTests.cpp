@@ -208,7 +208,10 @@ bool FSolidSightCycleTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("looking east stays on the captain's Y"), FMath::IsNearlyZero(West.Y, 1.f));
 	TestTrue(TEXT("the west offset is the falcon cap"), FMath::IsNearlyEqual(West.Size(), SolidSight::FalconMaxOffsetCm, 1.f));
 	const FVector2D Overhead = SolidSight::FalconHorizontalOffset(FRotator(-90.f, 0.f, 0.f));
-	TestTrue(TEXT("a straight-down look stays over the captain"), Overhead.IsNearlyZero(1.f));
+	TestTrue(TEXT("a straight-down look stays off the captain"),
+		FMath::IsNearlyEqual(Overhead.Size(), SolidSight::FalconMaxOffsetCm, 1.f));
+	TestTrue(TEXT("a straight-down look keeps its yaw"),
+		FMath::IsNearlyEqual(Overhead.X, -SolidSight::FalconMaxOffsetCm, 1.f));
 	const FVector2D Diagonal = SolidSight::FalconHorizontalOffset(FRotator(-30.f, 45.f, 0.f));
 	TestTrue(TEXT("a diagonal stay is the falcon cap"), FMath::IsNearlyEqual(Diagonal.Size(), SolidSight::FalconMaxOffsetCm, 1.f));
 	const FRotator AtCaptain = SolidSight::FalconLookAtCaptain(

@@ -299,18 +299,12 @@ namespace SolidSight
 	}
 
 	/**
-	 * Horizontal offset from the captain, opposite the look, at most 20 m away.
-	 * A straight-down look has no horizontal direction, so the offset is zero.
+	 * Horizontal offset from the captain, opposite the look's yaw, 20 m away.
+	 * Pitch is ignored, so a steep look still stands off to the side.
 	 */
 	inline FVector2D FalconHorizontalOffset(const FRotator& Look)
 	{
-		FVector Back = -Look.Vector();
-		Back.Z = 0.f;
-		if (Back.SizeSquared() <= KINDA_SMALL_NUMBER)
-		{
-			return FVector2D::ZeroVector;
-		}
-		Back.Normalize();
+		const FVector Back = -FRotator(0.f, Look.Yaw, 0.f).Vector();
 		return FVector2D(Back.X * FalconMaxOffsetCm, Back.Y * FalconMaxOffsetCm);
 	}
 

@@ -1,6 +1,5 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "SolidCameraFog.h"
 #include "SolidCharacter.h"
 #include "SolidSight.h"
 #include "SolidTerrainFog.h"
@@ -17,14 +16,14 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidCameraFogClearScaleTest::RunTest(const FString& Parameters)
 {
 	const auto Clear = [](float) { return 0.f; };
-	TestEqual(TEXT("clear camera stays"), SolidCameraFog::MaxClearScale(Clear), 1.f);
+	TestEqual(TEXT("clear camera stays"), SolidSight::MaxClearScale(Clear), 1.f);
 
 	const auto AnchorFogged = [](float Scale) { return Scale < 0.5f ? 1.f : 0.f; };
-	TestEqual(TEXT("fogged anchor is not pulled"), SolidCameraFog::MaxClearScale(AnchorFogged), 1.f);
+	TestEqual(TEXT("fogged anchor is not pulled"), SolidSight::MaxClearScale(AnchorFogged), 1.f);
 
 	// Clear on [0, 0.25], fog beyond. The boom must stop at or before the boundary.
 	const auto Boundary = [](float Scale) { return Scale > 0.25f ? 1.f : 0.f; };
-	const float Scale = SolidCameraFog::MaxClearScale(Boundary);
+	const float Scale = SolidSight::MaxClearScale(Boundary);
 	TestTrue(TEXT("stops before fog"), Scale <= 0.25f);
 	TestTrue(TEXT("reaches the clear side"), Scale > 0.24f);
 	return true;
@@ -46,14 +45,14 @@ bool FSolidCameraGroundNeighbourTest::RunTest(const FString& Parameters)
 
 	const FVector2D Origin = Map->GetFogOriginXY();
 	TestTrue(TEXT("the captain's point is clear"),
-		FMath::IsNearlyEqual(SolidCameraFog::CameraGroundFog(*Map, Origin.X, Origin.Y), 0.f));
+		FMath::IsNearlyEqual(SolidSight::CameraGroundFog(*Map, Origin.X, Origin.Y), 0.f));
 
 	const float Edge = SolidTerrainFog::MetersToCm(SolidTerrainFog::ClearRadiusMeters) - Map->PointSpacing;
 	const FVector2D Rim(Origin.X + Edge, Origin.Y);
 	TestTrue(TEXT("the rim point itself is clear"),
 		FMath::IsNearlyEqual(Map->GetNearestPoint(Rim.X, Rim.Y).Fog, 0.f));
 	TestTrue(TEXT("a fogged neighbour blocks the camera"),
-		SolidCameraFog::CameraGroundFog(*Map, Rim.X, Rim.Y) > 0.f);
+		SolidSight::CameraGroundFog(*Map, Rim.X, Rim.Y) > 0.f);
 	return true;
 }
 

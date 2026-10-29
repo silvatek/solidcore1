@@ -26,7 +26,7 @@ class ASolidNameSign;
 
 /**
  * Captain — the single player-controlled character.
- * Squad camera framing lives in SolidSquadCamera.cpp;
+ * Sight cameras live in Sight/.
  * visuals/clip selection in SolidCharacterVisuals.cpp (shared play via SolidClipLocomotion);
  * runtime input in SolidCharacterInput.cpp.
  */
@@ -206,8 +206,12 @@ protected:
 	void ApplyFalconSightCamera();
 	void ApplyEagleSightCamera(float DeltaSeconds);
 	void ShowEagleSea(const FVector2D& WorldMin, const FVector2D& WorldMax);
+	/** Drop the eagle camera when another sight is on. */
+	void HideEagleSight();
 	/** Falcon Sight. The view stays on the captain. */
 	void AimFalconAtCaptain();
+	/** Raven sight. Frame the captain and the companions who are out. */
+	void FrameRavenSquad(float DeltaTime);
 	void ToggleMainMenuFromInput();
 	bool IsAutoPlaythroughRunning() const;
 	/** Player Esc and F10. True when a running script was stopped. */

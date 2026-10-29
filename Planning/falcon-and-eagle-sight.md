@@ -42,7 +42,7 @@ The player looks at the sight marker. On Falcon Sight and Eagle Sight the bird s
 
 ## Implementation notes
 
-- Add the sights in `Source/SolidCore1/Player/SolidSight.h`. `ESolidSight` is `Raven` and `True` today. `Toggle` swaps those two, and F9 calls that. F9 should cycle the available modes instead of swapping a pair.
+- Add the sights in `Source/SolidCore1/Sight/SolidSight.h`. `ESolidSight` is `Raven` and `True` today. `Toggle` swaps those two, and F9 calls that. F9 should cycle the available modes instead of swapping a pair.
 - Raven zoom is the spring-arm length, `CameraZoomMin` 250 cm to `CameraZoomMax` 2000 cm (20 m). That length runs along the look. Raven, Falcon, and Eagle stand on a point only when that point and each neighbour have fog 0. Falcon has no lateral cap. The wheel still picks Falcon's height. True sight stays on the captain. The fog curtains reach above the tallest camera, Eagle Sight.
 - The world is a 1024 m square. Its centre is the middle of that square.
 - Fog on a terrain point is `FSolidTerrainPoint.Fog`. The bands and the rule that the camera stays over clear ground are in [Source/SolidCore1/Fog/README.md](../Source/SolidCore1/Fog/README.md).

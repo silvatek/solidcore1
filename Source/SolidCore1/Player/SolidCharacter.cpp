@@ -73,7 +73,7 @@
 // Captain core: construction, lifecycle, movement / look / zoom / sprint.
 // Input factory → SolidCharacterInput.cpp
 // Visuals / clip selection → SolidCharacterVisuals.cpp (shared play via SolidClipLocomotion)
-// Squad camera → SolidSquadCamera.cpp
+// Sight cameras → Sight/SolidSight.cpp
 
 ASolidCharacter::ASolidCharacter()
 {

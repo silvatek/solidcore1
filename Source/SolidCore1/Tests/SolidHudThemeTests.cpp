@@ -72,8 +72,8 @@ bool FSolidHudThemeSightMarkerTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("globe is larger than the plus"), Globe.Size > Plus.Span);
 	TestTrue(TEXT("globe fits beside the bird"), Globe.Size < Chip.Height);
 	TestTrue(TEXT("globe meridians are opaque"), FMath::IsNearlyEqual(Globe.Meridian.A, 1.f));
-	TestTrue(TEXT("globe meridians are blue"),
-		Globe.Meridian.B > Globe.Meridian.R && Globe.Meridian.B > Globe.Meridian.G);
+	TestTrue(TEXT("globe uses the plus gray"),
+		Globe.Meridian.Equals(Plus.Fill));
 	return true;
 }
 

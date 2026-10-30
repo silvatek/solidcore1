@@ -97,12 +97,12 @@ namespace SolidHudTheme
 		return Plus;
 	}
 
-	/** Wireframe blue globe behind the Eagle bird. Drawn meridians, not a font glyph. */
+	/** Wireframe globe behind the Eagle bird. Same dark gray as the Falcon plus. */
 	struct FEagleGlobe
 	{
 		float Size = 18.f;
 		float Line = 1.4f;
-		FLinearColor Meridian = FLinearColor(0.12f, 0.47f, 0.95f, 1.f);
+		FLinearColor Meridian = FLinearColor(0.28f, 0.28f, 0.28f, 1.f);
 	};
 
 	inline FEagleGlobe EagleGlobe()
@@ -110,7 +110,7 @@ namespace SolidHudTheme
 		FEagleGlobe Globe;
 		Globe.Size = 18.f;
 		Globe.Line = 1.4f;
-		Globe.Meridian = FLinearColor(0.12f, 0.47f, 0.95f, 1.f);
+		Globe.Meridian = FalconPlus().Fill;
 		return Globe;
 	}
 

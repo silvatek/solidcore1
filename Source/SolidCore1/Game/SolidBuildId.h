@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0820")
+#define SOLID_BUILD_ID TEXT("SC1-0821")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A clear road is the straight line between its ends.")
+#define SOLID_BUILD_NOTE TEXT("Solve takes the road and writes the terrain points.")
 #endif

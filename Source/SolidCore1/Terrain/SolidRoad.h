@@ -175,6 +175,8 @@ namespace SolidRoad
 		FDefinition Definition;
 		/** Cell centres the strip follows, including both ends. Empty when an end is missing. */
 		TArray<FIntPoint> Cells;
+		/** Terrain points on the straight line. Empty when the route is still the cell search. */
+		TArray<FIntPoint> Points;
 	};
 
 	/** One painted segment, in map cells. A point span uses the same cell twice. */
@@ -278,11 +280,17 @@ namespace SolidRoad
 	bool Parse(const FString& Line, FDefinition& Out);
 
 	/**
-	 * Orthogonal route from any cell of From to any cell of To.
-	 * A step's cost is the terrain point under that cell.
-	 * @return False when an end has no cells, or no path exists.
+	 * Route from one end to the other.
+	 * Road supplies the ends and the type when it is set. Definition and OutCells remain for a line that has no road.
+	 * OutPoints is the straight line of terrain points. Empty when the cell search runs.
+	 * @return False when an end is missing, or no path exists.
 	 */
-	bool Solve(const USolidWorldChart& Map, const FDefinition& Definition, TArray<FIntPoint>& OutCells);
+	bool Solve(
+		const USolidWorldChart& Map,
+		const FDefinition& Definition,
+		TArray<FIntPoint>& OutCells,
+		const FSolidRoad* Road,
+		TArray<FIntPoint>& OutPoints);
 
 	float DistanceToSegmentCm(const FVector2D& Point, const FVector2D& A, const FVector2D& B);
 }

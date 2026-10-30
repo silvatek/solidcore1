@@ -321,37 +321,51 @@ namespace SolidRoad
 			const EType Type,
 			const FIntPoint& FromCell,
 			const FIntPoint& ToCell,
-			TArray<FIntPoint>& OutCells)
+			const FSolidRoad* Road,
+			TArray<FIntPoint>& OutCells,
+			TArray<FIntPoint>& OutPoints)
 		{
+			OutPoints.Reset();
 			FVector2D Min = FVector2D::ZeroVector;
 			FVector2D Max = FVector2D::ZeroVector;
 			USolidWorldChart::DefaultWorldBounds(Min, Max);
-			FVector2D FromWorld = FVector2D::ZeroVector;
-			FVector2D ToWorld = FVector2D::ZeroVector;
-			if (!Map.CellToWorldXY(FromCell, Min, Max, FromWorld) || !Map.CellToWorldXY(ToCell, Min, Max, ToWorld))
-			{
-				return false;
-			}
 			FIntPoint FromPoint = FIntPoint::ZeroValue;
 			FIntPoint ToPoint = FIntPoint::ZeroValue;
-			if (!Map.TerrainPointAt(FromWorld.X, FromWorld.Y, Min, Max, FromPoint)
-				|| !Map.TerrainPointAt(ToWorld.X, ToWorld.Y, Min, Max, ToPoint))
+			if (Road != nullptr)
 			{
-				return false;
+				if (!Map.TerrainPointAt(Road->From.PositionCm.X, Road->From.PositionCm.Y, Min, Max, FromPoint)
+					|| !Map.TerrainPointAt(Road->To.PositionCm.X, Road->To.PositionCm.Y, Min, Max, ToPoint))
+				{
+					return false;
+				}
 			}
-
-			TArray<FIntPoint> Points;
-			TerrainLine(FromPoint, ToPoint, Points);
-			for (int32 Index = 1; Index < Points.Num(); ++Index)
+			else
 			{
-				if (!LineStepAllowed(Map, Type, Points[Index - 1], Points[Index]))
+				FVector2D FromWorld = FVector2D::ZeroVector;
+				FVector2D ToWorld = FVector2D::ZeroVector;
+				if (!Map.CellToWorldXY(FromCell, Min, Max, FromWorld) || !Map.CellToWorldXY(ToCell, Min, Max, ToWorld))
+				{
+					return false;
+				}
+				if (!Map.TerrainPointAt(FromWorld.X, FromWorld.Y, Min, Max, FromPoint)
+					|| !Map.TerrainPointAt(ToWorld.X, ToWorld.Y, Min, Max, ToPoint))
 				{
 					return false;
 				}
 			}
 
+			TerrainLine(FromPoint, ToPoint, OutPoints);
+			for (int32 Index = 1; Index < OutPoints.Num(); ++Index)
+			{
+				if (!LineStepAllowed(Map, Type, OutPoints[Index - 1], OutPoints[Index]))
+				{
+					OutPoints.Reset();
+					return false;
+				}
+			}
+
 			OutCells.Reset();
-			for (const FIntPoint& Point : Points)
+			for (const FIntPoint& Point : OutPoints)
 			{
 				FVector2D World = FVector2D::ZeroVector;
 				if (!Map.TerrainPointToWorld(Point, Min, Max, World))
@@ -402,23 +416,37 @@ namespace SolidRoad
 		return RoadParseType(TypeName, Out.Type);
 	}
 
-	bool Solve(const USolidWorldChart& Map, const FDefinition& Definition, TArray<FIntPoint>& OutCells)
+	bool Solve(
+		const USolidWorldChart& Map,
+		const FDefinition& Definition,
+		TArray<FIntPoint>& OutCells,
+		const FSolidRoad* Road,
+		TArray<FIntPoint>& OutPoints)
 	{
 		OutCells.Reset();
+		OutPoints.Reset();
+		const EType Type = Road != nullptr ? Road->Type : Definition.Type;
 
 		TArray<FIntPoint> Starts;
 		TArray<FIntPoint> Goals;
 		RoadCollectEndpoint(Map, Definition.From, Starts);
 		RoadCollectEndpoint(Map, Definition.To, Goals);
+		const bool bCells = Starts.Num() == 1 && Goals.Num() == 1;
+
+		if (Road != nullptr
+			&& OpenStraightCells(Map, Type, FIntPoint::ZeroValue, FIntPoint::ZeroValue, Road, OutCells, OutPoints))
+		{
+			return true;
+		}
+		if (Road == nullptr && bCells
+			&& OpenStraightCells(Map, Type, Starts[0], Goals[0], nullptr, OutCells, OutPoints))
+		{
+			return true;
+		}
+		OutPoints.Reset();
 		if (Starts.Num() == 0 || Goals.Num() == 0)
 		{
 			return false;
-		}
-
-		if (Starts.Num() == 1 && Goals.Num() == 1
-			&& OpenStraightCells(Map, Definition.Type, Starts[0], Goals[0], OutCells))
-		{
-			return true;
 		}
 
 		const int32 Width = USolidWorldChart::MapWidth;
@@ -507,7 +535,7 @@ namespace SolidRoad
 				const ESolidBiome NextBiome = Map.GetPointBiomeAtCell(Next.X, Next.Y);
 				const bool bSquareToRiver = NextBiome == ESolidBiome::River
 					&& StepIsSquareToRiver(Map, FIntPoint(X, Y), Next);
-				const int32 Enter = EnterCost(Definition.Type, NextBiome, bSquareToRiver);
+				const int32 Enter = EnterCost(Type, NextBiome, bSquareToRiver);
 				if (Enter < 0)
 				{
 					continue;
@@ -540,7 +568,7 @@ namespace SolidRoad
 		{
 			OutCells.Add(Reversed[Index]);
 		}
-		SlideSpursAfterRiver(Map, Definition.Type, OutCells);
+		SlideSpursAfterRiver(Map, Type, OutCells);
 		return OutCells.Num() > 0;
 	}
 
@@ -824,7 +852,6 @@ void USolidWorldChart::ResetRoads() const
 void USolidWorldChart::BuildRoad(const SolidRoad::FDefinition& Definition, const SolidRoad::FSolidRoad* Road) const
 {
 	// Prefer Road to Definition for every later change here. The aim is to remove Definition.
-	(void)Road;
 	if (RoadSpansByCell.Num() != MapWidth * MapHeight)
 	{
 		RoadSpansByCell.SetNum(MapWidth * MapHeight);
@@ -832,7 +859,7 @@ void USolidWorldChart::BuildRoad(const SolidRoad::FDefinition& Definition, const
 
 	SolidRoad::FRoute Route;
 	Route.Definition = Definition;
-	if (!SolidRoad::Solve(*this, Definition, Route.Cells))
+	if (!SolidRoad::Solve(*this, Definition, Route.Cells, Road, Route.Points))
 	{
 		const FString From = SolidRoad::ChartRoadEndName(Definition.From);
 		const FString To = SolidRoad::ChartRoadEndName(Definition.To);
@@ -845,7 +872,7 @@ void USolidWorldChart::BuildRoad(const SolidRoad::FDefinition& Definition, const
 		return;
 	}
 
-	const float HalfWidth = SolidRoad::WidthCm(Definition.Type) * 0.5f;
+	const float HalfWidth = SolidRoad::WidthCm(Road != nullptr ? Road->Type : Definition.Type) * 0.5f;
 	const int32 SpanCount = Route.Cells.Num() == 1 ? 1 : Route.Cells.Num() - 1;
 	for (int32 SpanIndex = 0; SpanIndex < SpanCount; ++SpanIndex)
 	{

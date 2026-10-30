@@ -12,9 +12,6 @@
 class SOLIDCORE1_API FSolidBiome
 {
 public:
-	/** Build amplitude the per-biome variances are taken from, in centimetres. */
-	static constexpr float StartingHeightVarianceCm = 3000.f;
-
 	explicit FSolidBiome(
 		FLinearColor InColor,
 		const TCHAR* InName,

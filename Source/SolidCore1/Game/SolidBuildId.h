@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0827")
+#define SOLID_BUILD_ID TEXT("SC1-0828")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Logs name a road only when the road is set.")
+#define SOLID_BUILD_NOTE TEXT("A blocked terrain point is logged with its biome.")
 #endif

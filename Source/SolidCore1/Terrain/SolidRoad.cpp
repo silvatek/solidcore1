@@ -494,6 +494,12 @@ namespace SolidRoad
 			{
 				if (!LineStepAllowed(Map, Road->Type, OutPoints[Index - 1], OutPoints[Index]))
 				{
+					const FIntPoint& Block = OutPoints[Index];
+					UE_LOG(LogSolid, Warning, TEXT("%s: blocked at %d,%d %s."),
+						*Road->toString(),
+						Block.X,
+						Block.Y,
+						SolidBiome::Of(Map.GetPointBiome(Block)).Name());
 					Blocked.Add(Index);
 				}
 			}

@@ -61,12 +61,19 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terrain")
 	TObjectPtr<UStaticMeshComponent> FogMeshComponent;
 
+	/** Opaque outer curtain, on its own mesh so it writes depth. */
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terrain")
+	TObjectPtr<UStaticMeshComponent> FogOuterMeshComponent;
+
 	/** Transient runtime mesh owned by this chunk; replaced each BuildChunk. */
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMesh> RuntimeStaticMesh;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UStaticMesh> RuntimeFogStaticMesh;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UStaticMesh> RuntimeFogOuterStaticMesh;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Terrain")
 	FIntPoint ChunkCoord = FIntPoint::ZeroValue;

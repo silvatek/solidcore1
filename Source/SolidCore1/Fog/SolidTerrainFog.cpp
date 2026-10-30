@@ -203,7 +203,7 @@ namespace SolidTerrainFog
 		return SolidMaterials::CreateSolidColor(Outer, Color, TEXT("ExplorationFogOuter"));
 	}
 
-	void ConfigureOverlayComponent(UStaticMeshComponent* Mesh)
+	void ConfigureOverlayComponent(UStaticMeshComponent* Mesh, bool bWriteDepth)
 	{
 		if (!Mesh)
 		{
@@ -226,7 +226,7 @@ namespace SolidTerrainFog
 		Mesh->SetVisibility(true);
 		Mesh->SetHiddenInGame(false);
 		Mesh->SetMobility(EComponentMobility::Movable);
-		Mesh->bUseAsOccluder = false;
+		Mesh->bUseAsOccluder = bWriteDepth;
 		Mesh->SetCanEverAffectNavigation(false);
 	}
 
@@ -615,27 +615,33 @@ namespace SolidTerrainFog
 			}
 		};
 
-		// Inner ring: clear (fog≈0) | any fog.
-		EmitIsocontour(
-			ClearFogEpsilon,
-			[](float F) { return F > ClearFogEpsilon; },
-			[&](float F00, float F10, float F01, float F11) -> int32
-			{
-				float FoggedAmount = 0.f;
-				if (F00 > ClearFogEpsilon) { FoggedAmount = FMath::Max(FoggedAmount, F00); }
-				if (F10 > ClearFogEpsilon) { FoggedAmount = FMath::Max(FoggedAmount, F10); }
-				if (F01 > ClearFogEpsilon) { FoggedAmount = FMath::Max(FoggedAmount, F01); }
-				if (F11 > ClearFogEpsilon) { FoggedAmount = FMath::Max(FoggedAmount, F11); }
-				return (FoggedAmount >= HalfFullFogThreshold) ? SlotFull : SlotHalf;
-			},
-			HeightHalf);
+		if (Params.bEmitInnerCurtain)
+		{
+			// Inner ring: clear (fog≈0) | any fog.
+			EmitIsocontour(
+				ClearFogEpsilon,
+				[](float F) { return F > ClearFogEpsilon; },
+				[&](float F00, float F10, float F01, float F11) -> int32
+				{
+					float FoggedAmount = 0.f;
+					if (F00 > ClearFogEpsilon) { FoggedAmount = FMath::Max(FoggedAmount, F00); }
+					if (F10 > ClearFogEpsilon) { FoggedAmount = FMath::Max(FoggedAmount, F10); }
+					if (F01 > ClearFogEpsilon) { FoggedAmount = FMath::Max(FoggedAmount, F01); }
+					if (F11 > ClearFogEpsilon) { FoggedAmount = FMath::Max(FoggedAmount, F11); }
+					return (FoggedAmount >= HalfFullFogThreshold) ? SlotFull : SlotHalf;
+				},
+				HeightHalf);
+		}
 
-		// Outer ring: half fog | full fog (white curtain ~50m).
-		EmitIsocontour(
-			HalfFullFogThreshold,
-			[](float F) { return F >= HalfFullFogThreshold; },
-			[&](float, float, float, float) -> int32 { return SlotOuter; },
-			HeightFull);
+		if (Params.bEmitOuterCurtain && bHaveOuter)
+		{
+			// Outer ring: half fog | full fog (white curtain ~50m).
+			EmitIsocontour(
+				HalfFullFogThreshold,
+				[](float F) { return F >= HalfFullFogThreshold; },
+				[&](float, float, float, float) -> int32 { return SlotOuter; },
+				HeightFull);
+		}
 
 		return BuildRuntimeFogStaticMesh(
 			Outer, Positions, Normals, Tangents, UVs, Colors, Triangles, Materials, TriMaterials);

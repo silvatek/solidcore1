@@ -52,6 +52,16 @@ bool FSolidFogMeshBuildGuardsTest::RunTest(const FString& Parameters)
 	{
 		TestTrue(TEXT("fog mesh has triangles"), Mesh->GetNumTriangles(0) > 0);
 	}
+
+	Params.bEmitInnerCurtain = false;
+	Params.bEmitOuterCurtain = true;
+	UStaticMesh* OuterMesh = SolidTerrainFog::BuildChunkFogMesh(
+		Outer, Map, Params, nullptr, nullptr, White);
+	TestNotNull(TEXT("outer curtain builds alone"), OuterMesh);
+	if (OuterMesh)
+	{
+		TestTrue(TEXT("outer curtain has triangles"), OuterMesh->GetNumTriangles(0) > 0);
+	}
 	return true;
 }
 

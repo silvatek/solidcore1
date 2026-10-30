@@ -202,9 +202,12 @@ ASolidTerrainChunk::ASolidTerrainChunk()
 
 	FogMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FogMeshComponent"));
 	FogMeshComponent->SetupAttachment(MeshComponent);
+	FogOuterMeshComponent = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("FogOuterMeshComponent"));
+	FogOuterMeshComponent->SetupAttachment(MeshComponent);
 
 	SolidTerrainChunkPrivate::ConfigureCollision(MeshComponent);
 	SolidTerrainFog::ConfigureOverlayComponent(FogMeshComponent);
+	SolidTerrainFog::ConfigureOverlayComponent(FogOuterMeshComponent, true);
 	MeshComponent->SetCastShadow(true);
 	MeshComponent->SetVisibility(true);
 	MeshComponent->SetHiddenInGame(false);
@@ -528,29 +531,52 @@ void ASolidTerrainChunk::RebuildExplorationFog(
 	Params.VolumeHeightHalfCm = CachedFogVolumeHeightHalfCm;
 	Params.CollisionHeightBias = CachedCollisionHeightBias;
 
-	RuntimeFogStaticMesh = SolidTerrainFog::BuildChunkFogMesh(
-		this, TerrainMap, Params, FogHalfMaterial, FogFullMaterial, FogOuterMaterial);
-
-	FogMeshComponent->SetStaticMesh(nullptr);
-	if (RuntimeFogStaticMesh)
+	auto AssignFogMesh = [&](
+		UStaticMeshComponent* Component,
+		TObjectPtr<UStaticMesh>& RuntimeMesh,
+		UStaticMesh* Built,
+		bool bWriteDepth)
 	{
-		FogMeshComponent->SetStaticMesh(RuntimeFogStaticMesh);
-		const int32 NumMaterials = RuntimeFogStaticMesh->GetStaticMaterials().Num();
-		for (int32 MatIndex = 0; MatIndex < NumMaterials; ++MatIndex)
+		Component->SetStaticMesh(nullptr);
+		RuntimeMesh = Built;
+		if (Built)
 		{
-			if (UMaterialInterface* Mat = RuntimeFogStaticMesh->GetMaterial(MatIndex))
+			Component->SetStaticMesh(Built);
+			const int32 NumMaterials = Built->GetStaticMaterials().Num();
+			for (int32 MatIndex = 0; MatIndex < NumMaterials; ++MatIndex)
 			{
-				FogMeshComponent->SetMaterial(MatIndex, Mat);
+				if (UMaterialInterface* Mat = Built->GetMaterial(MatIndex))
+				{
+					Component->SetMaterial(MatIndex, Mat);
+				}
 			}
+			SolidTerrainFog::ConfigureOverlayComponent(Component, bWriteDepth);
+			Component->SetVisibility(true);
+			Component->SetHiddenInGame(false);
+			Component->UpdateBounds();
+			Component->MarkRenderStateDirty();
 		}
-		SolidTerrainFog::ConfigureOverlayComponent(FogMeshComponent);
-		FogMeshComponent->SetVisibility(true);
-		FogMeshComponent->SetHiddenInGame(false);
-		FogMeshComponent->UpdateBounds();
-		FogMeshComponent->MarkRenderStateDirty();
-	}
-	else
-	{
-		FogMeshComponent->SetVisibility(false);
-	}
+		else
+		{
+			Component->SetVisibility(false);
+		}
+	};
+
+	Params.bEmitInnerCurtain = true;
+	Params.bEmitOuterCurtain = false;
+	AssignFogMesh(
+		FogMeshComponent,
+		RuntimeFogStaticMesh,
+		SolidTerrainFog::BuildChunkFogMesh(
+			this, TerrainMap, Params, FogHalfMaterial, FogFullMaterial, nullptr),
+		false);
+
+	Params.bEmitInnerCurtain = false;
+	Params.bEmitOuterCurtain = true;
+	AssignFogMesh(
+		FogOuterMeshComponent,
+		RuntimeFogOuterStaticMesh,
+		SolidTerrainFog::BuildChunkFogMesh(
+			this, TerrainMap, Params, nullptr, nullptr, FogOuterMaterial),
+		true);
 }

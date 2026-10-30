@@ -52,6 +52,8 @@ namespace SolidTerrainFog
 		float VolumeHeightCm = OuterCurtainHeightCm;
 		float VolumeHeightHalfCm = InnerCurtainHeightCm;
 		float CollisionHeightBias = 0.f;
+		bool bEmitInnerCurtain = true;
+		bool bEmitOuterCurtain = true;
 	};
 
 	struct FHeightFogStyle
@@ -74,7 +76,7 @@ namespace SolidTerrainFog
 	/** Opaque white curtain at the half→full fog boundary (~50m). */
 	UMaterialInterface* CreateOuterMaterial(UObject* Outer);
 
-	void ConfigureOverlayComponent(UStaticMeshComponent* Mesh);
+	void ConfigureOverlayComponent(UStaticMeshComponent* Mesh, bool bWriteDepth = false);
 
 	/**
 	 * Build a non-colliding fog overlay mesh: marching-squares isocontour curtains

@@ -390,19 +390,8 @@ void ASolidTerrainStreamer::ProcessExplorationFogMeshRebuilds()
 	}
 
 	EnsureExplorationFogMaterials();
-	const int32 Budget = FMath::Max(MaxFogChunkRebuildsPerUpdate, 1);
-	int32 Rebuilt = 0;
-	TArray<FIntPoint> StillDirty;
-	StillDirty.Reserve(DirtyFogChunkCoords.Num());
-
 	for (const FIntPoint& Coord : DirtyFogChunkCoords)
 	{
-		if (Rebuilt >= Budget)
-		{
-			StillDirty.Add(Coord);
-			continue;
-		}
-
 		if (ASolidTerrainChunk* Chunk = LoadedChunks.FindRef(Coord))
 		{
 			Chunk->RebuildExplorationFog(
@@ -413,15 +402,9 @@ void ASolidTerrainStreamer::ProcessExplorationFogMeshRebuilds()
 				FogQuadsPerSide,
 				FogVolumeHeightCm,
 				FogVolumeHeightHalfCm);
-			++Rebuilt;
 		}
 	}
-
 	DirtyFogChunkCoords.Reset();
-	for (const FIntPoint& Coord : StillDirty)
-	{
-		DirtyFogChunkCoords.Add(Coord);
-	}
 }
 
 void ASolidTerrainStreamer::EnsureHeightFog()

@@ -229,10 +229,6 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "50.0"))
 	float FogUpdateMoveThresholdCm = 250.f;
 
-	/** Max fog-overlay chunk rebuilds per streamer tick. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Terrain|Fog", meta = (ClampMin = "1", ClampMax = "16"))
-	int32 MaxFogChunkRebuildsPerUpdate = 2;
-
 	/**
 	 * Global Exponential Height Fog. Off by default — it is camera-relative and cannot
 	 * represent trail-based exploration fog. Prefer bRenderExplorationFogMeshes.
@@ -270,6 +266,7 @@ protected:
 	void EnsureExplorationFogMaterials();
 	int32 ClearExplorationFogAtFocus();
 	void QueueExplorationFogMeshRefresh(float WorldX, float WorldY, float RadiusCm);
+	/** Rebuild every dirty curtain in this tick so neighboring sheets stay closed. */
 	void ProcessExplorationFogMeshRebuilds();
 	/** Quads and FogQuads below 1 use QuadsPerSide and FogQuadsPerSide. */
 	void BuildChunkActor(ASolidTerrainChunk* Chunk, FIntPoint Coord, int32 Quads = -1, int32 FogQuads = -1);

@@ -512,6 +512,8 @@ protected:
 	void ResetRoads() const;
 	/** Solve one road and record its spans. */
 	void BuildRoad(const SolidRoad::FDefinition& Definition) const;
+	/** Locate each listed road and append it. */
+	void AppendListedRoads(TFunctionRef<SolidRoad::FDefinition*(const FString& From, const FString& To, const TCHAR* TypeName)> AppendRoad) const;
 	bool CellsToWorldXY(const TArray<FIntPoint>& InCells, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 	void ResetLoad() const;
 	/** Turn one chart mark into the named cell the queries read. A custom note and an encounter are skipped. */

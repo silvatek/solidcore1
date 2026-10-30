@@ -1366,18 +1366,17 @@ bool USolidWorldChart::BuildQuery() const
 	AssignTownPoints();
 
 	TArray<SolidRoad::FDefinition> RoadDefs;
-	auto AppendRoad = [&RoadDefs](const FString& From, const FString& To, const TCHAR* TypeName)
+	auto AppendRoad = [&RoadDefs](const FString& From, const FString& To, const TCHAR* TypeName) -> SolidRoad::FDefinition*
 	{
 		const FString Line = FString::Printf(TEXT("Road: %s -> %s, %s"), *From, *To, TypeName);
 		SolidRoad::FDefinition RoadDef;
-		if (SolidRoad::Parse(Line, RoadDef))
-		{
-			RoadDefs.Add(RoadDef);
-		}
-		else
+		if (!SolidRoad::Parse(Line, RoadDef))
 		{
 			UE_LOG(LogSolid, Warning, TEXT("WorldChart: ignored road %s -> %s."), *From, *To);
+			return nullptr;
 		}
+		RoadDefs.Add(RoadDef);
+		return &RoadDefs.Last();
 	};
 	if (SolidRoad::bRoadsFromChart)
 	{
@@ -1385,20 +1384,15 @@ bool USolidWorldChart::BuildQuery() const
 		{
 			AppendRoad(Road.FromName, Road.ToName, RoadTypeName(Road.Type));
 		}
+		for (SolidRoad::FDefinition& RoadDef : RoadDefs)
+		{
+			LocateStrongholdEnd(BangMarks, RoadDef.From);
+			LocateStrongholdEnd(BangMarks, RoadDef.To);
+		}
 	}
 	else
 	{
-		for (SolidRoad::FRoad Road : SolidRoad::Roads)
-		{
-			SolidRoad::LocateMark(Marks, Road.From);
-			SolidRoad::LocateMark(Marks, Road.To);
-			AppendRoad(Road.From.Name, Road.To.Name, RoadTypeName(ChartRoadType(Road.Type)));
-		}
-	}
-	for (SolidRoad::FDefinition& RoadDef : RoadDefs)
-	{
-		LocateStrongholdEnd(BangMarks, RoadDef.From);
-		LocateStrongholdEnd(BangMarks, RoadDef.To);
+		AppendListedRoads(AppendRoad);
 	}
 
 	bIsLoaded = true;
@@ -1407,6 +1401,29 @@ bool USolidWorldChart::BuildQuery() const
 		TEXT("WorldChart loaded: %dx%d startTownCells=%d locations=%d roads=%d"),
 		MapWidth, MapHeight, StartTownCells.Num(), Locations.Num(), SolvedRoads.Num());
 	return true;
+}
+
+void USolidWorldChart::AppendListedRoads(
+	TFunctionRef<SolidRoad::FDefinition*(const FString& From, const FString& To, const TCHAR* TypeName)> AppendRoad) const
+{
+	for (SolidRoad::FRoad Road : SolidRoad::Roads)
+	{
+		SolidRoad::LocateMark(Marks, Road.From);
+		SolidRoad::LocateMark(Marks, Road.To);
+		SolidRoad::FDefinition* Added = AppendRoad(Road.From.Name, Road.To.Name, RoadTypeName(ChartRoadType(Road.Type)));
+		if (Added == nullptr)
+		{
+			continue;
+		}
+		if (Road.From.Kind == ESolidWorldChartMarkKind::Stronghold)
+		{
+			LocateStrongholdEnd(BangMarks, Added->From);
+		}
+		if (Road.To.Kind == ESolidWorldChartMarkKind::Stronghold)
+		{
+			LocateStrongholdEnd(BangMarks, Added->To);
+		}
+	}
 }
 
 ESolidBiome USolidWorldChart::GetMarkerBiomeAtCell(const int32 MapX, const int32 MapY) const

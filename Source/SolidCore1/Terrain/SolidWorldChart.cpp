@@ -1591,15 +1591,20 @@ namespace
 
 void USolidWorldChart::BuildRoads(const TArray<SolidRoad::FDefinition>& Definitions) const
 {
-	SolvedRoads.Reset();
-	RoadSpans.Reset();
-	RoadSpansByCell.Reset();
-	RoadSpansByCell.SetNum(MapWidth * MapHeight);
+	ResetRoads();
 
 	for (const SolidRoad::FDefinition& Definition : Definitions)
 	{
 		BuildRoad(Definition);
 	}
+}
+
+void USolidWorldChart::ResetRoads() const
+{
+	SolvedRoads.Reset();
+	RoadSpans.Reset();
+	RoadSpansByCell.Reset();
+	RoadSpansByCell.SetNum(MapWidth * MapHeight);
 }
 
 void USolidWorldChart::BuildRoad(const SolidRoad::FDefinition& Definition) const

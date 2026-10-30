@@ -508,6 +508,8 @@ private:
 protected:
 	bool WorldXYToCell(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, int32& OutMapX, int32& OutMapY) const;
 	void BuildRoads(const TArray<SolidRoad::FDefinition>& Definitions) const;
+	/** Clear the solved roads and size the span index. */
+	void ResetRoads() const;
 	/** Solve one road and record its spans. */
 	void BuildRoad(const SolidRoad::FDefinition& Definition) const;
 	bool CellsToWorldXY(const TArray<FIntPoint>& InCells, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;

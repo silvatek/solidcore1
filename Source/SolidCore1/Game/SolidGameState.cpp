@@ -496,7 +496,21 @@ FResult NotifyCaptainKilled(
 	USolidCaptain& Captain,
 	const SolidWorldTime::FStamp& When)
 {
-	return MarkComplete(State, Captain, IdKilledByMonsters, When);
+	FResult Result;
+	Result.MaxSquadSize = State.MaxSquadSize;
+	Result.CaptainTitle = Captain.Title;
+
+	for (int32 Index = 0; Index < DefinitionCount; ++Index)
+	{
+		if (Definitions[Index].Trigger != ETrigger::CaptainDeath)
+		{
+			continue;
+		}
+		TryFireEvent(State, Captain, Index, When, Result);
+	}
+
+	Result.MaxSquadSize = State.MaxSquadSize;
+	return Result;
 }
 
 FResult MarkComplete(

@@ -206,8 +206,8 @@ namespace SolidEvents
 		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
 
 	/**
-	 * The captain was killed in a battle.
-	 * Records Killed by monsters when that event has not already fired.
+	 * The captain died in a fight.
+	 * Fires every unfired CaptainDeath event whose requirements are met.
 	 * A second call does nothing.
 	 */
 	FResult NotifyCaptainKilled(

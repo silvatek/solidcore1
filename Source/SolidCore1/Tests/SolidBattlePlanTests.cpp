@@ -741,7 +741,8 @@ bool FSolidBattlePlanEarlyEventsTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("the message does not enable Attack"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Attack")));
 	TestEqual(TEXT("the keys stay on Starter"), SolidBattlePlanTestPrivate::AssignedNames(Play.Squad), FString(TEXT("Starter")));
 
-	Play.GameMode->NoteMessageClosed(SolidMessages::IdKilledByMonsters);
+	SolidEvents::NotifyCaptainKilled(*Play.State, *Play.Captain);
+	Play.Sync();
 	const TArray<FString> AfterClose = Play.State->EnabledBattlePlans;
 	SolidEvents::MarkComplete(*Play.State, *Play.Captain, SolidEvents::IdDrivenFromVillage);
 	TestTrue(TEXT("Driven from the village keeps the flags"), Play.State->EnabledBattlePlans == AfterClose);
@@ -760,7 +761,8 @@ bool FSolidBattlePlanMonsterCloseTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	Play.GameMode->NoteMessageClosed(SolidMessages::IdKilledByMonsters);
+	SolidEvents::NotifyCaptainKilled(*Play.State, *Play.Captain);
+	Play.Sync();
 	TestEqual(TEXT("Attack then Defend"), SolidBattlePlanTestPrivate::AssignedNames(Play.Squad), FString(TEXT("Attack, Defend")));
 	TestNull(TEXT("F3 is empty"), Play.Squad->GetAssignedBattlePlan(2));
 	TestNull(TEXT("F8 is empty"), Play.Squad->GetAssignedBattlePlan(7));
@@ -804,7 +806,8 @@ bool FSolidBattlePlanEnterRelionTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	Play.GameMode->NoteMessageClosed(SolidMessages::IdKilledByMonsters);
+	SolidEvents::NotifyCaptainKilled(*Play.State, *Play.Captain);
+	Play.Sync();
 	SolidEvents::NotifyOccupiedTown(*Play.State, *Play.Captain, SolidTowns::Iglin);
 	const SolidEvents::FResult Relion = SolidEvents::NotifyOccupiedTown(*Play.State, *Play.Captain, SolidTowns::Relion);
 	TestTrue(TEXT("Enter Relion fires"), Relion.bFired);
@@ -835,7 +838,8 @@ bool FSolidBattlePlanActiveSurvivesEnableTest::RunTest(const FString& Parameters
 	{
 		return false;
 	}
-	Play.GameMode->NoteMessageClosed(SolidMessages::IdKilledByMonsters);
+	SolidEvents::NotifyCaptainKilled(*Play.State, *Play.Captain);
+	Play.Sync();
 	TestTrue(TEXT("Defend can be active"), Play.Squad->SelectAssignedSlot(1));
 	SolidEvents::FResult Result;
 	SolidEvents::ApplyChange(*Play.State, *Play.Captain, SolidEvents::Change::EnableBattlePlan(TEXT("Parade")), Result);
@@ -860,7 +864,8 @@ bool FSolidBattlePlanEnterKanfoldTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	Without.GameMode->NoteMessageClosed(SolidMessages::IdKilledByMonsters);
+	SolidEvents::NotifyCaptainKilled(*Without.State, *Without.Captain);
+	Without.Sync();
 	const SolidEvents::FResult Kanfold = SolidEvents::NotifyOccupiedTown(*Without.State, *Without.Captain, SolidTowns::Kanfold);
 	TestTrue(TEXT("Enter Kanfold fires"), Kanfold.bFired);
 	Without.Sync();
@@ -884,7 +889,8 @@ bool FSolidBattlePlanEnterKanfoldTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	With.GameMode->NoteMessageClosed(SolidMessages::IdKilledByMonsters);
+	SolidEvents::NotifyCaptainKilled(*With.State, *With.Captain);
+	With.Sync();
 	SolidEvents::NotifyOccupiedTown(*With.State, *With.Captain, SolidTowns::Iglin);
 	SolidEvents::NotifyOccupiedTown(*With.State, *With.Captain, SolidTowns::Relion);
 	With.Sync();
@@ -919,7 +925,8 @@ bool FSolidBattlePlanEnterDragongateTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	Without.GameMode->NoteMessageClosed(SolidMessages::IdKilledByMonsters);
+	SolidEvents::NotifyCaptainKilled(*Without.State, *Without.Captain);
+	Without.Sync();
 	const SolidEvents::FResult Gate = SolidEvents::NotifyOccupiedTown(*Without.State, *Without.Captain, SolidTowns::Dragongate);
 	TestTrue(TEXT("Enter Dragongate fires"), Gate.bFired);
 	Without.Sync();
@@ -937,7 +944,8 @@ bool FSolidBattlePlanEnterDragongateTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	With.GameMode->NoteMessageClosed(SolidMessages::IdKilledByMonsters);
+	SolidEvents::NotifyCaptainKilled(*With.State, *With.Captain);
+	With.Sync();
 	SolidEvents::NotifyOccupiedTown(*With.State, *With.Captain, SolidTowns::Iglin);
 	SolidEvents::NotifyOccupiedTown(*With.State, *With.Captain, SolidTowns::Relion);
 	With.Sync();
@@ -1076,7 +1084,8 @@ bool FSolidBattlePlanTripKeepsPlansTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	Play.GameMode->NoteMessageClosed(SolidMessages::IdKilledByMonsters);
+	SolidEvents::NotifyCaptainKilled(*Play.State, *Play.Captain);
+	Play.Sync();
 	TestTrue(TEXT("Defend is active for the trip"), Play.Squad->SelectAssignedSlot(1));
 	const TArray<int32> Saved = Play.Squad->GetAssignedCompanyPlanIndices();
 	TArray<int32> Mess;

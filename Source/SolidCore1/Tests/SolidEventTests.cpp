@@ -810,13 +810,10 @@ bool FSolidEventsMessageTest::RunTest(const FString& Parameters)
 	if (Killed)
 	{
 		TestEqual(
-			TEXT("closing the message is the trigger"),
+			TEXT("the captain's death is the trigger"),
 			static_cast<uint8>(Killed->Trigger),
-			static_cast<uint8>(SolidEvents::ETrigger::MessageClosed));
-		TestEqual(
-			TEXT("the close names the monster message"),
-			FString(Killed->MessageId),
-			FString(SolidMessages::IdKilledByMonsters));
+			static_cast<uint8>(SolidEvents::ETrigger::CaptainDeath));
+		TestNull(TEXT("the death names no message"), Killed->MessageId);
 		TestEqual(TEXT("the close is ACT_0"), Killed->Act, SolidEvents::ACT_0);
 		bool bEnablesCave = false;
 		const int32 ChangeCount = FMath::Min(Killed->ChangeCount, SolidEvents::MaxChangesPerEvent);
@@ -852,9 +849,9 @@ bool FSolidEventsMessageTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("another message does not fire"), Other.bFired);
 	TestFalse(TEXT("another message leaves the cave closed"), State.bStrongholdsEnabled);
 
-	const SolidEvents::FResult Closed = SolidEvents::NotifyMessageClosed(State, StateCaptain, SolidMessages::IdKilledByMonsters);
-	TestTrue(TEXT("closing the message fires"), Closed.bFired);
-	TestTrue(TEXT("closing the message sends the captain inside"), Closed.bEnterStronghold);
+	const SolidEvents::FResult Closed = SolidEvents::NotifyCaptainKilled(State, StateCaptain);
+	TestTrue(TEXT("the death fires"), Closed.bFired);
+	TestTrue(TEXT("the death sends the captain inside"), Closed.bEnterStronghold);
 	TestTrue(TEXT("the cave is open"), State.bStrongholdsEnabled);
 
 	TArray<USolidJournal::FRow> Rows;
@@ -875,7 +872,7 @@ bool FSolidEventsMessageTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the journal lists the message"), bSawMessage, bRampShowsMonster);
 	TestTrue(TEXT("the journal lists Cave enabled"), bSawCave);
 
-	const SolidEvents::FResult ClosedAgain = SolidEvents::NotifyMessageClosed(State, StateCaptain, SolidMessages::IdKilledByMonsters);
+	const SolidEvents::FResult ClosedAgain = SolidEvents::NotifyCaptainKilled(State, StateCaptain);
 	TestFalse(TEXT("closing the message fires once"), ClosedAgain.bFired);
 	TestFalse(TEXT("a second close does not travel again"), ClosedAgain.bEnterStronghold);
 	TestTrue(TEXT("the cave stays open"), State.bStrongholdsEnabled);
@@ -996,7 +993,7 @@ bool FSolidEventsDrivenFromVillageTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("a return before the close is not recorded"), HasFiredDriven(State));
 
 	SolidEvents::NotifyReachBrokenBridge(State, StateCaptain);
-	const SolidEvents::FResult Closed = SolidEvents::NotifyMessageClosed(State, StateCaptain, SolidMessages::IdKilledByMonsters);
+	const SolidEvents::FResult Closed = SolidEvents::NotifyCaptainKilled(State, StateCaptain);
 	TestTrue(TEXT("the close still opens the cave"), Closed.bEnterStronghold);
 	TestFalse(TEXT("the close is not the return"), HasFiredDriven(State));
 
@@ -1113,7 +1110,7 @@ bool FSolidEventsOrphanTitleTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Iglin state is Orphan"), FString(CaptainTitleName(StateCaptain.Title)), FString(CaptainTitleName(ESolidCaptainTitle::Orphan)));
 
 	SolidEvents::NotifyReachBrokenBridge(State, StateCaptain);
-	SolidEvents::NotifyMessageClosed(State, StateCaptain, SolidMessages::IdKilledByMonsters);
+	SolidEvents::NotifyCaptainKilled(State, StateCaptain);
 	TestEqual(TEXT("the close leaves Orphan"), FString(CaptainTitleName(StateCaptain.Title)), FString(CaptainTitleName(ESolidCaptainTitle::Orphan)));
 
 	const SolidEvents::FResult StillThere = SolidEvents::NotifyOccupiedTown(State, StateCaptain, 0);
@@ -1189,7 +1186,7 @@ bool FSolidEventsRavenSightWaitsForRelionTest::RunTest(const FString& Parameters
 	TestFalse(TEXT("the ramp does not switch sight"), Ramp.bSetSight);
 	TestFalse(TEXT("the ramp leaves raven sight locked"), StateCaptain.bRavenSightEnabled);
 
-	const SolidEvents::FResult Closed = SolidEvents::NotifyMessageClosed(State, StateCaptain, SolidMessages::IdKilledByMonsters);
+	const SolidEvents::FResult Closed = SolidEvents::NotifyCaptainKilled(State, StateCaptain);
 	TestTrue(TEXT("the close fires"), Closed.bFired);
 	TestFalse(TEXT("the close does not switch sight"), Closed.bSetSight);
 	TestFalse(TEXT("the close leaves raven sight locked"), StateCaptain.bRavenSightEnabled);
@@ -1363,7 +1360,7 @@ bool FSolidEventsClearInventoryTest::RunTest(const FString& Parameters)
 		FString(State.Inventory.Pack[SolidInventory::PackIndex(0, 0)].Id()),
 		FString(SolidItemType::IdDentedHelmet));
 
-	const SolidEvents::FResult Closed = SolidEvents::NotifyMessageClosed(State, StateCaptain, SolidMessages::IdKilledByMonsters);
+	const SolidEvents::FResult Closed = SolidEvents::NotifyCaptainKilled(State, StateCaptain);
 	TestTrue(TEXT("closing the message fires"), Closed.bFired);
 	TestTrue(TEXT("closing the message still opens the cave"), Closed.bEnterStronghold);
 	for (int32 Index = 0; Index < SolidInventory::WornCount; ++Index)
@@ -1399,7 +1396,7 @@ bool FSolidEventsClearInventoryTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the journal lists Inventory cleared"), bSawClear);
 
 	SolidInventory::PlaceWorn(State.Inventory, SolidInventory::ESlot::Head, SolidItemType::IdDentedHelmet);
-	const SolidEvents::FResult ClosedAgain = SolidEvents::NotifyMessageClosed(State, StateCaptain, SolidMessages::IdKilledByMonsters);
+	const SolidEvents::FResult ClosedAgain = SolidEvents::NotifyCaptainKilled(State, StateCaptain);
 	TestFalse(TEXT("closing the message fires once"), ClosedAgain.bFired);
 	TestEqual(
 		TEXT("a second close leaves the helmet"),
@@ -1718,7 +1715,7 @@ bool FSolidEventsEarlySizeUnlocksTest::RunTest(const FString& Parameters)
 
 	USolidGameState& Closed = *NewObject<USolidGameState>();
 	USolidCaptain& ClosedCaptain = *NewObject<USolidCaptain>();
-	const SolidEvents::FResult Monster = SolidEvents::NotifyMessageClosed(Closed, ClosedCaptain, SolidMessages::IdKilledByMonsters);
+	const SolidEvents::FResult Monster = SolidEvents::NotifyCaptainKilled(Closed, ClosedCaptain);
 	TestTrue(TEXT("Killed by monsters fires"), Monster.bFired);
 	TestTrue(TEXT("the close unlocks Meagre"), SolidEvents::IsStrongholdSizeUnlocked(Closed, ESolidStrongholdSize::Meagre));
 	TestFalse(TEXT("the close leaves Humble locked"), SolidEvents::IsStrongholdSizeUnlocked(Closed, ESolidStrongholdSize::Humble));

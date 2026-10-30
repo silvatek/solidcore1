@@ -419,8 +419,7 @@ bool FSolidCompanionJoinTest::RunTest(const FString& Parameters)
 	EnterTown(Early, SolidTowns::Iglin);
 	const SolidEvents::FResult Bridge = SolidEvents::NotifyReachBrokenBridge(*Early.State, *Early.Captain);
 	TestTrue(TEXT("the bridge fires"), Bridge.bFired);
-	const SolidEvents::FResult Killed = SolidEvents::NotifyMessageClosed(
-		*Early.State, *Early.Captain, SolidMessages::IdKilledByMonsters);
+	const SolidEvents::FResult Killed = SolidEvents::NotifyCaptainKilled(*Early.State, *Early.Captain);
 	TestTrue(TEXT("the death fires"), Killed.bFired);
 	SolidEvents::NotifyOccupiedTown(*Early.State, *Early.Captain, INDEX_NONE);
 	EnterTown(Early, SolidTowns::Iglin);
@@ -438,8 +437,7 @@ bool FSolidCompanionJoinTest::RunTest(const FString& Parameters)
 	EnterTown(AfterSam, SolidTowns::Relion);
 	const SolidEvents::FResult BridgeAfter = SolidEvents::NotifyReachBrokenBridge(*AfterSam.State, *AfterSam.Captain);
 	TestTrue(TEXT("the bridge still fires"), BridgeAfter.bFired);
-	const SolidEvents::FResult KilledAfter = SolidEvents::NotifyMessageClosed(
-		*AfterSam.State, *AfterSam.Captain, SolidMessages::IdKilledByMonsters);
+	const SolidEvents::FResult KilledAfter = SolidEvents::NotifyCaptainKilled(*AfterSam.State, *AfterSam.Captain);
 	TestTrue(TEXT("the death still fires"), KilledAfter.bFired);
 	EnterTown(AfterSam, SolidTowns::Iglin);
 	TestTrue(TEXT("driven from the village still fires"), DrivenIndex != INDEX_NONE && AfterSam.State->bFired[DrivenIndex]);

@@ -9,7 +9,7 @@
  * One event: a trigger, the changes it applies, and the events that must already have fired.
  * Each event fires once, the first time its trigger becomes true,
  * and only after every event it requires has already fired.
- * EnterTown, ReachBrokenBridge, and OnMessageClosed build one.
+ * EnterTown, ReachBrokenBridge, OnMessageClosed, and OnCaptainDeath build one.
  * A change helper fills the one value that change reads. The builder adds it.
  */
 namespace SolidEvents
@@ -49,6 +49,8 @@ namespace SolidEvents
 		ReachBrokenBridge,
 		/** The captain closes the message named by MessageId. */
 		MessageClosed,
+		/** The captain died in a fight. */
+		CaptainDeath,
 	};
 
 	enum class EChange : uint8
@@ -417,6 +419,17 @@ namespace SolidEvents
 		Event.Trigger = ETrigger::MessageClosed;
 		Event.Parameter = INDEX_NONE;
 		Event.MessageId = MessageId;
+		Event.Act = Act;
+		return Event;
+	}
+
+	inline constexpr FEvent OnCaptainDeath(const TCHAR* Id, const TCHAR* Name, const int32 Act)
+	{
+		FEvent Event;
+		Event.Id = Id;
+		Event.Name = Name;
+		Event.Trigger = ETrigger::CaptainDeath;
+		Event.Parameter = INDEX_NONE;
 		Event.Act = Act;
 		return Event;
 	}

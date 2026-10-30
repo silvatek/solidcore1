@@ -82,7 +82,7 @@ A comment above a type says what that type is, in a sentence or two. A comment o
 
 ## Automated tests
 
-UE Automation tests live under `Source/SolidCore1/Tests/` (editor builds, `WITH_DEV_AUTOMATION_TESTS`).
+UE Automation tests live under `Source/SolidCore1/Tests/`, in a subfolder that matches the source folder they cover (editor builds, `WITH_DEV_AUTOMATION_TESTS`).
 
 ### Policy
 

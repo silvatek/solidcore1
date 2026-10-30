@@ -4,7 +4,7 @@
 #include "SolidForestTrees.h"
 #include "SolidGameMode.h"
 #include "SolidTerrainMap.h"
-#include "SolidTerrainTestHelpers.h"
+#include "Terrain/SolidTerrainTestHelpers.h"
 #include "SolidTownBuildings.h"
 #include "SolidTownSigns.h"
 #include "SolidTree.h"

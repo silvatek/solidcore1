@@ -7,7 +7,7 @@
 #include "Inventory/SolidInventory.h"
 #include "Inventory/SolidItemType.h"
 #include "SolidClipLocomotion.h"
-#include "SolidCompanionTestSeed.h"
+#include "Companion/SolidCompanionTestSeed.h"
 #include "SolidGameInstance.h"
 #include "SolidGameMode.h"
 #include "UObject/SoftObjectPath.h"

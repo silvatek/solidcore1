@@ -1,6 +1,6 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "SolidTerrainTestHelpers.h"
+#include "Terrain/SolidTerrainTestHelpers.h"
 #include "SolidWallgate.h"
 #include "SolidTownBuildings.h"
 #include "SolidTownSign.h"

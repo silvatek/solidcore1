@@ -15,7 +15,7 @@
 #include "Company/SolidCaptain.h"
 #include "SolidTravelSession.h"
 #include "SolidTerrainMap.h"
-#include "SolidTerrainTestHelpers.h"
+#include "Terrain/SolidTerrainTestHelpers.h"
 #include "SolidTowns.h"
 #include "SolidWorldChart.h"
 

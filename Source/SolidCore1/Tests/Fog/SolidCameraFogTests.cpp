@@ -3,7 +3,7 @@
 #include "SolidCharacter.h"
 #include "SolidSight.h"
 #include "SolidTerrainFog.h"
-#include "SolidTerrainTestHelpers.h"
+#include "Terrain/SolidTerrainTestHelpers.h"
 #include "Terrain/SolidTerrainStreamer.h"
 
 #if WITH_DEV_AUTOMATION_TESTS

@@ -7,7 +7,7 @@
 #include "Menus/SolidMainMenu.h"
 #include "Company/SolidCompany.h"
 #include "SolidBodyMesh.h"
-#include "SolidCompanionTestSeed.h"
+#include "Companion/SolidCompanionTestSeed.h"
 #include "SolidBodyParams.h"
 #include "SolidHUD.h"
 

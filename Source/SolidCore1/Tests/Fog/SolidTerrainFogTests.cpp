@@ -2,7 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "SolidTerrainFog.h"
 #include "SolidTerrainMap.h"
-#include "SolidTerrainTestHelpers.h"
+#include "Terrain/SolidTerrainTestHelpers.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 

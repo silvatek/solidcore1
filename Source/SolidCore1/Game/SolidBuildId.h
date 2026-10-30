@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0785")
+#define SOLID_BUILD_ID TEXT("SC1-0786")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The shipped story list is StoryEvents.")
+#define SOLID_BUILD_NOTE TEXT("Companions live in the company folder.")
 #endif

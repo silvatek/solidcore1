@@ -4,7 +4,7 @@
 #include "UnrealClient.h"
 #include "HAL/FileManager.h"
 #include "Misc/Paths.h"
-#include "Companion/SolidCompanionCharacter.h"
+#include "Company/SolidCompanionCharacter.h"
 #include "HUD/SolidPointer.h"
 #include "SolidClickMove.h"
 #include "SolidGroundMove.h"

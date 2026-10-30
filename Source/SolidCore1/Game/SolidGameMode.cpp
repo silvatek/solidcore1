@@ -6,7 +6,7 @@
 #include "HUD/SolidHUD.h"
 #include "SolidPlayerController.h"
 #include "SolidCore1.h"
-#include "Companion/SolidCompanionCharacter.h"
+#include "Company/SolidCompanionCharacter.h"
 #include "SolidBodyMesh.h"
 #include "SolidBodyParams.h"
 #include "BattlePlans/SolidBattlePlan.h"

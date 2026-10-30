@@ -2,7 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
-#include "Companion/SolidCompanionCharacter.h"
+#include "Company/SolidCompanionCharacter.h"
 #include "Engine/World.h"
 #include "GameFramework/Character.h"
 

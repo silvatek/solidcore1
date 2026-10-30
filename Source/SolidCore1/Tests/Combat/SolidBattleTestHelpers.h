@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "Company/SolidSquad.h"
 #include "Inventory/SolidItem.h"
-#include "Companion/SolidCompanionTestSeed.h"
+#include "Company/SolidCompanionTestSeed.h"
 #include "Events/SolidEncounters.h"
 #include "Monster/SolidRaptor.h"
 

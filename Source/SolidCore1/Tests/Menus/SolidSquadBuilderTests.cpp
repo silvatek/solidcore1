@@ -6,7 +6,7 @@
 #include "BattlePlans/SolidBattlePlan.h"
 #include "Company/SolidCompany.h"
 #include "Company/SolidSquad.h"
-#include "Companion/SolidCompanionTestSeed.h"
+#include "Company/SolidCompanionTestSeed.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
 

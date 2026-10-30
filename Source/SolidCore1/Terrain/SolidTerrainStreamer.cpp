@@ -14,7 +14,7 @@
 #include "SolidTerrainNoise.h"
 #include "SolidWorldChart.h"
 #include "SolidCore1.h"
-#include "Companion/SolidCompanionCharacter.h"
+#include "Company/SolidCompanionCharacter.h"
 #include "Player/SolidCharacter.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"

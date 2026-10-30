@@ -24,7 +24,7 @@
 #include "Playthrough/SolidAutoPlaythrough.h"
 #include "SolidGameState.h"
 #include "SolidPlayerController.h"
-#include "Companion/SolidCompanionCharacter.h"
+#include "Company/SolidCompanionCharacter.h"
 #include "BattlePlans/SolidBattlePlan.h"
 #include "Company/SolidSquad.h"
 #include "Company/SolidSquadDrill.h"

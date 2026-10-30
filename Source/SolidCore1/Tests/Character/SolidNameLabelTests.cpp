@@ -2,7 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "SolidNameLabel.h"
 #include "SolidCharacter.h"
-#include "Companion/SolidCompanionCharacter.h"
+#include "Company/SolidCompanionCharacter.h"
 #include "Company/SolidCompany.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/TextRenderComponent.h"

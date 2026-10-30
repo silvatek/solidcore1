@@ -1,6 +1,6 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "Companion/SolidCompanionCharacter.h"
+#include "Company/SolidCompanionCharacter.h"
 #include "SolidCharacter.h"
 #include "Components/TextRenderComponent.h"
 

@@ -1,5 +1,5 @@
 #include "SolidCharacterStage.h"
-#include "Companion/SolidCompanionCharacter.h"
+#include "Company/SolidCompanionCharacter.h"
 #include "SolidMaterials.h"
 #include "Components/PointLightComponent.h"
 #include "Components/SceneComponent.h"

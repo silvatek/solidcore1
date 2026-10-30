@@ -10,12 +10,6 @@
  */
 namespace SolidRoad
 {
-	/**
-	 * True loads the roads stored on the world chart.
-	 * False uses Roads in this file.
-	 */
-	inline bool bRoadsFromChart = false;
-
 	struct FRoad
 	{
 		FSolidWorldChartMark From;

@@ -1365,36 +1365,7 @@ bool USolidWorldChart::BuildQuery() const
 	CopyPlayOntoPoints(false, true);
 	AssignTownPoints();
 
-	if (SolidRoad::bRoadsFromChart)
-	{
-		TArray<SolidRoad::FDefinition> RoadDefs;
-		auto AppendRoad = [&RoadDefs](const FString& From, const FString& To, const TCHAR* TypeName) -> SolidRoad::FDefinition*
-		{
-			const FString Line = FString::Printf(TEXT("Road: %s -> %s, %s"), *From, *To, TypeName);
-			SolidRoad::FDefinition RoadDef;
-			if (!SolidRoad::Parse(Line, RoadDef))
-			{
-				UE_LOG(LogSolid, Warning, TEXT("WorldChart: ignored road %s -> %s."), *From, *To);
-				return nullptr;
-			}
-			RoadDefs.Add(RoadDef);
-			return &RoadDefs.Last();
-		};
-		for (const FSolidWorldChartRoad& Road : Roads)
-		{
-			AppendRoad(Road.FromName, Road.ToName, RoadTypeName(Road.Type));
-		}
-		for (SolidRoad::FDefinition& RoadDef : RoadDefs)
-		{
-			LocateStrongholdEnd(BangMarks, RoadDef.From);
-			LocateStrongholdEnd(BangMarks, RoadDef.To);
-		}
-		BuildRoads(RoadDefs);
-	}
-	else
-	{
-		AppendListedRoads();
-	}
+	AppendListedRoads();
 
 	bIsLoaded = true;
 	UE_LOG(LogSolid, Warning,
@@ -1651,6 +1622,7 @@ void USolidWorldChart::ResetRoads() const
 
 void USolidWorldChart::BuildRoad(const SolidRoad::FDefinition& Definition, const SolidRoad::FRoad* Road) const
 {
+	// Prefer Road to Definition for every later change here. The aim is to remove Definition.
 	(void)Road;
 	if (RoadSpansByCell.Num() != MapWidth * MapHeight)
 	{

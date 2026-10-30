@@ -630,7 +630,7 @@ bool FSolidRoadDefinitionsTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	const SolidRoad::FRoad& Cave = SolidRoad::Roads[0];
+	const SolidRoad::FSolidRoad& Cave = SolidRoad::Roads[0];
 	TestEqual(TEXT("the trail starts at a stronghold"), static_cast<uint8>(Cave.From.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Stronghold));
 	TestEqual(TEXT("the trail starts at Meagre"), static_cast<uint8>(Cave.From.StrongholdSize), static_cast<uint8>(ESolidStrongholdSize::Meagre));
 	TestEqual(TEXT("the trail starts at a dungeon"), static_cast<uint8>(Cave.From.StrongholdType), static_cast<uint8>(ESolidStrongholdType::Dungeon));
@@ -641,7 +641,7 @@ bool FSolidRoadDefinitionsTest::RunTest(const FString& Parameters)
 
 	for (int32 Index = 0; Index < TownRoads; ++Index)
 	{
-		const SolidRoad::FRoad& Road = SolidRoad::Roads[Index + 1];
+		const SolidRoad::FSolidRoad& Road = SolidRoad::Roads[Index + 1];
 		TestEqual(TEXT("starts at a town"), static_cast<uint8>(Road.From.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Town));
 		TestEqual(TEXT("ends at a town"), static_cast<uint8>(Road.To.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Town));
 		TestEqual(TEXT("start town"), Road.From.Name, FString(SolidTowns::Definitions[FromIds[Index]].Name));
@@ -679,9 +679,8 @@ bool FSolidRoadLocationsTest::RunTest(const FString& Parameters)
 	Marks.Add(Iglin);
 	Marks.Add(Cave);
 
-	SolidRoad::FRoad Trail = SolidRoad::Roads[0];
-	SolidRoad::LocateMark(Marks, Trail.From);
-	SolidRoad::LocateMark(Marks, Trail.To);
+	SolidRoad::FSolidRoad Trail = SolidRoad::Roads[0];
+	Trail.Locate(Marks);
 	TestTrue(TEXT("the cave takes the chart place"), Trail.From.PositionCm.Equals(Cave.PositionCm));
 	TestTrue(TEXT("Iglin takes the chart place"), Trail.To.PositionCm.Equals(Iglin.PositionCm));
 	TestTrue(TEXT("the list itself stays unplaced"), SolidRoad::Roads[0].From.PositionCm.IsNearlyZero());
@@ -695,11 +694,10 @@ bool FSolidRoadLocationsTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	for (const SolidRoad::FRoad& Definition : SolidRoad::Roads)
+	for (const SolidRoad::FSolidRoad& Definition : SolidRoad::Roads)
 	{
-		SolidRoad::FRoad Road = Definition;
-		SolidRoad::LocateMark(Chart->Marks, Road.From);
-		SolidRoad::LocateMark(Chart->Marks, Road.To);
+		SolidRoad::FSolidRoad Road = Definition;
+		Road.Locate(Chart->Marks);
 		TestTrue(TEXT("the shipped start is on the chart"), Placed(Chart->Marks, Road.From));
 		TestTrue(TEXT("the shipped end is on the chart"), Placed(Chart->Marks, Road.To));
 	}

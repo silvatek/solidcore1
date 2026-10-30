@@ -2,6 +2,8 @@
 
 #include "CoreMinimal.h"
 #include "SolidBiome.h"
+#include "SolidWorldChartMark.h"
+#include "Towns/SolidTowns.h"
 
 class USolidWorldChart;
 
@@ -28,6 +30,92 @@ namespace SolidRoad
 		Highway,
 	};
 
+	struct FDefinition;
+
+	/** One shipped road. It joins two marks on the world chart. */
+	class FSolidRoad
+	{
+	public:
+		FSolidRoad(FSolidWorldChartMark InFrom, FSolidWorldChartMark InTo, EType InType)
+			: From(MoveTemp(InFrom))
+			, To(MoveTemp(InTo))
+			, Type(InType)
+		{
+		}
+
+		/** Copy the chart position onto each end when the chart has that mark. */
+		void Locate(const TArray<FSolidWorldChartMark>& ChartMarks);
+
+		/**
+		 * Legacy support only. Type, town id, and stronghold name.
+		 * A stronghold cell is still empty. An unknown town leaves that end blank.
+		 */
+		FDefinition ToDefinition() const;
+
+		FSolidWorldChartMark From;
+		FSolidWorldChartMark To;
+		EType Type = EType::Trail;
+	};
+
+	/** A town mark. The chart places it. */
+	inline FSolidWorldChartMark TownMark(const int32 TownId)
+	{
+		FSolidWorldChartMark Mark;
+		Mark.Kind = ESolidWorldChartMarkKind::Town;
+		Mark.Name = SolidTowns::Definitions[TownId].Name;
+		return Mark;
+	}
+
+	/** A stronghold mark. The chart places it. */
+	inline FSolidWorldChartMark StrongholdMark(const ESolidStrongholdSize Size, const ESolidStrongholdType Type)
+	{
+		FSolidWorldChartMark Mark;
+		Mark.Kind = ESolidWorldChartMarkKind::Stronghold;
+		Mark.StrongholdSize = Size;
+		Mark.StrongholdType = Type;
+		Mark.Name = SolidStronghold::Label(Size, Type);
+		return Mark;
+	}
+
+	/** Copy the chart mark's position onto this end when the chart has that mark. */
+	inline void LocateMark(const TArray<FSolidWorldChartMark>& ChartMarks, FSolidWorldChartMark& End)
+	{
+		for (const FSolidWorldChartMark& ChartMark : ChartMarks)
+		{
+			if (ChartMark.Kind != End.Kind)
+			{
+				continue;
+			}
+			if (End.Kind == ESolidWorldChartMarkKind::Stronghold)
+			{
+				if (ChartMark.StrongholdSize != End.StrongholdSize
+					|| ChartMark.StrongholdType != End.StrongholdType)
+				{
+					continue;
+				}
+			}
+			else
+			{
+				FString EndName = End.Name;
+				FString ChartName = ChartMark.Name;
+				EndName.ReplaceInline(TEXT(" "), TEXT(""));
+				ChartName.ReplaceInline(TEXT(" "), TEXT(""));
+				if (!EndName.Equals(ChartName, ESearchCase::IgnoreCase))
+				{
+					continue;
+				}
+			}
+			End.PositionCm = ChartMark.PositionCm;
+			return;
+		}
+	}
+
+	inline void FSolidRoad::Locate(const TArray<FSolidWorldChartMark>& ChartMarks)
+	{
+		LocateMark(ChartMarks, From);
+		LocateMark(ChartMarks, To);
+	}
+
 	struct FEndpoint
 	{
 		/** Town location id. INDEX_NONE when this end is a stronghold. */
@@ -42,12 +130,44 @@ namespace SolidRoad
 		FString StrongholdName;
 	};
 
+	/** Town name, or the stronghold name, for this end. */
+	FString ChartRoadEndName(const FEndpoint& End);
+
 	struct FDefinition
 	{
 		FEndpoint From;
 		FEndpoint To;
 		EType Type = EType::Trail;
 	};
+
+	inline FDefinition FSolidRoad::ToDefinition() const
+	{
+		auto FillEnd = [](const FSolidWorldChartMark& Mark, FEndpoint& Out)
+		{
+			Out = FEndpoint();
+			if (Mark.Kind == ESolidWorldChartMarkKind::Town)
+			{
+				const SolidTowns::FTownInfo* Town = SolidTowns::FindByName(Mark.Name);
+				if (Town == nullptr)
+				{
+					return;
+				}
+				Out.LocationId = Town->Id;
+				return;
+			}
+			if (Mark.Kind == ESolidWorldChartMarkKind::Stronghold)
+			{
+				Out.bStronghold = true;
+				Out.StrongholdName = Mark.Name;
+			}
+		};
+
+		FDefinition Result;
+		Result.Type = Type;
+		FillEnd(From, Result.From);
+		FillEnd(To, Result.To);
+		return Result;
+	}
 
 	struct FRoute
 	{

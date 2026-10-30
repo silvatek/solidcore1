@@ -600,36 +600,17 @@ bool USolidWorldChart::RouteForRoad(const int32 RoadIndex, TArray<FIntPoint>& Ou
 
 void USolidWorldChart::BuildListedRoads() const
 {
-	auto FillEnd = [](const FSolidWorldChartMark& Mark, SolidRoad::FEndpoint& Out) -> bool
+	auto EndReady = [](const SolidRoad::FEndpoint& End)
 	{
-		Out = SolidRoad::FEndpoint();
-		if (Mark.Kind == ESolidWorldChartMarkKind::Town)
-		{
-			const SolidTowns::FTownInfo* Town = SolidTowns::FindByName(Mark.Name);
-			if (Town == nullptr)
-			{
-				return false;
-			}
-			Out.LocationId = Town->Id;
-			return true;
-		}
-		if (Mark.Kind == ESolidWorldChartMarkKind::Stronghold)
-		{
-			Out.bStronghold = true;
-			Out.StrongholdName = Mark.Name;
-			return true;
-		}
-		return false;
+		return End.bStronghold || End.LocationId != INDEX_NONE;
 	};
 
 	ResetRoads();
-	for (SolidRoad::FRoad Road : SolidRoad::Roads)
+	for (SolidRoad::FSolidRoad Road : SolidRoad::Roads)
 	{
-		SolidRoad::LocateMark(Marks, Road.From);
-		SolidRoad::LocateMark(Marks, Road.To);
-		SolidRoad::FDefinition Definition;
-		Definition.Type = Road.Type;
-		if (!FillEnd(Road.From, Definition.From) || !FillEnd(Road.To, Definition.To))
+		Road.Locate(Marks);
+		SolidRoad::FDefinition Definition = Road.ToDefinition();
+		if (!EndReady(Definition.From) || !EndReady(Definition.To))
 		{
 			UE_LOG(LogSolid, Warning, TEXT("WorldChart: ignored road %s -> %s."), *Road.From.Name, *Road.To.Name);
 			continue;
@@ -664,7 +645,7 @@ void USolidWorldChart::ResetRoads() const
 	RoadSpansByCell.SetNum(MapWidth * MapHeight);
 }
 
-void USolidWorldChart::BuildRoad(const SolidRoad::FDefinition& Definition, const SolidRoad::FRoad* Road) const
+void USolidWorldChart::BuildRoad(const SolidRoad::FDefinition& Definition, const SolidRoad::FSolidRoad* Road) const
 {
 	// Prefer Road to Definition for every later change here. The aim is to remove Definition.
 	(void)Road;

@@ -7,26 +7,6 @@
 #include "SolidTerrainTypes.h"
 #include "SolidWorldChart.generated.h"
 
-namespace SolidRoad
-{
-	struct FRoad;
-}
-
-/** What a mark on the world chart is. A site has a size and no type. */
-UENUM()
-enum class ESolidWorldChartMarkKind : uint8
-{
-	Town,
-	Stronghold,
-	StrongholdSite,
-	LairEntrance,
-	LairExit,
-	/** A short note. It does not change the land, and it is not a road end. */
-	Custom,
-	/** A catalog encounter. It does not change the land. */
-	Encounter,
-};
-
 /** How wide a chart road is. The route is solved when the chart is asked. */
 UENUM()
 enum class ESolidWorldChartRoadType : uint8
@@ -35,42 +15,6 @@ enum class ESolidWorldChartRoadType : uint8
 	Track,
 	Road,
 	Highway,
-};
-
-/**
- * One named place on the chart. Its position is the cell centre, in centimetres.
- * Asking the chart turns that position into a cell once, then keeps the cell.
- */
-USTRUCT()
-struct FSolidWorldChartMark
-{
-	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, Category = "WorldChart")
-	ESolidWorldChartMarkKind Kind = ESolidWorldChartMarkKind::Town;
-
-	/**
-	 * Town, stronghold, site, or lair name, or the text of a custom note.
-	 * MeagreDungeon and Meagre Dungeon are the same stronghold name.
-	 */
-	UPROPERTY(EditAnywhere, Category = "WorldChart")
-	FString Name;
-
-	/** World position in centimetres, snapped to the cell centre. +X is west, +Y is north. */
-	UPROPERTY(EditAnywhere, Category = "WorldChart")
-	FVector2D PositionCm = FVector2D::ZeroVector;
-
-	/** Set for a stronghold. A site has no type. */
-	UPROPERTY(EditAnywhere, Category = "WorldChart")
-	ESolidStrongholdType StrongholdType = ESolidStrongholdType::Dungeon;
-
-	/** Set for a stronghold and a stronghold site. */
-	UPROPERTY(EditAnywhere, Category = "WorldChart")
-	ESolidStrongholdSize StrongholdSize = ESolidStrongholdSize::Meagre;
-
-	/** Eight hex digits when this mark is a lair mouth. Empty otherwise. */
-	UPROPERTY(EditAnywhere, Category = "WorldChart")
-	FString LairId;
 };
 
 /** A road definition on the chart. Two end names and a type. The solver runs when the chart is asked. */
@@ -516,7 +460,7 @@ protected:
 	/** Clear the solved roads and size the span index. */
 	void ResetRoads() const;
 	/** Solve one road and record its spans. Road is a listed road, or null when the definition came from the chart. */
-	void BuildRoad(const SolidRoad::FDefinition& Definition, const SolidRoad::FRoad* Road) const;
+	void BuildRoad(const SolidRoad::FDefinition& Definition, const SolidRoad::FSolidRoad* Road) const;
 	/** Build each listed road and solve it. */
 	void BuildListedRoads() const;
 	bool CellsToWorldXY(const TArray<FIntPoint>& InCells, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;

@@ -11,7 +11,7 @@ The cost of entering a biome depends on the road type:
 | Biome | Trail | Track | Road | Highway |
 | --- | --- | --- | --- | --- |
 | Grassland | 8 | 8 | 8 | 8 |
-| Forest | 8 | 8 | -- | -- |
+| Forest | 8 | 8 | 16 | 32 |
 | Mountain | -- | -- | -- | -- |
 | Town | 8 | 8 | 8 | 8 |
 | Desert | 8 | 8 | -- | -- |
@@ -20,7 +20,7 @@ The cost of entering a biome depends on the road type:
 | River | 16 | 16 | 16 | 16 |
 | Road | 8 | 8 | 8 | 8 |
 
-An ordinary step costs 8. `--` means the route goes around that ground. A river's 16 is a crossing at a right angle to the river. Any other step on the river is `--`.
+An ordinary step costs 8. `--` means the route goes around that ground. A road pays 16 to enter forest, and a highway pays 32. A river's 16 is a crossing at a right angle to the river. Any other step on the river is `--`.
 
 This story introduces no new class.
 

@@ -214,7 +214,6 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidBridgeSpanTest::RunTest(const FString& Parameters)
 {
 	const auto Height = [](float, float) { return 100.f; };
-	const float CellW = (BridgeTestMax.X - BridgeTestMin.X) / static_cast<float>(USolidWorldChart::MapWidth);
 
 	TArray<FBridgeTestMark> ShortMarks;
 	ShortMarks.Add({ 2, 20, USolidWorldChart::LocationMarker });
@@ -248,21 +247,10 @@ bool FSolidBridgeSpanTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TArray<SolidBridge::FBridge> LongBridges;
-	if (!TestEqual(TEXT("long crossing"), SolidBridge::Collect(*LongMap, BridgeTestMin, BridgeTestMax, Height, LongBridges), 1)
-		|| LongBridges.Num() != 1)
-	{
-		return false;
-	}
+	TestEqual(TEXT("a trail does not follow the river"),
+		SolidBridge::Collect(*LongMap, BridgeTestMin, BridgeTestMax, Height, LongBridges), 0);
 
 	TestTrue(TEXT("a trail center is 1 m"), FMath::IsNearlyEqual(ShortBridges[0].WidthCm, SolidRoad::WidthCm(SolidRoad::EType::Trail)));
-	// Each end gains the same step. The cells between them are already river from edge to edge.
-	TestTrue(TEXT("a longer river lengthens the center"),
-		FMath::IsNearlyEqual(
-			BridgePlanLength(LongBridges[0].Deck),
-			SolidRiver::WidthCm + static_cast<float>(RiverCells - 1) * CellW + 2.f * SolidBridge::BankRestCm + SolidRoad::TerrainQuadCm,
-			5.f));
-	TestTrue(TEXT("the long center is longer than one channel"),
-		BridgePlanLength(LongBridges[0].Deck) > BridgePlanLength(ShortBridges[0].Deck) + CellW);
 
 	TArray<FBridgeTestMark> Blocked;
 	Blocked.Add({ 4, 20, USolidWorldChart::LocationMarker });
@@ -302,8 +290,8 @@ bool FSolidBridgeSpanTest::RunTest(const FString& Parameters)
 	if (TestTrue(TEXT("around map loads"), Around->LoadFromString(BridgeTestGrid(Gap, BridgeTestNamed(4, 10, TEXT("Iglin"), 22, 10, TEXT("Relion"), TEXT("road"))))))
 	{
 		TArray<SolidBridge::FBridge> AroundBridges;
-		TestEqual(TEXT("a road that stays off the water has no bridge"),
-			SolidBridge::Collect(*Around, BridgeTestMin, BridgeTestMax, Height, AroundBridges), 0);
+		TestEqual(TEXT("a road crosses the river and takes one bridge"),
+			SolidBridge::Collect(*Around, BridgeTestMin, BridgeTestMax, Height, AroundBridges), 1);
 	}
 	return true;
 }

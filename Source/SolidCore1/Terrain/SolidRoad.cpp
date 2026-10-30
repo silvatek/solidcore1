@@ -74,12 +74,19 @@ namespace SolidRoad
 			return Map.GetPointBiomeAtCell(X, Y) == ESolidBiome::River;
 		}
 
-		/** A river step is allowed when it runs across the channel, not along it. */
+		/**
+		 * A river step is allowed when it runs across the channel, not along it.
+		 * A cell with no river beside it is a pond, so the step crosses it.
+		 */
 		bool StepIsSquareToRiver(const USolidWorldChart& Map, const FIntPoint& From, const FIntPoint& To)
 		{
 			const bool bAlongY = PointIsRiver(Map, To.X, To.Y - 1) || PointIsRiver(Map, To.X, To.Y + 1);
 			const bool bAlongX = PointIsRiver(Map, To.X + 1, To.Y) || PointIsRiver(Map, To.X - 1, To.Y);
-			if (bAlongY == bAlongX)
+			if (!bAlongY && !bAlongX)
+			{
+				return true;
+			}
+			if (bAlongY && bAlongX)
 			{
 				return false;
 			}

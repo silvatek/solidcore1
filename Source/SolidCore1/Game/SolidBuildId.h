@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0818")
+#define SOLID_BUILD_ID TEXT("SC1-0819")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A road pays the biome table when it enters a step.")
+#define SOLID_BUILD_NOTE TEXT("A lone river is a crossing. A step along a river is banned.")
 #endif

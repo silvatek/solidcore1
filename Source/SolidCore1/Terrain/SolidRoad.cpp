@@ -584,18 +584,18 @@ namespace SolidRoad
 	{
 		OutCells.Reset();
 		OutPoints.Reset();
-		const FString RoadText = Road != nullptr
-			? Road->toString()
-			: FString::Printf(
-				TEXT("%s -> %s"),
-				*ChartRoadEndName(Definition.From),
-				*ChartRoadEndName(Definition.To));
 		if (OpenStraightLine(Map, Road, OutCells, OutPoints))
 		{
-			UE_LOG(LogSolid, Warning, TEXT("%s: OpenStraightLine."), *RoadText);
+			if (Road != nullptr)
+			{
+				UE_LOG(LogSolid, Warning, TEXT("%s: OpenStraightLine."), *Road->toString());
+			}
 			return true;
 		}
-		UE_LOG(LogSolid, Warning, TEXT("%s: cell search."), *RoadText);
+		if (Road != nullptr)
+		{
+			UE_LOG(LogSolid, Warning, TEXT("%s: cell search."), *Road->toString());
+		}
 		OutPoints.Reset();
 
 		const EType Type = Road != nullptr ? Road->Type : Definition.Type;

@@ -15,12 +15,12 @@ The cost of entering a biome depends on the road type:
 | Mountain | -- | -- | -- | -- |
 | Town | 0 | 0 | 0 | 0 |
 | Desert | 8 | 8 | 16 | 32 |
-| Swamp | 8 | 8 | 8 | 8 |
+| Swamp | 8 | 8 | 16 | 32 |
 | Sea | -- | -- | -- | -- |
 | River | 16 | 16 | 16 | 16 |
 | Road | 0 | 0 | 0 | 0 |
 
-An ordinary step costs 8. Town and road cost 0. `--` means the route goes around that ground. A road pays 16 to enter forest or desert, and a highway pays 32. A river's 16 is a crossing at a right angle to the river. Any other step on the river is `--`.
+An ordinary step costs 8. Town and road cost 0. `--` means the route goes around that ground. A road pays 16 to enter forest, desert, or swamp, and a highway pays 32. The game has no swamp yet. The swamp row is the cost for when it does. A river's 16 is a crossing at a right angle to the river. Any other step on the river is `--`.
 
 This story introduces no new class.
 

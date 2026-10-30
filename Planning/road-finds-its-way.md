@@ -10,17 +10,17 @@ The cost of entering a biome depends on the road type:
 
 | Biome | Trail | Track | Road | Highway |
 | --- | --- | --- | --- | --- |
-| Grassland | Ordinary | Ordinary | Ordinary | Ordinary |
-| Forest | Ordinary | Ordinary | Banned | Banned |
-| Mountain | Banned | Banned | Banned | Banned |
-| Town | Ordinary | Ordinary | Ordinary | Ordinary |
-| Desert | Ordinary | Ordinary | Banned | Banned |
-| Swamp | Ordinary | Ordinary | Ordinary | Ordinary |
-| Sea | Banned | Banned | Banned | Banned |
-| River | Crossing | Crossing | Crossing | Crossing |
-| Road | Ordinary | Ordinary | Ordinary | Ordinary |
+| Grassland | 8 | 8 | 8 | 8 |
+| Forest | 8 | 8 | -- | -- |
+| Mountain | -- | -- | -- | -- |
+| Town | 8 | 8 | 8 | 8 |
+| Desert | 8 | 8 | -- | -- |
+| Swamp | 8 | 8 | 8 | 8 |
+| Sea | -- | -- | -- | -- |
+| River | 16 | 16 | 16 | 16 |
+| Road | 8 | 8 | 8 | 8 |
 
-Ordinary is one ordinary step. Banned means the route goes around that ground. Crossing means the route may cross the river at a right angle to the river, and that crossing costs more than one ordinary step. Any other step on the river is banned. This story does not set the number of an ordinary step, or how much higher a crossing is.
+An ordinary step costs 8. `--` means the route goes around that ground. A river's 16 is a crossing at a right angle to the river. Any other step on the river is `--`.
 
 This story introduces no new class.
 

@@ -1,6 +1,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "SolidRoad.h"
+#include "SolidRoads.h"
 #include "SolidStronghold.h"
 #include "SolidTerrainTypes.h"
 #include "SolidTowns.h"
@@ -591,6 +592,28 @@ bool FSolidRoadShippedTest::RunTest(const FString& Parameters)
 		Map->GetMarkerAtCell(Roads[0].Cells[0].X, Roads[0].Cells[0].Y),
 		USolidWorldChart::LocationMarker);
 	TestEqual(TEXT("trail ends at Iglin"), Map->GetLocationIdAtCell(Roads[0].Cells.Last().X, Roads[0].Cells.Last().Y), 0);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidRoadDefinitionsTest,
+	"SolidCore1.Road.Definitions",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidRoadDefinitionsTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("one road"), SolidRoad::DefinitionCount, 1);
+	if (SolidRoad::DefinitionCount < 1)
+	{
+		return false;
+	}
+
+	const SolidRoad::FRoad& Road = SolidRoad::Roads[0];
+	TestEqual(TEXT("starts at a town"), static_cast<uint8>(Road.From.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Town));
+	TestEqual(TEXT("starts at Relion"), Road.From.Name, FString(SolidTowns::Definitions[SolidTowns::Relion].Name));
+	TestEqual(TEXT("ends at a town"), static_cast<uint8>(Road.To.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Town));
+	TestEqual(TEXT("ends at Kanfold"), Road.To.Name, FString(SolidTowns::Definitions[SolidTowns::Kanfold].Name));
+	TestEqual(TEXT("highway"), static_cast<uint8>(Road.Type), static_cast<uint8>(SolidRoad::EType::Highway));
 	return true;
 }
 

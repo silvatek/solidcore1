@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0814")
+#define SOLID_BUILD_ID TEXT("SC1-0815")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A listed road is a class.")
+#define SOLID_BUILD_NOTE TEXT("Listed roads are placed from the marks they are given.")
 #endif

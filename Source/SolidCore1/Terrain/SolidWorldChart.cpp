@@ -1153,7 +1153,7 @@ bool USolidWorldChart::BuildQuery() const
 	CopyPlayOntoPoints(false, true);
 	AssignTownPoints();
 
-	BuildListedRoads();
+	BuildListedRoads(Marks);
 
 	bIsLoaded = true;
 	UE_LOG(LogSolid, Warning,

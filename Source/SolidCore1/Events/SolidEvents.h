@@ -7,6 +7,7 @@
 
 /**
  * The shipped story.
+ * Each StoryEvent fires once. After it has fired, a later trigger for that same event does nothing.
  * An enter-town event fires when the captain steps onto that town, or leaves one town for another.
  * Standing still, or walking within the same town, does not fire it again.
  */

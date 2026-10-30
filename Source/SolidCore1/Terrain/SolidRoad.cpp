@@ -599,8 +599,8 @@ bool USolidWorldChart::RouteForRoad(const int32 RoadIndex, TArray<FIntPoint>& Ou
 }
 
 void USolidWorldChart::BuildListedRoads(
-	const TArray<FSolidWorldChartMark>& Marks,
-	const TMap<int32, FSolidWorldBang>& BangMarks) const
+	const TArray<FSolidWorldChartMark>& ChartMarks,
+	const TMap<int32, FSolidWorldBang>& ChartBangMarks) const
 {
 	auto EndReady = [](const SolidRoad::FEndpoint& End)
 	{
@@ -610,7 +610,7 @@ void USolidWorldChart::BuildListedRoads(
 	ResetRoads();
 	for (SolidRoad::FSolidRoad Road : SolidRoad::Roads)
 	{
-		Road.Locate(Marks);
+		Road.Locate(ChartMarks);
 		SolidRoad::FDefinition Definition = Road.ToDefinition();
 		if (!EndReady(Definition.From) || !EndReady(Definition.To))
 		{
@@ -619,11 +619,11 @@ void USolidWorldChart::BuildListedRoads(
 		}
 		if (Road.From.Kind == ESolidWorldChartMarkKind::Stronghold)
 		{
-			SolidRoad::LocateStrongholdEnd(BangMarks, Definition.From);
+			SolidRoad::LocateStrongholdEnd(ChartBangMarks, Definition.From);
 		}
 		if (Road.To.Kind == ESolidWorldChartMarkKind::Stronghold)
 		{
-			SolidRoad::LocateStrongholdEnd(BangMarks, Definition.To);
+			SolidRoad::LocateStrongholdEnd(ChartBangMarks, Definition.To);
 		}
 		BuildRoad(Definition, &Road);
 	}

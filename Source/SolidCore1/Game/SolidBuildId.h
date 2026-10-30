@@ -9,7 +9,7 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0816")
+#define SOLID_BUILD_ID TEXT("SC1-0817")
 #endif
 
 #ifndef SOLID_BUILD_NOTE

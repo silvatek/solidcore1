@@ -623,16 +623,25 @@ bool FSolidRoadDefinitionsTest::RunTest(const FString& Parameters)
 		SolidRoad::EType::Track,
 		SolidRoad::EType::Track,
 	};
-	const int32 Count = UE_ARRAY_COUNT(FromIds);
-	TestEqual(TEXT("five town roads"), SolidRoad::DefinitionCount, Count);
-	if (SolidRoad::DefinitionCount < Count)
+	const int32 TownRoads = UE_ARRAY_COUNT(FromIds);
+	TestEqual(TEXT("six roads"), SolidRoad::DefinitionCount, TownRoads + 1);
+	if (SolidRoad::DefinitionCount < TownRoads + 1)
 	{
 		return false;
 	}
 
-	for (int32 Index = 0; Index < Count; ++Index)
+	const SolidRoad::FRoad& Cave = SolidRoad::Roads[0];
+	TestEqual(TEXT("the trail starts at a stronghold"), static_cast<uint8>(Cave.From.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Stronghold));
+	TestEqual(TEXT("the trail starts at Meagre"), static_cast<uint8>(Cave.From.StrongholdSize), static_cast<uint8>(ESolidStrongholdSize::Meagre));
+	TestEqual(TEXT("the trail starts at a dungeon"), static_cast<uint8>(Cave.From.StrongholdType), static_cast<uint8>(ESolidStrongholdType::Dungeon));
+	TestEqual(TEXT("the trail starts at Meagre Dungeon"), Cave.From.Name, SolidStronghold::Label(ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon));
+	TestEqual(TEXT("the trail ends at a town"), static_cast<uint8>(Cave.To.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Town));
+	TestEqual(TEXT("the trail ends at Iglin"), Cave.To.Name, FString(SolidTowns::Definitions[SolidTowns::Iglin].Name));
+	TestEqual(TEXT("trail"), static_cast<uint8>(Cave.Type), static_cast<uint8>(SolidRoad::EType::Trail));
+
+	for (int32 Index = 0; Index < TownRoads; ++Index)
 	{
-		const SolidRoad::FRoad& Road = SolidRoad::Roads[Index];
+		const SolidRoad::FRoad& Road = SolidRoad::Roads[Index + 1];
 		TestEqual(TEXT("starts at a town"), static_cast<uint8>(Road.From.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Town));
 		TestEqual(TEXT("ends at a town"), static_cast<uint8>(Road.To.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Town));
 		TestEqual(TEXT("start town"), Road.From.Name, FString(SolidTowns::Definitions[FromIds[Index]].Name));

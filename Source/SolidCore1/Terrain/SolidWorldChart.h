@@ -7,6 +7,11 @@
 #include "SolidTerrainTypes.h"
 #include "SolidWorldChart.generated.h"
 
+namespace SolidRoad
+{
+	struct FRoad;
+}
+
 /** What a mark on the world chart is. A site has a size and no type. */
 UENUM()
 enum class ESolidWorldChartMarkKind : uint8

@@ -50,10 +50,12 @@
 #include "Styling/SlateBrush.h"
 #include "Styling/StyleDefaults.h"
 #include "Brushes/SlateRoundedBoxBrush.h"
+#include "Rendering/DrawElements.h"
 #include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/SBoxPanel.h"
+#include "Widgets/SLeafWidget.h"
 #include "Widgets/SOverlay.h"
 #include "Widgets/Text/STextBlock.h"
 #include "Misc/Paths.h"
@@ -510,6 +512,91 @@ namespace SolidHUDPrivate
 				]
 			];
 	}
+
+	class SEagleGlobeMark : public SLeafWidget
+	{
+	public:
+		SLATE_BEGIN_ARGS(SEagleGlobeMark)
+		{
+		}
+		SLATE_END_ARGS()
+
+		void Construct(const FArguments&)
+		{
+		}
+
+		virtual FVector2D ComputeDesiredSize(float) const override
+		{
+			const float Size = SolidHudTheme::EagleGlobe().Size;
+			return FVector2D(Size, Size);
+		}
+
+		virtual int32 OnPaint(
+			const FPaintArgs& Args,
+			const FGeometry& AllottedGeometry,
+			const FSlateRect& MyCullingRect,
+			FSlateWindowElementList& OutDrawElements,
+			int32 LayerId,
+			const FWidgetStyle& InWidgetStyle,
+			bool bParentEnabled) const override
+		{
+			const SolidHudTheme::FEagleGlobe Globe = SolidHudTheme::EagleGlobe();
+			const FVector2D Local = AllottedGeometry.GetLocalSize();
+			const float Side = FMath::Min(Local.X, Local.Y);
+			const FVector2D Center(Local.X * 0.5f, Local.Y * 0.5f);
+			const float Radius = Side * 0.5f;
+			static const FSlateRoundedBoxBrush Disc(FLinearColor::White, 64.f);
+			FSlateDrawElement::MakeBox(
+				OutDrawElements,
+				LayerId,
+				AllottedGeometry.ToPaintGeometry(),
+				&Disc,
+				ESlateDrawEffect::None,
+				Globe.Fill);
+
+			const int32 LineLayer = LayerId + 1;
+			const FPaintGeometry Paint = AllottedGeometry.ToPaintGeometry();
+			auto DrawRing = [&](const float Rx, const float Ry)
+			{
+				TArray<FVector2D> Points;
+				const int32 Segs = 32;
+				Points.Reserve(Segs + 1);
+				for (int32 Index = 0; Index <= Segs; ++Index)
+				{
+					const float Angle = (2.f * PI * static_cast<float>(Index)) / static_cast<float>(Segs);
+					Points.Add(FVector2D(
+						Center.X + Rx * FMath::Cos(Angle),
+						Center.Y + Ry * FMath::Sin(Angle)));
+				}
+				FSlateDrawElement::MakeLines(
+					OutDrawElements,
+					LineLayer,
+					Paint,
+					Points,
+					ESlateDrawEffect::None,
+					Globe.Meridian,
+					true,
+					Globe.Line);
+			};
+			const float Rim = FMath::Max(Radius - Globe.Line * 0.5f, 1.f);
+			DrawRing(Rim, Rim);
+			DrawRing(Rim * 0.42f, Rim);
+			DrawRing(Rim, Rim * 0.42f);
+			TArray<FVector2D> Equator;
+			Equator.Add(FVector2D(Center.X - Rim, Center.Y));
+			Equator.Add(FVector2D(Center.X + Rim, Center.Y));
+			FSlateDrawElement::MakeLines(
+				OutDrawElements,
+				LineLayer,
+				Paint,
+				Equator,
+				ESlateDrawEffect::None,
+				Globe.Meridian,
+				true,
+				Globe.Line);
+			return LineLayer;
+		}
+	};
 
 	static TMap<ASolidHUD*, TSharedPtr<SWidget>> SightIndicators;
 	static TMap<ASolidHUD*, TArray<SolidMenuPointer::FRow>> ChoicePointerRows;
@@ -1858,10 +1945,7 @@ void ASolidHUD::EnsureSightIndicator()
 		[
 			SNew(SBox)
 			.Visibility(EVisibility::HitTestInvisible)
-			.WidthOverride_Lambda([SightOf]()
-			{
-				return FOptionalSize(SolidSight::ChipWidth(SightOf()));
-			})
+			.WidthOverride(Chip.Width)
 			.HeightOverride(Chip.Height)
 			[
 				SNew(SBorder)
@@ -1914,25 +1998,16 @@ void ASolidHUD::EnsureSightIndicator()
 						.HAlign(HAlign_Center)
 						.VAlign(VAlign_Center)
 						[
-							SNew(STextBlock)
+							SNew(SBox)
 							.Visibility_Lambda([SightOf]()
 							{
 								return SolidSight::IsEagleSight(SightOf())
 									? EVisibility::HitTestInvisible
 									: EVisibility::Collapsed;
 							})
-							.Font_Lambda([SightOf]()
-							{
-								FSlateFontInfo Font = SolidHUDPrivate::SightMarkerFont();
-								Font.Size = SolidSight::MarkFontSize(SightOf());
-								return Font;
-							})
-							.ColorAndOpacity(Ink)
-							.Justification(ETextJustify::Center)
-							.Text_Lambda([SightOf]()
-							{
-								return FText::FromString(SolidSight::Mark(SightOf()));
-							})
+							[
+								SNew(SolidHUDPrivate::SEagleGlobeMark)
+							]
 						]
 					]
 				]

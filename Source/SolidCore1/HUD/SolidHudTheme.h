@@ -81,20 +81,39 @@ namespace SolidHudTheme
 	/** Solid plus behind the Falcon bird. Two bars, not a font glyph. */
 	struct FFalconPlus
 	{
-		float Span = 24.f;
-		float Thickness = 8.f;
-		float CornerRadius = 2.f;
+		float Span = 16.f;
+		float Thickness = 5.f;
+		float CornerRadius = 1.5f;
 		FLinearColor Fill = FLinearColor(0.12f, 0.08f, 0.05f, 1.f);
 	};
 
 	inline FFalconPlus FalconPlus()
 	{
 		FFalconPlus Plus;
-		Plus.Span = 24.f;
-		Plus.Thickness = 8.f;
-		Plus.CornerRadius = 2.f;
+		Plus.Span = 16.f;
+		Plus.Thickness = 5.f;
+		Plus.CornerRadius = 1.5f;
 		Plus.Fill = FLinearColor(0.12f, 0.08f, 0.05f, 1.f);
 		return Plus;
+	}
+
+	/** Filled blue globe behind the Eagle bird. Drawn meridians, not a font glyph. */
+	struct FEagleGlobe
+	{
+		float Size = 18.f;
+		float Line = 1.4f;
+		FLinearColor Fill = FLinearColor(0.12f, 0.47f, 0.95f, 1.f);
+		FLinearColor Meridian = FLinearColor::White;
+	};
+
+	inline FEagleGlobe EagleGlobe()
+	{
+		FEagleGlobe Globe;
+		Globe.Size = 18.f;
+		Globe.Line = 1.4f;
+		Globe.Fill = FLinearColor(0.12f, 0.47f, 0.95f, 1.f);
+		Globe.Meridian = FLinearColor::White;
+		return Globe;
 	}
 
 	inline FPalette OakAndBronze()

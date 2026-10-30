@@ -185,10 +185,11 @@ namespace SolidSight
 		return Glyph != nullptr && Glyph[0] != 0;
 	}
 
-	/** Oval width in pixels. Wider when a mark sits behind the bird. 72 matches the raven chip. */
+	/** Oval width in pixels. The same oval for every sight. */
 	inline float ChipWidth(const ESolidSight Sight)
 	{
-		return HasMark(Sight) ? 112.f : 72.f;
+		(void)Sight;
+		return 72.f;
 	}
 
 	/** The globe is larger than the plus. The bird stays at 28. */

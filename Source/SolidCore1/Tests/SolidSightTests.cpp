@@ -104,10 +104,10 @@ bool FSolidSightMarkerTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("eagle mark is the globe"), FString(SolidSight::Mark(ESolidSight::Eagle)), FString(TEXT("\U0001F310")));
 	TestTrue(TEXT("the globe is larger than the plus"),
 		SolidSight::MarkFontSize(ESolidSight::Eagle) > SolidSight::MarkFontSize(ESolidSight::Falcon));
-	TestTrue(TEXT("falcon widens the oval"),
-		SolidSight::ChipWidth(ESolidSight::Falcon) > SolidSight::ChipWidth(ESolidSight::Raven));
-	TestTrue(TEXT("eagle widens the oval"),
-		SolidSight::ChipWidth(ESolidSight::Eagle) > SolidSight::ChipWidth(ESolidSight::True));
+	TestEqual(TEXT("falcon uses the raven oval"),
+		SolidSight::ChipWidth(ESolidSight::Falcon), SolidSight::ChipWidth(ESolidSight::Raven));
+	TestEqual(TEXT("eagle uses the raven oval"),
+		SolidSight::ChipWidth(ESolidSight::Eagle), SolidSight::ChipWidth(ESolidSight::True));
 	return true;
 }
 

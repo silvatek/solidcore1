@@ -59,10 +59,17 @@ bool FSolidHudThemeSightMarkerTest::RunTest(const FString& Parameters)
 
 	const SolidHudTheme::FFalconPlus Plus = SolidHudTheme::FalconPlus();
 	TestTrue(TEXT("plus is wider than a bar"), Plus.Span > Plus.Thickness);
-	TestTrue(TEXT("plus bar is solid"), Plus.Thickness >= 8.f);
+	TestTrue(TEXT("plus fits beside the bird"), Plus.Span < Chip.Height * 0.5f);
+	TestTrue(TEXT("plus bar is solid"), Plus.Thickness >= 5.f);
 	TestTrue(TEXT("plus is opaque"), FMath::IsNearlyEqual(Plus.Fill.A, 1.f));
 	TestTrue(TEXT("plus is darker than the chip"),
 		Plus.Fill.R + Plus.Fill.G + Plus.Fill.B < Chip.Fill.R + Chip.Fill.G + Chip.Fill.B);
+
+	const SolidHudTheme::FEagleGlobe Globe = SolidHudTheme::EagleGlobe();
+	TestTrue(TEXT("globe is larger than the plus"), Globe.Size > Plus.Span);
+	TestTrue(TEXT("globe fits beside the bird"), Globe.Size < Chip.Height);
+	TestTrue(TEXT("globe is opaque"), FMath::IsNearlyEqual(Globe.Fill.A, 1.f));
+	TestTrue(TEXT("globe is blue"), Globe.Fill.B > Globe.Fill.R && Globe.Fill.B > Globe.Fill.G);
 	return true;
 }
 

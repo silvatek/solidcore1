@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0822")
+#define SOLID_BUILD_ID TEXT("SC1-0823")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The straight line uses the road, then maps its points to cells.")
+#define SOLID_BUILD_NOTE TEXT("A straight line needs both ends on the chart.")
 #endif

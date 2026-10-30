@@ -806,7 +806,7 @@ void USolidWorldChart::BuildListedRoads(
 	ResetRoads();
 	for (SolidRoad::FSolidRoad Road : SolidRoad::Roads)
 	{
-		Road.Locate(ChartMarks);
+		const bool bPlaced = Road.Locate(ChartMarks);
 		SolidRoad::FDefinition Definition = Road.ToDefinition();
 		if (!EndReady(Definition.From) || !EndReady(Definition.To))
 		{
@@ -821,7 +821,7 @@ void USolidWorldChart::BuildListedRoads(
 		{
 			SolidRoad::LocateStrongholdEnd(ChartBangMarks, Definition.To);
 		}
-		BuildRoad(Definition, &Road);
+		BuildRoad(Definition, bPlaced ? &Road : nullptr);
 	}
 }
 

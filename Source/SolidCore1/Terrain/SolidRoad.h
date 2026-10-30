@@ -44,8 +44,11 @@ namespace SolidRoad
 		{
 		}
 
-		/** Copy the chart position onto each end when the chart has that mark. */
-		void Locate(const TArray<FSolidWorldChartMark>& ChartMarks);
+		/**
+		 * Copy the chart position onto each end when the chart has that mark.
+		 * False when either end is missing.
+		 */
+		bool Locate(const TArray<FSolidWorldChartMark>& ChartMarks);
 
 		/**
 		 * Legacy support only. Type, town id, and stronghold name.
@@ -79,7 +82,7 @@ namespace SolidRoad
 	}
 
 	/** Copy the chart mark's position onto this end when the chart has that mark. */
-	inline void LocateMark(const TArray<FSolidWorldChartMark>& ChartMarks, FSolidWorldChartMark& End)
+	inline bool LocateMark(const TArray<FSolidWorldChartMark>& ChartMarks, FSolidWorldChartMark& End)
 	{
 		for (const FSolidWorldChartMark& ChartMark : ChartMarks)
 		{
@@ -107,14 +110,16 @@ namespace SolidRoad
 				}
 			}
 			End.PositionCm = ChartMark.PositionCm;
-			return;
+			return true;
 		}
+		return false;
 	}
 
-	inline void FSolidRoad::Locate(const TArray<FSolidWorldChartMark>& ChartMarks)
+	inline bool FSolidRoad::Locate(const TArray<FSolidWorldChartMark>& ChartMarks)
 	{
-		LocateMark(ChartMarks, From);
-		LocateMark(ChartMarks, To);
+		const bool bFrom = LocateMark(ChartMarks, From);
+		const bool bTo = LocateMark(ChartMarks, To);
+		return bFrom && bTo;
 	}
 
 	struct FEndpoint

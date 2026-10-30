@@ -84,8 +84,8 @@ bool FSolidBiomeHeightOffsetTest::RunTest(const FString& Parameters)
 		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::Swamp).HeightVarianceCm(), Full * 0.1f));
 	TestTrue(TEXT("mountain variance is three times"),
 		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::Mountain).HeightVarianceCm(), Full * 3.f));
-	TestTrue(TEXT("river variance stays the build amplitude"),
-		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::River).HeightVarianceCm(), Full));
+	TestTrue(TEXT("river variance is a tenth"),
+		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::River).HeightVarianceCm(), Full * 0.1f));
 	return true;
 }
 

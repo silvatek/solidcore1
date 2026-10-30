@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0790")
+#define SOLID_BUILD_ID TEXT("SC1-0791")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Each biome rolls by its own height variance.")
+#define SOLID_BUILD_NOTE TEXT("A river rolls at a tenth of the build amplitude.")
 #endif

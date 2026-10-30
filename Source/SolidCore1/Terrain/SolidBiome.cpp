@@ -89,7 +89,7 @@ const FSolidBiome& SolidBiome::Of(const ESolidBiome Biome)
 	static const FSolidBiome Sea(
 		FLinearColor(0.15f, 0.35f, 0.75f), TEXT("Sea"), 0.f, Quiet, 8, TEXT('~'), true, true, true);
 	static const FSolidBiome River(
-		FLinearColor(0.15f, 0.35f, 0.75f), TEXT("River"), 0.f, Full, 6, TEXT('*'), true, true, true);
+		FLinearColor(0.15f, 0.35f, 0.75f), TEXT("River"), 0.f, Quiet, 6, TEXT('*'), true, true, true);
 	static const FSolidBiome Road(
 		FLinearColor(0.52f, 0.38f, 0.20f), TEXT("Road"), 100.f, TownRoad, 0, TEXT('R'), false, false, false);
 	static const FSolidBiome Unknown(

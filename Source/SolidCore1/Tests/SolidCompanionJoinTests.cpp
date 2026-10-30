@@ -232,7 +232,7 @@ bool FSolidCompanionJoinTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("a second Relion keeps Sam selected"), SelectedName(Town.Squad), FString(TEXT("Sam")));
 
 	const int32 RelionIndex = SolidEvents::FindIndexById(SolidEvents::IdEnterRelion);
-	const SolidEvents::FEvent& Relion = SolidEvents::Definitions[RelionIndex];
+	const SolidEvents::FEvent& Relion = SolidEvents::StoryEvents[RelionIndex];
 	TestEqual(TEXT("Relion has seven changes"), Relion.ChangeCount, 7);
 	bool bSamFollowsSize = false;
 	for (int32 Index = 0; Index + 1 < Relion.ChangeCount; ++Index)
@@ -273,7 +273,7 @@ bool FSolidCompanionJoinTest::RunTest(const FString& Parameters)
 	const TCHAR* PlanSentence = TEXT(
 		"Starter disabled. Attack disabled. Defend disabled. Line enabled. Column enabled. Tight mob enabled. Loose mob enabled");
 
-	const SolidEvents::FEvent& Kanfold = SolidEvents::Definitions[SolidEvents::FindIndexById(SolidEvents::IdEnterKanfold)];
+	const SolidEvents::FEvent& Kanfold = SolidEvents::StoryEvents[SolidEvents::FindIndexById(SolidEvents::IdEnterKanfold)];
 	TestEqual(TEXT("Kanfold has twelve changes"), Kanfold.ChangeCount, 12);
 	bool bAlexFollowsSize = false;
 	for (int32 Index = 0; Index + 1 < Kanfold.ChangeCount; ++Index)
@@ -296,7 +296,7 @@ bool FSolidCompanionJoinTest::RunTest(const FString& Parameters)
 		&& KanfoldSquadAt < AlexJoinsAt && AlexJoinsAt < RangerAt);
 	TestEqual(TEXT("Kanfold's battle plans stay one run"), OccurrenceCount(KanfoldDetail, PlanSentence), 1);
 
-	const SolidEvents::FEvent& Dragongate = SolidEvents::Definitions[SolidEvents::FindIndexById(SolidEvents::IdEnterDragongate)];
+	const SolidEvents::FEvent& Dragongate = SolidEvents::StoryEvents[SolidEvents::FindIndexById(SolidEvents::IdEnterDragongate)];
 	TestEqual(TEXT("Dragongate has twenty-two changes"), Dragongate.ChangeCount, 22);
 	int32 GateSizeAt = INDEX_NONE;
 	for (int32 Index = 0; Index < Dragongate.ChangeCount; ++Index)

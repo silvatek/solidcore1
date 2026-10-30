@@ -41,12 +41,12 @@ namespace
 		{
 			return false;
 		}
-		if (State.bFired[Index] || (!bForce && !RequirementsMet(State, SolidEvents::Definitions[Index])))
+		if (State.bFired[Index] || (!bForce && !RequirementsMet(State, SolidEvents::StoryEvents[Index])))
 		{
 			return false;
 		}
 
-		const SolidEvents::FEvent& Event = SolidEvents::Definitions[Index];
+		const SolidEvents::FEvent& Event = SolidEvents::StoryEvents[Index];
 		State.bFired[Index] = true;
 		if (State.FiredOrder.Num() < SolidEvents::MaxEvents)
 		{
@@ -425,7 +425,7 @@ FResult NotifyOccupiedTown(
 			continue;
 		}
 
-		const FEvent& Event = Definitions[Index];
+		const FEvent& Event = StoryEvents[Index];
 		if (Event.Trigger != ETrigger::EnterTown || Event.Parameter != TownId)
 		{
 			continue;
@@ -453,7 +453,7 @@ FResult NotifyMessageClosed(
 
 	for (int32 Index = 0; Index < DefinitionCount; ++Index)
 	{
-		const FEvent& Event = Definitions[Index];
+		const FEvent& Event = StoryEvents[Index];
 		if (Event.Trigger != ETrigger::MessageClosed || !Event.MessageId)
 		{
 			continue;
@@ -480,7 +480,7 @@ FResult NotifyCaptainKilled(
 
 	for (int32 Index = 0; Index < DefinitionCount; ++Index)
 	{
-		if (Definitions[Index].Trigger != ETrigger::CaptainDeath)
+		if (StoryEvents[Index].Trigger != ETrigger::CaptainDeath)
 		{
 			continue;
 		}

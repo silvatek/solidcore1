@@ -25,7 +25,7 @@ namespace SolidEventTestPrivate
 		}
 		for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
 		{
-			const SolidEvents::FEvent& Event = SolidEvents::Definitions[Index];
+			const SolidEvents::FEvent& Event = SolidEvents::StoryEvents[Index];
 			if (FCString::Strcmp(Event.Name, EventName) == 0)
 			{
 				return &Event;
@@ -38,7 +38,7 @@ namespace SolidEventTestPrivate
 	{
 		for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
 		{
-			const SolidEvents::FEvent& Event = SolidEvents::Definitions[Index];
+			const SolidEvents::FEvent& Event = SolidEvents::StoryEvents[Index];
 			if (FCString::Strcmp(Event.Name, EventName) != 0)
 			{
 				continue;
@@ -97,7 +97,7 @@ bool FSolidEventsStartAndTownsTest::RunTest(const FString& Parameters)
 	int32 EnterTownCount = 0;
 	for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
 	{
-		if (SolidEvents::Definitions[Index].Trigger == SolidEvents::ETrigger::EnterTown)
+		if (SolidEvents::StoryEvents[Index].Trigger == SolidEvents::ETrigger::EnterTown)
 		{
 			++EnterTownCount;
 		}
@@ -481,7 +481,7 @@ bool FSolidEventsLaterTownsEnableRavenTest::RunTest(const FString& Parameters)
 
 	for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
 	{
-		const SolidEvents::FEvent& Event = SolidEvents::Definitions[Index];
+		const SolidEvents::FEvent& Event = SolidEvents::StoryEvents[Index];
 		if (FCString::Strcmp(Event.Name, TEXT("Enter Kanfold")) != 0
 			&& FCString::Strcmp(Event.Name, TEXT("Enter Dragongate")) != 0)
 		{
@@ -504,7 +504,7 @@ bool FSolidEventsRequiresTest::RunTest(const FString& Parameters)
 	TArray<FString> Ids;
 	for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
 	{
-		const SolidEvents::FEvent& Event = SolidEvents::Definitions[Index];
+		const SolidEvents::FEvent& Event = SolidEvents::StoryEvents[Index];
 		const FString Id = Event.Id ? FString(Event.Id) : FString();
 		const int32 IdLength = FCString::Strlen(SolidEvents::IdEnterIglin);
 		TestEqual(TEXT("id is eight digits"), Id.Len(), IdLength);
@@ -527,7 +527,7 @@ bool FSolidEventsRequiresTest::RunTest(const FString& Parameters)
 		IglinIndex != INDEX_NONE && RelionIndex > IglinIndex);
 	if (RelionIndex != INDEX_NONE)
 	{
-		const SolidEvents::FEvent& Relion = SolidEvents::Definitions[RelionIndex];
+		const SolidEvents::FEvent& Relion = SolidEvents::StoryEvents[RelionIndex];
 		TestEqual(TEXT("Relion requires one event"), Relion.RequireCount, 1);
 		if (Relion.RequireCount > 0)
 		{
@@ -536,7 +536,7 @@ bool FSolidEventsRequiresTest::RunTest(const FString& Parameters)
 	}
 	for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
 	{
-		const SolidEvents::FEvent& Event = SolidEvents::Definitions[Index];
+		const SolidEvents::FEvent& Event = SolidEvents::StoryEvents[Index];
 		const bool bNamesOne = Event.RequireCount > 0 && Event.Requires[0] && Event.Requires[0][0];
 		TestEqual(
 			*FString::Printf(TEXT("%s names a requirement when it has one"), Event.Name),
@@ -571,7 +571,7 @@ bool FSolidEventsActTest::RunTest(const FString& Parameters)
 	auto ActOf = [](const TCHAR* Id) -> int32
 	{
 		const int32 Index = SolidEvents::FindIndexById(Id);
-		return Index == INDEX_NONE ? INDEX_NONE : SolidEvents::Definitions[Index].Act;
+		return Index == INDEX_NONE ? INDEX_NONE : SolidEvents::StoryEvents[Index].Act;
 	};
 
 	TestEqual(TEXT("ACT_0"), SolidEvents::ACT_0, 0);
@@ -741,7 +741,7 @@ bool FSolidEventsDrivenFromVillageTest::RunTest(const FString& Parameters)
 	int32 EnterTownCount = 0;
 	for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
 	{
-		if (SolidEvents::Definitions[Index].Trigger == SolidEvents::ETrigger::EnterTown)
+		if (SolidEvents::StoryEvents[Index].Trigger == SolidEvents::ETrigger::EnterTown)
 		{
 			++EnterTownCount;
 		}
@@ -989,7 +989,7 @@ bool FSolidEventsRavenSightWaitsForRelionTest::RunTest(const FString& Parameters
 	TestTrue(TEXT("Relion is listed"), RelionIndex != INDEX_NONE);
 	for (int32 Index = 0; Index < RelionIndex; ++Index)
 	{
-		const SolidEvents::FEvent& Event = SolidEvents::Definitions[Index];
+		const SolidEvents::FEvent& Event = SolidEvents::StoryEvents[Index];
 		const int32 ChangeCount = FMath::Min(Event.ChangeCount, SolidEvents::MaxChangesPerEvent);
 		for (int32 ChangeIndex = 0; ChangeIndex < ChangeCount; ++ChangeIndex)
 		{
@@ -1372,7 +1372,7 @@ bool FSolidEventsDragongateUnlocksSizesTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	const SolidEvents::FEvent& Event = SolidEvents::Definitions[EventIndex];
+	const SolidEvents::FEvent& Event = SolidEvents::StoryEvents[EventIndex];
 	bool Seen[SolidStronghold::SizeCount] = {};
 	int32 Unlocks = 0;
 	const int32 ChangeCount = FMath::Min(Event.ChangeCount, SolidEvents::MaxChangesPerEvent);

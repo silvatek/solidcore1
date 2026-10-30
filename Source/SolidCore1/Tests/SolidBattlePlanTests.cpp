@@ -116,7 +116,7 @@ namespace SolidBattlePlanTestPrivate
 	{
 		for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
 		{
-			const SolidEvents::FEvent& Event = SolidEvents::Definitions[Index];
+			const SolidEvents::FEvent& Event = SolidEvents::StoryEvents[Index];
 			if (FCString::Strcmp(Event.Name, EventName) != 0)
 			{
 				continue;
@@ -462,7 +462,7 @@ bool FSolidGameModeBattlePlanSelectTest::RunTest(const FString& Parameters)
 		{
 			if (EventIndex >= 0
 				&& EventIndex < SolidEvents::DefinitionCount
-				&& FCString::Strcmp(SolidEvents::Definitions[EventIndex].Name, Name) == 0)
+				&& FCString::Strcmp(SolidEvents::StoryEvents[EventIndex].Name, Name) == 0)
 			{
 				return true;
 			}
@@ -774,7 +774,7 @@ bool FSolidBattlePlanMonsterCloseTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Defend selects"), Play.GameMode->SelectBattlePlanSlot(1));
 	TestEqual(TEXT("Attack and Defend fire nothing more"), Play.State->FiredOrder.Num(), Fired);
 
-	const FString Detail = USolidJournal::Describe(SolidEvents::Definitions[SolidEvents::FindIndexById(SolidEvents::IdKilledByMonsters)]);
+	const FString Detail = USolidJournal::Describe(SolidEvents::StoryEvents[SolidEvents::FindIndexById(SolidEvents::IdKilledByMonsters)]);
 	TestTrue(TEXT("journal records Starter disabled"), Detail.Contains(TEXT("Starter disabled")));
 	TestTrue(TEXT("journal records Attack enabled"), Detail.Contains(TEXT("Attack enabled")));
 	TestTrue(TEXT("journal records Defend enabled"), Detail.Contains(TEXT("Defend enabled")));
@@ -817,7 +817,7 @@ bool FSolidBattlePlanEnterRelionTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Parade is on F3"), Play.Squad->GetAssignedBattlePlan(2)->Name, FString(TEXT("Parade")));
 	TestNull(TEXT("F4 is empty"), Play.Squad->GetAssignedBattlePlan(3));
 	TestTrue(TEXT("the list is shown"), SolidBattlePlanList::IsShown(Play.Squad->GetAssignedCount()));
-	const FString Detail = USolidJournal::Describe(SolidEvents::Definitions[SolidEvents::FindIndexById(SolidEvents::IdEnterRelion)]);
+	const FString Detail = USolidJournal::Describe(SolidEvents::StoryEvents[SolidEvents::FindIndexById(SolidEvents::IdEnterRelion)]);
 	TestTrue(TEXT("journal records Parade enabled"), Detail.Contains(TEXT("Parade enabled")));
 	TestTrue(TEXT("Relion still repairs the bridge"), Detail.Contains(TEXT("Iglin bridge repaired")));
 	return true;
@@ -903,7 +903,7 @@ bool FSolidBattlePlanEnterKanfoldTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Parade is on F1"), With.Squad->GetActiveAssignedSlot(), 0);
 	TestNull(TEXT("F6 is empty"), With.Squad->GetAssignedBattlePlan(5));
 
-	const FString Detail = USolidJournal::Describe(SolidEvents::Definitions[SolidEvents::FindIndexById(SolidEvents::IdEnterKanfold)]);
+	const FString Detail = USolidJournal::Describe(SolidEvents::StoryEvents[SolidEvents::FindIndexById(SolidEvents::IdEnterKanfold)]);
 	TestTrue(
 		TEXT("journal records the Kanfold plan edits"),
 		Detail.Contains(TEXT("Starter disabled. Attack disabled. Defend disabled. Line enabled. Column enabled. Tight mob enabled. Loose mob enabled")));
@@ -967,7 +967,7 @@ bool FSolidBattlePlanEnterDragongateTest::RunTest(const FString& Parameters)
 		SolidBattlePlanTestPrivate::AssignedNames(With.Squad),
 		FString(TEXT("Parade, Line, Column, Tight mob, Loose mob")));
 
-	const FString Detail = USolidJournal::Describe(SolidEvents::Definitions[SolidEvents::FindIndexById(SolidEvents::IdEnterDragongate)]);
+	const FString Detail = USolidJournal::Describe(SolidEvents::StoryEvents[SolidEvents::FindIndexById(SolidEvents::IdEnterDragongate)]);
 	TestTrue(
 		TEXT("journal records the Dragongate plan edits"),
 		Detail.Contains(TEXT("Starter disabled. Attack disabled. Defend disabled. Line enabled. Column enabled. Tight mob enabled. Loose mob enabled")));
@@ -995,7 +995,7 @@ bool FSolidBattlePlanParadeSkipsKanfoldTest::RunTest(const FString& Parameters)
 		{
 			if (EventIndex >= 0
 				&& EventIndex < SolidEvents::DefinitionCount
-				&& FCString::Strcmp(SolidEvents::Definitions[EventIndex].Name, Name) == 0)
+				&& FCString::Strcmp(SolidEvents::StoryEvents[EventIndex].Name, Name) == 0)
 			{
 				return true;
 			}

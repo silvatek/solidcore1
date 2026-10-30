@@ -233,7 +233,7 @@ void USolidJournal::CollectRows(TArray<FRow>& OutRows) const
 				&& Entry.EventIndex >= 0
 				&& Entry.EventIndex < SolidEvents::DefinitionCount)
 			{
-				const SolidEvents::FEvent& Event = SolidEvents::Definitions[Entry.EventIndex];
+				const SolidEvents::FEvent& Event = SolidEvents::StoryEvents[Entry.EventIndex];
 				Text = Event.Name;
 				Detail = Describe(Event);
 			}

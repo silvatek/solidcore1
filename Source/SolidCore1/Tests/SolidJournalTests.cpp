@@ -43,9 +43,9 @@ namespace SolidJournalTestPrivate
 		}
 		for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
 		{
-			if (FCString::Strcmp(SolidEvents::Definitions[Index].Name, EventName) == 0)
+			if (FCString::Strcmp(SolidEvents::StoryEvents[Index].Name, EventName) == 0)
 			{
-				return USolidJournal::Describe(SolidEvents::Definitions[Index]);
+				return USolidJournal::Describe(SolidEvents::StoryEvents[Index]);
 			}
 		}
 		return FString();
@@ -173,9 +173,9 @@ bool FSolidJournalTriggeredOrderTest::RunTest(const FString& Parameters)
 	FString KanfoldChanges;
 	for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
 	{
-		if (FCString::Strcmp(SolidEvents::Definitions[Index].Name, TEXT("Enter Kanfold")) == 0)
+		if (FCString::Strcmp(SolidEvents::StoryEvents[Index].Name, TEXT("Enter Kanfold")) == 0)
 		{
-			KanfoldChanges = USolidJournal::Describe(SolidEvents::Definitions[Index]);
+			KanfoldChanges = USolidJournal::Describe(SolidEvents::StoryEvents[Index]);
 			break;
 		}
 	}

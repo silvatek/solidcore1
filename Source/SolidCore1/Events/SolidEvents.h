@@ -6,14 +6,13 @@
 #include "Towns/SolidTowns.h"
 
 /**
- * The shipped events.
- * An enter-town entry fires when the captain steps onto that numbered WorldMap.txt cell,
- * or leaves one numbered town for another. The parameter is that digit.
- * Standing still, or walking between cells of the same town, does not re-fire.
+ * The shipped story.
+ * An enter-town event fires when the captain steps onto that town, or leaves one town for another.
+ * Standing still, or walking within the same town, does not fire it again.
  */
 namespace SolidEvents
 {
-	inline const FEvent Definitions[] = {
+	inline const FEvent StoryEvents[] = {
 		EnterTown(IdEnterIglin, TEXT("Enter Iglin"), SolidTowns::Iglin, ACT_0)
 			.SetPlayerTitle(ESolidCaptainTitle::Orphan),
 		OnCaptainDeath(IdKilledByMonsters, TEXT("Killed by monsters"), ACT_0)
@@ -22,8 +21,7 @@ namespace SolidEvents
 			.EnableStrongholdSize(ESolidStrongholdSize::Meagre)
 			.DisableBattlePlan(TEXT("Starter"))
 			.EnableBattlePlans(TEXT("Attack"), TEXT("Defend")),
-		// It does not send the captain inside.
-		// The portal to the grass north of the Iglin Tunnels Entrance records this event without waiting for the close.
+		// The return to Iglin. The death already sent the captain inside.
 		EnterTown(IdDrivenFromVillage, TEXT("Driven from the village"), SolidTowns::Iglin, ACT_1)
 			.Require(IdKilledByMonsters)
 			.DisplayMessage(SolidMessages::IdDrivenFromVillage)
@@ -61,9 +59,9 @@ namespace SolidEvents
 			.ClearAllFog(),
 	};
 
-	static_assert(UE_ARRAY_COUNT(Definitions) <= MaxEvents, "Raise SolidEvents::MaxEvents");
+	static_assert(UE_ARRAY_COUNT(StoryEvents) <= MaxEvents, "Raise SolidEvents::MaxEvents");
 
-	inline constexpr int32 DefinitionCount = UE_ARRAY_COUNT(Definitions);
+	inline constexpr int32 DefinitionCount = UE_ARRAY_COUNT(StoryEvents);
 
 	inline int32 FindIndexById(const TCHAR* Id)
 	{
@@ -73,7 +71,7 @@ namespace SolidEvents
 		}
 		for (int32 Index = 0; Index < DefinitionCount; ++Index)
 		{
-			if (FCString::Strcmp(Definitions[Index].Id, Id) == 0)
+			if (FCString::Strcmp(StoryEvents[Index].Id, Id) == 0)
 			{
 				return Index;
 			}

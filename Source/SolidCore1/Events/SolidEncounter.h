@@ -9,7 +9,7 @@ class USolidGameState;
 
 /**
  * Encounter catalog rows and a runtime encounter built from one.
- * StaticEncounters is the static list, the way SolidEvents::Definitions lists events.
+ * StaticEncounters is the static list, the way SolidEvents::StoryEvents lists events.
  * The constructor fills each group's plan and its members. Place chooses where they stand.
  */
 namespace SolidEncounter

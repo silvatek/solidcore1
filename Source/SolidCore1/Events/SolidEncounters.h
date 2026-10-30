@@ -4,7 +4,7 @@
 
 /**
  * The shipped encounters.
- * Add another FStaticEncounter to StaticEncounters, the way SolidEvents::Definitions lists events.
+ * Add another FStaticEncounter to StaticEncounters, the way SolidEvents::StoryEvents lists events.
  */
 namespace SolidEncounter
 {

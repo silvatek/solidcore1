@@ -97,9 +97,9 @@ namespace
 		}
 		for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
 		{
-			if (FCString::Strcmp(SolidEvents::Definitions[Index].Name, EventName) == 0)
+			if (FCString::Strcmp(SolidEvents::StoryEvents[Index].Name, EventName) == 0)
 			{
-				return SolidEvents::Definitions[Index].Parameter;
+				return SolidEvents::StoryEvents[Index].Parameter;
 			}
 		}
 		return INDEX_NONE;

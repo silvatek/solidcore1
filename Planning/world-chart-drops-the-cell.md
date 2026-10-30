@@ -8,7 +8,7 @@ The developer works in the World chart mode. Paint already stamps terrain points
 
 The chart still stores that land as cells. A road still solves as cells, and play still reads those cells. The world chart dump still prints the cells. The hover line names a road when the cell sits on the solved route.
 
-The mode, the chart, the road, play, and the dump use the terrain point Paint already uses. The hover line names the road when the point under the cursor sits on it. The World chart section of `AGENTS.md` describes that same point grid.
+The mode, the chart, the road, play, and the dump use the terrain point Paint already uses. The hover line names the road when the point under the cursor sits on it. The World chart section of `AGENTS.md` describes that same point grid. The road's step costs only choose that route. This story does not set them.
 
 This story introduces no new class.
 
@@ -33,3 +33,5 @@ Place, delete, and the View hover line use the cell. The place and delete method
 The chart's cell array is `USolidWorldChart::Cells`. `SolidRoad::FRoute::Cells` is the solved path. The dump writes that cell grid as `rows`, with the cell `width` and `height`, and logs each mark's cell row and column. It already writes the terrain points as `points`.
 
 The World chart section of `AGENTS.md` says the grid is 128 columns by 64 rows, and that a cell holds a marker biome. This story replaces that description with the terrain points. The fog note about per-cell lattices stays.
+
+`SolidRoad::StepCost`, `RiverCost`, `RiverBendCost`, `RiverBendReach`, and `AvoidCost` are read by `Solve` and by the spur slide at the end of that search. Play does not read them. This story does not set those values.

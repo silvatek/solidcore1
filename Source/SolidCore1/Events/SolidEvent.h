@@ -228,6 +228,21 @@ namespace SolidEvents
 			return With(Change::EnableSight(Mode));
 		}
 
+		/** Unlock several sights. The captain switches to the last mode. */
+		template <typename... FurtherModes>
+		constexpr FEvent EnableSights(const ESolidSight Mode, FurtherModes... Further) const
+		{
+			const FEvent Enabled = EnableSight(Mode);
+			if constexpr (sizeof...(Further) == 0)
+			{
+				return Enabled;
+			}
+			else
+			{
+				return Enabled.EnableSights(Further...);
+			}
+		}
+
 		constexpr FEvent SetMaxSquadSize(const int32 Size) const
 		{
 			return With(Change::SetMaxSquadSize(Size));

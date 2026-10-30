@@ -1758,11 +1758,15 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidEventsSeveralChangesTest::RunTest(const FString& Parameters)
 {
 	const SolidEvents::FEvent Packed = SolidEvents::EnterTown(TEXT("aabbcc11"), TEXT("Several"), 0, SolidEvents::ACT_0)
+		.EnableSights(ESolidSight::Falcon, ESolidSight::Eagle, ESolidSight::Raven)
 		.DisableBattlePlans(TEXT("Starter"), TEXT("Attack"), TEXT("Defend"))
 		.EnableBattlePlans(TEXT("Line"), TEXT("Column"), TEXT("Tight mob"), TEXT("Loose mob"))
 		.AddCompanions(TEXT("Max"), TEXT("Morgan"), TEXT("Quinn"))
 		.EnableAllStrongholds();
 	const SolidEvents::FEvent Single = SolidEvents::EnterTown(TEXT("aabbcc11"), TEXT("Several"), 0, SolidEvents::ACT_0)
+		.EnableSight(ESolidSight::Falcon)
+		.EnableSight(ESolidSight::Eagle)
+		.EnableSight(ESolidSight::Raven)
 		.DisableBattlePlan(TEXT("Starter"))
 		.DisableBattlePlan(TEXT("Attack"))
 		.DisableBattlePlan(TEXT("Defend"))
@@ -1792,6 +1796,10 @@ bool FSolidEventsSeveralChangesTest::RunTest(const FString& Parameters)
 			static_cast<uint8>(PackedChange.Kind),
 			static_cast<uint8>(SingleChange.Kind));
 		TestEqual(
+			*FString::Printf(TEXT("change %d sight"), Index),
+			static_cast<uint8>(PackedChange.Sight),
+			static_cast<uint8>(SingleChange.Sight));
+		TestEqual(
 			*FString::Printf(TEXT("change %d plan"), Index),
 			FString(PackedChange.BattlePlanName ? PackedChange.BattlePlanName : TEXT("")),
 			FString(SingleChange.BattlePlanName ? SingleChange.BattlePlanName : TEXT("")));
@@ -1819,10 +1827,12 @@ bool FSolidEventsSeveralChangesTest::RunTest(const FString& Parameters)
 	const TCHAR* CompanionNames[] = { TEXT("Max"), TEXT("Morgan"), TEXT("Quinn") };
 	const TCHAR* DisabledPlans[] = { TEXT("Starter"), TEXT("Attack"), TEXT("Defend") };
 	const TCHAR* EnabledPlans[] = { TEXT("Line"), TEXT("Column"), TEXT("Tight mob"), TEXT("Loose mob") };
+	const ESolidSight DragongateSights[] = { ESolidSight::Falcon, ESolidSight::Eagle, ESolidSight::Raven };
 	int32 CompanionIndex = 0;
 	int32 DisabledIndex = 0;
 	int32 EnabledIndex = 0;
 	int32 SizeIndex = 0;
+	int32 SightIndex = 0;
 	const int32 ChangeCount = FMath::Min(Dragongate->ChangeCount, SolidEvents::MaxChangesPerEvent);
 	for (int32 Index = 0; Index < ChangeCount; ++Index)
 	{
@@ -1860,6 +1870,17 @@ bool FSolidEventsSeveralChangesTest::RunTest(const FString& Parameters)
 			}
 			++EnabledIndex;
 		}
+		else if (Change.Kind == SolidEvents::EChange::EnableSight)
+		{
+			if (SightIndex < UE_ARRAY_COUNT(DragongateSights))
+			{
+				TestEqual(
+					*FString::Printf(TEXT("Enter Dragongate sight %d"), SightIndex),
+					static_cast<uint8>(Change.Sight),
+					static_cast<uint8>(DragongateSights[SightIndex]));
+			}
+			++SightIndex;
+		}
 		else if (Change.Kind == SolidEvents::EChange::EnableStrongholdSize)
 		{
 			if (SizeIndex < SolidStronghold::SizeCount)
@@ -1876,6 +1897,40 @@ bool FSolidEventsSeveralChangesTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Enter Dragongate disables three plans"), DisabledIndex, static_cast<int32>(UE_ARRAY_COUNT(DisabledPlans)));
 	TestEqual(TEXT("Enter Dragongate enables four plans"), EnabledIndex, static_cast<int32>(UE_ARRAY_COUNT(EnabledPlans)));
 	TestEqual(TEXT("Enter Dragongate unlocks sizes in shelf order"), SizeIndex, SolidStronghold::SizeCount);
+	TestEqual(TEXT("Enter Dragongate enables three sights"), SightIndex, static_cast<int32>(UE_ARRAY_COUNT(DragongateSights)));
+
+	const SolidEvents::FEvent* Jethan = SolidEventTestPrivate::FindEvent(TEXT("Enter Jethan"));
+	TestNotNull(TEXT("Enter Jethan is listed"), Jethan);
+	if (!Jethan)
+	{
+		return false;
+	}
+	const ESolidSight JethanSights[] = { ESolidSight::Raven, ESolidSight::Falcon, ESolidSight::Eagle };
+	int32 JethanSightIndex = 0;
+	ESolidSight JethanLastSight = ESolidSight::Raven;
+	const int32 JethanChangeCount = FMath::Min(Jethan->ChangeCount, SolidEvents::MaxChangesPerEvent);
+	for (int32 Index = 0; Index < JethanChangeCount; ++Index)
+	{
+		const SolidEvents::FChange& Change = Jethan->Changes[Index];
+		if (Change.Kind != SolidEvents::EChange::EnableSight)
+		{
+			continue;
+		}
+		if (JethanSightIndex < UE_ARRAY_COUNT(JethanSights))
+		{
+			TestEqual(
+				*FString::Printf(TEXT("Enter Jethan sight %d"), JethanSightIndex),
+				static_cast<uint8>(Change.Sight),
+				static_cast<uint8>(JethanSights[JethanSightIndex]));
+		}
+		JethanLastSight = Change.Sight;
+		++JethanSightIndex;
+	}
+	TestEqual(TEXT("Enter Jethan enables three sights"), JethanSightIndex, static_cast<int32>(UE_ARRAY_COUNT(JethanSights)));
+	TestEqual(
+		TEXT("Enter Jethan leaves the captain on Eagle"),
+		static_cast<uint8>(JethanLastSight),
+		static_cast<uint8>(ESolidSight::Eagle));
 	return true;
 }
 

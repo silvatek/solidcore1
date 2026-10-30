@@ -50,9 +50,7 @@ namespace SolidEvents
 			.DisableBattlePlans(TEXT("Starter"), TEXT("Attack"), TEXT("Defend"))
 			.EnableBattlePlans(TEXT("Line"), TEXT("Column"), TEXT("Tight mob"), TEXT("Loose mob")),
 		EnterTown(IdEnterDragongate, TEXT("Enter Dragongate"), SolidTowns::Dragongate, ACT_4)
-			.EnableSight(ESolidSight::Falcon)
-			.EnableSight(ESolidSight::Eagle)
-			.EnableSight(ESolidSight::Raven)
+			.EnableSights(ESolidSight::Falcon, ESolidSight::Eagle, ESolidSight::Raven)
 			.AddCompanions(TEXT("Max"), TEXT("Morgan"), TEXT("Quinn"))
 			.SetMaxSquadSize(RosterCount)
 			.SetPlayerTitle(ESolidCaptainTitle::Captain)
@@ -62,9 +60,7 @@ namespace SolidEvents
 		// No earlier event is required, so a portal here can try the sights.
 		// Eagle is last, so the view switches to Eagle.
 		EnterTown(IdEnterJethan, TEXT("Enter Jethan"), SolidTowns::Jethan, ACT_4)
-			.EnableSight(ESolidSight::Raven)
-			.EnableSight(ESolidSight::Falcon)
-			.EnableSight(ESolidSight::Eagle)
+			.EnableSights(ESolidSight::Raven, ESolidSight::Falcon, ESolidSight::Eagle)
 			.ClearAllFog(),
 	};
 

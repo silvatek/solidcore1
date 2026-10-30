@@ -1,6 +1,6 @@
 # Falcon Sight and Eagle Sight
 
-Status: In Progress
+Status: Done
 
 ## Story
 
@@ -25,7 +25,7 @@ The player enters Dragongate. Enter Dragongate fires, and from then on Falcon Si
 
 The player presses F9. The view moves from true sight to raven sight, then to Falcon Sight, then to Eagle Sight, and then back to true sight. A mode the player does not have yet is skipped.
 
-The player looks at the sight marker. On Falcon Sight and Eagle Sight the bird sits further left than on raven sight, leaving more room behind it. Falcon Sight shows a + in that space. Eagle Sight shows a larger globe there.
+The player looks at the sight marker. Every sight uses the same oval. On Falcon Sight and Eagle Sight the bird sits further left than on raven sight, leaving room behind it. Falcon Sight shows a dark gray + in that space. Eagle Sight shows a larger dark gray wireframe globe there.
 
 ## Acceptance
 
@@ -37,8 +37,8 @@ The player looks at the sight marker. On Falcon Sight and Eagle Sight the bird s
 - When every sight mode is available, F9 cycles true sight, raven sight, Falcon Sight, Eagle Sight, and then true sight again.
 - F9 skips a mode that is not available and uses the next available mode in that order.
 - Falcon Sight and Eagle Sight become available when Enter Dragongate or Enter Jethan fires, and not before either. Enter Jethan also enables Raven Sight. Entering Jethan switches the view to Eagle Sight and sets Fog to 0 on every terrain point.
-- Falcon Sight shows the raven eagle shifted left, with a + in the space behind the bird.
-- Eagle Sight shows the raven eagle shifted left, with a larger globe, Unicode U+1F310, in the space behind the bird.
+- Falcon Sight shows the raven eagle shifted left, with a dark gray + in the space behind the bird. The oval is the same size as raven sight.
+- Eagle Sight shows the raven eagle shifted left, with a larger dark gray wireframe globe in the space behind the bird. The oval is the same size as raven sight.
 
 ## Implementation notes
 
@@ -47,7 +47,7 @@ The player looks at the sight marker. On Falcon Sight and Eagle Sight the bird s
 - The world is a 1024 m square. Its centre is the middle of that square.
 - Fog on a terrain point is `FSolidTerrainPoint.Fog`. The bands and the rule that the camera stays over clear ground are in [Source/SolidCore1/Fog/README.md](../Source/SolidCore1/Fog/README.md).
 - The raven marker is the eagle returned by `SolidSight::Marker` for raven sight, drawn in the translucent oval at the top right. True sight keeps the eye. The bird faces left, so the empty part of the oval is behind it.
-- On Falcon Sight and Eagle Sight the bird is shifted left so the mark behind it can be larger. The globe is U+1F310 (globe with meridians). [falcon-eagle-markers.png](falcon-eagle-markers.png) shows the current raven indicator beside those two.
+- On Falcon Sight and Eagle Sight the bird is shifted left so the mark behind it can be larger. The plus and the globe are drawn marks in the same dark gray. [falcon-eagle-markers.png](falcon-eagle-markers.png) was the layout that started that work.
 - Camera height, including Falcon's 20 m to 200 m, is measured from the ground under the camera.
 - To start with, both sights are enabled by `SolidEvents::IdEnterDragongate` (`e6a4f093`), the Enter Dragongate event. That event already enables raven sight. `SolidEvents::IdEnterJethan` (`7c3a9e14`) enables Raven Sight, then Falcon Sight, then Eagle Sight, so the view switches to Eagle. Its ClearAllFog change sets every terrain point's Fog to 0.
 - Eagle Sight keeps the nearby terrain and streams the rest of the map at four quads a side as the camera climbs.

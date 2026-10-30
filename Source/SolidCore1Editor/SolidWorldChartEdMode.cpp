@@ -278,10 +278,6 @@ public:
 		MarkKinds.Add(MakeShared<FString>(TEXT("Lair exit")));
 		MarkKinds.Add(MakeShared<FString>(TEXT("Custom")));
 		MarkKinds.Add(MakeShared<FString>(TEXT("Encounter")));
-		RoadTypes.Add(MakeShared<FString>(TEXT("Trail")));
-		RoadTypes.Add(MakeShared<FString>(TEXT("Track")));
-		RoadTypes.Add(MakeShared<FString>(TEXT("Road")));
-		RoadTypes.Add(MakeShared<FString>(TEXT("Highway")));
 
 		TSharedRef<SWrapBox> BrushRow = SNew(SWrapBox).UseAllottedSize(true);
 		for (const ESolidBiome Biome : Biomes)
@@ -634,74 +630,6 @@ public:
 						]
 					]
 				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f, 0.f, 2.f)
-				[
-					SNew(STextBlock).Text(NSLOCTEXT("SolidWorldChart", "Road", "Road"))
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f)
-				[
-					SNew(SEditableTextBox)
-					.HintText(NSLOCTEXT("SolidWorldChart", "From", "From"))
-					.OnTextChanged_Lambda([this](const FText& Text)
-					{
-						if (Mode)
-						{
-							Mode->RoadFrom = Text.ToString();
-							Mode->RoadNamesChanged();
-						}
-					})
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f)
-				[
-					SNew(SEditableTextBox)
-					.HintText(NSLOCTEXT("SolidWorldChart", "To", "To"))
-					.OnTextChanged_Lambda([this](const FText& Text)
-					{
-						if (Mode)
-						{
-							Mode->RoadTo = Text.ToString();
-							Mode->RoadNamesChanged();
-						}
-					})
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f)
-				[
-					MakeCombo(RoadTypes, [this]()
-					{
-						const int32 Index = Mode ? static_cast<int32>(Mode->RoadType) : 0;
-						return RoadTypes.IsValidIndex(Index) && RoadTypes[Index].IsValid()
-							? *RoadTypes[Index]
-							: FString();
-					}, [this](const int32 Index)
-					{
-						if (Mode)
-						{
-							Mode->RoadType = static_cast<ESolidWorldChartRoadType>(Index);
-						}
-					})
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f)
-				[
-					SNew(SButton)
-					.Text(NSLOCTEXT("SolidWorldChart", "AddRoad", "Add road"))
-					.OnClicked_Lambda([this]()
-					{
-						if (Mode)
-						{
-							Mode->AddCurrentRoad();
-						}
-						return FReply::Handled();
-					})
-				]
-				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 2.f)
-				[
-					SNew(STextBlock)
-					.AutoWrapText(true)
-					.Text_Lambda([this]()
-					{
-						return FText::FromString(Mode ? Mode->RoadLine() : FString());
-					})
-				]
 				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 8.f)
 				[
 					SNew(SSeparator)
@@ -797,7 +725,6 @@ private:
 	TArray<TSharedPtr<FString>> Lairs;
 	TArray<TSharedPtr<FString>> Encounters;
 	TArray<TSharedPtr<FString>> MarkKinds;
-	TArray<TSharedPtr<FString>> RoadTypes;
 };
 
 FSolidWorldChartEdMode::FSolidWorldChartEdMode()
@@ -813,7 +740,6 @@ void FSolidWorldChartEdMode::Enter()
 	FEdMode::Enter();
 	Chart = LoadObject<USolidWorldChart>(nullptr, USolidWorldChart::ShippedPath());
 	ShowChart();
-	RefreshRoadMessage();
 	Hover = TEXT("Hover the chart.");
 	ToolMessage = TEXT("View. Left click does not edit.");
 
@@ -1054,12 +980,6 @@ void FSolidWorldChartEdMode::SetBrushRadius(const int32 Radius)
 	RefreshPanel();
 }
 
-void FSolidWorldChartEdMode::RoadNamesChanged()
-{
-	RefreshRoadMessage();
-	RefreshPanel();
-}
-
 void FSolidWorldChartEdMode::PlaceCurrentMark()
 {
 	if (!Chart)
@@ -1184,38 +1104,6 @@ void FSolidWorldChartEdMode::DeleteCurrentMark()
 	RefreshPanel();
 }
 
-void FSolidWorldChartEdMode::AddCurrentRoad()
-{
-	if (!Chart)
-	{
-		Note(TEXT("The chart is missing."));
-		return;
-	}
-	FString Error;
-	if (!Chart->AddRoad(RoadFrom, RoadTo, RoadType, Error))
-	{
-		Note(Error);
-		RefreshRoadMessage();
-		RefreshPanel();
-		return;
-	}
-
-	TArray<FIntPoint> Route;
-	Chart->RouteForRoad(Chart->Roads.Num() - 1, Route);
-	if (Streamer)
-	{
-		if (Route.Num() > 0)
-		{
-			Streamer->RebuildChartView(Chart, Route);
-		}
-	}
-	RoadMessage = Error;
-	Note(Error.IsEmpty()
-		? FString::Printf(TEXT("Added %s."), USolidWorldChart::RoadTypeName(RoadType))
-		: Error);
-	RefreshPanel();
-}
-
 void FSolidWorldChartEdMode::UndoChart()
 {
 	if (!Chart || !Chart->Undo())
@@ -1230,7 +1118,6 @@ void FSolidWorldChartEdMode::UndoChart()
 	}
 	RebuildOverlay();
 	RebuildSigns();
-	RefreshRoadMessage();
 	if (Tool == ESolidWorldChartTool::Paint && bHasPoint)
 	{
 		Hover = DescribePoint(CurrentPoint);
@@ -1867,11 +1754,6 @@ void FSolidWorldChartEdMode::DrawHUD(
 	Label.OutlineColor = FLinearColor::Black;
 	Label.Scale = FVector2D(1.8f);
 	Canvas->DrawItem(Label);
-}
-
-void FSolidWorldChartEdMode::RefreshRoadMessage()
-{
-	RoadMessage = Chart ? Chart->RoadEndError(RoadFrom, RoadTo) : FString();
 }
 
 void FSolidWorldChartEdMode::Note(const FString& Message)

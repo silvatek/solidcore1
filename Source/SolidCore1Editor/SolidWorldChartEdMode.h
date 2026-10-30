@@ -22,7 +22,7 @@ enum class ESolidWorldChartTool : uint8
 };
 
 /**
- * World chart mode. Paint, marks, and roads edit /Game/World/WorldChart.
+ * World chart mode. Paint and marks edit /Game/World/WorldChart.
  * The ground is the existing terrain build, fed by that chart.
  */
 class FSolidWorldChartEdMode : public FEdMode
@@ -61,23 +61,17 @@ public:
 	int32 LairIndex = 0;
 	int32 EncounterIndex = 0;
 	FString CustomNote;
-	ESolidWorldChartRoadType RoadType = ESolidWorldChartRoadType::Trail;
-	FString RoadFrom;
-	FString RoadTo;
 
 	void SetTool(ESolidWorldChartTool InTool);
 	void SetBrush(ESolidBiome Biome);
 	void SetBrushRadius(int32 Radius);
-	void RoadNamesChanged();
 	void PlaceCurrentMark();
 	void DeleteCurrentMark();
-	void AddCurrentRoad();
 	void UndoChart();
 	void SaveChart();
 
 	FString BannerText() const { return Banner; }
 	FString HoverLine() const { return Hover; }
-	FString RoadLine() const { return RoadMessage; }
 	FString ToolLine() const { return ToolMessage; }
 	void RefreshPanel();
 
@@ -105,7 +99,6 @@ private:
 
 	FString Banner;
 	FString Hover;
-	FString RoadMessage;
 	FString ToolMessage;
 
 	bool IsOpenWorld(const UWorld* World) const;
@@ -124,7 +117,6 @@ private:
 	void RebuildSigns();
 	void FaceSigns(const FVector& Camera);
 	bool MarkLocation(const FSolidWorldChartMark& Mark, FVector& OutLocation) const;
-	void RefreshRoadMessage();
 	void Note(const FString& Message);
 	FString DescribeCell(const FIntPoint& Cell) const;
 	FString DescribePoint(const FIntPoint& Point) const;

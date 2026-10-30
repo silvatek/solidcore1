@@ -49,7 +49,6 @@ void USolidTerrainMap::Build(
 
 	Points.SetNum(GridWidth * GridHeight);
 
-	const float SafeAmp = FMath::Max(Amplitude, 1.f);
 	const bool bUseWorldMap = WorldMap && WorldMap->IsLoaded();
 	const FVector2D WorldMin = GetWorldMinXY();
 	const FVector2D WorldMax = GetWorldMaxXY();
@@ -61,16 +60,19 @@ void USolidTerrainMap::Build(
 			FSolidTerrainPoint& Point = Points[IY * GridWidth + IX];
 			Point.X = OriginXY.X + static_cast<float>(IX) * PointSpacing;
 			Point.Y = OriginXY.Y + static_cast<float>(IY) * PointSpacing;
-			Point.Height = SolidTerrainNoise::SampleHeight(
-				Point.X, Point.Y, Seed, FrequencyScale, Amplitude, BaseHeight);
-
-			const float HeightNorm = FMath::Clamp((Point.Height - BaseHeight) / SafeAmp, 0.f, 1.f);
 			if (bUseWorldMap)
 			{
 				Point.Biome = WorldMap->SampleBiome(Point.X, Point.Y, WorldMin, WorldMax);
+				const float Variance = SolidBiome::Of(Point.Biome).HeightVarianceCm();
+				Point.Height = SolidTerrainNoise::SampleHeight(
+					Point.X, Point.Y, Seed, FrequencyScale, Variance, BaseHeight);
 			}
 			else
 			{
+				Point.Height = SolidTerrainNoise::SampleHeight(
+					Point.X, Point.Y, Seed, FrequencyScale, Amplitude, BaseHeight);
+				const float HeightNorm = FMath::Clamp(
+					(Point.Height - BaseHeight) / FMath::Max(Amplitude, 1.f), 0.f, 1.f);
 				Point.Biome = ChooseBiome(Point.X, Point.Y, HeightNorm, Seed);
 			}
 			FillThreatAndFog(Point);

@@ -66,6 +66,18 @@ bool FSolidBiomeHeightOffsetTest::RunTest(const FString& Parameters)
 		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::Swamp).HeightOffsetCm(), 100.f));
 	TestTrue(TEXT("road shares the land shelf"),
 		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::Road).HeightOffsetCm(), 100.f));
+
+	const ESolidBiome Ground[] = {
+		ESolidBiome::Sea, ESolidBiome::River, ESolidBiome::Mountain, ESolidBiome::Grassland,
+		ESolidBiome::Forest, ESolidBiome::Town, ESolidBiome::Desert, ESolidBiome::Swamp,
+		ESolidBiome::Road
+	};
+	for (const ESolidBiome Biome : Ground)
+	{
+		TestTrue(TEXT("height variance starts at the build amplitude"),
+			FMath::IsNearlyEqual(
+				SolidBiome::Of(Biome).HeightVarianceCm(), FSolidBiome::StartingHeightVarianceCm));
+	}
 	return true;
 }
 
@@ -204,6 +216,8 @@ bool FSolidBiomeGroundTest::RunTest(const FString& Parameters)
 	const FSolidBiome& Unknown = SolidBiome::Of(static_cast<ESolidBiome>(255));
 	TestEqual(TEXT("an unknown token has no name"), FString(Unknown.Name()), FString(TEXT("Unknown")));
 	TestTrue(TEXT("an unknown token shares the land shelf"), FMath::IsNearlyEqual(Unknown.HeightOffsetCm(), 100.f));
+	TestTrue(TEXT("an unknown token keeps the starting height variance"),
+		FMath::IsNearlyEqual(Unknown.HeightVarianceCm(), FSolidBiome::StartingHeightVarianceCm));
 	TestEqual(TEXT("an unknown token is a weak preference"), Unknown.SurfacePreference(), 1);
 	TestTrue(TEXT("an unknown token uses the grass letter"), Unknown.Marker() == USolidWorldChart::GrassMarker);
 	TestFalse(TEXT("an unknown token stays open"), Unknown.Impassable());

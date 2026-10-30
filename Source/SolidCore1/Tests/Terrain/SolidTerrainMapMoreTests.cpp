@@ -84,11 +84,11 @@ bool FSolidMapBiomeHeightOffsetTest::RunTest(const FString& Parameters)
 
 	for (const FSolidTerrainPoint& Point : Map->GetPoints())
 	{
+		const FSolidBiome& Ground = SolidBiome::Of(Point.Biome);
 		const float RawHeight = SolidTerrainNoise::SampleHeight(
 			Point.X, Point.Y, /*Seed=*/1337, /*FrequencyScale=*/0.00012f,
-			/*Amplitude=*/3000.f, /*BaseHeight=*/0.f);
-		const float Expected =
-			RawHeight + SolidBiome::Of(Point.Biome).HeightOffsetCm();
+			Ground.HeightVarianceCm(), /*BaseHeight=*/0.f);
+		const float Expected = RawHeight + Ground.HeightOffsetCm();
 		TestTrue(TEXT("height includes biome shelf"),
 			FMath::IsNearlyEqual(Point.Height, Expected, 0.01f));
 

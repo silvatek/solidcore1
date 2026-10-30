@@ -6,16 +6,20 @@
 /**
  * One kind of ground. A terrain point and the world chart store ESolidBiome.
  * This object answers for that token: its colour, its name, its shelf, its
- * chart letter, whether that ground is open or paintable, and whether it is
- * a flat colour.
+ * height variance, its chart letter, whether that ground is open or paintable,
+ * and whether it is a flat colour.
  */
 class SOLIDCORE1_API FSolidBiome
 {
 public:
+	/** Noise amplitude every ground starts with, in centimetres. */
+	static constexpr float StartingHeightVarianceCm = 3000.f;
+
 	explicit FSolidBiome(
 		FLinearColor InColor,
 		const TCHAR* InName,
 		float InHeightOffsetCm,
+		float InHeightVarianceCm,
 		int32 InSurfacePreference,
 		TCHAR InMarker,
 		bool bInImpassable,
@@ -34,6 +38,12 @@ public:
 	 * A road shares that land shelf, so a strip does not cut a trench.
 	 */
 	float HeightOffsetCm() const;
+
+	/**
+	 * Noise amplitude for a point of this ground, in centimetres.
+	 * SampleHeight uses it. Every biome starts at the build amplitude, 30 m.
+	 */
+	float HeightVarianceCm() const;
 
 	/** Lower is better. Smaller than one road step, so it only breaks a tie. */
 	int32 SurfacePreference() const;
@@ -60,6 +70,7 @@ private:
 	FLinearColor Tint;
 	const TCHAR* Label;
 	float ShelfCm;
+	float VarianceCm;
 	int32 Preference;
 	TCHAR Letter;
 	bool bImpassable;

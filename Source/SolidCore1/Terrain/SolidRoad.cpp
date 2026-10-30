@@ -243,6 +243,133 @@ namespace SolidRoad
 				}
 			}
 		}
+
+		void TerrainLine(const FIntPoint& From, const FIntPoint& To, TArray<FIntPoint>& OutPoints)
+		{
+			OutPoints.Reset();
+			int32 X0 = From.X;
+			int32 Y0 = From.Y;
+			const int32 X1 = To.X;
+			const int32 Y1 = To.Y;
+			const int32 Dx = FMath::Abs(X1 - X0);
+			const int32 Dy = FMath::Abs(Y1 - Y0);
+			const int32 Sx = X0 < X1 ? 1 : -1;
+			const int32 Sy = Y0 < Y1 ? 1 : -1;
+			int32 Err = Dx - Dy;
+			while (true)
+			{
+				OutPoints.Add(FIntPoint(X0, Y0));
+				if (X0 == X1 && Y0 == Y1)
+				{
+					break;
+				}
+				const int32 Twice = Err * 2;
+				if (Twice > -Dy)
+				{
+					Err -= Dy;
+					X0 += Sx;
+				}
+				if (Twice < Dx)
+				{
+					Err += Dx;
+					Y0 += Sy;
+				}
+			}
+		}
+
+		bool RiverPoint(const USolidWorldChart& Map, const int32 X, const int32 Y)
+		{
+			if (X < 0 || Y < 0 || X >= USolidWorldChart::PointAxis || Y >= USolidWorldChart::PointAxis)
+			{
+				return false;
+			}
+			return Map.GetPointBiome(FIntPoint(X, Y)) == ESolidBiome::River;
+		}
+
+		bool LineStepAllowed(const USolidWorldChart& Map, const EType Type, const FIntPoint& From, const FIntPoint& To)
+		{
+			const ESolidBiome Biome = Map.GetPointBiome(To);
+			if (Biome != ESolidBiome::River)
+			{
+				return EnterCost(Type, Biome, false) >= 0;
+			}
+			const int32 AlongY = (RiverPoint(Map, To.X, To.Y + 1) ? 1 : 0) + (RiverPoint(Map, To.X, To.Y - 1) ? 1 : 0);
+			const int32 AlongX = (RiverPoint(Map, To.X + 1, To.Y) ? 1 : 0) + (RiverPoint(Map, To.X - 1, To.Y) ? 1 : 0);
+			const FIntPoint Step(To.X - From.X, To.Y - From.Y);
+			bool bSquare = true;
+			if (AlongY == 0 && AlongX == 0)
+			{
+				bSquare = true;
+			}
+			else if (AlongY > AlongX)
+			{
+				bSquare = Step.X != 0 && Step.Y == 0;
+			}
+			else if (AlongX > AlongY)
+			{
+				bSquare = Step.Y != 0 && Step.X == 0;
+			}
+			else
+			{
+				bSquare = false;
+			}
+			return EnterCost(Type, Biome, bSquare) >= 0;
+		}
+
+		bool OpenStraightCells(
+			const USolidWorldChart& Map,
+			const EType Type,
+			const FIntPoint& FromCell,
+			const FIntPoint& ToCell,
+			TArray<FIntPoint>& OutCells)
+		{
+			FVector2D Min = FVector2D::ZeroVector;
+			FVector2D Max = FVector2D::ZeroVector;
+			USolidWorldChart::DefaultWorldBounds(Min, Max);
+			FVector2D FromWorld = FVector2D::ZeroVector;
+			FVector2D ToWorld = FVector2D::ZeroVector;
+			if (!Map.CellToWorldXY(FromCell, Min, Max, FromWorld) || !Map.CellToWorldXY(ToCell, Min, Max, ToWorld))
+			{
+				return false;
+			}
+			FIntPoint FromPoint = FIntPoint::ZeroValue;
+			FIntPoint ToPoint = FIntPoint::ZeroValue;
+			if (!Map.TerrainPointAt(FromWorld.X, FromWorld.Y, Min, Max, FromPoint)
+				|| !Map.TerrainPointAt(ToWorld.X, ToWorld.Y, Min, Max, ToPoint))
+			{
+				return false;
+			}
+
+			TArray<FIntPoint> Points;
+			TerrainLine(FromPoint, ToPoint, Points);
+			for (int32 Index = 1; Index < Points.Num(); ++Index)
+			{
+				if (!LineStepAllowed(Map, Type, Points[Index - 1], Points[Index]))
+				{
+					return false;
+				}
+			}
+
+			OutCells.Reset();
+			for (const FIntPoint& Point : Points)
+			{
+				FVector2D World = FVector2D::ZeroVector;
+				if (!Map.TerrainPointToWorld(Point, Min, Max, World))
+				{
+					return false;
+				}
+				FIntPoint Cell = FIntPoint::ZeroValue;
+				if (!Map.CellAtWorld(World.X, World.Y, Min, Max, Cell))
+				{
+					return false;
+				}
+				if (OutCells.Num() == 0 || OutCells.Last() != Cell)
+				{
+					OutCells.Add(Cell);
+				}
+			}
+			return OutCells.Num() > 0;
+		}
 	}
 
 	bool Parse(const FString& Line, FDefinition& Out)
@@ -286,6 +413,12 @@ namespace SolidRoad
 		if (Starts.Num() == 0 || Goals.Num() == 0)
 		{
 			return false;
+		}
+
+		if (Starts.Num() == 1 && Goals.Num() == 1
+			&& OpenStraightCells(Map, Definition.Type, Starts[0], Goals[0], OutCells))
+		{
+			return true;
 		}
 
 		const int32 Width = USolidWorldChart::MapWidth;

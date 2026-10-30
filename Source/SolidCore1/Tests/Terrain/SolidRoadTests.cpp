@@ -61,8 +61,9 @@ namespace
 	{
 		for (int32 Index = 1; Index < Cells.Num(); ++Index)
 		{
-			const int32 Steps = FMath::Abs(Cells[Index].X - Cells[Index - 1].X)
-				+ FMath::Abs(Cells[Index].Y - Cells[Index - 1].Y);
+			const int32 Steps = FMath::Max(
+				FMath::Abs(Cells[Index].X - Cells[Index - 1].X),
+				FMath::Abs(Cells[Index].Y - Cells[Index - 1].Y));
 			if (!Test.TestEqual(TEXT("route steps to a neighbour"), Steps, 1))
 			{
 				return false;

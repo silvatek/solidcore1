@@ -602,18 +602,43 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidRoadDefinitionsTest::RunTest(const FString& Parameters)
 {
-	TestEqual(TEXT("one road"), SolidRoad::DefinitionCount, 1);
-	if (SolidRoad::DefinitionCount < 1)
+	const int32 FromIds[] = {
+		SolidTowns::Iglin,
+		SolidTowns::Relion,
+		SolidTowns::Relion,
+		SolidTowns::Dragongate,
+		SolidTowns::Dragongate,
+	};
+	const int32 ToIds[] = {
+		SolidTowns::Relion,
+		SolidTowns::Kanfold,
+		SolidTowns::Dragongate,
+		SolidTowns::Jethan,
+		SolidTowns::Rathen,
+	};
+	const SolidRoad::EType Types[] = {
+		SolidRoad::EType::Track,
+		SolidRoad::EType::Highway,
+		SolidRoad::EType::Road,
+		SolidRoad::EType::Track,
+		SolidRoad::EType::Track,
+	};
+	const int32 Count = UE_ARRAY_COUNT(FromIds);
+	TestEqual(TEXT("five town roads"), SolidRoad::DefinitionCount, Count);
+	if (SolidRoad::DefinitionCount < Count)
 	{
 		return false;
 	}
 
-	const SolidRoad::FRoad& Road = SolidRoad::Roads[0];
-	TestEqual(TEXT("starts at a town"), static_cast<uint8>(Road.From.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Town));
-	TestEqual(TEXT("starts at Relion"), Road.From.Name, FString(SolidTowns::Definitions[SolidTowns::Relion].Name));
-	TestEqual(TEXT("ends at a town"), static_cast<uint8>(Road.To.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Town));
-	TestEqual(TEXT("ends at Kanfold"), Road.To.Name, FString(SolidTowns::Definitions[SolidTowns::Kanfold].Name));
-	TestEqual(TEXT("highway"), static_cast<uint8>(Road.Type), static_cast<uint8>(SolidRoad::EType::Highway));
+	for (int32 Index = 0; Index < Count; ++Index)
+	{
+		const SolidRoad::FRoad& Road = SolidRoad::Roads[Index];
+		TestEqual(TEXT("starts at a town"), static_cast<uint8>(Road.From.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Town));
+		TestEqual(TEXT("ends at a town"), static_cast<uint8>(Road.To.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Town));
+		TestEqual(TEXT("start town"), Road.From.Name, FString(SolidTowns::Definitions[FromIds[Index]].Name));
+		TestEqual(TEXT("end town"), Road.To.Name, FString(SolidTowns::Definitions[ToIds[Index]].Name));
+		TestEqual(TEXT("road type"), static_cast<uint8>(Road.Type), static_cast<uint8>(Types[Index]));
+	}
 	return true;
 }
 

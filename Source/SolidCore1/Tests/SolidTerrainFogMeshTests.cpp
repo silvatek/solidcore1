@@ -1,5 +1,6 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
+#include "Materials/Material.h"
 #include "SolidTerrainFog.h"
 #include "SolidTerrainMap.h"
 
@@ -35,6 +36,15 @@ bool FSolidFogMeshBuildGuardsTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("half material"), Half);
 	TestNotNull(TEXT("full material"), Full);
 	TestNotNull(TEXT("outer material"), White);
+	if (White)
+	{
+		const UMaterial* OuterMat = White->GetMaterial();
+		TestNotNull(TEXT("outer parent"), OuterMat);
+		TestEqual(
+			TEXT("outer curtain is opaque"),
+			static_cast<int32>(OuterMat->GetBlendMode()),
+			static_cast<int32>(BLEND_Opaque));
+	}
 
 	UStaticMesh* Mesh = SolidTerrainFog::BuildChunkFogMesh(Outer, Map, Params, Half, Full, White);
 	TestNotNull(TEXT("fog mesh builds with materials"), Mesh);

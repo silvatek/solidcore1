@@ -103,6 +103,58 @@ namespace SolidTerrainFog
 			TEXT("Fog translucent material %s (programmatic parent, opacity=%.2f)"), DebugName, Opacity);
 		return Material;
 	}
+
+	/** Solid outer curtain — BlendMode on a new UMaterial (MIDs cannot change blend mode). */
+	static UMaterialInterface* CreateProgrammaticOpaqueMist(
+		UObject* Outer,
+		const FLinearColor& Color,
+		const TCHAR* DebugName)
+	{
+		UMaterial* Material = NewObject<UMaterial>(Outer, NAME_None, RF_Transient);
+		if (!Material)
+		{
+			return nullptr;
+		}
+
+		Material->MaterialDomain = MD_Surface;
+		Material->BlendMode = BLEND_Opaque;
+		Material->TwoSided = true;
+		Material->bScreenSpaceReflections = false;
+		Material->SetShadingModel(MSM_Unlit);
+
+		UMaterialEditorOnlyData* EditorData = Material->GetEditorOnlyData();
+		if (!EditorData)
+		{
+			UE_LOG(LogSolid, Error, TEXT("Fog %s: GetEditorOnlyData() null — cannot build opaque mat."), DebugName);
+			return nullptr;
+		}
+
+		UMaterialExpressionVectorParameter* ColorParam =
+			NewObject<UMaterialExpressionVectorParameter>(Material);
+		ColorParam->ParameterName = TEXT("MistColor");
+		ColorParam->DefaultValue = Color;
+		ColorParam->MaterialExpressionEditorX = -380;
+		ColorParam->MaterialExpressionEditorY = 0;
+
+		EditorData->ExpressionCollection.Expressions.Add(ColorParam);
+		EditorData->EmissiveColor.Expression = ColorParam;
+
+		Material->SetMaterialUsage(MATUSAGE_StaticMesh);
+
+		Material->PreEditChange(nullptr);
+		Material->PostEditChange();
+
+		UMaterialInstanceDynamic* MID = UMaterialInstanceDynamic::Create(Material, Outer);
+		if (MID)
+		{
+			MID->SetVectorParameterValue(TEXT("MistColor"), Color);
+			UE_LOG(LogSolid, Warning, TEXT("Fog opaque material %s (programmatic)"), DebugName);
+			return MID;
+		}
+
+		UE_LOG(LogSolid, Warning, TEXT("Fog opaque material %s (programmatic parent)"), DebugName);
+		return Material;
+	}
 #endif // WITH_EDITOR
 
 	UMaterialInterface* CreateVolumeMaterial(
@@ -141,8 +193,14 @@ namespace SolidTerrainFog
 
 	UMaterialInterface* CreateOuterMaterial(UObject* Outer)
 	{
-		return CreateVolumeMaterial(
-			Outer, FLinearColor(0.92f, 0.94f, 0.96f), 0.82f, TEXT("ExplorationFogOuter"));
+		const FLinearColor Color(0.92f, 0.94f, 0.96f);
+#if WITH_EDITOR
+		if (UMaterialInterface* Programmatic = CreateProgrammaticOpaqueMist(Outer, Color, TEXT("ExplorationFogOuter")))
+		{
+			return Programmatic;
+		}
+#endif
+		return SolidMaterials::CreateSolidColor(Outer, Color, TEXT("ExplorationFogOuter"));
 	}
 
 	void ConfigureOverlayComponent(UStaticMeshComponent* Mesh)

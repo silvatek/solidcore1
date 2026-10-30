@@ -71,7 +71,7 @@ namespace SolidTerrainFog
 
 	UMaterialInterface* CreateHalfMaterial(UObject* Outer);
 	UMaterialInterface* CreateFullMaterial(UObject* Outer);
-	/** White curtain at the half→full fog boundary (~50m). */
+	/** Opaque white curtain at the half→full fog boundary (~50m). */
 	UMaterialInterface* CreateOuterMaterial(UObject* Outer);
 
 	void ConfigureOverlayComponent(UStaticMeshComponent* Mesh);

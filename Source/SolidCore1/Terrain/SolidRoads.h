@@ -17,18 +17,18 @@ namespace SolidRoad
 	};
 
 	/** A town mark. The chart places it. */
-	inline FSolidWorldChartMark TownMark(const SolidTowns::FTownInfo& Town)
+	inline FSolidWorldChartMark TownMark(const int32 TownId)
 	{
 		FSolidWorldChartMark Mark;
 		Mark.Kind = ESolidWorldChartMarkKind::Town;
-		Mark.Name = Town.Name;
+		Mark.Name = SolidTowns::Definitions[TownId].Name;
 		return Mark;
 	}
 
 	inline const FRoad Roads[] = {
 		{
-			TownMark(SolidTowns::Definitions[SolidTowns::Relion]),
-			TownMark(SolidTowns::Definitions[SolidTowns::Kanfold]),
+			TownMark(SolidTowns::Relion),
+			TownMark(SolidTowns::Kanfold),
 			EType::Highway,
 		},
 	};

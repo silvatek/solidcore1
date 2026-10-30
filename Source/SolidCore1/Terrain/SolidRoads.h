@@ -26,11 +26,7 @@ namespace SolidRoad
 	}
 
 	inline const FRoad Roads[] = {
-		{
-			TownMark(SolidTowns::Relion),
-			TownMark(SolidTowns::Kanfold),
-			EType::Highway,
-		},
+		{ TownMark(SolidTowns::Relion), TownMark(SolidTowns::Kanfold), EType::Highway },
 	};
 
 	inline constexpr int32 DefinitionCount = UE_ARRAY_COUNT(Roads);

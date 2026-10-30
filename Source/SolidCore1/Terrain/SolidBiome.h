@@ -12,7 +12,7 @@
 class SOLIDCORE1_API FSolidBiome
 {
 public:
-	/** Noise amplitude every ground starts with, in centimetres. */
+	/** Build amplitude the per-biome variances are taken from, in centimetres. */
 	static constexpr float StartingHeightVarianceCm = 3000.f;
 
 	explicit FSolidBiome(
@@ -41,7 +41,7 @@ public:
 
 	/**
 	 * Noise amplitude for a point of this ground, in centimetres.
-	 * SampleHeight uses it. Every biome starts at the build amplitude, 30 m.
+	 * SampleHeight uses it.
 	 */
 	float HeightVarianceCm() const;
 

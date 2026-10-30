@@ -67,17 +67,25 @@ bool FSolidBiomeHeightOffsetTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("road shares the land shelf"),
 		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::Road).HeightOffsetCm(), 100.f));
 
-	const ESolidBiome Ground[] = {
-		ESolidBiome::Sea, ESolidBiome::River, ESolidBiome::Mountain, ESolidBiome::Grassland,
-		ESolidBiome::Forest, ESolidBiome::Town, ESolidBiome::Desert, ESolidBiome::Swamp,
-		ESolidBiome::Road
-	};
-	for (const ESolidBiome Biome : Ground)
-	{
-		TestTrue(TEXT("height variance starts at the build amplitude"),
-			FMath::IsNearlyEqual(
-				SolidBiome::Of(Biome).HeightVarianceCm(), FSolidBiome::StartingHeightVarianceCm));
-	}
+	const float Full = FSolidBiome::StartingHeightVarianceCm;
+	TestTrue(TEXT("grassland variance is half"),
+		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::Grassland).HeightVarianceCm(), Full * 0.5f));
+	TestTrue(TEXT("forest variance is half"),
+		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::Forest).HeightVarianceCm(), Full * 0.5f));
+	TestTrue(TEXT("desert variance is half"),
+		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::Desert).HeightVarianceCm(), Full * 0.5f));
+	TestTrue(TEXT("town variance is a fifth"),
+		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::Town).HeightVarianceCm(), Full * 0.2f));
+	TestTrue(TEXT("road variance is a fifth"),
+		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::Road).HeightVarianceCm(), Full * 0.2f));
+	TestTrue(TEXT("sea variance is a tenth"),
+		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::Sea).HeightVarianceCm(), Full * 0.1f));
+	TestTrue(TEXT("swamp variance is a tenth"),
+		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::Swamp).HeightVarianceCm(), Full * 0.1f));
+	TestTrue(TEXT("mountain variance is three times"),
+		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::Mountain).HeightVarianceCm(), Full * 3.f));
+	TestTrue(TEXT("river variance stays the build amplitude"),
+		FMath::IsNearlyEqual(SolidBiome::Of(ESolidBiome::River).HeightVarianceCm(), Full));
 	return true;
 }
 

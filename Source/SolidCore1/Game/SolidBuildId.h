@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0795")
+#define SOLID_BUILD_ID TEXT("SC1-0796")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Every height variance is 30 m again.")
+#define SOLID_BUILD_NOTE TEXT("A road joins two world chart marks.")
 #endif

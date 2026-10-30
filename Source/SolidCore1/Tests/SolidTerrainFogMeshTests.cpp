@@ -55,8 +55,12 @@ bool FSolidFogMeshBuildGuardsTest::RunTest(const FString& Parameters)
 
 	Params.bEmitInnerCurtain = false;
 	Params.bEmitOuterCurtain = true;
+	Params.FogQuadsPerSide = 16;
+	USolidTerrainMap* Wide = NewObject<USolidTerrainMap>();
+	Wide->Build(1, 0.00012f, 1000.f, 0.f, 65, 65, 200.f, true);
+	Wide->CenterExplorationFogOn(0.f, 0.f);
 	UStaticMesh* OuterMesh = SolidTerrainFog::BuildChunkFogMesh(
-		Outer, Map, Params, nullptr, nullptr, White);
+		Outer, Wide, Params, nullptr, nullptr, White);
 	TestNotNull(TEXT("outer curtain builds alone"), OuterMesh);
 	if (OuterMesh)
 	{

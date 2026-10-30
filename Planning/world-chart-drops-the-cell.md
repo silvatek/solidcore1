@@ -8,7 +8,7 @@ The developer works in the World chart mode. Paint already stamps terrain points
 
 The chart still stores that land as cells. A road still solves as cells, and play still reads those cells. The world chart dump still prints the cells. The hover line names a road when the cell sits on the solved route.
 
-The mode, the chart, the road, play, and the dump use the terrain point Paint already uses. The hover line names the road when the point under the cursor sits on it.
+The mode, the chart, the road, play, and the dump use the terrain point Paint already uses. The hover line names the road when the point under the cursor sits on it. The World chart section of `AGENTS.md` describes that same point grid.
 
 This story introduces no new class.
 
@@ -22,6 +22,7 @@ This story introduces no new class.
 - A road solves on those terrain points.
 - Play reads those terrain points.
 - The world chart dump prints those terrain points. A mark in the dump is that mark's terrain point.
+- The World chart section of `AGENTS.md` describes the land as those terrain points.
 
 ## Implementation notes
 
@@ -30,3 +31,5 @@ This story introduces no new class.
 Place, delete, and the View hover line use the cell. The place and delete methods on `USolidWorldChart` still take a cell. A mark stores a world position. This story lands that position on the terrain point under the cursor. `DescribeCell` adds the road sentence when `SolidRoad::FRoute::Cells` contains the cell. `DescribePoint` has no road sentence.
 
 The chart's cell array is `USolidWorldChart::Cells`. `SolidRoad::FRoute::Cells` is the solved path. The dump writes that cell grid as `rows`, with the cell `width` and `height`, and logs each mark's cell row and column. It already writes the terrain points as `points`.
+
+The World chart section of `AGENTS.md` says the grid is 128 columns by 64 rows, and that a cell holds a marker biome. This story replaces that description with the terrain points. The fog note about per-cell lattices stays.

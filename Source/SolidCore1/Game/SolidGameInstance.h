@@ -64,7 +64,8 @@ public:
 	 * World time for a journal line. A new process advances the date once.
 	 * OpenLevel, including the cave, keeps this clock.
 	 */
-	SolidWorldTime::FStamp WorldStamp() const;
+	FSolidWorldTime& GetWorldTime() { return WorldTime; }
+	const FSolidWorldTime& GetWorldTime() const { return WorldTime; }
 
 private:
 	void BeginWorldSession();
@@ -79,10 +80,8 @@ private:
 	FSolidTravelSession Session;
 	bool bHasExplorationFog = false;
 	TArray<float> ExplorationFog;
-	/** 1 on the first launch. Not reset by the cave trip. */
-	int32 SessionNumber = 1;
-	/** Platform seconds when this play session started. 0 until OnStart. */
-	double SessionStartSeconds = 0.0;
+	/** The play session's clock. A level load keeps this instance, so the clock stays. */
+	FSolidWorldTime WorldTime;
 
 	/** The opening script. A level load keeps this instance, so the script stays. */
 	FSolidAutoPlaythrough AutoPlaythrough;

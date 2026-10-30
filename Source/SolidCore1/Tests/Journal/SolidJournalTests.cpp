@@ -228,7 +228,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidJournalWorldTimeTest::RunTest(const FString& Parameters)
 {
-	const SolidWorldTime::FStamp Ninth = SolidWorldTime::FromSession(9, 84.0 * 60.0);
+	const FSolidWorldTime Clock;
+	const FSolidWorldTime::FStamp Ninth = Clock.FromSession(9, 84.0 * 60.0);
 	USolidGameState& State = *NewObject<USolidGameState>();
 	USolidCaptain& StateCaptain = *NewObject<USolidCaptain>();
 	SolidEvents::NotifyOccupiedTown(State, StateCaptain, 0, Ninth);
@@ -245,7 +246,7 @@ bool FSolidJournalWorldTimeTest::RunTest(const FString& Parameters)
 		&& State.GetJournal()->Entries[0].Type == EJournalType::Event);
 
 	State.GetJournal()->RememberStronghold(Ninth, /*bEnter=*/true);
-	const SolidWorldTime::FStamp Later = SolidWorldTime::FromSession(9, 90.0 * 60.0);
+	const FSolidWorldTime::FStamp Later = Clock.FromSession(9, 90.0 * 60.0);
 	State.GetJournal()->RememberStronghold(Later, /*bEnter=*/false);
 	State.GetJournal()->RememberStronghold(Later, /*bEnter=*/true);
 

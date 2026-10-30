@@ -33,7 +33,7 @@ namespace
 		USolidGameState& State,
 		USolidCaptain& Captain,
 		const int32 Index,
-		const SolidWorldTime::FStamp& When,
+		const FSolidWorldTime::FStamp& When,
 		SolidEvents::FResult& Result,
 		const bool bForce = false)
 	{
@@ -396,7 +396,7 @@ FResult NotifyOccupiedTown(
 	USolidGameState& State,
 	USolidCaptain& Captain,
 	const int32 TownId,
-	const SolidWorldTime::FStamp& When)
+	const FSolidWorldTime::FStamp& When)
 {
 	FResult Result;
 	Result.MaxSquadSize = State.MaxSquadSize;
@@ -441,7 +441,7 @@ FResult NotifyMessageClosed(
 	USolidGameState& State,
 	USolidCaptain& Captain,
 	const TCHAR* MessageId,
-	const SolidWorldTime::FStamp& When)
+	const FSolidWorldTime::FStamp& When)
 {
 	FResult Result;
 	Result.MaxSquadSize = State.MaxSquadSize;
@@ -472,7 +472,7 @@ FResult NotifyMessageClosed(
 FResult NotifyCaptainKilled(
 	USolidGameState& State,
 	USolidCaptain& Captain,
-	const SolidWorldTime::FStamp& When)
+	const FSolidWorldTime::FStamp& When)
 {
 	FResult Result;
 	Result.MaxSquadSize = State.MaxSquadSize;
@@ -495,7 +495,7 @@ FResult MarkComplete(
 	USolidGameState& State,
 	USolidCaptain& Captain,
 	const TCHAR* EventId,
-	const SolidWorldTime::FStamp& When)
+	const FSolidWorldTime::FStamp& When)
 {
 	FResult Result;
 	Result.MaxSquadSize = State.MaxSquadSize;

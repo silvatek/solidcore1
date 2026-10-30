@@ -44,30 +44,19 @@ void USolidGameInstance::BeginWorldSession()
 		Completed = Loaded->SessionNumber;
 	}
 
-	SessionNumber = SolidWorldTime::NextSessionNumber(Completed);
-	SessionStartSeconds = FPlatformTime::Seconds();
+	WorldTime.Begin(Completed, FPlatformTime::Seconds());
 
 	USolidSessionSave* Save = NewObject<USolidSessionSave>(this);
-	Save->SessionNumber = SessionNumber;
+	Save->SessionNumber = WorldTime.GetSessionNumber();
 	if (!UGameplayStatics::SaveGameToSlot(Save, SolidWorldTimeSessionSlot, 0))
 	{
-		UE_LOG(LogSolid, Warning, TEXT("World time session %d was not saved."), SessionNumber);
+		UE_LOG(LogSolid, Warning, TEXT("World time session %d was not saved."), WorldTime.GetSessionNumber());
 	}
 	else
 	{
-		UE_LOG(LogSolid, Warning, TEXT("World time session %d, %s."), SessionNumber,
-			*SolidWorldTime::Format(WorldStamp()));
+		UE_LOG(LogSolid, Warning, TEXT("World time session %d, %s."), WorldTime.GetSessionNumber(),
+			*WorldTime.Format(WorldTime.Stamp(FPlatformTime::Seconds())));
 	}
-}
-
-SolidWorldTime::FStamp USolidGameInstance::WorldStamp() const
-{
-	if (SessionStartSeconds <= 0.0)
-	{
-		return SolidWorldTime::FromSession(SessionNumber, 0.0);
-	}
-	const double Elapsed = FPlatformTime::Seconds() - SessionStartSeconds;
-	return SolidWorldTime::FromSession(SessionNumber, Elapsed);
 }
 
 void USolidGameInstance::Capture(const FSolidTravelSession& InSession)

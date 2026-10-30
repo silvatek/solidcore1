@@ -24,8 +24,8 @@ enum class EJournalType : uint8
 struct FJournalEntry
 {
 	EJournalType Type = EJournalType::Event;
-	int32 Year = SolidWorldTime::StartYear;
-	int32 Day = SolidWorldTime::StartDay;
+	int32 Year = FSolidWorldTime::StartYear;
+	int32 Day = FSolidWorldTime::StartDay;
 	int32 MinuteOfSession = 0;
 	/** Catalog index when Type is Event. */
 	int32 EventIndex = INDEX_NONE;
@@ -109,7 +109,7 @@ public:
 	TArray<FJournalEntry> Entries;
 
 	void Remember(
-		const SolidWorldTime::FStamp& When,
+		const FSolidWorldTime::FStamp& When,
 		EJournalType Type,
 		const FString& Text,
 		int32 EventIndex = INDEX_NONE);
@@ -118,10 +118,10 @@ public:
 	 * Enter or exit. The line does not name the stronghold.
 	 * An upgrade will be its own entry. The same trip can be noted again.
 	 */
-	void RememberStronghold(const SolidWorldTime::FStamp& When, bool bEnter);
+	void RememberStronghold(const FSolidWorldTime::FStamp& When, bool bEnter);
 
 	/** Enter or exit the Iglin tunnels. The same trip can be noted again. */
-	void RememberLair(const SolidWorldTime::FStamp& When, bool bEnter);
+	void RememberLair(const FSolidWorldTime::FStamp& When, bool bEnter);
 
 	/** One line describing an event's configuration changes. Does not read Entries. */
 	static FString Describe(const SolidEvents::FEvent& Event);

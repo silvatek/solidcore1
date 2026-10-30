@@ -39,6 +39,7 @@
 #include "Strongholds/Actors/SolidStrongholdExterior.h"
 #include "Strongholds/Fortress/SolidFortress.h"
 #include "SolidGameInstance.h"
+#include "HAL/PlatformTime.h"
 #include "Kismet/GameplayStatics.h"
 #include "Vegetation/SolidForage.h"
 #include "Vegetation/SolidForagePile.h"
@@ -620,13 +621,13 @@ void ASolidGameMode::HideTemplateProps()
 	}
 }
 
-SolidWorldTime::FStamp ASolidGameMode::WorldStamp() const
+FSolidWorldTime::FStamp ASolidGameMode::WorldStamp() const
 {
 	if (const USolidGameInstance* Instance = GetGameInstance<USolidGameInstance>())
 	{
-		return Instance->WorldStamp();
+		return Instance->GetWorldTime().Stamp(FPlatformTime::Seconds());
 	}
-	return SolidWorldTime::FromSession(1, 0.0);
+	return FSolidWorldTime().Stamp(0.0);
 }
 
 void ASolidGameMode::TravelToLair(const TCHAR EndMarker)
@@ -641,9 +642,9 @@ void ASolidGameMode::TravelToLair(const TCHAR EndMarker)
 		return;
 	}
 	const TCHAR End = FChar::ToUpper(EndMarker);
-	const SolidWorldTime::FStamp When = WorldStamp();
+	const FSolidWorldTime::FStamp When = WorldStamp();
 	GetConfiguration()->GetJournal()->RememberLair(When, /*bEnter=*/true);
-	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Enter Iglin tunnels"), *SolidWorldTime::Format(When));
+	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Enter Iglin tunnels"), *FSolidWorldTime().Format(When));
 	SaveTravelSession(
 		/*bInStronghold=*/false,
 		/*bInLair=*/true,
@@ -660,9 +661,9 @@ void ASolidGameMode::TravelFromLair(const TCHAR EndMarker)
 		return;
 	}
 	const TCHAR End = SolidLair::IsEndMarker(EndMarker) ? FChar::ToUpper(EndMarker) : SolidLair::Entrance;
-	const SolidWorldTime::FStamp When = WorldStamp();
+	const FSolidWorldTime::FStamp When = WorldStamp();
 	GetConfiguration()->GetJournal()->RememberLair(When, /*bEnter=*/false);
-	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Exit Iglin tunnels"), *SolidWorldTime::Format(When));
+	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  Exit Iglin tunnels"), *FSolidWorldTime().Format(When));
 	SaveTravelSession(
 		/*bInStronghold=*/false,
 		/*bInLair=*/false,
@@ -686,9 +687,9 @@ void ASolidGameMode::EnterStronghold()
 		return;
 	}
 
-	const SolidWorldTime::FStamp When = WorldStamp();
+	const FSolidWorldTime::FStamp When = WorldStamp();
 	GetConfiguration()->GetJournal()->RememberStronghold(When, /*bEnter=*/true);
-	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  %s"), *SolidWorldTime::Format(When), SolidStronghold::EnterLabel);
+	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  %s"), *FSolidWorldTime().Format(When), SolidStronghold::EnterLabel);
 	SaveTravelSession(/*bInStronghold=*/true);
 	UGameplayStatics::OpenLevel(World, FName(SolidTravel::WorldMapPath), true, SolidTravel::EnterStrongholdOptions());
 }
@@ -1262,9 +1263,9 @@ void ASolidGameMode::ExitStronghold()
 	}
 
 	// Companions spawn again beside him once this world is the open world, facing the same way.
-	const SolidWorldTime::FStamp When = WorldStamp();
+	const FSolidWorldTime::FStamp When = WorldStamp();
 	GetConfiguration()->GetJournal()->RememberStronghold(When, /*bEnter=*/false);
-	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  %s"), *SolidWorldTime::Format(When), SolidStronghold::ExitLabel);
+	UE_LOG(LogSolid, Warning, TEXT("Journal: %s  %s"), *FSolidWorldTime().Format(When), SolidStronghold::ExitLabel);
 	SaveTravelSession(
 		/*bInStronghold=*/false,
 		/*bInLair=*/false,

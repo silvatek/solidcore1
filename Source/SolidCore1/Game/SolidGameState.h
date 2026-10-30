@@ -183,7 +183,7 @@ namespace SolidEvents
 		USolidGameState& State,
 		USolidCaptain& Captain,
 		int32 TownId,
-		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
+		const FSolidWorldTime::FStamp& When = FSolidWorldTime::FStamp());
 
 	/**
 	 * The captain closed the message named by MessageId.
@@ -193,7 +193,7 @@ namespace SolidEvents
 		USolidGameState& State,
 		USolidCaptain& Captain,
 		const TCHAR* MessageId,
-		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
+		const FSolidWorldTime::FStamp& When = FSolidWorldTime::FStamp());
 
 	/**
 	 * The captain died in a fight.
@@ -203,7 +203,7 @@ namespace SolidEvents
 	FResult NotifyCaptainKilled(
 		USolidGameState& State,
 		USolidCaptain& Captain,
-		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
+		const FSolidWorldTime::FStamp& When = FSolidWorldTime::FStamp());
 
 	/**
 	 * Record one event as already fired, including its journal line and changes,
@@ -213,5 +213,5 @@ namespace SolidEvents
 		USolidGameState& State,
 		USolidCaptain& Captain,
 		const TCHAR* EventId,
-		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
+		const FSolidWorldTime::FStamp& When = FSolidWorldTime::FStamp());
 }

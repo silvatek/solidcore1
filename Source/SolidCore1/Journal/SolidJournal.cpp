@@ -7,7 +7,7 @@
 #include "SolidWorldTime.h"
 
 void USolidJournal::Remember(
-	const SolidWorldTime::FStamp& When,
+	const FSolidWorldTime::FStamp& When,
 	const EJournalType Type,
 	const FString& Text,
 	const int32 EventIndex)
@@ -27,7 +27,7 @@ void USolidJournal::Remember(
 	Entries.Add(Entry);
 }
 
-void USolidJournal::RememberStronghold(const SolidWorldTime::FStamp& When, const bool bEnter)
+void USolidJournal::RememberStronghold(const FSolidWorldTime::FStamp& When, const bool bEnter)
 {
 	Remember(
 		When,
@@ -35,7 +35,7 @@ void USolidJournal::RememberStronghold(const SolidWorldTime::FStamp& When, const
 		bEnter ? FString(SolidStronghold::EnterLabel) : FString(SolidStronghold::ExitLabel));
 }
 
-void USolidJournal::RememberLair(const SolidWorldTime::FStamp& When, const bool bEnter)
+void USolidJournal::RememberLair(const FSolidWorldTime::FStamp& When, const bool bEnter)
 {
 	Remember(When, EJournalType::Lair, SolidLair::VisitJournalText(bEnter));
 }
@@ -225,6 +225,7 @@ void USolidJournal::CollectRows(TArray<FRow>& OutRows) const
 	}
 	else
 	{
+		const FSolidWorldTime Clock;
 		for (const FJournalEntry& Entry : Entries)
 		{
 			FString Text = Entry.Text;
@@ -242,11 +243,11 @@ void USolidJournal::CollectRows(TArray<FRow>& OutRows) const
 				continue;
 			}
 
-			SolidWorldTime::FStamp Stamp;
+			FSolidWorldTime::FStamp Stamp;
 			Stamp.Year = Entry.Year;
 			Stamp.Day = Entry.Day;
 			Stamp.MinuteOfSession = Entry.MinuteOfSession;
-			OutRows.Add({ ERowKind::Entry, SolidWorldTime::Format(Stamp), Text });
+			OutRows.Add({ ERowKind::Entry, Clock.Format(Stamp), Text });
 			if (!Detail.IsEmpty())
 			{
 				OutRows.Add({ ERowKind::Detail, FString(), Detail });

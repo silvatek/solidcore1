@@ -199,7 +199,7 @@ bool FSolidLairGateTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("a cave leave logs Exit stronghold"), FString(SolidLair::PassageTip(CaveLeave)), FString(TEXT("Exit stronghold")));
 	TestTrue(TEXT("a miss has no tip"), FString(SolidLair::PassageTip(SolidLair::FPassageHit())).IsEmpty());
 
-	State.GetJournal()->RememberLair(SolidWorldTime::FStamp(), true);
+	State.GetJournal()->RememberLair(FSolidWorldTime::FStamp(), true);
 	TestEqual(TEXT("the visit is recorded"), State.GetJournal()->Entries.Last().Text, FString(TEXT("Enter Iglin tunnels")));
 	TestTrue(TEXT("the visit is a lair line"), State.GetJournal()->Entries.Last().Type == EJournalType::Lair);
 	return true;

@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0786")
+#define SOLID_BUILD_ID TEXT("SC1-0787")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Companions live in the company folder.")
+#define SOLID_BUILD_NOTE TEXT("The game instance keeps the world clock.")
 #endif

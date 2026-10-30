@@ -1598,56 +1598,66 @@ void USolidWorldChart::BuildRoads(const TArray<SolidRoad::FDefinition>& Definiti
 
 	for (const SolidRoad::FDefinition& Definition : Definitions)
 	{
-		SolidRoad::FRoute Route;
-		Route.Definition = Definition;
-		if (!SolidRoad::Solve(*this, Definition, Route.Cells))
+		BuildRoad(Definition);
+	}
+}
+
+void USolidWorldChart::BuildRoad(const SolidRoad::FDefinition& Definition) const
+{
+	if (RoadSpansByCell.Num() != MapWidth * MapHeight)
+	{
+		RoadSpansByCell.SetNum(MapWidth * MapHeight);
+	}
+
+	SolidRoad::FRoute Route;
+	Route.Definition = Definition;
+	if (!SolidRoad::Solve(*this, Definition, Route.Cells))
+	{
+		const auto EndName = [](const SolidRoad::FEndpoint& End)
 		{
-			const auto EndName = [](const SolidRoad::FEndpoint& End)
+			return End.bStronghold
+				? End.StrongholdName
+				: SolidTowns::NameFor(End.LocationId);
+		};
+		const FString From = EndName(Definition.From);
+		const FString To = EndName(Definition.To);
+		UE_LOG(LogSolid, Warning, TEXT("WorldMap: no route for road %s -> %s."), *From, *To);
+	}
+	SolvedRoads.Add(Route);
+
+	if (Route.Cells.Num() == 0)
+	{
+		return;
+	}
+
+	const float HalfWidth = SolidRoad::WidthCm(Definition.Type) * 0.5f;
+	const int32 SpanCount = Route.Cells.Num() == 1 ? 1 : Route.Cells.Num() - 1;
+	for (int32 SpanIndex = 0; SpanIndex < SpanCount; ++SpanIndex)
+	{
+		SolidRoad::FSpan Span;
+		Span.From = Route.Cells[SpanIndex];
+		Span.To = Route.Cells[FMath::Min(SpanIndex + 1, Route.Cells.Num() - 1)];
+		Span.HalfWidthCm = HalfWidth;
+		const int32 Stored = RoadSpans.Add(Span);
+
+		auto Touch = [this, Stored](const FIntPoint& Cell)
+		{
+			for (int32 OffsetY = -1; OffsetY <= 1; ++OffsetY)
 			{
-				return End.bStronghold
-					? End.StrongholdName
-					: SolidTowns::NameFor(End.LocationId);
-			};
-			const FString From = EndName(Definition.From);
-			const FString To = EndName(Definition.To);
-			UE_LOG(LogSolid, Warning, TEXT("WorldMap: no route for road %s -> %s."), *From, *To);
-		}
-		SolvedRoads.Add(Route);
-
-		if (Route.Cells.Num() == 0)
-		{
-			continue;
-		}
-
-		const float HalfWidth = SolidRoad::WidthCm(Definition.Type) * 0.5f;
-		const int32 SpanCount = Route.Cells.Num() == 1 ? 1 : Route.Cells.Num() - 1;
-		for (int32 SpanIndex = 0; SpanIndex < SpanCount; ++SpanIndex)
-		{
-			SolidRoad::FSpan Span;
-			Span.From = Route.Cells[SpanIndex];
-			Span.To = Route.Cells[FMath::Min(SpanIndex + 1, Route.Cells.Num() - 1)];
-			Span.HalfWidthCm = HalfWidth;
-			const int32 Stored = RoadSpans.Add(Span);
-
-			auto Touch = [this, Stored](const FIntPoint& Cell)
-			{
-				for (int32 OffsetY = -1; OffsetY <= 1; ++OffsetY)
+				for (int32 OffsetX = -1; OffsetX <= 1; ++OffsetX)
 				{
-					for (int32 OffsetX = -1; OffsetX <= 1; ++OffsetX)
+					const int32 X = Cell.X + OffsetX;
+					const int32 Y = Cell.Y + OffsetY;
+					if (X < 0 || Y < 0 || X >= MapWidth || Y >= MapHeight)
 					{
-						const int32 X = Cell.X + OffsetX;
-						const int32 Y = Cell.Y + OffsetY;
-						if (X < 0 || Y < 0 || X >= MapWidth || Y >= MapHeight)
-						{
-							continue;
-						}
-						RoadSpansByCell[Y * MapWidth + X].AddUnique(Stored);
+						continue;
 					}
+					RoadSpansByCell[Y * MapWidth + X].AddUnique(Stored);
 				}
-			};
-			Touch(Span.From);
-			Touch(Span.To);
-		}
+			}
+		};
+		Touch(Span.From);
+		Touch(Span.To);
 	}
 }
 

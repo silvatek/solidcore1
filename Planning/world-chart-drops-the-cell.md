@@ -1,6 +1,6 @@
 # The World chart drops the cell
 
-Status: New
+Status: Ready
 
 ## Story
 

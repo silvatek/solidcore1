@@ -119,23 +119,32 @@ bool FSolidRoadWidthTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("track is 2 m"), FMath::IsNearlyEqual(SolidRoad::WidthCm(SolidRoad::EType::Track), 200.f));
 	TestTrue(TEXT("road is 3 m"), FMath::IsNearlyEqual(SolidRoad::WidthCm(SolidRoad::EType::Road), 300.f));
 	TestTrue(TEXT("highway is 4 m"), FMath::IsNearlyEqual(SolidRoad::WidthCm(SolidRoad::EType::Highway), 400.f));
-	TestTrue(TEXT("roads and highways avoid hard ground"),
-		SolidRoad::AvoidsHardGround(SolidRoad::EType::Road)
-		&& SolidRoad::AvoidsHardGround(SolidRoad::EType::Highway));
-	TestFalse(TEXT("a trail does not avoid hard ground"), SolidRoad::AvoidsHardGround(SolidRoad::EType::Trail));
-	TestFalse(TEXT("a track does not avoid hard ground"), SolidRoad::AvoidsHardGround(SolidRoad::EType::Track));
-
-	TestTrue(TEXT("a trail treats a mountain as a wall"),
-		SolidRoad::EnterCost(SolidRoad::EType::Trail, ESolidBiome::Mountain) > SolidRoad::StepCost * 64);
-	TestTrue(TEXT("a track treats a mountain as a wall"),
-		SolidRoad::EnterCost(SolidRoad::EType::Track, ESolidBiome::Mountain) > SolidRoad::StepCost * 64);
-	TestTrue(TEXT("a highway treats forest as a wall"),
-		SolidRoad::EnterCost(SolidRoad::EType::Highway, ESolidBiome::Forest) > SolidRoad::StepCost * 64);
-	TestTrue(TEXT("a road pays more for a river than for grass"),
-		SolidRoad::EnterCost(SolidRoad::EType::Road, ESolidBiome::River)
-		> SolidRoad::EnterCost(SolidRoad::EType::Road, ESolidBiome::Grassland) + SolidRoad::StepCost);
-	TestTrue(TEXT("sea is closed to a trail"),
-		SolidRoad::EnterCost(SolidRoad::EType::Trail, ESolidBiome::Sea) > SolidRoad::StepCost * 64);
+	TestEqual(TEXT("grass costs one step"),
+		SolidRoad::EnterCost(SolidRoad::EType::Trail, ESolidBiome::Grassland), SolidRoad::StepCost);
+	TestEqual(TEXT("a town costs nothing"),
+		SolidRoad::EnterCost(SolidRoad::EType::Highway, ESolidBiome::Town), 0);
+	TestEqual(TEXT("a road biome costs nothing"),
+		SolidRoad::EnterCost(SolidRoad::EType::Road, ESolidBiome::Road), 0);
+	TestEqual(TEXT("a trail pays 8 to enter forest"),
+		SolidRoad::EnterCost(SolidRoad::EType::Trail, ESolidBiome::Forest), 8);
+	TestEqual(TEXT("a road pays 16 to enter forest"),
+		SolidRoad::EnterCost(SolidRoad::EType::Road, ESolidBiome::Forest), 16);
+	TestEqual(TEXT("a highway pays 32 to enter desert"),
+		SolidRoad::EnterCost(SolidRoad::EType::Highway, ESolidBiome::Desert), 32);
+	TestEqual(TEXT("a road pays 16 to enter swamp"),
+		SolidRoad::EnterCost(SolidRoad::EType::Road, ESolidBiome::Swamp), 16);
+	TestEqual(TEXT("a mountain is banned"),
+		SolidRoad::EnterCost(SolidRoad::EType::Track, ESolidBiome::Mountain), SolidRoad::BannedStep);
+	TestEqual(TEXT("the sea is banned"),
+		SolidRoad::EnterCost(SolidRoad::EType::Trail, ESolidBiome::Sea), SolidRoad::BannedStep);
+	TestEqual(TEXT("a trail pays 16 to cross a river"),
+		SolidRoad::EnterCost(SolidRoad::EType::Trail, ESolidBiome::River, true), 16);
+	TestEqual(TEXT("a road pays 32 to cross a river"),
+		SolidRoad::EnterCost(SolidRoad::EType::Road, ESolidBiome::River, true), 32);
+	TestEqual(TEXT("a highway pays 64 to cross a river"),
+		SolidRoad::EnterCost(SolidRoad::EType::Highway, ESolidBiome::River, true), 64);
+	TestEqual(TEXT("a step along the river is banned"),
+		SolidRoad::EnterCost(SolidRoad::EType::Track, ESolidBiome::River, false), SolidRoad::BannedStep);
 	return true;
 }
 
@@ -261,8 +270,8 @@ bool FSolidRoadAvoidTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	TestTrue(TEXT("highway reaches the far town"), HighwayRoute->Cells.Num() > 19);
-	TestEqual(TEXT("highway stays off the forest"), RoadTestCountBiome(*Highway, HighwayRoute->Cells, ESolidBiome::Forest), 0);
+	TestEqual(TEXT("highway stays on the straight row"), HighwayRoute->Cells.Num(), 19);
+	TestEqual(TEXT("highway crosses one forest cell"), RoadTestCountBiome(*Highway, HighwayRoute->Cells, ESolidBiome::Forest), 1);
 	RoadTestOrthogonal(*this, HighwayRoute->Cells);
 
 	USolidWorldChart* Trail = NewObject<USolidWorldChart>();
@@ -383,7 +392,7 @@ bool FSolidRoadRiverTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	TestEqual(TEXT("road uses the ford"), RoadTestCountBiome(*Road, RoadRoute->Cells, ESolidBiome::River), 0);
+	TestEqual(TEXT("a road crosses the river once"), RoadTestCountBiome(*Road, RoadRoute->Cells, ESolidBiome::River), 1);
 
 	USolidWorldChart* Track = NewObject<USolidWorldChart>();
 	TestNotNull(TEXT("track map"), Track);

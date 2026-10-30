@@ -65,6 +65,32 @@ namespace SolidRoad
 			return true;
 		}
 
+		bool PointIsRiver(const USolidWorldChart& Map, const int32 X, const int32 Y)
+		{
+			if (X < 0 || Y < 0 || X >= USolidWorldChart::MapWidth || Y >= USolidWorldChart::MapHeight)
+			{
+				return false;
+			}
+			return Map.GetPointBiomeAtCell(X, Y) == ESolidBiome::River;
+		}
+
+		/** A river step is allowed when it runs across the channel, not along it. */
+		bool StepIsSquareToRiver(const USolidWorldChart& Map, const FIntPoint& From, const FIntPoint& To)
+		{
+			const bool bAlongY = PointIsRiver(Map, To.X, To.Y - 1) || PointIsRiver(Map, To.X, To.Y + 1);
+			const bool bAlongX = PointIsRiver(Map, To.X + 1, To.Y) || PointIsRiver(Map, To.X - 1, To.Y);
+			if (bAlongY == bAlongX)
+			{
+				return false;
+			}
+			const FIntPoint Step(To.X - From.X, To.Y - From.Y);
+			if (bAlongY)
+			{
+				return Step.X != 0 && Step.Y == 0;
+			}
+			return Step.Y != 0 && Step.X == 0;
+		}
+
 		bool CellBesideRiver(const USolidWorldChart& Map, const int32 X, const int32 Y)
 		{
 			for (int32 OffsetY = -RiverBendReach; OffsetY <= RiverBendReach; ++OffsetY)
@@ -164,7 +190,7 @@ namespace SolidRoad
 					{
 						continue;
 					}
-					if (EnterCost(Type, Map.GetPointBiomeAtCell(Side.X, Side.Y)) >= AvoidCost)
+					if (EnterCost(Type, Map.GetPointBiomeAtCell(Side.X, Side.Y)) < 0)
 					{
 						continue;
 					}
@@ -338,7 +364,15 @@ namespace SolidRoad
 				{
 					Bend = RiverBendCost;
 				}
-				const int32 NextCost = BestCost + EnterCost(Definition.Type, Map.GetPointBiomeAtCell(Next.X, Next.Y)) + Bend;
+				const ESolidBiome NextBiome = Map.GetPointBiomeAtCell(Next.X, Next.Y);
+				const bool bSquareToRiver = NextBiome == ESolidBiome::River
+					&& StepIsSquareToRiver(Map, FIntPoint(X, Y), Next);
+				const int32 Enter = EnterCost(Definition.Type, NextBiome, bSquareToRiver);
+				if (Enter < 0)
+				{
+					continue;
+				}
+				const int32 NextCost = BestCost + Enter + Bend;
 				if (NextCost < Cost[NextIndex])
 				{
 					Cost[NextIndex] = NextCost;

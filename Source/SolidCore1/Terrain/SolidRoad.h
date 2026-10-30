@@ -12,8 +12,9 @@ class USolidWorldChart;
  * The route is a path of map cells. A terrain quad takes the biome of its
  * northeast corner, so the painted strip lies half a step southwest of those centres.
  * Trails are 1 m, tracks 2 m, roads 3 m, highways 4 m.
- * Every route stays off mountains and the sea. Roads and highways also stay off
- * forest and desert, and they pay extra for every river cell so a crossing is short.
+ * A step costs 8. Town and road cost 0. Forest, desert, and swamp cost 16 for a
+ * road and 32 for a highway. A river costs twice that when the step is square
+ * to the river. Any other river step is banned, and so are mountain and sea.
  * A turn beside a river costs extra, and a spur just past the far bank is pulled
  * back, so the road runs straight across the water.
  * The strip uses a road texture, a brown close to the town colour.
@@ -184,19 +185,14 @@ namespace SolidRoad
 		float HalfWidthCm = 0.f;
 	};
 
-	/**
-	 * One step, in the same units as the other costs. A surface preference is
-	 * smaller than this, so it only breaks a tie between equal-length routes.
-	 */
-	inline constexpr int32 StepCost = 16;
-	/** Roads and highways pay this to enter a river cell. One crossing, not a trip along the water. */
-	inline constexpr int32 RiverCost = StepCost * 40;
+	/** One ordinary step. Town and road cost nothing. A banned step is BannedStep. */
+	inline constexpr int32 StepCost = 8;
+	/** The route goes around this ground. */
+	inline constexpr int32 BannedStep = -1;
 	/** Cells around a river, diagonals included, where a turn pays RiverBendCost. */
 	inline constexpr int32 RiverBendReach = 2;
 	/** Less than a step, so the route does not lengthen. A straight crossing wins the tie. */
 	inline constexpr int32 RiverBendCost = 4;
-	/** Closed ground. Mountains and the sea cost this for every type. Forest and desert cost it for a road or a highway. */
-	inline constexpr int32 AvoidCost = StepCost * 800;
 
 	/**
 	 * Terrain quads are this wide. Rounding picks the northeast corner, so the
@@ -223,30 +219,53 @@ namespace SolidRoad
 		}
 	}
 
-	inline bool AvoidsHardGround(const EType Type)
+	/**
+	 * Cost of entering this ground. BannedStep when the route goes around it.
+	 * A river step costs its crossing only when bSquareToRiver is set.
+	 * Any other step on the river is banned.
+	 */
+	inline int32 EnterCost(const EType Type, const ESolidBiome Biome, const bool bSquareToRiver = false)
 	{
-		return Type == EType::Road || Type == EType::Highway;
-	}
-
-	inline int32 EnterCost(const EType Type, const ESolidBiome Biome)
-	{
-		int32 Cost = StepCost;
-		if (Biome == ESolidBiome::Sea || Biome == ESolidBiome::Mountain)
+		const bool bRoad = Type == EType::Road;
+		const bool bHighway = Type == EType::Highway;
+		switch (Biome)
 		{
-			Cost = AvoidCost;
-		}
-		else if (AvoidsHardGround(Type))
-		{
-			if (Biome == ESolidBiome::Forest || Biome == ESolidBiome::Desert)
+		case ESolidBiome::Grassland:
+			return StepCost;
+		case ESolidBiome::Forest:
+		case ESolidBiome::Desert:
+		case ESolidBiome::Swamp:
+			if (bHighway)
 			{
-				Cost = AvoidCost;
+				return 32;
 			}
-			else if (Biome == ESolidBiome::River)
+			if (bRoad)
 			{
-				Cost = RiverCost;
+				return 16;
 			}
+			return StepCost;
+		case ESolidBiome::Town:
+		case ESolidBiome::Road:
+			return 0;
+		case ESolidBiome::River:
+			if (!bSquareToRiver)
+			{
+				return BannedStep;
+			}
+			if (bHighway)
+			{
+				return 64;
+			}
+			if (bRoad)
+			{
+				return 32;
+			}
+			return 16;
+		case ESolidBiome::Mountain:
+		case ESolidBiome::Sea:
+		default:
+			return BannedStep;
 		}
-		return Cost + SolidBiome::Of(Biome).SurfacePreference();
 	}
 
 	/**

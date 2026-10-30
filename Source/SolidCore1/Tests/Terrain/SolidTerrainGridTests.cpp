@@ -104,10 +104,10 @@ bool FSolidTerrainGridPointsDifferTest::RunTest(const FString& Parameters)
 	BiomeIs(*this, TEXT("the solver reads the mouth point"), Lair->GetPointBiomeAtCell(MouthCol, MouthRow), ESolidBiome::Grassland);
 	TestTrue(
 		TEXT("a trail can enter that grassland point"),
-		SolidRoad::EnterCost(SolidRoad::EType::Trail, Lair->GetPointBiomeAtCell(MouthCol, MouthRow)) < SolidRoad::AvoidCost);
+		SolidRoad::EnterCost(SolidRoad::EType::Trail, Lair->GetPointBiomeAtCell(MouthCol, MouthRow)) == SolidRoad::StepCost);
 	TestTrue(
 		TEXT("the mouth cell is still closed to a trail"),
-		SolidRoad::EnterCost(SolidRoad::EType::Trail, Lair->GetBiomeAtCell(MouthCol, MouthRow)) >= SolidRoad::AvoidCost);
+		SolidRoad::EnterCost(SolidRoad::EType::Trail, Lair->GetBiomeAtCell(MouthCol, MouthRow)) == SolidRoad::BannedStep);
 	return true;
 }
 

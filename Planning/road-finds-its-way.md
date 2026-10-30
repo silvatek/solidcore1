@@ -1,6 +1,6 @@
 # A road finds its way
 
-Status: Ready
+Status: In Progress
 
 ## Story
 

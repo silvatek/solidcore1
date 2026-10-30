@@ -737,7 +737,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidEventsDrivenFromVillageTest::RunTest(const FString& Parameters)
 {
 	TestEqual(TEXT("two messages"), SolidMessages::DefinitionCount, 2);
-	TestEqual(TEXT("eight events"), SolidEvents::DefinitionCount, 8);
+	TestEqual(TEXT("seven events"), SolidEvents::DefinitionCount, 7);
 	int32 EnterTownCount = 0;
 	for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
 	{

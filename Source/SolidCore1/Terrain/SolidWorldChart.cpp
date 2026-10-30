@@ -1365,21 +1365,21 @@ bool USolidWorldChart::BuildQuery() const
 	CopyPlayOntoPoints(false, true);
 	AssignTownPoints();
 
-	TArray<SolidRoad::FDefinition> RoadDefs;
-	auto AppendRoad = [&RoadDefs](const FString& From, const FString& To, const TCHAR* TypeName) -> SolidRoad::FDefinition*
-	{
-		const FString Line = FString::Printf(TEXT("Road: %s -> %s, %s"), *From, *To, TypeName);
-		SolidRoad::FDefinition RoadDef;
-		if (!SolidRoad::Parse(Line, RoadDef))
-		{
-			UE_LOG(LogSolid, Warning, TEXT("WorldChart: ignored road %s -> %s."), *From, *To);
-			return nullptr;
-		}
-		RoadDefs.Add(RoadDef);
-		return &RoadDefs.Last();
-	};
 	if (SolidRoad::bRoadsFromChart)
 	{
+		TArray<SolidRoad::FDefinition> RoadDefs;
+		auto AppendRoad = [&RoadDefs](const FString& From, const FString& To, const TCHAR* TypeName) -> SolidRoad::FDefinition*
+		{
+			const FString Line = FString::Printf(TEXT("Road: %s -> %s, %s"), *From, *To, TypeName);
+			SolidRoad::FDefinition RoadDef;
+			if (!SolidRoad::Parse(Line, RoadDef))
+			{
+				UE_LOG(LogSolid, Warning, TEXT("WorldChart: ignored road %s -> %s."), *From, *To);
+				return nullptr;
+			}
+			RoadDefs.Add(RoadDef);
+			return &RoadDefs.Last();
+		};
 		for (const FSolidWorldChartRoad& Road : Roads)
 		{
 			AppendRoad(Road.FromName, Road.ToName, RoadTypeName(Road.Type));
@@ -1389,21 +1389,21 @@ bool USolidWorldChart::BuildQuery() const
 			LocateStrongholdEnd(BangMarks, RoadDef.From);
 			LocateStrongholdEnd(BangMarks, RoadDef.To);
 		}
+		BuildRoads(RoadDefs);
 	}
 	else
 	{
-		AppendListedRoads(RoadDefs);
+		AppendListedRoads();
 	}
 
 	bIsLoaded = true;
-	BuildRoads(RoadDefs);
 	UE_LOG(LogSolid, Warning,
 		TEXT("WorldChart loaded: %dx%d startTownCells=%d locations=%d roads=%d"),
 		MapWidth, MapHeight, StartTownCells.Num(), Locations.Num(), SolvedRoads.Num());
 	return true;
 }
 
-void USolidWorldChart::AppendListedRoads(TArray<SolidRoad::FDefinition>& OutRoads) const
+void USolidWorldChart::AppendListedRoads() const
 {
 	auto FillEnd = [](const FSolidWorldChartMark& Mark, SolidRoad::FEndpoint& Out) -> bool
 	{
@@ -1427,6 +1427,7 @@ void USolidWorldChart::AppendListedRoads(TArray<SolidRoad::FDefinition>& OutRoad
 		return false;
 	};
 
+	ResetRoads();
 	for (SolidRoad::FRoad Road : SolidRoad::Roads)
 	{
 		SolidRoad::LocateMark(Marks, Road.From);
@@ -1446,7 +1447,7 @@ void USolidWorldChart::AppendListedRoads(TArray<SolidRoad::FDefinition>& OutRoad
 		{
 			LocateStrongholdEnd(BangMarks, Definition.To);
 		}
-		OutRoads.Add(Definition);
+		BuildRoad(Definition, &Road);
 	}
 }
 
@@ -1636,7 +1637,7 @@ void USolidWorldChart::BuildRoads(const TArray<SolidRoad::FDefinition>& Definiti
 
 	for (const SolidRoad::FDefinition& Definition : Definitions)
 	{
-		BuildRoad(Definition);
+		BuildRoad(Definition, nullptr);
 	}
 }
 
@@ -1648,8 +1649,9 @@ void USolidWorldChart::ResetRoads() const
 	RoadSpansByCell.SetNum(MapWidth * MapHeight);
 }
 
-void USolidWorldChart::BuildRoad(const SolidRoad::FDefinition& Definition) const
+void USolidWorldChart::BuildRoad(const SolidRoad::FDefinition& Definition, const SolidRoad::FRoad* Road) const
 {
+	(void)Road;
 	if (RoadSpansByCell.Num() != MapWidth * MapHeight)
 	{
 		RoadSpansByCell.SetNum(MapWidth * MapHeight);

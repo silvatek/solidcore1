@@ -1,5 +1,6 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
+#include "SolidRoads.h"
 #include "SolidStronghold.h"
 #include "SolidTowns.h"
 #include "SolidWorldChart.h"
@@ -97,42 +98,45 @@ namespace
 			MarkMiss,
 			0);
 
-		const TArray<SolidRoad::FRoute>& TextRoads = TextMap.GetRoads();
-		const TArray<SolidRoad::FRoute>& ChartRoads = ChartMap.GetRoads();
-		bOk &= Test.TestEqual(TEXT("road count"), ChartRoads.Num(), TextRoads.Num());
-		const int32 RoadCount = FMath::Min(TextRoads.Num(), ChartRoads.Num());
-		for (int32 Index = 0; Index < RoadCount; ++Index)
+		if (SolidRoad::bRoadsFromChart)
 		{
-			const SolidRoad::FRoute& TextRoad = TextRoads[Index];
-			const SolidRoad::FRoute& ChartRoad = ChartRoads[Index];
-			bOk &= Test.TestEqual(
-				*FString::Printf(TEXT("road %d type"), Index),
-				static_cast<uint8>(ChartRoad.Definition.Type),
-				static_cast<uint8>(TextRoad.Definition.Type));
-			bOk &= Test.TestTrue(
-				*FString::Printf(TEXT("road %d starts match"), Index),
-				SameEndpoint(TextRoad.Definition.From, ChartRoad.Definition.From));
-			bOk &= Test.TestTrue(
-				*FString::Printf(TEXT("road %d ends match"), Index),
-				SameEndpoint(TextRoad.Definition.To, ChartRoad.Definition.To));
-			bOk &= Test.TestEqual(
-				*FString::Printf(TEXT("road %d length"), Index),
-				ChartRoad.Cells.Num(),
-				TextRoad.Cells.Num());
-			const int32 CellCount = FMath::Min(TextRoad.Cells.Num(), ChartRoad.Cells.Num());
-			for (int32 CellIndex = 0; CellIndex < CellCount; ++CellIndex)
+			const TArray<SolidRoad::FRoute>& TextRoads = TextMap.GetRoads();
+			const TArray<SolidRoad::FRoute>& ChartRoads = ChartMap.GetRoads();
+			bOk &= Test.TestEqual(TEXT("road count"), ChartRoads.Num(), TextRoads.Num());
+			const int32 RoadCount = FMath::Min(TextRoads.Num(), ChartRoads.Num());
+			for (int32 Index = 0; Index < RoadCount; ++Index)
 			{
-				if (TextRoad.Cells[CellIndex] != ChartRoad.Cells[CellIndex])
+				const SolidRoad::FRoute& TextRoad = TextRoads[Index];
+				const SolidRoad::FRoute& ChartRoad = ChartRoads[Index];
+				bOk &= Test.TestEqual(
+					*FString::Printf(TEXT("road %d type"), Index),
+					static_cast<uint8>(ChartRoad.Definition.Type),
+					static_cast<uint8>(TextRoad.Definition.Type));
+				bOk &= Test.TestTrue(
+					*FString::Printf(TEXT("road %d starts match"), Index),
+					SameEndpoint(TextRoad.Definition.From, ChartRoad.Definition.From));
+				bOk &= Test.TestTrue(
+					*FString::Printf(TEXT("road %d ends match"), Index),
+					SameEndpoint(TextRoad.Definition.To, ChartRoad.Definition.To));
+				bOk &= Test.TestEqual(
+					*FString::Printf(TEXT("road %d length"), Index),
+					ChartRoad.Cells.Num(),
+					TextRoad.Cells.Num());
+				const int32 CellCount = FMath::Min(TextRoad.Cells.Num(), ChartRoad.Cells.Num());
+				for (int32 CellIndex = 0; CellIndex < CellCount; ++CellIndex)
 				{
-					bOk &= Test.TestEqual(
-						*FString::Printf(TEXT("road %d cell %d column"), Index, CellIndex),
-						ChartRoad.Cells[CellIndex].X,
-						TextRoad.Cells[CellIndex].X);
-					bOk &= Test.TestEqual(
-						*FString::Printf(TEXT("road %d cell %d row"), Index, CellIndex),
-						ChartRoad.Cells[CellIndex].Y,
-						TextRoad.Cells[CellIndex].Y);
-					break;
+					if (TextRoad.Cells[CellIndex] != ChartRoad.Cells[CellIndex])
+					{
+						bOk &= Test.TestEqual(
+							*FString::Printf(TEXT("road %d cell %d column"), Index, CellIndex),
+							ChartRoad.Cells[CellIndex].X,
+							TextRoad.Cells[CellIndex].X);
+						bOk &= Test.TestEqual(
+							*FString::Printf(TEXT("road %d cell %d row"), Index, CellIndex),
+							ChartRoad.Cells[CellIndex].Y,
+							TextRoad.Cells[CellIndex].Y);
+						break;
+					}
 				}
 			}
 		}
@@ -215,6 +219,13 @@ bool FSolidWorldChartRulesTest::RunTest(const FString& Parameters)
 	}
 
 	TestTrue(TEXT("the small chart matches its text"), MapsMatch(*this, *TextMap, *ChartMap));
+	if (!SolidRoad::bRoadsFromChart)
+	{
+		TestEqual(
+			TEXT("the loaded chart uses the code roads"),
+			ChartMap->GetRoads().Num(),
+			SolidRoad::DefinitionCount);
+	}
 
 	TestEqual(TEXT("an unknown town is not a location"), ChartMap->GetLocationIdAtCell(UnknownCell.X, UnknownCell.Y), INDEX_NONE);
 	FSolidWorldBang UnknownBang;

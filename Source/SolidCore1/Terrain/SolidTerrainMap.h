@@ -81,9 +81,16 @@ public:
 	 *   <= ClearRadius → Fog=0
 	 *   ClearRadius..FullFogStart → Fog = min(Fog, 0.5)
 	 * Beyond FullFogStart unchanged. Never increases Fog.
+	 * A later step with bHavePrev only writes the 25 m and 50 m rings that just moved.
 	 * @return Number of points whose Fog value changed.
 	 */
-	int32 ApplyExplorationFogAround(float WorldX, float WorldY);
+	int32 ApplyExplorationFogAround(
+		float WorldX,
+		float WorldY,
+		bool bHavePrev = false,
+		float PrevWorldX = 0.f,
+		float PrevWorldY = 0.f,
+		TArray<FVector2D>* OutChangedXY = nullptr);
 
 	/** Set Fog to 0 on every terrain point. */
 	void ClearAllExplorationFog();

@@ -266,6 +266,8 @@ protected:
 	void EnsureExplorationFogMaterials();
 	int32 ClearExplorationFogAtFocus();
 	void QueueExplorationFogMeshRefresh(float WorldX, float WorldY, float RadiusCm);
+	/** Mark the chunk that holds this point, and a neighbor if the point sits on the join. */
+	void MarkFogChunksAt(float WorldX, float WorldY);
 	/** Rebuild every dirty curtain in this tick so neighboring sheets stay closed. */
 	void ProcessExplorationFogMeshRebuilds();
 	/** Quads and FogQuads below 1 use QuadsPerSide and FogQuadsPerSide. */

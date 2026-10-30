@@ -251,4 +251,55 @@ bool FSolidMapClearAllExplorationFogTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidMapFogTrailRingsTest,
+	"SolidCore1.Map.FogTrailRings",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidMapFogTrailRingsTest::RunTest(const FString& Parameters)
+{
+	USolidTerrainMap* Map = SolidTerrainTestHelpers::MakeSmallMap();
+	TestNotNull(TEXT("map object"), Map);
+
+	FVector2D TrailXY = FVector2D::ZeroVector;
+	TestTrue(TEXT("found fully-fogged trail point"),
+		SolidTerrainTestHelpers::FindFullyFoggedTrailPoint(Map, TrailXY));
+
+	Map->ApplyExplorationFogAround(TrailXY.X, TrailXY.Y);
+
+	FVector2D TowardOrigin = Map->GetFogOriginXY() - TrailXY;
+	if (!TowardOrigin.Normalize())
+	{
+		TowardOrigin = FVector2D(-1.f, 0.f);
+	}
+	const FVector2D Next = TrailXY + TowardOrigin * 250.f;
+	TArray<FVector2D> ChangedXY;
+	const int32 Changed = Map->ApplyExplorationFogAround(
+		Next.X, Next.Y, true, TrailXY.X, TrailXY.Y, &ChangedXY);
+	TestTrue(TEXT("a short step writes some ring points"), Changed > 0);
+	TestEqual(TEXT("each write is listed"), ChangedXY.Num(), Changed);
+
+	const float Band = 250.f + Map->PointSpacing;
+	const float ClearR = SolidTerrainFog::MetersToCm(SolidTerrainFog::ClearRadiusMeters);
+	const float HalfR = SolidTerrainFog::MetersToCm(SolidTerrainFog::FullFogStartMeters);
+	for (const FVector2D& Point : ChangedXY)
+	{
+		const float Dist = FVector2D::Distance(Point, Next);
+		const bool bNearClear = FMath::Abs(Dist - ClearR) <= Band;
+		const bool bNearHalf = FMath::Abs(Dist - HalfR) <= Band;
+		if (!bNearClear && !bNearHalf)
+		{
+			AddError(FString::Printf(
+				TEXT("changed point (%.0f, %.0f) is %.0f cm from the new trail, not on a ring"),
+				Point.X, Point.Y, Dist));
+			return false;
+		}
+	}
+
+	const FVector2D Rear = TrailXY - TowardOrigin * 1000.f;
+	TestTrue(TEXT("ground already cleared behind the step stays clear"),
+		FMath::IsNearlyEqual(Map->SamplePoint(Rear.X, Rear.Y).Fog, 0.f));
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0772")
+#define SOLID_BUILD_ID TEXT("SC1-0773")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A fog trail update rebuilds every dirty curtain.")
+#define SOLID_BUILD_NOTE TEXT("The fog trail only writes the rings that just moved.")
 #endif

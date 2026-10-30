@@ -271,7 +271,13 @@ void USolidTerrainMap::ClearAllExplorationFog()
 	TrackClearFogBounds();
 }
 
-int32 USolidTerrainMap::ApplyExplorationFogAround(float WorldX, float WorldY)
+int32 USolidTerrainMap::ApplyExplorationFogAround(
+	float WorldX,
+	float WorldY,
+	bool bHavePrev,
+	float PrevWorldX,
+	float PrevWorldY,
+	TArray<FVector2D>* OutChangedXY)
 {
 	if (!IsBuilt())
 	{
@@ -282,47 +288,111 @@ int32 USolidTerrainMap::ApplyExplorationFogAround(float WorldX, float WorldY)
 	const float HalfOuterCm = SolidTerrainFog::MetersToCm(SolidTerrainFog::FullFogStartMeters);
 	const float ClearRadiusSq = ClearRadiusCm * ClearRadiusCm;
 	const float HalfOuterSq = HalfOuterCm * HalfOuterCm;
+	const float MoveCm = bHavePrev
+		? FVector2D::Distance(FVector2D(WorldX, WorldY), FVector2D(PrevWorldX, PrevWorldY))
+		: HalfOuterCm;
+	const bool bFullDisk = !bHavePrev || MoveCm > ClearRadiusCm;
 
-	const int32 X0 = FMath::Clamp(
-		FMath::FloorToInt((WorldX - HalfOuterCm - OriginXY.X) / PointSpacing), 0, GridWidth - 1);
-	const int32 X1 = FMath::Clamp(
-		FMath::CeilToInt((WorldX + HalfOuterCm - OriginXY.X) / PointSpacing), 0, GridWidth - 1);
-	const int32 Y0 = FMath::Clamp(
-		FMath::FloorToInt((WorldY - HalfOuterCm - OriginXY.Y) / PointSpacing), 0, GridHeight - 1);
-	const int32 Y1 = FMath::Clamp(
-		FMath::CeilToInt((WorldY + HalfOuterCm - OriginXY.Y) / PointSpacing), 0, GridHeight - 1);
+	auto WritePoint = [&](FSolidTerrainPoint& Point, float DistSq) -> bool
+	{
+		const float OldFog = Point.Fog;
+		if (DistSq <= ClearRadiusSq)
+		{
+			Point.Fog = 0.f;
+		}
+		else if (DistSq <= HalfOuterSq)
+		{
+			Point.Fog = FMath::Min(Point.Fog, 0.5f);
+		}
+		else
+		{
+			return false;
+		}
+		if (FMath::IsNearlyEqual(OldFog, Point.Fog))
+		{
+			return false;
+		}
+		if (OutChangedXY)
+		{
+			OutChangedXY->Add(FVector2D(Point.X, Point.Y));
+		}
+		return true;
+	};
+
+	auto AlreadyCovered = [&](float DistSq, float PrevDistSq) -> bool
+	{
+		if (DistSq <= ClearRadiusSq)
+		{
+			return PrevDistSq <= ClearRadiusSq;
+		}
+		if (DistSq <= HalfOuterSq)
+		{
+			return PrevDistSq <= HalfOuterSq;
+		}
+		return true;
+	};
 
 	int32 Changed = 0;
-	for (int32 IY = Y0; IY <= Y1; ++IY)
+	auto VisitBox = [&](float MinX, float MaxX, float MinY, float MaxY, bool bRingsOnly, float InnerSq, float OuterSq)
 	{
-		for (int32 IX = X0; IX <= X1; ++IX)
+		const int32 X0 = FMath::Clamp(
+			FMath::FloorToInt((MinX - OriginXY.X) / PointSpacing), 0, GridWidth - 1);
+		const int32 X1 = FMath::Clamp(
+			FMath::CeilToInt((MaxX - OriginXY.X) / PointSpacing), 0, GridWidth - 1);
+		const int32 Y0 = FMath::Clamp(
+			FMath::FloorToInt((MinY - OriginXY.Y) / PointSpacing), 0, GridHeight - 1);
+		const int32 Y1 = FMath::Clamp(
+			FMath::CeilToInt((MaxY - OriginXY.Y) / PointSpacing), 0, GridHeight - 1);
+		for (int32 IY = Y0; IY <= Y1; ++IY)
 		{
-			FSolidTerrainPoint& Point = Points[IY * GridWidth + IX];
-			const float DX = Point.X - WorldX;
-			const float DY = Point.Y - WorldY;
-			const float DistSq = DX * DX + DY * DY;
-			if (DistSq > HalfOuterSq)
+			for (int32 IX = X0; IX <= X1; ++IX)
 			{
-				continue;
-			}
-
-			const float OldFog = Point.Fog;
-			if (DistSq <= ClearRadiusSq)
-			{
-				Point.Fog = 0.f;
-			}
-			else
-			{
-				// 25–50m ring: pull full fog down to half, leave clearer points alone.
-				Point.Fog = FMath::Min(Point.Fog, 0.5f);
-			}
-
-			if (!FMath::IsNearlyEqual(OldFog, Point.Fog))
-			{
-				++Changed;
+				FSolidTerrainPoint& Point = Points[IY * GridWidth + IX];
+				const float DistSq = FVector2D::DistSquared(FVector2D(Point.X, Point.Y), FVector2D(WorldX, WorldY));
+				if (bRingsOnly && (DistSq < InnerSq || DistSq > OuterSq))
+				{
+					continue;
+				}
+				if (bHavePrev)
+				{
+					const float PrevDistSq = FVector2D::DistSquared(
+						FVector2D(Point.X, Point.Y), FVector2D(PrevWorldX, PrevWorldY));
+					if (AlreadyCovered(DistSq, PrevDistSq))
+					{
+						continue;
+					}
+				}
+				if (WritePoint(Point, DistSq))
+				{
+					++Changed;
+				}
 			}
 		}
+	};
+
+	if (bFullDisk)
+	{
+		VisitBox(
+			WorldX - HalfOuterCm, WorldX + HalfOuterCm,
+			WorldY - HalfOuterCm, WorldY + HalfOuterCm,
+			false, 0.f, HalfOuterSq);
 	}
+	else
+	{
+		const float Band = MoveCm + PointSpacing;
+		auto VisitRing = [&](float RadiusCm)
+		{
+			const float Inner = FMath::Max(RadiusCm - Band, 0.f);
+			const float Outer = RadiusCm + Band;
+			VisitBox(
+				WorldX - Outer, WorldX + Outer,
+				WorldY - Outer, WorldY + Outer,
+				true, Inner * Inner, Outer * Outer);
+		};
+		VisitRing(ClearRadiusCm);
+		VisitRing(HalfOuterCm);
+	}
+
 	TrackClearFogBounds();
 	return Changed;
 }

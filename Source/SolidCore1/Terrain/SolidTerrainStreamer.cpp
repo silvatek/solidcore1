@@ -251,7 +251,14 @@ int32 ASolidTerrainStreamer::ClearExplorationFogAtFocus()
 	}
 
 	// Trail clear only. The initial bubble is CenterExplorationFogOnFocus.
-	const int32 Changed = TerrainMap->ApplyExplorationFogAround(Loc.X, Loc.Y);
+	TArray<FVector2D> ChangedXY;
+	const int32 Changed = TerrainMap->ApplyExplorationFogAround(
+		Loc.X,
+		Loc.Y,
+		bHasFogApplyLocation,
+		LastFogApplyLocation.X,
+		LastFogApplyLocation.Y,
+		&ChangedXY);
 	LastFogApplyLocation = Loc;
 	bHasFogApplyLocation = true;
 	if (ASolidGameMode* Mode = GetWorld() ? GetWorld()->GetAuthGameMode<ASolidGameMode>() : nullptr)
@@ -262,9 +269,10 @@ int32 ASolidTerrainStreamer::ClearExplorationFogAtFocus()
 
 	if (Changed > 0 && bRenderExplorationFogMeshes)
 	{
-		QueueExplorationFogMeshRefresh(
-			Loc.X, Loc.Y,
-			SolidTerrainFog::MetersToCm(SolidTerrainFog::FullFogStartMeters) + ChunkWorldSize * 0.5f);
+		for (const FVector2D& Point : ChangedXY)
+		{
+			MarkFogChunksAt(Point.X, Point.Y);
+		}
 	}
 	return Changed;
 }
@@ -379,6 +387,48 @@ void ASolidTerrainStreamer::QueueExplorationFogMeshRefresh(float WorldX, float W
 		{
 			DirtyFogChunkCoords.Add(Pair.Key);
 		}
+	}
+}
+
+void ASolidTerrainStreamer::MarkFogChunksAt(float WorldX, float WorldY)
+{
+	const float Size = FMath::Max(ChunkWorldSize, 100.f);
+	const FIntPoint Coord = WorldToChunkCoord(FVector(WorldX, WorldY, 0.f));
+	DirtyFogChunkCoords.Add(Coord);
+	const float LocalX = WorldX - static_cast<float>(Coord.X) * Size;
+	const float LocalY = WorldY - static_cast<float>(Coord.Y) * Size;
+	const float Edge = FMath::Max(TerrainPointSpacing, 50.f);
+	if (LocalX <= Edge)
+	{
+		DirtyFogChunkCoords.Add(FIntPoint(Coord.X - 1, Coord.Y));
+	}
+	if (LocalX >= Size - Edge)
+	{
+		DirtyFogChunkCoords.Add(FIntPoint(Coord.X + 1, Coord.Y));
+	}
+	if (LocalY <= Edge)
+	{
+		DirtyFogChunkCoords.Add(FIntPoint(Coord.X, Coord.Y - 1));
+	}
+	if (LocalY >= Size - Edge)
+	{
+		DirtyFogChunkCoords.Add(FIntPoint(Coord.X, Coord.Y + 1));
+	}
+	if (LocalX <= Edge && LocalY <= Edge)
+	{
+		DirtyFogChunkCoords.Add(FIntPoint(Coord.X - 1, Coord.Y - 1));
+	}
+	if (LocalX >= Size - Edge && LocalY <= Edge)
+	{
+		DirtyFogChunkCoords.Add(FIntPoint(Coord.X + 1, Coord.Y - 1));
+	}
+	if (LocalX <= Edge && LocalY >= Size - Edge)
+	{
+		DirtyFogChunkCoords.Add(FIntPoint(Coord.X - 1, Coord.Y + 1));
+	}
+	if (LocalX >= Size - Edge && LocalY >= Size - Edge)
+	{
+		DirtyFogChunkCoords.Add(FIntPoint(Coord.X + 1, Coord.Y + 1));
 	}
 }
 

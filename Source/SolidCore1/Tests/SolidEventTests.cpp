@@ -520,13 +520,11 @@ bool FSolidEventsRequiresTest::RunTest(const FString& Parameters)
 	}
 
 	const int32 IglinIndex = SolidEvents::FindIndexById(SolidEvents::IdEnterIglin);
-	const int32 BridgeIndex = SolidEvents::FindIndexById(SolidEvents::IdReachBrokenBridge);
 	const int32 RelionIndex = SolidEvents::FindIndexById(SolidEvents::IdEnterRelion);
 	TestTrue(TEXT("Relion id is listed"), RelionIndex != INDEX_NONE);
-	TestTrue(TEXT("broken bridge id is listed"), BridgeIndex != INDEX_NONE);
 	TestTrue(
-		TEXT("Reach broken bridge sits between Iglin and Relion"),
-		IglinIndex != INDEX_NONE && BridgeIndex > IglinIndex && RelionIndex > BridgeIndex);
+		TEXT("Relion sits after Iglin"),
+		IglinIndex != INDEX_NONE && RelionIndex > IglinIndex);
 	if (RelionIndex != INDEX_NONE)
 	{
 		const SolidEvents::FEvent& Relion = SolidEvents::Definitions[RelionIndex];
@@ -535,23 +533,6 @@ bool FSolidEventsRequiresTest::RunTest(const FString& Parameters)
 		{
 			TestEqual(TEXT("Relion requires Enter Iglin"), FString(Relion.Requires[0]), FString(SolidEvents::IdEnterIglin));
 		}
-	}
-	if (BridgeIndex != INDEX_NONE)
-	{
-		const SolidEvents::FEvent& BridgeEvent = SolidEvents::Definitions[BridgeIndex];
-		TestEqual(TEXT("Reach broken bridge requires one event"), BridgeEvent.RequireCount, 1);
-		if (BridgeEvent.RequireCount > 0)
-		{
-			TestEqual(
-				TEXT("Reach broken bridge requires Enter Iglin"),
-				FString(BridgeEvent.Requires[0]),
-				FString(SolidEvents::IdEnterIglin));
-		}
-		const FString BridgeChanges = USolidJournal::Describe(BridgeEvent);
-		TestEqual(
-			TEXT("Reach broken bridge journal follows its changes"),
-			BridgeEvent.ChangeCount > 0,
-			!BridgeChanges.IsEmpty());
 	}
 	for (int32 Index = 0; Index < SolidEvents::DefinitionCount; ++Index)
 	{
@@ -581,78 +562,6 @@ bool FSolidEventsRequiresTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidEventsReachBrokenBridgeTest,
-	"SolidCore1.Events.ReachBrokenBridge",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
-
-bool FSolidEventsReachBrokenBridgeTest::RunTest(const FString& Parameters)
-{
-	const SolidEvents::FEvent* Event = SolidEventTestPrivate::FindEvent(TEXT("Reach broken bridge"));
-	TestNotNull(TEXT("Reach broken bridge is listed"), Event);
-	FString RampChanges;
-	if (Event)
-	{
-		TestEqual(
-			TEXT("the ramp trigger"),
-			static_cast<uint8>(Event->Trigger),
-			static_cast<uint8>(SolidEvents::ETrigger::ReachBrokenBridge));
-		RampChanges = USolidJournal::Describe(*Event);
-	}
-
-	USolidGameState& Early = *NewObject<USolidGameState>();
-	USolidCaptain& EarlyCaptain = *NewObject<USolidCaptain>();
-	const SolidEvents::FResult Blocked = SolidEvents::NotifyReachBrokenBridge(Early, EarlyCaptain);
-	TestFalse(TEXT("the ramp waits for Iglin"), Blocked.bFired);
-	TestEqual(TEXT("an early stand is not recorded"), Early.FiredOrder.Num(), 0);
-	TestEqual(TEXT("an early stand is not journaled"), Early.GetJournal()->Entries.Num(), 0);
-	TestEqual(TEXT("the ramp does not occupy a town"), EarlyCaptain.OccupiedTown, INDEX_NONE);
-
-	const SolidEvents::FResult Iglin = SolidEvents::NotifyOccupiedTown(Early, EarlyCaptain, 0);
-	TestTrue(TEXT("Iglin fires"), Iglin.bFired);
-	const SolidEvents::FResult Reached = SolidEvents::NotifyReachBrokenBridge(Early, EarlyCaptain);
-	TestTrue(TEXT("the ramp fires after Iglin"), Reached.bFired);
-	TestFalse(TEXT("the ramp does not switch sight"), Reached.bSetSight);
-	TestFalse(TEXT("the ramp does not retitle"), Reached.bSetTitle);
-	TestFalse(TEXT("the ramp does not repair the bridge"), Reached.bRepairBridge);
-	TestFalse(TEXT("the Iglin bridge stays broken"), Early.bIglinBridgeRepaired);
-	TestEqual(TEXT("the squad stays empty"), Early.MaxSquadSize, 0);
-	TestEqual(TEXT("Iglin and the ramp are recorded"), Early.FiredOrder.Num(), 2);
-
-	const int32 BridgeIndex = SolidEvents::FindIndexById(SolidEvents::IdReachBrokenBridge);
-	TestTrue(TEXT("the ramp is journaled"), Early.GetJournal()->Entries.Num() == 2 && BridgeIndex != INDEX_NONE
-		&& Early.GetJournal()->Entries[1].EventIndex == BridgeIndex
-		&& Early.GetJournal()->Entries[1].Type == EJournalType::Event);
-
-	TArray<USolidJournal::FRow> Rows;
-	Early.GetJournal()->CollectRows(Rows);
-	int32 RampRow = INDEX_NONE;
-	for (int32 Index = 0; Index < Rows.Num(); ++Index)
-	{
-		if (Rows[Index].Kind == USolidJournal::ERowKind::Entry && Rows[Index].Text == TEXT("Reach broken bridge"))
-		{
-			RampRow = Index;
-			break;
-		}
-	}
-	TestTrue(TEXT("the journal lists Reach broken bridge"), RampRow != INDEX_NONE);
-	const bool bDetail = RampRow != INDEX_NONE
-		&& RampRow + 1 < Rows.Num()
-		&& Rows[RampRow + 1].Kind == USolidJournal::ERowKind::Detail;
-	TestEqual(TEXT("the ramp detail follows the event"), bDetail, !RampChanges.IsEmpty());
-	if (bDetail && RampRow + 1 < Rows.Num())
-	{
-		TestEqual(TEXT("the ramp change line is the event"), Rows[RampRow + 1].Text, RampChanges);
-	}
-
-	const int32 JournalCount = Early.GetJournal()->Entries.Num();
-	const SolidEvents::FResult Again = SolidEvents::NotifyReachBrokenBridge(Early, EarlyCaptain);
-	TestFalse(TEXT("the ramp fires once"), Again.bFired);
-	TestEqual(TEXT("a second stand is not recorded"), Early.FiredOrder.Num(), 2);
-	TestEqual(TEXT("a second stand is not journaled"), Early.GetJournal()->Entries.Num(), JournalCount);
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidEventsActTest,
 	"SolidCore1.Events.Act",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
@@ -671,7 +580,6 @@ bool FSolidEventsActTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("ACT_3"), SolidEvents::ACT_3, 3);
 	TestEqual(TEXT("ACT_4"), SolidEvents::ACT_4, 4);
 	TestEqual(TEXT("Iglin is ACT_0"), ActOf(SolidEvents::IdEnterIglin), SolidEvents::ACT_0);
-	TestEqual(TEXT("Reach broken bridge is ACT_0"), ActOf(SolidEvents::IdReachBrokenBridge), SolidEvents::ACT_0);
 	TestEqual(TEXT("Driven from the village is ACT_1"), ActOf(SolidEvents::IdDrivenFromVillage), SolidEvents::ACT_1);
 	TestEqual(TEXT("Relion is ACT_2"), ActOf(SolidEvents::IdEnterRelion), SolidEvents::ACT_2);
 	TestEqual(TEXT("Kanfold is ACT_3"), ActOf(SolidEvents::IdEnterKanfold), SolidEvents::ACT_3);
@@ -691,53 +599,10 @@ bool FSolidEventsCaveTest::RunTest(const FString& Parameters)
 	USolidCaptain& StateCaptain = *NewObject<USolidCaptain>();
 	TestFalse(TEXT("the cave starts closed"), State.bStrongholdsEnabled);
 
-	const SolidEvents::FResult Blocked = SolidEvents::NotifyReachBrokenBridge(State, StateCaptain);
-	TestFalse(TEXT("an early stand does not enter"), Blocked.bEnterStronghold);
-	TestFalse(TEXT("an early stand leaves the cave closed"), State.bStrongholdsEnabled);
-
 	const SolidEvents::FResult Iglin = SolidEvents::NotifyOccupiedTown(State, StateCaptain, 0);
 	TestTrue(TEXT("Iglin fires"), Iglin.bFired);
 	TestFalse(TEXT("Iglin leaves the cave closed"), Iglin.bEnterStronghold);
 	TestFalse(TEXT("Iglin does not open the cave"), State.bStrongholdsEnabled);
-
-	const SolidEvents::FEvent* Event = SolidEventTestPrivate::FindEvent(TEXT("Reach broken bridge"));
-	TestNotNull(TEXT("Reach broken bridge is listed"), Event);
-	bool bReachOpensCave = false;
-	if (Event)
-	{
-		const int32 ChangeCount = FMath::Min(Event->ChangeCount, SolidEvents::MaxChangesPerEvent);
-		for (int32 Index = 0; Index < ChangeCount; ++Index)
-		{
-			if (Event->Changes[Index].Kind == SolidEvents::EChange::EnableCave)
-			{
-				bReachOpensCave = true;
-			}
-		}
-	}
-
-	const SolidEvents::FResult Reached = SolidEvents::NotifyReachBrokenBridge(State, StateCaptain);
-	TestEqual(TEXT("the ramp follows its cave change"), Reached.bEnterStronghold, bReachOpensCave);
-	TestEqual(TEXT("the cave follows the ramp event"), State.bStrongholdsEnabled, bReachOpensCave);
-	TestEqual(
-		TEXT("the journal records the cave when the ramp opens it"),
-		Event && USolidJournal::Describe(*Event).Contains(TEXT("Cave enabled")),
-		bReachOpensCave);
-
-	TArray<USolidJournal::FRow> Rows;
-	State.GetJournal()->CollectRows(Rows);
-	bool bSawCave = false;
-	for (const USolidJournal::FRow& Row : Rows)
-	{
-		if (Row.Kind == USolidJournal::ERowKind::Detail && Row.Text.Contains(TEXT("Cave enabled")))
-		{
-			bSawCave = true;
-		}
-	}
-	TestEqual(TEXT("the journal lists the cave when the ramp opens it"), bSawCave, bReachOpensCave);
-
-	const SolidEvents::FResult Again = SolidEvents::NotifyReachBrokenBridge(State, StateCaptain);
-	TestFalse(TEXT("the cave trip happens once"), Again.bEnterStronghold);
-	TestEqual(TEXT("the cave stays with the ramp event"), State.bStrongholdsEnabled, bReachOpensCave);
 
 	USolidGameInstance* Instance = NewObject<USolidGameInstance>();
 	ASolidGameMode* GameMode = NewObject<ASolidGameMode>(Instance);
@@ -777,33 +642,11 @@ bool FSolidEventsMessageTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("message id is hex"), bHex);
 
 	TestTrue(TEXT("at least the six events"), SolidEvents::DefinitionCount >= 6);
-	const int32 ReachIndex = SolidEvents::FindIndexById(SolidEvents::IdReachBrokenBridge);
+	const int32 IglinIndex = SolidEvents::FindIndexById(SolidEvents::IdEnterIglin);
 	const int32 KilledIndex = SolidEvents::FindIndexById(SolidEvents::IdKilledByMonsters);
 	const int32 RelionIndex = SolidEvents::FindIndexById(SolidEvents::IdEnterRelion);
-	TestTrue(TEXT("the close follows the ramp"), ReachIndex != INDEX_NONE && KilledIndex == ReachIndex + 1);
-	TestTrue(TEXT("Relion follows the close"), KilledIndex != INDEX_NONE && RelionIndex > KilledIndex);
-
-	const SolidEvents::FEvent* Reach = SolidEventTestPrivate::FindEvent(TEXT("Reach broken bridge"));
-	TestNotNull(TEXT("Reach broken bridge is listed"), Reach);
-	bool bRampShowsMonster = false;
-	if (Reach)
-	{
-		const int32 ChangeCount = FMath::Min(Reach->ChangeCount, SolidEvents::MaxChangesPerEvent);
-		for (int32 Index = 0; Index < ChangeCount; ++Index)
-		{
-			const SolidEvents::FChange& Change = Reach->Changes[Index];
-			if (Change.Kind == SolidEvents::EChange::ShowMessage
-				&& Change.MessageId
-				&& FCString::Strcmp(Change.MessageId, SolidMessages::IdKilledByMonsters) == 0)
-			{
-				bRampShowsMonster = true;
-			}
-		}
-		TestEqual(
-			TEXT("the ramp journal is the message"),
-			USolidJournal::Describe(*Reach).Contains(TEXT("You are killed by monsters")),
-			bRampShowsMonster);
-	}
+	TestTrue(TEXT("Killed by monsters follows Iglin"), IglinIndex != INDEX_NONE && KilledIndex == IglinIndex + 1);
+	TestTrue(TEXT("Relion follows the death"), KilledIndex != INDEX_NONE && RelionIndex > KilledIndex);
 
 	const SolidEvents::FEvent* Killed = SolidEventTestPrivate::FindEvent(TEXT("Killed by monsters"));
 	TestNotNull(TEXT("Killed by monsters is listed"), Killed);
@@ -833,17 +676,7 @@ bool FSolidEventsMessageTest::RunTest(const FString& Parameters)
 	USolidGameState& State = *NewObject<USolidGameState>();
 	USolidCaptain& StateCaptain = *NewObject<USolidCaptain>();
 	SolidEvents::NotifyOccupiedTown(State, StateCaptain, 0);
-	const SolidEvents::FResult Reached = SolidEvents::NotifyReachBrokenBridge(State, StateCaptain);
-	TestEqual(TEXT("the ramp shows the message"), Reached.bShowMessage, bRampShowsMonster);
-	if (bRampShowsMonster)
-	{
-		TestEqual(
-			TEXT("the ramp result names the monster message"),
-			FString(Reached.MessageId),
-			FString(SolidMessages::IdKilledByMonsters));
-	}
-	TestFalse(TEXT("the ramp leaves the cave closed"), Reached.bEnterStronghold);
-	TestFalse(TEXT("showing the message does not open the cave"), State.bStrongholdsEnabled);
+	TestFalse(TEXT("Iglin leaves the cave closed"), State.bStrongholdsEnabled);
 
 	const SolidEvents::FResult Other = SolidEvents::NotifyMessageClosed(State, StateCaptain, TEXT("missing"));
 	TestFalse(TEXT("another message does not fire"), Other.bFired);
@@ -869,7 +702,7 @@ bool FSolidEventsMessageTest::RunTest(const FString& Parameters)
 			bSawCave = true;
 		}
 	}
-	TestEqual(TEXT("the journal lists the message"), bSawMessage, bRampShowsMonster);
+	TestFalse(TEXT("the death journal does not list the monster message"), bSawMessage);
 	TestTrue(TEXT("the journal lists Cave enabled"), bSawCave);
 
 	const SolidEvents::FResult ClosedAgain = SolidEvents::NotifyCaptainKilled(State, StateCaptain);
@@ -992,7 +825,6 @@ bool FSolidEventsDrivenFromVillageTest::RunTest(const FString& Parameters)
 	TestFalse(TEXT("a return before the close shows no message"), EarlyReturn.bShowMessage);
 	TestFalse(TEXT("a return before the close is not recorded"), HasFiredDriven(State));
 
-	SolidEvents::NotifyReachBrokenBridge(State, StateCaptain);
 	const SolidEvents::FResult Closed = SolidEvents::NotifyCaptainKilled(State, StateCaptain);
 	TestTrue(TEXT("the close still opens the cave"), Closed.bEnterStronghold);
 	TestFalse(TEXT("the close is not the return"), HasFiredDriven(State));
@@ -1109,7 +941,6 @@ bool FSolidEventsOrphanTitleTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("Iglin result is Orphan"), FString(CaptainTitleName(Entered.CaptainTitle)), FString(CaptainTitleName(ESolidCaptainTitle::Orphan)));
 	TestEqual(TEXT("Iglin state is Orphan"), FString(CaptainTitleName(StateCaptain.Title)), FString(CaptainTitleName(ESolidCaptainTitle::Orphan)));
 
-	SolidEvents::NotifyReachBrokenBridge(State, StateCaptain);
 	SolidEvents::NotifyCaptainKilled(State, StateCaptain);
 	TestEqual(TEXT("the close leaves Orphan"), FString(CaptainTitleName(StateCaptain.Title)), FString(CaptainTitleName(ESolidCaptainTitle::Orphan)));
 
@@ -1180,11 +1011,6 @@ bool FSolidEventsRavenSightWaitsForRelionTest::RunTest(const FString& Parameters
 	TestTrue(TEXT("Iglin fires"), Iglin.bFired);
 	TestFalse(TEXT("Iglin does not switch sight"), Iglin.bSetSight);
 	TestFalse(TEXT("Iglin leaves raven sight locked"), StateCaptain.bRavenSightEnabled);
-
-	const SolidEvents::FResult Ramp = SolidEvents::NotifyReachBrokenBridge(State, StateCaptain);
-	TestTrue(TEXT("the ramp fires"), Ramp.bFired);
-	TestFalse(TEXT("the ramp does not switch sight"), Ramp.bSetSight);
-	TestFalse(TEXT("the ramp leaves raven sight locked"), StateCaptain.bRavenSightEnabled);
 
 	const SolidEvents::FResult Closed = SolidEvents::NotifyCaptainKilled(State, StateCaptain);
 	TestTrue(TEXT("the close fires"), Closed.bFired);
@@ -1267,24 +1093,6 @@ bool FSolidEventsBuilderTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(SolidEvents::EChange::EnableCave));
 	TestEqual(TEXT("sample close has no requirement"), Closed.RequireCount, 0);
 
-	const SolidEvents::FEvent Ramp = SolidEvents::ReachBrokenBridge(TEXT("55667788"), TEXT("Sample ramp"), SolidEvents::ACT_0)
-		.DisplayMessage(SolidMessages::IdDrivenFromVillage)
-		.RepairBridge();
-	TestEqual(
-		TEXT("sample ramp trigger"),
-		static_cast<uint8>(Ramp.Trigger),
-		static_cast<uint8>(SolidEvents::ETrigger::ReachBrokenBridge));
-	TestEqual(TEXT("sample ramp has no town"), Ramp.Parameter, INDEX_NONE);
-	TestEqual(TEXT("sample ramp change count"), Ramp.ChangeCount, 2);
-	TestEqual(
-		TEXT("sample ramp message"),
-		FString(Ramp.Changes[0].MessageId),
-		FString(SolidMessages::IdDrivenFromVillage));
-	TestEqual(
-		TEXT("sample ramp repairs the bridge"),
-		static_cast<uint8>(Ramp.Changes[1].Kind),
-		static_cast<uint8>(SolidEvents::EChange::RepairBridge));
-	TestEqual(TEXT("sample ramp has no requirement"), Ramp.RequireCount, 0);
 	return true;
 }
 
@@ -1334,29 +1142,13 @@ bool FSolidEventsClearInventoryTest::RunTest(const FString& Parameters)
 	SolidInventory::PlacePack(State.Inventory, 0, 0, SolidItemType::IdDentedHelmet);
 	SolidInventory::PlacePack(State.Inventory, 1, 2, SolidItemType::IdTorch);
 
-	const SolidEvents::FEvent* Reach = SolidEventTestPrivate::FindEvent(TEXT("Reach broken bridge"));
-	bool bRampShowsMessage = false;
-	if (Reach)
-	{
-		const int32 ChangeCount = FMath::Min(Reach->ChangeCount, SolidEvents::MaxChangesPerEvent);
-		for (int32 Index = 0; Index < ChangeCount; ++Index)
-		{
-			if (Reach->Changes[Index].Kind == SolidEvents::EChange::ShowMessage)
-			{
-				bRampShowsMessage = true;
-			}
-		}
-	}
-
 	SolidEvents::NotifyOccupiedTown(State, StateCaptain, 0);
-	const SolidEvents::FResult Reached = SolidEvents::NotifyReachBrokenBridge(State, StateCaptain);
-	TestEqual(TEXT("the ramp follows its message change"), Reached.bShowMessage, bRampShowsMessage);
 	TestEqual(
-		TEXT("the ramp leaves the helmet"),
+		TEXT("Iglin leaves the helmet"),
 		FString(State.Inventory.Worn[SolidInventory::WornIndex(SolidInventory::ESlot::Head)].Id()),
 		FString(SolidItemType::IdDentedHelmet));
 	TestEqual(
-		TEXT("the ramp leaves the pack"),
+		TEXT("Iglin leaves the pack"),
 		FString(State.Inventory.Pack[SolidInventory::PackIndex(0, 0)].Id()),
 		FString(SolidItemType::IdDentedHelmet));
 

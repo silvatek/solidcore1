@@ -16,9 +16,6 @@ namespace SolidEvents
 	inline const FEvent Definitions[] = {
 		EnterTown(IdEnterIglin, TEXT("Enter Iglin"), SolidTowns::Iglin, ACT_0)
 			.SetPlayerTitle(ESolidCaptainTitle::Orphan),
-		// Either ramp of the Iglin bridge. The deck and the gap past the lip do not count.
-		ReachBrokenBridge(IdReachBrokenBridge, TEXT("Reach broken bridge"), ACT_0)
-			.Require(IdEnterIglin),
 		OnCaptainDeath(IdKilledByMonsters, TEXT("Killed by monsters"), ACT_0)
 			.EnableCave()
 			.ClearInventory()

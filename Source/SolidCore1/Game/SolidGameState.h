@@ -186,16 +186,6 @@ namespace SolidEvents
 		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
 
 	/**
-	 * The captain is standing on a ramp of the Iglin bridge.
-	 * Fires every unfired ReachBrokenBridge event whose requirements are met.
-	 * An unmet requirement is not recorded. A later call retries.
-	 */
-	FResult NotifyReachBrokenBridge(
-		USolidGameState& State,
-		USolidCaptain& Captain,
-		const SolidWorldTime::FStamp& When = SolidWorldTime::FStamp());
-
-	/**
 	 * The captain closed the message named by MessageId.
 	 * Fires every unfired MessageClosed event for that id whose requirements are met.
 	 */

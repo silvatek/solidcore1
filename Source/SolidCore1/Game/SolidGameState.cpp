@@ -437,28 +437,6 @@ FResult NotifyOccupiedTown(
 	return Result;
 }
 
-FResult NotifyReachBrokenBridge(
-	USolidGameState& State,
-	USolidCaptain& Captain,
-	const SolidWorldTime::FStamp& When)
-{
-	FResult Result;
-	Result.MaxSquadSize = State.MaxSquadSize;
-	Result.CaptainTitle = Captain.Title;
-
-	for (int32 Index = 0; Index < DefinitionCount; ++Index)
-	{
-		if (Definitions[Index].Trigger != ETrigger::ReachBrokenBridge)
-		{
-			continue;
-		}
-		TryFireEvent(State, Captain, Index, When, Result);
-	}
-
-	Result.MaxSquadSize = State.MaxSquadSize;
-	return Result;
-}
-
 FResult NotifyMessageClosed(
 	USolidGameState& State,
 	USolidCaptain& Captain,

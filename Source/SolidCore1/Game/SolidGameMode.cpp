@@ -1315,7 +1315,6 @@ void ASolidGameMode::RefreshEvents()
 		Terrain->GetWorldMinXY(),
 		Terrain->GetWorldMaxXY());
 	NoteTownEntry(TownId);
-	NoteBrokenBridgeRamp(Location);
 	EnsureCompanion();
 }
 
@@ -1438,37 +1437,6 @@ void ASolidGameMode::NoteMessageClosed(const TCHAR* MessageId)
 		SyncBattlePlans();
 	}
 	PresentEventResult(Result);
-}
-
-void ASolidGameMode::NoteBrokenBridgeRamp(const FVector& Location)
-{
-	for (const TObjectPtr<ASolidBridge>& Actor : SpawnedBridges)
-	{
-		const ASolidBridge* Bridge = Actor.Get();
-		if (!Bridge || !Bridge->HasBridge() || !Bridge->GetBridge().bIglinRelion)
-		{
-			continue;
-		}
-		if (!SolidGroundMove::OnRamp(Bridge->GetBridge(), Location.X, Location.Y))
-		{
-			continue;
-		}
-
-		USolidCaptain* SessionCaptain = GetCompany() ? GetCompany()->GetCaptain() : nullptr;
-		if (!GetConfiguration() || !SessionCaptain)
-		{
-			return;
-		}
-		const SolidEvents::FResult Result = SolidEvents::NotifyReachBrokenBridge(
-			*GetConfiguration(), *SessionCaptain, WorldStamp());
-		if (Result.bFired)
-		{
-			UE_LOG(LogSolid, Warning, TEXT("Event: Reach broken bridge."));
-			SyncBattlePlans();
-		}
-		PresentEventResult(Result);
-		return;
-	}
 }
 
 void ASolidGameMode::FireParadeEvents()

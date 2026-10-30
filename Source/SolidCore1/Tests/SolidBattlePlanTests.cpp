@@ -480,7 +480,6 @@ bool FSolidGameModeBattlePlanSelectTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("parade fires Enter Relion"), Fired(State, TEXT("Enter Relion")));
 	TestTrue(TEXT("parade fires Enter Dragongate"), Fired(State, TEXT("Enter Dragongate")));
 	TestFalse(TEXT("parade does not fire Enter Kanfold"), Fired(State, TEXT("Enter Kanfold")));
-	TestFalse(TEXT("parade does not fire Reach broken bridge"), Fired(State, TEXT("Reach broken bridge")));
 	TestFalse(TEXT("parade does not fire Driven from the village"), Fired(State, TEXT("Driven from the village")));
 	const int32 FiredCount = State.FiredOrder.Num();
 	const int32 ParadeAgain = SolidBattlePlanTestPrivate::FindAssignedSlot(Squad, TEXT("Parade"));
@@ -726,7 +725,6 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidBattlePlanEarlyEventsTest::RunTest(const FString& Parameters)
 {
 	TestFalse(TEXT("Enter Iglin leaves plans"), SolidBattlePlanTestPrivate::EventChangesBattlePlan(TEXT("Enter Iglin")));
-	TestFalse(TEXT("Reach broken bridge leaves plans"), SolidBattlePlanTestPrivate::EventChangesBattlePlan(TEXT("Reach broken bridge")));
 	TestFalse(TEXT("Driven from the village leaves plans"), SolidBattlePlanTestPrivate::EventChangesBattlePlan(TEXT("Driven from the village")));
 	TestTrue(TEXT("Killed by monsters edits plans"), SolidBattlePlanTestPrivate::EventChangesBattlePlan(TEXT("Killed by monsters")));
 
@@ -736,8 +734,7 @@ bool FSolidBattlePlanEarlyEventsTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	SolidEvents::NotifyOccupiedTown(*Play.State, *Play.Captain, SolidTowns::Iglin);
-	SolidEvents::NotifyReachBrokenBridge(*Play.State, *Play.Captain);
-	TestTrue(TEXT("the message still leaves Starter on"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Starter")));
+	TestTrue(TEXT("Iglin leaves Starter on"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Starter")));
 	TestFalse(TEXT("the message does not enable Attack"), SolidEvents::IsBattlePlanEnabled(*Play.State, TEXT("Attack")));
 	TestEqual(TEXT("the keys stay on Starter"), SolidBattlePlanTestPrivate::AssignedNames(Play.Squad), FString(TEXT("Starter")));
 

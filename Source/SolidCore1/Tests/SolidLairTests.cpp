@@ -163,7 +163,6 @@ bool FSolidLairGateTest::RunTest(const FString& Parameters)
 
 	SolidEvents::NotifyOccupiedTown(State, StateCaptain, SolidTowns::Iglin);
 	TestFalse(TEXT("Iglin leaves the tunnels shut"), SolidLair::TunnelsOpen(State));
-	SolidEvents::NotifyReachBrokenBridge(State, StateCaptain);
 	SolidEvents::NotifyCaptainKilled(State, StateCaptain);
 	TestFalse(TEXT("the cave close leaves the tunnels shut"), SolidLair::TunnelsOpen(State));
 	TestTrue(TEXT("that close still opens the cave"), State.bStrongholdsEnabled);

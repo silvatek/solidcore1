@@ -299,8 +299,6 @@ protected:
 	void RefreshEvents();
 	/** Record one enter-town event and apply its sight, title, and bridge repair. */
 	void NoteTownEntry(int32 TownId);
-	/** Record Reach broken bridge when the captain stands on an Iglin ramp. */
-	void NoteBrokenBridgeRamp(const FVector& Location);
 	/** Show a message, send the captain into the cave, or place encounters waiting on a fired event. */
 	void PresentEventResult(const SolidEvents::FResult& Result);
 	/**

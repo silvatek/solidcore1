@@ -9,7 +9,7 @@
  * One event: a trigger, the changes it applies, and the events that must already have fired.
  * Each event fires once, the first time its trigger becomes true,
  * and only after every event it requires has already fired.
- * EnterTown, ReachBrokenBridge, OnMessageClosed, and OnCaptainDeath build one.
+ * EnterTown, OnMessageClosed, and OnCaptainDeath build one.
  * A change helper fills the one value that change reads. The builder adds it.
  */
 namespace SolidEvents
@@ -27,7 +27,6 @@ namespace SolidEvents
 
 	/** Stable ids. Eight hex digits. Requirements name these. */
 	inline constexpr const TCHAR* IdEnterIglin = TEXT("c4e1a7b2");
-	inline constexpr const TCHAR* IdReachBrokenBridge = TEXT("a17c4e58");
 	inline constexpr const TCHAR* IdKilledByMonsters = TEXT("e51b8c36");
 	inline constexpr const TCHAR* IdDrivenFromVillage = TEXT("8f3c2a17");
 	inline constexpr const TCHAR* IdEnterRelion = TEXT("9f30d86a");
@@ -45,8 +44,6 @@ namespace SolidEvents
 	enum class ETrigger : uint8
 	{
 		EnterTown,
-		/** The captain stands on a ramp of the Iglin bridge. */
-		ReachBrokenBridge,
 		/** The captain closes the message named by MessageId. */
 		MessageClosed,
 		/** The captain died in a fight. */
@@ -392,17 +389,6 @@ namespace SolidEvents
 		Event.Name = Name;
 		Event.Trigger = ETrigger::EnterTown;
 		Event.Parameter = TownId;
-		Event.Act = Act;
-		return Event;
-	}
-
-	inline constexpr FEvent ReachBrokenBridge(const TCHAR* Id, const TCHAR* Name, const int32 Act)
-	{
-		FEvent Event;
-		Event.Id = Id;
-		Event.Name = Name;
-		Event.Trigger = ETrigger::ReachBrokenBridge;
-		Event.Parameter = INDEX_NONE;
 		Event.Act = Act;
 		return Event;
 	}

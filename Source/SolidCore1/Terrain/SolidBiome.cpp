@@ -295,5 +295,33 @@ SolidTerrainTypes::FSolidQuadTriangles SolidTerrainTypes::QuadTriangles(
 		break;
 	}
 	}
+
+	// The highest corner is the top of the triangle. A mountain there keeps the mountain.
+	auto KeepMountainTop = [](const ESolidBiome Material, const ESolidBiome A, const ESolidBiome B, const ESolidBiome C)
+	{
+		const ESolidBiome Corners[3] = { A, B, C };
+		int32 Top = 0;
+		float Best = SolidBiome::Of(A).HeightOffsetCm();
+		for (int32 Index = 1; Index < 3; ++Index)
+		{
+			const float Height = SolidBiome::Of(Corners[Index]).HeightOffsetCm();
+			if (Height > Best)
+			{
+				Best = Height;
+				Top = Index;
+			}
+		}
+		return Corners[Top] == ESolidBiome::Mountain ? ESolidBiome::Mountain : Material;
+	};
+	if (Out.bFlip)
+	{
+		Out.First = KeepMountainTop(Out.First, B10, B00, B01);
+		Out.Second = KeepMountainTop(Out.Second, B10, B01, B11);
+	}
+	else
+	{
+		Out.First = KeepMountainTop(Out.First, B00, B11, B10);
+		Out.Second = KeepMountainTop(Out.Second, B00, B01, B11);
+	}
 	return Out;
 }

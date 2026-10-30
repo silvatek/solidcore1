@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0787")
+#define SOLID_BUILD_ID TEXT("SC1-0788")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The game instance keeps the world clock.")
+#define SOLID_BUILD_NOTE TEXT("A mountain top keeps the mountain texture.")
 #endif

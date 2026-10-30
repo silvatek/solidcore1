@@ -437,6 +437,7 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 
 	const ESolidBiome Grass = ESolidBiome::Grassland;
 	const ESolidBiome Town = ESolidBiome::Town;
+	const ESolidBiome Mountain = ESolidBiome::Mountain;
 
 	Expect(
 		TEXT("odd 11"),
@@ -490,6 +491,14 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 		TEXT("a two-and-two edge stays whole when the south-west point differs"),
 		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Town, Grass, Grass, Town, Town, Grass, Town),
 		false, Town, Town);
+	Expect(
+		TEXT("a mountain top uses the mountain"),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Grass, Grass, Grass, Mountain, Mountain, Grass, Grass),
+		false, Mountain, Mountain);
+	Expect(
+		TEXT("a lone mountain corner leaves the grass triangle"),
+		SolidTerrainTypes::QuadTriangles(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut, Grass, Grass, Grass, Grass, Mountain, Grass, Grass),
+		true, Grass, Mountain);
 
 	return true;
 }

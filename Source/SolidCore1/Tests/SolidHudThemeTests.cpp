@@ -62,6 +62,9 @@ bool FSolidHudThemeSightMarkerTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("plus fits beside the bird"), Plus.Span < Chip.Height * 0.5f);
 	TestTrue(TEXT("plus bar is solid"), Plus.Thickness >= 5.f);
 	TestTrue(TEXT("plus is opaque"), FMath::IsNearlyEqual(Plus.Fill.A, 1.f));
+	TestTrue(TEXT("plus is dark gray"),
+		FMath::IsNearlyEqual(Plus.Fill.R, Plus.Fill.G) && FMath::IsNearlyEqual(Plus.Fill.G, Plus.Fill.B)
+		&& Plus.Fill.R > 0.2f && Plus.Fill.R < 0.4f);
 	TestTrue(TEXT("plus is darker than the chip"),
 		Plus.Fill.R + Plus.Fill.G + Plus.Fill.B < Chip.Fill.R + Chip.Fill.G + Chip.Fill.B);
 

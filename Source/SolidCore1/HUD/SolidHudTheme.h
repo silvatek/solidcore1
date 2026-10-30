@@ -84,7 +84,7 @@ namespace SolidHudTheme
 		float Span = 16.f;
 		float Thickness = 5.f;
 		float CornerRadius = 1.5f;
-		FLinearColor Fill = FLinearColor(0.12f, 0.08f, 0.05f, 1.f);
+		FLinearColor Fill = FLinearColor(0.28f, 0.28f, 0.28f, 1.f);
 	};
 
 	inline FFalconPlus FalconPlus()
@@ -93,7 +93,7 @@ namespace SolidHudTheme
 		Plus.Span = 16.f;
 		Plus.Thickness = 5.f;
 		Plus.CornerRadius = 1.5f;
-		Plus.Fill = FLinearColor(0.12f, 0.08f, 0.05f, 1.f);
+		Plus.Fill = FLinearColor(0.28f, 0.28f, 0.28f, 1.f);
 		return Plus;
 	}
 

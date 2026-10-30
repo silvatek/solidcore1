@@ -287,7 +287,7 @@ namespace SolidRoad
 	/**
 	 * Route from one end to the other.
 	 * Road supplies the ends and the type when it is set. Definition and OutCells remain for a line that has no road.
-	 * OutPoints is the straight line of terrain points. Empty when the cell search runs.
+	 * OutPoints is the terrain points of that line, including one detour around a single banned patch. Empty when the cell search runs.
 	 * @return False when an end is missing, or no path exists.
 	 */
 	bool Solve(

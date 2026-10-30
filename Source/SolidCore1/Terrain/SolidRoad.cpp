@@ -347,7 +347,126 @@ namespace SolidRoad
 			return true;
 		}
 
-		bool OpenStraightCells(
+		bool OnTerrainPoint(const FIntPoint& Point)
+		{
+			return Point.X >= 0 && Point.Y >= 0
+				&& Point.X < USolidWorldChart::PointAxis
+				&& Point.Y < USolidWorldChart::PointAxis;
+		}
+
+		int32 PointKey(const FIntPoint& Point)
+		{
+			return Point.Y * USolidWorldChart::PointAxis + Point.X;
+		}
+
+		const FIntPoint PointSteps[] = {
+			FIntPoint(1, 0),
+			FIntPoint(-1, 0),
+			FIntPoint(0, 1),
+			FIntPoint(0, -1),
+			FIntPoint(1, 1),
+			FIntPoint(1, -1),
+			FIntPoint(-1, 1),
+			FIntPoint(-1, -1),
+		};
+
+		bool DetourAroundPatch(
+			const USolidWorldChart& Map,
+			const EType Type,
+			const TArray<FIntPoint>& Line,
+			const int32 First,
+			const int32 Last,
+			TArray<FIntPoint>& OutPoints)
+		{
+			if (First < 1 || Last + 1 >= Line.Num())
+			{
+				return false;
+			}
+
+			const FIntPoint Before = Line[First - 1];
+			const FIntPoint After = Line[Last + 1];
+			TSet<int32> Banned;
+			TSet<int32> Beside;
+			for (int32 Index = First; Index <= Last; ++Index)
+			{
+				Banned.Add(PointKey(Line[Index]));
+			}
+			for (int32 Index = First; Index <= Last; ++Index)
+			{
+				for (const FIntPoint& Step : PointSteps)
+				{
+					const FIntPoint Side = Line[Index] + Step;
+					if (!OnTerrainPoint(Side) || Banned.Contains(PointKey(Side)))
+					{
+						continue;
+					}
+					Beside.Add(PointKey(Side));
+				}
+			}
+			Beside.Add(PointKey(Before));
+			Beside.Add(PointKey(After));
+
+			TArray<FIntPoint> Queue;
+			TMap<int32, int32> CameFrom;
+			Queue.Add(Before);
+			CameFrom.Add(PointKey(Before), INDEX_NONE);
+			bool bFound = false;
+			for (int32 Index = 0; Index < Queue.Num(); ++Index)
+			{
+				const FIntPoint Here = Queue[Index];
+				if (Here == After)
+				{
+					bFound = true;
+					break;
+				}
+				for (const FIntPoint& Step : PointSteps)
+				{
+					const FIntPoint Next = Here + Step;
+					if (!OnTerrainPoint(Next))
+					{
+						continue;
+					}
+					const int32 Key = PointKey(Next);
+					if (!Beside.Contains(Key) || CameFrom.Contains(Key) || !LineStepAllowed(Map, Type, Here, Next))
+					{
+						continue;
+					}
+					CameFrom.Add(Key, PointKey(Here));
+					Queue.Add(Next);
+				}
+			}
+			if (!bFound)
+			{
+				return false;
+			}
+
+			TArray<FIntPoint> Reversed;
+			for (int32 Key = PointKey(After); Key != INDEX_NONE; Key = CameFrom[Key])
+			{
+				Reversed.Add(FIntPoint(Key % USolidWorldChart::PointAxis, Key / USolidWorldChart::PointAxis));
+				if (Reversed.Num() > Beside.Num())
+				{
+					return false;
+				}
+			}
+
+			OutPoints.Reset();
+			for (int32 Index = 0; Index < First; ++Index)
+			{
+				OutPoints.Add(Line[Index]);
+			}
+			for (int32 Index = Reversed.Num() - 2; Index >= 0; --Index)
+			{
+				OutPoints.Add(Reversed[Index]);
+			}
+			for (int32 Index = Last + 2; Index < Line.Num(); ++Index)
+			{
+				OutPoints.Add(Line[Index]);
+			}
+			return OutPoints.Num() > 1;
+		}
+
+		bool OpenStraightLine(
 			const USolidWorldChart& Map,
 			const FSolidRoad* Road,
 			TArray<FIntPoint>& OutCells,
@@ -370,9 +489,26 @@ namespace SolidRoad
 			}
 
 			TerrainLine(FromPoint, ToPoint, OutPoints);
+			TArray<int32> Blocked;
 			for (int32 Index = 1; Index < OutPoints.Num(); ++Index)
 			{
 				if (!LineStepAllowed(Map, Road->Type, OutPoints[Index - 1], OutPoints[Index]))
+				{
+					Blocked.Add(Index);
+				}
+			}
+			if (Blocked.Num() > 0)
+			{
+				int32 Runs = 1;
+				for (int32 Index = 1; Index < Blocked.Num(); ++Index)
+				{
+					if (Blocked[Index] != Blocked[Index - 1] + 1)
+					{
+						++Runs;
+					}
+				}
+				const TArray<FIntPoint> Line = OutPoints;
+				if (Runs != 1 || !DetourAroundPatch(Map, Road->Type, Line, Blocked[0], Blocked.Last(), OutPoints))
 				{
 					OutPoints.Reset();
 					return false;
@@ -427,17 +563,17 @@ namespace SolidRoad
 	{
 		OutCells.Reset();
 		OutPoints.Reset();
-		const EType Type = Road != nullptr ? Road->Type : Definition.Type;
-
-		TArray<FIntPoint> Starts;
-		TArray<FIntPoint> Goals;
-		RoadCollectEndpoint(Map, Definition.From, Starts);
-		RoadCollectEndpoint(Map, Definition.To, Goals);
-		if (OpenStraightCells(Map, Road, OutCells, OutPoints))
+		if (OpenStraightLine(Map, Road, OutCells, OutPoints))
 		{
 			return true;
 		}
 		OutPoints.Reset();
+
+		const EType Type = Road != nullptr ? Road->Type : Definition.Type;
+		TArray<FIntPoint> Starts;
+		TArray<FIntPoint> Goals;
+		RoadCollectEndpoint(Map, Definition.From, Starts);
+		RoadCollectEndpoint(Map, Definition.To, Goals);
 		if (Starts.Num() == 0 || Goals.Num() == 0)
 		{
 			return false;

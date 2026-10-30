@@ -518,7 +518,7 @@ protected:
 	/** Solve one road and record its spans. Road is a listed road, or null when the definition came from the chart. */
 	void BuildRoad(const SolidRoad::FDefinition& Definition, const SolidRoad::FRoad* Road) const;
 	/** Build each listed road and solve it. */
-	void AppendListedRoads() const;
+	void BuildListedRoads() const;
 	bool CellsToWorldXY(const TArray<FIntPoint>& InCells, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 	void ResetLoad() const;
 	/** Turn one chart mark into the named cell the queries read. A custom note and an encounter are skipped. */

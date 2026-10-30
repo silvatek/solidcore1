@@ -80,4 +80,10 @@ namespace SolidRoad
 	};
 
 	inline constexpr int32 DefinitionCount = UE_ARRAY_COUNT(Roads);
+
+	/** Town name, or the stronghold name, for this end. */
+	FString ChartRoadEndName(const FEndpoint& End);
+
+	/** Write the stronghold cell onto this end when the loaded marks name it. */
+	void LocateStrongholdEnd(const TMap<int32, FSolidWorldBang>& Marks, FEndpoint& End);
 }

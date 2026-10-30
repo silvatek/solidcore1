@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0812")
+#define SOLID_BUILD_ID TEXT("SC1-0813")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The World Editor no longer adds roads.")
+#define SOLID_BUILD_NOTE TEXT("Road solving lives with the road list.")
 #endif

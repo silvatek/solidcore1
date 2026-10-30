@@ -29,15 +29,6 @@ namespace
 			return ESolidWorldChartMarkKind::Town;
 		}
 	}
-
-	FString ChartRoadEndName(const SolidRoad::FEndpoint& End)
-	{
-		if (End.bStronghold)
-		{
-			return End.StrongholdName;
-		}
-		return SolidTowns::NameFor(End.LocationId);
-	}
 }
 
 const TCHAR* USolidWorldChart::ShippedPath()
@@ -50,38 +41,6 @@ void USolidWorldChart::DefaultWorldBounds(FVector2D& OutMin, FVector2D& OutMax)
 	const USolidTerrainMap* Terrain = GetDefault<USolidTerrainMap>();
 	OutMin = Terrain->GetWorldMinXY();
 	OutMax = Terrain->GetWorldMaxXY();
-}
-
-const TCHAR* USolidWorldChart::RoadTypeName(const ESolidWorldChartRoadType Type)
-{
-	switch (Type)
-	{
-	case ESolidWorldChartRoadType::Track:
-		return TEXT("track");
-	case ESolidWorldChartRoadType::Road:
-		return TEXT("road");
-	case ESolidWorldChartRoadType::Highway:
-		return TEXT("highway");
-	case ESolidWorldChartRoadType::Trail:
-	default:
-		return TEXT("trail");
-	}
-}
-
-ESolidWorldChartRoadType USolidWorldChart::ChartRoadType(const SolidRoad::EType Type)
-{
-	switch (Type)
-	{
-	case SolidRoad::EType::Track:
-		return ESolidWorldChartRoadType::Track;
-	case SolidRoad::EType::Road:
-		return ESolidWorldChartRoadType::Road;
-	case SolidRoad::EType::Highway:
-		return ESolidWorldChartRoadType::Highway;
-	case SolidRoad::EType::Trail:
-	default:
-		return ESolidWorldChartRoadType::Trail;
-	}
 }
 
 bool USolidWorldChart::ImportFromString(const FString& Text)
@@ -131,8 +90,8 @@ bool USolidWorldChart::ImportFromString(const FString& Text)
 	for (const SolidRoad::FRoute& Route : GetRoads())
 	{
 		FSolidWorldChartRoad Road;
-		Road.FromName = ChartRoadEndName(Route.Definition.From);
-		Road.ToName = ChartRoadEndName(Route.Definition.To);
+		Road.FromName = SolidRoad::ChartRoadEndName(Route.Definition.From);
+		Road.ToName = SolidRoad::ChartRoadEndName(Route.Definition.To);
 		Road.Type = ChartRoadType(Route.Definition.Type);
 		NewRoads.Add(Road);
 	}
@@ -146,66 +105,6 @@ bool USolidWorldChart::ImportFromString(const FString& Text)
 
 namespace
 {
-	FString CompactName(FString Name)
-	{
-		Name.ReplaceInline(TEXT(" "), TEXT(""));
-		return Name;
-	}
-
-	/** Town, stronghold, site, or neither. A site is reported and is not an end. */
-	enum class EChartRoadEnd : uint8
-	{
-		Missing,
-		Town,
-		Stronghold,
-		Site,
-	};
-
-	EChartRoadEnd RoadEndKind(const TArray<FSolidWorldChartMark>& Marks, const FString& Name)
-	{
-		const FString Compact = CompactName(Name);
-		if (Compact.IsEmpty())
-		{
-			return EChartRoadEnd::Missing;
-		}
-
-		EChartRoadEnd Found = EChartRoadEnd::Missing;
-		for (const FSolidWorldChartMark& Mark : Marks)
-		{
-			if (Mark.Kind == ESolidWorldChartMarkKind::Town
-				&& Mark.Name.Equals(Name.TrimStartAndEnd(), ESearchCase::IgnoreCase))
-			{
-				return EChartRoadEnd::Town;
-			}
-			if (Mark.Kind == ESolidWorldChartMarkKind::Stronghold
-				&& CompactName(Mark.Name).Equals(Compact, ESearchCase::IgnoreCase))
-			{
-				Found = EChartRoadEnd::Stronghold;
-			}
-			else if (Found != EChartRoadEnd::Stronghold
-				&& Mark.Kind == ESolidWorldChartMarkKind::StrongholdSite
-				&& Mark.Name.Equals(Name.TrimStartAndEnd(), ESearchCase::IgnoreCase))
-			{
-				Found = EChartRoadEnd::Site;
-			}
-		}
-		return Found;
-	}
-
-	FString RoadEndSentence(const EChartRoadEnd Kind, const FString& Name)
-	{
-		const FString Trimmed = Name.TrimStartAndEnd();
-		if (Kind == EChartRoadEnd::Site)
-		{
-			return FString::Printf(TEXT("%s is a stronghold site, not a road end."), *Trimmed);
-		}
-		if (Kind == EChartRoadEnd::Missing)
-		{
-			return FString::Printf(TEXT("%s is not a town or stronghold on the chart."), *Trimmed);
-		}
-		return FString();
-	}
-
 	/**
 	 * The values the place tool selected. Position is not one of them.
 	 * A town matches its name. A stronghold and a site match their size.
@@ -549,90 +448,6 @@ bool USolidWorldChart::DeleteMark(const FIntPoint Cell, FString& OutError)
 	return true;
 }
 
-FString USolidWorldChart::RoadEndError(const FString& From, const FString& To) const
-{
-	TArray<FString> Sentences;
-	const EChartRoadEnd FromKind = RoadEndKind(Marks, From);
-	const EChartRoadEnd ToKind = RoadEndKind(Marks, To);
-	if (FromKind == EChartRoadEnd::Site || FromKind == EChartRoadEnd::Missing)
-	{
-		Sentences.Add(RoadEndSentence(FromKind, From));
-	}
-	if (ToKind == EChartRoadEnd::Site || ToKind == EChartRoadEnd::Missing)
-	{
-		Sentences.Add(RoadEndSentence(ToKind, To));
-	}
-	return FString::Join(Sentences, TEXT(" "));
-}
-
-bool USolidWorldChart::AddRoad(
-	const FString& From,
-	const FString& To,
-	const ESolidWorldChartRoadType Type,
-	FString& OutError)
-{
-	OutError = RoadEndError(From, To);
-	if (From.TrimStartAndEnd().IsEmpty() || To.TrimStartAndEnd().IsEmpty())
-	{
-		OutError = TEXT("A road needs two names.");
-		return false;
-	}
-
-	PushUndo();
-	FSolidWorldChartRoad Road;
-	Road.FromName = From.TrimStartAndEnd();
-	Road.ToName = To.TrimStartAndEnd();
-	Road.Type = Type;
-	Roads.Add(Road);
-	InvalidateQuery();
-	return true;
-}
-
-bool USolidWorldChart::RouteForRoad(const int32 RoadIndex, TArray<FIntPoint>& OutCells) const
-{
-	OutCells.Reset();
-	if (!Roads.IsValidIndex(RoadIndex))
-	{
-		return false;
-	}
-	if (!EnsureQuery())
-	{
-		return false;
-	}
-
-	// A name that is not a town or a stronghold does not parse, so the strip is empty.
-	auto LineFor = [](const FSolidWorldChartRoad& Road)
-	{
-		return FString::Printf(
-			TEXT("Road: %s -> %s, %s"),
-			*Road.FromName,
-			*Road.ToName,
-			RoadTypeName(Road.Type));
-	};
-
-	SolidRoad::FDefinition ThisRoad;
-	if (!SolidRoad::Parse(LineFor(Roads[RoadIndex]), ThisRoad))
-	{
-		return true;
-	}
-
-	int32 ParsedIndex = 0;
-	for (int32 Index = 0; Index < RoadIndex; ++Index)
-	{
-		SolidRoad::FDefinition Earlier;
-		if (SolidRoad::Parse(LineFor(Roads[Index]), Earlier))
-		{
-			++ParsedIndex;
-		}
-	}
-
-	if (GetRoads().IsValidIndex(ParsedIndex))
-	{
-		OutCells = GetRoads()[ParsedIndex].Cells;
-	}
-	return true;
-}
-
 int32 USolidWorldChart::MarkAtCell(const FIntPoint Cell) const
 {
 	FVector2D Centre = FVector2D::ZeroVector;
@@ -917,33 +732,6 @@ namespace
 		}
 		return true;
 	}
-
-	void LocateStrongholdEnd(const TMap<int32, FSolidWorldBang>& Marks, SolidRoad::FEndpoint& End)
-	{
-		if (!End.bStronghold)
-		{
-			return;
-		}
-		FString Want = End.StrongholdName;
-		Want.ReplaceInline(TEXT(" "), TEXT(""));
-		for (const TPair<int32, FSolidWorldBang>& Pair : Marks)
-		{
-			const FSolidWorldBang& Mark = Pair.Value;
-			if (Mark.Kind != ESolidWorldBang::Stronghold)
-			{
-				continue;
-			}
-			FString Have = Mark.Name;
-			Have.ReplaceInline(TEXT(" "), TEXT(""));
-			if (!Have.Equals(Want, ESearchCase::IgnoreCase))
-			{
-				continue;
-			}
-			End.Cell = Mark.Cell;
-			End.bLocated = true;
-			return;
-		}
-	}
 }
 
 bool USolidWorldChart::LoadFromString(const FString& Text)
@@ -1134,8 +922,8 @@ bool USolidWorldChart::LoadFromString(const FString& Text)
 	AssignTownPoints();
 	for (SolidRoad::FDefinition& RoadDef : RoadDefs)
 	{
-		LocateStrongholdEnd(BangMarks, RoadDef.From);
-		LocateStrongholdEnd(BangMarks, RoadDef.To);
+		SolidRoad::LocateStrongholdEnd(BangMarks, RoadDef.From);
+		SolidRoad::LocateStrongholdEnd(BangMarks, RoadDef.To);
 	}
 	BuildRoads(RoadDefs);
 	UE_LOG(LogSolid, Warning,
@@ -1365,61 +1153,13 @@ bool USolidWorldChart::BuildQuery() const
 	CopyPlayOntoPoints(false, true);
 	AssignTownPoints();
 
-	AppendListedRoads();
+	BuildListedRoads();
 
 	bIsLoaded = true;
 	UE_LOG(LogSolid, Warning,
 		TEXT("WorldChart loaded: %dx%d startTownCells=%d locations=%d roads=%d"),
 		MapWidth, MapHeight, StartTownCells.Num(), Locations.Num(), SolvedRoads.Num());
 	return true;
-}
-
-void USolidWorldChart::AppendListedRoads() const
-{
-	auto FillEnd = [](const FSolidWorldChartMark& Mark, SolidRoad::FEndpoint& Out) -> bool
-	{
-		Out = SolidRoad::FEndpoint();
-		if (Mark.Kind == ESolidWorldChartMarkKind::Town)
-		{
-			const SolidTowns::FTownInfo* Town = SolidTowns::FindByName(Mark.Name);
-			if (Town == nullptr)
-			{
-				return false;
-			}
-			Out.LocationId = Town->Id;
-			return true;
-		}
-		if (Mark.Kind == ESolidWorldChartMarkKind::Stronghold)
-		{
-			Out.bStronghold = true;
-			Out.StrongholdName = Mark.Name;
-			return true;
-		}
-		return false;
-	};
-
-	ResetRoads();
-	for (SolidRoad::FRoad Road : SolidRoad::Roads)
-	{
-		SolidRoad::LocateMark(Marks, Road.From);
-		SolidRoad::LocateMark(Marks, Road.To);
-		SolidRoad::FDefinition Definition;
-		Definition.Type = Road.Type;
-		if (!FillEnd(Road.From, Definition.From) || !FillEnd(Road.To, Definition.To))
-		{
-			UE_LOG(LogSolid, Warning, TEXT("WorldChart: ignored road %s -> %s."), *Road.From.Name, *Road.To.Name);
-			continue;
-		}
-		if (Road.From.Kind == ESolidWorldChartMarkKind::Stronghold)
-		{
-			LocateStrongholdEnd(BangMarks, Definition.From);
-		}
-		if (Road.To.Kind == ESolidWorldChartMarkKind::Stronghold)
-		{
-			LocateStrongholdEnd(BangMarks, Definition.To);
-		}
-		BuildRoad(Definition, &Road);
-	}
 }
 
 ESolidBiome USolidWorldChart::GetMarkerBiomeAtCell(const int32 MapX, const int32 MapY) const
@@ -1600,122 +1340,6 @@ namespace
 		}
 		return ESolidBiome::Grassland;
 	}
-}
-
-void USolidWorldChart::BuildRoads(const TArray<SolidRoad::FDefinition>& Definitions) const
-{
-	ResetRoads();
-
-	for (const SolidRoad::FDefinition& Definition : Definitions)
-	{
-		BuildRoad(Definition, nullptr);
-	}
-}
-
-void USolidWorldChart::ResetRoads() const
-{
-	SolvedRoads.Reset();
-	RoadSpans.Reset();
-	RoadSpansByCell.Reset();
-	RoadSpansByCell.SetNum(MapWidth * MapHeight);
-}
-
-void USolidWorldChart::BuildRoad(const SolidRoad::FDefinition& Definition, const SolidRoad::FRoad* Road) const
-{
-	// Prefer Road to Definition for every later change here. The aim is to remove Definition.
-	(void)Road;
-	if (RoadSpansByCell.Num() != MapWidth * MapHeight)
-	{
-		RoadSpansByCell.SetNum(MapWidth * MapHeight);
-	}
-
-	SolidRoad::FRoute Route;
-	Route.Definition = Definition;
-	if (!SolidRoad::Solve(*this, Definition, Route.Cells))
-	{
-		const auto EndName = [](const SolidRoad::FEndpoint& End)
-		{
-			return End.bStronghold
-				? End.StrongholdName
-				: SolidTowns::NameFor(End.LocationId);
-		};
-		const FString From = EndName(Definition.From);
-		const FString To = EndName(Definition.To);
-		UE_LOG(LogSolid, Warning, TEXT("WorldMap: no route for road %s -> %s."), *From, *To);
-	}
-	SolvedRoads.Add(Route);
-
-	if (Route.Cells.Num() == 0)
-	{
-		return;
-	}
-
-	const float HalfWidth = SolidRoad::WidthCm(Definition.Type) * 0.5f;
-	const int32 SpanCount = Route.Cells.Num() == 1 ? 1 : Route.Cells.Num() - 1;
-	for (int32 SpanIndex = 0; SpanIndex < SpanCount; ++SpanIndex)
-	{
-		SolidRoad::FSpan Span;
-		Span.From = Route.Cells[SpanIndex];
-		Span.To = Route.Cells[FMath::Min(SpanIndex + 1, Route.Cells.Num() - 1)];
-		Span.HalfWidthCm = HalfWidth;
-		const int32 Stored = RoadSpans.Add(Span);
-
-		auto Touch = [this, Stored](const FIntPoint& Cell)
-		{
-			for (int32 OffsetY = -1; OffsetY <= 1; ++OffsetY)
-			{
-				for (int32 OffsetX = -1; OffsetX <= 1; ++OffsetX)
-				{
-					const int32 X = Cell.X + OffsetX;
-					const int32 Y = Cell.Y + OffsetY;
-					if (X < 0 || Y < 0 || X >= MapWidth || Y >= MapHeight)
-					{
-						continue;
-					}
-					RoadSpansByCell[Y * MapWidth + X].AddUnique(Stored);
-				}
-			}
-		};
-		Touch(Span.From);
-		Touch(Span.To);
-	}
-}
-
-bool USolidWorldChart::IsOnRoad(
-	const float WorldX,
-	const float WorldY,
-	const FVector2D WorldMinXY,
-	const FVector2D WorldMaxXY) const
-{
-	if (!EnsureQuery() || RoadSpans.Num() == 0 || RoadSpansByCell.Num() != MapWidth * MapHeight)
-	{
-		return false;
-	}
-
-	int32 MapX = 0;
-	int32 MapY = 0;
-	if (!WorldXYToCell(WorldX, WorldY, WorldMinXY, WorldMaxXY, MapX, MapY))
-	{
-		return false;
-	}
-
-	const FVector2D World(WorldX, WorldY);
-	for (const int32 SpanIndex : RoadSpansByCell[MapY * MapWidth + MapX])
-	{
-		const SolidRoad::FSpan& Span = RoadSpans[SpanIndex];
-		FVector2D From = FVector2D::ZeroVector;
-		FVector2D To = FVector2D::ZeroVector;
-		if (!CellToWorldXY(Span.From, WorldMinXY, WorldMaxXY, From)
-			|| !CellToWorldXY(Span.To, WorldMinXY, WorldMaxXY, To))
-		{
-			continue;
-		}
-		if (SolidRoad::DistanceToSegmentCm(World, From, To) <= Span.HalfWidthCm)
-		{
-			return true;
-		}
-	}
-	return false;
 }
 
 bool USolidWorldChart::IsMarkedTown(

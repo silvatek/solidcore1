@@ -263,6 +263,17 @@ namespace SolidEvents
 			return With(Change::EnableStrongholdSize(Size));
 		}
 
+		/** Unlock every stronghold size, so a definition does not list each shelf. */
+		constexpr FEvent EnableAllStrongholds() const
+		{
+			FEvent Event = *this;
+			for (int32 Index = 0; Index < SolidStronghold::SizeCount; ++Index)
+			{
+				Event = Event.EnableStrongholdSize(SolidStronghold::Sizes[Index]);
+			}
+			return Event;
+		}
+
 		constexpr FEvent EnableLair(const TCHAR* InLairId) const
 		{
 			return With(Change::EnableLair(InLairId));
@@ -273,14 +284,59 @@ namespace SolidEvents
 			return With(Change::EnableBattlePlan(PlanName));
 		}
 
+		/** Turn several catalog plans on. Each name is one change, in the order given. */
+		template <typename... FurtherNames>
+		constexpr FEvent EnableBattlePlans(const TCHAR* PlanName, FurtherNames... Further) const
+		{
+			const FEvent Enabled = EnableBattlePlan(PlanName);
+			if constexpr (sizeof...(Further) == 0)
+			{
+				return Enabled;
+			}
+			else
+			{
+				return Enabled.EnableBattlePlans(Further...);
+			}
+		}
+
 		constexpr FEvent DisableBattlePlan(const TCHAR* PlanName) const
 		{
 			return With(Change::DisableBattlePlan(PlanName));
 		}
 
+		/** Turn several catalog plans off. Each name is one change, in the order given. */
+		template <typename... FurtherNames>
+		constexpr FEvent DisableBattlePlans(const TCHAR* PlanName, FurtherNames... Further) const
+		{
+			const FEvent Disabled = DisableBattlePlan(PlanName);
+			if constexpr (sizeof...(Further) == 0)
+			{
+				return Disabled;
+			}
+			else
+			{
+				return Disabled.DisableBattlePlans(Further...);
+			}
+		}
+
 		constexpr FEvent AddCompanion(const TCHAR* CompanionName) const
 		{
 			return With(Change::AddCompanion(CompanionName));
+		}
+
+		/** Copy several companions onto the company. Each name is one change, in the order given. */
+		template <typename... FurtherNames>
+		constexpr FEvent AddCompanions(const TCHAR* CompanionName, FurtherNames... Further) const
+		{
+			const FEvent Added = AddCompanion(CompanionName);
+			if constexpr (sizeof...(Further) == 0)
+			{
+				return Added;
+			}
+			else
+			{
+				return Added.AddCompanions(Further...);
+			}
 		}
 
 		constexpr FEvent ClearAllFog() const

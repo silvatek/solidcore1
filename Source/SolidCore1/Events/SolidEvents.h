@@ -24,8 +24,7 @@ namespace SolidEvents
 			.ClearInventory()
 			.EnableStrongholdSize(ESolidStrongholdSize::Meagre)
 			.DisableBattlePlan(TEXT("Starter"))
-			.EnableBattlePlan(TEXT("Attack"))
-			.EnableBattlePlan(TEXT("Defend")),
+			.EnableBattlePlans(TEXT("Attack"), TEXT("Defend")),
 		// It does not send the captain inside.
 		// The portal to the grass north of the Iglin Tunnels Entrance records this event without waiting for the close.
 		EnterTown(IdDrivenFromVillage, TEXT("Driven from the village"), SolidTowns::Iglin, ACT_1)
@@ -48,36 +47,18 @@ namespace SolidEvents
 			.AddCompanion(TEXT("Alex"))
 			.SetPlayerTitle(ESolidCaptainTitle::Ranger)
 			.EnableStrongholdSize(ESolidStrongholdSize::Average)
-			.DisableBattlePlan(TEXT("Starter"))
-			.DisableBattlePlan(TEXT("Attack"))
-			.DisableBattlePlan(TEXT("Defend"))
-			.EnableBattlePlan(TEXT("Line"))
-			.EnableBattlePlan(TEXT("Column"))
-			.EnableBattlePlan(TEXT("Tight mob"))
-			.EnableBattlePlan(TEXT("Loose mob")),
+			.DisableBattlePlans(TEXT("Starter"), TEXT("Attack"), TEXT("Defend"))
+			.EnableBattlePlans(TEXT("Line"), TEXT("Column"), TEXT("Tight mob"), TEXT("Loose mob")),
 		EnterTown(IdEnterDragongate, TEXT("Enter Dragongate"), SolidTowns::Dragongate, ACT_4)
 			.EnableSight(ESolidSight::Falcon)
 			.EnableSight(ESolidSight::Eagle)
 			.EnableSight(ESolidSight::Raven)
-			.AddCompanion(TEXT("Max"))
-			.AddCompanion(TEXT("Morgan"))
-			.AddCompanion(TEXT("Quinn"))
+			.AddCompanions(TEXT("Max"), TEXT("Morgan"), TEXT("Quinn"))
 			.SetMaxSquadSize(RosterCount)
 			.SetPlayerTitle(ESolidCaptainTitle::Captain)
-			.EnableStrongholdSize(ESolidStrongholdSize::Meagre)
-			.EnableStrongholdSize(ESolidStrongholdSize::Humble)
-			.EnableStrongholdSize(ESolidStrongholdSize::Average)
-			.EnableStrongholdSize(ESolidStrongholdSize::Impressive)
-			.EnableStrongholdSize(ESolidStrongholdSize::Grand)
-			.EnableStrongholdSize(ESolidStrongholdSize::Stately)
-			.EnableStrongholdSize(ESolidStrongholdSize::Imperious)
-			.DisableBattlePlan(TEXT("Starter"))
-			.DisableBattlePlan(TEXT("Attack"))
-			.DisableBattlePlan(TEXT("Defend"))
-			.EnableBattlePlan(TEXT("Line"))
-			.EnableBattlePlan(TEXT("Column"))
-			.EnableBattlePlan(TEXT("Tight mob"))
-			.EnableBattlePlan(TEXT("Loose mob")),
+			.EnableAllStrongholds()
+			.DisableBattlePlans(TEXT("Starter"), TEXT("Attack"), TEXT("Defend"))
+			.EnableBattlePlans(TEXT("Line"), TEXT("Column"), TEXT("Tight mob"), TEXT("Loose mob")),
 		// No earlier event is required, so a portal here can try the sights.
 		// Eagle is last, so the view switches to Eagle.
 		EnterTown(IdEnterJethan, TEXT("Enter Jethan"), SolidTowns::Jethan, ACT_4)

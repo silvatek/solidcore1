@@ -1750,4 +1750,133 @@ bool FSolidEventsEarlySizeUnlocksTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidEventsSeveralChangesTest,
+	"SolidCore1.Events.SeveralChanges",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidEventsSeveralChangesTest::RunTest(const FString& Parameters)
+{
+	const SolidEvents::FEvent Packed = SolidEvents::EnterTown(TEXT("aabbcc11"), TEXT("Several"), 0, SolidEvents::ACT_0)
+		.DisableBattlePlans(TEXT("Starter"), TEXT("Attack"), TEXT("Defend"))
+		.EnableBattlePlans(TEXT("Line"), TEXT("Column"), TEXT("Tight mob"), TEXT("Loose mob"))
+		.AddCompanions(TEXT("Max"), TEXT("Morgan"), TEXT("Quinn"))
+		.EnableAllStrongholds();
+	const SolidEvents::FEvent Single = SolidEvents::EnterTown(TEXT("aabbcc11"), TEXT("Several"), 0, SolidEvents::ACT_0)
+		.DisableBattlePlan(TEXT("Starter"))
+		.DisableBattlePlan(TEXT("Attack"))
+		.DisableBattlePlan(TEXT("Defend"))
+		.EnableBattlePlan(TEXT("Line"))
+		.EnableBattlePlan(TEXT("Column"))
+		.EnableBattlePlan(TEXT("Tight mob"))
+		.EnableBattlePlan(TEXT("Loose mob"))
+		.AddCompanion(TEXT("Max"))
+		.AddCompanion(TEXT("Morgan"))
+		.AddCompanion(TEXT("Quinn"))
+		.EnableStrongholdSize(ESolidStrongholdSize::Meagre)
+		.EnableStrongholdSize(ESolidStrongholdSize::Humble)
+		.EnableStrongholdSize(ESolidStrongholdSize::Average)
+		.EnableStrongholdSize(ESolidStrongholdSize::Impressive)
+		.EnableStrongholdSize(ESolidStrongholdSize::Grand)
+		.EnableStrongholdSize(ESolidStrongholdSize::Stately)
+		.EnableStrongholdSize(ESolidStrongholdSize::Imperious);
+
+	TestEqual(TEXT("one call matches the one-by-one count"), Packed.ChangeCount, Single.ChangeCount);
+	const int32 Count = FMath::Min(Packed.ChangeCount, Single.ChangeCount);
+	for (int32 Index = 0; Index < Count; ++Index)
+	{
+		const SolidEvents::FChange& PackedChange = Packed.Changes[Index];
+		const SolidEvents::FChange& SingleChange = Single.Changes[Index];
+		TestEqual(
+			*FString::Printf(TEXT("change %d kind"), Index),
+			static_cast<uint8>(PackedChange.Kind),
+			static_cast<uint8>(SingleChange.Kind));
+		TestEqual(
+			*FString::Printf(TEXT("change %d plan"), Index),
+			FString(PackedChange.BattlePlanName ? PackedChange.BattlePlanName : TEXT("")),
+			FString(SingleChange.BattlePlanName ? SingleChange.BattlePlanName : TEXT("")));
+		TestEqual(
+			*FString::Printf(TEXT("change %d companion"), Index),
+			FString(PackedChange.CompanionName ? PackedChange.CompanionName : TEXT("")),
+			FString(SingleChange.CompanionName ? SingleChange.CompanionName : TEXT("")));
+		TestEqual(
+			*FString::Printf(TEXT("change %d size"), Index),
+			static_cast<uint8>(PackedChange.StrongholdSize),
+			static_cast<uint8>(SingleChange.StrongholdSize));
+	}
+
+	const SolidEvents::FEvent* Dragongate = SolidEventTestPrivate::FindEvent(TEXT("Enter Dragongate"));
+	TestNotNull(TEXT("Enter Dragongate is listed"), Dragongate);
+	if (!Dragongate)
+	{
+		return false;
+	}
+
+	TestEqual(
+		TEXT("Enter Dragongate keeps every change"),
+		Dragongate->ChangeCount,
+		SolidEvents::MaxChangesPerEvent);
+	const TCHAR* CompanionNames[] = { TEXT("Max"), TEXT("Morgan"), TEXT("Quinn") };
+	const TCHAR* DisabledPlans[] = { TEXT("Starter"), TEXT("Attack"), TEXT("Defend") };
+	const TCHAR* EnabledPlans[] = { TEXT("Line"), TEXT("Column"), TEXT("Tight mob"), TEXT("Loose mob") };
+	int32 CompanionIndex = 0;
+	int32 DisabledIndex = 0;
+	int32 EnabledIndex = 0;
+	int32 SizeIndex = 0;
+	const int32 ChangeCount = FMath::Min(Dragongate->ChangeCount, SolidEvents::MaxChangesPerEvent);
+	for (int32 Index = 0; Index < ChangeCount; ++Index)
+	{
+		const SolidEvents::FChange& Change = Dragongate->Changes[Index];
+		if (Change.Kind == SolidEvents::EChange::AddCompanion)
+		{
+			if (CompanionIndex < UE_ARRAY_COUNT(CompanionNames))
+			{
+				TestEqual(
+					*FString::Printf(TEXT("Enter Dragongate companion %d"), CompanionIndex),
+					FString(Change.CompanionName),
+					FString(CompanionNames[CompanionIndex]));
+			}
+			++CompanionIndex;
+		}
+		else if (Change.Kind == SolidEvents::EChange::DisableBattlePlan)
+		{
+			if (DisabledIndex < UE_ARRAY_COUNT(DisabledPlans))
+			{
+				TestEqual(
+					*FString::Printf(TEXT("Enter Dragongate disables %s"), DisabledPlans[DisabledIndex]),
+					FString(Change.BattlePlanName),
+					FString(DisabledPlans[DisabledIndex]));
+			}
+			++DisabledIndex;
+		}
+		else if (Change.Kind == SolidEvents::EChange::EnableBattlePlan)
+		{
+			if (EnabledIndex < UE_ARRAY_COUNT(EnabledPlans))
+			{
+				TestEqual(
+					*FString::Printf(TEXT("Enter Dragongate enables %s"), EnabledPlans[EnabledIndex]),
+					FString(Change.BattlePlanName),
+					FString(EnabledPlans[EnabledIndex]));
+			}
+			++EnabledIndex;
+		}
+		else if (Change.Kind == SolidEvents::EChange::EnableStrongholdSize)
+		{
+			if (SizeIndex < SolidStronghold::SizeCount)
+			{
+				TestEqual(
+					*FString::Printf(TEXT("Enter Dragongate size %d"), SizeIndex),
+					static_cast<uint8>(Change.StrongholdSize),
+					static_cast<uint8>(SolidStronghold::Sizes[SizeIndex]));
+			}
+			++SizeIndex;
+		}
+	}
+	TestEqual(TEXT("Enter Dragongate adds three companions"), CompanionIndex, UE_ARRAY_COUNT(CompanionNames));
+	TestEqual(TEXT("Enter Dragongate disables three plans"), DisabledIndex, UE_ARRAY_COUNT(DisabledPlans));
+	TestEqual(TEXT("Enter Dragongate enables four plans"), EnabledIndex, UE_ARRAY_COUNT(EnabledPlans));
+	TestEqual(TEXT("Enter Dragongate unlocks sizes in shelf order"), SizeIndex, SolidStronghold::SizeCount);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

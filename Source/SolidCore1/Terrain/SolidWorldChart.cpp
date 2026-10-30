@@ -1388,8 +1388,10 @@ bool USolidWorldChart::BuildQuery() const
 	}
 	else
 	{
-		for (const SolidRoad::FRoad& Road : SolidRoad::Roads)
+		for (SolidRoad::FRoad Road : SolidRoad::Roads)
 		{
+			SolidRoad::LocateMark(Marks, Road.From);
+			SolidRoad::LocateMark(Marks, Road.To);
 			AppendRoad(Road.From.Name, Road.To.Name, RoadTypeName(ChartRoadType(Road.Type)));
 		}
 	}

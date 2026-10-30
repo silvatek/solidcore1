@@ -43,6 +43,39 @@ namespace SolidRoad
 		return Mark;
 	}
 
+	/** Copy the chart mark's position onto this end when the chart has that mark. */
+	inline void LocateMark(const TArray<FSolidWorldChartMark>& ChartMarks, FSolidWorldChartMark& End)
+	{
+		for (const FSolidWorldChartMark& ChartMark : ChartMarks)
+		{
+			if (ChartMark.Kind != End.Kind)
+			{
+				continue;
+			}
+			if (End.Kind == ESolidWorldChartMarkKind::Stronghold)
+			{
+				if (ChartMark.StrongholdSize != End.StrongholdSize
+					|| ChartMark.StrongholdType != End.StrongholdType)
+				{
+					continue;
+				}
+			}
+			else
+			{
+				FString EndName = End.Name;
+				FString ChartName = ChartMark.Name;
+				EndName.ReplaceInline(TEXT(" "), TEXT(""));
+				ChartName.ReplaceInline(TEXT(" "), TEXT(""));
+				if (!EndName.Equals(ChartName, ESearchCase::IgnoreCase))
+				{
+					continue;
+				}
+			}
+			End.PositionCm = ChartMark.PositionCm;
+			return;
+		}
+	}
+
 	inline const FRoad Roads[] = {
 		{ StrongholdMark(ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon), TownMark(SolidTowns::Iglin), EType::Trail },
 		{ TownMark(SolidTowns::Iglin), TownMark(SolidTowns::Relion), EType::Track },

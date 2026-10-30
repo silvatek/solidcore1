@@ -651,4 +651,59 @@ bool FSolidRoadDefinitionsTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidRoadLocationsTest,
+	"SolidCore1.Road.Locations",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidRoadLocationsTest::RunTest(const FString& Parameters)
+{
+	auto Placed = [](const TArray<FSolidWorldChartMark>& ChartMarks, const FSolidWorldChartMark& End)
+	{
+		for (const FSolidWorldChartMark& ChartMark : ChartMarks)
+		{
+			if (ChartMark.PositionCm.Equals(End.PositionCm) && ChartMark.Kind == End.Kind)
+			{
+				return true;
+			}
+		}
+		return false;
+	};
+
+	FSolidWorldChartMark Iglin = SolidRoad::TownMark(SolidTowns::Iglin);
+	Iglin.PositionCm = FVector2D(1000.f, 2000.f);
+	FSolidWorldChartMark Cave = SolidRoad::StrongholdMark(ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon);
+	Cave.Name = TEXT("MeagreDungeon");
+	Cave.PositionCm = FVector2D(3000.f, 4000.f);
+	TArray<FSolidWorldChartMark> Marks;
+	Marks.Add(Iglin);
+	Marks.Add(Cave);
+
+	SolidRoad::FRoad Trail = SolidRoad::Roads[0];
+	SolidRoad::LocateMark(Marks, Trail.From);
+	SolidRoad::LocateMark(Marks, Trail.To);
+	TestTrue(TEXT("the cave takes the chart place"), Trail.From.PositionCm.Equals(Cave.PositionCm));
+	TestTrue(TEXT("Iglin takes the chart place"), Trail.To.PositionCm.Equals(Iglin.PositionCm));
+	TestTrue(TEXT("the list itself stays unplaced"), SolidRoad::Roads[0].From.PositionCm.IsNearlyZero());
+
+	FSolidWorldChartMark Missing = SolidRoad::TownMark(SolidTowns::Relion);
+	SolidRoad::LocateMark(Marks, Missing);
+	TestTrue(TEXT("a missing end stays unplaced"), Missing.PositionCm.IsNearlyZero());
+
+	const USolidWorldChart* Chart = LoadObject<USolidWorldChart>(nullptr, USolidWorldChart::ShippedPath());
+	if (!TestNotNull(TEXT("shipped chart"), Chart))
+	{
+		return false;
+	}
+	for (const SolidRoad::FRoad& Definition : SolidRoad::Roads)
+	{
+		SolidRoad::FRoad Road = Definition;
+		SolidRoad::LocateMark(Chart->Marks, Road.From);
+		SolidRoad::LocateMark(Chart->Marks, Road.To);
+		TestTrue(TEXT("the shipped start is on the chart"), Placed(Chart->Marks, Road.From));
+		TestTrue(TEXT("the shipped end is on the chart"), Placed(Chart->Marks, Road.To));
+	}
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

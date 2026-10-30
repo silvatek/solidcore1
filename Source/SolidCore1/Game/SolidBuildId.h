@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0792")
+#define SOLID_BUILD_ID TEXT("SC1-0793")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Each biome states its own height variance.")
+#define SOLID_BUILD_NOTE TEXT("Every height variance is cut by 90 percent.")
 #endif

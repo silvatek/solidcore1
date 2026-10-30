@@ -1872,9 +1872,9 @@ bool FSolidEventsSeveralChangesTest::RunTest(const FString& Parameters)
 			++SizeIndex;
 		}
 	}
-	TestEqual(TEXT("Enter Dragongate adds three companions"), CompanionIndex, UE_ARRAY_COUNT(CompanionNames));
-	TestEqual(TEXT("Enter Dragongate disables three plans"), DisabledIndex, UE_ARRAY_COUNT(DisabledPlans));
-	TestEqual(TEXT("Enter Dragongate enables four plans"), EnabledIndex, UE_ARRAY_COUNT(EnabledPlans));
+	TestEqual(TEXT("Enter Dragongate adds three companions"), CompanionIndex, static_cast<int32>(UE_ARRAY_COUNT(CompanionNames)));
+	TestEqual(TEXT("Enter Dragongate disables three plans"), DisabledIndex, static_cast<int32>(UE_ARRAY_COUNT(DisabledPlans)));
+	TestEqual(TEXT("Enter Dragongate enables four plans"), EnabledIndex, static_cast<int32>(UE_ARRAY_COUNT(EnabledPlans)));
 	TestEqual(TEXT("Enter Dragongate unlocks sizes in shelf order"), SizeIndex, SolidStronghold::SizeCount);
 	return true;
 }

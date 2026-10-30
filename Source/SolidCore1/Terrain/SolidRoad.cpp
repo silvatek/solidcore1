@@ -524,6 +524,27 @@ namespace SolidRoad
 		}
 	}
 
+	FString FSolidRoad::toString() const
+	{
+		const TCHAR* TypeName = TEXT("trail");
+		switch (Type)
+		{
+		case EType::Track:
+			TypeName = TEXT("track");
+			break;
+		case EType::Road:
+			TypeName = TEXT("road");
+			break;
+		case EType::Highway:
+			TypeName = TEXT("highway");
+			break;
+		case EType::Trail:
+		default:
+			break;
+		}
+		return FString::Printf(TEXT("%s -> %s, %s"), *From.Name, *To.Name, TypeName);
+	}
+
 	bool Parse(const FString& Line, FDefinition& Out)
 	{
 		const FString Trimmed = Line.TrimStartAndEnd();
@@ -563,14 +584,18 @@ namespace SolidRoad
 	{
 		OutCells.Reset();
 		OutPoints.Reset();
-		const FString FromName = ChartRoadEndName(Definition.From);
-		const FString ToName = ChartRoadEndName(Definition.To);
+		const FString RoadText = Road != nullptr
+			? Road->toString()
+			: FString::Printf(
+				TEXT("%s -> %s"),
+				*ChartRoadEndName(Definition.From),
+				*ChartRoadEndName(Definition.To));
 		if (OpenStraightLine(Map, Road, OutCells, OutPoints))
 		{
-			UE_LOG(LogSolid, Warning, TEXT("Road %s -> %s: OpenStraightLine."), *FromName, *ToName);
+			UE_LOG(LogSolid, Warning, TEXT("%s: OpenStraightLine."), *RoadText);
 			return true;
 		}
-		UE_LOG(LogSolid, Warning, TEXT("Road %s -> %s: cell search."), *FromName, *ToName);
+		UE_LOG(LogSolid, Warning, TEXT("%s: cell search."), *RoadText);
 		OutPoints.Reset();
 
 		const EType Type = Road != nullptr ? Road->Type : Definition.Type;

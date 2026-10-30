@@ -56,6 +56,9 @@ namespace SolidRoad
 		 */
 		FDefinition ToDefinition() const;
 
+		/** "Meagre Dungeon -> Iglin, trail". */
+		FString toString() const;
+
 		FSolidWorldChartMark From;
 		FSolidWorldChartMark To;
 		EType Type = EType::Trail;

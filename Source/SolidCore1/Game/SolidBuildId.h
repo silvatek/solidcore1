@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0825")
+#define SOLID_BUILD_ID TEXT("SC1-0826")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Each road logs OpenStraightLine or the cell search.")
+#define SOLID_BUILD_NOTE TEXT("A road logs its own name with the route it took.")
 #endif

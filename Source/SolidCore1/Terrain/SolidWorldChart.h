@@ -461,8 +461,8 @@ protected:
 	void ResetRoads() const;
 	/** Solve one road and record its spans. Road is a listed road, or null when the definition came from the chart. */
 	void BuildRoad(const SolidRoad::FDefinition& Definition, const SolidRoad::FSolidRoad* Road) const;
-	/** Build each listed road from these marks and solve it. */
-	void BuildListedRoads(const TArray<FSolidWorldChartMark>& Marks) const;
+	/** Build each listed road from these marks and solve it. Bang marks place a stronghold end. */
+	void BuildListedRoads(const TArray<FSolidWorldChartMark>& Marks, const TMap<int32, FSolidWorldBang>& BangMarks) const;
 	bool CellsToWorldXY(const TArray<FIntPoint>& InCells, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 	void ResetLoad() const;
 	/** Turn one chart mark into the named cell the queries read. A custom note and an encounter are skipped. */

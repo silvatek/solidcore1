@@ -598,7 +598,9 @@ bool USolidWorldChart::RouteForRoad(const int32 RoadIndex, TArray<FIntPoint>& Ou
 	return true;
 }
 
-void USolidWorldChart::BuildListedRoads(const TArray<FSolidWorldChartMark>& Marks) const
+void USolidWorldChart::BuildListedRoads(
+	const TArray<FSolidWorldChartMark>& Marks,
+	const TMap<int32, FSolidWorldBang>& BangMarks) const
 {
 	auto EndReady = [](const SolidRoad::FEndpoint& End)
 	{

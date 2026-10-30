@@ -71,8 +71,9 @@ bool FSolidHudThemeSightMarkerTest::RunTest(const FString& Parameters)
 	const SolidHudTheme::FEagleGlobe Globe = SolidHudTheme::EagleGlobe();
 	TestTrue(TEXT("globe is larger than the plus"), Globe.Size > Plus.Span);
 	TestTrue(TEXT("globe fits beside the bird"), Globe.Size < Chip.Height);
-	TestTrue(TEXT("globe is opaque"), FMath::IsNearlyEqual(Globe.Fill.A, 1.f));
-	TestTrue(TEXT("globe is blue"), Globe.Fill.B > Globe.Fill.R && Globe.Fill.B > Globe.Fill.G);
+	TestTrue(TEXT("globe meridians are opaque"), FMath::IsNearlyEqual(Globe.Meridian.A, 1.f));
+	TestTrue(TEXT("globe meridians are blue"),
+		Globe.Meridian.B > Globe.Meridian.R && Globe.Meridian.B > Globe.Meridian.G);
 	return true;
 }
 

@@ -545,16 +545,6 @@ namespace SolidHUDPrivate
 			const float Side = FMath::Min(Local.X, Local.Y);
 			const FVector2D Center(Local.X * 0.5f, Local.Y * 0.5f);
 			const float Radius = Side * 0.5f;
-			static const FSlateRoundedBoxBrush Disc(FLinearColor::White, 64.f);
-			FSlateDrawElement::MakeBox(
-				OutDrawElements,
-				LayerId,
-				AllottedGeometry.ToPaintGeometry(),
-				&Disc,
-				ESlateDrawEffect::None,
-				Globe.Fill);
-
-			const int32 LineLayer = LayerId + 1;
 			const FPaintGeometry Paint = AllottedGeometry.ToPaintGeometry();
 			auto DrawRing = [&](const float Rx, const float Ry)
 			{
@@ -570,7 +560,7 @@ namespace SolidHUDPrivate
 				}
 				FSlateDrawElement::MakeLines(
 					OutDrawElements,
-					LineLayer,
+					LayerId,
 					Paint,
 					Points,
 					ESlateDrawEffect::None,
@@ -587,14 +577,14 @@ namespace SolidHUDPrivate
 			Equator.Add(FVector2D(Center.X + Rim, Center.Y));
 			FSlateDrawElement::MakeLines(
 				OutDrawElements,
-				LineLayer,
+				LayerId,
 				Paint,
 				Equator,
 				ESlateDrawEffect::None,
 				Globe.Meridian,
 				true,
 				Globe.Line);
-			return LineLayer;
+			return LayerId;
 		}
 	};
 

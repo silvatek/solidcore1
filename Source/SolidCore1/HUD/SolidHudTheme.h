@@ -97,13 +97,12 @@ namespace SolidHudTheme
 		return Plus;
 	}
 
-	/** Filled blue globe behind the Eagle bird. Drawn meridians, not a font glyph. */
+	/** Wireframe blue globe behind the Eagle bird. Drawn meridians, not a font glyph. */
 	struct FEagleGlobe
 	{
 		float Size = 18.f;
 		float Line = 1.4f;
-		FLinearColor Fill = FLinearColor(0.12f, 0.47f, 0.95f, 1.f);
-		FLinearColor Meridian = FLinearColor::White;
+		FLinearColor Meridian = FLinearColor(0.12f, 0.47f, 0.95f, 1.f);
 	};
 
 	inline FEagleGlobe EagleGlobe()
@@ -111,8 +110,7 @@ namespace SolidHudTheme
 		FEagleGlobe Globe;
 		Globe.Size = 18.f;
 		Globe.Line = 1.4f;
-		Globe.Fill = FLinearColor(0.12f, 0.47f, 0.95f, 1.f);
-		Globe.Meridian = FLinearColor::White;
+		Globe.Meridian = FLinearColor(0.12f, 0.47f, 0.95f, 1.f);
 		return Globe;
 	}
 

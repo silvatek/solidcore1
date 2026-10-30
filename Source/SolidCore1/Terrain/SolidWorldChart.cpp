@@ -1,4 +1,5 @@
 #include "SolidWorldChart.h"
+#include "SolidRoads.h"
 #include "SolidBiome.h"
 #include "SolidCore1.h"
 #include "SolidLair.h"
@@ -1365,13 +1366,9 @@ bool USolidWorldChart::BuildQuery() const
 	AssignTownPoints();
 
 	TArray<SolidRoad::FDefinition> RoadDefs;
-	for (const FSolidWorldChartRoad& Road : Roads)
+	auto AppendRoad = [&RoadDefs](const FString& From, const FString& To, const TCHAR* TypeName)
 	{
-		const FString Line = FString::Printf(
-			TEXT("Road: %s -> %s, %s"),
-			*Road.FromName,
-			*Road.ToName,
-			USolidWorldChart::RoadTypeName(Road.Type));
+		const FString Line = FString::Printf(TEXT("Road: %s -> %s, %s"), *From, *To, TypeName);
 		SolidRoad::FDefinition RoadDef;
 		if (SolidRoad::Parse(Line, RoadDef))
 		{
@@ -1379,7 +1376,21 @@ bool USolidWorldChart::BuildQuery() const
 		}
 		else
 		{
-			UE_LOG(LogSolid, Warning, TEXT("WorldChart: ignored road %s -> %s."), *Road.FromName, *Road.ToName);
+			UE_LOG(LogSolid, Warning, TEXT("WorldChart: ignored road %s -> %s."), *From, *To);
+		}
+	};
+	if (SolidRoad::bRoadsFromChart)
+	{
+		for (const FSolidWorldChartRoad& Road : Roads)
+		{
+			AppendRoad(Road.FromName, Road.ToName, RoadTypeName(Road.Type));
+		}
+	}
+	else
+	{
+		for (const SolidRoad::FRoad& Road : SolidRoad::Roads)
+		{
+			AppendRoad(Road.From.Name, Road.To.Name, RoadTypeName(ChartRoadType(Road.Type)));
 		}
 	}
 	for (SolidRoad::FDefinition& RoadDef : RoadDefs)

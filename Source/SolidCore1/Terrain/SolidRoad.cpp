@@ -563,10 +563,14 @@ namespace SolidRoad
 	{
 		OutCells.Reset();
 		OutPoints.Reset();
+		const FString FromName = ChartRoadEndName(Definition.From);
+		const FString ToName = ChartRoadEndName(Definition.To);
 		if (OpenStraightLine(Map, Road, OutCells, OutPoints))
 		{
+			UE_LOG(LogSolid, Warning, TEXT("Road %s -> %s: OpenStraightLine."), *FromName, *ToName);
 			return true;
 		}
+		UE_LOG(LogSolid, Warning, TEXT("Road %s -> %s: cell search."), *FromName, *ToName);
 		OutPoints.Reset();
 
 		const EType Type = Road != nullptr ? Road->Type : Definition.Type;

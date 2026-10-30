@@ -49,6 +49,8 @@
 #include "Styling/CoreStyle.h"
 #include "Styling/SlateBrush.h"
 #include "Styling/StyleDefaults.h"
+#include "Brushes/SlateRoundedBoxBrush.h"
+#include "Widgets/Images/SImage.h"
 #include "Widgets/Layout/SBox.h"
 #include "Widgets/Layout/SBorder.h"
 #include "Widgets/SBoxPanel.h"
@@ -462,6 +464,51 @@ namespace SolidHUDPrivate
 		const SolidHudTheme::FSightMarkerChip Chip = SolidHudTheme::SightMarkerChip();
 		static const FSlateRoundedBoxBrush Brush(Chip.Fill, Chip.CornerRadius);
 		return &Brush;
+	}
+
+	static const FSlateBrush* FalconPlusBrush()
+	{
+		const SolidHudTheme::FFalconPlus Plus = SolidHudTheme::FalconPlus();
+		static const FSlateRoundedBoxBrush Brush(Plus.Fill, Plus.CornerRadius);
+		return &Brush;
+	}
+
+	static TSharedRef<SWidget> FalconPlusMark()
+	{
+		const SolidHudTheme::FFalconPlus Plus = SolidHudTheme::FalconPlus();
+		const FSlateBrush* Bar = FalconPlusBrush();
+		return SNew(SBox)
+			.WidthOverride(Plus.Span)
+			.HeightOverride(Plus.Span)
+			[
+				SNew(SOverlay)
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					SNew(SBox)
+					.WidthOverride(Plus.Span)
+					.HeightOverride(Plus.Thickness)
+					[
+						SNew(SImage)
+						.Image(Bar)
+						.ColorAndOpacity(Plus.Fill)
+					]
+				]
+				+ SOverlay::Slot()
+				.HAlign(HAlign_Center)
+				.VAlign(VAlign_Center)
+				[
+					SNew(SBox)
+					.WidthOverride(Plus.Thickness)
+					.HeightOverride(Plus.Span)
+					[
+						SNew(SImage)
+						.Image(Bar)
+						.ColorAndOpacity(Plus.Fill)
+					]
+				]
+			];
 	}
 
 	static TMap<ASolidHUD*, TSharedPtr<SWidget>> SightIndicators;
@@ -1847,25 +1894,46 @@ void ASolidHUD::EnsureSightIndicator()
 					.VAlign(VAlign_Center)
 					.Padding(FMargin(2.f, 0.f, 2.f, 0.f))
 					[
-						SNew(STextBlock)
-						.Visibility_Lambda([SightOf]()
-						{
-							return SolidSight::HasMark(SightOf())
-								? EVisibility::HitTestInvisible
-								: EVisibility::Collapsed;
-						})
-						.Font_Lambda([SightOf]()
-						{
-							FSlateFontInfo Font = SolidHUDPrivate::SightMarkerFont();
-							Font.Size = SolidSight::MarkFontSize(SightOf());
-							return Font;
-						})
-						.ColorAndOpacity(Ink)
-						.Justification(ETextJustify::Center)
-						.Text_Lambda([SightOf]()
-						{
-							return FText::FromString(SolidSight::Mark(SightOf()));
-						})
+						SNew(SOverlay)
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Center)
+						[
+							SNew(SBox)
+							.Visibility_Lambda([SightOf]()
+							{
+								return SolidSight::IsFalconSight(SightOf())
+									? EVisibility::HitTestInvisible
+									: EVisibility::Collapsed;
+							})
+							[
+								SolidHUDPrivate::FalconPlusMark()
+							]
+						]
+						+ SOverlay::Slot()
+						.HAlign(HAlign_Center)
+						.VAlign(VAlign_Center)
+						[
+							SNew(STextBlock)
+							.Visibility_Lambda([SightOf]()
+							{
+								return SolidSight::IsEagleSight(SightOf())
+									? EVisibility::HitTestInvisible
+									: EVisibility::Collapsed;
+							})
+							.Font_Lambda([SightOf]()
+							{
+								FSlateFontInfo Font = SolidHUDPrivate::SightMarkerFont();
+								Font.Size = SolidSight::MarkFontSize(SightOf());
+								return Font;
+							})
+							.ColorAndOpacity(Ink)
+							.Justification(ETextJustify::Center)
+							.Text_Lambda([SightOf]()
+							{
+								return FText::FromString(SolidSight::Mark(SightOf()));
+							})
+						]
 					]
 				]
 			]

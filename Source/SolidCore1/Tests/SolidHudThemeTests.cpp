@@ -56,6 +56,13 @@ bool FSolidHudThemeSightMarkerTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("ends are semicircles"), FMath::IsNearlyEqual(Chip.CornerRadius, Chip.Height * 0.5f));
 	TestTrue(TEXT("fill is visible"), Chip.Fill.A > 0.2f);
 	TestTrue(TEXT("fill is semi-transparent"), Chip.Fill.A < 0.75f);
+
+	const SolidHudTheme::FFalconPlus Plus = SolidHudTheme::FalconPlus();
+	TestTrue(TEXT("plus is wider than a bar"), Plus.Span > Plus.Thickness);
+	TestTrue(TEXT("plus bar is solid"), Plus.Thickness >= 8.f);
+	TestTrue(TEXT("plus is opaque"), FMath::IsNearlyEqual(Plus.Fill.A, 1.f));
+	TestTrue(TEXT("plus is darker than the chip"),
+		Plus.Fill.R + Plus.Fill.G + Plus.Fill.B < Chip.Fill.R + Chip.Fill.G + Chip.Fill.B);
 	return true;
 }
 

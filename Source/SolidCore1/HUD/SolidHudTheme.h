@@ -78,6 +78,25 @@ namespace SolidHudTheme
 		return Chip;
 	}
 
+	/** Solid plus behind the Falcon bird. Two bars, not a font glyph. */
+	struct FFalconPlus
+	{
+		float Span = 24.f;
+		float Thickness = 8.f;
+		float CornerRadius = 2.f;
+		FLinearColor Fill = FLinearColor(0.12f, 0.08f, 0.05f, 1.f);
+	};
+
+	inline FFalconPlus FalconPlus()
+	{
+		FFalconPlus Plus;
+		Plus.Span = 24.f;
+		Plus.Thickness = 8.f;
+		Plus.CornerRadius = 2.f;
+		Plus.Fill = FLinearColor(0.12f, 0.08f, 0.05f, 1.f);
+		return Plus;
+	}
+
 	inline FPalette OakAndBronze()
 	{
 		FPalette Palette;

@@ -168,9 +168,14 @@ bool FSolidWorldChartRulesTest::RunTest(const FString& Parameters)
 
 	TestTrue(TEXT("the small chart matches its text"), MapsMatch(*this, *TextMap, *ChartMap));
 	TestEqual(
-		TEXT("the loaded chart uses the code roads"),
+		TEXT("the loaded chart keeps the road whose ends are on the chart"),
 		ChartMap->GetRoads().Num(),
-		SolidRoad::DefinitionCount);
+		1);
+	if (ChartMap->GetRoads().Num() == 1)
+	{
+		TestTrue(TEXT("that road starts at the stronghold"), ChartMap->GetRoads()[0].Definition.From.bStronghold);
+		TestEqual(TEXT("that road ends at Iglin"), ChartMap->GetRoads()[0].Definition.To.LocationId, SolidTowns::Iglin);
+	}
 
 	TestEqual(TEXT("an unknown town is not a location"), ChartMap->GetLocationIdAtCell(UnknownCell.X, UnknownCell.Y), INDEX_NONE);
 	FSolidWorldBang UnknownBang;

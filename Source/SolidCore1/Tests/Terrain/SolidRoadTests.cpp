@@ -51,12 +51,6 @@ namespace
 		return Test.TestTrue(TEXT("map loads"), Map.LoadFromString(Text));
 	}
 
-	const SolidRoad::FRoute* RoadTestRoute(const USolidWorldChart& Map, const int32 Index)
-	{
-		const TArray<SolidRoad::FRoute>& Roads = Map.GetRoads();
-		return Roads.IsValidIndex(Index) ? &Roads[Index] : nullptr;
-	}
-
 	bool RoadTestOrthogonal(FAutomationTestBase& Test, const TArray<FIntPoint>& Cells)
 	{
 		for (int32 Index = 1; Index < Cells.Num(); ++Index)
@@ -70,19 +64,6 @@ namespace
 			}
 		}
 		return true;
-	}
-
-	int32 RoadTestCountBiome(const USolidWorldChart& Map, const TArray<FIntPoint>& Cells, const ESolidBiome Biome)
-	{
-		int32 Count = 0;
-		for (const FIntPoint& Cell : Cells)
-		{
-			if (Map.GetBiomeAtCell(Cell.X, Cell.Y) == Biome)
-			{
-				++Count;
-			}
-		}
-		return Count;
 	}
 
 	FVector2D RoadTestCenter(const USolidWorldChart& Map, const int32 Col, const int32 Row)
@@ -433,68 +414,84 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidRoadRiverTest::RunTest(const FString& Parameters)
 {
-	TArray<FRoadTestMark> Marks;
-	Marks.Add({ 4, 10, USolidWorldChart::LocationMarker });
-	Marks.Add({ 22, 10, USolidWorldChart::LocationMarker });
-	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
+	const int32 Row = 256;
+	const int32 RiverX = 250;
+	const FIntPoint IglinPoint(100, Row);
+	const FIntPoint RelionPoint(400, Row);
+	const int32 LastPoint = USolidWorldChart::PointAxis - 1;
+
+	auto Prepare = [this, IglinPoint, RelionPoint, RiverX, LastPoint](USolidWorldChart& Chart, const bool bGap) -> bool
 	{
-		if (Row != 22)
+		FillGrassPoints(Chart);
+		if (!TestTrue(TEXT("Iglin places"), PlacePointMark(Chart, SolidRoad::TownMark(SolidTowns::Iglin), IglinPoint))
+			|| !TestTrue(TEXT("Relion places"), PlacePointMark(Chart, SolidRoad::TownMark(SolidTowns::Relion), RelionPoint))
+			|| !TestTrue(TEXT("the river paints"), Chart.SetPointRectangle(FIntPoint(RiverX, 0), FIntPoint(RiverX, LastPoint), ESolidBiome::River)))
 		{
-			Marks.Add({ 12, Row, USolidWorldChart::RiverMarker });
+			return false;
 		}
+		if (!bGap)
+		{
+			return true;
+		}
+		return TestTrue(TEXT("the river leaves a gap"),
+			Chart.SetPointRectangle(FIntPoint(RiverX, 400), FIntPoint(RiverX, 402), ESolidBiome::Grassland));
+	};
+
+	auto Solve = [this, IglinPoint, RelionPoint](const USolidWorldChart& Chart, const SolidRoad::EType Type, SolidRoad::FSolidRoad& Road) -> bool
+	{
+		Road = SolidRoad::FSolidRoad(
+			SolidRoad::TownMark(SolidTowns::Iglin),
+			SolidRoad::TownMark(SolidTowns::Relion),
+			Type);
+		return TestTrue(TEXT("both ends are on the chart"), Road.Locate(Chart.Marks))
+			&& TestTrue(TEXT("the route solves"), Road.FindRoute(Chart))
+			&& TestEqual(TEXT("the route starts at Iglin"), Road.Points[0], IglinPoint)
+			&& TestEqual(TEXT("the route ends at Relion"), Road.Points.Last(), RelionPoint);
+	};
+
+	USolidWorldChart* Gapped = NewObject<USolidWorldChart>();
+	TestNotNull(TEXT("gapped map"), Gapped);
+	if (!Gapped || !Prepare(*Gapped, true))
+	{
+		return false;
 	}
 
-	USolidWorldChart* Road = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("road map"), Road);
-	if (!RoadTestLoad(*this, *Road, RoadTestGrid(Marks, RoadTestNamed(4, 10, TEXT("Iglin"), 22, 10, TEXT("Relion"), TEXT("road")))))
+	SolidRoad::FSolidRoad Road(
+		SolidRoad::TownMark(SolidTowns::Iglin),
+		SolidRoad::TownMark(SolidTowns::Relion),
+		SolidRoad::EType::Road);
+	if (!Solve(*Gapped, SolidRoad::EType::Road, Road))
 	{
 		return false;
 	}
-	const SolidRoad::FRoute* RoadRoute = RoadTestRoute(*Road, 0);
-	TestNotNull(TEXT("road route"), RoadRoute);
-	if (!RoadRoute)
-	{
-		return false;
-	}
-	TestEqual(TEXT("a road crosses the river once"), RoadTestCountBiome(*Road, RoadRoute->Cells, ESolidBiome::River), 1);
+	TestEqual(TEXT("a road crosses the river once"), RouteBiomeCount(*Gapped, Road.Points, ESolidBiome::River), 1);
 
-	USolidWorldChart* Track = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("track map"), Track);
-	if (!RoadTestLoad(*this, *Track, RoadTestGrid(Marks, RoadTestNamed(4, 10, TEXT("Iglin"), 22, 10, TEXT("Relion"), TEXT("track")))))
+	SolidRoad::FSolidRoad Track(
+		SolidRoad::TownMark(SolidTowns::Iglin),
+		SolidRoad::TownMark(SolidTowns::Relion),
+		SolidRoad::EType::Track);
+	if (!Solve(*Gapped, SolidRoad::EType::Track, Track))
 	{
 		return false;
 	}
-	const SolidRoad::FRoute* TrackRoute = RoadTestRoute(*Track, 0);
-	TestNotNull(TEXT("track route"), TrackRoute);
-	if (!TrackRoute)
-	{
-		return false;
-	}
-	TestTrue(TEXT("track crosses the river"), RoadTestCountBiome(*Track, TrackRoute->Cells, ESolidBiome::River) >= 1);
+	TestTrue(TEXT("track crosses the river"), RouteBiomeCount(*Gapped, Track.Points, ESolidBiome::River) >= 1);
 
-	TArray<FRoadTestMark> Blocked;
-	Blocked.Add({ 4, 20, USolidWorldChart::LocationMarker });
-	Blocked.Add({ 20, 20, USolidWorldChart::LocationMarker });
-	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
-	{
-		Blocked.Add({ 12, Row, USolidWorldChart::RiverMarker });
-	}
-	USolidWorldChart* Forced = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("forced map"), Forced);
-	if (!RoadTestLoad(*this, *Forced, RoadTestGrid(Blocked, RoadTestNamed(4, 20, TEXT("Iglin"), 20, 20, TEXT("Relion"), TEXT("road")))))
+	USolidWorldChart* Blocked = NewObject<USolidWorldChart>();
+	TestNotNull(TEXT("blocked map"), Blocked);
+	if (!Blocked || !Prepare(*Blocked, false))
 	{
 		return false;
 	}
-	const SolidRoad::FRoute* ForcedRoute = RoadTestRoute(*Forced, 0);
-	TestNotNull(TEXT("forced route"), ForcedRoute);
-	if (!ForcedRoute)
+	SolidRoad::FSolidRoad Forced(
+		SolidRoad::TownMark(SolidTowns::Iglin),
+		SolidRoad::TownMark(SolidTowns::Relion),
+		SolidRoad::EType::Road);
+	if (!Solve(*Blocked, SolidRoad::EType::Road, Forced))
 	{
 		return false;
 	}
-	TestEqual(TEXT("a blocking river is crossed once"),
-		RoadTestCountBiome(*Forced, ForcedRoute->Cells, ESolidBiome::River), 1);
-	TestEqual(TEXT("the crossing stays off the sea"),
-		RoadTestCountBiome(*Forced, ForcedRoute->Cells, ESolidBiome::Sea), 0);
+	TestEqual(TEXT("a blocking river is crossed once"), RouteBiomeCount(*Blocked, Forced.Points, ESolidBiome::River), 1);
+	TestEqual(TEXT("the crossing stays off the sea"), RouteBiomeCount(*Blocked, Forced.Points, ESolidBiome::Sea), 0);
 	return true;
 }
 

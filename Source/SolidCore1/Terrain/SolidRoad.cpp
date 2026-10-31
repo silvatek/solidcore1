@@ -488,6 +488,63 @@ namespace SolidRoad
 			return false;
 		}
 
+		bool StraightRunAllowed(
+			const USolidWorldChart& Map,
+			const EType Type,
+			const FIntPoint& From,
+			const FIntPoint& To)
+		{
+			TArray<FIntPoint> Line;
+			TerrainLine(From, To, Line);
+			for (int32 Index = 1; Index < Line.Num(); ++Index)
+			{
+				if (!LineStepAllowed(Map, Type, Line[Index - 1], Line[Index]))
+				{
+					return false;
+				}
+			}
+			return Line.Num() > 1;
+		}
+
+		void PullStraight(
+			const USolidWorldChart& Map,
+			const EType Type,
+			TArray<FIntPoint>& Points)
+		{
+			if (Points.Num() < 3)
+			{
+				return;
+			}
+
+			bool bChanged = true;
+			while (bChanged)
+			{
+				bChanged = false;
+				for (int32 Index = 0; Index + 2 < Points.Num();)
+				{
+					if (!StraightRunAllowed(Map, Type, Points[Index], Points[Index + 2]))
+					{
+						++Index;
+						continue;
+					}
+					Points.RemoveAt(Index + 1);
+					bChanged = true;
+				}
+			}
+
+			TArray<FIntPoint> Expanded;
+			Expanded.Add(Points[0]);
+			for (int32 Index = 1; Index < Points.Num(); ++Index)
+			{
+				TArray<FIntPoint> Segment;
+				TerrainLine(Points[Index - 1], Points[Index], Segment);
+				for (int32 Step = 1; Step < Segment.Num(); ++Step)
+				{
+					Expanded.Add(Segment[Step]);
+				}
+			}
+			Points = MoveTemp(Expanded);
+		}
 	}
 
 	FString FSolidRoad::toString() const
@@ -558,6 +615,7 @@ namespace SolidRoad
 			}
 		}
 
+		PullStraight(Map, Type, Points);
 		return Points.Num() > 1;
 	}
 

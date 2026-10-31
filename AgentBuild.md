@@ -2,7 +2,7 @@
 
 One coding agent runs on this Windows checkout. It writes the product change, bumps `SOLID_BUILD_ID` and `SOLID_BUILD_NOTE`, builds that commit, and runs the tests. A pass pushes `main`. The agent is the solidcore1-ue worker. It edits the tree the developer plays. The developer plays this same checkout. The developer does not pull. `AGENTS.md` is the ship rule.
 
-Research, plan, and code for up to three minutes. Then run `tools\build.bat` and `tools\test.bat` on what was written, or ask because it did not finish. Those are the only two exits. A second coding window with no build, no test, and no ask in between is a six-minute step. That loses. The chest piece owns its slots was the miss: nine minutes of coding with no input. `AGENTS.md` Coding activity is the clock.
+Research, plan, and code for up to three minutes. Then run `tools\build.bat` and `tools\test.bat` on what was written, or ask. Those are the only two exits. The three minutes is a ceiling. A small change stops when it is written. The ask then offers to build and test that change, or to code the next part. Finishing early is fine. Poor planning is the miss. A second coding window with no build, no test, and no ask in between is a six-minute step. That loses. The chest piece owns its slots was the miss: nine minutes of coding with no input. `AGENTS.md` Coding activity is the clock.
 
 This guide starts that worker so the agent can compile.
 

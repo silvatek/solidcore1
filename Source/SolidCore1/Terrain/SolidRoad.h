@@ -59,6 +59,15 @@ namespace SolidRoad
 		/** "Meagre Dungeon -> Iglin, trail". */
 		FString toString() const;
 
+		/**
+		 * Straight line of terrain points from one end to the other.
+		 * One banned patch is walked around. OutCells is that line for the strip.
+		 */
+		bool OpenStraightLine(
+			const USolidWorldChart& Map,
+			TArray<FIntPoint>& OutCells,
+			TArray<FIntPoint>& OutPoints) const;
+
 		FSolidWorldChartMark From;
 		FSolidWorldChartMark To;
 		EType Type = EType::Trail;

@@ -488,68 +488,6 @@ namespace SolidRoad
 			return false;
 		}
 
-		bool OpenStraightLine(
-			const USolidWorldChart& Map,
-			const FSolidRoad* Road,
-			TArray<FIntPoint>& OutCells,
-			TArray<FIntPoint>& OutPoints)
-		{
-			OutPoints.Reset();
-			if (Road == nullptr)
-			{
-				return false;
-			}
-			FVector2D Min = FVector2D::ZeroVector;
-			FVector2D Max = FVector2D::ZeroVector;
-			USolidWorldChart::DefaultWorldBounds(Min, Max);
-			FIntPoint FromPoint = FIntPoint::ZeroValue;
-			FIntPoint ToPoint = FIntPoint::ZeroValue;
-			if (!Map.TerrainPointAt(Road->From.PositionCm.X, Road->From.PositionCm.Y, Min, Max, FromPoint)
-				|| !Map.TerrainPointAt(Road->To.PositionCm.X, Road->To.PositionCm.Y, Min, Max, ToPoint))
-			{
-				return false;
-			}
-
-			TerrainLine(FromPoint, ToPoint, OutPoints);
-			TArray<int32> Blocked;
-			for (int32 Index = 1; Index < OutPoints.Num(); ++Index)
-			{
-				if (!LineStepAllowed(Map, Road->Type, OutPoints[Index - 1], OutPoints[Index]))
-				{
-					const FIntPoint& Block = OutPoints[Index];
-					UE_LOG(LogSolid, Warning, TEXT("%s: blocked at %d,%d %s."),
-						*Road->toString(),
-						Block.X,
-						Block.Y,
-						SolidBiome::Of(Map.GetPointBiome(Block)).Name());
-					Blocked.Add(Index);
-				}
-			}
-			if (Blocked.Num() > 0)
-			{
-				int32 Runs = 1;
-				for (int32 Index = 1; Index < Blocked.Num(); ++Index)
-				{
-					if (Blocked[Index] != Blocked[Index - 1] + 1)
-					{
-						++Runs;
-					}
-				}
-				const TArray<FIntPoint> Line = OutPoints;
-				if (Runs != 1 || !DetourAroundPatch(Map, Road->Type, Line, Blocked[0], Blocked.Last(), OutPoints))
-				{
-					OutPoints.Reset();
-					return false;
-				}
-			}
-
-			if (!CellsForPoints(Map, OutPoints, OutCells))
-			{
-				OutPoints.Reset();
-				return false;
-			}
-			return OutCells.Num() > 0;
-		}
 	}
 
 	FString FSolidRoad::toString() const
@@ -571,6 +509,64 @@ namespace SolidRoad
 			break;
 		}
 		return FString::Printf(TEXT("%s -> %s, %s"), *From.Name, *To.Name, TypeName);
+	}
+
+	bool FSolidRoad::OpenStraightLine(
+		const USolidWorldChart& Map,
+		TArray<FIntPoint>& OutCells,
+		TArray<FIntPoint>& OutPoints) const
+	{
+		OutPoints.Reset();
+		FVector2D Min = FVector2D::ZeroVector;
+		FVector2D Max = FVector2D::ZeroVector;
+		USolidWorldChart::DefaultWorldBounds(Min, Max);
+		FIntPoint FromPoint = FIntPoint::ZeroValue;
+		FIntPoint ToPoint = FIntPoint::ZeroValue;
+		if (!Map.TerrainPointAt(From.PositionCm.X, From.PositionCm.Y, Min, Max, FromPoint)
+			|| !Map.TerrainPointAt(To.PositionCm.X, To.PositionCm.Y, Min, Max, ToPoint))
+		{
+			return false;
+		}
+
+		TerrainLine(FromPoint, ToPoint, OutPoints);
+		TArray<int32> Blocked;
+		for (int32 Index = 1; Index < OutPoints.Num(); ++Index)
+		{
+			if (!LineStepAllowed(Map, Type, OutPoints[Index - 1], OutPoints[Index]))
+			{
+				const FIntPoint& Block = OutPoints[Index];
+				UE_LOG(LogSolid, Warning, TEXT("%s: blocked at %d,%d %s."),
+					*toString(),
+					Block.X,
+					Block.Y,
+					SolidBiome::Of(Map.GetPointBiome(Block)).Name());
+				Blocked.Add(Index);
+			}
+		}
+		if (Blocked.Num() > 0)
+		{
+			int32 Runs = 1;
+			for (int32 Index = 1; Index < Blocked.Num(); ++Index)
+			{
+				if (Blocked[Index] != Blocked[Index - 1] + 1)
+				{
+					++Runs;
+				}
+			}
+			const TArray<FIntPoint> Line = OutPoints;
+			if (Runs != 1 || !DetourAroundPatch(Map, Type, Line, Blocked[0], Blocked.Last(), OutPoints))
+			{
+				OutPoints.Reset();
+				return false;
+			}
+		}
+
+		if (!CellsForPoints(Map, OutPoints, OutCells))
+		{
+			OutPoints.Reset();
+			return false;
+		}
+		return OutCells.Num() > 0;
 	}
 
 	bool Parse(const FString& Line, FDefinition& Out)
@@ -612,12 +608,9 @@ namespace SolidRoad
 	{
 		OutCells.Reset();
 		OutPoints.Reset();
-		if (OpenStraightLine(Map, Road, OutCells, OutPoints))
+		if (Road != nullptr && Road->OpenStraightLine(Map, OutCells, OutPoints))
 		{
-			if (Road != nullptr)
-			{
-				UE_LOG(LogSolid, Warning, TEXT("%s: OpenStraightLine."), *Road->toString());
-			}
+			UE_LOG(LogSolid, Warning, TEXT("%s: OpenStraightLine."), *Road->toString());
 			return true;
 		}
 		if (Road != nullptr)

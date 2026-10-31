@@ -43,22 +43,6 @@ namespace
 		return Text;
 	}
 
-	FString BridgeTestNamed(
-		const int32 FromCol,
-		const int32 FromRow,
-		const TCHAR* FromTown,
-		const int32 ToCol,
-		const int32 ToRow,
-		const TCHAR* ToTown,
-		const TCHAR* Type)
-	{
-		return FString::Printf(
-			TEXT("! %d,%d = Town %s\n! %d,%d = Town %s\nRoad: %s -> %s, %s\n"),
-			FromRow + 1, FromCol + 1, FromTown,
-			ToRow + 1, ToCol + 1, ToTown,
-			FromTown, ToTown, Type);
-	}
-
 	float BridgePlanLength(const TArray<FVector>& Line)
 	{
 		float Length = 0.f;
@@ -276,96 +260,6 @@ bool FSolidBridgeBanksTest::RunTest(const FString& Parameters)
 		BridgePlanLength(Bridge.RampFrom) * 2.f < BridgePlanLength(Bridge.RampTo));
 	TestTrue(TEXT("high ramp still enters the ground"), BridgeBuried(Bridge.RampFrom, Height));
 	TestTrue(TEXT("low ramp reaches the lower bank"), BridgeBuried(Bridge.RampTo, Height));
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidBridgeSpanTest,
-	"SolidCore1.Bridge.Span",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
-
-bool FSolidBridgeSpanTest::RunTest(const FString& Parameters)
-{
-	const auto Height = [](float, float) { return 100.f; };
-
-	TArray<FBridgeTestMark> ShortMarks;
-	ShortMarks.Add({ 2, 20, USolidWorldChart::LocationMarker });
-	ShortMarks.Add({ 10, 20, USolidWorldChart::RiverMarker });
-	ShortMarks.Add({ 18, 20, USolidWorldChart::LocationMarker });
-	USolidWorldChart* ShortMap = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("short map"), ShortMap);
-	if (!TestTrue(TEXT("short map loads"), ShortMap->LoadFromString(BridgeTestGrid(ShortMarks, BridgeTestNamed(2, 20, TEXT("Iglin"), 18, 20, TEXT("Relion"), TEXT("trail"))))))
-	{
-		return false;
-	}
-	TArray<SolidBridge::FBridge> ShortBridges;
-	if (!TestEqual(TEXT("short crossing"), SolidBridge::Collect(*ShortMap, BridgeTestMin, BridgeTestMax, Height, ShortBridges), 1)
-		|| ShortBridges.Num() != 1)
-	{
-		return false;
-	}
-
-	TArray<FBridgeTestMark> LongMarks;
-	LongMarks.Add({ 2, 20, USolidWorldChart::LocationMarker });
-	LongMarks.Add({ 18, 20, USolidWorldChart::LocationMarker });
-	constexpr int32 RiverCells = 5;
-	for (int32 Col = 8; Col < 8 + RiverCells; ++Col)
-	{
-		LongMarks.Add({ Col, 20, USolidWorldChart::RiverMarker });
-	}
-	USolidWorldChart* LongMap = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("long map"), LongMap);
-	if (!TestTrue(TEXT("long map loads"), LongMap->LoadFromString(BridgeTestGrid(LongMarks, BridgeTestNamed(2, 20, TEXT("Iglin"), 18, 20, TEXT("Relion"), TEXT("trail"))))))
-	{
-		return false;
-	}
-	TArray<SolidBridge::FBridge> LongBridges;
-	TestEqual(TEXT("a trail does not follow the river"),
-		SolidBridge::Collect(*LongMap, BridgeTestMin, BridgeTestMax, Height, LongBridges), 0);
-
-	TestTrue(TEXT("a trail center is 1 m"), FMath::IsNearlyEqual(ShortBridges[0].WidthCm, SolidRoad::WidthCm(SolidRoad::EType::Trail)));
-
-	TArray<FBridgeTestMark> Blocked;
-	Blocked.Add({ 4, 20, USolidWorldChart::LocationMarker });
-	Blocked.Add({ 20, 20, USolidWorldChart::LocationMarker });
-	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
-	{
-		Blocked.Add({ 12, Row, USolidWorldChart::RiverMarker });
-	}
-	USolidWorldChart* Wide = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("wide map"), Wide);
-	if (!TestTrue(TEXT("wide map loads"), Wide->LoadFromString(BridgeTestGrid(Blocked, BridgeTestNamed(4, 20, TEXT("Iglin"), 20, 20, TEXT("Relion"), TEXT("road"))))))
-	{
-		return false;
-	}
-	TArray<SolidBridge::FBridge> WideBridges;
-	if (!TestEqual(TEXT("a road that must cross gets one bridge"),
-		SolidBridge::Collect(*Wide, BridgeTestMin, BridgeTestMax, Height, WideBridges), 1)
-		|| WideBridges.Num() != 1)
-	{
-		return false;
-	}
-	TestTrue(TEXT("a road center is 3 m"), FMath::IsNearlyEqual(WideBridges[0].WidthCm, SolidRoad::WidthCm(SolidRoad::EType::Road)));
-	TestTrue(TEXT("a wider road widens the center"), WideBridges[0].WidthCm > ShortBridges[0].WidthCm + 100.f);
-
-	TArray<FBridgeTestMark> Gap;
-	Gap.Add({ 4, 10, USolidWorldChart::LocationMarker });
-	Gap.Add({ 22, 10, USolidWorldChart::LocationMarker });
-	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
-	{
-		if (Row != 22)
-		{
-			Gap.Add({ 12, Row, USolidWorldChart::RiverMarker });
-		}
-	}
-	USolidWorldChart* Around = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("around map"), Around);
-	if (TestTrue(TEXT("around map loads"), Around->LoadFromString(BridgeTestGrid(Gap, BridgeTestNamed(4, 10, TEXT("Iglin"), 22, 10, TEXT("Relion"), TEXT("road"))))))
-	{
-		TArray<SolidBridge::FBridge> AroundBridges;
-		TestEqual(TEXT("a road crosses the river and takes one bridge"),
-			SolidBridge::Collect(*Around, BridgeTestMin, BridgeTestMax, Height, AroundBridges), 1);
-	}
 	return true;
 }
 

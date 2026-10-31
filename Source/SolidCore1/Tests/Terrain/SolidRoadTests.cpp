@@ -310,6 +310,57 @@ bool FSolidRoadForestHighwayTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidRoadForestTrailTest,
+	"SolidCore1.Road.ForestTrail",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidRoadForestTrailTest::RunTest(const FString& Parameters)
+{
+	const int32 Row = 256;
+	const FIntPoint IglinPoint(100, Row);
+	const FIntPoint RelionPoint(400, Row);
+	const FIntPoint ForestPoint(250, Row);
+	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
+	UTEST_NOT_NULL(TEXT("forest chart"), Chart);
+	FillGrassPoints(*Chart);
+	if (!TestTrue(TEXT("Iglin places"), PlacePointMark(*Chart, SolidRoad::TownMark(SolidTowns::Iglin), IglinPoint))
+		|| !TestTrue(TEXT("Relion places"), PlacePointMark(*Chart, SolidRoad::TownMark(SolidTowns::Relion), RelionPoint)))
+	{
+		return false;
+	}
+
+	const FIntPoint WallTop(ForestPoint.X, 0);
+	const FIntPoint WallBottom(ForestPoint.X, USolidWorldChart::PointAxis - 1);
+	const FIntPoint Gap(ForestPoint.X, 40);
+	if (!TestTrue(TEXT("the forest wall paints"), Chart->SetPointRectangle(WallTop, WallBottom, ESolidBiome::Forest))
+		|| !TestTrue(TEXT("the gap stays grass"), Chart->SetPointRectangle(Gap, Gap, ESolidBiome::Grassland)))
+	{
+		return false;
+	}
+
+	SolidRoad::FSolidRoad Trail(
+		SolidRoad::TownMark(SolidTowns::Iglin),
+		SolidRoad::TownMark(SolidTowns::Relion),
+		SolidRoad::EType::Trail);
+	if (!TestTrue(TEXT("both ends are on the chart"), Trail.Locate(Chart->Marks))
+		|| !TestTrue(TEXT("the trail solves"), Trail.FindRoute(*Chart)))
+	{
+		return false;
+	}
+	TestTrue(TEXT("trail stays on the straight row"), RouteStaysOnRow(Trail.Points, Row));
+	int32 ForestPoints = 0;
+	for (const FIntPoint& Point : Trail.Points)
+	{
+		if (Chart->GetPointBiome(Point) == ESolidBiome::Forest)
+		{
+			++ForestPoints;
+		}
+	}
+	TestEqual(TEXT("trail crosses one forest point"), ForestPoints, 1);
+	return TestTrue(TEXT("that point is the wall"), Trail.Points.Contains(ForestPoint));
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidRoadAvoidTest,
 	"SolidCore1.Road.Avoid",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)

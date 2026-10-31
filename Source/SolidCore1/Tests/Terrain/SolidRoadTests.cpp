@@ -203,18 +203,18 @@ bool FSolidRoadNamedEndTest::RunTest(const FString& Parameters)
 	const int32 CaveRow = 8;
 	const int32 TownCol = 8;
 	const int32 TownRow = 8;
-	const FString Lines = FString::Printf(
-		TEXT("! %d,%d = Stronghold (MeagreDungeon)\n! %d,%d = Town (Iglin)\nRoad: MeagreDungeon -> Iglin, trail\n"),
-		CaveRow + 1,
-		CaveCol + 1,
-		TownRow + 1,
-		TownCol + 1);
 	USolidWorldChart* Map = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("named map"), Map);
-	if (!Map || !RoadTestLoad(*this, *Map, RoadTestGrid({
-		{ CaveCol, CaveRow, USolidWorldChart::LocationMarker },
-		{ TownCol, TownRow, USolidWorldChart::LocationMarker },
-	}, Lines)))
+	if (!TestNotNull(TEXT("named map"), Map))
+	{
+		return false;
+	}
+	Map->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
+	FString Error;
+	const FString CaveName = SolidStronghold::Label(ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon);
+	if (!TestTrue(TEXT("the cave places"), Map->PlaceStronghold(FIntPoint(CaveCol, CaveRow), ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon, Error))
+		|| !TestTrue(TEXT("Iglin places"), Map->PlaceTown(FIntPoint(TownCol, TownRow), TEXT("Iglin"), Error))
+		|| !TestTrue(TEXT("the trail is stored"), Map->AddRoad(CaveName, TEXT("Iglin"), ESolidWorldChartRoadType::Trail, Error))
+		|| !TestTrue(TEXT("the chart solves"), Map->LoadFromChart(Map)))
 	{
 		return false;
 	}

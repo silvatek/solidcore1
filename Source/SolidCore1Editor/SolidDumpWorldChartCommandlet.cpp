@@ -24,6 +24,7 @@ namespace
 		case ESolidWorldChartMarkKind::LairExit: return TEXT("Lair exit");
 		case ESolidWorldChartMarkKind::Custom: return TEXT("Custom");
 		case ESolidWorldChartMarkKind::Encounter: return TEXT("Encounter");
+		case ESolidWorldChartMarkKind::Bridge: return TEXT("Bridge");
 		case ESolidWorldChartMarkKind::Town:
 		default:
 			return TEXT("Town");

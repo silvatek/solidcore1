@@ -60,6 +60,7 @@ public:
 	int32 TypeIndex = 0;
 	int32 LairIndex = 0;
 	int32 EncounterIndex = 0;
+	int32 BridgeIndex = 0;
 	FString CustomNote;
 
 	void SetTool(ESolidWorldChartTool InTool);

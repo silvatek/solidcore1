@@ -17,6 +17,8 @@ enum class ESolidWorldChartMarkKind : uint8
 	Custom,
 	/** A catalog encounter. It does not change the land. */
 	Encounter,
+	/** A bridge. It does not change the land. Length, orientation, and state stay in the C++ list. */
+	Bridge,
 };
 
 /**

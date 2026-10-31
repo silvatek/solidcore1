@@ -366,6 +366,13 @@ public:
 	 */
 	bool PlaceEncounter(FIntPoint Cell, const FString& Name, FString& OutError);
 
+	/**
+	 * Put a bridge on this cell. The same name moves here.
+	 * The name is the one in SolidBridge::Bridges. The position is the cell centre.
+	 * Length, orientation, and the initial state stay in that list. The paint stays.
+	 */
+	bool PlaceBridge(FIntPoint Cell, const FString& Name, FString& OutError);
+
 	/** Remove the mark on this cell. */
 	bool DeleteMark(FIntPoint Cell, FString& OutError);
 

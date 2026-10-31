@@ -6,6 +6,7 @@
 #include "Terrain/SolidBiome.h"
 #include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidTerrainStreamer.h"
+#include "Terrain/SolidBridges.h"
 #include "Terrain/SolidWorldChart.h"
 #include "Towns/SolidTowns.h"
 
@@ -48,6 +49,7 @@ namespace
 		case ESolidWorldChartMarkKind::LairExit: return TEXT("Lair exit");
 		case ESolidWorldChartMarkKind::Custom: return TEXT("Custom");
 		case ESolidWorldChartMarkKind::Encounter: return TEXT("Encounter");
+		case ESolidWorldChartMarkKind::Bridge: return TEXT("Bridge");
 		case ESolidWorldChartMarkKind::Town:
 		default: return TEXT("Town");
 		}
@@ -63,6 +65,7 @@ namespace
 		case ESolidWorldChartMarkKind::LairExit: return FLinearColor(0.35f, 0.48f, 1.f);
 		case ESolidWorldChartMarkKind::Custom: return FLinearColor(1.f, 0.35f, 0.75f);
 		case ESolidWorldChartMarkKind::Encounter: return FLinearColor(0.95f, 0.72f, 0.15f);
+		case ESolidWorldChartMarkKind::Bridge: return FLinearColor(0.55f, 0.32f, 0.14f);
 		case ESolidWorldChartMarkKind::Town:
 		default: return FLinearColor(1.f, 0.78f, 0.15f);
 		}
@@ -271,6 +274,10 @@ public:
 		{
 			Encounters.Add(MakeShared<FString>(Encounter.Name));
 		}
+		for (const SolidBridge::FBridgeMarker& Bridge : SolidBridge::Bridges)
+		{
+			Bridges.Add(MakeShared<FString>(Bridge.Name));
+		}
 		MarkKinds.Add(MakeShared<FString>(TEXT("Town")));
 		MarkKinds.Add(MakeShared<FString>(TEXT("Stronghold")));
 		MarkKinds.Add(MakeShared<FString>(TEXT("Stronghold site")));
@@ -278,6 +285,7 @@ public:
 		MarkKinds.Add(MakeShared<FString>(TEXT("Lair exit")));
 		MarkKinds.Add(MakeShared<FString>(TEXT("Custom")));
 		MarkKinds.Add(MakeShared<FString>(TEXT("Encounter")));
+		MarkKinds.Add(MakeShared<FString>(TEXT("Bridge")));
 
 		TSharedRef<SWrapBox> BrushRow = SNew(SWrapBox).UseAllottedSize(true);
 		for (const ESolidBiome Biome : Biomes)
@@ -619,6 +627,31 @@ public:
 						})
 					]
 				]
+				+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f)
+				[
+					SNew(SBox)
+					.Visibility_Lambda([this]()
+					{
+						return Mode && Mode->MarkKind == ESolidWorldChartMarkKind::Bridge
+							? EVisibility::Visible
+							: EVisibility::Collapsed;
+					})
+					[
+						MakeCombo(Bridges, [this]()
+						{
+							const int32 Index = Mode ? Mode->BridgeIndex : 0;
+							return Bridges.IsValidIndex(Index) && Bridges[Index].IsValid()
+								? *Bridges[Index]
+								: FString();
+						}, [this](const int32 Index)
+						{
+							if (Mode)
+							{
+								Mode->BridgeIndex = Index;
+							}
+						})
+					]
+				]
 						+ SVerticalBox::Slot().AutoHeight().Padding(0.f, 4.f)
 						[
 							SNew(STextBlock)
@@ -724,6 +757,7 @@ private:
 	TArray<TSharedPtr<FString>> Types;
 	TArray<TSharedPtr<FString>> Lairs;
 	TArray<TSharedPtr<FString>> Encounters;
+	TArray<TSharedPtr<FString>> Bridges;
 	TArray<TSharedPtr<FString>> MarkKinds;
 };
 
@@ -1044,6 +1078,13 @@ void FSolidWorldChartEdMode::PlaceCurrentMark()
 		{
 			const int32 Index = FMath::Clamp(EncounterIndex, 0, SolidEncounter::DefinitionCount - 1);
 			bPlaced = Chart->PlaceEncounter(CurrentCell, SolidEncounter::StaticEncounters[Index].Name, Error);
+		}
+		break;
+	case ESolidWorldChartMarkKind::Bridge:
+		if (SolidBridge::DefinitionCount > 0)
+		{
+			const int32 Index = FMath::Clamp(BridgeIndex, 0, SolidBridge::DefinitionCount - 1);
+			bPlaced = Chart->PlaceBridge(CurrentCell, SolidBridge::Bridges[Index].Name, Error);
 		}
 		break;
 	default:

@@ -1,4 +1,5 @@
 #include "SolidWorldChart.h"
+#include "SolidBridges.h"
 #include "SolidRoads.h"
 #include "SolidBiome.h"
 #include "SolidCore1.h"
@@ -109,7 +110,7 @@ namespace
 	 * The values the place tool selected. Position is not one of them.
 	 * A town matches its name. A stronghold and a site match their size.
 	 * A lair mouth matches its lair and its end. A note matches its text.
-	 * An encounter matches its name.
+	 * An encounter matches its name. A bridge matches its name.
 	 */
 	bool SamePlacedMark(const FSolidWorldChartMark& Existing, const FSolidWorldChartMark& Incoming)
 	{
@@ -134,6 +135,7 @@ namespace
 		case ESolidWorldChartMarkKind::Custom:
 			return Existing.Name.Equals(Incoming.Name, ESearchCase::CaseSensitive);
 		case ESolidWorldChartMarkKind::Encounter:
+		case ESolidWorldChartMarkKind::Bridge:
 			return Existing.Name.Equals(Incoming.Name, ESearchCase::IgnoreCase);
 		default:
 			return false;
@@ -429,6 +431,30 @@ bool USolidWorldChart::PlaceEncounter(const FIntPoint Cell, const FString& Name,
 
 	FSolidWorldChartMark Mark;
 	Mark.Kind = ESolidWorldChartMarkKind::Encounter;
+	Mark.Name = Found->Name;
+	return PlaceMark(Cell, Mark, OutError);
+}
+
+bool USolidWorldChart::PlaceBridge(const FIntPoint Cell, const FString& Name, FString& OutError)
+{
+	const FString Clean = Name.TrimStartAndEnd();
+	const SolidBridge::FBridgeMarker* Found = nullptr;
+	for (const SolidBridge::FBridgeMarker& Bridge : SolidBridge::Bridges)
+	{
+		if (Clean.Equals(Bridge.Name, ESearchCase::IgnoreCase))
+		{
+			Found = &Bridge;
+			break;
+		}
+	}
+	if (!Found || !Found->Name)
+	{
+		OutError = FString::Printf(TEXT("%s is not a bridge."), *Clean);
+		return false;
+	}
+
+	FSolidWorldChartMark Mark;
+	Mark.Kind = ESolidWorldChartMarkKind::Bridge;
 	Mark.Name = Found->Name;
 	return PlaceMark(Cell, Mark, OutError);
 }
@@ -1068,6 +1094,7 @@ bool USolidWorldChart::RememberChartMark(const FSolidWorldChartMark& Mark, const
 	}
 	case ESolidWorldChartMarkKind::Custom:
 	case ESolidWorldChartMarkKind::Encounter:
+	case ESolidWorldChartMarkKind::Bridge:
 		return false;
 	default:
 		return false;

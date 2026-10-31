@@ -504,4 +504,56 @@ bool FSolidWorldChartPlaceMovesTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidWorldChartBridgeTest,
+	"SolidCore1.WorldChart.Bridge",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FSolidWorldChartBridgeTest::RunTest(const FString& Parameters)
+{
+	USolidWorldChart* Chart = PaintGrassChart();
+	UTEST_NOT_NULL(TEXT("grass chart"), Chart);
+
+	FString Error;
+	const FIntPoint Cell(14, 8);
+	TestFalse(TEXT("an unknown bridge is rejected"), Chart->PlaceBridge(Cell, TEXT("Nope"), Error));
+	TestTrue(TEXT("the error names Nope"), Error.Contains(TEXT("Nope")));
+	TestEqual(TEXT("the unknown name left no mark"), Chart->MarkAtCell(Cell), static_cast<int32>(INDEX_NONE));
+
+	const int32 CellIndex = Cell.Y * USolidWorldChart::MapWidth + Cell.X;
+	const uint8 PaintBefore = static_cast<uint8>(Chart->Cells[CellIndex]);
+	TestTrue(TEXT("Iglin Bridge places"), Chart->PlaceBridge(Cell, TEXT("Iglin Bridge"), Error));
+	const int32 MarkIndex = Chart->MarkAtCell(Cell);
+	if (!TestTrue(TEXT("the bridge is on the cell"), MarkIndex != INDEX_NONE))
+	{
+		return false;
+	}
+	TestEqual(
+		TEXT("the mark is a bridge"),
+		static_cast<uint8>(Chart->Marks[MarkIndex].Kind),
+		static_cast<uint8>(ESolidWorldChartMarkKind::Bridge));
+	TestEqual(TEXT("the list name is stored"), Chart->Marks[MarkIndex].Name, FString(TEXT("Iglin Bridge")));
+	FVector2D Centre = FVector2D::ZeroVector;
+	TestTrue(TEXT("the cell has a centre"), USolidWorldChart::CellCentre(Cell, Centre));
+	TestTrue(
+		TEXT("the bridge sits on the cell centre"),
+		FVector2D::Distance(Chart->Marks[MarkIndex].PositionCm, Centre) <= 1.f);
+	TestEqual(TEXT("the bridge leaves the paint"), static_cast<uint8>(Chart->Cells[CellIndex]), PaintBefore);
+
+	const FIntPoint Moved(15, 9);
+	TestTrue(TEXT("the same bridge moves"), Chart->PlaceBridge(Moved, TEXT("iglin bridge"), Error));
+	TestEqual(TEXT("the old cell is empty"), Chart->MarkAtCell(Cell), static_cast<int32>(INDEX_NONE));
+	const int32 MovedIndex = Chart->MarkAtCell(Moved);
+	TestTrue(TEXT("Iglin Bridge is on the new cell"), MovedIndex != INDEX_NONE);
+	if (MovedIndex != INDEX_NONE)
+	{
+		FVector2D MovedCentre = FVector2D::ZeroVector;
+		TestTrue(TEXT("the new cell has a centre"), USolidWorldChart::CellCentre(Moved, MovedCentre));
+		TestTrue(
+			TEXT("the moved bridge sits on that centre"),
+			FVector2D::Distance(Chart->Marks[MovedIndex].PositionCm, MovedCentre) <= 1.f);
+	}
+	return true;
+}
+
 #endif

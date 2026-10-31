@@ -12,7 +12,8 @@ namespace SolidRoad
 {
 	inline const FSolidRoad Roads[] = {
 		FSolidRoad(StrongholdMark(ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon), TownMark(SolidTowns::Iglin), EType::Trail),
-		FSolidRoad(TownMark(SolidTowns::Iglin), TownMark(SolidTowns::Relion), EType::Track),
+		FSolidRoad(TownMark(SolidTowns::Iglin), BridgeMark(TEXT("Iglin Bridge")), EType::Track),
+		FSolidRoad(BridgeMark(TEXT("Iglin Bridge")), TownMark(SolidTowns::Relion), EType::Track),
 		FSolidRoad(TownMark(SolidTowns::Relion), TownMark(SolidTowns::Kanfold), EType::Highway),
 		FSolidRoad(TownMark(SolidTowns::Relion), TownMark(SolidTowns::Dragongate), EType::Road),
 		FSolidRoad(TownMark(SolidTowns::Dragongate), TownMark(SolidTowns::Jethan), EType::Track),

@@ -110,7 +110,8 @@ namespace
 
 		FString Error;
 		if (!Test.TestTrue(TEXT("Iglin places"), Chart->PlaceTown(Iglin, TEXT("Iglin"), Error))
-			|| !Test.TestTrue(TEXT("Relion places"), Chart->PlaceTown(Relion, TEXT("Relion"), Error)))
+			|| !Test.TestTrue(TEXT("Relion places"), Chart->PlaceTown(Relion, TEXT("Relion"), Error))
+			|| !Test.TestTrue(TEXT("Iglin Bridge places"), Chart->PlaceBridge(FIntPoint(11, 16), TEXT("Iglin Bridge"), Error)))
 		{
 			return false;
 		}
@@ -145,7 +146,7 @@ namespace
 			return false;
 		}
 		OutMap = Loaded;
-		return Test.TestEqual(TEXT("the Iglin track is routed"), Loaded->GetRoutedRoads().Num(), 1);
+		return Test.TestEqual(TEXT("both halves of the Iglin track are routed"), Loaded->GetRoutedRoads().Num(), 2);
 	}
 }
 
@@ -270,9 +271,9 @@ bool FSolidBridgeBrokenTest::RunTest(const FString& Parameters)
 	TArray<SolidBridge::FBridge> Iglin;
 	if (BridgeLoadTrack(*this, WestIglin, true) && WestIglin && OneBridge(*WestIglin, Iglin))
 	{
-		TestTrue(TEXT("Iglin west of the river is broken"), Iglin[0].bBroken);
-		TestTrue(TEXT("Iglin west of the river is the Iglin bridge"), Iglin[0].bIglinRelion);
-		TestTrue(TEXT("the missing span is still measured"), Iglin[0].Deck.Num() >= 2);
+		TestFalse(TEXT("the west half stays intact"), Iglin[0].bBroken);
+		TestFalse(TEXT("the west half leaves the Iglin repair flag clear"), Iglin[0].bIglinRelion);
+		TestTrue(TEXT("the span is still measured"), Iglin[0].Deck.Num() >= 2);
 	}
 
 	USolidWorldChart* EastIglin = nullptr;
@@ -280,8 +281,8 @@ bool FSolidBridgeBrokenTest::RunTest(const FString& Parameters)
 	if (BridgeLoadTrack(*this, EastIglin, true, FIntPoint(20, 16), FIntPoint(4, 16))
 		&& EastIglin && OneBridge(*EastIglin, Swapped))
 	{
-		TestTrue(TEXT("Iglin east of the river is broken"), Swapped[0].bBroken);
-		TestTrue(TEXT("Iglin east of the river is the Iglin bridge"), Swapped[0].bIglinRelion);
+		TestFalse(TEXT("the east half stays intact"), Swapped[0].bBroken);
+		TestFalse(TEXT("the east half leaves the Iglin repair flag clear"), Swapped[0].bIglinRelion);
 	}
 
 	ASolidBridge* Actor = NewObject<ASolidBridge>();

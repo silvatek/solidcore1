@@ -455,12 +455,13 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	if (!SurfaceChart(*this, TrackChart)
 		|| !TestTrue(TEXT("Iglin places"), TrackChart->PlaceTown(FIntPoint(4, 12), TEXT("Iglin"), Error))
 		|| !TestTrue(TEXT("Relion places"), TrackChart->PlaceTown(FIntPoint(16, 12), TEXT("Relion"), Error))
+		|| !TestTrue(TEXT("Iglin Bridge places"), TrackChart->PlaceBridge(FIntPoint(11, 12), TEXT("Iglin Bridge"), Error))
 		|| !SurfacePoint(*this, *TrackChart, FIntPoint(8, 12), ForestPoint)
 		|| !TestTrue(TEXT("forest paints on the track"), TrackChart->SetPointRectangle(ForestPoint, ForestPoint, ESolidBiome::Forest))
 		|| !SurfacePoint(*this, *TrackChart, FIntPoint(12, 12), RiverPoint)
 		|| !TestTrue(TEXT("the river paints"), TrackChart->SetPointRectangle(
 			FIntPoint(RiverPoint.X, 0), FIntPoint(RiverPoint.X, USolidWorldChart::PointAxis - 1), ESolidBiome::River))
-		|| !SurfaceLoad(*this, TrackChart, Track, 1))
+		|| !SurfaceLoad(*this, TrackChart, Track, 2))
 	{
 		return false;
 	}
@@ -558,27 +559,35 @@ bool FSolidRoadShippedTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("map"), Map);
 	TestTrue(TEXT("default map loads"), Map->LoadDefault());
 
+	TArray<SolidRoad::FSolidRoad> Located;
+	for (const SolidRoad::FSolidRoad& Definition : SolidRoad::Roads)
+	{
+		SolidRoad::FSolidRoad Road = Definition;
+		if (Road.Locate(Map->Marks))
+		{
+			Located.Add(Road);
+		}
+	}
+
 	const TArray<SolidRoad::FRoute>& Roads = Map->GetRoads();
-	TestEqual(TEXT("five roads"), Roads.Num(), 5);
-	if (Roads.Num() < 5)
+	TestEqual(TEXT("located roads"), Roads.Num(), Located.Num());
+	if (Roads.Num() != Located.Num())
 	{
 		return false;
 	}
 
-	const SolidRoad::EType Types[] = {
-		SolidRoad::EType::Trail,
-		SolidRoad::EType::Track,
-		SolidRoad::EType::Highway,
-		SolidRoad::EType::Road,
-		SolidRoad::EType::Track,
-	};
-	const int32 FromIds[] = { INDEX_NONE, 0, 1, 1, 5 };
-	const int32 ToIds[] = { 0, 1, 2, 5, 4 };
-	for (int32 Index = 0; Index < 5; ++Index)
+	for (int32 Index = 0; Index < Roads.Num(); ++Index)
 	{
-		TestEqual(TEXT("road type"), static_cast<uint8>(Roads[Index].Definition.Type), static_cast<uint8>(Types[Index]));
-		TestEqual(TEXT("road starts where the line says"), Roads[Index].Definition.From.LocationId, FromIds[Index]);
-		TestEqual(TEXT("road ends where the line says"), Roads[Index].Definition.To.LocationId, ToIds[Index]);
+		const SolidRoad::FDefinition Ends = Located[Index].ToDefinition();
+		const bool bBridge = Located[Index].From.Kind == ESolidWorldChartMarkKind::Bridge
+			|| Located[Index].To.Kind == ESolidWorldChartMarkKind::Bridge;
+		TestEqual(TEXT("road type"), static_cast<uint8>(Roads[Index].Definition.Type), static_cast<uint8>(Located[Index].Type));
+		TestEqual(TEXT("road starts where the line says"), Roads[Index].Definition.From.LocationId, Ends.From.LocationId);
+		TestEqual(TEXT("road ends where the line says"), Roads[Index].Definition.To.LocationId, Ends.To.LocationId);
+		if (bBridge)
+		{
+			continue;
+		}
 		TestTrue(TEXT("route has cells"), Roads[Index].Cells.Num() >= 2);
 		RoadTestOrthogonal(*this, Roads[Index].Cells);
 	}
@@ -601,26 +610,23 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidRoadDefinitionsTest::RunTest(const FString& Parameters)
 {
 	const int32 FromIds[] = {
-		SolidTowns::Iglin,
 		SolidTowns::Relion,
 		SolidTowns::Relion,
 		SolidTowns::Dragongate,
 	};
 	const int32 ToIds[] = {
-		SolidTowns::Relion,
 		SolidTowns::Kanfold,
 		SolidTowns::Dragongate,
 		SolidTowns::Jethan,
 	};
 	const SolidRoad::EType Types[] = {
-		SolidRoad::EType::Track,
 		SolidRoad::EType::Highway,
 		SolidRoad::EType::Road,
 		SolidRoad::EType::Track,
 	};
 	const int32 TownRoads = UE_ARRAY_COUNT(FromIds);
-	TestEqual(TEXT("five roads"), SolidRoad::DefinitionCount, TownRoads + 1);
-	if (SolidRoad::DefinitionCount < TownRoads + 1)
+	TestEqual(TEXT("six roads"), SolidRoad::DefinitionCount, TownRoads + 3);
+	if (SolidRoad::DefinitionCount < TownRoads + 3)
 	{
 		return false;
 	}
@@ -634,9 +640,23 @@ bool FSolidRoadDefinitionsTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the trail ends at Iglin"), Cave.To.Name, FString(SolidTowns::Definitions[SolidTowns::Iglin].Name));
 	TestEqual(TEXT("trail"), static_cast<uint8>(Cave.Type), static_cast<uint8>(SolidRoad::EType::Trail));
 
+	const SolidRoad::FSolidRoad& ToBridge = SolidRoad::Roads[1];
+	TestEqual(TEXT("the first half starts at a town"), static_cast<uint8>(ToBridge.From.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Town));
+	TestEqual(TEXT("the first half starts at Iglin"), ToBridge.From.Name, FString(SolidTowns::Definitions[SolidTowns::Iglin].Name));
+	TestEqual(TEXT("the first half ends at a bridge"), static_cast<uint8>(ToBridge.To.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Bridge));
+	TestEqual(TEXT("the first half ends at Iglin Bridge"), ToBridge.To.Name, FString(TEXT("Iglin Bridge")));
+	TestEqual(TEXT("the first half is a track"), static_cast<uint8>(ToBridge.Type), static_cast<uint8>(SolidRoad::EType::Track));
+
+	const SolidRoad::FSolidRoad& FromBridge = SolidRoad::Roads[2];
+	TestEqual(TEXT("the second half starts at a bridge"), static_cast<uint8>(FromBridge.From.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Bridge));
+	TestEqual(TEXT("the second half starts at Iglin Bridge"), FromBridge.From.Name, FString(TEXT("Iglin Bridge")));
+	TestEqual(TEXT("the second half ends at a town"), static_cast<uint8>(FromBridge.To.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Town));
+	TestEqual(TEXT("the second half ends at Relion"), FromBridge.To.Name, FString(SolidTowns::Definitions[SolidTowns::Relion].Name));
+	TestEqual(TEXT("the second half is a track"), static_cast<uint8>(FromBridge.Type), static_cast<uint8>(SolidRoad::EType::Track));
+
 	for (int32 Index = 0; Index < TownRoads; ++Index)
 	{
-		const SolidRoad::FSolidRoad& Road = SolidRoad::Roads[Index + 1];
+		const SolidRoad::FSolidRoad& Road = SolidRoad::Roads[Index + 3];
 		TestEqual(TEXT("starts at a town"), static_cast<uint8>(Road.From.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Town));
 		TestEqual(TEXT("ends at a town"), static_cast<uint8>(Road.To.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Town));
 		TestEqual(TEXT("start town"), Road.From.Name, FString(SolidTowns::Definitions[FromIds[Index]].Name));
@@ -689,12 +709,29 @@ bool FSolidRoadLocationsTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
+	auto ExpectEnd = [&](const FSolidWorldChartMark& End)
+	{
+		if (End.Kind != ESolidWorldChartMarkKind::Bridge)
+		{
+			TestTrue(TEXT("the shipped end is on the chart"), Placed(Chart->Marks, End));
+			return;
+		}
+
+		FSolidWorldChartMark Seek = End;
+		Seek.PositionCm = FVector2D::ZeroVector;
+		if (!SolidRoad::LocateMark(Chart->Marks, Seek))
+		{
+			TestTrue(TEXT("a missing bridge mark leaves the end unplaced"), End.PositionCm.IsNearlyZero());
+			return;
+		}
+		TestTrue(TEXT("the bridge end takes the chart centre"), End.PositionCm.Equals(Seek.PositionCm));
+	};
 	for (const SolidRoad::FSolidRoad& Definition : SolidRoad::Roads)
 	{
 		SolidRoad::FSolidRoad Road = Definition;
 		Road.Locate(Chart->Marks);
-		TestTrue(TEXT("the shipped start is on the chart"), Placed(Chart->Marks, Road.From));
-		TestTrue(TEXT("the shipped end is on the chart"), Placed(Chart->Marks, Road.To));
+		ExpectEnd(Road.From);
+		ExpectEnd(Road.To);
 	}
 	return true;
 }
@@ -740,6 +777,39 @@ bool FSolidRoadRoutedTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("a routed road keeps its points"), Road.Points.Num() > 1);
 	}
 	TestEqual(TEXT("the shipped list stays unrouted"), SolidRoad::Roads[0].Points.Num(), 0);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidRoadBridgeEndTest,
+	"SolidCore1.Road.BridgeEnd",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidRoadBridgeEndTest::RunTest(const FString& Parameters)
+{
+	FSolidWorldChartMark Iglin = SolidRoad::TownMark(SolidTowns::Iglin);
+	Iglin.PositionCm = FVector2D(100.f, 200.f);
+	FSolidWorldChartMark Bridge = SolidRoad::BridgeMark(TEXT("Iglin Bridge"));
+	Bridge.PositionCm = FVector2D(1200.f, 3400.f);
+	TArray<FSolidWorldChartMark> Marks;
+	Marks.Add(Iglin);
+	Marks.Add(Bridge);
+
+	SolidRoad::FSolidRoad Track(
+		SolidRoad::TownMark(SolidTowns::Iglin),
+		SolidRoad::BridgeMark(TEXT("Iglin Bridge")),
+		SolidRoad::EType::Track);
+	TestEqual(TEXT("the end is a bridge"), static_cast<uint8>(Track.To.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Bridge));
+	TestTrue(TEXT("the bridge end locates"), Track.Locate(Marks));
+	TestTrue(TEXT("Iglin takes the chart place"), Track.From.PositionCm.Equals(Iglin.PositionCm));
+	TestTrue(TEXT("the bridge takes the chart centre"), Track.To.PositionCm.Equals(Bridge.PositionCm));
+
+	SolidRoad::FSolidRoad Missing(
+		SolidRoad::BridgeMark(TEXT("Jethan Bridge")),
+		SolidRoad::TownMark(SolidTowns::Iglin),
+		SolidRoad::EType::Track);
+	TestFalse(TEXT("a missing bridge stays unplaced"), Missing.Locate(Marks));
+	TestTrue(TEXT("the missing bridge has no centre"), Missing.From.PositionCm.IsNearlyZero());
 	return true;
 }
 

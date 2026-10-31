@@ -97,6 +97,15 @@ namespace SolidRoad
 		return Mark;
 	}
 
+	/** A bridge mark. The chart places its centre. The name is the one in SolidBridge::Bridges. */
+	inline FSolidWorldChartMark BridgeMark(const TCHAR* Name)
+	{
+		FSolidWorldChartMark Mark;
+		Mark.Kind = ESolidWorldChartMarkKind::Bridge;
+		Mark.Name = Name;
+		return Mark;
+	}
+
 	/** Copy the chart mark's position onto this end when the chart has that mark. */
 	inline bool LocateMark(const TArray<FSolidWorldChartMark>& ChartMarks, FSolidWorldChartMark& End)
 	{

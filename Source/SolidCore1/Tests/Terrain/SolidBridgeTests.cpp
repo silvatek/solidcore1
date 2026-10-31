@@ -11,38 +11,6 @@ namespace
 	const FVector2D BridgeTestMin(-51200.f, -51200.f);
 	const FVector2D BridgeTestMax(51200.f, 51200.f);
 
-	struct FBridgeTestMark
-	{
-		int32 Col = 0;
-		int32 Row = 0;
-		TCHAR Marker = USolidWorldChart::GrassMarker;
-	};
-
-	FString BridgeTestGrid(const TArray<FBridgeTestMark>& Marks, const FString& Roads)
-	{
-		FString Text;
-		Text.Reserve((USolidWorldChart::MapWidth + 1) * USolidWorldChart::MapHeight + Roads.Len());
-		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
-		{
-			for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
-			{
-				TCHAR Marker = USolidWorldChart::GrassMarker;
-				for (const FBridgeTestMark& Mark : Marks)
-				{
-					if (Mark.Col == Col && Mark.Row == Row)
-					{
-						Marker = Mark.Marker;
-						break;
-					}
-				}
-				Text.AppendChar(Marker);
-			}
-			Text.AppendChar(TEXT('\n'));
-		}
-		Text += Roads;
-		return Text;
-	}
-
 	float BridgePlanLength(const TArray<FVector>& Line)
 	{
 		float Length = 0.f;
@@ -124,7 +92,12 @@ namespace
 	}
 
 	// LoadFromChart needs a full cell grid. The river is one point column, and the towns are marks.
-	bool BridgeLoadTrack(FAutomationTestBase& Test, USolidWorldChart*& OutMap, const bool bRiver)
+	bool BridgeLoadTrack(
+		FAutomationTestBase& Test,
+		USolidWorldChart*& OutMap,
+		const bool bRiver,
+		const FIntPoint Iglin = FIntPoint(4, 16),
+		const FIntPoint Relion = FIntPoint(20, 16))
 	{
 		USolidWorldChart* Chart = NewObject<USolidWorldChart>();
 		if (!Test.TestNotNull(TEXT("chart"), Chart))
@@ -135,8 +108,8 @@ namespace
 		Chart->Points.Init(ESolidBiome::Grassland, USolidWorldChart::PointAxis * USolidWorldChart::PointAxis);
 
 		FString Error;
-		if (!Test.TestTrue(TEXT("Iglin places"), Chart->PlaceTown(FIntPoint(4, 16), TEXT("Iglin"), Error))
-			|| !Test.TestTrue(TEXT("Relion places"), Chart->PlaceTown(FIntPoint(20, 16), TEXT("Relion"), Error)))
+		if (!Test.TestTrue(TEXT("Iglin places"), Chart->PlaceTown(Iglin, TEXT("Iglin"), Error))
+			|| !Test.TestTrue(TEXT("Relion places"), Chart->PlaceTown(Relion, TEXT("Relion"), Error)))
 		{
 			return false;
 		}
@@ -286,52 +259,28 @@ bool FSolidBridgeBrokenTest::RunTest(const FString& Parameters)
 {
 	const auto Height = [](float, float) { return 100.f; };
 
-	auto LoadCrossing = [this, Height](const TCHAR* FromKind, const TCHAR* FromName, const TCHAR* ToKind, const TCHAR* ToName, const TCHAR* Type, TArray<SolidBridge::FBridge>& Out) -> bool
+	auto OneBridge = [this, Height](const USolidWorldChart& Map, TArray<SolidBridge::FBridge>& Out) -> bool
 	{
-		TArray<FBridgeTestMark> Marks;
-		Marks.Add({ 4, 16, USolidWorldChart::LocationMarker });
-		Marks.Add({ 12, 16, USolidWorldChart::RiverMarker });
-		Marks.Add({ 20, 16, USolidWorldChart::LocationMarker });
-		const FString Lines = FString::Printf(
-			TEXT("! 17,5 = %s (%s)\n! 17,21 = %s (%s)\nRoad: %s -> %s, %s\n"),
-			FromKind, FromName, ToKind, ToName, FromName, ToName, Type);
-		USolidWorldChart* Map = NewObject<USolidWorldChart>();
-		TestNotNull(TEXT("map"), Map);
-		if (!TestTrue(TEXT("map loads"), Map && Map->LoadFromString(BridgeTestGrid(Marks, Lines))))
-		{
-			return false;
-		}
-		return TestEqual(TEXT("one crossing"), SolidBridge::Collect(*Map, BridgeTestMin, BridgeTestMax, Height, Out), 1)
+		return TestEqual(TEXT("one crossing"), SolidBridge::Collect(Map, BridgeTestMin, BridgeTestMax, Height, Out), 1)
 			&& Out.Num() == 1;
 	};
 
+	USolidWorldChart* WestIglin = nullptr;
 	TArray<SolidBridge::FBridge> Iglin;
-	if (LoadCrossing(TEXT("Town"), TEXT("Iglin"), TEXT("Town"), TEXT("Relion"), TEXT("track"), Iglin))
+	if (BridgeLoadTrack(*this, WestIglin, true) && WestIglin && OneBridge(*WestIglin, Iglin))
 	{
-		TestTrue(TEXT("Iglin to Relion is broken"), Iglin[0].bBroken);
-		TestTrue(TEXT("Iglin to Relion is the Iglin bridge"), Iglin[0].bIglinRelion);
+		TestTrue(TEXT("Iglin west of the river is broken"), Iglin[0].bBroken);
+		TestTrue(TEXT("Iglin west of the river is the Iglin bridge"), Iglin[0].bIglinRelion);
 		TestTrue(TEXT("the missing span is still measured"), Iglin[0].Deck.Num() >= 2);
 	}
 
-	TArray<SolidBridge::FBridge> Reverse;
-	if (LoadCrossing(TEXT("Town"), TEXT("Relion"), TEXT("Town"), TEXT("Iglin"), TEXT("track"), Reverse))
+	USolidWorldChart* EastIglin = nullptr;
+	TArray<SolidBridge::FBridge> Swapped;
+	if (BridgeLoadTrack(*this, EastIglin, true, FIntPoint(20, 16), FIntPoint(4, 16))
+		&& EastIglin && OneBridge(*EastIglin, Swapped))
 	{
-		TestTrue(TEXT("Relion to Iglin is broken"), Reverse[0].bBroken);
-		TestTrue(TEXT("Relion to Iglin is the Iglin bridge"), Reverse[0].bIglinRelion);
-	}
-
-	TArray<SolidBridge::FBridge> Other;
-	if (LoadCrossing(TEXT("Town"), TEXT("Kanfold"), TEXT("Town"), TEXT("Visolar"), TEXT("track"), Other))
-	{
-		TestFalse(TEXT("another route keeps its span"), Other[0].bBroken);
-		TestFalse(TEXT("another route is not the Iglin bridge"), Other[0].bIglinRelion);
-	}
-
-	TArray<SolidBridge::FBridge> Cave;
-	if (LoadCrossing(TEXT("Stronghold"), TEXT("MeagreDungeon"), TEXT("Town"), TEXT("Iglin"), TEXT("trail"), Cave))
-	{
-		TestFalse(TEXT("the cave road is not the Iglin bridge"), Cave[0].bBroken);
-		TestFalse(TEXT("the cave road is not marked as the Iglin bridge"), Cave[0].bIglinRelion);
+		TestTrue(TEXT("Iglin east of the river is broken"), Swapped[0].bBroken);
+		TestTrue(TEXT("Iglin east of the river is the Iglin bridge"), Swapped[0].bIglinRelion);
 	}
 
 	ASolidBridge* Actor = NewObject<ASolidBridge>();

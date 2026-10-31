@@ -42,3 +42,7 @@ The finished centre line keeps the 90-degree crossing. Open ground pulls out to 
 The painted river there runs north to south and is more than one terrain point wide. The track crosses it in several steps, all east to west. That is one crossing.
 
 Each of the four roads was solved on its own, on the biomes as painted. No point on this chart is the Road biome, so the 0 in that row did not bring one road onto another. The tracks from Dragongate to Jethan and from Dragongate to Rathen were outside the picture. They follow the same rule.
+
+## Next step
+
+Remove as much of the legacy road code as possible. Dragongate to Rathen is not a shipped road. It comes back when there are points in between to route through.

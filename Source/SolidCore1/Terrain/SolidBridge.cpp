@@ -427,9 +427,15 @@ namespace
 	/**
 	 * A routed centerline follows the road, and that road may bend onto the crossing.
 	 * The deck's longer span is the bridge axis. Every point keeps its place along that
-	 * axis and takes the deck's cross-axis value, so the ramps and the deck are one straight run.
+	 * axis. The cross-axis is the road cell at the unshifted deck middle, plus the
+	 * half-quad paint shift, so the straight run sits on the painted strip.
 	 */
-	void Straighten(SolidBridge::FBridge& Bridge)
+	void Straighten(
+		const USolidWorldChart& Map,
+		const FVector2D WorldMin,
+		const FVector2D WorldMax,
+		const FVector& UnshiftedMid,
+		SolidBridge::FBridge& Bridge)
 	{
 		if (Bridge.Deck.Num() < 2)
 		{
@@ -447,7 +453,15 @@ namespace
 			MaxY = FMath::Max(MaxY, Point.Y);
 		}
 		const bool bEastWest = (MaxX - MinX) >= (MaxY - MinY);
-		const float Lock = DeckCrossAxis(Bridge.Deck, bEastWest);
+		float Lock = DeckCrossAxis(Bridge.Deck, bEastWest);
+		FIntPoint Cell = FIntPoint::ZeroValue;
+		FVector2D Center = FVector2D::ZeroVector;
+		if (Map.CellAtWorld(UnshiftedMid.X, UnshiftedMid.Y, WorldMin, WorldMax, Cell)
+			&& Map.CellToWorldXY(Cell, WorldMin, WorldMax, Center))
+		{
+			const FVector2D Paint = SolidRoad::StripPaintOffset();
+			Lock = bEastWest ? Center.Y + Paint.Y : Center.X + Paint.X;
+		}
 		auto Snap = [bEastWest, Lock](TArray<FVector>& Line)
 		{
 			for (FVector& Point : Line)
@@ -778,13 +792,8 @@ int32 SolidBridge::Collect(
 			BuildRamp(Deck1, 1.f, Bridge.RampTo);
 			if (Bridge.Deck.Num() >= 2 && Bridge.RampFrom.Num() >= 2 && Bridge.RampTo.Num() >= 2)
 			{
-				// A routed bridge sits two terrain points south of the road.
-				// Move it north so the northern edges meet. East-west stays as it is.
-				FVector2D Paint = SolidRoad::StripPaintOffset();
-				if (Crossing.bRouted)
-				{
-					Paint.Y += 2.f * SolidRoad::TerrainQuadCm;
-				}
+				const FVector UnshiftedMid = (Bridge.Deck[0] + Bridge.Deck.Last()) * 0.5f;
+				const FVector2D Paint = SolidRoad::StripPaintOffset();
 				auto Shift = [Paint](TArray<FVector>& Line)
 				{
 					for (FVector& Point : Line)
@@ -798,7 +807,7 @@ int32 SolidBridge::Collect(
 				Shift(Bridge.RampTo);
 				if (Crossing.bRouted)
 				{
-					Straighten(Bridge);
+					Straighten(Map, WorldMinXY, WorldMaxXY, UnshiftedMid, Bridge);
 				}
 				if (Bridge.Deck.Num() >= 2 && Bridge.RampFrom.Num() >= 2 && Bridge.RampTo.Num() >= 2)
 				{

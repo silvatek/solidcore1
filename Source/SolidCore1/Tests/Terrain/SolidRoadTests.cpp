@@ -570,8 +570,8 @@ bool FSolidRoadShippedTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("default map loads"), Map->LoadDefault());
 
 	const TArray<SolidRoad::FRoute>& Roads = Map->GetRoads();
-	TestEqual(TEXT("six roads"), Roads.Num(), 6);
-	if (Roads.Num() < 6)
+	TestEqual(TEXT("five roads"), Roads.Num(), 5);
+	if (Roads.Num() < 5)
 	{
 		return false;
 	}
@@ -582,11 +582,10 @@ bool FSolidRoadShippedTest::RunTest(const FString& Parameters)
 		SolidRoad::EType::Highway,
 		SolidRoad::EType::Road,
 		SolidRoad::EType::Track,
-		SolidRoad::EType::Track,
 	};
-	const int32 FromIds[] = { INDEX_NONE, 0, 1, 1, 5, 5 };
-	const int32 ToIds[] = { 0, 1, 2, 5, 4, 6 };
-	for (int32 Index = 0; Index < 6; ++Index)
+	const int32 FromIds[] = { INDEX_NONE, 0, 1, 1, 5 };
+	const int32 ToIds[] = { 0, 1, 2, 5, 4 };
+	for (int32 Index = 0; Index < 5; ++Index)
 	{
 		TestEqual(TEXT("road type"), static_cast<uint8>(Roads[Index].Definition.Type), static_cast<uint8>(Types[Index]));
 		TestEqual(TEXT("road starts where the line says"), Roads[Index].Definition.From.LocationId, FromIds[Index]);
@@ -617,24 +616,21 @@ bool FSolidRoadDefinitionsTest::RunTest(const FString& Parameters)
 		SolidTowns::Relion,
 		SolidTowns::Relion,
 		SolidTowns::Dragongate,
-		SolidTowns::Dragongate,
 	};
 	const int32 ToIds[] = {
 		SolidTowns::Relion,
 		SolidTowns::Kanfold,
 		SolidTowns::Dragongate,
 		SolidTowns::Jethan,
-		SolidTowns::Rathen,
 	};
 	const SolidRoad::EType Types[] = {
 		SolidRoad::EType::Track,
 		SolidRoad::EType::Highway,
 		SolidRoad::EType::Road,
 		SolidRoad::EType::Track,
-		SolidRoad::EType::Track,
 	};
 	const int32 TownRoads = UE_ARRAY_COUNT(FromIds);
-	TestEqual(TEXT("six roads"), SolidRoad::DefinitionCount, TownRoads + 1);
+	TestEqual(TEXT("five roads"), SolidRoad::DefinitionCount, TownRoads + 1);
 	if (SolidRoad::DefinitionCount < TownRoads + 1)
 	{
 		return false;

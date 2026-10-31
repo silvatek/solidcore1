@@ -16,7 +16,6 @@ namespace SolidRoad
 		FSolidRoad(TownMark(SolidTowns::Relion), TownMark(SolidTowns::Kanfold), EType::Highway),
 		FSolidRoad(TownMark(SolidTowns::Relion), TownMark(SolidTowns::Dragongate), EType::Road),
 		FSolidRoad(TownMark(SolidTowns::Dragongate), TownMark(SolidTowns::Jethan), EType::Track),
-		FSolidRoad(TownMark(SolidTowns::Dragongate), TownMark(SolidTowns::Rathen), EType::Track),
 	};
 
 	inline constexpr int32 DefinitionCount = UE_ARRAY_COUNT(Roads);

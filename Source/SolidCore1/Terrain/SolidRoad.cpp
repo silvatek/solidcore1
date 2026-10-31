@@ -413,10 +413,16 @@ namespace SolidRoad
 			const FIntPoint After = Line[Last + 1];
 			TSet<int32> Banned;
 			TArray<FIntPoint> Frontier;
+			bool bClearMountain = false;
 			for (int32 Index = First; Index <= Last; ++Index)
 			{
 				Banned.Add(PointKey(Line[Index]));
 				Frontier.Add(Line[Index]);
+				const ESolidBiome Biome = Map.GetPointBiome(Line[Index]);
+				if (Biome == ESolidBiome::Mountain || Biome == ESolidBiome::Sea)
+				{
+					bClearMountain = true;
+				}
 			}
 
 			TSet<int32> Beside;
@@ -474,7 +480,7 @@ namespace SolidRoad
 						{
 							continue;
 						}
-						if (Next != Before && Next != After && BesideMountainOrSea(Map, Next))
+						if (bClearMountain && Next != Before && Next != After && BesideMountainOrSea(Map, Next))
 						{
 							continue;
 						}

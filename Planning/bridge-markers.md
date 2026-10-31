@@ -1,6 +1,6 @@
 # Bridge markers
 
-Status: New
+Status: Ready
 
 ## Story
 

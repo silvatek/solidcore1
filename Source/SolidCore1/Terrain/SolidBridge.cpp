@@ -428,6 +428,7 @@ int32 SolidBridge::Collect(
 		FRouteLine Poly;
 		SolidRoad::EType Type = SolidRoad::EType::Trail;
 		bool bIglinRelion = false;
+		bool bRouted = false;
 	};
 	TArray<FCrossing> Crossings;
 	if (Map.GetRoutedRoads().Num() > 0)
@@ -441,6 +442,7 @@ int32 SolidBridge::Collect(
 			}
 			Crossing.Type = Road.Type;
 			Crossing.bIglinRelion = IsIglinRelionRoad(Road);
+			Crossing.bRouted = true;
 			Crossings.Add(MoveTemp(Crossing));
 		}
 	}
@@ -698,9 +700,13 @@ int32 SolidBridge::Collect(
 			BuildRamp(Deck1, 1.f, Bridge.RampTo);
 			if (Bridge.Deck.Num() >= 2 && Bridge.RampFrom.Num() >= 2 && Bridge.RampTo.Num() >= 2)
 			{
-				// The painted strip lies half a quad southwest of the centreline.
-				// Move the finished bridge onto that strip. The span stays the same.
-				const FVector2D Paint = SolidRoad::StripPaintOffset();
+				// A routed bridge sits two terrain points south of the road.
+				// Move it north so the northern edges meet. East-west stays as it is.
+				FVector2D Paint = SolidRoad::StripPaintOffset();
+				if (Crossing.bRouted)
+				{
+					Paint.Y += 2.f * SolidRoad::TerrainQuadCm;
+				}
 				auto Shift = [Paint](TArray<FVector>& Line)
 				{
 					for (FVector& Point : Line)

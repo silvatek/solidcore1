@@ -353,12 +353,13 @@ namespace
 		{
 			return;
 		}
-		if (UMaterialInterface* Timber = SolidMaterials::CreateSolidColor(Outer, SolidBridge::TimberColor(), TimberName, 0.92f))
+		// Magenta is unused by the biome colours, so a playshot can separate the bridge from the road.
+		const FLinearColor Mark(1.f, 0.f, 1.f);
+		if (UMaterialInterface* Timber = SolidMaterials::CreateSolidColor(Outer, Mark, TimberName, 0.92f))
 		{
 			Mesh->SetMaterial(0, Timber);
 		}
-		if (UMaterialInterface* Road = SolidMaterials::CreateSolidColor(
-			Outer, USolidWorldChart::DefaultColorForBiome(ESolidBiome::Road), RoadName, 0.95f))
+		if (UMaterialInterface* Road = SolidMaterials::CreateSolidColor(Outer, Mark, RoadName, 0.95f))
 		{
 			Mesh->SetMaterial(1, Road);
 		}

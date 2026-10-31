@@ -511,12 +511,9 @@ namespace SolidRoad
 		return FString::Printf(TEXT("%s -> %s, %s"), *From.Name, *To.Name, TypeName);
 	}
 
-	bool FSolidRoad::OpenStraightLine(
-		const USolidWorldChart& Map,
-		TArray<FIntPoint>& OutCells,
-		TArray<FIntPoint>& OutPoints) const
+	bool FSolidRoad::FindRoute(const USolidWorldChart& Map)
 	{
-		OutPoints.Reset();
+		Points.Reset();
 		FVector2D Min = FVector2D::ZeroVector;
 		FVector2D Max = FVector2D::ZeroVector;
 		USolidWorldChart::DefaultWorldBounds(Min, Max);
@@ -528,13 +525,13 @@ namespace SolidRoad
 			return false;
 		}
 
-		TerrainLine(FromPoint, ToPoint, OutPoints);
+		TerrainLine(FromPoint, ToPoint, Points);
 		TArray<int32> Blocked;
-		for (int32 Index = 1; Index < OutPoints.Num(); ++Index)
+		for (int32 Index = 1; Index < Points.Num(); ++Index)
 		{
-			if (!LineStepAllowed(Map, Type, OutPoints[Index - 1], OutPoints[Index]))
+			if (!LineStepAllowed(Map, Type, Points[Index - 1], Points[Index]))
 			{
-				const FIntPoint& Block = OutPoints[Index];
+				const FIntPoint& Block = Points[Index];
 				UE_LOG(LogSolid, Warning, TEXT("%s: blocked at %d,%d %s."),
 					*toString(),
 					Block.X,
@@ -553,20 +550,20 @@ namespace SolidRoad
 					++Runs;
 				}
 			}
-			const TArray<FIntPoint> Line = OutPoints;
-			if (Runs != 1 || !DetourAroundPatch(Map, Type, Line, Blocked[0], Blocked.Last(), OutPoints))
+			const TArray<FIntPoint> Line = Points;
+			if (Runs != 1 || !DetourAroundPatch(Map, Type, Line, Blocked[0], Blocked.Last(), Points))
 			{
-				OutPoints.Reset();
+				Points.Reset();
 				return false;
 			}
 		}
 
-		if (!CellsForPoints(Map, OutPoints, OutCells))
-		{
-			OutPoints.Reset();
-			return false;
-		}
-		return OutCells.Num() > 0;
+		return Points.Num() > 1;
+	}
+
+	void FSolidRoad::CopyPoints(TArray<FIntPoint>& OutPoints) const
+	{
+		OutPoints = Points;
 	}
 
 	bool Parse(const FString& Line, FDefinition& Out)
@@ -603,15 +600,21 @@ namespace SolidRoad
 		const USolidWorldChart& Map,
 		const FDefinition& Definition,
 		TArray<FIntPoint>& OutCells,
-		const FSolidRoad* Road,
+		FSolidRoad* Road,
 		TArray<FIntPoint>& OutPoints)
 	{
 		OutCells.Reset();
 		OutPoints.Reset();
-		if (Road != nullptr && Road->OpenStraightLine(Map, OutCells, OutPoints))
+		if (Road != nullptr && Road->FindRoute(Map))
 		{
-			UE_LOG(LogSolid, Warning, TEXT("%s: OpenStraightLine."), *Road->toString());
-			return true;
+			Road->CopyPoints(OutPoints);
+			if (CellsForPoints(Map, OutPoints, OutCells) && OutCells.Num() > 0)
+			{
+				UE_LOG(LogSolid, Warning, TEXT("%s: FindRoute."), *Road->toString());
+				return true;
+			}
+			OutCells.Reset();
+			OutPoints.Reset();
 		}
 		if (Road != nullptr)
 		{
@@ -1029,7 +1032,7 @@ void USolidWorldChart::ResetRoads() const
 	RoadSpansByCell.SetNum(MapWidth * MapHeight);
 }
 
-void USolidWorldChart::BuildRoad(const SolidRoad::FDefinition& Definition, const SolidRoad::FSolidRoad* Road) const
+void USolidWorldChart::BuildRoad(const SolidRoad::FDefinition& Definition, SolidRoad::FSolidRoad* Road) const
 {
 	// Prefer Road to Definition for every later change here. The aim is to remove Definition.
 	if (RoadSpansByCell.Num() != MapWidth * MapHeight)

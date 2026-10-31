@@ -61,16 +61,18 @@ namespace SolidRoad
 
 		/**
 		 * Straight line of terrain points from one end to the other.
-		 * One banned patch is walked around. OutCells is that line for the strip.
+		 * One banned patch is walked around. The points stay on this road.
 		 */
-		bool OpenStraightLine(
-			const USolidWorldChart& Map,
-			TArray<FIntPoint>& OutCells,
-			TArray<FIntPoint>& OutPoints) const;
+		bool FindRoute(const USolidWorldChart& Map);
+
+		/** Copy this road's route points into OutPoints. */
+		void CopyPoints(TArray<FIntPoint>& OutPoints) const;
 
 		FSolidWorldChartMark From;
 		FSolidWorldChartMark To;
 		EType Type = EType::Trail;
+		/** Terrain points from FindRoute. Empty until that call succeeds. */
+		TArray<FIntPoint> Points;
 	};
 
 	/** A town mark. The chart places it. */
@@ -299,14 +301,14 @@ namespace SolidRoad
 	/**
 	 * Route from one end to the other.
 	 * Road supplies the ends and the type when it is set. Definition and OutCells remain for a line that has no road.
-	 * OutPoints is the terrain points of that line, including one detour around a single banned patch. Empty when the cell search runs.
+	 * OutPoints is a copy of the road's route points, including one detour around a single banned patch. Empty when the cell search runs.
 	 * @return False when an end is missing, or no path exists.
 	 */
 	bool Solve(
 		const USolidWorldChart& Map,
 		const FDefinition& Definition,
 		TArray<FIntPoint>& OutCells,
-		const FSolidRoad* Road,
+		FSolidRoad* Road,
 		TArray<FIntPoint>& OutPoints);
 
 	float DistanceToSegmentCm(const FVector2D& Point, const FVector2D& A, const FVector2D& B);

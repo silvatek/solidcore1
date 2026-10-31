@@ -460,7 +460,7 @@ protected:
 	/** Clear the solved roads and size the span index. */
 	void ResetRoads() const;
 	/** Solve one road and record its spans. Road is a listed road, or null when the definition came from the chart. */
-	void BuildRoad(const SolidRoad::FDefinition& Definition, const SolidRoad::FSolidRoad* Road) const;
+	void BuildRoad(const SolidRoad::FDefinition& Definition, SolidRoad::FSolidRoad* Road) const;
 	/** Build each listed road from these marks and solve it. Bang marks place a stronghold end. */
 	void BuildListedRoads(const TArray<FSolidWorldChartMark>& ChartMarks, const TMap<int32, FSolidWorldBang>& ChartBangMarks) const;
 	bool CellsToWorldXY(const TArray<FIntPoint>& InCells, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;

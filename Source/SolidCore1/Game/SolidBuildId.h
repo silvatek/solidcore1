@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0830")
+#define SOLID_BUILD_ID TEXT("SC1-0831")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("OpenStraightLine is a method on the road.")
+#define SOLID_BUILD_NOTE TEXT("FindRoute stores the route points on the road.")
 #endif

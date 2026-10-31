@@ -1,7 +1,6 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "SolidBridge.h"
-#include "SolidRiver.h"
 #include "SolidRoad.h"
 #include "SolidWorldChart.h"
 
@@ -139,6 +138,57 @@ namespace
 		return End.Z < Ground - SolidBridge::Grade * SolidBridge::BurialCm + Slack
 			&& End.Z < Ramp[0].Z;
 	}
+
+	// LoadFromChart needs a full cell grid. The river is one point column, and the towns are marks.
+	bool BridgeLoadTrack(FAutomationTestBase& Test, USolidWorldChart*& OutMap, const bool bRiver)
+	{
+		USolidWorldChart* Chart = NewObject<USolidWorldChart>();
+		if (!Test.TestNotNull(TEXT("chart"), Chart))
+		{
+			return false;
+		}
+		Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
+		Chart->Points.Init(ESolidBiome::Grassland, USolidWorldChart::PointAxis * USolidWorldChart::PointAxis);
+
+		FString Error;
+		if (!Test.TestTrue(TEXT("Iglin places"), Chart->PlaceTown(FIntPoint(4, 16), TEXT("Iglin"), Error))
+			|| !Test.TestTrue(TEXT("Relion places"), Chart->PlaceTown(FIntPoint(20, 16), TEXT("Relion"), Error)))
+		{
+			return false;
+		}
+
+		if (bRiver)
+		{
+			FVector2D Min = FVector2D::ZeroVector;
+			FVector2D Max = FVector2D::ZeroVector;
+			USolidWorldChart::DefaultWorldBounds(Min, Max);
+			FVector2D Centre = FVector2D::ZeroVector;
+			FIntPoint River = FIntPoint::ZeroValue;
+			if (!Test.TestTrue(TEXT("the river cell has a centre"), Chart->CellToWorldXY(FIntPoint(12, 16), Min, Max, Centre))
+				|| !Test.TestTrue(TEXT("the river sits on a point"), Chart->TerrainPointAt(Centre.X, Centre.Y, Min, Max, River)))
+			{
+				return false;
+			}
+			const int32 Last = USolidWorldChart::PointAxis - 1;
+			if (!Test.TestTrue(TEXT("the river paints"),
+				Chart->SetPointRectangle(FIntPoint(River.X, 0), FIntPoint(River.X, Last), ESolidBiome::River)))
+			{
+				return false;
+			}
+		}
+
+		USolidWorldChart* Loaded = NewObject<USolidWorldChart>();
+		if (!Test.TestNotNull(TEXT("loaded chart"), Loaded))
+		{
+			return false;
+		}
+		if (!Test.TestTrue(TEXT("the chart loads"), Loaded->LoadFromChart(Chart)))
+		{
+			return false;
+		}
+		OutMap = Loaded;
+		return Test.TestEqual(TEXT("the Iglin track is routed"), Loaded->GetRoutedRoads().Num(), 1);
+	}
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -148,14 +198,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidBridgeStraightTest::RunTest(const FString& Parameters)
 {
-	TArray<FBridgeTestMark> Marks;
-	Marks.Add({ 4, 16, USolidWorldChart::LocationMarker });
-	Marks.Add({ 12, 16, USolidWorldChart::RiverMarker });
-	Marks.Add({ 20, 16, USolidWorldChart::LocationMarker });
-
-	USolidWorldChart* Map = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("map"), Map);
-	if (!TestTrue(TEXT("map loads"), Map->LoadFromString(BridgeTestGrid(Marks, BridgeTestNamed(4, 16, TEXT("Iglin"), 20, 16, TEXT("Relion"), TEXT("track"))))))
+	USolidWorldChart* Map = nullptr;
+	if (!BridgeLoadTrack(*this, Map, true))
 	{
 		return false;
 	}
@@ -171,11 +215,11 @@ bool FSolidBridgeStraightTest::RunTest(const FString& Parameters)
 	const SolidBridge::FBridge& Bridge = Bridges[0];
 	TestTrue(TEXT("center is as wide as the track"), FMath::IsNearlyEqual(Bridge.WidthCm, SolidRoad::WidthCm(SolidRoad::EType::Track)));
 	TestTrue(TEXT("center is flat"), BridgeFlat(Bridge.Deck));
-	// The points on the 4 m rim are river. A sample stays river until the next point.
+	// One point column is the channel. A sample stays river until the next point.
 	TestTrue(TEXT("center covers the river and rests on both banks"),
 		FMath::IsNearlyEqual(
 			BridgePlanLength(Bridge.Deck),
-			SolidRiver::WidthCm + 2.f * SolidBridge::BankRestCm + SolidRoad::TerrainQuadCm,
+			SolidRoad::TerrainQuadCm + 2.f * SolidBridge::BankRestCm,
 			2.f));
 	TestTrue(TEXT("three pieces"), Bridge.Deck.Num() >= 2 && Bridge.RampFrom.Num() >= 2 && Bridge.RampTo.Num() >= 2);
 	TestTrue(TEXT("the near ramp leaves the center"), Bridge.RampFrom[0].Equals(Bridge.Deck[0], 1.f));
@@ -190,12 +234,8 @@ bool FSolidBridgeStraightTest::RunTest(const FString& Parameters)
 		FMath::Abs(BridgePlanLength(Bridge.RampFrom) - BridgePlanLength(Bridge.RampTo)) < SolidBridge::SampleStepCm * 2.f);
 
 	TArray<SolidBridge::FBridge> None;
-	USolidWorldChart* Dry = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("dry map"), Dry);
-	if (TestTrue(TEXT("dry map loads"), Dry->LoadFromString(BridgeTestGrid({
-		{ 4, 16, USolidWorldChart::LocationMarker },
-		{ 20, 16, USolidWorldChart::LocationMarker },
-	}, BridgeTestNamed(4, 16, TEXT("Iglin"), 20, 16, TEXT("Relion"), TEXT("track"))))))
+	USolidWorldChart* Dry = nullptr;
+	if (BridgeLoadTrack(*this, Dry, false))
 	{
 		TestEqual(TEXT("no river means no bridge"), SolidBridge::Collect(*Dry, BridgeTestMin, BridgeTestMax, Height, None), 0);
 	}
@@ -209,14 +249,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidBridgeBanksTest::RunTest(const FString& Parameters)
 {
-	TArray<FBridgeTestMark> Marks;
-	Marks.Add({ 4, 16, USolidWorldChart::LocationMarker });
-	Marks.Add({ 12, 16, USolidWorldChart::RiverMarker });
-	Marks.Add({ 20, 16, USolidWorldChart::LocationMarker });
-
-	USolidWorldChart* Map = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("map"), Map);
-	if (!TestTrue(TEXT("map loads"), Map->LoadFromString(BridgeTestGrid(Marks, BridgeTestNamed(4, 16, TEXT("Iglin"), 20, 16, TEXT("Relion"), TEXT("track"))))))
+	USolidWorldChart* Map = nullptr;
+	if (!BridgeLoadTrack(*this, Map, true))
 	{
 		return false;
 	}

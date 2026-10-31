@@ -1917,7 +1917,6 @@ bool USolidWorldChart::PaintBrush(
 
 bool USolidWorldChart::SetPointRectangle(const FIntPoint From, const FIntPoint To, const ESolidBiome Biome)
 {
-	constexpr int32 PointCount = PointAxis * PointAxis;
 	if (Points.Num() != PointCount || !OnPoint(From) || !OnPoint(To))
 	{
 		return false;

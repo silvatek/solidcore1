@@ -153,6 +153,23 @@ namespace SolidRoad
 	/** Town name, or the stronghold name, for this end. */
 	FString ChartRoadEndName(const FEndpoint& End);
 
+	struct FSolidWorldBang;
+
+	/** Copy the stronghold mark's cell onto this end when the name matches. */
+	void LocateStrongholdEnd(const TMap<int32, FSolidWorldBang>& Marks, FEndpoint& End);
+
+	/** How a chart name matches a road end. A site is not an end. */
+	enum class EChartRoadEnd : uint8
+	{
+		Missing,
+		Town,
+		Stronghold,
+		Site,
+	};
+
+	EChartRoadEnd RoadEndKind(const TArray<FSolidWorldChartMark>& Marks, const FString& Name);
+	FString RoadEndSentence(EChartRoadEnd Kind, const FString& Name);
+
 	struct FDefinition
 	{
 		FEndpoint From;

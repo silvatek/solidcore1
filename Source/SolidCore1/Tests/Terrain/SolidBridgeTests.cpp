@@ -459,6 +459,43 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 
 	FString Error;
 	TestTrue(TEXT("Iglin Bridge places"), Chart->PlaceBridge(FIntPoint(11, 16), TEXT("Iglin Bridge"), Error));
+
+	FVector2D BoundsMin = FVector2D::ZeroVector;
+	FVector2D BoundsMax = FVector2D::ZeroVector;
+	USolidWorldChart::DefaultWorldBounds(BoundsMin, BoundsMax);
+	FVector2D RiverCentre = FVector2D::ZeroVector;
+	FIntPoint RiverPoint = FIntPoint::ZeroValue;
+	const int32 LastPoint = USolidWorldChart::PointAxis - 1;
+	if (TestTrue(TEXT("the river cell has a centre"), Chart->CellToWorldXY(FIntPoint(12, 16), BoundsMin, BoundsMax, RiverCentre))
+		&& TestTrue(TEXT("the river sits on a point"), Chart->TerrainPointAt(RiverCentre.X, RiverCentre.Y, BoundsMin, BoundsMax, RiverPoint)))
+	{
+		TestTrue(TEXT("the river paints"),
+			Chart->SetPointRectangle(FIntPoint(RiverPoint.X, 0), FIntPoint(RiverPoint.X, LastPoint), ESolidBiome::River));
+	}
+	const int32 MarkIndex = Chart->MarkAtCell(FIntPoint(11, 16));
+	SolidBridge::FBridge OverWater;
+	if (TestTrue(TEXT("the mark is stored"), MarkIndex != INDEX_NONE)
+		&& TestTrue(TEXT("Iglin stands over the river"),
+			SolidBridge::Stand(
+				SolidBridge::Bridges[0],
+				Chart->Marks[MarkIndex].PositionCm,
+				Width,
+				Height,
+				OverWater,
+				Chart,
+				BoundsMin,
+				BoundsMax)))
+	{
+		const FVector DeckMid = (OverWater.Deck[0] + OverWater.Deck.Last()) * 0.5f;
+		TestTrue(TEXT("the centre sits on the river"),
+			FMath::Abs(DeckMid.X - RiverCentre.X) < SolidRiver::WidthCm
+			&& FMath::Abs(DeckMid.Y - RiverCentre.Y) < SolidRiver::WidthCm);
+		TestTrue(TEXT("the centre clears the water"),
+			OverWater.Deck[0].Z >= 100.f + SolidBridge::MinClearanceCm + SolidBridge::ThicknessCm - 0.1f);
+		TestTrue(TEXT("the ramps leave the centre for the banks"),
+			BridgeBuried(OverWater.RampFrom, Height) && BridgeBuried(OverWater.RampTo, Height));
+	}
+
 	TArray<SolidBridge::FBridge> Marked;
 	TestEqual(TEXT("the placed mark stands"), SolidBridge::FromMarkers(*Chart, Height, Marked), 1);
 	if (Marked.Num() == 1)

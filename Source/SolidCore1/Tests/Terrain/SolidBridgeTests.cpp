@@ -2,6 +2,7 @@
 #include "Misc/AutomationTest.h"
 #include "SolidBridge.h"
 #include "SolidBridges.h"
+#include "SolidRiver.h"
 #include "SolidRoad.h"
 #include "SolidWorldChart.h"
 
@@ -391,6 +392,67 @@ bool FSolidBridgeDefinitionsTest::RunTest(const FString& Parameters)
 		TEXT("Rathen is intact"),
 		static_cast<uint8>(Rathen.State),
 		static_cast<uint8>(SolidBridge::EInitialState::Intact));
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBridgeStandsTest,
+	"SolidCore1.Bridge.Stands",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
+{
+	const FVector2D Centre(1000.f, 2000.f);
+	const FVector2D Paint = SolidRoad::StripPaintOffset();
+	const auto Height = [](float, float) { return 100.f; };
+	const float DeckLen = SolidRiver::WidthCm + 2.f * SolidBridge::BankRestCm;
+	const float Width = SolidRoad::WidthCm(SolidRoad::EType::Track);
+
+	SolidBridge::FBridge Iglin;
+	TestTrue(TEXT("Iglin stands"), SolidBridge::Stand(SolidBridge::Bridges[0], Centre, Width, Height, Iglin));
+	TestTrue(TEXT("Iglin starts broken"), Iglin.bBroken);
+	TestTrue(TEXT("Iglin can be repaired"), Iglin.bIglinRelion);
+	TestTrue(TEXT("Iglin is as wide as the track"), FMath::IsNearlyEqual(Iglin.WidthCm, Width));
+	TestTrue(TEXT("Iglin center is flat"), BridgeFlat(Iglin.Deck));
+	TestTrue(TEXT("Iglin center is the channel plus both rests"),
+		FMath::IsNearlyEqual(BridgePlanLength(Iglin.Deck), DeckLen, 1.f));
+	TestTrue(TEXT("Iglin is 18 m, ramps included"),
+		FMath::IsNearlyEqual(
+			BridgePlanLength(Iglin.RampFrom) + BridgePlanLength(Iglin.Deck) + BridgePlanLength(Iglin.RampTo),
+			1800.f,
+			1.f));
+	TestTrue(TEXT("Iglin runs east-west"), BridgeOnOneAxis(Iglin));
+	const FVector IglinMid = (Iglin.Deck[0] + Iglin.Deck.Last()) * 0.5f;
+	TestTrue(TEXT("Iglin is centred on the marker"),
+		FVector2D(IglinMid.X, IglinMid.Y).Equals(Centre + Paint, 1.f));
+	TestTrue(TEXT("Iglin's span stays on one east-west line"),
+		FMath::IsNearlyEqual(Iglin.Deck[0].Y, Iglin.Deck.Last().Y, 1.f)
+		&& FMath::Abs(Iglin.Deck[0].X - Iglin.Deck.Last().X) > 100.f);
+
+	SolidBridge::FBridge Jethan;
+	TestTrue(TEXT("Jethan stands"), SolidBridge::Stand(SolidBridge::Bridges[1], Centre, Width, Height, Jethan));
+	TestFalse(TEXT("Jethan starts intact"), Jethan.bBroken);
+	TestFalse(TEXT("Jethan is not the Iglin repair"), Jethan.bIglinRelion);
+	TestTrue(TEXT("Jethan runs north-south"),
+		FMath::IsNearlyEqual(Jethan.Deck[0].X, Jethan.Deck.Last().X, 1.f)
+		&& FMath::Abs(Jethan.Deck[0].Y - Jethan.Deck.Last().Y) > 100.f);
+
+	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
+	UTEST_NOT_NULL(TEXT("chart"), Chart);
+	Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
+	TArray<SolidBridge::FBridge> None;
+	TestEqual(TEXT("a chart with no bridge mark stands nothing"), SolidBridge::FromMarkers(*Chart, Height, None), 0);
+
+	FString Error;
+	TestTrue(TEXT("Iglin Bridge places"), Chart->PlaceBridge(FIntPoint(11, 16), TEXT("Iglin Bridge"), Error));
+	TArray<SolidBridge::FBridge> Marked;
+	TestEqual(TEXT("the placed mark stands"), SolidBridge::FromMarkers(*Chart, Height, Marked), 1);
+	if (Marked.Num() == 1)
+	{
+		TestTrue(TEXT("the placed Iglin bridge starts broken"), Marked[0].bBroken);
+		TestTrue(TEXT("the placed span is as wide as the Iglin track"),
+			FMath::IsNearlyEqual(Marked[0].WidthCm, Width));
+	}
 	return true;
 }
 

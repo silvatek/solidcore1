@@ -1,8 +1,10 @@
 #include "SolidBridge.h"
 
+#include "SolidBridges.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
 #include "SolidRiver.h"
+#include "SolidRoads.h"
 #include "SolidWorldChart.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -473,6 +475,143 @@ namespace
 		// The last point is the buried end.
 		return BuildStrip(Outer, Centerline, WidthCm, Origin, bCapLip, true, Name);
 	}
+}
+
+bool SolidBridge::Stand(
+	const FBridgeMarker& Marker,
+	const FVector2D CentreCm,
+	const float WidthCm,
+	const TFunction<float(float X, float Y)>& HeightAt,
+	FBridge& Out)
+{
+	Out = FBridge();
+	if (!HeightAt || Marker.LengthCm < 10.f || WidthCm < 1.f)
+	{
+		return false;
+	}
+
+	const bool bEastWest = Marker.Orientation == EOrientation::EastWest;
+	const FVector2D Axis = bEastWest ? FVector2D(1.f, 0.f) : FVector2D(0.f, 1.f);
+	const float DeckLen = FMath::Min(Marker.LengthCm, SolidRiver::WidthCm + 2.f * BankRestCm);
+	const float DeckHalf = DeckLen * 0.5f;
+	const float RampLen = (Marker.LengthCm - DeckLen) * 0.5f;
+
+	float Highest = -TNumericLimits<float>::Max();
+	for (float D = -DeckHalf; D <= DeckHalf + 0.1f; D += SampleStepCm)
+	{
+		const float Clamped = FMath::Clamp(D, -DeckHalf, DeckHalf);
+		const FVector2D P = CentreCm + Axis * Clamped;
+		Highest = FMath::Max(Highest, HeightAt(P.X, P.Y));
+	}
+	const float DeckTop = Highest + FMath::Max(RiseCm, MinClearanceCm + ThicknessCm);
+
+	auto Point = [&](const float Along, const float Travel, const bool bRamp) -> FVector
+	{
+		const FVector2D P = CentreCm + Axis * Along;
+		const float Z = bRamp ? DeckTop - Grade * Travel : DeckTop;
+		return FVector(P.X, P.Y, Z);
+	};
+
+	auto Fill = [&](TArray<FVector>& Line, const float FromAlong, const float ToAlong, const bool bRamp)
+	{
+		const float Length = FMath::Abs(ToAlong - FromAlong);
+		const float Sign = ToAlong >= FromAlong ? 1.f : -1.f;
+		Line.Reset();
+		Line.Add(Point(FromAlong, 0.f, bRamp));
+		for (float Travel = SampleStepCm; Travel < Length; Travel += SampleStepCm)
+		{
+			Line.Add(Point(FromAlong + Sign * Travel, Travel, bRamp));
+		}
+		if (Length > 1.f)
+		{
+			Line.Add(Point(ToAlong, Length, bRamp));
+		}
+	};
+
+	Fill(Out.Deck, -DeckHalf, DeckHalf, false);
+	Fill(Out.RampFrom, -DeckHalf, -DeckHalf - RampLen, true);
+	Fill(Out.RampTo, DeckHalf, DeckHalf + RampLen, true);
+
+	const FVector2D Paint = SolidRoad::StripPaintOffset();
+	auto Shift = [Paint](TArray<FVector>& Line)
+	{
+		for (FVector& PointOnLine : Line)
+		{
+			PointOnLine.X += Paint.X;
+			PointOnLine.Y += Paint.Y;
+		}
+	};
+	Shift(Out.Deck);
+	Shift(Out.RampFrom);
+	Shift(Out.RampTo);
+
+	Out.WidthCm = WidthCm;
+	Out.bBroken = Marker.State == EInitialState::Broken;
+	Out.bIglinRelion = Marker.Name != nullptr && FCString::Stricmp(Marker.Name, TEXT("Iglin Bridge")) == 0;
+	return Out.Deck.Num() >= 2 && Out.RampFrom.Num() >= 2 && Out.RampTo.Num() >= 2;
+}
+
+namespace
+{
+	float WidthForMarker(const TCHAR* Name)
+	{
+		const float Track = SolidRoad::WidthCm(SolidRoad::EType::Track);
+		if (!Name)
+		{
+			return Track;
+		}
+		for (const SolidRoad::FSolidRoad& Road : SolidRoad::Roads)
+		{
+			const bool bFrom = Road.From.Kind == ESolidWorldChartMarkKind::Bridge
+				&& Road.From.Name.Equals(Name, ESearchCase::IgnoreCase);
+			const bool bTo = Road.To.Kind == ESolidWorldChartMarkKind::Bridge
+				&& Road.To.Name.Equals(Name, ESearchCase::IgnoreCase);
+			if (bFrom || bTo)
+			{
+				return SolidRoad::WidthCm(Road.Type);
+			}
+		}
+		return Track;
+	}
+}
+
+int32 SolidBridge::FromMarkers(
+	const USolidWorldChart& Map,
+	const TFunction<float(float X, float Y)>& HeightAt,
+	TArray<FBridge>& Out)
+{
+	Out.Reset();
+	if (!HeightAt)
+	{
+		return 0;
+	}
+
+	for (const FSolidWorldChartMark& Mark : Map.Marks)
+	{
+		if (Mark.Kind != ESolidWorldChartMarkKind::Bridge)
+		{
+			continue;
+		}
+		const FBridgeMarker* Marker = nullptr;
+		for (const FBridgeMarker& Defined : Bridges)
+		{
+			if (Defined.Name && Mark.Name.Equals(Defined.Name, ESearchCase::IgnoreCase))
+			{
+				Marker = &Defined;
+				break;
+			}
+		}
+		if (!Marker)
+		{
+			continue;
+		}
+		FBridge Bridge;
+		if (Stand(*Marker, Mark.PositionCm, WidthForMarker(Marker->Name), HeightAt, Bridge))
+		{
+			Out.Add(MoveTemp(Bridge));
+		}
+	}
+	return Out.Num();
 }
 
 int32 SolidBridge::Collect(

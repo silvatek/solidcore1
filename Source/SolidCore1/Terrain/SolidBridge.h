@@ -106,6 +106,31 @@ namespace SolidBridge
 		FVector2D WorldMaxXY,
 		const TFunction<float(float X, float Y)>& HeightAt,
 		TArray<FBridge>& Out);
+
+	/**
+	 * The bridge that stands at a marker.
+	 * CentreCm is the centre of the span. Length, orientation, and the initial state come from Marker.
+	 * The flat centre is the river width plus a rest on each bank. Each ramp takes half of what remains.
+	 * HeightAt returns the terrain surface in centimetres at a world XY.
+	 * @return False when there is no height, no width, or no length.
+	 */
+	bool Stand(
+		const FBridgeMarker& Marker,
+		FVector2D CentreCm,
+		float WidthCm,
+		const TFunction<float(float X, float Y)>& HeightAt,
+		FBridge& Out);
+
+	/**
+	 * One bridge for each bridge mark on the chart.
+	 * The centre is the mark. Length, orientation, and the initial state come from the C++ list.
+	 * Width is the shipped road that ends at that bridge. A bridge with no such road is as wide as a track.
+	 * @return Number of bridges written.
+	 */
+	int32 FromMarkers(
+		const USolidWorldChart& Map,
+		const TFunction<float(float X, float Y)>& HeightAt,
+		TArray<FBridge>& Out);
 }
 
 /** Ramp, flat center, and ramp. A broken bridge keeps the ramps and leaves the center out. */

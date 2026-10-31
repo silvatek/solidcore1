@@ -2621,10 +2621,8 @@ void ASolidGameMode::EnsureVegetation()
 		if (BridgeMap && BridgeMap->IsLoaded())
 		{
 			TArray<SolidBridge::FBridge> Bridges;
-			SolidBridge::Collect(
+			SolidBridge::FromMarkers(
 				*BridgeMap,
-				Terrain->GetWorldMinXY(),
-				Terrain->GetWorldMaxXY(),
 				[Streamer](const float X, const float Y)
 				{
 					return Streamer->GetHeightAt(FVector(X, Y, 0.f));
@@ -2644,7 +2642,7 @@ void ASolidGameMode::EnsureVegetation()
 					continue;
 				}
 				SolidBridge::FBridge Spec = Bridge;
-				if (GetConfiguration()->bIglinBridgeRepaired)
+				if (Spec.bIglinRelion && GetConfiguration()->bIglinBridgeRepaired)
 				{
 					Spec.bBroken = false;
 				}

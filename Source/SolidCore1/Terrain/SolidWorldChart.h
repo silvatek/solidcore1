@@ -233,7 +233,7 @@ public:
 	/** Preferred road data. Each road keeps the terrain points of its route. */
 	const TArray<SolidRoad::FSolidRoad>& GetRoutedRoads() const { return RoutedRoads; }
 
-	/** True when the point lies on a solved road strip. Does not change the biome by itself. */
+	/** True when the point lies within the routed road's width of its terrain points. */
 	bool IsOnRoad(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 
 	/** True when this cell is the town marker, or a named town. A road strip is not a town. */
@@ -470,16 +470,16 @@ private:
 	mutable TArray<SolidRoad::FRoute> SolvedRoads;
 	/** Preferred road data. Listed roads that found a route. Empty until the chart loads. */
 	mutable TArray<SolidRoad::FSolidRoad> RoutedRoads;
-	/** Deprecated. Prefer RoutedRoads. Painted segments between world cells. */
+	/** Deprecated. The strip is measured from RoutedRoads. These stay empty. */
 	mutable TArray<SolidRoad::FSpan> RoadSpans;
-	/** Deprecated. Prefer RoutedRoads. Span indexes for each world cell and its neighbours. */
+	/** Deprecated. The strip is measured from RoutedRoads. This stays empty. */
 	mutable TArray<TArray<int32>> RoadSpansByCell;
 
 protected:
 	bool WorldXYToCell(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, int32& OutMapX, int32& OutMapY) const;
-	/** Clear the solved roads and size the span index. */
+	/** Clear the solved roads. */
 	void ResetRoads() const;
-	/** Route one listed road and record its spans. */
+	/** Route one listed road. */
 	void BuildRoad(SolidRoad::FSolidRoad* Road) const;
 	/** Build each listed road and solve it. */
 	void BuildListedRoads() const;

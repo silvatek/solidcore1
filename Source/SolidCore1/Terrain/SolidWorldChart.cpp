@@ -2290,7 +2290,6 @@ void USolidWorldChart::ResetRoads() const
 	RoutedRoads.Reset();
 	RoadSpans.Reset();
 	RoadSpansByCell.Reset();
-	RoadSpansByCell.SetNum(MapWidth * MapHeight);
 }
 
 namespace
@@ -2347,11 +2346,6 @@ void USolidWorldChart::BuildRoad(SolidRoad::FSolidRoad* Road) const
 		return;
 	}
 
-	if (RoadSpansByCell.Num() != MapWidth * MapHeight)
-	{
-		RoadSpansByCell.SetNum(MapWidth * MapHeight);
-	}
-
 	SolidRoad::FRoute Route;
 	if (Road->FindRoute(*this))
 	{
@@ -2382,41 +2376,6 @@ void USolidWorldChart::BuildRoad(SolidRoad::FSolidRoad* Road) const
 	{
 		RoutedRoads.Add(*Road);
 	}
-
-	if (Route.Cells.Num() == 0)
-	{
-		return;
-	}
-
-	const float HalfWidth = SolidRoad::WidthCm(Road->Type) * 0.5f;
-	const int32 SpanCount = Route.Cells.Num() == 1 ? 1 : Route.Cells.Num() - 1;
-	for (int32 SpanIndex = 0; SpanIndex < SpanCount; ++SpanIndex)
-	{
-		SolidRoad::FSpan Span;
-		Span.From = Route.Cells[SpanIndex];
-		Span.To = Route.Cells[FMath::Min(SpanIndex + 1, Route.Cells.Num() - 1)];
-		Span.HalfWidthCm = HalfWidth;
-		const int32 Stored = RoadSpans.Add(Span);
-
-		auto Touch = [this, Stored](const FIntPoint& Cell)
-		{
-			for (int32 OffsetY = -1; OffsetY <= 1; ++OffsetY)
-			{
-				for (int32 OffsetX = -1; OffsetX <= 1; ++OffsetX)
-				{
-					const int32 X = Cell.X + OffsetX;
-					const int32 Y = Cell.Y + OffsetY;
-					if (X < 0 || Y < 0 || X >= MapWidth || Y >= MapHeight)
-					{
-						continue;
-					}
-					RoadSpansByCell[Y * MapWidth + X].AddUnique(Stored);
-				}
-			}
-		};
-		Touch(Span.From);
-		Touch(Span.To);
-	}
 }
 
 bool USolidWorldChart::IsOnRoad(
@@ -2425,32 +2384,35 @@ bool USolidWorldChart::IsOnRoad(
 	const FVector2D WorldMinXY,
 	const FVector2D WorldMaxXY) const
 {
-	if (!EnsureQuery() || RoadSpans.Num() == 0 || RoadSpansByCell.Num() != MapWidth * MapHeight)
-	{
-		return false;
-	}
-
-	int32 MapX = 0;
-	int32 MapY = 0;
-	if (!WorldXYToCell(WorldX, WorldY, WorldMinXY, WorldMaxXY, MapX, MapY))
+	if (!EnsureQuery())
 	{
 		return false;
 	}
 
 	const FVector2D World(WorldX, WorldY);
-	for (const int32 SpanIndex : RoadSpansByCell[MapY * MapWidth + MapX])
+	for (const SolidRoad::FSolidRoad& Road : GetRoutedRoads())
 	{
-		const SolidRoad::FSpan& Span = RoadSpans[SpanIndex];
-		FVector2D From = FVector2D::ZeroVector;
-		FVector2D To = FVector2D::ZeroVector;
-		if (!CellToWorldXY(Span.From, WorldMinXY, WorldMaxXY, From)
-			|| !CellToWorldXY(Span.To, WorldMinXY, WorldMaxXY, To))
+		if (Road.Points.Num() < 2)
 		{
 			continue;
 		}
-		if (SolidRoad::DistanceToSegmentCm(World, From, To) <= Span.HalfWidthCm)
+		const float HalfWidth = SolidRoad::WidthCm(Road.Type) * 0.5f;
+		FVector2D Previous = FVector2D::ZeroVector;
+		bool bHasPrevious = false;
+		for (const FIntPoint& Point : Road.Points)
 		{
-			return true;
+			FVector2D At = FVector2D::ZeroVector;
+			if (!TerrainPointToWorld(Point, WorldMinXY, WorldMaxXY, At))
+			{
+				bHasPrevious = false;
+				continue;
+			}
+			if (bHasPrevious && SolidRoad::DistanceToSegmentCm(World, Previous, At) <= HalfWidth)
+			{
+				return true;
+			}
+			Previous = At;
+			bHasPrevious = true;
 		}
 	}
 	return false;

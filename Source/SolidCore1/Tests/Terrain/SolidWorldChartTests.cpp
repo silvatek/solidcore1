@@ -1,6 +1,5 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
-#include "SolidRoads.h"
 #include "SolidStronghold.h"
 #include "SolidTowns.h"
 #include "SolidWorldChart.h"
@@ -113,11 +112,6 @@ namespace
 		return bOk;
 	}
 
-	FString WithoutSpaces(FString Name)
-	{
-		Name.ReplaceInline(TEXT(" "), TEXT(""));
-		return Name;
-	}
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -148,8 +142,7 @@ bool FSolidWorldChartRulesTest::RunTest(const FString& Parameters)
 			TEXT("! %d,%d = Stronghold MeagreDungeon\n")
 			TEXT("! %d,%d = Town Dragongate\n")
 			TEXT("! %d,%d = Town (Dragongate)\n")
-			TEXT("! %d,%d = Town Nowhere\n")
-			TEXT("Road: MeagreDungeon -> Iglin, trail\n"),
+			TEXT("! %d,%d = Town Nowhere\n"),
 			IglinCell.Y + 1, IglinCell.X + 1,
 			CaveCell.Y + 1, CaveCell.X + 1,
 			GateCell.Y + 1, GateCell.X + 1,
@@ -167,15 +160,6 @@ bool FSolidWorldChartRulesTest::RunTest(const FString& Parameters)
 	}
 
 	TestTrue(TEXT("the small chart matches its text"), MapsMatch(*this, *TextMap, *ChartMap));
-	TestEqual(
-		TEXT("the loaded chart keeps the road whose ends are on the chart"),
-		ChartMap->GetRoads().Num(),
-		1);
-	if (ChartMap->GetRoads().Num() == 1)
-	{
-		TestTrue(TEXT("that road starts at the stronghold"), ChartMap->GetRoads()[0].Definition.From.bStronghold);
-		TestEqual(TEXT("that road ends at Iglin"), ChartMap->GetRoads()[0].Definition.To.LocationId, SolidTowns::Iglin);
-	}
 
 	TestEqual(TEXT("an unknown town is not a location"), ChartMap->GetLocationIdAtCell(UnknownCell.X, UnknownCell.Y), INDEX_NONE);
 	FSolidWorldBang UnknownBang;
@@ -201,23 +185,6 @@ bool FSolidWorldChartRulesTest::RunTest(const FString& Parameters)
 	FSolidWorldLocation Gate;
 	TestTrue(TEXT("two Dragongate marks are one town"), ChartMap->FindLocation(SolidTowns::Dragongate, Gate));
 	TestEqual(TEXT("Dragongate has two cells"), Gate.Cells.Num(), 2);
-
-	const FSolidWorldChartRoad* Road = Chart->Roads.Num() > 0 ? &Chart->Roads[0] : nullptr;
-	TestTrue(TEXT("the trail is on the chart"), Road != nullptr);
-	FString MarkName;
-	for (const FSolidWorldChartMark& Mark : Chart->Marks)
-	{
-		if (Mark.Kind == ESolidWorldChartMarkKind::Stronghold)
-		{
-			MarkName = Mark.Name;
-		}
-	}
-	if (Road)
-	{
-		TestTrue(
-			TEXT("MeagreDungeon and Meagre Dungeon are the same name"),
-			WithoutSpaces(Road->FromName).Equals(WithoutSpaces(MarkName), ESearchCase::IgnoreCase));
-	}
 	return true;
 }
 

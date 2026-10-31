@@ -621,7 +621,8 @@ namespace SolidRoad
 					}
 					FIntPoint BankA = FIntPoint::ZeroValue;
 					FIntPoint BankB = FIntPoint::ZeroValue;
-					if (!FindRiverBank(Map, Anchor, -Across, BankA) || !FindRiverBank(Map, Anchor, Across, BankB))
+					if (!FindRiverBank(Map, Anchor, FIntPoint(-Across.X, -Across.Y), BankA)
+						|| !FindRiverBank(Map, Anchor, Across, BankB))
 					{
 						continue;
 					}

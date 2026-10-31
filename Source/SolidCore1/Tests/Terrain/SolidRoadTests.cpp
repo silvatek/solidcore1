@@ -107,6 +107,45 @@ namespace
 			ToRow + 1, ToCol + 1, ToTown,
 			FromTown, ToTown, Type);
 	}
+
+	void FillGrassPoints(USolidWorldChart& Chart)
+	{
+		Chart.Points.Init(ESolidBiome::Grassland, USolidWorldChart::PointAxis * USolidWorldChart::PointAxis);
+	}
+
+	void SetTerrainPoint(USolidWorldChart& Chart, const FIntPoint Point, const ESolidBiome Biome)
+	{
+		Chart.Points[Point.Y * USolidWorldChart::PointAxis + Point.X] = Biome;
+	}
+
+	bool PlacePointMark(USolidWorldChart& Chart, FSolidWorldChartMark Mark, const FIntPoint Point)
+	{
+		FVector2D Min = FVector2D::ZeroVector;
+		FVector2D Max = FVector2D::ZeroVector;
+		USolidWorldChart::DefaultWorldBounds(Min, Max);
+		if (!Chart.TerrainPointToWorld(Point, Min, Max, Mark.PositionCm))
+		{
+			return false;
+		}
+		Chart.Marks.Add(Mark);
+		return true;
+	}
+
+	bool RouteStaysOnRow(const TArray<FIntPoint>& Points, const int32 Row)
+	{
+		if (Points.Num() < 2)
+		{
+			return false;
+		}
+		for (const FIntPoint& Point : Points)
+		{
+			if (Point.Y != Row)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -199,43 +238,29 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidRoadNamedEndTest::RunTest(const FString& Parameters)
 {
-	const int32 CaveCol = 4;
-	const int32 CaveRow = 8;
-	const int32 TownCol = 8;
-	const int32 TownRow = 8;
+	const FIntPoint CavePoint(80, 200);
+	const FIntPoint TownPoint(160, 200);
 	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	UTEST_NOT_NULL(TEXT("named map"), Map);
-	Map->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
-	FString Error;
-	const FString CaveName = SolidStronghold::Label(ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon);
-	if (!TestTrue(TEXT("the cave places"), Map->PlaceStronghold(FIntPoint(CaveCol, CaveRow), ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon, Error))
-		|| !TestTrue(TEXT("Iglin places"), Map->PlaceTown(FIntPoint(TownCol, TownRow), TEXT("Iglin"), Error))
-		|| !TestTrue(TEXT("the trail is stored"), Map->AddRoad(CaveName, TEXT("Iglin"), ESolidWorldChartRoadType::Trail, Error))
-		|| !TestTrue(TEXT("the chart solves"), Map->LoadFromChart(Map)))
+	FillGrassPoints(*Map);
+	if (!TestTrue(TEXT("the cave places"), PlacePointMark(*Map, SolidRoad::StrongholdMark(ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon), CavePoint))
+		|| !TestTrue(TEXT("Iglin places"), PlacePointMark(*Map, SolidRoad::TownMark(SolidTowns::Iglin), TownPoint)))
 	{
 		return false;
 	}
 
-	const SolidRoad::FRoute* Route = RoadTestRoute(*Map, 0);
-	TestNotNull(TEXT("named route"), Route);
-	if (!Route)
+	SolidRoad::FSolidRoad Trail(
+		SolidRoad::StrongholdMark(ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon),
+		SolidRoad::TownMark(SolidTowns::Iglin),
+		SolidRoad::EType::Trail);
+	if (!TestTrue(TEXT("both ends are on the chart"), Trail.Locate(Map->Marks))
+		|| !TestTrue(TEXT("the trail solves"), Trail.FindRoute(*Map)))
 	{
 		return false;
 	}
-	TestTrue(TEXT("the stronghold end is not a town id"), Route->Definition.From.bStronghold);
-	TestTrue(TEXT("the stronghold end is located"), Route->Definition.From.bLocated);
-	TestEqual(TEXT("the stronghold end is that cell"), Route->Definition.From.Cell, FIntPoint(CaveCol, CaveRow));
-	TestEqual(TEXT("the town end is Iglin"), Route->Definition.To.LocationId, SolidTowns::Iglin);
-	TestTrue(TEXT("the trail has cells"), Route->Cells.Num() >= 2);
-	if (Route->Cells.Num() < 2)
-	{
-		return false;
-	}
-	TestEqual(TEXT("the trail starts on the stronghold"), Route->Cells[0].X, CaveCol);
-	TestEqual(TEXT("the trail starts on that row"), Route->Cells[0].Y, CaveRow);
-	TestEqual(TEXT("the trail ends on Iglin"), Route->Cells.Last().X, TownCol);
-	TestEqual(TEXT("the trail ends on that row"), Route->Cells.Last().Y, TownRow);
-	return RoadTestOrthogonal(*this, Route->Cells);
+	TestEqual(TEXT("the trail starts on the cave"), Trail.Points[0], CavePoint);
+	TestEqual(TEXT("the trail ends on Iglin"), Trail.Points.Last(), TownPoint);
+	return TestTrue(TEXT("the trail stays on that row"), RouteStaysOnRow(Trail.Points, CavePoint.Y));
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -245,49 +270,47 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidRoadForestHighwayTest::RunTest(const FString& Parameters)
 {
-	const FIntPoint Iglin(2, 8);
-	const FIntPoint Relion(20, 8);
+	const int32 Row = 256;
+	const FIntPoint IglinPoint(100, Row);
+	const FIntPoint RelionPoint(400, Row);
+	const FIntPoint ForestPoint(250, Row);
 	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
 	UTEST_NOT_NULL(TEXT("forest chart"), Chart);
-	Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
-	FString Error;
-	if (!TestTrue(TEXT("Iglin places"), Chart->PlaceTown(Iglin, TEXT("Iglin"), Error))
-		|| !TestTrue(TEXT("Relion places"), Chart->PlaceTown(Relion, TEXT("Relion"), Error)))
+	FillGrassPoints(*Chart);
+	if (!TestTrue(TEXT("Iglin places"), PlacePointMark(*Chart, SolidRoad::TownMark(SolidTowns::Iglin), IglinPoint))
+		|| !TestTrue(TEXT("Relion places"), PlacePointMark(*Chart, SolidRoad::TownMark(SolidTowns::Relion), RelionPoint)))
 	{
 		return false;
 	}
 
-	TArray<FIntPoint> Wall;
-	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
+	for (int32 Y = 0; Y < USolidWorldChart::PointAxis; ++Y)
 	{
-		if (Row != 2)
+		if (Y != 40)
 		{
-			Wall.Add(FIntPoint(10, Row));
+			SetTerrainPoint(*Chart, FIntPoint(ForestPoint.X, Y), ESolidBiome::Forest);
 		}
-	}
-	if (!TestTrue(TEXT("the forest wall paints"), Chart->PaintRun(Wall, ESolidBiome::Forest, Error)))
-	{
-		return false;
 	}
 
 	SolidRoad::FSolidRoad Highway(
 		SolidRoad::TownMark(SolidTowns::Iglin),
 		SolidRoad::TownMark(SolidTowns::Relion),
 		SolidRoad::EType::Highway);
-	if (!TestTrue(TEXT("both ends are on the chart"), Highway.Locate(Chart->Marks)))
+	if (!TestTrue(TEXT("both ends are on the chart"), Highway.Locate(Chart->Marks))
+		|| !TestTrue(TEXT("the highway solves"), Highway.FindRoute(*Chart)))
 	{
 		return false;
 	}
-
-	TArray<FIntPoint> Cells;
-	TArray<FIntPoint> Points;
-	if (!TestTrue(TEXT("the highway solves"), SolidRoad::Solve(*Chart, Highway.ToDefinition(), Cells, &Highway, Points)))
+	TestTrue(TEXT("highway stays on the straight row"), RouteStaysOnRow(Highway.Points, Row));
+	int32 ForestPoints = 0;
+	for (const FIntPoint& Point : Highway.Points)
 	{
-		return false;
+		if (Chart->GetPointBiome(Point) == ESolidBiome::Forest)
+		{
+			++ForestPoints;
+		}
 	}
-	TestEqual(TEXT("highway stays on the straight row"), Cells.Num(), 19);
-	TestEqual(TEXT("highway crosses one forest cell"), RoadTestCountBiome(*Chart, Cells, ESolidBiome::Forest), 1);
-	return RoadTestOrthogonal(*this, Cells);
+	TestEqual(TEXT("highway crosses one forest point"), ForestPoints, 1);
+	return TestTrue(TEXT("that point is the wall"), Highway.Points.Contains(ForestPoint));
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(

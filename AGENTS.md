@@ -157,7 +157,7 @@ Read the request and the names next to the new code before choosing. When those 
 
 ## Tests
 
-Follow the Automated tests policy in `CodingGuidelines.md`. A test that creates an object uses `UTEST_NOT_NULL`.
+Follow the Automated tests policy in `CodingGuidelines.md`. A test that creates an object uses `UTEST_NOT_NULL`. A test chart stores the land on terrain points and the ends on marks. It does not fill `Cells`.
 
 A failure caused by an edit to `/Game/World/WorldChart` follows the World chart section.
 

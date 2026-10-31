@@ -139,39 +139,41 @@ namespace
 		return Hit;
 	}
 
-	bool IsMeagreDungeon(const SolidRoad::FEndpoint& End)
+	bool IsMeagreDungeon(const FSolidWorldChartMark& Mark)
 	{
-		if (!End.bStronghold)
-		{
-			return false;
-		}
-		FString Name = End.StrongholdName;
-		Name.ReplaceInline(TEXT(" "), TEXT(""));
-		return Name.Equals(TEXT("MeagreDungeon"), ESearchCase::IgnoreCase);
+		return Mark.Kind == ESolidWorldChartMarkKind::Stronghold
+			&& Mark.StrongholdSize == ESolidStrongholdSize::Meagre
+			&& Mark.StrongholdType == ESolidStrongholdType::Dungeon;
 	}
 
-	bool IsCaveTrail(const SolidRoad::FDefinition& Definition)
+	bool IsIglin(const FSolidWorldChartMark& Mark)
 	{
-		if (Definition.Type != SolidRoad::EType::Trail)
+		if (Mark.Kind != ESolidWorldChartMarkKind::Town)
 		{
 			return false;
 		}
-		const bool bFromCave = IsMeagreDungeon(Definition.From)
-			&& !Definition.To.bStronghold
-			&& Definition.To.LocationId == SolidTowns::Iglin;
-		const bool bToCave = IsMeagreDungeon(Definition.To)
-			&& !Definition.From.bStronghold
-			&& Definition.From.LocationId == SolidTowns::Iglin;
+		const SolidTowns::FTownInfo* Town = SolidTowns::FindByName(Mark.Name);
+		return Town && Town->Id == SolidTowns::Iglin;
+	}
+
+	bool IsCaveTrail(const SolidRoad::FSolidRoad& Road)
+	{
+		if (Road.Type != SolidRoad::EType::Trail || Road.Points.Num() == 0)
+		{
+			return false;
+		}
+		const bool bFromCave = IsMeagreDungeon(Road.From) && IsIglin(Road.To);
+		const bool bToCave = IsMeagreDungeon(Road.To) && IsIglin(Road.From);
 		return bFromCave || bToCave;
 	}
 
-	const SolidRoad::FRoute* FindCaveTrail(const USolidWorldChart& Chart)
+	const SolidRoad::FSolidRoad* FindCaveTrail(const USolidWorldChart& Chart)
 	{
-		for (const SolidRoad::FRoute& Route : Chart.GetRoads())
+		for (const SolidRoad::FSolidRoad& Road : Chart.GetRoutedRoads())
 		{
-			if (IsCaveTrail(Route.Definition))
+			if (IsCaveTrail(Road))
 			{
-				return &Route;
+				return &Road;
 			}
 		}
 		return nullptr;
@@ -1109,31 +1111,29 @@ bool FSolidAutoPlaythrough::BuildIglinTrail(const ASolidGameMode& Mode, const FV
 		return false;
 	}
 
-	const SolidRoad::FRoute* Road = FindCaveTrail(*Chart);
-	if (!Road || Road->Cells.Num() == 0)
+	const SolidRoad::FSolidRoad* Road = FindCaveTrail(*Chart);
+	if (!Road || Road->Points.Num() == 0)
 	{
 		return false;
 	}
 
-	TArray<FIntPoint> Cells = Road->Cells;
-	const bool bIglinFirst = !Road->Definition.From.bStronghold
-		&& Road->Definition.From.LocationId == SolidTowns::Iglin;
-	if (bIglinFirst)
+	TArray<FIntPoint> RoutePoints = Road->Points;
+	if (IsIglin(Road->From))
 	{
-		Algo::Reverse(Cells);
+		Algo::Reverse(RoutePoints);
 	}
 
 	const FVector2D WorldMin = Terrain->GetWorldMinXY();
 	const FVector2D WorldMax = Terrain->GetWorldMaxXY();
 	const FVector2D Paint = SolidRoad::StripPaintOffset();
 	TArray<FVector2D> Centers;
-	Centers.Reserve(Cells.Num());
-	for (const FIntPoint& Cell : Cells)
+	Centers.Reserve(RoutePoints.Num());
+	for (const FIntPoint& Point : RoutePoints)
 	{
-		FVector2D Center = FVector2D::ZeroVector;
-		if (Chart->CellToWorldXY(Cell, WorldMin, WorldMax, Center))
+		FVector2D WorldXY = FVector2D::ZeroVector;
+		if (Chart->TerrainPointToWorld(Point, WorldMin, WorldMax, WorldXY))
 		{
-			Centers.Add(Center + Paint);
+			Centers.Add(WorldXY + Paint);
 		}
 	}
 	if (Centers.Num() == 0)

@@ -45,4 +45,8 @@ Each of the four roads was solved on its own, on the biomes as painted. No point
 
 ## Next step
 
-Remove as much of the legacy road code as possible. Dragongate to Rathen is not a shipped road. It comes back when there are points in between to route through.
+Legacy road code removal is paused. [Bridge markers](bridge-markers.md) ships first. This story stays open. The removal resumes after that story is done.
+
+The road strip already follows the terrain points on each routed road. `IsOnRoad` measures those points. The cell spans are no longer built. Autoplay walks those points. The bridge and the chart cell hover read them. What remains is the old cell route: `GetRoads`, `RouteForRoad`, and the cell list still stored on each solved road.
+
+Dragongate to Rathen is not a shipped road. It comes back when there are points in between to route through.

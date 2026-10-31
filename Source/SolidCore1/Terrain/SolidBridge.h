@@ -13,7 +13,8 @@ class UStaticMeshComponent;
  * Three pieces: a ramp, a flat center, and a ramp. The center is its own mesh.
  * A broken bridge leaves that mesh out. Each ramp is capped at the gap, and nothing can cross.
  * The center is as wide as that road and as long as the water it crosses.
- * It follows the painted strip, half a terrain quad southwest of the cell centres.
+ * A cell route is shifted half a terrain quad southwest onto the painted strip.
+ * A routed road stays on its terrain points.
  * Each ramp runs down to its own bank and continues into the ground.
  * Local offsets are centimetres. +X is west, +Y is north.
  */
@@ -61,7 +62,8 @@ namespace SolidBridge
 	};
 
 	/**
-	 * One bridge for each run of river water on any solved route.
+	 * One bridge for each run of river water on a routed road.
+	 * A chart with no routed roads uses the solved cell routes.
 	 * HeightAt returns the terrain surface in centimetres at a world XY.
 	 * @return Number of bridges written.
 	 */

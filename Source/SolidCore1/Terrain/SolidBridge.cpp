@@ -86,6 +86,24 @@ namespace
 		return Out.Points.Num() >= 2;
 	}
 
+	bool RoadPoly(const USolidWorldChart& Map, const SolidRoad::FSolidRoad& Road, const FVector2D WorldMin, const FVector2D WorldMax, FRouteLine& Out)
+	{
+		Out.Points.Reset();
+		for (const FIntPoint& Point : Road.Points)
+		{
+			FVector2D World = FVector2D::ZeroVector;
+			if (!Map.TerrainPointToWorld(Point, WorldMin, WorldMax, World))
+			{
+				continue;
+			}
+			if (Out.Points.Num() == 0 || !Out.Points.Last().Equals(World, 1.f))
+			{
+				Out.Points.Add(World);
+			}
+		}
+		return Out.Points.Num() >= 2;
+	}
+
 	struct FMeshAccum
 	{
 		TArray<FVector> TimberPos;
@@ -354,6 +372,23 @@ namespace
 		return (From == 0 && To == 1) || (From == 1 && To == 0);
 	}
 
+	bool IsIglinRelionRoad(const SolidRoad::FSolidRoad& Road)
+	{
+		auto TownId = [](const FSolidWorldChartMark& Mark) -> int32
+		{
+			if (Mark.Kind != ESolidWorldChartMarkKind::Town)
+			{
+				return INDEX_NONE;
+			}
+			const SolidTowns::FTownInfo* Town = SolidTowns::FindByName(Mark.Name);
+			return Town != nullptr ? Town->Id : INDEX_NONE;
+		};
+		const int32 From = TownId(Road.From);
+		const int32 To = TownId(Road.To);
+		return (From == SolidTowns::Iglin && To == SolidTowns::Relion)
+			|| (From == SolidTowns::Relion && To == SolidTowns::Iglin);
+	}
+
 	/** Intact center. A broken bridge does not build this mesh. */
 	UStaticMesh* BuildIntactDeckMesh(UObject* Outer, const SolidBridge::FBridge& Bridge, const FVector& Origin)
 	{
@@ -387,13 +422,47 @@ int32 SolidBridge::Collect(
 		return 0;
 	}
 
-	for (const SolidRoad::FRoute& Route : Map.GetRoads())
+	struct FCrossing
 	{
 		FRouteLine Poly;
-		if (!RoutePoly(Map, Route, WorldMinXY, WorldMaxXY, Poly))
+		SolidRoad::EType Type = SolidRoad::EType::Trail;
+		bool bIglinRelion = false;
+		bool bFromCells = false;
+	};
+	TArray<FCrossing> Crossings;
+	if (Map.GetRoutedRoads().Num() > 0)
+	{
+		for (const SolidRoad::FSolidRoad& Road : Map.GetRoutedRoads())
 		{
-			continue;
+			FCrossing Crossing;
+			if (!RoadPoly(Map, Road, WorldMinXY, WorldMaxXY, Crossing.Poly))
+			{
+				continue;
+			}
+			Crossing.Type = Road.Type;
+			Crossing.bIglinRelion = IsIglinRelionRoad(Road);
+			Crossings.Add(MoveTemp(Crossing));
 		}
+	}
+	else
+	{
+		for (const SolidRoad::FRoute& Route : Map.GetRoads())
+		{
+			FCrossing Crossing;
+			if (!RoutePoly(Map, Route, WorldMinXY, WorldMaxXY, Crossing.Poly))
+			{
+				continue;
+			}
+			Crossing.Type = Route.Definition.Type;
+			Crossing.bIglinRelion = IsIglinRelion(Route.Definition);
+			Crossing.bFromCells = true;
+			Crossings.Add(MoveTemp(Crossing));
+		}
+	}
+
+	for (const FCrossing& Crossing : Crossings)
+	{
+		const FRouteLine& Poly = Crossing.Poly;
 
 		const float Total = PolyLength(Poly);
 		TArray<float> Dist;
@@ -522,7 +591,7 @@ int32 SolidBridge::Collect(
 			return WetAt;
 		};
 
-		const float Width = SolidRoad::WidthCm(Route.Definition.Type);
+		const float Width = SolidRoad::WidthCm(Crossing.Type);
 		for (const FRun& Run : Runs)
 		{
 			float Water0 = Dist[Run.First];
@@ -587,7 +656,7 @@ int32 SolidBridge::Collect(
 
 			FBridge Bridge;
 			Bridge.WidthCm = Width;
-			Bridge.bIglinRelion = IsIglinRelion(Route.Definition);
+			Bridge.bIglinRelion = Crossing.bIglinRelion;
 			Bridge.bBroken = Bridge.bIglinRelion;
 			Bridge.Deck.Reserve(DeckD.Num());
 			for (const float D : DeckD)
@@ -630,21 +699,25 @@ int32 SolidBridge::Collect(
 			BuildRamp(Deck1, 1.f, Bridge.RampTo);
 			if (Bridge.Deck.Num() >= 2 && Bridge.RampFrom.Num() >= 2 && Bridge.RampTo.Num() >= 2)
 			{
-				// Water and the banks were measured on the cell centres. The painted
+				// A cell centreline is measured on the cell centres. The painted
 				// strip lies half a quad southwest of that line, so move the finished
-				// bridge onto the strip without changing its span.
-				const FVector2D Paint = SolidRoad::StripPaintOffset();
-				auto Shift = [Paint](TArray<FVector>& Line)
+				// bridge onto the strip without changing its span. A routed road is
+				// already on its terrain points.
+				if (Crossing.bFromCells)
 				{
-					for (FVector& Point : Line)
+					const FVector2D Paint = SolidRoad::StripPaintOffset();
+					auto Shift = [Paint](TArray<FVector>& Line)
 					{
-						Point.X += Paint.X;
-						Point.Y += Paint.Y;
-					}
-				};
-				Shift(Bridge.Deck);
-				Shift(Bridge.RampFrom);
-				Shift(Bridge.RampTo);
+						for (FVector& Point : Line)
+						{
+							Point.X += Paint.X;
+							Point.Y += Paint.Y;
+						}
+					};
+					Shift(Bridge.Deck);
+					Shift(Bridge.RampFrom);
+					Shift(Bridge.RampTo);
+				}
 				Out.Add(MoveTemp(Bridge));
 			}
 		}

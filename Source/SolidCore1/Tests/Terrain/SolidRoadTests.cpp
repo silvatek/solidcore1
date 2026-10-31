@@ -773,4 +773,48 @@ bool FSolidRoadLocationsTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidRoadRoutedTest,
+	"SolidCore1.Road.Routed",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidRoadRoutedTest::RunTest(const FString& Parameters)
+{
+	const USolidWorldChart* Shipped = LoadObject<USolidWorldChart>(nullptr, USolidWorldChart::ShippedPath());
+	UTEST_NOT_NULL(TEXT("shipped chart"), Shipped);
+
+	USolidWorldChart* Loaded = NewObject<USolidWorldChart>();
+	UTEST_NOT_NULL(TEXT("loaded chart"), Loaded);
+	if (!TestTrue(TEXT("the chart loads"), Loaded->LoadFromChart(Shipped)))
+	{
+		return false;
+	}
+
+	const TArray<SolidRoad::FSolidRoad>& Routed = Loaded->GetRoutedRoads();
+	TestTrue(TEXT("the chart keeps a routed road"), Routed.Num() > 0);
+	for (const SolidRoad::FRoute& Route : Loaded->GetRoads())
+	{
+		if (Route.Points.Num() <= 1)
+		{
+			continue;
+		}
+		bool bKept = false;
+		for (const SolidRoad::FSolidRoad& Road : Routed)
+		{
+			if (Road.Points == Route.Points)
+			{
+				bKept = true;
+				break;
+			}
+		}
+		TestTrue(TEXT("a point route stays on its road"), bKept);
+	}
+	for (const SolidRoad::FSolidRoad& Road : Routed)
+	{
+		TestTrue(TEXT("a routed road keeps its points"), Road.Points.Num() > 1);
+	}
+	TestEqual(TEXT("the shipped list stays unrouted"), SolidRoad::Roads[0].Points.Num(), 0);
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

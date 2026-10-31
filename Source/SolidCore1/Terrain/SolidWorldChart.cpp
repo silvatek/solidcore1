@@ -958,6 +958,7 @@ void USolidWorldChart::ResetLoad() const
 	StartTownCells.Reset();
 	Locations.Reset();
 	SolvedRoads.Reset();
+	RoutedRoads.Reset();
 	RoadSpans.Reset();
 	RoadSpansByCell.Reset();
 	bHasStartTown = false;
@@ -2338,6 +2339,7 @@ void USolidWorldChart::BuildRoads(const TArray<SolidRoad::FDefinition>& Definiti
 void USolidWorldChart::ResetRoads() const
 {
 	SolvedRoads.Reset();
+	RoutedRoads.Reset();
 	RoadSpans.Reset();
 	RoadSpansByCell.Reset();
 	RoadSpansByCell.SetNum(MapWidth * MapHeight);
@@ -2360,6 +2362,10 @@ void USolidWorldChart::BuildRoad(const SolidRoad::FDefinition& Definition, Solid
 		UE_LOG(LogSolid, Warning, TEXT("WorldMap: no route for road %s -> %s."), *From, *To);
 	}
 	SolvedRoads.Add(Route);
+	if (Road != nullptr && Road->Points.Num() > 1)
+	{
+		RoutedRoads.Add(*Road);
+	}
 
 	if (Route.Cells.Num() == 0)
 	{

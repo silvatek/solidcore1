@@ -225,6 +225,9 @@ public:
 	/** Solved routes, in file order. A route with no cells had a missing end. */
 	const TArray<SolidRoad::FRoute>& GetRoads() const { return SolvedRoads; }
 
+	/** Listed roads that found a route. Each one keeps its terrain points. */
+	const TArray<SolidRoad::FSolidRoad>& GetRoutedRoads() const { return RoutedRoads; }
+
 	/** True when the point lies on a solved road strip. Does not change the biome by itself. */
 	bool IsOnRoad(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 
@@ -457,6 +460,8 @@ private:
 	/** Location id of each terrain point, or INDEX_NONE. Same order as Points. */
 	mutable TArray<int32> PointTowns;
 	mutable TArray<SolidRoad::FRoute> SolvedRoads;
+	/** Listed roads that found a route. Empty until the chart loads. */
+	mutable TArray<SolidRoad::FSolidRoad> RoutedRoads;
 	mutable TArray<SolidRoad::FSpan> RoadSpans;
 	mutable TArray<TArray<int32>> RoadSpansByCell;
 

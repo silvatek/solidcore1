@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0841")
+#define SOLID_BUILD_ID TEXT("SC1-0842")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A rectangle of terrain points takes one biome.")
+#define SOLID_BUILD_NOTE TEXT("A bridge follows a routed road when the chart has one.")
 #endif

@@ -427,7 +427,6 @@ int32 SolidBridge::Collect(
 		FRouteLine Poly;
 		SolidRoad::EType Type = SolidRoad::EType::Trail;
 		bool bIglinRelion = false;
-		bool bFromCells = false;
 	};
 	TArray<FCrossing> Crossings;
 	if (Map.GetRoutedRoads().Num() > 0)
@@ -455,7 +454,6 @@ int32 SolidBridge::Collect(
 			}
 			Crossing.Type = Route.Definition.Type;
 			Crossing.bIglinRelion = IsIglinRelion(Route.Definition);
-			Crossing.bFromCells = true;
 			Crossings.Add(MoveTemp(Crossing));
 		}
 	}
@@ -699,25 +697,20 @@ int32 SolidBridge::Collect(
 			BuildRamp(Deck1, 1.f, Bridge.RampTo);
 			if (Bridge.Deck.Num() >= 2 && Bridge.RampFrom.Num() >= 2 && Bridge.RampTo.Num() >= 2)
 			{
-				// A cell centreline is measured on the cell centres. The painted
-				// strip lies half a quad southwest of that line, so move the finished
-				// bridge onto the strip without changing its span. A routed road is
-				// already on its terrain points.
-				if (Crossing.bFromCells)
+				// The painted strip lies half a quad southwest of the centreline.
+				// Move the finished bridge onto that strip. The span stays the same.
+				const FVector2D Paint = SolidRoad::StripPaintOffset();
+				auto Shift = [Paint](TArray<FVector>& Line)
 				{
-					const FVector2D Paint = SolidRoad::StripPaintOffset();
-					auto Shift = [Paint](TArray<FVector>& Line)
+					for (FVector& Point : Line)
 					{
-						for (FVector& Point : Line)
-						{
-							Point.X += Paint.X;
-							Point.Y += Paint.Y;
-						}
-					};
-					Shift(Bridge.Deck);
-					Shift(Bridge.RampFrom);
-					Shift(Bridge.RampTo);
-				}
+						Point.X += Paint.X;
+						Point.Y += Paint.Y;
+					}
+				};
+				Shift(Bridge.Deck);
+				Shift(Bridge.RampFrom);
+				Shift(Bridge.RampTo);
 				Out.Add(MoveTemp(Bridge));
 			}
 		}

@@ -538,19 +538,14 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 {
-	FString Grid;
-	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
-	{
-		Grid += FString::ChrN(USolidWorldChart::MapWidth, USolidWorldChart::GrassMarker);
-		Grid += TEXT("\n");
-	}
-
 	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
 	USolidWorldChart* Empty = NewObject<USolidWorldChart>();
-	if (!TestNotNull(TEXT("chart"), Chart)
-		|| !TestNotNull(TEXT("map"), Empty)
-		|| !TestTrue(TEXT("grass imports"), Chart->ImportFromString(Grid))
-		|| !TestTrue(TEXT("the unmarked chart loads"), Empty->LoadFromChart(Chart)))
+	if (!TestNotNull(TEXT("chart"), Chart) || !TestNotNull(TEXT("map"), Empty))
+	{
+		return false;
+	}
+	Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
+	if (!TestTrue(TEXT("the unmarked chart loads"), Empty->LoadFromChart(Chart)))
 	{
 		return false;
 	}
@@ -625,7 +620,11 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 	FString RexError;
 	const FIntPoint RexCell(30, 8);
 	const FIntPoint RexCellTwo(40, 12);
-	if (!TestTrue(TEXT("a Dracorex chart imports"), Rex && Rex->ImportFromString(Grid))
+	if (Rex)
+	{
+		Rex->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
+	}
+	if (!TestNotNull(TEXT("a Dracorex chart"), Rex)
 		|| !TestFalse(TEXT("an unknown encounter is rejected"), Rex->PlaceEncounter(RexCell, TEXT("Nope"), RexError))
 		|| !TestTrue(TEXT("Dracorex places"), Rex->PlaceEncounter(RexCell, TEXT("dracorex"), RexError)))
 	{
@@ -701,21 +700,16 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidMonsterMarkGroundTest::RunTest(const FString& Parameters)
 {
-	FString Grid;
-	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
-	{
-		Grid += FString::ChrN(USolidWorldChart::MapWidth, USolidWorldChart::GrassMarker);
-		Grid += TEXT("\n");
-	}
-
 	const FIntPoint Cell(10, 4);
 	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
 	USolidWorldChart* WorldMap = NewObject<USolidWorldChart>();
 	FString Error;
-	if (!TestNotNull(TEXT("chart"), Chart)
-		|| !TestNotNull(TEXT("map"), WorldMap)
-		|| !TestTrue(TEXT("grass imports"), Chart->ImportFromString(Grid))
-		|| !TestTrue(TEXT("the mark places"), Chart->PlaceEncounter(Cell, TEXT("Iglin Bridge"), Error))
+	if (!TestNotNull(TEXT("chart"), Chart) || !TestNotNull(TEXT("map"), WorldMap))
+	{
+		return false;
+	}
+	Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
+	if (!TestTrue(TEXT("the mark places"), Chart->PlaceEncounter(Cell, TEXT("Iglin Bridge"), Error))
 		|| !TestTrue(TEXT("the chart loads"), WorldMap->LoadFromChart(Chart))
 		|| !TestEqual(TEXT("one mark"), WorldMap->GetEncounterMarks().Num(), 1))
 	{

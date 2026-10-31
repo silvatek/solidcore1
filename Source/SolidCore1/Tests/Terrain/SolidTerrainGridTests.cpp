@@ -23,6 +23,18 @@ namespace
 		return Text;
 	}
 
+	USolidWorldChart* GrassChart()
+	{
+		USolidWorldChart* Chart = NewObject<USolidWorldChart>();
+		if (!Chart)
+		{
+			return nullptr;
+		}
+		Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
+		Chart->LoadFromChart(Chart);
+		return Chart;
+	}
+
 	void SetTerrainCell(FString& Grid, const int32 Col, const int32 Row, const TCHAR Marker)
 	{
 		Grid[Row * (USolidWorldChart::MapWidth + 1) + Col] = Marker;
@@ -118,12 +130,12 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidTerrainGridCellPaintTest::RunTest(const FString& Parameters)
 {
-	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
-	if (!TestNotNull(TEXT("grass chart"), Chart) || !TestTrue(TEXT("grass imports"), Chart->ImportFromString(GrassGrid())))
+	USolidWorldChart* Chart = GrassChart();
+	if (!TestNotNull(TEXT("grass chart"), Chart))
 	{
 		return false;
 	}
-	TestEqual(TEXT("import keeps a point for every terrain point"), Chart->Points.Num(), USolidWorldChart::PointAxis * USolidWorldChart::PointAxis);
+	TestEqual(TEXT("the chart has a point for every terrain point"), Chart->Points.Num(), USolidWorldChart::PointAxis * USolidWorldChart::PointAxis);
 
 	const FIntPoint Cell(4, 6);
 	const FIntPoint Beside(5, 6);
@@ -149,8 +161,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidTerrainGridMarkerPointTest::RunTest(const FString& Parameters)
 {
-	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
-	if (!TestNotNull(TEXT("grass chart"), Chart) || !TestTrue(TEXT("grass imports"), Chart->ImportFromString(GrassGrid())))
+	USolidWorldChart* Chart = GrassChart();
+	if (!TestNotNull(TEXT("grass chart"), Chart))
 	{
 		return false;
 	}
@@ -246,8 +258,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidTerrainGridTownRegionTest::RunTest(const FString& Parameters)
 {
-	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
-	if (!TestNotNull(TEXT("grass chart"), Chart) || !TestTrue(TEXT("grass imports"), Chart->ImportFromString(GrassGrid())))
+	USolidWorldChart* Chart = GrassChart();
+	if (!TestNotNull(TEXT("grass chart"), Chart))
 	{
 		return false;
 	}
@@ -324,8 +336,8 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidTerrainGridPointBrushTest::RunTest(const FString& Parameters)
 {
-	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
-	if (!TestNotNull(TEXT("grass chart"), Chart) || !TestTrue(TEXT("grass imports"), Chart->ImportFromString(GrassGrid())))
+	USolidWorldChart* Chart = GrassChart();
+	if (!TestNotNull(TEXT("grass chart"), Chart))
 	{
 		return false;
 	}

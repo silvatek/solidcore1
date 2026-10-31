@@ -23,7 +23,10 @@ namespace
 	USolidWorldChart* GrassChart()
 	{
 		USolidWorldChart* Chart = NewObject<USolidWorldChart>();
-		Chart->ImportFromString(PaintGrid());
+		if (Chart)
+		{
+			Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
+		}
 		return Chart;
 	}
 }

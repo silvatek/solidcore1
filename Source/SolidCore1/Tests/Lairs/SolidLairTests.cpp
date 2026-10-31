@@ -571,20 +571,16 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidLairExitFacesWestTest::RunTest(const FString& Parameters)
 {
-	FString Grid;
-	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
-	{
-		Grid += FString::ChrN(USolidWorldChart::MapWidth, USolidWorldChart::GrassMarker);
-		Grid += TEXT("\n");
-	}
-
 	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
 	FString Error;
 	const FIntPoint Exit(12, 10);
 	const FIntPoint Entrance(4, 4);
-	if (!TestNotNull(TEXT("grass chart"), Chart)
-		|| !TestTrue(TEXT("grass imports"), Chart->ImportFromString(Grid))
-		|| !TestTrue(TEXT("the exit places"), Chart->PlaceLairMouth(Exit, SolidLair::IglinTunnels.Name, false, Error))
+	if (!TestNotNull(TEXT("grass chart"), Chart))
+	{
+		return false;
+	}
+	Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
+	if (!TestTrue(TEXT("the exit places"), Chart->PlaceLairMouth(Exit, SolidLair::IglinTunnels.Name, false, Error))
 		|| !TestTrue(TEXT("the entrance places"), Chart->PlaceLairMouth(Entrance, SolidLair::IglinTunnels.Name, true, Error))
 		|| !TestTrue(TEXT("the chart loads"), Chart->LoadFromChart(Chart)))
 	{

@@ -14,43 +14,6 @@ namespace
 	const FVector2D RoadTestMin(-51200.f, -51200.f);
 	const FVector2D RoadTestMax(51200.f, 51200.f);
 
-	struct FRoadTestMark
-	{
-		int32 Col = 0;
-		int32 Row = 0;
-		TCHAR Marker = USolidWorldChart::GrassMarker;
-	};
-
-	FString RoadTestGrid(const TArray<FRoadTestMark>& Marks, const FString& Roads)
-	{
-		FString Text;
-		Text.Reserve((USolidWorldChart::MapWidth + 1) * USolidWorldChart::MapHeight + Roads.Len());
-		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
-		{
-			for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
-			{
-				TCHAR Marker = USolidWorldChart::GrassMarker;
-				for (const FRoadTestMark& Mark : Marks)
-				{
-					if (Mark.Col == Col && Mark.Row == Row)
-					{
-						Marker = Mark.Marker;
-						break;
-					}
-				}
-				Text.AppendChar(Marker);
-			}
-			Text.AppendChar(TEXT('\n'));
-		}
-		Text += Roads;
-		return Text;
-	}
-
-	bool RoadTestLoad(FAutomationTestBase& Test, USolidWorldChart& Map, const FString& Text)
-	{
-		return Test.TestTrue(TEXT("map loads"), Map.LoadFromString(Text));
-	}
-
 	bool RoadTestOrthogonal(FAutomationTestBase& Test, const TArray<FIntPoint>& Cells)
 	{
 		for (int32 Index = 1; Index < Cells.Num(); ++Index)
@@ -73,20 +36,38 @@ namespace
 		return Center;
 	}
 
-	FString RoadTestNamed(
-		const int32 FromCol,
-		const int32 FromRow,
-		const TCHAR* FromTown,
-		const int32 ToCol,
-		const int32 ToRow,
-		const TCHAR* ToTown,
-		const TCHAR* Type)
+	bool SurfaceChart(FAutomationTestBase& Test, USolidWorldChart*& OutChart)
 	{
-		return FString::Printf(
-			TEXT("! %d,%d = Town %s\n! %d,%d = Town %s\nRoad: %s -> %s, %s\n"),
-			FromRow + 1, FromCol + 1, FromTown,
-			ToRow + 1, ToCol + 1, ToTown,
-			FromTown, ToTown, Type);
+		OutChart = NewObject<USolidWorldChart>();
+		if (!Test.TestNotNull(TEXT("chart"), OutChart))
+		{
+			return false;
+		}
+		OutChart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
+		OutChart->Points.Init(ESolidBiome::Grassland, USolidWorldChart::PointAxis * USolidWorldChart::PointAxis);
+		return true;
+	}
+
+	bool SurfaceLoad(FAutomationTestBase& Test, USolidWorldChart* Chart, USolidWorldChart*& OutMap, const int32 Roads)
+	{
+		USolidWorldChart* Loaded = NewObject<USolidWorldChart>();
+		if (!Test.TestNotNull(TEXT("loaded chart"), Loaded)
+			|| !Test.TestTrue(TEXT("the chart loads"), Loaded->LoadFromChart(Chart)))
+		{
+			return false;
+		}
+		OutMap = Loaded;
+		return Test.TestEqual(TEXT("routed roads"), Loaded->GetRoutedRoads().Num(), Roads);
+	}
+
+	bool SurfacePoint(FAutomationTestBase& Test, USolidWorldChart& Chart, const FIntPoint Cell, FIntPoint& OutPoint)
+	{
+		FVector2D Min = FVector2D::ZeroVector;
+		FVector2D Max = FVector2D::ZeroVector;
+		USolidWorldChart::DefaultWorldBounds(Min, Max);
+		FVector2D Centre = FVector2D::ZeroVector;
+		return Test.TestTrue(TEXT("the cell has a centre"), Chart.CellToWorldXY(Cell, Min, Max, Centre))
+			&& Test.TestTrue(TEXT("the cell sits on a point"), Chart.TerrainPointAt(Centre.X, Centre.Y, Min, Max, OutPoint));
 	}
 
 	void FillGrassPoints(USolidWorldChart& Chart)
@@ -502,47 +483,6 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 {
-	USolidWorldChart* Trail = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("trail map"), Trail);
-	if (!RoadTestLoad(*this, *Trail, RoadTestGrid({
-		{ 4, 12, USolidWorldChart::LocationMarker },
-		{ 4, 14, USolidWorldChart::TownMarker },
-		{ 4, 16, TEXT('Z') },
-		{ 7, 12, USolidWorldChart::ForestMarker },
-		{ 12, 12, USolidWorldChart::LocationMarker },
-	}, RoadTestNamed(4, 12, TEXT("Iglin"), 12, 12, TEXT("Relion"), TEXT("trail")))))
-	{
-		return false;
-	}
-
-	const FVector2D Grass = RoadTestCenter(*Trail, 6, 12);
-	const FVector2D Forest = RoadTestCenter(*Trail, 7, 12);
-	TestEqual(TEXT("marker under the trail stays grass"),
-		static_cast<uint8>(Trail->GetBiomeAtCell(6, 12)),
-		static_cast<uint8>(ESolidBiome::Grassland));
-	TestEqual(TEXT("trail centre uses the road texture"),
-		static_cast<uint8>(Trail->SampleBiome(Grass.X, Grass.Y, RoadTestMin, RoadTestMax)),
-		static_cast<uint8>(ESolidBiome::Road));
-	TestEqual(TEXT("trail rim is road"),
-		static_cast<uint8>(Trail->SampleBiome(Grass.X, Grass.Y + 50.f, RoadTestMin, RoadTestMax)),
-		static_cast<uint8>(ESolidBiome::Road));
-	TestEqual(TEXT("past the trail is grass"),
-		static_cast<uint8>(Trail->SampleBiome(Grass.X, Grass.Y + 70.f, RoadTestMin, RoadTestMax)),
-		static_cast<uint8>(ESolidBiome::Grassland));
-	TestEqual(TEXT("forest on the trail uses the road texture"),
-		static_cast<uint8>(Trail->SampleBiome(Forest.X, Forest.Y, RoadTestMin, RoadTestMax)),
-		static_cast<uint8>(ESolidBiome::Road));
-	TestFalse(TEXT("grass under a trail is not a town marker"),
-		Trail->IsMarkedTown(Grass.X, Grass.Y, RoadTestMin, RoadTestMax));
-	const FVector2D TownDigit = RoadTestCenter(*Trail, 4, 12);
-	const FVector2D TownLetter = RoadTestCenter(*Trail, 4, 14);
-	const FVector2D LegacyTown = RoadTestCenter(*Trail, 4, 16);
-	TestTrue(TEXT("a named town is a town"),
-		Trail->IsMarkedTown(TownDigit.X, TownDigit.Y, RoadTestMin, RoadTestMax));
-	TestTrue(TEXT("a town circle is a town"),
-		Trail->IsMarkedTown(TownLetter.X, TownLetter.Y, RoadTestMin, RoadTestMax));
-	TestFalse(TEXT("Z is not a town"),
-		Trail->IsMarkedTown(LegacyTown.X, LegacyTown.Y, RoadTestMin, RoadTestMax));
 	const FLinearColor RoadBrown = USolidWorldChart::DefaultColorForBiome(ESolidBiome::Road);
 	const FLinearColor TownBrown = USolidWorldChart::DefaultColorForBiome(ESolidBiome::Town);
 	TestTrue(TEXT("road brown sits near the town brown"),
@@ -550,12 +490,63 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 		&& TownBrown.R > TownBrown.G && TownBrown.G > TownBrown.B
 		&& FMath::Abs(RoadBrown.R - TownBrown.R) < 0.2f);
 
-	USolidWorldChart* Cave = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("cave map"), Cave);
-	if (!RoadTestLoad(*this, *Cave, RoadTestGrid({
-		{ 4, 8, USolidWorldChart::LocationMarker },
-		{ 8, 8, USolidWorldChart::LocationMarker },
-	}, TEXT("! 9,5 = Stronghold (MeagreDungeon)\n! 9,9 = Town Iglin\nRoad: MeagreDungeon -> Iglin, trail\n"))))
+	FString Error;
+	USolidWorldChart* TrackChart = nullptr;
+	USolidWorldChart* Track = nullptr;
+	FIntPoint ForestPoint = FIntPoint::ZeroValue;
+	FIntPoint RiverPoint = FIntPoint::ZeroValue;
+	if (!SurfaceChart(*this, TrackChart)
+		|| !TestTrue(TEXT("Iglin places"), TrackChart->PlaceTown(FIntPoint(4, 12), TEXT("Iglin"), Error))
+		|| !TestTrue(TEXT("Relion places"), TrackChart->PlaceTown(FIntPoint(16, 12), TEXT("Relion"), Error))
+		|| !SurfacePoint(*this, *TrackChart, FIntPoint(8, 12), ForestPoint)
+		|| !TestTrue(TEXT("forest paints on the track"), TrackChart->SetPointRectangle(ForestPoint, ForestPoint, ESolidBiome::Forest))
+		|| !SurfacePoint(*this, *TrackChart, FIntPoint(12, 12), RiverPoint)
+		|| !TestTrue(TEXT("the river paints"), TrackChart->SetPointRectangle(
+			FIntPoint(RiverPoint.X, 0), FIntPoint(RiverPoint.X, USolidWorldChart::PointAxis - 1), ESolidBiome::River))
+		|| !SurfaceLoad(*this, TrackChart, Track, 1))
+	{
+		return false;
+	}
+
+	const FVector2D Grass = RoadTestCenter(*Track, 6, 12);
+	const FVector2D Forest = RoadTestCenter(*Track, 8, 12);
+	const float TrackHalf = SolidRoad::WidthCm(SolidRoad::EType::Track) * 0.5f;
+	TestEqual(TEXT("the cell under the track stays grass"),
+		static_cast<uint8>(Track->GetBiomeAtCell(6, 12)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+	TestEqual(TEXT("track centre uses the road texture"),
+		static_cast<uint8>(Track->SampleBiome(Grass.X, Grass.Y, RoadTestMin, RoadTestMax)),
+		static_cast<uint8>(ESolidBiome::Road));
+	TestEqual(TEXT("track rim is road"),
+		static_cast<uint8>(Track->SampleBiome(Grass.X, Grass.Y + TrackHalf - 10.f, RoadTestMin, RoadTestMax)),
+		static_cast<uint8>(ESolidBiome::Road));
+	TestEqual(TEXT("past the track is grass"),
+		static_cast<uint8>(Track->SampleBiome(Grass.X, Grass.Y + TrackHalf + 10.f, RoadTestMin, RoadTestMax)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+	TestEqual(TEXT("forest on the track uses the road texture"),
+		static_cast<uint8>(Track->SampleBiome(Forest.X, Forest.Y, RoadTestMin, RoadTestMax)),
+		static_cast<uint8>(ESolidBiome::Road));
+	TestFalse(TEXT("grass under a track is not a town"),
+		Track->IsMarkedTown(Grass.X, Grass.Y, RoadTestMin, RoadTestMax));
+	const FVector2D Iglin = RoadTestCenter(*Track, 4, 12);
+	TestTrue(TEXT("Iglin is a town"),
+		Track->IsMarkedTown(Iglin.X, Iglin.Y, RoadTestMin, RoadTestMax));
+
+	const FVector2D River = RoadTestCenter(*Track, 12, 12);
+	TestEqual(TEXT("the channel stays river"),
+		static_cast<uint8>(Track->SampleBiome(River.X, River.Y, RoadTestMin, RoadTestMax)),
+		static_cast<uint8>(ESolidBiome::River));
+	TestEqual(TEXT("the bank of a crossing uses the road texture"),
+		static_cast<uint8>(Track->SampleBiome(River.X + 400.f, River.Y, RoadTestMin, RoadTestMax)),
+		static_cast<uint8>(ESolidBiome::Road));
+
+	USolidWorldChart* CaveChart = nullptr;
+	USolidWorldChart* Cave = nullptr;
+	if (!SurfaceChart(*this, CaveChart)
+		|| !TestTrue(TEXT("the cave places"), CaveChart->PlaceStronghold(
+			FIntPoint(4, 8), ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon, Error))
+		|| !TestTrue(TEXT("Iglin places by the cave"), CaveChart->PlaceTown(FIntPoint(8, 8), TEXT("Iglin"), Error))
+		|| !SurfaceLoad(*this, CaveChart, Cave, 1))
 	{
 		return false;
 	}
@@ -563,58 +554,39 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	const FSolidStronghold MeagreDungeon(ESolidStrongholdType::Dungeon, ESolidStrongholdSize::Meagre);
 	ESolidBiome CaveShelf = ESolidBiome::Grassland;
 	TestTrue(TEXT("the cave names a shelf"), SolidStronghold::BiomeFor(MeagreDungeon, CaveShelf));
-	TestEqual(TEXT("the cave cell keeps its shelf"),
+	TestEqual(TEXT("the cave keeps its shelf"),
 		static_cast<uint8>(Cave->SampleBiome(CaveCell.X, CaveCell.Y, RoadTestMin, RoadTestMax)),
 		static_cast<uint8>(CaveShelf));
 	TestFalse(TEXT("the cave is not a town"),
 		Cave->IsMarkedTown(CaveCell.X, CaveCell.Y, RoadTestMin, RoadTestMax));
 
-	USolidWorldChart* Crossing = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("crossing map"), Crossing);
-	if (!RoadTestLoad(*this, *Crossing, RoadTestGrid({
-		{ 4, 16, USolidWorldChart::LocationMarker },
-		{ 10, 15, USolidWorldChart::RiverMarker },
-		{ 10, 16, USolidWorldChart::RiverMarker },
-		{ 10, 17, USolidWorldChart::RiverMarker },
-		{ 16, 16, USolidWorldChart::LocationMarker },
-	}, RoadTestNamed(4, 16, TEXT("Iglin"), 16, 16, TEXT("Relion"), TEXT("track")))))
+	USolidWorldChart* HighwayChart = nullptr;
+	USolidWorldChart* Highway = nullptr;
+	if (!SurfaceChart(*this, HighwayChart)
+		|| !TestTrue(TEXT("Relion places"), HighwayChart->PlaceTown(FIntPoint(8, 20), TEXT("Relion"), Error))
+		|| !TestTrue(TEXT("Kanfold places"), HighwayChart->PlaceTown(FIntPoint(16, 20), TEXT("Kanfold"), Error))
+		|| !SurfaceLoad(*this, HighwayChart, Highway, 1))
 	{
 		return false;
 	}
-	const FVector2D River = RoadTestCenter(*Crossing, 10, 16);
-	TestEqual(TEXT("the channel stays river"),
-		static_cast<uint8>(Crossing->SampleBiome(River.X, River.Y, RoadTestMin, RoadTestMax)),
-		static_cast<uint8>(ESolidBiome::River));
-	TestEqual(TEXT("the bank of a crossing uses the road texture"),
-		static_cast<uint8>(Crossing->SampleBiome(River.X + 400.f, River.Y, RoadTestMin, RoadTestMax)),
-		static_cast<uint8>(ESolidBiome::Road));
-
-	USolidWorldChart* Highway = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("highway map"), Highway);
-	if (!RoadTestLoad(*this, *Highway, RoadTestGrid({
-		{ 8, 20, USolidWorldChart::LocationMarker },
-		{ 12, 20, USolidWorldChart::LocationMarker },
-	}, RoadTestNamed(8, 20, TEXT("Iglin"), 12, 20, TEXT("Relion"), TEXT("highway")))))
-	{
-		return false;
-	}
-	const FVector2D Wide = RoadTestCenter(*Highway, 10, 20);
+	const FVector2D Wide = RoadTestCenter(*Highway, 12, 20);
+	const float HighwayHalf = SolidRoad::WidthCm(SolidRoad::EType::Highway) * 0.5f;
 	TestEqual(TEXT("inside a highway"),
-		static_cast<uint8>(Highway->SampleBiome(Wide.X, Wide.Y + 190.f, RoadTestMin, RoadTestMax)),
+		static_cast<uint8>(Highway->SampleBiome(Wide.X, Wide.Y + HighwayHalf - 10.f, RoadTestMin, RoadTestMax)),
 		static_cast<uint8>(ESolidBiome::Road));
 	TestEqual(TEXT("outside a highway"),
-		static_cast<uint8>(Highway->SampleBiome(Wide.X, Wide.Y + 220.f, RoadTestMin, RoadTestMax)),
+		static_cast<uint8>(Highway->SampleBiome(Wide.X, Wide.Y + HighwayHalf + 20.f, RoadTestMin, RoadTestMax)),
 		static_cast<uint8>(ESolidBiome::Grassland));
 
-	USolidWorldChart* Missing = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("missing map"), Missing);
-	if (!RoadTestLoad(*this, *Missing, RoadTestGrid({
-		{ 4, 4, USolidWorldChart::LocationMarker },
-	}, TEXT("! 5,5 = Town Iglin\nRoad: Iglin -> Nowhere, trail\n"))))
+	USolidWorldChart* LoneChart = nullptr;
+	USolidWorldChart* Lone = nullptr;
+	if (!SurfaceChart(*this, LoneChart)
+		|| !TestTrue(TEXT("Iglin places alone"), LoneChart->PlaceTown(FIntPoint(4, 4), TEXT("Iglin"), Error))
+		|| !SurfaceLoad(*this, LoneChart, Lone, 0))
 	{
 		return false;
 	}
-	TestEqual(TEXT("an unknown end is ignored"), Missing->GetRoads().Num(), 0);
+	TestEqual(TEXT("a road needs both ends"), Lone->GetRoads().Num(), 0);
 	return true;
 }
 

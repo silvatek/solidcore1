@@ -521,6 +521,204 @@ namespace SolidRoad
 			return false;
 		}
 
+		bool RiverAxis(const USolidWorldChart& Map, const FIntPoint& Point, FIntPoint& OutAlong, FIntPoint& OutAcross)
+		{
+			const int32 AlongY = (RiverPoint(Map, Point.X, Point.Y + 1) ? 1 : 0) + (RiverPoint(Map, Point.X, Point.Y - 1) ? 1 : 0);
+			const int32 AlongX = (RiverPoint(Map, Point.X + 1, Point.Y) ? 1 : 0) + (RiverPoint(Map, Point.X - 1, Point.Y) ? 1 : 0);
+			if (AlongX > AlongY)
+			{
+				OutAlong = FIntPoint(1, 0);
+				OutAcross = FIntPoint(0, 1);
+				return true;
+			}
+			if (AlongY > AlongX)
+			{
+				OutAlong = FIntPoint(0, 1);
+				OutAcross = FIntPoint(1, 0);
+				return true;
+			}
+			return false;
+		}
+
+		bool FindRiverBank(
+			const USolidWorldChart& Map,
+			const FIntPoint& Anchor,
+			const FIntPoint& Dir,
+			FIntPoint& OutBank)
+		{
+			FIntPoint Here = Anchor;
+			for (int32 Step = 0; Step < 6; ++Step)
+			{
+				const FIntPoint Next = Here + Dir;
+				if (!OnTerrainPoint(Next))
+				{
+					return false;
+				}
+				if (!RiverPoint(Map, Next.X, Next.Y))
+				{
+					OutBank = Next;
+					return true;
+				}
+				Here = Next;
+			}
+			return false;
+		}
+
+		/** A river run is a crossing at 90 degrees. Slide along the channel when the hit is beside the sea. */
+		bool CrossRiver(
+			const USolidWorldChart& Map,
+			const EType Type,
+			const TArray<FIntPoint>& Line,
+			const int32 First,
+			const int32 Last,
+			TArray<FIntPoint>& OutPoints)
+		{
+			if (First < 1 || Last + 1 >= Line.Num())
+			{
+				return false;
+			}
+
+			FIntPoint Along = FIntPoint::ZeroValue;
+			FIntPoint Across = FIntPoint::ZeroValue;
+			FIntPoint Hit = FIntPoint::ZeroValue;
+			bool bAxis = false;
+			for (int32 Index = First; Index <= Last; ++Index)
+			{
+				if (Map.GetPointBiome(Line[Index]) != ESolidBiome::River)
+				{
+					return false;
+				}
+				if (!bAxis && RiverAxis(Map, Line[Index], Along, Across))
+				{
+					Hit = Line[Index];
+					bAxis = true;
+				}
+			}
+			if (!bAxis)
+			{
+				return false;
+			}
+
+			const FIntPoint Before = Line[First - 1];
+			const FIntPoint After = Line[Last + 1];
+			const auto StepsBetween = [](const FIntPoint& A, const FIntPoint& B)
+			{
+				return FMath::Abs(A.X - B.X) + FMath::Abs(A.Y - B.Y);
+			};
+
+			for (int32 Slide = 0; Slide <= DetourReach; ++Slide)
+			{
+				for (int32 Sign = 1; Sign >= -1; Sign -= 2)
+				{
+					if (Slide == 0 && Sign < 0)
+					{
+						continue;
+					}
+					const FIntPoint Anchor = Hit + Along * (Sign * Slide);
+					if (!OnTerrainPoint(Anchor) || !RiverPoint(Map, Anchor.X, Anchor.Y))
+					{
+						continue;
+					}
+					FIntPoint BankA = FIntPoint::ZeroValue;
+					FIntPoint BankB = FIntPoint::ZeroValue;
+					if (!FindRiverBank(Map, Anchor, -Across, BankA) || !FindRiverBank(Map, Anchor, Across, BankB))
+					{
+						continue;
+					}
+
+					TArray<FIntPoint> Crossing;
+					Crossing.Add(BankA);
+					FIntPoint Here = BankA;
+					bool bReached = false;
+					for (int32 Step = 0; Step < 8; ++Step)
+					{
+						const FIntPoint Next = Here + Across;
+						if (!OnTerrainPoint(Next) || !LineStepAllowed(Map, Type, Here, Next))
+						{
+							break;
+						}
+						Crossing.Add(Next);
+						if (Next == BankB)
+						{
+							bReached = true;
+							break;
+						}
+						Here = Next;
+					}
+					if (!bReached)
+					{
+						continue;
+					}
+
+					const FIntPoint Near = StepsBetween(Before, BankA) <= StepsBetween(Before, BankB) ? BankA : BankB;
+					const FIntPoint Far = Near == BankA ? BankB : BankA;
+					if (StepsBetween(After, Far) >= StepsBetween(After, Near))
+					{
+						continue;
+					}
+
+					auto OpenTo = [&Map, Type](const FIntPoint& From, const FIntPoint& To) -> bool
+					{
+						if (From == To)
+						{
+							return true;
+						}
+						TArray<FIntPoint> Segment;
+						TerrainLine(From, To, Segment);
+						for (int32 Index = 1; Index < Segment.Num(); ++Index)
+						{
+							if (!LineStepAllowed(Map, Type, Segment[Index - 1], Segment[Index]))
+							{
+								return false;
+							}
+						}
+						return true;
+					};
+					if (!OpenTo(Before, Near) || !OpenTo(Far, After))
+					{
+						continue;
+					}
+
+					OutPoints.Reset();
+					for (int32 Index = 0; Index < First; ++Index)
+					{
+						OutPoints.Add(Line[Index]);
+					}
+					auto AppendLine = [&OutPoints](const FIntPoint& From, const FIntPoint& To)
+					{
+						if (From == To)
+						{
+							return;
+						}
+						TArray<FIntPoint> Segment;
+						TerrainLine(From, To, Segment);
+						for (int32 Index = 1; Index < Segment.Num(); ++Index)
+						{
+							OutPoints.Add(Segment[Index]);
+						}
+					};
+					AppendLine(Before, Near);
+					const int32 Start = Crossing[0] == Near ? 1 : Crossing.Num() - 2;
+					const int32 Step = Crossing[0] == Near ? 1 : -1;
+					const int32 Stop = Crossing[0] == Near ? Crossing.Num() : -1;
+					for (int32 Index = Start; Index != Stop; Index += Step)
+					{
+						if (OutPoints.Num() == 0 || OutPoints.Last() != Crossing[Index])
+						{
+							OutPoints.Add(Crossing[Index]);
+						}
+					}
+					AppendLine(Far, After);
+					for (int32 Index = Last + 2; Index < Line.Num(); ++Index)
+					{
+						OutPoints.Add(Line[Index]);
+					}
+					return OutPoints.Num() > 1;
+				}
+			}
+			return false;
+		}
+
 		bool StraightRunAllowed(
 			const USolidWorldChart& Map,
 			const EType Type,
@@ -654,7 +852,8 @@ namespace SolidRoad
 			}
 
 			const TArray<FIntPoint> Line = Points;
-			if (!DetourAroundPatch(Map, Type, Line, Blocked[0], Last, Points))
+			if (!CrossRiver(Map, Type, Line, Blocked[0], Last, Points)
+				&& !DetourAroundPatch(Map, Type, Line, Blocked[0], Last, Points))
 			{
 				Points.Reset();
 				return false;

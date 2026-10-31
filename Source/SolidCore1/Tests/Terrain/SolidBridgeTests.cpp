@@ -1,6 +1,7 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
 #include "SolidBridge.h"
+#include "SolidBridges.h"
 #include "SolidRoad.h"
 #include "SolidWorldChart.h"
 
@@ -338,6 +339,57 @@ bool FSolidBridgeAxisTest::RunTest(const FString& Parameters)
 	{
 		TestTrue(TEXT("a routed bridge is straight on one axis"), BridgeOnOneAxis(Bridge));
 	}
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBridgeDefinitionsTest,
+	"SolidCore1.Bridge.Definitions",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBridgeDefinitionsTest::RunTest(const FString& Parameters)
+{
+	TestEqual(TEXT("three bridges"), SolidBridge::DefinitionCount, 3);
+	if (SolidBridge::DefinitionCount < 3)
+	{
+		return false;
+	}
+
+	const SolidBridge::FBridgeMarker& Iglin = SolidBridge::Bridges[0];
+	TestEqual(TEXT("Iglin Bridge"), FString(Iglin.Name), FString(TEXT("Iglin Bridge")));
+	TestEqual(TEXT("Iglin is 18 m"), Iglin.LengthCm, 1800.f);
+	TestEqual(
+		TEXT("Iglin is east-west"),
+		static_cast<uint8>(Iglin.Orientation),
+		static_cast<uint8>(SolidBridge::EOrientation::EastWest));
+	TestEqual(
+		TEXT("Iglin is broken"),
+		static_cast<uint8>(Iglin.State),
+		static_cast<uint8>(SolidBridge::EInitialState::Broken));
+
+	const SolidBridge::FBridgeMarker& Jethan = SolidBridge::Bridges[1];
+	TestEqual(TEXT("Jethan Bridge"), FString(Jethan.Name), FString(TEXT("Jethan Bridge")));
+	TestEqual(TEXT("Jethan is 18 m"), Jethan.LengthCm, 1800.f);
+	TestEqual(
+		TEXT("Jethan is north-south"),
+		static_cast<uint8>(Jethan.Orientation),
+		static_cast<uint8>(SolidBridge::EOrientation::NorthSouth));
+	TestEqual(
+		TEXT("Jethan is intact"),
+		static_cast<uint8>(Jethan.State),
+		static_cast<uint8>(SolidBridge::EInitialState::Intact));
+
+	const SolidBridge::FBridgeMarker& Rathen = SolidBridge::Bridges[2];
+	TestEqual(TEXT("Rathen Bridge"), FString(Rathen.Name), FString(TEXT("Rathen Bridge")));
+	TestEqual(TEXT("Rathen is 18 m"), Rathen.LengthCm, 1800.f);
+	TestEqual(
+		TEXT("Rathen is north-south"),
+		static_cast<uint8>(Rathen.Orientation),
+		static_cast<uint8>(SolidBridge::EOrientation::NorthSouth));
+	TestEqual(
+		TEXT("Rathen is intact"),
+		static_cast<uint8>(Rathen.State),
+		static_cast<uint8>(SolidBridge::EInitialState::Intact));
 	return true;
 }
 

@@ -42,6 +42,39 @@ namespace SolidBridge
 		return FLinearColor(0.36f, 0.23f, 0.12f);
 	}
 
+	enum class EOrientation : uint8
+	{
+		NorthSouth,
+		EastWest,
+	};
+
+	enum class EInitialState : uint8
+	{
+		Broken,
+		Intact,
+	};
+
+	/** One bridge marker. The chart places its centre. 18 m is the level-bank span, ramps included. */
+	struct FBridgeMarker
+	{
+		FBridgeMarker(
+			const TCHAR* InName,
+			float InLengthCm,
+			EOrientation InOrientation,
+			EInitialState InState)
+			: Name(InName)
+			, LengthCm(InLengthCm)
+			, Orientation(InOrientation)
+			, State(InState)
+		{
+		}
+
+		const TCHAR* Name = TEXT("");
+		float LengthCm = 1800.f;
+		EOrientation Orientation = EOrientation::EastWest;
+		EInitialState State = EInitialState::Broken;
+	};
+
 	/**
 	 * One crossing, in world centimetres.
 	 * Deck, RampFrom, and RampTo are centerlines. Z is the walking surface.

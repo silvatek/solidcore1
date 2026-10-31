@@ -13,7 +13,8 @@ class UStaticMeshComponent;
  * Three pieces: a ramp, a flat center, and a ramp. The center is its own mesh.
  * A broken bridge leaves that mesh out. Each ramp is capped at the gap, and nothing can cross.
  * The center is as wide as that road and as long as the water it crosses.
- * A routed bridge is moved two terrain points north onto the road. East-west is unchanged.
+ * A routed bridge runs straight, east-west or north-south, on the deck's axis.
+ * It is moved two terrain points north. Its east-west position is unchanged.
  * Each ramp runs down to its own bank and continues into the ground.
  * Local offsets are centimetres. +X is west, +Y is north.
  */

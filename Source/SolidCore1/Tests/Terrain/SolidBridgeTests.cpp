@@ -88,6 +88,45 @@ namespace
 		return true;
 	}
 
+	bool BridgeOnOneAxis(const SolidBridge::FBridge& Bridge)
+	{
+		TArray<FVector> Points;
+		Points.Append(Bridge.Deck);
+		Points.Append(Bridge.RampFrom);
+		Points.Append(Bridge.RampTo);
+		if (Points.Num() < 2)
+		{
+			return false;
+		}
+		float MinX = Points[0].X;
+		float MaxX = MinX;
+		float MinY = Points[0].Y;
+		float MaxY = MinY;
+		for (const FVector& Point : Points)
+		{
+			MinX = FMath::Min(MinX, Point.X);
+			MaxX = FMath::Max(MaxX, Point.X);
+			MinY = FMath::Min(MinY, Point.Y);
+			MaxY = FMath::Max(MaxY, Point.Y);
+		}
+		const bool bEastWest = (MaxX - MinX) >= (MaxY - MinY);
+		const float Lock = bEastWest ? Points[0].Y : Points[0].X;
+		const float Span = bEastWest ? (MaxX - MinX) : (MaxY - MinY);
+		if (Span <= 1.f)
+		{
+			return false;
+		}
+		for (const FVector& Point : Points)
+		{
+			const float Value = bEastWest ? Point.Y : Point.X;
+			if (!FMath::IsNearlyEqual(Value, Lock, 1.f))
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
 	bool BridgeBuried(const TArray<FVector>& Ramp, const TFunction<float(float, float)>& HeightAt)
 	{
 		if (Ramp.Num() < 2)
@@ -386,6 +425,42 @@ bool FSolidBridgeBrokenTest::RunTest(const FString& Parameters)
 	Actor->SetBroken(false);
 	TestFalse(TEXT("repair restores the span"), Actor->GetBridge().bBroken);
 	TestTrue(TEXT("repair still knows the Iglin bridge"), Actor->GetBridge().bIglinRelion);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBridgeAxisTest,
+	"SolidCore1.Bridge.Axis",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBridgeAxisTest::RunTest(const FString& Parameters)
+{
+	const USolidWorldChart* Shipped = LoadObject<USolidWorldChart>(nullptr, USolidWorldChart::ShippedPath());
+	TestNotNull(TEXT("shipped chart"), Shipped);
+	if (!Shipped)
+	{
+		return false;
+	}
+
+	USolidWorldChart* Loaded = NewObject<USolidWorldChart>();
+	TestNotNull(TEXT("loaded chart"), Loaded);
+	if (!Loaded || !TestTrue(TEXT("the chart loads"), Loaded->LoadFromChart(Shipped)))
+	{
+		return false;
+	}
+	TestTrue(TEXT("the chart has a routed road"), Loaded->GetRoutedRoads().Num() > 0);
+
+	FVector2D WorldMin = FVector2D::ZeroVector;
+	FVector2D WorldMax = FVector2D::ZeroVector;
+	USolidWorldChart::DefaultWorldBounds(WorldMin, WorldMax);
+	const auto Height = [](float, float) { return 100.f; };
+	TArray<SolidBridge::FBridge> Bridges;
+	TestTrue(TEXT("a routed chart has a bridge"),
+		SolidBridge::Collect(*Loaded, WorldMin, WorldMax, Height, Bridges) > 0);
+	for (const SolidBridge::FBridge& Bridge : Bridges)
+	{
+		TestTrue(TEXT("a routed bridge is straight on one axis"), BridgeOnOneAxis(Bridge));
+	}
 	return true;
 }
 

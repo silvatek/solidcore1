@@ -390,6 +390,84 @@ namespace
 			|| (From == SolidTowns::Relion && To == SolidTowns::Iglin);
 	}
 
+	/** One cross-axis value, the middle of the deck's values on that axis. */
+	float DeckCrossAxis(const TArray<FVector>& Deck, const bool bEastWest)
+	{
+		TArray<float> Values;
+		Values.Reserve(Deck.Num());
+		for (const FVector& Point : Deck)
+		{
+			Values.Add(bEastWest ? Point.Y : Point.X);
+		}
+		Values.Sort();
+		return Values[Values.Num() / 2];
+	}
+
+	/** Drop a later point that sits on the same plan position. */
+	void DropStacked(TArray<FVector>& Line)
+	{
+		if (Line.Num() < 2)
+		{
+			return;
+		}
+		int32 Write = 1;
+		for (int32 Index = 1; Index < Line.Num(); ++Index)
+		{
+			const FVector& Prev = Line[Write - 1];
+			if (FMath::Abs(Line[Index].X - Prev.X) < 1.f && FMath::Abs(Line[Index].Y - Prev.Y) < 1.f)
+			{
+				continue;
+			}
+			Line[Write] = Line[Index];
+			++Write;
+		}
+		Line.SetNum(Write);
+	}
+
+	/**
+	 * A routed centerline follows the road, and that road may bend onto the crossing.
+	 * The deck's longer span is the bridge axis. Every point keeps its place along that
+	 * axis and takes the deck's cross-axis value, so the ramps and the deck are one straight run.
+	 */
+	void Straighten(SolidBridge::FBridge& Bridge)
+	{
+		if (Bridge.Deck.Num() < 2)
+		{
+			return;
+		}
+		float MinX = Bridge.Deck[0].X;
+		float MaxX = MinX;
+		float MinY = Bridge.Deck[0].Y;
+		float MaxY = MinY;
+		for (const FVector& Point : Bridge.Deck)
+		{
+			MinX = FMath::Min(MinX, Point.X);
+			MaxX = FMath::Max(MaxX, Point.X);
+			MinY = FMath::Min(MinY, Point.Y);
+			MaxY = FMath::Max(MaxY, Point.Y);
+		}
+		const bool bEastWest = (MaxX - MinX) >= (MaxY - MinY);
+		const float Lock = DeckCrossAxis(Bridge.Deck, bEastWest);
+		auto Snap = [bEastWest, Lock](TArray<FVector>& Line)
+		{
+			for (FVector& Point : Line)
+			{
+				if (bEastWest)
+				{
+					Point.Y = Lock;
+				}
+				else
+				{
+					Point.X = Lock;
+				}
+			}
+			DropStacked(Line);
+		};
+		Snap(Bridge.Deck);
+		Snap(Bridge.RampFrom);
+		Snap(Bridge.RampTo);
+	}
+
 	/** Intact center. A broken bridge does not build this mesh. */
 	UStaticMesh* BuildIntactDeckMesh(UObject* Outer, const SolidBridge::FBridge& Bridge, const FVector& Origin)
 	{
@@ -718,7 +796,14 @@ int32 SolidBridge::Collect(
 				Shift(Bridge.Deck);
 				Shift(Bridge.RampFrom);
 				Shift(Bridge.RampTo);
-				Out.Add(MoveTemp(Bridge));
+				if (Crossing.bRouted)
+				{
+					Straighten(Bridge);
+				}
+				if (Bridge.Deck.Num() >= 2 && Bridge.RampFrom.Num() >= 2 && Bridge.RampTo.Num() >= 2)
+				{
+					Out.Add(MoveTemp(Bridge));
+				}
 			}
 		}
 	}

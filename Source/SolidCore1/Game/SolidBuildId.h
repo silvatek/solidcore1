@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0845")
+#define SOLID_BUILD_ID TEXT("SC1-0846")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The bridge moves two terrain points north.")
+#define SOLID_BUILD_NOTE TEXT("A routed bridge runs straight east-west or north-south.")
 #endif

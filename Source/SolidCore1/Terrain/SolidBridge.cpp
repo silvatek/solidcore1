@@ -503,79 +503,8 @@ bool SolidBridge::Stand(
 		return Map && Map->SampleBiome(P.X, P.Y, WorldMinXY, WorldMaxXY) == ESolidBiome::River;
 	};
 
-	float Span0 = -DeckHalf;
-	float Span1 = DeckHalf;
-	if (Map)
-	{
-		struct FRun
-		{
-			float A = 0.f;
-			float B = 0.f;
-		};
-		TArray<FRun> Runs;
-		bool bIn = false;
-		float RunStart = 0.f;
-		const float Search = 4000.f;
-		for (float D = -Search; D <= Search + 0.1f; D += SampleStepCm)
-		{
-			const bool bWet = IsWet(CentreCm + Axis * D);
-			if (bWet && !bIn)
-			{
-				bIn = true;
-				RunStart = D;
-			}
-			else if (!bWet && bIn)
-			{
-				bIn = false;
-				if (Runs.Num() > 0 && RunStart - Runs.Last().B < SolidRiver::WidthCm)
-				{
-					Runs.Last().B = D;
-				}
-				else
-				{
-					Runs.Add({ RunStart, D });
-				}
-			}
-		}
-		if (bIn)
-		{
-			if (Runs.Num() > 0 && RunStart - Runs.Last().B < SolidRiver::WidthCm)
-			{
-				Runs.Last().B = Search;
-			}
-			else
-			{
-				Runs.Add({ RunStart, Search });
-			}
-		}
-
-		float BestDist = TNumericLimits<float>::Max();
-		float Water0 = 0.f;
-		float Water1 = 0.f;
-		bool bFound = false;
-		for (const FRun& Run : Runs)
-		{
-			const float Dist = Run.A > 0.f ? Run.A : (Run.B < 0.f ? -Run.B : 0.f);
-			if (Dist < BestDist)
-			{
-				BestDist = Dist;
-				Water0 = Run.A;
-				Water1 = Run.B;
-				bFound = true;
-			}
-		}
-		if (bFound)
-		{
-			Span0 = Water0 - BankRestCm;
-			Span1 = Water1 + BankRestCm;
-			if (Span1 - Span0 > DeckLen)
-			{
-				const float CentreAlong = 0.f < Water0 ? Water0 : (0.f > Water1 ? Water1 : 0.f);
-				Span0 = CentreAlong - DeckHalf;
-				Span1 = CentreAlong + DeckHalf;
-			}
-		}
-	}
+	const float Span0 = -DeckHalf;
+	const float Span1 = DeckHalf;
 	const float SpanLen = Span1 - Span0;
 
 	float Highest = -TNumericLimits<float>::Max();
@@ -648,19 +577,6 @@ bool SolidBridge::Stand(
 
 	BuildRamp(Span0, -1.f, Out.RampFrom);
 	BuildRamp(Span1, 1.f, Out.RampTo);
-
-	const FVector2D Paint = SolidRoad::StripPaintOffset();
-	auto Shift = [Paint](TArray<FVector>& Line)
-	{
-		for (FVector& PointOnLine : Line)
-		{
-			PointOnLine.X += Paint.X;
-			PointOnLine.Y += Paint.Y;
-		}
-	};
-	Shift(Out.Deck);
-	Shift(Out.RampFrom);
-	Shift(Out.RampTo);
 
 	Out.WidthCm = WidthCm;
 	Out.bBroken = Marker.State == EInitialState::Broken;

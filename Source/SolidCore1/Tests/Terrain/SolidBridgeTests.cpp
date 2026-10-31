@@ -403,7 +403,6 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 {
 	const FVector2D Centre(1000.f, 2000.f);
-	const FVector2D Paint = SolidRoad::StripPaintOffset();
 	const auto Height = [](float, float) { return 100.f; };
 	const float DeckLen = SolidRiver::WidthCm + 2.f * SolidBridge::BankRestCm;
 	const float Width = SolidRoad::WidthCm(SolidRoad::EType::Track);
@@ -424,7 +423,7 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Iglin runs east-west"), BridgeOnOneAxis(Iglin));
 	const FVector IglinMid = (Iglin.Deck[0] + Iglin.Deck.Last()) * 0.5f;
 	TestTrue(TEXT("Iglin is centred on the marker"),
-		FVector2D(IglinMid.X, IglinMid.Y).Equals(Centre + Paint, 1.f));
+		FVector2D(IglinMid.X, IglinMid.Y).Equals(Centre, 1.f));
 	TestTrue(TEXT("Iglin's span stays on one east-west line"),
 		FMath::IsNearlyEqual(Iglin.Deck[0].Y, Iglin.Deck.Last().Y, 1.f)
 		&& FMath::Abs(Iglin.Deck[0].X - Iglin.Deck.Last().X) > 100.f);
@@ -486,14 +485,17 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 				BoundsMin,
 				BoundsMax)))
 	{
+		const FVector2D Mark = Chart->Marks[MarkIndex].PositionCm;
 		const FVector DeckMid = (OverWater.Deck[0] + OverWater.Deck.Last()) * 0.5f;
-		TestTrue(TEXT("the centre sits on the river"),
-			FMath::Abs(DeckMid.X - RiverCentre.X) < SolidRiver::WidthCm
-			&& FMath::Abs(DeckMid.Y - RiverCentre.Y) < SolidRiver::WidthCm);
-		TestTrue(TEXT("the centre clears the water"),
-			OverWater.Deck[0].Z >= 100.f + SolidBridge::MinClearanceCm + SolidBridge::ThicknessCm - 0.1f);
-		TestTrue(TEXT("the ramps leave the centre for the banks"),
-			BridgeBuried(OverWater.RampFrom, Height) && BridgeBuried(OverWater.RampTo, Height));
+		TestTrue(TEXT("the centre span is the marker"),
+			FVector2D(DeckMid.X, DeckMid.Y).Equals(Mark, 1.f));
+		TestTrue(TEXT("the span stays east-west beside the river"),
+			FMath::IsNearlyEqual(OverWater.Deck[0].Y, Mark.Y, 1.f)
+			&& FMath::Abs(OverWater.Deck[0].X - OverWater.Deck.Last().X) > 100.f);
+		TestTrue(TEXT("the ramps leave that span"),
+			OverWater.RampFrom[0].Equals(OverWater.Deck[0], 1.f)
+			&& OverWater.RampTo[0].Equals(OverWater.Deck.Last(), 1.f));
+		TestTrue(TEXT("Iglin starts with the centre removed"), OverWater.bBroken);
 	}
 
 	TArray<SolidBridge::FBridge> Marked;

@@ -109,9 +109,9 @@ namespace SolidBridge
 
 	/**
 	 * The bridge that stands at a marker.
-	 * CentreCm is the centre of the span. Length, orientation, and the initial state come from Marker.
-	 * The flat centre sits on the river nearest the mark, the channel plus a rest on each bank.
-	 * It clears that water and the ground under it. Each ramp runs down into its bank and continues into the ground.
+	 * CentreCm is the centre of the flat span. The span is aligned to the marker's orientation.
+	 * Each ramp leaves one end of that span on the same line and runs down into the ground.
+	 * A broken bridge keeps the ramps and does not draw the centre.
 	 * HeightAt returns the terrain surface in centimetres at a world XY.
 	 * @return False when there is no height, no width, or no length.
 	 */

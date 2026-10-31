@@ -20,7 +20,7 @@ namespace
 		return Text;
 	}
 
-	USolidWorldChart* GrassChart()
+	USolidWorldChart* PaintGrassChart()
 	{
 		USolidWorldChart* Chart = NewObject<USolidWorldChart>();
 		if (Chart)
@@ -38,7 +38,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 {
-	USolidWorldChart* Chart = GrassChart();
+	USolidWorldChart* Chart = PaintGrassChart();
 	if (!TestNotNull(TEXT("grass chart"), Chart)
 		|| !TestTrue(TEXT("the chart covers the map"), Chart->Cells.Num() == USolidWorldChart::MapWidth * USolidWorldChart::MapHeight))
 	{
@@ -261,7 +261,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidWorldChartEncounterTest::RunTest(const FString& Parameters)
 {
 	const FString Grid = PaintGrid();
-	USolidWorldChart* Chart = GrassChart();
+	USolidWorldChart* Chart = PaintGrassChart();
 	if (!TestNotNull(TEXT("grass chart"), Chart))
 	{
 		return false;
@@ -365,7 +365,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidWorldChartPlaceMovesTest::RunTest(const FString& Parameters)
 {
-	USolidWorldChart* Chart = GrassChart();
+	USolidWorldChart* Chart = PaintGrassChart();
 	if (!TestNotNull(TEXT("grass chart"), Chart))
 	{
 		return false;

@@ -370,6 +370,9 @@ namespace SolidRoad
 			FIntPoint(-1, -1),
 		};
 
+		/** Rings around one banned run. Another ring would leave that patch. */
+		constexpr int32 DetourReach = 8;
+
 		bool DetourAroundPatch(
 			const USolidWorldChart& Map,
 			const EType Type,
@@ -386,84 +389,103 @@ namespace SolidRoad
 			const FIntPoint Before = Line[First - 1];
 			const FIntPoint After = Line[Last + 1];
 			TSet<int32> Banned;
-			TSet<int32> Beside;
+			TArray<FIntPoint> Frontier;
 			for (int32 Index = First; Index <= Last; ++Index)
 			{
 				Banned.Add(PointKey(Line[Index]));
-			}
-			for (int32 Index = First; Index <= Last; ++Index)
-			{
-				for (const FIntPoint& Step : PointSteps)
-				{
-					const FIntPoint Side = Line[Index] + Step;
-					if (!OnTerrainPoint(Side) || Banned.Contains(PointKey(Side)))
-					{
-						continue;
-					}
-					Beside.Add(PointKey(Side));
-				}
-			}
-			Beside.Add(PointKey(Before));
-			Beside.Add(PointKey(After));
-
-			TArray<FIntPoint> Queue;
-			TMap<int32, int32> CameFrom;
-			Queue.Add(Before);
-			CameFrom.Add(PointKey(Before), INDEX_NONE);
-			bool bFound = false;
-			for (int32 Index = 0; Index < Queue.Num(); ++Index)
-			{
-				const FIntPoint Here = Queue[Index];
-				if (Here == After)
-				{
-					bFound = true;
-					break;
-				}
-				for (const FIntPoint& Step : PointSteps)
-				{
-					const FIntPoint Next = Here + Step;
-					if (!OnTerrainPoint(Next))
-					{
-						continue;
-					}
-					const int32 Key = PointKey(Next);
-					if (!Beside.Contains(Key) || CameFrom.Contains(Key) || !LineStepAllowed(Map, Type, Here, Next))
-					{
-						continue;
-					}
-					CameFrom.Add(Key, PointKey(Here));
-					Queue.Add(Next);
-				}
-			}
-			if (!bFound)
-			{
-				return false;
+				Frontier.Add(Line[Index]);
 			}
 
-			TArray<FIntPoint> Reversed;
-			for (int32 Key = PointKey(After); Key != INDEX_NONE; Key = CameFrom[Key])
+			TSet<int32> Beside;
+			for (int32 Ring = 0; Ring < DetourReach; ++Ring)
 			{
-				Reversed.Add(FIntPoint(Key % USolidWorldChart::PointAxis, Key / USolidWorldChart::PointAxis));
-				if (Reversed.Num() > Beside.Num())
+				TArray<FIntPoint> Grown;
+				for (const FIntPoint& Point : Frontier)
+				{
+					for (const FIntPoint& Step : PointSteps)
+					{
+						const FIntPoint Side = Point + Step;
+						if (!OnTerrainPoint(Side))
+						{
+							continue;
+						}
+						const int32 Key = PointKey(Side);
+						if (Banned.Contains(Key) || Beside.Contains(Key))
+						{
+							continue;
+						}
+						Beside.Add(Key);
+						Grown.Add(Side);
+					}
+				}
+				if (Grown.Num() == 0)
 				{
 					return false;
 				}
-			}
+				Frontier = Grown;
+				Beside.Add(PointKey(Before));
+				Beside.Add(PointKey(After));
 
-			OutPoints.Reset();
-			for (int32 Index = 0; Index < First; ++Index)
-			{
-				OutPoints.Add(Line[Index]);
+				TArray<FIntPoint> Queue;
+				TMap<int32, int32> CameFrom;
+				Queue.Add(Before);
+				CameFrom.Add(PointKey(Before), INDEX_NONE);
+				bool bFound = false;
+				for (int32 Index = 0; Index < Queue.Num(); ++Index)
+				{
+					const FIntPoint Here = Queue[Index];
+					if (Here == After)
+					{
+						bFound = true;
+						break;
+					}
+					for (const FIntPoint& Step : PointSteps)
+					{
+						const FIntPoint Next = Here + Step;
+						if (!OnTerrainPoint(Next))
+						{
+							continue;
+						}
+						const int32 Key = PointKey(Next);
+						if (!Beside.Contains(Key) || CameFrom.Contains(Key) || !LineStepAllowed(Map, Type, Here, Next))
+						{
+							continue;
+						}
+						CameFrom.Add(Key, PointKey(Here));
+						Queue.Add(Next);
+					}
+				}
+				if (!bFound)
+				{
+					continue;
+				}
+
+				TArray<FIntPoint> Reversed;
+				for (int32 Key = PointKey(After); Key != INDEX_NONE; Key = CameFrom[Key])
+				{
+					Reversed.Add(FIntPoint(Key % USolidWorldChart::PointAxis, Key / USolidWorldChart::PointAxis));
+					if (Reversed.Num() > Beside.Num())
+					{
+						return false;
+					}
+				}
+
+				OutPoints.Reset();
+				for (int32 Index = 0; Index < First; ++Index)
+				{
+					OutPoints.Add(Line[Index]);
+				}
+				for (int32 Index = Reversed.Num() - 2; Index >= 0; --Index)
+				{
+					OutPoints.Add(Reversed[Index]);
+				}
+				for (int32 Index = Last + 2; Index < Line.Num(); ++Index)
+				{
+					OutPoints.Add(Line[Index]);
+				}
+				return OutPoints.Num() > 1;
 			}
-			for (int32 Index = Reversed.Num() - 2; Index >= 0; --Index)
-			{
-				OutPoints.Add(Reversed[Index]);
-			}
-			for (int32 Index = Last + 2; Index < Line.Num(); ++Index)
-			{
-				OutPoints.Add(Line[Index]);
-			}
-			return OutPoints.Num() > 1;
+			return false;
 		}
 
 		bool OpenStraightLine(

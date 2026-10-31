@@ -204,10 +204,7 @@ bool FSolidRoadNamedEndTest::RunTest(const FString& Parameters)
 	const int32 TownCol = 8;
 	const int32 TownRow = 8;
 	USolidWorldChart* Map = NewObject<USolidWorldChart>();
-	if (!TestNotNull(TEXT("named map"), Map))
-	{
-		return false;
-	}
+	UTEST_NOT_NULL(TEXT("named map"), Map);
 	Map->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
 	FString Error;
 	const FString CaveName = SolidStronghold::Label(ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon);

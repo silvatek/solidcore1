@@ -171,6 +171,10 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Bridge")
 	TObjectPtr<UStaticMeshComponent> RampToMesh;
 
+	/** Stands on the bridge point so play can see where the marker is. */
+	UPROPERTY(VisibleAnywhere, Category = "Bridge")
+	TObjectPtr<UStaticMeshComponent> PoleMesh;
+
 private:
 	SolidBridge::FBridge Bridge;
 	bool bHasBridge = false;

@@ -977,6 +977,11 @@ ASolidBridge::ASolidBridge()
 	RampToMesh->SetCollisionEnabled(ECollisionEnabled::QueryAndPhysics);
 	RampToMesh->SetCollisionResponseToAllChannels(ECR_Block);
 	RampToMesh->SetCastShadow(true);
+
+	PoleMesh = CreateDefaultSubobject<UStaticMeshComponent>(TEXT("Pole"));
+	PoleMesh->SetupAttachment(SceneRoot);
+	PoleMesh->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	PoleMesh->SetCastShadow(true);
 }
 
 void ASolidBridge::OnConstruction(const FTransform& Transform)
@@ -1029,7 +1034,7 @@ void ASolidBridge::SetBroken(const bool bInBroken)
 
 void ASolidBridge::BuildVisuals()
 {
-	if (!bHasBridge || !DeckMesh || !RampFromMesh || !RampToMesh)
+	if (!bHasBridge || !DeckMesh || !RampFromMesh || !RampToMesh || !PoleMesh)
 	{
 		return;
 	}
@@ -1057,5 +1062,36 @@ void ASolidBridge::BuildVisuals()
 	{
 		RampToMesh->SetStaticMesh(Ramp);
 		Paint(RampToMesh, this, TEXT("BridgeRampToTimber"), TEXT("BridgeRampToRoad"));
+	}
+
+	// The pole stands on the bridge point: 50 cm across, 20 m up from the deck.
+	constexpr float PoleAcrossCm = 50.f;
+	constexpr float PoleHeightCm = 2000.f;
+	constexpr float CubeSizeCm = 100.f;
+	UStaticMesh* Cube = LoadObject<UStaticMesh>(nullptr, TEXT("/Engine/BasicShapes/Cube.Cube"));
+	if (!Cube)
+	{
+		UE_LOG(LogSolid, Error, TEXT("SolidBridge: missing Engine BasicShapes Cube."));
+		return;
+	}
+	FVector DeckMid = FVector::ZeroVector;
+	for (const FVector& Point : Bridge.Deck)
+	{
+		DeckMid += Point;
+	}
+	DeckMid /= static_cast<float>(Bridge.Deck.Num());
+	const FVector Local = DeckMid - Origin;
+	PoleMesh->SetStaticMesh(Cube);
+	PoleMesh->SetRelativeLocation(FVector(Local.X, Local.Y, Local.Z + PoleHeightCm * 0.5f));
+	PoleMesh->SetRelativeRotation(FRotator::ZeroRotator);
+	PoleMesh->SetRelativeScale3D(FVector(
+		PoleAcrossCm / CubeSizeCm,
+		PoleAcrossCm / CubeSizeCm,
+		PoleHeightCm / CubeSizeCm));
+	PoleMesh->SetVisibility(true);
+	if (UMaterialInterface* Magenta = SolidMaterials::CreateSolidColor(
+			this, FLinearColor(1.f, 0.f, 1.f), TEXT("BridgePole"), 0.4f))
+	{
+		PoleMesh->SetMaterial(0, Magenta);
 	}
 }

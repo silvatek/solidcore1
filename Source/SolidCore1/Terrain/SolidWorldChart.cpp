@@ -2282,7 +2282,7 @@ void USolidWorldChart::BuildListedRoads(
 	{
 		const bool bPlaced = Road.Locate(ChartMarks);
 		SolidRoad::FDefinition Definition = Road.ToDefinition();
-		if (!EndReady(Definition.From) || !EndReady(Definition.To))
+		if (!bPlaced || !EndReady(Definition.From) || !EndReady(Definition.To))
 		{
 			UE_LOG(LogSolid, Warning, TEXT("WorldChart: ignored road %s -> %s."), *Road.From.Name, *Road.To.Name);
 			continue;
@@ -2295,7 +2295,7 @@ void USolidWorldChart::BuildListedRoads(
 		{
 			SolidRoad::LocateStrongholdEnd(ChartBangMarks, Definition.To);
 		}
-		BuildRoad(Definition, bPlaced ? &Road : nullptr);
+		BuildRoad(Definition, &Road);
 	}
 }
 

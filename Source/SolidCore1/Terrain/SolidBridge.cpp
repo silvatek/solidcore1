@@ -68,24 +68,6 @@ namespace
 		return Poly.Points.Last();
 	}
 
-	bool RoutePoly(const USolidWorldChart& Map, const SolidRoad::FRoute& Route, const FVector2D WorldMin, const FVector2D WorldMax, FRouteLine& Out)
-	{
-		Out.Points.Reset();
-		for (const FIntPoint& Cell : Route.Cells)
-		{
-			FVector2D Center = FVector2D::ZeroVector;
-			if (!Map.CellToWorldXY(Cell, WorldMin, WorldMax, Center))
-			{
-				continue;
-			}
-			if (Out.Points.Num() == 0 || !Out.Points.Last().Equals(Center, 1.f))
-			{
-				Out.Points.Add(Center);
-			}
-		}
-		return Out.Points.Num() >= 2;
-	}
-
 	bool RoadPoly(const USolidWorldChart& Map, const SolidRoad::FSolidRoad& Road, const FVector2D WorldMin, const FVector2D WorldMax, FRouteLine& Out)
 	{
 		Out.Points.Reset();
@@ -364,14 +346,6 @@ namespace
 		}
 	}
 
-	/** Location 0 is Iglin and location 1 is Relion. Either direction. */
-	bool IsIglinRelion(const SolidRoad::FDefinition& Definition)
-	{
-		const int32 From = Definition.From.LocationId;
-		const int32 To = Definition.To.LocationId;
-		return (From == 0 && To == 1) || (From == 1 && To == 0);
-	}
-
 	bool IsIglinRelionRoad(const SolidRoad::FSolidRoad& Road)
 	{
 		auto TownId = [](const FSolidWorldChartMark& Mark) -> int32
@@ -519,37 +493,18 @@ int32 SolidBridge::Collect(
 		FRouteLine Poly;
 		SolidRoad::EType Type = SolidRoad::EType::Trail;
 		bool bIglinRelion = false;
-		bool bRouted = false;
 	};
 	TArray<FCrossing> Crossings;
-	if (Map.GetRoutedRoads().Num() > 0)
+	for (const SolidRoad::FSolidRoad& Road : Map.GetRoutedRoads())
 	{
-		for (const SolidRoad::FSolidRoad& Road : Map.GetRoutedRoads())
+		FCrossing Crossing;
+		if (!RoadPoly(Map, Road, WorldMinXY, WorldMaxXY, Crossing.Poly))
 		{
-			FCrossing Crossing;
-			if (!RoadPoly(Map, Road, WorldMinXY, WorldMaxXY, Crossing.Poly))
-			{
-				continue;
-			}
-			Crossing.Type = Road.Type;
-			Crossing.bIglinRelion = IsIglinRelionRoad(Road);
-			Crossing.bRouted = true;
-			Crossings.Add(MoveTemp(Crossing));
+			continue;
 		}
-	}
-	else
-	{
-		for (const SolidRoad::FRoute& Route : Map.GetRoads())
-		{
-			FCrossing Crossing;
-			if (!RoutePoly(Map, Route, WorldMinXY, WorldMaxXY, Crossing.Poly))
-			{
-				continue;
-			}
-			Crossing.Type = Route.Definition.Type;
-			Crossing.bIglinRelion = IsIglinRelion(Route.Definition);
-			Crossings.Add(MoveTemp(Crossing));
-		}
+		Crossing.Type = Road.Type;
+		Crossing.bIglinRelion = IsIglinRelionRoad(Road);
+		Crossings.Add(MoveTemp(Crossing));
 	}
 
 	for (const FCrossing& Crossing : Crossings)
@@ -804,10 +759,7 @@ int32 SolidBridge::Collect(
 				Shift(Bridge.Deck);
 				Shift(Bridge.RampFrom);
 				Shift(Bridge.RampTo);
-				if (Crossing.bRouted)
-				{
-					Straighten(Map, WorldMinXY, WorldMaxXY, UnshiftedMid, Bridge);
-				}
+				Straighten(Map, WorldMinXY, WorldMaxXY, UnshiftedMid, Bridge);
 				if (Bridge.Deck.Num() >= 2 && Bridge.RampFrom.Num() >= 2 && Bridge.RampTo.Num() >= 2)
 				{
 					Out.Add(MoveTemp(Bridge));

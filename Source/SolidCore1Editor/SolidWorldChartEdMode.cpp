@@ -1775,9 +1775,8 @@ FString FSolidWorldChartEdMode::DescribeCell(const FIntPoint& Cell) const
 
 	const ESolidBiome Painted = Chart->Cells[Index];
 	ESolidBiome Resolved = Painted;
-	const USolidWorldChart* WorldMap = Streamer && Streamer->GetTerrainMap()
-		? Streamer->GetTerrainMap()->GetWorldMap()
-		: nullptr;
+	const USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
+	const USolidWorldChart* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
 	if (WorldMap && WorldMap->IsLoaded())
 	{
 		Resolved = WorldMap->GetBiomeAtCell(Cell.X, Cell.Y);
@@ -1796,21 +1795,35 @@ FString FSolidWorldChartEdMode::DescribeCell(const FIntPoint& Cell) const
 		Line += FString::Printf(TEXT(" %s, %s."), MarkKindName(Mark.Kind), *Mark.Name);
 	}
 
-	if (WorldMap)
+	if (WorldMap && WorldMap->IsLoaded() && Terrain)
 	{
-		const TArray<SolidRoad::FRoute>& Routes = WorldMap->GetRoads();
-		for (int32 RoadIndex = 0; RoadIndex < Routes.Num(); ++RoadIndex)
+		const FVector2D WorldMin = Terrain->GetWorldMinXY();
+		const FVector2D WorldMax = Terrain->GetWorldMaxXY();
+		for (const SolidRoad::FSolidRoad& Road : WorldMap->GetRoutedRoads())
 		{
-			if (!Routes[RoadIndex].Cells.Contains(Cell) || !Chart->Roads.IsValidIndex(RoadIndex))
+			bool bOnCell = false;
+			for (const FIntPoint& Point : Road.Points)
+			{
+				FVector2D World = FVector2D::ZeroVector;
+				FIntPoint PointCell = FIntPoint::ZeroValue;
+				if (!WorldMap->TerrainPointToWorld(Point, WorldMin, WorldMax, World)
+					|| !WorldMap->CellAtWorld(World.X, World.Y, WorldMin, WorldMax, PointCell)
+					|| PointCell != Cell)
+				{
+					continue;
+				}
+				bOnCell = true;
+				break;
+			}
+			if (!bOnCell)
 			{
 				continue;
 			}
-			const FSolidWorldChartRoad& Road = Chart->Roads[RoadIndex];
 			Line += FString::Printf(
 				TEXT(" Road %s -> %s, %s."),
-				*Road.FromName,
-				*Road.ToName,
-				USolidWorldChart::RoadTypeName(Road.Type));
+				*Road.From.Name,
+				*Road.To.Name,
+				USolidWorldChart::RoadTypeName(USolidWorldChart::ChartRoadType(Road.Type)));
 		}
 	}
 	return Line;

@@ -263,36 +263,35 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 	}
 	TestEqual(TEXT("three town walks"), TownSteps, static_cast<int32>(UE_ARRAY_COUNT(TownIds)));
 
-	TArray<SolidRoad::FRoute> Routes;
+	TArray<SolidRoad::FSolidRoad> Roads;
 	{
-		SolidRoad::FRoute Highway;
-		Highway.Definition.From.LocationId = SolidTowns::Relion;
-		Highway.Definition.To.LocationId = SolidTowns::Kanfold;
-		Highway.Cells = { FIntPoint(1, 1), FIntPoint(1, 2), FIntPoint(1, 3) };
-		Routes.Add(Highway);
+		SolidRoad::FSolidRoad Highway(
+			SolidRoad::TownMark(SolidTowns::Relion),
+			SolidRoad::TownMark(SolidTowns::Kanfold),
+			SolidRoad::EType::Highway);
+		Highway.Points = { FIntPoint(1, 1), FIntPoint(1, 2), FIntPoint(1, 3) };
+		Roads.Add(Highway);
 
-		SolidRoad::FRoute Road;
-		Road.Definition.From.LocationId = SolidTowns::Relion;
-		Road.Definition.To.LocationId = SolidTowns::Dragongate;
-		Road.Cells = { FIntPoint(1, 1), FIntPoint(2, 1), FIntPoint(3, 1) };
-		Routes.Add(Road);
+		SolidRoad::FSolidRoad Road(
+			SolidRoad::TownMark(SolidTowns::Relion),
+			SolidRoad::TownMark(SolidTowns::Dragongate),
+			SolidRoad::EType::Road);
+		Road.Points = { FIntPoint(1, 1), FIntPoint(2, 1), FIntPoint(3, 1) };
+		Roads.Add(Road);
 
-		SolidRoad::FRoute Track;
-		Track.Definition.From.LocationId = SolidTowns::Iglin;
-		Track.Definition.To.LocationId = SolidTowns::Relion;
-		Track.Cells = { FIntPoint(0, 0), FIntPoint(1, 1) };
-		Routes.Add(Track);
+		SolidRoad::FSolidRoad Track(
+			SolidRoad::TownMark(SolidTowns::Iglin),
+			SolidRoad::TownMark(SolidTowns::Relion),
+			SolidRoad::EType::Track);
+		Track.Points = { FIntPoint(0, 0), FIntPoint(1, 1) };
+		Roads.Add(Track);
 
-		SolidRoad::FRoute Hold;
-		Hold.Definition.From.bStronghold = true;
-		Hold.Definition.To.LocationId = SolidTowns::Dragongate;
-		Hold.Cells = { FIntPoint(9, 9), FIntPoint(3, 1) };
-		Routes.Add(Hold);
-
-		SolidRoad::FRoute Empty;
-		Empty.Definition.From.LocationId = SolidTowns::Visolar;
-		Empty.Definition.To.LocationId = SolidTowns::Dragongate;
-		Routes.Add(Empty);
+		SolidRoad::FSolidRoad Hold(
+			SolidRoad::StrongholdMark(ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon),
+			SolidRoad::TownMark(SolidTowns::Dragongate),
+			SolidRoad::EType::Trail);
+		Hold.Points = { FIntPoint(9, 9), FIntPoint(3, 1) };
+		Roads.Add(Hold);
 	}
 
 	const auto ExpectCells = [this](const TArray<FIntPoint>& Cells, const FIntPoint* Expected, const int32 Count)
@@ -313,7 +312,7 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 	const FIntPoint KanfoldCells[] = { FIntPoint(1, 1), FIntPoint(1, 2), FIntPoint(1, 3) };
 	TestTrue(
 		TEXT("Relion reaches Kanfold"),
-		FSolidAutoPlaythrough::TownRoads(Routes, SolidTowns::Relion, SolidTowns::Kanfold, ToKanfold));
+		FSolidAutoPlaythrough::TownRoads(Roads, SolidTowns::Relion, SolidTowns::Kanfold, ToKanfold));
 	ExpectCells(ToKanfold, KanfoldCells, UE_ARRAY_COUNT(KanfoldCells));
 
 	TArray<FIntPoint> ToGate;
@@ -322,19 +321,19 @@ bool FSolidAutoPlaythroughStepsTest::RunTest(const FString& Parameters)
 	};
 	TestTrue(
 		TEXT("Kanfold reaches Dragongate through Relion"),
-		FSolidAutoPlaythrough::TownRoads(Routes, SolidTowns::Kanfold, SolidTowns::Dragongate, ToGate));
+		FSolidAutoPlaythrough::TownRoads(Roads, SolidTowns::Kanfold, SolidTowns::Dragongate, ToGate));
 	ExpectCells(ToGate, GateCells, UE_ARRAY_COUNT(GateCells));
 
 	TArray<FIntPoint> SameTown;
 	TestFalse(
 		TEXT("a town does not road to itself"),
-		FSolidAutoPlaythrough::TownRoads(Routes, SolidTowns::Relion, SolidTowns::Relion, SameTown));
+		FSolidAutoPlaythrough::TownRoads(Roads, SolidTowns::Relion, SolidTowns::Relion, SameTown));
 	TestEqual(TEXT("that path is empty"), SameTown.Num(), 0);
 
 	TArray<FIntPoint> MissingTown;
 	TestFalse(
 		TEXT("Visolar has no chain to Dragongate"),
-		FSolidAutoPlaythrough::TownRoads(Routes, SolidTowns::Visolar, SolidTowns::Dragongate, MissingTown));
+		FSolidAutoPlaythrough::TownRoads(Roads, SolidTowns::Visolar, SolidTowns::Dragongate, MissingTown));
 	TestEqual(TEXT("the missing chain is empty"), MissingTown.Num(), 0);
 	TestEqual(
 		TEXT("a Relion cell starts from Relion"),

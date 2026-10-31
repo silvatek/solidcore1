@@ -375,14 +375,14 @@ public:
 	static bool LairCells(const TCHAR* LairId, TCHAR FromEnd, TCHAR ToEnd, TArray<FIntPoint>& OutCells);
 
 	/**
-	 * Map cells along the chart routes from one town to another, including both ends.
-	 * The chain is the fewest routes. A stronghold end is left out. False when no chain exists.
+	 * Terrain points along the routed roads from one town to another, including both ends.
+	 * The chain is the fewest roads. A stronghold end is left out. False when no chain exists.
 	 */
 	static bool TownRoads(
-		const TArray<SolidRoad::FRoute>& Routes,
+		const TArray<SolidRoad::FSolidRoad>& Roads,
 		int32 FromTown,
 		int32 ToTown,
-		TArray<FIntPoint>& OutCells);
+		TArray<FIntPoint>& OutPoints);
 	/** The town a road walk starts from. A grass cell uses OccupiedTown. */
 	static int32 TownWalkFrom(const int32 CellTown, const int32 OccupiedTown)
 	{

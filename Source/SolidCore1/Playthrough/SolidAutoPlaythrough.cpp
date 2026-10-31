@@ -146,14 +146,24 @@ namespace
 			&& Mark.StrongholdType == ESolidStrongholdType::Dungeon;
 	}
 
-	bool IsIglin(const FSolidWorldChartMark& Mark)
+	bool IsTown(const FSolidWorldChartMark& Mark, const int32 TownId)
 	{
 		if (Mark.Kind != ESolidWorldChartMarkKind::Town)
 		{
 			return false;
 		}
 		const SolidTowns::FTownInfo* Town = SolidTowns::FindByName(Mark.Name);
-		return Town && Town->Id == SolidTowns::Iglin;
+		return Town && Town->Id == TownId;
+	}
+
+	bool IsIglin(const FSolidWorldChartMark& Mark)
+	{
+		return IsTown(Mark, SolidTowns::Iglin);
+	}
+
+	bool IsRelion(const FSolidWorldChartMark& Mark)
+	{
+		return IsTown(Mark, SolidTowns::Relion);
 	}
 
 	bool IsCaveTrail(const SolidRoad::FSolidRoad& Road)
@@ -311,21 +321,19 @@ namespace
 			&& SolidStrongholdTransition::CompanyChestOpen(*State, Hold, Mode.IsInStronghold());
 	}
 
-	bool IsIglinRelionRoad(const SolidRoad::FDefinition& Definition)
+	const SolidRoad::FSolidRoad* FindIglinRelionRoad(const USolidWorldChart& Chart)
 	{
-		const int32 From = Definition.From.LocationId;
-		const int32 To = Definition.To.LocationId;
-		return (From == SolidTowns::Iglin && To == SolidTowns::Relion)
-			|| (From == SolidTowns::Relion && To == SolidTowns::Iglin);
-	}
-
-	const SolidRoad::FRoute* FindIglinRelionRoad(const USolidWorldChart& Chart)
-	{
-		for (const SolidRoad::FRoute& Route : Chart.GetRoads())
+		for (const SolidRoad::FSolidRoad& Road : Chart.GetRoutedRoads())
 		{
-			if (IsIglinRelionRoad(Route.Definition))
+			if (Road.Points.Num() == 0)
 			{
-				return &Route;
+				continue;
+			}
+			const bool bForward = IsIglin(Road.From) && IsRelion(Road.To);
+			const bool bBackward = IsRelion(Road.From) && IsIglin(Road.To);
+			if (bForward || bBackward)
+			{
+				return &Road;
 			}
 		}
 		return nullptr;
@@ -847,8 +855,8 @@ bool FSolidAutoPlaythrough::BuildWalk(const ASolidGameMode& Mode, const FVector&
 		return false;
 	}
 
-	const SolidRoad::FRoute* Road = FindIglinRelionRoad(*Chart);
-	if (!Road || Road->Cells.Num() == 0)
+	const SolidRoad::FSolidRoad* Road = FindIglinRelionRoad(*Chart);
+	if (!Road || Road->Points.Num() == 0)
 	{
 		return false;
 	}
@@ -868,21 +876,21 @@ bool FSolidAutoPlaythrough::BuildWalk(const ASolidGameMode& Mode, const FVector&
 		return false;
 	}
 
-	TArray<FIntPoint> Cells = Road->Cells;
-	if (Road->Definition.From.LocationId != SolidTowns::Iglin)
+	TArray<FIntPoint> RoutePoints = Road->Points;
+	if (!IsIglin(Road->From))
 	{
-		Algo::Reverse(Cells);
+		Algo::Reverse(RoutePoints);
 	}
 
 	const FVector2D Paint = SolidRoad::StripPaintOffset();
 	TArray<FVector2D> Centers;
-	Centers.Reserve(Cells.Num());
-	for (const FIntPoint& Cell : Cells)
+	Centers.Reserve(RoutePoints.Num());
+	for (const FIntPoint& Point : RoutePoints)
 	{
-		FVector2D Center = FVector2D::ZeroVector;
-		if (Chart->CellToWorldXY(Cell, WorldMin, WorldMax, Center))
+		FVector2D WorldXY = FVector2D::ZeroVector;
+		if (Chart->TerrainPointToWorld(Point, WorldMin, WorldMax, WorldXY))
 		{
-			Centers.Add(Center + Paint);
+			Centers.Add(WorldXY + Paint);
 		}
 	}
 	if (Centers.Num() == 0)
@@ -1312,20 +1320,25 @@ bool FSolidAutoPlaythrough::LairCells(
 }
 
 bool FSolidAutoPlaythrough::TownRoads(
-	const TArray<SolidRoad::FRoute>& Routes,
+	const TArray<SolidRoad::FSolidRoad>& Roads,
 	const int32 FromTown,
 	const int32 ToTown,
-	TArray<FIntPoint>& OutCells)
+	TArray<FIntPoint>& OutPoints)
 {
-	OutCells.Reset();
+	OutPoints.Reset();
 	if (FromTown == INDEX_NONE || ToTown == INDEX_NONE || FromTown == ToTown)
 	{
 		return false;
 	}
 
-	const auto TownEnd = [](const SolidRoad::FEndpoint& End)
+	const auto TownEnd = [](const FSolidWorldChartMark& Mark) -> int32
 	{
-		return End.bStronghold || End.LocationId == INDEX_NONE ? INDEX_NONE : End.LocationId;
+		if (Mark.Kind != ESolidWorldChartMarkKind::Town)
+		{
+			return INDEX_NONE;
+		}
+		const SolidTowns::FTownInfo* Town = SolidTowns::FindByName(Mark.Name);
+		return Town ? Town->Id : INDEX_NONE;
 	};
 
 	struct FLink
@@ -1334,12 +1347,12 @@ bool FSolidAutoPlaythrough::TownRoads(
 		int32 Route = INDEX_NONE;
 	};
 	TMap<int32, TArray<FLink>> Links;
-	for (int32 Index = 0; Index < Routes.Num(); ++Index)
+	for (int32 Index = 0; Index < Roads.Num(); ++Index)
 	{
-		const SolidRoad::FRoute& Route = Routes[Index];
-		const int32 From = TownEnd(Route.Definition.From);
-		const int32 To = TownEnd(Route.Definition.To);
-		if (Route.Cells.Num() == 0 || From == INDEX_NONE || To == INDEX_NONE || From == To)
+		const SolidRoad::FSolidRoad& Road = Roads[Index];
+		const int32 From = TownEnd(Road.From);
+		const int32 To = TownEnd(Road.To);
+		if (Road.Points.Num() == 0 || From == INDEX_NONE || To == INDEX_NONE || From == To)
 		{
 			continue;
 		}
@@ -1400,26 +1413,26 @@ bool FSolidAutoPlaythrough::TownRoads(
 	int32 Leave = FromTown;
 	for (const int32 RouteIndex : Chain)
 	{
-		const SolidRoad::FRoute& Route = Routes[RouteIndex];
-		TArray<FIntPoint> Cells = Route.Cells;
-		const int32 From = TownEnd(Route.Definition.From);
-		const int32 To = TownEnd(Route.Definition.To);
+		const SolidRoad::FSolidRoad& Road = Roads[RouteIndex];
+		TArray<FIntPoint> RoadPoints = Road.Points;
+		const int32 From = TownEnd(Road.From);
+		const int32 To = TownEnd(Road.To);
 		if (From != Leave)
 		{
-			Algo::Reverse(Cells);
+			Algo::Reverse(RoadPoints);
 		}
 		int32 Start = 0;
-		if (OutCells.Num() > 0 && Cells.Num() > 0 && Cells[0] == OutCells.Last())
+		if (OutPoints.Num() > 0 && RoadPoints.Num() > 0 && RoadPoints[0] == OutPoints.Last())
 		{
 			Start = 1;
 		}
-		for (int32 Index = Start; Index < Cells.Num(); ++Index)
+		for (int32 Index = Start; Index < RoadPoints.Num(); ++Index)
 		{
-			OutCells.Add(Cells[Index]);
+			OutPoints.Add(RoadPoints[Index]);
 		}
 		Leave = From == Leave ? To : From;
 	}
-	return OutCells.Num() > 0;
+	return OutPoints.Num() > 0;
 }
 
 bool FSolidAutoPlaythrough::TrailYawDeg(
@@ -1633,6 +1646,7 @@ bool FSolidAutoPlaythrough::BuildTownWalk(
 
 	TArray<FIntPoint> Cells;
 	bool bPaint = false;
+	bool bOnRoad = false;
 	int32 OccupiedTown = INDEX_NONE;
 	if (USolidCompany* Company = Mode.GetCompany())
 	{
@@ -1646,17 +1660,24 @@ bool FSolidAutoPlaythrough::BuildTownWalk(
 		OccupiedTown);
 	if (HereTown != INDEX_NONE && HereTown != Step.TownId)
 	{
-		if (!TownRoads(Chart->GetRoads(), HereTown, Step.TownId, Cells))
+		if (!TownRoads(Chart->GetRoutedRoads(), HereTown, Step.TownId, Cells))
 		{
 			Stop();
 			return false;
 		}
 		bPaint = true;
+		bOnRoad = true;
+		const FVector2D Here(CaptainLocation.X, CaptainLocation.Y);
 		int32 Start = 0;
-		int32 Nearest = TNumericLimits<int32>::Max();
+		float Nearest = TNumericLimits<float>::Max();
 		for (int32 Index = 0; Index < Cells.Num(); ++Index)
 		{
-			const int32 Dist = FMath::Abs(Cells[Index].X - HereCell.X) + FMath::Abs(Cells[Index].Y - HereCell.Y);
+			FVector2D WorldXY = FVector2D::ZeroVector;
+			if (!Chart->TerrainPointToWorld(Cells[Index], WorldMin, WorldMax, WorldXY))
+			{
+				continue;
+			}
+			const float Dist = FVector2D::DistSquared(WorldXY, Here);
 			if (Dist < Nearest)
 			{
 				Nearest = Dist;
@@ -1703,6 +1724,25 @@ bool FSolidAutoPlaythrough::BuildTownWalk(
 	bool bAddedGate = false;
 	for (const FIntPoint& Cell : Cells)
 	{
+		if (bOnRoad)
+		{
+			FVector2D WorldXY = FVector2D::ZeroVector;
+			if (!Chart->TerrainPointToWorld(Cell, WorldMin, WorldMax, WorldXY))
+			{
+				continue;
+			}
+			if (bGate && Chart->SampleLocationId(WorldXY.X, WorldXY.Y, WorldMin, WorldMax) == Step.TownId)
+			{
+				if (!bAddedGate)
+				{
+					Points.Add(Gate);
+					bAddedGate = true;
+				}
+				continue;
+			}
+			Points.Add(WorldXY + Paint);
+			continue;
+		}
 		if (bGate && Chart->GetLocationIdAtCell(Cell.X, Cell.Y) == Step.TownId)
 		{
 			if (!bAddedGate)

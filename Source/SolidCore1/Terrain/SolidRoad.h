@@ -317,8 +317,9 @@ namespace SolidRoad
 
 	/**
 	 * Route from one end to the other.
-	 * Road supplies the ends and the type when it is set. Definition and OutCells remain for a line that has no road.
-	 * OutPoints is a copy of the road's route points, including one detour around a single banned patch. Empty when the cell search runs.
+	 * A road uses FindRoute. When that fails, the route stays empty.
+	 * A line that has no road still uses Definition and the cell search.
+	 * OutPoints is a copy of the road's route points. Empty when the cell search runs.
 	 * @return False when an end is missing, or no path exists.
 	 */
 	bool Solve(

@@ -914,24 +914,23 @@ namespace SolidRoad
 	{
 		OutCells.Reset();
 		OutPoints.Reset();
-		if (Road != nullptr && Road->FindRoute(Map))
+		if (Road != nullptr)
 		{
+			if (!Road->FindRoute(Map))
+			{
+				return false;
+			}
 			Road->CopyPoints(OutPoints);
 			if (CellsForPoints(Map, OutPoints, OutCells) && OutCells.Num() > 0)
 			{
-				UE_LOG(LogSolid, Warning, TEXT("%s: FindRoute."), *Road->toString());
 				return true;
 			}
 			OutCells.Reset();
 			OutPoints.Reset();
+			return false;
 		}
-		if (Road != nullptr)
-		{
-			UE_LOG(LogSolid, Warning, TEXT("%s: cell search."), *Road->toString());
-		}
-		OutPoints.Reset();
 
-		const EType Type = Road != nullptr ? Road->Type : Definition.Type;
+		const EType Type = Definition.Type;
 		TArray<FIntPoint> Starts;
 		TArray<FIntPoint> Goals;
 		RoadCollectEndpoint(Map, Definition.From, Starts);

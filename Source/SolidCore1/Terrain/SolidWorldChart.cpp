@@ -786,25 +786,16 @@ bool USolidWorldChart::LoadFromString(const FString& Text)
 		}
 	}
 
-	TArray<SolidRoad::FDefinition> RoadDefs;
 	TArray<FWorldMapBangRef> BangRefs;
 	for (const FString& RawLine : Lines)
 	{
 		const FString Trimmed = RawLine.TrimStartAndEnd();
-		SolidRoad::FDefinition RoadDef;
-		FWorldMapBangRef BangRef;
 		if (Trimmed.StartsWith(TEXT("Road:"), ESearchCase::IgnoreCase))
 		{
-			if (SolidRoad::Parse(Trimmed, RoadDef))
-			{
-				RoadDefs.Add(RoadDef);
-			}
-			else
-			{
-				UE_LOG(LogSolid, Warning, TEXT("WorldMap: ignored road line '%s'."), *Trimmed);
-			}
+			continue;
 		}
-		else if (WorldMapParseBangLocation(Trimmed, BangRef))
+		FWorldMapBangRef BangRef;
+		if (WorldMapParseBangLocation(Trimmed, BangRef))
 		{
 			BangRefs.Add(BangRef);
 		}
@@ -920,12 +911,6 @@ bool USolidWorldChart::LoadFromString(const FString& Text)
 	bIsLoaded = true;
 	CopyPlayOntoPoints(true, false);
 	AssignTownPoints();
-	for (SolidRoad::FDefinition& RoadDef : RoadDefs)
-	{
-		SolidRoad::LocateStrongholdEnd(BangMarks, RoadDef.From);
-		SolidRoad::LocateStrongholdEnd(BangMarks, RoadDef.To);
-	}
-	BuildRoads(RoadDefs);
 	UE_LOG(LogSolid, Warning,
 		TEXT("WorldMap loaded: %dx%d startTownCells=%d locations=%d roads=%d"),
 		MapWidth, MapHeight, StartTownCells.Num(), Locations.Num(), SolvedRoads.Num());
@@ -2323,16 +2308,6 @@ void USolidWorldChart::BuildListedRoads(
 			SolidRoad::LocateStrongholdEnd(ChartBangMarks, Definition.To);
 		}
 		BuildRoad(Definition, &Road);
-	}
-}
-
-void USolidWorldChart::BuildRoads(const TArray<SolidRoad::FDefinition>& Definitions) const
-{
-	ResetRoads();
-
-	for (const SolidRoad::FDefinition& Definition : Definitions)
-	{
-		BuildRoad(Definition, nullptr);
 	}
 }
 

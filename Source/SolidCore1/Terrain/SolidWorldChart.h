@@ -159,7 +159,7 @@ public:
 	/**
 	 * Fill this chart from map text. A ! is stored as grassland.
 	 * Named towns, strongholds, sites, and lair mouths become marks.
-	 * A road is stored as two end names and a type.
+	 * A Road: line is ignored.
 	 */
 	bool ImportFromString(const FString& Text);
 
@@ -168,6 +168,7 @@ public:
 
 	/**
 	 * Fill the solved queries from map text. A colour line is ignored.
+	 * A Road: line is ignored.
 	 * Digits and tunnel letters stay markers. An encounter is not in the text.
 	 */
 	bool LoadFromString(const FString& Text);
@@ -473,10 +474,9 @@ private:
 
 protected:
 	bool WorldXYToCell(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, int32& OutMapX, int32& OutMapY) const;
-	void BuildRoads(const TArray<SolidRoad::FDefinition>& Definitions) const;
 	/** Clear the solved roads and size the span index. */
 	void ResetRoads() const;
-	/** Solve one road and record its spans. Road is a listed road, or null when the definition came from the chart. */
+	/** Solve one listed road and record its spans. */
 	void BuildRoad(const SolidRoad::FDefinition& Definition, SolidRoad::FSolidRoad* Road) const;
 	/** Build each listed road from these marks and solve it. Bang marks place a stronghold end. */
 	void BuildListedRoads(const TArray<FSolidWorldChartMark>& ChartMarks, const TMap<int32, FSolidWorldBang>& ChartBangMarks) const;

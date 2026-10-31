@@ -113,11 +113,6 @@ namespace
 		Chart.Points.Init(ESolidBiome::Grassland, USolidWorldChart::PointAxis * USolidWorldChart::PointAxis);
 	}
 
-	void SetTerrainPoint(USolidWorldChart& Chart, const FIntPoint Point, const ESolidBiome Biome)
-	{
-		Chart.Points[Point.Y * USolidWorldChart::PointAxis + Point.X] = Biome;
-	}
-
 	bool PlacePointMark(USolidWorldChart& Chart, FSolidWorldChartMark Mark, const FIntPoint Point)
 	{
 		FVector2D Min = FVector2D::ZeroVector;
@@ -283,12 +278,13 @@ bool FSolidRoadForestHighwayTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	for (int32 Y = 0; Y < USolidWorldChart::PointAxis; ++Y)
+	const FIntPoint WallTop(ForestPoint.X, 0);
+	const FIntPoint WallBottom(ForestPoint.X, USolidWorldChart::PointAxis - 1);
+	const FIntPoint Gap(ForestPoint.X, 40);
+	if (!TestTrue(TEXT("the forest wall paints"), Chart->SetPointRectangle(WallTop, WallBottom, ESolidBiome::Forest))
+		|| !TestTrue(TEXT("the gap stays grass"), Chart->SetPointRectangle(Gap, Gap, ESolidBiome::Grassland)))
 	{
-		if (Y != 40)
-		{
-			SetTerrainPoint(*Chart, FIntPoint(ForestPoint.X, Y), ESolidBiome::Forest);
-		}
+		return false;
 	}
 
 	SolidRoad::FSolidRoad Highway(

@@ -316,6 +316,12 @@ public:
 	static void PointRectangle(FIntPoint From, FIntPoint To, TArray<FIntPoint>& OutPoints);
 
 	/**
+	 * Every terrain point in this inclusive rectangle takes this biome.
+	 * The points already cover the grid.
+	 */
+	bool SetPointRectangle(FIntPoint From, FIntPoint To, ESolidBiome Biome);
+
+	/**
 	 * Paint the points under a round brush. One call is one undo step.
 	 * The cell array stays. A marker point the brush covers stays town or grassland.
 	 * Swamp and road are rejected.

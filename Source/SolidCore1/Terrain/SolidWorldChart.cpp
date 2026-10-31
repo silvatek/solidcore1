@@ -1915,6 +1915,28 @@ bool USolidWorldChart::PaintBrush(
 	return PaintPoints(Covered, Biome, OutError);
 }
 
+bool USolidWorldChart::SetPointRectangle(const FIntPoint From, const FIntPoint To, const ESolidBiome Biome)
+{
+	constexpr int32 PointCount = PointAxis * PointAxis;
+	if (Points.Num() != PointCount || !OnPoint(From) || !OnPoint(To))
+	{
+		return false;
+	}
+
+	const int32 X0 = FMath::Min(From.X, To.X);
+	const int32 X1 = FMath::Max(From.X, To.X);
+	const int32 Y0 = FMath::Min(From.Y, To.Y);
+	const int32 Y1 = FMath::Max(From.Y, To.Y);
+	for (int32 Y = Y0; Y <= Y1; ++Y)
+	{
+		for (int32 X = X0; X <= X1; ++X)
+		{
+			Points[PointSlot(X, Y)] = Biome;
+		}
+	}
+	return true;
+}
+
 bool USolidWorldChart::PaintPointRectangle(
 	const FIntPoint From,
 	const FIntPoint To,

@@ -110,7 +110,8 @@ namespace SolidBridge
 	/**
 	 * The bridge that stands at a marker.
 	 * CentreCm is the centre of the span. Length, orientation, and the initial state come from Marker.
-	 * The flat centre is the river width plus a rest on each bank. Each ramp takes half of what remains.
+	 * The flat centre is the river width plus a rest on each bank. It clears the ground under it,
+	 * and the water when Map shows river there. Each ramp runs down into its bank and continues into the ground.
 	 * HeightAt returns the terrain surface in centimetres at a world XY.
 	 * @return False when there is no height, no width, or no length.
 	 */
@@ -119,7 +120,10 @@ namespace SolidBridge
 		FVector2D CentreCm,
 		float WidthCm,
 		const TFunction<float(float X, float Y)>& HeightAt,
-		FBridge& Out);
+		FBridge& Out,
+		const USolidWorldChart* Map = nullptr,
+		FVector2D WorldMinXY = FVector2D::ZeroVector,
+		FVector2D WorldMaxXY = FVector2D::ZeroVector);
 
 	/**
 	 * One bridge for each bridge mark on the chart.

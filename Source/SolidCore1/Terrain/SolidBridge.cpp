@@ -482,7 +482,10 @@ bool SolidBridge::Stand(
 	const FVector2D CentreCm,
 	const float WidthCm,
 	const TFunction<float(float X, float Y)>& HeightAt,
-	FBridge& Out)
+	FBridge& Out,
+	const USolidWorldChart* Map,
+	const FVector2D WorldMinXY,
+	const FVector2D WorldMaxXY)
 {
 	Out = FBridge();
 	if (!HeightAt || Marker.LengthCm < 10.f || WidthCm < 1.f)
@@ -494,43 +497,82 @@ bool SolidBridge::Stand(
 	const FVector2D Axis = bEastWest ? FVector2D(1.f, 0.f) : FVector2D(0.f, 1.f);
 	const float DeckLen = FMath::Min(Marker.LengthCm, SolidRiver::WidthCm + 2.f * BankRestCm);
 	const float DeckHalf = DeckLen * 0.5f;
-	const float RampLen = (Marker.LengthCm - DeckLen) * 0.5f;
+
+	auto IsWet = [Map, WorldMinXY, WorldMaxXY](const FVector2D& P)
+	{
+		return Map && Map->SampleBiome(P.X, P.Y, WorldMinXY, WorldMaxXY) == ESolidBiome::River;
+	};
 
 	float Highest = -TNumericLimits<float>::Max();
+	float HighestWater = -TNumericLimits<float>::Max();
+	bool bSawWater = false;
 	for (float D = -DeckHalf; D <= DeckHalf + 0.1f; D += SampleStepCm)
 	{
 		const float Clamped = FMath::Clamp(D, -DeckHalf, DeckHalf);
 		const FVector2D P = CentreCm + Axis * Clamped;
-		Highest = FMath::Max(Highest, HeightAt(P.X, P.Y));
+		const float H = HeightAt(P.X, P.Y);
+		Highest = FMath::Max(Highest, H);
+		if (IsWet(P))
+		{
+			bSawWater = true;
+			HighestWater = FMath::Max(HighestWater, H);
+		}
 	}
-	const float DeckTop = Highest + FMath::Max(RiseCm, MinClearanceCm + ThicknessCm);
+	float DeckTop = Highest + RiseCm;
+	if (bSawWater)
+	{
+		DeckTop = FMath::Max(DeckTop, HighestWater + MinClearanceCm + ThicknessCm);
+	}
+	else
+	{
+		DeckTop = Highest + FMath::Max(RiseCm, MinClearanceCm + ThicknessCm);
+	}
 
-	auto Point = [&](const float Along, const float Travel, const bool bRamp) -> FVector
+	auto PointAtAlong = [&](const float Along, const float Travel, const bool bRamp) -> FVector
 	{
 		const FVector2D P = CentreCm + Axis * Along;
 		const float Z = bRamp ? DeckTop - Grade * Travel : DeckTop;
 		return FVector(P.X, P.Y, Z);
 	};
 
-	auto Fill = [&](TArray<FVector>& Line, const float FromAlong, const float ToAlong, const bool bRamp)
+	Out.Deck.Reset();
+	Out.Deck.Add(PointAtAlong(-DeckHalf, 0.f, false));
+	for (float Travel = SampleStepCm; Travel < DeckLen; Travel += SampleStepCm)
 	{
-		const float Length = FMath::Abs(ToAlong - FromAlong);
-		const float Sign = ToAlong >= FromAlong ? 1.f : -1.f;
-		Line.Reset();
-		Line.Add(Point(FromAlong, 0.f, bRamp));
-		for (float Travel = SampleStepCm; Travel < Length; Travel += SampleStepCm)
+		Out.Deck.Add(PointAtAlong(-DeckHalf + Travel, Travel, false));
+	}
+	if (DeckLen > 1.f)
+	{
+		Out.Deck.Add(PointAtAlong(DeckHalf, DeckLen, false));
+	}
+
+	auto BuildRamp = [&](float Along, const float Sign, TArray<FVector>& Ramp)
+	{
+		float OutDist = 0.f;
+		bool bMet = false;
+		float MetAt = 0.f;
+		Ramp.Reset();
+		Ramp.Add(PointAtAlong(Along, 0.f, true));
+		while (OutDist < MaxRampCm)
 		{
-			Line.Add(Point(FromAlong + Sign * Travel, Travel, bRamp));
-		}
-		if (Length > 1.f)
-		{
-			Line.Add(Point(ToAlong, Length, bRamp));
+			OutDist += SampleStepCm;
+			Along += Sign * SampleStepCm;
+			Ramp.Add(PointAtAlong(Along, OutDist, true));
+			const FVector& Last = Ramp.Last();
+			if (!bMet && Last.Z <= HeightAt(Last.X, Last.Y))
+			{
+				bMet = true;
+				MetAt = OutDist;
+			}
+			if (bMet && OutDist >= MetAt + BurialCm)
+			{
+				break;
+			}
 		}
 	};
 
-	Fill(Out.Deck, -DeckHalf, DeckHalf, false);
-	Fill(Out.RampFrom, -DeckHalf, -DeckHalf - RampLen, true);
-	Fill(Out.RampTo, DeckHalf, DeckHalf + RampLen, true);
+	BuildRamp(-DeckHalf, -1.f, Out.RampFrom);
+	BuildRamp(DeckHalf, 1.f, Out.RampTo);
 
 	const FVector2D Paint = SolidRoad::StripPaintOffset();
 	auto Shift = [Paint](TArray<FVector>& Line)
@@ -605,8 +647,19 @@ int32 SolidBridge::FromMarkers(
 		{
 			continue;
 		}
+		FVector2D WorldMin = FVector2D::ZeroVector;
+		FVector2D WorldMax = FVector2D::ZeroVector;
+		USolidWorldChart::DefaultWorldBounds(WorldMin, WorldMax);
 		FBridge Bridge;
-		if (Stand(*Marker, Mark.PositionCm, WidthForMarker(Marker->Name), HeightAt, Bridge))
+		if (Stand(
+			*Marker,
+			Mark.PositionCm,
+			WidthForMarker(Marker->Name),
+			HeightAt,
+			Bridge,
+			&Map,
+			WorldMin,
+			WorldMax))
 		{
 			Out.Add(MoveTemp(Bridge));
 		}

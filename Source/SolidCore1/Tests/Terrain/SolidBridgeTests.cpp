@@ -428,6 +428,20 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("Iglin's span stays on one east-west line"),
 		FMath::IsNearlyEqual(Iglin.Deck[0].Y, Iglin.Deck.Last().Y, 1.f)
 		&& FMath::Abs(Iglin.Deck[0].X - Iglin.Deck.Last().X) > 100.f);
+	TestTrue(TEXT("the near ramp runs into the ground"), BridgeBuried(Iglin.RampFrom, Height));
+	TestTrue(TEXT("the far ramp runs into the ground"), BridgeBuried(Iglin.RampTo, Height));
+
+	const auto Bank = [Centre](float X, float)
+	{
+		return X > Centre.X ? 400.f : 100.f;
+	};
+	SolidBridge::FBridge HighBank;
+	TestTrue(TEXT("Iglin stands on a high bank"), SolidBridge::Stand(SolidBridge::Bridges[0], Centre, Width, Bank, HighBank));
+	TestTrue(TEXT("the center clears the higher bank"), HighBank.Deck[0].Z >= 400.f + SolidBridge::RiseCm - 0.1f);
+	TestTrue(TEXT("the high bank gets the shorter ramp"),
+		BridgePlanLength(HighBank.RampTo) * 2.f < BridgePlanLength(HighBank.RampFrom));
+	TestTrue(TEXT("the high ramp enters the ground"), BridgeBuried(HighBank.RampTo, Bank));
+	TestTrue(TEXT("the low ramp enters the ground"), BridgeBuried(HighBank.RampFrom, Bank));
 
 	SolidBridge::FBridge Jethan;
 	TestTrue(TEXT("Jethan stands"), SolidBridge::Stand(SolidBridge::Bridges[1], Centre, Width, Height, Jethan));

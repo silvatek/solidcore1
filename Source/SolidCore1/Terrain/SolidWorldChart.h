@@ -227,10 +227,10 @@ public:
 	 */
 	ESolidBiome GetPointBiomeAtCell(int32 MapX, int32 MapY) const;
 
-	/** Solved routes, in file order. A route with no cells had a missing end. */
+	/** Deprecated. Prefer GetRoutedRoads. Solved routes, in file order. A route with no cells had a missing end. */
 	const TArray<SolidRoad::FRoute>& GetRoads() const { return SolvedRoads; }
 
-	/** Listed roads that found a route. Each one keeps its terrain points. */
+	/** Preferred road data. Each road keeps the terrain points of its route. */
 	const TArray<SolidRoad::FSolidRoad>& GetRoutedRoads() const { return RoutedRoads; }
 
 	/** True when the point lies on a solved road strip. Does not change the biome by itself. */
@@ -466,17 +466,20 @@ private:
 	mutable TArray<FTownSeed> TownSeeds;
 	/** Location id of each terrain point, or INDEX_NONE. Same order as Points. */
 	mutable TArray<int32> PointTowns;
+	/** Deprecated. Prefer RoutedRoads. One solved route per listed road, including an empty route. */
 	mutable TArray<SolidRoad::FRoute> SolvedRoads;
-	/** Listed roads that found a route. Empty until the chart loads. */
+	/** Preferred road data. Listed roads that found a route. Empty until the chart loads. */
 	mutable TArray<SolidRoad::FSolidRoad> RoutedRoads;
+	/** Deprecated. Prefer RoutedRoads. Painted segments between world cells. */
 	mutable TArray<SolidRoad::FSpan> RoadSpans;
+	/** Deprecated. Prefer RoutedRoads. Span indexes for each world cell and its neighbours. */
 	mutable TArray<TArray<int32>> RoadSpansByCell;
 
 protected:
 	bool WorldXYToCell(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, int32& OutMapX, int32& OutMapY) const;
 	/** Clear the solved roads and size the span index. */
 	void ResetRoads() const;
-	/** Solve one listed road and record its spans. */
+	/** Route one listed road and record its spans. */
 	void BuildRoad(const SolidRoad::FDefinition& Definition, SolidRoad::FSolidRoad* Road) const;
 	/** Build each listed road from these marks and solve it. Bang marks place a stronghold end. */
 	void BuildListedRoads(const TArray<FSolidWorldChartMark>& ChartMarks, const TMap<int32, FSolidWorldBang>& ChartBangMarks) const;

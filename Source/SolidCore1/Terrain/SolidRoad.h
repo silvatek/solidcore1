@@ -211,7 +211,7 @@ namespace SolidRoad
 		FDefinition Definition;
 		/** Cell centres the strip follows, including both ends. Empty when an end is missing. */
 		TArray<FIntPoint> Cells;
-		/** Terrain points on the straight line. Empty when the route is still the cell search. */
+		/** Terrain points on the straight line. Empty when the route fails. */
 		TArray<FIntPoint> Points;
 	};
 
@@ -314,20 +314,6 @@ namespace SolidRoad
 	 * or an end is not one of those.
 	 */
 	bool Parse(const FString& Line, FDefinition& Out);
-
-	/**
-	 * Route from one end to the other.
-	 * A road uses FindRoute. When that fails, the route stays empty.
-	 * A line that has no road still uses Definition and the cell search.
-	 * OutPoints is a copy of the road's route points. Empty when the cell search runs.
-	 * @return False when an end is missing, or no path exists.
-	 */
-	bool Solve(
-		const USolidWorldChart& Map,
-		const FDefinition& Definition,
-		TArray<FIntPoint>& OutCells,
-		FSolidRoad* Road,
-		TArray<FIntPoint>& OutPoints);
 
 	float DistanceToSegmentCm(const FVector2D& Point, const FVector2D& A, const FVector2D& B);
 }

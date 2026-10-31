@@ -2320,9 +2320,56 @@ void USolidWorldChart::ResetRoads() const
 	RoadSpansByCell.SetNum(MapWidth * MapHeight);
 }
 
+namespace
+{
+	bool CellsForPoints(
+		const USolidWorldChart& Map,
+		const TArray<FIntPoint>& Points,
+		TArray<FIntPoint>& OutCells)
+	{
+		OutCells.Reset();
+		FVector2D Min = FVector2D::ZeroVector;
+		FVector2D Max = FVector2D::ZeroVector;
+		USolidWorldChart::DefaultWorldBounds(Min, Max);
+		for (const FIntPoint& Point : Points)
+		{
+			FVector2D World = FVector2D::ZeroVector;
+			if (!Map.TerrainPointToWorld(Point, Min, Max, World))
+			{
+				OutCells.Reset();
+				return false;
+			}
+			FIntPoint Cell = FIntPoint::ZeroValue;
+			if (!Map.CellAtWorld(World.X, World.Y, Min, Max, Cell))
+			{
+				OutCells.Reset();
+				return false;
+			}
+			const ESolidBiome CellBiome = Map.GetBiomeAtCell(Cell.X, Cell.Y);
+			if (CellBiome == ESolidBiome::Mountain || CellBiome == ESolidBiome::Sea)
+			{
+				continue;
+			}
+			if (OutCells.Num() == 0 || OutCells.Last() != Cell)
+			{
+				OutCells.Add(Cell);
+			}
+		}
+		return true;
+	}
+}
+
 void USolidWorldChart::BuildRoad(const SolidRoad::FDefinition& Definition, SolidRoad::FSolidRoad* Road) const
 {
 	// Prefer Road to Definition for every later change here. The aim is to remove Definition.
+	if (Road == nullptr)
+	{
+		const FString From = SolidRoad::ChartRoadEndName(Definition.From);
+		const FString To = SolidRoad::ChartRoadEndName(Definition.To);
+		UE_LOG(LogSolid, Warning, TEXT("WorldMap: no road for %s -> %s."), *From, *To);
+		return;
+	}
+
 	if (RoadSpansByCell.Num() != MapWidth * MapHeight)
 	{
 		RoadSpansByCell.SetNum(MapWidth * MapHeight);
@@ -2330,14 +2377,23 @@ void USolidWorldChart::BuildRoad(const SolidRoad::FDefinition& Definition, Solid
 
 	SolidRoad::FRoute Route;
 	Route.Definition = Definition;
-	if (!SolidRoad::Solve(*this, Definition, Route.Cells, Road, Route.Points))
+	if (Road->FindRoute(*this))
+	{
+		Road->CopyPoints(Route.Points);
+		if (!CellsForPoints(*this, Route.Points, Route.Cells) || Route.Cells.Num() == 0)
+		{
+			Route.Cells.Reset();
+			Route.Points.Reset();
+		}
+	}
+	if (Route.Cells.Num() == 0)
 	{
 		const FString From = SolidRoad::ChartRoadEndName(Definition.From);
 		const FString To = SolidRoad::ChartRoadEndName(Definition.To);
 		UE_LOG(LogSolid, Warning, TEXT("WorldMap: no route for road %s -> %s."), *From, *To);
 	}
 	SolvedRoads.Add(Route);
-	if (Road != nullptr && Road->Points.Num() > 1)
+	if (Road->Points.Num() > 1)
 	{
 		RoutedRoads.Add(*Road);
 	}
@@ -2347,7 +2403,7 @@ void USolidWorldChart::BuildRoad(const SolidRoad::FDefinition& Definition, Solid
 		return;
 	}
 
-	const float HalfWidth = SolidRoad::WidthCm(Road != nullptr ? Road->Type : Definition.Type) * 0.5f;
+	const float HalfWidth = SolidRoad::WidthCm(Road->Type) * 0.5f;
 	const int32 SpanCount = Route.Cells.Num() == 1 ? 1 : Route.Cells.Num() - 1;
 	for (int32 SpanIndex = 0; SpanIndex < SpanCount; ++SpanIndex)
 	{

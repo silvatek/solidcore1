@@ -239,6 +239,58 @@ bool FSolidRoadNamedEndTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidRoadForestHighwayTest,
+	"SolidCore1.Road.ForestHighway",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidRoadForestHighwayTest::RunTest(const FString& Parameters)
+{
+	const FIntPoint Iglin(2, 8);
+	const FIntPoint Relion(20, 8);
+	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
+	UTEST_NOT_NULL(TEXT("forest chart"), Chart);
+	Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
+	FString Error;
+	if (!TestTrue(TEXT("Iglin places"), Chart->PlaceTown(Iglin, TEXT("Iglin"), Error))
+		|| !TestTrue(TEXT("Relion places"), Chart->PlaceTown(Relion, TEXT("Relion"), Error)))
+	{
+		return false;
+	}
+
+	TArray<FIntPoint> Wall;
+	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
+	{
+		if (Row != 2)
+		{
+			Wall.Add(FIntPoint(10, Row));
+		}
+	}
+	if (!TestTrue(TEXT("the forest wall paints"), Chart->PaintRun(Wall, ESolidBiome::Forest, Error)))
+	{
+		return false;
+	}
+
+	SolidRoad::FSolidRoad Highway(
+		SolidRoad::TownMark(SolidTowns::Iglin),
+		SolidRoad::TownMark(SolidTowns::Relion),
+		SolidRoad::EType::Highway);
+	if (!TestTrue(TEXT("both ends are on the chart"), Highway.Locate(Chart->Marks)))
+	{
+		return false;
+	}
+
+	TArray<FIntPoint> Cells;
+	TArray<FIntPoint> Points;
+	if (!TestTrue(TEXT("the highway solves"), SolidRoad::Solve(*Chart, Highway.ToDefinition(), Cells, &Highway, Points)))
+	{
+		return false;
+	}
+	TestEqual(TEXT("highway stays on the straight row"), Cells.Num(), 19);
+	TestEqual(TEXT("highway crosses one forest cell"), RoadTestCountBiome(*Chart, Cells, ESolidBiome::Forest), 1);
+	return RoadTestOrthogonal(*this, Cells);
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidRoadAvoidTest,
 	"SolidCore1.Road.Avoid",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)

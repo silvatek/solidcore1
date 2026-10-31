@@ -161,7 +161,10 @@ namespace
 		const FIntPoint IglinPoint(100, Row);
 		const FIntPoint RelionPoint(400, Row);
 		USolidWorldChart* Chart = NewObject<USolidWorldChart>();
-		UTEST_NOT_NULL(TEXT("patch chart"), Chart);
+		if (!Test.TestNotNull(TEXT("patch chart"), Chart))
+		{
+			return false;
+		}
 		FillGrassPoints(*Chart);
 		if (!Test.TestTrue(TEXT("Iglin places"), PlacePointMark(*Chart, SolidRoad::TownMark(SolidTowns::Iglin), IglinPoint))
 			|| !Test.TestTrue(TEXT("Relion places"), PlacePointMark(*Chart, SolidRoad::TownMark(SolidTowns::Relion), RelionPoint))

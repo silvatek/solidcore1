@@ -141,6 +141,49 @@ namespace
 		}
 		return true;
 	}
+
+	int32 RouteBiomeCount(const USolidWorldChart& Chart, const TArray<FIntPoint>& Points, const ESolidBiome Biome)
+	{
+		int32 Count = 0;
+		for (const FIntPoint& Point : Points)
+		{
+			if (Chart.GetPointBiome(Point) == Biome)
+			{
+				++Count;
+			}
+		}
+		return Count;
+	}
+
+	bool RouteGoesAround(FAutomationTestBase& Test, const ESolidBiome Patch, const SolidRoad::EType Type)
+	{
+		const int32 Row = 256;
+		const FIntPoint IglinPoint(100, Row);
+		const FIntPoint RelionPoint(400, Row);
+		USolidWorldChart* Chart = NewObject<USolidWorldChart>();
+		UTEST_NOT_NULL(TEXT("patch chart"), Chart);
+		FillGrassPoints(*Chart);
+		if (!Test.TestTrue(TEXT("Iglin places"), PlacePointMark(*Chart, SolidRoad::TownMark(SolidTowns::Iglin), IglinPoint))
+			|| !Test.TestTrue(TEXT("Relion places"), PlacePointMark(*Chart, SolidRoad::TownMark(SolidTowns::Relion), RelionPoint))
+			|| !Test.TestTrue(TEXT("the patch paints"), Chart->SetPointRectangle(FIntPoint(249, Row - 1), FIntPoint(251, Row + 1), Patch)))
+		{
+			return false;
+		}
+
+		SolidRoad::FSolidRoad Road(
+			SolidRoad::TownMark(SolidTowns::Iglin),
+			SolidRoad::TownMark(SolidTowns::Relion),
+			Type);
+		if (!Test.TestTrue(TEXT("both ends are on the chart"), Road.Locate(Chart->Marks))
+			|| !Test.TestTrue(TEXT("the route solves"), Road.FindRoute(*Chart)))
+		{
+			return false;
+		}
+		Test.TestEqual(TEXT("the route starts at Iglin"), Road.Points[0], IglinPoint);
+		Test.TestEqual(TEXT("the route ends at Relion"), Road.Points.Last(), RelionPoint);
+		Test.TestEqual(TEXT("the route stays off the patch"), RouteBiomeCount(*Chart, Road.Points, Patch), 0);
+		return Test.TestFalse(TEXT("the route leaves the straight row"), RouteStaysOnRow(Road.Points, Row));
+	}
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
@@ -358,6 +401,26 @@ bool FSolidRoadForestTrailTest::RunTest(const FString& Parameters)
 	}
 	TestEqual(TEXT("trail crosses one forest point"), ForestPoints, 1);
 	return TestTrue(TEXT("that point is the wall"), Trail.Points.Contains(ForestPoint));
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidRoadMountainPatchTest,
+	"SolidCore1.Road.MountainPatch",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidRoadMountainPatchTest::RunTest(const FString& Parameters)
+{
+	return RouteGoesAround(*this, ESolidBiome::Mountain, SolidRoad::EType::Track);
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidRoadSeaPatchTest,
+	"SolidCore1.Road.SeaPatch",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidRoadSeaPatchTest::RunTest(const FString& Parameters)
+{
+	return RouteGoesAround(*this, ESolidBiome::Sea, SolidRoad::EType::Trail);
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(

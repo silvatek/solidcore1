@@ -2189,11 +2189,11 @@ FString USolidWorldChart::RoadEndError(const FString& From, const FString& To) c
 	TArray<FString> Sentences;
 	const SolidRoad::EChartRoadEnd FromKind = SolidRoad::RoadEndKind(Marks, From);
 	const SolidRoad::EChartRoadEnd ToKind = SolidRoad::RoadEndKind(Marks, To);
-	if (FromKind == EChartRoadEnd::Site || FromKind == EChartRoadEnd::Missing)
+	if (FromKind == SolidRoad::EChartRoadEnd::Site || FromKind == SolidRoad::EChartRoadEnd::Missing)
 	{
 		Sentences.Add(SolidRoad::RoadEndSentence(FromKind, From));
 	}
-	if (ToKind == EChartRoadEnd::Site || ToKind == EChartRoadEnd::Missing)
+	if (ToKind == SolidRoad::EChartRoadEnd::Site || ToKind == SolidRoad::EChartRoadEnd::Missing)
 	{
 		Sentences.Add(SolidRoad::RoadEndSentence(ToKind, To));
 	}

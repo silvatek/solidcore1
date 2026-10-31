@@ -480,9 +480,9 @@ protected:
 	/** Clear the solved roads and size the span index. */
 	void ResetRoads() const;
 	/** Route one listed road and record its spans. */
-	void BuildRoad(const SolidRoad::FDefinition& Definition, SolidRoad::FSolidRoad* Road) const;
-	/** Build each listed road from these marks and solve it. Bang marks place a stronghold end. */
-	void BuildListedRoads(const TArray<FSolidWorldChartMark>& ChartMarks, const TMap<int32, FSolidWorldBang>& ChartBangMarks) const;
+	void BuildRoad(SolidRoad::FSolidRoad* Road) const;
+	/** Build each listed road and solve it. */
+	void BuildListedRoads() const;
 	bool CellsToWorldXY(const TArray<FIntPoint>& InCells, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 	void ResetLoad() const;
 	/** Turn one chart mark into the named cell the queries read. A custom note and an encounter are skipped. */

@@ -1139,7 +1139,7 @@ bool USolidWorldChart::BuildQuery() const
 	CopyPlayOntoPoints(false, true);
 	AssignTownPoints();
 
-	BuildListedRoads(Marks, BangMarks);
+	BuildListedRoads();
 
 	bIsLoaded = true;
 	UE_LOG(LogSolid, Warning,
@@ -2275,39 +2275,12 @@ bool USolidWorldChart::RouteForRoad(const int32 RoadIndex, TArray<FIntPoint>& Ou
 	return true;
 }
 
-void USolidWorldChart::BuildListedRoads(
-	const TArray<FSolidWorldChartMark>& ChartMarks,
-	const TMap<int32, FSolidWorldBang>& ChartBangMarks) const
+void USolidWorldChart::BuildListedRoads() const
 {
-	auto EndReady = [](const SolidRoad::FEndpoint& End)
-	{
-		return End.bStronghold || End.LocationId != INDEX_NONE;
-	};
-
 	ResetRoads();
 	for (SolidRoad::FSolidRoad Road : SolidRoad::Roads)
 	{
-		const bool bPlaced = Road.Locate(ChartMarks);
-		if (!bPlaced)
-		{
-			UE_LOG(LogSolid, Warning, TEXT("WorldChart: cannot locate both ends of %s -> %s."), *Road.From.Name, *Road.To.Name);
-			continue;
-		}
-		SolidRoad::FDefinition Definition = Road.ToDefinition();
-		if (!EndReady(Definition.From) || !EndReady(Definition.To))
-		{
-			UE_LOG(LogSolid, Warning, TEXT("WorldChart: ignored road %s -> %s."), *Road.From.Name, *Road.To.Name);
-			continue;
-		}
-		if (Road.From.Kind == ESolidWorldChartMarkKind::Stronghold)
-		{
-			SolidRoad::LocateStrongholdEnd(ChartBangMarks, Definition.From);
-		}
-		if (Road.To.Kind == ESolidWorldChartMarkKind::Stronghold)
-		{
-			SolidRoad::LocateStrongholdEnd(ChartBangMarks, Definition.To);
-		}
-		BuildRoad(Definition, &Road);
+		BuildRoad(&Road);
 	}
 }
 
@@ -2359,14 +2332,18 @@ namespace
 	}
 }
 
-void USolidWorldChart::BuildRoad(const SolidRoad::FDefinition& Definition, SolidRoad::FSolidRoad* Road) const
+void USolidWorldChart::BuildRoad(SolidRoad::FSolidRoad* Road) const
 {
-	// Prefer Road to Definition for every later change here. The aim is to remove Definition.
 	if (Road == nullptr)
 	{
-		const FString From = SolidRoad::ChartRoadEndName(Definition.From);
-		const FString To = SolidRoad::ChartRoadEndName(Definition.To);
-		UE_LOG(LogSolid, Warning, TEXT("WorldMap: no road for %s -> %s."), *From, *To);
+		UE_LOG(LogSolid, Warning, TEXT("WorldMap: no road."));
+		return;
+	}
+
+	const bool bPlaced = Road->Locate(Marks);
+	if (!bPlaced)
+	{
+		UE_LOG(LogSolid, Warning, TEXT("WorldChart: cannot locate both ends of %s -> %s."), *Road->From.Name, *Road->To.Name);
 		return;
 	}
 
@@ -2376,7 +2353,6 @@ void USolidWorldChart::BuildRoad(const SolidRoad::FDefinition& Definition, Solid
 	}
 
 	SolidRoad::FRoute Route;
-	Route.Definition = Definition;
 	if (Road->FindRoute(*this))
 	{
 		Road->CopyPoints(Route.Points);
@@ -2388,10 +2364,19 @@ void USolidWorldChart::BuildRoad(const SolidRoad::FDefinition& Definition, Solid
 	}
 	if (Route.Cells.Num() == 0)
 	{
-		const FString From = SolidRoad::ChartRoadEndName(Definition.From);
-		const FString To = SolidRoad::ChartRoadEndName(Definition.To);
-		UE_LOG(LogSolid, Warning, TEXT("WorldMap: no route for road %s -> %s."), *From, *To);
+		UE_LOG(LogSolid, Warning, TEXT("WorldMap: no route for road %s -> %s."), *Road->From.Name, *Road->To.Name);
 	}
+
+	SolidRoad::FDefinition Definition = Road->ToDefinition();
+	if (Road->From.Kind == ESolidWorldChartMarkKind::Stronghold)
+	{
+		SolidRoad::LocateStrongholdEnd(BangMarks, Definition.From);
+	}
+	if (Road->To.Kind == ESolidWorldChartMarkKind::Stronghold)
+	{
+		SolidRoad::LocateStrongholdEnd(BangMarks, Definition.To);
+	}
+	Route.Definition = Definition;
 	SolvedRoads.Add(Route);
 	if (Road->Points.Num() > 1)
 	{

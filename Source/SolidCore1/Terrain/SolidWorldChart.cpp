@@ -2281,8 +2281,13 @@ void USolidWorldChart::BuildListedRoads(
 	for (SolidRoad::FSolidRoad Road : SolidRoad::Roads)
 	{
 		const bool bPlaced = Road.Locate(ChartMarks);
+		if (!bPlaced)
+		{
+			UE_LOG(LogSolid, Warning, TEXT("WorldChart: cannot locate both ends of %s -> %s."), *Road.From.Name, *Road.To.Name);
+			continue;
+		}
 		SolidRoad::FDefinition Definition = Road.ToDefinition();
-		if (!bPlaced || !EndReady(Definition.From) || !EndReady(Definition.To))
+		if (!EndReady(Definition.From) || !EndReady(Definition.To))
 		{
 			UE_LOG(LogSolid, Warning, TEXT("WorldChart: ignored road %s -> %s."), *Road.From.Name, *Road.To.Name);
 			continue;

@@ -198,6 +198,8 @@ When a test fails because `/Game/World/WorldChart` has changed, the agent may in
 
 The grid is 128 columns by 64 rows. Stored row 0 is north and stored column 0 is west. The dump counts from 1 at the top-left. A cell holds a marker biome. Swamp and road are not painted.
 
+World +Y is north and world +X is west for a terrain point and for a world cell. A terrain point's row number counts up toward the north, so point row 0 is the south edge. A world cell's row number counts up toward the south. Column 0 is west on both.
+
 A mark is a town, a stronghold, a stronghold site, a lair entrance, a lair exit, a custom note, or an encounter. A named town resolves as town. A lair mouth resolves as mountain. A stronghold uses the shelf that stronghold names. A site, a note, and an encounter leave the paint. A road is two end names and a type: trail, track, road, or highway. An end is a town or a stronghold. A site is not an end. The Iglin Tunnels Entrance is the LairEntrance south of Iglin. The Iglin Tunnels Exit is the LairExit west of Relion.
 
 ## Lairs

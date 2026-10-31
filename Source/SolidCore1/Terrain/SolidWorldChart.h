@@ -100,6 +100,10 @@ struct FSolidWorldEncounterMark
  * The same object answers the map queries: biomes, towns, and solved routes.
  * Those solved routes are not saved with the asset.
  * The game builds the world from /Game/World/WorldChart.
+ * World +Y is north and world +X is west, for a terrain point and for a world cell.
+ * A terrain point's row number counts up toward the north. Point row 0 is the south edge.
+ * A world cell's row number counts up toward the south. Cell row 0 is the north edge.
+ * Column 0 is west on both.
  */
 UCLASS(BlueprintType)
 class SOLIDCORE1_API USolidWorldChart : public UDataAsset
@@ -386,12 +390,14 @@ public:
 	/** Terrain points on one side. The same count as the terrain map's default grid. */
 	static constexpr int32 PointAxis = 513;
 
-	/** Marker biome of each cell. Row-major. Row 0 is north, column 0 is west. A ! is grassland. */
+	/** Marker biome of each cell. Row-major. Row 0 is north, so a higher row is further south. Column 0 is west. A ! is grassland. */
 	UPROPERTY(EditAnywhere, Category = "WorldChart")
 	TArray<ESolidBiome> Cells;
 
 	/**
-	 * Biome of each terrain point. Row-major. Index 0 is the south-east corner.
+	 * Biome of each terrain point. Row-major. Point row 0 is the south edge, so a
+	 * higher row is further north. Index 0 is the south-east corner. World +Y is
+	 * north, the same direction as a cell. A cell row counts the other way.
 	 * Empty on a chart saved as cells; loading copies those cells onto the points.
 	 * Mutable because solving a const chart fills it.
 	 */

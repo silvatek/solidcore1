@@ -620,36 +620,50 @@ namespace SolidRoad
 		}
 
 		TerrainLine(FromPoint, ToPoint, Points);
-		TArray<int32> Blocked;
-		for (int32 Index = 1; Index < Points.Num(); ++Index)
+		bool bOpen = false;
+		for (int32 Attempt = 0; Attempt < 4; ++Attempt)
 		{
-			if (!LineStepAllowed(Map, Type, Points[Index - 1], Points[Index]))
+			TArray<int32> Blocked;
+			for (int32 Index = 1; Index < Points.Num(); ++Index)
 			{
-				const FIntPoint& Block = Points[Index];
-				UE_LOG(LogSolid, Warning, TEXT("%s: blocked at %d,%d %s."),
-					*toString(),
-					Block.X,
-					Block.Y,
-					SolidBiome::Of(Map.GetPointBiome(Block)).Name());
-				Blocked.Add(Index);
-			}
-		}
-		if (Blocked.Num() > 0)
-		{
-			int32 Runs = 1;
-			for (int32 Index = 1; Index < Blocked.Num(); ++Index)
-			{
-				if (Blocked[Index] != Blocked[Index - 1] + 1)
+				if (!LineStepAllowed(Map, Type, Points[Index - 1], Points[Index]))
 				{
-					++Runs;
+					const FIntPoint& Block = Points[Index];
+					UE_LOG(LogSolid, Warning, TEXT("%s: blocked at %d,%d %s."),
+						*toString(),
+						Block.X,
+						Block.Y,
+						SolidBiome::Of(Map.GetPointBiome(Block)).Name());
+					Blocked.Add(Index);
 				}
 			}
+			if (Blocked.Num() == 0)
+			{
+				bOpen = true;
+				break;
+			}
+
+			int32 Last = Blocked[0];
+			for (int32 Index = 1; Index < Blocked.Num(); ++Index)
+			{
+				if (Blocked[Index] != Last + 1)
+				{
+					break;
+				}
+				Last = Blocked[Index];
+			}
+
 			const TArray<FIntPoint> Line = Points;
-			if (Runs != 1 || !DetourAroundPatch(Map, Type, Line, Blocked[0], Blocked.Last(), Points))
+			if (!DetourAroundPatch(Map, Type, Line, Blocked[0], Last, Points))
 			{
 				Points.Reset();
 				return false;
 			}
+		}
+		if (!bOpen)
+		{
+			Points.Reset();
+			return false;
 		}
 
 		PullStraight(Map, Type, Points);

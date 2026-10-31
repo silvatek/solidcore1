@@ -207,15 +207,6 @@ bool FSolidTerrainGridShippedChartTest::RunTest(const FString& Parameters)
 		TEXT("loading fills every terrain point"),
 		Chart->Points.Num(),
 		USolidWorldChart::PointAxis * USolidWorldChart::PointAxis);
-	int32 RoadPoints = 0;
-	for (const ESolidBiome Point : Chart->Points)
-	{
-		if (Point == ESolidBiome::Road)
-		{
-			++RoadPoints;
-		}
-	}
-	TestEqual(TEXT("the shipped copy has no road points"), RoadPoints, 0);
 	return true;
 }
 

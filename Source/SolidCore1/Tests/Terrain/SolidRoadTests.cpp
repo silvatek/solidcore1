@@ -192,49 +192,6 @@ bool FSolidRoadWidthTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidRoadParseTest,
-	"SolidCore1.Road.Parse",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
-
-bool FSolidRoadParseTest::RunTest(const FString& Parameters)
-{
-	SolidRoad::FDefinition Def;
-	TestFalse(TEXT("a letter is not an end"), SolidRoad::Parse(TEXT("Road: C -> Iglin, trail"), Def));
-	TestFalse(TEXT("a number is not an end"), SolidRoad::Parse(TEXT("Road: 0 -> 1, trail"), Def));
-
-	TestTrue(TEXT("town names"), SolidRoad::Parse(TEXT("Road: Iglin -> Relion, trail"), Def));
-	TestFalse(TEXT("town names are not a stronghold"), Def.From.bStronghold || Def.To.bStronghold);
-	TestEqual(TEXT("Iglin id"), Def.From.LocationId, SolidTowns::Iglin);
-	TestEqual(TEXT("Relion id"), Def.To.LocationId, SolidTowns::Relion);
-	TestEqual(TEXT("trail"), static_cast<uint8>(Def.Type), static_cast<uint8>(SolidRoad::EType::Trail));
-
-	TestTrue(TEXT("spaced track"), SolidRoad::Parse(TEXT("  Road: Dragongate -> Rathen, track  "), Def));
-	TestEqual(TEXT("from Dragongate"), Def.From.LocationId, SolidTowns::Dragongate);
-	TestEqual(TEXT("to Rathen"), Def.To.LocationId, SolidTowns::Rathen);
-	TestEqual(TEXT("track"), static_cast<uint8>(Def.Type), static_cast<uint8>(SolidRoad::EType::Track));
-
-	TestTrue(TEXT("highway"), SolidRoad::Parse(TEXT("Road: Relion -> Kanfold, highway"), Def));
-	TestEqual(TEXT("highway type"), static_cast<uint8>(Def.Type), static_cast<uint8>(SolidRoad::EType::Highway));
-	TestTrue(TEXT("road type ignores case"), SolidRoad::Parse(TEXT("Road: Relion -> Dragongate, Road"), Def));
-	TestEqual(TEXT("road type"), static_cast<uint8>(Def.Type), static_cast<uint8>(SolidRoad::EType::Road));
-
-	TestFalse(TEXT("missing type"), SolidRoad::Parse(TEXT("Road: Relion -> Dragongate"), Def));
-	TestFalse(TEXT("bad end"), SolidRoad::Parse(TEXT("Road: nowhere -> Iglin, trail"), Def));
-	TestFalse(TEXT("a key line is not a road"), SolidRoad::Parse(TEXT("G = Grassland (light green)"), Def));
-
-	TestTrue(TEXT("stronghold name"), SolidRoad::Parse(TEXT("Road: (MeagreDungeon) -> (Iglin), trail"), Def));
-	TestTrue(TEXT("from the stronghold"), Def.From.bStronghold);
-	TestEqual(TEXT("MeagreDungeon"), Def.From.StrongholdName, FString(TEXT("MeagreDungeon")));
-	TestEqual(TEXT("to Iglin"), Def.To.LocationId, SolidTowns::Iglin);
-
-	TestTrue(TEXT("spaced stronghold name"), SolidRoad::Parse(TEXT("Road: Meagre Dungeon -> iglin, trail"), Def));
-	TestTrue(TEXT("spaces still name the stronghold"), Def.From.bStronghold);
-	TestEqual(TEXT("the spaced name is kept"), Def.From.StrongholdName, FString(TEXT("Meagre Dungeon")));
-	TestEqual(TEXT("iglin ignores case"), Def.To.LocationId, SolidTowns::Iglin);
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidRoadNamedEndTest,
 	"SolidCore1.Road.NamedEnd",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)

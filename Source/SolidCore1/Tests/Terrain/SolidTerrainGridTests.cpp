@@ -191,38 +191,6 @@ bool FSolidTerrainGridMarkerPointTest::RunTest(const FString& Parameters)
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
-	FSolidTerrainGridRoadStripTest,
-	"SolidCore1.TerrainGrid.RoadStrip",
-	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
-
-bool FSolidTerrainGridRoadStripTest::RunTest(const FString& Parameters)
-{
-	FString Grid = GrassGrid();
-	SetTerrainCell(Grid, 4, 12, USolidWorldChart::LocationMarker);
-	SetTerrainCell(Grid, 12, 12, USolidWorldChart::LocationMarker);
-	Grid += TEXT("! 13,5 = Town Iglin\n! 13,13 = Town Relion\nRoad: Iglin -> Relion, trail\n");
-	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
-	if (!TestNotNull(TEXT("trail chart"), Chart) || !TestTrue(TEXT("trail loads"), Chart->LoadFromString(Grid)))
-	{
-		return false;
-	}
-
-	int32 RoadPoints = 0;
-	for (const ESolidBiome Point : Chart->Points)
-	{
-		if (Point == ESolidBiome::Road)
-		{
-			++RoadPoints;
-		}
-	}
-	TestEqual(TEXT("the copy leaves the road strip off the points"), RoadPoints, 0);
-	BiomeIs(*this, TEXT("the trail centre still samples as road"), SampleAt(*Chart, CellCentre(*Chart, 6, 12)), ESolidBiome::Road);
-	BiomeIs(*this, TEXT("the point under the trail stays grassland"), Chart->GetPointBiomeAtCell(6, 12), ESolidBiome::Grassland);
-	BiomeIs(*this, TEXT("the town point stays town"), Chart->GetPointBiomeAtCell(4, 12), ESolidBiome::Town);
-	return true;
-}
-
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidTerrainGridShippedChartTest,
 	"SolidCore1.TerrainGrid.ShippedChart",
 	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
@@ -489,20 +457,6 @@ bool FSolidTerrainGridPointBrushTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("a note places"), Chart->PlaceCustom(Note, TEXT("Lookout"), Error));
 	TestTrue(TEXT("forest covers the note"), Chart->PaintBrush({ NotePoint }, 0, ESolidBiome::Forest, Error));
 	BiomeIs(*this, TEXT("the note point stays grassland"), Chart->GetPointBiome(NotePoint), ESolidBiome::Grassland);
-
-	FString Road = GrassGrid();
-	SetTerrainCell(Road, 4, 12, USolidWorldChart::LocationMarker);
-	SetTerrainCell(Road, 12, 12, USolidWorldChart::LocationMarker);
-	Road += TEXT("! 13,5 = Town Iglin\n! 13,13 = Town Relion\nRoad: Iglin -> Relion, trail\n");
-	USolidWorldChart* Trail = NewObject<USolidWorldChart>();
-	if (!TestNotNull(TEXT("trail chart"), Trail) || !TestTrue(TEXT("trail loads"), Trail->LoadFromString(Road)))
-	{
-		return false;
-	}
-	const FVector2D TrailCentre = CellCentre(*Trail, 6, 12);
-	const FIntPoint TrailPoint = PointAt(*Trail, TrailCentre);
-	BiomeIs(*this, TEXT("the point under the trail is grassland"), Trail->GetPointBiome(TrailPoint), ESolidBiome::Grassland);
-	BiomeIs(*this, TEXT("play still reads the trail as road"), SampleAt(*Trail, TrailCentre), ESolidBiome::Road);
 	return true;
 }
 

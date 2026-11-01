@@ -7,12 +7,12 @@ The open world is one square in Unreal, measured in centimetres. Five coordinate
 - [Systems](#systems)
   - [World](#world)
   - [Terrain](#terrain)
-  - [Stored](#stored)
+  - [Chart](#chart)
   - [Cell](#cell)
   - [Chunk](#chunk)
 - [Transformations](#transformations)
   - [Terrain and world](#terrain-and-world)
-  - [Stored and world](#stored-and-world)
+  - [Chart and world](#chart-and-world)
   - [Cell and world](#cell-and-world)
   - [Chunk and world](#chunk-and-world)
 - [Actor](#actor)
@@ -48,11 +48,11 @@ A terrain point carries a world position, a surface height, a biome, and explora
 
 The world chart asset keeps a second copy of this lattice. `Points` there is one biome per terrain point, in the same order, with the same index 0 at the south-east corner. It does not store a second set of positions.
 
-### Stored
+### Chart
 
-`storedX` and `storedY` are centimetres on the chart asset. +storedX is west and +storedY is north, the same directions as world. The origin is the south-east corner. That corner is stored (0, 0) and world (−51200, −51200). The opposite corner is stored (102400, 102400) and world (51200, 51200).
+`chartX` and `chartY` are centimetres stored on the world chart. +chartX is west and +chartY is north, the same directions as world. The origin is the south-east corner. That corner is chart (0, 0) and world (−51200, −51200). The opposite corner is chart (102400, 102400) and world (51200, 51200).
 
-A mark saves its position as `PositionCm` in this frame. The centimetres of a terrain point are `terrainX * 200` and `terrainY * 200`. Using a stored value as a world position places it 512 m west and 512 m north of where it stands.
+A mark saves its position as `PositionCm` in chart. The centimetres of a terrain point are `terrainX * 200` and `terrainY * 200`. Using a chart position as a world position places it 512 m west and 512 m north of where it stands.
 
 ### Cell
 
@@ -62,7 +62,7 @@ A mark saves its position as `PositionCm` in this frame. The centimetres of a te
 
 `cellX` increases east, and `cellY` increases south. That is the opposite of `terrainX` and `terrainY`.
 
-A mark (a town, a stronghold, a site, a lair mouth, a note, an encounter, or a bridge) sits on one cell. Its `PositionCm` is that cell's centre in stored. On the shipped sizes that centre is stored (102000, 101600), which is world (50800, 50400) and `terrainX` 510, `terrainY` 508. A column is 4 steps wide. A row is 8 steps tall.
+A mark (a town, a stronghold, a site, a lair mouth, a note, an encounter, or a bridge) sits on one cell. Its `PositionCm` is that cell's centre in chart. On the shipped sizes that centre is chart (102000, 101600), which is world (50800, 50400) and `terrainX` 510, `terrainY` 508. A column is 4 steps wide. A row is 8 steps tall.
 
 The old map text, and a dump of the grid, count from 1 at the top-left. The top-left is `cellX` 0, `cellY` 0. A line `! 8,21 = Town Iglin` is row 8, column 21 in that count, which is `cellX` 20, `cellY` 7.
 
@@ -101,21 +101,21 @@ worldY = (terrainY - 256) * 200 - 100
 
 A bridge uses that same shift.
 
-### Stored and world
+### Chart and world
 
 ```
-worldX = storedX - 51200
-worldY = storedY - 51200
+worldX = chartX - 51200
+worldY = chartY - 51200
 ```
 
 51200 is `256 * 200`, half the square. `TerrainPosition` is this shift. Play draws a mark only after it.
 
 ```
-storedX = worldX + 51200
-storedY = worldY + 51200
+chartX = worldX + 51200
+chartY = worldY + 51200
 ```
 
-A terrain point lands on `storedX = terrainX * 200` and `storedY = terrainY * 200`.
+A terrain point lands on `chartX = terrainX * 200` and `chartY = terrainY * 200`.
 
 ### Cell and world
 
@@ -138,7 +138,7 @@ From a cell, the neighbours are:
 | South | 0 | +1 |
 | West | −1 | 0 |
 
-In stored that same centre is `storedX = worldX + 51200` and `storedY = worldY + 51200`. The stored square runs to 102400.
+In chart, that same centre is `chartX = worldX + 51200` and `chartY = worldY + 51200`. The chart square runs to 102400.
 
 The text count from 1 is `cellX + 1` for the column and `cellY + 1` for the row. The line writes the row first.
 
@@ -183,17 +183,17 @@ A lair maze is 11 by 9 squares of 200 cm. `mazeX` 0, `mazeY` 0 is the minimum lo
 
 ## Code
 
-World axes, terrain, stored, and cell live on `USolidWorldChart` in [SolidWorldChart.h](SolidWorldChart.h). `MapWidth` and `MapHeight` are the 128 by 64 cells. `PointAxis` is 513, the terrain grid. The comment on the class states the compass and which edge is index 0. `Cells` is cell storage. `Points` is the chart asset's copy of that grid, one biome per terrain point.
+World axes, terrain, chart, and cell live on `USolidWorldChart` in [SolidWorldChart.h](SolidWorldChart.h). `MapWidth` and `MapHeight` are the 128 by 64 cells. `PointAxis` is 513, the terrain grid. The comment on the class states the compass and which edge is index 0. `Cells` is cell storage. `Points` is the chart asset's copy of that grid, one biome per terrain point.
 
 [SolidWorldChart.cpp](SolidWorldChart.cpp) is the arithmetic:
 
-- `DefaultWorldBounds` is the stored square, from stored (0, 0) to stored (102400, 102400). The terrain class default still has its origin at (0, 0). `Build` recenters a running map.
-- `TerrainPosition` adds −51200, taking stored to world.
+- `DefaultWorldBounds` is the chart square, from chart (0, 0) to chart (102400, 102400). The terrain class default still has its origin at (0, 0). `Build` recenters a running map.
+- `TerrainPosition` adds −51200, taking chart to world.
 - `CellCentre` and `CellToWorldXY` project a cell centre. `WorldXYToCell` and `CellAtWorld` project the other way.
 - `TerrainPointToWorld` and `TerrainPointAt` project a point. The helpers next to them are `WorldAtPoint`, `PointAtWorld`, and `PointUnderCell`. `PointAtWorld` passes the fraction from the minimum X, the east edge, toward the maximum X. The parameter on that helper is named `EastFromWest`.
 - `WorldMapParseBangLocation` turns a `! row,column` line, counting from 1, into a cell. The column minus 1 is `MapX`. The row minus 1 is `MapY`.
 
-[SolidWorldChartMark.h](SolidWorldChartMark.h) stores `PositionCm` as the cell centre in stored. +X is west and +Y is north. `TerrainPosition` shifts that value into world.
+[SolidWorldChartMark.h](SolidWorldChartMark.h) stores `PositionCm` as the cell centre in chart. +X is west and +Y is north. `TerrainPosition` shifts that value into world.
 
 [SolidTerrainMap.h](SolidTerrainMap.h) and [SolidTerrainMap.cpp](SolidTerrainMap.cpp) are terrain. `Build` centres `OriginXY` on the world origin, so terrain index 0 is at world (−51200, −51200). `GetWorldMinXY` and `GetWorldMaxXY` are the centred square. `GetPoint` is row-major from the terrain grid's south-east corner. `WorldToIndex` rounds to the nearest terrain point. `SampleHeight` and `SamplePoint` interpolate inside the surrounding quad, and the biome stays on the nearest point.
 

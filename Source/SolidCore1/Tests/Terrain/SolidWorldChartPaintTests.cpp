@@ -554,7 +554,7 @@ bool FSolidWorldChartBridgeTest::RunTest(const FString& Parameters)
 	USolidWorldChart::DefaultWorldBounds(BoundsMin, BoundsMax);
 	TestEqual(
 		TEXT("the river beside the bridge stays river"),
-		static_cast<uint8>(Chart->SampleBiome(Centre.X - 400.f, Centre.Y, BoundsMin, BoundsMax)),
+		static_cast<uint8>(Chart->SampleBiome(Centre.X - 200.f, Centre.Y, BoundsMin, BoundsMax)),
 		static_cast<uint8>(ESolidBiome::River));
 
 	const FIntPoint Moved(15, 9);

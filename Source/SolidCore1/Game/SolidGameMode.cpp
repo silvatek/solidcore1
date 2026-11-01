@@ -2625,9 +2625,6 @@ void ASolidGameMode::EnsureVegetation()
 		USolidWorldChart* BridgeMap = Terrain ? Terrain->GetWorldMap() : nullptr;
 		if (BridgeMap && BridgeMap->IsLoaded())
 		{
-			FVector2D ChartMin = FVector2D::ZeroVector;
-			FVector2D ChartMax = FVector2D::ZeroVector;
-			USolidWorldChart::ChartBounds(ChartMin, ChartMax);
 			const FVector2D TerrainMin = Terrain->GetWorldMinXY();
 			const FVector2D TerrainMax = Terrain->GetWorldMaxXY();
 			const APawn* Pawn = World->GetFirstPlayerController()
@@ -2635,8 +2632,7 @@ void ASolidGameMode::EnsureVegetation()
 				: nullptr;
 			const FVector PawnAt = Pawn ? Pawn->GetActorLocation() : FVector::ZeroVector;
 			UE_LOG(LogSolid, Warning,
-				TEXT("Bridge frame chart (%.0f, %.0f)-(%.0f, %.0f) terrain (%.0f, %.0f)-(%.0f, %.0f) pawn (%.0f, %.0f, %.0f)"),
-				ChartMin.X, ChartMin.Y, ChartMax.X, ChartMax.Y,
+				TEXT("Bridge frame terrain (%.0f, %.0f)-(%.0f, %.0f) pawn (%.0f, %.0f, %.0f)"),
 				TerrainMin.X, TerrainMin.Y, TerrainMax.X, TerrainMax.Y,
 				PawnAt.X, PawnAt.Y, PawnAt.Z);
 			for (const FSolidWorldChartMark& Mark : BridgeMap->Marks)

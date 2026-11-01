@@ -151,12 +151,6 @@ public:
 	static const TCHAR* ShippedPath();
 
 	/**
-	 * Chart rectangle in centimetres. The origin is the south-east corner.
-	 * This is the terrain map's default square, origin at zero. Build recenters a running map.
-	 */
-	static void ChartBounds(FVector2D& OutChartMin, FVector2D& OutChartMax);
-
-	/**
 	 * Fill this chart from map text. A ! is stored as grassland.
 	 * Named towns, strongholds, sites, and lair mouths become marks.
 	 * A Road: line is ignored.
@@ -221,9 +215,6 @@ public:
 	 */
 	ESolidBiome SampleBiome(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 
-	/** Sample biome for a chart position. The rectangle is ChartBounds. */
-	ESolidBiome SampleChartBiome(float ChartX, float ChartY, FVector2D ChartMin, FVector2D ChartMax) const;
-
 	/**
 	 * Biome of the terrain point under this cell, the point at the cell centre.
 	 * A road step reads this. The cell's own biome is GetBiomeAtCell.
@@ -238,9 +229,6 @@ public:
 
 	/** True when the point lies within the routed road's width of its terrain points. */
 	bool IsOnRoad(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
-
-	/** True when the chart position lies within the routed road's width. The rectangle is ChartBounds. */
-	bool IsOnChart(float ChartX, float ChartY, FVector2D ChartMin, FVector2D ChartMax) const;
 
 	/** True when this cell is the town marker, or a named town. A road strip is not a town. */
 	bool IsMarkedTown(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
@@ -293,19 +281,6 @@ public:
 	static ESolidWorldChartRoadType ChartRoadType(SolidRoad::EType Type);
 
 	/**
-	 * Centre of one map cell, in the chart's centimetre rectangle.
-	 * Column 0 is west, row 0 is north.
-	 */
-	static bool CellCentre(FIntPoint Cell, FVector2D& OutChartCm);
-
-	/**
-	 * A stored mark position in a terrain map's centimetres.
-	 * The chart rectangle starts at the origin. A built map is centred on the origin.
-	 * Play and the chart mode both use this shift.
-	 */
-	static FVector2D TerrainPosition(const FVector2D& ChartCm, const FVector2D& WorldMin);
-
-	/**
 	 * Paint marker biomes. Swamp and road are rejected. Marks stay where they are.
 	 * One call is one undo step. A run is the cells of one drag. A rectangle is inclusive.
 	 */
@@ -317,9 +292,6 @@ public:
 	 * TerrainPoint.Y increases north from the south edge. The same rectangle as SampleBiome.
 	 */
 	bool TerrainPointAt(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, FIntPoint& OutTerrainPoint) const;
-
-	/** Terrain point nearest this chart position. The rectangle is ChartBounds. */
-	bool ChartTerrainPointAt(float ChartX, float ChartY, FVector2D ChartMin, FVector2D ChartMax, FIntPoint& OutTerrainPoint) const;
 
 	/** World position of one terrain point. The same rectangle as TerrainPointAt. */
 	bool TerrainPointToWorld(FIntPoint TerrainPoint, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;

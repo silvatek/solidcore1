@@ -37,13 +37,6 @@ const TCHAR* USolidWorldChart::ShippedPath()
 	return TEXT("/Game/World/WorldChart");
 }
 
-void USolidWorldChart::ChartBounds(FVector2D& OutChartMin, FVector2D& OutChartMax)
-{
-	const USolidTerrainMap* Terrain = GetDefault<USolidTerrainMap>();
-	OutChartMin = Terrain->GetWorldMinXY();
-	OutChartMax = Terrain->GetWorldMaxXY();
-}
-
 bool USolidWorldChart::ImportFromString(const FString& Text)
 {
 	if (!LoadFromString(Text))
@@ -135,34 +128,6 @@ namespace
 			return false;
 		}
 	}
-}
-
-bool USolidWorldChart::CellCentre(const FIntPoint Cell, FVector2D& OutChartCm)
-{
-	if (Cell.X < 0 || Cell.Y < 0 || Cell.X >= USolidWorldChart::MapWidth || Cell.Y >= USolidWorldChart::MapHeight)
-	{
-		return false;
-	}
-
-	FVector2D ChartMin = FVector2D::ZeroVector;
-	FVector2D ChartMax = FVector2D::ZeroVector;
-	ChartBounds(ChartMin, ChartMax);
-	const float ExtentX = FMath::Max(ChartMax.X - ChartMin.X, 1.f);
-	const float ExtentY = FMath::Max(ChartMax.Y - ChartMin.Y, 1.f);
-	const float CellW = ExtentX / static_cast<float>(USolidWorldChart::MapWidth);
-	const float CellH = ExtentY / static_cast<float>(USolidWorldChart::MapHeight);
-	// Column 0 is west. Row 0 is north. The centre matches USolidWorldChart::CellToWorldXY.
-	OutChartCm.X = ChartMax.X - (static_cast<float>(Cell.X) + 0.5f) * CellW;
-	OutChartCm.Y = ChartMax.Y - (static_cast<float>(Cell.Y) + 0.5f) * CellH;
-	return true;
-}
-
-FVector2D USolidWorldChart::TerrainPosition(const FVector2D& ChartCm, const FVector2D& WorldMin)
-{
-	FVector2D ChartMin = FVector2D::ZeroVector;
-	FVector2D ChartMax = FVector2D::ZeroVector;
-	ChartBounds(ChartMin, ChartMax);
-	return ChartCm + (WorldMin - ChartMin);
 }
 
 void USolidWorldChart::PushUndo()
@@ -1415,28 +1380,7 @@ namespace
 		PointAtFraction((WorldX - Min.X) / ExtentX, (WorldY - Min.Y) / ExtentY, OutTerrainX, OutTerrainY);
 	}
 
-	void PointAtChart(
-		const float ChartX,
-		const float ChartY,
-		const FVector2D& Min,
-		const FVector2D& Max,
-		int32& OutTerrainX,
-		int32& OutTerrainY)
-	{
-		const float ExtentX = FMath::Max(Max.X - Min.X, 1.f);
-		const float ExtentY = FMath::Max(Max.Y - Min.Y, 1.f);
-		PointAtFraction((ChartX - Min.X) / ExtentX, (ChartY - Min.Y) / ExtentY, OutTerrainX, OutTerrainY);
-	}
-
 	FVector2D WorldAtPoint(const int32 TerrainX, const int32 TerrainY, const FVector2D& Min, const FVector2D& Max)
-	{
-		const float Span = static_cast<float>(USolidWorldChart::PointAxis - 1);
-		return FVector2D(
-			Min.X + static_cast<float>(TerrainX) * (Max.X - Min.X) / Span,
-			Min.Y + static_cast<float>(TerrainY) * (Max.Y - Min.Y) / Span);
-	}
-
-	FVector2D ChartAtPoint(const int32 TerrainX, const int32 TerrainY, const FVector2D& Min, const FVector2D& Max)
 	{
 		const float Span = static_cast<float>(USolidWorldChart::PointAxis - 1);
 		return FVector2D(
@@ -1706,20 +1650,6 @@ bool USolidWorldChart::TerrainPointToWorld(
 	return true;
 }
 
-bool USolidWorldChart::ChartTerrainPointAt(
-	const float ChartX,
-	const float ChartY,
-	const FVector2D ChartMin,
-	const FVector2D ChartMax,
-	FIntPoint& OutTerrainPoint) const
-{
-	int32 TerrainX = 0;
-	int32 TerrainY = 0;
-	PointAtChart(ChartX, ChartY, ChartMin, ChartMax, TerrainX, TerrainY);
-	OutTerrainPoint = FIntPoint(TerrainX, TerrainY);
-	return true;
-}
-
 ESolidBiome USolidWorldChart::GetPointBiome(const FIntPoint TerrainPoint) const
 {
 	if (!EnsurePoints() || !OnPoint(TerrainPoint))
@@ -1930,52 +1860,6 @@ ESolidBiome USolidWorldChart::SampleBiome(
 	if (!bNamedShelf
 		&& Ground != ESolidBiome::River
 		&& IsOnRoad(WorldX, WorldY, WorldMinXY, WorldMaxXY)
-		&& SolidBiome::Of(Ground).HeightOffsetCm()
-			== SolidBiome::Of(ESolidBiome::Road).HeightOffsetCm())
-	{
-		return ESolidBiome::Road;
-	}
-	return Ground;
-}
-
-ESolidBiome USolidWorldChart::SampleChartBiome(
-	const float ChartX,
-	const float ChartY,
-	const FVector2D ChartMin,
-	const FVector2D ChartMax) const
-{
-	if (!EnsurePoints())
-	{
-		return ESolidBiome::Grassland;
-	}
-
-	int32 TerrainX = 0;
-	int32 TerrainY = 0;
-	PointAtChart(ChartX, ChartY, ChartMin, ChartMax, TerrainX, TerrainY);
-	const ESolidBiome Ground = Points[PointSlot(TerrainX, TerrainY)];
-
-	if (!EnsureQuery())
-	{
-		return Ground;
-	}
-	const float ExtentX = FMath::Max(ChartMax.X - ChartMin.X, 1.f);
-	const float ExtentY = FMath::Max(ChartMax.Y - ChartMin.Y, 1.f);
-	const float UFromWest = FMath::Clamp((ChartMax.X - ChartX) / ExtentX, 0.f, 1.f);
-	const float VFromNorth = 1.f - FMath::Clamp((ChartY - ChartMin.Y) / ExtentY, 0.f, 1.f);
-	const int32 CellX = FMath::Clamp(FMath::FloorToInt(UFromWest * MapWidth), 0, MapWidth - 1);
-	const int32 CellY = FMath::Clamp(FMath::FloorToInt(VFromNorth * MapHeight), 0, MapHeight - 1);
-
-	bool bNamedShelf = false;
-	ESolidStrongholdType HoldType = ESolidStrongholdType::Dungeon;
-	ESolidStrongholdSize HoldSize = ESolidStrongholdSize::Meagre;
-	if (StrongholdAtCell(CellX, CellY, HoldType, HoldSize))
-	{
-		ESolidBiome Named = ESolidBiome::Grassland;
-		bNamedShelf = SolidStronghold::BiomeFor(FSolidStronghold(HoldType, HoldSize), Named);
-	}
-	if (!bNamedShelf
-		&& Ground != ESolidBiome::River
-		&& IsOnChart(ChartX, ChartY, ChartMin, ChartMax)
 		&& SolidBiome::Of(Ground).HeightOffsetCm()
 			== SolidBiome::Of(ESolidBiome::Road).HeightOffsetCm())
 	{
@@ -2384,47 +2268,6 @@ bool USolidWorldChart::IsOnRoad(
 				continue;
 			}
 			if (bHasPrevious && SolidRoad::DistanceToSegmentCm(World, Previous, At) <= HalfWidth)
-			{
-				return true;
-			}
-			Previous = At;
-			bHasPrevious = true;
-		}
-	}
-	return false;
-}
-
-bool USolidWorldChart::IsOnChart(
-	const float ChartX,
-	const float ChartY,
-	const FVector2D ChartMin,
-	const FVector2D ChartMax) const
-{
-	if (!EnsureQuery())
-	{
-		return false;
-	}
-
-	const FVector2D Chart(ChartX, ChartY);
-	for (const SolidRoad::FSolidRoad& Road : GetRoutedRoads())
-	{
-		if (Road.Points.Num() < 2)
-		{
-			continue;
-		}
-		const float HalfWidth = SolidRoad::WidthCm(Road.Type) * 0.5f;
-		FVector2D Previous = FVector2D::ZeroVector;
-		bool bHasPrevious = false;
-		for (const FIntPoint& TerrainPoint : Road.Points)
-		{
-			if (TerrainPoint.X < 0 || TerrainPoint.Y < 0
-				|| TerrainPoint.X >= PointAxis || TerrainPoint.Y >= PointAxis)
-			{
-				bHasPrevious = false;
-				continue;
-			}
-			const FVector2D At = ChartAtPoint(TerrainPoint.X, TerrainPoint.Y, ChartMin, ChartMax);
-			if (bHasPrevious && SolidRoad::DistanceToSegmentCm(Chart, Previous, At) <= HalfWidth)
 			{
 				return true;
 			}

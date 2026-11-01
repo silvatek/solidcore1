@@ -104,7 +104,7 @@ worldX = chartX - 51200
 worldY = chartY - 51200
 ```
 
-51200 is `256 * 200`, half the square. `TerrainPosition` is this shift. Play draws a mark only after it. A bridge stood on a mark uses this shift alone. The centre of the span is that point.
+51200 is `256 * 200`, half the square. `Build` recenters a running map by this shift. A bridge stood on a mark uses this shift alone. The centre of the span is that point.
 
 ```
 chartX = worldX + 51200
@@ -193,13 +193,11 @@ World axes, terrain, chart, and cell live on `USolidWorldChart` in [SolidWorldCh
 
 [SolidWorldChart.cpp](SolidWorldChart.cpp) is the arithmetic:
 
-- `ChartBounds` is the chart square, from chart (0, 0) to chart (102400, 102400). The terrain class default still has its origin at (0, 0). `Build` recenters a running map.
-- `TerrainPosition` adds −51200, taking chart to world.
-- `CellCentre` and `CellToWorldXY` project a cell centre. `WorldXYToCell` and `CellAtWorld` project the other way. `PointUnderCell` is the terrain point at a cell centre. `CellAtTerrainPoint` is the cell that contains a terrain point.
-- `TerrainPointToWorld` and `TerrainPointAt` project a point. `ChartTerrainPointAt` is the chart copy of `TerrainPointAt`. `SampleChartBiome` is the chart copy of `SampleBiome`. `TerrainPointAt` writes `OutTerrainPoint`, an `FIntPoint` whose X and Y are `terrainX` and `terrainY`. The helpers next to them are `WorldAtPoint`, `PointAtWorld`, and `PointUnderCell`. Their indexes are `TerrainX` and `TerrainY`. `PointAtWorld` passes the fraction from the minimum X, the east edge, toward the maximum X. The parameter on that helper is named `EastFromWest`.
+- `CellToWorldXY` projects a cell centre. `WorldXYToCell` and `CellAtWorld` project the other way. `PointUnderCell` is the terrain point at a cell centre. `CellAtTerrainPoint` is the cell that contains a terrain point.
+- `TerrainPointToWorld` and `TerrainPointAt` project a point. `SampleBiome` reads the biome at a world position. `TerrainPointAt` writes `OutTerrainPoint`, an `FIntPoint` whose X and Y are `terrainX` and `terrainY`. The helpers next to them are `WorldAtPoint`, `PointAtWorld`, and `PointUnderCell`. Their indexes are `TerrainX` and `TerrainY`. `PointAtWorld` passes the fraction from the minimum X, the east edge, toward the maximum X. The parameter on that helper is named `EastFromWest`.
 - `WorldMapParseBangLocation` turns a `! row,column` line, counting from 1, into a cell. The column minus 1 is `CellX`. The row minus 1 is `CellY`.
 
-[SolidWorldChartMark.h](SolidWorldChartMark.h) stores `TerrainPoint` as the cell centre. +X is west and +Y is north. `TerrainPosition` shifts a chart position into world. Callers project `TerrainPoint`.
+[SolidWorldChartMark.h](SolidWorldChartMark.h) stores `TerrainPoint` as the cell centre. +X is west and +Y is north. Callers project `TerrainPoint` with `TerrainPointToWorld`.
 
 [SolidTerrainMap.h](SolidTerrainMap.h) and [SolidTerrainMap.cpp](SolidTerrainMap.cpp) are terrain. `Build` centres `WorldMinCm` on the world origin, so terrain index 0 is at world (−51200, −51200). `GetWorldMinXY` and `GetWorldMaxXY` are the centred square. `GetPoint(TerrainX, TerrainY)` is row-major from the terrain grid's south-east corner. `WorldToIndex` writes `OutTerrainX` and `OutTerrainY`. `SampleHeight` and `SamplePoint` interpolate inside the surrounding quad, and the biome stays on the nearest point.
 

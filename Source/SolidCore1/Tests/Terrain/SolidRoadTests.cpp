@@ -6,6 +6,7 @@
 #include "SolidStronghold.h"
 #include "SolidTerrainTypes.h"
 #include "SolidTowns.h"
+#include "SolidTerrainMap.h"
 #include "SolidWorldChart.h"
 
 #if WITH_DEV_AUTOMATION_TESTS
@@ -850,10 +851,7 @@ bool FSolidRoadNearerEndTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	FVector2D ChartMin = FVector2D::ZeroVector;
-	FVector2D ChartMax = FVector2D::ZeroVector;
-	USolidWorldChart::ChartBounds(ChartMin, ChartMax);
-	const float Spacing = (ChartMax.X - ChartMin.X) / static_cast<float>(USolidWorldChart::PointAxis - 1);
+	const float Spacing = GetDefault<USolidTerrainMap>()->PointSpacing;
 	const int32 LastPoint = USolidWorldChart::PointAxis - 1;
 	const FIntPoint WestTerrainPoint(
 		FMath::Clamp(FMath::RoundToInt(static_cast<float>(BridgePoint.X) + Half / Spacing), 0, LastPoint),

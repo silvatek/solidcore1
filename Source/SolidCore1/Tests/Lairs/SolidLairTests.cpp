@@ -10,6 +10,7 @@
 #include "SolidGameState.h"
 #include "Company/SolidCaptain.h"
 #include "SolidStronghold.h"
+#include "SolidTerrainMap.h"
 #include "SolidWorldChart.h"
 #include "Towns/SolidTowns.h"
 #include "Components/InstancedStaticMeshComponent.h"
@@ -587,11 +588,12 @@ bool FSolidLairExitFacesWestTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	FVector2D ChartMin = FVector2D::ZeroVector;
-	FVector2D ChartMax = FVector2D::ZeroVector;
-	USolidWorldChart::ChartBounds(ChartMin, ChartMax);
+	const USolidTerrainMap* Defaults = GetDefault<USolidTerrainMap>();
 	TArray<SolidLair::FEntrance> Mouths;
-	TestEqual(TEXT("both mouths stand"), SolidLair::CollectEntrances(Chart, ChartMin, ChartMax, Mouths), 2);
+	TestEqual(
+		TEXT("both mouths stand"),
+		SolidLair::CollectEntrances(Chart, Defaults->GetWorldMinXY(), Defaults->GetWorldMaxXY(), Mouths),
+		2);
 	bool bSawExit = false;
 	bool bSawEntrance = false;
 	for (const SolidLair::FEntrance& Mouth : Mouths)

@@ -22,7 +22,7 @@ The open world is one square in Unreal, measured in centimetres. Four coordinate
 
 ### World
 
-`worldX`, `worldY`, and `worldZ` are Unreal centimetres. `worldX` is west, `worldY` is north, and `worldZ` is up. Unreal's forward axis is west, and Unreal's right axis is north.
+`worldX`, `worldY`, and `worldZ` are Unreal centimetres. +worldX is west, +worldY is north, and +worldZ is up. Unreal's forward axis is west, and Unreal's right axis is north.
 
 The running game places the centre of the 1024 m square at world (0, 0). The square runs from world (−51200, −51200) to world (51200, 51200). Height noise is sampled from `worldX` and `worldY`.
 
@@ -42,7 +42,7 @@ A sign that faces south uses yaw −90. A sign that faces north uses yaw 90.
 
 `terrainX` and `terrainY` index a square lattice of sample points. The shipped grid is 513 points on a side, 200 cm apart, so there are 512 steps from edge to edge and the steps fill the 1024 m square.
 
-`terrainX` 0, `terrainY` 0 is the south-east corner, at world (−51200, −51200). `terrainX` increases west. `terrainY` increases north, so `terrainY` 0 is the south edge. Storage order is `terrainY × 513 + terrainX`.
+`terrainX` 0, `terrainY` 0 is the south-east corner, at world (−51200, −51200). +terrainX is west and +terrainY is north, the same directions as world. `terrainY` 0 is the south edge. Storage order is `terrainY × 513 + terrainX`.
 
 A terrain point carries a world position, a surface height, a biome, and exploration fog. Fog is a value on the point. Between four terrain points, height, threat, and fog are bilinear. The biome is the nearest point's biome.
 
@@ -50,7 +50,7 @@ The world chart asset keeps a second copy of this lattice. `Points` there is one
 
 ### Chart (legacy)
 
-`chartX` and `chartY` are centimetres stored on the world chart. +chartX is west and +chartY is north, the same directions as world. The origin is the south-east corner. That corner is chart (0, 0) and world (−51200, −51200). The opposite corner is chart (102400, 102400) and world (51200, 51200).
+`chartX` and `chartY` are centimetres stored on the world chart. +chartX is west and +chartY is north, the same directions as world and terrain. The origin is the south-east corner. That corner is chart (0, 0) and world (−51200, −51200). The opposite corner is chart (102400, 102400) and world (51200, 51200).
 
 A mark saves its position as `PositionCm` in chart. The centimetres of a terrain point are `terrainX * 200` and `terrainY * 200`. Using a chart position as a world position places it 512 m west and 512 m north of where it stands.
 
@@ -62,7 +62,7 @@ This frame will eventually be replaced by storing a world position on the world 
 
 `cellX` 0 is the west edge. `cellY` 0 is the north edge. A higher `cellY` is further south. Storage order is `cellY × 128 + cellX`.
 
-`cellX` increases east, and `cellY` increases south. That is the opposite of `terrainX` and `terrainY`.
++cellX is east and +cellY is south. World, terrain, and chart use +X west and +Y north. Cell does not.
 
 A mark (a town, a stronghold, a site, a lair mouth, a note, an encounter, or a bridge) sits on one cell. Its `PositionCm` is that cell's centre in chart. On the shipped sizes that centre is chart (102000, 101600), which is world (50800, 50400) and `terrainX` 510, `terrainY` 508. A column is 4 steps wide. A row is 8 steps tall.
 

@@ -44,6 +44,10 @@ struct FSolidWorldChartMark
 	UPROPERTY(EditAnywhere, Category = "WorldChart")
 	FVector2D ChartCm = FVector2D::ZeroVector;
 
+	/** Terrain point of this mark. The same place as ChartCm. */
+	UPROPERTY(EditAnywhere, Category = "WorldChart")
+	FIntPoint TerrainPoint = FIntPoint::ZeroValue;
+
 	/** Set for a stronghold. A site has no type. */
 	UPROPERTY(EditAnywhere, Category = "WorldChart")
 	ESolidStrongholdType StrongholdType = ESolidStrongholdType::Dungeon;

@@ -278,6 +278,10 @@ bool USolidWorldChart::PlaceMark(const FIntPoint Cell, const FSolidWorldChartMar
 	PushUndo();
 	FSolidWorldChartMark Stored = Mark;
 	Stored.ChartCm = ChartCm;
+	FVector2D ChartMin = FVector2D::ZeroVector;
+	FVector2D ChartMax = FVector2D::ZeroVector;
+	ChartBounds(ChartMin, ChartMax);
+	ChartTerrainPointAt(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, Stored.TerrainPoint);
 	for (int32 Index = Marks.Num() - 1; Index >= 0; --Index)
 	{
 		const bool bHere = FVector2D::Distance(Marks[Index].ChartCm, ChartCm) <= 1.f;

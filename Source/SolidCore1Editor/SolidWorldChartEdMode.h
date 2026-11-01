@@ -113,6 +113,8 @@ private:
 	void EndStroke();
 	void SampleBrush(const FIntPoint& TerrainPoint);
 	void ShowChart();
+	/** Fill each mark's TerrainPoint from ChartCm. Dirty the chart when one changes. */
+	void FillMarkTerrainPoints();
 	void ClearChartActors();
 	void RebuildOverlay();
 	void RebuildSigns();

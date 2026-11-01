@@ -1491,6 +1491,42 @@ void FSolidWorldChartEdMode::SampleBrush(const FIntPoint& TerrainPoint)
 	Note(FString::Printf(TEXT("Brush is %s."), SolidBiome::Of(Painted).Name()));
 }
 
+void FSolidWorldChartEdMode::FillMarkTerrainPoints()
+{
+	if (!Chart)
+	{
+		return;
+	}
+
+	FVector2D ChartMin = FVector2D::ZeroVector;
+	FVector2D ChartMax = FVector2D::ZeroVector;
+	USolidWorldChart::ChartBounds(ChartMin, ChartMax);
+	TArray<FIntPoint> Points;
+	Points.Reserve(Chart->Marks.Num());
+	bool bChanged = false;
+	for (const FSolidWorldChartMark& Mark : Chart->Marks)
+	{
+		FIntPoint TerrainPoint = Mark.TerrainPoint;
+		Chart->ChartTerrainPointAt(Mark.ChartCm.X, Mark.ChartCm.Y, ChartMin, ChartMax, TerrainPoint);
+		Points.Add(TerrainPoint);
+		if (Mark.TerrainPoint != TerrainPoint)
+		{
+			bChanged = true;
+		}
+	}
+	if (!bChanged)
+	{
+		return;
+	}
+
+	Chart->Modify();
+	for (int32 Index = 0; Index < Chart->Marks.Num(); ++Index)
+	{
+		Chart->Marks[Index].TerrainPoint = Points[Index];
+	}
+	Chart->MarkPackageDirty();
+}
+
 void FSolidWorldChartEdMode::ShowChart()
 {
 	UWorld* World = GetWorld();
@@ -1519,6 +1555,13 @@ void FSolidWorldChartEdMode::ShowChart()
 	}
 	Streamer->bIsEditorOnlyActor = true;
 	Streamer->BuildChartView(Chart);
+	if (const USolidTerrainMap* Terrain = Streamer->GetTerrainMap())
+	{
+		if (Terrain->IsBuilt())
+		{
+			FillMarkTerrainPoints();
+		}
+	}
 
 	Overlay = World->SpawnActor<AActor>(
 		AActor::StaticClass(), FVector::ZeroVector, FRotator::ZeroRotator, Params);

@@ -439,9 +439,9 @@ bool FSolidQuadTrianglesTest::RunTest(const FString& Parameters)
 	const ESolidBiome Desert = ESolidBiome::Desert;
 
 	TestEqual(
-		TEXT("this build uses NorthWestCut"),
+		TEXT("this build uses NorthWest"),
 		static_cast<uint8>(SolidTerrainTypes::QuadMaterial),
-		static_cast<uint8>(SolidTerrainTypes::ESolidQuadMaterial::NorthWestCut));
+		static_cast<uint8>(SolidTerrainTypes::ESolidQuadMaterial::NorthWest));
 
 	auto Expect = [this](const TCHAR* What, const SolidTerrainTypes::FSolidQuadTriangles& Tri, const bool bFlip, const ESolidBiome First, const ESolidBiome Second)
 	{

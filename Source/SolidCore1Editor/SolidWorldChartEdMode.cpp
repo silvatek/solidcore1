@@ -1102,15 +1102,10 @@ void FSolidWorldChartEdMode::PlaceCurrentMark()
 	{
 		TArray<FIntPoint> Cells;
 		Cells.Add(CurrentCell);
-		FVector2D ChartMin = FVector2D::ZeroVector;
-		FVector2D ChartMax = FVector2D::ZeroVector;
-		USolidWorldChart::ChartBounds(ChartMin, ChartMax);
 		for (const FIntPoint& TerrainPoint : Before)
 		{
-			FVector2D ChartCm = FVector2D::ZeroVector;
 			FIntPoint Cell = FIntPoint::ZeroValue;
-			if (Chart->TerrainPointToChart(TerrainPoint, ChartMin, ChartMax, ChartCm)
-				&& Chart->CellAtChart(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, Cell)
+			if (USolidWorldChart::CellAtTerrainPoint(TerrainPoint, Cell)
 				&& Chart->MarkAtCell(Cell) == INDEX_NONE)
 			{
 				Cells.AddUnique(Cell);

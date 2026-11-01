@@ -61,14 +61,17 @@ namespace
 		return Test.TestEqual(TEXT("routed roads"), Loaded->GetRoutedRoads().Num(), Roads);
 	}
 
-	bool SurfacePoint(FAutomationTestBase& Test, USolidWorldChart& Chart, const FIntPoint Cell, FIntPoint& OutTerrainPoint)
+	bool SurfacePoint(FAutomationTestBase& Test, const FIntPoint Cell, FIntPoint& OutTerrainPoint)
 	{
-		FVector2D ChartMin = FVector2D::ZeroVector;
-		FVector2D ChartMax = FVector2D::ZeroVector;
-		USolidWorldChart::ChartBounds(ChartMin, ChartMax);
-		FVector2D ChartCm = FVector2D::ZeroVector;
-		return Test.TestTrue(TEXT("the cell has a centre"), Chart.CellToChartXY(Cell, ChartMin, ChartMax, ChartCm))
-			&& Test.TestTrue(TEXT("the cell sits on a point"), Chart.ChartTerrainPointAt(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, OutTerrainPoint));
+		int32 TerrainX = 0;
+		int32 TerrainY = 0;
+		USolidWorldChart::PointUnderCell(Cell.X, Cell.Y, TerrainX, TerrainY);
+		OutTerrainPoint = FIntPoint(TerrainX, TerrainY);
+		return Test.TestTrue(
+			TEXT("the cell sits on a point"),
+			TerrainX >= 0 && TerrainY >= 0
+				&& TerrainX < USolidWorldChart::PointAxis
+				&& TerrainY < USolidWorldChart::PointAxis);
 	}
 
 	void FillGrassPoints(USolidWorldChart& Chart)
@@ -451,9 +454,9 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 		|| !TestTrue(TEXT("Iglin places"), TrackChart->PlaceTown(FIntPoint(4, 12), TEXT("Iglin"), Error))
 		|| !TestTrue(TEXT("Relion places"), TrackChart->PlaceTown(FIntPoint(16, 12), TEXT("Relion"), Error))
 		|| !TestTrue(TEXT("Iglin Bridge places"), TrackChart->PlaceBridge(FIntPoint(11, 12), TEXT("Iglin Bridge"), Error))
-		|| !SurfacePoint(*this, *TrackChart, FIntPoint(8, 12), ForestPoint)
+		|| !SurfacePoint(*this, FIntPoint(8, 12), ForestPoint)
 		|| !TestTrue(TEXT("forest paints on the track"), TrackChart->SetPointRectangle(ForestPoint, ForestPoint, ESolidBiome::Forest))
-		|| !SurfacePoint(*this, *TrackChart, FIntPoint(12, 12), RiverTerrainPoint)
+		|| !SurfacePoint(*this, FIntPoint(12, 12), RiverTerrainPoint)
 		|| !TestTrue(TEXT("the river paints"), TrackChart->SetPointRectangle(
 			FIntPoint(RiverTerrainPoint.X, 0), FIntPoint(RiverTerrainPoint.X, USolidWorldChart::PointAxis - 1), ESolidBiome::River))
 		|| !SurfaceLoad(*this, TrackChart, Track, 2))
@@ -850,15 +853,14 @@ bool FSolidRoadNearerEndTest::RunTest(const FString& Parameters)
 	FVector2D ChartMin = FVector2D::ZeroVector;
 	FVector2D ChartMax = FVector2D::ZeroVector;
 	USolidWorldChart::ChartBounds(ChartMin, ChartMax);
-	FVector2D ChartCm = FVector2D::ZeroVector;
-	FIntPoint WestTerrainPoint = FIntPoint::ZeroValue;
-	FIntPoint EastTerrainPoint = FIntPoint::ZeroValue;
-	if (!TestTrue(TEXT("the centre is a point"), Chart->TerrainPointToChart(BridgePoint, ChartMin, ChartMax, ChartCm))
-		|| !TestTrue(TEXT("the west end is a point"), Chart->ChartTerrainPointAt(ChartCm.X + Half, ChartCm.Y, ChartMin, ChartMax, WestTerrainPoint))
-		|| !TestTrue(TEXT("the east end is a point"), Chart->ChartTerrainPointAt(ChartCm.X - Half, ChartCm.Y, ChartMin, ChartMax, EastTerrainPoint)))
-	{
-		return false;
-	}
+	const float Spacing = (ChartMax.X - ChartMin.X) / static_cast<float>(USolidWorldChart::PointAxis - 1);
+	const int32 LastPoint = USolidWorldChart::PointAxis - 1;
+	const FIntPoint WestTerrainPoint(
+		FMath::Clamp(FMath::RoundToInt(static_cast<float>(BridgePoint.X) + Half / Spacing), 0, LastPoint),
+		BridgePoint.Y);
+	const FIntPoint EastTerrainPoint(
+		FMath::Clamp(FMath::RoundToInt(static_cast<float>(BridgePoint.X) - Half / Spacing), 0, LastPoint),
+		BridgePoint.Y);
 
 	SolidRoad::FSolidRoad ToBridge(
 		SolidRoad::TownMark(SolidTowns::Iglin),

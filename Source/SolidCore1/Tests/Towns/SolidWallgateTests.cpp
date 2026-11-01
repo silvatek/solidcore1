@@ -27,12 +27,10 @@ namespace
 			FSolidWorldChartMark Mark;
 			Mark.Kind = ESolidWorldChartMarkKind::Town;
 			Mark.Name = SolidTowns::Definitions[SolidTowns::Dragongate].Name;
-			FVector2D ChartCm = FVector2D::ZeroVector;
-			USolidWorldChart::CellCentre(Cell, ChartCm);
-			FVector2D ChartMin = FVector2D::ZeroVector;
-			FVector2D ChartMax = FVector2D::ZeroVector;
-			USolidWorldChart::ChartBounds(ChartMin, ChartMax);
-			Map->ChartTerrainPointAt(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, Mark.TerrainPoint);
+			int32 TerrainX = 0;
+			int32 TerrainY = 0;
+			USolidWorldChart::PointUnderCell(Cell.X, Cell.Y, TerrainX, TerrainY);
+			Mark.TerrainPoint = FIntPoint(TerrainX, TerrainY);
 			Map->Marks.Add(Mark);
 		}
 		return Map;

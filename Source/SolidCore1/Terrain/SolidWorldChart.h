@@ -275,14 +275,14 @@ public:
 	/** World XY of one map cell center. Same rectangle as SampleBiome. */
 	bool CellToWorldXY(FIntPoint Cell, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 
-	/** Chart centimetres of one map cell centre. The rectangle is ChartBounds. */
-	bool CellToChartXY(FIntPoint Cell, FVector2D ChartMin, FVector2D ChartMax, FVector2D& OutChartCm) const;
-
 	/** Map cell under a world XY. Column 0 is west, row 0 is north. */
 	bool CellAtWorld(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, FIntPoint& OutCell) const;
 
-	/** Map cell under a chart position. The rectangle is ChartBounds. Column 0 is west, row 0 is north. */
-	bool CellAtChart(float ChartX, float ChartY, FVector2D ChartMin, FVector2D ChartMax, FIntPoint& OutCell) const;
+	/** Terrain point at a cell centre. Column 0 is west, row 0 is north. */
+	static void PointUnderCell(int32 CellX, int32 CellY, int32& OutTerrainX, int32& OutTerrainY);
+
+	/** Cell that contains a terrain point. Column 0 is west, row 0 is north. */
+	static bool CellAtTerrainPoint(FIntPoint TerrainPoint, FIntPoint& OutCell);
 
 	/** The biome's colour. The same answer as GetBiomeColor. */
 	static FLinearColor DefaultColorForBiome(ESolidBiome Biome);
@@ -323,9 +323,6 @@ public:
 
 	/** World position of one terrain point. The same rectangle as TerrainPointAt. */
 	bool TerrainPointToWorld(FIntPoint TerrainPoint, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
-
-	/** Chart centimetres of one terrain point. The rectangle is ChartBounds. */
-	bool TerrainPointToChart(FIntPoint TerrainPoint, FVector2D ChartMin, FVector2D ChartMax, FVector2D& OutChartCm) const;
 
 	/** Biome stored on that terrain point. The road strip is not part of it. */
 	ESolidBiome GetPointBiome(FIntPoint TerrainPoint) const;
@@ -449,8 +446,8 @@ private:
 	void PushUndo();
 	/** Copy each cell's play biome onto the points. The road strip is not copied. A mark does not change a point. */
 	void CopyPlayOntoPoints(bool bForce) const;
-	/** The biome a cell shows in play at this position, without the road strip. */
-	ESolidBiome SampleCellPlay(float ChartX, float ChartY, FVector2D ChartMin, FVector2D ChartMax) const;
+	/** The biome a cell shows in play at this terrain point, without the road strip. */
+	ESolidBiome SampleCellPlay(int32 TerrainX, int32 TerrainY) const;
 	void SetPointsInCells(const TArray<int32>& CellIndexes, ESolidBiome Biome) const;
 	/** Write these terrain points. One undo step. A mark on a point does not change that paint. */
 	bool PaintPoints(const TArray<FIntPoint>& Covered, ESolidBiome Biome, FString& OutError);
@@ -499,7 +496,6 @@ private:
 
 protected:
 	bool WorldXYToCell(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, int32& OutCellX, int32& OutCellY) const;
-	bool ChartXYToCell(float ChartX, float ChartY, FVector2D ChartMin, FVector2D ChartMax, int32& OutCellX, int32& OutCellY) const;
 	/** Clear the solved roads. */
 	void ResetRoads() const;
 	/** Route one listed road. */

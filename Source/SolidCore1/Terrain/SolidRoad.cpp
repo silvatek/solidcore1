@@ -3,6 +3,7 @@
 #include "SolidCore1.h"
 #include "SolidRoads.h"
 #include "SolidStronghold.h"
+#include "SolidTerrainMap.h"
 #include "SolidTowns.h"
 #include "SolidWallgate.h"
 #include "SolidWorldChart.h"
@@ -752,10 +753,9 @@ namespace SolidRoad
 		 * A tie, or a bridge with no definition, has no such end.
 		 */
 		bool NearerSpanEnd(
-			const USolidWorldChart& Map,
 			const FSolidWorldChartMark& Bridge,
 			const FIntPoint OtherTerrainPoint,
-			FVector2D& OutChartCm)
+			FIntPoint& OutTerrainPoint)
 		{
 			const SolidBridge::FBridgeMarker* Marker = nullptr;
 			for (const SolidBridge::FBridgeMarker& Defined : SolidBridge::Bridges)
@@ -770,20 +770,14 @@ namespace SolidRoad
 			{
 				return false;
 			}
-			const float Half = Marker->LengthCm * 0.5f;
+			const USolidTerrainMap* Terrain = GetDefault<USolidTerrainMap>();
+			const float Spacing = Terrain ? Terrain->PointSpacing : 200.f;
+			const float Half = Marker->LengthCm * 0.5f / Spacing;
 			const FVector2D Along = Marker->Orientation == SolidBridge::EOrientation::NorthSouth
 				? FVector2D(0.f, Half)
 				: FVector2D(Half, 0.f);
-			FVector2D ChartMin = FVector2D::ZeroVector;
-			FVector2D ChartMax = FVector2D::ZeroVector;
-			USolidWorldChart::ChartBounds(ChartMin, ChartMax);
-			FVector2D Centre = FVector2D::ZeroVector;
-			FVector2D Other = FVector2D::ZeroVector;
-			if (!Map.TerrainPointToChart(Bridge.TerrainPoint, ChartMin, ChartMax, Centre)
-				|| !Map.TerrainPointToChart(OtherTerrainPoint, ChartMin, ChartMax, Other))
-			{
-				return false;
-			}
+			const FVector2D Centre(Bridge.TerrainPoint.X, Bridge.TerrainPoint.Y);
+			const FVector2D Other(OtherTerrainPoint.X, OtherTerrainPoint.Y);
 			const FVector2D OneEnd = Centre + Along;
 			const FVector2D OtherEnd = Centre - Along;
 			const float OneDist = FVector2D::DistSquared(OneEnd, Other);
@@ -792,7 +786,10 @@ namespace SolidRoad
 			{
 				return false;
 			}
-			OutChartCm = OneDist < OtherDist ? OneEnd : OtherEnd;
+			const FVector2D Chosen = OneDist < OtherDist ? OneEnd : OtherEnd;
+			const int32 Last = USolidWorldChart::PointAxis - 1;
+			OutTerrainPoint.X = FMath::Clamp(FMath::RoundToInt(Chosen.X), 0, Last);
+			OutTerrainPoint.Y = FMath::Clamp(FMath::RoundToInt(Chosen.Y), 0, Last);
 			return true;
 		}
 	}
@@ -821,28 +818,13 @@ namespace SolidRoad
 	bool FSolidRoad::FindRoute(const USolidWorldChart& Map)
 	{
 		Points.Reset();
-		FVector2D ChartMin = FVector2D::ZeroVector;
-		FVector2D ChartMax = FVector2D::ZeroVector;
-		USolidWorldChart::ChartBounds(ChartMin, ChartMax);
-		FVector2D FromChartCm = FVector2D::ZeroVector;
-		FVector2D ToChartCm = FVector2D::ZeroVector;
-		if (!Map.TerrainPointToChart(From.TerrainPoint, ChartMin, ChartMax, FromChartCm)
-			|| !Map.TerrainPointToChart(To.TerrainPoint, ChartMin, ChartMax, ToChartCm))
+		FIntPoint FromTerrainPoint = From.TerrainPoint;
+		FIntPoint ToTerrainPoint = To.TerrainPoint;
+		if (From.Kind == ESolidWorldChartMarkKind::Bridge && !NearerSpanEnd(From, To.TerrainPoint, FromTerrainPoint))
 		{
 			return false;
 		}
-		if (From.Kind == ESolidWorldChartMarkKind::Bridge && !NearerSpanEnd(Map, From, To.TerrainPoint, FromChartCm))
-		{
-			return false;
-		}
-		if (To.Kind == ESolidWorldChartMarkKind::Bridge && !NearerSpanEnd(Map, To, From.TerrainPoint, ToChartCm))
-		{
-			return false;
-		}
-		FIntPoint FromTerrainPoint = FIntPoint::ZeroValue;
-		FIntPoint ToTerrainPoint = FIntPoint::ZeroValue;
-		if (!Map.ChartTerrainPointAt(FromChartCm.X, FromChartCm.Y, ChartMin, ChartMax, FromTerrainPoint)
-			|| !Map.ChartTerrainPointAt(ToChartCm.X, ToChartCm.Y, ChartMin, ChartMax, ToTerrainPoint))
+		if (To.Kind == ESolidWorldChartMarkKind::Bridge && !NearerSpanEnd(To, From.TerrainPoint, ToTerrainPoint))
 		{
 			return false;
 		}

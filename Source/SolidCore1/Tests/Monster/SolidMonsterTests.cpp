@@ -567,14 +567,19 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 		{
 			return 0;
 		}
-		FVector2D ChartMin = FVector2D::ZeroVector;
-		FVector2D ChartMax = FVector2D::ZeroVector;
-		USolidWorldChart::ChartBounds(ChartMin, ChartMax);
-		FVector2D Place = FVector2D::ZeroVector;
-		if (!Chart->TerrainPointToChart(Mark.TerrainPoint, ChartMin, ChartMax, Place))
+		if (Mark.TerrainPoint.X < 0 || Mark.TerrainPoint.Y < 0
+			|| Mark.TerrainPoint.X >= USolidWorldChart::PointAxis
+			|| Mark.TerrainPoint.Y >= USolidWorldChart::PointAxis)
 		{
 			return 0;
 		}
+		FVector2D ChartMin = FVector2D::ZeroVector;
+		FVector2D ChartMax = FVector2D::ZeroVector;
+		USolidWorldChart::ChartBounds(ChartMin, ChartMax);
+		const float Span = static_cast<float>(USolidWorldChart::PointAxis - 1);
+		const FVector2D Place(
+			ChartMin.X + static_cast<float>(Mark.TerrainPoint.X) * (ChartMax.X - ChartMin.X) / Span,
+			ChartMin.Y + static_cast<float>(Mark.TerrainPoint.Y) * (ChartMax.Y - ChartMin.Y) / Span);
 		TArray<FSolidTerrainPoint> Points;
 		const float Offsets[] = { 900.f, 1400.f, 1800.f, 2300.f };
 		for (const float Offset : Offsets)
@@ -661,11 +666,17 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 		const SolidEncounter::FStaticEncounter* Def = SolidEncounter::FindByName(Mark.Name);
 		if (TestNotNull(TEXT("the mark names Dracorex"), Def))
 		{
-			FVector2D Place = FVector2D::ZeroVector;
 			FVector2D ChartMin = FVector2D::ZeroVector;
 			FVector2D ChartMax = FVector2D::ZeroVector;
 			USolidWorldChart::ChartBounds(ChartMin, ChartMax);
-			if (!TestTrue(TEXT("the mark projects"), RexLoaded->TerrainPointToChart(Mark.TerrainPoint, ChartMin, ChartMax, Place)))
+			const float Span = static_cast<float>(USolidWorldChart::PointAxis - 1);
+			const FVector2D Place(
+				ChartMin.X + static_cast<float>(Mark.TerrainPoint.X) * (ChartMax.X - ChartMin.X) / Span,
+				ChartMin.Y + static_cast<float>(Mark.TerrainPoint.Y) * (ChartMax.Y - ChartMin.Y) / Span);
+			if (!TestTrue(TEXT("the mark projects"),
+				Mark.TerrainPoint.X >= 0 && Mark.TerrainPoint.Y >= 0
+					&& Mark.TerrainPoint.X < USolidWorldChart::PointAxis
+					&& Mark.TerrainPoint.Y < USolidWorldChart::PointAxis))
 			{
 				return false;
 			}
@@ -749,10 +760,15 @@ bool FSolidMonsterMarkGroundTest::RunTest(const FString& Parameters)
 	FVector2D ChartMin = FVector2D::ZeroVector;
 	FVector2D ChartMax = FVector2D::ZeroVector;
 	USolidWorldChart::ChartBounds(ChartMin, ChartMax);
-	FVector2D Stored = FVector2D::ZeroVector;
+	const float Span = static_cast<float>(USolidWorldChart::PointAxis - 1);
+	const FVector2D Stored(
+		ChartMin.X + static_cast<float>(StoredPoint.X) * (ChartMax.X - ChartMin.X) / Span,
+		ChartMin.Y + static_cast<float>(StoredPoint.Y) * (ChartMax.Y - ChartMin.Y) / Span);
 	FVector2D Ground = FVector2D::ZeroVector;
 	TestTrue(TEXT("the mark projects to chart"),
-		WorldMap->TerrainPointToChart(StoredPoint, ChartMin, ChartMax, Stored));
+		StoredPoint.X >= 0 && StoredPoint.Y >= 0
+			&& StoredPoint.X < USolidWorldChart::PointAxis
+			&& StoredPoint.Y < USolidWorldChart::PointAxis);
 	TestTrue(TEXT("the mark projects to ground"),
 		WorldMap->TerrainPointToWorld(StoredPoint, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), Ground));
 	FVector2D CellGround = FVector2D::ZeroVector;

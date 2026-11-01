@@ -137,6 +137,7 @@ bool FSolidWorldChartRulesTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
+	TextMap->Marks = Chart->Marks;
 	TestTrue(TEXT("the small chart matches its text"), MapsMatch(*this, *TextMap, *ChartMap));
 
 	TestEqual(TEXT("an unknown town is not a location"), ChartMap->GetLocationIdAtCell(UnknownCell.X, UnknownCell.Y), INDEX_NONE);

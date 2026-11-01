@@ -12,6 +12,34 @@
 
 #if WITH_DEV_AUTOMATION_TESTS
 
+namespace
+{
+	void AddChartMark(
+		USolidWorldChart& Chart,
+		const int32 CellX,
+		const int32 CellY,
+		const ESolidWorldChartMarkKind Kind,
+		const FString& Name,
+		const FString& LairId = FString())
+	{
+		FSolidWorldChartMark Mark;
+		Mark.Kind = Kind;
+		Mark.Name = Name;
+		Mark.LairId = LairId;
+		int32 TerrainX = 0;
+		int32 TerrainY = 0;
+		USolidWorldChart::PointUnderCell(CellX, CellY, TerrainX, TerrainY);
+		Mark.TerrainPoint = FIntPoint(TerrainX, TerrainY);
+		Chart.Marks.Add(Mark);
+	}
+
+	void RefreshSolvedPoints(USolidWorldChart& Chart)
+	{
+		Chart.CopyPlayOntoPoints(true);
+		Chart.AssignTownPoints();
+	}
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 	FSolidWorldMapLoadDefaultTest,
 	"SolidCore1.WorldMap.LoadDefault",
@@ -101,6 +129,8 @@ bool FSolidWorldMapParseKeyAndSampleTest::RunTest(const FString& Parameters)
 
 	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("LoadFromString"), Map->LoadFromString(Text));
+	AddChartMark(*Map, USolidWorldChart::MapWidth / 2, 0, ESolidWorldChartMarkKind::Town, TEXT("Iglin"));
+	RefreshSolvedPoints(*Map);
 	FVector2D StartXY = FVector2D::ZeroVector;
 	TestTrue(
 		TEXT("one start cell"),
@@ -391,6 +421,8 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 
 	USolidWorldChart* Synthetic = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("synthetic loads named towns"), Synthetic->LoadFromString(Text));
+	AddChartMark(*Synthetic, 4, 2, ESolidWorldChartMarkKind::Town, TEXT("Iglin"));
+	AddChartMark(*Synthetic, 6, 4, ESolidWorldChartMarkKind::Town, TEXT("Relion"));
 	TestEqual(
 		TEXT("Iglin cell is Town"),
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(4, 2)),
@@ -1190,6 +1222,8 @@ bool FSolidWorldMapBangLocationTest::RunTest(const FString& Parameters)
 
 	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("a map with ! loads"), Map->LoadFromString(Text));
+	AddChartMark(*Map, IglinCol, IglinRow, ESolidWorldChartMarkKind::Town, TEXT("Iglin"));
+	RefreshSolvedPoints(*Map);
 	TestEqual(
 		TEXT("top-left marker is !"),
 		Map->GetMarkerAtCell(IglinCol, IglinRow),
@@ -1309,6 +1343,14 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 
 	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("described map loads"), Map->LoadFromString(Text));
+	AddChartMark(*Map, RelionCol, RelionRow, ESolidWorldChartMarkKind::Town, TEXT("Relion"));
+	AddChartMark(
+		*Map,
+		EnterCol,
+		EnterRow,
+		ESolidWorldChartMarkKind::LairEntrance,
+		SolidLair::IglinTunnels.Name,
+		SolidLair::IdIglinTunnels);
 
 	FSolidWorldBang Iglin;
 	TestTrue(TEXT("named ! is a town"), Map->FindBang(IglinCol, IglinRow, Iglin));

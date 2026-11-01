@@ -392,6 +392,21 @@ bool FSolidEventsNumberedCellTest::RunTest(const FString& Parameters)
 
 	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("synthetic map loads"), Map->LoadFromString(Text));
+	auto AddTown = [](USolidWorldChart& Chart, const int32 CellX, const int32 CellY, const TCHAR* Name)
+	{
+		FSolidWorldChartMark Mark;
+		Mark.Kind = ESolidWorldChartMarkKind::Town;
+		Mark.Name = Name;
+		int32 TerrainX = 0;
+		int32 TerrainY = 0;
+		USolidWorldChart::PointUnderCell(CellX, CellY, TerrainX, TerrainY);
+		Mark.TerrainPoint = FIntPoint(TerrainX, TerrainY);
+		Chart.Marks.Add(Mark);
+	};
+	AddTown(*Map, 4, 2, TEXT("Iglin"));
+	AddTown(*Map, 6, 4, TEXT("Relion"));
+	Map->CopyPlayOntoPoints(true);
+	Map->AssignTownPoints();
 
 	const FVector2D WorldMin(0.f, 0.f);
 	const FVector2D WorldMax(6400.f, 6400.f);

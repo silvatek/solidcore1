@@ -109,6 +109,17 @@ bool FSolidTerrainGridPointsDifferTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
+	FSolidWorldChartMark MouthMark;
+	MouthMark.Kind = ESolidWorldChartMarkKind::LairEntrance;
+	MouthMark.Name = SolidLair::IglinTunnels.Name;
+	MouthMark.LairId = SolidLair::IdIglinTunnels;
+	int32 MouthTerrainX = 0;
+	int32 MouthTerrainY = 0;
+	USolidWorldChart::PointUnderCell(MouthCol, MouthRow, MouthTerrainX, MouthTerrainY);
+	MouthMark.TerrainPoint = FIntPoint(MouthTerrainX, MouthTerrainY);
+	Lair->Marks.Add(MouthMark);
+	Lair->CopyPlayOntoPoints(true);
+
 	const FVector2D MouthCentre = CellCentre(*Lair, MouthCol, MouthRow);
 	BiomeIs(*this, TEXT("the mouth cell is mountain"), Lair->GetBiomeAtCell(MouthCol, MouthRow), ESolidBiome::Mountain);
 	BiomeIs(*this, TEXT("the mouth point is mountain"), SampleAt(*Lair, MouthCentre), ESolidBiome::Mountain);

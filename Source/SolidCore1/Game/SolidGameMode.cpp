@@ -2620,6 +2620,32 @@ void ASolidGameMode::EnsureVegetation()
 		USolidWorldChart* BridgeMap = Terrain ? Terrain->GetWorldMap() : nullptr;
 		if (BridgeMap && BridgeMap->IsLoaded())
 		{
+			FVector2D ChartMin = FVector2D::ZeroVector;
+			FVector2D ChartMax = FVector2D::ZeroVector;
+			USolidWorldChart::DefaultWorldBounds(ChartMin, ChartMax);
+			const FVector2D TerrainMin = Terrain->GetWorldMinXY();
+			const FVector2D TerrainMax = Terrain->GetWorldMaxXY();
+			const APawn* Pawn = World->GetFirstPlayerController()
+				? World->GetFirstPlayerController()->GetPawn()
+				: nullptr;
+			const FVector PawnAt = Pawn ? Pawn->GetActorLocation() : FVector::ZeroVector;
+			UE_LOG(LogSolid, Warning,
+				TEXT("Bridge frame chart (%.0f, %.0f)-(%.0f, %.0f) terrain (%.0f, %.0f)-(%.0f, %.0f) pawn (%.0f, %.0f, %.0f)"),
+				ChartMin.X, ChartMin.Y, ChartMax.X, ChartMax.Y,
+				TerrainMin.X, TerrainMin.Y, TerrainMax.X, TerrainMax.Y,
+				PawnAt.X, PawnAt.Y, PawnAt.Z);
+			for (const FSolidWorldChartMark& Mark : BridgeMap->Marks)
+			{
+				if (Mark.Kind != ESolidWorldChartMarkKind::Bridge)
+				{
+					continue;
+				}
+				const FVector2D Shifted = USolidWorldChart::TerrainPosition(Mark.PositionCm, TerrainMin);
+				UE_LOG(LogSolid, Warning,
+					TEXT("Bridge mark '%s' chart (%.0f, %.0f) shifted (%.0f, %.0f)"),
+					*Mark.Name, Mark.PositionCm.X, Mark.PositionCm.Y, Shifted.X, Shifted.Y);
+			}
+
 			TArray<SolidBridge::FBridge> Bridges;
 			SolidBridge::FromMarkers(
 				*BridgeMap,
@@ -2627,7 +2653,9 @@ void ASolidGameMode::EnsureVegetation()
 				{
 					return Streamer->GetHeightAt(FVector(X, Y, 0.f));
 				},
-				Bridges);
+				Bridges,
+				TerrainMin,
+				TerrainMax);
 
 			int32 Spawned = 0;
 			for (const SolidBridge::FBridge& Bridge : Bridges)
@@ -2639,6 +2667,7 @@ void ASolidGameMode::EnsureVegetation()
 					SpawnParams);
 				if (!Actor)
 				{
+					UE_LOG(LogSolid, Warning, TEXT("Bridge actor failed to spawn"));
 					continue;
 				}
 				SolidBridge::FBridge Spec = Bridge;
@@ -2649,9 +2678,23 @@ void ASolidGameMode::EnsureVegetation()
 				Actor->SetBridge(Spec);
 				SpawnedBridges.Add(Actor);
 				++Spawned;
+				const FVector At = Actor->GetActorLocation();
+				const float PawnDist = Pawn ? FVector::Dist2D(At, PawnAt) : -1.f;
+				UE_LOG(LogSolid, Warning,
+					TEXT("Bridge actor at (%.0f, %.0f, %.0f) pawn distance %.0f"),
+					At.X, At.Y, At.Z, PawnDist);
 			}
 			UE_LOG(LogSolid, Warning, TEXT("Spawned %d bridges"), Spawned);
 		}
+		else
+		{
+			UE_LOG(LogSolid, Warning, TEXT("Bridge spawn skipped: %s"),
+				BridgeMap ? TEXT("chart not loaded") : TEXT("no chart"));
+		}
+	}
+	else
+	{
+		UE_LOG(LogSolid, Warning, TEXT("Bridge spawn skipped: %d already present"), SpawnedBridges.Num());
 	}
 
 	ChooseForagePiles(Streamer->GetTerrainMap());

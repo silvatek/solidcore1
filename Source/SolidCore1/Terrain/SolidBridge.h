@@ -127,14 +127,18 @@ namespace SolidBridge
 
 	/**
 	 * One bridge for each bridge mark on the chart.
-	 * The centre is the mark. Length, orientation, and the initial state come from the C++ list.
+	 * The centre is that mark, shifted into the terrain the same way as the other marks.
+	 * Length, orientation, and the initial state come from the C++ list.
 	 * Width is the shipped road that ends at that bridge. A bridge with no such road is as wide as a track.
+	 * WorldMinXY and WorldMaxXY are the terrain the bridge stands on.
 	 * @return Number of bridges written.
 	 */
 	int32 FromMarkers(
 		const USolidWorldChart& Map,
 		const TFunction<float(float X, float Y)>& HeightAt,
-		TArray<FBridge>& Out);
+		TArray<FBridge>& Out,
+		FVector2D WorldMinXY,
+		FVector2D WorldMaxXY);
 }
 
 /** Ramp, flat center, and ramp. A broken bridge keeps the ramps and leaves the center out. */

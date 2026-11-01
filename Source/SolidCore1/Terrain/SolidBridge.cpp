@@ -611,7 +611,9 @@ namespace
 int32 SolidBridge::FromMarkers(
 	const USolidWorldChart& Map,
 	const TFunction<float(float X, float Y)>& HeightAt,
-	TArray<FBridge>& Out)
+	TArray<FBridge>& Out,
+	const FVector2D WorldMinXY,
+	const FVector2D WorldMaxXY)
 {
 	Out.Reset();
 	if (!HeightAt)
@@ -636,24 +638,37 @@ int32 SolidBridge::FromMarkers(
 		}
 		if (!Marker)
 		{
+			UE_LOG(LogSolid, Warning, TEXT("Bridge mark '%s' at (%.0f, %.0f) has no definition"),
+				*Mark.Name, Mark.PositionCm.X, Mark.PositionCm.Y);
 			continue;
 		}
-		FVector2D WorldMin = FVector2D::ZeroVector;
-		FVector2D WorldMax = FVector2D::ZeroVector;
-		USolidWorldChart::DefaultWorldBounds(WorldMin, WorldMax);
+		const FVector2D Centre = USolidWorldChart::TerrainPosition(Mark.PositionCm, WorldMinXY);
 		FBridge Bridge;
-		if (Stand(
+		if (!Stand(
 			*Marker,
-			Mark.PositionCm,
+			Centre,
 			WidthForMarker(Marker->Name),
 			HeightAt,
 			Bridge,
 			&Map,
-			WorldMin,
-			WorldMax))
+			WorldMinXY,
+			WorldMaxXY))
 		{
-			Out.Add(MoveTemp(Bridge));
+			UE_LOG(LogSolid, Warning, TEXT("Bridge '%s' did not stand at (%.0f, %.0f)"),
+				*Mark.Name, Centre.X, Centre.Y);
+			continue;
 		}
+		const FVector Deck0 = Bridge.Deck[0];
+		const FVector Deck1 = Bridge.Deck.Last();
+		UE_LOG(LogSolid, Warning,
+			TEXT("Bridge '%s' chart (%.0f, %.0f) ground (%.0f, %.0f) deck (%.0f, %.0f, %.0f) to (%.0f, %.0f, %.0f) broken=%d"),
+			*Mark.Name,
+			Mark.PositionCm.X, Mark.PositionCm.Y,
+			Centre.X, Centre.Y,
+			Deck0.X, Deck0.Y, Deck0.Z,
+			Deck1.X, Deck1.Y, Deck1.Z,
+			Bridge.bBroken ? 1 : 0);
+		Out.Add(MoveTemp(Bridge));
 	}
 	return Out.Num();
 }
@@ -1094,4 +1109,13 @@ void ASolidBridge::BuildVisuals()
 	{
 		PoleMesh->SetMaterial(0, Magenta);
 	}
+	const FVector PoleWorld = PoleMesh->GetComponentLocation();
+	UE_LOG(LogSolid, Warning,
+		TEXT("Bridge pole %s at (%.0f, %.0f, %.0f) actor (%.0f, %.0f, %.0f) deckZ %.0f from %s to %s"),
+		PoleMesh->GetStaticMesh() ? TEXT("set") : TEXT("empty"),
+		PoleWorld.X, PoleWorld.Y, PoleWorld.Z,
+		Origin.X, Origin.Y, Origin.Z,
+		Local.Z,
+		RampFromMesh->GetStaticMesh() ? TEXT("set") : TEXT("empty"),
+		RampToMesh->GetStaticMesh() ? TEXT("set") : TEXT("empty"));
 }

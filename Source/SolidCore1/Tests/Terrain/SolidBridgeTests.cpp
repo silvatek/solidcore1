@@ -454,14 +454,15 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 	UTEST_NOT_NULL(TEXT("chart"), Chart);
 	Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
 	TArray<SolidBridge::FBridge> None;
-	TestEqual(TEXT("a chart with no bridge mark stands nothing"), SolidBridge::FromMarkers(*Chart, Height, None), 0);
+	FVector2D BoundsMin = FVector2D::ZeroVector;
+	FVector2D BoundsMax = FVector2D::ZeroVector;
+	USolidWorldChart::DefaultWorldBounds(BoundsMin, BoundsMax);
+	TestEqual(TEXT("a chart with no bridge mark stands nothing"),
+		SolidBridge::FromMarkers(*Chart, Height, None, BoundsMin, BoundsMax), 0);
 
 	FString Error;
 	TestTrue(TEXT("Iglin Bridge places"), Chart->PlaceBridge(FIntPoint(11, 16), TEXT("Iglin Bridge"), Error));
 
-	FVector2D BoundsMin = FVector2D::ZeroVector;
-	FVector2D BoundsMax = FVector2D::ZeroVector;
-	USolidWorldChart::DefaultWorldBounds(BoundsMin, BoundsMax);
 	FVector2D RiverCentre = FVector2D::ZeroVector;
 	FIntPoint RiverPoint = FIntPoint::ZeroValue;
 	const int32 LastPoint = USolidWorldChart::PointAxis - 1;
@@ -499,12 +500,26 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 	}
 
 	TArray<SolidBridge::FBridge> Marked;
-	TestEqual(TEXT("the placed mark stands"), SolidBridge::FromMarkers(*Chart, Height, Marked), 1);
+	TestEqual(TEXT("the placed mark stands"),
+		SolidBridge::FromMarkers(*Chart, Height, Marked, BoundsMin, BoundsMax), 1);
 	if (Marked.Num() == 1)
 	{
 		TestTrue(TEXT("the placed Iglin bridge starts broken"), Marked[0].bBroken);
 		TestTrue(TEXT("the placed span is as wide as the Iglin track"),
 			FMath::IsNearlyEqual(Marked[0].WidthCm, Width));
+	}
+
+	const FVector2D ShiftedMin = BoundsMin + FVector2D(-51200.f, -51200.f);
+	const FVector2D ShiftedMax = BoundsMax + FVector2D(-51200.f, -51200.f);
+	TArray<SolidBridge::FBridge> Shifted;
+	TestEqual(TEXT("the shifted terrain still stands the mark"),
+		SolidBridge::FromMarkers(*Chart, Height, Shifted, ShiftedMin, ShiftedMax), 1);
+	if (Shifted.Num() == 1 && MarkIndex != INDEX_NONE)
+	{
+		const FVector2D Ground = USolidWorldChart::TerrainPosition(Chart->Marks[MarkIndex].PositionCm, ShiftedMin);
+		const FVector ShiftedMid = (Shifted[0].Deck[0] + Shifted[0].Deck.Last()) * 0.5f;
+		TestTrue(TEXT("the centre span is the marker on the terrain"),
+			FVector2D(ShiftedMid.X, ShiftedMid.Y).Equals(Ground, 1.f));
 	}
 	return true;
 }

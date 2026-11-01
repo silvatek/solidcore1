@@ -79,6 +79,10 @@ namespace
 	TSharedRef<FJsonObject> MarkJson(const FSolidWorldChartMark& Mark)
 	{
 		TSharedRef<FJsonObject> Object = MakeShared<FJsonObject>();
+		TArray<TSharedPtr<FJsonValue>> TerrainPoint;
+		TerrainPoint.Add(MakeShared<FJsonValueNumber>(Mark.TerrainPoint.X));
+		TerrainPoint.Add(MakeShared<FJsonValueNumber>(Mark.TerrainPoint.Y));
+		Object->SetArrayField(TEXT("terrainPoint"), TerrainPoint);
 		Object->SetStringField(TEXT("kind"), MarkKindName(Mark.Kind));
 		Object->SetStringField(TEXT("name"), Mark.Name);
 		int32 Row = 0;
@@ -212,9 +216,11 @@ int32 USolidDumpWorldChartCommandlet::Main(const FString& Params)
 		const bool bCell = CellOfPosition(Mark.ChartCm, Row, Column);
 		const FVector2D Ground = GroundCm(Mark.ChartCm);
 		UE_LOG(LogSolidChartDump, Warning,
-			TEXT("Mark %s \"%s\" row %s column %s position (%.0f, %.0f) ground (%.0f, %.0f)"),
+			TEXT("Mark %s \"%s\" terrain (%d, %d) row %s column %s position (%.0f, %.0f) ground (%.0f, %.0f)"),
 			MarkKindName(Mark.Kind),
 			*Mark.Name,
+			Mark.TerrainPoint.X,
+			Mark.TerrainPoint.Y,
 			bCell ? *FString::FromInt(Row) : TEXT("?"),
 			bCell ? *FString::FromInt(Column) : TEXT("?"),
 			Mark.ChartCm.X,

@@ -51,9 +51,9 @@ A terrain point carries a world position, a surface height, a biome, and explora
 
 `chartX` and `chartY` index the world chart's own 2 m grid. It is 513 points on a side, the same count and the same spacing as terrain.
 
-`chartX` 0, `chartY` 0 is the same south-east corner as `terrainX` 0, `terrainY` 0. `chartX` increases west. `chartY` increases north. The indexes match: that corner is 0 on both grids.
+`chartX` 0, `chartY` 0 is the same south-east corner as `terrainX` 0, `terrainY` 0, and a step of +1 is 200 cm west or north on both. That is an index. It is not a position.
 
-The origins in world centimetres do not match. The chart writes the south-east corner at (0, 0). Terrain writes it at world (−51200, −51200). A chart point's stored centimetres are `(chartX × 200, chartY × 200)`.
+A chart position is centimetres stored from (0, 0): `(chartX × 200, chartY × 200)`. A terrain position for that same corner is world centimetres, 51200 cm further toward −worldX and −worldY. The two positions are not interchangeable. Code that places an actor, a mark, or a mesh from a position will render it 512 m west and 512 m north of the corner if it is given the chart position where a world position belongs.
 
 ### Cell
 
@@ -79,18 +79,18 @@ Inside a chunk, centimetres grow with `worldX` and `worldY` from that chunk's so
 
 ### Chart and terrain
 
-`chartX` and `terrainX` are index numbers. Both count from the south-east corner, and a step of +1 is 200 cm west on both, so the numbers are equal. The different origins are not in the index. They are the centimetres written for that index.
-
-```
-chartX = terrainX
-chartY = terrainY
-```
-
-Index 0 is stored on the chart at (0, 0) and placed in world at (−51200, −51200):
+A chart position and a world position are not interchangeable. Subtract 51200 cm on each axis to go from the chart's stored centimetres to world. Add 51200 cm to go the other way. `TerrainPosition` does that subtraction before play draws a stored mark.
 
 ```
 worldX = chartX * 200 - 51200
 worldY = chartY * 200 - 51200
+```
+
+The index of a corner is a separate fact. Both grids count that index from the south-east corner, so the index numbers match. Passing an index where a position belongs, or a position where an index belongs, is still the wrong unit.
+
+```
+chartX = terrainX
+chartY = terrainY
 ```
 
 ### Terrain and world

@@ -104,11 +104,10 @@ bool FSolidTerrainGridPointsDifferTest::RunTest(const FString& Parameters)
 	SetTerrainCell(Mouth, MouthCol, MouthRow, USolidWorldChart::LocationMarker);
 	Mouth += TEXT("! 11,11 = LairEntrance (Iglin tunnels)\n");
 	USolidWorldChart* Lair = NewObject<USolidWorldChart>();
-	if (!TestNotNull(TEXT("mouth chart"), Lair) || !TestTrue(TEXT("mouth loads"), Lair->LoadFromString(Mouth)))
+	if (!TestNotNull(TEXT("mouth chart"), Lair))
 	{
 		return false;
 	}
-
 	FSolidWorldChartMark MouthMark;
 	MouthMark.Kind = ESolidWorldChartMarkKind::LairEntrance;
 	MouthMark.Name = SolidLair::IglinTunnels.Name;
@@ -118,7 +117,10 @@ bool FSolidTerrainGridPointsDifferTest::RunTest(const FString& Parameters)
 	USolidWorldChart::PointUnderCell(MouthCol, MouthRow, MouthTerrainX, MouthTerrainY);
 	MouthMark.TerrainPoint = FIntPoint(MouthTerrainX, MouthTerrainY);
 	Lair->Marks.Add(MouthMark);
-	Lair->CopyPlayOntoPoints(true);
+	if (!TestTrue(TEXT("mouth loads"), Lair->LoadFromString(Mouth)))
+	{
+		return false;
+	}
 
 	const FVector2D MouthCentre = CellCentre(*Lair, MouthCol, MouthRow);
 	BiomeIs(*this, TEXT("the mouth cell is mountain"), Lair->GetBiomeAtCell(MouthCol, MouthRow), ESolidBiome::Mountain);

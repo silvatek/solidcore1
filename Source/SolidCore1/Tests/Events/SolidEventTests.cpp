@@ -391,7 +391,6 @@ bool FSolidEventsNumberedCellTest::RunTest(const FString& Parameters)
 	Text += TEXT("Z = Starting town (brown)\n");
 
 	USolidWorldChart* Map = NewObject<USolidWorldChart>();
-	TestTrue(TEXT("synthetic map loads"), Map->LoadFromString(Text));
 	auto AddTown = [](USolidWorldChart& Chart, const int32 CellX, const int32 CellY, const TCHAR* Name)
 	{
 		FSolidWorldChartMark Mark;
@@ -405,8 +404,7 @@ bool FSolidEventsNumberedCellTest::RunTest(const FString& Parameters)
 	};
 	AddTown(*Map, 4, 2, TEXT("Iglin"));
 	AddTown(*Map, 6, 4, TEXT("Relion"));
-	Map->CopyPlayOntoPoints(true);
-	Map->AssignTownPoints();
+	TestTrue(TEXT("synthetic map loads"), Map->LoadFromString(Text));
 
 	const FVector2D WorldMin(0.f, 0.f);
 	const FVector2D WorldMax(6400.f, 6400.f);

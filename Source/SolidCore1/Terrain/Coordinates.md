@@ -168,7 +168,7 @@ A lair maze is 11 by 9 squares of 200 cm. `mazeX` 0, `mazeY` 0 is the minimum lo
 
 ## Code
 
-World axes, terrain, chart, and cell live on `USolidWorldChart` in [SolidWorldChart.h](SolidWorldChart.h). `MapWidth` and `MapHeight` are the 128 by 64 cells. `PointAxis` is the 513 points shared by terrain and chart. The comment on the class states the compass and which edge is index 0. `Cells` is cell storage. `Points` is the chart's 2 m grid.
+World axes, terrain, chart, and cell live on `USolidWorldChart` in [SolidWorldChart.h](SolidWorldChart.h). `MapWidth` and `MapHeight` are the 128 by 64 cells. `PointAxis` is 513, the count of the chart grid and of the terrain grid. The comment on the class states the compass and which edge is index 0. `Cells` is cell storage. `Points` is the chart's 2 m grid.
 
 [SolidWorldChart.cpp](SolidWorldChart.cpp) is the arithmetic:
 

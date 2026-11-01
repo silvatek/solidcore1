@@ -395,38 +395,38 @@ void ASolidTerrainStreamer::MarkFogChunksAt(float WorldX, float WorldY)
 	const float Size = FMath::Max(ChunkWorldSize, 100.f);
 	const FIntPoint Coord = WorldToChunkCoord(FVector(WorldX, WorldY, 0.f));
 	DirtyFogChunkCoords.Add(Coord);
-	const float LocalX = WorldX - static_cast<float>(Coord.X) * Size;
-	const float LocalY = WorldY - static_cast<float>(Coord.Y) * Size;
+	const float ChunkXCm = WorldX - static_cast<float>(Coord.X) * Size;
+	const float ChunkYCm = WorldY - static_cast<float>(Coord.Y) * Size;
 	const float Edge = FMath::Max(TerrainPointSpacing, 50.f);
-	if (LocalX <= Edge)
+	if (ChunkXCm <= Edge)
 	{
 		DirtyFogChunkCoords.Add(FIntPoint(Coord.X - 1, Coord.Y));
 	}
-	if (LocalX >= Size - Edge)
+	if (ChunkXCm >= Size - Edge)
 	{
 		DirtyFogChunkCoords.Add(FIntPoint(Coord.X + 1, Coord.Y));
 	}
-	if (LocalY <= Edge)
+	if (ChunkYCm <= Edge)
 	{
 		DirtyFogChunkCoords.Add(FIntPoint(Coord.X, Coord.Y - 1));
 	}
-	if (LocalY >= Size - Edge)
+	if (ChunkYCm >= Size - Edge)
 	{
 		DirtyFogChunkCoords.Add(FIntPoint(Coord.X, Coord.Y + 1));
 	}
-	if (LocalX <= Edge && LocalY <= Edge)
+	if (ChunkXCm <= Edge && ChunkYCm <= Edge)
 	{
 		DirtyFogChunkCoords.Add(FIntPoint(Coord.X - 1, Coord.Y - 1));
 	}
-	if (LocalX >= Size - Edge && LocalY <= Edge)
+	if (ChunkXCm >= Size - Edge && ChunkYCm <= Edge)
 	{
 		DirtyFogChunkCoords.Add(FIntPoint(Coord.X + 1, Coord.Y - 1));
 	}
-	if (LocalX <= Edge && LocalY >= Size - Edge)
+	if (ChunkXCm <= Edge && ChunkYCm >= Size - Edge)
 	{
 		DirtyFogChunkCoords.Add(FIntPoint(Coord.X - 1, Coord.Y + 1));
 	}
-	if (LocalX >= Size - Edge && LocalY >= Size - Edge)
+	if (ChunkXCm >= Size - Edge && ChunkYCm >= Size - Edge)
 	{
 		DirtyFogChunkCoords.Add(FIntPoint(Coord.X + 1, Coord.Y + 1));
 	}

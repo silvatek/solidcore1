@@ -166,7 +166,7 @@ worldX = chunkX * 6400
 worldY = chunkY * 6400
 ```
 
-That is the chunk's south-east corner. A point in the chunk adds the centimetres from that corner. The chunk under a world position is:
+That is the chunk's south-east corner. A point in the chunk adds the centimetres from that corner. `ChunkXCm` and `ChunkYCm` are those centimetres. The chunk under a world position is:
 
 ```
 chunkX = floor(worldX / 6400)
@@ -207,7 +207,7 @@ World axes, terrain, chart, and cell live on `USolidWorldChart` in [SolidWorldCh
 
 [SolidTerrainChunk.cpp](SolidTerrainChunk.cpp) builds a chunk mesh from the chunk origin plus the centimetres inside it. The quad loop uses corners `I00`, `I10`, `I01`, and `I11`. The vertex west of corner 11 is two steps past the quad's south-east.
 
-[SolidTerrainStreamer.h](SolidTerrainStreamer.h) holds `ChunkWorldSize` (6400 cm), `QuadsPerSide` (32), and `TerrainPointSpacing` (200 cm). `WorldToChunkCoord` in [SolidTerrainStreamer.cpp](SolidTerrainStreamer.cpp) is `chunkX` and `chunkY`. The streamer's map comment records the 8 m by 16 m cells.
+[SolidTerrainStreamer.h](SolidTerrainStreamer.h) holds `ChunkWorldSize` (6400 cm), `QuadsPerSide` (32), and `TerrainPointSpacing` (200 cm). `WorldToChunkCoord` in [SolidTerrainStreamer.cpp](SolidTerrainStreamer.cpp) is `chunkX` and `chunkY`. `MarkFogChunksAt` names the centimetres inside that chunk `ChunkXCm` and `ChunkYCm`. The streamer's map comment records the 8 m by 16 m cells.
 
 [SolidRoad.h](SolidRoad.h) holds `TerrainQuadCm` and `StripPaintOffset`, the −100 cm shift of `worldX` and `worldY`. [SolidRoad.cpp](SolidRoad.cpp) walks terrain steps. `PointSteps` starts with `(1, 0)` and `(0, 1)`, one step west and one step north. A solved route keeps both the cells and the terrain points.
 

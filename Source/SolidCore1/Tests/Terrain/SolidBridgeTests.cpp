@@ -512,4 +512,82 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidBridgeBuriedRampTest,
+	"SolidCore1.Bridge.BuriedRamp",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidBridgeBuriedRampTest::RunTest(const FString& Parameters)
+{
+	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
+	UTEST_NOT_NULL(TEXT("chart"), Chart);
+	Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
+
+	FString Error;
+	const FIntPoint Cell(11, 16);
+	if (!TestTrue(TEXT("Iglin Bridge places"), Chart->PlaceBridge(Cell, TEXT("Iglin Bridge"), Error)))
+	{
+		return false;
+	}
+
+	FVector2D BoundsMin = FVector2D::ZeroVector;
+	FVector2D BoundsMax = FVector2D::ZeroVector;
+	USolidWorldChart::DefaultWorldBounds(BoundsMin, BoundsMax);
+	FVector2D Centre = FVector2D::ZeroVector;
+	if (!TestTrue(TEXT("the cell has a centre"), USolidWorldChart::CellCentre(Cell, Centre)))
+	{
+		return false;
+	}
+
+	const auto Height = [](float, float) { return 100.f; };
+	const float Width = SolidRoad::WidthCm(SolidRoad::EType::Track);
+	SolidBridge::FBridge Bridge;
+	if (!TestTrue(TEXT("Iglin stands"), SolidBridge::Stand(SolidBridge::Bridges[0], Centre, Width, Height, Bridge)))
+	{
+		return false;
+	}
+
+	SolidBridge::PaintBuriedRamp(*Chart, Bridge, Height, BoundsMin, BoundsMax);
+
+	const float HalfQuad = SolidRoad::TerrainQuadCm * 0.5f;
+	bool bSawBuried = false;
+	bool bSawOpen = false;
+	const TArray<FVector>* Ramps[] = { &Bridge.RampFrom, &Bridge.RampTo };
+	for (const TArray<FVector>* Ramp : Ramps)
+	{
+		for (const FVector& Sample : *Ramp)
+		{
+			FIntPoint Surface = FIntPoint::ZeroValue;
+			Chart->TerrainPointAt(Sample.X, Sample.Y + HalfQuad, BoundsMin, BoundsMax, Surface);
+			const ESolidBiome Painted = Chart->GetPointBiome(Surface);
+			if (Sample.Z < 99.f)
+			{
+				bSawBuried = true;
+				TestEqual(
+					TEXT("the ground over a buried ramp is road"),
+					static_cast<uint8>(Painted),
+					static_cast<uint8>(ESolidBiome::Road));
+			}
+			else if (Sample.Equals((*Ramp)[0], 1.f))
+			{
+				bSawOpen = true;
+				TestEqual(
+					TEXT("the ground over the open ramp stays grassland"),
+					static_cast<uint8>(Painted),
+					static_cast<uint8>(ESolidBiome::Grassland));
+			}
+		}
+	}
+	TestTrue(TEXT("a ramp does go under the ground"), bSawBuried);
+	TestTrue(TEXT("a ramp also stands above the ground"), bSawOpen);
+
+	FIntPoint OnRamp = FIntPoint::ZeroValue;
+	Chart->TerrainPointAt(Centre.X, Centre.Y, BoundsMin, BoundsMax, OnRamp);
+	TestEqual(
+		TEXT("the ramp's own point stays grassland"),
+		static_cast<uint8>(Chart->GetPointBiome(OnRamp)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+	return true;
+}
+
 #endif

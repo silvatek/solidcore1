@@ -1552,7 +1552,12 @@ void USolidWorldChart::ApplyMarkerPoint(const FVector2D& PositionCm, const ESoli
 	int32 IX = 0;
 	int32 IY = 0;
 	PointAtWorld(PositionCm.X, PositionCm.Y, Min, Max, IX, IY);
-	Points[PointSlot(IX, IY)] = Kind == ESolidWorldChartMarkKind::Town
+	const int32 Slot = PointSlot(IX, IY);
+	if (Kind == ESolidWorldChartMarkKind::Bridge && Points[Slot] == ESolidBiome::River)
+	{
+		return;
+	}
+	Points[Slot] = Kind == ESolidWorldChartMarkKind::Town
 		? ESolidBiome::Town
 		: ESolidBiome::Grassland;
 }

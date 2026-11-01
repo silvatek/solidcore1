@@ -1,5 +1,6 @@
 #include "SolidTerrainMap.h"
 #include "SolidBiome.h"
+#include "SolidBridge.h"
 #include "SolidTerrainFog.h"
 #include "SolidTerrainNoise.h"
 #include "SolidWorldChart.h"
@@ -81,6 +82,31 @@ void USolidTerrainMap::Build(
 	}
 
 	bIsBuilt = true;
+	if (bUseWorldMap && WorldMap)
+	{
+		TArray<SolidBridge::FBridge> Bridges;
+		const TFunction<float(float, float)> HeightAt = [this](const float X, const float Y)
+		{
+			return SampleHeight(X, Y);
+		};
+		SolidBridge::FromMarkers(*WorldMap, HeightAt, Bridges, WorldMin, WorldMax);
+		for (const SolidBridge::FBridge& Bridge : Bridges)
+		{
+			SolidBridge::PaintBuriedRamp(*WorldMap, Bridge, HeightAt, WorldMin, WorldMax);
+		}
+		const float RoadShelf = SolidBiome::Of(ESolidBiome::Road).HeightOffsetCm();
+		for (FSolidTerrainPoint& Point : Points)
+		{
+			if (SolidBiome::Of(Point.Biome).HeightOffsetCm() != RoadShelf)
+			{
+				continue;
+			}
+			if (WorldMap->SampleBiome(Point.X, Point.Y, WorldMin, WorldMax) == ESolidBiome::Road)
+			{
+				Point.Biome = ESolidBiome::Road;
+			}
+		}
+	}
 	TrackClearFogBounds();
 	UE_LOG(LogSolid, Warning,
 		TEXT("TerrainMap built: %dx%d spacing=%.0f cm seed=%d origin=(%.0f,%.0f) extent=(%.0f,%.0f) worldMap=%s fogOrigin=(%.0f,%.0f)"),

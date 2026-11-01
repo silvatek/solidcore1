@@ -139,6 +139,19 @@ namespace SolidBridge
 		TArray<FBridge>& Out,
 		FVector2D WorldMinXY,
 		FVector2D WorldMaxXY);
+
+	/**
+	 * Where a ramp is under the ground, the terrain point for that square becomes road.
+	 * The square shows the biome of its north-west corner, so an east-west ramp paints the
+	 * point just north of the ramp and a north-south ramp paints the point just west.
+	 * HeightAt is the surface the ramp was stood against. The open road is left as it is.
+	 */
+	void PaintBuriedRamp(
+		USolidWorldChart& Map,
+		const FBridge& Bridge,
+		const TFunction<float(float X, float Y)>& HeightAt,
+		FVector2D WorldMinXY,
+		FVector2D WorldMaxXY);
 }
 
 /** Ramp, flat center, and ramp. A broken bridge keeps the ramps and leaves the center out. */

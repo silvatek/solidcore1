@@ -673,6 +673,49 @@ int32 SolidBridge::FromMarkers(
 	return Out.Num();
 }
 
+void SolidBridge::PaintBuriedRamp(
+	USolidWorldChart& Map,
+	const FBridge& Bridge,
+	const TFunction<float(float X, float Y)>& HeightAt,
+	const FVector2D WorldMinXY,
+	const FVector2D WorldMaxXY)
+{
+	if (!HeightAt || Bridge.Deck.Num() < 2)
+	{
+		return;
+	}
+
+	const FVector Deck0 = Bridge.Deck[0];
+	const FVector Deck1 = Bridge.Deck.Last();
+	const bool bEastWest = FMath::Abs(Deck1.X - Deck0.X) >= FMath::Abs(Deck1.Y - Deck0.Y);
+	const float HalfQuad = SolidRoad::TerrainQuadCm * 0.5f;
+	const FVector2D Nudge = bEastWest ? FVector2D(0.f, HalfQuad) : FVector2D(HalfQuad, 0.f);
+	const TArray<FVector>* Ramps[] = { &Bridge.RampFrom, &Bridge.RampTo };
+	for (const TArray<FVector>* Ramp : Ramps)
+	{
+		for (const FVector& Sample : *Ramp)
+		{
+			const float Surface = HeightAt(Sample.X, Sample.Y);
+			if (Sample.Z >= Surface - 1.f)
+			{
+				continue;
+			}
+			FIntPoint Point = FIntPoint::ZeroValue;
+			Map.TerrainPointAt(Sample.X + Nudge.X, Sample.Y + Nudge.Y, WorldMinXY, WorldMaxXY, Point);
+			const ESolidBiome Here = Map.GetPointBiome(Point);
+			if (Here == ESolidBiome::River
+				|| Here == ESolidBiome::Sea
+				|| Here == ESolidBiome::Mountain
+				|| Here == ESolidBiome::Town
+				|| SolidBiome::Of(Here).HeightOffsetCm() != SolidBiome::Of(ESolidBiome::Road).HeightOffsetCm())
+			{
+				continue;
+			}
+			Map.SetPointRectangle(Point, Point, ESolidBiome::Road);
+		}
+	}
+}
+
 int32 SolidBridge::Collect(
 	const USolidWorldChart& Map,
 	const FVector2D WorldMinXY,

@@ -539,6 +539,23 @@ bool FSolidWorldChartBridgeTest::RunTest(const FString& Parameters)
 		TEXT("the bridge sits on the cell centre"),
 		FVector2D::Distance(Chart->Marks[MarkIndex].PositionCm, Centre) <= 1.f);
 	TestEqual(TEXT("the bridge leaves the paint"), static_cast<uint8>(Chart->Cells[CellIndex]), PaintBefore);
+	TestEqual(
+		TEXT("a bridge on grass keeps a grassland point"),
+		static_cast<uint8>(Chart->GetPointBiomeAtCell(Cell.X, Cell.Y)),
+		static_cast<uint8>(ESolidBiome::Grassland));
+
+	TestTrue(TEXT("river paint fills the bridge cell"), Chart->PaintRun({ Cell }, ESolidBiome::River, Error));
+	TestEqual(
+		TEXT("the bridge leaves the river point"),
+		static_cast<uint8>(Chart->GetPointBiomeAtCell(Cell.X, Cell.Y)),
+		static_cast<uint8>(ESolidBiome::River));
+	FVector2D BoundsMin = FVector2D::ZeroVector;
+	FVector2D BoundsMax = FVector2D::ZeroVector;
+	USolidWorldChart::DefaultWorldBounds(BoundsMin, BoundsMax);
+	TestEqual(
+		TEXT("the river beside the bridge stays river"),
+		static_cast<uint8>(Chart->SampleBiome(Centre.X - 400.f, Centre.Y, BoundsMin, BoundsMax)),
+		static_cast<uint8>(ESolidBiome::River));
 
 	const FIntPoint Moved(15, 9);
 	TestTrue(TEXT("the same bridge moves"), Chart->PlaceBridge(Moved, TEXT("iglin bridge"), Error));

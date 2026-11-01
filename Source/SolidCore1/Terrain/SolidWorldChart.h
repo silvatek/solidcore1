@@ -332,13 +332,14 @@ public:
 	/**
 	 * Paint the points under a round brush. One call is one undo step.
 	 * The cell array stays. A marker point the brush covers stays town or grassland.
-	 * Swamp and road are rejected.
+	 * A bridge leaves a river point as river. Swamp and road are rejected.
 	 */
 	bool PaintBrush(const TArray<FIntPoint>& Centres, int32 Radius, ESolidBiome Biome, FString& OutError);
 
 	/**
 	 * Fill the inclusive rectangle of terrain points. One call is one undo step.
 	 * The cell array stays. A marker point inside stays town or grassland.
+	 * A bridge leaves a river point as river.
 	 */
 	bool PaintPointRectangle(FIntPoint From, FIntPoint To, ESolidBiome Biome, FString& OutError);
 
@@ -434,6 +435,7 @@ private:
 	/** The biome a cell shows in play at this position, without the road strip. */
 	ESolidBiome SampleCellPlay(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY) const;
 	void SetPointsInCells(const TArray<int32>& CellIndexes, ESolidBiome Biome) const;
+	/** A town point becomes town. Any other mark becomes grassland. A bridge leaves a river point as river. */
 	void ApplyMarkerPoint(const FVector2D& PositionCm, ESolidWorldChartMarkKind Kind) const;
 	/** Put a marker point back to the biome of another point in its cell. */
 	void ReleaseMarkerPoint(const FVector2D& PositionCm) const;

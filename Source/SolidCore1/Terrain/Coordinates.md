@@ -8,7 +8,7 @@ The open world is one square in Unreal, measured in centimetres. Five coordinate
   - [World](#world)
   - [Terrain](#terrain)
   - [Chart (legacy)](#chart-legacy)
-  - [Cell](#cell)
+  - [Cell (legacy)](#cell-legacy)
   - [Chunk](#chunk)
 - [Transformations](#transformations)
   - [Terrain and world](#terrain-and-world)
@@ -56,7 +56,7 @@ A mark saves its position as `PositionCm` in chart. The centimetres of a terrain
 
 This frame will eventually be replaced by storing a world position on the world chart.
 
-### Cell
+### Cell (legacy)
 
 `cellX` and `cellY` index the rectangles on the world chart. There are 128 columns and 64 rows across the same square. A column is 8 m east–west. A row is 16 m north–south.
 
@@ -67,6 +67,8 @@ This frame will eventually be replaced by storing a world position on the world 
 A mark (a town, a stronghold, a site, a lair mouth, a note, an encounter, or a bridge) sits on one cell. Its `PositionCm` is that cell's centre in chart. On the shipped sizes that centre is chart (102000, 101600), which is world (50800, 50400) and `terrainX` 510, `terrainY` 508. A column is 4 steps wide. A row is 8 steps tall.
 
 The old map text, and a dump of the grid, count from 1 at the top-left. The top-left is `cellX` 0, `cellY` 0. A line `! 8,21 = Town Iglin` is row 8, column 21 in that count, which is `cellX` 20, `cellY` 7.
+
+This frame will eventually be replaced by direct use of terrain.
 
 ### Chunk
 

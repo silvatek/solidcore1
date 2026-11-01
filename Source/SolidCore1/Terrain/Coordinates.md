@@ -77,11 +77,11 @@ Inside a chunk, centimetres grow with `worldX` and `worldY` from that chunk's so
 ### Chart and world
 
 ```
-worldX = chartX * 200 - 51200
-worldY = chartY * 200 - 51200
+worldX = (chartX - 256) * 200
+worldY = (chartY - 256) * 200
 ```
 
-A chart position and a world position are not interchangeable. Subtract 51200 cm on each axis to go from the chart's stored centimetres to world. Add 51200 cm to go the other way. `TerrainPosition` does that subtraction before play draws a stored mark.
+This is the same translation as a terrain index. 256 is half of 512. The chart's stored centimetres are `chartX * 200` and `chartY * 200`, which still have to go through that translation before they are world coordinates. `TerrainPosition` subtracts the 51200 cm, which is `256 * 200`, before play draws a stored mark.
 
 ### Terrain and world
 

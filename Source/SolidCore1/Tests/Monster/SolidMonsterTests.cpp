@@ -200,7 +200,7 @@ bool FSolidMonsterChoiceTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("nearest grassland in the band"), Member->PointIndex, Expected[Index]);
 		TestTrue(
 			TEXT("the place is that point"),
-			Member->XY.Equals(FVector2D(Points[Expected[Index]].X, Points[Expected[Index]].Y)));
+			Member->XY.Equals(FVector2D(Points[Expected[Index]].WorldX, Points[Expected[Index]].WorldY)));
 		TestTrue(
 			TEXT("each member is a raptor"),
 			FCString::Strcmp(Member->Kind(), TEXT("Raptor")) == 0);
@@ -427,7 +427,7 @@ bool FSolidMonsterMountainTest::RunTest(const FString& Parameters)
 	TArray<FSolidTerrainPoint> DiagonalPoints;
 	DiagonalPoints.Add(PointAt(900.f, ESolidBiome::Grassland));
 	FSolidTerrainPoint Corner = PointAt(1100.f, ESolidBiome::Mountain);
-	Corner.Y = 200.f;
+	Corner.WorldY = 200.f;
 	DiagonalPoints.Add(Corner);
 	DiagonalPoints.Add(PointAt(1800.f, ESolidBiome::Grassland));
 	DiagonalPoints.Add(PointAt(2300.f, ESolidBiome::Grassland));

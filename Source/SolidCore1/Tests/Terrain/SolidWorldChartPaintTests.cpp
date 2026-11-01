@@ -397,9 +397,9 @@ bool FSolidWorldChartPlaceMovesTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the entrance point"), Chart->TerrainPointAt(MouthCentre.X, MouthCentre.Y, BoundsMin, BoundsMax, MouthPoint));
 	TestTrue(TEXT("forest covers the entrance"), Chart->PaintBrush({ MouthPoint }, 1, ESolidBiome::Forest, Error));
 	TestEqual(
-		TEXT("the entrance point stays grassland"),
+		TEXT("the entrance point takes the forest"),
 		static_cast<uint8>(Chart->GetPointBiome(MouthPoint)),
-		static_cast<uint8>(ESolidBiome::Grassland));
+		static_cast<uint8>(ESolidBiome::Forest));
 	TestEqual(
 		TEXT("the point beside the entrance is forest"),
 		static_cast<uint8>(Chart->GetPointBiome(MouthPoint + FIntPoint(1, 0))),
@@ -410,7 +410,7 @@ bool FSolidWorldChartPlaceMovesTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the old entrance cell is empty"), Chart->MarkAtCell(Mouth), static_cast<int32>(INDEX_NONE));
 	TestTrue(TEXT("the entrance is on the new cell"), Chart->MarkAtCell(MouthMoved) != INDEX_NONE);
 	TestEqual(
-		TEXT("the old entrance point takes the forest beside it"),
+		TEXT("the old entrance point keeps its forest"),
 		static_cast<uint8>(Chart->GetPointBiome(MouthPoint)),
 		static_cast<uint8>(ESolidBiome::Forest));
 	FVector2D MovedCentre = FVector2D::ZeroVector;
@@ -418,7 +418,7 @@ bool FSolidWorldChartPlaceMovesTest::RunTest(const FString& Parameters)
 	FIntPoint MovedPoint = FIntPoint::ZeroValue;
 	TestTrue(TEXT("the new entrance point"), Chart->TerrainPointAt(MovedCentre.X, MovedCentre.Y, BoundsMin, BoundsMax, MovedPoint));
 	TestEqual(
-		TEXT("the new entrance point is grassland"),
+		TEXT("the new entrance point stays grassland"),
 		static_cast<uint8>(Chart->GetPointBiome(MovedPoint)),
 		static_cast<uint8>(ESolidBiome::Grassland));
 	TestTrue(TEXT("undo puts the entrance back"), Chart->Undo());

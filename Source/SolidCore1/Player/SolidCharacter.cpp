@@ -744,6 +744,24 @@ void ASolidCharacter::TakePlayshot()
 	TArray<FString> ForBuild;
 	const FString FileName = SolidPlayshot::FileName(FString(SOLID_BUILD_ID), FDateTime::Now(), Existing, ForBuild);
 	const FString Path = FPaths::ConvertRelativePathToFull(Directory / FileName);
+	TWeakObjectPtr<ASolidCharacter> Self(this);
+	TSharedRef<FDelegateHandle> Handle = MakeShared<FDelegateHandle>();
+	*Handle = FScreenshotRequest::OnScreenshotRequestProcessed().AddLambda([Self, Path, Handle]()
+	{
+		FScreenshotRequest::OnScreenshotRequestProcessed().Remove(*Handle);
+		const ASolidCharacter* Captain = Self.Get();
+		const ASolidHUD* HUD = Captain ? Captain->GetSolidHUD() : nullptr;
+		if (!HUD)
+		{
+			return;
+		}
+		const FString Text = FString::Join(HUD->GetDebugPanelLines(), TEXT("\n"));
+		if (Text.IsEmpty() || SolidPlayshot::StampHudFile(Path, Text))
+		{
+			return;
+		}
+		UE_LOG(LogSolid, Warning, TEXT("Playshot left the HUD lines out of %s"), *Path);
+	});
 	FScreenshotRequest::RequestScreenshot(Path, true, false, false, FIntRect(), true);
 }
 

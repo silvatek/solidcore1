@@ -2121,6 +2121,7 @@ void ASolidHUD::DrawHUD()
 	}
 
 	float BelowTech = 12.f;
+	DebugPanelLines.Reset();
 	if (bShowDebugPanel && !bShowCharacterEditor)
 	{
 	TArray<FString> Lines;
@@ -2350,6 +2351,7 @@ void ASolidHUD::DrawHUD()
 		}
 	}
 
+	DebugPanelLines = Lines;
 	UFont* DebugFont = GEngine ? GEngine->GetSmallFont() : nullptr;
 	BelowTech = SolidHUDPrivate::DrawLines(Canvas, DebugFont, Lines, FLinearColor::White);
 	}

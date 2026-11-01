@@ -53,4 +53,47 @@ bool FSolidPlayshotFileNameTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidPlayshotHudTextTest,
+	"SolidCore1.Playshot.HudText",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidPlayshotHudTextTest::RunTest(const FString& Parameters)
+{
+	TArray<uint8> Png;
+	const uint8 Signature[] = { 137, 80, 78, 71, 13, 10, 26, 10 };
+	Png.Append(Signature, UE_ARRAY_COUNT(Signature));
+	const uint8 Ihdr[] = {
+		0, 0, 0, 13, 'I', 'H', 'D', 'R',
+		0, 0, 0, 1, 0, 0, 0, 1, 8, 0, 0, 0, 0,
+		0, 0, 0, 0
+	};
+	Png.Append(Ihdr, UE_ARRAY_COUNT(Ihdr));
+	const uint8 Iend[] = { 0, 0, 0, 0, 'I', 'E', 'N', 'D', 0xAE, 0x42, 0x60, 0x82 };
+	Png.Append(Iend, UE_ARRAY_COUNT(Iend));
+
+	const int32 Before = Png.Num();
+	TArray<uint8> Prefix;
+	Prefix.Append(Png.GetData(), Before - UE_ARRAY_COUNT(Iend));
+	const FString Text(TEXT("Build SC1-0866\nPawn  1, 2, 3  (feet Z=4)\nfeet\u0394=+0 cm"));
+	TestTrue(TEXT("the lines fit in the PNG"), SolidPlayshot::StampHud(Png, Text));
+	TestEqual(TEXT("the picture bytes stay"), Png.Num() > Before, true);
+	TestTrue(TEXT("the chunk sits in front of IEND"), Png.Num() >= Prefix.Num() + UE_ARRAY_COUNT(Iend));
+	bool bPrefix = Png.Num() >= Prefix.Num();
+	for (int32 Index = 0; bPrefix && Index < Prefix.Num(); ++Index)
+	{
+		bPrefix = Png[Index] == Prefix[Index];
+	}
+	TestTrue(TEXT("bytes before the chunk stay"), bPrefix);
+	TestEqual(TEXT("the lines read back"), SolidPlayshot::ReadHud(Png), Text);
+
+	TArray<uint8> NotPng;
+	NotPng.Add(1);
+	TestFalse(TEXT("a file that is not a PNG is left alone"), SolidPlayshot::StampHud(NotPng, Text));
+	TestEqual(TEXT("that buffer stays one byte"), NotPng.Num(), 1);
+	TestTrue(TEXT("an empty read has no HUD text"), SolidPlayshot::ReadHud(NotPng).IsEmpty());
+
+	return true;
+}
+
 #endif // WITH_DEV_AUTOMATION_TESTS

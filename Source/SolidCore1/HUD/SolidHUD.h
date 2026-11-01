@@ -19,6 +19,9 @@ public:
 	virtual void DrawHUD() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
+	/** Debug-panel lines from the frame just drawn. Empty when that panel is hidden. */
+	const TArray<FString>& GetDebugPanelLines() const { return DebugPanelLines; }
+
 	bool IsCreditsVisible() const { return bShowCredits; }
 	void SetCreditsVisible(bool bVisible) { bShowCredits = bVisible; }
 
@@ -189,6 +192,8 @@ protected:
 	void DrawSquadBuilderPopup();
 	/** Wall-clock timestamps (seconds) for frames in the rolling FPS window. */
 	TArray<double> RecentFrameTimes;
+	/** Debug-panel lines from the frame just drawn. A playshot stamps these into the PNG. */
+	TArray<FString> DebugPanelLines;
 
 	/** Rolling average window for the FPS gauge. */
 	UPROPERTY(EditAnywhere, Category = "HUD")

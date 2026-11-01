@@ -1027,10 +1027,10 @@ void FSolidWorldChartEdMode::PlaceCurrentMark()
 		return;
 	}
 
-	TArray<FVector2D> Before;
+	TArray<FIntPoint> Before;
 	for (const FSolidWorldChartMark& Mark : Chart->Marks)
 	{
-		Before.Add(Mark.ChartCm);
+		Before.Add(Mark.TerrainPoint);
 	}
 
 	FString Error;
@@ -1105,10 +1105,12 @@ void FSolidWorldChartEdMode::PlaceCurrentMark()
 		FVector2D ChartMin = FVector2D::ZeroVector;
 		FVector2D ChartMax = FVector2D::ZeroVector;
 		USolidWorldChart::ChartBounds(ChartMin, ChartMax);
-		for (const FVector2D& ChartCm : Before)
+		for (const FIntPoint& TerrainPoint : Before)
 		{
+			FVector2D ChartCm = FVector2D::ZeroVector;
 			FIntPoint Cell = FIntPoint::ZeroValue;
-			if (Chart->CellAtChart(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, Cell)
+			if (Chart->TerrainPointToChart(TerrainPoint, ChartMin, ChartMax, ChartCm)
+				&& Chart->CellAtChart(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, Cell)
 				&& Chart->MarkAtCell(Cell) == INDEX_NONE)
 			{
 				Cells.AddUnique(Cell);
@@ -1729,11 +1731,15 @@ void FSolidWorldChartEdMode::FaceSigns(const FVector& Camera)
 bool FSolidWorldChartEdMode::MarkLocation(const FSolidWorldChartMark& Mark, FVector& OutLocation) const
 {
 	const USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
-	if (!Terrain || !Terrain->IsBuilt())
+	if (!Chart || !Terrain || !Terrain->IsBuilt())
 	{
 		return false;
 	}
-	const FVector2D XY = USolidWorldChart::TerrainPosition(Mark.ChartCm, Terrain->GetWorldMinXY());
+	FVector2D XY = FVector2D::ZeroVector;
+	if (!Chart->TerrainPointToWorld(Mark.TerrainPoint, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), XY))
+	{
+		return false;
+	}
 	OutLocation = FVector(XY.X, XY.Y, Terrain->SampleHeight(XY.X, XY.Y) + 800.f);
 	return true;
 }
@@ -1941,13 +1947,7 @@ FString FSolidWorldChartEdMode::DescribePoint(const FIntPoint& TerrainPoint) con
 
 	for (const FSolidWorldChartMark& Mark : Chart->Marks)
 	{
-		FIntPoint MarkTerrainPoint = FIntPoint::ZeroValue;
-		const FVector2D Shifted = USolidWorldChart::TerrainPosition(Mark.ChartCm, Terrain->GetWorldMinXY());
-		if (!WorldMap->TerrainPointAt(Shifted.X, Shifted.Y, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), MarkTerrainPoint))
-		{
-			continue;
-		}
-		if (MarkTerrainPoint != TerrainPoint)
+		if (Mark.TerrainPoint != TerrainPoint)
 		{
 			continue;
 		}

@@ -638,11 +638,15 @@ int32 SolidBridge::FromMarkers(
 		}
 		if (!Marker)
 		{
-			UE_LOG(LogSolid, Warning, TEXT("Bridge mark '%s' at (%.0f, %.0f) has no definition"),
-				*Mark.Name, Mark.ChartCm.X, Mark.ChartCm.Y);
+			UE_LOG(LogSolid, Warning, TEXT("Bridge mark '%s' at terrain (%d, %d) has no definition"),
+				*Mark.Name, Mark.TerrainPoint.X, Mark.TerrainPoint.Y);
 			continue;
 		}
-		const FVector2D Centre = USolidWorldChart::TerrainPosition(Mark.ChartCm, WorldMinXY);
+		FVector2D Centre = FVector2D::ZeroVector;
+		if (!Map.TerrainPointToWorld(Mark.TerrainPoint, WorldMinXY, WorldMaxXY, Centre))
+		{
+			continue;
+		}
 		FBridge Bridge;
 		if (!Stand(
 			*Marker,
@@ -661,9 +665,9 @@ int32 SolidBridge::FromMarkers(
 		const FVector Deck0 = Bridge.Deck[0];
 		const FVector Deck1 = Bridge.Deck.Last();
 		UE_LOG(LogSolid, Warning,
-			TEXT("Bridge '%s' chart (%.0f, %.0f) ground (%.0f, %.0f) deck (%.0f, %.0f, %.0f) to (%.0f, %.0f, %.0f) broken=%d"),
+			TEXT("Bridge '%s' terrain (%d, %d) ground (%.0f, %.0f) deck (%.0f, %.0f, %.0f) to (%.0f, %.0f, %.0f) broken=%d"),
 			*Mark.Name,
-			Mark.ChartCm.X, Mark.ChartCm.Y,
+			Mark.TerrainPoint.X, Mark.TerrainPoint.Y,
 			Centre.X, Centre.Y,
 			Deck0.X, Deck0.Y, Deck0.Z,
 			Deck1.X, Deck1.Y, Deck1.Z,

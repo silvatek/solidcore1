@@ -560,10 +560,18 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 	}
 	TestEqual(TEXT("a chart with no Dracorex mark places none of that encounter"), DracorexOnEmpty, 0);
 
-	auto StandAt = [](const FSolidWorldEncounterMark& Mark) -> int32
+	auto StandAt = [Chart](const FSolidWorldEncounterMark& Mark) -> int32
 	{
 		const SolidEncounter::FStaticEncounter* Def = SolidEncounter::FindByName(Mark.Name);
 		if (!Def)
+		{
+			return 0;
+		}
+		FVector2D ChartMin = FVector2D::ZeroVector;
+		FVector2D ChartMax = FVector2D::ZeroVector;
+		USolidWorldChart::ChartBounds(ChartMin, ChartMax);
+		FVector2D Place = FVector2D::ZeroVector;
+		if (!Chart->TerrainPointToChart(Mark.TerrainPoint, ChartMin, ChartMax, Place))
 		{
 			return 0;
 		}
@@ -572,15 +580,15 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 		for (const float Offset : Offsets)
 		{
 			FSolidTerrainPoint Point;
-			Point.WorldX = Mark.ChartCm.X + Offset;
-			Point.WorldY = Mark.ChartCm.Y;
+			Point.WorldX = Place.X + Offset;
+			Point.WorldY = Place.Y;
 			Point.Biome = ESolidBiome::Grassland;
 			Points.Add(Point);
 		}
 		FSolidEncounter Encounter(*Def);
 		const TArray<int32> None;
-		const int32 Count = Encounter.Place(Points, None, None, Mark.ChartCm);
-		return Encounter.Location.Equals(Mark.ChartCm) ? Count : 0;
+		const int32 Count = Encounter.Place(Points, None, None, Place);
+		return Encounter.Location.Equals(Place) ? Count : 0;
 	};
 
 	FString Error;
@@ -602,6 +610,10 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 	FVector2D SecondCentre = FVector2D::ZeroVector;
 	TestTrue(TEXT("the second cell has a centre"), USolidWorldChart::CellCentre(FIntPoint(22, 9), SecondCentre));
 	Second.ChartCm = SecondCentre;
+	FVector2D SecondMin = FVector2D::ZeroVector;
+	FVector2D SecondMax = FVector2D::ZeroVector;
+	USolidWorldChart::ChartBounds(SecondMin, SecondMax);
+	Chart->ChartTerrainPointAt(SecondCentre.X, SecondCentre.Y, SecondMin, SecondMax, Second.TerrainPoint);
 	Chart->Marks.Add(Second);
 	USolidWorldChart* Two = NewObject<USolidWorldChart>();
 	if (!TestTrue(TEXT("both marks load"), Two && Two->LoadFromChart(Chart)))
@@ -650,17 +662,25 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 		const SolidEncounter::FStaticEncounter* Def = SolidEncounter::FindByName(Mark.Name);
 		if (TestNotNull(TEXT("the mark names Dracorex"), Def))
 		{
+			FVector2D Place = FVector2D::ZeroVector;
+			FVector2D ChartMin = FVector2D::ZeroVector;
+			FVector2D ChartMax = FVector2D::ZeroVector;
+			USolidWorldChart::ChartBounds(ChartMin, ChartMax);
+			if (!TestTrue(TEXT("the mark projects"), RexLoaded->TerrainPointToChart(Mark.TerrainPoint, ChartMin, ChartMax, Place)))
+			{
+				return false;
+			}
 			TArray<FSolidTerrainPoint> OnePoint;
 			FSolidTerrainPoint Point;
-			Point.WorldX = Mark.ChartCm.X + 900.f;
-			Point.WorldY = Mark.ChartCm.Y;
+			Point.WorldX = Place.X + 900.f;
+			Point.WorldY = Place.Y;
 			Point.Biome = ESolidBiome::Grassland;
 			OnePoint.Add(Point);
 			FSolidEncounter Encounter(*Def);
 			const TArray<int32> None;
 			TestEqual(
 				TEXT("one point places the one member"),
-				Encounter.Place(OnePoint, None, None, Mark.ChartCm),
+				Encounter.Place(OnePoint, None, None, Place),
 				1);
 			const FSolidMonster* Member = Encounter.Groups.Num() == 1 ? Encounter.Groups[0].Get(0) : nullptr;
 			TestTrue(TEXT("that member is Immense"), Member && Member->Size == ESolidMonsterSize::Immense);
@@ -677,6 +697,10 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 	FVector2D SecondRexCentre = FVector2D::ZeroVector;
 	TestTrue(TEXT("the second Dracorex cell has a centre"), USolidWorldChart::CellCentre(RexCellTwo, SecondRexCentre));
 	SecondRex.ChartCm = SecondRexCentre;
+	FVector2D RexMin = FVector2D::ZeroVector;
+	FVector2D RexMax = FVector2D::ZeroVector;
+	USolidWorldChart::ChartBounds(RexMin, RexMax);
+	Rex->ChartTerrainPointAt(SecondRexCentre.X, SecondRexCentre.Y, RexMin, RexMax, SecondRex.TerrainPoint);
 	Rex->Marks.Add(SecondRex);
 	USolidWorldChart* TwoRex = NewObject<USolidWorldChart>();
 	if (!TestTrue(TEXT("both Dracorex marks load"), TwoRex && TwoRex->LoadFromChart(Rex)))
@@ -723,8 +747,16 @@ bool FSolidMonsterMarkGroundTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	const FVector2D Stored = WorldMap->GetEncounterMarks()[0].ChartCm;
-	const FVector2D Ground = USolidWorldChart::TerrainPosition(Stored, Terrain->GetWorldMinXY());
+	const FIntPoint StoredPoint = WorldMap->GetEncounterMarks()[0].TerrainPoint;
+	FVector2D ChartMin = FVector2D::ZeroVector;
+	FVector2D ChartMax = FVector2D::ZeroVector;
+	USolidWorldChart::ChartBounds(ChartMin, ChartMax);
+	FVector2D Stored = FVector2D::ZeroVector;
+	FVector2D Ground = FVector2D::ZeroVector;
+	TestTrue(TEXT("the mark projects to chart"),
+		WorldMap->TerrainPointToChart(StoredPoint, ChartMin, ChartMax, Stored));
+	TestTrue(TEXT("the mark projects to ground"),
+		WorldMap->TerrainPointToWorld(StoredPoint, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), Ground));
 	FVector2D CellGround = FVector2D::ZeroVector;
 	TestTrue(TEXT("the cell has a ground centre"),
 		WorldMap->CellToWorldXY(Cell, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), CellGround));

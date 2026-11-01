@@ -83,6 +83,7 @@ bool USolidWorldChart::ImportFromString(const FString& Text)
 				continue;
 			}
 			Mark.ChartCm = ChartCm;
+			ChartTerrainPointAt(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, Mark.TerrainPoint);
 			NewMarks.Add(Mark);
 		}
 	}
@@ -284,7 +285,7 @@ bool USolidWorldChart::PlaceMark(const FIntPoint Cell, const FSolidWorldChartMar
 	ChartTerrainPointAt(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, Stored.TerrainPoint);
 	for (int32 Index = Marks.Num() - 1; Index >= 0; --Index)
 	{
-		const bool bHere = FVector2D::Distance(Marks[Index].ChartCm, ChartCm) <= 1.f;
+		const bool bHere = Marks[Index].TerrainPoint == Stored.TerrainPoint;
 		if (!bHere && !SamePlacedMark(Marks[Index], Stored))
 		{
 			continue;
@@ -470,9 +471,14 @@ int32 USolidWorldChart::MarkAtCell(const FIntPoint Cell) const
 	{
 		return INDEX_NONE;
 	}
+	FVector2D ChartMin = FVector2D::ZeroVector;
+	FVector2D ChartMax = FVector2D::ZeroVector;
+	ChartBounds(ChartMin, ChartMax);
+	FIntPoint TerrainPoint = FIntPoint::ZeroValue;
+	ChartTerrainPointAt(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, TerrainPoint);
 	for (int32 Index = 0; Index < Marks.Num(); ++Index)
 	{
-		if (FVector2D::Distance(Marks[Index].ChartCm, ChartCm) <= 1.f)
+		if (Marks[Index].TerrainPoint == TerrainPoint)
 		{
 			return Index;
 		}
@@ -1140,11 +1146,13 @@ bool USolidWorldChart::BuildQuery() const
 		{
 			FSolidWorldEncounterMark Found;
 			Found.Name = Mark.Name;
-			Found.ChartCm = Mark.ChartCm;
+			Found.TerrainPoint = Mark.TerrainPoint;
 			EncounterMarks.Add(Found);
 		}
+		FVector2D ChartCm = FVector2D::ZeroVector;
 		FIntPoint Cell = FIntPoint::ZeroValue;
-		if (!CellAtChart(Mark.ChartCm.X, Mark.ChartCm.Y, ChartMin, ChartMax, Cell))
+		if (!TerrainPointToChart(Mark.TerrainPoint, ChartMin, ChartMax, ChartCm)
+			|| !CellAtChart(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, Cell))
 		{
 			continue;
 		}

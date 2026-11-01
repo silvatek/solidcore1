@@ -135,7 +135,7 @@ namespace SolidRoad
 					continue;
 				}
 			}
-			End.ChartCm = ChartMark.ChartCm;
+			End.TerrainPoint = ChartMark.TerrainPoint;
 			return true;
 		}
 		return false;

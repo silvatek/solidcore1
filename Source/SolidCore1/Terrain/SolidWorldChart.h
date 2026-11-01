@@ -87,11 +87,11 @@ struct FSolidWorldLocation
 	TArray<FIntPoint> Cells;
 };
 
-/** One encounter mark. The position is the cell centre in chart centimetres. */
+/** One encounter mark. The position is the mark's terrain point. */
 struct FSolidWorldEncounterMark
 {
 	FString Name;
-	FVector2D ChartCm = FVector2D::ZeroVector;
+	FIntPoint TerrainPoint = FIntPoint::ZeroValue;
 };
 
 /**

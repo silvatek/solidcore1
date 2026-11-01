@@ -81,6 +81,7 @@ namespace
 		FVector2D ChartMin = FVector2D::ZeroVector;
 		FVector2D ChartMax = FVector2D::ZeroVector;
 		USolidWorldChart::ChartBounds(ChartMin, ChartMax);
+		Mark.TerrainPoint = TerrainPoint;
 		if (!Chart.TerrainPointToChart(TerrainPoint, ChartMin, ChartMax, Mark.ChartCm))
 		{
 			return false;
@@ -678,7 +679,7 @@ bool FSolidRoadLocationsTest::RunTest(const FString& Parameters)
 	{
 		for (const FSolidWorldChartMark& ChartMark : ChartMarks)
 		{
-			if (ChartMark.ChartCm.Equals(End.ChartCm) && ChartMark.Kind == End.Kind)
+			if (ChartMark.TerrainPoint == End.TerrainPoint && ChartMark.Kind == End.Kind)
 			{
 				return true;
 			}
@@ -687,23 +688,23 @@ bool FSolidRoadLocationsTest::RunTest(const FString& Parameters)
 	};
 
 	FSolidWorldChartMark Iglin = SolidRoad::TownMark(SolidTowns::Iglin);
-	Iglin.ChartCm = FVector2D(1000.f, 2000.f);
+	Iglin.TerrainPoint = FIntPoint(5, 10);
 	FSolidWorldChartMark Cave = SolidRoad::StrongholdMark(ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon);
 	Cave.Name = TEXT("MeagreDungeon");
-	Cave.ChartCm = FVector2D(3000.f, 4000.f);
+	Cave.TerrainPoint = FIntPoint(15, 20);
 	TArray<FSolidWorldChartMark> Marks;
 	Marks.Add(Iglin);
 	Marks.Add(Cave);
 
 	SolidRoad::FSolidRoad Trail = SolidRoad::Roads[0];
 	Trail.Locate(Marks);
-	TestTrue(TEXT("the cave takes the chart place"), Trail.From.ChartCm.Equals(Cave.ChartCm));
-	TestTrue(TEXT("Iglin takes the chart place"), Trail.To.ChartCm.Equals(Iglin.ChartCm));
-	TestTrue(TEXT("the list itself stays unplaced"), SolidRoad::Roads[0].From.ChartCm.IsNearlyZero());
+	TestTrue(TEXT("the cave takes the chart place"), Trail.From.TerrainPoint == Cave.TerrainPoint);
+	TestTrue(TEXT("Iglin takes the chart place"), Trail.To.TerrainPoint == Iglin.TerrainPoint);
+	TestTrue(TEXT("the list itself stays unplaced"), SolidRoad::Roads[0].From.TerrainPoint == FIntPoint::ZeroValue);
 
 	FSolidWorldChartMark Missing = SolidRoad::TownMark(SolidTowns::Relion);
 	SolidRoad::LocateMark(Marks, Missing);
-	TestTrue(TEXT("a missing end stays unplaced"), Missing.ChartCm.IsNearlyZero());
+	TestTrue(TEXT("a missing end stays unplaced"), Missing.TerrainPoint == FIntPoint::ZeroValue);
 
 	const USolidWorldChart* Chart = LoadObject<USolidWorldChart>(nullptr, USolidWorldChart::ShippedPath());
 	if (!TestNotNull(TEXT("shipped chart"), Chart))
@@ -719,13 +720,13 @@ bool FSolidRoadLocationsTest::RunTest(const FString& Parameters)
 		}
 
 		FSolidWorldChartMark Seek = End;
-		Seek.ChartCm = FVector2D::ZeroVector;
+		Seek.TerrainPoint = FIntPoint::ZeroValue;
 		if (!SolidRoad::LocateMark(Chart->Marks, Seek))
 		{
-			TestTrue(TEXT("a missing bridge mark leaves the end unplaced"), End.ChartCm.IsNearlyZero());
+			TestTrue(TEXT("a missing bridge mark leaves the end unplaced"), End.TerrainPoint == FIntPoint::ZeroValue);
 			return;
 		}
-		TestTrue(TEXT("the bridge end takes the chart centre"), End.ChartCm.Equals(Seek.ChartCm));
+		TestTrue(TEXT("the bridge end takes the chart centre"), End.TerrainPoint == Seek.TerrainPoint);
 	};
 	for (const SolidRoad::FSolidRoad& Definition : SolidRoad::Roads)
 	{
@@ -789,9 +790,9 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidRoadBridgeEndTest::RunTest(const FString& Parameters)
 {
 	FSolidWorldChartMark Iglin = SolidRoad::TownMark(SolidTowns::Iglin);
-	Iglin.ChartCm = FVector2D(100.f, 200.f);
+	Iglin.TerrainPoint = FIntPoint(1, 1);
 	FSolidWorldChartMark Bridge = SolidRoad::BridgeMark(TEXT("Iglin Bridge"));
-	Bridge.ChartCm = FVector2D(1200.f, 3400.f);
+	Bridge.TerrainPoint = FIntPoint(6, 17);
 	TArray<FSolidWorldChartMark> Marks;
 	Marks.Add(Iglin);
 	Marks.Add(Bridge);
@@ -802,15 +803,15 @@ bool FSolidRoadBridgeEndTest::RunTest(const FString& Parameters)
 		SolidRoad::EType::Track);
 	TestEqual(TEXT("the end is a bridge"), static_cast<uint8>(Track.To.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Bridge));
 	TestTrue(TEXT("the bridge end locates"), Track.Locate(Marks));
-	TestTrue(TEXT("Iglin takes the chart place"), Track.From.ChartCm.Equals(Iglin.ChartCm));
-	TestTrue(TEXT("the bridge takes the chart centre"), Track.To.ChartCm.Equals(Bridge.ChartCm));
+	TestTrue(TEXT("Iglin takes the chart place"), Track.From.TerrainPoint == Iglin.TerrainPoint);
+	TestTrue(TEXT("the bridge takes the chart centre"), Track.To.TerrainPoint == Bridge.TerrainPoint);
 
 	SolidRoad::FSolidRoad Missing(
 		SolidRoad::BridgeMark(TEXT("Jethan Bridge")),
 		SolidRoad::TownMark(SolidTowns::Iglin),
 		SolidRoad::EType::Track);
 	TestFalse(TEXT("a missing bridge stays unplaced"), Missing.Locate(Marks));
-	TestTrue(TEXT("the missing bridge has no centre"), Missing.From.ChartCm.IsNearlyZero());
+	TestTrue(TEXT("the missing bridge has no centre"), Missing.From.TerrainPoint == FIntPoint::ZeroValue);
 	return true;
 }
 

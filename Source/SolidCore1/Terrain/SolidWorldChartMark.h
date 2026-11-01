@@ -40,7 +40,10 @@ struct FSolidWorldChartMark
 	UPROPERTY(EditAnywhere, Category = "WorldChart")
 	FString Name;
 
-	/** Chart centimetres, snapped to the cell centre. The origin is the south-east corner. +X is west, +Y is north. */
+	/**
+	 * Deprecated. Chart centimetres of the cell centre.
+	 * TerrainPoint is the stored position.
+	 */
 	UPROPERTY(EditAnywhere, Category = "WorldChart")
 	FVector2D ChartCm = FVector2D::ZeroVector;
 

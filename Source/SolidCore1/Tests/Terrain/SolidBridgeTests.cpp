@@ -462,11 +462,14 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 	}
 	const int32 MarkIndex = Chart->MarkAtCell(FIntPoint(11, 16));
 	SolidBridge::FBridge OverWater;
+	FVector2D Centre = FVector2D::ZeroVector;
 	if (TestTrue(TEXT("the mark is stored"), MarkIndex != INDEX_NONE)
+		&& TestTrue(TEXT("the mark projects to chart"),
+			Chart->TerrainPointToChart(Chart->Marks[MarkIndex].TerrainPoint, ChartMin, ChartMax, Centre))
 		&& TestTrue(TEXT("Iglin stands over the river"),
 			SolidBridge::Stand(
 				SolidBridge::Bridges[0],
-				Chart->Marks[MarkIndex].ChartCm,
+				Centre,
 				Width,
 				Height,
 				OverWater,
@@ -474,12 +477,11 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 				ChartMin,
 				ChartMax)))
 	{
-		const FVector2D Mark = Chart->Marks[MarkIndex].ChartCm;
 		const FVector DeckMid = (OverWater.Deck[0] + OverWater.Deck.Last()) * 0.5f;
 		TestTrue(TEXT("the centre span is the marker"),
-			FVector2D(DeckMid.X, DeckMid.Y).Equals(Mark, 1.f));
+			FVector2D(DeckMid.X, DeckMid.Y).Equals(Centre, 1.f));
 		TestTrue(TEXT("the span stays east-west beside the river"),
-			FMath::IsNearlyEqual(OverWater.Deck[0].Y, Mark.Y, 1.f)
+			FMath::IsNearlyEqual(OverWater.Deck[0].Y, Centre.Y, 1.f)
 			&& FMath::Abs(OverWater.Deck[0].X - OverWater.Deck.Last().X) > 100.f);
 		TestTrue(TEXT("the ramps leave that span"),
 			OverWater.RampFrom[0].Equals(OverWater.Deck[0], 1.f)
@@ -504,7 +506,9 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 		SolidBridge::FromMarkers(*Chart, Height, Shifted, ShiftedMin, ShiftedMax), 1);
 	if (Shifted.Num() == 1 && MarkIndex != INDEX_NONE)
 	{
-		const FVector2D Ground = USolidWorldChart::TerrainPosition(Chart->Marks[MarkIndex].ChartCm, ShiftedMin);
+		FVector2D Ground = FVector2D::ZeroVector;
+		TestTrue(TEXT("the mark projects to the shifted terrain"),
+			Chart->TerrainPointToWorld(Chart->Marks[MarkIndex].TerrainPoint, ShiftedMin, ShiftedMax, Ground));
 		const FVector ShiftedMid = (Shifted[0].Deck[0] + Shifted[0].Deck.Last()) * 0.5f;
 		TestTrue(TEXT("the centre span is the marker on the terrain"),
 			FVector2D(ShiftedMid.X, ShiftedMid.Y).Equals(Ground, 1.f));

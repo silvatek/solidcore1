@@ -2100,7 +2100,12 @@ int32 ASolidGameMode::PlaceEncounterMarks(const USolidTerrainMap* Map)
 			continue;
 		}
 		const bool bDisabled = State && SolidEncounter::IsDisabled(*State, Def->Name);
-		const FVector2D Focus = USolidWorldChart::TerrainPosition(Mark.ChartCm, Map->GetWorldMinXY());
+		FVector2D Place = FVector2D::ZeroVector;
+		if (!WorldMap->TerrainPointToWorld(
+			Mark.TerrainPoint, Map->GetWorldMinXY(), Map->GetWorldMaxXY(), Place))
+		{
+			continue;
+		}
 		Chosen += SolidEncounter::PlaceMark(
 			Encounters,
 			*Def,
@@ -2110,7 +2115,7 @@ int32 ASolidGameMode::PlaceEncounterMarks(const USolidTerrainMap* Map)
 			Map->GetPoints(),
 			TreePoints,
 			ForagePoints,
-			Focus,
+			Place,
 			Map->PointSpacing);
 	}
 	return Chosen;
@@ -2640,10 +2645,14 @@ void ASolidGameMode::EnsureVegetation()
 				{
 					continue;
 				}
-				const FVector2D Shifted = USolidWorldChart::TerrainPosition(Mark.ChartCm, TerrainMin);
+				FVector2D Shifted = FVector2D::ZeroVector;
+				if (!BridgeMap->TerrainPointToWorld(Mark.TerrainPoint, TerrainMin, TerrainMax, Shifted))
+				{
+					continue;
+				}
 				UE_LOG(LogSolid, Warning,
-					TEXT("Bridge mark '%s' chart (%.0f, %.0f) shifted (%.0f, %.0f)"),
-					*Mark.Name, Mark.ChartCm.X, Mark.ChartCm.Y, Shifted.X, Shifted.Y);
+					TEXT("Bridge mark '%s' terrain (%d, %d) world (%.0f, %.0f)"),
+					*Mark.Name, Mark.TerrainPoint.X, Mark.TerrainPoint.Y, Shifted.X, Shifted.Y);
 			}
 
 			TArray<SolidBridge::FBridge> Bridges;

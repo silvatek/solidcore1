@@ -76,7 +76,7 @@ namespace
 		return USolidWorldChart::TerrainPosition(ChartCm, BuiltMin);
 	}
 
-	TSharedRef<FJsonObject> MarkJson(const FSolidWorldChartMark& Mark)
+	TSharedRef<FJsonObject> MarkJson(const USolidWorldChart& Chart, const FSolidWorldChartMark& Mark)
 	{
 		TSharedRef<FJsonObject> Object = MakeShared<FJsonObject>();
 		TArray<TSharedPtr<FJsonValue>> TerrainPoint;
@@ -85,18 +85,23 @@ namespace
 		Object->SetArrayField(TEXT("terrainPoint"), TerrainPoint);
 		Object->SetStringField(TEXT("kind"), MarkKindName(Mark.Kind));
 		Object->SetStringField(TEXT("name"), Mark.Name);
+		FVector2D ChartMin = FVector2D::ZeroVector;
+		FVector2D ChartMax = FVector2D::ZeroVector;
+		USolidWorldChart::ChartBounds(ChartMin, ChartMax);
+		FVector2D ChartCm = FVector2D::ZeroVector;
+		Chart.TerrainPointToChart(Mark.TerrainPoint, ChartMin, ChartMax, ChartCm);
 		int32 Row = 0;
 		int32 Column = 0;
-		if (CellOfPosition(Mark.ChartCm, Row, Column))
+		if (CellOfPosition(ChartCm, Row, Column))
 		{
 			Object->SetNumberField(TEXT("row"), Row);
 			Object->SetNumberField(TEXT("column"), Column);
 		}
 		TArray<TSharedPtr<FJsonValue>> Position;
-		Position.Add(MakeShared<FJsonValueNumber>(Mark.ChartCm.X));
-		Position.Add(MakeShared<FJsonValueNumber>(Mark.ChartCm.Y));
+		Position.Add(MakeShared<FJsonValueNumber>(ChartCm.X));
+		Position.Add(MakeShared<FJsonValueNumber>(ChartCm.Y));
 		Object->SetArrayField(TEXT("chartCm"), Position);
-		const FVector2D Ground = GroundCm(Mark.ChartCm);
+		const FVector2D Ground = GroundCm(ChartCm);
 		TArray<TSharedPtr<FJsonValue>> GroundPosition;
 		GroundPosition.Add(MakeShared<FJsonValueNumber>(Ground.X));
 		GroundPosition.Add(MakeShared<FJsonValueNumber>(Ground.Y));
@@ -210,11 +215,16 @@ int32 USolidDumpWorldChartCommandlet::Main(const FString& Params)
 	Marks.Reserve(Chart->Marks.Num());
 	for (const FSolidWorldChartMark& Mark : Chart->Marks)
 	{
-		Marks.Add(MakeShared<FJsonValueObject>(MarkJson(Mark)));
+		Marks.Add(MakeShared<FJsonValueObject>(MarkJson(*Chart, Mark)));
+		FVector2D ChartMin = FVector2D::ZeroVector;
+		FVector2D ChartMax = FVector2D::ZeroVector;
+		USolidWorldChart::ChartBounds(ChartMin, ChartMax);
+		FVector2D ChartCm = FVector2D::ZeroVector;
+		Chart->TerrainPointToChart(Mark.TerrainPoint, ChartMin, ChartMax, ChartCm);
 		int32 Row = 0;
 		int32 Column = 0;
-		const bool bCell = CellOfPosition(Mark.ChartCm, Row, Column);
-		const FVector2D Ground = GroundCm(Mark.ChartCm);
+		const bool bCell = CellOfPosition(ChartCm, Row, Column);
+		const FVector2D Ground = GroundCm(ChartCm);
 		UE_LOG(LogSolidChartDump, Warning,
 			TEXT("Mark %s \"%s\" terrain (%d, %d) row %s column %s position (%.0f, %.0f) ground (%.0f, %.0f)"),
 			MarkKindName(Mark.Kind),
@@ -223,8 +233,8 @@ int32 USolidDumpWorldChartCommandlet::Main(const FString& Params)
 			Mark.TerrainPoint.Y,
 			bCell ? *FString::FromInt(Row) : TEXT("?"),
 			bCell ? *FString::FromInt(Column) : TEXT("?"),
-			Mark.ChartCm.X,
-			Mark.ChartCm.Y,
+			ChartCm.X,
+			ChartCm.Y,
 			Ground.X,
 			Ground.Y);
 	}

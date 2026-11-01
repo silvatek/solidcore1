@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0878")
+#define SOLID_BUILD_ID TEXT("SC1-0879")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A mark stores TerrainPoint beside ChartCm.")
+#define SOLID_BUILD_NOTE TEXT("A mark's position is its terrain point.")
 #endif

@@ -47,8 +47,8 @@ namespace SolidRoad
 		}
 
 		/**
-		 * Copy the chart position onto each end when the chart has that mark.
-		 * False when either end is missing.
+		 * Copy each end's terrain point when the chart has that mark.
+		 * False when either end is missing. Chart coordinates are no longer used.
 		 */
 		bool Locate(const TArray<FSolidWorldChartMark>& ChartMarks);
 
@@ -98,7 +98,7 @@ namespace SolidRoad
 		return Mark;
 	}
 
-	/** A bridge mark. The chart places its centre. The name is the one in SolidBridge::Bridges. */
+	/** A bridge mark. The world chart places its terrain point. The name is the one in SolidBridge::Bridges. */
 	inline FSolidWorldChartMark BridgeMark(const TCHAR* Name)
 	{
 		FSolidWorldChartMark Mark;
@@ -107,7 +107,7 @@ namespace SolidRoad
 		return Mark;
 	}
 
-	/** Copy the chart mark's position onto this end when the chart has that mark. */
+	/** Copy the mark's terrain point onto this end when the chart has that mark. Chart coordinates are no longer used. */
 	inline bool LocateMark(const TArray<FSolidWorldChartMark>& ChartMarks, FSolidWorldChartMark& End)
 	{
 		for (const FSolidWorldChartMark& ChartMark : ChartMarks)

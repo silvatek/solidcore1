@@ -1,17 +1,16 @@
 # Coordinates
 
-The open world is one square in Unreal, measured in centimetres. Four coordinate systems cover it. Each has a one-word name. A coordinate is that name followed by X or Y, as in `worldX` and `terrainY`. Later sections use only names introduced above them. Local coordinate systems are a separate section.
+The open world is one square in Unreal, measured in centimetres. World, terrain, and cell cover it. Chart coordinates are no longer used. They were similar to World, with different offsets. A coordinate is that name followed by X or Y, as in `worldX` and `terrainY`. Later sections use only names introduced above them. Local coordinate systems are a separate section.
 
 ## Contents
 
 - [Systems](#systems)
   - [World](#world)
   - [Terrain](#terrain)
-  - [Chart (legacy)](#chart-legacy)
+  - [Chart](#chart)
   - [Cell (legacy)](#cell-legacy)
 - [Transformations](#transformations)
   - [Terrain and world](#terrain-and-world)
-  - [Chart and world](#chart-and-world)
   - [Cell and world](#cell-and-world)
 - [Local coordinate systems](#local-coordinate-systems)
   - [Chunk](#chunk)
@@ -48,13 +47,9 @@ A terrain point carries a world position, a surface height, a biome, and explora
 
 The world chart asset keeps a second copy of this lattice. `Points` there is one biome per terrain point, in the same order, with the same index 0 at the south-east corner. It does not store a second set of positions.
 
-### Chart (legacy)
+### Chart
 
-`chartX` and `chartY` are centimetres stored on the world chart. +chartX is west and +chartY is north, the same directions as world and terrain. The origin is the south-east corner. That corner is chart (0, 0) and world (−51200, −51200). The opposite corner is chart (102400, 102400) and world (51200, 51200).
-
-A mark stores its position as `TerrainPoint`. The centimetres of that point in this frame are `terrainX * 200` and `terrainY * 200`. Using a chart position as a world position places it 512 m west and 512 m north of where it stands.
-
-This frame will eventually be replaced by storing a world position on the world chart.
+Chart coordinates are no longer used. They were similar to World, with different offsets. A mark stores its position as `TerrainPoint`.
 
 ### Cell (legacy)
 
@@ -62,9 +57,9 @@ This frame will eventually be replaced by storing a world position on the world 
 
 `cellX` 0 is the west edge. `cellY` 0 is the north edge. A higher `cellY` is further south. Storage order is `cellY × 128 + cellX`.
 
-+cellX is east and +cellY is south. World, terrain, and chart use +X west and +Y north. Cell does not.
++cellX is east and +cellY is south. World and terrain use +X west and +Y north. Cell does not.
 
-A mark (a town, a stronghold, a site, a lair mouth, a note, an encounter, or a bridge) sits on one cell and stores that cell's centre as `TerrainPoint`. On the shipped sizes that centre is chart (102000, 101600), which is world (50800, 50400) and `terrainX` 510, `terrainY` 508. A column is 4 steps wide. A row is 8 steps tall.
+A mark (a town, a stronghold, a site, a lair mouth, a note, an encounter, or a bridge) sits on one cell and stores that cell's centre as `TerrainPoint`. On the shipped sizes that centre is world (50800, 50400) and `terrainX` 510, `terrainY` 508. A column is 4 steps wide. A row is 8 steps tall.
 
 The old map text, and a dump of the grid, count from 1 at the top-left. The top-left is `cellX` 0, `cellY` 0. A line `! 8,21 = Town Iglin` is row 8, column 21 in that count, which is `cellX` 20, `cellY` 7.
 
@@ -97,22 +92,6 @@ worldY = (terrainY - 256) * 200 - 100
 
 A bridge laid along that strip uses the same shift.
 
-### Chart and world
-
-```
-worldX = chartX - 51200
-worldY = chartY - 51200
-```
-
-51200 is `256 * 200`, half the square. `Build` recenters a running map by this shift. A bridge stood on a mark uses this shift alone. The centre of the span is that point.
-
-```
-chartX = worldX + 51200
-chartY = worldY + 51200
-```
-
-A terrain point lands on `chartX = terrainX * 200` and `chartY = terrainY * 200`.
-
 ### Cell and world
 
 ```
@@ -133,8 +112,6 @@ From a cell, the neighbours are:
 | East | +1 | 0 |
 | South | 0 | +1 |
 | West | −1 | 0 |
-
-In chart, that same centre is `chartX = worldX + 51200` and `chartY = worldY + 51200`. The chart square runs to 102400.
 
 The text count from 1 is `cellX + 1` for the column and `cellY + 1` for the row. The line writes the row first.
 
@@ -189,7 +166,7 @@ A lair maze is 11 by 9 squares of 200 cm. `mazeX` 0, `mazeY` 0 is the minimum lo
 
 ## Code
 
-World axes, terrain, chart, and cell live on `USolidWorldChart` in [SolidWorldChart.h](SolidWorldChart.h). `MapWidth` and `MapHeight` are the 128 by 64 cells. `PointAxis` is 513, the terrain grid. The comment on the class states the compass and which edge is index 0. `Cells` is cell storage. `Points` is the chart asset's copy of that grid, one biome per terrain point.
+World axes, terrain, and cell live on `USolidWorldChart` in [SolidWorldChart.h](SolidWorldChart.h). Chart coordinates are no longer used. `MapWidth` and `MapHeight` are the 128 by 64 cells. `PointAxis` is 513, the terrain grid. The comment on the class states the compass and which edge is index 0. `Cells` is cell storage. `Points` is the chart asset's copy of that grid, one biome per terrain point.
 
 [SolidWorldChart.cpp](SolidWorldChart.cpp) is the arithmetic:
 

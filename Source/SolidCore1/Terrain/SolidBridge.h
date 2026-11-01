@@ -54,7 +54,7 @@ namespace SolidBridge
 		Intact,
 	};
 
-	/** One bridge marker. The chart places its centre. 18 m is the level-bank span, ramps included. */
+	/** One bridge marker. The world chart places its terrain point. Chart coordinates are no longer used. 18 m is the level-bank span, ramps included. */
 	struct FBridgeMarker
 	{
 		FBridgeMarker(

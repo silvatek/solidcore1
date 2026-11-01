@@ -695,8 +695,8 @@ bool FSolidRoadLocationsTest::RunTest(const FString& Parameters)
 
 	SolidRoad::FSolidRoad Trail = SolidRoad::Roads[0];
 	Trail.Locate(Marks);
-	TestTrue(TEXT("the cave takes the chart place"), Trail.From.TerrainPoint == Cave.TerrainPoint);
-	TestTrue(TEXT("Iglin takes the chart place"), Trail.To.TerrainPoint == Iglin.TerrainPoint);
+	TestTrue(TEXT("the cave takes the terrain point"), Trail.From.TerrainPoint == Cave.TerrainPoint);
+	TestTrue(TEXT("Iglin takes the terrain point"), Trail.To.TerrainPoint == Iglin.TerrainPoint);
 	TestTrue(TEXT("the list itself stays unplaced"), SolidRoad::Roads[0].From.TerrainPoint == FIntPoint::ZeroValue);
 
 	FSolidWorldChartMark Missing = SolidRoad::TownMark(SolidTowns::Relion);
@@ -723,7 +723,7 @@ bool FSolidRoadLocationsTest::RunTest(const FString& Parameters)
 			TestTrue(TEXT("a missing bridge mark leaves the end unplaced"), End.TerrainPoint == FIntPoint::ZeroValue);
 			return;
 		}
-		TestTrue(TEXT("the bridge end takes the chart centre"), End.TerrainPoint == Seek.TerrainPoint);
+		TestTrue(TEXT("the bridge end takes the terrain point"), End.TerrainPoint == Seek.TerrainPoint);
 	};
 	for (const SolidRoad::FSolidRoad& Definition : SolidRoad::Roads)
 	{
@@ -800,8 +800,8 @@ bool FSolidRoadBridgeEndTest::RunTest(const FString& Parameters)
 		SolidRoad::EType::Track);
 	TestEqual(TEXT("the end is a bridge"), static_cast<uint8>(Track.To.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Bridge));
 	TestTrue(TEXT("the bridge end locates"), Track.Locate(Marks));
-	TestTrue(TEXT("Iglin takes the chart place"), Track.From.TerrainPoint == Iglin.TerrainPoint);
-	TestTrue(TEXT("the bridge takes the chart centre"), Track.To.TerrainPoint == Bridge.TerrainPoint);
+	TestTrue(TEXT("Iglin takes the terrain point"), Track.From.TerrainPoint == Iglin.TerrainPoint);
+	TestTrue(TEXT("the bridge takes the terrain point"), Track.To.TerrainPoint == Bridge.TerrainPoint);
 
 	SolidRoad::FSolidRoad Missing(
 		SolidRoad::BridgeMark(TEXT("Jethan Bridge")),

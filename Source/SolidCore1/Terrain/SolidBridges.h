@@ -3,7 +3,8 @@
 #include "SolidBridge.h"
 
 /**
- * The shipped bridges. The chart stores each marker's centre.
+ * The shipped bridges. The world chart stores each marker's terrain point.
+ * Chart coordinates are no longer used.
  */
 namespace SolidBridge
 {

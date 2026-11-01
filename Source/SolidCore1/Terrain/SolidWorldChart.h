@@ -234,7 +234,7 @@ public:
 	/** The description of a named cell, or false when that cell has none. */
 	bool FindBang(int32 CellX, int32 CellY, FSolidWorldBang& Out) const;
 
-	/** True when this cell is a stronghold. A stronghold site is not one. */
+	/** True when the mark on this cell is a stronghold. A site is not one. */
 	bool StrongholdAtCell(int32 CellX, int32 CellY, ESolidStrongholdType& OutType, ESolidStrongholdSize& OutSize) const;
 
 	/** True when this cell is a stronghold site. OutSize is that size. */

@@ -1335,6 +1335,9 @@ bool FSolidWorldMapBangDescriptionTest::RunTest(const FString& Parameters)
 
 	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	AddChartMark(*Map, RelionCol, RelionRow, ESolidWorldChartMarkKind::Town, TEXT("Relion"));
+	AddChartMark(*Map, CaveCol, CaveRow, ESolidWorldChartMarkKind::Stronghold, TEXT("MeagreDungeon"));
+	AddChartMark(*Map, TowerCol, TowerRow, ESolidWorldChartMarkKind::Stronghold, TEXT("Humble Tower"));
+	AddChartMark(*Map, ImperiousCol, ImperiousRow, ESolidWorldChartMarkKind::Stronghold, TEXT("Imperious Tower"));
 	AddChartMark(
 		*Map,
 		EnterCol,

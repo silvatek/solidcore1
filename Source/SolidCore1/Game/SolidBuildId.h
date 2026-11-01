@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0886")
+#define SOLID_BUILD_ID TEXT("SC1-0887")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A cell's biome comes from its mark.")
+#define SOLID_BUILD_NOTE TEXT("A stronghold cell is read from its mark.")
 #endif

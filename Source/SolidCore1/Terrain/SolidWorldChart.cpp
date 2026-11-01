@@ -1180,14 +1180,27 @@ bool USolidWorldChart::StrongholdAtCell(
 	ESolidStrongholdType& OutType,
 	ESolidStrongholdSize& OutSize) const
 {
-	FSolidWorldBang Mark;
-	if (!FindBang(CellX, CellY, Mark) || Mark.Kind != ESolidWorldBang::Stronghold)
+	if (!EnsureQuery() || CellX < 0 || CellY < 0 || CellX >= MapWidth || CellY >= MapHeight)
 	{
 		return false;
 	}
-	OutType = Mark.StrongholdType;
-	OutSize = Mark.StrongholdSize;
-	return true;
+	for (const FSolidWorldChartMark& Mark : Marks)
+	{
+		FIntPoint Cell;
+		if (!CellAtTerrainPoint(Mark.TerrainPoint, Cell) || Cell.X != CellX || Cell.Y != CellY)
+		{
+			continue;
+		}
+		if (Mark.Kind != ESolidWorldChartMarkKind::Stronghold)
+		{
+			return false;
+		}
+		OutType = Mark.StrongholdType;
+		OutSize = Mark.StrongholdSize;
+		SolidStronghold::FromToken(Mark.Name, OutType, OutSize);
+		return true;
+	}
+	return false;
 }
 
 bool USolidWorldChart::StrongholdSiteAtCell(const int32 CellX, const int32 CellY, ESolidStrongholdSize& OutSize) const

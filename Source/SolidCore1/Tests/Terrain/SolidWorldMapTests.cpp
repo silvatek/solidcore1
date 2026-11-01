@@ -287,63 +287,33 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 	USolidWorldChart* Map = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("LoadDefault"), Map->LoadDefault());
 
-	FSolidWorldLocation Iglin;
-	TestTrue(TEXT("location 0"), Map->FindLocation(0, Iglin));
-	TestEqual(TEXT("Iglin"), Iglin.Name, FString(TEXT("Iglin")));
-	TestTrue(TEXT("role is not in the map file"), Iglin.Role.IsEmpty());
-	TestEqual(TEXT("Iglin is Town"), static_cast<uint8>(Iglin.Biome), static_cast<uint8>(ESolidBiome::Town));
-	TestTrue(TEXT("Iglin has a cell"), Iglin.Cells.Num() >= 1);
+	FIntPoint Iglin;
+	TestTrue(TEXT("location 0"), Map->TownCell(0, Iglin));
+	TestEqual(TEXT("Iglin is !"), Map->GetMarkerAtCell(Iglin.X, Iglin.Y), USolidWorldChart::LocationMarker);
+	TestEqual(TEXT("Iglin cell id"), Map->GetLocationIdAtCell(Iglin.X, Iglin.Y), 0);
+	TestEqual(
+		TEXT("Iglin is Town"),
+		static_cast<uint8>(Map->GetBiomeAtCell(Iglin.X, Iglin.Y)),
+		static_cast<uint8>(ESolidBiome::Town));
 
-	FSolidWorldLocation Relion;
-	TestTrue(TEXT("location 1"), Map->FindLocation(1, Relion));
-	TestEqual(TEXT("Relion"), Relion.Name, FString(TEXT("Relion")));
-	TestTrue(TEXT("Relion role is not in the map file"), Relion.Role.IsEmpty());
-	TestEqual(TEXT("Relion is one cell"), Relion.Cells.Num(), 1);
-	if (Relion.Cells.Num() == 1)
+	const int32 NamedIds[] = { 1, 2, 3, 4, 6 };
+	const TCHAR* NamedLabels[] = { TEXT("Relion"), TEXT("Kanfold"), TEXT("Visolar"), TEXT("Jethan"), TEXT("Rathen") };
+	for (int32 Index = 0; Index < UE_ARRAY_COUNT(NamedIds); ++Index)
 	{
-		TestEqual(TEXT("Relion is !"), Map->GetMarkerAtCell(Relion.Cells[0].X, Relion.Cells[0].Y), USolidWorldChart::LocationMarker);
-	}
-
-	FSolidWorldLocation Kanfold;
-	TestTrue(TEXT("location 2"), Map->FindLocation(2, Kanfold));
-	TestEqual(TEXT("Kanfold"), Kanfold.Name, FString(TEXT("Kanfold")));
-	TestTrue(TEXT("Kanfold role is not in the map file"), Kanfold.Role.IsEmpty());
-	TestEqual(TEXT("Kanfold is one cell"), Kanfold.Cells.Num(), 1);
-	if (Kanfold.Cells.Num() == 1)
-	{
-		TestEqual(TEXT("Kanfold is !"), Map->GetMarkerAtCell(Kanfold.Cells[0].X, Kanfold.Cells[0].Y), USolidWorldChart::LocationMarker);
-	}
-
-	FSolidWorldLocation Visolar;
-	TestTrue(TEXT("location 3"), Map->FindLocation(3, Visolar));
-	TestEqual(TEXT("Visolar"), Visolar.Name, FString(TEXT("Visolar")));
-	TestTrue(TEXT("Visolar role is not in the map file"), Visolar.Role.IsEmpty());
-	TestEqual(TEXT("Visolar is one cell"), Visolar.Cells.Num(), 1);
-	if (Visolar.Cells.Num() == 1)
-	{
-		TestEqual(TEXT("Visolar is !"), Map->GetMarkerAtCell(Visolar.Cells[0].X, Visolar.Cells[0].Y), USolidWorldChart::LocationMarker);
-	}
-
-	FSolidWorldLocation Jethan;
-	TestTrue(TEXT("location 4"), Map->FindLocation(4, Jethan));
-	TestEqual(TEXT("Jethan"), Jethan.Name, FString(TEXT("Jethan")));
-	TestTrue(TEXT("Jethan role is not in the map file"), Jethan.Role.IsEmpty());
-	TestEqual(TEXT("Jethan is Town"), static_cast<uint8>(Jethan.Biome), static_cast<uint8>(ESolidBiome::Town));
-	TestEqual(TEXT("Jethan is one cell"), Jethan.Cells.Num(), 1);
-	if (Jethan.Cells.Num() == 1)
-	{
-		TestEqual(TEXT("Jethan is !"), Map->GetMarkerAtCell(Jethan.Cells[0].X, Jethan.Cells[0].Y), USolidWorldChart::LocationMarker);
-	}
-
-	FSolidWorldLocation Rathen;
-	TestTrue(TEXT("location 6"), Map->FindLocation(6, Rathen));
-	TestEqual(TEXT("Rathen"), Rathen.Name, FString(TEXT("Rathen")));
-	TestTrue(TEXT("Rathen role is not in the map file"), Rathen.Role.IsEmpty());
-	TestEqual(TEXT("Rathen is Town"), static_cast<uint8>(Rathen.Biome), static_cast<uint8>(ESolidBiome::Town));
-	TestEqual(TEXT("Rathen is one cell"), Rathen.Cells.Num(), 1);
-	if (Rathen.Cells.Num() == 1)
-	{
-		TestEqual(TEXT("Rathen is !"), Map->GetMarkerAtCell(Rathen.Cells[0].X, Rathen.Cells[0].Y), USolidWorldChart::LocationMarker);
+		FIntPoint Cell;
+		TestTrue(*FString::Printf(TEXT("%s"), NamedLabels[Index]), Map->TownCell(NamedIds[Index], Cell));
+		TestEqual(
+			*FString::Printf(TEXT("%s is !"), NamedLabels[Index]),
+			Map->GetMarkerAtCell(Cell.X, Cell.Y),
+			USolidWorldChart::LocationMarker);
+		TestEqual(
+			*FString::Printf(TEXT("%s cell id"), NamedLabels[Index]),
+			Map->GetLocationIdAtCell(Cell.X, Cell.Y),
+			NamedIds[Index]);
+		TestEqual(
+			*FString::Printf(TEXT("%s is Town"), NamedLabels[Index]),
+			static_cast<uint8>(Map->GetBiomeAtCell(Cell.X, Cell.Y)),
+			static_cast<uint8>(ESolidBiome::Town));
 	}
 
 	const SolidTowns::FTownInfo* WallGate = nullptr;
@@ -356,29 +326,16 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 		}
 	}
 	TestNotNull(TEXT("a wall gate is defined"), WallGate);
-	FSolidWorldLocation Dragongate;
-	if (WallGate && Map->FindLocation(WallGate->Id, Dragongate))
+	if (WallGate)
 	{
-		TestEqual(TEXT("Dragongate"), Dragongate.Name, FString(TEXT("Dragongate")));
-		TestEqual(TEXT("Dragongate is Town"), static_cast<uint8>(Dragongate.Biome), static_cast<uint8>(ESolidBiome::Town));
-		TestEqual(TEXT("Dragongate is one cell"), Dragongate.Cells.Num(), 1);
-		if (Dragongate.Cells.Num() == 1)
-		{
-			const FIntPoint Cell = Dragongate.Cells[0];
-			TestEqual(TEXT("Dragongate is !"), Map->GetMarkerAtCell(Cell.X, Cell.Y), USolidWorldChart::LocationMarker);
-		}
-	}
-
-	const FSolidWorldLocation* Named[] = { &Iglin, &Relion, &Kanfold, &Visolar, &Jethan, &Rathen };
-	for (const FSolidWorldLocation* Loc : Named)
-	{
-		for (const FIntPoint& Cell : Loc->Cells)
-		{
-			TestEqual(
-				*FString::Printf(TEXT("location %d cell is its biome"), Loc->Id),
-				static_cast<uint8>(Map->GetBiomeAtCell(Cell.X, Cell.Y)),
-				static_cast<uint8>(Loc->Biome));
-		}
+		FIntPoint Dragongate;
+		TestTrue(TEXT("Dragongate"), Map->TownCell(WallGate->Id, Dragongate));
+		TestEqual(TEXT("Dragongate is !"), Map->GetMarkerAtCell(Dragongate.X, Dragongate.Y), USolidWorldChart::LocationMarker);
+		TestEqual(TEXT("Dragongate cell id"), Map->GetLocationIdAtCell(Dragongate.X, Dragongate.Y), WallGate->Id);
+		TestEqual(
+			TEXT("Dragongate is Town"),
+			static_cast<uint8>(Map->GetBiomeAtCell(Dragongate.X, Dragongate.Y)),
+			static_cast<uint8>(ESolidBiome::Town));
 	}
 
 	const FVector2D WorldMin(-1000.f, -1000.f);
@@ -453,18 +410,8 @@ bool FSolidWorldMapNumberedLocationsTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Synthetic->GetBiomeAtCell(6, 6)),
 		static_cast<uint8>(ESolidBiome::Grassland));
 
-	FSolidWorldLocation IndexOne;
-	TestTrue(TEXT("location 1"), Synthetic->FindLocation(1, IndexOne));
-	TestEqual(TEXT("name comes from the town table"), IndexOne.Name, FString(TEXT("Relion")));
-	TestTrue(TEXT("role is empty"), IndexOne.Role.IsEmpty());
-	TestEqual(
-		TEXT("biome stays Town"),
-		static_cast<uint8>(IndexOne.Biome),
-		static_cast<uint8>(ESolidBiome::Town));
-	FSolidWorldLocation IndexZero;
-	TestTrue(TEXT("location 0"), Synthetic->FindLocation(0, IndexZero));
-	TestEqual(TEXT("index 0 is Iglin"), IndexZero.Name, FString(TEXT("Iglin")));
-	TestTrue(TEXT("Iglin role is empty"), IndexZero.Role.IsEmpty());
+	TestEqual(TEXT("Iglin cell id"), Synthetic->GetLocationIdAtCell(4, 2), 0);
+	TestEqual(TEXT("Relion cell id"), Synthetic->GetLocationIdAtCell(6, 4), 1);
 
 	const FLinearColor Grass = Synthetic->GetBiomeColor(ESolidBiome::Grassland);
 	TestTrue(TEXT("an old key line leaves grass green"), Grass.G > Grass.R && Grass.G > Grass.B);
@@ -603,10 +550,9 @@ bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 	TestFalse(
 		TEXT("digits are not the start"),
 		Map->GetStartTownWorldXY(FVector2D(-100.f, -100.f), FVector2D(100.f, 100.f), DigitStart));
-	FSolidWorldLocation NumberedKey;
-	TestFalse(TEXT("a numbered key line is not a location"), Map->FindLocation(15, NumberedKey));
-	FSolidWorldLocation IglinKey;
-	TestFalse(TEXT("a location key line is not a town"), Map->FindLocation(0, IglinKey));
+	FIntPoint Missed;
+	TestFalse(TEXT("a numbered key line is not a location"), Map->TownCell(15, Missed));
+	TestFalse(TEXT("a location key line is not a town"), Map->TownCell(0, Missed));
 	const FLinearColor Grass = Map->GetBiomeColor(ESolidBiome::Grassland);
 	TestTrue(TEXT("an old key line leaves grass green"), Grass.G > Grass.R && Grass.G > Grass.B);
 
@@ -617,37 +563,22 @@ bool FSolidWorldMapDigitPairTest::RunTest(const FString& Parameters)
 		return true;
 	}
 
-	FSolidWorldLocation ShippedIglin;
-	TestTrue(TEXT("shipped location 0"), Shipped->FindLocation(0, ShippedIglin));
-	TestEqual(TEXT("shipped Iglin is one cell"), ShippedIglin.Cells.Num(), 1);
-	if (ShippedIglin.Cells.Num() == 1)
-	{
-		const FIntPoint Cell = ShippedIglin.Cells[0];
-		TestEqual(TEXT("Iglin is !"), Shipped->GetMarkerAtCell(Cell.X, Cell.Y), USolidWorldChart::LocationMarker);
-		TestEqual(TEXT("Iglin cell id"), Shipped->GetLocationIdAtCell(Cell.X, Cell.Y), 0);
-		TestEqual(TEXT("Iglin row"), Cell.Y + 1, 8);
-		TestEqual(TEXT("Iglin column"), Cell.X + 1, 21);
-	}
+	FIntPoint ShippedIglin;
+	TestTrue(TEXT("shipped location 0"), Shipped->TownCell(0, ShippedIglin));
+	TestEqual(TEXT("Iglin is !"), Shipped->GetMarkerAtCell(ShippedIglin.X, ShippedIglin.Y), USolidWorldChart::LocationMarker);
+	TestEqual(TEXT("Iglin cell id"), Shipped->GetLocationIdAtCell(ShippedIglin.X, ShippedIglin.Y), 0);
+	TestEqual(TEXT("Iglin row"), ShippedIglin.Y + 1, 8);
+	TestEqual(TEXT("Iglin column"), ShippedIglin.X + 1, 21);
 
-	FSolidWorldLocation ShippedKanfold;
-	TestTrue(TEXT("shipped location 2"), Shipped->FindLocation(2, ShippedKanfold));
-	TestEqual(TEXT("shipped Kanfold is one cell"), ShippedKanfold.Cells.Num(), 1);
-	if (ShippedKanfold.Cells.Num() == 1)
-	{
-		const FIntPoint Cell = ShippedKanfold.Cells[0];
-		TestEqual(TEXT("Kanfold is !"), Shipped->GetMarkerAtCell(Cell.X, Cell.Y), USolidWorldChart::LocationMarker);
-		TestEqual(TEXT("Kanfold cell id"), Shipped->GetLocationIdAtCell(Cell.X, Cell.Y), 2);
-	}
+	FIntPoint ShippedKanfold;
+	TestTrue(TEXT("shipped location 2"), Shipped->TownCell(2, ShippedKanfold));
+	TestEqual(TEXT("Kanfold is !"), Shipped->GetMarkerAtCell(ShippedKanfold.X, ShippedKanfold.Y), USolidWorldChart::LocationMarker);
+	TestEqual(TEXT("Kanfold cell id"), Shipped->GetLocationIdAtCell(ShippedKanfold.X, ShippedKanfold.Y), 2);
 
-	FSolidWorldLocation ShippedGate;
-	TestTrue(TEXT("shipped location 5"), Shipped->FindLocation(5, ShippedGate));
-	TestEqual(TEXT("shipped Dragongate is one cell"), ShippedGate.Cells.Num(), 1);
-	if (ShippedGate.Cells.Num() == 1)
-	{
-		const FIntPoint Cell = ShippedGate.Cells[0];
-		TestEqual(TEXT("Dragongate is !"), Shipped->GetMarkerAtCell(Cell.X, Cell.Y), USolidWorldChart::LocationMarker);
-		TestEqual(TEXT("Dragongate cell id"), Shipped->GetLocationIdAtCell(Cell.X, Cell.Y), 5);
-	}
+	FIntPoint ShippedGate;
+	TestTrue(TEXT("shipped location 5"), Shipped->TownCell(5, ShippedGate));
+	TestEqual(TEXT("Dragongate is !"), Shipped->GetMarkerAtCell(ShippedGate.X, ShippedGate.Y), USolidWorldChart::LocationMarker);
+	TestEqual(TEXT("Dragongate cell id"), Shipped->GetLocationIdAtCell(ShippedGate.X, ShippedGate.Y), 5);
 	return true;
 }
 
@@ -1269,23 +1200,10 @@ bool FSolidWorldMapBangLocationTest::RunTest(const FString& Parameters)
 		TEXT("location 0 is the start"),
 		Map->GetStartTownWorldXY(FVector2D(-100.f, -100.f), FVector2D(100.f, 100.f), StartXY));
 
-	FSolidWorldLocation Iglin;
-	TestTrue(TEXT("location 0"), Map->FindLocation(0, Iglin));
-	TestEqual(TEXT("Iglin name"), Iglin.Name, FString(TEXT("Iglin")));
-	TestTrue(TEXT("Iglin role is empty"), Iglin.Role.IsEmpty());
-	TestEqual(TEXT("Iglin is one cell"), Iglin.Cells.Num(), 1);
 	TestEqual(
 		TEXT("a named ! is Town"),
 		static_cast<uint8>(Map->GetBiomeAtCell(IglinCol, IglinRow)),
 		static_cast<uint8>(ESolidBiome::Town));
-
-	FSolidWorldLocation Replaced;
-	TestFalse(TEXT("a second line does not replace Iglin"), Map->FindLocation(SolidTowns::Kanfold, Replaced));
-
-	FSolidWorldLocation Gate;
-	TestTrue(TEXT("location 5"), Map->FindLocation(5, Gate));
-	TestEqual(TEXT("two ! cells are one location"), Gate.Cells.Num(), 2);
-	TestEqual(TEXT("Dragongate name"), Gate.Name, FString(TEXT("Dragongate")));
 	TestEqual(TEXT("east ! is location 5"), Map->GetLocationIdAtCell(GateCol, GateRow), 5);
 	TestEqual(TEXT("west ! is location 5"), Map->GetLocationIdAtCell(GateCol + 1, GateRow), 5);
 
@@ -1306,12 +1224,8 @@ bool FSolidWorldMapBangLocationTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("a numeric ! line is ignored"), Map->GetLocationIdAtCell(SplitCol + 1, SplitRow), INDEX_NONE);
 	TestEqual(TEXT("a digit after ! is not a location"), Map->GetLocationIdAtCell(SplitCol + 2, SplitRow), INDEX_NONE);
 
-	FSolidWorldLocation Missed;
-	TestFalse(TEXT("a line on grass is not a location"), Map->FindLocation(SolidTowns::Visolar, Missed));
 	TestEqual(TEXT("that grass cell stays grass"), Map->GetMarkerAtCell(1, 0), USolidWorldChart::GrassMarker);
-	TestFalse(TEXT("row 0 is ignored"), Map->FindLocation(SolidTowns::Kanfold, Missed));
-	TestFalse(TEXT("a column past the grid is ignored"), Map->FindLocation(SolidTowns::Jethan, Missed));
-	TestFalse(TEXT("a row past the grid is ignored"), Map->FindLocation(SolidTowns::Rathen, Missed));
+	TestEqual(TEXT("a line on grass is not a location"), Map->GetLocationIdAtCell(1, 0), INDEX_NONE);
 
 	const FLinearColor Grass = Map->GetBiomeColor(ESolidBiome::Grassland);
 	TestTrue(TEXT("the ! key leaves grass green"), Grass.G > Grass.R && Grass.G > Grass.B);

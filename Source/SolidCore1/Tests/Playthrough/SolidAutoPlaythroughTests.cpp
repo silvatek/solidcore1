@@ -912,10 +912,8 @@ bool FSolidAutoPlaythroughStage4Test::RunTest(const FString& Parameters)
 				ESolidStrongholdSize::Meagre,
 				Missing));
 
-		FSolidWorldLocation Gate;
-		TestTrue(TEXT("Dragongate is on the chart"), Chart->FindLocation(SolidTowns::Dragongate, Gate));
-		TestTrue(TEXT("Dragongate has cells"), Gate.Cells.Num() > 0);
-		if (Gate.Cells.Num() > 0)
+		FIntPoint GateCell;
+		TestTrue(TEXT("Dragongate is on the chart"), Chart->TownCell(SolidTowns::Dragongate, GateCell));
 		{
 			const FVector2D WorldMin(0.f, 0.f);
 			const FVector2D WorldMax(102400.f, 102400.f);
@@ -934,26 +932,11 @@ bool FSolidAutoPlaythroughStage4Test::RunTest(const FString& Parameters)
 				TEXT("a Dragongate cell walks the opening"),
 				FSolidAutoPlaythrough::WalkPointForCell(
 					*Chart,
-					Gate.Cells[0],
+					GateCell,
 					WorldMin,
 					WorldMax,
 					Walk));
 			TestTrue(TEXT("that walk is the opening"), Walk.Equals(Opening, 0.1f));
-			if (Gate.Cells.Num() > 1)
-			{
-				FIntPoint Eastern = Gate.Cells[0];
-				for (const FIntPoint& GateCell : Gate.Cells)
-				{
-					if (GateCell.X < Eastern.X)
-					{
-						Eastern = GateCell;
-					}
-				}
-				FVector2D EasternXY = FVector2D::ZeroVector;
-				TestTrue(TEXT("the eastern marker projects"),
-					Chart->CellToWorldXY(Eastern, WorldMin, WorldMax, EasternXY));
-				TestTrue(TEXT("the opening is the eastern marker"), Opening.Equals(EasternXY, 1.f));
-			}
 			TestTrue(
 				TEXT("grass at the site keeps its centre"),
 				FSolidAutoPlaythrough::WalkPointForCell(*Chart, Cell, WorldMin, WorldMax, Walk));

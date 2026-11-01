@@ -372,24 +372,15 @@ bool FSolidWallgateWallTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("shipped map loads"), Shipped && Shipped->LoadDefault());
 	if (Shipped && Shipped->IsLoaded())
 	{
-		FSolidWorldLocation Town;
-		TestTrue(TEXT("shipped Dragongate"), Shipped->FindLocation(SolidTowns::Dragongate, Town));
-		TestTrue(TEXT("shipped Dragongate has a marker"), Town.Cells.Num() > 0);
-		FIntPoint Eastern = Town.Cells.Num() > 0 ? Town.Cells[0] : FIntPoint::ZeroValue;
-		for (const FIntPoint& Cell : Town.Cells)
-		{
-			if (Cell.X > Eastern.X)
-			{
-				Eastern = Cell;
-			}
-		}
-		FVector2D EastXY = FVector2D::ZeroVector;
+		FIntPoint Cell;
+		TestTrue(TEXT("shipped Dragongate"), Shipped->TownCell(SolidTowns::Dragongate, Cell));
+		FVector2D CellXY = FVector2D::ZeroVector;
 		FVector2D Opening = FVector2D::ZeroVector;
-		TestTrue(TEXT("eastern marker projects"),
-			Shipped->CellToWorldXY(Eastern, WallgateTestMin, WallgateTestMax, EastXY));
+		TestTrue(TEXT("the marker projects"),
+			Shipped->CellToWorldXY(Cell, WallgateTestMin, WallgateTestMax, CellXY));
 		TestTrue(TEXT("the shipped gate has an opening"),
 			SolidWallgate::GateCenterXY(Shipped, SolidTowns::Dragongate, WallgateTestMin, WallgateTestMax, Opening));
-		TestTrue(TEXT("the shipped opening is the eastern marker"), Opening.Equals(EastXY, 0.5f));
+		TestTrue(TEXT("the shipped opening is that cell"), Opening.Equals(CellXY, 0.5f));
 	}
 	return true;
 }
@@ -410,9 +401,6 @@ bool FSolidWallgateDigitPairTest::RunTest(const FString& Parameters)
 		return true;
 	}
 
-	FSolidWorldLocation Gate;
-	TestTrue(TEXT("both markers are one town"), Map->FindLocation(SolidTowns::Dragongate, Gate));
-	TestEqual(TEXT("the pair is two cells"), Gate.Cells.Num(), 2);
 	FIntPoint Used = FIntPoint::ZeroValue;
 	TestTrue(TEXT("the gate uses one marker"), SolidWallgate::MarkerCell(Map, SolidTowns::Dragongate, Used));
 	TestEqual(TEXT("the used marker is the eastern cell"), Used, EastCell);

@@ -59,34 +59,6 @@ struct FSolidWorldBang
 	FIntPoint Cell = FIntPoint::ZeroValue;
 };
 
-/**
- * One named town. Iglin is location 0 and is where the captain starts.
- * Biome is Town.
- */
-USTRUCT(BlueprintType)
-struct FSolidWorldLocation
-{
-	GENERATED_BODY()
-
-	UPROPERTY(BlueprintReadOnly, Category = "WorldChart")
-	int32 Id = INDEX_NONE;
-
-	/** From SolidTowns, matched by Id. */
-	UPROPERTY(BlueprintReadOnly, Category = "WorldChart")
-	FString Name;
-
-	/** Unused. Older maps wrote a role here; a named town leaves this empty. */
-	UPROPERTY(BlueprintReadOnly, Category = "WorldChart")
-	FString Role;
-
-	UPROPERTY(BlueprintReadOnly, Category = "WorldChart")
-	ESolidBiome Biome = ESolidBiome::Town;
-
-	/** Map cells that resolve to this id. Each named town is one cell. */
-	UPROPERTY(BlueprintReadOnly, Category = "WorldChart")
-	TArray<FIntPoint> Cells;
-};
-
 /** One encounter mark. The position is the mark's terrain point. */
 struct FSolidWorldEncounterMark
 {
@@ -151,6 +123,7 @@ public:
 	static const TCHAR* ShippedPath();
 
 	/**
+	 * Deprecated. The chart stores marks.
 	 * Fill this chart from map text. A ! is stored as grassland.
 	 * Named towns, strongholds, sites, and lair mouths become marks.
 	 * A Road: line is ignored.
@@ -161,6 +134,7 @@ public:
 	bool LoadDefault(bool bForceReload = false);
 
 	/**
+	 * Deprecated. The chart stores marks.
 	 * Fill the solved queries from map text. A colour line is ignored.
 	 * A Road: line is ignored.
 	 * Digits and tunnel letters stay markers. An encounter is not in the text.
@@ -242,8 +216,8 @@ public:
 	 */
 	bool GetStartTownWorldXY(FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 
-	/** Copy of a numbered location, including its map cells. */
-	bool FindLocation(int32 Id, FSolidWorldLocation& OutLocation) const;
+	/** Cell of this town's marker. False when the chart has no such town. */
+	bool TownCell(int32 TownId, FIntPoint& OutCell) const;
 
 	/** The description of a named cell, or false when that cell has none. */
 	bool FindBang(int32 CellX, int32 CellY, FSolidWorldBang& Out) const;
@@ -254,10 +228,7 @@ public:
 	/** True when this cell is a stronghold site. OutSize is that size. */
 	bool StrongholdSiteAtCell(int32 CellX, int32 CellY, ESolidStrongholdSize& OutSize) const;
 
-	/** Every numbered location, sorted by id. */
-	void CollectLocations(TArray<FSolidWorldLocation>& OutLocations) const;
-
-	/** Centroid of one location's cells. Same world rectangle as SampleBiome. */
+	/** World XY of this town's cell. Same world rectangle as SampleBiome. */
 	bool GetLocationWorldXY(int32 Id, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 
 	/** World XY of one map cell center. Same rectangle as SampleBiome. */
@@ -443,7 +414,6 @@ private:
 	mutable TMap<int32, FSolidWorldBang> BangMarks;
 	mutable bool bHasStartTown = false;
 	mutable TArray<FIntPoint> StartTownCells;
-	mutable TMap<int32, FSolidWorldLocation> Locations;
 	mutable TArray<FSolidWorldEncounterMark> EncounterMarks;
 
 	/** A town marker, in the order the chart stored it. The first seed claims a shared region. */

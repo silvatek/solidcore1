@@ -271,20 +271,16 @@ bool FSolidTerrainGridTownRegionTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	FSolidWorldLocation Gate;
-	if (!TestTrue(TEXT("shipped Dragongate"), Shipped->FindLocation(SolidTowns::Dragongate, Gate))
-		|| !TestEqual(TEXT("shipped Dragongate is one cell"), Gate.Cells.Num(), 1))
+	FIntPoint GateCell;
+	if (!TestTrue(TEXT("shipped Dragongate"), Shipped->TownCell(SolidTowns::Dragongate, GateCell)))
 	{
 		return false;
 	}
-	for (const FIntPoint& Cell : Gate.Cells)
-	{
-		const FVector2D Centre = CellCentre(*Shipped, Cell.X, Cell.Y);
-		TestEqual(
-			TEXT("standing on a Dragongate mark is Dragongate"),
-			Shipped->SampleLocationId(Centre.X, Centre.Y, GridMin, GridMax),
-			SolidTowns::Dragongate);
-	}
+	const FVector2D Centre = CellCentre(*Shipped, GateCell.X, GateCell.Y);
+	TestEqual(
+		TEXT("standing on a Dragongate mark is Dragongate"),
+		Shipped->SampleLocationId(Centre.X, Centre.Y, GridMin, GridMax),
+		SolidTowns::Dragongate);
 	return true;
 }
 

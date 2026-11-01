@@ -1552,14 +1552,8 @@ bool ASolidGameMode::TeleportSquadToTown(const int32 TownId)
 		return false;
 	}
 
-	FSolidWorldLocation Location;
-	if (!WorldMap->FindLocation(TownId, Location))
-	{
-		return false;
-	}
-
 	FIntPoint Cell;
-	if (!SolidPortal::ChooseLandingCell(Location.Cells, Cell))
+	if (!WorldMap->TownCell(TownId, Cell))
 	{
 		return false;
 	}

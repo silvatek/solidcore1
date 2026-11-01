@@ -888,8 +888,8 @@ bool USolidWorldChart::LoadFromString(const FString& Text)
 	CopyPlayOntoPoints(true);
 	AssignTownPoints();
 	UE_LOG(LogSolid, Warning,
-		TEXT("WorldMap loaded: %dx%d startTownCells=%d locations=%d roads=%d"),
-		MapWidth, MapHeight, StartTownCells.Num(), Locations.Num(), SolvedRoads.Num());
+		TEXT("WorldMap loaded: %dx%d startTownCells=%d roads=%d"),
+		MapWidth, MapHeight, StartTownCells.Num(), SolvedRoads.Num());
 	return true;
 }
 
@@ -917,7 +917,6 @@ void USolidWorldChart::ResetLoad() const
 {
 	Markers.SetNum(MapWidth * MapHeight);
 	StartTownCells.Reset();
-	Locations.Reset();
 	SolvedRoads.Reset();
 	RoutedRoads.Reset();
 	RoadSpans.Reset();
@@ -937,30 +936,13 @@ void USolidWorldChart::CollectNamedTowns() const
 	{
 		for (int32 CellX = 0; CellX < MapWidth; ++CellX)
 		{
-			const int32 Id = ResolveLocationId(CellX, CellY);
-			if (Id == INDEX_NONE)
-			{
-				continue;
-			}
-			FSolidWorldLocation& Loc = Locations.FindOrAdd(Id);
-			if (Loc.Id == INDEX_NONE)
-			{
-				Loc.Id = Id;
-				Loc.Biome = ESolidBiome::Town;
-			}
-			Loc.Cells.Add(FIntPoint(CellX, CellY));
-			if (Id == 0)
+			if (ResolveLocationId(CellX, CellY) == 0)
 			{
 				StartTownCells.Add(FIntPoint(CellX, CellY));
 			}
 		}
 	}
 	bHasStartTown = StartTownCells.Num() > 0;
-
-	for (TPair<int32, FSolidWorldLocation>& Pair : Locations)
-	{
-		Pair.Value.Name = SolidTowns::NameFor(Pair.Key);
-	}
 }
 
 namespace
@@ -1117,8 +1099,8 @@ bool USolidWorldChart::BuildQuery() const
 
 	bIsLoaded = true;
 	UE_LOG(LogSolid, Warning,
-		TEXT("WorldChart loaded: %dx%d startTownCells=%d locations=%d roads=%d"),
-		MapWidth, MapHeight, StartTownCells.Num(), Locations.Num(), SolvedRoads.Num());
+		TEXT("WorldChart loaded: %dx%d startTownCells=%d roads=%d"),
+		MapWidth, MapHeight, StartTownCells.Num(), SolvedRoads.Num());
 	return true;
 }
 
@@ -1141,13 +1123,8 @@ ESolidBiome USolidWorldChart::GetBiomeAtCell(int32 CellX, int32 CellY) const
 	}
 	CellX = FMath::Clamp(CellX, 0, MapWidth - 1);
 	CellY = FMath::Clamp(CellY, 0, MapHeight - 1);
-	const int32 Id = ResolveLocationId(CellX, CellY);
-	if (Id != INDEX_NONE)
+	if (ResolveLocationId(CellX, CellY) != INDEX_NONE)
 	{
-		if (const FSolidWorldLocation* Loc = Locations.Find(Id))
-		{
-			return Loc->Biome;
-		}
 		return ESolidBiome::Town;
 	}
 	if (const FSolidWorldBang* Mark = BangMarks.Find(CellY * MapWidth + CellX))
@@ -1964,26 +1941,26 @@ bool USolidWorldChart::GetStartTownWorldXY(
 	return CellsToWorldXY(StartTownCells, WorldMinXY, WorldMaxXY, OutWorldXY);
 }
 
-bool USolidWorldChart::FindLocation(const int32 Id, FSolidWorldLocation& OutLocation) const
+bool USolidWorldChart::TownCell(const int32 TownId, FIntPoint& OutCell) const
 {
-	EnsureQuery();
-	if (const FSolidWorldLocation* Found = Locations.Find(Id))
+	const SolidTowns::FTownInfo* Town = SolidTowns::Find(TownId);
+	if (!Town)
 	{
-		OutLocation = *Found;
-		return true;
+		return false;
+	}
+	for (const FSolidWorldChartMark& Mark : Marks)
+	{
+		if (Mark.Kind != ESolidWorldChartMarkKind::Town)
+		{
+			continue;
+		}
+		if (!Mark.Name.Equals(Town->Name, ESearchCase::IgnoreCase))
+		{
+			continue;
+		}
+		return CellAtTerrainPoint(Mark.TerrainPoint, OutCell);
 	}
 	return false;
-}
-
-void USolidWorldChart::CollectLocations(TArray<FSolidWorldLocation>& OutLocations) const
-{
-	EnsureQuery();
-	OutLocations.Reset();
-	Locations.GenerateValueArray(OutLocations);
-	OutLocations.Sort([](const FSolidWorldLocation& A, const FSolidWorldLocation& B)
-	{
-		return A.Id < B.Id;
-	});
 }
 
 bool USolidWorldChart::CellToWorldXY(
@@ -2019,13 +1996,12 @@ bool USolidWorldChart::GetLocationWorldXY(
 	const FVector2D WorldMaxXY,
 	FVector2D& OutWorldXY) const
 {
-	EnsureQuery();
-	const FSolidWorldLocation* Found = Locations.Find(Id);
-	if (!Found)
+	FIntPoint Cell;
+	if (!TownCell(Id, Cell))
 	{
 		return false;
 	}
-	return CellsToWorldXY(Found->Cells, WorldMinXY, WorldMaxXY, OutWorldXY);
+	return CellToWorldXY(Cell, WorldMinXY, WorldMaxXY, OutWorldXY);
 }
 
 const TCHAR* USolidWorldChart::RoadTypeName(const ESolidWorldChartRoadType Type)

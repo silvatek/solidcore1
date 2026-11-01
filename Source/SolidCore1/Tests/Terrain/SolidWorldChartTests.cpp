@@ -87,28 +87,6 @@ namespace
 			*FString::Printf(TEXT("marks match, first cell %d,%d"), FirstMark.X, FirstMark.Y),
 			MarkMiss,
 			0);
-
-		TArray<FSolidWorldLocation> TextTowns;
-		TArray<FSolidWorldLocation> ChartTowns;
-		TextMap.CollectLocations(TextTowns);
-		ChartMap.CollectLocations(ChartTowns);
-		bOk &= Test.TestEqual(TEXT("town count"), ChartTowns.Num(), TextTowns.Num());
-		const int32 TownCount = FMath::Min(TextTowns.Num(), ChartTowns.Num());
-		for (int32 Index = 0; Index < TownCount; ++Index)
-		{
-			bOk &= Test.TestEqual(
-				*FString::Printf(TEXT("town %d id"), Index),
-				ChartTowns[Index].Id,
-				TextTowns[Index].Id);
-			bOk &= Test.TestEqual(
-				*FString::Printf(TEXT("town %d name"), Index),
-				ChartTowns[Index].Name,
-				TextTowns[Index].Name);
-			bOk &= Test.TestEqual(
-				*FString::Printf(TEXT("town %d cells"), Index),
-				ChartTowns[Index].Cells.Num(),
-				TextTowns[Index].Cells.Num());
-		}
 		return bOk;
 	}
 
@@ -182,9 +160,9 @@ bool FSolidWorldChartRulesTest::RunTest(const FString& Parameters)
 		static_cast<uint8>(Chart->Cells[DigitCell.Y * USolidWorldChart::MapWidth + DigitCell.X]),
 		static_cast<uint8>(ESolidBiome::Grassland));
 
-	FSolidWorldLocation Gate;
-	TestTrue(TEXT("two Dragongate marks are one town"), ChartMap->FindLocation(SolidTowns::Dragongate, Gate));
-	TestEqual(TEXT("Dragongate has two cells"), Gate.Cells.Num(), 2);
+	FIntPoint Gate;
+	TestTrue(TEXT("Dragongate has a cell"), ChartMap->TownCell(SolidTowns::Dragongate, Gate));
+	TestEqual(TEXT("the town cell is its marker"), Gate, GateCell);
 	return true;
 }
 
@@ -221,11 +199,10 @@ bool FSolidShippedWorldChartTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the cave row stays 9"), CaveBang.Cell.Y + 1, SolidStronghold::StartingRow);
 	TestEqual(TEXT("the cave column stays 17"), CaveBang.Cell.X + 1, SolidStronghold::StartingColumn);
 
-	FSolidWorldLocation Iglin;
-	TestTrue(TEXT("Iglin stays location 0"), DefaultMap->FindLocation(0, Iglin) && Iglin.Id == 0);
-	FSolidWorldLocation Gate;
-	TestTrue(TEXT("Dragongate stays one town"), DefaultMap->FindLocation(SolidTowns::Dragongate, Gate));
-	TestEqual(TEXT("Dragongate stays on one cell"), Gate.Cells.Num(), 1);
+	FIntPoint Iglin;
+	TestTrue(TEXT("Iglin stays location 0"), DefaultMap->TownCell(0, Iglin));
+	FIntPoint Gate;
+	TestTrue(TEXT("Dragongate stays one town"), DefaultMap->TownCell(SolidTowns::Dragongate, Gate));
 	return true;
 }
 

@@ -99,16 +99,13 @@ bool FSolidPortalLandingTest::RunTest(const FString& Parameters)
 	for (const SolidTowns::FTownInfo& Town : SolidTowns::Definitions)
 	{
 		const int32 TownId = Town.Id;
-		FSolidWorldLocation Location;
-		if (!Map->FindLocation(TownId, Location))
+		FIntPoint Cell;
+		if (!Map->TownCell(TownId, Cell))
 		{
 			TestTrue(TEXT("only a wall gate may be missing from the map"),
 				Town.Type == SolidTowns::ETownType::WallGate);
 			continue;
 		}
-		FIntPoint Cell;
-		TestTrue(TEXT("landing cell"), SolidPortal::ChooseLandingCell(Location.Cells, Cell));
-		TestTrue(TEXT("cell belongs to the town"), Location.Cells.Contains(Cell));
 
 		FVector2D CellXY = FVector2D::ZeroVector;
 		TestTrue(TEXT("cell projects"), Map->CellToWorldXY(Cell, GameMin, GameMax, CellXY));
@@ -119,16 +116,8 @@ bool FSolidPortalLandingTest::RunTest(const FString& Parameters)
 			TownId);
 	}
 
-	FSolidWorldLocation Kanfold;
-	TestTrue(TEXT("Kanfold"), Map->FindLocation(SolidTowns::Kanfold, Kanfold));
-	TestEqual(TEXT("Kanfold is one cell"), Kanfold.Cells.Num(), 1);
-	if (Kanfold.Cells.Num() == 1)
-	{
-		FIntPoint LandingCell = FIntPoint::ZeroValue;
-		TestTrue(TEXT("Kanfold landing cell"), SolidPortal::ChooseLandingCell(Kanfold.Cells, LandingCell));
-		TestEqual(TEXT("portal stands on the Kanfold column"), LandingCell.X, Kanfold.Cells[0].X);
-		TestEqual(TEXT("portal stands on the Kanfold row"), LandingCell.Y, Kanfold.Cells[0].Y);
-	}
+	FIntPoint Kanfold;
+	TestTrue(TEXT("Kanfold"), Map->TownCell(SolidTowns::Kanfold, Kanfold));
 	return true;
 }
 

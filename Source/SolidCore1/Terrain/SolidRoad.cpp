@@ -5,7 +5,6 @@
 #include "SolidStronghold.h"
 #include "SolidTerrainMap.h"
 #include "SolidTowns.h"
-#include "SolidWallgate.h"
 #include "SolidWorldChart.h"
 
 namespace SolidRoad
@@ -231,18 +230,10 @@ namespace SolidRoad
 				return;
 			}
 
-			FSolidWorldLocation Location;
-			if (Map.FindLocation(End.LocationId, Location))
+			FIntPoint Cell;
+			if (Map.TownCell(End.LocationId, Cell))
 			{
-				FIntPoint Marker = FIntPoint::ZeroValue;
-				if (SolidWallgate::MarkerCell(&Map, End.LocationId, Marker))
-				{
-					OutCells.Add(Marker);
-				}
-				else
-				{
-					OutCells = Location.Cells;
-				}
+				OutCells.Add(Cell);
 			}
 		}
 

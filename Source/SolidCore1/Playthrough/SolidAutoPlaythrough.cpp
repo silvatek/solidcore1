@@ -1691,25 +1691,13 @@ bool FSolidAutoPlaythrough::BuildTownWalk(
 	}
 	else
 	{
-		FSolidWorldLocation Location;
-		if (!Chart->FindLocation(Step.TownId, Location) || Location.Cells.Num() == 0)
+		FIntPoint Cell;
+		if (!Chart->TownCell(Step.TownId, Cell))
 		{
 			Stop();
 			return false;
 		}
-		int32 Best = 0;
-		int32 Nearest = TNumericLimits<int32>::Max();
-		for (int32 Index = 0; Index < Location.Cells.Num(); ++Index)
-		{
-			const FIntPoint& Cell = Location.Cells[Index];
-			const int32 Dist = FMath::Abs(Cell.X - HereCell.X) + FMath::Abs(Cell.Y - HereCell.Y);
-			if (Dist < Nearest)
-			{
-				Nearest = Dist;
-				Best = Index;
-			}
-		}
-		if (!GrassPath(*Chart, HereCell, Location.Cells[Best], Cells))
+		if (!GrassPath(*Chart, HereCell, Cell, Cells))
 		{
 			Stop();
 			return false;

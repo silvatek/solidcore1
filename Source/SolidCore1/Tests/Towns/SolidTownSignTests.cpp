@@ -25,15 +25,13 @@ bool FSolidTownSignPlacementsTest::RunTest(const FString& Parameters)
 	const FVector2D WorldMax(51200.f, 51200.f);
 
 	int32 NamedTowns = 0;
-	TArray<FSolidWorldLocation> Locations;
-	WorldMap->CollectLocations(Locations);
-	for (const FSolidWorldLocation& Location : Locations)
+	for (const SolidTowns::FTownInfo& Town : SolidTowns::Definitions)
 	{
-		if (SolidTowns::NameFor(Location.Id).IsEmpty())
+		FIntPoint Cell;
+		if (WorldMap->TownCell(Town.Id, Cell))
 		{
-			continue;
+			++NamedTowns;
 		}
-		++NamedTowns;
 	}
 
 	TArray<SolidTownSigns::FPlacement> Placements;
@@ -66,27 +64,7 @@ bool FSolidTownSignPlacementsTest::RunTest(const FString& Parameters)
 		TestNotNull(TEXT("town"), Town);
 		if (Town)
 		{
-			FVector2D Middle = CellXY;
-			FSolidWorldLocation TownLocation;
-			if (WorldMap->FindLocation(Town->Id, TownLocation) && TownLocation.Cells.Num() > 0)
-			{
-				FVector2D Sum = FVector2D::ZeroVector;
-				int32 Found = 0;
-				for (const FIntPoint& TownCell : TownLocation.Cells)
-				{
-					FVector2D TownXY = FVector2D::ZeroVector;
-					if (WorldMap->CellToWorldXY(TownCell, WorldMin, WorldMax, TownXY))
-					{
-						Sum += TownXY;
-						++Found;
-					}
-				}
-				if (Found > 0)
-				{
-					Middle = Sum / static_cast<float>(Found);
-				}
-			}
-			FVector2D Anchor = Middle;
+			FVector2D Anchor = CellXY;
 			if (SolidTowns::IsWallGate(Town->Id))
 			{
 				FVector2D Gate = FVector2D::ZeroVector;
@@ -165,6 +143,22 @@ bool FSolidTownSignSkipsEmptyNameTest::RunTest(const FString& Parameters)
 
 	USolidWorldChart* WorldMap = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("synthetic loads"), WorldMap->LoadFromString(Text));
+	FSolidWorldChartMark IglinMark;
+	IglinMark.Kind = ESolidWorldChartMarkKind::Town;
+	IglinMark.Name = TEXT("Iglin");
+	int32 IglinTerrainX = 0;
+	int32 IglinTerrainY = 0;
+	USolidWorldChart::PointUnderCell(2, 1, IglinTerrainX, IglinTerrainY);
+	IglinMark.TerrainPoint = FIntPoint(IglinTerrainX, IglinTerrainY);
+	WorldMap->Marks.Add(IglinMark);
+	FSolidWorldChartMark KanfoldMark;
+	KanfoldMark.Kind = ESolidWorldChartMarkKind::Town;
+	KanfoldMark.Name = TEXT("Kanfold");
+	int32 KanfoldTerrainX = 0;
+	int32 KanfoldTerrainY = 0;
+	USolidWorldChart::PointUnderCell(9, 3, KanfoldTerrainX, KanfoldTerrainY);
+	KanfoldMark.TerrainPoint = FIntPoint(KanfoldTerrainX, KanfoldTerrainY);
+	WorldMap->Marks.Add(KanfoldMark);
 
 	const FVector2D WorldMin(0.f, 0.f);
 	const FVector2D WorldMax(6400.f, 6400.f);
@@ -177,12 +171,10 @@ bool FSolidTownSignSkipsEmptyNameTest::RunTest(const FString& Parameters)
 	}
 	TestEqual(TEXT("first is Iglin"), Placements[0].Name, FString(TEXT("Iglin")));
 	TestEqual(TEXT("second is Kanfold"), Placements[1].Name, FString(TEXT("Kanfold")));
-	FVector2D KanfoldNorth = FVector2D::ZeroVector;
-	FVector2D KanfoldSouth = FVector2D::ZeroVector;
-	TestTrue(TEXT("north Kanfold cell"), WorldMap->CellToWorldXY(FIntPoint(9, 3), WorldMin, WorldMax, KanfoldNorth));
-	TestTrue(TEXT("south Kanfold cell"), WorldMap->CellToWorldXY(FIntPoint(9, 8), WorldMin, WorldMax, KanfoldSouth));
-	TestTrue(TEXT("Kanfold sign is centered between its cells"),
-		Placements[1].WorldXY.Equals((KanfoldNorth + KanfoldSouth) * 0.5f, 0.1f));
+	FVector2D KanfoldXY = FVector2D::ZeroVector;
+	TestTrue(TEXT("Kanfold cell"), WorldMap->CellToWorldXY(FIntPoint(9, 3), WorldMin, WorldMax, KanfoldXY));
+	TestTrue(TEXT("Kanfold sign sits on its marker"),
+		Placements[1].WorldXY.Equals(KanfoldXY, 0.1f));
 
 	FVector2D IglinXY = FVector2D::ZeroVector;
 	TestTrue(TEXT("Iglin cell"), WorldMap->CellToWorldXY(FIntPoint(2, 1), WorldMin, WorldMax, IglinXY));
@@ -291,6 +283,14 @@ bool FSolidTownSignWallgateTest::RunTest(const FString& Parameters)
 
 	USolidWorldChart* WorldMap = NewObject<USolidWorldChart>();
 	TestTrue(TEXT("synthetic loads"), WorldMap->LoadFromString(Text));
+	FSolidWorldChartMark GateMark;
+	GateMark.Kind = ESolidWorldChartMarkKind::Town;
+	GateMark.Name = TEXT("Dragongate");
+	int32 GateTerrainX = 0;
+	int32 GateTerrainY = 0;
+	USolidWorldChart::PointUnderCell(16, 9, GateTerrainX, GateTerrainY);
+	GateMark.TerrainPoint = FIntPoint(GateTerrainX, GateTerrainY);
+	WorldMap->Marks.Add(GateMark);
 	const FVector2D WorldMin(-51200.f, -51200.f);
 	const FVector2D WorldMax(51200.f, 51200.f);
 	TArray<SolidTownSigns::FPlacement> Placements;

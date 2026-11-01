@@ -48,8 +48,7 @@ namespace SolidWallgate
 	};
 
 	/**
-	 * The marker the gate stands on. Several markers of one wall gate use the eastern one.
-	 * False when that id is not a wall gate, or it has no marker.
+	 * The town's cell. False when that id is not a wall gate, or it has no cell.
 	 */
 	bool MarkerCell(const USolidWorldChart* WorldMap, int32 TownId, FIntPoint& OutCell);
 

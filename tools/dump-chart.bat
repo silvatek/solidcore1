@@ -9,8 +9,7 @@ rem
 rem The file lists the painted cells, the terrain points, then each mark and each road.
 rem Cell row and column count from 1 at the top-left.
 rem Point rows run north to south. The first character of a point row is the west edge.
-rem positionCm is the cell centre stored on the asset. groundCm is where the
-rem World chart mode draws that mark, on the terrain centred at the origin.
+rem A mark's position is terrainPoint.
 rem
 rem Launches only when ue.lock is missing or its word is Free. Then writes Dump,
 rem runs the commandlet, and writes Free. Any other word leaves the lock unchanged

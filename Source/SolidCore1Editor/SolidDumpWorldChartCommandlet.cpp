@@ -7,7 +7,6 @@
 #include "Serialization/JsonWriter.h"
 #include "Strongholds/SolidStronghold.h"
 #include "Terrain/SolidBiome.h"
-#include "Terrain/SolidTerrainMap.h"
 #include "Terrain/SolidWorldChart.h"
 
 DEFINE_LOG_CATEGORY_STATIC(LogSolidChartDump, Log, All);
@@ -60,22 +59,6 @@ namespace
 		return true;
 	}
 
-	/**
-	 * Where the chart mode draws this mark. The chart rectangle starts at the
-	 * terrain class default, and a built map is centred on the origin.
-	 */
-	FVector2D GroundCm(const FVector2D& ChartCm)
-	{
-		const USolidTerrainMap* Terrain = GetDefault<USolidTerrainMap>();
-		const float Spacing = Terrain ? Terrain->PointSpacing : 200.f;
-		const int32 Width = Terrain ? Terrain->GridWidth : 513;
-		const int32 Height = Terrain ? Terrain->GridHeight : 513;
-		const FVector2D BuiltMin(
-			-0.5f * static_cast<float>(FMath::Max(Width - 1, 0)) * Spacing,
-			-0.5f * static_cast<float>(FMath::Max(Height - 1, 0)) * Spacing);
-		return USolidWorldChart::TerrainPosition(ChartCm, BuiltMin);
-	}
-
 	TSharedRef<FJsonObject> MarkJson(const USolidWorldChart& Chart, const FSolidWorldChartMark& Mark)
 	{
 		TSharedRef<FJsonObject> Object = MakeShared<FJsonObject>();
@@ -97,15 +80,6 @@ namespace
 			Object->SetNumberField(TEXT("row"), Row);
 			Object->SetNumberField(TEXT("column"), Column);
 		}
-		TArray<TSharedPtr<FJsonValue>> Position;
-		Position.Add(MakeShared<FJsonValueNumber>(ChartCm.X));
-		Position.Add(MakeShared<FJsonValueNumber>(ChartCm.Y));
-		Object->SetArrayField(TEXT("chartCm"), Position);
-		const FVector2D Ground = GroundCm(ChartCm);
-		TArray<TSharedPtr<FJsonValue>> GroundPosition;
-		GroundPosition.Add(MakeShared<FJsonValueNumber>(Ground.X));
-		GroundPosition.Add(MakeShared<FJsonValueNumber>(Ground.Y));
-		Object->SetArrayField(TEXT("groundCm"), GroundPosition);
 		Object->SetStringField(TEXT("strongholdSize"), SolidStronghold::SizeName(Mark.StrongholdSize));
 		Object->SetStringField(TEXT("strongholdType"), SolidStronghold::TypeName(Mark.StrongholdType));
 		Object->SetStringField(TEXT("lairId"), Mark.LairId);
@@ -224,19 +198,14 @@ int32 USolidDumpWorldChartCommandlet::Main(const FString& Params)
 		int32 Row = 0;
 		int32 Column = 0;
 		const bool bCell = CellOfPosition(ChartCm, Row, Column);
-		const FVector2D Ground = GroundCm(ChartCm);
 		UE_LOG(LogSolidChartDump, Warning,
-			TEXT("Mark %s \"%s\" terrain (%d, %d) row %s column %s position (%.0f, %.0f) ground (%.0f, %.0f)"),
+			TEXT("Mark %s \"%s\" terrain (%d, %d) row %s column %s"),
 			MarkKindName(Mark.Kind),
 			*Mark.Name,
 			Mark.TerrainPoint.X,
 			Mark.TerrainPoint.Y,
 			bCell ? *FString::FromInt(Row) : TEXT("?"),
-			bCell ? *FString::FromInt(Column) : TEXT("?"),
-			ChartCm.X,
-			ChartCm.Y,
-			Ground.X,
-			Ground.Y);
+			bCell ? *FString::FromInt(Column) : TEXT("?"));
 	}
 	Root->SetArrayField(TEXT("marks"), Marks);
 

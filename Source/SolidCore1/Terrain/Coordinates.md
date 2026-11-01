@@ -1,8 +1,6 @@
 # Coordinates
 
-The open world is one square in Unreal, measured in centimetres. Five coordinate systems cover it. Each has a one-word name. A coordinate is that name followed by X or Y, as in `worldX` and `terrainY`. Later sections use only names introduced above them.
-
-A stronghold floor, a fortress plan, and a lair maze are measured on an actor. They are not indexes of this square.
+The open world is one square in Unreal, measured in centimetres. Five coordinate systems cover it. Each has a one-word name. A coordinate is that name followed by X or Y, as in `worldX` and `terrainY`. Later sections use only names introduced above them. Actor coordinates are a separate section.
 
 ## Contents
 
@@ -18,6 +16,7 @@ A stronghold floor, a fortress plan, and a lair maze are measured on an actor. T
   - [Cell and world](#cell-and-world)
   - [Cell and terrain](#cell-and-terrain)
   - [Chunk and world](#chunk-and-world)
+- [Actor](#actor)
 - [Code](#code)
 
 ## Systems
@@ -159,6 +158,20 @@ chunkY = floor(worldY / 6400)
 ```
 
 The centimetres inside the chunk, from its south-east corner, are `worldX - chunkX × 6400` and `worldY - chunkY × 6400`.
+
+## Actor
+
+These coordinates are measured on an actor. The actor's location and yaw place them into world. They do not index the open-world square.
+
+`localX` and `localY` are centimetres on the actor. Yaw 0 leaves +localX on +worldX, west, and +localY on +worldY, north. Yaw 90 turns +localX onto +worldY.
+
+A stronghold floor is pointy-top hexes, 120 cm flat to flat. `floorX` increases +localX. `floorY` increases +localY, and an odd row shifts half a hex toward +localX. On the cave, interior +localX runs in from the mouth. Exterior +localX points out of the mouth along the yaw table.
+
+A fortress plan measures `planX` east and `planY` north before the actor is turned. After placement, −localX is plan north, the gate side, turned toward the grass.
+
+A lair maze is 11 by 9 squares of 200 cm. `mazeX` 0, `mazeY` 0 is the minimum local corner. A square's centre is half a side in from that corner. Yaw 0 at the entrance looks into the maze, and yaw 180 at the exit looks into the maze.
+
+`SolidStronghold::OrientationYawDeg` in [SolidStronghold.h](../Strongholds/SolidStronghold.h) is the yaw table. The floor grid is [SolidStrongholdGrid.h](../Strongholds/Furnishings/SolidStrongholdGrid.h). The cave's +localX is on [SolidDungeonLevel.h](../Strongholds/Dungeon/SolidDungeonLevel.h), and the mouth's half-step in localY is `FSolidDungeon::ShelfLateralCm` in [SolidDungeon.cpp](../Strongholds/Dungeon/SolidDungeon.cpp). Plan east, plan north, and the −localX gate are on [SolidFortress.h](../Strongholds/Fortress/SolidFortress.h). The maze is [SolidLair.h](../Lairs/SolidLair.h).
 
 ## Code
 

@@ -1,20 +1,18 @@
 # Coordinates
 
-The open world is one square in Unreal, measured in centimetres. Six coordinate systems cover it. Each has a one-word name. A coordinate is that name followed by X or Y, as in `worldX` and `terrainY`. Later sections use only names introduced above them. Actor coordinates are a separate section.
+The open world is one square in Unreal, measured in centimetres. Five coordinate systems cover it. Each has a one-word name. A coordinate is that name followed by X or Y, as in `worldX` and `terrainY`. Later sections use only names introduced above them. Actor coordinates are a separate section.
 
 ## Contents
 
 - [Systems](#systems)
   - [World](#world)
   - [Terrain](#terrain)
-  - [Chart](#chart)
   - [Stored](#stored)
   - [Cell](#cell)
   - [Chunk](#chunk)
 - [Transformations](#transformations)
-  - [Chart and world](#chart-and-world)
-  - [Stored and world](#stored-and-world)
   - [Terrain and world](#terrain-and-world)
+  - [Stored and world](#stored-and-world)
   - [Cell and world](#cell-and-world)
   - [Chunk and world](#chunk-and-world)
 - [Actor](#actor)
@@ -48,21 +46,17 @@ A sign that faces south uses yaw −90. A sign that faces north uses yaw 90.
 
 A terrain point carries a world position, a surface height, a biome, and exploration fog. Fog is a value on the point. Between four terrain points, height, threat, and fog are bilinear. The biome is the nearest point's biome.
 
-### Chart
-
-`chartX` and `chartY` index the world chart's own 2 m grid. It is 513 points on a side, the same count and the same spacing as terrain.
-
-`chartX` increases west and `chartY` increases north. Index 0 is the south-east corner, and the translation to world is the same formula as terrain, so that index is the same world location as `terrainX` 0, `terrainY` 0: world (−51200, −51200).
+The world chart asset keeps a second copy of this lattice. `Points` there is one biome per terrain point, in the same order, with the same index 0 at the south-east corner. It does not store a second set of positions.
 
 ### Stored
 
 `storedX` and `storedY` are centimetres on the chart asset. +storedX is west and +storedY is north, the same directions as world. The origin is the south-east corner. That corner is stored (0, 0) and world (−51200, −51200). The opposite corner is stored (102400, 102400) and world (51200, 51200).
 
-A mark saves its position as `PositionCm` in this frame. The centimetres of a chart sample are `chartX * 200` and `chartY * 200`. Using a stored value as a world position places it 512 m west and 512 m north of where it stands.
+A mark saves its position as `PositionCm` in this frame. The centimetres of a terrain point are `terrainX * 200` and `terrainY * 200`. Using a stored value as a world position places it 512 m west and 512 m north of where it stands.
 
 ### Cell
 
-`cellX` and `cellY` index the chart's rectangles. There are 128 columns and 64 rows across the same square. A column is 8 m east–west. A row is 16 m north–south.
+`cellX` and `cellY` index the rectangles on the world chart. There are 128 columns and 64 rows across the same square. A column is 8 m east–west. A row is 16 m north–south.
 
 `cellX` 0 is the west edge. `cellY` 0 is the north edge. A higher `cellY` is further south. Storage order is `cellY × 128 + cellX`.
 
@@ -81,31 +75,6 @@ The old map text, and a dump of the grid, count from 1 at the top-left. The top-
 Inside a chunk, centimetres grow with `worldX` and `worldY` from that chunk's south-east corner. One quad's corners, in mesh order 00, 10, 01, 11, are the south-east, the south-west, the north-east, and the north-west. Corner 11 is the northwest corner the material code prefers.
 
 ## Transformations
-
-### Chart and world
-
-```
-worldX = (chartX - 256) * 200
-worldY = (chartY - 256) * 200
-```
-
-This is the same translation as a terrain index. 256 is half of 512. The same index in stored is `chartX * 200` and `chartY * 200`.
-
-### Stored and world
-
-```
-worldX = storedX - 51200
-worldY = storedY - 51200
-```
-
-51200 is `256 * 200`, half the square. `TerrainPosition` is this shift. Play draws a mark only after it.
-
-```
-storedX = worldX + 51200
-storedY = worldY + 51200
-```
-
-A chart sample lands on `storedX = chartX * 200` and `storedY = chartY * 200`.
 
 ### Terrain and world
 
@@ -131,6 +100,22 @@ worldY = (terrainY - 256) * 200 - 100
 ```
 
 A bridge uses that same shift.
+
+### Stored and world
+
+```
+worldX = storedX - 51200
+worldY = storedY - 51200
+```
+
+51200 is `256 * 200`, half the square. `TerrainPosition` is this shift. Play draws a mark only after it.
+
+```
+storedX = worldX + 51200
+storedY = worldY + 51200
+```
+
+A terrain point lands on `storedX = terrainX * 200` and `storedY = terrainY * 200`.
 
 ### Cell and world
 
@@ -198,7 +183,7 @@ A lair maze is 11 by 9 squares of 200 cm. `mazeX` 0, `mazeY` 0 is the minimum lo
 
 ## Code
 
-World axes, terrain, chart, stored, and cell live on `USolidWorldChart` in [SolidWorldChart.h](SolidWorldChart.h). `MapWidth` and `MapHeight` are the 128 by 64 cells. `PointAxis` is 513, the count of the chart grid and of the terrain grid. The comment on the class states the compass and which edge is index 0. `Cells` is cell storage. `Points` is the chart's 2 m grid.
+World axes, terrain, stored, and cell live on `USolidWorldChart` in [SolidWorldChart.h](SolidWorldChart.h). `MapWidth` and `MapHeight` are the 128 by 64 cells. `PointAxis` is 513, the terrain grid. The comment on the class states the compass and which edge is index 0. `Cells` is cell storage. `Points` is the chart asset's copy of that grid, one biome per terrain point.
 
 [SolidWorldChart.cpp](SolidWorldChart.cpp) is the arithmetic:
 

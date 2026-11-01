@@ -95,7 +95,7 @@ worldX = (terrainX - 256) * 200 - 100
 worldY = (terrainY - 256) * 200 - 100
 ```
 
-A bridge uses that same shift.
+A bridge laid along that strip uses the same shift.
 
 ### Chart and world
 
@@ -104,7 +104,7 @@ worldX = chartX - 51200
 worldY = chartY - 51200
 ```
 
-51200 is `256 * 200`, half the square. `TerrainPosition` is this shift. Play draws a mark only after it.
+51200 is `256 * 200`, half the square. `TerrainPosition` is this shift. Play draws a mark only after it. A bridge stood on a mark uses this shift alone. The centre of the span is that point.
 
 ```
 chartX = worldX + 51200

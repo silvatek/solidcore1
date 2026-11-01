@@ -79,12 +79,14 @@ Inside a chunk, centimetres grow with `worldX` and `worldY` from that chunk's so
 
 ### Chart and terrain
 
+`chartX` and `terrainX` are index numbers. Both count from the south-east corner, and a step of +1 is 200 cm west on both, so the numbers are equal. The different origins are not in the index. They are the centimetres written for that index.
+
 ```
 chartX = terrainX
 chartY = terrainY
 ```
 
-The indexes name the same corner and take the same steps. The stored centimetres do not. Chart writes index 0 at (0, 0). Terrain writes index 0 at world (−51200, −51200).
+Index 0 is stored on the chart at (0, 0) and placed in world at (−51200, −51200):
 
 ```
 worldX = chartX * 200 - 51200

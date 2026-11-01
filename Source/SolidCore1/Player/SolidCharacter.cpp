@@ -748,19 +748,23 @@ void ASolidCharacter::TakePlayshot()
 	TSharedRef<FDelegateHandle> Handle = MakeShared<FDelegateHandle>();
 	*Handle = FScreenshotRequest::OnScreenshotRequestProcessed().AddLambda([Self, Path, Handle]()
 	{
-		FScreenshotRequest::OnScreenshotRequestProcessed().Remove(*Handle);
-		const ASolidCharacter* Captain = Self.Get();
-		const ASolidHUD* HUD = Captain ? Captain->GetSolidHUD() : nullptr;
-		if (!HUD)
+		// Unbind destroys this lambda, so the path and the lines are copied first.
+		const FString FilePath = Path;
+		const FDelegateHandle Stamp = *Handle;
+		FString Text;
+		if (const ASolidCharacter* Captain = Self.Get())
+		{
+			if (const ASolidHUD* HUD = Captain->GetSolidHUD())
+			{
+				Text = FString::Join(HUD->GetDebugPanelLines(), TEXT("\n"));
+			}
+		}
+		FScreenshotRequest::OnScreenshotRequestProcessed().Remove(Stamp);
+		if (Text.IsEmpty() || SolidPlayshot::StampHudFile(FilePath, Text))
 		{
 			return;
 		}
-		const FString Text = FString::Join(HUD->GetDebugPanelLines(), TEXT("\n"));
-		if (Text.IsEmpty() || SolidPlayshot::StampHudFile(Path, Text))
-		{
-			return;
-		}
-		UE_LOG(LogSolid, Warning, TEXT("Playshot left the HUD lines out of %s"), *Path);
+		UE_LOG(LogSolid, Warning, TEXT("Playshot left the HUD lines out of %s"), *FilePath);
 	});
 	FScreenshotRequest::RequestScreenshot(Path, true, false, false, FIntRect(), true);
 }

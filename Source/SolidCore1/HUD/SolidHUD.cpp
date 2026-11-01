@@ -2122,7 +2122,6 @@ void ASolidHUD::DrawHUD()
 
 	float BelowTech = 12.f;
 	DebugPanelLines.Reset();
-	if (bShowDebugPanel && !bShowCharacterEditor)
 	{
 	TArray<FString> Lines;
 	Lines.Add(FString::Printf(TEXT("Build %s"), SOLID_BUILD_ID));
@@ -2326,20 +2325,10 @@ void ASolidHUD::DrawHUD()
 
 	if (const ASolidCharacter* Captain = Cast<ASolidCharacter>(Pawn))
 	{
-		Lines.Add(FString::Printf(TEXT("F9  %s"), SolidSight::Label(Captain->GetSight())));
-		Lines.Add(Captain->IsTrueSight() ? TEXT("WASD  Move") : TEXT("LMB  Move"));
 		if (Captain->HasClickMoveDestination())
 		{
 			Lines.Add(TEXT("Click  moving"));
 		}
-	}
-	Lines.Add(TEXT("F10  Menu"));
-	Lines.Add(FString::Printf(TEXT("%s  Inventory"), SolidInventory::ToggleKeyLabel));
-	Lines.Add(TEXT("F12  Debug"));
-	Lines.Add(TEXT("RMB  Look"));
-
-	if (const ASolidCharacter* Captain = Cast<ASolidCharacter>(Pawn))
-	{
 		if (Captain->IsSquadFormationDrillActive())
 		{
 			Lines.Add(FString::Printf(
@@ -2352,8 +2341,20 @@ void ASolidHUD::DrawHUD()
 	}
 
 	DebugPanelLines = Lines;
-	UFont* DebugFont = GEngine ? GEngine->GetSmallFont() : nullptr;
-	BelowTech = SolidHUDPrivate::DrawLines(Canvas, DebugFont, Lines, FLinearColor::White);
+	if (bShowDebugPanel && !bShowCharacterEditor)
+	{
+		if (const ASolidCharacter* Captain = Cast<ASolidCharacter>(Pawn))
+		{
+			Lines.Add(FString::Printf(TEXT("F9  %s"), SolidSight::Label(Captain->GetSight())));
+			Lines.Add(Captain->IsTrueSight() ? TEXT("WASD  Move") : TEXT("LMB  Move"));
+		}
+		Lines.Add(TEXT("F10  Menu"));
+		Lines.Add(FString::Printf(TEXT("%s  Inventory"), SolidInventory::ToggleKeyLabel));
+		Lines.Add(TEXT("F12  Debug"));
+		Lines.Add(TEXT("RMB  Look"));
+		UFont* DebugFont = GEngine ? GEngine->GetSmallFont() : nullptr;
+		BelowTech = SolidHUDPrivate::DrawLines(Canvas, DebugFont, Lines, FLinearColor::White);
+	}
 	}
 
 	UFont* Font = GEngine ? GEngine->GetSmallFont() : nullptr;

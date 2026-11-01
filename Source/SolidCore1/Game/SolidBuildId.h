@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0866")
+#define SOLID_BUILD_ID TEXT("SC1-0867")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A playshot keeps the HUD lines in the PNG.")
+#define SOLID_BUILD_NOTE TEXT("Playshot text skips the key hints and stays with the panel hidden.")
 #endif

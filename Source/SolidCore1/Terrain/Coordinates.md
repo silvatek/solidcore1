@@ -1,6 +1,6 @@
 # Coordinates
 
-The open world is one square in Unreal, measured in centimetres. Five coordinate systems cover it. Each has a one-word name. A coordinate is that name followed by X or Y, as in `worldX` and `terrainY`. Later sections use only names introduced above them. Actor coordinates are a separate section.
+The open world is one square in Unreal, measured in centimetres. Four coordinate systems cover it. Each has a one-word name. A coordinate is that name followed by X or Y, as in `worldX` and `terrainY`. Later sections use only names introduced above them. Local coordinate systems are a separate section.
 
 ## Contents
 
@@ -9,13 +9,13 @@ The open world is one square in Unreal, measured in centimetres. Five coordinate
   - [Terrain](#terrain)
   - [Chart (legacy)](#chart-legacy)
   - [Cell (legacy)](#cell-legacy)
-  - [Chunk](#chunk)
 - [Transformations](#transformations)
   - [Terrain and world](#terrain-and-world)
   - [Chart and world](#chart-and-world)
   - [Cell and world](#cell-and-world)
-  - [Chunk and world](#chunk-and-world)
-- [Actor](#actor)
+- [Local coordinate systems](#local-coordinate-systems)
+  - [Chunk](#chunk)
+  - [Actor](#actor)
 - [Code](#code)
 
 ## Systems
@@ -69,14 +69,6 @@ A mark (a town, a stronghold, a site, a lair mouth, a note, an encounter, or a b
 The old map text, and a dump of the grid, count from 1 at the top-left. The top-left is `cellX` 0, `cellY` 0. A line `! 8,21 = Town Iglin` is row 8, column 21 in that count, which is `cellX` 20, `cellY` 7.
 
 This frame will eventually be replaced by direct use of terrain.
-
-### Chunk
-
-`chunkX` and `chunkY` index the rendered ground. The shipped chunk is 64 m on a side, 6400 cm, with 32 quads along an edge. The quad step is 200 cm, the same spacing as terrain.
-
-`chunkX` and `chunkY` are the floor of `worldX` and `worldY` divided by 6400. `chunkX` 0, `chunkY` 0 contains the world origin and extends west and north. On the centred square the interior falls in −8 through 7. The exact north edge and the exact west edge, maximum `worldY` and maximum `worldX`, fall on the next chunk.
-
-Inside a chunk, centimetres grow with `worldX` and `worldY` from that chunk's south-east corner. One quad's corners, in mesh order 00, 10, 01, 11, are the south-east, the south-west, the north-east, and the north-west. Corner 11 is the northwest corner the material code prefers.
 
 ## Transformations
 
@@ -157,7 +149,17 @@ For `cellX` 0, `cellY` 0 that is `terrainX` 510, `terrainY` 508. The next column
 
 A terrain point exactly on an edge follows the cell inverse above. On the shipped grid a column keeps its west-edge points and gives its east-edge points to the eastern neighbour, and a row keeps its north-edge points and gives its south-edge points to the southern neighbour. The kept points sit 100 cm west and 100 cm north of the cell's geometric centre.
 
-### Chunk and world
+## Local coordinate systems
+
+These coordinate systems are only used in specific game subsystems, and they are not referred to outside those subsystems.
+
+### Chunk
+
+`chunkX` and `chunkY` index the rendered ground. The shipped chunk is 64 m on a side, 6400 cm, with 32 quads along an edge. The quad step is 200 cm, the same spacing as terrain.
+
+`chunkX` and `chunkY` are the floor of `worldX` and `worldY` divided by 6400. `chunkX` 0, `chunkY` 0 contains the world origin and extends west and north. On the centred square the interior falls in −8 through 7. The exact north edge and the exact west edge, maximum `worldY` and maximum `worldX`, fall on the next chunk.
+
+Inside a chunk, centimetres grow with `worldX` and `worldY` from that chunk's south-east corner. One quad's corners, in mesh order 00, 10, 01, 11, are the south-east, the south-west, the north-east, and the north-west. Corner 11 is the northwest corner the material code prefers.
 
 ```
 worldX = chunkX * 6400
@@ -171,7 +173,7 @@ chunkX = floor(worldX / 6400)
 chunkY = floor(worldY / 6400)
 ```
 
-## Actor
+### Actor
 
 These coordinates are measured on an actor. The actor's location and yaw place them into world. They do not index the open-world square.
 

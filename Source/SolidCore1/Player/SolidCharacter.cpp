@@ -752,14 +752,20 @@ void ASolidCharacter::TakePlayshot()
 		const FString FilePath = Path;
 		const FDelegateHandle Stamp = *Handle;
 		FString Text;
-		if (const ASolidCharacter* Captain = Self.Get())
+		ASolidHUD* PlayshotHUD = nullptr;
+		if (ASolidCharacter* Captain = Self.Get())
 		{
-			if (const ASolidHUD* HUD = Captain->GetSolidHUD())
+			if (ASolidHUD* HUD = Captain->GetSolidHUD())
 			{
 				Text = FString::Join(HUD->GetDebugPanelLines(), TEXT("\n"));
+				PlayshotHUD = HUD;
 			}
 		}
 		FScreenshotRequest::OnScreenshotRequestProcessed().Remove(Stamp);
+		if (PlayshotHUD)
+		{
+			PlayshotHUD->NotePlayshotCaptured();
+		}
 		if (Text.IsEmpty() || SolidPlayshot::StampHudFile(FilePath, Text))
 		{
 			return;

@@ -2587,6 +2587,39 @@ void ASolidHUD::DrawHUD()
 			}
 		}
 	}
+	DrawPlayshotNote();
+}
+
+void ASolidHUD::NotePlayshotCaptured()
+{
+	PlayshotNoteUntilSeconds = FPlatformTime::Seconds() + 1.5;
+}
+
+void ASolidHUD::DrawPlayshotNote() const
+{
+	if (!Canvas || FPlatformTime::Seconds() >= PlayshotNoteUntilSeconds)
+	{
+		return;
+	}
+	UFont* Font = GEngine ? GEngine->GetMediumFont() : nullptr;
+	if (!Font)
+	{
+		return;
+	}
+	const FString Line(TEXT("Playshot captured"));
+	float TextW = 0.f;
+	float TextH = 0.f;
+	Canvas->StrLen(Font, Line, TextW, TextH);
+	const FVector2D At((static_cast<float>(Canvas->SizeX) - TextW) * 0.5f, 16.f);
+	FVector2D Rim[SolidPointer::OutlineOffsetCount];
+	SolidPointer::OutlineOffsets(1.f, Rim);
+	for (const FVector2D& Offset : Rim)
+	{
+		FCanvasTextItem Outline(At + Offset, FText::FromString(Line), Font, FLinearColor::Black);
+		Canvas->DrawItem(Outline);
+	}
+	FCanvasTextItem Text(At, FText::FromString(Line), Font, FLinearColor::White);
+	Canvas->DrawItem(Text);
 }
 
 void ASolidHUD::SetCavePassageTip(const FString& Tip)

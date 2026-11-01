@@ -22,6 +22,9 @@ public:
 	/** Debug-panel lines from the frame just drawn, without the key hints. Filled when that panel is hidden. */
 	const TArray<FString>& GetDebugPanelLines() const { return DebugPanelLines; }
 
+	/** White "Playshot captured" at the top of the screen for 1.5 seconds. */
+	void NotePlayshotCaptured();
+
 	bool IsCreditsVisible() const { return bShowCredits; }
 	void SetCreditsVisible(bool bVisible) { bShowCredits = bVisible; }
 
@@ -190,6 +193,9 @@ protected:
 	void DrawStrongholdChoice();
 	void DrawStrongholdName() const;
 	void DrawSquadBuilderPopup();
+	void DrawPlayshotNote() const;
+	/** Wall-clock time when the playshot note leaves the screen. */
+	double PlayshotNoteUntilSeconds = 0.0;
 	/** Wall-clock timestamps (seconds) for frames in the rolling FPS window. */
 	TArray<double> RecentFrameTimes;
 	/** Debug-panel lines from the frame just drawn, without the key hints. A playshot stamps these into the PNG. */

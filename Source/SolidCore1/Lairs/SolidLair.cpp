@@ -111,7 +111,7 @@ int32 SolidLair::CollectEntrances(
 	auto AddMouth = [&](const ESolidWorldChartMarkKind Kind, const TCHAR End)
 	{
 		FSolidWorldChartMark Mark;
-		FIntPoint Cell;
+		FIntPoint Cell = FIntPoint::ZeroValue;
 		if (!WorldMap->FindLairMarker(SolidLair::IdIglinTunnels, Kind, Mark)
 			|| !USolidWorldChart::CellAtTerrainPoint(Mark.TerrainPoint, Cell))
 		{

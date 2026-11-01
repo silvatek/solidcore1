@@ -11,10 +11,9 @@ The open world is one square in Unreal, measured in centimetres. Five coordinate
   - [Cell](#cell)
   - [Chunk](#chunk)
 - [Transformations](#transformations)
-  - [Chart and terrain](#chart-and-terrain)
+  - [Chart and world](#chart-and-world)
   - [Terrain and world](#terrain-and-world)
   - [Cell and world](#cell-and-world)
-  - [Cell and terrain](#cell-and-terrain)
   - [Chunk and world](#chunk-and-world)
 - [Actor](#actor)
 - [Code](#code)
@@ -75,23 +74,25 @@ Inside a chunk, centimetres grow with `worldX` and `worldY` from that chunk's so
 
 ## Transformations
 
-### Chart and terrain
-
-A chart position and a world position are not interchangeable. Subtract 51200 cm on each axis to go from the chart's stored centimetres to world. Add 51200 cm to go the other way. `TerrainPosition` does that subtraction before play draws a stored mark.
+### Chart and world
 
 ```
 worldX = chartX * 200 - 51200
 worldY = chartY * 200 - 51200
 ```
 
-### Terrain and world
+A chart position and a world position are not interchangeable. Subtract 51200 cm on each axis to go from the chart's stored centimetres to world. Add 51200 cm to go the other way. `TerrainPosition` does that subtraction before play draws a stored mark.
 
-256 is half of 512, the index of the world origin on the centred square.
+### Terrain and world
 
 ```
 worldX = (terrainX - 256) * 200
 worldY = (terrainY - 256) * 200
+```
 
+256 is half of 512, the index of the world origin on the centred square.
+
+```
 terrainX = round(worldX / 200 + 256)
 terrainY = round(worldY / 200 + 256)
 ```
@@ -132,7 +133,7 @@ On the chart's stored centimetres the same centre is `worldX + 51200` and `world
 
 The text count from 1 is `cellX + 1` for the column and `cellY + 1` for the row. The line writes the row first.
 
-### Cell and terrain
+The terrain index under a cell centre is:
 
 ```
 terrainX = round((1 - (cellX + 0.5) / 128) * 512)
@@ -146,11 +147,16 @@ A terrain point exactly on an edge follows the cell inverse above. On the shippe
 ### Chunk and world
 
 ```
+worldX = chunkX * 6400
+worldY = chunkY * 6400
+```
+
+That is the chunk's south-east corner. A point in the chunk adds the centimetres from that corner. The chunk under a world position is:
+
+```
 chunkX = floor(worldX / 6400)
 chunkY = floor(worldY / 6400)
 ```
-
-The centimetres inside the chunk, from its south-east corner, are `worldX - chunkX × 6400` and `worldY - chunkY × 6400`.
 
 ## Actor
 

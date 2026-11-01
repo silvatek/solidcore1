@@ -68,6 +68,8 @@ Types start with `Solid`. Unreal's prefixes stay: `F` for a plain class or struc
 
 A method name is the question or the act, as `Supported` and `CollectGroundHexes` are.
 
+An input parameter has no `In` prefix. A parameter that may hold a different value after the call uses the `Out` prefix.
+
 Words come from the design: Captain, Company, Squad, Companion, Stronghold. The word den is not a name in this code.
 
 ## Coordinates

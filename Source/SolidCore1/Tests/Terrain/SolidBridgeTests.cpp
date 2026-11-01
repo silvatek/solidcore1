@@ -462,14 +462,14 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 	}
 	const int32 MarkIndex = Chart->MarkAtCell(FIntPoint(11, 16));
 	SolidBridge::FBridge OverWater;
-	FVector2D Centre = FVector2D::ZeroVector;
+	FVector2D MarkCentre = FVector2D::ZeroVector;
 	if (TestTrue(TEXT("the mark is stored"), MarkIndex != INDEX_NONE)
 		&& TestTrue(TEXT("the mark projects to chart"),
-			Chart->TerrainPointToChart(Chart->Marks[MarkIndex].TerrainPoint, ChartMin, ChartMax, Centre))
+			Chart->TerrainPointToChart(Chart->Marks[MarkIndex].TerrainPoint, ChartMin, ChartMax, MarkCentre))
 		&& TestTrue(TEXT("Iglin stands over the river"),
 			SolidBridge::Stand(
 				SolidBridge::Bridges[0],
-				Centre,
+				MarkCentre,
 				Width,
 				Height,
 				OverWater,
@@ -479,9 +479,9 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 	{
 		const FVector DeckMid = (OverWater.Deck[0] + OverWater.Deck.Last()) * 0.5f;
 		TestTrue(TEXT("the centre span is the marker"),
-			FVector2D(DeckMid.X, DeckMid.Y).Equals(Centre, 1.f));
+			FVector2D(DeckMid.X, DeckMid.Y).Equals(MarkCentre, 1.f));
 		TestTrue(TEXT("the span stays east-west beside the river"),
-			FMath::IsNearlyEqual(OverWater.Deck[0].Y, Centre.Y, 1.f)
+			FMath::IsNearlyEqual(OverWater.Deck[0].Y, MarkCentre.Y, 1.f)
 			&& FMath::Abs(OverWater.Deck[0].X - OverWater.Deck.Last().X) > 100.f);
 		TestTrue(TEXT("the ramps leave that span"),
 			OverWater.RampFrom[0].Equals(OverWater.Deck[0], 1.f)

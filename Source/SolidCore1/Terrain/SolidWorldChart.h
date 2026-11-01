@@ -192,19 +192,19 @@ public:
 	 * A stronghold site keeps the marker biome. A ! with no description is Grassland.
 	 * The river marker is River for the whole cell. SampleBiome paints only the channel.
 	 */
-	ESolidBiome GetBiomeAtCell(int32 MapX, int32 MapY) const;
+	ESolidBiome GetBiomeAtCell(int32 CellX, int32 CellY) const;
 
 	/**
 	 * Marker biome at a cell, before a named town, a stronghold shelf, or a lair mouth replaces it.
 	 * A ! is grassland. Swamp and road are not marker biomes.
 	 */
-	ESolidBiome GetMarkerBiomeAtCell(int32 MapX, int32 MapY) const;
+	ESolidBiome GetMarkerBiomeAtCell(int32 CellX, int32 CellY) const;
 
 	/** Marker character at a cell, or 0 when the chart is not solved. Digits stay digits. */
-	TCHAR GetMarkerAtCell(int32 MapX, int32 MapY) const;
+	TCHAR GetMarkerAtCell(int32 CellX, int32 CellY) const;
 
 	/** Location id on this cell, or INDEX_NONE when it is not a named town. */
-	int32 GetLocationIdAtCell(int32 MapX, int32 MapY) const;
+	int32 GetLocationIdAtCell(int32 CellX, int32 CellY) const;
 
 	/**
 	 * Town under a world XY, or INDEX_NONE. The town is the painted town ground
@@ -225,7 +225,7 @@ public:
 	 * Biome of the terrain point under this cell, the point at the cell centre.
 	 * A road step reads this. The cell's own biome is GetBiomeAtCell.
 	 */
-	ESolidBiome GetPointBiomeAtCell(int32 MapX, int32 MapY) const;
+	ESolidBiome GetPointBiomeAtCell(int32 CellX, int32 CellY) const;
 
 	/** Deprecated. Prefer GetRoutedRoads. Solved routes, in file order. A route with no cells had a missing end. */
 	const TArray<SolidRoad::FRoute>& GetRoads() const { return SolvedRoads; }
@@ -252,13 +252,13 @@ public:
 	bool FindLocation(int32 Id, FSolidWorldLocation& OutLocation) const;
 
 	/** The description of a named cell, or false when that cell has none. */
-	bool FindBang(int32 MapX, int32 MapY, FSolidWorldBang& Out) const;
+	bool FindBang(int32 CellX, int32 CellY, FSolidWorldBang& Out) const;
 
 	/** True when this cell is a stronghold. A stronghold site is not one. */
-	bool StrongholdAtCell(int32 MapX, int32 MapY, ESolidStrongholdType& OutType, ESolidStrongholdSize& OutSize) const;
+	bool StrongholdAtCell(int32 CellX, int32 CellY, ESolidStrongholdType& OutType, ESolidStrongholdSize& OutSize) const;
 
 	/** True when this cell is a stronghold site. OutSize is that size. */
-	bool StrongholdSiteAtCell(int32 MapX, int32 MapY, ESolidStrongholdSize& OutSize) const;
+	bool StrongholdSiteAtCell(int32 CellX, int32 CellY, ESolidStrongholdSize& OutSize) const;
 
 	/** Every numbered location, sorted by id. */
 	void CollectLocations(TArray<FSolidWorldLocation>& OutLocations) const;
@@ -480,7 +480,7 @@ private:
 	mutable TArray<TArray<int32>> RoadSpansByCell;
 
 protected:
-	bool WorldXYToCell(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, int32& OutMapX, int32& OutMapY) const;
+	bool WorldXYToCell(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, int32& OutCellX, int32& OutCellY) const;
 	/** Clear the solved roads. */
 	void ResetRoads() const;
 	/** Route one listed road. */
@@ -496,5 +496,5 @@ protected:
 	static ESolidBiome MarkerToBiome(TCHAR Marker);
 	static bool IsGridMarker(TCHAR Marker);
 	/** Location id of a named town on this cell, or INDEX_NONE. */
-	int32 ResolveLocationId(int32 MapX, int32 MapY) const;
+	int32 ResolveLocationId(int32 CellX, int32 CellY) const;
 };

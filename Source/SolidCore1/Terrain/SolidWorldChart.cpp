@@ -624,8 +624,8 @@ namespace
 			LairExit,
 		};
 
-		int32 MapX = INDEX_NONE;
-		int32 MapY = INDEX_NONE;
+		int32 CellX = INDEX_NONE;
+		int32 CellY = INDEX_NONE;
 		EKind Kind = EKind::Skip;
 		FString Identifier;
 	};
@@ -636,7 +636,7 @@ namespace
 	 * "! 10,11 = LairEntrance Iglin tunnels", "! 11,40 = LairExit Iglin tunnels".
 	 * Anything after # is a comment. A numeric right-hand side is ignored.
 	 * Returns false when the line is not that shape.
-	 * An out-of-range coordinate is that shape: MapX stays INDEX_NONE and the line is consumed.
+	 * An out-of-range coordinate is that shape: CellX stays INDEX_NONE and the line is consumed.
 	 */
 	bool WorldMapParseBangLocation(const FString& Line, FWorldMapBangRef& Out)
 	{
@@ -687,8 +687,8 @@ namespace
 			return true;
 		}
 
-		Out.MapX = Column - 1;
-		Out.MapY = Row - 1;
+		Out.CellX = Column - 1;
+		Out.CellY = Row - 1;
 
 		if (FChar::IsDigit(Right[0]))
 		{
@@ -814,13 +814,13 @@ bool USolidWorldChart::LoadFromString(const FString& Text)
 
 	for (const FWorldMapBangRef& Ref : BangRefs)
 	{
-		if (Ref.MapX == INDEX_NONE || Ref.MapY == INDEX_NONE || Ref.Kind == FWorldMapBangRef::EKind::Skip)
+		if (Ref.CellX == INDEX_NONE || Ref.CellY == INDEX_NONE || Ref.Kind == FWorldMapBangRef::EKind::Skip)
 		{
 			continue;
 		}
-		const int32 Index = Ref.MapY * MapWidth + Ref.MapX;
-		const int32 Row = Ref.MapY + 1;
-		const int32 Column = Ref.MapX + 1;
+		const int32 Index = Ref.CellY * MapWidth + Ref.CellX;
+		const int32 Row = Ref.CellY + 1;
+		const int32 Column = Ref.CellX + 1;
 		if (static_cast<TCHAR>(Markers[Index]) != LocationMarker)
 		{
 			UE_LOG(LogSolid, Warning,
@@ -837,7 +837,7 @@ bool USolidWorldChart::LoadFromString(const FString& Text)
 		}
 
 		FSolidWorldBang Mark;
-		Mark.Cell = FIntPoint(Ref.MapX, Ref.MapY);
+		Mark.Cell = FIntPoint(Ref.CellX, Ref.CellY);
 		switch (Ref.Kind)
 		{
 		case FWorldMapBangRef::EKind::Town:
@@ -856,8 +856,8 @@ bool USolidWorldChart::LoadFromString(const FString& Text)
 			BangLocationIds[Index] = Town->Id;
 			FTownSeed Seed;
 			Seed.LocationId = Town->Id;
-			Seed.Column = Ref.MapX;
-			Seed.Row = Ref.MapY;
+			Seed.Column = Ref.CellX;
+			Seed.Row = Ref.CellY;
 			TownSeeds.Add(Seed);
 			break;
 		}
@@ -1160,26 +1160,26 @@ bool USolidWorldChart::BuildQuery() const
 	return true;
 }
 
-ESolidBiome USolidWorldChart::GetMarkerBiomeAtCell(const int32 MapX, const int32 MapY) const
+ESolidBiome USolidWorldChart::GetMarkerBiomeAtCell(int32 CellX, int32 CellY) const
 {
 	if (!EnsureQuery() || Markers.Num() != MapWidth * MapHeight)
 	{
 		return ESolidBiome::Grassland;
 	}
-	const int32 X = FMath::Clamp(MapX, 0, MapWidth - 1);
-	const int32 Y = FMath::Clamp(MapY, 0, MapHeight - 1);
-	return MarkerToBiome(static_cast<TCHAR>(Markers[Y * MapWidth + X]));
+	CellX = FMath::Clamp(CellX, 0, MapWidth - 1);
+	CellY = FMath::Clamp(CellY, 0, MapHeight - 1);
+	return MarkerToBiome(static_cast<TCHAR>(Markers[CellY * MapWidth + CellX]));
 }
 
-ESolidBiome USolidWorldChart::GetBiomeAtCell(int32 MapX, int32 MapY) const
+ESolidBiome USolidWorldChart::GetBiomeAtCell(int32 CellX, int32 CellY) const
 {
 	if (!EnsureQuery() || Markers.Num() != MapWidth * MapHeight)
 	{
 		return ESolidBiome::Grassland;
 	}
-	MapX = FMath::Clamp(MapX, 0, MapWidth - 1);
-	MapY = FMath::Clamp(MapY, 0, MapHeight - 1);
-	const int32 Id = ResolveLocationId(MapX, MapY);
+	CellX = FMath::Clamp(CellX, 0, MapWidth - 1);
+	CellY = FMath::Clamp(CellY, 0, MapHeight - 1);
+	const int32 Id = ResolveLocationId(CellX, CellY);
 	if (Id != INDEX_NONE)
 	{
 		if (const FSolidWorldLocation* Loc = Locations.Find(Id))
@@ -1188,7 +1188,7 @@ ESolidBiome USolidWorldChart::GetBiomeAtCell(int32 MapX, int32 MapY) const
 		}
 		return ESolidBiome::Town;
 	}
-	if (const FSolidWorldBang* Mark = BangMarks.Find(MapY * MapWidth + MapX))
+	if (const FSolidWorldBang* Mark = BangMarks.Find(CellY * MapWidth + CellX))
 	{
 		if (Mark->Kind == ESolidWorldBang::Stronghold)
 		{
@@ -1205,17 +1205,17 @@ ESolidBiome USolidWorldChart::GetBiomeAtCell(int32 MapX, int32 MapY) const
 			return ESolidBiome::Mountain;
 		}
 	}
-	const TCHAR Marker = static_cast<TCHAR>(Markers[MapY * MapWidth + MapX]);
+	const TCHAR Marker = static_cast<TCHAR>(Markers[CellY * MapWidth + CellX]);
 	return MarkerToBiome(Marker);
 }
 
-bool USolidWorldChart::FindBang(const int32 MapX, const int32 MapY, FSolidWorldBang& Out) const
+bool USolidWorldChart::FindBang(const int32 CellX, const int32 CellY, FSolidWorldBang& Out) const
 {
-	if (!EnsureQuery() || MapX < 0 || MapY < 0 || MapX >= MapWidth || MapY >= MapHeight)
+	if (!EnsureQuery() || CellX < 0 || CellY < 0 || CellX >= MapWidth || CellY >= MapHeight)
 	{
 		return false;
 	}
-	if (const FSolidWorldBang* Found = BangMarks.Find(MapY * MapWidth + MapX))
+	if (const FSolidWorldBang* Found = BangMarks.Find(CellY * MapWidth + CellX))
 	{
 		Out = *Found;
 		return true;
@@ -1224,13 +1224,13 @@ bool USolidWorldChart::FindBang(const int32 MapX, const int32 MapY, FSolidWorldB
 }
 
 bool USolidWorldChart::StrongholdAtCell(
-	const int32 MapX,
-	const int32 MapY,
+	const int32 CellX,
+	const int32 CellY,
 	ESolidStrongholdType& OutType,
 	ESolidStrongholdSize& OutSize) const
 {
 	FSolidWorldBang Mark;
-	if (!FindBang(MapX, MapY, Mark) || Mark.Kind != ESolidWorldBang::Stronghold)
+	if (!FindBang(CellX, CellY, Mark) || Mark.Kind != ESolidWorldBang::Stronghold)
 	{
 		return false;
 	}
@@ -1239,10 +1239,10 @@ bool USolidWorldChart::StrongholdAtCell(
 	return true;
 }
 
-bool USolidWorldChart::StrongholdSiteAtCell(const int32 MapX, const int32 MapY, ESolidStrongholdSize& OutSize) const
+bool USolidWorldChart::StrongholdSiteAtCell(const int32 CellX, const int32 CellY, ESolidStrongholdSize& OutSize) const
 {
 	FSolidWorldBang Mark;
-	if (!FindBang(MapX, MapY, Mark) || Mark.Kind != ESolidWorldBang::StrongholdSite)
+	if (!FindBang(CellX, CellY, Mark) || Mark.Kind != ESolidWorldBang::StrongholdSite)
 	{
 		return false;
 	}
@@ -1250,15 +1250,15 @@ bool USolidWorldChart::StrongholdSiteAtCell(const int32 MapX, const int32 MapY, 
 	return true;
 }
 
-TCHAR USolidWorldChart::GetMarkerAtCell(int32 MapX, int32 MapY) const
+TCHAR USolidWorldChart::GetMarkerAtCell(int32 CellX, int32 CellY) const
 {
 	if (!EnsureQuery() || Markers.Num() != MapWidth * MapHeight)
 	{
 		return 0;
 	}
-	MapX = FMath::Clamp(MapX, 0, MapWidth - 1);
-	MapY = FMath::Clamp(MapY, 0, MapHeight - 1);
-	return static_cast<TCHAR>(Markers[MapY * MapWidth + MapX]);
+	CellX = FMath::Clamp(CellX, 0, MapWidth - 1);
+	CellY = FMath::Clamp(CellY, 0, MapHeight - 1);
+	return static_cast<TCHAR>(Markers[CellY * MapWidth + CellX]);
 }
 
 bool USolidWorldChart::WorldXYToCell(
@@ -1266,8 +1266,8 @@ bool USolidWorldChart::WorldXYToCell(
 	const float WorldY,
 	const FVector2D WorldMinXY,
 	const FVector2D WorldMaxXY,
-	int32& OutMapX,
-	int32& OutMapY) const
+	int32& OutCellX,
+	int32& OutCellY) const
 {
 	if (!EnsureQuery())
 	{
@@ -1282,20 +1282,20 @@ bool USolidWorldChart::WorldXYToCell(
 	const float VFromSouth = FMath::Clamp((WorldY - WorldMinXY.Y) / ExtentY, 0.f, 1.f);
 	const float VFromNorth = 1.f - VFromSouth;
 
-	OutMapX = FMath::Clamp(FMath::FloorToInt(UFromWest * MapWidth), 0, MapWidth - 1);
-	OutMapY = FMath::Clamp(FMath::FloorToInt(VFromNorth * MapHeight), 0, MapHeight - 1);
+	OutCellX = FMath::Clamp(FMath::FloorToInt(UFromWest * MapWidth), 0, MapWidth - 1);
+	OutCellY = FMath::Clamp(FMath::FloorToInt(VFromNorth * MapHeight), 0, MapHeight - 1);
 	return true;
 }
 
 namespace
 {
-	bool WorldMapMarkerInCell(const USolidWorldChart& Map, const int32 MapX, const int32 MapY, TCHAR& OutMarker)
+	bool WorldMapMarkerInCell(const USolidWorldChart& Map, const int32 CellX, const int32 CellY, TCHAR& OutMarker)
 	{
-		if (MapX < 0 || MapY < 0 || MapX >= USolidWorldChart::MapWidth || MapY >= USolidWorldChart::MapHeight)
+		if (CellX < 0 || CellY < 0 || CellX >= USolidWorldChart::MapWidth || CellY >= USolidWorldChart::MapHeight)
 		{
 			return false;
 		}
-		OutMarker = Map.GetMarkerAtCell(MapX, MapY);
+		OutMarker = Map.GetMarkerAtCell(CellX, CellY);
 		return OutMarker != 0;
 	}
 
@@ -1312,15 +1312,15 @@ namespace
 		}
 	}
 
-	ESolidBiome WorldMapRiverBank(const USolidWorldChart& Map, const int32 MapX, const int32 MapY, const SolidRiver::ESide Preferred)
+	ESolidBiome WorldMapRiverBank(const USolidWorldChart& Map, const int32 CellX, const int32 CellY, const SolidRiver::ESide Preferred)
 	{
 		const int32 First = static_cast<int32>(Preferred);
 		const int32 Order[4] = { First, (First + 1) & 3, (First + 3) & 3, (First + 2) & 3 };
 		for (const int32 Index : Order)
 		{
 			const FIntPoint Step = WorldMapRiverSideStep(static_cast<SolidRiver::ESide>(Index));
-			const int32 NextX = MapX + Step.X;
-			const int32 NextY = MapY + Step.Y;
+			const int32 NextX = CellX + Step.X;
+			const int32 NextY = CellY + Step.Y;
 			TCHAR Marker = 0;
 			if (!WorldMapMarkerInCell(Map, NextX, NextY, Marker))
 			{
@@ -1346,17 +1346,17 @@ bool USolidWorldChart::IsMarkedTown(
 	const FVector2D WorldMinXY,
 	const FVector2D WorldMaxXY) const
 {
-	int32 MapX = 0;
-	int32 MapY = 0;
-	if (!WorldXYToCell(WorldX, WorldY, WorldMinXY, WorldMaxXY, MapX, MapY))
+	int32 CellX = 0;
+	int32 CellY = 0;
+	if (!WorldXYToCell(WorldX, WorldY, WorldMinXY, WorldMaxXY, CellX, CellY))
 	{
 		return false;
 	}
 
-	const TCHAR Marker = GetMarkerAtCell(MapX, MapY);
+	const TCHAR Marker = GetMarkerAtCell(CellX, CellY);
 	if (Marker == LocationMarker)
 	{
-		return GetLocationIdAtCell(MapX, MapY) != INDEX_NONE;
+		return GetLocationIdAtCell(CellX, CellY) != INDEX_NONE;
 	}
 	return Marker == TownMarker;
 }
@@ -1486,17 +1486,17 @@ ESolidBiome USolidWorldChart::SampleCellPlay(
 	const FVector2D WorldMinXY,
 	const FVector2D WorldMaxXY) const
 {
-	int32 MapX = 0;
-	int32 MapY = 0;
-	if (!WorldXYToCell(WorldX, WorldY, WorldMinXY, WorldMaxXY, MapX, MapY))
+	int32 CellX = 0;
+	int32 CellY = 0;
+	if (!WorldXYToCell(WorldX, WorldY, WorldMinXY, WorldMaxXY, CellX, CellY))
 	{
 		return ESolidBiome::Grassland;
 	}
 
 	TCHAR Marker = 0;
-	if (!WorldMapMarkerInCell(*this, MapX, MapY, Marker) || Marker != RiverMarker)
+	if (!WorldMapMarkerInCell(*this, CellX, CellY, Marker) || Marker != RiverMarker)
 	{
-		return GetBiomeAtCell(MapX, MapY);
+		return GetBiomeAtCell(CellX, CellY);
 	}
 
 	const float ExtentX = FMath::Max(WorldMaxXY.X - WorldMinXY.X, 1.f);
@@ -1505,7 +1505,7 @@ ESolidBiome USolidWorldChart::SampleCellPlay(
 	const float CellH = ExtentY / static_cast<float>(MapHeight);
 
 	FVector2D Center = FVector2D::ZeroVector;
-	if (!CellToWorldXY(FIntPoint(MapX, MapY), WorldMinXY, WorldMaxXY, Center))
+	if (!CellToWorldXY(FIntPoint(CellX, CellY), WorldMinXY, WorldMaxXY, Center))
 	{
 		return ESolidBiome::River;
 	}
@@ -1513,15 +1513,15 @@ ESolidBiome USolidWorldChart::SampleCellPlay(
 	const FVector2D Local(WorldX - Center.X, WorldY - Center.Y);
 	SolidRiver::FLinks Links;
 	TCHAR Neighbor = 0;
-	Links.bNorth = WorldMapMarkerInCell(*this, MapX, MapY - 1, Neighbor) && SolidRiver::Joins(Neighbor);
-	Links.bEast = WorldMapMarkerInCell(*this, MapX + 1, MapY, Neighbor) && SolidRiver::Joins(Neighbor);
-	Links.bSouth = WorldMapMarkerInCell(*this, MapX, MapY + 1, Neighbor) && SolidRiver::Joins(Neighbor);
-	Links.bWest = WorldMapMarkerInCell(*this, MapX - 1, MapY, Neighbor) && SolidRiver::Joins(Neighbor);
+	Links.bNorth = WorldMapMarkerInCell(*this, CellX, CellY - 1, Neighbor) && SolidRiver::Joins(Neighbor);
+	Links.bEast = WorldMapMarkerInCell(*this, CellX + 1, CellY, Neighbor) && SolidRiver::Joins(Neighbor);
+	Links.bSouth = WorldMapMarkerInCell(*this, CellX, CellY + 1, Neighbor) && SolidRiver::Joins(Neighbor);
+	Links.bWest = WorldMapMarkerInCell(*this, CellX - 1, CellY, Neighbor) && SolidRiver::Joins(Neighbor);
 	if (SolidRiver::IsWater(Local, CellW, CellH, Links))
 	{
 		return ESolidBiome::River;
 	}
-	return WorldMapRiverBank(*this, MapX, MapY, SolidRiver::Side(Local, CellW, CellH, Links));
+	return WorldMapRiverBank(*this, CellX, CellY, SolidRiver::Side(Local, CellW, CellH, Links));
 }
 
 void USolidWorldChart::CopyPlayOntoPoints(const bool bForce) const
@@ -1841,18 +1841,18 @@ bool USolidWorldChart::PaintPointRectangle(
 	return PaintPoints(Covered, Biome, OutError);
 }
 
-ESolidBiome USolidWorldChart::GetPointBiomeAtCell(const int32 MapX, const int32 MapY) const
+ESolidBiome USolidWorldChart::GetPointBiomeAtCell(int32 CellX, int32 CellY) const
 {
 	if (!EnsurePoints())
 	{
-		return GetBiomeAtCell(MapX, MapY);
+		return GetBiomeAtCell(CellX, CellY);
 	}
 
-	const int32 X = FMath::Clamp(MapX, 0, MapWidth - 1);
-	const int32 Y = FMath::Clamp(MapY, 0, MapHeight - 1);
+	CellX = FMath::Clamp(CellX, 0, MapWidth - 1);
+	CellY = FMath::Clamp(CellY, 0, MapHeight - 1);
 	int32 IX = 0;
 	int32 IY = 0;
-	PointUnderCell(X, Y, IX, IY);
+	PointUnderCell(CellX, CellY, IX, IY);
 	return Points[PointSlot(IX, IY)];
 }
 
@@ -1872,9 +1872,9 @@ ESolidBiome USolidWorldChart::SampleBiome(
 	PointAtWorld(WorldX, WorldY, WorldMinXY, WorldMaxXY, IX, IY);
 	const ESolidBiome Ground = Points[PointSlot(IX, IY)];
 
-	int32 MapX = 0;
-	int32 MapY = 0;
-	if (!WorldXYToCell(WorldX, WorldY, WorldMinXY, WorldMaxXY, MapX, MapY))
+	int32 CellX = 0;
+	int32 CellY = 0;
+	if (!WorldXYToCell(WorldX, WorldY, WorldMinXY, WorldMaxXY, CellX, CellY))
 	{
 		return Ground;
 	}
@@ -1885,7 +1885,7 @@ ESolidBiome USolidWorldChart::SampleBiome(
 	bool bNamedShelf = false;
 	ESolidStrongholdType HoldType = ESolidStrongholdType::Dungeon;
 	ESolidStrongholdSize HoldSize = ESolidStrongholdSize::Meagre;
-	if (StrongholdAtCell(MapX, MapY, HoldType, HoldSize))
+	if (StrongholdAtCell(CellX, CellY, HoldType, HoldSize))
 	{
 		ESolidBiome Named = ESolidBiome::Grassland;
 		bNamedShelf = SolidStronghold::BiomeFor(FSolidStronghold(HoldType, HoldSize), Named);
@@ -1901,31 +1901,31 @@ ESolidBiome USolidWorldChart::SampleBiome(
 	return Ground;
 }
 
-int32 USolidWorldChart::GetLocationIdAtCell(const int32 MapX, const int32 MapY) const
+int32 USolidWorldChart::GetLocationIdAtCell(int32 CellX, int32 CellY) const
 {
 	if (!EnsureQuery() || Markers.Num() != MapWidth * MapHeight)
 	{
 		return INDEX_NONE;
 	}
 
-	const int32 X = FMath::Clamp(MapX, 0, MapWidth - 1);
-	const int32 Y = FMath::Clamp(MapY, 0, MapHeight - 1);
-	return ResolveLocationId(X, Y);
+	CellX = FMath::Clamp(CellX, 0, MapWidth - 1);
+	CellY = FMath::Clamp(CellY, 0, MapHeight - 1);
+	return ResolveLocationId(CellX, CellY);
 }
 
-int32 USolidWorldChart::ResolveLocationId(const int32 MapX, const int32 MapY) const
+int32 USolidWorldChart::ResolveLocationId(const int32 CellX, const int32 CellY) const
 {
 	if (Markers.Num() != MapWidth * MapHeight
-		|| MapX < 0 || MapY < 0 || MapX >= MapWidth || MapY >= MapHeight)
+		|| CellX < 0 || CellY < 0 || CellX >= MapWidth || CellY >= MapHeight)
 	{
 		return INDEX_NONE;
 	}
 
-	if (static_cast<TCHAR>(Markers[MapY * MapWidth + MapX]) != LocationMarker)
+	if (static_cast<TCHAR>(Markers[CellY * MapWidth + CellX]) != LocationMarker)
 	{
 		return INDEX_NONE;
 	}
-	const int32 Index = MapY * MapWidth + MapX;
+	const int32 Index = CellY * MapWidth + CellX;
 	return BangLocationIds.IsValidIndex(Index) ? BangLocationIds[Index] : INDEX_NONE;
 }
 
@@ -2036,13 +2036,13 @@ bool USolidWorldChart::CellAtWorld(
 	const FVector2D WorldMaxXY,
 	FIntPoint& OutCell) const
 {
-	int32 MapX = 0;
-	int32 MapY = 0;
-	if (!WorldXYToCell(WorldX, WorldY, WorldMinXY, WorldMaxXY, MapX, MapY))
+	int32 CellX = 0;
+	int32 CellY = 0;
+	if (!WorldXYToCell(WorldX, WorldY, WorldMinXY, WorldMaxXY, CellX, CellY))
 	{
 		return false;
 	}
-	OutCell = FIntPoint(MapX, MapY);
+	OutCell = FIntPoint(CellX, CellY);
 	return true;
 }
 

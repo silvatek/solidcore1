@@ -197,7 +197,7 @@ World axes, terrain, chart, and cell live on `USolidWorldChart` in [SolidWorldCh
 - `TerrainPosition` adds −51200, taking chart to world.
 - `CellCentre` and `CellToWorldXY` project a cell centre. `WorldXYToCell` and `CellAtWorld` project the other way.
 - `TerrainPointToWorld` and `TerrainPointAt` project a point. The helpers next to them are `WorldAtPoint`, `PointAtWorld`, and `PointUnderCell`. `PointAtWorld` passes the fraction from the minimum X, the east edge, toward the maximum X. The parameter on that helper is named `EastFromWest`.
-- `WorldMapParseBangLocation` turns a `! row,column` line, counting from 1, into a cell. The column minus 1 is `MapX`. The row minus 1 is `MapY`.
+- `WorldMapParseBangLocation` turns a `! row,column` line, counting from 1, into a cell. The column minus 1 is `CellX`. The row minus 1 is `CellY`.
 
 [SolidWorldChartMark.h](SolidWorldChartMark.h) stores `PositionCm` as the cell centre in chart. +X is west and +Y is north. `TerrainPosition` shifts that value into world.
 

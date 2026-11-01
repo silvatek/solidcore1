@@ -16,19 +16,9 @@ Positive yaw turns from west toward north. A town sign that faces south uses yaw
 
 ### World centimetres
 
-A position in the running game is an Unreal `FVector`. X and Y are the ground plane. Z is height. Gameplay, the pawn, marks, and the terrain meshes all speak this space once a position has been projected.
+A position in the running game is an Unreal `FVector`. X and Y are the ground plane. Z is height. Gameplay, the pawn, marks, and the terrain meshes all speak this space once a position has been projected. Height noise is sampled from these centimetres.
 
-Height noise is sampled from those world centimetres.
-
-### Two rectangles on the same square
-
-The shipped square is 1024 m on a side. Two origins are in use.
-
-The chart rectangle starts at the world origin and runs to the far corner, (0, 0) through (102400, 102400) cm. Marks stored on the chart asset use this rectangle. Their X and Y are still west and north.
-
-The play rectangle is the same size, centred on the origin, (−51200, −51200) through (51200, 51200) cm. The terrain map built at startup uses this rectangle, so the origin sits in the middle of the square.
-
-A stored mark is shifted by the difference of the two minima when play, or the chart view, reads it. Queries that are handed a rectangle use that rectangle directly, so a cell centre computed with the play bounds is already in play centimetres.
+The shipped square is 1024 m on a side, and world centimetres are used with two origins. Marks stored on the chart asset use a square from (0, 0) to (102400, 102400) cm. The terrain map built at startup uses the same square centred on the origin, (−51200, −51200) through (51200, 51200) cm. The axes are the same. A stored mark is shifted by the difference of the two minima when play, or the chart view, reads it. A query that is handed a rectangle uses that rectangle, so a cell centre computed with the play bounds is already in play centimetres.
 
 ### Terrain points
 

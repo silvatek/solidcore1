@@ -1555,10 +1555,13 @@ void USolidWorldChart::AssignTownPoints() const
 	TArray<int32> Queue;
 	for (const FTownSeed& Seed : TownSeeds)
 	{
-		int32 TerrainX = 0;
-		int32 TerrainY = 0;
-		PointUnderCell(Seed.Column, Seed.Row, TerrainX, TerrainY);
-		const int32 Start = PointSlot(TerrainX, TerrainY);
+		int32 Start = 0;
+		{
+			int32 TerrainX = 0;
+			int32 TerrainY = 0;
+			PointUnderCell(Seed.Column, Seed.Row, TerrainX, TerrainY);
+			Start = PointSlot(TerrainX, TerrainY);
+		}
 		if (Points[Start] != ESolidBiome::Town || PointTowns[Start] != INDEX_NONE)
 		{
 			continue;

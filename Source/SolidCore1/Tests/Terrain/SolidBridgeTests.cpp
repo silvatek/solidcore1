@@ -315,28 +315,16 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidBridgeAxisTest::RunTest(const FString& Parameters)
 {
-	const USolidWorldChart* Shipped = LoadObject<USolidWorldChart>(nullptr, USolidWorldChart::ShippedPath());
-	TestNotNull(TEXT("shipped chart"), Shipped);
-	if (!Shipped)
+	USolidWorldChart* Loaded = nullptr;
+	if (!BridgeLoadTrack(*this, Loaded, true) || !Loaded)
 	{
 		return false;
 	}
 
-	USolidWorldChart* Loaded = NewObject<USolidWorldChart>();
-	TestNotNull(TEXT("loaded chart"), Loaded);
-	if (!Loaded || !TestTrue(TEXT("the chart loads"), Loaded->LoadFromChart(Shipped)))
-	{
-		return false;
-	}
-	TestTrue(TEXT("the chart has a routed road"), Loaded->GetRoutedRoads().Num() > 0);
-
-	FVector2D WorldMin = FVector2D::ZeroVector;
-	FVector2D WorldMax = FVector2D::ZeroVector;
-	USolidWorldChart::DefaultWorldBounds(WorldMin, WorldMax);
 	const auto Height = [](float, float) { return 100.f; };
 	TArray<SolidBridge::FBridge> Bridges;
-	TestTrue(TEXT("a routed chart has a bridge"),
-		SolidBridge::Collect(*Loaded, WorldMin, WorldMax, Height, Bridges) > 0);
+	TestTrue(TEXT("a road that still crosses the river has a bridge"),
+		SolidBridge::Collect(*Loaded, BridgeTestMin, BridgeTestMax, Height, Bridges) > 0);
 	for (const SolidBridge::FBridge& Bridge : Bridges)
 	{
 		TestTrue(TEXT("a routed bridge is straight on one axis"), BridgeOnOneAxis(Bridge));

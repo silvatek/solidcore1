@@ -495,9 +495,9 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the channel stays river"),
 		static_cast<uint8>(Track->SampleBiome(River.X, River.Y, RoadTestMin, RoadTestMax)),
 		static_cast<uint8>(ESolidBiome::River));
-	TestEqual(TEXT("the bank of a crossing uses the road texture"),
+	TestEqual(TEXT("the track stops short of the far bank"),
 		static_cast<uint8>(Track->SampleBiome(River.X + 400.f, River.Y, RoadTestMin, RoadTestMax)),
-		static_cast<uint8>(ESolidBiome::Road));
+		static_cast<uint8>(ESolidBiome::Grassland));
 
 	USolidWorldChart* CaveChart = nullptr;
 	USolidWorldChart* Cave = nullptr;

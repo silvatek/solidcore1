@@ -50,7 +50,7 @@ A terrain point carries a world position, a surface height, a biome, and explora
 
 `chartX` and `chartY` index the world chart's own 2 m grid. It is 513 points on a side, the same count and the same spacing as terrain.
 
-`chartX` increases west and `chartY` increases north. The chart stores `chartX` 0, `chartY` 0 at centimetres (0, 0). That stored (0, 0) is not the world position of `terrainX` 0, `terrainY` 0. Using a chart position where a world position belongs places the result 512 m west and 512 m north of the terrain position with the same numbers.
+`chartX` increases west and `chartY` increases north. Index 0 is the south-east corner, and the translation to world is the same formula as terrain, so that index is the same world location as `terrainX` 0, `terrainY` 0: world (−51200, −51200). The chart also stores that corner as centimetres (0, 0). Those stored centimetres are not a world position. Using (0, 0) as world places the corner at the origin, 512 m west and 512 m north of where it stands.
 
 ### Cell
 

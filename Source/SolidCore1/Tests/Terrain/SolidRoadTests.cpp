@@ -1,5 +1,6 @@
 #include "CoreMinimal.h"
 #include "Misc/AutomationTest.h"
+#include "SolidBridges.h"
 #include "SolidRoad.h"
 #include "SolidRoads.h"
 #include "SolidStronghold.h"
@@ -810,6 +811,95 @@ bool FSolidRoadBridgeEndTest::RunTest(const FString& Parameters)
 		SolidRoad::EType::Track);
 	TestFalse(TEXT("a missing bridge stays unplaced"), Missing.Locate(Marks));
 	TestTrue(TEXT("the missing bridge has no centre"), Missing.From.PositionCm.IsNearlyZero());
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(
+	FSolidRoadNearerEndTest,
+	"SolidCore1.Road.NearerEnd",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::ProductFilter)
+
+bool FSolidRoadNearerEndTest::RunTest(const FString& Parameters)
+{
+	float Half = 0.f;
+	for (const SolidBridge::FBridgeMarker& Marker : SolidBridge::Bridges)
+	{
+		if (Marker.Name && FCString::Strcmp(Marker.Name, TEXT("Iglin Bridge")) == 0)
+		{
+			Half = Marker.LengthCm * 0.5f;
+		}
+	}
+	if (!TestTrue(TEXT("Iglin Bridge has a length"), Half > 0.f))
+	{
+		return false;
+	}
+
+	const int32 Row = 256;
+	const FIntPoint BridgePoint(200, Row);
+	const FIntPoint WestTown(280, Row);
+	const FIntPoint EastTown(120, Row);
+	const FIntPoint NorthTown(200, 320);
+	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
+	if (!TestNotNull(TEXT("chart"), Chart))
+	{
+		return false;
+	}
+	FillGrassPoints(*Chart);
+	if (!TestTrue(TEXT("the bridge places"), PlacePointMark(*Chart, SolidRoad::BridgeMark(TEXT("Iglin Bridge")), BridgePoint))
+		|| !TestTrue(TEXT("Iglin places"), PlacePointMark(*Chart, SolidRoad::TownMark(SolidTowns::Iglin), WestTown))
+		|| !TestTrue(TEXT("Relion places"), PlacePointMark(*Chart, SolidRoad::TownMark(SolidTowns::Relion), EastTown))
+		|| !TestTrue(TEXT("Dragongate places"), PlacePointMark(*Chart, SolidRoad::TownMark(SolidTowns::Dragongate), NorthTown)))
+	{
+		return false;
+	}
+
+	FVector2D Min = FVector2D::ZeroVector;
+	FVector2D Max = FVector2D::ZeroVector;
+	USolidWorldChart::DefaultWorldBounds(Min, Max);
+	FVector2D Centre = FVector2D::ZeroVector;
+	FIntPoint WestEnd = FIntPoint::ZeroValue;
+	FIntPoint EastEnd = FIntPoint::ZeroValue;
+	if (!TestTrue(TEXT("the centre is a point"), Chart->TerrainPointToWorld(BridgePoint, Min, Max, Centre))
+		|| !TestTrue(TEXT("the west end is a point"), Chart->TerrainPointAt(Centre.X + Half, Centre.Y, Min, Max, WestEnd))
+		|| !TestTrue(TEXT("the east end is a point"), Chart->TerrainPointAt(Centre.X - Half, Centre.Y, Min, Max, EastEnd)))
+	{
+		return false;
+	}
+
+	SolidRoad::FSolidRoad ToBridge(
+		SolidRoad::TownMark(SolidTowns::Iglin),
+		SolidRoad::BridgeMark(TEXT("Iglin Bridge")),
+		SolidRoad::EType::Track);
+	if (!TestTrue(TEXT("Iglin locates"), ToBridge.Locate(Chart->Marks))
+		|| !TestTrue(TEXT("Iglin reaches the bridge"), ToBridge.FindRoute(*Chart))
+		|| !TestTrue(TEXT("the route has points"), ToBridge.Points.Num() > 1))
+	{
+		return false;
+	}
+	TestEqual(TEXT("the route starts at Iglin"), ToBridge.Points[0], WestTown);
+	TestEqual(TEXT("the route finishes at the west end"), ToBridge.Points.Last(), WestEnd);
+	TestNotEqual(TEXT("the route does not finish at the centre"), ToBridge.Points.Last(), BridgePoint);
+
+	SolidRoad::FSolidRoad FromBridge(
+		SolidRoad::BridgeMark(TEXT("Iglin Bridge")),
+		SolidRoad::TownMark(SolidTowns::Relion),
+		SolidRoad::EType::Track);
+	if (!TestTrue(TEXT("Relion locates"), FromBridge.Locate(Chart->Marks))
+		|| !TestTrue(TEXT("the bridge reaches Relion"), FromBridge.FindRoute(*Chart))
+		|| !TestTrue(TEXT("that route has points"), FromBridge.Points.Num() > 1))
+	{
+		return false;
+	}
+	TestEqual(TEXT("the route starts at the east end"), FromBridge.Points[0], EastEnd);
+	TestEqual(TEXT("the route finishes at Relion"), FromBridge.Points.Last(), EastTown);
+
+	SolidRoad::FSolidRoad Tied(
+		SolidRoad::TownMark(SolidTowns::Dragongate),
+		SolidRoad::BridgeMark(TEXT("Iglin Bridge")),
+		SolidRoad::EType::Track);
+	TestTrue(TEXT("Dragongate locates"), Tied.Locate(Chart->Marks));
+	TestFalse(TEXT("a town square to the span does not route"), Tied.FindRoute(*Chart));
+	TestEqual(TEXT("the failed route keeps no points"), Tied.Points.Num(), 0);
 	return true;
 }
 

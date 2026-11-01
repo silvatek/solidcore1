@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0868")
+#define SOLID_BUILD_ID TEXT("SC1-0869")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Playshot captured shows for a second and a half.")
+#define SOLID_BUILD_NOTE TEXT("A road finishes at the nearer end of the bridge.")
 #endif

@@ -1,4 +1,5 @@
 #include "SolidRoad.h"
+#include "SolidBridges.h"
 #include "SolidCore1.h"
 #include "SolidRoads.h"
 #include "SolidStronghold.h"
@@ -745,6 +746,41 @@ namespace SolidRoad
 			}
 			Points = MoveTemp(Expanded);
 		}
+
+		/**
+		 * The span end closer to the other end of the route.
+		 * A tie, or a bridge with no definition, has no such end.
+		 */
+		bool NearerSpanEnd(const FSolidWorldChartMark& Bridge, const FVector2D& OtherCm, FVector2D& OutCm)
+		{
+			const SolidBridge::FBridgeMarker* Marker = nullptr;
+			for (const SolidBridge::FBridgeMarker& Defined : SolidBridge::Bridges)
+			{
+				if (Defined.Name && Bridge.Name.Equals(Defined.Name, ESearchCase::IgnoreCase))
+				{
+					Marker = &Defined;
+					break;
+				}
+			}
+			if (!Marker || Marker->LengthCm <= 0.f)
+			{
+				return false;
+			}
+			const float Half = Marker->LengthCm * 0.5f;
+			const FVector2D Along = Marker->Orientation == SolidBridge::EOrientation::NorthSouth
+				? FVector2D(0.f, Half)
+				: FVector2D(Half, 0.f);
+			const FVector2D OneEnd = Bridge.PositionCm + Along;
+			const FVector2D OtherEnd = Bridge.PositionCm - Along;
+			const float OneDist = FVector2D::DistSquared(OneEnd, OtherCm);
+			const float OtherDist = FVector2D::DistSquared(OtherEnd, OtherCm);
+			if (FMath::IsNearlyEqual(OneDist, OtherDist))
+			{
+				return false;
+			}
+			OutCm = OneDist < OtherDist ? OneEnd : OtherEnd;
+			return true;
+		}
 	}
 
 	FString FSolidRoad::toString() const
@@ -774,10 +810,20 @@ namespace SolidRoad
 		FVector2D Min = FVector2D::ZeroVector;
 		FVector2D Max = FVector2D::ZeroVector;
 		USolidWorldChart::DefaultWorldBounds(Min, Max);
+		FVector2D FromCm = From.PositionCm;
+		FVector2D ToCm = To.PositionCm;
+		if (From.Kind == ESolidWorldChartMarkKind::Bridge && !NearerSpanEnd(From, To.PositionCm, FromCm))
+		{
+			return false;
+		}
+		if (To.Kind == ESolidWorldChartMarkKind::Bridge && !NearerSpanEnd(To, From.PositionCm, ToCm))
+		{
+			return false;
+		}
 		FIntPoint FromPoint = FIntPoint::ZeroValue;
 		FIntPoint ToPoint = FIntPoint::ZeroValue;
-		if (!Map.TerrainPointAt(From.PositionCm.X, From.PositionCm.Y, Min, Max, FromPoint)
-			|| !Map.TerrainPointAt(To.PositionCm.X, To.PositionCm.Y, Min, Max, ToPoint))
+		if (!Map.TerrainPointAt(FromCm.X, FromCm.Y, Min, Max, FromPoint)
+			|| !Map.TerrainPointAt(ToCm.X, ToCm.Y, Min, Max, ToPoint))
 		{
 			return false;
 		}

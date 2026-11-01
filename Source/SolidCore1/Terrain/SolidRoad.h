@@ -63,6 +63,7 @@ namespace SolidRoad
 
 		/**
 		 * Straight line of terrain points from one end to the other.
+		 * A bridge end is the span end closer to the other end. A tie fails.
 		 * One banned patch is walked around. The points stay on this road.
 		 */
 		bool FindRoute(const USolidWorldChart& Map);

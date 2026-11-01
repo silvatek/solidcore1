@@ -124,7 +124,7 @@ bool FSolidTerrainSeatTest::RunTest(const FString& Parameters)
 		for (int32 TerrainX = 0; TerrainX < Map->GridWidth; ++TerrainX)
 		{
 			const FSolidTerrainPoint& TerrainPoint = Map->GetPoint(TerrainX, TerrainY);
-			if (SolidTerrainSeat::Contains(WideActor, 0.f, Wide, TerrainPoint.X, TerrainPoint.Y))
+			if (SolidTerrainSeat::Contains(WideActor, 0.f, Wide, TerrainPoint.WorldX, TerrainPoint.WorldY))
 			{
 				Known = FMath::Min(Known, TerrainPoint.Height);
 			}

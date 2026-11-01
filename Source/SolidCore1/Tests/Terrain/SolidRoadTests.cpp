@@ -67,8 +67,8 @@ namespace
 		FVector2D ChartMax = FVector2D::ZeroVector;
 		USolidWorldChart::ChartBounds(ChartMin, ChartMax);
 		FVector2D ChartCm = FVector2D::ZeroVector;
-		return Test.TestTrue(TEXT("the cell has a centre"), Chart.CellToWorldXY(Cell, ChartMin, ChartMax, ChartCm))
-			&& Test.TestTrue(TEXT("the cell sits on a point"), Chart.TerrainPointAt(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, OutTerrainPoint));
+		return Test.TestTrue(TEXT("the cell has a centre"), Chart.CellToChartXY(Cell, ChartMin, ChartMax, ChartCm))
+			&& Test.TestTrue(TEXT("the cell sits on a point"), Chart.ChartTerrainPointAt(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, OutTerrainPoint));
 	}
 
 	void FillGrassPoints(USolidWorldChart& Chart)
@@ -81,7 +81,7 @@ namespace
 		FVector2D ChartMin = FVector2D::ZeroVector;
 		FVector2D ChartMax = FVector2D::ZeroVector;
 		USolidWorldChart::ChartBounds(ChartMin, ChartMax);
-		if (!Chart.TerrainPointToWorld(TerrainPoint, ChartMin, ChartMax, Mark.ChartCm))
+		if (!Chart.TerrainPointToChart(TerrainPoint, ChartMin, ChartMax, Mark.ChartCm))
 		{
 			return false;
 		}
@@ -859,9 +859,9 @@ bool FSolidRoadNearerEndTest::RunTest(const FString& Parameters)
 	FVector2D ChartCm = FVector2D::ZeroVector;
 	FIntPoint WestTerrainPoint = FIntPoint::ZeroValue;
 	FIntPoint EastTerrainPoint = FIntPoint::ZeroValue;
-	if (!TestTrue(TEXT("the centre is a point"), Chart->TerrainPointToWorld(BridgePoint, ChartMin, ChartMax, ChartCm))
-		|| !TestTrue(TEXT("the west end is a point"), Chart->TerrainPointAt(ChartCm.X + Half, ChartCm.Y, ChartMin, ChartMax, WestTerrainPoint))
-		|| !TestTrue(TEXT("the east end is a point"), Chart->TerrainPointAt(ChartCm.X - Half, ChartCm.Y, ChartMin, ChartMax, EastTerrainPoint)))
+	if (!TestTrue(TEXT("the centre is a point"), Chart->TerrainPointToChart(BridgePoint, ChartMin, ChartMax, ChartCm))
+		|| !TestTrue(TEXT("the west end is a point"), Chart->ChartTerrainPointAt(ChartCm.X + Half, ChartCm.Y, ChartMin, ChartMax, WestTerrainPoint))
+		|| !TestTrue(TEXT("the east end is a point"), Chart->ChartTerrainPointAt(ChartCm.X - Half, ChartCm.Y, ChartMin, ChartMax, EastTerrainPoint)))
 	{
 		return false;
 	}

@@ -506,7 +506,7 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 				{
 					const FSolidTerrainPoint& Point = Terrain->GetPoint(TerrainX, TerrainY);
 					FIntPoint PointCell = FIntPoint::ZeroValue;
-					if (Map->CellAtWorld(Point.X, Point.Y, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), PointCell)
+					if (Map->CellAtWorld(Point.WorldX, Point.WorldY, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), PointCell)
 						&& PointCell == Cell)
 					{
 						Lowest = FMath::Min(Lowest, Point.Height);

@@ -63,8 +63,8 @@ int32 SolidForage::CollectChoices(
 		FChoice Choice;
 		Choice.PointIndex = PointIndex;
 		Choice.XY = FVector2D(
-			Point.X + Rng.FRandRange(-Jitter, Jitter),
-			Point.Y + Rng.FRandRange(-Jitter, Jitter));
+			Point.WorldX + Rng.FRandRange(-Jitter, Jitter),
+			Point.WorldY + Rng.FRandRange(-Jitter, Jitter));
 		Choice.ItemId = (I % 2 == 0) ? SolidItemType::IdStick : SolidItemType::IdPitch;
 		OutChoices.Add(Choice);
 	}
@@ -113,7 +113,7 @@ int32 SolidForage::GuaranteeForestCells(
 		PointUsed[Choice.PointIndex] = 1;
 
 		FIntPoint Cell = FIntPoint::ZeroValue;
-		if (!WorldMap->CellAtWorld(Points[Choice.PointIndex].X, Points[Choice.PointIndex].Y, WorldMinXY, WorldMaxXY, Cell))
+		if (!WorldMap->CellAtWorld(Points[Choice.PointIndex].WorldX, Points[Choice.PointIndex].WorldY, WorldMinXY, WorldMaxXY, Cell))
 		{
 			continue;
 		}
@@ -151,7 +151,7 @@ int32 SolidForage::GuaranteeForestCells(
 		}
 
 		FIntPoint Cell = FIntPoint::ZeroValue;
-		if (!WorldMap->CellAtWorld(Points[PointIndex].X, Points[PointIndex].Y, WorldMinXY, WorldMaxXY, Cell))
+		if (!WorldMap->CellAtWorld(Points[PointIndex].WorldX, Points[PointIndex].WorldY, WorldMinXY, WorldMaxXY, Cell))
 		{
 			continue;
 		}
@@ -226,7 +226,7 @@ int32 SolidForage::GuaranteeForestCells(
 				{
 					FChoice Choice;
 					Choice.PointIndex = PointIndex;
-					Choice.XY = FVector2D(Points[PointIndex].X, Points[PointIndex].Y);
+					Choice.XY = FVector2D(Points[PointIndex].WorldX, Points[PointIndex].WorldY);
 					Choice.ItemId = SolidItemType::IdStick;
 					InOutChoices.Add(Choice);
 					HasStick[Key] = 1;
@@ -239,7 +239,7 @@ int32 SolidForage::GuaranteeForestCells(
 				{
 					FChoice Choice;
 					Choice.PointIndex = PointIndex;
-					Choice.XY = FVector2D(Points[PointIndex].X, Points[PointIndex].Y);
+					Choice.XY = FVector2D(Points[PointIndex].WorldX, Points[PointIndex].WorldY);
 					Choice.ItemId = SolidItemType::IdPitch;
 					InOutChoices.Add(Choice);
 					HasPitch[Key] = 1;

@@ -124,8 +124,8 @@ namespace
 			USolidWorldChart::ChartBounds(ChartMin, ChartMax);
 			FVector2D ChartCm = FVector2D::ZeroVector;
 			FIntPoint RiverTerrainPoint = FIntPoint::ZeroValue;
-			if (!Test.TestTrue(TEXT("the river cell has a centre"), Chart->CellToWorldXY(FIntPoint(12, 16), ChartMin, ChartMax, ChartCm))
-				|| !Test.TestTrue(TEXT("the river sits on a point"), Chart->TerrainPointAt(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, RiverTerrainPoint)))
+			if (!Test.TestTrue(TEXT("the river cell has a centre"), Chart->CellToChartXY(FIntPoint(12, 16), ChartMin, ChartMax, ChartCm))
+				|| !Test.TestTrue(TEXT("the river sits on a point"), Chart->ChartTerrainPointAt(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, RiverTerrainPoint)))
 			{
 				return false;
 			}
@@ -454,8 +454,8 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 	FVector2D RiverCentre = FVector2D::ZeroVector;
 	FIntPoint RiverTerrainPoint = FIntPoint::ZeroValue;
 	const int32 LastPoint = USolidWorldChart::PointAxis - 1;
-	if (TestTrue(TEXT("the river cell has a centre"), Chart->CellToWorldXY(FIntPoint(12, 16), ChartMin, ChartMax, RiverCentre))
-		&& TestTrue(TEXT("the river sits on a point"), Chart->TerrainPointAt(RiverCentre.X, RiverCentre.Y, ChartMin, ChartMax, RiverTerrainPoint)))
+	if (TestTrue(TEXT("the river cell has a centre"), Chart->CellToChartXY(FIntPoint(12, 16), ChartMin, ChartMax, RiverCentre))
+		&& TestTrue(TEXT("the river sits on a point"), Chart->ChartTerrainPointAt(RiverCentre.X, RiverCentre.Y, ChartMin, ChartMax, RiverTerrainPoint)))
 	{
 		TestTrue(TEXT("the river paints"),
 			Chart->SetPointRectangle(FIntPoint(RiverTerrainPoint.X, 0), FIntPoint(RiverTerrainPoint.X, LastPoint), ESolidBiome::River));
@@ -558,7 +558,7 @@ bool FSolidBridgeBuriedRampTest::RunTest(const FString& Parameters)
 		for (const FVector& Sample : *Ramp)
 		{
 			FIntPoint SurfaceTerrainPoint = FIntPoint::ZeroValue;
-			Chart->TerrainPointAt(Sample.X, Sample.Y + HalfQuad, ChartMin, ChartMax, SurfaceTerrainPoint);
+			Chart->ChartTerrainPointAt(Sample.X, Sample.Y + HalfQuad, ChartMin, ChartMax, SurfaceTerrainPoint);
 			const ESolidBiome Painted = Chart->GetPointBiome(SurfaceTerrainPoint);
 			if (Sample.Z < 99.f)
 			{
@@ -582,7 +582,7 @@ bool FSolidBridgeBuriedRampTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("a ramp also stands above the ground"), bSawOpen);
 
 	FIntPoint RampTerrainPoint = FIntPoint::ZeroValue;
-	Chart->TerrainPointAt(Centre.X, Centre.Y, ChartMin, ChartMax, RampTerrainPoint);
+	Chart->ChartTerrainPointAt(Centre.X, Centre.Y, ChartMin, ChartMax, RampTerrainPoint);
 	TestEqual(
 		TEXT("the ramp's own point stays grassland"),
 		static_cast<uint8>(Chart->GetPointBiome(RampTerrainPoint)),

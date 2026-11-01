@@ -521,7 +521,7 @@ float ASolidDungeonExterior::GroundDropCm(
 		{
 			const FSolidTerrainPoint& Point = Terrain->GetPoint(TerrainX, TerrainY);
 			FIntPoint PointCell = FIntPoint::ZeroValue;
-			if (!Map->CellAtWorld(Point.X, Point.Y, WorldMin, WorldMax, PointCell) || PointCell != Cell)
+			if (!Map->CellAtWorld(Point.WorldX, Point.WorldY, WorldMin, WorldMax, PointCell) || PointCell != Cell)
 			{
 				continue;
 			}

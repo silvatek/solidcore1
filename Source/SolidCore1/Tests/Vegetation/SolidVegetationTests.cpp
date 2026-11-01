@@ -57,8 +57,8 @@ bool FSolidForestTreeScatterTest::RunTest(const FString& Parameters)
 		for (const FSolidTerrainPoint& Point : Map->GetPoints())
 		{
 			if (Point.Biome == ESolidBiome::Forest
-				&& FMath::IsNearlyEqual(Point.X, PositionsA[I].X, 0.5f)
-				&& FMath::IsNearlyEqual(Point.Y, PositionsA[I].Y, 0.5f))
+				&& FMath::IsNearlyEqual(Point.WorldX, PositionsA[I].X, 0.5f)
+				&& FMath::IsNearlyEqual(Point.WorldY, PositionsA[I].Y, 0.5f))
 			{
 				bMatchesForestNode = true;
 				break;
@@ -181,7 +181,7 @@ bool FSolidTownBuildingPackTest::RunTest(const FString& Parameters)
 			}
 			NearestTownCm = FMath::Min(
 				NearestTownCm,
-				FVector2D::Distance(A.CenterXY, FVector2D(Point.X, Point.Y)));
+				FVector2D::Distance(A.CenterXY, FVector2D(Point.WorldX, Point.WorldY)));
 		}
 		TestTrue(
 			TEXT("placement stays by a town point"),

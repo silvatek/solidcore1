@@ -21,8 +21,8 @@ namespace SolidMonsterTestPrivate
 	FSolidTerrainPoint PointAt(const float X, const ESolidBiome Biome, const float Fog = 1.f)
 	{
 		FSolidTerrainPoint Point;
-		Point.X = X;
-		Point.Y = 0.f;
+		Point.WorldX = X;
+		Point.WorldY = 0.f;
 		Point.Biome = Biome;
 		Point.Fog = Fog;
 		return Point;
@@ -572,8 +572,8 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 		for (const float Offset : Offsets)
 		{
 			FSolidTerrainPoint Point;
-			Point.X = Mark.ChartCm.X + Offset;
-			Point.Y = Mark.ChartCm.Y;
+			Point.WorldX = Mark.ChartCm.X + Offset;
+			Point.WorldY = Mark.ChartCm.Y;
 			Point.Biome = ESolidBiome::Grassland;
 			Points.Add(Point);
 		}
@@ -652,8 +652,8 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 		{
 			TArray<FSolidTerrainPoint> OnePoint;
 			FSolidTerrainPoint Point;
-			Point.X = Mark.ChartCm.X + 900.f;
-			Point.Y = Mark.ChartCm.Y;
+			Point.WorldX = Mark.ChartCm.X + 900.f;
+			Point.WorldY = Mark.ChartCm.Y;
 			Point.Biome = ESolidBiome::Grassland;
 			OnePoint.Add(Point);
 			FSolidEncounter Encounter(*Def);
@@ -788,8 +788,8 @@ bool FSolidMonsterEventTest::RunTest(const FString& Parameters)
 	for (const float Offset : Offsets)
 	{
 		FSolidTerrainPoint Point;
-		Point.X = Offset;
-		Point.Y = 0.f;
+		Point.WorldX = Offset;
+		Point.WorldY = 0.f;
 		Point.Biome = ESolidBiome::Grassland;
 		Points.Add(Point);
 	}
@@ -891,8 +891,8 @@ bool FSolidMonsterEventTest::RunTest(const FString& Parameters)
 	for (const float Offset : Offsets)
 	{
 		FSolidTerrainPoint Point;
-		Point.X = 20000.f + Offset;
-		Point.Y = 0.f;
+		Point.WorldX = 20000.f + Offset;
+		Point.WorldY = 0.f;
 		Point.Biome = ESolidBiome::Grassland;
 		SecondPoints.Add(Point);
 	}

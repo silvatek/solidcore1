@@ -84,7 +84,7 @@ int32 SolidForestTrees::CollectSpawnPositions(
 		const FSolidTerrainPoint& Point = Points[Index];
 		const float Jx = Rng.FRandRange(-Jitter, Jitter);
 		const float Jy = Rng.FRandRange(-Jitter, Jitter);
-		OutXY.Add(FVector2D(Point.X + Jx, Point.Y + Jy));
+		OutXY.Add(FVector2D(Point.WorldX + Jx, Point.WorldY + Jy));
 	}
 
 	return OutXY.Num();

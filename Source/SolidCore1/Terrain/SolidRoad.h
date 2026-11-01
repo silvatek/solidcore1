@@ -225,11 +225,11 @@ namespace SolidRoad
 		TArray<FIntPoint> Points;
 	};
 
-	/** One painted segment, in map cells. A point span uses the same cell twice. */
+	/** One painted segment. FromCell and ToCell are map cells. A point span uses the same cell twice. */
 	struct FSpan
 	{
-		FIntPoint From = FIntPoint::ZeroValue;
-		FIntPoint To = FIntPoint::ZeroValue;
+		FIntPoint FromCell = FIntPoint::ZeroValue;
+		FIntPoint ToCell = FIntPoint::ZeroValue;
 		float HalfWidthCm = 0.f;
 	};
 

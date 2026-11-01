@@ -35,7 +35,7 @@ namespace SolidTerrainTestHelpers
 	 */
 	inline FVector2D InBoundsFogProbeDir(const USolidTerrainMap* Map, float DistCm)
 	{
-		const FVector2D Origin = Map->GetFogOriginXY();
+		const FVector2D Origin = Map->GetFogOriginWorldCm();
 		const FVector2D MinXY = Map->GetWorldMinXY();
 		const FVector2D MaxXY = Map->GetWorldMaxXY();
 		const FVector2D Center = (MinXY + MaxXY) * 0.5f;
@@ -81,7 +81,7 @@ namespace SolidTerrainTestHelpers
 			return;
 		}
 
-		const FVector2D FogOrigin = Map->GetFogOriginXY();
+		const FVector2D FogOrigin = Map->GetFogOriginWorldCm();
 		const FVector2D MinXY = Map->GetWorldMinXY();
 		const FVector2D MaxXY = Map->GetWorldMaxXY();
 		// Keep probes in-bounds for a 35m step toward fog origin, but stay near corners
@@ -119,7 +119,7 @@ namespace SolidTerrainTestHelpers
 			return false;
 		}
 
-		const FVector2D FogOrigin = Map->GetFogOriginXY();
+		const FVector2D FogOrigin = Map->GetFogOriginWorldCm();
 		int32 BestIndex = 0;
 		float BestDistSq = -1.f;
 		for (int32 Index = 0; Index < Candidates.Num(); ++Index)

@@ -19,13 +19,13 @@ bool FSolidMapSampleHeightMatchesGridTest::RunTest(const FString& Parameters)
 	TestNotNull(TEXT("map"), Map);
 
 	const FSolidTerrainPoint& Grid = Map->GetPoint(32, 32);
-	const float Sampled = Map->SampleHeight(Grid.X, Grid.Y);
+	const float Sampled = Map->SampleHeight(Grid.WorldX, Grid.WorldY);
 	TestTrue(TEXT("sample at grid node matches point height"),
 		FMath::IsNearlyEqual(Sampled, Grid.Height, 0.01f));
 
-	const FSolidTerrainPoint& Nearest = Map->GetNearestPoint(Grid.X + 10.f, Grid.Y - 10.f);
-	TestEqual(TEXT("nearest snaps nearby query"), Nearest.X, Grid.X);
-	TestEqual(TEXT("nearest snaps nearby query Y"), Nearest.Y, Grid.Y);
+	const FSolidTerrainPoint& Nearest = Map->GetNearestPoint(Grid.WorldX + 10.f, Grid.WorldY - 10.f);
+	TestEqual(TEXT("nearest snaps nearby query"), Nearest.WorldX, Grid.WorldX);
+	TestEqual(TEXT("nearest snaps nearby query Y"), Nearest.WorldY, Grid.WorldY);
 	return true;
 }
 
@@ -86,7 +86,7 @@ bool FSolidMapBiomeHeightOffsetTest::RunTest(const FString& Parameters)
 	{
 		const FSolidBiome& Ground = SolidBiome::Of(Point.Biome);
 		const float RawHeight = SolidTerrainNoise::SampleHeight(
-			Point.X, Point.Y, /*Seed=*/1337, /*FrequencyScale=*/0.00012f,
+			Point.WorldX, Point.WorldY, /*Seed=*/1337, /*FrequencyScale=*/0.00012f,
 			Ground.HeightVarianceCm(), /*BaseHeight=*/0.f);
 		const float Expected = RawHeight + Ground.HeightOffsetCm();
 		TestTrue(TEXT("height includes biome shelf"),

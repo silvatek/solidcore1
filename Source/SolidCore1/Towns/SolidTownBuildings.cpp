@@ -93,7 +93,7 @@ int32 SolidTownBuildings::CollectPlacements(
 			continue;
 		}
 		// Roads share a brown with the town, but the marker on the map is the town.
-		if (bMapLoaded && !WorldMap->IsMarkedTown(Point.X, Point.Y, WorldMin, WorldMax))
+		if (bMapLoaded && !WorldMap->IsMarkedTown(Point.WorldX, Point.WorldY, WorldMin, WorldMax))
 		{
 			continue;
 		}
@@ -130,7 +130,7 @@ int32 SolidTownBuildings::CollectPlacements(
 	for (int32 I = 0; I < CandidateCount && OutPlacements.Num() < MaxBuildings; ++I)
 	{
 		const FSolidTerrainPoint& Point = Points[TownIndices[I]];
-		const FVector2D Center(Point.X, Point.Y);
+		const FVector2D Center(Point.WorldX, Point.WorldY);
 		if (bMapLoaded
 			&& SolidTowns::IsWallGate(WorldMap->SampleLocationId(Center.X, Center.Y, WorldMin, WorldMax)))
 		{

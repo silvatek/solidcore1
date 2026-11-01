@@ -1108,7 +1108,7 @@ void FSolidWorldChartEdMode::PlaceCurrentMark()
 		for (const FVector2D& ChartCm : Before)
 		{
 			FIntPoint Cell = FIntPoint::ZeroValue;
-			if (Chart->CellAtWorld(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, Cell)
+			if (Chart->CellAtChart(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, Cell)
 				&& Chart->MarkAtCell(Cell) == INDEX_NONE)
 			{
 				Cells.AddUnique(Cell);
@@ -1577,15 +1577,15 @@ void FSolidWorldChartEdMode::RebuildOverlay()
 	TArray<FBatchedLine> Batch;
 	Batch.Reserve(USolidWorldChart::MapWidth * USolidWorldChart::MapHeight * 4);
 	const float Lift = 80.f;
-	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
+	for (int32 CellY = 0; CellY < USolidWorldChart::MapHeight; ++CellY)
 	{
-		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
+		for (int32 CellX = 0; CellX < USolidWorldChart::MapWidth; ++CellX)
 		{
-			const FIntPoint Cell(Col, Row);
+			const FIntPoint Cell(CellX, CellY);
 			FVector2D WestSouth = FVector2D::ZeroVector;
 			FVector2D EastNorth = FVector2D::ZeroVector;
 			CellCorners(Cell, WorldMin, WorldMax, WestSouth, EastNorth);
-			const FLinearColor Color = WorldMap->GetBiomeColor(WorldMap->GetBiomeAtCell(Col, Row));
+			const FLinearColor Color = WorldMap->GetBiomeColor(WorldMap->GetBiomeAtCell(CellX, CellY));
 			const FVector A(WestSouth.X, WestSouth.Y, Terrain->SampleHeight(WestSouth.X, WestSouth.Y) + Lift);
 			const FVector B(EastNorth.X, WestSouth.Y, Terrain->SampleHeight(EastNorth.X, WestSouth.Y) + Lift);
 			const FVector C(EastNorth.X, EastNorth.Y, Terrain->SampleHeight(EastNorth.X, EastNorth.Y) + Lift);

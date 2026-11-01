@@ -28,9 +28,9 @@ public:
 	UPROPERTY(BlueprintReadOnly, Category = "Terrain")
 	float PointSpacing = 200.f;
 
-	/** World XY of index (0, 0). Grid is centered on the origin by default. */
+	/** World centimetres of terrain index (0, 0). Build centres the grid on the world origin. */
 	UPROPERTY(BlueprintReadOnly, Category = "Terrain")
-	FVector2D OriginXY = FVector2D::ZeroVector;
+	FVector2D WorldMinCm = FVector2D::ZeroVector;
 
 	UPROPERTY(BlueprintReadOnly, Category = "Terrain")
 	int32 Seed = 1337;
@@ -72,7 +72,7 @@ public:
 
 	/**
 	 * Gameplay sample: bilinear Height / Threat / Fog, nearest-neighbor Biome.
-	 * Coordinates on the result are the query world XY.
+	 * WorldX and WorldY on the result are the query position.
 	 */
 	FSolidTerrainPoint SamplePoint(float WorldX, float WorldY) const;
 
@@ -111,10 +111,10 @@ public:
 	 */
 	bool ApplyExplorationFog(const TArray<float>& InFog);
 
-	FVector2D GetWorldMinXY() const { return OriginXY; }
+	FVector2D GetWorldMinXY() const { return WorldMinCm; }
 	FVector2D GetWorldMaxXY() const
 	{
-		return OriginXY + FVector2D(
+		return WorldMinCm + FVector2D(
 			static_cast<float>(FMath::Max(GridWidth - 1, 0)) * PointSpacing,
 			static_cast<float>(FMath::Max(GridHeight - 1, 0)) * PointSpacing);
 	}
@@ -125,10 +125,10 @@ public:
 	bool GetStartTownWorldXY(FVector2D& OutWorldXY) const;
 
 	/**
-	 * World XY fog bands were last centered on.
+	 * World centimetres fog bands were last centered on.
 	 * Valid after CenterExplorationFogOn. Build leaves this at zero and every point fully fogged.
 	 */
-	FVector2D GetFogOriginXY() const { return FogOriginXY; }
+	FVector2D GetFogOriginWorldCm() const { return FogOriginWorldCm; }
 
 	/** World bounds of terrain points whose Fog is 0. False when every point is fogged. */
 	bool GetClearFogBounds(FVector2D& OutMin, FVector2D& OutMax) const;
@@ -140,18 +140,18 @@ protected:
 	UPROPERTY()
 	TObjectPtr<USolidWorldChart> WorldMap;
 
-	/** Last player position passed to CenterExplorationFogOn. */
+	/** Last player position passed to CenterExplorationFogOn, in world centimetres. */
 	UPROPERTY()
-	FVector2D FogOriginXY = FVector2D::ZeroVector;
+	FVector2D FogOriginWorldCm = FVector2D::ZeroVector;
 
 	UPROPERTY()
 	bool bHasClearFog = false;
 
 	UPROPERTY()
-	FVector2D ClearFogMinXY = FVector2D::ZeroVector;
+	FVector2D ClearFogMinWorldCm = FVector2D::ZeroVector;
 
 	UPROPERTY()
-	FVector2D ClearFogMaxXY = FVector2D::ZeroVector;
+	FVector2D ClearFogMaxWorldCm = FVector2D::ZeroVector;
 
 	void TrackClearFogBounds();
 	void WorldToIndex(float WorldX, float WorldY, int32& OutTerrainX, int32& OutTerrainY) const;

@@ -2185,8 +2185,8 @@ void ASolidHUD::DrawHUD()
 					Map->GridWidth, Map->GridHeight, Map->PointSpacing, Map->GetPointCount()));
 				if (Map->bIsBuilt && Map->PointSpacing > KINDA_SMALL_NUMBER)
 				{
-					const float FX = (Loc.X - Map->OriginXY.X) / Map->PointSpacing;
-					const float FY = (Loc.Y - Map->OriginXY.Y) / Map->PointSpacing;
+					const float FX = (Loc.X - Map->WorldMinCm.X) / Map->PointSpacing;
+					const float FY = (Loc.Y - Map->WorldMinCm.Y) / Map->PointSpacing;
 					const int32 TerrainX0 = FMath::Clamp(FMath::FloorToInt(FX), 0, Map->GridWidth - 1);
 					const int32 TerrainY0 = FMath::Clamp(FMath::FloorToInt(FY), 0, Map->GridHeight - 1);
 					const int32 TerrainX1 = FMath::Min(TerrainX0 + 1, Map->GridWidth - 1);
@@ -2224,8 +2224,8 @@ void ASolidHUD::DrawHUD()
 					}
 					else
 					{
-						const float CentreX = Map->OriginXY.X + (static_cast<float>(TerrainX0) + 0.5f) * Map->PointSpacing;
-						const float CentreY = Map->OriginXY.Y + (static_cast<float>(TerrainY0) + 0.5f) * Map->PointSpacing;
+						const float CentreX = Map->WorldMinCm.X + (static_cast<float>(TerrainX0) + 0.5f) * Map->PointSpacing;
+						const float CentreY = Map->WorldMinCm.Y + (static_cast<float>(TerrainY0) + 0.5f) * Map->PointSpacing;
 						const ESolidBiome Preferred = Map->SamplePoint(CentreX, CentreY).Biome;
 						const ESolidBiome WestOfNorthWest = Map->GetPoint(TerrainX1 + 1, TerrainY1).Biome;
 						const ESolidBiome SouthWestOfNorthWest = Map->GetPoint(TerrainX1 + 1, TerrainY0).Biome;

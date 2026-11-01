@@ -43,7 +43,7 @@ bool FSolidCameraGroundNeighbourTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	const FVector2D Origin = Map->GetFogOriginXY();
+	const FVector2D Origin = Map->GetFogOriginWorldCm();
 	TestTrue(TEXT("the captain's point is clear"),
 		FMath::IsNearlyEqual(SolidSight::CameraGroundFog(*Map, Origin.X, Origin.Y), 0.f));
 

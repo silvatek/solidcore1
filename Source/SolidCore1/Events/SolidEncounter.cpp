@@ -70,8 +70,8 @@ namespace SolidEncounterPrivate
 			{
 				continue;
 			}
-			const float DX = Point.X - XY.X;
-			const float DY = Point.Y - XY.Y;
+			const float DX = Point.WorldX - XY.X;
+			const float DY = Point.WorldY - XY.Y;
 			if (DX * DX + DY * DY <= LimitSq)
 			{
 				return true;
@@ -117,7 +117,7 @@ namespace SolidEncounterPrivate
 				continue;
 			}
 
-			const FVector2D XY(Point.X, Point.Y);
+			const FVector2D XY(Point.WorldX, Point.WorldY);
 			const float Distance = FVector2D::Distance(XY, Outer);
 			if (Distance < Definition.NearLimitCm || Distance > Definition.FarLimitCm)
 			{

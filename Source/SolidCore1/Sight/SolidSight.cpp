@@ -12,9 +12,9 @@ float SolidSight::CameraGroundFog(const USolidTerrainMap& Map, const float World
 	const int32 Width = Map.GridWidth;
 	const int32 Height = Map.GridHeight;
 	const int32 TerrainX = FMath::Clamp(
-		FMath::RoundToInt((WorldX - Map.OriginXY.X) / Map.PointSpacing), 0, Width - 1);
+		FMath::RoundToInt((WorldX - Map.WorldMinCm.X) / Map.PointSpacing), 0, Width - 1);
 	const int32 TerrainY = FMath::Clamp(
-		FMath::RoundToInt((WorldY - Map.OriginXY.Y) / Map.PointSpacing), 0, Height - 1);
+		FMath::RoundToInt((WorldY - Map.WorldMinCm.Y) / Map.PointSpacing), 0, Height - 1);
 
 	float Fog = 0.f;
 	for (int32 OffsetY = -1; OffsetY <= 1; ++OffsetY)

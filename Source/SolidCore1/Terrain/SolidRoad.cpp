@@ -66,7 +66,7 @@ namespace SolidRoad
 			return true;
 		}
 
-		bool PointIsRiver(const USolidWorldChart& Map, const int32 CellX, const int32 CellY)
+		bool CellIsRiver(const USolidWorldChart& Map, const int32 CellX, const int32 CellY)
 		{
 			if (CellX < 0 || CellY < 0 || CellX >= USolidWorldChart::MapWidth || CellY >= USolidWorldChart::MapHeight)
 			{
@@ -81,8 +81,8 @@ namespace SolidRoad
 		 */
 		bool StepIsSquareToRiver(const USolidWorldChart& Map, const FIntPoint& FromCell, const FIntPoint& ToCell)
 		{
-			const bool bAlongY = PointIsRiver(Map, ToCell.X, ToCell.Y - 1) || PointIsRiver(Map, ToCell.X, ToCell.Y + 1);
-			const bool bAlongX = PointIsRiver(Map, ToCell.X + 1, ToCell.Y) || PointIsRiver(Map, ToCell.X - 1, ToCell.Y);
+			const bool bAlongY = CellIsRiver(Map, ToCell.X, ToCell.Y - 1) || CellIsRiver(Map, ToCell.X, ToCell.Y + 1);
+			const bool bAlongX = CellIsRiver(Map, ToCell.X + 1, ToCell.Y) || CellIsRiver(Map, ToCell.X - 1, ToCell.Y);
 			if (!bAlongY && !bAlongX)
 			{
 				return true;
@@ -822,8 +822,8 @@ namespace SolidRoad
 		}
 		FIntPoint FromTerrainPoint = FIntPoint::ZeroValue;
 		FIntPoint ToTerrainPoint = FIntPoint::ZeroValue;
-		if (!Map.TerrainPointAt(FromChartCm.X, FromChartCm.Y, ChartMin, ChartMax, FromTerrainPoint)
-			|| !Map.TerrainPointAt(ToChartCm.X, ToChartCm.Y, ChartMin, ChartMax, ToTerrainPoint))
+		if (!Map.ChartTerrainPointAt(FromChartCm.X, FromChartCm.Y, ChartMin, ChartMax, FromTerrainPoint)
+			|| !Map.ChartTerrainPointAt(ToChartCm.X, ToChartCm.Y, ChartMin, ChartMax, ToTerrainPoint))
 		{
 			return false;
 		}

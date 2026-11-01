@@ -79,11 +79,11 @@ bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("the rectangle's far corner"), static_cast<uint8>(Chart->Cells[1 * USolidWorldChart::MapWidth + 2]), static_cast<uint8>(ESolidBiome::Sea));
 	TestEqual(TEXT("outside the rectangle stays grassland"), static_cast<uint8>(Chart->Cells[2 * USolidWorldChart::MapWidth + 2]), static_cast<uint8>(ESolidBiome::Grassland));
 	int32 SeaCells = 0;
-	for (int32 Row = 0; Row <= 1; ++Row)
+	for (int32 CellY = 0; CellY <= 1; ++CellY)
 	{
-		for (int32 Col = 0; Col <= 2; ++Col)
+		for (int32 CellX = 0; CellX <= 2; ++CellX)
 		{
-			if (Chart->Cells[Row * USolidWorldChart::MapWidth + Col] == ESolidBiome::Sea)
+			if (Chart->Cells[CellY * USolidWorldChart::MapWidth + CellX] == ESolidBiome::Sea)
 			{
 				++SeaCells;
 			}
@@ -394,7 +394,7 @@ bool FSolidWorldChartPlaceMovesTest::RunTest(const FString& Parameters)
 	FVector2D MouthCentre = FVector2D::ZeroVector;
 	TestTrue(TEXT("the entrance cell has a centre"), USolidWorldChart::CellCentre(Mouth, MouthCentre));
 	FIntPoint MouthTerrainPoint = FIntPoint::ZeroValue;
-	TestTrue(TEXT("the entrance point"), Chart->TerrainPointAt(MouthCentre.X, MouthCentre.Y, ChartMin, ChartMax, MouthTerrainPoint));
+	TestTrue(TEXT("the entrance point"), Chart->ChartTerrainPointAt(MouthCentre.X, MouthCentre.Y, ChartMin, ChartMax, MouthTerrainPoint));
 	TestTrue(TEXT("forest covers the entrance"), Chart->PaintBrush({ MouthTerrainPoint }, 1, ESolidBiome::Forest, Error));
 	TestEqual(
 		TEXT("the entrance point takes the forest"),
@@ -416,7 +416,7 @@ bool FSolidWorldChartPlaceMovesTest::RunTest(const FString& Parameters)
 	FVector2D MovedCentre = FVector2D::ZeroVector;
 	TestTrue(TEXT("the new cell has a centre"), USolidWorldChart::CellCentre(MouthMoved, MovedCentre));
 	FIntPoint MovedTerrainPoint = FIntPoint::ZeroValue;
-	TestTrue(TEXT("the new entrance point"), Chart->TerrainPointAt(MovedCentre.X, MovedCentre.Y, ChartMin, ChartMax, MovedTerrainPoint));
+	TestTrue(TEXT("the new entrance point"), Chart->ChartTerrainPointAt(MovedCentre.X, MovedCentre.Y, ChartMin, ChartMax, MovedTerrainPoint));
 	TestEqual(
 		TEXT("the new entrance point stays grassland"),
 		static_cast<uint8>(Chart->GetPointBiome(MovedTerrainPoint)),
@@ -554,7 +554,7 @@ bool FSolidWorldChartBridgeTest::RunTest(const FString& Parameters)
 	USolidWorldChart::ChartBounds(ChartMin, ChartMax);
 	TestEqual(
 		TEXT("the river beside the bridge stays river"),
-		static_cast<uint8>(Chart->SampleBiome(Centre.X - 200.f, Centre.Y, ChartMin, ChartMax)),
+		static_cast<uint8>(Chart->SampleChartBiome(Centre.X - 200.f, Centre.Y, ChartMin, ChartMax)),
 		static_cast<uint8>(ESolidBiome::River));
 
 	const FIntPoint Moved(15, 9);

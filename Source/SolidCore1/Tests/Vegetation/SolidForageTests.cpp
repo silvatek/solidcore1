@@ -26,8 +26,8 @@ namespace
 	FSolidTerrainPoint ForagePoint(const int32 Index, const ESolidBiome Biome, const float Fog = 1.f)
 	{
 		FSolidTerrainPoint Point;
-		Point.X = static_cast<float>(Index) * 200.f;
-		Point.Y = 0.f;
+		Point.WorldX = static_cast<float>(Index) * 200.f;
+		Point.WorldY = 0.f;
 		Point.Biome = Biome;
 		Point.Fog = Fog;
 		return Point;
@@ -106,8 +106,8 @@ bool FSolidForageScatterTest::RunTest(const FString& Parameters)
 	{
 		TestTrue(TEXT("a pile sits on a forest point"), Points.IsValidIndex(Choice.PointIndex));
 		TestTrue(TEXT("that point is forest"), Points[Choice.PointIndex].Biome == ESolidBiome::Forest);
-		const float Dx = FMath::Abs(Choice.XY.X - Points[Choice.PointIndex].X);
-		const float Dy = FMath::Abs(Choice.XY.Y - Points[Choice.PointIndex].Y);
+		const float Dx = FMath::Abs(Choice.XY.X - Points[Choice.PointIndex].WorldX);
+		const float Dy = FMath::Abs(Choice.XY.Y - Points[Choice.PointIndex].WorldY);
 		TestTrue(TEXT("jitter stays within 90 cm"), Dx <= Params.JitterCm + 0.01f && Dy <= Params.JitterCm + 0.01f);
 	}
 
@@ -172,8 +172,8 @@ bool FSolidForageScatterTest::RunTest(const FString& Parameters)
 	{
 		const FSolidTerrainPoint& Point = MapPoints[TreeIndices[Index]];
 		TestTrue(TEXT("the tree index is that grid point"),
-			FMath::IsNearlyEqual(Point.X, TreeXY[Index].X, 0.5f)
-			&& FMath::IsNearlyEqual(Point.Y, TreeXY[Index].Y, 0.5f));
+			FMath::IsNearlyEqual(Point.WorldX, TreeXY[Index].X, 0.5f)
+			&& FMath::IsNearlyEqual(Point.WorldY, TreeXY[Index].Y, 0.5f));
 	}
 	return true;
 }
@@ -449,11 +449,11 @@ bool FSolidForageIglinTest::RunTest(const FString& Parameters)
 		TestFalse(TEXT("each point holds one pile"), UsedPoints.Contains(Choice.PointIndex));
 		UsedPoints.Add(Choice.PointIndex);
 		TestTrue(TEXT("the guaranteed pile is not jittered"),
-			Choice.XY.Equals(FVector2D(Point.X, Point.Y), 0.01f));
+			Choice.XY.Equals(FVector2D(Point.WorldX, Point.WorldY), 0.01f));
 
 		FIntPoint Cell = FIntPoint::ZeroValue;
 		TestTrue(TEXT("the point lies on the world map"),
-			WorldMap->CellAtWorld(Point.X, Point.Y, WorldMin, WorldMax, Cell));
+			WorldMap->CellAtWorld(Point.WorldX, Point.WorldY, WorldMin, WorldMax, Cell));
 		TestEqual(TEXT("the cell is forest on the world map"),
 			FString::Chr(WorldMap->GetMarkerAtCell(Cell.X, Cell.Y)),
 			FString::Chr(USolidWorldChart::ForestMarker));
@@ -493,7 +493,7 @@ bool FSolidForageIglinTest::RunTest(const FString& Parameters)
 					continue;
 				}
 				FIntPoint Cell = FIntPoint::ZeroValue;
-				if (!WorldMap->CellAtWorld(Points[Choice.PointIndex].X, Points[Choice.PointIndex].Y, WorldMin, WorldMax, Cell))
+				if (!WorldMap->CellAtWorld(Points[Choice.PointIndex].WorldX, Points[Choice.PointIndex].WorldY, WorldMin, WorldMax, Cell))
 				{
 					continue;
 				}
@@ -541,7 +541,7 @@ bool FSolidForageIglinTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("a combined pile is still forest"), Points[Choice.PointIndex].Biome == ESolidBiome::Forest);
 
 		FIntPoint Cell = FIntPoint::ZeroValue;
-		if (!WorldMap->CellAtWorld(Points[Choice.PointIndex].X, Points[Choice.PointIndex].Y, WorldMin, WorldMax, Cell))
+		if (!WorldMap->CellAtWorld(Points[Choice.PointIndex].WorldX, Points[Choice.PointIndex].WorldY, WorldMin, WorldMax, Cell))
 		{
 			continue;
 		}
@@ -567,7 +567,7 @@ bool FSolidForageIglinTest::RunTest(const FString& Parameters)
 		TArray<SolidForage::FChoice> Partial;
 		SolidForage::FChoice Kept;
 		Kept.PointIndex = StickPoint;
-		Kept.XY = FVector2D(Points[StickPoint].X, Points[StickPoint].Y);
+		Kept.XY = FVector2D(Points[StickPoint].WorldX, Points[StickPoint].WorldY);
 		Kept.ItemId = SolidItemType::IdStick;
 		Partial.Add(Kept);
 		const int32 PartialAdded = SolidForage::GuaranteeForestCells(
@@ -584,7 +584,7 @@ bool FSolidForageIglinTest::RunTest(const FString& Parameters)
 				continue;
 			}
 			FIntPoint Cell = FIntPoint::ZeroValue;
-			if (!WorldMap->CellAtWorld(Points[Choice.PointIndex].X, Points[Choice.PointIndex].Y, WorldMin, WorldMax, Cell))
+			if (!WorldMap->CellAtWorld(Points[Choice.PointIndex].WorldX, Points[Choice.PointIndex].WorldY, WorldMin, WorldMax, Cell))
 			{
 				continue;
 			}
@@ -602,7 +602,7 @@ bool FSolidForageIglinTest::RunTest(const FString& Parameters)
 				++KeptPitches;
 				PitchPoint = Choice.PointIndex;
 				TestTrue(TEXT("the added pitch stays on its point"),
-					Choice.XY.Equals(FVector2D(Points[Choice.PointIndex].X, Points[Choice.PointIndex].Y), 0.01f));
+					Choice.XY.Equals(FVector2D(Points[Choice.PointIndex].WorldX, Points[Choice.PointIndex].WorldY), 0.01f));
 			}
 		}
 		TestEqual(TEXT("that cell still has one stick"), KeptSticks, 1);

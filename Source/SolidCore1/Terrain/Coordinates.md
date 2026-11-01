@@ -195,15 +195,15 @@ World axes, terrain, chart, and cell live on `USolidWorldChart` in [SolidWorldCh
 
 - `ChartBounds` is the chart square, from chart (0, 0) to chart (102400, 102400). The terrain class default still has its origin at (0, 0). `Build` recenters a running map.
 - `TerrainPosition` adds −51200, taking chart to world.
-- `CellCentre` and `CellToWorldXY` project a cell centre. `WorldXYToCell` and `CellAtWorld` project the other way.
-- `TerrainPointToWorld` and `TerrainPointAt` project a point. `TerrainPointAt` writes `OutTerrainPoint`, an `FIntPoint` whose X and Y are `terrainX` and `terrainY`. The helpers next to them are `WorldAtPoint`, `PointAtWorld`, and `PointUnderCell`. Their indexes are `TerrainX` and `TerrainY`. `PointAtWorld` passes the fraction from the minimum X, the east edge, toward the maximum X. The parameter on that helper is named `EastFromWest`.
+- `CellCentre` and `CellToWorldXY` project a cell centre. `WorldXYToCell` and `CellAtWorld` project the other way. The chart copies are `CellToChartXY`, `ChartXYToCell`, and `CellAtChart`. They take `ChartBounds`.
+- `TerrainPointToWorld` and `TerrainPointAt` project a point. The chart copies are `TerrainPointToChart` and `ChartTerrainPointAt`. `SampleChartBiome` is the chart copy of `SampleBiome`. `TerrainPointAt` writes `OutTerrainPoint`, an `FIntPoint` whose X and Y are `terrainX` and `terrainY`. The helpers next to them are `WorldAtPoint`, `PointAtWorld`, and `PointUnderCell`. Their indexes are `TerrainX` and `TerrainY`. `PointAtWorld` passes the fraction from the minimum X, the east edge, toward the maximum X. The parameter on that helper is named `EastFromWest`.
 - `WorldMapParseBangLocation` turns a `! row,column` line, counting from 1, into a cell. The column minus 1 is `CellX`. The row minus 1 is `CellY`.
 
 [SolidWorldChartMark.h](SolidWorldChartMark.h) stores `ChartCm` as the cell centre in chart. +X is west and +Y is north. `TerrainPosition` shifts that value into world.
 
-[SolidTerrainMap.h](SolidTerrainMap.h) and [SolidTerrainMap.cpp](SolidTerrainMap.cpp) are terrain. `Build` centres `OriginXY` on the world origin, so terrain index 0 is at world (−51200, −51200). `GetWorldMinXY` and `GetWorldMaxXY` are the centred square. `GetPoint(TerrainX, TerrainY)` is row-major from the terrain grid's south-east corner. `WorldToIndex` writes `OutTerrainX` and `OutTerrainY`. `SampleHeight` and `SamplePoint` interpolate inside the surrounding quad, and the biome stays on the nearest point.
+[SolidTerrainMap.h](SolidTerrainMap.h) and [SolidTerrainMap.cpp](SolidTerrainMap.cpp) are terrain. `Build` centres `WorldMinCm` on the world origin, so terrain index 0 is at world (−51200, −51200). `GetWorldMinXY` and `GetWorldMaxXY` are the centred square. `GetPoint(TerrainX, TerrainY)` is row-major from the terrain grid's south-east corner. `WorldToIndex` writes `OutTerrainX` and `OutTerrainY`. `SampleHeight` and `SamplePoint` interpolate inside the surrounding quad, and the biome stays on the nearest point.
 
-[SolidTerrainTypes.h](SolidTerrainTypes.h) is one terrain point: `FSolidTerrainPoint` holds world X, world Y, and height. The quad-material comments name corners 00, 10, 01, and 11, and call corner 11 the northwest corner.
+[SolidTerrainTypes.h](SolidTerrainTypes.h) is one terrain point: `FSolidTerrainPoint` holds `WorldX`, `WorldY`, and height. The quad-material comments name corners 00, 10, 01, and 11, and call corner 11 the northwest corner.
 
 [SolidTerrainChunk.cpp](SolidTerrainChunk.cpp) builds a chunk mesh from the chunk origin plus the centimetres inside it. The quad loop uses corners `I00`, `I10`, `I01`, and `I11`. The vertex west of corner 11 is two steps past the quad's south-east.
 

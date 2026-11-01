@@ -154,8 +154,8 @@ FSolidTerrainPoint ASolidTerrainStreamer::GetTerrainPointAt(const FVector& World
 	}
 
 	FSolidTerrainPoint Fallback;
-	Fallback.X = WorldLocation.X;
-	Fallback.Y = WorldLocation.Y;
+	Fallback.WorldX = WorldLocation.X;
+	Fallback.WorldY = WorldLocation.Y;
 	Fallback.Height = SampleHeightAtWorld(WorldLocation);
 	return Fallback;
 }

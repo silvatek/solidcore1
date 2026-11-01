@@ -18,19 +18,19 @@ enum class ESolidBiome : uint8
 	Road UMETA(DisplayName = "Road"),
 };
 
-/** One cell in the world simulation grid (gameplay + heightfield source). */
+/** One terrain point. WorldX and WorldY are world centimetres. */
 USTRUCT(BlueprintType)
 struct FSolidTerrainPoint
 {
 	GENERATED_BODY()
 
-	/** World X in cm. */
+	/** WorldX in centimetres. */
 	UPROPERTY(BlueprintReadOnly, Category = "Terrain")
-	float X = 0.f;
+	float WorldX = 0.f;
 
-	/** World Y in cm. */
+	/** WorldY in centimetres. */
 	UPROPERTY(BlueprintReadOnly, Category = "Terrain")
-	float Y = 0.f;
+	float WorldY = 0.f;
 
 	/** World surface height in cm. */
 	UPROPERTY(BlueprintReadOnly, Category = "Terrain")

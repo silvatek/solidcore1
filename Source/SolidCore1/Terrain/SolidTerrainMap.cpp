@@ -28,7 +28,7 @@ void USolidTerrainMap::Build(
 	Seed = InSeed;
 
 	// Center the grid on world origin so the default spawn sits mid-map.
-	OriginXY = FVector2D(
+	WorldMinCm = FVector2D(
 		-0.5f * static_cast<float>(GridWidth - 1) * PointSpacing,
 		-0.5f * static_cast<float>(GridHeight - 1) * PointSpacing);
 
@@ -46,7 +46,7 @@ void USolidTerrainMap::Build(
 	}
 
 	// Fully fogged until the player is placed. The Z cell is the spawn, not the fog center.
-	FogOriginXY = FVector2D::ZeroVector;
+	FogOriginWorldCm = FVector2D::ZeroVector;
 
 	Points.SetNum(GridWidth * GridHeight);
 
@@ -59,22 +59,22 @@ void USolidTerrainMap::Build(
 		for (int32 TerrainX = 0; TerrainX < GridWidth; ++TerrainX)
 		{
 			FSolidTerrainPoint& Point = Points[TerrainY * GridWidth + TerrainX];
-			Point.X = OriginXY.X + static_cast<float>(TerrainX) * PointSpacing;
-			Point.Y = OriginXY.Y + static_cast<float>(TerrainY) * PointSpacing;
+			Point.WorldX = WorldMinCm.X + static_cast<float>(TerrainX) * PointSpacing;
+			Point.WorldY = WorldMinCm.Y + static_cast<float>(TerrainY) * PointSpacing;
 			if (bUseWorldMap)
 			{
-				Point.Biome = WorldMap->SampleBiome(Point.X, Point.Y, WorldMin, WorldMax);
+				Point.Biome = WorldMap->SampleBiome(Point.WorldX, Point.WorldY, WorldMin, WorldMax);
 				const float Variance = SolidBiome::Of(Point.Biome).HeightVarianceCm();
 				Point.Height = SolidTerrainNoise::SampleHeight(
-					Point.X, Point.Y, Seed, FrequencyScale, Variance, BaseHeight);
+					Point.WorldX, Point.WorldY, Seed, FrequencyScale, Variance, BaseHeight);
 			}
 			else
 			{
 				Point.Height = SolidTerrainNoise::SampleHeight(
-					Point.X, Point.Y, Seed, FrequencyScale, Amplitude, BaseHeight);
+					Point.WorldX, Point.WorldY, Seed, FrequencyScale, Amplitude, BaseHeight);
 				const float HeightNorm = FMath::Clamp(
 					(Point.Height - BaseHeight) / FMath::Max(Amplitude, 1.f), 0.f, 1.f);
-				Point.Biome = ChooseBiome(Point.X, Point.Y, HeightNorm, Seed);
+				Point.Biome = ChooseBiome(Point.WorldX, Point.WorldY, HeightNorm, Seed);
 			}
 			FillThreatAndFog(Point);
 			Point.Height += SolidBiome::Of(Point.Biome).HeightOffsetCm();
@@ -101,7 +101,7 @@ void USolidTerrainMap::Build(
 			{
 				continue;
 			}
-			if (WorldMap->SampleBiome(Point.X, Point.Y, WorldMin, WorldMax) == ESolidBiome::Road)
+			if (WorldMap->SampleBiome(Point.WorldX, Point.WorldY, WorldMin, WorldMax) == ESolidBiome::Road)
 			{
 				Point.Biome = ESolidBiome::Road;
 			}
@@ -111,9 +111,9 @@ void USolidTerrainMap::Build(
 	UE_LOG(LogSolid, Warning,
 		TEXT("TerrainMap built: %dx%d spacing=%.0f cm seed=%d origin=(%.0f,%.0f) extent=(%.0f,%.0f) worldMap=%s fogOrigin=(%.0f,%.0f)"),
 		GridWidth, GridHeight, PointSpacing, Seed,
-		OriginXY.X, OriginXY.Y, GetWorldMaxXY().X, GetWorldMaxXY().Y,
+		WorldMinCm.X, WorldMinCm.Y, GetWorldMaxXY().X, GetWorldMaxXY().Y,
 		bUseWorldMap ? TEXT("yes") : TEXT("no"),
-		FogOriginXY.X, FogOriginXY.Y);
+		FogOriginWorldCm.X, FogOriginWorldCm.Y);
 }
 
 bool USolidTerrainMap::GetStartTownWorldXY(FVector2D& OutWorldXY) const
@@ -127,8 +127,8 @@ bool USolidTerrainMap::GetStartTownWorldXY(FVector2D& OutWorldXY) const
 
 void USolidTerrainMap::WorldToIndex(float WorldX, float WorldY, int32& OutTerrainX, int32& OutTerrainY) const
 {
-	const float FX = (WorldX - OriginXY.X) / PointSpacing;
-	const float FY = (WorldY - OriginXY.Y) / PointSpacing;
+	const float FX = (WorldX - WorldMinCm.X) / PointSpacing;
+	const float FY = (WorldY - WorldMinCm.Y) / PointSpacing;
 	OutTerrainX = FMath::Clamp(FMath::RoundToInt(FX), 0, GridWidth - 1);
 	OutTerrainY = FMath::Clamp(FMath::RoundToInt(FY), 0, GridHeight - 1);
 }
@@ -156,8 +156,8 @@ float USolidTerrainMap::SampleHeight(float WorldX, float WorldY) const
 		return 0.f;
 	}
 
-	const float FX = (WorldX - OriginXY.X) / PointSpacing;
-	const float FY = (WorldY - OriginXY.Y) / PointSpacing;
+	const float FX = (WorldX - WorldMinCm.X) / PointSpacing;
+	const float FY = (WorldY - WorldMinCm.Y) / PointSpacing;
 	const int32 TerrainX0 = FMath::Clamp(FMath::FloorToInt(FX), 0, GridWidth - 1);
 	const int32 TerrainY0 = FMath::Clamp(FMath::FloorToInt(FY), 0, GridHeight - 1);
 	const int32 TerrainX1 = FMath::Min(TerrainX0 + 1, GridWidth - 1);
@@ -175,16 +175,16 @@ float USolidTerrainMap::SampleHeight(float WorldX, float WorldY) const
 FSolidTerrainPoint USolidTerrainMap::SamplePoint(float WorldX, float WorldY) const
 {
 	FSolidTerrainPoint Result;
-	Result.X = WorldX;
-	Result.Y = WorldY;
+	Result.WorldX = WorldX;
+	Result.WorldY = WorldY;
 
 	if (!IsBuilt())
 	{
 		return Result;
 	}
 
-	const float FX = (WorldX - OriginXY.X) / PointSpacing;
-	const float FY = (WorldY - OriginXY.Y) / PointSpacing;
+	const float FX = (WorldX - WorldMinCm.X) / PointSpacing;
+	const float FY = (WorldY - WorldMinCm.Y) / PointSpacing;
 	const int32 TerrainX0 = FMath::Clamp(FMath::FloorToInt(FX), 0, GridWidth - 1);
 	const int32 TerrainY0 = FMath::Clamp(FMath::FloorToInt(FY), 0, GridHeight - 1);
 	const int32 TerrainX1 = FMath::Min(TerrainX0 + 1, GridWidth - 1);
@@ -257,10 +257,10 @@ void USolidTerrainMap::CenterExplorationFogOn(const float WorldX, const float Wo
 		return;
 	}
 
-	FogOriginXY = FVector2D(WorldX, WorldY);
+	FogOriginWorldCm = FVector2D(WorldX, WorldY);
 	for (FSolidTerrainPoint& Point : Points)
 	{
-		const float DistM = (FVector2D(Point.X, Point.Y) - FogOriginXY).Size() * 0.01f;
+		const float DistM = (FVector2D(Point.WorldX, Point.WorldY) - FogOriginWorldCm).Size() * 0.01f;
 		Point.Fog = SolidTerrainFog::FogFromDistanceMeters(DistM);
 	}
 	TrackClearFogBounds();
@@ -342,7 +342,7 @@ int32 USolidTerrainMap::ApplyExplorationFogAround(
 		}
 		if (OutChangedXY)
 		{
-			OutChangedXY->Add(FVector2D(Point.X, Point.Y));
+			OutChangedXY->Add(FVector2D(Point.WorldX, Point.WorldY));
 		}
 		return true;
 	};
@@ -364,19 +364,19 @@ int32 USolidTerrainMap::ApplyExplorationFogAround(
 	auto VisitBox = [&](float MinX, float MaxX, float MinY, float MaxY, bool bRingsOnly, float InnerSq, float OuterSq)
 	{
 		const int32 TerrainX0 = FMath::Clamp(
-			FMath::FloorToInt((MinX - OriginXY.X) / PointSpacing), 0, GridWidth - 1);
+			FMath::FloorToInt((MinX - WorldMinCm.X) / PointSpacing), 0, GridWidth - 1);
 		const int32 TerrainX1 = FMath::Clamp(
-			FMath::CeilToInt((MaxX - OriginXY.X) / PointSpacing), 0, GridWidth - 1);
+			FMath::CeilToInt((MaxX - WorldMinCm.X) / PointSpacing), 0, GridWidth - 1);
 		const int32 TerrainY0 = FMath::Clamp(
-			FMath::FloorToInt((MinY - OriginXY.Y) / PointSpacing), 0, GridHeight - 1);
+			FMath::FloorToInt((MinY - WorldMinCm.Y) / PointSpacing), 0, GridHeight - 1);
 		const int32 TerrainY1 = FMath::Clamp(
-			FMath::CeilToInt((MaxY - OriginXY.Y) / PointSpacing), 0, GridHeight - 1);
+			FMath::CeilToInt((MaxY - WorldMinCm.Y) / PointSpacing), 0, GridHeight - 1);
 		for (int32 TerrainY = TerrainY0; TerrainY <= TerrainY1; ++TerrainY)
 		{
 			for (int32 TerrainX = TerrainX0; TerrainX <= TerrainX1; ++TerrainX)
 			{
 				FSolidTerrainPoint& Point = Points[TerrainY * GridWidth + TerrainX];
-				const float DistSq = FVector2D::DistSquared(FVector2D(Point.X, Point.Y), FVector2D(WorldX, WorldY));
+				const float DistSq = FVector2D::DistSquared(FVector2D(Point.WorldX, Point.WorldY), FVector2D(WorldX, WorldY));
 				if (bRingsOnly && (DistSq < InnerSq || DistSq > OuterSq))
 				{
 					continue;
@@ -384,7 +384,7 @@ int32 USolidTerrainMap::ApplyExplorationFogAround(
 				if (bHavePrev)
 				{
 					const float PrevDistSq = FVector2D::DistSquared(
-						FVector2D(Point.X, Point.Y), FVector2D(PrevWorldX, PrevWorldY));
+						FVector2D(Point.WorldX, Point.WorldY), FVector2D(PrevWorldX, PrevWorldY));
 					if (AlreadyCovered(DistSq, PrevDistSq))
 					{
 						continue;
@@ -427,8 +427,8 @@ int32 USolidTerrainMap::ApplyExplorationFogAround(
 
 bool USolidTerrainMap::GetClearFogBounds(FVector2D& OutMin, FVector2D& OutMax) const
 {
-	OutMin = ClearFogMinXY;
-	OutMax = ClearFogMaxXY;
+	OutMin = ClearFogMinWorldCm;
+	OutMax = ClearFogMaxWorldCm;
 	return bHasClearFog;
 }
 
@@ -447,16 +447,16 @@ void USolidTerrainMap::TrackClearFogBounds()
 		}
 		if (!bHasClearFog)
 		{
-			MinX = MaxX = Point.X;
-			MinY = MaxY = Point.Y;
+			MinX = MaxX = Point.WorldX;
+			MinY = MaxY = Point.WorldY;
 			bHasClearFog = true;
 			continue;
 		}
-		MinX = FMath::Min(MinX, Point.X);
-		MaxX = FMath::Max(MaxX, Point.X);
-		MinY = FMath::Min(MinY, Point.Y);
-		MaxY = FMath::Max(MaxY, Point.Y);
+		MinX = FMath::Min(MinX, Point.WorldX);
+		MaxX = FMath::Max(MaxX, Point.WorldX);
+		MinY = FMath::Min(MinY, Point.WorldY);
+		MaxY = FMath::Max(MaxY, Point.WorldY);
 	}
-	ClearFogMinXY = FVector2D(MinX, MinY);
-	ClearFogMaxXY = FVector2D(MaxX, MaxY);
+	ClearFogMinWorldCm = FVector2D(MinX, MinY);
+	ClearFogMaxWorldCm = FVector2D(MaxX, MaxY);
 }

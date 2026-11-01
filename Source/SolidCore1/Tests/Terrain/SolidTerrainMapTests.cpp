@@ -17,7 +17,7 @@ bool FSolidMapBuildSmokeTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("map reports built"), Map->IsBuilt());
 	TestEqual(TEXT("point count"), Map->GetPointCount(), 65 * 65);
 
-	const FVector2D FogOrigin = Map->GetFogOriginXY();
+	const FVector2D FogOrigin = Map->GetFogOriginWorldCm();
 	const FSolidTerrainPoint Origin = Map->SamplePoint(FogOrigin.X, FogOrigin.Y);
 	TestTrue(TEXT("fog origin starts clear"), FMath::IsNearlyEqual(Origin.Fog, 0.f));
 
@@ -68,7 +68,7 @@ bool FSolidMapTrailClearTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("found second full-fog point outside trail apply radius"),
 		SolidTerrainTestHelpers::FindUntouchedFullFogPoint(Map, TrailXY, UntouchedXY));
 
-	const FVector2D FogOrigin = Map->GetFogOriginXY();
+	const FVector2D FogOrigin = Map->GetFogOriginWorldCm();
 	FVector2D TowardOrigin = FogOrigin - TrailXY;
 	if (!TowardOrigin.Normalize())
 	{
@@ -244,7 +244,7 @@ bool FSolidMapClearAllExplorationFogTest::RunTest(const FString& Parameters)
 	{
 		if (Point.Fog > KINDA_SMALL_NUMBER)
 		{
-			AddError(FString::Printf(TEXT("Fog remains %.3f at (%.0f, %.0f)"), Point.Fog, Point.X, Point.Y));
+			AddError(FString::Printf(TEXT("Fog remains %.3f at (%.0f, %.0f)"), Point.Fog, Point.WorldX, Point.WorldY));
 			return false;
 		}
 	}
@@ -267,7 +267,7 @@ bool FSolidMapFogTrailRingsTest::RunTest(const FString& Parameters)
 
 	Map->ApplyExplorationFogAround(TrailXY.X, TrailXY.Y);
 
-	FVector2D TowardOrigin = Map->GetFogOriginXY() - TrailXY;
+	FVector2D TowardOrigin = Map->GetFogOriginWorldCm() - TrailXY;
 	if (!TowardOrigin.Normalize())
 	{
 		TowardOrigin = FVector2D(-1.f, 0.f);

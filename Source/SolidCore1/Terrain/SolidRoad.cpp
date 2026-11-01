@@ -751,7 +751,7 @@ namespace SolidRoad
 		 * The span end closer to the other end of the route.
 		 * A tie, or a bridge with no definition, has no such end.
 		 */
-		bool NearerSpanEnd(const FSolidWorldChartMark& Bridge, const FVector2D& OtherCm, FVector2D& OutCm)
+		bool NearerSpanEnd(const FSolidWorldChartMark& Bridge, const FVector2D& OtherChartCm, FVector2D& OutChartCm)
 		{
 			const SolidBridge::FBridgeMarker* Marker = nullptr;
 			for (const SolidBridge::FBridgeMarker& Defined : SolidBridge::Bridges)
@@ -770,15 +770,15 @@ namespace SolidRoad
 			const FVector2D Along = Marker->Orientation == SolidBridge::EOrientation::NorthSouth
 				? FVector2D(0.f, Half)
 				: FVector2D(Half, 0.f);
-			const FVector2D OneEnd = Bridge.PositionCm + Along;
-			const FVector2D OtherEnd = Bridge.PositionCm - Along;
-			const float OneDist = FVector2D::DistSquared(OneEnd, OtherCm);
-			const float OtherDist = FVector2D::DistSquared(OtherEnd, OtherCm);
+			const FVector2D OneEnd = Bridge.ChartCm + Along;
+			const FVector2D OtherEnd = Bridge.ChartCm - Along;
+			const float OneDist = FVector2D::DistSquared(OneEnd, OtherChartCm);
+			const float OtherDist = FVector2D::DistSquared(OtherEnd, OtherChartCm);
 			if (FMath::IsNearlyEqual(OneDist, OtherDist))
 			{
 				return false;
 			}
-			OutCm = OneDist < OtherDist ? OneEnd : OtherEnd;
+			OutChartCm = OneDist < OtherDist ? OneEnd : OtherEnd;
 			return true;
 		}
 	}
@@ -807,23 +807,23 @@ namespace SolidRoad
 	bool FSolidRoad::FindRoute(const USolidWorldChart& Map)
 	{
 		Points.Reset();
-		FVector2D Min = FVector2D::ZeroVector;
-		FVector2D Max = FVector2D::ZeroVector;
-		USolidWorldChart::DefaultWorldBounds(Min, Max);
-		FVector2D FromCm = From.PositionCm;
-		FVector2D ToCm = To.PositionCm;
-		if (From.Kind == ESolidWorldChartMarkKind::Bridge && !NearerSpanEnd(From, To.PositionCm, FromCm))
+		FVector2D ChartMin = FVector2D::ZeroVector;
+		FVector2D ChartMax = FVector2D::ZeroVector;
+		USolidWorldChart::ChartBounds(ChartMin, ChartMax);
+		FVector2D FromChartCm = From.ChartCm;
+		FVector2D ToChartCm = To.ChartCm;
+		if (From.Kind == ESolidWorldChartMarkKind::Bridge && !NearerSpanEnd(From, To.ChartCm, FromChartCm))
 		{
 			return false;
 		}
-		if (To.Kind == ESolidWorldChartMarkKind::Bridge && !NearerSpanEnd(To, From.PositionCm, ToCm))
+		if (To.Kind == ESolidWorldChartMarkKind::Bridge && !NearerSpanEnd(To, From.ChartCm, ToChartCm))
 		{
 			return false;
 		}
 		FIntPoint FromPoint = FIntPoint::ZeroValue;
 		FIntPoint ToPoint = FIntPoint::ZeroValue;
-		if (!Map.TerrainPointAt(FromCm.X, FromCm.Y, Min, Max, FromPoint)
-			|| !Map.TerrainPointAt(ToCm.X, ToCm.Y, Min, Max, ToPoint))
+		if (!Map.TerrainPointAt(FromChartCm.X, FromChartCm.Y, ChartMin, ChartMax, FromPoint)
+			|| !Map.TerrainPointAt(ToChartCm.X, ToChartCm.Y, ChartMin, ChartMax, ToPoint))
 		{
 			return false;
 		}

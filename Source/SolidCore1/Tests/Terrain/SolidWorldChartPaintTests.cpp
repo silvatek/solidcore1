@@ -106,7 +106,7 @@ bool FSolidWorldChartPaintTest::RunTest(const FString& Parameters)
 		TestEqual(TEXT("the cave's name"), Chart->Marks[HoldIndex].Name, FString(TEXT("Meagre Dungeon")));
 		FVector2D Centre = FVector2D::ZeroVector;
 		TestTrue(TEXT("the cave cell has a centre"), USolidWorldChart::CellCentre(HoldCell, Centre));
-		TestTrue(TEXT("the cave sits on the cell centre"), FVector2D::Distance(Chart->Marks[HoldIndex].PositionCm, Centre) <= 1.f);
+		TestTrue(TEXT("the cave sits on the cell centre"), FVector2D::Distance(Chart->Marks[HoldIndex].ChartCm, Centre) <= 1.f);
 	}
 
 	TestTrue(TEXT("forest paint leaves the town"), Chart->PaintRun({ TownCell }, ESolidBiome::Forest, Error));
@@ -298,7 +298,7 @@ bool FSolidWorldChartEncounterTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the cell has a centre"), USolidWorldChart::CellCentre(Cell, Centre));
 	TestTrue(
 		TEXT("the encounter sits on the cell centre"),
-		FVector2D::Distance(Chart->Marks[MarkIndex].PositionCm, Centre) <= 1.f);
+		FVector2D::Distance(Chart->Marks[MarkIndex].ChartCm, Centre) <= 1.f);
 	TestEqual(TEXT("the encounter leaves the paint"), static_cast<uint8>(Chart->Cells[CellIndex]), PaintBefore);
 
 	TestTrue(TEXT("paint leaves the mark"), Chart->PaintRun({ Cell }, ESolidBiome::Forest, Error));
@@ -336,7 +336,7 @@ bool FSolidWorldChartEncounterTest::RunTest(const FString& Parameters)
 			TestEqual(TEXT("the kept name"), Loaded->GetEncounterMarks()[0].Name, FString(TEXT("Iglin Bridge")));
 			TestTrue(
 				TEXT("the kept position is the cell centre"),
-				FVector2D::Distance(Loaded->GetEncounterMarks()[0].PositionCm, Centre) <= 1.f);
+				FVector2D::Distance(Loaded->GetEncounterMarks()[0].ChartCm, Centre) <= 1.f);
 		}
 	}
 
@@ -388,13 +388,13 @@ bool FSolidWorldChartPlaceMovesTest::RunTest(const FString& Parameters)
 	const FIntPoint Mouth(3, 3);
 	const FIntPoint MouthMoved(20, 20);
 	TestTrue(TEXT("the entrance places"), Chart->PlaceLairMouth(Mouth, SolidLair::IglinTunnels.Name, true, Error));
-	FVector2D BoundsMin = FVector2D::ZeroVector;
-	FVector2D BoundsMax = FVector2D::ZeroVector;
-	USolidWorldChart::DefaultWorldBounds(BoundsMin, BoundsMax);
+	FVector2D ChartMin = FVector2D::ZeroVector;
+	FVector2D ChartMax = FVector2D::ZeroVector;
+	USolidWorldChart::ChartBounds(ChartMin, ChartMax);
 	FVector2D MouthCentre = FVector2D::ZeroVector;
 	TestTrue(TEXT("the entrance cell has a centre"), USolidWorldChart::CellCentre(Mouth, MouthCentre));
 	FIntPoint MouthPoint = FIntPoint::ZeroValue;
-	TestTrue(TEXT("the entrance point"), Chart->TerrainPointAt(MouthCentre.X, MouthCentre.Y, BoundsMin, BoundsMax, MouthPoint));
+	TestTrue(TEXT("the entrance point"), Chart->TerrainPointAt(MouthCentre.X, MouthCentre.Y, ChartMin, ChartMax, MouthPoint));
 	TestTrue(TEXT("forest covers the entrance"), Chart->PaintBrush({ MouthPoint }, 1, ESolidBiome::Forest, Error));
 	TestEqual(
 		TEXT("the entrance point takes the forest"),
@@ -416,7 +416,7 @@ bool FSolidWorldChartPlaceMovesTest::RunTest(const FString& Parameters)
 	FVector2D MovedCentre = FVector2D::ZeroVector;
 	TestTrue(TEXT("the new cell has a centre"), USolidWorldChart::CellCentre(MouthMoved, MovedCentre));
 	FIntPoint MovedPoint = FIntPoint::ZeroValue;
-	TestTrue(TEXT("the new entrance point"), Chart->TerrainPointAt(MovedCentre.X, MovedCentre.Y, BoundsMin, BoundsMax, MovedPoint));
+	TestTrue(TEXT("the new entrance point"), Chart->TerrainPointAt(MovedCentre.X, MovedCentre.Y, ChartMin, ChartMax, MovedPoint));
 	TestEqual(
 		TEXT("the new entrance point stays grassland"),
 		static_cast<uint8>(Chart->GetPointBiome(MovedPoint)),
@@ -537,7 +537,7 @@ bool FSolidWorldChartBridgeTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("the cell has a centre"), USolidWorldChart::CellCentre(Cell, Centre));
 	TestTrue(
 		TEXT("the bridge sits on the cell centre"),
-		FVector2D::Distance(Chart->Marks[MarkIndex].PositionCm, Centre) <= 1.f);
+		FVector2D::Distance(Chart->Marks[MarkIndex].ChartCm, Centre) <= 1.f);
 	TestEqual(TEXT("the bridge leaves the paint"), static_cast<uint8>(Chart->Cells[CellIndex]), PaintBefore);
 	TestEqual(
 		TEXT("a bridge on grass keeps a grassland point"),
@@ -549,12 +549,12 @@ bool FSolidWorldChartBridgeTest::RunTest(const FString& Parameters)
 		TEXT("the bridge leaves the river point"),
 		static_cast<uint8>(Chart->GetPointBiomeAtCell(Cell.X, Cell.Y)),
 		static_cast<uint8>(ESolidBiome::River));
-	FVector2D BoundsMin = FVector2D::ZeroVector;
-	FVector2D BoundsMax = FVector2D::ZeroVector;
-	USolidWorldChart::DefaultWorldBounds(BoundsMin, BoundsMax);
+	FVector2D ChartMin = FVector2D::ZeroVector;
+	FVector2D ChartMax = FVector2D::ZeroVector;
+	USolidWorldChart::ChartBounds(ChartMin, ChartMax);
 	TestEqual(
 		TEXT("the river beside the bridge stays river"),
-		static_cast<uint8>(Chart->SampleBiome(Centre.X - 200.f, Centre.Y, BoundsMin, BoundsMax)),
+		static_cast<uint8>(Chart->SampleBiome(Centre.X - 200.f, Centre.Y, ChartMin, ChartMax)),
 		static_cast<uint8>(ESolidBiome::River));
 
 	const FIntPoint Moved(15, 9);
@@ -568,7 +568,7 @@ bool FSolidWorldChartBridgeTest::RunTest(const FString& Parameters)
 		TestTrue(TEXT("the new cell has a centre"), USolidWorldChart::CellCentre(Moved, MovedCentre));
 		TestTrue(
 			TEXT("the moved bridge sits on that centre"),
-			FVector2D::Distance(Chart->Marks[MovedIndex].PositionCm, MovedCentre) <= 1.f);
+			FVector2D::Distance(Chart->Marks[MovedIndex].ChartCm, MovedCentre) <= 1.f);
 	}
 	return true;
 }

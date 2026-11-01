@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0873")
+#define SOLID_BUILD_ID TEXT("SC1-0874")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("Cell indexes are named CellX and CellY.")
+#define SOLID_BUILD_NOTE TEXT("A chart position is ChartCm, and a fortress plan corner is PlanPositionCm.")
 #endif

@@ -639,10 +639,10 @@ int32 SolidBridge::FromMarkers(
 		if (!Marker)
 		{
 			UE_LOG(LogSolid, Warning, TEXT("Bridge mark '%s' at (%.0f, %.0f) has no definition"),
-				*Mark.Name, Mark.PositionCm.X, Mark.PositionCm.Y);
+				*Mark.Name, Mark.ChartCm.X, Mark.ChartCm.Y);
 			continue;
 		}
-		const FVector2D Centre = USolidWorldChart::TerrainPosition(Mark.PositionCm, WorldMinXY);
+		const FVector2D Centre = USolidWorldChart::TerrainPosition(Mark.ChartCm, WorldMinXY);
 		FBridge Bridge;
 		if (!Stand(
 			*Marker,
@@ -663,7 +663,7 @@ int32 SolidBridge::FromMarkers(
 		UE_LOG(LogSolid, Warning,
 			TEXT("Bridge '%s' chart (%.0f, %.0f) ground (%.0f, %.0f) deck (%.0f, %.0f, %.0f) to (%.0f, %.0f, %.0f) broken=%d"),
 			*Mark.Name,
-			Mark.PositionCm.X, Mark.PositionCm.Y,
+			Mark.ChartCm.X, Mark.ChartCm.Y,
 			Centre.X, Centre.Y,
 			Deck0.X, Deck0.Y, Deck0.Z,
 			Deck1.X, Deck1.Y, Deck1.Z,

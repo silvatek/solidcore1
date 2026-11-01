@@ -22,7 +22,7 @@ enum class ESolidWorldChartMarkKind : uint8
 };
 
 /**
- * One named place on the chart. Its position is the cell centre, in centimetres.
+ * One named place on the chart. Its position is the cell centre in chart centimetres.
  * Asking the chart turns that position into a cell once, then keeps the cell.
  */
 USTRUCT()
@@ -40,9 +40,9 @@ struct FSolidWorldChartMark
 	UPROPERTY(EditAnywhere, Category = "WorldChart")
 	FString Name;
 
-	/** World position in centimetres, snapped to the cell centre. +X is west, +Y is north. */
+	/** Chart centimetres, snapped to the cell centre. The origin is the south-east corner. +X is west, +Y is north. */
 	UPROPERTY(EditAnywhere, Category = "WorldChart")
-	FVector2D PositionCm = FVector2D::ZeroVector;
+	FVector2D ChartCm = FVector2D::ZeroVector;
 
 	/** Set for a stronghold. A site has no type. */
 	UPROPERTY(EditAnywhere, Category = "WorldChart")

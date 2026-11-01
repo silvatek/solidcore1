@@ -587,11 +587,11 @@ bool FSolidLairExitFacesWestTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	FVector2D WorldMin = FVector2D::ZeroVector;
-	FVector2D WorldMax = FVector2D::ZeroVector;
-	USolidWorldChart::DefaultWorldBounds(WorldMin, WorldMax);
+	FVector2D ChartMin = FVector2D::ZeroVector;
+	FVector2D ChartMax = FVector2D::ZeroVector;
+	USolidWorldChart::ChartBounds(ChartMin, ChartMax);
 	TArray<SolidLair::FEntrance> Mouths;
-	TestEqual(TEXT("both mouths stand"), SolidLair::CollectEntrances(Chart, WorldMin, WorldMax, Mouths), 2);
+	TestEqual(TEXT("both mouths stand"), SolidLair::CollectEntrances(Chart, ChartMin, ChartMax, Mouths), 2);
 	bool bSawExit = false;
 	bool bSawEntrance = false;
 	for (const SolidLair::FEntrance& Mouth : Mouths)

@@ -37,11 +37,11 @@ const TCHAR* USolidWorldChart::ShippedPath()
 	return TEXT("/Game/World/WorldChart");
 }
 
-void USolidWorldChart::DefaultWorldBounds(FVector2D& OutMin, FVector2D& OutMax)
+void USolidWorldChart::ChartBounds(FVector2D& OutChartMin, FVector2D& OutChartMax)
 {
 	const USolidTerrainMap* Terrain = GetDefault<USolidTerrainMap>();
-	OutMin = Terrain->GetWorldMinXY();
-	OutMax = Terrain->GetWorldMaxXY();
+	OutChartMin = Terrain->GetWorldMinXY();
+	OutChartMax = Terrain->GetWorldMaxXY();
 }
 
 bool USolidWorldChart::ImportFromString(const FString& Text)
@@ -51,9 +51,9 @@ bool USolidWorldChart::ImportFromString(const FString& Text)
 		return false;
 	}
 
-	FVector2D WorldMin = FVector2D::ZeroVector;
-	FVector2D WorldMax = FVector2D::ZeroVector;
-	DefaultWorldBounds(WorldMin, WorldMax);
+	FVector2D ChartMin = FVector2D::ZeroVector;
+	FVector2D ChartMax = FVector2D::ZeroVector;
+	ChartBounds(ChartMin, ChartMax);
 
 	TArray<ESolidBiome> NewCells;
 	NewCells.SetNum(MapWidth * MapHeight);
@@ -77,12 +77,12 @@ bool USolidWorldChart::ImportFromString(const FString& Text)
 			Mark.StrongholdType = Bang.StrongholdType;
 			Mark.StrongholdSize = Bang.StrongholdSize;
 			Mark.LairId = Bang.LairId;
-			FVector2D Centre = FVector2D::ZeroVector;
-			if (!CellToWorldXY(Bang.Cell, WorldMin, WorldMax, Centre))
+			FVector2D ChartCm = FVector2D::ZeroVector;
+			if (!CellToWorldXY(Bang.Cell, ChartMin, ChartMax, ChartCm))
 			{
 				continue;
 			}
-			Mark.PositionCm = Centre;
+			Mark.ChartCm = ChartCm;
 			NewMarks.Add(Mark);
 		}
 	}
@@ -143,32 +143,32 @@ namespace
 	}
 }
 
-bool USolidWorldChart::CellCentre(const FIntPoint Cell, FVector2D& OutCm)
+bool USolidWorldChart::CellCentre(const FIntPoint Cell, FVector2D& OutChartCm)
 {
 	if (Cell.X < 0 || Cell.Y < 0 || Cell.X >= USolidWorldChart::MapWidth || Cell.Y >= USolidWorldChart::MapHeight)
 	{
 		return false;
 	}
 
-	FVector2D WorldMin = FVector2D::ZeroVector;
-	FVector2D WorldMax = FVector2D::ZeroVector;
-	DefaultWorldBounds(WorldMin, WorldMax);
-	const float ExtentX = FMath::Max(WorldMax.X - WorldMin.X, 1.f);
-	const float ExtentY = FMath::Max(WorldMax.Y - WorldMin.Y, 1.f);
+	FVector2D ChartMin = FVector2D::ZeroVector;
+	FVector2D ChartMax = FVector2D::ZeroVector;
+	ChartBounds(ChartMin, ChartMax);
+	const float ExtentX = FMath::Max(ChartMax.X - ChartMin.X, 1.f);
+	const float ExtentY = FMath::Max(ChartMax.Y - ChartMin.Y, 1.f);
 	const float CellW = ExtentX / static_cast<float>(USolidWorldChart::MapWidth);
 	const float CellH = ExtentY / static_cast<float>(USolidWorldChart::MapHeight);
 	// Column 0 is west. Row 0 is north. The centre matches USolidWorldChart::CellToWorldXY.
-	OutCm.X = WorldMax.X - (static_cast<float>(Cell.X) + 0.5f) * CellW;
-	OutCm.Y = WorldMax.Y - (static_cast<float>(Cell.Y) + 0.5f) * CellH;
+	OutChartCm.X = ChartMax.X - (static_cast<float>(Cell.X) + 0.5f) * CellW;
+	OutChartCm.Y = ChartMax.Y - (static_cast<float>(Cell.Y) + 0.5f) * CellH;
 	return true;
 }
 
-FVector2D USolidWorldChart::TerrainPosition(const FVector2D& PositionCm, const FVector2D& TerrainMin)
+FVector2D USolidWorldChart::TerrainPosition(const FVector2D& ChartCm, const FVector2D& WorldMin)
 {
 	FVector2D ChartMin = FVector2D::ZeroVector;
 	FVector2D ChartMax = FVector2D::ZeroVector;
-	DefaultWorldBounds(ChartMin, ChartMax);
-	return PositionCm + (TerrainMin - ChartMin);
+	ChartBounds(ChartMin, ChartMax);
+	return ChartCm + (WorldMin - ChartMin);
 }
 
 void USolidWorldChart::PushUndo()
@@ -261,8 +261,8 @@ bool USolidWorldChart::PaintRectangle(const FIntPoint From, const FIntPoint To, 
 bool USolidWorldChart::PlaceMark(const FIntPoint Cell, const FSolidWorldChartMark& Mark, FString& OutError)
 {
 	OutError.Reset();
-	FVector2D Centre = FVector2D::ZeroVector;
-	if (!CellCentre(Cell, Centre) || Cells.Num() != USolidWorldChart::MapWidth * USolidWorldChart::MapHeight)
+	FVector2D ChartCm = FVector2D::ZeroVector;
+	if (!CellCentre(Cell, ChartCm) || Cells.Num() != USolidWorldChart::MapWidth * USolidWorldChart::MapHeight)
 	{
 		OutError = Cells.Num() == USolidWorldChart::MapWidth * USolidWorldChart::MapHeight
 			? TEXT("That cell is off the map.")
@@ -277,10 +277,10 @@ bool USolidWorldChart::PlaceMark(const FIntPoint Cell, const FSolidWorldChartMar
 
 	PushUndo();
 	FSolidWorldChartMark Stored = Mark;
-	Stored.PositionCm = Centre;
+	Stored.ChartCm = ChartCm;
 	for (int32 Index = Marks.Num() - 1; Index >= 0; --Index)
 	{
-		const bool bHere = FVector2D::Distance(Marks[Index].PositionCm, Centre) <= 1.f;
+		const bool bHere = FVector2D::Distance(Marks[Index].ChartCm, ChartCm) <= 1.f;
 		if (!bHere && !SamePlacedMark(Marks[Index], Stored))
 		{
 			continue;
@@ -461,14 +461,14 @@ bool USolidWorldChart::DeleteMark(const FIntPoint Cell, FString& OutError)
 
 int32 USolidWorldChart::MarkAtCell(const FIntPoint Cell) const
 {
-	FVector2D Centre = FVector2D::ZeroVector;
-	if (!CellCentre(Cell, Centre))
+	FVector2D ChartCm = FVector2D::ZeroVector;
+	if (!CellCentre(Cell, ChartCm))
 	{
 		return INDEX_NONE;
 	}
 	for (int32 Index = 0; Index < Marks.Num(); ++Index)
 	{
-		if (FVector2D::Distance(Marks[Index].PositionCm, Centre) <= 1.f)
+		if (FVector2D::Distance(Marks[Index].ChartCm, ChartCm) <= 1.f)
 		{
 			return Index;
 		}
@@ -1127,20 +1127,20 @@ bool USolidWorldChart::BuildQuery() const
 	// A mark position becomes a cell once. That conversion needs a loaded map.
 	bIsLoaded = true;
 
-	FVector2D WorldMin = FVector2D::ZeroVector;
-	FVector2D WorldMax = FVector2D::ZeroVector;
-	USolidWorldChart::DefaultWorldBounds(WorldMin, WorldMax);
+	FVector2D ChartMin = FVector2D::ZeroVector;
+	FVector2D ChartMax = FVector2D::ZeroVector;
+	USolidWorldChart::ChartBounds(ChartMin, ChartMax);
 	for (const FSolidWorldChartMark& Mark : Marks)
 	{
 		if (Mark.Kind == ESolidWorldChartMarkKind::Encounter)
 		{
 			FSolidWorldEncounterMark Found;
 			Found.Name = Mark.Name;
-			Found.PositionCm = Mark.PositionCm;
+			Found.ChartCm = Mark.ChartCm;
 			EncounterMarks.Add(Found);
 		}
 		FIntPoint Cell = FIntPoint::ZeroValue;
-		if (!CellAtWorld(Mark.PositionCm.X, Mark.PositionCm.Y, WorldMin, WorldMax, Cell))
+		if (!CellAtWorld(Mark.ChartCm.X, Mark.ChartCm.Y, ChartMin, ChartMax, Cell))
 		{
 			continue;
 		}
@@ -1531,16 +1531,16 @@ void USolidWorldChart::CopyPlayOntoPoints(const bool bForce) const
 		return;
 	}
 
-	FVector2D Min = FVector2D::ZeroVector;
-	FVector2D Max = FVector2D::ZeroVector;
-	DefaultWorldBounds(Min, Max);
+	FVector2D ChartMin = FVector2D::ZeroVector;
+	FVector2D ChartMax = FVector2D::ZeroVector;
+	ChartBounds(ChartMin, ChartMax);
 	Points.SetNum(PointCount);
 	for (int32 IY = 0; IY < PointAxis; ++IY)
 	{
 		for (int32 IX = 0; IX < PointAxis; ++IX)
 		{
-			const FVector2D World = WorldAtPoint(IX, IY, Min, Max);
-			Points[PointSlot(IX, IY)] = SampleCellPlay(World.X, World.Y, Min, Max);
+			const FVector2D ChartCm = WorldAtPoint(IX, IY, ChartMin, ChartMax);
+			Points[PointSlot(IX, IY)] = SampleCellPlay(ChartCm.X, ChartCm.Y, ChartMin, ChartMax);
 		}
 	}
 }
@@ -1632,17 +1632,17 @@ void USolidWorldChart::SetPointsInCells(const TArray<int32>& CellIndexes, const 
 		Want.Add(Index);
 	}
 
-	FVector2D Min = FVector2D::ZeroVector;
-	FVector2D Max = FVector2D::ZeroVector;
-	DefaultWorldBounds(Min, Max);
+	FVector2D ChartMin = FVector2D::ZeroVector;
+	FVector2D ChartMax = FVector2D::ZeroVector;
+	ChartBounds(ChartMin, ChartMax);
 	for (int32 IY = 0; IY < PointAxis; ++IY)
 	{
 		for (int32 IX = 0; IX < PointAxis; ++IX)
 		{
-			const FVector2D World = WorldAtPoint(IX, IY, Min, Max);
+			const FVector2D ChartCm = WorldAtPoint(IX, IY, ChartMin, ChartMax);
 			int32 Col = 0;
 			int32 Row = 0;
-			if (!WorldXYToCell(World.X, World.Y, Min, Max, Col, Row))
+			if (!WorldXYToCell(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, Col, Row))
 			{
 				continue;
 			}
@@ -2202,19 +2202,19 @@ namespace
 		TArray<FIntPoint>& OutCells)
 	{
 		OutCells.Reset();
-		FVector2D Min = FVector2D::ZeroVector;
-		FVector2D Max = FVector2D::ZeroVector;
-		USolidWorldChart::DefaultWorldBounds(Min, Max);
+		FVector2D ChartMin = FVector2D::ZeroVector;
+		FVector2D ChartMax = FVector2D::ZeroVector;
+		USolidWorldChart::ChartBounds(ChartMin, ChartMax);
 		for (const FIntPoint& Point : Points)
 		{
-			FVector2D World = FVector2D::ZeroVector;
-			if (!Map.TerrainPointToWorld(Point, Min, Max, World))
+			FVector2D ChartCm = FVector2D::ZeroVector;
+			if (!Map.TerrainPointToWorld(Point, ChartMin, ChartMax, ChartCm))
 			{
 				OutCells.Reset();
 				return false;
 			}
 			FIntPoint Cell = FIntPoint::ZeroValue;
-			if (!Map.CellAtWorld(World.X, World.Y, Min, Max, Cell))
+			if (!Map.CellAtWorld(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, Cell))
 			{
 				OutCells.Reset();
 				return false;

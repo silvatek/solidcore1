@@ -1030,7 +1030,7 @@ void FSolidWorldChartEdMode::PlaceCurrentMark()
 	TArray<FVector2D> Before;
 	for (const FSolidWorldChartMark& Mark : Chart->Marks)
 	{
-		Before.Add(Mark.PositionCm);
+		Before.Add(Mark.ChartCm);
 	}
 
 	FString Error;
@@ -1102,13 +1102,13 @@ void FSolidWorldChartEdMode::PlaceCurrentMark()
 	{
 		TArray<FIntPoint> Cells;
 		Cells.Add(CurrentCell);
-		FVector2D Min = FVector2D::ZeroVector;
-		FVector2D Max = FVector2D::ZeroVector;
-		USolidWorldChart::DefaultWorldBounds(Min, Max);
-		for (const FVector2D& Position : Before)
+		FVector2D ChartMin = FVector2D::ZeroVector;
+		FVector2D ChartMax = FVector2D::ZeroVector;
+		USolidWorldChart::ChartBounds(ChartMin, ChartMax);
+		for (const FVector2D& ChartCm : Before)
 		{
 			FIntPoint Cell = FIntPoint::ZeroValue;
-			if (Chart->CellAtWorld(Position.X, Position.Y, Min, Max, Cell)
+			if (Chart->CellAtWorld(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, Cell)
 				&& Chart->MarkAtCell(Cell) == INDEX_NONE)
 			{
 				Cells.AddUnique(Cell);
@@ -1690,7 +1690,7 @@ bool FSolidWorldChartEdMode::MarkLocation(const FSolidWorldChartMark& Mark, FVec
 	{
 		return false;
 	}
-	const FVector2D XY = USolidWorldChart::TerrainPosition(Mark.PositionCm, Terrain->GetWorldMinXY());
+	const FVector2D XY = USolidWorldChart::TerrainPosition(Mark.ChartCm, Terrain->GetWorldMinXY());
 	OutLocation = FVector(XY.X, XY.Y, Terrain->SampleHeight(XY.X, XY.Y) + 800.f);
 	return true;
 }
@@ -1899,7 +1899,7 @@ FString FSolidWorldChartEdMode::DescribePoint(const FIntPoint& Point) const
 	for (const FSolidWorldChartMark& Mark : Chart->Marks)
 	{
 		FIntPoint MarkPoint = FIntPoint::ZeroValue;
-		const FVector2D Shifted = USolidWorldChart::TerrainPosition(Mark.PositionCm, Terrain->GetWorldMinXY());
+		const FVector2D Shifted = USolidWorldChart::TerrainPosition(Mark.ChartCm, Terrain->GetWorldMinXY());
 		if (!WorldMap->TerrainPointAt(Shifted.X, Shifted.Y, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), MarkPoint))
 		{
 			continue;

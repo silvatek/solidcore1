@@ -240,7 +240,7 @@ namespace SolidStronghold
 	}
 
 	void FSolidFortress::AddBuilding(
-		const FVector2D PositionCm,
+		const FVector2D PlanPositionCm,
 		const FVector2D FootprintCm,
 		const ESolidStrongholdOrientation InFacing,
 		const std::initializer_list<ESolidStrongholdRoom> InFloors)
@@ -248,7 +248,7 @@ namespace SolidStronghold
 		FSolidFortressBuilding Building;
 		Building.Floors = InFloors;
 		Building.Facing = InFacing;
-		Building.InnerMinCm = PositionCm;
+		Building.InnerMinCm = PlanPositionCm;
 		Building.InnerWidthCm = FootprintCm.X;
 		Building.InnerDepthCm = FootprintCm.Y;
 		if (InFacing == ESolidStrongholdOrientation::EastFace
@@ -317,48 +317,48 @@ namespace SolidStronghold
 	}
 
 	void FSolidFortress::AddMediumHigh(
-		const FVector2D PositionCm,
+		const FVector2D PlanPositionCm,
 		const ESolidStrongholdOrientation InFacing,
 		const std::initializer_list<ESolidStrongholdRoom> InFloors)
 	{
 		const float MediumWidth = 5.f * SolidStrongholdGrid::SideCm();
 		// The medium span, plus the top landing. The ground landing is the first run of that span.
 		const float MediumLength = 4.5f * SolidStrongholdGrid::FlatToFlatCm + LandingRunCm;
-		AddBuilding(PositionCm, FVector2D(MediumLength, MediumWidth), InFacing, InFloors);
+		AddBuilding(PlanPositionCm, FVector2D(MediumLength, MediumWidth), InFacing, InFloors);
 	}
 
 	void FSolidFortress::AddLargeHigh(
-		const FVector2D PositionCm,
+		const FVector2D PlanPositionCm,
 		const ESolidStrongholdOrientation InFacing,
 		const std::initializer_list<ESolidStrongholdRoom> InFloors)
 	{
 		const float LargeDepth = 8.f * SolidStrongholdGrid::SideCm();
 		const float LargeLength = 4.5f * SolidStrongholdGrid::FlatToFlatCm + LandingRunCm;
-		AddBuilding(PositionCm, FVector2D(LargeLength, LargeDepth), InFacing, InFloors);
+		AddBuilding(PlanPositionCm, FVector2D(LargeLength, LargeDepth), InFacing, InFloors);
 	}
 
 	void FSolidFortress::AddMediumLow(
-		const FVector2D PositionCm,
+		const FVector2D PlanPositionCm,
 		const ESolidStrongholdOrientation InFacing)
 	{
 		const float MediumWidth = 4.5f * SolidStrongholdGrid::FlatToFlatCm;
 		const float MediumDepth = 5.f * SolidStrongholdGrid::SideCm();
-		AddBuilding(PositionCm, FVector2D(MediumWidth, MediumDepth), InFacing, { ESolidStrongholdRoom::Medium });
+		AddBuilding(PlanPositionCm, FVector2D(MediumWidth, MediumDepth), InFacing, { ESolidStrongholdRoom::Medium });
 	}
 
 	void FSolidFortress::AddSmallLow(
-		const FVector2D PositionCm,
+		const FVector2D PlanPositionCm,
 		const ESolidStrongholdOrientation InFacing)
 	{
 		const float SmallWidth = 2.5f * SolidStrongholdGrid::FlatToFlatCm;
 		const float SmallDepth = 5.f * SolidStrongholdGrid::SideCm();
-		AddBuilding(PositionCm, FVector2D(SmallWidth, SmallDepth), InFacing, { ESolidStrongholdRoom::Small });
+		AddBuilding(PlanPositionCm, FVector2D(SmallWidth, SmallDepth), InFacing, { ESolidStrongholdRoom::Small });
 	}
 
-	void FSolidFortress::AddCourtyard(const FVector2D PositionCm, const FVector2D SizeCm)
+	void FSolidFortress::AddCourtyard(const FVector2D PlanPositionCm, const FVector2D SizeCm)
 	{
 		FSolidFortressBuilding Gap;
-		Gap.InnerMinCm = PositionCm;
+		Gap.InnerMinCm = PlanPositionCm;
 		Gap.InnerWidthCm = SizeCm.X;
 		Gap.InnerDepthCm = SizeCm.Y;
 		ApplyNorthAnchor(Gap);

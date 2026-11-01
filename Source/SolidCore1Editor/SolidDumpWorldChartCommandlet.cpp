@@ -35,17 +35,17 @@ namespace
 	 * Row and column count from 1 at the top-left, as Content/WorldMap.txt does.
 	 * The position is a cell centre in the chart's centimetre rectangle.
 	 */
-	bool CellOfPosition(const FVector2D& PositionCm, int32& OutRow, int32& OutColumn)
+	bool CellOfPosition(const FVector2D& ChartCm, int32& OutRow, int32& OutColumn)
 	{
-		FVector2D WorldMin = FVector2D::ZeroVector;
-		FVector2D WorldMax = FVector2D::ZeroVector;
-		USolidWorldChart::DefaultWorldBounds(WorldMin, WorldMax);
-		const float ExtentX = FMath::Max(WorldMax.X - WorldMin.X, 1.f);
-		const float ExtentY = FMath::Max(WorldMax.Y - WorldMin.Y, 1.f);
+		FVector2D ChartMin = FVector2D::ZeroVector;
+		FVector2D ChartMax = FVector2D::ZeroVector;
+		USolidWorldChart::ChartBounds(ChartMin, ChartMax);
+		const float ExtentX = FMath::Max(ChartMax.X - ChartMin.X, 1.f);
+		const float ExtentY = FMath::Max(ChartMax.Y - ChartMin.Y, 1.f);
 		const float CellW = ExtentX / static_cast<float>(USolidWorldChart::MapWidth);
 		const float CellH = ExtentY / static_cast<float>(USolidWorldChart::MapHeight);
-		const float ColumnIndex = (WorldMax.X - PositionCm.X) / CellW - 0.5f;
-		const float RowIndex = (WorldMax.Y - PositionCm.Y) / CellH - 0.5f;
+		const float ColumnIndex = (ChartMax.X - ChartCm.X) / CellW - 0.5f;
+		const float RowIndex = (ChartMax.Y - ChartCm.Y) / CellH - 0.5f;
 		const int32 Column = FMath::RoundToInt(ColumnIndex);
 		const int32 Row = FMath::RoundToInt(RowIndex);
 		if (Column < 0 || Row < 0
@@ -64,7 +64,7 @@ namespace
 	 * Where the chart mode draws this mark. The chart rectangle starts at the
 	 * terrain class default, and a built map is centred on the origin.
 	 */
-	FVector2D GroundCm(const FVector2D& PositionCm)
+	FVector2D GroundCm(const FVector2D& ChartCm)
 	{
 		const USolidTerrainMap* Terrain = GetDefault<USolidTerrainMap>();
 		const float Spacing = Terrain ? Terrain->PointSpacing : 200.f;
@@ -73,7 +73,7 @@ namespace
 		const FVector2D BuiltMin(
 			-0.5f * static_cast<float>(FMath::Max(Width - 1, 0)) * Spacing,
 			-0.5f * static_cast<float>(FMath::Max(Height - 1, 0)) * Spacing);
-		return USolidWorldChart::TerrainPosition(PositionCm, BuiltMin);
+		return USolidWorldChart::TerrainPosition(ChartCm, BuiltMin);
 	}
 
 	TSharedRef<FJsonObject> MarkJson(const FSolidWorldChartMark& Mark)
@@ -83,16 +83,16 @@ namespace
 		Object->SetStringField(TEXT("name"), Mark.Name);
 		int32 Row = 0;
 		int32 Column = 0;
-		if (CellOfPosition(Mark.PositionCm, Row, Column))
+		if (CellOfPosition(Mark.ChartCm, Row, Column))
 		{
 			Object->SetNumberField(TEXT("row"), Row);
 			Object->SetNumberField(TEXT("column"), Column);
 		}
 		TArray<TSharedPtr<FJsonValue>> Position;
-		Position.Add(MakeShared<FJsonValueNumber>(Mark.PositionCm.X));
-		Position.Add(MakeShared<FJsonValueNumber>(Mark.PositionCm.Y));
-		Object->SetArrayField(TEXT("positionCm"), Position);
-		const FVector2D Ground = GroundCm(Mark.PositionCm);
+		Position.Add(MakeShared<FJsonValueNumber>(Mark.ChartCm.X));
+		Position.Add(MakeShared<FJsonValueNumber>(Mark.ChartCm.Y));
+		Object->SetArrayField(TEXT("chartCm"), Position);
+		const FVector2D Ground = GroundCm(Mark.ChartCm);
 		TArray<TSharedPtr<FJsonValue>> GroundPosition;
 		GroundPosition.Add(MakeShared<FJsonValueNumber>(Ground.X));
 		GroundPosition.Add(MakeShared<FJsonValueNumber>(Ground.Y));
@@ -209,16 +209,16 @@ int32 USolidDumpWorldChartCommandlet::Main(const FString& Params)
 		Marks.Add(MakeShared<FJsonValueObject>(MarkJson(Mark)));
 		int32 Row = 0;
 		int32 Column = 0;
-		const bool bCell = CellOfPosition(Mark.PositionCm, Row, Column);
-		const FVector2D Ground = GroundCm(Mark.PositionCm);
+		const bool bCell = CellOfPosition(Mark.ChartCm, Row, Column);
+		const FVector2D Ground = GroundCm(Mark.ChartCm);
 		UE_LOG(LogSolidChartDump, Warning,
 			TEXT("Mark %s \"%s\" row %s column %s position (%.0f, %.0f) ground (%.0f, %.0f)"),
 			MarkKindName(Mark.Kind),
 			*Mark.Name,
 			bCell ? *FString::FromInt(Row) : TEXT("?"),
 			bCell ? *FString::FromInt(Column) : TEXT("?"),
-			Mark.PositionCm.X,
-			Mark.PositionCm.Y,
+			Mark.ChartCm.X,
+			Mark.ChartCm.Y,
 			Ground.X,
 			Ground.Y);
 	}

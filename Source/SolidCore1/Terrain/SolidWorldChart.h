@@ -87,11 +87,11 @@ struct FSolidWorldLocation
 	TArray<FIntPoint> Cells;
 };
 
-/** One encounter mark. The position is the cell centre, in centimetres. */
+/** One encounter mark. The position is the cell centre in chart centimetres. */
 struct FSolidWorldEncounterMark
 {
 	FString Name;
-	FVector2D PositionCm = FVector2D::ZeroVector;
+	FVector2D ChartCm = FVector2D::ZeroVector;
 };
 
 /**
@@ -151,10 +151,10 @@ public:
 	static const TCHAR* ShippedPath();
 
 	/**
-	 * World rectangle the cell centres use, in centimetres.
-	 * This is the terrain map's default square, origin at zero.
+	 * Chart rectangle in centimetres. The origin is the south-east corner.
+	 * This is the terrain map's default square, origin at zero. Build recenters a running map.
 	 */
-	static void DefaultWorldBounds(FVector2D& OutMin, FVector2D& OutMax);
+	static void ChartBounds(FVector2D& OutChartMin, FVector2D& OutChartMax);
 
 	/**
 	 * Fill this chart from map text. A ! is stored as grassland.
@@ -284,14 +284,14 @@ public:
 	 * Centre of one map cell, in the chart's centimetre rectangle.
 	 * Column 0 is west, row 0 is north.
 	 */
-	static bool CellCentre(FIntPoint Cell, FVector2D& OutCm);
+	static bool CellCentre(FIntPoint Cell, FVector2D& OutChartCm);
 
 	/**
 	 * A stored mark position in a terrain map's centimetres.
 	 * The chart rectangle starts at the origin. A built map is centred on the origin.
 	 * Play and the chart mode both use this shift.
 	 */
-	static FVector2D TerrainPosition(const FVector2D& PositionCm, const FVector2D& TerrainMin);
+	static FVector2D TerrainPosition(const FVector2D& ChartCm, const FVector2D& WorldMin);
 
 	/**
 	 * Paint marker biomes. Swamp and road are rejected. Marks stay where they are.

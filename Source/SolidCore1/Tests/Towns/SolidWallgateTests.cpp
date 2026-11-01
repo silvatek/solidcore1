@@ -27,7 +27,7 @@ namespace
 			FSolidWorldChartMark Mark;
 			Mark.Kind = ESolidWorldChartMarkKind::Town;
 			Mark.Name = SolidTowns::Definitions[SolidTowns::Dragongate].Name;
-			USolidWorldChart::CellCentre(Cell, Mark.PositionCm);
+			USolidWorldChart::CellCentre(Cell, Mark.ChartCm);
 			Map->Marks.Add(Mark);
 		}
 		return Map;

@@ -119,13 +119,13 @@ namespace
 
 		if (bRiver)
 		{
-			FVector2D Min = FVector2D::ZeroVector;
-			FVector2D Max = FVector2D::ZeroVector;
-			USolidWorldChart::DefaultWorldBounds(Min, Max);
-			FVector2D Centre = FVector2D::ZeroVector;
+			FVector2D ChartMin = FVector2D::ZeroVector;
+			FVector2D ChartMax = FVector2D::ZeroVector;
+			USolidWorldChart::ChartBounds(ChartMin, ChartMax);
+			FVector2D ChartCm = FVector2D::ZeroVector;
 			FIntPoint River = FIntPoint::ZeroValue;
-			if (!Test.TestTrue(TEXT("the river cell has a centre"), Chart->CellToWorldXY(FIntPoint(12, 16), Min, Max, Centre))
-				|| !Test.TestTrue(TEXT("the river sits on a point"), Chart->TerrainPointAt(Centre.X, Centre.Y, Min, Max, River)))
+			if (!Test.TestTrue(TEXT("the river cell has a centre"), Chart->CellToWorldXY(FIntPoint(12, 16), ChartMin, ChartMax, ChartCm))
+				|| !Test.TestTrue(TEXT("the river sits on a point"), Chart->TerrainPointAt(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, River)))
 			{
 				return false;
 			}
@@ -442,11 +442,11 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 	UTEST_NOT_NULL(TEXT("chart"), Chart);
 	Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
 	TArray<SolidBridge::FBridge> None;
-	FVector2D BoundsMin = FVector2D::ZeroVector;
-	FVector2D BoundsMax = FVector2D::ZeroVector;
-	USolidWorldChart::DefaultWorldBounds(BoundsMin, BoundsMax);
+	FVector2D ChartMin = FVector2D::ZeroVector;
+	FVector2D ChartMax = FVector2D::ZeroVector;
+	USolidWorldChart::ChartBounds(ChartMin, ChartMax);
 	TestEqual(TEXT("a chart with no bridge mark stands nothing"),
-		SolidBridge::FromMarkers(*Chart, Height, None, BoundsMin, BoundsMax), 0);
+		SolidBridge::FromMarkers(*Chart, Height, None, ChartMin, ChartMax), 0);
 
 	FString Error;
 	TestTrue(TEXT("Iglin Bridge places"), Chart->PlaceBridge(FIntPoint(11, 16), TEXT("Iglin Bridge"), Error));
@@ -454,8 +454,8 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 	FVector2D RiverCentre = FVector2D::ZeroVector;
 	FIntPoint RiverPoint = FIntPoint::ZeroValue;
 	const int32 LastPoint = USolidWorldChart::PointAxis - 1;
-	if (TestTrue(TEXT("the river cell has a centre"), Chart->CellToWorldXY(FIntPoint(12, 16), BoundsMin, BoundsMax, RiverCentre))
-		&& TestTrue(TEXT("the river sits on a point"), Chart->TerrainPointAt(RiverCentre.X, RiverCentre.Y, BoundsMin, BoundsMax, RiverPoint)))
+	if (TestTrue(TEXT("the river cell has a centre"), Chart->CellToWorldXY(FIntPoint(12, 16), ChartMin, ChartMax, RiverCentre))
+		&& TestTrue(TEXT("the river sits on a point"), Chart->TerrainPointAt(RiverCentre.X, RiverCentre.Y, ChartMin, ChartMax, RiverPoint)))
 	{
 		TestTrue(TEXT("the river paints"),
 			Chart->SetPointRectangle(FIntPoint(RiverPoint.X, 0), FIntPoint(RiverPoint.X, LastPoint), ESolidBiome::River));
@@ -466,15 +466,15 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 		&& TestTrue(TEXT("Iglin stands over the river"),
 			SolidBridge::Stand(
 				SolidBridge::Bridges[0],
-				Chart->Marks[MarkIndex].PositionCm,
+				Chart->Marks[MarkIndex].ChartCm,
 				Width,
 				Height,
 				OverWater,
 				Chart,
-				BoundsMin,
-				BoundsMax)))
+				ChartMin,
+				ChartMax)))
 	{
-		const FVector2D Mark = Chart->Marks[MarkIndex].PositionCm;
+		const FVector2D Mark = Chart->Marks[MarkIndex].ChartCm;
 		const FVector DeckMid = (OverWater.Deck[0] + OverWater.Deck.Last()) * 0.5f;
 		TestTrue(TEXT("the centre span is the marker"),
 			FVector2D(DeckMid.X, DeckMid.Y).Equals(Mark, 1.f));
@@ -489,7 +489,7 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 
 	TArray<SolidBridge::FBridge> Marked;
 	TestEqual(TEXT("the placed mark stands"),
-		SolidBridge::FromMarkers(*Chart, Height, Marked, BoundsMin, BoundsMax), 1);
+		SolidBridge::FromMarkers(*Chart, Height, Marked, ChartMin, ChartMax), 1);
 	if (Marked.Num() == 1)
 	{
 		TestTrue(TEXT("the placed Iglin bridge starts broken"), Marked[0].bBroken);
@@ -497,14 +497,14 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 			FMath::IsNearlyEqual(Marked[0].WidthCm, Width));
 	}
 
-	const FVector2D ShiftedMin = BoundsMin + FVector2D(-51200.f, -51200.f);
-	const FVector2D ShiftedMax = BoundsMax + FVector2D(-51200.f, -51200.f);
+	const FVector2D ShiftedMin = ChartMin + FVector2D(-51200.f, -51200.f);
+	const FVector2D ShiftedMax = ChartMax + FVector2D(-51200.f, -51200.f);
 	TArray<SolidBridge::FBridge> Shifted;
 	TestEqual(TEXT("the shifted terrain still stands the mark"),
 		SolidBridge::FromMarkers(*Chart, Height, Shifted, ShiftedMin, ShiftedMax), 1);
 	if (Shifted.Num() == 1 && MarkIndex != INDEX_NONE)
 	{
-		const FVector2D Ground = USolidWorldChart::TerrainPosition(Chart->Marks[MarkIndex].PositionCm, ShiftedMin);
+		const FVector2D Ground = USolidWorldChart::TerrainPosition(Chart->Marks[MarkIndex].ChartCm, ShiftedMin);
 		const FVector ShiftedMid = (Shifted[0].Deck[0] + Shifted[0].Deck.Last()) * 0.5f;
 		TestTrue(TEXT("the centre span is the marker on the terrain"),
 			FVector2D(ShiftedMid.X, ShiftedMid.Y).Equals(Ground, 1.f));
@@ -530,9 +530,9 @@ bool FSolidBridgeBuriedRampTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	FVector2D BoundsMin = FVector2D::ZeroVector;
-	FVector2D BoundsMax = FVector2D::ZeroVector;
-	USolidWorldChart::DefaultWorldBounds(BoundsMin, BoundsMax);
+	FVector2D ChartMin = FVector2D::ZeroVector;
+	FVector2D ChartMax = FVector2D::ZeroVector;
+	USolidWorldChart::ChartBounds(ChartMin, ChartMax);
 	FVector2D Centre = FVector2D::ZeroVector;
 	if (!TestTrue(TEXT("the cell has a centre"), USolidWorldChart::CellCentre(Cell, Centre)))
 	{
@@ -547,7 +547,7 @@ bool FSolidBridgeBuriedRampTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	SolidBridge::PaintBuriedRamp(*Chart, Bridge, Height, BoundsMin, BoundsMax);
+	SolidBridge::PaintBuriedRamp(*Chart, Bridge, Height, ChartMin, ChartMax);
 
 	const float HalfQuad = SolidRoad::TerrainQuadCm * 0.5f;
 	bool bSawBuried = false;
@@ -558,7 +558,7 @@ bool FSolidBridgeBuriedRampTest::RunTest(const FString& Parameters)
 		for (const FVector& Sample : *Ramp)
 		{
 			FIntPoint Surface = FIntPoint::ZeroValue;
-			Chart->TerrainPointAt(Sample.X, Sample.Y + HalfQuad, BoundsMin, BoundsMax, Surface);
+			Chart->TerrainPointAt(Sample.X, Sample.Y + HalfQuad, ChartMin, ChartMax, Surface);
 			const ESolidBiome Painted = Chart->GetPointBiome(Surface);
 			if (Sample.Z < 99.f)
 			{
@@ -582,7 +582,7 @@ bool FSolidBridgeBuriedRampTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("a ramp also stands above the ground"), bSawOpen);
 
 	FIntPoint OnRamp = FIntPoint::ZeroValue;
-	Chart->TerrainPointAt(Centre.X, Centre.Y, BoundsMin, BoundsMax, OnRamp);
+	Chart->TerrainPointAt(Centre.X, Centre.Y, ChartMin, ChartMax, OnRamp);
 	TestEqual(
 		TEXT("the ramp's own point stays grassland"),
 		static_cast<uint8>(Chart->GetPointBiome(OnRamp)),

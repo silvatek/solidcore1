@@ -69,13 +69,13 @@ namespace SolidStronghold
 
 		/**
 		 * One building.
-		 * PositionCm is the inner south-west corner. FootprintCm is the room block facing north.
+		 * PlanPositionCm is the inner south-west corner. FootprintCm is the room block facing north.
 		 * East or west turns that block so its north wall is the door wall.
 		 * Facing is the door wall. Floors start at the ground, and each entry is that floor's room.
 		 * A second floor adds the stair along the door wall.
 		 */
 		void AddBuilding(
-			FVector2D PositionCm,
+			FVector2D PlanPositionCm,
 			FVector2D FootprintCm,
 			ESolidStrongholdOrientation Facing,
 			std::initializer_list<ESolidStrongholdRoom> Floors);
@@ -134,7 +134,7 @@ namespace SolidStronghold
 		 * Floors start at the ground, and each entry is that floor's room.
 		 */
 		void AddMediumHigh(
-			FVector2D PositionCm,
+			FVector2D PlanPositionCm,
 			ESolidStrongholdOrientation Facing,
 			std::initializer_list<ESolidStrongholdRoom> Floors);
 		/**
@@ -143,21 +143,21 @@ namespace SolidStronghold
 		 * Floors start at the ground, and each entry is that floor's room.
 		 */
 		void AddLargeHigh(
-			FVector2D PositionCm,
+			FVector2D PlanPositionCm,
 			ESolidStrongholdOrientation Facing,
 			std::initializer_list<ESolidStrongholdRoom> Floors);
 		/**
 		 * A medium room on one floor. The size is the room, so there is no room list, and no stair.
 		 */
-		void AddMediumLow(FVector2D PositionCm, ESolidStrongholdOrientation Facing);
+		void AddMediumLow(FVector2D PlanPositionCm, ESolidStrongholdOrientation Facing);
 		/**
 		 * A small room on one floor. The size is the room, so there is no room list, and no stair.
 		 */
-		void AddSmallLow(FVector2D PositionCm, ESolidStrongholdOrientation Facing);
+		void AddSmallLow(FVector2D PlanPositionCm, ESolidStrongholdOrientation Facing);
 		/**
-		 * Open ground. PositionCm is the inner south-west corner, and SizeCm is that open face.
+		 * Open ground. PlanPositionCm is the inner south-west corner, and SizeCm is that open face.
 		 * It is listed with the buildings so a later piece can sit EastOf it. It is not drawn.
 		 */
-		void AddCourtyard(FVector2D PositionCm, FVector2D SizeCm);
+		void AddCourtyard(FVector2D PlanPositionCm, FVector2D SizeCm);
 	};
 }

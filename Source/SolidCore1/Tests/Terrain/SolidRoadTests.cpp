@@ -63,12 +63,12 @@ namespace
 
 	bool SurfacePoint(FAutomationTestBase& Test, USolidWorldChart& Chart, const FIntPoint Cell, FIntPoint& OutPoint)
 	{
-		FVector2D Min = FVector2D::ZeroVector;
-		FVector2D Max = FVector2D::ZeroVector;
-		USolidWorldChart::DefaultWorldBounds(Min, Max);
-		FVector2D Centre = FVector2D::ZeroVector;
-		return Test.TestTrue(TEXT("the cell has a centre"), Chart.CellToWorldXY(Cell, Min, Max, Centre))
-			&& Test.TestTrue(TEXT("the cell sits on a point"), Chart.TerrainPointAt(Centre.X, Centre.Y, Min, Max, OutPoint));
+		FVector2D ChartMin = FVector2D::ZeroVector;
+		FVector2D ChartMax = FVector2D::ZeroVector;
+		USolidWorldChart::ChartBounds(ChartMin, ChartMax);
+		FVector2D ChartCm = FVector2D::ZeroVector;
+		return Test.TestTrue(TEXT("the cell has a centre"), Chart.CellToWorldXY(Cell, ChartMin, ChartMax, ChartCm))
+			&& Test.TestTrue(TEXT("the cell sits on a point"), Chart.TerrainPointAt(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, OutPoint));
 	}
 
 	void FillGrassPoints(USolidWorldChart& Chart)
@@ -78,10 +78,10 @@ namespace
 
 	bool PlacePointMark(USolidWorldChart& Chart, FSolidWorldChartMark Mark, const FIntPoint Point)
 	{
-		FVector2D Min = FVector2D::ZeroVector;
-		FVector2D Max = FVector2D::ZeroVector;
-		USolidWorldChart::DefaultWorldBounds(Min, Max);
-		if (!Chart.TerrainPointToWorld(Point, Min, Max, Mark.PositionCm))
+		FVector2D ChartMin = FVector2D::ZeroVector;
+		FVector2D ChartMax = FVector2D::ZeroVector;
+		USolidWorldChart::ChartBounds(ChartMin, ChartMax);
+		if (!Chart.TerrainPointToWorld(Point, ChartMin, ChartMax, Mark.ChartCm))
 		{
 			return false;
 		}
@@ -678,7 +678,7 @@ bool FSolidRoadLocationsTest::RunTest(const FString& Parameters)
 	{
 		for (const FSolidWorldChartMark& ChartMark : ChartMarks)
 		{
-			if (ChartMark.PositionCm.Equals(End.PositionCm) && ChartMark.Kind == End.Kind)
+			if (ChartMark.ChartCm.Equals(End.ChartCm) && ChartMark.Kind == End.Kind)
 			{
 				return true;
 			}
@@ -687,23 +687,23 @@ bool FSolidRoadLocationsTest::RunTest(const FString& Parameters)
 	};
 
 	FSolidWorldChartMark Iglin = SolidRoad::TownMark(SolidTowns::Iglin);
-	Iglin.PositionCm = FVector2D(1000.f, 2000.f);
+	Iglin.ChartCm = FVector2D(1000.f, 2000.f);
 	FSolidWorldChartMark Cave = SolidRoad::StrongholdMark(ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon);
 	Cave.Name = TEXT("MeagreDungeon");
-	Cave.PositionCm = FVector2D(3000.f, 4000.f);
+	Cave.ChartCm = FVector2D(3000.f, 4000.f);
 	TArray<FSolidWorldChartMark> Marks;
 	Marks.Add(Iglin);
 	Marks.Add(Cave);
 
 	SolidRoad::FSolidRoad Trail = SolidRoad::Roads[0];
 	Trail.Locate(Marks);
-	TestTrue(TEXT("the cave takes the chart place"), Trail.From.PositionCm.Equals(Cave.PositionCm));
-	TestTrue(TEXT("Iglin takes the chart place"), Trail.To.PositionCm.Equals(Iglin.PositionCm));
-	TestTrue(TEXT("the list itself stays unplaced"), SolidRoad::Roads[0].From.PositionCm.IsNearlyZero());
+	TestTrue(TEXT("the cave takes the chart place"), Trail.From.ChartCm.Equals(Cave.ChartCm));
+	TestTrue(TEXT("Iglin takes the chart place"), Trail.To.ChartCm.Equals(Iglin.ChartCm));
+	TestTrue(TEXT("the list itself stays unplaced"), SolidRoad::Roads[0].From.ChartCm.IsNearlyZero());
 
 	FSolidWorldChartMark Missing = SolidRoad::TownMark(SolidTowns::Relion);
 	SolidRoad::LocateMark(Marks, Missing);
-	TestTrue(TEXT("a missing end stays unplaced"), Missing.PositionCm.IsNearlyZero());
+	TestTrue(TEXT("a missing end stays unplaced"), Missing.ChartCm.IsNearlyZero());
 
 	const USolidWorldChart* Chart = LoadObject<USolidWorldChart>(nullptr, USolidWorldChart::ShippedPath());
 	if (!TestNotNull(TEXT("shipped chart"), Chart))
@@ -719,13 +719,13 @@ bool FSolidRoadLocationsTest::RunTest(const FString& Parameters)
 		}
 
 		FSolidWorldChartMark Seek = End;
-		Seek.PositionCm = FVector2D::ZeroVector;
+		Seek.ChartCm = FVector2D::ZeroVector;
 		if (!SolidRoad::LocateMark(Chart->Marks, Seek))
 		{
-			TestTrue(TEXT("a missing bridge mark leaves the end unplaced"), End.PositionCm.IsNearlyZero());
+			TestTrue(TEXT("a missing bridge mark leaves the end unplaced"), End.ChartCm.IsNearlyZero());
 			return;
 		}
-		TestTrue(TEXT("the bridge end takes the chart centre"), End.PositionCm.Equals(Seek.PositionCm));
+		TestTrue(TEXT("the bridge end takes the chart centre"), End.ChartCm.Equals(Seek.ChartCm));
 	};
 	for (const SolidRoad::FSolidRoad& Definition : SolidRoad::Roads)
 	{
@@ -789,9 +789,9 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 bool FSolidRoadBridgeEndTest::RunTest(const FString& Parameters)
 {
 	FSolidWorldChartMark Iglin = SolidRoad::TownMark(SolidTowns::Iglin);
-	Iglin.PositionCm = FVector2D(100.f, 200.f);
+	Iglin.ChartCm = FVector2D(100.f, 200.f);
 	FSolidWorldChartMark Bridge = SolidRoad::BridgeMark(TEXT("Iglin Bridge"));
-	Bridge.PositionCm = FVector2D(1200.f, 3400.f);
+	Bridge.ChartCm = FVector2D(1200.f, 3400.f);
 	TArray<FSolidWorldChartMark> Marks;
 	Marks.Add(Iglin);
 	Marks.Add(Bridge);
@@ -802,15 +802,15 @@ bool FSolidRoadBridgeEndTest::RunTest(const FString& Parameters)
 		SolidRoad::EType::Track);
 	TestEqual(TEXT("the end is a bridge"), static_cast<uint8>(Track.To.Kind), static_cast<uint8>(ESolidWorldChartMarkKind::Bridge));
 	TestTrue(TEXT("the bridge end locates"), Track.Locate(Marks));
-	TestTrue(TEXT("Iglin takes the chart place"), Track.From.PositionCm.Equals(Iglin.PositionCm));
-	TestTrue(TEXT("the bridge takes the chart centre"), Track.To.PositionCm.Equals(Bridge.PositionCm));
+	TestTrue(TEXT("Iglin takes the chart place"), Track.From.ChartCm.Equals(Iglin.ChartCm));
+	TestTrue(TEXT("the bridge takes the chart centre"), Track.To.ChartCm.Equals(Bridge.ChartCm));
 
 	SolidRoad::FSolidRoad Missing(
 		SolidRoad::BridgeMark(TEXT("Jethan Bridge")),
 		SolidRoad::TownMark(SolidTowns::Iglin),
 		SolidRoad::EType::Track);
 	TestFalse(TEXT("a missing bridge stays unplaced"), Missing.Locate(Marks));
-	TestTrue(TEXT("the missing bridge has no centre"), Missing.From.PositionCm.IsNearlyZero());
+	TestTrue(TEXT("the missing bridge has no centre"), Missing.From.ChartCm.IsNearlyZero());
 	return true;
 }
 
@@ -853,15 +853,15 @@ bool FSolidRoadNearerEndTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	FVector2D Min = FVector2D::ZeroVector;
-	FVector2D Max = FVector2D::ZeroVector;
-	USolidWorldChart::DefaultWorldBounds(Min, Max);
-	FVector2D Centre = FVector2D::ZeroVector;
+	FVector2D ChartMin = FVector2D::ZeroVector;
+	FVector2D ChartMax = FVector2D::ZeroVector;
+	USolidWorldChart::ChartBounds(ChartMin, ChartMax);
+	FVector2D ChartCm = FVector2D::ZeroVector;
 	FIntPoint WestEnd = FIntPoint::ZeroValue;
 	FIntPoint EastEnd = FIntPoint::ZeroValue;
-	if (!TestTrue(TEXT("the centre is a point"), Chart->TerrainPointToWorld(BridgePoint, Min, Max, Centre))
-		|| !TestTrue(TEXT("the west end is a point"), Chart->TerrainPointAt(Centre.X + Half, Centre.Y, Min, Max, WestEnd))
-		|| !TestTrue(TEXT("the east end is a point"), Chart->TerrainPointAt(Centre.X - Half, Centre.Y, Min, Max, EastEnd)))
+	if (!TestTrue(TEXT("the centre is a point"), Chart->TerrainPointToWorld(BridgePoint, ChartMin, ChartMax, ChartCm))
+		|| !TestTrue(TEXT("the west end is a point"), Chart->TerrainPointAt(ChartCm.X + Half, ChartCm.Y, ChartMin, ChartMax, WestEnd))
+		|| !TestTrue(TEXT("the east end is a point"), Chart->TerrainPointAt(ChartCm.X - Half, ChartCm.Y, ChartMin, ChartMax, EastEnd)))
 	{
 		return false;
 	}

@@ -73,10 +73,10 @@ namespace
 	bool RoadPoly(const USolidWorldChart& Map, const SolidRoad::FSolidRoad& Road, const FVector2D WorldMin, const FVector2D WorldMax, FRouteLine& Out)
 	{
 		Out.Points.Reset();
-		for (const FIntPoint& Point : Road.Points)
+		for (const FIntPoint& TerrainPoint : Road.Points)
 		{
 			FVector2D World = FVector2D::ZeroVector;
-			if (!Map.TerrainPointToWorld(Point, WorldMin, WorldMax, World))
+			if (!Map.TerrainPointToWorld(TerrainPoint, WorldMin, WorldMax, World))
 			{
 				continue;
 			}
@@ -700,9 +700,9 @@ void SolidBridge::PaintBuriedRamp(
 			{
 				continue;
 			}
-			FIntPoint Point = FIntPoint::ZeroValue;
-			Map.TerrainPointAt(Sample.X + Nudge.X, Sample.Y + Nudge.Y, WorldMinXY, WorldMaxXY, Point);
-			const ESolidBiome Here = Map.GetPointBiome(Point);
+			FIntPoint TerrainPoint = FIntPoint::ZeroValue;
+			Map.TerrainPointAt(Sample.X + Nudge.X, Sample.Y + Nudge.Y, WorldMinXY, WorldMaxXY, TerrainPoint);
+			const ESolidBiome Here = Map.GetPointBiome(TerrainPoint);
 			if (Here == ESolidBiome::River
 				|| Here == ESolidBiome::Sea
 				|| Here == ESolidBiome::Mountain
@@ -711,7 +711,7 @@ void SolidBridge::PaintBuriedRamp(
 			{
 				continue;
 			}
-			Map.SetPointRectangle(Point, Point, ESolidBiome::Road);
+			Map.SetPointRectangle(TerrainPoint, TerrainPoint, ESolidBiome::Road);
 		}
 	}
 }

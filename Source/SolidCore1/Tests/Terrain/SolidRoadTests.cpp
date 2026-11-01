@@ -61,14 +61,14 @@ namespace
 		return Test.TestEqual(TEXT("routed roads"), Loaded->GetRoutedRoads().Num(), Roads);
 	}
 
-	bool SurfacePoint(FAutomationTestBase& Test, USolidWorldChart& Chart, const FIntPoint Cell, FIntPoint& OutPoint)
+	bool SurfacePoint(FAutomationTestBase& Test, USolidWorldChart& Chart, const FIntPoint Cell, FIntPoint& OutTerrainPoint)
 	{
 		FVector2D ChartMin = FVector2D::ZeroVector;
 		FVector2D ChartMax = FVector2D::ZeroVector;
 		USolidWorldChart::ChartBounds(ChartMin, ChartMax);
 		FVector2D ChartCm = FVector2D::ZeroVector;
 		return Test.TestTrue(TEXT("the cell has a centre"), Chart.CellToWorldXY(Cell, ChartMin, ChartMax, ChartCm))
-			&& Test.TestTrue(TEXT("the cell sits on a point"), Chart.TerrainPointAt(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, OutPoint));
+			&& Test.TestTrue(TEXT("the cell sits on a point"), Chart.TerrainPointAt(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, OutTerrainPoint));
 	}
 
 	void FillGrassPoints(USolidWorldChart& Chart)
@@ -76,12 +76,12 @@ namespace
 		Chart.Points.Init(ESolidBiome::Grassland, USolidWorldChart::PointAxis * USolidWorldChart::PointAxis);
 	}
 
-	bool PlacePointMark(USolidWorldChart& Chart, FSolidWorldChartMark Mark, const FIntPoint Point)
+	bool PlacePointMark(USolidWorldChart& Chart, FSolidWorldChartMark Mark, const FIntPoint TerrainPoint)
 	{
 		FVector2D ChartMin = FVector2D::ZeroVector;
 		FVector2D ChartMax = FVector2D::ZeroVector;
 		USolidWorldChart::ChartBounds(ChartMin, ChartMax);
-		if (!Chart.TerrainPointToWorld(Point, ChartMin, ChartMax, Mark.ChartCm))
+		if (!Chart.TerrainPointToWorld(TerrainPoint, ChartMin, ChartMax, Mark.ChartCm))
 		{
 			return false;
 		}
@@ -95,9 +95,9 @@ namespace
 		{
 			return false;
 		}
-		for (const FIntPoint& Point : Points)
+		for (const FIntPoint& TerrainPoint : Points)
 		{
-			if (Point.Y != Row)
+			if (TerrainPoint.Y != Row)
 			{
 				return false;
 			}
@@ -108,9 +108,9 @@ namespace
 	int32 RouteBiomeCount(const USolidWorldChart& Chart, const TArray<FIntPoint>& Points, const ESolidBiome Biome)
 	{
 		int32 Count = 0;
-		for (const FIntPoint& Point : Points)
+		for (const FIntPoint& TerrainPoint : Points)
 		{
-			if (Chart.GetPointBiome(Point) == Biome)
+			if (Chart.GetPointBiome(TerrainPoint) == Biome)
 			{
 				++Count;
 			}
@@ -264,9 +264,9 @@ bool FSolidRoadForestHighwayTest::RunTest(const FString& Parameters)
 	}
 	TestTrue(TEXT("highway stays on the straight row"), RouteStaysOnRow(Highway.Points, Row));
 	int32 ForestPoints = 0;
-	for (const FIntPoint& Point : Highway.Points)
+	for (const FIntPoint& TerrainPoint : Highway.Points)
 	{
-		if (Chart->GetPointBiome(Point) == ESolidBiome::Forest)
+		if (Chart->GetPointBiome(TerrainPoint) == ESolidBiome::Forest)
 		{
 			++ForestPoints;
 		}
@@ -315,9 +315,9 @@ bool FSolidRoadForestTrailTest::RunTest(const FString& Parameters)
 	}
 	TestTrue(TEXT("trail stays on the straight row"), RouteStaysOnRow(Trail.Points, Row));
 	int32 ForestPoints = 0;
-	for (const FIntPoint& Point : Trail.Points)
+	for (const FIntPoint& TerrainPoint : Trail.Points)
 	{
-		if (Chart->GetPointBiome(Point) == ESolidBiome::Forest)
+		if (Chart->GetPointBiome(TerrainPoint) == ESolidBiome::Forest)
 		{
 			++ForestPoints;
 		}
@@ -452,16 +452,16 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	USolidWorldChart* TrackChart = nullptr;
 	USolidWorldChart* Track = nullptr;
 	FIntPoint ForestPoint = FIntPoint::ZeroValue;
-	FIntPoint RiverPoint = FIntPoint::ZeroValue;
+	FIntPoint RiverTerrainPoint = FIntPoint::ZeroValue;
 	if (!SurfaceChart(*this, TrackChart)
 		|| !TestTrue(TEXT("Iglin places"), TrackChart->PlaceTown(FIntPoint(4, 12), TEXT("Iglin"), Error))
 		|| !TestTrue(TEXT("Relion places"), TrackChart->PlaceTown(FIntPoint(16, 12), TEXT("Relion"), Error))
 		|| !TestTrue(TEXT("Iglin Bridge places"), TrackChart->PlaceBridge(FIntPoint(11, 12), TEXT("Iglin Bridge"), Error))
 		|| !SurfacePoint(*this, *TrackChart, FIntPoint(8, 12), ForestPoint)
 		|| !TestTrue(TEXT("forest paints on the track"), TrackChart->SetPointRectangle(ForestPoint, ForestPoint, ESolidBiome::Forest))
-		|| !SurfacePoint(*this, *TrackChart, FIntPoint(12, 12), RiverPoint)
+		|| !SurfacePoint(*this, *TrackChart, FIntPoint(12, 12), RiverTerrainPoint)
 		|| !TestTrue(TEXT("the river paints"), TrackChart->SetPointRectangle(
-			FIntPoint(RiverPoint.X, 0), FIntPoint(RiverPoint.X, USolidWorldChart::PointAxis - 1), ESolidBiome::River))
+			FIntPoint(RiverTerrainPoint.X, 0), FIntPoint(RiverTerrainPoint.X, USolidWorldChart::PointAxis - 1), ESolidBiome::River))
 		|| !SurfaceLoad(*this, TrackChart, Track, 2))
 	{
 		return false;
@@ -857,11 +857,11 @@ bool FSolidRoadNearerEndTest::RunTest(const FString& Parameters)
 	FVector2D ChartMax = FVector2D::ZeroVector;
 	USolidWorldChart::ChartBounds(ChartMin, ChartMax);
 	FVector2D ChartCm = FVector2D::ZeroVector;
-	FIntPoint WestEnd = FIntPoint::ZeroValue;
-	FIntPoint EastEnd = FIntPoint::ZeroValue;
+	FIntPoint WestTerrainPoint = FIntPoint::ZeroValue;
+	FIntPoint EastTerrainPoint = FIntPoint::ZeroValue;
 	if (!TestTrue(TEXT("the centre is a point"), Chart->TerrainPointToWorld(BridgePoint, ChartMin, ChartMax, ChartCm))
-		|| !TestTrue(TEXT("the west end is a point"), Chart->TerrainPointAt(ChartCm.X + Half, ChartCm.Y, ChartMin, ChartMax, WestEnd))
-		|| !TestTrue(TEXT("the east end is a point"), Chart->TerrainPointAt(ChartCm.X - Half, ChartCm.Y, ChartMin, ChartMax, EastEnd)))
+		|| !TestTrue(TEXT("the west end is a point"), Chart->TerrainPointAt(ChartCm.X + Half, ChartCm.Y, ChartMin, ChartMax, WestTerrainPoint))
+		|| !TestTrue(TEXT("the east end is a point"), Chart->TerrainPointAt(ChartCm.X - Half, ChartCm.Y, ChartMin, ChartMax, EastTerrainPoint)))
 	{
 		return false;
 	}
@@ -877,7 +877,7 @@ bool FSolidRoadNearerEndTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestEqual(TEXT("the route starts at Iglin"), ToBridge.Points[0], WestTown);
-	TestEqual(TEXT("the route finishes at the west end"), ToBridge.Points.Last(), WestEnd);
+	TestEqual(TEXT("the route finishes at the west end"), ToBridge.Points.Last(), WestTerrainPoint);
 	TestNotEqual(TEXT("the route does not finish at the centre"), ToBridge.Points.Last(), BridgePoint);
 
 	SolidRoad::FSolidRoad FromBridge(
@@ -890,7 +890,7 @@ bool FSolidRoadNearerEndTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	TestEqual(TEXT("the route starts at the east end"), FromBridge.Points[0], EastEnd);
+	TestEqual(TEXT("the route starts at the east end"), FromBridge.Points[0], EastTerrainPoint);
 	TestEqual(TEXT("the route finishes at Relion"), FromBridge.Points.Last(), EastTown);
 
 	SolidRoad::FSolidRoad Tied(

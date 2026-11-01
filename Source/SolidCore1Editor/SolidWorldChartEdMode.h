@@ -91,9 +91,9 @@ private:
 	bool bRectangle = false;
 	/** True after this left click has already placed a mark. */
 	bool bPlacedClick = false;
-	FIntPoint Anchor = FIntPoint::ZeroValue;
+	FIntPoint AnchorTerrainPoint = FIntPoint::ZeroValue;
 	FIntPoint CurrentCell = FIntPoint::ZeroValue;
-	FIntPoint CurrentPoint = FIntPoint::ZeroValue;
+	FIntPoint CurrentTerrainPoint = FIntPoint::ZeroValue;
 	bool bHasCell = false;
 	bool bHasPoint = false;
 	TArray<FIntPoint> StrokePoints;
@@ -105,13 +105,13 @@ private:
 	bool IsOpenWorld(const UWorld* World) const;
 	bool CursorHit(FEditorViewportClient* ViewportClient, FViewport* Viewport, int32 X, int32 Y, FVector& OutHit) const;
 	bool CursorCell(FEditorViewportClient* ViewportClient, FViewport* Viewport, int32 X, int32 Y, FIntPoint& OutCell) const;
-	bool CursorPoint(FEditorViewportClient* ViewportClient, FViewport* Viewport, int32 X, int32 Y, FIntPoint& OutPoint) const;
+	bool CursorPoint(FEditorViewportClient* ViewportClient, FViewport* Viewport, int32 X, int32 Y, FIntPoint& OutTerrainPoint) const;
 	void HoverAt(FEditorViewportClient* ViewportClient, FViewport* Viewport, int32 X, int32 Y);
 	void PlaceUnderCursor(FEditorViewportClient* ViewportClient, FViewport* Viewport);
 	void BeginStroke(FEditorViewportClient* ViewportClient, FViewport* Viewport);
 	void ExtendStroke(FEditorViewportClient* ViewportClient, FViewport* Viewport, int32 X, int32 Y);
 	void EndStroke();
-	void SampleBrush(const FIntPoint& Point);
+	void SampleBrush(const FIntPoint& TerrainPoint);
 	void ShowChart();
 	void ClearChartActors();
 	void RebuildOverlay();
@@ -120,5 +120,5 @@ private:
 	bool MarkLocation(const FSolidWorldChartMark& Mark, FVector& OutLocation) const;
 	void Note(const FString& Message);
 	FString DescribeCell(const FIntPoint& Cell) const;
-	FString DescribePoint(const FIntPoint& Point) const;
+	FString DescribePoint(const FIntPoint& TerrainPoint) const;
 };

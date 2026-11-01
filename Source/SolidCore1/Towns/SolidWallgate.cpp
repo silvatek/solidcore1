@@ -33,15 +33,15 @@ namespace
 	{
 		for (int32 Step = 1; Step < USolidWorldChart::PointAxis; ++Step)
 		{
-			const FIntPoint Point(Marker.X + Step * StepX, Marker.Y);
-			if (Point.X < 0 || Point.Y < 0
-				|| Point.X >= USolidWorldChart::PointAxis
-				|| Point.Y >= USolidWorldChart::PointAxis)
+			const FIntPoint TerrainPoint(Marker.X + Step * StepX, Marker.Y);
+			if (TerrainPoint.X < 0 || TerrainPoint.Y < 0
+				|| TerrainPoint.X >= USolidWorldChart::PointAxis
+				|| TerrainPoint.Y >= USolidWorldChart::PointAxis)
 			{
 				return false;
 			}
 
-			const ESolidBiome Ground = WorldMap.GetPointBiome(Point);
+			const ESolidBiome Ground = WorldMap.GetPointBiome(TerrainPoint);
 			if (Step <= WallgateOpenSteps)
 			{
 				if (!WallgateOpen(Ground))
@@ -58,7 +58,7 @@ namespace
 			{
 				return false;
 			}
-			return WorldMap.TerrainPointToWorld(Point, WorldMinXY, WorldMaxXY, OutMountain);
+			return WorldMap.TerrainPointToWorld(TerrainPoint, WorldMinXY, WorldMaxXY, OutMountain);
 		}
 		return false;
 	}
@@ -70,16 +70,16 @@ namespace
 		const FVector2D& Marker,
 		TArray<SolidWallgate::FPiece>& OutPieces)
 	{
-		FIntPoint MarkerPoint = FIntPoint::ZeroValue;
-		if (!WorldMap.TerrainPointAt(Marker.X, Marker.Y, WorldMinXY, WorldMaxXY, MarkerPoint))
+		FIntPoint MarkerTerrainPoint = FIntPoint::ZeroValue;
+		if (!WorldMap.TerrainPointAt(Marker.X, Marker.Y, WorldMinXY, WorldMaxXY, MarkerTerrainPoint))
 		{
 			return;
 		}
 
 		FVector2D MountainEast = FVector2D::ZeroVector;
 		FVector2D MountainWest = FVector2D::ZeroVector;
-		if (!WallgateMountain(WorldMap, MarkerPoint, 1, WorldMinXY, WorldMaxXY, MountainEast)
-			|| !WallgateMountain(WorldMap, MarkerPoint, -1, WorldMinXY, WorldMaxXY, MountainWest))
+		if (!WallgateMountain(WorldMap, MarkerTerrainPoint, 1, WorldMinXY, WorldMaxXY, MountainEast)
+			|| !WallgateMountain(WorldMap, MarkerTerrainPoint, -1, WorldMinXY, WorldMaxXY, MountainWest))
 		{
 			return;
 		}

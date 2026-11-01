@@ -2187,15 +2187,15 @@ void ASolidHUD::DrawHUD()
 				{
 					const float FX = (Loc.X - Map->OriginXY.X) / Map->PointSpacing;
 					const float FY = (Loc.Y - Map->OriginXY.Y) / Map->PointSpacing;
-					const int32 X0 = FMath::Clamp(FMath::FloorToInt(FX), 0, Map->GridWidth - 1);
-					const int32 Y0 = FMath::Clamp(FMath::FloorToInt(FY), 0, Map->GridHeight - 1);
-					const int32 X1 = FMath::Min(X0 + 1, Map->GridWidth - 1);
-					const int32 Y1 = FMath::Min(Y0 + 1, Map->GridHeight - 1);
+					const int32 TerrainX0 = FMath::Clamp(FMath::FloorToInt(FX), 0, Map->GridWidth - 1);
+					const int32 TerrainY0 = FMath::Clamp(FMath::FloorToInt(FY), 0, Map->GridHeight - 1);
+					const int32 TerrainX1 = FMath::Min(TerrainX0 + 1, Map->GridWidth - 1);
+					const int32 TerrainY1 = FMath::Min(TerrainY0 + 1, Map->GridHeight - 1);
 					const ESolidBiome Corners[4] = {
-						Map->GetPoint(X0, Y0).Biome,
-						Map->GetPoint(X1, Y0).Biome,
-						Map->GetPoint(X0, Y1).Biome,
-						Map->GetPoint(X1, Y1).Biome,
+						Map->GetPoint(TerrainX0, TerrainY0).Biome,
+						Map->GetPoint(TerrainX1, TerrainY0).Biome,
+						Map->GetPoint(TerrainX0, TerrainY1).Biome,
+						Map->GetPoint(TerrainX1, TerrainY1).Biome,
 					};
 					int32 CutCorner = 0;
 					const bool bCut = SolidTerrainTypes::QuadMaterial == SolidTerrainTypes::ESolidQuadMaterial::OddCorner
@@ -2224,11 +2224,11 @@ void ASolidHUD::DrawHUD()
 					}
 					else
 					{
-						const float CentreX = Map->OriginXY.X + (static_cast<float>(X0) + 0.5f) * Map->PointSpacing;
-						const float CentreY = Map->OriginXY.Y + (static_cast<float>(Y0) + 0.5f) * Map->PointSpacing;
+						const float CentreX = Map->OriginXY.X + (static_cast<float>(TerrainX0) + 0.5f) * Map->PointSpacing;
+						const float CentreY = Map->OriginXY.Y + (static_cast<float>(TerrainY0) + 0.5f) * Map->PointSpacing;
 						const ESolidBiome Preferred = Map->SamplePoint(CentreX, CentreY).Biome;
-						const ESolidBiome WestOfNorthWest = Map->GetPoint(X1 + 1, Y1).Biome;
-						const ESolidBiome SouthWestOfNorthWest = Map->GetPoint(X1 + 1, Y0).Biome;
+						const ESolidBiome WestOfNorthWest = Map->GetPoint(TerrainX1 + 1, TerrainY1).Biome;
+						const ESolidBiome SouthWestOfNorthWest = Map->GetPoint(TerrainX1 + 1, TerrainY0).Biome;
 						const SolidTerrainTypes::FSolidQuadTriangles Picked = SolidTerrainTypes::QuadTriangles(
 							SolidTerrainTypes::QuadMaterial, Preferred,
 							Corners[0], Corners[1], Corners[2], Corners[3],

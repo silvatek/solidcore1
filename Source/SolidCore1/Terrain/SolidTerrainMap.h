@@ -62,7 +62,7 @@ public:
 	const TArray<FSolidTerrainPoint>& GetPoints() const { return Points; }
 
 	/** Row-major access; clamps indices. */
-	const FSolidTerrainPoint& GetPoint(int32 IndexX, int32 IndexY) const;
+	const FSolidTerrainPoint& GetPoint(int32 TerrainX, int32 TerrainY) const;
 
 	/** Nearest grid point (no interpolation). */
 	const FSolidTerrainPoint& GetNearestPoint(float WorldX, float WorldY) const;
@@ -154,7 +154,7 @@ protected:
 	FVector2D ClearFogMaxXY = FVector2D::ZeroVector;
 
 	void TrackClearFogBounds();
-	void WorldToIndex(float WorldX, float WorldY, int32& OutX, int32& OutY) const;
+	void WorldToIndex(float WorldX, float WorldY, int32& OutTerrainX, int32& OutTerrainY) const;
 	ESolidBiome ChooseBiome(float WorldX, float WorldY, float HeightNorm, int32 InSeed) const;
 	/** Threat stays zero. Fog starts fully shrouded. */
 	void FillThreatAndFog(FSolidTerrainPoint& Point) const;

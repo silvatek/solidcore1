@@ -500,11 +500,11 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 			Map && Map->CellAtWorld(CaveXY.X, CaveXY.Y, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), Cell));
 		if (Map)
 		{
-			for (int32 IndexY = 0; IndexY < Terrain->GridHeight; ++IndexY)
+			for (int32 TerrainY = 0; TerrainY < Terrain->GridHeight; ++TerrainY)
 			{
-				for (int32 IndexX = 0; IndexX < Terrain->GridWidth; ++IndexX)
+				for (int32 TerrainX = 0; TerrainX < Terrain->GridWidth; ++TerrainX)
 				{
-					const FSolidTerrainPoint& Point = Terrain->GetPoint(IndexX, IndexY);
+					const FSolidTerrainPoint& Point = Terrain->GetPoint(TerrainX, TerrainY);
 					FIntPoint PointCell = FIntPoint::ZeroValue;
 					if (Map->CellAtWorld(Point.X, Point.Y, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), PointCell)
 						&& PointCell == Cell)

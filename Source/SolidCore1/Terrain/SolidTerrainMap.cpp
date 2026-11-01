@@ -54,13 +54,13 @@ void USolidTerrainMap::Build(
 	const FVector2D WorldMin = GetWorldMinXY();
 	const FVector2D WorldMax = GetWorldMaxXY();
 
-	for (int32 IY = 0; IY < GridHeight; ++IY)
+	for (int32 TerrainY = 0; TerrainY < GridHeight; ++TerrainY)
 	{
-		for (int32 IX = 0; IX < GridWidth; ++IX)
+		for (int32 TerrainX = 0; TerrainX < GridWidth; ++TerrainX)
 		{
-			FSolidTerrainPoint& Point = Points[IY * GridWidth + IX];
-			Point.X = OriginXY.X + static_cast<float>(IX) * PointSpacing;
-			Point.Y = OriginXY.Y + static_cast<float>(IY) * PointSpacing;
+			FSolidTerrainPoint& Point = Points[TerrainY * GridWidth + TerrainX];
+			Point.X = OriginXY.X + static_cast<float>(TerrainX) * PointSpacing;
+			Point.Y = OriginXY.Y + static_cast<float>(TerrainY) * PointSpacing;
 			if (bUseWorldMap)
 			{
 				Point.Biome = WorldMap->SampleBiome(Point.X, Point.Y, WorldMin, WorldMax);
@@ -125,28 +125,28 @@ bool USolidTerrainMap::GetStartTownWorldXY(FVector2D& OutWorldXY) const
 	return WorldMap->GetStartTownWorldXY(GetWorldMinXY(), GetWorldMaxXY(), OutWorldXY);
 }
 
-void USolidTerrainMap::WorldToIndex(float WorldX, float WorldY, int32& OutX, int32& OutY) const
+void USolidTerrainMap::WorldToIndex(float WorldX, float WorldY, int32& OutTerrainX, int32& OutTerrainY) const
 {
 	const float FX = (WorldX - OriginXY.X) / PointSpacing;
 	const float FY = (WorldY - OriginXY.Y) / PointSpacing;
-	OutX = FMath::Clamp(FMath::RoundToInt(FX), 0, GridWidth - 1);
-	OutY = FMath::Clamp(FMath::RoundToInt(FY), 0, GridHeight - 1);
+	OutTerrainX = FMath::Clamp(FMath::RoundToInt(FX), 0, GridWidth - 1);
+	OutTerrainY = FMath::Clamp(FMath::RoundToInt(FY), 0, GridHeight - 1);
 }
 
-const FSolidTerrainPoint& USolidTerrainMap::GetPoint(int32 IndexX, int32 IndexY) const
+const FSolidTerrainPoint& USolidTerrainMap::GetPoint(int32 TerrainX, int32 TerrainY) const
 {
 	check(Points.Num() > 0);
-	IndexX = FMath::Clamp(IndexX, 0, GridWidth - 1);
-	IndexY = FMath::Clamp(IndexY, 0, GridHeight - 1);
-	return Points[IndexY * GridWidth + IndexX];
+	TerrainX = FMath::Clamp(TerrainX, 0, GridWidth - 1);
+	TerrainY = FMath::Clamp(TerrainY, 0, GridHeight - 1);
+	return Points[TerrainY * GridWidth + TerrainX];
 }
 
 const FSolidTerrainPoint& USolidTerrainMap::GetNearestPoint(float WorldX, float WorldY) const
 {
-	int32 IX = 0;
-	int32 IY = 0;
-	WorldToIndex(WorldX, WorldY, IX, IY);
-	return GetPoint(IX, IY);
+	int32 TerrainX = 0;
+	int32 TerrainY = 0;
+	WorldToIndex(WorldX, WorldY, TerrainX, TerrainY);
+	return GetPoint(TerrainX, TerrainY);
 }
 
 float USolidTerrainMap::SampleHeight(float WorldX, float WorldY) const
@@ -158,17 +158,17 @@ float USolidTerrainMap::SampleHeight(float WorldX, float WorldY) const
 
 	const float FX = (WorldX - OriginXY.X) / PointSpacing;
 	const float FY = (WorldY - OriginXY.Y) / PointSpacing;
-	const int32 X0 = FMath::Clamp(FMath::FloorToInt(FX), 0, GridWidth - 1);
-	const int32 Y0 = FMath::Clamp(FMath::FloorToInt(FY), 0, GridHeight - 1);
-	const int32 X1 = FMath::Min(X0 + 1, GridWidth - 1);
-	const int32 Y1 = FMath::Min(Y0 + 1, GridHeight - 1);
-	const float Tx = FMath::Clamp(FX - static_cast<float>(X0), 0.f, 1.f);
-	const float Ty = FMath::Clamp(FY - static_cast<float>(Y0), 0.f, 1.f);
+	const int32 TerrainX0 = FMath::Clamp(FMath::FloorToInt(FX), 0, GridWidth - 1);
+	const int32 TerrainY0 = FMath::Clamp(FMath::FloorToInt(FY), 0, GridHeight - 1);
+	const int32 TerrainX1 = FMath::Min(TerrainX0 + 1, GridWidth - 1);
+	const int32 TerrainY1 = FMath::Min(TerrainY0 + 1, GridHeight - 1);
+	const float Tx = FMath::Clamp(FX - static_cast<float>(TerrainX0), 0.f, 1.f);
+	const float Ty = FMath::Clamp(FY - static_cast<float>(TerrainY0), 0.f, 1.f);
 
-	const float H00 = GetPoint(X0, Y0).Height;
-	const float H10 = GetPoint(X1, Y0).Height;
-	const float H01 = GetPoint(X0, Y1).Height;
-	const float H11 = GetPoint(X1, Y1).Height;
+	const float H00 = GetPoint(TerrainX0, TerrainY0).Height;
+	const float H10 = GetPoint(TerrainX1, TerrainY0).Height;
+	const float H01 = GetPoint(TerrainX0, TerrainY1).Height;
+	const float H11 = GetPoint(TerrainX1, TerrainY1).Height;
 	return FMath::Lerp(FMath::Lerp(H00, H10, Tx), FMath::Lerp(H01, H11, Tx), Ty);
 }
 
@@ -185,17 +185,17 @@ FSolidTerrainPoint USolidTerrainMap::SamplePoint(float WorldX, float WorldY) con
 
 	const float FX = (WorldX - OriginXY.X) / PointSpacing;
 	const float FY = (WorldY - OriginXY.Y) / PointSpacing;
-	const int32 X0 = FMath::Clamp(FMath::FloorToInt(FX), 0, GridWidth - 1);
-	const int32 Y0 = FMath::Clamp(FMath::FloorToInt(FY), 0, GridHeight - 1);
-	const int32 X1 = FMath::Min(X0 + 1, GridWidth - 1);
-	const int32 Y1 = FMath::Min(Y0 + 1, GridHeight - 1);
-	const float Tx = FMath::Clamp(FX - static_cast<float>(X0), 0.f, 1.f);
-	const float Ty = FMath::Clamp(FY - static_cast<float>(Y0), 0.f, 1.f);
+	const int32 TerrainX0 = FMath::Clamp(FMath::FloorToInt(FX), 0, GridWidth - 1);
+	const int32 TerrainY0 = FMath::Clamp(FMath::FloorToInt(FY), 0, GridHeight - 1);
+	const int32 TerrainX1 = FMath::Min(TerrainX0 + 1, GridWidth - 1);
+	const int32 TerrainY1 = FMath::Min(TerrainY0 + 1, GridHeight - 1);
+	const float Tx = FMath::Clamp(FX - static_cast<float>(TerrainX0), 0.f, 1.f);
+	const float Ty = FMath::Clamp(FY - static_cast<float>(TerrainY0), 0.f, 1.f);
 
-	const FSolidTerrainPoint& P00 = GetPoint(X0, Y0);
-	const FSolidTerrainPoint& P10 = GetPoint(X1, Y0);
-	const FSolidTerrainPoint& P01 = GetPoint(X0, Y1);
-	const FSolidTerrainPoint& P11 = GetPoint(X1, Y1);
+	const FSolidTerrainPoint& P00 = GetPoint(TerrainX0, TerrainY0);
+	const FSolidTerrainPoint& P10 = GetPoint(TerrainX1, TerrainY0);
+	const FSolidTerrainPoint& P01 = GetPoint(TerrainX0, TerrainY1);
+	const FSolidTerrainPoint& P11 = GetPoint(TerrainX1, TerrainY1);
 
 	Result.Height = FMath::Lerp(FMath::Lerp(P00.Height, P10.Height, Tx), FMath::Lerp(P01.Height, P11.Height, Tx), Ty);
 	Result.Threat = FMath::Lerp(FMath::Lerp(P00.Threat, P10.Threat, Tx), FMath::Lerp(P01.Threat, P11.Threat, Tx), Ty);
@@ -363,19 +363,19 @@ int32 USolidTerrainMap::ApplyExplorationFogAround(
 	int32 Changed = 0;
 	auto VisitBox = [&](float MinX, float MaxX, float MinY, float MaxY, bool bRingsOnly, float InnerSq, float OuterSq)
 	{
-		const int32 X0 = FMath::Clamp(
+		const int32 TerrainX0 = FMath::Clamp(
 			FMath::FloorToInt((MinX - OriginXY.X) / PointSpacing), 0, GridWidth - 1);
-		const int32 X1 = FMath::Clamp(
+		const int32 TerrainX1 = FMath::Clamp(
 			FMath::CeilToInt((MaxX - OriginXY.X) / PointSpacing), 0, GridWidth - 1);
-		const int32 Y0 = FMath::Clamp(
+		const int32 TerrainY0 = FMath::Clamp(
 			FMath::FloorToInt((MinY - OriginXY.Y) / PointSpacing), 0, GridHeight - 1);
-		const int32 Y1 = FMath::Clamp(
+		const int32 TerrainY1 = FMath::Clamp(
 			FMath::CeilToInt((MaxY - OriginXY.Y) / PointSpacing), 0, GridHeight - 1);
-		for (int32 IY = Y0; IY <= Y1; ++IY)
+		for (int32 TerrainY = TerrainY0; TerrainY <= TerrainY1; ++TerrainY)
 		{
-			for (int32 IX = X0; IX <= X1; ++IX)
+			for (int32 TerrainX = TerrainX0; TerrainX <= TerrainX1; ++TerrainX)
 			{
-				FSolidTerrainPoint& Point = Points[IY * GridWidth + IX];
+				FSolidTerrainPoint& Point = Points[TerrainY * GridWidth + TerrainX];
 				const float DistSq = FVector2D::DistSquared(FVector2D(Point.X, Point.Y), FVector2D(WorldX, WorldY));
 				if (bRingsOnly && (DistSq < InnerSq || DistSq > OuterSq))
 				{

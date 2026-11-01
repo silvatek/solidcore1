@@ -40,9 +40,9 @@ namespace
 
 	FIntPoint WallgatePoint(const USolidWorldChart& Map, const FVector2D& World)
 	{
-		FIntPoint Point = FIntPoint::ZeroValue;
-		Map.TerrainPointAt(World.X, World.Y, WallgateTestMin, WallgateTestMax, Point);
-		return Point;
+		FIntPoint TerrainPoint = FIntPoint::ZeroValue;
+		Map.TerrainPointAt(World.X, World.Y, WallgateTestMin, WallgateTestMax, TerrainPoint);
+		return TerrainPoint;
 	}
 
 	bool WallgatePaint(

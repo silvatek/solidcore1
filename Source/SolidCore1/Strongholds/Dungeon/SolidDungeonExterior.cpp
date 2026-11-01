@@ -508,18 +508,18 @@ float ASolidDungeonExterior::GroundDropCm(
 	const float YMax = WorldMax.Y - static_cast<float>(Cell.Y) * CellH;
 	const float YMin = YMax - CellH;
 	const float Spacing = FMath::Max(Terrain->PointSpacing, 1.f);
-	const int32 X0 = FMath::Clamp(FMath::FloorToInt((XMin - WorldMin.X) / Spacing), 0, Terrain->GridWidth - 1);
-	const int32 X1 = FMath::Clamp(FMath::CeilToInt((XMax - WorldMin.X) / Spacing), 0, Terrain->GridWidth - 1);
-	const int32 Y0 = FMath::Clamp(FMath::FloorToInt((YMin - WorldMin.Y) / Spacing), 0, Terrain->GridHeight - 1);
-	const int32 Y1 = FMath::Clamp(FMath::CeilToInt((YMax - WorldMin.Y) / Spacing), 0, Terrain->GridHeight - 1);
+	const int32 TerrainX0 = FMath::Clamp(FMath::FloorToInt((XMin - WorldMin.X) / Spacing), 0, Terrain->GridWidth - 1);
+	const int32 TerrainX1 = FMath::Clamp(FMath::CeilToInt((XMax - WorldMin.X) / Spacing), 0, Terrain->GridWidth - 1);
+	const int32 TerrainY0 = FMath::Clamp(FMath::FloorToInt((YMin - WorldMin.Y) / Spacing), 0, Terrain->GridHeight - 1);
+	const int32 TerrainY1 = FMath::Clamp(FMath::CeilToInt((YMax - WorldMin.Y) / Spacing), 0, Terrain->GridHeight - 1);
 
 	float Lowest = TNumericLimits<float>::Max();
 	int32 Count = 0;
-	for (int32 IndexY = Y0; IndexY <= Y1; ++IndexY)
+	for (int32 TerrainY = TerrainY0; TerrainY <= TerrainY1; ++TerrainY)
 	{
-		for (int32 IndexX = X0; IndexX <= X1; ++IndexX)
+		for (int32 TerrainX = TerrainX0; TerrainX <= TerrainX1; ++TerrainX)
 		{
-			const FSolidTerrainPoint& Point = Terrain->GetPoint(IndexX, IndexY);
+			const FSolidTerrainPoint& Point = Terrain->GetPoint(TerrainX, TerrainY);
 			FIntPoint PointCell = FIntPoint::ZeroValue;
 			if (!Map->CellAtWorld(Point.X, Point.Y, WorldMin, WorldMax, PointCell) || PointCell != Cell)
 			{

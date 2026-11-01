@@ -119,11 +119,11 @@ bool FSolidTerrainSeatTest::RunTest(const FString& Parameters)
 			Known = FMath::Min(Known, Map->SampleHeight(WideActor.X + Sample.X, WideActor.Y + Sample.Y));
 		}
 	}
-	for (int32 IndexY = 0; IndexY < Map->GridHeight; ++IndexY)
+	for (int32 TerrainY = 0; TerrainY < Map->GridHeight; ++TerrainY)
 	{
-		for (int32 IndexX = 0; IndexX < Map->GridWidth; ++IndexX)
+		for (int32 TerrainX = 0; TerrainX < Map->GridWidth; ++TerrainX)
 		{
-			const FSolidTerrainPoint& TerrainPoint = Map->GetPoint(IndexX, IndexY);
+			const FSolidTerrainPoint& TerrainPoint = Map->GetPoint(TerrainX, TerrainY);
 			if (SolidTerrainSeat::Contains(WideActor, 0.f, Wide, TerrainPoint.X, TerrainPoint.Y))
 			{
 				Known = FMath::Min(Known, TerrainPoint.Height);

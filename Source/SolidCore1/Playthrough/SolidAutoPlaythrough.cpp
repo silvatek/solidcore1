@@ -885,10 +885,10 @@ bool FSolidAutoPlaythrough::BuildWalk(const ASolidGameMode& Mode, const FVector&
 	const FVector2D Paint = SolidRoad::StripPaintOffset();
 	TArray<FVector2D> Centers;
 	Centers.Reserve(RoutePoints.Num());
-	for (const FIntPoint& Point : RoutePoints)
+	for (const FIntPoint& TerrainPoint : RoutePoints)
 	{
 		FVector2D WorldXY = FVector2D::ZeroVector;
-		if (Chart->TerrainPointToWorld(Point, WorldMin, WorldMax, WorldXY))
+		if (Chart->TerrainPointToWorld(TerrainPoint, WorldMin, WorldMax, WorldXY))
 		{
 			Centers.Add(WorldXY + Paint);
 		}
@@ -1136,10 +1136,10 @@ bool FSolidAutoPlaythrough::BuildIglinTrail(const ASolidGameMode& Mode, const FV
 	const FVector2D Paint = SolidRoad::StripPaintOffset();
 	TArray<FVector2D> Centers;
 	Centers.Reserve(RoutePoints.Num());
-	for (const FIntPoint& Point : RoutePoints)
+	for (const FIntPoint& TerrainPoint : RoutePoints)
 	{
 		FVector2D WorldXY = FVector2D::ZeroVector;
-		if (Chart->TerrainPointToWorld(Point, WorldMin, WorldMax, WorldXY))
+		if (Chart->TerrainPointToWorld(TerrainPoint, WorldMin, WorldMax, WorldXY))
 		{
 			Centers.Add(WorldXY + Paint);
 		}

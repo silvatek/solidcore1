@@ -66,23 +66,23 @@ namespace SolidRoad
 			return true;
 		}
 
-		bool PointIsRiver(const USolidWorldChart& Map, const int32 X, const int32 Y)
+		bool PointIsRiver(const USolidWorldChart& Map, const int32 CellX, const int32 CellY)
 		{
-			if (X < 0 || Y < 0 || X >= USolidWorldChart::MapWidth || Y >= USolidWorldChart::MapHeight)
+			if (CellX < 0 || CellY < 0 || CellX >= USolidWorldChart::MapWidth || CellY >= USolidWorldChart::MapHeight)
 			{
 				return false;
 			}
-			return Map.GetPointBiomeAtCell(X, Y) == ESolidBiome::River;
+			return Map.GetPointBiomeAtCell(CellX, CellY) == ESolidBiome::River;
 		}
 
 		/**
 		 * A river step is allowed when it runs across the channel, not along it.
 		 * A cell with no river beside it is a pond, so the step crosses it.
 		 */
-		bool StepIsSquareToRiver(const USolidWorldChart& Map, const FIntPoint& From, const FIntPoint& To)
+		bool StepIsSquareToRiver(const USolidWorldChart& Map, const FIntPoint& FromCell, const FIntPoint& ToCell)
 		{
-			const bool bAlongY = PointIsRiver(Map, To.X, To.Y - 1) || PointIsRiver(Map, To.X, To.Y + 1);
-			const bool bAlongX = PointIsRiver(Map, To.X + 1, To.Y) || PointIsRiver(Map, To.X - 1, To.Y);
+			const bool bAlongY = PointIsRiver(Map, ToCell.X, ToCell.Y - 1) || PointIsRiver(Map, ToCell.X, ToCell.Y + 1);
+			const bool bAlongX = PointIsRiver(Map, ToCell.X + 1, ToCell.Y) || PointIsRiver(Map, ToCell.X - 1, ToCell.Y);
 			if (!bAlongY && !bAlongX)
 			{
 				return true;
@@ -91,7 +91,7 @@ namespace SolidRoad
 			{
 				return false;
 			}
-			const FIntPoint Step(To.X - From.X, To.Y - From.Y);
+			const FIntPoint Step(ToCell.X - FromCell.X, ToCell.Y - FromCell.Y);
 			if (bAlongY)
 			{
 				return Step.X != 0 && Step.Y == 0;
@@ -99,19 +99,19 @@ namespace SolidRoad
 			return Step.Y != 0 && Step.X == 0;
 		}
 
-		bool CellBesideRiver(const USolidWorldChart& Map, const int32 X, const int32 Y)
+		bool CellBesideRiver(const USolidWorldChart& Map, const int32 CellX, const int32 CellY)
 		{
 			for (int32 OffsetY = -RiverBendReach; OffsetY <= RiverBendReach; ++OffsetY)
 			{
 				for (int32 OffsetX = -RiverBendReach; OffsetX <= RiverBendReach; ++OffsetX)
 				{
-					const int32 NextX = X + OffsetX;
-					const int32 NextY = Y + OffsetY;
-					if (NextX < 0 || NextY < 0 || NextX >= USolidWorldChart::MapWidth || NextY >= USolidWorldChart::MapHeight)
+					const int32 NextCellX = CellX + OffsetX;
+					const int32 NextCellY = CellY + OffsetY;
+					if (NextCellX < 0 || NextCellY < 0 || NextCellX >= USolidWorldChart::MapWidth || NextCellY >= USolidWorldChart::MapHeight)
 					{
 						continue;
 					}
-					if (Map.GetMarkerAtCell(NextX, NextY) == USolidWorldChart::RiverMarker)
+					if (Map.GetMarkerAtCell(NextCellX, NextCellY) == USolidWorldChart::RiverMarker)
 					{
 						return true;
 					}
@@ -128,8 +128,8 @@ namespace SolidRoad
 			int32 Best = MAX_int32;
 			for (const int32 RiverIndex : RiverIndices)
 			{
-				const FIntPoint& River = Cells[RiverIndex];
-				Best = FMath::Min(Best, FMath::Max(FMath::Abs(Cell.X - River.X), FMath::Abs(Cell.Y - River.Y)));
+				const FIntPoint& RiverCell = Cells[RiverIndex];
+				Best = FMath::Min(Best, FMath::Max(FMath::Abs(Cell.X - RiverCell.X), FMath::Abs(Cell.Y - RiverCell.Y)));
 			}
 			return Best;
 		}
@@ -181,33 +181,33 @@ namespace SolidRoad
 						continue;
 					}
 
-					const FIntPoint Side = Cells[Index - 1] + Out;
-					if (Side + In != Cells[Index + 1])
+					const FIntPoint SideCell = Cells[Index - 1] + Out;
+					if (SideCell + In != Cells[Index + 1])
 					{
 						continue;
 					}
-					if (ChebyshevToRiver(Cells, Rivers, Side) >= ChebyshevToRiver(Cells, Rivers, Cells[Index]))
+					if (ChebyshevToRiver(Cells, Rivers, SideCell) >= ChebyshevToRiver(Cells, Rivers, Cells[Index]))
 					{
 						continue;
 					}
-					if (Side.X < 0 || Side.Y < 0 || Side.X >= USolidWorldChart::MapWidth || Side.Y >= USolidWorldChart::MapHeight)
+					if (SideCell.X < 0 || SideCell.Y < 0 || SideCell.X >= USolidWorldChart::MapWidth || SideCell.Y >= USolidWorldChart::MapHeight)
 					{
 						continue;
 					}
-					if (Map.GetMarkerAtCell(Side.X, Side.Y) == USolidWorldChart::RiverMarker)
+					if (Map.GetMarkerAtCell(SideCell.X, SideCell.Y) == USolidWorldChart::RiverMarker)
 					{
 						continue;
 					}
-					if (EnterCost(Type, Map.GetPointBiomeAtCell(Side.X, Side.Y)) < 0)
+					if (EnterCost(Type, Map.GetPointBiomeAtCell(SideCell.X, SideCell.Y)) < 0)
 					{
 						continue;
 					}
-					if (Cells.Contains(Side))
+					if (Cells.Contains(SideCell))
 					{
 						continue;
 					}
 
-					Cells[Index] = Side;
+					Cells[Index] = SideCell;
 					bChanged = true;
 					break;
 				}
@@ -245,22 +245,22 @@ namespace SolidRoad
 			}
 		}
 
-		void TerrainLine(const FIntPoint& From, const FIntPoint& To, TArray<FIntPoint>& OutPoints)
+		void TerrainLine(const FIntPoint& FromTerrainPoint, const FIntPoint& ToTerrainPoint, TArray<FIntPoint>& OutPoints)
 		{
 			OutPoints.Reset();
-			int32 X0 = From.X;
-			int32 Y0 = From.Y;
-			const int32 X1 = To.X;
-			const int32 Y1 = To.Y;
-			const int32 Dx = FMath::Abs(X1 - X0);
-			const int32 Dy = FMath::Abs(Y1 - Y0);
-			const int32 Sx = X0 < X1 ? 1 : -1;
-			const int32 Sy = Y0 < Y1 ? 1 : -1;
+			int32 TerrainX = FromTerrainPoint.X;
+			int32 TerrainY = FromTerrainPoint.Y;
+			const int32 TerrainX1 = ToTerrainPoint.X;
+			const int32 TerrainY1 = ToTerrainPoint.Y;
+			const int32 Dx = FMath::Abs(TerrainX1 - TerrainX);
+			const int32 Dy = FMath::Abs(TerrainY1 - TerrainY);
+			const int32 Sx = TerrainX < TerrainX1 ? 1 : -1;
+			const int32 Sy = TerrainY < TerrainY1 ? 1 : -1;
 			int32 Err = Dx - Dy;
 			while (true)
 			{
-				OutPoints.Add(FIntPoint(X0, Y0));
-				if (X0 == X1 && Y0 == Y1)
+				OutPoints.Add(FIntPoint(TerrainX, TerrainY));
+				if (TerrainX == TerrainX1 && TerrainY == TerrainY1)
 				{
 					break;
 				}
@@ -268,35 +268,35 @@ namespace SolidRoad
 				if (Twice > -Dy)
 				{
 					Err -= Dy;
-					X0 += Sx;
+					TerrainX += Sx;
 				}
 				if (Twice < Dx)
 				{
 					Err += Dx;
-					Y0 += Sy;
+					TerrainY += Sy;
 				}
 			}
 		}
 
-		bool RiverPoint(const USolidWorldChart& Map, const int32 X, const int32 Y)
+		bool RiverPoint(const USolidWorldChart& Map, const int32 TerrainX, const int32 TerrainY)
 		{
-			if (X < 0 || Y < 0 || X >= USolidWorldChart::PointAxis || Y >= USolidWorldChart::PointAxis)
+			if (TerrainX < 0 || TerrainY < 0 || TerrainX >= USolidWorldChart::PointAxis || TerrainY >= USolidWorldChart::PointAxis)
 			{
 				return false;
 			}
-			return Map.GetPointBiome(FIntPoint(X, Y)) == ESolidBiome::River;
+			return Map.GetPointBiome(FIntPoint(TerrainX, TerrainY)) == ESolidBiome::River;
 		}
 
-		bool LineStepAllowed(const USolidWorldChart& Map, const EType Type, const FIntPoint& From, const FIntPoint& To)
+		bool LineStepAllowed(const USolidWorldChart& Map, const EType Type, const FIntPoint& FromTerrainPoint, const FIntPoint& ToTerrainPoint)
 		{
-			const ESolidBiome Biome = Map.GetPointBiome(To);
+			const ESolidBiome Biome = Map.GetPointBiome(ToTerrainPoint);
 			if (Biome != ESolidBiome::River)
 			{
 				return EnterCost(Type, Biome, false) >= 0;
 			}
-			const int32 AlongY = (RiverPoint(Map, To.X, To.Y + 1) ? 1 : 0) + (RiverPoint(Map, To.X, To.Y - 1) ? 1 : 0);
-			const int32 AlongX = (RiverPoint(Map, To.X + 1, To.Y) ? 1 : 0) + (RiverPoint(Map, To.X - 1, To.Y) ? 1 : 0);
-			const FIntPoint Step(To.X - From.X, To.Y - From.Y);
+			const int32 AlongY = (RiverPoint(Map, ToTerrainPoint.X, ToTerrainPoint.Y + 1) ? 1 : 0) + (RiverPoint(Map, ToTerrainPoint.X, ToTerrainPoint.Y - 1) ? 1 : 0);
+			const int32 AlongX = (RiverPoint(Map, ToTerrainPoint.X + 1, ToTerrainPoint.Y) ? 1 : 0) + (RiverPoint(Map, ToTerrainPoint.X - 1, ToTerrainPoint.Y) ? 1 : 0);
+			const FIntPoint Step(ToTerrainPoint.X - FromTerrainPoint.X, ToTerrainPoint.Y - FromTerrainPoint.Y);
 			bool bSquare = true;
 			if (AlongY == 0 && AlongX == 0)
 			{
@@ -317,16 +317,16 @@ namespace SolidRoad
 			return EnterCost(Type, Biome, bSquare) >= 0;
 		}
 
-		bool OnTerrainPoint(const FIntPoint& Point)
+		bool OnTerrainPoint(const FIntPoint& TerrainPoint)
 		{
-			return Point.X >= 0 && Point.Y >= 0
-				&& Point.X < USolidWorldChart::PointAxis
-				&& Point.Y < USolidWorldChart::PointAxis;
+			return TerrainPoint.X >= 0 && TerrainPoint.Y >= 0
+				&& TerrainPoint.X < USolidWorldChart::PointAxis
+				&& TerrainPoint.Y < USolidWorldChart::PointAxis;
 		}
 
-		int32 PointKey(const FIntPoint& Point)
+		int32 PointKey(const FIntPoint& TerrainPoint)
 		{
-			return Point.Y * USolidWorldChart::PointAxis + Point.X;
+			return TerrainPoint.Y * USolidWorldChart::PointAxis + TerrainPoint.X;
 		}
 
 		const FIntPoint PointSteps[] = {
@@ -343,16 +343,16 @@ namespace SolidRoad
 		/** Rings around one banned run. Another ring would leave that patch. */
 		constexpr int32 DetourReach = 8;
 
-		bool BesideMountainOrSea(const USolidWorldChart& Map, const FIntPoint& Point)
+		bool BesideMountainOrSea(const USolidWorldChart& Map, const FIntPoint& TerrainPoint)
 		{
 			for (const FIntPoint& Step : PointSteps)
 			{
-				const FIntPoint Side = Point + Step;
-				if (!OnTerrainPoint(Side))
+				const FIntPoint SideTerrainPoint = TerrainPoint + Step;
+				if (!OnTerrainPoint(SideTerrainPoint))
 				{
 					continue;
 				}
-				const ESolidBiome Biome = Map.GetPointBiome(Side);
+				const ESolidBiome Biome = Map.GetPointBiome(SideTerrainPoint);
 				if (Biome == ESolidBiome::Mountain || Biome == ESolidBiome::Sea)
 				{
 					return true;
@@ -374,8 +374,8 @@ namespace SolidRoad
 				return false;
 			}
 
-			const FIntPoint Before = Line[First - 1];
-			const FIntPoint After = Line[Last + 1];
+			const FIntPoint BeforeTerrainPoint = Line[First - 1];
+			const FIntPoint AfterTerrainPoint = Line[Last + 1];
 			TSet<int32> Banned;
 			TArray<FIntPoint> Frontier;
 			bool bClearMountain = false;
@@ -394,22 +394,22 @@ namespace SolidRoad
 			for (int32 Ring = 0; Ring < DetourReach; ++Ring)
 			{
 				TArray<FIntPoint> Grown;
-				for (const FIntPoint& Point : Frontier)
+				for (const FIntPoint& TerrainPoint : Frontier)
 				{
 					for (const FIntPoint& Step : PointSteps)
 					{
-						const FIntPoint Side = Point + Step;
-						if (!OnTerrainPoint(Side))
+						const FIntPoint SideTerrainPoint = TerrainPoint + Step;
+						if (!OnTerrainPoint(SideTerrainPoint))
 						{
 							continue;
 						}
-						const int32 Key = PointKey(Side);
+						const int32 Key = PointKey(SideTerrainPoint);
 						if (Banned.Contains(Key) || Beside.Contains(Key))
 						{
 							continue;
 						}
 						Beside.Add(Key);
-						Grown.Add(Side);
+						Grown.Add(SideTerrainPoint);
 					}
 				}
 				if (Grown.Num() == 0)
@@ -417,40 +417,40 @@ namespace SolidRoad
 					return false;
 				}
 				Frontier = Grown;
-				Beside.Add(PointKey(Before));
-				Beside.Add(PointKey(After));
+				Beside.Add(PointKey(BeforeTerrainPoint));
+				Beside.Add(PointKey(AfterTerrainPoint));
 
 				TArray<FIntPoint> Queue;
 				TMap<int32, int32> CameFrom;
-				Queue.Add(Before);
-				CameFrom.Add(PointKey(Before), INDEX_NONE);
+				Queue.Add(BeforeTerrainPoint);
+				CameFrom.Add(PointKey(BeforeTerrainPoint), INDEX_NONE);
 				bool bFound = false;
 				for (int32 Index = 0; Index < Queue.Num(); ++Index)
 				{
-					const FIntPoint Here = Queue[Index];
-					if (Here == After)
+					const FIntPoint HereTerrainPoint = Queue[Index];
+					if (HereTerrainPoint == AfterTerrainPoint)
 					{
 						bFound = true;
 						break;
 					}
 					for (const FIntPoint& Step : PointSteps)
 					{
-						const FIntPoint Next = Here + Step;
-						if (!OnTerrainPoint(Next))
+						const FIntPoint NextTerrainPoint = HereTerrainPoint + Step;
+						if (!OnTerrainPoint(NextTerrainPoint))
 						{
 							continue;
 						}
-						const int32 Key = PointKey(Next);
-						if (!Beside.Contains(Key) || CameFrom.Contains(Key) || !LineStepAllowed(Map, Type, Here, Next))
+						const int32 Key = PointKey(NextTerrainPoint);
+						if (!Beside.Contains(Key) || CameFrom.Contains(Key) || !LineStepAllowed(Map, Type, HereTerrainPoint, NextTerrainPoint))
 						{
 							continue;
 						}
-						if (bClearMountain && Next != Before && Next != After && BesideMountainOrSea(Map, Next))
+						if (bClearMountain && NextTerrainPoint != BeforeTerrainPoint && NextTerrainPoint != AfterTerrainPoint && BesideMountainOrSea(Map, NextTerrainPoint))
 						{
 							continue;
 						}
-						CameFrom.Add(Key, PointKey(Here));
-						Queue.Add(Next);
+						CameFrom.Add(Key, PointKey(HereTerrainPoint));
+						Queue.Add(NextTerrainPoint);
 					}
 				}
 				if (!bFound)
@@ -459,7 +459,7 @@ namespace SolidRoad
 				}
 
 				TArray<FIntPoint> Reversed;
-				for (int32 Key = PointKey(After); Key != INDEX_NONE; Key = CameFrom[Key])
+				for (int32 Key = PointKey(AfterTerrainPoint); Key != INDEX_NONE; Key = CameFrom[Key])
 				{
 					Reversed.Add(FIntPoint(Key % USolidWorldChart::PointAxis, Key / USolidWorldChart::PointAxis));
 					if (Reversed.Num() > Beside.Num())
@@ -486,10 +486,10 @@ namespace SolidRoad
 			return false;
 		}
 
-		bool RiverAxis(const USolidWorldChart& Map, const FIntPoint& Point, FIntPoint& OutAlong, FIntPoint& OutAcross)
+		bool RiverAxis(const USolidWorldChart& Map, const FIntPoint& TerrainPoint, FIntPoint& OutAlong, FIntPoint& OutAcross)
 		{
-			const int32 AlongY = (RiverPoint(Map, Point.X, Point.Y + 1) ? 1 : 0) + (RiverPoint(Map, Point.X, Point.Y - 1) ? 1 : 0);
-			const int32 AlongX = (RiverPoint(Map, Point.X + 1, Point.Y) ? 1 : 0) + (RiverPoint(Map, Point.X - 1, Point.Y) ? 1 : 0);
+			const int32 AlongY = (RiverPoint(Map, TerrainPoint.X, TerrainPoint.Y + 1) ? 1 : 0) + (RiverPoint(Map, TerrainPoint.X, TerrainPoint.Y - 1) ? 1 : 0);
+			const int32 AlongX = (RiverPoint(Map, TerrainPoint.X + 1, TerrainPoint.Y) ? 1 : 0) + (RiverPoint(Map, TerrainPoint.X - 1, TerrainPoint.Y) ? 1 : 0);
 			if (AlongX > AlongY)
 			{
 				OutAlong = FIntPoint(1, 0);
@@ -507,24 +507,24 @@ namespace SolidRoad
 
 		bool FindRiverBank(
 			const USolidWorldChart& Map,
-			const FIntPoint& Anchor,
+			const FIntPoint& AnchorTerrainPoint,
 			const FIntPoint& Dir,
-			FIntPoint& OutBank)
+			FIntPoint& OutBankTerrainPoint)
 		{
-			FIntPoint Here = Anchor;
+			FIntPoint HereTerrainPoint = AnchorTerrainPoint;
 			for (int32 Step = 0; Step < 6; ++Step)
 			{
-				const FIntPoint Next = Here + Dir;
-				if (!OnTerrainPoint(Next))
+				const FIntPoint NextTerrainPoint = HereTerrainPoint + Dir;
+				if (!OnTerrainPoint(NextTerrainPoint))
 				{
 					return false;
 				}
-				if (!RiverPoint(Map, Next.X, Next.Y))
+				if (!RiverPoint(Map, NextTerrainPoint.X, NextTerrainPoint.Y))
 				{
-					OutBank = Next;
+					OutBankTerrainPoint = NextTerrainPoint;
 					return true;
 				}
-				Here = Next;
+				HereTerrainPoint = NextTerrainPoint;
 			}
 			return false;
 		}
@@ -545,7 +545,7 @@ namespace SolidRoad
 
 			FIntPoint Along = FIntPoint::ZeroValue;
 			FIntPoint Across = FIntPoint::ZeroValue;
-			FIntPoint Hit = FIntPoint::ZeroValue;
+			FIntPoint HitTerrainPoint = FIntPoint::ZeroValue;
 			bool bAxis = false;
 			for (int32 Index = First; Index <= Last; ++Index)
 			{
@@ -555,7 +555,7 @@ namespace SolidRoad
 				}
 				if (!bAxis && RiverAxis(Map, Line[Index], Along, Across))
 				{
-					Hit = Line[Index];
+					HitTerrainPoint = Line[Index];
 					bAxis = true;
 				}
 			}
@@ -564,11 +564,11 @@ namespace SolidRoad
 				return false;
 			}
 
-			const FIntPoint Before = Line[First - 1];
-			const FIntPoint After = Line[Last + 1];
-			const auto StepsBetween = [](const FIntPoint& A, const FIntPoint& B)
+			const FIntPoint BeforeTerrainPoint = Line[First - 1];
+			const FIntPoint AfterTerrainPoint = Line[Last + 1];
+			const auto StepsBetween = [](const FIntPoint& FromTerrainPoint, const FIntPoint& ToTerrainPoint)
 			{
-				return FMath::Abs(A.X - B.X) + FMath::Abs(A.Y - B.Y);
+				return FMath::Abs(FromTerrainPoint.X - ToTerrainPoint.X) + FMath::Abs(FromTerrainPoint.Y - ToTerrainPoint.Y);
 			};
 
 			for (int32 Slide = 0; Slide <= DetourReach; ++Slide)
@@ -579,58 +579,58 @@ namespace SolidRoad
 					{
 						continue;
 					}
-					const FIntPoint Anchor = Hit + Along * (Sign * Slide);
-					if (!OnTerrainPoint(Anchor) || !RiverPoint(Map, Anchor.X, Anchor.Y))
+					const FIntPoint AnchorTerrainPoint = HitTerrainPoint + Along * (Sign * Slide);
+					if (!OnTerrainPoint(AnchorTerrainPoint) || !RiverPoint(Map, AnchorTerrainPoint.X, AnchorTerrainPoint.Y))
 					{
 						continue;
 					}
-					FIntPoint BankA = FIntPoint::ZeroValue;
-					FIntPoint BankB = FIntPoint::ZeroValue;
-					if (!FindRiverBank(Map, Anchor, FIntPoint(-Across.X, -Across.Y), BankA)
-						|| !FindRiverBank(Map, Anchor, Across, BankB))
+					FIntPoint BankATerrainPoint = FIntPoint::ZeroValue;
+					FIntPoint BankBTerrainPoint = FIntPoint::ZeroValue;
+					if (!FindRiverBank(Map, AnchorTerrainPoint, FIntPoint(-Across.X, -Across.Y), BankATerrainPoint)
+						|| !FindRiverBank(Map, AnchorTerrainPoint, Across, BankBTerrainPoint))
 					{
 						continue;
 					}
 
 					TArray<FIntPoint> Crossing;
-					Crossing.Add(BankA);
-					FIntPoint Here = BankA;
+					Crossing.Add(BankATerrainPoint);
+					FIntPoint HereTerrainPoint = BankATerrainPoint;
 					bool bReached = false;
 					for (int32 Step = 0; Step < 8; ++Step)
 					{
-						const FIntPoint Next = Here + Across;
-						if (!OnTerrainPoint(Next) || !LineStepAllowed(Map, Type, Here, Next))
+						const FIntPoint NextTerrainPoint = HereTerrainPoint + Across;
+						if (!OnTerrainPoint(NextTerrainPoint) || !LineStepAllowed(Map, Type, HereTerrainPoint, NextTerrainPoint))
 						{
 							break;
 						}
-						Crossing.Add(Next);
-						if (Next == BankB)
+						Crossing.Add(NextTerrainPoint);
+						if (NextTerrainPoint == BankBTerrainPoint)
 						{
 							bReached = true;
 							break;
 						}
-						Here = Next;
+						HereTerrainPoint = NextTerrainPoint;
 					}
 					if (!bReached)
 					{
 						continue;
 					}
 
-					const FIntPoint Near = StepsBetween(Before, BankA) <= StepsBetween(Before, BankB) ? BankA : BankB;
-					const FIntPoint Far = Near == BankA ? BankB : BankA;
-					if (StepsBetween(After, Far) >= StepsBetween(After, Near))
+					const FIntPoint NearTerrainPoint = StepsBetween(BeforeTerrainPoint, BankATerrainPoint) <= StepsBetween(BeforeTerrainPoint, BankBTerrainPoint) ? BankATerrainPoint : BankBTerrainPoint;
+					const FIntPoint FarTerrainPoint = NearTerrainPoint == BankATerrainPoint ? BankBTerrainPoint : BankATerrainPoint;
+					if (StepsBetween(AfterTerrainPoint, FarTerrainPoint) >= StepsBetween(AfterTerrainPoint, NearTerrainPoint))
 					{
 						continue;
 					}
 
-					auto OpenTo = [&Map, Type](const FIntPoint& From, const FIntPoint& To) -> bool
+					auto OpenTo = [&Map, Type](const FIntPoint& FromTerrainPoint, const FIntPoint& ToTerrainPoint) -> bool
 					{
-						if (From == To)
+						if (FromTerrainPoint == ToTerrainPoint)
 						{
 							return true;
 						}
 						TArray<FIntPoint> Segment;
-						TerrainLine(From, To, Segment);
+						TerrainLine(FromTerrainPoint, ToTerrainPoint, Segment);
 						for (int32 Index = 1; Index < Segment.Num(); ++Index)
 						{
 							if (!LineStepAllowed(Map, Type, Segment[Index - 1], Segment[Index]))
@@ -640,7 +640,7 @@ namespace SolidRoad
 						}
 						return true;
 					};
-					if (!OpenTo(Before, Near) || !OpenTo(Far, After))
+					if (!OpenTo(BeforeTerrainPoint, NearTerrainPoint) || !OpenTo(FarTerrainPoint, AfterTerrainPoint))
 					{
 						continue;
 					}
@@ -650,23 +650,23 @@ namespace SolidRoad
 					{
 						OutPoints.Add(Line[Index]);
 					}
-					auto AppendLine = [&OutPoints](const FIntPoint& From, const FIntPoint& To)
+					auto AppendLine = [&OutPoints](const FIntPoint& FromTerrainPoint, const FIntPoint& ToTerrainPoint)
 					{
-						if (From == To)
+						if (FromTerrainPoint == ToTerrainPoint)
 						{
 							return;
 						}
 						TArray<FIntPoint> Segment;
-						TerrainLine(From, To, Segment);
+						TerrainLine(FromTerrainPoint, ToTerrainPoint, Segment);
 						for (int32 Index = 1; Index < Segment.Num(); ++Index)
 						{
 							OutPoints.Add(Segment[Index]);
 						}
 					};
-					AppendLine(Before, Near);
-					const int32 Start = Crossing[0] == Near ? 1 : Crossing.Num() - 2;
-					const int32 Step = Crossing[0] == Near ? 1 : -1;
-					const int32 Stop = Crossing[0] == Near ? Crossing.Num() : -1;
+					AppendLine(BeforeTerrainPoint, NearTerrainPoint);
+					const int32 Start = Crossing[0] == NearTerrainPoint ? 1 : Crossing.Num() - 2;
+					const int32 Step = Crossing[0] == NearTerrainPoint ? 1 : -1;
+					const int32 Stop = Crossing[0] == NearTerrainPoint ? Crossing.Num() : -1;
 					for (int32 Index = Start; Index != Stop; Index += Step)
 					{
 						if (OutPoints.Num() == 0 || OutPoints.Last() != Crossing[Index])
@@ -674,7 +674,7 @@ namespace SolidRoad
 							OutPoints.Add(Crossing[Index]);
 						}
 					}
-					AppendLine(Far, After);
+					AppendLine(FarTerrainPoint, AfterTerrainPoint);
 					for (int32 Index = Last + 2; Index < Line.Num(); ++Index)
 					{
 						OutPoints.Add(Line[Index]);
@@ -688,11 +688,11 @@ namespace SolidRoad
 		bool StraightRunAllowed(
 			const USolidWorldChart& Map,
 			const EType Type,
-			const FIntPoint& From,
-			const FIntPoint& To)
+			const FIntPoint& FromTerrainPoint,
+			const FIntPoint& ToTerrainPoint)
 		{
 			TArray<FIntPoint> Line;
-			TerrainLine(From, To, Line);
+			TerrainLine(FromTerrainPoint, ToTerrainPoint, Line);
 			for (int32 Index = 1; Index < Line.Num(); ++Index)
 			{
 				if (!LineStepAllowed(Map, Type, Line[Index - 1], Line[Index]))
@@ -820,15 +820,15 @@ namespace SolidRoad
 		{
 			return false;
 		}
-		FIntPoint FromPoint = FIntPoint::ZeroValue;
-		FIntPoint ToPoint = FIntPoint::ZeroValue;
-		if (!Map.TerrainPointAt(FromChartCm.X, FromChartCm.Y, ChartMin, ChartMax, FromPoint)
-			|| !Map.TerrainPointAt(ToChartCm.X, ToChartCm.Y, ChartMin, ChartMax, ToPoint))
+		FIntPoint FromTerrainPoint = FIntPoint::ZeroValue;
+		FIntPoint ToTerrainPoint = FIntPoint::ZeroValue;
+		if (!Map.TerrainPointAt(FromChartCm.X, FromChartCm.Y, ChartMin, ChartMax, FromTerrainPoint)
+			|| !Map.TerrainPointAt(ToChartCm.X, ToChartCm.Y, ChartMin, ChartMax, ToTerrainPoint))
 		{
 			return false;
 		}
 
-		TerrainLine(FromPoint, ToPoint, Points);
+		TerrainLine(FromTerrainPoint, ToTerrainPoint, Points);
 		bool bOpen = false;
 		for (int32 Attempt = 0; Attempt < 4; ++Attempt)
 		{
@@ -837,12 +837,12 @@ namespace SolidRoad
 			{
 				if (!LineStepAllowed(Map, Type, Points[Index - 1], Points[Index]))
 				{
-					const FIntPoint& Block = Points[Index];
+					const FIntPoint& BlockTerrainPoint = Points[Index];
 					UE_LOG(LogSolid, Warning, TEXT("%s: blocked at %d,%d %s."),
 						*toString(),
-						Block.X,
-						Block.Y,
-						SolidBiome::Of(Map.GetPointBiome(Block)).Name());
+						BlockTerrainPoint.X,
+						BlockTerrainPoint.Y,
+						SolidBiome::Of(Map.GetPointBiome(BlockTerrainPoint)).Name());
 					Blocked.Add(Index);
 				}
 			}

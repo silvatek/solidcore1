@@ -128,28 +128,28 @@ namespace SolidTerrainSeat
 
 		const FVector2D WorldCenter = ToWorld(ActorLocation, YawDeg, Center);
 		const float Spacing = FMath::Max(Terrain->PointSpacing, 1.f);
-		const int32 MinX = FMath::Clamp(
+		const int32 TerrainMinX = FMath::Clamp(
 			FMath::FloorToInt((WorldCenter.X - BoundX - Terrain->OriginXY.X) / Spacing),
 			0,
 			Terrain->GridWidth - 1);
-		const int32 MaxX = FMath::Clamp(
+		const int32 TerrainMaxX = FMath::Clamp(
 			FMath::CeilToInt((WorldCenter.X + BoundX - Terrain->OriginXY.X) / Spacing),
 			0,
 			Terrain->GridWidth - 1);
-		const int32 MinY = FMath::Clamp(
+		const int32 TerrainMinY = FMath::Clamp(
 			FMath::FloorToInt((WorldCenter.Y - BoundY - Terrain->OriginXY.Y) / Spacing),
 			0,
 			Terrain->GridHeight - 1);
-		const int32 MaxY = FMath::Clamp(
+		const int32 TerrainMaxY = FMath::Clamp(
 			FMath::CeilToInt((WorldCenter.Y + BoundY - Terrain->OriginXY.Y) / Spacing),
 			0,
 			Terrain->GridHeight - 1);
 
-		for (int32 IndexY = MinY; IndexY <= MaxY; ++IndexY)
+		for (int32 TerrainY = TerrainMinY; TerrainY <= TerrainMaxY; ++TerrainY)
 		{
-			for (int32 IndexX = MinX; IndexX <= MaxX; ++IndexX)
+			for (int32 TerrainX = TerrainMinX; TerrainX <= TerrainMaxX; ++TerrainX)
 			{
-				const FSolidTerrainPoint& Point = Terrain->GetPoint(IndexX, IndexY);
+				const FSolidTerrainPoint& Point = Terrain->GetPoint(TerrainX, TerrainY);
 				if (Contains(ActorLocation, YawDeg, Footprint, Point.X, Point.Y))
 				{
 					Consider(Point.X, Point.Y);

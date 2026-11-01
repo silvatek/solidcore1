@@ -301,16 +301,16 @@ public:
 	bool PaintRectangle(FIntPoint From, FIntPoint To, ESolidBiome Biome, FString& OutError);
 
 	/**
-	 * Terrain point nearest this position. X increases west from the east edge.
-	 * Y increases north from the south edge. The same rectangle as SampleBiome.
+	 * Terrain point nearest this position. TerrainPoint.X increases west from the east edge.
+	 * TerrainPoint.Y increases north from the south edge. The same rectangle as SampleBiome.
 	 */
-	bool TerrainPointAt(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, FIntPoint& OutPoint) const;
+	bool TerrainPointAt(float WorldX, float WorldY, FVector2D WorldMinXY, FVector2D WorldMaxXY, FIntPoint& OutTerrainPoint) const;
 
 	/** World position of one terrain point. The same rectangle as TerrainPointAt. */
-	bool TerrainPointToWorld(FIntPoint Point, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
+	bool TerrainPointToWorld(FIntPoint TerrainPoint, FVector2D WorldMinXY, FVector2D WorldMaxXY, FVector2D& OutWorldXY) const;
 
 	/** Biome stored on that terrain point. The road strip is not part of it. */
-	ESolidBiome GetPointBiome(FIntPoint Point) const;
+	ESolidBiome GetPointBiome(FIntPoint TerrainPoint) const;
 
 	/**
 	 * Points a round brush covers. Radius 0 is the one point, 2 m across.

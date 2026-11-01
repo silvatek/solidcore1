@@ -54,15 +54,15 @@ namespace
 
 	FIntPoint PointAt(const USolidWorldChart& Chart, const FVector2D& World)
 	{
-		FIntPoint Point = FIntPoint::ZeroValue;
-		Chart.TerrainPointAt(World.X, World.Y, GridMin, GridMax, Point);
-		return Point;
+		FIntPoint TerrainPoint = FIntPoint::ZeroValue;
+		Chart.TerrainPointAt(World.X, World.Y, GridMin, GridMax, TerrainPoint);
+		return TerrainPoint;
 	}
 
-	FVector2D PointWorld(const USolidWorldChart& Chart, const FIntPoint& Point)
+	FVector2D PointWorld(const USolidWorldChart& Chart, const FIntPoint& TerrainPoint)
 	{
 		FVector2D World = FVector2D::ZeroVector;
-		Chart.TerrainPointToWorld(Point, GridMin, GridMax, World);
+		Chart.TerrainPointToWorld(TerrainPoint, GridMin, GridMax, World);
 		return World;
 	}
 
@@ -431,16 +431,16 @@ bool FSolidTerrainGridPointBrushTest::RunTest(const FString& Parameters)
 	BiomeIs(*this, TEXT("the site point takes the mountain"), Chart->GetPointBiome(SitePoint), ESolidBiome::Mountain);
 
 	const FIntPoint Mouth(3, 3);
-	const FIntPoint MouthPoint = PointAt(*Chart, CellCentre(*Chart, Mouth.X, Mouth.Y));
+	const FIntPoint MouthTerrainPoint = PointAt(*Chart, CellCentre(*Chart, Mouth.X, Mouth.Y));
 	TestTrue(TEXT("the mouth places"), Chart->PlaceLairMouth(Mouth, SolidLair::IglinTunnels.Name, true, Error));
-	TestTrue(TEXT("desert covers the mouth"), Chart->PaintBrush({ MouthPoint }, 2, ESolidBiome::Desert, Error));
-	BiomeIs(*this, TEXT("the mouth point takes the desert"), Chart->GetPointBiome(MouthPoint), ESolidBiome::Desert);
-	BiomeIs(*this, TEXT("two steps from the mouth are desert"), Chart->GetPointBiome(MouthPoint + FIntPoint(2, 0)), ESolidBiome::Desert);
-	BiomeIs(*this, TEXT("the diagonal step from the mouth is desert"), Chart->GetPointBiome(MouthPoint + FIntPoint(1, 1)), ESolidBiome::Desert);
-	BiomeIs(*this, TEXT("the square corner by the mouth stays grassland"), Chart->GetPointBiome(MouthPoint + FIntPoint(2, 1)), ESolidBiome::Grassland);
+	TestTrue(TEXT("desert covers the mouth"), Chart->PaintBrush({ MouthTerrainPoint }, 2, ESolidBiome::Desert, Error));
+	BiomeIs(*this, TEXT("the mouth point takes the desert"), Chart->GetPointBiome(MouthTerrainPoint), ESolidBiome::Desert);
+	BiomeIs(*this, TEXT("two steps from the mouth are desert"), Chart->GetPointBiome(MouthTerrainPoint + FIntPoint(2, 0)), ESolidBiome::Desert);
+	BiomeIs(*this, TEXT("the diagonal step from the mouth is desert"), Chart->GetPointBiome(MouthTerrainPoint + FIntPoint(1, 1)), ESolidBiome::Desert);
+	BiomeIs(*this, TEXT("the square corner by the mouth stays grassland"), Chart->GetPointBiome(MouthTerrainPoint + FIntPoint(2, 1)), ESolidBiome::Grassland);
 	TestTrue(TEXT("undo restores the mouth paint"), Chart->Undo());
-	BiomeIs(*this, TEXT("the mouth ring is grassland again"), Chart->GetPointBiome(MouthPoint + FIntPoint(2, 0)), ESolidBiome::Grassland);
-	BiomeIs(*this, TEXT("the mouth point is grassland again"), Chart->GetPointBiome(MouthPoint), ESolidBiome::Grassland);
+	BiomeIs(*this, TEXT("the mouth ring is grassland again"), Chart->GetPointBiome(MouthTerrainPoint + FIntPoint(2, 0)), ESolidBiome::Grassland);
+	BiomeIs(*this, TEXT("the mouth point is grassland again"), Chart->GetPointBiome(MouthTerrainPoint), ESolidBiome::Grassland);
 
 	const FIntPoint Exit(8, 10);
 	const FIntPoint ExitPoint = PointAt(*Chart, CellCentre(*Chart, Exit.X, Exit.Y));

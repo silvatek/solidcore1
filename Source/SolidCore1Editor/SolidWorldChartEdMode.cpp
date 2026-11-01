@@ -143,12 +143,12 @@ namespace
 		FPrimitiveDrawInterface* PDI,
 		const USolidTerrainMap& Terrain,
 		const USolidWorldChart& Chart,
-		const FIntPoint& Point,
+		const FIntPoint& TerrainPoint,
 		const int32 Radius,
 		const FLinearColor& Color)
 	{
 		FVector2D World = FVector2D::ZeroVector;
-		if (!Chart.TerrainPointToWorld(Point, Terrain.GetWorldMinXY(), Terrain.GetWorldMaxXY(), World))
+		if (!Chart.TerrainPointToWorld(TerrainPoint, Terrain.GetWorldMinXY(), Terrain.GetWorldMaxXY(), World))
 		{
 			return;
 		}
@@ -176,12 +176,12 @@ namespace
 		FPrimitiveDrawInterface* PDI,
 		const USolidTerrainMap& Terrain,
 		const USolidWorldChart& Chart,
-		const FIntPoint& From,
-		const FIntPoint& To,
+		const FIntPoint& FromTerrainPoint,
+		const FIntPoint& ToTerrainPoint,
 		const FLinearColor& Color)
 	{
-		const FIntPoint SouthWest(FMath::Min(From.X, To.X), FMath::Min(From.Y, To.Y));
-		const FIntPoint NorthEast(FMath::Max(From.X, To.X), FMath::Max(From.Y, To.Y));
+		const FIntPoint SouthWest(FMath::Min(FromTerrainPoint.X, ToTerrainPoint.X), FMath::Min(FromTerrainPoint.Y, ToTerrainPoint.Y));
+		const FIntPoint NorthEast(FMath::Max(FromTerrainPoint.X, ToTerrainPoint.X), FMath::Max(FromTerrainPoint.Y, ToTerrainPoint.Y));
 		FVector2D WestSouth = FVector2D::ZeroVector;
 		FVector2D EastNorth = FVector2D::ZeroVector;
 		const FVector2D WorldMin = Terrain.GetWorldMinXY();
@@ -836,18 +836,18 @@ void FSolidWorldChartEdMode::Render(const FSceneView* View, FViewport* Viewport,
 	{
 		if (Tool == ESolidWorldChartTool::Paint && bHasPoint)
 		{
-			DrawPointBrush(PDI, *Terrain, *Chart, CurrentPoint, BrushRadius, Color);
+			DrawPointBrush(PDI, *Terrain, *Chart, CurrentTerrainPoint, BrushRadius, Color);
 		}
 		return;
 	}
 	if (bRectangle)
 	{
-		DrawPointRectangle(PDI, *Terrain, *Chart, Anchor, CurrentPoint, Color);
+		DrawPointRectangle(PDI, *Terrain, *Chart, AnchorTerrainPoint, CurrentTerrainPoint, Color);
 		return;
 	}
-	for (const FIntPoint& Point : StrokePoints)
+	for (const FIntPoint& TerrainPoint : StrokePoints)
 	{
-		DrawPointBrush(PDI, *Terrain, *Chart, Point, BrushRadius, Color);
+		DrawPointBrush(PDI, *Terrain, *Chart, TerrainPoint, BrushRadius, Color);
 	}
 }
 
@@ -1161,7 +1161,7 @@ void FSolidWorldChartEdMode::UndoChart()
 	RebuildSigns();
 	if (Tool == ESolidWorldChartTool::Paint && bHasPoint)
 	{
-		Hover = DescribePoint(CurrentPoint);
+		Hover = DescribePoint(CurrentTerrainPoint);
 	}
 	else if (bHasCell)
 	{
@@ -1266,7 +1266,7 @@ bool FSolidWorldChartEdMode::CursorPoint(
 	FViewport* Viewport,
 	int32 X,
 	int32 Y,
-	FIntPoint& OutPoint) const
+	FIntPoint& OutTerrainPoint) const
 {
 	const USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
 	FVector Hit = FVector::ZeroVector;
@@ -1279,7 +1279,7 @@ bool FSolidWorldChartEdMode::CursorPoint(
 		Hit.Y,
 		Terrain->GetWorldMinXY(),
 		Terrain->GetWorldMaxXY(),
-		OutPoint);
+		OutTerrainPoint);
 }
 
 void FSolidWorldChartEdMode::HoverAt(
@@ -1307,20 +1307,20 @@ void FSolidWorldChartEdMode::HoverAt(
 	}
 	if (Chart && Terrain)
 	{
-		FIntPoint Point = FIntPoint::ZeroValue;
-		if (Chart->TerrainPointAt(Hit.X, Hit.Y, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), Point))
+		FIntPoint TerrainPoint = FIntPoint::ZeroValue;
+		if (Chart->TerrainPointAt(Hit.X, Hit.Y, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), TerrainPoint))
 		{
 			bHasPoint = true;
-			CurrentPoint = Point;
+			CurrentTerrainPoint = TerrainPoint;
 		}
 	}
 
 	if (Tool == ESolidWorldChartTool::Paint && bHasPoint && ViewportClient && ViewportClient->IsAltPressed())
 	{
-		SampleBrush(CurrentPoint);
+		SampleBrush(CurrentTerrainPoint);
 	}
 	const FString Next = Tool == ESolidWorldChartTool::Paint && bHasPoint
-		? DescribePoint(CurrentPoint)
+		? DescribePoint(CurrentTerrainPoint)
 		: DescribeCell(CurrentCell);
 	if (Next != Hover)
 	{
@@ -1357,23 +1357,23 @@ void FSolidWorldChartEdMode::BeginStroke(FEditorViewportClient* ViewportClient, 
 	}
 	const int32 X = Viewport->GetMouseX();
 	const int32 Y = Viewport->GetMouseY();
-	FIntPoint Point = FIntPoint::ZeroValue;
-	if (!CursorPoint(ViewportClient, Viewport, X, Y, Point))
+	FIntPoint TerrainPoint = FIntPoint::ZeroValue;
+	if (!CursorPoint(ViewportClient, Viewport, X, Y, TerrainPoint))
 	{
 		return;
 	}
 	bHasPoint = true;
-	CurrentPoint = Point;
+	CurrentTerrainPoint = TerrainPoint;
 	if (ViewportClient->IsAltPressed())
 	{
-		SampleBrush(Point);
+		SampleBrush(TerrainPoint);
 		return;
 	}
 	bStroke = true;
 	bRectangle = ViewportClient->IsShiftPressed();
-	Anchor = Point;
+	AnchorTerrainPoint = TerrainPoint;
 	StrokePoints.Reset();
-	StrokePoints.Add(Point);
+	StrokePoints.Add(TerrainPoint);
 }
 
 void FSolidWorldChartEdMode::ExtendStroke(
@@ -1390,24 +1390,24 @@ void FSolidWorldChartEdMode::ExtendStroke(
 	{
 		bStroke = false;
 		StrokePoints.Reset();
-		FIntPoint Point = FIntPoint::ZeroValue;
-		if (CursorPoint(ViewportClient, Viewport, X, Y, Point))
+		FIntPoint TerrainPoint = FIntPoint::ZeroValue;
+		if (CursorPoint(ViewportClient, Viewport, X, Y, TerrainPoint))
 		{
-			SampleBrush(Point);
+			SampleBrush(TerrainPoint);
 		}
 		return;
 	}
 
-	FIntPoint Point = FIntPoint::ZeroValue;
-	if (!CursorPoint(ViewportClient, Viewport, X, Y, Point))
+	FIntPoint TerrainPoint = FIntPoint::ZeroValue;
+	if (!CursorPoint(ViewportClient, Viewport, X, Y, TerrainPoint))
 	{
 		return;
 	}
-	CurrentPoint = Point;
+	CurrentTerrainPoint = TerrainPoint;
 	bRectangle = ViewportClient->IsShiftPressed();
-	if (StrokePoints.Num() == 0 || StrokePoints.Last() != Point)
+	if (StrokePoints.Num() == 0 || StrokePoints.Last() != TerrainPoint)
 	{
-		StrokePoints.Add(Point);
+		StrokePoints.Add(TerrainPoint);
 	}
 }
 
@@ -1427,7 +1427,7 @@ void FSolidWorldChartEdMode::EndStroke()
 	TArray<FIntPoint> Covered;
 	if (bRectangle)
 	{
-		USolidWorldChart::PointRectangle(Anchor, CurrentPoint, Covered);
+		USolidWorldChart::PointRectangle(AnchorTerrainPoint, CurrentTerrainPoint, Covered);
 	}
 	else
 	{
@@ -1436,7 +1436,7 @@ void FSolidWorldChartEdMode::EndStroke()
 
 	FString Error;
 	const bool bPainted = bRectangle
-		? Chart->PaintPointRectangle(Anchor, CurrentPoint, BrushBiome, Error)
+		? Chart->PaintPointRectangle(AnchorTerrainPoint, CurrentTerrainPoint, BrushBiome, Error)
 		: Chart->PaintBrush(StrokePoints, BrushRadius, BrushBiome, Error);
 	StrokePoints.Reset();
 	if (!bPainted)
@@ -1454,10 +1454,10 @@ void FSolidWorldChartEdMode::EndStroke()
 		{
 			const FVector2D WorldMin = Terrain->GetWorldMinXY();
 			const FVector2D WorldMax = Terrain->GetWorldMaxXY();
-			for (const FIntPoint& Point : Covered)
+			for (const FIntPoint& TerrainPoint : Covered)
 			{
 				FVector2D World = FVector2D::ZeroVector;
-				if (Chart->TerrainPointToWorld(Point, WorldMin, WorldMax, World))
+				if (Chart->TerrainPointToWorld(TerrainPoint, WorldMin, WorldMax, World))
 				{
 					ChunkProbes(World, Positions);
 				}
@@ -1468,13 +1468,13 @@ void FSolidWorldChartEdMode::EndStroke()
 	RebuildOverlay();
 	if (bHasPoint)
 	{
-		Hover = DescribePoint(CurrentPoint);
+		Hover = DescribePoint(CurrentTerrainPoint);
 	}
 	Note(TEXT("Painted."));
 	RefreshPanel();
 }
 
-void FSolidWorldChartEdMode::SampleBrush(const FIntPoint& Point)
+void FSolidWorldChartEdMode::SampleBrush(const FIntPoint& TerrainPoint)
 {
 	const USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
 	const USolidWorldChart* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
@@ -1482,7 +1482,7 @@ void FSolidWorldChartEdMode::SampleBrush(const FIntPoint& Point)
 	{
 		return;
 	}
-	const ESolidBiome Painted = WorldMap->GetPointBiome(Point);
+	const ESolidBiome Painted = WorldMap->GetPointBiome(TerrainPoint);
 	if (!SolidBiome::Of(Painted).Paintable())
 	{
 		return;
@@ -1843,11 +1843,11 @@ FString FSolidWorldChartEdMode::DescribeCell(const FIntPoint& Cell) const
 		for (const SolidRoad::FSolidRoad& Road : WorldMap->GetRoutedRoads())
 		{
 			bool bOnCell = false;
-			for (const FIntPoint& Point : Road.Points)
+			for (const FIntPoint& TerrainPoint : Road.Points)
 			{
 				FVector2D World = FVector2D::ZeroVector;
 				FIntPoint PointCell = FIntPoint::ZeroValue;
-				if (!WorldMap->TerrainPointToWorld(Point, WorldMin, WorldMax, World)
+				if (!WorldMap->TerrainPointToWorld(TerrainPoint, WorldMin, WorldMax, World)
 					|| !WorldMap->CellAtWorld(World.X, World.Y, WorldMin, WorldMax, PointCell)
 					|| PointCell != Cell)
 				{
@@ -1870,7 +1870,7 @@ FString FSolidWorldChartEdMode::DescribeCell(const FIntPoint& Cell) const
 	return Line;
 }
 
-FString FSolidWorldChartEdMode::DescribePoint(const FIntPoint& Point) const
+FString FSolidWorldChartEdMode::DescribePoint(const FIntPoint& TerrainPoint) const
 {
 	const USolidTerrainMap* Terrain = Streamer ? Streamer->GetTerrainMap() : nullptr;
 	const USolidWorldChart* WorldMap = Terrain ? Terrain->GetWorldMap() : nullptr;
@@ -1879,9 +1879,9 @@ FString FSolidWorldChartEdMode::DescribePoint(const FIntPoint& Point) const
 		return FString();
 	}
 
-	const ESolidBiome Stored = WorldMap->GetPointBiome(Point);
+	const ESolidBiome Stored = WorldMap->GetPointBiome(TerrainPoint);
 	FVector2D World = FVector2D::ZeroVector;
-	if (!WorldMap->TerrainPointToWorld(Point, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), World))
+	if (!WorldMap->TerrainPointToWorld(TerrainPoint, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), World))
 	{
 		return FString();
 	}
@@ -1898,13 +1898,13 @@ FString FSolidWorldChartEdMode::DescribePoint(const FIntPoint& Point) const
 
 	for (const FSolidWorldChartMark& Mark : Chart->Marks)
 	{
-		FIntPoint MarkPoint = FIntPoint::ZeroValue;
+		FIntPoint MarkTerrainPoint = FIntPoint::ZeroValue;
 		const FVector2D Shifted = USolidWorldChart::TerrainPosition(Mark.ChartCm, Terrain->GetWorldMinXY());
-		if (!WorldMap->TerrainPointAt(Shifted.X, Shifted.Y, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), MarkPoint))
+		if (!WorldMap->TerrainPointAt(Shifted.X, Shifted.Y, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), MarkTerrainPoint))
 		{
 			continue;
 		}
-		if (MarkPoint != Point)
+		if (MarkTerrainPoint != TerrainPoint)
 		{
 			continue;
 		}

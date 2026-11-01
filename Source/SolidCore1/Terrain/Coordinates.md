@@ -7,7 +7,7 @@ The open world is one square in Unreal, measured in centimetres. Five coordinate
 - [Systems](#systems)
   - [World](#world)
   - [Terrain](#terrain)
-  - [Chart](#chart)
+  - [Chart (legacy)](#chart-legacy)
   - [Cell](#cell)
   - [Chunk](#chunk)
 - [Transformations](#transformations)
@@ -48,11 +48,13 @@ A terrain point carries a world position, a surface height, a biome, and explora
 
 The world chart asset keeps a second copy of this lattice. `Points` there is one biome per terrain point, in the same order, with the same index 0 at the south-east corner. It does not store a second set of positions.
 
-### Chart
+### Chart (legacy)
 
 `chartX` and `chartY` are centimetres stored on the world chart. +chartX is west and +chartY is north, the same directions as world. The origin is the south-east corner. That corner is chart (0, 0) and world (−51200, −51200). The opposite corner is chart (102400, 102400) and world (51200, 51200).
 
 A mark saves its position as `PositionCm` in chart. The centimetres of a terrain point are `terrainX * 200` and `terrainY * 200`. Using a chart position as a world position places it 512 m west and 512 m north of where it stands.
+
+This frame will eventually be replaced by storing a world position on the world chart.
 
 ### Cell
 

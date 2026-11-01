@@ -1123,26 +1123,38 @@ ESolidBiome USolidWorldChart::GetBiomeAtCell(int32 CellX, int32 CellY) const
 	}
 	CellX = FMath::Clamp(CellX, 0, MapWidth - 1);
 	CellY = FMath::Clamp(CellY, 0, MapHeight - 1);
-	if (ResolveLocationId(CellX, CellY) != INDEX_NONE)
+	for (const FSolidWorldChartMark& Mark : Marks)
 	{
-		return ESolidBiome::Town;
-	}
-	if (const FSolidWorldBang* Mark = BangMarks.Find(CellY * MapWidth + CellX))
-	{
-		if (Mark->Kind == ESolidWorldBang::Stronghold)
+		FIntPoint Cell;
+		if (!CellAtTerrainPoint(Mark.TerrainPoint, Cell) || Cell.X != CellX || Cell.Y != CellY)
 		{
-			const FSolidStronghold Attributes(Mark->StrongholdType, Mark->StrongholdSize);
+			continue;
+		}
+		if (Mark.Kind == ESolidWorldChartMarkKind::Town)
+		{
+			if (SolidTowns::FindByName(Mark.Name))
+			{
+				return ESolidBiome::Town;
+			}
+		}
+		else if (Mark.Kind == ESolidWorldChartMarkKind::Stronghold)
+		{
+			ESolidStrongholdType HoldType = Mark.StrongholdType;
+			ESolidStrongholdSize HoldSize = Mark.StrongholdSize;
+			SolidStronghold::FromToken(Mark.Name, HoldType, HoldSize);
 			ESolidBiome Shelf = ESolidBiome::Grassland;
-			if (SolidStronghold::BiomeFor(Attributes, Shelf))
+			if (SolidStronghold::BiomeFor(FSolidStronghold(HoldType, HoldSize), Shelf))
 			{
 				return Shelf;
 			}
 		}
-		else if (Mark->Kind == ESolidWorldBang::LairEntrance
-			|| Mark->Kind == ESolidWorldBang::LairExit)
+		else if ((Mark.Kind == ESolidWorldChartMarkKind::LairEntrance
+				|| Mark.Kind == ESolidWorldChartMarkKind::LairExit)
+			&& (!Mark.LairId.IsEmpty() || SolidLair::FindByName(Mark.Name)))
 		{
 			return ESolidBiome::Mountain;
 		}
+		break;
 	}
 	const TCHAR Marker = static_cast<TCHAR>(Markers[CellY * MapWidth + CellX]);
 	return MarkerToBiome(Marker);

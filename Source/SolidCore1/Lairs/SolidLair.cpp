@@ -28,24 +28,6 @@ namespace SolidLairMouth
 		return false;
 	}
 
-	/** LairEntrance is the Iglin Tunnels Entrance. LairExit is the Iglin Tunnels Exit. */
-	TCHAR EndForBang(const FSolidWorldBang& Bang)
-	{
-		if (!Bang.LairId.Equals(SolidLair::IdIglinTunnels, ESearchCase::CaseSensitive))
-		{
-			return 0;
-		}
-		if (Bang.Kind == ESolidWorldBang::LairEntrance)
-		{
-			return SolidLair::Entrance;
-		}
-		if (Bang.Kind == ESolidWorldBang::LairExit)
-		{
-			return SolidLair::Exit;
-		}
-		return 0;
-	}
-
 	bool TryAdd(
 		const USolidWorldChart& WorldMap,
 		const FVector2D WorldMinXY,
@@ -126,23 +108,18 @@ int32 SolidLair::CollectEntrances(
 		return 0;
 	}
 
-	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
+	auto AddMouth = [&](const ESolidWorldChartMarkKind Kind, const TCHAR End)
 	{
-		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
+		FSolidWorldChartMark Mark;
+		FIntPoint Cell;
+		if (!WorldMap->FindLairMarker(SolidLair::IdIglinTunnels, Kind, Mark)
+			|| !USolidWorldChart::CellAtTerrainPoint(Mark.TerrainPoint, Cell))
 		{
-			FSolidWorldBang Bang;
-			if (!WorldMap->FindBang(Col, Row, Bang))
-			{
-				continue;
-			}
-			const TCHAR End = SolidLairMouth::EndForBang(Bang);
-			if (End == 0)
-			{
-				continue;
-			}
-			SolidLairMouth::TryAdd(*WorldMap, WorldMinXY, WorldMaxXY, Col, Row, End, OutEntrances);
+			return;
 		}
-	}
-
+		SolidLairMouth::TryAdd(*WorldMap, WorldMinXY, WorldMaxXY, Cell.X, Cell.Y, End, OutEntrances);
+	};
+	AddMouth(ESolidWorldChartMarkKind::LairEntrance, SolidLair::Entrance);
+	AddMouth(ESolidWorldChartMarkKind::LairExit, SolidLair::Exit);
 	return OutEntrances.Num();
 }

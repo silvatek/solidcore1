@@ -21,8 +21,6 @@ class USolidWorldChart;
  * River water keeps the river texture.
  * Local offsets are centimetres. +X is west, +Y is north.
  */
-struct FSolidWorldBang;
-
 namespace SolidRoad
 {
 	enum class EType : uint8
@@ -166,7 +164,7 @@ namespace SolidRoad
 	FString ChartRoadEndName(const FEndpoint& End);
 
 	/** Copy the stronghold mark's cell onto this end when the name matches. */
-	void LocateStrongholdEnd(const TMap<int32, FSolidWorldBang>& Marks, FEndpoint& End);
+	void LocateStrongholdEnd(const USolidWorldChart& Chart, FEndpoint& End);
 
 	/** How a chart name matches a road end. A site is not an end. */
 	enum class EChartRoadEnd : uint8

@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0884")
+#define SOLID_BUILD_ID TEXT("SC1-0885")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A town id returns its cell.")
+#define SOLID_BUILD_NOTE TEXT("A mark is found by what it is.")
 #endif

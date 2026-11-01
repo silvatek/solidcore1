@@ -1941,7 +1941,7 @@ bool USolidWorldChart::GetStartTownWorldXY(
 	return CellsToWorldXY(StartTownCells, WorldMinXY, WorldMaxXY, OutWorldXY);
 }
 
-bool USolidWorldChart::TownCell(const int32 TownId, FIntPoint& OutCell) const
+bool USolidWorldChart::FindTownMarker(const int32 TownId, FSolidWorldChartMark& OutMark) const
 {
 	const SolidTowns::FTownInfo* Town = SolidTowns::Find(TownId);
 	if (!Town)
@@ -1958,9 +1958,83 @@ bool USolidWorldChart::TownCell(const int32 TownId, FIntPoint& OutCell) const
 		{
 			continue;
 		}
-		return CellAtTerrainPoint(Mark.TerrainPoint, OutCell);
+		OutMark = Mark;
+		return true;
 	}
 	return false;
+}
+
+bool USolidWorldChart::FindLairMarker(
+	const FString& LairId,
+	const ESolidWorldChartMarkKind Kind,
+	FSolidWorldChartMark& OutMark) const
+{
+	if (LairId.IsEmpty())
+	{
+		return false;
+	}
+	for (const FSolidWorldChartMark& Mark : Marks)
+	{
+		if (Mark.Kind != Kind || !Mark.LairId.Equals(LairId, ESearchCase::IgnoreCase))
+		{
+			continue;
+		}
+		OutMark = Mark;
+		return true;
+	}
+	return false;
+}
+
+bool USolidWorldChart::FindStrongholdMarker(const FString& Name, FSolidWorldChartMark& OutMark) const
+{
+	FString Want = Name;
+	Want.ReplaceInline(TEXT(" "), TEXT(""));
+	if (Want.IsEmpty())
+	{
+		return false;
+	}
+	for (const FSolidWorldChartMark& Mark : Marks)
+	{
+		if (Mark.Kind != ESolidWorldChartMarkKind::Stronghold)
+		{
+			continue;
+		}
+		FString Have = Mark.Name;
+		Have.ReplaceInline(TEXT(" "), TEXT(""));
+		if (!Have.Equals(Want, ESearchCase::IgnoreCase))
+		{
+			continue;
+		}
+		OutMark = Mark;
+		return true;
+	}
+	return false;
+}
+
+bool USolidWorldChart::FindStrongholdSiteMarker(
+	const ESolidStrongholdSize Size,
+	FSolidWorldChartMark& OutMark) const
+{
+	for (const FSolidWorldChartMark& Mark : Marks)
+	{
+		if (Mark.Kind != ESolidWorldChartMarkKind::StrongholdSite || Mark.StrongholdSize != Size)
+		{
+			continue;
+		}
+		OutMark = Mark;
+		return true;
+	}
+	return false;
+}
+
+bool USolidWorldChart::TownCell(const int32 TownId, FIntPoint& OutCell) const
+{
+	FSolidWorldChartMark Mark;
+	if (!FindTownMarker(TownId, Mark))
+	{
+		return false;
+	}
+	return CellAtTerrainPoint(Mark.TerrainPoint, OutCell);
 }
 
 bool USolidWorldChart::CellToWorldXY(
@@ -2200,11 +2274,11 @@ void USolidWorldChart::BuildRoad(SolidRoad::FSolidRoad* Road) const
 	SolidRoad::FDefinition Definition = Road->ToDefinition();
 	if (Road->From.Kind == ESolidWorldChartMarkKind::Stronghold)
 	{
-		SolidRoad::LocateStrongholdEnd(BangMarks, Definition.From);
+		SolidRoad::LocateStrongholdEnd(*this, Definition.From);
 	}
 	if (Road->To.Kind == ESolidWorldChartMarkKind::Stronghold)
 	{
-		SolidRoad::LocateStrongholdEnd(BangMarks, Definition.To);
+		SolidRoad::LocateStrongholdEnd(*this, Definition.To);
 	}
 	Route.Definition = Definition;
 	SolvedRoads.Add(Route);

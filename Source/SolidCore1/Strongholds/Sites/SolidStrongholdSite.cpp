@@ -102,18 +102,20 @@ void ASolidStrongholdSite::Spawn(
 	const FVector2D WorldMax = Terrain->GetWorldMaxXY();
 	bSitesSpawned = true;
 	int32 SpawnedSites = 0;
-	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
+	for (uint8 SizeValue = static_cast<uint8>(ESolidStrongholdSize::Meagre);
+		SizeValue <= static_cast<uint8>(ESolidStrongholdSize::Imperious);
+		++SizeValue)
 	{
-		for (int32 Col = 0; Col < USolidWorldChart::MapWidth; ++Col)
+		const ESolidStrongholdSize SiteSize = static_cast<ESolidStrongholdSize>(SizeValue);
+		FSolidWorldChartMark Mark;
+		FIntPoint SiteCell;
+		if (!Map->FindStrongholdSiteMarker(SiteSize, Mark)
+			|| !USolidWorldChart::CellAtTerrainPoint(Mark.TerrainPoint, SiteCell))
 		{
-			ESolidStrongholdSize SiteSize = ESolidStrongholdSize::Meagre;
-			if (!Map->StrongholdSiteAtCell(Col, Row, SiteSize))
-			{
-				continue;
-			}
+			continue;
+		}
 
-			const FIntPoint SiteCell(Col, Row);
-			FVector2D SiteXY = FVector2D::ZeroVector;
+		FVector2D SiteXY = FVector2D::ZeroVector;
 			if (!Map->CellToWorldXY(SiteCell, WorldMin, WorldMax, SiteXY))
 			{
 				continue;
@@ -149,7 +151,6 @@ void ASolidStrongholdSite::Spawn(
 			Site->BuildVisuals();
 			Sites.Add(Site);
 			++SpawnedSites;
-		}
 	}
 	UE_LOG(LogSolid, Warning, TEXT("Spawned %d stronghold sites"), SpawnedSites);
 }

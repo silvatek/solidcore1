@@ -1470,19 +1470,12 @@ bool FSolidAutoPlaythrough::StrongholdSiteCell(
 	const ESolidStrongholdSize Size,
 	FIntPoint& OutCell)
 {
-	for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
+	FSolidWorldChartMark Mark;
+	if (!Chart.FindStrongholdSiteMarker(Size, Mark))
 	{
-		for (int32 Column = 0; Column < USolidWorldChart::MapWidth; ++Column)
-		{
-			ESolidStrongholdSize Found = ESolidStrongholdSize::Meagre;
-			if (Chart.StrongholdSiteAtCell(Column, Row, Found) && Found == Size)
-			{
-				OutCell = FIntPoint(Column, Row);
-				return true;
-			}
-		}
+		return false;
 	}
-	return false;
+	return USolidWorldChart::CellAtTerrainPoint(Mark.TerrainPoint, OutCell);
 }
 
 bool FSolidAutoPlaythrough::WalkPointForCell(

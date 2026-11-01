@@ -928,31 +928,21 @@ namespace SolidRoad
 		return SolidTowns::NameFor(End.LocationId);
 	}
 
-	void LocateStrongholdEnd(const TMap<int32, FSolidWorldBang>& Marks, FEndpoint& End)
+	void LocateStrongholdEnd(const USolidWorldChart& Chart, FEndpoint& End)
 	{
 		if (!End.bStronghold)
 		{
 			return;
 		}
-		FString Want = End.StrongholdName;
-		Want.ReplaceInline(TEXT(" "), TEXT(""));
-		for (const TPair<int32, FSolidWorldBang>& Pair : Marks)
+		FSolidWorldChartMark Mark;
+		FIntPoint Cell;
+		if (!Chart.FindStrongholdMarker(End.StrongholdName, Mark)
+			|| !USolidWorldChart::CellAtTerrainPoint(Mark.TerrainPoint, Cell))
 		{
-			const FSolidWorldBang& Mark = Pair.Value;
-			if (Mark.Kind != ESolidWorldBang::Stronghold)
-			{
-				continue;
-			}
-			FString Have = Mark.Name;
-			Have.ReplaceInline(TEXT(" "), TEXT(""));
-			if (!Have.Equals(Want, ESearchCase::IgnoreCase))
-			{
-				continue;
-			}
-			End.Cell = Mark.Cell;
-			End.bLocated = true;
 			return;
 		}
+		End.Cell = Cell;
+		End.bLocated = true;
 	}
 }
 

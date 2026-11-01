@@ -360,6 +360,21 @@ bool FSolidLairBangMouthTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
+	auto AddMouth = [](USolidWorldChart& Chart, const int32 CellX, const int32 CellY, const ESolidWorldChartMarkKind Kind)
+	{
+		FSolidWorldChartMark Mark;
+		Mark.Kind = Kind;
+		Mark.Name = TEXT("Iglin tunnels");
+		Mark.LairId = SolidLair::IdIglinTunnels;
+		int32 TerrainX = 0;
+		int32 TerrainY = 0;
+		USolidWorldChart::PointUnderCell(CellX, CellY, TerrainX, TerrainY);
+		Mark.TerrainPoint = FIntPoint(TerrainX, TerrainY);
+		Chart.Marks.Add(Mark);
+	};
+	AddMouth(*Map, 10, 10, ESolidWorldChartMarkKind::LairEntrance);
+	AddMouth(*Map, 12, 10, ESolidWorldChartMarkKind::LairExit);
+
 	TArray<SolidLair::FEntrance> Entrances;
 	TestEqual(TEXT("a sealed mouth is left out"), SolidLair::CollectEntrances(Map, WorldMin, WorldMax, Entrances), 2);
 	if (Entrances.Num() == 2)

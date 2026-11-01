@@ -219,6 +219,18 @@ public:
 	/** Cell of this town's marker. False when the chart has no such town. */
 	bool TownCell(int32 TownId, FIntPoint& OutCell) const;
 
+	/** This town's mark. False when the chart has no such town. */
+	bool FindTownMarker(int32 TownId, FSolidWorldChartMark& OutMark) const;
+
+	/** This lair mouth. Kind is LairEntrance or LairExit. False when the chart has no such mouth. */
+	bool FindLairMarker(const FString& LairId, ESolidWorldChartMarkKind Kind, FSolidWorldChartMark& OutMark) const;
+
+	/** This stronghold's mark. The name ignores spaces. False when the chart has no such stronghold. */
+	bool FindStrongholdMarker(const FString& Name, FSolidWorldChartMark& OutMark) const;
+
+	/** The stronghold site of this size. False when the chart has none. */
+	bool FindStrongholdSiteMarker(ESolidStrongholdSize Size, FSolidWorldChartMark& OutMark) const;
+
 	/** The description of a named cell, or false when that cell has none. */
 	bool FindBang(int32 CellX, int32 CellY, FSolidWorldBang& Out) const;
 

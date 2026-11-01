@@ -78,14 +78,7 @@ namespace
 
 	bool PlacePointMark(USolidWorldChart& Chart, FSolidWorldChartMark Mark, const FIntPoint TerrainPoint)
 	{
-		FVector2D ChartMin = FVector2D::ZeroVector;
-		FVector2D ChartMax = FVector2D::ZeroVector;
-		USolidWorldChart::ChartBounds(ChartMin, ChartMax);
 		Mark.TerrainPoint = TerrainPoint;
-		if (!Chart.TerrainPointToChart(TerrainPoint, ChartMin, ChartMax, Mark.ChartCm))
-		{
-			return false;
-		}
 		Chart.Marks.Add(Mark);
 		return true;
 	}

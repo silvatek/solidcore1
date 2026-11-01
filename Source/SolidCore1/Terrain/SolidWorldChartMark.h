@@ -22,7 +22,7 @@ enum class ESolidWorldChartMarkKind : uint8
 };
 
 /**
- * One named place on the chart. Its position is the cell centre in chart centimetres.
+ * One named place on the chart. Its position is the terrain point of the cell centre.
  * Asking the chart turns that position into a cell once, then keeps the cell.
  */
 USTRUCT()
@@ -40,14 +40,7 @@ struct FSolidWorldChartMark
 	UPROPERTY(EditAnywhere, Category = "WorldChart")
 	FString Name;
 
-	/**
-	 * Deprecated. Chart centimetres of the cell centre.
-	 * TerrainPoint is the stored position.
-	 */
-	UPROPERTY(EditAnywhere, Category = "WorldChart")
-	FVector2D ChartCm = FVector2D::ZeroVector;
-
-	/** Terrain point of this mark. The same place as ChartCm. */
+	/** Terrain point of this mark. The cell centre. */
 	UPROPERTY(EditAnywhere, Category = "WorldChart")
 	FIntPoint TerrainPoint = FIntPoint::ZeroValue;
 

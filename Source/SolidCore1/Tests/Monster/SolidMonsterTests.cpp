@@ -609,7 +609,6 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 	Second.Name = TEXT("Iglin Bridge");
 	FVector2D SecondCentre = FVector2D::ZeroVector;
 	TestTrue(TEXT("the second cell has a centre"), USolidWorldChart::CellCentre(FIntPoint(22, 9), SecondCentre));
-	Second.ChartCm = SecondCentre;
 	FVector2D SecondMin = FVector2D::ZeroVector;
 	FVector2D SecondMax = FVector2D::ZeroVector;
 	USolidWorldChart::ChartBounds(SecondMin, SecondMax);
@@ -696,7 +695,6 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 	SecondRex.Name = TEXT("Dracorex");
 	FVector2D SecondRexCentre = FVector2D::ZeroVector;
 	TestTrue(TEXT("the second Dracorex cell has a centre"), USolidWorldChart::CellCentre(RexCellTwo, SecondRexCentre));
-	SecondRex.ChartCm = SecondRexCentre;
 	FVector2D RexMin = FVector2D::ZeroVector;
 	FVector2D RexMax = FVector2D::ZeroVector;
 	USolidWorldChart::ChartBounds(RexMin, RexMax);

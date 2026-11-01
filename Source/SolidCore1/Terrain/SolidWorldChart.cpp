@@ -82,7 +82,6 @@ bool USolidWorldChart::ImportFromString(const FString& Text)
 			{
 				continue;
 			}
-			Mark.ChartCm = ChartCm;
 			ChartTerrainPointAt(ChartCm.X, ChartCm.Y, ChartMin, ChartMax, Mark.TerrainPoint);
 			NewMarks.Add(Mark);
 		}
@@ -278,7 +277,6 @@ bool USolidWorldChart::PlaceMark(const FIntPoint Cell, const FSolidWorldChartMar
 
 	PushUndo();
 	FSolidWorldChartMark Stored = Mark;
-	Stored.ChartCm = ChartCm;
 	FVector2D ChartMin = FVector2D::ZeroVector;
 	FVector2D ChartMax = FVector2D::ZeroVector;
 	ChartBounds(ChartMin, ChartMax);

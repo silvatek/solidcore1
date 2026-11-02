@@ -112,11 +112,6 @@ int32 USolidDumpWorldChartCommandlet::Main(const FString& Params)
 
 	TSharedRef<FJsonObject> Root = MakeShared<FJsonObject>();
 	Root->SetStringField(TEXT("asset"), Chart->GetPathName());
-	Root->SetNumberField(TEXT("width"), USolidWorldChart::MapWidth);
-	Root->SetNumberField(TEXT("height"), USolidWorldChart::MapHeight);
-	Root->SetStringField(
-		TEXT("origin"),
-		TEXT("row 1, column 1 is the top-left, as in Content/WorldMap.txt. Column 0 of a row is west."));
 
 	TSharedRef<FJsonObject> Key = MakeShared<FJsonObject>();
 	Key->SetStringField(TEXT("."), TEXT("Grassland"));
@@ -129,30 +124,6 @@ int32 USolidDumpWorldChartCommandlet::Main(const FString& Params)
 	Key->SetStringField(TEXT("S"), TEXT("Swamp"));
 	Key->SetStringField(TEXT("R"), TEXT("Road"));
 	Root->SetObjectField(TEXT("key"), Key);
-
-	TArray<TSharedPtr<FJsonValue>> Rows;
-	Rows.Reserve(USolidWorldChart::MapHeight);
-	if (Chart->Cells.Num() == USolidWorldChart::MapWidth * USolidWorldChart::MapHeight)
-	{
-		for (int32 Row = 0; Row < USolidWorldChart::MapHeight; ++Row)
-		{
-			FString Line;
-			Line.Reserve(USolidWorldChart::MapWidth);
-			for (int32 Column = 0; Column < USolidWorldChart::MapWidth; ++Column)
-			{
-				Line.AppendChar(SolidBiome::Of(Chart->Cells[Row * USolidWorldChart::MapWidth + Column]).Marker());
-			}
-			Rows.Add(MakeShared<FJsonValueString>(Line));
-		}
-	}
-	else
-	{
-		UE_LOG(LogSolidChartDump, Warning,
-			TEXT("World chart dump: the chart has %d cells, not %d."),
-			Chart->Cells.Num(),
-			USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
-	}
-	Root->SetArrayField(TEXT("rows"), Rows);
 
 	// Terrain points. The first row is the north edge. The first character of a
 	// row is the west edge, the same as a painted cell row. Point index 0 stays

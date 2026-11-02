@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0921")
+#define SOLID_BUILD_ID TEXT("SC1-0922")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A chart with points and no cells still loads.")
+#define SOLID_BUILD_NOTE TEXT("The world chart dump drops the cell grid.")
 #endif

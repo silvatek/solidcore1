@@ -5,7 +5,6 @@
 #include "SolidStronghold.h"
 #include "Strongholds/Dungeon/SolidDungeon.h"
 #include "Terrain/SolidTerrainMap.h"
-#include "Terrain/SolidWorldChart.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
 #include "MeshDescription.h"
@@ -491,30 +490,15 @@ bool FSolidDungeonExteriorTest::RunTest(const FString& Parameters)
 		const FVector2D CaveXY = SolidStronghold::WorldXY(SolidStronghold::StartingCell());
 		const float Bias = 3.f;
 		const FVector ActorLocation(CaveXY.X, CaveXY.Y, Terrain->SampleHeight(CaveXY.X, CaveXY.Y) + Bias + 4.f);
-		const float Drop = ASolidDungeonExterior::GroundDropCm(Terrain, Bias, ActorLocation);
-		const USolidWorldChart* Map = Terrain->GetWorldMap();
-		FIntPoint Cell = FIntPoint::ZeroValue;
-		float Lowest = TNumericLimits<float>::Max();
-		TestTrue(
-			TEXT("the cave cell is on the map"),
-			Map && Map->CellAtWorld(CaveXY.X, CaveXY.Y, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), Cell));
-		if (Map)
-		{
-			for (int32 TerrainY = 0; TerrainY < Terrain->GridHeight; ++TerrainY)
-			{
-				for (int32 TerrainX = 0; TerrainX < Terrain->GridWidth; ++TerrainX)
-				{
-					const FSolidTerrainPoint& Point = Terrain->GetPoint(TerrainX, TerrainY);
-					FIntPoint PointCell = FIntPoint::ZeroValue;
-					if (Map->CellAtWorld(Point.WorldX, Point.WorldY, Terrain->GetWorldMinXY(), Terrain->GetWorldMaxXY(), PointCell)
-						&& PointCell == Cell)
-					{
-						Lowest = FMath::Min(Lowest, Point.Height);
-					}
-				}
-			}
-		}
-		TestTrue(TEXT("the cell has a terrain point"), Lowest < TNumericLimits<float>::Max());
+		const SolidTerrainSeat::FFootprint Seat = SolidDungeonExteriorPrivate::RockFootprint(
+			Dungeon.FaceWidthCm(),
+			Dungeon.SlopeRunCm(),
+			FVector2D(
+				Dungeon.FaceForwardCm(ESolidStrongholdOrientation::WestFace),
+				Dungeon.ShelfLateralCm(ESolidStrongholdOrientation::WestFace)));
+		const float Drop = SolidTerrainSeat::DropCm(Terrain, Bias, ActorLocation, 0.f, Seat);
+		const float Lowest = SolidTerrainSeat::LowestCm(Terrain, ActorLocation, 0.f, Seat);
+		TestTrue(TEXT("the rock covers ground"), Lowest < TNumericLimits<float>::Max());
 		TestTrue(
 			TEXT("the ground edge is 10 cm under the lowest point"),
 			FMath::IsNearlyEqual(ActorLocation.Z - Drop, Lowest + Bias - ASolidDungeonExterior::GroundBurialCm, 0.1f));

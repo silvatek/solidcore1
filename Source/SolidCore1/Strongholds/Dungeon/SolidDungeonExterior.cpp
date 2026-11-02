@@ -2,13 +2,9 @@
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
 #include "Strongholds/SolidStronghold.h"
-#include "Terrain/SolidTerrainMap.h"
-#include "Terrain/SolidTerrainStreamer.h"
-#include "Terrain/SolidWorldChart.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
-#include "EngineUtils.h"
 #include "Materials/MaterialInterface.h"
 #include "MeshDescription.h"
 #include "PhysicsEngine/BodySetup.h"
@@ -476,68 +472,6 @@ void ASolidDungeonExterior::BeginPlay()
 	BuildVisuals();
 }
 
-float ASolidDungeonExterior::GroundDropCm(
-	const USolidTerrainMap* Terrain,
-	const float SurfaceBias,
-	const FVector& ActorLocation)
-{
-	if (!Terrain || !Terrain->IsBuilt())
-	{
-		return 0.f;
-	}
-	const USolidWorldChart* Map = Terrain->GetWorldMap();
-	if (!Map || !Map->IsLoaded())
-	{
-		return 0.f;
-	}
-
-	const FVector2D WorldMin = Terrain->GetWorldMinXY();
-	const FVector2D WorldMax = Terrain->GetWorldMaxXY();
-	FIntPoint Cell = FIntPoint::ZeroValue;
-	if (!Map->CellAtWorld(ActorLocation.X, ActorLocation.Y, WorldMin, WorldMax, Cell))
-	{
-		return 0.f;
-	}
-
-	const float ExtentX = FMath::Max(WorldMax.X - WorldMin.X, 1.f);
-	const float ExtentY = FMath::Max(WorldMax.Y - WorldMin.Y, 1.f);
-	const float CellW = ExtentX / static_cast<float>(USolidWorldChart::MapWidth);
-	const float CellH = ExtentY / static_cast<float>(USolidWorldChart::MapHeight);
-	const float XMax = WorldMax.X - static_cast<float>(Cell.X) * CellW;
-	const float XMin = XMax - CellW;
-	const float YMax = WorldMax.Y - static_cast<float>(Cell.Y) * CellH;
-	const float YMin = YMax - CellH;
-	const float Spacing = FMath::Max(Terrain->PointSpacing, 1.f);
-	const int32 TerrainX0 = FMath::Clamp(FMath::FloorToInt((XMin - WorldMin.X) / Spacing), 0, Terrain->GridWidth - 1);
-	const int32 TerrainX1 = FMath::Clamp(FMath::CeilToInt((XMax - WorldMin.X) / Spacing), 0, Terrain->GridWidth - 1);
-	const int32 TerrainY0 = FMath::Clamp(FMath::FloorToInt((YMin - WorldMin.Y) / Spacing), 0, Terrain->GridHeight - 1);
-	const int32 TerrainY1 = FMath::Clamp(FMath::CeilToInt((YMax - WorldMin.Y) / Spacing), 0, Terrain->GridHeight - 1);
-
-	float Lowest = TNumericLimits<float>::Max();
-	int32 Count = 0;
-	for (int32 TerrainY = TerrainY0; TerrainY <= TerrainY1; ++TerrainY)
-	{
-		for (int32 TerrainX = TerrainX0; TerrainX <= TerrainX1; ++TerrainX)
-		{
-			const FSolidTerrainPoint& Point = Terrain->GetPoint(TerrainX, TerrainY);
-			FIntPoint PointCell = FIntPoint::ZeroValue;
-			if (!Map->CellAtWorld(Point.WorldX, Point.WorldY, WorldMin, WorldMax, PointCell) || PointCell != Cell)
-			{
-				continue;
-			}
-			Lowest = FMath::Min(Lowest, Point.Height);
-			++Count;
-		}
-	}
-	if (Count == 0)
-	{
-		return 0.f;
-	}
-
-	const float Target = Lowest + SurfaceBias - GroundBurialCm;
-	return FMath::Max(0.f, ActorLocation.Z - Target);
-}
-
 void ASolidDungeonExterior::SetGroundDrop(const float InGroundDropCm)
 {
 	ChosenDropCm = InGroundDropCm;
@@ -620,18 +554,11 @@ void ASolidDungeonExterior::BuildVisuals()
 	float Drop = ChosenDropCm;
 	if (Drop < 0.f)
 	{
-		const USolidTerrainMap* Terrain = nullptr;
-		float SurfaceBias = 0.f;
-		if (UWorld* World = GetWorld())
-		{
-			for (TActorIterator<ASolidTerrainStreamer> It(World); It; ++It)
-			{
-				Terrain = It->GetTerrainMap();
-				SurfaceBias = It->CollisionHeightBias;
-				break;
-			}
-		}
-		Drop = GroundDropCm(Terrain, SurfaceBias, GetActorLocation());
+		const SolidTerrainSeat::FFootprint Seat = SolidDungeonExteriorPrivate::RockFootprint(
+			FaceWidthCm,
+			SlopeRunCm,
+			FVector2D(FaceForwardCm, ShelfLateralCm));
+		Drop = SolidTerrainSeat::DropCm(this, Seat);
 	}
 
 	UStaticMesh* Rock = SolidDungeonExteriorPrivate::BuildRock(

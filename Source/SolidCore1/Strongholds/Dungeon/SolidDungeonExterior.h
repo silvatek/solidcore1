@@ -5,7 +5,6 @@
 #include "Terrain/SolidTerrainSeat.h"
 #include "SolidDungeonExterior.generated.h"
 
-class USolidTerrainMap;
 class UStaticMesh;
 class UStaticMeshComponent;
 
@@ -14,7 +13,7 @@ class UStaticMeshComponent;
  * Local +X faces the exit. The face sits just inside the next cell, and local +Y
  * shifts the stone onto the center of that cell's terrain points. Both follow
  * the stronghold's orientation. The mouth is a round arch, widest at the ground.
- * The ground edge continues down to 10 cm below the lowest terrain point in the cell.
+ * The ground edge continues down to 10 cm below the lowest terrain point under the rock.
  * The stone is rounded and lumpy inside the face size. A click on the stone does not enter.
  */
 UCLASS()
@@ -28,15 +27,8 @@ public:
 	virtual void OnConstruction(const FTransform& Transform) override;
 	virtual void BeginPlay() override;
 
-	/** How far the ground edge is buried under the lowest terrain point in the cell. */
+	/** How far the ground edge is buried under the lowest terrain point under the rock. */
 	static constexpr float GroundBurialCm = SolidTerrainSeat::BurialCm;
-
-	/**
-	 * How far below the actor origin the ground edge must reach.
-	 * That is 10 cm under the lowest terrain point in the map cell around ActorLocation.
-	 * Zero when the terrain has no point in that cell.
-	 */
-	static float GroundDropCm(const USolidTerrainMap* Terrain, float SurfaceBias, const FVector& ActorLocation);
 
 	/**
 	 * Rock size, how far the face sits in front of the actor, and the local +Y
@@ -49,7 +41,7 @@ public:
 		float InFaceForwardCm,
 		float InShelfLateralCm);
 
-	/** Use this drop instead of measuring the cell. A negative value measures the cell. */
+	/** Use this drop instead of measuring the rock's footprint. A negative value measures that footprint. */
 	void SetGroundDrop(float InGroundDropCm);
 	void BuildVisuals();
 
@@ -73,7 +65,7 @@ private:
 	float SlopeRunCm = 0.f;
 	float FaceForwardCm = 0.f;
 	float ShelfLateralCm = 0.f;
-	/** Negative until a caller sets a drop. BuildVisuals then measures the cell. */
+	/** Negative until a caller sets a drop. BuildVisuals then measures the footprint. */
 	float ChosenDropCm = -1.f;
 
 	void DiscardParts();
@@ -92,6 +84,19 @@ private:
  */
 namespace SolidDungeonExteriorPrivate
 {
+	/** The rock's plan. The mesh front is local X = 0 and the slope runs back by SlopeRunCm. */
+	inline SolidTerrainSeat::FFootprint RockFootprint(
+		const float FaceWidthCm,
+		const float SlopeRunCm,
+		const FVector2D& Face)
+	{
+		SolidTerrainSeat::FFootprint Seat;
+		Seat.LocalCenter = FVector2D(Face.X - SlopeRunCm * 0.5f, Face.Y);
+		Seat.HalfXCm = SlopeRunCm * 0.5f;
+		Seat.HalfYCm = FaceWidthCm * 0.5f;
+		return Seat;
+	}
+
 	UStaticMesh* BuildRock(
 		UObject* Outer,
 		float FaceWidth,

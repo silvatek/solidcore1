@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0939")
+#define SOLID_BUILD_ID TEXT("SC1-0940")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("A routed bridge straightens on the middle of its deck.")
+#define SOLID_BUILD_NOTE TEXT("A dungeon exterior buries to the rock footprint.")
 #endif

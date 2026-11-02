@@ -4,11 +4,9 @@
 #include "Strongholds/SolidStronghold.h"
 #include "SolidCore1.h"
 #include "SolidMaterials.h"
-#include "Terrain/SolidTerrainStreamer.h"
 #include "Components/SceneComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Engine/StaticMesh.h"
-#include "EngineUtils.h"
 #include "Materials/MaterialInterface.h"
 
 namespace SolidLairEntrancePrivate
@@ -75,19 +73,11 @@ void ASolidLairEntrance::BeginPlay()
 void ASolidLairEntrance::BuildVisuals()
 {
 	const SolidStronghold::FSolidDungeon& Dungeon = SolidStronghold::FSolidDungeon::Instance();
-	float Drop = 0.f;
-	if (UWorld* World = GetWorld())
-	{
-		const USolidTerrainMap* Terrain = nullptr;
-		float SurfaceBias = 0.f;
-		for (TActorIterator<ASolidTerrainStreamer> It(World); It; ++It)
-		{
-			Terrain = It->GetTerrainMap();
-			SurfaceBias = It->CollisionHeightBias;
-			break;
-		}
-		Drop = ASolidDungeonExterior::GroundDropCm(Terrain, SurfaceBias, GetActorLocation());
-	}
+	const SolidTerrainSeat::FFootprint Seat = SolidDungeonExteriorPrivate::RockFootprint(
+		Dungeon.FaceWidthCm(),
+		Dungeon.SlopeRunCm(),
+		FVector2D(-Dungeon.LeaveStandCm(), 0.f));
+	const float Drop = SolidTerrainSeat::DropCm(this, Seat);
 
 	UStaticMesh* Rock = SolidDungeonExteriorPrivate::BuildRock(
 		this,

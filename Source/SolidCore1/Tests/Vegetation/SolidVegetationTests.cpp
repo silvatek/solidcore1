@@ -145,10 +145,25 @@ bool FSolidTownBuildingPackTest::RunTest(const FString& Parameters)
 	const FVector2D WorldMax = Map->GetWorldMaxXY();
 
 	SolidTownBuildings::FScatterParams Params;
-	Params.Density = 0.8f;
-	Params.MaxBuildings = 64;
-	Params.MinSeparationCm = 50.f;
-	Params.ClearRadiusAroundTownCenterCm = 450.f;
+	Params.Density = 0.35f;
+	Params.MinSeparationCm = 0.f;
+	Params.MinFootprintCm = 40.f;
+	Params.MaxFootprintCm = 40.f;
+
+	int32 OpenTownPoints = 0;
+	for (const FSolidTerrainPoint& Point : Map->GetPoints())
+	{
+		if (Point.Biome != ESolidBiome::Town)
+		{
+			continue;
+		}
+		if (WorldMap->IsOnRoad(Point.WorldX, Point.WorldY, WorldMin, WorldMax))
+		{
+			continue;
+		}
+		++OpenTownPoints;
+	}
+	const int32 Expected = FMath::RoundToInt(static_cast<float>(OpenTownPoints) * Params.Density);
 
 	TArray<SolidTownBuildings::FPlacement> PlacementsA;
 	TArray<SolidTownBuildings::FPlacement> PlacementsB;
@@ -156,8 +171,7 @@ bool FSolidTownBuildingPackTest::RunTest(const FString& Parameters)
 	const int32 CountB = SolidTownBuildings::CollectPlacements(Map, 77, Params, PlacementsB);
 	TestEqual(TEXT("same seed => same count"), CountA, CountB);
 	TestEqual(TEXT("placements filled"), PlacementsA.Num(), CountA);
-	TestTrue(TEXT("packed some buildings"), CountA > 0);
-	TestTrue(TEXT("respects max"), CountA <= Params.MaxBuildings);
+	TestEqual(TEXT("a share of the open town points"), CountA, Expected);
 
 	FVector2D TownCenter = FVector2D::ZeroVector;
 	const bool bHasTownCenter = Map->GetStartTownWorldXY(TownCenter);
@@ -188,18 +202,12 @@ bool FSolidTownBuildingPackTest::RunTest(const FString& Parameters)
 			NearestTownCm <= SolidTownBuildings::RoadSlideCm + 0.5f);
 		if (WorldMap)
 		{
-			TestTrue(TEXT("placement sits on a town point"),
-				WorldMap->SampleLocationId(A.CenterXY.X, A.CenterXY.Y, WorldMin, WorldMax) != INDEX_NONE);
+			TestEqual(TEXT("placement sits on a town point"),
+				WorldMap->SampleBiome(A.CenterXY.X, A.CenterXY.Y, WorldMin, WorldMax), ESolidBiome::Town);
 			TestFalse(TEXT("placement stays off the road strip"),
 				WorldMap->IsOnRoad(A.CenterXY.X, A.CenterXY.Y, WorldMin, WorldMax));
 			TestFalse(TEXT("the building stays off the road"),
 				SolidTownBuildings::CoversRoad(*WorldMap, A, WorldMin, WorldMax));
-		}
-
-		if (bHasTownCenter)
-		{
-			TestTrue(TEXT("clears town center"),
-				FVector2D::Distance(A.CenterXY, TownCenter) >= Params.ClearRadiusAroundTownCenterCm - 0.5f);
 		}
 
 		for (int32 J = I + 1; J < PlacementsA.Num(); ++J)
@@ -305,22 +313,14 @@ bool FSolidTownBuildingRoadTest::RunTest(const FString& Parameters)
 	const ASolidGameMode* Defaults = GetDefault<ASolidGameMode>();
 	SolidTownBuildings::FScatterParams Params;
 	Params.Density = Defaults->TownBuildingDensity;
-	Params.MaxBuildings = Defaults->MaxTownBuildings;
 	Params.MinSeparationCm = Defaults->TownBuildingMinSeparationCm;
-	Params.ClearRadiusAroundTownCenterCm = Defaults->TownBuildingClearRadiusCm;
 
 	TArray<SolidTownSigns::FPlacement> Signs;
 	SolidTownSigns::CollectPlacements(WorldMap, WorldMin, WorldMax, Signs);
-	TArray<FVector2D> SignCenters;
-	SignCenters.Reserve(Signs.Num());
-	for (const SolidTownSigns::FPlacement& Sign : Signs)
-	{
-		SignCenters.Add(Sign.WorldXY);
-	}
 
 	TArray<SolidTownBuildings::FPlacement> Placements;
 	const int32 Count = SolidTownBuildings::CollectPlacements(
-		Map, Defaults->TownBuildingSeed, Params, Placements, SignCenters);
+		Map, Defaults->TownBuildingSeed, Params, Placements, Signs);
 	TestTrue(TEXT("the towns have buildings"), Count > 0);
 
 	FVector2D Iglin = FVector2D::ZeroVector;

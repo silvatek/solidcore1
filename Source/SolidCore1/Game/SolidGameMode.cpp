@@ -2396,31 +2396,23 @@ void ASolidGameMode::EnsureVegetation()
 
 	TArray<SolidTownSigns::FPlacement> SignPlacements;
 	TArray<SolidLair::FEntrance> TunnelEntrances;
-	TArray<FVector2D> SignClearCenters;
 	if (const USolidWorldChart* WorldMap = Streamer->GetTerrainMap()->GetWorldMap())
 	{
 		const FVector2D WorldMin = Streamer->GetTerrainMap()->GetWorldMinXY();
 		const FVector2D WorldMax = Streamer->GetTerrainMap()->GetWorldMaxXY();
 		SolidTownSigns::CollectPlacements(WorldMap, WorldMin, WorldMax, SignPlacements);
 		SolidLair::CollectEntrances(WorldMap, WorldMin, WorldMax, TunnelEntrances);
-		SignClearCenters.Reserve(SignPlacements.Num());
-		for (const SolidTownSigns::FPlacement& Placement : SignPlacements)
-		{
-			SignClearCenters.Add(Placement.WorldXY);
-		}
 	}
 
 	if (SpawnedTownBuildings.Num() == 0)
 	{
 		SolidTownBuildings::FScatterParams BuildingParams;
 		BuildingParams.Density = TownBuildingDensity;
-		BuildingParams.MaxBuildings = MaxTownBuildings;
 		BuildingParams.MinSeparationCm = TownBuildingMinSeparationCm;
-		BuildingParams.ClearRadiusAroundTownCenterCm = TownBuildingClearRadiusCm;
 
 		TArray<SolidTownBuildings::FPlacement> Placements;
 		SolidTownBuildings::CollectPlacements(
-			Streamer->GetTerrainMap(), TownBuildingSeed, BuildingParams, Placements, SignClearCenters);
+			Streamer->GetTerrainMap(), TownBuildingSeed, BuildingParams, Placements, SignPlacements);
 
 		int32 Spawned = 0;
 		for (const SolidTownBuildings::FPlacement& Placement : Placements)
@@ -2490,8 +2482,8 @@ void ASolidGameMode::EnsureVegetation()
 		}
 
 		UE_LOG(LogSolid, Warning,
-			TEXT("Spawned %d town buildings (density=%.2f max=%d)"),
-			Spawned, TownBuildingDensity, MaxTownBuildings);
+			TEXT("Spawned %d town buildings (density=%.2f)"),
+			Spawned, TownBuildingDensity);
 	}
 
 	if (SpawnedTownSigns.Num() == 0)

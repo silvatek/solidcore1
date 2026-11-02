@@ -1,13 +1,15 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "SolidTownSigns.h"
 
 class USolidTerrainMap;
 class USolidWorldChart;
 
 /**
- * Pack random non-overlapping building footprints onto town points.
- * A footprint that would cover a routed road is slid off that road, still in the town.
+ * Pack building footprints onto town points.
+ * The number of buildings is a share of the town points left after roads and signs.
+ * A footprint that would cover a routed road is slid off that road, still on a town point.
  * Pure logic — no actor spawning (safe for automation).
  */
 namespace SolidTownBuildings
@@ -31,14 +33,10 @@ namespace SolidTownBuildings
 
 	struct FScatterParams
 	{
-		/** Fraction of town grid points considered as candidate sites [0, 1]. */
+		/** Share of the open town points that receive a building [0, 1]. */
 		float Density = 0.35f;
-		/** Hard cap on returned placements. */
-		int32 MaxBuildings = 48;
 		/** Extra gap between packing circles (cm). */
 		float MinSeparationCm = 100.f;
-		/** Keep the town centroid clear (cm). */
-		float ClearRadiusAroundTownCenterCm = 450.f;
 		float MinFootprintCm = 180.f;
 		float MaxFootprintCm = 420.f;
 		float MinBodyHeightCm = 220.f;
@@ -60,11 +58,11 @@ namespace SolidTownBuildings
 		FVector2D* OutOnRoad = nullptr);
 
 	/**
-	 * Fill OutPlacements with non-overlapping buildings on town points.
-	 * A point counts when AssignTownPoints claimed it. A routed road does not.
-	 * Each claimed town offers its own points, so the cap does not spend itself on the largest town.
-	 * Deterministic for a given map + seed + params.
-	 * ExtraClearCenters use the same radius as the start-town centroid (welcome signs).
+	 * Fill OutPlacements with buildings on town points.
+	 * An open point has a town biome, is not on a routed road, and is not under a welcome sign.
+	 * The count is Density times the open points.
+	 * A point that would overlap a building already placed is skipped.
+	 * Deterministic for a given map, seed, and params.
 	 * @return Number of placements written.
 	 */
 	int32 CollectPlacements(
@@ -72,5 +70,5 @@ namespace SolidTownBuildings
 		int32 Seed,
 		const FScatterParams& Params,
 		TArray<FPlacement>& OutPlacements,
-		const TArray<FVector2D>& ExtraClearCenters = TArray<FVector2D>());
+		const TArray<SolidTownSigns::FPlacement>& Signs = TArray<SolidTownSigns::FPlacement>());
 }

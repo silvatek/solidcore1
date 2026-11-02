@@ -286,9 +286,7 @@ bool FSolidTownSignBuildingClearTest::RunTest(const FString& Parameters)
 
 	SolidTownBuildings::FScatterParams Params;
 	Params.Density = 0.8f;
-	Params.MaxBuildings = 64;
 	Params.MinSeparationCm = 50.f;
-	Params.ClearRadiusAroundTownCenterCm = 450.f;
 
 	TArray<SolidTownBuildings::FPlacement> Open;
 	TestTrue(TEXT("packed some buildings"),
@@ -298,16 +296,23 @@ bool FSolidTownSignBuildingClearTest::RunTest(const FString& Parameters)
 		return false;
 	}
 
-	const FVector2D SignXY = Open[0].CenterXY;
-	TArray<FVector2D> ExtraClear;
-	ExtraClear.Add(SignXY);
+	SolidTownSigns::FPlacement Sign;
+	Sign.Name = TEXT("Iglin");
+	Sign.WorldXY = Open[0].CenterXY;
+	Sign.YawDeg = SolidTownSigns::FacingYawDeg;
+	TArray<SolidTownSigns::FPlacement> Signs;
+	Signs.Add(Sign);
+	const float HalfWidth = SolidTownSigns::BoardWidthCm(SolidTownSigns::MakeLabel(Sign.Name)) * 0.5f;
+	const float HalfDepth = FMath::Max(SolidTownSigns::BoardDepthCm, SolidTownSigns::PoleThicknessCm) * 0.5f;
 
 	TArray<SolidTownBuildings::FPlacement> Cleared;
-	SolidTownBuildings::CollectPlacements(Map, 77, Params, Cleared, ExtraClear);
+	SolidTownBuildings::CollectPlacements(Map, 77, Params, Cleared, Signs);
 	for (const SolidTownBuildings::FPlacement& Placement : Cleared)
 	{
-		TestTrue(TEXT("buildings stay clear of the sign"),
-			FVector2D::Distance(Placement.CenterXY, SignXY) + 0.5f >= Params.ClearRadiusAroundTownCenterCm);
+		const FVector2D Delta = Placement.CenterXY - Sign.WorldXY;
+		const FVector Local = FRotator(0.f, -Sign.YawDeg, 0.f).RotateVector(FVector(Delta.X, Delta.Y, 0.f));
+		TestTrue(TEXT("a building stays off the sign"),
+			FMath::Abs(Local.X) > HalfDepth || FMath::Abs(Local.Y) > HalfWidth);
 	}
 	return true;
 }

@@ -2,7 +2,6 @@
 #include "SolidRoad.h"
 #include "SolidTerrainMap.h"
 #include "SolidTerrainTypes.h"
-#include "SolidTowns.h"
 #include "SolidWorldChart.h"
 
 namespace
@@ -62,7 +61,7 @@ int32 SolidTownBuildings::CollectPlacements(
 	const int32 Seed,
 	const FScatterParams& Params,
 	TArray<FPlacement>& OutPlacements,
-	const TArray<FVector2D>& ExtraClearCenters)
+	const TArray<SolidTownSigns::FPlacement>& Signs)
 {
 	OutPlacements.Reset();
 	if (!TerrainMap || !TerrainMap->IsBuilt())
@@ -71,8 +70,7 @@ int32 SolidTownBuildings::CollectPlacements(
 	}
 
 	const float Density = FMath::Clamp(Params.Density, 0.f, 1.f);
-	const int32 MaxBuildings = FMath::Max(Params.MaxBuildings, 0);
-	if (MaxBuildings == 0 || Density <= 0.f)
+	if (Density <= 0.f)
 	{
 		return 0;
 	}
@@ -81,9 +79,27 @@ int32 SolidTownBuildings::CollectPlacements(
 	const FVector2D WorldMin = TerrainMap->GetWorldMinXY();
 	const FVector2D WorldMax = TerrainMap->GetWorldMaxXY();
 	const bool bMapLoaded = WorldMap && WorldMap->IsLoaded();
+	const float Separation = FMath::Max(Params.MinSeparationCm, 0.f);
+
+	auto CoveredBySign = [&](const FVector2D& At) -> bool
+	{
+		for (const SolidTownSigns::FPlacement& Sign : Signs)
+		{
+			const float HalfWidth = SolidTownSigns::BoardWidthCm(SolidTownSigns::MakeLabel(Sign.Name)) * 0.5f;
+			const float HalfDepth = FMath::Max(SolidTownSigns::BoardDepthCm, SolidTownSigns::PoleThicknessCm) * 0.5f;
+			const FVector2D Delta = At - Sign.WorldXY;
+			const FVector Local = FRotator(0.f, -Sign.YawDeg, 0.f).RotateVector(FVector(Delta.X, Delta.Y, 0.f));
+			if (FMath::Abs(Local.X) <= HalfDepth && FMath::Abs(Local.Y) <= HalfWidth)
+			{
+				return true;
+			}
+		}
+		return false;
+	};
 
 	const TArray<FSolidTerrainPoint>& Points = TerrainMap->GetPoints();
-	TMap<int32, TArray<int32>> ByTown;
+	TArray<int32> OpenPoints;
+	OpenPoints.Reserve(Points.Num() / 16);
 	for (int32 Index = 0; Index < Points.Num(); ++Index)
 	{
 		const FSolidTerrainPoint& Point = Points[Index];
@@ -91,103 +107,38 @@ int32 SolidTownBuildings::CollectPlacements(
 		{
 			continue;
 		}
-		int32 TownId = 0;
-		if (bMapLoaded)
+		const FVector2D At(Point.WorldX, Point.WorldY);
+		if (CoveredBySign(At))
 		{
-			TownId = WorldMap->SampleLocationId(Point.WorldX, Point.WorldY, WorldMin, WorldMax);
-			if (TownId == INDEX_NONE)
-			{
-				continue;
-			}
+			continue;
 		}
-		ByTown.FindOrAdd(TownId).Add(Index);
+		if (bMapLoaded && WorldMap->IsOnRoad(At.X, At.Y, WorldMin, WorldMax))
+		{
+			continue;
+		}
+		OpenPoints.Add(Index);
 	}
-	if (ByTown.Num() == 0)
+
+	const int32 BuildingCount = FMath::Clamp(
+		FMath::RoundToInt(static_cast<float>(OpenPoints.Num()) * Density),
+		0,
+		OpenPoints.Num());
+	if (BuildingCount <= 0)
 	{
 		return 0;
 	}
-
-	TArray<int32> TownIds;
-	ByTown.GetKeys(TownIds);
-	TownIds.Sort();
 
 	FRandomStream Rng(Seed != 0 ? Seed : 1337);
-	TArray<TArray<int32>> Buckets;
-	Buckets.Reserve(TownIds.Num());
-	int32 Longest = 0;
-	for (const int32 TownId : TownIds)
+	for (int32 I = OpenPoints.Num() - 1; I > 0; --I)
 	{
-		TArray<int32>& Indices = ByTown.FindChecked(TownId);
-		for (int32 I = Indices.Num() - 1; I > 0; --I)
-		{
-			Indices.Swap(I, Rng.RandRange(0, I));
-		}
-		const int32 Keep = FMath::Clamp(
-			FMath::RoundToInt(static_cast<float>(Indices.Num()) * Density),
-			0,
-			Indices.Num());
-		if (Keep <= 0)
-		{
-			continue;
-		}
-		Indices.SetNum(Keep);
-		Longest = FMath::Max(Longest, Keep);
-		Buckets.Add(MoveTemp(Indices));
-	}
-	if (Buckets.Num() == 0)
-	{
-		return 0;
+		OpenPoints.Swap(I, Rng.RandRange(0, I));
 	}
 
-	// One point from each town, then the next, so the cap does not spend itself on the largest town.
-	TArray<int32> TownIndices;
-	TownIndices.Reserve(Longest * Buckets.Num());
-	for (int32 Slot = 0; Slot < Longest; ++Slot)
+	OutPlacements.Reserve(BuildingCount);
+	for (int32 I = 0; I < OpenPoints.Num() && OutPlacements.Num() < BuildingCount; ++I)
 	{
-		for (const TArray<int32>& Bucket : Buckets)
-		{
-			if (Slot < Bucket.Num())
-			{
-				TownIndices.Add(Bucket[Slot]);
-			}
-		}
-	}
-	const int32 CandidateCount = TownIndices.Num();
-
-	FVector2D TownCenter = FVector2D::ZeroVector;
-	const bool bHasTownCenter = TerrainMap->GetStartTownWorldXY(TownCenter);
-	const float ClearRadius = FMath::Max(Params.ClearRadiusAroundTownCenterCm, 0.f);
-	const float ClearRadiusSq = ClearRadius * ClearRadius;
-	const float Separation = FMath::Max(Params.MinSeparationCm, 0.f);
-
-	OutPlacements.Reserve(FMath::Min(MaxBuildings, CandidateCount));
-	for (int32 I = 0; I < CandidateCount && OutPlacements.Num() < MaxBuildings; ++I)
-	{
-		const FSolidTerrainPoint& Point = Points[TownIndices[I]];
+		const FSolidTerrainPoint& Point = Points[OpenPoints[I]];
 		const FVector2D Center(Point.WorldX, Point.WorldY);
-		if (bMapLoaded
-			&& SolidTowns::IsWallGate(WorldMap->SampleLocationId(Center.X, Center.Y, WorldMin, WorldMax)))
-		{
-			continue;
-		}
-
-		if (bHasTownCenter && FVector2D::DistSquared(Center, TownCenter) < ClearRadiusSq)
-		{
-			continue;
-		}
-		bool bInsideExtraClear = false;
-		for (const FVector2D& ClearCenter : ExtraClearCenters)
-		{
-			if (FVector2D::DistSquared(Center, ClearCenter) < ClearRadiusSq)
-			{
-				bInsideExtraClear = true;
-				break;
-			}
-		}
-		if (bInsideExtraClear)
-		{
-			continue;
-		}
 
 		FPlacement Placement;
 		Placement.CenterXY = Center;
@@ -199,36 +150,23 @@ int32 SolidTownBuildings::CollectPlacements(
 
 		auto Blocked = [&](const FVector2D& At) -> bool
 		{
-			if (bHasTownCenter && FVector2D::DistSquared(At, TownCenter) < ClearRadiusSq)
+			if (CoveredBySign(At))
 			{
 				return true;
 			}
-			for (const FVector2D& ClearCenter : ExtraClearCenters)
+			if (bMapLoaded)
 			{
-				if (FVector2D::DistSquared(At, ClearCenter) < ClearRadiusSq)
+				if (WorldMap->SampleBiome(At.X, At.Y, WorldMin, WorldMax) != ESolidBiome::Town
+					|| WorldMap->IsOnRoad(At.X, At.Y, WorldMin, WorldMax))
 				{
 					return true;
 				}
-			}
-			if (!bMapLoaded)
-			{
-				return false;
-			}
-			if (WorldMap->SampleLocationId(At.X, At.Y, WorldMin, WorldMax) == INDEX_NONE
-				|| WorldMap->IsOnRoad(At.X, At.Y, WorldMin, WorldMax))
-			{
-				return true;
-			}
-			const ESolidBiome Ground = WorldMap->SampleBiome(At.X, At.Y, WorldMin, WorldMax);
-			if (Ground == ESolidBiome::Sea || Ground == ESolidBiome::Mountain || Ground == ESolidBiome::River)
-			{
-				return true;
-			}
-			FPlacement Trial = Placement;
-			Trial.CenterXY = At;
-			if (CoversRoad(*WorldMap, Trial, WorldMin, WorldMax))
-			{
-				return true;
+				FPlacement Trial = Placement;
+				Trial.CenterXY = At;
+				if (CoversRoad(*WorldMap, Trial, WorldMin, WorldMax))
+				{
+					return true;
+				}
 			}
 			const float Radius = Trial.PackingRadiusCm() + Separation * 0.5f;
 			for (const FPlacement& Existing : OutPlacements)

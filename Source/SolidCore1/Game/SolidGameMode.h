@@ -78,21 +78,13 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation")
 	int32 ForestTreeSeed = 42;
 
-	/** Fraction of Town TerrainPoints considered as building candidate sites [0, 1]. */
+	/** Share of town points, after roads and signs, that receive a building [0, 1]. */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation", meta = (ClampMin = "0.0", ClampMax = "1.0"))
 	float TownBuildingDensity = 0.35f;
-
-	/** Hard cap on packed town buildings. */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation", meta = (ClampMin = "0", ClampMax = "500"))
-	int32 MaxTownBuildings = 48;
 
 	/** Extra gap between building packing circles (cm). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation", meta = (ClampMin = "0.0"))
 	float TownBuildingMinSeparationCm = 100.f;
-
-	/** Keep the start-town centroid and each welcome sign clear of buildings (cm). */
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation", meta = (ClampMin = "0.0"))
-	float TownBuildingClearRadiusCm = 450.f;
 
 	/** RNG seed for town building pack / sizes (0 = fixed fallback). */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Vegetation")

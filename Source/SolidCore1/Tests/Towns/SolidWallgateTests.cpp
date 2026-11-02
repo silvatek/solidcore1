@@ -14,7 +14,7 @@ namespace
 
 	const FIntPoint WallgateMarkerCell(40, 30);
 
-	void PointsUnderCells(const TArray<FIntPoint>& Cells, TArray<FIntPoint>& OutPoints)
+	void WallgatePointsUnderCells(const TArray<FIntPoint>& Cells, TArray<FIntPoint>& OutPoints)
 	{
 		OutPoints.Reset();
 		for (int32 TerrainY = 0; TerrainY < USolidWorldChart::PointAxis; ++TerrainY)
@@ -54,7 +54,7 @@ namespace
 		{
 			FString Error;
 			TArray<FIntPoint> TownPoints;
-			PointsUnderCells(TownCells, TownPoints);
+			WallgatePointsUnderCells(TownCells, TownPoints);
 			Map->PaintPoints(TownPoints, ESolidBiome::Town, Error);
 		}
 		return Map;

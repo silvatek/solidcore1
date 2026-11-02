@@ -386,13 +386,9 @@ bool USolidWorldChart::EnsureQuery() const
 	{
 		return true;
 	}
-	const bool bCellsEmpty = Cells.Num() == 0;
-	const bool bPointsEmpty = Points.Num() == 0;
-	if (bCellsEmpty && bPointsEmpty)
-	{
-		return false;
-	}
-	if (!bCellsEmpty && Cells.Num() != MapWidth * MapHeight)
+	const bool bPointsCover = Points.Num() == PointAxis * PointAxis;
+	const bool bCellsCover = Cells.Num() == MapWidth * MapHeight;
+	if (!bPointsCover && !bCellsCover)
 	{
 		return false;
 	}
@@ -557,22 +553,16 @@ bool USolidWorldChart::LoadFromChart(const USolidWorldChart* Chart)
 
 bool USolidWorldChart::BuildQuery() const
 {
-	const bool bCellsEmpty = Cells.Num() == 0;
-	const bool bPointsEmpty = Points.Num() == 0;
-	if (bCellsEmpty && bPointsEmpty)
-	{
-		UE_LOG(LogSolid, Error, TEXT("WorldChart: the chart does not cover the %dx%d map."), MapWidth, MapHeight);
-		return false;
-	}
-
-	if (!bCellsEmpty && Cells.Num() != MapWidth * MapHeight)
+	const bool bPointsCover = Points.Num() == PointAxis * PointAxis;
+	const bool bCellsCover = Cells.Num() == MapWidth * MapHeight;
+	if (!bPointsCover && !bCellsCover)
 	{
 		UE_LOG(LogSolid, Error, TEXT("WorldChart: the chart does not cover the %dx%d map."), MapWidth, MapHeight);
 		return false;
 	}
 
 	ResetLoad();
-	if (bCellsEmpty)
+	if (bPointsCover)
 	{
 		for (int32 CellY = 0; CellY < MapHeight; ++CellY)
 		{

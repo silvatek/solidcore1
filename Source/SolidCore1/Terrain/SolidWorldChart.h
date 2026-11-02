@@ -95,7 +95,7 @@ public:
 
 	/**
 	 * Biome of the terrain point under this cell, the point at the cell centre.
-	 * A road step reads this. The cell's own biome is GetBiomeAtCell.
+	 * The cell's own biome is GetBiomeAtCell.
 	 */
 	ESolidBiome GetPointBiomeAtCell(int32 CellX, int32 CellY) const;
 
@@ -278,14 +278,14 @@ private:
 	bool EnsurePoints() const;
 	bool CellIndex(FIntPoint Cell, int32& OutIndex) const;
 	bool PlaceOn(FIntPoint TerrainPoint, const FSolidWorldChartMark& Mark, FString& OutError);
-	/** Solve from Cells and Marks when a query finds the chart unsolved. */
+	/** Solve when a query finds the chart unsolved. Points cover the map, or the cells do. */
 	bool EnsureQuery() const;
 	/**
 	 * AssignTownPoints claims each run of town points for the town mark that touches it.
 	 * BuildListedRoads routes each road in SolidRoads.h across the terrain points.
-	 * The cell grid is legacy. MarkerForChartBiome still fills Markers from the cells,
-	 * or from the point under each cell when the cells are empty. CellAtTerrainPoint
-	 * turns a mark into a cell, and RememberChartMark stamps that cell.
+	 * The cell grid is legacy. MarkerForChartBiome fills Markers from the point under
+	 * each cell. It fills them from the cells when the point grid does not cover the map.
+	 * CellAtTerrainPoint turns a mark into a cell, and RememberChartMark stamps that cell.
 	 * Those cell steps go when the cell grid goes.
 	 */
 	bool BuildQuery() const;

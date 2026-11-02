@@ -9,14 +9,12 @@ class USolidWorldChart;
 
 /**
  * A road line in WorldMap.txt names a start, an end, and a type.
- * The route is a path of map cells. A terrain quad takes the biome of its
+ * The route is a line of terrain points. A terrain quad takes the biome of its
  * northeast corner, so the painted strip lies half a step southwest of those centres.
  * Trails are 1 m, tracks 2 m, roads 3 m, highways 4 m.
  * A step costs 8. Town and road cost 0. Forest, desert, and swamp cost 16 for a
  * road and 32 for a highway. A river costs twice that when the step is square
  * to the river. Any other river step is banned, and so are mountain and sea.
- * A turn beside a river costs extra, and a spur just past the far bank is pulled
- * back, so the road runs straight across the water.
  * The strip uses a road texture, a brown close to the town colour.
  * River water keeps the river texture.
  * Local offsets are centimetres. +X is west, +Y is north.
@@ -208,10 +206,6 @@ namespace SolidRoad
 	inline constexpr int32 StepCost = 8;
 	/** The route goes around this ground. */
 	inline constexpr int32 BannedStep = -1;
-	/** Cells around a river, diagonals included, where a turn pays RiverBendCost. */
-	inline constexpr int32 RiverBendReach = 2;
-	/** Less than a step, so the route does not lengthen. A straight crossing wins the tie. */
-	inline constexpr int32 RiverBendCost = 4;
 
 	/**
 	 * Terrain quads are this wide. Rounding picks the northeast corner, so the

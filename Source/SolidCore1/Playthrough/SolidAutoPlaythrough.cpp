@@ -74,7 +74,7 @@ const FStep FSolidAutoPlaythrough::Script[FSolidAutoPlaythrough::ScriptCount] = 
 	FStep::SelectBattlePlan(TEXT("Form Loose mob"), TEXT("Loose mob")),
 	FStep::SelectBattlePlan(TEXT("Form Tight mob"), TEXT("Tight mob")),
 	FStep::WalkToMarker(TEXT("Walk to Dragongate"), ESolidWorldChartMarkKind::Town, TEXT("Dragongate")),
-	FStep::WalkTo(TEXT("Walk to the Imperious site"), EWalk::StrongholdSite, ESolidStrongholdSize::Imperious),
+	FStep::WalkToMarker(TEXT("Walk to the Imperious site"), ESolidWorldChartMarkKind::StrongholdSite, TEXT("Imperious")),
 	FStep::ChooseStronghold(TEXT("Choose Imperious Tower"), ESolidStrongholdSize::Imperious, ESolidStrongholdType::Tower),
 	FStep::WakeInStronghold(TEXT("Wake in the tower")),
 	FStep::ExitStronghold(TEXT("Leave the tower")),
@@ -325,9 +325,24 @@ namespace
 		{
 			return nullptr;
 		}
+		ESolidStrongholdSize SiteSize = ESolidStrongholdSize::Meagre;
+		const bool bSiteSize = Kind == ESolidWorldChartMarkKind::StrongholdSite
+			&& SolidStronghold::SizeFromToken(Name, SiteSize);
 		for (const FSolidWorldChartMark& Mark : Chart.Marks)
 		{
-			if (Mark.Kind == Kind && Mark.Name.Equals(Name, ESearchCase::IgnoreCase))
+			if (Mark.Kind != Kind)
+			{
+				continue;
+			}
+			if (bSiteSize)
+			{
+				if (Mark.StrongholdSize == SiteSize)
+				{
+					return &Mark;
+				}
+				continue;
+			}
+			if (Mark.Name.Equals(Name, ESearchCase::IgnoreCase))
 			{
 				return &Mark;
 			}

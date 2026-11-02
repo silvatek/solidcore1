@@ -908,13 +908,17 @@ bool FSolidAutoPlaythroughStage4Test::RunTest(const FString& Parameters)
 
 	const FSolidAutoPlaythrough::FStep* Site = FoundSteps[1];
 	TestEqual(
-		TEXT("the site walk is a StrongholdSite"),
+		TEXT("the site walk is a marker walk"),
 		static_cast<uint8>(Site->Walk),
-		static_cast<uint8>(FSolidAutoPlaythrough::EWalk::StrongholdSite));
+		static_cast<uint8>(FSolidAutoPlaythrough::EWalk::Marker));
 	TestEqual(
-		TEXT("that site is Imperious"),
-		static_cast<uint8>(Site->StrongholdSize),
-		static_cast<uint8>(ESolidStrongholdSize::Imperious));
+		TEXT("that mark is a stronghold site"),
+		static_cast<uint8>(Site->MarkKind),
+		static_cast<uint8>(ESolidWorldChartMarkKind::StrongholdSite));
+	TestEqual(
+		TEXT("the mark is Imperious"),
+		FString(Site->MarkName),
+		FString(TEXT("Imperious")));
 
 	const FSolidAutoPlaythrough::FStep* Choice = FoundSteps[2];
 	TestEqual(

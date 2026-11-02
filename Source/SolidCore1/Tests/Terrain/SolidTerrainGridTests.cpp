@@ -83,11 +83,15 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidTerrainGridPointsDifferTest::RunTest(const FString& Parameters)
 {
-	FString Pond = GrassGrid();
-	SetTerrainCell(Pond, 10, 10, SolidBiome::Of(ESolidBiome::River).Marker());
-	SetTerrainCell(Pond, 9, 10, TEXT('M'));
 	USolidWorldChart* River = NewObject<USolidWorldChart>();
-	if (!TestNotNull(TEXT("pond chart"), River) || !TestTrue(TEXT("pond loads"), River->LoadFromString(Pond)))
+	if (!TestNotNull(TEXT("pond chart"), River))
+	{
+		return false;
+	}
+	River->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
+	River->Cells[10 * USolidWorldChart::MapWidth + 10] = ESolidBiome::River;
+	River->Cells[10 * USolidWorldChart::MapWidth + 9] = ESolidBiome::Mountain;
+	if (!TestTrue(TEXT("pond solves"), River->LoadFromChart(River)))
 	{
 		return false;
 	}

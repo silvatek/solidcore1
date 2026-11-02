@@ -74,6 +74,14 @@ bool FSolidLairMazeTest::RunTest(const FString& Parameters)
 {
 	TestEqual(TEXT("lair name"), FString(SolidLair::IglinTunnels.Name), FString(TEXT("Iglin tunnels")));
 	TestEqual(TEXT("lair id"), FString(SolidLair::IglinTunnels.Id), FString(SolidLair::IdIglinTunnels));
+	TestEqual(
+		TEXT("the entrance faces north"),
+		static_cast<uint8>(SolidLair::IglinTunnels.EntranceOrientation),
+		static_cast<uint8>(SolidLair::EOrientation::North));
+	TestEqual(
+		TEXT("the exit faces east"),
+		static_cast<uint8>(SolidLair::IglinTunnels.ExitOrientation),
+		static_cast<uint8>(SolidLair::EOrientation::East));
 	const FString LairId(SolidLair::IdIglinTunnels);
 	TestEqual(TEXT("lair id is eight digits"), LairId.Len(), SolidLair::IdLength);
 	bool bLairIdHex = LairId.Len() == SolidLair::IdLength;

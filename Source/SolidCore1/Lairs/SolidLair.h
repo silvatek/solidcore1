@@ -71,15 +71,28 @@ namespace SolidLair
 	inline const TCHAR* VisitValue = TEXT("Lair");
 	inline const TCHAR* EndOptionKey = TEXT("LairEnd");
 
+	/** Which way a mouth faces on the world map. North is world +Y. East is world -X. */
+	enum class EOrientation : uint8
+	{
+		North,
+		East,
+		South,
+		West,
+	};
+
 	struct FDefinition
 	{
 		/** Eight hex digits. */
 		const TCHAR* Id = TEXT("");
 		const TCHAR* Name = TEXT("");
+		/** The entrance mouth faces this way. */
+		EOrientation EntranceOrientation = EOrientation::North;
+		/** The exit mouth faces this way. */
+		EOrientation ExitOrientation = EOrientation::East;
 	};
 
 	inline const FDefinition Definitions[] = {
-		{ IdIglinTunnels, TEXT("Iglin tunnels") },
+		{ IdIglinTunnels, TEXT("Iglin tunnels"), EOrientation::North, EOrientation::East },
 	};
 
 	inline constexpr int32 DefinitionCount = UE_ARRAY_COUNT(Definitions);

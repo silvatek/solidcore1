@@ -141,15 +141,49 @@ bool USolidWorldChart::PaintRectangle(const FIntPoint FromCell, const FIntPoint 
 	return PaintRun(Covered, Biome, OutError);
 }
 
+namespace
+{
+	bool CentrePoint(const USolidWorldChart& Chart, const FIntPoint Cell, FIntPoint& OutPoint, FString& OutError)
+	{
+		if (Cell.X < 0 || Cell.Y < 0
+			|| Cell.X >= USolidWorldChart::MapWidth || Cell.Y >= USolidWorldChart::MapHeight
+			|| Chart.Cells.Num() != USolidWorldChart::MapWidth * USolidWorldChart::MapHeight)
+		{
+			OutError = Chart.Cells.Num() == USolidWorldChart::MapWidth * USolidWorldChart::MapHeight
+				? TEXT("That cell is off the map.")
+				: TEXT("The chart does not cover the map.");
+			return false;
+		}
+		int32 TerrainX = 0;
+		int32 TerrainY = 0;
+		USolidWorldChart::PointUnderCell(Cell.X, Cell.Y, TerrainX, TerrainY);
+		OutPoint = FIntPoint(TerrainX, TerrainY);
+		return true;
+	}
+}
+
 bool USolidWorldChart::PlaceMark(const FIntPoint Cell, const FSolidWorldChartMark& Mark, FString& OutError)
 {
-	OutError.Reset();
-	if (Cell.X < 0 || Cell.Y < 0 || Cell.X >= MapWidth || Cell.Y >= MapHeight
-		|| Cells.Num() != USolidWorldChart::MapWidth * USolidWorldChart::MapHeight)
+	FIntPoint Point;
+	if (!CentrePoint(*this, Cell, Point, OutError))
 	{
-		OutError = Cells.Num() == USolidWorldChart::MapWidth * USolidWorldChart::MapHeight
-			? TEXT("That cell is off the map.")
-			: TEXT("The chart does not cover the map.");
+		return false;
+	}
+	return PlaceOn(Point, Mark, OutError);
+}
+
+bool USolidWorldChart::PlaceOn(const FIntPoint TerrainPoint, const FSolidWorldChartMark& Mark, FString& OutError)
+{
+	OutError.Reset();
+	if (TerrainPoint.X < 0 || TerrainPoint.Y < 0
+		|| TerrainPoint.X >= PointAxis || TerrainPoint.Y >= PointAxis)
+	{
+		OutError = TEXT("That point is off the map.");
+		return false;
+	}
+	if (Cells.Num() != USolidWorldChart::MapWidth * USolidWorldChart::MapHeight)
+	{
+		OutError = TEXT("The chart does not cover the map.");
 		return false;
 	}
 	if (!EnsurePoints())
@@ -160,10 +194,7 @@ bool USolidWorldChart::PlaceMark(const FIntPoint Cell, const FSolidWorldChartMar
 
 	PushUndo();
 	FSolidWorldChartMark Stored = Mark;
-	int32 TerrainX = 0;
-	int32 TerrainY = 0;
-	PointUnderCell(Cell.X, Cell.Y, TerrainX, TerrainY);
-	Stored.TerrainPoint = FIntPoint(TerrainX, TerrainY);
+	Stored.TerrainPoint = TerrainPoint;
 	for (int32 Index = Marks.Num() - 1; Index >= 0; --Index)
 	{
 		const bool bHere = Marks[Index].TerrainPoint == Stored.TerrainPoint;
@@ -180,6 +211,16 @@ bool USolidWorldChart::PlaceMark(const FIntPoint Cell, const FSolidWorldChartMar
 
 bool USolidWorldChart::PlaceTown(const FIntPoint Cell, const FString& Name, FString& OutError)
 {
+	FIntPoint Point;
+	if (!CentrePoint(*this, Cell, Point, OutError))
+	{
+		return false;
+	}
+	return PlaceTownAt(Point, Name, OutError);
+}
+
+bool USolidWorldChart::PlaceTownAt(const FIntPoint TerrainPoint, const FString& Name, FString& OutError)
+{
 	const SolidTowns::FTownInfo* Town = SolidTowns::FindByName(Name.TrimStartAndEnd());
 	if (!Town)
 	{
@@ -190,11 +231,25 @@ bool USolidWorldChart::PlaceTown(const FIntPoint Cell, const FString& Name, FStr
 	FSolidWorldChartMark Mark;
 	Mark.Kind = ESolidWorldChartMarkKind::Town;
 	Mark.Name = Town->Name;
-	return PlaceMark(Cell, Mark, OutError);
+	return PlaceOn(TerrainPoint, Mark, OutError);
 }
 
 bool USolidWorldChart::PlaceStronghold(
 	const FIntPoint Cell,
+	const ESolidStrongholdSize Size,
+	const ESolidStrongholdType Type,
+	FString& OutError)
+{
+	FIntPoint Point;
+	if (!CentrePoint(*this, Cell, Point, OutError))
+	{
+		return false;
+	}
+	return PlaceStrongholdAt(Point, Size, Type, OutError);
+}
+
+bool USolidWorldChart::PlaceStrongholdAt(
+	const FIntPoint TerrainPoint,
 	const ESolidStrongholdSize Size,
 	const ESolidStrongholdType Type,
 	FString& OutError)
@@ -220,10 +275,20 @@ bool USolidWorldChart::PlaceStronghold(
 	Mark.StrongholdSize = Size;
 	Mark.StrongholdType = Type;
 	Mark.Name = SolidStronghold::Label(Size, Type);
-	return PlaceMark(Cell, Mark, OutError);
+	return PlaceOn(TerrainPoint, Mark, OutError);
 }
 
 bool USolidWorldChart::PlaceSite(const FIntPoint Cell, const ESolidStrongholdSize Size, FString& OutError)
+{
+	FIntPoint Point;
+	if (!CentrePoint(*this, Cell, Point, OutError))
+	{
+		return false;
+	}
+	return PlaceSiteAt(Point, Size, OutError);
+}
+
+bool USolidWorldChart::PlaceSiteAt(const FIntPoint TerrainPoint, const ESolidStrongholdSize Size, FString& OutError)
 {
 	bool bKnownSize = false;
 	for (const ESolidStrongholdSize Known : SolidStronghold::Sizes)
@@ -240,11 +305,25 @@ bool USolidWorldChart::PlaceSite(const FIntPoint Cell, const ESolidStrongholdSiz
 	Mark.Kind = ESolidWorldChartMarkKind::StrongholdSite;
 	Mark.StrongholdSize = Size;
 	Mark.Name = SolidStronghold::SizeName(Size);
-	return PlaceMark(Cell, Mark, OutError);
+	return PlaceOn(TerrainPoint, Mark, OutError);
 }
 
 bool USolidWorldChart::PlaceLairMouth(
 	const FIntPoint Cell,
+	const FString& LairName,
+	const bool bEntrance,
+	FString& OutError)
+{
+	FIntPoint Point;
+	if (!CentrePoint(*this, Cell, Point, OutError))
+	{
+		return false;
+	}
+	return PlaceLairMouthAt(Point, LairName, bEntrance, OutError);
+}
+
+bool USolidWorldChart::PlaceLairMouthAt(
+	const FIntPoint TerrainPoint,
 	const FString& LairName,
 	const bool bEntrance,
 	FString& OutError)
@@ -260,10 +339,20 @@ bool USolidWorldChart::PlaceLairMouth(
 	Mark.Kind = bEntrance ? ESolidWorldChartMarkKind::LairEntrance : ESolidWorldChartMarkKind::LairExit;
 	Mark.Name = Lair->Name;
 	Mark.LairId = Lair->Id;
-	return PlaceMark(Cell, Mark, OutError);
+	return PlaceOn(TerrainPoint, Mark, OutError);
 }
 
 bool USolidWorldChart::PlaceCustom(const FIntPoint Cell, const FString& Note, FString& OutError)
+{
+	FIntPoint Point;
+	if (!CentrePoint(*this, Cell, Point, OutError))
+	{
+		return false;
+	}
+	return PlaceCustomAt(Point, Note, OutError);
+}
+
+bool USolidWorldChart::PlaceCustomAt(const FIntPoint TerrainPoint, const FString& Note, FString& OutError)
 {
 	FString Clean = Note;
 	Clean.ReplaceInline(TEXT("\r"), TEXT(" "));
@@ -288,10 +377,20 @@ bool USolidWorldChart::PlaceCustom(const FIntPoint Cell, const FString& Note, FS
 	FSolidWorldChartMark Mark;
 	Mark.Kind = ESolidWorldChartMarkKind::Custom;
 	Mark.Name = Clean;
-	return PlaceMark(Cell, Mark, OutError);
+	return PlaceOn(TerrainPoint, Mark, OutError);
 }
 
 bool USolidWorldChart::PlaceEncounter(const FIntPoint Cell, const FString& Name, FString& OutError)
+{
+	FIntPoint Point;
+	if (!CentrePoint(*this, Cell, Point, OutError))
+	{
+		return false;
+	}
+	return PlaceEncounterAt(Point, Name, OutError);
+}
+
+bool USolidWorldChart::PlaceEncounterAt(const FIntPoint TerrainPoint, const FString& Name, FString& OutError)
 {
 	const SolidEncounter::FStaticEncounter* Found = SolidEncounter::FindByName(Name);
 	if (!Found || !Found->Name)
@@ -303,10 +402,20 @@ bool USolidWorldChart::PlaceEncounter(const FIntPoint Cell, const FString& Name,
 	FSolidWorldChartMark Mark;
 	Mark.Kind = ESolidWorldChartMarkKind::Encounter;
 	Mark.Name = Found->Name;
-	return PlaceMark(Cell, Mark, OutError);
+	return PlaceOn(TerrainPoint, Mark, OutError);
 }
 
 bool USolidWorldChart::PlaceBridge(const FIntPoint Cell, const FString& Name, FString& OutError)
+{
+	FIntPoint Point;
+	if (!CentrePoint(*this, Cell, Point, OutError))
+	{
+		return false;
+	}
+	return PlaceBridgeAt(Point, Name, OutError);
+}
+
+bool USolidWorldChart::PlaceBridgeAt(const FIntPoint TerrainPoint, const FString& Name, FString& OutError)
 {
 	const FString Clean = Name.TrimStartAndEnd();
 	const SolidBridge::FBridgeMarker* Found = nullptr;
@@ -327,7 +436,7 @@ bool USolidWorldChart::PlaceBridge(const FIntPoint Cell, const FString& Name, FS
 	FSolidWorldChartMark Mark;
 	Mark.Kind = ESolidWorldChartMarkKind::Bridge;
 	Mark.Name = Found->Name;
-	return PlaceMark(Cell, Mark, OutError);
+	return PlaceOn(TerrainPoint, Mark, OutError);
 }
 
 bool USolidWorldChart::DeleteMark(const FIntPoint Cell, FString& OutError)
@@ -337,6 +446,29 @@ bool USolidWorldChart::DeleteMark(const FIntPoint Cell, FString& OutError)
 	if (Existing == INDEX_NONE)
 	{
 		OutError = TEXT("No mark on this cell.");
+		return false;
+	}
+	PushUndo();
+	Marks.RemoveAt(Existing);
+	InvalidateQuery();
+	return true;
+}
+
+bool USolidWorldChart::DeleteMarkAt(const FIntPoint TerrainPoint, FString& OutError)
+{
+	OutError.Reset();
+	int32 Existing = INDEX_NONE;
+	for (int32 Index = 0; Index < Marks.Num(); ++Index)
+	{
+		if (Marks[Index].TerrainPoint == TerrainPoint)
+		{
+			Existing = Index;
+			break;
+		}
+	}
+	if (Existing == INDEX_NONE)
+	{
+		OutError = TEXT("No mark on this point.");
 		return false;
 	}
 	PushUndo();

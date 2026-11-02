@@ -16,7 +16,7 @@ enum class ESolidWorldChartTool : uint8
 	View,
 	/** Left click paints the brush biome. Shift drags a rectangle. */
 	Paint,
-	/** Left click places the current mark on that cell. */
+	/** Left click places the current mark on that terrain point. */
 	Place,
 };
 

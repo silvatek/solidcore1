@@ -973,9 +973,9 @@ void FSolidWorldChartEdMode::PlaceCurrentMark()
 		Note(TEXT("The chart is missing."));
 		return;
 	}
-	if (!bHasCell)
+	if (!bHasPoint)
 	{
-		Note(TEXT("Click a cell on the map."));
+		Note(TEXT("Click a point on the map."));
 		return;
 	}
 
@@ -992,22 +992,22 @@ void FSolidWorldChartEdMode::PlaceCurrentMark()
 	case ESolidWorldChartMarkKind::Town:
 		if (SolidTowns::Definitions[FMath::Clamp(TownIndex, 0, SolidTowns::DefinitionCount - 1)].Name)
 		{
-			bPlaced = Chart->PlaceTown(
-				CurrentCell,
+			bPlaced = Chart->PlaceTownAt(
+				CurrentTerrainPoint,
 				SolidTowns::Definitions[FMath::Clamp(TownIndex, 0, SolidTowns::DefinitionCount - 1)].Name,
 				Error);
 		}
 		break;
 	case ESolidWorldChartMarkKind::Stronghold:
-		bPlaced = Chart->PlaceStronghold(
-			CurrentCell,
+		bPlaced = Chart->PlaceStrongholdAt(
+			CurrentTerrainPoint,
 			SolidStronghold::Sizes[FMath::Clamp(SizeIndex, 0, SolidStronghold::SizeCount - 1)],
 			SolidStronghold::Types[FMath::Clamp(TypeIndex, 0, SolidStronghold::TypeCount - 1)],
 			Error);
 		break;
 	case ESolidWorldChartMarkKind::StrongholdSite:
-		bPlaced = Chart->PlaceSite(
-			CurrentCell,
+		bPlaced = Chart->PlaceSiteAt(
+			CurrentTerrainPoint,
 			SolidStronghold::Sizes[FMath::Clamp(SizeIndex, 0, SolidStronghold::SizeCount - 1)],
 			Error);
 		break;
@@ -1015,28 +1015,28 @@ void FSolidWorldChartEdMode::PlaceCurrentMark()
 	case ESolidWorldChartMarkKind::LairExit:
 		if (SolidLair::DefinitionCount > 0)
 		{
-			bPlaced = Chart->PlaceLairMouth(
-				CurrentCell,
+			bPlaced = Chart->PlaceLairMouthAt(
+				CurrentTerrainPoint,
 				SolidLair::Definitions[FMath::Clamp(LairIndex, 0, SolidLair::DefinitionCount - 1)].Name,
 				MarkKind == ESolidWorldChartMarkKind::LairEntrance,
 				Error);
 		}
 		break;
 	case ESolidWorldChartMarkKind::Custom:
-		bPlaced = Chart->PlaceCustom(CurrentCell, CustomNote, Error);
+		bPlaced = Chart->PlaceCustomAt(CurrentTerrainPoint, CustomNote, Error);
 		break;
 	case ESolidWorldChartMarkKind::Encounter:
 		if (SolidEncounter::DefinitionCount > 0)
 		{
 			const int32 Index = FMath::Clamp(EncounterIndex, 0, SolidEncounter::DefinitionCount - 1);
-			bPlaced = Chart->PlaceEncounter(CurrentCell, SolidEncounter::StaticEncounters[Index].Name, Error);
+			bPlaced = Chart->PlaceEncounterAt(CurrentTerrainPoint, SolidEncounter::StaticEncounters[Index].Name, Error);
 		}
 		break;
 	case ESolidWorldChartMarkKind::Bridge:
 		if (SolidBridge::DefinitionCount > 0)
 		{
 			const int32 Index = FMath::Clamp(BridgeIndex, 0, SolidBridge::DefinitionCount - 1);
-			bPlaced = Chart->PlaceBridge(CurrentCell, SolidBridge::Bridges[Index].Name, Error);
+			bPlaced = Chart->PlaceBridgeAt(CurrentTerrainPoint, SolidBridge::Bridges[Index].Name, Error);
 		}
 		break;
 	default:
@@ -1071,13 +1071,13 @@ void FSolidWorldChartEdMode::PlaceCurrentMark()
 
 void FSolidWorldChartEdMode::DeleteCurrentMark()
 {
-	if (!Chart || !bHasCell)
+	if (!Chart || !bHasPoint)
 	{
 		Note(TEXT("Hover a mark, then press Delete."));
 		return;
 	}
 	FString Error;
-	if (!Chart->DeleteMark(CurrentCell, Error))
+	if (!Chart->DeleteMarkAt(CurrentTerrainPoint, Error))
 	{
 		Note(Error);
 		return;
@@ -1273,25 +1273,21 @@ void FSolidWorldChartEdMode::PlaceUnderCursor(FEditorViewportClient* ViewportCli
 		return;
 	}
 	bPlacedClick = true;
-	FIntPoint Cell = FIntPoint::ZeroValue;
-	if (!CursorCell(ViewportClient, Viewport, Viewport->GetMouseX(), Viewport->GetMouseY(), Cell))
+	FIntPoint TerrainPoint = FIntPoint::ZeroValue;
+	if (!CursorPoint(ViewportClient, Viewport, Viewport->GetMouseX(), Viewport->GetMouseY(), TerrainPoint))
 	{
-		Note(TEXT("Click a cell on the map."));
+		Note(TEXT("Click a point on the map."));
 		RefreshPanel();
 		return;
 	}
-	bHasCell = true;
-	CurrentCell = Cell;
-	FIntPoint TerrainPoint = FIntPoint::ZeroValue;
-	if (CursorPoint(ViewportClient, Viewport, Viewport->GetMouseX(), Viewport->GetMouseY(), TerrainPoint))
+	bHasPoint = true;
+	CurrentTerrainPoint = TerrainPoint;
+	Hover = DescribePoint(TerrainPoint);
+	FIntPoint Cell = FIntPoint::ZeroValue;
+	if (USolidWorldChart::CellAtTerrainPoint(TerrainPoint, Cell))
 	{
-		bHasPoint = true;
-		CurrentTerrainPoint = TerrainPoint;
-		Hover = DescribePoint(TerrainPoint);
-	}
-	else
-	{
-		Hover.Reset();
+		bHasCell = true;
+		CurrentCell = Cell;
 	}
 	PlaceCurrentMark();
 }

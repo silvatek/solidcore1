@@ -402,15 +402,9 @@ namespace
 	/**
 	 * A routed centerline follows the road, and that road may bend onto the crossing.
 	 * The deck's longer span is the bridge axis. Every point keeps its place along that
-	 * axis. The cross-axis is the road cell at the unshifted deck middle, plus the
-	 * half-quad paint shift, so the straight run sits on the painted strip.
+	 * axis and takes the deck's cross-axis value, so the ramps and the deck are one straight run.
 	 */
-	void Straighten(
-		const USolidWorldChart& Map,
-		const FVector2D WorldMin,
-		const FVector2D WorldMax,
-		const FVector& UnshiftedMid,
-		SolidBridge::FBridge& Bridge)
+	void Straighten(SolidBridge::FBridge& Bridge)
 	{
 		if (Bridge.Deck.Num() < 2)
 		{
@@ -428,15 +422,7 @@ namespace
 			MaxY = FMath::Max(MaxY, Point.Y);
 		}
 		const bool bEastWest = (MaxX - MinX) >= (MaxY - MinY);
-		float Lock = DeckCrossAxis(Bridge.Deck, bEastWest);
-		FIntPoint Cell = FIntPoint::ZeroValue;
-		FVector2D Center = FVector2D::ZeroVector;
-		if (Map.CellAtWorld(UnshiftedMid.X, UnshiftedMid.Y, WorldMin, WorldMax, Cell)
-			&& Map.CellToWorldXY(Cell, WorldMin, WorldMax, Center))
-		{
-			const FVector2D Paint = SolidRoad::StripPaintOffset();
-			Lock = bEastWest ? Center.Y + Paint.Y : Center.X + Paint.X;
-		}
+		const float Lock = DeckCrossAxis(Bridge.Deck, bEastWest);
 		auto Snap = [bEastWest, Lock](TArray<FVector>& Line)
 		{
 			for (FVector& Point : Line)
@@ -991,7 +977,6 @@ int32 SolidBridge::Collect(
 			BuildRamp(Deck1, 1.f, Bridge.RampTo);
 			if (Bridge.Deck.Num() >= 2 && Bridge.RampFrom.Num() >= 2 && Bridge.RampTo.Num() >= 2)
 			{
-				const FVector UnshiftedMid = (Bridge.Deck[0] + Bridge.Deck.Last()) * 0.5f;
 				const FVector2D Paint = SolidRoad::StripPaintOffset();
 				auto Shift = [Paint](TArray<FVector>& Line)
 				{
@@ -1004,7 +989,7 @@ int32 SolidBridge::Collect(
 				Shift(Bridge.Deck);
 				Shift(Bridge.RampFrom);
 				Shift(Bridge.RampTo);
-				Straighten(Map, WorldMinXY, WorldMaxXY, UnshiftedMid, Bridge);
+				Straighten(Bridge);
 				if (Bridge.Deck.Num() >= 2 && Bridge.RampFrom.Num() >= 2 && Bridge.RampTo.Num() >= 2)
 				{
 					Out.Add(MoveTemp(Bridge));

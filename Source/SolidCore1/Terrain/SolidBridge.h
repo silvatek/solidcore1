@@ -14,7 +14,7 @@ class UStaticMeshComponent;
  * A broken bridge leaves that mesh out. Each ramp is capped at the gap, and nothing can cross.
  * The center is as wide as that road and as long as the water it crosses.
  * A routed bridge runs straight, east-west or north-south.
- * Its cross-axis is the road cell at the crossing, plus the half-quad paint shift.
+ * Its cross-axis is the middle of the deck after the half-quad paint shift.
  * Each ramp runs down to its own bank and continues into the ground.
  * Local offsets are centimetres. +X is west, +Y is north.
  */

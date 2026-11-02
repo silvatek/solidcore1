@@ -31,6 +31,14 @@ namespace
 		return true;
 	}
 
+	FIntPoint RoadCellPoint(const FIntPoint Cell)
+	{
+		int32 X = 0;
+		int32 Y = 0;
+		USolidWorldChart::PointUnderCell(Cell.X, Cell.Y, X, Y);
+		return FIntPoint(X, Y);
+	}
+
 	FVector2D RoadTestCenter(const USolidWorldChart& Map, const int32 Col, const int32 Row)
 	{
 		FVector2D Center = FVector2D::ZeroVector;
@@ -452,9 +460,9 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	FIntPoint ForestPoint = FIntPoint::ZeroValue;
 	FIntPoint RiverTerrainPoint = FIntPoint::ZeroValue;
 	if (!SurfaceChart(*this, TrackChart)
-		|| !TestTrue(TEXT("Iglin places"), TrackChart->PlaceTown(FIntPoint(4, 12), TEXT("Iglin"), Error))
-		|| !TestTrue(TEXT("Relion places"), TrackChart->PlaceTown(FIntPoint(16, 12), TEXT("Relion"), Error))
-		|| !TestTrue(TEXT("Iglin Bridge places"), TrackChart->PlaceBridge(FIntPoint(11, 12), TEXT("Iglin Bridge"), Error))
+		|| !TestTrue(TEXT("Iglin places"), TrackChart->PlaceTownAt(RoadCellPoint(FIntPoint(4, 12)), TEXT("Iglin"), Error))
+		|| !TestTrue(TEXT("Relion places"), TrackChart->PlaceTownAt(RoadCellPoint(FIntPoint(16, 12)), TEXT("Relion"), Error))
+		|| !TestTrue(TEXT("Iglin Bridge places"), TrackChart->PlaceBridgeAt(RoadCellPoint(FIntPoint(11, 12)), TEXT("Iglin Bridge"), Error))
 		|| !SurfacePoint(*this, FIntPoint(8, 12), ForestPoint)
 		|| !TestTrue(TEXT("forest paints on the track"), TrackChart->SetPointRectangle(ForestPoint, ForestPoint, ESolidBiome::Forest))
 		|| !SurfacePoint(*this, FIntPoint(12, 12), RiverTerrainPoint)
@@ -500,9 +508,9 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	USolidWorldChart* CaveChart = nullptr;
 	USolidWorldChart* Cave = nullptr;
 	if (!SurfaceChart(*this, CaveChart)
-		|| !TestTrue(TEXT("the cave places"), CaveChart->PlaceStronghold(
-			FIntPoint(4, 8), ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon, Error))
-		|| !TestTrue(TEXT("Iglin places by the cave"), CaveChart->PlaceTown(FIntPoint(8, 8), TEXT("Iglin"), Error))
+		|| !TestTrue(TEXT("the cave places"), CaveChart->PlaceStrongholdAt(
+			RoadCellPoint(FIntPoint(4, 8)), ESolidStrongholdSize::Meagre, ESolidStrongholdType::Dungeon, Error))
+		|| !TestTrue(TEXT("Iglin places by the cave"), CaveChart->PlaceTownAt(RoadCellPoint(FIntPoint(8, 8)), TEXT("Iglin"), Error))
 		|| !SurfaceLoad(*this, CaveChart, Cave, 1))
 	{
 		return false;
@@ -520,8 +528,8 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	USolidWorldChart* HighwayChart = nullptr;
 	USolidWorldChart* Highway = nullptr;
 	if (!SurfaceChart(*this, HighwayChart)
-		|| !TestTrue(TEXT("Relion places"), HighwayChart->PlaceTown(FIntPoint(8, 20), TEXT("Relion"), Error))
-		|| !TestTrue(TEXT("Kanfold places"), HighwayChart->PlaceTown(FIntPoint(16, 20), TEXT("Kanfold"), Error))
+		|| !TestTrue(TEXT("Relion places"), HighwayChart->PlaceTownAt(RoadCellPoint(FIntPoint(8, 20)), TEXT("Relion"), Error))
+		|| !TestTrue(TEXT("Kanfold places"), HighwayChart->PlaceTownAt(RoadCellPoint(FIntPoint(16, 20)), TEXT("Kanfold"), Error))
 		|| !SurfaceLoad(*this, HighwayChart, Highway, 1))
 	{
 		return false;
@@ -538,7 +546,7 @@ bool FSolidRoadSurfaceTest::RunTest(const FString& Parameters)
 	USolidWorldChart* LoneChart = nullptr;
 	USolidWorldChart* Lone = nullptr;
 	if (!SurfaceChart(*this, LoneChart)
-		|| !TestTrue(TEXT("Iglin places alone"), LoneChart->PlaceTown(FIntPoint(4, 4), TEXT("Iglin"), Error))
+		|| !TestTrue(TEXT("Iglin places alone"), LoneChart->PlaceTownAt(RoadCellPoint(FIntPoint(4, 4)), TEXT("Iglin"), Error))
 		|| !SurfaceLoad(*this, LoneChart, Lone, 0))
 	{
 		return false;

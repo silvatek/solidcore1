@@ -18,6 +18,14 @@
 
 namespace SolidMonsterTestPrivate
 {
+	FIntPoint CellPoint(const FIntPoint Cell)
+	{
+		int32 X = 0;
+		int32 Y = 0;
+		USolidWorldChart::PointUnderCell(Cell.X, Cell.Y, X, Y);
+		return FIntPoint(X, Y);
+	}
+
 	FSolidTerrainPoint PointAt(const float X, const ESolidBiome Biome, const float Fog = 1.f)
 	{
 		FSolidTerrainPoint Point;
@@ -538,6 +546,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 {
+	using namespace SolidMonsterTestPrivate;
 	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
 	USolidWorldChart* Empty = NewObject<USolidWorldChart>();
 	if (!TestNotNull(TEXT("chart"), Chart) || !TestNotNull(TEXT("map"), Empty))
@@ -594,7 +603,7 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 	};
 
 	FString Error;
-	TestTrue(TEXT("the mark places"), Chart->PlaceEncounter(FIntPoint(10, 4), TEXT("Iglin Bridge"), Error));
+	TestTrue(TEXT("the mark places"), Chart->PlaceEncounterAt(CellPoint(FIntPoint(10, 4)), TEXT("Iglin Bridge"), Error));
 	USolidWorldChart* Marked = NewObject<USolidWorldChart>();
 	if (!TestTrue(TEXT("the marked chart loads"), Marked && Marked->LoadFromChart(Chart)))
 	{
@@ -636,8 +645,8 @@ bool FSolidMonsterMarkTest::RunTest(const FString& Parameters)
 		Rex->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
 	}
 	if (!TestNotNull(TEXT("a Dracorex chart"), Rex)
-		|| !TestFalse(TEXT("an unknown encounter is rejected"), Rex->PlaceEncounter(RexCell, TEXT("Nope"), RexError))
-		|| !TestTrue(TEXT("Dracorex places"), Rex->PlaceEncounter(RexCell, TEXT("dracorex"), RexError)))
+		|| !TestFalse(TEXT("an unknown encounter is rejected"), Rex->PlaceEncounterAt(CellPoint(RexCell), TEXT("Nope"), RexError))
+		|| !TestTrue(TEXT("Dracorex places"), Rex->PlaceEncounterAt(CellPoint(RexCell), TEXT("dracorex"), RexError)))
 	{
 		return false;
 	}
@@ -723,6 +732,7 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(
 
 bool FSolidMonsterMarkGroundTest::RunTest(const FString& Parameters)
 {
+	using namespace SolidMonsterTestPrivate;
 	const FIntPoint Cell(10, 4);
 	USolidWorldChart* Chart = NewObject<USolidWorldChart>();
 	USolidWorldChart* WorldMap = NewObject<USolidWorldChart>();
@@ -732,7 +742,7 @@ bool FSolidMonsterMarkGroundTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
-	if (!TestTrue(TEXT("the mark places"), Chart->PlaceEncounter(Cell, TEXT("Iglin Bridge"), Error))
+	if (!TestTrue(TEXT("the mark places"), Chart->PlaceEncounterAt(CellPoint(Cell), TEXT("Iglin Bridge"), Error))
 		|| !TestTrue(TEXT("the chart loads"), WorldMap->LoadFromChart(Chart))
 		|| !TestEqual(TEXT("one mark"), WorldMap->GetEncounterMarks().Num(), 1))
 	{

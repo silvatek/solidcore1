@@ -25,6 +25,14 @@
 
 namespace SolidLairTestPrivate
 {
+	FIntPoint CellPoint(const FIntPoint Cell)
+	{
+		int32 X = 0;
+		int32 Y = 0;
+		USolidWorldChart::PointUnderCell(Cell.X, Cell.Y, X, Y);
+		return FIntPoint(X, Y);
+	}
+
 	/** Bounds of a mesh built in its own space, then shifted by the component. */
 	bool PlacedBox(const UStaticMeshComponent* Part, FBox& OutBox, int32& OutVertices)
 	{
@@ -524,8 +532,8 @@ bool FSolidLairExitFacesWestTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	Chart->Cells.Init(ESolidBiome::Grassland, USolidWorldChart::MapWidth * USolidWorldChart::MapHeight);
-	if (!TestTrue(TEXT("the exit places"), Chart->PlaceLairMouth(Exit, SolidLair::IglinTunnels.Name, false, Error))
-		|| !TestTrue(TEXT("the entrance places"), Chart->PlaceLairMouth(Entrance, SolidLair::IglinTunnels.Name, true, Error))
+	if (!TestTrue(TEXT("the exit places"), Chart->PlaceLairMouthAt(SolidLairTestPrivate::CellPoint(Exit), SolidLair::IglinTunnels.Name, false, Error))
+		|| !TestTrue(TEXT("the entrance places"), Chart->PlaceLairMouthAt(SolidLairTestPrivate::CellPoint(Entrance), SolidLair::IglinTunnels.Name, true, Error))
 		|| !TestTrue(TEXT("the chart loads"), Chart->LoadFromChart(Chart)))
 	{
 		return false;

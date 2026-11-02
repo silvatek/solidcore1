@@ -11,6 +11,14 @@
 
 namespace
 {
+	FIntPoint BridgeCellPoint(const FIntPoint Cell)
+	{
+		int32 X = 0;
+		int32 Y = 0;
+		USolidWorldChart::PointUnderCell(Cell.X, Cell.Y, X, Y);
+		return FIntPoint(X, Y);
+	}
+
 	const FVector2D BridgeTestMin(-51200.f, -51200.f);
 	const FVector2D BridgeTestMax(51200.f, 51200.f);
 
@@ -111,9 +119,9 @@ namespace
 		Chart->Points.Init(ESolidBiome::Grassland, USolidWorldChart::PointAxis * USolidWorldChart::PointAxis);
 
 		FString Error;
-		if (!Test.TestTrue(TEXT("Iglin places"), Chart->PlaceTown(Iglin, TEXT("Iglin"), Error))
-			|| !Test.TestTrue(TEXT("Relion places"), Chart->PlaceTown(Relion, TEXT("Relion"), Error))
-			|| !Test.TestTrue(TEXT("Iglin Bridge places"), Chart->PlaceBridge(FIntPoint(11, 16), TEXT("Iglin Bridge"), Error)))
+		if (!Test.TestTrue(TEXT("Iglin places"), Chart->PlaceTownAt(BridgeCellPoint(Iglin), TEXT("Iglin"), Error))
+			|| !Test.TestTrue(TEXT("Relion places"), Chart->PlaceTownAt(BridgeCellPoint(Relion), TEXT("Relion"), Error))
+			|| !Test.TestTrue(TEXT("Iglin Bridge places"), Chart->PlaceBridgeAt(BridgeCellPoint(FIntPoint(11, 16)), TEXT("Iglin Bridge"), Error)))
 		{
 			return false;
 		}
@@ -448,7 +456,7 @@ bool FSolidBridgeStandsTest::RunTest(const FString& Parameters)
 		SolidBridge::FromMarkers(*Chart, Height, None, WorldMin, WorldMax), 0);
 
 	FString Error;
-	TestTrue(TEXT("Iglin Bridge places"), Chart->PlaceBridge(FIntPoint(11, 16), TEXT("Iglin Bridge"), Error));
+	TestTrue(TEXT("Iglin Bridge places"), Chart->PlaceBridgeAt(BridgeCellPoint(FIntPoint(11, 16)), TEXT("Iglin Bridge"), Error));
 
 	int32 RiverTerrainX = 0;
 	int32 RiverTerrainY = 0;
@@ -533,7 +541,7 @@ bool FSolidBridgeBuriedRampTest::RunTest(const FString& Parameters)
 
 	FString Error;
 	const FIntPoint Cell(11, 16);
-	if (!TestTrue(TEXT("Iglin Bridge places"), Chart->PlaceBridge(Cell, TEXT("Iglin Bridge"), Error)))
+	if (!TestTrue(TEXT("Iglin Bridge places"), Chart->PlaceBridgeAt(BridgeCellPoint(Cell), TEXT("Iglin Bridge"), Error)))
 	{
 		return false;
 	}

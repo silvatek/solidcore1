@@ -208,60 +208,26 @@ public:
 	 */
 	bool PaintPointRectangle(FIntPoint From, FIntPoint To, ESolidBiome Biome, FString& OutError);
 
-	/** Put a SolidTowns town on this cell's centre point. The same town name moves here. */
-	bool PlaceTown(FIntPoint Cell, const FString& Name, FString& OutError);
-
 	/** Put a SolidTowns town on this terrain point. The same town name moves here. */
 	bool PlaceTownAt(FIntPoint TerrainPoint, const FString& Name, FString& OutError);
-
-	/** Put a stronghold the game already has on this cell's centre point. The same size moves here. */
-	bool PlaceStronghold(FIntPoint Cell, ESolidStrongholdSize Size, ESolidStrongholdType Type, FString& OutError);
 
 	/** Put a stronghold the game already has on this terrain point. The same size moves here. */
 	bool PlaceStrongholdAt(FIntPoint TerrainPoint, ESolidStrongholdSize Size, ESolidStrongholdType Type, FString& OutError);
 
-	/** Put a stronghold site on this cell's centre point. The same size moves here. A site is not a road end. */
-	bool PlaceSite(FIntPoint Cell, ESolidStrongholdSize Size, FString& OutError);
-
 	/** Put a stronghold site on this terrain point. The same size moves here. A site is not a road end. */
 	bool PlaceSiteAt(FIntPoint TerrainPoint, ESolidStrongholdSize Size, FString& OutError);
-
-	/** Put one end of a lair the game already has on this cell's centre point. The same lair and end move here. */
-	bool PlaceLairMouth(FIntPoint Cell, const FString& LairName, bool bEntrance, FString& OutError);
 
 	/** Put one end of a lair the game already has on this terrain point. The same lair and end move here. */
 	bool PlaceLairMouthAt(FIntPoint TerrainPoint, const FString& LairName, bool bEntrance, FString& OutError);
 
-	/**
-	 * Put a custom note on this cell's centre point. The same text moves here.
-	 * The note is one line, at most 48 characters. It does not change the paint.
-	 */
-	bool PlaceCustom(FIntPoint Cell, const FString& Note, FString& OutError);
-
 	/** Put a custom note on this terrain point. The same text moves here. */
 	bool PlaceCustomAt(FIntPoint TerrainPoint, const FString& Note, FString& OutError);
-
-	/**
-	 * Put a catalog encounter on this cell's centre point. The same name moves here.
-	 * The name is the one in SolidEncounter::StaticEncounters. The paint stays.
-	 */
-	bool PlaceEncounter(FIntPoint Cell, const FString& Name, FString& OutError);
 
 	/** Put a catalog encounter on this terrain point. The same name moves here. */
 	bool PlaceEncounterAt(FIntPoint TerrainPoint, const FString& Name, FString& OutError);
 
-	/**
-	 * Put a bridge on this cell's centre point. The same name moves here.
-	 * The name is the one in SolidBridge::Bridges.
-	 * Length, orientation, and the initial state stay in that list. The paint stays.
-	 */
-	bool PlaceBridge(FIntPoint Cell, const FString& Name, FString& OutError);
-
 	/** Put a bridge on this terrain point. The same name moves here. */
 	bool PlaceBridgeAt(FIntPoint TerrainPoint, const FString& Name, FString& OutError);
-
-	/** Remove the mark on this cell's centre point. */
-	bool DeleteMark(FIntPoint Cell, FString& OutError);
 
 	/** Remove the mark on this terrain point. */
 	bool DeleteMarkAt(FIntPoint TerrainPoint, FString& OutError);
@@ -316,7 +282,6 @@ private:
 	void AssignTownPoints() const;
 	bool EnsurePoints() const;
 	bool CellIndex(FIntPoint Cell, int32& OutIndex) const;
-	bool PlaceMark(FIntPoint Cell, const FSolidWorldChartMark& Mark, FString& OutError);
 	bool PlaceOn(FIntPoint TerrainPoint, const FSolidWorldChartMark& Mark, FString& OutError);
 	/** Solve from Cells and Marks when a query finds the chart unsolved. */
 	bool EnsureQuery() const;

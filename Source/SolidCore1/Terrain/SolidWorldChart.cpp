@@ -385,7 +385,13 @@ bool USolidWorldChart::EnsureQuery() const
 	{
 		return true;
 	}
-	if (Cells.Num() != MapWidth * MapHeight)
+	const bool bCellsEmpty = Cells.Num() == 0;
+	const bool bPointsEmpty = Points.Num() == 0;
+	if (bCellsEmpty && bPointsEmpty)
+	{
+		return false;
+	}
+	if (!bCellsEmpty && Cells.Num() != MapWidth * MapHeight)
 	{
 		return false;
 	}
@@ -884,16 +890,42 @@ bool USolidWorldChart::LoadFromChart(const USolidWorldChart* Chart)
 
 bool USolidWorldChart::BuildQuery() const
 {
-	if (Cells.Num() != MapWidth * MapHeight)
+	const bool bCellsEmpty = Cells.Num() == 0;
+	const bool bPointsEmpty = Points.Num() == 0;
+	if (bCellsEmpty && bPointsEmpty)
+	{
+		UE_LOG(LogSolid, Error, TEXT("WorldChart: the chart does not cover the %dx%d map."), MapWidth, MapHeight);
+		return false;
+	}
+
+	if (!bCellsEmpty && Cells.Num() != MapWidth * MapHeight)
 	{
 		UE_LOG(LogSolid, Error, TEXT("WorldChart: the chart does not cover the %dx%d map."), MapWidth, MapHeight);
 		return false;
 	}
 
 	ResetLoad();
-	for (int32 Index = 0; Index < Cells.Num(); ++Index)
+	if (bCellsEmpty)
 	{
-		Markers[Index] = static_cast<uint8>(MarkerForChartBiome(Cells[Index]));
+		for (int32 CellY = 0; CellY < MapHeight; ++CellY)
+		{
+			for (int32 CellX = 0; CellX < MapWidth; ++CellX)
+			{
+				int32 TerrainX = 0;
+				int32 TerrainY = 0;
+				PointUnderCell(CellX, CellY, TerrainX, TerrainY);
+				const int32 Slot = TerrainY * PointAxis + TerrainX;
+				const ESolidBiome Ground = Points.IsValidIndex(Slot) ? Points[Slot] : ESolidBiome::Grassland;
+				Markers[CellY * MapWidth + CellX] = static_cast<uint8>(MarkerForChartBiome(Ground));
+			}
+		}
+	}
+	else
+	{
+		for (int32 Index = 0; Index < Cells.Num(); ++Index)
+		{
+			Markers[Index] = static_cast<uint8>(MarkerForChartBiome(Cells[Index]));
+		}
 	}
 
 	// A mark position becomes a cell once. That conversion needs a loaded map.

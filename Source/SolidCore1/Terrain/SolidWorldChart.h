@@ -264,7 +264,10 @@ public:
 	/** Terrain points on one side. The same count as the terrain map's default grid. */
 	static constexpr int32 PointAxis = 513;
 
-	/** Marker biome of each cell. Row-major. Row 0 is north, so a higher row is further south. Column 0 is west. A ! is grassland. */
+	/**
+	 * Deprecated. The cell grid. The land is the terrain points.
+	 * Marker biome of each cell. Row-major. Row 0 is north, so a higher row is further south. Column 0 is west. A ! is grassland.
+	 */
 	UPROPERTY(EditAnywhere, Category = "WorldChart")
 	TArray<ESolidBiome> Cells;
 

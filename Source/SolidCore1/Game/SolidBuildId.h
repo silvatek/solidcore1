@@ -9,9 +9,9 @@
  * SOLID_BUILD_NOTE is a short one-line summary of what this build changed.
  */
 #ifndef SOLID_BUILD_ID
-#define SOLID_BUILD_ID TEXT("SC1-0893")
+#define SOLID_BUILD_ID TEXT("SC1-0894")
 #endif
 
 #ifndef SOLID_BUILD_NOTE
-#define SOLID_BUILD_NOTE TEXT("The chart stores no road of its own.")
+#define SOLID_BUILD_NOTE TEXT("An empty cell grid solves from the points.")
 #endif

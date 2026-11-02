@@ -11,84 +11,9 @@
 #include "SolidRiver.h"
 #include "Game/SolidGameMode.h"
 
-namespace
-{
-	ESolidWorldChartMarkKind ChartMarkKind(const ESolidWorldBang Kind)
-	{
-		switch (Kind)
-		{
-		case ESolidWorldBang::Stronghold:
-			return ESolidWorldChartMarkKind::Stronghold;
-		case ESolidWorldBang::StrongholdSite:
-			return ESolidWorldChartMarkKind::StrongholdSite;
-		case ESolidWorldBang::LairEntrance:
-			return ESolidWorldChartMarkKind::LairEntrance;
-		case ESolidWorldBang::LairExit:
-			return ESolidWorldChartMarkKind::LairExit;
-		case ESolidWorldBang::Town:
-		default:
-			return ESolidWorldChartMarkKind::Town;
-		}
-	}
-}
-
 const TCHAR* USolidWorldChart::ShippedPath()
 {
 	return TEXT("/Game/World/WorldChart");
-}
-
-bool USolidWorldChart::ImportFromString(const FString& Text)
-{
-	if (!LoadFromString(Text))
-	{
-		return false;
-	}
-
-	TArray<ESolidBiome> NewCells;
-	NewCells.SetNum(MapWidth * MapHeight);
-	TArray<FSolidWorldChartMark> NewMarks;
-	for (int32 CellY = 0; CellY < MapHeight; ++CellY)
-	{
-		for (int32 CellX = 0; CellX < MapWidth; ++CellX)
-		{
-			const int32 Index = CellY * MapWidth + CellX;
-			NewCells[Index] = GetMarkerBiomeAtCell(CellX, CellY);
-
-			FSolidWorldBang Bang;
-			if (!FindBang(CellX, CellY, Bang))
-			{
-				continue;
-			}
-
-			FSolidWorldChartMark Mark;
-			Mark.Kind = ChartMarkKind(Bang.Kind);
-			Mark.Name = Bang.Name;
-			Mark.StrongholdType = Bang.StrongholdType;
-			Mark.StrongholdSize = Bang.StrongholdSize;
-			Mark.LairId = Bang.LairId;
-			int32 TerrainX = 0;
-			int32 TerrainY = 0;
-			PointUnderCell(Bang.Cell.X, Bang.Cell.Y, TerrainX, TerrainY);
-			Mark.TerrainPoint = FIntPoint(TerrainX, TerrainY);
-			NewMarks.Add(Mark);
-		}
-	}
-
-	TArray<FSolidWorldChartRoad> NewRoads;
-	for (const SolidRoad::FRoute& Route : GetRoads())
-	{
-		FSolidWorldChartRoad Road;
-		Road.FromName = SolidRoad::ChartRoadEndName(Route.Definition.From);
-		Road.ToName = SolidRoad::ChartRoadEndName(Route.Definition.To);
-		Road.Type = ChartRoadType(Route.Definition.Type);
-		NewRoads.Add(Road);
-	}
-
-	Cells = MoveTemp(NewCells);
-	Marks = MoveTemp(NewMarks);
-	Roads = MoveTemp(NewRoads);
-	UndoStack.Reset();
-	return true;
 }
 
 namespace

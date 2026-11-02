@@ -122,14 +122,6 @@ public:
 	/** Editor path of the shipped chart. */
 	static const TCHAR* ShippedPath();
 
-	/**
-	 * Deprecated. The chart stores marks.
-	 * Fill this chart from map text. A ! is stored as grassland.
-	 * Named towns, strongholds, sites, and lair mouths become marks.
-	 * A Road: line is ignored.
-	 */
-	bool ImportFromString(const FString& Text);
-
 	/** Copy /Game/World/WorldChart onto this chart and solve it. Idempotent when already solved. */
 	bool LoadDefault(bool bForceReload = false);
 
